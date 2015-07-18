@@ -1,0 +1,19 @@
+var searchData=
+[
+  ['schedule_5fstrategy',['SCHEDULE_STRATEGY',['../d_sch_comp_udt-2_ddynamic_8c.html#a134853771ac01cb0e212995a4de29099',1,'SCHEDULE_STRATEGY():&#160;dSchCompUdt-2Ddynamic.c'],['../d_sch_comp_udt-cuda_8c.html#a134853771ac01cb0e212995a4de29099',1,'SCHEDULE_STRATEGY():&#160;dSchCompUdt-cuda.c'],['../pdgstrf_8c.html#a134853771ac01cb0e212995a4de29099',1,'SCHEDULE_STRATEGY():&#160;pdgstrf.c'],['../pzgstrf_8c.html#a134853771ac01cb0e212995a4de29099',1,'SCHEDULE_STRATEGY():&#160;pzgstrf.c'],['../z_sch_comp_udt-2_ddynamic_8c.html#a134853771ac01cb0e212995a4de29099',1,'SCHEDULE_STRATEGY():&#160;zSchCompUdt-2Ddynamic.c'],['../z_sch_comp_udt-cuda_8c.html#a134853771ac01cb0e212995a4de29099',1,'SCHEDULE_STRATEGY():&#160;zSchCompUdt-cuda.c']]],
+  ['sgi',['SGI',['../machines_8h.html#a6cec40033b5de1283cc20f23384b2022',1,'machines.h']]],
+  ['slu_5fmpi_5ftag',['SLU_MPI_TAG',['../superlu__defs_8h.html#afd734c3833a31e7ddf54660b520e4d7b',1,'superlu_defs.h']]],
+  ['stackfull',['StackFull',['../util__dist_8h.html#a1ef4d4db4d5e1fe0719416163e0e51ae',1,'util_dist.h']]],
+  ['succes_5fret',['SUCCES_RET',['../psymbfact_8h.html#a09c1386b4b0c0639823927990f9c081a',1,'psymbfact.h']]],
+  ['sun',['SUN',['../machines_8h.html#a332587bf4287f2a9eb97ccee6ad00504',1,'machines.h']]],
+  ['super_5fblock',['SUPER_BLOCK',['../superlu__defs_8h.html#a7ef6fa6a8a0f5fde950f434206097929',1,'superlu_defs.h']]],
+  ['super_5flinear',['SUPER_LINEAR',['../superlu__defs_8h.html#a927a58b2baf7aeba07ad52c1873e908f',1,'superlu_defs.h']]],
+  ['superlu_5ffree',['SUPERLU_FREE',['../util__dist_8h.html#a9672c5511c3efd9467e4d375a347c192',1,'util_dist.h']]],
+  ['superlu_5fmalloc',['SUPERLU_MALLOC',['../util__dist_8h.html#a55a5ed83733c30850c14cc7b3f922a54',1,'util_dist.h']]],
+  ['superlu_5fmax',['SUPERLU_MAX',['../util__dist_8h.html#adca8259e9d345c7cbaaa0608a1acdfd4',1,'util_dist.h']]],
+  ['superlu_5fmin',['SUPERLU_MIN',['../util__dist_8h.html#a7147dd5df1048562cd4ab83e9fd808d9',1,'util_dist.h']]],
+  ['superlu_5ftimer_5f',['SuperLU_timer_',['../superlu__defs_8h.html#aa723b2429cc132973ad37bfd1b1c95e1',1,'superlu_defs.h']]],
+  ['supersize',['SuperSize',['../superlu__defs_8h.html#a4e9e1e2ceac69b9deb0a59bba51c554b',1,'superlu_defs.h']]],
+  ['sx',['SX',['../isamax_8c.html#a282a43c576080b0cb7fa78a2d112eab5',1,'SX():&#160;isamax.c'],['../sasum_8c.html#a282a43c576080b0cb7fa78a2d112eab5',1,'SX():&#160;sasum.c'],['../saxpy_8c.html#a282a43c576080b0cb7fa78a2d112eab5',1,'SX():&#160;saxpy.c'],['../scopy_8c.html#a282a43c576080b0cb7fa78a2d112eab5',1,'SX():&#160;scopy.c'],['../sdot_8c.html#a282a43c576080b0cb7fa78a2d112eab5',1,'SX():&#160;sdot.c'],['../srot_8c.html#a282a43c576080b0cb7fa78a2d112eab5',1,'SX():&#160;srot.c'],['../sscal_8c.html#a282a43c576080b0cb7fa78a2d112eab5',1,'SX():&#160;sscal.c']]],
+  ['sy',['SY',['../saxpy_8c.html#a1595239c1004968b08e47189d9c9d5d9',1,'SY():&#160;saxpy.c'],['../scopy_8c.html#a1595239c1004968b08e47189d9c9d5d9',1,'SY():&#160;scopy.c'],['../sdot_8c.html#a1595239c1004968b08e47189d9c9d5d9',1,'SY():&#160;sdot.c'],['../srot_8c.html#a1595239c1004968b08e47189d9c9d5d9',1,'SY():&#160;srot.c']]]
+];

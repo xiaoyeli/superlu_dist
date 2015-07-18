@@ -1,0 +1,12 @@
+601c601
+< 	if ( !(ToRecv = (int *) SUPERLU_MALLOC(nsupers * sizeof(int))) )
+---
+> 	if ( !(ToRecv = intCalloc_dist(nsupers)) )
+942c942
+< 			fprintf(stderr, "col block " IFMT " ", jb);
+---
+> 			fprintf(stderr, "col block %d ", jb);
+1015c1015
+< 	if ( !iam ) printf(".. # L blocks " IFMT "\t# U blocks " IFMT "\n",
+---
+> 	if ( !iam ) printf(".. # L blocks %d\t# U blocks %d\n",

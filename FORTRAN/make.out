@@ -1,0 +1,24 @@
+ftn -fast  -c superlupara.f90 
+ftn -fast  -c superlu_mod.f90 
+ftn -fast  -c dhbcode1.f90 
+ftn -fast  -c f_pddrive.f90 
+cc -fast -m64 -std=c99 -Wall -openmp -I/global/homes/x/xiaoye/Edison/lib/parmetis-4.0.3_64/include -I/global/homes/x/xiaoye/Edison/lib/parmetis-4.0.3_64/metis/include -DDEBUGlevel=0 -DPRNTlevel=1 -DPROFlevel=0 -D_LONGINT  -DAdd_ -DUSE_VENDOR_BLAS -I../SRC -c dcreate_dist_matrix.c 
+cc -fast -m64 -std=c99 -Wall -openmp -I/global/homes/x/xiaoye/Edison/lib/parmetis-4.0.3_64/include -I/global/homes/x/xiaoye/Edison/lib/parmetis-4.0.3_64/metis/include -DDEBUGlevel=0 -DPRNTlevel=1 -DPROFlevel=0 -D_LONGINT  -DAdd_ -DUSE_VENDOR_BLAS -I../SRC -c superlu_c2f_dwrap.c 
+superlu_c2f_dwrap.c(221): warning #167: argument of type "int *" is incompatible with parameter of type "int_t={long long} *"
+     superlu_gridmap(f2c_comm(Bcomm), *nprow, *npcol, usermap, *ldumap, (gridinfo_t *) *grid);
+                                                      ^
+
+superlu_c2f_dwrap.c(253): warning #167: argument of type "int_t={long long}" is incompatible with parameter of type "LUstruct_t *"
+     LUstructInit(*m, *n, (LUstruct_t *) *LUstruct);
+                      ^
+
+superlu_c2f_dwrap.c(253): error #140: too many arguments in function call
+     LUstructInit(*m, *n, (LUstruct_t *) *LUstruct);
+                          ^
+
+superlu_c2f_dwrap.c(265): warning #266: function "Destroy_LU" declared implicitly
+     Destroy_LU(*n, (gridinfo_t *) *grid, (LUstruct_t *) *LUstruct);
+     ^
+
+compilation aborted for superlu_c2f_dwrap.c (code 2)
+make: *** [superlu_c2f_dwrap.o] Error 2

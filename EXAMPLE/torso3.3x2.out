@@ -1,0 +1,98 @@
+/global/u2/x/xiaoye/Release_Codes/SuperLU_DIST-branch/EXAMPLE
+Input matrix file: /global/scratch2/sd/xiaoye/torso3.rua
+	Process grid	3 X 2
+**************************************************
+.. blocking parameters from sp_ienv():
+**    relaxation           :       20
+**    max supernode        :      128
+**    estimated fill ratio :        5
+**************************************************
+**************************************************
+.. options:
+**    Fact             :    0
+**    Equil            :    1
+**    ColPerm          :    4
+**    RowPerm          :    1
+**    ReplaceTinyPivot :    1
+**    Trans            :    0
+**    IterRefine       :    2
+**    num_lookaheads   :   10
+**    SymPattern       :    0
+**    lookahead_etree  :    0
+**************************************************
+.. equilibrated? *equed = R
+.. LDPERM job 5	 time: 0.41
+.. anorm 4.344439e+00
+.. Use METIS ordering on A'+A
+.. symbfact(): relax   20, maxsuper  128, fill    5
+	Nonzeros in L       118359299
+	Nonzeros in U       118364670
+	nonzeros in L+U     236464813
+	nonzeros in LSUB    19348473
+	No of supers 35941
+	Size of G(L) 6513200
+	Size of G(U) 6256322
+	int 4, short 2, float 4, double 8
+	SYMBfact (MB):	L\U 30.21	total 39.54	expansions 0
+.. # L blocks 151889	# U blocks 148393
+MPI tag upper bound = 2147483647
+.. Starting with 8 OpenMP threads 
+ === using DAG ===
+ * init: 8.880115e-02 seconds
+.. thresh = s_eps 5.960464e-08 * anorm 4.344439e+00 = 2.589488e-07
+.. Buffer size: Lsub 1711	Lval 215168	Usub 4061	Uval 304768	LDA 1681
+[0] .. BIG U size 1565696 
+[0] .. BIG V size 1048576
+  Max row size is 1529 
+  Using buffer_size of 64000000 
+  Threads per process 8 
+Time in scattering 0.000000 
+Time in dgemm 0.000000 
+Total time spent in schur update is    		:  3.53 seconds,
+Total Time in Factorization            		:  7.56 seconds, 
+Time (other GEMM and Scatter)          		:  7.56 seconds, 
+Total time spent in schur update when offload    		:  0.00 seconds,
+.. dQuery_Space: peak_buffer 71859184
+.. dQuery_Space: peak_buffer 73104368
+.. dQuery_Space: peak_buffer 71859184
+.. dQuery_Space: peak_buffer 73104368
+
+** Memory Usage **********************************
+** NUMfact space (MB): (sum-of-all-processes)
+    L\U :         2084.96 |  Total :  2518.85
+** Total highmark (MB):
+    Sum-of-all :  2809.90 | Avg :   468.32  | Max :   485.47
+**************************************************
+.. dQuery_Space: peak_buffer 71982064
+.. dQuery_Space: peak_buffer 71982064
+( 0) .. Step  0: berr[j] = 1.228974e-15
+( 0) .. Step  1: berr[j] = 2.193377e-16
+( 0) .. Step  2: berr[j] = 2.189624e-16
+.. DiagScale = 3
+	Sol  0: ||X-Xtrue||/||X|| = 4.884981e-15
+**************************************************
+**** Time (seconds) ****
+	EQUIL time             0.10
+	ROWPERM time           0.41
+	COLPERM time           4.15
+	SYMBFACT time          2.79
+	DISTRIBUTE time        1.30
+	FACTOR time            7.67
+	Factor flops	3.633105e+11	Mflops 	47346.54
+	SOLVE time             0.93
+	Solve flops	4.759041e+08	Mflops 	  510.02
+	REFINEMENT time        1.99	Steps       2
+
+**************************************************
+
+----------------------------------------------------------------
+Jobs exit status code is 0
+Job test.cpu.bat/10111095.cvrsvc09-ib completed Fri Sep 12 16:43:12 PDT 2014
+Submitted by xiaoye/xiaoye using m1863
+Job Limits: neednodes=8:ppn=1,nodes=8:ppn=1,walltime=00:04:00
+Job Resources used: cput=00:07:38,mem=1277572kb,vmem=2359060kb,walltime=00:00:26
+Nodes used: c0406-ib c0409-ib c0680-ib c0701-ib c1258-ib c1265-ib c1307-ib c1329-ib 
+
+Killing any leftover processes...
+
+Job completed.

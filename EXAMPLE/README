@@ -1,0 +1,52 @@
+		SuperLU_DIST  EXAMPLES
+		======================
+
+This directory contains sample programs to illustrate how to use
+various functions provded in SuperLU_DIST. You can modify these
+examples to suit your applications.
+
+The examples illustrate the following functionalities:
+  1. pddrive.c, pddrive_ABglobal.c
+     Use PDGSSVX with the full (default) options to solve a linear system.
+  2. pddrive1.c, pddrive1_ABglobal.c
+     Solve the systems with same A but different right-hand side.
+     (Reuse the factored form of A)
+  3. pddrive2.c, pddrive2_ABglobal.c
+     Solve the systems with the same sparsity pattern of A.
+     (Reuse the sparsity ordering)
+  4. pddrive3.c, pddrive3_ABglobal.c
+     Solve the systems with the same sparsity pattern and similar values.
+  5. pddrive4.c, pddrive4_ABglobal.c
+     Divide the processors into two subgroups (two grids) such that each
+     subgroup solves a linear system independently from the other.
+
+
+The command line options "-r <process rows>" and "-c <process columns>"
+defines the 2-D process grid. The total number of processes <procs> is:
+	<procs> = <process rows> * <process columns>
+If the options is not provided at the command line, the programs
+will use 1 processor as default in each case.
+
+Three input matrices (Harwell-Boeing format) are provided in this directory:
+	g20.rua  -- a real matrix of dimension 400x400
+	big.rua  -- a real matrix of dimension 4960x4960
+        cg20.cua -- a complex matrix of dimension 400x400
+
+The command lines given below show how to run the parallel programs on the
+Cray XT using "aprun". On the other platforms, you may need other
+command in place of "aprun".
+
+1. To run the real examples (pddrive, pddrive1, etc.)
+   you may type:
+   % aprun -n <np> pddrive -r <process row> -c <process columns> g20.rua 
+     (e.g., aprun -n 4 pddrive -r 2 -c 2 g20.rua)
+
+2. To run the real examples pddrive4 and pddrive4_ABglobal, you may type:
+   % aprun -n 10 pddrive4 g20.rua
+   
+3. To run the complex examples (pzdrive, pzdrive1, etc.),
+   you may type:
+   % aprun -n <np> pzdrive -r <process row> -c <process columns> cg20.cua
+
+4. To run the complex examples pzdrive4 and pzdrive4_ABglobal, you may type:
+   % aprun -n 10 pzdrive4 cg20.cua

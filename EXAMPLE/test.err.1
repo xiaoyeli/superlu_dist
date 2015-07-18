@@ -1,0 +1,99 @@
+Trying to delete a non-HEAP mop.
+
+Unknown mop type of 617
+
+Trying to delete a non-HEAP mop.
+
+Unknown mop type of 617
+
+*** glibc detected *** ./pddrive: munmap_chunk(): invalid pointer: 0x00000000009a5180 ***
+pddrive: malloc.c:4624: _int_malloc: Assertion `(unsigned long)(size) >= (unsigned long)(nb)' failed.
+pddrive: malloc.c:4624: _int_malloc: Assertion `(unsigned long)(size) >= (unsigned long)(nb)' failed.
+pddrive: malloc.c:4474: _int_malloc: Assertion `(fwd->size & 0x4) == 0' failed.
+*** glibc detected *** ./pddrive: corrupted double-linked list: 0x00000000009c1fb0 ***
+======= Backtrace: =========
+[0x5cf444]
+[0x47605d]
+[0x48713e]
+[0x47675e]
+[0x47673a]
+[0x47677f]
+[0x47673a]
+======= Memory map: ========
+00400000-006ac000 r-xp 00000000 00:0d 1089215                            /var/spool/alps/6996456/pddrive
+008ab000-008f1000 rwxp 002ab000 00:0d 1089215                            /var/spool/alps/6996456/pddrive
+008f1000-00b9a000 rwxp 00000000 00:00 0                                  [heap]
+2aaaaaaab000-2aaaaaaac000 r-xp 00000000 00:00 0                          [vdso]
+2aaaaaaac000-2aaaaaad7000 rwxs 00000000 00:04 1089270                    /dev/zero (deleted)
+2aaaaaad7000-2aaaace59000 rwxs 00000000 00:04 27099136                   /SYSV00000000 (deleted)
+2aaaaceb7000-2aaaad4b7000 rwxs 00000000 00:00 0 
+2aaaad4b7000-2aaaadab7000 rwxs 00000000 00:00 0 
+2aaaadab7000-2aaaae0b7000 rwxs 00000000 00:00 0 
+2aaaae0b7000-2aaaae6b7000 rwxs 00000000 00:00 0 
+2aaaae6b7000-2aaaaecb7000 rwxs 00000000 00:00 0 
+2aaaaecb7000-2aaaaecb8000 rwxp 00000000 00:00 0 
+7ffffffe7000-7ffffffff000 rwxp 00000000 00:00 0                          [stack]
+ffffffffff600000-ffffffffff601000 r-xp 00000000 00:00 0                  [vsyscall]
+*** glibc detected *** ./pddrive: munmap_chunk(): invalid pointer: 0x00000000009a5180 ***
+======= Backtrace: =========
+[0x5cf444]
+[0x472817]
+[0x475df4]
+[0x47663e]
+[0x422a25]
+[0x423d82]
+[0x40404f]
+[0x400983]
+[0x5aedf4]
+[0x4005a9]
+======= Memory map: ========
+00400000-006ac000 r-xp 00000000 00:0d 1089215                            /var/spool/alps/6996456/pddrive
+008ab000-008f1000 rwxp 002ab000 00:0d 1089215                            /var/spool/alps/6996456/pddrive
+008f1000-00b9a000 rwxp 00000000 00:00 0                                  [heap]
+2aaaaaaab000-2aaaaaaac000 r-xp 00000000 00:00 0                          [vdso]
+2aaaaaaac000-2aaaaaad7000 rwxs 00000000 00:04 1089270                    /dev/zero (deleted)
+2aaaaaad7000-2aaaace59000 rwxs 00000000 00:04 27099136                   /SYSV00000000 (deleted)
+2aaaaceb7000-2aaaad4b7000 rwxs 00000000 00:00 0 
+2aaaad4b7000-2aaaadab7000 rwxs 00000000 00:00 0 
+2aaaadab7000-2aaaae0b7000 rwxs 00000000 00:00 0 
+2aaaae0b7000-2aaaae6b7000 rwxs 00000000 00:00 0 
+2aaaae6b7000-2aaaaecb7000 rwxs 00000000 00:00 0 
+2aaaaecb7000-2aaaaecb8000 rwxp 00000000 00:00 0 
+7ffffffe7000-7ffffffff000 rwxp 00000000 00:00 0                          [stack]
+ffffffffff600000-ffffffffff601000 r-xp 00000000 00:00 0                  [vsyscall]
+======= Backtrace: =========
+[0x5cf444]
+[0x5d2dfd]
+[0x5d42bf]
+[0x475e4c]
+[0x47a83d]
+[0x48e237]
+[0x48d663]
+[0x48ce72]
+[0x48c326]
+[0x48b7c7]
+[0x476d0b]
+[0x476b2e]
+[0x4769f6]
+[0x47668d]
+[0x47677f]
+[0x47673a]
+======= Memory map: ========
+00400000-006ac000 r-xp 00000000 00:0d 1089215                            /var/spool/alps/6996456/pddrive
+008ab000-008f1000 rwxp 002ab000 00:0d 1089215                            /var/spool/alps/6996456/pddrive
+008f1000-00b4d000 rwxp 00000000 00:00 0                                  [heap]
+2aaaaaaab000-2aaaaaaac000 r-xp 00000000 00:00 0                          [vdso]
+2aaaaaaac000-2aaaaaad7000 rwxs 00000000 00:04 1089270                    /dev/zero (deleted)
+2aaaaaad7000-2aaaace59000 rwxs 00000000 00:04 27099136                   /SYSV00000000 (deleted)
+2aaaaceb7000-2aaaad4b7000 rwxs 00000000 00:00 0 
+2aaaad4b7000-2aaaadab7000 rwxs 00000000 00:00 0 
+2aaaadab7000-2aaaae0b7000 rwxs 00000000 00:00 0 
+2aaaae0b7000-2aaaae6b7000 rwxs 00000000 00:00 0 
+2aaaae6b7000-2aaaaecb7000 rwxs 00000000 00:00 0 
+2aaaaecb7000-2aaaaecb8000 rwxp 00000000 00:00 0 
+2aaab0000000-2aaab0021000 rwxp 00000000 00:00 0 
+2aaab0021000-2aaab4000000 ---p 00000000 00:00 0 
+7ffffffe7000-7ffffffff000 rwxp 00000000 00:00 0                          [stack]
+ffffffffff600000-ffffffffff601000 r-xp 00000000 00:00 0                  [vsyscall]
+_pmiu_daemon(SIGCHLD): [NID 01773] [c8-3c2s6n1] [Fri Apr 20 01:39:37 2012] PE RANK 0 exit signal Aborted
+[NID 01773] 2012-04-19 18:39:37 Apid 6996456: initiated application termination
