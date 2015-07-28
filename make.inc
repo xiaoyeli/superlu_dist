@@ -60,7 +60,7 @@ RANLIB       	= ranlib
 CC           	= cc
 # CFLAGS should be set to be the C flags that include optimization
 CFLAGS          = -fast -m64 -std=c99 -Wall -openmp \
-		$(I_PARMETIS) -DDEBUGlevel=0 -DPRNTlevel=1 -DPROFlevel=0 \
+		$(I_PARMETIS) -DDEBUGlevel=0 -DPRNTlevel=0 -DPROFlevel=0 \
 # uncomment the following to use 64-bit integer
 # CFLAGS 		+= -D_LONGINT
 

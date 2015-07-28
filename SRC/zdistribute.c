@@ -313,6 +313,7 @@ zdistribute(fact_t fact, int_t n, SuperMatrix *A,
 	
 	if ( !(ToSendD = SUPERLU_MALLOC(k * sizeof(int))) )
 	    ABORT("Malloc fails for ToSendD[].");
+	for (i = 0; i < k; ++i) ToSendD[i] = NO;
 	if ( !(ilsum = intMalloc_dist(k+1)) )
 	    ABORT("Malloc fails for ilsum[].");
 

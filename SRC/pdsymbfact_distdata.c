@@ -1333,6 +1333,7 @@ ddist_psymbtonum(fact_t fact, int_t n, SuperMatrix *A,
     fprintf(stderr, "Calloc fails for ToRecv[].");
     return (memDist + memNLU);
   }
+  for (i = 0; i < nsupers; ++i) ToRecv[i] = 0;
   memNLU += nsupers * iword;
   
   k = CEILING( nsupers, grid->npcol ); /* Number of local column blocks */
@@ -1390,6 +1391,8 @@ ddist_psymbtonum(fact_t fact, int_t n, SuperMatrix *A,
     fprintf(stderr, "Malloc fails for ToSendD[].");
     return (memDist + memNLU);
   }
+  for (i = 0; i < nsupers_i; ++i) ToSendD[i] = NO;
+
   memNLU += nsupers_i*iword;  
   if ( !(Urb_marker = intCalloc_dist(nsupers_j))) {
     fprintf(stderr, "Calloc fails for rb_marker[].");

@@ -141,6 +141,8 @@ int main(int argc, char *argv[])
         options.PrintStat         = YES;
      */
     set_default_options_dist(&options);
+    options.ParSymbFact       = YES;
+    options.ColPerm = PARMETIS;
 #if 0
     options.RowPerm = NOROWPERM;
     options.IterRefine = NOREFINE;
