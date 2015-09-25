@@ -352,31 +352,33 @@ extern int   file_PrintDoublecomplex(FILE *fp, char *, int_t, doublecomplex *);
 /* BLAS */
 
 #ifdef USE_VENDOR_BLAS
-extern int zgemm_(const char*, const char*, const int*, const int*, const int*,
-                  const doublecomplex*, const doublecomplex*, const int*, const doublecomplex*,
-                  const int*, const doublecomplex*, doublecomplex*, const int*, int, int);
-extern int ztrsv_(char*, char*, char*, int*, doublecomplex*, int*,
+extern void zgemm_(char*, char*, int*, int*, int*,
+                  doublecomplex*, doublecomplex*, int*, doublecomplex*,
+                  int*, doublecomplex*, doublecomplex*, int*, int, int);
+extern void ztrsv_(char*, char*, char*, int*, doublecomplex*, int*,
                   doublecomplex*, int*, int, int, int);
-extern int ztrsm_(char*, char*, char*, char*, int*, int*, 
+extern void ztrsm_(char*, char*, char*, char*, int*, int*, 
                   doublecomplex*, doublecomplex*, int*, doublecomplex*, 
                   int*, int, int, int, int);
-extern int zgemv_(char *, int *, int *, doublecomplex *, doublecomplex *a, int *, 
+extern void zgemv_(char *, int *, int *, doublecomplex *, doublecomplex *a, int *, 
                   doublecomplex *, int *, doublecomplex *, doublecomplex *, int *, int);
+extern void zgeru_(int*, int*, doublecomplex*, doublecomplex*, int*,
+                 doublecomplex*, int*, doublecomplex*, int*);
+
 #else
-extern int zgemm_(const char*, const char*, const int*, const int*, const int*,
-                  const doublecomplex*, const doublecomplex*, const int*, 
-                  const doublecomplex*, const int*, const doublecomplex*,
-                  doublecomplex*, const int*);
+extern int zgemm_(char*, char*, int*, int*, int*,
+                   doublecomplex*,  doublecomplex*,  int*,  doublecomplex*,
+                   int*,  doublecomplex*, doublecomplex*, const int*);
 extern int ztrsv_(char*, char*, char*, int*, doublecomplex*, int*,
                   doublecomplex*, int*);
 extern int ztrsm_(char*, char*, char*, char*, int*, int*, 
                   doublecomplex*, doublecomplex*, int*, doublecomplex*, int*);
 extern int zgemv_(char *, int *, int *, doublecomplex *, doublecomplex *a, int *, 
                   doublecomplex *, int *, doublecomplex *, doublecomplex *, int *);
-#endif
-
 extern int zgeru_(int*, int*, doublecomplex*, doublecomplex*, int*,
                  doublecomplex*, int*, doublecomplex*, int*);
+
+#endif
 
 
 #ifdef __cplusplus

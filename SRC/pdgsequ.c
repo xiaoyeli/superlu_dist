@@ -113,7 +113,7 @@ pdgsequ(SuperMatrix *A, double *r, double *c, double *rowcnd,
     m_loc = Astore->m_loc;
     
     /* Get machine constants. */
-    smlnum = dlamch_("S");
+    smlnum = dmach("S");
     bignum = 1. / smlnum;
 
     /* Compute row scale factors. */

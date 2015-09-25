@@ -713,7 +713,7 @@ pzgssvx_ABglobal(superlu_options_t *options, SuperMatrix *A,
 	    }
 
 #if ( PRNTlevel>=2 )
-	    dmin = dlamch_("Overflow");
+	    dmin = dmach("Overflow");
 	    dsum = 0.0;
 	    dprod = 1.0;
 #endif

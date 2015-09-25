@@ -81,7 +81,6 @@ zgsequ_dist(SuperMatrix *A, double *r, double *c, double *rowcnd,
     int i, j, irow;
     double rcmin, rcmax;
     double bignum, smlnum;
-    /*extern double dlamch_(char *);*/
     
     /* Test the input parameters. */
     *info = 0;
@@ -106,7 +105,7 @@ zgsequ_dist(SuperMatrix *A, double *r, double *c, double *rowcnd,
     Aval = (doublecomplex *) Astore->nzval;
     
     /* Get machine constants. */
-    smlnum = dlamch_("S");
+    smlnum = dmach("S");
     bignum = 1. / smlnum;
 
     /* Compute row scale factors. */

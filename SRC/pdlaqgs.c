@@ -83,7 +83,6 @@ pdlaqgs(SuperMatrix *A, double *r, double *c,
     double *Aval;
     int_t i, j, irow, jcol, m_loc;
     double large, small;
-    /*extern double dlamch_(char *);*/
 
     /* Quick return if possible */
     if (A->nrow <= 0 || A->ncol <= 0) {
@@ -96,7 +95,7 @@ pdlaqgs(SuperMatrix *A, double *r, double *c,
     m_loc = Astore->m_loc;
     
     /* Initialize LARGE and SMALL. */
-    small = dlamch_("Safe minimum") / dlamch_("Precision");
+    small = dmach("Safe minimum") / dmach("Precision");
     large = 1. / small;
 
     if (rowcnd >= THRESH && amax >= small && amax <= large) {

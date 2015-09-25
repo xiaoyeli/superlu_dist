@@ -65,7 +65,7 @@ CFLAGS          = -fast -m64 -std=c99 -Wall -openmp \
 # CFLAGS 		+= -D_LONGINT
 
 # NOOPTS should be set to be the C flags that turn off any optimization
-NOOPTS		= -O0
+NOOPTS		= -O0 -std=c99
 ############################################################################
 # FORTRAN compiler setup
 FORTRAN         = ftn

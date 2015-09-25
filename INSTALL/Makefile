@@ -1,12 +1,12 @@
 include ../make.inc
 
-all:  testdlamch testslamch testtimer #install.out
+all:  testdmach testsmach testtimer #install.out
 
-testdlamch: dlamch.o lsame.o dlamchtst.o
-	$(LOADER) $(LOADOPTS) -o testdlamch dlamch.o lsame.o dlamchtst.o
+testdmach: dmach.o lsame.o dmachtst.o
+	$(LOADER) $(LOADOPTS) -o testdmach dmach.o lsame.o dmachtst.o
 
-testslamch: slamch.o lsame.o slamchtst.o
-	$(LOADER) $(LOADOPTS) -o testslamch slamch.o lsame.o slamchtst.o
+testsmach: smach.o lsame.o smachtst.o
+	$(LOADER) $(LOADOPTS) -o testsmach smach.o lsame.o smachtst.o
 
 testtimer: superlu_timer.o timertst.o
 	$(LOADER) $(LOADOPTS) -o testtimer superlu_timer.o timertst.o \
@@ -16,8 +16,8 @@ install.out:
 	@echo Testing machines parameters and timer
 	csh install.csh
 
-slamch.o: slamch.c ; $(CC) $(NOOPTS) -c $<
-dlamch.o: dlamch.c ; $(CC) $(NOOPTS) -c $<
+smach.o: ../SRC/smach.c ; $(CC) $(NOOPTS) -c $<
+dmach.o: ../SRC/dmach.c ; $(CC) $(NOOPTS) -c $<
 superlu_timer.o: superlu_timer.c; $(CC) $(NOOPTS) -c $<
 
 .c.o:

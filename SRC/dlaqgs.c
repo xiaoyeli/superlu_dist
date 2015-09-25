@@ -79,7 +79,6 @@ dlaqgs_dist(SuperMatrix *A, double *r, double *c,
     double   *Aval;
     int_t i, j, irow;
     double large, small, cj;
-    /*extern double dlamch_(char *);*/
 
 
     /* Quick return if possible */
@@ -92,7 +91,7 @@ dlaqgs_dist(SuperMatrix *A, double *r, double *c,
     Aval = (double *) Astore->nzval;
     
     /* Initialize LARGE and SMALL. */
-    small = dlamch_("Safe minimum") / dlamch_("Precision");
+    small = dmach("Safe minimum") / dmach("Precision");
     large = 1. / small;
 
     if (rowcnd >= THRESH && amax >= small && amax <= large) {

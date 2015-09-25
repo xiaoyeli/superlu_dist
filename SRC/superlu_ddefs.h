@@ -349,31 +349,33 @@ extern int   file_PrintDouble5(FILE *, char *, int_t, double *);
 /* BLAS */
 
 #ifdef USE_VENDOR_BLAS
-extern int dgemm_(const char*, const char*, const int*, const int*, const int*,
-                  const double*, const double*, const int*, const double*,
-                  const int*, const double*, double*, const int*, int, int);
-extern int dtrsv_(char*, char*, char*, int*, double*, int*,
+extern void dgemm_(char*, char*, int*, int*, int*,
+                  double*, double*, int*, double*,
+                  int*, double*, double*, int*, int, int);
+extern void dtrsv_(char*, char*, char*, int*, double*, int*,
                   double*, int*, int, int, int);
-extern int dtrsm_(char*, char*, char*, char*, int*, int*, 
+extern void dtrsm_(char*, char*, char*, char*, int*, int*, 
                   double*, double*, int*, double*, 
                   int*, int, int, int, int);
-extern int dgemv_(char *, int *, int *, double *, double *a, int *, 
+extern void dgemv_(char *, int *, int *, double *, double *a, int *, 
                   double *, int *, double *, double *, int *, int);
+extern void dger_(int*, int*, double*, double*, int*,
+                 double*, int*, double*, int*);
+
 #else
-extern int dgemm_(const char*, const char*, const int*, const int*, const int*,
-                  const double*, const double*, const int*, 
-                  const double*, const int*, const double*,
-                  double*, const int*);
+extern int dgemm_(char*, char*, int*, int*, int*,
+                   double*,  double*,  int*,  double*,
+                   int*,  double*, double*, const int*);
 extern int dtrsv_(char*, char*, char*, int*, double*, int*,
                   double*, int*);
 extern int dtrsm_(char*, char*, char*, char*, int*, int*, 
                   double*, double*, int*, double*, int*);
 extern int dgemv_(char *, int *, int *, double *, double *a, int *, 
                   double *, int *, double *, double *, int *);
-#endif
-
-extern int dger_(int*, int*, double*, double*, int*,
+extern void dger_(int*, int*, double*, double*, int*,
                  double*, int*, double*, int*);
+
+#endif
 
 
 #ifdef __cplusplus

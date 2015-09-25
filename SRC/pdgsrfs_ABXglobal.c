@@ -146,7 +146,6 @@ pdgsrfs_ABXglobal(int_t n, SuperMatrix *A, double anorm, LUstruct_t *LUstruct,
     /*-- Function prototypes --*/
     extern void pdgstrs1(int_t, LUstruct_t *, gridinfo_t *,
 			 double *, int, SuperLUStat_t *, int *);
-    /*extern double dlamch_(char *);*/
     
     /* Test the input parameters. */
     *info = 0;
@@ -231,8 +230,8 @@ pdgsrfs_ABXglobal(int_t n, SuperMatrix *A, double anorm, LUstruct_t *LUstruct,
 
     /* NZ = maximum number of nonzero elements in each row of A, plus 1 */
     nz     = A->ncol + 1;
-    eps    = dlamch_("Epsilon");
-    safmin = dlamch_("Safe minimum");
+    eps    = dmach("Epsilon");
+    safmin = dmach("Safe minimum");
 
     /* Set SAFE1 essentially to be the underflow threshold times the
        number of additions in each row. */

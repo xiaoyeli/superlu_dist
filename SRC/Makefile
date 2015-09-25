@@ -40,7 +40,7 @@ ALLAUX += cublas_utils.o
 endif
 
 #### LAPACK auxiliary routines
-LAAUX	= lsame.o xerbla.o slamch.o dlamch.o
+LAAUX	= lsame.o xerbla.o smach.o dmach.o
 
 #
 # Routines literally taken from SuperLU
@@ -84,8 +84,8 @@ complex16: $(ZSLUSRC) $(ZPLUSRC) $(ALLAUX) $(LAAUX)
 ##################################
 # Do not optimize these routines #
 ##################################
-slamch.o: slamch.c ; $(CC) $(NOOPTS) $(CDEFS) -c $<
-dlamch.o: dlamch.c ; $(CC) $(NOOPTS) $(CDEFS) -c $<
+smach.o: smach.c ; $(CC) $(NOOPTS) $(CDEFS) -c $<
+dmach.o: dmach.c ; $(CC) $(NOOPTS) $(CDEFS) -c $<
 ##################################
 
 .c.o:

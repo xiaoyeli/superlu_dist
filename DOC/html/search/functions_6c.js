@@ -1,7 +1,0 @@
-var searchData=
-[
-  ['log_5fmemory',['log_memory',['../superlu__defs_8h.html#a7c9fbd1530885afdd1648927af215a09',1,'log_memory(long long, SuperLUStat_t *):&#160;util.c'],['../util_8c.html#acb7fe9e25ab25aa29303c66c0fcc8fc2',1,'log_memory(long long cur_bytes, SuperLUStat_t *stat):&#160;util.c']]],
-  ['lsame_5f',['lsame_',['../_s_r_c_2lsame_8c.html#a6de88349c1fe993f318dd0643af908c3',1,'lsame_(char *ca, char *cb):&#160;lsame.c'],['../superlu__defs_8h.html#a4d9eb0e1ec853020a42e867b4ff3018c',1,'lsame_(char *, char *):&#160;lsame.c'],['../_i_n_s_t_a_l_l_2lsame_8c.html#a6de88349c1fe993f318dd0643af908c3',1,'lsame_(char *ca, char *cb):&#160;lsame.c']]],
-  ['lustructfree',['LUstructFree',['../superlu__ddefs_8h.html#a3554f5a50d18bc4511110bf2774cdb17',1,'LUstructFree(LUstruct_t *):&#160;util.c'],['../superlu__zdefs_8h.html#a3554f5a50d18bc4511110bf2774cdb17',1,'LUstructFree(LUstruct_t *):&#160;util.c'],['../util_8c.html#aa8fcf119450a1b018e527cc134c48c3a',1,'LUstructFree(LUstruct_t *LUstruct):&#160;util.c']]],
-  ['lustructinit',['LUstructInit',['../superlu__ddefs_8h.html#a26c4d2e03638e967eb158446b777059c',1,'LUstructInit(const int_t, LUstruct_t *):&#160;util.c'],['../superlu__zdefs_8h.html#a26c4d2e03638e967eb158446b777059c',1,'LUstructInit(const int_t, LUstruct_t *):&#160;util.c'],['../util_8c.html#a932f2c097b964808a27d2795c62cbad2',1,'LUstructInit(const int_t n, LUstruct_t *LUstruct):&#160;util.c']]]
-];

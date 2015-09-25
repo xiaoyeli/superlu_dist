@@ -79,7 +79,6 @@ zlaqgs_dist(SuperMatrix *A, double *r, double *c,
     doublecomplex   *Aval;
     int i, j, irow;
     double large, small, cj;
-    /*extern double dlamch_(char *);*/
     double temp;
 
 
@@ -93,7 +92,7 @@ zlaqgs_dist(SuperMatrix *A, double *r, double *c,
     Aval = (doublecomplex *) Astore->nzval;
     
     /* Initialize LARGE and SMALL. */
-    small = dlamch_("Safe minimum") / dlamch_("Precision");
+    small = dmach("Safe minimum") / dmach("Precision");
     large = 1. / small;
 
     if (rowcnd >= THRESH && amax >= small && amax <= large) {

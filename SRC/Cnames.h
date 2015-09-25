@@ -169,10 +169,10 @@
 #define zgeru_    ZGERU
 
 /* LAPACK */
-#define dlamch_         DLAMCH
-#define slamch_         SLAMCH
-#define xerbla_         XERBLA
-#define lsame_          LSAME
+#define dmach         DMACH
+#define smach         SMACH
+#define xerbla_       XERBLA
+#define lsame_        LSAME
 
 /*
 #define mc64id_dist     MC64ID_DIST
@@ -302,10 +302,10 @@
 #define zgeru_    zgeru
 
 /* LAPACK */
-#define dlamch_         dlamch
-#define slamch_         slamch
-#define xerbla_         xerbla
-#define lsame_          lsame
+#define dmach         dmach
+#define smach         smach
+#define xerbla_       xerbla
+#define lsame_        lsame
 
 /*
 #define mc64id_dist         mc64id_dist
