@@ -4,9 +4,12 @@
  * \brief Solves a system of linear equations A*X=B,
  *
  * <pre>
- * -- Distributed SuperLU routine (version 1.0) --
+ * -- Distributed SuperLU routine (version 4.3) --
  * Lawrence Berkeley National Lab, Univ. of California Berkeley.
  * September 1, 1999
+ *
+ * Last modified:
+ * December 31, 2015   version 4.3
  * </pre>
  */
 
@@ -516,7 +519,7 @@ pdgssvx_ABglobal(superlu_options_t *options, SuperMatrix *A,
 	*info = -6;
     if ( *info ) {
 	i = -(*info);
-	pxerbla("pdgssvx_ABglobal", grid, -*info);
+	pxerr_dist("pdgssvx_ABglobal", grid, -*info);
 	return;
     }
 
@@ -623,12 +626,15 @@ pdgssvx_ABglobal(superlu_options_t *options, SuperMatrix *A,
 		    MPI_Bcast( &amax,   1, MPI_DOUBLE, 0, grid->comm );
 		} else {
 		    if ( iinfo > 0 ) {
-			if ( iinfo <= m )
+			if ( iinfo <= m ) {
 			    fprintf(stderr, "The " IFMT "-th row of A is exactly zero\n", 
 				    iinfo);
-			else fprintf(stderr, "The " IFMT "-th column of A is exactly zero\n", 
+                            *info = iinfo;
+			} else {
+                            fprintf(stderr, "The " IFMT "-th column of A is exactly zero\n", 
 				     iinfo-n);
-			exit(-1);
+                            *info = iinfo - n;
+                        }
 		    }
 		}
 	    } else {
@@ -646,13 +652,13 @@ pdgssvx_ABglobal(superlu_options_t *options, SuperMatrix *A,
 	
 	    /* Equilibrate matrix A. */
 	    dlaqgs_dist(A, R, C, rowcnd, colcnd, amax, equed);
-	    if ( lsame_(equed, "R") ) {
+	    if ( strncmp(equed, "R", 1)==0 ) {
 		ScalePermstruct->DiagScale = ROW;
 		rowequ = ROW;
-	    } else if ( lsame_(equed, "C") ) {
+	    } else if ( strncmp(equed, "C", 1)==0 ) {
 		ScalePermstruct->DiagScale = COL;
 		colequ = COL;
-	    } else if ( lsame_(equed, "B") ) {
+	    } else if ( strncmp(equed, "B", 1)==0 ) {
 		ScalePermstruct->DiagScale = BOTH;
 		rowequ = ROW;
 		colequ = COL;
@@ -711,7 +717,7 @@ pdgssvx_ABglobal(superlu_options_t *options, SuperMatrix *A,
 	    }
 
 #if ( PRNTlevel>=2 )
-	    dmin = dmach("Overflow");
+	    dmin = dmach_dist("Overflow");
 	    dsum = 0.0;
 	    dprod = 1.0;
 #endif
@@ -850,7 +856,7 @@ pdgssvx_ABglobal(superlu_options_t *options, SuperMatrix *A,
 
 	    stat->utime[SYMBFAC] = SuperLU_timer_() - t;
 
-	    if ( iinfo < 0 ) {
+	    if ( iinfo <= 0 ) {
 		QuerySpace_dist(n, -iinfo, Glu_freeable, &symb_mem_usage);
 #if ( PRNTlevel>=1 ) 
 		if ( !iam ) {
@@ -869,7 +875,8 @@ pdgssvx_ABglobal(superlu_options_t *options, SuperMatrix *A,
 	    } else {
 		if ( !iam ) {
 		    fprintf(stderr, "symbfact() error returns " IFMT "\n", iinfo);
-		    exit(-1);
+                    *info = iinfo;
+                    return;
 		}
 	    }
 	}

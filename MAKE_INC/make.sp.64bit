@@ -21,8 +21,8 @@ PLAT		= _power5
 #
 #  The name of the libraries to be created/linked to
 #
-DSuperLUroot 	= ${HOME}/Release_Codes/SuperLU_DIST-branch
-DSUPERLULIB   	= $(DSuperLUroot)/lib/libsuperlu_dist_4.0.a
+DSuperLUroot 	= ${HOME}/Release_Codes/SuperLU_DIST_4.2
+DSUPERLULIB   	= $(DSuperLUroot)/lib/libsuperlu_dist_4.2.a
 #
 BLASDEF	     	= -DUSE_VENDOR_BLAS
 BLASLIB      	= -lessl

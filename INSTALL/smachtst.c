@@ -4,19 +4,19 @@ int main()
 {
     /* Local variables */
     float base, emin, prec, emax, rmin, rmax, t, sfmin;
-    extern float smach(char *);
+    extern float smach_dist(char *);
     float rnd, eps;
 
-    eps = smach("Epsilon");
-    sfmin = smach("Safe minimum");
-    base = smach("Base");
-    prec = smach("Precision");
-    t = smach("Number of digits in mantissa");
-    rnd = smach("Rounding mode");
-    emin = smach("Minnimum exponent");
-    rmin = smach("Underflow threshold");
-    emax = smach("Largest exponent");
-    rmax = smach("Overflow threshold");
+    eps = smach_dist("Epsilon");
+    sfmin = smach_dist("Safe minimum");
+    base = smach_dist("Base");
+    prec = smach_dist("Precision");
+    t = smach_dist("Number of digits in mantissa");
+    rnd = smach_dist("Rounding mode");
+    emin = smach_dist("Minnimum exponent");
+    rmin = smach_dist("Underflow threshold");
+    emax = smach_dist("Largest exponent");
+    rmax = smach_dist("Overflow threshold");
 
     printf(" Epsilon                      = %e\n", eps);
     printf(" Safe minimum                 = %e\n", sfmin);

@@ -23,8 +23,8 @@ PLAT		= _xc30
 #
 #  The name of the libraries to be created/linked to
 #
-DSuperLUroot 	= ${HOME}/Release_Codes/SuperLU_DIST-branch
-DSUPERLULIB   	= $(DSuperLUroot)/lib/libsuperlu_dist_4.1.a
+DSuperLUroot 	= ${HOME}/Release_Codes/SuperLU_DIST_4.3
+DSUPERLULIB   	= $(DSuperLUroot)/lib/libsuperlu_dist_4.3.a
 #
 BLASDEF	     	= -DUSE_VENDOR_BLAS
 BLASLIB	        =

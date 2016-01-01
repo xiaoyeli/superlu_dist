@@ -61,7 +61,7 @@ static_schedule(superlu_options_t * options, int m, int n,
     if (m < 0) *info = -2;
     else if (n < 0) *info = -3;
     if (*info) {
-        pxerbla ("pdgstrf", grid, -*info);
+        pxerr_dist ("static_schedule", grid, -*info);
         return (-1);
     }
 

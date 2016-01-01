@@ -11,20 +11,21 @@
 #  Modified:	    September 1, 1999  version 1.0
 #                   March 15, 2003     version 2.0
 #		    November 1, 2007   version 2.1
-#		    September 1, 2011   version 3.0
+#		    September 1, 2011  version 3.0
+#		    December 31, 2015  version 4.3
 #
 ############################################################################
 #
 #  The machine (platform) identifier to append to the library names
 #
-## edison at NERSC
-PLAT		= _xc30
+## Cori at NERSC
+PLAT		= _xc40
 
 #
 #  The name of the libraries to be created/linked to
 #
 DSuperLUroot 	= ${HOME}/Release_Codes/SuperLU_DIST-branch
-DSUPERLULIB   	= $(DSuperLUroot)/lib/libsuperlu_dist_4.1.a
+DSUPERLULIB   	= $(DSuperLUroot)/lib/libsuperlu_dist_4.3.a
 #
 BLASDEF	     	= -DUSE_VENDOR_BLAS
 BLASLIB	        =
@@ -34,7 +35,7 @@ BLASLIB	        =
  PARMETIS_DIR	:= ${HOME}/Edison/lib/parmetis-4.0.3
 ## parmetis 4.x.x, 64-bit integer
 # PARMETIS_DIR	:= ${HOME}/Edison/lib/parmetis-4.0.3_64
-
+PARMETIS_DIR	=/project/projectdirs/mp127/parmetis-4.0.3-g
 METISLIB := -L${PARMETIS_DIR}/build/Linux-x86_64/libmetis -lmetis
 PARMETISLIB := -L${PARMETIS_DIR}/build/Linux-x86_64/libparmetis -lparmetis
 I_PARMETIS := -I${PARMETIS_DIR}/include -I${PARMETIS_DIR}/metis/include

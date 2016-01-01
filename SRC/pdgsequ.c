@@ -96,7 +96,7 @@ pdgsequ(SuperMatrix *A, double *r, double *c, double *rowcnd,
 	*info = -1;
     if (*info != 0) {
 	i = -(*info);
-	xerbla_("pdgsequ", &i);
+	pxerr_dist("pdgsequ", grid, i);
 	return;
     }
 
@@ -113,7 +113,7 @@ pdgsequ(SuperMatrix *A, double *r, double *c, double *rowcnd,
     m_loc = Astore->m_loc;
     
     /* Get machine constants. */
-    smlnum = dmach("S");
+    smlnum = dmach_dist("S");
     bignum = 1. / smlnum;
 
     /* Compute row scale factors. */

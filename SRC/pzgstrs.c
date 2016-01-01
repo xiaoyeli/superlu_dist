@@ -522,7 +522,7 @@ pzgstrs(int_t n, LUstruct_t *LUstruct,
     if ( n < 0 ) *info = -1;
     else if ( nrhs < 0 ) *info = -9;
     if ( *info ) {
-	pxerbla("PZGSTRS", grid, -*info);
+	pxerr_dist("PZGSTRS", grid, -*info);
 	return;
     }
 	

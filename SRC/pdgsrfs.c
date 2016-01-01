@@ -4,9 +4,12 @@
  * \brief Improves the computed solution to a system of linear equations and provides error bounds and backward error estimates
  *
  * <pre>
- * -- Distributed SuperLU routine (version 2.0) --
+ * -- Distributed SuperLU routine (version 4.3) --
  * Lawrence Berkeley National Lab, Univ. of California Berkeley.
  * March 15, 2003
+ *
+ * Last modified:
+ * December 31, 2015
  * </pre>
  */
 
@@ -143,7 +146,7 @@ pdgsrfs(int_t n, SuperMatrix *A, double anorm, LUstruct_t *LUstruct,
     else if ( nrhs < 0 ) *info = -13;
     if (*info != 0) {
 	i = -(*info);
-	pxerbla("PDGSRFS", grid, i);
+	pxerr_dist("PDGSRFS", grid, i);
 	return;
     }
 
@@ -165,8 +168,8 @@ pdgsrfs(int_t n, SuperMatrix *A, double anorm, LUstruct_t *LUstruct,
 
     /* NZ = maximum number of nonzero elements in each row of A, plus 1 */
     nz     = A->ncol + 1;
-    eps    = dmach("Epsilon");
-    safmin = dmach("Safe minimum");
+    eps    = dmach_dist("Epsilon");
+    safmin = dmach_dist("Safe minimum");
 
     /* Set SAFE1 essentially to be the underflow threshold times the
        number of additions in each row. */

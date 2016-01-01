@@ -41,6 +41,8 @@
 	    = 5: the minimum column dimension for 2-D blocking to be used;
 	    = 6: the estimated fills factor for the adjacency structures 
 	         of L and U, compared with A;
+	    = 7: the minimum value of the product M*N*K for a GEMM call
+	         to be off-loaded to accelerator (e.g., GPU, Xeon Phi).
 	    
    (SP_IENV_DIST) (output) int
             >= 0: the value of the parameter specified by ISPEC   
@@ -92,11 +94,16 @@ sp_ienv_dist(int_t ispec)
 
 #endif
         case 6: return (5);
+        case 7:
+	    ttemp = getenv ("N_GEMM");
+	    if (ttemp) return atoi (ttemp);
+	    else return 10000;
+
     }
 
     /* Invalid value for ISPEC */
     i = 1;
-    xerbla_("sp_ienv", &i);
+    xerr_dist("sp_ienv", &i);
     return 0;
 
 

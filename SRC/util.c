@@ -335,11 +335,12 @@ void print_options_dist(superlu_options_t *options)
     printf(".. options:\n");
     printf("**    Fact             : %4d\n", options->Fact);
     printf("**    Equil            : %4d\n", options->Equil);
+    printf("**    ParSymbFact      : %4d\n", options->ParSymbFact);
     printf("**    ColPerm          : %4d\n", options->ColPerm);
     printf("**    RowPerm          : %4d\n", options->RowPerm);
     printf("**    ReplaceTinyPivot : %4d\n", options->ReplaceTinyPivot);
-    printf("**    Trans            : %4d\n", options->Trans);
     printf("**    IterRefine       : %4d\n", options->IterRefine);
+    printf("**    Trans            : %4d\n", options->Trans);
     printf("**    num_lookaheads   : %4d\n", options->num_lookaheads);
     printf("**    SymPattern       : %4d\n", options->SymPattern);
     printf("**    lookahead_etree  : %4d\n", options->lookahead_etree);

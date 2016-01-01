@@ -4,9 +4,12 @@
  * \brief Improves the computed solution and provies error bounds
  *
  * <pre>
- * -- Distributed SuperLU routine (version 1.0) --
+ * -- Distributed SuperLU routine (version 4.3) --
  * Lawrence Berkeley National Lab, Univ. of California Berkeley.
  * September 1, 1999
+ *
+ * Last modified:
+ * December 31, 2015  version 4.3
  * </pre>
  */
 
@@ -158,7 +161,7 @@ pdgsrfs_ABXglobal(int_t n, SuperMatrix *A, double anorm, LUstruct_t *LUstruct,
     else if ( nrhs < 0 ) *info = -13;
     if (*info != 0) {
 	i = -(*info);
-	xerbla_("pdgsrfs_ABXglobal", &i);
+	pxerr_dist("pdgsrfs_ABXglobal", grid, i);
 	return;
     }
 
@@ -230,8 +233,8 @@ pdgsrfs_ABXglobal(int_t n, SuperMatrix *A, double anorm, LUstruct_t *LUstruct,
 
     /* NZ = maximum number of nonzero elements in each row of A, plus 1 */
     nz     = A->ncol + 1;
-    eps    = dmach("Epsilon");
-    safmin = dmach("Safe minimum");
+    eps    = dmach_dist("Epsilon");
+    safmin = dmach_dist("Safe minimum");
 
     /* Set SAFE1 essentially to be the underflow threshold times the
        number of additions in each row. */

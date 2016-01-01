@@ -69,7 +69,7 @@ double pzlangs(char *norm, SuperMatrix *A, gridinfo_t *grid)
     
     if ( SUPERLU_MIN(A->nrow, A->ncol) == 0) {
 	value = 0.;
-    } else if (lsame_(norm, "M")) {
+    } else if ( strncmp(norm, "M", 1)==0 ) {
 	/* Find max(abs(A(i,j))). */
 	value = 0.;
 	for (i = 0; i < m_loc; ++i) {
@@ -80,7 +80,7 @@ double pzlangs(char *norm, SuperMatrix *A, gridinfo_t *grid)
 	MPI_Allreduce(&value, &tempvalue, 1, MPI_DOUBLE, MPI_MAX, grid->comm);
 	value = tempvalue;
 
-    } else if (lsame_(norm, "O") || *(unsigned char *)norm == '1') {
+    } else if ( strncmp(norm, "O", 1)==0 || *(unsigned char *)norm == '1') {
 	/* Find norm1(A). */
 	value = 0.;
 #if 0
@@ -110,7 +110,7 @@ double pzlangs(char *norm, SuperMatrix *A, gridinfo_t *grid)
 	SUPERLU_FREE (temprwork);
 	SUPERLU_FREE (rwork);
 #endif	
-    } else if (lsame_(norm, "I")) {
+    } else if ( strncmp(norm, "I", 1)==0 ) {
 	/* Find normI(A). */
 	value = 0.;
 	sum = 0.;
@@ -122,7 +122,7 @@ double pzlangs(char *norm, SuperMatrix *A, gridinfo_t *grid)
 	MPI_Allreduce(&value, &tempvalue, 1, MPI_DOUBLE, MPI_MAX, grid->comm);
 	value = tempvalue;
 
-    } else if (lsame_(norm, "F") || lsame_(norm, "E")) {
+    } else if ( strncmp(norm, "F", 1)==0 || strncmp(norm, "E", 1)==0 ) {
 	/* Find normF(A). */
 	ABORT("Not implemented.");
     } else {

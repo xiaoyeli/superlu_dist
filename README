@@ -1,4 +1,4 @@
-		SuperLU_DIST (version 4.2)
+		SuperLU_DIST (version 4.3)
 		==========================
 
 Copyright (c) 2003, The Regents of the University of California, through
@@ -204,3 +204,4 @@ Ichitaro Yamazaki    Univ. of Tennessee, ic.yamazaki@gmail.com
   October 1, 2014    Version 4.0
   July 15, 2014      Version 4.1
   September 25, 2015 Version 4.2
+  December 31, 2015  Version 4.3

@@ -343,7 +343,7 @@ static int_t c__2 = 2;
     --info;
 
     /* Function Body */
-    rinf = dmach("Overflow");
+    rinf = dmach_dist("Overflow");
 /* Check value of JOB */
     if (*job < 1 || *job > 5) {
 	info[1] = -1;
@@ -735,7 +735,7 @@ L99:
     --irn;
 
     /* Function Body */
-    rinf = dmach("Overflow");
+    rinf = dmach_dist("Overflow");
 /* Initialization */
     *num = 0;
     bv = rinf;
@@ -1629,7 +1629,7 @@ L100:
     --irn;
 
     /* Function Body */
-    rinf = dmach("Overflow");
+    rinf = dmach_dist("Overflow");
 /* Compute a first maximum matching from scratch on whole matrix. */
     i__1 = *n;
     for (j = 1; j <= i__1; ++j) {
@@ -2244,7 +2244,7 @@ L101:
     --irn;
 
     /* Function Body */
-    rinf = dmach("Overflow");
+    rinf = dmach_dist("Overflow");
 /* Initialization */
     *num = 0;
     i__1 = *n;

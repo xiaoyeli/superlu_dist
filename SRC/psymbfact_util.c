@@ -133,7 +133,8 @@ int_t psymbfact_LUXpandMem
   }
   
   len_tcopy_fend = prev_len - prev_xsub_nextLvl;  
-  if (rout_type == DNS_UPSEPS || rout_type == DNS_CURSEP) {
+  /* if (rout_type == DNS_UPSEPS || rout_type == DNS_CURSEP)  { - bug corrected on Sept 1st, 2013 - */
+  if (rout_type == DNS_UPSEPS) { 
     fstVtx_nextLvl = n;
     fstVtx_nextLvl_lid = nvtcs_loc;
     len_tcopy_fend = 0;

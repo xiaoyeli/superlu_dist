@@ -21,7 +21,6 @@
  */
 #ifdef _CRAY
     #include <fortran.h>
-    #include <string.h>
 #endif
 
 #ifdef _OPENMP
@@ -32,6 +31,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <limits.h>
+#include <string.h>
 
 
 /* Define my integer size int_t */
@@ -624,8 +624,8 @@ extern void    countnz_dist (const int_t, int_t *,
 extern long long int fixupL_dist (const int_t, const int_t *, Glu_persist_t *,
 				  Glu_freeable_t *);
 extern int_t   *TreePostorder_dist (int_t, int_t *);
-extern float   smach(char *);
-extern double  dmach(char *);
+extern float   smach_dist(char *);
+extern double  dmach_dist(char *);
 extern void    *superlu_malloc_dist (size_t);
 extern void    superlu_free_dist (void*);
 extern int_t   *intMalloc_dist (int_t);
@@ -636,8 +636,6 @@ extern int_t   mc64id_dist(int_t *);
 extern double SuperLU_timer_ ();
 extern void   superlu_abort_and_exit_dist(char *);
 extern int_t  sp_ienv_dist (int_t);
-extern int    lsame_ (char *, char *);
-extern int    xerbla_ (char *, int *);
 extern void   ifill_dist (int_t *, int_t, int_t);
 extern void   super_stats_dist (int_t, int_t *);
 extern void   ScalePermstructInit(const int_t, const int_t, 
@@ -646,8 +644,8 @@ extern void   ScalePermstructFree(ScalePermstruct_t *);
 extern void  get_diag_procs(int_t, Glu_persist_t *, gridinfo_t *, int_t *,
 			    int_t **, int_t **);
 extern int_t QuerySpace_dist(int_t, int_t, Glu_freeable_t *, mem_usage_t *);
-extern int   xerbla_ (char *, int *);
-extern void  pxerbla (char *, gridinfo_t *, int_t);
+extern int   xerr_dist (char *, int *);
+extern void  pxerr_dist (char *, gridinfo_t *, int_t);
 extern void  PStatInit(SuperLUStat_t *);
 extern void  PStatFree(SuperLUStat_t *);
 extern void  PStatPrint(superlu_options_t *, SuperLUStat_t *, gridinfo_t *);

@@ -194,7 +194,8 @@ int_t symbfact
     CHECK_MALLOC(pnum, "Exit symbfact()");
 #endif
 
-    return (-i);
+    /* return (-i); */
+    return (-nnzLSUB);
 
 } /* SYMBFACT */
 

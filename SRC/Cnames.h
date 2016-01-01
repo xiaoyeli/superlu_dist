@@ -168,12 +168,6 @@
 #define zher2_    ZHER2
 #define zgeru_    ZGERU
 
-/* LAPACK */
-#define dmach         DMACH
-#define smach         SMACH
-#define xerbla_       XERBLA
-#define lsame_        LSAME
-
 /*
 #define mc64id_dist     MC64ID_DIST
 #define mc64ad_dist     MC64AD_DIST
@@ -300,12 +294,6 @@
 #define zhemv_    zhemv
 #define zher2_    zher2
 #define zgeru_    zgeru
-
-/* LAPACK */
-#define dmach         dmach
-#define smach         smach
-#define xerbla_       xerbla
-#define lsame_        lsame
 
 /*
 #define mc64id_dist         mc64id_dist

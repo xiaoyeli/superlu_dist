@@ -95,7 +95,7 @@ pzlaqgs(SuperMatrix *A, double *r, double *c,
     m_loc = Astore->m_loc;
     
     /* Initialize LARGE and SMALL. */
-    small = dmach("Safe minimum") / dmach("Precision");
+    small = dmach_dist("Safe minimum") / dmach_dist("Precision");
     large = 1. / small;
 
     if (rowcnd >= THRESH && amax >= small && amax <= large) {

@@ -153,7 +153,7 @@ pzgstrs_Bglobal(int_t n, LUstruct_t *LUstruct, gridinfo_t *grid,
     if ( n < 0 ) *info = -1;
     else if ( nrhs < 0 ) *info = -9;
     if ( *info ) {
-	pxerbla("PDGSTRS_BGLOBAL", grid, -*info);
+	pxerr_dist("PZGSTRS_BGLOBAL", grid, -*info);
 	return;
     }
 	

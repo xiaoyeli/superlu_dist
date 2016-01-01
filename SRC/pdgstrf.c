@@ -4,7 +4,7 @@
  * \brief Performs LU factorization in parallel
  *
  * <pre>
- * -- Distributed SuperLU routine (version 4.0) --
+ * -- Distributed SuperLU routine (version 4.3) --
  * Lawrence Berkeley National Lab, Univ. of California Berkeley.
  * October 1, 2014
  *
@@ -15,6 +15,7 @@
  *     July    12, 2011  static scheduling and arbitrary look-ahead
  *     March   13, 2013  change NTAGS to MPI_TAG_UB value
  *     September 24, 2015 replace xLAMCH by xMACH, using C99 standard.
+ *     December 31, 2015 rename xMACH to xMACH_DIST
  *
  * Sketch of the algorithm 
  *
@@ -421,7 +422,7 @@ pdgstrf(superlu_options_t * options, int m, int n, double anorm,
     else if (n < 0)
         *info = -3;
     if (*info) {
-        pxerbla ("pdgstrf", grid, -*info);
+        pxerr_dist ("pdgstrf", grid, -*info);
         return (-1);
     }
 
@@ -438,7 +439,7 @@ pdgstrf(superlu_options_t * options, int m, int n, double anorm,
     mycol = MYCOL (iam, grid);
     nsupers = Glu_persist->supno[n - 1] + 1;
     xsup = Glu_persist->xsup;
-    s_eps = smach("Epsilon");
+    s_eps = smach_dist("Epsilon");
     thresh = s_eps * anorm;
 
     MPI_Attr_get (MPI_COMM_WORLD, MPI_TAG_UB, &attr_val, &flag);

@@ -144,7 +144,7 @@ void pzgstrs1(int_t n, LUstruct_t *LUstruct, gridinfo_t *grid,
     if ( n < 0 ) *info = -1;
     else if ( nrhs < 0 ) *info = -8;
     if ( *info ) {
-	pxerbla("PZGSTRS1", grid, -*info);
+	pxerr_dist("PZGSTRS1", grid, -*info);
 	return;
     }
 	

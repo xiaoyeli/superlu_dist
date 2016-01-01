@@ -31,28 +31,27 @@ include ../make.inc
 #
 ALLAUX 	= sp_ienv.o etree.o sp_colorder.o get_perm_c.o \
 	  mmd.o comm.o memory.o util.o superlu_grid.o \
-	  pxerbla.o superlu_timer.o GetDiagU.o symbfact.o \
+	  pxerr_dist.o superlu_timer.o GetDiagU.o symbfact.o \
 	  psymbfact.o psymbfact_util.o get_perm_c_parmetis.o mc64ad_dist.o \
-	  static_schedule.o
+	  static_schedule.o xerr_dist.o smach_dist.o dmach_dist.o
 
 ifeq "${ACC}" "GPU"
 ALLAUX += cublas_utils.o
 endif
 
-#### LAPACK auxiliary routines
-LAAUX	= lsame.o xerbla.o smach.o dmach.o
-
 #
-# Routines literally taken from SuperLU
+# Routines literally taken from SuperLU, but renamed with suffix _dist
 #
-DSLUSRC	= dlangs.o dgsequ.o dlaqgs.o dutil.o \
-	  dmemory.o dmyblas2.o dsp_blas2.o dsp_blas3.o
-ZSLUSRC	= dcomplex.o zlangs.o zgsequ.o zlaqgs.o zutil.o \
-	  zmemory.o zmyblas2.o zsp_blas2.o zsp_blas3.o
+DSLUSRC	= dlangs_dist.o dgsequ_dist.o dlaqgs_dist.o dutil_dist.o \
+	  dmemory_dist.o dmyblas2_dist.o dsp_blas2_dist.o dsp_blas3_dist.o
+ZSLUSRC	= dcomplex_dist.o zlangs_dist.o zgsequ_dist.o zlaqgs_dist.o \
+	  zutil_dist.o zmemory_dist.o zmyblas2_dist.o \
+	  zsp_blas2_dist.o zsp_blas3_dist.o
 
 #
 # Routines for double precision parallel SuperLU
-DPLUSRC = pdgssvx.o pdgssvx_ABglobal.o dreadhb.o dreadrb.o dreadtriple.o dreadMM.o \
+DPLUSRC = pdgssvx.o pdgssvx_ABglobal.o \
+	  dreadhb.o dreadrb.o dreadtriple.o dreadMM.o \
 	  pdgsequ.o pdlaqgs.o dldperm_dist.o pdlangs.o pdutil.o \
 	  pdsymbfact_distdata.o ddistribute.o pddistribute.o \
 	  pdgstrf.o pdgstrf2.o \
@@ -61,7 +60,8 @@ DPLUSRC = pdgssvx.o pdgssvx_ABglobal.o dreadhb.o dreadrb.o dreadtriple.o dreadMM
 
 #
 # Routines for double complex parallel SuperLU
-ZPLUSRC = pzgssvx.o pzgssvx_ABglobal.o zreadhb.o zreadrb.o zreadtriple.o zreadMM.o \
+ZPLUSRC = pzgssvx.o pzgssvx_ABglobal.o \
+	  zreadhb.o zreadrb.o zreadtriple.o zreadMM.o \
 	  pzgsequ.o pzlaqgs.o zldperm_dist.o pzlangs.o pzutil.o \
 	  pzsymbfact_distdata.o zdistribute.o pzdistribute.o \
 	  pzgstrf.o pzgstrf2.o \
@@ -70,22 +70,22 @@ ZPLUSRC = pzgssvx.o pzgssvx_ABglobal.o zreadhb.o zreadrb.o zreadtriple.o zreadMM
 
 all:  double complex16
 
-double: $(DSLUSRC) $(DPLUSRC) $(ALLAUX) $(LAAUX)
+double: $(DSLUSRC) $(DPLUSRC) $(ALLAUX)
 	$(ARCH) $(ARCHFLAGS) $(DSUPERLULIB) \
-		$(DSLUSRC) $(DPLUSRC) $(ALLAUX) $(LAAUX)
+		$(DSLUSRC) $(DPLUSRC) $(ALLAUX)
 	$(RANLIB) $(DSUPERLULIB)
 
-complex16: $(ZSLUSRC) $(ZPLUSRC) $(ALLAUX) $(LAAUX)
+complex16: $(ZSLUSRC) $(ZPLUSRC) $(ALLAUX)
 	$(ARCH) $(ARCHFLAGS) $(DSUPERLULIB) \
-		$(ZSLUSRC) $(ZPLUSRC) $(ALLAUX) $(LAAUX)
+		$(ZSLUSRC) $(ZPLUSRC) $(ALLAUX)
 	$(RANLIB) $(DSUPERLULIB)
 
 
 ##################################
 # Do not optimize these routines #
 ##################################
-smach.o: smach.c ; $(CC) $(NOOPTS) $(CDEFS) -c $<
-dmach.o: dmach.c ; $(CC) $(NOOPTS) $(CDEFS) -c $<
+smach_dist.o: smach_dist.c ; $(CC) $(NOOPTS) $(CDEFS) -c $<
+dmach_dist.o: dmach_dist.c ; $(CC) $(NOOPTS) $(CDEFS) -c $<
 ##################################
 
 .c.o:
