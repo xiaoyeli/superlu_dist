@@ -259,7 +259,7 @@ extern void  pdgssvx(superlu_options_t *, SuperMatrix *,
 extern int  dSolveInit(superlu_options_t *, SuperMatrix *, int_t [], int_t [],
 		       int_t, LUstruct_t *, gridinfo_t *, SOLVEstruct_t *);
 extern void dSolveFinalize(superlu_options_t *, SOLVEstruct_t *);
-extern void dldperm_dist(int_t, int_t, int_t, int_t [], int_t [],
+extern int  dldperm_dist(int_t, int_t, int_t, int_t [], int_t [],
 		    double [], int_t *, double [], double []);
 extern int  static_schedule(superlu_options_t *, int, int, 
 		            LUstruct_t *, gridinfo_t *, SuperLUStat_t *,

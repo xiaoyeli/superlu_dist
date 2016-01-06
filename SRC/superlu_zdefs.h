@@ -259,7 +259,7 @@ extern void  pzgssvx(superlu_options_t *, SuperMatrix *,
 extern int  zSolveInit(superlu_options_t *, SuperMatrix *, int_t [], int_t [],
 		       int_t, LUstruct_t *, gridinfo_t *, SOLVEstruct_t *);
 extern void zSolveFinalize(superlu_options_t *, SOLVEstruct_t *);
-extern void zldperm_dist(int_t, int_t, int_t, int_t [], int_t [],
+extern int  zldperm_dist(int_t, int_t, int_t, int_t [], int_t [],
 		    doublecomplex [], int_t *, double [], double []);
 extern int  static_schedule(superlu_options_t *, int, int, 
 		            LUstruct_t *, gridinfo_t *, SuperLUStat_t *,

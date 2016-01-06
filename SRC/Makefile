@@ -81,13 +81,6 @@ complex16: $(ZSLUSRC) $(ZPLUSRC) $(ALLAUX)
 	$(RANLIB) $(DSUPERLULIB)
 
 
-##################################
-# Do not optimize these routines #
-##################################
-smach_dist.o: smach_dist.c ; $(CC) $(NOOPTS) $(CDEFS) -c $<
-dmach_dist.o: dmach_dist.c ; $(CC) $(NOOPTS) $(CDEFS) -c $<
-##################################
-
 .c.o:
 	$(CC) $(CFLAGS) $(CDEFS) $(BLASDEF) -c $< $(VERBOSE)
 
@@ -96,5 +89,3 @@ dmach_dist.o: dmach_dist.c ; $(CC) $(NOOPTS) $(CDEFS) -c $<
 
 clean:	
 	rm -f *.o $(DSUPERLULIB)
-
-

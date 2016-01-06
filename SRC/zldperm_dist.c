@@ -80,7 +80,7 @@ extern void mc64ad_dist(int_t*, int_t*, int_t*, int_t [], int_t [], double [],
  * </pre>
  */
 
-void
+int
 zldperm_dist(int_t job, int_t n, int_t nnz, int_t colptr[], int_t adjncy[],
 	doublecomplex nzval[], int_t *perm, double u[], double v[])
 { 
@@ -161,6 +161,6 @@ zldperm_dist(int_t job, int_t n, int_t nnz, int_t colptr[], int_t adjncy[],
 #if ( DEBUGlevel>=1 )
     CHECK_MALLOC(0, "Exit zldperm_dist()");
 #endif
-   return;
+   return (info[0]);
 }
 

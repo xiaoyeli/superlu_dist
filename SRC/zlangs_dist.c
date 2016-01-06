@@ -1,14 +1,13 @@
 /*! @file
- * \brief Returns the value of the one norm, the infinity norm, or the element of largest value 
+ * \brief Returns the one norm, or the Frobenius norm, or the infinity norm, or the element of largest value
  */
- 
 
 /*
- * File name:	dlangs.c
- * History:     Modified from lapack routine DLANGE
+ * File name:	zlangs.c
+ * History:     Modified from lapack routine ZLANGE
  */
 #include <math.h>
-#include "superlu_ddefs.h"
+#include "superlu_zdefs.h"
 
 /*! \brief
 
@@ -16,16 +15,16 @@
     Purpose   
     =======   
 
-    DLANGS_dist returns the value of the one norm, or the Frobenius norm, or 
+    ZLANGS_DIST returns the value of the one norm, or the Frobenius norm, or 
     the infinity norm, or the element of largest absolute value of a 
     real matrix A.   
 
     Description   
     ===========   
 
-    DLANGE returns the value   
+    ZLANGE returns the value   
 
-       DLANGE = ( max(abs(A(i,j))), NORM = 'M' or 'm'   
+       ZLANGE = ( max(abs(A(i,j))), NORM = 'M' or 'm'   
                 (   
                 ( norm1(A),         NORM = '1', 'O' or 'o'   
                 (   
@@ -42,48 +41,46 @@
     =========   
 
     NORM    (input) CHARACTER*1   
-            Specifies the value to be returned in DLANGE as described above.   
+            Specifies the value to be returned in ZLANGE as described above.   
     A       (input) SuperMatrix*
             The M by N sparse matrix A. 
 
    ===================================================================== 
 </pre>
 */
-double dlangs_dist(char *norm, SuperMatrix *A)
+double zlangs_dist(char *norm, SuperMatrix *A)
 {
-
-    
     /* Local variables */
     NCformat *Astore;
-    double   *Aval;
-    int_t    i, j, irow;
+    doublecomplex   *Aval;
+    int      i, j, irow;
     double   value=0., sum;
     double   *rwork;
 
-    Astore = (NCformat *) A->Store;
-    Aval   = (double *) Astore->nzval;
+    Astore = A->Store;
+    Aval   = Astore->nzval;
     
     if ( SUPERLU_MIN(A->nrow, A->ncol) == 0) {
 	value = 0.;
 	
-    } else if (lsame_(norm, "M")) {
+    } else if ( strncmp(norm, "M", 1)==0 ) {
 	/* Find max(abs(A(i,j))). */
 	value = 0.;
 	for (j = 0; j < A->ncol; ++j)
 	    for (i = Astore->colptr[j]; i < Astore->colptr[j+1]; i++)
-		value = SUPERLU_MAX( value, fabs( Aval[i]) );
+		value = SUPERLU_MAX( value, slud_z_abs( &Aval[i]) );
 	
-    } else if (lsame_(norm, "O") || *(unsigned char *)norm == '1') {
+    } else if ( strncmp(norm, "O", 1)==0 || *(unsigned char *)norm == '1') {
 	/* Find norm1(A). */
 	value = 0.;
 	for (j = 0; j < A->ncol; ++j) {
 	    sum = 0.;
 	    for (i = Astore->colptr[j]; i < Astore->colptr[j+1]; i++) 
-		sum += fabs(Aval[i]);
-	    value = SUPERLU_MAX(value, sum);
+		sum += slud_z_abs( &Aval[i] );
+	    value = SUPERLU_MAX(value,sum);
 	}
 	
-    } else if (lsame_(norm, "I")) {
+    } else if ( strncmp(norm, "I", 1)==0 ) {
 	/* Find normI(A). */
 	if ( !(rwork = (double *) SUPERLU_MALLOC(A->nrow * sizeof(double))) )
 	    ABORT("SUPERLU_MALLOC fails for rwork.");
@@ -91,7 +88,7 @@ double dlangs_dist(char *norm, SuperMatrix *A)
 	for (j = 0; j < A->ncol; ++j)
 	    for (i = Astore->colptr[j]; i < Astore->colptr[j+1]; i++) {
 		irow = Astore->rowind[i];
-		rwork[irow] += fabs(Aval[i]);
+		rwork[irow] += slud_z_abs( &Aval[i] );
 	    }
 	value = 0.;
 	for (i = 0; i < A->nrow; ++i)
@@ -99,7 +96,7 @@ double dlangs_dist(char *norm, SuperMatrix *A)
 	
 	SUPERLU_FREE (rwork);
 	
-    } else if (lsame_(norm, "F") || lsame_(norm, "E")) {
+    } else if ( strncmp(norm, "F", 1)==0 || strncmp(norm, "E", 1)==0 ) {
 	/* Find normF(A). */
 	ABORT("Not implemented.");
     } else
@@ -107,5 +104,5 @@ double dlangs_dist(char *norm, SuperMatrix *A)
 
     return (value);
 
-} /* dlangs_dist */
+} /* zlangs_dist */
 

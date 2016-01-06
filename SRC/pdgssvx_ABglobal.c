@@ -645,24 +645,26 @@ pdgssvx_ABglobal(superlu_options_t *options, SuperMatrix *A,
 		    MPI_Bcast( &rowcnd, 1, MPI_DOUBLE, 0, grid->comm );
 		    MPI_Bcast( &colcnd, 1, MPI_DOUBLE, 0, grid->comm );
 		    MPI_Bcast( &amax,   1, MPI_DOUBLE, 0, grid->comm );
-		} else {
-		    ABORT("DGSEQU failed\n");
-		}
+		} else if ( iinfo <= m ) {
+ 		    *info = iinfo;
+                } else *info = iinfo - n;
 	    }
 	
-	    /* Equilibrate matrix A. */
-	    dlaqgs_dist(A, R, C, rowcnd, colcnd, amax, equed);
-	    if ( strncmp(equed, "R", 1)==0 ) {
-		ScalePermstruct->DiagScale = ROW;
-		rowequ = ROW;
-	    } else if ( strncmp(equed, "C", 1)==0 ) {
-		ScalePermstruct->DiagScale = COL;
-		colequ = COL;
-	    } else if ( strncmp(equed, "B", 1)==0 ) {
-		ScalePermstruct->DiagScale = BOTH;
-		rowequ = ROW;
-		colequ = COL;
-	    } else ScalePermstruct->DiagScale = NOEQUIL;
+            if ( iinfo == 0 ) {
+	        /* Equilibrate matrix A. */
+	        dlaqgs_dist(A, R, C, rowcnd, colcnd, amax, equed);
+	        if ( strncmp(equed, "R", 1)==0 ) {
+		    ScalePermstruct->DiagScale = ROW;
+		    rowequ = ROW;
+	        } else if ( strncmp(equed, "C", 1)==0 ) {
+		    ScalePermstruct->DiagScale = COL;
+		    colequ = COL;
+	        } else if ( strncmp(equed, "B", 1)==0 ) {
+		    ScalePermstruct->DiagScale = BOTH;
+		    rowequ = ROW;
+		    colequ = COL;
+	        } else ScalePermstruct->DiagScale = NOEQUIL;
+            }
 
 #if ( PRNTlevel>=1 )
 	    if ( !iam ) {
@@ -701,27 +703,40 @@ pdgssvx_ABglobal(superlu_options_t *options, SuperMatrix *A,
 
 	    if ( !iam ) {
 		/* Process 0 finds a row permutation for large diagonal. */
-		dldperm_dist(job, m, nnz, colptr, rowind, a, perm_r, R1, C1);
-		
-		MPI_Bcast( perm_r, m, mpi_int_t, 0, grid->comm );
-		if ( job == 5 && Equil ) {
-		    MPI_Bcast( R1, m, MPI_DOUBLE, 0, grid->comm );
-		    MPI_Bcast( C1, n, MPI_DOUBLE, 0, grid->comm );
+		iinfo = dldperm_dist(job, m, nnz, colptr, rowind, a,
+                                perm_r, R1, C1);
+
+                MPI_Bcast( &iinfo, 1, mpi_int_t, 0, grid->comm );		
+		if ( iinfo == 0 ) {
+		    MPI_Bcast( perm_r, m, mpi_int_t, 0, grid->comm );
+		    if ( job == 5 && Equil ) {
+		       MPI_Bcast( R1, m, MPI_DOUBLE, 0, grid->comm );
+		       MPI_Bcast( C1, n, MPI_DOUBLE, 0, grid->comm );
+		   }
 		}
 	    } else {
-		MPI_Bcast( perm_r, m, mpi_int_t, 0, grid->comm );
-		if ( job == 5 && Equil ) {
-		    MPI_Bcast( R1, m, MPI_DOUBLE, 0, grid->comm );
-		    MPI_Bcast( C1, n, MPI_DOUBLE, 0, grid->comm );
+		MPI_Bcast( &iinfo, 1, mpi_int_t, 0, grid->comm );
+		if ( iinfo == 0 ) {
+		   MPI_Bcast( perm_r, m, mpi_int_t, 0, grid->comm );
+		   if ( job == 5 && Equil ) {
+		      MPI_Bcast( R1, m, MPI_DOUBLE, 0, grid->comm );
+		      MPI_Bcast( C1, n, MPI_DOUBLE, 0, grid->comm );
+		   }
 		}
 	    }
+
+	    if ( iinfo && job == 5) {
+	        SUPERLU_FREE(R1);
+	        SUPERLU_FREE(C1);
+   	    }
 
 #if ( PRNTlevel>=2 )
 	    dmin = dmach_dist("Overflow");
 	    dsum = 0.0;
 	    dprod = 1.0;
 #endif
-	    if ( job == 5 ) {
+	    if ( iinfo == 0 ) {
+	      if ( job == 5 ) {
 		if ( Equil ) {
 		    for (i = 0; i < n; ++i) {
 			R1[i] = exp(R1[i]);
@@ -755,7 +770,7 @@ pdgssvx_ABglobal(superlu_options_t *options, SuperMatrix *A,
 		}
 		SUPERLU_FREE (R1);
 		SUPERLU_FREE (C1);
-	    } else { /* job = 2,3,4 */
+	      } else { /* job = 2,3,4 */
 		for (j = 0; j < n; ++j) {
 		    for (i = colptr[j]; i < colptr[j+1]; ++i) {
 			irow = rowind[i];
@@ -770,9 +785,10 @@ pdgssvx_ABglobal(superlu_options_t *options, SuperMatrix *A,
 				dprod *= fabs(a[i]);
 			}
 #endif
-		    }
-		}
-	    }
+		    } /* end for i ... */
+		} /* end for j ... */
+              } /* end else */
+	    } /* end if iinfo == 0 */
 
 #if ( PRNTlevel>=2 )
 	    if ( job == 2 || job == 3 ) {
@@ -872,12 +888,11 @@ pdgssvx_ABglobal(superlu_options_t *options, SuperMatrix *A,
 			   symb_mem_usage.expansions);
 		}
 #endif
-	    } else {
-		if ( !iam ) {
+	    } else { /* symbfact out of memory */
+		if ( !iam )
 		    fprintf(stderr, "symbfact() error returns " IFMT "\n", iinfo);
-                    *info = iinfo;
-                    return;
-		}
+                *info = iinfo;  
+                return;
 	    }
 	}
 
@@ -942,7 +957,7 @@ pdgssvx_ABglobal(superlu_options_t *options, SuperMatrix *A,
     /* ------------------------------------------------------------
        Compute the solution matrix X.
        ------------------------------------------------------------*/
-    if ( nrhs ) {
+    if ( nrhs && *info == 0 ) {
 
 	if ( !(b_work = doubleMalloc_dist(n)) )
 	    ABORT("Malloc fails for b_work[]");

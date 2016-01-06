@@ -687,27 +687,27 @@ pdgssvx(superlu_options_t *options, SuperMatrix *A,
 	    if ( iinfo > 0 ) {
 		if ( iinfo <= m ) {
 		    fprintf(stderr, "The " IFMT "-th row of A is exactly zero\n", iinfo);
-                    *info = iinfo;
 		} else {
                     fprintf(stderr, "The " IFMT "-th column of A is exactly zero\n", iinfo-n);
-                    *info = iinfo - n;
                 }
  	    } else if ( iinfo < 0 ) return;
-	    
-	    /* Equilibrate matrix A if it is badly-scaled. */
-	    pdlaqgs(A, R, C, rowcnd, colcnd, amax, equed);
 
-	    if ( strncmp(equed, "R", 1)==0 ) {
-		ScalePermstruct->DiagScale = ROW;
-		rowequ = ROW;
-	    } else if ( strncmp(equed, "C", 1)==0 ) {
-		ScalePermstruct->DiagScale = COL;
-		colequ = COL;
-	    } else if ( strncmp(equed, "B", 1)==0 ) {
-		ScalePermstruct->DiagScale = BOTH;
-		rowequ = ROW;
-		colequ = COL;
-	    } else ScalePermstruct->DiagScale = NOEQUIL;
+	    if ( iinfo == 0 ) {	    
+	       /* Equilibrate matrix A if it is badly-scaled. */
+	       pdlaqgs(A, R, C, rowcnd, colcnd, amax, equed);
+
+	       if ( strncmp(equed, "R", 1)==0 ) {
+		  ScalePermstruct->DiagScale = ROW;
+		  rowequ = ROW;
+	       } else if ( strncmp(equed, "C", 1)==0 ) {
+		  ScalePermstruct->DiagScale = COL;
+		  colequ = COL;
+	       } else if ( strncmp(equed, "B", 1)==0 ) {
+		  ScalePermstruct->DiagScale = BOTH;
+		  rowequ = ROW;
+		  colequ = COL;
+	       } else ScalePermstruct->DiagScale = NOEQUIL;
+	    }
 
 #if ( PRNTlevel>=1 )
 	    if ( !iam ) {
@@ -773,28 +773,39 @@ pdgssvx(superlu_options_t *options, SuperMatrix *A,
 
 	            if ( !iam ) {
 		        /* Process 0 finds a row permutation */
-		        dldperm_dist(job, m, nnz, colptr, rowind, a_GA,
+		        iinfo = dldperm_dist(job, m, nnz, colptr, rowind, a_GA,
 		                perm_r, R1, C1);
 		
-		        MPI_Bcast( perm_r, m, mpi_int_t, 0, grid->comm );
-		        if ( job == 5 && Equil ) {
-		            MPI_Bcast( R1, m, MPI_DOUBLE, 0, grid->comm );
-		            MPI_Bcast( C1, n, MPI_DOUBLE, 0, grid->comm );
+                        MPI_Bcast( &iinfo, 1, mpi_int_t, 0, grid->comm );
+		        if ( iinfo == 0 ) {
+		            MPI_Bcast( perm_r, m, mpi_int_t, 0, grid->comm );
+		            if ( job == 5 && Equil ) {
+		                MPI_Bcast( R1, m, MPI_DOUBLE, 0, grid->comm );
+		                MPI_Bcast( C1, n, MPI_DOUBLE, 0, grid->comm );
+                            }
 		        }
 	            } else {
-		        MPI_Bcast( perm_r, m, mpi_int_t, 0, grid->comm );
-		        if ( job == 5 && Equil ) {
-		            MPI_Bcast( R1, m, MPI_DOUBLE, 0, grid->comm );
-		            MPI_Bcast( C1, n, MPI_DOUBLE, 0, grid->comm );
+		        MPI_Bcast( &iinfo, 1, mpi_int_t, 0, grid->comm );
+			if ( iinfo == 0 ) {
+		            MPI_Bcast( perm_r, m, mpi_int_t, 0, grid->comm );
+		            if ( job == 5 && Equil ) {
+		                MPI_Bcast( R1, m, MPI_DOUBLE, 0, grid->comm );
+		                MPI_Bcast( C1, n, MPI_DOUBLE, 0, grid->comm );
+                            }
 		        }
 	            }
 
+	    	    if ( iinfo && job == 5) {
+	                SUPERLU_FREE(R1);
+	        	SUPERLU_FREE(C1);
+   	            }
 #if ( PRNTlevel>=2 )
 	            dmin = dmach_dist("Overflow");
 	            dsum = 0.0;
 	            dprod = 1.0;
 #endif
-	            if ( job == 5 ) {
+	            if ( iinfo == 0 ) {
+	              if ( job == 5 ) {
 		        if ( Equil ) {
 		            for (i = 0; i < n; ++i) {
 			        R1[i] = exp(R1[i]);
@@ -841,14 +852,15 @@ pdgssvx(superlu_options_t *options, SuperMatrix *A,
 		        }
 		        SUPERLU_FREE (R1);
 		        SUPERLU_FREE (C1);
-	            } else { /* job = 2,3,4 */
+	              } else { /* job = 2,3,4 */
 		        for (j = 0; j < n; ++j) {
 		            for (i = colptr[j]; i < colptr[j+1]; ++i) {
 			        irow = rowind[i];
 			        rowind[i] = perm_r[irow];
 		            } /* end for i ... */
 		        } /* end for j ... */
-	            } /* end else job ... */
+	              } /* end else job ... */
+                    } /* end if iinfo == 0 */
 
 #if ( PRNTlevel>=2 )
 	            if ( job == 2 || job == 3 ) {
@@ -945,8 +957,11 @@ pdgssvx(superlu_options_t *options, SuperMatrix *A,
 	      flinfo = get_perm_c_parmetis(A, perm_r, perm_c, nprocs_num,
                                   	   noDomains, &sizes, &fstVtxSep,
                                            grid, &symb_comm);
-	      if (flinfo > 0)
-	          ABORT("ERROR in get perm_c parmetis.");
+	      if (flinfo > 0) {
+	          fprintf(stderr, "ERROR in get perm_c parmetis.");
+		  *info = flinfo;
+		  return;
+     	      }
 	  } else {
 	      get_perm_c_dist(iam, permc_spec, &GA, perm_c);
           }
@@ -1009,7 +1024,7 @@ pdgssvx(superlu_options_t *options, SuperMatrix *A,
 			   	symb_mem_usage.expansions);
 		    }
 #endif
-	    	} else {
+	    	} else { /* symbfact out of memory */
 		    if ( !iam ) {
 		        fprintf(stderr,"symbfact() error returns " IFMT "\n",iinfo);
 			*info = iinfo;
@@ -1024,8 +1039,11 @@ pdgssvx(superlu_options_t *options, SuperMatrix *A,
 				       &(grid->comm), &symb_comm,
 				       &symb_mem_usage); 
 	    	stat->utime[SYMBFAC] = SuperLU_timer_() - t;
-	    	if (flinfo > 0) 
-	      	    ABORT("Insufficient memory for parallel symbolic factorization.");
+	    	if (flinfo > 0) {
+	      	    fprintf(stderr, "Insufficient memory for parallel symbolic factorization.");
+		    *info = flinfo;
+		    return;
+                }
 	    }
 
             /* Destroy GA */
@@ -1172,11 +1190,13 @@ pdgssvx(superlu_options_t *options, SuperMatrix *A,
 	}
     
     } /* end if (!factored) */
+
+    printf(" before solve: *info %d\n", *info);
 	
     /* ------------------------------------------------------------
        Compute the solution matrix X.
        ------------------------------------------------------------*/
-    if ( nrhs ) {
+    if ( nrhs && *info == 0 ) {
 
 	if ( !(b_work = doubleMalloc_dist(n)) )
 	    ABORT("Malloc fails for b_work[]");
@@ -1358,7 +1378,7 @@ pdgssvx(superlu_options_t *options, SuperMatrix *A,
 	SUPERLU_FREE(b_work);
 	SUPERLU_FREE(X);
 
-    } /* end if nrhs != 0 */
+    } /* end if nrhs != 0 && *info == 0 */
 
 #if ( PRNTlevel>=1 )
     if ( !iam ) printf(".. DiagScale = %d\n", ScalePermstruct->DiagScale);

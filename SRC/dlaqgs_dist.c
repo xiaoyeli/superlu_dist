@@ -1,13 +1,12 @@
 /*! @file
- * \brief Equilibrates a general sparse M by N matrix A
- */
-
+ * \brief Equilibrates a general sparse M by N matrix A 
+*/
 /*
- * File name:	zlaqgs.c
- * History:     Modified from LAPACK routine ZLAQGE
+ * File name:	dlaqgs.c
+ * History:     Modified from LAPACK routine DLAQGE
  */
 #include <math.h>
-#include "superlu_zdefs.h"
+#include "superlu_ddefs.h"
 
 /*! \brief
 
@@ -15,7 +14,7 @@
     Purpose   
     =======   
 
-    ZLAQGS_DIST equilibrates a general sparse M by N matrix A using the row
+    DLAQGS_dist equilibrates a general sparse M by N matrix A using the row
     and column scaling factors in the vectors R and C.   
 
     See supermatrix.h for the definition of 'SuperMatrix' structure.
@@ -26,7 +25,7 @@
     A       (input/output) SuperMatrix*
             On exit, the equilibrated matrix.  See EQUED for the form of 
             the equilibrated matrix. The type of A can be:
-	    Stype = SLU_NC; Dtype = SLU_Z; Mtype = SLU_GE.
+	    Stype = SLU_NC; Dtype = SLU_D; Mtype = SLU_GE.
 	    
     R       (input) double*, dimension (A->nrow)
             The row scale factors for A.
@@ -69,17 +68,17 @@
 </pre>
 */
 void
-zlaqgs_dist(SuperMatrix *A, double *r, double *c, 
+dlaqgs_dist(SuperMatrix *A, double *r, double *c, 
 	    double rowcnd, double colcnd, double amax, char *equed)
 {
+
 #define THRESH    (0.1)
     
     /* Local variables */
     NCformat *Astore;
-    doublecomplex   *Aval;
-    int i, j, irow;
+    double   *Aval;
+    int_t i, j, irow;
     double large, small, cj;
-    double temp;
 
 
     /* Quick return if possible */
@@ -89,10 +88,10 @@ zlaqgs_dist(SuperMatrix *A, double *r, double *c,
     }
 
     Astore = (NCformat *) A->Store;
-    Aval = (doublecomplex *) Astore->nzval;
+    Aval = (double *) Astore->nzval;
     
     /* Initialize LARGE and SMALL. */
-    small = dmach("Safe minimum") / dmach("Precision");
+    small = dmach_dist("Safe minimum") / dmach_dist("Precision");
     large = 1. / small;
 
     if (rowcnd >= THRESH && amax >= small && amax <= large) {
@@ -103,7 +102,7 @@ zlaqgs_dist(SuperMatrix *A, double *r, double *c,
 	    for (j = 0; j < A->ncol; ++j) {
 		cj = c[j];
 		for (i = Astore->colptr[j]; i < Astore->colptr[j+1]; ++i) {
-		    zd_mult(&Aval[i], &Aval[i], cj);
+		    Aval[i] *= cj;
                 }
 	    }
 	    *(unsigned char *)equed = 'C';
@@ -113,7 +112,7 @@ zlaqgs_dist(SuperMatrix *A, double *r, double *c,
 	for (j = 0; j < A->ncol; ++j)
 	    for (i = Astore->colptr[j]; i < Astore->colptr[j+1]; ++i) {
 		irow = Astore->rowind[i];
-		zd_mult(&Aval[i], &Aval[i], r[irow]);
+		Aval[i] *= r[irow];
 	    }
 	*(unsigned char *)equed = 'R';
     } else {
@@ -122,8 +121,7 @@ zlaqgs_dist(SuperMatrix *A, double *r, double *c,
 	    cj = c[j];
 	    for (i = Astore->colptr[j]; i < Astore->colptr[j+1]; ++i) {
 		irow = Astore->rowind[i];
-		temp = cj * r[irow];
-		zd_mult(&Aval[i], &Aval[i], temp);
+		Aval[i] *= cj * r[irow];
 	    }
 	}
 	*(unsigned char *)equed = 'B';
@@ -131,5 +129,5 @@ zlaqgs_dist(SuperMatrix *A, double *r, double *c,
 
     return;
 
-} /* zlaqgs_dist */
+} /* dlaqgs_dist */
 

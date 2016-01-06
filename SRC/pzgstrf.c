@@ -1764,13 +1764,18 @@ pzgstrf(superlu_options_t * options, int m, int n, double anorm,
     SUPERLU_FREE(Ublock_info_jb);
 
 
-    /* Prepare error message. */
-    if (*info == 0)
-        *info = n + 1;
 #if ( PROFlevel>=1 )
     TIC (t1);
 #endif
+
+    /* Prepare error message - find the smallesr index i that U(i,i)==0 */
+    if ( *info == 0 ) *info = n + 1;
     MPI_Allreduce (info, &iinfo, 1, MPI_INT, MPI_MIN, grid->comm);
+    if ( iinfo == n + 1 ) *info = 0;
+    else *info = iinfo;
+
+    // printf("test out\n");
+
 #if ( PROFlevel>=1 )
     TOC (t2, t1);
     stat->utime[COMM] += t2;
@@ -1794,11 +1799,6 @@ pzgstrf(superlu_options_t * options, int m, int n, double anorm,
         }
     }
 #endif
-    if (iinfo == n + 1)
-        *info = 0;
-    else
-        *info = iinfo;
-    // printf("test out\n");
 
 #if ( PRNTlevel==3 )
     MPI_Allreduce (&zero_msg, &iinfo, 1, MPI_INT, MPI_SUM, grid->comm);

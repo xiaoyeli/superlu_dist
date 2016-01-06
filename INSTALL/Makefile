@@ -15,9 +15,9 @@ install.out:
 	@echo Testing machines parameters and timer
 	csh install.csh
 
-smach_dist.o: ../SRC/smach_dist.c ; $(CC) $(NOOPTS) -c $<
-dmach_dist.o: ../SRC/dmach_dist.c ; $(CC) $(NOOPTS) -c $<
-superlu_timer.o: superlu_timer.c; $(CC) $(NOOPTS) -c $<
+smach_dist.o: ../SRC/smach_dist.c ; $(CC) -c $<
+dmach_dist.o: ../SRC/dmach_dist.c ; $(CC) -c $<
+superlu_timer.o: ../SRC/superlu_timer.c ; $(CC) -c $<
 
 .c.o:
 	$(CC) $(CFLAGS) -c $<

@@ -1,21 +1,21 @@
 /*! @file
- * \brief Computes row and column scalings 
+ * \brief Computes row and column scalings
  */
 
 /*
- * File name:	dgsequ.c
- * History:     Modified from LAPACK routine DGEEQU
+ * File name:	zgsequ.c
+ * History:     Modified from LAPACK routine ZGEEQU
  */
 #include <math.h>
-#include "superlu_ddefs.h"
+#include "superlu_zdefs.h"
 
 /*! \brief
 
-<pre>    
+<pre>   
     Purpose   
     =======   
 
-    DGSEQU_dist computes row and column scalings intended to equilibrate an   
+    ZGSEQU_DIST computes row and column scalings intended to equilibrate an   
     M-by-N sparse matrix A and reduce its condition number. R returns the row
     scale factors and C the column scale factors, chosen to try to make   
     the largest element in each row and column of the matrix B with   
@@ -34,7 +34,7 @@
     A       (input) SuperMatrix*
             The matrix of dimension (A->nrow, A->ncol) whose equilibration
             factors are to be computed. The type of A can be:
-            Stype = SLU_NC; Dtype = SLU_D; Mtype = SLU_GE.
+            Stype = SLU_NC; Dtype = SLU_Z; Mtype = SLU_GE.
 	    
     R       (output) double*, size A->nrow
             If INFO = 0 or INFO > M, R contains the row scale factors   
@@ -71,13 +71,13 @@
 */
 
 void
-dgsequ_dist(SuperMatrix *A, double *r, double *c, double *rowcnd,
+zgsequ_dist(SuperMatrix *A, double *r, double *c, double *rowcnd,
 	    double *colcnd, double *amax, int_t *info)
 {
 
     /* Local variables */
     NCformat *Astore;
-    double   *Aval;
+    doublecomplex *Aval;
     int i, j, irow;
     double rcmin, rcmax;
     double bignum, smlnum;
@@ -85,11 +85,11 @@ dgsequ_dist(SuperMatrix *A, double *r, double *c, double *rowcnd,
     /* Test the input parameters. */
     *info = 0;
     if ( A->nrow < 0 || A->ncol < 0 ||
-	 A->Stype != SLU_NC || A->Dtype != SLU_D || A->Mtype != SLU_GE )
+	 A->Stype != SLU_NC || A->Dtype != SLU_Z || A->Mtype != SLU_GE )
 	*info = -1;
     if (*info != 0) {
 	i = -(*info);
-	xerbla_("dgsequ_dist", &i);
+	xerr_dist("zgsequ_dist", &i);
 	return;
     }
 
@@ -102,10 +102,10 @@ dgsequ_dist(SuperMatrix *A, double *r, double *c, double *rowcnd,
     }
 
     Astore = (NCformat *) A->Store;
-    Aval = (double *) Astore->nzval;
+    Aval = (doublecomplex *) Astore->nzval;
     
     /* Get machine constants. */
-    smlnum = dmach("S");
+    smlnum = dmach_dist("S");
     bignum = 1. / smlnum;
 
     /* Compute row scale factors. */
@@ -115,7 +115,7 @@ dgsequ_dist(SuperMatrix *A, double *r, double *c, double *rowcnd,
     for (j = 0; j < A->ncol; ++j)
 	for (i = Astore->colptr[j]; i < Astore->colptr[j+1]; ++i) {
 	    irow = Astore->rowind[i];
-	    r[irow] = SUPERLU_MAX( r[irow], fabs(Aval[i]) );
+	    r[irow] = SUPERLU_MAX( r[irow], slud_z_abs1(&Aval[i]) );
 	}
 
     /* Find the maximum and minimum scale factors. */
@@ -150,7 +150,7 @@ dgsequ_dist(SuperMatrix *A, double *r, double *c, double *rowcnd,
     for (j = 0; j < A->ncol; ++j)
 	for (i = Astore->colptr[j]; i < Astore->colptr[j+1]; ++i) {
 	    irow = Astore->rowind[i];
-	    c[j] = SUPERLU_MAX( c[j], fabs(Aval[i]) * r[irow] );
+	    c[j] = SUPERLU_MAX( c[j], slud_z_abs1(&Aval[i]) * r[irow] );
 	}
 
     /* Find the maximum and minimum scale factors. */
@@ -178,6 +178,6 @@ dgsequ_dist(SuperMatrix *A, double *r, double *c, double *rowcnd,
 
     return;
 
-} /* dgsequ_dist */
+} /* zgsequ_dist */
 
 

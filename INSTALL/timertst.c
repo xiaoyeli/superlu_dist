@@ -15,7 +15,7 @@ int main(int argc, char *argv[])
     int      i, j;
     double   alpha, avg, t1, t2, tnotim;
     double   x[NMAX], y[NMAX];
-    double   SuperLU_timer_();
+    extern double   SuperLU_timer_dist_();
 
     MPI_Init( &argc, &argv );
 
@@ -27,13 +27,13 @@ int main(int argc, char *argv[])
     alpha = 0.315;
 
     /* Time 1,000,000 DAXPY operations */
-    t1 = SuperLU_timer_();
+    t1 = SuperLU_timer_dist_();
     for (j = 0; j < ITS; ++j) {
 	for (i = 0; i < NMAX; ++i)
 	    y[i] += alpha * x[i];
 	alpha = -alpha;
     }
-    t2 = SuperLU_timer_();
+    t2 = SuperLU_timer_dist_();
     printf("Time for 1,000,000 DAXPY ops  = %10.3g seconds\n", t2-t1);
     if ( t2-t1 > 0. ) 
 	printf("DAXPY performance rate        = %10.3g mflops\n", 2./(t2-t1));
@@ -44,12 +44,12 @@ int main(int argc, char *argv[])
 
     /* Time 1,000,000 DAXPY operations with SuperLU_timer_() 
        in the outer loop */
-    t1 = SuperLU_timer_();
+    t1 = SuperLU_timer_dist_();
     for (j = 0; j < ITS; ++j) {
 	for (i = 0; i < NMAX; ++i)
 	    y[i] += alpha * x[i];
 	alpha = -alpha;
-	t2 = SuperLU_timer_();
+	t2 = SuperLU_timer_dist_();
     }
 
     /* Compute the time in milliseconds used by an average call to 
