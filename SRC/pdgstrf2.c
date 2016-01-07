@@ -88,9 +88,6 @@ pdgstrf2_trsm
     MPI_Status status;
     MPI_Comm comm = (grid->cscp).comm;
 
-    /* Quick return. */
-    *info = 0;
-
     /* Initialization. */
     iam = grid->iam;
     Pr = grid->nprow;
@@ -134,7 +131,7 @@ pdgstrf2_trsm
         for (j = 0; j < jlst - jfst; ++j) {  /* for each column in panel */
             /* Diagonal pivot */
             i = luptr;
-            if (options->ReplaceTinyPivot == YES || lusup[i] == 0.0)  {
+            if (options->ReplaceTinyPivot == YES)  {
                 if (fabs (lusup[i]) < thresh) {  /* Diagonal */
 
 #if ( PRNTlevel>=2 )

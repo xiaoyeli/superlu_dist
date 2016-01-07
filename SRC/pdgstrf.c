@@ -1083,7 +1083,6 @@ pdgstrf(superlu_options_t * options, int m, int n, double anorm,
 
                     PDGSTRF2 (options, kk0, kk, thresh, Glu_persist,
                               grid, Llu, U_diag_blk_send_req, tag_ub, stat, info);
-
                      pdgstrf2_timer += SuperLU_timer_() - ttt1; 
 
                     /* Multicasts numeric values of L(:,kk) to process rows. */

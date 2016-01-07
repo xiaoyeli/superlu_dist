@@ -861,7 +861,9 @@ pzgssvx(superlu_options_t *options, SuperMatrix *A,
 		            } /* end for i ... */
 		        } /* end for j ... */
 	              } /* end else job ... */
-                    } /* end if iinfo == 0 */
+                    } else { /* if iinfo != 0 */
+			for (i = 0; i < m; ++i) perm_r[i] = i;
+		    }
 
 #if ( PRNTlevel>=2 )
 	            if ( job == 2 || job == 3 ) {

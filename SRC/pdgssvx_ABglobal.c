@@ -629,11 +629,9 @@ pdgssvx_ABglobal(superlu_options_t *options, SuperMatrix *A,
 			if ( iinfo <= m ) {
 			    fprintf(stderr, "The " IFMT "-th row of A is exactly zero\n", 
 				    iinfo);
-                            *info = iinfo;
 			} else {
                             fprintf(stderr, "The " IFMT "-th column of A is exactly zero\n", 
 				     iinfo-n);
-                            *info = iinfo - n;
                         }
 		    }
 		}
@@ -645,9 +643,7 @@ pdgssvx_ABglobal(superlu_options_t *options, SuperMatrix *A,
 		    MPI_Bcast( &rowcnd, 1, MPI_DOUBLE, 0, grid->comm );
 		    MPI_Bcast( &colcnd, 1, MPI_DOUBLE, 0, grid->comm );
 		    MPI_Bcast( &amax,   1, MPI_DOUBLE, 0, grid->comm );
-		} else if ( iinfo <= m ) {
- 		    *info = iinfo;
-                } else *info = iinfo - n;
+		} 
 	    }
 	
             if ( iinfo == 0 ) {
@@ -788,7 +784,9 @@ pdgssvx_ABglobal(superlu_options_t *options, SuperMatrix *A,
 		    } /* end for i ... */
 		} /* end for j ... */
               } /* end else */
-	    } /* end if iinfo == 0 */
+            } else { /* if iinfo != 0 */
+		for (i = 0; i < m; ++i) perm_r[i] = i;
+	    }
 
 #if ( PRNTlevel>=2 )
 	    if ( job == 2 || job == 3 ) {
@@ -939,13 +937,11 @@ pdgssvx_ABglobal(superlu_options_t *options, SuperMatrix *A,
 		       "\t\ttotal\t%.2f\tAvg\t%.2f\tMax\t%.2f\n",
 		       avg*1e-6, avg/grid->nprow/grid->npcol*1e-6, max*1e-6);
 		printf("\tNumber of tiny pivots: %10d\n", stat->TinyPivots);
+		printf(".. pdgstrf INFO = %d\n", *info);
 	    }
 	}
 #endif
     
-#if ( PRNTlevel>=2 )
-	if ( !iam ) printf(".. pdgstrf INFO = %d\n", *info);
-#endif
 
     } else if ( options->IterRefine ) { /* options->Fact==FACTORED */
 	/* Permute columns of A to form A*Pc' using the existing perm_c.

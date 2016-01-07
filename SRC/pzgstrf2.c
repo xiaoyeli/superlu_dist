@@ -87,9 +87,6 @@ pzgstrf2_trsm
     MPI_Status status;
     MPI_Comm comm = (grid->cscp).comm;
 
-    /* Quick return. */
-    *info = 0;
-
     /* Initialization. */
     iam = grid->iam;
     Pr = grid->nprow;

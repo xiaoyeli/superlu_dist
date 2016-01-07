@@ -141,9 +141,10 @@ int main(int argc, char *argv[])
         options.PrintStat         = YES;
      */
     set_default_options_dist(&options);
+#if 0
     options.ParSymbFact       = YES;
     options.ColPerm = PARMETIS;
-#if 0
+
     options.RowPerm = NOROWPERM;
     options.IterRefine = NOREFINE;
     options.ColPerm = NATURAL;
@@ -170,6 +171,7 @@ int main(int argc, char *argv[])
     pdgssvx(&options, &A, &ScalePermstruct, b, ldb, nrhs, &grid,
 	    &LUstruct, &SOLVEstruct, berr, &stat, &info);
 
+    if ( !iam ) printf(" INFO %d\n", info);
 
     /* Check the accuracy of the solution. */
     pdinf_norm_error(iam, ((NRformat_loc *)A.Store)->m_loc,
