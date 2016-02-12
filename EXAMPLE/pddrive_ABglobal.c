@@ -119,7 +119,7 @@ int main(int argc, char *argv[])
     if ( !iam ) {
 	/* Print the CPP definitions. */
 	cpp_defs();
-#if 0	
+#if 1
 	/* Read the matrix stored on disk in Harwell-Boeing format. */
 	dreadhb_dist(iam, fp, &m, &n, &nnz, &a, &asub, &xa);
 #else	

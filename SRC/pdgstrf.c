@@ -734,7 +734,7 @@ pdgstrf(superlu_options_t * options, int m, int n, double anorm,
          ABORT("Malloc fails for ujrow[].");
 #else
     /* Instead of half storage, we'll do full storage */
-    if (!(Llu->ujrow = doubleMalloc_dist (k * k)))
+    if (!(Llu->ujrow = doubleCalloc_dist (k * k)))
         ABORT ("Malloc fails for ujrow[].");
     log_memory(k * k * iword, stat);
 #endif
@@ -1083,6 +1083,7 @@ pdgstrf(superlu_options_t * options, int m, int n, double anorm,
 
                     PDGSTRF2 (options, kk0, kk, thresh, Glu_persist,
                               grid, Llu, U_diag_blk_send_req, tag_ub, stat, info);
+
                      pdgstrf2_timer += SuperLU_timer_() - ttt1; 
 
                     /* Multicasts numeric values of L(:,kk) to process rows. */

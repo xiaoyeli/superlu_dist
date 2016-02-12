@@ -124,11 +124,9 @@ zldperm_dist(int_t job, int_t n, int_t nnz, int_t colptr[], int_t adjncy[],
      *
      */
     mc64id_dist(icntl);
-#if 0
     /* Suppress error and warning messages. */
     icntl[0] = -1;
     icntl[1] = -1;
-#endif
 
     for (i = 0; i < nnz; ++i) nzval_abs[i] = slud_z_abs1(&nzval[i]);
     mc64ad_dist(&job, &n, &nnz, colptr, adjncy, nzval_abs, &num, perm,

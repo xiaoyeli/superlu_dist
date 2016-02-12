@@ -79,7 +79,7 @@ int dcreate_matrix(SuperMatrix *A, int nrhs, double **rhs,
 #endif
 
     if ( !iam ) {
-#if 0
+#if 1
         /* Read the matrix stored on disk in Harwell-Boeing format. */
         dreadhb_dist(iam, fp, &m, &n, &nnz, &nzval, &rowind, &colptr);
 #else

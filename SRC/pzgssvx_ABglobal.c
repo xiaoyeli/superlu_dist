@@ -627,11 +627,15 @@ pzgssvx_ABglobal(superlu_options_t *options, SuperMatrix *A,
 		} else {
 		    if ( iinfo > 0 ) {
 			if ( iinfo <= m ) {
+#if ( PRNTlevel>=1 )
 			    fprintf(stderr, "The " IFMT "-th row of A is exactly zero\n", 
 				    iinfo);
+#endif
 			} else {
+#if ( PRNTlevel>=1 )
                             fprintf(stderr, "The " IFMT "-th column of A is exactly zero\n", 
 				     iinfo-n);
+#endif
                         }
 		    }
 		}
@@ -886,8 +890,10 @@ pzgssvx_ABglobal(superlu_options_t *options, SuperMatrix *A,
 		}
 #endif
 	    } else { /* symbfact out of memory */
+#if ( PRNTlevel>=1 )
 		if ( !iam )
 		    fprintf(stderr, "symbfact() error returns " IFMT "\n", iinfo);
+#endif
                 *info = iinfo;  
                 return;
 	    }
@@ -936,14 +942,11 @@ pzgssvx_ABglobal(superlu_options_t *options, SuperMatrix *A,
 		       "\t\ttotal\t%.2f\tAvg\t%.2f\tMax\t%.2f\n",
 		       avg*1e-6, avg/grid->nprow/grid->npcol*1e-6, max*1e-6);
 		printf("\tNumber of tiny pivots: %10d\n", stat->TinyPivots);
+		printf(".. pzgstrf INFO = %d\n", *info);
 	    }
 	}
 #endif
     
-#if ( PRNTlevel>=2 )
-	if ( !iam ) printf(".. pzgstrf INFO = %d\n", *info);
-#endif
-
     } else if ( options->IterRefine ) { /* options->Fact==FACTORED */
 	/* Permute columns of A to form A*Pc' using the existing perm_c.
 	 * NOTE: rows of A were previously permuted to Pc*A.

@@ -124,11 +124,9 @@ dldperm_dist(int_t job, int_t n, int_t nnz, int_t colptr[], int_t adjncy[],
      *
      */
     mc64id_dist(icntl);
-#if 0
     /* Suppress error and warning messages. */
     icntl[0] = -1;
     icntl[1] = -1;
-#endif
 
     mc64ad_dist(&job, &n, &nnz, colptr, adjncy, nzval, &num, perm,
 	        &liw, iw, &ldw, dw, icntl, info);

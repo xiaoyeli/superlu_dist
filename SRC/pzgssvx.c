@@ -686,13 +686,17 @@ pzgssvx(superlu_options_t *options, SuperMatrix *A,
 
 	    if ( iinfo > 0 ) {
 		if ( iinfo <= m ) {
+#if ( PRNTlevel>=1 )
 		    fprintf(stderr, "The " IFMT "-th row of A is exactly zero\n", iinfo);
+#endif
 		} else {
+#if ( PRNTlevel>=1 )
                     fprintf(stderr, "The " IFMT "-th column of A is exactly zero\n", iinfo-n);
+#endif
                 }
  	    } else if ( iinfo < 0 ) return;
 
-	    if ( iinfo == 0 ) {	    
+	    /* Now iinfo == 0 */
 	       /* Equilibrate matrix A if it is badly-scaled. */
 	       pzlaqgs(A, R, C, rowcnd, colcnd, amax, equed);
 
@@ -707,7 +711,6 @@ pzgssvx(superlu_options_t *options, SuperMatrix *A,
 		  rowequ = ROW;
 		  colequ = COL;
 	       } else ScalePermstruct->DiagScale = NOEQUIL;
-	    }
 
 #if ( PRNTlevel>=1 )
 	    if ( !iam ) {
@@ -961,7 +964,9 @@ pzgssvx(superlu_options_t *options, SuperMatrix *A,
                                   	   noDomains, &sizes, &fstVtxSep,
                                            grid, &symb_comm);
 	      if (flinfo > 0) {
-	          fprintf(stderr, "ERROR in get perm_c parmetis.");
+#if ( PRNTlevel>=1 )
+	          fprintf(stderr, "Insufficient memory for get_perm_c parmetis\n");
+#endif
 		  *info = flinfo;
 		  return;
      	      }
@@ -1028,11 +1033,12 @@ pzgssvx(superlu_options_t *options, SuperMatrix *A,
 		    }
 #endif
 	    	} else { /* symbfact out of memory */
-		    if ( !iam ) {
+#if ( PRNTlevel>=1 )
+		    if ( !iam )
 		        fprintf(stderr,"symbfact() error returns " IFMT "\n",iinfo);
-			*info = iinfo;
-			return;
-		    }
+#endif
+		    *info = iinfo;
+		    return;
 	        }
 	    } /* end serial symbolic factorization */
 	    else {  /* parallel symbolic factorization */
@@ -1043,7 +1049,9 @@ pzgssvx(superlu_options_t *options, SuperMatrix *A,
 				       &symb_mem_usage); 
 	    	stat->utime[SYMBFAC] = SuperLU_timer_() - t;
 	    	if (flinfo > 0) {
+#if ( PRNTlevel>=1 )
 	      	    fprintf(stderr, "Insufficient memory for parallel symbolic factorization.");
+#endif
 		    *info = flinfo;
 		    return;
                 }

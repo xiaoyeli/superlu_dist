@@ -627,11 +627,15 @@ pdgssvx_ABglobal(superlu_options_t *options, SuperMatrix *A,
 		} else {
 		    if ( iinfo > 0 ) {
 			if ( iinfo <= m ) {
+#if ( PRNTlevel>=1 )
 			    fprintf(stderr, "The " IFMT "-th row of A is exactly zero\n", 
 				    iinfo);
+#endif
 			} else {
+#if ( PRNTlevel>=1 )
                             fprintf(stderr, "The " IFMT "-th column of A is exactly zero\n", 
 				     iinfo-n);
+#endif
                         }
 		    }
 		}
@@ -887,8 +891,10 @@ pdgssvx_ABglobal(superlu_options_t *options, SuperMatrix *A,
 		}
 #endif
 	    } else { /* symbfact out of memory */
+#if ( PRNTlevel>=1 )
 		if ( !iam )
 		    fprintf(stderr, "symbfact() error returns " IFMT "\n", iinfo);
+#endif
                 *info = iinfo;  
                 return;
 	    }
@@ -942,7 +948,6 @@ pdgssvx_ABglobal(superlu_options_t *options, SuperMatrix *A,
 	}
 #endif
     
-
     } else if ( options->IterRefine ) { /* options->Fact==FACTORED */
 	/* Permute columns of A to form A*Pc' using the existing perm_c.
 	 * NOTE: rows of A were previously permuted to Pc*A.

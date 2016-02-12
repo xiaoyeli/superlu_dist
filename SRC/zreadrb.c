@@ -240,10 +240,6 @@ FormFullA(int_t n, int_t *nonz, doublecomplex **nzval, int_t **rowind, int_t **c
 	if ( t_rowind[i] != j ) { /* not diagonal */
 	  a_rowind[k] = t_rowind[i];
 	  a_val[k] = t_val[i];
-#if (DEBUGlevel >= 2)
-	  if ( fabs(a_val[k]) < 4.047e-300 )
-	      printf("%5d: %e\n", k, a_val[k]);
-#endif
 	  ++k;
 	}
       }
@@ -251,10 +247,6 @@ FormFullA(int_t n, int_t *nonz, doublecomplex **nzval, int_t **rowind, int_t **c
       for (i = al_colptr[j]; i < al_colptr[j+1]; ++i) {
 	a_rowind[k] = al_rowind[i];
 	a_val[k] = al_val[i];
-#if (DEBUGlevel >= 2)
-	if ( fabs(a_val[k]) < 4.047e-300 )
-	    printf("%5d: %e\n", k, a_val[k]);
-#endif
 	++k;
       }
       

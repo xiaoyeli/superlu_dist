@@ -131,7 +131,8 @@ pzgstrf2_trsm
             /* Diagonal pivot */
             i = luptr;
            if ( options->ReplaceTinyPivot == YES ) {
-                if ( slud_z_abs1(&lusup[i]) < thresh ) { /* Diagonal */
+                if ( slud_z_abs1(&lusup[i]) < thresh && 
+		     lusup[i].r != 0.0 && lusup[i].i != 0.0 ) { /* Diagonal */
 
 #if ( PRNTlevel>=2 )
                     printf ("(%d) .. col %d, tiny pivot %e  ",

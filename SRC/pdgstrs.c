@@ -577,8 +577,8 @@ pdgstrs(int_t n, LUstruct_t *LUstruct,
     maxrecvsz = knsupc * nrhs + SUPERLU_MAX( XK_H, LSUM_H );
     if ( !(lsum = doubleCalloc_dist(((size_t)ldalsum)*nrhs + nlb*LSUM_H)) )
 	ABORT("Calloc fails for lsum[].");
-    if ( !(x = doubleMalloc_dist(ldalsum * nrhs + nlb * XK_H)) )
-	ABORT("Malloc fails for x[].");
+    if ( !(x = doubleCalloc_dist(ldalsum * nrhs + nlb * XK_H)) )
+	ABORT("Calloc fails for x[].");
     if ( !(recvbuf = doubleMalloc_dist(maxrecvsz)) )
 	ABORT("Malloc fails for recvbuf[].");
     if ( !(rtemp = doubleCalloc_dist(maxrecvsz)) )

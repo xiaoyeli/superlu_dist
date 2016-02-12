@@ -734,7 +734,7 @@ pzgstrf(superlu_options_t * options, int m, int n, double anorm,
          ABORT("Malloc fails for ujrow[].");
 #else
     /* Instead of half storage, we'll do full storage */
-    if (!(Llu->ujrow = doublecomplexMalloc_dist (k * k)))
+    if (!(Llu->ujrow = doublecomplexCalloc_dist (k * k)))
         ABORT ("Malloc fails for ujrow[].");
     log_memory(k * k * iword, stat);
 #endif

@@ -577,8 +577,8 @@ pzgstrs(int_t n, LUstruct_t *LUstruct,
     maxrecvsz = knsupc * nrhs + SUPERLU_MAX( XK_H, LSUM_H );
     if ( !(lsum = doublecomplexCalloc_dist(((size_t)ldalsum)*nrhs + nlb*LSUM_H)) )
 	ABORT("Calloc fails for lsum[].");
-    if ( !(x = doublecomplexMalloc_dist(ldalsum * nrhs + nlb * XK_H)) )
-	ABORT("Malloc fails for x[].");
+    if ( !(x = doublecomplexCalloc_dist(ldalsum * nrhs + nlb * XK_H)) )
+	ABORT("Calloc fails for x[].");
     if ( !(recvbuf = doublecomplexMalloc_dist(maxrecvsz)) )
 	ABORT("Malloc fails for recvbuf[].");
     if ( !(rtemp = doublecomplexCalloc_dist(maxrecvsz)) )
