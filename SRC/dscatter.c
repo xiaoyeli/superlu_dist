@@ -302,57 +302,6 @@ arrive_at_ublock (int_t j,      //block number
     *iukp += UB_DESCRIPTOR;     /* Start fstnz of block U(k,j). */
 }
 
-typedef struct pair pair;
-
-int_t
-get_min (int_t * sums, int_t nprocs)
-{
-    int_t min_ind, min_val;
-    min_ind = 0;
-    min_val = 2147483647;
-    for (int i = 0; i < nprocs; i++)
-    {
-        if (sums[i] < min_val)
-        {
-            min_val = sums[i];
-            min_ind = i;
-        }
-    }
-
-    return min_ind;
-}
-
-int
-compare_pair (const void *a, const void *b)
-{
-    return (((pair *) a)->val - ((pair *) b)->val);
-}
-
-int_t
-static_partition (pair * work_load, int_t nwl, int_t * partition, int_t ldp,
-                  int_t * sums, int_t * counts, int nprocs)
-{
-    //initialization loop
-    for (int i = 0; i < nprocs; ++i)
-    {
-        counts[i] = 0;
-        sums[i] = 0;
-    }
-    qsort (work_load, nwl, sizeof (pair), compare_pair);
-    // for(int i=0;i<nwl;i++)
-    for (int i = nwl - 1; i >= 0; i--)
-    {
-        int_t ind = get_min (sums, nprocs);
-        // printf("ind %d\n",ind );
-        partition[ldp * ind + counts[ind]] = work_load[i].ind;
-        counts[ind]++;
-        sums[ind] += work_load[i].val;
-
-    }
-
-    return 0;
-}
-
 /*Divide CPU-GPU dgemm work here*/
 #ifdef PI_DEBUG
 int Ngem = 2;

@@ -39,11 +39,11 @@ DEXM2	= pddrive2.o dcreate_matrix.o
 DEXM3	= pddrive3.o dcreate_matrix.o
 DEXM4	= pddrive4.o dcreate_matrix.o
 DEXMG	= pddrive_ABglobal.o
-DEXMG1	= pddrive1_ABglobal.o sp_ienv.o 
+DEXMG1	= pddrive1_ABglobal.o
 DEXMG2	= pddrive2_ABglobal.o
 DEXMG3	= pddrive3_ABglobal.o
 DEXMG4	= pddrive4_ABglobal.o
-ZEXM	= pzdrive.o zcreate_matrix.o sp_ienv.o 
+ZEXM	= pzdrive.o zcreate_matrix.o
 	#pzgstrf2.o pzgstrf_v3.3.o pzgstrf.o
 ZEXM1	= pzdrive1.o zcreate_matrix.o
 ZEXM2	= pzdrive2.o zcreate_matrix.o

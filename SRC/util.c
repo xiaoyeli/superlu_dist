@@ -259,7 +259,6 @@ countnz_dist(const int_t n, int_t *xprune,
 }
 
 
-
 /*! \brief
  *
  * <pre>
@@ -947,3 +946,95 @@ void print_memorylog(SuperLUStat_t *stat, char *msg) {
     printf("__ %s (MB):\n\tcurrent_buffer : %8.2f\tpeak_buffer : %8.2f\n",
 	   msg, stat->current_buffer, stat->peak_buffer);
 }
+
+
+int compare_pair (const void *a, const void *b)
+{
+    return (((struct pair *) a)->val - ((struct pair *) b)->val);
+}
+
+int get_thread_per_process()
+{   
+    char* ttemp; 
+    ttemp = getenv("THREAD_PER_PROCESS");
+
+    if(ttemp) return atoi(ttemp);
+    else return 1;
+}
+
+int_t
+get_max_buffer_size ()
+{
+    char *ttemp;
+    ttemp = getenv ("MAX_BUFFER_SIZE");
+    if (ttemp)
+        return atoi (ttemp);
+    else
+        return 5000000;
+}
+
+int_t
+get_cublas_nb ()
+{
+    char *ttemp;
+    ttemp = getenv ("CUBLAS_NB");
+    if (ttemp)
+        return atoi (ttemp);
+    else
+        return 64;
+}
+
+int_t
+get_num_cuda_streams ()
+{
+    char *ttemp;
+    ttemp = getenv ("NUM_CUDA_STREAMS");
+    if (ttemp)
+        return atoi (ttemp);
+    else
+        return 8;
+}
+
+int_t
+get_min (int_t * sums, int_t nprocs)
+{
+    int_t min_ind, min_val;
+    min_ind = 0;
+    min_val = 2147483647;
+    for (int i = 0; i < nprocs; i++)
+    {
+        if (sums[i] < min_val)
+        {
+            min_val = sums[i];
+            min_ind = i;
+        }
+    }
+
+    return min_ind;
+}
+
+int_t
+static_partition (struct pair *work_load, int_t nwl, int_t *partition,
+		  int_t ldp, int_t * sums, int_t * counts, int nprocs)
+{
+    //initialization loop
+    for (int i = 0; i < nprocs; ++i)
+    {
+        counts[i] = 0;
+        sums[i] = 0;
+    }
+    qsort (work_load, nwl, sizeof (struct pair), compare_pair);
+    // for(int i=0;i<nwl;i++)
+    for (int i = nwl - 1; i >= 0; i--)
+    {
+        int_t ind = get_min (sums, nprocs);
+        // printf("ind %d\n",ind );
+        partition[ldp * ind + counts[ind]] = work_load[i].ind;
+        counts[ind]++;
+        sums[ind] += work_load[i].val;
+
+    }
+
+    return 0;
+}
+

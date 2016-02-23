@@ -160,68 +160,6 @@ superlu_sort_perm (const void *arg1, const void *arg2)
 #endif
 
 
-int get_thread_per_process()
-{   
-    char* ttemp; 
-    ttemp = getenv("THREAD_PER_PROCESS");
-
-    if(ttemp) return atoi(ttemp);
-    else return 1;
-}
-
-int
-get_mic_offload ()
-{
-    char *ttemp;
-    ttemp = getenv ("SUPERLU_MIC_OFFLOAD");
-
-    if (ttemp)
-        return atoi (ttemp);
-    else
-        return 0;
-}
-
-int_t
-get_max_buffer_size ()
-{
-    char *ttemp;
-    ttemp = getenv ("MAX_BUFFER_SIZE");
-    if (ttemp)
-        return atoi (ttemp);
-    else
-        return 5000000;
-}
-
-int_t
-get_cublas_nb ()
-{
-    char *ttemp;
-    ttemp = getenv ("CUBLAS_NB");
-    if (ttemp)
-        return atoi (ttemp);
-    else
-        return 64;
-}
-
-int_t
-get_num_cuda_streams ()
-{
-    char *ttemp;
-    ttemp = getenv ("NUM_CUDA_STREAMS");
-    if (ttemp)
-        return atoi (ttemp);
-    else
-        return 8;
-}
-
-/*int omp_get_num_threads (void);
-  int omp_get_thread_num (void);*/
-
-int AssignMic(int my_rank)
-{
-    return (my_rank+1)%2;
-}
-
 /************************************************************************/
 
 #include "zscatter.c"
@@ -590,8 +528,6 @@ pzgstrf(superlu_options_t * options, int m, int n, double anorm,
     ncb = nsupers / Pc;
     nrb = nsupers / Pr;
 
-    int nstreams = get_num_cuda_streams ();
-    /* int nstreams = NUM_CUDA_STREAMS;    */
     /* in order to have dynamic scheduling */
     int *full_u_cols;
     int *blk_ldu;
@@ -604,13 +540,6 @@ pzgstrf(superlu_options_t * options, int m, int n, double anorm,
 #endif
     log_memory(2 * ncb * iword, stat);
 
-    /* array holding last column blk for each partition,
-       used in SchCompUdt--CUDA.c         */
-#if 0
-    int *stream_end_col = (int_t *) _mm_malloc (sizeof (int_t) * nstreams,64);
-#else
-    int *stream_end_col = SUPERLU_MALLOC( nstreams * sizeof(int) );
-#endif
 
     /* insert a check condition here */
 
@@ -786,10 +715,21 @@ pzgstrf(superlu_options_t * options, int m, int n, double anorm,
          SUPERLU_MAX (max_row_size * num_threads * ldt,
                       get_max_buffer_size ());           */
             
-    int cublas_nb = get_cublas_nb();
 #ifdef GPU_ACC
+    int cublas_nb = get_cublas_nb();
+    int nstreams = get_num_cuda_streams ();
+
     int buffer_size  = SUPERLU_MAX(max_row_size*nstreams*cublas_nb,get_max_buffer_size());
+    /* array holding last column blk for each partition,
+       used in SchCompUdt--CUDA.c         */
+  #if 0
+    int *stream_end_col = (int_t *) _mm_malloc (sizeof (int_t) * nstreams,64);
+  #else
+    int *stream_end_col = SUPERLU_MALLOC( nstreams * sizeof(int) );
+  #endif
+
 #else 
+
     int Threads_per_process = get_thread_per_process();
     int buffer_size  = SUPERLU_MAX(max_row_size*Threads_per_process*ldt,get_max_buffer_size());
 #endif 
@@ -1716,6 +1656,7 @@ pzgstrf(superlu_options_t * options, int m, int n, double anorm,
     cudaFree( (void*)dC );
     SUPERLU_FREE( handle );
     SUPERLU_FREE( streams );
+    SUPERLU_FREE( stream_end_col );
 #else
     SUPERLU_FREE (bigV);
     SUPERLU_FREE (bigU);
@@ -1741,7 +1682,6 @@ pzgstrf(superlu_options_t * options, int m, int n, double anorm,
     SUPERLU_FREE(blk_ldu);
     log_memory(-2 * ncb * dword, stat);
 
-    SUPERLU_FREE(stream_end_col);
     SUPERLU_FREE(lookAheadFullRow);
     SUPERLU_FREE(lookAheadStRow);
     SUPERLU_FREE(lookAhead_lptr);

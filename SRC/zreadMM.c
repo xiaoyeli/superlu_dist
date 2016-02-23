@@ -213,7 +213,7 @@ zreadMM(FILE *fp, int_t *m, int_t *n, int_t *nonz,
 }
 
 
-void zreadrhs(int m, doublecomplex *b)
+static void zreadrhs(int m, doublecomplex *b)
 {
     FILE *fp, *fopen();
     int i;

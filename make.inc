@@ -6,79 +6,36 @@
 #
 #  Purpose:         Top-level Definitions
 #
-#  Creation date:   February 4, 1999   version alpha
+#  Creation date:   March 1, 2016	version 5.0.0
 #
-#  Modified:	    September 1, 1999  version 1.0
-#                   March 15, 2003     version 2.0
-#		    November 1, 2007   version 2.1
-#		    September 1, 2011  version 3.0
-#		    December 31, 2015  version 4.3
+#  Modified:	    
+#		    
 #
 ############################################################################
-#
-#  The machine (platform) identifier to append to the library names
-#
-## Cori at NERSC
-PLAT		= _xc40
-
 #
 #  The name of the libraries to be created/linked to
 #
-DSuperLUroot 	= ${HOME}/Release_Codes/SuperLU_DIST-branch
-DSUPERLULIB   	= $(DSuperLUroot)/lib/libsuperlu_dist_4.3.a
-#
-BLASDEF	     	= -DUSE_VENDOR_BLAS
-BLASLIB	        =
-#
-############################################################################
-## parmetis 4.x.x, 32-bit integer
- PARMETIS_DIR	:= ${HOME}/Edison/lib/parmetis-4.0.3
-## parmetis 4.x.x, 64-bit integer
-# PARMETIS_DIR	:= ${HOME}/Edison/lib/parmetis-4.0.3_64
-PARMETIS_DIR	=/project/projectdirs/mp127/parmetis-4.0.3-g
-METISLIB := -L${PARMETIS_DIR}/build/Linux-x86_64/libmetis -lmetis
-PARMETISLIB := -L${PARMETIS_DIR}/build/Linux-x86_64/libparmetis -lparmetis
-I_PARMETIS := -I${PARMETIS_DIR}/include -I${PARMETIS_DIR}/metis/include
-############################################################################
+SuperLUroot	= /global/homes/x/xiaoye/Release_Codes/superlu_dist.git/build
+SUPERLULIB   	= $(SuperLUroot)/SRC/libsuperlu_dist.a
 
-# Define the required Fortran libraries, if you use C compiler to link
-# FLIBS	 	= -lpgf90 -lpgf90_rpm1  ## for PGI compiler
-#FLIBS	 	= -lifport -lifcore     ## for Intel compiler
+# BLASDEF 	= -DUSE_VENDOR_BLAS
 
-# Define all the libraries
-LIBS	     	= $(DSUPERLULIB) $(BLASLIB) $(PARMETISLIB) $(METISLIB) $(FLIBS)
+LIBS		= $(SUPERLULIB) /opt/intel/parallel_studio_xe_2016.0.047/compilers_and_libraries_2016.0.109/linux/mkl/lib/intel64/libmkl_intel_lp64.so /opt/intel/parallel_studio_xe_2016.0.047/compilers_and_libraries_2016.0.109/linux/mkl/lib/intel64/libmkl_intel_thread.so /opt/intel/parallel_studio_xe_2016.0.047/compilers_and_libraries_2016.0.109/linux/mkl/lib/intel64/libmkl_core.so /opt/intel/parallel_studio_xe_2016.0.047/compilers_and_libraries_2016.0.109/linux/compiler/lib/intel64/libiomp5.so /global/homes/x/xiaoye/Edison/lib/parmetis-4.0.3/build/Linux-x86_64/libmetis/libmetis.a /global/homes/x/xiaoye/Edison/lib/parmetis-4.0.3/build/Linux-x86_64/libparmetis/libparmetis.a
 
 #
 #  The archiver and the flag(s) to use when building archive (library)
 #  If your system has no ranlib, set RANLIB = echo.
 #
-ARCH         	= ar
-ARCHFLAGS    	= cr
-RANLIB       	= ranlib
+ARCH         = /usr/bin/ar
+ARCHFLAGS    = cr
+RANLIB       = /usr/bin/ranlib
 
-############################################################################
-# C compiler setup
-CC           	= cc
-# CFLAGS should be set to be the C flags that include optimization
-CFLAGS          = -fast -m64 -std=c99 -Wall -openmp \
-		$(I_PARMETIS) -DDEBUGlevel=0 -DPRNTlevel=0 -DPROFlevel=0 \
-# uncomment the following to use 64-bit integer
-# CFLAGS 		+= -D_LONGINT
+CC           = /opt/cray/craype/2.4.2/bin/cc
+CFLAGS 	     = -O3 -DNDEBUG  -DUSE_VENDOR_BLAS -DPRNTlevel=0 -DDEBUGlevel=0 -DAdd_ -std=c99 
+# CFLAGS       += -D
+# CFLAGS       +=  
+NOOPTS       = -O0
+FORTRAN	     = /opt/intel/parallel_studio_xe_2016.0.047/compilers_and_libraries_2016.0.109/linux/bin/intel64/ifort
 
-# NOOPTS should be set to be the C flags that turn off any optimization
-NOOPTS		= -O0 -std=c99
-############################################################################
-# FORTRAN compiler setup
-FORTRAN         = ftn
-F90FLAGS	= -fast #-Mipa=fast,safe
-# uncomment the following to use 64-bit integer
-# F90FLAGS	+= -i8
-############################################################################
-LOADER	        = $(CC)
-LOADOPTS	= -openmp
-############################################################################
-#  C preprocessor defs for compilation (-DNoChange, -DAdd_, or -DUpCase)
-#
-#  Need follow the convention of how C calls a Fortran routine.
-#
-CDEFS        = -DAdd_
+LOADER       = $(CC)
+LOADOPTS     =

@@ -1,0 +1,48 @@
+set(headers 
+    f2c.h
+    Cnames.h
+)
+set(sources "")
+
+if (enable_double)
+    list(APPEND sources
+      idamax.c
+      dasum.c
+      daxpy.c
+      dcopy.c
+      ddot.c
+      dnrm2.c
+      drot.c
+      dscal.c
+      dgemv.c
+      dsymv.c
+      dtrsv.c
+      dger.c
+      dsyr2.c
+      dgemm.c
+      dtrsm.c
+    )
+endif()
+
+if (enable_complex16)
+    list(APPEND sources
+      izamax.c
+      dzasum.c
+      zaxpy.c
+      zcopy.c
+      dznrm2.c
+      zscal.c
+      dcabs1.c
+      z_internal.c
+      zgemv.c
+      zhemv.c
+      ztrsv.c
+      zgerc.c
+      zgeru.c
+      zher2.c
+      zgemm.c
+      ztrsm.c
+    )
+endif()
+
+add_library(blas ${sources} ${HEADERS})
