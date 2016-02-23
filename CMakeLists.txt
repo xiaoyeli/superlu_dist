@@ -121,11 +121,6 @@ if (enable_parmetislib)   ## want to use parmetis
   if (NOT TPL_PARMETIS_LIBRARIES)
     message(FATAL_ERROR "TPL_PARMETIS_LIBRARIES option should be set for PARMETIS support to be enabled.")
   endif()
-  foreach(lib ${TPL_PARMETIS_LIBRARIES})
-    if (NOT EXISTS ${lib})
-      message(FATAL_ERROR "PARMETIS library not found: ${lib}")
-    endif()
-  endforeach()
 
   if (NOT TPL_PARMETIS_INCLUDE_DIRS)
     message(FATAL_ERROR "TPL_PARMETIS_INCLUDE_DIRS option be set for PARMETIS support to be enabled.")
