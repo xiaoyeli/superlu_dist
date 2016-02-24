@@ -230,7 +230,7 @@ pzgsrfs_ABXglobal(int_t n, SuperMatrix *A, double anorm, LUstruct_t *LUstruct,
         }
 	/* Check correctness of matrix-vector multiply. */
 	pzgsmv_AXglobal(N_update, update, val, bindx, dwork, ax);
-	PrintDouble5("Mult A*x", N_update, ax);
+	PrintDoublecomplex("Mult A*x", N_update, ax);
 	SUPERLU_FREE(dwork);
     }
 #endif

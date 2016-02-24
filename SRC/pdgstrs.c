@@ -852,7 +852,7 @@ pdgstrs(int_t n, LUstruct_t *LUstruct,
 
 #if ( DEBUGlevel>=2 )
 	    default:
-	      printf("(%2d) Recv'd wrong message tag %4d\n", status.MPI_TAG);
+	      printf("(%2d) Recv'd wrong message tag %4d\n", iam, status.MPI_TAG);
 	      break;
 #endif
 	  } /* switch */
@@ -1252,7 +1252,7 @@ pdgstrs(int_t n, LUstruct_t *LUstruct,
 
 #if ( DEBUGlevel>=2 )
 	      default:
-		printf("(%2d) Recv'd wrong message tag %4d\n", status.MPI_TAG);
+		printf("(%2d) Recv'd wrong message tag %4d\n", iam, status.MPI_TAG);
 		break;
 #endif		
 

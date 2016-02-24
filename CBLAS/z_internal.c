@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include "f2c.h"
 
 /* Complex Division c = a/b */

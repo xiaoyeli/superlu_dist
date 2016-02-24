@@ -20,7 +20,7 @@ SUPERLULIB   	= $(SuperLUroot)/SRC/libsuperlu_dist.a
 
 # BLASDEF 	= -DUSE_VENDOR_BLAS
 
-LIBS		= $(SUPERLULIB) /opt/intel/parallel_studio_xe_2016.0.047/compilers_and_libraries_2016.0.109/linux/mkl/lib/intel64/libmkl_intel_lp64.so /opt/intel/parallel_studio_xe_2016.0.047/compilers_and_libraries_2016.0.109/linux/mkl/lib/intel64/libmkl_intel_thread.so /opt/intel/parallel_studio_xe_2016.0.047/compilers_and_libraries_2016.0.109/linux/mkl/lib/intel64/libmkl_core.so /opt/intel/parallel_studio_xe_2016.0.047/compilers_and_libraries_2016.0.109/linux/compiler/lib/intel64/libiomp5.so /global/homes/x/xiaoye/Edison/lib/parmetis-4.0.3/build/Linux-x86_64/libmetis/libmetis.a /global/homes/x/xiaoye/Edison/lib/parmetis-4.0.3/build/Linux-x86_64/libparmetis/libparmetis.a
+LIBS		= $(SUPERLULIB) /global/homes/x/xiaoye/Release_Codes/superlu_dist.git/build/CBLAS/libblas.a /global/homes/x/xiaoye/Edison/lib/parmetis-4.0.3/build/Linux-x86_64/libparmetis/libparmetis.a /global/homes/x/xiaoye/Edison/lib/parmetis-4.0.3/build/Linux-x86_64/libmetis/libmetis.a
 
 #
 #  The archiver and the flag(s) to use when building archive (library)
@@ -31,7 +31,7 @@ ARCHFLAGS    = cr
 RANLIB       = /usr/bin/ranlib
 
 CC           = /opt/cray/craype/2.4.2/bin/cc
-CFLAGS 	     = -O3 -DNDEBUG  -DUSE_VENDOR_BLAS -DPRNTlevel=0 -DDEBUGlevel=0 -DAdd_ -std=c99 
+CFLAGS 	     = -O3 -DNDEBUG  -DPRNTlevel=0 -DDEBUGlevel=0 -DAdd_ -std=c99 -DDEBUGlevel=3 -DPRNTlevel=3 
 # CFLAGS       += -D
 # CFLAGS       +=  
 NOOPTS       = -O0
