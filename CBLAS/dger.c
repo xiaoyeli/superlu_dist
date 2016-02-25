@@ -19,7 +19,7 @@
     static integer info;
     static doublereal temp;
     static integer i, j, ix, jy, kx;
-    extern /* Subroutine */ int xerbla_(char *, integer *);
+    extern /* Subroutine */ int input_error_dist(char *, integer *);
 
 
 /*  Purpose   
@@ -119,7 +119,7 @@
 	info = 9;
     }
     if (info != 0) {
-	xerbla_("DGER  ", &info);
+	input_error_dist("DGER  ", &info);
 	return 0;
     }
 

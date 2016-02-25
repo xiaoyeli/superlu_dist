@@ -2,7 +2,7 @@ set(headers
     f2c.h
     Cnames.h
 )
-set(sources "")
+set(sources input_error_dist.c)
 
 if (enable_double)
     list(APPEND sources

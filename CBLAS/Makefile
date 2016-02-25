@@ -1,5 +1,5 @@
 include ../make.inc
-HEADER = ../SRC
+#HEADER = ../SRC
 
 #######################################################################
 #  This is the makefile to create a library for C-BLAS.
@@ -62,6 +62,7 @@ ZBLAS1 = izamax.o dzasum.o zaxpy.o zcopy.o dznrm2.o \
 ZBLAS2 = zgemv.o zhemv.o ztrsv.o zgerc.o zgeru.o zher2.o
 ZBLAS3 = zgemm.o ztrsm.o
 
+ALLBLAS = input_error_dist.o
 
 all: single double complex complex16
 

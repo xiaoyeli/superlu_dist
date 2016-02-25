@@ -3,7 +3,7 @@
    You must link the resulting object file with the libraries:
 	-lf2c -lm   (in that order)
 */
-
+#include <string.h>
 #include "f2c.h"
 
 /* Subroutine */ int zgemm_(char *transa, char *transb, integer *m, integer *
@@ -28,9 +28,8 @@
     static integer i, j, l;
     static logical conja, conjb;
     static integer ncola;
-    extern logical lsame_(char *, char *);
     static integer nrowa, nrowb;
-    extern /* Subroutine */ int xerbla_(char *, integer *);
+    extern /* Subroutine */ int input_error_dist(char *, integer *);
 
 
 /*  Purpose   
@@ -182,18 +181,11 @@
        Jeremy Du Croz, Numerical Algorithms Group Ltd.   
        Sven Hammarling, Numerical Algorithms Group Ltd.   
 
-
-
        Set  NOTA  and  NOTB  as  true if  A  and  B  respectively are not 
-  
        conjugated or transposed, set  CONJA and CONJB  as true if  A  and 
-  
        B  respectively are to be  transposed but  not conjugated  and set 
-  
        NROWA, NCOLA and  NROWB  as the number of rows and  columns  of  A 
-  
        and the number of rows of  B  respectively.   
-
     
    Parameter adjustments   
        Function Body */
@@ -202,10 +194,10 @@
 #define B(I,J) b[(I)-1 + ((J)-1)* ( *ldb)]
 #define C(I,J) c[(I)-1 + ((J)-1)* ( *ldc)]
 
-    nota = lsame_(transa, "N");
-    notb = lsame_(transb, "N");
-    conja = lsame_(transa, "C");
-    conjb = lsame_(transb, "C");
+    nota = (strncmp(transa, "N", 1)==0);
+    notb = (strncmp(transb, "N", 1)==0);
+    conja = (strncmp(transa, "C", 1)==0);
+    conjb = (strncmp(transb, "C", 1)==0);
     if (nota) {
 	nrowa = *m;
 	ncola = *k;
@@ -222,9 +214,9 @@
 /*     Test the input parameters. */
 
     info = 0;
-    if (! nota && ! conja && ! lsame_(transa, "T")) {
+    if (! nota && ! conja && strncmp(transa, "T", 1)!=0) {
 	info = 1;
-    } else if (! notb && ! conjb && ! lsame_(transb, "T")) {
+    } else if (! notb && ! conjb && strncmp(transb, "T", 1)!=0) {
 	info = 2;
     } else if (*m < 0) {
 	info = 3;
@@ -240,7 +232,7 @@
 	info = 13;
     }
     if (info != 0) {
-	xerbla_("ZGEMM ", &info);
+	input_error_dist("ZGEMM ", &info);
 	return 0;
     }
 

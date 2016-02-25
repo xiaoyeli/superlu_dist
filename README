@@ -206,7 +206,8 @@ The procedures are described below.
   -DTPL_PARMETIS_LIBRARIES="${PARMETIS_BUILD_DIR}/libparmetis/libparmetis.a;${PARMETIS_BUILD_DIR}/libmetis/libmetis.a" \
     -DCMAKE_C_FLAGS="-std=c99" \
     -Denable_blaslib=ON \
-    -DBUILD_SHARED_LIBS=OFF \
+    -DBUILD_SHARED_LIBS=ON \
+    -DCMAKE_C_COMPILER=mpicc
   )
 
    To actually build, type:

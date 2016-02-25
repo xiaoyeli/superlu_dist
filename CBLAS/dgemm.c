@@ -3,7 +3,7 @@
    You must link the resulting object file with the libraries:
 	-lf2c -lm   (in that order)
 */
-
+#include <string.h>
 #include "f2c.h"
 
 /* Subroutine */ int dgemm_(char *transa, char *transb, integer *m, integer *
@@ -22,9 +22,8 @@
     static logical nota, notb;
     static doublereal temp;
     static integer i, j, l, ncola;
-    extern logical lsame_(char *, char *);
     static integer nrowa, nrowb;
-    extern /* Subroutine */ int xerbla_(char *, integer *);
+    extern /* Subroutine */ int input_error_dist(char *, integer *);
 
 
 /*  Purpose   
@@ -193,8 +192,8 @@
 #define B(I,J) b[(I)-1 + ((J)-1)* ( *ldb)]
 #define C(I,J) c[(I)-1 + ((J)-1)* ( *ldc)]
 
-    nota = lsame_(transa, "N");
-    notb = lsame_(transb, "N");
+    nota = (strncmp(transa, "N", 1)==0);
+    notb = (strncmp(transb, "N", 1)==0);
     if (nota) {
 	nrowa = *m;
 	ncola = *k;
@@ -211,10 +210,9 @@
 /*     Test the input parameters. */
 
     info = 0;
-    if (! nota && ! lsame_(transa, "C") && ! lsame_(transa, "T")) {
+    if (! nota && strncmp(transa, "C", 1)!=0 && strncmp(transa, "T", 1)!=0) {
 	info = 1;
-    } else if (! notb && ! lsame_(transb, "C") && ! lsame_(transb, 
-	    "T")) {
+    } else if (! notb && strncmp(transb, "C", 1)!=0 && strncmp(transb,"T", 1)!=0) {
 	info = 2;
     } else if (*m < 0) {
 	info = 3;
@@ -230,7 +228,7 @@
 	info = 13;
     }
     if (info != 0) {
-	xerbla_("DGEMM ", &info);
+	input_error_dist("DGEMM ", &info);
 	return 0;
     }
 

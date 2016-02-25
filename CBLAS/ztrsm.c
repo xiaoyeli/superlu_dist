@@ -3,7 +3,7 @@
    You must link the resulting object file with the libraries:
 	-lf2c -lm   (in that order)
 */
-
+#include <string.h>
 #include "f2c.h"
 
 /* Table of constant values */
@@ -30,10 +30,9 @@ static doublecomplex c_b1 = {1.,0.};
     static doublecomplex temp;
     static integer i, j, k;
     static logical lside;
-    extern logical lsame_(char *, char *);
     static integer nrowa;
     static logical upper;
-    extern /* Subroutine */ int xerbla_(char *, integer *);
+    extern /* Subroutine */ int input_error_dist(char *, integer *);
     static logical noconj, nounit;
 
 
@@ -192,25 +191,25 @@ static doublecomplex c_b1 = {1.,0.};
 #define A(I,J) a[(I)-1 + ((J)-1)* ( *lda)]
 #define B(I,J) b[(I)-1 + ((J)-1)* ( *ldb)]
 
-    lside = lsame_(side, "L");
+    lside = (strncmp(side, "L", 1)==0);
     if (lside) {
 	nrowa = *m;
     } else {
 	nrowa = *n;
     }
-    noconj = lsame_(transa, "T");
-    nounit = lsame_(diag, "N");
-    upper = lsame_(uplo, "U");
+    noconj = (strncmp(transa, "T", 1)==0);
+    nounit = (strncmp(diag, "N", 1)==0);
+    upper = (strncmp(uplo, "U", 1)==0);
 
     info = 0;
-    if (! lside && ! lsame_(side, "R")) {
+    if (! lside && strncmp(side, "R", 1)!=0) {
 	info = 1;
-    } else if (! upper && ! lsame_(uplo, "L")) {
+    } else if (! upper && strncmp(uplo, "L", 1)!=0) {
 	info = 2;
-    } else if (! lsame_(transa, "N") && ! lsame_(transa, "T") 
-	    && ! lsame_(transa, "C")) {
+    } else if (strncmp(transa, "N", 1)!=0 && strncmp(transa, "T", 1)!=0
+	       && strncmp(transa, "C", 1)!=0) {
 	info = 3;
-    } else if (! lsame_(diag, "U") && ! lsame_(diag, "N")) {
+    } else if (strncmp(diag, "U", 1)!=0 && strncmp(diag, "N", 1)!=0) {
 	info = 4;
     } else if (*m < 0) {
 	info = 5;
@@ -222,7 +221,7 @@ static doublecomplex c_b1 = {1.,0.};
 	info = 11;
     }
     if (info != 0) {
-	xerbla_("ZTRSM ", &info);
+	input_error_dist("ZTRSM ", &info);
 	return 0;
     }
 
@@ -251,7 +250,7 @@ static doublecomplex c_b1 = {1.,0.};
 /*     Start the operations. */
 
     if (lside) {
-	if (lsame_(transa, "N")) {
+	if (strncmp(transa, "N", 1)==0) {
 
 /*           Form  B := alpha*inv( A )*B. */
 
@@ -446,7 +445,7 @@ static doublecomplex c_b1 = {1.,0.};
 	    }
 	}
     } else {
-	if (lsame_(transa, "N")) {
+	if (strncmp(transa, "N", 1)==0) {
 
 /*           Form  B := alpha*B*inv( A ). */
 

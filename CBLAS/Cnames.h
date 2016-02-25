@@ -160,12 +160,6 @@
 #define zher2_    ZHER2
 #define zgeru_    ZGERU
 
-/* LAPACK */
-#define dlamch_         DLAMCH
-#define slamch_         SLAMCH
-#define xerbla_         XERBLA
-#define lsame_          LSAME
-
 #define mc64id_         MC64ID
 #define mc64ad_         MC64AD
 #define c_bridge_dgssv_               C_BRIDGE_DGSSV
@@ -285,12 +279,6 @@
 #define zhemv_    zhemv
 #define zher2_    zher2
 #define zgeru_    zgeru
-
-/* LAPACK */
-#define dlamch_         dlamch
-#define slamch_         slamch
-#define xerbla_         xerbla
-#define lsame_          lsame
 
 #define mc64id_         mc64id
 #define mc64ad_         mc64ad
