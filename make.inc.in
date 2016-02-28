@@ -38,4 +38,4 @@ NOOPTS       = -O0
 FORTRAN	     = @CMAKE_Fortran_COMPILER@
 
 LOADER       = $(CC)
-LOADOPTS     =
+LOADOPTS     = -Wl,-rpath,@CMAKE_INSTALL_RPATH@ 

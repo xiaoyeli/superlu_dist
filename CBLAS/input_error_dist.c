@@ -1,5 +1,4 @@
 #include <stdio.h>
-#include "Cnames.h"
 
 /*! @file input_error_dist_dist.c
  * \brief Error handler for input parameters.

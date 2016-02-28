@@ -27,8 +27,37 @@ INCLUDE("cmake/XSDKDefaults.cmake")
 # Usual initialization stuff
 #
 ######################################################################
-set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)    ## ????
-set(CMAKE_INSTALL_NAME_DIR "${CMAKE_INSTALL_PREFIX}/lib")
+# setup options
+option(enable_blaslib   "Build the CBLAS library" ${enable_blaslib_DEFAULT})
+option(enable_parmetislib   "Build the ParMETIS library" ON)
+option(enable_doc       "Build doxygen documentation" OFF)
+option(enable_double    "Enable double precision library" ON)
+option(enable_complex16 "Enable complex16 precision library" ON)
+option(enable_examples  "Build examples" ON)
+option(TPL_PARMETIS_LIBRARIES "List of absolute paths to ParMETIS link libraries [].")
+option(TPL_PARMETIS_INCLUDE_DIRS "List of absolute paths to ParMETIS include directories [].")
+
+if (NOT CMAKE_INSTALL_PREFIX)
+  set(CMAKE_INSTALL_PREFIX /usr/local)
+endif()
+
+
+#---- For shared library
+
+# use, i.e. don't skip the full RPATH for the build tree
+SET(CMAKE_SKIP_BUILD_RPATH  FALSE)
+
+# when building, don't use the install RPATH already
+# (but later on when installing)
+SET(CMAKE_BUILD_WITH_INSTALL_RPATH FALSE) 
+
+# the RPATH to be used when installing
+set(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib")
+
+# add the automatically determined parts of the RPATH
+# which point to directories outside the build tree to the install RPATH
+SET(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
+#----
 
 if (BUILD_SHARED_LIBS)
   message("-- SuperLU_DIST will be built as a shared library.")
@@ -51,16 +80,6 @@ else()
   set(enable_blaslib_DEFAULT ON)
 endif()
 
-# setup options
-option(enable_blaslib   "Build the CBLAS library" ${enable_blaslib_DEFAULT})
-option(enable_parmetislib   "Build the ParMETIS library" ON)
-option(enable_examples  "Build tests" ON)
-option(enable_doc       "Build doxygen documentation" OFF)
-option(enable_double    "Enable double precision library" ON)
-option(enable_complex16 "Enable complex16 precision library" ON)
-option(enable_examples  "Build examples" OFF)
-option(TPL_PARMETIS_LIBRARIES "List of absolute paths to ParMETIS link libraries [].")
-option(TPL_PARMETIS_INCLUDE_DIRS "List of absolute paths to ParMETIS include directories [].")
 
 # setup required compiler defines and options.
 ## get_directory_property( DirDefs COMPILE_DEFINITIONS )
@@ -111,11 +130,11 @@ else()
 endif()
 
 #--------------------- MPI ---------------------
-#find_package(MPI)
-#if(MPI_C_FOUND)
-#    set(CMAKE_C_FLAGS "${MPI_C_COMPILE_FLAGS} ${CMAKE_C_FLAGS}")
-#endif()
-#
+find_package(MPI)
+if(MPI_C_FOUND)
+    set(CMAKE_C_FLAGS "${MPI_C_COMPILE_FLAGS} ${CMAKE_C_FLAGS}")
+endif()
+
 #--------------------- ParMETIS ---------------------
 if (enable_parmetislib)   ## want to use parmetis
   if (NOT TPL_PARMETIS_LIBRARIES)
@@ -177,6 +196,7 @@ if(enable_doc)
 endif()
 
 if(enable_examples)
+  enable_testing()
   add_subdirectory(EXAMPLE)
 endif()
 

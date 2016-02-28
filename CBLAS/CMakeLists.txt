@@ -1,6 +1,5 @@
 set(headers 
     f2c.h
-    Cnames.h
 )
 set(sources input_error_dist.c)
 
@@ -46,3 +45,6 @@ if (enable_complex16)
 endif()
 
 add_library(blas ${sources} ${HEADERS})
+
+install(TARGETS blas DESTINATION ${CMAKE_INSTALL_PREFIX}/lib)
+install(FILES ${headers} DESTINATION ${CMAKE_INSTALL_PREFIX}/include)

@@ -3,18 +3,26 @@ include_directories(${SuperLU_DIST_SOURCE_DIR}/SRC)
 # Libs linked to all of the examples
 set(all_link_libs superlu_dist ${BLAS_LIB} m)
 
-function(add_superlu_dist_test output input target)
-  set(TEST_INPUT "${SuperLU_DIST_SOURCE_DIR}/EXAMPLE/${input}")
-  set(TEST_OUTPUT "${SuperLU_DIST_BINARY_DIR}/EXAMPLE/${output}")
+function(add_superlu_dist_test target input nprow npcol)
+    set(TEST_INPUT "${SuperLU_DIST_SOURCE_DIR}/EXAMPLE/${input}")
+    set(TEST_OUTPUT "${SuperLU_DIST_BINARY_DIR}/EXAMPLE/${target}.out")
 
 ##  get_target_property(TEST_LOC ${target} LOCATION)
-  set(TEST_LOC ${CMAKE_CURRENT_BINARY_DIR})
+    set(TEST_LOC ${CMAKE_CURRENT_BINARY_DIR})
 
-  set(SINGLE_OUTPUT ${SuperLU_DIST_BINARY_DIR}/EXAMPLE/${target}.out)
-  add_test( ${target}  "${CMAKE_COMMAND}"
-	    -DTEST=${TEST_LOC} ${MPIEXEC} ${target} -r 2 -c 2 ${TEST_INPUT}
-	    -DOUTPUT=${SINGLE_OUTPUT}
-	  )
+    MATH( EXPR procs "${nprow}*${npcol}" )
+    message("MPIEXEC_FLAG is ${MPIEXEC_NUMPROC_FLAG}")
+
+# corresponding to mpiexec -n 4 pddrive -r <nprow> -c <npcol> g20.rua
+    add_test(${target} ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} ${procs}
+             ${MPIEXEC_PREFLAGS} ${target} ${MPIEXEC_POSTFLAGS} -r "${nprow}" -c "${npcol}" "${TEST_INPUT}")
+#     add_test(NAME ${target} COMMAND "${CMAKE_COMMAND}"
+#              -DTEST=${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} ${procs}
+#             ${MPIEXEC_PREFLAGS} ${target} ${MPIEXEC_POSTFLAGS} -r "${nprow}" -c "${npcol}" "${TEST_INPUT}"
+#	     -DOUTPUT=${target}.out
+#	    -P "${SuperLU_DIST_SOURCE_DIR}/EXAMPLE/runexample.cmake" )
+
+
 # MPI variables:
 # ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} PROCS
 #  	${MPIEXEC_PREFLAGS} EXECUTABLE ${MPIEXEC_POSTFLAGS} ARGS)
@@ -26,12 +34,12 @@ if(enable_double)
   set(DEXM pddrive.c dcreate_matrix.c)
   add_executable(pddrive ${DEXM})
   target_link_libraries(pddrive ${all_link_libs})
-
-  add_superlu_dist_test(pddrive.out big.rua pddrive)
+  add_superlu_dist_test(pddrive big.rua 2 2)
 
   set(DEXM1 pddrive1.c dcreate_matrix.c)
   add_executable(pddrive1 ${DEXM1})
   target_link_libraries(pddrive1 ${all_link_libs})
+  add_superlu_dist_test(pddrive1 big.rua 2 2)
 
   set(DEXM2 pddrive2.c dcreate_matrix.c)
   add_executable(pddrive2 ${DEXM2})
