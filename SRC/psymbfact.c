@@ -503,10 +503,10 @@ float symbfact_dist
       szsn = 1;
       if (INT_MAX - nnzL <= Llu_symbfact.xlsub[fstVtx_lid + 1] - 
 	  Llu_symbfact.xlsub[fstVtx_lid])
-	printf ("PE[%d] ERR nnzL %ld\n", iam, nnzL); 
+	printf ("PE[%d] ERR nnzL %lld\n", iam, nnzL); 
       if (INT_MAX - nnzU <= Llu_symbfact.xusub[fstVtx_lid + 1] - 
 	  Llu_symbfact.xusub[fstVtx_lid])
-	printf ("PE[%d] ERR nnzU %ld\n", iam, nnzU);
+	printf ("PE[%d] ERR nnzU %lld\n", iam, nnzU);
       
       j = Llu_symbfact.xlsub[fstVtx_lid + 1] - Llu_symbfact.xlsub[fstVtx_lid];
       k = Llu_symbfact.xusub[fstVtx_lid + 1] - Llu_symbfact.xusub[fstVtx_lid];

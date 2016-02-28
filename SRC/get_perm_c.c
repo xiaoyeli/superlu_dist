@@ -201,7 +201,7 @@ getata_dist(
 	ABORT("SUPERLU_MALLOC fails for ata_colptr[]");
     if ( *atanz ) {
 	if ( !(*ata_rowind = (int_t*)SUPERLU_MALLOC(*atanz*sizeof(int_t)) ) ) {
-	    fprintf(stderr, ".. atanz = %ld\n", (long long) *atanz);
+	    fprintf(stderr, ".. atanz = %lld\n", (long long) *atanz);
 	    ABORT("SUPERLU_MALLOC fails for ata_rowind[]");
 	}
     }

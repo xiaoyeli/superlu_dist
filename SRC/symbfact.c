@@ -173,10 +173,10 @@ int_t symbfact
 
     if ( !pnum && (options->PrintStat == YES)) {
 	nnzLU = nnzL + nnzU - min_mn;
-	printf("\tNonzeros in L       %ld\n", nnzL);
-	printf("\tNonzeros in U       %ld\n", nnzU);
-	printf("\tnonzeros in L+U     %ld\n", nnzLU);
-	printf("\tnonzeros in LSUB    %ld\n", nnzLSUB);
+	printf("\tNonzeros in L       %lld\n", nnzL);
+	printf("\tNonzeros in U       %lld\n", nnzU);
+	printf("\tnonzeros in L+U     %lld\n", nnzLU);
+	printf("\tnonzeros in LSUB    %lld\n", nnzLSUB);
     }
     SUPERLU_FREE(iwork);
 
