@@ -147,7 +147,7 @@ void dPrint_CompCol_Matrix_dist(SuperMatrix *A)
     }
     printf("\nrowind:\n");
     for (i = 0; i < Astore->nnz; ++i) 
-        printf("%ld  ", (long long) Astore->rowind[i]);
+        printf("%lld  ", (long long) Astore->rowind[i]);
     printf("\ncolptr:\n");
     for (i = 0; i <= A->ncol; ++i) 
         printf("%lld  ", (long long) Astore->colptr[i]);

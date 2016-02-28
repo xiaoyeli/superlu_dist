@@ -112,7 +112,7 @@ dreadMM(FILE *fp, int_t *m, int_t *n, int_t *nonz,
       new_nonz = *nonz;
 
     *m = *n;
-    printf("m %ld, n %ld, nonz %ld\n", (long long) *m, (long long) *n, (long long) *nonz);
+    printf("m %lld, n %lld, nonz %lld\n", (long long) *m, (long long) *n, (long long) *nonz);
     dallocateA_dist(*n, new_nonz, nzval, rowind, colptr); /* Allocate storage */
     a    = *nzval;
     asub = *rowind;
@@ -130,7 +130,7 @@ dreadMM(FILE *fp, int_t *m, int_t *n, int_t *nonz,
     /* 4/ Read triplets of values */
     for (nnz = 0, nz = 0; nnz < *nonz; ++nnz) {
 #ifdef _LONGINT
-	fscanf(fp, "%ld%ld%lf\n", &row[nz], &col[nz], &val[nz]);
+	fscanf(fp, "%lld%lld%lf\n", &row[nz], &col[nz], &val[nz]);
 #else
 	fscanf(fp, "%d%d%lf\n", &row[nz], &col[nz], &val[nz]);
 #endif

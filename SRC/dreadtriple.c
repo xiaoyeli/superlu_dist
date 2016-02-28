@@ -48,7 +48,7 @@ dreadtriple(FILE *fp, int_t *m, int_t *n, int_t *nonz,
     new_nonz = *nonz;
 #endif
     *m = *n;
-    printf("m %ld, n %ld, nonz %ld\n", (long long) *m, (long long) *n, (long long) *nonz);
+    printf("m %lld, n %lld, nonz %lld\n", (long long) *m, (long long) *n, (long long) *nonz);
     dallocateA_dist(*n, new_nonz, nzval, rowind, colptr); /* Allocate storage */
     a    = *nzval;
     asub = *rowind;
