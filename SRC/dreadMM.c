@@ -24,7 +24,7 @@
  */
 
 void
-dreadMM(FILE *fp, int_t *m, int_t *n, int_t *nonz,
+dreadMM_dist(FILE *fp, int_t *m, int_t *n, int_t *nonz,
 	    double **nzval, int_t **rowind, int_t **colptr)
 {
     int_t    j, k, jsize, nnz, nz, new_nonz;

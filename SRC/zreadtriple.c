@@ -21,7 +21,7 @@
  */
 
 void
-zreadtriple(FILE *fp, int_t *m, int_t *n, int_t *nonz,
+zreadtriple_dist(FILE *fp, int_t *m, int_t *n, int_t *nonz,
 	    doublecomplex **nzval, int_t **rowind, int_t **colptr)
 {
     int_t    j, k, jsize, nnz, nz, new_nonz;

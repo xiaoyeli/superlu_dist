@@ -324,11 +324,11 @@ extern void    pzinf_norm_error(int, int_t, int_t, doublecomplex [], int_t,
 				doublecomplex [], int_t , gridinfo_t *);
 extern void  zreadhb_dist (int, FILE *, int_t *, int_t *, int_t *, 
 			   doublecomplex **, int_t **, int_t **);
-extern void  zreadtriple(FILE *, int_t *, int_t *, int_t *,
+extern void  zreadtriple_dist(FILE *, int_t *, int_t *, int_t *,
 			 doublecomplex **, int_t **, int_t **);
 extern void  zreadrb_dist(int, FILE *, int_t *, int_t *, int_t *,
 		     doublecomplex **, int_t **, int_t **);
-extern void  zreadMM(FILE *, int_t *, int_t *, int_t *,
+extern void  zreadMM_dist(FILE *, int_t *, int_t *, int_t *,
 	                  doublecomplex **, int_t **, int_t **);
 
 /* Distribute the data for numerical factorization */
@@ -352,9 +352,9 @@ extern int   file_PrintDoublecomplex(FILE *fp, char *, int_t, doublecomplex *);
 /* BLAS */
 
 #ifdef USE_VENDOR_BLAS
-extern void zgemm_(char*, char*, int*, int*, int*,
-                  doublecomplex*, doublecomplex*, int*, doublecomplex*,
-                  int*, doublecomplex*, doublecomplex*, int*, int, int);
+extern void zgemm_(const char*, const char*, const int*, const int*, const int*,
+                  const doublecomplex*, const doublecomplex*, const int*, const doublecomplex*,
+                  const int*, const doublecomplex*, doublecomplex*, const int*, int, int);
 extern void ztrsv_(char*, char*, char*, int*, doublecomplex*, int*,
                   doublecomplex*, int*, int, int, int);
 extern void ztrsm_(char*, char*, char*, char*, int*, int*, 
@@ -366,9 +366,9 @@ extern void zgeru_(int*, int*, doublecomplex*, doublecomplex*, int*,
                  doublecomplex*, int*, doublecomplex*, int*);
 
 #else
-extern int zgemm_(char*, char*, int*, int*, int*,
-                   doublecomplex*,  doublecomplex*,  int*,  doublecomplex*,
-                   int*,  doublecomplex*, doublecomplex*, const int*);
+extern int zgemm_(const char*, const char*, const int*, const int*, const int*,
+                   const doublecomplex*,  const doublecomplex*,  const int*,  const doublecomplex*,
+                   const int*,  const doublecomplex*, doublecomplex*, const int*);
 extern int ztrsv_(char*, char*, char*, int*, doublecomplex*, int*,
                   doublecomplex*, int*);
 extern int ztrsm_(char*, char*, char*, char*, int*, int*, 
