@@ -210,7 +210,7 @@
  * Arguments
  * =========
  *
- * options (input) superlu_options_t*
+ * options (input) superlu_dist_options_t*
  *         The structure defines the input parameters to control
  *         how the LU decomposition will be performed.
  *         The following fields should be defined for this structure:
@@ -454,7 +454,7 @@
  * </pre>
  */
 void
-pzgssvx_ABglobal(superlu_options_t *options, SuperMatrix *A, 
+pzgssvx_ABglobal(superlu_dist_options_t *options, SuperMatrix *A, 
 		 ScalePermstruct_t *ScalePermstruct,
 		 doublecomplex B[], int ldb, int nrhs, gridinfo_t *grid,
 		 LUstruct_t *LUstruct, double *berr,
@@ -490,7 +490,7 @@ pzgssvx_ABglobal(superlu_options_t *options, SuperMatrix *A,
     double   *C, *R, *C1, *R1, amax, anorm, colcnd, rowcnd;
     doublecomplex   *X, *b_col, *b_work, *x_col;
     double   t;
-    static mem_usage_t num_mem_usage, symb_mem_usage;
+    static superlu_dist_mem_usage_t num_mem_usage, symb_mem_usage;
 #if ( PRNTlevel>= 2 )
     double   dmin, dsum, dprod;
 #endif

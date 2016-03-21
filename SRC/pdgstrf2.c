@@ -19,7 +19,7 @@
  *
  * Arguments
  * =========
- * options (input) superlu_options_t* (global)
+ * options (input) superlu_dist_options_t* (global)
  *         The structure defines the input parameters to control
  *         how the LU decomposition will be performed.
  *
@@ -67,7 +67,7 @@
 /* This pdgstrf2 is based on TRSM function */
 void
 pdgstrf2_trsm
-    (superlu_options_t * options, int_t k0, int_t k, double thresh,
+    (superlu_dist_options_t * options, int_t k0, int_t k, double thresh,
      Glu_persist_t * Glu_persist, gridinfo_t * grid, LocalLU_t * Llu,
      MPI_Request * U_diag_blk_send_req, int tag_ub,
      SuperLUStat_t * stat, int *info)

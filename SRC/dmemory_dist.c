@@ -61,7 +61,7 @@ void duser_free_dist(int_t bytes, int_t which_end)
  * </pre>
  */
 int_t dQuerySpace_dist(int_t n, LUstruct_t *LUstruct, gridinfo_t *grid,
-		       SuperLUStat_t *stat, mem_usage_t *mem_usage)
+		       SuperLUStat_t *stat, superlu_dist_mem_usage_t *mem_usage)
 {
     register int_t dword, gb, iword, k, nb, nsupers;
     int_t *index, *xsup;

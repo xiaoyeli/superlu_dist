@@ -245,23 +245,23 @@ extern int     sp_dgemm_dist (char *, int, double, SuperMatrix *,
 
 extern float ddistribute(fact_t, int_t, SuperMatrix *, Glu_freeable_t *, 
 			 LUstruct_t *, gridinfo_t *);
-extern void  pdgssvx_ABglobal(superlu_options_t *, SuperMatrix *, 
+extern void  pdgssvx_ABglobal(superlu_dist_options_t *, SuperMatrix *, 
 			      ScalePermstruct_t *, double *,
 			      int, int, gridinfo_t *, LUstruct_t *, double *,
 			      SuperLUStat_t *, int *);
 extern float pddistribute(fact_t, int_t, SuperMatrix *, 
 			 ScalePermstruct_t *, Glu_freeable_t *, 
 			 LUstruct_t *, gridinfo_t *);
-extern void  pdgssvx(superlu_options_t *, SuperMatrix *, 
+extern void  pdgssvx(superlu_dist_options_t *, SuperMatrix *, 
 		     ScalePermstruct_t *, double *,
 		     int, int, gridinfo_t *, LUstruct_t *,
 		     SOLVEstruct_t *, double *, SuperLUStat_t *, int *);
-extern int  dSolveInit(superlu_options_t *, SuperMatrix *, int_t [], int_t [],
+extern int  dSolveInit(superlu_dist_options_t *, SuperMatrix *, int_t [], int_t [],
 		       int_t, LUstruct_t *, gridinfo_t *, SOLVEstruct_t *);
-extern void dSolveFinalize(superlu_options_t *, SOLVEstruct_t *);
+extern void dSolveFinalize(superlu_dist_options_t *, SOLVEstruct_t *);
 extern int  dldperm_dist(int_t, int_t, int_t, int_t [], int_t [],
 		    double [], int_t *, double [], double []);
-extern int  static_schedule(superlu_options_t *, int, int, 
+extern int  static_schedule(superlu_dist_options_t *, int, int, 
 		            LUstruct_t *, gridinfo_t *, SuperLUStat_t *,
 			    int_t *, int_t *, int *);
 extern void LUstructInit(const int_t, LUstruct_t *);
@@ -271,7 +271,7 @@ extern void Destroy_LU(int_t, gridinfo_t *, LUstruct_t *);
 /* #define GPU_PROF
 #define IPM_PROF */
 
-extern int_t pdgstrf(superlu_options_t *, int, int, double,
+extern int_t pdgstrf(superlu_dist_options_t *, int, int, double,
 		    LUstruct_t*, gridinfo_t*, SuperLUStat_t*, int*);
 extern void pdgstrs_Bglobal(int_t, LUstruct_t *, gridinfo_t *,
 			     double *, int_t, int, SuperLUStat_t *, int *);
@@ -312,7 +312,7 @@ extern double  *doubleCalloc_dist(int_t);
 extern void  *duser_malloc_dist (int_t, int_t);
 extern void  duser_free_dist (int_t, int_t);
 extern int_t dQuerySpace_dist(int_t, LUstruct_t *, gridinfo_t *,
-			      SuperLUStat_t *, mem_usage_t *);
+			      SuperLUStat_t *, superlu_dist_mem_usage_t *);
 
 /* Auxiliary routines */
 extern void    dfill_dist (double *, int_t, double);

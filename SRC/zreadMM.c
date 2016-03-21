@@ -68,7 +68,7 @@ zreadMM_dist(FILE *fp, int_t *m, int_t *n, int_t *nonz,
 
      if(strcmp(arith,"real")) {
        if(!strcmp(arith,"complex")) {
-         printf("Complex matrix; use zreadtriple instead!\n");
+         printf("Complex matrix; use zreadMM instead!\n");
          exit(-1);
        }
        else if(!strcmp(arith, "pattern")) {

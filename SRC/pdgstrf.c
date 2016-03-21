@@ -132,7 +132,7 @@
 #define PDGSTRF2 pdgstrf2_trsm
 #define PDGSTRS2 pdgstrs2_omp
 
-extern void PDGSTRF2 (superlu_options_t *, int_t, int_t, double,
+extern void PDGSTRF2 (superlu_dist_options_t *, int_t, int_t, double,
                         Glu_persist_t *, gridinfo_t *, LocalLU_t *,
                         MPI_Request *, int, SuperLUStat_t *, int *);
 #ifdef _CRAY
@@ -179,7 +179,7 @@ superlu_sort_perm (const void *arg1, const void *arg2)
  * Arguments
  * =========
  *
- * options (input) superlu_options_t*
+ * options (input) superlu_dist_options_t*
  *         The structure defines the input parameters to control
  *         how the LU decomposition will be performed.
  *         The following field should be defined:
@@ -234,7 +234,7 @@ superlu_sort_perm (const void *arg1, const void *arg2)
  * </pre>
  */
 int_t
-pdgstrf(superlu_options_t * options, int m, int n, double anorm,
+pdgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
        LUstruct_t * LUstruct, gridinfo_t * grid, SuperLUStat_t * stat, int *info)
 {
 #ifdef _CRAY

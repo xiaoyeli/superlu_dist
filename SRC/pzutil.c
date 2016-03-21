@@ -389,7 +389,7 @@ int pzPermute_Dense_Matrix
 
 /*! \brief Initialize the data structure for the solution phase.
  */
-int zSolveInit(superlu_options_t *options, SuperMatrix *A, 
+int zSolveInit(superlu_dist_options_t *options, SuperMatrix *A, 
 	       int_t perm_r[], int_t perm_c[], int_t nrhs,
 	       LUstruct_t *LUstruct, gridinfo_t *grid,
 	       SOLVEstruct_t *SOLVEstruct)
@@ -481,7 +481,7 @@ int zSolveInit(superlu_options_t *options, SuperMatrix *A,
 
 /*! \brief Release the resources used for the solution phase.
  */
-void zSolveFinalize(superlu_options_t *options, SOLVEstruct_t *SOLVEstruct)
+void zSolveFinalize(superlu_dist_options_t *options, SOLVEstruct_t *SOLVEstruct)
 {
     int_t *it;
     extern void pxgstrs_finalize(pxgstrs_comm_t *);

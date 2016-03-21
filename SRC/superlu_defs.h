@@ -586,20 +586,20 @@ struct pair
 extern "C" {
 #endif
 
-extern void   set_default_options_dist(superlu_options_t *);
+extern void   set_default_options_dist(superlu_dist_options_t *);
 extern void   superlu_gridinit(MPI_Comm, int_t, int_t, gridinfo_t *);
 extern void   superlu_gridmap(MPI_Comm, int_t, int_t, int_t [], int_t,
 			      gridinfo_t *);
 extern void   superlu_gridexit(gridinfo_t *);
-extern void   print_options_dist(superlu_options_t *);
-extern void   print_sp_ienv_dist(superlu_options_t *);
+extern void   print_options_dist(superlu_dist_options_t *);
+extern void   print_sp_ienv_dist(superlu_dist_options_t *);
 extern void   Destroy_CompCol_Matrix_dist(SuperMatrix *);
 extern void   Destroy_SuperNode_Matrix_dist(SuperMatrix *);
 extern void   Destroy_SuperMatrix_Store_dist(SuperMatrix *);
 extern void   Destroy_CompCol_Permuted_dist(SuperMatrix *);
 extern void   Destroy_CompRowLoc_Matrix_dist(SuperMatrix *);
 extern void   Destroy_CompRow_Matrix_dist(SuperMatrix *);
-extern void   sp_colorder (superlu_options_t*, SuperMatrix*, int_t*, int_t*,
+extern void   sp_colorder (superlu_dist_options_t*, SuperMatrix*, int_t*, int_t*,
 			   SuperMatrix*);
 extern int    sp_symetree_dist(int_t *, int_t *, int_t *, int_t, int_t *);
 extern int    sp_coletree_dist (int_t *, int_t *, int_t *, int_t, int_t, int_t *);
@@ -611,7 +611,7 @@ extern int    genmmd_dist_(int_t *, int_t *, int_t *a,
 			   int_t *, int_t *, int_t *, int_t *, int_t *);
 extern void  bcast_tree(void *, int, MPI_Datatype, int, int,
 			gridinfo_t *, int, int *);
-extern int_t symbfact(superlu_options_t *, int, SuperMatrix *, int_t *,
+extern int_t symbfact(superlu_dist_options_t *, int, SuperMatrix *, int_t *,
                       int_t *, Glu_persist_t *, Glu_freeable_t *);
 extern int_t symbfact_SubInit(fact_t, void *, int_t, int_t, int_t, int_t,
 			      Glu_persist_t *, Glu_freeable_t *);
@@ -643,19 +643,19 @@ extern void   ScalePermstructInit(const int_t, const int_t,
 extern void   ScalePermstructFree(ScalePermstruct_t *);
 extern void  get_diag_procs(int_t, Glu_persist_t *, gridinfo_t *, int_t *,
 			    int_t **, int_t **);
-extern int_t QuerySpace_dist(int_t, int_t, Glu_freeable_t *, mem_usage_t *);
+extern int_t QuerySpace_dist(int_t, int_t, Glu_freeable_t *, superlu_dist_mem_usage_t *);
 extern int   xerr_dist (char *, int *);
 extern void  pxerr_dist (char *, gridinfo_t *, int_t);
 extern void  PStatInit(SuperLUStat_t *);
 extern void  PStatFree(SuperLUStat_t *);
-extern void  PStatPrint(superlu_options_t *, SuperLUStat_t *, gridinfo_t *);
+extern void  PStatPrint(superlu_dist_options_t *, SuperLUStat_t *, gridinfo_t *);
 extern void  log_memory(long long, SuperLUStat_t *);
 extern void  print_memorylog(SuperLUStat_t *, char *);
 
 /* Prototypes for parallel symbolic factorization */
 extern float symbfact_dist
 (int,  int, SuperMatrix *, int_t *, int_t *,  int_t *, int_t *,
- Pslu_freeable_t *, MPI_Comm *, MPI_Comm *,  mem_usage_t *);
+ Pslu_freeable_t *, MPI_Comm *, MPI_Comm *,  superlu_dist_mem_usage_t *);
 
 /* Get the column permutation using parmetis */
 extern float get_perm_c_parmetis 
