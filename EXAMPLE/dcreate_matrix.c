@@ -85,7 +85,7 @@ int dcreate_matrix(SuperMatrix *A, int nrhs, double **rhs,
 #else
         /* Read the matrix stored on disk in Harwell-Boeing format. */
 	printf(".. reading triplet file\n");
-        dreadtriple(fp, &m, &n, &nnz, &nzval, &rowind, &colptr);
+        dreadtriple_dist(fp, &m, &n, &nnz, &nzval, &rowind, &colptr);
 #endif
 
 	/* Broadcast matrix A to the other PEs. */

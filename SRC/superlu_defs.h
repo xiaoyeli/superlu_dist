@@ -537,14 +537,14 @@ typedef struct {
     yes_no_t      lookahead_etree; /* use etree computed from the
 				      serial symbolic factorization */
     yes_no_t      SymPattern;      /* symmetric factorization          */
-} superlu_options_t;
+} superlu_dist_options_t;
 
 typedef struct {
     float for_lu;
     float total;
     int_t expansions;
     long long int nnzL, nnzU;
-} mem_usage_t;
+} superlu_dist_mem_usage_t;
 
 /* 
  *-- The new structures added in the hybrid CUDA + OpenMP + MPI code.

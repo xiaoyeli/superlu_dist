@@ -11,7 +11,7 @@ function(add_superlu_dist_test target input nprow npcol)
     set(TEST_LOC ${CMAKE_CURRENT_BINARY_DIR})
 
     MATH( EXPR procs "${nprow}*${npcol}" )
-    message("MPIEXEC_FLAG is ${MPIEXEC_NUMPROC_FLAG}")
+#    message("MPIEXEC_FLAG is ${MPIEXEC_NUMPROC_FLAG}")
 
 # corresponding to mpiexec -n 4 pddrive -r <nprow> -c <npcol> g20.rua
     add_test(${target} ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} ${procs}
