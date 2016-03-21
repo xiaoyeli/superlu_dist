@@ -39,7 +39,7 @@
 
 int main(int argc, char *argv[])
 {
-    superlu_options_t options;
+    superlu_dist_options_t options;
     SuperLUStat_t stat;
     SuperMatrix A;
     ScalePermstruct_t ScalePermstruct;
@@ -142,9 +142,6 @@ int main(int argc, char *argv[])
      */
     set_default_options_dist(&options);
 #if 0
-    options.ParSymbFact       = YES;
-    options.ColPerm = PARMETIS;
-
     options.RowPerm = NOROWPERM;
     options.IterRefine = NOREFINE;
     options.ColPerm = NATURAL;
@@ -171,7 +168,6 @@ int main(int argc, char *argv[])
     pdgssvx(&options, &A, &ScalePermstruct, b, ldb, nrhs, &grid,
 	    &LUstruct, &SOLVEstruct, berr, &stat, &info);
 
-    if ( !iam ) printf(" INFO %d\n", info);
 
     /* Check the accuracy of the solution. */
     pdinf_norm_error(iam, ((NRformat_loc *)A.Store)->m_loc,

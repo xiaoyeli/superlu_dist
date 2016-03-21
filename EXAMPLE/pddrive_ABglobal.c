@@ -38,7 +38,7 @@
 
 int main(int argc, char *argv[])
 {
-    superlu_options_t options;
+    superlu_dist_options_t options;
     SuperLUStat_t stat;
     SuperMatrix A;
     ScalePermstruct_t ScalePermstruct;
@@ -119,14 +119,9 @@ int main(int argc, char *argv[])
     if ( !iam ) {
 	/* Print the CPP definitions. */
 	cpp_defs();
-#if 1
+	
 	/* Read the matrix stored on disk in Harwell-Boeing format. */
 	dreadhb_dist(iam, fp, &m, &n, &nnz, &a, &asub, &xa);
-#else	
-        /* Read the matrix stored on disk in Harwell-Boeing format. */
-	printf(".. reading triplet file\n");
-        dreadtriple(fp, &m, &n, &nnz, &a, &asub, &xa);
-#endif
 	
 	printf("Input matrix file: %s\n", *cpp);
 	printf("\tDimension\t" IFMT "x" IFMT "\t # nonzeros " IFMT "\n", m, n, nnz);
@@ -178,6 +173,7 @@ int main(int argc, char *argv[])
         options.Equil = YES;
         options.ColPerm = METIS_AT_PLUS_A;
         options.RowPerm = LargeDiag;
+        options.ReplaceTinyPivot = YES;
         options.Trans = NOTRANS;
         options.IterRefine = DOUBLE;
         options.SolveInitialized = NO;
