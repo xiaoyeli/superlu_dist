@@ -33,7 +33,7 @@ int check_perm_dist(char *, int_t, int_t *);
  * Arguments
  * =========
  *
- * options (input) superlu_options_t*
+ * options (input) superlu_dist_options_t*
  *         Specifies whether or not the elimination tree will be re-used.
  *         If options->Fact == DOFACT, this means first time factor A, 
  *         etree is computed and output.
@@ -67,7 +67,7 @@ int check_perm_dist(char *, int_t, int_t *);
  * </pre>
  */
 void
-sp_colorder(superlu_options_t *options,  SuperMatrix *A, int_t *perm_c, 
+sp_colorder(superlu_dist_options_t *options,  SuperMatrix *A, int_t *perm_c, 
 	    int_t *etree, SuperMatrix *AC)
 {
 

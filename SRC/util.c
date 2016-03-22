@@ -306,7 +306,7 @@ fixupL_dist(const int_t n, const int_t *perm_r,
 
 /*! \brief Set the default values for the options argument.
  */
-void set_default_options_dist(superlu_options_t *options)
+void set_default_options_dist(superlu_dist_options_t *options)
 {
     options->Fact              = DOFACT;
     options->Equil             = YES;
@@ -326,7 +326,7 @@ void set_default_options_dist(superlu_options_t *options)
 
 /*! \brief Print the options setting.
  */
-void print_options_dist(superlu_options_t *options)
+void print_options_dist(superlu_dist_options_t *options)
 {
     if ( options->PrintStat == NO ) return;
 
@@ -348,7 +348,7 @@ void print_options_dist(superlu_options_t *options)
 
 /*! \brief Print the blocking parameters.
  */
-void print_sp_ienv_dist(superlu_options_t *options)
+void print_sp_ienv_dist(superlu_dist_options_t *options)
 {
     if ( options->PrintStat == NO ) return;
 
@@ -563,7 +563,7 @@ PStatInit(SuperLUStat_t *stat)
 }
 
 void
-PStatPrint(superlu_options_t *options, SuperLUStat_t *stat, gridinfo_t *grid)
+PStatPrint(superlu_dist_options_t *options, SuperLUStat_t *stat, gridinfo_t *grid)
 {
     double  *utime = stat->utime;
     flops_t *ops = stat->ops;

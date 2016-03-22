@@ -33,7 +33,7 @@ superlu_sort_perm (const void *arg1, const void *arg2)
 #endif
 
 int
-static_schedule(superlu_options_t * options, int m, int n, 
+static_schedule(superlu_dist_options_t * options, int m, int n, 
 		LUstruct_t * LUstruct, gridinfo_t * grid, SuperLUStat_t * stat,
 		int_t *perm_c_supno, int_t *iperm_c_supno, int *info)
 {

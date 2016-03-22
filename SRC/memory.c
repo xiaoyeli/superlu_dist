@@ -540,7 +540,7 @@ static void *expand
  */
 
 int_t QuerySpace_dist(int_t n, int_t lsub_size, Glu_freeable_t *Glu_freeable,
-		      mem_usage_t *mem_usage)
+		      superlu_dist_mem_usage_t *mem_usage)
 /************************************************************************/
 {
     register int_t iword = sizeof(int_t);

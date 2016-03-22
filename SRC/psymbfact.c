@@ -42,7 +42,7 @@ initParmsAndStats
 
 static void
 estimate_memUsage
-(int_t, int, mem_usage_t *, float *, float *,
+(int_t, int, superlu_dist_mem_usage_t *, float *, float *,
  Pslu_freeable_t *, Llu_symbfact_t *,
  vtcsInfo_symbfact_t *, comm_symbfact_t *, psymbfact_stat_t *);
 
@@ -141,7 +141,7 @@ float symbfact_dist
 				    global to local indexing information */
  MPI_Comm    *num_comm,   /* Input - communicator for numerical factorization */
  MPI_Comm    *symb_comm,  /* Input - communicator for symbolic factorization */
- mem_usage_t *symb_mem_usage
+ superlu_dist_mem_usage_t *symb_mem_usage
  )
 {
 /*! \brief
@@ -206,7 +206,7 @@ float symbfact_dist
  * symb_comm (input) MPI_Comm*
  *         Communicator for symbolic factorization 
  *
- * symb_mem_usage (input) mem_usage_t *
+ * symb_mem_usage (input) superlu_dist_mem_usage_t *
  *         Statistics on memory usage.
  *
  * Return value
@@ -5137,7 +5137,7 @@ estimate_memUsage
 (
  int_t n,  /* Input - order of the matrix */
  int iam,  /* Input - my processor number */
- mem_usage_t *symb_mem_usage,
+ superlu_dist_mem_usage_t *symb_mem_usage,
  float *p_totalMemLU,   /* Output -memory used for symbolic factorization */
  float *p_overestimMem, /* Output -memory allocated during to right looking 
 			   overestimation memory usage */

@@ -70,7 +70,7 @@ static void  pruneL(const int_t, const int_t *, const int_t, const int_t,
 int_t symbfact
 /************************************************************************/
 (
- superlu_options_t *options, /* input options */
+ superlu_dist_options_t *options, /* input options */
  int         pnum,     /* process number */
  SuperMatrix *A,       /* original matrix A permuted by columns (input) */
  int_t       *perm_c,  /* column permutation vector (input) */
