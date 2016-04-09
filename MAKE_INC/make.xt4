@@ -17,12 +17,12 @@
 #  The machine (platform) identifier to append to the library names
 #
 PLAT		= _xt4
-
+VERSION		= 5.0.0
 #
 #  The name of the libraries to be created/linked to
 #
-DSuperLUroot 	= ${HOME}/Release_Codes/SuperLU_DIST_4.2
-DSUPERLULIB   	= $(DSuperLUroot)/lib/libsuper_dist_4.2.a
+DSuperLUroot 	= ${HOME}/Release_Codes/SuperLU_DIST_${VERSION}
+DSUPERLULIB   	= $(DSuperLUroot)/lib/libsuper_dist_${VERSION}.a
 #
 BLASDEF	     	= -DUSE_VENDOR_BLAS
 BLASLIB	        =

@@ -19,12 +19,12 @@
 #
 ## edison at NERSC
 PLAT		= _xc30
-
+VERSION		= 5.0.0
 #
 #  The name of the libraries to be created/linked to
 #
-DSuperLUroot 	= ${HOME}/Release_Codes/SuperLU_DIST_4.3
-DSUPERLULIB   	= $(DSuperLUroot)/lib/libsuperlu_dist_4.3.a
+DSuperLUroot 	= ${HOME}/Release_Codes/SuperLU_DIST_${VERSION}
+DSUPERLULIB   	= $(DSuperLUroot)/lib/libsuperlu_dist_${VERSION}.a
 #
 BLASDEF	     	= -DUSE_VENDOR_BLAS
 BLASLIB	        =
