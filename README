@@ -123,6 +123,7 @@ The procedures are described below.
 
        	o -DAdd_: Fortran expects a C routine to have an underscore
 		  postfixed to the name;
+		  (This is set as the default)
         o -DNoChange: Fortran expects a C routine name to be identical to
 		      that compiled by C;
         o -DUpCase: Fortran expects a C routine name to be all uppercase.
@@ -189,6 +190,17 @@ The procedures are described below.
    To run the installation test, type:
         make test
        (all the outputs are in file: build/Testing/Temporary​/LastTest.log)
+
+
+   A note on the C-Fortran name mangling handled by C preprocessor definition:
+   In the default setting, we assume that Fortran expects a C routine
+   to have an underscore postfixed to the name. Depending on the
+   compiler, you may need to define one of the following flags in
+   during the cmake build to overwrite default setting:
+
+   cmake .. -DCMAKE_C_FLAGS="-DNoChange"
+
+   cmake .. -DCMAKE_C_FLAGS="-DUpCase"
 
 
 --------------
