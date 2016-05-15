@@ -47,7 +47,7 @@ at the top-level directory.
  * Constants
  **************************************************************************/
 /*
- * You can support older version os SuperLU_DIST.
+ * You can support older version of SuperLU_DIST.
  * At compile-time, you can catch the new release as:
  *   #ifdef SUPERLU_DIST_MAIN_VERSION == 5
  *       use the new interface
@@ -57,7 +57,7 @@ at the top-level directory.
  * Versions 4.x and earlier do not include a #define'd version numbers.
  */
 #define SUPERLU_DIST_MAJOR_VERSION     5
-#define SUPERLU_DIST_MINOR_VERSION     0
+#define SUPERLU_DIST_MINOR_VERSION     1
 #define SUPERLU_DIST_PATCH_VERSION     0
 
 /* Define my integer size int_t */

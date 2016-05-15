@@ -1,4 +1,4 @@
-		SuperLU_DIST (version 5.0.0)
+		SuperLU_DIST (version 5.1)
 		============================
 
 SuperLU_DIST contains a set of subroutines to solve a sparse linear system 
@@ -241,3 +241,4 @@ Ichitaro Yamazaki    Univ. of Tennessee, ic.yamazaki@gmail.com
   September 25, 2015 Version 4.2
   December 31, 2015  Version 4.3
   April 8, 2016      Version 5.0.0
+  May 15, 2016      Version 5.1.0

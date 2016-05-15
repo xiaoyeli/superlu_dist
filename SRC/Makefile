@@ -31,7 +31,7 @@ include ../make.inc
 #
 ALLAUX 	= sp_ienv.o etree.o sp_colorder.o get_perm_c.o \
 	  mmd.o comm.o memory.o util.o superlu_grid.o \
-	  pxerr_dist.o superlu_timer.o GetDiagU.o symbfact.o \
+	  pxerr_dist.o superlu_timer.o symbfact.o \
 	  psymbfact.o psymbfact_util.o get_perm_c_parmetis.o mc64ad_dist.o \
 	  static_schedule.o xerr_dist.o smach_dist.o dmach_dist.o
 
@@ -54,7 +54,7 @@ DPLUSRC = pdgssvx.o pdgssvx_ABglobal.o \
 	  dreadhb.o dreadrb.o dreadtriple.o dreadMM.o \
 	  pdgsequ.o pdlaqgs.o dldperm_dist.o pdlangs.o pdutil.o \
 	  pdsymbfact_distdata.o ddistribute.o pddistribute.o \
-	  pdgstrf.o pdgstrf2.o \
+	  pdgstrf.o pdgstrf2.o pxGetDiagU.o \
 	  pdgstrs.o pdgstrs1.o pdgstrs_lsum.o pdgstrs_Bglobal.o \
 	  pdgsrfs.o pdgsmv.o pdgsrfs_ABXglobal.o pdgsmv_AXglobal.o 
 
@@ -64,7 +64,7 @@ ZPLUSRC = pzgssvx.o pzgssvx_ABglobal.o \
 	  zreadhb.o zreadrb.o zreadtriple.o zreadMM.o \
 	  pzgsequ.o pzlaqgs.o zldperm_dist.o pzlangs.o pzutil.o \
 	  pzsymbfact_distdata.o zdistribute.o pzdistribute.o \
-	  pzgstrf.o pzgstrf2.o \
+	  pzgstrf.o pzgstrf2.o pzGetDiagU.o \
 	  pzgstrs.o pzgstrs1.o pzgstrs_lsum.o pzgstrs_Bglobal.o \
 	  pzgsrfs.o pzgsmv.o pzgsrfs_ABXglobal.o pzgsmv_AXglobal.o 
 

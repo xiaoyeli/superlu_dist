@@ -343,6 +343,7 @@ extern void  dreadMM_dist(FILE *, int_t *, int_t *, int_t *,
 extern float ddist_psymbtonum(fact_t, int_t, SuperMatrix *,
                                 ScalePermstruct_t *, Pslu_freeable_t *, 
                                 LUstruct_t *, gridinfo_t *);
+extern void pdGetDiagU(int_t, LUstruct_t *, gridinfo_t *, double *);
 
 
 /* Routines for debugging */

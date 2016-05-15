@@ -345,6 +345,7 @@ extern void  zreadMM_dist(FILE *, int_t *, int_t *, int_t *,
 extern float zdist_psymbtonum(fact_t, int_t, SuperMatrix *,
                                 ScalePermstruct_t *, Pslu_freeable_t *, 
                                 LUstruct_t *, gridinfo_t *);
+extern void pzGetDiagU(int_t, LUstruct_t *, gridinfo_t *, doublecomplex *);
 
 
 /* Routines for debugging */

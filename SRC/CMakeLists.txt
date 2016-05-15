@@ -23,7 +23,6 @@ set(sources
   superlu_grid.c
   pxerr_dist.c
   superlu_timer.c
-  GetDiagU.c
   symbfact.c
   psymbfact.c
   psymbfact_util.c
@@ -71,7 +70,8 @@ if(enable_double)
     pdgsrfs.c
     pdgsmv.c
     pdgsrfs_ABXglobal.c
-    pdgsmv_AXglobal.c 
+    pdgsmv_AXglobal.c
+    pdGetDiagU.c
   )
 endif()
 
@@ -111,7 +111,8 @@ if(enable_complex16)
     pzgsrfs.c
     pzgsmv.c
     pzgsrfs_ABXglobal.c
-    pzgsmv_AXglobal.c  
+    pzgsmv_AXglobal.c
+    pzGetDiagU.c
   )
 endif()
 
