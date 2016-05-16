@@ -5,18 +5,18 @@ if ( ! $?NERSC_HOST ) then
 else
   if ( "$NERSC_HOST" == "edison" ) then
     setenv PARMETIS_ROOT ~/Edison/lib/parmetis-4.0.3 
-    setenv PARMETIS_BUILD_DIR ${PARMETIS_ROOT}/shared-build
-#    setenv PARMETIS_BUILD_DIR ${PARMETIS_ROOT}/static-build/Linux-x86_64
+#    setenv PARMETIS_BUILD_DIR ${PARMETIS_ROOT}/shared-build
+    setenv PARMETIS_BUILD_DIR ${PARMETIS_ROOT}/static-build/Linux-x86_64
     cmake .. \
-    -DUSE_XSDK_DEFAULTS=TRUE\
+    -DUSE_XSDK_DEFAULTS=FALSE\
     -DTPL_PARMETIS_INCLUDE_DIRS="${PARMETIS_ROOT}/include;${PARMETIS_ROOT}/metis/include" \
-    -DTPL_PARMETIS_LIBRARIES="${PARMETIS_BUILD_DIR}/libparmetis/libparmetis.so;${PARMETIS_BUILD_DIR}/libmetis/libmetis.so" \
+    -DTPL_PARMETIS_LIBRARIES="${PARMETIS_BUILD_DIR}/libparmetis/libparmetis.a;${PARMETIS_BUILD_DIR}/libmetis/libmetis.a" \
     -DCMAKE_C_FLAGS="-std=c99 -fPIC" \
-    -DCMAKE_EXE_LINKER_FLAGS="-shared" \
+#    -DCMAKE_EXE_LINKER_FLAGS="-shared" \
     -DCMAKE_Fortran_COMPILER=ftn \
     -Denable_blaslib=OFF \
-    -DTPL_BLAS_LIBRARIES=" "
-#    -DBUILD_SHARED_LIBS=OFF
+    -DTPL_BLAS_LIBRARIES=" " \
+    -DBUILD_SHARED_LIBS=OFF
   endif
 
   if ( "$NERSC_HOST" == "cori" ) then

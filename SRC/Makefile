@@ -54,7 +54,7 @@ DPLUSRC = pdgssvx.o pdgssvx_ABglobal.o \
 	  dreadhb.o dreadrb.o dreadtriple.o dreadMM.o \
 	  pdgsequ.o pdlaqgs.o dldperm_dist.o pdlangs.o pdutil.o \
 	  pdsymbfact_distdata.o ddistribute.o pddistribute.o \
-	  pdgstrf.o pdgstrf2.o pxGetDiagU.o \
+	  pdgstrf.o pdgstrf2.o pdGetDiagU.o \
 	  pdgstrs.o pdgstrs1.o pdgstrs_lsum.o pdgstrs_Bglobal.o \
 	  pdgsrfs.o pdgsmv.o pdgsrfs_ABXglobal.o pdgsmv_AXglobal.o 
 

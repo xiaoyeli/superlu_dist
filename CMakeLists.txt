@@ -157,6 +157,7 @@ if (enable_parmetislib)   ## want to use parmetis
     if (NOT EXISTS ${dir})
       message(FATAL_ERROR "PARMETIS include directory not found: ${dir}")
     endif()
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -I${dir}")
   endforeach()
 
   message("-- Enabled support for PARMETIS")
