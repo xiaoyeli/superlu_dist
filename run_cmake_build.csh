@@ -31,6 +31,7 @@ else
     -DCMAKE_Fortran_COMPILER=ftn \
     -DCMAKE_C_FLAGS="-std=c99 -fPIC" \
     -DCMAKE_EXE_LINKER_FLAGS="-shared" 
+  endif
 endif
 
 set THISHOST=`hostname -s`
