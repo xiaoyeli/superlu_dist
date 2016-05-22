@@ -68,8 +68,10 @@ else()
 endif()
 
 enable_language (C)
-enable_language (Fortran)
-set(NOFORTRAN FALSE)
+if (XSDK_ENABLE_Fortran)
+  enable_language (Fortran)
+  set(NOFORTRAN FALSE)
+endif()
 set(SUPERLU_VERSION "${PROJECT_VERSION}")
 set(SUPERLU_REV "${PROJECT_REV}")
 
