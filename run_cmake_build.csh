@@ -36,7 +36,7 @@ endif
 
 set THISHOST=`hostname -s`
 #echo $THISHOST
-if ( "$THISHOST" == "scg1" ) then
+if ( "$THISHOST" == "ssg1" ) then
   setenv PARMETIS_ROOT ~/lib/static/parmetis-4.0.3 
   setenv PARMETIS_BUILD_DIR ${PARMETIS_ROOT}/build/Linux-x86_64
     echo $PARMETIS_ROOT

@@ -595,7 +595,7 @@ typedef struct
     void *next;
 } etree_node;
 
-struct pair
+struct superlu_pair
 {
     int ind;
     int val;
@@ -713,11 +713,11 @@ extern int_t get_cublas_nb ();
 extern int_t get_num_cuda_streams ();
 #endif
 
-extern int compare_pair (const void *, const void *);
 extern int get_thread_per_process();
 extern int_t get_max_buffer_size ();
 extern int_t get_min (int_t *, int_t);
-extern int_t static_partition (struct pair *, int_t, int_t *, int_t,
+extern int compare_pair (const void *, const void *);
+extern int_t static_partition (struct superlu_pair *, int_t, int_t *, int_t,
 			       int_t *, int_t *, int);
 
 /* Routines for debugging */

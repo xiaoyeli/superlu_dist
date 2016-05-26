@@ -957,10 +957,9 @@ void print_memorylog(SuperLUStat_t *stat, char *msg) {
 	   msg, stat->current_buffer, stat->peak_buffer);
 }
 
-
 int compare_pair (const void *a, const void *b)
 {
-    return (((struct pair *) a)->val - ((struct pair *) b)->val);
+    return (((struct superlu_pair *) a)->val - ((struct superlu_pair *) b)->val);
 }
 
 int get_thread_per_process()
@@ -1024,7 +1023,7 @@ get_min (int_t * sums, int_t nprocs)
 }
 
 int_t
-static_partition (struct pair *work_load, int_t nwl, int_t *partition,
+static_partition (struct superlu_pair *work_load, int_t nwl, int_t *partition,
 		  int_t ldp, int_t * sums, int_t * counts, int nprocs)
 {
     //initialization loop
@@ -1033,7 +1032,7 @@ static_partition (struct pair *work_load, int_t nwl, int_t *partition,
         counts[i] = 0;
         sums[i] = 0;
     }
-    qsort (work_load, nwl, sizeof (struct pair), compare_pair);
+    qsort (work_load, nwl, sizeof (struct superlu_pair), compare_pair);
     // for(int i=0;i<nwl;i++)
     for (int i = nwl - 1; i >= 0; i--)
     {
@@ -1047,4 +1046,3 @@ static_partition (struct pair *work_load, int_t nwl, int_t *partition,
 
     return 0;
 }
-
