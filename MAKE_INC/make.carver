@@ -48,12 +48,6 @@ LIBS   	= $(DSUPERLULIB) $(PARMETISLIB) $(METISLIB) $(BLASLIB) $(FLIBS)
 # Include directories for header files
 INCS	= ${I_PARMETIS}
 
-ifeq "${ACC}" "GPU"
-CUDA_FLAGS = -DGPU_ACC
-INCS += -I/usr/common/usg/cuda/5.5/include
-LIBS += -L/usr/common/usg/cuda/5.5/lib64 -lcublas -lcudart 
-endif
-
 #
 #  The archiver and the flag(s) to use when building archive (library)
 #  If your system has no ranlib, set RANLIB = echo.
@@ -74,6 +68,14 @@ CFLAGS          = ${CUDA_FLAGS} ${INCS} -std=c99 -O3 -Wall -w2 -openmp -mkl \
 #
 # NOOPTS should be set to be the C flags that turn off any optimization
 NOOPTS		= -O0
+
+# Add more flags to use GPU
+ifeq "${ACC}" "GPU"
+CFLAGS	      += -DGPU_ACC
+INCS 	      += -I/usr/common/usg/cuda/5.5/include
+LIBS 	      += -L/usr/common/usg/cuda/5.5/lib64 -lcublas -lcudart 
+endif
+
 ############################################################################
 # FORTRAN compiler setup
 FORTRAN         = mpif90

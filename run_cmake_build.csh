@@ -16,7 +16,8 @@ else
     -DCMAKE_Fortran_COMPILER=ftn \
     -Denable_blaslib=OFF \
     -DTPL_BLAS_LIBRARIES=" " \
-    -DBUILD_SHARED_LIBS=OFF
+    -DBUILD_SHARED_LIBS=OFF \
+    -DCMAKE_INSTALL_PREFIX=..
   endif
 
   if ( "$NERSC_HOST" == "cori" ) then
@@ -30,7 +31,8 @@ else
     -Denable_blaslib=OFF \
     -DCMAKE_Fortran_COMPILER=ftn \
     -DCMAKE_C_FLAGS="-std=c99 -fPIC" \
-    -DCMAKE_EXE_LINKER_FLAGS="-shared" 
+    -DCMAKE_EXE_LINKER_FLAGS="-shared" \
+    -DCMAKE_INSTALL_PREFIX=..
   endif
 endif
 

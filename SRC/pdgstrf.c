@@ -575,8 +575,8 @@ pdgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
 #if ( DEBUGlevel >= 2 )
     PrintInt10("schedule:perm_c_supno", nsupers, perm_c_supno);
     
-    printf("[%d] .. Turn off static schedule for debugging ..\n", iam);
     /* Turn off static schedule */
+    printf("[%d] .. Turn off static schedule for debugging ..\n", iam);
     for (i = 0; i < nsupers; ++i) perm_c_supno[i] = iperm_c_supno[i] = i;
 #endif
      /* ################################################################## */
@@ -720,7 +720,7 @@ pdgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
     /* Max row size is global reduction of within A row */
     MPI_Allreduce (&local_max_row_size, &max_row_size, 1, MPI_INT, MPI_MAX, (grid->rscp.comm));
 
-    /* Buffer size is max of of look ahead window */
+    /* Buffer size is max of look ahead window */
     /* int_t buffer_size =
          SUPERLU_MAX (max_row_size * num_threads * ldt,
                       get_max_buffer_size ());           */
@@ -738,33 +738,34 @@ pdgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
     int *stream_end_col = SUPERLU_MALLOC( nstreams * sizeof(int) );
   #endif
 
-#else 
+#else /* no GPU */
 
     int Threads_per_process = get_thread_per_process();
     int buffer_size  = SUPERLU_MAX(max_row_size*Threads_per_process*ldt,get_max_buffer_size());
-#endif 
+#endif /* end ifdef GPU_ACC */
  
     /* symmetric assumption */
     /* Note that in following expression 8 can be anything
        as long as its not too big */
     int bigu_size = 8 * sp_ienv_dist (3) * (max_row_size);
 
+    /* bigU and bigV are either on CPU or on GPU, not both. */
+    double* bigU; /* for GEMM output matrix, i.e., Update matrix */
+    double* bigV; /* for aggregating the U blocks */
+
 #if ( PRNTlevel>=1 )
-    if(!iam) printf("[%d] .. BIG U size %d \n", iam, bigu_size);
+    if(!iam) printf("[%d] .. BIG U size %d (same either on CPU or GPU)\n", iam, bigu_size);
 #endif
 
 #ifdef GPU_ACC
 
-    // printf("hello 1\n");
-    double* bigU;
     if ( checkCuda(cudaHostAlloc((void**)&bigU,  bigu_size * sizeof(double), cudaHostAllocDefault)) )
         ABORT("Malloc fails for dgemm buffer U ");
 
     int bigv_size = buffer_size;
 #if ( PRNTlevel>=1 )
-    if (!iam) printf("[%d] .. BIG V size %d\n", iam, bigv_size);
+    if (!iam) printf("[%d] .. BIG V size %d, using buffer_size %d (on GPU)\n", iam, bigv_size, buffer_size);
 #endif
-    double* bigV;
     if ( checkCuda(cudaHostAlloc((void**)&bigV, bigv_size * sizeof(double) ,cudaHostAllocDefault)) )
         ABORT("Malloc fails for dgemm buffer V");
  
@@ -817,22 +818,20 @@ pdgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
     stat->gpu_buffer += ( max_row_size * sp_ienv_dist(3) 
 			  + bigu_size + buffer_size ) * dword;
 
-#else  /* not CUDA */
+#else  /* no CUDA */
     
-    double* bigU;
     if ( !(bigU = doubleMalloc_dist(bigu_size)) )
         ABORT ("Malloc fails for dgemm u buff U"); 
           //Maximum size of of bigU= sqrt(buffsize) ?
 
     int bigv_size = 8 * ldt * ldt * num_threads;
 #if ( PRNTlevel>=1 )
-    if (!iam) printf("[%d] .. BIG V size %d\n", iam, bigv_size);
+    if (!iam) printf("[%d] .. BIG V size (on CPU) %d\n", iam, bigv_size);
 #endif
-    double *bigV;
     if ( !(bigV = doubleMalloc_dist(bigv_size)) )
         ABORT ("Malloc failed for dgemm buffer V");
 
-#endif
+#endif /* end ifdef GPU_ACC */
 
     log_memory((bigv_size + bigu_size) * dword, stat);
 
@@ -841,8 +840,8 @@ pdgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
 #if ( PRNTlevel>=1 )
     if(!iam) {
 	printf ("  Max row size is %d \n", max_row_size);
-        printf ("  Using buffer_size of %d \n", buffer_size);
         printf ("  Threads per process %d \n", num_threads);
+	/* printf ("  Using buffer_size of %d \n", buffer_size); */
     }
 #endif
 

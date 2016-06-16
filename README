@@ -130,7 +130,12 @@ The procedures are described below.
    
    1.5. Multicore and GPU (optional).
    
-	To use OpenMP parallelism, need to set the number of threads as follows:
+	To use OpenMP parallelism, need to compile the code with the
+	following CPP definition:
+
+	     -D_OPENMP
+
+        and set the number of threads to be used as follows:
 
  	     setenv OMP_NUM_THREADS <##>
 
@@ -142,7 +147,7 @@ The procedures are described below.
       	  2) Add the CUDA library location in make.inc:
 
     	  ifeq "${ACC}" "GPU"
-      	       CUDA_FLAGS = -DGPU_ACC
+      	       CFLAGS += -DGPU_ACC
                INCS += -I<CUDA directory>/include
       	       LIBS += -L<CUDA directory>/lib64 -lcublas -lcudart 
     	  endif
