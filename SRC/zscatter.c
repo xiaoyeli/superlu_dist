@@ -469,7 +469,7 @@ gemm_division_new (int * num_streams_used,   /*number of streams that will be us
     int Ngem = sp_ienv(7); /*get_mnk_dgemm ();*/
     int min_gpu_col = get_cublas_nb ();
 
-    Ngem = 1000000000;
+    // Ngem = 1000000000;
     /*
        cpu is to gpu dgemm should be ideally 0:1 ratios to hide the total cost
        However since there is gpu latency of around 20,000 ns implying about
