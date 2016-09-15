@@ -10,7 +10,7 @@ at the top-level directory.
 */
 
 /*! @file 
- * \brief THis file contains the main loop of pdgstrf which involves rank k
+ * \brief This file contains the main loop of pdgstrf which involves rank k
  *        update of the Schur complement.
  *        Uses 2D partitioning for the scatter phase.
  *
