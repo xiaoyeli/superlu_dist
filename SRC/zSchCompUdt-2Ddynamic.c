@@ -26,29 +26,39 @@ at the top-level directory.
 double tt_start;
 double tt_end;
 if ( msg0 && msg2 ) {  /* L(:,k) and U(k,:) are not empty. */
-    int cum_nrow=0;
-    int temp_nbrow;
+    int cum_nrow=0; /* cumulative number of nonzero rows in L(:,k) */
+    int temp_nbrow; /* nonzero rows in current block L(i,k) */
     lptr = lptr0;
     luptr = luptr0;
     /**
-     * seperating L blocks
+     * Seperating L blocks into the top part within look-ahead window
+     * and the remaining ones.
      */
      int lookAheadBlk=0, RemainBlk=0;
 
      tt_start = SuperLU_timer_();
 
+     /* Loop through all blocks in L(:,k) to set up pointers to the start 
+      * of each block in the data arrays.
+      *   - lookAheadFullRow[i] := number of nonzero rows from block 0 to i
+      *   - lookAheadStRow[i] := number of nonzero rows before block i
+      *   - lookAhead_lptr[i] := point to the start of block i in L's index[] 
+      *   - (ditto Remain_Info[i])
+      */
      for (int i = 0; i < nlb; ++i) {
-	 ib = lsub[lptr];            /* Row block L(i,k). */
+	 ib = lsub[lptr];            /* block number of L(i,k). */
 	 temp_nbrow = lsub[lptr+1];  /* Number of full rows. */
         
-	 int look_up_flag=1;
+	 int look_up_flag = 1; /* assume ib is outside look-up window */
 	 for (int j = k0+1; j < SUPERLU_MIN (k0 + num_look_aheads+2, nsupers ); ++j)
 	     {
-		 if(ib == perm_c_supno[j]) look_up_flag=0;
+		 if(ib == perm_c_supno[j]) {
+		     look_up_flag=0; /* flag ib is within look-up window */
+                     break; /* Sherry -- can exit the loop?? */
+                 }
 	     }
 	 
-	 if(!look_up_flag) {
-	     /* ib is within look up window */
+	 if( look_up_flag == 0 ) { /* ib is within look up window */
 	     if (lookAheadBlk==0) {
 		 lookAheadFullRow[lookAheadBlk] = temp_nbrow;
 	     } else {
@@ -77,9 +87,9 @@ if ( msg0 && msg2 ) {  /* L(:,k) and U(k,:) are not empty. */
          cum_nrow +=temp_nbrow;
 	 
 	 lptr += LB_DESCRIPTOR;  /* Skip descriptor. */
-	 lptr += temp_nbrow;
+	 lptr += temp_nbrow;     /* Move to next block */
 	 luptr += temp_nbrow;
-     }  /* for i ... */
+     }  /* for i ... all blocks in L(:,k) */
 
      lptr = lptr0;
      luptr = luptr0;
@@ -91,7 +101,10 @@ if ( msg0 && msg2 ) {  /* L(:,k) and U(k,:) are not empty. */
      int LDlookAhead_LBuff = lookAheadBlk==0? 0 :lookAheadFullRow[lookAheadBlk-1];
 #endif
 
-     /* #pragma omp parallel for  */
+     /* Loop through the look-ahead blocks to copy Lval into the buffer */
+#ifdef __OPENMP
+     /* #pragma omp parallel for -- why not?? Sherry */
+#endif
      for (int i = 0; i < lookAheadBlk; ++i) {
 	 int StRowDest  = 0;
 	 int temp_nbrow;
@@ -114,6 +127,8 @@ if ( msg0 && msg2 ) {  /* L(:,k) and U(k,:) are not empty. */
      }
 
      int LDRemain_LBuff = RemainBlk==0 ? 0 : Remain_info[RemainBlk-1].FullRow;
+
+    /* Loop through the remaining blocks to copy Lval into the buffer */
 #ifdef _OPENMP
 #pragma omp parallel for 
 #endif
@@ -145,10 +160,11 @@ if ( msg0 && msg2 ) {  /* L(:,k) and U(k,:) are not empty. */
 #if 0
      LookAheadRowSepMOP  +=  2*knsupc*(lookAheadFullRow[lookAheadBlk-1]+Remain_info[RemainBlk-1].FullRow );
 #else
-     int_t lnbrow, rnbrow;
+     int_t lnbrow, rnbrow; /* number of nonzero rows in look-ahead window
+                              or remaining part.  */
      lnbrow = lookAheadBlk==0 ? 0  : lookAheadFullRow[lookAheadBlk-1];
      rnbrow = RemainBlk==0 ? 0 : Remain_info[RemainBlk-1].FullRow;
-     nbrow = lnbrow + rnbrow;
+     nbrow = lnbrow + rnbrow; /* total number of rows in L */
      LookAheadRowSepMOP += 2*knsupc*(nbrow);
 #endif     
      ldu   =0;
@@ -161,19 +177,25 @@ if ( msg0 && msg2 ) {  /* L(:,k) and U(k,:) are not empty. */
      nbrow = lookAheadFullRow[lookAheadBlk-1]+Remain_info[RemainBlk-1].FullRow;
 #endif
 
-     if ( nbrow>0 ) {
+     if ( nbrow > 0 ) { /* L(:,k) is not empty */
 	 /*
 	  *   counting U blocks
 	  */
-	 ncols=0;
+	 ncols=0; /* total number of nonzero columns in U(k,:) */
 	 ldu=0;
-	 full=1;
+	 full=1; /* flag the U block is indeed 'full', containing segments
+	            of same length. No need padding 0 */
 	 int temp_ncols=0;
-	 for (j = jj0; j < nub; ++j) {
-	     temp_ncols=0;
+
+         /* Loop through all blocks in U(k,:) to set up pointers to the start
+          * of each block in the data arrays, store them in Ublock_info[j]
+          * for block U(k,j).
+  	  */
+	 for (j = jj0; j < nub; ++j) { /* jj0 was set to 0 */
+	     temp_ncols = 0;
 	     arrive_at_ublock(
-			      j,&iukp,&rukp,&jb,&ljb,&nsupc,
-			      iukp0,rukp0,usub,perm_u,xsup,grid
+			      j, &iukp, &rukp, &jb, &ljb, &nsupc,
+			      iukp0, rukp0, usub, perm_u, xsup, grid
 			      );
 	     Ublock_info[j].iukp = iukp;
 	     Ublock_info[j].rukp = rukp;
@@ -186,7 +208,7 @@ if ( msg0 && msg2 ) {  /* L(:,k) and U(k,:) are not empty. */
 		 segsize = klst - usub[jj];
 		 if ( segsize ) {
                     ++temp_ncols;
-                    if ( segsize != ldu ) full = 0;
+                    if ( segsize != ldu ) full = 0; /* need padding 0 */
                     if ( segsize > ldu ) ldu = segsize;
 		 }
 	     }
@@ -195,27 +217,32 @@ if ( msg0 && msg2 ) {  /* L(:,k) and U(k,:) are not empty. */
 	     ncols += temp_ncols;
 	 }
 
-	 /* Now doing prefix sum on  on full_u_cols */
+	 /* Now doing prefix sum on full_u_cols.
+	  * After this, full_u_cols is the number of nonzero columns
+          * from block 0 to block j.
+          */
 	 for ( j = jj0+1; j < nub; ++j) {
 	     Ublock_info[j].full_u_cols += Ublock_info[j-1].full_u_cols;
 	 }
             
-	 tempu = bigU;
+	 tempu = bigU; /* buffer the entire row block U(k,:) */
 
+         /* Gather U(k,:) into buffer to prepare for GEMM */
 #ifdef _OPENMP        
 #pragma omp parallel for private(j,iukp,rukp,tempu, jb, nsupc,ljb,segsize,\
 	lead_zero, jj, i) \
         default (shared) schedule(SCHEDULE_STRATEGY)
 #endif
-        for (j = jj0; j < nub; ++j) {
+        for (j = jj0; j < nub; ++j) { /* jj0 was set to 0 */
 
             if(j==jj0) tempu = bigU;
             else tempu = bigU + ldu*Ublock_info[j-1].full_u_cols;
 
             /* == processing each of the remaining columns == */
-            arrive_at_ublock(j,&iukp,&rukp,&jb,&ljb,&nsupc,
-			     iukp0,rukp0,usub,perm_u,xsup,grid);
-            
+            arrive_at_ublock(j, &iukp, &rukp, &jb, &ljb, &nsupc,
+			     iukp0, rukp0, usub,perm_u, xsup, grid);
+
+            /* Copy from U(k,:) to tempu[], padding zeros.  */            
             for (jj = iukp; jj < iukp+nsupc; ++jj) {
                 segsize = klst - usub[jj];
                 if ( segsize ) {
@@ -232,9 +259,9 @@ if ( msg0 && msg2 ) {  /* L(:,k) and U(k,:) are not empty. */
 
         }   /* parallel for j:jjj_st..jjj */
 
-        tempu = bigU;       //setting it to starting of the matrix
+        tempu = bigU;  /* setting to the start of padded U(k,:) */
 
-    }  /* if(nbrow>0) */
+    }  /* end if (nbrow>0) */
 
     tt_end = SuperLU_timer_();
     GatherTimer += tt_end-tt_start;
@@ -245,20 +272,24 @@ if ( msg0 && msg2 ) {  /* L(:,k) and U(k,:) are not empty. */
     int jj_cpu=nub;       /*limit between CPU and GPU */
     tempv = bigV;
 
-    if (Lnbrow>0 && ldu >0 && ncols>0) {
-        ncols   = Ublock_info[nub-1].full_u_cols;
-        schur_flop_counter  += 2 * (double)Lnbrow * (double)ldu * (double)ncols;
-        stat->ops[FACT]     += 2 * (double)Lnbrow * (double)ldu * (double)ncols;
+    if ( Lnbrow>0 && ldu>0 && ncols>0 ) { /* Both L(:,k) and U(k,:) nonempty */
+        /* Perform a large GEMM call */
+        ncols = Ublock_info[nub-1].full_u_cols;
+        schur_flop_counter += 2 * (double)Lnbrow * (double)ldu * (double)ncols;
+        stat->ops[FACT]    += 2 * (double)Lnbrow * (double)ldu * (double)ncols;
 
         tt_start = SuperLU_timer_();
 
+        /* Process the look-ahead blocks.
+         * Each thread is assigned one block of U(k,:)
+         */
 #ifdef _OPENMP
 #pragma omp parallel for default (shared) \
     private (j,i,lb,rukp,iukp,jb,nsupc,ljb,lptr,ib,temp_nbrow,cum_nrow)	\
     schedule(dynamic)
 #endif
         for (int ij = 0; ij < lookAheadBlk*(nub-jj0); ++ij) {
-            int j   = ij/lookAheadBlk + jj0; 
+            int j   = ij/lookAheadBlk + jj0; /* jj0 was set to 0 */
             int lb  = ij%lookAheadBlk;
 
 #ifdef _OPENMP            
@@ -279,7 +310,7 @@ if ( msg0 && msg2 ) {  /* L(:,k) and U(k,:) are not empty. */
             int ljb = LBj (jb, grid);
             int st_col;
             int ncols;
-            if (j>jj0) {
+            if ( j>jj0 ) { /* jj0 was set to 0 */
                 ncols  = Ublock_info[j].full_u_cols-Ublock_info[j-1].full_u_cols;
                 st_col = Ublock_info[j-1].full_u_cols;
             } else {
@@ -306,31 +337,34 @@ if ( msg0 && msg2 ) {  /* L(:,k) and U(k,:) are not empty. */
             if ( ib < jb ) {
                 zscatter_u (
 				 ib, jb,
-				 nsupc, iukp,xsup,
+				 nsupc, iukp, xsup,
 				 klst, temp_nbrow,
-				 lptr, temp_nbrow,lsub,
+				 lptr, temp_nbrow, lsub,
 				 usub, tempv1,
-				 Ufstnz_br_ptr,
-				 Unzval_br_ptr,
+				 Ufstnz_br_ptr, Unzval_br_ptr,
 				 grid
 				 );
             } else {
                 zscatter_l (
-				 ib, ljb, nsupc,iukp,xsup,klst,temp_nbrow,lptr,
-				 temp_nbrow,usub,lsub,tempv1,
+				 ib, ljb, 
+				 nsupc, iukp, xsup,
+ 				 klst, temp_nbrow,
+				 lptr, temp_nbrow,
+				 usub, lsub, tempv1,
 				 indirect_thread, indirect2_thread,
-				 Lrowind_bc_ptr,Lnzval_bc_ptr,grid
+				 Lrowind_bc_ptr, Lnzval_bc_ptr,
+				 grid
 				 );
             }
         } /* for ij = ... */
 
         tt_end = SuperLU_timer_();
         LookAheadGEMMTimer += tt_end- tt_start;
-        LookAheadGEMMFlOp  += 2 * (double ) Lnbrow * (double )ldu * (double )ncols;
-        stat->ops[FACT]    += 2 * (double ) Lnbrow * (double )ldu * (double )ncols;
+        LookAheadGEMMFlOp  += 2*(double)Lnbrow * (double)ldu * (double)ncols;
+        stat->ops[FACT]    += 2 * (double)Lnbrow * (double)ldu * (double)ncols;
         LookAheadScatterTimer += tt_end-tt_start;
         LookAheadScatterMOP   += 3*Lnbrow*ncols;
-    } /* if Lnbrow < ... */
+    } /* end if Lnbrow < ... */
     
     /***************************************************************
      *   Updating remaining rows and column on CPU
@@ -400,22 +434,25 @@ if ( msg0 && msg2 ) {  /* L(:,k) and U(k,:) are not empty. */
 	if ( ib<jb ) {
 	    zscatter_u (
 			     ib, jb,
-			     nsupc, iukp,xsup,
+			     nsupc, iukp, xsup,
 			     klst, temp_nbrow,
 			     lptr, temp_nbrow,lsub,
 			     usub, tempv1,
-			     Ufstnz_br_ptr,
-			     Unzval_br_ptr,
+			     Ufstnz_br_ptr, Unzval_br_ptr,
 			     grid
 			     );
 	} else {
 	    zscatter_l (
-			     ib, ljb, nsupc,iukp,xsup,klst,temp_nbrow,lptr,
-			     temp_nbrow,usub,lsub,tempv1,
+			     ib, ljb,
+			     nsupc, iukp, xsup,
+			     klst, temp_nbrow,
+			     lptr, temp_nbrow,
+			     usub, lsub, tempv1,
 			     indirect_thread, indirect2_thread,
-			     Lrowind_bc_ptr,Lnzval_bc_ptr,grid
+			     Lrowind_bc_ptr,Lnzval_bc_ptr,
+			     grid
 			     );
 	}
     } /* for (int ij =... */
         
-}  /* if  k L(:,k) and U(k,:) are not empty */
+}  /* end if L(:,k) and U(k,:) are not empty */
