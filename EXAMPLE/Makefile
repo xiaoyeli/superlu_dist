@@ -31,7 +31,7 @@
 include ../make.inc
 INCLUDEDIR = -I../SRC
 
-DEXM	= pddrive.o dcreate_matrix.o  #pdgstrf2.o 
+DEXM	= pddrive.o dcreate_matrix.o #pdgstrf2.o 
 #pdgssvx.o
 # pdgstrs_lsum_X1.o pdgstrf_X1.o
 DEXM1	= pddrive1.o dcreate_matrix.o

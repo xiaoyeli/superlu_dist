@@ -59,12 +59,12 @@ typedef struct {
     int_t   *Usub_buf_2[MAX_LOOKAHEADS];   /* Buffer for the remote subscripts of U */
     double  *Uval_buf_2[MAX_LOOKAHEADS];   /* Buffer for the remote nonzeros of U   */
     double  *ujrow;           /* used in panel factorization.          */
-    int_t   bufmax[NBUFFERS]; /* Buffer size; 5 entries
-			       *     0 : size of Lsub_buf[]
-			       *     1 : size of Lval_buf[]
-			       *     2 : size of Usub_buf[] 
-			       *     3 : size of Uval_buf[]
-			       *     4 : size of tempv[LDA]
+    int_t   bufmax[NBUFFERS]; /* Maximum buffer size across all MPI ranks:
+			       *  0 : maximum size of Lsub_buf[]
+			       *  1 : maximum size of Lval_buf[]
+			       *  2 : maximum size of Usub_buf[] 
+			       *  3 : maximum size of Uval_buf[]
+			       *  4 : maximum size of tempv[LDA]
 			       */
 
     /*-- Record communication schedule for factorization. --*/

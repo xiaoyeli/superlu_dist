@@ -28,21 +28,27 @@ while (j < nub && perm_u[2 * j] <= k0 + num_look_aheads)
 {
     double zero = 0.0;
 
-    arrive_at_ublock
-        (j, &iukp, &rukp, &jb, &ljb, &nsupc,
-         iukp0, rukp0, usub, perm_u, xsup, grid);
+    /* Search along the row for the pointers {iukp, rukp} pointing to
+     * block U(k,j).
+     * j    -- current block in look-ahead window, initialized to 0 on entry
+     * iukp -- point to the start of index[] medadata
+     * rukp -- point to the start of nzval[] array
+     * jb   -- block number of block U(k,j), update destination column
+     */
+    arrive_at_ublock(
+		     j, &iukp, &rukp, &jb, &ljb, &nsupc,
+         	     iukp0, rukp0, usub, perm_u, xsup, grid
+		    );
     j++;
     jj0++;
     jj = iukp;
-    lptr = lptr0;
-    luptr = luptr0;
 
-    while (usub[jj] == klst) ++jj;
+    while (usub[jj] == klst) ++jj; /* Skip zero segments */
 
     ldu = klst - usub[jj++];
     ncols = 1;
     full = 1;
-    for (; jj < iukp + nsupc; ++jj) {
+    for (; jj < iukp + nsupc; ++jj) { /* for each column jj in block U(k,j) */
         segsize = klst - usub[jj];
         if (segsize) {
             ++ncols;
@@ -58,7 +64,7 @@ while (j < nub && perm_u[2 * j] <= k0 + num_look_aheads)
     if (0) {
         tempu = &uval[rukp];
     }
-    else  {                    /* Copy block U(k,j) into tempU2d. */
+    else { /* Copy block U(k,j) into tempU2d, padding zeros. */
 #if ( DEBUGlevel>=3 )
         printf ("(%d) full=%d,k=%d,jb=%d,ldu=%d,ncols=%d,nsupc=%d\n",
                 iam, full, k, jb, ldu, ncols, nsupc);
@@ -80,28 +86,40 @@ while (j < nub && perm_u[2 * j] <= k0 + num_look_aheads)
         }
         tempu = bigU;
         rukp -= usub[iukp - 1]; /* Return to start of U(k,j). */
-    }                           /* if full ... */
+    } /* if full ... */
 
-    nbrow = lsub[1];
+    nbrow = lsub[1]; /* number of row subscripts in L(:,k) */
     if (myrow == krow) nbrow = lsub[1] - lsub[3]; /* skip diagonal block for those rows */
-// double ttx =SuperLU_timer_();
+    // double ttx =SuperLU_timer_();
+
+    int current_b = 0; /* Each thread starts searching from first block.
+                          This records the moving search target.           */
+    lptr = lptr0; /* point to the start of index[] in supernode L(:,k) */
+    luptr = luptr0;
+
 #ifdef _OPENMP
+    /* Sherry -- examine all the shared variables ??
+       'firstprivate' ensures that the private variables are initialized
+       to the values before entering the loop  */
 #pragma omp parallel for \
-                    private(lb,lptr,luptr,ib,tempv ) \
-                    default(shared) schedule(dynamic)
+    firstprivate(lb,lptr,luptr,ib,tempv,current_b)  \
+    default(shared) schedule(dynamic)
 #endif
-    for (lb = 0; lb < nlb; lb++) {
-        int temp_nbrow;
-        int_t lptr = lptr0;
-        int_t luptr = luptr0;
-        for (int i = 0; i < lb; ++i) {
-            ib = lsub[lptr];    /* Row block L(i,k). */
+    for (lb = 0; lb < nlb; lb++) { /* Loop through each block in L(:,k) */
+        int temp_nbrow; /* automatic variable is private */
+
+        /* Search for the L block that my thread will work on.
+           No need to search from 0, can continue at the point where
+           it is left from last iteration.
+           Note: Blocks may not be sorted in L. Different thread picks up
+	   different lb.   */
+        for (; current_b < lb; ++current_b) {
             temp_nbrow = lsub[lptr + 1];    /* Number of full rows. */
             lptr += LB_DESCRIPTOR;  /* Skip descriptor. */
-            lptr += temp_nbrow;
-            luptr += temp_nbrow;
-            
+            lptr += temp_nbrow;   /* move to next block */
+            luptr += temp_nbrow;  /* move to next block */
         }
+
 #ifdef _OPENMP        
         int_t thread_id = omp_get_thread_num ();
 #else
@@ -109,11 +127,11 @@ while (j < nub && perm_u[2 * j] <= k0 + num_look_aheads)
 #endif
         double * tempv = bigV + ldt*ldt*thread_id;
 
-        int *indirect_thread = indirect + ldt * thread_id;
-        int *indirect2_thread   = indirect2 + ldt*thread_id;        
-        ib = lsub[lptr];        /* Row block L(i,k). */
+        int *indirect_thread  = indirect + ldt * thread_id;
+        int *indirect2_thread = indirect2 + ldt * thread_id;        
+        ib = lsub[lptr];        /* block number of L(i,k) */
         temp_nbrow = lsub[lptr + 1];    /* Number of full rows. */
-        assert (temp_nbrow <= nbrow);
+	/* assert (temp_nbrow <= nbrow); */
 
         lptr += LB_DESCRIPTOR;  /* Skip descriptor. */
 
@@ -142,15 +160,19 @@ while (j < nub && perm_u[2 * j] <= k0 + num_look_aheads)
                        Lrowind_bc_ptr, Lnzval_bc_ptr, grid);
         }
 
-    } /* parallel for lb = 0, ... */
+        ++current_b;         /* move to next block */
+        lptr += temp_nbrow;
+        luptr += temp_nbrow;
 
-    rukp += usub[iukp - 1];     /* Move to block U(k,j+1) */
+    } /* end parallel for lb = 0, nlb ... all blocks in L(:,k) */
+
+    rukp += usub[iukp - 1]; /* Move to next U block, U(k,j+1) */
     iukp += nsupc;
 
-    /* ==================================== *
-     * == factorize and send if possible == *
-     * ==================================== */
-    kk = jb;
+    /* =========================================== *
+     * == factorize L(:,j) and send if possible == *
+     * =========================================== */
+    kk = jb; /* destination column that is just updated */
     kcol = PCOL (kk, grid);
 #ifdef ISORT
     kk0 = iperm_u[j - 1];
@@ -160,7 +182,7 @@ while (j < nub && perm_u[2 * j] <= k0 + num_look_aheads)
     look_id = kk0 % (1 + num_look_aheads);
 
     if (look_ahead[kk] == k0 && kcol == mycol) {
-    /* current column is the last dependency */
+        /* current column is the last dependency */
         look_id = kk0 % (1 + num_look_aheads);
 
         /* Factor diagonal and subdiagonal blocks and test for exact
