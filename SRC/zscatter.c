@@ -105,15 +105,16 @@ zscatter_l_1 (int ib,
 } /* zscatter_l_1 */
 
 static void
-zscatter_l (int ib,
-           int ljb,
-           int nsupc,
-           int_t iukp,
+zscatter_l (
+           int ib,    /* row block number of source block L(i,k) */
+           int ljb,   /* local column block number of dest. block L(i,j) */
+           int nsupc, /* number of columns in destination supernode */
+           int_t iukp, /* point to destination supernode's index[] */
            int_t* xsup,
            int klst,
            int nbrow,
-           int_t lptr,
-           int temp_nbrow,
+           int_t lptr, /* Input, point to index[] location of block L(i,k) */
+	   int temp_nbrow, /* number of rows in block L(i,k) */
            int_t* usub,
            int_t* lsub,
            doublecomplex *tempv,
@@ -130,7 +131,7 @@ zscatter_l (int ib,
     int_t luptrj = 0;
     int_t ijb = index[lptrj];
     
-    while (ijb != ib)
+    while (ijb != ib)  /* Search for destination block L(i,j) */
     {
         luptrj += index[lptrj + 1];
         lptrj += LB_DESCRIPTOR + index[lptrj + 1];
@@ -160,8 +161,7 @@ zscatter_l (int ib,
         indirect2[i] =indirect_thread[rel]; 
     }
 
-
-    nzval = Lnzval_bc_ptr[ljb] + luptrj;
+    nzval = Lnzval_bc_ptr[ljb] + luptrj; /* Dest. block L(i,j) */
     for (jj = 0; jj < nsupc; ++jj)
     {
         segsize = klst - usub[iukp + jj];
@@ -208,7 +208,10 @@ zscatter_u (int ib,
     int_t lib = LBi (ib, grid);
     int_t *index = Ufstnz_br_ptr[lib];
 
-    /* reinitialize the pointer to each row of U */
+    /* Reinitilize the pointers to the begining of the 
+     * k-th column/row of L/U factors.
+     * usub[] - index array for panel U(k,:)
+     */
     int_t iuip_lib, ruip_lib;
     iuip_lib = BR_HEADER;
     ruip_lib = 0;
@@ -268,49 +271,6 @@ zscatter_u (int ib,
     // TAU_STATIC_TIMER_STOP("SCATTER_UB");
 } /* zscatter_u */
 
-
-static void
-arrive_at_ublock (int_t j,      //block number 
-                  int_t * iukp, // output 
-                  int_t * rukp, int_t * jb, /* Global block number of block U(k,j). */
-                  int_t * ljb,  /* Local block number of U(k,j). */
-                  int_t * nsupc,    /*supernode size of destination block */
-                  int_t iukp0,  //input
-                  int_t rukp0, int_t * usub,    /*usub scripts */
-                  int_t * perm_u,   /*permutation matrix */
-                  int_t * xsup, /*for SuperSize and LBj */
-                  gridinfo_t * grid)
-{
-    int_t jj;
-    *iukp = iukp0;
-    *rukp = rukp0;
-
-#ifdef ISORT
-    for (jj = 0; jj < perm_u[j]; jj++)
-#else
-    for (jj = 0; jj < perm_u[2 * j + 1]; jj++)
-#endif
-    {
-        /* reinitilize the pointers to the begining of the */
-        /* kth column/row of L/U factors                   */
-        // printf("iukp %d \n",*iukp );
-        *jb = usub[*iukp];      /* Global block number of block U(k,j). */
-        // printf("jb %d \n",*jb );
-        *nsupc = SuperSize (*jb);
-        // printf("nsupc %d \n",*nsupc );
-        *iukp += UB_DESCRIPTOR; /* Start fstnz of block U(k,j). */
-
-        *rukp += usub[*iukp - 1];   /* Move to block U(k,j+1) */
-        *iukp += *nsupc;
-    }
-
-    /* reinitilize the pointers to the begining of the */
-    /* kth column/row of L/U factors                   */
-    *jb = usub[*iukp];          /* Global block number of block U(k,j). */
-    *ljb = LBj (*jb, grid);     /* Local block number of U(k,j). */
-    *nsupc = SuperSize (*jb);
-    *iukp += UB_DESCRIPTOR;     /* Start fstnz of block U(k,j). */
-}
 
 /*Divide CPU-GPU dgemm work here*/
 #ifdef PI_DEBUG

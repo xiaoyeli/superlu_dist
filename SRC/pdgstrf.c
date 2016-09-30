@@ -153,8 +153,6 @@ extern void PDGSTRS2 (int_t, int_t, Glu_persist_t *, gridinfo_t *,
                       LocalLU_t *, SuperLUStat_t *);
 #endif
 
-#define ISORT                   /* Note: qsort() has bug on Mac */
-
 #ifdef ISORT
 extern void isort (int_t N, int_t * ARRAY1, int_t * ARRAY2);
 extern void isort1 (int_t N, int_t * ARRAY);
@@ -745,18 +743,24 @@ pdgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
     int Threads_per_process = get_thread_per_process();
     int buffer_size  = SUPERLU_MAX(max_row_size*Threads_per_process*ldt,get_max_buffer_size());
 #endif /* end ifdef GPU_ACC */
- 
-    /* symmetric assumption */
+
+#if 0
+    /* symmetric assumption -- using L's supernode to estimate. */
     /* Note that in following expression 8 can be anything
        as long as its not too big */
     int bigu_size = 8 * sp_ienv_dist (3) * (max_row_size);
+#else
+    int_t bigu_size = estimate_bigu_size( nsupers, ldt, 
+					  Ufstnz_br_ptr,
+					  Glu_persist, grid, perm_u );
+#endif
 
     /* bigU and bigV are either on CPU or on GPU, not both. */
     double* bigU; /* for GEMM output matrix, i.e., Update matrix */
     double* bigV; /* for aggregating the U blocks */
 
 #if ( PRNTlevel>=1 )
-    if(!iam) printf("[%d] .. BIG U size %d (same either on CPU or GPU)\n", iam, bigu_size);
+    if(!iam) printf("[%d] .. BIG U bigu_size %d (same either on CPU or GPU)\n", iam, bigu_size);
 #endif
 
 #ifdef GPU_ACC
@@ -766,7 +770,7 @@ pdgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
 
     int bigv_size = buffer_size;
 #if ( PRNTlevel>=1 )
-    if (!iam) printf("[%d] .. BIG V size %d, using buffer_size %d (on GPU)\n", iam, bigv_size, buffer_size);
+    if (!iam) printf("[%d] .. BIG V bigv_size %d, using buffer_size %d (on GPU)\n", iam, bigv_size, buffer_size);
 #endif
     if ( checkCuda(cudaHostAlloc((void**)&bigV, bigv_size * sizeof(double) ,cudaHostAllocDefault)) )
         ABORT("Malloc fails for dgemm buffer V");

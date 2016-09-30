@@ -25,8 +25,6 @@ at the top-level directory.
 
 #include "superlu_ddefs.h"
 
-#define ISORT                   /* Note: qsort() has bug on Mac */
-
 #ifdef ISORT
 extern void isort (int_t N, int_t * ARRAY1, int_t * ARRAY2);
 extern void isort1 (int_t N, int_t * ARRAY);

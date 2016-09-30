@@ -180,7 +180,7 @@ if ( msg0 && msg2 ) {  /* L(:,k) and U(k,:) are not empty. */
 
      if ( nbrow > 0 ) { /* L(:,k) is not empty */
 	 /*
-	  *   counting U blocks
+	  * Counting U blocks
 	  */
 	 ncols=0; /* total number of nonzero columns in U(k,:) */
 	 ldu=0;
@@ -228,7 +228,7 @@ if ( msg0 && msg2 ) {  /* L(:,k) and U(k,:) are not empty. */
             
 	 tempu = bigU; /* buffer the entire row block U(k,:) */
 
-         /* Gather U(k,:) into buffer to prepare for GEMM */
+         /* Gather U(k,:) into buffer bigU[] to prepare for GEMM */
 #ifdef _OPENMP        
 #pragma omp parallel for private(j,iukp,rukp,tempu, jb, nsupc,ljb,segsize,\
 	lead_zero, jj, i) \
@@ -271,6 +271,7 @@ if ( msg0 && msg2 ) {  /* L(:,k) and U(k,:) are not empty. */
     int Lnbrow   = lookAheadBlk==0 ? 0 :lookAheadFullRow[lookAheadBlk-1];
     int Rnbrow   = RemainBlk==0 ? 0 : Remain_info[RemainBlk-1].FullRow;
     int jj_cpu=nub;       /*limit between CPU and GPU */
+    int thread_id;
     tempv = bigV;
 
     if ( Lnbrow>0 && ldu>0 && ncols>0 ) { /* Both L(:,k) and U(k,:) nonempty */
@@ -281,34 +282,45 @@ if ( msg0 && msg2 ) {  /* L(:,k) and U(k,:) are not empty. */
 
         tt_start = SuperLU_timer_();
 
-        /* Process the look-ahead blocks.
-         * Each thread is assigned one block of U(k,:)
-         */
+        /***************************************************************
+         * Updating look-ahead blocks in both L and U look-ahead windows.
+         ***************************************************************/
+#pragma omp parallel default (shared) private(thread_id)
+     {
+ 	thread_id = omp_get_thread_num();
+ 
+ 	/* Ideally, should organize the loop as:
+                for (j = 0; j < nub; ++j) {
+                    for (lb = 0; lb < lookAheadBlk; ++lb) {
+ 	               L(lb,k) X U(k,j) -> tempv[]
+                    }
+                }
+ 	   But now, we use collapsed loop to achieve more parallelism.
+ 	   Total number of block updates is:
+ 	      (# of lookAheadBlk in L(:,k)) X (# of blocks in U(k,:))
+ 	*/
 #ifdef _OPENMP
-#pragma omp parallel for default (shared) \
+#pragma omp for \
     private (j,i,lb,rukp,iukp,jb,nsupc,ljb,lptr,ib,temp_nbrow,cum_nrow)	\
     schedule(dynamic)
 #endif
+ 	/* Each thread is assigned one loop index ij, responsible for 
+ 	   block update L(lb,k) * U(k,j) -> tempv[]. */
         for (int ij = 0; ij < lookAheadBlk*(nub-jj0); ++ij) {
             int j   = ij/lookAheadBlk + jj0; /* jj0 was set to 0 */
             int lb  = ij%lookAheadBlk;
 
-#ifdef _OPENMP            
-            int thread_id = omp_get_thread_num();
-#else
-            int thread_id = 0;
-#endif
             int* indirect_thread    = indirect + ldt*thread_id;
             int* indirect2_thread   = indirect2 + ldt*thread_id;
             double* tempv1 = bigV + thread_id*ldt*ldt; 
 
-            /* Getting U block information */
+            /* Getting U block U(k,j) information */
             /* unsigned long long ut_start, ut_end; */
             int_t rukp =  Ublock_info[j].rukp;
             int_t iukp =  Ublock_info[j].iukp;
             int jb   =  Ublock_info[j].jb;
             int nsupc = SuperSize(jb);
-            int ljb = LBj (jb, grid);
+            int ljb = LBj (jb, grid);  /* destination column block */
             int st_col;
             int ncols;
             if ( j>jj0 ) { /* jj0 was set to 0 */
@@ -319,7 +331,7 @@ if ( msg0 && msg2 ) {  /* L(:,k) and U(k,:) are not empty. */
                 st_col = 0;   
             }
 
-            /* Getting L block information */
+            /* Getting L block L(i,k) information */
             int_t lptr = lookAhead_lptr[lb];
             int ib   = lookAhead_ib[lb];
             int temp_nbrow = lsub[lptr+1];
@@ -344,7 +356,7 @@ if ( msg0 && msg2 ) {  /* L(:,k) and U(k,:) are not empty. */
 				 usub, tempv1,
 				 Ufstnz_br_ptr, Unzval_br_ptr,
 				 grid
-				 );
+			        );
             } else {
                 dscatter_l (
 				 ib, ljb, 
@@ -355,9 +367,10 @@ if ( msg0 && msg2 ) {  /* L(:,k) and U(k,:) are not empty. */
 				 indirect_thread, indirect2_thread,
 				 Lrowind_bc_ptr, Lnzval_bc_ptr,
 				 grid
-				 );
+				);
             }
-        } /* for ij = ... */
+        } /* end omp for ij = ... */
+    } /* end omp parallel */
 
         tt_end = SuperLU_timer_();
         LookAheadGEMMTimer += tt_end- tt_start;
@@ -368,7 +381,7 @@ if ( msg0 && msg2 ) {  /* L(:,k) and U(k,:) are not empty. */
     } /* end if Lnbrow < ... */
     
     /***************************************************************
-     *   Updating remaining rows and column on CPU
+     * Updating remaining rows and columns on CPU.
      ***************************************************************/
     Rnbrow  = RemainBlk==0 ? 0 : Remain_info[RemainBlk-1].FullRow;
     ncols   = jj_cpu==0 ? 0 : Ublock_info[jj_cpu-1].full_u_cols;
@@ -378,25 +391,36 @@ if ( msg0 && msg2 ) {  /* L(:,k) and U(k,:) are not empty. */
 
     tt_start = SuperLU_timer_();
 
+#pragma omp parallel default(shared) private(thread_id)
+    {
+	thread_id = omp_get_thread_num();
+ 
+	/* Ideally, should organize the loop as:
+               for (j = 0; j < jj_cpu; ++j) {
+                   for (lb = 0; lb < RemainBlk; ++lb) {
+	               L(lb,k) X U(k,j) -> tempv[]
+                   }
+               }
+	   But now, we use collapsed loop to achieve more parallelism.
+	   Total number of block updates is:
+	      (# of RemainBlk in L(:,k)) X (# of blocks in U(k,:))
+	*/
 #ifdef _OPENMP
-#pragma omp parallel for default (shared) \
+#pragma omp for \
     private (j,i,lb,rukp,iukp,jb,nsupc,ljb,lptr,ib,temp_nbrow,cum_nrow)	\
     schedule(dynamic)
 #endif
-    for (int ij = 0; ij < RemainBlk*(jj_cpu-jj0); ++ij) {
+	/* Each thread is assigned one loop index ij, responsible for 
+	   block update L(lb,k) * U(k,j) -> tempv[]. */
+    for (int ij = 0; ij < RemainBlk*(jj_cpu-jj0); ++ij) { /* jj_cpu := nub */
 	int j   = ij / RemainBlk + jj0; 
 	int lb  = ij % RemainBlk;
 
-#ifdef _OPENMP            
-	int thread_id = omp_get_thread_num();
-#else
-	int thread_id = 0;
-#endif
 	int* indirect_thread = indirect + ldt*thread_id;
 	int* indirect2_thread = indirect2 + ldt*thread_id;
 	double* tempv1 = bigV + thread_id*ldt*ldt; 
 
-	/* Getting U block information */
+	/* Getting U block U(k,j) information */
 	/* unsigned long long ut_start, ut_end; */
 	int_t rukp =  Ublock_info[j].rukp;
 	int_t iukp =  Ublock_info[j].iukp;
@@ -405,7 +429,7 @@ if ( msg0 && msg2 ) {  /* L(:,k) and U(k,:) are not empty. */
 	int ljb = LBj (jb, grid);
 	int st_col;
 	int ncols;
-	if (j>jj0) {
+	if ( j>jj0 ) {
 	    ncols  = Ublock_info[j].full_u_cols-Ublock_info[j-1].full_u_cols;
 	    st_col = Ublock_info[j-1].full_u_cols;
 	} else {
@@ -413,7 +437,7 @@ if ( msg0 && msg2 ) {  /* L(:,k) and U(k,:) are not empty. */
 	    st_col = 0;   
 	}
 
-	/* Getting L block information */
+	/* Getting L block L(i,k) information */
 	int_t lptr = Remain_info[lb].lptr;
 	int ib   = Remain_info[lb].ib;
 	int temp_nbrow = lsub[lptr+1];
@@ -433,27 +457,27 @@ if ( msg0 && msg2 ) {  /* L(:,k) and U(k,:) are not empty. */
 
 	/* Now scattering the block */
 	if ( ib<jb ) {
-	    dscatter_u (
-			     ib, jb,
-			     nsupc, iukp, xsup,
-			     klst, temp_nbrow,
-			     lptr, temp_nbrow,lsub,
-			     usub, tempv1,
-			     Ufstnz_br_ptr, Unzval_br_ptr,
-			     grid
-			     );
+	    dscatter_u(
+			    ib, jb,
+			    nsupc, iukp, xsup,
+			    klst, temp_nbrow,
+			    lptr, temp_nbrow,lsub,
+			    usub, tempv1,
+			    Ufstnz_br_ptr, Unzval_br_ptr,
+			    grid
+		           );
 	} else {
-	    dscatter_l (
-			     ib, ljb,
-			     nsupc, iukp, xsup,
-			     klst, temp_nbrow,
-			     lptr, temp_nbrow,
-			     usub, lsub, tempv1,
-			     indirect_thread, indirect2_thread,
-			     Lrowind_bc_ptr,Lnzval_bc_ptr,
-			     grid
-			     );
+	    dscatter_l(
+			    ib, ljb,
+			    nsupc, iukp, xsup,
+			    klst, temp_nbrow,
+			    lptr, temp_nbrow,
+			    usub, lsub, tempv1,
+			    indirect_thread, indirect2_thread,
+			    Lrowind_bc_ptr,Lnzval_bc_ptr,
+			    grid
+			   );
 	}
-    } /* for (int ij =... */
-        
+    } /* end omp for (int ij =... */
+    } /* end omp parallel region */
 }  /* end if L(:,k) and U(k,:) are not empty */

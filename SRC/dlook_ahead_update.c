@@ -47,15 +47,14 @@ while (j < nub && perm_u[2 * j] <= k0 + num_look_aheads)
 
     ldu = klst - usub[jj++];
     ncols = 1;
-    full = 1;
+    full = 1; /* flag the U block is indeed 'full', containing segments
+                 of same length. No need padding 0.  */
     for (; jj < iukp + nsupc; ++jj) { /* for each column jj in block U(k,j) */
         segsize = klst - usub[jj];
         if (segsize) {
             ++ncols;
-            if (segsize != ldu)
-                full = 0;
-            if (segsize > ldu)
-                ldu = segsize;
+            if (segsize != ldu) full = 0; /* need padding 0 */
+            if (segsize > ldu)  ldu = segsize;
         }
     }
 #if ( DEBUGlevel>=3 )
@@ -70,7 +69,7 @@ while (j < nub && perm_u[2 * j] <= k0 + num_look_aheads)
                 iam, full, k, jb, ldu, ncols, nsupc);
         ++num_copy;
 #endif
-        tempu = bigU;
+        tempu = bigU; /* Copy one block U(k,j) to bigU for GEMM */
         for (jj = iukp; jj < iukp + nsupc; ++jj) {
             segsize = klst - usub[jj];
             if (segsize) {
