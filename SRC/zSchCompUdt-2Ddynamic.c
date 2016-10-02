@@ -284,6 +284,7 @@ if ( msg0 && msg2 ) {  /* L(:,k) and U(k,:) are not empty. */
         /***************************************************************
          * Updating look-ahead blocks in both L and U look-ahead windows.
          ***************************************************************/
+#ifdef _OPENMP
 #pragma omp parallel default (shared) private(thread_id)
      {
  	thread_id = omp_get_thread_num();
@@ -298,10 +299,11 @@ if ( msg0 && msg2 ) {  /* L(:,k) and U(k,:) are not empty. */
  	   Total number of block updates is:
  	      (# of lookAheadBlk in L(:,k)) X (# of blocks in U(k,:))
  	*/
-#ifdef _OPENMP
 #pragma omp for \
     private (j,i,lb,rukp,iukp,jb,nsupc,ljb,lptr,ib,temp_nbrow,cum_nrow)	\
     schedule(dynamic)
+#else /* not use _OPENMP */
+ 	thread_id = 0;
 #endif
  	/* Each thread is assigned one loop index ij, responsible for 
  	   block update L(lb,k) * U(k,j) -> tempv[]. */
@@ -369,8 +371,9 @@ if ( msg0 && msg2 ) {  /* L(:,k) and U(k,:) are not empty. */
 				);
             }
         } /* end omp for ij = ... */
+#ifdef _OPENMP
     } /* end omp parallel */
-
+#endif
         tt_end = SuperLU_timer_();
         LookAheadGEMMTimer += tt_end- tt_start;
         LookAheadGEMMFlOp  += 2*(double)Lnbrow * (double)ldu * (double)ncols;
@@ -390,6 +393,7 @@ if ( msg0 && msg2 ) {  /* L(:,k) and U(k,:) are not empty. */
 
     tt_start = SuperLU_timer_();
 
+#ifdef _OPENMP
 #pragma omp parallel default(shared) private(thread_id)
     {
 	thread_id = omp_get_thread_num();
@@ -404,10 +408,11 @@ if ( msg0 && msg2 ) {  /* L(:,k) and U(k,:) are not empty. */
 	   Total number of block updates is:
 	      (# of RemainBlk in L(:,k)) X (# of blocks in U(k,:))
 	*/
-#ifdef _OPENMP
 #pragma omp for \
     private (j,i,lb,rukp,iukp,jb,nsupc,ljb,lptr,ib,temp_nbrow,cum_nrow)	\
     schedule(dynamic)
+#else /* not use _OPENMP */
+    thread_id = 0;
 #endif
 	/* Each thread is assigned one loop index ij, responsible for 
 	   block update L(lb,k) * U(k,j) -> tempv[]. */
@@ -477,6 +482,8 @@ if ( msg0 && msg2 ) {  /* L(:,k) and U(k,:) are not empty. */
 			    grid
 			   );
 	}
-    } /* end omp for (int ij =... */
+    } /* end omp for (int ij =...) */
+#ifdef _OPENMP
     } /* end omp parallel region */
+#endif
 }  /* end if L(:,k) and U(k,:) are not empty */

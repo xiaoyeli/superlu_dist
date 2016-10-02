@@ -1165,15 +1165,16 @@ int_t estimate_bigu_size(int_t nsupers,
         ncols = SUPERLU_MAX(ncols, num_full_cols_U(lk, Ufstnz_br_ptr,
 						   xsup, grid, perm_u, &ldu) );
     }
-#if 0
+
     int_t max_ncols = 0;
     int_t max_ldu = 0;
 
     MPI_Allreduce(&ncols, &max_ncols, 1, mpi_int_t, MPI_MAX, grid->cscp.comm);
     MPI_Allreduce(&ldu, &max_ldu, 1, mpi_int_t, MPI_MAX, grid->cscp.comm);
-#endif
+
 #if ( PRNTlevel>=1 )
-    printf("ncols %d, ldu %d, ldt %d, bigu_size=%d\n", ncols, ldu, ldt, ldu*ncols);
+    printf("max_ncols %d, max_ldu %d, ldt %d, bigu_size=%d\n",
+	   max_ncols, max_ldu, ldt, max_ldu*max_ncols);
 #endif
-    return(ldu * ncols);
+    return(max_ldu * max_ncols);
 }
