@@ -583,7 +583,7 @@ pzgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 	*info = -1;
     else if ( options->IterRefine == SLU_EXTRA ) {
 	*info = -1;
-	fprintf(stderr, "Extra precise iterative refinement yet to support.");
+	printf("ERROR: Extra precise iterative refinement yet to support.\n");
     } else if ( A->nrow != A->ncol || A->nrow < 0 || A->Stype != SLU_NR_loc
 		|| A->Dtype != SLU_Z || A->Mtype != SLU_GE )
 	*info = -2;
@@ -591,6 +591,11 @@ pzgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 	*info = -5;
     else if ( nrhs < 0 )
 	*info = -6;
+    if ( sp_ienv_dist(2) > sp_ienv_dist(3) ) {
+        *info = 1;
+	printf("ERROR: Relaxation (NREL) cannot be larger than max. supernode size (NSUP).\n"
+	"\t-> Check parameter setting in sp_ienv_dist.c to correct error.\n");
+    }
     if ( *info ) {
 	i = -(*info);
 	pxerr_dist("pzgssvx", grid, -*info);

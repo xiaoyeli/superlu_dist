@@ -152,8 +152,6 @@ extern void PZGSTRS2 (int_t, int_t, Glu_persist_t *, gridinfo_t *,
                       LocalLU_t *, SuperLUStat_t *);
 #endif
 
-#define ISORT                   /* Note: qsort() has bug on Mac */
-
 #ifdef ISORT
 extern void isort (int_t N, int_t * ARRAY1, int_t * ARRAY2);
 extern void isort1 (int_t N, int_t * ARRAY);
@@ -300,9 +298,11 @@ pzgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
 		    *     2 : transferred in Usub_buf[]
 		    *     3 : transferred in Uval_buf[]
 		    */
-    int **msgcnts, **msgcntsU;
-    int *factored, *factoredU, nnodes, *sendcnts, *sdispls, *recvcnts,
-        *rdispls, *srows, *rrows;
+    int **msgcnts, **msgcntsU; /* counts for each panel in the
+                                  look-ahead window */
+    int *factored;  /* factored[j]==0 : L col panel j is factorized */
+    int *factoredU; /* factoredU[i]==1 : U row panel i is factorized */
+    int nnodes, *sendcnts, *sdispls, *recvcnts, *rdispls, *srows, *rrows;
     etree_node *head, *tail, *ptr;
     int *num_child;
     int num_look_aheads, look_id, *look_ahead;
@@ -535,8 +535,8 @@ pzgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
     double tt1 = SuperLU_timer_ ();
 #endif
     nblocks = 0;
-    ncb = nsupers / Pc;
-    nrb = nsupers / Pr;
+    ncb = nsupers / Pc; /* number of column blocks, horizontal */
+    nrb = nsupers / Pr; /* number of row blocks, vertical  */
 
     /* in order to have dynamic scheduling */
     int *full_u_cols;
@@ -582,7 +582,7 @@ pzgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
      /* ################################################################## */
 
     /* constructing look-ahead table to indicate the last dependency */
-    int *look_ahead_l;
+    int *look_ahead_l; /* Sherry: add comment on look_ahead_l[] */
     stat->num_look_aheads = num_look_aheads;
 
     look_ahead_l = SUPERLU_MALLOC (nsupers * sizeof (int));
@@ -597,7 +597,7 @@ pzgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
         if (index) { /* Not an empty row */
             k = BR_HEADER;
             for (j = 0; j < index[0]; ++j) {
-                jb = index[k];
+                jb = index[k]; /* global block number */
                 if (jb != ib)
                     look_ahead_l[jb] =
                         SUPERLU_MAX (iperm_c_supno[ib], look_ahead_l[jb]);
@@ -738,23 +738,36 @@ pzgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
     int *stream_end_col = SUPERLU_MALLOC( nstreams * sizeof(int) );
   #endif
 
-#else /* no GPU */
+#else /* not to use GPU */
 
     int Threads_per_process = get_thread_per_process();
     int buffer_size  = SUPERLU_MAX(max_row_size*Threads_per_process*ldt,get_max_buffer_size());
 #endif /* end ifdef GPU_ACC */
- 
-    /* symmetric assumption */
+
+#if 0
+    /* symmetric assumption -- using L's supernode to estimate. */
     /* Note that in following expression 8 can be anything
        as long as its not too big */
     int bigu_size = 8 * sp_ienv_dist (3) * (max_row_size);
+#else
+    int_t bigu_size = estimate_bigu_size( nsupers, ldt, 
+					  Ufstnz_br_ptr,
+					  Glu_persist, grid, perm_u );
+#endif
+
+    /* bigU and bigV are either on CPU or on GPU, not both. */
+    doublecomplex* bigU; /* for storing entire U(k,:) panel, prepare for GEMM.
+                     bigU has the same size either on CPU or on CPU. */
+    doublecomplex* bigV; /* for GEMM output matrix, i.e. update matrix. 
+                     On CPU, bigV is small for block-by-block update.
+	             On GPU, bigV is large to hold the aggregate GEMM output.*/
 
     /* bigU and bigV are either on CPU or on GPU, not both. */
     doublecomplex* bigU; /* for GEMM output matrix, i.e., Update matrix */
     doublecomplex* bigV; /* for aggregating the U blocks */
 
 #if ( PRNTlevel>=1 )
-    if(!iam) printf("[%d] .. BIG U size %d (same either on CPU or GPU)\n", iam, bigu_size);
+    if(!iam) printf("[%d] .. BIG U bigu_size %d (same either on CPU or GPU)\n", iam, bigu_size);
 #endif
 
 #ifdef GPU_ACC
@@ -764,7 +777,7 @@ pzgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
 
     int bigv_size = buffer_size;
 #if ( PRNTlevel>=1 )
-    if (!iam) printf("[%d] .. BIG V size %d, using buffer_size %d (on GPU)\n", iam, bigv_size, buffer_size);
+    if (!iam) printf("[%d] .. BIG V bigv_size %d, using buffer_size %d (on GPU)\n", iam, bigv_size, buffer_size);
 #endif
     if ( checkCuda(cudaHostAlloc((void**)&bigV, bigv_size * sizeof(doublecomplex) ,cudaHostAllocDefault)) )
         ABORT("Malloc fails for zgemm buffer V");
@@ -818,11 +831,11 @@ pzgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
     stat->gpu_buffer += ( max_row_size * sp_ienv_dist(3) 
 			  + bigu_size + buffer_size ) * dword;
 
-#else  /* no CUDA */
+#else  /* not to use GPU */
     
     if ( !(bigU = doublecomplexMalloc_dist(bigu_size)) )
         ABORT ("Malloc fails for zgemm u buff U"); 
-          //Maximum size of of bigU= sqrt(buffsize) ?
+          //Maximum size of bigU= sqrt(buffsize) ?
 
     int bigv_size = 8 * ldt * ldt * num_threads;
 #if ( PRNTlevel>=1 )
@@ -915,7 +928,7 @@ pzgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
        ** Handle first block column separately to start the pipeline. **
        ################################################################## */
     look_id = 0;
-    msgcnt = msgcnts[0];
+    msgcnt = msgcnts[0]; /* First count in the window */
     send_req = send_reqs[0];
     recv_req = recv_reqs[0];
 
@@ -1004,7 +1017,7 @@ pzgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
         k = perm_c_supno[k0];
 
         /* ============================================ *
-         * ======== look-ahead the new columns ======== *
+         * ======= look-ahead the new L columns ======= *
          * ============================================ */
         /* tt1 = SuperLU_timer_(); */
         if (k0 == 0) { /* look-ahead all the columns in the window */
@@ -1016,14 +1029,14 @@ pzgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
         }
 
         for (kk0 = kk1; kk0 <= kk2; kk0++) {
-	    /* loop through look-ahead window */
+	    /* loop through look-ahead window in L */
 
             kk = perm_c_supno[kk0]; /* use the ordering from static schedule */
             look_id = kk0 % (1 + num_look_aheads); /* which column in window */
 
             if (look_ahead[kk] < k0) { /* does not depend on current column */
                 kcol = PCOL (kk, grid);
-                if (mycol == kcol) {
+                if (mycol == kcol) { /* I own this panel */
 
                     /* Panel factorization -- Factor diagonal and subdiagonal
                        L blocks and test for exact singularity.  */
@@ -1040,11 +1053,11 @@ pzgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
                     msgcnt = msgcnts[look_id];  /* point to the proper count array */
                     send_req = send_reqs[look_id];
 
-                    lk = LBj (kk, grid);    /* Local block number. */
+                    lk = LBj (kk, grid);    /* Local block number in L */
                     lsub1 = Lrowind_bc_ptr[lk];
                     if (lsub1) {
-                        msgcnt[0] = lsub1[1] + BC_HEADER + lsub1[0] * LB_DESCRIPTOR;
-                        msgcnt[1] = lsub1[1] * SuperSize (kk);
+                        msgcnt[0] = lsub1[1] + BC_HEADER + lsub1[0] * LB_DESCRIPTOR; /* size of metadata */
+                        msgcnt[1] = lsub1[1] * SuperSize (kk); /* Lval_buf[] size */
                     } else {
                         msgcnt[0] = 0;
                         msgcnt[1] = 0;
@@ -1082,12 +1095,12 @@ pzgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
                     }
                     /* stat->time10 += SuperLU_timer_() - ttt1; */
                 }  /* end if mycol == Pc(kk) */
-            }  /* end if look-ahead */
+            }  /* end if look-ahead in L supernodes */
 
             /* post irecv for U-row look-ahead */
             krow = PROW (kk, grid);
             if (myrow != krow) {
-                if (ToRecv[kk] == 2) { /* post iRecv block row U(k,:). */
+                if (ToRecv[kk] == 2) { /* post iRecv block row U(kk,:). */
                     scp = &grid->cscp;  /* The scope of process column. */
                     Usub_buf = Llu->Usub_buf_2[look_id];
                     Uval_buf = Llu->Uval_buf_2[look_id];
@@ -1101,48 +1114,49 @@ pzgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
                 }
             }
 
-        }  /* end for each column in look-ahead window */
+        }  /* end for each column in look-ahead window for L supernodes */
 
         /* stat->time4 += SuperLU_timer_()-tt1; */
 
         /* ================================= *
-         * == looking-ahead the U columns == *
+         * ==== look-ahead the U rows    === *
          * ================================= */
         kk1 = k0;
         kk2 = SUPERLU_MIN (k0 + num_look_aheads, nsupers - 1);
         for (kk0 = kk1; kk0 < kk2; kk0++) {
-            kk = perm_c_supno[kk0];
+            kk = perm_c_supno[kk0]; /* order determined from static schedule */  
             if (factoredU[kk0] != 1 && look_ahead[kk] < k0) {
                 kcol = PCOL (kk, grid);
                 krow = PROW (kk, grid);
-                lk = LBj (kk, grid);    /* Local block number. */
+                lk = LBj (kk, grid);  /* Local block number across row. NOT USED?? -- Sherry */
 
                 look_id = kk0 % (1 + num_look_aheads);
                 msgcnt = msgcntsU[look_id];
                 recv_req = recv_reqs[look_id];
 
                 /* ================================================= *
-                 * checking if diagonal block has been received      *
+                 * Check if diagonal block has been received         *
                  * for panel factorization of U in look-ahead window *
                  * ================================================= */
 
-                if (mycol == kcol) {
+                if (mycol == kcol) {  /* I own this column panel, no need
+                                         to receive L  */
                     flag0 = flag1 = 1;
-                    msgcnt[0] = msgcnt[1] = -1;
-                } else {
+                    msgcnt[0] = msgcnt[1] = -1; /* No need to transfer Lsub, nor Lval */
+                } else { /* Check to receive L(:,kk) from the left */
                     flag0 = flag1 = 0;
-                    if (ToRecv[kk] >= 1) {
-                        if (recv_req[0] != MPI_REQUEST_NULL) {
+                    if ( ToRecv[kk] >= 1 ) {
+                        if ( recv_req[0] != MPI_REQUEST_NULL ) {
                             MPI_Test (&recv_req[0], &flag0, &status);
-                            if (flag0) {
+                            if ( flag0 ) {
                                 MPI_Get_count (&status, mpi_int_t, &msgcnt[0]);
                                 recv_req[0] = MPI_REQUEST_NULL;
                             }
                         } else flag0 = 1;
 
-                        if (recv_req[1] != MPI_REQUEST_NULL) {
+                        if ( recv_req[1] != MPI_REQUEST_NULL ) {
                             MPI_Test (&recv_req[1], &flag1, &status);
-                            if (flag1) {
+                            if ( flag1 ) {
                                 MPI_Get_count (&status, mpi_int_t, &msgcnt[1]);
                                 recv_req[1] = MPI_REQUEST_NULL;
                             }
@@ -1150,7 +1164,7 @@ pzgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
                     } else msgcnt[0] = 0;
                 }
 
-                if (flag0 && flag1) {
+                if (flag0 && flag1) { /* L(:,kk) is ready */
                     /* tt1 = SuperLU_timer_(); */
                     scp = &grid->cscp;  /* The scope of process column. */
                     if (myrow == krow) {
@@ -1170,13 +1184,13 @@ pzgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
                         pdgstrs2_timer += SuperLU_timer_()-ttt2;
                         /* stat->time8 += SuperLU_timer_()-ttt2; */
 
-                        /* Multicasts U(k,:) to process columns. */
+                        /* Multicasts U(kk,:) to process columns. */
                         lk = LBi (kk, grid);
                         usub = Ufstnz_br_ptr[lk];
                         uval = Unzval_br_ptr[lk];
                         if (usub) {
-                            msgcnt[2] = usub[2];
-                            msgcnt[3] = usub[1];
+                            msgcnt[2] = usub[2]; /* metadata size */
+                            msgcnt[3] = usub[1]; /* Uval[] size */
                         } else {
                             msgcnt[2] = msgcnt[3] = 0;
                         }
@@ -1217,7 +1231,7 @@ pzgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
         } /* end for kk0 ... */
 
         /* ============================================== *
-         * == start processing the current row of U == *
+         * == start processing the current row of U(k,:) *
          * ============================================== */
         knsupc = SuperSize (k);
         krow = PROW (k, grid);
@@ -1232,10 +1246,10 @@ pzgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
         Uval_buf = Llu->Uval_buf_2[look_id];
 
         if (mycol == kcol) {
-            lk = LBj (k, grid); /* Local block number. */
+            lk = LBj (k, grid); /* Local block number in L */
 
             for (pj = 0; pj < Pc; ++pj) {
-                /* Wait for Isend to complete before using lsub/lusup. */
+                /* Wait for Isend to complete before using lsub/lusup buffer */
                 if (ToSendR[lk][pj] != EMPTY) {
                     MPI_Wait (&send_req[pj], &status);
                     MPI_Wait (&send_req[pj + Pc], &status);
@@ -1245,13 +1259,15 @@ pzgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
             lusup = Lnzval_bc_ptr[lk];
         } else {
             if (ToRecv[k] >= 1) { /* Recv block column L(:,k). */
+
                 scp = &grid->rscp;  /* The scope of process row. */
-                /* ============================================ *
-                 * waiting for L(:,kk) for outer-product uptate *
-                 * if iam in U(kk,:) then                       *
-                 *  the diagonal block did not reach in time    *
-                 *  for panel factorization of U(k,:)           *
-                 * ============================================ */
+
+                /* ============================================= *
+                 * Waiting for L(:,kk) for outer-product uptate  *
+                 * if iam in U(kk,:), then the diagonal block    *
+		 * did not reach in time for panel factorization *
+		 * of U(k,:)           	                         *
+                 * ============================================= */
 #if ( PROFlevel>=1 )
                 TIC (t1);
 #endif
@@ -1305,7 +1321,7 @@ pzgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
         scp = &grid->cscp;      /* The scope of process column. */
 
         /* tt1 = SuperLU_timer_(); */
-        if (myrow == krow) {
+        if (myrow == krow) { /* I own U(k,:) */
             lk = LBi (k, grid);
             usub = Ufstnz_br_ptr[lk];
             uval = Unzval_br_ptr[lk];
@@ -1322,10 +1338,12 @@ pzgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
                 }
                 pdgstrs2_timer += SuperLU_timer_() - ttt2; 
 
+	        /* Sherry -- need to set factoredU[k0] = 1; ?? */
+
                 /* Multicasts U(k,:) along process columns. */
-                if (usub) {
-                    msgcnt[2] = usub[2];
-                    msgcnt[3] = usub[1];
+                if ( usub ) {
+                    msgcnt[2] = usub[2]; /* metadata size */
+                    msgcnt[3] = usub[1]; /* Uval[] size */
                 } else {
                     msgcnt[2] = msgcnt[3] = 0;
                 }
@@ -1351,14 +1369,17 @@ pzgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
 #if ( DEBUGlevel>=2 )
                             printf ("[%d] Send U(%4d,:) down to Pr %2d\n", iam, k, pi);
 #endif
-                        }       /* if pi ... */
-                    }           /* for pi ... */
-                }               /* if ToSendD ... */
-            } else {
+                        } /* if pi ... */
+                    } /* for pi ... */
+                } /* if ToSendD ... */
 
-                /* =========================================== *
-                 * waiting for U(k,:) for outer-product update *
-                 * =========================================== */
+            } else { /* Panel U(k,:) already factorized */
+
+               /* ================================================ *
+                 * Wait for downward sending of U(k,:) to complete *
+		 * for outer-product update                        *
+                 * =============================================== */
+
                 if (ToSendD[lk] == YES) {
                     for (pi = 0; pi < Pr; ++pi) {
                         if (pi != myrow) {
@@ -1371,6 +1392,7 @@ pzgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
                 msgcnt[3] = msgcntsU[look_id][3];
             }
             /* stat->time2 += SuperLU_timer_()-tt1; */
+
         } else {    /* myrow != krow */
 
             /* ========================================= *
@@ -1403,7 +1425,7 @@ pzgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
                 msgcnt[2] = 0;
 	    }
             /* stat->time6 += SuperLU_timer_()-tt1; */
-        }                       /* if myrow == Pr(k) */
+        } /* end if myrow == Pr(k) */
 
         /*
          * Parallel rank-k update; pair up blocks L(i,k) and U(k,j).
@@ -1544,7 +1566,7 @@ pzgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
 
         double tsch = SuperLU_timer_();
 
-/************************************************************************/
+	/************************************************************************/
 
 #ifdef GPU_ACC
 
@@ -1558,7 +1580,7 @@ pzgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
 #endif 
 	/*uncomment following to compare against SuperLU 3.3 baseline*/
         /* #include "SchCompUdt--baseline.c"  */
-/************************************************************************/
+	/************************************************************************/
         
         NetSchurUpTimer += SuperLU_timer_()-tsch;
 

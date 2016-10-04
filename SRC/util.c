@@ -1046,3 +1046,135 @@ static_partition (struct superlu_pair *work_load, int_t nwl, int_t *partition,
 
     return 0;
 }
+
+/*
+ * Search for the metadata of the j-th block in a U panel.
+ */
+void
+arrive_at_ublock (int_t j,      /* j-th block in a U panel */
+                  int_t * iukp, /* output : point to index[] of j-th block */
+                  int_t * rukp, /* output : point to nzval[] of j-th block */ 
+		  int_t * jb,   /* Global block number of block U(k,j). */
+                  int_t * ljb,  /* Local block number of U(k,j). */
+                  int_t * nsupc,/* supernode size of destination block */
+                  int_t iukp0,  /* input : search starting point */
+                  int_t rukp0, 
+		  int_t * usub, /* usub scripts */
+                  int_t * perm_u, /* permutation vector from static schedule */
+                  int_t * xsup, /* for SuperSize and LBj */
+                  gridinfo_t * grid)
+{
+    int_t jj;
+    *iukp = iukp0; /* point to the first block in index[] */
+    *rukp = rukp0; /* point to the start of nzval[] */
+
+#ifdef ISORT
+    for (jj = 0; jj < perm_u[j]; jj++) /* perm_u[j] == j */
+#else
+    for (jj = 0; jj < perm_u[2 * j + 1]; jj++) /* == j */
+#endif
+    {
+        // printf("iukp %d \n",*iukp );
+        *jb = usub[*iukp];      /* Global block number of block U(k,j). */
+        // printf("jb %d \n",*jb );
+        *nsupc = SuperSize (*jb);
+        // printf("nsupc %d \n",*nsupc );
+        *iukp += UB_DESCRIPTOR; /* Start fstnz of block U(k,j). */
+
+        *rukp += usub[*iukp - 1]; /* Jump # of nonzeros in block U(k,jj);
+				     Move to block U(k,jj+1) in nzval[] */ 
+        *iukp += *nsupc;
+    }
+
+    /* Set the pointers to the begining of U block U(k,j) */
+    *jb = usub[*iukp];          /* Global block number of block U(k,j). */
+    *ljb = LBj (*jb, grid);     /* Local block number of U(k,j). */
+    *nsupc = SuperSize (*jb);
+    *iukp += UB_DESCRIPTOR;     /* Start fstnz of block U(k,j). */
+}
+
+
+/*
+ * Count the maximum size of U(k,:) across all the MPI processes.
+ * September 28, 2016
+ */
+static int_t num_full_cols_U
+(
+ int_t kk,  int_t **Ufstnz_br_ptr, int_t *xsup,
+ gridinfo_t *grid, int_t *perm_u,
+ int_t *ldu /* max. size of nonzero columns in U(kk,:) */
+)
+{
+    int_t lk = LBi (kk, grid);
+    int_t *usub = Ufstnz_br_ptr[lk];
+
+    if (usub == NULL) return 0; /* code */
+
+    int_t iukp = BR_HEADER;   /* Skip header; Pointer to index[] of U(k,:) */
+    int_t rukp = 0;           /* Pointer to nzval[] of U(k,:) */
+    int_t nub = usub[0];      /* Number of blocks in the block row U(k,:) */
+    
+    int_t klst = FstBlockC (kk + 1);
+    int_t iukp0 = iukp;
+    int_t rukp0 = rukp;
+    int_t jb,ljb;
+    int_t nsupc;
+    int_t full = 1;
+    int_t full_Phi = 1;
+    int_t temp_ncols = 0;
+    int_t segsize;
+
+    for (int_t j = 0; j < nub; ++j) {
+        
+	/* Sherry -- no need to search from beginning ?? */
+        arrive_at_ublock(
+			 j, &iukp, &rukp, &jb, &ljb, &nsupc,
+			 iukp0, rukp0, usub, perm_u, xsup, grid
+			 );
+
+        for (int_t jj = iukp; jj < iukp + nsupc; ++jj) {
+            segsize = klst - usub[jj];
+            if ( segsize ) ++temp_ncols;
+            if ( segsize > *ldu ) *ldu = segsize;
+        }
+    }
+    return temp_ncols;
+}
+
+int_t estimate_bigu_size(int_t nsupers,
+			 int_t ldt, /* Largest segment of all U(k,:) columns */
+			 int_t**Ufstnz_br_ptr, /* point to U index[] array */
+			 Glu_persist_t *Glu_persist,
+			 gridinfo_t* grid, int_t* perm_u)
+{
+    int_t iam = grid->iam;
+    int_t Pc = grid->npcol;
+    int_t Pr = grid->nprow;
+    int_t myrow = MYROW (iam, grid);
+    int_t mycol = MYCOL (iam, grid);
+    
+    int_t* xsup = Glu_persist->xsup;
+
+    int ncols = 0; /* Count local number of nonzero columns */
+    int ldu = 0;   /* Count local max. size of nonzero columns */
+
+    /*initilize perm_u*/
+    for (int i = 0; i < nsupers; ++i) perm_u[i] = i;
+
+    for (int lk = myrow; lk < nsupers; lk += Pr ) {
+        ncols = SUPERLU_MAX(ncols, num_full_cols_U(lk, Ufstnz_br_ptr,
+						   xsup, grid, perm_u, &ldu) );
+    }
+
+    int_t max_ncols = 0;
+    int_t max_ldu = 0;
+
+    MPI_Allreduce(&ncols, &max_ncols, 1, mpi_int_t, MPI_MAX, grid->cscp.comm);
+    MPI_Allreduce(&ldu, &max_ldu, 1, mpi_int_t, MPI_MAX, grid->cscp.comm);
+
+#if ( PRNTlevel>=1 )
+    printf("max_ncols %d, max_ldu %d, ldt %d, bigu_size=%d\n",
+	   max_ncols, max_ldu, ldt, max_ldu*max_ncols);
+#endif
+    return(max_ldu * max_ncols);
+}

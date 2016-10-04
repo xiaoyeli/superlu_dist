@@ -316,8 +316,8 @@ void pzgstrs2_omp
     /* Initialization. */
     iam = grid->iam;
     pkk = PNUM (PROW (k, grid), PCOL (k, grid), grid);
-    int k_row_cycle = k / grid->nprow;  // for know which cycle k exist; (to assign thread wise blocking) 
-    int gb_col_cycle;
+    int k_row_cycle = k / grid->nprow;  /* for which cycle k exist (to assign rowwise thread blocking) */
+    int gb_col_cycle;  /* cycle through block columns  */
     klst = FstBlockC (k + 1);
     knsupc = SuperSize (k);
     usub = Llu->Ufstnz_br_ptr[lk];  /* index[] of block row U(k,:) */

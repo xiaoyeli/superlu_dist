@@ -81,6 +81,7 @@ at the top-level directory.
 #include "util_dist.h"
 #include "psymbfact.h"
 
+#define ISORT     /* NOTE: qsort() has bug on Mac */
 
 /*********************************************************************** 
  * Constants
@@ -263,8 +264,8 @@ typedef struct {
 /*-- Process grid definition */
 typedef struct {
     MPI_Comm comm;        /* MPI communicator */
-    superlu_scope_t rscp; /* row scope */
-    superlu_scope_t cscp; /* column scope */
+    superlu_scope_t rscp; /* process scope in rowwise, horizontal directon */
+    superlu_scope_t cscp; /* process scope in columnwise, vertical direction */
     int iam;              /* my process number in this scope */
     int_t nprow;          /* number of process rows */
     int_t npcol;          /* number of process columns */
@@ -657,6 +658,11 @@ extern void    superlu_free_dist (void*);
 extern int_t   *intMalloc_dist (int_t);
 extern int_t   *intCalloc_dist (int_t);
 extern int_t   mc64id_dist(int_t *);
+extern void  arrive_at_ublock (int_t, int_t *, int_t *, int_t *,
+			       int_t *, int_t *, int_t, int_t, 
+			       int_t *, int_t *, int_t *, gridinfo_t *);
+extern int_t estimate_bigu_size (int_t, int_t, int_t **, Glu_persist_t *,
+				 gridinfo_t *, int_t *);
 
 /* Auxiliary routines */
 extern double SuperLU_timer_ ();
