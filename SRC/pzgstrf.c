@@ -756,8 +756,11 @@ pzgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
 #endif
 
     /* bigU and bigV are either on CPU or on GPU, not both. */
-    doublecomplex* bigU; /* for GEMM output matrix, i.e., Update matrix */
-    doublecomplex* bigV; /* for aggregating the U blocks */
+    doublecomplex* bigU; /* for storing entire U(k,:) panel, prepare for GEMM.
+                     bigU has the same size either on CPU or on CPU. */
+    doublecomplex* bigV; /* for GEMM output matrix, i.e. update matrix. 
+                     On CPU, bigV is small for block-by-block update.
+	             On GPU, bigV is large to hold the aggregate GEMM output.*/
 
 #if ( PRNTlevel>=1 )
     if(!iam) printf("[%d] .. BIG U bigu_size %d (same either on CPU or GPU)\n", iam, bigu_size);
