@@ -961,6 +961,8 @@ static_schedule(superlu_dist_options_t * options, int m, int n,
 
 #if ( DEBUGlevel >= 1 )
     print_memorylog(stat, "after static schedule");
+    check_perm_dist("perm_c_supno", nsupers, perm_c_supno);
+    check_perm_dist("iperm_c_supno", nsupers, iperm_c_supno);
 #endif
 
     return 0;
