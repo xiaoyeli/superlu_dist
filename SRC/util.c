@@ -881,23 +881,23 @@ void isort(int_t N, int_t *ARRAY1, int_t *ARRAY2)
   int_t TEMP;
   IGAP = N / 2;
   while (IGAP > 0) {
-    for (I = IGAP; I < N; I++) {
-    J = I - IGAP;
-    while (J >= 0) {
-      if (ARRAY1[J] > ARRAY1[J + IGAP]) {
-        TEMP = ARRAY1[J];
-        ARRAY1[J] = ARRAY1[J + IGAP];
-        ARRAY1[J + IGAP] = TEMP;
-        TEMP = ARRAY2[J];
-        ARRAY2[J] = ARRAY2[J + IGAP];
-        ARRAY2[J + IGAP] = TEMP;
-        J = J - IGAP;
-      } else {
-        break;
+      for (I = IGAP; I < N; I++) {
+	  J = I - IGAP;
+	  while (J >= 0) {
+	      if (ARRAY1[J] > ARRAY1[J + IGAP]) {
+		  TEMP = ARRAY1[J];
+		  ARRAY1[J] = ARRAY1[J + IGAP];
+		  ARRAY1[J + IGAP] = TEMP;
+		  TEMP = ARRAY2[J];
+		  ARRAY2[J] = ARRAY2[J + IGAP];
+		  ARRAY2[J + IGAP] = TEMP;
+		  J = J - IGAP;
+	      } else {
+		  break;
+	      }
+	  }
       }
-    }
-  }
-    IGAP = IGAP / 2;
+      IGAP = IGAP / 2;
   }
 }
 
@@ -907,40 +907,36 @@ void isort1(int_t N, int_t *ARRAY)
 /*
  * Purpose
  * =======
- * Use quick sort algorithm to sort ARRAY1 and ARRAY2 in the increasing
- * order of ARRAY1.
+ * Use quick sort algorithm to sort ARRAY in increasing order.
  *
  * Arguments
  * =========
  * N       (input) INTEGER
  *          On entry, specifies the size of the arrays.
  *
- * ARRAY1  (input/output) DOUBLE PRECISION ARRAY of LENGTH N
+ * ARRAY   (input/output) DOUBLE PRECISION ARRAY of LENGTH N
  *          On entry, contains the array to be sorted.
  *          On exit, contains the sorted array.
  *
- * ARRAY2  (input/output) DOUBLE PRECISION ARRAY of LENGTH N
- *          On entry, contains the array to be sorted.
- *          On exit, contains the sorted array.
  */
   int_t IGAP, I, J;
   int_t TEMP;
   IGAP = N / 2;
   while (IGAP > 0) {
-  for (I = IGAP; I < N; I++) {
-    J = I - IGAP;
-    while (J >= 0) {
-      if (ARRAY[J] > ARRAY[J + IGAP]) {
-        TEMP = ARRAY[J];
-        ARRAY[J] = ARRAY[J + IGAP];
-        ARRAY[J + IGAP] = TEMP;
-        J = J - IGAP;
-      } else {
-        break;
+      for (I = IGAP; I < N; I++) {
+	  J = I - IGAP;
+	  while (J >= 0) {
+	      if (ARRAY[J] > ARRAY[J + IGAP]) {
+		  TEMP = ARRAY[J];
+		  ARRAY[J] = ARRAY[J + IGAP];
+		  ARRAY[J + IGAP] = TEMP;
+		  J = J - IGAP;
+	      } else {
+		  break;
+	      }
+	  }
       }
-    }
-  }
-    IGAP = IGAP / 2;
+      IGAP = IGAP / 2;
   }
 }
 

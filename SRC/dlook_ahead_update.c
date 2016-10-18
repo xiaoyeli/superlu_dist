@@ -101,7 +101,7 @@ while (j < nub && perm_u[2 * j] <= k0 + num_look_aheads)
        'firstprivate' ensures that the private variables are initialized
        to the values before entering the loop  */
 #pragma omp parallel for \
-    firstprivate(lb,lptr,luptr,ib,tempv,current_b)  \
+    firstprivate(lptr,luptr,ib,tempv,current_b) private(lb) \
     default(shared) schedule(dynamic)
 #endif
     for (lb = 0; lb < nlb; lb++) { /* Loop through each block in L(:,k) */
