@@ -67,7 +67,7 @@ at the top-level directory.
   #define mpi_int_t   MPI_SHORT
 #elif defined (_LONGINT)
   typedef long long int int_t;
-  #define mpi_int_t   MPI_LONG
+  #define mpi_int_t   MPI_LONG_LONG_INT
   #define IFMT "%lld"
 #else /* Default */
   typedef int int_t;

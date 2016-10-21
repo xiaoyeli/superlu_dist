@@ -1155,8 +1155,8 @@ int_t estimate_bigu_size(int_t nsupers,
     
     int_t* xsup = Glu_persist->xsup;
 
-    int ncols = 0; /* Count local number of nonzero columns */
-    int ldu = 0;   /* Count local max. size of nonzero columns */
+    int_t ncols = 0; /* Count local number of nonzero columns */
+    int_t ldu = 0;   /* Count local max. size of nonzero columns */
 
     /*initilize perm_u*/
     for (int i = 0; i < nsupers; ++i) perm_u[i] = i;

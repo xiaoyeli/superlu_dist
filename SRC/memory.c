@@ -65,7 +65,7 @@ void *superlu_malloc_dist(size_t size)
     MPI_Comm_rank(MPI_COMM_WORLD, &iam);
     buf = (char *) malloc(size + DWORD);
     if ( !buf ) {
-	printf("(%d) superlu_malloc fails: malloc_total %.0f MB, size %ld\n",
+	printf("(%d) superlu_malloc fails: malloc_total %.0f MB, size %lld\n",
 	       iam, superlu_malloc_total*1e-6, size);
 	ABORT("superlu_malloc: out of memory");
     }
