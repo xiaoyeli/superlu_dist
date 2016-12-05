@@ -174,13 +174,14 @@ typedef struct {
     int_t *row_to_proc;
     int_t *inv_perm_c;
     int_t num_diag_procs, *diag_procs, *diag_len;
-    pdgsmv_comm_t *gsmv_comm;
-    pxgstrs_comm_t *gstrs_comm;
+    pdgsmv_comm_t *gsmv_comm; /* communication metadata for SpMV, 
+         	       		      required by IterRefine.          */
+    pxgstrs_comm_t *gstrs_comm;  /* communication metadata for SpTRSV. */
     int_t *A_colind_gsmv; /* After pdgsmv_init(), the global column
                              indices of A are translated into the relative
                              positions in the gathered x-vector.
                              This is re-used in repeated calls to pdgsmv() */
-    int_t *xrow_to_proc;
+    /*int_t *xrow_to_proc; Xiaoye: can be removed */
 } SOLVEstruct_t;
 
 

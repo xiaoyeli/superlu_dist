@@ -474,6 +474,7 @@ int zSolveInit(superlu_dist_options_t *options, SuperMatrix *A,
 		   &SOLVEstruct->diag_procs,
 		   &SOLVEstruct->diag_len);
 
+    /* Setup communication pattern for redistribution of B and X. */
     if ( !(SOLVEstruct->gstrs_comm = (pxgstrs_comm_t *)
 	   SUPERLU_MALLOC(sizeof(pxgstrs_comm_t))) )
         ABORT("Malloc fails for gstrs_comm[]");

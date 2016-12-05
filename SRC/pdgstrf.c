@@ -763,7 +763,7 @@ pdgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
 	             On GPU, bigV is large to hold the aggregate GEMM output.*/
 
 #if ( PRNTlevel>=1 )
-    if(!iam) printf("[%d] .. BIG U bigu_size %d (same either on CPU or GPU)\n", iam, bigu_size);
+    if(!iam) printf("[%d] .. BIG U bigu_size " IFMT " (same either on CPU or GPU)\n", iam, bigu_size);
 #endif
 
 #ifdef GPU_ACC

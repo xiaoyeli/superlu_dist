@@ -654,7 +654,7 @@ pzgssvx(superlu_dist_options_t *options, SuperMatrix *A,
     }
 
     /* ------------------------------------------------------------
-       Diagonal scaling to equilibrate the matrix.
+       Diagonal scaling to equilibrate the matrix. (simple scheme)
        ------------------------------------------------------------*/
     if ( Equil ) {
 #if ( DEBUGlevel>=1 )
@@ -712,20 +712,22 @@ pzgssvx(superlu_dist_options_t *options, SuperMatrix *A,
  	    } else if ( iinfo < 0 ) return;
 
 	    /* Now iinfo == 0 */
-	       /* Equilibrate matrix A if it is badly-scaled. */
-	       pzlaqgs(A, R, C, rowcnd, colcnd, amax, equed);
 
-	       if ( strncmp(equed, "R", 1)==0 ) {
+            /* Equilibrate matrix A if it is badly-scaled. 
+               A <-- diag(R)*A*diag(C)                     */
+	    pzlaqgs(A, R, C, rowcnd, colcnd, amax, equed);
+
+	    if ( strncmp(equed, "R", 1)==0 ) {
 		  ScalePermstruct->DiagScale = ROW;
 		  rowequ = ROW;
-	       } else if ( strncmp(equed, "C", 1)==0 ) {
+	    } else if ( strncmp(equed, "C", 1)==0 ) {
 		  ScalePermstruct->DiagScale = COL;
 		  colequ = COL;
-	       } else if ( strncmp(equed, "B", 1)==0 ) {
+	    } else if ( strncmp(equed, "B", 1)==0 ) {
 		  ScalePermstruct->DiagScale = BOTH;
 		  rowequ = ROW;
 		  colequ = COL;
-	       } else ScalePermstruct->DiagScale = NOEQUIL;
+	    } else ScalePermstruct->DiagScale = NOEQUIL;
 
 #if ( PRNTlevel>=1 )
 	    if ( !iam ) {
@@ -733,23 +735,24 @@ pzgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 		/*fflush(stdout);*/
 	    }
 #endif
-	} /* if Fact ... */
+	} /* end if Fact ... */
 
 	stat->utime[EQUIL] = SuperLU_timer_() - t;
 #if ( DEBUGlevel>=1 )
 	CHECK_MALLOC(iam, "Exit equil");
 #endif
-    } /* if Equil ... */
+    } /* end if Equil ... LAPACK style, not involving MC64 */
 
     if ( !factored ) { /* Skip this if already factored. */
         /*
-         * Gather A from the distributed compressed row format to
-         * global A in compressed column format.
+         * For serial symbolic factorization, gather A from the distributed
+	 * compressed row format to global A in compressed column format.
          * Numerical values are gathered only when a row permutation
          * for large diagonal is sought after.
          */
 	if ( Fact != SamePattern_SameRowPerm &&
              (parSymbFact == NO || options->RowPerm != NO) ) {
+             /* need serial symbolic factorzation and/or MC64 */
 
             need_value = (options->RowPerm == LargeDiag);
 
@@ -768,7 +771,8 @@ pzgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 	}
 
         /* ------------------------------------------------------------
-           Find the row permutation for A.
+           Find the row permutation Pr for A, and apply Pr*[GA].
+	   GA is overwritten by Pr*[GA].
            ------------------------------------------------------------*/
         if ( options->RowPerm != NO ) {
 	    t = SuperLU_timer_();
@@ -789,8 +793,7 @@ pzgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 		            ABORT("SUPERLU_MALLOC fails for C1[]");
 	            }
 
-	            if ( !iam ) {
-		        /* Process 0 finds a row permutation */
+	            if ( !iam ) { /* Process 0 finds a row permutation */
 		        iinfo = zldperm_dist(job, m, nnz, colptr, rowind, a_GA,
 		                perm_r, R1, C1);
 		
@@ -813,7 +816,7 @@ pzgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 		        }
 	            }
 
-	    	    if ( iinfo && job == 5) {
+	    	    if ( iinfo && job == 5) { /* Error return */
 	                SUPERLU_FREE(R1);
 	        	SUPERLU_FREE(C1);
    	            }
@@ -830,7 +833,8 @@ pzgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 			        C1[i] = exp(C1[i]);
 		            }
 
-		            /* Scale the distributed matrix */
+		            /* Scale the distributed matrix further.
+			       A <-- diag(R1)*A*diag(C1)            */
 		            irow = fst_row;
 		            for (j = 0; j < m_loc; ++j) {
 			        for (i = rowptr[j]; i < rowptr[j+1]; ++i) {
@@ -851,7 +855,8 @@ pzgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 			        ++irow;
 		            }
 
-		            /* Multiply together the scaling factors. */
+		            /* Multiply together the scaling factors --
+			       R/C from simple scheme, R1/C1 from MC64. */
 		            if ( rowequ ) for (i = 0; i < m; ++i) R[i] *= R1[i];
 		            else for (i = 0; i < m; ++i) R[i] = R1[i];
 		            if ( colequ ) for (i = 0; i < n; ++i) C[i] *= C1[i];
@@ -935,7 +940,6 @@ pzgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 	 *   permc_spec = MY_PERMC: the ordering already supplied in perm_c[]
 	 */
 	permc_spec = options->ColPerm;
-
 
 	if ( parSymbFact == YES || permc_spec == PARMETIS ) {	
 	    nprocs_num = grid->nprow * grid->npcol;
@@ -1072,7 +1076,7 @@ pzgssvx(superlu_dist_options_t *options, SuperMatrix *A,
                 }
 	    }
 
-            /* Destroy GA */
+            /* Destroy global GA */
             if ( parSymbFact == NO || options->RowPerm != NO )
                 Destroy_CompCol_Matrix_dist(&GA);
             if ( parSymbFact == NO )
@@ -1086,6 +1090,7 @@ pzgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 	  MPI_Comm_free (&symb_comm); 
 
 	if (parSymbFact == NO || Fact == SamePattern_SameRowPerm) {
+	    /* CASE OF SERIAL SYMBOLIC */
   	    /* Apply column permutation to the original distributed A */
 	    for (j = 0; j < nnz_loc; ++j) colind[j] = perm_c[colind[j]];
 
@@ -1102,7 +1107,7 @@ pzgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 	        iinfo = symbfact_SubFree(Glu_freeable);
 	        SUPERLU_FREE(Glu_freeable);
 	    }
-	} else {
+	} else { /* CASE OF PARALLEL SYMBOLIC */
 	    /* Distribute Pc*Pr*diag(R)*A*diag(C)*Pc' into L and U storage. 
 	       NOTE: the row permutation Pc*Pr is applied internally in the
 	       distribution routine. */
@@ -1213,7 +1218,7 @@ pzgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 		       max * 1e-6);
 		printf("**************************************************\n");
             }
-	}
+	} /* end printing stats */
     
     } /* end if (!factored) */
 	
@@ -1271,6 +1276,9 @@ pzgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 	if ( options->SolveInitialized == NO ) {
 	    zSolveInit(options, A, perm_r, perm_c, nrhs, LUstruct, grid,
 		       SOLVEstruct);
+            /* Inside this routine, SolveInitialized is set to YES.
+	       For repeated call to pzgssvx(), no need to re-initialilze
+	       the Solve data & communication structures.     */
 	}
 
 	pzgstrs(n, LUstruct, ScalePermstruct, grid, X, m_loc, 
@@ -1282,7 +1290,9 @@ pzgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 	   ------------------------------------------------------------*/
 	if ( options->IterRefine ) {
 	    /* Improve the solution by iterative refinement. */
-	    int_t *it, *colind_gsmv = SOLVEstruct->A_colind_gsmv;
+	    int_t *it;
+            int_t *colind_gsmv = SOLVEstruct->A_colind_gsmv;
+	          /* This was allocated and set to NULL in zSolveInit() */
 	    SOLVEstruct_t *SOLVEstruct1;  /* Used by refinement. */
 
 	    t = SuperLU_timer_();
@@ -1303,7 +1313,7 @@ pzgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 	        options->RefineInitialized = YES;
 	    } else if ( Fact == SamePattern ||
 			Fact == SamePattern_SameRowPerm ) {
-	        doublecomplex at;
+	        doublecomplex atemp;
 	        int_t k, jcol, p;
 	        /* Swap to beginning the part of A corresponding to the
 		   local part of X, as was done in pzgsmv_init() */
@@ -1313,7 +1323,7 @@ pzgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 		        jcol = colind[j];
 		        p = SOLVEstruct->row_to_proc[jcol];
 		        if ( p == iam ) { /* Local */
-		            at = a[k]; a[k] = a[j]; a[j] = at;
+		            atemp = a[k]; a[k] = a[j]; a[j] = atemp;
 		            ++k;
 		        }
 		    }
@@ -1361,7 +1371,7 @@ pzgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 	    }
 
 	    stat->utime[REFINE] = SuperLU_timer_() - t;
-	}
+	} /* end if IterRefine */
 
 	/* Permute the solution matrix B <= Pc'*X. */
 	pzPermute_Dense_Matrix(fst_row, m_loc, SOLVEstruct->row_to_proc,
@@ -1374,7 +1384,7 @@ pzgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 #endif
 	
 	/* Transform the solution matrix X to a solution of the original
-	   system before the equilibration. */
+	   system before equilibration. */
 	if ( notran ) {
 	    if ( colequ ) {
 		b_col = B;
