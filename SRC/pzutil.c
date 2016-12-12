@@ -409,11 +409,6 @@ int zSolveInit(superlu_dist_options_t *options, SuperMatrix *A,
     int_t        i, fst_row, m_loc, p;
     int          procs;
 
-    /* prototypes */
-    extern int_t pxgstrs_init(int_t, int_t, int_t, int_t,
-	                      int_t [], int_t [], gridinfo_t *grid,
-	                      Glu_persist_t *, SOLVEstruct_t *);
-
     Astore = (NRformat_loc *) A->Store;
     fst_row = Astore->fst_row;
     m_loc = Astore->m_loc;
@@ -474,6 +469,7 @@ int zSolveInit(superlu_dist_options_t *options, SuperMatrix *A,
 		   &SOLVEstruct->diag_procs,
 		   &SOLVEstruct->diag_len);
 
+    /* Setup communication pattern for redistribution of B and X. */
     if ( !(SOLVEstruct->gstrs_comm = (pxgstrs_comm_t *)
 	   SUPERLU_MALLOC(sizeof(pxgstrs_comm_t))) )
         ABORT("Malloc fails for gstrs_comm[]");
@@ -494,7 +490,6 @@ int zSolveInit(superlu_dist_options_t *options, SuperMatrix *A,
 void zSolveFinalize(superlu_dist_options_t *options, SOLVEstruct_t *SOLVEstruct)
 {
     int_t *it;
-    extern void pxgstrs_finalize(pxgstrs_comm_t *);
 
     pxgstrs_finalize(SOLVEstruct->gstrs_comm);
 

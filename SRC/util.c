@@ -376,7 +376,8 @@ void print_sp_ienv_dist(superlu_dist_options_t *options)
  * <pre>
  * Purpose
  * =======
- *   Set up the communication pattern for the triangular solution.
+ *   Set up the communication pattern for redistribution between B and X
+ *   in the triangular solution.
  * 
  * Arguments
  * =========

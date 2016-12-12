@@ -62,10 +62,8 @@ at the top-level directory.
 </pre>
 */
 
-
 #include <stdlib.h>
 #include <stdio.h>
-
 
 int_t
 sp_ienv_dist(int_t ispec)
@@ -91,7 +89,7 @@ sp_ienv_dist(int_t ispec)
                 return(atoi(ttemp));
             }
             else
-            return 20;
+            return 2;
             
 	case 3: 
             ttemp = getenv("NSUP");

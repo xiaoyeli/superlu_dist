@@ -123,7 +123,11 @@ sp_colorder(superlu_dist_options_t *options,  SuperMatrix *A, int_t *perm_c,
 	ACstore->colend[perm_c[i]] = Astore->colptr[i+1];
     }
 	
-    if ( options->Fact == DOFACT ) { 
+    if ( options->Fact == DOFACT 
+	 || options->Fact == SamePattern )
+	/* In this case, perm_r[] may be changed, etree(Pr*A + (Pr*A)')
+	   may be changed, so need to recompute etree.   */
+    { 
 	/* Factor A "from scratch" -- we also compute the etree, and
 	 * make perm_c consistent with the postorder of the etree.
 	 */

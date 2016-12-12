@@ -46,8 +46,8 @@ at the top-level directory.
  * although the numerical values are different. So 'Llu' is set up once
  * in the first call to PDGSSVX, and reused in the subsequent call.
  *
- * On an IBM SP, the program may be run by typing:
- *    poe pddrive3 -r <proc rows> -c <proc columns> <input_matrix> -procs <p>
+ * With MPICH,  program may be run by typing:
+ *    mpiexec -n <np> pddrive3 -r <proc rows> -c <proc columns> big.rua
  * </pre>
  */
 
@@ -69,11 +69,6 @@ int main(int argc, char *argv[])
     int      iam, info, ldb, ldx, nrhs;
     char     **cpp, c;
     FILE *fp, *fopen();
-
-    /* prototypes */
-    extern void LUstructInit(const int_t, LUstruct_t *);
-    extern void LUstructFree(LUstruct_t *);
-    extern void Destroy_LU(int_t, gridinfo_t *, LUstruct_t *);
 
     nprow = 1;  /* Default process rows.      */
     npcol = 1;  /* Default process columns.   */

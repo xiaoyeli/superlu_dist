@@ -41,8 +41,8 @@ at the top-level directory.
  *  2. subgroup 2 consists of processes 6 to 9 arranged as
  *     a 2-by-2 process grid.
  *
- * On an IBM SP, the program may be run by typing
- *    poe pzdrive4 <input_file> -procs 10
+ * With MPICH,  program may be run by typing:
+ *    mpiexec -n 10 pzdrive4 big.rua
  * </pre>
  */
 
@@ -66,10 +66,6 @@ int main(int argc, char *argv[])
     char     **cpp, c;
     FILE *fp, *fopen();
 
-    /* prototypes */
-    extern void LUstructInit(const int_t, LUstruct_t *);
-    extern void LUstructFree(LUstruct_t *);
-    extern void Destroy_LU(int_t, gridinfo_t *, LUstruct_t *);
 
     /* ------------------------------------------------------------
        INITIALIZE MPI ENVIRONMENT. 
