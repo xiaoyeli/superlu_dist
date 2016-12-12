@@ -23,9 +23,9 @@ at the top-level directory.
 #include <math.h>
 #include "superlu_zdefs.h"
 
-
-int main(int argc, char *argv[])
-/*
+/*! \brief
+ *
+ * <pre>
  * Purpose
  * =======
  *
@@ -39,10 +39,11 @@ int main(int argc, char *argv[])
  *        ScalePermstruct  : DiagScale, R, C, perm_r, perm_c
  *        LUstruct         : Glu_persist, Llu
  * 
- * On an IBM SP, the program may be run by typing:
- *    poe pzdrive1 -r <proc rows> -c <proc columns> <input_matrix> -procs <p>
- *
+ * With MPICH,  program may be run by typing:
+ *    mpiexec -n <np> pzdrive1 -r <proc rows> -c <proc columns> big.rua
+ * </pre>
  */
+int main(int argc, char *argv[])
 {
     superlu_dist_options_t options;
     SuperLUStat_t stat;
@@ -58,11 +59,6 @@ int main(int argc, char *argv[])
     int    iam, info, ldb, ldx, nrhs;
     char     **cpp, c;
     FILE *fp, *fopen();
-
-    /* prototypes */
-    extern void LUstructInit(const int_t, LUstruct_t *);
-    extern void LUstructFree(LUstruct_t *);
-    extern void Destroy_LU(int_t, gridinfo_t *, LUstruct_t *);
 
     nprow = 1;  /* Default process rows.      */
     npcol = 1;  /* Default process columns.   */

@@ -149,26 +149,6 @@ typedef struct {
 			     (also total number of indices to be received) */
 } pzgsmv_comm_t;
 
-/*-- Data structure for redistribution of B and X --*/
-typedef struct {
-    int  *B_to_X_SendCnt;
-    int  *X_to_B_SendCnt;
-    int  *ptr_to_ibuf, *ptr_to_dbuf;
-
-    /* the following are needed in the hybrid solver */	
-    int *X_to_B_iSendCnt;
-    int *X_to_B_vSendCnt;
-    int    *disp_ibuf;
-    int_t  *send_ibuf;
-    void   *send_dbuf;
-
-    int_t  x2b, b2x;
-    int_t  *send_ibuf2;
-    int_t  *recv_ibuf2;
-    void   *send_dbuf2;
-    void   *recv_dbuf2;
-} pxgstrs_comm_t;
-
 /*-- Data structure holding the information for the solution phase --*/
 typedef struct {
     int_t *row_to_proc;
@@ -270,6 +250,10 @@ extern void  pzgssvx(superlu_dist_options_t *, SuperMatrix *,
 extern int  zSolveInit(superlu_dist_options_t *, SuperMatrix *, int_t [], int_t [],
 		       int_t, LUstruct_t *, gridinfo_t *, SOLVEstruct_t *);
 extern void zSolveFinalize(superlu_dist_options_t *, SOLVEstruct_t *);
+extern int_t pxgstrs_init(int_t, int_t, int_t, int_t,
+                          int_t [], int_t [], gridinfo_t *grid,
+	                  Glu_persist_t *, SOLVEstruct_t *);
+extern void pxgstrs_finalize(pxgstrs_comm_t *);
 extern int  zldperm_dist(int_t, int_t, int_t, int_t [], int_t [],
 		    doublecomplex [], int_t *, double [], double []);
 extern int  static_schedule(superlu_dist_options_t *, int, int, 

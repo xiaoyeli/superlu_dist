@@ -398,6 +398,26 @@ typedef struct {
     int_t  *perm_c;
 } ScalePermstruct_t;
 
+/*-- Data structure for redistribution of B and X --*/
+typedef struct {
+    int  *B_to_X_SendCnt;
+    int  *X_to_B_SendCnt;
+    int  *ptr_to_ibuf, *ptr_to_dbuf;
+
+    /* the following are needed in the hybrid solver PDSLin */	
+    int *X_to_B_iSendCnt;
+    int *X_to_B_vSendCnt;
+    int    *disp_ibuf;
+    int_t  *send_ibuf;
+    void   *send_dbuf;
+
+    int_t  x2b, b2x;
+    int_t  *send_ibuf2;
+    int_t  *recv_ibuf2;
+    void   *send_dbuf2;
+    void   *recv_dbuf2;
+} pxgstrs_comm_t;
+
 /* 
  *-- This contains the options used to control the solution process.
  *

@@ -542,12 +542,6 @@ pzgssvx(superlu_dist_options_t *options, SuperMatrix *A,
     double   dmin, dsum, dprod;
 #endif
 
-    /* prototypes */
-    extern int_t pxgstrs_init(int_t, int_t, int_t, int_t,
-	                      int_t [], int_t [], gridinfo_t *grid,
-	                      Glu_persist_t *, SOLVEstruct_t *);
-    extern void pxgstrs_finalize(pxgstrs_comm_t *);
-
     /* Structures needed for parallel symbolic factorization */
     int_t *sizes, *fstVtxSep, parSymbFact;
     int   noDomains, nprocs_num;
@@ -752,7 +746,7 @@ pzgssvx(superlu_dist_options_t *options, SuperMatrix *A,
          */
 	if ( Fact != SamePattern_SameRowPerm &&
              (parSymbFact == NO || options->RowPerm != NO) ) {
-             /* need serial symbolic factorzation and/or MC64 */
+             /* Performs serial symbolic factorzation and/or MC64 */
 
             need_value = (options->RowPerm == LargeDiag);
 
@@ -867,7 +861,7 @@ pzgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 
 		        } /* end Equil */
 
-                        /* Now permute global A to prepare for symbfact() */
+                        /* Now permute global GA to prepare for symbfact() */
                         for (j = 0; j < n; ++j) {
 		            for (i = colptr[j]; i < colptr[j+1]; ++i) {
 	                        irow = rowind[i];
@@ -897,16 +891,16 @@ pzgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 		        if ( !iam ) printf("\t product of diagonal %e\n", dprod);
 	            }
 #endif
-	    
+#if ( PRNTlevel>=1 )
+	            if ( !iam ) printf(".. LDPERM job " IFMT "\t time: %.2f\n", job, t);
+#endif
                 } /* end if options->RowPerm ... */
 
 	        t = SuperLU_timer_() - t;
 	        stat->utime[ROWPERM] = t;
-#if ( PRNTlevel>=1 )
-	        if ( !iam ) printf(".. LDPERM job " IFMT "\t time: %.2f\n", job, t);
-#endif
             } /* end if Fact ... */
-        } else { /* options->RowPerm == NOROWPERM */
+
+        } else { /* options->RowPerm == NOROWPERM / NATURAL */
             for (i = 0; i < m; ++i) perm_r[i] = i;
         }
 
@@ -926,7 +920,8 @@ pzgssvx(superlu_dist_options_t *options, SuperMatrix *A,
     }
 
     /* ------------------------------------------------------------
-       Perform the LU factorization.
+       Perform the LU factorization: symbolic factorization, 
+       redistribution, and numerical factorization.
        ------------------------------------------------------------*/
     if ( !factored ) {
 	t = SuperLU_timer_();
@@ -941,7 +936,8 @@ pzgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 	 */
 	permc_spec = options->ColPerm;
 
-	if ( parSymbFact == YES || permc_spec == PARMETIS ) {	
+	if ( parSymbFact == YES || permc_spec == PARMETIS ) {
+
 	    nprocs_num = grid->nprow * grid->npcol;
   	    noDomains = (int) ( pow(2, ((int) LOG2( nprocs_num ))));
 
@@ -973,6 +969,7 @@ pzgssvx(superlu_dist_options_t *options, SuperMatrix *A,
         }
 
 	if ( permc_spec != MY_PERMC && Fact == DOFACT ) {
+          /* Reuse perm_c if Fact == SamePattern, or SamePattern_SameRowPerm */
 	  if ( permc_spec == PARMETIS ) {
 	      /* Get column permutation vector in perm_c.                    *
 	       * This routine takes as input the distributed input matrix A  *
@@ -996,17 +993,19 @@ pzgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 
 	stat->utime[COLPERM] = SuperLU_timer_() - t;
 
-	/* Compute the elimination tree of Pc*(A'+A)*Pc' or Pc*A'*A*Pc'
+	/* Compute the elimination tree of Pc*(A^T+A)*Pc^T or Pc*A^T*A*Pc^T
 	   (a.k.a. column etree), depending on the choice of ColPerm.
 	   Adjust perm_c[] to be consistent with a postorder of etree.
 	   Permute columns of A to form A*Pc'. */
 	if ( Fact != SamePattern_SameRowPerm ) {
-	    if ( parSymbFact == NO ) {
+	    if ( parSymbFact == NO ) { /* Perform serial symbolic factorization */
+		/* GA = Pr*A, perm_r[] is already applied. */
 	        int_t *GACcolbeg, *GACcolend, *GACrowind;
 
+		/* After this routine, GAC = GA*Pc^T.  */
 	        sp_colorder(options, &GA, perm_c, etree, &GAC); 
 
-	        /* Form Pc*A*Pc' to preserve the diagonal of the matrix GAC. */
+	        /* Form Pc*A*Pc^T to preserve the diagonal of the matrix GAC. */
 	        GACstore = (NCPformat *) GAC.Store;
 	        GACcolbeg = GACstore->colbeg;
 	        GACcolend = GACstore->colend;
@@ -1018,7 +1017,7 @@ pzgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 	            }
 	        }
 
-	        /* Perform a symbolic factorization on Pc*Pr*A*Pc' and set up
+	        /* Perform a symbolic factorization on Pc*Pr*A*Pc^T and set up
                    the nonzero data structures for L & U. */
 #if ( PRNTlevel>=1 ) 
                 if ( !iam )
@@ -1094,7 +1093,7 @@ pzgssvx(superlu_dist_options_t *options, SuperMatrix *A,
   	    /* Apply column permutation to the original distributed A */
 	    for (j = 0; j < nnz_loc; ++j) colind[j] = perm_c[colind[j]];
 
-	    /* Distribute Pc*Pr*diag(R)*A*diag(C)*Pc' into L and U storage. 
+	    /* Distribute Pc*Pr*diag(R)*A*diag(C)*Pc^T into L and U storage. 
 	       NOTE: the row permutation Pc*Pr is applied internally in the
   	       distribution routine. */
 	    t = SuperLU_timer_();
@@ -1273,12 +1272,24 @@ pzgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 	/* ------------------------------------------------------------
 	   Solve the linear system.
 	   ------------------------------------------------------------*/
-	if ( options->SolveInitialized == NO ) {
+	if ( options->SolveInitialized == NO ) { /* First time */
 	    zSolveInit(options, A, perm_r, perm_c, nrhs, LUstruct, grid,
 		       SOLVEstruct);
             /* Inside this routine, SolveInitialized is set to YES.
 	       For repeated call to pzgssvx(), no need to re-initialilze
 	       the Solve data & communication structures.     */
+	} else if ( options->Fact == SamePattern ) {
+		/* Need to reset the solve's communication pattern,
+		   because perm_r[] is changed.    */
+#if 1
+	    zSolveFinalize(options, SOLVEstruct);
+	    zSolveInit(options, A, perm_r, perm_c, nrhs, LUstruct, grid,
+		       SOLVEstruct);
+#else /* not good enough for X-to-B distribution -- inv_perm_c changed */
+	    pxgstrs_finalize(SOLVEstruct->gstrs_comm);
+	    pxgstrs_init(A->ncol, m_loc, nrhs, fst_row, perm_r, perm_c, grid, 
+			 LUstruct->Glu_persist, SOLVEstruct);
+#endif
 	}
 
 	pzgstrs(n, LUstruct, ScalePermstruct, grid, X, m_loc, 

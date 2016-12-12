@@ -35,7 +35,7 @@ DEXM	= pddrive.o dcreate_matrix.o #pdgstrf2.o
 #pdgssvx.o
 # pdgstrs_lsum_X1.o pdgstrf_X1.o
 DEXM1	= pddrive1.o dcreate_matrix.o
-DEXM2	= pddrive2.o dcreate_matrix.o
+DEXM2	= pddrive2.o dcreate_matrix.o dcreate_matrix_perturbed.o
 DEXM3	= pddrive3.o dcreate_matrix.o
 DEXM4	= pddrive4.o dcreate_matrix.o
 DEXMG	= pddrive_ABglobal.o
@@ -46,7 +46,7 @@ DEXMG4	= pddrive4_ABglobal.o
 ZEXM	= pzdrive.o zcreate_matrix.o
 	#pzgstrf2.o pzgstrf_v3.3.o pzgstrf.o
 ZEXM1	= pzdrive1.o zcreate_matrix.o
-ZEXM2	= pzdrive2.o zcreate_matrix.o
+ZEXM2	= pzdrive2.o zcreate_matrix.o zcreate_matrix_perturbed.o
 ZEXM3	= pzdrive3.o zcreate_matrix.o
 ZEXM4	= pzdrive4.o zcreate_matrix.o
 ZEXMG	= pzdrive_ABglobal.o
