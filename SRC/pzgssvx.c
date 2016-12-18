@@ -937,7 +937,6 @@ pzgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 	permc_spec = options->ColPerm;
 
 	if ( parSymbFact == YES || permc_spec == PARMETIS ) {
-
 	    nprocs_num = grid->nprow * grid->npcol;
   	    noDomains = (int) ( pow(2, ((int) LOG2( nprocs_num ))));
 
@@ -1038,9 +1037,9 @@ pzgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 		    QuerySpace_dist(n, -iinfo, Glu_freeable, &symb_mem_usage);
 #if ( PRNTlevel>=1 )
 		    if ( !iam ) {
-		    	printf("\tNo of supers %ld\n", (long long) Glu_persist->supno[n-1]+1);
-		    	printf("\tSize of G(L) %ld\n", (long long) Glu_freeable->xlsub[n]);
-		    	printf("\tSize of G(U) %ld\n", (long long) Glu_freeable->xusub[n]);
+		    	printf("\tNo of supers " IFMT "\n", (long long) Glu_persist->supno[n-1]+1);
+		    	printf("\tSize of G(L) " IFMT "\n", (long long) Glu_freeable->xlsub[n]);
+		    	printf("\tSize of G(U) " IFMT "\n", (long long) Glu_freeable->xusub[n]);
 		    	printf("\tint %d, short %d, float %d, double %d\n", 
 			       (int) sizeof(int_t), (int) sizeof(short),
         		       (int) sizeof(float), (int) sizeof(double));
