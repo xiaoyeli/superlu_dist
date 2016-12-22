@@ -891,13 +891,14 @@ pzgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 		        if ( !iam ) printf("\t product of diagonal %e\n", dprod);
 	            }
 #endif
-#if ( PRNTlevel>=1 )
-	            if ( !iam ) printf(".. LDPERM job " IFMT "\t time: %.2f\n", job, t);
-#endif
                 } /* end if options->RowPerm ... */
 
 	        t = SuperLU_timer_() - t;
 	        stat->utime[ROWPERM] = t;
+#if ( PRNTlevel>=1 )
+                if ( !iam ) printf(".. LDPERM job " IFMT "\t time: %.2f\n",
+	                            job, t);
+#endif
             } /* end if Fact ... */
 
         } else { /* options->RowPerm == NOROWPERM / NATURAL */
@@ -1219,6 +1220,24 @@ pzgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 	} /* end printing stats */
     
     } /* end if (!factored) */
+
+    
+    if ( options->Fact == DOFACT || options->Fact == SamePattern ) {
+	/* Need to reset the solve's communication pattern,
+	   because perm_r[] and/or perm_c[] is changed.    */
+	if ( options->SolveInitialized == YES ) { /* Initialized before */
+	    zSolveFinalize(options, SOLVEstruct); /* Clean up structure */
+	    options->SolveInitialized = NO;   /* Reset the solve state */
+	}
+     }
+#if 0
+    /* Need to revisit: Why the following is not good enough for X-to-B
+       distribution -- inv_perm_c changed */
+	pxgstrs_finalize(SOLVEstruct->gstrs_comm);
+	pxgstrs_init(A->ncol, m_loc, nrhs, fst_row, perm_r, perm_c, grid, 
+	             LUstruct->Glu_persist, SOLVEstruct);
+#endif
+
 	
     /* ------------------------------------------------------------
        Compute the solution matrix X.
@@ -1276,20 +1295,9 @@ pzgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 		       SOLVEstruct);
             /* Inside this routine, SolveInitialized is set to YES.
 	       For repeated call to pzgssvx(), no need to re-initialilze
-	       the Solve data & communication structures.     */
-	} else if ( options->Fact == SamePattern ) {
-		/* Need to reset the solve's communication pattern,
-		   because perm_r[] is changed.    */
-#if 1
-	    zSolveFinalize(options, SOLVEstruct);
-	    zSolveInit(options, A, perm_r, perm_c, nrhs, LUstruct, grid,
-		       SOLVEstruct);
-#else /* not good enough for X-to-B distribution -- inv_perm_c changed */
-	    pxgstrs_finalize(SOLVEstruct->gstrs_comm);
-	    pxgstrs_init(A->ncol, m_loc, nrhs, fst_row, perm_r, perm_c, grid, 
-			 LUstruct->Glu_persist, SOLVEstruct);
-#endif
-	}
+	       the Solve data & communication structures, unless a new
+	       factorization with Fact == DOFACT or SamePattern is asked for. */
+	} 
 
 	pzgstrs(n, LUstruct, ScalePermstruct, grid, X, m_loc, 
 		fst_row, ldb, nrhs, SOLVEstruct, stat, info);
