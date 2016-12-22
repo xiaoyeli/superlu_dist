@@ -890,13 +890,14 @@ pdgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 		        if ( !iam ) printf("\t product of diagonal %e\n", dprod);
 	            }
 #endif
-#if ( PRNTlevel>=1 )
-	            if ( !iam ) printf(".. LDPERM job " IFMT "\t time: %.2f\n", job, t);
-#endif
                 } /* end if options->RowPerm ... */
 
 	        t = SuperLU_timer_() - t;
 	        stat->utime[ROWPERM] = t;
+#if ( PRNTlevel>=1 )
+                if ( !iam ) printf(".. LDPERM job " IFMT "\t time: %.2f\n",
+	                            job, t);
+#endif
             } /* end if Fact ... */
 
         } else { /* options->RowPerm == NOROWPERM / NATURAL */
@@ -1036,9 +1037,9 @@ pdgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 		    QuerySpace_dist(n, -iinfo, Glu_freeable, &symb_mem_usage);
 #if ( PRNTlevel>=1 )
 		    if ( !iam ) {
-		    	printf("\tNo of supers %ld\n", (long long) Glu_persist->supno[n-1]+1);
-		    	printf("\tSize of G(L) %ld\n", (long long) Glu_freeable->xlsub[n]);
-		    	printf("\tSize of G(U) %ld\n", (long long) Glu_freeable->xusub[n]);
+		    	printf("\tNo of supers " IFMT "\n", (long long) Glu_persist->supno[n-1]+1);
+		    	printf("\tSize of G(L) " IFMT "\n", (long long) Glu_freeable->xlsub[n]);
+		    	printf("\tSize of G(U) " IFMT "\n", (long long) Glu_freeable->xusub[n]);
 		    	printf("\tint %d, short %d, float %d, double %d\n", 
 			       (int) sizeof(int_t), (int) sizeof(short),
         		       (int) sizeof(float), (int) sizeof(double));
@@ -1218,6 +1219,24 @@ pdgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 	} /* end printing stats */
     
     } /* end if (!factored) */
+
+    
+    if ( options->Fact == DOFACT || options->Fact == SamePattern ) {
+	/* Need to reset the solve's communication pattern,
+	   because perm_r[] and/or perm_c[] is changed.    */
+	if ( options->SolveInitialized == YES ) { /* Initialized before */
+	    dSolveFinalize(options, SOLVEstruct); /* Clean up structure */
+	    options->SolveInitialized = NO;   /* Reset the solve state */
+	}
+     }
+#if 0
+    /* Need to revisit: Why the following is not good enough for X-to-B
+       distribution -- inv_perm_c changed */
+	pxgstrs_finalize(SOLVEstruct->gstrs_comm);
+	pxgstrs_init(A->ncol, m_loc, nrhs, fst_row, perm_r, perm_c, grid, 
+	             LUstruct->Glu_persist, SOLVEstruct);
+#endif
+
 	
     /* ------------------------------------------------------------
        Compute the solution matrix X.
@@ -1275,20 +1294,9 @@ pdgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 		       SOLVEstruct);
             /* Inside this routine, SolveInitialized is set to YES.
 	       For repeated call to pdgssvx(), no need to re-initialilze
-	       the Solve data & communication structures.     */
-	} else if ( options->Fact == SamePattern ) {
-		/* Need to reset the solve's communication pattern,
-		   because perm_r[] is changed.    */
-#if 1
-	    dSolveFinalize(options, SOLVEstruct);
-	    dSolveInit(options, A, perm_r, perm_c, nrhs, LUstruct, grid,
-		       SOLVEstruct);
-#else /* not good enough for X-to-B distribution -- inv_perm_c changed */
-	    pxgstrs_finalize(SOLVEstruct->gstrs_comm);
-	    pxgstrs_init(A->ncol, m_loc, nrhs, fst_row, perm_r, perm_c, grid, 
-			 LUstruct->Glu_persist, SOLVEstruct);
-#endif
-	}
+	       the Solve data & communication structures, unless a new
+	       factorization with Fact == DOFACT or SamePattern is asked for. */
+	} 
 
 	pdgstrs(n, LUstruct, ScalePermstruct, grid, X, m_loc, 
 		fst_row, ldb, nrhs, SOLVEstruct, stat, info);
