@@ -317,9 +317,6 @@ pzgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
     int iword = sizeof (int_t);
     int dword = sizeof (doublecomplex);
 
-    double scatter_timer = 0;
-    double gemm_timer = 0;
-
     /* For measuring load imbalence in omp threads*/
     double omp_load_imblc = 0.0;
     double *omp_loop_time;
@@ -331,6 +328,8 @@ pzgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
     double pdgstrf2_timer       = 0.0;
     double pdgstrs2_timer       = 0.0;
     double lookaheadupdatetimer = 0.0;
+    double InitTimer            = 0.0; /* including compute schedule, malloc */
+    double tt_start, tt_end;
 
 #if !defined( GPU_ACC )
     /* Counter for couting memory operations */
@@ -341,15 +340,23 @@ pzgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
     double scatterU_mem_op_counter = 0.0;
     double scatterU_mem_op_timer   = 0.0;
 
-    double LookAheadRowSepTimer    = 0.0;
+    double GatherLTimer            = 0.0;
     double LookAheadRowSepMOP      = 0.0;
-    double GatherTimer             = 0.0;
+    double GatherUTimer             = 0.0;
     double GatherMOP               = 0.0;
     double LookAheadGEMMTimer      = 0.0;
     double LookAheadGEMMFlOp       = 0.0;
     double LookAheadScatterTimer   = 0.0;
     double LookAheadScatterMOP     = 0.0;
+    double RemainGEMMTimer         = 0.0;
+    double RemainScatterTimer      = 0.0;
+    double NetSchurUpTimer         = 0.0;
     double schur_flop_counter      = 0.0;
+#endif
+
+#if ( PRNTlevel>= 1)
+    /* count GEMM max dimensions */
+    int gemm_max_m = 0, gemm_max_n = 0, gemm_max_k = 0;
 #endif
 
 #if ( DEBUGlevel>=2 )
@@ -532,8 +539,9 @@ pzgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
 
 #if ( PRNTlevel>=1 )
     if(!iam) printf(".. Starting with %d OpenMP threads \n", num_threads );
-    double tt1 = SuperLU_timer_ ();
 #endif
+    double tt1 = SuperLU_timer_ ();
+
     nblocks = 0;
     ncb = nsupers / Pc; /* number of column blocks, horizontal */
     nrb = nsupers / Pr; /* number of row blocks, vertical  */
@@ -662,11 +670,6 @@ pzgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
 #endif
     log_memory(nsupers * iword, stat);
 
-#if ( PRNTlevel>=1 )
-    if (grid->iam == 0)
-        printf (" * init: %e seconds\n", SuperLU_timer_ () - tt1);
-#endif
-
     k = sp_ienv_dist (3);       /* max supernode size */
 #if 0
     if ( !(Llu->ujrow = doubleMalloc_dist(k*(k+1)/2)) )
@@ -763,7 +766,7 @@ pzgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
 	             On GPU, bigV is large to hold the aggregate GEMM output.*/
 
 #if ( PRNTlevel>=1 )
-    if(!iam) printf("[%d] .. BIG U bigu_size %d (same either on CPU or GPU)\n", iam, bigu_size);
+    if(!iam) printf("[%d] .. BIG U bigu_size " IFMT " (same either on CPU or GPU)\n", iam, bigu_size);
 #endif
 
 #ifdef GPU_ACC
@@ -917,8 +920,9 @@ pzgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
 #endif
     log_memory(Llu->bufmax[1] * dword, stat);
 
-    double NetSchurUpTimer = 0;
-    double pdgstrfTimer= SuperLU_timer_();
+    InitTimer = SuperLU_timer_() - tt1;
+
+    double pxgstrfTimer = SuperLU_timer_();
 
     /* ##################################################################
        ** Handle first block column separately to start the pipeline. **
@@ -1562,7 +1566,7 @@ pzgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
 
         double tsch = SuperLU_timer_();
 
-	/************************************************************************/
+	/*******************************************************************/
 
 #ifdef GPU_ACC
 
@@ -1578,7 +1582,7 @@ pzgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
         /* #include "SchCompUdt--baseline.c"  */
 	/************************************************************************/
         
-        NetSchurUpTimer += SuperLU_timer_()-tsch;
+        NetSchurUpTimer += SuperLU_timer_() - tsch;
 
     }  /* for k0 = 0, ... */
 
@@ -1586,17 +1590,33 @@ pzgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
        ** END MAIN LOOP: for k0 = ...
        ################################################################## */
     
-    pdgstrfTimer= SuperLU_timer_()-pdgstrfTimer;
+    pxgstrfTimer = SuperLU_timer_() - pxgstrfTimer;
 
     /* updating total flops */
 #if ( PRNTlevel>=1 )
-    if (!iam) {
-        printf("Time in scattering %lf \n",scatter_timer );
-        printf("Time in dgemm %lf \n", gemm_timer );
-        printf("Total time spent in schur update is    \t\t: %5.2lf seconds,\n",NetSchurUpTimer );
-        printf("Total Time in Factorization            \t\t: %5.2lf seconds, \n", pdgstrfTimer);
-        printf("Time (other GEMM and Scatter)          \t\t: %5.2lf seconds, \n", pdgstrfTimer-schur_flop_timer);
-        printf("Total time spent in schur update when offload    \t\t: %5.2lf seconds,\n",CPUOffloadTimer );
+    if ( iam==0 ) {
+	printf("\nInitialization time\t%8.2lf seconds\n"
+	       "\t Serial: compute static schedule, allocate storage\n", InitTimer);
+        printf("\n---- Time breakdown in factorization ----\n");
+	printf("Time in Look-ahead update \t %8.2lf seconds\n", lookaheadupdatetimer);
+        printf("Time in Schur update \t\t %8.2lf seconds\n", NetSchurUpTimer);
+        printf(".. Time to Gather L buffer\t %8.2lf  (Separate L panel by Lookahead/Remain)\n", GatherLTimer);
+        printf(".. Time to Gather U buffer\t %8.2lf \n", GatherUTimer);
+	       
+        printf(".. Time in GEMM %8.2lf \n",
+	       LookAheadGEMMTimer + RemainGEMMTimer);
+        printf("\t* Look-ahead\t %8.2lf \n", LookAheadGEMMTimer);
+        printf("\t* Remain\t %8.2lf \n", RemainGEMMTimer);
+
+        printf(".. Time to Scatter %8.2lf \n", 
+	       LookAheadScatterTimer + RemainScatterTimer);
+        printf("\t* Look-ahead\t %8.2lf \n", LookAheadScatterTimer);
+        printf("\t* Remain\t %8.2lf \n", RemainScatterTimer);
+
+        printf("Total Time in Factorization            \t: %8.2lf seconds, \n", pxgstrfTimer);
+        printf("Total time in Schur update with offload\t  %8.2lf seconds,\n",CPUOffloadTimer );
+        printf("--------\n");
+	printf("GEMM maximum block: %d-%d-%d\n", gemm_max_m, gemm_max_k, gemm_max_n);
     }
 #endif
     

@@ -23,13 +23,13 @@ at the top-level directory.
  */
 
 #define SCHEDULE_STRATEGY guided 
-
 double tt_start;
 double tt_end;
-if ( msg0 && msg2 ) {  /* L(:,k) and U(k,:) are not empty. */
-    int cum_nrow=0; /* cumulative number of nonzero rows in L(:,k) */
-    int temp_nbrow; /* nonzero rows in current block L(i,k) */
-    lptr = lptr0;
+
+if ( msg0 && msg2 ) { /* L(:,k) and U(k,:) are not empty. */
+    int cum_nrow = 0; /* cumulative number of nonzero rows in L(:,k) */
+    int temp_nbrow;   /* nonzero rows in current block L(i,k) */
+    lptr  = lptr0;
     luptr = luptr0;
     /**
      * Seperating L blocks into the top part within look-ahead window
@@ -155,9 +155,10 @@ if ( msg0 && msg2 ) {  /* L(:,k) and U(k,:) are not empty. */
 	 }
      } /* parallel for i ... */
 
+#if ( PRNTlevel>=1 )
      tt_end = SuperLU_timer_();
-
-     LookAheadRowSepTimer += tt_end-tt_start;
+     GatherLTimer += tt_end - tt_start;
+#endif
 #if 0
      LookAheadRowSepMOP  +=  2*knsupc*(lookAheadFullRow[lookAheadBlk-1]+Remain_info[RemainBlk-1].FullRow );
 #else
@@ -168,11 +169,11 @@ if ( msg0 && msg2 ) {  /* L(:,k) and U(k,:) are not empty. */
      nbrow = lnbrow + rnbrow; /* total number of rows in L */
      LookAheadRowSepMOP += 2*knsupc*(nbrow);
 #endif     
-     ldu   =0;
-     full  =1;
      
-     /*updating lookahead rows */
-     
+     /**********************
+      * Gather U blocks *
+      **********************/
+
      tt_start = SuperLU_timer_();
 #if 0     
      nbrow = lookAheadFullRow[lookAheadBlk-1]+Remain_info[RemainBlk-1].FullRow;
@@ -182,10 +183,10 @@ if ( msg0 && msg2 ) {  /* L(:,k) and U(k,:) are not empty. */
 	 /*
 	  * Counting U blocks
 	  */
-	 ncols=0; /* total number of nonzero columns in U(k,:) */
-	 ldu=0;
-	 full=1; /* flag the U block is indeed 'full', containing segments
-	            of same length. No need padding 0 */
+	 ncols = 0; /* total number of nonzero columns in U(k,:) */
+	 ldu   = 0;
+	 full  = 1; /* flag the U block is indeed 'full', containing segments
+	               of same length. No need padding 0 */
 	 int temp_ncols=0;
 
          /* Loop through all blocks in U(k,:) to set up pointers to the start
@@ -264,8 +265,9 @@ if ( msg0 && msg2 ) {  /* L(:,k) and U(k,:) are not empty. */
 
     }  /* end if (nbrow>0) */
 
-    tt_end = SuperLU_timer_();
-    GatherTimer += tt_end-tt_start;
+#if ( PRNTlevel>=1 )
+    GatherUTimer += SuperLU_timer_() - tt_start;
+#endif
     GatherMOP += 2*ldu*ncols;
 
     int Lnbrow   = lookAheadBlk==0 ? 0 :lookAheadFullRow[lookAheadBlk-1];
@@ -274,19 +276,21 @@ if ( msg0 && msg2 ) {  /* L(:,k) and U(k,:) are not empty. */
     int thread_id;
     tempv = bigV;
 
+    /**************************************
+     * Perform GEMM followed by Scatter *
+     **************************************/
+
     if ( Lnbrow>0 && ldu>0 && ncols>0 ) { /* Both L(:,k) and U(k,:) nonempty */
         /* Perform a large GEMM call */
         ncols = Ublock_info[nub-1].full_u_cols;
         schur_flop_counter += 2 * (double)Lnbrow * (double)ldu * (double)ncols;
         stat->ops[FACT]    += 2 * (double)Lnbrow * (double)ldu * (double)ncols;
 
-        tt_start = SuperLU_timer_();
-
         /***************************************************************
          * Updating look-ahead blocks in both L and U look-ahead windows.
          ***************************************************************/
 #ifdef _OPENMP
-#pragma omp parallel default (shared) private(thread_id)
+#pragma omp parallel default (shared) private(thread_id,tt_start,tt_end)
      {
  	thread_id = omp_get_thread_num();
  
@@ -309,6 +313,8 @@ if ( msg0 && msg2 ) {  /* L(:,k) and U(k,:) are not empty. */
  	/* Each thread is assigned one loop index ij, responsible for 
  	   block update L(lb,k) * U(k,j) -> tempv[]. */
         for (int ij = 0; ij < lookAheadBlk*(nub-jj0); ++ij) {
+	    if ( thread_id == 0 ) tt_start = SuperLU_timer_();
+
             int j   = ij/lookAheadBlk + jj0; /* jj0 was set to 0 */
             int lb  = ij%lookAheadBlk;
 
@@ -340,6 +346,12 @@ if ( msg0 && msg2 ) {  /* L(:,k) and U(k,:) are not empty. */
             lptr += LB_DESCRIPTOR;
             int cum_nrow = (lb==0 ? 0 : lookAheadFullRow[lb-1]);
 
+#if ( PRNTlevel>= 1)
+	    gemm_max_m = SUPERLU_MAX(gemm_max_m, temp_nbrow);
+	    gemm_max_n = SUPERLU_MAX(gemm_max_n, ncols);
+	    gemm_max_k = SUPERLU_MAX(gemm_max_k, ldu);
+#endif
+
 #if defined (USE_VENDOR_BLAS)            
             dgemm_("N", "N", &temp_nbrow, &ncols, &ldu, &alpha,
                   &lookAhead_L_buff[(knsupc-ldu)*Lnbrow+cum_nrow], &Lnbrow,
@@ -348,6 +360,13 @@ if ( msg0 && msg2 ) {  /* L(:,k) and U(k,:) are not empty. */
             dgemm_("N", "N", &temp_nbrow, &ncols, &ldu, &alpha,
                   &lookAhead_L_buff[(knsupc-ldu)*Lnbrow+cum_nrow], &Lnbrow,
                   &tempu[st_col*ldu], &ldu, &beta, tempv1, &temp_nbrow);
+#endif
+#if ( PRNTlevel>=1 )
+	    if (thread_id == 0) {
+		tt_end = SuperLU_timer_();
+		LookAheadGEMMTimer += tt_end - tt_start;
+		tt_start = tt_end;
+	    }
 #endif
             if ( ib < jb ) {
                 dscatter_u (
@@ -371,16 +390,18 @@ if ( msg0 && msg2 ) {  /* L(:,k) and U(k,:) are not empty. */
 				 grid
 				);
             }
+
+#if ( PRNTlevel>=1 )
+	    if (thread_id == 0)
+		LookAheadScatterTimer += SuperLU_timer_() - tt_start;
+#endif
         } /* end omp for ij = ... */
 #ifdef _OPENMP
     } /* end omp parallel */
 #endif
-        tt_end = SuperLU_timer_();
-        LookAheadGEMMTimer += tt_end- tt_start;
         LookAheadGEMMFlOp  += 2*(double)Lnbrow * (double)ldu * (double)ncols;
-        stat->ops[FACT]    += 2 * (double)Lnbrow * (double)ldu * (double)ncols;
-        LookAheadScatterTimer += tt_end-tt_start;
-        LookAheadScatterMOP   += 3*Lnbrow*ncols;
+        stat->ops[FACT]    += 2*(double)Lnbrow * (double)ldu * (double)ncols;
+        LookAheadScatterMOP += 3*Lnbrow*ncols;
     } /* end if Lnbrow < ... */
     
     /***************************************************************
@@ -392,10 +413,8 @@ if ( msg0 && msg2 ) {  /* L(:,k) and U(k,:) are not empty. */
     schur_flop_counter  += 2 * (double)Rnbrow * (double)ldu * (double)ncols;
     stat->ops[FACT]     += 2 * (double)Rnbrow * (double)ldu * (double)ncols;
 
-    tt_start = SuperLU_timer_();
-
 #ifdef _OPENMP
-#pragma omp parallel default(shared) private(thread_id)
+#pragma omp parallel default(shared) private(thread_id,tt_start,tt_end)
     {
 	thread_id = omp_get_thread_num();
  
@@ -449,6 +468,10 @@ if ( msg0 && msg2 ) {  /* L(:,k) and U(k,:) are not empty. */
 	lptr += LB_DESCRIPTOR;
 	int cum_nrow = (lb==0 ? 0 : Remain_info[lb-1].FullRow);
 
+#if ( PRNTlevel>=1 )
+	if ( thread_id==0 ) tt_start = SuperLU_timer_();
+#endif
+
 	/* calling GEMM */
 #if defined (USE_VENDOR_BLAS)
 	dgemm_("N", "N", &temp_nbrow, &ncols, &ldu, &alpha,
@@ -458,6 +481,14 @@ if ( msg0 && msg2 ) {  /* L(:,k) and U(k,:) are not empty. */
 	dgemm_("N", "N", &temp_nbrow, &ncols, &ldu, &alpha,
 	      &Remain_L_buff[(knsupc-ldu)*Rnbrow+cum_nrow], &Rnbrow,
 	      &tempu[st_col*ldu], &ldu, &beta, tempv1, &temp_nbrow);
+#endif
+
+#if ( PRNTlevel>=1 )
+	if (thread_id==0) {
+	    tt_end = SuperLU_timer_();
+	    RemainGEMMTimer += tt_end - tt_start;
+	    tt_start = tt_end;
+	}
 #endif
 
 	/* Now scattering the block */
@@ -483,6 +514,10 @@ if ( msg0 && msg2 ) {  /* L(:,k) and U(k,:) are not empty. */
 			    grid
 			   );
 	}
+
+#if ( PRNTlevel>=1 )
+	if (thread_id==0) RemainScatterTimer += SuperLU_timer_() - tt_start;
+#endif
     } /* end omp for (int ij =...) */
 #ifdef _OPENMP
     } /* end omp parallel region */
