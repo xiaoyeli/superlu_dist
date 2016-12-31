@@ -13,9 +13,9 @@ at the top-level directory.
  * \brief Read the matrix from data file
  *
  * <pre>
- * -- Distributed SuperLU routine (version 2.0) --
+ * -- Distributed SuperLU routine (version 5.1.3) --
  * Lawrence Berkeley National Lab, Univ. of California Berkeley.
- * March 15, 2003
+ * December 31, 2016
  * </pre>
  */
 #include <math.h>
