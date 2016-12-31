@@ -24,8 +24,8 @@ PLAT		= _i386
 #
 #  The name of the libraries to be created/linked to
 #
-DSuperLUroot 	= ${HOME}/Release_Codes/SuperLU_DIST_4.2
-DSUPERLULIB   	= $(DSuperLUroot)/lib/libsuperlu_dist_4.2.a
+DSuperLUroot 	= ${HOME}/Release_Codes/SuperLU_DIST_5.1.3
+DSUPERLULIB   	= $(DSuperLUroot)/lib/libsuperlu_dist.a
 #
 BLASDEF	     	= -DUSE_VENDOR_BLAS
 BLASLIB      	= /usr/lib/libblas.so.3
