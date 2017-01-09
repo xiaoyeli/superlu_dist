@@ -100,7 +100,7 @@ while (j < nub && perm_u[2 * j] <= k0 + num_look_aheads)
        'firstprivate' ensures that the private variables are initialized
        to the values before entering the loop  */
 #pragma omp parallel for \
-    firstprivate(lptr,luptr,ib,tempv,current_b)	private(lb) \
+    firstprivate(lptr,luptr,ib,tempv,current_b) private(lb) \
     default(shared) schedule(dynamic)
 #endif
     for (lb = 0; lb < nlb; lb++) { /* Loop through each block in L(:,k) */
@@ -134,6 +134,7 @@ while (j < nub && perm_u[2 * j] <= k0 + num_look_aheads)
         lptr += LB_DESCRIPTOR;  /* Skip descriptor. */
 
         /* calling gemm */
+	stat->ops[FACT] += 8.0 * (flops_t)temp_nbrow * ldu * ncols;
 #if defined (USE_VENDOR_BLAS)
         zgemm_("N", "N", &temp_nbrow, &ncols, &ldu, &alpha,
                    &lusup[luptr + (knsupc - ldu) * nsupr], &nsupr,

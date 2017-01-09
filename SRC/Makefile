@@ -80,6 +80,11 @@ complex16: $(ZSLUSRC) $(ZPLUSRC) $(ALLAUX)
 		$(ZSLUSRC) $(ZPLUSRC) $(ALLAUX)
 	$(RANLIB) $(DSUPERLULIB)
 
+pdgstrf.o: dscatter.c dlook_ahead_update.c dSchCompUdt-2Ddynamic.c pdgstrf.c
+	$(CC) $(CFLAGS) $(CDEFS) $(BLASDEF) -c pdgstrf.c $(VERBOSE)
+
+pzgstrf.o: zscatter.c zlook_ahead_update.c zSchCompUdt-2Ddynamic.c pzgstrf.c
+	$(CC) $(CFLAGS) $(CDEFS) $(BLASDEF) -c pzgstrf.c $(VERBOSE)
 
 .c.o:
 	$(CC) $(CFLAGS) $(CDEFS) $(BLASDEF) -c $< $(VERBOSE)

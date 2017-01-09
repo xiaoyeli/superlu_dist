@@ -283,8 +283,11 @@ if ( msg0 && msg2 ) { /* L(:,k) and U(k,:) are not empty. */
     if ( Lnbrow>0 && ldu>0 && ncols>0 ) { /* Both L(:,k) and U(k,:) nonempty */
         /* Perform a large GEMM call */
         ncols = Ublock_info[nub-1].full_u_cols;
-        schur_flop_counter += 2 * (double)Lnbrow * (double)ldu * (double)ncols;
-        stat->ops[FACT]    += 2 * (double)Lnbrow * (double)ldu * (double)ncols;
+	flops_t flps = 2.0 * (flops_t)Lnbrow * ldu * ncols;
+        schur_flop_counter += flps;
+        stat->ops[FACT]    += flps;
+        LookAheadGEMMFlOp  += flps;
+        LookAheadScatterMOP += 3*Lnbrow*ncols;
 
         /***************************************************************
          * Updating look-ahead blocks in both L and U look-ahead windows.
@@ -399,9 +402,6 @@ if ( msg0 && msg2 ) { /* L(:,k) and U(k,:) are not empty. */
 #ifdef _OPENMP
     } /* end omp parallel */
 #endif
-        LookAheadGEMMFlOp  += 2*(double)Lnbrow * (double)ldu * (double)ncols;
-        stat->ops[FACT]    += 2*(double)Lnbrow * (double)ldu * (double)ncols;
-        LookAheadScatterMOP += 3*Lnbrow*ncols;
     } /* end if Lnbrow < ... */
     
     /***************************************************************
@@ -409,9 +409,9 @@ if ( msg0 && msg2 ) { /* L(:,k) and U(k,:) are not empty. */
      ***************************************************************/
     Rnbrow  = RemainBlk==0 ? 0 : Remain_info[RemainBlk-1].FullRow;
     ncols   = jj_cpu==0 ? 0 : Ublock_info[jj_cpu-1].full_u_cols;
-
-    schur_flop_counter  += 2 * (double)Rnbrow * (double)ldu * (double)ncols;
-    stat->ops[FACT]     += 2 * (double)Rnbrow * (double)ldu * (double)ncols;
+    flops_t flps = 2.0 * (flops_t)Rnbrow * ldu * ncols;
+    schur_flop_counter  += flps;
+    stat->ops[FACT]     += flps;
 
 #ifdef _OPENMP
 #pragma omp parallel default(shared) private(thread_id,tt_start,tt_end)

@@ -238,7 +238,7 @@ pdgstrf2_trsm
                 &l, &nsupc,
                 &alpha, ublk_ptr, &ld_ujrow, &lusup[nsupc], &nsupr);
 #endif
-
+	stat->ops[FACT] += (flops_t) nsupc * (nsupc+1) * l;
     } else {  /* non-diagonal process */
         /* ================================================ *
          * Receive the diagonal block of U                  *
@@ -271,9 +271,10 @@ pdgstrf2_trsm
                     &nsupr, &nsupc,
                     &alpha, ublk_ptr, &ld_ujrow, lusup, &nsupr);
 #endif
+	    stat->ops[FACT] += (flops_t) nsupc * (nsupc+1) * nsupr;
         }
 
-    }                           /* end if pkk ... */
+    } /* end if pkk ... */
 
     /* printf("exiting pdgstrf2 %d \n", grid->iam);  */
 
@@ -363,13 +364,11 @@ void pdgstrs2_omp
                             &uval[rukp], &incx);
 #endif
                 }
-
-                if (thread_id == 0)
-                    stat->ops[FACT] += segsize * (segsize + 1); // master thread updated the stats
                 rukp += segsize;
-            }
-        }
-    }                           /* for b ... */
+		stat->ops[FACT] += (flops_t) segsize * (segsize + 1);
+            } /* end if segsize > 0 */
+        } /* end for j ... */
+    } /* end for b ... */
 
 } /* PDGSTRS2_omp */
 

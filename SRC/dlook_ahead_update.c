@@ -135,6 +135,7 @@ while (j < nub && perm_u[2 * j] <= k0 + num_look_aheads)
         lptr += LB_DESCRIPTOR;  /* Skip descriptor. */
 
         /* calling gemm */
+	stat->ops[FACT] += 2.0 * (flops_t)temp_nbrow * ldu * ncols;
 #if defined (USE_VENDOR_BLAS)
         dgemm_("N", "N", &temp_nbrow, &ncols, &ldu, &alpha,
                    &lusup[luptr + (knsupc - ldu) * nsupr], &nsupr,
