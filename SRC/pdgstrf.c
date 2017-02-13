@@ -519,6 +519,7 @@ pdgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
     if (!(factoredU = SUPERLU_MALLOC (nsupers * sizeof (int_t))))
         ABORT ("Malloc fails for factoredU[].");
     for (i = 0; i < nsupers; i++) factored[i] = factoredU[i] = -1;
+
     log_memory(2 * nsupers * iword, stat);
 
     int num_threads = 1;
@@ -538,7 +539,10 @@ pdgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
 #endif
 
 #if ( PRNTlevel>=1 )
-    if(!iam) printf(".. Starting with %d OpenMP threads \n", num_threads );
+    if(!iam) {
+       printf(".. Starting with %d OpenMP threads \n", num_threads );
+       fflush(stdout);
+    }
 #endif
     double tt1 = SuperLU_timer_ ();
 
@@ -556,8 +560,8 @@ pdgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
     full_u_cols = SUPERLU_MALLOC(ncb * sizeof(int));
     blk_ldu = SUPERLU_MALLOC(ncb * sizeof(int));
 #endif
-    log_memory(2 * ncb * iword, stat);
 
+    log_memory(2 * ncb * iword, stat);
 
     /* insert a check condition here */
 
@@ -678,8 +682,8 @@ pdgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
     /* Instead of half storage, we'll do full storage */
     if (!(Llu->ujrow = doubleCalloc_dist (k * k)))
         ABORT ("Malloc fails for ujrow[].");
-    log_memory(k * k * iword, stat);
 #endif
+    log_memory(k * k * iword, stat);
 
 #if ( PRNTlevel>=1 )
     if (!iam) {
@@ -690,6 +694,7 @@ pdgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
              (long int) Llu->bufmax[0], (long int) Llu->bufmax[1],
              (long int) Llu->bufmax[2], (long int) Llu->bufmax[3],
              (long int) Llu->bufmax[4]);
+        fflush(stdout);
     }
 #endif
    
@@ -850,11 +855,14 @@ pdgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
     // mlock(bigU,(bigu_size) * sizeof (double));   
 
 #if ( PRNTlevel>=1 )
+
     if(!iam) {
 	printf ("  Max row size is %d \n", max_row_size);
         printf ("  Threads per process %d \n", num_threads);
 	/* printf ("  Using buffer_size of %d \n", buffer_size); */
+	fflush(stdout);
     }
+
 #endif
 
     if (!(tempv2d = doubleCalloc_dist (2 * ((size_t) ldt) * ldt)))
@@ -897,13 +905,11 @@ pdgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
 #else
     Remain_info = (Remain_info_t *) SUPERLU_MALLOC(mrb*sizeof(Remain_info_t));
 #endif
-    log_memory(4 * mrb * iword + mrb * sizeof(Remain_info_t), stat);
 
     double *lookAhead_L_buff, *Remain_L_buff;
     Ublock_info_t *Ublock_info;
     ldt = sp_ienv_dist (3);       /* max supernode size */
     lookAhead_L_buff = doubleMalloc_dist(ldt*ldt* (num_look_aheads+1) );
-    log_memory(ldt * ldt * (num_look_aheads+1) * dword, stat);
 
 #if 0
     Remain_L_buff = (double *) _mm_malloc( sizeof(double)*(Llu->bufmax[1]),64);
@@ -918,7 +924,11 @@ pdgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
     int *Ublock_info_rukp = (int *) SUPERLU_MALLOC(mcb*sizeof(int));
     int *Ublock_info_jb = (int *) SUPERLU_MALLOC(mcb*sizeof(int));
 #endif
-    log_memory(Llu->bufmax[1] * dword, stat);
+
+    long long alloc_mem = 4 * mrb * iword + mrb * sizeof(Remain_info_t)
+                        + ldt * ldt * (num_look_aheads+1) * dword
+ 			+ Llu->bufmax[1] * dword ;
+    log_memory(alloc_mem, stat);
 
     InitTimer = SuperLU_timer_() - tt1;
 
@@ -1673,7 +1683,6 @@ pdgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
     SUPERLU_FREE (factored);
     log_memory(-(6 * nsupers * iword), stat);
 
-
     for (i = 0; i <= num_look_aheads; i++) {
         SUPERLU_FREE (msgcnts[i]);
         SUPERLU_FREE (msgcntsU[i]);
@@ -1727,7 +1736,9 @@ pdgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
     SUPERLU_FREE(omp_loop_time);
     SUPERLU_FREE(full_u_cols);
     SUPERLU_FREE(blk_ldu);
+#if ( PRNTlevel>=1 )
     log_memory(-2 * ncb * dword, stat);
+#endif
 
     SUPERLU_FREE(lookAheadFullRow);
     SUPERLU_FREE(lookAheadStRow);

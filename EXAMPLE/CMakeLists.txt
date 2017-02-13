@@ -41,7 +41,7 @@ if(enable_double)
   target_link_libraries(pddrive1 ${all_link_libs})
   add_superlu_dist_test(pddrive1 big.rua 2 2)
 
-  set(DEXM2 pddrive2.c dcreate_matrix.c)
+  set(DEXM2 pddrive2.c dcreate_matrix.c dcreate_matrix_perturbed.c)
   add_executable(pddrive2 ${DEXM2})
   target_link_libraries(pddrive2 ${all_link_libs})
 
@@ -85,7 +85,7 @@ if(enable_complex16)
   add_executable(pzdrive1 ${ZEXM1})
   target_link_libraries(pzdrive1 ${all_link_libs})
 
-  set(ZEXM2 pzdrive2.c zcreate_matrix.c)
+  set(ZEXM2 pzdrive2.c zcreate_matrix.c zcreate_matrix_perturbed.c)
   add_executable(pzdrive2 ${ZEXM2})
   target_link_libraries(pzdrive2 ${all_link_libs})
 

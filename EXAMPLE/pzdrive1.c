@@ -105,6 +105,7 @@ int main(int argc, char *argv[])
     if ( !iam ) {
 	printf("Input matrix file: %s\n", *cpp);
         printf("\tProcess grid\t%d X %d\n", (int)grid.nprow, (int)grid.npcol);
+	fflush(stdout);
     }
 
 #if ( VAMPIR>=1 )
@@ -148,6 +149,7 @@ int main(int argc, char *argv[])
     if (!iam) {
 	print_sp_ienv_dist(&options);
 	print_options_dist(&options);
+	fflush(stdout);
     }
 
     m = A.nrow;

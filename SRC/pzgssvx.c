@@ -727,7 +727,7 @@ pzgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 #if ( PRNTlevel>=1 )
 	    if ( !iam ) {
 		printf(".. equilibrated? *equed = %c\n", *equed);
-		/*fflush(stdout);*/
+		fflush(stdout);
 	    }
 #endif
 	} /* end if Fact ... */
@@ -917,7 +917,7 @@ pzgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 	else *(unsigned char *)norm = 'I';
 	anorm = pzlangs(norm, A, grid);
 #if ( PRNTlevel>=1 )
-	if ( !iam ) printf(".. anorm %e\n", anorm);
+	if ( !iam ) { printf(".. anorm %e\n", anorm); 	fflush(stdout); }
 #endif
     }
 
@@ -1049,6 +1049,7 @@ pzgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 			   	symb_mem_usage.for_lu*1e-6, 
 			   	symb_mem_usage.total*1e-6,
 			   	symb_mem_usage.expansions);
+			fflush(stdout);
 		    }
 #endif
 	    	} else { /* symbfact out of memory */
@@ -1217,6 +1218,7 @@ pzgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 		       avg / grid->nprow / grid->npcol * 1e-6,
 		       max * 1e-6);
 		printf("**************************************************\n");
+		fflush(stdout);
             }
 	} /* end printing stats */
     

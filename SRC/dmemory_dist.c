@@ -135,7 +135,6 @@ int_t dQuerySpace_dist(int_t n, LUstruct_t *LUstruct, gridinfo_t *grid,
     printf(".. dQuery_Space: peak_buffer %.2f (MB)\n", stat->peak_buffer * 1.0e-6);
 #endif
 #endif
-
     return 0;
 } /* dQuerySpace_dist */
 

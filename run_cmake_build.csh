@@ -4,7 +4,7 @@ if ( ! $?NERSC_HOST ) then
     echo "NERSC_HOST undefined"
 else
   if ( "$NERSC_HOST" == "edison" ) then
-    setenv PARMETIS_ROOT ~/Edison/lib/parmetis-4.0.3 
+    setenv PARMETIS_ROOT ~/Edison/lib/parmetis-4.0.3
 #    setenv PARMETIS_BUILD_DIR ${PARMETIS_ROOT}/shared-build
     setenv PARMETIS_BUILD_DIR ${PARMETIS_ROOT}/static-build/Linux-x86_64
     cmake .. \
@@ -15,7 +15,7 @@ else
 #    -DCMAKE_EXE_LINKER_FLAGS="-shared" \
     -DCMAKE_Fortran_COMPILER=ftn \
     -Denable_blaslib=OFF \
-    -DTPL_BLAS_LIBRARIES=" " \
+#    -DTPL_BLAS_LIBRARIES=" " \
     -DBUILD_SHARED_LIBS=OFF \
     -DCMAKE_INSTALL_PREFIX=..
   endif
