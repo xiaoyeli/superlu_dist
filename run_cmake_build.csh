@@ -15,7 +15,7 @@ else
 #    -DCMAKE_EXE_LINKER_FLAGS="-shared" \
     -DCMAKE_Fortran_COMPILER=ftn \
     -Denable_blaslib=OFF \
-    -DTPL_BLAS_LIBRARIES=" " \
+#    -DTPL_BLAS_LIBRARIES=" " \
     -DBUILD_SHARED_LIBS=OFF \
     -DCMAKE_INSTALL_PREFIX=..
   endif
