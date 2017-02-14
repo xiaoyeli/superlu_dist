@@ -1,0 +1,40 @@
+############################################################################
+#
+#  Program:         SuperLU_DIST
+#
+#  Module:          make.inc
+#
+#  Purpose:         Top-level Definitions
+#
+#  Creation date:   March 1, 2016	version 5.0.0
+#
+#  Modified:	    
+#		    
+#
+############################################################################
+#
+#  The name of the libraries to be created/linked to
+#
+SuperLUroot	= /home/xiaoye/Dropbox/Codes/SuperLU/superlu_dist.git/build
+DSUPERLULIB   	= $(SuperLUroot)/SRC/libsuperlu_dist.a
+
+LIBS		= $(DSUPERLULIB) /usr/lib/libf77blas.so /usr/lib/libatlas.so /home/xiaoye/lib/static/parmetis-4.0.3/build/Linux-x86_64/libparmetis/libparmetis.a /home/xiaoye/lib/static/parmetis-4.0.3/build/Linux-x86_64/libmetis/libmetis.a
+
+#
+#  The archiver and the flag(s) to use when building archive (library)
+#  If your system has no ranlib, set RANLIB = echo.
+#
+ARCH         = /usr/bin/ar
+ARCHFLAGS    = cr
+RANLIB       = /usr/bin/ranlib
+
+CC           = /home/xiaoye/mpich-install/bin/mpicc
+CFLAGS 	     = -O3 -DNDEBUG -I/home/xiaoye/lib/static/parmetis-4.0.3/metis/include -I/home/xiaoye/lib/static/parmetis-4.0.3/include -fopenmp  -DUSE_VENDOR_BLAS -DDEBUGlevel=0 -DPRNTlevel=0 -std=c99 -g
+# CFLAGS       += -D
+# CFLAGS       +=  
+# CFLAGS       += -D_LONGINT
+NOOPTS       = -O0
+FORTRAN	     = /usr/bin/gfortran
+
+LOADER       = $(CC)
+LOADOPTS     = -Wl,-rpath,/home/xiaoye/Dropbox/Codes/SuperLU/superlu_dist.git/lib    -Wl,-rpath  -Wl,/home/xiaoye/mpich-install/lib  -Wl,--enable-new-dtags -fopenmp
