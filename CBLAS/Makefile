@@ -87,7 +87,7 @@ complex16: $(ZBLAS1) $(ZBLAS2) $(ZBLAS3) $(ALLBLAS)
 	$(RANLIB) $(BLASLIB)
 
 .c.o:
-	$(CC) $(CFLAGS) $(CDEFS) -I$(HEADER) -c $< $(VERBOSE)
+	$(CC) $(CFLAGS) $(CDEFS) -c $< $(VERBOSE)
 
 clean:	
 	rm -f *.o
