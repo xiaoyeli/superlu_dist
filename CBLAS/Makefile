@@ -66,22 +66,22 @@ ALLBLAS = input_error_dist.o
 
 all: single double complex complex16
 
-single: $(SBLAS1) $(SBLAS2) $(SBLAS3)
+single: $(SBLAS1) $(SBLAS2) $(SBLAS3) $(ALLBLAS)
 	$(ARCH) $(ARCHFLAGS) $(BLASLIB) $(SBLAS1) $(ALLBLAS) \
 	$(SBLAS2) $(SBLAS3)
 	$(RANLIB) $(BLASLIB)
 
-double: $(DBLAS1) $(DBLAS2) $(DBLAS3)
+double: $(DBLAS1) $(DBLAS2) $(DBLAS3) $(ALLBLAS)
 	$(ARCH) $(ARCHFLAGS) $(BLASLIB) $(DBLAS1) $(ALLBLAS) \
 	$(DBLAS2) $(DBLAS3)
 	$(RANLIB) $(BLASLIB)
 
-complex: $(CBLAS1) $(CBLAS2) $(CBLAS3)
+complex: $(CBLAS1) $(CBLAS2) $(CBLAS3) $(ALLBLAS)
 	$(ARCH) $(ARCHFLAGS) $(BLASLIB) $(CBLAS1) $(ALLBLAS) \
 	$(CBLAS2) $(CBLAS3)
 	$(RANLIB) $(BLASLIB)
 
-complex16: $(ZBLAS1) $(ZBLAS2) $(ZBLAS3)
+complex16: $(ZBLAS1) $(ZBLAS2) $(ZBLAS3) $(ALLBLAS)
 	$(ARCH) $(ARCHFLAGS) $(BLASLIB) $(ZBLAS1) $(ALLBLAS) \
 	$(ZBLAS2) $(ZBLAS3)
 	$(RANLIB) $(BLASLIB)
