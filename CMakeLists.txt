@@ -27,20 +27,8 @@ INCLUDE("cmake/XSDKDefaults.cmake")
 # Usual initialization stuff
 #
 ######################################################################
-# setup options
-option(enable_blaslib   "Build the CBLAS library" ${enable_blaslib_DEFAULT})
-option(enable_parmetislib   "Build the ParMETIS library" ON)
-option(enable_doc       "Build doxygen documentation" OFF)
-option(enable_double    "Enable double precision library" ON)
-option(enable_complex16 "Enable complex16 precision library" ON)
-option(enable_examples  "Build examples" ON)
-option(TPL_PARMETIS_LIBRARIES "List of absolute paths to ParMETIS link libraries [].")
-option(TPL_PARMETIS_INCLUDE_DIRS "List of absolute paths to ParMETIS include directories [].")
-
-if (NOT CMAKE_INSTALL_PREFIX)
-  set(CMAKE_INSTALL_PREFIX /usr/local)
-endif()
-
+set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)    ## ????
+set(CMAKE_INSTALL_NAME_DIR "${CMAKE_INSTALL_PREFIX}/lib")
 
 #---- For shared library
 
@@ -81,6 +69,21 @@ if (USE_XSDK_DEFAULTS)
 else()
   set(enable_blaslib_DEFAULT ON)
 endif()
+
+if (NOT CMAKE_INSTALL_PREFIX)
+  set(CMAKE_INSTALL_PREFIX /usr/local)
+endif()
+
+
+# setup options
+option(enable_blaslib   "Build the CBLAS library" ${enable_blaslib_DEFAULT})
+option(enable_parmetislib   "Build the ParMETIS library" ON)
+option(enable_doc       "Build doxygen documentation" OFF)
+option(enable_double    "Enable double precision library" ON)
+option(enable_complex16 "Enable complex16 precision library" ON)
+option(enable_examples  "Build examples" ON)
+option(TPL_PARMETIS_LIBRARIES "List of absolute paths to ParMETIS link libraries [].")
+option(TPL_PARMETIS_INCLUDE_DIRS "List of absolute paths to ParMETIS include directories [].")
 
 
 # setup required compiler defines and options.
@@ -125,9 +128,9 @@ else()
     add_subdirectory(CBLAS)
     set(BLAS_LIB blas)
     if (BUILD_SHARED_LIBS)  # export to be referenced by downstream makefile
-        set(BLAS_LIB_EXPORT ${CMAKE_SOURCE_DIR}/build/CBLAS/libblas.so)
+        set(BLAS_LIB_EXPORT ${CMAKE_INSTALL_PREFIX}/CBLAS/libblas.so)
     else()
-        set(BLAS_LIB_EXPORT ${CMAKE_SOURCE_DIR}/build/CBLAS/libblas.a)
+        set(BLAS_LIB_EXPORT ${CMAKE_INSTALL_PREFIX}/CBLAS/libblas.a)
     endif()
 endif()
 
@@ -215,3 +218,8 @@ endif()
 # file(WRITE "make.defs" "# can be exposed to users" ${CMAKE_C_COMPILER})
 # configure_file(${CMAKE_SOURCE_DIR}/make.inc.in ${CMAKE_BINARY_DIR}/make.inc)
 configure_file(${SuperLU_DIST_SOURCE_DIR}/make.inc.in ${SuperLU_DIST_SOURCE_DIR}/make.inc)
+
+# Add pkg-config support
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/superlu_dist.pc.in ${CMAKE_CURRENT_BINARY_DIR}/superlu_dist.pc @ONLY)
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/superlu_dist.pc
+	DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig)

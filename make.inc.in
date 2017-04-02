@@ -15,7 +15,7 @@
 #
 #  The name of the libraries to be created/linked to
 #
-SuperLUroot	= ${CMAKE_SOURCE_DIR}/build
+SuperLUroot	= ${CMAKE_INSTALL_PREFIX}
 DSUPERLULIB   	= $(SuperLUroot)/SRC/${PROJECT_NAME_LIB_EXPORT}
 
 LIBS		= $(DSUPERLULIB) ${BLAS_LIB_EXPORT} ${PARMETIS_LIB_EXPORT}

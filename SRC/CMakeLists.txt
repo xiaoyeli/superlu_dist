@@ -123,5 +123,14 @@ set_target_properties(superlu_dist PROPERTIES
                       VERSION ${PROJECT_VERSION} SOVERSION ${VERSION_MAJOR}
 )
 
-install(TARGETS superlu_dist DESTINATION ${CMAKE_INSTALL_PREFIX}/lib)
-install(FILES ${headers} DESTINATION ${CMAKE_INSTALL_PREFIX}/include)
+# Define GNU standard installation directories
+include(GNUInstallDirs)
+
+install(TARGETS superlu_dist
+# DESTINATION ${CMAKE_INSTALL_PREFIX}/lib)
+     DESTINATION ${CMAKE_INSTALL_LIBDIR}
+)
+install(FILES ${headers}
+# DESTINATION ${CMAKE_INSTALL_PREFIX}/include)
+  DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+)

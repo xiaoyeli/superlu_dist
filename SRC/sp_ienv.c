@@ -103,7 +103,10 @@ sp_ienv_dist(int_t ispec)
             return 128;
 
 #endif
-        case 6: return (5);
+        case 6: 
+            ttemp = getenv("FILL");
+            if ( ttemp ) return(atoi(ttemp));
+            else return (5);
         case 7:
 	    ttemp = getenv ("N_GEMM");
 	    if (ttemp) return atoi (ttemp);
