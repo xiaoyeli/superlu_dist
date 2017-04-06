@@ -45,8 +45,9 @@ int pdcompute_resid(int m, int n, int nrhs, SuperMatrix *A,
             The number of columns of B, the matrix of right hand sides.   
             NRHS >= 0.
 	    
-    A       (input) SuperMatrix*
+    A       (input/output) SuperMatrix*
             The original M x N sparse matrix A.   
+	    On exit, the column indices are modified due to SPMV setup.
 
     X       (input) DOUBLE PRECISION array, dimension (LDX,NRHS)   
             The computed solution vectors for the system of linear   
