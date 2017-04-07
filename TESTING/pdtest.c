@@ -139,6 +139,11 @@ int main(int argc, char *argv[])
     nrhs = 1;   /* Number of right-hand side. */
     for (i = 0; i < NTESTS; ++i) result[i] = 0.0;
 
+    /* Parse command line argv[]. */
+    parse_command_line(argc, argv, &nprow, &npcol, matrix_type, &n,
+		       &relax, &maxsuper,
+		       &fill_ratio, &min_gemm_gpu_offload, &nrhs, &fp);
+
     /* ------------------------------------------------------------
        INITIALIZE MPI ENVIRONMENT. 
        ------------------------------------------------------------*/
@@ -152,7 +157,7 @@ int main(int argc, char *argv[])
     /* Bail out if I do not belong in the grid. */
     iam = grid.iam;
     if ( iam >= nprow * npcol )	goto out;
-    if ( !iam ) {
+    if ( 0 ) {
         printf("\tProcess grid\t%d X %d\n", (int)grid.nprow, (int)grid.npcol);
 	fflush(stdout);
     }
@@ -160,11 +165,6 @@ int main(int argc, char *argv[])
 #if ( DEBUGlevel>=1 )
     CHECK_MALLOC(iam, "Enter main()");
 #endif
-
-    /* Parse command line argv[]. */
-    parse_command_line(argc, argv, &nprow, &npcol, matrix_type, &n,
-		       &relax, &maxsuper,
-		       &fill_ratio, &min_gemm_gpu_offload, &nrhs, &fp);
 
     /* Set the default input options. */
     set_default_options_dist(&options);
@@ -292,7 +292,7 @@ int main(int argc, char *argv[])
 				&grid, &LUstruct, &SOLVEstruct,
 				berr, &stat, &info);
 
-			if ( !info ) {
+			if ( info ) {
 			    printf("** First factor: nrun %d: fact %d, info %d, "
 				   "equil %d, what_equil %d, DiagScale %d \n",
 				   nrun, fact, info, equil, what_equil,
@@ -324,8 +324,8 @@ int main(int argc, char *argv[])
 
 		    PStatInit(&stat);
 
-		    if ( !iam ) printf("\ttest pdgssvx: nrun %d, iequed %d, equil %d, fact %d\n", 
-				       nrun, iequed, equil, options.Fact);
+		    //if ( !iam ) printf("\ttest pdgssvx: nrun %d, iequed %d, equil %d, fact %d\n", 
+		    //   nrun, iequed, equil, options.Fact);
 		    /* Testing PDGSSVX: solve and compute the error bounds. */
 		    pdgssvx(&options, &A, &ScalePermstruct, b, ldb, nrhs,
 			    &grid, &LUstruct, &SOLVEstruct,
@@ -462,22 +462,22 @@ parse_command_line(int argc, char *argv[], int *nprow, int *npcol,
 	  case 'x': c = atoi(optarg); 
 	            sprintf(str, "%d", c);
 	            setenv("NREL", str, 1);
-	            printf("Reset relax env. variable to %d\n", c);
+	            //printf("Reset relax env. variable to %d\n", c);
 	            break;
 	  case 'm': c = atoi(optarg); 
 	            sprintf(str, "%d", c);
 		    setenv("NSUP", str, 1);
-		    printf("Reset maxsuper env. variable to %d\n", c);
+		    //printf("Reset maxsuper env. variable to %d\n", c);
 	            break;
 	  case 'b': c = atoi(optarg); 
 	            sprintf(str, "%d", c);
 		    setenv("FILL", str, 1);
-		    printf("Reset fill_ratio env. variable to %d\n", c);
+		    //printf("Reset fill_ratio env. variable to %d\n", c);
 	            break;
 	  case 'g': c = atoi(optarg); 
 	            sprintf(str, "%d", c);
 		    setenv("N_GEMM", str, 1);
-		    printf("Reset min_gemm_gpu_offload env. variable to %d\n", c);
+		    //printf("Reset min_gemm_gpu_offload env. variable to %d\n", c);
 	            break;
 	  case 's': *nrhs = atoi(optarg); 
 	            break;
@@ -485,7 +485,7 @@ parse_command_line(int argc, char *argv[], int *nprow, int *npcol,
                     if ( !(*fp = fopen(optarg, "r")) ) {
                         ABORT("File does not exist");
                     }
-                    printf(".. test sparse matrix in file: %s\n", optarg);
+                    //printf(".. test sparse matrix in file: %s\n", optarg);
                     break;
   	}
     }
