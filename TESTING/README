@@ -5,6 +5,9 @@ This directory contains testing programs to test various functions
 provded in SuperLU_DIST. 
 
 1. To run the real test (pdtest), you may type:
-  % mpiexec -n <np> pdtest -r <process row> -c <process columns> -f g20.rua 
+  % mpiexec -n <np> pdtest -r <process row> -c <process columns> -f ../EXAMPLE/g20.rua 
 
+2. bash scripts to run test;
+   - run.sh: do a single run with one set of input parameters.
+   - pdtest.sh: invoke many runs varying several input parameters.
 
