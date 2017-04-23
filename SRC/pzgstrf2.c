@@ -230,13 +230,11 @@ pzgstrf2_trsm
 #endif
 
 #if defined (USE_VENDOR_BLAS)
-        ztrsm_ (&side, &uplo, &transa, &diag,
-                &l, &nsupc,
+        ztrsm_ ("R", "U", "N", "N", &l, &nsupc,
                 &alpha, ublk_ptr, &ld_ujrow, &lusup[nsupc], &nsupr,
 		1, 1, 1, 1);
 #else
-        ztrsm_ (&side, &uplo, &transa, &diag,
-                &l, &nsupc,
+        ztrsm_ ("R", "U", "N", "N", &l, &nsupc,
                 &alpha, ublk_ptr, &ld_ujrow, &lusup[nsupc], &nsupr);
 #endif
 	stat->ops[FACT] += 4.0 * ((flops_t) nsupc * (nsupc+1) * l);
@@ -264,12 +262,10 @@ pzgstrf2_trsm
                 printf (" Rank :%d \t Empty block column occured :\n", iam);
 #endif
 #if defined (USE_VENDOR_BLAS)
-            ztrsm_ (&side, &uplo, &transa, &diag,
-                    &nsupr, &nsupc,
+            ztrsm_ ("R", "U", "N", "N", &nsupr, &nsupc,
                     &alpha, ublk_ptr, &ld_ujrow, lusup, &nsupr, 1, 1, 1, 1);
 #else
-            ztrsm_ (&side, &uplo, &transa, &diag,
-                    &nsupr, &nsupc,
+            ztrsm_ ("R", "U", "N", "N", &nsupr, &nsupc,
                     &alpha, ublk_ptr, &ld_ujrow, lusup, &nsupr);
 #endif
 	    stat->ops[FACT] += 4.0 * ((flops_t) nsupc * (nsupc+1) * nsupr);
