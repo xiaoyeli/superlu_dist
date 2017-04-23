@@ -1,0 +1,43 @@
+############################################################################
+#
+#  Program:         SuperLU_DIST
+#
+#  Module:          make.inc
+#
+#  Purpose:         Top-level Definitions
+#
+#  Creation date:   March 1, 2016	version 5.0.0
+#
+#  Modified:	    
+#		    
+#
+############################################################################
+#
+#  The name of the libraries to be created/linked to
+#
+SuperLUroot	= /Users/xsli/Dropbox/Codes/SuperLU/superlu_dist.git/xsli-build
+DSUPERLULIB   	= $(SuperLUroot)/SRC/libsuperlu_dist.a
+
+BLASLIB		= ${HOME}/Dropbox/Codes/SuperLU/superlu_dist.git/CBLAS/libblas.a
+
+LIBS		= $(DSUPERLULIB) ${BLASLIB} /Users/xsli/lib/parmetis-4.0.3/build/Darwin-x86_64/libparmetis/libparmetis.a /Users/xsli/lib/parmetis-4.0.3/build/Darwin-x86_64/libmetis/libmetis.a
+
+#
+#  The archiver and the flag(s) to use when building archive (library)
+#  If your system has no ranlib, set RANLIB = echo.
+#
+ARCH         = /usr/bin/ar
+ARCHFLAGS    = cr
+RANLIB       = /usr/bin/ranlib
+
+CC           = /Users/xsli/lib/mpich2-install/bin/mpicc
+CFLAGS 	     = -O3 -DNDEBUG -I/Users/xsli/lib/parmetis-4.0.3/metis/include -I/Users/xsli/lib/parmetis-4.0.3/include  -DDEBUGlevel=0 -DPRNTlevel=0 -std=c99 -g
+#CFLAGS       += -openmp
+# CFLAGS       += -D_LONGINT   ## 64-bit integer
+# CFLAGS       +=  
+NOOPTS       = -O0
+FORTRAN	     = /usr/local/bin/gfortran
+
+LOADER       = $(CC)
+LOADOPTS     = -openmp
+# LOADOPTS     = -Wl,-rpath,/Users/xsli/Dropbox/Codes/SuperLU/superlu_dist.git/xsli-build/lib

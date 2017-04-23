@@ -122,7 +122,7 @@ int main(int argc, char *argv[])
     char matrix_type[8], equed[1];
     int  relax, maxsuper=0, fill_ratio=0, min_gemm_gpu_offload=0;
     int    equil, ifact, nfact, iequil, iequed, prefact, notfactored;
-    int    nt, nrun=0, nfail=0, nerrs=0, imat, fimat, nimat=1;
+    int    nt, nrun=0, nfail=0, nerrs=0, imat, fimat=0, nimat=1;
     fact_t fact;
     double rowcnd, colcnd, amax;
     double result[NTESTS];
@@ -181,6 +181,7 @@ int main(int argc, char *argv[])
 	
     /* Loop through all the input options. */
     for (imat = fimat; imat < nimat; ++imat) { /* All matrix types */
+	//if (!iam) printf("imat loop ... %d\n", imat);
 	/* ------------------------------------------------------------
 	   GET THE MATRIX FROM FILE AND SETUP THE RIGHT HAND SIDE. 
 	   ------------------------------------------------------------*/
@@ -213,12 +214,17 @@ int main(int argc, char *argv[])
 		nfact = 1;
 		options.RowPerm = NOROWPERM; /* Turn off MC64 */
 	    }
+	    //if (!iam) printf("iequed loop ... %d\n", iequed);
 
 	    for (ifact = 0; ifact < nfact; ++ifact) {
 		fact = facts[ifact];
 		options.Fact = fact;
+		//if (!iam) printf("ifact loop ... %d\n", ifact);
 
 		for (equil = 0; equil < 2; ++equil) {
+
+		    //if (!iam) printf("equil loop ... %d\n", equil);
+
 		    options.Equil = equil;
 		    /* Need a first factor */
 		    prefact   = ( options.Fact == FACTORED ||
@@ -231,12 +237,12 @@ int main(int argc, char *argv[])
 		    /* Initialize ScalePermstruct and LUstruct. */
 		    ScalePermstructInit(m, n, &ScalePermstruct);
 		    LUstructInit(n, &LUstruct);
-#if 0
-		    if ( options.Fact == FACTORED || 
-			 options.Fact == SamePattern_SameRowPerm ) {
-#else
+
+		    //if ( options.Fact == FACTORED || 
+		    // options.Fact == SamePattern_SameRowPerm ) {
+
 		    if ( prefact ) {
-#endif
+
 			R = (double *) SUPERLU_MALLOC(m*sizeof(double));
 			C = (double *) SUPERLU_MALLOC(n*sizeof(double));
 			
@@ -324,8 +330,8 @@ int main(int argc, char *argv[])
 
 		    PStatInit(&stat);
 
-		    //if ( !iam ) printf("\ttest pdgssvx: nrun %d, iequed %d, equil %d, fact %d\n", 
-		    //   nrun, iequed, equil, options.Fact);
+		    /*if ( !iam ) printf("\ttest pdgssvx: nrun %d, iequed %d, equil %d, fact %d\n", 
+		      nrun, iequed, equil, options.Fact);*/
 		    /* Testing PDGSSVX: solve and compute the error bounds. */
 		    pdgssvx(&options, &A, &ScalePermstruct, b, ldb, nrhs,
 			    &grid, &LUstruct, &SOLVEstruct,
@@ -386,9 +392,9 @@ c		    pdinf_norm_error(iam, ((NRformat_loc *)A.Store)->m_loc,
 		    }
 
 		} /* end for equil ... */
-
+		    
 	    } /* end for ifact ... */
-
+		
 	} /* end for iequed ... */
 	
 	/* ------------------------------------------------------------
@@ -404,7 +410,7 @@ c		    pdinf_norm_error(iam, ((NRformat_loc *)A.Store)->m_loc,
     } /* end for imat ... */
 
     /* Print a summary of the testing results. */
-    PrintSumm("DGS", nfail, nrun, nerrs);
+    if ( iam==0 ) PrintSumm("DGS", nfail, nrun, nerrs);
 
     SUPERLU_FREE(berr);
 

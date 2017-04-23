@@ -20,6 +20,8 @@ set(PROJECT_VERSION ${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_BugFix})
 MESSAGE("\nProcess XSDK defaults ...")
 # SET(USE_XSDK_DEFAULTS_DEFAULT TRUE) # Set to false if desired
 INCLUDE("cmake/XSDKDefaults.cmake")
+# include(CTest)
+
 ######################################################################
 
 ######################################################################
@@ -81,8 +83,8 @@ option(enable_parmetislib   "Build the ParMETIS library" ON)
 option(enable_doc       "Build doxygen documentation" OFF)
 option(enable_double    "Enable double precision library" ON)
 option(enable_complex16 "Enable complex16 precision library" ON)
-option(enable_testing  "Enable testing" ON)
-option(enable_examples  "Build examples" OFF)
+option(enable_tests  "Build tests" ON)
+option(enable_examples  "Build examples" ON)
 option(TPL_PARMETIS_LIBRARIES "List of absolute paths to ParMETIS link libraries [].")
 option(TPL_PARMETIS_INCLUDE_DIRS "List of absolute paths to ParMETIS include directories [].")
 
@@ -143,12 +145,14 @@ if(MPI_C_FOUND)
 endif()
 #--------------------- OpenMP ---------------------
 find_package(OpenMP)
+## include(FindOpenMP)  # Strumpack uses this
 if(OPENMP_FOUND)
   set(CMAKE_C_FLAGS "${OpenMP_C_FLAGS} ${CMAKE_C_FLAGS}")
 # On edison, OpenMP_EXE_LINKER_FLAGS is empty
-# set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${OpenMP_EXE_LINKER_FLAGS}")
+#  set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${OpenMP_EXE_LINKER_FLAGS}")
   set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${OpenMP_C_FLAGS}")
-# message("-- CMAKE_EXE_LINKER_FLAGS='${CMAKE_EXE_LINKER_FLAGS}'")
+ message("-- OpenMP_EXE_LINKER_FLAGS='${OpenMP_EXE_LINKER_FLAGS}'")
+ message("-- CMAKE_EXE_LINKER_FLAGS='${CMAKE_EXE_LINKER_FLAGS}'")
 endif()
 #--------------------- ParMETIS ---------------------
 if (enable_parmetislib)   ## want to use parmetis
@@ -201,14 +205,14 @@ include_directories(${MPI_C_INCLUDE_PATH})
 
 add_subdirectory(SRC)
 
-if(enable_tests)
-  enable_testing()
-  add_subdirectory(TESTING)
-endif()
-
 if(enable_doc)
   message(FATAL_ERROR "Documentation build requested but not implemented.")
   #implement doxygen
+endif()
+
+if(enable_tests)
+  enable_testing()
+  add_subdirectory(TESTING)
 endif()
 
 if(enable_examples)
