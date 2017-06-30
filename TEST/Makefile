@@ -32,7 +32,7 @@
 include ../make.inc
 HEADER  = ../SRC
 
-DLINTST = pdtest.o dcreate_matrix.o pdcompute_resid.o #pdgsequ.o
+DLINTST = pdtest.o dcreate_matrix.o pdcompute_resid.o
 #sp_dconvert.o dgst01.o dgst02.o dgst04.o dgst07.o 
 
 ZLINTST = zdrive.o #sp_zconvert.o zgst01.o zgst02.o zgst04.o zgst07.o

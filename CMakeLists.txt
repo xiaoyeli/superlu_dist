@@ -20,7 +20,7 @@ set(PROJECT_VERSION ${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_BugFix})
 MESSAGE("\nProcess XSDK defaults ...")
 # SET(USE_XSDK_DEFAULTS_DEFAULT TRUE) # Set to false if desired
 INCLUDE("cmake/XSDKDefaults.cmake")
-# include(CTest)
+INCLUDE(CTest)
 
 ######################################################################
 
@@ -212,7 +212,7 @@ endif()
 
 if(enable_tests)
   enable_testing()
-  add_subdirectory(TESTING)
+  add_subdirectory(TEST)
 endif()
 
 if(enable_examples)

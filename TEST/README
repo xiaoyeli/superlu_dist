@@ -1,5 +1,5 @@
-		SuperLU_DIST TESTING
-		====================
+		SuperLU_DIST TEST
+		=================
 
 This directory contains testing programs to test various functions
 provded in SuperLU_DIST. 

@@ -25,6 +25,7 @@ The distribution contains the following directory structure:
   SuperLU_DIST/EXAMPLE/  example programs
   SuperLU_DIST/INSTALL/  test machine dependent parameters
   SuperLU_DIST/SRC/      C source code, to be compiled into libsuperlu_dist.a
+  SuperLU_DIST/TEST/     Testing code
   SuperLU_DIST/lib/      contains library archive libsuperlu_dist.a
   SuperLU_DIST/Makefile  top level Makefile that does installation and testing
   SuperLU_DIST/make.inc  compiler, compiler flags, library definitions and C
@@ -194,8 +195,12 @@ The procedures are described below.
         make install
 
    To run the installation test, type:
-        make test
+        ctest
         (The outputs are in file: build/Testing/Temporary/LastTest.log)
+      or,
+        ctest -D Experimental
+      or,
+	ctest -D Nightly
 
 
    ++++++++

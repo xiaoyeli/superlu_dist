@@ -7,3 +7,7 @@ file(APPEND ${ALL_OUTPUT} "\n")
 #file(READ ${OUTPUT} SINGLE_OUTPUT)
 file(APPEND ${ALL_OUTPUT} OUTPUT_FILE)
 #file(REMOVE ${OUTPUT})   # remove the individual output file.
+
+if (NOT "${RET}" STREQUAL "0")
+   message (FATAL_ERROR "TEST FAILED!")
+endif()

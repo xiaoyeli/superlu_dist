@@ -24,7 +24,7 @@ endfunction()
 # call API:  add_superlu_dist_tests(pddrive big.rua)
 function(add_superlu_dist_tests target input)
    set(TEST_INPUT "${SuperLU_DIST_SOURCE_DIR}/EXAMPLE/${input}")
-   set(TEST_OUTPUT "${SuperLU_DIST_BINARY_DIR}/TESTING/${target}.out")
+   set(TEST_OUTPUT "${SuperLU_DIST_BINARY_DIR}/TEST/${target}.out")
 
   # Prepare a temporary file to "cat" to:
   # file(WRITE ${TEST_OUTPUT} "")
@@ -40,7 +40,7 @@ function(add_superlu_dist_tests target input)
 	    foreach (x ${RELAX})
 	      foreach (m ${SUPERSIZE})
                 set(testName "${target}_${r}x${c}_${s}_${b}_${x}_${m}")
-	  	set(SINGLE_OUTPUT ${SuperLU_DIST_BINARY_DIR}/TESTING/${testName}.out)
+	  	set(SINGLE_OUTPUT ${SuperLU_DIST_BINARY_DIR}/TEST/${testName}.out)
           add_test( ${testName}_SP 
 	    	    ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} ${np}
             	    ${MPIEXEC_PREFLAGS} ${target} ${MPIEXEC_POSTFLAGS} 
@@ -52,7 +52,7 @@ function(add_superlu_dist_tests target input)
 #	    -DOUTPUT=${SINGLE_OUTPUT}
 #	    -DALL_OUTPUT=${TEST_OUTPUT}
 #	    -DHEADING=Sparse\ matrix\ ${TEST_INPUT}\ --\ r=${r},\ c=${c},\ s=${s},\ x=${x},\ m=${m}
-#	    -P "${SuperLU_DIST_SOURCE_DIR}/TESTING/runtest.cmake"
+#	    -P "${SuperLU_DIST_SOURCE_DIR}/TEST/runtest.cmake"
 #		  )
 	      endforeach()
 	    endforeach()
