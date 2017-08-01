@@ -161,7 +161,7 @@ typedef struct {
                              indices of A are translated into the relative
                              positions in the gathered x-vector.
                              This is re-used in repeated calls to pdgsmv() */
-    /*int_t *xrow_to_proc; Xiaoye: can be removed */
+    int_t *xrow_to_proc; /* used by PDSLin */
 } SOLVEstruct_t;
 
 
