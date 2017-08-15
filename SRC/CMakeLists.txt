@@ -8,6 +8,7 @@ set(headers
     superlu_enum_consts.h
     supermatrix.h
     util_dist.h
+    colamd.h
 )
 
 # first: precision-independent files
@@ -32,6 +33,7 @@ set(sources
   xerr_dist.c
   smach_dist.c
   dmach_dist.c
+  colamd.c
 )
 set_source_files_properties(superlu_timer.c PROPERTIES COMPILE_FLAGS -O0)
 

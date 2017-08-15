@@ -216,6 +216,19 @@ The procedures are described below.
    cmake .. -DCMAKE_C_FLAGS="-DUpCase"
 
 
+-------------------------------
+| READING SPARSE MATRIX FILES |
+-------------------------------
+The SRC/ directory contains the following routines to read different file 
+formats, they all have the similar calling sequence.
+  $ ls -l dread*.c
+  dreadMM.c              : Matrix Market, files with suffix .mtx
+  dreadhb.c              : Harrell-Boeing, files with suffix .rua
+  dreadrb.c              : Rutherford-Boeing, files with suffix .rb
+  dreadtriple.c          : triplet, with header
+  dreadtriple_noheader.c : triplet, no header, which is also readable in Matlab
+
+
 --------------
 | REFERENCES |
 --------------
