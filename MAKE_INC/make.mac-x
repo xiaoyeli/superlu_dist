@@ -18,7 +18,7 @@
 SuperLUroot	= /Users/xsli/Dropbox/Codes/SuperLU/superlu_dist.git/xsli-build
 DSUPERLULIB   	= $(SuperLUroot)/SRC/libsuperlu_dist.a
 
-BLASLIB		= ${HOME}/Dropbox/Codes/SuperLU/superlu_dist.git/CBLAS/libblas.a
+BLASLIB		= $(SuperLUroot)/CBLAS/libblas.a
 
 LIBS		= $(DSUPERLULIB) ${BLASLIB} /Users/xsli/lib/parmetis-4.0.3/build/Darwin-x86_64/libparmetis/libparmetis.a /Users/xsli/lib/parmetis-4.0.3/build/Darwin-x86_64/libmetis/libmetis.a
 

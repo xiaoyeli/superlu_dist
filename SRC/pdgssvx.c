@@ -896,8 +896,10 @@ pdgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 	        t = SuperLU_timer_() - t;
 	        stat->utime[ROWPERM] = t;
 #if ( PRNTlevel>=1 )
-                if ( !iam ) printf(".. LDPERM job " IFMT "\t time: %.2f\n",
-	                            job, t);
+                if ( !iam ) {
+		    printf(".. LDPERM job " IFMT "\t time: %.2f\n", job, t);
+		    fflush(stdout);
+		}
 #endif
             } /* end if Fact ... */
 
@@ -1020,9 +1022,11 @@ pdgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 	        /* Perform a symbolic factorization on Pc*Pr*A*Pc^T and set up
                    the nonzero data structures for L & U. */
 #if ( PRNTlevel>=1 ) 
-                if ( !iam )
-		  printf(".. symbfact(): relax " IFMT ", maxsuper " IFMT ", fill " IFMT "\n",
+                if ( !iam ) {
+		    printf(".. symbfact(): relax " IFMT ", maxsuper " IFMT ", fill " IFMT "\n",
 		          sp_ienv_dist(2), sp_ienv_dist(3), sp_ienv_dist(6));
+		    fflush(stdout);
+	        }
 #endif
   	        t = SuperLU_timer_();
 	        if ( !(Glu_freeable = (Glu_freeable_t *)
