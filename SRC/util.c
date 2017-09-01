@@ -323,7 +323,7 @@ void set_default_options_dist(superlu_dist_options_t *options)
     options->ParSymbFact       = NO;
     options->ColPerm           = METIS_AT_PLUS_A;
     options->RowPerm           = LargeDiag;
-    options->ReplaceTinyPivot  = YES;
+    options->ReplaceTinyPivot  = NO;
     options->IterRefine        = SLU_DOUBLE;
     options->Trans             = NOTRANS;
     options->SolveInitialized  = NO;

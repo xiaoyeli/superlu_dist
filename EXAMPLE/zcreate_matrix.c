@@ -88,8 +88,13 @@ int zcreate_matrix(SuperMatrix *A, int nrhs, doublecomplex **rhs,
 #endif
 
     if ( !iam ) {
+        double t = SuperLU_timer_();
+
         /* Read the matrix stored on disk in Harwell-Boeing format. */
         zreadhb_dist(iam, fp, &m, &n, &nnz, &nzval, &rowind, &colptr);
+
+	printf("Time to read and distribute matrix %.2f\n", 
+	        SuperLU_timer_() - t);  fflush(stdout);
 
 	/* Broadcast matrix A to the other PEs. */
 	MPI_Bcast( &m,     1,   mpi_int_t,  0, grid->comm );

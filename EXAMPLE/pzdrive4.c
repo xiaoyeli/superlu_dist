@@ -65,6 +65,7 @@ int main(int argc, char *argv[])
     int      nrhs = 1;   /* Number of right-hand side. */
     char     **cpp, c;
     FILE *fp, *fopen();
+    int cpp_defs();
 
 
     /* ------------------------------------------------------------
@@ -152,7 +153,7 @@ int main(int argc, char *argv[])
             options.Equil = YES;
             options.ColPerm = METIS_AT_PLUS_A;
             options.RowPerm = LargeDiag;
-            options.ReplaceTinyPivot = YES;
+            options.ReplaceTinyPivot = NO;
             options.Trans = NOTRANS;
             options.IterRefine = DOUBLE;
             options.SolveInitialized = NO;

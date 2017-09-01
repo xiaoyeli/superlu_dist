@@ -59,6 +59,7 @@ int main(int argc, char *argv[])
     int    iam, info, ldb, ldx, nrhs;
     char     **cpp, c;
     FILE *fp, *fopen();
+    int cpp_defs();
 
     nprow = 1;  /* Default process rows.      */
     npcol = 1;  /* Default process columns.   */
@@ -137,7 +138,7 @@ int main(int argc, char *argv[])
         options.Equil = YES;
         options.ColPerm = METIS_AT_PLUS_A;
         options.RowPerm = LargeDiag;
-        options.ReplaceTinyPivot = YES;
+        options.ReplaceTinyPivot = NO;
         options.Trans = NOTRANS;
         options.IterRefine = DOUBLE;
         options.SolveInitialized = NO;

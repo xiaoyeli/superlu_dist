@@ -63,7 +63,7 @@ int main(int argc, char *argv[])
     int      iam, info, ldb, ldx, nrhs;
     char     **cpp, c;
     FILE *fp, *fopen();
-    extern int cpp_defs();
+    int cpp_defs();
 
     nprow = 1;  /* Default process rows.      */
     npcol = 1;  /* Default process columns.   */
@@ -139,7 +139,7 @@ int main(int argc, char *argv[])
         options.ParSymbFact       = NO;
         options.ColPerm           = METIS_AT_PLUS_A;
         options.RowPerm           = LargeDiag;
-        options.ReplaceTinyPivot  = YES;
+        options.ReplaceTinyPivot  = NO;
         options.IterRefine        = DOUBLE;
         options.Trans             = NOTRANS;
         options.SolveInitialized  = NO;
@@ -148,11 +148,11 @@ int main(int argc, char *argv[])
      */
     set_default_options_dist(&options);
 #if 0
-    options.IterRefine = NOREFINE;
     options.RowPerm = NOROWPERM;
+    options.IterRefine = NOREFINE;
     options.ColPerm = NATURAL;
     options.Equil = NO; 
-    options.ReplaceTinyPivot = NO;
+    options.ReplaceTinyPivot = YES;
 #endif
 
     if (!iam) {

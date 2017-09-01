@@ -123,6 +123,7 @@ dreadMM_dist(FILE *fp, int_t *m, int_t *n, int_t *nonz,
 
     *m = *n;
     printf("m %lld, n %lld, nonz %lld\n", (long long) *m, (long long) *n, (long long) *nonz);
+    fflush(stdout);
     dallocateA_dist(*n, new_nonz, nzval, rowind, colptr); /* Allocate storage */
     a    = *nzval;
     asub = *rowind;
@@ -145,12 +146,14 @@ dreadMM_dist(FILE *fp, int_t *m, int_t *n, int_t *nonz,
 	fscanf(fp, "%d%d%lf\n", &row[nz], &col[nz], &val[nz]);
 #endif
 
-	if ( nnz == 0 ) /* first nonzero */
+	if ( nnz == 0 ) /* first nonzero */ {
 	    if ( row[0] == 0 || col[0] == 0 ) {
 		zero_base = 1;
 		printf("triplet file: row/col indices are zero-based.\n");
 	    } else
 		printf("triplet file: row/col indices are one-based.\n");
+	    fflush(stdout);
+	}
 
 	if ( !zero_base ) {
 	    /* Change to 0-based indexing. */
@@ -181,6 +184,7 @@ dreadMM_dist(FILE *fp, int_t *m, int_t *n, int_t *nonz,
     *nonz = nz;
     if(expand) {
       printf("new_nonz after symmetric expansion:\t" IFMT "\n", *nonz);
+      fflush(stdout);
     }
     
 

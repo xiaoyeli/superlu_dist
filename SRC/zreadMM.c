@@ -76,9 +76,9 @@ zreadMM_dist(FILE *fp, int_t *m, int_t *n, int_t *nonz,
        exit(-1);
      }
 
-     if(strcmp(arith,"real")) {
-       if(!strcmp(arith,"complex")) {
-         printf("Complex matrix; use zreadMM instead!\n");
+     if(strcmp(arith,"complex")) {
+       if(!strcmp(arith,"real")) {
+         printf("Complex matrix; use dreadMM instead!\n");
          exit(-1);
        }
        else if(!strcmp(arith, "pattern")) {
@@ -122,6 +122,7 @@ zreadMM_dist(FILE *fp, int_t *m, int_t *n, int_t *nonz,
 
     *m = *n;
     printf("m %lld, n %lld, nonz %lld\n", (long long) *m, (long long) *n, (long long) *nonz);
+    fflush(stdout);
     zallocateA_dist(*n, new_nonz, nzval, rowind, colptr); /* Allocate storage */
     a    = *nzval;
     asub = *rowind;
@@ -144,12 +145,14 @@ zreadMM_dist(FILE *fp, int_t *m, int_t *n, int_t *nonz,
 	fscanf(fp, "%d%d%lf%lf\n", &row[nz], &col[nz], &val[nz].r, &val[nz].i);
 #endif
 
-	if ( nnz == 0 ) /* first nonzero */
+	if ( nnz == 0 ) /* first nonzero */ {
 	    if ( row[0] == 0 || col[0] == 0 ) {
 		zero_base = 1;
 		printf("triplet file: row/col indices are zero-based.\n");
 	    } else
 		printf("triplet file: row/col indices are one-based.\n");
+	    fflush(stdout);
+	}
 
 	if ( !zero_base ) {
 	    /* Change to 0-based indexing. */
@@ -180,6 +183,7 @@ zreadMM_dist(FILE *fp, int_t *m, int_t *n, int_t *nonz,
     *nonz = nz;
     if(expand) {
       printf("new_nonz after symmetric expansion:\t" IFMT "\n", *nonz);
+      fflush(stdout);
     }
     
 
