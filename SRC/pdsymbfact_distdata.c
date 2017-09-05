@@ -1217,6 +1217,8 @@ ddist_psymbtonum(fact_t fact, int_t n, SuperMatrix *A,
   int_t *recvBuf;
   int *ptrToRecv, *nnzToRecv, *ptrToSend, *nnzToSend;
   double **Lnzval_bc_ptr;  /* size ceil(NSUPERS/Pc) */
+  double **Linv_bc_ptr;  /* size ceil(NSUPERS/Pc) */
+  double **Uinv_bc_ptr;  /* size ceil(NSUPERS/Pc) */
   int_t  **Lrowind_bc_ptr; /* size ceil(NSUPERS/Pc) */
   double **Unzval_br_ptr;  /* size ceil(NSUPERS/Pr) */
   int_t  **Ufstnz_br_ptr;  /* size ceil(NSUPERS/Pr) */
@@ -1441,12 +1443,25 @@ ddist_psymbtonum(fact_t fact, int_t n, SuperMatrix *A,
     fprintf(stderr, "Malloc fails for Lnzval_bc_ptr[].");
     return (memDist + memNLU);
   }
+  if ( !(Linv_bc_ptr = 
+	 (double**)SUPERLU_MALLOC(nsupers_j * sizeof(double*))) ) {
+    fprintf(stderr, "Malloc fails for Linv_bc_ptr[].");
+    return (memDist + memNLU);
+  }  
+  if ( !(Uinv_bc_ptr = 
+	 (double**)SUPERLU_MALLOC(nsupers_j * sizeof(double*))) ) {
+    fprintf(stderr, "Malloc fails for Uinv_bc_ptr[].");
+    return (memDist + memNLU);
+  }  
+  
   if ( !(Lrowind_bc_ptr = (int_t**)SUPERLU_MALLOC(nsupers_j * sizeof(int_t*))) ) {
     fprintf(stderr, "Malloc fails for Lrowind_bc_ptr[].");
     return (memDist + memNLU);
   }
   memNLU += nsupers_j * sizeof(double*) + nsupers_j * sizeof(int_t*);
   Lnzval_bc_ptr[nsupers_j-1] = NULL;
+  Linv_bc_ptr[nsupers_j-1] = NULL;
+  Uinv_bc_ptr[nsupers_j-1] = NULL;
   Lrowind_bc_ptr[nsupers_j-1] = NULL;
   
   /* These lists of processes will be used for triangular solves. */
@@ -1735,6 +1750,18 @@ ddist_psymbtonum(fact_t fact, int_t n, SuperMatrix *A,
 	  fprintf(stderr, "Malloc fails for Lnzval_bc_ptr[*][] col block " IFMT, jb);
 	  return (memDist + memNLU);
 	}
+
+	if (!(Linv_bc_ptr[ljb_j] = 
+	      doubleCalloc_dist(nsupc*nsupc))) {
+	  fprintf(stderr, "Malloc fails for Linv_bc_ptr[*][] col block " IFMT, jb);
+	  return (memDist + memNLU);
+	}
+	if (!(Uinv_bc_ptr[ljb_j] = 
+	      doubleCalloc_dist(nsupc*nsupc))) {
+	  fprintf(stderr, "Malloc fails for Uinv_bc_ptr[*][] col block " IFMT, jb);
+	  return (memDist + memNLU);
+	}
+	
 	memNLU += len1*iword + len*nsupc*dword;
 	
 	lusup = Lnzval_bc_ptr[ljb_j];
@@ -1780,6 +1807,8 @@ ddist_psymbtonum(fact_t fact, int_t n, SuperMatrix *A,
 	} else {
 	  Lrowind_bc_ptr[ljb_j] = NULL;
 	  Lnzval_bc_ptr[ljb_j] = NULL;
+	  Linv_bc_ptr[ljb_j] = NULL;
+	  Uinv_bc_ptr[ljb_j] = NULL;
 	} /* if nrbl ... */		  
       } /* if mycol == pc */
   } /* for jb ... */
@@ -1932,6 +1961,8 @@ ddist_psymbtonum(fact_t fact, int_t n, SuperMatrix *A,
   
   Llu->Lrowind_bc_ptr = Lrowind_bc_ptr;
   Llu->Lnzval_bc_ptr = Lnzval_bc_ptr;
+  Llu->Linv_bc_ptr = Linv_bc_ptr;
+  Llu->Uinv_bc_ptr = Uinv_bc_ptr;
   Llu->Ufstnz_br_ptr = Ufstnz_br_ptr;
   Llu->Unzval_br_ptr = Unzval_br_ptr;
   Llu->ToRecv = ToRecv;

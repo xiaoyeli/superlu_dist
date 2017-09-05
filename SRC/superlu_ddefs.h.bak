@@ -46,8 +46,6 @@ typedef struct {
 typedef struct {
     int_t   **Lrowind_bc_ptr; /* size ceil(NSUPERS/Pc)                 */
     double  **Lnzval_bc_ptr;  /* size ceil(NSUPERS/Pc)                 */
-    double  **Linv_bc_ptr;  /* size ceil(NSUPERS/Pc)                 */
-    double  **Uinv_bc_ptr;  /* size ceil(NSUPERS/Pc)                 */
     int_t   **Ufstnz_br_ptr;  /* size ceil(NSUPERS/Pr)                 */
     double  **Unzval_br_ptr;  /* size ceil(NSUPERS/Pr)                 */
 #if 0
@@ -254,9 +252,6 @@ extern void  pdgssvx(superlu_dist_options_t *, SuperMatrix *,
 		     ScalePermstruct_t *, double *,
 		     int, int, gridinfo_t *, LUstruct_t *,
 		     SOLVEstruct_t *, double *, SuperLUStat_t *, int *);
-
-extern void  pdCompute_Diag_Inv(int_t, LUstruct_t *,gridinfo_t *, SuperLUStat_t *, int *);
-		 
 extern int  dSolveInit(superlu_dist_options_t *, SuperMatrix *, int_t [], int_t [],
 		       int_t, LUstruct_t *, gridinfo_t *, SOLVEstruct_t *);
 extern void dSolveFinalize(superlu_dist_options_t *, SOLVEstruct_t *);
@@ -288,14 +283,6 @@ extern void dlsum_fmod(double *, double *, double *, double *,
 		       int_t *, gridinfo_t *, LocalLU_t *, 
 		       MPI_Request [], SuperLUStat_t *);
 extern void dlsum_bmod(double *, double *, double *,
-                       int, int_t, int_t *, int_t *, Ucb_indptr_t **,
-                       int_t **, int_t *, gridinfo_t *, LocalLU_t *,
-		       MPI_Request [], SuperLUStat_t *);
-extern void dlsum_fmod_inv(double *, double *, double *, double *,
-		       int, int, int_t , int_t *, int_t, int_t, int_t,
-		       int_t *, gridinfo_t *, LocalLU_t *, 
-		       MPI_Request [], SuperLUStat_t *);
-extern void dlsum_bmod_inv(double *, double *, double *, double *,
                        int, int_t, int_t *, int_t *, Ucb_indptr_t **,
                        int_t **, int_t *, gridinfo_t *, LocalLU_t *,
 		       MPI_Request [], SuperLUStat_t *);

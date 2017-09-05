@@ -20,6 +20,7 @@ at the top-level directory.
  */
 
 #include <math.h>
+#include <unistd.h>
 #include "superlu_ddefs.h"
 
 /*! \brief Deallocate the structure pointing to the actual storage of the matrix. */
@@ -191,6 +192,7 @@ void LUstructInit(const int_t n, LUstruct_t *LUstruct)
     if ( !(LUstruct->Llu = (LocalLU_t *)
 	   SUPERLU_MALLOC(sizeof(LocalLU_t))) )
 	ABORT("Malloc fails for LocalLU_t.");
+	LUstruct->Llu->inv = 0;
 }
 
 /*! \brief Deallocate LUstruct */
@@ -323,7 +325,7 @@ void set_default_options_dist(superlu_dist_options_t *options)
     options->ParSymbFact       = NO;
     options->ColPerm           = METIS_AT_PLUS_A;
     options->RowPerm           = LargeDiag;
-    options->ReplaceTinyPivot  = NO;
+    options->ReplaceTinyPivot  = YES;
     options->IterRefine        = SLU_DOUBLE;
     options->Trans             = NOTRANS;
     options->SolveInitialized  = NO;
@@ -332,6 +334,7 @@ void set_default_options_dist(superlu_dist_options_t *options)
     options->num_lookaheads    = 10;
     options->lookahead_etree   = NO;
     options->SymPattern        = NO;
+    options->DiagInv           = NO;
 }
 
 /*! \brief Print the options setting.
@@ -614,13 +617,13 @@ PStatPrint(superlu_dist_options_t *options, SuperLUStat_t *stat, gridinfo_t *gri
 	       0, grid->comm);
     solveflop = flopcnt;
     if ( !iam ) {
-	printf("\tSOLVE time         %8.2f\n", utime[SOLVE]);
+	printf("\tSOLVE time         %8.3f\n", utime[SOLVE]);
 	if ( utime[SOLVE] != 0.0 )
 	    printf("\tSolve flops\t%e\tMflops \t%8.2f\n",
 		   flopcnt,
 		   flopcnt*1e-6/utime[SOLVE]);
 	if ( options->IterRefine != NOREFINE ) {
-	    printf("\tREFINEMENT time    %8.2f\tSteps%8d\n\n",
+	    printf("\tREFINEMENT time    %8.3f\tSteps%8d\n\n",
 		   utime[REFINE], stat->RefineSteps);
 	}
 	printf("**************************************************\n");
@@ -628,12 +631,14 @@ PStatPrint(superlu_dist_options_t *options, SuperLUStat_t *stat, gridinfo_t *gri
 
 #if ( PROFlevel>=1 )
     fflush(stdout);
+	sleep(2.0); 
     MPI_Barrier( grid->comm );
 
     {
 	int_t i, P = grid->nprow*grid->npcol;
 	flops_t b, maxflop;
 	if ( !iam ) printf("\n.. FACT time breakdown:\tcomm\ttotal\n");
+	fflush(stdout);
 	for (i = 0; i < P; ++i) {
 	    if ( iam == i) {
 		printf("\t\t(%d)%8.2f%8.2f\n", iam, utime[COMM], utime[FACT]);
@@ -641,7 +646,12 @@ PStatPrint(superlu_dist_options_t *options, SuperLUStat_t *stat, gridinfo_t *gri
 	    }
 	    MPI_Barrier( grid->comm );
 	}
+	fflush(stdout);
+	sleep(2.0); 
+	MPI_Barrier( grid->comm );
 	if ( !iam ) printf("\n.. FACT ops distribution:\n");
+	fflush(stdout);
+	MPI_Barrier( grid->comm );
 	for (i = 0; i < P; ++i) {
 	    if ( iam == i ) {
 		printf("\t\t(%d)\t%e\n", iam, ops[FACT]);
@@ -650,11 +660,35 @@ PStatPrint(superlu_dist_options_t *options, SuperLUStat_t *stat, gridinfo_t *gri
 	    MPI_Barrier( grid->comm );
 	}
 	MPI_Reduce(&ops[FACT], &maxflop, 1, MPI_FLOAT, MPI_MAX, 0, grid->comm);
+	fflush(stdout);
+	sleep(2.0); 
+	MPI_Barrier( grid->comm );	
 	if ( !iam ) {
 	    b = factflop/P/maxflop;
 	    printf("\tFACT load balance: %.2f\n", b);
+		fflush(stdout);
 	}
+	fflush(stdout);
+	sleep(2.0); 
+	MPI_Barrier( grid->comm );	
+	if ( !iam ) printf("\n.. SOLVE time breakdown:\tcomm\ttotal\n");
+	fflush(stdout);
+	sleep(2.0); 
+	MPI_Barrier( grid->comm );	
+	for (i = 0; i < P; ++i) {
+	    if ( iam == i) {
+		printf("\t\t%d%10.5f%10.5f%10.5f%10.5f\n", iam, utime[SOL_COMM],utime[SOL_GEMM],utime[SOL_TRSM], utime[SOLVE]);
+		fflush(stdout);
+	    }
+	    MPI_Barrier( grid->comm );
+	}
+	fflush(stdout);
+	sleep(2.0); 
+	MPI_Barrier( grid->comm );	
 	if ( !iam ) printf("\n.. SOLVE ops distribution:\n");
+	fflush(stdout);
+	sleep(2.0); 
+	MPI_Barrier( grid->comm );	
 	for (i = 0; i < P; ++i) {
 	    if ( iam == i ) {
 		printf("\t\t%d\t%e\n", iam, ops[SOLVE]);
@@ -663,9 +697,12 @@ PStatPrint(superlu_dist_options_t *options, SuperLUStat_t *stat, gridinfo_t *gri
 	    MPI_Barrier( grid->comm );
 	}
 	MPI_Reduce(&ops[SOLVE], &maxflop, 1, MPI_FLOAT, MPI_MAX, 0,grid->comm);
+	sleep(2.0); 
+	MPI_Barrier( grid->comm );
 	if ( !iam ) {
 	    b = solveflop/P/maxflop;
 	    printf("\tSOLVE load balance: %.2f\n", b);
+		fflush(stdout);
 	}
     }
 #endif

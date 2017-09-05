@@ -61,10 +61,11 @@ int main(int argc, char *argv[])
     int    m, n;
     int      nprow, npcol;
     int      iam, info, ldb, ldx, nrhs;
-    char     **cpp, c;
+    char     **cpp, c, *postfix;
     FILE *fp, *fopen();
     int cpp_defs();
-
+	int ii;
+	
     nprow = 1;  /* Default process rows.      */
     npcol = 1;  /* Default process columns.   */
     nrhs = 1;   /* Number of right-hand side. */
@@ -121,10 +122,18 @@ int main(int argc, char *argv[])
     CHECK_MALLOC(iam, "Enter main()");
 #endif
 
+	for(ii = 0;ii<strlen(*cpp);ii++){
+		if((*cpp)[ii]=='.'){
+			postfix = &((*cpp)[ii+1]);
+		}
+	}
+	// printf("%s\n", postfix);
+	
+
     /* ------------------------------------------------------------
        GET THE MATRIX FROM FILE AND SETUP THE RIGHT HAND SIDE. 
        ------------------------------------------------------------*/
-    dcreate_matrix(&A, nrhs, &b, &ldb, &xtrue, &ldx, fp, &grid);
+    dcreate_matrix_postfix(&A, nrhs, &b, &ldb, &xtrue, &ldx, fp, postfix, &grid);
 
     if ( !(berr = doubleMalloc_dist(nrhs)) )
 	ABORT("Malloc fails for berr[].");
@@ -139,7 +148,7 @@ int main(int argc, char *argv[])
         options.ParSymbFact       = NO;
         options.ColPerm           = METIS_AT_PLUS_A;
         options.RowPerm           = LargeDiag;
-        options.ReplaceTinyPivot  = NO;
+        options.ReplaceTinyPivot  = YES;
         options.IterRefine        = DOUBLE;
         options.Trans             = NOTRANS;
         options.SolveInitialized  = NO;
@@ -152,9 +161,15 @@ int main(int argc, char *argv[])
     options.IterRefine = NOREFINE;
     options.ColPerm = NATURAL;
     options.Equil = NO; 
-    options.ReplaceTinyPivot = YES;
+    options.ReplaceTinyPivot = NO;
 #endif
 
+
+	options.ParSymbFact       = YES;
+	options.ColPerm           = PARMETIS;
+	options.IterRefine       = 0;
+	options.DiagInv       = YES;
+	
     if (!iam) {
 	print_sp_ienv_dist(&options);
 	print_options_dist(&options);

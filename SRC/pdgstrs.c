@@ -20,7 +20,7 @@ at the top-level directory.
  * October 15, 2008
  * </pre>
  */
-
+#include <math.h>
 #include "superlu_ddefs.h"
 
 /*
@@ -391,6 +391,111 @@ pdReDistribute_X_to_B(int_t n, double *B, int_t m_loc, int_t ldb, int_t fst_row,
 
 } /* pdReDistribute_X_to_B */
 
+
+
+void
+pdCompute_Diag_Inv(int_t n, LUstruct_t *LUstruct,gridinfo_t *grid, SuperLUStat_t *stat, int *info)
+{
+    Glu_persist_t *Glu_persist = LUstruct->Glu_persist;
+    LocalLU_t *Llu = LUstruct->Llu;
+
+    double *lusup;
+    double *recvbuf, *tempv;
+    double *Linv;/* Inverse of diagonal block */
+    double *Uinv;/* Inverse of diagonal block */
+
+    int_t  kcol, krow, mycol, myrow;
+    int_t  i, ii, il, j, jj, k, lb, ljb, lk, lptr, luptr;
+    int_t  nb, nlb, nub, nsupers;
+    int_t  *xsup, *supno, *lsub, *usub;
+    int_t  *ilsum;    /* Starting position of each supernode in lsum (LOCAL)*/
+    int    Pc, Pr, iam;
+    int    knsupc, nsupr;
+    int    ldalsum;   /* Number of lsum entries locally owned. */
+    int    maxrecvsz, p, pi;
+    int_t  **Lrowind_bc_ptr;
+    double **Lnzval_bc_ptr;
+    double **Linv_bc_ptr;
+    double **Uinv_bc_ptr;
+	int INFO;
+	double t;
+ 
+#if ( PROFlevel>=1 )
+    t = SuperLU_timer_();
+#endif 
+ 	
+	// printf("wocao \n");
+	// fflush(stdout);
+    /*
+     * Initialization.
+     */
+    iam = grid->iam;
+    Pc = grid->npcol;
+    Pr = grid->nprow;
+    myrow = MYROW( iam, grid );
+    mycol = MYCOL( iam, grid );
+    xsup = Glu_persist->xsup;
+    supno = Glu_persist->supno;
+    nsupers = supno[n-1] + 1;
+    Lrowind_bc_ptr = Llu->Lrowind_bc_ptr;
+    Linv_bc_ptr = Llu->Linv_bc_ptr;
+    Uinv_bc_ptr = Llu->Uinv_bc_ptr;
+    Lnzval_bc_ptr = Llu->Lnzval_bc_ptr;
+    nlb = CEILING( nsupers, Pr ); /* Number of local block rows. */
+
+
+	Llu->inv = 1;
+
+    /*---------------------------------------------------
+     * Compute inverse of L(lk,lk).
+     *---------------------------------------------------*/
+
+	for (k = 0; k < nsupers; ++k) {
+	    krow = PROW( k, grid );
+	    if ( myrow == krow ) {
+		lk = LBi( k, grid );    /* local block number */
+		kcol = PCOL( k, grid );
+		if ( mycol == kcol ) { /* diagonal process */
+
+		lk = LBj( k, grid ); /* Local block number, column-wise. */
+		lsub = Lrowind_bc_ptr[lk];
+		lusup = Lnzval_bc_ptr[lk];
+		Linv = Linv_bc_ptr[lk];
+		Uinv = Uinv_bc_ptr[lk];
+		nsupr = lsub[1];	
+		knsupc = SuperSize( k );
+
+		// printf("myid: %10d, %10d",iam,lk);	 
+		for (j=0 ; j<knsupc; j++){
+			Linv[j*knsupc+j] = 1.0;
+
+			for (i=j+1 ; i<knsupc; i++){
+			Linv[j*knsupc+i] = lusup[j*nsupr+i];	
+			}
+
+			for (i=0 ; i<j+1; i++){
+			Uinv[j*knsupc+i] = lusup[j*nsupr+i];	
+			}			
+			
+		}
+	    dtrtri_("L","U",&knsupc,Linv,&knsupc,&INFO);		  	
+	    dtrtri_("U","N",&knsupc,Uinv,&knsupc,&INFO);		  	
+		}
+	    }
+	}
+	
+#if ( PROFlevel>=1 )
+    t = SuperLU_timer_() - t;
+    printf(".. L-diag_inv time\t%10.5f\n", t);
+	fflush(stdout);
+#endif	
+	
+    return;
+}
+
+
+
+
 /*! \brief
  *
  * <pre>
@@ -473,6 +578,7 @@ pdgstrs(int_t n, LUstruct_t *LUstruct,
     Glu_persist_t *Glu_persist = LUstruct->Glu_persist;
     LocalLU_t *Llu = LUstruct->Llu;
     double alpha = 1.0;
+    double beta = 0.0;
     double zero = 0.0;
     double *lsum;  /* Local running sum of the updates to B-components */
     double *x;     /* X component at step k. */
@@ -480,6 +586,10 @@ pdgstrs(int_t n, LUstruct_t *LUstruct,
     double *lusup, *dest;
     double *recvbuf, *tempv;
     double *rtemp; /* Result of full matrix-vector multiply. */
+    double *Linv; /* Inverse of diagonal block */
+    double *Uinv; /* Inverse of diagonal block */
+	int *ipiv; 
+	
     int_t  **Ufstnz_br_ptr = Llu->Ufstnz_br_ptr;
     int_t  *Urbs, *Urbs1; /* Number of row blocks in each block column of U. */
     Ucb_indptr_t **Ucb_indptr;/* Vertical linked list pointing to Uindex[] */
@@ -495,6 +605,9 @@ pdgstrs(int_t n, LUstruct_t *LUstruct,
     int    maxrecvsz, p, pi;
     int_t  **Lrowind_bc_ptr;
     double **Lnzval_bc_ptr;
+    double **Linv_bc_ptr;
+    double **Uinv_bc_ptr;
+    double sum;
     MPI_Status status;
     MPI_Request *send_req, recv_req;
     pxgstrs_comm_t *gstrs_comm = SOLVEstruct->gstrs_comm;
@@ -524,6 +637,22 @@ pdgstrs(int_t n, LUstruct_t *LUstruct,
 #endif
 
     int_t *mod_bit = Llu->mod_bit; /* flag contribution from each row block */
+	int INFO;
+ 
+#if ( PROFlevel>=1 )
+    double t1, t2;
+    float msg_vol = 0, msg_cnt = 0;
+#endif 
+
+    int_t *msgcnt=(int_t *) SUPERLU_MALLOC(4 * sizeof(int_t));   /* Count the size of the message xfer'd in each buffer:
+		    *     0 : transferred in Lsub_buf[]
+		    *     1 : transferred in Lval_buf[]
+		    *     2 : transferred in Usub_buf[]
+		    *     3 : transferred in Uval_buf[]
+		    */
+    int iword = sizeof (int_t);
+    int dword = sizeof (double);	
+ 
  
     t = SuperLU_timer_();
 
@@ -549,8 +678,15 @@ pdgstrs(int_t n, LUstruct_t *LUstruct,
     nsupers = supno[n-1] + 1;
     Lrowind_bc_ptr = Llu->Lrowind_bc_ptr;
     Lnzval_bc_ptr = Llu->Lnzval_bc_ptr;
+    Linv_bc_ptr = Llu->Linv_bc_ptr;
+    Uinv_bc_ptr = Llu->Uinv_bc_ptr;
     nlb = CEILING( nsupers, Pr ); /* Number of local block rows. */
 
+	stat->utime[SOL_COMM] = 0.0;
+	stat->utime[SOL_GEMM] = 0.0;
+	stat->utime[SOL_TRSM] = 0.0;
+	
+	
 #if ( DEBUGlevel>=1 )
     CHECK_MALLOC(iam, "Enter pdgstrs()");
 #endif
@@ -593,7 +729,8 @@ pdgstrs(int_t n, LUstruct_t *LUstruct,
 	ABORT("Malloc fails for recvbuf[].");
     if ( !(rtemp = doubleCalloc_dist(maxrecvsz)) )
 	ABORT("Malloc fails for rtemp[].");
-
+	if ( !(ipiv = intCalloc_dist(knsupc)) )
+	ABORT("Malloc fails for ipiv[].");
     
     /*---------------------------------------------------
      * Forward solve Ly = b.
@@ -685,10 +822,18 @@ pdgstrs(int_t n, LUstruct_t *LUstruct,
     /* ---------------------------------------------------------
        Solve the leaf nodes first by all the diagonal processes.
        --------------------------------------------------------- */
-#if ( DEBUGlevel>=2 )
+// #if ( DEBUGlevel>=2 )
     printf("(%2d) nleaf %4d\n", iam, nleaf);
-#endif
-    for (k = 0; k < nsupers && nleaf; ++k) {
+// #endif
+    
+	
+// #if ( PROFlevel>=1 )
+		// TIC(t1);
+		// msgcnt[1] = maxrecvsz;
+// #endif			
+			
+	
+	for (k = 0; k < nsupers && nleaf; ++k) {
 	krow = PROW( k, grid );
 	kcol = PCOL( k, grid );
 	if ( myrow == krow && mycol == kcol ) { /* Diagonal process */
@@ -701,29 +846,63 @@ pdgstrs(int_t n, LUstruct_t *LUstruct,
 		lsub = Lrowind_bc_ptr[lk];
 		lusup = Lnzval_bc_ptr[lk];
 		nsupr = lsub[1];
+		
+
+#if ( PROFlevel>=1 )
+		TIC(t1);
+#endif			
+		if(Llu->inv == 1){
+		  Linv = Linv_bc_ptr[lk];
 #ifdef _CRAY
-		STRSM(ftcs1, ftcs1, ftcs2, ftcs3, &knsupc, &nrhs, &alpha,
-		      lusup, &nsupr, &x[ii], &knsupc);
+		  SGEMM( ftcs2, ftcs2, &knsupc, &nrhs, &knsupc,
+			  &alpha, Linv, &knsupc, &x[ii],
+			  &knsupc, &beta, rtemp, &knsupc );
 #elif defined (USE_VENDOR_BLAS)
-		dtrsm_("L", "L", "N", "U", &knsupc, &nrhs, &alpha, 
-		       lusup, &nsupr, &x[ii], &knsupc, 1, 1, 1, 1);
+		  dgemm_( "N", "N", &knsupc, &nrhs, &knsupc,
+			   &alpha, Linv, &knsupc, &x[ii],
+			   &knsupc, &beta, rtemp, &knsupc, 1, 1 );
 #else
-		dtrsm_("L", "L", "N", "U", &knsupc, &nrhs, &alpha, 
-		       lusup, &nsupr, &x[ii], &knsupc);
+		  dgemm_( "N", "N", &knsupc, &nrhs, &knsupc,
+			   &alpha, Linv, &knsupc, &x[ii],
+			   &knsupc, &beta, rtemp, &knsupc );
+#endif		   
+		  for (i=0 ; i<knsupc ; i++){
+			x[ii+i] = rtemp[i];
+		  }		
+		}else{
+#ifdef _CRAY
+			STRSM(ftcs1, ftcs1, ftcs2, ftcs3, &knsupc, &nrhs, &alpha,
+				  lusup, &nsupr, &x[ii], &knsupc);
+#elif defined (USE_VENDOR_BLAS)
+			dtrsm_("L", "L", "N", "U", &knsupc, &nrhs, &alpha, 
+				lusup, &nsupr, &x[ii], &knsupc, 1, 1, 1, 1);	
+#else
+			dtrsm_("L", "L", "N", "U", &knsupc, &nrhs, &alpha, 
+				   lusup, &nsupr, &x[ii], &knsupc);
 #endif
+		}		
+
+#if ( PROFlevel>=1 )
+		TOC(t2, t1);
+		stat->utime[SOL_TRSM] += t2;
+	
+#endif	
+
+
 		stat->ops[SOLVE] += knsupc * (knsupc - 1) * nrhs;
 		--nleaf;
 #if ( DEBUGlevel>=2 )
 		printf("(%2d) Solve X[%2d]\n", iam, k);
 #endif
-		
+
 		/*
 		 * Send Xk to process column Pc[k].
 		 */
 		for (p = 0; p < Pr; ++p) {
 		    if ( fsendx_plist[lk][p] != EMPTY ) {
 			pi = PNUM( p, kcol, grid );
-
+		
+			
 			MPI_Isend( &x[ii - XK_H], knsupc * nrhs + XK_H,
 				   MPI_DOUBLE, pi, Xk, grid->comm,
                                    &send_req[Llu->SolveMsgSent++]);
@@ -731,12 +910,17 @@ pdgstrs(int_t n, LUstruct_t *LUstruct,
 			MPI_Send( &x[ii - XK_H], knsupc * nrhs + XK_H,
 				 MPI_DOUBLE, pi, Xk, grid->comm );
 #endif
+
+
+
 #if ( DEBUGlevel>=2 )
 			printf("(%2d) Sent X[%2.0f] to P %2d\n",
 			       iam, x[ii-XK_H], pi);
 #endif
 		    }
 		}
+		
+		
 		/*
 		 * Perform local block modifications: lsum[i] -= L_i,k * X[k]
 		 */
@@ -744,13 +928,26 @@ pdgstrs(int_t n, LUstruct_t *LUstruct,
 		lptr = BC_HEADER + LB_DESCRIPTOR + knsupc;
 		luptr = knsupc; /* Skip diagonal block L(k,k). */
 		
-		dlsum_fmod(lsum, x, &x[ii], rtemp, nrhs, knsupc, k,
+		dlsum_fmod_inv(lsum, x, &x[ii], rtemp, nrhs, knsupc, k,
 			   fmod, nb, lptr, luptr, xsup, grid, Llu, 
 			   send_req, stat);
 	    }
 	} /* if diagonal process ... */
     } /* for k ... */
 
+// #if ( PROFlevel>=1 )
+		// // if(iam==0){
+		// // printf("time: %8.5f\n")
+		// // }
+		// TOC(t2, t1);
+		// stat->utime[SOL_COMM] += t2;
+	
+        // msg_cnt += 1;
+        // msg_vol += msgcnt[1] * dword;		
+// #endif	
+			  
+	
+	
     /* -----------------------------------------------------------
        Compute the internal nodes asynchronously by all processes.
        ----------------------------------------------------------- */
@@ -761,10 +958,31 @@ pdgstrs(int_t n, LUstruct_t *LUstruct,
 
     while ( nfrecvx || nfrecvmod ) { /* While not finished. */
 
+#if ( PROFlevel>=1 )
+		TIC(t1);
+		msgcnt[1] = maxrecvsz;
+#endif	
+	
 	/* Receive a message. */
 	MPI_Recv( recvbuf, maxrecvsz, MPI_DOUBLE,
                   MPI_ANY_SOURCE, MPI_ANY_TAG, grid->comm, &status );
 
+				  
+#if ( PROFlevel>=1 )
+		// if(iam==0){
+		// printf("time: %8.5f\n")
+		// }
+		TOC(t2, t1);
+		stat->utime[SOL_COMM] += t2;
+	
+        msg_cnt += 1;
+        msg_vol += msgcnt[1] * dword;		
+#endif	
+				  
+
+
+
+				  
 	k = *recvbuf;
 
 #if ( DEBUGlevel>=2 )
@@ -786,7 +1004,7 @@ pdgstrs(int_t n, LUstruct_t *LUstruct,
 		  /*
 		   * Perform local block modifications: lsum[i] -= L_i,k * X[k]
 		   */
-		  dlsum_fmod(lsum, x, &recvbuf[XK_H], rtemp, nrhs, knsupc, k,
+		  dlsum_fmod_inv(lsum, x, &recvbuf[XK_H], rtemp, nrhs, knsupc, k,
 			     fmod, nb, lptr, luptr, xsup, grid, Llu, 
 			     send_req, stat);
 	      } /* if lsub */
@@ -810,16 +1028,55 @@ pdgstrs(int_t n, LUstruct_t *LUstruct,
 		  lsub = Lrowind_bc_ptr[lk];
 		  lusup = Lnzval_bc_ptr[lk];
 		  nsupr = lsub[1];
+		  
+		  
+	
+#if ( PROFlevel>=1 )
+		TIC(t1);
+#endif			  
+		  
+
+		if(Llu->inv == 1){
+		  Linv = Linv_bc_ptr[lk];		  
+#ifdef _CRAY
+		  SGEMM( ftcs2, ftcs2, &knsupc, &nrhs, &knsupc,
+			  &alpha, Linv, &knsupc, &x[ii],
+			  &knsupc, &beta, rtemp, &knsupc );
+#elif defined (USE_VENDOR_BLAS)
+		  dgemm_( "N", "N", &knsupc, &nrhs, &knsupc,
+			   &alpha, Linv, &knsupc, &x[ii],
+			   &knsupc, &beta, rtemp, &knsupc, 1, 1 );
+#else
+		  dgemm_( "N", "N", &knsupc, &nrhs, &knsupc,
+			   &alpha, Linv, &knsupc, &x[ii],
+			   &knsupc, &beta, rtemp, &knsupc );
+#endif			   
+		  for (i=0 ; i<knsupc ; i++){
+			x[ii+i] = rtemp[i];
+		  }		
+		}
+		else{
 #ifdef _CRAY
 		  STRSM(ftcs1, ftcs1, ftcs2, ftcs3, &knsupc, &nrhs, &alpha,
 			lusup, &nsupr, &x[ii], &knsupc);
 #elif defined (USE_VENDOR_BLAS)
 		  dtrsm_("L", "L", "N", "U", &knsupc, &nrhs, &alpha, 
-			 lusup, &nsupr, &x[ii], &knsupc, 1, 1, 1, 1);
+			lusup, &nsupr, &x[ii], &knsupc, 1, 1, 1, 1);		
 #else
 		  dtrsm_("L", "L", "N", "U", &knsupc, &nrhs, &alpha, 
 			 lusup, &nsupr, &x[ii], &knsupc);
 #endif
+		}
+
+
+#if ( PROFlevel>=1 )
+		TOC(t2, t1);
+		stat->utime[SOL_TRSM] += t2;
+	
+#endif	
+
+
+
 		  stat->ops[SOLVE] += knsupc * (knsupc - 1) * nrhs;
 #if ( DEBUGlevel>=2 )
 		  printf("(%2d) Solve X[%2d]\n", iam, k);
@@ -833,6 +1090,8 @@ pdgstrs(int_t n, LUstruct_t *LUstruct,
 		      if ( fsendx_plist[lk][p] != EMPTY ) {
 			  pi = PNUM( p, kcol, grid );
 
+	
+			  
 			  MPI_Isend( &x[ii-XK_H], knsupc * nrhs + XK_H,
                                      MPI_DOUBLE, pi, Xk, grid->comm,
                                      &send_req[Llu->SolveMsgSent++]);
@@ -840,6 +1099,12 @@ pdgstrs(int_t n, LUstruct_t *LUstruct,
 			  MPI_Send( &x[ii - XK_H], knsupc * nrhs + XK_H,
 				    MPI_DOUBLE, pi, Xk, grid->comm );
 #endif
+
+
+		
+
+
+
 #if ( DEBUGlevel>=2 )
 			  printf("(%2d) Sent X[%2.0f] to P %2d\n",
 				 iam, x[ii-XK_H], pi);
@@ -853,7 +1118,7 @@ pdgstrs(int_t n, LUstruct_t *LUstruct,
 		  lptr = BC_HEADER + LB_DESCRIPTOR + knsupc;
 		  luptr = knsupc; /* Skip diagonal block L(k,k). */
 
-		  dlsum_fmod(lsum, x, &x[ii], rtemp, nrhs, knsupc, k,
+		  dlsum_fmod_inv(lsum, x, &x[ii], rtemp, nrhs, knsupc, k,
 			     fmod, nb, lptr, luptr, xsup, grid, Llu,
 			     send_req, stat);
 	      } /* if */
@@ -897,7 +1162,7 @@ pdgstrs(int_t n, LUstruct_t *LUstruct,
 
     SUPERLU_FREE(fmod);
     SUPERLU_FREE(frecv);
-    SUPERLU_FREE(rtemp);
+
 
     /*for (i = 0; i < Llu->SolveMsgSent; ++i) MPI_Request_free(&send_req[i]);*/
 
@@ -1103,9 +1368,9 @@ pdgstrs(int_t n, LUstruct_t *LUstruct,
     /*
      * Solve the roots first by all the diagonal processes.
      */
-#if ( DEBUGlevel>=2 )
+// #if ( DEBUGlevel>=2 )
     printf("(%2d) nroot %4d\n", iam, nroot);
-#endif
+// #endif
     for (k = nsupers-1; k >= 0 && nroot; --k) {
 	krow = PROW( k, grid );
 	kcol = PCOL( k, grid );
@@ -1119,16 +1384,43 @@ pdgstrs(int_t n, LUstruct_t *LUstruct,
 		lsub = Lrowind_bc_ptr[lk];
 		lusup = Lnzval_bc_ptr[lk];
 		nsupr = lsub[1];
+		
+		
+		if(Llu->inv == 1){
+		
+		  Uinv = Uinv_bc_ptr[lk];
 #ifdef _CRAY
-		STRSM(ftcs1, ftcs3, ftcs2, ftcs2, &knsupc, &nrhs, &alpha,
+		  SGEMM( ftcs2, ftcs2, &knsupc, &nrhs, &knsupc,
+			  &alpha, Uinv, &knsupc, &x[ii],
+			  &knsupc, &beta, rtemp, &knsupc );
+#elif defined (USE_VENDOR_BLAS)
+		  dgemm_( "N", "N", &knsupc, &nrhs, &knsupc,
+			   &alpha, Uinv, &knsupc, &x[ii],
+			   &knsupc, &beta, rtemp, &knsupc, 1, 1 );
+#else
+		  dgemm_( "N", "N", &knsupc, &nrhs, &knsupc,
+			   &alpha, Uinv, &knsupc, &x[ii],
+			   &knsupc, &beta, rtemp, &knsupc );
+#endif			   
+		   
+		  for (i=0 ; i<knsupc ; i++){
+			x[ii+i] = rtemp[i];
+		  }		
+		}else{
+#ifdef _CRAY
+		  STRSM(ftcs1, ftcs3, ftcs2, ftcs2, &knsupc, &nrhs, &alpha,
 		      lusup, &nsupr, &x[ii], &knsupc);
 #elif defined (USE_VENDOR_BLAS)
-		dtrsm_("L", "U", "N", "N", &knsupc, &nrhs, &alpha, 
-		       lusup, &nsupr, &x[ii], &knsupc, 1, 1, 1, 1);
+		  dtrsm_("L", "U", "N", "N", &knsupc, &nrhs, &alpha, 
+		       lusup, &nsupr, &x[ii], &knsupc, 1, 1, 1, 1);	
 #else
-		dtrsm_("L", "U", "N", "N", &knsupc, &nrhs, &alpha, 
+		  dtrsm_("L", "U", "N", "N", &knsupc, &nrhs, &alpha, 
 		       lusup, &nsupr, &x[ii], &knsupc);
 #endif
+		}		
+		
+		
+
 		stat->ops[SOLVE] += knsupc * (knsupc + 1) * nrhs;
 		--nroot;
 #if ( DEBUGlevel>=2 )
@@ -1141,6 +1433,13 @@ pdgstrs(int_t n, LUstruct_t *LUstruct,
 		    if ( bsendx_plist[lk][p] != EMPTY ) {
 			pi = PNUM( p, kcol, grid );
 
+
+
+// #if ( PROFlevel>=1 )
+		// TIC(t1);
+		// msgcnt[1] = knsupc * nrhs + XK_H;
+// #endif	
+
 			MPI_Isend( &x[ii - XK_H], knsupc * nrhs + XK_H,
                                    MPI_DOUBLE, pi, Xk, grid->comm,
                                    &send_req[Llu->SolveMsgSent++]);
@@ -1149,6 +1448,17 @@ pdgstrs(int_t n, LUstruct_t *LUstruct,
                                   MPI_DOUBLE, pi, Xk,
                                   grid->comm );
 #endif
+
+
+// #if ( PROFlevel>=1 )
+		// TOC(t2, t1);
+		// stat->utime[SOL_COMM] += t2;
+	
+        // msg_cnt += 1;
+        // msg_vol += msgcnt[1] * dword;		
+// #endif	
+
+
 #if ( DEBUGlevel>=2 )
 			printf("(%2d) Sent X[%2.0f] to P %2d\n",
 			       iam, x[ii-XK_H], pi);
@@ -1159,7 +1469,7 @@ pdgstrs(int_t n, LUstruct_t *LUstruct,
 		 * Perform local block modifications: lsum[i] -= U_i,k * X[k]
 		 */
 		if ( Urbs[lk] ) 
-		    dlsum_bmod(lsum, x, &x[ii], nrhs, k, bmod, Urbs,
+		    dlsum_bmod_inv(lsum, x, &x[ii], rtemp, nrhs, k, bmod, Urbs,
 			       Ucb_indptr, Ucb_valptr, xsup, grid, Llu,
 			       send_req, stat);
 	    } /* if root ... */
@@ -1172,9 +1482,24 @@ pdgstrs(int_t n, LUstruct_t *LUstruct,
      */
     while ( nbrecvx || nbrecvmod ) { /* While not finished. */
 
+			  
+// #if ( PROFlevel>=1 )
+		// TIC(t1);
+		// msgcnt[1] = maxrecvsz;
+// #endif	
+	
 	/* Receive a message. */
 	MPI_Recv( recvbuf, maxrecvsz, MPI_DOUBLE,
                   MPI_ANY_SOURCE, MPI_ANY_TAG, grid->comm, &status );
+				  
+// #if ( PROFlevel>=1 )
+		// TOC(t2, t1);
+		// stat->utime[SOL_COMM] += t2;
+	
+        // msg_cnt += 1;
+        // msg_vol += msgcnt[1] * dword;		
+// #endif					  
+				  	  
 	k = *recvbuf;
 
 #if ( DEBUGlevel>=2 )
@@ -1189,7 +1514,7 @@ pdgstrs(int_t n, LUstruct_t *LUstruct,
 		 * Perform local block modifications:
 		 *         lsum[i] -= U_i,k * X[k]
 		 */
-		dlsum_bmod(lsum, x, &recvbuf[XK_H], nrhs, k, bmod, Urbs,
+		dlsum_bmod_inv(lsum, x, &recvbuf[XK_H], rtemp, nrhs, k, bmod, Urbs,
 			   Ucb_indptr, Ucb_valptr, xsup, grid, Llu, 
 			   send_req, stat);
 
@@ -1212,16 +1537,42 @@ pdgstrs(int_t n, LUstruct_t *LUstruct,
 		    lsub = Lrowind_bc_ptr[lk];
 		    lusup = Lnzval_bc_ptr[lk];
 		    nsupr = lsub[1];
+
+
+		if(Llu->inv == 1){
+		
+		  Uinv = Uinv_bc_ptr[lk];
+		  
+#ifdef _CRAY
+		  SGEMM( ftcs2, ftcs2, &knsupc, &nrhs, &knsupc,
+			  &alpha, Uinv, &knsupc, &x[ii],
+			  &knsupc, &beta, rtemp, &knsupc );
+#elif defined (USE_VENDOR_BLAS)
+		  dgemm_( "N", "N", &knsupc, &nrhs, &knsupc,
+			   &alpha, Uinv, &knsupc, &x[ii],
+			   &knsupc, &beta, rtemp, &knsupc, 1, 1 );
+#else
+		  dgemm_( "N", "N", &knsupc, &nrhs, &knsupc,
+			   &alpha, Uinv, &knsupc, &x[ii],
+			   &knsupc, &beta, rtemp, &knsupc );
+#endif		
+		   
+		  for (i=0 ; i<knsupc ; i++){
+			x[ii+i] = rtemp[i];
+		  }		
+		}else{
 #ifdef _CRAY
 		    STRSM(ftcs1, ftcs3, ftcs2, ftcs2, &knsupc, &nrhs, &alpha,
 			  lusup, &nsupr, &x[ii], &knsupc);
 #elif defined (USE_VENDOR_BLAS)
 		    dtrsm_("L", "U", "N", "N", &knsupc, &nrhs, &alpha, 
-			   lusup, &nsupr, &x[ii], &knsupc, 1, 1, 1, 1);
+		       lusup, &nsupr, &x[ii], &knsupc, 1, 1, 1, 1);		
 #else
 		    dtrsm_("L", "U", "N", "N", &knsupc, &nrhs, &alpha, 
 			   lusup, &nsupr, &x[ii], &knsupc);
 #endif
+		}
+
 		    stat->ops[SOLVE] += knsupc * (knsupc + 1) * nrhs;
 #if ( DEBUGlevel>=2 )
 		    printf("(%2d) Solve X[%2d]\n", iam, k);
@@ -1234,6 +1585,11 @@ pdgstrs(int_t n, LUstruct_t *LUstruct,
 			if ( bsendx_plist[lk][p] != EMPTY ) {
 			    pi = PNUM( p, kcol, grid );
 
+// #if ( PROFlevel>=1 )
+		// TIC(t1);
+		// msgcnt[1] = knsupc * nrhs + XK_H;
+// #endif	
+
 			    MPI_Isend( &x[ii - XK_H], knsupc * nrhs + XK_H,
                                        MPI_DOUBLE, pi, Xk, grid->comm,
                                        &send_req[Llu->SolveMsgSent++] );
@@ -1242,6 +1598,15 @@ pdgstrs(int_t n, LUstruct_t *LUstruct,
                                       MPI_DOUBLE, pi, Xk,
                                       grid->comm );
 #endif
+
+// #if ( PROFlevel>=1 )
+		// TOC(t2, t1);
+		// stat->utime[SOL_COMM] += t2;
+	
+        // msg_cnt += 1;
+        // msg_vol += msgcnt[1] * dword;		
+// #endif	
+
 #if ( DEBUGlevel>=2 )
 			    printf("(%2d) Sent X[%2.0f] to P %2d\n",
 				   iam, x[ii - XK_H], pi);
@@ -1253,7 +1618,7 @@ pdgstrs(int_t n, LUstruct_t *LUstruct,
 		     *         lsum[i] -= U_i,k * X[k]
 		     */
 		    if ( Urbs[lk] )
-			dlsum_bmod(lsum, x, &x[ii], nrhs, k, bmod, Urbs,
+			dlsum_bmod_inv(lsum, x, &x[ii], rtemp, nrhs, k, bmod, Urbs,
 				   Ucb_indptr, Ucb_valptr, xsup, grid, Llu,
 				   send_req, stat);
 		} /* if becomes solvable */
@@ -1308,6 +1673,7 @@ pdgstrs(int_t n, LUstruct_t *LUstruct,
 
 
     /* Deallocate storage. */
+	SUPERLU_FREE(rtemp);
     SUPERLU_FREE(lsum);
     SUPERLU_FREE(x);
     SUPERLU_FREE(recvbuf);
@@ -1330,6 +1696,31 @@ pdgstrs(int_t n, LUstruct_t *LUstruct,
 
     MPI_Barrier( grid->comm );
 
+	
+#if ( PROFlevel>=1 )
+    {
+        float msg_vol_max, msg_vol_sum, msg_cnt_max, msg_cnt_sum;
+
+        MPI_Reduce (&msg_cnt, &msg_cnt_sum,
+                    1, MPI_FLOAT, MPI_SUM, 0, grid->comm);
+        MPI_Reduce (&msg_cnt, &msg_cnt_max,
+                    1, MPI_FLOAT, MPI_MAX, 0, grid->comm);
+        MPI_Reduce (&msg_vol, &msg_vol_sum,
+                    1, MPI_FLOAT, MPI_SUM, 0, grid->comm);
+        MPI_Reduce (&msg_vol, &msg_vol_max,
+                    1, MPI_FLOAT, MPI_MAX, 0, grid->comm);
+        if (!iam) {
+            printf ("\tPDGSTRS comm stat:"
+                    "\tAvg\tMax\t\tAvg\tMax\n"
+                    "\t\t\tCount:\t%.0f\t%.0f\tVol(MB)\t%.2f\t%.2f\n",
+                    msg_cnt_sum / Pr / Pc, msg_cnt_max,
+                    msg_vol_sum / Pr / Pc * 1e-6, msg_vol_max * 1e-6);
+        }
+    }
+#endif	
+	
+	
+	
     stat->utime[SOLVE] = SuperLU_timer_() - t;
 
 #if ( DEBUGlevel>=1 )

@@ -332,7 +332,7 @@ typedef struct {
  *      the row indices. Instead, only the leading nonzero index is stored.
  *      The rest can be found together with xsup/supno pair.
  *      For example, 
- *          usub[xsub[j+1]] - usub[xsub[j]] = number of segments in column j.
+ *          usub[xusub[j+1]] - usub[xusub[j]] = number of segments in column j.
  *          for any i in usub[], 
  *              supno[i]         = block number in which i belongs to
  *  	        xsup[supno[i]+1] = first row of the next block
@@ -559,6 +559,7 @@ typedef struct {
 typedef struct {
     fact_t        Fact;
     yes_no_t      Equil;
+    yes_no_t      DiagInv;
     colperm_t     ColPerm;
     trans_t       Trans;
     IterRefine_t  IterRefine;

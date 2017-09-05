@@ -1306,10 +1306,13 @@ pdgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 	} 
 
 	
+	// printf("am I here?\n");
+	// fflush(stdout);
 	if(options->DiagInv==YES){	
 	pdCompute_Diag_Inv(n, LUstruct, grid, stat, info);
 	}
-
+	// printf("am I good here?\n");
+	// fflush(stdout);
 	pdgstrs(n, LUstruct, ScalePermstruct, grid, X, m_loc, 
 		fst_row, ldb, nrhs, SOLVEstruct, stat, info);
 

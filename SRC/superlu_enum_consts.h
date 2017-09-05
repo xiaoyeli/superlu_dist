@@ -68,6 +68,8 @@ typedef enum {
     FACT,    /* perform LU factorization */
     COMM,    /* communication for factorization */
     SOL_COMM,/* communication for solve */
+    SOL_GEMM,/* gemm for solve */
+    SOL_TRSM,/* trsm for solve */	
     RCOND,   /* estimate reciprocal condition number */
     SOLVE,   /* forward and back solves */
     REFINE,  /* perform iterative refinement */
@@ -76,6 +78,7 @@ typedef enum {
     FERR,    /* estimate error bounds after iterative refinement */
     NPHASES  /* total number of phases */
 } PhaseType;
+
 
 
 #endif /* __SUPERLU_ENUM_CONSTS */
