@@ -165,7 +165,7 @@ at the top-level directory.
 #define GSUM     20 
 #define Xk       21
 #define Yk       22
-#define LSUM     100000000    /* for now, make sure it's larger than nsupers*/
+#define LSUM     1000000    /* for now, make sure it's larger than nsupers*/
 
 /* 
  * Communication scopes
@@ -784,11 +784,13 @@ extern void 	RdTree_SetTag(RdTree Tree, int tag);
 extern BcTree   BcTree_Create(MPI_Comm comm, int* ranks, int rank_cnt, int msgSize, double rseed);  
 extern void     BcTree_Testsome(int incount, int* treeIdx, int Ntree, BcTree* arrTrees, int* outcount, int* doneIdx, yes_no_t* finishedFlags);
 extern yes_no_t BcTree_Progress(BcTree Tree);
+// extern int_t    BcTree_Iprobe(BcTree Tree, MPI_Status* status);
 extern void     BcTree_SetDataReady(BcTree Tree);
 extern void 	BcTree_SetLocalBuffer(BcTree Tree, void* localBuffer);
 extern void 	BcTree_CleanupBuffers(BcTree Tree);
 extern void 	BcTree_Reset(BcTree Tree);
 extern void 	BcTree_SetTag(BcTree Tree, int tag);
+extern yes_no_t BcTree_IsRoot(BcTree Tree);
 extern void 	TreeTest(void* tree);
 
 #ifdef __cplusplus

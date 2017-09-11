@@ -319,7 +319,7 @@ float
 pddistribute(fact_t fact, int_t n, SuperMatrix *A,
 	     ScalePermstruct_t *ScalePermstruct,
 	     Glu_freeable_t *Glu_freeable, LUstruct_t *LUstruct,
-	     gridinfo_t *grid)
+	     gridinfo_t *grid, int_t nrhs)
 /*
  * -- Distributed SuperLU routine (version 2.0) --
  * Lawrence Berkeley National Lab, Univ. of California Berkeley.
@@ -397,6 +397,7 @@ pddistribute(fact_t fact, int_t n, SuperMatrix *A,
     int_t  **Ufstnz_br_ptr;  /* size ceil(NSUPERS/Pr) */
 	BcTree  *LBtree_ptr;       /* size ceil(NSUPERS/Pc)                */
 	RdTree  *LRtree_ptr;		  /* size ceil(NSUPERS/Pr)                */
+	int_t msgsize;
 	
     /*-- Counts to be used in factorization. --*/
     int  *ToRecv, *ToSendD, **ToSendR;
@@ -1036,6 +1037,11 @@ pddistribute(fact_t fact, int_t n, SuperMatrix *A,
 	if ( !(ranks = intCalloc_dist(grid->nprow)) )
 	    ABORT("Calloc fails for ranks[].");	
 	
+	
+	for (ljb = 0; ljb <k ; ++ljb) {
+		LBtree_ptr[ljb]=NULL;
+	}	
+	
 	for (jb = 0; jb < nsupers; ++jb) { /* for each block column ... */
 		pc = PCOL( jb, grid );
 	    if ( mycol == pc ) { /* Block column jb in my process column */
@@ -1072,37 +1078,42 @@ pddistribute(fact_t fact, int_t n, SuperMatrix *A,
 			++rank_cnt;
 			}
 		}
+		
+		if(rank_cnt>1){
+		
 		// rseed=rand();
 		rseed=1.0;
-		LBtree_ptr[ljb] = BcTree_Create(grid->cscp.comm, ranks, rank_cnt, SuperSize( jb ),rseed);  	
+		msgsize = SuperSize( jb )*nrhs+XK_H;
+		LBtree_ptr[ljb] = BcTree_Create(grid->cscp.comm, ranks, rank_cnt, msgsize,rseed);  	
 		BcTree_SetTag(LBtree_ptr[ljb],jb);
-		// TreeTest(LBtree_ptr[ljb]);
-	
-		rank_cnt_ref=1;
-		for (j = 0; j < grid->nprow; ++j) {
-			if ( fsendx_plist[ljb][j] != EMPTY ) {	
-				++rank_cnt_ref;		
-			}
-		}			
-		assert(rank_cnt==rank_cnt_ref);
 
-// // #if ( PRNTlevel>=1 )		
-		// if(Root==myrow){			
+		// TreeTest(LBtree_ptr[ljb]);
+
+// #if ( PRNTlevel>=1 )		
+		if(Root==myrow){
+			rank_cnt_ref=1;
+			for (j = 0; j < grid->nprow; ++j) {
+				if ( fsendx_plist[ljb][j] != EMPTY ) {	
+					++rank_cnt_ref;		
+				}
+			}
+			assert(rank_cnt==rank_cnt_ref);		
+	
 			// printf("Partial Bcast Procs: col%7d np%4d\n",jb,rank_cnt);
 			
 			// // printf("Partial Bcast Procs: %4d %4d: ",iam, rank_cnt);
 			// // for(j=0;j<rank_cnt;++j)printf("%4d",ranks[j]);
 			// // printf("\n");
-		// }
-// // #endif		
+		}
+// #endif
+		}	
 		}
 
 		}
 	}	
 	SUPERLU_FREE(ActiveFlag);
 	SUPERLU_FREE(ranks);
-	
-	
+		
 	/* construct the Reduce tree for L ... */
 	
 	
@@ -1162,6 +1173,10 @@ pddistribute(fact_t fact, int_t n, SuperMatrix *A,
 	}
 
 	
+	for (lib = 0; lib <k ; ++lib) {
+		LRtree_ptr[lib]=NULL;
+	}
+		
 	for (ib = nsupers-1; ib >0 ; --ib) {
 		pr = PROW( ib, grid );
 	    if ( myrow == pr ) { /* Block row ib in my process row */
@@ -1206,24 +1221,26 @@ pddistribute(fact_t fact, int_t n, SuperMatrix *A,
 			++rank_cnt;
 			}
 		}
+		if(rank_cnt>1){
 		// rseed=rand();
 		rseed=1.0;
-		// LRtree_ptr[lib] = RdTree_Create(grid->rscp.comm, ranks, rank_cnt, SuperSize( ib ),rseed);  	
+		msgsize = SuperSize( ib )*nrhs+LSUM_H;
+		// LRtree_ptr[lib] = RdTree_Create(grid->rscp.comm, ranks, rank_cnt, msgsize,rseed);  	
 		// RdTree_SetTag(ib+nsupers);
 		
 		
 		
-// // #if ( PRNTlevel>=1 )
-		// assert(rank_cnt==frecv[lib]);
-		// if(Root==mycol){
-			// printf("Partial Reduce Procs: row%7d np%4d\n",ib,rank_cnt);
-			// // printf("Partial Reduce Procs: %4d %4d: ",iam, rank_cnt);
-			// // // for(j=0;j<rank_cnt;++j)printf("%4d",ranks[j]);
-			// // printf("\n");
-		// }
-// // #endif		
+// #if ( PRNTlevel>=1 )
+		if(Root==mycol){
+			assert(rank_cnt==frecv[lib]);
+			printf("Partial Reduce Procs: row%7d np%4d\n",ib,rank_cnt);
+			// printf("Partial Reduce Procs: %4d %4d: ",iam, rank_cnt);
+			// // for(j=0;j<rank_cnt;++j)printf("%4d",ranks[j]);
+			// printf("\n");
 		}
-		
+// #endif		
+		}
+		}
 		}		
 	}
 	

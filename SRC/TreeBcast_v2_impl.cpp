@@ -43,7 +43,7 @@ BcTree BcTree_Create(MPI_Comm comm, Int* ranks, Int rank_cnt, Int msgSize, doubl
 	return (BcTree) BcastLTree;
 }
 
-void BcTree_SetTag(BcTree Tree, int tag){
+void BcTree_SetTag(BcTree Tree, Int tag){
 	TreeBcast_v2<double>* BcastLTree = (TreeBcast_v2<double>*) Tree;
 	BcastLTree->SetTag(tag); 
 }
@@ -51,8 +51,22 @@ void BcTree_SetTag(BcTree Tree, int tag){
 yes_no_t BcTree_Progress(BcTree Tree){
 	TreeBcast_v2<double>* BcastLTree = (TreeBcast_v2<double>*) Tree;
 	bool done = BcastLTree->Progress();
+	// std::cout<<done<<std::endl;
 	return done ? YES : NO;	
 }
+
+
+// Int BcTree_Iprobe(BcTree Tree, MPI_Status* status){
+	// TreeBcast_v2<double>* BcastLTree = (TreeBcast_v2<double>*) Tree;
+	// Int flag;	
+
+	// MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, BcastLTree->comm_, &flag, status);
+	// if(flag!=0){
+	// printf("hahah %5d", flag);		
+	// fflush(stdout);
+	// }
+	// return flag;
+// }
 
 
 void BcTree_SetDataReady(BcTree Tree){
@@ -65,7 +79,10 @@ void BcTree_SetLocalBuffer(BcTree Tree, void* localBuffer){
 	BcastLTree->SetLocalBuffer( (double*) localBuffer);
 }
 
-
+yes_no_t BcTree_IsRoot(BcTree Tree){
+	TreeBcast_v2<double>* BcastLTree = (TreeBcast_v2<double>*) Tree;
+	return BcastLTree->IsRoot()?YES:NO;
+}
 
 
 #ifdef __cplusplus
@@ -277,7 +294,8 @@ void BcTree_SetLocalBuffer(BcTree Tree, void* localBuffer){
     inline void TreeBcast_v2<T>::forwardMessage( ){
       if(this->isReady_){
 #if ( _DEBUGlevel_ >= 1 ) || defined(BCAST_VERBOSE)
-        statusOFS<<this->myRank_<<" FORWARDING on tag "<<this->tag_<<std::endl;
+        // std::cout<<this->myRank_<<" FORWARDING on tag "<<this->tag_<<std::endl;
+        statusOFS::cout<<this->myRank_<<" FORWARDING on tag "<<this->tag_<<std::endl;
 #endif
         if(this->sendRequests_.size()!=this->GetDestCount()){
           this->sendRequests_.assign(this->GetDestCount(),MPI_REQUEST_NULL);
