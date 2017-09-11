@@ -426,6 +426,9 @@ pdCompute_Diag_Inv(int_t n, LUstruct_t *LUstruct,gridinfo_t *grid, SuperLUStat_t
  	
 	// printf("wocao \n");
 	// fflush(stdout);
+	
+	printf("computing inverse of diagonal blocks...");
+	fflush(stdout);
     /*
      * Initialization.
      */
@@ -464,8 +467,7 @@ pdCompute_Diag_Inv(int_t n, LUstruct_t *LUstruct,gridinfo_t *grid, SuperLUStat_t
 		Uinv = Uinv_bc_ptr[lk];
 		nsupr = lsub[1];	
 		knsupc = SuperSize( k );
-
-		// printf("myid: %10d, %10d",iam,lk);	 
+	 
 		for (j=0 ; j<knsupc; j++){
 			Linv[j*knsupc+j] = 1.0;
 
@@ -623,6 +625,7 @@ pdgstrs(int_t n, LUstruct_t *LUstruct,
                              It is only valid on the diagonal processes. */
     int_t  nfrecvmod = 0; /* Count of total modifications to be recv'd. */
     int_t  nleaf = 0, nroot = 0;
+    int_t  nleaftmp = 0, nroottmp = 0;
 
     /*-- Counts used for U-solve --*/
     int_t  *bmod;         /* Modification count for U-solve. */
@@ -934,6 +937,140 @@ pdgstrs(int_t n, LUstruct_t *LUstruct,
 	    }
 	} /* if diagonal process ... */
     } /* for k ... */
+	
+	
+
+
+
+	// // nleaftmp=nleaf;
+	// for (k = 0; k < nsupers && nleaf; ++k) {
+	// krow = PROW( k, grid );
+	// kcol = PCOL( k, grid );
+	// if ( myrow == krow && mycol == kcol ) { /* Diagonal process */
+	    // knsupc = SuperSize( k );
+	    // lk = LBi( k, grid );
+	    // if ( frecv[lk]==0 && fmod[lk]==0 ) {
+		// // fmod[lk] = -1;  /* Do not solve X[k] in the future. */
+		// ii = X_BLK( lk );
+		// lk = LBj( k, grid ); /* Local block number, column-wise. */
+		// lsub = Lrowind_bc_ptr[lk];
+		// lusup = Lnzval_bc_ptr[lk];
+		// nsupr = lsub[1];
+		
+
+// #if ( PROFlevel>=1 )
+		// TIC(t1);
+// #endif			
+		// if(Llu->inv == 1){
+		  // Linv = Linv_bc_ptr[lk];
+// #ifdef _CRAY
+		  // SGEMM( ftcs2, ftcs2, &knsupc, &nrhs, &knsupc,
+			  // &alpha, Linv, &knsupc, &x[ii],
+			  // &knsupc, &beta, rtemp, &knsupc );
+// #elif defined (USE_VENDOR_BLAS)
+		  // dgemm_( "N", "N", &knsupc, &nrhs, &knsupc,
+			   // &alpha, Linv, &knsupc, &x[ii],
+			   // &knsupc, &beta, rtemp, &knsupc, 1, 1 );
+// #else
+		  // dgemm_( "N", "N", &knsupc, &nrhs, &knsupc,
+			   // &alpha, Linv, &knsupc, &x[ii],
+			   // &knsupc, &beta, rtemp, &knsupc );
+// #endif		   
+		  // for (i=0 ; i<knsupc ; i++){
+			// x[ii+i] = rtemp[i];
+		  // }		
+		// }else{
+// #ifdef _CRAY
+			// STRSM(ftcs1, ftcs1, ftcs2, ftcs3, &knsupc, &nrhs, &alpha,
+				  // lusup, &nsupr, &x[ii], &knsupc);
+// #elif defined (USE_VENDOR_BLAS)
+			// dtrsm_("L", "L", "N", "U", &knsupc, &nrhs, &alpha, 
+				// lusup, &nsupr, &x[ii], &knsupc, 1, 1, 1, 1);	
+// #else
+			// dtrsm_("L", "L", "N", "U", &knsupc, &nrhs, &alpha, 
+				   // lusup, &nsupr, &x[ii], &knsupc);
+// #endif
+		// }		
+
+// #if ( PROFlevel>=1 )
+		// TOC(t2, t1);
+		// stat->utime[SOL_TRSM] += t2;
+	
+// #endif	
+
+
+		// stat->ops[SOLVE] += knsupc * (knsupc - 1) * nrhs;
+		// // --nleaftmp;
+// #if ( DEBUGlevel>=2 )
+		// printf("(%2d) Solve X[%2d]\n", iam, k);
+// #endif
+
+		// /*
+		 // * Send Xk to process column Pc[k].
+		 // */
+		// for (p = 0; p < Pr; ++p) {
+		    // if ( fsendx_plist[lk][p] != EMPTY ) {
+			// pi = PNUM( p, kcol, grid );
+		
+			
+			// MPI_Isend( &x[ii - XK_H], knsupc * nrhs + XK_H,
+				   // MPI_DOUBLE, pi, Xk, grid->comm,
+                                   // &send_req[Llu->SolveMsgSent++]);
+// #if 0
+			// MPI_Send( &x[ii - XK_H], knsupc * nrhs + XK_H,
+				 // MPI_DOUBLE, pi, Xk, grid->comm );
+// #endif
+
+
+
+// #if ( DEBUGlevel>=2 )
+			// printf("(%2d) Sent X[%2.0f] to P %2d\n",
+			       // iam, x[ii-XK_H], pi);
+// #endif
+		    // }
+		// }
+	    // }
+	// } /* if diagonal process ... */
+    // } /* for k ... */
+
+
+
+	// // nleaftmp=nleaf;
+	// for (k = 0; k < nsupers && nleaf; ++k) {
+	// krow = PROW( k, grid );
+	// kcol = PCOL( k, grid );
+	// if ( myrow == krow && mycol == kcol ) { /* Diagonal process */
+	    // knsupc = SuperSize( k );
+	    // lk = LBi( k, grid );
+	    // if ( frecv[lk]==0 && fmod[lk]==0 ) {
+		// fmod[lk] = -1;  /* Do not solve X[k] in the future. */
+		// ii = X_BLK( lk );
+		// lk = LBj( k, grid ); /* Local block number, column-wise. */
+		// lsub = Lrowind_bc_ptr[lk];
+		// lusup = Lnzval_bc_ptr[lk];
+		// nsupr = lsub[1];
+				
+		
+		// --nleaf;
+		// /*
+		 // * Perform local block modifications: lsum[i] -= L_i,k * X[k]
+		 // */
+		// nb = lsub[0] - 1;
+		// lptr = BC_HEADER + LB_DESCRIPTOR + knsupc;
+		// luptr = knsupc; /* Skip diagonal block L(k,k). */
+		
+		// dlsum_fmod_inv(lsum, x, &x[ii], rtemp, nrhs, knsupc, k,
+			   // fmod, nb, lptr, luptr, xsup, grid, Llu, 
+			   // send_req, stat);
+	    // }
+	// } /* if diagonal process ... */
+    // } /* for k ... */	
+	
+	
+	
+	
+	
+	
 
 // #if ( PROFlevel>=1 )
 		// // if(iam==0){
@@ -958,16 +1095,18 @@ pdgstrs(int_t n, LUstruct_t *LUstruct,
 
     while ( nfrecvx || nfrecvmod ) { /* While not finished. */
 
+	/* Receive a message. */
+	MPI_Probe(MPI_ANY_SOURCE, MPI_ANY_TAG, grid->comm, &status);
+	
+	if(status.MPI_TAG<=LSUM){ /*Xk*/
+	
 #if ( PROFlevel>=1 )
 		TIC(t1);
 		msgcnt[1] = maxrecvsz;
-#endif	
-	
-	/* Receive a message. */
-	MPI_Recv( recvbuf, maxrecvsz, MPI_DOUBLE,
-                  MPI_ANY_SOURCE, MPI_ANY_TAG, grid->comm, &status );
-
-				  
+#endif		
+		MPI_Recv( recvbuf, maxrecvsz, MPI_DOUBLE,
+					  status.MPI_SOURCE, status.MPI_TAG, grid->comm, &status );	
+	    
 #if ( PROFlevel>=1 )
 		// if(iam==0){
 		// printf("time: %8.5f\n")
@@ -977,20 +1116,13 @@ pdgstrs(int_t n, LUstruct_t *LUstruct,
 	
         msg_cnt += 1;
         msg_vol += msgcnt[1] * dword;		
-#endif	
-				  
-
-
-
-				  
-	k = *recvbuf;
+#endif			
+		
+		k = *recvbuf;
 
 #if ( DEBUGlevel>=2 )
 	printf("(%2d) Recv'd block %d, tag %2d\n", iam, k, status.MPI_TAG);
-#endif
-	
-	switch ( status.MPI_TAG ) {
-	  case Xk:
+#endif					  
 	      --nfrecvx;
 	      lk = LBj( k, grid ); /* Local block number, column-wise. */
 	      lsub = Lrowind_bc_ptr[lk];
@@ -1007,11 +1139,36 @@ pdgstrs(int_t n, LUstruct_t *LUstruct,
 		  dlsum_fmod_inv(lsum, x, &recvbuf[XK_H], rtemp, nrhs, knsupc, k,
 			     fmod, nb, lptr, luptr, xsup, grid, Llu, 
 			     send_req, stat);
-	      } /* if lsub */
+	      } /* if lsub */					  
+					  
+	}
+	else{                      /*LSUM*/
+		
+#if ( PROFlevel>=1 )
+		TIC(t1);
+		msgcnt[1] = maxrecvsz;
+#endif			
+		
+		MPI_Recv( recvbuf, maxrecvsz, MPI_DOUBLE,
+					  status.MPI_SOURCE, status.MPI_TAG, grid->comm, &status );	
+					  
+#if ( PROFlevel>=1 )
+		// if(iam==0){
+		// printf("time: %8.5f\n")
+		// }
+		TOC(t2, t1);
+		stat->utime[SOL_COMM] += t2;
+	
+        msg_cnt += 1;
+        msg_vol += msgcnt[1] * dword;		
+#endif						  
+					  
+					  
+	    k = *recvbuf;
 
-	      break;
-
-	  case LSUM: /* Receiver must be a diagonal process */
+#if ( DEBUGlevel>=2 )
+	printf("(%2d) Recv'd block %d, tag %2d\n", iam, k, status.MPI_TAG);
+#endif	
 	      --nfrecvmod;
 	      lk = LBi( k, grid ); /* Local block number, row-wise. */
 	      ii = X_BLK( lk );
@@ -1122,16 +1279,11 @@ pdgstrs(int_t n, LUstruct_t *LUstruct,
 			     fmod, nb, lptr, luptr, xsup, grid, Llu,
 			     send_req, stat);
 	      } /* if */
-
-	      break;
-
-#if ( DEBUGlevel>=2 )
-	    default:
-	      printf("(%2d) Recv'd wrong message tag %4d\n", iam, status.MPI_TAG);
-	      break;
-#endif
-	  } /* switch */
-
+	
+	}
+	
+	
+				  
     } /* while not finished ... */
 
 

@@ -165,7 +165,7 @@ at the top-level directory.
 #define GSUM     20 
 #define Xk       21
 #define Yk       22
-#define LSUM     23
+#define LSUM     100000000    /* for now, make sure it's larger than nsupers*/
 
 /* 
  * Communication scopes
@@ -704,6 +704,9 @@ extern void  PStatFree(SuperLUStat_t *);
 extern void  PStatPrint(superlu_dist_options_t *, SuperLUStat_t *, gridinfo_t *);
 extern void  log_memory(long long, SuperLUStat_t *);
 extern void  print_memorylog(SuperLUStat_t *, char *);
+extern void  quickSort( int_t*, int_t, int_t);
+extern int_t partition( int_t*, int_t, int_t);
+
 
 /* Prototypes for parallel symbolic factorization */
 extern float symbfact_dist
@@ -757,6 +760,36 @@ extern void  PrintInt32(char *, int, int *);
 extern int   file_PrintInt10(FILE *, char *, int_t, int_t *);
 extern int   file_PrintInt32(FILE *, char *, int, int *);
 extern int   file_PrintLong10(FILE *, char *, int_t, int_t *);
+
+
+/* Routines for Async_tree communication*/
+
+#ifndef __SUPERLU_ASYNC_TREE /* allow multiple inclusions */
+#define __SUPERLU_ASYNC_TREE
+typedef void* BcTree;
+typedef void* RdTree;
+#endif
+
+// typedef enum {NO, YES}  yes_no_t;
+extern RdTree   RdTree_Create(MPI_Comm comm, int* ranks, int rank_cnt, int msgSize, double rseed);  
+extern void     RdTree_Testsome(int incount, int* treeIdx, int Ntree, RdTree* arrTrees, int* outcount, int* doneIdx, yes_no_t* finishedFlags);
+extern yes_no_t RdTree_Progress(RdTree Tree);
+extern void     RdTree_SetDataReady(RdTree Tree);
+extern void 	RdTree_SetLocalBuffer(RdTree Tree, void* localBuffer);
+extern void 	RdTree_CleanupBuffers(RdTree Tree);
+extern void 	RdTree_Reset(RdTree Tree);
+extern void 	RdTree_AllocRecvBuffers(RdTree Tree);
+extern void 	RdTree_SetTag(RdTree Tree, int tag);
+
+extern BcTree   BcTree_Create(MPI_Comm comm, int* ranks, int rank_cnt, int msgSize, double rseed);  
+extern void     BcTree_Testsome(int incount, int* treeIdx, int Ntree, BcTree* arrTrees, int* outcount, int* doneIdx, yes_no_t* finishedFlags);
+extern yes_no_t BcTree_Progress(BcTree Tree);
+extern void     BcTree_SetDataReady(BcTree Tree);
+extern void 	BcTree_SetLocalBuffer(BcTree Tree, void* localBuffer);
+extern void 	BcTree_CleanupBuffers(BcTree Tree);
+extern void 	BcTree_Reset(BcTree Tree);
+extern void 	BcTree_SetTag(BcTree Tree, int tag);
+extern void 	TreeTest(void* tree);
 
 #ifdef __cplusplus
   }

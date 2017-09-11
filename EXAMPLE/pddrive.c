@@ -165,10 +165,10 @@ int main(int argc, char *argv[])
 #endif
 
 
-	options.ParSymbFact       = YES;
-	options.ColPerm           = PARMETIS;
+	// options.ParSymbFact       = YES;
+	// options.ColPerm           = PARMETIS;
 	options.IterRefine       = 0;
-	options.DiagInv       = YES;
+	options.DiagInv       = NO;
 	
     if (!iam) {
 	print_sp_ienv_dist(&options);

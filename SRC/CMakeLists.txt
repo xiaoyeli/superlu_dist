@@ -9,10 +9,15 @@ set(headers
     supermatrix.h
     util_dist.h
     colamd.h
+    timer.h
+    environment.hpp
+    TreeBcast_v2.hpp	
 )
 
 # first: precision-independent files
 set(sources
+  global.cpp
+  TreeBcast_v2_impl.cpp
   sp_ienv.c
   etree.c 
   sp_colorder.c

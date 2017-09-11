@@ -1213,3 +1213,42 @@ int_t estimate_bigu_size(int_t nsupers,
 #endif
     return(max_ldu * max_ncols);
 }
+
+
+
+void quickSort( int_t* a, int_t l, int_t r)
+{
+   int_t j;
+
+   if( l < r ) 
+   {
+   	// divide and conquer
+       j = partition( a, l, r);
+       quickSort( a, l, j-1);
+       quickSort( a, j+1, r);
+   }
+	
+}
+
+int_t partition( int_t* a, int_t l, int_t r) {
+   int_t pivot, i, j, t;
+   pivot = a[l];
+   i = l; j = r+1;
+		
+   while( 1)
+   {
+   	do ++i; while( a[i] <= pivot && i <= r );
+   	do --j; while( a[j] > pivot );
+   	if( i >= j ) break;
+   	t = a[i]; a[i] = a[j]; a[j] = t;
+   }
+   t = a[l]; a[l] = a[j]; a[j] = t;
+   return j;
+}
+
+
+
+
+
+
+

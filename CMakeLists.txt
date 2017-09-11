@@ -58,6 +58,7 @@ else()
 endif()
 
 enable_language (C)
+enable_language (CXX)
 if (XSDK_ENABLE_Fortran)
   enable_language (Fortran)
   set(NOFORTRAN FALSE)

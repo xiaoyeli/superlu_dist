@@ -33,7 +33,7 @@ ALLAUX 	= sp_ienv.o etree.o sp_colorder.o get_perm_c.o \
 	  mmd.o comm.o memory.o util.o superlu_grid.o \
 	  pxerr_dist.o superlu_timer.o symbfact.o \
 	  psymbfact.o psymbfact_util.o get_perm_c_parmetis.o mc64ad_dist.o \
-	  static_schedule.o xerr_dist.o smach_dist.o dmach_dist.o
+	  static_schedule.o xerr_dist.o smach_dist.o dmach_dist.o 
 
 ifeq "${ACC}" "GPU"
 ALLAUX += cublas_utils.o
@@ -87,6 +87,9 @@ pzgstrf.o: zscatter.c zlook_ahead_update.c zSchCompUdt-2Ddynamic.c pzgstrf.c
 	$(CC) $(CFLAGS) $(CDEFS) $(BLASDEF) -c pzgstrf.c $(VERBOSE)
 
 .c.o:
+	$(CC) $(CFLAGS) $(CDEFS) $(BLASDEF) -c $< $(VERBOSE)
+
+.cpp.o:
 	$(CC) $(CFLAGS) $(CDEFS) $(BLASDEF) -c $< $(VERBOSE)
 
 .f.o:

@@ -1307,6 +1307,7 @@ pdgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 
 	
 	if(options->DiagInv==YES){	
+	// printf("dfdfdfdfddf\n");
 	pdCompute_Diag_Inv(n, LUstruct, grid, stat, info);
 	}
 
