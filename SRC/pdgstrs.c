@@ -991,16 +991,14 @@ pdgstrs(int_t n, LUstruct_t *LUstruct,
     /* -----------------------------------------------------------
        Compute the internal nodes asynchronously by all processes.
        ----------------------------------------------------------- */
-// #if ( DEBUGlevel>=2 )
+#if ( DEBUGlevel>=2 )
     printf("(%2d) nfrecvx %4d,  nfrecvmod %4d,  nleaf %4d\n",
 	   iam, nfrecvx, nfrecvmod, nleaf);
 	fflush(stdout);
-// #endif
+#endif
 
     while ( nfrecvx || nfrecvmod ) { /* While not finished. */
 
-	// printf("%5d dddd %8d%8d\n",iam, LSUM, nsupers);
-	// fflush(stdout);
 
 	/* Receive a message. */
 	flagx=0;
@@ -1015,8 +1013,8 @@ pdgstrs(int_t n, LUstruct_t *LUstruct,
 
 	if(flagx==1){ /*Xk*/
 
-	printf("%5d x receiving %8d%8d%8d\n",iam, statusx.MPI_TAG, LSUM, nsupers);
-	fflush(stdout);
+	// printf("%5d x receiving %8d%8d%8d\n",iam, statusx.MPI_TAG, LSUM, nsupers);
+	// fflush(stdout);
 	
 #if ( PROFlevel>=1 )
 		TIC(t1);
@@ -1070,8 +1068,8 @@ pdgstrs(int_t n, LUstruct_t *LUstruct,
 	}
 	else{                      /*LSUM*/
 		
-	printf("%5d lsum receiving %8d%8d%8d\n",iam, statuslsum.MPI_TAG, LSUM, nsupers);
-	fflush(stdout);
+	// printf("%5d lsum receiving %8d%8d%8d\n",iam, statuslsum.MPI_TAG, LSUM, nsupers);
+	// fflush(stdout);
 
 #if ( PROFlevel>=1 )
 		TIC(t1);

@@ -349,7 +349,7 @@ extern void  dreadMM_dist(FILE *, int_t *, int_t *, int_t *,
 /* Distribute the data for numerical factorization */
 extern float ddist_psymbtonum(fact_t, int_t, SuperMatrix *,
                                 ScalePermstruct_t *, Pslu_freeable_t *, 
-                                LUstruct_t *, gridinfo_t *);
+                                LUstruct_t *, gridinfo_t *, int_t nrhs);
 extern void pdGetDiagU(int_t, LUstruct_t *, gridinfo_t *, double *);
 
 

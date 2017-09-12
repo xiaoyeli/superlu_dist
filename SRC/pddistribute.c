@@ -441,6 +441,8 @@ pddistribute(fact_t fact, int_t n, SuperMatrix *A,
     float mem_use = 0.0;
 	int_t *mod_bit;
 	int_t *frecv;
+	double **Linv_bc_ptr;  /* size ceil(NSUPERS/Pc) */
+	double **Uinv_bc_ptr;  /* size ceil(NSUPERS/Pc) */
 	
 	
 #if ( PRNTlevel>=1 )
@@ -795,6 +797,18 @@ pddistribute(fact_t fact, int_t n, SuperMatrix *A,
 	    ABORT("Malloc fails for Lrowind_bc_ptr[].");
 	Lrowind_bc_ptr[k-1] = NULL;
 
+
+  if ( !(Linv_bc_ptr = 
+	 (double**)SUPERLU_MALLOC(k * sizeof(double*))) ) {
+    fprintf(stderr, "Malloc fails for Linv_bc_ptr[].");
+  }  
+  if ( !(Uinv_bc_ptr = 
+	 (double**)SUPERLU_MALLOC(k * sizeof(double*))) ) {
+    fprintf(stderr, "Malloc fails for Uinv_bc_ptr[].");
+  }  
+  Linv_bc_ptr[k-1] = NULL;
+  Uinv_bc_ptr[k-1] = NULL;
+
 	/* These lists of processes will be used for triangular solves. */
 	if ( !(fsendx_plist = (int_t **) SUPERLU_MALLOC(k*sizeof(int_t*))) )
 	    ABORT("Malloc fails for fsendx_plist[].");
@@ -969,6 +983,16 @@ pddistribute(fact_t fact, int_t n, SuperMatrix *A,
 			fprintf(stderr, "col block " IFMT " ", jb);
 			ABORT("Malloc fails for Lnzval_bc_ptr[*][]");
 		    }
+
+			if (!(Linv_bc_ptr[ljb] = 
+				  doubleCalloc_dist(nsupc*nsupc))) {
+			  fprintf(stderr, "Malloc fails for Linv_bc_ptr[*][] col block " IFMT, jb);
+			}
+			if (!(Uinv_bc_ptr[ljb] = 
+				  doubleCalloc_dist(nsupc*nsupc))) {
+			  fprintf(stderr, "Malloc fails for Uinv_bc_ptr[*][] col block " IFMT, jb);
+			}
+
 		    mybufmax[0] = SUPERLU_MAX( mybufmax[0], len1 );
 		    mybufmax[1] = SUPERLU_MAX( mybufmax[1], len*nsupc );
 		    mybufmax[4] = SUPERLU_MAX( mybufmax[4], len );
@@ -1012,6 +1036,8 @@ pddistribute(fact_t fact, int_t n, SuperMatrix *A,
 		} else {
 		    Lrowind_bc_ptr[ljb] = NULL;
 		    Lnzval_bc_ptr[ljb] = NULL;
+			Linv_bc_ptr[ljb] = NULL;
+			Uinv_bc_ptr[ljb] = NULL;
 		} /* if nrbl ... */
 #if ( PROFlevel>=1 )
 		t_l += SuperLU_timer_() - t;
@@ -1226,18 +1252,18 @@ pddistribute(fact_t fact, int_t n, SuperMatrix *A,
 		rseed=1.0;
 		msgsize = SuperSize( ib )*nrhs+LSUM_H;
 		// LRtree_ptr[lib] = RdTree_Create(grid->rscp.comm, ranks, rank_cnt, msgsize,rseed);  	
-		// RdTree_SetTag(ib+nsupers);
+		// RdTree_SetTag(LRtree_ptr[lib], ib+nsupers);
 		
 		
 		
 // #if ( PRNTlevel>=1 )
-		if(Root==mycol){
-			assert(rank_cnt==frecv[lib]);
-			printf("Partial Reduce Procs: row%7d np%4d\n",ib,rank_cnt);
-			// printf("Partial Reduce Procs: %4d %4d: ",iam, rank_cnt);
-			// // for(j=0;j<rank_cnt;++j)printf("%4d",ranks[j]);
-			// printf("\n");
-		}
+		// if(Root==mycol){
+			// assert(rank_cnt==frecv[lib]);
+			// printf("Partial Reduce Procs: row%7d np%4d\n",ib,rank_cnt);
+			// // printf("Partial Reduce Procs: %4d %4d: ",iam, rank_cnt);
+			// // // for(j=0;j<rank_cnt;++j)printf("%4d",ranks[j]);
+			// // printf("\n");
+		// }
 // #endif		
 		}
 		}
@@ -1281,7 +1307,10 @@ pddistribute(fact_t fact, int_t n, SuperMatrix *A,
 	Llu->ldalsum = ldaspa;
 	Llu->LRtree_ptr = LRtree_ptr;
 	Llu->LBtree_ptr = LBtree_ptr;
-	
+	Llu->Linv_bc_ptr = Linv_bc_ptr;
+	Llu->Uinv_bc_ptr = Uinv_bc_ptr;	
+
+
 #if ( PRNTlevel>=1 )
 	if ( !iam ) printf(".. # L blocks " IFMT "\t# U blocks " IFMT "\n",
 			   nLblocks, nUblocks);

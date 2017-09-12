@@ -1120,7 +1120,7 @@ pdgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 
     	    t = SuperLU_timer_();
 	    dist_mem_use = ddist_psymbtonum(Fact, n, A, ScalePermstruct,
-		  			   &Pslu_freeable, LUstruct, grid);
+		  			   &Pslu_freeable, LUstruct, grid, nrhs);
 	    if (dist_mem_use > 0)
 	        ABORT ("Not enough memory available for dist_psymbtonum\n");
             
