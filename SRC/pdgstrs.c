@@ -480,8 +480,8 @@ pdCompute_Diag_Inv(int_t n, LUstruct_t *LUstruct,gridinfo_t *grid, SuperLUStat_t
 			}			
 			
 		}
-	    dtrtri_("L","U",&knsupc,Linv,&knsupc,&INFO);		  	
-	    dtrtri_("U","N",&knsupc,Uinv,&knsupc,&INFO);		  	
+	    // dtrtri_("L","U",&knsupc,Linv,&knsupc,&INFO);		  	
+	    // dtrtri_("U","N",&knsupc,Uinv,&knsupc,&INFO);		  	
 		}
 	    }
 	}
@@ -586,7 +586,7 @@ pdgstrs(int_t n, LUstruct_t *LUstruct,
     double *x;     /* X component at step k. */
 		    /* NOTE: x and lsum are of same size. */
     double *lusup, *dest;
-    double *recvbuf, *tempv;
+    double *recvbuf, *tempv, *recvbufall;
     double *rtemp; /* Result of full matrix-vector multiply. */
     double *Linv; /* Inverse of diagonal block */
     double *Uinv; /* Inverse of diagonal block */
@@ -659,6 +659,7 @@ pdgstrs(int_t n, LUstruct_t *LUstruct,
     int dword = sizeof (double);	
  
 	yes_no_t done;
+	yes_no_t startforward;
  
     t = SuperLU_timer_();
 
@@ -737,7 +738,10 @@ pdgstrs(int_t n, LUstruct_t *LUstruct,
 	ABORT("Malloc fails for rtemp[].");
 	if ( !(ipiv = intCalloc_dist(knsupc)) )
 	ABORT("Malloc fails for ipiv[].");
-    
+
+    // if ( !(recvbufall = doubleMalloc_dist(n)) )
+	// ABORT("Malloc fails for recvbufall[].");
+
     /*---------------------------------------------------
      * Forward solve Ly = b.
      *---------------------------------------------------*/
@@ -832,16 +836,15 @@ pdgstrs(int_t n, LUstruct_t *LUstruct,
 	// printf("%5d ddd am I here?\n",iam);
 	// fflush(stdout);
 	
-	// nsupers_i = CEILING( nsupers, grid->nprow ); /* Number of local block rows */
+	// // nsupers_i = CEILING( nsupers, grid->nprow ); /* Number of local block rows */
 	// nsupers_j = CEILING( nsupers, grid->npcol ); /* Number of local block columns */
 	// for (lk=0;lk<nsupers_j;++lk){
 		// if(LBtree_ptr[lk]!=NULL){
 			// // ii = X_BLK( lk );
-			// // BcTree_SetLocalBuffer(LBtree_ptr[lk],&x[ii - XK_H]);
 			// if(BcTree_IsRoot(LBtree_ptr[lk])==NO){  /* if nonroot, start receiving*/
-				// done = BcTree_Progress(LBtree_ptr[lk]);	
+				// BcTree_SetLocalBuffer(LBtree_ptr[lk],recvbuf);;	
 				// assert(done==NO);
-			// }	
+			// }	 
 		// }
 	// }	
 	
@@ -1000,6 +1003,9 @@ pdgstrs(int_t n, LUstruct_t *LUstruct,
     while ( nfrecvx || nfrecvmod ) { /* While not finished. */
 
 
+#if ( PROFlevel>=1 )
+		TIC(t1);
+#endif	
 	/* Receive a message. */
 	flagx=0;
 	flaglsum=0;
@@ -1007,7 +1013,10 @@ pdgstrs(int_t n, LUstruct_t *LUstruct,
 		MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, grid->cscp.comm, &flagx, &statusx);
 		MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, grid->comm, &flaglsum, &statuslsum);
 	}
-
+#if ( PROFlevel>=1 )
+		TOC(t2, t1);
+		stat->utime[SOL_COMM] += t2;
+#endif	
 	
 
 
@@ -1016,31 +1025,32 @@ pdgstrs(int_t n, LUstruct_t *LUstruct,
 	// printf("%5d x receiving %8d%8d%8d\n",iam, statusx.MPI_TAG, LSUM, nsupers);
 	// fflush(stdout);
 	
-#if ( PROFlevel>=1 )
-		TIC(t1);
-		msgcnt[1] = maxrecvsz;
-#endif		
+	
 		// MPI_Recv( recvbuf, maxrecvsz, MPI_DOUBLE,
 					  // status.MPI_SOURCE, status.MPI_TAG, grid->comm, &status );	
 	    
-		
+#if ( PROFlevel>=1 )
+		TIC(t1);
+#endif			
 		lk = LBj( statusx.MPI_TAG, grid );    /* local block number */
 		done = BcTree_Progress(LBtree_ptr[lk]);
-		while(done==NO){
+		startforward = BcTree_StartForward(LBtree_ptr[lk]);
+
+		while(!(done==YES || startforward==YES)){			
 			done = BcTree_Progress(LBtree_ptr[lk]);
+			startforward = BcTree_StartForward(LBtree_ptr[lk]);			
 		}
-		BcTree_SetLocalBuffer(LBtree_ptr[lk],recvbuf);
+				
 		
 #if ( PROFlevel>=1 )
-		// if(iam==0){
-		// printf("time: %8.5f\n")
-		// }
 		TOC(t2, t1);
-		stat->utime[SOL_COMM] += t2;
-	
-        msg_cnt += 1;
-        msg_vol += msgcnt[1] * dword;		
-#endif			
+		stat->utime[SOL_COMM] += t2;	
+#endif	
+
+		
+		BcTree_SetLocalBuffer(LBtree_ptr[lk],recvbuf);
+		
+		
 		
 		k = *recvbuf;
 

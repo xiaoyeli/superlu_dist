@@ -1,7 +1,7 @@
 #ifndef _PEXSI_TREE_IMPL_V2_HPP_
 #define _PEXSI_TREE_IMPL_V2_HPP_
 
-#define CHECK_MPI_ERROR
+// #define CHECK_MPI_ERROR
 
 #include "TreeBcast_v2.hpp"
 
@@ -82,6 +82,11 @@ void BcTree_SetLocalBuffer(BcTree Tree, void* localBuffer){
 yes_no_t BcTree_IsRoot(BcTree Tree){
 	TreeBcast_v2<double>* BcastLTree = (TreeBcast_v2<double>*) Tree;
 	return BcastLTree->IsRoot()?YES:NO;
+}
+
+yes_no_t BcTree_StartForward(BcTree Tree){
+	TreeBcast_v2<double>* BcastLTree = (TreeBcast_v2<double>*) Tree;
+	return BcastLTree->StartForward()?YES:NO;
 }
 
 
@@ -284,6 +289,11 @@ yes_no_t BcTree_IsRoot(BcTree Tree){
     inline bool TreeBcast_v2<T>::IsRoot(){
       return this->myRoot_==this->myRank_;
     }
+	
+  template< typename T> 
+    inline bool TreeBcast_v2<T>::StartForward(){
+      return this->fwded_==true;
+    }	
 
   template< typename T> 
     inline Int TreeBcast_v2<T>::GetMsgSize(){
@@ -365,7 +375,11 @@ yes_no_t BcTree_IsRoot(BcTree Tree){
         //If we have received some data, we need to copy 
         //it to the new buffer
         if(this->recvCount_>0){
+			double t1,t2;
+			TIC(t1);		
           copyLocalBuffer(locBuffer);
+		    TOC(t2,t1);
+			
         }
 
         //If data hasn't been forwarded yet, 

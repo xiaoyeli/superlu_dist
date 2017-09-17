@@ -791,6 +791,7 @@ extern void 	BcTree_CleanupBuffers(BcTree Tree);
 extern void 	BcTree_Reset(BcTree Tree);
 extern void 	BcTree_SetTag(BcTree Tree, int tag);
 extern yes_no_t BcTree_IsRoot(BcTree Tree);
+extern yes_no_t BcTree_StartForward(BcTree Tree);
 extern void 	TreeTest(void* tree);
 
 #ifdef __cplusplus
