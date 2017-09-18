@@ -380,8 +380,11 @@ extern void dgemv_(char *, int *, int *, double *, double *a, int *,
 extern void dger_(int*, int*, double*, double*, int*,
                  double*, int*, double*, int*);
 
-extern void dtrtri_(char*, char*, int*, double*, int*,int*);				 
+// extern int daxpy_(int *, double *, double *, int *, double *, int *);				 
 				 
+extern void dtrtri_(char*, char*, int*, double*, int*,int*);				 
+
+				
 				 
 #else
 extern int dgemm_(const char*, const char*, const int*, const int*, const int*,
@@ -395,6 +398,8 @@ extern int dgemv_(char *, int *, int *, double *, double *a, int *,
                   double *, int *, double *, double *, int *);
 extern void dger_(int*, int*, double*, double*, int*,
                  double*, int*, double*, int*);
+				 
+// extern int daxpy_(int *, double *, double *, int *, double *, int *);				 
 
 #endif
 

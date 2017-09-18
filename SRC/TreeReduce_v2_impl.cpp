@@ -3,7 +3,90 @@
 
 #define _SELINV_TAG_COUNT_ 17
 
+#include "TreeReduce_v2.hpp"
+
+
 namespace PEXSI{
+	
+	
+	
+#ifdef __cplusplus
+	extern "C" {
+#endif
+
+
+	RdTree RdTree_Create(MPI_Comm comm, Int* ranks, Int rank_cnt, Int msgSize, double rseed){
+		TreeReduce_v2<double>* ReduceTree = TreeReduce_v2<double>::Create(comm,ranks,rank_cnt,msgSize,rseed);
+		return (RdTree) ReduceTree;
+	}
+
+	void RdTree_SetTag(RdTree Tree, Int tag){
+		TreeReduce_v2<double>* ReduceTree = (TreeReduce_v2<double>*) Tree;
+		ReduceTree->SetTag(tag); 
+	}
+
+	yes_no_t RdTree_Progress(RdTree Tree){
+		TreeReduce_v2<double>* ReduceTree = (TreeReduce_v2<double>*) Tree;
+		bool done = ReduceTree->Progress();
+		// std::cout<<done<<std::endl;
+		return done ? YES : NO;	
+	}
+
+
+	void RdTree_SetDataReady(RdTree Tree){
+		TreeReduce_v2<double>* ReduceTree = (TreeReduce_v2<double>*) Tree;
+		ReduceTree->SetDataReady(true);
+	}
+
+	void RdTree_SetLocalBuffer(RdTree Tree, void* localBuffer){
+		TreeReduce_v2<double>* ReduceTree = (TreeReduce_v2<double>*) Tree;
+		ReduceTree->SetLocalBuffer( (double*) localBuffer);
+	}
+
+	yes_no_t RdTree_IsRoot(RdTree Tree){
+		TreeReduce_v2<double>* ReduceTree = (TreeReduce_v2<double>*) Tree;
+		return ReduceTree->IsRoot()?YES:NO;
+	}
+
+	yes_no_t RdTree_StartForward(RdTree Tree){
+		TreeReduce_v2<double>* ReduceTree = (TreeReduce_v2<double>*) Tree;
+		return ReduceTree->StartForward()?YES:NO;
+	}
+
+
+
+	void RdTree_Testsome(StdList TreeIdx, RdTree* ArrTrees, int* Outcount, int* FinishedTrees){
+		 std::list<int>* treeIdx = (std::list<int>*)TreeIdx;
+		 int i=0, idone=0;
+		 bool done;
+		 TreeReduce_v2<double>*  curTree;
+		
+		  for (std::list<int>::iterator itr = (*treeIdx).begin(); itr != (*treeIdx).end(); /*nothing*/){
+			curTree = (TreeReduce_v2<double>*) ArrTrees[*itr];
+			assert(curTree!=nullptr);
+			done = curTree->Progress();
+			if(done){
+				FinishedTrees[idone] = *itr; /*store finished tree numbers */
+				++idone;
+				itr = (*treeIdx).erase(itr);			
+			}else{
+				++itr;	
+			}
+			++i;
+		  }	
+		  *Outcount = idone;
+	}
+
+
+#ifdef __cplusplus
+	}
+#endif
+	
+	
+	
+	
+	
+	
   template<typename T>
     TreeReduce_v2<T>::TreeReduce_v2(const MPI_Comm & pComm, Int * ranks, Int rank_cnt, Int msgSize):TreeBcast_v2<T>(pComm,ranks,rank_cnt,msgSize){
       this->sendDataPtrs_.assign(1,NULL);

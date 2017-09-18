@@ -1,9 +1,9 @@
 #ifndef _PEXSI_REDUCE_TREE_V2_HPP_
 #define _PEXSI_REDUCE_TREE_V2_HPP_
 
-#include "pexsi/environment.hpp"
-#include "pexsi/timer.h"
-#include "pexsi/TreeBcast_v2.hpp"
+#include "environment.hpp"
+#include "timer.h"
+#include "TreeBcast_v2.hpp"
 
 #include <vector>
 #include <map>
@@ -155,5 +155,5 @@ public:
 
 }//namespace PEXSI
 
-#include "pexsi/TreeReduce_v2_impl.hpp"
+// #include "pexsi/TreeReduce_v2_impl.hpp"
 #endif

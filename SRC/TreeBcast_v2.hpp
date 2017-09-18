@@ -2,8 +2,10 @@
 #define _PEXSI_TREE_V2_HPP_
 
 #include "environment.hpp"
+#include "blas.hpp"
 #include "timer.h"
 #include "superlu_defs.h"
+
 
 #include <vector>
 #include <list>

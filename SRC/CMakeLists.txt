@@ -11,13 +11,19 @@ set(headers
     colamd.h
     timer.h
     environment.hpp
-    TreeBcast_v2.hpp	
+	blas.hpp
+	lapack.hpp
+    TreeBcast_v2.hpp
+	TreeReduce_v2.hpp	
 )
 
 # first: precision-independent files
 set(sources
   global.cpp
+  blas.cpp
+  lapack.cpp  
   TreeBcast_v2_impl.cpp
+  TreeReduce_v2_impl.cpp
   sp_ienv.c
   etree.c 
   sp_colorder.c

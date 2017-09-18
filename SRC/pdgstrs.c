@@ -594,16 +594,18 @@ pdgstrs(int_t n, LUstruct_t *LUstruct,
 	
     int_t  **Ufstnz_br_ptr = Llu->Ufstnz_br_ptr;
 	BcTree  *LBtree_ptr = Llu->LBtree_ptr;
+	BcTree  *LRtree_ptr = Llu->LRtree_ptr;
     int_t  *Urbs, *Urbs1; /* Number of row blocks in each block column of U. */
     Ucb_indptr_t **Ucb_indptr;/* Vertical linked list pointing to Uindex[] */
     int_t  **Ucb_valptr;      /* Vertical linked list pointing to Unzval[] */
     int_t  kcol, krow, mycol, myrow;
     int_t  i, ii, il, j, jj, k, lb, ljb, lk, lib, lptr, luptr;
-    int_t  nb, nlb, nub, nsupers, nsupers_j;
+    int_t  nb, nlb, nub, nsupers, nsupers_j, nsupers_i;
     int_t  *xsup, *supno, *lsub, *usub;
     int_t  *ilsum;    /* Starting position of each supernode in lsum (LOCAL)*/
     int    Pc, Pr, iam;
     int    knsupc, nsupr;
+	int    nbtree, nrtree, outcount;
     int    ldalsum;   /* Number of lsum entries locally owned. */
     int    maxrecvsz, p, pi;
     int_t  **Lrowind_bc_ptr;
@@ -636,6 +638,9 @@ pdgstrs(int_t n, LUstruct_t *LUstruct,
 			     processes in this row. */
     int_t  nbrecvmod = 0; /* Count of total modifications to be recv'd. */
 	int_t flagx,flaglsum;
+	int_t *LBTree_active, *LRTree_active, *LBTree_finish; 
+	StdList LBList, LRList;
+	
     double t;
 #if ( DEBUGlevel>=2 )
     int_t Ublocks = 0;
@@ -836,7 +841,7 @@ pdgstrs(int_t n, LUstruct_t *LUstruct,
 	// printf("%5d ddd am I here?\n",iam);
 	// fflush(stdout);
 	
-	// // nsupers_i = CEILING( nsupers, grid->nprow ); /* Number of local block rows */
+	// nsupers_i = CEILING( nsupers, grid->nprow ); /* Number of local block rows */
 	// nsupers_j = CEILING( nsupers, grid->npcol ); /* Number of local block columns */
 	// for (lk=0;lk<nsupers_j;++lk){
 		// if(LBtree_ptr[lk]!=NULL){
@@ -847,6 +852,37 @@ pdgstrs(int_t n, LUstruct_t *LUstruct,
 			// }	 
 		// }
 	// }	
+	
+	
+	nsupers_j = CEILING( nsupers, grid->npcol ); /* Number of local block columns */
+	if ( !(	LBTree_active = intCalloc_dist(nsupers_j)) )
+	ABORT("Calloc fails for LBTree_active.");
+	LBList = StdList_Init();
+	
+	if ( !(	LBTree_finish = intCalloc_dist(nsupers_j)) )
+	ABORT("Calloc fails for LBTree_finish.");	
+	
+	nbtree = 0;
+	for (lk=0;lk<nsupers_j;++lk){
+		if(LBtree_ptr[lk]!=NULL){
+		if(BcTree_IsRoot(LBtree_ptr[lk])==NO){			
+			nbtree++;
+		}
+		}
+	}
+	
+	
+	
+	nsupers_i = CEILING( nsupers, grid->nprow ); /* Number of local block rows */
+	if ( !(	LRTree_active = intCalloc_dist(nsupers_i)) )
+	ABORT("Calloc fails for LRTree_active.");	
+	LRList = StdList_Init();
+	nrtree = 0;
+	for (lk=0;lk<nsupers_i;++lk){
+		if(LRtree_ptr[lk]!=NULL){
+			nrtree++;
+		}
+	}	
 	
 	// printf("%5d ddd am I here!!\n",iam);
 	// fflush(stdout);
@@ -943,31 +979,6 @@ pdgstrs(int_t n, LUstruct_t *LUstruct,
 		done = BcTree_Progress(LBtree_ptr[lk]);	
 		assert(done==NO);
 		}
-		 
-		 
-		 
-		// for (p = 0; p < Pr; ++p) {
-		    // if ( fsendx_plist[lk][p] != EMPTY ) {
-			// pi = PNUM( p, kcol, grid );
-		
-			
-			// MPI_Isend( &x[ii - XK_H], knsupc * nrhs + XK_H,
-				   // MPI_DOUBLE, pi, Xk, grid->comm,
-                                   // &send_req[Llu->SolveMsgSent++]);
-// #if 0
-			// MPI_Send( &x[ii - XK_H], knsupc * nrhs + XK_H,
-				 // MPI_DOUBLE, pi, Xk, grid->comm );
-// #endif
-
-
-
-// #if ( DEBUGlevel>=2 )
-			// printf("(%2d) Sent X[%2.0f] to P %2d\n",
-			       // iam, x[ii-XK_H], pi);
-// #endif
-		    // }
-		// }
-		
 
 		
 		/*
@@ -1000,7 +1011,7 @@ pdgstrs(int_t n, LUstruct_t *LUstruct,
 	fflush(stdout);
 #endif
 
-    while ( nfrecvx || nfrecvmod ) { /* While not finished. */
+    while ( nbtree || nfrecvmod ) { /* While not finished. */
 
 
 #if ( PROFlevel>=1 )
@@ -1009,10 +1020,10 @@ pdgstrs(int_t n, LUstruct_t *LUstruct,
 	/* Receive a message. */
 	flagx=0;
 	flaglsum=0;
-	while (!(flagx||flaglsum)){
+	// while (!(flagx||flaglsum)){
 		MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, grid->cscp.comm, &flagx, &statusx);
 		MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, grid->comm, &flaglsum, &statuslsum);
-	}
+	// }
 #if ( PROFlevel>=1 )
 		TOC(t2, t1);
 		stat->utime[SOL_COMM] += t2;
@@ -1021,62 +1032,17 @@ pdgstrs(int_t n, LUstruct_t *LUstruct,
 
 
 	if(flagx==1){ /*Xk*/
-
-	// printf("%5d x receiving %8d%8d%8d\n",iam, statusx.MPI_TAG, LSUM, nsupers);
-	// fflush(stdout);
 	
-	
-		// MPI_Recv( recvbuf, maxrecvsz, MPI_DOUBLE,
-					  // status.MPI_SOURCE, status.MPI_TAG, grid->comm, &status );	
-	    
-#if ( PROFlevel>=1 )
-		TIC(t1);
-#endif			
 		lk = LBj( statusx.MPI_TAG, grid );    /* local block number */
-		done = BcTree_Progress(LBtree_ptr[lk]);
-		startforward = BcTree_StartForward(LBtree_ptr[lk]);
-
-		while(!(done==YES || startforward==YES)){			
-			done = BcTree_Progress(LBtree_ptr[lk]);
-			startforward = BcTree_StartForward(LBtree_ptr[lk]);			
-		}
-				
-		
-#if ( PROFlevel>=1 )
-		TOC(t2, t1);
-		stat->utime[SOL_COMM] += t2;	
-#endif	
-
-		
-		BcTree_SetLocalBuffer(LBtree_ptr[lk],recvbuf);
-		
-		
-		
-		k = *recvbuf;
-
-#if ( DEBUGlevel>=2 )
-	printf("(%2d) Recv'd block %d, tag %2d\n", iam, k, statusx.MPI_TAG);
-#endif					  
-	      --nfrecvx;
-	      lk = LBj( k, grid ); /* Local block number, column-wise. */
-	      lsub = Lrowind_bc_ptr[lk];
-	      lusup = Lnzval_bc_ptr[lk];
-	      if ( lsub ) {
-		  nb   = lsub[0];
-		  lptr = BC_HEADER;
-		  luptr = 0;
-		  knsupc = SuperSize( k );
-
-		  /*
-		   * Perform local block modifications: lsum[i] -= L_i,k * X[k]
-		   */
-		  dlsum_fmod_inv(lsum, x, &recvbuf[XK_H], rtemp, nrhs, knsupc, k,
-			     fmod, nb, lptr, luptr, xsup, grid, Llu, 
-			     send_req, stat);
-	      } /* if lsub */					  
-					  
+		if(LBTree_active[lk]==0){  /* mark this tree as active if not done so*/
+			LBTree_active[lk]=1;
+			StdList_Pushback(LBList,lk);
+				// printf("%5d %5d in\n",iam,lk);
+				// fflush(stdout);			
+			
+		}		
 	}
-	else{                      /*LSUM*/
+	else if(flaglsum==1){                      /*LSUM*/
 		
 	// printf("%5d lsum receiving %8d%8d%8d\n",iam, statuslsum.MPI_TAG, LSUM, nsupers);
 	// fflush(stdout);
@@ -1230,6 +1196,44 @@ pdgstrs(int_t n, LUstruct_t *LUstruct,
 	
 	}
 	
+	
+	
+	
+	
+#if ( PROFlevel>=1 )
+		TIC(t1);
+#endif			
+		outcount=0;
+        BcTree_Testsome(LBList, LBtree_ptr, &outcount, LBTree_finish);		
+#if ( PROFlevel>=1 )
+		TOC(t2, t1);
+		stat->utime[SOL_COMM] += t2;	
+#endif	
+		for (ii=0;ii<outcount;++ii){
+			lk = LBTree_finish[ii];
+			if(BcTree_IsRoot(LBtree_ptr[lk])==NO){
+				BcTree_SetLocalBuffer(LBtree_ptr[lk],recvbuf);
+				k = *recvbuf;
+				nbtree--;
+				  
+				  lk = LBj( k, grid ); /* Local block number, column-wise. */
+				  lsub = Lrowind_bc_ptr[lk];
+				  lusup = Lnzval_bc_ptr[lk];
+				  if ( lsub ) {
+				  nb   = lsub[0];
+				  lptr = BC_HEADER;
+				  luptr = 0;
+				  knsupc = SuperSize( k );
+
+				  /*
+				   * Perform local block modifications: lsum[i] -= L_i,k * X[k]
+				   */
+				  dlsum_fmod_inv(lsum, x, &recvbuf[XK_H], rtemp, nrhs, knsupc, k,
+						 fmod, nb, lptr, luptr, xsup, grid, Llu, 
+						 send_req, stat);
+				  } /* if lsub */						
+			}				
+		}
 	
 				  
     } /* while not finished ... */

@@ -768,11 +768,12 @@ extern int   file_PrintLong10(FILE *, char *, int_t, int_t *);
 #define __SUPERLU_ASYNC_TREE
 typedef void* BcTree;
 typedef void* RdTree;
+typedef void* StdList;
 #endif
 
 // typedef enum {NO, YES}  yes_no_t;
 extern RdTree   RdTree_Create(MPI_Comm comm, int* ranks, int rank_cnt, int msgSize, double rseed);  
-extern void     RdTree_Testsome(int incount, int* treeIdx, int Ntree, RdTree* arrTrees, int* outcount, int* doneIdx, yes_no_t* finishedFlags);
+extern void     RdTree_Testsome(StdList TreeIdx, RdTree* ArrTrees, int* Outcount, int* FinishedTrees);
 extern yes_no_t RdTree_Progress(RdTree Tree);
 extern void     RdTree_SetDataReady(RdTree Tree);
 extern void 	RdTree_SetLocalBuffer(RdTree Tree, void* localBuffer);
@@ -780,9 +781,13 @@ extern void 	RdTree_CleanupBuffers(RdTree Tree);
 extern void 	RdTree_Reset(RdTree Tree);
 extern void 	RdTree_AllocRecvBuffers(RdTree Tree);
 extern void 	RdTree_SetTag(RdTree Tree, int tag);
+extern yes_no_t RdTree_IsRoot(RdTree Tree);
+extern yes_no_t RdTree_StartForward(RdTree Tree);
+
+
 
 extern BcTree   BcTree_Create(MPI_Comm comm, int* ranks, int rank_cnt, int msgSize, double rseed);  
-extern void     BcTree_Testsome(int incount, int* treeIdx, int Ntree, BcTree* arrTrees, int* outcount, int* doneIdx, yes_no_t* finishedFlags);
+extern void     BcTree_Testsome(StdList TreeIdx, BcTree* ArrTrees, int *Outcount, int* FinishedTrees);
 extern yes_no_t BcTree_Progress(BcTree Tree);
 // extern int_t    BcTree_Iprobe(BcTree Tree, MPI_Status* status);
 extern void     BcTree_SetDataReady(BcTree Tree);
@@ -793,6 +798,10 @@ extern void 	BcTree_SetTag(BcTree Tree, int tag);
 extern yes_no_t BcTree_IsRoot(BcTree Tree);
 extern yes_no_t BcTree_StartForward(BcTree Tree);
 extern void 	TreeTest(void* tree);
+
+extern StdList 	StdList_Init();
+extern void 	StdList_Pushback(StdList lst, int dat);
+extern yes_no_t StdList_Find(StdList lst, int dat);
 
 #ifdef __cplusplus
   }

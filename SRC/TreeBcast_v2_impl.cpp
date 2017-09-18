@@ -39,28 +39,28 @@ void TreeTest(void *tree) {
 
 
 BcTree BcTree_Create(MPI_Comm comm, Int* ranks, Int rank_cnt, Int msgSize, double rseed){
-	TreeBcast_v2<double>* BcastLTree = TreeBcast_v2<double>::Create(comm,ranks,rank_cnt,msgSize,rseed);
-	return (BcTree) BcastLTree;
+	TreeBcast_v2<double>* BcastTree = TreeBcast_v2<double>::Create(comm,ranks,rank_cnt,msgSize,rseed);
+	return (BcTree) BcastTree;
 }
 
 void BcTree_SetTag(BcTree Tree, Int tag){
-	TreeBcast_v2<double>* BcastLTree = (TreeBcast_v2<double>*) Tree;
-	BcastLTree->SetTag(tag); 
+	TreeBcast_v2<double>* BcastTree = (TreeBcast_v2<double>*) Tree;
+	BcastTree->SetTag(tag); 
 }
 
 yes_no_t BcTree_Progress(BcTree Tree){
-	TreeBcast_v2<double>* BcastLTree = (TreeBcast_v2<double>*) Tree;
-	bool done = BcastLTree->Progress();
+	TreeBcast_v2<double>* BcastTree = (TreeBcast_v2<double>*) Tree;
+	bool done = BcastTree->Progress();
 	// std::cout<<done<<std::endl;
 	return done ? YES : NO;	
 }
 
 
 // Int BcTree_Iprobe(BcTree Tree, MPI_Status* status){
-	// TreeBcast_v2<double>* BcastLTree = (TreeBcast_v2<double>*) Tree;
+	// TreeBcast_v2<double>* BcastTree = (TreeBcast_v2<double>*) Tree;
 	// Int flag;	
 
-	// MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, BcastLTree->comm_, &flag, status);
+	// MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, BcastTree->comm_, &flag, status);
 	// if(flag!=0){
 	// printf("hahah %5d", flag);		
 	// fflush(stdout);
@@ -70,24 +70,69 @@ yes_no_t BcTree_Progress(BcTree Tree){
 
 
 void BcTree_SetDataReady(BcTree Tree){
-	TreeBcast_v2<double>* BcastLTree = (TreeBcast_v2<double>*) Tree;
-	BcastLTree->SetDataReady(true);
+	TreeBcast_v2<double>* BcastTree = (TreeBcast_v2<double>*) Tree;
+	BcastTree->SetDataReady(true);
 }
 
 void BcTree_SetLocalBuffer(BcTree Tree, void* localBuffer){
-	TreeBcast_v2<double>* BcastLTree = (TreeBcast_v2<double>*) Tree;
-	BcastLTree->SetLocalBuffer( (double*) localBuffer);
+	TreeBcast_v2<double>* BcastTree = (TreeBcast_v2<double>*) Tree;
+	BcastTree->SetLocalBuffer( (double*) localBuffer);
 }
 
 yes_no_t BcTree_IsRoot(BcTree Tree){
-	TreeBcast_v2<double>* BcastLTree = (TreeBcast_v2<double>*) Tree;
-	return BcastLTree->IsRoot()?YES:NO;
+	TreeBcast_v2<double>* BcastTree = (TreeBcast_v2<double>*) Tree;
+	return BcastTree->IsRoot()?YES:NO;
 }
 
 yes_no_t BcTree_StartForward(BcTree Tree){
-	TreeBcast_v2<double>* BcastLTree = (TreeBcast_v2<double>*) Tree;
-	return BcastLTree->StartForward()?YES:NO;
+	TreeBcast_v2<double>* BcastTree = (TreeBcast_v2<double>*) Tree;
+	return BcastTree->StartForward()?YES:NO;
 }
+
+
+
+void BcTree_Testsome(StdList TreeIdx, BcTree* ArrTrees, int* Outcount, int* FinishedTrees){
+	 std::list<int>* treeIdx = (std::list<int>*)TreeIdx;
+     int i=0, idone=0;
+	 bool done;
+  	 TreeBcast_v2<double>*  curTree;
+	
+      for (std::list<int>::iterator itr = (*treeIdx).begin(); itr != (*treeIdx).end(); /*nothing*/){
+        curTree = (TreeBcast_v2<double>*) ArrTrees[*itr];
+        assert(curTree!=nullptr);
+	    done = curTree->Progress();
+	    if(done){
+			FinishedTrees[idone] = *itr; /*store finished tree numbers */
+			++idone;
+			itr = (*treeIdx).erase(itr);			
+		}else{
+			++itr;	
+		}
+		++i;
+      }	
+	  *Outcount = idone;
+}
+
+
+
+StdList StdList_Init(){
+	std::list<int>* lst = new std::list<int>();
+	return (StdList) lst;
+}
+void StdList_Pushback(StdList lst, int dat){
+	std::list<int>* list = (std::list<int>*) lst;
+	list->push_back(dat);
+}
+
+yes_no_t StdList_Find(StdList lst, int dat){
+	std::list<int>* list = (std::list<int>*) lst;
+	for (std::list<int>::iterator itr = (*list).begin(); itr != (*list).end(); /*nothing*/){
+		if(*itr==dat)return YES;
+		++itr;
+	}
+	return NO;
+}
+
 
 
 #ifdef __cplusplus

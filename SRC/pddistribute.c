@@ -1251,8 +1251,8 @@ pddistribute(fact_t fact, int_t n, SuperMatrix *A,
 		// rseed=rand();
 		rseed=1.0;
 		msgsize = SuperSize( ib )*nrhs+LSUM_H;
-		// LRtree_ptr[lib] = RdTree_Create(grid->rscp.comm, ranks, rank_cnt, msgsize,rseed);  	
-		// RdTree_SetTag(LRtree_ptr[lib], ib+nsupers);
+		LRtree_ptr[lib] = RdTree_Create(grid->rscp.comm, ranks, rank_cnt, msgsize,rseed);  	
+		RdTree_SetTag(LRtree_ptr[lib], ib+nsupers);
 		
 		
 		
