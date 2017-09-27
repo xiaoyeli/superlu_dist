@@ -17,6 +17,7 @@ at the top-level directory.
  *
  */
 #include <ctype.h>
+#include <stdio.h>
 #include "superlu_ddefs.h"
 
 #undef EXPAND_SYM
@@ -43,6 +44,7 @@ dreadMM_dist(FILE *fp, int_t *m, int_t *n, int_t *nonz,
     int_t    zero_base = 0;
     char *p, line[512], banner[64], mtx[64], crd[64], arith[64], sym[64];
     int expand;
+    char *cs;
 
     /* 	File format:
      *    %%MatrixMarket matrix coordinate real general/symmetric/...
@@ -54,7 +56,7 @@ dreadMM_dist(FILE *fp, int_t *m, int_t *n, int_t *nonz,
      */
 
      /* 1/ read header */ 
-     fgets(line,512,fp);
+     cs = fgets(line,512,fp);
      for (p=line; *p!='\0'; *p=tolower(*p),p++);
 
      if (sscanf(line, "%s %s %s %s %s", banner, mtx, crd, arith, sym) != 5) {
@@ -100,7 +102,7 @@ dreadMM_dist(FILE *fp, int_t *m, int_t *n, int_t *nonz,
 
      /* 2/ Skip comments */
      while(banner[0]=='%') {
-       fgets(line,512,fp);
+       cs = fgets(line,512,fp);
        sscanf(line,"%s",banner);
      }
 
@@ -129,11 +131,11 @@ dreadMM_dist(FILE *fp, int_t *m, int_t *n, int_t *nonz,
     asub = *rowind;
     xa   = *colptr;
 
-    if ( !(val = (double *) SUPERLU_MALLOC(new_nonz * sizeof(double))) )
+    if ( !(val = doubleMalloc_dist(new_nonz)) )
         ABORT("Malloc fails for val[]");
-    if ( !(row = (int_t *) SUPERLU_MALLOC(new_nonz * sizeof(int_t))) )
+    if ( !(row = (int_t *) intMalloc_dist(new_nonz)) )
         ABORT("Malloc fails for row[]");
-    if ( !(col = (int_t *) SUPERLU_MALLOC(new_nonz * sizeof(int_t))) )
+    if ( !(col = (int_t *) intMalloc_dist(new_nonz)) )
         ABORT("Malloc fails for col[]");
 
     for (j = 0; j < *n; ++j) xa[j] = 0;
@@ -141,9 +143,9 @@ dreadMM_dist(FILE *fp, int_t *m, int_t *n, int_t *nonz,
     /* 4/ Read triplets of values */
     for (nnz = 0, nz = 0; nnz < *nonz; ++nnz) {
 #ifdef _LONGINT
-	fscanf(fp, "%lld%lld%lf\n", &row[nz], &col[nz], &val[nz]);
+	j = fscanf(fp, "%lld%lld%lf\n", &row[nz], &col[nz], &val[nz]);
 #else
-	fscanf(fp, "%d%d%lf\n", &row[nz], &col[nz], &val[nz]);
+	j = fscanf(fp, "%d%d%lf\n", &row[nz], &col[nz], &val[nz]);
 #endif
 
 	if ( nnz == 0 ) /* first nonzero */ {
@@ -238,10 +240,8 @@ static void dreadrhs(int m, double *b)
 	exit(-1);
     }
     for (i = 0; i < m; ++i)
-      fscanf(fp, "%lf\n", &b[i]);
+      i = fscanf(fp, "%lf\n", &b[i]);
       /*fscanf(fp, "%d%lf\n", &j, &b[i]);*/
     /*        readpair_(j, &b[i]);*/
     fclose(fp);
 }
-
-

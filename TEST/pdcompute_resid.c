@@ -9,12 +9,13 @@ The source code is distributed under BSD license, see the file License.txt
 at the top-level directory.
 */
 
-/*! @filee
+
+/*! @file
  * \brief Test for small residual.
  *
- * -- Distributed SuperLU routine (version 5.0) --
+ * -- Distributed SuperLU routine (version 5.2) --
  * Lawrence Berkeley National Lab, Univ. of California Berkeley.
- * APril 1, 2017
+ * September 30, 2017
  *
  */
 #include "superlu_ddefs.h"
@@ -70,7 +71,7 @@ int pdcompute_resid(int m, int n, int nrhs, SuperMatrix *A,
 
     GRID    (input) gridinfo_t*
 	    
-    RESID   (output) DOUBLE PRECISION   
+    RESID   (output) double PRECISION   
             The maximum over the number of right-hand sides of
             norm(B - A*X) / ( norm(A) * norm(X) * EPS ).   
 
@@ -78,8 +79,6 @@ int pdcompute_resid(int m, int n, int nrhs, SuperMatrix *A,
 */
 
     /* Table of constant values */
-    double alpha = -1.;
-    double beta  = 1.;
     int    inc  = 1;
     
     /* Local variables */
@@ -132,6 +131,7 @@ int pdcompute_resid(int m, int n, int nrhs, SuperMatrix *A,
 
 	rnorm = dasum_(&m_loc, R, &inc);
 	xnorm = dasum_(&m_loc, X_col, &inc);
+
 	/* */
 	MPI_Allreduce( &rnorm, &rnorm_g, 1, MPI_DOUBLE, MPI_SUM, grid->comm );
 	MPI_Allreduce( &xnorm, &xnorm_g, 1, MPI_DOUBLE, MPI_SUM, grid->comm );

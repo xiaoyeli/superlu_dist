@@ -43,6 +43,12 @@ at the top-level directory.
 #include <limits.h>
 #include <string.h>
 
+/* Following is for vtune */
+#if 0
+#include <ittnotify.h>
+#define USE_VTUNE
+#endif
+
 /*************************************************************************
  * Constants
  **************************************************************************/

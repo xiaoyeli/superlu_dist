@@ -13,9 +13,12 @@ at the top-level directory.
  * \brief Performs panel LU factorization.
  *
  * <pre>
- * -- Distributed SuperLU routine (version 4.0) --
+ * -- Distributed SuperLU routine (version 5.2) --
  * Lawrence Berkeley National Lab, Univ. of California Berkeley.
  * August 15, 2014
+ *
+ * Modified:
+ *   September 19, 2017
  *
  * <pre>
  * Purpose
@@ -96,6 +99,7 @@ pzgstrf2_trsm
     int_t Pr;
     MPI_Status status;
     MPI_Comm comm = (grid->cscp).comm;
+    double t1, t2;
 
     /* Initialization. */
     iam = grid->iam;
@@ -127,16 +131,25 @@ pzgstrf2_trsm
     if ( U_diag_blk_send_req && 
 	 U_diag_blk_send_req[myrow] != MPI_REQUEST_NULL ) {
         /* There are pending sends - wait for all Isend to complete */
-        for (pr = 0; pr < Pr; ++pr)
+#if ( PROFlevel>=1 )
+	TIC (t1);
+#endif
+        for (pr = 0; pr < Pr; ++pr) {
             if (pr != myrow) {
                 MPI_Wait (U_diag_blk_send_req + pr, &status);
             }
-
+	}
+#if ( PROFlevel>=1 )
+	TOC (t2, t1);
+	stat->utime[COMM] += t2;
+	stat->utime[COMM_DIAG] += t2;
+#endif
 	/* flag no more outstanding send request. */
 	U_diag_blk_send_req[myrow] = MPI_REQUEST_NULL;
     }
 
     if (iam == pkk) {            /* diagonal process */
+	/* ++++ First step compute diagonal block ++++++++++ */
         for (j = 0; j < jlst - jfst; ++j) {  /* for each column in panel */
             /* Diagonal pivot */
             i = luptr;
@@ -197,13 +210,16 @@ pzgstrf2_trsm
 
         }                       /* for column j ...  first loop */
 
-	/* ++++++++++second step ====== */
+	/* ++++ Second step compute off-diagonal block with communication  ++*/
 
         ublk_ptr = ujrow = Llu->ujrow;
 
-        if (U_diag_blk_send_req && iam == pkk)  { /* Send the U block */
+        if (U_diag_blk_send_req && iam == pkk)  { /* Send the U block downward */
             /** ALWAYS SEND TO ALL OTHERS - TO FIX **/
-            for (pr = 0; pr < Pr; ++pr)
+#if ( PROFlevel>=1 )
+	    TIC (t1);
+#endif
+            for (pr = 0; pr < Pr; ++pr) {
                 if (pr != krow) {
                     /* tag = ((k0<<2)+2) % tag_ub;        */
                     /* tag = (4*(nsupers+k0)+2) % tag_ub; */
@@ -212,6 +228,12 @@ pzgstrf2_trsm
                                comm, U_diag_blk_send_req + pr);
 
                 }
+            }
+#if ( PROFlevel>=1 )
+	    TOC (t2, t1);
+	    stat->utime[COMM] += t2;
+	    stat->utime[COMM_DIAG] += t2;
+#endif
 
 	    /* flag outstanding Isend */
             U_diag_blk_send_req[krow] = (MPI_Request) TRUE; /* Sherry */
@@ -239,19 +261,26 @@ pzgstrf2_trsm
 #endif
 	stat->ops[FACT] += 4.0 * ((flops_t) nsupc * (nsupc+1) * l);
     } else {  /* non-diagonal process */
-        /* ================================================ *
-         * Receive the diagonal block of U                  *
-         * for panel factorization of L(:,k)                *
-         * note: we block for panel factorization of L(:,k) *
-         * but panel factorization of U(:,k) don't          *
-         * ================================================ */
+        /* ================================================================== *
+         * Receive the diagonal block of U for panel factorization of L(:,k). * 
+         * Note: we block for panel factorization of L(:,k), but panel        *
+	 * factorization of U(:,k) do not block                               *
+         * ================================================================== */
 
         /* tag = ((k0<<2)+2) % tag_ub;        */
         /* tag = (4*(nsupers+k0)+2) % tag_ub; */
         // printf("hello message receiving%d %d\n",(nsupc*(nsupc+1))>>1,SLU_MPI_TAG(4,k0));
+#if ( PROFlevel>=1 )
+	TIC (t1);
+#endif
         MPI_Recv (ublk_ptr, (nsupc * nsupc), SuperLU_MPI_DOUBLE_COMPLEX, krow,
                   SLU_MPI_TAG (4, k0) /* tag */ ,
                   comm, &status);
+#if ( PROFlevel>=1 )
+	TOC (t2, t1);
+	stat->utime[COMM] += t2;
+	stat->utime[COMM_DIAG] += t2;
+#endif
         if (nsupr > 0) {
             char uplo = 'u', side = 'r', transa = 'n', diag = 'n';
             doublecomplex alpha = {1.0, 0.0};
@@ -298,12 +327,10 @@ void pzgstrs2_omp
     int_t *usub;
     doublecomplex *lusup, *uval;
 
-#ifdef _OPENMP
-    int thread_id = omp_get_thread_num ();
-    int num_thread = omp_get_num_threads ();
-#else
-    int thread_id = 0;
-    int num_thread = 1;
+#if 0
+    //#ifdef USE_VTUNE
+    __SSC_MARK(0x111);// start SDE tracing, note uses 2 underscores
+    __itt_resume(); // start VTune, again use 2 underscores
 #endif
 
     /* Quick return. */
@@ -313,15 +340,12 @@ void pzgstrs2_omp
     /* Initialization. */
     iam = grid->iam;
     pkk = PNUM (PROW (k, grid), PCOL (k, grid), grid);
-    int k_row_cycle = k / grid->nprow;  /* for which cycle k exist (to assign rowwise thread blocking) */
-    int gb_col_cycle;  /* cycle through block columns  */
+    //int k_row_cycle = k / grid->nprow;  /* for which cycle k exist (to assign rowwise thread blocking) */
+    //int gb_col_cycle;  /* cycle through block columns  */
     klst = FstBlockC (k + 1);
     knsupc = SuperSize (k);
     usub = Llu->Ufstnz_br_ptr[lk];  /* index[] of block row U(k,:) */
     uval = Llu->Unzval_br_ptr[lk];
-    nb = usub[0];
-    iukp = BR_HEADER;
-    rukp = 0;
     if (iam == pkk) {
         lk = LBj (k, grid);
         nsupr = Llu->Lrowind_bc_ptr[lk][1]; /* LDA of lusup[] */
@@ -331,41 +355,50 @@ void pzgstrs2_omp
         lusup = Llu->Lval_buf_2[k0 % (1 + stat->num_look_aheads)];
     }
 
+    nb = usub[0];
+    iukp = BR_HEADER;
+    rukp = 0;
+
+#pragma omp parallel default(shared) firstprivate(nb,iukp,rukp)
+{
+#pragma omp single  // taken from pdgstrf2_v2.c
+//Sherry: no need? #pragma omp task default(shared) untied
+  {
     /* Loop through all the row blocks. */
-    for (b = 0; b < nb; ++b)  {
-        /* assuming column cyclic distribution of data among threads */
+    for (b = 0; b < nb; ++b) {
         gb = usub[iukp];
-        gb_col_cycle = gb / grid->npcol;
         nsupc = SuperSize (gb);
         iukp += UB_DESCRIPTOR;
 
         /* Loop through all the segments in the block. */
         for (j = 0; j < nsupc; ++j) {
-#ifdef PI_DEBUG
-            printf("segsize %d klst %d usub[%d] : %d",segsize,klst ,iukp,usub[iukp]);
-#endif 
             segsize = klst - usub[iukp++];
-            if (segsize) {    /* Nonzero segment. */
+            if (segsize)    /* Nonzero segment. */
+#pragma omp task default(shared) firstprivate(segsize,luptr,rukp) if (segsize > 40)
+            {
                 luptr = (knsupc - segsize) * (nsupr + 1);
 
-		/* if gb belongs to present thread then do the factorize */
-                if ((gb_col_cycle + k_row_cycle + 1) % num_thread == thread_id) {
-#ifdef PI_DEBUG
-                    printf ("dtrsv param 4 %d param 6 %d\n", segsize, nsupr);
-#endif
 #if defined (USE_VENDOR_BLAS)
-                    ztrsv_ ("L", "N", "U", &segsize, &lusup[luptr], &nsupr,
-                            &uval[rukp], &incx, 1, 1, 1);
+                ztrsv_ ("L", "N", "U", &segsize, &lusup[luptr], &nsupr,
+                        &uval[rukp], &incx, 1, 1, 1);
 #else
-                    ztrsv_ ("L", "N", "U", &segsize, &lusup[luptr], &nsupr,
-                            &uval[rukp], &incx);
+                ztrsv_ ("L", "N", "U", &segsize, &lusup[luptr], &nsupr,
+                        &uval[rukp], &incx);
 #endif
-                }
                 rukp += segsize;
 		stat->ops[FACT] += 4.0 * (flops_t) segsize * (segsize + 1);
             } /* end if segsize > 0 */
         } /* end for j ... */
     } /* end for b ... */
+  } /* end single */
+#pragma omp threadwait
+} /* end parallel region */
+
+#if 0
+    //#ifdef USE_VTUNE
+    __itt_pause(); // stop VTune
+    __SSC_MARK(0x222); // stop SDE tracing
+#endif
 
 } /* PZGSTRS2_omp */
 

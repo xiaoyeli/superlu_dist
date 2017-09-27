@@ -1057,7 +1057,7 @@ arrive_at_ublock (int_t j,      /* j-th block in a U panel */
                   int_t * nsupc,/* supernode size of destination block */
                   int_t iukp0,  /* input : search starting point */
                   int_t rukp0, 
-		  int_t * usub, /* usub scripts */
+		  int_t * usub, /* U subscripts */
                   int_t * perm_u, /* permutation vector from static schedule */
                   int_t * xsup, /* for SuperSize and LBj */
                   gridinfo_t * grid)
@@ -1066,19 +1066,26 @@ arrive_at_ublock (int_t j,      /* j-th block in a U panel */
     *iukp = iukp0; /* point to the first block in index[] */
     *rukp = rukp0; /* point to the start of nzval[] */
 
+    /* Sherry -- why always starts from 0 ?? Can continue at 
+       the column left from last search.  */
+    /* Caveat: There is a permutation perm_u involved for j. That's why
+       the search need to restart from 0.  */
 #ifdef ISORT
     for (jj = 0; jj < perm_u[j]; jj++) /* perm_u[j] == j */
 #else
     for (jj = 0; jj < perm_u[2 * j + 1]; jj++) /* == j */
 #endif
     {
+        /* Reinitilize the pointers to the begining of the 
+	 * k-th column/row of L/U factors.
+	 * usub[] - index array for panel U(k,:)
+	 */
         // printf("iukp %d \n",*iukp );
         *jb = usub[*iukp];      /* Global block number of block U(k,j). */
         // printf("jb %d \n",*jb );
         *nsupc = SuperSize (*jb);
         // printf("nsupc %d \n",*nsupc );
         *iukp += UB_DESCRIPTOR; /* Start fstnz of block U(k,j). */
-
         *rukp += usub[*iukp - 1]; /* Jump # of nonzeros in block U(k,jj);
 				     Move to block U(k,jj+1) in nzval[] */ 
         *iukp += *nsupc;

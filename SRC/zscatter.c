@@ -13,10 +13,13 @@ at the top-level directory.
  * \brief Scatter the computed blocks into LU destination.
  *
  * <pre>
- * -- Distributed SuperLU routine (version 4.0) --
+ * -- Distributed SuperLU routine (version 5.2) --
  * Lawrence Berkeley National Lab, Univ. of California Berkeley.
  * October 1, 2014
  *
+ * Modified: 
+ *   September 18, 2017, enable SIMD vectorized scatter operation.
+ *   
  */
 #include <math.h>
 #include "superlu_zdefs.h"
@@ -112,9 +115,9 @@ zscatter_l (
            int_t iukp, /* point to destination supernode's index[] */
            int_t* xsup,
            int klst,
-           int nbrow,
+           int nbrow,  /* LDA of the block in tempv[] */
            int_t lptr, /* Input, point to index[] location of block L(i,k) */
-	   int temp_nbrow, /* number of rows in block L(i,k) */
+	   int temp_nbrow, /* number of rows of source block L(i,k) */
            int_t* usub,
            int_t* lsub,
            doublecomplex *tempv,
@@ -126,7 +129,7 @@ zscatter_l (
     int_t rel, i, segsize, jj;
     doublecomplex *nzval;
     int_t *index = Lrowind_bc_ptr[ljb];
-    int_t ldv = index[1];       /* LDA of the dest lusup. */
+    int_t ldv = index[1];       /* LDA of the destination lusup. */
     int_t lptrj = BC_HEADER;
     int_t luptrj = 0;
     int_t ijb = index[lptrj];
@@ -139,36 +142,43 @@ zscatter_l (
     }
     
     /*
-     * Build indirect table. This is needed because the
-     * indices are not sorted for the L blocks.
+     * Build indirect table. This is needed because the indices are not sorted
+     * in the L blocks.
      */
     int_t fnz = FstBlockC (ib);
     int_t dest_nbrow; 
     lptrj += LB_DESCRIPTOR;
     dest_nbrow=index[lptrj - 1];
     
-    for (i = 0; i < dest_nbrow; ++i)
-    {
+#ifdef _OPENMP
+#pragma omp simd
+#endif
+    for (i = 0; i < dest_nbrow; ++i) {
         rel = index[lptrj + i] - fnz;
         indirect_thread[rel] = i;
 
     }
 
-    /* can be precalculated */
-    for (i = 0; i < temp_nbrow; ++i)
-    {
+#ifdef _OPENMP
+#pragma omp simd
+#endif
+    /* can be precalculated? */
+    for (i = 0; i < temp_nbrow; ++i) { /* Source index is a subset of dest. */
         rel = lsub[lptr + i] - fnz;
         indirect2[i] =indirect_thread[rel]; 
     }
 
-    nzval = Lnzval_bc_ptr[ljb] + luptrj; /* Dest. block L(i,j) */
-    for (jj = 0; jj < nsupc; ++jj)
-    {
+    nzval = Lnzval_bc_ptr[ljb] + luptrj; /* Destination block L(i,j) */
+#ifdef __INTEL_COMPILER
+#pragma ivdep
+#endif
+    for (jj = 0; jj < nsupc; ++jj) {
         segsize = klst - usub[iukp + jj];
-        if (segsize)
-        {
-            for (i = 0; i < temp_nbrow; ++i)
-            {
+        if (segsize) {
+#ifdef _OPENMP
+#pragma omp simd
+#endif
+            for (i = 0; i < temp_nbrow; ++i) {
                 z_sub(&nzval[indirect2[i]], &nzval[indirect2[i]], &tempv[i]);
             }
             tempv += nbrow;
@@ -186,9 +196,9 @@ zscatter_u (int ib,
            int_t iukp,
            int_t * xsup,
            int klst,
-           int nbrow,
-           int_t lptr,
-           int temp_nbrow,
+ 	   int nbrow,      /* LDA of the block in tempv[] */
+           int_t lptr,     /* point to index location of block L(i,k) */
+	   int temp_nbrow, /* number of rows of source block L(i,k) */
            int_t* lsub,
            int_t* usub,
            doublecomplex* tempv,
@@ -208,8 +218,8 @@ zscatter_u (int ib,
     int_t lib = LBi (ib, grid);
     int_t *index = Ufstnz_br_ptr[lib];
 
-    /* Reinitilize the pointers to the begining of the 
-     * k-th column/row of L/U factors.
+    /* Reinitilize the pointers to the begining of the k-th column/row of
+     * L/U factors.
      * usub[] - index array for panel U(k,:)
      */
     int_t iuip_lib, ruip_lib;
@@ -217,37 +227,31 @@ zscatter_u (int ib,
     ruip_lib = 0;
 
     int_t ijb = index[iuip_lib];
-    while (ijb < jb)            /* Search for dest block. */
-    {
+    while (ijb < jb) {   /* Search for destination block. */
         ruip_lib += index[iuip_lib + 1];
         // printf("supersize[%ld] \t:%ld \n",ijb,SuperSize( ijb ) );
         iuip_lib += UB_DESCRIPTOR + SuperSize (ijb);
         ijb = index[iuip_lib];
     }
-    /* Skip descriptor.  Now point to fstnz index of
-       block U(i,j). */
+    /* Skip descriptor. Now point to fstnz index of block U(i,j). */
     iuip_lib += UB_DESCRIPTOR;
 
     // tempv = bigV + (cum_nrow + cum_ncol*nbrow);
-    for (jj = 0; jj < nsupc; ++jj)
-    {
+    for (jj = 0; jj < nsupc; ++jj) {
         segsize = klst - usub[iukp + jj];
         fnz = index[iuip_lib++];
-        if (segsize)            /* Nonzero segment in U(k.j). */
-        {
+        if (segsize) {          /* Nonzero segment in U(k,j). */
             ucol = &Unzval_br_ptr[lib][ruip_lib];
 
             // printf("========Entering loop=========\n");
-            for (i = 0; i < temp_nbrow; ++i)
-            {
-
+#ifdef _OPENMP
+#pragma omp simd
+#endif
+            for (i = 0; i < temp_nbrow; ++i) {
                 rel = lsub[lptr + i] - fnz;
                 // printf("%d %d %d %d %d \n",lptr,i,fnz,temp_nbrow,nbrow );
                 // printf("hello   ucol[%d] %d %d : \n",rel,lsub[lptr + i],fnz);
-
                 z_sub(&ucol[rel], &ucol[rel], &tempv[i]);
-
-                // printf("hello\n");
 
 #ifdef PI_DEBUG
                 double zz = 0.0;
@@ -256,15 +260,16 @@ zscatter_u (int ib,
                             ucol[rel]);
                 //printing triplets (location??, old value, new value ) if none of them is zero
 #endif
-            }                   /* for i=0..temp_nbropw */
-            tempv += nbrow;
+            } /* for i = 0:temp_nbropw */
+            tempv += nbrow; /* Jump LDA to next column */
 #ifdef PI_DEBUG
             // printf("\n");
 #endif
-        }                       /*ig segsize */
+        }  /* if segsize */
+
         ruip_lib += ilst - fnz;
 
-    }                           /*for jj=0:nsupc */
+    }  /* for jj = 0:nsupc */
 #ifdef PI_DEBUG
     // printf("\n");
 #endif

@@ -649,8 +649,10 @@ pzgssvx(superlu_dist_options_t *options, SuperMatrix *A,
     }
 
     /* ------------------------------------------------------------
-       Diagonal scaling to equilibrate the matrix. (simple scheme)
-       ------------------------------------------------------------*/
+     * Diagonal scaling to equilibrate the matrix. (simple scheme)
+     *   for row i = 1:n,  A(i,:) <- A(i,:) / max(abs(A(i,:));
+     *   for column j = 1:n,  A(:,j) <- A(:, j) / max(abs(A(:,j))
+     * ------------------------------------------------------------*/
     if ( Equil ) {
 #if ( DEBUGlevel>=1 )
 	CHECK_MALLOC(iam, "Enter equil");

@@ -45,6 +45,14 @@ static_schedule(superlu_dist_options_t * options, int m, int n,
 		LUstruct_t * LUstruct, gridinfo_t * grid, SuperLUStat_t * stat,
 		int_t *perm_c_supno, int_t *iperm_c_supno, int *info)
 {
+/* 
+ * Arguments
+ *
+ * perm_c_supno (output) 
+ *      perm_c_superno[k] = j means at the k-th step of elimination, the j-th
+ *      panel is chosen.
+ * 
+ */
     int_t *xsup;
     int_t  i, ib, jb, lb, nlb, il, iu;
     int_t Pc, Pr;

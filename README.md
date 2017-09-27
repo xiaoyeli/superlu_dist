@@ -202,6 +202,12 @@ The procedures are described below.
       or,
 	ctest -D Nightly
 
+   !!!! NOTE !!!! 
+    The parallel execution in ctest is invoked by "mpiexec" command which is
+    from MPICH environment. If your MPI is not MPICH/mpiexec based, the test
+    execution may fail. You can always go to TEST/ directory to perform
+    testing manually.
+
 
    ++++++++
    Note on the C-Fortran name mangling handled by C preprocessor definition:

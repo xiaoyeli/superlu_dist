@@ -14,9 +14,9 @@ at the top-level directory.
  * \brief Driver program for testing PDGSSVX.
  *
  * <pre>
- * -- Distributed SuperLU routine (version 5.0) --
+ * -- Distributed SuperLU routine (version 5.2) --
  * Lawrence Berkeley National Lab, Univ. of California Berkeley.
- * March 16, 2017
+ * September 30, 2017
  * </pre>
  */
 /*
@@ -120,7 +120,8 @@ int main(int argc, char *argv[])
     char     **cpp, c;
     FILE *fp, *fopen();
     char matrix_type[8], equed[1];
-    int  relax, maxsuper=0, fill_ratio=0, min_gemm_gpu_offload=0;
+    int  relax, maxsuper=sp_ienv_dist(3), fill_ratio=sp_ienv_dist(6),
+         min_gemm_gpu_offload=0;
     int    equil, ifact, nfact, iequil, iequed, prefact, notfactored;
     int    nt, nrun=0, nfail=0, nerrs=0, imat, fimat=0, nimat=1;
     fact_t fact;
@@ -339,7 +340,7 @@ int main(int argc, char *argv[])
 
 		    PStatFree(&stat);
 #if 0
-c		    pdinf_norm_error(iam, ((NRformat_loc *)A.Store)->m_loc,
+		    pdinf_norm_error(iam, ((NRformat_loc *)A.Store)->m_loc,
 				     nrhs, b, ldb, xtrue, ldx, &grid);
 #endif
 		    /*		    if ( info && info != izero ) {*/
@@ -363,7 +364,7 @@ c		    pdinf_norm_error(iam, ((NRformat_loc *)A.Store)->m_loc,
 #endif
 
 			/* Print information about the tests that did
-				   not pass the threshold.    */
+			   not pass the threshold.    */
 			int k1 = 0;
 			for (i = k1; i < NTESTS; ++i) {
 			    if ( result[i] >= THRESH ) {

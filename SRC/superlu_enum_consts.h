@@ -67,6 +67,9 @@ typedef enum {
     DIST,    /* distribute matrix. */
     FACT,    /* perform LU factorization */
     COMM,    /* communication for factorization */
+    COMM_DIAG, /* Bcast diagonal block to process column */
+    COMM_RIGHT, /* communicate L panel */
+    COMM_DOWN, /* communicate U panel */
     SOL_COMM,/* communication for solve */
     RCOND,   /* estimate reciprocal condition number */
     SOLVE,   /* forward and back solves */
