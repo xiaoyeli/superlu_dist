@@ -15,11 +15,17 @@ at the top-level directory.
  * \brief Look-ahead update of the Schur complement.
  *
  * <pre>
- * -- Distributed SuperLU routine (version 4.0) --
+ * -- Distributed SuperLU routine (version 5.2) --
  * Lawrence Berkeley National Lab, Univ. of California Berkeley.
  * October 1, 2014
  *
+ * Modified: September 18, 2017
+ *   
  */
+
+iukp = iukp0; /* point to the first block in index[] */
+rukp = rukp0; /* point to the start of nzval[] */
+
 #ifdef ISORT
 while (j < nub && iperm_u[j] <= k0 + num_look_aheads)
 #else
@@ -28,6 +34,8 @@ while (j < nub && perm_u[2 * j] <= k0 + num_look_aheads)
 {
     double zero = 0.0;
 
+#if 0 // Sherry: no need to search
+    /* Caveat: There is a permutation perm_u involved for j  */
     /* Search along the row for the pointers {iukp, rukp} pointing to
      * block U(k,j).
      * j    -- current block in look-ahead window, initialized to 0 on entry
@@ -39,6 +47,13 @@ while (j < nub && perm_u[2 * j] <= k0 + num_look_aheads)
 		     j, &iukp, &rukp, &jb, &ljb, &nsupc,
          	     iukp0, rukp0, usub, perm_u, xsup, grid
 		    );
+#else
+    jb = usub[iukp];
+    ljb = LBj (jb, grid);     /* Local block number of U(k,j). */
+    nsupc = SuperSize(jb);
+    iukp += UB_DESCRIPTOR; /* Start fstnz of block U(k,j). */
+#endif
+
     j++;
     jj0++;
     jj = iukp;
@@ -47,48 +62,47 @@ while (j < nub && perm_u[2 * j] <= k0 + num_look_aheads)
 
     ldu = klst - usub[jj++];
     ncols = 1;
-    full = 1; /* flag the U block is indeed 'full', containing segments
-                 of same length. No need padding 0.  */
+
+    /* This loop computes ldu. */
     for (; jj < iukp + nsupc; ++jj) { /* for each column jj in block U(k,j) */
         segsize = klst - usub[jj];
         if (segsize) {
             ++ncols;
-            if (segsize != ldu) full = 0; /* need padding 0 */
             if (segsize > ldu)  ldu = segsize;
         }
     }
 #if ( DEBUGlevel>=3 )
     ++num_update;
 #endif
-    if (0) {
-        tempu = &uval[rukp];
-    }
-    else { /* Copy block U(k,j) into tempU2d, padding zeros. */
+
 #if ( DEBUGlevel>=3 )
-        printf ("(%d) full=%d,k=%d,jb=%d,ldu=%d,ncols=%d,nsupc=%d\n",
-                iam, full, k, jb, ldu, ncols, nsupc);
-        ++num_copy;
+    printf ("(%d) k=%d,jb=%d,ldu=%d,ncols=%d,nsupc=%d\n",
+	    iam, k, jb, ldu, ncols, nsupc);
+    ++num_copy;
 #endif
-        tempu = bigU; /* Copy one block U(k,j) to bigU for GEMM */
-        for (jj = iukp; jj < iukp + nsupc; ++jj) {
-            segsize = klst - usub[jj];
-            if (segsize) {
-                lead_zero = ldu - segsize;
-                for (i = 0; i < lead_zero; ++i) tempu[i] = zero;
-                tempu += lead_zero;
-                for (i = 0; i < segsize; ++i) {
-                    tempu[i] = uval[rukp + i];
-                }
-                rukp += segsize;
-                tempu += segsize;
+
+    /* Now copy one block U(k,j) to bigU for GEMM, padding zeros up to ldu. */
+    tempu = bigU; /* Copy one block U(k,j) to bigU for GEMM */
+    for (jj = iukp; jj < iukp + nsupc; ++jj) {
+        segsize = klst - usub[jj];
+        if (segsize) {
+            lead_zero = ldu - segsize;
+            for (i = 0; i < lead_zero; ++i) tempu[i] = zero;
+            tempu += lead_zero;
+            for (i = 0; i < segsize; ++i) {
+                tempu[i] = uval[rukp + i];
             }
+            rukp += segsize;
+            tempu += segsize;
         }
-        tempu = bigU;
-        rukp -= usub[iukp - 1]; /* Return to start of U(k,j). */
-    } /* if full ... */
+    }
+    tempu = bigU; /* set back to the beginning of the buffer */
+#if 0
+    rukp -= usub[iukp - 1]; /* Return to start of U(k,j). */
+#endif
 
     nbrow = lsub[1]; /* number of row subscripts in L(:,k) */
-    if (myrow == krow) nbrow = lsub[1] - lsub[3]; /* skip diagonal block for those rows */
+    if (myrow == krow) nbrow = lsub[1] - lsub[3]; /* skip diagonal block for those rows. */
     // double ttx =SuperLU_timer_();
 
     int current_b = 0; /* Each thread starts searching from first block.
@@ -99,9 +113,9 @@ while (j < nub && perm_u[2 * j] <= k0 + num_look_aheads)
 #ifdef _OPENMP
     /* Sherry -- examine all the shared variables ??
        'firstprivate' ensures that the private variables are initialized
-       to the values before entering the loop  */
+       to the values before entering the loop.  */
 #pragma omp parallel for \
-    firstprivate(lptr,luptr,ib,tempv,current_b) private(lb) \
+    firstprivate(lptr,luptr,ib,current_b) private(lb) \
     default(shared) schedule(dynamic)
 #endif
     for (lb = 0; lb < nlb; lb++) { /* Loop through each block in L(:,k) */
@@ -134,6 +148,8 @@ while (j < nub && perm_u[2 * j] <= k0 + num_look_aheads)
 
         lptr += LB_DESCRIPTOR;  /* Skip descriptor. */
 
+	/*if (thread_id == 0) tt_start = SuperLU_timer_();*/
+
         /* calling gemm */
 	stat->ops[FACT] += 2.0 * (flops_t)temp_nbrow * ldu * ncols;
 #if defined (USE_VENDOR_BLAS)
@@ -146,7 +162,14 @@ while (j < nub && perm_u[2 * j] <= k0 + num_look_aheads)
                    tempu, &ldu, &beta, tempv, &temp_nbrow );
 #endif
 
-        /* Now scattering the output*/
+#if 0
+	if (thread_id == 0) {
+	    tt_end = SuperLU_timer_();
+	    LookAheadGEMMTimer += tt_end - tt_start;
+	    tt_start = tt_end;
+	} 
+#endif
+        /* Now scattering the output. */
         if (ib < jb) {    /* A(i,j) is in U. */
             dscatter_u (ib, jb,
                        nsupc, iukp, xsup,
@@ -160,14 +183,22 @@ while (j < nub && perm_u[2 * j] <= k0 + num_look_aheads)
                        Lrowind_bc_ptr, Lnzval_bc_ptr, grid);
         }
 
-        ++current_b;         /* move to next block */
+        ++current_b;         /* Move to next block. */
         lptr += temp_nbrow;
         luptr += temp_nbrow;
 
+#if 0
+	if (thread_id == 0) {
+	    tt_end = SuperLU_timer_();
+	    LookAheadScatterTimer += tt_end - tt_start;
+	}
+#endif
     } /* end parallel for lb = 0, nlb ... all blocks in L(:,k) */
 
-    rukp += usub[iukp - 1]; /* Move to next U block, U(k,j+1) */
-    iukp += nsupc;
+#if 0
+    rukp += usub[iukp - 1]; /* Move to block U(k,j+1) */
+#endif
+    iukp += nsupc; /* Mov to block U(k,j+1) */
 
     /* =========================================== *
      * == factorize L(:,j) and send if possible == *
@@ -188,17 +219,14 @@ while (j < nub && perm_u[2 * j] <= k0 + num_look_aheads)
         /* Factor diagonal and subdiagonal blocks and test for exact
            singularity.  */
         factored[kk] = 0;
-        /* double ttt1 = SuperLU_timer_(); */
-#if ( VAMPIR>=1 )
-        VT_begin (5);
-#endif
+
+        double tt1 = SuperLU_timer_();
 
         PDGSTRF2(options, kk0, kk, thresh, Glu_persist, grid, Llu,
                   U_diag_blk_send_req, tag_ub, stat, info);
 
-#if ( VAMPIR>=1 )
-        VT_end (5);
-#endif
+        pdgstrf2_timer += SuperLU_timer_() - tt1; 
+
         /* stat->time7 += SuperLU_timer_() - ttt1; */
 
         /* Multicasts numeric values of L(:,kk) to process rows. */
@@ -222,18 +250,12 @@ while (j < nub && perm_u[2 * j] <= k0 + num_look_aheads)
 #if ( PROFlevel>=1 )
                 TIC (t1);
 #endif
-#if ( VAMPIR>=1 )
-                VT_begin (1);
-#endif
                 MPI_Isend (lsub1, msgcnt[0], mpi_int_t, pj,
                            SLU_MPI_TAG (0, kk0) /* (4*kk0)%tag_ub */ ,
                            scp->comm, &send_req[pj]);
                 MPI_Isend (lusup1, msgcnt[1], MPI_DOUBLE, pj,
                            SLU_MPI_TAG (1, kk0) /* (4*kk0+1)%tag_ub */ ,
                            scp->comm, &send_req[pj + Pc]);
-#if ( VAMPIR>=1 )
-                VT_end (1);
-#endif
 #if ( PROFlevel>=1 )
                 TOC (t2, t1);
                 stat->utime[COMM] += t2;

@@ -13,7 +13,7 @@ at the top-level directory.
  * \brief Performs LU factorization in parallel
  *
  * <pre>
- * -- Distributed SuperLU routine (version 4.3) --
+ * -- Distributed SuperLU routine (version 5.2) --
  * Lawrence Berkeley National Lab, Univ. of California Berkeley.
  * October 1, 2014
  *
@@ -24,7 +24,8 @@ at the top-level directory.
  *     July    12, 2011  static scheduling and arbitrary look-ahead
  *     March   13, 2013  change NTAGS to MPI_TAG_UB value
  *     September 24, 2015 replace xLAMCH by xMACH, using C99 standard.
- *     December 31, 2015 rename xMACH to xMACH_DIST
+ *     December 31, 2015 rename xMACH to xMACH_DIST.
+ *     September 30, 2017 optimization for Intel Knights Landing (KNL) node .
  *
  * Sketch of the algorithm 
  *
@@ -137,6 +138,14 @@ at the top-level directory.
     Overhead : NA : this wont be used for running experiments
 */
 #define PHI_FRAMEWORK
+
+#if 0
+#define CACHELINE 64  /* bytes, Xeon Phi KNL */
+#else
+#define CACHELINE 0  /* not worry about false sharing of different threads */
+#endif
+//#define GEMM_PADLEN 1
+#define GEMM_PADLEN 8
 
 #define PZGSTRF2 pzgstrf2_trsm
 #define PZGSTRS2 pzgstrs2_omp
@@ -275,7 +284,9 @@ pzgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
     int_t *iuip, *ruip; /* Pointers to U index/nzval; size ceil(NSUPERS/Pr). */
     doublecomplex *ucol;
     int *indirect, *indirect2;
-    doublecomplex *tempv, *tempv2d;
+    int_t *tempi;
+    doublecomplex *tempu, *tempv, *tempr;
+    /*    doublecomplex *tempv2d, *tempU2d;  Sherry */
     int iinfo;
     int *ToRecv, *ToSendD, **ToSendR;
     Glu_persist_t *Glu_persist = LUstruct->Glu_persist;
@@ -283,8 +294,8 @@ pzgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
     superlu_scope_t *scp;
     float s_eps;
     double thresh;
-    doublecomplex *tempU2d, *tempu;
-    int full, ldt, ldu, lead_zero, ncols, ncb, nrb, p, pr, pc, nblocks;
+    /*int full;*/
+    int ldt, ldu, lead_zero, ncols, ncb, nrb, p, pr, pc, nblocks;
     int_t *etree_supno_l, *etree_supno, *blocks, *blockr, *Ublock, *Urows,
         *Lblock, *Lrows, *perm_u, *sf_block, *sf_block_l, *nnodes_l,
         *nnodes_u, *edag_supno_l, *recvbuf, **edag_supno;
@@ -298,10 +309,9 @@ pzgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
 		    *     2 : transferred in Usub_buf[]
 		    *     3 : transferred in Uval_buf[]
 		    */
-    int **msgcnts, **msgcntsU; /* counts for each panel in the
-                                  look-ahead window */
-    int *factored;  /* factored[j]==0 : L col panel j is factorized */
-    int *factoredU; /* factoredU[i]==1 : U row panel i is factorized */
+    int **msgcnts, **msgcntsU; /* counts in the look-ahead window */
+    int *factored;  /* factored[j] == 0 : L col panel j is factorized. */
+    int *factoredU; /* factoredU[i] == 1 : U row panel i is factorized. */
     int nnodes, *sendcnts, *sdispls, *recvcnts, *rdispls, *srows, *rrows;
     etree_node *head, *tail, *ptr;
     int *num_child;
@@ -314,16 +324,19 @@ pzgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
     void *attr_val;
     int flag;
 
+    /* The following variables are used to pad GEMM dimensions so that
+       each is a multiple of vector length (8 doubles for KNL)  */
+    int gemm_m_pad = GEMM_PADLEN, gemm_k_pad = GEMM_PADLEN,
+        gemm_n_pad = GEMM_PADLEN;
+    int gemm_padding = 0;
+
     int iword = sizeof (int_t);
     int dword = sizeof (doublecomplex);
 
-    /* For measuring load imbalence in omp threads*/
+    /* For measuring load imbalence in omp threads */
     double omp_load_imblc = 0.0;
     double *omp_loop_time;
 
-    double CPUOffloadTimer      = 0;
-    double CPUOffloadFlop       = 0;
-    double CPUOffloadMop        = 0;
     double schur_flop_timer     = 0.0;
     double pdgstrf2_timer       = 0.0;
     double pdgstrs2_timer       = 0.0;
@@ -331,8 +344,8 @@ pzgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
     double InitTimer            = 0.0; /* including compute schedule, malloc */
     double tt_start, tt_end;
 
-#if !defined( GPU_ACC )
-    /* Counter for couting memory operations */
+/* #if !defined( GPU_ACC ) */
+    /* Counters for memory operations and timings */
     double scatter_mem_op_counter  = 0.0;
     double scatter_mem_op_timer    = 0.0;
     double scatterL_mem_op_counter = 0.0;
@@ -340,6 +353,7 @@ pzgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
     double scatterU_mem_op_counter = 0.0;
     double scatterU_mem_op_timer   = 0.0;
 
+    /* Counters for flops/gather/scatter and timings */
     double GatherLTimer            = 0.0;
     double LookAheadRowSepMOP      = 0.0;
     double GatherUTimer             = 0.0;
@@ -349,10 +363,11 @@ pzgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
     double LookAheadScatterTimer   = 0.0;
     double LookAheadScatterMOP     = 0.0;
     double RemainGEMMTimer         = 0.0;
+    double RemainGEMM_flops        = 0.0;
     double RemainScatterTimer      = 0.0;
     double NetSchurUpTimer         = 0.0;
     double schur_flop_counter      = 0.0;
-#endif
+/* #endif */
 
 #if ( PRNTlevel>= 1)
     /* count GEMM max dimensions */
@@ -368,6 +383,15 @@ pzgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
 #if ( PROFlevel>=1 )
     double t1, t2;
     float msg_vol = 0, msg_cnt = 0;
+    double comm_wait_time = 0.0;
+    /* Record GEMM dimensions and times */
+    FILE *fopen(), *fgemm;
+    int gemm_count = 0;
+    typedef struct {
+	int m, n, k;
+	double microseconds;
+    } gemm_profile;
+    gemm_profile *gemm_stats;
 #endif
 
     /* Test the input parameters. */
@@ -383,6 +407,8 @@ pzgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
 
     /* Quick return if possible. */
     if (m == 0 || n == 0) return 0;
+
+    double tt1 = SuperLU_timer_ ();
  
     /* 
      * Initialization.  
@@ -405,14 +431,20 @@ pzgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
     int tag_ub = *(int *) attr_val;
 
 #if ( PRNTlevel>=1 )
-    if (!iam)
-        printf ("MPI tag upper bound = %d\n", tag_ub);
+    if (!iam) {
+        printf ("MPI tag upper bound = %d\n", tag_ub); fflush(stdout);
+    }
 #endif
 
 #if ( DEBUGlevel>=1 )
     if (s_eps == 0.0)
         printf (" ***** warning s_eps = %e *****\n", s_eps);
     CHECK_MALLOC (iam, "Enter pdgstrf()");
+#endif
+#if (PROFlevel >= 1 )
+    gemm_stats = (gemm_profile *) SUPERLU_MALLOC(nsupers * sizeof(gemm_profile));
+    if (iam == 0) fgemm = fopen("dgemm_mnk.dat", "w");
+    int *prof_sendR = intCalloc_dist(nsupers);
 #endif
 
     stat->ops[FACT]      = 0.0;
@@ -435,29 +467,37 @@ pzgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
         if (i != 0) {
             if ( !(Llu->Lsub_buf_2[0] = intMalloc_dist ((num_look_aheads + 1) * ((size_t) i))) )
                 ABORT ("Malloc fails for Lsub_buf.");
+	    tempi = Llu->Lsub_buf_2[0];
             for (jj = 0; jj < num_look_aheads; jj++)
-                Llu->Lsub_buf_2[jj + 1] = Llu->Lsub_buf_2[jj] + i;
+		Llu->Lsub_buf_2[jj+1] = tempi + i*(jj+1); /* vectorize */
+	    //Llu->Lsub_buf_2[jj + 1] = Llu->Lsub_buf_2[jj] + i;
         }
         i = Llu->bufmax[1];
         if (i != 0) {
             if (!(Llu->Lval_buf_2[0] = doublecomplexMalloc_dist ((num_look_aheads + 1) * ((size_t) i))))
                 ABORT ("Malloc fails for Lval_buf[].");
+	    tempr = Llu->Lval_buf_2[0];
             for (jj = 0; jj < num_look_aheads; jj++)
-                Llu->Lval_buf_2[jj + 1] = Llu->Lval_buf_2[jj] + i;
+		Llu->Lval_buf_2[jj+1] = tempr + i*(jj+1); /* vectorize */
+	    //Llu->Lval_buf_2[jj + 1] = Llu->Lval_buf_2[jj] + i;
         }
         i = Llu->bufmax[2];
         if (i != 0) {
             if (!(Llu->Usub_buf_2[0] = intMalloc_dist ((num_look_aheads + 1) * i)))
                 ABORT ("Malloc fails for Usub_buf_2[].");
+	    tempi = Llu->Usub_buf_2[0];
             for (jj = 0; jj < num_look_aheads; jj++)
-                Llu->Usub_buf_2[jj + 1] = Llu->Usub_buf_2[jj] + i;
+                Llu->Usub_buf_2[jj+1] = tempi + i*(jj+1); /* vectorize */
+                //Llu->Usub_buf_2[jj + 1] = Llu->Usub_buf_2[jj] + i;
         }
         i = Llu->bufmax[3];
         if (i != 0) {
             if (!(Llu->Uval_buf_2[0] = doublecomplexMalloc_dist ((num_look_aheads + 1) * i)))
                 ABORT ("Malloc fails for Uval_buf_2[].");
+	    tempr = Llu->Uval_buf_2[0];
             for (jj = 0; jj < num_look_aheads; jj++)
-                Llu->Uval_buf_2[jj + 1] = Llu->Uval_buf_2[jj] + i;
+                Llu->Uval_buf_2[jj+1] = tempr + i*(jj+1); /* vectorize */
+	    //Llu->Uval_buf_2[jj + 1] = Llu->Uval_buf_2[jj] + i;
         }
     }
 
@@ -544,7 +584,6 @@ pzgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
        fflush(stdout);
     }
 #endif
-    double tt1 = SuperLU_timer_ ();
 
     nblocks = 0;
     ncb = nsupers / Pc; /* number of column blocks, horizontal */
@@ -562,8 +601,6 @@ pzgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
 #endif
 
     log_memory(2 * ncb * iword, stat);
-
-    /* insert a check condition here */
 
 #if 0  /* Sherry: not used? */
     /* This bunch is used for static scheduling */
@@ -599,11 +636,12 @@ pzgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
 
     look_ahead_l = SUPERLU_MALLOC (nsupers * sizeof (int));
     look_ahead = SUPERLU_MALLOC (nsupers * sizeof (int));
-    for (lb = 0; lb < nsupers; lb++) look_ahead_l[lb] = -1;
+    for (lb = 0; lb < nsupers; lb++) look_ahead_l[lb] = -1; /* vectorized */
     log_memory(3 * nsupers * iword, stat);
 
-    /* go through U-factor */
-    for (lb = 0; lb < nrb; ++lb) {
+    /* Sherry: omp parallel? 
+       not worth doing, due to concurrent write to look_ahead_l[jb] */
+    for (lb = 0; lb < nrb; ++lb) { /* go through U-factor */
         ib = lb * Pr + myrow;
         index = Llu->Ufstnz_br_ptr[lb];
         if (index) { /* Not an empty row */
@@ -617,7 +655,7 @@ pzgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
             }
         }
     }
-    if (myrow < nsupers % grid->nprow) {
+    if (myrow < nsupers % grid->nprow) { /* leftover block rows */
         ib = nrb * Pr + myrow;
         index = Llu->Ufstnz_br_ptr[nrb];
         if (index) {             /* Not an empty row */
@@ -633,8 +671,9 @@ pzgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
     }
 
     if (options->SymPattern == NO) {
-        /* go through L-factor */
-        for (lb = 0; lb < ncb; lb++) {
+	/* Sherry: omp parallel?
+	   not worth doing, due to concurrent write to look_ahead_l[jb] */
+        for (lb = 0; lb < ncb; lb++) { /* go through L-factor */
             ib = lb * Pc + mycol;
             index = Llu->Lrowind_bc_ptr[lb];
             if (index) {
@@ -648,7 +687,7 @@ pzgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
                 }
             }
         }
-        if (mycol < nsupers % grid->npcol) {
+        if (mycol < nsupers % grid->npcol) { /* leftover block columns */
             ib = ncb * Pc + mycol;
             index = Llu->Lrowind_bc_ptr[ncb];
             if (index) {
@@ -709,26 +748,30 @@ pzgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
     ldt = sp_ienv_dist (3);     /* Size of maximum supernode */
     k = CEILING (nsupers, Pr);  /* Number of local block rows */
 
-    /* Following circuit is for finding maximum block size */
+    /* Following code is for finding maximum row dimension of all L panels */
     int local_max_row_size = 0;
     int max_row_size;
 
-    for (int i = 0; i < nsupers; ++i) {
-        int tpc = PCOL (i, grid);
-        if (mycol == tpc) {
-            lk = LBj (i, grid);
-            lsub = Lrowind_bc_ptr[lk];
-            if (lsub != NULL) {
-                local_max_row_size = SUPERLU_MAX (local_max_row_size, lsub[1]);
-            }
-        }
+#if 0
+#if defined _OPENMP  // Sherry: parallel reduction -- seems slower?
+#pragma omp parallel for reduction(max :local_max_row_size) private(lk,lsub) 
+#endif
+#endif
+    for (int i = mycol; i < nsupers; i += Pc) { /* grab my local columns */
+        //int tpc = PCOL (i, grid);
+	lk = LBj (i, grid);
+	lsub = Lrowind_bc_ptr[lk];
+	if (lsub != NULL) {
+	    if (lsub[1] > local_max_row_size) local_max_row_size = lsub[1];
+	}
 
     }
 
-    /* Max row size is global reduction of within A row */
-    MPI_Allreduce (&local_max_row_size, &max_row_size, 1, MPI_INT, MPI_MAX, (grid->rscp.comm));
+    /* Max row size is global reduction within a row */
+    MPI_Allreduce (&local_max_row_size, &max_row_size, 1, MPI_INT, MPI_MAX,
+                   (grid->rscp.comm));
 
-    /* Buffer size is max of look ahead window */
+    /* Buffer size is max of look-ahead window */
     /* int_t buffer_size =
          SUPERLU_MAX (max_row_size * num_threads * ldt,
                       get_max_buffer_size ());           */
@@ -763,15 +806,24 @@ pzgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
 					  Glu_persist, grid, perm_u );
 #endif
 
+    /* +16 to avoid cache line false sharing */
+    int_t bigv_size = SUPERLU_MAX(max_row_size * (bigu_size / ldt),
+				  (ldt*ldt + CACHELINE / dword) * num_threads);
+
     /* bigU and bigV are either on CPU or on GPU, not both. */
     doublecomplex* bigU; /* for storing entire U(k,:) panel, prepare for GEMM.
-                     bigU has the same size either on CPU or on CPU. */
-    doublecomplex* bigV; /* for GEMM output matrix, i.e. update matrix. 
-                     On CPU, bigV is small for block-by-block update.
-	             On GPU, bigV is large to hold the aggregate GEMM output.*/
+                      bigU has the same size either on CPU or on CPU. */
+    doublecomplex* bigV; /* for storing GEMM output matrix, i.e. update matrix. 
+	              bigV is large to hold the aggregate GEMM output.*/
 
 #if ( PRNTlevel>=1 )
-    if(!iam) printf("[%d] .. BIG U bigu_size " IFMT " (same either on CPU or GPU)\n", iam, bigu_size);
+    if(!iam) {
+	printf("max_nrows in L panel %d\n", max_row_size);
+	printf("\t.. GEMM buffer size: max_nrows X max_ncols = %d x %d\n",
+	       max_row_size, (bigu_size / ldt));
+	printf(".. BIG U size %d\t BIG V size %d\n", bigu_size, bigv_size);
+	fflush(stdout);
+    }
 #endif
 
 #ifdef GPU_ACC
@@ -779,7 +831,7 @@ pzgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
     if ( checkCuda(cudaHostAlloc((void**)&bigU,  bigu_size * sizeof(doublecomplex), cudaHostAllocDefault)) )
         ABORT("Malloc fails for zgemm buffer U ");
 
-    int bigv_size = buffer_size;
+    bigv_size = buffer_size;
 #if ( PRNTlevel>=1 )
     if (!iam) printf("[%d] .. BIG V bigv_size %d, using buffer_size %d (on GPU)\n", iam, bigv_size, buffer_size);
 #endif
@@ -835,18 +887,24 @@ pzgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
     stat->gpu_buffer += ( max_row_size * sp_ienv_dist(3) 
 			  + bigu_size + buffer_size ) * dword;
 
-#else  /* not to use GPU */
+#else  /* not CUDA */
     
-    if ( !(bigU = doublecomplexMalloc_dist(bigu_size)) )
-        ABORT ("Malloc fails for zgemm u buff U"); 
-          //Maximum size of bigU= sqrt(buffsize) ?
+    // for GEMM padding 0
+    j = bigu_size / ldt;
+    bigu_size += (gemm_k_pad * (j + ldt + gemm_n_pad));
+    bigv_size += (gemm_m_pad * (j + max_row_size + gemm_n_pad));
 
-    int bigv_size = 8 * ldt * ldt * num_threads;
-#if ( PRNTlevel>=1 )
-    if (!iam) printf("[%d] .. BIG V size (on CPU) %d\n", iam, bigv_size);
-#endif
+#ifdef __INTEL_COMPILER
+    bigU = _mm_malloc(bigu_size * sizeof(doublecomplex), 1<<12); // align at 4K page
+    bigV = _mm_malloc(bigv_size * sizeof(doublecomplex), 1<<12);
+#else
+    if ( !(bigU = doublecomplexMalloc_dist(bigu_size)) )
+        ABORT ("Malloc fails for zgemm U buffer"); 
+          //Maximum size of bigU= sqrt(buffsize) ?
+    // int bigv_size = 8 * ldt * ldt * num_threads;
     if ( !(bigV = doublecomplexMalloc_dist(bigv_size)) )
-        ABORT ("Malloc failed for zgemm buffer V");
+        ABORT ("Malloc failed for zgemm V buffer");
+#endif
 
 #endif /* end ifdef GPU_ACC */
 
@@ -855,27 +913,30 @@ pzgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
     // mlock(bigU,(bigu_size) * sizeof (double));   
 
 #if ( PRNTlevel>=1 )
-
     if(!iam) {
 	printf ("  Max row size is %d \n", max_row_size);
         printf ("  Threads per process %d \n", num_threads);
-	/* printf ("  Using buffer_size of %d \n", buffer_size); */
 	fflush(stdout);
     }
 
 #endif
 
+#if 0 /* Sherry */
     if (!(tempv2d = doublecomplexCalloc_dist (2 * ((size_t) ldt) * ldt)))
         ABORT ("Calloc fails for tempv2d[].");
     tempU2d = tempv2d + ldt * ldt;
-    if (!(indirect = SUPERLU_MALLOC (ldt * num_threads * sizeof(int))))
+#endif
+    /* Sherry: (ldt + 16), avoid cache line false sharing.
+       KNL cacheline size = 64 bytes = 16 int */
+    iinfo = ldt + CACHELINE / sizeof(int);
+    if (!(indirect = SUPERLU_MALLOC (iinfo * num_threads * sizeof(int))))
         ABORT ("Malloc fails for indirect[].");
-    if (!(indirect2 = SUPERLU_MALLOC (ldt * num_threads * sizeof(int))))
+    if (!(indirect2 = SUPERLU_MALLOC (iinfo * num_threads * sizeof(int))))
         ABORT ("Malloc fails for indirect[].");
     if (!(iuip = intMalloc_dist (k)))  ABORT ("Malloc fails for iuip[].");
     if (!(ruip = intMalloc_dist (k)))  ABORT ("Malloc fails for ruip[].");
 
-    log_memory(2 * ldt *ldt * dword + 2 * ldt * num_threads * iword
+    log_memory(2 * ldt*ldt * dword + 2 * iinfo * num_threads * iword
 	       + 2 * k * iword, stat);
 
     int_t *lookAheadFullRow,*lookAheadStRow,*lookAhead_lptr,*lookAhead_ib,
@@ -906,9 +967,10 @@ pzgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
     Remain_info = (Remain_info_t *) SUPERLU_MALLOC(mrb*sizeof(Remain_info_t));
 #endif
 
-    doublecomplex *lookAhead_L_buff, *Remain_L_buff;
+    doublecomplex *lookAhead_L_buff, *Remain_L_buff; /* Stores entire L-panel */
     Ublock_info_t *Ublock_info;
-    ldt = sp_ienv_dist (3);       /* max supernode size */
+    ldt = sp_ienv_dist (3); /* max supernode size */
+    /* The following is quite loose */
     lookAhead_L_buff = doublecomplexMalloc_dist(ldt*ldt* (num_look_aheads+1) );
 
 #if 0
@@ -918,7 +980,8 @@ pzgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
     int * Ublock_info_rukp = (int *) _mm_malloc(mcb*sizeof(int),64);
     int * Ublock_info_jb = (int *) _mm_malloc(mcb*sizeof(int),64);
 #else
-    Remain_L_buff = doublecomplexMalloc_dist(Llu->bufmax[1]);
+    j = gemm_m_pad * (ldt + max_row_size + gemm_k_pad);
+    Remain_L_buff = doublecomplexMalloc_dist(Llu->bufmax[1] + j); /* This is loose */
     Ublock_info = (Ublock_info_t *) SUPERLU_MALLOC(mcb*sizeof(Ublock_info_t));
     int *Ublock_info_iukp = (int *) SUPERLU_MALLOC(mcb*sizeof(int));
     int *Ublock_info_rukp = (int *) SUPERLU_MALLOC(mcb*sizeof(int));
@@ -938,7 +1001,7 @@ pzgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
        ** Handle first block column separately to start the pipeline. **
        ################################################################## */
     look_id = 0;
-    msgcnt = msgcnts[0]; /* First count in the window */
+    msgcnt = msgcnts[0]; /* Lsub[0] to be transferred */
     send_req = send_reqs[0];
     recv_req = recv_reqs[0];
 
@@ -962,7 +1025,9 @@ pzgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
         lsub = Lrowind_bc_ptr[lk];
         lusup = Lnzval_bc_ptr[lk];
         if (lsub) {
+	    /* number of entries in Lsub_buf[] to be transferred */
             msgcnt[0] = lsub[1] + BC_HEADER + lsub[0] * LB_DESCRIPTOR;
+	    /* number of entries in Lval_buf[] to be transferred */
             msgcnt[1] = lsub[1] * SuperSize (k);
         } else {
             msgcnt[0] = msgcnt[1] = 0;
@@ -974,9 +1039,11 @@ pzgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
                 TIC (t1);
 #endif
 
-                MPI_Isend (lsub, msgcnt[0], mpi_int_t, pj, SLU_MPI_TAG (0, 0) /* 0 */ ,
+                MPI_Isend (lsub, msgcnt[0], mpi_int_t, pj,
+                           SLU_MPI_TAG (0, 0) /* 0 */,
                            scp->comm, &send_req[pj]);
-                MPI_Isend (lusup, msgcnt[1], SuperLU_MPI_DOUBLE_COMPLEX, pj, SLU_MPI_TAG (1, 0) /* 1 */ ,
+                MPI_Isend (lusup, msgcnt[1], SuperLU_MPI_DOUBLE_COMPLEX, pj,
+                           SLU_MPI_TAG (1, 0) /* 1 */,
                            scp->comm, &send_req[pj + Pc]);
 #if ( DEBUGlevel>=2 )
                 printf ("[%d] first block cloumn Send L(:,%4d): lsub %4d, lusup %4d to Pc %2d\n",
@@ -986,6 +1053,8 @@ pzgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
 #if ( PROFlevel>=1 )
                 TOC (t2, t1);
                 stat->utime[COMM] += t2;
+                stat->utime[COMM_RIGHT] += t2;
+		++prof_sendR[lk];
                 msg_cnt += 2;
                 msg_vol += msgcnt[0] * iword + msgcnt[1] * dword;
 #endif
@@ -994,12 +1063,20 @@ pzgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
     } else {  /* Post immediate receives. */
         if (ToRecv[k] >= 1) {   /* Recv block column L(:,0). */
             scp = &grid->rscp;  /* The scope of process row. */
+#if ( PROFlevel>=1 )
+	    TIC (t1);
+#endif
             MPI_Irecv (Lsub_buf_2[0], Llu->bufmax[0], mpi_int_t, kcol,
                        SLU_MPI_TAG (0, 0) /* 0 */ ,
                        scp->comm, &recv_req[0]);
             MPI_Irecv (Lval_buf_2[0], Llu->bufmax[1], SuperLU_MPI_DOUBLE_COMPLEX, kcol,
                        SLU_MPI_TAG (1, 0) /* 1 */ ,
                        scp->comm, &recv_req[1]);
+#if ( PROFlevel>=1 )
+	    TOC (t2, t1);
+	    stat->utime[COMM] += t2;
+	    stat->utime[COMM_RIGHT] += t2;
+#endif
         }
     } /* end if mycol == 0 */
 
@@ -1011,12 +1088,20 @@ pzgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
             scp = &grid->cscp;  /* The scope of process column. */
             Usub_buf = Llu->Usub_buf_2[0];
             Uval_buf = Llu->Uval_buf_2[0];
+#if ( PROFlevel>=1 )
+	    TIC (t1);
+#endif
             MPI_Irecv (Usub_buf, Llu->bufmax[2], mpi_int_t, krow,
                        SLU_MPI_TAG (2, 0) /* 2%tag_ub */ ,
                        scp->comm, &recv_reqs_u[0][0]);
             MPI_Irecv (Uval_buf, Llu->bufmax[3], SuperLU_MPI_DOUBLE_COMPLEX, krow,
                        SLU_MPI_TAG (3, 0) /* 3%tag_ub */ ,
                        scp->comm, &recv_reqs_u[0][1]);
+#if ( PROFlevel>=1 )
+	    TOC (t2, t1);
+	    stat->utime[COMM] += t2;
+	    stat->utime[COMM_DOWN] += t2;
+#endif
         }
     }
 
@@ -1044,7 +1129,7 @@ pzgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
             kk = perm_c_supno[kk0]; /* use the ordering from static schedule */
             look_id = kk0 % (1 + num_look_aheads); /* which column in window */
 
-            if (look_ahead[kk] < k0) { /* does not depend on current column */
+            if (look_ahead[kk] < k0) { /* does not depend on current column k */
                 kcol = PCOL (kk, grid);
                 if (mycol == kcol) { /* I own this panel */
 
@@ -1063,7 +1148,7 @@ pzgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
                     msgcnt = msgcnts[look_id];  /* point to the proper count array */
                     send_req = send_reqs[look_id];
 
-                    lk = LBj (kk, grid);    /* Local block number in L */
+                    lk = LBj (kk, grid);    /* Local block number in L. */
                     lsub1 = Lrowind_bc_ptr[lk];
                     if (lsub1) {
                         msgcnt[0] = lsub1[1] + BC_HEADER + lsub1[0] * LB_DESCRIPTOR; /* size of metadata */
@@ -1076,12 +1161,21 @@ pzgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
                     for (pj = 0; pj < Pc; ++pj) {
                         if (ToSendR[lk][pj] != EMPTY) {
                             lusup1 = Lnzval_bc_ptr[lk];
+#if ( PROFlevel>=1 )
+			    TIC (t1);
+#endif
                             MPI_Isend (lsub1, msgcnt[0], mpi_int_t, pj,
                                        SLU_MPI_TAG (0, kk0),  /* (4*kk0)%tag_ub */
                                        scp->comm, &send_req[pj]);
                             MPI_Isend (lusup1, msgcnt[1], SuperLU_MPI_DOUBLE_COMPLEX, pj,
                                        SLU_MPI_TAG (1, kk0),  /* (4*kk0+1)%tag_ub */
                                        scp->comm, &send_req[pj + Pc]);
+#if ( PROFlevel>=1 )
+			    TOC (t2, t1);
+			    stat->utime[COMM] += t2;
+			    stat->utime[COMM_RIGHT] += t2;
+			    ++prof_sendR[lk];
+#endif
 #if ( DEBUGlevel>=2 )
 			    printf ("[%d] -1- Send L(:,%4d): #lsub1 %4d, #lusup1 %4d right to Pj %2d\n",
 				    iam, kk, msgcnt[0], msgcnt[1], pj);
@@ -1094,7 +1188,9 @@ pzgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
                     if (ToRecv[kk] >= 1) {
                         scp = &grid->rscp;  /* The scope of process row. */
                         recv_req = recv_reqs[look_id];
-
+#if ( PROFlevel>=1 )
+			TIC (t1);
+#endif
                         MPI_Irecv (Lsub_buf_2[look_id], Llu->bufmax[0],
                                    mpi_int_t, kcol, SLU_MPI_TAG (0, kk0), /* (4*kk0)%tag_ub */
                                    scp->comm, &recv_req[0]);
@@ -1102,29 +1198,41 @@ pzgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
                                    SuperLU_MPI_DOUBLE_COMPLEX, kcol,
                                    SLU_MPI_TAG (1, kk0), /* (4*kk0+1)%tag_ub */
                                    scp->comm, &recv_req[1]);
+#if ( PROFlevel>=1 )
+			TOC (t2, t1);
+			stat->utime[COMM] += t2;
+			stat->utime[COMM_RIGHT] += t2;
+#endif
                     }
                     /* stat->time10 += SuperLU_timer_() - ttt1; */
                 }  /* end if mycol == Pc(kk) */
-            }  /* end if look-ahead in L supernodes */
+            }  /* end if look-ahead in L panels */
 
-            /* post irecv for U-row look-ahead */
+            /* Pre-post irecv for U-row look-ahead */
             krow = PROW (kk, grid);
             if (myrow != krow) {
                 if (ToRecv[kk] == 2) { /* post iRecv block row U(kk,:). */
                     scp = &grid->cscp;  /* The scope of process column. */
                     Usub_buf = Llu->Usub_buf_2[look_id];
                     Uval_buf = Llu->Uval_buf_2[look_id];
-
+#if ( PROFlevel>=1 )
+		    TIC (t1);
+#endif
                     MPI_Irecv (Usub_buf, Llu->bufmax[2], mpi_int_t, krow,
                                SLU_MPI_TAG (2, kk0) /* (4*kk0+2)%tag_ub */ ,
                                scp->comm, &recv_reqs_u[look_id][0]);
                     MPI_Irecv (Uval_buf, Llu->bufmax[3], SuperLU_MPI_DOUBLE_COMPLEX, krow,
                                SLU_MPI_TAG (3, kk0) /* (4*kk0+3)%tag_ub */ ,
                                scp->comm, &recv_reqs_u[look_id][1]);
+#if ( PROFlevel>=1 )
+		    TOC (t2, t1);
+		    stat->utime[COMM] += t2;
+		    stat->utime[COMM_DOWN] += t2;
+#endif
                 }
             }
 
-        }  /* end for each column in look-ahead window for L supernodes */
+        }  /* end for each column in look-ahead window for L panels */
 
         /* stat->time4 += SuperLU_timer_()-tt1; */
 
@@ -1136,6 +1244,7 @@ pzgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
         for (kk0 = kk1; kk0 < kk2; kk0++) {
             kk = perm_c_supno[kk0]; /* order determined from static schedule */  
             if (factoredU[kk0] != 1 && look_ahead[kk] < k0) {
+		/* does not depend on current column k */
                 kcol = PCOL (kk, grid);
                 krow = PROW (kk, grid);
                 lk = LBj (kk, grid);  /* Local block number across row. NOT USED?? -- Sherry */
@@ -1156,6 +1265,9 @@ pzgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
                 } else { /* Check to receive L(:,kk) from the left */
                     flag0 = flag1 = 0;
                     if ( ToRecv[kk] >= 1 ) {
+#if ( PROFlevel>=1 )
+			TIC (t1);
+#endif
                         if ( recv_req[0] != MPI_REQUEST_NULL ) {
                             MPI_Test (&recv_req[0], &flag0, &status);
                             if ( flag0 ) {
@@ -1171,7 +1283,14 @@ pzgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
                                 recv_req[1] = MPI_REQUEST_NULL;
                             }
                         } else flag1 = 1;
-                    } else msgcnt[0] = 0;
+#if ( PROFlevel>=1 )
+			TOC (t2, t1);
+			stat->utime[COMM] += t2;
+			stat->utime[COMM_RIGHT] += t2;
+#endif
+                    } else {
+                        msgcnt[0] = 0;
+ 	            }
                 }
 
                 if (flag0 && flag1) { /* L(:,kk) is ready */
@@ -1181,10 +1300,9 @@ pzgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
                         factoredU[kk0] = 1;
                         /* Parallel triangular solve across process row *krow* --
                            U(k,j) = L(k,k) \ A(k,j).  */
-                        /* double ttt2 = SuperLU_timer_(); */
                         double ttt2 = SuperLU_timer_();
 #ifdef _OPENMP
-#pragma omp parallel
+/* #pragma omp parallel */ /* Sherry -- parallel done inside pzgstrs2 */
 #endif
 			{
                             PZGSTRS2 (kk0, kk, Glu_persist, grid, Llu,
@@ -1236,7 +1354,7 @@ pzgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
                         /* stat->time2 += SuperLU_timer_()-tt1; */
 
                     } /* end if myrow == krow */
-                } /* end if flag0 ... */
+                } /* end if flag0 & flag1 ... */
             } /* end if factoredU[] ... */
         } /* end for kk0 ... */
 
@@ -1258,13 +1376,21 @@ pzgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
         if (mycol == kcol) {
             lk = LBj (k, grid); /* Local block number in L */
 
+#if ( PROFlevel>=1 )
+	    TIC(t1);
+#endif
             for (pj = 0; pj < Pc; ++pj) {
-                /* Wait for Isend to complete before using lsub/lusup buffer */
+                /* Wait for Isend to complete before using lsub/lusup buffer. */
                 if (ToSendR[lk][pj] != EMPTY) {
                     MPI_Wait (&send_req[pj], &status);
                     MPI_Wait (&send_req[pj + Pc], &status);
                 }
             }
+#if ( PROFlevel>=1 )
+	    TOC(t2, t1);
+	    stat->utime[COMM] += t2;
+	    stat->utime[COMM_RIGHT] += t2;
+#endif
             lsub = Lrowind_bc_ptr[lk];
             lusup = Lnzval_bc_ptr[lk];
         } else {
@@ -1275,8 +1401,8 @@ pzgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
                 /* ============================================= *
                  * Waiting for L(:,kk) for outer-product uptate  *
                  * if iam in U(kk,:), then the diagonal block    *
-		 * did not reach in time for panel factorization *
-		 * of U(k,:)           	                         *
+                 * did not reach in time for panel factorization *
+                 * of U(k,:).          	                         *
                  * ============================================= */
 #if ( PROFlevel>=1 )
                 TIC (t1);
@@ -1308,6 +1434,7 @@ pzgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
 #if ( PROFlevel>=1 )
                 TOC (t2, t1);
                 stat->utime[COMM] += t2;
+                stat->utime[COMM_RIGHT] += t2;
 #endif
 #if ( DEBUGlevel>=2 )
                 printf("[%d] Recv L(:,%4d): #lsub %4d, #lusup %4d from Pc %2d\n",
@@ -1325,7 +1452,7 @@ pzgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
 
             lsub = Lsub_buf_2[look_id];
             lusup = Lval_buf_2[look_id];
-        }                       /* if mycol = Pc(k) */
+        }  /* else if mycol = Pc(k) */
         /* stat->time1 += SuperLU_timer_()-tt1; */
 
         scp = &grid->cscp;      /* The scope of process column. */
@@ -1341,7 +1468,7 @@ pzgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
                    U(k,j) = L(k,k) \ A(k,j).  */
                  double ttt2 = SuperLU_timer_(); 
 #ifdef _OPENMP
-#pragma omp parallel
+/* #pragma omp parallel */ /* Sherry -- parallel done inside pzgstrs2 */
 #endif
                 {
                     PZGSTRS2 (k0, k, Glu_persist, grid, Llu, stat);
@@ -1360,7 +1487,7 @@ pzgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
 
                 if (ToSendD[lk] == YES) {
                     for (pi = 0; pi < Pr; ++pi) {
-                        if (pi != myrow) {
+                        if (pi != myrow) { /* Matching recv was pre-posted before */
 #if ( PROFlevel>=1 )
                             TIC (t1);
 #endif
@@ -1373,6 +1500,7 @@ pzgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
 #if ( PROFlevel>=1 )
                             TOC (t2, t1);
                             stat->utime[COMM] += t2;
+                            stat->utime[COMM_DOWN] += t2;
                             msg_cnt += 2;
                             msg_vol += msgcnt[2] * iword + msgcnt[3] * dword;
 #endif
@@ -1383,20 +1511,28 @@ pzgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
                     } /* for pi ... */
                 } /* if ToSendD ... */
 
-            } else { /* Panel U(k,:) already factorized */
+            } else { /* Panel U(k,:) already factorized from previous look-ahead */
 
                /* ================================================ *
-                 * Wait for downward sending of U(k,:) to complete *
-		 * for outer-product update                        *
-                 * =============================================== */
+                * Wait for downward sending of U(k,:) to complete  *
+		* for outer-product update.                        *
+                * ================================================ */
 
                 if (ToSendD[lk] == YES) {
+#if ( PROFlevel>=1 )
+		    TIC (t1);
+#endif
                     for (pi = 0; pi < Pr; ++pi) {
                         if (pi != myrow) {
                             MPI_Wait (&send_reqs_u[look_id][pi], &status);
                             MPI_Wait (&send_reqs_u[look_id][pi + Pr], &status);
                         }
                     }
+#if ( PROFlevel>=1 )
+		    TOC (t2, t1);
+		    stat->utime[COMM] += t2;
+		    stat->utime[COMM_DOWN] += t2;
+#endif
                 }
                 msgcnt[2] = msgcntsU[look_id][2];
                 msgcnt[3] = msgcntsU[look_id][3];
@@ -1405,9 +1541,9 @@ pzgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
 
         } else {    /* myrow != krow */
 
-            /* ========================================= *
-             * wait for U(k,:) for outer-product updates *
-             * ========================================= */
+            /* ========================================== *
+             * Wait for U(k,:) for outer-product updates. *
+             * ========================================== */
 
             if (ToRecv[k] == 2) { /* Recv block row U(k,:). */
 #if ( PROFlevel>=1 )
@@ -1421,6 +1557,7 @@ pzgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
 #if ( PROFlevel>=1 )
                 TOC (t2, t1);
                 stat->utime[COMM] += t2;
+                stat->utime[COMM_DOWN] += t2;
 #endif
                 usub = Usub_buf;
                 uval = Uval_buf;
@@ -1494,8 +1631,12 @@ pzgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
             j = jj0 = 0;
 
 /************************************************************************/
+#if 0
+	for (jj = 0; jj < nub; ++jj) assert(perm_u[jj] == jj); /* Sherry */
+#endif
             double ttx =SuperLU_timer_();
 
+//#include "zlook_ahead_update_v4.c"
 #include "zlook_ahead_update.c"
 
             lookaheadupdatetimer += SuperLU_timer_() - ttx;
@@ -1522,6 +1663,9 @@ pzgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
 
                         look_id = kk0 % (1 + num_look_aheads);
                         recv_req = recv_reqs[look_id];
+#if ( PROFlevel>=1 )
+			TIC (t1);
+#endif
                         MPI_Irecv (Lsub_buf_2[look_id], Llu->bufmax[0],
                                    mpi_int_t, kcol, SLU_MPI_TAG (0, kk0), /* (4*kk0)%tag_ub */
                                    scp->comm, &recv_req[0]);
@@ -1529,6 +1673,11 @@ pzgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
                                    SuperLU_MPI_DOUBLE_COMPLEX, kcol,
                                    SLU_MPI_TAG (1, kk0), /* (4*kk0+1)%tag_ub */
                                    scp->comm, &recv_req[1]);
+#if ( PROFlevel>=1 )
+			TOC (t2, t1);
+			stat->utime[COMM] += t2;
+			stat->utime[COMM_RIGHT] += t2;
+#endif
                     }
                 } else {
                     lk = LBj (kk, grid);    /* Local block number. */
@@ -1561,15 +1710,24 @@ pzgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
                         scp = &grid->rscp;  /* The scope of process row. */
                         for (pj = 0; pj < Pc; ++pj) {
                             if (ToSendR[lk][pj] != EMPTY) {
+#if ( PROFlevel>=1 )
+			       TIC (t1);
+#endif
                                 MPI_Isend (lsub1, msgcnt[0], mpi_int_t, pj,
                                            SLU_MPI_TAG (0, kk0), /* (4*kk0)%tag_ub */
                                            scp->comm, &send_req[pj]);
                                 MPI_Isend (lusup1, msgcnt[1], SuperLU_MPI_DOUBLE_COMPLEX, pj,
                                            SLU_MPI_TAG (1, kk0), /* (4*kk0+1)%tag_ub */
                                            scp->comm, &send_req[pj + Pc]);
+#if ( PROFlevel>=1 )
+				TOC (t2, t1);
+				stat->utime[COMM] += t2;
+				stat->utime[COMM_RIGHT] += t2;
+				++prof_sendR[lk];
+#endif
                             }
-                        }
-                    }           /* for pj ... */
+                        } /* end for pj ... */
+                    } /* if    factored[kk] ... */
                 }
             }
         }
@@ -1585,6 +1743,8 @@ pzgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
 #else 
 
 /*#include "SchCompUdt--Phi-2Ddynamic-alt.c"*/
+//#include "zSchCompUdt-2Ddynamic_v6.c"
+
 #include "zSchCompUdt-2Ddynamic.c"
 
 #endif 
@@ -1594,7 +1754,7 @@ pzgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
         
         NetSchurUpTimer += SuperLU_timer_() - tsch;
 
-    }  /* for k0 = 0, ... */
+    }  /* MAIN LOOP for k0 = 0, ... */
 
     /* ##################################################################
        ** END MAIN LOOP: for k0 = ...
@@ -1602,12 +1762,20 @@ pzgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
     
     pxgstrfTimer = SuperLU_timer_() - pxgstrfTimer;
 
-    /* updating total flops */
 #if ( PRNTlevel>=1 )
+    /* Print detailed statistics */
+    /* Updating total flops */
+    double allflops;
+    MPI_Reduce(&RemainGEMM_flops, &allflops, 1, MPI_DOUBLE, MPI_SUM,
+	       0, grid->comm);
     if ( iam==0 ) {
 	printf("\nInitialization time\t%8.2lf seconds\n"
 	       "\t Serial: compute static schedule, allocate storage\n", InitTimer);
-        printf("\n---- Time breakdown in factorization ----\n");
+        printf("\n==== Time breakdown in factorization (rank 0) ====\n");
+	printf("Panel factorization \t %8.2lf seconds\n",
+	       pdgstrf2_timer + pdgstrs2_timer);
+	printf(".. L-panel pxgstrf2 \t %8.2lf seconds\n", pdgstrf2_timer);
+	printf(".. U-panel pxgstrs2 \t %8.2lf seconds\n", pdgstrs2_timer);
 	printf("Time in Look-ahead update \t %8.2lf seconds\n", lookaheadupdatetimer);
         printf("Time in Schur update \t\t %8.2lf seconds\n", NetSchurUpTimer);
         printf(".. Time to Gather L buffer\t %8.2lf  (Separate L panel by Lookahead/Remain)\n", GatherLTimer);
@@ -1616,21 +1784,20 @@ pzgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
         printf(".. Time in GEMM %8.2lf \n",
 	       LookAheadGEMMTimer + RemainGEMMTimer);
         printf("\t* Look-ahead\t %8.2lf \n", LookAheadGEMMTimer);
-        printf("\t* Remain\t %8.2lf \n", RemainGEMMTimer);
-
+        printf("\t* Remain\t %8.2lf\tFlops %8.2le\tGflops %8.2lf\n", 
+	       RemainGEMMTimer, allflops, allflops/RemainGEMMTimer*1e-9);
         printf(".. Time to Scatter %8.2lf \n", 
 	       LookAheadScatterTimer + RemainScatterTimer);
         printf("\t* Look-ahead\t %8.2lf \n", LookAheadScatterTimer);
         printf("\t* Remain\t %8.2lf \n", RemainScatterTimer);
 
-        printf("Total Time in Factorization            \t: %8.2lf seconds, \n", pxgstrfTimer);
-        printf("Total time in Schur update with offload\t  %8.2lf seconds,\n",CPUOffloadTimer );
+        printf("Total factorization time            \t: %8.2lf seconds, \n", pxgstrfTimer);
         printf("--------\n");
 	printf("GEMM maximum block: %d-%d-%d\n", gemm_max_m, gemm_max_k, gemm_max_n);
     }
 #endif
     
-#if ( DEBUGlevel>=2 )
+#if ( DEBUGlevel>=3 )
     for (i = 0; i < Pr * Pc; ++i) {
         if (iam == i) {
             zPrintLblocks(iam, nsupers, grid, Glu_persist, Llu);
@@ -1641,8 +1808,6 @@ pzgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
         MPI_Barrier (grid->comm);
     }
 #endif
-
-    // printf("Debug : MPI buffers 1\n");
 
     /********************************************************
      * Free memory                                          *
@@ -1702,8 +1867,6 @@ pzgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
     SUPERLU_FREE (recv_reqs);
     SUPERLU_FREE (send_reqs);
 
-    // printf("Debug : MPI buffers 3\n");
-
 #ifdef GPU_ACC
     checkCuda (cudaFreeHost (bigV));
     checkCuda (cudaFreeHost (bigU));
@@ -1714,15 +1877,19 @@ pzgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
     SUPERLU_FREE( streams );
     SUPERLU_FREE( stream_end_col );
 #else
+  #ifdef __INTEL_COMPILER
+    _mm_free (bigU);
+    _mm_free (bigV);
+  #else
     SUPERLU_FREE (bigV);
     SUPERLU_FREE (bigU);
+  #endif
+    /* Decrement freed memory from memory stat. */
+    log_memory(-(bigv_size + bigu_size) * dword, stat);
 #endif
 
-    log_memory(-(bigv_size + bigu_size) * dword, stat);
-    // printf("Debug : MPI buffers 5\n");
-
     SUPERLU_FREE (Llu->ujrow);
-    SUPERLU_FREE (tempv2d);
+    // SUPERLU_FREE (tempv2d);/* Sherry */
     SUPERLU_FREE (indirect);
     SUPERLU_FREE (indirect2); /* Sherry added */
     SUPERLU_FREE (iuip);
@@ -1772,8 +1939,6 @@ pzgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
     if ( iinfo == n + 1 ) *info = 0;
     else *info = iinfo;
 
-    // printf("test out\n");
-
 #if ( PROFlevel>=1 )
     TOC (t2, t1);
     stat->utime[COMM] += t2;
@@ -1788,13 +1953,29 @@ pzgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
                     1, MPI_FLOAT, MPI_SUM, 0, grid->comm);
         MPI_Reduce (&msg_vol, &msg_vol_max,
                     1, MPI_FLOAT, MPI_MAX, 0, grid->comm);
-        if (!iam) {
+        if ( iam==0 ) {
             printf ("\tPZGSTRF comm stat:"
                     "\tAvg\tMax\t\tAvg\tMax\n"
                     "\t\t\tCount:\t%.0f\t%.0f\tVol(MB)\t%.2f\t%.2f\n",
                     msg_cnt_sum / Pr / Pc, msg_cnt_max,
                     msg_vol_sum / Pr / Pc * 1e-6, msg_vol_max * 1e-6);
+	    printf("\t\tcomm time on task 0: %8.2lf\n"
+		   "\t\t\tcomm down DIAG block %8.2lf\n"
+		   "\t\t\tcomm right L panel %8.2lf\n"
+		   "\t\t\tcomm down U panel %8.2lf\n",
+		   stat->utime[COMM], stat->utime[COMM_DIAG],
+		   stat->utime[COMM_RIGHT], stat->utime[COMM_DOWN]);
+	    //#include <float.h>
+	    //int Digs = DECIMAL_DIG;
+	    printf("gemm_count %d\n", gemm_count);
+	    for (i = 0; i < gemm_count; ++i)
+		fprintf(fgemm, "%8d%8d%8d\t %20.16e\t%8d\n", gemm_stats[i].m, gemm_stats[i].n,
+			gemm_stats[i].k, gemm_stats[i].microseconds, prof_sendR[i]);
+	    
+	    fclose(fgemm);
         }
+	SUPERLU_FREE(gemm_stats);
+	SUPERLU_FREE(prof_sendR);
     }
 #endif
 
@@ -1807,7 +1988,7 @@ pzgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
         printf (".. # total msg\t%d\n", iinfo);
 #endif
 
-#if ( DEBUGlevel>=2 )
+#if ( DEBUGlevel>=3 )
     for (i = 0; i < Pr * Pc; ++i) {
         if (iam == i) {
             zPrintLblocks (iam, nsupers, grid, Glu_persist, Llu);

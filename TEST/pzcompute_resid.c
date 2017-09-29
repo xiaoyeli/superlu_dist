@@ -9,7 +9,6 @@ The source code is distributed under BSD license, see the file License.txt
 at the top-level directory.
 */
 
-
 /*! @file
  * \brief Test for small residual.
  *
@@ -18,17 +17,17 @@ at the top-level directory.
  * September 30, 2017
  *
  */
-#include "superlu_ddefs.h"
+#include "superlu_zdefs.h"
 
-int pdcompute_resid(int m, int n, int nrhs, SuperMatrix *A,
-		    double *x, int ldx, double *b, int ldb,
+int pzcompute_resid(int m, int n, int nrhs, SuperMatrix *A,
+		    doublecomplex *x, int ldx, doublecomplex *b, int ldb,
 		    gridinfo_t *grid, SOLVEstruct_t *SOLVEstruct, double *resid)
 {
 /*  
     Purpose   
     =======   
 
-    PDCOMPUTE_RESID computes the residual for a solution of a system of linear   
+    PZCOMPUTE_RESID computes the residual for a solution of a system of linear   
     equations  A*x = b  or  A'*x = b:   
        RESID = norm(B - A*X) / ( norm(A) * norm(X) * EPS ),   
     where EPS is the machine epsilon.   
@@ -50,7 +49,7 @@ int pdcompute_resid(int m, int n, int nrhs, SuperMatrix *A,
             The original M x N sparse matrix A.   
 	    On exit, the column indices are modified due to SPMV setup.
 
-    X       (input) DOUBLE PRECISION array, dimension (LDX,NRHS)   
+    X       (input) DOUBLE COMPLEX PRECISION array, dimension (LDX,NRHS)   
             The computed solution vectors for the system of linear   
             equations.   
 
@@ -58,7 +57,7 @@ int pdcompute_resid(int m, int n, int nrhs, SuperMatrix *A,
             The leading dimension of the array X.  If TRANS = NOTRANS,   
             LDX >= max(1,N); if TRANS = TRANS or CONJ, LDX >= max(1,M).   
 
-    B       (input/output) DOUBLE PRECISION array, dimension (LDB,NRHS)   
+    B       (input/output) DOUBLE COMPLEX PRECISION array, dimension (LDB,NRHS)   
             On entry, the right hand side vectors for the system of   
             linear equations.   
             On exit, B is overwritten with the difference B - A*X.   
@@ -87,12 +86,12 @@ int pdcompute_resid(int m, int n, int nrhs, SuperMatrix *A,
     double xnorm, xnorm_g;
     double eps;
     char transc[1];
-    double *ax, *R;
-    pdgsmv_comm_t gsmv_comm; 
+    doublecomplex *ax, *R;
+    pzgsmv_comm_t gsmv_comm; 
     int_t m_loc = ((NRformat_loc*) A->Store)->m_loc;
 
     /* Function prototypes */
-    extern double dasum_(int *, double *, int *);
+    extern double dzasum_(int *, doublecomplex *, int *);
     
     /* Function Body */
     if ( m <= 0 || n <= 0 || nrhs == 0) {
@@ -102,35 +101,35 @@ int pdcompute_resid(int m, int n, int nrhs, SuperMatrix *A,
 
     /* Exit with RESID = 1/EPS if ANORM = 0. */
     eps = dmach_dist("Epsilon");
-    anorm = pdlangs("1", A, grid);
+    anorm = pzlangs("1", A, grid);
     if (anorm <= 0.) {
 	*resid = 1. / eps;
 	return 0;
     }
 
-    if ( !(ax = doubleMalloc_dist(m_loc)) ) ABORT("Malloc fails for work[]");
+    if ( !(ax = doublecomplexMalloc_dist(m_loc)) ) ABORT("Malloc fails for work[]");
     R = ax;
 
     /* A is modified with colind[] permuted to [internal, external]. */
-    pdgsmv_init(A, SOLVEstruct->row_to_proc, grid, &gsmv_comm);
+    pzgsmv_init(A, SOLVEstruct->row_to_proc, grid, &gsmv_comm);
 
     /* Compute the maximum over the number of right-hand sides of   
        norm(B - A*X) / ( norm(A) * norm(X) * EPS ) . */
     *resid = 0.;
     for (j = 0; j < nrhs; ++j) {
-	double *B_col = &b[j*ldb];
-	double *X_col = &x[j*ldx];
+	doublecomplex *B_col = &b[j*ldb];
+	doublecomplex *X_col = &x[j*ldx];
 
 	/* Compute residual R = B - op(A) * X,   
 	   where op(A) = A, A**T, or A**H, depending on TRANS. */
 	/* Matrix-vector multiply. */
-	pdgsmv(0, A, grid, &gsmv_comm, X_col, ax);
+	pzgsmv(0, A, grid, &gsmv_comm, X_col, ax);
 	    
 	/* Compute residual, stored in R[]. */
-	for (i = 0; i < m_loc; ++i) R[i] = B_col[i] - ax[i];
+	for (i = 0; i < m_loc; ++i) z_sub(&R[i], &B_col[i], &ax[i]);
 
-	rnorm = dasum_(&m_loc, R, &inc);
-	xnorm = dasum_(&m_loc, X_col, &inc);
+	rnorm = dzasum_(&m_loc, R, &inc);
+	xnorm = dzasum_(&m_loc, X_col, &inc);
 
 	/* */
 	MPI_Allreduce( &rnorm, &rnorm_g, 1, MPI_DOUBLE, MPI_SUM, grid->comm );
@@ -147,9 +146,9 @@ int pdcompute_resid(int m, int n, int nrhs, SuperMatrix *A,
 	}
     } /* end for j ... */
 
-    pdgsmv_finalize(&gsmv_comm);
+    pzgsmv_finalize(&gsmv_comm);
     SUPERLU_FREE(ax);
 
     return 0;
 
-} /* pdcompute_redid */
+} /* pzcompute_redid */

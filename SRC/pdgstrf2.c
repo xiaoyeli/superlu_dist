@@ -14,9 +14,12 @@ at the top-level directory.
  * \brief Performs panel LU factorization.
  *
  * <pre>
- * -- Distributed SuperLU routine (version 4.0) --
+ * -- Distributed SuperLU routine (version 5.2) --
  * Lawrence Berkeley National Lab, Univ. of California Berkeley.
  * August 15, 2014
+ *
+ * Modified:
+ *   September 30, 2017
  *
  * <pre>
  * Purpose
@@ -97,6 +100,7 @@ pdgstrf2_trsm
     int_t Pr;
     MPI_Status status;
     MPI_Comm comm = (grid->cscp).comm;
+    double t1, t2;
 
     /* Initialization. */
     iam = grid->iam;
@@ -128,16 +132,25 @@ pdgstrf2_trsm
     if ( U_diag_blk_send_req && 
 	 U_diag_blk_send_req[myrow] != MPI_REQUEST_NULL ) {
         /* There are pending sends - wait for all Isend to complete */
-        for (pr = 0; pr < Pr; ++pr)
+#if ( PROFlevel>=1 )
+	TIC (t1);
+#endif
+        for (pr = 0; pr < Pr; ++pr) {
             if (pr != myrow) {
                 MPI_Wait (U_diag_blk_send_req + pr, &status);
             }
-
+	}
+#if ( PROFlevel>=1 )
+	TOC (t2, t1);
+	stat->utime[COMM] += t2;
+	stat->utime[COMM_DIAG] += t2;
+#endif
 	/* flag no more outstanding send request. */
 	U_diag_blk_send_req[myrow] = MPI_REQUEST_NULL;
     }
 
     if (iam == pkk) {            /* diagonal process */
+	/* ++++ First step compute diagonal block ++++++++++ */
         for (j = 0; j < jlst - jfst; ++j) {  /* for each column in panel */
             /* Diagonal pivot */
             i = luptr;
@@ -196,13 +209,16 @@ pdgstrf2_trsm
 
         }                       /* for column j ...  first loop */
 
-	/* ++++++++++second step ====== */
+	/* ++++ Second step compute off-diagonal block with communication  ++*/
 
         ublk_ptr = ujrow = Llu->ujrow;
 
-        if (U_diag_blk_send_req && iam == pkk)  { /* Send the U block */
+        if (U_diag_blk_send_req && iam == pkk)  { /* Send the U block downward */
             /** ALWAYS SEND TO ALL OTHERS - TO FIX **/
-            for (pr = 0; pr < Pr; ++pr)
+#if ( PROFlevel>=1 )
+	    TIC (t1);
+#endif
+            for (pr = 0; pr < Pr; ++pr) {
                 if (pr != krow) {
                     /* tag = ((k0<<2)+2) % tag_ub;        */
                     /* tag = (4*(nsupers+k0)+2) % tag_ub; */
@@ -211,14 +227,18 @@ pdgstrf2_trsm
                                comm, U_diag_blk_send_req + pr);
 
                 }
+            }
+#if ( PROFlevel>=1 )
+	    TOC (t2, t1);
+	    stat->utime[COMM] += t2;
+	    stat->utime[COMM_DIAG] += t2;
+#endif
 
 	    /* flag outstanding Isend */
             U_diag_blk_send_req[krow] = (MPI_Request) TRUE; /* Sherry */
         }
 
         /* pragma below would be changed by an MKL call */
-
-        char uplo = 'u', side = 'r', transa = 'n', diag = 'n';
 
         l = nsupr - nsupc;
         // n = nsupc;
@@ -238,21 +258,27 @@ pdgstrf2_trsm
 #endif
 	stat->ops[FACT] += (flops_t) nsupc * (nsupc+1) * l;
     } else {  /* non-diagonal process */
-        /* ================================================ *
-         * Receive the diagonal block of U                  *
-         * for panel factorization of L(:,k)                *
-         * note: we block for panel factorization of L(:,k) *
-         * but panel factorization of U(:,k) don't          *
-         * ================================================ */
+        /* ================================================================== *
+         * Receive the diagonal block of U for panel factorization of L(:,k). * 
+         * Note: we block for panel factorization of L(:,k), but panel        *
+	 * factorization of U(:,k) do not block                               *
+         * ================================================================== */
 
         /* tag = ((k0<<2)+2) % tag_ub;        */
         /* tag = (4*(nsupers+k0)+2) % tag_ub; */
         // printf("hello message receiving%d %d\n",(nsupc*(nsupc+1))>>1,SLU_MPI_TAG(4,k0));
+#if ( PROFlevel>=1 )
+	TIC (t1);
+#endif
         MPI_Recv (ublk_ptr, (nsupc * nsupc), MPI_DOUBLE, krow,
                   SLU_MPI_TAG (4, k0) /* tag */ ,
                   comm, &status);
+#if ( PROFlevel>=1 )
+	TOC (t2, t1);
+	stat->utime[COMM] += t2;
+	stat->utime[COMM_DIAG] += t2;
+#endif
         if (nsupr > 0) {
-            char uplo = 'u', side = 'r', transa = 'n', diag = 'n';
             double alpha = 1.0;
 
 #ifdef PI_DEBUG
@@ -297,12 +323,10 @@ void pdgstrs2_omp
     int_t *usub;
     double *lusup, *uval;
 
-#ifdef _OPENMP
-    int thread_id = omp_get_thread_num ();
-    int num_thread = omp_get_num_threads ();
-#else
-    int thread_id = 0;
-    int num_thread = 1;
+#if 0
+    //#ifdef USE_VTUNE
+    __SSC_MARK(0x111);// start SDE tracing, note uses 2 underscores
+    __itt_resume(); // start VTune, again use 2 underscores
 #endif
 
     /* Quick return. */
@@ -312,15 +336,12 @@ void pdgstrs2_omp
     /* Initialization. */
     iam = grid->iam;
     pkk = PNUM (PROW (k, grid), PCOL (k, grid), grid);
-    int k_row_cycle = k / grid->nprow;  /* for which cycle k exist (to assign rowwise thread blocking) */
-    int gb_col_cycle;  /* cycle through block columns  */
+    //int k_row_cycle = k / grid->nprow;  /* for which cycle k exist (to assign rowwise thread blocking) */
+    //int gb_col_cycle;  /* cycle through block columns  */
     klst = FstBlockC (k + 1);
     knsupc = SuperSize (k);
     usub = Llu->Ufstnz_br_ptr[lk];  /* index[] of block row U(k,:) */
     uval = Llu->Unzval_br_ptr[lk];
-    nb = usub[0];
-    iukp = BR_HEADER;
-    rukp = 0;
     if (iam == pkk) {
         lk = LBj (k, grid);
         nsupr = Llu->Lrowind_bc_ptr[lk][1]; /* LDA of lusup[] */
@@ -330,28 +351,45 @@ void pdgstrs2_omp
         lusup = Llu->Lval_buf_2[k0 % (1 + stat->num_look_aheads)];
     }
 
-    /* Loop through all the row blocks. */
-    for (b = 0; b < nb; ++b)  {
-        /* assuming column cyclic distribution of data among threads */
-        gb = usub[iukp];
-        gb_col_cycle = gb / grid->npcol;
-        nsupc = SuperSize (gb);
-        iukp += UB_DESCRIPTOR;
+    /////////////////////new-test//////////////////////////
+    /* !! Taken from Carl/SuperLU_DIST_5.1.0/EXAMPLE/pdgstrf2_v3.c !! */
+
+    /* Master thread: set up pointers to each block in the row */
+    nb = usub[0];
+    iukp = BR_HEADER;
+    rukp = 0;
+    
+    int* blocks_index_pointers = SUPERLU_MALLOC (3 * nb * sizeof(int));
+    int* blocks_value_pointers = blocks_index_pointers + nb;
+    int* nsupc_temp = blocks_value_pointers + nb;
+    for (b = 0; b < nb; b++) { /* set up pointers to each block */
+	blocks_index_pointers[b] = iukp + UB_DESCRIPTOR;
+	blocks_value_pointers[b] = rukp;
+	gb = usub[iukp];
+	rukp += usub[iukp+1];
+	nsupc = SuperSize( gb );
+	nsupc_temp[b] = nsupc;
+	iukp += (UB_DESCRIPTOR + nsupc);  /* move to the next block */
+    }
+
+    // Sherry: this version is more NUMA friendly compared to pdgstrf2_v2.c
+    // https://stackoverflow.com/questions/13065943/task-based-programming-pragma-omp-task-versus-pragma-omp-parallel-for
+#pragma omp parallel for schedule(static) default(shared) \
+    private(b,j,iukp,rukp,segsize)
+    /* Loop through all the blocks in the row. */
+    for (b = 0; b < nb; ++b) {
+	iukp = blocks_index_pointers[b];
+	rukp = blocks_value_pointers[b];
 
         /* Loop through all the segments in the block. */
-        for (j = 0; j < nsupc; ++j) {
-#ifdef PI_DEBUG
-            printf("segsize %d klst %d usub[%d] : %d",segsize,klst ,iukp,usub[iukp]);
-#endif 
+        for (j = 0; j < nsupc_temp[b]; j++) {
             segsize = klst - usub[iukp++];
-            if (segsize) {    /* Nonzero segment. */
-                luptr = (knsupc - segsize) * (nsupr + 1);
+	    if (segsize) {
+#pragma omp task default(shared) firstprivate(segsize,rukp) if (segsize > 30)
+		{ /* Nonzero segment. */
+		    int_t luptr = (knsupc - segsize) * (nsupr + 1);
+		    //printf("[2] segsize %d, nsupr %d\n", segsize, nsupr);
 
-		/* if gb belongs to present thread then do the factorize */
-                if ((gb_col_cycle + k_row_cycle + 1) % num_thread == thread_id) {
-#ifdef PI_DEBUG
-                    printf ("dtrsv param 4 %d param 6 %d\n", segsize, nsupr);
-#endif
 #if defined (USE_VENDOR_BLAS)
                     dtrsv_ ("L", "N", "U", &segsize, &lusup[luptr], &nsupr,
                             &uval[rukp], &incx, 1, 1, 1);
@@ -359,12 +397,22 @@ void pdgstrs2_omp
                     dtrsv_ ("L", "N", "U", &segsize, &lusup[luptr], &nsupr,
                             &uval[rukp], &incx);
 #endif
-                }
-                rukp += segsize;
-		stat->ops[FACT] += (flops_t) segsize * (segsize + 1);
-            } /* end if segsize > 0 */
-        } /* end for j ... */
-    } /* end for b ... */
+		} /* end task */
+		rukp += segsize;
+		stat->ops[FACT] += segsize * (segsize + 1);
+	    } /* end if segsize > 0 */
+	} /* end for j in parallel ... */
+/* #pragma omp taskwait */
+    }  /* end for b ... */
+
+    /* Deallocate memory */
+    SUPERLU_FREE(blocks_index_pointers);
+
+#if 0
+    //#ifdef USE_VTUNE
+    __itt_pause(); // stop VTune
+    __SSC_MARK(0x222); // stop SDE tracing
+#endif
 
 } /* PDGSTRS2_omp */
 

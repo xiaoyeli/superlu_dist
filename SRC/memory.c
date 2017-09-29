@@ -12,9 +12,12 @@ at the top-level directory.
  * \brief Memory utilities
  *
  * <pre>
- * -- Distributed SuperLU routine (version 1.0) --
+ * -- Distributed SuperLU routine (version 5.2) --
  * Lawrence Berkeley National Lab, Univ. of California Berkeley.
  * September 1, 1999
+ * 
+ * Modified:
+ *   September 30, 2017, add aligned malloc for Intel
  * </pre>
  */
 
@@ -112,17 +115,31 @@ void superlu_free_dist(void *addr)
 
 #else  /* The production mode. */
 
-void *superlu_malloc_dist(size_t size)
-{
+#if defined (__INTEL_COMPILER)
+#include <immintrin.h>
+void * superlu_malloc_dist(size_t size) {
+    void* ptr;
+    int alignment = 1<<12; // align at 4K page
+    if (size > 1<<19 ) { alignment=1<<21; }
+    return (_mm_malloc(size, alignment));
+}
+void  superlu_free_dist(void * ptr)  { _mm_free(ptr); }
+
+// #elif (_POSIX_C_SOURCE>=200112L)
+//
+// void * MALLOC(size_t size) {void* ptr;int alignment=1<<12;if(size>1<<19){alignment=1<<21;}posix_memalign( (void**)&(ptr), alignment, size );return(ptr);}
+//void   FREE(void * ptr)    {free(ptr);}
+
+#else // normal malloc/free 
+
+void *superlu_malloc_dist(size_t size) {
     void *buf;
     buf = (void *) malloc(size);
     return (buf);
 }
+void superlu_free_dist(void *addr) { free (addr); }
 
-void superlu_free_dist(void *addr)
-{
-    free (addr);
-}
+#endif
 
 #endif  /* End debug malloc/free. */
 
