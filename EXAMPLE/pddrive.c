@@ -108,6 +108,9 @@ int main(int argc, char *argv[])
     iam = grid.iam;
     if ( iam >= nprow * npcol )	goto out;
     if ( !iam ) {
+#ifdef __INTEL_COMPILER
+	printf("__INTEL_COMPILER is defined\n");
+#endif
 	printf("Input matrix file: %s\n", *cpp);
         printf("\tProcess grid\t%d X %d\n", (int)grid.nprow, (int)grid.npcol);
 	fflush(stdout);

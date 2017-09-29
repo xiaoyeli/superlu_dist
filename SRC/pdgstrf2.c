@@ -19,7 +19,7 @@ at the top-level directory.
  * August 15, 2014
  *
  * Modified:
- *   September 19, 2017
+ *   September 30, 2017
  *
  * <pre>
  * Purpose
@@ -240,8 +240,6 @@ pdgstrf2_trsm
 
         /* pragma below would be changed by an MKL call */
 
-        char uplo = 'u', side = 'r', transa = 'n', diag = 'n';
-
         l = nsupr - nsupc;
         // n = nsupc;
         double alpha = 1.0;
@@ -281,7 +279,6 @@ pdgstrf2_trsm
 	stat->utime[COMM_DIAG] += t2;
 #endif
         if (nsupr > 0) {
-            char uplo = 'u', side = 'r', transa = 'n', diag = 'n';
             double alpha = 1.0;
 
 #ifdef PI_DEBUG
@@ -354,44 +351,68 @@ void pdgstrs2_omp
         lusup = Llu->Lval_buf_2[k0 % (1 + stat->num_look_aheads)];
     }
 
+    /////////////////////new-test//////////////////////////
+    /* !! Taken from Carl/SuperLU_DIST_5.1.0/EXAMPLE/pdgstrf2_v3.c !! */
+
+    /* Master thread: set up pointers to each block in the row */
     nb = usub[0];
     iukp = BR_HEADER;
     rukp = 0;
+    
+    int* blocks_index_pointers = SUPERLU_MALLOC (3 * nb * sizeof(int));
+    int* blocks_value_pointers = blocks_index_pointers + nb;
+    int* nsupc_temp = blocks_value_pointers + nb;
+    for (b = 0; b < nb; b++) { /* set up pointers to each block */
+	blocks_index_pointers[b] = iukp + UB_DESCRIPTOR;
+	blocks_value_pointers[b] = rukp;
+	gb = usub[iukp];
+	rukp += usub[iukp+1];
+	nsupc = SuperSize( gb );
+	nsupc_temp[b] = nsupc;
+	iukp += (UB_DESCRIPTOR + nsupc);  /* move to the next block */
+    }
 
-#pragma omp parallel default(shared) firstprivate(nb,iukp,rukp)
-{
-#pragma omp single
-//Sherry: no need? #pragma omp task default(shared) untied
-  {
-    /* Loop through all the row blocks. */
+    // Sherry: this version is more NUMA friendly compared to pdgstrf2_v2.c
+    // https://stackoverflow.com/questions/13065943/task-based-programming-pragma-omp-task-versus-pragma-omp-parallel-for
+#pragma omp parallel for schedule(static) default(shared) \
+    private(b,j,iukp,rukp,segsize)
+    /* Loop through all the blocks in the row. */
     for (b = 0; b < nb; ++b) {
-        gb = usub[iukp];
-        nsupc = SuperSize (gb);
-        iukp += UB_DESCRIPTOR;
+	iukp = blocks_index_pointers[b];
+	rukp = blocks_value_pointers[b];
 
         /* Loop through all the segments in the block. */
-        for (j = 0; j < nsupc; ++j) {
+        for (j = 0; j < nsupc_temp[b]; j++) {
             segsize = klst - usub[iukp++];
-            if (segsize)    /* Nonzero segment. */
-#pragma omp task default(shared) firstprivate(segsize,luptr,rukp) if (segsize > 40)
-            {
-                luptr = (knsupc - segsize) * (nsupr + 1);
+	    if (segsize) {
+#pragma omp task default(shared) firstprivate(segsize,rukp) if (segsize > 30)
+		{ /* Nonzero segment. */
+		    int_t luptr = (knsupc - segsize) * (nsupr + 1);
+		    //printf("[2] segsize %d, nsupr %d\n", segsize, nsupr);
 
 #if defined (USE_VENDOR_BLAS)
-                dtrsv_ ("L", "N", "U", &segsize, &lusup[luptr], &nsupr,
-                        &uval[rukp], &incx, 1, 1, 1);
+                    dtrsv_ ("L", "N", "U", &segsize, &lusup[luptr], &nsupr,
+                            &uval[rukp], &incx, 1, 1, 1);
 #else
-                dtrsv_ ("L", "N", "U", &segsize, &lusup[luptr], &nsupr,
-                        &uval[rukp], &incx);
+                    dtrsv_ ("L", "N", "U", &segsize, &lusup[luptr], &nsupr,
+                            &uval[rukp], &incx);
 #endif
-                rukp += segsize;
-		stat->ops[FACT] += (flops_t) segsize * (segsize + 1);
-            } /* end if segsize > 0 */
-        } /* end for j ... */
-    } /* end for b ... */
-  } /* end single */
-#pragma omp threadwait
-} /* end parallel region */
+		} /* end task */
+		rukp += segsize;
+		stat->ops[FACT] += segsize * (segsize + 1);
+	    } /* end if segsize > 0 */
+	} /* end for j in parallel ... */
+/* #pragma omp taskwait */
+    }  /* end for b ... */
+
+    /* Deallocate memory */
+    SUPERLU_FREE(blocks_index_pointers);
+
+#if 0
+    //#ifdef USE_VTUNE
+    __itt_pause(); // stop VTune
+    __SSC_MARK(0x222); // stop SDE tracing
+#endif
 
 } /* PDGSTRS2_omp */
 

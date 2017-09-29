@@ -9,4 +9,4 @@ provded in SuperLU_DIST.
   $ mpiexec -n <np> pztest -r <process row> -c <process columns> -f ../EXAMPLE/cg20.cua
 
 2. bash scripts to run tests:
-   - pdtest.sh/pztest.sh : invoke many runs varying several input parameters.
+   - pdtest.sh / pztest.sh : invoke many runs varying several input parameters.

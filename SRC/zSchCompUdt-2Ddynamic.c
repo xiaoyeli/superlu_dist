@@ -42,7 +42,6 @@ if ( msg0 && msg2 ) { /* L(:,k) and U(k,:) are not empty. */
     int temp_nbrow;   /* nonzero rows in current block L(i,k) */
     lptr  = lptr0;
     luptr = luptr0;
-
     int Lnbrow, Rnbrow; /* number of nonzero rows in look-ahead window,
 			   and remaining part.  */
 
@@ -94,7 +93,6 @@ if ( msg0 && msg2 ) { /* L(:,k) and U(k,:) are not empty. */
 		 Remain_info[RemainBlk].FullRow = 
 		     temp_nbrow + Remain_info[RemainBlk-1].FullRow;   
 	     }
-
              RemainStRow[RemainBlk] = cum_nrow;
              // Remain_lptr[RemainBlk] = lptr;
 	     Remain_info[RemainBlk].lptr = lptr;
@@ -120,11 +118,8 @@ if ( msg0 && msg2 ) { /* L(:,k) and U(k,:) are not empty. */
      //int LDRemain_LBuff = RemainBlk==0 ? 0 : Remain_info[RemainBlk-1].FullRow;
      Rnbrow = RemainBlk==0 ? 0 : Remain_info[RemainBlk-1].FullRow;
      /* assert( cum_nrow == (LDlookAhead_LBuff + LDRemain_LBuff) );*/
-#if 0
-     int LDlookAhead_LBuff = lookAheadFullRow[lookAheadBlk-1]; /* may go negative.*/
-#else /* Piyush fix */
-     int LDlookAhead_LBuff = lookAheadBlk==0? 0 : lookAheadFullRow[lookAheadBlk-1];
-#endif
+     /* Piyush fix */
+     //int LDlookAhead_LBuff = lookAheadBlk==0? 0 : lookAheadFullRow[lookAheadBlk-1];
 
      nbrow = Lnbrow + Rnbrow; /* total number of rows in L */
      LookAheadRowSepMOP += 2*knsupc*(nbrow);
@@ -273,14 +268,11 @@ if ( msg0 && msg2 ) { /* L(:,k) and U(k,:) are not empty. */
                     lead_zero = ldu - segsize;
                     for (i = 0; i < lead_zero; ++i) tempu[i] = zero;
 		    //tempu += lead_zero;
-#ifdef _OPENMP
+#if (_OPENMP>=201307)
 #pragma omp simd
-#if 0
-		    for (i = 0; i < segsize; ++i) tempu[i] = uval[rukp+i];
-#else
-		    for (i = 0; i < segsize; ++i) tempu[i+lead_zero] = uval[rukp+i];
 #endif
-#endif
+		    for (i=0; i<segsize; ++i) tempu[i+lead_zero] = uval[rukp+i];
+
                     rukp += segsize;
 #if 0
 		    tempu += segsize;
@@ -314,7 +306,7 @@ if ( msg0 && msg2 ) { /* L(:,k) and U(k,:) are not empty. */
 
      /* Loop through the look-ahead blocks to copy Lval into the buffer */
 #ifdef _OPENMP
-#pragma omp parallel for  // Sherry ? 
+#pragma omp parallel for private(j,jj,tempu,tempv) default (shared)
 #endif
      for (int i = 0; i < lookAheadBlk; ++i) {
 	 int StRowDest, temp_nbrow;
@@ -339,10 +331,10 @@ if ( msg0 && msg2 ) { /* L(:,k) and U(k,:) are not empty. */
 	     //tempu = &lookAhead_L_buff[StRowDest + j * Lnbrow];
 	     tempu = &lookAhead_L_buff[StRowDest + (j - (knsupc-ldu)) * Lnbrow];
 	     tempv = &lusup[luptr+j*nsupr + StRowSource];
-#ifdef _OPENMP
+#if (_OPENMP>=201307)
 #pragma omp simd
-	     for (jj = 0; jj < temp_nbrow; ++jj) tempu[jj] = tempv[jj];
 #endif
+	     for (jj = 0; jj < temp_nbrow; ++jj) tempu[jj] = tempv[jj];
 #else
 	     //memcpy(&lookAhead_L_buff[StRowDest + j*LDlookAhead_LBuff],
 	     memcpy(&lookAhead_L_buff[StRowDest + (j - (knsupc-ldu)) * Lnbrow],
@@ -354,7 +346,8 @@ if ( msg0 && msg2 ) { /* L(:,k) and U(k,:) are not empty. */
 
      /* Loop through the remaining blocks to copy Lval into the buffer */
 #ifdef _OPENMP
-#pragma omp parallel for
+#pragma omp parallel for private(i,j,jj,tempu,tempv) default (shared) \
+    schedule(SCHEDULE_STRATEGY)
 #endif
      for (int i = 0; i < RemainBlk; ++i) {
          int StRowDest, temp_nbrow;
@@ -379,10 +372,10 @@ if ( msg0 && msg2 ) { /* L(:,k) and U(k,:) are not empty. */
 	     //tempu = &Remain_L_buff[StRowDest + (j - (knsupc-ldu)) * Rnbrow];
 	     tempu = &Remain_L_buff[StRowDest + (j - (knsupc-ldu)) * gemm_m_pad];
 	     tempv = &lusup[luptr + j*nsupr + StRowSource];
-#ifdef _OPENMP
+#if (_OPENMP>=201307)
 #pragma omp simd
-	     for (jj = 0; jj < temp_nbrow; ++jj) tempu[jj] = tempv[jj];
 #endif
+	     for (jj = 0; jj < temp_nbrow; ++jj) tempu[jj] = tempv[jj];
 #else
 	     //memcpy(&Remain_L_buff[StRowDest + j*LDRemain_LBuff],
 	     memcpy(&Remain_L_buff[StRowDest + (j - (knsupc-ldu)) * gemm_m_pad],
@@ -415,7 +408,7 @@ if ( msg0 && msg2 ) { /* L(:,k) and U(k,:) are not empty. */
 	 LookAheadGEMMFlOp  += flps;
 
 #ifdef _OPENMP
-#pragma omp parallel default (shared) private(thread_id,tt_start,tt_end)
+#pragma omp parallel default (shared) private(thread_id)
 	 {
 	   thread_id = omp_get_thread_num();
  
@@ -579,7 +572,7 @@ if ( msg0 && msg2 ) { /* L(:,k) and U(k,:) are not empty. */
 	       &Remain_L_buff[0], &gemm_m_pad,
 	       &bigU[0], &gemm_k_pad, &beta, bigV, &gemm_m_pad, 1, 1);
 #else
-	//@9pre)gemm_("N", "N", &Rnbrow, &ncols, &ldu, &alpha,
+	//zgemm_("N", "N", &Rnbrow, &ncols, &ldu, &alpha,
 	zgemm_("N", "N", &gemm_m_pad, &gemm_n_pad, &gemm_k_pad, &alpha,
 	       //&Remain_L_buff[(knsupc-ldu)*Rnbrow], &Rnbrow,
 	       &Remain_L_buff[0], &gemm_m_pad,
