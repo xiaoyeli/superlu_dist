@@ -150,7 +150,7 @@ dscatter_l (
     lptrj += LB_DESCRIPTOR;
     dest_nbrow=index[lptrj - 1];
     
-#ifdef _OPENMP
+#if (_OPENMP>=201307)
 #pragma omp simd
 #endif
     for (i = 0; i < dest_nbrow; ++i) {
@@ -159,7 +159,7 @@ dscatter_l (
 
     }
 
-#ifdef _OPENMP
+#if (_OPENMP>=201307)
 #pragma omp simd
 #endif
     /* can be precalculated? */
@@ -175,7 +175,7 @@ dscatter_l (
     for (jj = 0; jj < nsupc; ++jj) {
         segsize = klst - usub[iukp + jj];
         if (segsize) {
-#ifdef _OPENMP
+#if (_OPENMP>=201307)
 #pragma omp simd
 #endif
             for (i = 0; i < temp_nbrow; ++i) {
@@ -244,7 +244,7 @@ dscatter_u (int ib,
             ucol = &Unzval_br_ptr[lib][ruip_lib];
 
             // printf("========Entering loop=========\n");
-#ifdef _OPENMP
+#if (_OPENMP>=201307)
 #pragma omp simd
 #endif
             for (i = 0; i < temp_nbrow; ++i) {
