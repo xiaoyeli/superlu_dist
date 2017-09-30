@@ -1,4 +1,4 @@
-		SuperLU_DIST (version 5.1)
+		SuperLU_DIST (version 5.2)
 		============================
 
 SuperLU_DIST contains a set of subroutines to solve a sparse linear system 
@@ -21,6 +21,7 @@ The distribution contains the following directory structure:
 
   SuperLU_DIST/README    instructions on installation
   SuperLU_DIST/CBLAS/    needed BLAS routines in C, not necessarily fast
+                         (NOTE: this release performs better with threaded GEMM)
   SuperLU_DIST/DOC/  	 the Users' Guide
   SuperLU_DIST/EXAMPLE/  example programs
   SuperLU_DIST/INSTALL/  test machine dependent parameters

@@ -328,7 +328,7 @@ pdgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
        each is a multiple of vector length (8 doubles for KNL)  */
     int gemm_m_pad = GEMM_PADLEN, gemm_k_pad = GEMM_PADLEN,
         gemm_n_pad = GEMM_PADLEN;
-    int gemm_padding = 0;
+    int gemm_padding = 1;
 
     int iword = sizeof (int_t);
     int dword = sizeof (double);
