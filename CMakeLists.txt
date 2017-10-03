@@ -94,7 +94,6 @@ option(TPL_PARMETIS_INCLUDE_DIRS "List of absolute paths to ParMETIS include dir
 # set(CMAKE_C_FLAGS "-DDEBUGlevel=0 -DPRNTlevel=0 ${CMAKE_C_FLAGS}")
 if(XSDK_INDEX_SIZE EQUAL 64)
     message("-- Using 64 bit integer for index size")
-    set(CMAKE_C_FLAGS "-D_LONGINT ${CMAKE_C_FLAGS}")
 endif()	
 set(CMAKE_C_FLAGS_RELEASE "-O3" CACHE STRING "")
 
@@ -223,6 +222,7 @@ endif()
 # file(WRITE "make.defs" "# can be exposed to users" ${CMAKE_C_COMPILER})
 # configure_file(${CMAKE_SOURCE_DIR}/make.inc.in ${CMAKE_BINARY_DIR}/make.inc)
 configure_file(${SuperLU_DIST_SOURCE_DIR}/make.inc.in ${SuperLU_DIST_SOURCE_DIR}/make.inc)
+configure_file(${SuperLU_DIST_SOURCE_DIR}/SRC/superlu_dist_config.h.in ${SuperLU_DIST_SOURCE_DIR}/SRC/superlu_dist_config.h)
 
 # Add pkg-config support
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/superlu_dist.pc.in ${CMAKE_CURRENT_BINARY_DIR}/superlu_dist.pc @ONLY)

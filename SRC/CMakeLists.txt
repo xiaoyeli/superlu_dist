@@ -9,6 +9,7 @@ set(headers
     supermatrix.h
     util_dist.h
     colamd.h
+    superlu_dist_config.h
 )
 
 # first: precision-independent files
