@@ -59,6 +59,7 @@ endif()
 
 enable_language (C)
 enable_language (CXX)
+set(CMAKE_CXX_STANDARD 11)
 if (XSDK_ENABLE_Fortran)
   enable_language (Fortran)
   set(NOFORTRAN FALSE)

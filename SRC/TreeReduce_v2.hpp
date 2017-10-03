@@ -49,7 +49,11 @@ namespace PEXSI{
         virtual T * GetLocalBuffer();
 
 
-
+		
+		virtual void forwardMessageSimple(T * locBuffer);
+		virtual void allocateRequest();	
+		virtual void waitSendRequest();
+	
         //async wait and forward
         virtual bool Progress();
         
@@ -155,5 +159,5 @@ public:
 
 }//namespace PEXSI
 
-// #include "pexsi/TreeReduce_v2_impl.hpp"
+#include "TreeReduce_v2_impl.hpp"
 #endif

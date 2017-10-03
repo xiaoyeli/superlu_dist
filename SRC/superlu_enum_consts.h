@@ -69,7 +69,10 @@ typedef enum {
     COMM,    /* communication for factorization */
     SOL_COMM,/* communication for solve */
     SOL_GEMM,/* gemm for solve */
-    SOL_TRSM,/* trsm for solve */	
+    SOL_TRSM,/* trsm for solve */
+    SOL_COMM_PROBE,/* communication for solve */
+    SOL_COMM_TESTSOME,/* communication for solve */	
+	SOL_L,	/* L-solve time*/
     RCOND,   /* estimate reciprocal condition number */
     SOLVE,   /* forward and back solves */
     REFINE,  /* perform iterative refinement */

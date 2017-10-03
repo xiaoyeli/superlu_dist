@@ -20,8 +20,8 @@ EXIT_PARAM=2
 # # ^^^ Get the input ile
 
 CUR_DIR=`pwd`
-FILE_DIR=~/Edison/my_research/SuperLU/github/superlu_dist/build/EXAMPLE
-INPUT_DIR=~/Edison/my_research/SuperLU/SuperLUDIST_Begin/build/EXAMPLE
+FILE_DIR=$CUR_DIR/EXAMPLE
+INPUT_DIR=~/Edison/my_research/SuperLU/SuperLUDIST_Begin/build_bac/EXAMPLE
 FILE_NAME=pddrive
 FILE=$FILE_DIR/$FILE_NAME
 
@@ -42,10 +42,29 @@ else
 fi
 
 
-for NROW in 36 144 576 2304
-do
+nprows=(6 12 24 48 1 1 1 1 36 144 576 2304)
+npcols=(6 12 24 48 36 144 576 2304 1 1 1 1)
 
-NCOL=1
+#nprows=(48  1  2304)
+#npcols=(48  2304 1)
+
+#nprows=(6 12 24 48 )
+#npcols=(6 12 24 48 )
+
+# nprows=(6 12 24 1 1 1  36 144 576 )
+# npcols=(6 12 24 36 144 576 1 1 1 )
+
+#nprows=(12 1 144)
+#npcols=(12 144 1)
+
+
+#nprows=(48)
+#npcols=(48)
+ 
+for ((i = 0; i < ${#npcols[@]}; i++)); do
+NROW=${nprows[i]}
+NCOL=${npcols[i]}
+
 # NROW=36
 CORE_VAL=`expr $NCOL \* $NROW`
 NODE_VAL=`expr $CORE_VAL / $CORES_PER_NODE`
@@ -54,8 +73,8 @@ if [[ $MOD_VAL -ne 0 ]]
 then
   NODE_VAL=`expr $NODE_VAL + 1`
 fi
-PARTITION=debug
-#PARTITION=regular
+#PARTITION=debug
+PARTITION=regular
 LICENSE=SCRATCH
 TIME=00:10:00
 
@@ -90,8 +109,8 @@ OMP_NUM_THREADS=1
     echo "#SBATCH -t $TIME" >> $TMP_BATCH_FILE
     echo "#SBATCH -L $LICENSE" >> $TMP_BATCH_FILE
     echo "#SBATCH -J SLU_$MAT" >> $TMP_BATCH_FILE
-    echo "#SBATCH -o ./$MAT/SLU.o_mpi_np${CORE_VAL}_metis_internalblas_asyncBcast_1Dimp" >> $TMP_BATCH_FILE
-    echo "#SBATCH -e ./$MAT/SLU.o_mpi_np${CORE_VAL}_metis_internalblas_asyncBcast_1Dimp" >> $TMP_BATCH_FILE
+    echo "#SBATCH -o ./$MAT/SLU.o_mpi_${NROW}x${NCOL}_async_simple_over_icollec" >> $TMP_BATCH_FILE
+    echo "#SBATCH -e ./$MAT/SLU.o_mpi_${NROW}x${NCOL}_async_simple_over_icollec" >> $TMP_BATCH_FILE
     # echo "#SBATCH --mail-type=BEGIN" >> $TMP_BATCH_FILE
     # echo "#SBATCH --mail-type=END" >> $TMP_BATCH_FILE
     echo "#SBATCH --mail-user=liuyangzhuan@lbl.gov" >> $TMP_BATCH_FILE
@@ -125,6 +144,7 @@ OMP_NUM_THREADS=1
 #one
 
 done
+
 
 exit $EXIT_SUCCESS
 

@@ -223,6 +223,20 @@ at the top-level directory.
 #endif
 
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+
+#ifndef max
+    #define cmax(a,b) ((a) > (b) ? (a) : (b))
+#endif
+
+#ifdef __cplusplus
+  }
+#endif
+
+
 /***********************************************************************
  * New data types
  ***********************************************************************/
@@ -775,17 +789,23 @@ typedef void* StdList;
 extern RdTree   RdTree_Create(MPI_Comm comm, int* ranks, int rank_cnt, int msgSize, double rseed);  
 extern void     RdTree_Testsome(StdList TreeIdx, RdTree* ArrTrees, int* Outcount, int* FinishedTrees);
 extern yes_no_t RdTree_Progress(RdTree Tree);
+extern void 	RdTree_PostRecv(RdTree Tree);
 extern void     RdTree_SetDataReady(RdTree Tree);
 extern void 	RdTree_SetLocalBuffer(RdTree Tree, void* localBuffer);
 extern void 	RdTree_CleanupBuffers(RdTree Tree);
 extern void 	RdTree_Reset(RdTree Tree);
 extern void 	RdTree_AllocRecvBuffers(RdTree Tree);
 extern void 	RdTree_SetTag(RdTree Tree, int tag);
+extern int  	RdTree_GetTag(RdTree Tree);
 extern yes_no_t RdTree_IsRoot(RdTree Tree);
+extern yes_no_t RdTree_IsReady(RdTree Tree);
 extern yes_no_t RdTree_StartForward(RdTree Tree);
+extern void 	RdTree_forwardMessageSimple(RdTree Tree, void* localBuffer);
+extern void 	RdTree_allocateRequest(RdTree Tree);
+extern int  	RdTree_GetDestCount(RdTree Tree);
+extern void 	RdTree_waitSendRequest(RdTree Tree);
 
-
-
+extern void 	BcTree_AllocateBuffer(BcTree Tree);	
 extern BcTree   BcTree_Create(MPI_Comm comm, int* ranks, int rank_cnt, int msgSize, double rseed);  
 extern void     BcTree_Testsome(StdList TreeIdx, BcTree* ArrTrees, int *Outcount, int* FinishedTrees);
 extern yes_no_t BcTree_Progress(BcTree Tree);
@@ -797,11 +817,16 @@ extern void 	BcTree_Reset(BcTree Tree);
 extern void 	BcTree_SetTag(BcTree Tree, int tag);
 extern yes_no_t BcTree_IsRoot(BcTree Tree);
 extern yes_no_t BcTree_StartForward(BcTree Tree);
+extern void 	BcTree_forwardMessageSimple(BcTree Tree, void* localBuffer);
+extern void 	BcTree_allocateRequest(BcTree Tree);
+extern void 	BcTree_waitSendRequest(BcTree Tree);
+
 extern void 	TreeTest(void* tree);
 
 extern StdList 	StdList_Init();
 extern void 	StdList_Pushback(StdList lst, int dat);
 extern yes_no_t StdList_Find(StdList lst, int dat);
+extern int 	   	StdList_Size(StdList lst);
 
 #ifdef __cplusplus
   }

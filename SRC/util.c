@@ -369,6 +369,7 @@ void print_sp_ienv_dist(superlu_dist_options_t *options)
     printf(".. blocking parameters from sp_ienv():\n");
     printf("**    relaxation                 : " IFMT "\n", sp_ienv_dist(2));
     printf("**    max supernode              : " IFMT "\n", sp_ienv_dist(3));
+    printf("**    number of probes           : " IFMT "\n", sp_ienv_dist(4));
     printf("**    estimated fill ratio       : " IFMT "\n", sp_ienv_dist(6));
     printf("**    min GEMM dimension for GPU : " IFMT "\n", sp_ienv_dist(7));
     printf("**************************************************\n");
@@ -630,6 +631,7 @@ PStatPrint(superlu_dist_options_t *options, SuperLUStat_t *stat, gridinfo_t *gri
     }
 
 #if ( PROFlevel>=1 )
+	
     fflush(stdout);
 	sleep(2.0); 
     MPI_Barrier( grid->comm );
@@ -637,6 +639,25 @@ PStatPrint(superlu_dist_options_t *options, SuperLUStat_t *stat, gridinfo_t *gri
     {
 	int_t i, P = grid->nprow*grid->npcol;
 	flops_t b, maxflop;
+
+	// fflush(stdout); 
+	// if ( !iam ) printf("\n.. Tree max sizes:\tbtree\trtree\n");
+	// fflush(stdout);
+	// sleep(2.0); 	
+	// MPI_Barrier( grid->comm );
+	// for (i = 0; i < P; ++i) {
+	    // if ( iam == i) {
+		// printf("\t\t%d %5d %5d\n", iam, stat->MaxActiveBTrees,stat->MaxActiveRTrees);
+		// fflush(stdout);
+	    // }
+	    // MPI_Barrier( grid->comm );
+	// }	
+	
+	// sleep(2.0); 	
+
+	
+	MPI_Barrier( grid->comm );	
+	
 	if ( !iam ) printf("\n.. FACT time breakdown:\tcomm\ttotal\n");
 	fflush(stdout);
 	for (i = 0; i < P; ++i) {
@@ -671,18 +692,21 @@ PStatPrint(superlu_dist_options_t *options, SuperLUStat_t *stat, gridinfo_t *gri
 	fflush(stdout);
 	sleep(2.0); 
 	MPI_Barrier( grid->comm );	
-	if ( !iam ) printf("\n.. SOLVE time breakdown:\tcomm\ttotal\n");
+	if ( !iam ) printf("\n.. SOLVE time breakdown:\tcommL \tgemmL\ttrsmL\ttotal\n");
 	fflush(stdout);
 	sleep(2.0); 
 	MPI_Barrier( grid->comm );	
 	for (i = 0; i < P; ++i) {
 	    if ( iam == i) {
-		printf("\t\t%d%10.5f%10.5f%10.5f%10.5f\n", iam, utime[SOL_COMM],utime[SOL_GEMM],utime[SOL_TRSM], utime[SOLVE]);
+		printf("\t\t\t%d%10.5f%10.5f%10.5f%10.5f\n", iam,utime[SOL_COMM],utime[SOL_GEMM],utime[SOL_TRSM], utime[SOL_L]);
 		fflush(stdout);
 	    }
 	    MPI_Barrier( grid->comm );
 	}
-	fflush(stdout);
+	fflush(stdout); 
+
+	
+	
 	sleep(2.0); 
 	MPI_Barrier( grid->comm );	
 	if ( !iam ) printf("\n.. SOLVE ops distribution:\n");
@@ -704,6 +728,7 @@ PStatPrint(superlu_dist_options_t *options, SuperLUStat_t *stat, gridinfo_t *gri
 	    printf("\tSOLVE load balance: %.2f\n", b);
 		fflush(stdout);
 	}
+	
     }
 #endif
 
@@ -1208,6 +1233,7 @@ int_t estimate_bigu_size(int_t nsupers,
     MPI_Allreduce(&ldu, &max_ldu, 1, mpi_int_t, MPI_MAX, grid->cscp.comm);
 
 #if ( PRNTlevel>=1 )
+	if(iam==0)
     printf("max_ncols %d, max_ldu %d, ldt %d, bigu_size=%d\n",
 	   max_ncols, max_ldu, ldt, max_ldu*max_ncols);
 #endif

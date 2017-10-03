@@ -443,6 +443,7 @@ pddistribute(fact_t fact, int_t n, SuperMatrix *A,
 	int_t *frecv;
 	double **Linv_bc_ptr;  /* size ceil(NSUPERS/Pc) */
 	double **Uinv_bc_ptr;  /* size ceil(NSUPERS/Pc) */
+	double *SeedSTD_BC,*SeedSTD_RD;				 
 	
 	
 #if ( PRNTlevel>=1 )
@@ -1062,8 +1063,16 @@ pddistribute(fact_t fact, int_t n, SuperMatrix *A,
 	    ABORT("Calloc fails for ActiveFlag[].");	
 	if ( !(ranks = intCalloc_dist(grid->nprow)) )
 	    ABORT("Calloc fails for ranks[].");	
+	if ( !(SeedSTD_BC = (double*)SUPERLU_MALLOC(k * sizeof(double))) )
+		ABORT("Malloc fails for SeedSTD_BC[].");	
 	
+	for (i=0;i<k;i++){
+		SeedSTD_BC[i]=rand();		
+	}
+
+	MPI_Allreduce(MPI_IN_PLACE,&SeedSTD_BC[0],k,MPI_DOUBLE,MPI_MAX,grid->cscp.comm);					  
 	
+
 	for (ljb = 0; ljb <k ; ++ljb) {
 		LBtree_ptr[ljb]=NULL;
 	}	
@@ -1103,16 +1112,23 @@ pddistribute(fact_t fact, int_t n, SuperMatrix *A,
 			ranks[rank_cnt]=j;
 			++rank_cnt;
 			}
-		}
+		}		
 		
 		if(rank_cnt>1){
+
+		for (ii=0;ii<rank_cnt;ii++)   // use global ranks rather than local ranks
+		ranks[ii] = PNUM( ranks[ii], pc, grid );
 		
 		// rseed=rand();
-		rseed=1.0;
+		// rseed=1.0;
 		msgsize = SuperSize( jb )*nrhs+XK_H;
-		LBtree_ptr[ljb] = BcTree_Create(grid->cscp.comm, ranks, rank_cnt, msgsize,rseed);  	
+		LBtree_ptr[ljb] = BcTree_Create(grid->comm, ranks, rank_cnt, msgsize,SeedSTD_BC[ljb]);  	
 		BcTree_SetTag(LBtree_ptr[ljb],jb);
-
+		
+		// if(iam==15 || iam==3){
+			// printf("iam %5d btree lk %5d tag %5d root %5d\n",iam, ljb,jb,BcTree_IsRoot(LBtree_ptr[ljb]));
+			// fflush(stdout);
+		// }
 		// TreeTest(LBtree_ptr[ljb]);
 
 // #if ( PRNTlevel>=1 )		
@@ -1180,6 +1196,17 @@ pddistribute(fact_t fact, int_t n, SuperMatrix *A,
 	if ( !(nzrows = (int_t**)SUPERLU_MALLOC(nsupers * sizeof(int_t*))) )
 		ABORT("Malloc fails for nzrows[].");
 
+	
+	if ( !(SeedSTD_RD = (double*)SUPERLU_MALLOC(k * sizeof(double))) )
+		ABORT("Malloc fails for SeedSTD_RD[].");	
+	
+	for (i=0;i<k;i++){
+		SeedSTD_RD[i]=rand();		
+	}
+
+	MPI_Allreduce(MPI_IN_PLACE,&SeedSTD_RD[0],k,MPI_DOUBLE,MPI_MAX,grid->rscp.comm);					  
+		
+	
 	for (jb = 0; jb < nsupers; ++jb) { /* for each block column ... */
 		fsupc = FstBlockC( jb );
 		len=xlsub[fsupc+1]-xlsub[fsupc];
@@ -1248,12 +1275,23 @@ pddistribute(fact_t fact, int_t n, SuperMatrix *A,
 			}
 		}
 		if(rank_cnt>1){
+			
+		for (ii=0;ii<rank_cnt;ii++)   // use global ranks rather than local ranks
+			ranks[ii] = PNUM( pr, ranks[ii], grid );		
+			
 		// rseed=rand();
-		rseed=1.0;
+		// rseed=1.0;
 		msgsize = SuperSize( ib )*nrhs+LSUM_H;
-		LRtree_ptr[lib] = RdTree_Create(grid->rscp.comm, ranks, rank_cnt, msgsize,rseed);  	
+		LRtree_ptr[lib] = RdTree_Create(grid->comm, ranks, rank_cnt, msgsize,SeedSTD_RD[lib]);  	
 		RdTree_SetTag(LRtree_ptr[lib], ib+nsupers);
 		
+		
+		// if(ib==15  || ib ==16){
+		
+		// if(iam==15 || iam==3){
+			// printf("iam %5d rtree lk %5d tag %5d root %5d\n",iam,lib,ib,RdTree_IsRoot(LRtree_ptr[lib]));
+			// fflush(stdout);
+		// }		
 		
 		
 // #if ( PRNTlevel>=1 )

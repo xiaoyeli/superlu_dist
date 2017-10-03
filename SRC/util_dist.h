@@ -90,6 +90,8 @@ typedef struct {
     float   current_buffer; /* bytes allocated for buffer in numerical factorization */
     float   peak_buffer;    /* monitor the peak buffer size (bytes) */
     float   gpu_buffer;     /* monitor the buffer allocated on GPU (bytes) */
+	int_t MaxActiveBTrees;
+	int_t MaxActiveRTrees;	
 } SuperLUStat_t;
 
 /* Headers for 2 types of dynamatically managed memory */

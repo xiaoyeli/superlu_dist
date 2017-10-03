@@ -15,15 +15,16 @@ set(headers
 	lapack.hpp
     TreeBcast_v2.hpp
 	TreeReduce_v2.hpp	
+    TreeBcast_v2_impl.hpp
+    TreeReduce_v2_impl.hpp	
 )
 
 # first: precision-independent files
 set(sources
   global.cpp
   blas.cpp
-  lapack.cpp  
-  TreeBcast_v2_impl.cpp
-  TreeReduce_v2_impl.cpp
+  lapack.cpp
+  TreeInterface.cpp
   sp_ienv.c
   etree.c 
   sp_colorder.c

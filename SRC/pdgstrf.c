@@ -381,6 +381,10 @@ pdgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
         return (-1);
     }
 
+	
+
+	
+	
     /* Quick return if possible. */
     if (m == 0 || n == 0) return 0;
  
@@ -397,6 +401,13 @@ pdgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
     s_eps = smach_dist("Epsilon");
     thresh = s_eps * anorm;
 
+	if(iam==0){
+	printf("nga %5d\n",n);
+	printf("nsupers %5d\n",nsupers);	
+	fflush(stdout);
+	}
+	
+	
     MPI_Attr_get (MPI_COMM_WORLD, MPI_TAG_UB, &attr_val, &flag);
     if (!flag) {
         fprintf (stderr, "Could not get TAG_UB\n");

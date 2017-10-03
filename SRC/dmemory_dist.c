@@ -131,7 +131,7 @@ int_t dQuerySpace_dist(int_t n, LUstruct_t *LUstruct, gridinfo_t *grid,
     /*mem_usage->total += stat->current_buffer;*/
     mem_usage->total += stat->peak_buffer;
 
-#if ( PRNTlevel>=1 )
+#if ( PRNTlevel>=2 )
     printf(".. dQuery_Space: peak_buffer %.2f (MB)\n", stat->peak_buffer * 1.0e-6);
 #endif
 #endif

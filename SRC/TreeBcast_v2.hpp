@@ -2,7 +2,7 @@
 #define _PEXSI_TREE_V2_HPP_
 
 #include "environment.hpp"
-#include "blas.hpp"
+ #include "blas.hpp"
 #include "timer.h"
 #include "superlu_defs.h"
 
@@ -17,7 +17,7 @@
 
 // options to switch from a flat bcast/reduce tree to a binary tree
 #ifndef FTREE_LIMIT
-#define FTREE_LIMIT 16
+#define FTREE_LIMIT 12
 #endif
 
 
@@ -111,12 +111,18 @@ namespace PEXSI{
 
         //async wait and forward
         virtual bool Progress();
+		virtual void AllocateBuffer();															
         //blocking wait
         void Wait();
 
 
         virtual void cleanupBuffers();
 
+		virtual void allocateRequest();
+		virtual void forwardMessageSimple(T * locBuffer);	
+		virtual void waitSendRequest();	
+
+		
       protected:
         virtual void postRecv();
         virtual void forwardMessage();
@@ -176,5 +182,5 @@ namespace PEXSI{
 
 }//namespace PEXSI
 
-// #include "TreeBcast_v2_impl.hpp"
+#include "TreeBcast_v2_impl.hpp"
 #endif

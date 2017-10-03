@@ -410,6 +410,7 @@ void dlsum_bmod
 
 
 
+
 /************************************************************************/
 /*! \brief
  *
@@ -450,20 +451,18 @@ void dlsum_fmod_inv
     int_t  *ilsum = Llu->ilsum; /* Starting position of each supernode in lsum.   */
     int_t  *frecv = Llu->frecv;
     int_t  **fsendx_plist = Llu->fsendx_plist;
-	BcTree  *LBtree_ptr = Llu->LBtree_ptr;
     MPI_Status status;
     int test_flag;
 	yes_no_t done;
-
+	BcTree  *LBtree_ptr = Llu->LBtree_ptr;
+	RdTree  *LRtree_ptr = Llu->LRtree_ptr;
+	
+	
 #if ( PROFlevel>=1 )
     double t1, t2;
     float msg_vol = 0, msg_cnt = 0;
 #endif 
 
-	
-#if ( PROFlevel>=1 )
-		TIC(t1);
-#endif	
 	
     iam = grid->iam;
     myrow = MYROW( iam, grid );
@@ -473,6 +472,11 @@ void dlsum_fmod_inv
     nsupr = lsub[1];
 	
     for (lb = 0; lb < nlb; ++lb) {
+		
+#if ( PROFlevel>=1 )
+		TIC(t1);
+#endif	
+		
 	ik = lsub[lptr]; /* Global block number, row-wise. */
 	nbrow = lsub[lptr+1];
 #ifdef _CRAY
@@ -518,23 +522,32 @@ void dlsum_fmod_inv
 	    ikcol = PCOL( ik, grid );
 	    p = PNUM( myrow, ikcol, grid );
 	    if ( iam != p ) {
-#ifdef ISEND_IRECV
-		MPI_Isend( &lsum[il - LSUM_H], iknsupc * nrhs + LSUM_H,
-			   MPI_DOUBLE, p, LSUM, grid->comm,
-                           &send_req[Llu->SolveMsgSent++] );
-#else
-#ifdef BSEND
-		MPI_Bsend( &lsum[il - LSUM_H], iknsupc * nrhs + LSUM_H,
-			   MPI_DOUBLE, p, LSUM, grid->comm );
-#else
-		MPI_Send( &lsum[il - LSUM_H], iknsupc * nrhs + LSUM_H,
-			 MPI_DOUBLE, p, LSUM, grid->comm );
-#endif
-#endif
-#if ( DEBUGlevel>=2 )
-		printf("(%2d) Sent LSUM[%2.0f], size %2d, to P %2d\n",
-		       iam, lsum[il-LSUM_H], iknsupc*nrhs+LSUM_H, p);
-#endif
+			if(frecv[lk]==0){
+			fmod[lk] = -1;
+			RdTree_forwardMessageSimple(LRtree_ptr[lk],&lsum[il - LSUM_H]);
+			}
+			
+// #ifdef ISEND_IRECV
+		// MPI_Isend( &lsum[il - LSUM_H], iknsupc * nrhs + LSUM_H,
+			   // MPI_DOUBLE, p, LSUM, grid->comm,
+                           // &send_req[Llu->SolveMsgSent++] );
+// #else
+// #ifdef BSEND
+		// MPI_Bsend( &lsum[il - LSUM_H], iknsupc * nrhs + LSUM_H,
+			   // MPI_DOUBLE, p, LSUM, grid->comm );
+// #else
+		// MPI_Send( &lsum[il - LSUM_H], iknsupc * nrhs + LSUM_H,
+			 // MPI_DOUBLE, p, LSUM, grid->comm );
+// #endif
+// #endif
+// #if ( DEBUGlevel>=2 )
+		// printf("(%2d) Sent LSUM[%2.0f], size %2d, to P %2d\n",
+		       // iam, lsum[il-LSUM_H], iknsupc*nrhs+LSUM_H, p);
+// #endif
+
+
+
+
 	    } else { /* Diagonal process: X[i] += lsum[i]. */
 		ii = X_BLK( lk );
 		RHS_ITERATE(j)
@@ -598,15 +611,11 @@ void dlsum_fmod_inv
 		    /*
 		     * Send Xk to process column Pc[k].
 		     */
-			if(LBtree_ptr[lk]!=NULL){ 
-				lib = LBi( ik, grid ); /* Local block number, row-wise. */ 
-				ii = X_BLK( lib );
-				BcTree_SetLocalBuffer(LBtree_ptr[lk],&x[ii - XK_H]);
-				BcTree_SetDataReady(LBtree_ptr[lk]);	
-				done = BcTree_Progress(LBtree_ptr[lk]);	
-				assert(done==NO);
-			}			 
-			 
+
+			if(LBtree_ptr[lk]!=NULL)
+			BcTree_forwardMessageSimple(LBtree_ptr[lk],&x[ii - XK_H]);
+	
+	
 		    // for (p = 0; p < grid->nprow; ++p) {
 			// if ( fsendx_plist[lk][p] != EMPTY ) {
 			    // pi = PNUM( p, ikcol, grid );
@@ -629,6 +638,11 @@ void dlsum_fmod_inv
 // #endif
 			// }
                     // }
+					
+					
+					
+					
+					
 		    /*
 		     * Perform local block modifications.
 		     */
@@ -646,6 +660,7 @@ void dlsum_fmod_inv
     } /* for lb ... */
 	
 } /* dLSUM_FMOD_inv */
+
 
 
 /************************************************************************/
