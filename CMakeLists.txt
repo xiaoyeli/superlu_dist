@@ -103,6 +103,23 @@ set(CMAKE_C_FLAGS_RELEASE "-O3" CACHE STRING "")
 #
 ######################################################################
 #
+#--------------------- MPI ---------------------
+find_package(MPI)
+if(MPI_C_FOUND)
+    set(CMAKE_C_FLAGS "${MPI_C_COMPILE_FLAGS} ${CMAKE_C_FLAGS}")
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${MPI_C_LINK_FLAGS}" )
+endif()
+#--------------------- OpenMP ---------------------
+find_package(OpenMP)
+## include(FindOpenMP)  # Strumpack uses this
+if(OPENMP_FOUND)
+  set(CMAKE_C_FLAGS "${OpenMP_C_FLAGS} ${CMAKE_C_FLAGS}")
+# On edison, OpenMP_EXE_LINKER_FLAGS is empty
+#  set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${OpenMP_EXE_LINKER_FLAGS}")
+  set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${OpenMP_C_FLAGS}")
+ message("-- OpenMP_EXE_LINKER_FLAGS='${OpenMP_EXE_LINKER_FLAGS}'")
+ message("-- CMAKE_EXE_LINKER_FLAGS='${CMAKE_EXE_LINKER_FLAGS}'")
+endif()
 #--------------------- BLAS ---------------------
 if(NOT enable_blaslib)
 #  set(TPL_BLAS_LIBRARIES "" CACHE FILEPATH
@@ -136,23 +153,6 @@ else()
     endif()
 endif()
 
-#--------------------- MPI ---------------------
-find_package(MPI)
-if(MPI_C_FOUND)
-    set(CMAKE_C_FLAGS "${MPI_C_COMPILE_FLAGS} ${CMAKE_C_FLAGS}")
-    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${MPI_C_LINK_FLAGS}" )
-endif()
-#--------------------- OpenMP ---------------------
-find_package(OpenMP)
-## include(FindOpenMP)  # Strumpack uses this
-if(OPENMP_FOUND)
-  set(CMAKE_C_FLAGS "${OpenMP_C_FLAGS} ${CMAKE_C_FLAGS}")
-# On edison, OpenMP_EXE_LINKER_FLAGS is empty
-#  set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${OpenMP_EXE_LINKER_FLAGS}")
-  set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${OpenMP_C_FLAGS}")
- message("-- OpenMP_EXE_LINKER_FLAGS='${OpenMP_EXE_LINKER_FLAGS}'")
- message("-- CMAKE_EXE_LINKER_FLAGS='${CMAKE_EXE_LINKER_FLAGS}'")
-endif()
 #--------------------- ParMETIS ---------------------
 if (enable_parmetislib)   ## want to use parmetis
   if (NOT TPL_PARMETIS_LIBRARIES)

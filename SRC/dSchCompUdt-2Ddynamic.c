@@ -347,10 +347,10 @@ if ( msg0 && msg2 ) { /* L(:,k) and U(k,:) are not empty. */
 
      /* Loop through the remaining blocks to copy Lval into the buffer */
 #ifdef _OPENMP
-#pragma omp parallel for private(i,j,jj,tempu,tempv) default (shared) \
+#pragma omp parallel for private(i,j,jj,tempu,tempv) default (shared)	\
     schedule(SCHEDULE_STRATEGY)
 #endif
-     for (int i = 0; i < RemainBlk; ++i) {
+     for (i = 0; i < RemainBlk; ++i) {
          int StRowDest, temp_nbrow;
          if ( i==0 )  {
 	     StRowDest  = 0;
@@ -365,7 +365,7 @@ if ( msg0 && msg2 ) { /* L(:,k) and U(k,:) are not empty. */
 	 /* Now copying a block into L remaining buffer */
 	 // #pragma omp parallel for (gives slow down)
 	 // for (int j = 0; j < knsupc; ++j) {
-	 for (int j = knsupc-ldu; j < knsupc; ++j) {
+	 for (j = knsupc-ldu; j < knsupc; ++j) {
 	     // printf("StRowDest %d Rnbrow %d StRowSource %d \n", StRowDest,Rnbrow ,StRowSource);
 #if 1
 	     /* Better let compiler generate memcpy or vectorized code. */
