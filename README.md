@@ -1,6 +1,6 @@
 # SuperLU_DIST (version 5.2)
 
-[![Build Status](https://travis-ci.org/xiaoyeli/superlu_dist.svg?branch=master)](https://github.com/xiaoyeli/superlu_dist) 
+[![Build Status](https://travis-ci.org/xiaoyeli/superlu_dist.svg?branch=master)](https://travis-ci.org/xiaoyeli/superlu_dist) 
 [Nightly tests](http://my.cdash.org/index.php?project=superlu_dist)
 
 SuperLU_DIST contains a set of subroutines to solve a sparse linear system 
