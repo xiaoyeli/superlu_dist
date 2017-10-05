@@ -29,7 +29,7 @@ SuperLU_DIST/DOC/      the Users' Guide
 SuperLU_DIST/EXAMPLE/  example programs
 SuperLU_DIST/INSTALL/  test machine dependent parameters
 SuperLU_DIST/SRC/      C source code, to be compiled into libsuperlu_dist.a
-SuperLU_DIST/TEST/     Testing code
+SuperLU_DIST/TEST/     testing code
 SuperLU_DIST/lib/      contains library archive libsuperlu_dist.a
 SuperLU_DIST/Makefile  top-level Makefile that does installation and testing
 SuperLU_DIST/make.inc  compiler, compiler flags, library definitions and C
@@ -240,15 +240,9 @@ dreadtriple_noheader.c : triplet, no header, which is also readable in Matlab
 
 ## REFERENCES
 
-**[1]** SuperLU_DIST: A Scalable Distributed-Memory Sparse Direct Solver for
-Unsymmetric Linear Systems.  Xiaoye S. Li and James W. Demmel.  
-ACM Trans. on Math. Software, Vol. 29, No. 2, June 2003, pp. 110-140.  
-**[2]** Parallel Symbolic Factorization for Sparse LU with Static Pivoting.
-L. Grigori, J. Demmel and X.S. Li. SIAM J. Sci. Comp., Vol. 29, Issue 3,
-1289-1314, 2007.  
-**[3]** A distributed CPU-GPU sparse direct solver. P. Sao, R. Vuduc and X.S. Li,
-Proc. of EuroPar-2014 Parallel Processing, August 25-29, 2014.
-Porto, Portugal.  
+**[1]** SuperLU_DIST: A Scalable Distributed-Memory Sparse Direct Solver for Unsymmetric Linear Systems. Xiaoye S. Li and James W. Demmel. ACM Trans. on Math. Software, Vol. 29, No. 2, June 2003, pp. 110-140.  
+**[2]** Parallel Symbolic Factorization for Sparse LU with Static Pivoting. L. Grigori, J. Demmel and X.S. Li. SIAM J. Sci. Comp., Vol. 29, Issue 3, 1289-1314, 2007.  
+**[3]** A distributed CPU-GPU sparse direct solver. P. Sao, R. Vuduc and X.S. Li, Proc. of EuroPar-2014 Parallel Processing, August 25-29, 2014. Porto, Portugal.  
 
 **Xiaoye S. Li**, Lawrence Berkeley National Lab, [xsli@lbl.gov](xsli@lbl.gov)  
 **Laura Grigori**, INRIA, France, [laura.grigori@inria.fr](laura.grigori@inria.fr)  
