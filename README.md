@@ -1,5 +1,6 @@
-		SuperLU_DIST (version 5.2)
-		============================
+# SuperLU_DIST (version 5.2)
+
+[![Build Status](https://travis-ci.org/xiaoyeli/superlu_dist.svg?branch=master)](https://github.com/xiaoyeli/superlu_dist)
 
 SuperLU_DIST contains a set of subroutines to solve a sparse linear system 
 A*X=B. It uses Gaussian elimination with static pivoting (GESP). 
@@ -17,8 +18,9 @@ column preordering for sparsity are performed sequentially.
 This "alpha" release contains double-precision real and double-precision
 complex data types.
 
-The distribution contains the following directory structure:
+## The distribution contains the following directory structure:
 
+```
   SuperLU_DIST/README    instructions on installation
   SuperLU_DIST/CBLAS/    needed BLAS routines in C, not necessarily fast
                          (NOTE: this release performs better with threaded GEMM)
@@ -34,11 +36,10 @@ The distribution contains the following directory structure:
                          (You may need to edit it to suit for your system
                           before compiling the whole package.)
   SuperLU_DIST/MAKE_INC/ sample machine-specific make.inc files
+```
 
 
-----------------
-| INSTALLATION |
-----------------
+## INSTALLATION
 
 There are two ways to install the package. One requires users to 
 edit makefile manually, the other uses CMake build system.
@@ -69,7 +70,8 @@ The procedures are described below.
    	for detailed instructions on porting.
 
    	The following CPP definitions can be set in CFLAGS.
-      	  o -D_LONGINT
+```
+	  o -D_LONGINT
           use 64-bit integers for indexing sparse matrices. (default 32 bit)
 
       	  o -DPRNTlevel=[0,1,2,...]
@@ -77,16 +79,17 @@ The procedures are described below.
 
       	  o -DDEBUGlevel=[0,1,2,...]
           diagnostic printing level for debugging purpose. (default 0)
-      
+```      
    
    1.2. The BLAS library.
 
    	The parallel routines in SuperLU_DIST uses some sequential BLAS routines
    	on each process. If there is BLAS library available on your machine,
    	you may define the following in the file make.inc:
-            BLASDEF = -DUSE_VENDOR_BLAS
+```
+	    BLASDEF = -DUSE_VENDOR_BLAS
             BLASLIB = <BLAS library you wish to link with>
-
+```
    	    The CBLAS/ subdirectory contains the part of the C BLAS needed by 
    	    SuperLU_DIST package. However, these codes are intended for use
 	    only if there is no faster implementation of the BLAS already
@@ -94,11 +97,11 @@ The procedures are described below.
 	    top-level SuperLU_DIST/ directory and do the following:
 
 	    1) In make.inc, undefine (comment out) BLASDEF, and define:
-               BLASLIB = ../lib/libblas$(PLAT).a
+```               BLASLIB = ../lib/libblas$(PLAT).a ```
 
-    	    2) Type: make blaslib
+    	    2) Type: `make blaslib`
        	       to make the BLAS library from the routines in the
-	       CBLAS/ subdirectory.
+```	       CBLAS/ subdirectory.```
 
 
    1.3. External libraries: Metis and ParMetis.
@@ -115,7 +118,6 @@ The procedures are described below.
         I_PARMETIS = -I<parmetis directory>/include -I<parmetis directory>/metis/include
 
    1.4. C preprocessor definition CDEFS.
-
    	In the header file SRC/Cnames.h, we use macros to determine how
    	C routines should be named so that they are callable by Fortran.
    	(Some vendor-supplied BLAS libraries do not have C interfaces. So the 
@@ -123,37 +125,38 @@ The procedures are described below.
     	interface with the Fortran-style BLAS.)
    	The possible options for CDEFS are:
 
-       	o -DAdd_: Fortran expects a C routine to have an underscore
+	`-DAdd_`: Fortran expects a C routine to have an underscore
 		  postfixed to the name;
 		  (This is set as the default)
-        o -DNoChange: Fortran expects a C routine name to be identical to
+        `-DNoChange`: Fortran expects a C routine name to be identical to
 		      that compiled by C;
-        o -DUpCase: Fortran expects a C routine name to be all uppercase.
+        `-DUpCase`: Fortran expects a C routine name to be all uppercase.
    
    1.5. Multicore and GPU (optional).
    
 	To use OpenMP parallelism, need to compile the code with the
 	following CPP definition:
 
-	     -D_OPENMP
+	`-D_OPENMP`
 
-        and set the number of threads to be used as follows (bash):
+	and set the number of threads to be used as follows (bash):
 
- 	     export OMP_NUM_THREADS=<##>
+	`export OMP_NUM_THREADS=<##>`
 
    	To enable Nvidia GPU access, need to take the following 2 step:
       	  1) set the following Linux environment variable:
 
-	     export ACC=GPU
+	`export ACC=GPU`
 
       	  2) Add the CUDA library location in make.inc:
 
+```
     	  ifeq "${ACC}" "GPU"
       	       CFLAGS += -DGPU_ACC
                INCS += -I<CUDA directory>/include
       	       LIBS += -L<CUDA directory>/lib64 -lcublas -lcudart 
     	  endif
-
+```
    A Makefile is provided in each subdirectory. The installation can be done
    completely automatically by simply typing "make" at the top level.
 
@@ -164,68 +167,67 @@ The procedures are described below.
    need to install ParMETIS parallel ordering package, and define the
    two environment variables: PARMETIS_ROOT and PARMETIS_BUILD_DIR
 
-     export PARMETIS_ROOT=<Prefix directory of the ParMETIS installation>
-     export PARMETIS_BUILD_DIR=${PARMETIS_ROOT}/build/Linux-x86_64
+   `export PARMETIS_ROOT=<Prefix directory of the ParMETIS installation>`
+   `export PARMETIS_BUILD_DIR=${PARMETIS_ROOT}/build/Linux-x86_64`
 
    Then, the installation procedure is the following.
 
    From the top level directory, do:
 
-     	mkdir build ; cd build
-   	cmake .. \
-	  -DTPL_PARMETIS_LIBRARIES="${PARMETIS_BUILD_DIR}/libparmetis/libparmetis.a;${PARMETIS_BUILD_DIR}/libmetis/libmetis.a" \
-          -DTPL_PARMETIS_INCLUDE_DIRS="${PARMETIS_ROOT}/include;${PARMETIS_ROOT}/metis/include"
+```
+mkdir build ; cd build
+cmake .. \
+-DTPL_PARMETIS_LIBRARIES="${PARMETIS_BUILD_DIR}/libparmetis/libparmetis.a;${PARMETIS_BUILD_DIR}/libmetis/libmetis.a" \
+-DTPL_PARMETIS_INCLUDE_DIRS="${PARMETIS_ROOT}/include;${PARMETIS_ROOT}/metis/include"
 
-  ( Example cmake script: see run_cmkae_build.sh
-  export PARMETIS_ROOT=~/lib/dynamic/parmetis-4.0.3 
-  export PARMETIS_BUILD_DIR=${PARMETIS_ROOT}/build/Linux-x86_64 
-  cmake .. \
-    -DTPL_PARMETIS_INCLUDE_DIRS="${PARMETIS_ROOT}/include;${PARMETIS_ROOT}/metis/include" \
-    -DTPL_PARMETIS_LIBRARIES="${PARMETIS_BUILD_DIR}/libparmetis/libparmetis.a;${PARMETIS_BUILD_DIR}/libmetis/libmetis.a" \
-    -DCMAKE_C_FLAGS="-std=c99 -g" \
-    -Denable_blaslib=OFF \
-    -DBUILD_SHARED_LIBS=OFF \
-    -DCMAKE_C_COMPILER=mpicc \
-    -DCMAKE_INSTALL_PREFIX=.
-  )
-
+( Example cmake script: see run_cmkae_build.sh
+export PARMETIS_ROOT=~/lib/dynamic/parmetis-4.0.3 
+export PARMETIS_BUILD_DIR=${PARMETIS_ROOT}/build/Linux-x86_64 
+cmake .. \
+-DTPL_PARMETIS_INCLUDE_DIRS="${PARMETIS_ROOT}/include;${PARMETIS_ROOT}/metis/include" \
+-DTPL_PARMETIS_LIBRARIES="${PARMETIS_BUILD_DIR}/libparmetis/libparmetis.a;${PARMETIS_BUILD_DIR}/libmetis/libmetis.a" \
+-DCMAKE_C_FLAGS="-std=c99 -g" \
+-Denable_blaslib=OFF \
+-DBUILD_SHARED_LIBS=OFF \
+-DCMAKE_C_COMPILER=mpicc \
+-DCMAKE_INSTALL_PREFIX=.
+)
+```
    To actually build, type:
-   	make
+   	`make`
 
    To install the libraries, type:
-        make install
+        `make install`
 
    To run the installation test, type:
-        ctest
+        `ctest`
         (The outputs are in file: build/Testing/Temporary/LastTest.log)
       or,
-        ctest -D Experimental
+        `ctest -D Experimental`
       or,
-	ctest -D Nightly
+	`ctest -D Nightly`
 
-   !!!! NOTE !!!! 
+    _NOTE_
     The parallel execution in ctest is invoked by "mpiexec" command which is
     from MPICH environment. If your MPI is not MPICH/mpiexec based, the test
     execution may fail. You can always go to TEST/ directory to perform
     testing manually.
 
 
-   ++++++++
-   Note on the C-Fortran name mangling handled by C preprocessor definition:
-   ++++++++
+
+## Note on the C-Fortran name mangling handled by C preprocessor definition:
    In the default setting, we assume that Fortran expects a C routine
    to have an underscore postfixed to the name. Depending on the
    compiler, you may need to define one of the following flags in
    during the cmake build to overwrite default setting:
 
-   cmake .. -DCMAKE_C_FLAGS="-DNoChange"
+   `cmake .. -DCMAKE_C_FLAGS="-DNoChange"`
+   `cmake .. -DCMAKE_C_FLAGS="-DUpCase"`
 
-   cmake .. -DCMAKE_C_FLAGS="-DUpCase"
 
 
--------------------------------
-| READING SPARSE MATRIX FILES |
--------------------------------
+## READING SPARSE MATRIX FILES
+
 The SRC/ directory contains the following routines to read different file 
 formats, they all have the similar calling sequence.
   $ ls -l dread*.c
@@ -236,17 +238,15 @@ formats, they all have the similar calling sequence.
   dreadtriple_noheader.c : triplet, no header, which is also readable in Matlab
 
 
---------------
-| REFERENCES |
---------------
+## REFERENCES
 
-[1] SuperLU_DIST: A Scalable Distributed-Memory Sparse Direct Solver for
+_[1]_ SuperLU_DIST: A Scalable Distributed-Memory Sparse Direct Solver for
     Unsymmetric Linear Systems.  Xiaoye S. Li and James W. Demmel.
     ACM Trans. on Math. Solftware, Vol. 29, No. 2, June 2003, pp. 110-140.
-[2] Parallel Symbolic Factorization for Sparse LU with Static Pivoting.
+_[2]_ Parallel Symbolic Factorization for Sparse LU with Static Pivoting.
     L. Grigori, J. Demmel and X.S. Li. SIAM J. Sci. Comp., Vol. 29, Issue 3,
     1289-1314, 2007.
-[3] A distributed CPU-GPU sparse direct solver. P. Sao, R. Vuduc and X.S. Li,
+_[3]_ A distributed CPU-GPU sparse direct solver. P. Sao, R. Vuduc and X.S. Li,
     Proc. of EuroPar-2014 Parallel Processing, August 25-29, 2014.
     Porto, Portugal.
 
@@ -255,22 +255,20 @@ Laura Grigori        INRIA, France, Laura.Grigori@inria.fr
 Piyush Sao           Georgia Institute of Technology, piyush.feynman@gmail.com
 Ichitaro Yamazaki    Univ. of Tennessee, ic.yamazaki@gmail.com
 
---------------------
-| RELEASE VERSIONS |
---------------------
+## RELEASE VERSIONS
 
-  October 15, 2003   Version 2.0
-  October 1,  2007   Version 2.1
-  Feburary 20, 2008  Version 2.2
-  October 15, 2008   Version 2.3
-  June 9, 2010       Version 2.4 
-  November 23, 2010  Version 2.5
-  March 31, 2013     Version 3.3
-  October 1, 2014    Version 4.0
-  July 15, 2014      Version 4.1
-  September 25, 2015 Version 4.2
-  December 31, 2015  Version 4.3
-  April 8, 2016      Version 5.0.0
-  May 15, 2016       Version 5.1.0
-  October 4, 2016    Version 5.1.1
-  December 31, 2016  Version 5.1.3
+October 15, 2003   Version 2.0  
+October 1,  2007   Version 2.1  
+Feburary 20, 2008  Version 2.2  
+October 15, 2008   Version 2.3  
+June 9, 2010       Version 2.4  
+November 23, 2010  Version 2.5  
+March 31, 2013     Version 3.3  
+October 1, 2014    Version 4.0  
+July 15, 2014      Version 4.1  
+September 25, 2015 Version 4.2  
+December 31, 2015  Version 4.3  
+April 8, 2016      Version 5.0.0  
+May 15, 2016       Version 5.1.0  
+October 4, 2016    Version 5.1.1  
+December 31, 2016  Version 5.1.3  
