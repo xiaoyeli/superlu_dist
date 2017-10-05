@@ -31,10 +31,10 @@ SuperLU_DIST/INSTALL/  test machine dependent parameters
 SuperLU_DIST/SRC/      C source code, to be compiled into libsuperlu_dist.a
 SuperLU_DIST/TEST/     Testing code
 SuperLU_DIST/lib/      contains library archive libsuperlu_dist.a
-SuperLU_DIST/Makefile  top level Makefile that does installation and testing
+SuperLU_DIST/Makefile  top-level Makefile that does installation and testing
 SuperLU_DIST/make.inc  compiler, compiler flags, library definitions and C
 	               preprocessor definitions, included in all Makefiles.
-	               (You may need to edit it to suit for your system
+	               (You may need to edit it to suit your system
 	               before compiling the whole package.)
 SuperLU_DIST/MAKE_INC/ sample machine-specific make.inc files
 ```
@@ -84,7 +84,7 @@ diagnostic printing level for debugging purpose. (default 0)
 ```      
 
 1.2. The BLAS library.
-The parallel routines in SuperLU_DIST uses some sequential BLAS routines
+The parallel routines in SuperLU_DIST use some sequential BLAS routines
 on each process. If there is BLAS library available on your machine,
 you may define the following in the file make.inc:
 
@@ -163,7 +163,7 @@ completely automatically by simply typing "make" at the top level.
 You will need to create a build tree from which to invoke CMake.
 
 First, in order to use parallel symbolic factorization function, you
-need to install ParMETIS parallel ordering package, and define the
+need to install ParMETIS parallel ordering package and define the
 two environment variables: PARMETIS_ROOT and PARMETIS_BUILD_DIR
 
 ```
@@ -179,7 +179,7 @@ cmake .. \
 -DTPL_PARMETIS_LIBRARIES="${PARMETIS_BUILD_DIR}/libparmetis/libparmetis.a;${PARMETIS_BUILD_DIR}/libmetis/libmetis.a" \
 -DTPL_PARMETIS_INCLUDE_DIRS="${PARMETIS_ROOT}/include;${PARMETIS_ROOT}/metis/include"
 
-( Example cmake script: see run_cmkae_build.sh
+( Example cmake script: see run_cmake_build.sh
 
 export PARMETIS_ROOT=~/lib/dynamic/parmetis-4.0.3 
 export PARMETIS_BUILD_DIR=${PARMETIS_ROOT}/build/Linux-x86_64 
@@ -220,8 +220,10 @@ to have an underscore postfixed to the name. Depending on the
 compiler, you may need to define one of the following flags in
 during the cmake build to overwrite default setting:
 
-`cmake .. -DCMAKE_C_FLAGS="-DNoChange"`
-`cmake .. -DCMAKE_C_FLAGS="-DUpCase"`
+```
+cmake .. -DCMAKE_C_FLAGS="-DNoChange" 
+cmake .. -DCMAKE_C_FLAGS="-DUpCase"
+```
 
 ## READING SPARSE MATRIX FILES
 
@@ -240,7 +242,7 @@ dreadtriple_noheader.c : triplet, no header, which is also readable in Matlab
 
 **[1]** SuperLU_DIST: A Scalable Distributed-Memory Sparse Direct Solver for
 Unsymmetric Linear Systems.  Xiaoye S. Li and James W. Demmel.  
-ACM Trans. on Math. Solftware, Vol. 29, No. 2, June 2003, pp. 110-140.  
+ACM Trans. on Math. Software, Vol. 29, No. 2, June 2003, pp. 110-140.  
 **[2]** Parallel Symbolic Factorization for Sparse LU with Static Pivoting.
 L. Grigori, J. Demmel and X.S. Li. SIAM J. Sci. Comp., Vol. 29, Issue 3,
 1289-1314, 2007.  
