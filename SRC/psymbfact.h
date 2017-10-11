@@ -279,8 +279,10 @@ typedef struct {
 /* Code for the type of the memory to expand */
 #define USUB_PR 0
 #define LSUB_PR 1
+/* Sherry: the following are already defined in superlu_enum_const.h 
 #define USUB 0
 #define LSUB 1
+*/
 
 /* 
  * Code for the type of computation - right looking (RL_SYMB); left
@@ -297,6 +299,3 @@ typedef struct {
 
 
 #endif /* __SUPERLU_DIST_PSYMBFACT */
-
-
-
