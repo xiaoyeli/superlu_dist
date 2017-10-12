@@ -24,7 +24,9 @@ complex data types.
 ```
 SuperLU_DIST/README    instructions on installation
 SuperLU_DIST/CBLAS/    needed BLAS routines in C, not necessarily fast
-	 	       (NOTE: this release performs better with threaded GEMM)
+	 	       (NOTE: this version is single threaded. If you use the
+		       library with multiple OpenMP threads, performance
+		       relies on a good multithreaded BLAS implementation.)
 SuperLU_DIST/DOC/      the Users' Guide
 SuperLU_DIST/EXAMPLE/  example programs
 SuperLU_DIST/INSTALL/  test machine dependent parameters
@@ -57,14 +59,14 @@ edit the Makefiles in the subdirectories. All information that is
 machine specific has been defined in this include file. 
 
 Sample machine-specific make.inc are provided in the MAKE_INC/
-directory for several platforms, such as Cray XT5 and IBM SP.
+directory for several platforms, such as Cray XT5, Linux, Mac-OS, and CUDA.
 When you have selected the machine to which you wish to install
 SuperLU_DIST, copy the appropriate sample include file 
 (if one is present) into make.inc.
 
 For example, if you wish to run SuperLU_DIST on a Cray XT5,  you can do
 
-`cp MAKE_INC/make.xc30  make.inc`
+`cp MAKE_INC/make.xt5  make.inc`
 
 For the systems other than listed above, some porting effort is needed
 for parallel factorization routines. Please refer to the Users' Guide 
@@ -84,17 +86,22 @@ diagnostic printing level for debugging purpose. (default 0)
 ```      
 
 1.2. The BLAS library.
-The parallel routines in SuperLU_DIST use some sequential BLAS routines
-on each process. If there is BLAS library available on your machine,
-you may define the following in the file make.inc:
+The parallel routines in SuperLU_DIST use some BLAS routines on each MPI
+process. Moreover, if you enable OpenMP with multiple threads, you need to
+link with a multithreaded BLAS library. Otherwise performance will be poor.
+A good public domain BLAS library is OpenBLAS (http://www.openblas.net),
+which has OpenMP support.
+
+If you have a BLAS library your machine, you may define the following in
+the file make.inc:
 
 ```
 BLASDEF = -DUSE_VENDOR_BLAS
 BLASLIB = <BLAS library you wish to link with>
 ```
 
-The CBLAS/ subdirectory contains the part of the C BLAS needed by 
-SuperLU_DIST package. However, these codes are intended for use
+The CBLAS/ subdirectory contains the part of the C BLAS (single threaded) 
+needed by SuperLU_DIST package. However, these codes are intended for use
 only if there is no faster implementation of the BLAS already
 available on your machine. In this case, you should go to the
 top-level SuperLU_DIST/ directory and do the following:
@@ -137,11 +144,9 @@ The possible options for CDEFS are:
 
 1.5. Multicore and GPU (optional).
 
-To use OpenMP parallelism, need to compile the code with the
-following CPP definition:
-`-D_OPENMP`
+To use OpenMP parallelism, need to link with an OpenMP library, and
+set the number of threads you wish to use as follows (bash):
 
-and set the number of threads to be used as follows (bash):
 `export OMP_NUM_THREADS=<##>`
 
 To enable Nvidia GPU access, need to take the following 2 step:
@@ -251,19 +256,20 @@ dreadtriple_noheader.c : triplet, no header, which is also readable in Matlab
 
 ## RELEASE VERSIONS
 ```
-October 15, 2003   Version 2.0  
-October 1,  2007   Version 2.1  
-Feburary 20, 2008  Version 2.2  
-October 15, 2008   Version 2.3  
-June 9, 2010       Version 2.4  
-November 23, 2010  Version 2.5  
-March 31, 2013     Version 3.3  
-October 1, 2014    Version 4.0  
-July 15, 2014      Version 4.1  
-September 25, 2015 Version 4.2  
-December 31, 2015  Version 4.3  
-April 8, 2016      Version 5.0.0  
-May 15, 2016       Version 5.1.0  
-October 4, 2016    Version 5.1.1  
-December 31, 2016  Version 5.1.3  
+October 15, 2003    Version 2.0  
+October 1,  2007    Version 2.1  
+Feburary 20, 2008   Version 2.2  
+October 15, 2008    Version 2.3  
+June 9, 2010        Version 2.4  
+November 23, 2010   Version 2.5  
+March 31, 2013      Version 3.3  
+October 1, 2014     Version 4.0  
+July 15, 2014       Version 4.1  
+September 25, 2015  Version 4.2  
+December 31, 2015   Version 4.3  
+April 8, 2016       Version 5.0.0  
+May 15, 2016        Version 5.1.0  
+October 4, 2016     Version 5.1.1  
+December 31, 2016   Version 5.1.3  
+September 30, 2017  Version 5.2.0  
 ```
