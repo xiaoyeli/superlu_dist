@@ -64,7 +64,7 @@ at the top-level directory.
  */
 #define SUPERLU_DIST_MAJOR_VERSION     5
 #define SUPERLU_DIST_MINOR_VERSION     2
-#define SUPERLU_DIST_PATCH_VERSION     0
+#define SUPERLU_DIST_PATCH_VERSION     1
 
 #include "superlu_dist_config.h"
 /* Define my integer size int_t */

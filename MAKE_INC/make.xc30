@@ -62,7 +62,7 @@ CC           	= cc
 CFLAGS          = -fast -m64 -std=c99 -Wall -openmp \
 		$(I_PARMETIS) -DDEBUGlevel=0 -DPRNTlevel=0 -DPROFlevel=0 \
 # uncomment the following to use 64-bit integer
-# CFLAGS 		+= -D_LONGINT
+#XSDK_INDEX_SIZE = 64 ## 64-bit integer
 
 # NOOPTS should be set to be the C flags that turn off any optimization
 NOOPTS		= -O0 -std=c99
