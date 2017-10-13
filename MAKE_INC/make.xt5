@@ -59,7 +59,8 @@ RANLIB       	= ranlib
 CC      = cc
 INCS	= $(I_PARMETIS)
 # CFLAGS should be set to be the C flags that include optimization
-CFLAGS          = ${INCS} -c99 -fastsse -DDEBUGlevel=0 -DPRNTlevel=1 #-D_LONGINT
+CFLAGS          = ${INCS} -c99 -fastsse -DDEBUGlevel=0 -DPRNTlevel=1
+#XSDK_INDEX_SIZE = 64 ## 64-bit integer
 #
 # NOOPTS should be set to be the C flags that turn off any optimization
 NOOPTS		= -O0

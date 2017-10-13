@@ -30,9 +30,7 @@ RANLIB       = /usr/bin/ranlib
 
 CC           = /home/xiaoye/mpich-install/bin/mpicc
 CFLAGS 	     = -O3 -DNDEBUG -I/home/xiaoye/lib/static/parmetis-4.0.3/metis/include -I/home/xiaoye/lib/static/parmetis-4.0.3/include -fopenmp  -DUSE_VENDOR_BLAS -DDEBUGlevel=0 -DPRNTlevel=0 -std=c99 -g
-# CFLAGS       += -D
-# CFLAGS       +=  
-# CFLAGS       += -D_LONGINT
+#XSDK_INDEX_SIZE = 64 ## 64-bit integer
 NOOPTS       = -O0
 FORTRAN	     = /usr/bin/gfortran
 

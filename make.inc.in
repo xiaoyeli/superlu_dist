@@ -8,7 +8,7 @@
 #
 #  Creation date:   March 1, 2016	version 5.0.0
 #
-#  Modified:	    
+#  Modified:	    October 13, 2017    version 5.2.1
 #		    
 #
 ############################################################################
@@ -30,9 +30,9 @@ RANLIB       = @CMAKE_RANLIB@
 
 CC           = @CMAKE_C_COMPILER@
 CFLAGS 	     = @CMAKE_C_FLAGS_RELEASE@ @CMAKE_C_FLAGS@
-# CFLAGS       += -D_LONGINT   ## 64-bit integer
 # CFLAGS       += -D${DirDefs}
 # CFLAGS       += @COMPILE_DEFINITIONS@ 
+#XSDK_INDEX_SIZE = 64 ## 64-bit integer
 NOOPTS       = -O0
 FORTRAN	     = @CMAKE_Fortran_COMPILER@
 

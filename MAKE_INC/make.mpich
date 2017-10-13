@@ -39,7 +39,7 @@ RANLIB       = /usr/bin/ranlib
 
 CC           = /home/xiaoye/mpich-install/bin/mpicc
 CFLAGS 	     = -DNDEBUG -DUSE_VENDOR_BLAS -DAdd_ -DDEBUGlevel=0 -DPRNTlevel=0 -std=c99 -fPIC -g ${I_PARMETIS}
-# CFLAGS       += -D_LONGINT
+#XSDK_INDEX_SIZE = 64 ## 64-bit integer
 # CFLAGS       +=  
 NOOPTS       = -O0
 FORTRAN	     = /usr/bin/gfortran
