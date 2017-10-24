@@ -1,0 +1,8 @@
+export OMP_NUM_THREADS=1
+export KMP_NUM_THREADS=1
+export MKL_NUM_THREADS=1
+export NSUP=1280
+export NREL=1000
+
+srun -n 24 ./EXAMPLE/pddrive -c 24 -r 1 ../EXAMPLE/big.rua | tee a.out
+

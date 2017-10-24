@@ -288,6 +288,7 @@ namespace PEXSI{
           int error_code = MPI_Isend( locBuffer, this->msgSize_, this->type_, 
               iProc, this->tag_,this->comm_, &this->sendRequests_[idxRecv] );
 			  // MPI_Wait(&this->sendRequests_[idxRecv],&status) ; 
+			  // std::cout<<this->myRank_<<" FWD to "<<iProc<<" on tag "<<this->tag_<<std::endl;
         } // for (iProc)
     }	  
 
@@ -554,7 +555,8 @@ namespace PEXSI{
 #if ( _DEBUGlevel_ >= 1 ) || defined(REDUCE_VERBOSE)
         statusOFS<<"BINARY TREE USED"<<std::endl;
 #endif
-        return new ModBTreeBcast2<T>(pComm,ranks,rank_cnt,msgSize, rseed);
+        // return new ModBTreeBcast2<T>(pComm,ranks,rank_cnt,msgSize, rseed);
+		return new BTreeBcast2<T>(pComm,ranks,rank_cnt,msgSize);
       }
     }
 
@@ -612,71 +614,98 @@ namespace PEXSI{
 
 
 
+  // template< typename T>
+    // inline void BTreeBcast2<T>::buildTree(Int * ranks, Int rank_cnt){
+
+      // Int idxStart = 0;
+      // Int idxEnd = rank_cnt;
+
+
+
+      // Int prevRoot = ranks[0];
+      // while(idxStart<idxEnd){
+        // Int curRoot = ranks[idxStart];
+        // Int listSize = idxEnd - idxStart;
+
+        // if(listSize == 1){
+          // if(curRoot == this->myRank_){
+            // this->myRoot_ = prevRoot;
+            // break;
+          // }
+        // }
+        // else{
+          // Int halfList = floor(ceil(double(listSize) / 2.0));
+          // Int idxStartL = idxStart+1;
+          // Int idxStartH = idxStart+halfList;
+
+          // if(curRoot == this->myRank_){
+            // if ((idxEnd - idxStartH) > 0 && (idxStartH - idxStartL)>0){
+              // Int childL = ranks[idxStartL];
+              // Int childR = ranks[idxStartH];
+
+              // this->myDests_.push_back(childL);
+              // this->myDests_.push_back(childR);
+            // }
+            // else if ((idxEnd - idxStartH) > 0){
+              // Int childR = ranks[idxStartH];
+              // this->myDests_.push_back(childR);
+            // }
+            // else{
+              // Int childL = ranks[idxStartL];
+              // this->myDests_.push_back(childL);
+            // }
+            // this->myRoot_ = prevRoot;
+            // break;
+          // } 
+
+          // if( this->myRank_ < ranks[idxStartH]){
+            // idxStart = idxStartL;
+            // idxEnd = idxStartH;
+          // }
+          // else{
+            // idxStart = idxStartH;
+          // }
+          // prevRoot = curRoot;
+        // }
+
+      // }
+
+// #if (defined(BCAST_VERBOSE))
+      // statusOFS<<"My root is "<<this->myRoot_<<std::endl;
+      // statusOFS<<"My dests are ";
+      // for(int i =0;i<this->myDests_.size();++i){statusOFS<<this->myDests_[i]<<" ";}
+      // statusOFS<<std::endl;
+// #endif
+    // }
+
   template< typename T>
     inline void BTreeBcast2<T>::buildTree(Int * ranks, Int rank_cnt){
 
-      Int idxStart = 0;
-      Int idxEnd = rank_cnt;
+      Int myIdx = 0;
+      Int ii=0; 
+	  Int child,root;
+	  for (ii=0;ii<rank_cnt;ii++)
+		  if(this->myRank_ == ranks[ii]){
+			  myIdx = ii;
+			  break;
+		  }
 
+	  if(myIdx*2+1<rank_cnt){
+		   child = ranks[myIdx*2+1];
+           this->myDests_.push_back(child);
+	  }
+	  if(myIdx*2+2<rank_cnt){
+		   child = ranks[myIdx*2+2];
+           this->myDests_.push_back(child);
+	  }	 
 
-
-      Int prevRoot = ranks[0];
-      while(idxStart<idxEnd){
-        Int curRoot = ranks[idxStart];
-        Int listSize = idxEnd - idxStart;
-
-        if(listSize == 1){
-          if(curRoot == this->myRank_){
-            this->myRoot_ = prevRoot;
-            break;
-          }
-        }
-        else{
-          Int halfList = floor(ceil(double(listSize) / 2.0));
-          Int idxStartL = idxStart+1;
-          Int idxStartH = idxStart+halfList;
-
-          if(curRoot == this->myRank_){
-            if ((idxEnd - idxStartH) > 0 && (idxStartH - idxStartL)>0){
-              Int childL = ranks[idxStartL];
-              Int childR = ranks[idxStartH];
-
-              this->myDests_.push_back(childL);
-              this->myDests_.push_back(childR);
-            }
-            else if ((idxEnd - idxStartH) > 0){
-              Int childR = ranks[idxStartH];
-              this->myDests_.push_back(childR);
-            }
-            else{
-              Int childL = ranks[idxStartL];
-              this->myDests_.push_back(childL);
-            }
-            this->myRoot_ = prevRoot;
-            break;
-          } 
-
-          if( this->myRank_ < ranks[idxStartH]){
-            idxStart = idxStartL;
-            idxEnd = idxStartH;
-          }
-          else{
-            idxStart = idxStartH;
-          }
-          prevRoot = curRoot;
-        }
-
-      }
-
-#if (defined(BCAST_VERBOSE))
-      statusOFS<<"My root is "<<this->myRoot_<<std::endl;
-      statusOFS<<"My dests are ";
-      for(int i =0;i<this->myDests_.size();++i){statusOFS<<this->myDests_[i]<<" ";}
-      statusOFS<<std::endl;
-#endif
+	  if(myIdx!=0){
+		  this->myRoot_ = ranks[(Int)floor((double)(myIdx-1.0)/2.0)];
+	  }else{
+		  this->myRoot_ = this->myRank_;
+	  } 
+	  
     }
-
-
 
 
 

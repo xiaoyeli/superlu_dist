@@ -213,6 +213,10 @@ at the top-level directory.
 #define SuperLU_timer_  SuperLU_timer_dist_
 #define LOG2(x)   (log10((double) x) / log10(2.0))
 
+#define MIN(a,b) ((a) <= (b) ? (a) : (b))
+#define MAX(a,b) ((a) >= (b) ? (a) : (b))
+
+
 
 #if ( VAMPIR>=1 ) 
 #define VT_TRACEON    VT_traceon()
@@ -718,9 +722,10 @@ extern void  PStatFree(SuperLUStat_t *);
 extern void  PStatPrint(superlu_dist_options_t *, SuperLUStat_t *, gridinfo_t *);
 extern void  log_memory(long long, SuperLUStat_t *);
 extern void  print_memorylog(SuperLUStat_t *, char *);
-extern void  quickSort( int_t*, int_t, int_t);
-extern int_t partition( int_t*, int_t, int_t);
-
+extern void  quickSort( int_t*, int_t, int_t, int_t);
+extern void  quickSortM( int_t*, int_t, int_t, int_t, int_t, int_t);
+extern int_t partition( int_t*, int_t, int_t, int_t);
+extern int_t partitionM( int_t*, int_t, int_t, int_t, int_t, int_t);
 
 /* Prototypes for parallel symbolic factorization */
 extern float symbfact_dist
@@ -819,6 +824,7 @@ extern yes_no_t BcTree_IsRoot(BcTree Tree);
 extern yes_no_t BcTree_StartForward(BcTree Tree);
 extern void 	BcTree_forwardMessageSimple(BcTree Tree, void* localBuffer);
 extern void 	BcTree_allocateRequest(BcTree Tree);
+extern int 		BcTree_getDestCount(BcTree Tree); 
 extern void 	BcTree_waitSendRequest(BcTree Tree);
 
 extern void 	TreeTest(void* tree);

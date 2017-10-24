@@ -112,7 +112,10 @@ namespace PEXSI{
 		BcastTree->allocateRequest();			
 	}	
 	
-	
+	int BcTree_getDestCount(BcTree Tree){
+		TreeBcast_v2<double>* BcastTree = (TreeBcast_v2<double>*) Tree;
+		return BcastTree->GetDestCount();			
+	}	
 
 
 	StdList StdList_Init(){

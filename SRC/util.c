@@ -1242,38 +1242,103 @@ int_t estimate_bigu_size(int_t nsupers,
 
 
 
-void quickSort( int_t* a, int_t l, int_t r)
+void quickSort( int_t* a, int_t l, int_t r, int_t dir)
 {
    int_t j;
 
    if( l < r ) 
    {
    	// divide and conquer
-       j = partition( a, l, r);
-       quickSort( a, l, j-1);
-       quickSort( a, j+1, r);
+       j = partition( a, l, r, dir);
+       quickSort( a, l, j-1, dir);
+       quickSort( a, j+1, r, dir);
    }
 	
 }
 
-int_t partition( int_t* a, int_t l, int_t r) {
+int_t partition( int_t* a, int_t l, int_t r, int_t dir) {
    int_t pivot, i, j, t;
    pivot = a[l];
    i = l; j = r+1;
-		
-   while( 1)
-   {
-   	do ++i; while( a[i] <= pivot && i <= r );
-   	do --j; while( a[j] > pivot );
-   	if( i >= j ) break;
-   	t = a[i]; a[i] = a[j]; a[j] = t;
+   
+   if(dir==0){		
+	   while( 1)
+	   {
+		do ++i; while( a[i] <= pivot && i <= r );
+		do --j; while( a[j] > pivot );
+		if( i >= j ) break;
+		t = a[i]; a[i] = a[j]; a[j] = t;
+	   }
+	   t = a[l]; a[l] = a[j]; a[j] = t;
+	   return j;
+   }else if(dir==1){
+	   while( 1)
+	   {
+		do ++i; while( a[i] >= pivot && i <= r );
+		do --j; while( a[j] < pivot );
+		if( i >= j ) break;
+		t = a[i]; a[i] = a[j]; a[j] = t;
+	   }
+	   t = a[l]; a[l] = a[j]; a[j] = t;
+	   return j;	   
    }
-   t = a[l]; a[l] = a[j]; a[j] = t;
-   return j;
 }
 
 
 
+void quickSortM( int_t* a, int_t l, int_t r, int_t lda, int_t dir, int_t dims)
+{
+   int_t j;
+
+   if( l < r ) 
+   {
+	   	// printf("dims: %5d",dims);
+		// fflush(stdout);
+		
+   	// divide and conquer
+       j = partitionM( a, l, r,lda,dir, dims);
+       quickSortM( a, l, j-1,lda,dir,dims);
+       quickSortM( a, j+1, r,lda,dir,dims);
+   }
+	
+}
+
+
+int_t partitionM( int_t* a, int_t l, int_t r, int_t lda, int_t dir, int_t dims) {
+   int_t pivot, i, j, t, dd;
+   pivot = a[l];
+   i = l; j = r+1;
+
+	if(dir==0){
+	   while( 1)
+	   {
+		do ++i; while( a[i] <= pivot && i <= r );
+		do --j; while( a[j] > pivot );
+		if( i >= j ) break; 
+		for(dd=0;dd<dims;dd++){	
+			t = a[i+lda*dd]; a[i+lda*dd] = a[j+lda*dd]; a[j+lda*dd] = t;	
+		}
+	   }
+	   for(dd=0;dd<dims;dd++){	
+		t = a[l+lda*dd]; a[l+lda*dd] = a[j+lda*dd]; a[j+lda*dd] = t;
+	   }	   
+	   return j;		
+	}else if(dir==1){
+	   while( 1)
+	   {
+		do ++i; while( a[i] >= pivot && i <= r );
+		do --j; while( a[j] < pivot );
+		if( i >= j ) break;
+		for(dd=0;dd<dims;dd++){	
+			t = a[i+lda*dd]; a[i+lda*dd] = a[j+lda*dd]; a[j+lda*dd] = t;	
+		}
+	   }
+	   for(dd=0;dd<dims;dd++){	
+		t = a[l+lda*dd]; a[l+lda*dd] = a[j+lda*dd]; a[j+lda*dd] = t;
+	   } 
+	   return j;		
+	}
+}
 
 
 

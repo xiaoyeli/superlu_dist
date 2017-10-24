@@ -47,6 +47,8 @@ typedef struct {
     int_t   **Lrowind_bc_ptr; /* size ceil(NSUPERS/Pc)                 */
     double  **Lnzval_bc_ptr;  /* size ceil(NSUPERS/Pc)                 */
     double  **Linv_bc_ptr;  /* size ceil(NSUPERS/Pc)                 */
+	int_t   **Lindval_loc_bc_ptr; /* size ceil(NSUPERS/Pc)  pointers to locations in Lrowind_bc_ptr and Lnzval_bc_ptr               */
+	int_t 	**Lrowind_bc_2_lsum; /* size ceil(NSUPERS/Pc)  map indices of Lrowind_bc_ptr to indices of lsum  */  
     double  **Uinv_bc_ptr;  /* size ceil(NSUPERS/Pc)                 */
     int_t   **Ufstnz_br_ptr;  /* size ceil(NSUPERS/Pr)                 */
     double  **Unzval_br_ptr;  /* size ceil(NSUPERS/Pr)                 */
@@ -380,11 +382,12 @@ extern void dgemv_(char *, int *, int *, double *, double *a, int *,
 extern void dger_(int*, int*, double*, double*, int*,
                  double*, int*, double*, int*);
 
-// extern int daxpy_(int *, double *, double *, int *, double *, int *);				 
+extern int daxpy_(int *, double *, double *, int *, double *, int *);				 
+
 				 
 extern void dtrtri_(char*, char*, int*, double*, int*,int*);				 
 
-				
+			 	
 				 
 #else
 extern int dgemm_(const char*, const char*, const int*, const int*, const int*,
@@ -399,7 +402,7 @@ extern int dgemv_(char *, int *, int *, double *, double *a, int *,
 extern void dger_(int*, int*, double*, double*, int*,
                  double*, int*, double*, int*);
 				 
-// extern int daxpy_(int *, double *, double *, int *, double *, int *);				 
+extern int daxpy_(int *, double *, double *, int *, double *, int *);				 
 
 #endif
 

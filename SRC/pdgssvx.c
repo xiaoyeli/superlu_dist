@@ -551,6 +551,7 @@ pdgssvx(superlu_dist_options_t *options, SuperMatrix *A,
     int   col, key; /* parameters for creating a new communicator */
     Pslu_freeable_t Pslu_freeable;
     float  flinfo;
+	int blas_flag;
 
     /* Initialization. */
     m       = A->nrow;
@@ -1307,8 +1308,17 @@ pdgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 
 	
 	if(options->DiagInv==YES){	
-	// printf("dfdfdfdfddf\n");
-	pdCompute_Diag_Inv(n, LUstruct, grid, stat, info);
+
+#ifdef _CRAY
+		  blas_flag=1;
+#elif defined (USE_VENDOR_BLAS)
+		  blas_flag=2;
+#else
+		  blas_flag=0;
+#endif	
+		if(blas_flag==0)
+		ABORT("DiagInv doesn't works with internal blas\n");
+		pdCompute_Diag_Inv(n, LUstruct, grid, stat, info);
 	}
 
 	pdgstrs(n, LUstruct, ScalePermstruct, grid, X, m_loc, 
