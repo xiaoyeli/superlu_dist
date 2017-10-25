@@ -108,11 +108,12 @@ int main(int argc, char *argv[])
     iam = grid.iam;
     if ( iam >= nprow * npcol )	goto out;
     if ( !iam ) {
-#ifdef __INTEL_COMPILER
-	printf("__INTEL_COMPILER is defined\n");
-#endif
-	printf("Input matrix file: %s\n", *cpp);
-        printf("\tProcess grid\t%d X %d\n", (int)grid.nprow, (int)grid.npcol);
+	int v_major, v_minor, v_bugfix;
+	superlu_dist_GetVersionNumber(&v_major, &v_minor, &v_bugfix);
+	printf("Library version:\t%d.%d.%d\n", v_major, v_minor, v_bugfix);
+
+	printf("Input matrix file:\t%s\n", *cpp);
+        printf("Process grid:\t\t%d X %d\n", (int)grid.nprow, (int)grid.npcol);
 	fflush(stdout);
     }
 

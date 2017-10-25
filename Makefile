@@ -14,7 +14,7 @@
 
 include make.inc
 
-all: install lib example
+all: lib install example
 
 lib: superlulib
 

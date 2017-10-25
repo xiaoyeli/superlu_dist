@@ -64,7 +64,8 @@ at the top-level directory.
  */
 #define SUPERLU_DIST_MAJOR_VERSION     5
 #define SUPERLU_DIST_MINOR_VERSION     2
-#define SUPERLU_DIST_PATCH_VERSION     1
+#define SUPERLU_DIST_PATCH_VERSION     2
+#define SUPERLU_DIST_RELEASE_DATE      "October 24, 2017"
 
 #include "superlu_dist_config.h"
 /* Define my integer size int_t */
@@ -710,6 +711,7 @@ extern void  PStatFree(SuperLUStat_t *);
 extern void  PStatPrint(superlu_dist_options_t *, SuperLUStat_t *, gridinfo_t *);
 extern void  log_memory(long long, SuperLUStat_t *);
 extern void  print_memorylog(SuperLUStat_t *, char *);
+extern int   superlu_dist_GetVersionNumber(int *, int *, int *);
 
 /* Prototypes for parallel symbolic factorization */
 extern float symbfact_dist
