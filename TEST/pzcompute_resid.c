@@ -88,7 +88,7 @@ int pzcompute_resid(int m, int n, int nrhs, SuperMatrix *A,
     char transc[1];
     doublecomplex *ax, *R;
     pzgsmv_comm_t gsmv_comm; 
-    int_t m_loc = ((NRformat_loc*) A->Store)->m_loc;
+    int m_loc = ((NRformat_loc*) A->Store)->m_loc;
 
     /* Function prototypes */
     extern double dzasum_(int *, doublecomplex *, int *);

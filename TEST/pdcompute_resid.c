@@ -89,7 +89,7 @@ int pdcompute_resid(int m, int n, int nrhs, SuperMatrix *A,
     char transc[1];
     double *ax, *R;
     pdgsmv_comm_t gsmv_comm; 
-    int_t m_loc = ((NRformat_loc*) A->Store)->m_loc;
+    int m_loc = ((NRformat_loc*) A->Store)->m_loc;
 
     /* Function prototypes */
     extern double dasum_(int *, double *, int *);
