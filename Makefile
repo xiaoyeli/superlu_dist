@@ -43,3 +43,4 @@ cleantesting:
 	( cd INSTALL; $(MAKE) clean )
 	( cd EXAMPLE; $(MAKE) clean )
 	( cd FORTRAN; $(MAKE) clean )
+	( cd TEST; $(MAKE) clean )
