@@ -35,6 +35,7 @@ set(sources
   smach_dist.c
   dmach_dist.c
   colamd.c
+  superlu_dist_version.c
 )
 set_source_files_properties(superlu_timer.c PROPERTIES COMPILE_FLAGS -O0)
 

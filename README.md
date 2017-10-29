@@ -75,7 +75,7 @@ for detailed instructions on porting.
 The following CPP definitions can be set in CFLAGS.
 
 ```
--D_LONGINT
+-DXSDK_INDEX_SIZE=64
 use 64-bit integers for indexing sparse matrices. (default 32 bit)
 
 -DPRNTlevel=[0,1,2,...]
@@ -149,7 +149,7 @@ set the number of threads you wish to use as follows (bash):
 
 `export OMP_NUM_THREADS=<##>`
 
-To enable Nvidia GPU access, need to take the following 2 step:
+To enable NVIDIA GPU access, need to take the following 2 step:
 1) Set the following Linux environment variable:
 `export ACC=GPU`
 

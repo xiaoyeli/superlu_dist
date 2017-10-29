@@ -15,8 +15,8 @@
 #
 #  The name of the libraries to be created/linked to
 #
-SuperLUroot	= /Users/xsli/Dropbox/Codes/SuperLU/superlu_dist.git/xsli-build
-DSUPERLULIB   	= $(SuperLUroot)/SRC/libsuperlu_dist.a
+SuperLUroot	= /Users/xsli/Dropbox/Codes/SuperLU/superlu_dist.git/
+DSUPERLULIB   	= $(SuperLUroot)/lib/libsuperlu_dist.a
 
 BLASLIB		= $(SuperLUroot)/CBLAS/libblas.a
 

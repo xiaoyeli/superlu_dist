@@ -117,6 +117,7 @@ int main(int argc, char *argv[])
     int    i, j, m, n, izero = 0;
     int    nprow, npcol;
     int    iam, info, ldb, ldx, nrhs;
+    int_t  iinfo;
     char     **cpp, c;
     FILE *fp, *fopen();
     char matrix_type[8], equed[1];
@@ -251,11 +252,11 @@ int main(int argc, char *argv[])
                         if ( equil || iequed ) {
 			    /* Compute row and column scale factors to
 			       equilibrate matrix A.    */
-			    pdgsequ(&A, R, C, &rowcnd, &colcnd, &amax, &info,
+			    pdgsequ(&A, R, C, &rowcnd, &colcnd, &amax, &iinfo,
 				    &grid);
 
 			    /* Force equilibration. */
-			    if ( info==0 && n > 0 ) {
+			    if ( iinfo==0 && n > 0 ) {
 				if ( what_equil == ROW ) {
 				    rowcnd = 0.;
 				    colcnd = 1.;

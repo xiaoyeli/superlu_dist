@@ -108,9 +108,9 @@ get_colamd_dist(
 	   const int m,  /* number of rows in matrix A. */
 	   const int n,  /* number of columns in matrix A. */
 	   const int nnz,/* number of nonzeros in matrix A. */
-	   int *colptr,  /* column pointer of size n+1 for matrix A. */
-	   int *rowind,  /* row indices of size nz for matrix A. */
-	   int *perm_c   /* out - the column permutation vector. */
+	   int_t *colptr,  /* column pointer of size n+1 for matrix A. */
+	   int_t *rowind,  /* row indices of size nz for matrix A. */
+	   int_t *perm_c   /* out - the column permutation vector. */
 	   )
 {
     int Alen, *A, i, info, *p;
