@@ -218,7 +218,7 @@ zscatter_u (int ib,
     int_t lib = LBi (ib, grid);
     int_t *index = Ufstnz_br_ptr[lib];
 
-    /* Reinitilize the pointers to the begining of the k-th column/row of
+    /* Reinitilize the pointers to the beginning of the k-th column/row of
      * L/U factors.
      * usub[] - index array for panel U(k,:)
      */

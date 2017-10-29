@@ -2,7 +2,7 @@
 		=================
 
 This directory contains testing programs to test various functions
-provded in SuperLU_DIST. 
+provided in SuperLU_DIST. 
 
 1. To run the tests (pdtest for real, pztest for complex), you may type:
   $ mpiexec -n <np> pdtest -r <process row> -c <process columns> -f ../EXAMPLE/g20.rua 

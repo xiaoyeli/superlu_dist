@@ -1076,7 +1076,7 @@ arrive_at_ublock (int_t j,      /* j-th block in a U panel */
     for (jj = 0; jj < perm_u[2 * j + 1]; jj++) /* == j */
 #endif
     {
-        /* Reinitilize the pointers to the begining of the 
+        /* Reinitilize the pointers to the beginning of the 
 	 * k-th column/row of L/U factors.
 	 * usub[] - index array for panel U(k,:)
 	 */
@@ -1091,7 +1091,7 @@ arrive_at_ublock (int_t j,      /* j-th block in a U panel */
         *iukp += *nsupc;
     }
 
-    /* Set the pointers to the begining of U block U(k,j) */
+    /* Set the pointers to the beginning of U block U(k,j) */
     *jb = usub[*iukp];          /* Global block number of block U(k,j). */
     *ljb = LBj (*jb, grid);     /* Local block number of U(k,j). */
     *nsupc = SuperSize (*jb);
@@ -1163,7 +1163,7 @@ int_t estimate_bigu_size(int_t nsupers,
     int_t ncols = 0; /* Count local number of nonzero columns */
     int_t ldu = 0;   /* Count local max. size of nonzero columns */
 
-    /*initilize perm_u*/
+    /*initialize perm_u*/
     for (int i = 0; i < nsupers; ++i) perm_u[i] = i;
 
     for (int lk = myrow; lk < nsupers; lk += Pr ) {

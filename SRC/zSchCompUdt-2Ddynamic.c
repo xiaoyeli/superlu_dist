@@ -46,7 +46,7 @@ if ( msg0 && msg2 ) { /* L(:,k) and U(k,:) are not empty. */
 			   and remaining part.  */
 
     /*******************************************************************
-     * Seperating L blocks into the top part within look-ahead window
+     * Separating L blocks into the top part within look-ahead window
      * and the remaining ones.
      *******************************************************************/
 
@@ -143,7 +143,7 @@ if ( msg0 && msg2 ) { /* L(:,k) and U(k,:) are not empty. */
 	    not to start from block 0. */
 	 iukp = iukp0; /* point to the first block in index[] */
 	 rukp = rukp0; /* point to the start of nzval[] */
-#esle
+#else
 	 /* Save pointers at location right after look-ahead window
 	    for later restart. */
 	 iukp0 = iukp;

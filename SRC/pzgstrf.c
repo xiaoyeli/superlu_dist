@@ -120,7 +120,7 @@ at the top-level directory.
 /* 
     Name    : SUPERNODE_PROFILE  
     Purpose : For SuperNode Level profiling of various measurements such as gigaflop/sec
-    obtained,bandwidth achived:
+    obtained,bandwidth achieved:
     Overhead : Low 
 */
 // #define SUPERNODE_PROFILE   
@@ -128,14 +128,14 @@ at the top-level directory.
 /* 
     Name    :   BAELINE
     Purpose : baseline to compare performance against
-    Overhead : NA : this wont be used for running experiments
+    Overhead : NA : this won't be used for running experiments
 */
 // #define BASELINE
 
 /* 
     Name    :   PHI_FRAMEWORK
     Purpose : To simulate and test algorithm used for offloading Phi
-    Overhead : NA : this wont be used for running experiments
+    Overhead : NA : this won't be used for running experiments
 */
 #define PHI_FRAMEWORK
 

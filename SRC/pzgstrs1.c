@@ -779,7 +779,7 @@ void pzgstrs1(int_t n, LUstruct_t *LUstruct, gridinfo_t *grid,
 
 
     /*
-     * Compute the internal nodes asychronously by all processes.
+     * Compute the internal nodes asynchronously by all processes.
      */
     while ( nbrecvx || nbrecvmod ) { /* While not finished. */
 

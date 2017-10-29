@@ -284,7 +284,7 @@ pdgstrf2_trsm
 #ifdef PI_DEBUG
             printf ("dtrsm non diagonal param 11:  %d \n", nsupr);
             if (!lusup)
-                printf (" Rank :%d \t Empty block column occured :\n", iam);
+                printf (" Rank :%d \t Empty block column occurred :\n", iam);
 #endif
 #if defined (USE_VENDOR_BLAS)
             dtrsm_ ("R", "U", "N", "N", &nsupr, &nsupc,
