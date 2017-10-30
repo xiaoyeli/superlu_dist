@@ -168,8 +168,8 @@ at the top-level directory.
 #define LkVAL    14
 #define LkkDIAG  15
     /* For triangular solves. */
-#define XK_H     2  /* The header preceeding each X block. */
-#define LSUM_H   2  /* The header preceeding each MOD block. */
+#define XK_H     2  /* The header preceding each X block. */
+#define LSUM_H   2  /* The header preceding each MOD block. */
 #define GSUM     20 
 #define Xk       21
 #define Yk       22

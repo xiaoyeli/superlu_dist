@@ -209,7 +209,7 @@ at the top-level directory.
  *
  *      The user must also supply 
  *
- *      -  A, the unfactored matrix, only in the case that iterative refinment
+ *      -  A, the unfactored matrix, only in the case that iterative refinement
  *            is to be done (specifically A must be the output A from 
  *            the previous call, so that it has been scaled and permuted)
  *      -  all of ScalePermstruct
@@ -312,7 +312,7 @@ at the top-level directory.
  *           = SLU_DOUBLE: accumulate residual in double precision.
  *           = SLU_EXTRA:  accumulate residual in extra precision.
  *
- *         NOTE: all options must be indentical on all processes when
+ *         NOTE: all options must be identical on all processes when
  *               calling this routine.
  *
  * A (input/output) SuperMatrix*
