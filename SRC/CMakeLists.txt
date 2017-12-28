@@ -67,6 +67,7 @@ if(enable_double)
     dreadrb.c
     dreadtriple.c
     dreadMM.c
+	dbinary_io.c	
     pdgsequ.c
     pdlaqgs.c
     dldperm_dist.c

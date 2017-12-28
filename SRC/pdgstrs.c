@@ -911,6 +911,7 @@ if(iam==0){
     if ( !(fmod = intMalloc_dist(nlb)) )
 	ABORT("Calloc fails for fmod[].");
     for (i = 0; i < nlb; ++i) fmod[i] = Llu->fmod[i];
+	
     if ( !(frecv = intCalloc_dist(nlb)) )
 	ABORT("Malloc fails for frecv[].");
     Llu->frecv = frecv;
@@ -1601,15 +1602,20 @@ if(iam==0){
 #if ( PRNTlevel>=1 )
     t = SuperLU_timer_() - t;
 	stat->utime[SOL_L] = t;
-    if ( !iam ) printf(".. L-solve time\t%8.3f\n", t);
-	
-
+    if ( !iam ) printf(".. L-solve time\t%8.4f\n", t);
     MPI_Reduce (&t, &tmax, 1, MPI_DOUBLE,
 		MPI_MAX, 0, grid->comm);
-    if ( !iam ) printf(".. L-solve time (MAX) \t%8.3f\n", tmax);	
+    if ( !iam ) printf(".. L-solve time (MAX) \t%8.4f\n", tmax);		
+														  
+    MPI_Reduce (&stat->utime[SOL_GEMM], &tmax, 1, MPI_DOUBLE,
+		MPI_MAX, 0, grid->comm);
+    if ( !iam ) printf(".. L-GEMM time (MAX) \t%8.4f\n", tmax);	
 	
+    MPI_Reduce (&stat->utime[SOL_COMM], &tmax, 1, MPI_DOUBLE,
+		MPI_MAX, 0, grid->comm);
+    if ( !iam ) printf(".. L-COMM time (MAX) \t%8.4f\n", tmax);		
 	
-	
+														  
     t = SuperLU_timer_();
 #endif
 
@@ -2226,6 +2232,26 @@ if(iam==0){
 	
 	TOC(t2_sol,t1_sol);
     stat->utime[SOLVE] = t2_sol;
+
+#if ( PROFlevel>=1 )
+	{
+	int_t i, P = grid->nprow*grid->npcol;
+	MPI_Barrier( grid->comm );	
+	
+	if ( !iam ) printf("\n.. Msg_vol breakdown:\tpr\tpc\tMB\tCNT\n");
+	fflush(stdout);
+	for (i = 0; i < P; ++i) {
+	    if ( iam == i) {
+		printf("\t\t%5d %5d %15.4e %10d\n", myrow, mycol , msg_vol * 1e-6, (int_t)msg_cnt);
+		fflush(stdout);
+	    }
+	    MPI_Barrier( grid->comm );
+	}
+	fflush(stdout);
+	sleep(2.0); 
+	MPI_Barrier( grid->comm );
+	}
+#endif	
 
 #if ( DEBUGlevel>=1 )
     CHECK_MALLOC(iam, "Exit pdgstrs()");

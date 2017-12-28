@@ -141,7 +141,11 @@ static int ReadVector(FILE *fp, int_t n, int_t *where, int_t perline, int_t pers
     i = 0;
     while (i < n) {
         fgets(buf, 100, fp);    /* read a line at a time */
-        for (j=0; j<perline && i<n; j++) {
+		// if(0==i%10000){
+			// printf("line ind: %s\n", buf);
+			// fflush(stdout);
+		// }
+		for (j=0; j<perline && i<n; j++) {
             tmp = buf[(j+1)*persize];     /* save the char at that place */
             buf[(j+1)*persize] = 0;       /* null terminate */
             item = atoi(&buf[j*persize]); 
@@ -162,7 +166,11 @@ static int dReadValues(FILE *fp, int_t n, double *destination,
     i = 0;
     while (i < n) {
         fgets(buf, 100, fp);    /* read a line at a time */
-        for (j=0; j<perline && i<n; j++) {
+        // if(0==i%10000){
+			// printf("line: %s\n", buf);
+			// fflush(stdout);
+		// }
+		for (j=0; j<perline && i<n; j++) {
             tmp = buf[(j+1)*persize];     /* save the char at that place */
             buf[(j+1)*persize] = 0;       /* null terminate */
             s = j*persize;
@@ -297,7 +305,10 @@ dreadrb_dist(int iam, FILE *fp, int_t *nrow, int_t *ncol, int_t *nonz,
     fscanf(fp, "%11c", buf); /* pad */
     type[3] = 0;
 #if (DEBUGlevel >= 1)
-    if ( !iam ) printf("Matrix type %s\n", type);
+    if ( !iam ) {
+		printf("Matrix type %s\n", type);
+		fflush(stdout);
+	}
 #endif
 
     fscanf(fp, "%14c", buf); *nrow = atoi(buf);

@@ -168,7 +168,10 @@ int main(int argc, char *argv[])
 	//options.ParSymbFact       = YES;
 	//options.ColPerm           = PARMETIS;
 	options.IterRefine       = 0;
-	options.DiagInv       = NO;
+	options.DiagInv       = YES;
+	options.RowPerm = NOROWPERM;
+	//options.ReplaceTinyPivot = NO;	
+	options.SymPattern = YES;
 	
     if (!iam) {
 	print_sp_ienv_dist(&options);
