@@ -26,6 +26,8 @@ at the top-level directory.
 
 #include <mpi.h>
 
+#include "superlu_defs.h"
+
 typedef struct { double r, i; } doublecomplex;
 
 /*
@@ -33,7 +35,7 @@ typedef struct { double r, i; } doublecomplex;
  * and double complex. I'm too lazy to declare
  * these guys external in every file that needs them.
  */
-extern MPI_Datatype SuperLU_MPI_DOUBLE_COMPLEX;
+extern SUPERLU_DIST_EXPORT MPI_Datatype SuperLU_MPI_DOUBLE_COMPLEX;
 
 
 /* Macro definitions */

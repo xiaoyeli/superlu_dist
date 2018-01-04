@@ -130,6 +130,13 @@ set_target_properties(superlu_dist PROPERTIES
                       VERSION ${PROJECT_VERSION} SOVERSION ${VERSION_MAJOR}
 )
 
+target_compile_definitions(superlu_dist PRIVATE SUPERLU_DIST_EXPORTS)
+if(WIN32 AND BUILD_SHARED_LIBS)
+  set_target_properties(superlu_dist PROPERTIES
+                        WINDOWS_EXPORT_ALL_SYMBOLS ON
+  )
+endif()
+
 install(TARGETS superlu_dist
     RUNTIME DESTINATION "${INSTALL_BIN_DIR}"
     LIBRARY DESTINATION "${INSTALL_LIB_DIR}"

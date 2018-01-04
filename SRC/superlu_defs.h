@@ -230,6 +230,18 @@ at the top-level directory.
 #define VT_TRACEOFF
 #endif
 
+#ifndef SUPERLU_DIST_EXPORT
+#if WIN32
+#ifdef SUPERLU_DIST_EXPORTS
+#define SUPERLU_DIST_EXPORT __declspec(dllexport)
+#else
+#define SUPERLU_DIST_EXPORT __declspec(dllimport)
+#endif /* SUPERLU_DIST_EXPORTS */
+#else
+#define SUPERLU_DIST_EXPORT
+#endif /* WIN32 */
+#endif /* SUPERLU_DIST_EXPORT */
+
 
 /***********************************************************************
  * New data types
