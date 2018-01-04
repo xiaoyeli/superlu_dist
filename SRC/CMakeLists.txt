@@ -122,7 +122,10 @@ endif()
 
 add_library(superlu_dist ${sources} ${HEADERS})
 target_link_libraries(superlu_dist
-                      ${MPI_C_LIBRARIES} ${BLAS_LIB} ${PARMETIS_LIB} m)
+                      ${MPI_C_LIBRARIES} ${BLAS_LIB} ${PARMETIS_LIB})
+if(NOT WIN32)
+  target_link_libraries(superlu_dist m)
+endif()
 set_target_properties(superlu_dist PROPERTIES
                       VERSION ${PROJECT_VERSION} SOVERSION ${VERSION_MAJOR}
 )
