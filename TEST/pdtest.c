@@ -25,8 +25,13 @@ at the top-level directory.
  */
 #include <stdio.h>
 #include <stdlib.h>
+#ifndef WIN32
 #include <unistd.h>
 #include <getopt.h>
+#else
+#include "win32/getopt.h"
+#include "win32/setenv.h"
+#endif /* WIN32 */
 #include <math.h>
 #include "superlu_ddefs.h"
 
