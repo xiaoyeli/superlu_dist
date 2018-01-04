@@ -1344,8 +1344,17 @@ symbfact_distributeMatrix
   /* setup ptr_toSnd[p] to point to data in snd_aind to be send to 
    processor p */
   for (i = 0, j = 0, p = 0; p < nprocs_num; p++) {
-    if ( p != iam ) 
+    if ( p != iam )
+#ifdef WIN32
+    {
+        int_t* dest = ptr_toSnd;
+        for (int_t ii = 0; ii < p; ++ii)
+            ++dest;
+        *dest = i;
+    }
+#else
       ptr_toSnd[p] = i;
+#endif /* WIN32 */
     else
       ptr_toSnd[p] = j;
     i += nnzToSend[p]; 
