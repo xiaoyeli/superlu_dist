@@ -14,6 +14,8 @@ set(VERSION_MINOR "2")
 set(VERSION_BugFix "2")
 set(PROJECT_VERSION ${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_BugFix})
 
+list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake")
+
 ######################################################################
 #
 # IDEAS: xSDK standards module
@@ -181,9 +183,13 @@ else()
   message("-- Will not link with ParMETIS.")
 endif()
 
-# if(NOT enable_parmetislib)
-#  find_package(PARMETIS)    ## does not have this Module yet.
-# endif()
+if(NOT enable_parmetislib)
+  find_package(ParMETIS)
+  if(PARMETIS_FOUND)
+    set(PARMETIS_LIB ParMETIS::ParMETIS)
+    set(TPL_PARMETIS_INCLUDE_DIRS "")
+  endif()
+endif()
 
 
 ######################################################################
