@@ -306,10 +306,11 @@ if ( msg0 && msg2 ) { /* L(:,k) and U(k,:) are not empty. */
      tt_start = SuperLU_timer_();
 
      /* Loop through the look-ahead blocks to copy Lval into the buffer */
+	 int i;
 #ifdef _OPENMP
 #pragma omp parallel for private(j,jj,tempu,tempv) default (shared)
 #endif
-     for (int i = 0; i < lookAheadBlk; ++i) {
+     for (i = 0; i < lookAheadBlk; ++i) {
 	 int StRowDest, temp_nbrow;
 	 if ( i==0 ) {
 	     StRowDest = 0;
@@ -428,6 +429,7 @@ if ( msg0 && msg2 ) { /* L(:,k) and U(k,:) are not empty. */
 	   int* indirect_thread    = indirect + (ldt + CACHELINE/i) * thread_id;
 	   int* indirect2_thread   = indirect2 + (ldt + CACHELINE/i) * thread_id;
 
+	   int ij;
 #pragma omp for \
     private (nsupc,ljb,lptr,ib,temp_nbrow,cum_nrow)	\
     schedule(dynamic)
@@ -438,7 +440,7 @@ if ( msg0 && msg2 ) { /* L(:,k) and U(k,:) are not empty. */
 #endif
 	   /* Each thread is assigned one loop index ij, responsible for 
 	      block update L(lb,k) * U(k,j) -> tempv[]. */
-	   for (int ij = 0; ij < lookAheadBlk*(nub-jj0); ++ij) {
+	   for (ij = 0; ij < lookAheadBlk*(nub-jj0); ++ij) {
 	       /* jj0 starts after look-ahead window. */
             int j   = ij/lookAheadBlk + jj0;
             int lb  = ij%lookAheadBlk;
@@ -621,6 +623,7 @@ if ( msg0 && msg2 ) { /* L(:,k) and U(k,:) are not empty. */
 	    int* indirect_thread = indirect + (ldt + CACHELINE/i) * thread_id;
 	    int* indirect2_thread = indirect2 + (ldt + CACHELINE/i) * thread_id;
 
+	    int ij;
 #pragma omp for \
     private (j,lb,rukp,iukp,jb,nsupc,ljb,lptr,ib,temp_nbrow,cum_nrow)	\
     schedule(dynamic)
@@ -631,7 +634,7 @@ if ( msg0 && msg2 ) { /* L(:,k) and U(k,:) are not empty. */
 #endif
 	    /* Each thread is assigned one loop index ij, responsible for 
 	       block update L(lb,k) * U(k,j) -> tempv[]. */
-	    for (int ij = 0; ij < RemainBlk*(jj_cpu-jj0); ++ij) {
+	    for (ij = 0; ij < RemainBlk*(jj_cpu-jj0); ++ij) {
 		/* jj_cpu := nub, jj0 starts after look-ahead window. */
 		int j   = ij / RemainBlk + jj0; /* j-th block in U panel */
 		int lb  = ij % RemainBlk;       /* lb-th block in L panel */

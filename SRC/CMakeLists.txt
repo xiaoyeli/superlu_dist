@@ -122,19 +122,26 @@ endif()
 
 add_library(superlu_dist ${sources} ${HEADERS})
 target_link_libraries(superlu_dist
-                      ${MPI_C_LIBRARIES} ${BLAS_LIB} ${PARMETIS_LIB} m)
+                      ${MPI_C_LIBRARIES} ${BLAS_LIB} ${PARMETIS_LIB})
+if(NOT WIN32)
+  target_link_libraries(superlu_dist m)
+endif()
 set_target_properties(superlu_dist PROPERTIES
                       VERSION ${PROJECT_VERSION} SOVERSION ${VERSION_MAJOR}
 )
 
-# Define GNU standard installation directories
-include(GNUInstallDirs)
+target_compile_definitions(superlu_dist PRIVATE SUPERLU_DIST_EXPORTS)
+if(WIN32 AND BUILD_SHARED_LIBS)
+  set_target_properties(superlu_dist PROPERTIES
+                        WINDOWS_EXPORT_ALL_SYMBOLS ON
+  )
+endif()
 
 install(TARGETS superlu_dist
-# DESTINATION ${CMAKE_INSTALL_PREFIX}/lib)
-     DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    RUNTIME DESTINATION "${INSTALL_BIN_DIR}"
+    LIBRARY DESTINATION "${INSTALL_LIB_DIR}"
+    ARCHIVE DESTINATION "${INSTALL_LIB_DIR}"
 )
 install(FILES ${headers}
-# DESTINATION ${CMAKE_INSTALL_PREFIX}/include)
-  DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+  DESTINATION "${INSTALL_INC_DIR}"
 )

@@ -90,6 +90,20 @@ option(enable_examples  "Build examples" ON)
 option(TPL_PARMETIS_LIBRARIES "List of absolute paths to ParMETIS link libraries [].")
 option(TPL_PARMETIS_INCLUDE_DIRS "List of absolute paths to ParMETIS include directories [].")
 
+if(NOT WIN32)
+  include(GNUInstallDirs)
+  set(default_install_inc_dir ${CMAKE_INSTALL_INCLUDEDIR})
+  set(default_install_lib_dir ${CMAKE_INSTALL_LIBDIR})
+  set(default_install_bin_dir ${CMAKE_INSTALL_BINDIR})
+else()
+  set(default_install_inc_dir "include")
+  set(default_install_lib_dir "lib")
+  set(default_install_bin_dir "bin")
+endif()
+
+set(INSTALL_INC_DIR "${default_install_inc_dir}" CACHE STRING "The folder where headers will be installed.")
+set(INSTALL_LIB_DIR "${default_install_lib_dir}" CACHE STRING "The folder where libraries will be installed.")
+set(INSTALL_BIN_DIR "${default_install_bin_dir}" CACHE STRING "The folder where runtime files will be installed.")
 
 # setup required compiler defines and options.
 ## get_directory_property( DirDefs COMPILE_DEFINITIONS )

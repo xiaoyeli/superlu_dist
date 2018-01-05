@@ -1,7 +1,10 @@
 include_directories(${SuperLU_DIST_SOURCE_DIR}/SRC)
 
 # Libs linked to all of the tests
-set(all_link_libs superlu_dist ${BLAS_LIB} m)
+set(all_link_libs superlu_dist ${BLAS_LIB})
+if(NOT WIN32)
+  list(APPEND all_link_libs m)
+endif()
 
 set(MATRICES ../EXAMPLE/g20.rua)  # sample sparse matrix from a file
 set(NPROWS 1 2)		  # process rows
@@ -69,6 +72,9 @@ endfunction(add_superlu_dist_tests)
 
 if(enable_double)
   set(DTEST pdtest.c dcreate_matrix.c pdcompute_resid.c)
+  if(WIN32)
+    list(APPEND DTEST win32/setenv.c win32/getopt.c)
+  endif()
   add_executable(pdtest ${DTEST})
   target_link_libraries(pdtest ${all_link_libs})
   add_superlu_dist_tests(pdtest g20.rua)

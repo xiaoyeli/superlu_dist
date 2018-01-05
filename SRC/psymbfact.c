@@ -1343,8 +1343,11 @@ symbfact_distributeMatrix
 
   /* setup ptr_toSnd[p] to point to data in snd_aind to be send to 
    processor p */
+#ifdef _MSC_VER
+#pragma loop(no_vector)
+#endif
   for (i = 0, j = 0, p = 0; p < nprocs_num; p++) {
-    if ( p != iam ) 
+    if ( p != iam )
       ptr_toSnd[p] = i;
     else
       ptr_toSnd[p] = j;

@@ -386,7 +386,9 @@ void pzgstrs2_omp
         for (j = 0; j < nsupc_temp[b]; j++) {
             segsize = klst - usub[iukp++];
 	    if (segsize) {
+#ifndef _MSC_VER
 #pragma omp task default(shared) firstprivate(segsize,rukp) if (segsize > 30)
+#endif
 		{ /* Nonzero segment. */
 		    int_t luptr = (knsupc - segsize) * (nsupr + 1);
 		    //printf("[2] segsize %d, nsupr %d\n", segsize, nsupr);
