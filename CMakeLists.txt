@@ -8,7 +8,7 @@
 cmake_minimum_required(VERSION 2.8.12 FATAL_ERROR)
 
 # Project version numbers
-project(SuperLU_DIST NONE)
+project(SuperLU_DIST LANGUAGES C)
 set(VERSION_MAJOR "5")
 set(VERSION_MINOR "2")
 set(VERSION_BugFix "2")
@@ -183,7 +183,7 @@ else()
   message("-- Will not link with ParMETIS.")
 endif()
 
-if(NOT enable_parmetislib)
+if(enable_parmetislib AND NOT PARMETIS_FOUND)
   find_package(ParMETIS)
   if(PARMETIS_FOUND)
     set(PARMETIS_LIB ParMETIS::ParMETIS)
@@ -198,8 +198,11 @@ endif()
 #
 ######################################################################
 
+include_directories(${CMAKE_BINARY_DIR}/SRC) # For superlu_dist_config.h
 include_directories(${CMAKE_SOURCE_DIR}/SRC)
-include_directories(${TPL_PARMETIS_INCLUDE_DIRS})  ## parmetis
+if (TPL_PARMETIS_INCLUDE_DIRS)
+  include_directories(${TPL_PARMETIS_INCLUDE_DIRS})  ## parmetis
+endif ()
 include_directories(${MPI_C_INCLUDE_PATH})
 
 ######################################################################
@@ -228,7 +231,7 @@ endif()
 # file(WRITE "make.defs" "# can be exposed to users" ${CMAKE_C_COMPILER})
 # configure_file(${CMAKE_SOURCE_DIR}/make.inc.in ${CMAKE_BINARY_DIR}/make.inc)
 configure_file(${SuperLU_DIST_SOURCE_DIR}/make.inc.in ${SuperLU_DIST_SOURCE_DIR}/make.inc)
-configure_file(${SuperLU_DIST_SOURCE_DIR}/SRC/superlu_dist_config.h.in ${SuperLU_DIST_SOURCE_DIR}/SRC/superlu_dist_config.h)
+configure_file(${SuperLU_DIST_SOURCE_DIR}/SRC/superlu_dist_config.h.in ${SuperLU_DIST_BINARY_DIR}/SRC/superlu_dist_config.h)
 
 # Add pkg-config support
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/superlu_dist.pc.in ${CMAKE_CURRENT_BINARY_DIR}/superlu_dist.pc @ONLY)
