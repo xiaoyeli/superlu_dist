@@ -35,6 +35,7 @@ get_metis(
 	  int_t *perm_c    /* out - the column permutation vector. */
 	  )
 {
+#ifdef HAVE_PARMETIS
     /*#define METISOPTIONS 8*/
 #define METISOPTIONS 40
     int_t metis_options[METISOPTIONS];
@@ -101,6 +102,7 @@ get_metis(
     SUPERLU_FREE(b_rowind);
 #endif
     SUPERLU_FREE(perm);
+#endif /* HAVE_PARMETIS */
 }
 
 void
