@@ -22,6 +22,7 @@ at the top-level directory.
  */
 
 #include <math.h>
+#include <superlu_dist_config.h>
 #include "superlu_ddefs.h"
 
 /*! \brief
@@ -151,6 +152,11 @@ int main(int argc, char *argv[])
         options.PrintStat = YES;
      */
     set_default_options_dist(&options);
+#ifndef HAVE_PARMETIS
+    printf("No parmetis.\n");
+    options.ColPerm = MMD_AT_PLUS_A;
+#endif
+    printf("options.ColPerm = %d\n", options.ColPerm);
 
     if (!iam) {
 	print_sp_ienv_dist(&options);
