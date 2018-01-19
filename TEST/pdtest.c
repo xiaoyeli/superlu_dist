@@ -28,6 +28,7 @@ at the top-level directory.
 #include <unistd.h>
 #include <getopt.h>
 #include <math.h>
+#include <superlu_dist_config.h>
 #include "superlu_ddefs.h"
 
 #define NTESTS 1 /*5*/      /* Number of test types */
@@ -170,6 +171,10 @@ int main(int argc, char *argv[])
 
     /* Set the default input options. */
     set_default_options_dist(&options);
+#ifndef HAVE_PARMETIS
+    printf("No parmetis.\n");
+    options.ColPerm = MMD_AT_PLUS_A;
+#endif
     options.PrintStat = NO;
 	
     if (!iam) {

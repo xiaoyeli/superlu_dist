@@ -22,6 +22,7 @@ at the top-level directory.
  *
  */
 
+#include <superlu_dist_config.h>
 #include "superlu_ddefs.h"
 #include "colamd.h"
 
@@ -35,6 +36,7 @@ get_metis(
 	  int_t *perm_c    /* out - the column permutation vector. */
 	  )
 {
+#ifdef HAVE_PARMETIS
     /*#define METISOPTIONS 8*/
 #define METISOPTIONS 40
     int_t metis_options[METISOPTIONS];
@@ -101,6 +103,7 @@ get_metis(
     SUPERLU_FREE(b_rowind);
 #endif
     SUPERLU_FREE(perm);
+#endif /* HAVE_PARMETIS */
 }
 
 void
@@ -513,6 +516,7 @@ get_perm_c_dist(int_t pnum, int_t ispec, SuperMatrix *A, int_t *perm_c)
 	      printf(".. Use approximate minimum degree column ordering.\n");
 #endif
 	      return;
+#ifdef HAVE_PARMETIS
         case METIS_AT_PLUS_A: /* METIS ordering on A'+A */
 	      if ( m != n ) ABORT("Matrix is not square");
 	      at_plus_a_dist(n, Astore->nnz, Astore->colptr, Astore->rowind,
@@ -530,6 +534,7 @@ get_perm_c_dist(int_t pnum, int_t ispec, SuperMatrix *A, int_t *perm_c)
 	      if ( !pnum ) printf(".. Use METIS ordering on A'+A\n");
 #endif
 	      return;
+#endif
 
         default:
 	      ABORT("Invalid ISPEC");
