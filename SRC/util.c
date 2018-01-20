@@ -321,7 +321,11 @@ void set_default_options_dist(superlu_dist_options_t *options)
     options->Fact              = DOFACT;
     options->Equil             = YES;
     options->ParSymbFact       = NO;
+#ifdef HAVE_PARMETIS
     options->ColPerm           = METIS_AT_PLUS_A;
+#else
+    options->ColPerm            = MMD_AT_PLUS_A;
+#endif
     options->RowPerm           = LargeDiag;
     options->ReplaceTinyPivot  = NO;
     options->IterRefine        = SLU_DOUBLE;

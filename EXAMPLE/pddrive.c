@@ -152,10 +152,6 @@ int main(int argc, char *argv[])
         options.PrintStat         = YES;
      */
     set_default_options_dist(&options);
-#ifndef HAVE_PARMETIS
-    printf("No parmetis.\n");
-    options.ColPerm = MMD_AT_PLUS_A;
-#endif
 #if 0
     options.RowPerm = NOROWPERM;
     options.IterRefine = NOREFINE;

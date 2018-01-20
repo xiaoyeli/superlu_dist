@@ -137,10 +137,10 @@ if ( msg0 && msg2 ) { /* L(:,k) and U(k,:) are not empty. */
 	 ncols = 0; /* Total number of nonzero columns in U(k,:) */
 	 int temp_ncols = 0;
 
-#if 0
 	 /* jj0 contains the look-ahead window that was updated in 
 	    dlook_ahead_update.c. Now the search can continue from that point,
 	    not to start from block 0. */
+#if 0
 	 iukp = iukp0; /* point to the first block in index[] */
 	 rukp = rukp0; /* point to the start of nzval[] */
 #else
@@ -308,7 +308,7 @@ if ( msg0 && msg2 ) { /* L(:,k) and U(k,:) are not empty. */
 #ifdef _OPENMP
 #pragma omp parallel for private(j,jj,tempu,tempv) default (shared)
 #endif
-     for (int i = 0; i < lookAheadBlk; ++i) {
+     for (i = 0; i < lookAheadBlk; ++i) {
 	 int StRowDest, temp_nbrow;
 	 if ( i==0 ) {
 	     StRowDest = 0;

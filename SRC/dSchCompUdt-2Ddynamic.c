@@ -138,10 +138,10 @@ if ( msg0 && msg2 ) { /* L(:,k) and U(k,:) are not empty. */
 	 ncols = 0; /* Total number of nonzero columns in U(k,:) */
 	 int temp_ncols = 0;
 
-#if 0
 	 /* jj0 contains the look-ahead window that was updated in 
 	    dlook_ahead_update.c. Now the search can continue from that point,
 	    not to start from block 0. */
+#if 0
 	 iukp = iukp0; /* point to the first block in index[] */
 	 rukp = rukp0; /* point to the start of nzval[] */
 #else
@@ -309,7 +309,7 @@ if ( msg0 && msg2 ) { /* L(:,k) and U(k,:) are not empty. */
 #ifdef _OPENMP
 #pragma omp parallel for private(j,jj,tempu,tempv) default (shared)
 #endif
-     for (int i = 0; i < lookAheadBlk; ++i) {
+     for (i = 0; i < lookAheadBlk; ++i) {
 	 int StRowDest, temp_nbrow;
 	 if ( i==0 ) {
 	     StRowDest = 0;
@@ -347,10 +347,10 @@ if ( msg0 && msg2 ) { /* L(:,k) and U(k,:) are not empty. */
 
      /* Loop through the remaining blocks to copy Lval into the buffer */
 #ifdef _OPENMP
-#pragma omp parallel for private(i,j,jj,tempu,tempv) default (shared)	\
+#pragma omp parallel for private(i,j,jj,tempu,tempv) default (shared) \
     schedule(SCHEDULE_STRATEGY)
 #endif
-     for (i = 0; i < RemainBlk; ++i) {
+     for (int i = 0; i < RemainBlk; ++i) {
          int StRowDest, temp_nbrow;
          if ( i==0 )  {
 	     StRowDest  = 0;
@@ -365,7 +365,7 @@ if ( msg0 && msg2 ) { /* L(:,k) and U(k,:) are not empty. */
 	 /* Now copying a block into L remaining buffer */
 	 // #pragma omp parallel for (gives slow down)
 	 // for (int j = 0; j < knsupc; ++j) {
-	 for (j = knsupc-ldu; j < knsupc; ++j) {
+	 for (int j = knsupc-ldu; j < knsupc; ++j) {
 	     // printf("StRowDest %d Rnbrow %d StRowSource %d \n", StRowDest,Rnbrow ,StRowSource);
 #if 1
 	     /* Better let compiler generate memcpy or vectorized code. */

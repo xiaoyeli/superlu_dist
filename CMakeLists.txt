@@ -8,7 +8,7 @@
 cmake_minimum_required(VERSION 2.8.12 FATAL_ERROR)
 
 # Project version numbers
-project(SuperLU_DIST LANGUAGES C)
+project(SuperLU_DIST NONE)
 set(VERSION_MAJOR "5")
 set(VERSION_MINOR "2")
 set(VERSION_BugFix "2")
@@ -191,6 +191,10 @@ if(enable_parmetislib AND NOT PARMETIS_FOUND)
   endif()
 endif()
 
+if(PARMETIS_FOUND)
+  set(HAVE_PARMETIS TRUE)
+endif()
+
 
 ######################################################################
 #
@@ -232,6 +236,7 @@ endif()
 # configure_file(${CMAKE_SOURCE_DIR}/make.inc.in ${CMAKE_BINARY_DIR}/make.inc)
 configure_file(${SuperLU_DIST_SOURCE_DIR}/make.inc.in ${SuperLU_DIST_SOURCE_DIR}/make.inc)
 configure_file(${SuperLU_DIST_SOURCE_DIR}/SRC/superlu_dist_config.h.in ${SuperLU_DIST_BINARY_DIR}/SRC/superlu_dist_config.h)
+configure_file(${SuperLU_DIST_SOURCE_DIR}/SRC/superlu_dist_config.h.in ${SuperLU_DIST_SOURCE_DIR}/SRC/superlu_dist_config.h)
 
 # Add pkg-config support
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/superlu_dist.pc.in ${CMAKE_CURRENT_BINARY_DIR}/superlu_dist.pc @ONLY)
