@@ -22,7 +22,7 @@ at the top-level directory.
  *
  */
 
-#include <superlu_dist_config.h>
+#include "superlu_dist_config.h"
 #include "superlu_ddefs.h"
 #include "colamd.h"
 

@@ -1343,7 +1343,7 @@ symbfact_distributeMatrix
 
   /* setup ptr_toSnd[p] to point to data in snd_aind to be send to 
    processor p */
-  /* VS 2017 crashes without this rearrangement */
+  /* VS 2017 crashes without this rearrangement -- fix by John Cary 1/20/18 */
   /* for (i = 0, j = 0, p = 0; p < nprocs_num; p++) { */
   i = 0; j = 0; p = 0;
   while (1) {

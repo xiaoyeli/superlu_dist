@@ -24,7 +24,7 @@ at the top-level directory.
 /* limits.h:  the largest positive integer (INT_MAX) */
 #include <limits.h>
 #include <math.h>
-#include <superlu_dist_config.h>
+#include "superlu_dist_config.h"
 #ifdef HAVE_PARMETIS
 #include "parmetis.h"
 #endif

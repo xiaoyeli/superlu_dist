@@ -108,6 +108,8 @@ typedef struct {
 
 /* Constants */
 #define GluIntArray(n)   (5 * (n) + 5)
+
+#if 0 // defined in superlu_enum_consts.h -- 1/20/2018
 #define NO_MEMTYPE  6      /* 0: lusup;
 			      1: ucol;
 			      2: lsub;
@@ -115,6 +117,7 @@ typedef struct {
 			      4: llvl; level number in L for ILU(k)
 			      5: ulvl; level number in U for ILU(k)
                            */
+#endif
 
 /* Macros to manipulate stack */
 #define StackFull(x)         ( x + stack.used >= stack.size )

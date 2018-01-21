@@ -153,11 +153,11 @@ int main(int argc, char *argv[])
      */
     set_default_options_dist(&options);
 #if 0
+    options.ColPerm = PARMETIS;
+    options.ParSymbFact = YES;
     options.RowPerm = NOROWPERM;
     options.IterRefine = NOREFINE;
-    options.ColPerm = NATURAL;
     options.Equil = NO; 
-    options.ReplaceTinyPivot = YES;
 #endif
 
     if (!iam) {
