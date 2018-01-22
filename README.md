@@ -236,6 +236,7 @@ without Fortran, and with OpenMP disabled.
 
 The cmake configuration line used was
 
+```
 '/winsame/contrib-vs2017/cmake-3.9.4-ser/bin/cmake' \
   -DCMAKE_INSTALL_PREFIX:PATH=C:/winsame/volatile-vs2017/superlu_dist-master.r147-parcomm \
   -DCMAKE_BUILD_TYPE:STRING=Release \
@@ -248,17 +249,20 @@ The cmake configuration line used was
   -DXSDK_ENABLE_Fortran=OFF \
   -G 'NMake Makefiles JOM' \
   C:/path/to/superlu_dist
+```
 
 After configuring, simply do
-  jom # or nmake)
+```
+  jom # or nmake
   jom install  # or nmake install
+```
 
 Libraries will be installed under
 C:/winsame/volatile-vs2017/superlu_dist-master.r147-parcomm/lib
 for the above configuration.
 
 If you wish to test:
-  ctest
+  `ctest`
 
 
 ## READING SPARSE MATRIX FILES
