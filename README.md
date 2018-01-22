@@ -229,6 +229,37 @@ during the cmake build to overwrite default setting:
 cmake .. -DCMAKE_C_FLAGS="-DNoChange" 
 cmake .. -DCMAKE_C_FLAGS="-DUpCase"
 ```
+## Windows Usage
+Prerequisites: CMake, Visual Studio, Microsoft HPC Pack
+This has been tested with Visual Studio 2017, without Parmetis,
+without Fortran, and with OpenMP disabled. 
+
+The cmake configuration line used was
+
+'/winsame/contrib-vs2017/cmake-3.9.4-ser/bin/cmake' \
+  -DCMAKE_INSTALL_PREFIX:PATH=C:/winsame/volatile-vs2017/superlu_dist-master.r147-parcomm \
+  -DCMAKE_BUILD_TYPE:STRING=Release \
+  -DCMAKE_COLOR_MAKEFILE:BOOL=FALSE \
+  -DCMAKE_VERBOSE_MAKEFILE:BOOL=TRUE \
+  -Denable_openmp:BOOL=FALSE \
+  -DCMAKE_C_COMPILER:FILEPATH='C:/Program Files (x86)/Microsoft Visual Studio/2017/Professional/VC/Tools/MSVC/14.11.25503/bin/HostX64/x64/cl.exe' \
+  -DCMAKE_C_FLAGS:STRING='/DWIN32 /D_WINDOWS /W3' \
+  -Denable_parmetislib:BOOL=FALSE \
+  -DXSDK_ENABLE_Fortran=OFF \
+  -G 'NMake Makefiles JOM' \
+  C:/path/to/superlu_dist
+
+After configuring, simply do
+  jom # or nmake)
+  jom install  # or nmake install
+
+Libraries will be installed under
+C:/winsame/volatile-vs2017/superlu_dist-master.r147-parcomm/lib
+for the above configuration.
+
+If you wish to test:
+  ctest
+
 
 ## READING SPARSE MATRIX FILES
 
