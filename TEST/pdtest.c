@@ -25,8 +25,11 @@ at the top-level directory.
  */
 #include <stdio.h>
 #include <stdlib.h>
-// #include <unistd.h>
+#ifdef _MSC_VER
+#include <wingetopt.h>
+#else
 #include <getopt.h>
+#endif
 #include <math.h>
 #include <superlu_dist_config.h>
 #include "superlu_ddefs.h"

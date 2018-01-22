@@ -11,6 +11,9 @@ set(headers
     colamd.h
     ${CMAKE_CURRENT_BINARY_DIR}/superlu_dist_config.h
 )
+if (MSVC)
+  list(APPEND headers wingetopt.h)
+endif ()
 
 # first: precision-independent files
 set(sources
@@ -37,6 +40,9 @@ set(sources
   colamd.c
   superlu_dist_version.c
 )
+if (MSVC)
+  list(APPEND sources wingetopt.c)
+endif ()
 set_source_files_properties(superlu_timer.c PROPERTIES COMPILE_FLAGS -O0)
 
 if(enable_double)
