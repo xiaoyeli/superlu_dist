@@ -1,7 +1,10 @@
 include_directories(${SuperLU_DIST_SOURCE_DIR}/SRC)
 
 # Libs linked to all of the examples
-set(all_link_libs superlu_dist ${BLAS_LIB} m)
+set(all_link_libs superlu_dist ${BLAS_LIB})
+if (NOT MSVC)
+  list(APPEND all_link_libs m)
+endif ()
 
 function(add_superlu_dist_example target input nprow npcol)
     set(EXAMPLE_INPUT "${SuperLU_DIST_SOURCE_DIR}/EXAMPLE/${input}")

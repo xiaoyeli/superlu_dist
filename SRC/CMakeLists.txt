@@ -121,8 +121,11 @@ if(enable_complex16)
 endif()
 
 add_library(superlu_dist ${sources} ${HEADERS})
-target_link_libraries(superlu_dist
-                      ${MPI_C_LIBRARIES} ${BLAS_LIB} ${PARMETIS_LIB} m)
+set(superlu_dist_libs ${MPI_C_LIBRARIES} ${BLAS_LIB} ${PARMETIS_LIB})
+if (NOT MSVC)
+  list(APPEND superlu_dist_libs m)
+endif ()
+target_link_libraries(superlu_dist ${superlu_dist_libs})
 set_target_properties(superlu_dist PROPERTIES
                       VERSION ${PROJECT_VERSION} SOVERSION ${VERSION_MAJOR}
 )
