@@ -127,19 +127,31 @@ if(enable_complex16)
 endif()
 
 add_library(superlu_dist ${sources} ${HEADERS})
+set(targets superlu_dist)
+if (BUILD_SHARED_LIBS AND BUILD_STATIC_LIBS)
+  # build both shared and static libs
+  add_library(superlu_dist-static STATIC ${sources} ${HEADERS})
+  list(APPEND targets superlu_dist-static)
+endif()
+
 set(superlu_dist_libs ${MPI_C_LIBRARIES} ${BLAS_LIB} ${PARMETIS_LIB})
 if (NOT MSVC)
   list(APPEND superlu_dist_libs m)
 endif ()
-target_link_libraries(superlu_dist ${superlu_dist_libs})
-set_target_properties(superlu_dist PROPERTIES
-                      VERSION ${PROJECT_VERSION} SOVERSION ${VERSION_MAJOR}
-)
+
+foreach(target ${targets})
+  target_link_libraries(${target} ${superlu_dist_libs})
+  set_target_properties(${target} PROPERTIES
+                        OUTPUT_NAME superlu_dist
+                        VERSION ${PROJECT_VERSION}
+                        SOVERSION ${VERSION_MAJOR}
+  )
+endforeach(target)
 
 # Define GNU standard installation directories
 include(GNUInstallDirs)
 
-install(TARGETS superlu_dist
+install(TARGETS ${targets}
 # DESTINATION ${CMAKE_INSTALL_PREFIX}/lib)
      DESTINATION ${CMAKE_INSTALL_LIBDIR}
 )
