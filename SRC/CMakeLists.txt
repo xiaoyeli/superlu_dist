@@ -148,12 +148,21 @@ foreach(target ${targets})
   )
 endforeach(target)
 
+target_compile_definitions(superlu_dist PRIVATE SUPERLU_DIST_EXPORTS)
+if(MSVC AND BUILD_SHARED_LIBS)
+  set_target_properties(superlu_dist PROPERTIES
+                        WINDOWS_EXPORT_ALL_SYMBOLS ON
+  )
+endif()
+
 # Define GNU standard installation directories
 include(GNUInstallDirs)
 
 install(TARGETS ${targets}
-# DESTINATION ${CMAKE_INSTALL_PREFIX}/lib)
-     DESTINATION ${CMAKE_INSTALL_LIBDIR}
+# DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    RUNTIME DESTINATION "${INSTALL_BIN_DIR}"
+    LIBRARY DESTINATION "${INSTALL_LIB_DIR}"
+    ARCHIVE DESTINATION "${INSTALL_LIB_DIR}"
 )
 install(FILES ${headers}
 # DESTINATION ${CMAKE_INSTALL_PREFIX}/include)
