@@ -25,16 +25,21 @@ at the top-level directory.
 #define __SUPERLU_DCOMPLEX
 
 #include <mpi.h>
+#include "superlu_defs.h"
 
 typedef struct { double r, i; } doublecomplex;
 
 /*
  * These variables will be defined to be MPI datatypes for complex
- * and double complex. I'm too lazy to declare
- * these guys external in every file that needs them.
+ * and double complex. I'm too lazy to declare them external in every
+ * file that needs them.
+ * 
+ * Use WINOWS_EXPORT_ALL_SYMBOLS on windows to export all symbols when
+ * building a shared library.
+ * Introduce macro SUPERLU_DIST_EXPORT to correctly export the only
+ * remaining data symbol SuperLU_MPI_DOUBLE_COMPLEX.
  */
-extern MPI_Datatype SuperLU_MPI_DOUBLE_COMPLEX;
-
+extern SUPERLU_DIST_EXPORT MPI_Datatype SuperLU_MPI_DOUBLE_COMPLEX;
 
 /* Macro definitions */
 
