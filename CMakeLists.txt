@@ -51,9 +51,14 @@ set(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib")
 SET(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 #----
 
+SET(BUILD_STATIC_LIBS TRUE CACHE BOOL "Include static libs when building shared")
+
 if (BUILD_SHARED_LIBS)
   message("-- SuperLU_DIST will be built as a shared library.")
   set(PROJECT_NAME_LIB_EXPORT libsuperlu_dist.so)
+  if (BUILD_STATIC_LIBS)
+    message("-- SuperLU_DIST will also be built as a static library.")
+  endif()
 else()
   message("-- SuperLU_DIST will be built as a static library.")
   set(PROJECT_NAME_LIB_EXPORT libsuperlu_dist.a)
