@@ -65,7 +65,6 @@ SuperLU_DIST, copy the appropriate sample include file
 (if one is present) into make.inc.
 
 For example, if you wish to run SuperLU_DIST on a Cray XT5,  you can do
-
 `cp MAKE_INC/make.xt5  make.inc`
 
 For the systems other than listed above, some porting effort is needed
@@ -73,7 +72,6 @@ for parallel factorization routines. Please refer to the Users' Guide
 for detailed instructions on porting.
 
 The following CPP definitions can be set in CFLAGS.
-
 ```
 -DXSDK_INDEX_SIZE=64
 use 64-bit integers for indexing sparse matrices. (default 32 bit)
@@ -94,12 +92,10 @@ which has OpenMP support.
 
 If you have a BLAS library your machine, you may define the following in
 the file make.inc:
-
 ```
 BLASDEF = -DUSE_VENDOR_BLAS
 BLASLIB = <BLAS library you wish to link with>
 ```
-
 The CBLAS/ subdirectory contains the part of the C BLAS (single threaded) 
 needed by SuperLU_DIST package. However, these codes are intended for use
 only if there is no faster implementation of the BLAS already
@@ -127,12 +123,10 @@ METISLIB = -L<metis directory> -lmetis
 PARMETISLIB = -L<parmetis directory> -lparmetis
 I_PARMETIS = -I<parmetis directory>/include -I<parmetis directory>/metis/include
 ```
-
 You can disable ParMetis with the following line in SRC/superlu_dist_config.h:
 ```
 #undef HAVE_PARMETIS
 ```
-
 1.4. C preprocessor definition CDEFS.
 In the header file SRC/Cnames.h, we use macros to determine how
 C routines should be named so that they are callable by Fortran.
@@ -141,14 +135,13 @@ re-naming is needed in order for the SuperLU BLAS calls (in C) to
 interface with the Fortran-style BLAS.)
 The possible options for CDEFS are:
 ```
-`-DAdd_`: Fortran expects a C routine to have an underscore
+-DAdd_: Fortran expects a C routine to have an underscore
   postfixed to the name;
   (This is set as the default)
-`-DNoChange`: Fortran expects a C routine name to be identical to
+-DNoChange: Fortran expects a C routine name to be identical to
       that compiled by C;
-`-DUpCase`: Fortran expects a C routine name to be all uppercase.
+-DUpCase: Fortran expects a C routine name to be all uppercase.
 ```
-
 1.5. Multicore and GPU (optional).
 
 To use OpenMP parallelism, need to link with an OpenMP library, and
@@ -231,7 +224,6 @@ In the default setting, we assume that Fortran expects a C routine
 to have an underscore postfixed to the name. Depending on the
 compiler, you may need to define one of the following flags in
 during the cmake build to overwrite default setting:
-
 ```
 cmake .. -DCMAKE_C_FLAGS="-DNoChange" 
 cmake .. -DCMAKE_C_FLAGS="-DUpCase"
@@ -242,7 +234,6 @@ This has been tested with Visual Studio 2017, without Parmetis,
 without Fortran, and with OpenMP disabled. 
 
 The cmake configuration line used was
-
 ```
 '/winsame/contrib-vs2017/cmake-3.9.4-ser/bin/cmake' \
   -DCMAKE_INSTALL_PREFIX:PATH=C:/winsame/volatile-vs2017/superlu_dist-master.r147-parcomm \
@@ -270,7 +261,6 @@ for the above configuration.
 
 If you wish to test:
   `ctest`
-
 
 ## READING SPARSE MATRIX FILES
 
@@ -314,4 +304,5 @@ May 15, 2016        Version 5.1.0
 October 4, 2016     Version 5.1.1  
 December 31, 2016   Version 5.1.3  
 September 30, 2017  Version 5.2.0  
+January 28, 2018    Version 5.3.0
 ```
