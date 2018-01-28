@@ -20,6 +20,7 @@ at the top-level directory.
  * November 1, 2007
  * Feburary 20, 2008
  * October 15, 2008
+ * January 28, 2018
  *
  * The function symbfact_dist implements the parallel symbolic factorization
  * algorithm described in the paper:

@@ -1,4 +1,4 @@
-# SuperLU_DIST (version 5.2)
+# SuperLU_DIST (version 5.3)
 
 [![Build Status](https://travis-ci.org/xiaoyeli/superlu_dist.svg?branch=master)](https://travis-ci.org/xiaoyeli/superlu_dist) 
 [Nightly tests](http://my.cdash.org/index.php?project=superlu_dist)
@@ -127,6 +127,12 @@ METISLIB = -L<metis directory> -lmetis
 PARMETISLIB = -L<parmetis directory> -lparmetis
 I_PARMETIS = -I<parmetis directory>/include -I<parmetis directory>/metis/include
 ```
+
+You can disable ParMetis with the following line in SRC/superlu_dist_config.h:
+```
+#undef HAVE_PARMETIS
+```
+
 1.4. C preprocessor definition CDEFS.
 In the header file SRC/Cnames.h, we use macros to determine how
 C routines should be named so that they are callable by Fortran.
@@ -134,13 +140,14 @@ C routines should be named so that they are callable by Fortran.
 re-naming is needed in order for the SuperLU BLAS calls (in C) to 
 interface with the Fortran-style BLAS.)
 The possible options for CDEFS are:
-
+```
 `-DAdd_`: Fortran expects a C routine to have an underscore
   postfixed to the name;
   (This is set as the default)
 `-DNoChange`: Fortran expects a C routine name to be identical to
       that compiled by C;
 `-DUpCase`: Fortran expects a C routine name to be all uppercase.
+```
 
 1.5. Multicore and GPU (optional).
 
