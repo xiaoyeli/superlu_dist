@@ -1,0 +1,2 @@
+module unload darshan
+module load vtune
