@@ -180,10 +180,10 @@ if (enable_parmetislib)   ## want to use parmetis
   # fix up PARMETIS library names
   string (REPLACE ";" " " PARMETIS_LIB_STR "${PARMETIS_LIB}")
   set(PARMETIS_LIB_EXPORT ${PARMETIS_LIB_STR})
-  set(VTUNE_LIB_EXPORT "dfdfdfddf")
+
 else()
   message("-- Will not link with ParMETIS.")
-endif() 
+endif()
 
 # if(NOT enable_parmetislib)
 #  find_package(PARMETIS)    ## does not have this Module yet.

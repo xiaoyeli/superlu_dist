@@ -100,7 +100,6 @@ typedef struct {
     int_t   SolveMsgSent;     /* Number of actual messages sent in LU-solve */
     int_t   SolveMsgVol;      /* Volume of messages sent in the solve phase */
 
-
     /*********************/	
     /* The following variables are used in the hybrid solver */
 
@@ -298,13 +297,21 @@ extern void dlsum_bmod(double *, double *, double *,
                        int_t **, int_t *, gridinfo_t *, LocalLU_t *,
 		       MPI_Request [], SuperLUStat_t *);
 extern void dlsum_fmod_inv(double *, double *, double *, double *,
-		       int, int, int_t , int_t *, int_t, int_t, int_t,
+		       int, int, int_t , int_t *, int_t,
 		       int_t *, gridinfo_t *, LocalLU_t *, 
-		       MPI_Request [], SuperLUStat_t *);
+		       SuperLUStat_t **, int_t *, int_t *, int_t, int_t, int_t);
+extern void dlsum_fmod_inv_master(double *, double *, double *, double *,
+		       int, int, int_t , int_t *, int_t, 
+		       int_t *, gridinfo_t *, LocalLU_t *, 
+		       SuperLUStat_t **, int_t, int_t, int_t);
 extern void dlsum_bmod_inv(double *, double *, double *, double *,
-                       int, int_t, int_t *, int_t *, Ucb_indptr_t **,
+                       int, int_t, int_t *, int_t *, int_t *, Ucb_indptr_t **,
                        int_t **, int_t *, gridinfo_t *, LocalLU_t *,
-		       MPI_Request [], SuperLUStat_t *);
+		       MPI_Request [], SuperLUStat_t **, int_t *, int_t *, int_t, int_t);
+extern void dlsum_bmod_inv_master(double *, double *, double *, double *,
+                       int, int_t, int_t *, int_t *, int_t *, Ucb_indptr_t **,
+                       int_t **, int_t *, gridinfo_t *, LocalLU_t *,
+		       MPI_Request [], SuperLUStat_t **, int_t, int_t);			   
 extern void pdgsrfs(int_t, SuperMatrix *, double, LUstruct_t *,
 		    ScalePermstruct_t *, gridinfo_t *,
 		    double [], int_t, double [], int_t, int,
@@ -347,7 +354,8 @@ extern void  dreadrb_dist(int, FILE *, int_t *, int_t *, int_t *,
 		     double **, int_t **, int_t **);
 extern void  dreadMM_dist(FILE *, int_t *, int_t *, int_t *,
 	                  double **, int_t **, int_t **);
-
+extern int  dread_binary(FILE *, int_t *, int_t *, int_t *,
+	                  double **, int_t **, int_t **);													 
 /* Distribute the data for numerical factorization */
 extern float ddist_psymbtonum(fact_t, int_t, SuperMatrix *,
                                 ScalePermstruct_t *, Pslu_freeable_t *, 

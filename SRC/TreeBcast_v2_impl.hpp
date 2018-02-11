@@ -6,28 +6,7 @@
 // #include "TreeBcast_v2.hpp"
 
 
-namespace PEXSI{
-#ifdef COMM_PROFILE_BCAST
-  template< typename T> 
-    inline void TreeBcast_v2<T>::SetGlobalComm(const MPI_Comm & pGComm){
-      if(commGlobRanks.count(comm_)==0){
-        MPI_Group group2 = MPI_GROUP_NULL;
-        MPI_Comm_group(pGComm, &group2);
-        MPI_Group group1 = MPI_GROUP_NULL;
-        MPI_Comm_group(comm_, &group1);
-
-        Int size;
-        MPI_Comm_size(comm_,&size);
-        vector<int> globRanks(size);
-        vector<int> Lranks(size);
-        for(int i = 0; i<size;++i){Lranks[i]=i;}
-        MPI_Group_translate_ranks(group1, size, &Lranks[0],group2, &globRanks[0]);
-        commGlobRanks[comm_] = globRanks;
-      }
-      myGRoot_ = commGlobRanks[comm_][myRoot_];
-      myGRank_ = commGlobRanks[comm_][myRank_];
-    }
-#endif
+namespace ASYNCOMM{
 
 
   template< typename T> 
@@ -157,51 +136,10 @@ namespace PEXSI{
       tag_ = tag;
     }
   template< typename T> 
-    inline int TreeBcast_v2<T>::GetTag(){
+    inline Int TreeBcast_v2<T>::GetTag(){
       return tag_;
     }
 
-  template< typename T> 
-    inline bool TreeBcast_v2<T>::IsDone(){
-      return done_;
-    }
-
-
-  template< typename T> 
-    inline bool TreeBcast_v2<T>::IsDataReceived(){
-      bool retVal = false;
-      if(myRank_==myRoot_){
-        retVal = isReady_;
-      }
-      else if(recvCount_ == 1){
-        retVal = true;
-      }
-      else if(recvRequests_[0] == MPI_REQUEST_NULL ){
-        //post the recv
-        postRecv();
-        retVal = false;
-      }
-      else if(recvRequests_[0] != MPI_REQUEST_NULL ){
-#if ( _DEBUGlevel_ >= 1 ) || defined(BCAST_VERBOSE)
-        statusOFS<<myRank_<<" TESTING RECV on tag "<<tag_<<std::endl;
-#endif
-        //test
-        int flag = 0;
-        MPI_Status stat;
-        int mpierr = MPI_Test(&recvRequests_[0],&flag,&stat);
-        assert(mpierr==MPI_SUCCESS);
-        if(flag==1){
-          this->recvCount_++;
-        }
-
-        retVal = flag==1;
-        if(recvCount_==recvPostedCount_){
-          //mark that we are ready to send / forward
-          isReady_ = true;
-        }
-      }
-      return retVal;
-    }
 
   template< typename T> 
     inline Int * TreeBcast_v2<T>::GetDests(){
@@ -225,56 +163,10 @@ namespace PEXSI{
       return this->myRoot_==this->myRank_;
     }
 	
-  template< typename T> 
-    inline bool TreeBcast_v2<T>::StartForward(){
-      return this->fwded_==true;
-    }	
 
   template< typename T> 
     inline Int TreeBcast_v2<T>::GetMsgSize(){
       return this->msgSize_;
-    }
-
-  template< typename T> 
-    inline void TreeBcast_v2<T>::forwardMessage( ){
-      if(this->isReady_){
-#if ( _DEBUGlevel_ >= 1 ) || defined(BCAST_VERBOSE)
-        // std::cout<<this->myRank_<<" FORWARDING on tag "<<this->tag_<<std::endl;
-        statusOFS::cout<<this->myRank_<<" FORWARDING on tag "<<this->tag_<<std::endl;
-#endif
-        if(this->sendRequests_.size()!=this->GetDestCount()){
-          this->sendRequests_.assign(this->GetDestCount(),MPI_REQUEST_NULL);
-        }
-
-        for( Int idxRecv = 0; idxRecv < this->myDests_.size(); ++idxRecv ){
-          Int iProc = this->myDests_[idxRecv];
-          // Use Isend to send to multiple targets
-          int error_code = MPI_Isend( this->recvDataPtrs_[0], this->msgSize_, this->type_, 
-              iProc, this->tag_,this->comm_, &this->sendRequests_[idxRecv] );
-#ifdef CHECK_MPI_ERROR
-          if(error_code!=MPI_SUCCESS){
-            char error_string[BUFSIZ];
-            int length_of_error_string, error_class;
-
-            MPI_Error_class(error_code, &error_class);
-            MPI_Error_string(error_class, error_string, &length_of_error_string);
-            statusOFS<<error_string<<std::endl;
-            MPI_Error_string(error_code, error_string, &length_of_error_string);
-            statusOFS<<error_string<<std::endl;
-            gdb_lock();
-          }
-#endif
-
-#if ( _DEBUGlevel_ >= 1 ) || defined(BCAST_VERBOSE)
-          statusOFS<<this->myRank_<<" FWD to "<<iProc<<" on tag "<<this->tag_<<std::endl;
-#endif
-#ifdef COMM_PROFILE_BCAST
-          PROFILE_COMM(this->myGRank_,commGlobRanks[this->comm_][iProc],this->tag_,this->msgSize_);
-#endif
-          this->sendPostedCount_++;
-        } // for (iProc)
-        this->fwded_ = true;
-      }
     }
 
 	
@@ -339,91 +231,11 @@ namespace PEXSI{
       this->sendDoneIdx_.shrink_to_fit();
       this->sendDataPtrs_.shrink_to_fit();
       this->sendTempBuffer_.shrink_to_fit();
+	  
+	  this->myDests_.clear();
+	  
     }
 
-
-  template< typename T> 
-    inline void TreeBcast_v2<T>::SetLocalBuffer(T * locBuffer){
-      //if recvDataPtrs_[0] has been allocated as a temporary buffer
-      if(this->recvDataPtrs_[0]!=NULL && this->recvDataPtrs_[0]!=locBuffer){
-        //If we have received some data, we need to copy 
-        //it to the new buffer
-        if(this->recvCount_>0){
-			double t1,t2;
-			TIC(t1);		
-          copyLocalBuffer(locBuffer);
-		    TOC(t2,t1);
-			
-        }
-
-        //If data hasn't been forwarded yet, 
-        //it is safe to clear recvTempBuffer_ now
-        if(!this->fwded_){
-          this->recvTempBuffer_.clear(); 
-        }
-      }
-
-      this->recvDataPtrs_[0] = locBuffer;
-    }
-
-
-  template< typename T> 
-    inline bool TreeBcast_v2<T>::isMessageForwarded(){
-      bool retVal=false;
-
-      if(!this->fwded_){
-        //If data has been received but not forwarded 
-        if(IsDataReceived()){
-          forwardMessage();
-        }
-        retVal = false;
-      }
-      else{
-        //If data has been forwared, check for completion of send requests
-        int destCount = this->myDests_.size();
-        int completed = 0;
-        if(destCount>0){
-          //test the send requests
-          int flag = 0;
-
-          this->sendDoneIdx_.resize(this->GetDestCount());
-#ifndef CHECK_MPI_ERROR
-          MPI_Testsome(destCount,this->sendRequests_.data(),&completed,this->sendDoneIdx_.data(),MPI_STATUSES_IGNORE);
-#else
-          this->sendStatuses_.resize(destCount);
-          int error_code = MPI_Testsome(destCount,this->sendRequests_.data(),&completed,this->sendDoneIdx_.data(),this->sendStatuses_.data());
-          if(error_code!=MPI_SUCCESS){
-            char error_string[BUFSIZ];
-            int length_of_error_string, error_class;
-
-            MPI_Error_class(error_code, &error_class);
-            MPI_Error_string(error_class, error_string, &length_of_error_string);
-            statusOFS<<error_string<<std::endl;
-            MPI_Error_string(error_code, error_string, &length_of_error_string);
-            statusOFS<<error_string<<std::endl;
-
-            //now check the status
-            for(int i = 0; i<this->sendStatuses_.size();i++){
-              error_code = this->sendStatuses_[i].MPI_ERROR;
-              if(error_code != MPI_SUCCESS){
-                MPI_Error_class(error_code, &error_class);
-                MPI_Error_string(error_class, error_string, &length_of_error_string);
-                statusOFS<<error_string<<std::endl;
-                MPI_Error_string(error_code, error_string, &length_of_error_string);
-                statusOFS<<error_string<<std::endl;
-              }
-            }
-            gdb_lock();
-          }
-#endif
-
-        }
-        this->sendCount_ += completed;
-        retVal = this->sendCount_ == this->sendPostedCount_;
-
-      }
-      return retVal;
-    }
 
   template< typename T> 
     inline void TreeBcast_v2<T>::AllocateBuffer()
@@ -438,96 +250,6 @@ namespace PEXSI{
       }
     }	
 	
-	
-	
-  //async wait and forward
-  template< typename T> 
-    inline bool TreeBcast_v2<T>::Progress(){
-      bool retVal = this->done_;
-
-      if(!retVal){
-        retVal = isMessageForwarded();
-
-        if(retVal){
-          //if the local buffer has been set by the user, but the temporary 
-          //buffer was already in use, we can clear it now
-          if(this->recvTempBuffer_.size()>0){ 
-            if(this->recvDataPtrs_[0]!=(T*)this->recvTempBuffer_.data()){
-              this->recvTempBuffer_.clear();
-            }
-          }
-
-          //free the unnecessary arrays
-          this->sendRequests_.clear();
-#if ( _DEBUGlevel_ >= 1 ) || defined(BCAST_VERBOSE)
-          statusOFS<<this->myRank_<<" EVERYTHING COMPLETED on tag "<<this->tag_<<std::endl;
-#endif
-        }
-
-
-      }
-
-      this->done_ = retVal;
-      return retVal;
-
-    }
-
-  //blocking wait
-  template< typename T> 
-    inline void TreeBcast_v2<T>::Wait(){
-      if(!this->done_){
-        while(!Progress());
-      }
-    }
-
-  template< typename T> 
-    inline T* TreeBcast_v2<T>::GetLocalBuffer(){
-      assert(this->recvDataPtrs_.size()>0);
-      assert(this->recvDataPtrs_[0]!=nullptr);
-      return this->recvDataPtrs_[0];
-    }
-
-  template< typename T> 
-    inline void TreeBcast_v2<T>::postRecv()
-    {
-#if ( _DEBUGlevel_ >= 1 ) || defined(BCAST_VERBOSE)
-      statusOFS<<this->myRank_<<" POSTING RECV on tag "<<this->tag_<<std::endl;
-#endif
-      if(this->recvCount_<1 && this->recvRequests_[0]==MPI_REQUEST_NULL && !this->IsRoot() ){
-
-        if(this->recvDataPtrs_[0]==NULL){
-          this->recvTempBuffer_.resize(this->msgSize_);
-          this->recvDataPtrs_[0] = (T*)this->recvTempBuffer_.data();
-        }
-        int error_code = MPI_Irecv( (char*)this->recvDataPtrs_[0], this->msgSize_, this->type_, 
-            this->myRoot_, this->tag_,this->comm_, &this->recvRequests_[0] );
-#ifdef CHECK_MPI_ERROR
-          if(error_code!=MPI_SUCCESS){
-            char error_string[BUFSIZ];
-            int length_of_error_string, error_class;
-
-            MPI_Error_class(error_code, &error_class);
-            MPI_Error_string(error_class, error_string, &length_of_error_string);
-            statusOFS<<error_string<<std::endl;
-            MPI_Error_string(error_code, error_string, &length_of_error_string);
-            statusOFS<<error_string<<std::endl;
-            gdb_lock();
-          }
-#endif
-
-
-        this->recvPostedCount_=1;
-      }
-    }
-
-
-
-  template< typename T> 
-    inline void TreeBcast_v2<T>::copyLocalBuffer(T* destBuffer){
-      std::copy((T*)this->recvDataPtrs_[0],(T*)this->recvDataPtrs_[0]+this->msgSize_,destBuffer);
-    }
-
-
   template< typename T>
     inline TreeBcast_v2<T> * TreeBcast_v2<T>::Create(const MPI_Comm & pComm, Int * ranks, Int rank_cnt, Int msgSize, double rseed){
       //get communicator size
@@ -798,117 +520,7 @@ namespace PEXSI{
     }
 
 
-
-  template< typename T>
-   void TreeBcast_Waitsome(std::vector<Int> & treeIdx, std::vector< std::shared_ptr<TreeBcast_v2<T> > > & arrTrees, std::list<int> & doneIdx, std::vector<bool> & finishedFlags){
-      doneIdx.clear();
-      auto all_done = [](const std::vector<bool> & boolvec){
-        return std::all_of(boolvec.begin(), boolvec.end(), [](bool v) { return v; });
-      };
-
-      while(doneIdx.empty() && !all_done(finishedFlags) ){
-
-        //for(auto it = finishedFlags.begin();it!=finishedFlags.end();it++){
-        //  statusOFS<<(*it?"1":"0")<<" ";
-        //}
-        //statusOFS<<std::endl;
-
-        for(int i = 0; i<treeIdx.size(); i++){
-          Int idx = treeIdx[i];
-          auto & curTree = arrTrees[idx];
-          if(curTree!=nullptr){
-            bool done = curTree->Progress();
-            if(done){
-              if(!finishedFlags[i]){
-                doneIdx.push_back(i);
-                finishedFlags[i] = true;
-              }
-            }
-          }
-          else{
-            finishedFlags[i] = true;
-          }
-        }
-      }
-    }
-
-  template< typename T>
-  void TreeBcast_Testsome(std::vector<Int> & treeIdx, std::vector< std::shared_ptr<TreeBcast_v2<T> > > & arrTrees, std::list<int> & doneIdx, std::vector<bool> & finishedFlags){
-      doneIdx.clear();
-      for(int i = 0; i<treeIdx.size(); i++){
-        Int idx = treeIdx[i];
-        auto & curTree = arrTrees[idx];
-        if(curTree!=nullptr){
-          bool done = curTree->Progress();
-          if(done){
-            if(!finishedFlags[i]){
-              doneIdx.push_back(i);
-              finishedFlags[i] = true;
-            }
-          }
-        }
-        else{
-          finishedFlags[i] = true;
-        }
-      }
-    }
-
-  template< typename T>
-  void TreeBcast_Testsome(std::vector<Int> & treeIdx, std::vector< std::shared_ptr<TreeBcast_v2<T> > > & arrTrees, std::list<int> & doneIdx, std::vector<int> & finishedEpochs){
-      doneIdx.clear();
-      assert(finishedEpochs.size()==treeIdx.size()+1);
-      Int curEpoch = ++finishedEpochs.back();
-      for(int i = 0; i<treeIdx.size(); i++){
-        Int idx = treeIdx[i];
-        auto & curTree = arrTrees[idx];
-        if(curTree!=nullptr){
-          bool done = curTree->Progress();
-          if(done){
-            if(finishedEpochs[i]<=0){
-              doneIdx.push_back(i);
-              finishedEpochs[i] = curEpoch;
-            }
-          }
-        }
-        else{
-          finishedEpochs[i] = curEpoch;
-        }
-      }
-    }
-
-
-
-  template< typename T>
-   void TreeBcast_Waitall(std::vector<Int> & treeIdx, std::vector< std::shared_ptr<TreeBcast_v2<T> > > & arrTrees){
-     std::list<int> doneIdx;
-     std::vector<bool> finishedFlags(treeIdx.size(),false);
-     
-      doneIdx.clear();
-      auto all_done = [](const std::vector<bool> & boolvec){
-        return std::all_of(boolvec.begin(), boolvec.end(), [](bool v) { return v; });
-      };
-
-     while(!all_done(finishedFlags) ){
-        for(int i = 0; i<treeIdx.size(); i++){
-          Int idx = treeIdx[i];
-          auto & curTree = arrTrees[idx];
-          if(curTree!=nullptr){
-            bool done = curTree->Progress();
-            if(done){
-              if(!finishedFlags[i]){
-                doneIdx.push_back(i);
-                finishedFlags[i] = true;
-              }
-            }
-          }
-          else{
-            finishedFlags[i] = true;
-          }
-        }
-      }
-    }
-
-} //namespace PEXSI
+} //namespace ASYNCOMM
 
 
 #endif

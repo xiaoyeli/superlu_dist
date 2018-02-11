@@ -116,7 +116,8 @@ OMP_NUM_THREADS=1
     mkdir -p $MAT   
     echo "export OMP_NUM_THREADS=$OMP_NUM_THREADS" >> $TMP_BATCH_FILE
     echo "export KMP_NUM_THREADS=$OMP_NUM_THREADS" >> $TMP_BATCH_FILE
-    echo "export MKL_NUM_THREADS=$OMP_NUM_THREADS" >> $TMP_BATCH_FILE  																			
+    echo "export MKL_NUM_THREADS=$OMP_NUM_THREADS" >> $TMP_BATCH_FILE
+    echo "export MPICH_MAX_THREAD_SAFETY=multiple" >> $TMP_BATCH_FILE 
     echo "export NSUP=128" >> $TMP_BATCH_FILE
     echo "export NREL=20" >> $TMP_BATCH_FILE
     

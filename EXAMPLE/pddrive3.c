@@ -64,10 +64,10 @@ int main(int argc, char *argv[])
     double   *berr;
     double   *b, *b1, *xtrue, *nzval, *nzval1;
     int_t    *colind, *colind1, *rowptr, *rowptr1;
-    int_t    i, j, m, n, nnz_loc, m_loc, fst_row;
+    int_t    i, j, ii, m, n, nnz_loc, m_loc, fst_row;
     int      nprow, npcol;
     int      iam, info, ldb, ldx, nrhs;
-    char     **cpp, c;
+    char     **cpp, c, *postfix;;
     FILE *fp, *fopen();
     int cpp_defs();
 
@@ -123,10 +123,17 @@ int main(int argc, char *argv[])
     CHECK_MALLOC(iam, "Enter main()");
 #endif
 
+	for(ii = 0;ii<strlen(*cpp);ii++){
+		if((*cpp)[ii]=='.'){
+			postfix = &((*cpp)[ii+1]);
+		}
+	}	
+	// printf("%s\n", postfix);
+	 
     /* ------------------------------------------------------------
        GET THE MATRIX FROM FILE AND SETUP THE RIGHT HAND SIDE. 
        ------------------------------------------------------------*/
-    dcreate_matrix(&A, nrhs, &b, &ldb, &xtrue, &ldx, fp, &grid);
+    dcreate_matrix_postfix(&A, nrhs, &b, &ldb, &xtrue, &ldx, fp, postfix, &grid);
 
     if ( !(b1 = doubleMalloc_dist(ldb * nrhs)) )
         ABORT("Malloc fails for b1[]");

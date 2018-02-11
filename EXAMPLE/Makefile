@@ -133,7 +133,8 @@ pzdrive4_ABglobal: $(ZEXMG4) $(DSUPERLULIB)
 #	$(CC) $(CFLAGS) $(CDEFS) $(BLASDEF) $(INCLUDEDIR) -c pdgstrf.c $(VERBOSE)
 .c.o:
 	$(CC) $(CFLAGS) $(CDEFS) $(BLASDEF) $(INCLUDEDIR) -c $< $(VERBOSE)
-
+.cpp.o:
+	$(CPP) $(CPPFLAGS) $(CDEFS) $(BLASDEF) $(INCLUDEDIR) -c $< $(VERBOSE)
 .f.o:
 	$(FORTRAN) $(FFLAGS) -c $< $(VERBOSE)
 

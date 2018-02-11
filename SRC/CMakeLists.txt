@@ -11,8 +11,6 @@ set(headers
     colamd.h
     timer.h
     environment.hpp
-	blas.hpp
-	lapack.hpp
     TreeBcast_v2.hpp
 	TreeReduce_v2.hpp	
     TreeBcast_v2_impl.hpp
@@ -22,8 +20,6 @@ set(headers
 # first: precision-independent files
 set(sources
   global.cpp
-  blas.cpp
-  lapack.cpp
   TreeInterface.cpp
   sp_ienv.c
   etree.c 
@@ -66,8 +62,8 @@ if(enable_double)
     dreadhb.c
     dreadrb.c
     dreadtriple.c
-    dreadMM.c
 	dbinary_io.c	
+    dreadMM.c
     pdgsequ.c
     pdlaqgs.c
     dldperm_dist.c

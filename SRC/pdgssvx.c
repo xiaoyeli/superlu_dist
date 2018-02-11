@@ -923,6 +923,8 @@ pdgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 #endif
     }
 
+	
+
     /* ------------------------------------------------------------
        Perform the LU factorization: symbolic factorization, 
        redistribution, and numerical factorization.
@@ -974,7 +976,15 @@ pdgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 	if ( permc_spec != MY_PERMC && Fact == DOFACT ) {
           /* Reuse perm_c if Fact == SamePattern, or SamePattern_SameRowPerm */
 	  if ( permc_spec == PARMETIS ) {
-	      /* Get column permutation vector in perm_c.                    *
+	      
+		  
+	// #pragma omp parallel  
+    // {  	
+	// #pragma omp master
+	// {	
+	
+		  
+		  /* Get column permutation vector in perm_c.                    *
 	       * This routine takes as input the distributed input matrix A  *
 	       * and does not modify it.  It also allocates memory for       *
 	       * sizes[] and fstVtxSep[] arrays, that contain information    *
@@ -982,6 +992,9 @@ pdgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 	      flinfo = get_perm_c_parmetis(A, perm_r, perm_c, nprocs_num,
                                   	   noDomains, &sizes, &fstVtxSep,
                                            grid, &symb_comm);
+	// }
+	// }	
+										   
 	      if (flinfo > 0) {
 #if ( PRNTlevel>=1 )
 	          fprintf(stderr, "Insufficient memory for get_perm_c parmetis\n");
@@ -1132,8 +1145,20 @@ pdgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 
 	/* Perform numerical factorization in parallel. */
 	t = SuperLU_timer_();
+	
+	
+
+	
+    // #pragma omp parallel  
+    // {  	
+	// #pragma omp master
+	// {	
+		
 	pdgstrf(options, m, n, anorm, LUstruct, grid, stat, info);
-	stat->utime[FACT] = SuperLU_timer_() - t;
+	stat->utime[FACT] = SuperLU_timer_() - t;	
+	// }
+	// }	 
+	
 
 #if 0
 
@@ -1304,25 +1329,30 @@ pdgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 	       For repeated call to pdgssvx(), no need to re-initialilze
 	       the Solve data & communication structures, unless a new
 	       factorization with Fact == DOFACT or SamePattern is asked for. */
+		if(options->DiagInv==YES){	
+
+	#ifdef _CRAY
+			  blas_flag=1;
+	#elif defined (USE_VENDOR_BLAS)
+			  blas_flag=2;
+	#else
+			  blas_flag=0;
+	#endif	
+			if(blas_flag==0)
+			ABORT("DiagInv doesn't works with internal blas\n");
+			pdCompute_Diag_Inv(n, LUstruct, grid, stat, info);
+		}	
 	} 
 
-	
-	if(options->DiagInv==YES){	
-
-#ifdef _CRAY
-		  blas_flag=1;
-#elif defined (USE_VENDOR_BLAS)
-		  blas_flag=2;
-#else
-		  blas_flag=0;
-#endif	
-		if(blas_flag==0)
-		ABORT("DiagInv doesn't works with internal blas\n");
-		pdCompute_Diag_Inv(n, LUstruct, grid, stat, info);
-	}
-
+    // #pragma omp parallel  
+    // {  	
+	// #pragma omp master
+	// {
 	pdgstrs(n, LUstruct, ScalePermstruct, grid, X, m_loc, 
-		fst_row, ldb, nrhs, SOLVEstruct, stat, info);
+		fst_row, ldb, nrhs, SOLVEstruct, stat, info);		
+	// }
+	// }
+
 
 	/* ------------------------------------------------------------
 	   Use iterative refinement to improve the computed solution and

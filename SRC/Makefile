@@ -29,11 +29,11 @@ include ../make.inc
 #
 # Precision independent routines
 #
-ALLAUX 	= sp_ienv.o etree.o sp_colorder.o get_perm_c.o \
+ALLAUX 	= global.o blas.o lapack.o TreeInterface.o sp_ienv.o etree.o sp_colorder.o get_perm_c.o \
 	  mmd.o comm.o memory.o util.o superlu_grid.o \
 	  pxerr_dist.o superlu_timer.o symbfact.o \
 	  psymbfact.o psymbfact_util.o get_perm_c_parmetis.o mc64ad_dist.o \
-	  static_schedule.o xerr_dist.o smach_dist.o dmach_dist.o 
+	  static_schedule.o xerr_dist.o smach_dist.o dmach_dist.o colamd.o 
 
 ifeq "${ACC}" "GPU"
 ALLAUX += cublas_utils.o
@@ -51,7 +51,7 @@ ZSLUSRC	= dcomplex_dist.o zlangs_dist.o zgsequ_dist.o zlaqgs_dist.o \
 #
 # Routines for double precision parallel SuperLU
 DPLUSRC = pdgssvx.o pdgssvx_ABglobal.o \
-	  dreadhb.o dreadrb.o dreadtriple.o dreadMM.o \
+	  dreadhb.o dreadrb.o dreadtriple.o dreadMM.o dbinary_io.o \
 	  pdgsequ.o pdlaqgs.o dldperm_dist.o pdlangs.o pdutil.o \
 	  pdsymbfact_distdata.o ddistribute.o pddistribute.o \
 	  pdgstrf.o pdgstrf2.o pdGetDiagU.o \
@@ -90,7 +90,7 @@ pzgstrf.o: zscatter.c zlook_ahead_update.c zSchCompUdt-2Ddynamic.c pzgstrf.c
 	$(CC) $(CFLAGS) $(CDEFS) $(BLASDEF) -c $< $(VERBOSE)
 
 .cpp.o:
-	$(CC) $(CFLAGS) $(CDEFS) $(BLASDEF) -c $< $(VERBOSE)
+	$(CPP) $(CPPFLAGS) $(CDEFS) $(BLASDEF) -c $< $(VERBOSE)
 
 .f.o:
 	$(FORTRAN) $(FFLAGS) -c $< $(VERBOSE)

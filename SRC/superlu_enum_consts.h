@@ -82,6 +82,4 @@ typedef enum {
     NPHASES  /* total number of phases */
 } PhaseType;
 
-
-
 #endif /* __SUPERLU_ENUM_CONSTS */

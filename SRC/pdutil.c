@@ -533,6 +533,17 @@ void pdinf_norm_error(int iam, int_t n, int_t nrhs, double x[], int_t ldx,
 
       err = err / xnorm;
       if ( !iam ) printf("\tSol %2d: ||X-Xtrue||/||X|| = %e\n", j, err);
+	  fflush(stdout);
+	  
+	  // while(1);
+	  
+      // if(err>1e-5){
+		// if( !iam ) printf("Wrong solution! \n");
+		// fflush(stdout);
+		// while(1);
+
+		// ABORT("Wrong solution! \n");
+// }
     }
 }
 

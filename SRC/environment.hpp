@@ -1,45 +1,3 @@
-/*
-	 Copyright (c) 2012 The Regents of the University of California,
-	 through Lawrence Berkeley National Laboratory.  
-
-   Author: Lin Lin
-	 
-   This file is part of PEXSI. All rights reserved.
-
-	 Redistribution and use in source and binary forms, with or without
-	 modification, are permitted provided that the following conditions are met:
-
-	 (1) Redistributions of source code must retain the above copyright notice, this
-	 list of conditions and the following disclaimer.
-	 (2) Redistributions in binary form must reproduce the above copyright notice,
-	 this list of conditions and the following disclaimer in the documentation
-	 and/or other materials provided with the distribution.
-	 (3) Neither the name of the University of California, Lawrence Berkeley
-	 National Laboratory, U.S. Dept. of Energy nor the names of its contributors may
-	 be used to endorse or promote products derived from this software without
-	 specific prior written permission.
-
-	 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
-	 ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-	 WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
-	 DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR
-	 ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
-	 (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
-	 LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON
-	 ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-	 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
-	 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
-	 You are under no obligation whatsoever to provide any bug fixes, patches, or
-	 upgrades to the features, functionality or performance of the source code
-	 ("Enhancements") to anyone; however, if you choose to make your Enhancements
-	 available either publicly, or directly to Lawrence Berkeley National
-	 Laboratory, without imposing a separate written license agreement for such
-	 Enhancements, then you hereby grant the following license: a non-exclusive,
-	 royalty-free perpetual license to install, use, modify, prepare derivative
-	 works, incorporate into other computer software, distribute, and sublicense
-	 such enhancements or derivative works thereof, in binary and source code form.
-*/
 /// @file environment.hpp
 /// @brief Environmental variables.
 /// @date 2012-08-10
@@ -103,10 +61,10 @@
  *  Data types and constants
  **********************************************************************/
 
-/// @namespace PEXSI
+/// @namespace ASYNCOMM
 /// @brief The main namespace.
 
-namespace PEXSI{
+namespace ASYNCOMM{
 
 // Basic data types
 
@@ -131,34 +89,6 @@ typedef    double                Scalar;
 
 // IO
 extern  std::ofstream  statusOFS;
-#ifdef GEMM_PROFILE
-extern  std::ofstream  statOFS;
-#include <deque>
-extern std::deque<int > gemm_stat;
-#endif
-
-#if defined(COMM_PROFILE) || defined(COMM_PROFILE_BCAST)
-extern  std::ofstream  commOFS;
-#include <deque>
-extern std::deque<int > comm_stat;
-
-#define PROFILE_COMM(sender,receiver,tag,size)\
-do{\
-  comm_stat.push_back(sender);\
-  comm_stat.push_back(receiver);\
-  comm_stat.push_back(tag);\
-  comm_stat.push_back(size);\
-}while(0)
-
-#define HEADER_COMM "Sender\tReceiver\tTag\tSize"
-#define LINE_COMM(it) *it<<"\t"<<*(it+1)<<"\t"<<*(it+2)<<"\t"<<*(it+3)
-
-#else
-
-#define PROFILE_COMM(sender,receiver,tag,size)
-
-#endif
-
 
 // *********************************************************************
 // Define constants
@@ -194,13 +124,13 @@ const char LOWER = 'L';
 const Real au2K = 315774.67;
 const Real PI = 3.141592653589793;
 
-} // namespace PEXSI
+} // namespace ASYNCOMM
 
 /***********************************************************************
  *  Error handling
  **********************************************************************/
 
-namespace PEXSI{
+namespace ASYNCOMM{
 
 
 
@@ -291,7 +221,7 @@ namespace PEXSI{
 	}
 
 
-} // namespace PEXSI
+} // namespace ASYNCOMM
 
 
 #endif // _PEXSI_ENVIRONMENT_HPP_

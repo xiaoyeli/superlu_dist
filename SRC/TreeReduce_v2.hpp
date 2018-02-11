@@ -13,7 +13,7 @@
 
 
 
-namespace PEXSI{
+namespace ASYNCOMM{
 
 
 
@@ -40,12 +40,6 @@ namespace PEXSI{
         virtual inline Int GetNumMsgToSend(){return this->myRank_==this->myRoot_?0:1;}
         virtual inline Int GetNumMsgToRecv(){return this->GetDestCount();}
 
-
-        virtual void AllocRecvBuffers();
-        
-
-
-        virtual void SetLocalBuffer(T * locBuffer);
         virtual T * GetLocalBuffer();
 
 
@@ -53,27 +47,6 @@ namespace PEXSI{
 		virtual void forwardMessageSimple(T * locBuffer);
 		virtual void allocateRequest();	
 		virtual void waitSendRequest();
-	
-        //async wait and forward
-        virtual bool Progress();
-        
-
-        //  void CopyLocalBuffer(T* destBuffer){
-        //    std::copy((char*)myData_,(char*)myData_+GetMsgSize(),(char*)destBuffer);
-        //  }
-
-
-
-      protected:
-        virtual void reduce( Int idxRecv, Int idReq);
-        virtual void forwardMessage();
-        virtual void postRecv();
-        virtual bool IsDataReceived();
-        virtual bool isMessageForwarded();
-
-
-
-
     };
 
 
@@ -84,9 +57,6 @@ protected:
 public:
   FTreeReduce_v2(const MPI_Comm & pComm, Int * ranks, Int rank_cnt, Int msgSize);
   virtual FTreeReduce_v2<T> * clone() const;
-  virtual void postRecv();
-  virtual void AllocRecvBuffers();
-  virtual bool Progress();
 };
 
 
@@ -138,26 +108,7 @@ public:
 };
 
 
-
-
-
-  template< typename T>
-  void TreeReduce_Waitsome(std::vector<Int> & treeIdx, std::vector< std::shared_ptr<TreeReduce_v2<T> > > & arrTrees, std::list<int> & doneIdx, std::vector<bool> & finishedFlags);
-
-  template< typename T>
-  void TreeReduce_Testsome(std::vector<Int> & treeIdx, std::vector< std::shared_ptr<TreeReduce_v2<T> > > & arrTrees, std::list<int> & doneIdx, std::vector<bool> & finishedFlags);
-
-  template< typename T>
-  void TreeReduce_Waitall(std::vector<Int> & treeIdx, std::vector< std::shared_ptr<TreeReduce_v2<T> > > & arrTrees);
-
-
-  template< typename T>
-  void TreeReduce_ProgressAll(std::vector<Int> & treeIdx, std::vector< std::shared_ptr<TreeReduce_v2<T> > > & arrTrees);
-
-  
-
-
-}//namespace PEXSI
+}//namespace ASYNCOMM
 
 #include "TreeReduce_v2_impl.hpp"
 #endif

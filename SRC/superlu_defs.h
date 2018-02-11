@@ -42,7 +42,12 @@ at the top-level directory.
 #include <stdio.h>
 #include <limits.h>
 #include <string.h>
+#include <stdatomic.h>
+#include <math.h>
 
+#if ( VTUNE>=1 )
+#include <ittnotify.h>
+#endif
 /*************************************************************************
  * Constants
  **************************************************************************/
@@ -74,6 +79,21 @@ at the top-level directory.
   #define mpi_int_t   MPI_INT
   #define IFMT "%8d"
 #endif
+
+ 
+
+
+// /* Define atomic int_t */
+// #ifdef _CRAY
+  // typedef atomic_short int_t_ato  ;
+// #elif defined (_LONGINT)
+  // typedef atomic_llong int_t_ato  ;
+// #else /* Default */
+  // typedef atomic_int int_t_ato  ;
+// #endif
+
+
+
 
 #include "superlu_enum_consts.h"
 #include "Cnames.h"
@@ -166,6 +186,12 @@ at the top-level directory.
 #define Xk       21
 #define Yk       22
 #define LSUM     1000000    /* for now, make sure it's larger than nsupers*/
+
+ 
+static const int BC_L=1;	/* MPI tag for x in L-solve*/	
+static const int RD_L=2;	/* MPI tag for lsum in L-solve*/	
+static const int BC_U=3;	/* MPI tag for x in U-solve*/
+static const int RD_U=4;	/* MPI tag for lsum in U-solve*/	
 
 /* 
  * Communication scopes
@@ -792,47 +818,32 @@ typedef void* StdList;
 
 // typedef enum {NO, YES}  yes_no_t;
 extern RdTree   RdTree_Create(MPI_Comm comm, int* ranks, int rank_cnt, int msgSize, double rseed);  
-extern void     RdTree_Testsome(StdList TreeIdx, RdTree* ArrTrees, int* Outcount, int* FinishedTrees);
-extern yes_no_t RdTree_Progress(RdTree Tree);
-extern void 	RdTree_PostRecv(RdTree Tree);
-extern void     RdTree_SetDataReady(RdTree Tree);
-extern void 	RdTree_SetLocalBuffer(RdTree Tree, void* localBuffer);
-extern void 	RdTree_CleanupBuffers(RdTree Tree);
-extern void 	RdTree_Reset(RdTree Tree);
-extern void 	RdTree_AllocRecvBuffers(RdTree Tree);
+extern void   	RdTree_Destroy(RdTree Tree);
 extern void 	RdTree_SetTag(RdTree Tree, int tag);
-extern int  	RdTree_GetTag(RdTree Tree);
 extern yes_no_t RdTree_IsRoot(RdTree Tree);
-extern yes_no_t RdTree_IsReady(RdTree Tree);
-extern yes_no_t RdTree_StartForward(RdTree Tree);
 extern void 	RdTree_forwardMessageSimple(RdTree Tree, void* localBuffer);
 extern void 	RdTree_allocateRequest(RdTree Tree);
 extern int  	RdTree_GetDestCount(RdTree Tree);
 extern void 	RdTree_waitSendRequest(RdTree Tree);
 
-extern void 	BcTree_AllocateBuffer(BcTree Tree);	
 extern BcTree   BcTree_Create(MPI_Comm comm, int* ranks, int rank_cnt, int msgSize, double rseed);  
-extern void     BcTree_Testsome(StdList TreeIdx, BcTree* ArrTrees, int *Outcount, int* FinishedTrees);
-extern yes_no_t BcTree_Progress(BcTree Tree);
-// extern int_t    BcTree_Iprobe(BcTree Tree, MPI_Status* status);
-extern void     BcTree_SetDataReady(BcTree Tree);
-extern void 	BcTree_SetLocalBuffer(BcTree Tree, void* localBuffer);
-extern void 	BcTree_CleanupBuffers(BcTree Tree);
-extern void 	BcTree_Reset(BcTree Tree);
+extern void   	BcTree_Destroy(BcTree Tree);
 extern void 	BcTree_SetTag(BcTree Tree, int tag);
 extern yes_no_t BcTree_IsRoot(BcTree Tree);
-extern yes_no_t BcTree_StartForward(BcTree Tree);
 extern void 	BcTree_forwardMessageSimple(BcTree Tree, void* localBuffer);
 extern void 	BcTree_allocateRequest(BcTree Tree);
 extern int 		BcTree_getDestCount(BcTree Tree); 
 extern void 	BcTree_waitSendRequest(BcTree Tree);
-
-extern void 	TreeTest(void* tree);
-
+ 
 extern StdList 	StdList_Init();
-extern void 	StdList_Pushback(StdList lst, int dat);
-extern yes_no_t StdList_Find(StdList lst, int dat);
-extern int 	   	StdList_Size(StdList lst);
+extern void 	StdList_Pushback(StdList lst, int_t dat);
+extern void 	StdList_Pushfront(StdList lst, int_t dat);
+extern int_t 		StdList_Popfront(StdList lst);
+extern yes_no_t StdList_Find(StdList lst, int_t dat);
+extern int_t 	   	StdList_Size(StdList lst);
+yes_no_t 		StdList_Empty(StdList lst);
+
+
 
 #ifdef __cplusplus
   }

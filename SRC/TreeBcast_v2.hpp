@@ -2,7 +2,7 @@
 #define _PEXSI_TREE_V2_HPP_
 
 #include "environment.hpp"
- #include "blas.hpp"
+// #include "blas.hpp"
 #include "timer.h"
 #include "superlu_defs.h"
 
@@ -22,7 +22,7 @@
 
 
 
-namespace PEXSI{
+namespace ASYNCOMM{
 
 
   extern std::map< MPI_Comm , std::vector<int> > commGlobRanks;
@@ -64,13 +64,6 @@ namespace PEXSI{
 
         MPI_Datatype type_;
 
-#ifdef COMM_PROFILE_BCAST
-      protected:
-        Int myGRoot_;
-        Int myGRank_;
-      public:
-        inline void SetGlobalComm(const MPI_Comm & pGComm);
-#endif
 
       protected:
         virtual void buildTree(Int * ranks, Int rank_cnt)=0;
@@ -93,27 +86,18 @@ namespace PEXSI{
         virtual inline Int GetNumSendMsg();
         inline void SetDataReady(bool rdy);
         inline void SetTag(Int tag);
-        inline int GetTag();
+        inline Int GetTag();
         Int * GetDests();
         Int GetDest(Int i);
         Int GetDestCount();
         Int GetRoot();
         bool IsRoot();
-        bool StartForward();
         void SetMsgSize(Int msgSize){ this->msgSize_ = msgSize;}
         Int GetMsgSize();
-        bool IsDone();
         bool IsReady(){ return this->isReady_;}
 
-
-        virtual void SetLocalBuffer(T * locBuffer);
-        virtual T * GetLocalBuffer();
-
         //async wait and forward
-        virtual bool Progress();
 		virtual void AllocateBuffer();															
-        //blocking wait
-        void Wait();
 
 
         virtual void cleanupBuffers();
@@ -122,13 +106,6 @@ namespace PEXSI{
 		virtual void forwardMessageSimple(T * locBuffer);	
 		virtual void waitSendRequest();	
 
-		
-      protected:
-        virtual void postRecv();
-        virtual void forwardMessage();
-        virtual void copyLocalBuffer(T* destBuffer);
-        virtual bool isMessageForwarded();
-        virtual bool IsDataReceived();
     };
 
 
@@ -164,23 +141,9 @@ namespace PEXSI{
     };
 
 
-  template< typename T>
-  void TreeBcast_Waitsome(std::vector<Int> & treeIdx, std::vector< std::shared_ptr<TreeBcast_v2<T> > > & arrTrees, std::list<int> & doneIdx, std::vector<bool> & finishedFlags);
-
-  template< typename T>
-  void TreeBcast_Testsome(std::vector<Int> & treeIdx, std::vector< std::shared_ptr<TreeBcast_v2<T> > > & arrTrees, std::list<int> & doneIdx, std::vector<bool> & finishedFlags);
-
-  template< typename T>
-  void TreeBcast_Testsome(std::vector<Int> & treeIdx, std::vector< std::shared_ptr<TreeBcast_v2<T> > > & arrTrees, std::list<int> & doneIdx, std::vector<int> & finishedEpochs);
-
-  template< typename T>
-  void TreeBcast_Waitall(std::vector<Int> & treeIdx, std::vector< std::shared_ptr<TreeBcast_v2<T> > > & arrTrees);
 
 
-
-
-
-}//namespace PEXSI
+}//namespace ASYNCOMM
 
 #include "TreeBcast_v2_impl.hpp"
 #endif

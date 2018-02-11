@@ -1,3 +1,4 @@
+export MPICH_MAX_THREAD_SAFETY=multiple
 export OMP_NUM_THREADS=1
 export KMP_NUM_THREADS=1
 export MKL_NUM_THREADS=1

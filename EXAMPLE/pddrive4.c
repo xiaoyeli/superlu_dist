@@ -59,12 +59,12 @@ int main(int argc, char *argv[])
     double   *berr;
     double   *a, *b, *xtrue;
     int_t    *asub, *xa;
-    int_t    i, j, m, n;
+    int_t    i, j, ii, m, n;
     int      nprow, npcol, ldumap, p;
     int_t    usermap[6];
     int      iam, info, ldb, ldx, nprocs;
     int      nrhs = 1;   /* Number of right-hand side. */
-    char     **cpp, c;
+    char     **cpp, c, *postfix;;
     FILE *fp, *fopen();
     int cpp_defs();
 
@@ -134,14 +134,24 @@ int main(int argc, char *argv[])
     CHECK_MALLOC(iam, "Enter main()");
 #endif
 
+
+	for(ii = 0;ii<strlen(*cpp);ii++){
+		if((*cpp)[ii]=='.'){
+			postfix = &((*cpp)[ii+1]);
+		}
+	}
+	// printf("%s\n", postfix);
+	
+
     if ( iam >= 0 && iam < 6 ) { /* I am in grid 1. */
 	iam = grid1.iam;  /* Get the logical number in the new grid. */
 
         /* ------------------------------------------------------------
            GET THE MATRIX FROM FILE AND SETUP THE RIGHT HAND SIDE. 
            ------------------------------------------------------------*/
-        dcreate_matrix(&A, nrhs, &b, &ldb, &xtrue, &ldx, fp, &grid1);
-	
+		dcreate_matrix_postfix(&A, nrhs, &b, &ldb, &xtrue, &ldx, fp, postfix, &grid1);
+
+		
 	if ( !(berr = doubleMalloc_dist(nrhs)) )
 	    ABORT("Malloc fails for berr[].");
 
@@ -210,7 +220,7 @@ int main(int argc, char *argv[])
         /* ------------------------------------------------------------
            GET THE MATRIX FROM FILE AND SETUP THE RIGHT HAND SIDE. 
            ------------------------------------------------------------*/
-        dcreate_matrix(&A, nrhs, &b, &ldb, &xtrue, &ldx, fp, &grid2);
+		dcreate_matrix_postfix(&A, nrhs, &b, &ldb, &xtrue, &ldx, fp, postfix, &grid2);
 
 	if ( !(berr = doubleMalloc_dist(nrhs)) )
 	    ABORT("Malloc fails for berr[].");
