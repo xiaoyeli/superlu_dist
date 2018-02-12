@@ -2,7 +2,7 @@
 # Bash script to submit many files to Cori/Edison/Queue
 Vtune=0
 export CRAYPE_LINK_TYPE=dynamic
-export PARMETIS_ROOT=~/Cori/my_software/parmetis-4.0.3_dynamic_longint
+export PARMETIS_ROOT=~/Cori/my_software/parmetis-4.0.3_dynamic
 export PARMETIS_BUILD_DIR=${PARMETIS_ROOT}/build/Linux-x86_64 
 rm -rf CMakeCache.txt
 rm -rf CMakeFiles
@@ -24,7 +24,7 @@ cmake .. \
 	-DCMAKE_INSTALL_PREFIX=. \
 	-DCMAKE_BUILD_TYPE=Debug \
 	-DCMAKE_VERBOSE_MAKEFILE:BOOL=ON \
-	-DCMAKE_C_FLAGS="-D_LONGINT -g -O0 -std=c11 -DPRNTlevel=1 -DPROFlevel=1 -DDEBUGlevel=0" \
+	-DCMAKE_C_FLAGS="-g -O0 -std=c11 -DPRNTlevel=1 -DPROFlevel=1 -DDEBUGlevel=0" \
 	-DCMAKE_CXX_FLAGS="-Ofast -std=c++11 -DAdd_ -DRELEASE ${INC_VTUNE}" \
 	-DTPL_BLAS_LIBRARIES="/opt/intel/compilers_and_libraries_2017.2.174/linux/mkl/lib/intel64/libmkl_intel_lp64.so;/opt/intel/compilers_and_libraries_2017.2.174/linux/mkl/lib/intel64/libmkl_sequential.so;/opt/intel/compilers_and_libraries_2017.2.174/linux/mkl/lib/intel64/libmkl_core.so"
 

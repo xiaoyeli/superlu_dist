@@ -326,9 +326,9 @@ static int_t snode_dfs
 		marker[krow] = kcol;
 		lsub[nextl++] = krow;
 		if ( nextl >= nzlmax ) {
-		    if (mem_error = symbfact_SubXpand(A->ncol, jcol, nextl,
+		    if ((mem_error = symbfact_SubXpand(A->ncol, jcol, nextl,
 						      (MemType) LSUB, &nzlmax,
-						      Glu_freeable))
+						       Glu_freeable)))
 			return (mem_error);
 		    lsub = Glu_freeable->lsub;
 		}
@@ -342,8 +342,8 @@ static int_t snode_dfs
     if ( jcol < kcol ) {
 	new_next = nextl + (nextl - xlsub[jcol]);
 	while ( new_next > nzlmax ) {
-	    if (mem_error = symbfact_SubXpand(A->ncol, jcol, nextl, (MemType) LSUB,
-					      &nzlmax, Glu_freeable))
+	    if ((mem_error = symbfact_SubXpand(A->ncol, jcol, nextl, (MemType) LSUB,
+					       &nzlmax, Glu_freeable)))
 		return (mem_error);
 	    lsub = Glu_freeable->lsub;
 	}

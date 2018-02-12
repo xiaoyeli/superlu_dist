@@ -22,6 +22,7 @@ at the top-level directory.
  */
 
 #include <math.h>
+#include <superlu_dist_config.h>								
 #include "superlu_ddefs.h"
 
 /*! \brief
@@ -142,8 +143,12 @@ int main(int argc, char *argv[])
     iam = grid.iam;
     if ( iam >= nprow * npcol )	goto out;
     if ( !iam ) {
-	printf("Input matrix file: %s\n", *cpp);
-        printf("\tProcess grid\t%d X %d\n", (int)grid.nprow, (int)grid.npcol);
+	int v_major, v_minor, v_bugfix;
+	superlu_dist_GetVersionNumber(&v_major, &v_minor, &v_bugfix);
+	printf("Library version:\t%d.%d.%d\n", v_major, v_minor, v_bugfix);
+
+	printf("Input matrix file:\t%s\n", *cpp);
+        printf("Process grid:\t\t%d X %d\n", (int)grid.nprow, (int)grid.npcol);
 	fflush(stdout);
     }
 
@@ -181,7 +186,7 @@ int main(int argc, char *argv[])
         options.ParSymbFact       = NO;
         options.ColPerm           = METIS_AT_PLUS_A;
         options.RowPerm           = LargeDiag;
-        options.ReplaceTinyPivot  = YES;
+        options.ReplaceTinyPivot  = NO;
         options.IterRefine        = DOUBLE;
         options.Trans             = NOTRANS;
         options.SolveInitialized  = NO;
@@ -190,20 +195,20 @@ int main(int argc, char *argv[])
      */
     set_default_options_dist(&options);
 #if 0
+    options.ColPerm = PARMETIS;
+    options.ParSymbFact = YES;							  
     options.RowPerm = NOROWPERM;
     options.IterRefine = NOREFINE;
-    options.ColPerm = NATURAL;
     options.Equil = NO; 
-    options.ReplaceTinyPivot = NO;
 #endif
 
-//	options.ParSymbFact       = YES;
-//	options.ColPerm           = PARMETIS;
-//	options.RowPerm = NOROWPERM;
-	options.IterRefine       = 0;
-//	options.DiagInv       = YES;
-	options.ReplaceTinyPivot = NO;	
-	options.SymPattern = YES;						  
+// //	options.ParSymbFact       = YES;
+// //	options.ColPerm           = PARMETIS;
+// //	options.RowPerm = NOROWPERM;
+	// options.IterRefine       = 0;
+// //	options.DiagInv       = YES;
+	// options.ReplaceTinyPivot = NO;	
+	// options.SymPattern = YES;						  
 	
     if (!iam) {
 	print_sp_ienv_dist(&options);

@@ -240,7 +240,7 @@ at the top-level directory.
  *      The user must also supply 
  *
  *        o  A, the unfactored matrix, only in the case that iterative
- *              refinment is to be done (specifically A must be the output
+ *              refinement is to be done (specifically A must be the output
  *              A from the previous call, so that it has been scaled and permuted)
  *        o  all of ScalePermstruct
  *        o  all of LUstruct, including the actual numerical values of
@@ -343,7 +343,7 @@ at the top-level directory.
  *           = SLU_DOUBLE: accumulate residual in double precision.
  *           = SLU_EXTRA:  accumulate residual in extra precision.
  *
- *         NOTE: all options must be indentical on all processes when
+ *         NOTE: all options must be identical on all processes when
  *               calling this routine.
  *
  * A (input/output) SuperMatrix* (local)
@@ -468,7 +468,7 @@ at the top-level directory.
  * SOLVEstruct (input/output) SOLVEstruct_t*
  *         The data structure to hold the communication pattern used
  *         in the phases of triangular solution and iterative refinement.
- *         This pattern should be intialized only once for repeated solutions.
+ *         This pattern should be initialized only once for repeated solutions.
  *         If options->SolveInitialized = YES, it is an input argument.
  *         If options->SolveInitialized = NO and nrhs != 0, it is an output
  *         argument. See superlu_ddefs.h for the definition of 'SOLVEstruct_t'.
@@ -651,8 +651,10 @@ pdgssvx(superlu_dist_options_t *options, SuperMatrix *A,
     }
 
     /* ------------------------------------------------------------
-       Diagonal scaling to equilibrate the matrix. (simple scheme)
-       ------------------------------------------------------------*/
+     * Diagonal scaling to equilibrate the matrix. (simple scheme)
+     *   for row i = 1:n,  A(i,:) <- A(i,:) / max(abs(A(i,:));
+     *   for column j = 1:n,  A(:,j) <- A(:, j) / max(abs(A(:,j))
+     * ------------------------------------------------------------*/
     if ( Equil ) {
 #if ( DEBUGlevel>=1 )
 	CHECK_MALLOC(iam, "Enter equil");
@@ -1349,7 +1351,7 @@ pdgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 	// #pragma omp master
 	// {
 	pdgstrs(n, LUstruct, ScalePermstruct, grid, X, m_loc, 
-		fst_row, ldb, nrhs, SOLVEstruct, stat, info);		
+		fst_row, ldb, nrhs, SOLVEstruct, stat, info);
 	// }
 	// }
 

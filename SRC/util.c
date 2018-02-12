@@ -12,10 +12,12 @@ at the top-level directory.
  * \brief Utilities functions
  *
  * <pre>
- * -- Distributed SuperLU routine (version 2.3) --
+ * -- Distributed SuperLU routine (version 5.3) --
  * Lawrence Berkeley National Lab, Univ. of California Berkeley.
  * February 1, 2003
+ *
  * Modified: March 31, 2013
+ *           January 29, 2018
  * </pre>
  */
 
@@ -381,9 +383,13 @@ void set_default_options_dist(superlu_dist_options_t *options)
     options->Fact              = DOFACT;
     options->Equil             = YES;
     options->ParSymbFact       = NO;
+#ifdef HAVE_PARMETIS
     options->ColPerm           = METIS_AT_PLUS_A;
+#else
+    options->ColPerm            = MMD_AT_PLUS_A;
+#endif	  
     options->RowPerm           = LargeDiag;
-    options->ReplaceTinyPivot  = YES;
+    options->ReplaceTinyPivot  = NO;
     options->IterRefine        = SLU_DOUBLE;
     options->Trans             = NOTRANS;
     options->SolveInitialized  = NO;
@@ -427,7 +433,6 @@ void print_sp_ienv_dist(superlu_dist_options_t *options)
     printf(".. blocking parameters from sp_ienv():\n");
     printf("**    relaxation                 : " IFMT "\n", sp_ienv_dist(2));
     printf("**    max supernode              : " IFMT "\n", sp_ienv_dist(3));
-    printf("**    number of probes           : " IFMT "\n", sp_ienv_dist(4));
     printf("**    estimated fill ratio       : " IFMT "\n", sp_ienv_dist(6));
     printf("**    min GEMM dimension for GPU : " IFMT "\n", sp_ienv_dist(7));
     printf("**************************************************\n");
@@ -1180,7 +1185,7 @@ arrive_at_ublock (int_t j,      /* j-th block in a U panel */
                   int_t * nsupc,/* supernode size of destination block */
                   int_t iukp0,  /* input : search starting point */
                   int_t rukp0, 
-		  int_t * usub, /* usub scripts */
+		  int_t * usub, /* U subscripts */
                   int_t * perm_u, /* permutation vector from static schedule */
                   int_t * xsup, /* for SuperSize and LBj */
                   gridinfo_t * grid)
@@ -1189,14 +1194,22 @@ arrive_at_ublock (int_t j,      /* j-th block in a U panel */
     *iukp = iukp0; /* point to the first block in index[] */
     *rukp = rukp0; /* point to the start of nzval[] */
 
+    /* Sherry -- why always starts from 0 ?? Can continue at 
+       the column left from last search.  */
+    /* Caveat: There is a permutation perm_u involved for j. That's why
+       the search need to restart from 0.  */
 #ifdef ISORT
     for (jj = 0; jj < perm_u[j]; jj++) /* perm_u[j] == j */
 #else
     for (jj = 0; jj < perm_u[2 * j + 1]; jj++) /* == j */
 #endif
     {
-        // printf("iukp %d \n",*iukp );
-        *jb = usub[*iukp];      /* Global block number of block U(k,j). */
+        /* Reinitilize the pointers to the beginning of the 
+	 * k-th column/row of L/U factors.
+	 * usub[] - index array for panel U(k,:)
+		*/        
+	    // printf("iukp %d \n",*iukp );
+		*jb = usub[*iukp];      /* Global block number of block U(k,j). */
         // printf("jb %d \n",*jb );
         *nsupc = SuperSize (*jb);
         // printf("nsupc %d \n",*nsupc );
@@ -1207,7 +1220,7 @@ arrive_at_ublock (int_t j,      /* j-th block in a U panel */
         *iukp += *nsupc;
     }
 
-    /* Set the pointers to the begining of U block U(k,j) */
+    /* Set the pointers to the beginning of U block U(k,j) */
     *jb = usub[*iukp];          /* Global block number of block U(k,j). */
     *ljb = LBj (*jb, grid);     /* Local block number of U(k,j). */
     *nsupc = SuperSize (*jb);
@@ -1252,7 +1265,6 @@ static int_t num_full_cols_U
 			 j, &iukp, &rukp, &jb, &ljb, &nsupc,
 			 iukp0, rukp0, usub, perm_u, xsup, grid
 			 );
-
         for (int_t jj = iukp; jj < iukp + nsupc; ++jj) {
             segsize = klst - usub[jj];
             if ( segsize ) ++temp_ncols;
@@ -1279,7 +1291,7 @@ int_t estimate_bigu_size(int_t nsupers,
     int_t ncols = 0; /* Count local number of nonzero columns */
     int_t ldu = 0;   /* Count local max. size of nonzero columns */
 
-    /*initilize perm_u*/
+    /*initialize perm_u*/
     for (int i = 0; i < nsupers; ++i) perm_u[i] = i;
 
     for (int lk = myrow; lk < nsupers; lk += Pr ) {

@@ -16,6 +16,7 @@ at the top-level directory.
  *
  */
 #include <ctype.h>
+#include <stdio.h>
 #include "superlu_zdefs.h"
 
 #undef EXPAND_SYM
@@ -42,6 +43,7 @@ zreadMM_dist(FILE *fp, int_t *m, int_t *n, int_t *nonz,
     int_t    zero_base = 0;
     char *p, line[512], banner[64], mtx[64], crd[64], arith[64], sym[64];
     int expand;
+    char *cs;
 
     /* 	File format:
      *    %%MatrixMarket matrix coordinate real general/symmetric/...
@@ -53,7 +55,7 @@ zreadMM_dist(FILE *fp, int_t *m, int_t *n, int_t *nonz,
      */
 
      /* 1/ read header */ 
-     fgets(line,512,fp);
+     cs = fgets(line,512,fp);
      for (p=line; *p!='\0'; *p=tolower(*p),p++);
 
      if (sscanf(line, "%s %s %s %s %s", banner, mtx, crd, arith, sym) != 5) {
@@ -99,7 +101,7 @@ zreadMM_dist(FILE *fp, int_t *m, int_t *n, int_t *nonz,
 
      /* 2/ Skip comments */
      while(banner[0]=='%') {
-       fgets(line,512,fp);
+       cs = fgets(line,512,fp);
        sscanf(line,"%s",banner);
      }
 
@@ -128,11 +130,11 @@ zreadMM_dist(FILE *fp, int_t *m, int_t *n, int_t *nonz,
     asub = *rowind;
     xa   = *colptr;
 
-    if ( !(val = (doublecomplex *) SUPERLU_MALLOC(new_nonz * sizeof(double))) )
+    if ( !(val = doublecomplexMalloc_dist(new_nonz)) )
         ABORT("Malloc fails for val[]");
-    if ( !(row = (int_t *) SUPERLU_MALLOC(new_nonz * sizeof(int_t))) )
+    if ( !(row = (int_t *) intMalloc_dist(new_nonz)) )
         ABORT("Malloc fails for row[]");
-    if ( !(col = (int_t *) SUPERLU_MALLOC(new_nonz * sizeof(int_t))) )
+    if ( !(col = (int_t *) intMalloc_dist(new_nonz)) )
         ABORT("Malloc fails for col[]");
 
     for (j = 0; j < *n; ++j) xa[j] = 0;
@@ -140,9 +142,9 @@ zreadMM_dist(FILE *fp, int_t *m, int_t *n, int_t *nonz,
     /* 4/ Read triplets of values */
     for (nnz = 0, nz = 0; nnz < *nonz; ++nnz) {
 #ifdef _LONGINT
-	fscanf(fp, "%lld%lld%lf%lf\n", &row[nz], &col[nz], &val[nz].r, &val[nz].i);
+	j = fscanf(fp, "%lld%lld%lf%lf\n", &row[nz], &col[nz], &val[nz].r, &val[nz].i);
 #else
-	fscanf(fp, "%d%d%lf%lf\n", &row[nz], &col[nz], &val[nz].r, &val[nz].i);
+	j = fscanf(fp, "%d%d%lf%lf\n", &row[nz], &col[nz], &val[nz].r, &val[nz].i);
 #endif
 
 	if ( nnz == 0 ) /* first nonzero */ {
@@ -237,8 +239,6 @@ static void zreadrhs(int m, doublecomplex *b)
 	exit(-1);
     }
     for (i = 0; i < m; ++i)
-      fscanf(fp, "%lf%lf\n", &b[i].r, &b[i].i);
+      i = fscanf(fp, "%lf%lf\n", &b[i].r, &b[i].i);
     fclose(fp);
 }
-
-

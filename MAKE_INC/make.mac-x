@@ -15,8 +15,8 @@
 #
 #  The name of the libraries to be created/linked to
 #
-SuperLUroot	= /Users/xsli/Dropbox/Codes/SuperLU/superlu_dist.git/xsli-build
-DSUPERLULIB   	= $(SuperLUroot)/SRC/libsuperlu_dist.a
+SuperLUroot	= /Users/xsli/Dropbox/Codes/SuperLU/superlu_dist.git/
+DSUPERLULIB   	= $(SuperLUroot)/lib/libsuperlu_dist.a
 
 BLASLIB		= $(SuperLUroot)/CBLAS/libblas.a
 
@@ -33,7 +33,7 @@ RANLIB       = /usr/bin/ranlib
 CC           = /Users/xsli/lib/mpich2-install/bin/mpicc
 CFLAGS 	     = -O3 -DNDEBUG -I/Users/xsli/lib/parmetis-4.0.3/metis/include -I/Users/xsli/lib/parmetis-4.0.3/include  -DDEBUGlevel=0 -DPRNTlevel=0 -std=c99 -g
 #CFLAGS       += -openmp
-# CFLAGS       += -D_LONGINT   ## 64-bit integer
+#XSDK_INDEX_SIZE = 64 ## 64-bit integer
 # CFLAGS       +=  
 NOOPTS       = -O0
 FORTRAN	     = /usr/local/bin/gfortran

@@ -125,10 +125,9 @@ sp_colorder(superlu_dist_options_t *options,  SuperMatrix *A, int_t *perm_c,
     }
 	
     if ( options->Fact == DOFACT 
-	 || options->Fact == SamePattern )
+	 || options->Fact == SamePattern ) {
 	/* In this case, perm_r[] may be changed, etree(Pr*A + (Pr*A)')
 	   may be changed, so need to recompute etree.   */
-    { 
 	/* Factor A "from scratch" -- we also compute the etree, and
 	 * make perm_c consistent with the postorder of the etree.
 	 */

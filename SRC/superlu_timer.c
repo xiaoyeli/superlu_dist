@@ -71,14 +71,7 @@ double SuperLU_timer_()
 
 double SuperLU_timer_()
 {
-	
-#ifdef _OPENMP	
-	return omp_get_wtime();
-#else
     return MPI_Wtime();
-#endif
-	
-	
 }
 
 #endif

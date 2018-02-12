@@ -3,7 +3,7 @@
 
 #include "environment.hpp"
 // #include "blas.hpp"
-#include "timer.h"
+// #include "timer.h"
 #include "superlu_defs.h"
 
 

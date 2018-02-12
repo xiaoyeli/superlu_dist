@@ -1,0 +1,12 @@
+/* superlu_dist_config.h.in */
+
+/* Enable parmetis */
+#cmakedefine HAVE_PARMETIS @HAVE_PARMETIS@
+
+/* enable 64bit index mode */
+#cmakedefine XSDK_INDEX_SIZE @XSDK_INDEX_SIZE@
+
+#if (XSDK_INDEX_SIZE == 64)
+#define _LONGINT 1
+#endif
+

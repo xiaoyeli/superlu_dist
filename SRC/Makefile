@@ -29,11 +29,12 @@ include ../make.inc
 #
 # Precision independent routines
 #
-ALLAUX 	= global.o blas.o lapack.o TreeInterface.o sp_ienv.o etree.o sp_colorder.o get_perm_c.o \
-	  mmd.o comm.o memory.o util.o superlu_grid.o \
+ALLAUX 	= global.o TreeInterface.o sp_ienv.o etree.o sp_colorder.o get_perm_c.o \
+	  colamd.o mmd.o comm.o memory.o util.o superlu_grid.o \
 	  pxerr_dist.o superlu_timer.o symbfact.o \
 	  psymbfact.o psymbfact_util.o get_perm_c_parmetis.o mc64ad_dist.o \
-	  static_schedule.o xerr_dist.o smach_dist.o dmach_dist.o colamd.o 
+	  static_schedule.o xerr_dist.o smach_dist.o dmach_dist.o \
+	  superlu_dist_version.o
 
 ifeq "${ACC}" "GPU"
 ALLAUX += cublas_utils.o
@@ -70,12 +71,20 @@ ZPLUSRC = pzgssvx.o pzgssvx_ABglobal.o \
 
 all:  double complex16
 
-double: $(DSLUSRC) $(DPLUSRC) $(ALLAUX)
+config_h:
+ifeq ($(XSDK_INDEX_SIZE),64)
+	printf "#define XSDK_INDEX_SIZE 64\n" > superlu_dist_config.h
+else
+	printf "/* #define XSDK_INDEX_SIZE 64 */\n" > superlu_dist_config.h
+endif
+	printf "#if (XSDK_INDEX_SIZE == 64)\n#define _LONGINT 1\n#endif\n" >> superlu_dist_config.h
+
+double: config_h $(DSLUSRC) $(DPLUSRC) $(ALLAUX)
 	$(ARCH) $(ARCHFLAGS) $(DSUPERLULIB) \
 		$(DSLUSRC) $(DPLUSRC) $(ALLAUX)
 	$(RANLIB) $(DSUPERLULIB)
 
-complex16: $(ZSLUSRC) $(ZPLUSRC) $(ALLAUX)
+complex16: config_h $(ZSLUSRC) $(ZPLUSRC) $(ALLAUX)
 	$(ARCH) $(ARCHFLAGS) $(DSUPERLULIB) \
 		$(ZSLUSRC) $(ZPLUSRC) $(ALLAUX)
 	$(RANLIB) $(DSUPERLULIB)

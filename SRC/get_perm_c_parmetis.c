@@ -24,7 +24,10 @@ at the top-level directory.
 /* limits.h:  the largest positive integer (INT_MAX) */
 #include <limits.h>
 #include <math.h>
+#include "superlu_dist_config.h"
+#ifdef HAVE_PARMETIS
 #include "parmetis.h"
+#endif
 #include "superlu_ddefs.h"
 
 /*
@@ -104,6 +107,9 @@ get_perm_c_parmetis (SuperMatrix *A, int_t *perm_r, int_t *perm_c,
 		     gridinfo_t *grid, MPI_Comm *metis_comm)
 
 {
+  float mem;  /* Memory used during this routine */
+  mem = 0.;
+#ifdef HAVE_PARMETIS
   NRformat_loc *Astore;
   int   iam, p;
 #if 0
@@ -123,7 +129,6 @@ get_perm_c_parmetis (SuperMatrix *A, int_t *perm_r, int_t *perm_c,
   int_t  *vtxdist_i, *vtxdist_o; 
   int_t szSep, k, noNodes;
   float apat_mem_l; /* memory used during the computation of the graph of A+A' */
-  float mem;  /* Memory used during this routine */
   MPI_Status status;
 
   /* Initialization. */
@@ -131,7 +136,6 @@ get_perm_c_parmetis (SuperMatrix *A, int_t *perm_r, int_t *perm_c,
   n = A->ncol;
   m = A->nrow;
   if ( m != n ) ABORT("Matrix is not square");
-  mem = 0.;
 
 #if ( DEBUGlevel>=1 )
   CHECK_MALLOC(iam, "Enter get_perm_c_parmetis()");
@@ -355,8 +359,8 @@ get_perm_c_parmetis (SuperMatrix *A, int_t *perm_r, int_t *perm_c,
   CHECK_MALLOC(iam, "Exit get_perm_c_parmetis()");
 #endif
   
+#endif /* HAVE_PARMETIS */
   return (-mem);
-
 } /* get_perm_c_parmetis */
 
 /*! \brief

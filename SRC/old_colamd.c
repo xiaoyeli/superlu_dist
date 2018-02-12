@@ -586,7 +586,7 @@ PUBLIC int colamd_recommended	/* returns recommended value of Alen. */
 	+ n_col			/* minimum elbow room to guarrantee success */
 	+ COLAMD_STATS ;	/* for output statistics */
 
-    /* recommended is equal to the minumum plus enough memory to keep the */
+    /* recommended is equal to the minimum plus enough memory to keep the */
     /* number garbage collections low */
     recommended = minimum + nnz/5 ;
 
@@ -2147,7 +2147,7 @@ PRIVATE void detect_super_cols
 
 /*
     Defragments and compacts columns and rows in the workspace A.  Used when
-    all avaliable memory has been used while performing row merging.  Returns
+    all available memory has been used while performing row merging.  Returns
     the index of the first free position in A, after garbage collection.  The
     time taken by this routine is linear is the size of the array A, which is
     itself linear in the number of nonzeros in the input matrix.

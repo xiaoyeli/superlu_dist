@@ -9,26 +9,30 @@ The source code is distributed under BSD license, see the file License.txt
 at the top-level directory.
 */
 
-
 /*! @file 
- * \brief Driver program for testing PDGSSVX.
+ * \brief Driver program for testing PZGSSVX.
  *
  * <pre>
- * -- Distributed SuperLU routine (version 5.0) --
+ * -- Distributed SuperLU routine (version 5.2) --
  * Lawrence Berkeley National Lab, Univ. of California Berkeley.
- * March 16, 2017
+ * September 30, 2017
  * </pre>
  */
 /*
- * File name:		pdtest.c
+ * File name:		pztest.c
  * Purpose:             MAIN test program
  */
 #include <stdio.h>
 #include <stdlib.h>
-#include <unistd.h>
+//#include <unistd.h>
+#ifdef _MSC_VER
+#include <wingetopt.h>
+#else
 #include <getopt.h>
+#endif
 #include <math.h>
-#include "superlu_ddefs.h"
+#include "superlu_dist_config.h"
+#include "superlu_zdefs.h"
 
 #define NTESTS 1 /*5*/      /* Number of test types */
 #define NTYPES 11     /* Number of matrix types */
@@ -46,13 +50,13 @@ parse_command_line(int argc, char *argv[], int *nprow, int *npcol,
 		   int *nrhs, FILE **fp);
 
 extern int
-pdcompute_resid(int m, int n, int nrhs, SuperMatrix *A,
-		double *x, int ldx, double *b, int ldb,
+pzcompute_resid(int m, int n, int nrhs, SuperMatrix *A,
+		doublecomplex *x, int ldx, doublecomplex *b, int ldb,
 		gridinfo_t *grid, SOLVEstruct_t *SOLVEstruct, double *resid);
 
 /*! \brief Copy matrix A into matrix B, in distributed compressed row format. */
 void
-dCopy_CompRowLoc_Matrix_dist(SuperMatrix *A, SuperMatrix *B)
+zCopy_CompRowLoc_Matrix_dist(SuperMatrix *A, SuperMatrix *B)
 {
     NRformat_loc *Astore;
     NRformat_loc *Bstore;
@@ -70,7 +74,7 @@ dCopy_CompRowLoc_Matrix_dist(SuperMatrix *A, SuperMatrix *B)
     Bstore->m_loc = Astore->m_loc;
     m_loc = Astore->m_loc;
     Bstore->fst_row = Astore->fst_row;
-    memcpy(Bstore->nzval, Astore->nzval, nnz_loc * sizeof(double));
+    memcpy(Bstore->nzval, Astore->nzval, nnz_loc * sizeof(doublecomplex));
     memcpy(Bstore->colind, Astore->colind, nnz_loc * sizeof(int_t));
     memcpy(Bstore->rowptr, Astore->rowptr, (m_loc+1) * sizeof(int_t));
 }
@@ -96,8 +100,8 @@ int main(int argc, char *argv[])
  * Purpose
  * =======
  *
- * PDTEST is the main test program for the DOUBLE linear 
- * equation driver routines PDGSSVX.
+ * PZTEST is the main test program for the DOUBLE COMPLEX linear 
+ * equation driver routines PZGSSVX.
  * 
  * The program is invoked by a shell script file -- dtest.csh.
  * The output from the tests are written into a file -- dtest.out.
@@ -110,17 +114,19 @@ int main(int argc, char *argv[])
     LUstruct_t LUstruct;
     SOLVEstruct_t SOLVEstruct;
     gridinfo_t grid;
-    double   *nzval_save;
+    doublecomplex   *nzval_save;
     int_t    *colind_save, *rowptr_save;
     double   *berr, *R, *C;
-    double   *b, *bsave, *xtrue, *solx;
+    doublecomplex   *b, *bsave, *xtrue, *solx;
     int    i, j, m, n, izero = 0;
     int    nprow, npcol;
     int    iam, info, ldb, ldx, nrhs;
+    int_t  iinfo;
     char     **cpp, c;
     FILE *fp, *fopen();
     char matrix_type[8], equed[1];
-    int  relax, maxsuper=0, fill_ratio=0, min_gemm_gpu_offload=0;
+    int  relax, maxsuper=sp_ienv_dist(3), fill_ratio=sp_ienv_dist(6),
+         min_gemm_gpu_offload=0;
     int    equil, ifact, nfact, iequil, iequed, prefact, notfactored;
     int    nt, nrun=0, nfail=0, nerrs=0, imat, fimat=0, nimat=1;
     fact_t fact;
@@ -185,12 +191,12 @@ int main(int argc, char *argv[])
 	/* ------------------------------------------------------------
 	   GET THE MATRIX FROM FILE AND SETUP THE RIGHT HAND SIDE. 
 	   ------------------------------------------------------------*/
-	dcreate_matrix(&A, nrhs, &b, &ldb, &xtrue, &ldx, fp, &grid);
+	zcreate_matrix(&A, nrhs, &b, &ldb, &xtrue, &ldx, fp, &grid);
 
 	m = A.nrow;
 	n = A.ncol;
 
-	if ( !(bsave = doubleMalloc_dist(ldb * nrhs)) )
+	if ( !(bsave = doublecomplexMalloc_dist(ldb * nrhs)) )
 	    ABORT("Malloc fails for bsave[]");
 	for (j = 0; j < nrhs; ++j)
 	    for (i = 0; i < ldb; ++i) bsave[i+j*ldb] = b[i+j*ldb];
@@ -199,13 +205,13 @@ int main(int argc, char *argv[])
 	Astore = (NRformat_loc *) A.Store;
 	int_t nnz_loc = Astore->nnz_loc;
 	int_t m_loc = Astore->m_loc;
-	nzval_save = (double *) doubleMalloc_dist(nnz_loc);
+	nzval_save = (doublecomplex *) doublecomplexMalloc_dist(nnz_loc);
 	colind_save = (int_t *) intMalloc_dist(nnz_loc);
 	rowptr_save = (int_t *) intMalloc_dist(m_loc + 1);
-	dCreate_CompRowLoc_Matrix_dist(&Asave, m, n, nnz_loc, m_loc, Astore->fst_row,
+	zCreate_CompRowLoc_Matrix_dist(&Asave, m, n, nnz_loc, m_loc, Astore->fst_row,
 				       nzval_save, colind_save, rowptr_save,
 				       SLU_NR_loc, SLU_D, SLU_GE);
-	dCopy_CompRowLoc_Matrix_dist(&A, &Asave);
+	zCopy_CompRowLoc_Matrix_dist(&A, &Asave);
 
 	for (iequed = 0; iequed < 4; ++iequed) {
 	    int what_equil = equils[iequed];
@@ -232,7 +238,7 @@ int main(int argc, char *argv[])
 				  options.Fact == SamePattern_SameRowPerm );
 
 		    /* Restore the matrix A. */
-		    dCopy_CompRowLoc_Matrix_dist(&Asave, &A);
+		    zCopy_CompRowLoc_Matrix_dist(&Asave, &A);
 
 		    /* Initialize ScalePermstruct and LUstruct. */
 		    ScalePermstructInit(m, n, &ScalePermstruct);
@@ -246,15 +252,15 @@ int main(int argc, char *argv[])
 			R = (double *) SUPERLU_MALLOC(m*sizeof(double));
 			C = (double *) SUPERLU_MALLOC(n*sizeof(double));
 			
-			/* Later call to PDGSSVX only needs to solve. */
+			/* Later call to PZGSSVX only needs to solve. */
                         if ( equil || iequed ) {
 			    /* Compute row and column scale factors to
 			       equilibrate matrix A.    */
-			    pdgsequ(&A, R, C, &rowcnd, &colcnd, &amax, &info,
+			    pzgsequ(&A, R, C, &rowcnd, &colcnd, &amax, &iinfo,
 				    &grid);
 
 			    /* Force equilibration. */
-			    if ( info==0 && n > 0 ) {
+			    if ( iinfo==0 && n > 0 ) {
 				if ( what_equil == ROW ) {
 				    rowcnd = 0.;
 				    colcnd = 1.;
@@ -275,7 +281,7 @@ int main(int argc, char *argv[])
 			    }
 			
 			    /* Equilibrate the matrix. */
-			    pdlaqgs(&A, R, C, rowcnd, colcnd, amax, equed);
+			    pzlaqgs(&A, R, C, rowcnd, colcnd, amax, equed);
 			    // printf("after pdlaqgs: *equed %c\n", *equed);
 
 			    /* Not equilibrate anymore when calling PDGSSVX,.
@@ -294,7 +300,7 @@ int main(int argc, char *argv[])
 			PStatInit(&stat);
 	
 			int nrhs1 = 0; /* Only performs factorization */
-			pdgssvx(&options, &A, &ScalePermstruct, b, ldb, nrhs1,
+			pzgssvx(&options, &A, &ScalePermstruct, b, ldb, nrhs1,
 				&grid, &LUstruct, &SOLVEstruct,
 				berr, &stat, &info);
 
@@ -317,41 +323,41 @@ int main(int argc, char *argv[])
 		    } /* end if .. first time factor */
 
 		    /*----------------
-		     * Test pdgssvx
+		     * Test pzgssvx
 		     *----------------*/
 
 		    if ( options.Fact != FACTORED ) {
 			/* Restore the matrix A. */
-			dCopy_CompRowLoc_Matrix_dist(&Asave, &A);
+			zCopy_CompRowLoc_Matrix_dist(&Asave, &A);
 		    } 
 
 		    /* Set the right-hand side. */
-		    dCopy_Dense_Matrix_dist(m_loc, nrhs, bsave, ldb, b, ldb);
+		    zCopy_Dense_Matrix_dist(m_loc, nrhs, bsave, ldb, b, ldb);
 
 		    PStatInit(&stat);
 
 		    /*if ( !iam ) printf("\ttest pdgssvx: nrun %d, iequed %d, equil %d, fact %d\n", 
 		      nrun, iequed, equil, options.Fact);*/
 		    /* Testing PDGSSVX: solve and compute the error bounds. */
-		    pdgssvx(&options, &A, &ScalePermstruct, b, ldb, nrhs,
+		    pzgssvx(&options, &A, &ScalePermstruct, b, ldb, nrhs,
 			    &grid, &LUstruct, &SOLVEstruct,
 			    berr, &stat, &info);
 
 		    PStatFree(&stat);
 #if 0
-c		    pdinf_norm_error(iam, ((NRformat_loc *)A.Store)->m_loc,
+		    pdinf_norm_error(iam, ((NRformat_loc *)A.Store)->m_loc,
 				     nrhs, b, ldb, xtrue, ldx, &grid);
 #endif
 		    /*		    if ( info && info != izero ) {*/
 		    if ( info ) {
-			printf(FMT3, "pdgssvx",info,izero,n,nrhs,imat,nfail);
+			printf(FMT3, "pzgssvx",info,izero,n,nrhs,imat,nfail);
 		    } else {
 			/* Restore the matrix A. */
-			dCopy_CompRowLoc_Matrix_dist(&Asave, &A);
+			zCopy_CompRowLoc_Matrix_dist(&Asave, &A);
 
 			/* Compute residual of the computed solution.*/
 			solx = b;
-			pdcompute_resid(m, n, nrhs, &A, solx, ldx, bsave, ldb,
+			pzcompute_resid(m, n, nrhs, &A, solx, ldx, bsave, ldb,
 					&grid, &SOLVEstruct, &result[0]);
 			
 #if 0  /* how to get RCOND? */
@@ -363,11 +369,11 @@ c		    pdinf_norm_error(iam, ((NRformat_loc *)A.Store)->m_loc,
 #endif
 
 			/* Print information about the tests that did
-				   not pass the threshold.    */
+			   not pass the threshold.    */
 			int k1 = 0;
 			for (i = k1; i < NTESTS; ++i) {
 			    if ( result[i] >= THRESH ) {
-				printf(FMT2, "pdgssvx", options.Fact, 
+				printf(FMT2, "pzgssvx", options.Fact, 
 				       ScalePermstruct.DiagScale,
 				       n, imat, i, result[i], berr[0]);
 				++nfail;
@@ -388,7 +394,7 @@ c		    pdinf_norm_error(iam, ((NRformat_loc *)A.Store)->m_loc,
 		    Destroy_LU(n, &grid, &LUstruct);
 		    LUstructFree(&LUstruct);
 		    if ( options.SolveInitialized ) {
-			dSolveFinalize(&options, &SOLVEstruct);
+			zSolveFinalize(&options, &SOLVEstruct);
 		    }
 
 		} /* end for equil ... */
@@ -443,6 +449,8 @@ parse_command_line(int argc, char *argv[], int *nprow, int *npcol,
     int c;
     extern char *optarg;
     char  str[20];
+    char *xenvstr, *menvstr, *benvstr, *genvstr;
+    xenvstr = menvstr = benvstr = genvstr = 0;
 
     while ( (c = getopt(argc, argv, "hr:c:t:n:x:m:b:g:s:f:")) != EOF ) {
 	switch (c) {
@@ -461,33 +469,48 @@ parse_command_line(int argc, char *argv[], int *nprow, int *npcol,
 	    break;
 	  case 'r': *nprow = atoi(optarg);
 	            break;
-	  case 'c': *npcol = atoi(c);
+	  case 'c': *npcol = atoi(optarg);
 	            break;
 	  case 'n': *n = atoi(optarg);
 	            break;
-	  case 'x': c = atoi(optarg); 
-	            sprintf(str, "%d", c);
-	            setenv("NREL", str, 1);
+// Use putenv as exists on Windows
+#ifdef _MSC_VER
+#define putenv _putenv
+#endif
+	  case 'x': // c = atoi(optarg); 
+	            // sprintf(str, "%d", c);
+	            // setenv("NREL", str, 1);
+		    xenvstr = (char*) malloc((6+strlen(optarg))*sizeof(char));
+		    strcpy(xenvstr, "NREL=");
+		    strcat(xenvstr, optarg);
+		    putenv(xenvstr);
 	            //printf("Reset relax env. variable to %d\n", c);
 	            break;
-	  case 'm': c = atoi(optarg); 
-	            sprintf(str, "%d", c);
-		    setenv("NSUP", str, 1);
+	  case 'm': // c = atoi(optarg); 
+	            // sprintf(str, "%d", c);
+		    // setenv("NSUP", str, 1);
+		    menvstr = (char*) malloc((6+strlen(optarg))*sizeof(char));
+		    strcpy(menvstr, "NSUP=");
+		    strcat(menvstr, optarg);
+		    putenv(menvstr);
 		    //printf("Reset maxsuper env. variable to %d\n", c);
 	            break;
-	  case 'e': c = atoi(optarg); 
-	            sprintf(str, "%d", c);
-		    setenv("NPROBE", str, 1);
-		    //printf("Reset maxsuper env. variable to %d\n", c);
-	            break;				
-	  case 'b': c = atoi(optarg); 
-	            sprintf(str, "%d", c);
-		    setenv("FILL", str, 1);
+	  case 'b': // c = atoi(optarg); 
+	            // sprintf(str, "%d", c);
+		    // setenv("FILL", str, 1);
+		    benvstr = (char*) malloc((6+strlen(optarg))*sizeof(char));
+		    strcpy(benvstr, "FILL=");
+		    strcat(benvstr, optarg);
+		    putenv(benvstr);
 		    //printf("Reset fill_ratio env. variable to %d\n", c);
 	            break;
-	  case 'g': c = atoi(optarg); 
-	            sprintf(str, "%d", c);
-		    setenv("N_GEMM", str, 1);
+	  case 'g': // c = atoi(optarg); 
+	            // sprintf(str, "%d", c);
+		    // setenv("N_GEMM", str, 1);
+		    genvstr = (char*) malloc((8+strlen(optarg))*sizeof(char));
+		    strcpy(genvstr, "N_GEMM=");
+		    strcat(genvstr, optarg);
+		    putenv(genvstr);
 		    //printf("Reset min_gemm_gpu_offload env. variable to %d\n", c);
 	            break;
 	  case 's': *nrhs = atoi(optarg); 

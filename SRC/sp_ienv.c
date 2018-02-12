@@ -101,14 +101,7 @@ sp_ienv_dist(int_t ispec)
             }
             else
             return 128;
-	case 4: 
-            ttemp = getenv("NPROBE");
-            if(ttemp)
-            {
-                return(atoi(ttemp));
-            }
-            else
-            return 1;	
+
 #endif
         case 6: 
             ttemp = getenv("FILL");

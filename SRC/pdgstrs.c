@@ -920,8 +920,6 @@ pdgstrs(int_t n, LUstruct_t *LUstruct,
 	nlb = CEILING( nsupers, Pr ); /* Number of local block rows. */
 
 	stat->utime[SOL_COMM] = 0.0;
-	stat->utime[SOL_COMM_PROBE] = 0.0;
-	stat->utime[SOL_COMM_TESTSOME] = 0.0;
 	stat->utime[SOL_GEMM] = 0.0;
 	stat->utime[SOL_TRSM] = 0.0;
 	stat->utime[SOL_L] = 0.0;
@@ -966,7 +964,6 @@ pdgstrs(int_t n, LUstruct_t *LUstruct,
 
 	/* Allocate working storage. */
 	knsupc = sp_ienv_dist(3);
-	nprobe = sp_ienv_dist(4);
 	maxrecvsz = knsupc * nrhs + SUPERLU_MAX( XK_H, LSUM_H );
 	sizelsum = (((size_t)ldalsum)*nrhs + nlb*LSUM_H);
 	sizelsum = ((sizelsum + (aln_d - 1)) / aln_d) * aln_d;

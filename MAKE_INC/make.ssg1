@@ -15,8 +15,8 @@
 #
 #  The name of the libraries to be created/linked to
 #
-SuperLUroot	= /home/xiaoye/Dropbox/Codes/SuperLU/superlu_dist.git/build
-DSUPERLULIB   	= $(SuperLUroot)/SRC/libsuperlu_dist.a
+SuperLUroot	= /home/xiaoye/Dropbox/Codes/SuperLU/superlu_dist.git
+DSUPERLULIB   	= $(SuperLUroot)/lib/libsuperlu_dist.a
 
 LIBS		= $(DSUPERLULIB) /usr/lib/libf77blas.so /usr/lib/libatlas.so /home/xiaoye/lib/static/parmetis-4.0.3/build/Linux-x86_64/libparmetis/libparmetis.a /home/xiaoye/lib/static/parmetis-4.0.3/build/Linux-x86_64/libmetis/libmetis.a
 
@@ -30,9 +30,7 @@ RANLIB       = /usr/bin/ranlib
 
 CC           = /home/xiaoye/mpich-install/bin/mpicc
 CFLAGS 	     = -O3 -DNDEBUG -I/home/xiaoye/lib/static/parmetis-4.0.3/metis/include -I/home/xiaoye/lib/static/parmetis-4.0.3/include -fopenmp  -DUSE_VENDOR_BLAS -DDEBUGlevel=0 -DPRNTlevel=0 -std=c99 -g
-# CFLAGS       += -D
-# CFLAGS       +=  
-# CFLAGS       += -D_LONGINT
+#XSDK_INDEX_SIZE = 64 ## 64-bit integer
 NOOPTS       = -O0
 FORTRAN	     = /usr/bin/gfortran
 

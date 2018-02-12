@@ -12,7 +12,7 @@ at the top-level directory.
  * \brief Definitions which are precision-neutral
  *
  * <pre>
- * -- Distributed SuperLU routine (version 4.0) --
+ * -- Distributed SuperLU routine (version 5.2) --
  * Lawrence Berkeley National Lab, Univ. of California Berkeley.
  * November 1, 2007
  *
@@ -45,6 +45,11 @@ at the top-level directory.
 #include <stdatomic.h>
 #include <math.h>
 
+// /* Following is for vtune */
+// #if 0
+// #include <ittnotify.h>
+// #define USE_VTUNE
+// #endif
 #if ( VTUNE>=1 )
 #include <ittnotify.h>
 #endif
@@ -62,9 +67,11 @@ at the top-level directory.
  * Versions 4.x and earlier do not include a #define'd version numbers.
  */
 #define SUPERLU_DIST_MAJOR_VERSION     5
-#define SUPERLU_DIST_MINOR_VERSION     1
-#define SUPERLU_DIST_PATCH_VERSION     3
+#define SUPERLU_DIST_MINOR_VERSION     3
+#define SUPERLU_DIST_PATCH_VERSION     0
+#define SUPERLU_DIST_RELEASE_DATE      "January 28, 2018"					  
 
+#include "superlu_dist_config.h"							   
 /* Define my integer size int_t */
 #ifdef _CRAY
   typedef short int_t;
@@ -180,12 +187,12 @@ at the top-level directory.
 #define LkVAL    14
 #define LkkDIAG  15
     /* For triangular solves. */
-#define XK_H     2  /* The header preceeding each X block. */
-#define LSUM_H   2  /* The header preceeding each MOD block. */
+#define XK_H     2  /* The header preceding each X block. */
+#define LSUM_H   2  /* The header preceding each MOD block. */
 #define GSUM     20 
 #define Xk       21
 #define Yk       22
-#define LSUM     1000000    /* for now, make sure it's larger than nsupers*/
+#define LSUM     23    
 
  
 static const int BC_L=1;	/* MPI tag for x in L-solve*/	
@@ -252,6 +259,18 @@ static const int RD_U=4;	/* MPI tag for lsum in U-solve*/
 #define VT_TRACEOFF
 #endif
 
+/* Support Windows */
+#ifndef SUPERLU_DIST_EXPORT
+#if MSVC
+#ifdef SUPERLU_DIST_EXPORTS
+#define SUPERLU_DIST_EXPORT __declspec(dllexport)
+#else
+#define SUPERLU_DIST_EXPORT __declspec(dllimport)
+#endif /* SUPERLU_DIST_EXPORTS */
+#else
+#define SUPERLU_DIST_EXPORT
+#endif /* MSVC */
+#endif /* SUPERLU_DIST_EXPORT */
 
 #ifdef __cplusplus
 extern "C" {
@@ -376,7 +395,7 @@ typedef struct {
  *      the row indices. Instead, only the leading nonzero index is stored.
  *      The rest can be found together with xsup/supno pair.
  *      For example, 
- *          usub[xusub[j+1]] - usub[xusub[j]] = number of segments in column j.
+ *          usub[xsub[j+1]] - usub[xsub[j]] = number of segments in column j.
  *          for any i in usub[], 
  *              supno[i]         = block number in which i belongs to
  *  	        xsup[supno[i]+1] = first row of the next block
@@ -748,6 +767,7 @@ extern void  PStatFree(SuperLUStat_t *);
 extern void  PStatPrint(superlu_dist_options_t *, SuperLUStat_t *, gridinfo_t *);
 extern void  log_memory(long long, SuperLUStat_t *);
 extern void  print_memorylog(SuperLUStat_t *, char *);
+extern int   superlu_dist_GetVersionNumber(int *, int *, int *);
 extern void  quickSort( int_t*, int_t, int_t, int_t);
 extern void  quickSortM( int_t*, int_t, int_t, int_t, int_t, int_t);
 extern int_t partition( int_t*, int_t, int_t, int_t);

@@ -131,7 +131,8 @@ int_t zQuerySpace_dist(int_t n, LUstruct_t *LUstruct, gridinfo_t *grid,
     mem_usage->total += stat->peak_buffer;
 
 #if ( PRNTlevel>=1 )
-    printf(".. zQuery_Space: peak_buffer %.2f (MB)\n", stat->peak_buffer * 1.0e-6);
+    if (iam==0) printf(".. zQuerySpace: peak_buffer %.2f (MB)\n",
+                       stat->peak_buffer * 1.0e-6);
 #endif
 #endif
     return 0;

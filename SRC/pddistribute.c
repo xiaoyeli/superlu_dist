@@ -1,12 +1,12 @@
 /*! \file
-  Copyright (c) 2003, The Regents of the University of California, through
-  Lawrence Berkeley National Laboratory (subject to receipt of any required 
-  approvals from U.S. Dept. of Energy) 
+Copyright (c) 2003, The Regents of the University of California, through
+Lawrence Berkeley National Laboratory (subject to receipt of any required 
+approvals from U.S. Dept. of Energy) 
 
-  All rights reserved. 
+All rights reserved. 
 
-  The source code is distributed under BSD license, see the file License.txt
-  at the top-level directory.
+The source code is distributed under BSD license, see the file License.txt
+at the top-level directory.
  */
 
 
@@ -1006,7 +1006,7 @@ pddistribute(fact_t fact, int_t n, SuperMatrix *A,
 					/* Add room for descriptors */
 					len1 = len + BC_HEADER + nrbl * LB_DESCRIPTOR;
 					if ( !(index = intMalloc_dist(len1)) ) 
-						ABORT("Malloc fails for index[]");				
+						ABORT("Malloc fails for index[]");												 
 					if (!(lusup = 
 								doubleMalloc_dist(len*nsupc))) {
 						fprintf(stderr, "col block " IFMT " ", jb);
@@ -1233,7 +1233,7 @@ pddistribute(fact_t fact, int_t n, SuperMatrix *A,
 			
 			/////////////////////////////////////////////////////////////////
 
-			if(LSUM<nsupers)ABORT("Need increase LSUM."); /* temporary*/
+			// if(LSUM<nsupers)ABORT("Need increase LSUM."); /* temporary*/
 
 #if ( PROFlevel>=1 )
 				t = SuperLU_timer_();

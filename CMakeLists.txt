@@ -10,10 +10,11 @@ cmake_minimum_required(VERSION 2.8.12 FATAL_ERROR)
 # Project version numbers
 project(SuperLU_DIST NONE)
 set(VERSION_MAJOR "5")
-set(VERSION_MINOR "1")
-set(VERSION_BugFix "3")
+set(VERSION_MINOR "3")
+set(VERSION_BugFix "0")
 set(PROJECT_VERSION ${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_BugFix})
 
+list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake")
 ######################################################################
 #
 # IDEAS: xSDK standards module
@@ -49,9 +50,13 @@ set(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib")
 SET(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 #----
 
+SET(BUILD_STATIC_LIBS TRUE CACHE BOOL "Include static libs when building shared")
 if (BUILD_SHARED_LIBS)
   message("-- SuperLU_DIST will be built as a shared library.")
   set(PROJECT_NAME_LIB_EXPORT libsuperlu_dist.so)
+  if (BUILD_STATIC_LIBS)
+    message("-- SuperLU_DIST will also be built as a static library.")
+  endif()
 else()
   message("-- SuperLU_DIST will be built as a static library.")
   set(PROJECT_NAME_LIB_EXPORT libsuperlu_dist.a)
@@ -90,13 +95,26 @@ option(enable_examples  "Build examples" ON)
 option(TPL_PARMETIS_LIBRARIES "List of absolute paths to ParMETIS link libraries [].")
 option(TPL_PARMETIS_INCLUDE_DIRS "List of absolute paths to ParMETIS include directories [].")
 
+if(NOT MSVC)
+  include(GNUInstallDirs)
+  set(default_install_inc_dir ${CMAKE_INSTALL_INCLUDEDIR})
+  set(default_install_lib_dir ${CMAKE_INSTALL_LIBDIR})
+  set(default_install_bin_dir ${CMAKE_INSTALL_BINDIR})
+else()
+  set(default_install_inc_dir "include")
+  set(default_install_lib_dir "lib")
+  set(default_install_bin_dir "bin")
+endif()
 
-# setup required compiler defines and options.
+set(INSTALL_INC_DIR "${default_install_inc_dir}" CACHE STRING "The folder where headers will be installed.")
+set(INSTALL_LIB_DIR "${default_install_lib_dir}" CACHE STRING "The folder where libraries will be installed.")
+set(INSTALL_BIN_DIR "${default_install_bin_dir}" CACHE STRING "The folder where runtime files will be installed.")
+
+# Set up required compiler defines and options.
 ## get_directory_property( DirDefs COMPILE_DEFINITIONS )
 # set(CMAKE_C_FLAGS "-DDEBUGlevel=0 -DPRNTlevel=0 ${CMAKE_C_FLAGS}")
 if(XSDK_INDEX_SIZE EQUAL 64)
     message("-- Using 64 bit integer for index size")
-    set(CMAKE_C_FLAGS "-D_LONGINT ${CMAKE_C_FLAGS}")
 endif()	
 set(CMAKE_C_FLAGS_RELEASE "-O3" CACHE STRING "")
 
@@ -105,18 +123,29 @@ set(CMAKE_C_FLAGS_RELEASE "-O3" CACHE STRING "")
 # Find packages
 #
 ######################################################################
+#
+#--------------------- MPI ---------------------
+find_package(MPI)
+if(MPI_C_FOUND)
+    set(CMAKE_C_FLAGS "${MPI_C_COMPILE_FLAGS} ${CMAKE_C_FLAGS}")
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${MPI_C_LINK_FLAGS}" )
+endif()
 #--------------------- OpenMP ---------------------
-find_package(OpenMP)
+if (NOT DEFINED enable_openmp)
+  set(enable_openmp TRUE)
+endif ()
+if (enable_openmp)
+  find_package(OpenMP)
 ## include(FindOpenMP)  # Strumpack uses this
-if(OPENMP_FOUND)
-  set(CMAKE_C_FLAGS "${OpenMP_C_FLAGS} ${CMAKE_C_FLAGS}")
+  if(OPENMP_FOUND)
+    set(CMAKE_C_FLAGS "${OpenMP_C_FLAGS} ${CMAKE_C_FLAGS}")
 # On edison, OpenMP_EXE_LINKER_FLAGS is empty
 #  set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${OpenMP_EXE_LINKER_FLAGS}")
-  set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${OpenMP_C_FLAGS}")
- message("-- OpenMP_EXE_LINKER_FLAGS='${OpenMP_EXE_LINKER_FLAGS}'")
- message("-- CMAKE_EXE_LINKER_FLAGS='${CMAKE_EXE_LINKER_FLAGS}'")
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${OpenMP_C_FLAGS}")
+    message("-- OpenMP_EXE_LINKER_FLAGS='${OpenMP_EXE_LINKER_FLAGS}'")
+    message("-- CMAKE_EXE_LINKER_FLAGS='${CMAKE_EXE_LINKER_FLAGS}'")
+  endif()
 endif()
-#
 #--------------------- BLAS ---------------------
 if(NOT enable_blaslib)
 #  set(TPL_BLAS_LIBRARIES "" CACHE FILEPATH
@@ -150,13 +179,6 @@ else()
     endif()
 endif()
 
-#--------------------- MPI ---------------------
-find_package(MPI)
-if(MPI_C_FOUND)
-    set(CMAKE_C_FLAGS "${MPI_C_COMPILE_FLAGS} ${CMAKE_C_FLAGS}")
-    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${MPI_C_LINK_FLAGS}" )
-endif()
-
 #--------------------- ParMETIS ---------------------
 if (enable_parmetislib)   ## want to use parmetis
   if (NOT TPL_PARMETIS_LIBRARIES)
@@ -185,10 +207,17 @@ else()
   message("-- Will not link with ParMETIS.")
 endif()
 
-# if(NOT enable_parmetislib)
-#  find_package(PARMETIS)    ## does not have this Module yet.
-# endif()
+if(enable_parmetislib AND NOT PARMETIS_FOUND)
+  find_package(ParMETIS)
+  if(PARMETIS_FOUND)
+    set(PARMETIS_LIB ParMETIS::ParMETIS)
+    set(TPL_PARMETIS_INCLUDE_DIRS "")
+  endif()
+endif()
 
+if(PARMETIS_FOUND)
+  set(HAVE_PARMETIS TRUE)
+endif()
 
 ######################################################################
 #
@@ -196,10 +225,12 @@ endif()
 #
 ######################################################################
 
+include_directories(${CMAKE_BINARY_DIR}/SRC) # For superlu_dist_config.h
 include_directories(${CMAKE_SOURCE_DIR}/SRC)
-include_directories(${TPL_PARMETIS_INCLUDE_DIRS})  ## parmetis
+if (TPL_PARMETIS_INCLUDE_DIRS)
+  include_directories(${TPL_PARMETIS_INCLUDE_DIRS})  ## parmetis
+endif ()
 include_directories(${MPI_C_INCLUDE_PATH})
-
 ######################################################################
 #
 # Add subdirectories
@@ -226,6 +257,8 @@ endif()
 # file(WRITE "make.defs" "# can be exposed to users" ${CMAKE_C_COMPILER})
 # configure_file(${CMAKE_SOURCE_DIR}/make.inc.in ${CMAKE_BINARY_DIR}/make.inc)
 configure_file(${SuperLU_DIST_SOURCE_DIR}/make.inc.in ${SuperLU_DIST_SOURCE_DIR}/make.inc)
+configure_file(${SuperLU_DIST_SOURCE_DIR}/SRC/superlu_dist_config.h.in ${SuperLU_DIST_BINARY_DIR}/SRC/superlu_dist_config.h)
+# configure_file(${SuperLU_DIST_SOURCE_DIR}/SRC/superlu_dist_config.h.in ${SuperLU_DIST_SOURCE_DIR}/SRC/superlu_dist_config.h)
 
 # Add pkg-config support
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/superlu_dist.pc.in ${CMAKE_CURRENT_BINARY_DIR}/superlu_dist.pc @ONLY)

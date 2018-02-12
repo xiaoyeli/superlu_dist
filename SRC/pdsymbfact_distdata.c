@@ -2131,7 +2131,7 @@ ddist_psymbtonum(fact_t fact, int_t n, SuperMatrix *A,
 			
 			/////////////////////////////////////////////////////////////////
 
-			if(LSUM<nsupers)ABORT("Need increase LSUM."); /* temporary*/
+			// if(LSUM<nsupers)ABORT("Need increase LSUM."); /* temporary*/
 
 #if ( PROFlevel>=1 )
 				t = SuperLU_timer_();

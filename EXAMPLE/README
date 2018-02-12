@@ -2,7 +2,7 @@
 		======================
 
 This directory contains sample programs to illustrate how to use
-various functions provded in SuperLU_DIST. You can modify these
+various functions provided in SuperLU_DIST. You can modify these
 examples to suit your applications.
 
 The examples illustrate the following functionalities:

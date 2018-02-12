@@ -2,7 +2,7 @@
 #define _PEXSI_REDUCE_TREE_V2_HPP_
 
 #include "environment.hpp"
-#include "timer.h"
+// #include "timer.h"
 #include "TreeBcast_v2.hpp"
 
 #include <vector>

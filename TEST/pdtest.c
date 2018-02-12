@@ -14,9 +14,9 @@ at the top-level directory.
  * \brief Driver program for testing PDGSSVX.
  *
  * <pre>
- * -- Distributed SuperLU routine (version 5.0) --
+ * -- Distributed SuperLU routine (version 5.2) --
  * Lawrence Berkeley National Lab, Univ. of California Berkeley.
- * March 16, 2017
+ * September 30, 2017
  * </pre>
  */
 /*
@@ -25,9 +25,14 @@ at the top-level directory.
  */
 #include <stdio.h>
 #include <stdlib.h>
-#include <unistd.h>
+//#include <unistd.h>
+#ifdef _MSC_VER
+#include <wingetopt.h>
+#else
 #include <getopt.h>
+#endif
 #include <math.h>
+#include "superlu_dist_config.h"
 #include "superlu_ddefs.h"
 
 #define NTESTS 1 /*5*/      /* Number of test types */
@@ -117,10 +122,12 @@ int main(int argc, char *argv[])
     int    i, j, m, n, izero = 0;
     int    nprow, npcol;
     int    iam, info, ldb, ldx, nrhs;
+    int_t  iinfo;
     char     **cpp, c;
     FILE *fp, *fopen();
     char matrix_type[8], equed[1];
-    int  relax, maxsuper=0, fill_ratio=0, min_gemm_gpu_offload=0;
+    int  relax, maxsuper=sp_ienv_dist(3), fill_ratio=sp_ienv_dist(6),
+         min_gemm_gpu_offload=0;
     int    equil, ifact, nfact, iequil, iequed, prefact, notfactored;
     int    nt, nrun=0, nfail=0, nerrs=0, imat, fimat=0, nimat=1;
     fact_t fact;
@@ -250,11 +257,11 @@ int main(int argc, char *argv[])
                         if ( equil || iequed ) {
 			    /* Compute row and column scale factors to
 			       equilibrate matrix A.    */
-			    pdgsequ(&A, R, C, &rowcnd, &colcnd, &amax, &info,
+			    pdgsequ(&A, R, C, &rowcnd, &colcnd, &amax, &iinfo,
 				    &grid);
 
 			    /* Force equilibration. */
-			    if ( info==0 && n > 0 ) {
+			    if ( iinfo==0 && n > 0 ) {
 				if ( what_equil == ROW ) {
 				    rowcnd = 0.;
 				    colcnd = 1.;
@@ -339,7 +346,7 @@ int main(int argc, char *argv[])
 
 		    PStatFree(&stat);
 #if 0
-c		    pdinf_norm_error(iam, ((NRformat_loc *)A.Store)->m_loc,
+		    pdinf_norm_error(iam, ((NRformat_loc *)A.Store)->m_loc,
 				     nrhs, b, ldb, xtrue, ldx, &grid);
 #endif
 		    /*		    if ( info && info != izero ) {*/
@@ -363,7 +370,7 @@ c		    pdinf_norm_error(iam, ((NRformat_loc *)A.Store)->m_loc,
 #endif
 
 			/* Print information about the tests that did
-				   not pass the threshold.    */
+			   not pass the threshold.    */
 			int k1 = 0;
 			for (i = k1; i < NTESTS; ++i) {
 			    if ( result[i] >= THRESH ) {
@@ -443,6 +450,8 @@ parse_command_line(int argc, char *argv[], int *nprow, int *npcol,
     int c;
     extern char *optarg;
     char  str[20];
+    char *xenvstr, *menvstr, *benvstr, *genvstr;
+    xenvstr = menvstr = benvstr = genvstr = 0;
 
     while ( (c = getopt(argc, argv, "hr:c:t:n:x:m:b:g:s:f:")) != EOF ) {
 	switch (c) {
@@ -465,24 +474,44 @@ parse_command_line(int argc, char *argv[], int *nprow, int *npcol,
 	            break;
 	  case 'n': *n = atoi(optarg);
 	            break;
-	  case 'x': c = atoi(optarg); 
-	            sprintf(str, "%d", c);
-	            setenv("NREL", str, 1);
+// Use putenv as exists on Windows
+#ifdef _MSC_VER
+#define putenv _putenv
+#endif
+	  case 'x': // c = atoi(optarg); 
+	            // sprintf(str, "%d", c);
+	            // setenv("NREL", str, 1);
+		    xenvstr = (char*) malloc((6+strlen(optarg))*sizeof(char));
+		    strcpy(xenvstr, "NREL=");
+		    strcat(xenvstr, optarg);
+		    putenv(xenvstr);
 	            //printf("Reset relax env. variable to %d\n", c);
 	            break;
-	  case 'm': c = atoi(optarg); 
-	            sprintf(str, "%d", c);
-		    setenv("NSUP", str, 1);
+	  case 'm': // c = atoi(optarg); 
+	            // sprintf(str, "%d", c);
+		    // setenv("NSUP", str, 1);
+		    menvstr = (char*) malloc((6+strlen(optarg))*sizeof(char));
+		    strcpy(menvstr, "NSUP=");
+		    strcat(menvstr, optarg);
+		    putenv(menvstr);
 		    //printf("Reset maxsuper env. variable to %d\n", c);
 	            break;
-	  case 'b': c = atoi(optarg); 
-	            sprintf(str, "%d", c);
-		    setenv("FILL", str, 1);
+	  case 'b': // c = atoi(optarg); 
+	            // sprintf(str, "%d", c);
+		    // setenv("FILL", str, 1);
+		    benvstr = (char*) malloc((6+strlen(optarg))*sizeof(char));
+		    strcpy(benvstr, "FILL=");
+		    strcat(benvstr, optarg);
+		    putenv(benvstr);
 		    //printf("Reset fill_ratio env. variable to %d\n", c);
 	            break;
-	  case 'g': c = atoi(optarg); 
-	            sprintf(str, "%d", c);
-		    setenv("N_GEMM", str, 1);
+	  case 'g': // c = atoi(optarg); 
+	            // sprintf(str, "%d", c);
+		    // setenv("N_GEMM", str, 1);
+		    genvstr = (char*) malloc((8+strlen(optarg))*sizeof(char));
+		    strcpy(genvstr, "N_GEMM=");
+		    strcat(genvstr, optarg);
+		    putenv(genvstr);
 		    //printf("Reset min_gemm_gpu_offload env. variable to %d\n", c);
 	            break;
 	  case 's': *nrhs = atoi(optarg); 

@@ -22,6 +22,7 @@ at the top-level directory.
  */
 
 #include <math.h>
+#include <superlu_dist_config.h>								
 #include "superlu_ddefs.h"
 
 /*! \brief
@@ -105,8 +106,12 @@ int main(int argc, char *argv[])
     iam = grid.iam;
     if ( iam >= nprow * npcol )	goto out;
     if ( !iam ) {
-	printf("Input matrix file: %s\n", *cpp);
-        printf("\tProcess grid\t%d X %d\n", (int)grid.nprow, (int)grid.npcol);
+	int v_major, v_minor, v_bugfix;
+	superlu_dist_GetVersionNumber(&v_major, &v_minor, &v_bugfix);
+	printf("Library version:\t%d.%d.%d\n", v_major, v_minor, v_bugfix);
+
+	printf("Input matrix file:\t%s\n", *cpp);
+        printf("Process grid:\t\t%d X %d\n", (int)grid.nprow, (int)grid.npcol);
 	fflush(stdout);
     }
 
@@ -155,6 +160,7 @@ int main(int argc, char *argv[])
         options.PrintStat = YES;
      */
     set_default_options_dist(&options);
+    printf("options.ColPerm = %d\n", options.ColPerm);													  
 
     if (!iam) {
 	print_sp_ienv_dist(&options);
