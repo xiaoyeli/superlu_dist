@@ -277,6 +277,7 @@ extern int  static_schedule(superlu_dist_options_t *, int, int,
 extern void LUstructInit(const int_t, LUstruct_t *);
 extern void LUstructFree(LUstruct_t *);
 extern void Destroy_LU(int_t, gridinfo_t *, LUstruct_t *);
+extern void dDestroy_Tree(int_t, gridinfo_t *, LUstruct_t *);
 
 /* #define GPU_PROF
 #define IPM_PROF */

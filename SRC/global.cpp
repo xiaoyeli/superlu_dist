@@ -1,5 +1,5 @@
 #include "environment.hpp"
-  #include <deque>
+#include <deque>
 
 namespace ASYNCOMM{
 
@@ -35,4 +35,5 @@ namespace ASYNCOMM{
 	}
 
 #endif // ifndef _RELEASE_
+	
 } // namespace ASYNCOMM

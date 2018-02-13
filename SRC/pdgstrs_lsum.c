@@ -645,7 +645,7 @@ void dlsum_fmod_inv
 #endif
 								nleaf_send_tmp = ++nleaf_send[0];
 								leaf_send[nleaf_send_tmp-1] = -lk-1;		
-								// RdTree_forwardMessageSimple(LRtree_ptr[lk],&lsum[il - LSUM_H ]);
+								// RdTree_forwardMessageSimple(LRtree_ptr[lk],&lsum[il - LSUM_H ],'d');
 
 							} else { /* Diagonal process: X[i] += lsum[i]. */
 
@@ -721,7 +721,7 @@ void dlsum_fmod_inv
 #endif
 									nleaf_send_tmp = ++nleaf_send[0];
 									leaf_send[nleaf_send_tmp-1] = lk;
-									// BcTree_forwardMessageSimple(LBtree_ptr[lk],&x[ii - XK_H]);
+									// BcTree_forwardMessageSimple(LBtree_ptr[lk],&x[ii - XK_H],'d');
 								}
 
 								/*
@@ -842,7 +842,7 @@ void dlsum_fmod_inv
 						nleaf_send_tmp = ++nleaf_send[0];
 						leaf_send[nleaf_send_tmp-1] = -lk-1;						
 
-						// RdTree_forwardMessageSimple(LRtree_ptr[lk],&lsum[il - LSUM_H ]);
+						// RdTree_forwardMessageSimple(LRtree_ptr[lk],&lsum[il - LSUM_H ],'d');
 					} else { /* Diagonal process: X[i] += lsum[i]. */
 
 #if ( PROFlevel>=1 )
@@ -921,7 +921,7 @@ void dlsum_fmod_inv
 							nleaf_send_tmp = ++nleaf_send[0];
 							// printf("nleaf_send_tmp %5d lk %5d\n",nleaf_send_tmp);
 							leaf_send[nleaf_send_tmp-1] = lk;
-							// BcTree_forwardMessageSimple(LBtree_ptr[lk],&x[ii - XK_H]);
+							// BcTree_forwardMessageSimple(LBtree_ptr[lk],&x[ii - XK_H],'d');
 						}
 
 						/*
@@ -1269,7 +1269,7 @@ void dlsum_fmod_inv_master
 							lsum[il + jj] += lsum[il + jj + ii*sizelsum];
 
 
-					RdTree_forwardMessageSimple(LRtree_ptr[lk],&lsum[il - LSUM_H ]);
+					RdTree_forwardMessageSimple(LRtree_ptr[lk],&lsum[il - LSUM_H ],'d');
 					// }
 
 
@@ -1351,7 +1351,7 @@ void dlsum_fmod_inv_master
 					 */
 
 					if(LBtree_ptr[lk]!=NULL)
-						BcTree_forwardMessageSimple(LBtree_ptr[lk],&x[ii - XK_H]);
+						BcTree_forwardMessageSimple(LBtree_ptr[lk],&x[ii - XK_H],'d');
 
 					/*
 					 * Perform local block modifications.
@@ -1543,7 +1543,7 @@ void dlsum_bmod_inv
 #endif
 						nroot_send_tmp = ++nroot_send[0];
 						root_send[nroot_send_tmp-1] = -ik-1;							
-						// RdTree_forwardMessageSimple(URtree_ptr[ik],&lsum[il - LSUM_H ]);
+						// RdTree_forwardMessageSimple(URtree_ptr[ik],&lsum[il - LSUM_H ],'d');
 
 		#if ( DEBUGlevel>=2 )
 						printf("(%2d) Sent LSUM[%2.0f], size %2d, to P %2d\n",
@@ -1628,7 +1628,7 @@ void dlsum_bmod_inv
 #endif
 							nroot_send_tmp = ++nroot_send[0];
 							root_send[nroot_send_tmp-1] = lk1;							
-							// BcTree_forwardMessageSimple(UBtree_ptr[lk1],&x[ii - XK_H]); 
+							// BcTree_forwardMessageSimple(UBtree_ptr[lk1],&x[ii - XK_H],'d'); 
 							} 
 
 							/*
@@ -1709,7 +1709,7 @@ void dlsum_bmod_inv
 #endif
 					nroot_send_tmp = ++nroot_send[0];
 					root_send[nroot_send_tmp-1] = -ik-1;					
-					// RdTree_forwardMessageSimple(URtree_ptr[ik],&lsum[il - LSUM_H ]);
+					// RdTree_forwardMessageSimple(URtree_ptr[ik],&lsum[il - LSUM_H ],'d');
 
 	#if ( DEBUGlevel>=2 )
 					printf("(%2d) Sent LSUM[%2.0f], size %2d, to P %2d\n",
@@ -1794,7 +1794,7 @@ void dlsum_bmod_inv
 #endif
 						nroot_send_tmp = ++nroot_send[0];
 						root_send[nroot_send_tmp-1] = lk1;							
-						// BcTree_forwardMessageSimple(UBtree_ptr[lk1],&x[ii - XK_H]); 
+						// BcTree_forwardMessageSimple(UBtree_ptr[lk1],&x[ii - XK_H],'d'); 
 						} 
 
 						/*
@@ -2037,7 +2037,7 @@ void dlsum_bmod_inv_master
 					// if(ii!=thread_id1)
 					for (jj=0;jj<iknsupc*nrhs;jj++)
 						lsum[il + jj] += lsum[il + jj + ii*sizelsum];			
-				RdTree_forwardMessageSimple(URtree_ptr[ik],&lsum[il - LSUM_H ]);
+				RdTree_forwardMessageSimple(URtree_ptr[ik],&lsum[il - LSUM_H ],'d');
 
 #if ( DEBUGlevel>=2 )
 				printf("(%2d) Sent LSUM[%2.0f], size %2d, to P %2d\n",
@@ -2116,7 +2116,7 @@ void dlsum_bmod_inv_master
 						// fflush(stdout);
 					// }
 					if(UBtree_ptr[lk1]!=NULL){
-					BcTree_forwardMessageSimple(UBtree_ptr[lk1],&x[ii - XK_H]); 
+					BcTree_forwardMessageSimple(UBtree_ptr[lk1],&x[ii - XK_H],'d'); 
 					} 
 
 					/*

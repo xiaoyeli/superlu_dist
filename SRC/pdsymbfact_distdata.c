@@ -2227,14 +2227,14 @@ ddist_psymbtonum(fact_t fact, int_t n, SuperMatrix *A,
 						// rseed=rand();
 						// rseed=1.0;
 						msgsize = SuperSize( jb )*nrhs+XK_H;
-						LBtree_ptr[ljb] = BcTree_Create(grid->comm, ranks, rank_cnt, msgsize,SeedSTD_BC[ljb]);  	
-						BcTree_SetTag(LBtree_ptr[ljb],BC_L);
+						LBtree_ptr[ljb] = BcTree_Create(grid->comm, ranks, rank_cnt, msgsize,SeedSTD_BC[ljb],'d');  	
+						BcTree_SetTag(LBtree_ptr[ljb],BC_L,'d');
 
 						// printf("iam %5d btree rank_cnt %5d \n",iam,rank_cnt);
 						// fflush(stdout);
 
 						// if(iam==15 || iam==3){
-						// printf("iam %5d btree lk %5d tag %5d root %5d\n",iam, ljb,jb,BcTree_IsRoot(LBtree_ptr[ljb]));
+						// printf("iam %5d btree lk %5d tag %5d root %5d\n",iam, ljb,jb,BcTree_IsRoot(LBtree_ptr[ljb],'d'));
 						// fflush(stdout);
 						// }
 
@@ -2396,8 +2396,8 @@ ddist_psymbtonum(fact_t fact, int_t n, SuperMatrix *A,
 
 							// if(ib==0){
 
-							LRtree_ptr[lib] = RdTree_Create(grid->comm, ranks, rank_cnt, msgsize,SeedSTD_RD[lib]);  	
-							RdTree_SetTag(LRtree_ptr[lib], RD_L);
+							LRtree_ptr[lib] = RdTree_Create(grid->comm, ranks, rank_cnt, msgsize,SeedSTD_RD[lib],'d');  	
+							RdTree_SetTag(LRtree_ptr[lib], RD_L,'d');
 							// }
 
 							// printf("iam %5d rtree rank_cnt %5d \n",iam,rank_cnt);
@@ -2550,8 +2550,8 @@ ddist_psymbtonum(fact_t fact, int_t n, SuperMatrix *A,
 						// rseed=rand();
 						// rseed=1.0;
 						msgsize = SuperSize( jb )*nrhs+XK_H;
-						UBtree_ptr[ljb] = BcTree_Create(grid->comm, ranks, rank_cnt, msgsize,SeedSTD_BC[ljb]);  	
-						BcTree_SetTag(UBtree_ptr[ljb],BC_U);
+						UBtree_ptr[ljb] = BcTree_Create(grid->comm, ranks, rank_cnt, msgsize,SeedSTD_BC[ljb],'d');  	
+						BcTree_SetTag(UBtree_ptr[ljb],BC_U,'d');
 
 						// printf("iam %5d btree rank_cnt %5d \n",iam,rank_cnt);
 						// fflush(stdout);
@@ -2704,8 +2704,8 @@ ddist_psymbtonum(fact_t fact, int_t n, SuperMatrix *A,
 
 							// if(ib==0){
 
-							URtree_ptr[lib] = RdTree_Create(grid->comm, ranks, rank_cnt, msgsize,SeedSTD_RD[lib]);  	
-							RdTree_SetTag(URtree_ptr[lib], RD_U);
+							URtree_ptr[lib] = RdTree_Create(grid->comm, ranks, rank_cnt, msgsize,SeedSTD_RD[lib],'d');  	
+							RdTree_SetTag(URtree_ptr[lib], RD_U,'d');
 							// }
 	
 							// #if ( PRNTlevel>=1 )

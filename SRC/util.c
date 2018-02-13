@@ -154,31 +154,6 @@ Destroy_LU(int_t n, gridinfo_t *grid, LUstruct_t *LUstruct)
 	}	
 	SUPERLU_FREE(Llu->Lindval_loc_bc_ptr);
 	
- 
-	nb = CEILING(nsupers, grid->npcol);
-	for (i=0;i<nb;++i){
-		if(Llu->LBtree_ptr[i]!=NULL){
-			BcTree_Destroy(Llu->LBtree_ptr[i]);
-		}
-		if(Llu->UBtree_ptr[i]!=NULL){
-			BcTree_Destroy(Llu->UBtree_ptr[i]);
-		}		
-	}
-	SUPERLU_FREE(Llu->LBtree_ptr);
-	SUPERLU_FREE(Llu->UBtree_ptr);
-	
- 	nb = CEILING(nsupers, grid->nprow);
-	for (i=0;i<nb;++i){
-		if(Llu->LRtree_ptr[i]!=NULL){
-			RdTree_Destroy(Llu->LRtree_ptr[i]);
-		}
-		if(Llu->URtree_ptr[i]!=NULL){
-			RdTree_Destroy(Llu->URtree_ptr[i]);
-		}		
-	}
-	SUPERLU_FREE(Llu->LRtree_ptr);
-	SUPERLU_FREE(Llu->URtree_ptr);
-
 	nb = CEILING(nsupers, grid->npcol);
 	for (i=0;i<nb;++i){
 		if(Llu->Linv_bc_ptr[i]!=NULL){

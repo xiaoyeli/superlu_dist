@@ -43,6 +43,10 @@ extern SUPERLU_DIST_EXPORT MPI_Datatype SuperLU_MPI_DOUBLE_COMPLEX;
 
 /* Macro definitions */
 
+/*! \brief Complex Copy c = a */
+#define z_copy(c, a) { (c)->r = (a)->r ; \
+			 (c)->i = (a)->i ; }
+
 /*! \brief Complex Addition c = a + b */
 #define z_add(c, a, b) { (c)->r = (a)->r + (b)->r; \
 			 (c)->i = (a)->i + (b)->i; }

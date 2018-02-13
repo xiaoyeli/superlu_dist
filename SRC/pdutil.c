@@ -547,3 +547,49 @@ void pdinf_norm_error(int iam, int_t n, int_t nrhs, double x[], int_t ldx,
     }
 }
 
+/*! \brief Destroy distributed L & U matrices. */
+void
+dDestroy_Tree(int_t n, gridinfo_t *grid, LUstruct_t *LUstruct)
+{
+    int_t i, nb, nsupers;
+    Glu_persist_t *Glu_persist = LUstruct->Glu_persist;
+    LocalLU_t *Llu = LUstruct->Llu;
+
+#if ( DEBUGlevel>=1 )
+    int iam;
+    MPI_Comm_rank( MPI_COMM_WORLD, &iam );
+    CHECK_MALLOC(iam, "Enter Destroy_LU()");
+#endif
+
+    nsupers = Glu_persist->supno[n-1] + 1;
+
+	nb = CEILING(nsupers, grid->npcol);
+	for (i=0;i<nb;++i){
+		if(Llu->LBtree_ptr[i]!=NULL){
+			BcTree_Destroy(Llu->LBtree_ptr[i],'d');
+		}
+		if(Llu->UBtree_ptr[i]!=NULL){
+			BcTree_Destroy(Llu->UBtree_ptr[i],'d');
+		}		
+	}
+	SUPERLU_FREE(Llu->LBtree_ptr);
+	SUPERLU_FREE(Llu->UBtree_ptr);
+	
+ 	nb = CEILING(nsupers, grid->nprow);
+	for (i=0;i<nb;++i){
+		if(Llu->LRtree_ptr[i]!=NULL){
+			RdTree_Destroy(Llu->LRtree_ptr[i],'d');
+		}
+		if(Llu->URtree_ptr[i]!=NULL){
+			RdTree_Destroy(Llu->URtree_ptr[i],'d');
+		}		
+	}
+	SUPERLU_FREE(Llu->LRtree_ptr);
+	SUPERLU_FREE(Llu->URtree_ptr);
+
+
+
+#if ( DEBUGlevel>=1 )
+    CHECK_MALLOC(iam, "Exit dDestroy_Tree()");
+#endif
+}
