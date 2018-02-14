@@ -62,7 +62,7 @@ DPLUSRC = pdgssvx.o pdgssvx_ABglobal.o \
 #
 # Routines for double complex parallel SuperLU
 ZPLUSRC = pzgssvx.o pzgssvx_ABglobal.o \
-	  zreadhb.o zreadrb.o zreadtriple.o zreadMM.o \
+	  zreadhb.o zreadrb.o zreadtriple.o zreadMM.o zbinary_io.o\
 	  pzgsequ.o pzlaqgs.o zldperm_dist.o pzlangs.o pzutil.o \
 	  pzsymbfact_distdata.o zdistribute.o pzdistribute.o \
 	  pzgstrf.o pzgstrf2.o pzGetDiagU.o \

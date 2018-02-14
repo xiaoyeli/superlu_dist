@@ -552,7 +552,7 @@ pdgssvx(superlu_dist_options_t *options, SuperMatrix *A,
     Pslu_freeable_t Pslu_freeable;
     float  flinfo;
 	int blas_flag;
-
+	
     /* Initialization. */
     m       = A->nrow;
     n       = A->ncol;
@@ -925,8 +925,6 @@ pdgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 #endif
     }
 
-	
-
     /* ------------------------------------------------------------
        Perform the LU factorization: symbolic factorization, 
        redistribution, and numerical factorization.
@@ -978,14 +976,10 @@ pdgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 	if ( permc_spec != MY_PERMC && Fact == DOFACT ) {
           /* Reuse perm_c if Fact == SamePattern, or SamePattern_SameRowPerm */
 	  if ( permc_spec == PARMETIS ) {
-	      
-		  
 	// #pragma omp parallel  
     // {  	
 	// #pragma omp master
 	// {	
-	
-		  
 		  /* Get column permutation vector in perm_c.                    *
 	       * This routine takes as input the distributed input matrix A  *
 	       * and does not modify it.  It also allocates memory for       *
@@ -995,8 +989,7 @@ pdgssvx(superlu_dist_options_t *options, SuperMatrix *A,
                                   	   noDomains, &sizes, &fstVtxSep,
                                            grid, &symb_comm);
 	// }
-	// }	
-										   
+	// }
 	      if (flinfo > 0) {
 #if ( PRNTlevel>=1 )
 	          fprintf(stderr, "Insufficient memory for get_perm_c parmetis\n");
@@ -1147,21 +1140,15 @@ pdgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 
 	/* Perform numerical factorization in parallel. */
 	t = SuperLU_timer_();
-	
-	
-
-	
     // #pragma omp parallel  
     // {  	
 	// #pragma omp master
-	// {	
-		
+	// {
 	pdgstrf(options, m, n, anorm, LUstruct, grid, stat, info);
-	stat->utime[FACT] = SuperLU_timer_() - t;	
+	stat->utime[FACT] = SuperLU_timer_() - t;
 	// }
-	// }	 
+	// }
 	
-
 #if 0
 
 // #ifdef GPU_PROF
@@ -1354,8 +1341,7 @@ pdgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 		fst_row, ldb, nrhs, SOLVEstruct, stat, info);
 	// }
 	// }
-
-
+	
 	/* ------------------------------------------------------------
 	   Use iterative refinement to improve the computed solution and
 	   compute error bounds and backward error estimates for it.

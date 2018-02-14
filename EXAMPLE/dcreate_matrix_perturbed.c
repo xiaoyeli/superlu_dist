@@ -258,7 +258,7 @@ int dcreate_matrix_perturbed_postfix(SuperMatrix *A, int nrhs, double **rhs,
 
     if ( !iam ) {
     double t = SuperLU_timer_();       
-	if(!strcmp(postfix,"rua")){
+    if(!strcmp(postfix,"rua")){
 		/* Read the matrix stored on disk in Harwell-Boeing format. */
 		dreadhb_dist(iam, fp, &m, &n, &nnz, &nzval, &rowind, &colptr);
 	}else if(!strcmp(postfix,"mtx")){
@@ -279,7 +279,7 @@ int dcreate_matrix_perturbed_postfix(SuperMatrix *A, int nrhs, double **rhs,
 
 	printf("Time to read and distribute matrix %.2f\n", 
 	        SuperLU_timer_() - t);  fflush(stdout);
-
+			
 	/* Broadcast matrix A to the other PEs. */
 	MPI_Bcast( &m,     1,   mpi_int_t,  0, grid->comm );
 	MPI_Bcast( &n,     1,   mpi_int_t,  0, grid->comm );

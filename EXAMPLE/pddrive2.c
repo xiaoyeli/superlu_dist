@@ -23,7 +23,6 @@ at the top-level directory.
  */
 
 #include <math.h>
-#include <superlu_dist_config.h>								
 #include "superlu_ddefs.h"
 
 /*! \brief
@@ -70,8 +69,8 @@ int main(int argc, char *argv[])
     /* prototypes */
     extern int dcreate_matrix_perturbed
         (SuperMatrix *, int, double **, int *, double **, int *,
-         FILE *, gridinfo_t *);    
-	extern int dcreate_matrix_perturbed_postfix
+         FILE *, gridinfo_t *);
+    extern int dcreate_matrix_perturbed_postfix
         (SuperMatrix *, int, double **, int *, double **, int *,
          FILE *, char *, gridinfo_t *);
 
@@ -137,9 +136,9 @@ int main(int argc, char *argv[])
 		}
 	}	
 	// printf("%s\n", postfix);
-	 
+
     /* ------------------------------------------------------------
-       GET THE MATRIX FROM FILE AND SETUP THE RIGHT HAND SIDE. 
+       GET THE MATRIX FROM FILE AND SETUP THE RIGHT-HAND SIDE. 
        ------------------------------------------------------------*/
     dcreate_matrix_postfix(&A, nrhs, &b, &ldb, &xtrue, &ldx, fp, postfix, &grid);
 
@@ -191,7 +190,8 @@ int main(int argc, char *argv[])
     PStatPrint(&options, &stat, &grid);        /* Print the statistics. */
     PStatFree(&stat);
     Destroy_CompRowLoc_Matrix_dist(&A); /* Deallocate storage of matrix A.  */
-    Destroy_LU(n, &grid, &LUstruct); /* Deallocate storage associated with 
+	dDestroy_Tree(n, &grid, &LUstruct);      
+	Destroy_LU(n, &grid, &LUstruct); /* Deallocate storage associated with 
 					the L and U matrices.               */
     SUPERLU_FREE(b);                 /* Free storage of right-hand side.    */
     SUPERLU_FREE(xtrue);             /* Free storage of the exact solution. */
@@ -239,7 +239,8 @@ int main(int argc, char *argv[])
        ------------------------------------------------------------*/
     PStatFree(&stat);
     Destroy_CompRowLoc_Matrix_dist(&A); /* Deallocate storage of matrix A.  */
-    Destroy_LU(n, &grid, &LUstruct); /* Deallocate storage associated with    
+	dDestroy_Tree(n, &grid, &LUstruct);  
+	Destroy_LU(n, &grid, &LUstruct); /* Deallocate storage associated with    
 					the L and U matrices.               */
     ScalePermstructFree(&ScalePermstruct);
     LUstructFree(&LUstruct);         /* Deallocate the structure of L and U.*/

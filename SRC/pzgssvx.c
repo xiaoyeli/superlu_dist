@@ -239,7 +239,7 @@ at the top-level directory.
  *      The user must also supply 
  *
  *        o  A, the unfactored matrix, only in the case that iterative
- *              refinment is to be done (specifically A must be the output
+ *              refinement is to be done (specifically A must be the output
  *              A from the previous call, so that it has been scaled and permuted)
  *        o  all of ScalePermstruct
  *        o  all of LUstruct, including the actual numerical values of
@@ -342,7 +342,7 @@ at the top-level directory.
  *           = SLU_DOUBLE: accumulate residual in double precision.
  *           = SLU_EXTRA:  accumulate residual in extra precision.
  *
- *         NOTE: all options must be indentical on all processes when
+ *         NOTE: all options must be identical on all processes when
  *               calling this routine.
  *
  * A (input/output) SuperMatrix* (local)
@@ -467,7 +467,7 @@ at the top-level directory.
  * SOLVEstruct (input/output) SOLVEstruct_t*
  *         The data structure to hold the communication pattern used
  *         in the phases of triangular solution and iterative refinement.
- *         This pattern should be intialized only once for repeated solutions.
+ *         This pattern should be initialized only once for repeated solutions.
  *         If options->SolveInitialized = YES, it is an input argument.
  *         If options->SolveInitialized = NO and nrhs != 0, it is an output
  *         argument. See superlu_zdefs.h for the definition of 'SOLVEstruct_t'.
@@ -550,7 +550,8 @@ pzgssvx(superlu_dist_options_t *options, SuperMatrix *A,
     int   col, key; /* parameters for creating a new communicator */
     Pslu_freeable_t Pslu_freeable;
     float  flinfo;
-
+	int blas_flag;
+	
     /* Initialization. */
     m       = A->nrow;
     n       = A->ncol;
@@ -649,8 +650,10 @@ pzgssvx(superlu_dist_options_t *options, SuperMatrix *A,
     }
 
     /* ------------------------------------------------------------
-       Diagonal scaling to equilibrate the matrix. (simple scheme)
-       ------------------------------------------------------------*/
+     * Diagonal scaling to equilibrate the matrix. (simple scheme)
+     *   for row i = 1:n,  A(i,:) <- A(i,:) / max(abs(A(i,:));
+     *   for column j = 1:n,  A(:,j) <- A(:, j) / max(abs(A(:,j))
+     * ------------------------------------------------------------*/
     if ( Equil ) {
 #if ( DEBUGlevel>=1 )
 	CHECK_MALLOC(iam, "Enter equil");
@@ -974,7 +977,11 @@ pzgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 	if ( permc_spec != MY_PERMC && Fact == DOFACT ) {
           /* Reuse perm_c if Fact == SamePattern, or SamePattern_SameRowPerm */
 	  if ( permc_spec == PARMETIS ) {
-	      /* Get column permutation vector in perm_c.                    *
+	// #pragma omp parallel  
+    // {  	
+	// #pragma omp master
+	// {	
+		  /* Get column permutation vector in perm_c.                    *
 	       * This routine takes as input the distributed input matrix A  *
 	       * and does not modify it.  It also allocates memory for       *
 	       * sizes[] and fstVtxSep[] arrays, that contain information    *
@@ -982,6 +989,8 @@ pzgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 	      flinfo = get_perm_c_parmetis(A, perm_r, perm_c, nprocs_num,
                                   	   noDomains, &sizes, &fstVtxSep,
                                            grid, &symb_comm);
+	// }
+	// }
 	      if (flinfo > 0) {
 #if ( PRNTlevel>=1 )
 	          fprintf(stderr, "Insufficient memory for get_perm_c parmetis\n");
@@ -1104,7 +1113,7 @@ pzgssvx(superlu_dist_options_t *options, SuperMatrix *A,
   	       distribution routine. */
 	    t = SuperLU_timer_();
 	    dist_mem_use = pzdistribute(Fact, n, A, ScalePermstruct,
-                                      Glu_freeable, LUstruct, grid);
+                                      Glu_freeable, LUstruct, grid, nrhs);
 	    stat->utime[DIST] = SuperLU_timer_() - t;
 
   	    /* Deallocate storage used in symbolic factorization. */
@@ -1121,7 +1130,7 @@ pzgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 
     	    t = SuperLU_timer_();
 	    dist_mem_use = zdist_psymbtonum(Fact, n, A, ScalePermstruct,
-		  			   &Pslu_freeable, LUstruct, grid);
+		  			   &Pslu_freeable, LUstruct, grid, nrhs);
 	    if (dist_mem_use > 0)
 	        ABORT ("Not enough memory available for dist_psymbtonum\n");
             
@@ -1132,9 +1141,15 @@ pzgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 
 	/* Perform numerical factorization in parallel. */
 	t = SuperLU_timer_();
+    // #pragma omp parallel  
+    // {  	
+	// #pragma omp master
+	// {
 	pzgstrf(options, m, n, anorm, LUstruct, grid, stat, info);
 	stat->utime[FACT] = SuperLU_timer_() - t;
-
+	// }
+	// }
+	
 #if 0
 
 // #ifdef GPU_PROF
@@ -1304,11 +1319,30 @@ pzgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 	       For repeated call to pzgssvx(), no need to re-initialilze
 	       the Solve data & communication structures, unless a new
 	       factorization with Fact == DOFACT or SamePattern is asked for. */
+		if(options->DiagInv==YES){	
+
+	#ifdef _CRAY
+			  blas_flag=1;
+	#elif defined (USE_VENDOR_BLAS)
+			  blas_flag=2;
+	#else
+			  blas_flag=0;
+	#endif	
+			if(blas_flag==0)
+			ABORT("DiagInv doesn't works with internal blas\n");
+			pzCompute_Diag_Inv(n, LUstruct, grid, stat, info);
+		}	
 	} 
 
+    // #pragma omp parallel  
+    // {  	
+	// #pragma omp master
+	// {
 	pzgstrs(n, LUstruct, ScalePermstruct, grid, X, m_loc, 
 		fst_row, ldb, nrhs, SOLVEstruct, stat, info);
-
+	// }
+	// }
+	
 	/* ------------------------------------------------------------
 	   Use iterative refinement to improve the computed solution and
 	   compute error bounds and backward error estimates for it.

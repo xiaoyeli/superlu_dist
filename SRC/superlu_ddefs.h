@@ -21,8 +21,8 @@ at the top-level directory.
  * </pre>
  */
 
-#ifndef __SUPERLU_dDEFS /* allow multiple inclusions */
-#define __SUPERLU_dDEFS
+#ifndef __SUPERLU_DDEFS /* allow multiple inclusions */
+#define __SUPERLU_DDEFS
 
 /*
  * File name:	superlu_ddefs.h
@@ -49,13 +49,13 @@ typedef struct {
     double  **Linv_bc_ptr;  /* size ceil(NSUPERS/Pc)                 */
 	int_t   **Lindval_loc_bc_ptr; /* size ceil(NSUPERS/Pc)  pointers to locations in Lrowind_bc_ptr and Lnzval_bc_ptr               */
 	int_t 	**Lrowind_bc_2_lsum; /* size ceil(NSUPERS/Pc)  map indices of Lrowind_bc_ptr to indices of lsum  */  
-    double  **Uinv_bc_ptr;  /* size ceil(NSUPERS/Pc)                 */
-    int_t   **Ufstnz_br_ptr;  /* size ceil(NSUPERS/Pr)                 */
+    double  **Uinv_bc_ptr;  /* size ceil(NSUPERS/Pc)     				*/
+	int_t   **Ufstnz_br_ptr;  /* size ceil(NSUPERS/Pr)                 */
     double  **Unzval_br_ptr;  /* size ceil(NSUPERS/Pr)                 */
 	BcTree  *LBtree_ptr;       /* size ceil(NSUPERS/Pc)                */
 	RdTree  *LRtree_ptr;		  /* size ceil(NSUPERS/Pr)                */
 	BcTree  *UBtree_ptr;       /* size ceil(NSUPERS/Pc)                */
-	RdTree  *URtree_ptr;		  /* size ceil(NSUPERS/Pr)                */	
+	RdTree  *URtree_ptr;		  /* size ceil(NSUPERS/Pr)  			*/
 #if 0
     int_t   *Lsub_buf;        /* Buffer for the remote subscripts of L */
     double  *Lval_buf;        /* Buffer for the remote nonzeros of L   */
@@ -99,6 +99,7 @@ typedef struct {
     int_t   ldalsum;          /* LDA of lsum (local) */
     int_t   SolveMsgSent;     /* Number of actual messages sent in LU-solve */
     int_t   SolveMsgVol;      /* Volume of messages sent in the solve phase */
+
 
     /*********************/	
     /* The following variables are used in the hybrid solver */
@@ -219,11 +220,10 @@ extern int     dcreate_matrix_rb(SuperMatrix *, int, double **, int *,
 			      double **, int *, FILE *, gridinfo_t *);
 extern int     dcreate_matrix_dat(SuperMatrix *, int, double **, int *, 
 			      double **, int *, FILE *, gridinfo_t *);
-
 extern int 	   dcreate_matrix_postfix(SuperMatrix *, int, double **, int *, 
 				  double **, int *, FILE *, char *, gridinfo_t *);				  
 				  
-				  
+	
 /* Driver related */
 extern void    dgsequ_dist (SuperMatrix *, double *, double *, double *,
 			    double *, double *, int_t *);
@@ -259,9 +259,7 @@ extern void  pdgssvx(superlu_dist_options_t *, SuperMatrix *,
 		     ScalePermstruct_t *, double *,
 		     int, int, gridinfo_t *, LUstruct_t *,
 		     SOLVEstruct_t *, double *, SuperLUStat_t *, int *);
-
 extern void  pdCompute_Diag_Inv(int_t, LUstruct_t *,gridinfo_t *, SuperLUStat_t *, int *);
-		 
 extern int  dSolveInit(superlu_dist_options_t *, SuperMatrix *, int_t [], int_t [],
 		       int_t, LUstruct_t *, gridinfo_t *, SOLVEstruct_t *);
 extern void dSolveFinalize(superlu_dist_options_t *, SOLVEstruct_t *);
@@ -297,6 +295,7 @@ extern void dlsum_bmod(double *, double *, double *,
                        int, int_t, int_t *, int_t *, Ucb_indptr_t **,
                        int_t **, int_t *, gridinfo_t *, LocalLU_t *,
 		       MPI_Request [], SuperLUStat_t *);
+
 extern void dlsum_fmod_inv(double *, double *, double *, double *,
 		       int, int, int_t , int_t *, int_t,
 		       int_t *, gridinfo_t *, LocalLU_t *, 
@@ -312,7 +311,8 @@ extern void dlsum_bmod_inv(double *, double *, double *, double *,
 extern void dlsum_bmod_inv_master(double *, double *, double *, double *,
                        int, int_t, int_t *, int_t *, int_t *, Ucb_indptr_t **,
                        int_t **, int_t *, gridinfo_t *, LocalLU_t *,
-		       MPI_Request [], SuperLUStat_t **, int_t, int_t);			   
+		       MPI_Request [], SuperLUStat_t **, int_t, int_t);				   
+			   
 extern void pdgsrfs(int_t, SuperMatrix *, double, LUstruct_t *,
 		    ScalePermstruct_t *, gridinfo_t *,
 		    double [], int_t, double [], int_t, int,
@@ -356,7 +356,8 @@ extern void  dreadrb_dist(int, FILE *, int_t *, int_t *, int_t *,
 extern void  dreadMM_dist(FILE *, int_t *, int_t *, int_t *,
 	                  double **, int_t **, int_t **);
 extern int  dread_binary(FILE *, int_t *, int_t *, int_t *,
-	                  double **, int_t **, int_t **);													 
+	                  double **, int_t **, int_t **);	
+					  
 /* Distribute the data for numerical factorization */
 extern float ddist_psymbtonum(fact_t, int_t, SuperMatrix *,
                                 ScalePermstruct_t *, Pslu_freeable_t *, 
@@ -388,16 +389,11 @@ extern void dtrsm_(char*, char*, char*, char*, int*, int*,
                   int*, int, int, int, int);
 extern void dgemv_(char *, int *, int *, double *, double *a, int *, 
                   double *, int *, double *, double *, int *, int);
+extern void dtrtri_(char*, char*, int*, double*, int*,int*);				 
+
 extern void dger_(int*, int*, double*, double*, int*,
                  double*, int*, double*, int*);
 
-extern int daxpy_(int *, double *, double *, int *, double *, int *);				 
-
-				 
-extern void dtrtri_(char*, char*, int*, double*, int*,int*);				 
-
-			 	
-				 
 #else
 extern int dgemm_(const char*, const char*, const int*, const int*, const int*,
                    const double*,  const double*,  const int*,  const double*,
@@ -410,8 +406,6 @@ extern int dgemv_(char *, int *, int *, double *, double *a, int *,
                   double *, int *, double *, double *, int *);
 extern void dger_(int*, int*, double*, double*, int*,
                  double*, int*, double*, int*);
-				 
-extern int daxpy_(int *, double *, double *, int *, double *, int *);				 
 
 #endif
 

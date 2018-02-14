@@ -22,7 +22,6 @@ at the top-level directory.
  */
 
 #include <math.h>
-#include <superlu_dist_config.h>								
 #include "superlu_ddefs.h"
 
 /*! \brief
@@ -129,13 +128,12 @@ int main(int argc, char *argv[])
 		}
 	}	
 	// printf("%s\n", postfix);
-	 
+
     /* ------------------------------------------------------------
        GET THE MATRIX FROM FILE AND SETUP THE RIGHT HAND SIDE. 
        ------------------------------------------------------------*/
     dcreate_matrix_postfix(&A, nrhs, &b, &ldb, &xtrue, &ldx, fp, postfix, &grid);
-	
-	if ( !(b1 = doubleMalloc_dist(ldb * nrhs)) )
+    if ( !(b1 = doubleMalloc_dist(ldb * nrhs)) )
         ABORT("Malloc fails for b1[]");
     for (j = 0; j < nrhs; ++j)
         for (i = 0; i < ldb; ++i) b1[i+j*ldb] = b[i+j*ldb];
@@ -160,7 +158,6 @@ int main(int argc, char *argv[])
         options.PrintStat = YES;
      */
     set_default_options_dist(&options);
-    printf("options.ColPerm = %d\n", options.ColPerm);													  
 
     if (!iam) {
 	print_sp_ienv_dist(&options);
@@ -216,7 +213,8 @@ int main(int argc, char *argv[])
     PStatFree(&stat);
     Destroy_CompRowLoc_Matrix_dist(&A);
     ScalePermstructFree(&ScalePermstruct);
-    Destroy_LU(n, &grid, &LUstruct);
+	dDestroy_Tree(n, &grid, &LUstruct);      
+	Destroy_LU(n, &grid, &LUstruct);
     LUstructFree(&LUstruct);
     if ( options.SolveInitialized ) {
         dSolveFinalize(&options, &SOLVEstruct);

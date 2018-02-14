@@ -22,7 +22,6 @@ at the top-level directory.
  */
 
 #include <math.h>
-#include <superlu_dist_config.h>								
 #include "superlu_ddefs.h"
 
 /*! \brief
@@ -68,7 +67,7 @@ int main(int argc, char *argv[])
     int_t    i, j, ii, m, n, nnz_loc, m_loc, fst_row;
     int      nprow, npcol;
     int      iam, info, ldb, ldx, nrhs;
-    char     **cpp, c, *postfix;;
+    char     **cpp, c, *postfix;
     FILE *fp, *fopen();
     int cpp_defs();
 
@@ -134,7 +133,7 @@ int main(int argc, char *argv[])
 		}
 	}	
 	// printf("%s\n", postfix);
-	 
+
     /* ------------------------------------------------------------
        GET THE MATRIX FROM FILE AND SETUP THE RIGHT HAND SIDE. 
        ------------------------------------------------------------*/
@@ -240,7 +239,8 @@ int main(int argc, char *argv[])
        ------------------------------------------------------------*/
     PStatFree(&stat);
     Destroy_CompRowLoc_Matrix_dist(&A); /* Deallocate storage of matrix A.  */
-    Destroy_LU(n, &grid, &LUstruct); /* Deallocate storage associated with    
+    dDestroy_Tree(n, &grid, &LUstruct);      
+	Destroy_LU(n, &grid, &LUstruct); /* Deallocate storage associated with    
 					the L and U matrices.               */
     ScalePermstructFree(&ScalePermstruct);
     LUstructFree(&LUstruct);         /* Deallocate the structure of L and U.*/

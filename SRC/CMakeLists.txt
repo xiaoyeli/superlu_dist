@@ -111,6 +111,7 @@ if(enable_complex16)
     zreadhb.c
     zreadrb.c
     zreadtriple.c
+	zbinary_io.c	
     zreadMM.c
     pzgsequ.c
     pzlaqgs.c

@@ -63,8 +63,7 @@ at the top-level directory.
  * </pre>
  */
 
- 
- int dcreate_matrix(SuperMatrix *A, int nrhs, double **rhs,
+int dcreate_matrix(SuperMatrix *A, int nrhs, double **rhs,
                    int *ldb, double **x, int *ldx,
                    FILE *fp, gridinfo_t *grid)
 {
@@ -90,14 +89,14 @@ at the top-level directory.
 #endif
 
     if ( !iam ) {
-    double t = SuperLU_timer_();
+        double t = SuperLU_timer_();
 
-	/* Read the matrix stored on disk in Harwell-Boeing format. */
-	dreadhb_dist(iam, fp, &m, &n, &nnz, &nzval, &rowind, &colptr);
-	
+        /* Read the matrix stored on disk in Harwell-Boeing format. */
+        dreadhb_dist(iam, fp, &m, &n, &nnz, &nzval, &rowind, &colptr);
+
 	printf("Time to read and distribute matrix %.2f\n", 
-	        SuperLU_timer_() - t);  fflush(stdout);	
-		
+	        SuperLU_timer_() - t);  fflush(stdout);
+
 	/* Broadcast matrix A to the other PEs. */
 	MPI_Bcast( &m,     1,   mpi_int_t,  0, grid->comm );
 	MPI_Bcast( &n,     1,   mpi_int_t,  0, grid->comm );
@@ -235,9 +234,8 @@ at the top-level directory.
     return 0;
 }
 
- 
- 
- 
+
+
 int dcreate_matrix_postfix(SuperMatrix *A, int nrhs, double **rhs,
                    int *ldb, double **x, int *ldx,
                    FILE *fp, char * postfix, gridinfo_t *grid)
@@ -264,8 +262,9 @@ int dcreate_matrix_postfix(SuperMatrix *A, int nrhs, double **rhs,
 #endif
 
     if ( !iam ) {
-    double t = SuperLU_timer_();       
-	if(!strcmp(postfix,"rua")){
+    double t = SuperLU_timer_(); 
+
+    if(!strcmp(postfix,"rua")){
 		/* Read the matrix stored on disk in Harwell-Boeing format. */
 		dreadhb_dist(iam, fp, &m, &n, &nnz, &nzval, &rowind, &colptr);
 	}else if(!strcmp(postfix,"mtx")){
@@ -286,7 +285,7 @@ int dcreate_matrix_postfix(SuperMatrix *A, int nrhs, double **rhs,
 
 	printf("Time to read and distribute matrix %.2f\n", 
 	        SuperLU_timer_() - t);  fflush(stdout);
-		
+			
 	/* Broadcast matrix A to the other PEs. */
 	MPI_Bcast( &m,     1,   mpi_int_t,  0, grid->comm );
 	MPI_Bcast( &n,     1,   mpi_int_t,  0, grid->comm );

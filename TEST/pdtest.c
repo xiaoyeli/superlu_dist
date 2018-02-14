@@ -25,14 +25,9 @@ at the top-level directory.
  */
 #include <stdio.h>
 #include <stdlib.h>
-//#include <unistd.h>
-#ifdef _MSC_VER
-#include <wingetopt.h>
-#else
+#include <unistd.h>
 #include <getopt.h>
-#endif
 #include <math.h>
-#include "superlu_dist_config.h"
 #include "superlu_ddefs.h"
 
 #define NTESTS 1 /*5*/      /* Number of test types */
@@ -318,6 +313,7 @@ int main(int argc, char *argv[])
 			options.Fact = fact;
 			if ( fact == SamePattern ) {
 			    // {L,U} not re-used in subsequent call to PDGSSVX.
+				dDestroy_Tree(n, &grid, &LUstruct);  				
 			    Destroy_LU(n, &grid, &LUstruct);
 			}
 
@@ -392,7 +388,8 @@ int main(int argc, char *argv[])
 			ScalePermstruct.DiagScale = NOEQUIL; /* Avoid free R/C again. */
 		    }
 		    ScalePermstructFree(&ScalePermstruct);
-		    Destroy_LU(n, &grid, &LUstruct);
+		    dDestroy_Tree(n, &grid, &LUstruct);  
+			Destroy_LU(n, &grid, &LUstruct);
 		    LUstructFree(&LUstruct);
 		    if ( options.SolveInitialized ) {
 			dSolveFinalize(&options, &SOLVEstruct);
@@ -450,8 +447,6 @@ parse_command_line(int argc, char *argv[], int *nprow, int *npcol,
     int c;
     extern char *optarg;
     char  str[20];
-    char *xenvstr, *menvstr, *benvstr, *genvstr;
-    xenvstr = menvstr = benvstr = genvstr = 0;
 
     while ( (c = getopt(argc, argv, "hr:c:t:n:x:m:b:g:s:f:")) != EOF ) {
 	switch (c) {
@@ -474,44 +469,24 @@ parse_command_line(int argc, char *argv[], int *nprow, int *npcol,
 	            break;
 	  case 'n': *n = atoi(optarg);
 	            break;
-// Use putenv as exists on Windows
-#ifdef _MSC_VER
-#define putenv _putenv
-#endif
-	  case 'x': // c = atoi(optarg); 
-	            // sprintf(str, "%d", c);
-	            // setenv("NREL", str, 1);
-		    xenvstr = (char*) malloc((6+strlen(optarg))*sizeof(char));
-		    strcpy(xenvstr, "NREL=");
-		    strcat(xenvstr, optarg);
-		    putenv(xenvstr);
+	  case 'x': c = atoi(optarg); 
+	            sprintf(str, "%d", c);
+	            setenv("NREL", str, 1);
 	            //printf("Reset relax env. variable to %d\n", c);
 	            break;
-	  case 'm': // c = atoi(optarg); 
-	            // sprintf(str, "%d", c);
-		    // setenv("NSUP", str, 1);
-		    menvstr = (char*) malloc((6+strlen(optarg))*sizeof(char));
-		    strcpy(menvstr, "NSUP=");
-		    strcat(menvstr, optarg);
-		    putenv(menvstr);
+	  case 'm': c = atoi(optarg); 
+	            sprintf(str, "%d", c);
+		    setenv("NSUP", str, 1);
 		    //printf("Reset maxsuper env. variable to %d\n", c);
 	            break;
-	  case 'b': // c = atoi(optarg); 
-	            // sprintf(str, "%d", c);
-		    // setenv("FILL", str, 1);
-		    benvstr = (char*) malloc((6+strlen(optarg))*sizeof(char));
-		    strcpy(benvstr, "FILL=");
-		    strcat(benvstr, optarg);
-		    putenv(benvstr);
+	  case 'b': c = atoi(optarg); 
+	            sprintf(str, "%d", c);
+		    setenv("FILL", str, 1);
 		    //printf("Reset fill_ratio env. variable to %d\n", c);
 	            break;
-	  case 'g': // c = atoi(optarg); 
-	            // sprintf(str, "%d", c);
-		    // setenv("N_GEMM", str, 1);
-		    genvstr = (char*) malloc((8+strlen(optarg))*sizeof(char));
-		    strcpy(genvstr, "N_GEMM=");
-		    strcat(genvstr, optarg);
-		    putenv(genvstr);
+	  case 'g': c = atoi(optarg); 
+	            sprintf(str, "%d", c);
+		    setenv("N_GEMM", str, 1);
 		    //printf("Reset min_gemm_gpu_offload env. variable to %d\n", c);
 	            break;
 	  case 's': *nrhs = atoi(optarg); 

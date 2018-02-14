@@ -15,7 +15,7 @@
 #
 #  The name of the libraries to be created/linked to
 #
-SuperLUroot	= /global/homes/l/liuyangz/Cori/my_research/github/superlu_dist_task_hybrid_whypddistslow_01_27_2018/build
+SuperLUroot	= ./build
 DSUPERLULIB   	= $(SuperLUroot)/SRC/libsuperlu_dist.a
 
 LIBS		= $(DSUPERLULIB) /opt/intel/compilers_and_libraries_2017.2.174/linux/mkl/lib/intel64/libmkl_intel_lp64.a /opt/intel/compilers_and_libraries_2017.2.174/linux/mkl/lib/intel64/libmkl_sequential.a /opt/intel/compilers_and_libraries_2017.2.174/linux/mkl/lib/intel64/libmkl_core.a /global/homes/l/liuyangz/Edison/my_software/parmetis-4.0.3/build/Linux-x86_64/libparmetis/libparmetis.a /global/homes/l/liuyangz/Edison/my_software/parmetis-4.0.3/build/Linux-x86_64/libmetis/libmetis.a

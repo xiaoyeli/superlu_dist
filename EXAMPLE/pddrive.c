@@ -22,7 +22,6 @@ at the top-level directory.
  */
 
 #include <math.h>
-#include <superlu_dist_config.h>								
 #include "superlu_ddefs.h"
 
 /*! \brief
@@ -62,7 +61,7 @@ int main(int argc, char *argv[])
     int    m, n;
     int      nprow, npcol;
     int      iam, info, ldb, ldx, nrhs;
-    char     **cpp, c, *postfix;
+    char     **cpp, c, *postfix;;
     FILE *fp, *fopen();
     int cpp_defs();
 	int ii;
@@ -70,8 +69,8 @@ int main(int argc, char *argv[])
 	
     nprow = 1;  /* Default process rows.      */
     npcol = 1;  /* Default process columns.   */
-    nrhs =1;   /* Number of right-hand side. */
- 
+    nrhs = 1;   /* Number of right-hand side. */
+
     /* ------------------------------------------------------------
        INITIALIZE MPI ENVIRONMENT. 
        ------------------------------------------------------------*/
@@ -86,7 +85,7 @@ int main(int argc, char *argv[])
 #if ( VTUNE>=1 )
 	__itt_pause();
 #endif
-
+	
     /* Parse command line argv[]. */
     for (cpp = argv+1; *cpp; ++cpp) {
 	if ( **cpp == '-' ) {
@@ -116,7 +115,7 @@ int main(int argc, char *argv[])
        INITIALIZE THE SUPERLU PROCESS GRID. 
        ------------------------------------------------------------*/
     superlu_gridinit(MPI_COMM_WORLD, nprow, npcol, &grid);
-
+	
 	if(grid.iam==0){
 	MPI_Query_thread(&omp_mpi_level);
     switch (omp_mpi_level) {
@@ -138,7 +137,7 @@ int main(int argc, char *argv[])
 	break;
     }
 	}
-
+	
     /* Bail out if I do not belong in the grid. */
     iam = grid.iam;
     if ( iam >= nprow * npcol )	goto out;
@@ -167,7 +166,6 @@ int main(int argc, char *argv[])
 	}
 	// printf("%s\n", postfix);
 	
-
     /* ------------------------------------------------------------
        GET THE MATRIX FROM FILE AND SETUP THE RIGHT HAND SIDE. 
        ------------------------------------------------------------*/
@@ -192,24 +190,19 @@ int main(int argc, char *argv[])
         options.SolveInitialized  = NO;
         options.RefineInitialized = NO;
         options.PrintStat         = YES;
+	options.DiagInv       = NO;
      */
     set_default_options_dist(&options);
+    // options.DiagInv       = YES;
+
 #if 0
-    options.ColPerm = PARMETIS;
-    options.ParSymbFact = YES;							  
     options.RowPerm = NOROWPERM;
     options.IterRefine = NOREFINE;
+    options.ColPerm = NATURAL;
     options.Equil = NO; 
+    options.ReplaceTinyPivot = YES;
 #endif
 
-// //	options.ParSymbFact       = YES;
-// //	options.ColPerm           = PARMETIS;
-// //	options.RowPerm = NOROWPERM;
-	// options.IterRefine       = 0;
-// //	options.DiagInv       = YES;
-	// options.ReplaceTinyPivot = NO;	
-	// options.SymPattern = YES;						  
-	
     if (!iam) {
 	print_sp_ienv_dist(&options);
 	print_options_dist(&options);
@@ -244,7 +237,8 @@ int main(int argc, char *argv[])
     PStatFree(&stat);
     Destroy_CompRowLoc_Matrix_dist(&A);
     ScalePermstructFree(&ScalePermstruct);
-    Destroy_LU(n, &grid, &LUstruct);
+	dDestroy_Tree(n, &grid, &LUstruct);      
+	Destroy_LU(n, &grid, &LUstruct);
     LUstructFree(&LUstruct);
     if ( options.SolveInitialized ) {
         dSolveFinalize(&options, &SOLVEstruct);

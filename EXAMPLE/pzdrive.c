@@ -60,10 +60,12 @@ int main(int argc, char *argv[])
     int    m, n;
     int      nprow, npcol;
     int      iam, info, ldb, ldx, nrhs;
-    char     **cpp, c;
+    char     **cpp, c, *postfix;;
     FILE *fp, *fopen();
     int cpp_defs();
-
+	int ii;
+	int omp_mpi_level;
+	
     nprow = 1;  /* Default process rows.      */
     npcol = 1;  /* Default process columns.   */
     nrhs = 1;   /* Number of right-hand side. */
@@ -72,7 +74,17 @@ int main(int argc, char *argv[])
        INITIALIZE MPI ENVIRONMENT. 
        ------------------------------------------------------------*/
     MPI_Init( &argc, &argv );
+    //MPI_Init_thread( &argc, &argv, MPI_THREAD_MULTIPLE, &omp_mpi_level); 
+	
 
+#if ( VAMPIR>=1 )
+    VT_traceoff(); 
+#endif
+
+#if ( VTUNE>=1 )
+	__itt_pause();
+#endif
+	
     /* Parse command line argv[]. */
     for (cpp = argv+1; *cpp; ++cpp) {
 	if ( **cpp == '-' ) {
@@ -102,7 +114,29 @@ int main(int argc, char *argv[])
        INITIALIZE THE SUPERLU PROCESS GRID. 
        ------------------------------------------------------------*/
     superlu_gridinit(MPI_COMM_WORLD, nprow, npcol, &grid);
-
+	
+	if(grid.iam==0){
+	MPI_Query_thread(&omp_mpi_level);
+    switch (omp_mpi_level) {
+      case MPI_THREAD_SINGLE:
+		printf("MPI_Query_thread with MPI_THREAD_SINGLE\n");
+		fflush(stdout);
+	break;
+      case MPI_THREAD_FUNNELED:
+		printf("MPI_Query_thread with MPI_THREAD_FUNNELED\n");
+		fflush(stdout);
+	break;
+      case MPI_THREAD_SERIALIZED:
+		printf("MPI_Query_thread with MPI_THREAD_SERIALIZED\n");
+		fflush(stdout);
+	break;
+      case MPI_THREAD_MULTIPLE:
+		printf("MPI_Query_thread with MPI_THREAD_MULTIPLE\n");
+		fflush(stdout);
+	break;
+    }
+	}
+	
     /* Bail out if I do not belong in the grid. */
     iam = grid.iam;
     if ( iam >= nprow * npcol )	goto out;
@@ -124,10 +158,17 @@ int main(int argc, char *argv[])
     CHECK_MALLOC(iam, "Enter main()");
 #endif
 
+	for(ii = 0;ii<strlen(*cpp);ii++){
+		if((*cpp)[ii]=='.'){
+			postfix = &((*cpp)[ii+1]);
+		}
+	}
+	// printf("%s\n", postfix);
+	
     /* ------------------------------------------------------------
        GET THE MATRIX FROM FILE AND SETUP THE RIGHT HAND SIDE. 
        ------------------------------------------------------------*/
-    zcreate_matrix(&A, nrhs, &b, &ldb, &xtrue, &ldx, fp, &grid);
+    zcreate_matrix_postfix(&A, nrhs, &b, &ldb, &xtrue, &ldx, fp, postfix, &grid);
 
     if ( !(berr = doubleMalloc_dist(nrhs)) )
 	ABORT("Malloc fails for berr[].");
@@ -148,8 +189,10 @@ int main(int argc, char *argv[])
         options.SolveInitialized  = NO;
         options.RefineInitialized = NO;
         options.PrintStat         = YES;
+		options.DiagInv       = NO;
      */
     set_default_options_dist(&options);
+	// options.DiagInv       = YES;
 #if 0
     options.RowPerm = NOROWPERM;
     options.IterRefine = NOREFINE;
@@ -192,7 +235,8 @@ int main(int argc, char *argv[])
     PStatFree(&stat);
     Destroy_CompRowLoc_Matrix_dist(&A);
     ScalePermstructFree(&ScalePermstruct);
-    Destroy_LU(n, &grid, &LUstruct);
+	zDestroy_Tree(n, &grid, &LUstruct);      
+	Destroy_LU(n, &grid, &LUstruct);
     LUstructFree(&LUstruct);
     if ( options.SolveInitialized ) {
         zSolveFinalize(&options, &SOLVEstruct);
