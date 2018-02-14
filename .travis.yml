@@ -9,13 +9,14 @@ sudo: required
 branches:
   only:
   - master
+  - trisolve
 
 notifications:
   slack: 
     rooms:
       - ecpsparsesolvers:nBWC0jcAd7B1j9whHUYcaVJO
     on_failure: always
-    on_success: never
+    on_success: always
 
 env:
   matrix:
@@ -86,11 +87,13 @@ install:
     cmake .. \
     -DTPL_PARMETIS_INCLUDE_DIRS="$TRAVIS_BUILD_DIR/installDir/parmetis-4.0.3/metis/include;$TRAVIS_BUILD_DIR/installDir/parmetis-4.0.3/install/include" \
     -DTPL_PARMETIS_LIBRARIES="$TRAVIS_BUILD_DIR/installDir/parmetis-4.0.3/install/lib/libparmetis.so" \
-    -DCMAKE_C_FLAGS="-std=c99 -DPRNTlevel=0 -DPROFlevel=0 -DDEBUGlevel=0" \
+    -DCMAKE_C_FLAGS="-std=c11 -DPRNTlevel=1 -DPROFlevel=1 -DDEBUGlevel=0" \
+    -DCMAKE_CXX_FLAGS="-Ofast -std=c++11 -DAdd_ -DRELEASE" \
     -DTPL_BLAS_LIBRARIES="$BLAS_LIB" \
     -Denable_blaslib=OFF \
     -DBUILD_SHARED_LIBS=OFF \
     -DCMAKE_C_COMPILER=cc \
+    -DCMAKE_CXX_COMPILER=CC \
     -DCMAKE_INSTALL_PREFIX=. \
     -DCMAKE_BUILD_TYPE=Release \
     -DCMAKE_VERBOSE_MAKEFILE:BOOL=OFF
