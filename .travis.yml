@@ -40,7 +40,7 @@ git:
 
 before_install:
   - export BLUE="\033[34;1m"
-  - mkdir installDir
+  - mkdir -p installDir
 
   - printf "${BLUE} GC; Installing gcc-6 via apt\n"
   - sudo apt-get update
@@ -72,7 +72,7 @@ before_install:
   - wget http://glaros.dtc.umn.edu/gkhome/fetch/sw/parmetis/parmetis-4.0.3.tar.gz
   - tar -xf parmetis-4.0.3.tar.gz
   - cd parmetis-4.0.3/
-  - mkdir install
+  - mkdir -p install
   - make config shared=1 cc=mpicc cxx=mpic++ prefix=$PWD/install
   - make install > make_parmetis_install.log 2>&1
   - printf "${BLUE} GC; Done installing ParMetis-4.0 from source\n"
@@ -81,7 +81,7 @@ install:
   - export BLUE="\033[34;1m"
   - printf "${BLUE} GC; Installing superlu_dist from source\n"
   - cd $TRAVIS_BUILD_DIR
-  - mkdir build
+  - mkdir -p build
   - cd build
   - |
     cmake .. \
