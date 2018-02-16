@@ -356,9 +356,9 @@ namespace ASYNCOMM{
 
           //not true anymore ?
           //first half to 
-          TIMER_START(FIND_RANK);
+          // TIMER_START(FIND_RANK);
           Int * pos = std::find(&ranks[idxStartL], &ranks[idxStartH], this->myRank_);
-          TIMER_STOP(FIND_RANK);
+          // TIMER_STOP(FIND_RANK);
           if( pos != &ranks[idxStartH]){
             idxStart = idxStartL;
             idxEnd = idxStartH;

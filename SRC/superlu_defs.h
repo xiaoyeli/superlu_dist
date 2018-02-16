@@ -42,7 +42,7 @@ at the top-level directory.
 #include <stdio.h>
 #include <limits.h>
 #include <string.h>
-#include <stdatomic.h>
+//#include <stdatomic.h>
 #include <math.h>
 
 // /* Following is for vtune */
