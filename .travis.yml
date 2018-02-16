@@ -95,7 +95,7 @@ install:
     -DTPL_PARMETIS_LIBRARIES="$TRAVIS_BUILD_DIR/installDir/parmetis-4.0.3/install/lib/libparmetis.so" \
     -DCMAKE_C_FLAGS="-std=c11 -DPRNTlevel=1 -DPROFlevel=1 -DDEBUGlevel=0" \
     -DCMAKE_CXX_FLAGS="-Ofast -std=c++11 -DAdd_ -DRELEASE" \
-    -DTPL_BLAS_LIBRARIES="$BLAS_LIB $LAPACK_LIB" \
+    -DTPL_BLAS_LIBRARIES="$BLAS_LIB ; $LAPACK_LIB" \
     -Denable_blaslib=OFF \
     -DBUILD_SHARED_LIBS=OFF \
     -DCMAKE_C_COMPILER=gcc-6 \
