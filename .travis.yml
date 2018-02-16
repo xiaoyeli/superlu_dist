@@ -15,7 +15,7 @@ notifications:
   slack: 
     rooms:
       - ecpsparsesolvers:nBWC0jcAd7B1j9whHUYcaVJO
-    on_failure: always
+    on_failure: never
     on_success: always
 
 env:
@@ -69,7 +69,7 @@ before_install:
 
   - printf "${BLUE} GC; Installing LAPACKfrom apt\n"
   - sudo apt-get install liblapack-dev
-  - export LAPACK_LIB=/usr/lib/liblapack/liblapack.so
+  - export LAPACK_LIB=/usr/lib/liblapack.so
   - printf "${BLUE} GC; Done installing LAPACKfrom apt\n"
   
   - printf "${BLUE} GC; Installing ParMetis-4.0 from source\n"
