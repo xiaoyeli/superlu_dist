@@ -88,7 +88,7 @@ install:
   - cd $TRAVIS_BUILD_DIR
   - rm -rf build
   - mkdir -p build
-  - cd build
+  - cd build 
   - |
     cmake .. \
     -DTPL_PARMETIS_INCLUDE_DIRS="$TRAVIS_BUILD_DIR/installDir/parmetis-4.0.3/metis/include;$TRAVIS_BUILD_DIR/installDir/parmetis-4.0.3/install/include" \
