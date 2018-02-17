@@ -1190,11 +1190,11 @@ pdgstrs(int_t n, LUstruct_t *LUstruct,
 					gb = mycol+lk*grid->npcol;  /* not sure */
 					lib = LBi( gb, grid ); /* Local block number, row-wise. */
 					ii = X_BLK( lib );			
-					BcTree_forwardMessageSimple(LBtree_ptr[lk],&x[ii - XK_H],'d');
+					BcTree_forwardMessageSimple(LBtree_ptr[lk],&x[ii - XK_H],BcTree_GetMsgSize(LBtree_ptr[lk],'d')*nrhs+XK_H,'d');
 				}else{ // this is a reduce forwarding
 					lk = -lk - 1;
 					il = LSUM_BLK( lk );
-					RdTree_forwardMessageSimple(LRtree_ptr[lk],&lsum[il - LSUM_H ],'d');
+					RdTree_forwardMessageSimple(LRtree_ptr[lk],&lsum[il - LSUM_H ],RdTree_GetMsgSize(LRtree_ptr[lk],'d')*nrhs+LSUM_H,'d');
 				}
 			}
 
@@ -1259,7 +1259,7 @@ pdgstrs(int_t n, LUstruct_t *LUstruct,
 
 									if(BcTree_getDestCount(LBtree_ptr[lk],'d')>0){
 
-										BcTree_forwardMessageSimple(LBtree_ptr[lk],recvbuf0,'d');	
+										BcTree_forwardMessageSimple(LBtree_ptr[lk],recvbuf0,BcTree_GetMsgSize(LBtree_ptr[lk],'d')*nrhs+XK_H,'d');	
 										// nfrecvx_buf++;
 									}
 
@@ -1379,7 +1379,7 @@ pdgstrs(int_t n, LUstruct_t *LUstruct,
 											 * Send Xk to process column Pc[k].
 											 */						  
 											if(LBtree_ptr[lk]!=NULL){ 
-												BcTree_forwardMessageSimple(LBtree_ptr[lk],&x[ii - XK_H],'d');
+												BcTree_forwardMessageSimple(LBtree_ptr[lk],&x[ii - XK_H],BcTree_GetMsgSize(LBtree_ptr[lk],'d')*nrhs+XK_H,'d');
 											}		  
 
 
@@ -1409,7 +1409,7 @@ pdgstrs(int_t n, LUstruct_t *LUstruct,
 										for (ii=1;ii<num_thread;ii++)
 											for (jj=0;jj<knsupc*nrhs;jj++)
 												lsum[il + jj] += lsum[il + jj + ii*sizelsum];
-										RdTree_forwardMessageSimple(LRtree_ptr[lk],&lsum[il-LSUM_H],'d'); 
+										RdTree_forwardMessageSimple(LRtree_ptr[lk],&lsum[il-LSUM_H],RdTree_GetMsgSize(LRtree_ptr[lk],'d')*nrhs+LSUM_H,'d'); 
 									}  
 
 								}
@@ -1791,11 +1791,11 @@ for (i=0;i<nroot_send;i++){
 		gb = mycol+lk*grid->npcol;  /* not sure */
 		lib = LBi( gb, grid ); /* Local block number, row-wise. */
 		ii = X_BLK( lib );			
-		BcTree_forwardMessageSimple(UBtree_ptr[lk],&x[ii - XK_H],'d');
+		BcTree_forwardMessageSimple(UBtree_ptr[lk],&x[ii - XK_H],BcTree_GetMsgSize(UBtree_ptr[lk],'d')*nrhs+XK_H,'d');
 	}else{ // this is a reduce forwarding
 		lk = -lk - 1;
 		il = LSUM_BLK( lk );
-		RdTree_forwardMessageSimple(URtree_ptr[lk],&lsum[il - LSUM_H ],'d');
+		RdTree_forwardMessageSimple(URtree_ptr[lk],&lsum[il - LSUM_H ],RdTree_GetMsgSize(URtree_ptr[lk],'d')*nrhs+LSUM_H,'d');
 	}
 }
 
@@ -1851,7 +1851,7 @@ for (i=0;i<nroot_send;i++){
 
 				if(BcTree_getDestCount(UBtree_ptr[lk],'d')>0){
 
-					BcTree_forwardMessageSimple(UBtree_ptr[lk],recvbuf0,'d');	
+					BcTree_forwardMessageSimple(UBtree_ptr[lk],recvbuf0,BcTree_GetMsgSize(UBtree_ptr[lk],'d')*nrhs+XK_H,'d');	
 					// nfrecvx_buf++;
 				}
 
@@ -1947,7 +1947,7 @@ for (i=0;i<nroot_send;i++){
 						 * Send Xk to process column Pc[k].
 						 */						
 						if(UBtree_ptr[lk]!=NULL){ 
-							BcTree_forwardMessageSimple(UBtree_ptr[lk],&x[ii - XK_H],'d');
+							BcTree_forwardMessageSimple(UBtree_ptr[lk],&x[ii - XK_H],BcTree_GetMsgSize(UBtree_ptr[lk],'d')*nrhs+XK_H,'d');
 						}							
 						
 
@@ -1968,7 +1968,7 @@ for (i=0;i<nroot_send;i++){
 							for (jj=0;jj<knsupc*nrhs;jj++)
 								lsum[il+ jj ] += lsum[il + jj + ii*sizelsum];	
 												
-						RdTree_forwardMessageSimple(URtree_ptr[lk],&lsum[il-LSUM_H],'d'); 
+						RdTree_forwardMessageSimple(URtree_ptr[lk],&lsum[il-LSUM_H],RdTree_GetMsgSize(URtree_ptr[lk],'d')*nrhs+LSUM_H,'d'); 
 					}						
 				
 				}

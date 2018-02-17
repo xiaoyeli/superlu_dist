@@ -57,14 +57,14 @@ namespace ASYNCOMM{
 	}
 
 	
-	void BcTree_forwardMessageSimple(BcTree Tree, void* localBuffer, char precision){
+	void BcTree_forwardMessageSimple(BcTree Tree, void* localBuffer, Int msgSize, char precision){
 		if(precision=='d'){
 		TreeBcast_v2<double>* BcastTree = (TreeBcast_v2<double>*) Tree;
-		BcastTree->forwardMessageSimple((double*)localBuffer);	
+		BcastTree->forwardMessageSimple((double*)localBuffer,msgSize);	
 		}
 		if(precision=='z'){
 		TreeBcast_v2<doublecomplex>* BcastTree = (TreeBcast_v2<doublecomplex>*) Tree;
-		BcastTree->forwardMessageSimple((doublecomplex*)localBuffer);	
+		BcastTree->forwardMessageSimple((doublecomplex*)localBuffer,msgSize);	
 		}	
 	}
 
@@ -103,6 +103,17 @@ namespace ASYNCOMM{
 		}
 	}	
 
+	int BcTree_GetMsgSize(BcTree Tree, char precision){
+		if(precision=='d'){
+		TreeBcast_v2<double>* BcastTree = (TreeBcast_v2<double>*) Tree;
+		return BcastTree->GetMsgSize();					
+		}
+		if(precision=='z'){
+		TreeBcast_v2<doublecomplex>* BcastTree = (TreeBcast_v2<doublecomplex>*) Tree;
+		return BcastTree->GetMsgSize();					
+		}
+	}		
+	
 
 	StdList StdList_Init(){
 		std::list<int_t>* lst = new std::list<int_t>();
@@ -195,6 +206,18 @@ namespace ASYNCOMM{
 		}
 	}	
 	
+	int  RdTree_GetMsgSize(RdTree Tree, char precision){
+		if(precision=='d'){
+		TreeReduce_v2<double>* ReduceTree = (TreeReduce_v2<double>*) Tree;
+		return ReduceTree->GetMsgSize();		
+		}
+		if(precision=='z'){
+		TreeReduce_v2<doublecomplex>* ReduceTree = (TreeReduce_v2<doublecomplex>*) Tree;
+		return ReduceTree->GetMsgSize();		
+		}
+	}		
+	
+	
 
 	yes_no_t RdTree_IsRoot(RdTree Tree, char precision){
 		if(precision=='d'){
@@ -208,13 +231,13 @@ namespace ASYNCOMM{
 	}
 
 
-	void RdTree_forwardMessageSimple(RdTree Tree, void* localBuffer, char precision){
+	void RdTree_forwardMessageSimple(RdTree Tree, void* localBuffer, Int msgSize, char precision){
 		if(precision=='d'){
 		TreeReduce_v2<double>* ReduceTree = (TreeReduce_v2<double>*) Tree;
-		ReduceTree->forwardMessageSimple((double*)localBuffer);	
+		ReduceTree->forwardMessageSimple((double*)localBuffer,msgSize);	
 		}
 		if(precision=='z'){TreeReduce_v2<doublecomplex>* ReduceTree = (TreeReduce_v2<doublecomplex>*) Tree;
-		ReduceTree->forwardMessageSimple((doublecomplex*)localBuffer);	
+		ReduceTree->forwardMessageSimple((doublecomplex*)localBuffer,msgSize);	
 		}
 	}
 	void RdTree_allocateRequest(RdTree Tree, char precision){

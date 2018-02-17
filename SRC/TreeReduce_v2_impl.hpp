@@ -46,7 +46,7 @@ namespace ASYNCOMM{
     }
 	
   template< typename T> 
-    inline void TreeReduce_v2<T>::forwardMessageSimple(T * locBuffer){
+    inline void TreeReduce_v2<T>::forwardMessageSimple(T * locBuffer, Int msgSize){
         MPI_Status status;
 		if(this->myRank_!=this->myRoot_){
 			// if(this->recvCount_== this->GetDestCount()){		
@@ -54,7 +54,7 @@ namespace ASYNCOMM{
 			  Int iProc = this->myRoot_;
 			  // Use Isend to send to multiple targets
 
-			  int error_code = MPI_Isend(locBuffer, this->msgSize_, this->type_, 
+			  int error_code = MPI_Isend(locBuffer, msgSize, this->type_, 
 				  iProc, this->tag_,this->comm_, &this->sendRequests_[0] );
 				  
 				  // std::cout<<this->myRank_<<" FWD to "<<iProc<<" on tag "<<this->tag_<<std::endl;

@@ -1191,7 +1191,7 @@ float
 ddist_psymbtonum(fact_t fact, int_t n, SuperMatrix *A,
 		ScalePermstruct_t *ScalePermstruct,
 		Pslu_freeable_t *Pslu_freeable, 
-		LUstruct_t *LUstruct, gridinfo_t *grid, int_t nrhs)
+		LUstruct_t *LUstruct, gridinfo_t *grid)
 {
   Glu_persist_t *Glu_persist = LUstruct->Glu_persist;
   Glu_freeable_t Glu_freeable_n;
@@ -2215,7 +2215,7 @@ double *dense, *dense_col; /* SPA */
 
 					// rseed=rand();
 					// rseed=1.0;
-					msgsize = SuperSize( jb )*nrhs+XK_H;
+					msgsize = SuperSize( jb );
 					LBtree_ptr[ljb] = BcTree_Create(grid->comm, ranks, rank_cnt, msgsize,SeedSTD_BC[ljb],'d');  	
 					BcTree_SetTag(LBtree_ptr[ljb],BC_L,'d');
 
@@ -2381,7 +2381,7 @@ double *dense, *dense_col; /* SPA */
 
 						// rseed=rand();
 						// rseed=1.0;
-						msgsize = SuperSize( ib )*nrhs+LSUM_H;
+						msgsize = SuperSize( ib );
 
 						// if(ib==0){
 
@@ -2538,7 +2538,7 @@ double *dense, *dense_col; /* SPA */
 
 					// rseed=rand();
 					// rseed=1.0;
-					msgsize = SuperSize( jb )*nrhs+XK_H;
+					msgsize = SuperSize( jb );
 					UBtree_ptr[ljb] = BcTree_Create(grid->comm, ranks, rank_cnt, msgsize,SeedSTD_BC[ljb],'d');  	
 					BcTree_SetTag(UBtree_ptr[ljb],BC_U,'d');
 
@@ -2689,7 +2689,7 @@ double *dense, *dense_col; /* SPA */
 
 						// rseed=rand();
 						// rseed=1.0;
-						msgsize = SuperSize( ib )*nrhs+LSUM_H;
+						msgsize = SuperSize( ib );
 
 						// if(ib==0){
 

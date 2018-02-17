@@ -1228,7 +1228,7 @@ void dlsum_fmod_inv_master
 						for (jj=0;jj<iknsupc*nrhs;jj++)
 							lsum[il + jj ] += lsum[il + jj + ii*sizelsum];
 
-					RdTree_forwardMessageSimple(LRtree_ptr[lk],&lsum[il - LSUM_H ],'d');
+					RdTree_forwardMessageSimple(LRtree_ptr[lk],&lsum[il - LSUM_H ],RdTree_GetMsgSize(LRtree_ptr[lk],'d')*nrhs+LSUM_H,'d');
 					// }
 
 
@@ -1310,7 +1310,7 @@ void dlsum_fmod_inv_master
 					 */
 
 					if(LBtree_ptr[lk]!=NULL)
-						BcTree_forwardMessageSimple(LBtree_ptr[lk],&x[ii - XK_H],'d');
+						BcTree_forwardMessageSimple(LBtree_ptr[lk],&x[ii - XK_H],BcTree_GetMsgSize(LBtree_ptr[lk],'d')*nrhs+XK_H,'d');
 
 					/*
 					 * Perform local block modifications.
@@ -1991,7 +1991,7 @@ void dlsum_bmod_inv_master
 					// if(ii!=thread_id1)
 					for (jj=0;jj<iknsupc*nrhs;jj++)
 						lsum[il + jj ] += lsum[il + jj + ii*sizelsum];
-				RdTree_forwardMessageSimple(URtree_ptr[ik],&lsum[il - LSUM_H ],'d');
+				RdTree_forwardMessageSimple(URtree_ptr[ik],&lsum[il - LSUM_H ],RdTree_GetMsgSize(URtree_ptr[ik],'d')*nrhs+LSUM_H,'d');
 
 #if ( DEBUGlevel>=2 )
 				printf("(%2d) Sent LSUM[%2.0f], size %2d, to P %2d\n",
@@ -2070,7 +2070,7 @@ void dlsum_bmod_inv_master
 						// fflush(stdout);
 					// }
 					if(UBtree_ptr[lk1]!=NULL){
-					BcTree_forwardMessageSimple(UBtree_ptr[lk1],&x[ii - XK_H],'d'); 
+					BcTree_forwardMessageSimple(UBtree_ptr[lk1],&x[ii - XK_H],BcTree_GetMsgSize(UBtree_ptr[lk1],'d')*nrhs+XK_H,'d'); 
 					} 
 
 					/*

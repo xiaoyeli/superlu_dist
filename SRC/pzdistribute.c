@@ -322,7 +322,7 @@ float
 pzdistribute(fact_t fact, int_t n, SuperMatrix *A,
 	     ScalePermstruct_t *ScalePermstruct,
 	     Glu_freeable_t *Glu_freeable, LUstruct_t *LUstruct,
-	     gridinfo_t *grid, int_t nrhs)
+	     gridinfo_t *grid)
 /*
  * -- Distributed SuperLU routine (version 2.0) --
  * Lawrence Berkeley National Lab, Univ. of California Berkeley.
@@ -1289,7 +1289,7 @@ pzdistribute(fact_t fact, int_t n, SuperMatrix *A,
 
 				// rseed=rand();
 				// rseed=1.0;
-				msgsize = SuperSize( jb )*nrhs+XK_H;
+				msgsize = SuperSize( jb );
 				LBtree_ptr[ljb] = BcTree_Create(grid->comm, ranks, rank_cnt, msgsize,SeedSTD_BC[ljb],'z');  	
 				BcTree_SetTag(LBtree_ptr[ljb],BC_L,'z');
 
@@ -1469,7 +1469,7 @@ if ( !iam) printf(".. Construct Bcast tree for L: %.2f\t\n", t);
 
 					// rseed=rand();
 					// rseed=1.0;
-					msgsize = SuperSize( ib )*nrhs+LSUM_H;
+					msgsize = SuperSize( ib );
 
 					// if(ib==0){
 
@@ -1629,7 +1629,7 @@ if ( !iam) printf(".. Construct Reduce tree for L: %.2f\t\n", t);
 
 				// rseed=rand();
 				// rseed=1.0;
-				msgsize = SuperSize( jb )*nrhs+XK_H;
+				msgsize = SuperSize( jb );
 				UBtree_ptr[ljb] = BcTree_Create(grid->comm, ranks, rank_cnt, msgsize,SeedSTD_BC[ljb],'z');  	
 				BcTree_SetTag(UBtree_ptr[ljb],BC_U,'z');
 
@@ -1827,7 +1827,7 @@ if ( !iam) printf(".. Construct Bcast tree for U: %.2f\t\n", t);
 
 					// rseed=rand();
 					// rseed=1.0;
-					msgsize = SuperSize( ib )*nrhs+LSUM_H;
+					msgsize = SuperSize( ib );
 
 					// if(ib==0){
 

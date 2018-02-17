@@ -254,7 +254,7 @@ extern void  pzgssvx_ABglobal(superlu_dist_options_t *, SuperMatrix *,
 			      SuperLUStat_t *, int *);
 extern float pzdistribute(fact_t, int_t, SuperMatrix *, 
 			 ScalePermstruct_t *, Glu_freeable_t *, 
-			 LUstruct_t *, gridinfo_t *, int_t);
+			 LUstruct_t *, gridinfo_t *);
 extern void  pzgssvx(superlu_dist_options_t *, SuperMatrix *, 
 		     ScalePermstruct_t *, doublecomplex *,
 		     int, int, gridinfo_t *, LUstruct_t *,
@@ -363,7 +363,7 @@ extern int  zread_binary(FILE *, int_t *, int_t *, int_t *,
 /* Distribute the data for numerical factorization */
 extern float zdist_psymbtonum(fact_t, int_t, SuperMatrix *,
                                 ScalePermstruct_t *, Pslu_freeable_t *, 
-                                LUstruct_t *, gridinfo_t *, int_t nrhs);
+                                LUstruct_t *, gridinfo_t *);
 extern void pzGetDiagU(int_t, LUstruct_t *, gridinfo_t *, doublecomplex *);
 
 

@@ -1113,7 +1113,7 @@ pzgssvx(superlu_dist_options_t *options, SuperMatrix *A,
   	       distribution routine. */
 	    t = SuperLU_timer_();
 	    dist_mem_use = pzdistribute(Fact, n, A, ScalePermstruct,
-                                      Glu_freeable, LUstruct, grid, nrhs);
+                                      Glu_freeable, LUstruct, grid);
 	    stat->utime[DIST] = SuperLU_timer_() - t;
 
   	    /* Deallocate storage used in symbolic factorization. */
@@ -1130,7 +1130,7 @@ pzgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 
     	    t = SuperLU_timer_();
 	    dist_mem_use = zdist_psymbtonum(Fact, n, A, ScalePermstruct,
-		  			   &Pslu_freeable, LUstruct, grid, nrhs);
+		  			   &Pslu_freeable, LUstruct, grid);
 	    if (dist_mem_use > 0)
 	        ABORT ("Not enough memory available for dist_psymbtonum\n");
             

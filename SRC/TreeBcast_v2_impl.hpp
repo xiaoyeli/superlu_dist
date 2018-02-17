@@ -172,12 +172,12 @@ namespace ASYNCOMM{
 	
 	
   template< typename T> 
-    inline void TreeBcast_v2<T>::forwardMessageSimple(T * locBuffer){
+    inline void TreeBcast_v2<T>::forwardMessageSimple(T * locBuffer, Int msgSize){
         MPI_Status status;
 		for( Int idxRecv = 0; idxRecv < this->myDests_.size(); ++idxRecv ){
           Int iProc = this->myDests_[idxRecv];
           // Use Isend to send to multiple targets
-          int error_code = MPI_Isend( locBuffer, this->msgSize_, this->type_, 
+          int error_code = MPI_Isend( locBuffer, msgSize, this->type_, 
               iProc, this->tag_,this->comm_, &this->sendRequests_[idxRecv] );
 			  // MPI_Wait(&this->sendRequests_[idxRecv],&status) ; 
 			  // std::cout<<this->myRank_<<" FWD to "<<iProc<<" on tag "<<this->tag_<<std::endl;

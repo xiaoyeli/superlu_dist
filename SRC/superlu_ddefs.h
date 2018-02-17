@@ -254,7 +254,7 @@ extern void  pdgssvx_ABglobal(superlu_dist_options_t *, SuperMatrix *,
 			      SuperLUStat_t *, int *);
 extern float pddistribute(fact_t, int_t, SuperMatrix *, 
 			 ScalePermstruct_t *, Glu_freeable_t *, 
-			 LUstruct_t *, gridinfo_t *, int_t);
+			 LUstruct_t *, gridinfo_t *);
 extern void  pdgssvx(superlu_dist_options_t *, SuperMatrix *, 
 		     ScalePermstruct_t *, double *,
 		     int, int, gridinfo_t *, LUstruct_t *,
@@ -361,7 +361,7 @@ extern int  dread_binary(FILE *, int_t *, int_t *, int_t *,
 /* Distribute the data for numerical factorization */
 extern float ddist_psymbtonum(fact_t, int_t, SuperMatrix *,
                                 ScalePermstruct_t *, Pslu_freeable_t *, 
-                                LUstruct_t *, gridinfo_t *, int_t nrhs);
+                                LUstruct_t *, gridinfo_t *);
 extern void pdGetDiagU(int_t, LUstruct_t *, gridinfo_t *, double *);
 
 

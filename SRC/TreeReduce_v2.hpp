@@ -44,7 +44,7 @@ namespace ASYNCOMM{
 
 
 		
-		virtual void forwardMessageSimple(T * locBuffer);
+		virtual void forwardMessageSimple(T * locBuffer, Int msgSize);
 		virtual void allocateRequest();	
 		virtual void waitSendRequest();
     };

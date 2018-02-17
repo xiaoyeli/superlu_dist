@@ -841,18 +841,20 @@ extern RdTree   RdTree_Create(MPI_Comm comm, int* ranks, int rank_cnt, int msgSi
 extern void   	RdTree_Destroy(RdTree Tree, char precision);
 extern void 	RdTree_SetTag(RdTree Tree, int tag, char precision);
 extern yes_no_t RdTree_IsRoot(RdTree Tree, char precision);
-extern void 	RdTree_forwardMessageSimple(RdTree Tree, void* localBuffer, char precision);
+extern void 	RdTree_forwardMessageSimple(RdTree Tree, void* localBuffer, int msgSize, char precision);
 extern void 	RdTree_allocateRequest(RdTree Tree, char precision);
 extern int  	RdTree_GetDestCount(RdTree Tree, char precision);
+extern int  	RdTree_GetMsgSize(RdTree Tree, char precision);
 extern void 	RdTree_waitSendRequest(RdTree Tree, char precision);
 
 extern BcTree   BcTree_Create(MPI_Comm comm, int* ranks, int rank_cnt, int msgSize, double rseed, char precision);  
 extern void   	BcTree_Destroy(BcTree Tree, char precision);
 extern void 	BcTree_SetTag(BcTree Tree, int tag, char precision);
 extern yes_no_t BcTree_IsRoot(BcTree Tree, char precision);
-extern void 	BcTree_forwardMessageSimple(BcTree Tree, void* localBuffer, char precision);
+extern void 	BcTree_forwardMessageSimple(BcTree Tree, void* localBuffer, int msgSize, char precision);
 extern void 	BcTree_allocateRequest(BcTree Tree, char precision);
 extern int 		BcTree_getDestCount(BcTree Tree, char precision); 
+extern int 		BcTree_GetMsgSize(BcTree Tree, char precision); 
 extern void 	BcTree_waitSendRequest(BcTree Tree, char precision);
  
 extern StdList 	StdList_Init();

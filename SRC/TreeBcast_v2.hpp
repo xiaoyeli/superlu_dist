@@ -103,7 +103,7 @@ namespace ASYNCOMM{
         virtual void cleanupBuffers();
 
 		virtual void allocateRequest();
-		virtual void forwardMessageSimple(T * locBuffer);	
+		virtual void forwardMessageSimple(T * locBuffer, Int msgSize);	
 		virtual void waitSendRequest();	
 
     };
