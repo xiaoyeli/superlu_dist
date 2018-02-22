@@ -48,6 +48,7 @@ namespace ASYNCOMM{
   template< typename T> 
     inline void TreeReduce_v2<T>::forwardMessageSimple(T * locBuffer, Int msgSize){
         MPI_Status status;
+		Int flag;
 		if(this->myRank_!=this->myRoot_){
 			// if(this->recvCount_== this->GetDestCount()){		
 			  //forward to my root if I have reseived everything
@@ -56,6 +57,8 @@ namespace ASYNCOMM{
 
 			  int error_code = MPI_Isend(locBuffer, msgSize, this->type_, 
 				  iProc, this->tag_,this->comm_, &this->sendRequests_[0] );
+				  
+				  MPI_Test(&this->sendRequests_[0],&flag,&status) ; 
 				  
 				  // std::cout<<this->myRank_<<" FWD to "<<iProc<<" on tag "<<this->tag_<<std::endl;
 				  
