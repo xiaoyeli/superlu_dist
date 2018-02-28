@@ -16,7 +16,7 @@ notifications:
     rooms:
       - ecpsparsesolvers:nBWC0jcAd7B1j9whHUYcaVJO
     on_failure: never
-    on_success: always
+    on_success: never
 
 env:
   matrix:
