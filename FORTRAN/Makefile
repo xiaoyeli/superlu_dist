@@ -10,7 +10,6 @@
 .SUFFIXES: 
 .SUFFIXES: .f90 .c .o
 include ../make.inc
-INCLUDEDIR = -I../SRC
 
 #F90FLAGS	= $(FFLAGS) -qfree -qsuffix=f=f90  -qflag=w:w
 
@@ -34,7 +33,7 @@ f_pzdrive: $(F_ZEXM) $(C_ZWRAP) $(DSUPERLULIB)
 	$(FORTRAN) $(LOADOPTS) $(F_ZEXM) $(C_ZWRAP) $(LIBS) -o $@
 
 .c.o:
-	$(CC) $(CFLAGS) $(CDEFS) $(BLASDEF) $(INCLUDEDIR) -c $< $(VERBOSE)
+	$(CC) $(CFLAGS) $(CDEFS) $(BLASDEF) -I$(INCLUDEDIR) -c $< $(VERBOSE)
 
 .f90.o:
 	$(FORTRAN) $(F90FLAGS) -c $< $(VERBOSE)

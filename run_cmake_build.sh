@@ -15,7 +15,7 @@ then
     -DCMAKE_C_FLAGS="-std=c99 -fPIC" \
     -DCMAKE_Fortran_COMPILER=ftn \
     -Denable_blaslib=OFF \
-#    -DTPL_BLAS_LIBRARIES="-mkl" \
+    -DTPL_BLAS_LIBRARIES="-mkl" \
     -DBUILD_SHARED_LIBS=OFF \
     -DCMAKE_INSTALL_PREFIX=.
 #    -DCMAKE_EXE_LINKER_FLAGS="-shared"
