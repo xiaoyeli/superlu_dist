@@ -228,7 +228,7 @@ endif()
 ######################################################################
 
 include_directories(${CMAKE_BINARY_DIR}/SRC) # For superlu_dist_config.h
-include_directories(${CMAKE_SOURCE_DIR}/SRC)
+# include_directories(${CMAKE_SOURCE_DIR}/SRC)
 if (TPL_PARMETIS_INCLUDE_DIRS)
   include_directories(${TPL_PARMETIS_INCLUDE_DIRS})  ## parmetis
 endif ()
@@ -257,7 +257,6 @@ if(enable_examples)
   add_subdirectory(EXAMPLE)
 endif()
 
-# file(WRITE "make.defs" "# can be exposed to users" ${CMAKE_C_COMPILER})
 # configure_file(${CMAKE_SOURCE_DIR}/make.inc.in ${CMAKE_BINARY_DIR}/make.inc)
 configure_file(${SuperLU_DIST_SOURCE_DIR}/make.inc.in ${SuperLU_DIST_SOURCE_DIR}/make.inc)
 configure_file(${SuperLU_DIST_SOURCE_DIR}/SRC/superlu_dist_config.h.in ${SuperLU_DIST_BINARY_DIR}/SRC/superlu_dist_config.h)
