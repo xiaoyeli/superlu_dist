@@ -71,17 +71,23 @@ ZPLUSRC = pzgssvx.o pzgssvx_ABglobal.o \
 
 all:  double complex16
 
-#config_h:
-#ifeq ($(XSDK_INDEX_SIZE),64)
-#	printf "#define XSDK_INDEX_SIZE 64\n" > superlu_dist_config.h
-#else
-#	printf "/* #define XSDK_INDEX_SIZE 64 */\n" > superlu_dist_config.h
-#endif
-#	printf "#if (XSDK_INDEX_SIZE == 64)\n#define _LONGINT 1\n#endif\n" >> superlu_dist_config.h
-#
-
 config_h:
-	cp -f superlu_dist_config_for_makefile.h superlu_dist_config.h
+	rm -f superlu_dist_config.h
+ifeq ($(HAVE_PARMETIS),FALSE)
+	printf "/* #define HAVE_PARMETIS TRUE */\n" > superlu_dist_config.h
+else
+	printf "#define HAVE_PARMETIS TRUE\n" > superlu_dist_config.h
+endif
+ifeq ($(XSDK_INDEX_SIZE),64)
+	printf "#define XSDK_INDEX_SIZE 64\n" >> superlu_dist_config.h
+else
+	printf "/* #define XSDK_INDEX_SIZE 64 */\n" >> superlu_dist_config.h
+endif
+	printf "#if (XSDK_INDEX_SIZE == 64)\n#define _LONGINT 1\n#endif\n" >> superlu_dist_config.h
+
+
+#config_h:
+#	cp -f superlu_dist_config_for_makefile.h superlu_dist_config.h
 
 double: config_h $(DSLUSRC) $(DPLUSRC) $(ALLAUX)
 	$(ARCH) $(ARCHFLAGS) $(DSUPERLULIB) \
@@ -106,4 +112,4 @@ pzgstrf.o: zscatter.c zlook_ahead_update.c zSchCompUdt-2Ddynamic.c pzgstrf.c
 	$(FORTRAN) $(FFLAGS) -c $< $(VERBOSE)
 
 clean:	
-	rm -f *.o $(DSUPERLULIB)
+	rm -f *.o $(DSUPERLULIB) superlu_dist_config.h
