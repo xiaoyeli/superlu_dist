@@ -51,7 +51,7 @@ then
   cmake .. \
     -DTPL_PARMETIS_INCLUDE_DIRS="${PARMETIS_ROOT}/include;${PARMETIS_ROOT}/metis/include" \
     -DTPL_PARMETIS_LIBRARIES="${PARMETIS_BUILD_DIR}/libparmetis/libparmetis.a;${PARMETIS_BUILD_DIR}/libmetis/libmetis.a" \
-    -DCMAKE_C_FLAGS="-std=c99 -g -DPRNTlevel=0 -DDEBUGlevel=0" \
+    -DCMAKE_C_FLAGS="-std=c99 -g -DPRNTlevel=1 -DDEBUGlevel=0" \
     -Denable_blaslib=OFF \
     -DBUILD_SHARED_LIBS=OFF \
     -DCMAKE_C_COMPILER=mpicc \

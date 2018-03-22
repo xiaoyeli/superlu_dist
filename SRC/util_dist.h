@@ -96,7 +96,7 @@ typedef struct {
 typedef struct e_node {
     int size;      /* length of the memory that has been used */
     void *mem;     /* pointer to the new malloc'd store */
-} ExpHeader;
+} SuperLU_ExpHeader;
 
 typedef struct {
     int  size;
@@ -104,30 +104,30 @@ typedef struct {
     int  top1;  /* grow upward, relative to &array[0] */
     int  top2;  /* grow downward */
     void *array;
-} LU_stack_t;
+} SuperLU_LU_stack_t;
 
 /* Constants */
-#define GluIntArray(n)   (5 * (n) + 5)
+#define SuperLU_GluIntArray(n)   (5 * (n) + 5)
 
 #if 0 // defined in superlu_enum_consts.h -- 1/20/2018
-#define NO_MEMTYPE  6      /* 0: lusup;
-			      1: ucol;
-			      2: lsub;
-			      3: usub
-			      4: llvl; level number in L for ILU(k)
-			      5: ulvl; level number in U for ILU(k)
-                           */
+#define SuperLU_NO_MEMTYPE  6      /* 0: lusup;
+				      1: ucol;
+				      2: lsub;
+				      3: usub
+				      4: llvl; level number in L for ILU(k)
+				      5: ulvl; level number in U for ILU(k)
+				   */
 #endif
 
 /* Macros to manipulate stack */
-#define StackFull(x)         ( x + stack.used >= stack.size )
-#define NotDoubleAlign(addr) ( (long)addr & 7 )
-#define DoubleAlign(addr)    ( ((long)addr + 7) & ~7L )
-#define TempSpace(n, w)      ( (2*w + 4 + NO_MARKER)*m*sizeof(int) + \
+#define SuperLU_StackFull(x)         ( x + stack.used >= stack.size )
+#define SuperLU_NotDoubleAlign(addr) ( (long)addr & 7 )
+#define SuperLU_DoubleAlign(addr)    ( ((long)addr + 7) & ~7L )
+#define SuperLU_TempSpace(n, w)      ( (2*w + 4 + NO_MARKER)*m*sizeof(int) + \
 			      (w + 1)*n*sizeof(double) )
-#define Reduce(alpha)        ((alpha + 1) / 2)  /* i.e. (alpha-1)/2 + 1 */
+#define SuperLU_Reduce(alpha)        ((alpha + 1) / 2)  /* i.e. (alpha-1)/2 + 1 */
 
-#define FIRSTCOL_OF_SNODE(i)	(xsup[i])
+#define SuperLU_FIRSTCOL_OF_SNODE(i)	(xsup[i])
 
 #if ( PROFlevel>=1 )
 #define TIC(t)          t = SuperLU_timer_()
@@ -140,11 +140,11 @@ typedef struct {
 /*********************************************************
  * Macros used for easy access of sparse matrix entries. *
  *********************************************************/
-#define L_SUB_START(col)     ( Lstore->rowind_colptr[col] )
-#define L_SUB(ptr)           ( Lstore->rowind[ptr] )
-#define L_NZ_START(col)      ( Lstore->nzval_colptr[col] )
-#define L_FST_SUPC(superno)  ( Lstore->sup_to_col[superno] )
-#define U_NZ_START(col)      ( Ustore->colptr[col] )
-#define U_SUB(ptr)           ( Ustore->rowind[ptr] )
+#define SuperLU_L_SUB_START(col)     ( Lstore->rowind_colptr[col] )
+#define SuperLU_L_SUB(ptr)           ( Lstore->rowind[ptr] )
+#define SuperLU_L_NZ_START(col)      ( Lstore->nzval_colptr[col] )
+#define SuperLU_L_FST_SUPC(superno)  ( Lstore->sup_to_col[superno] )
+#define SuperLU_U_NZ_START(col)      ( Ustore->colptr[col] )
+#define SuperLU_U_SUB(ptr)           ( Ustore->rowind[ptr] )
 
 #endif /* __SUPERLU_UTIL */

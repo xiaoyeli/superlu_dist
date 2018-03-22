@@ -26,8 +26,8 @@ at the top-level directory.
 /*
  * Global variables
  */
-ExpHeader *expanders; /* Array of pointers to 4 types of memory */
-LU_stack_t stack;
+SuperLU_ExpHeader *expanders; /* Array of pointers to 4 types of memory */
+SuperLU_LU_stack_t stack;
 int_t no_expand;
 
 
@@ -189,7 +189,7 @@ void *user_malloc_dist(int_t bytes, int_t which_end)
 {
     void *buf;
     
-    if ( StackFull(bytes) ) return (NULL);
+    if ( SuperLU_StackFull(bytes) ) return (NULL);
 
     if ( which_end == HEAD ) {
 	buf = (char*) stack.array + stack.top1;
@@ -273,7 +273,7 @@ int_t symbfact_SubInit
     no_expand = 0;
     iword     = sizeof(int_t);
 
-    expanders = (ExpHeader *) SUPERLU_MALLOC( NO_MEMTYPE*sizeof(ExpHeader) );
+    expanders = (SuperLU_ExpHeader *) SUPERLU_MALLOC( NO_MEMTYPE*sizeof(SuperLU_ExpHeader) );
     if ( !expanders ) ABORT("SUPERLU_MALLOC fails for expanders");
     
     if ( fact == DOFACT || fact == SamePattern ) {
@@ -282,7 +282,7 @@ int_t symbfact_SubInit
 	nzumax = FILL/2.0 * annz;
 
 	if ( lwork == -1 ) {
-	    return ( GluIntArray(n) * iword + TempSpace(m,1)
+	    return ( SuperLU_GluIntArray(n) * iword + SuperLU_TempSpace(m,1)
 		    + (nzlmax+nzumax)*iword + n );
         } else {
 	    SetupSpace(work, lwork, &Glu_freeable->MemModel);
@@ -324,7 +324,7 @@ int_t symbfact_SubInit
 	    }
 #if ( PRNTlevel>=1 )
 	    printf("(%d).. symbfact_SubInit() reduce size:"
-		   "nzlmax %ld, nzumax %ld\n", iam, (long long) nzlmax, (long long) nzumax);
+		   "nzlmax %lld, nzumax %lld\n", iam, (long long) nzlmax, (long long) nzumax);
 	    fflush(stdout);
 #endif
 	    lsub  = (int_t *) expand( &nzlmax, (MemType) LSUB, 0, 0, Glu_freeable );
@@ -342,7 +342,7 @@ int_t symbfact_SubInit
     } else {
 	/* fact == SamePattern_SameRowPerm */
 	if ( lwork == -1 ) {
-	    return ( GluIntArray(n) * iword + TempSpace(m, 1)
+	    return ( SuperLU_GluIntArray(n) * iword + SuperLU_TempSpace(m, 1)
 		    + (nzlmax+nzumax)*iword + n );
         } else if ( lwork == 0 ) {
 	    Glu_freeable->MemModel = SYSTEM;
@@ -492,7 +492,7 @@ static void *expand
 	    } else {
 		while ( !new_mem ) {
 		    if ( ++tries > 10 ) return (NULL);
-		    alpha = Reduce(alpha);
+		    alpha = SuperLU_Reduce(alpha);
 		    new_len = alpha * *prev_len;
 		    new_mem = (void*) SUPERLU_MALLOC((size_t)new_len * lword); 
 		    /* new_mem = (void *) calloc(new_len, lword); */
@@ -512,11 +512,11 @@ static void *expand
 	    tries = 0;
 	    extra = (new_len - *prev_len) * lword;
 	    if ( keep_prev ) {
-		if ( StackFull(extra) ) return (NULL);
+		if ( SuperLU_StackFull(extra) ) return (NULL);
 	    } else {
-		while ( StackFull(extra) ) {
+		while ( SuperLU_StackFull(extra) ) {
 		    if ( ++tries > 10 ) return (NULL);
-		    alpha = Reduce(alpha);
+		    alpha = SuperLU_Reduce(alpha);
 		    new_len = alpha * *prev_len;
 		    extra = (new_len - *prev_len) * lword;	    
 		}

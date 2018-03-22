@@ -73,15 +73,15 @@ all:  double complex16
 
 config_h:
 	rm -f superlu_dist_config.h
-ifeq ($(HAVE_PARMETIS),FALSE)
-	printf "/* #define HAVE_PARMETIS TRUE */\n" > superlu_dist_config.h
-else
-	printf "#define HAVE_PARMETIS TRUE\n" > superlu_dist_config.h
-endif
 ifeq ($(XSDK_INDEX_SIZE),64)
-	printf "#define XSDK_INDEX_SIZE 64\n" >> superlu_dist_config.h
+		printf "#define XSDK_INDEX_SIZE 64\n" >> superlu_dist_config.h
 else
-	printf "/* #define XSDK_INDEX_SIZE 64 */\n" >> superlu_dist_config.h
+		printf "/* #define XSDK_INDEX_SIZE 64 */\n" >> superlu_dist_config.h
+endif
+ifeq ($(HAVE_PARMETIS),FALSE)
+		printf "/* #define HAVE_PARMETIS TRUE */\n" >> superlu_dist_config.h
+else
+		printf "#define HAVE_PARMETIS TRUE\n" >> superlu_dist_config.h
 endif
 	printf "#if (XSDK_INDEX_SIZE == 64)\n#define _LONGINT 1\n#endif\n" >> superlu_dist_config.h
 

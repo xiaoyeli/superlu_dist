@@ -55,6 +55,7 @@ at the top-level directory.
  *
  * Return value
  * ============
+ *        = 0: successful exit
  * </pre>
  */
 int_t
