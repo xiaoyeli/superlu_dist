@@ -22,6 +22,7 @@ at the top-level directory.
  * April 5, 2015
  * December 31, 2015  version 4.3
  * December 31, 2016  version 5.1.3
+ * April 10, 2018  version 5.3
  * </pre>
  */
 
@@ -319,9 +320,13 @@ at the top-level directory.
  *         o RowPerm (rowperm_t)
  *           Specifies how to permute rows of the matrix A.
  *           = NATURAL:   use the natural ordering.
- *           = LargeDiag: use the Duff/Koster algorithm to permute rows of
- *                        the original matrix to make the diagonal large
+ *           = LargeDiag_MC64: use the Duff/Koster algorithm to permute rows
+ *                        of the original matrix to make the diagonal large
  *                        relative to the off-diagonal.
+ *           = LargeDiag_APWM: use the parallel approximate-weight perfect
+ *                        matching to permute rows of the original matrix
+ *                        to make the diagonal large relative to the
+ *                        off-diagonal.
  *           = MY_PERMR:  use the ordering given in ScalePermstruct->perm_r
  *                        input by the user.
  *           
@@ -751,7 +756,7 @@ pdgssvx(superlu_dist_options_t *options, SuperMatrix *A,
              (parSymbFact == NO || options->RowPerm != NO) ) {
              /* Performs serial symbolic factorzation and/or MC64 */
 
-            need_value = (options->RowPerm == LargeDiag);
+            need_value = (options->RowPerm == LargeDiag_MC64);
 
             pdCompRow_loc_to_CompCol_global(need_value, A, grid, &GA);
 
@@ -780,8 +785,8 @@ pdgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 	            	irow = rowind[i]; 
 		    	rowind[i] = perm_r[irow];
 	            }
-	        } else { /* options->RowPerm == LargeDiag */
-	            /* Get a new perm_r[] */
+	        } else if ( options->RowPerm == LargeDiag_MC64 ) {
+	            /* Get a new perm_r[] from MC64 */
 	            if ( job == 5 ) {
 		        /* Allocate storage for scaling factors. */
 		        if ( !(R1 = doubleMalloc_dist(m)) )
@@ -893,7 +898,9 @@ pdgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 		        if ( !iam ) printf("\t product of diagonal %e\n", dprod);
 	            }
 #endif
-                } /* end if options->RowPerm ... */
+                } else { /* use largeDiag_AWPM */
+		    // c2pp_GetAWPM(A, grid, ScalePermstruct);
+		} /* end if options->RowPerm ... */
 
 	        t = SuperLU_timer_() - t;
 	        stat->utime[ROWPERM] = t;

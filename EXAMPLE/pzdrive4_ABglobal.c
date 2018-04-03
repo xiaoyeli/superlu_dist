@@ -195,7 +195,7 @@ int main(int argc, char *argv[])
             options.Fact = DOFACT;
             options.Equil = YES;
             options.ColPerm = METIS_AT_PLUS_A;
-            options.RowPerm = LargeDiag;
+            options.RowPerm = LargeDiag_MC64;
             options.ReplaceTinyPivot = YES;
             options.Trans = NOTRANS;
             options.IterRefine = DOUBLE;
@@ -301,7 +301,7 @@ int main(int argc, char *argv[])
             options.Fact = DOFACT;
             options.Equil = YES;
             options.ColPerm = MMD_AT_PLUS_A;
-            options.RowPerm = LargeDiag;
+            options.RowPerm = LargeDiag_MC64;
             options.ReplaceTinyPivot = YES;
             options.Trans = NOTRANS;
             options.IterRefine = DOUBLE;
