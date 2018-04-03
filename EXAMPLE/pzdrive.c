@@ -141,7 +141,7 @@ int main(int argc, char *argv[])
         options.Equil             = YES;
         options.ParSymbFact       = NO;
         options.ColPerm           = METIS_AT_PLUS_A;
-        options.RowPerm           = LargeDiag;
+        options.RowPerm           = LargeDiag_MC64;
         options.ReplaceTinyPivot  = NO;
         options.IterRefine        = DOUBLE;
         options.Trans             = NOTRANS;

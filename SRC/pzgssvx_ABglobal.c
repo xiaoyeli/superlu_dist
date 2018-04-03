@@ -288,9 +288,13 @@ at the top-level directory.
  *         o RowPerm (rowperm_t)
  *           Specifies how to permute rows of the matrix A.
  *           = NATURAL:   use the natural ordering.
- *           = LargeDiag: use the Duff/Koster algorithm to permute rows of
- *                        the original matrix to make the diagonal large
+ *           = LargeDiag_MC64: use the Duff/Koster algorithm to permute rows
+ *                        of the original matrix to make the diagonal large
  *                        relative to the off-diagonal.
+ *           = LargeDiag_APWM: use the parallel approximate-weight perfect
+ *                        matching to permute rows of the original matrix
+ *                        to make the diagonal large relative to the
+ *                        off-diagonal.
  *           = MY_PERMR:  use the ordering given in ScalePermstruct->perm_r
  *                        input by the user.
  *           

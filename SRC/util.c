@@ -328,7 +328,7 @@ void set_default_options_dist(superlu_dist_options_t *options)
 #else
     options->ColPerm            = MMD_AT_PLUS_A;
 #endif
-    options->RowPerm           = LargeDiag;
+    options->RowPerm           = LargeDiag_MC64;
     options->ReplaceTinyPivot  = NO;
     options->IterRefine        = SLU_DOUBLE;
     options->Trans             = NOTRANS;
