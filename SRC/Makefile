@@ -34,7 +34,7 @@ ALLAUX 	= sp_ienv.o etree.o sp_colorder.o get_perm_c.o \
 	  pxerr_dist.o superlu_timer.o symbfact.o \
 	  psymbfact.o psymbfact_util.o get_perm_c_parmetis.o mc64ad_dist.o \
 	  static_schedule.o xerr_dist.o smach_dist.o dmach_dist.o \
-	  superlu_dist_version.o
+	  superlu_dist_version.o c2pp_GetAWPM.o
 
 ifeq "${ACC}" "GPU"
 ALLAUX += cublas_utils.o
@@ -104,6 +104,9 @@ pdgstrf.o: dscatter.c dlook_ahead_update.c dSchCompUdt-2Ddynamic.c pdgstrf.c
 
 pzgstrf.o: zscatter.c zlook_ahead_update.c zSchCompUdt-2Ddynamic.c pzgstrf.c
 	$(CC) $(CFLAGS) $(CDEFS) $(BLASDEF) -I$(INCLUDEDIR) -c pzgstrf.c $(VERBOSE)
+
+c2pp_GetAWPM.o: c2pp_GetAWPM.cpp
+	$(CXX) $(CXXFLAGS) -I$(INCLUDEDIR) -o $@ -c $<
 
 .c.o:
 	$(CC) $(CFLAGS) $(CDEFS) $(BLASDEF) -I$(INCLUDEDIR) -c $< $(VERBOSE)

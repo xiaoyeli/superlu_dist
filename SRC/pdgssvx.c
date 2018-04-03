@@ -780,7 +780,7 @@ pdgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 	            	irow = rowind[i]; 
 		    	rowind[i] = perm_r[irow];
 	            }
-	        } else { /* options->RowPerm == LargeDiag */
+	        } else if (options->RowPerm == LargeDiag ) {
 	            /* Get a new perm_r[] */
 	            if ( job == 5 ) {
 		        /* Allocate storage for scaling factors. */
@@ -893,7 +893,9 @@ pdgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 		        if ( !iam ) printf("\t product of diagonal %e\n", dprod);
 	            }
 #endif
-                } /* end if options->RowPerm ... */
+                } else { /* use AWPM */
+		    c2pp_GetAWPM(A, grid, ScalePermstruct);
+		} /* end if options->RowPerm ... */
 
 	        t = SuperLU_timer_() - t;
 	        stat->utime[ROWPERM] = t;
