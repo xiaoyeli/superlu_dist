@@ -785,13 +785,8 @@ pdgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 	            	irow = rowind[i]; 
 		    	rowind[i] = perm_r[irow];
 	            }
-<<<<<<< HEAD
-	        } else if (options->RowPerm == LargeDiag ) {
-	            /* Get a new perm_r[] */
-=======
 	        } else if ( options->RowPerm == LargeDiag_MC64 ) {
 	            /* Get a new perm_r[] from MC64 */
->>>>>>> d7dce5a3488f80645023ab8431d82399e5546ebf
 	            if ( job == 5 ) {
 		        /* Allocate storage for scaling factors. */
 		        if ( !(R1 = doubleMalloc_dist(m)) )
