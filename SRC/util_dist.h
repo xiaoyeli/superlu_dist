@@ -50,6 +50,7 @@ at the top-level directory.
     extern long int superlu_malloc_total;        \
     printf("(%d) %s: superlu_malloc_total (MB) %.6f\n", \
 	   pnum, where, superlu_malloc_total*1e-6); \
+	fflush(stdout);        \	   
 }
 
 #define SUPERLU_MAX(x, y) 	( (x) > (y) ? (x) : (y) )

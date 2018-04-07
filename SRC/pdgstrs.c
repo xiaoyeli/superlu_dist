@@ -737,7 +737,7 @@ pdgstrs(int_t n, LUstruct_t *LUstruct,
 	float msg_vol = 0, msg_cnt = 0;
 	// #endif 
 
-	int_t *msgcnt=(int_t *) SUPERLU_MALLOC(4 * sizeof(int_t));   /* Count the size of the message xfer'd in each buffer:
+	int_t msgcnt[4];   /* Count the size of the message xfer'd in each buffer:
 								      *     0 : transferred in Lsub_buf[]
 								      *     1 : transferred in Lval_buf[]
 								      *     2 : transferred in Usub_buf[]
@@ -2051,6 +2051,12 @@ for (i=0;i<nroot_send;i++){
 
 
 		/* Deallocate storage. */
+		
+		for(i=0;i<num_thread;i++){
+			PStatFree(stat_loc[i]);
+			SUPERLU_FREE(stat_loc[i]);
+		}
+		
 		SUPERLU_FREE(stat_loc);
 		SUPERLU_FREE(rtemp);
 		SUPERLU_FREE(lsum);
