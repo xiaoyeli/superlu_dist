@@ -900,7 +900,7 @@ pzgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 	            }
 #endif
                 } else { /* use largeDiag_AWPM */
-		    c2pp_GetAWPM(A, grid, ScalePermstruct);
+		    c2cpp_GetAWPM(A, grid, ScalePermstruct);
 		} /* end if options->RowPerm ... */
 
 	        t = SuperLU_timer_() - t;

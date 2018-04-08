@@ -39,6 +39,8 @@ set(sources
   dmach_dist.c
   colamd.c
   superlu_dist_version.c
+  c2cpp_GetAWPM.cpp
+  AWPM_CombBLAS.h
 )
 if (MSVC)
   list(APPEND sources wingetopt.c)
