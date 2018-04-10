@@ -8,13 +8,31 @@
 cmake_minimum_required(VERSION 2.8.12 FATAL_ERROR)
 
 # Project version numbers
-project(SuperLU_DIST NONE)
+project(SuperLU_DIST C)
 set(VERSION_MAJOR "5")
 set(VERSION_MINOR "3")
 set(VERSION_BugFix "0")
 set(PROJECT_VERSION ${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_BugFix})
 
 list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake")
+
+# Set up options
+option(enable_blaslib   "Build the CBLAS library" ${enable_blaslib_DEFAULT})
+option(enable_doc       "Build doxygen documentation" OFF)
+option(enable_double    "Enable double precision library" ON)
+option(enable_complex16 "Enable complex16 precision library" ON)
+option(enable_tests  "Build tests" ON)
+option(enable_examples  "Build examples" ON)
+option(enable_parmetislib   "Build the ParMETIS library" ON)
+option(TPL_PARMETIS_LIBRARIES "List of absolute paths to ParMETIS link libraries [].")
+option(TPL_PARMETIS_INCLUDE_DIRS "List of absolute paths to ParMETIS include directories [].")
+option(enable_combblaslib   "Build the CombBLAS library" OFF)
+option(TPL_COMBBLAS_LIBRARIES "List of absolute paths to CombBLAS link libraries [].")
+option(TPL_COMBBLAS_INCLUDE_DIRS "List of absolute paths to CombBLAS include directories [].")
+
+if (NOT enable_combblaslib)
+  SET(XSDK_ENABLE_CXX OFF)
+endif()
 
 ######################################################################
 #
@@ -23,7 +41,6 @@ MESSAGE("\nProcess XSDK defaults ...")
 # SET(USE_XSDK_DEFAULTS_DEFAULT TRUE) # Set to false if desired
 INCLUDE("cmake/XSDKDefaults.cmake")
 INCLUDE(CTest)
-
 ######################################################################
 
 ######################################################################
@@ -64,7 +81,6 @@ else()
   set(PROJECT_NAME_LIB_EXPORT libsuperlu_dist.a)
 endif()
 
-enable_language (C)
 if (XSDK_ENABLE_CXX)
   enable_language (CXX)
   set(NOCXX FALSE)
@@ -87,17 +103,6 @@ if (NOT CMAKE_INSTALL_PREFIX)
   set(CMAKE_INSTALL_PREFIX /usr/local)
 endif()
 
-
-# setup options
-option(enable_blaslib   "Build the CBLAS library" ${enable_blaslib_DEFAULT})
-option(enable_parmetislib   "Build the ParMETIS library" ON)
-option(enable_doc       "Build doxygen documentation" OFF)
-option(enable_double    "Enable double precision library" ON)
-option(enable_complex16 "Enable complex16 precision library" ON)
-option(enable_tests  "Build tests" ON)
-option(enable_examples  "Build examples" ON)
-option(TPL_PARMETIS_LIBRARIES "List of absolute paths to ParMETIS link libraries [].")
-option(TPL_PARMETIS_INCLUDE_DIRS "List of absolute paths to ParMETIS include directories [].")
 
 if(NOT MSVC)
   include(GNUInstallDirs)
@@ -227,6 +232,41 @@ if(PARMETIS_FOUND)
   set(HAVE_PARMETIS TRUE)
 endif()
 
+#--------------------- CombBLAS ---------------------
+if (enable_combblaslib)   ## want to use CombBLAS
+  if (NOT TPL_COMBBLAS_LIBRARIES)
+    message(FATAL_ERROR "TPL_COMBBLAS_LIBRARIES option should be set for COMBBLAS support to be enabled.")
+  endif()
+
+  if (NOT TPL_COMBBLAS_INCLUDE_DIRS)
+    message(FATAL_ERROR "TPL_COMBBLAS_INCLUDE_DIRS option be set for COMBBLAS support to be enabled.")
+  endif()
+  foreach(dir ${TPL_COMBBLAS_INCLUDE_DIRS})
+    if (NOT EXISTS ${dir})
+      message(FATAL_ERROR "COMBBLAS include directory not found: ${dir}")
+    endif()
+    set(CMAKE_CXX_FLAGS "-I${dir} ${CMAKE_CXX_FLAGS}")
+  endforeach()
+
+  message("-- Enabled support for COMBBLAS")
+  set(COMBBLAS_FOUND TRUE)
+
+  set(COMBBLAS_LIB ${TPL_COMBBLAS_LIBRARIES})
+  # fix up COMBBLAS library names
+  string (REPLACE ";" " " COMBBLAS_LIB_STR "${COMBBLAS_LIB}")
+  set(COMBBLAS_LIB_EXPORT ${COMBBLAS_LIB_STR})
+
+else()
+  message("-- Will not link with CombBLAS.")
+endif()
+
+if(COMBBLAS_FOUND)
+  set(HAVE_COMBBLAS TRUE)
+  set(LOADER $(CXX))
+else()
+  set(LOADER $(CC))
+endif()
+
 
 ######################################################################
 #
@@ -238,6 +278,9 @@ include_directories(${CMAKE_BINARY_DIR}/SRC) # For superlu_dist_config.h
 # include_directories(${CMAKE_SOURCE_DIR}/SRC)
 if (TPL_PARMETIS_INCLUDE_DIRS)
   include_directories(${TPL_PARMETIS_INCLUDE_DIRS})  ## parmetis
+endif ()
+if (TPL_COMBBLAS_INCLUDE_DIRS)
+  include_directories(${TPL_COMBBLAS_INCLUDE_DIRS})  ## CombBLAS
 endif ()
 include_directories(${MPI_C_INCLUDE_PATH})
 

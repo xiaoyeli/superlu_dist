@@ -900,7 +900,13 @@ pzgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 	            }
 #endif
                 } else { /* use largeDiag_AWPM */
+#ifdef HAVE_COMBBLAS
 		    c2cpp_GetAWPM(A, grid, ScalePermstruct);
+#else
+		    if ( iam == 0 ) {
+		        printf("CombBLAS is not available\n"); fflush(stdout);
+		    }
+#endif
 		} /* end if options->RowPerm ... */
 
 	        t = SuperLU_timer_() - t;

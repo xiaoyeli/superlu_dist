@@ -48,18 +48,22 @@ then
   export PARMETIS_ROOT=~/lib/static/parmetis-4.0.3 
   export PARMETIS_BUILD_DIR=${PARMETIS_ROOT}/build/Linux-x86_64
   echo "ParMetis root: $PARMETIS_ROOT"
+  export COMBBLAS_DIR=${HOME}/Dropbox/Codes/CombBLAS_beta_16_1
   cmake .. \
     -DTPL_PARMETIS_INCLUDE_DIRS="${PARMETIS_ROOT}/include;${PARMETIS_ROOT}/metis/include" \
     -DTPL_PARMETIS_LIBRARIES="${PARMETIS_BUILD_DIR}/libparmetis/libparmetis.a;${PARMETIS_BUILD_DIR}/libmetis/libmetis.a" \
+    -DTPL_COMBBLAS_INCLUDE_DIRS="${COMBBLAS_DIR};${COMBBLAS_DIR}/BipartiteMatchings" \
+    -DTPL_COMBBLAS_LIBRARIES="${COMBBLAS_DIR}/libCommGridlib.a;${COMBBLAS_DIR}/libMPITypelib.a" \
     -DCMAKE_C_FLAGS="-std=c99 -g -DPRNTlevel=1 -DDEBUGlevel=0" \
     -DCMAKE_C_COMPILER=mpicc \
     -DCMAKE_CXX_COMPILER=mpicxx \
     -DCMAKE_CXX_FLAGS="-std=c++11" \
     -Denable_blaslib=OFF \
+    -Denable_combblaslib=OFF \
     -DBUILD_SHARED_LIBS=OFF \
     -DCMAKE_INSTALL_PREFIX=.
-#   -Denable_parmetislib=OFF
 fi
+#   -Denable_parmetislib=OFF
 #    -DXSDK_INDEX_SIZE=64 \
 
 # make VERBOSE=1

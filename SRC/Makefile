@@ -34,10 +34,14 @@ ALLAUX 	= sp_ienv.o etree.o sp_colorder.o get_perm_c.o \
 	  pxerr_dist.o superlu_timer.o symbfact.o \
 	  psymbfact.o psymbfact_util.o get_perm_c_parmetis.o mc64ad_dist.o \
 	  static_schedule.o xerr_dist.o smach_dist.o dmach_dist.o \
-	  superlu_dist_version.o c2cpp_GetAWPM.o
+	  superlu_dist_version.o
 
 ifeq "${ACC}" "GPU"
 ALLAUX += cublas_utils.o
+endif
+
+ifeq ($(HAVE_COMBBLAS),TRUE)
+ALLAUX += c2cpp_GetAWPM.o
 endif
 
 #
@@ -78,10 +82,15 @@ ifeq ($(XSDK_INDEX_SIZE),64)
 else
 		printf "/* #define XSDK_INDEX_SIZE 64 */\n" >> superlu_dist_config.h
 endif
-ifeq ($(HAVE_PARMETIS),FALSE)
-		printf "/* #define HAVE_PARMETIS TRUE */\n" >> superlu_dist_config.h
-else
+ifeq ($(HAVE_PARMETIS),TRUE)
 		printf "#define HAVE_PARMETIS TRUE\n" >> superlu_dist_config.h
+else
+		printf "/* #define HAVE_PARMETIS TRUE */\n" >> superlu_dist_config.h
+endif
+ifeq ($(HAVE_COMBBLAS),TRUE)
+		printf "#define HAVE_COMBBLAS TRUE\n" >> superlu_dist_config.h
+else
+		printf "/* #define HAVE_COMBBLAS TRUE */\n" >> superlu_dist_config.h
 endif
 	printf "#if (XSDK_INDEX_SIZE == 64)\n#define _LONGINT 1\n#endif\n" >> superlu_dist_config.h
 

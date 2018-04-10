@@ -19,7 +19,7 @@ at the top-level directory.
  * </pre>
  */
 #include <math.h>
-/*#include "AWPM_CombBLAS.h"*/
+#include "AWPM_CombBLAS.hpp"
 #include "superlu_ddefs.h"
 
 /*! \brief
@@ -58,6 +58,6 @@ int
 c2cpp_GetAWPM(SuperMatrix *A, gridinfo_t *grid,
 	     ScalePermstruct_t *ScalePermstruct)
 {
-    // GetAWPM(A, grid, ScalePermstruct);
+    GetAWPM(A, grid, ScalePermstruct);
     return 0;
 }

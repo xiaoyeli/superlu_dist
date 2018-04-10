@@ -39,12 +39,15 @@ set(sources
   dmach_dist.c
   colamd.c
   superlu_dist_version.c
-  c2cpp_GetAWPM.cpp
-  AWPM_CombBLAS.h
 )
 if (MSVC)
   list(APPEND sources wingetopt.c)
 endif ()
+
+if (HAVE_COMBBLAS)
+  list(APPEND sources c2cpp_GetAWPM.cpp AWPM_CombBLAS.hpp)
+endif()
+
 set_source_files_properties(superlu_timer.c PROPERTIES COMPILE_FLAGS -O0)
 
 if(enable_double)
@@ -136,18 +139,28 @@ if (BUILD_SHARED_LIBS AND BUILD_STATIC_LIBS)
   list(APPEND targets superlu_dist-static)
 endif()
 
-set(superlu_dist_libs ${MPI_C_LIBRARIES} ${BLAS_LIB} ${PARMETIS_LIB})
+set(superlu_dist_libs ${MPI_C_LIBRARIES} ${BLAS_LIB} 
+    ${PARMETIS_LIB} ${COMBBLAS_LIB})
 if (NOT MSVC)
   list(APPEND superlu_dist_libs m)
 endif ()
 
 foreach(target ${targets})
-  target_link_libraries(${target} ${superlu_dist_libs})
-  set_target_properties(${target} PROPERTIES
-                        OUTPUT_NAME superlu_dist
-                        VERSION ${PROJECT_VERSION}
-                        SOVERSION ${VERSION_MAJOR}
-  )
+    target_link_libraries(${target} ${superlu_dist_libs})
+    if (HAVE_COMBBLAS)
+        set_target_properties(${target} PROPERTIES
+                              OUTPUT_NAME superlu_dist
+                              VERSION ${PROJECT_VERSION}
+                              SOVERSION ${VERSION_MAJOR}
+			      LINKER_LANGUAGE CXX
+			      )
+    else()
+        set_target_properties(${target} PROPERTIES
+                              OUTPUT_NAME superlu_dist
+                              VERSION ${PROJECT_VERSION}
+                              SOVERSION ${VERSION_MAJOR}
+			      )
+    endif()
 endforeach(target)
 
 target_compile_definitions(superlu_dist PRIVATE SUPERLU_DIST_EXPORTS)

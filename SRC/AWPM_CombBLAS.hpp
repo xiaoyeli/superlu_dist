@@ -2,8 +2,8 @@
 #define AWPM_CombBLAS_h
 
 
-#include "CombBLAS/CombBLAS.h"
-#include "CombBLAS/BipartiteMatchings/ApproxWeightPerfectMatching.h"
+#include "CombBLAS.h"
+#include "ApproxWeightPerfectMatching.h"
 #include "superlu_ddefs.h"
 
 
@@ -21,7 +21,8 @@ using namespace combblas;
  * =========
  *
  * A      (input) SuperMatrix*
- *        The distributed input matrix A of dimension (A->nrow, A->ncol).
+ *      The distributed input matrix A of dimension (A->nrow, A->ncol).
+ *        A may be overwritten by diag(R)*A*diag(C)*Pc^T.
  *        The type of A can be: Stype = SLU_NR_loc; Dtype = SLU_D; Mtype = SLU_GE.
  *
  * perm   (input) int_t*
@@ -38,8 +39,8 @@ using namespace combblas;
  *
  * </pre>
  */
-int
-GetAWPM(SuperMatrix *A, int_t *perm, gridinfo_t *grid, ScalePermstruct_t *ScalePermstruct)
+void
+GetAWPM(SuperMatrix *A, gridinfo_t *grid, ScalePermstruct_t *ScalePermstruct)
 {
     NRformat_loc *Astore;
     int_t  i, irow, fst_row, j, jcol, k, m, n, m_loc;
@@ -49,9 +50,14 @@ GetAWPM(SuperMatrix *A, int_t *perm, gridinfo_t *grid, ScalePermstruct_t *ScaleP
     int_t  RecvCnt; /* number of remote nonzeros to be sent */
     double *nzval_a;
     int    iam, it, p, procs;
+    int_t *perm=NULL; // placeholder for load balancing permutation for CombBLAS
     procs = grid->nprow * grid->npcol;
     
-    combblas::SpParMat < int_t, double, combblas::SpDCCols<int_t,double> > Adcsc(MPI_COMM_WORLD);
+    if(grid->nprow != grid->npcol)
+    {
+        printf("AWPM only supports square process grid. Retuning without a permutation.\n");
+    }
+    combblas::SpParMat < int_t, double, combblas::SpDCCols<int_t,double> > Adcsc;
     std::vector< std::vector < std::tuple<int_t,int_t,double> > > data(procs);
     
     /* ------------------------------------------------------------
@@ -72,7 +78,7 @@ GetAWPM(SuperMatrix *A, int_t *perm, gridinfo_t *grid, ScalePermstruct_t *ScaleP
      COUNT THE NUMBER OF NONZEROS TO BE SENT TO EACH PROCESS,
      THEN ALLOCATE SPACE.
      ------------------------------------------------------------*/
-    nzval_a = Astore->nzval;
+    nzval_a = (double *) Astore->nzval;
     nnz_loc = 0;
     for (i = 0; i < m_loc; ++i) {
         for (j = Astore->rowptr[i]; j < Astore->rowptr[i+1]; ++j) {
@@ -114,11 +120,11 @@ GetAWPM(SuperMatrix *A, int_t *perm, gridinfo_t *grid, ScalePermstruct_t *ScaleP
     
     MPI_Allgatherv(senddata, sendcnt, MPIType<int_t>(), ScalePermstruct->perm_r, recvcnt, rdispls, MPIType<int_t>(), World);
     
+    
+    
 #if ( DEBUGlevel>=1 )
     CHECK_MALLOC(iam, "Exit pdCSR_loc_to_2DBlock()");
 #endif
-
-    return 0;
 }
 
 #endif /* AWPM_CombBLAS_h */

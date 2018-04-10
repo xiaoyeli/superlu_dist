@@ -3,6 +3,9 @@
 /* Enable parmetis */
 #cmakedefine HAVE_PARMETIS @HAVE_PARMETIS@
 
+/* Enable CombBLAS */
+#cmakedefine HAVE_COMBBLAS @HAVE_COMBBLAS@
+
 /* enable 64bit index mode */
 #cmakedefine XSDK_INDEX_SIZE @XSDK_INDEX_SIZE@
 
