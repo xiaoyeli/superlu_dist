@@ -7,8 +7,6 @@
 #include "superlu_ddefs.h"
 
 
-using namespace combblas;
-
 /*! \brief
  *
  * <pre>
@@ -43,14 +41,12 @@ void
 GetAWPM(SuperMatrix *A, gridinfo_t *grid, ScalePermstruct_t *ScalePermstruct)
 {
     NRformat_loc *Astore;
-    int_t  i, irow, fst_row, j, jcol, k, m, n, m_loc;
+    int_t  i, irow, fst_row, j, jcol, m, n, m_loc;
     int_t lirow, ljcol;
     int_t  nnz_loc;    /* number of local nonzeros */
-    int_t  SendCnt; /* number of remote nonzeros to be sent */
-    int_t  RecvCnt; /* number of remote nonzeros to be sent */
     double *nzval_a;
-    int    iam, it, p, procs;
-    int_t *perm=NULL; // placeholder for load balancing permutation for CombBLAS
+    int    iam, p, procs;
+    int_t *perm=nullptr; // placeholder for load balancing permutation for CombBLAS
     procs = grid->nprow * grid->npcol;
     
     if(grid->nprow != grid->npcol)
@@ -93,7 +89,6 @@ GetAWPM(SuperMatrix *A, gridinfo_t *grid, ScalePermstruct_t *ScalePermstruct)
                 jcol = Astore->colind[j];
             }
             p = Adcsc.Owner(m, n , irow, jcol, lirow, ljcol);
-            //++nnzToSend[p];
             ++ nnz_loc;
             data[p].push_back(std::make_tuple(lirow,ljcol,nzval_a[j]));
             
@@ -101,9 +96,9 @@ GetAWPM(SuperMatrix *A, gridinfo_t *grid, ScalePermstruct_t *ScalePermstruct)
     }
     
     Adcsc.SparseCommon(data, nnz_loc, m, n, std::plus<double>());
-    FullyDistVec<int_t, int_t> mateRow2Col ( Adcsc.getcommgrid(), m, (int_t) -1);
-    FullyDistVec<int_t, int_t> mateCol2Row ( Adcsc.getcommgrid(), n, (int_t) -1);
-    AWPM(Adcsc, mateRow2Col, mateCol2Row,true);
+    combblas::FullyDistVec<int_t, int_t> mateRow2Col ( Adcsc.getcommgrid(), m, (int_t) -1);
+    combblas::FullyDistVec<int_t, int_t> mateCol2Row ( Adcsc.getcommgrid(), n, (int_t) -1);
+    combblas::AWPM(Adcsc, mateRow2Col, mateCol2Row,true);
     
     // now gather the matching vector
     MPI_Comm World = mateRow2Col.getcommgrid()->GetWorld();
@@ -118,9 +113,10 @@ GetAWPM(SuperMatrix *A, gridinfo_t *grid, ScalePermstruct_t *ScalePermstruct)
     }
     int_t *senddata = (int_t *)mateRow2Col.GetLocArr();
     
-    MPI_Allgatherv(senddata, sendcnt, MPIType<int_t>(), ScalePermstruct->perm_r, recvcnt, rdispls, MPIType<int_t>(), World);
+    MPI_Allgatherv(senddata, sendcnt, combblas::MPIType<int_t>(), ScalePermstruct->perm_r, recvcnt, rdispls, combblas::MPIType<int_t>(), World);
     
-    
+    delete[] rdispls;
+    delete[] recvcnt;
     
 #if ( DEBUGlevel>=1 )
     CHECK_MALLOC(iam, "Exit pdCSR_loc_to_2DBlock()");
