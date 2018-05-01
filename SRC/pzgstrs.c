@@ -483,10 +483,12 @@ pzCompute_Diag_Inv(int_t n, LUstruct_t *LUstruct,gridinfo_t *grid, SuperLUStat_t
 	t = SuperLU_timer_();
 #endif 
 
+#if ( PRNTlevel>=1 )
 	if(grid->iam==0){
 		printf("computing inverse of diagonal blocks...\n");
 		fflush(stdout);
 	}
+#endif	
 	/*
 	 * Initialization.
 	 */
@@ -770,10 +772,13 @@ pzgstrs(int_t n, LUstruct_t *LUstruct,
 		}
 	}
 #endif
+
+#if ( PRNTlevel>=1 )
 	if(grid->iam==0){
 		printf("num_thread: %5d\n",num_thread);
 		fflush(stdout);
 	}
+#endif	
 
 	MPI_Barrier( grid->comm );
 	TIC(t1_sol);
