@@ -315,8 +315,11 @@ pzgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
     int nnodes, *sendcnts, *sdispls, *recvcnts, *rdispls, *srows, *rrows;
     etree_node *head, *tail, *ptr;
     int *num_child;
-    int num_look_aheads, look_id, *look_ahead;
+    int num_look_aheads, look_id;
+    int *look_ahead; /* global look_ahead table */
     int_t *perm_c_supno, *iperm_c_supno;
+          /* perm_c_supno[k] = j means at the k-th step of elimination,
+	   * the j-th supernode is chosen. */
     MPI_Request *recv_req, **recv_reqs, **send_reqs, **send_reqs_u,
         **recv_reqs_u;
     MPI_Request *send_req, *U_diag_blk_send_req = NULL;
@@ -1623,17 +1626,15 @@ pzgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
             }
             iukp = iukp0;
 #ifdef ISORT
-            isort (nub, iperm_u, perm_u);
+            /* iperm_u is sorted based on elimination order; 
+               perm_u reorders the U blocks to match the elimination order. */
+            isort (nub, iperm_u, perm_u); 
 #else
             qsort (perm_u, (size_t) nub, 2 * sizeof (int_t),
                    &superlu_sort_perm);
 #endif
-            j = jj0 = 0;
 
 /************************************************************************/
-#if 0
-	for (jj = 0; jj < nub; ++jj) assert(perm_u[jj] == jj); /* Sherry */
-#endif
             double ttx =SuperLU_timer_();
 
 //#include "zlook_ahead_update_v4.c"
