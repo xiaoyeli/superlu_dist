@@ -84,6 +84,7 @@ diagnostic printing level for debugging purpose. (default 0)
 ```      
 
 #### 1.2. The BLAS library.
+
 The parallel routines in SuperLU_DIST use some BLAS routines on each MPI
 process. Moreover, if you enable OpenMP with multiple threads, you need to
 link with a multithreaded BLAS library. Otherwise performance will be poor.
@@ -129,6 +130,7 @@ You can disable ParMetis with the following line in SRC/superlu_dist_config.h:
 ```
 #undef HAVE_PARMETIS
 ```
+
  ##### 1.3.2 CombBLAS.
 
 You can use parallel approximate weight perfect matching (AWPM) algorithm
@@ -149,6 +151,7 @@ You can disable CombBLAS with the following line in SRC/superlu_dist_config.h:
 ```
 
 #### 1.4. C preprocessor definition CDEFS.
+
 In the header file SRC/Cnames.h, we use macros to determine how
 C routines should be named so that they are callable by Fortran.
 (Some vendor-supplied BLAS libraries do not have C interfaces. So the 
