@@ -83,7 +83,7 @@ printing level to show solver's execution details. (default 0)
 diagnostic printing level for debugging purpose. (default 0)
 ```      
 
-1.2. The BLAS library.
+#### 1.2. The BLAS library.
 The parallel routines in SuperLU_DIST use some BLAS routines on each MPI
 process. Moreover, if you enable OpenMP with multiple threads, you need to
 link with a multithreaded BLAS library. Otherwise performance will be poor.
@@ -109,9 +109,9 @@ top-level SuperLU_DIST/ directory and do the following:
 to make the BLAS library from the routines in the
 ` CBLAS/ subdirectory.`
 
-1.3. External libraries. 
+#### 1.3. External libraries. 
 
-  1.3.1 Metis and ParMetis.
+ ##### 1.3.1 Metis and ParMetis.
 
 If you will use Metis or ParMetis for sparsity ordering, you will
 need to install them yourself. Since ParMetis package already
@@ -129,7 +129,7 @@ You can disable ParMetis with the following line in SRC/superlu_dist_config.h:
 ```
 #undef HAVE_PARMETIS
 ```
-  1.3.2 CombBLAS.
+ ##### 1.3.2 CombBLAS.
 
 You can use parallel approximate weight perfect matching (AWPM) algorithm
 to perform numerical pre-pivoting for stability. The default pre-pivoting
@@ -148,7 +148,7 @@ You can disable CombBLAS with the following line in SRC/superlu_dist_config.h:
 #undef HAVE_COMBBLAS
 ```
 
-1.4. C preprocessor definition CDEFS.
+#### 1.4. C preprocessor definition CDEFS.
 In the header file SRC/Cnames.h, we use macros to determine how
 C routines should be named so that they are callable by Fortran.
 (Some vendor-supplied BLAS libraries do not have C interfaces. So the 
@@ -163,7 +163,8 @@ The possible options for CDEFS are:
       that compiled by C;
 -DUpCase: Fortran expects a C routine name to be all uppercase.
 ```
-1.5. Multicore and GPU (optional).
+
+#### 1.5. Multicore and GPU (optional).
 
 To use OpenMP parallelism, need to link with an OpenMP library, and
 set the number of threads you wish to use as follows (bash):
