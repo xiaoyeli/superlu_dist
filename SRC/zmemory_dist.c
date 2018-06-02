@@ -23,14 +23,14 @@ at the top-level directory.
 
 
 /* Variables external to this file */
-extern LU_stack_t stack;
+extern SuperLU_LU_stack_t stack;
 
 
 void *zuser_malloc_dist(int_t bytes, int_t which_end)
 {
     void *buf;
     
-    if ( StackFull(bytes) ) return (NULL);
+    if ( SuperLU_StackFull(bytes) ) return (NULL);
 
     if ( which_end == HEAD ) {
 	buf = (char*) stack.array + stack.top1;

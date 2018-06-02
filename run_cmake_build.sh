@@ -6,33 +6,37 @@ then
     echo "NERSC_HOST undefined"
 elif [ "$NERSC_HOST" == "edison" ]
 then
+    mkdir edison-build; cd edison-build;
+#    export PARMETIS_ROOT=~/Edison/lib/parmetis-4.0.3_64
     export PARMETIS_ROOT=~/Edison/lib/parmetis-4.0.3
-    export PARMETIS_BUILD_DIR=${PARMETIS_ROOT}/static-build/Linux-x86_64
+    export PARMETIS_BUILD_DIR=${PARMETIS_ROOT}/build/Linux-x86_64
     cmake .. \
-    -DUSE_XSDK_DEFAULTS=FALSE\
     -DTPL_PARMETIS_INCLUDE_DIRS="${PARMETIS_ROOT}/include;${PARMETIS_ROOT}/metis/include" \
     -DTPL_PARMETIS_LIBRARIES="${PARMETIS_BUILD_DIR}/libparmetis/libparmetis.a;${PARMETIS_BUILD_DIR}/libmetis/libmetis.a" \
-    -DCMAKE_C_FLAGS="-std=c99 -fPIC" \
+    -DCMAKE_C_FLAGS="-std=c99 -fPIC -DPRNTlevel=1" \
     -DCMAKE_Fortran_COMPILER=ftn \
     -Denable_blaslib=OFF \
-#    -DTPL_BLAS_LIBRARIES="-mkl" \
+    -DTPL_BLAS_LIBRARIES="-mkl" \
     -DBUILD_SHARED_LIBS=OFF \
     -DCMAKE_INSTALL_PREFIX=.
+#    -DXSDK_INDEX_SIZE=64 \
 #    -DCMAKE_EXE_LINKER_FLAGS="-shared"
 elif [ "$NERSC_HOST" == "cori" ]
 then
-    export PARMETIS_ROOT=~/Cori/lib/parmetis-4.0.3
+    rm -fr cori-build; mkdir cori-build; cd cori-build;
+    export PARMETIS_ROOT=~/Cori/lib/parmetis-4.0.3-64
 #    export PARMETIS_BUILD_DIR=${PARMETIS_ROOT}/shared-build
-    setenv PARMETIS_BUILD_DIR ${PARMETIS_ROOT}/static-build/Linux-x86_64
+    export PARMETIS_BUILD_DIR=${PARMETIS_ROOT}/build/Linux-x86_64
     cmake .. \
-    -DUSE_XSDK_DEFAULTS=TRUE\
     -DTPL_PARMETIS_INCLUDE_DIRS="${PARMETIS_ROOT}/include;${PARMETIS_ROOT}/metis/include" \
     -DTPL_PARMETIS_LIBRARIES="${PARMETIS_BUILD_DIR}/libparmetis/libparmetis.a;${PARMETIS_BUILD_DIR}/libmetis/libmetis.a" \
     -Denable_blaslib=OFF \
+    -DTPL_BLAS_LIBRARIES="-mkl" \
     -DCMAKE_Fortran_COMPILER=ftn \
-    -DCMAKE_C_FLAGS="-std=c99 -fPIC" \
+    -DCMAKE_C_FLAGS="-std=c99 -fPIC -DPRNTlevel=1" \
+    -DCMAKE_INSTALL_PREFIX=. \
+    -DXSDK_INDEX_SIZE=64
 #    -DCMAKE_EXE_LINKER_FLAGS="-shared" \
-    -DCMAKE_INSTALL_PREFIX=.
 fi
 
 THISHOST=`hostname -s`
@@ -40,21 +44,27 @@ echo "host: $THISHOST"
 if [ "$THISHOST" == "ssg1" ]
 then
   rm -fr ssg1-build; mkdir ssg1-build; cd ssg1-build;
-  export PARMETIS_ROOT=~/lib/static/64-bit/parmetis-4.0.3 
-#  export PARMETIS_ROOT=~/lib/static/parmetis-4.0.3 
+#  export PARMETIS_ROOT=~/lib/static/64-bit/parmetis-4.0.3 
+  export PARMETIS_ROOT=~/lib/static/parmetis-4.0.3 
   export PARMETIS_BUILD_DIR=${PARMETIS_ROOT}/build/Linux-x86_64
   echo "ParMetis root: $PARMETIS_ROOT"
+  export COMBBLAS_DIR=${HOME}/Dropbox/Codes/CombBLAS_beta_16_1
   cmake .. \
     -DTPL_PARMETIS_INCLUDE_DIRS="${PARMETIS_ROOT}/include;${PARMETIS_ROOT}/metis/include" \
     -DTPL_PARMETIS_LIBRARIES="${PARMETIS_BUILD_DIR}/libparmetis/libparmetis.a;${PARMETIS_BUILD_DIR}/libmetis/libmetis.a" \
-    -DCMAKE_C_FLAGS="-std=c99 -g -DPRNTlevel=0 -DDEBUGlevel=0" \
-    -Denable_blaslib=OFF \
-    -DBUILD_SHARED_LIBS=OFF \
+    -DTPL_COMBBLAS_INCLUDE_DIRS="${COMBBLAS_DIR};${COMBBLAS_DIR}/BipartiteMatchings" \
+    -DTPL_COMBBLAS_LIBRARIES="${COMBBLAS_DIR}/libCommGridlib.a;${COMBBLAS_DIR}/libMPITypelib.a" \
+    -DCMAKE_C_FLAGS="-std=c99 -g -DPRNTlevel=1 -DDEBUGlevel=0" \
     -DCMAKE_C_COMPILER=mpicc \
-    -DXSDK_INDEX_SIZE=64 \
+    -DCMAKE_CXX_COMPILER=mpicxx \
+    -DCMAKE_CXX_FLAGS="-std=c++11" \
+    -Denable_blaslib=OFF \
+    -Denable_combblaslib=OFF \
+    -DBUILD_SHARED_LIBS=OFF \
     -DCMAKE_INSTALL_PREFIX=.
-#   -Denable_parmetislib=OFF
 fi
+#   -Denable_parmetislib=OFF
+#    -DXSDK_INDEX_SIZE=64 \
 
 # make VERBOSE=1
 # make test

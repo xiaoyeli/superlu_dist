@@ -22,7 +22,6 @@ at the top-level directory.
  */
 
 #include <math.h>
-#include <superlu_dist_config.h>
 #include "superlu_ddefs.h"
 
 /*! \brief
@@ -143,7 +142,7 @@ int main(int argc, char *argv[])
         options.Equil             = YES;
         options.ParSymbFact       = NO;
         options.ColPerm           = METIS_AT_PLUS_A;
-        options.RowPerm           = LargeDiag;
+        options.RowPerm           = LargeDiag_MC64;
         options.ReplaceTinyPivot  = NO;
         options.IterRefine        = DOUBLE;
         options.Trans             = NOTRANS;
@@ -153,11 +152,12 @@ int main(int argc, char *argv[])
      */
     set_default_options_dist(&options);
 #if 0
-    options.ColPerm = PARMETIS;
-    options.ParSymbFact = YES;
     options.RowPerm = NOROWPERM;
+    options.RowPerm = LargeDiag_AWPM;
     options.IterRefine = NOREFINE;
+    options.ColPerm = NATURAL;
     options.Equil = NO; 
+    options.ReplaceTinyPivot = YES;
 #endif
 
     if (!iam) {

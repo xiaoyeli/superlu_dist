@@ -199,6 +199,9 @@ cmake .. \
 
 )
 ```
+You can disable ParMetis with the following cmake option:
+`-Denable_parmetislib=FALSE`
+
 To actually build, type:
 `make`
 

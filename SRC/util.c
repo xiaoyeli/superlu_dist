@@ -328,7 +328,7 @@ void set_default_options_dist(superlu_dist_options_t *options)
 #else
     options->ColPerm            = MMD_AT_PLUS_A;
 #endif
-    options->RowPerm           = LargeDiag;
+    options->RowPerm           = LargeDiag_MC64;
     options->ReplaceTinyPivot  = NO;
     options->IterRefine        = SLU_DOUBLE;
     options->Trans             = NOTRANS;
@@ -877,11 +877,11 @@ void isort(int_t N, int_t *ARRAY1, int_t *ARRAY2)
  * N       (input) INTEGER
  *          On entry, specifies the size of the arrays.
  *
- * ARRAY1  (input/output) DOUBLE PRECISION ARRAY of LENGTH N
+ * ARRAY1  (input/output) integer array of length N
  *          On entry, contains the array to be sorted.
  *          On exit, contains the sorted array.
  *
- * ARRAY2  (input/output) DOUBLE PRECISION ARRAY of LENGTH N
+ * ARRAY2  (input/output) integer array of length N
  *          On entry, contains the array to be sorted.
  *          On exit, contains the sorted array.
  */
@@ -896,7 +896,7 @@ void isort(int_t N, int_t *ARRAY1, int_t *ARRAY2)
 		  TEMP = ARRAY1[J];
 		  ARRAY1[J] = ARRAY1[J + IGAP];
 		  ARRAY1[J + IGAP] = TEMP;
-		  TEMP = ARRAY2[J];
+		  TEMP = ARRAY2[J];  
 		  ARRAY2[J] = ARRAY2[J + IGAP];
 		  ARRAY2[J + IGAP] = TEMP;
 		  J = J - IGAP;
@@ -1087,7 +1087,7 @@ arrive_at_ublock (int_t j,      /* j-th block in a U panel */
 	 * usub[] - index array for panel U(k,:)
 	 */
         // printf("iukp %d \n",*iukp );
-        *jb = usub[*iukp];      /* Global block number of block U(k,j). */
+        *jb = usub[*iukp];      /* Global block number of block U(k,jj). */
         // printf("jb %d \n",*jb );
         *nsupc = SuperSize (*jb);
         // printf("nsupc %d \n",*nsupc );

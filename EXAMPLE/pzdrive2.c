@@ -22,7 +22,6 @@ at the top-level directory.
  */
 
 #include <math.h>
-#include <superlu_dist_config.h>
 #include "superlu_zdefs.h"
 
 /*! \brief
@@ -147,7 +146,7 @@ int main(int argc, char *argv[])
         options.Fact = DOFACT;
         options.Equil = YES;
         options.ColPerm = METIS_AT_PLUS_A;
-        options.RowPerm = LargeDiag;
+        options.RowPerm = LargeDiag_MC64;
         options.ReplaceTinyPivot = NO;
         options.Trans = NOTRANS;
         options.IterRefine = DOUBLE;

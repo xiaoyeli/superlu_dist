@@ -698,6 +698,7 @@ extern void    superlu_free_dist (void*);
 extern int_t   *intMalloc_dist (int_t);
 extern int_t   *intCalloc_dist (int_t);
 extern int_t   mc64id_dist(int_t *);
+extern int     c2cpp_GetAWPM(SuperMatrix *, gridinfo_t *, ScalePermstruct_t *);
 extern void  arrive_at_ublock (int_t, int_t *, int_t *, int_t *,
 			       int_t *, int_t *, int_t, int_t, 
 			       int_t *, int_t *, int_t *, gridinfo_t *);

@@ -47,10 +47,14 @@ static_schedule(superlu_dist_options_t * options, int m, int n,
 {
 /* 
  * Arguments
+ * =========
  *
  * perm_c_supno (output) 
- *      perm_c_superno[k] = j means at the k-th step of elimination, the j-th
- *      panel is chosen.
+ *      perm_c_supno[k] = j means at the k-th step of elimination, the j-th
+ *      supernode is chosen.
+ * iperm_c_supno (output), inverse of perm_c_supno[]
+ *      iperm_c_supno[j] = k means the j-th supernode will be scheduled
+ *      at the k-th step of elimination.
  * 
  */
     int_t *xsup;

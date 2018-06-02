@@ -28,7 +28,6 @@
 #######################################################################
 
 include ../make.inc
-HEADER  = ../SRC
 
 DLINTST = pdtest.o dcreate_matrix.o pdcompute_resid.o
 
@@ -49,7 +48,7 @@ double: ./pdtest
 complex16: ./pztest
 
 .c.o:
-	$(CC) $(CFLAGS) $(CDEFS) -I$(HEADER) -c $< $(VERBOSE)
+	$(CC) $(CFLAGS) $(CDEFS) -I$(INCLUDEDIR) -c $< $(VERBOSE)
 
 clean:	
 	rm -f *.o *test *.out
