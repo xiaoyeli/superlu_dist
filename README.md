@@ -1,4 +1,4 @@
-# SuperLU_DIST (version 5.3)
+# SuperLU_DIST (version 5.4)
 
 [![Build Status](https://travis-ci.org/xiaoyeli/superlu_dist.svg?branch=master)](https://travis-ci.org/xiaoyeli/superlu_dist) 
 [Nightly tests](http://my.cdash.org/index.php?project=superlu_dist)
@@ -109,9 +109,10 @@ top-level SuperLU_DIST/ directory and do the following:
 to make the BLAS library from the routines in the
 ` CBLAS/ subdirectory.`
 
-1.3. External libraries: Metis and ParMetis.
+1.3. External libraries. 
+  1.3.1 Metis and ParMetis.
 
-If you will use Metis or ParMetis ordering, you will
+If you will use Metis or ParMetis for sparsity ordering, you will
 need to install them yourself. Since ParMetis package already
 contains the source code for the Metis library, you can just
 download and compile ParMetis from:
@@ -127,6 +128,26 @@ You can disable ParMetis with the following line in SRC/superlu_dist_config.h:
 ```
 #undef HAVE_PARMETIS
 ```
+  1.3.2 CombBLAS.
+
+You can use parallel approximate weight perfect matching (AWPM) algorithm
+to perform numerical pre-pivoting for stability. The default pre-pivoting
+is to use MC64 provided internally, which is an exact algorithm, but serial.
+In order to use AWPM, you will need to install CombBLAS yourself, at the
+download site:
+[https://people.eecs.berkeley.edu/~aydin/CombBLAS/html/index.html](https://people.eecs.berkeley.edu/~aydin/CombBLAS/html/index.html)
+
+After you have installed it, you should define the following in make.inc:
+```
+COMBBLASLIB = <combblas root>/_build/libCombBLAS.a
+PARMETISLIB = <parmetis directory> -lparmetis
+I_COMBBLAS=-I<combblas root>/_install/include -I<combblas root>/Applications/BipartiteMatchings
+```
+You can disable CombBLAS with the following line in SRC/superlu_dist_config.h:
+```
+#undef HAVE_COMBBLAS
+
+
 1.4. C preprocessor definition CDEFS.
 In the header file SRC/Cnames.h, we use macros to determine how
 C routines should be named so that they are callable by Fortran.
