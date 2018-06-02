@@ -51,7 +51,7 @@ The procedures are described below.
 Before installing the package, please examine the three things dependent 
 on your system setup:
 
-1.1 Edit the make.inc include file.
+## 1.1 Edit the make.inc include file.
 
 This make include file is referenced inside each of the Makefiles
 in the various subdirectories. As a result, there is no need to 
