@@ -110,6 +110,7 @@ to make the BLAS library from the routines in the
 ` CBLAS/ subdirectory.`
 
 1.3. External libraries. 
+
   1.3.1 Metis and ParMetis.
 
 If you will use Metis or ParMetis for sparsity ordering, you will
@@ -140,13 +141,12 @@ download site:
 After you have installed it, you should define the following in make.inc:
 ```
 COMBBLASLIB = <combblas root>/_build/libCombBLAS.a
-PARMETISLIB = <parmetis directory> -lparmetis
 I_COMBBLAS=-I<combblas root>/_install/include -I<combblas root>/Applications/BipartiteMatchings
 ```
 You can disable CombBLAS with the following line in SRC/superlu_dist_config.h:
 ```
 #undef HAVE_COMBBLAS
-
+```
 
 1.4. C preprocessor definition CDEFS.
 In the header file SRC/Cnames.h, we use macros to determine how
