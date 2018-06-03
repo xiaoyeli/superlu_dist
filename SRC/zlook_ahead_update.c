@@ -14,11 +14,13 @@ at the top-level directory.
  * \brief Look-ahead update of the Schur complement.
  *
  * <pre>
- * -- Distributed SuperLU routine (version 5.2) --
+ * -- Distributed SuperLU routine (version 5.4) --
  * Lawrence Berkeley National Lab, Univ. of California Berkeley.
  * October 1, 2014
  *
- * Modified: September 18, 2017
+ * Modified:
+ *  September 18, 2017
+ *  June 1, 2018  add parallel AWPM pivoting; add back arrive_at_ublock()
  *   
  */
 

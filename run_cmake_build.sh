@@ -48,12 +48,14 @@ then
   export PARMETIS_ROOT=~/lib/static/parmetis-4.0.3 
   export PARMETIS_BUILD_DIR=${PARMETIS_ROOT}/build/Linux-x86_64
   echo "ParMetis root: $PARMETIS_ROOT"
-  export COMBBLAS_DIR=${HOME}/Dropbox/Codes/CombBLAS_beta_16_1
+  export COMBBLAS_ROOT=~/Cori/KNL/combinatorial-blas-2.0/CombBLAS
+  export COMBBLAS_BUILD_DIR=${COMBBLAS_ROOT}/_build
   cmake .. \
     -DTPL_PARMETIS_INCLUDE_DIRS="${PARMETIS_ROOT}/include;${PARMETIS_ROOT}/metis/include" \
     -DTPL_PARMETIS_LIBRARIES="${PARMETIS_BUILD_DIR}/libparmetis/libparmetis.a;${PARMETIS_BUILD_DIR}/libmetis/libmetis.a" \
-    -DTPL_COMBBLAS_INCLUDE_DIRS="${COMBBLAS_DIR};${COMBBLAS_DIR}/BipartiteMatchings" \
-    -DTPL_COMBBLAS_LIBRARIES="${COMBBLAS_DIR}/libCommGridlib.a;${COMBBLAS_DIR}/libMPITypelib.a" \
+    -DTPL_COMBBLAS_INCLUDE_DIRS="${COMBBLAS_ROOT}/_install/include;${COMBBLAS_R\
+OOT}/Applications/BipartiteMatchings" \
+    -DTPL_COMBBLAS_LIBRARIES="${COMBBLAS_BUILD_DIR}/libCombBLAS.a" \
     -DCMAKE_C_FLAGS="-std=c99 -g -DPRNTlevel=1 -DDEBUGlevel=0" \
     -DCMAKE_C_COMPILER=mpicc \
     -DCMAKE_CXX_COMPILER=mpicxx \

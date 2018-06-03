@@ -1,4 +1,4 @@
-# SuperLU_DIST (version 5.3)
+# SuperLU_DIST (version 5.4)
 
 [![Build Status](https://travis-ci.org/xiaoyeli/superlu_dist.svg?branch=master)](https://travis-ci.org/xiaoyeli/superlu_dist) 
 [Nightly tests](http://my.cdash.org/index.php?project=superlu_dist)
@@ -44,14 +44,14 @@ SuperLU_DIST/MAKE_INC/ sample machine-specific make.inc files
 ## INSTALLATION
 
 There are two ways to install the package. One requires users to 
-edit makefile manually, the other uses CMake build system.
+edit makefile manually, the other uses CMake automatic build system.
 The procedures are described below.
 
 ### Installation option 1: Manual installation with makefile.
 Before installing the package, please examine the three things dependent 
 on your system setup:
 
-1.1 Edit the make.inc include file.
+#### 1.1 Edit the make.inc include file.
 
 This make include file is referenced inside each of the Makefiles
 in the various subdirectories. As a result, there is no need to 
@@ -83,7 +83,8 @@ printing level to show solver's execution details. (default 0)
 diagnostic printing level for debugging purpose. (default 0)
 ```      
 
-1.2. The BLAS library.
+#### 1.2. The BLAS library.
+
 The parallel routines in SuperLU_DIST use some BLAS routines on each MPI
 process. Moreover, if you enable OpenMP with multiple threads, you need to
 link with a multithreaded BLAS library. Otherwise performance will be poor.
@@ -109,9 +110,11 @@ top-level SuperLU_DIST/ directory and do the following:
 to make the BLAS library from the routines in the
 ` CBLAS/ subdirectory.`
 
-1.3. External libraries: Metis and ParMetis.
+#### 1.3. External libraries. 
 
-If you will use Metis or ParMetis ordering, you will
+ ##### 1.3.1 Metis and ParMetis.
+
+If you will use Metis or ParMetis for sparsity ordering, you will
 need to install them yourself. Since ParMetis package already
 contains the source code for the Metis library, you can just
 download and compile ParMetis from:
@@ -127,7 +130,28 @@ You can disable ParMetis with the following line in SRC/superlu_dist_config.h:
 ```
 #undef HAVE_PARMETIS
 ```
-1.4. C preprocessor definition CDEFS.
+
+ ##### 1.3.2 CombBLAS.
+
+You can use parallel approximate weight perfect matching (AWPM) algorithm
+to perform numerical pre-pivoting for stability. The default pre-pivoting
+is to use MC64 provided internally, which is an exact algorithm, but serial.
+In order to use AWPM, you will need to install CombBLAS yourself, at the
+download site:
+[https://people.eecs.berkeley.edu/~aydin/CombBLAS/html/index.html](https://people.eecs.berkeley.edu/~aydin/CombBLAS/html/index.html)
+
+After you have installed it, you should define the following in make.inc:
+```
+COMBBLASLIB = <combblas root>/_build/libCombBLAS.a
+I_COMBBLAS=-I<combblas root>/_install/include -I<combblas root>/Applications/BipartiteMatchings
+```
+You can disable CombBLAS with the following line in SRC/superlu_dist_config.h:
+```
+#undef HAVE_COMBBLAS
+```
+
+#### 1.4. C preprocessor definition CDEFS.
+
 In the header file SRC/Cnames.h, we use macros to determine how
 C routines should be named so that they are callable by Fortran.
 (Some vendor-supplied BLAS libraries do not have C interfaces. So the 
@@ -142,7 +166,8 @@ The possible options for CDEFS are:
       that compiled by C;
 -DUpCase: Fortran expects a C routine name to be all uppercase.
 ```
-1.5. Multicore and GPU (optional).
+
+#### 1.5. Multicore and GPU (optional).
 
 To use OpenMP parallelism, need to link with an OpenMP library, and
 set the number of threads you wish to use as follows (bash):
@@ -175,34 +200,52 @@ two environment variables: PARMETIS_ROOT and PARMETIS_BUILD_DIR
 export PARMETIS_ROOT=<Prefix directory of the ParMETIS installation>
 export PARMETIS_BUILD_DIR=${PARMETIS_ROOT}/build/Linux-x86_64
 ```
-Then, the installation procedure is the following.
 
-From the top level directory, do:
+Second, in order to use parallel weighted matching AWPM for numerical
+pre-pivoting, you need to install CombBLAS and define the environment
+variable:
+
 ```
-mkdir build ; cd build
-cmake .. \
--DTPL_PARMETIS_LIBRARIES="${PARMETIS_BUILD_DIR}/libparmetis/libparmetis.a;${PARMETIS_BUILD_DIR}/libmetis/libmetis.a" \
--DTPL_PARMETIS_INCLUDE_DIRS="${PARMETIS_ROOT}/include;${PARMETIS_ROOT}/metis/include"
-
-( Example cmake script: see run_cmake_build.sh
-
-export PARMETIS_ROOT=~/lib/dynamic/parmetis-4.0.3 
-export PARMETIS_BUILD_DIR=${PARMETIS_ROOT}/build/Linux-x86_64 
-cmake .. \
--DTPL_PARMETIS_INCLUDE_DIRS="${PARMETIS_ROOT}/include;${PARMETIS_ROOT}/metis/include" \
--DTPL_PARMETIS_LIBRARIES="${PARMETIS_BUILD_DIR}/libparmetis/libparmetis.a;${PARMETIS_BUILD_DIR}/libmetis/libmetis.a" \
--DCMAKE_C_FLAGS="-std=c99 -g" \
--Denable_blaslib=OFF \
--DBUILD_SHARED_LIBS=OFF \
--DCMAKE_C_COMPILER=mpicc \
--DCMAKE_INSTALL_PREFIX=.
-
-)
+export COMBBLAS_ROOT=<Prefix directory of the CombBLAS installation>
+export COMBBLAS_BUILD_DIR=${COMBBLAS_ROOT}/_build
 ```
-You can disable ParMetis with the following cmake option:
+
+Once these needed third-party libraries are in place, SuperLU installation
+can be done as follows from the top level directory:
+
+For a simple installation with default setting, do:
+(ParMETIS is needed, i.e., enable_parmetislib=ON)
+```
+mkdir build ; cd build;
+cmake .. \
+    -DTPL_PARMETIS_INCLUDE_DIRS="${PARMETIS_ROOT}/include;${PARMETIS_ROOT}/metis/include" \
+    -DTPL_PARMETIS_LIBRARIES="${PARMETIS_BUILD_DIR}/libparmetis/libparmetis.a;${PARMETIS_BUILD_DIR}/libmetis/libmetis.a" \
+```
+
+For a more sophisticated installation including third-part libraries, do:
+```
+cmake .. \
+    -DTPL_PARMETIS_INCLUDE_DIRS="${PARMETIS_ROOT}/include;${PARMETIS_ROOT}/metis/include" \
+    -DTPL_PARMETIS_LIBRARIES="${PARMETIS_BUILD_DIR}/libparmetis/libparmetis.a;${PARMETIS_BUILD_DIR}/libmetis/libmetis.a" \
+    -Denable_combblaslib=ON \
+    -DTPL_COMBBLAS_INCLUDE_DIRS="${COMBBLAS_ROOT}/_install/include;${COMBBLAS_R\
+OOT}/Applications/BipartiteMatchings" \
+    -DTPL_COMBBLAS_LIBRARIES="${COMBBLAS_BUILD_DIR}/libCombBLAS.a" \
+    -DCMAKE_C_FLAGS="-std=c99 -g -DPRNTlevel=0 -DDEBUGlevel=0" \
+    -DCMAKE_C_COMPILER=mpicc \
+    -DCMAKE_CXX_COMPILER=mpicxx \
+    -DCMAKE_CXX_FLAGS="-std=c++11" \
+    -Denable_blaslib=OFF \
+    -DBUILD_SHARED_LIBS=OFF \
+    -DCMAKE_INSTALL_PREFIX=.
+
+( see example cmake script: see run_cmake_build.sh )
+```
+You can disable ParMetis or CombBLAS with the following cmake option:
 `-Denable_parmetislib=FALSE`
+`-Denable_combblaslib=FALSE`
 
-To actually build, type:
+To actually build (compile), type:
 `make`
 
 To install the libraries, type:
@@ -280,14 +323,33 @@ dreadtriple_noheader.c : triplet, no header, which is also readable in Matlab
 
 ## REFERENCES
 
-**[1]** SuperLU_DIST: A Scalable Distributed-Memory Sparse Direct Solver for Unsymmetric Linear Systems. Xiaoye S. Li and James W. Demmel. ACM Trans. on Math. Software, Vol. 29, No. 2, June 2003, pp. 110-140.  
-**[2]** Parallel Symbolic Factorization for Sparse LU with Static Pivoting. L. Grigori, J. Demmel and X.S. Li. SIAM J. Sci. Comp., Vol. 29, Issue 3, 1289-1314, 2007.  
-**[3]** A distributed CPU-GPU sparse direct solver. P. Sao, R. Vuduc and X.S. Li, Proc. of EuroPar-2014 Parallel Processing, August 25-29, 2014. Porto, Portugal.  
+**[1]** X.S. Li and J.W. Demmel, "SuperLU_DIST: A Scalable Distributed-Memory
+ Sparse Direct Solver for Unsymmetric Linear Systems", ACM Trans. on Math.
+ Software, Vol. 29, No. 2, June 2003, pp. 110-140.  
+**[2]** L. Grigori, J. Demmel and X.S. Li, "Parallel Symbolic Factorization
+ for Sparse LU with Static Pivoting", SIAM J. Sci. Comp., Vol. 29, Issue 3,
+ 1289-1314, 2007.  
+**[3]** P. Sao, R. Vuduc and X.S. Li, "A distributed CPU-GPU sparse direct
+ solver", Proc. of EuroPar-2014 Parallel Processing, August 25-29, 2014.
+ Porto, Portugal.  
+**[4]** P. Sao, X.S. Li, R. Vuduc, “A Communication-Avoiding 3D Factorization
+ for Sparse Matrices”, Proc. of IPDPS, May 21–25, 2018, Vancouver.   
+**[5]** Y. Liu, M. Jacquelin, P. Ghysels and X.S. Li, “Highly scalable
+ distributed-memory sparse triangular solution algorithms”, Proc. of
+ SIAM workshop on Combinatorial Scientific Computing, June 6-8, 2018,
+ Bergen, Norway. 
 
 **Xiaoye S. Li**, Lawrence Berkeley National Lab, [xsli@lbl.gov](xsli@lbl.gov)  
+**Gustavo Chavez**, Lawrence Berkeley National Lab, [gichavez@lbl.gov](gichavez@lbl.gov)   
 **Laura Grigori**, INRIA, France, [laura.grigori@inria.fr](laura.grigori@inria.fr)  
+**Yang Liu**, Lawrence Berkeley National Lab, [liuyangzhuan@lbl.gov](liuyangzhuan@lbl.gov)   
+**Meiyue Shao**, Lawrence Berkeley National Lab, [myshao@lbl.gov](myshao@lbl.gov)   
 **Piyush Sao**, Georgia Institute of Technology, [piyush.feynman@gmail.com](piyush.feynman@gmail.com)  
 **Ichitaro Yamazaki**, Univ. of Tennessee, [ic.yamazaki@gmail.com](ic.yamazaki@gmail.com)  
+**Jim Demmel**, UC Berkeley, [demmel@cs.berkeley.edu](demmel@cs.berkeley.edu)  
+**John Gilbert**, UC Santa Barbara, [gilbert@cs.ucsb.edu](gilbert@cs.ucsb.edu)
+
+
 
 ## RELEASE VERSIONS
 ```
@@ -308,4 +370,5 @@ October 4, 2016     Version 5.1.1
 December 31, 2016   Version 5.1.3  
 September 30, 2017  Version 5.2.0  
 January 28, 2018    Version 5.3.0
+June 1, 2018        Version 5.4.0
 ```

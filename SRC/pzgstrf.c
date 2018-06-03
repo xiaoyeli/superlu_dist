@@ -13,19 +13,20 @@ at the top-level directory.
  * \brief Performs LU factorization in parallel
  *
  * <pre>
- * -- Distributed SuperLU routine (version 5.2) --
+ * -- Distributed SuperLU routine (version 5.4) --
  * Lawrence Berkeley National Lab, Univ. of California Berkeley.
  * October 1, 2014
  *
  * Modified:
- *     September 1, 1999
- *     Feburary 7, 2001  use MPI_Isend/MPI_Irecv
- *     October 15, 2008  latency-reducing panel factorization
- *     July    12, 2011  static scheduling and arbitrary look-ahead
- *     March   13, 2013  change NTAGS to MPI_TAG_UB value
- *     September 24, 2015 replace xLAMCH by xMACH, using C99 standard.
- *     December 31, 2015 rename xMACH to xMACH_DIST.
- *     September 30, 2017 optimization for Intel Knights Landing (KNL) node .
+ *   September 1, 1999
+ *   Feburary 7, 2001  use MPI_Isend/MPI_Irecv
+ *   October 15, 2008  latency-reducing panel factorization
+ *   July    12, 2011  static scheduling and arbitrary look-ahead
+ *   March   13, 2013  change NTAGS to MPI_TAG_UB value
+ *   September 24, 2015 replace xLAMCH by xMACH, using C99 standard.
+ *   December 31, 2015 rename xMACH to xMACH_DIST.
+ *   September 30, 2017 optimization for Intel Knights Landing (KNL) node .
+ *   June 1, 2018      add parallel AWPM pivoting; add back arrive_at_ublock()
  *
  * Sketch of the algorithm 
  *

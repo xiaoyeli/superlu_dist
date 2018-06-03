@@ -15,16 +15,18 @@ at the top-level directory.
  *        Uses 2D partitioning for the scatter phase.
  *
  * <pre>
- * -- Distributed SuperLU routine (version 5.2) --
+ * -- Distributed SuperLU routine (version 5.4) --
  * Lawrence Berkeley National Lab, Univ. of California Berkeley.
  * October 1, 2014
  *
- * Modified: September 14, 2017
+ * Modified:
+ *   September 14, 2017
  *   - First gather U-panel, then depending on "ldu" (excluding leading zeros), 
  *     gather only trailing columns of the L-panel corresponding to the nonzero
  *     of U-rows.
  *   - Padding zeros for nice dimensions of GEMM.
  *
+ *  June 1, 2018  add parallel AWPM pivoting; add back arrive_at_ublock()
  */
 
 #define SCHEDULE_STRATEGY guided 
