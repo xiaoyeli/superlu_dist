@@ -333,21 +333,22 @@ dreadtriple_noheader.c : triplet, no header, which is also readable in Matlab
  solver", Proc. of EuroPar-2014 Parallel Processing, August 25-29, 2014.
  Porto, Portugal.  
 **[4]** P. Sao, X.S. Li, R. Vuduc, “A Communication-Avoiding 3D Factorization
- for Sparse Matrices”, Proc. of IPDPS, May 21–25, 2018, Vancouver.
+ for Sparse Matrices”, Proc. of IPDPS, May 21–25, 2018, Vancouver.   
 **[5]** Y. Liu, M. Jacquelin, P. Ghysels and X.S. Li, “Highly scalable
  distributed-memory sparse triangular solution algorithms”, Proc. of
  SIAM workshop on Combinatorial Scientific Computing, June 6-8, 2018,
  Bergen, Norway. 
 
-**Xiaoye S. Li**, Lawrence Berkeley National Lab, [xsli@lbl.gov](xsli@lbl.gov)
-**Gustavo Chavez**, Lawrence Berkeley National Lab, [gichavez@lbl.gov](gichavez@lbl.gov)
+**Xiaoye S. Li**, Lawrence Berkeley National Lab, [xsli@lbl.gov](xsli@lbl.gov)  
+**Gustavo Chavez**, Lawrence Berkeley National Lab, [gichavez@lbl.gov](gichavez@lbl.gov)   
 **Laura Grigori**, INRIA, France, [laura.grigori@inria.fr](laura.grigori@inria.fr)  
-**Yang Liu**, Lawrence Berkeley National Lab, [liuyangzhuan@lbl.gov](liuyangzhuan@lbl.gov)
-**Meiyue Shao**, Lawrence Berkeley National Lab, [myshao@lbl.gov](myshao@lbl.gov)
-**Piyush Sao**, Georgia Institute of Technology, [piyush.feynman@gmail.com](piyush.feynman@gmail.com)
+**Yang Liu**, Lawrence Berkeley National Lab, [liuyangzhuan@lbl.gov](liuyangzhuan@lbl.gov)   
+**Meiyue Shao**, Lawrence Berkeley National Lab, [myshao@lbl.gov](myshao@lbl.gov)   
+**Piyush Sao**, Georgia Institute of Technology, [piyush.feynman@gmail.com](piyush.feynman@gmail.com)  
 **Ichitaro Yamazaki**, Univ. of Tennessee, [ic.yamazaki@gmail.com](ic.yamazaki@gmail.com)  
-**Jim Demmel**, UC Berkeley, [demmel@cs.berkeley.edu](demmel@cs.berkeley.edu)
+**Jim Demmel**, UC Berkeley, [demmel@cs.berkeley.edu](demmel@cs.berkeley.edu)  
 **John Gilbert**, UC Santa Barbara, [gilbert@cs.ucsb.edu](gilbert@cs.ucsb.edu)
+
 
 
 ## RELEASE VERSIONS
