@@ -194,7 +194,14 @@ int main(int argc, char *argv[])
      */
     set_default_options_dist(&options);
     // options.DiagInv       = YES;
-
+   options.Equil = YES;
+   //options.IterRefine        = NO;
+   options.ColPerm           = METIS_AT_PLUS_A;
+   
+	// options.ParSymbFact = YES; 
+	// options.ColPerm == PARMETIS;
+   
+   
 #if 0
     options.RowPerm = NOROWPERM;
     options.IterRefine = NOREFINE;

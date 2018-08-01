@@ -628,6 +628,7 @@ pdgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
     printf("[%d] .. Turn off static schedule for debugging ..\n", iam);
     for (i = 0; i < nsupers; ++i) perm_c_supno[i] = iperm_c_supno[i] = i;
 #endif
+
      /* ################################################################## */
 
     /* constructing look-ahead table to indicate the last dependency */
@@ -766,9 +767,6 @@ pdgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
 	}
 
     }
-	
-
-
 
     /* Max row size is global reduction within a row */
     MPI_Allreduce (&local_max_row_size, &max_row_size, 1, MPI_INT, MPI_MAX,
@@ -809,7 +807,6 @@ pdgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
 					  Glu_persist, grid, perm_u );
 #endif
 
-
     /* +16 to avoid cache line false sharing */
     int_t bigv_size = SUPERLU_MAX(max_row_size * (bigu_size / ldt),
 				  (ldt*ldt + CACHELINE / dword) * num_threads);
@@ -822,10 +819,10 @@ pdgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
 
 #if ( PRNTlevel>=1 )
     if(!iam) {
-	printf("max_nrows in L panel %d\n", max_row_size);
-	printf("\t.. GEMM buffer size: max_nrows X max_ncols = %d x %d\n",
+	printf("max_nrows in L panel " IFMT "\n", max_row_size);
+	printf("\t.. GEMM buffer size: max_nrows X max_ncols = " IFMT "x" IFMT "\n",
 	       max_row_size, (bigu_size / ldt));
-	printf(".. BIG U size %d\t BIG V size %d\n", bigu_size, bigv_size);
+	printf(".. BIG U size " IFMT "\t BIG V size " IFMT "\n", bigu_size, bigv_size);
 	fflush(stdout);
     }
 #endif
@@ -1632,12 +1629,9 @@ pdgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
             qsort (perm_u, (size_t) nub, 2 * sizeof (int_t),
                    &superlu_sort_perm);
 #endif
-            j = jj0 = 0;
+            // j = jj0 = 0;
 
 /************************************************************************/
-#if 0
-	for (jj = 0; jj < nub; ++jj) assert(perm_u[jj] == jj); /* Sherry */
-#endif
             double ttx =SuperLU_timer_();
 
 //#include "dlook_ahead_update_v4.c"

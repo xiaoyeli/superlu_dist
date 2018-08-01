@@ -193,6 +193,8 @@ int main(int argc, char *argv[])
      */
     set_default_options_dist(&options);
 	// options.DiagInv       = YES;
+    options.IterRefine = NOREFINE;
+    options.ColPerm           = MMD_AT_PLUS_A;
 #if 0
     options.RowPerm = NOROWPERM;
     options.IterRefine = NOREFINE;

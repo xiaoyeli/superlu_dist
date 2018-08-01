@@ -22,9 +22,15 @@ at the top-level directory.
  * Modified: September 18, 2017
  *   
  */
+#include <assert.h>
 
 iukp = iukp0; /* point to the first block in index[] */
 rukp = rukp0; /* point to the start of nzval[] */
+j = jj0 = 0;
+
+#if 0
+for (jj = 0; jj < nub; ++jj) assert(perm_u[jj] == jj); /* Sherry */
+#endif
 
 #ifdef ISORT
 while (j < nub && iperm_u[j] <= k0 + num_look_aheads)
@@ -34,7 +40,7 @@ while (j < nub && perm_u[2 * j] <= k0 + num_look_aheads)
 {
     double zero = 0.0;
 
-#if 0 // Sherry: no need to search
+#if 1 // Sherry: no need to search
     /* Caveat: There is a permutation perm_u involved for j  */
     /* Search along the row for the pointers {iukp, rukp} pointing to
      * block U(k,j).
