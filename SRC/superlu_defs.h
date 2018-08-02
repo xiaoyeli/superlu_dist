@@ -42,6 +42,7 @@ at the top-level directory.
 #include <stdio.h>
 #include <limits.h>
 #include <string.h>
+#include <stdint.h>
 
 /* Following is for vtune */
 #if 0
