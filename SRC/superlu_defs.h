@@ -74,7 +74,7 @@ at the top-level directory.
   /*#undef int   Revert back to int of default size. */
   #define mpi_int_t   MPI_SHORT
 #elif defined (_LONGINT)
-  typedef long long int int_t;
+  typedef int64_t int_t;
   #define mpi_int_t   MPI_LONG_LONG_INT
   #define IFMT "%lld"
 #else /* Default */
@@ -610,7 +610,7 @@ typedef struct {
     float for_lu;
     float total;
     int_t expansions;
-    long long int nnzL, nnzU;
+    int64_t nnzL, nnzU;
 } superlu_dist_mem_usage_t;
 
 /* 
@@ -685,10 +685,9 @@ extern int_t symbfact_SubInit(fact_t, void *, int_t, int_t, int_t, int_t,
 extern int_t symbfact_SubXpand(int_t, int_t, int_t, MemType, int_t *,
 			       Glu_freeable_t *);
 extern int_t symbfact_SubFree(Glu_freeable_t *);
-extern void    countnz_dist (const int_t, int_t *, 
-			     long long int *, long long int *,
+extern void    countnz_dist (const int_t, int_t *, int64_t *, int64_t *,
 			     Glu_persist_t *, Glu_freeable_t *);
-extern long long int fixupL_dist (const int_t, const int_t *, Glu_persist_t *,
+extern int64_t fixupL_dist (const int_t, const int_t *, Glu_persist_t *,
 				  Glu_freeable_t *);
 extern int_t   *TreePostorder_dist (int_t, int_t *);
 extern float   smach_dist(char *);
@@ -722,7 +721,7 @@ extern void  pxerr_dist (char *, gridinfo_t *, int_t);
 extern void  PStatInit(SuperLUStat_t *);
 extern void  PStatFree(SuperLUStat_t *);
 extern void  PStatPrint(superlu_dist_options_t *, SuperLUStat_t *, gridinfo_t *);
-extern void  log_memory(long long, SuperLUStat_t *);
+extern void  log_memory(int64_t, SuperLUStat_t *);
 extern void  print_memorylog(SuperLUStat_t *, char *);
 extern int   superlu_dist_GetVersionNumber(int *, int *, int *);
 

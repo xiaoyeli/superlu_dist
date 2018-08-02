@@ -48,8 +48,6 @@ then
   export PARMETIS_ROOT=~/lib/static/parmetis-4.0.3 
   export PARMETIS_BUILD_DIR=${PARMETIS_ROOT}/build/Linux-x86_64
   echo "ParMetis root: $PARMETIS_ROOT"
-  export COMBBLAS_ROOT=~/Cori/KNL/combinatorial-blas-2.0/CombBLAS
-  export COMBBLAS_BUILD_DIR=${COMBBLAS_ROOT}/_build
   cmake .. \
     -DTPL_PARMETIS_INCLUDE_DIRS="${PARMETIS_ROOT}/include;${PARMETIS_ROOT}/metis/include" \
     -DTPL_PARMETIS_LIBRARIES="${PARMETIS_BUILD_DIR}/libparmetis/libparmetis.a;${PARMETIS_BUILD_DIR}/libmetis/libmetis.a" \

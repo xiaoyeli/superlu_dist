@@ -301,6 +301,7 @@ extern void pdgsmv(int_t, SuperMatrix *, gridinfo_t *, pdgsmv_comm_t *,
 		   double x[], double ax[]);
 extern void pdgsmv_finalize(pdgsmv_comm_t *);
 
+
 /* Memory-related */
 extern double  *doubleMalloc_dist(int_t);
 extern double  *doubleCalloc_dist(int_t);
@@ -310,6 +311,13 @@ extern int_t dQuerySpace_dist(int_t, LUstruct_t *, gridinfo_t *,
 			      SuperLUStat_t *, superlu_dist_mem_usage_t *);
 
 /* Auxiliary routines */
+
+extern void dClone_CompRowLoc_Matrix_dist(SuperMatrix *, SuperMatrix *);
+extern void dCopy_CompRowLoc_Matrix_dist(SuperMatrix *, SuperMatrix *);
+extern void dZero_CompRowLoc_Matrix_dist(SuperMatrix *);
+extern void dScaleAddId_CompRowLoc_Matrix_dist(SuperMatrix *, double);
+extern void dScaleAdd_CompRowLoc_Matrix_dist(SuperMatrix *, SuperMatrix *, double);
+
 extern void    dfill_dist (double *, int_t, double);
 extern void    dinf_norm_error_dist (int_t, int_t, double*, int_t,
                                      double*, int_t, gridinfo_t*);

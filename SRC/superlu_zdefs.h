@@ -301,6 +301,7 @@ extern void pzgsmv(int_t, SuperMatrix *, gridinfo_t *, pzgsmv_comm_t *,
 		   doublecomplex x[], doublecomplex ax[]);
 extern void pzgsmv_finalize(pzgsmv_comm_t *);
 
+
 /* Memory-related */
 extern doublecomplex  *doublecomplexMalloc_dist(int_t);
 extern doublecomplex  *doublecomplexCalloc_dist(int_t);
@@ -312,6 +313,13 @@ extern int_t zQuerySpace_dist(int_t, LUstruct_t *, gridinfo_t *,
 			      SuperLUStat_t *, superlu_dist_mem_usage_t *);
 
 /* Auxiliary routines */
+
+extern void zClone_CompRowLoc_Matrix_dist(SuperMatrix *, SuperMatrix *);
+extern void zCopy_CompRowLoc_Matrix_dist(SuperMatrix *, SuperMatrix *);
+extern void zZero_CompRowLoc_Matrix_dist(SuperMatrix *);
+extern void zScaleAddId_CompRowLoc_Matrix_dist(SuperMatrix *, doublecomplex);
+extern void zScaleAdd_CompRowLoc_Matrix_dist(SuperMatrix *, SuperMatrix *, doublecomplex);
+
 extern void    zfill_dist (doublecomplex *, int_t, doublecomplex);
 extern void    zinf_norm_error_dist (int_t, int_t, doublecomplex*, int_t,
                                      doublecomplex*, int_t, gridinfo_t*);

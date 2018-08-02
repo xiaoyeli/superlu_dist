@@ -55,6 +55,7 @@ pdcompute_resid(int m, int n, int nrhs, SuperMatrix *A,
 		double *x, int ldx, double *b, int ldb,
 		gridinfo_t *grid, SOLVEstruct_t *SOLVEstruct, double *resid);
 
+#if 0
 /*! \brief Copy matrix A into matrix B, in distributed compressed row format. */
 void
 dCopy_CompRowLoc_Matrix_dist(SuperMatrix *A, SuperMatrix *B)
@@ -79,6 +80,7 @@ dCopy_CompRowLoc_Matrix_dist(SuperMatrix *A, SuperMatrix *B)
     memcpy(Bstore->colind, Astore->colind, nnz_loc * sizeof(int_t));
     memcpy(Bstore->rowptr, Astore->rowptr, (m_loc+1) * sizeof(int_t));
 }
+#endif
 
 /*! \brief Print a summary of the testing results. */
 void

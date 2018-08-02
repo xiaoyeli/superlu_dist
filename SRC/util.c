@@ -222,7 +222,7 @@ void LUstructFree(LUstruct_t *LUstruct)
  */
 void
 countnz_dist(const int_t n, int_t *xprune,
-	     long long int *nnzL, long long int *nnzU, 
+	     int64_t *nnzL, int64_t *nnzU, 
 	     Glu_persist_t *Glu_persist, Glu_freeable_t *Glu_freeable)
 {
     int_t  fnz, fsupc, i, j, nsuper;
@@ -279,7 +279,7 @@ countnz_dist(const int_t n, int_t *xprune,
  * subscripts.
  * </pre>
  */
-long long int
+int64_t
 fixupL_dist(const int_t n, const int_t *perm_r, 
 	    Glu_persist_t *Glu_persist, Glu_freeable_t *Glu_freeable)
 {
@@ -948,7 +948,7 @@ void isort1(int_t N, int_t *ARRAY)
   }
 }
 
-void log_memory(long long cur_bytes, SuperLUStat_t *stat) {
+void log_memory(int64_t cur_bytes, SuperLUStat_t *stat) {
     stat->current_buffer += (float) cur_bytes;
     if (cur_bytes > 0) {
 	stat->peak_buffer = 
@@ -1189,3 +1189,6 @@ int_t estimate_bigu_size(int_t nsupers,
 #endif
     return(max_ldu * max_ncols);
 }
+
+
+
