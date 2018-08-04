@@ -311,7 +311,7 @@ void dClone_CompRowLoc_Matrix_dist(SuperMatrix *A, SuperMatrix *B)
 	ABORT("doubleMalloc_dist fails for Bstore->nzval");
     if ( !(Bstore->colind = (int_t *) intMalloc_dist(Bstore->nnz_loc)) )
 	ABORT("intMalloc_dist fails for Bstore->colind");
-    if ( !(Bstore->rowptr = (int_t *) intMalloc_dist(B->nrow + 1)) )
+    if ( !(Bstore->rowptr = (int_t *) intMalloc_dist(Bstore->m_loc + 1)) )
 	ABORT("intMalloc_dist fails for Bstore->rowptr");
 
     return;
@@ -365,11 +365,11 @@ void dScaleAddId_CompRowLoc_Matrix_dist(SuperMatrix *A, double c)
 
     for (i = 0; i < Astore->m_loc; ++i) { /* Loop through each row */
         for (j = Astore->rowptr[i]; j < Astore->rowptr[i+1]; ++j) {
-            if ( i == Astore->colind[j] ) {  /* diagonal */
+            if ( (Astore->fst_row + i) == Astore->colind[j] ) {  /* diagonal */
                 temp = aval[j] * c;
-	        aval[j] = temp + one;
+                aval[j] = temp + one;
             } else {
-	        aval[j] *= c;
+                aval[j] *= c;
 	   }
         }
     }

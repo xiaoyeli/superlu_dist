@@ -310,7 +310,7 @@ void zClone_CompRowLoc_Matrix_dist(SuperMatrix *A, SuperMatrix *B)
 	ABORT("doublecomplexMalloc_dist fails for Bstore->nzval");
     if ( !(Bstore->colind = (int_t *) intMalloc_dist(Bstore->nnz_loc)) )
 	ABORT("intMalloc_dist fails for Bstore->colind");
-    if ( !(Bstore->rowptr = (int_t *) intMalloc_dist(B->nrow + 1)) )
+    if ( !(Bstore->rowptr = (int_t *) intMalloc_dist(Bstore->m_loc + 1)) )
 	ABORT("intMalloc_dist fails for Bstore->rowptr");
 
     return;
@@ -364,7 +364,7 @@ void zScaleAddId_CompRowLoc_Matrix_dist(SuperMatrix *A, doublecomplex c)
 
     for (i = 0; i < Astore->m_loc; ++i) { /* Loop through each row */
         for (j = Astore->rowptr[i]; j < Astore->rowptr[i+1]; ++j) {
-            if ( i == Astore->colind[j] ) {  /* diagonal */
+            if ( (Astore->fst_row + i) == Astore->colind[j] ) {  /* diagonal */
                 zz_mult(&temp, &aval[j], &c);
 		z_add(&aval[j], &temp, &one);
             } else {
