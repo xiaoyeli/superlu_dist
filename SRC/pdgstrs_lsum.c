@@ -913,9 +913,8 @@ void dlsum_fmod_inv
 						 */
 
 						// #ifdef _OPENMP
-						// #pragma	omp	task firstprivate (Llu,sizelsum,iknsupc,ii,ik,lsub1,x,rtemp,fmod,lsum,send_req,stat,nrhs,grid,xsup,recurlevel) private(lptr1,luptr1,nlb1,thread_id1) untied priority(1) 	
-						// #endif
-
+								// #pragma	omp	task firstprivate (Llu,sizelsum,iknsupc,ii,ik,lsub1,x,rtemp,fmod,lsum,stat,nrhs,grid,xsup,recurlevel) private(lptr1,luptr1,nlb1,thread_id1) untied priority(1) 	
+								// #endif						
 						{
 							nlb1 = lsub1[0] - 1;
 							dlsum_fmod_inv(lsum, x, &x[ii], rtemp, nrhs, iknsupc, ik,

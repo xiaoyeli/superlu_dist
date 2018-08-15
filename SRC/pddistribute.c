@@ -78,6 +78,7 @@ dReDistribute_A(SuperMatrix *A, ScalePermstruct_t *ScalePermstruct,
     int_t  *ptr_to_send;
     double *aij, **aij_send, *nzval, *dtemp;
     double *nzval_a;
+	double asum;
     int    iam, it, p, procs;
     MPI_Request *send_req;
     MPI_Status  status;
@@ -100,6 +101,24 @@ dReDistribute_A(SuperMatrix *A, ScalePermstruct_t *ScalePermstruct,
     nnzToRecv = intCalloc_dist(2*procs);
     nnzToSend = nnzToRecv + procs;
 
+	
+#if ( PRNTlevel>=1 )
+    /* ------------------------------------------------------------
+       SUM OVER ALL ENTRIES OF A AND PRINT NNZ AND SIZE OF A.
+       ------------------------------------------------------------*/
+    Astore = (NRformat_loc *) A->Store;
+	nzval_a = Astore->nzval;
+	asum=0;
+    for (i = 0; i < Astore->m_loc; ++i) {
+        for (j = Astore->rowptr[i]; j < Astore->rowptr[i+1]; ++j) {
+	    asum += nzval_a[j];
+	}
+    }
+	printf("..myid %5d part A nnzA %7d sum %e N %7d\n", iam, Astore->rowptr[Astore->m_loc],asum,A->ncol);
+#endif	
+	
+	
+	
 
     /* ------------------------------------------------------------
        COUNT THE NUMBER OF NONZEROS TO BE SENT TO EACH PROCESS,
