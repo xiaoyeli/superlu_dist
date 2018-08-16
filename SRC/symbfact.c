@@ -95,6 +95,7 @@ int_t symbfact
     int_t *xprune, *marker, *parent, *xplore;
     int_t relax, *desc, *relax_end;
     long long int nnzL, nnzU, nnzLU, nnzLSUB;
+	NRformat_loc *Astore;
 
 #if ( DEBUGlevel>=1 )
     CHECK_MALLOC(pnum, "Enter symbfact()");
@@ -177,12 +178,12 @@ int_t symbfact
     } /* for j ... */
 
     countnz_dist(min_mn, xprune, &nnzL, &nnzU, Glu_persist, Glu_freeable);
-
+	Glu_freeable->nnzLU=nnzL + nnzU - min_mn;	
     /* Apply perm_r to L; Compress LSUB array. */
     nnzLSUB = fixupL_dist(min_mn, perm_r, Glu_persist, Glu_freeable);
 
     if ( !pnum && (options->PrintStat == YES)) {
-	nnzLU = nnzL + nnzU - min_mn;
+	nnzLU = nnzL + nnzU - min_mn;				   
 	printf("\tNonzeros in L       %lld\n", nnzL);
 	printf("\tNonzeros in U       %lld\n", nnzU);
 	printf("\tnonzeros in L+U     %lld\n", nnzLU);

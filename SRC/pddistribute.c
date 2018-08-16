@@ -79,7 +79,7 @@ dReDistribute_A(SuperMatrix *A, ScalePermstruct_t *ScalePermstruct,
     double *aij, **aij_send, *nzval, *dtemp;
     double *nzval_a;
 	double asum,asum_tot;
-    int    iam, it, p, procs;
+    int    iam, it, p, procs, iam_g;
     MPI_Request *send_req;
     MPI_Status  status;
     
@@ -100,31 +100,6 @@ dReDistribute_A(SuperMatrix *A, ScalePermstruct_t *ScalePermstruct,
     fst_row = Astore->fst_row;
     nnzToRecv = intCalloc_dist(2*procs);
     nnzToSend = nnzToRecv + procs;
-
-	
-#if ( PRNTlevel>=1 )
-    /* ------------------------------------------------------------
-       SUM OVER ALL ENTRIES OF A AND PRINT NNZ AND SIZE OF A.
-       ------------------------------------------------------------*/
-    Astore = (NRformat_loc *) A->Store;
-	nzval_a = Astore->nzval;
-	asum=0;
-    for (i = 0; i < Astore->m_loc; ++i) {
-        for (j = Astore->rowptr[i]; j < Astore->rowptr[i+1]; ++j) {
-	    asum += nzval_a[j];
-	}
-    }
-
-	MPI_Reduce( &asum, &asum_tot,1, MPI_DOUBLE, MPI_SUM, 0, grid->comm );
-	MPI_Reduce( &Astore->rowptr[Astore->m_loc], &nnz_tot,1, mpi_int_t, MPI_SUM, 0, grid->comm );
-	
-		  
-	if ( !iam )
-	printf(".. Ainfo nnz %7d sum %e N %7d\n", nnz_tot,asum_tot,A->ncol);
-#endif	
-	
-	
-	
 
     /* ------------------------------------------------------------
        COUNT THE NUMBER OF NONZEROS TO BE SENT TO EACH PROCESS,

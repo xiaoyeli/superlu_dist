@@ -628,6 +628,7 @@ float symbfact_dist
     if (stat_msgs_g[6] == 0) stat_msgs_g[6] = 1;
     if (stat_msgs_g[7] == 0) stat_msgs_g[7] = 1;
     
+	Pslu_freeable->nnzLU=(long long) stat_glob[0]+(long long) stat_glob[1];
     if (!iam) {
       nnzL   = (long long) stat_glob[0]; nnzU  = (long long) stat_glob[1];
       nsuper = (int_t) stat_glob[2];
@@ -641,7 +642,7 @@ float symbfact_dist
 	     (long long) sp_ienv_dist(6), (long long) PS.fill_par);
       printf("\tNonzeros in L       %ld\n", nnzL);
       printf("\tNonzeros in U       %ld\n", nnzU);
-      nnzLU = nnzL + nnzU;
+      nnzLU = nnzL + nnzU;							  
       printf("\tnonzeros in L+U-I   %ld\n", nnzLU);
       printf("\tNo of supers   %ld\n", (long long) nsuper);
       printf("\tSize of G(L)   %ld\n", (long long) szLGr);
