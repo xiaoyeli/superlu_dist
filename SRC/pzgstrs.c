@@ -813,7 +813,7 @@ pzgstrs(int_t n, LUstruct_t *LUstruct,
 	stat->utime[SOL_COMM] = 0.0;
 	stat->utime[SOL_GEMM] = 0.0;
 	stat->utime[SOL_TRSM] = 0.0;
-	stat->utime[SOL_L] = 0.0;	
+	stat->utime[SOL_TOT] = 0.0;	
 	
 #if ( DEBUGlevel>=1 )
     CHECK_MALLOC(iam, "Enter pzgstrs()");
@@ -1442,7 +1442,7 @@ pzgstrs(int_t n, LUstruct_t *LUstruct,
 
 #if ( PRNTlevel>=1 )
 		t = SuperLU_timer_() - t;
-		stat->utime[SOL_L] = t;
+		stat->utime[SOL_TOT] += t;
 		if ( !iam ) {
 			printf(".. L-solve time\t%8.4f\n", t);
 			fflush(stdout);
@@ -2004,6 +2004,8 @@ for (i=0;i<nroot_send;i++){
 	}
 #if ( PRNTlevel>=1 )
 		t = SuperLU_timer_() - t;
+		stat->utime[SOL_TOT] += t;
+		
 		if ( !iam ) printf(".. U-solve time\t%8.4f\n", t);
 		MPI_Reduce (&t, &tmax, 1, MPI_DOUBLE,
 				MPI_MAX, 0, grid->comm);

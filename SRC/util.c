@@ -740,7 +740,7 @@ PStatPrint(superlu_dist_options_t *options, SuperLUStat_t *stat, gridinfo_t *gri
     MPI_Gather(&utime[SOL_COMM], 1, MPI_DOUBLE,utime1, 1 , MPI_DOUBLE, 0, grid->comm);	
     MPI_Gather(&utime[SOL_GEMM], 1, MPI_DOUBLE,utime2, 1 , MPI_DOUBLE, 0, grid->comm);		
     MPI_Gather(&utime[SOL_TRSM], 1, MPI_DOUBLE,utime3, 1 , MPI_DOUBLE, 0, grid->comm);		
-    MPI_Gather(&utime[SOL_L], 1, MPI_DOUBLE,utime4, 1 , MPI_DOUBLE, 0, grid->comm);		
+    MPI_Gather(&utime[SOL_TOT], 1, MPI_DOUBLE,utime4, 1 , MPI_DOUBLE, 0, grid->comm);		
 	if ( !iam ) 	
 	for (i = 0; i < P; ++i) {
 		printf("\t\t\t%d%10.5f%10.5f%10.5f%10.5f\n", i,utime1[i],utime2[i],utime3[i], utime4[i]);
