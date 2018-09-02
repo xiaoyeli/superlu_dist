@@ -986,7 +986,7 @@ pdgstrs(int_t n, LUstruct_t *LUstruct,
 
 #if ( DEBUGlevel>=1 )   
     /* Dump the L factor using matlab triple-let format. */
-	dDumpLblocks(iam, nsupers, grid, Glu_persist, Llu);
+	//dDumpLblocks(iam, nsupers, grid, Glu_persist, Llu);
 #endif   
     /*---------------------------------------------------
      * Forward solve Ly = b.
