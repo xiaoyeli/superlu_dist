@@ -586,10 +586,10 @@ float symbfact_dist
     stat_loc[21] = PS.fill_pelt[3];
     stat_loc[22] = PS.fill_pelt[5];
     
-    MPI_Reduce (stat_loc, stat_glob, 23, MPI_FLOAT, 
-		MPI_SUM, 0, (*symb_comm));
-    MPI_Reduce (&(stat_loc[5]), mem_glob, 14, MPI_FLOAT, 
-		MPI_MAX, 0, (*symb_comm));
+    MPI_Allreduce (stat_loc, stat_glob, 23, MPI_FLOAT, 
+		MPI_SUM,  (*symb_comm));
+    MPI_Allreduce (&(stat_loc[5]), mem_glob, 14, MPI_FLOAT, 
+		MPI_MAX,  (*symb_comm));
     fill_rcmd = (int_t) mem_glob[10];
     PS.fill_pelt[0] = stat_glob[19];
     PS.fill_pelt[1] = mem_glob[12];
@@ -628,6 +628,7 @@ float symbfact_dist
     if (stat_msgs_g[6] == 0) stat_msgs_g[6] = 1;
     if (stat_msgs_g[7] == 0) stat_msgs_g[7] = 1;
     
+	Pslu_freeable->nnzLU=(long long) stat_glob[0]+(long long) stat_glob[1];					
     if (!iam) {
       nnzL   = (long long) stat_glob[0]; nnzU  = (long long) stat_glob[1];
       nsuper = (int_t) stat_glob[2];

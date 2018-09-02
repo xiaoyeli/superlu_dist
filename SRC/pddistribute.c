@@ -67,7 +67,7 @@ dReDistribute_A(SuperMatrix *A, ScalePermstruct_t *ScalePermstruct,
     NRformat_loc *Astore;
     int_t  *perm_r; /* row permutation vector */
     int_t  *perm_c; /* column permutation vector */
-    int_t  i, irow, fst_row, j, jcol, k, gbi, gbj, n, m_loc, jsize;
+    int_t  i, irow, fst_row, j, jcol, k, gbi, gbj, n, m_loc, jsize,nnz_tot;
     int_t  nnz_loc;    /* number of local nonzeros */
     int_t  SendCnt; /* number of remote nonzeros to be sent */
     int_t  RecvCnt; /* number of remote nonzeros to be sent */
@@ -76,6 +76,7 @@ dReDistribute_A(SuperMatrix *A, ScalePermstruct_t *ScalePermstruct,
     int_t  *ptr_to_send;
     double *aij, **aij_send, *nzval, *dtemp;
     double *nzval_a;
+	double asum,asum_tot;				  
     int    iam, it, p, procs;
     MPI_Request *send_req;
     MPI_Status  status;
@@ -97,7 +98,6 @@ dReDistribute_A(SuperMatrix *A, ScalePermstruct_t *ScalePermstruct,
     fst_row = Astore->fst_row;
     nnzToRecv = intCalloc_dist(2*procs);
     nnzToSend = nnzToRecv + procs;
-
 
     /* ------------------------------------------------------------
        COUNT THE NUMBER OF NONZEROS TO BE SENT TO EACH PROCESS,

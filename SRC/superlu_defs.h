@@ -371,6 +371,7 @@ typedef struct {
     LU_space_t MemModel; /* 0 - system malloc'd; 1 - user provided */
     int_t     *llvl;     /* keep track of level in L for level-based ILU */
     int_t     *ulvl;     /* keep track of level in U for level-based ILU */
+	int64_t nnzLU;   /* number of nonzeros in L+U*/					  
 } Glu_freeable_t;
 
 
