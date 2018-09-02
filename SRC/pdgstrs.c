@@ -407,34 +407,34 @@ pdReDistribute_X_to_B(int_t n, double *B, int_t m_loc, int_t ldb, int_t fst_row,
     ptr_to_dbuf  = gstrs_comm->ptr_to_dbuf;
 
 	
-	// if(procs==1){ //faster memory copy when procs=1
+	if(procs==1){ //faster memory copy when procs=1
 		
-// #ifdef _OPENMP
-// #pragma omp parallel default (shared)
-// #endif
-	// {
-// #ifdef _OPENMP
-// #pragma omp master
-// #endif
-	// {	
-		// // t = SuperLU_timer_();
-// #ifdef _OPENMP
-// #pragma	omp	taskloop private (k,knsupc,lk,irow,l,i,j) untied 
-// #endif		
-		// for (k = 0; k < nsupers; k++) { 
-		// knsupc = SuperSize( k );
-		// lk = LBi( k, grid ); /* Local block number */
-		// irow = FstBlockC( k );
-		// l = X_BLK( lk );
-		// for (i = 0; i < knsupc; ++i) {
-			// RHS_ITERATE(j) { /* RHS is stored in row major in the buffer. */
-				// B[irow-fst_row +i + j*ldb] = x[l + i + j*knsupc];
-			// }
-			// }
-		// }
-	// }
-	// }	
-	// }else{
+#ifdef _OPENMP
+#pragma omp parallel default (shared)
+#endif
+	{
+#ifdef _OPENMP
+#pragma omp master
+#endif
+	{	
+		// t = SuperLU_timer_();
+#ifdef _OPENMP
+#pragma	omp	taskloop private (k,knsupc,lk,irow,l,i,j) untied 
+#endif		
+		for (k = 0; k < nsupers; k++) { 
+		knsupc = SuperSize( k );
+		lk = LBi( k, grid ); /* Local block number */
+		irow = FstBlockC( k );
+		l = X_BLK( lk );
+		for (i = 0; i < knsupc; ++i) {
+			RHS_ITERATE(j) { /* RHS is stored in row major in the buffer. */
+				B[irow-fst_row +i + j*ldb] = x[l + i + j*knsupc];
+			}
+			}
+		}
+	}
+	}	
+	}else{
 		k = sdispls[procs-1] + SendCnt[procs-1]; /* Total number of sends */
 		l = rdispls[procs-1] + RecvCnt[procs-1]; /* Total number of receives */
 		if ( !(send_ibuf = intMalloc_dist(k + l)) )
@@ -521,7 +521,7 @@ pdReDistribute_X_to_B(int_t n, double *B, int_t m_loc, int_t ldb, int_t fst_row,
 	SUPERLU_FREE(req_recv);
 	SUPERLU_FREE(status_send);
 	SUPERLU_FREE(status_recv);	
-// }
+}
 #if ( DEBUGlevel>=1 )
     CHECK_MALLOC(grid->iam, "Exit pdReDistribute_X_to_B()");
 #endif
