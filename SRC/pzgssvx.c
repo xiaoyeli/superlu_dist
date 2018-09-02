@@ -1198,10 +1198,12 @@ pzgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 	}
 	
 	
+	MPI_Allreduce( &(asum.r), &(asum_tot.r),1, MPI_DOUBLE, MPI_SUM, grid->comm );
+	MPI_Allreduce( &(asum.i), &(asum_tot.i),1, MPI_DOUBLE, MPI_SUM, grid->comm );
+	MPI_Allreduce( &(lsum.r), &(lsum_tot.r),1, MPI_DOUBLE, MPI_SUM, grid->comm );
+	MPI_Allreduce( &(lsum.i), &(lsum_tot.i),1, MPI_DOUBLE, MPI_SUM, grid->comm );
 	
-	
-	MPI_Allreduce( &asum, &asum_tot,1, SuperLU_MPI_DOUBLE_COMPLEX, MPI_SUM, grid->comm );
-	MPI_Allreduce( &lsum, &lsum_tot,1, SuperLU_MPI_DOUBLE_COMPLEX, MPI_SUM, grid->comm );
+
 	MPI_Allreduce( &Astore->rowptr[Astore->m_loc], &nnz_tot,1, mpi_int_t, MPI_SUM, grid->comm );
 	// MPI_Bcast( &nnzLU, 1, mpi_int_t, 0, grid->comm );
 	
