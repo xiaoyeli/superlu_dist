@@ -140,10 +140,7 @@ if ( msg0 && msg2 ) { /* L(:,k) and U(k,:) are not empty. */
 	 /* jj0 contains the look-ahead window that was updated in 
 	    dlook_ahead_update.c. Now the search can continue from that point,
 	    not to start from block 0. */
-#if 0
-	 iukp = iukp0; /* point to the first block in index[] */
-	 rukp = rukp0; /* point to the start of nzval[] */
-#else
+#if 0 //Sherry comment out 5/21/2018
 	 /* Save pointers at location right after look-ahead window
 	    for later restart. */
 	 iukp0 = iukp;
@@ -159,7 +156,7 @@ if ( msg0 && msg2 ) { /* L(:,k) and U(k,:) are not empty. */
   	  */
 	 for (j = jj0; j < nub; ++j) { /* jj0 starts after look-ahead window. */
 	     temp_ncols = 0;
-#if 0
+#if 1
 	     /* Sherry - can remove following call, since perm_u == Identity  */
 	     arrive_at_ublock(
 			      j, &iukp, &rukp, &jb, &ljb, &nsupc,
@@ -181,7 +178,7 @@ if ( msg0 && msg2 ) { /* L(:,k) and U(k,:) are not empty. */
 			j, Ublock_info[j].iukp, Ublock_info[j].rukp,
 			Ublock_info[j].jb, nsupc); */
 
-	     /* Prepare to call GEMM. */
+	     /* Prepare to call GEMM: compute ldu and # of nonzero columns. */
 	     jj = iukp;
 	     for (; jj < iukp+nsupc; ++jj) {
 		 segsize = klst - usub[jj];
@@ -193,7 +190,7 @@ if ( msg0 && msg2 ) { /* L(:,k) and U(k,:) are not empty. */
 
 	     Ublock_info[j].full_u_cols = temp_ncols;
 	     ncols += temp_ncols;
-#if 1	     
+#if 0 // Sherry comment out 5/31/2018 */	     
 	     /* Jump number of nonzeros in block U(k,jj);
 		Move to block U(k,j+1) in nzval[] array.  */
 	     rukp += usub[iukp - 1];
@@ -252,7 +249,7 @@ if ( msg0 && msg2 ) { /* L(:,k) and U(k,:) are not empty. */
 
             /* == processing each of the remaining columns in parallel == */
 #if 0
-	    /* Sherry - can remove following call, since perm_u == Identity  */
+	    /* Can remove following call, since the search was already done. */
             arrive_at_ublock(j, &iukp, &rukp, &jb, &ljb, &nsupc,
 			     iukp0, rukp0, usub,perm_u, xsup, grid);
 #else
@@ -274,11 +271,7 @@ if ( msg0 && msg2 ) { /* L(:,k) and U(k,:) are not empty. */
 		    for (i=0; i<segsize; ++i) tempu[i+lead_zero] = uval[rukp+i];
 
                     rukp += segsize;
-#if 0
-		    tempu += segsize;
-#else
                     tempu += gemm_k_pad;
-#endif
                 }
 	    }
 #if 0

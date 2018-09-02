@@ -26,8 +26,8 @@ at the top-level directory.
 
 iukp = iukp0; /* point to the first block in index[] */
 rukp = rukp0; /* point to the start of nzval[] */
-j = jj0 = 0;
 
+j = jj0 = 0;
 #if 0
 for (jj = 0; jj < nub; ++jj) assert(perm_u[jj] == jj); /* Sherry */
 #endif

@@ -141,8 +141,7 @@ if ( msg0 && msg2 ) { /* L(:,k) and U(k,:) are not empty. */
 	 /* jj0 contains the look-ahead window that was updated in 
 	    dlook_ahead_update.c. Now the search can continue from that point,
 	    not to start from block 0. */
-
-#if 0 // Sherry comment out 5/21/208
+#if 0 //Sherry comment out 5/21/2018
 	 /* Save pointers at location right after look-ahead window
 	    for later restart. */
 	 iukp0 = iukp;
@@ -192,7 +191,7 @@ if ( msg0 && msg2 ) { /* L(:,k) and U(k,:) are not empty. */
 
 	     Ublock_info[j].full_u_cols = temp_ncols;
 	     ncols += temp_ncols;
-#if 0 // Sherry comment out 5/31/2018 */
+#if 0 // Sherry comment out 5/31/2018 */	     
 	     /* Jump number of nonzeros in block U(k,jj);
 		Move to block U(k,j+1) in nzval[] array.  */
 	     rukp += usub[iukp - 1];

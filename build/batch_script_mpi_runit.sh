@@ -79,15 +79,15 @@ fi
 #nprows=(12 1 144)
 #npcols=(12 144 1)
  
-NREP=1	  
+NREP=1  
 
 #nprows=(4 8 16 32 45)
 #npcols=(4 8 16 32 45)
 #nprows=(32)
 #npcols=(48)
 
-nprows=(16)
-npcols=(16)
+nprows=(4)
+npcols=(4)
  
 for ((i = 0; i < ${#npcols[@]}; i++)); do
 NROW=${nprows[i]}
@@ -134,7 +134,7 @@ THREADS_PER_RANK=`expr 2 \* $OMP_NUM_THREADS`
 #  for MAT in DG_PNF_14000.bin DG_GrapheneDisorder_32768.bin
  #  for MAT in DNA_715_64cell.mtx
  # for MAT in Ga19As19H42.mtx cage13.rb Geo_1438.mtx nlpkkt80.mtx torso3.mtx helm2d03.mtx gsm_106857.mtx atmosmodj.mtx StocF-1465.mtx hvdc2.mtx  
- for MAT in Geo_1438.bin
+ for MAT in big.rua
  do
     # Start of looping stuff
     > $TMP_BATCH_FILE
@@ -173,7 +173,7 @@ THREADS_PER_RANK=`expr 2 \* $OMP_NUM_THREADS`
     echo "NCOL=$NCOL" >> $TMP_BATCH_FILE
     echo "NROW=$NROW" >> $TMP_BATCH_FILE
     # This should be computed individually for each script...
-OUTPUT=./$MAT/SLU.o_mpi_${NROW}x${NCOL}_asyncU_cori	
+OUTPUT=./$MAT/SLU.o_mpi_${NROW}x${NCOL}_nompitest
 	rm -rf $OUTPUT
 	for ii in `seq 1 $NREP`
     do

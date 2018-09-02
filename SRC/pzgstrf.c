@@ -818,10 +818,10 @@ pzgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
 
 #if ( PRNTlevel>=1 )
     if(!iam) {
-	printf("max_nrows in L panel %d\n", max_row_size);
-	printf("\t.. GEMM buffer size: max_nrows X max_ncols = %d x %d\n",
+	printf("max_nrows in L panel " IFMT "\n", max_row_size);
+	printf("\t.. GEMM buffer size: max_nrows X max_ncols = " IFMT "x" IFMT "\n",
 	       max_row_size, (bigu_size / ldt));
-	printf(".. BIG U size %d\t BIG V size %d\n", bigu_size, bigv_size);
+	printf(".. BIG U size " IFMT "\t BIG V size " IFMT "\n", bigu_size, bigv_size);
 	fflush(stdout);
     }
 #endif
@@ -1628,12 +1628,9 @@ pzgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
             qsort (perm_u, (size_t) nub, 2 * sizeof (int_t),
                    &superlu_sort_perm);
 #endif
-            j = jj0 = 0;
+            // j = jj0 = 0;
 
 /************************************************************************/
-#if 0
-	for (jj = 0; jj < nub; ++jj) assert(perm_u[jj] == jj); /* Sherry */
-#endif
             double ttx =SuperLU_timer_();
 
 //#include "zlook_ahead_update_v4.c"

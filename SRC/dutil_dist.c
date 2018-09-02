@@ -430,12 +430,10 @@ void dDumpLblocks(int iam, int_t nsupers, gridinfo_t *grid,
 	
 	snprintf(filename, sizeof(filename), "%s-%d", "L", iam);    
     printf("Dumping L factor to --> %s\n", filename);
-
-	if ( !(fp = fopen(filename, "w")) ) {
+ 	if ( !(fp = fopen(filename, "w")) ) {
 			ABORT("File open failed");
 		}
-
-    ncb = nsupers / grid->npcol;
+     ncb = nsupers / grid->npcol;
     extra = nsupers % grid->npcol;
     mycol = MYCOL( iam, grid );
     if ( mycol < extra ) ++ncb;
@@ -460,14 +458,9 @@ void dDumpLblocks(int iam, int_t nsupers, gridinfo_t *grid,
 	    }
 	}	
     }
-
-	fclose(fp);
-
-	
+ 	fclose(fp);
+ 	
 } /* dDumpLblocks */
-
-
-
 
 
 

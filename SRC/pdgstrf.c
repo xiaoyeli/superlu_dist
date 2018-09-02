@@ -628,7 +628,6 @@ pdgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
     printf("[%d] .. Turn off static schedule for debugging ..\n", iam);
     for (i = 0; i < nsupers; ++i) perm_c_supno[i] = iperm_c_supno[i] = i;
 #endif
-
      /* ################################################################## */
 
     /* constructing look-ahead table to indicate the last dependency */

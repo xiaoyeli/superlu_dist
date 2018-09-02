@@ -530,7 +530,7 @@ pzgssvx(superlu_dist_options_t *options, SuperMatrix *A,
     int_t    colequ, Equil, factored, job, notran, rowequ, need_value;
     int_t    i, iinfo, j, irow, m, n, nnz, permc_spec;
     int_t    nnz_loc, m_loc, fst_row, icol;
-    int      iam;
+    int      iam,iam_g;
     int      ldx;  /* LDA for matrix X (local). */
     char     equed[1], norm[1];
     double   *C, *R, *C1, *R1, amax, anorm, colcnd, rowcnd;
@@ -539,6 +539,14 @@ pzgssvx(superlu_dist_options_t *options, SuperMatrix *A,
     float    GA_mem_use;    /* memory usage by global A */
     float    dist_mem_use; /* memory usage during distribution */
     superlu_dist_mem_usage_t num_mem_usage, symb_mem_usage;
+	long long int nnzLU;
+	int_t nnz_tot;
+	doublecomplex *nzval_a;
+	doublecomplex asum,asum_tot,lsum,lsum_tot;
+	int_t nsupers,nsupers_j;
+	int_t lk,k,knsupc,nsupr;
+	int_t  *lsub,*xsup;
+	doublecomplex *lusup;	
 #if ( PRNTlevel>= 2 )
     double   dmin, dsum, dprod;
 #endif
@@ -1046,7 +1054,7 @@ pzgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 	    	/* Every process does this. */
 	    	iinfo = symbfact(options, iam, &GAC, perm_c, etree, 
 			     	 Glu_persist, Glu_freeable);
-
+			nnzLU = Glu_freeable->nnzLU;
 	    	stat->utime[SYMBFAC] = SuperLU_timer_() - t;
 	    	if ( iinfo <= 0 ) { /* Successful return */
 		    QuerySpace_dist(n, -iinfo, Glu_freeable, &symb_mem_usage);
@@ -1080,6 +1088,7 @@ pzgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 				       sizes, fstVtxSep, &Pslu_freeable, 
 				       &(grid->comm), &symb_comm,
 				       &symb_mem_usage); 
+			nnzLU = Pslu_freeable.nnzLU;
 	    	stat->utime[SYMBFAC] = SuperLU_timer_() - t;
 	    	if (flinfo > 0) {
 #if ( PRNTlevel>=1 )
@@ -1150,6 +1159,71 @@ pzgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 	// }
 	// }
 	
+	
+#if ( PRNTlevel>=1 )
+    /* ------------------------------------------------------------
+       SUM OVER ALL ENTRIES OF A AND PRINT NNZ AND SIZE OF A.
+       ------------------------------------------------------------*/
+    Astore = (NRformat_loc *) A->Store;
+	xsup = Glu_persist->xsup;
+	nzval_a = Astore->nzval;
+
+
+	asum.r=0.0;
+	asum.i=0.0;
+    for (i = 0; i < Astore->m_loc; ++i) {
+        for (j = Astore->rowptr[i]; j < Astore->rowptr[i+1]; ++j) {
+		z_add(&asum,&asum,&nzval_a[j]);
+	}
+    }
+	
+	nsupers = Glu_persist->supno[n-1] + 1;
+	nsupers_j = CEILING( nsupers, grid->npcol ); /* Number of local block columns */
+	
+	
+	
+	lsum.r=0.0;
+	lsum.i=0.0;
+	for (lk=0;lk<nsupers_j;++lk){	
+		lsub = LUstruct->Llu->Lrowind_bc_ptr[lk];
+		lusup = LUstruct->Llu->Lnzval_bc_ptr[lk];
+		if(lsub){
+			k = MYCOL(grid->iam, grid)+lk*grid->npcol;  /* not sure */
+			knsupc = SuperSize( k );
+			nsupr = lsub[1];
+			for (j=0; j<knsupc; ++j)
+				for (i = 0; i < nsupr; ++i) 
+					z_add(&lsum,&lsum,&lusup[j*nsupr+i]);
+		}
+	}
+	
+	
+	
+	
+	MPI_Allreduce( &asum, &asum_tot,1, SuperLU_MPI_DOUBLE_COMPLEX, MPI_SUM, grid->comm );
+	MPI_Allreduce( &lsum, &lsum_tot,1, SuperLU_MPI_DOUBLE_COMPLEX, MPI_SUM, grid->comm );
+	MPI_Allreduce( &Astore->rowptr[Astore->m_loc], &nnz_tot,1, mpi_int_t, MPI_SUM, grid->comm );
+	// MPI_Bcast( &nnzLU, 1, mpi_int_t, 0, grid->comm );
+	
+	MPI_Comm_rank( MPI_COMM_WORLD, &iam_g );
+	
+    if (!iam_g) {
+	print_options_dist(options);
+	fflush(stdout);
+    }
+ 	// if ( !iam )
+
+
+
+	printf(".. Ainfo mygid %5d   mysid %5d   nnz_loc %7d   sum_loc   %e lsum_loc   %e nnz %7d  nnzLU %7d sum %e  lsum %e  N %7d\n", iam_g,iam,Astore->rowptr[Astore->m_loc],asum.r+asum.i, lsum.r+lsum.i, nnz_tot,nnzLU,asum_tot.r+asum_tot.i,lsum_tot.r+lsum_tot.i,A->ncol);
+	
+	
+	fflush(stdout);
+#endif				
+			
+ 			
+	
+		
 #if 0
 
 // #ifdef GPU_PROF
