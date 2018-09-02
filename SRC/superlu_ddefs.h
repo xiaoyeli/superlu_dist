@@ -347,6 +347,7 @@ extern void  dPrintUblocks(int, int_t, gridinfo_t *, Glu_persist_t *,
 extern void  dPrint_CompCol_Matrix_dist(SuperMatrix *);
 extern void  dPrint_Dense_Matrix_dist(SuperMatrix *);
 extern int   dPrint_CompRowLoc_Matrix_dist(SuperMatrix *);
+extern int   file_dPrint_CompRowLoc_Matrix_dist(FILE *fp, SuperMatrix *A);
 extern int   file_PrintDouble5(FILE *, char *, int_t, double *);
 
 
