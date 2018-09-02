@@ -212,7 +212,7 @@ pdReDistribute_B_to_X(double *B, int_t m_loc, int nrhs, int_t ldb,
 	{	
 		// t = SuperLU_timer_();
 #ifdef _OPENMP
-#pragma	omp	taskloop private (i,l,irow,k,j)  
+#pragma	omp	taskloop private (i,l,irow,k,j,knsupc,lk) untied 
 #endif
 		for (i = 0; i < m_loc; ++i) {
 			irow = perm_c[perm_r[i+fst_row]]; /* Row number in Pc*Pr*B */
@@ -230,7 +230,7 @@ pdReDistribute_B_to_X(double *B, int_t m_loc, int nrhs, int_t ldb,
 		
  		RHS_ITERATE(j) {
 #ifdef _OPENMP
-#pragma	omp	taskloop private (i) 
+#pragma	omp	taskloop private (i) untied 
 #endif		
 		for (i = 0; i < m_loc; ++i) {
 		x[rowind[i] + j*knsupc] = B[i + j*ldb];
