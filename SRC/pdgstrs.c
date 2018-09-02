@@ -162,7 +162,7 @@ pdReDistribute_B_to_X(double *B, int_t m_loc, int nrhs, int_t ldb,
     int_t  *perm_r, *perm_c; /* row and column permutation vectors */
     int_t  *send_ibuf, *recv_ibuf;
     double *send_dbuf, *recv_dbuf;
-    int_t  *xsup, *supno, *rowind;
+    int_t  *xsup, *supno;
     int_t  i, ii, irow, gbi, j, jj, k, knsupc, l, lk, nbrow;
     int    p, procs;
     pxgstrs_comm_t *gstrs_comm = SOLVEstruct->gstrs_comm;
@@ -199,9 +199,6 @@ pdReDistribute_B_to_X(double *B, int_t m_loc, int nrhs, int_t ldb,
 
 	if(procs==1){ // faster memory copy when procs=1 
 	
-		if ( !(rowind = intMalloc_dist(m_loc)) )
-			ABORT("Malloc fails for rowind[].");	
-	
 #ifdef _OPENMP
 #pragma omp parallel default (shared)
 #endif
@@ -225,18 +222,10 @@ pdReDistribute_B_to_X(double *B, int_t m_loc, int nrhs, int_t ldb,
 			x[l - XK_H] = k;      /* Block number prepended in the header. */
 			
 			irow = irow - FstBlockC(k); /* Relative row number in X-block */
-			rowind[i] = l + irow;
+			RHS_ITERATE(j) {
+			x[l + irow + j*knsupc] = B[i + j*ldb];
+			}
 		}
-		
- 		RHS_ITERATE(j) {
-#ifdef _OPENMP
-#pragma	omp	taskloop private (i) untied 
-#endif		
-		for (i = 0; i < m_loc; ++i) {
-		x[rowind[i] + j*knsupc] = B[i + j*ldb];
-		}
-		}
-		SUPERLU_FREE(rowind);
 	}
 	}
 	}else{
@@ -986,7 +975,7 @@ pdgstrs(int_t n, LUstruct_t *LUstruct,
 
 #if ( DEBUGlevel>=1 )   
     /* Dump the L factor using matlab triple-let format. */
-	//dDumpLblocks(iam, nsupers, grid, Glu_persist, Llu);
+	dDumpLblocks(iam, nsupers, grid, Glu_persist, Llu);
 #endif   
     /*---------------------------------------------------
      * Forward solve Ly = b.

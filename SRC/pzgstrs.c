@@ -161,7 +161,7 @@ pzReDistribute_B_to_X(doublecomplex *B, int_t m_loc, int nrhs, int_t ldb,
     int_t  *perm_r, *perm_c; /* row and column permutation vectors */
     int_t  *send_ibuf, *recv_ibuf;
     doublecomplex *send_dbuf, *recv_dbuf;
-    int_t  *xsup, *supno, *rowind;
+    int_t  *xsup, *supno;
     int_t  i, ii, irow, gbi, j, jj, k, knsupc, l, lk, nbrow;
     int    p, procs;
     pxgstrs_comm_t *gstrs_comm = SOLVEstruct->gstrs_comm;
@@ -198,9 +198,6 @@ pzReDistribute_B_to_X(doublecomplex *B, int_t m_loc, int nrhs, int_t ldb,
 
 	if(procs==1){ // faster memory copy when procs=1 
 	
-		if ( !(rowind = intMalloc_dist(m_loc)) )
-			ABORT("Malloc fails for rowind[].");	
-	
 #ifdef _OPENMP
 #pragma omp parallel default (shared)
 #endif
@@ -211,7 +208,7 @@ pzReDistribute_B_to_X(doublecomplex *B, int_t m_loc, int nrhs, int_t ldb,
 	{	
 		// t = SuperLU_timer_();
 #ifdef _OPENMP
-#pragma	omp	taskloop private (i,l,irow,k,j) untied 
+#pragma	omp	taskloop private (i,l,irow,k,j,knsupc,lk) untied 
 #endif
 		for (i = 0; i < m_loc; ++i) {
 			irow = perm_c[perm_r[i+fst_row]]; /* Row number in Pc*Pr*B */
@@ -225,18 +222,10 @@ pzReDistribute_B_to_X(doublecomplex *B, int_t m_loc, int nrhs, int_t ldb,
 			x[l - XK_H].i = 0;
 			
 			irow = irow - FstBlockC(k); /* Relative row number in X-block */
-			rowind[i] = l + irow;
+			RHS_ITERATE(j) {
+			x[l + irow + j*knsupc] = B[i + j*ldb];
+			}
 		}
-		
- 		RHS_ITERATE(j) {
-#ifdef _OPENMP
-#pragma	omp	taskloop private (i) untied 
-#endif		
-		for (i = 0; i < m_loc; ++i) {
-		x[rowind[i] + j*knsupc] = B[i + j*ldb];
-		}
-		}
-		SUPERLU_FREE(rowind);
 	}
 	}
 	}else{
