@@ -40,6 +40,9 @@ ifeq "${ACC}" "GPU"
 ALLAUX += cublas_utils.o
 endif
 
+ifeq ($(HAVE_COMBBLAS),TRUE)
+ALLAUX += c2cpp_GetAWPM.o
+endif
 #
 # Routines literally taken from SuperLU, but renamed with suffix _dist
 #
@@ -72,13 +75,27 @@ ZPLUSRC = pzgssvx.o pzgssvx_ABglobal.o \
 all:  double complex16
 
 config_h:
+	rm -f superlu_dist_config.h							
 ifeq ($(XSDK_INDEX_SIZE),64)
-	printf "#define XSDK_INDEX_SIZE 64\n" > superlu_dist_config.h
+		printf "#define XSDK_INDEX_SIZE 64\n" >> superlu_dist_config.h
 else
-	printf "/* #define XSDK_INDEX_SIZE 64 */\n" > superlu_dist_config.h
+		printf "/* #define XSDK_INDEX_SIZE 64 */\n" >> superlu_dist_config.h
+endif
+ifeq ($(HAVE_PARMETIS),TRUE)
+		printf "#define HAVE_PARMETIS TRUE\n" >> superlu_dist_config.h
+else
+		printf "/* #define HAVE_PARMETIS TRUE */\n" >> superlu_dist_config.h
+endif
+ifeq ($(HAVE_COMBBLAS),TRUE)
+		printf "#define HAVE_COMBBLAS TRUE\n" >> superlu_dist_config.h
+else
+		printf "/* #define HAVE_COMBBLAS TRUE */\n" >> superlu_dist_config.h
 endif
 	printf "#if (XSDK_INDEX_SIZE == 64)\n#define _LONGINT 1\n#endif\n" >> superlu_dist_config.h
 
+
+#config_h:
+#	cp -f superlu_dist_config_for_makefile.h superlu_dist_config.h
 double: config_h $(DSLUSRC) $(DPLUSRC) $(ALLAUX)
 	$(ARCH) $(ARCHFLAGS) $(DSUPERLULIB) \
 		$(DSLUSRC) $(DPLUSRC) $(ALLAUX)
@@ -90,19 +107,22 @@ complex16: config_h $(ZSLUSRC) $(ZPLUSRC) $(ALLAUX)
 	$(RANLIB) $(DSUPERLULIB)
 
 pdgstrf.o: dscatter.c dlook_ahead_update.c dSchCompUdt-2Ddynamic.c pdgstrf.c
-	$(CC) $(CFLAGS) $(CDEFS) $(BLASDEF) -c pdgstrf.c $(VERBOSE)
+	$(CC) $(CFLAGS) $(CDEFS) $(BLASDEF) -I$(INCLUDEDIR) -c pdgstrf.c $(VERBOSE)
 
 pzgstrf.o: zscatter.c zlook_ahead_update.c zSchCompUdt-2Ddynamic.c pzgstrf.c
-	$(CC) $(CFLAGS) $(CDEFS) $(BLASDEF) -c pzgstrf.c $(VERBOSE)
+	$(CC) $(CFLAGS) $(CDEFS) $(BLASDEF) -I$(INCLUDEDIR) -c pzgstrf.c $(VERBOSE)
 
+c2cpp_GetAWPM.o: c2cpp_GetAWPM.cpp
+	$(CXX) $(CXXFLAGS) -I$(INCLUDEDIR) -o $@ -c $<
+		
 .c.o:
-	$(CC) $(CFLAGS) $(CDEFS) $(BLASDEF) -c $< $(VERBOSE)
+	$(CC) $(CFLAGS) $(CDEFS) $(BLASDEF) -I$(INCLUDEDIR) -c $< $(VERBOSE)
 
 .cpp.o:
-	$(CPP) $(CPPFLAGS) $(CDEFS) $(BLASDEF) -c $< $(VERBOSE)
+	$(CPP) $(CPPFLAGS) $(CDEFS) $(BLASDEF) -I$(INCLUDEDIR) -c $< $(VERBOSE)
 
 .f.o:
 	$(FORTRAN) $(FFLAGS) -c $< $(VERBOSE)
 
 clean:	
-	rm -f *.o $(DSUPERLULIB)
+	rm -f *.o $(DSUPERLULIB) superlu_dist_config.h

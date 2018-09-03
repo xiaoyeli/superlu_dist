@@ -209,7 +209,7 @@ at the top-level directory.
  *
  *      The user must also supply 
  *
- *      -  A, the unfactored matrix, only in the case that iterative refinment
+ *      -  A, the unfactored matrix, only in the case that iterative refinement
  *            is to be done (specifically A must be the output A from 
  *            the previous call, so that it has been scaled and permuted)
  *      -  all of ScalePermstruct
@@ -288,9 +288,13 @@ at the top-level directory.
  *         o RowPerm (rowperm_t)
  *           Specifies how to permute rows of the matrix A.
  *           = NATURAL:   use the natural ordering.
- *           = LargeDiag: use the Duff/Koster algorithm to permute rows of
- *                        the original matrix to make the diagonal large
+ *           = LargeDiag_MC64: use the Duff/Koster algorithm to permute rows
+ *                        of the original matrix to make the diagonal large
  *                        relative to the off-diagonal.
+ *           = LargeDiag_APWM: use the parallel approximate-weight perfect
+ *                        matching to permute rows of the original matrix
+ *                        to make the diagonal large relative to the
+ *                        off-diagonal.
  *           = MY_PERMR:  use the ordering given in ScalePermstruct->perm_r
  *                        input by the user.
  *           
@@ -312,7 +316,7 @@ at the top-level directory.
  *           = SLU_DOUBLE: accumulate residual in double precision.
  *           = SLU_EXTRA:  accumulate residual in extra precision.
  *
- *         NOTE: all options must be indentical on all processes when
+ *         NOTE: all options must be identical on all processes when
  *               calling this routine.
  *
  * A (input/output) SuperMatrix*
@@ -887,9 +891,9 @@ pzgssvx_ABglobal(superlu_dist_options_t *options, SuperMatrix *A,
 		QuerySpace_dist(n, -iinfo, Glu_freeable, &symb_mem_usage);
 #if ( PRNTlevel>=1 ) 
 		if ( !iam ) {
-		    printf("\tNo of supers %ld\n", (long long)Glu_persist->supno[n-1]+1);
-		    printf("\tSize of G(L) %ld\n", (long long)Glu_freeable->xlsub[n]);
-		    printf("\tSize of G(U) %ld\n", (long long)Glu_freeable->xusub[n]);
+		    printf("\tNo of supers " IFMT "\n", Glu_persist->supno[n-1]+1);
+		    printf("\tSize of G(L) " IFMT "\n", Glu_freeable->xlsub[n]);
+		    printf("\tSize of G(U) " IFMT "\n", Glu_freeable->xusub[n]);
 		    printf("\tint %d, short %d, float %d, double %d\n", 
 			   (int) sizeof(int_t), (int) sizeof(short), 
  			   (int) sizeof(float), (int) sizeof(double));

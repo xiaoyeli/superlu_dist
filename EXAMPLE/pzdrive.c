@@ -182,7 +182,7 @@ int main(int argc, char *argv[])
         options.Equil             = YES;
         options.ParSymbFact       = NO;
         options.ColPerm           = METIS_AT_PLUS_A;
-        options.RowPerm           = LargeDiag;
+        options.RowPerm           = LargeDiag_MC64;
         options.ReplaceTinyPivot  = NO;
         options.IterRefine        = DOUBLE;
         options.Trans             = NOTRANS;
@@ -192,9 +192,6 @@ int main(int argc, char *argv[])
 		options.DiagInv       = NO;
      */
     set_default_options_dist(&options);
-	// options.DiagInv       = YES;
-    options.IterRefine = NOREFINE;
-    options.ColPerm           = MMD_AT_PLUS_A;
 #if 0
     options.RowPerm = NOROWPERM;
     options.IterRefine = NOREFINE;

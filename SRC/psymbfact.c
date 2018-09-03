@@ -31,7 +31,7 @@ at the top-level directory.
  * </pre>
  */
 
-/* limits.h:  the largest positive integer (INT_MAX) */
+/* limits.h:  the largest positive integer (INT_MAX) (LONG_MAX) */
 #include <limits.h>
 #include <math.h>
 #include "superlu_ddefs.h"
@@ -512,10 +512,10 @@ float symbfact_dist
       nsuper = Pslu_freeable->supno_loc[fstVtx_lid];
       Pslu_freeable->xsup_beg_loc[nsuper] = fstVtx;
       szsn = 1;
-      if (INT_MAX - nnzL <= Llu_symbfact.xlsub[fstVtx_lid + 1] - 
+      if (LONG_MAX - nnzL <= Llu_symbfact.xlsub[fstVtx_lid + 1] - 
 	  Llu_symbfact.xlsub[fstVtx_lid])
 	printf ("PE[%d] ERR nnzL %lld\n", iam, nnzL); 
-      if (INT_MAX - nnzU <= Llu_symbfact.xusub[fstVtx_lid + 1] - 
+      if (LONG_MAX - nnzU <= Llu_symbfact.xusub[fstVtx_lid + 1] - 
 	  Llu_symbfact.xusub[fstVtx_lid])
 	printf ("PE[%d] ERR nnzU %lld\n", iam, nnzU);
       
@@ -587,9 +587,9 @@ float symbfact_dist
     stat_loc[22] = PS.fill_pelt[5];
     
     MPI_Allreduce (stat_loc, stat_glob, 23, MPI_FLOAT, 
-		MPI_SUM, (*symb_comm));
+		MPI_SUM,  (*symb_comm));
     MPI_Allreduce (&(stat_loc[5]), mem_glob, 14, MPI_FLOAT, 
-		MPI_MAX, (*symb_comm));
+		MPI_MAX,  (*symb_comm));
     fill_rcmd = (int_t) mem_glob[10];
     PS.fill_pelt[0] = stat_glob[19];
     PS.fill_pelt[1] = mem_glob[12];
@@ -628,7 +628,7 @@ float symbfact_dist
     if (stat_msgs_g[6] == 0) stat_msgs_g[6] = 1;
     if (stat_msgs_g[7] == 0) stat_msgs_g[7] = 1;
     
-	Pslu_freeable->nnzLU=(long long) stat_glob[0]+(long long) stat_glob[1];
+	Pslu_freeable->nnzLU=(long long) stat_glob[0]+(long long) stat_glob[1];					
     if (!iam) {
       nnzL   = (long long) stat_glob[0]; nnzU  = (long long) stat_glob[1];
       nsuper = (int_t) stat_glob[2];
@@ -638,11 +638,12 @@ float symbfact_dist
       printf("\t relax_gen %.2f, relax_curSep %.2f, relax_seps %.2f\n",
 	     PS.relax_gen, PS.relax_curSep, PS.relax_seps);
 #endif
+      printf("LONG_MAX %ld\n", LONG_MAX);
       printf("\tParameters: fill mem %ld fill pelt %ld\n",
 	     (long long) sp_ienv_dist(6), (long long) PS.fill_par);
       printf("\tNonzeros in L       %ld\n", nnzL);
       printf("\tNonzeros in U       %ld\n", nnzU);
-      nnzLU = nnzL + nnzU;							  
+      nnzLU = nnzL + nnzU;
       printf("\tnonzeros in L+U-I   %ld\n", nnzLU);
       printf("\tNo of supers   %ld\n", (long long) nsuper);
       printf("\tSize of G(L)   %ld\n", (long long) szLGr);
@@ -1471,9 +1472,9 @@ symbfact_distributeMatrix
     intBuf4 = intBuf1 + 3 * nprocs_num;
     
     for (p=0; p<nprocs_num; p++) {
-      if (nnzToSend[p] > INT_MAX || ptr_toSnd[p] > INT_MAX ||
-	  nnzToRecv[p] > INT_MAX || ptr_toRcv[p] > INT_MAX)
-	ABORT("ERROR in symbfact_distributeMatrix size to send > INT_MAX\n");
+      if (nnzToSend[p] > LONG_MAX || ptr_toSnd[p] > LONG_MAX ||
+	  nnzToRecv[p] > LONG_MAX || ptr_toRcv[p] > LONG_MAX)
+	ABORT("ERROR in symbfact_distributeMatrix size to send > LONG_MAX\n");
       intBuf1[p] = (int) nnzToSend[p];
       intBuf2[p] = (int) ptr_toSnd[p];
       intBuf3[p] = (int) nnzToRecv[p];
@@ -4773,8 +4774,8 @@ intraLvl_symbfact
 	  MPI_Irecv (&sz_msg, 1, mpi_int_t, 
 		     MPI_ANY_SOURCE, tag_intraLvl_szMsg, 
 		     (*symb_comm), &(request[0]));  
-	  if (sz_msg > INT_MAX)
-	    ABORT("ERROR in intraLvl_symbfact size to send > INT_MAX\n");
+	  if (sz_msg > LONG_MAX)
+	    ABORT("ERROR in intraLvl_symbfact size to send > LONG_MAX\n");
 	}
 	MPI_Waitany (2, request, index_req, status);
 	if (index_req[0] == 1) {

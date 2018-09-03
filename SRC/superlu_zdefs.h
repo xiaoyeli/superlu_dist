@@ -344,6 +344,12 @@ extern int_t zQuerySpace_dist(int_t, LUstruct_t *, gridinfo_t *,
 			      SuperLUStat_t *, superlu_dist_mem_usage_t *);
 
 /* Auxiliary routines */
+
+extern void zClone_CompRowLoc_Matrix_dist(SuperMatrix *, SuperMatrix *);
+extern void zCopy_CompRowLoc_Matrix_dist(SuperMatrix *, SuperMatrix *);
+extern void zZero_CompRowLoc_Matrix_dist(SuperMatrix *);
+extern void zScaleAddId_CompRowLoc_Matrix_dist(SuperMatrix *, doublecomplex);
+extern void zScaleAdd_CompRowLoc_Matrix_dist(SuperMatrix *, SuperMatrix *, doublecomplex);
 extern void    zfill_dist (doublecomplex *, int_t, doublecomplex);
 extern void    zinf_norm_error_dist (int_t, int_t, doublecomplex*, int_t,
                                      doublecomplex*, int_t, gridinfo_t*);
@@ -375,6 +381,7 @@ extern void  zPrintUblocks(int, int_t, gridinfo_t *, Glu_persist_t *,
 extern void  zPrint_CompCol_Matrix_dist(SuperMatrix *);
 extern void  zPrint_Dense_Matrix_dist(SuperMatrix *);
 extern int   zPrint_CompRowLoc_Matrix_dist(SuperMatrix *);
+extern int   file_zPrint_CompRowLoc_Matrix_dist(FILE *fp, SuperMatrix *A);																			   
 extern void  PrintDoublecomplex(char *, int_t, doublecomplex *);
 extern int   file_PrintDoublecomplex(FILE *fp, char *, int_t, doublecomplex *);
 

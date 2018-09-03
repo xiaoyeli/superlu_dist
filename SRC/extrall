@@ -1,0 +1,65 @@
+@beginskip
+	Filename:  extrall
+	Purpose :  for extracting all base files
+	Usage   :  extract -b extrall precision=<precision> 
+
+@endskip
+
+@extract -b ../Typedef.inc
+
+@precision SINGLE
+	@extract -b xgssv.base -o ../../SuperLU/SRC/sgssv.c precision=single
+	@extract -b xgssvx.base -o ../../SuperLU/SRC/sgssvx.c precision=single
+	@extract -b xgstrf.base -o ../../SuperLU/SRC/sgstrf.c precision=single
+	@extract -b xgstrs.base -o ../../SuperLU/SRC/sgstrs.c precision=single
+	@extract -b xgscon.base -o ../../SuperLU/SRC/sgscon.c precision=single
+	@extract -b xmemory.base -o ../../SuperLU/SRC/smemory.c precision=single
+	@extract -b xgsequ.base -o ../../SuperLU/SRC/sgsequ.c precision=single
+	@extract -b xlaqgs.base -o ../../SuperLU/SRC/slaqgs.c precision=single
+	@extract -b xgsrfs.base -o ../../SuperLU/SRC/sgsrfs.c precision=single
+	@extract -b xlacon.base -o ../../SuperLU/SRC/slacon.c precision=single
+	@extract -b xlangs.base -o ../../SuperLU/SRC/slangs.c precision=single
+	@extract -b xcolumn_bmod.base -o ../../SuperLU/SRC/scolumn_bmod.c precision=single
+	@extract -b xcolumn_dfs.base -o ../../SuperLU/SRC/scolumn_dfs.c precision=single
+	@extract -b xpanel_bmod.base -o ../../SuperLU/SRC/spanel_bmod.c precision=single
+	@extract -b xpanel_dfs.base -o ../../SuperLU/SRC/spanel_dfs.c precision=single
+
+	@extract -b xpivotL.base -o ../../SuperLU/SRC/spivotL.c precision=single
+	@extract -b xpivotgrowth.base -o ../../SuperLU/SRC/spivotgrowth.c precision=single
+	@extract -b xpruneL.base -o ../../SuperLU/SRC/spruneL.c precision=single
+	@extract -b xreadmt.base -o ../../SuperLU/SRC/sreadmt.c precision=single
+	@extract -b xsnode_bmod.base -o ../../SuperLU/SRC/ssnode_bmod.c precision=single
+	@extract -b xsnode_dfs.base -o ../../SuperLU/SRC/ssnode_dfs.c precision=single
+	@extract -b xsp_blas2.base -o ../../SuperLU/SRC/ssp_blas2.c precision=single
+	@extract -b xsp_blas3.base -o ../../SuperLU/SRC/ssp_blas3.c precision=single
+	@extract -b xutil.base -o ../../SuperLU/SRC/sutil.c precision=single
+	@extract -b xsp_defs.h.base -o ../../SuperLU/SRC/ssp_defs.h precision=single
+
+
+@precision DOUBLE
+	@extract -b xgssv.base -o ../../SuperLU/SRC/dgssv.c precision=double
+	@extract -b xgssvx.base -o ../../SuperLU/SRC/dgssvx.c precision=double
+	@extract -b xgstrf.base -o ../../SuperLU/SRC/dgstrf.c precision=double
+	@extract -b xgstrs.base -o ../../SuperLU/SRC/dgstrs.c precision=double
+	@extract -b xgscon.base -o ../../SuperLU/SRC/dgscon.c precision=double
+	@extract -b xmemory.base -o ../../SuperLU/SRC/dmemory.c precision=double
+	@extract -b xgsequ.base -o ../../SuperLU/SRC/dgsequ.c precision=double
+	@extract -b xlaqgs.base -o ../../SuperLU/SRC/dlaqgs.c precision=double
+	@extract -b xgsrfs.base -o ../../SuperLU/SRC/dgsrfs.c precision=double
+	@extract -b xlacon.base -o ../../SuperLU/SRC/dlacon.c precision=double
+	@extract -b xlangs.base -o ../../SuperLU/SRC/dlangs.c precision=double
+	@extract -b xcolumn_bmod.base -o ../../SuperLU/SRC/dcolumn_bmod.c precision=double
+	@extract -b xcolumn_dfs.base -o ../../SuperLU/SRC/dcolumn_dfs.c precision=double
+	@extract -b xpanel_bmod.base -o ../../SuperLU/SRC/dpanel_bmod.c precision=double
+	@extract -b xpanel_dfs.base -o ../../SuperLU/SRC/dpanel_dfs.c precision=double
+
+	@extract -b xpivotL.base -o ../../SuperLU/SRC/dpivotL.c precision=double
+	@extract -b xpivotgrowth.base -o ../../SuperLU/SRC/dpivotgrowth.c precision=double
+	@extract -b xpruneL.base -o ../../SuperLU/SRC/dpruneL.c precision=double
+	@extract -b xreadmt.base -o ../../SuperLU/SRC/dreadmt.c precision=double
+	@extract -b xsnode_bmod.base -o ../../SuperLU/SRC/dsnode_bmod.c precision=double
+	@extract -b xsnode_dfs.base -o ../../SuperLU/SRC/dsnode_dfs.c precision=double
+	@extract -b xsp_blas2.base -o ../../SuperLU/SRC/dsp_blas2.c precision=double
+	@extract -b xsp_blas3.base -o ../../SuperLU/SRC/dsp_blas3.c precision=double
+	@extract -b xutil.base -o ../../SuperLU/SRC/dutil.c precision=double
+	@extract -b xsp_defs.h.base -o ../../SuperLU/SRC/dsp_defs.h precision=double

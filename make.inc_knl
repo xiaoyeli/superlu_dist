@@ -1,0 +1,63 @@
+############################################################################
+#
+#  Program:         SuperLU_DIST
+#
+#  Module:          make.inc for Cori KNL
+#
+#  Purpose:         Top-level Definitions
+#
+#  Creation date:   March 1, 2016	version 5.0.0
+#
+#  Modified:	    
+#		    
+#
+############################################################################
+#
+#  The name of the libraries to be created/linked to
+#
+SuperLUroot	= /global/homes/l/liuyangz/Cori/my_research/github/superlu_dist_trisolve_done_knl_02_21_2018
+#DSUPERLULIB   	= $(SuperLUroot)/lib/libsuperlu_dist.so
+DSUPERLULIB   	= $(SuperLUroot)/lib/libsuperlu_dist_knl_trisolve.a
+# DSUPERLULIB   	= $(SuperLUroot)/lib/libsuperlu_dist_haswell.a
+
+VTUNE_DIR 	= /usr/common/software/intel/vtune_amplifier_xe_2016.3.0.463186
+
+LIBS		= $(DSUPERLULIB)
+LIBS += /global/homes/x/xiaoye/Cori/KNL/lib/parmetis-4.0.3/static-build/Linux-x86_64/libparmetis/libparmetis.a \
+   /global/homes/x/xiaoye/Cori/KNL/lib/parmetis-4.0.3/static-build/Linux-x86_64/libmetis/libmetis.a
+ 
+#     		   -L${VTUNE_DIR}/lib64 -littnotify
+
+# MKL can be used with Intel mpiicc compiler
+# -mkl 
+
+# Following are shared libraries
+#LIBS += /project/projectdirs/sparse/xiaoye/Carl-test/libparmetis.so \
+#     /project/projectdirs/sparse/xiaoye/Carl-test/libmetis.so \
+
+#
+#  The archiver and the flag(s) to use when building archive (library)
+#  If your system has no ranlib, set RANLIB = echo.
+#
+ARCH         = /usr/bin/ar
+ARCHFLAGS    = cr
+RANLIB       = /usr/bin/ranlib
+
+# CC           = mpiicc
+CC           = cc
+#CFLAGS 	     = -Ofast -DUSE_VENDOR_BLAS -DDEBUGlevel=0 -std=c11 -fpic -DPRNTlevel=1 -qopenmp -I/global/homes/x/xiaoye/Cori/KNL/lib/parmetis-4.0.3/include -I/global/homes/x/xiaoye/Cori/KNL/lib/parmetis-4.0.3/ -I${VTUNE_DIR}/include
+CFLAGS       = -g -dynamic -DUSE_VENDOR_BLAS -DDEBUGlevel=0 -std=c11 -fpic -DPRNTlevel=1 -qopenmp -I/global/homes/x/xiaoye/Cori/KNL/lib/parmetis-4.0.3/include -I/global/homes/x/xiaoye/Cori/KNL/lib/parmetis-4.0.3/ -I${VTUNE_DIR}/include
+CFLAGS += -align   # Steve Leak suggested this
+CFLAGS += -qopt-report=5 ##-DPROFlevel=1
+CFLAGS += -fno-alias
+NOOPTS       = -O0
+# FORTRAN	     = ifort
+FORTRAN	     = ftn
+CPP          =/opt/cray/pe/craype/2.5.12/bin/CC
+CPPFLAGS     = -Ofast -std=c++11 -DAdd_ 											 
+
+LOADER       = $(CPP)
+# LOADOPTS     = -Wl,-rpath,/global/homes/x/xiaoye/Carl/SuperLU_DIST_5.1.0/lib -qopenmp
+LOADOPTS     = -qopenmp
+# LIBS += -Wl,--start-group ${MKLROOT}/lib/mic/libmkl_intel_lp64.a ${MKLROOT}/lib/mic/libmkl_intel_thread.a ${MKLROOT}/lib/mic/libmkl_core.a -Wl,--end-group -liomp5 -lpthread -lm -ldl
+LOADOPTS += -mkl  #-craype-verbose

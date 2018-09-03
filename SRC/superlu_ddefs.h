@@ -342,6 +342,12 @@ extern int_t dQuerySpace_dist(int_t, LUstruct_t *, gridinfo_t *,
 			      SuperLUStat_t *, superlu_dist_mem_usage_t *);
 
 /* Auxiliary routines */
+
+extern void dClone_CompRowLoc_Matrix_dist(SuperMatrix *, SuperMatrix *);
+extern void dCopy_CompRowLoc_Matrix_dist(SuperMatrix *, SuperMatrix *);
+extern void dZero_CompRowLoc_Matrix_dist(SuperMatrix *);
+extern void dScaleAddId_CompRowLoc_Matrix_dist(SuperMatrix *, double);
+extern void dScaleAdd_CompRowLoc_Matrix_dist(SuperMatrix *, SuperMatrix *, double);
 extern void    dfill_dist (double *, int_t, double);
 extern void    dinf_norm_error_dist (int_t, int_t, double*, int_t,
                                      double*, int_t, gridinfo_t*);
@@ -373,6 +379,7 @@ extern void  dPrintUblocks(int, int_t, gridinfo_t *, Glu_persist_t *,
 extern void  dPrint_CompCol_Matrix_dist(SuperMatrix *);
 extern void  dPrint_Dense_Matrix_dist(SuperMatrix *);
 extern int   dPrint_CompRowLoc_Matrix_dist(SuperMatrix *);
+extern int   file_dPrint_CompRowLoc_Matrix_dist(FILE *fp, SuperMatrix *A);																			   
 extern int   file_PrintDouble5(FILE *, char *, int_t, double *);
 
 

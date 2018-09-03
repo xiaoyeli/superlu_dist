@@ -183,25 +183,17 @@ int main(int argc, char *argv[])
         options.Equil             = YES;
         options.ParSymbFact       = NO;
         options.ColPerm           = METIS_AT_PLUS_A;
-        options.RowPerm           = LargeDiag;
+        options.RowPerm           = LargeDiag_MC64;
         options.ReplaceTinyPivot  = NO;
         options.IterRefine        = DOUBLE;
         options.Trans             = NOTRANS;
         options.SolveInitialized  = NO;
         options.RefineInitialized = NO;
         options.PrintStat         = YES;
-	options.DiagInv       = NO;
+		options.DiagInv       = NO;
      */
     set_default_options_dist(&options);
-    // options.DiagInv       = YES;
-   options.Equil = YES;
-   //options.IterRefine        = NO;
-   options.ColPerm           = METIS_AT_PLUS_A;
-   
-	// options.ParSymbFact = YES; 
-	// options.ColPerm == PARMETIS;
-   
-   
+	options.IterRefine = NOREFINE;				   
 #if 0
     options.RowPerm = NOROWPERM;
     options.IterRefine = NOREFINE;
@@ -209,6 +201,8 @@ int main(int argc, char *argv[])
     options.Equil = NO; 
     options.ReplaceTinyPivot = YES;
 #endif
+
+	
 
     if (!iam) {
 	print_sp_ienv_dist(&options);

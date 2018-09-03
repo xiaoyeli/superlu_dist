@@ -12,7 +12,7 @@ at the top-level directory.
  * \brief Utilities functions
  *
  * <pre>
- * -- Distributed SuperLU routine (version 5.3) --
+ * -- Distributed SuperLU routine (version 5.4) --
  * Lawrence Berkeley National Lab, Univ. of California Berkeley.
  * February 1, 2003
  *
@@ -257,7 +257,7 @@ void LUstructFree(LUstruct_t *LUstruct)
  */
 void
 countnz_dist(const int_t n, int_t *xprune,
-	     long long int *nnzL, long long int *nnzU, 
+	     int64_t *nnzL, int64_t *nnzU, 
 	     Glu_persist_t *Glu_persist, Glu_freeable_t *Glu_freeable)
 {
     int_t  fnz, fsupc, i, j, nsuper;
@@ -314,7 +314,7 @@ countnz_dist(const int_t n, int_t *xprune,
  * subscripts.
  * </pre>
  */
-long long int
+int64_t
 fixupL_dist(const int_t n, const int_t *perm_r, 
 	    Glu_persist_t *Glu_persist, Glu_freeable_t *Glu_freeable)
 {
@@ -362,8 +362,8 @@ void set_default_options_dist(superlu_dist_options_t *options)
     options->ColPerm           = METIS_AT_PLUS_A;
 #else
     options->ColPerm            = MMD_AT_PLUS_A;
-#endif	  
-    options->RowPerm           = LargeDiag;
+#endif
+    options->RowPerm           = LargeDiag_MC64;
     options->ReplaceTinyPivot  = NO;
     options->IterRefine        = SLU_DOUBLE;
     options->Trans             = NOTRANS;
@@ -671,7 +671,7 @@ PStatPrint(superlu_dist_options_t *options, SuperLUStat_t *stat, gridinfo_t *gri
 	double  *utime1,*utime2,*utime3,*utime4;
 	flops_t  *ops1;
 #if ( PROFlevel>=1 )
-	
+	fflush(stdout);
     MPI_Barrier( grid->comm );
 
     {
@@ -974,11 +974,11 @@ void isort(int_t N, int_t *ARRAY1, int_t *ARRAY2)
  * N       (input) INTEGER
  *          On entry, specifies the size of the arrays.
  *
- * ARRAY1  (input/output) DOUBLE PRECISION ARRAY of LENGTH N
+ * ARRAY1  (input/output) integer array of length N
  *          On entry, contains the array to be sorted.
  *          On exit, contains the sorted array.
  *
- * ARRAY2  (input/output) DOUBLE PRECISION ARRAY of LENGTH N
+ * ARRAY2  (input/output) integer array of length N
  *          On entry, contains the array to be sorted.
  *          On exit, contains the sorted array.
  */
@@ -993,7 +993,7 @@ void isort(int_t N, int_t *ARRAY1, int_t *ARRAY2)
 		  TEMP = ARRAY1[J];
 		  ARRAY1[J] = ARRAY1[J + IGAP];
 		  ARRAY1[J + IGAP] = TEMP;
-		  TEMP = ARRAY2[J];
+		  TEMP = ARRAY2[J];  
 		  ARRAY2[J] = ARRAY2[J + IGAP];
 		  ARRAY2[J + IGAP] = TEMP;
 		  J = J - IGAP;
@@ -1045,7 +1045,7 @@ void isort1(int_t N, int_t *ARRAY)
   }
 }
 
-void log_memory(long long cur_bytes, SuperLUStat_t *stat) {
+void log_memory(int64_t cur_bytes, SuperLUStat_t *stat) {
     stat->current_buffer += (float) cur_bytes;
     if (cur_bytes > 0) {
 	stat->peak_buffer = 
