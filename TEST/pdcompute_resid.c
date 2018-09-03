@@ -9,13 +9,12 @@ The source code is distributed under BSD license, see the file License.txt
 at the top-level directory.
 */
 
-
-/*! @file
+/*! @filee
  * \brief Test for small residual.
  *
- * -- Distributed SuperLU routine (version 5.2) --
+ * -- Distributed SuperLU routine (version 5.0) --
  * Lawrence Berkeley National Lab, Univ. of California Berkeley.
- * September 30, 2017
+ * APril 1, 2017
  *
  */
 #include "superlu_ddefs.h"
@@ -71,7 +70,7 @@ int pdcompute_resid(int m, int n, int nrhs, SuperMatrix *A,
 
     GRID    (input) gridinfo_t*
 	    
-    RESID   (output) double PRECISION   
+    RESID   (output) DOUBLE PRECISION   
             The maximum over the number of right-hand sides of
             norm(B - A*X) / ( norm(A) * norm(X) * EPS ).   
 
@@ -79,6 +78,8 @@ int pdcompute_resid(int m, int n, int nrhs, SuperMatrix *A,
 */
 
     /* Table of constant values */
+    double alpha = -1.;
+    double beta  = 1.;
     int    inc  = 1;
     
     /* Local variables */
@@ -89,7 +90,7 @@ int pdcompute_resid(int m, int n, int nrhs, SuperMatrix *A,
     char transc[1];
     double *ax, *R;
     pdgsmv_comm_t gsmv_comm; 
-    int m_loc = ((NRformat_loc*) A->Store)->m_loc;
+    int_t m_loc = ((NRformat_loc*) A->Store)->m_loc;
 
     /* Function prototypes */
     extern double dasum_(int *, double *, int *);
@@ -131,7 +132,6 @@ int pdcompute_resid(int m, int n, int nrhs, SuperMatrix *A,
 
 	rnorm = dasum_(&m_loc, R, &inc);
 	xnorm = dasum_(&m_loc, X_col, &inc);
-
 	/* */
 	MPI_Allreduce( &rnorm, &rnorm_g, 1, MPI_DOUBLE, MPI_SUM, grid->comm );
 	MPI_Allreduce( &xnorm, &xnorm_g, 1, MPI_DOUBLE, MPI_SUM, grid->comm );

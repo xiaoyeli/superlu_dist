@@ -15,6 +15,25 @@ set(VERSION_BugFix "0")
 set(PROJECT_VERSION ${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_BugFix})
 
 list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake")
+
+# Set up options
+option(enable_blaslib   "Build the CBLAS library" ${enable_blaslib_DEFAULT})
+option(enable_doc       "Build doxygen documentation" OFF)
+option(enable_double    "Enable double precision library" ON)
+option(enable_complex16 "Enable complex16 precision library" ON)
+option(enable_tests  "Build tests" ON)
+option(enable_examples  "Build examples" ON)
+option(enable_parmetislib   "Build the ParMETIS library" ON)
+option(TPL_PARMETIS_LIBRARIES "List of absolute paths to ParMETIS link libraries [].")
+option(TPL_PARMETIS_INCLUDE_DIRS "List of absolute paths to ParMETIS include directories [].")
+option(enable_combblaslib   "Build the CombBLAS library" OFF)
+option(TPL_COMBBLAS_LIBRARIES "List of absolute paths to CombBLAS link libraries [].")
+option(TPL_COMBBLAS_INCLUDE_DIRS "List of absolute paths to CombBLAS include directories [].")
+
+# if (NOT enable_combblaslib)
+  SET(XSDK_ENABLE_CXX ON)
+# endif()
+
 ######################################################################
 #
 # IDEAS: xSDK standards module
@@ -22,7 +41,6 @@ MESSAGE("\nProcess XSDK defaults ...")
 # SET(USE_XSDK_DEFAULTS_DEFAULT TRUE) # Set to false if desired
 INCLUDE("cmake/XSDKDefaults.cmake")
 INCLUDE(CTest)
-
 ######################################################################
 
 ######################################################################
@@ -51,6 +69,7 @@ SET(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 #----
 
 SET(BUILD_STATIC_LIBS TRUE CACHE BOOL "Include static libs when building shared")
+
 if (BUILD_SHARED_LIBS)
   message("-- SuperLU_DIST will be built as a shared library.")
   set(PROJECT_NAME_LIB_EXPORT libsuperlu_dist.so)
@@ -82,17 +101,6 @@ if (NOT CMAKE_INSTALL_PREFIX)
 endif()
 
 
-# setup options
-option(enable_blaslib   "Build the CBLAS library" ${enable_blaslib_DEFAULT})
-option(enable_parmetislib   "Build the ParMETIS library" ON)
-option(enable_doc       "Build doxygen documentation" OFF)
-option(enable_double    "Enable double precision library" ON)
-option(enable_complex16 "Enable complex16 precision library" ON)
-option(enable_tests  "Build tests" ON)
-option(enable_examples  "Build examples" ON)
-option(TPL_PARMETIS_LIBRARIES "List of absolute paths to ParMETIS link libraries [].")
-option(TPL_PARMETIS_INCLUDE_DIRS "List of absolute paths to ParMETIS include directories [].")
-
 if(NOT MSVC)
   include(GNUInstallDirs)
   set(default_install_inc_dir ${CMAKE_INSTALL_INCLUDEDIR})
@@ -107,6 +115,7 @@ endif()
 set(INSTALL_INC_DIR "${default_install_inc_dir}" CACHE STRING "The folder where headers will be installed.")
 set(INSTALL_LIB_DIR "${default_install_lib_dir}" CACHE STRING "The folder where libraries will be installed.")
 set(INSTALL_BIN_DIR "${default_install_bin_dir}" CACHE STRING "The folder where runtime files will be installed.")
+
 
 # Set up required compiler defines and options.
 ## get_directory_property( DirDefs COMPILE_DEFINITIONS )
@@ -290,9 +299,6 @@ include_directories(${CMAKE_BINARY_DIR}/SRC) # For superlu_dist_config.h
 if (TPL_PARMETIS_INCLUDE_DIRS)
   include_directories(${TPL_PARMETIS_INCLUDE_DIRS})  ## parmetis
 endif ()
-if (TPL_PARMETIS_INCLUDE_DIRS)
-  include_directories(${TPL_PARMETIS_INCLUDE_DIRS})  ## parmetis
-endif ()
 if (TPL_COMBBLAS_INCLUDE_DIRS)
   include_directories(${TPL_COMBBLAS_INCLUDE_DIRS})  ## CombBLAS
 endif ()
@@ -325,7 +331,10 @@ endif()
 configure_file(${SuperLU_DIST_SOURCE_DIR}/make.inc.in ${SuperLU_DIST_SOURCE_DIR}/make.inc)
 configure_file(${SuperLU_DIST_SOURCE_DIR}/SRC/superlu_dist_config.h.in ${SuperLU_DIST_BINARY_DIR}/SRC/superlu_dist_config.h)
 configure_file(${SuperLU_DIST_SOURCE_DIR}/SRC/superlu_dist_config.h.in ${SuperLU_DIST_SOURCE_DIR}/SRC/superlu_dist_config.h)
+<<<<<<< HEAD
 # configure_file(${SuperLU_DIST_SOURCE_DIR}/SRC/superlu_dist_config.h.in ${SuperLU_DIST_SOURCE_DIR}/SRC/superlu_dist_config.h)
+=======
+>>>>>>> 511751f3a98425a14b37bc01d3dee65f62b2a6d7
 
 # Add pkg-config support
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/superlu_dist.pc.in ${CMAKE_CURRENT_BINARY_DIR}/superlu_dist.pc @ONLY)

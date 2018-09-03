@@ -3,6 +3,9 @@
 /* Enable parmetis */
 #define HAVE_PARMETIS TRUE
 
+/* Enable CombBLAS */
+/* #undef HAVE_COMBBLAS */
+
 /* enable 64bit index mode */
 /* #undef XSDK_INDEX_SIZE */
 

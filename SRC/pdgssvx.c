@@ -22,6 +22,7 @@ at the top-level directory.
  * April 5, 2015
  * December 31, 2015  version 4.3
  * December 31, 2016  version 5.1.3
+ * April 10, 2018  version 5.3							  
  * </pre>
  */
 
@@ -319,9 +320,13 @@ at the top-level directory.
  *         o RowPerm (rowperm_t)
  *           Specifies how to permute rows of the matrix A.
  *           = NATURAL:   use the natural ordering.
- *           = LargeDiag: use the Duff/Koster algorithm to permute rows of
+ *           = LargeDiag_MC64: use the Duff/Koster algorithm to permute rows of
  *                        the original matrix to make the diagonal large
  *                        relative to the off-diagonal.
+ *           = LargeDiag_APWM: use the parallel approximate-weight perfect
+ *                        matching to permute rows of the original matrix
+ *                        to make the diagonal large relative to the
+ *                        off-diagonal.								   
  *           = MY_PERMR:  use the ordering given in ScalePermstruct->perm_r
  *                        input by the user.
  *           
@@ -547,7 +552,7 @@ pdgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 	int_t nsupers,nsupers_j;
 	int_t lk,k,knsupc,nsupr;
 	int_t  *lsub,*xsup;
-	double *lusup;
+	double *lusup;	
 #if ( PRNTlevel>= 2 )
     double   dmin, dsum, dprod;
 #endif
@@ -760,7 +765,7 @@ pdgssvx(superlu_dist_options_t *options, SuperMatrix *A,
              (parSymbFact == NO || options->RowPerm != NO) ) {
              /* Performs serial symbolic factorzation and/or MC64 */
 
-            need_value = (options->RowPerm == LargeDiag);
+            need_value = (options->RowPerm == LargeDiag_MC64);
 
             pdCompRow_loc_to_CompCol_global(need_value, A, grid, &GA);
 
@@ -789,8 +794,8 @@ pdgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 	            	irow = rowind[i]; 
 		    	rowind[i] = perm_r[irow];
 	            }
-	        } else { /* options->RowPerm == LargeDiag */
-	            /* Get a new perm_r[] */
+	        } else if ( options->RowPerm == LargeDiag_MC64 ) {
+	            /* Get a new perm_r[] from MC64 */
 	            if ( job == 5 ) {
 		        /* Allocate storage for scaling factors. */
 		        if ( !(R1 = doubleMalloc_dist(m)) )
@@ -901,6 +906,14 @@ pdgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 	            } else if ( job == 5 ) {
 		        if ( !iam ) printf("\t product of diagonal %e\n", dprod);
 	            }
+#endif
+                } else { /* use largeDiag_AWPM */
+#ifdef HAVE_COMBBLAS
+		    c2cpp_GetAWPM(A, grid, ScalePermstruct);
+#else
+		    if ( iam == 0 ) {
+		        printf("CombBLAS is not available\n"); fflush(stdout);
+		    }
 #endif
                 } /* end if options->RowPerm ... */
 
@@ -1102,7 +1115,7 @@ pdgssvx(superlu_dist_options_t *options, SuperMatrix *A,
             if ( parSymbFact == NO || options->RowPerm != NO )
                 Destroy_CompCol_Matrix_dist(&GA);
             if ( parSymbFact == NO )
- 	        Destroy_CompCol_Permuted_dist(&GAC);	
+ 	        Destroy_CompCol_Permuted_dist(&GAC);
 
 	} /* end if Fact ... */
 
@@ -1159,15 +1172,15 @@ pdgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 	// }
 	
 	
-	
-
-// #if ( PRNTlevel>=1 )
+#if ( PRNTlevel>=1 )
     /* ------------------------------------------------------------
        SUM OVER ALL ENTRIES OF A AND PRINT NNZ AND SIZE OF A.
        ------------------------------------------------------------*/
     Astore = (NRformat_loc *) A->Store;
 	xsup = Glu_persist->xsup;
 	nzval_a = Astore->nzval;
+
+
 	asum=0;
     for (i = 0; i < Astore->m_loc; ++i) {
         for (j = Astore->rowptr[i]; j < Astore->rowptr[i+1]; ++j) {
@@ -1192,10 +1205,13 @@ pdgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 				for (i = 0; i < nsupr; ++i) 
 					lsum +=lusup[j*nsupr+i];
 		}
-	}	
+	}
+	
 	
 	MPI_Allreduce( &asum, &asum_tot,1, MPI_DOUBLE, MPI_SUM, grid->comm );
 	MPI_Allreduce( &lsum, &lsum_tot,1, MPI_DOUBLE, MPI_SUM, grid->comm );
+	
+
 	MPI_Allreduce( &Astore->rowptr[Astore->m_loc], &nnz_tot,1, mpi_int_t, MPI_SUM, grid->comm );
 	// MPI_Bcast( &nnzLU, 1, mpi_int_t, 0, grid->comm );
 	
@@ -1205,16 +1221,19 @@ pdgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 	print_options_dist(options);
 	fflush(stdout);
     }
+ 	// if ( !iam )
 
-	// if ( !iam )
+
+
 	printf(".. Ainfo mygid %5d   mysid %5d   nnz_loc %7d   sum_loc   %e lsum_loc   %e nnz %7d  nnzLU %7d sum %e  lsum %e  N %7d\n", iam_g,iam,Astore->rowptr[Astore->m_loc],asum, lsum, nnz_tot,nnzLU,asum_tot,lsum_tot,A->ncol);
+	
+	
 	fflush(stdout);
-// #endif				
+#endif				
 			
-
-			
+ 			
 	
-	
+		
 #if 0
 
 // #ifdef GPU_PROF

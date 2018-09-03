@@ -69,7 +69,7 @@ typedef struct {
   int_t     nvtcs_loc;       /* number of local vertices */
   int_t     *globToLoc;      /* global to local indexing */
   int_t     maxNvtcsPProc;   /* max number of vertices on the processors */
-  long long int nnzLU;   /* number of nonzeros in L+U*/
+  int64_t nnzLU;   /* number of nonzeros in L+U*/
 } Pslu_freeable_t;
 
 
@@ -300,6 +300,3 @@ typedef struct {
 
 
 #endif /* __SUPERLU_DIST_PSYMBFACT */
-
-
-

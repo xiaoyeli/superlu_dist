@@ -29,7 +29,6 @@
 #
 #######################################################################
 include ../make.inc
-INCLUDEDIR = -I../SRC
 
 DEXM	= pddrive.o dcreate_matrix.o sp_ienv.o #pdgstrf2.o 
 #pdgssvx.o
@@ -132,9 +131,9 @@ pzdrive4_ABglobal: $(ZEXMG4) $(DSUPERLULIB)
 #pdgstrf.o: dscatter.c dSchCompUdt-cuda.c pdgstrf.c
 #	$(CC) $(CFLAGS) $(CDEFS) $(BLASDEF) $(INCLUDEDIR) -c pdgstrf.c $(VERBOSE)
 .c.o:
-	$(CC) $(CFLAGS) $(CDEFS) $(BLASDEF) $(INCLUDEDIR) -c $< $(VERBOSE)
+	$(CC) $(CFLAGS) $(CDEFS) $(BLASDEF) -I $(INCLUDEDIR) -c $< $(VERBOSE)
 .cpp.o:
-	$(CPP) $(CPPFLAGS) $(CDEFS) $(BLASDEF) $(INCLUDEDIR) -c $< $(VERBOSE)
+	$(CPP) $(CPPFLAGS) $(CDEFS) $(BLASDEF) -I $(INCLUDEDIR) -c $< $(VERBOSE)
 .f.o:
 	$(FORTRAN) $(FFLAGS) -c $< $(VERBOSE)
 

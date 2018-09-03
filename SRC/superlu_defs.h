@@ -12,7 +12,7 @@ at the top-level directory.
  * \brief Definitions which are precision-neutral
  *
  * <pre>
- * -- Distributed SuperLU routine (version 5.2) --
+ * -- Distributed SuperLU routine (version 5.4) --
  * Lawrence Berkeley National Lab, Univ. of California Berkeley.
  * November 1, 2007
  *
@@ -44,14 +44,14 @@ at the top-level directory.
 #include <string.h>
 //#include <stdatomic.h>
 #include <math.h>
-
+#include <stdint.h>
 // /* Following is for vtune */
 // #if 0
 // #include <ittnotify.h>
 // #define USE_VTUNE
 // #endif
 #if ( VTUNE>=1 )
-#include <ittnotify.h>
+#include <ittnotify.h>			 
 #endif
 /*************************************************************************
  * Constants
@@ -67,18 +67,18 @@ at the top-level directory.
  * Versions 4.x and earlier do not include a #define'd version numbers.
  */
 #define SUPERLU_DIST_MAJOR_VERSION     5
-#define SUPERLU_DIST_MINOR_VERSION     3
+#define SUPERLU_DIST_MINOR_VERSION     4
 #define SUPERLU_DIST_PATCH_VERSION     0
-#define SUPERLU_DIST_RELEASE_DATE      "January 28, 2018"					  
+#define SUPERLU_DIST_RELEASE_DATE      "June 1, 2018"
 
-#include "superlu_dist_config.h"							   
+#include "superlu_dist_config.h"
 /* Define my integer size int_t */
 #ifdef _CRAY
   typedef short int_t;
   /*#undef int   Revert back to int of default size. */
   #define mpi_int_t   MPI_SHORT
 #elif defined (_LONGINT)
-  typedef long long int int_t;
+  typedef int64_t int_t;
   #define mpi_int_t   MPI_LONG_LONG_INT
   #define IFMT "%lld"
 #else /* Default */
@@ -86,21 +86,6 @@ at the top-level directory.
   #define mpi_int_t   MPI_INT
   #define IFMT "%8d"
 #endif
-
- 
-
-
-// /* Define atomic int_t */
-// #ifdef _CRAY
-  // typedef atomic_short int_t_ato  ;
-// #elif defined (_LONGINT)
-  // typedef atomic_llong int_t_ato  ;
-// #else /* Default */
-  // typedef atomic_int int_t_ato  ;
-// #endif
-
-
-
 
 #include "superlu_enum_consts.h"
 #include "Cnames.h"
@@ -413,7 +398,7 @@ typedef struct {
     LU_space_t MemModel; /* 0 - system malloc'd; 1 - user provided */
     int_t     *llvl;     /* keep track of level in L for level-based ILU */
     int_t     *ulvl;     /* keep track of level in U for level-based ILU */
-	long long int nnzLU;   /* number of nonzeros in L+U*/		  
+	int64_t nnzLU;   /* number of nonzeros in L+U*/
 } Glu_freeable_t;
 
 
@@ -655,7 +640,7 @@ typedef struct {
     float for_lu;
     float total;
     int_t expansions;
-    long long int nnzL, nnzU;
+    int64_t nnzL, nnzU;
 } superlu_dist_mem_usage_t;
 
 /* 
@@ -730,10 +715,9 @@ extern int_t symbfact_SubInit(fact_t, void *, int_t, int_t, int_t, int_t,
 extern int_t symbfact_SubXpand(int_t, int_t, int_t, MemType, int_t *,
 			       Glu_freeable_t *);
 extern int_t symbfact_SubFree(Glu_freeable_t *);
-extern void    countnz_dist (const int_t, int_t *, 
-			     long long int *, long long int *,
+extern void    countnz_dist (const int_t, int_t *, int64_t *, int64_t *,
 			     Glu_persist_t *, Glu_freeable_t *);
-extern long long int fixupL_dist (const int_t, const int_t *, Glu_persist_t *,
+extern int64_t fixupL_dist (const int_t, const int_t *, Glu_persist_t *,
 				  Glu_freeable_t *);
 extern int_t   *TreePostorder_dist (int_t, int_t *);
 extern float   smach_dist(char *);
@@ -743,6 +727,7 @@ extern void    superlu_free_dist (void*);
 extern int_t   *intMalloc_dist (int_t);
 extern int_t   *intCalloc_dist (int_t);
 extern int_t   mc64id_dist(int_t *);
+extern int     c2cpp_GetAWPM(SuperMatrix *, gridinfo_t *, ScalePermstruct_t *);
 extern void  arrive_at_ublock (int_t, int_t *, int_t *, int_t *,
 			       int_t *, int_t *, int_t, int_t, 
 			       int_t *, int_t *, int_t *, gridinfo_t *);
@@ -766,7 +751,7 @@ extern void  pxerr_dist (char *, gridinfo_t *, int_t);
 extern void  PStatInit(SuperLUStat_t *);
 extern void  PStatFree(SuperLUStat_t *);
 extern void  PStatPrint(superlu_dist_options_t *, SuperLUStat_t *, gridinfo_t *);
-extern void  log_memory(long long, SuperLUStat_t *);
+extern void  log_memory(int64_t, SuperLUStat_t *);
 extern void  print_memorylog(SuperLUStat_t *, char *);
 extern int   superlu_dist_GetVersionNumber(int *, int *, int *);
 extern void  quickSort( int_t*, int_t, int_t, int_t);

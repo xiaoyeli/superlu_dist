@@ -16,16 +16,18 @@ at the top-level directory.
  *        Uses 2D partitioning for the scatter phase.
  *
  * <pre>
- * -- Distributed SuperLU routine (version 5.2) --
+ * -- Distributed SuperLU routine (version 5.4) --
  * Lawrence Berkeley National Lab, Univ. of California Berkeley.
  * October 1, 2014
  *
- * Modified: September 14, 2017
+ * Modified:
+ *   September 14, 2017
  *   - First gather U-panel, then depending on "ldu" (excluding leading zeros), 
  *     gather only trailing columns of the L-panel corresponding to the nonzero
  *     of U-rows.
  *   - Padding zeros for nice dimensions of GEMM.
  *
+ *  June 1, 2018  add parallel AWPM pivoting; add back arrive_at_ublock()
  */
 
 #define SCHEDULE_STRATEGY guided 
@@ -141,7 +143,6 @@ if ( msg0 && msg2 ) { /* L(:,k) and U(k,:) are not empty. */
 	 /* jj0 contains the look-ahead window that was updated in 
 	    dlook_ahead_update.c. Now the search can continue from that point,
 	    not to start from block 0. */
-
 #if 0 // Sherry comment out 5/21/208
 	 /* Save pointers at location right after look-ahead window
 	    for later restart. */
@@ -159,7 +160,7 @@ if ( msg0 && msg2 ) { /* L(:,k) and U(k,:) are not empty. */
 	 for (j = jj0; j < nub; ++j) { /* jj0 starts after look-ahead window. */
 	     temp_ncols = 0;
 #if 1
-	     /* Sherry - can remove following call, since perm_u == Identity  */
+	     /* Cannot remove following call, since perm_u != Identity  */
 	     arrive_at_ublock(
 			      j, &iukp, &rukp, &jb, &ljb, &nsupc,
 			      iukp0, rukp0, usub, perm_u, xsup, grid
@@ -180,7 +181,7 @@ if ( msg0 && msg2 ) { /* L(:,k) and U(k,:) are not empty. */
 			j, Ublock_info[j].iukp, Ublock_info[j].rukp,
 			Ublock_info[j].jb, nsupc); */
 
-	     /* Prepare to call GEMM: compute ldu and # of nonzero columns. */
+	     /* Prepare to call GEMM. */
 	     jj = iukp;
 	     for (; jj < iukp+nsupc; ++jj) {
 		 segsize = klst - usub[jj];
@@ -251,7 +252,7 @@ if ( msg0 && msg2 ) { /* L(:,k) and U(k,:) are not empty. */
 
             /* == processing each of the remaining columns in parallel == */
 #if 0
-	    /* Can remove following call, since the search was already done. */
+	    /* Can remove following call, since search was already done.  */
             arrive_at_ublock(j, &iukp, &rukp, &jb, &ljb, &nsupc,
 			     iukp0, rukp0, usub,perm_u, xsup, grid);
 #else
@@ -270,15 +271,12 @@ if ( msg0 && msg2 ) { /* L(:,k) and U(k,:) are not empty. */
 #if (_OPENMP>=201307)
 #pragma omp simd
 #endif
-		    for (i=0; i<segsize; ++i) tempu[i+lead_zero] = uval[rukp+i];
-
+		    for (i = 0; i < segsize; ++i) 
+                    	tempu[i+lead_zero] = uval[rukp+i];
                     rukp += segsize;
                     tempu += gemm_k_pad;
                 }
 	    }
-#if 0
-	    rukp -= usub[iukp - 1]; /* Return to start of U(k,j). */
-#endif
         }   /* parallel for j = jj0 .. nub */
 
 #if 0

@@ -140,19 +140,19 @@ sp_dtrsv_dist(char *uplo, char *trans, char *diag, SuperMatrix *L,
     	    if ( L->nrow == 0 ) return 0; /* Quick return */
 	    
 	    for (k = 0; k <= Lstore->nsuper; k++) {
-		fsupc = L_FST_SUPC(k);
-		istart = L_SUB_START(fsupc);
-		nsupr = L_SUB_START(fsupc+1) - istart;
-		nsupc = L_FST_SUPC(k+1) - fsupc;
-		luptr = L_NZ_START(fsupc);
+		fsupc = SuperLU_L_FST_SUPC(k);
+		istart = SuperLU_L_SUB_START(fsupc);
+		nsupr = SuperLU_L_SUB_START(fsupc+1) - istart;
+		nsupc = SuperLU_L_FST_SUPC(k+1) - fsupc;
+		luptr = SuperLU_L_NZ_START(fsupc);
 		nrow = nsupr - nsupc;
 
 	        solve_ops += nsupc * (nsupc - 1);
 	        solve_ops += 2 * nrow * nsupc;
 
 		if ( nsupc == 1 ) {
-		    for (iptr=istart+1; iptr < L_SUB_START(fsupc+1); ++iptr) {
-			irow = L_SUB(iptr);
+		    for (iptr=istart+1; iptr < SuperLU_L_SUB_START(fsupc+1); ++iptr) {
+			irow = SuperLU_L_SUB(iptr);
 			++luptr;
 			x[irow] -= x[fsupc] * Lval[luptr];
 		    }
@@ -183,7 +183,7 @@ sp_dtrsv_dist(char *uplo, char *trans, char *diag, SuperMatrix *L,
 		
 		    iptr = istart + nsupc;
 		    for (i = 0; i < nrow; ++i, ++iptr) {
-			irow = L_SUB(iptr);
+			irow = SuperLU_L_SUB(iptr);
 			x[irow] -= work[i];	/* Scatter */
 			work[i] = 0.0;
 
@@ -197,17 +197,17 @@ sp_dtrsv_dist(char *uplo, char *trans, char *diag, SuperMatrix *L,
 	    if ( U->nrow == 0 ) return 0; /* Quick return */
 	    
 	    for (k = Lstore->nsuper; k >= 0; k--) {
-	    	fsupc = L_FST_SUPC(k);
-	    	nsupr = L_SUB_START(fsupc+1) - L_SUB_START(fsupc);
-	    	nsupc = L_FST_SUPC(k+1) - fsupc;
-	    	luptr = L_NZ_START(fsupc);
+	    	fsupc = SuperLU_L_FST_SUPC(k);
+	    	nsupr = SuperLU_L_SUB_START(fsupc+1) - SuperLU_L_SUB_START(fsupc);
+	    	nsupc = SuperLU_L_FST_SUPC(k+1) - fsupc;
+	    	luptr = SuperLU_L_NZ_START(fsupc);
 		
     	        solve_ops += nsupc * (nsupc + 1);
 
 		if ( nsupc == 1 ) {
 		    x[fsupc] /= Lval[luptr];
-		    for (i = U_NZ_START(fsupc); i < U_NZ_START(fsupc+1); ++i) {
-			irow = U_SUB(i);
+		    for (i = SuperLU_U_NZ_START(fsupc); i < SuperLU_U_NZ_START(fsupc+1); ++i) {
+			irow = SuperLU_U_SUB(i);
 			x[irow] -= x[fsupc] * Uval[i];
 		    }
 		} else {
@@ -225,11 +225,11 @@ sp_dtrsv_dist(char *uplo, char *trans, char *diag, SuperMatrix *L,
 		    dusolve ( nsupr, nsupc, &Lval[luptr], &x[fsupc] );
 #endif		
 
-		    for (jcol = fsupc; jcol < L_FST_SUPC(k+1); jcol++) {
-		        solve_ops += 2*(U_NZ_START(jcol+1) - U_NZ_START(jcol));
-		    	for (i = U_NZ_START(jcol); i < U_NZ_START(jcol+1); 
+		    for (jcol = fsupc; jcol < SuperLU_L_FST_SUPC(k+1); jcol++) {
+		        solve_ops += 2*(SuperLU_U_NZ_START(jcol+1) - SuperLU_U_NZ_START(jcol));
+		    	for (i = SuperLU_U_NZ_START(jcol); i < SuperLU_U_NZ_START(jcol+1); 
 				i++) {
-			    irow = U_SUB(i);
+			    irow = SuperLU_U_SUB(i);
 			    x[irow] -= x[jcol] * Uval[i];
 		    	}
                     }
@@ -244,19 +244,19 @@ sp_dtrsv_dist(char *uplo, char *trans, char *diag, SuperMatrix *L,
     	    if ( L->nrow == 0 ) return 0; /* Quick return */
 	    
 	    for (k = Lstore->nsuper; k >= 0; --k) {
-	    	fsupc = L_FST_SUPC(k);
-	    	istart = L_SUB_START(fsupc);
-	    	nsupr = L_SUB_START(fsupc+1) - istart;
-	    	nsupc = L_FST_SUPC(k+1) - fsupc;
-	    	luptr = L_NZ_START(fsupc);
+	    	fsupc = SuperLU_L_FST_SUPC(k);
+	    	istart = SuperLU_L_SUB_START(fsupc);
+	    	nsupr = SuperLU_L_SUB_START(fsupc+1) - istart;
+	    	nsupc = SuperLU_L_FST_SUPC(k+1) - fsupc;
+	    	luptr = SuperLU_L_NZ_START(fsupc);
 
 		solve_ops += 2 * (nsupr - nsupc) * nsupc;
 
-		for (jcol = fsupc; jcol < L_FST_SUPC(k+1); jcol++) {
+		for (jcol = fsupc; jcol < SuperLU_L_FST_SUPC(k+1); jcol++) {
 		    iptr = istart + nsupc;
-		    for (i = L_NZ_START(jcol) + nsupc; 
-				i < L_NZ_START(jcol+1); i++) {
-			irow = L_SUB(iptr);
+		    for (i = SuperLU_L_NZ_START(jcol) + nsupc; 
+				i < SuperLU_L_NZ_START(jcol+1); i++) {
+			irow = SuperLU_L_SUB(iptr);
 			x[jcol] -= x[irow] * Lval[i];
 			iptr++;
 		    }
@@ -286,15 +286,15 @@ sp_dtrsv_dist(char *uplo, char *trans, char *diag, SuperMatrix *L,
 	    if ( U->nrow == 0 ) return 0; /* Quick return */
 	    
 	    for (k = 0; k <= Lstore->nsuper; k++) {
-	    	fsupc = L_FST_SUPC(k);
-	    	nsupr = L_SUB_START(fsupc+1) - L_SUB_START(fsupc);
-	    	nsupc = L_FST_SUPC(k+1) - fsupc;
-	    	luptr = L_NZ_START(fsupc);
+	    	fsupc = SuperLU_L_FST_SUPC(k);
+	    	nsupr = SuperLU_L_SUB_START(fsupc+1) - SuperLU_L_SUB_START(fsupc);
+	    	nsupc = SuperLU_L_FST_SUPC(k+1) - fsupc;
+	    	luptr = SuperLU_L_NZ_START(fsupc);
 
-		for (jcol = fsupc; jcol < L_FST_SUPC(k+1); jcol++) {
-		    solve_ops += 2*(U_NZ_START(jcol+1) - U_NZ_START(jcol));
-		    for (i = U_NZ_START(jcol); i < U_NZ_START(jcol+1); i++) {
-			irow = U_SUB(i);
+		for (jcol = fsupc; jcol < SuperLU_L_FST_SUPC(k+1); jcol++) {
+		    solve_ops += 2*(SuperLU_U_NZ_START(jcol+1) - SuperLU_U_NZ_START(jcol));
+		    for (i = SuperLU_U_NZ_START(jcol); i < SuperLU_U_NZ_START(jcol+1); i++) {
+			irow = SuperLU_U_SUB(i);
 			x[jcol] -= x[irow] * Uval[i];
 		    }
 		}

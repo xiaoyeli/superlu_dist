@@ -27,6 +27,10 @@ at the top-level directory.
 #include "superlu_ddefs.h"
 #include "superlu_defs.h"
 
+#ifndef CACHELINE
+#define CACHELINE 64  /* bytes, Xeon Phi KNL, Cori haswell, Edision */
+#endif	
+
 #define ISEND_IRECV
 
 /*
@@ -448,12 +452,16 @@ void dlsum_fmod_inv
 	RdTree  *LRtree_ptr = Llu->LRtree_ptr;
 	int_t* idx_lsum,idx_lsum1;
 	double *rtemp_loc;
-	int_t ldalsum,maxsuper,aln_d;
-	int dword = sizeof (double);	
+	int_t ldalsum,maxsuper;
 	int_t nleaf_send_tmp;
 	int_t lptr;      /* Starting position in lsub[*].                      */
 	int_t luptr;     /* Starting position in lusup[*].                     */
-
+	int_t iword = sizeof(int_t);	
+	int_t dword = sizeof (double);		
+	int_t aln_d,aln_i;
+	aln_d = ceil(CACHELINE/(double)dword);
+	aln_i = ceil(CACHELINE/(double)iword);
+	
 	maxsuper = sp_ienv_dist(3);
 #ifdef _OPENMP
 	thread_id = omp_get_thread_num ();
@@ -596,7 +604,7 @@ void dlsum_fmod_inv
 #ifdef _OPENMP
 #pragma omp atomic capture
 #endif
-						fmod_tmp=--fmod[lk];
+						fmod_tmp=--fmod[lk*aln_i];
 
 						if ( fmod_tmp==0 ) { /* Local accumulation done. */
 
@@ -619,7 +627,7 @@ void dlsum_fmod_inv
 #pragma omp atomic capture
 #endif
 								nleaf_send_tmp = ++nleaf_send[0];
-								leaf_send[nleaf_send_tmp-1] = -lk-1;		
+								leaf_send[(nleaf_send_tmp-1)*aln_i] = -lk-1;	
 								// RdTree_forwardMessageSimple(LRtree_ptr[lk],&lsum[il - LSUM_H ],'d');
 
 							} else { /* Diagonal process: X[i] += lsum[i]. */
@@ -706,7 +714,7 @@ void dlsum_fmod_inv
 #pragma omp atomic capture
 #endif
 									nleaf_send_tmp = ++nleaf_send[0];
-									leaf_send[nleaf_send_tmp-1] = lk;
+									leaf_send[(nleaf_send_tmp-1)*aln_i] = lk;
 									// BcTree_forwardMessageSimple(LBtree_ptr[lk],&x[ii - XK_H],'d');
 								}
 
@@ -795,7 +803,7 @@ void dlsum_fmod_inv
 #ifdef _OPENMP
 #pragma omp atomic capture
 #endif
-				fmod_tmp=--fmod[lk];
+				fmod_tmp=--fmod[lk*aln_i];
 
 
 				if ( fmod_tmp==0 ) { /* Local accumulation done. */
@@ -819,7 +827,7 @@ void dlsum_fmod_inv
 #pragma omp atomic capture
 #endif
 						nleaf_send_tmp = ++nleaf_send[0];
-						leaf_send[nleaf_send_tmp-1] = -lk-1;						
+						leaf_send[(nleaf_send_tmp-1)*aln_i] = -lk-1;						
 
 						// RdTree_forwardMessageSimple(LRtree_ptr[lk],&lsum[il - LSUM_H ],'d');
 					} else { /* Diagonal process: X[i] += lsum[i]. */
@@ -904,7 +912,7 @@ void dlsum_fmod_inv
 #endif
 							nleaf_send_tmp = ++nleaf_send[0];
 							// printf("nleaf_send_tmp %5d lk %5d\n",nleaf_send_tmp);
-							leaf_send[nleaf_send_tmp-1] = lk;
+							leaf_send[(nleaf_send_tmp-1)*aln_i] = lk;
 							// BcTree_forwardMessageSimple(LBtree_ptr[lk],&x[ii - XK_H],'d');
 						}
 
@@ -913,8 +921,9 @@ void dlsum_fmod_inv
 						 */
 
 						// #ifdef _OPENMP
-								// #pragma	omp	task firstprivate (Llu,sizelsum,iknsupc,ii,ik,lsub1,x,rtemp,fmod,lsum,stat,nrhs,grid,xsup,recurlevel) private(lptr1,luptr1,nlb1,thread_id1) untied priority(1) 	
-								// #endif						
+						// #pragma	omp	task firstprivate (Llu,sizelsum,iknsupc,ii,ik,lsub1,x,rtemp,fmod,lsum,send_req,stat,nrhs,grid,xsup,recurlevel) private(lptr1,luptr1,nlb1,thread_id1) untied priority(1) 	
+						// #endif
+
 						{
 							nlb1 = lsub1[0] - 1;
 							dlsum_fmod_inv(lsum, x, &x[ii], rtemp, nrhs, iknsupc, ik,
@@ -987,12 +996,15 @@ void dlsum_fmod_inv_master
 	RdTree  *LRtree_ptr = Llu->LRtree_ptr;
 	int_t* idx_lsum,idx_lsum1;
 	double *rtemp_loc;
-	int_t ldalsum,maxsuper,aln_d;
-	int dword = sizeof (double);	
+	int_t ldalsum,maxsuper;	
 	int_t nleaf_send_tmp;
 	int_t lptr;      /* Starting position in lsub[*].                      */
 	int_t luptr;     /* Starting position in lusup[*].                     */
-
+	int_t iword = sizeof(int_t);	
+	int_t dword = sizeof (double);		
+	int_t aln_d,aln_i;
+	aln_d = ceil(CACHELINE/(double)dword);
+	aln_i = ceil(CACHELINE/(double)iword);
 	maxsuper = sp_ienv_dist(3);
 #ifdef _OPENMP
 	thread_id = omp_get_thread_num ();
@@ -1198,7 +1210,7 @@ void dlsum_fmod_inv_master
 			// #ifdef _OPENMP
 			// #pragma omp atomic capture
 			// #endif
-			fmod_tmp=--fmod[lk];
+			fmod_tmp=--fmod[lk*aln_i];
 
 
 			if ( fmod_tmp==0 ) { /* Local accumulation done. */
@@ -1393,7 +1405,11 @@ void dlsum_bmod_inv
 	double t1, t2;
 	float msg_vol = 0, msg_cnt = 0;
 	int_t Nchunk, nub_loc,remainder,nn,lbstart,lbend;  
-	
+	int_t iword = sizeof(int_t);	
+	int_t dword = sizeof (double);		
+	int_t aln_d,aln_i;
+	aln_d = ceil(CACHELINE/(double)dword);
+	aln_i = ceil(CACHELINE/(double)iword);	
 #ifdef _OPENMP
 	thread_id = omp_get_thread_num ();
 	num_thread = omp_get_num_threads ();
@@ -1477,7 +1493,7 @@ void dlsum_bmod_inv
 		#ifdef _OPENMP
 		#pragma omp atomic capture
 		#endif		
-				bmod_tmp=--bmod[ik];
+				bmod_tmp=--bmod[ik*aln_i];
 				
 				if ( bmod_tmp == 0 ) { /* Local accumulation done. */
 					gikcol = PCOL( gik, grid );
@@ -1492,7 +1508,7 @@ void dlsum_bmod_inv
 #pragma omp atomic capture
 #endif
 						nroot_send_tmp = ++nroot_send[0];
-						root_send[nroot_send_tmp-1] = -ik-1;							
+						root_send[(nroot_send_tmp-1)*aln_i] = -ik-1;						
 						// RdTree_forwardMessageSimple(URtree_ptr[ik],&lsum[il - LSUM_H ],'d');
 
 		#if ( DEBUGlevel>=2 )
@@ -1582,7 +1598,7 @@ void dlsum_bmod_inv
 #pragma omp atomic capture
 #endif
 							nroot_send_tmp = ++nroot_send[0];
-							root_send[nroot_send_tmp-1] = lk1;							
+							root_send[(nroot_send_tmp-1)*aln_i] = lk1;						
 							// BcTree_forwardMessageSimple(UBtree_ptr[lk1],&x[ii - XK_H],'d'); 
 							} 
 
@@ -1649,7 +1665,7 @@ void dlsum_bmod_inv
 	#ifdef _OPENMP
 	#pragma omp atomic capture
 	#endif		
-			bmod_tmp=--bmod[ik];
+			bmod_tmp=--bmod[ik*aln_i];
 
 			if ( bmod_tmp == 0 ) { /* Local accumulation done. */
 				gikcol = PCOL( gik, grid );
@@ -1663,7 +1679,7 @@ void dlsum_bmod_inv
 #pragma omp atomic capture
 #endif
 					nroot_send_tmp = ++nroot_send[0];
-					root_send[nroot_send_tmp-1] = -ik-1;					
+					root_send[(nroot_send_tmp-1)*aln_i] = -ik-1;					
 					// RdTree_forwardMessageSimple(URtree_ptr[ik],&lsum[il - LSUM_H ],'d');
 
 	#if ( DEBUGlevel>=2 )
@@ -1748,7 +1764,7 @@ void dlsum_bmod_inv
 #pragma omp atomic capture
 #endif
 						nroot_send_tmp = ++nroot_send[0];
-						root_send[nroot_send_tmp-1] = lk1;							
+						root_send[(nroot_send_tmp-1)*aln_i] = lk1;						
 						// BcTree_forwardMessageSimple(UBtree_ptr[lk1],&x[ii - XK_H],'d'); 
 						} 
 
@@ -1833,7 +1849,13 @@ void dlsum_bmod_inv_master
 
 	double t1, t2;
 	float msg_vol = 0, msg_cnt = 0;
-	int_t Nchunk, nub_loc,remainder,nn,lbstart,lbend;  
+	int_t Nchunk, nub_loc,remainder,nn,lbstart,lbend; 
+	int_t iword = sizeof(int_t);	
+	int_t dword = sizeof (double);		
+	int_t aln_d,aln_i;
+	aln_d = ceil(CACHELINE/(double)dword);
+	aln_i = ceil(CACHELINE/(double)iword);
+		
 	
 #ifdef _OPENMP
 	thread_id = omp_get_thread_num ();
@@ -1980,7 +2002,7 @@ void dlsum_bmod_inv_master
 	// #ifdef _OPENMP
 	// #pragma omp atomic capture
 	// #endif		
-		bmod_tmp=--bmod[ik];
+		bmod_tmp=--bmod[ik*aln_i];
 		
 		if ( bmod_tmp == 0 ) { /* Local accumulation done. */
 			gikcol = PCOL( gik, grid );

@@ -21,6 +21,7 @@ at the top-level directory.
  * April 5, 2015
  * December 31, 2015  version 4.3
  * December 31, 2016  version 5.1.3
+ * April 10, 2018  version 5.3							  
  * </pre>
  */
 
@@ -318,9 +319,13 @@ at the top-level directory.
  *         o RowPerm (rowperm_t)
  *           Specifies how to permute rows of the matrix A.
  *           = NATURAL:   use the natural ordering.
- *           = LargeDiag: use the Duff/Koster algorithm to permute rows of
+ *           = LargeDiag_MC64: use the Duff/Koster algorithm to permute rows of
  *                        the original matrix to make the diagonal large
  *                        relative to the off-diagonal.
+ *           = LargeDiag_APWM: use the parallel approximate-weight perfect
+ *                        matching to permute rows of the original matrix
+ *                        to make the diagonal large relative to the
+ *                        off-diagonal.								   
  *           = MY_PERMR:  use the ordering given in ScalePermstruct->perm_r
  *                        input by the user.
  *           
@@ -530,7 +535,7 @@ pzgssvx(superlu_dist_options_t *options, SuperMatrix *A,
     int_t    colequ, Equil, factored, job, notran, rowequ, need_value;
     int_t    i, iinfo, j, irow, m, n, nnz, permc_spec;
     int_t    nnz_loc, m_loc, fst_row, icol;
-    int      iam;
+    int      iam,iam_g;
     int      ldx;  /* LDA for matrix X (local). */
     char     equed[1], norm[1];
     double   *C, *R, *C1, *R1, amax, anorm, colcnd, rowcnd;
@@ -539,6 +544,14 @@ pzgssvx(superlu_dist_options_t *options, SuperMatrix *A,
     float    GA_mem_use;    /* memory usage by global A */
     float    dist_mem_use; /* memory usage during distribution */
     superlu_dist_mem_usage_t num_mem_usage, symb_mem_usage;
+	long long int nnzLU;
+	int_t nnz_tot;
+	doublecomplex *nzval_a;
+	doublecomplex asum,asum_tot,lsum,lsum_tot;
+	int_t nsupers,nsupers_j;
+	int_t lk,k,knsupc,nsupr;
+	int_t  *lsub,*xsup;
+	doublecomplex *lusup;	
 #if ( PRNTlevel>= 2 )
     double   dmin, dsum, dprod;
 #endif
@@ -752,7 +765,7 @@ pzgssvx(superlu_dist_options_t *options, SuperMatrix *A,
              (parSymbFact == NO || options->RowPerm != NO) ) {
              /* Performs serial symbolic factorzation and/or MC64 */
 
-            need_value = (options->RowPerm == LargeDiag);
+            need_value = (options->RowPerm == LargeDiag_MC64);
 
             pzCompRow_loc_to_CompCol_global(need_value, A, grid, &GA);
 
@@ -781,8 +794,8 @@ pzgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 	            	irow = rowind[i]; 
 		    	rowind[i] = perm_r[irow];
 	            }
-	        } else { /* options->RowPerm == LargeDiag */
-	            /* Get a new perm_r[] */
+	        } else if ( options->RowPerm == LargeDiag_MC64 ) {
+	            /* Get a new perm_r[] from MC64 */
 	            if ( job == 5 ) {
 		        /* Allocate storage for scaling factors. */
 		        if ( !(R1 = doubleMalloc_dist(m)) )
@@ -894,6 +907,14 @@ pzgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 	            } else if ( job == 5 ) {
 		        if ( !iam ) printf("\t product of diagonal %e\n", dprod);
 	            }
+#endif
+                } else { /* use largeDiag_AWPM */
+#ifdef HAVE_COMBBLAS
+		    c2cpp_GetAWPM(A, grid, ScalePermstruct);
+#else
+		    if ( iam == 0 ) {
+		        printf("CombBLAS is not available\n"); fflush(stdout);
+		    }
 #endif
                 } /* end if options->RowPerm ... */
 
@@ -1046,7 +1067,7 @@ pzgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 	    	/* Every process does this. */
 	    	iinfo = symbfact(options, iam, &GAC, perm_c, etree, 
 			     	 Glu_persist, Glu_freeable);
-
+			nnzLU = Glu_freeable->nnzLU;
 	    	stat->utime[SYMBFAC] = SuperLU_timer_() - t;
 	    	if ( iinfo <= 0 ) { /* Successful return */
 		    QuerySpace_dist(n, -iinfo, Glu_freeable, &symb_mem_usage);
@@ -1080,6 +1101,7 @@ pzgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 				       sizes, fstVtxSep, &Pslu_freeable, 
 				       &(grid->comm), &symb_comm,
 				       &symb_mem_usage); 
+			nnzLU = Pslu_freeable.nnzLU;
 	    	stat->utime[SYMBFAC] = SuperLU_timer_() - t;
 	    	if (flinfo > 0) {
 #if ( PRNTlevel>=1 )
@@ -1150,6 +1172,73 @@ pzgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 	// }
 	// }
 	
+	
+#if ( PRNTlevel>=1 )
+    /* ------------------------------------------------------------
+       SUM OVER ALL ENTRIES OF A AND PRINT NNZ AND SIZE OF A.
+       ------------------------------------------------------------*/
+    Astore = (NRformat_loc *) A->Store;
+	xsup = Glu_persist->xsup;
+	nzval_a = Astore->nzval;
+
+
+	asum.r=0.0;
+	asum.i=0.0;
+    for (i = 0; i < Astore->m_loc; ++i) {
+        for (j = Astore->rowptr[i]; j < Astore->rowptr[i+1]; ++j) {
+		z_add(&asum,&asum,&nzval_a[j]);
+	}
+    }
+	
+	nsupers = Glu_persist->supno[n-1] + 1;
+	nsupers_j = CEILING( nsupers, grid->npcol ); /* Number of local block columns */
+	
+	
+	
+	lsum.r=0.0;
+	lsum.i=0.0;
+	for (lk=0;lk<nsupers_j;++lk){	
+		lsub = LUstruct->Llu->Lrowind_bc_ptr[lk];
+		lusup = LUstruct->Llu->Lnzval_bc_ptr[lk];
+		if(lsub){
+			k = MYCOL(grid->iam, grid)+lk*grid->npcol;  /* not sure */
+			knsupc = SuperSize( k );
+			nsupr = lsub[1];
+			for (j=0; j<knsupc; ++j)
+				for (i = 0; i < nsupr; ++i) 
+					z_add(&lsum,&lsum,&lusup[j*nsupr+i]);
+		}
+	}
+	
+	
+	MPI_Allreduce( &(asum.r), &(asum_tot.r),1, MPI_DOUBLE, MPI_SUM, grid->comm );
+	MPI_Allreduce( &(asum.i), &(asum_tot.i),1, MPI_DOUBLE, MPI_SUM, grid->comm );
+	MPI_Allreduce( &(lsum.r), &(lsum_tot.r),1, MPI_DOUBLE, MPI_SUM, grid->comm );
+	MPI_Allreduce( &(lsum.i), &(lsum_tot.i),1, MPI_DOUBLE, MPI_SUM, grid->comm );
+	
+
+	MPI_Allreduce( &Astore->rowptr[Astore->m_loc], &nnz_tot,1, mpi_int_t, MPI_SUM, grid->comm );
+	// MPI_Bcast( &nnzLU, 1, mpi_int_t, 0, grid->comm );
+	
+	MPI_Comm_rank( MPI_COMM_WORLD, &iam_g );
+	
+    if (!iam_g) {
+	print_options_dist(options);
+	fflush(stdout);
+    }
+ 	// if ( !iam )
+
+
+
+	printf(".. Ainfo mygid %5d   mysid %5d   nnz_loc %7d   sum_loc   %e lsum_loc   %e nnz %7d  nnzLU %7d sum %e  lsum %e  N %7d\n", iam_g,iam,Astore->rowptr[Astore->m_loc],asum.r+asum.i, lsum.r+lsum.i, nnz_tot,nnzLU,asum_tot.r+asum_tot.i,lsum_tot.r+lsum_tot.i,A->ncol);
+	
+	
+	fflush(stdout);
+#endif				
+			
+ 			
+	
+		
 #if 0
 
 // #ifdef GPU_PROF

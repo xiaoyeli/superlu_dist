@@ -7,7 +7,11 @@ if (NOT MSVC)
 endif ()
 
 set(MATRICES ../EXAMPLE/g20.rua)  # sample sparse matrix from a file
+<<<<<<< HEAD
 set(NPROWS 1 2 5)	  # process rows
+=======
+set(NPROWS 1 2 5)		  # process rows
+>>>>>>> 511751f3a98425a14b37bc01d3dee65f62b2a6d7
 set(NPCOLS 1 2 3) 	  # process columns 
 set(NVAL 9 19)	  	  # generated matrix dimensions
 set(NRHS 1 3)		  # number of RHS

@@ -112,7 +112,7 @@ then
 fi
 
 
-for NTH in 1  
+for NTH in 1 4 16  
 do
 
 OMP_NUM_THREADS=$NTH
@@ -176,7 +176,7 @@ TH_PER_RANK=`expr $NTH \* 2`
     export OMP_NUM_THREADS=$OMP_NUM_THREADS
     export OMP_PLACES=threads
     export OMP_PROC_BIND=spread
-    export MPICH_MAX_THREAD_SAFETY=multiple
+    
     srun -n $CORE_VAL -c $TH_PER_RANK --cpu_bind=cores $FILE -c $NCOL -r $NROW $INPUT_DIR/$MAT | tee ./$MAT/SLU.o_mpi_${NROW}x${NCOL}_OMP_${OMP_NUM_THREADS}
     # Add final line (srun line) to temporary slurm script
 

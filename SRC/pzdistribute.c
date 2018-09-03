@@ -68,7 +68,7 @@ zReDistribute_A(SuperMatrix *A, ScalePermstruct_t *ScalePermstruct,
     NRformat_loc *Astore;
     int_t  *perm_r; /* row permutation vector */
     int_t  *perm_c; /* column permutation vector */
-    int_t  i, irow, fst_row, j, jcol, k, gbi, gbj, n, m_loc, jsize;
+    int_t  i, irow, fst_row, j, jcol, k, gbi, gbj, n, m_loc, jsize,nnz_tot;
     int_t  nnz_loc;    /* number of local nonzeros */
     int_t  SendCnt; /* number of remote nonzeros to be sent */
     int_t  RecvCnt; /* number of remote nonzeros to be sent */
@@ -77,7 +77,8 @@ zReDistribute_A(SuperMatrix *A, ScalePermstruct_t *ScalePermstruct,
     int_t  *ptr_to_send;
     doublecomplex *aij, **aij_send, *nzval, *dtemp;
     doublecomplex *nzval_a;
-    int    iam, it, p, procs;
+	doublecomplex asum,asum_tot;
+    int    iam, it, p, procs, iam_g;
     MPI_Request *send_req;
     MPI_Status  status;
     
@@ -97,9 +98,8 @@ zReDistribute_A(SuperMatrix *A, ScalePermstruct_t *ScalePermstruct,
     m_loc = Astore->m_loc;
     fst_row = Astore->fst_row;
     nnzToRecv = intCalloc_dist(2*procs);
-    nnzToSend = nnzToRecv + procs;
-
-
+    nnzToSend = nnzToRecv + procs;	
+	
     /* ------------------------------------------------------------
        COUNT THE NUMBER OF NONZEROS TO BE SENT TO EACH PROCESS,
        THEN ALLOCATE SPACE.

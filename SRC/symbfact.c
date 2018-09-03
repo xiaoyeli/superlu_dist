@@ -94,7 +94,8 @@ int_t symbfact
     int_t *iwork, *perm_r, *segrep, *repfnz;
     int_t *xprune, *marker, *parent, *xplore;
     int_t relax, *desc, *relax_end;
-    long long int nnzL, nnzU, nnzLU, nnzLSUB;
+    long long int nnzLU, nnzLSUB;
+    int64_t nnzL, nnzU;
 	NRformat_loc *Astore;
 
 #if ( DEBUGlevel>=1 )

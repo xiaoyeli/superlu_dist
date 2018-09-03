@@ -14,16 +14,26 @@ at the top-level directory.
  * \brief Look-ahead update of the Schur complement.
  *
  * <pre>
- * -- Distributed SuperLU routine (version 5.2) --
+ * -- Distributed SuperLU routine (version 5.4) --
  * Lawrence Berkeley National Lab, Univ. of California Berkeley.
  * October 1, 2014
  *
- * Modified: September 18, 2017
+ * Modified:
+ *  September 18, 2017
+ *  June 1, 2018  add parallel AWPM pivoting; add back arrive_at_ublock()
  *   
  */
 
+#include <assert.h>  /* assertion doesn't work if NDEBUG is defined */
+
 iukp = iukp0; /* point to the first block in index[] */
 rukp = rukp0; /* point to the start of nzval[] */
+j = jj0 = 0;  /* After the j-loop, jj0 points to the first block in U
+                 outside look-ahead window. */
+
+#if 0
+for (jj = 0; jj < nub; ++jj) assert(perm_u[jj] == jj); /* Sherry */
+#endif
 
 #ifdef ISORT
 while (j < nub && iperm_u[j] <= k0 + num_look_aheads)
@@ -33,12 +43,12 @@ while (j < nub && perm_u[2 * j] <= k0 + num_look_aheads)
 {
     doublecomplex zero = {0.0, 0.0};
 
-#if 0 // Sherry: no need to search
-    /* Caveat: There is a permutation perm_u involved for j  */
+#if 1
+    /* Search is needed because a permutation perm_u is involved for j  */
     /* Search along the row for the pointers {iukp, rukp} pointing to
      * block U(k,j).
      * j    -- current block in look-ahead window, initialized to 0 on entry
-     * iukp -- point to the start of index[] medadata
+     * iukp -- point to the start of index[] metadata
      * rukp -- point to the start of nzval[] array
      * jb   -- block number of block U(k,j), update destination column
      */
@@ -96,9 +106,6 @@ while (j < nub && perm_u[2 * j] <= k0 + num_look_aheads)
         }
     }
     tempu = bigU; /* set back to the beginning of the buffer */
-#if 0
-    rukp -= usub[iukp - 1]; /* Return to start of U(k,j). */
-#endif
 
     nbrow = lsub[1]; /* number of row subscripts in L(:,k) */
     if (myrow == krow) nbrow = lsub[1] - lsub[3]; /* skip diagonal block for those rows. */
@@ -194,9 +201,6 @@ while (j < nub && perm_u[2 * j] <= k0 + num_look_aheads)
 #endif
     } /* end parallel for lb = 0, nlb ... all blocks in L(:,k) */
 
-#if 0
-    rukp += usub[iukp - 1]; /* Move to block U(k,j+1) */
-#endif
     iukp += nsupc; /* Mov to block U(k,j+1) */
 
     /* =========================================== *

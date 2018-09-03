@@ -11,7 +11,7 @@ set(headers
     colamd.h
     environment.hpp
     TreeBcast_v2.hpp
-	TreeReduce_v2.hpp	
+    TreeReduce_v2.hpp	
     TreeBcast_v2_impl.hpp
     TreeReduce_v2_impl.hpp	
     ${CMAKE_CURRENT_BINARY_DIR}/superlu_dist_config.h
@@ -148,13 +148,19 @@ if (BUILD_SHARED_LIBS AND BUILD_STATIC_LIBS)
   list(APPEND targets superlu_dist-static)
 endif()
 
+<<<<<<< HEAD
 set(superlu_dist_libs ${MPI_C_LIBRARIES} ${BLAS_LIB} ${LAPACK_LIB}
     ${PARMETIS_LIB} ${COMBBLAS_LIB})
+=======
+set(superlu_dist_libs ${MPI_C_LIBRARIES} ${BLAS_LIB} 
+    ${PARMETIS_LIB} ${COMBBLAS_LIB})								
+>>>>>>> 511751f3a98425a14b37bc01d3dee65f62b2a6d7
 if (NOT MSVC)
   list(APPEND superlu_dist_libs m)
 endif ()
 
 foreach(target ${targets})
+<<<<<<< HEAD
   target_link_libraries(${target} ${superlu_dist_libs})
   set_target_properties(${target} PROPERTIES
                         OUTPUT_NAME superlu_dist
@@ -162,6 +168,23 @@ foreach(target ${targets})
                         SOVERSION ${VERSION_MAJOR}
                         LINKER_LANGUAGE CXX
                        )
+=======
+    target_link_libraries(${target} ${superlu_dist_libs})
+    if (HAVE_COMBBLAS)
+        set_target_properties(${target} PROPERTIES
+                              OUTPUT_NAME superlu_dist
+                              VERSION ${PROJECT_VERSION}
+                              SOVERSION ${VERSION_MAJOR}
+			      LINKER_LANGUAGE CXX
+			      )
+    else()
+        set_target_properties(${target} PROPERTIES
+                              OUTPUT_NAME superlu_dist
+                              VERSION ${PROJECT_VERSION}
+                              SOVERSION ${VERSION_MAJOR}
+			      )
+    endif()	   
+>>>>>>> 511751f3a98425a14b37bc01d3dee65f62b2a6d7
 endforeach(target)
 
 target_compile_definitions(superlu_dist PRIVATE SUPERLU_DIST_EXPORTS)

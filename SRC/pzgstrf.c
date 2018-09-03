@@ -13,19 +13,20 @@ at the top-level directory.
  * \brief Performs LU factorization in parallel
  *
  * <pre>
- * -- Distributed SuperLU routine (version 5.2) --
+ * -- Distributed SuperLU routine (version 5.4) --
  * Lawrence Berkeley National Lab, Univ. of California Berkeley.
  * October 1, 2014
  *
  * Modified:
- *     September 1, 1999
- *     Feburary 7, 2001  use MPI_Isend/MPI_Irecv
- *     October 15, 2008  latency-reducing panel factorization
- *     July    12, 2011  static scheduling and arbitrary look-ahead
- *     March   13, 2013  change NTAGS to MPI_TAG_UB value
- *     September 24, 2015 replace xLAMCH by xMACH, using C99 standard.
- *     December 31, 2015 rename xMACH to xMACH_DIST.
- *     September 30, 2017 optimization for Intel Knights Landing (KNL) node .
+ *   September 1, 1999
+ *   Feburary 7, 2001  use MPI_Isend/MPI_Irecv
+ *   October 15, 2008  latency-reducing panel factorization
+ *   July    12, 2011  static scheduling and arbitrary look-ahead
+ *   March   13, 2013  change NTAGS to MPI_TAG_UB value
+ *   September 24, 2015 replace xLAMCH by xMACH, using C99 standard.
+ *   December 31, 2015 rename xMACH to xMACH_DIST.
+ *   September 30, 2017 optimization for Intel Knights Landing (KNL) node .
+ *   June 1, 2018      add parallel AWPM pivoting; add back arrive_at_ublock()
  *
  * Sketch of the algorithm 
  *
@@ -315,8 +316,11 @@ pzgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
     int nnodes, *sendcnts, *sdispls, *recvcnts, *rdispls, *srows, *rrows;
     etree_node *head, *tail, *ptr;
     int *num_child;
-    int num_look_aheads, look_id, *look_ahead;
+    int num_look_aheads, look_id;
+    int *look_ahead; /* global look_ahead table */
     int_t *perm_c_supno, *iperm_c_supno;
+          /* perm_c_supno[k] = j means at the k-th step of elimination,
+	   * the j-th supernode is chosen. */
     MPI_Request *recv_req, **recv_reqs, **send_reqs, **send_reqs_u,
         **recv_reqs_u;
     MPI_Request *send_req, *U_diag_blk_send_req = NULL;
@@ -818,10 +822,10 @@ pzgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
 
 #if ( PRNTlevel>=1 )
     if(!iam) {
-	printf("max_nrows in L panel %d\n", max_row_size);
-	printf("\t.. GEMM buffer size: max_nrows X max_ncols = %d x %d\n",
+	printf("max_nrows in L panel " IFMT "\n", max_row_size);
+	printf("\t.. GEMM buffer size: max_nrows X max_ncols = " IFMT "x" IFMT "\n",
 	       max_row_size, (bigu_size / ldt));
-	printf(".. BIG U size %d\t BIG V size %d\n", bigu_size, bigv_size);
+	printf(".. BIG U size " IFMT "\t BIG V size " IFMT "\n", bigu_size, bigv_size);
 	fflush(stdout);
     }
 #endif
@@ -1623,17 +1627,15 @@ pzgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
             }
             iukp = iukp0;
 #ifdef ISORT
-            isort (nub, iperm_u, perm_u);
+            /* iperm_u is sorted based on elimination order; 
+               perm_u reorders the U blocks to match the elimination order. */
+            isort (nub, iperm_u, perm_u); 
 #else
             qsort (perm_u, (size_t) nub, 2 * sizeof (int_t),
                    &superlu_sort_perm);
 #endif
-            j = jj0 = 0;
 
 /************************************************************************/
-#if 0
-	for (jj = 0; jj < nub; ++jj) assert(perm_u[jj] == jj); /* Sherry */
-#endif
             double ttx =SuperLU_timer_();
 
 //#include "zlook_ahead_update_v4.c"
