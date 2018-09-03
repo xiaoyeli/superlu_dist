@@ -8,9 +8,9 @@
 cmake_minimum_required(VERSION 2.8.12 FATAL_ERROR)
 
 # Project version numbers
-project(SuperLU_DIST NONE)
+project(SuperLU_DIST C CXX)
 set(VERSION_MAJOR "5")
-set(VERSION_MINOR "3")
+set(VERSION_MINOR "4")
 set(VERSION_BugFix "0")
 set(PROJECT_VERSION ${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_BugFix})
 
@@ -62,8 +62,6 @@ else()
   set(PROJECT_NAME_LIB_EXPORT libsuperlu_dist.a)
 endif()
 
-enable_language (C)
-enable_language (CXX)
 set(CMAKE_CXX_STANDARD 11)
 if (XSDK_ENABLE_Fortran)
   enable_language (Fortran)
@@ -117,6 +115,7 @@ if(XSDK_INDEX_SIZE EQUAL 64)
     message("-- Using 64 bit integer for index size")
 endif()	
 set(CMAKE_C_FLAGS_RELEASE "-O3" CACHE STRING "")
+set(CMAKE_CXX_FLAGS_RELEASE "-O3" CACHE STRING "")
 
 ######################################################################
 #
@@ -128,6 +127,7 @@ set(CMAKE_C_FLAGS_RELEASE "-O3" CACHE STRING "")
 find_package(MPI)
 if(MPI_C_FOUND)
     set(CMAKE_C_FLAGS "${MPI_C_COMPILE_FLAGS} ${CMAKE_C_FLAGS}")
+    set(CMAKE_CXX_FLAGS "${MPI_CXX_COMPILE_FLAGS} ${CMAKE_CXX_FLAGS}")
     set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${MPI_C_LINK_FLAGS}" )
 endif()
 #--------------------- OpenMP ---------------------
@@ -139,6 +139,7 @@ if (enable_openmp)
 ## include(FindOpenMP)  # Strumpack uses this
   if(OPENMP_FOUND)
     set(CMAKE_C_FLAGS "${OpenMP_C_FLAGS} ${CMAKE_C_FLAGS}")
+    set(CMAKE_CXX_FLAGS "${OpenMP_CXX_FLAGS} ${CMAKE_CXX_FLAGS}")
 # On edison, OpenMP_EXE_LINKER_FLAGS is empty
 #  set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${OpenMP_EXE_LINKER_FLAGS}")
     set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${OpenMP_C_FLAGS}")
@@ -177,6 +178,29 @@ else()
     else()
         set(BLAS_LIB_EXPORT ${CMAKE_INSTALL_PREFIX}/CBLAS/libblas.a)
     endif()
+endif()
+
+#--------------------- LAPACK ---------------------
+if(NOT enable_lapacklib)
+  if(TPL_LAPACK_LIBRARIES)
+    set(LAPACK_FOUND TRUE)
+  else()
+    find_package(LAPACK)
+    if(LAPACK_FOUND)
+      set(TPL_LAPACK_LIBRARIES "${LAPACK_LIBRARIES}" CACHE FILEPATH
+        "Set from FindLAPACK.cmake LAPACK_LIBRARIES." FORCE)
+    endif()
+  endif()
+endif()
+
+if(LAPACK_FOUND)
+    message("-- Using TPL_LAPACK_LIBRARIES='${TPL_LAPACK_LIBRARIES}'")
+    set(LAPACK_LIB ${TPL_LAPACK_LIBRARIES})
+    # fix up LAPACK library name
+    string (REPLACE ";" " " LAPACK_LIB_STR "${LAPACK_LIB}")
+    set(LAPACK_LIB_EXPORT ${LAPACK_LIB_STR})
+else()
+    message("-- Did not find or specify LAPACK.")
 endif()
 
 #--------------------- ParMETIS ---------------------
@@ -219,6 +243,42 @@ if(PARMETIS_FOUND)
   set(HAVE_PARMETIS TRUE)
 endif()
 
+#--------------------- CombBLAS ---------------------
+if (enable_combblaslib)   ## want to use CombBLAS
+  if (NOT TPL_COMBBLAS_LIBRARIES)
+    message(FATAL_ERROR "TPL_COMBBLAS_LIBRARIES option should be set for COMBBLAS support to be enabled.")
+  endif()
+
+  if (NOT TPL_COMBBLAS_INCLUDE_DIRS)
+    message(FATAL_ERROR "TPL_COMBBLAS_INCLUDE_DIRS option be set for COMBBLAS support to be enabled.")
+  endif()
+  foreach(dir ${TPL_COMBBLAS_INCLUDE_DIRS})
+    if (NOT EXISTS ${dir})
+      message(FATAL_ERROR "COMBBLAS include directory not found: ${dir}")
+    endif()
+    set(CMAKE_CXX_FLAGS "-I${dir} ${CMAKE_CXX_FLAGS}")
+  endforeach()
+
+  message("-- Enabled support for COMBBLAS")
+  set(COMBBLAS_FOUND TRUE)
+
+  set(COMBBLAS_LIB ${TPL_COMBBLAS_LIBRARIES})
+  # fix up COMBBLAS library names
+  string (REPLACE ";" " " COMBBLAS_LIB_STR "${COMBBLAS_LIB}")
+  set(COMBBLAS_LIB_EXPORT ${COMBBLAS_LIB_STR})
+
+else()
+  message("-- Will not link with CombBLAS.")
+endif()
+
+if(COMBBLAS_FOUND)
+  set(HAVE_COMBBLAS TRUE)
+  set(LOADER $(CXX))
+else()
+  set(LOADER $(CC))
+endif()
+
+
 ######################################################################
 #
 # Include directories
@@ -226,11 +286,18 @@ endif()
 ######################################################################
 
 include_directories(${CMAKE_BINARY_DIR}/SRC) # For superlu_dist_config.h
-include_directories(${CMAKE_SOURCE_DIR}/SRC)
+# include_directories(${CMAKE_SOURCE_DIR}/SRC)
 if (TPL_PARMETIS_INCLUDE_DIRS)
   include_directories(${TPL_PARMETIS_INCLUDE_DIRS})  ## parmetis
 endif ()
+if (TPL_PARMETIS_INCLUDE_DIRS)
+  include_directories(${TPL_PARMETIS_INCLUDE_DIRS})  ## parmetis
+endif ()
+if (TPL_COMBBLAS_INCLUDE_DIRS)
+  include_directories(${TPL_COMBBLAS_INCLUDE_DIRS})  ## CombBLAS
+endif ()
 include_directories(${MPI_C_INCLUDE_PATH})
+
 ######################################################################
 #
 # Add subdirectories
@@ -254,10 +321,10 @@ if(enable_examples)
   add_subdirectory(EXAMPLE)
 endif()
 
-# file(WRITE "make.defs" "# can be exposed to users" ${CMAKE_C_COMPILER})
 # configure_file(${CMAKE_SOURCE_DIR}/make.inc.in ${CMAKE_BINARY_DIR}/make.inc)
 configure_file(${SuperLU_DIST_SOURCE_DIR}/make.inc.in ${SuperLU_DIST_SOURCE_DIR}/make.inc)
 configure_file(${SuperLU_DIST_SOURCE_DIR}/SRC/superlu_dist_config.h.in ${SuperLU_DIST_BINARY_DIR}/SRC/superlu_dist_config.h)
+configure_file(${SuperLU_DIST_SOURCE_DIR}/SRC/superlu_dist_config.h.in ${SuperLU_DIST_SOURCE_DIR}/SRC/superlu_dist_config.h)
 # configure_file(${SuperLU_DIST_SOURCE_DIR}/SRC/superlu_dist_config.h.in ${SuperLU_DIST_SOURCE_DIR}/SRC/superlu_dist_config.h)
 
 # Add pkg-config support

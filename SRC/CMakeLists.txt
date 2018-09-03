@@ -50,6 +50,11 @@ set(sources
 if (MSVC)
   list(APPEND sources wingetopt.c)
 endif ()
+
+if (HAVE_COMBBLAS)
+  list(APPEND sources c2cpp_GetAWPM.cpp AWPM_CombBLAS.hpp)
+endif()
+
 set_source_files_properties(superlu_timer.c PROPERTIES COMPILE_FLAGS -O0)
 
 if(enable_double)
@@ -69,7 +74,7 @@ if(enable_double)
     dreadhb.c
     dreadrb.c
     dreadtriple.c
-	dbinary_io.c	
+    dbinary_io.c	
     dreadMM.c
     pdgsequ.c
     pdlaqgs.c
@@ -111,7 +116,7 @@ if(enable_complex16)
     zreadhb.c
     zreadrb.c
     zreadtriple.c
-	zbinary_io.c	
+    zbinary_io.c	
     zreadMM.c
     pzgsequ.c
     pzlaqgs.c
@@ -143,7 +148,8 @@ if (BUILD_SHARED_LIBS AND BUILD_STATIC_LIBS)
   list(APPEND targets superlu_dist-static)
 endif()
 
-set(superlu_dist_libs ${MPI_C_LIBRARIES} ${BLAS_LIB} ${PARMETIS_LIB})
+set(superlu_dist_libs ${MPI_C_LIBRARIES} ${BLAS_LIB} ${LAPACK_LIB}
+    ${PARMETIS_LIB} ${COMBBLAS_LIB})
 if (NOT MSVC)
   list(APPEND superlu_dist_libs m)
 endif ()
@@ -154,7 +160,8 @@ foreach(target ${targets})
                         OUTPUT_NAME superlu_dist
                         VERSION ${PROJECT_VERSION}
                         SOVERSION ${VERSION_MAJOR}
-  )
+                        LINKER_LANGUAGE CXX
+                       )
 endforeach(target)
 
 target_compile_definitions(superlu_dist PRIVATE SUPERLU_DIST_EXPORTS)
