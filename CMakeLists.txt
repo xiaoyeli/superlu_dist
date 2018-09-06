@@ -8,7 +8,7 @@
 cmake_minimum_required(VERSION 2.8.12 FATAL_ERROR)
 
 # Project version numbers
-project(SuperLU_DIST C)
+project(SuperLU_DIST C CXX)
 set(VERSION_MAJOR "5")
 set(VERSION_MINOR "4")
 set(VERSION_BugFix "0")
@@ -81,10 +81,7 @@ else()
   set(PROJECT_NAME_LIB_EXPORT libsuperlu_dist.a)
 endif()
 
-if (XSDK_ENABLE_CXX)
-  enable_language (CXX)
-  set(NOCXX FALSE)
-endif()
+set(CMAKE_CXX_STANDARD 11)
 if (XSDK_ENABLE_Fortran)
   enable_language (Fortran)
   set(NOFORTRAN FALSE)
@@ -192,6 +189,29 @@ else()
     endif()
 endif()
 
+#--------------------- LAPACK ---------------------
+if(NOT enable_lapacklib)
+  if(TPL_LAPACK_LIBRARIES)
+    set(LAPACK_FOUND TRUE)
+  else()
+    find_package(LAPACK)
+    if(LAPACK_FOUND)
+      set(TPL_LAPACK_LIBRARIES "${LAPACK_LIBRARIES}" CACHE FILEPATH
+        "Set from FindLAPACK.cmake LAPACK_LIBRARIES." FORCE)
+    endif()
+  endif()
+endif()
+
+if(LAPACK_FOUND)
+    message("-- Using TPL_LAPACK_LIBRARIES='${TPL_LAPACK_LIBRARIES}'")
+    set(LAPACK_LIB ${TPL_LAPACK_LIBRARIES})
+    # fix up LAPACK library name
+    string (REPLACE ";" " " LAPACK_LIB_STR "${LAPACK_LIB}")
+    set(LAPACK_LIB_EXPORT ${LAPACK_LIB_STR})
+else()
+    message("-- Did not find or specify LAPACK.")
+endif()
+
 #--------------------- ParMETIS ---------------------
 if (enable_parmetislib)   ## want to use parmetis
   if (NOT TPL_PARMETIS_LIBRARIES)
@@ -275,7 +295,7 @@ endif()
 ######################################################################
 
 include_directories(${CMAKE_BINARY_DIR}/SRC) # For superlu_dist_config.h
-include_directories(${CMAKE_SOURCE_DIR}/SRC)
+# include_directories(${CMAKE_SOURCE_DIR}/SRC)
 if (TPL_PARMETIS_INCLUDE_DIRS)
   include_directories(${TPL_PARMETIS_INCLUDE_DIRS})  ## parmetis
 endif ()
@@ -311,6 +331,10 @@ endif()
 configure_file(${SuperLU_DIST_SOURCE_DIR}/make.inc.in ${SuperLU_DIST_SOURCE_DIR}/make.inc)
 configure_file(${SuperLU_DIST_SOURCE_DIR}/SRC/superlu_dist_config.h.in ${SuperLU_DIST_BINARY_DIR}/SRC/superlu_dist_config.h)
 configure_file(${SuperLU_DIST_SOURCE_DIR}/SRC/superlu_dist_config.h.in ${SuperLU_DIST_SOURCE_DIR}/SRC/superlu_dist_config.h)
+<<<<<<< HEAD
+# configure_file(${SuperLU_DIST_SOURCE_DIR}/SRC/superlu_dist_config.h.in ${SuperLU_DIST_SOURCE_DIR}/SRC/superlu_dist_config.h)
+=======
+>>>>>>> 511751f3a98425a14b37bc01d3dee65f62b2a6d7
 
 # Add pkg-config support
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/superlu_dist.pc.in ${CMAKE_CURRENT_BINARY_DIR}/superlu_dist.pc @ONLY)
