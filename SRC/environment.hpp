@@ -1,3 +1,5 @@
+// asynccomm.hpp
+
 /// @file environment.hpp
 /// @brief Environmental variables.
 /// @date 2012-08-10
@@ -43,9 +45,9 @@
 
 
 // FIXME Always use complex data for pexsi and ppexsi.
-#define _USE_COMPLEX_
+#define _USE_COMPLEX_  // sherry: remove
 
-// The verbose level of debugging information
+// The verbose level of debugging information, sherry remove
 #ifdef  DEBUG
 #define _DEBUGlevel_ DEBUG
 #endif
@@ -68,7 +70,7 @@ namespace ASYNCOMM{
 
 // Basic data types
 
-#ifndef Add_
+#ifndef Add_   // sherry remove
 #define FORTRAN(name) name
 #define BLAS(name) name
 #define LAPACK(name) name
@@ -78,7 +80,7 @@ namespace ASYNCOMM{
 #define LAPACK(name) name##_
 #endif
 typedef    int                   Int;
-typedef    int64_t               LongInt;
+    typedef    int64_t               LongInt; //
 typedef    double                Real;
 typedef    std::complex<double>  Complex; // Must use elemental form of complex
 #ifdef _USE_COMPLEX_
