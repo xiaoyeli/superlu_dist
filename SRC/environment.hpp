@@ -94,6 +94,7 @@ extern  std::ofstream  statusOFS;
 // Define constants
 // *********************************************************************
 // Commonly used
+const Int DEG_TREE = 2;
 const Int I_ZERO = 0;
 const Int I_ONE  = 1;
 const Int I_MINUS_ONE  = -1;

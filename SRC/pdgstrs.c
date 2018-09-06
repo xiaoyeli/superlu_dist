@@ -602,6 +602,13 @@ pdCompute_Diag_Inv(int_t n, LUstruct_t *LUstruct,gridinfo_t *grid, SuperLUStat_t
 				knsupc = SuperSize( k );
 
 				for (j=0 ; j<knsupc; j++){
+					for (i=0 ; i<knsupc; i++){
+						Linv[j*knsupc+i] = zero;	
+						Uinv[j*knsupc+i] = zero;	
+					}
+				}				
+				
+				for (j=0 ; j<knsupc; j++){
 					Linv[j*knsupc+j] = one;
 					for (i=j+1 ; i<knsupc; i++){
 						Linv[j*knsupc+i] = lusup[j*nsupr+i];	

@@ -415,18 +415,15 @@ namespace ASYNCOMM{
 			  myIdx = ii;
 			  break;
 		  }
-
-	  if(myIdx*2+1<rank_cnt){
-		   child = ranks[myIdx*2+1];
-           this->myDests_.push_back(child);
+	  for (ii=0;ii<DEG_TREE;ii++){
+		  if(myIdx*DEG_TREE+1+ii<rank_cnt){
+			   child = ranks[myIdx*DEG_TREE+1+ii];
+			   this->myDests_.push_back(child);
+		  }		
 	  }
-	  if(myIdx*2+2<rank_cnt){
-		   child = ranks[myIdx*2+2];
-           this->myDests_.push_back(child);
-	  }	 
-
+	  	   
 	  if(myIdx!=0){
-		  this->myRoot_ = ranks[(Int)floor((double)(myIdx-1.0)/2.0)];
+		  this->myRoot_ = ranks[(Int)floor((double)(myIdx-1.0)/(double)DEG_TREE)];
 	  }else{
 		  this->myRoot_ = this->myRank_;
 	  } 
