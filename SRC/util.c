@@ -373,7 +373,7 @@ void set_default_options_dist(superlu_dist_options_t *options)
     options->num_lookaheads    = 10;
     options->lookahead_etree   = NO;
     options->SymPattern        = NO;
-    options->DiagInv           = NO;
+    options->DiagInv           = YES;
 }
 
 /*! \brief Print the options setting.
