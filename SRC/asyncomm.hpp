@@ -43,7 +43,7 @@
 /// @namespace ASYNCOMM
 /// @brief The main namespace.
 
-namespace ASYNCOMM {
+namespace SuperLU_ASYNCOMM {
 
     // Basic data types
     typedef    int                   Int;
@@ -58,13 +58,13 @@ namespace ASYNCOMM {
     // Commonly used
     const Int DEG_TREE = 2;
 
-} // namespace ASYNCOMM
+} // namespace SuperLU_ASYNCOMM
 
 /***********************************************************************
  *  Error handling
  **********************************************************************/
 
-namespace ASYNCOMM {
+namespace SuperLU_ASYNCOMM {
 
   inline void gdb_lock(){
     volatile int lock = 1;
@@ -146,6 +146,6 @@ namespace ASYNCOMM {
 	}
 
 
-} // namespace ASYNCOMM
+} // namespace SuperLU_ASYNCOMM
 
 #endif // __SUPERLU_ASYNCOMM_HPP 

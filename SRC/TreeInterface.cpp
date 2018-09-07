@@ -1,7 +1,7 @@
 #include "TreeReduce_v2.hpp"
 #include "dcomplex.h"
 
-namespace ASYNCOMM{
+namespace SuperLU_ASYNCOMM{
 	
 	
 	
@@ -263,12 +263,9 @@ namespace ASYNCOMM{
 		}		
 	}
 	
-	
-
-
 #ifdef __cplusplus
 	}
 #endif
 	
-} //namespace ASYNCOMM
+} //namespace SuperLU_ASYNCOMM
 

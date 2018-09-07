@@ -6,7 +6,7 @@
 // #include "TreeBcast_v2.hpp"
 
 
-namespace ASYNCOMM{
+namespace SuperLU_ASYNCOMM{
 
 
   template< typename T> 
@@ -521,7 +521,7 @@ namespace ASYNCOMM{
     }
 
 
-} //namespace ASYNCOMM
+} //namespace SuperLU_ASYNCOMM
 
 
 #endif

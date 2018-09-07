@@ -19,7 +19,7 @@
 #define FTREE_LIMIT 8
 #endif
 
-namespace ASYNCOMM{
+namespace SuperLU_ASYNCOMM{
 
   extern std::map< MPI_Comm , std::vector<int> > commGlobRanks;
 
@@ -137,7 +137,7 @@ namespace ASYNCOMM{
 
 
 
-}//namespace ASYNCOMM
+}//namespace SuperLU_ASYNCOMM
 
 #include "TreeBcast_v2_impl.hpp"
 

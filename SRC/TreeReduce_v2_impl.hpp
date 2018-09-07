@@ -6,7 +6,7 @@
 // #include "TreeReduce_v2.hpp"
 
 
-namespace ASYNCOMM{
+namespace SuperLU_ASYNCOMM {
 	
   template<typename T>
     TreeReduce_v2<T>::TreeReduce_v2(const MPI_Comm & pComm, Int * ranks, Int rank_cnt, Int msgSize):TreeBcast_v2<T>(pComm,ranks,rank_cnt,msgSize){
@@ -430,5 +430,5 @@ namespace ASYNCOMM{
 
 
 
-} //namespace ASYNCOMM
+} //namespace SuperLU_ASYNCOMM
 #endif

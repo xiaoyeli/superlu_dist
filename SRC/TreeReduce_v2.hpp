@@ -12,7 +12,7 @@
 //#include <random>
 
 
-namespace ASYNCOMM{
+namespace SuperLU_ASYNCOMM{
 
   template< typename T>
     class TreeReduce_v2: public TreeBcast_v2<T>{
@@ -101,7 +101,7 @@ public:
 
 };
 
-}//namespace ASYNCOMM
+}//namespace SuperLU_ASYNCOMM
 
 #include "TreeReduce_v2_impl.hpp"
 
