@@ -10,10 +10,10 @@ set(headers
     util_dist.h
     colamd.h
     asyncomm.hpp
-    TreeBcast_v2.hpp
-    TreeReduce_v2.hpp	
-    TreeBcast_v2_impl.hpp
-    TreeReduce_v2_impl.hpp	
+    TreeBcast_slu.hpp
+    TreeReduce_slu.hpp	
+    TreeBcast_slu_impl.hpp
+    TreeReduce_slu_impl.hpp	
     ${CMAKE_CURRENT_BINARY_DIR}/superlu_dist_config.h
 )
 if (MSVC)

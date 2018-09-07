@@ -541,7 +541,7 @@ void zDumpLblocks(int iam, int_t nsupers, gridinfo_t *grid,
 	char filename[256];
 	FILE *fp, *fopen();	
  
-	assert(grid->npcol*grid->nprow==1);
+	// assert(grid->npcol*grid->nprow==1);
 	
 	snprintf(filename, sizeof(filename), "%s-%d", "L", iam);    
     printf("Dumping L factor to --> %s\n", filename);
@@ -565,7 +565,11 @@ void zDumpLblocks(int iam, int_t nsupers, gridinfo_t *grid,
 		
 		for (j = 0; j < nsupc; ++j) {
 		for (i=0; i<len; ++i){
+		
+			fprintf(fp, "%d %d %e\n", index[k+LB_DESCRIPTOR+i]+1, xsup[gb]+j+1, (double)iam);
+#if 0		
 			fprintf(fp, "%d %d %e %e\n", index[k+LB_DESCRIPTOR+i]+1, xsup[gb]+j+1, nzval[r +i+ j*nsupr].r,nzval[r +i+ j*nsupr].i);
+#endif		
 		}
 		}
 		k += LB_DESCRIPTOR + len;

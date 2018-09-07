@@ -47,7 +47,6 @@ namespace SuperLU_ASYNCOMM {
 
     // Basic data types
     typedef    int                   Int;
-    typedef    double                Real;
 
     // IO
     extern  std::ofstream  statusOFS;
@@ -56,7 +55,7 @@ namespace SuperLU_ASYNCOMM {
     // Define constants
     // *********************************************************************
     // Commonly used
-    const Int DEG_TREE = 2;
+    const Int DEG_TREE = 2; //number of children of each tree node
 
 } // namespace SuperLU_ASYNCOMM
 
@@ -120,7 +119,7 @@ namespace SuperLU_ASYNCOMM {
   // These utility functions do not depend on local definitions
   // *********************************************************************
   // Return the closest integer to a real number
-	inline Int iround(Real a){ 
+	inline Int iround(double a){ 
 		Int b = 0;
 		if(a>0) b = (a-Int(a)<0.5)?Int(a):(Int(a)+1);
 		else b = (Int(a)-a<0.5)?Int(a):(Int(a)-1);

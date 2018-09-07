@@ -21,14 +21,14 @@
 
 namespace SuperLU_ASYNCOMM{
 
-  extern std::map< MPI_Comm , std::vector<int> > commGlobRanks;
+  extern std::map< MPI_Comm , std::vector<Int> > commGlobRanks;
 
   template< typename T>
-    class TreeBcast_v2{
+    class TreeBcast_slu{
       protected:
         std::vector<MPI_Request> recvRequests_;
         std::vector<MPI_Status> recvStatuses_;
-        std::vector<int> recvDoneIdx_;
+        std::vector<Int> recvDoneIdx_;
         std::vector<T *> recvDataPtrs_;
         std::vector<T> recvTempBuffer_;
         Int recvPostedCount_;
@@ -36,7 +36,7 @@ namespace SuperLU_ASYNCOMM{
 
         std::vector<MPI_Request> sendRequests_;
         std::vector<MPI_Status> sendStatuses_;
-        std::vector<int> sendDoneIdx_;
+        std::vector<Int> sendDoneIdx_;
         std::vector<T *> sendDataPtrs_;
         std::vector<T> sendTempBuffer_;
         Int sendPostedCount_;
@@ -64,13 +64,13 @@ namespace SuperLU_ASYNCOMM{
 
 
       public:
-        static TreeBcast_v2<T> * Create(const MPI_Comm & pComm, Int * ranks, Int rank_cnt, Int msgSize,double rseed);
-        TreeBcast_v2();
-        TreeBcast_v2(const MPI_Comm & pComm, Int * ranks, Int rank_cnt,Int msgSize);
-        TreeBcast_v2(const TreeBcast_v2 & Tree);
-        virtual ~TreeBcast_v2();
-        virtual TreeBcast_v2 * clone() const = 0; 
-        virtual void Copy(const TreeBcast_v2 & Tree);
+        static TreeBcast_slu<T> * Create(const MPI_Comm & pComm, Int * ranks, Int rank_cnt, Int msgSize,double rseed);
+        TreeBcast_slu();
+        TreeBcast_slu(const MPI_Comm & pComm, Int * ranks, Int rank_cnt,Int msgSize);
+        TreeBcast_slu(const TreeBcast_slu & Tree);
+        virtual ~TreeBcast_slu();
+        virtual TreeBcast_slu * clone() const = 0; 
+        virtual void Copy(const TreeBcast_slu & Tree);
         virtual void Reset();
 
 
@@ -104,7 +104,7 @@ namespace SuperLU_ASYNCOMM{
 
 
   template< typename T>
-    class FTreeBcast2: public TreeBcast_v2<T>{
+    class FTreeBcast2: public TreeBcast_slu<T>{
       protected:
         virtual void buildTree(Int * ranks, Int rank_cnt);
 
@@ -114,7 +114,7 @@ namespace SuperLU_ASYNCOMM{
     };
 
   template< typename T>
-    class BTreeBcast2: public TreeBcast_v2<T>{
+    class BTreeBcast2: public TreeBcast_slu<T>{
       protected:
         virtual void buildTree(Int * ranks, Int rank_cnt);
 
@@ -124,7 +124,7 @@ namespace SuperLU_ASYNCOMM{
     };
 
   template< typename T>
-    class ModBTreeBcast2: public TreeBcast_v2<T>{
+    class ModBTreeBcast2: public TreeBcast_slu<T>{
       protected:
         double rseed_;
         virtual void buildTree(Int * ranks, Int rank_cnt);
@@ -139,6 +139,6 @@ namespace SuperLU_ASYNCOMM{
 
 }//namespace SuperLU_ASYNCOMM
 
-#include "TreeBcast_v2_impl.hpp"
+#include "TreeBcast_slu_impl.hpp"
 
 #endif // __SUPERLU_TREEBCAST

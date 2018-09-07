@@ -1,4 +1,4 @@
-#include "TreeReduce_v2.hpp"
+#include "TreeReduce_slu.hpp"
 #include "dcomplex.h"
 
 namespace SuperLU_ASYNCOMM{
@@ -12,22 +12,22 @@ namespace SuperLU_ASYNCOMM{
 	BcTree BcTree_Create(MPI_Comm comm, Int* ranks, Int rank_cnt, Int msgSize, double rseed, char precision){
 		assert(msgSize>0);
 		if(precision=='d'){
-			TreeBcast_v2<double>* BcastTree = TreeBcast_v2<double>::Create(comm,ranks,rank_cnt,msgSize,rseed);
+			TreeBcast_slu<double>* BcastTree = TreeBcast_slu<double>::Create(comm,ranks,rank_cnt,msgSize,rseed);
 			return (BcTree) BcastTree;
 		}
 		if(precision=='z'){
-			TreeBcast_v2<doublecomplex>* BcastTree = TreeBcast_v2<doublecomplex>::Create(comm,ranks,rank_cnt,msgSize,rseed);		
+			TreeBcast_slu<doublecomplex>* BcastTree = TreeBcast_slu<doublecomplex>::Create(comm,ranks,rank_cnt,msgSize,rseed);		
 			return (BcTree) BcastTree;
 		}
 	}
 
 	void BcTree_Destroy(BcTree Tree, char precision){
 		if(precision=='d'){
-			TreeBcast_v2<double>* BcastTree = (TreeBcast_v2<double>*) Tree;
+			TreeBcast_slu<double>* BcastTree = (TreeBcast_slu<double>*) Tree;
 			delete BcastTree; 
 		}
 		if(precision=='z'){
-			TreeBcast_v2<doublecomplex>* BcastTree = (TreeBcast_v2<doublecomplex>*) Tree;
+			TreeBcast_slu<doublecomplex>* BcastTree = (TreeBcast_slu<doublecomplex>*) Tree;
 			delete BcastTree; 
 		}
 
@@ -35,11 +35,11 @@ namespace SuperLU_ASYNCOMM{
 	
 	void BcTree_SetTag(BcTree Tree, Int tag, char precision){
 		if(precision=='d'){
-		TreeBcast_v2<double>* BcastTree = (TreeBcast_v2<double>*) Tree;
+		TreeBcast_slu<double>* BcastTree = (TreeBcast_slu<double>*) Tree;
 		BcastTree->SetTag(tag); 
 		}
 		if(precision=='z'){
-		TreeBcast_v2<doublecomplex>* BcastTree = (TreeBcast_v2<doublecomplex>*) Tree;
+		TreeBcast_slu<doublecomplex>* BcastTree = (TreeBcast_slu<doublecomplex>*) Tree;
 		BcastTree->SetTag(tag); 
 		}
 	}
@@ -47,11 +47,11 @@ namespace SuperLU_ASYNCOMM{
 
 	yes_no_t BcTree_IsRoot(BcTree Tree, char precision){
 		if(precision=='d'){
-		TreeBcast_v2<double>* BcastTree = (TreeBcast_v2<double>*) Tree;
+		TreeBcast_slu<double>* BcastTree = (TreeBcast_slu<double>*) Tree;
 		return BcastTree->IsRoot()?YES:NO;
 		}
 		if(precision=='z'){
-		TreeBcast_v2<doublecomplex>* BcastTree = (TreeBcast_v2<doublecomplex>*) Tree;
+		TreeBcast_slu<doublecomplex>* BcastTree = (TreeBcast_slu<doublecomplex>*) Tree;
 		return BcastTree->IsRoot()?YES:NO;
 		}
 	}
@@ -59,22 +59,22 @@ namespace SuperLU_ASYNCOMM{
 	
 	void BcTree_forwardMessageSimple(BcTree Tree, void* localBuffer, Int msgSize, char precision){
 		if(precision=='d'){
-		TreeBcast_v2<double>* BcastTree = (TreeBcast_v2<double>*) Tree;
+		TreeBcast_slu<double>* BcastTree = (TreeBcast_slu<double>*) Tree;
 		BcastTree->forwardMessageSimple((double*)localBuffer,msgSize);	
 		}
 		if(precision=='z'){
-		TreeBcast_v2<doublecomplex>* BcastTree = (TreeBcast_v2<doublecomplex>*) Tree;
+		TreeBcast_slu<doublecomplex>* BcastTree = (TreeBcast_slu<doublecomplex>*) Tree;
 		BcastTree->forwardMessageSimple((doublecomplex*)localBuffer,msgSize);	
 		}	
 	}
 
 	void BcTree_waitSendRequest(BcTree Tree, char precision){
 		if(precision=='d'){
-		TreeBcast_v2<double>* BcastTree = (TreeBcast_v2<double>*) Tree;
+		TreeBcast_slu<double>* BcastTree = (TreeBcast_slu<double>*) Tree;
 		BcastTree->waitSendRequest();		
 		}
 		if(precision=='z'){
-		TreeBcast_v2<doublecomplex>* BcastTree = (TreeBcast_v2<doublecomplex>*) Tree;
+		TreeBcast_slu<doublecomplex>* BcastTree = (TreeBcast_slu<doublecomplex>*) Tree;
 		BcastTree->waitSendRequest();		
 		}
 	}
@@ -83,33 +83,33 @@ namespace SuperLU_ASYNCOMM{
 	
 	void BcTree_allocateRequest(BcTree Tree, char precision){
 		if(precision=='d'){
-		TreeBcast_v2<double>* BcastTree = (TreeBcast_v2<double>*) Tree;
+		TreeBcast_slu<double>* BcastTree = (TreeBcast_slu<double>*) Tree;
 		BcastTree->allocateRequest();
 		}
 		if(precision=='z'){
-		TreeBcast_v2<doublecomplex>* BcastTree = (TreeBcast_v2<doublecomplex>*) Tree;
+		TreeBcast_slu<doublecomplex>* BcastTree = (TreeBcast_slu<doublecomplex>*) Tree;
 		BcastTree->allocateRequest();
 		}			
 	}	
 	
 	int BcTree_getDestCount(BcTree Tree, char precision){
 		if(precision=='d'){
-		TreeBcast_v2<double>* BcastTree = (TreeBcast_v2<double>*) Tree;
+		TreeBcast_slu<double>* BcastTree = (TreeBcast_slu<double>*) Tree;
 		return BcastTree->GetDestCount();					
 		}
 		if(precision=='z'){
-		TreeBcast_v2<doublecomplex>* BcastTree = (TreeBcast_v2<doublecomplex>*) Tree;
+		TreeBcast_slu<doublecomplex>* BcastTree = (TreeBcast_slu<doublecomplex>*) Tree;
 		return BcastTree->GetDestCount();					
 		}
 	}	
 
 	int BcTree_GetMsgSize(BcTree Tree, char precision){
 		if(precision=='d'){
-		TreeBcast_v2<double>* BcastTree = (TreeBcast_v2<double>*) Tree;
+		TreeBcast_slu<double>* BcastTree = (TreeBcast_slu<double>*) Tree;
 		return BcastTree->GetMsgSize();					
 		}
 		if(precision=='z'){
-		TreeBcast_v2<doublecomplex>* BcastTree = (TreeBcast_v2<doublecomplex>*) Tree;
+		TreeBcast_slu<doublecomplex>* BcastTree = (TreeBcast_slu<doublecomplex>*) Tree;
 		return BcastTree->GetMsgSize();					
 		}
 	}		
@@ -163,22 +163,22 @@ namespace SuperLU_ASYNCOMM{
 	RdTree RdTree_Create(MPI_Comm comm, Int* ranks, Int rank_cnt, Int msgSize, double rseed, char precision){
 		assert(msgSize>0);
 		if(precision=='d'){
-		TreeReduce_v2<double>* ReduceTree = TreeReduce_v2<double>::Create(comm,ranks,rank_cnt,msgSize,rseed);
+		TreeReduce_slu<double>* ReduceTree = TreeReduce_slu<double>::Create(comm,ranks,rank_cnt,msgSize,rseed);
 		return (RdTree) ReduceTree;
 		}
 		if(precision=='z'){
-		TreeReduce_v2<doublecomplex>* ReduceTree = TreeReduce_v2<doublecomplex>::Create(comm,ranks,rank_cnt,msgSize,rseed);
+		TreeReduce_slu<doublecomplex>* ReduceTree = TreeReduce_slu<doublecomplex>::Create(comm,ranks,rank_cnt,msgSize,rseed);
 		return (RdTree) ReduceTree;
 		}
 	}
 	
 	void RdTree_Destroy(RdTree Tree, char precision){
 		if(precision=='d'){
-		TreeReduce_v2<double>* ReduceTree = (TreeReduce_v2<double>*) Tree;
+		TreeReduce_slu<double>* ReduceTree = (TreeReduce_slu<double>*) Tree;
 		delete ReduceTree; 
 		}
 		if(precision=='z'){
-		TreeReduce_v2<doublecomplex>* ReduceTree = (TreeReduce_v2<doublecomplex>*) Tree;
+		TreeReduce_slu<doublecomplex>* ReduceTree = (TreeReduce_slu<doublecomplex>*) Tree;
 		delete ReduceTree;
 		}		
 	}	
@@ -186,33 +186,33 @@ namespace SuperLU_ASYNCOMM{
 
 	void RdTree_SetTag(RdTree Tree, Int tag, char precision){
 		if(precision=='d'){
-		TreeReduce_v2<double>* ReduceTree = (TreeReduce_v2<double>*) Tree;
+		TreeReduce_slu<double>* ReduceTree = (TreeReduce_slu<double>*) Tree;
 		ReduceTree->SetTag(tag); 		
 		}
 		if(precision=='z'){
-		TreeReduce_v2<doublecomplex>* ReduceTree = (TreeReduce_v2<doublecomplex>*) Tree;
+		TreeReduce_slu<doublecomplex>* ReduceTree = (TreeReduce_slu<doublecomplex>*) Tree;
 		ReduceTree->SetTag(tag); 
 		}
 	}
 
 	int  RdTree_GetDestCount(RdTree Tree, char precision){
 		if(precision=='d'){
-		TreeReduce_v2<double>* ReduceTree = (TreeReduce_v2<double>*) Tree;
+		TreeReduce_slu<double>* ReduceTree = (TreeReduce_slu<double>*) Tree;
 		return ReduceTree->GetDestCount();		
 		}
 		if(precision=='z'){
-		TreeReduce_v2<doublecomplex>* ReduceTree = (TreeReduce_v2<doublecomplex>*) Tree;
+		TreeReduce_slu<doublecomplex>* ReduceTree = (TreeReduce_slu<doublecomplex>*) Tree;
 		return ReduceTree->GetDestCount();		
 		}
 	}	
 	
 	int  RdTree_GetMsgSize(RdTree Tree, char precision){
 		if(precision=='d'){
-		TreeReduce_v2<double>* ReduceTree = (TreeReduce_v2<double>*) Tree;
+		TreeReduce_slu<double>* ReduceTree = (TreeReduce_slu<double>*) Tree;
 		return ReduceTree->GetMsgSize();		
 		}
 		if(precision=='z'){
-		TreeReduce_v2<doublecomplex>* ReduceTree = (TreeReduce_v2<doublecomplex>*) Tree;
+		TreeReduce_slu<doublecomplex>* ReduceTree = (TreeReduce_slu<doublecomplex>*) Tree;
 		return ReduceTree->GetMsgSize();		
 		}
 	}		
@@ -221,11 +221,11 @@ namespace SuperLU_ASYNCOMM{
 
 	yes_no_t RdTree_IsRoot(RdTree Tree, char precision){
 		if(precision=='d'){
-		TreeReduce_v2<double>* ReduceTree = (TreeReduce_v2<double>*) Tree;
+		TreeReduce_slu<double>* ReduceTree = (TreeReduce_slu<double>*) Tree;
 		return ReduceTree->IsRoot()?YES:NO;
 		}
 		if(precision=='z'){
-		TreeReduce_v2<doublecomplex>* ReduceTree = (TreeReduce_v2<doublecomplex>*) Tree;
+		TreeReduce_slu<doublecomplex>* ReduceTree = (TreeReduce_slu<doublecomplex>*) Tree;
 		return ReduceTree->IsRoot()?YES:NO;
 		}
 	}
@@ -233,20 +233,20 @@ namespace SuperLU_ASYNCOMM{
 
 	void RdTree_forwardMessageSimple(RdTree Tree, void* localBuffer, Int msgSize, char precision){
 		if(precision=='d'){
-		TreeReduce_v2<double>* ReduceTree = (TreeReduce_v2<double>*) Tree;
+		TreeReduce_slu<double>* ReduceTree = (TreeReduce_slu<double>*) Tree;
 		ReduceTree->forwardMessageSimple((double*)localBuffer,msgSize);	
 		}
-		if(precision=='z'){TreeReduce_v2<doublecomplex>* ReduceTree = (TreeReduce_v2<doublecomplex>*) Tree;
+		if(precision=='z'){TreeReduce_slu<doublecomplex>* ReduceTree = (TreeReduce_slu<doublecomplex>*) Tree;
 		ReduceTree->forwardMessageSimple((doublecomplex*)localBuffer,msgSize);	
 		}
 	}
 	void RdTree_allocateRequest(RdTree Tree, char precision){
 		if(precision=='d'){
-		TreeReduce_v2<double>* ReduceTree = (TreeReduce_v2<double>*) Tree;
+		TreeReduce_slu<double>* ReduceTree = (TreeReduce_slu<double>*) Tree;
 		ReduceTree->allocateRequest();
 		}		
 		if(precision=='z'){
-		TreeReduce_v2<doublecomplex>* ReduceTree = (TreeReduce_v2<doublecomplex>*) Tree;
+		TreeReduce_slu<doublecomplex>* ReduceTree = (TreeReduce_slu<doublecomplex>*) Tree;
 		ReduceTree->allocateRequest();		
 		}
 		
@@ -254,11 +254,11 @@ namespace SuperLU_ASYNCOMM{
 
 	void RdTree_waitSendRequest(RdTree Tree, char precision){
 		if(precision=='d'){
-		TreeReduce_v2<double>* ReduceTree = (TreeReduce_v2<double>*) Tree;
+		TreeReduce_slu<double>* ReduceTree = (TreeReduce_slu<double>*) Tree;
 		ReduceTree->waitSendRequest();			
 		}
 		if(precision=='z'){
-		TreeReduce_v2<doublecomplex>* ReduceTree = (TreeReduce_v2<doublecomplex>*) Tree;
+		TreeReduce_slu<doublecomplex>* ReduceTree = (TreeReduce_slu<doublecomplex>*) Tree;
 		ReduceTree->waitSendRequest();	
 		}		
 	}
