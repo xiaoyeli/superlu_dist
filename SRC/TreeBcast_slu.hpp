@@ -1,7 +1,7 @@
 #ifndef __SUPERLU_TREEBCAST
 #define __SUPERLU_TREEBCAST
 
-#include "asyncomm.hpp"
+// #include "asyncomm.hpp"
 // #include "blas.hpp"
 // #include "timer.h"
 #include "superlu_defs.h"
@@ -20,6 +20,13 @@
 #endif
 
 namespace SuperLU_ASYNCOMM{
+
+    // Basic data types
+  typedef    int  Int;
+    // IO
+  extern  std::ofstream  statusOFS;
+    // Commonly used
+  const Int DEG_TREE = 2; //number of children of each tree node
 
   extern std::map< MPI_Comm , std::vector<Int> > commGlobRanks;
 

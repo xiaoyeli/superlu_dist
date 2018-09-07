@@ -1,7 +1,7 @@
 #ifndef __SUPERLU_TREEREDUCE
 #define __SUPERLU_TREEREDUCE
 
-#include "asyncomm.hpp"
+// #include "asyncomm.hpp"
 // #include "timer.h"
 #include "TreeBcast_slu.hpp"
 

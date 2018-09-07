@@ -9,7 +9,6 @@ set(headers
     supermatrix.h
     util_dist.h
     colamd.h
-    asyncomm.hpp
     TreeBcast_slu.hpp
     TreeReduce_slu.hpp	
     TreeBcast_slu_impl.hpp
