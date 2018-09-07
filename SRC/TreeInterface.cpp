@@ -270,10 +270,5 @@ namespace ASYNCOMM{
 	}
 #endif
 	
-	
-	
-
-
-
 } //namespace ASYNCOMM
 

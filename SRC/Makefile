@@ -34,7 +34,7 @@ ALLAUX 	= global.o TreeInterface.o sp_ienv.o etree.o sp_colorder.o get_perm_c.o 
 	  pxerr_dist.o superlu_timer.o symbfact.o \
 	  psymbfact.o psymbfact_util.o get_perm_c_parmetis.o mc64ad_dist.o \
 	  static_schedule.o xerr_dist.o smach_dist.o dmach_dist.o \
-	  superlu_dist_version.o global.cpp TreeInterface.cpp
+	  superlu_dist_version.o TreeInterface.o
 
 ifeq "${ACC}" "GPU"
 ALLAUX += cublas_utils.o

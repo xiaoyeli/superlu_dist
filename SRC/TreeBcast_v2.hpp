@@ -1,11 +1,10 @@
-#ifndef _PEXSI_TREE_V2_HPP_
-#define _PEXSI_TREE_V2_HPP_
+#ifndef __SUPERLU_TREEBCAST
+#define __SUPERLU_TREEBCAST
 
-#include "environment.hpp"
+#include "asyncomm.hpp"
 // #include "blas.hpp"
 // #include "timer.h"
 #include "superlu_defs.h"
-
 
 #include <vector>
 #include <list>
@@ -20,14 +19,9 @@
 #define FTREE_LIMIT 8
 #endif
 
-
-
 namespace ASYNCOMM{
 
-
   extern std::map< MPI_Comm , std::vector<int> > commGlobRanks;
-
-
 
   template< typename T>
     class TreeBcast_v2{
@@ -146,4 +140,5 @@ namespace ASYNCOMM{
 }//namespace ASYNCOMM
 
 #include "TreeBcast_v2_impl.hpp"
-#endif
+
+#endif // __SUPERLU_TREEBCAST

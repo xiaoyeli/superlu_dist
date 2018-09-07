@@ -1,10 +1,8 @@
-// asynccomm.hpp
-
-/// @file environment.hpp
-/// @brief Environmental variables.
-/// @date 2012-08-10
-#ifndef _PEXSI_ENVIRONMENT_HPP_
-#define _PEXSI_ENVIRONMENT_HPP_
+/// @file asyncomm.hpp
+/// @brief Namespace defining variables used in asynchronous broadcast/reduction tree.
+/// @date 2018-09-06
+#ifndef __SUPERLU_ASYNCOMM_HPP // allow multiple inclusions
+#define __SUPERLU_ASYNCOMM_HPP 
 
 // STL libraries
 #include <iostream> 
@@ -38,27 +36,6 @@
 #include <mpi.h>
 
 
-
-// *********************************************************************
-// Redefine the global macros
-// *********************************************************************
-
-
-// FIXME Always use complex data for pexsi and ppexsi.
-#define _USE_COMPLEX_  // sherry: remove
-
-// The verbose level of debugging information, sherry remove
-#ifdef  DEBUG
-#define _DEBUGlevel_ DEBUG
-#endif
-
-// Release mode. For speed up the calculation and reduce verbose level.
-// Note that RELEASE overwrites DEBUG level.
-#ifdef RELEASE
-#define _RELEASE_
-#define _DEBUGlevel -1
-#endif
-
 /***********************************************************************
  *  Data types and constants
  **********************************************************************/
@@ -66,66 +43,20 @@
 /// @namespace ASYNCOMM
 /// @brief The main namespace.
 
-namespace ASYNCOMM{
+namespace ASYNCOMM {
 
-// Basic data types
+    // Basic data types
+    typedef    int                   Int;
+    typedef    double                Real;
 
-#ifndef Add_   // sherry remove
-#define FORTRAN(name) name
-#define BLAS(name) name
-#define LAPACK(name) name
-#else
-#define FORTRAN(name) name##_
-#define BLAS(name) name##_
-#define LAPACK(name) name##_
-#endif
-typedef    int                   Int;
-    typedef    int64_t               LongInt; //
-typedef    double                Real;
-typedef    std::complex<double>  Complex; // Must use elemental form of complex
-#ifdef _USE_COMPLEX_
-typedef    std::complex<double>  Scalar;  // Must use elemental form of complex
-#else
-typedef    double                Scalar;
-#endif
+    // IO
+    extern  std::ofstream  statusOFS;
 
-// IO
-extern  std::ofstream  statusOFS;
-
-// *********************************************************************
-// Define constants
-// *********************************************************************
-// Commonly used
-const Int DEG_TREE = 2;
-const Int I_ZERO = 0;
-const Int I_ONE  = 1;
-const Int I_MINUS_ONE  = -1;
-const Real D_ZERO = 0.0;
-const Real D_ONE  = 1.0;
-const Real D_MINUS_ONE  = -1.0;
-const Complex Z_ZERO = Complex(0.0, 0.0);
-const Complex Z_ONE  = Complex(1.0, 0.0);
-const Complex Z_MINUS_ONE  = Complex(-1.0, 0.0);
-const Complex Z_I    = Complex(0.0, 1.0);
-const Complex Z_MINUS_I    = Complex(0.0, -1.0);
-const Scalar SCALAR_ZERO    = static_cast<Scalar>(0.0);
-const Scalar SCALAR_ONE     = static_cast<Scalar>(1.0);
-const Scalar SCALAR_MINUS_ONE = static_cast<Scalar>(-1.0);
-
-template<typename T>
-const T ZERO(){ return static_cast<T>(0.0);};
-template<typename T>
-const T ONE(){ return static_cast<T>(1.0);};
-template<typename T>
-const T MINUS_ONE(){ return static_cast<T>(-1.0);};
-
-const char UPPER = 'U';
-const char LOWER = 'L';
-
-// Physical constants
-
-const Real au2K = 315774.67;
-const Real PI = 3.141592653589793;
+    // *********************************************************************
+    // Define constants
+    // *********************************************************************
+    // Commonly used
+    const Int DEG_TREE = 2;
 
 } // namespace ASYNCOMM
 
@@ -133,12 +64,7 @@ const Real PI = 3.141592653589793;
  *  Error handling
  **********************************************************************/
 
-namespace ASYNCOMM{
-
-
-
-
-
+namespace ASYNCOMM {
 
   inline void gdb_lock(){
     volatile int lock = 1;
@@ -146,17 +72,13 @@ namespace ASYNCOMM{
     while (lock == 1){ }
   }
 
-
-
-
-
-
-
+#if 0
 #ifndef _RELEASE_
   void PushCallStack( std::string s );
   void PopCallStack();
   void DumpCallStack();
 #endif // ifndef _RELEASE_
+#endif
 
   // We define an output stream that does nothing. This is done so that the 
   // root process can be used to print data to a file's ostream while all other 
@@ -226,5 +148,4 @@ namespace ASYNCOMM{
 
 } // namespace ASYNCOMM
 
-
-#endif // _PEXSI_ENVIRONMENT_HPP_
+#endif // __SUPERLU_ASYNCOMM_HPP 

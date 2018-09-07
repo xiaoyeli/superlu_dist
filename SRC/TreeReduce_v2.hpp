@@ -1,7 +1,7 @@
-#ifndef _PEXSI_REDUCE_TREE_V2_HPP_
-#define _PEXSI_REDUCE_TREE_V2_HPP_
+#ifndef __SUPERLU_TREEREDUCE
+#define __SUPERLU_TREEREDUCE
 
-#include "environment.hpp"
+#include "asyncomm.hpp"
 // #include "timer.h"
 #include "TreeBcast_v2.hpp"
 
@@ -12,10 +12,7 @@
 //#include <random>
 
 
-
 namespace ASYNCOMM{
-
-
 
   template< typename T>
     class TreeReduce_v2: public TreeBcast_v2<T>{
@@ -102,13 +99,11 @@ public:
   PalmTreeReduce_v2(const MPI_Comm & pComm, Int * ranks, Int rank_cnt, Int msgSize);
   virtual PalmTreeReduce_v2<T> * clone() const;
 
-
-
-
 };
-
 
 }//namespace ASYNCOMM
 
 #include "TreeReduce_v2_impl.hpp"
-#endif
+
+#endif // __SUPERLU_TREEREDUCE
+

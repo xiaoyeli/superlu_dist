@@ -9,7 +9,7 @@ set(headers
     supermatrix.h
     util_dist.h
     colamd.h
-    environment.hpp
+    asyncomm.hpp
     TreeBcast_v2.hpp
     TreeReduce_v2.hpp	
     TreeBcast_v2_impl.hpp
@@ -149,8 +149,6 @@ if (BUILD_SHARED_LIBS AND BUILD_STATIC_LIBS)
 endif()
 
 set(superlu_dist_libs ${MPI_C_LIBRARIES} ${BLAS_LIB} ${LAPACK_LIB}
-    ${PARMETIS_LIB} ${COMBBLAS_LIB})
-set(superlu_dist_libs ${MPI_C_LIBRARIES} ${BLAS_LIB} 
     ${PARMETIS_LIB} ${COMBBLAS_LIB})
 
 if (NOT MSVC)
