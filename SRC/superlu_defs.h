@@ -257,8 +257,6 @@ static const int RD_U=4;	/* MPI tag for lsum in U-solve*/
 #define SUPERLU_DIST_EXPORT
 #endif /* MSVC */
 #endif /* SUPERLU_DIST_EXPORT */
-<<<<<<< HEAD
-=======
 
 #ifdef __cplusplus
 extern "C" {
@@ -273,7 +271,6 @@ extern "C" {
   }
 #endif
 
->>>>>>> trisolve
 
 /***********************************************************************
  * New data types
@@ -402,11 +399,7 @@ typedef struct {
     LU_space_t MemModel; /* 0 - system malloc'd; 1 - user provided */
     int_t     *llvl;     /* keep track of level in L for level-based ILU */
     int_t     *ulvl;     /* keep track of level in U for level-based ILU */
-<<<<<<< HEAD
-	int64_t nnzLU;   /* number of nonzeros in L+U*/					  
-=======
-	int64_t nnzLU;   /* number of nonzeros in L+U*/
->>>>>>> trisolve
+    int64_t nnzLU;   /* number of nonzeros in L+U*/
 } Glu_freeable_t;
 
 
@@ -762,13 +755,10 @@ extern void  PStatPrint(superlu_dist_options_t *, SuperLUStat_t *, gridinfo_t *)
 extern void  log_memory(int64_t, SuperLUStat_t *);
 extern void  print_memorylog(SuperLUStat_t *, char *);
 extern int   superlu_dist_GetVersionNumber(int *, int *, int *);
-<<<<<<< HEAD
-=======
 extern void  quickSort( int_t*, int_t, int_t, int_t);
 extern void  quickSortM( int_t*, int_t, int_t, int_t, int_t, int_t);
 extern int_t partition( int_t*, int_t, int_t, int_t);
 extern int_t partitionM( int_t*, int_t, int_t, int_t, int_t, int_t);
->>>>>>> trisolve
 
 /* Prototypes for parallel symbolic factorization */
 extern float symbfact_dist

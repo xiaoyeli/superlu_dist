@@ -383,11 +383,7 @@ extern void  zPrintUblocks(int, int_t, gridinfo_t *, Glu_persist_t *,
 extern void  zPrint_CompCol_Matrix_dist(SuperMatrix *);
 extern void  zPrint_Dense_Matrix_dist(SuperMatrix *);
 extern int   zPrint_CompRowLoc_Matrix_dist(SuperMatrix *);
-<<<<<<< HEAD
 extern int   file_zPrint_CompRowLoc_Matrix_dist(FILE *fp, SuperMatrix *A);
-=======
-extern int   file_zPrint_CompRowLoc_Matrix_dist(FILE *fp, SuperMatrix *A);																			   
->>>>>>> trisolve
 extern void  PrintDoublecomplex(char *, int_t, doublecomplex *);
 extern int   file_PrintDoublecomplex(FILE *fp, char *, int_t, doublecomplex *);
 

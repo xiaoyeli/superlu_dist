@@ -1172,57 +1172,6 @@ pdgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 	// }
 	// }
 	
-	
-#if ( PRNTlevel>=1 )
-    /* ------------------------------------------------------------
-       SUM OVER ALL ENTRIES OF A AND PRINT NNZ AND SIZE OF A.
-       ------------------------------------------------------------*/
-    Astore = (NRformat_loc *) A->Store;
-	xsup = Glu_persist->xsup;
-	nzval_a = Astore->nzval;
-
-
-	asum=0;
-    for (i = 0; i < Astore->m_loc; ++i) {
-        for (j = Astore->rowptr[i]; j < Astore->rowptr[i+1]; ++j) {
-	    asum += nzval_a[j];
-	}
-    }
-	
-	nsupers = Glu_persist->supno[n-1] + 1;
-	nsupers_j = CEILING( nsupers, grid->npcol ); /* Number of local block columns */
-	
-	
-	
-	lsum=0.0;
-	for (lk=0;lk<nsupers_j;++lk){	
-		lsub = LUstruct->Llu->Lrowind_bc_ptr[lk];
-		lusup = LUstruct->Llu->Lnzval_bc_ptr[lk];
-		if(lsub){
-			k = MYCOL(grid->iam, grid)+lk*grid->npcol;  /* not sure */
-			knsupc = SuperSize( k );
-			nsupr = lsub[1];
-			for (j=0; j<knsupc; ++j)
-				for (i = 0; i < nsupr; ++i) 
-					lsum +=lusup[j*nsupr+i];
-		}
-	}
-	
-	
-	MPI_Allreduce( &asum, &asum_tot,1, MPI_DOUBLE, MPI_SUM, grid->comm );
-	MPI_Allreduce( &lsum, &lsum_tot,1, MPI_DOUBLE, MPI_SUM, grid->comm );
-	
-
-	MPI_Allreduce( &Astore->rowptr[Astore->m_loc], &nnz_tot,1, mpi_int_t, MPI_SUM, grid->comm );
-	// MPI_Bcast( &nnzLU, 1, mpi_int_t, 0, grid->comm );
-	
-	MPI_Comm_rank( MPI_COMM_WORLD, &iam_g );
-	
-    if (!iam_g) {
-	print_options_dist(options);
-	fflush(stdout);
-    }
- 	// if ( !iam )
 
 #if ( PRNTlevel>=1 )
     /* ------------------------------------------------------------

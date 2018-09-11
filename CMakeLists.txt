@@ -112,22 +112,11 @@ else()
   set(default_install_lib_dir "lib")
   set(default_install_bin_dir "bin")
 endif()
-<<<<<<< HEAD
-
-set(INSTALL_INC_DIR "${default_install_inc_dir}" CACHE STRING "The folder where headers will be installed.")
-set(INSTALL_LIB_DIR "${default_install_lib_dir}" CACHE STRING "The folder where libraries will be installed.")
-set(INSTALL_BIN_DIR "${default_install_bin_dir}" CACHE STRING "The folder where runtime files will be installed.")
-=======
->>>>>>> trisolve
 
 set(INSTALL_INC_DIR "${default_install_inc_dir}" CACHE STRING "The folder where headers will be installed.")
 set(INSTALL_LIB_DIR "${default_install_lib_dir}" CACHE STRING "The folder where libraries will be installed.")
 set(INSTALL_BIN_DIR "${default_install_bin_dir}" CACHE STRING "The folder where runtime files will be installed.")
 
-<<<<<<< HEAD
-=======
-
->>>>>>> trisolve
 # Set up required compiler defines and options.
 ## get_directory_property( DirDefs COMPILE_DEFINITIONS )
 # set(CMAKE_C_FLAGS "-DDEBUGlevel=0 -DPRNTlevel=0 ${CMAKE_C_FLAGS}")
@@ -200,8 +189,6 @@ else()
     endif()
 endif()
 
-<<<<<<< HEAD
-=======
 #--------------------- LAPACK ---------------------
 if(NOT enable_lapacklib)
   if(TPL_LAPACK_LIBRARIES)
@@ -225,7 +212,6 @@ else()
     message("-- Did not find or specify LAPACK.")
 endif()
 
->>>>>>> trisolve
 #--------------------- ParMETIS ---------------------
 if (enable_parmetislib)   ## want to use parmetis
   if (NOT TPL_PARMETIS_LIBRARIES)

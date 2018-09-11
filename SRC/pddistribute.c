@@ -100,13 +100,8 @@ dReDistribute_A(SuperMatrix *A, ScalePermstruct_t *ScalePermstruct,
     m_loc = Astore->m_loc;
     fst_row = Astore->fst_row;
     nnzToRecv = intCalloc_dist(2*procs);
-<<<<<<< HEAD
     nnzToSend = nnzToRecv + procs;
 
-=======
-    nnzToSend = nnzToRecv + procs;	
-	
->>>>>>> trisolve
     /* ------------------------------------------------------------
        COUNT THE NUMBER OF NONZEROS TO BE SENT TO EACH PROCESS,
        THEN ALLOCATE SPACE.

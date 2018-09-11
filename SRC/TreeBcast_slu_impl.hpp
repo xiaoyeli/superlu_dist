@@ -2,8 +2,7 @@
 #define __SUPERLU_TREEBCAST_IMPL
 
 
-namespace SuperLU_ASYNCOMM{
-
+namespace SuperLU_ASYNCOMM {
 
   template< typename T> 
     TreeBcast_slu<T>::TreeBcast_slu(){
@@ -28,7 +27,6 @@ namespace SuperLU_ASYNCOMM{
       MPI_Type_commit( &type_ );
 
     }
-
 
   template< typename T> 
     TreeBcast_slu<T>::TreeBcast_slu(const MPI_Comm & pComm, Int * ranks, Int rank_cnt,Int msgSize):TreeBcast_slu(){

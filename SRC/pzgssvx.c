@@ -319,22 +319,13 @@ at the top-level directory.
  *         o RowPerm (rowperm_t)
  *           Specifies how to permute rows of the matrix A.
  *           = NATURAL:   use the natural ordering.
-<<<<<<< HEAD
  *           = LargeDiag_MC64: use the Duff/Koster algorithm to permute rows
  *                        of the original matrix to make the diagonal large
-=======
- *           = LargeDiag_MC64: use the Duff/Koster algorithm to permute rows of
- *                        the original matrix to make the diagonal large
->>>>>>> trisolve
  *                        relative to the off-diagonal.
  *           = LargeDiag_APWM: use the parallel approximate-weight perfect
  *                        matching to permute rows of the original matrix
  *                        to make the diagonal large relative to the
-<<<<<<< HEAD
  *                        off-diagonal.
-=======
- *                        off-diagonal.								   
->>>>>>> trisolve
  *           = MY_PERMR:  use the ordering given in ScalePermstruct->perm_r
  *                        input by the user.
  *           
@@ -925,11 +916,7 @@ pzgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 		        printf("CombBLAS is not available\n"); fflush(stdout);
 		    }
 #endif
-<<<<<<< HEAD
 		} /* end if options->RowPerm ... */
-=======
-                } /* end if options->RowPerm ... */
->>>>>>> trisolve
 
 	        t = SuperLU_timer_() - t;
 	        stat->utime[ROWPERM] = t;

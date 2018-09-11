@@ -393,12 +393,8 @@ int main(int argc, char *argv[])
 			ScalePermstruct.DiagScale = NOEQUIL; /* Avoid free R/C again. */
 		    }
 		    ScalePermstructFree(&ScalePermstruct);
-<<<<<<< HEAD
-		    Destroy_LU(n, &grid, &LUstruct);
-=======
 		    zDestroy_Tree(n, &grid, &LUstruct);  
-			Destroy_LU(n, &grid, &LUstruct);
->>>>>>> trisolve
+		    Destroy_LU(n, &grid, &LUstruct);
 		    LUstructFree(&LUstruct);
 		    if ( options.SolveInitialized ) {
 			zSolveFinalize(&options, &SOLVEstruct);
@@ -517,11 +513,7 @@ parse_command_line(int argc, char *argv[], int *nprow, int *npcol,
 		    genvstr = (char*) malloc((8+strlen(optarg))*sizeof(char));
 		    strcpy(genvstr, "N_GEMM=");
 		    strcat(genvstr, optarg);
-<<<<<<< HEAD
 		    putenv(genvstr);
-=======
-		    putenv(genvstr);		  
->>>>>>> trisolve
 		    //printf("Reset min_gemm_gpu_offload env. variable to %d\n", c);
 	            break;
 	  case 's': *nrhs = atoi(optarg); 
