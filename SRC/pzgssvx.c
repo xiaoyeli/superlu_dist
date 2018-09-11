@@ -319,13 +319,22 @@ at the top-level directory.
  *         o RowPerm (rowperm_t)
  *           Specifies how to permute rows of the matrix A.
  *           = NATURAL:   use the natural ordering.
+<<<<<<< HEAD
  *           = LargeDiag_MC64: use the Duff/Koster algorithm to permute rows
  *                        of the original matrix to make the diagonal large
+=======
+ *           = LargeDiag_MC64: use the Duff/Koster algorithm to permute rows of
+ *                        the original matrix to make the diagonal large
+>>>>>>> trisolve
  *                        relative to the off-diagonal.
  *           = LargeDiag_APWM: use the parallel approximate-weight perfect
  *                        matching to permute rows of the original matrix
  *                        to make the diagonal large relative to the
+<<<<<<< HEAD
  *                        off-diagonal.
+=======
+ *                        off-diagonal.								   
+>>>>>>> trisolve
  *           = MY_PERMR:  use the ordering given in ScalePermstruct->perm_r
  *                        input by the user.
  *           
@@ -535,7 +544,7 @@ pzgssvx(superlu_dist_options_t *options, SuperMatrix *A,
     int_t    colequ, Equil, factored, job, notran, rowequ, need_value;
     int_t    i, iinfo, j, irow, m, n, nnz, permc_spec;
     int_t    nnz_loc, m_loc, fst_row, icol;
-    int      iam;
+    int      iam,iam_g;
     int      ldx;  /* LDA for matrix X (local). */
     char     equed[1], norm[1];
     double   *C, *R, *C1, *R1, amax, anorm, colcnd, rowcnd;
@@ -544,6 +553,14 @@ pzgssvx(superlu_dist_options_t *options, SuperMatrix *A,
     float    GA_mem_use;    /* memory usage by global A */
     float    dist_mem_use; /* memory usage during distribution */
     superlu_dist_mem_usage_t num_mem_usage, symb_mem_usage;
+	long long int nnzLU;
+	int_t nnz_tot;
+	doublecomplex *nzval_a;
+	doublecomplex asum,asum_tot,lsum,lsum_tot;
+	int_t nsupers,nsupers_j;
+	int_t lk,k,knsupc,nsupr;
+	int_t  *lsub,*xsup;
+	doublecomplex *lusup;	
 #if ( PRNTlevel>= 2 )
     double   dmin, dsum, dprod;
 #endif
@@ -555,7 +572,8 @@ pzgssvx(superlu_dist_options_t *options, SuperMatrix *A,
     int   col, key; /* parameters for creating a new communicator */
     Pslu_freeable_t Pslu_freeable;
     float  flinfo;
-
+	int blas_flag;
+	
     /* Initialization. */
     m       = A->nrow;
     n       = A->ncol;
@@ -907,7 +925,11 @@ pzgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 		        printf("CombBLAS is not available\n"); fflush(stdout);
 		    }
 #endif
+<<<<<<< HEAD
 		} /* end if options->RowPerm ... */
+=======
+                } /* end if options->RowPerm ... */
+>>>>>>> trisolve
 
 	        t = SuperLU_timer_() - t;
 	        stat->utime[ROWPERM] = t;
@@ -989,7 +1011,11 @@ pzgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 	if ( permc_spec != MY_PERMC && Fact == DOFACT ) {
           /* Reuse perm_c if Fact == SamePattern, or SamePattern_SameRowPerm */
 	  if ( permc_spec == PARMETIS ) {
-	      /* Get column permutation vector in perm_c.                    *
+	// #pragma omp parallel  
+    // {  	
+	// #pragma omp master
+	// {	
+		  /* Get column permutation vector in perm_c.                    *
 	       * This routine takes as input the distributed input matrix A  *
 	       * and does not modify it.  It also allocates memory for       *
 	       * sizes[] and fstVtxSep[] arrays, that contain information    *
@@ -997,6 +1023,8 @@ pzgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 	      flinfo = get_perm_c_parmetis(A, perm_r, perm_c, nprocs_num,
                                   	   noDomains, &sizes, &fstVtxSep,
                                            grid, &symb_comm);
+	// }
+	// }
 	      if (flinfo > 0) {
 #if ( PRNTlevel>=1 )
 	          fprintf(stderr, "Insufficient memory for get_perm_c parmetis\n");
@@ -1052,7 +1080,7 @@ pzgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 	    	/* Every process does this. */
 	    	iinfo = symbfact(options, iam, &GAC, perm_c, etree, 
 			     	 Glu_persist, Glu_freeable);
-
+			nnzLU = Glu_freeable->nnzLU;
 	    	stat->utime[SYMBFAC] = SuperLU_timer_() - t;
 	    	if ( iinfo <= 0 ) { /* Successful return */
 		    QuerySpace_dist(n, -iinfo, Glu_freeable, &symb_mem_usage);
@@ -1086,6 +1114,7 @@ pzgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 				       sizes, fstVtxSep, &Pslu_freeable, 
 				       &(grid->comm), &symb_comm,
 				       &symb_mem_usage); 
+			nnzLU = Pslu_freeable.nnzLU;
 	    	stat->utime[SYMBFAC] = SuperLU_timer_() - t;
 	    	if (flinfo > 0) {
 #if ( PRNTlevel>=1 )
@@ -1147,9 +1176,82 @@ pzgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 
 	/* Perform numerical factorization in parallel. */
 	t = SuperLU_timer_();
+    // #pragma omp parallel  
+    // {  	
+	// #pragma omp master
+	// {
 	pzgstrf(options, m, n, anorm, LUstruct, grid, stat, info);
 	stat->utime[FACT] = SuperLU_timer_() - t;
+	// }
+	// }
+	
+	
+#if ( PRNTlevel>=1 )
+    /* ------------------------------------------------------------
+       SUM OVER ALL ENTRIES OF A AND PRINT NNZ AND SIZE OF A.
+       ------------------------------------------------------------*/
+    Astore = (NRformat_loc *) A->Store;
+	xsup = Glu_persist->xsup;
+	nzval_a = Astore->nzval;
 
+
+	asum.r=0.0;
+	asum.i=0.0;
+    for (i = 0; i < Astore->m_loc; ++i) {
+        for (j = Astore->rowptr[i]; j < Astore->rowptr[i+1]; ++j) {
+		z_add(&asum,&asum,&nzval_a[j]);
+	}
+    }
+	
+	nsupers = Glu_persist->supno[n-1] + 1;
+	nsupers_j = CEILING( nsupers, grid->npcol ); /* Number of local block columns */
+	
+	
+	
+	lsum.r=0.0;
+	lsum.i=0.0;
+	for (lk=0;lk<nsupers_j;++lk){	
+		lsub = LUstruct->Llu->Lrowind_bc_ptr[lk];
+		lusup = LUstruct->Llu->Lnzval_bc_ptr[lk];
+		if(lsub){
+			k = MYCOL(grid->iam, grid)+lk*grid->npcol;  /* not sure */
+			knsupc = SuperSize( k );
+			nsupr = lsub[1];
+			for (j=0; j<knsupc; ++j)
+				for (i = 0; i < nsupr; ++i) 
+					z_add(&lsum,&lsum,&lusup[j*nsupr+i]);
+		}
+	}
+	
+	
+	MPI_Allreduce( &(asum.r), &(asum_tot.r),1, MPI_DOUBLE, MPI_SUM, grid->comm );
+	MPI_Allreduce( &(asum.i), &(asum_tot.i),1, MPI_DOUBLE, MPI_SUM, grid->comm );
+	MPI_Allreduce( &(lsum.r), &(lsum_tot.r),1, MPI_DOUBLE, MPI_SUM, grid->comm );
+	MPI_Allreduce( &(lsum.i), &(lsum_tot.i),1, MPI_DOUBLE, MPI_SUM, grid->comm );
+	
+
+	MPI_Allreduce( &Astore->rowptr[Astore->m_loc], &nnz_tot,1, mpi_int_t, MPI_SUM, grid->comm );
+	// MPI_Bcast( &nnzLU, 1, mpi_int_t, 0, grid->comm );
+	
+	MPI_Comm_rank( MPI_COMM_WORLD, &iam_g );
+	
+    if (!iam_g) {
+	print_options_dist(options);
+	fflush(stdout);
+    }
+ 	// if ( !iam )
+
+
+
+	printf(".. Ainfo mygid %5d   mysid %5d   nnz_loc %7d   sum_loc   %e lsum_loc   %e nnz %7d  nnzLU %7d sum %e  lsum %e  N %7d\n", iam_g,iam,Astore->rowptr[Astore->m_loc],asum.r+asum.i, lsum.r+lsum.i, nnz_tot,nnzLU,asum_tot.r+asum_tot.i,lsum_tot.r+lsum_tot.i,A->ncol);
+	
+	
+	fflush(stdout);
+#endif				
+			
+ 			
+	
+		
 #if 0
 
 // #ifdef GPU_PROF
@@ -1319,11 +1421,30 @@ pzgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 	       For repeated call to pzgssvx(), no need to re-initialilze
 	       the Solve data & communication structures, unless a new
 	       factorization with Fact == DOFACT or SamePattern is asked for. */
+		if(options->DiagInv==YES){	
+
+	#ifdef _CRAY
+			  blas_flag=1;
+	#elif defined (USE_VENDOR_BLAS)
+			  blas_flag=2;
+	#else
+			  blas_flag=0;
+	#endif	
+			if(blas_flag==0)
+			ABORT("DiagInv doesn't works with internal blas\n");
+			pzCompute_Diag_Inv(n, LUstruct, grid, stat, info);
+		}	
 	} 
 
+    // #pragma omp parallel  
+    // {  	
+	// #pragma omp master
+	// {
 	pzgstrs(n, LUstruct, ScalePermstruct, grid, X, m_loc, 
 		fst_row, ldb, nrhs, SOLVEstruct, stat, info);
-
+	// }
+	// }
+	
 	/* ------------------------------------------------------------
 	   Use iterative refinement to improve the computed solution and
 	   compute error bounds and backward error estimates for it.

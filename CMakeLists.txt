@@ -8,7 +8,7 @@
 cmake_minimum_required(VERSION 2.8.12 FATAL_ERROR)
 
 # Project version numbers
-project(SuperLU_DIST C)
+project(SuperLU_DIST C CXX)
 set(VERSION_MAJOR "5")
 set(VERSION_MINOR "4")
 set(VERSION_BugFix "0")
@@ -30,9 +30,9 @@ option(enable_combblaslib   "Build the CombBLAS library" OFF)
 option(TPL_COMBBLAS_LIBRARIES "List of absolute paths to CombBLAS link libraries [].")
 option(TPL_COMBBLAS_INCLUDE_DIRS "List of absolute paths to CombBLAS include directories [].")
 
-if (NOT enable_combblaslib)
-  SET(XSDK_ENABLE_CXX OFF)
-endif()
+# if (NOT enable_combblaslib)
+  SET(XSDK_ENABLE_CXX ON)
+# endif()
 
 ######################################################################
 #
@@ -81,10 +81,8 @@ else()
   set(PROJECT_NAME_LIB_EXPORT libsuperlu_dist.a)
 endif()
 
-if (XSDK_ENABLE_CXX)
-  enable_language (CXX)
-  set(NOCXX FALSE)
-endif()
+set(CMAKE_CXX_STANDARD 11)
+
 if (XSDK_ENABLE_Fortran)
   enable_language (Fortran)
   set(NOFORTRAN FALSE)
@@ -114,12 +112,22 @@ else()
   set(default_install_lib_dir "lib")
   set(default_install_bin_dir "bin")
 endif()
+<<<<<<< HEAD
+
+set(INSTALL_INC_DIR "${default_install_inc_dir}" CACHE STRING "The folder where headers will be installed.")
+set(INSTALL_LIB_DIR "${default_install_lib_dir}" CACHE STRING "The folder where libraries will be installed.")
+set(INSTALL_BIN_DIR "${default_install_bin_dir}" CACHE STRING "The folder where runtime files will be installed.")
+=======
+>>>>>>> trisolve
 
 set(INSTALL_INC_DIR "${default_install_inc_dir}" CACHE STRING "The folder where headers will be installed.")
 set(INSTALL_LIB_DIR "${default_install_lib_dir}" CACHE STRING "The folder where libraries will be installed.")
 set(INSTALL_BIN_DIR "${default_install_bin_dir}" CACHE STRING "The folder where runtime files will be installed.")
 
+<<<<<<< HEAD
+=======
 
+>>>>>>> trisolve
 # Set up required compiler defines and options.
 ## get_directory_property( DirDefs COMPILE_DEFINITIONS )
 # set(CMAKE_C_FLAGS "-DDEBUGlevel=0 -DPRNTlevel=0 ${CMAKE_C_FLAGS}")
@@ -192,6 +200,32 @@ else()
     endif()
 endif()
 
+<<<<<<< HEAD
+=======
+#--------------------- LAPACK ---------------------
+if(NOT enable_lapacklib)
+  if(TPL_LAPACK_LIBRARIES)
+    set(LAPACK_FOUND TRUE)
+  else()
+    find_package(LAPACK)
+    if(LAPACK_FOUND)
+      set(TPL_LAPACK_LIBRARIES "${LAPACK_LIBRARIES}" CACHE FILEPATH
+        "Set from FindLAPACK.cmake LAPACK_LIBRARIES." FORCE)
+    endif()
+  endif()
+endif()
+
+if(LAPACK_FOUND)
+    message("-- Using TPL_LAPACK_LIBRARIES='${TPL_LAPACK_LIBRARIES}'")
+    set(LAPACK_LIB ${TPL_LAPACK_LIBRARIES})
+    # fix up LAPACK library name
+    string (REPLACE ";" " " LAPACK_LIB_STR "${LAPACK_LIB}")
+    set(LAPACK_LIB_EXPORT ${LAPACK_LIB_STR})
+else()
+    message("-- Did not find or specify LAPACK.")
+endif()
+
+>>>>>>> trisolve
 #--------------------- ParMETIS ---------------------
 if (enable_parmetislib)   ## want to use parmetis
   if (NOT TPL_PARMETIS_LIBRARIES)

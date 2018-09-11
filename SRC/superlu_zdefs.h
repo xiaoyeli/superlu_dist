@@ -20,8 +20,8 @@ at the top-level directory.
  * </pre>
  */
 
-#ifndef __SUPERLU_zDEFS /* allow multiple inclusions */
-#define __SUPERLU_zDEFS
+#ifndef __SUPERLU_ZDEFS /* allow multiple inclusions */
+#define __SUPERLU_ZDEFS
 
 /*
  * File name:	superlu_zdefs.h
@@ -46,8 +46,16 @@ typedef struct {
 typedef struct {
     int_t   **Lrowind_bc_ptr; /* size ceil(NSUPERS/Pc)                 */
     doublecomplex  **Lnzval_bc_ptr;  /* size ceil(NSUPERS/Pc)                 */
-    int_t   **Ufstnz_br_ptr;  /* size ceil(NSUPERS/Pr)                 */
+    doublecomplex  **Linv_bc_ptr;  /* size ceil(NSUPERS/Pc)                 */
+	int_t   **Lindval_loc_bc_ptr; /* size ceil(NSUPERS/Pc)  pointers to locations in Lrowind_bc_ptr and Lnzval_bc_ptr               */
+	int_t 	**Lrowind_bc_2_lsum; /* size ceil(NSUPERS/Pc)  map indices of Lrowind_bc_ptr to indices of lsum  */  
+    doublecomplex  **Uinv_bc_ptr;  /* size ceil(NSUPERS/Pc)     				*/
+	int_t   **Ufstnz_br_ptr;  /* size ceil(NSUPERS/Pr)                 */
     doublecomplex  **Unzval_br_ptr;  /* size ceil(NSUPERS/Pr)                 */
+	BcTree  *LBtree_ptr;       /* size ceil(NSUPERS/Pc)                */
+	RdTree  *LRtree_ptr;		  /* size ceil(NSUPERS/Pr)                */
+	BcTree  *UBtree_ptr;       /* size ceil(NSUPERS/Pc)                */
+	RdTree  *URtree_ptr;		  /* size ceil(NSUPERS/Pr)  			*/
 #if 0
     int_t   *Lsub_buf;        /* Buffer for the remote subscripts of L */
     double  *Lval_buf;        /* Buffer for the remote nonzeros of L   */
@@ -118,6 +126,7 @@ typedef struct {
     int_t n;
     int_t nleaf;
     int_t nfrecvmod;
+	int_t inv; /* whether the diagonal block is inverted*/	
 } LocalLU_t;
 
 
@@ -211,7 +220,10 @@ extern int     zcreate_matrix_rb(SuperMatrix *, int, doublecomplex **, int *,
 			      doublecomplex **, int *, FILE *, gridinfo_t *);
 extern int     zcreate_matrix_dat(SuperMatrix *, int, doublecomplex **, int *, 
 			      doublecomplex **, int *, FILE *, gridinfo_t *);
-
+extern int 	   zcreate_matrix_postfix(SuperMatrix *, int, doublecomplex **, int *, 
+				  doublecomplex **, int *, FILE *, char *, gridinfo_t *);				  
+				  
+	
 /* Driver related */
 extern void    zgsequ_dist (SuperMatrix *, double *, double *, double *,
 			    double *, double *, int_t *);
@@ -247,6 +259,7 @@ extern void  pzgssvx(superlu_dist_options_t *, SuperMatrix *,
 		     ScalePermstruct_t *, doublecomplex *,
 		     int, int, gridinfo_t *, LUstruct_t *,
 		     SOLVEstruct_t *, double *, SuperLUStat_t *, int *);
+extern void  pzCompute_Diag_Inv(int_t, LUstruct_t *,gridinfo_t *, SuperLUStat_t *, int *);
 extern int  zSolveInit(superlu_dist_options_t *, SuperMatrix *, int_t [], int_t [],
 		       int_t, LUstruct_t *, gridinfo_t *, SOLVEstruct_t *);
 extern void zSolveFinalize(superlu_dist_options_t *, SOLVEstruct_t *);
@@ -262,6 +275,7 @@ extern int  static_schedule(superlu_dist_options_t *, int, int,
 extern void LUstructInit(const int_t, LUstruct_t *);
 extern void LUstructFree(LUstruct_t *);
 extern void Destroy_LU(int_t, gridinfo_t *, LUstruct_t *);
+extern void zDestroy_Tree(int_t, gridinfo_t *, LUstruct_t *);
 
 /* #define GPU_PROF
 #define IPM_PROF */
@@ -281,6 +295,24 @@ extern void zlsum_bmod(doublecomplex *, doublecomplex *, doublecomplex *,
                        int, int_t, int_t *, int_t *, Ucb_indptr_t **,
                        int_t **, int_t *, gridinfo_t *, LocalLU_t *,
 		       MPI_Request [], SuperLUStat_t *);
+
+extern void zlsum_fmod_inv(doublecomplex *, doublecomplex *, doublecomplex *, doublecomplex *,
+		       int, int, int_t , int_t *, int_t,
+		       int_t *, gridinfo_t *, LocalLU_t *, 
+		       SuperLUStat_t **, int_t *, int_t *, int_t, int_t, int_t);
+extern void zlsum_fmod_inv_master(doublecomplex *, doublecomplex *, doublecomplex *, doublecomplex *,
+		       int, int, int_t , int_t *, int_t, 
+		       int_t *, gridinfo_t *, LocalLU_t *, 
+		       SuperLUStat_t **, int_t, int_t, int_t);
+extern void zlsum_bmod_inv(doublecomplex *, doublecomplex *, doublecomplex *, doublecomplex *,
+                       int, int_t, int_t *, int_t *, int_t *, Ucb_indptr_t **,
+                       int_t **, int_t *, gridinfo_t *, LocalLU_t *,
+		       MPI_Request [], SuperLUStat_t **, int_t *, int_t *, int_t, int_t);
+extern void zlsum_bmod_inv_master(doublecomplex *, doublecomplex *, doublecomplex *, doublecomplex *,
+                       int, int_t, int_t *, int_t *, int_t *, Ucb_indptr_t **,
+                       int_t **, int_t *, gridinfo_t *, LocalLU_t *,
+		       MPI_Request [], SuperLUStat_t **, int_t, int_t);				   
+			   
 extern void pzgsrfs(int_t, SuperMatrix *, double, LUstruct_t *,
 		    ScalePermstruct_t *, gridinfo_t *,
 		    doublecomplex [], int_t, doublecomplex [], int_t, int,
@@ -333,7 +365,9 @@ extern void  zreadrb_dist(int, FILE *, int_t *, int_t *, int_t *,
 		     doublecomplex **, int_t **, int_t **);
 extern void  zreadMM_dist(FILE *, int_t *, int_t *, int_t *,
 	                  doublecomplex **, int_t **, int_t **);
-
+extern int  zread_binary(FILE *, int_t *, int_t *, int_t *,
+	                  doublecomplex **, int_t **, int_t **);	
+					  
 /* Distribute the data for numerical factorization */
 extern float zdist_psymbtonum(fact_t, int_t, SuperMatrix *,
                                 ScalePermstruct_t *, Pslu_freeable_t *, 
@@ -349,7 +383,11 @@ extern void  zPrintUblocks(int, int_t, gridinfo_t *, Glu_persist_t *,
 extern void  zPrint_CompCol_Matrix_dist(SuperMatrix *);
 extern void  zPrint_Dense_Matrix_dist(SuperMatrix *);
 extern int   zPrint_CompRowLoc_Matrix_dist(SuperMatrix *);
+<<<<<<< HEAD
 extern int   file_zPrint_CompRowLoc_Matrix_dist(FILE *fp, SuperMatrix *A);
+=======
+extern int   file_zPrint_CompRowLoc_Matrix_dist(FILE *fp, SuperMatrix *A);																			   
+>>>>>>> trisolve
 extern void  PrintDoublecomplex(char *, int_t, doublecomplex *);
 extern int   file_PrintDoublecomplex(FILE *fp, char *, int_t, doublecomplex *);
 
@@ -367,6 +405,8 @@ extern void ztrsm_(char*, char*, char*, char*, int*, int*,
                   int*, int, int, int, int);
 extern void zgemv_(char *, int *, int *, doublecomplex *, doublecomplex *a, int *, 
                   doublecomplex *, int *, doublecomplex *, doublecomplex *, int *, int);
+extern void ztrtri_(char*, char*, int*, doublecomplex*, int*,int*);				 
+
 extern void zgeru_(int*, int*, doublecomplex*, doublecomplex*, int*,
                  doublecomplex*, int*, doublecomplex*, int*);
 

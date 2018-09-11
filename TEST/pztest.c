@@ -54,7 +54,7 @@ pzcompute_resid(int m, int n, int nrhs, SuperMatrix *A,
 		doublecomplex *x, int ldx, doublecomplex *b, int ldb,
 		gridinfo_t *grid, SOLVEstruct_t *SOLVEstruct, double *resid);
 
-#if 0
+#if 0	 
 /*! \brief Copy matrix A into matrix B, in distributed compressed row format. */
 void
 zCopy_CompRowLoc_Matrix_dist(SuperMatrix *A, SuperMatrix *B)
@@ -79,7 +79,7 @@ zCopy_CompRowLoc_Matrix_dist(SuperMatrix *A, SuperMatrix *B)
     memcpy(Bstore->colind, Astore->colind, nnz_loc * sizeof(int_t));
     memcpy(Bstore->rowptr, Astore->rowptr, (m_loc+1) * sizeof(int_t));
 }
-#endif
+#endif	  
 
 /*! \brief Print a summary of the testing results. */
 void
@@ -319,7 +319,7 @@ int main(int argc, char *argv[])
 			options.Fact = fact;
 			if ( fact == SamePattern ) {
 			    // {L,U} not re-used in subsequent call to PDGSSVX.
-			    Destroy_LU(n, &grid, &LUstruct);
+				zDestroy_Tree(n, &grid, &LUstruct);  					    Destroy_LU(n, &grid, &LUstruct);
 			}
 
 		    } /* end if .. first time factor */
@@ -393,7 +393,12 @@ int main(int argc, char *argv[])
 			ScalePermstruct.DiagScale = NOEQUIL; /* Avoid free R/C again. */
 		    }
 		    ScalePermstructFree(&ScalePermstruct);
+<<<<<<< HEAD
 		    Destroy_LU(n, &grid, &LUstruct);
+=======
+		    zDestroy_Tree(n, &grid, &LUstruct);  
+			Destroy_LU(n, &grid, &LUstruct);
+>>>>>>> trisolve
 		    LUstructFree(&LUstruct);
 		    if ( options.SolveInitialized ) {
 			zSolveFinalize(&options, &SOLVEstruct);
@@ -512,7 +517,11 @@ parse_command_line(int argc, char *argv[], int *nprow, int *npcol,
 		    genvstr = (char*) malloc((8+strlen(optarg))*sizeof(char));
 		    strcpy(genvstr, "N_GEMM=");
 		    strcat(genvstr, optarg);
+<<<<<<< HEAD
 		    putenv(genvstr);
+=======
+		    putenv(genvstr);		  
+>>>>>>> trisolve
 		    //printf("Reset min_gemm_gpu_offload env. variable to %d\n", c);
 	            break;
 	  case 's': *nrhs = atoi(optarg); 

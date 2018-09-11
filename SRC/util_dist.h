@@ -50,6 +50,7 @@ at the top-level directory.
     extern long int superlu_malloc_total;        \
     printf("(%d) %s: superlu_malloc_total (MB) %.6f\n", \
 	   pnum, where, superlu_malloc_total*1e-6); \
+	fflush(stdout);        \
 }
 
 #define SUPERLU_MAX(x, y) 	( (x) > (y) ? (x) : (y) )
@@ -90,6 +91,8 @@ typedef struct {
     float   current_buffer; /* bytes allocated for buffer in numerical factorization */
     float   peak_buffer;    /* monitor the peak buffer size (bytes) */
     float   gpu_buffer;     /* monitor the buffer allocated on GPU (bytes) */
+	int_t MaxActiveBTrees;
+	int_t MaxActiveRTrees;	
 } SuperLUStat_t;
 
 /* Headers for 2 types of dynamatically managed memory */
@@ -117,7 +120,7 @@ typedef struct {
 				      4: llvl; level number in L for ILU(k)
 				      5: ulvl; level number in U for ILU(k)
 				   */
-#endif
+#endif	  
 
 /* Macros to manipulate stack */
 #define SuperLU_StackFull(x)         ( x + stack.used >= stack.size )

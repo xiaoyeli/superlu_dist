@@ -9,6 +9,10 @@ set(headers
     supermatrix.h
     util_dist.h
     colamd.h
+    TreeBcast_slu.hpp
+    TreeReduce_slu.hpp	
+    TreeBcast_slu_impl.hpp
+    TreeReduce_slu_impl.hpp	
     ${CMAKE_CURRENT_BINARY_DIR}/superlu_dist_config.h
 )
 if (MSVC)
@@ -16,7 +20,9 @@ if (MSVC)
 endif ()
 
 # first: precision-independent files
+#  global.cpp
 set(sources
+  TreeInterface.cpp
   sp_ienv.c
   etree.c 
   sp_colorder.c
@@ -67,6 +73,7 @@ if(enable_double)
     dreadhb.c
     dreadrb.c
     dreadtriple.c
+    dbinary_io.c	
     dreadMM.c
     pdgsequ.c
     pdlaqgs.c
@@ -108,6 +115,7 @@ if(enable_complex16)
     zreadhb.c
     zreadrb.c
     zreadtriple.c
+    zbinary_io.c	
     zreadMM.c
     pzgsequ.c
     pzlaqgs.c
@@ -139,8 +147,9 @@ if (BUILD_SHARED_LIBS AND BUILD_STATIC_LIBS)
   list(APPEND targets superlu_dist-static)
 endif()
 
-set(superlu_dist_libs ${MPI_C_LIBRARIES} ${BLAS_LIB} 
+set(superlu_dist_libs ${MPI_C_LIBRARIES} ${BLAS_LIB} ${LAPACK_LIB}
     ${PARMETIS_LIB} ${COMBBLAS_LIB})
+
 if (NOT MSVC)
   list(APPEND superlu_dist_libs m)
 endif ()

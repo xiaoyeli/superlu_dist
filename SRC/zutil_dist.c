@@ -528,6 +528,62 @@ void zPrintLblocks(int iam, int_t nsupers, gridinfo_t *grid,
 } /* ZPRINTLBLOCKS */
 
 
+
+/*! \Dump the factored matrix L using matlab triple-let format
+ */
+void zDumpLblocks(int iam, int_t nsupers, gridinfo_t *grid,
+		  Glu_persist_t *Glu_persist, LocalLU_t *Llu)
+{
+    register int c, extra, gb, j, i, lb, nsupc, nsupr, len, nb, ncb;
+    register int_t k, mycol, r;
+    int_t *xsup = Glu_persist->xsup;
+    int_t *index;
+    doublecomplex *nzval;
+	char filename[256];
+	FILE *fp, *fopen();	
+ 
+	// assert(grid->npcol*grid->nprow==1);
+	
+	snprintf(filename, sizeof(filename), "%s-%d", "L", iam);    
+    printf("Dumping L factor to --> %s\n", filename);
+ 	if ( !(fp = fopen(filename, "w")) ) {
+			ABORT("File open failed");
+		}
+     ncb = nsupers / grid->npcol;
+    extra = nsupers % grid->npcol;
+    mycol = MYCOL( iam, grid );
+    if ( mycol < extra ) ++ncb;
+    for (lb = 0; lb < ncb; ++lb) {
+	index = Llu->Lrowind_bc_ptr[lb];
+	if ( index ) { /* Not an empty column */
+	    nzval = Llu->Lnzval_bc_ptr[lb];
+	    nb = index[0];
+	    nsupr = index[1];
+	    gb = lb * grid->npcol + mycol;
+	    nsupc = SuperSize( gb );
+	    for (c = 0, k = BC_HEADER, r = 0; c < nb; ++c) {
+		len = index[k+1];
+		
+		for (j = 0; j < nsupc; ++j) {
+		for (i=0; i<len; ++i){
+		
+			fprintf(fp, "%d %d %e\n", index[k+LB_DESCRIPTOR+i]+1, xsup[gb]+j+1, (double)iam);
+#if 0		
+			fprintf(fp, "%d %d %e %e\n", index[k+LB_DESCRIPTOR+i]+1, xsup[gb]+j+1, nzval[r +i+ j*nsupr].r,nzval[r +i+ j*nsupr].i);
+#endif		
+		}
+		}
+		k += LB_DESCRIPTOR + len;
+		r += len;
+	    }
+	}	
+    }
+ 	fclose(fp);
+ 	
+} /* zDumpLblocks */
+
+
+
 /*! \brief Print the blocks in the factored matrix U.
  */
 void zPrintUblocks(int iam, int_t nsupers, gridinfo_t *grid, 

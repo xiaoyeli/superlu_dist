@@ -148,6 +148,7 @@ at the top-level directory.
 #define dtrsv_    DTRSV
 #define dgemm_    DGEMM
 #define dtrsm_    DTRSM
+#define dtrtri_   DTRTRI
 
 #define scasum_   SCASUM
 #define icamax_   ICAMAX
@@ -275,6 +276,7 @@ at the top-level directory.
 #define dtrsv_    dtrsv
 #define dgemm_    dgemm
 #define dtrsm_    dtrsm
+#define dtrtri_   dtrtri
 
 #define scasum_   scasum
 #define icamax_   icamax

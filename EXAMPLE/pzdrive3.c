@@ -63,10 +63,10 @@ int main(int argc, char *argv[])
     double   *berr;
     doublecomplex   *b, *b1, *xtrue, *nzval, *nzval1;
     int_t    *colind, *colind1, *rowptr, *rowptr1;
-    int_t    i, j, m, n, nnz_loc, m_loc, fst_row;
+    int_t    i, j, ii, m, n, nnz_loc, m_loc, fst_row;
     int      nprow, npcol;
     int      iam, info, ldb, ldx, nrhs;
-    char     **cpp, c;
+    char     **cpp, c, *postfix;
     FILE *fp, *fopen();
     int cpp_defs();
 
@@ -126,10 +126,17 @@ int main(int argc, char *argv[])
     CHECK_MALLOC(iam, "Enter main()");
 #endif
 
+	for(ii = 0;ii<strlen(*cpp);ii++){
+		if((*cpp)[ii]=='.'){
+			postfix = &((*cpp)[ii+1]);
+		}
+	}	
+	// printf("%s\n", postfix);
+
     /* ------------------------------------------------------------
        GET THE MATRIX FROM FILE AND SETUP THE RIGHT HAND SIDE. 
        ------------------------------------------------------------*/
-    zcreate_matrix(&A, nrhs, &b, &ldb, &xtrue, &ldx, fp, &grid);
+    zcreate_matrix_postfix(&A, nrhs, &b, &ldb, &xtrue, &ldx, fp, postfix, &grid);
 
     if ( !(b1 = doublecomplexMalloc_dist(ldb * nrhs)) )
         ABORT("Malloc fails for b1[]");
@@ -231,7 +238,8 @@ int main(int argc, char *argv[])
        ------------------------------------------------------------*/
     PStatFree(&stat);
     Destroy_CompRowLoc_Matrix_dist(&A); /* Deallocate storage of matrix A.  */
-    Destroy_LU(n, &grid, &LUstruct); /* Deallocate storage associated with    
+    zDestroy_Tree(n, &grid, &LUstruct);      
+	Destroy_LU(n, &grid, &LUstruct); /* Deallocate storage associated with    
 					the L and U matrices.               */
     ScalePermstructFree(&ScalePermstruct);
     LUstructFree(&LUstruct);         /* Deallocate the structure of L and U.*/

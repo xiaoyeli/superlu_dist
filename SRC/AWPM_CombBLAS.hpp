@@ -1,7 +1,6 @@
 #ifndef AWPM_CombBLAS_h
 #define AWPM_CombBLAS_h
 
-
 #include "CombBLAS.h"
 #include "ApproxWeightPerfectMatching.h"
 #include "superlu_ddefs.h"

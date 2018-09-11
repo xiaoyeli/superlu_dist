@@ -1,0 +1,42 @@
+############################################################################
+#
+#  Program:         SuperLU_DIST
+#
+#  Module:          make.inc
+#
+#  Purpose:         Top-level Definitions
+#
+#  Creation date:   March 1, 2016	version 5.0.0
+#
+#  Modified:	    
+#		    
+#
+############################################################################
+#
+#  The name of the libraries to be created/linked to
+#
+SuperLUroot	= /global/homes/l/liuyangz/Cori/my_research/github/superlu_dist_task_hybrid_whypddistslow_01_27_2018/build
+DSUPERLULIB   	= $(SuperLUroot)/SRC/libsuperlu_dist.so
+
+LIBS		= $(DSUPERLULIB) /opt/intel/compilers_and_libraries_2017.2.174/linux/mkl/lib/intel64/libmkl_intel_lp64.so /opt/intel/compilers_and_libraries_2017.2.174/linux/mkl/lib/intel64/libmkl_sequential.so /opt/intel/compilers_and_libraries_2017.2.174/linux/mkl/lib/intel64/libmkl_core.so /global/homes/l/liuyangz/Edison/my_software/parmetis-4.0.3_dynamic/build/Linux-x86_64/libparmetis/libparmetis.so /global/homes/l/liuyangz/Edison/my_software/parmetis-4.0.3_dynamic/build/Linux-x86_64/libmetis/libmetis.so
+
+#
+#  The archiver and the flag(s) to use when building archive (library)
+#  If your system has no ranlib, set RANLIB = echo.
+#
+ARCH         = /usr/bin/ar
+ARCHFLAGS    = cr
+RANLIB       = /usr/bin/ranlib
+
+CC           = /opt/cray/pe/craype/2.5.12/bin/cc
+CFLAGS 	     = -O0 -g -I/global/homes/l/liuyangz/Edison/my_software/parmetis-4.0.3_dynamic/metis/include -I/global/homes/l/liuyangz/Edison/my_software/parmetis-4.0.3_dynamic/include  -DUSE_VENDOR_BLAS -qopenmp -std=c11 -DPRNTlevel=1 -DPROFlevel=1 -DDEBUGlevel=0
+# CFLAGS       += -D_LONGINT   ## 64-bit integer
+# CFLAGS       += -D
+# CFLAGS       +=  
+NOOPTS       = -O0
+FORTRAN	     = /opt/cray/pe/craype/2.5.12/bin/ftn
+CPP          =/opt/cray/pe/craype/2.5.12/bin/CC
+CPPFLAGS     = -Ofast -std=c++11 -DAdd_ 
+
+LOADER       = $(CPP)
+LOADOPTS     = $(LIBS) -Wl,-rpath,-qopenmp  -qopenmp -dynamic 
