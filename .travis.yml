@@ -96,7 +96,7 @@ install:
     -DCMAKE_C_FLAGS="-std=c11 -DPRNTlevel=1 -DPROFlevel=1 -DDEBUGlevel=0" \
     -DCMAKE_CXX_FLAGS="-Ofast -std=c++11 -DAdd_ -DRELEASE" \
     -DTPL_BLAS_LIBRARIES="$BLAS_LIB" \
-    -DTPL_LAPACK_LIBRARIES="$$LAPACK_LIB" \
+    -DTPL_LAPACK_LIBRARIES="$LAPACK_LIB" \
     -Denable_blaslib=OFF \
     -DBUILD_SHARED_LIBS=OFF \
     -DCMAKE_C_COMPILER=mpicc \
