@@ -20,7 +20,8 @@ PLAT            = _altix
 #  The name of the libraries to be created/linked to
 #
 DSuperLUroot 	= ${HOME}/Release_Codes/SuperLU_DIST_4.2
-DSUPERLULIB     = $(DSuperLUroot)/lib/libsuperlu_dist_4.2.a
+DSUPERLULIB     = $(SuperLUroot)/lib/libsuperlu_dist_4.2.a
+INCLUDEDIR   	= $(SuperLUroot)/SRC
 
 MKLHOME		= /usr/common/intel/mkl/8.1.014
 BLASDEF         = -DUSE_VENDOR_BLAS

@@ -17,6 +17,7 @@
 #
 SuperLUroot	= /Users/xsli/Dropbox/Codes/SuperLU/superlu_dist.git/
 DSUPERLULIB   	= $(SuperLUroot)/lib/libsuperlu_dist.a
+INCLUDEDIR   	= $(SuperLUroot)/SRC
 
 BLASLIB		= $(SuperLUroot)/CBLAS/libblas.a
 

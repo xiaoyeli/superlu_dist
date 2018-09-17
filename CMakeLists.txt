@@ -17,22 +17,19 @@ set(PROJECT_VERSION ${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_BugFix})
 list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake")
 
 # Set up options
-option(enable_blaslib   "Build the CBLAS library" ${enable_blaslib_DEFAULT})
 option(enable_doc       "Build doxygen documentation" OFF)
 option(enable_double    "Enable double precision library" ON)
 option(enable_complex16 "Enable complex16 precision library" ON)
 option(enable_tests  "Build tests" ON)
 option(enable_examples  "Build examples" ON)
-option(enable_parmetislib   "Build the ParMETIS library" ON)
+option(TPL_ENABLE_BLASLIB  "Build the CBLAS library" ${enable_blaslib_DEFAULT})
+option(TPL_ENABLE_PARMETISLIB   "Build the ParMETIS library" ON)
 option(TPL_PARMETIS_LIBRARIES "List of absolute paths to ParMETIS link libraries [].")
 option(TPL_PARMETIS_INCLUDE_DIRS "List of absolute paths to ParMETIS include directories [].")
-option(enable_combblaslib   "Build the CombBLAS library" OFF)
+option(TPL_ENABLE_COMBBLASLIB   "Build the CombBLAS library" OFF)
 option(TPL_COMBBLAS_LIBRARIES "List of absolute paths to CombBLAS link libraries [].")
 option(TPL_COMBBLAS_INCLUDE_DIRS "List of absolute paths to CombBLAS include directories [].")
 
-# if (NOT enable_combblaslib)
-  SET(XSDK_ENABLE_CXX ON)
-# endif()
 
 ######################################################################
 #
@@ -121,7 +118,7 @@ set(INSTALL_BIN_DIR "${default_install_bin_dir}" CACHE STRING "The folder where 
 ## get_directory_property( DirDefs COMPILE_DEFINITIONS )
 # set(CMAKE_C_FLAGS "-DDEBUGlevel=0 -DPRNTlevel=0 ${CMAKE_C_FLAGS}")
 if(XSDK_INDEX_SIZE EQUAL 64)
-    message("-- Using 64 bit integer for index size")
+    message("-- Using 64 bit integer for index size.")
 endif()	
 set(CMAKE_C_FLAGS_RELEASE "-O3" CACHE STRING "")
 set(CMAKE_CXX_FLAGS_RELEASE "-O3" CACHE STRING "")
@@ -157,7 +154,7 @@ if (enable_openmp)
   endif()
 endif()
 #--------------------- BLAS ---------------------
-if(NOT enable_blaslib)
+if(NOT TPL_ENABLE_BLASLIB)
 #  set(TPL_BLAS_LIBRARIES "" CACHE FILEPATH
 #    "Override of list of absolute path to libs for BLAS.")
   if(TPL_BLAS_LIBRARIES)
@@ -190,7 +187,7 @@ else()
 endif()
 
 #--------------------- LAPACK ---------------------
-if(NOT enable_lapacklib)
+if(NOT TPL_ENABLE_LAPACKLIB)
   if(TPL_LAPACK_LIBRARIES)
     set(LAPACK_FOUND TRUE)
   else()
@@ -213,7 +210,7 @@ else()
 endif()
 
 #--------------------- ParMETIS ---------------------
-if (enable_parmetislib)   ## want to use parmetis
+if (TPL_ENABLE_PARMETISLIB)   ## want to use parmetis
   if (NOT TPL_PARMETIS_LIBRARIES)
     message(FATAL_ERROR "TPL_PARMETIS_LIBRARIES option should be set for PARMETIS support to be enabled.")
   endif()
@@ -228,7 +225,7 @@ if (enable_parmetislib)   ## want to use parmetis
     set(CMAKE_C_FLAGS "-I${dir} ${CMAKE_C_FLAGS}")
   endforeach()
 
-  message("-- Enabled support for PARMETIS")
+  message("-- Enabled support for PARMETIS.")
   set(PARMETIS_FOUND TRUE)
 
   set(PARMETIS_LIB ${TPL_PARMETIS_LIBRARIES})
@@ -240,7 +237,7 @@ else()
   message("-- Will not link with ParMETIS.")
 endif()
 
-if(enable_parmetislib AND NOT PARMETIS_FOUND)
+if(TPL_ENABLE_PARMETISLIB AND NOT PARMETIS_FOUND)
   find_package(ParMETIS)
   if(PARMETIS_FOUND)
     set(PARMETIS_LIB ParMETIS::ParMETIS)
@@ -253,7 +250,7 @@ if(PARMETIS_FOUND)
 endif()
 
 #--------------------- CombBLAS ---------------------
-if (enable_combblaslib)   ## want to use CombBLAS
+if (TPL_ENABLE_COMBBLASLIB)   ## want to use CombBLAS
   if (NOT TPL_COMBBLAS_LIBRARIES)
     message(FATAL_ERROR "TPL_COMBBLAS_LIBRARIES option should be set for COMBBLAS support to be enabled.")
   endif()

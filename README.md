@@ -214,7 +214,7 @@ Once these needed third-party libraries are in place, SuperLU installation
 can be done as follows from the top level directory:
 
 For a simple installation with default setting, do:
-(ParMETIS is needed, i.e., enable_parmetislib=ON)
+(ParMETIS is needed, i.e., TPL_ENABLE_PARMETISLIB=ON)
 ```
 mkdir build ; cd build;
 cmake .. \
@@ -227,7 +227,7 @@ For a more sophisticated installation including third-part libraries, do:
 cmake .. \
     -DTPL_PARMETIS_INCLUDE_DIRS="${PARMETIS_ROOT}/include;${PARMETIS_ROOT}/metis/include" \
     -DTPL_PARMETIS_LIBRARIES="${PARMETIS_BUILD_DIR}/libparmetis/libparmetis.a;${PARMETIS_BUILD_DIR}/libmetis/libmetis.a" \
-    -Denable_combblaslib=ON \
+    -DTPL_ENABLE_COMBBLASLIB=ON \
     -DTPL_COMBBLAS_INCLUDE_DIRS="${COMBBLAS_ROOT}/_install/include;${COMBBLAS_R\
 OOT}/Applications/BipartiteMatchings" \
     -DTPL_COMBBLAS_LIBRARIES="${COMBBLAS_BUILD_DIR}/libCombBLAS.a" \
@@ -235,15 +235,15 @@ OOT}/Applications/BipartiteMatchings" \
     -DCMAKE_C_COMPILER=mpicc \
     -DCMAKE_CXX_COMPILER=mpicxx \
     -DCMAKE_CXX_FLAGS="-std=c++11" \
-    -Denable_blaslib=OFF \
+    -DTPL_ENABLE_BLASLIB=OFF \
     -DBUILD_SHARED_LIBS=OFF \
     -DCMAKE_INSTALL_PREFIX=.
 
 ( see example cmake script: see run_cmake_build.sh )
 ```
 You can disable ParMetis or CombBLAS with the following cmake option:
-`-Denable_parmetislib=FALSE`
-`-Denable_combblaslib=FALSE`
+`-DTPL_ENABLE_PARMETISLIB=FALSE`
+`-DTPL_ENABLE_COMBBLASLIB=FALSE`
 
 To actually build (compile), type:
 `make`
@@ -289,7 +289,7 @@ The cmake configuration line used was
   -Denable_openmp:BOOL=FALSE \
   -DCMAKE_C_COMPILER:FILEPATH='C:/Program Files (x86)/Microsoft Visual Studio/2017/Professional/VC/Tools/MSVC/14.11.25503/bin/HostX64/x64/cl.exe' \
   -DCMAKE_C_FLAGS:STRING='/DWIN32 /D_WINDOWS /W3' \
-  -Denable_parmetislib:BOOL=FALSE \
+  -DTPL_ENABLE_PARMETISLIB:BOOL=FALSE \
   -DXSDK_ENABLE_Fortran=OFF \
   -G 'NMake Makefiles JOM' \
   C:/path/to/superlu_dist

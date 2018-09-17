@@ -21,8 +21,9 @@ VERSION		= 5.0.0
 #
 #  The name of the libraries to be created/linked to
 #
-DSuperLUroot 	= ${HOME}/Release_Codes/SuperLU_DIST_${VERSION}
-DSUPERLULIB   	= $(DSuperLUroot)/lib/libsuper_dist_${VERSION}.a
+SuperLUroot 	= ${HOME}/Release_Codes/SuperLU_DIST_${VERSION}
+DSUPERLULIB   	= $(SuperLUroot)/lib/libsuper_dist_${VERSION}.a
+INCLUDEDIR   	= $(SuperLUroot)/SRC
 #
 BLASDEF	     	= -DUSE_VENDOR_BLAS
 BLASLIB	        =

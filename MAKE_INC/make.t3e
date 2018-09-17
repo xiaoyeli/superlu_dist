@@ -20,8 +20,9 @@ PLAT		= _t3e
 #
 #  The name of the libraries to be created/linked to
 #
-DSuperLUroot 	= ${HOME}/Release_Codes/SuperLU_DIST_4.2
-DSUPERLULIB   	= $(DSuperLUroot)/lib/libsuperlu_dist_4.2.a
+SuperLUroot 	= ${HOME}/Release_Codes/SuperLU_DIST_4.2
+DSUPERLULIB   	= $(SuperLUroot)/lib/libsuperlu_dist_4.2.a
+INCLUDEDIR   	= $(SuperLUroot)/SRC
 #
 BLASDEF	     	= -DUSE_VENDOR_BLAS
 #
