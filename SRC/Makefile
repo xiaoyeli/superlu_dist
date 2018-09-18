@@ -77,11 +77,15 @@ all:  double complex16
 
 config_h:
 	rm -f superlu_dist_config.h
-
 ifeq ($(XSDK_INDEX_SIZE),64)
 		printf "#define XSDK_INDEX_SIZE 64\n" >> superlu_dist_config.h
 else
 		printf "/* #define XSDK_INDEX_SIZE 64 */\n" >> superlu_dist_config.h
+endif
+ifeq ($(HAVE_LAPACK),TRUE)
+		printf "#define HAVE_LAPACK TRUE\n" >> superlu_dist_config.h
+else
+		printf "/* #define HAVE_LAPACK TRUE */\n" >> superlu_dist_config.h
 endif
 ifeq ($(HAVE_PARMETIS),TRUE)
 		printf "#define HAVE_PARMETIS TRUE\n" >> superlu_dist_config.h

@@ -27,6 +27,7 @@ INCLUDEDIR   	= $(SuperLUroot)/SRC
 #
 BLASDEF	     	= -DUSE_VENDOR_BLAS
 BLASLIB	        =
+LAPACKLIB	= 
 METISLIB    	= -L/usr/common/usg/parmetis/3.1 -lmetis
 PARMETISLIB   	= -L/usr/common/usg/parmetis/3.1 -lparmetis
 
@@ -34,7 +35,8 @@ PARMETISLIB   	= -L/usr/common/usg/parmetis/3.1 -lparmetis
 FLIBS	 	= -lpgf90 -lpgf90_rpm1 -lpgf902 -lpgf90rtl -lpgftnrtl
 
 # Define all the libraries
-LIBS	     	= $(DSUPERLULIB) $(BLASLIB) $(PARMETISLIB) $(METISLIB) $(FLIBS)
+LIBS	     	= $(DSUPERLULIB) $(BLASLIB) $(PARMETISLIB) $(METISLIB) 
+		  $(LAPACKLIB) $(FLIBS)
 
 #
 #  The archiver and the flag(s) to use when building archive (library)

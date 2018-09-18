@@ -20,8 +20,10 @@ DSUPERLULIB   	= $(SuperLUroot)/lib/libsuperlu_dist.a
 INCLUDEDIR   	= $(SuperLUroot)/SRC
 
 BLASLIB		= $(SuperLUroot)/CBLAS/libblas.a
+# LAPACKLIB	=
+# HAVE_LAPACK = TRUE
 
-LIBS		= $(DSUPERLULIB) ${BLASLIB} /Users/xsli/lib/parmetis-4.0.3/build/Darwin-x86_64/libparmetis/libparmetis.a /Users/xsli/lib/parmetis-4.0.3/build/Darwin-x86_64/libmetis/libmetis.a
+LIBS		= $(DSUPERLULIB) ${BLASLIB} /Users/xsli/lib/parmetis-4.0.3/build/Darwin-x86_64/libparmetis/libparmetis.a /Users/xsli/lib/parmetis-4.0.3/build/Darwin-x86_64/libmetis/libmetis.a $(LAPACKLIB)
 
 #
 #  The archiver and the flag(s) to use when building archive (library)

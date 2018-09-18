@@ -31,9 +31,12 @@ INCLUDEDIR   	= $(SuperLUroot)/SRC
 #
 BLASDEF	     	= -DUSE_VENDOR_BLAS
 BLASLIB      	= /usr/lib/libblas.so.3
+#LAPACKLIB	= 
+#HAVE_LAPACK	= TRUE
 
 ############################################################################
 ## parmetis 4.x.x, 32-bit integer
+#HAVE_PARMETIS = TRUE
 PARMETIS_DIR	:= ${HOME}/Carver/lib/parmetis-4.0.3
 ## parmetis 4.x.x, 64-bit integer
 # PARMETIS_DIR	:= ${HOME}/Carver/lib/parmetis-4.0.3_64
@@ -47,8 +50,8 @@ I_PARMETIS := -I${PARMETIS_DIR}/include -I${PARMETIS_DIR}/metis/include
 FLIBS	 	= 
 
 # Define all the libraries
-LIBS            = $(DSUPERLULIB) $(BLASLIB) $(PARMETISLIB) $(METISLIB)
-
+LIBS            = $(DSUPERLULIB) $(BLASLIB) $(PARMETISLIB) $(METISLIB) \
+		  $(LAPACKLIB)
 #
 #  The archiver and the flag(s) to use when building archive (library)
 #  If your system has no ranlib, set RANLIB = echo.

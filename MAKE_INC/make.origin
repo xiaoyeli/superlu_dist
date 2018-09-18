@@ -26,6 +26,7 @@ INCLUDEDIR   	= $(SuperLUroot)/SRC
 #
 BLASDEF         = -DUSE_VENDOR_BLAS
 BLASLIB         = -lscs
+LAPACKLIB	= 
 MPILIB		= -lmpi
 
 ############################################################################
@@ -45,7 +46,7 @@ FLIBS	 	= -lfortran
 # Define all the libraries
 #
 LIBS            = $(DSUPERLULIB) $(BLASLIB) $(PARMETISLIB) $(METISLIB) \
-	          $(MPILIB) $(FLIBS)
+		  $(LAPACKLIB) $(MPILIB) $(FLIBS)
 
 #
 #  The archiver and the flag(s) to use when building archive (library)

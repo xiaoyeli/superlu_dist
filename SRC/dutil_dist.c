@@ -397,7 +397,6 @@ void dScaleAdd_CompRowLoc_Matrix_dist(SuperMatrix *A, SuperMatrix *B, double c)
 
 
 /**** Other utilities ****/
-
 void
 dGenXtrue_dist(int_t n, int_t nrhs, double *x, int_t ldx)
 {
@@ -568,10 +567,9 @@ void dDumpLblocks(int iam, int_t nsupers, gridinfo_t *grid,
 		
 		for (j = 0; j < nsupc; ++j) {
 		for (i=0; i<len; ++i){
-		
-			fprintf(fp, "%d %d %e\n", index[k+LB_DESCRIPTOR+i]+1, xsup[gb]+j+1, (double)iam);
+			fprintf(fp, IFMT IFMT " %e\n", index[k+LB_DESCRIPTOR+i]+1, xsup[gb]+j+1, (double)iam);
 #if 0		
-			fprintf(fp, "%d %d %e\n", index[k+LB_DESCRIPTOR+i]+1, xsup[gb]+j+1, nzval[r +i+ j*nsupr]);
+			fprintf(fp, IFMT IFMT " %e\n", index[k+LB_DESCRIPTOR+i]+1, xsup[gb]+j+1, nzval[r +i+ j*nsupr]);
 #endif		
 		}
 		}

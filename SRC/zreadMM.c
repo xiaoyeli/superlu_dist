@@ -142,7 +142,7 @@ zreadMM_dist(FILE *fp, int_t *m, int_t *n, int_t *nonz,
     /* 4/ Read triplets of values */
     for (nnz = 0, nz = 0; nnz < *nonz; ++nnz) {
 #ifdef _LONGINT
-	j = fscanf(fp, "%lld%lld%lf%lf\n", &row[nz], &col[nz], &val[nz].r, &val[nz].i);
+	j = fscanf(fp, IFMT IFMT "%lf%lf\n", &row[nz], &col[nz], &val[nz].r, &val[nz].i);
 #else
 	j = fscanf(fp, "%d%d%lf%lf\n", &row[nz], &col[nz], &val[nz].r, &val[nz].i);
 #endif

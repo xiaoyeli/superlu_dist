@@ -27,6 +27,7 @@ INCLUDEDIR   	= $(SuperLUroot)/SRC
 #
 BLASDEF	     	= -DUSE_VENDOR_BLAS
 BLASLIB      	= -lessl
+LAPACKLIB	= 
 #MPILIB		= -L/usr/lpp/ppe.poe/lib -lmpi
 #PERFLIB     	= -L/vol1/VAMPIR/lib -lVT
 
@@ -45,7 +46,8 @@ I_PARMETIS := -I${PARMETIS_DIR}/include -I${PARMETIS_DIR}/metis/include
 FLIBS	 	=
 
 # Define all the libraries
-LIBS            = $(DSUPERLULIB) $(BLASLIB) $(PARMETISLIB) $(METISLIB) $(FLIBS)
+LIBS            = $(DSUPERLULIB) $(BLASLIB) $(PARMETISLIB) $(METISLIB) \
+		  $(LAPACKLIB) $(FLIBS)
 
 #
 #  The archiver and the flag(s) to use when building archive (library)

@@ -63,9 +63,9 @@ OOT}/Applications/BipartiteMatchings" \
     -DBUILD_SHARED_LIBS=OFF \
     -DCMAKE_INSTALL_PREFIX=.
 fi
+#   -DXSDK_INDEX_SIZE=64 \
 #   -DTPL_ENABLE_LAPACKLIB=OFF
 #   -DTPL_ENABLE_PARMETISLIB=OFF
-#    -DXSDK_INDEX_SIZE=64
 
 # make VERBOSE=1
 # make test

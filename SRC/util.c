@@ -1285,7 +1285,7 @@ int_t estimate_bigu_size(int_t nsupers,
 
 #if ( PRNTlevel>=1 )
 	if(iam==0)
-    printf("max_ncols %d, max_ldu %d, ldt %d, bigu_size=%d\n",
+    printf("max_ncols " IFMT ", max_ldu " IFMT ", ldt " IFMT ", bigu_size " IFMT "\n",
 	   max_ncols, max_ldu, ldt, max_ldu*max_ncols);
 #endif
     return(max_ldu * max_ncols);

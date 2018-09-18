@@ -94,9 +94,9 @@ int_t symbfact
     int_t *iwork, *perm_r, *segrep, *repfnz;
     int_t *xprune, *marker, *parent, *xplore;
     int_t relax, *desc, *relax_end;
-    long long int nnzLU, nnzLSUB;
-    int64_t nnzL, nnzU;
-	NRformat_loc *Astore;
+    int_t nnzLU, nnzLSUB;
+    int_t nnzL, nnzU;
+    NRformat_loc *Astore;
 
 #if ( DEBUGlevel>=1 )
     CHECK_MALLOC(pnum, "Enter symbfact()");
@@ -185,10 +185,10 @@ int_t symbfact
 
     if ( !pnum && (options->PrintStat == YES)) {
 	nnzLU = nnzL + nnzU - min_mn;				   
-	printf("\tNonzeros in L       %lld\n", nnzL);
-	printf("\tNonzeros in U       %lld\n", nnzU);
-	printf("\tnonzeros in L+U     %lld\n", nnzLU);
-	printf("\tnonzeros in LSUB    %lld\n", nnzLSUB);
+	printf("\tNonzeros in L       " IFMT "\n", nnzL);
+	printf("\tNonzeros in U       " IFMT "\n", nnzU);
+	printf("\tnonzeros in L+U     " IFMT "\n", nnzLU);
+	printf("\tnonzeros in LSUB    " IFMT "\n", nnzLSUB);
     }
     SUPERLU_FREE(iwork);
 
