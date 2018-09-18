@@ -9,8 +9,8 @@ cmake_minimum_required(VERSION 2.8.12 FATAL_ERROR)
 
 # Project version numbers
 project(SuperLU_DIST C CXX)
-set(VERSION_MAJOR "5")
-set(VERSION_MINOR "4")
+set(VERSION_MAJOR "6")
+set(VERSION_MINOR "0")
 set(VERSION_BugFix "0")
 set(PROJECT_VERSION ${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_BugFix})
 
@@ -24,6 +24,7 @@ option(enable_tests  "Build tests" ON)
 option(enable_examples  "Build examples" ON)
 option(TPL_ENABLE_BLASLIB  "Build the CBLAS library" ${enable_blaslib_DEFAULT})
 option(TPL_ENABLE_PARMETISLIB   "Build the ParMETIS library" ON)
+option(TPL_ENABLE_LAPACKLIB "Enable LAPACK library" ON)
 option(TPL_PARMETIS_LIBRARIES "List of absolute paths to ParMETIS link libraries [].")
 option(TPL_PARMETIS_INCLUDE_DIRS "List of absolute paths to ParMETIS include directories [].")
 option(TPL_ENABLE_COMBBLASLIB   "Build the CombBLAS library" OFF)
@@ -187,7 +188,7 @@ else()
 endif()
 
 #--------------------- LAPACK ---------------------
-if(NOT TPL_ENABLE_LAPACKLIB)
+if(TPL_ENABLE_LAPACKLIB)  ## want to use LAPACK
   if(TPL_LAPACK_LIBRARIES)
     set(LAPACK_FOUND TRUE)
   else()
@@ -197,6 +198,9 @@ if(NOT TPL_ENABLE_LAPACKLIB)
         "Set from FindLAPACK.cmake LAPACK_LIBRARIES." FORCE)
     endif()
   endif()
+else()  ## not to use LAPACK
+  set(LAPACK_FOUND FALSE)
+  set(HAVE_LAPACK FALSE)
 endif()
 
 if(LAPACK_FOUND)
@@ -205,8 +209,9 @@ if(LAPACK_FOUND)
     # fix up LAPACK library name
     string (REPLACE ";" " " LAPACK_LIB_STR "${LAPACK_LIB}")
     set(LAPACK_LIB_EXPORT ${LAPACK_LIB_STR})
+    set(HAVE_LAPACK TRUE)
 else()
-    message("-- Did not find or specify LAPACK.")
+    message("-- Will not link with LAPACK.")
 endif()
 
 #--------------------- ParMETIS ---------------------
@@ -232,7 +237,6 @@ if (TPL_ENABLE_PARMETISLIB)   ## want to use parmetis
   # fix up PARMETIS library names
   string (REPLACE ";" " " PARMETIS_LIB_STR "${PARMETIS_LIB}")
   set(PARMETIS_LIB_EXPORT ${PARMETIS_LIB_STR})
-
 else()
   message("-- Will not link with ParMETIS.")
 endif()

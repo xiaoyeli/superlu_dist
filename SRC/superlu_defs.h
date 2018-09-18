@@ -12,13 +12,14 @@ at the top-level directory.
  * \brief Definitions which are precision-neutral
  *
  * <pre>
- * -- Distributed SuperLU routine (version 5.4) --
+ * -- Distributed SuperLU routine (version 6.0) --
  * Lawrence Berkeley National Lab, Univ. of California Berkeley.
  * November 1, 2007
  *
  * Modified:
  *     Feburary 20, 2008
  *     October 11, 2014
+ *     September 18, 2018  version 6.0
  * </pre>
  */
 
@@ -67,10 +68,10 @@ at the top-level directory.
  *   #endif
  * Versions 4.x and earlier do not include a #define'd version numbers.
  */
-#define SUPERLU_DIST_MAJOR_VERSION     5
-#define SUPERLU_DIST_MINOR_VERSION     4
+#define SUPERLU_DIST_MAJOR_VERSION     6
+#define SUPERLU_DIST_MINOR_VERSION     0
 #define SUPERLU_DIST_PATCH_VERSION     0
-#define SUPERLU_DIST_RELEASE_DATE      "June 1, 2018"
+#define SUPERLU_DIST_RELEASE_DATE      "September 18, 2018"
 
 #include "superlu_dist_config.h"
 /* Define my integer size int_t */

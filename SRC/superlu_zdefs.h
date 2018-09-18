@@ -13,10 +13,11 @@ at the top-level directory.
  * \brief  Distributed SuperLU data types and function prototypes
  *
  * <pre>
- * -- Distributed SuperLU routine (version 4.1) --
+ * -- Distributed SuperLU routine (version 6.0) --
  * Lawrence Berkeley National Lab, Univ. of California Berkeley.
  * November 1, 2007
  * April 5, 2015
+ * September 18, 2018  version 6.0
  * </pre>
  */
 
@@ -45,17 +46,18 @@ typedef struct {
 #define MAX_LOOKAHEADS 50
 typedef struct {
     int_t   **Lrowind_bc_ptr; /* size ceil(NSUPERS/Pc)                 */
-    doublecomplex  **Lnzval_bc_ptr;  /* size ceil(NSUPERS/Pc)                 */
-    doublecomplex  **Linv_bc_ptr;  /* size ceil(NSUPERS/Pc)                 */
-	int_t   **Lindval_loc_bc_ptr; /* size ceil(NSUPERS/Pc)  pointers to locations in Lrowind_bc_ptr and Lnzval_bc_ptr               */
-	int_t 	**Lrowind_bc_2_lsum; /* size ceil(NSUPERS/Pc)  map indices of Lrowind_bc_ptr to indices of lsum  */  
-    doublecomplex  **Uinv_bc_ptr;  /* size ceil(NSUPERS/Pc)     				*/
-	int_t   **Ufstnz_br_ptr;  /* size ceil(NSUPERS/Pr)                 */
+    doublecomplex **Lnzval_bc_ptr;  /* size ceil(NSUPERS/Pc)                 */
+    doublecomplex **Linv_bc_ptr;  /* size ceil(NSUPERS/Pc)                 */
+    int_t   **Lindval_loc_bc_ptr; /* size ceil(NSUPERS/Pc)  pointers to locations in Lrowind_bc_ptr and Lnzval_bc_ptr */
+    int_t   **Lrowind_bc_2_lsum; /* size ceil(NSUPERS/Pc)  map indices of Lrowind_bc_ptr to indices of lsum  */  
+    doublecomplex  **Uinv_bc_ptr;  /* size ceil(NSUPERS/Pc)     	*/
+    int_t   **Ufstnz_br_ptr;  /* size ceil(NSUPERS/Pr)                 */
     doublecomplex  **Unzval_br_ptr;  /* size ceil(NSUPERS/Pr)                 */
-	BcTree  *LBtree_ptr;       /* size ceil(NSUPERS/Pc)                */
-	RdTree  *LRtree_ptr;		  /* size ceil(NSUPERS/Pr)                */
-	BcTree  *UBtree_ptr;       /* size ceil(NSUPERS/Pc)                */
-	RdTree  *URtree_ptr;		  /* size ceil(NSUPERS/Pr)  			*/
+        /*-- Data structures used for broadcast and reduction trees. --*/
+    BcTree  *LBtree_ptr;       /* size ceil(NSUPERS/Pc)                */
+    RdTree  *LRtree_ptr;       /* size ceil(NSUPERS/Pr)                */
+    BcTree  *UBtree_ptr;       /* size ceil(NSUPERS/Pc)                */
+    RdTree  *URtree_ptr;       /* size ceil(NSUPERS/Pr)			*/
 #if 0
     int_t   *Lsub_buf;        /* Buffer for the remote subscripts of L */
     double  *Lval_buf;        /* Buffer for the remote nonzeros of L   */
@@ -126,7 +128,7 @@ typedef struct {
     int_t n;
     int_t nleaf;
     int_t nfrecvmod;
-	int_t inv; /* whether the diagonal block is inverted*/	
+    int_t inv; /* whether the diagonal block is inverted*/	
 } LocalLU_t;
 
 
@@ -333,7 +335,6 @@ extern void pzgsmv(int_t, SuperMatrix *, gridinfo_t *, pzgsmv_comm_t *,
 		   doublecomplex x[], doublecomplex ax[]);
 extern void pzgsmv_finalize(pzgsmv_comm_t *);
 
-
 /* Memory-related */
 extern doublecomplex  *doublecomplexMalloc_dist(int_t);
 extern doublecomplex  *doublecomplexCalloc_dist(int_t);
@@ -351,7 +352,6 @@ extern void zCopy_CompRowLoc_Matrix_dist(SuperMatrix *, SuperMatrix *);
 extern void zZero_CompRowLoc_Matrix_dist(SuperMatrix *);
 extern void zScaleAddId_CompRowLoc_Matrix_dist(SuperMatrix *, doublecomplex);
 extern void zScaleAdd_CompRowLoc_Matrix_dist(SuperMatrix *, SuperMatrix *, doublecomplex);
-
 extern void    zfill_dist (doublecomplex *, int_t, doublecomplex);
 extern void    zinf_norm_error_dist (int_t, int_t, doublecomplex*, int_t,
                                      doublecomplex*, int_t, gridinfo_t*);
@@ -383,7 +383,7 @@ extern void  zPrintUblocks(int, int_t, gridinfo_t *, Glu_persist_t *,
 extern void  zPrint_CompCol_Matrix_dist(SuperMatrix *);
 extern void  zPrint_Dense_Matrix_dist(SuperMatrix *);
 extern int   zPrint_CompRowLoc_Matrix_dist(SuperMatrix *);
-extern int   file_zPrint_CompRowLoc_Matrix_dist(FILE *fp, SuperMatrix *A);
+extern int   file_zPrint_CompRowLoc_Matrix_dist(FILE *fp, SuperMatrix *A);																			   
 extern void  PrintDoublecomplex(char *, int_t, doublecomplex *);
 extern int   file_PrintDoublecomplex(FILE *fp, char *, int_t, doublecomplex *);
 

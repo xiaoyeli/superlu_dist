@@ -1,4 +1,4 @@
-# SuperLU_DIST (version 5.4)
+# SuperLU_DIST (version 6.0)
 
 [![Build Status](https://travis-ci.org/xiaoyeli/superlu_dist.svg?branch=master)](https://travis-ci.org/xiaoyeli/superlu_dist) 
 [Nightly tests](http://my.cdash.org/index.php?project=superlu_dist)
@@ -112,7 +112,12 @@ to make the BLAS library from the routines in the
 
 #### 1.3. External libraries. 
 
- ##### 1.3.1 Metis and ParMetis.
+  ##### 1.3.3 LAPACK.
+  Starting Version 6.0, the triangular solve routine can perform explicit
+  inversion on the diagonal blocks, using the LAPACK's xTRTRI inversion
+  routine. 
+
+  ##### 1.3.2 Metis and ParMetis.
 
 If you will use Metis or ParMetis for sparsity ordering, you will
 need to install them yourself. Since ParMetis package already
@@ -131,7 +136,7 @@ You can disable ParMetis with the following line in SRC/superlu_dist_config.h:
 #undef HAVE_PARMETIS
 ```
 
- ##### 1.3.2 CombBLAS.
+ ##### 1.3.3 CombBLAS.
 
 You can use parallel approximate weight perfect matching (AWPM) algorithm
 to perform numerical pre-pivoting for stability. The default pre-pivoting
@@ -149,6 +154,7 @@ You can disable CombBLAS with the following line in SRC/superlu_dist_config.h:
 ```
 #undef HAVE_COMBBLAS
 ```
+
 
 #### 1.4. C preprocessor definition CDEFS.
 

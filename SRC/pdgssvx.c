@@ -14,7 +14,7 @@ at the top-level directory.
  * \brief Solves a system of linear equations A*X=B
  *
  * <pre>
- * -- Distributed SuperLU routine (version 5.1.3) --
+ * -- Distributed SuperLU routine (version 6.0) --
  * Lawrence Berkeley National Lab, Univ. of California Berkeley.
  * November 1, 2007
  * October 22, 2012
@@ -23,7 +23,7 @@ at the top-level directory.
  * December 31, 2015  version 4.3
  * December 31, 2016  version 5.1.3
  * April 10, 2018  version 5.3
- * April 10, 2018  version 5.3   
+ * September 18, 2018  version 6.0
  * </pre>
  */
 
@@ -327,7 +327,7 @@ at the top-level directory.
  *           = LargeDiag_APWM: use the parallel approximate-weight perfect
  *                        matching to permute rows of the original matrix
  *                        to make the diagonal large relative to the
- *                        off-diagonal.
+ *                        off-diagonal.								   
  *           = MY_PERMR:  use the ordering given in ScalePermstruct->perm_r
  *                        input by the user.
  *           
@@ -546,14 +546,14 @@ pdgssvx(superlu_dist_options_t *options, SuperMatrix *A,
     float    GA_mem_use;    /* memory usage by global A */
     float    dist_mem_use; /* memory usage during distribution */
     superlu_dist_mem_usage_t num_mem_usage, symb_mem_usage;
-	long long int nnzLU;
-	int_t nnz_tot;
-	double *nzval_a;
-	double asum,asum_tot,lsum,lsum_tot;
-	int_t nsupers,nsupers_j;
-	int_t lk,k,knsupc,nsupr;
-	int_t  *lsub,*xsup;
-	double *lusup;	
+    int64_t  nnzLU;
+    int_t    nnz_tot;
+    double *nzval_a;
+    double asum,asum_tot,lsum,lsum_tot;
+    int_t nsupers,nsupers_j;
+    int_t lk,k,knsupc,nsupr;
+    int_t  *lsub,*xsup;
+    double *lusup;	
 #if ( PRNTlevel>= 2 )
     double   dmin, dsum, dprod;
 #endif
@@ -565,7 +565,6 @@ pdgssvx(superlu_dist_options_t *options, SuperMatrix *A,
     int   col, key; /* parameters for creating a new communicator */
     Pslu_freeable_t Pslu_freeable;
     float  flinfo;
-	int blas_flag;
 	
     /* Initialization. */
     m       = A->nrow;
@@ -1172,7 +1171,7 @@ pdgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 	// }
 	// }
 	
-
+	
 #if ( PRNTlevel>=1 )
     /* ------------------------------------------------------------
        SUM OVER ALL ENTRIES OF A AND PRINT NNZ AND SIZE OF A.
@@ -1180,6 +1179,8 @@ pdgssvx(superlu_dist_options_t *options, SuperMatrix *A,
     Astore = (NRformat_loc *) A->Store;
 	xsup = Glu_persist->xsup;
 	nzval_a = Astore->nzval;
+
+
 	asum=0;
     for (i = 0; i < Astore->m_loc; ++i) {
         for (j = Astore->rowptr[i]; j < Astore->rowptr[i+1]; ++j) {
@@ -1204,10 +1205,13 @@ pdgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 				for (i = 0; i < nsupr; ++i) 
 					lsum +=lusup[j*nsupr+i];
 		}
-	}	
+	}
+	
 	
 	MPI_Allreduce( &asum, &asum_tot,1, MPI_DOUBLE, MPI_SUM, grid->comm );
 	MPI_Allreduce( &lsum, &lsum_tot,1, MPI_DOUBLE, MPI_SUM, grid->comm );
+	
+
 	MPI_Allreduce( &Astore->rowptr[Astore->m_loc], &nnz_tot,1, mpi_int_t, MPI_SUM, grid->comm );
 	// MPI_Bcast( &nnzLU, 1, mpi_int_t, 0, grid->comm );
 	
@@ -1218,11 +1222,10 @@ pdgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 	fflush(stdout);
     }
 
-	printf(".. Ainfo mygid %5d   mysid %5d   nnz_loc %7d   sum_loc   %e lsum_loc   %e nnz %7d  nnzLU %7d sum %e  lsum %e  N %7d\n", iam_g,iam,Astore->rowptr[Astore->m_loc],asum, lsum, nnz_tot,nnzLU,asum_tot,lsum_tot,A->ncol);
+    printf(".. Ainfo mygid %5d   mysid %5d   nnz_loc %7d   sum_loc   %e lsum_loc   %e nnz %7d  nnzLU %ld sum %e  lsum %e  N %7d\n", iam_g,iam,Astore->rowptr[Astore->m_loc],asum, lsum, nnz_tot,nnzLU,asum_tot,lsum_tot,A->ncol);
 	fflush(stdout);
-
-#endif
-
+#endif				
+			
 #if 0
 
 // #ifdef GPU_PROF
@@ -1392,19 +1395,9 @@ pdgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 	       For repeated call to pdgssvx(), no need to re-initialilze
 	       the Solve data & communication structures, unless a new
 	       factorization with Fact == DOFACT or SamePattern is asked for. */
-		if(options->DiagInv==YES){	
-
-	#ifdef _CRAY
-			  blas_flag=1;
-	#elif defined (USE_VENDOR_BLAS)
-			  blas_flag=2;
-	#else
-			  blas_flag=0;
-	#endif	
-			if(blas_flag==0)
-			ABORT("DiagInv doesn't works with internal blas\n");
-			pdCompute_Diag_Inv(n, LUstruct, grid, stat, info);
-		}	
+    	    if ( options->DiagInv==YES ) {
+		pdCompute_Diag_Inv(n, LUstruct, grid, stat, info);
+	    }	
 	} 
 
     // #pragma omp parallel  
