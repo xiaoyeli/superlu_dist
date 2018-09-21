@@ -126,7 +126,7 @@ c2cpp_GetAWPM.o: c2cpp_GetAWPM.cpp
 	$(CC) $(CFLAGS) $(CDEFS) $(BLASDEF) -I$(INCLUDEDIR) -c $< $(VERBOSE)
 
 .cpp.o:
-	$(CPP) $(CPPFLAGS) $(CDEFS) $(BLASDEF) -I$(INCLUDEDIR) -c $< $(VERBOSE)
+	$(CXX) $(CXXFLAGS) $(CPPFLAGS) $(CDEFS) $(BLASDEF) -I$(INCLUDEDIR) -c $< $(VERBOSE)
 
 .f.o:
 	$(FORTRAN) $(FFLAGS) -c $< $(VERBOSE)
