@@ -795,7 +795,11 @@ void dlsum_fmod_inv
 			stat[thread_id]->utime[SOL_GEMM] += t2;
 #endif		
 
+#ifdef _OPENMP
 			thread_id1 = omp_get_thread_num ();
+#else
+			thread_id1 = 0;
+#endif
 			rtemp_loc = &rtemp[sizertemp* thread_id1];
 			for (lb=0;lb<nlb;lb++){
 				lk = lloc[lb+idx_n];
@@ -1196,7 +1200,11 @@ void dlsum_fmod_inv_master
 #endif	
 		}	
 			// TOC(t3, t1);
+#ifdef _OPENMP
 		thread_id1 = omp_get_thread_num ();
+#else
+                thread_id1 = 0;
+#endif
 
 
 
@@ -1623,7 +1631,11 @@ void dlsum_bmod_inv
 
 	}else{ 
 	
+#ifdef _OPENMP
 		thread_id1 = omp_get_thread_num ();
+#else
+                thread_id1 = 0;
+#endif
 		rtemp_loc = &rtemp[sizertemp* thread_id1];
 
 		for (ub = 0; ub < nub; ++ub) {
