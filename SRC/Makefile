@@ -119,9 +119,6 @@ pdgstrf.o: dscatter.c dlook_ahead_update.c dSchCompUdt-2Ddynamic.c pdgstrf.c
 pzgstrf.o: zscatter.c zlook_ahead_update.c zSchCompUdt-2Ddynamic.c pzgstrf.c
 	$(CC) $(CFLAGS) $(CDEFS) $(BLASDEF) -I$(INCLUDEDIR) -c pzgstrf.c $(VERBOSE)
 
-c2cpp_GetAWPM.o: c2cpp_GetAWPM.cpp
-	$(CXX) $(CXXFLAGS) -I$(INCLUDEDIR) -o $@ -c $<
-
 .c.o:
 	$(CC) $(CFLAGS) $(CDEFS) $(BLASDEF) -I$(INCLUDEDIR) -c $< $(VERBOSE)
 

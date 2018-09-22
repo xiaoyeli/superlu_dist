@@ -257,7 +257,7 @@ void LUstructFree(LUstruct_t *LUstruct)
  */
 void
 countnz_dist(const int_t n, int_t *xprune,
-	     int64_t *nnzL, int64_t *nnzU, 
+	     int_t *nnzL, int_t *nnzU, 
 	     Glu_persist_t *Glu_persist, Glu_freeable_t *Glu_freeable)
 {
     int_t  fnz, fsupc, i, j, nsuper;

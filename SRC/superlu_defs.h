@@ -717,7 +717,7 @@ extern int_t symbfact_SubInit(fact_t, void *, int_t, int_t, int_t, int_t,
 extern int_t symbfact_SubXpand(int_t, int_t, int_t, MemType, int_t *,
 			       Glu_freeable_t *);
 extern int_t symbfact_SubFree(Glu_freeable_t *);
-extern void    countnz_dist (const int_t, int_t *, int64_t *, int64_t *,
+extern void    countnz_dist (const int_t, int_t *, int_t *, int_t *,
 			     Glu_persist_t *, Glu_freeable_t *);
 extern int64_t fixupL_dist (const int_t, const int_t *, Glu_persist_t *,
 				  Glu_freeable_t *);

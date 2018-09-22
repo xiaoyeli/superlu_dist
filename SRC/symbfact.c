@@ -179,7 +179,7 @@ int_t symbfact
     } /* for j ... */
 
     countnz_dist(min_mn, xprune, &nnzL, &nnzU, Glu_persist, Glu_freeable);
-    Glu_freeable->nnzLU=nnzL + nnzU - min_mn;	
+    Glu_freeable->nnzLU = nnzL + nnzU - min_mn;	
     /* Apply perm_r to L; Compress LSUB array. */
     nnzLSUB = fixupL_dist(min_mn, perm_r, Glu_persist, Glu_freeable);
 
