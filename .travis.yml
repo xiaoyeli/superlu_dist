@@ -9,6 +9,7 @@ sudo: required
 branches:
   only:
   - master
+  - trisolve
 
 notifications:
   slack: 
@@ -39,7 +40,7 @@ git:
 
 before_install:
   - export BLUE="\033[34;1m"
-  - mkdir installDir
+  - mkdir -p installDir
 
   - printf "${BLUE} GC; Installing gcc-6 via apt\n"
   - sudo apt-get update
@@ -66,12 +67,17 @@ before_install:
   - export BLAS_LIB=/usr/lib/libblas/libblas.so
   - printf "${BLUE} GC; Done installing BLASfrom apt\n"
 
+  - printf "${BLUE} GC; Installing LAPACKfrom apt\n"
+  - sudo apt-get install liblapack-dev
+  - export LAPACK_LIB=/usr/lib/liblapack.so
+  - printf "${BLUE} GC; Done installing LAPACKfrom apt\n"
+
   - printf "${BLUE} GC; Installing ParMetis-4.0 from source\n"
   - cd $TRAVIS_BUILD_DIR/installDir
   - wget http://glaros.dtc.umn.edu/gkhome/fetch/sw/parmetis/parmetis-4.0.3.tar.gz
   - tar -xf parmetis-4.0.3.tar.gz
   - cd parmetis-4.0.3/
-  - mkdir install
+  - mkdir -p install
   - make config shared=1 cc=mpicc cxx=mpic++ prefix=$PWD/install
   - make install > make_parmetis_install.log 2>&1
   - printf "${BLUE} GC; Done installing ParMetis-4.0 from source\n"
@@ -80,19 +86,23 @@ install:
   - export BLUE="\033[34;1m"
   - printf "${BLUE} GC; Installing superlu_dist from source\n"
   - cd $TRAVIS_BUILD_DIR
-  - mkdir build
-  - cd build
+  - rm -rf build
+  - mkdir -p build
+  - cd build 
   - |
     cmake .. \
     -DTPL_PARMETIS_INCLUDE_DIRS="$TRAVIS_BUILD_DIR/installDir/parmetis-4.0.3/metis/include;$TRAVIS_BUILD_DIR/installDir/parmetis-4.0.3/install/include" \
     -DTPL_PARMETIS_LIBRARIES="$TRAVIS_BUILD_DIR/installDir/parmetis-4.0.3/install/lib/libparmetis.so" \
-    -DCMAKE_C_FLAGS="-std=c99 -DPRNTlevel=0 -DPROFlevel=0 -DDEBUGlevel=0" \
+    -DCMAKE_C_FLAGS="-std=c11 -DPRNTlevel=1 -DPROFlevel=1 -DDEBUGlevel=0" \
+    -DCMAKE_CXX_FLAGS="-Ofast -std=c++11 -DAdd_ -DRELEASE" \
     -DTPL_BLAS_LIBRARIES="$BLAS_LIB" \
+    -DTPL_LAPACK_LIBRARIES="$LAPACK_LIB" \
     -Denable_blaslib=OFF \
     -DBUILD_SHARED_LIBS=OFF \
-    -DCMAKE_C_COMPILER=cc \
+    -DCMAKE_C_COMPILER=mpicc \
+    -DCMAKE_CXX_COMPILER=mpic++ \
     -DCMAKE_INSTALL_PREFIX=. \
-    -DCMAKE_BUILD_TYPE=Release \
+    -DCMAKE_BUILD_TYPE=Debug \
     -DCMAKE_VERBOSE_MAKEFILE:BOOL=OFF
   - make
   - make install

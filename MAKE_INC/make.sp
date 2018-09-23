@@ -21,11 +21,13 @@ PLAT		= _sp
 #
 #  The name of the libraries to be created/linked to
 #
-DSuperLUroot 	= ${HOME}/Release_Codes/SuperLU_DIST_4.2
-DSUPERLULIB   	= $(DSuperLUroot)/lib/libsuperlu_dist_4.2.a
+SuperLUroot 	= ${HOME}/Release_Codes/SuperLU_DIST_4.2
+DSUPERLULIB   	= $(SuperLUroot)/lib/libsuperlu_dist_4.2.a
+INCLUDEDIR   	= $(SuperLUroot)/SRC
 #
 BLASDEF	     	= -DUSE_VENDOR_BLAS
 BLASLIB      	= -lessl
+LAPACKLIB	= 
 #MPILIB		= -L/usr/lpp/ppe.poe/lib -lmpi
 #PERFLIB     	= -L/vol1/VAMPIR/lib -lVT
 
@@ -44,7 +46,8 @@ I_PARMETIS := -I${PARMETIS_DIR}/include -I${PARMETIS_DIR}/metis/include
 FLIBS	 	=
 
 # Define all the libraries
-LIBS            = $(DSUPERLULIB) $(BLASLIB) $(PARMETISLIB) $(METISLIB) $(FLIBS)
+LIBS            = $(DSUPERLULIB) $(BLASLIB) $(PARMETISLIB) $(METISLIB) \
+		  $(LAPACKLIB) $(FLIBS)
 
 #
 #  The archiver and the flag(s) to use when building archive (library)

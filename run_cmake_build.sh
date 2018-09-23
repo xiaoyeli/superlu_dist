@@ -15,7 +15,7 @@ then
     -DTPL_PARMETIS_LIBRARIES="${PARMETIS_BUILD_DIR}/libparmetis/libparmetis.a;${PARMETIS_BUILD_DIR}/libmetis/libmetis.a" \
     -DCMAKE_C_FLAGS="-std=c99 -fPIC -DPRNTlevel=1" \
     -DCMAKE_Fortran_COMPILER=ftn \
-    -Denable_blaslib=OFF \
+    -DTPL_ENABLE_BLASLIB=OFF \
     -DTPL_BLAS_LIBRARIES="-mkl" \
     -DBUILD_SHARED_LIBS=OFF \
     -DCMAKE_INSTALL_PREFIX=.
@@ -30,7 +30,7 @@ then
     cmake .. \
     -DTPL_PARMETIS_INCLUDE_DIRS="${PARMETIS_ROOT}/include;${PARMETIS_ROOT}/metis/include" \
     -DTPL_PARMETIS_LIBRARIES="${PARMETIS_BUILD_DIR}/libparmetis/libparmetis.a;${PARMETIS_BUILD_DIR}/libmetis/libmetis.a" \
-    -Denable_blaslib=OFF \
+    -DTPL_ENABLE_BLASLIB=OFF \
     -DTPL_BLAS_LIBRARIES="-mkl" \
     -DCMAKE_Fortran_COMPILER=ftn \
     -DCMAKE_C_FLAGS="-std=c99 -fPIC -DPRNTlevel=1" \
@@ -48,8 +48,6 @@ then
   export PARMETIS_ROOT=~/lib/static/parmetis-4.0.3 
   export PARMETIS_BUILD_DIR=${PARMETIS_ROOT}/build/Linux-x86_64
   echo "ParMetis root: $PARMETIS_ROOT"
-  export COMBBLAS_ROOT=~/Cori/KNL/combinatorial-blas-2.0/CombBLAS
-  export COMBBLAS_BUILD_DIR=${COMBBLAS_ROOT}/_build
   cmake .. \
     -DTPL_PARMETIS_INCLUDE_DIRS="${PARMETIS_ROOT}/include;${PARMETIS_ROOT}/metis/include" \
     -DTPL_PARMETIS_LIBRARIES="${PARMETIS_BUILD_DIR}/libparmetis/libparmetis.a;${PARMETIS_BUILD_DIR}/libmetis/libmetis.a" \
@@ -60,13 +58,14 @@ OOT}/Applications/BipartiteMatchings" \
     -DCMAKE_C_COMPILER=mpicc \
     -DCMAKE_CXX_COMPILER=mpicxx \
     -DCMAKE_CXX_FLAGS="-std=c++11" \
-    -Denable_blaslib=OFF \
-    -Denable_combblaslib=OFF \
+    -DTPL_ENABLE_BLASLIB=OFF \
+    -DTPL_ENABLE_COMBBLASLIB=OFF \
     -DBUILD_SHARED_LIBS=OFF \
     -DCMAKE_INSTALL_PREFIX=.
 fi
-#   -Denable_parmetislib=OFF
-#    -DXSDK_INDEX_SIZE=64 \
+#   -DXSDK_INDEX_SIZE=64 \
+#   -DTPL_ENABLE_LAPACKLIB=OFF
+#   -DTPL_ENABLE_PARMETISLIB=OFF
 
 # make VERBOSE=1
 # make test

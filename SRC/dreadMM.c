@@ -143,7 +143,7 @@ dreadMM_dist(FILE *fp, int_t *m, int_t *n, int_t *nonz,
     /* 4/ Read triplets of values */
     for (nnz = 0, nz = 0; nnz < *nonz; ++nnz) {
 #ifdef _LONGINT
-	j = fscanf(fp, "%lld%lld%lf\n", &row[nz], &col[nz], &val[nz]);
+	j = fscanf(fp, IFMT IFMT "%lf\n", &row[nz], &col[nz], &val[nz]);
 #else
 	j = fscanf(fp, "%d%d%lf\n", &row[nz], &col[nz], &val[nz]);
 #endif

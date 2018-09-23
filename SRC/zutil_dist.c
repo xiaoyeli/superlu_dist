@@ -279,6 +279,125 @@ zCreate_SuperNode_Matrix_dist(SuperMatrix *L, int_t m, int_t n, int_t nnz,
 
 }
 
+/**** The following utilities are added per request of SUNDIALS ****/
+
+/*! \brief Clone: Allocate memory for a new matrix B, which is of the same type
+ *  and shape as A.
+ *  The clone operation would copy all the non-pointer structure members like
+ *  nrow, ncol, Stype, Dtype, Mtype from A and allocate a new nested Store
+ *  structure. It would also copy nnz_loc, m_loc, fst_row from A->Store 
+ *  into B->Store. It does not copy the matrix entries, row pointers,
+ *  or column indices.
+ */
+void zClone_CompRowLoc_Matrix_dist(SuperMatrix *A, SuperMatrix *B)
+{
+    NRformat_loc  *Astore, *Bstore;
+
+    B->Stype = A->Stype;
+    B->Dtype = A->Dtype;
+    B->Mtype = A->Mtype;
+    B->nrow  = A->nrow;;
+    B->ncol  = A->ncol;
+    Astore   = (NRformat_loc *) A->Store;
+    B->Store = (void *) SUPERLU_MALLOC( sizeof(NRformat_loc) );
+    if ( !(B->Store) ) ABORT("SUPERLU_MALLOC fails for B->Store");
+    Bstore = (NRformat_loc *) B->Store;
+
+    Bstore->nnz_loc = Astore->nnz_loc;
+    Bstore->m_loc = Astore->m_loc;
+    Bstore->fst_row = Astore->fst_row;
+    if ( !(Bstore->nzval = (doublecomplex *) doublecomplexMalloc_dist(Bstore->nnz_loc)) )
+	ABORT("doublecomplexMalloc_dist fails for Bstore->nzval");
+    if ( !(Bstore->colind = (int_t *) intMalloc_dist(Bstore->nnz_loc)) )
+	ABORT("intMalloc_dist fails for Bstore->colind");
+    if ( !(Bstore->rowptr = (int_t *) intMalloc_dist(Bstore->m_loc + 1)) )
+	ABORT("intMalloc_dist fails for Bstore->rowptr");
+
+    return;
+}
+
+/* \brief Copy: Call the clone operation and then copies all entries,
+ *  row pointers, and column indices of a matrix into another matrix of
+ *  the same type, B_{i,j}=A_{i,j}, for i,j=1,...,n
+ */
+void zCopy_CompRowLoc_Matrix_dist(SuperMatrix *A, SuperMatrix *B)
+{
+    NRformat_loc  *Astore, *Bstore;
+
+    zClone_CompRowLoc_Matrix_dist(A, B);
+
+    Astore = (NRformat_loc *) A->Store;
+    Bstore = (NRformat_loc *) B->Store;
+
+    memcpy(Bstore->nzval, Astore->nzval, Astore->nnz_loc * sizeof(doublecomplex));
+    memcpy(Bstore->colind, Astore->colind, Astore->nnz_loc * sizeof(int_t));
+    memcpy(Bstore->rowptr, Astore->rowptr, (Astore->m_loc+1) * sizeof(int_t));
+
+    return;
+}
+
+/*! \brief Sets all entries of a matrix to zero, A_{i,j}=0, for i,j=1,..,n */
+void zZero_CompRowLoc_Matrix_dist(SuperMatrix *A)
+{
+    doublecomplex zero = {0.0, 0.0};
+    NRformat_loc  *Astore = A->Store;
+    doublecomplex *aval;
+    int_t i;
+
+    aval = (doublecomplex *) Astore->nzval;
+    for (i = 0; i < Astore->nnz_loc; ++i) aval[i] = zero;
+
+    return;
+}
+
+/*! \brief Scale and add I: scales a matrix and adds an identity.
+ *  A_{i,j} = c * A_{i,j} + \delta_{i,j} for i,j=1,...,n and
+ *  \delta_{i,j} is the Kronecker delta.
+ */
+void zScaleAddId_CompRowLoc_Matrix_dist(SuperMatrix *A, doublecomplex c)
+{
+    doublecomplex one = {1.0, 0.0};
+    NRformat_loc  *Astore = A->Store;
+    doublecomplex *aval = (doublecomplex *) Astore->nzval;
+    int i, j;
+    doublecomplex temp;
+
+    for (i = 0; i < Astore->m_loc; ++i) { /* Loop through each row */
+        for (j = Astore->rowptr[i]; j < Astore->rowptr[i+1]; ++j) {
+            if ( (Astore->fst_row + i) == Astore->colind[j] ) {  /* diagonal */
+                zz_mult(&temp, &aval[j], &c);
+		z_add(&aval[j], &temp, &one);
+            } else {
+                zz_mult(&temp, &aval[j], &c);
+		aval[j] = temp;
+	   }
+        }
+    }
+
+    return;
+}
+
+/*! \brief Scale and add: adds a scalar multiple of one matrix to another.
+ *  A_{i,j} = c * A_{i,j} + B_{i,j}$ for i,j=1,...,n
+ */
+void zScaleAdd_CompRowLoc_Matrix_dist(SuperMatrix *A, SuperMatrix *B, doublecomplex c)
+{
+    NRformat_loc  *Astore = A->Store;
+    NRformat_loc  *Bstore = B->Store;
+    doublecomplex *aval = (doublecomplex *) Astore->nzval, *bval = (doublecomplex *) Bstore->nzval;
+    int_t i;
+    doublecomplex temp;
+
+    for (i = 0; i < Astore->nnz_loc; ++i) { /* Loop through each nonzero */
+        zz_mult (&temp, &aval[i], &c);
+	z_add (&aval[i], &temp, &bval[i]);
+    }
+
+    return;
+}
+
+
+/**** Other utilities ****/
 void
 zGenXtrue_dist(int_t n, int_t nrhs, doublecomplex *x, int_t ldx)
 {
@@ -406,6 +525,61 @@ void zPrintLblocks(int iam, int_t nsupers, gridinfo_t *grid,
     PrintInt10("fmod", k, Llu->fmod);
     
 } /* ZPRINTLBLOCKS */
+
+
+
+/*! \Dump the factored matrix L using matlab triple-let format
+ */
+void zDumpLblocks(int iam, int_t nsupers, gridinfo_t *grid,
+		  Glu_persist_t *Glu_persist, LocalLU_t *Llu)
+{
+    register int c, extra, gb, j, i, lb, nsupc, nsupr, len, nb, ncb;
+    register int_t k, mycol, r;
+    int_t *xsup = Glu_persist->xsup;
+    int_t *index;
+    doublecomplex *nzval;
+	char filename[256];
+	FILE *fp, *fopen();	
+ 
+	// assert(grid->npcol*grid->nprow==1);
+	
+	snprintf(filename, sizeof(filename), "%s-%d", "L", iam);    
+    printf("Dumping L factor to --> %s\n", filename);
+ 	if ( !(fp = fopen(filename, "w")) ) {
+			ABORT("File open failed");
+		}
+     ncb = nsupers / grid->npcol;
+    extra = nsupers % grid->npcol;
+    mycol = MYCOL( iam, grid );
+    if ( mycol < extra ) ++ncb;
+    for (lb = 0; lb < ncb; ++lb) {
+	index = Llu->Lrowind_bc_ptr[lb];
+	if ( index ) { /* Not an empty column */
+	    nzval = Llu->Lnzval_bc_ptr[lb];
+	    nb = index[0];
+	    nsupr = index[1];
+	    gb = lb * grid->npcol + mycol;
+	    nsupc = SuperSize( gb );
+	    for (c = 0, k = BC_HEADER, r = 0; c < nb; ++c) {
+		len = index[k+1];
+		
+		for (j = 0; j < nsupc; ++j) {
+		for (i=0; i<len; ++i){
+			fprintf(fp, IFMT IFMT " %e\n", index[k+LB_DESCRIPTOR+i]+1, xsup[gb]+j+1, (double)iam);
+#if 0		
+			fprintf(fp, IFMT IFMT " %e %e\n", index[k+LB_DESCRIPTOR+i]+1, xsup[gb]+j+1, nzval[r +i+ j*nsupr].r,nzval[r +i+ j*nsupr].i);
+#endif		
+		}
+		}
+		k += LB_DESCRIPTOR + len;
+		r += len;
+	    }
+	}	
+    }
+ 	fclose(fp);
+ 	
+} /* zDumpLblocks */
+
 
 
 /*! \brief Print the blocks in the factored matrix U.

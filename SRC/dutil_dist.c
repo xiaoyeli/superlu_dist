@@ -280,6 +280,123 @@ dCreate_SuperNode_Matrix_dist(SuperMatrix *L, int_t m, int_t n, int_t nnz,
 
 }
 
+/**** The following utilities are added per request of SUNDIALS ****/
+
+/*! \brief Clone: Allocate memory for a new matrix B, which is of the same type
+ *  and shape as A.
+ *  The clone operation would copy all the non-pointer structure members like
+ *  nrow, ncol, Stype, Dtype, Mtype from A and allocate a new nested Store
+ *  structure. It would also copy nnz_loc, m_loc, fst_row from A->Store 
+ *  into B->Store. It does not copy the matrix entries, row pointers,
+ *  or column indices.
+ */
+void dClone_CompRowLoc_Matrix_dist(SuperMatrix *A, SuperMatrix *B)
+{
+    NRformat_loc  *Astore, *Bstore;
+
+    B->Stype = A->Stype;
+    B->Dtype = A->Dtype;
+    B->Mtype = A->Mtype;
+    B->nrow  = A->nrow;;
+    B->ncol  = A->ncol;
+    Astore   = (NRformat_loc *) A->Store;
+    B->Store = (void *) SUPERLU_MALLOC( sizeof(NRformat_loc) );
+    if ( !(B->Store) ) ABORT("SUPERLU_MALLOC fails for B->Store");
+    Bstore = (NRformat_loc *) B->Store;
+
+    Bstore->nnz_loc = Astore->nnz_loc;
+    Bstore->m_loc = Astore->m_loc;
+    Bstore->fst_row = Astore->fst_row;
+    if ( !(Bstore->nzval = (double *) doubleMalloc_dist(Bstore->nnz_loc)) )
+	ABORT("doubleMalloc_dist fails for Bstore->nzval");
+    if ( !(Bstore->colind = (int_t *) intMalloc_dist(Bstore->nnz_loc)) )
+	ABORT("intMalloc_dist fails for Bstore->colind");
+    if ( !(Bstore->rowptr = (int_t *) intMalloc_dist(Bstore->m_loc + 1)) )
+	ABORT("intMalloc_dist fails for Bstore->rowptr");
+
+    return;
+}
+
+/* \brief Copy: Call the clone operation and then copies all entries,
+ *  row pointers, and column indices of a matrix into another matrix of
+ *  the same type, B_{i,j}=A_{i,j}, for i,j=1,...,n
+ */
+void dCopy_CompRowLoc_Matrix_dist(SuperMatrix *A, SuperMatrix *B)
+{
+    NRformat_loc  *Astore, *Bstore;
+
+    dClone_CompRowLoc_Matrix_dist(A, B);
+
+    Astore = (NRformat_loc *) A->Store;
+    Bstore = (NRformat_loc *) B->Store;
+
+    memcpy(Bstore->nzval, Astore->nzval, Astore->nnz_loc * sizeof(double));
+    memcpy(Bstore->colind, Astore->colind, Astore->nnz_loc * sizeof(int_t));
+    memcpy(Bstore->rowptr, Astore->rowptr, (Astore->m_loc+1) * sizeof(int_t));
+
+    return;
+}
+
+/*! \brief Sets all entries of a matrix to zero, A_{i,j}=0, for i,j=1,..,n */
+void dZero_CompRowLoc_Matrix_dist(SuperMatrix *A)
+{
+    double zero = 0.0;
+    NRformat_loc  *Astore = A->Store;
+    double *aval;
+    int_t i;
+
+    aval = (double *) Astore->nzval;
+    for (i = 0; i < Astore->nnz_loc; ++i) aval[i] = zero;
+
+    return;
+}
+
+/*! \brief Scale and add I: scales a matrix and adds an identity.
+ *  A_{i,j} = c * A_{i,j} + \delta_{i,j} for i,j=1,...,n and
+ *  \delta_{i,j} is the Kronecker delta.
+ */
+void dScaleAddId_CompRowLoc_Matrix_dist(SuperMatrix *A, double c)
+{
+    double one = 1.0;
+    NRformat_loc  *Astore = A->Store;
+    double *aval = (double *) Astore->nzval;
+    int i, j;
+    double temp;
+
+    for (i = 0; i < Astore->m_loc; ++i) { /* Loop through each row */
+        for (j = Astore->rowptr[i]; j < Astore->rowptr[i+1]; ++j) {
+            if ( (Astore->fst_row + i) == Astore->colind[j] ) {  /* diagonal */
+                temp = aval[j] * c;
+                aval[j] = temp + one;
+            } else {
+                aval[j] *= c;
+	   }
+        }
+    }
+
+    return;
+}
+
+/*! \brief Scale and add: adds a scalar multiple of one matrix to another.
+ *  A_{i,j} = c * A_{i,j} + B_{i,j}$ for i,j=1,...,n
+ */
+void dScaleAdd_CompRowLoc_Matrix_dist(SuperMatrix *A, SuperMatrix *B, double c)
+{
+    NRformat_loc  *Astore = A->Store;
+    NRformat_loc  *Bstore = B->Store;
+    double *aval = (double *) Astore->nzval, *bval = (double *) Bstore->nzval;
+    int_t i;
+    double temp;
+
+    for (i = 0; i < Astore->nnz_loc; ++i) { /* Loop through each nonzero */
+        aval[i] = c * aval[i] + bval[i];
+    }
+
+    return;
+}
+
+
+/**** Other utilities ****/
 void
 dGenXtrue_dist(int_t n, int_t nrhs, double *x, int_t ldx)
 {
@@ -412,6 +529,61 @@ void dPrintLblocks(int iam, int_t nsupers, gridinfo_t *grid,
 } /* DPRINTLBLOCKS */
 
 
+
+/*! \Dump the factored matrix L using matlab triple-let format
+ */
+void dDumpLblocks(int iam, int_t nsupers, gridinfo_t *grid,
+		  Glu_persist_t *Glu_persist, LocalLU_t *Llu)
+{
+    register int c, extra, gb, j, i, lb, nsupc, nsupr, len, nb, ncb;
+    register int_t k, mycol, r;
+    int_t *xsup = Glu_persist->xsup;
+    int_t *index;
+    double *nzval;
+	char filename[256];
+	FILE *fp, *fopen();	
+ 
+	// assert(grid->npcol*grid->nprow==1);
+	
+	snprintf(filename, sizeof(filename), "%s-%d", "L", iam);    
+    printf("Dumping L factor to --> %s\n", filename);
+ 	if ( !(fp = fopen(filename, "w")) ) {
+			ABORT("File open failed");
+		}
+     ncb = nsupers / grid->npcol;
+    extra = nsupers % grid->npcol;
+    mycol = MYCOL( iam, grid );
+    if ( mycol < extra ) ++ncb;
+    for (lb = 0; lb < ncb; ++lb) {
+	index = Llu->Lrowind_bc_ptr[lb];
+	if ( index ) { /* Not an empty column */
+	    nzval = Llu->Lnzval_bc_ptr[lb];
+	    nb = index[0];
+	    nsupr = index[1];
+	    gb = lb * grid->npcol + mycol;
+	    nsupc = SuperSize( gb );
+	    for (c = 0, k = BC_HEADER, r = 0; c < nb; ++c) {
+		len = index[k+1];
+		
+		for (j = 0; j < nsupc; ++j) {
+		for (i=0; i<len; ++i){
+			fprintf(fp, IFMT IFMT " %e\n", index[k+LB_DESCRIPTOR+i]+1, xsup[gb]+j+1, (double)iam);
+#if 0		
+			fprintf(fp, IFMT IFMT " %e\n", index[k+LB_DESCRIPTOR+i]+1, xsup[gb]+j+1, nzval[r +i+ j*nsupr]);
+#endif		
+		}
+		}
+		k += LB_DESCRIPTOR + len;
+		r += len;
+	    }
+	}	
+    }
+ 	fclose(fp);
+ 	
+} /* dDumpLblocks */
+
+
+
 /*! \brief Print the blocks in the factored matrix U.
  */
 void dPrintUblocks(int iam, int_t nsupers, gridinfo_t *grid, 
@@ -480,7 +652,7 @@ GenXtrueRHS(int nrhs, SuperMatrix *A, Glu_persist_t *Glu_persist,
     int_t *supno, *xsup, *lxsup;
     double *x, *bb;
     NCformat *Astore;
-    double   *Aval;
+    double   *aval;
 
     n = A->ncol;
     *ldb = 0;
@@ -490,7 +662,7 @@ GenXtrueRHS(int nrhs, SuperMatrix *A, Glu_persist_t *Glu_persist,
     iam = grid->iam;
     myrow = MYROW( iam, grid );
     Astore = (NCformat *) A->Store;
-    Aval = (double *) Astore->nzval;
+    aval = (double *) Astore->nzval;
     lb = CEILING( nsupers, grid->nprow ) + 1;
     if ( !(lxsup = intMalloc_dist(lb)) )
 	ABORT("Malloc fails for lxsup[].");
@@ -523,7 +695,7 @@ GenXtrueRHS(int nrhs, SuperMatrix *A, Glu_persist_t *Glu_persist,
 	    if ( myrow == gbrow ) {
 		rel = irow - xsup[gb];
 		lb = LBi( gb, grid );
-		bb[lxsup[lb] + rel] += Aval[i] * x[j];
+		bb[lxsup[lb] + rel] += aval[i] * x[j];
 	    }
 	}
 

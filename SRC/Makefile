@@ -34,7 +34,7 @@ ALLAUX 	= sp_ienv.o etree.o sp_colorder.o get_perm_c.o \
 	  pxerr_dist.o superlu_timer.o symbfact.o \
 	  psymbfact.o psymbfact_util.o get_perm_c_parmetis.o mc64ad_dist.o \
 	  static_schedule.o xerr_dist.o smach_dist.o dmach_dist.o \
-	  superlu_dist_version.o
+	  superlu_dist_version.o TreeInterface.o
 
 ifeq "${ACC}" "GPU"
 ALLAUX += cublas_utils.o
@@ -56,7 +56,7 @@ ZSLUSRC	= dcomplex_dist.o zlangs_dist.o zgsequ_dist.o zlaqgs_dist.o \
 #
 # Routines for double precision parallel SuperLU
 DPLUSRC = pdgssvx.o pdgssvx_ABglobal.o \
-	  dreadhb.o dreadrb.o dreadtriple.o dreadMM.o \
+	  dreadhb.o dreadrb.o dreadtriple.o dreadMM.o dbinary_io.o \
 	  pdgsequ.o pdlaqgs.o dldperm_dist.o pdlangs.o pdutil.o \
 	  pdsymbfact_distdata.o ddistribute.o pddistribute.o \
 	  pdgstrf.o pdgstrf2.o pdGetDiagU.o \
@@ -66,7 +66,7 @@ DPLUSRC = pdgssvx.o pdgssvx_ABglobal.o \
 #
 # Routines for double complex parallel SuperLU
 ZPLUSRC = pzgssvx.o pzgssvx_ABglobal.o \
-	  zreadhb.o zreadrb.o zreadtriple.o zreadMM.o \
+	  zreadhb.o zreadrb.o zreadtriple.o zreadMM.o zbinary_io.o\
 	  pzgsequ.o pzlaqgs.o zldperm_dist.o pzlangs.o pzutil.o \
 	  pzsymbfact_distdata.o zdistribute.o pzdistribute.o \
 	  pzgstrf.o pzgstrf2.o pzGetDiagU.o \
@@ -81,6 +81,11 @@ ifeq ($(XSDK_INDEX_SIZE),64)
 		printf "#define XSDK_INDEX_SIZE 64\n" >> superlu_dist_config.h
 else
 		printf "/* #define XSDK_INDEX_SIZE 64 */\n" >> superlu_dist_config.h
+endif
+ifeq ($(HAVE_LAPACK),TRUE)
+		printf "#define HAVE_LAPACK TRUE\n" >> superlu_dist_config.h
+else
+		printf "/* #define HAVE_LAPACK TRUE */\n" >> superlu_dist_config.h
 endif
 ifeq ($(HAVE_PARMETIS),TRUE)
 		printf "#define HAVE_PARMETIS TRUE\n" >> superlu_dist_config.h
@@ -114,11 +119,11 @@ pdgstrf.o: dscatter.c dlook_ahead_update.c dSchCompUdt-2Ddynamic.c pdgstrf.c
 pzgstrf.o: zscatter.c zlook_ahead_update.c zSchCompUdt-2Ddynamic.c pzgstrf.c
 	$(CC) $(CFLAGS) $(CDEFS) $(BLASDEF) -I$(INCLUDEDIR) -c pzgstrf.c $(VERBOSE)
 
-c2cpp_GetAWPM.o: c2cpp_GetAWPM.cpp
-	$(CXX) $(CXXFLAGS) -I$(INCLUDEDIR) -o $@ -c $<
-
 .c.o:
 	$(CC) $(CFLAGS) $(CDEFS) $(BLASDEF) -I$(INCLUDEDIR) -c $< $(VERBOSE)
+
+.cpp.o:
+	$(CXX) $(CXXFLAGS) $(CPPFLAGS) $(CDEFS) $(BLASDEF) -I$(INCLUDEDIR) -c $< $(VERBOSE)
 
 .f.o:
 	$(FORTRAN) $(FFLAGS) -c $< $(VERBOSE)

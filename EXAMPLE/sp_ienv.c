@@ -35,7 +35,7 @@ at the top-level directory.
 
     Arguments   
     =========   
-
+ 
     ISPEC   (input) int
             Specifies the parameter to be returned as the value of SP_IENV_DIST.   
             = 1: the panel size w; a panel consists of w consecutive
@@ -100,7 +100,7 @@ sp_ienv_dist(int_t ispec)
                 return(atoi(ttemp));
             }
             else
-            return 128;
+            return 128;	
 
 #endif
         case 6: 

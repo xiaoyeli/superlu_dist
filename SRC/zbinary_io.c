@@ -8,7 +8,7 @@ zread_binary(FILE *fp, int_t *m, int_t *n, int_t *nnz,
     int nnz_read;
     fread(n, isize, 1, fp);
     fread(nnz, isize, 1, fp);
-    printf("fread n %d\tnnz %d\n", *n, *nnz);
+    printf("fread n " IFMT "\tnnz " IFMT "\n", *n, *nnz);
     *m = *n;
     *colptr = intMalloc_dist(*n+1);
     *rowind = intMalloc_dist(*nnz);
@@ -33,7 +33,7 @@ zwrite_binary(int_t n, int_t nnz,
     fwrite(colptr, isize, n+1, fp1);
     fwrite(rowind, isize, nnz, fp1);
     nnz_written = fwrite(values, dsize, 2*nnz, fp1);
-    printf("n %d, # of doublecomplex: %d\n", n, nnz);
+    printf("n " IFMT ", # of doublecomplex: " IFMT "\n", n, nnz);
     printf("dump binary file ... # of doubles fwrite: %d\n", nnz_written);
     assert(nnz_written == 2*nnz);
     fclose(fp1);

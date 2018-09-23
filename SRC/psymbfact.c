@@ -586,10 +586,10 @@ float symbfact_dist
     stat_loc[21] = PS.fill_pelt[3];
     stat_loc[22] = PS.fill_pelt[5];
     
-    MPI_Reduce (stat_loc, stat_glob, 23, MPI_FLOAT, 
-		MPI_SUM, 0, (*symb_comm));
-    MPI_Reduce (&(stat_loc[5]), mem_glob, 14, MPI_FLOAT, 
-		MPI_MAX, 0, (*symb_comm));
+    MPI_Allreduce (stat_loc, stat_glob, 23, MPI_FLOAT, 
+		MPI_SUM,  (*symb_comm));
+    MPI_Allreduce (&(stat_loc[5]), mem_glob, 14, MPI_FLOAT, 
+		MPI_MAX,  (*symb_comm));
     fill_rcmd = (int_t) mem_glob[10];
     PS.fill_pelt[0] = stat_glob[19];
     PS.fill_pelt[1] = mem_glob[12];
@@ -628,26 +628,27 @@ float symbfact_dist
     if (stat_msgs_g[6] == 0) stat_msgs_g[6] = 1;
     if (stat_msgs_g[7] == 0) stat_msgs_g[7] = 1;
     
+	Pslu_freeable->nnzLU=(long long) stat_glob[0]+(long long) stat_glob[1];					
     if (!iam) {
       nnzL   = (long long) stat_glob[0]; nnzU  = (long long) stat_glob[1];
       nsuper = (int_t) stat_glob[2];
       szLGr  = (int_t) stat_glob[3]; szUGr = (int_t) stat_glob[4];
-      printf("\tMax szBlk          %ld\n", (long long) VInfo.maxSzBlk);
+      printf("\tMax szBlk          %ld\n", (long) VInfo.maxSzBlk);
 #if ( PRNTlevel>=2 )
       printf("\t relax_gen %.2f, relax_curSep %.2f, relax_seps %.2f\n",
 	     PS.relax_gen, PS.relax_curSep, PS.relax_seps);
 #endif
       printf("LONG_MAX %ld\n", LONG_MAX);
       printf("\tParameters: fill mem %ld fill pelt %ld\n",
-	     (long long) sp_ienv_dist(6), (long long) PS.fill_par);
-      printf("\tNonzeros in L       %ld\n", nnzL);
-      printf("\tNonzeros in U       %ld\n", nnzU);
+	     (long) sp_ienv_dist(6), (long) PS.fill_par);
+      printf("\tNonzeros in L       %lld\n", nnzL);
+      printf("\tNonzeros in U       %lld\n", nnzU);
       nnzLU = nnzL + nnzU;
-      printf("\tnonzeros in L+U-I   %ld\n", nnzLU);
-      printf("\tNo of supers   %ld\n", (long long) nsuper);
-      printf("\tSize of G(L)   %ld\n", (long long) szLGr);
-      printf("\tSize of G(U)   %ld\n", (long long) szUGr);
-      printf("\tSize of G(L+U) %ld\n", (long long) szLGr+szUGr);
+      printf("\tnonzeros in L+U-I   %lld\n", nnzLU);
+      printf("\tNo of supers   %ld\n", (long) nsuper);
+      printf("\tSize of G(L)   %ld\n", (long) szLGr);
+      printf("\tSize of G(U)   %ld\n", (long) szUGr);
+      printf("\tSize of G(L+U) %ld\n", (long) szLGr+szUGr);
 
       printf("\tParSYMBfact (MB)      :\tL\\U MAX %.2f\tAVG %.2f\n",
 	     mem_glob[0]*1e-6, 

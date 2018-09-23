@@ -1,0 +1,24 @@
+module load itac/2017.up1
+module swap intel/18.0.0.128 intel/17.0.3.191
+export LD_PRELOAD=$VT_ROOT/slib/libVT.so
+export VT_LOGFILE_FORMAT=STFSINGLE
+export I_MPI_PMI_LIBRARY=/usr/lib64/slurmpmi/libpmi.so
+
+
+export OMP_NUM_THREADS=1
+export KMP_NUM_THREADS=1
+export MKL_NUM_THREADS=1
+export NSUP=128
+export NREL=20
+
+srun -trace -n 32 ./EXAMPLE/pddrive -r 4 -c 8 ./EXAMPLE/torso3.mtx 
+
+traceanalyzer pddrive.single.stf
+
+
+
+# export I_MPI_FABRICS=ofi
+# export I_MPI_OFI_PROVIDER=gni
+# export I_MPI_OFI_LIBRARY=/usr/common/software/libfabric/1.5.0/gnu/lib/libfabric.so
+
+

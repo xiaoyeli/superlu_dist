@@ -1,0 +1,1 @@
+0 amplxe-cl -data-limit=0 -collect hotspots -start-paused -knob sampling-interval=1 -r Vtune_np1_mrhs -trace-mpi -- ./EXAMPLE/pddrive -c 1 -r 1 ./EXAMPLE/torso3.mtx

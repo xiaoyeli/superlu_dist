@@ -12,13 +12,14 @@ at the top-level directory.
  * \brief Definitions which are precision-neutral
  *
  * <pre>
- * -- Distributed SuperLU routine (version 5.4) --
+ * -- Distributed SuperLU routine (version 6.0) --
  * Lawrence Berkeley National Lab, Univ. of California Berkeley.
  * November 1, 2007
  *
  * Modified:
  *     Feburary 20, 2008
  *     October 11, 2014
+ *     September 18, 2018  version 6.0
  * </pre>
  */
 
@@ -42,11 +43,16 @@ at the top-level directory.
 #include <stdio.h>
 #include <limits.h>
 #include <string.h>
-
-/* Following is for vtune */
-#if 0
-#include <ittnotify.h>
-#define USE_VTUNE
+//#include <stdatomic.h>
+#include <math.h>
+#include <stdint.h>
+// /* Following is for vtune */
+// #if 0
+// #include <ittnotify.h>
+// #define USE_VTUNE
+// #endif
+#if ( VTUNE>=1 )
+#include <ittnotify.h>			 
 #endif
 
 /*************************************************************************
@@ -62,10 +68,10 @@ at the top-level directory.
  *   #endif
  * Versions 4.x and earlier do not include a #define'd version numbers.
  */
-#define SUPERLU_DIST_MAJOR_VERSION     5
-#define SUPERLU_DIST_MINOR_VERSION     4
+#define SUPERLU_DIST_MAJOR_VERSION     6
+#define SUPERLU_DIST_MINOR_VERSION     0
 #define SUPERLU_DIST_PATCH_VERSION     0
-#define SUPERLU_DIST_RELEASE_DATE      "June 1, 2018"
+#define SUPERLU_DIST_RELEASE_DATE      "September 18, 2018"
 
 #include "superlu_dist_config.h"
 /* Define my integer size int_t */
@@ -74,9 +80,9 @@ at the top-level directory.
   /*#undef int   Revert back to int of default size. */
   #define mpi_int_t   MPI_SHORT
 #elif defined (_LONGINT)
-  typedef long long int int_t;
+  typedef int64_t int_t;
   #define mpi_int_t   MPI_LONG_LONG_INT
-  #define IFMT "%lld"
+  #define IFMT "%ld"
 #else /* Default */
   typedef int int_t;
   #define mpi_int_t   MPI_INT
@@ -173,7 +179,13 @@ at the top-level directory.
 #define GSUM     20 
 #define Xk       21
 #define Yk       22
-#define LSUM     23
+#define LSUM     23    
+
+ 
+static const int BC_L=1;	/* MPI tag for x in L-solve*/	
+static const int RD_L=2;	/* MPI tag for lsum in L-solve*/	
+static const int BC_U=3;	/* MPI tag for x in U-solve*/
+static const int RD_U=4;	/* MPI tag for lsum in U-solve*/	
 
 /* 
  * Communication scopes
@@ -221,6 +233,10 @@ at the top-level directory.
 #define SuperLU_timer_  SuperLU_timer_dist_
 #define LOG2(x)   (log10((double) x) / log10(2.0))
 
+#define MIN(a,b) ((a) <= (b) ? (a) : (b))
+#define MAX(a,b) ((a) >= (b) ? (a) : (b))
+
+
 
 #if ( VAMPIR>=1 ) 
 #define VT_TRACEON    VT_traceon()
@@ -242,6 +258,20 @@ at the top-level directory.
 #define SUPERLU_DIST_EXPORT
 #endif /* MSVC */
 #endif /* SUPERLU_DIST_EXPORT */
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+
+#ifndef max
+    #define cmax(a,b) ((a) > (b) ? (a) : (b))
+#endif
+
+#ifdef __cplusplus
+  }
+#endif
+
 
 /***********************************************************************
  * New data types
@@ -370,6 +400,7 @@ typedef struct {
     LU_space_t MemModel; /* 0 - system malloc'd; 1 - user provided */
     int_t     *llvl;     /* keep track of level in L for level-based ILU */
     int_t     *ulvl;     /* keep track of level in U for level-based ILU */
+    int64_t nnzLU;   /* number of nonzeros in L+U*/
 } Glu_freeable_t;
 
 
@@ -579,6 +610,7 @@ typedef struct {
 typedef struct {
     fact_t        Fact;
     yes_no_t      Equil;
+    yes_no_t      DiagInv;
     colperm_t     ColPerm;
     trans_t       Trans;
     IterRefine_t  IterRefine;
@@ -610,7 +642,7 @@ typedef struct {
     float for_lu;
     float total;
     int_t expansions;
-    long long int nnzL, nnzU;
+    int64_t nnzL, nnzU;
 } superlu_dist_mem_usage_t;
 
 /* 
@@ -685,10 +717,9 @@ extern int_t symbfact_SubInit(fact_t, void *, int_t, int_t, int_t, int_t,
 extern int_t symbfact_SubXpand(int_t, int_t, int_t, MemType, int_t *,
 			       Glu_freeable_t *);
 extern int_t symbfact_SubFree(Glu_freeable_t *);
-extern void    countnz_dist (const int_t, int_t *, 
-			     long long int *, long long int *,
+extern void    countnz_dist (const int_t, int_t *, int_t *, int_t *,
 			     Glu_persist_t *, Glu_freeable_t *);
-extern long long int fixupL_dist (const int_t, const int_t *, Glu_persist_t *,
+extern int64_t fixupL_dist (const int_t, const int_t *, Glu_persist_t *,
 				  Glu_freeable_t *);
 extern int_t   *TreePostorder_dist (int_t, int_t *);
 extern float   smach_dist(char *);
@@ -722,9 +753,13 @@ extern void  pxerr_dist (char *, gridinfo_t *, int_t);
 extern void  PStatInit(SuperLUStat_t *);
 extern void  PStatFree(SuperLUStat_t *);
 extern void  PStatPrint(superlu_dist_options_t *, SuperLUStat_t *, gridinfo_t *);
-extern void  log_memory(long long, SuperLUStat_t *);
+extern void  log_memory(int64_t, SuperLUStat_t *);
 extern void  print_memorylog(SuperLUStat_t *, char *);
 extern int   superlu_dist_GetVersionNumber(int *, int *, int *);
+extern void  quickSort( int_t*, int_t, int_t, int_t);
+extern void  quickSortM( int_t*, int_t, int_t, int_t, int_t, int_t);
+extern int_t partition( int_t*, int_t, int_t, int_t);
+extern int_t partitionM( int_t*, int_t, int_t, int_t, int_t, int_t);
 
 /* Prototypes for parallel symbolic factorization */
 extern float symbfact_dist
@@ -778,6 +813,47 @@ extern void  PrintInt32(char *, int, int *);
 extern int   file_PrintInt10(FILE *, char *, int_t, int_t *);
 extern int   file_PrintInt32(FILE *, char *, int, int *);
 extern int   file_PrintLong10(FILE *, char *, int_t, int_t *);
+
+
+/* Routines for Async_tree communication*/
+
+#ifndef __SUPERLU_ASYNC_TREE /* allow multiple inclusions */
+#define __SUPERLU_ASYNC_TREE
+typedef void* BcTree;
+typedef void* RdTree;
+typedef void* StdList;
+#endif
+
+// typedef enum {NO, YES}  yes_no_t;
+extern RdTree   RdTree_Create(MPI_Comm comm, int* ranks, int rank_cnt, int msgSize, double rseed, char precision);  
+extern void   	RdTree_Destroy(RdTree Tree, char precision);
+extern void 	RdTree_SetTag(RdTree Tree, int tag, char precision);
+extern yes_no_t RdTree_IsRoot(RdTree Tree, char precision);
+extern void 	RdTree_forwardMessageSimple(RdTree Tree, void* localBuffer, int msgSize, char precision);
+extern void 	RdTree_allocateRequest(RdTree Tree, char precision);
+extern int  	RdTree_GetDestCount(RdTree Tree, char precision);
+extern int  	RdTree_GetMsgSize(RdTree Tree, char precision);
+extern void 	RdTree_waitSendRequest(RdTree Tree, char precision);
+
+extern BcTree   BcTree_Create(MPI_Comm comm, int* ranks, int rank_cnt, int msgSize, double rseed, char precision);  
+extern void   	BcTree_Destroy(BcTree Tree, char precision);
+extern void 	BcTree_SetTag(BcTree Tree, int tag, char precision);
+extern yes_no_t BcTree_IsRoot(BcTree Tree, char precision);
+extern void 	BcTree_forwardMessageSimple(BcTree Tree, void* localBuffer, int msgSize, char precision);
+extern void 	BcTree_allocateRequest(BcTree Tree, char precision);
+extern int 		BcTree_getDestCount(BcTree Tree, char precision); 
+extern int 		BcTree_GetMsgSize(BcTree Tree, char precision); 
+extern void 	BcTree_waitSendRequest(BcTree Tree, char precision);
+ 
+extern StdList 	StdList_Init();
+extern void 	StdList_Pushback(StdList lst, int_t dat);
+extern void 	StdList_Pushfront(StdList lst, int_t dat);
+extern int_t 		StdList_Popfront(StdList lst);
+extern yes_no_t StdList_Find(StdList lst, int_t dat);
+extern int_t 	   	StdList_Size(StdList lst);
+yes_no_t 		StdList_Empty(StdList lst);
+
+
 
 #ifdef __cplusplus
   }

@@ -1,0 +1,41 @@
+############################################################################
+#
+#  Program:         SuperLU_DIST
+#
+#  Module:          make.inc
+#
+#  Purpose:         Top-level Definitions
+#
+#  Creation date:   March 1, 2016	version 5.0.0
+#
+#  Modified:	    
+#		    
+#
+############################################################################
+#
+#  The name of the libraries to be created/linked to
+#
+SuperLUroot	= ./build
+DSUPERLULIB   	= $(SuperLUroot)/SRC/libsuperlu_dist.a
+
+LIBS		= $(DSUPERLULIB) /opt/intel/compilers_and_libraries_2017.2.174/linux/mkl/lib/intel64/libmkl_intel_lp64.a /opt/intel/compilers_and_libraries_2017.2.174/linux/mkl/lib/intel64/libmkl_sequential.a /opt/intel/compilers_and_libraries_2017.2.174/linux/mkl/lib/intel64/libmkl_core.a /global/homes/l/liuyangz/Edison/my_software/parmetis-4.0.3/build/Linux-x86_64/libparmetis/libparmetis.a /global/homes/l/liuyangz/Edison/my_software/parmetis-4.0.3/build/Linux-x86_64/libmetis/libmetis.a
+
+#
+#  The archiver and the flag(s) to use when building archive (library)
+#  If your system has no ranlib, set RANLIB = echo.
+#
+ARCH         = /usr/bin/ar
+ARCHFLAGS    = cr
+RANLIB       = /usr/bin/ranlib
+
+CC           = /opt/cray/pe/craype/2.5.12/bin/cc
+CFLAGS 	     = -O3 -DNDEBUG -I/global/homes/l/liuyangz/Edison/my_software/parmetis-4.0.3/metis/include -I/global/homes/l/liuyangz/Edison/my_software/parmetis-4.0.3/include  -DUSE_VENDOR_BLAS -qopenmp -std=c11 -DPRNTlevel=1 -DPROFlevel=1 -DDEBUGlevel=0
+# CFLAGS       += -D_LONGINT   ## 64-bit integer
+# CFLAGS       += -D
+# CFLAGS       +=  
+NOOPTS       = -O0
+FORTRAN	     = /opt/cray/pe/craype/2.5.12/bin/ftn
+CPP          =/opt/cray/pe/craype/2.5.12/bin/CC
+CPPFLAGS     = -Ofast -std=c++11 -DAdd_ 
+LOADER       = $(CPP)
+LOADOPTS     = -Wl,-rpath,-qopenmp  -qopenmp 
