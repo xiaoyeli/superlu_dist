@@ -15,9 +15,10 @@ at the top-level directory.
  * general N-by-N matrix A using the LU factors computed previously.
  *
  * <pre>
- * -- Distributed SuperLU routine (version 2.3) --
+ * -- Distributed SuperLU routine (version 6.0) --
  * Lawrence Berkeley National Lab, Univ. of California Berkeley.
  * October 15, 2008
+ * September 18, 2018  version 6.0
  * </pre>
  */
 #include <math.h>
@@ -521,127 +522,133 @@ pdReDistribute_X_to_B(int_t n, double *B, int_t m_loc, int_t ldb, int_t fst_row,
 
 
 
-	void
-pdCompute_Diag_Inv(int_t n, LUstruct_t *LUstruct,gridinfo_t *grid, SuperLUStat_t *stat, int *info)
+/*! \brief
+ *
+ * <pre>
+ * Purpose
+ * =======
+ *   Compute the inverse of the diagonal blocks of the L and U
+ *   triangular matrices.
+ * </pre>
+ */
+void
+pdCompute_Diag_Inv(int_t n, LUstruct_t *LUstruct,gridinfo_t *grid,
+                   SuperLUStat_t *stat, int *info)
 {
-	Glu_persist_t *Glu_persist = LUstruct->Glu_persist;
-	LocalLU_t *Llu = LUstruct->Llu;
+#ifdef HAVE_LAPACK
+    Glu_persist_t *Glu_persist = LUstruct->Glu_persist;
+    LocalLU_t *Llu = LUstruct->Llu;
 
-	double *lusup;
-	double *recvbuf, *tempv;
-	double *Linv;/* Inverse of diagonal block */
-	double *Uinv;/* Inverse of diagonal block */
+    double *lusup;
+    double *recvbuf, *tempv;
+    double *Linv;/* Inverse of diagonal block */
+    double *Uinv;/* Inverse of diagonal block */
 
-	int_t  kcol, krow, mycol, myrow;
-	int_t  i, ii, il, j, jj, k, lb, ljb, lk, lptr, luptr;
-	int_t  nb, nlb,nlb_nodiag, nub, nsupers;
-	int_t  *xsup, *supno, *lsub, *usub;
-	int_t  *ilsum;    /* Starting position of each supernode in lsum (LOCAL)*/
-	int    Pc, Pr, iam;
-	int    knsupc, nsupr;
-	int    ldalsum;   /* Number of lsum entries locally owned. */
-	int    maxrecvsz, p, pi;
-	int_t  **Lrowind_bc_ptr;
-	double **Lnzval_bc_ptr;
-	double **Linv_bc_ptr;
-	double **Uinv_bc_ptr;
-	int INFO;
-	double t;
+    int_t  kcol, krow, mycol, myrow;
+    int_t  i, ii, il, j, jj, k, lb, ljb, lk, lptr, luptr;
+    int_t  nb, nlb,nlb_nodiag, nub, nsupers;
+    int_t  *xsup, *supno, *lsub, *usub;
+    int_t  *ilsum;    /* Starting position of each supernode in lsum (LOCAL)*/
+    int    Pc, Pr, iam;
+    int    knsupc, nsupr;
+    int    ldalsum;   /* Number of lsum entries locally owned. */
+    int    maxrecvsz, p, pi;
+    int_t  **Lrowind_bc_ptr;
+    double **Lnzval_bc_ptr;
+    double **Linv_bc_ptr;
+    double **Uinv_bc_ptr;
+    int INFO;
+    double t;
 
     double one = 1.0;
     double zero = 0.0;
 	
 #if ( PROFlevel>=1 )
-	t = SuperLU_timer_();
+    t = SuperLU_timer_();
 #endif 
 
 #if ( PRNTlevel>=1 )
-	if(grid->iam==0){
-		printf("computing inverse of diagonal blocks...\n");
-		fflush(stdout);
-	}
+    if ( grid->iam==0 ) {
+	printf("computing inverse of diagonal blocks...\n");
+	fflush(stdout);
+    }
 #endif
 	
-	/*
-	 * Initialization.
-	 */
-	iam = grid->iam;
-	Pc = grid->npcol;
-	Pr = grid->nprow;
-	myrow = MYROW( iam, grid );
-	mycol = MYCOL( iam, grid );
-	xsup = Glu_persist->xsup;
-	supno = Glu_persist->supno;
-	nsupers = supno[n-1] + 1;
-	Lrowind_bc_ptr = Llu->Lrowind_bc_ptr;
-	Linv_bc_ptr = Llu->Linv_bc_ptr;
-	Uinv_bc_ptr = Llu->Uinv_bc_ptr;
-	Lnzval_bc_ptr = Llu->Lnzval_bc_ptr;
-	nlb = CEILING( nsupers, Pr ); /* Number of local block rows. */
+    /*
+     * Initialization.
+     */
+    iam = grid->iam;
+    Pc = grid->npcol;
+    Pr = grid->nprow;
+    myrow = MYROW( iam, grid );
+    mycol = MYCOL( iam, grid );
+    xsup = Glu_persist->xsup;
+    supno = Glu_persist->supno;
+    nsupers = supno[n-1] + 1;
+    Lrowind_bc_ptr = Llu->Lrowind_bc_ptr;
+    Linv_bc_ptr = Llu->Linv_bc_ptr;
+    Uinv_bc_ptr = Llu->Uinv_bc_ptr;
+    Lnzval_bc_ptr = Llu->Lnzval_bc_ptr;
+    nlb = CEILING( nsupers, Pr ); /* Number of local block rows. */
+    
+    Llu->inv = 1;
 
+    /*---------------------------------------------------
+     * Compute inverse of L(lk,lk).
+     *---------------------------------------------------*/
 
-	Llu->inv = 1;
+     for (k = 0; k < nsupers; ++k) {
+         krow = PROW( k, grid );
+	 if ( myrow == krow ) {
+	     lk = LBi( k, grid );    /* local block number */
+	     kcol = PCOL( k, grid );
+	     if ( mycol == kcol ) { /* diagonal process */
 
-	/*---------------------------------------------------
-	 * Compute inverse of L(lk,lk).
-	 *---------------------------------------------------*/
+	     	  lk = LBj( k, grid ); /* Local block number, column-wise. */
+		  lsub = Lrowind_bc_ptr[lk];
+		  lusup = Lnzval_bc_ptr[lk];
+		  Linv = Linv_bc_ptr[lk];
+		  Uinv = Uinv_bc_ptr[lk];
+		  nsupr = lsub[1];	
+		  knsupc = SuperSize( k );
 
-	for (k = 0; k < nsupers; ++k) {
-		krow = PROW( k, grid );
-		if ( myrow == krow ) {
-			lk = LBi( k, grid );    /* local block number */
-			kcol = PCOL( k, grid );
-			if ( mycol == kcol ) { /* diagonal process */
-
-				lk = LBj( k, grid ); /* Local block number, column-wise. */
-				lsub = Lrowind_bc_ptr[lk];
-				lusup = Lnzval_bc_ptr[lk];
-				Linv = Linv_bc_ptr[lk];
-				Uinv = Uinv_bc_ptr[lk];
-				nsupr = lsub[1];	
-				knsupc = SuperSize( k );
-
-				for (j=0 ; j<knsupc; j++){
-					for (i=0 ; i<knsupc; i++){
-						Linv[j*knsupc+i] = zero;	
-						Uinv[j*knsupc+i] = zero;	
-					}
-				}				
+		  for (j=0 ; j<knsupc; j++){
+		      for (i=0 ; i<knsupc; i++){
+		  	  Linv[j*knsupc+i] = zero;	
+			  Uinv[j*knsupc+i] = zero;	
+		      }
+	          }
 				
-				for (j=0 ; j<knsupc; j++){
-					Linv[j*knsupc+j] = one;
-					for (i=j+1 ; i<knsupc; i++){
-						Linv[j*knsupc+i] = lusup[j*nsupr+i];	
-					}
-					for (i=0 ; i<j+1; i++){
-						Uinv[j*knsupc+i] = lusup[j*nsupr+i];	
-					}
-				}
+	   	  for (j=0 ; j<knsupc; j++){
+		      Linv[j*knsupc+j] = one;
+		      for (i=j+1 ; i<knsupc; i++){
+		          Linv[j*knsupc+i] = lusup[j*nsupr+i];	
+		      }
+		      for (i=0 ; i<j+1; i++){
+			  Uinv[j*knsupc+i] = lusup[j*nsupr+i];	
+	              }
+ 		  }
 
-#ifdef _CRAY
-				ABORT("Cray blas dtrtri not implemented\n");
-#elif defined (USE_VENDOR_BLAS)
-				dtrtri_("L","U",&knsupc,Linv,&knsupc,&INFO);		  	
-				dtrtri_("U","N",&knsupc,Uinv,&knsupc,&INFO);	
-#else
-				ABORT("internal blas dtrtri not implemented\n");
-#endif			
+		  /* Triangular inversion */
+   		  dtrtri_("L","U",&knsupc,Linv,&knsupc,&INFO);
 
-			}
-		}
-	}
+		  dtrtri_("U","N",&knsupc,Uinv,&knsupc,&INFO);
+
+	    } /* end if (mycol === kcol) */
+	} /* end if (myrow === krow) */
+    } /* end fo k = ... nsupers */
 
 #if ( PROFlevel>=1 )
-	if(grid->iam==0){
-		t = SuperLU_timer_() - t;
-		printf(".. L-diag_inv time\t%10.5f\n", t);
-		fflush(stdout);
-	}
+    if( grid->iam==0 ) {
+	t = SuperLU_timer_() - t;
+	printf(".. L-diag_inv time\t%10.5f\n", t);
+	fflush(stdout);
+    }
 #endif	
 
-	return;
+    return;
+#endif /* HAVE_LAPACK */
 }
-
 
 
 /*! \brief
@@ -807,7 +814,7 @@ pdgstrs(int_t n, LUstruct_t *LUstruct,
 	int_t TAG;
 	double t1_sol, t2_sol, t;
 #if ( DEBUGlevel>=2 )
-	int_t Ublocks = 0;
+    int_t Ublocks = 0;
 #endif
 
 	int_t gik,iklrow,fnz;
@@ -853,23 +860,23 @@ pdgstrs(int_t n, LUstruct_t *LUstruct,
 	
 #ifdef _OPENMP
 #pragma omp parallel default(shared)
-	{
-		if (omp_get_thread_num () == 0) {
-			num_thread = omp_get_num_threads ();
-		}
-	}
+    {
+    	if (omp_get_thread_num () == 0) {
+    		num_thread = omp_get_num_threads ();
+    	}
+    }
 #endif
 
 #if ( PRNTlevel>=1 )
-	if(grid->iam==0){
-		printf("num_thread: %5d\n",num_thread);
-		fflush(stdout);
-	}
+    if( grid->iam==0 ) {
+	printf("num_thread: %5d\n", num_thread);
+	fflush(stdout);
+    }
 #endif
 	
-	MPI_Barrier( grid->comm );
-	TIC(t1_sol);
-	t = SuperLU_timer_();
+    MPI_Barrier( grid->comm );
+    TIC(t1_sol);
+    t = SuperLU_timer_();
 
     /* Test input parameters. */
     *info = 0;
@@ -893,14 +900,14 @@ pdgstrs(int_t n, LUstruct_t *LUstruct,
     nsupers = supno[n-1] + 1;
     Lrowind_bc_ptr = Llu->Lrowind_bc_ptr;
     Lnzval_bc_ptr = Llu->Lnzval_bc_ptr;
-	Linv_bc_ptr = Llu->Linv_bc_ptr;
-	Uinv_bc_ptr = Llu->Uinv_bc_ptr;	
+    Linv_bc_ptr = Llu->Linv_bc_ptr;
+    Uinv_bc_ptr = Llu->Uinv_bc_ptr;	
     nlb = CEILING( nsupers, Pr ); /* Number of local block rows. */
 
-	stat->utime[SOL_COMM] = 0.0;
-	stat->utime[SOL_GEMM] = 0.0;
-	stat->utime[SOL_TRSM] = 0.0;
-	stat->utime[SOL_TOT] = 0.0;	
+    stat->utime[SOL_COMM] = 0.0;
+    stat->utime[SOL_GEMM] = 0.0;
+    stat->utime[SOL_TRSM] = 0.0;
+    stat->utime[SOL_TOT] = 0.0;	
 	
 #if ( DEBUGlevel>=1 )
     CHECK_MALLOC(iam, "Enter pdgstrs()");
@@ -918,12 +925,12 @@ pdgstrs(int_t n, LUstruct_t *LUstruct,
 	ABORT("Malloc fails for frecv[].");
     Llu->frecv = frecv;
 
-	if ( !(leaf_send = intMalloc_dist((CEILING( nsupers, Pr )+CEILING( nsupers, Pc ))*aln_i)) )												  
-		ABORT("Malloc fails for leaf_send[].");
-	nleaf_send=0;
-	if ( !(root_send = intMalloc_dist((CEILING( nsupers, Pr )+CEILING( nsupers, Pc ))*aln_i)) )
-		ABORT("Malloc fails for root_send[].");
-	nroot_send=0;
+    if ( !(leaf_send = intMalloc_dist((CEILING( nsupers, Pr )+CEILING( nsupers, Pc ))*aln_i)) )
+	ABORT("Malloc fails for leaf_send[].");
+    nleaf_send=0;
+    if ( !(root_send = intMalloc_dist((CEILING( nsupers, Pr )+CEILING( nsupers, Pc ))*aln_i)) )
+	ABORT("Malloc fails for root_send[].");
+    nroot_send=0;
 
 #ifdef _CRAY
     ftcs1 = _cptofcd("L", strlen("L"));
@@ -939,10 +946,8 @@ pdgstrs(int_t n, LUstruct_t *LUstruct,
     /* Allocate working storage. */
     knsupc = sp_ienv_dist(3);
     maxrecvsz = knsupc * nrhs + SUPERLU_MAX( XK_H, LSUM_H );
-	sizelsum = (((size_t)ldalsum)*nrhs + nlb*LSUM_H);
-	sizelsum = ((sizelsum + (aln_d - 1)) / aln_d) * aln_d;
-
-
+    sizelsum = (((size_t)ldalsum)*nrhs + nlb*LSUM_H);
+    sizelsum = ((sizelsum + (aln_d - 1)) / aln_d) * aln_d;
 	
 #ifdef _OPENMP
 	if ( !(lsum = (double*)SUPERLU_MALLOC(sizelsum*num_thread * sizeof(double))))
@@ -954,16 +959,16 @@ pdgstrs(int_t n, LUstruct_t *LUstruct,
 			lsum[thread_id*sizelsum+ii]=0;
 	}
 #else	
-	if ( !(lsum = (double*)SUPERLU_MALLOC(sizelsum*num_thread * sizeof(double))))
-		ABORT("Malloc fails for lsum[].");
-		for(ii=0;ii<sizelsum*num_thread;ii++)
-			lsum[ii]=0;
+    if ( !(lsum = (double*)SUPERLU_MALLOC(sizelsum*num_thread * sizeof(double))))
+  	    ABORT("Malloc fails for lsum[].");
+    for ( ii=0; ii < sizelsum*num_thread; ii++ )
+	lsum[ii]=0;
 #endif	
     if ( !(x = doubleCalloc_dist(ldalsum * nrhs + nlb * XK_H)) )
 	ABORT("Calloc fails for x[].");
 	
-	sizertemp=ldalsum * nrhs;
-	sizertemp = ((sizertemp + (aln_d - 1)) / aln_d) * aln_d;
+    sizertemp=ldalsum * nrhs;
+    sizertemp = ((sizertemp + (aln_d - 1)) / aln_d) * aln_d;
 #ifdef _OPENMP
 	if ( !(rtemp = (double*)SUPERLU_MALLOC(sizertemp*num_thread * sizeof(double))) )
 		ABORT("Malloc fails for rtemp[].");		
@@ -974,24 +979,25 @@ pdgstrs(int_t n, LUstruct_t *LUstruct,
 				rtemp[thread_id*sizertemp+ii]=0;
 	}
 #else	
-	if ( !(rtemp = (double*)SUPERLU_MALLOC(sizertemp*num_thread * sizeof(double))) )
-		ABORT("Malloc fails for rtemp[].");
-		for(ii=0;ii<sizertemp*num_thread;ii++)
-			rtemp[ii]=0;
+    if ( !(rtemp = (double*)SUPERLU_MALLOC(sizertemp*num_thread * sizeof(double))) )
+	ABORT("Malloc fails for rtemp[].");
+    for ( ii=0; ii<sizertemp*num_thread; ii++ )
+	rtemp[ii]=0;
 #endif	
 
-	if ( !(stat_loc = (SuperLUStat_t**) SUPERLU_MALLOC(num_thread*sizeof(SuperLUStat_t*))) )
-		ABORT("Malloc fails for stat_loc[].");
+    if ( !(stat_loc = (SuperLUStat_t**) SUPERLU_MALLOC(num_thread*sizeof(SuperLUStat_t*))) )
+	ABORT("Malloc fails for stat_loc[].");
 
-	for(i=0;i<num_thread;i++){
-		stat_loc[i] = (SuperLUStat_t*)SUPERLU_MALLOC(sizeof(SuperLUStat_t));
-		PStatInit(stat_loc[i]);
-	}
+    for ( i=0; i<num_thread; i++) {
+	stat_loc[i] = (SuperLUStat_t*)SUPERLU_MALLOC(sizeof(SuperLUStat_t));
+	PStatInit(stat_loc[i]);
+    }
 
 #if ( DEBUGlevel>=1 )   
     /* Dump the L factor using matlab triple-let format. */
-	dDumpLblocks(iam, nsupers, grid, Glu_persist, Llu);
-#endif   
+    dDumpLblocks(iam, nsupers, grid, Glu_persist, Llu);
+#endif
+
     /*---------------------------------------------------
      * Forward solve Ly = b.
      *---------------------------------------------------*/
@@ -1000,10 +1006,10 @@ pdgstrs(int_t n, LUstruct_t *LUstruct,
 			  ScalePermstruct, Glu_persist, grid, SOLVEstruct);
 
 #if ( PRNTlevel>=1 )
-	t = SuperLU_timer_() - t;
-	if ( !iam) printf(".. B to X redistribute time\t%8.4f\n", t);
-	fflush(stdout);
-	t = SuperLU_timer_();
+    t = SuperLU_timer_() - t;
+    if ( !iam) printf(".. B to X redistribute time\t%8.4f\n", t);
+    fflush(stdout);
+    t = SuperLU_timer_();
 #endif	
 
     /* Set up the headers in lsum[]. */
@@ -1075,8 +1081,6 @@ pdgstrs(int_t n, LUstruct_t *LUstruct,
 	fflush(stdout);
 #endif
 
-
-
 #if ( PRNTlevel>=1 )
 	t = SuperLU_timer_() - t;
 	if ( !iam) printf(".. Setup L-solve time\t%8.4f\n", t);
@@ -1084,7 +1088,6 @@ pdgstrs(int_t n, LUstruct_t *LUstruct,
 	MPI_Barrier( grid->comm );	
 	t = SuperLU_timer_();
 #endif
-
 
 #if ( VAMPIR>=1 )
 	// VT_initialize(); 
@@ -1095,7 +1098,6 @@ pdgstrs(int_t n, LUstruct_t *LUstruct,
 	__SSC_MARK(0x111);// start SDE tracing, note uses 2 underscores
 	__itt_resume(); // start VTune, again use 2 underscores
 #endif
-
 
 	/* ---------------------------------------------------------
 	   Solve the leaf nodes first by all the diagonal processes.
@@ -1672,7 +1674,7 @@ if(Llu->inv == 1){
 		 *
 		 * The Y components from the forward solve is already
 		 * on the diagonal processes.
-		 *---------------------------------------------------*/
+	 *---------------------------------------------------*/
 		 
 		 
 		/* Save the count to be altered so it can be used by
@@ -2287,13 +2289,13 @@ for (i=0;i<nroot_send;i++){
 		}
 #endif	
 
-		TOC(t2_sol,t1_sol);
-		stat->utime[SOLVE] = t2_sol;
+    TOC(t2_sol,t1_sol);
+    stat->utime[SOLVE] = t2_sol;
 
 #if ( DEBUGlevel>=1 )
-		CHECK_MALLOC(iam, "Exit pdgstrs()");
+    CHECK_MALLOC(iam, "Exit pdgstrs()");
 #endif
 
-		return;
-	} /* PDGSTRS */
+    return;
+} /* PDGSTRS */
 

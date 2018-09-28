@@ -198,6 +198,7 @@ int main(int argc, char *argv[])
 	options.DiagInv       = YES;
 #if 0
     options.RowPerm = NOROWPERM;
+    options.RowPerm = LargeDiag_AWPM;
     options.IterRefine = NOREFINE;
     options.ColPerm = NATURAL;
     options.Equil = NO; 

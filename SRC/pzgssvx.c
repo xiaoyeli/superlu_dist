@@ -13,7 +13,7 @@ at the top-level directory.
  * \brief Solves a system of linear equations A*X=B
  *
  * <pre>
- * -- Distributed SuperLU routine (version 5.1.3) --
+ * -- Distributed SuperLU routine (version 6.0) --
  * Lawrence Berkeley National Lab, Univ. of California Berkeley.
  * November 1, 2007
  * October 22, 2012
@@ -21,7 +21,8 @@ at the top-level directory.
  * April 5, 2015
  * December 31, 2015  version 4.3
  * December 31, 2016  version 5.1.3
- * April 10, 2018  version 5.3							  
+ * April 10, 2018  version 5.3
+ * September 18, 2018  version 6.0
  * </pre>
  */
 
@@ -319,8 +320,8 @@ at the top-level directory.
  *         o RowPerm (rowperm_t)
  *           Specifies how to permute rows of the matrix A.
  *           = NATURAL:   use the natural ordering.
- *           = LargeDiag_MC64: use the Duff/Koster algorithm to permute rows of
- *                        the original matrix to make the diagonal large
+ *           = LargeDiag_MC64: use the Duff/Koster algorithm to permute rows
+ *                        of the original matrix to make the diagonal large
  *                        relative to the off-diagonal.
  *           = LargeDiag_APWM: use the parallel approximate-weight perfect
  *                        matching to permute rows of the original matrix
@@ -544,14 +545,14 @@ pzgssvx(superlu_dist_options_t *options, SuperMatrix *A,
     float    GA_mem_use;    /* memory usage by global A */
     float    dist_mem_use; /* memory usage during distribution */
     superlu_dist_mem_usage_t num_mem_usage, symb_mem_usage;
-	long long int nnzLU;
-	int_t nnz_tot;
-	doublecomplex *nzval_a;
-	doublecomplex asum,asum_tot,lsum,lsum_tot;
-	int_t nsupers,nsupers_j;
-	int_t lk,k,knsupc,nsupr;
-	int_t  *lsub,*xsup;
-	doublecomplex *lusup;	
+    int64_t  nnzLU;
+    int_t    nnz_tot;
+    doublecomplex *nzval_a;
+    doublecomplex asum,asum_tot,lsum,lsum_tot;
+    int_t nsupers,nsupers_j;
+    int_t lk,k,knsupc,nsupr;
+    int_t  *lsub,*xsup;
+    doublecomplex *lusup;	
 #if ( PRNTlevel>= 2 )
     double   dmin, dsum, dprod;
 #endif
@@ -563,7 +564,6 @@ pzgssvx(superlu_dist_options_t *options, SuperMatrix *A,
     int   col, key; /* parameters for creating a new communicator */
     Pslu_freeable_t Pslu_freeable;
     float  flinfo;
-	int blas_flag;
 	
     /* Initialization. */
     m       = A->nrow;
@@ -1073,9 +1073,9 @@ pzgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 		    QuerySpace_dist(n, -iinfo, Glu_freeable, &symb_mem_usage);
 #if ( PRNTlevel>=1 )
 		    if ( !iam ) {
-		    	printf("\tNo of supers " IFMT "\n", (long long) Glu_persist->supno[n-1]+1);
-		    	printf("\tSize of G(L) " IFMT "\n", (long long) Glu_freeable->xlsub[n]);
-		    	printf("\tSize of G(U) " IFMT "\n", (long long) Glu_freeable->xusub[n]);
+		    	printf("\tNo of supers " IFMT "\n", Glu_persist->supno[n-1]+1);
+		    	printf("\tSize of G(L) " IFMT "\n", Glu_freeable->xlsub[n]);
+		    	printf("\tSize of G(U) " IFMT "\n", Glu_freeable->xusub[n]);
 		    	printf("\tint %d, short %d, float %d, double %d\n", 
 			       (int) sizeof(int_t), (int) sizeof(short),
         		       (int) sizeof(float), (int) sizeof(double));
@@ -1226,19 +1226,11 @@ pzgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 	print_options_dist(options);
 	fflush(stdout);
     }
- 	// if ( !iam )
 
-
-
-	printf(".. Ainfo mygid %5d   mysid %5d   nnz_loc %7d   sum_loc   %e lsum_loc   %e nnz %7d  nnzLU %7d sum %e  lsum %e  N %7d\n", iam_g,iam,Astore->rowptr[Astore->m_loc],asum.r+asum.i, lsum.r+lsum.i, nnz_tot,nnzLU,asum_tot.r+asum_tot.i,lsum_tot.r+lsum_tot.i,A->ncol);
-	
-	
+    printf(".. Ainfo mygid %5d   mysid %5d   nnz_loc " IFMT "  sum_loc  %e lsum_loc   %e nnz "IFMT " nnzLU %ld sum %e  lsum %e  N "IFMT "\n", iam_g,iam,Astore->rowptr[Astore->m_loc],asum.r+asum.i, lsum.r+lsum.i, nnz_tot,nnzLU,asum_tot.r+asum_tot.i,lsum_tot.r+lsum_tot.i,A->ncol);
 	fflush(stdout);
 #endif				
 			
- 			
-	
-		
 #if 0
 
 // #ifdef GPU_PROF
@@ -1408,19 +1400,9 @@ pzgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 	       For repeated call to pzgssvx(), no need to re-initialilze
 	       the Solve data & communication structures, unless a new
 	       factorization with Fact == DOFACT or SamePattern is asked for. */
-		if(options->DiagInv==YES){	
-
-	#ifdef _CRAY
-			  blas_flag=1;
-	#elif defined (USE_VENDOR_BLAS)
-			  blas_flag=2;
-	#else
-			  blas_flag=0;
-	#endif	
-			if(blas_flag==0)
-			ABORT("DiagInv doesn't works with internal blas\n");
-			pzCompute_Diag_Inv(n, LUstruct, grid, stat, info);
-		}	
+    	    if ( options->DiagInv==YES ) {
+		pzCompute_Diag_Inv(n, LUstruct, grid, stat, info);
+	    }	
 	} 
 
     // #pragma omp parallel  

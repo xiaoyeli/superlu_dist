@@ -29,7 +29,7 @@ include ../make.inc
 #
 # Precision independent routines
 #
-ALLAUX 	= global.o TreeInterface.o sp_ienv.o etree.o sp_colorder.o get_perm_c.o \
+ALLAUX 	= sp_ienv.o etree.o sp_colorder.o get_perm_c.o \
 	  colamd.o mmd.o comm.o memory.o util.o superlu_grid.o \
 	  pxerr_dist.o superlu_timer.o symbfact.o \
 	  psymbfact.o psymbfact_util.o get_perm_c_parmetis.o mc64ad_dist.o \
@@ -43,6 +43,7 @@ endif
 ifeq ($(HAVE_COMBBLAS),TRUE)
 ALLAUX += c2cpp_GetAWPM.o
 endif
+
 #
 # Routines literally taken from SuperLU, but renamed with suffix _dist
 #
@@ -75,11 +76,16 @@ ZPLUSRC = pzgssvx.o pzgssvx_ABglobal.o \
 all:  double complex16
 
 config_h:
-	rm -f superlu_dist_config.h							
+	rm -f superlu_dist_config.h
 ifeq ($(XSDK_INDEX_SIZE),64)
 		printf "#define XSDK_INDEX_SIZE 64\n" >> superlu_dist_config.h
 else
 		printf "/* #define XSDK_INDEX_SIZE 64 */\n" >> superlu_dist_config.h
+endif
+ifeq ($(HAVE_LAPACK),TRUE)
+		printf "#define HAVE_LAPACK TRUE\n" >> superlu_dist_config.h
+else
+		printf "/* #define HAVE_LAPACK TRUE */\n" >> superlu_dist_config.h
 endif
 ifeq ($(HAVE_PARMETIS),TRUE)
 		printf "#define HAVE_PARMETIS TRUE\n" >> superlu_dist_config.h
@@ -96,6 +102,7 @@ endif
 
 #config_h:
 #	cp -f superlu_dist_config_for_makefile.h superlu_dist_config.h
+
 double: config_h $(DSLUSRC) $(DPLUSRC) $(ALLAUX)
 	$(ARCH) $(ARCHFLAGS) $(DSUPERLULIB) \
 		$(DSLUSRC) $(DPLUSRC) $(ALLAUX)
@@ -112,14 +119,11 @@ pdgstrf.o: dscatter.c dlook_ahead_update.c dSchCompUdt-2Ddynamic.c pdgstrf.c
 pzgstrf.o: zscatter.c zlook_ahead_update.c zSchCompUdt-2Ddynamic.c pzgstrf.c
 	$(CC) $(CFLAGS) $(CDEFS) $(BLASDEF) -I$(INCLUDEDIR) -c pzgstrf.c $(VERBOSE)
 
-c2cpp_GetAWPM.o: c2cpp_GetAWPM.cpp
-	$(CXX) $(CXXFLAGS) -I$(INCLUDEDIR) -o $@ -c $<
-		
 .c.o:
 	$(CC) $(CFLAGS) $(CDEFS) $(BLASDEF) -I$(INCLUDEDIR) -c $< $(VERBOSE)
 
 .cpp.o:
-	$(CPP) $(CPPFLAGS) $(CDEFS) $(BLASDEF) -I$(INCLUDEDIR) -c $< $(VERBOSE)
+	$(CXX) $(CXXFLAGS) $(CPPFLAGS) $(CDEFS) $(BLASDEF) -I$(INCLUDEDIR) -c $< $(VERBOSE)
 
 .f.o:
 	$(FORTRAN) $(FFLAGS) -c $< $(VERBOSE)

@@ -19,7 +19,7 @@
 #define FTREE_LIMIT 8
 #endif
 
-namespace SuperLU_ASYNCOMM{
+namespace SuperLU_ASYNCOMM {
 
     // Basic data types
   typedef    int  Int;
@@ -141,10 +141,7 @@ namespace SuperLU_ASYNCOMM{
         virtual ModBTreeBcast2<T> * clone() const;
     };
 
-
-
-
-}//namespace SuperLU_ASYNCOMM
+} // namespace SuperLU_ASYNCOMM
 
 #include "TreeBcast_slu_impl.hpp"
 

@@ -13,10 +13,11 @@ at the top-level directory.
  * \brief  Distributed SuperLU data types and function prototypes
  *
  * <pre>
- * -- Distributed SuperLU routine (version 4.1) --
+ * -- Distributed SuperLU routine (version 6.0) --
  * Lawrence Berkeley National Lab, Univ. of California Berkeley.
  * November 1, 2007
  * April 5, 2015
+ * September 18, 2018  version 6.0
  * </pre>
  */
 
@@ -45,17 +46,18 @@ typedef struct {
 #define MAX_LOOKAHEADS 50
 typedef struct {
     int_t   **Lrowind_bc_ptr; /* size ceil(NSUPERS/Pc)                 */
-    doublecomplex  **Lnzval_bc_ptr;  /* size ceil(NSUPERS/Pc)                 */
-    doublecomplex  **Linv_bc_ptr;  /* size ceil(NSUPERS/Pc)                 */
-	int_t   **Lindval_loc_bc_ptr; /* size ceil(NSUPERS/Pc)  pointers to locations in Lrowind_bc_ptr and Lnzval_bc_ptr               */
-	int_t 	**Lrowind_bc_2_lsum; /* size ceil(NSUPERS/Pc)  map indices of Lrowind_bc_ptr to indices of lsum  */  
-    doublecomplex  **Uinv_bc_ptr;  /* size ceil(NSUPERS/Pc)     				*/
-	int_t   **Ufstnz_br_ptr;  /* size ceil(NSUPERS/Pr)                 */
+    doublecomplex **Lnzval_bc_ptr;  /* size ceil(NSUPERS/Pc)                 */
+    doublecomplex **Linv_bc_ptr;  /* size ceil(NSUPERS/Pc)                 */
+    int_t   **Lindval_loc_bc_ptr; /* size ceil(NSUPERS/Pc)  pointers to locations in Lrowind_bc_ptr and Lnzval_bc_ptr */
+    int_t   **Lrowind_bc_2_lsum; /* size ceil(NSUPERS/Pc)  map indices of Lrowind_bc_ptr to indices of lsum  */  
+    doublecomplex  **Uinv_bc_ptr;  /* size ceil(NSUPERS/Pc)     	*/
+    int_t   **Ufstnz_br_ptr;  /* size ceil(NSUPERS/Pr)                 */
     doublecomplex  **Unzval_br_ptr;  /* size ceil(NSUPERS/Pr)                 */
-	BcTree  *LBtree_ptr;       /* size ceil(NSUPERS/Pc)                */
-	RdTree  *LRtree_ptr;		  /* size ceil(NSUPERS/Pr)                */
-	BcTree  *UBtree_ptr;       /* size ceil(NSUPERS/Pc)                */
-	RdTree  *URtree_ptr;		  /* size ceil(NSUPERS/Pr)  			*/
+        /*-- Data structures used for broadcast and reduction trees. --*/
+    BcTree  *LBtree_ptr;       /* size ceil(NSUPERS/Pc)                */
+    RdTree  *LRtree_ptr;       /* size ceil(NSUPERS/Pr)                */
+    BcTree  *UBtree_ptr;       /* size ceil(NSUPERS/Pc)                */
+    RdTree  *URtree_ptr;       /* size ceil(NSUPERS/Pr)			*/
 #if 0
     int_t   *Lsub_buf;        /* Buffer for the remote subscripts of L */
     double  *Lval_buf;        /* Buffer for the remote nonzeros of L   */
@@ -126,7 +128,7 @@ typedef struct {
     int_t n;
     int_t nleaf;
     int_t nfrecvmod;
-	int_t inv; /* whether the diagonal block is inverted*/	
+    int_t inv; /* whether the diagonal block is inverted*/	
 } LocalLU_t;
 
 

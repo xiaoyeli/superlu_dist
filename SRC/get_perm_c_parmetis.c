@@ -148,7 +148,7 @@ get_perm_c_parmetis (SuperMatrix *A, int_t *perm_r, int_t *perm_c,
   colind = Astore->colind;
   
 #if ( PRNTlevel>=1 )
-  if ( !iam ) printf(".. Use parMETIS ordering on A'+A with %d sub-domains. sizeof(int_t) %d\n",
+  if ( !iam ) printf(".. Use parMETIS ordering on A'+A with %d sub-domains. sizeof(int_t) %lu\n",
 		     noDomains, sizeof(int_t));
 #endif
 

@@ -31,7 +31,7 @@ at the top-level directory.
 #include <getopt.h>
 #endif
 #include <math.h>
-#include "superlu_dist_config.h"					
+#include "superlu_dist_config.h"
 #include "superlu_zdefs.h"
 
 #define NTESTS 1 /*5*/      /* Number of test types */
@@ -319,8 +319,7 @@ int main(int argc, char *argv[])
 			options.Fact = fact;
 			if ( fact == SamePattern ) {
 			    // {L,U} not re-used in subsequent call to PDGSSVX.
-				zDestroy_Tree(n, &grid, &LUstruct);  				
-			    Destroy_LU(n, &grid, &LUstruct);
+				zDestroy_Tree(n, &grid, &LUstruct);  					    Destroy_LU(n, &grid, &LUstruct);
 			}
 
 		    } /* end if .. first time factor */
@@ -395,7 +394,7 @@ int main(int argc, char *argv[])
 		    }
 		    ScalePermstructFree(&ScalePermstruct);
 		    zDestroy_Tree(n, &grid, &LUstruct);  
-			Destroy_LU(n, &grid, &LUstruct);
+		    Destroy_LU(n, &grid, &LUstruct);
 		    LUstructFree(&LUstruct);
 		    if ( options.SolveInitialized ) {
 			zSolveFinalize(&options, &SOLVEstruct);
@@ -514,7 +513,7 @@ parse_command_line(int argc, char *argv[], int *nprow, int *npcol,
 		    genvstr = (char*) malloc((8+strlen(optarg))*sizeof(char));
 		    strcpy(genvstr, "N_GEMM=");
 		    strcat(genvstr, optarg);
-		    putenv(genvstr);		  
+		    putenv(genvstr);
 		    //printf("Reset min_gemm_gpu_offload env. variable to %d\n", c);
 	            break;
 	  case 's': *nrhs = atoi(optarg); 

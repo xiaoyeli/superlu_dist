@@ -91,8 +91,8 @@ int main(int argc, char *argv[])
 	    switch (c) {
 	      case 'h':
 		  printf("Options:\n");
-		  printf("\t-r <int>: process rows    (default %d)\n", nprow);
-		  printf("\t-c <int>: process columns (default %d)\n", npcol);
+		  printf("\t-r <int>: process rows    (default " IFMT ")\n", nprow);
+		  printf("\t-c <int>: process columns (default " IFMT ")\n", npcol);
 		  exit(0);
 		  break;
 	      case 'r': nprow = atoi(*cpp);
@@ -134,7 +134,7 @@ int main(int argc, char *argv[])
 	zreadhb_dist(iam, fp, &m, &n, &nnz, &a, &asub, &xa);
 	
 	printf("Input matrix file: %s\n", *cpp);
-	printf("\tDimension\t%dx%d\t # nonzeros %d\n", m, n, nnz);
+	printf("\tDimension\t" IFMT "x" IFMT "\t # nonzeros " IFMT "\n", m, n, nnz);
 	printf("\tProcess grid\t%d X %d\n", (int) grid.nprow, (int) grid.npcol);
 
 	/* Broadcast matrix A to the other PEs. */

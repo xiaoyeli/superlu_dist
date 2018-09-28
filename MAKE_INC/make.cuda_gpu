@@ -23,13 +23,19 @@ PLAT		= _sp
 #
 #  The name of the libraries to be created/linked to
 #
-DSuperLUroot 	= ${HOME}/Release_Codes/SuperLU_DIST_4.2
-DSUPERLULIB   	= $(DSuperLUroot)/lib/libsuperlu_dist_4.2.a
+SuperLUroot 	= ${HOME}/Release_Codes/SuperLU_DIST_4.2
+DSUPERLULIB   	= $(SuperLUroot)/lib/libsuperlu_dist_4.2.a
+INCLUDEDIR   	= $(SuperLUroot)/SRC
+
 #
 BLASDEF	     	= -DUSE_VENDOR_BLAS
 BLASLIB	        = ${MKL}
 #
+LAPACKLIB	= 
+# HAVE_LAPACK	= TRUE
+
 ################# parmetis 4.x.x, 32-bit integer ###########################
+#HAVE_PARMETIS = TRUE
 PARMETIS_DIR	:= ${HOME}/Carver/lib/parmetis-4.0.3
 ## parmetis 4.x.x, 64-bit integer
 # PARMETIS_DIR	:= ${HOME}/Carver/lib/parmetis-4.0.3_64
@@ -43,7 +49,8 @@ I_PARMETIS := -I${PARMETIS_DIR}/include -I${PARMETIS_DIR}/metis/include
 FLIBS	 	= 
 
 # Define all the libraries
-LIBS   	= $(DSUPERLULIB) $(PARMETISLIB) $(METISLIB) $(BLASLIB) $(FLIBS)
+LIBS   	= $(DSUPERLULIB) $(PARMETISLIB) $(METISLIB) $(BLASLIB) \
+	  $(LAPACKLIB) $(FLIBS)
 
 # Include directories for header files
 INCS	= ${I_PARMETIS}

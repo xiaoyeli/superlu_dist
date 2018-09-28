@@ -12,13 +12,14 @@ at the top-level directory.
  * \brief Definitions which are precision-neutral
  *
  * <pre>
- * -- Distributed SuperLU routine (version 5.4) --
+ * -- Distributed SuperLU routine (version 6.0) --
  * Lawrence Berkeley National Lab, Univ. of California Berkeley.
  * November 1, 2007
  *
  * Modified:
  *     Feburary 20, 2008
  *     October 11, 2014
+ *     September 18, 2018  version 6.0
  * </pre>
  */
 
@@ -50,6 +51,7 @@ at the top-level directory.
 #include <ittnotify.h>
 #define USE_VTUNE
 #endif
+
 /*************************************************************************
  * Constants
  **************************************************************************/
@@ -63,10 +65,10 @@ at the top-level directory.
  *   #endif
  * Versions 4.x and earlier do not include a #define'd version numbers.
  */
-#define SUPERLU_DIST_MAJOR_VERSION     5
-#define SUPERLU_DIST_MINOR_VERSION     4
+#define SUPERLU_DIST_MAJOR_VERSION     6
+#define SUPERLU_DIST_MINOR_VERSION     0
 #define SUPERLU_DIST_PATCH_VERSION     0
-#define SUPERLU_DIST_RELEASE_DATE      "June 1, 2018"
+#define SUPERLU_DIST_RELEASE_DATE      "September 18, 2018"
 
 #include "superlu_dist_config.h"
 /* Define my integer size int_t */
@@ -77,7 +79,7 @@ at the top-level directory.
 #elif defined (_LONGINT)
   typedef int64_t int_t;
   #define mpi_int_t   MPI_LONG_LONG_INT
-  #define IFMT "%lld"
+  #define IFMT "%ld"
 #else /* Default */
   typedef int int_t;
   #define mpi_int_t   MPI_INT
@@ -395,7 +397,7 @@ typedef struct {
     LU_space_t MemModel; /* 0 - system malloc'd; 1 - user provided */
     int_t     *llvl;     /* keep track of level in L for level-based ILU */
     int_t     *ulvl;     /* keep track of level in U for level-based ILU */
-	int64_t nnzLU;   /* number of nonzeros in L+U*/
+    int64_t nnzLU;   /* number of nonzeros in L+U*/
 } Glu_freeable_t;
 
 
@@ -712,7 +714,7 @@ extern int_t symbfact_SubInit(fact_t, void *, int_t, int_t, int_t, int_t,
 extern int_t symbfact_SubXpand(int_t, int_t, int_t, MemType, int_t *,
 			       Glu_freeable_t *);
 extern int_t symbfact_SubFree(Glu_freeable_t *);
-extern void    countnz_dist (const int_t, int_t *, int64_t *, int64_t *,
+extern void    countnz_dist (const int_t, int_t *, int_t *, int_t *,
 			     Glu_persist_t *, Glu_freeable_t *);
 extern int64_t fixupL_dist (const int_t, const int_t *, Glu_persist_t *,
 				  Glu_freeable_t *);

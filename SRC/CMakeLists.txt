@@ -44,7 +44,7 @@ set(sources
   smach_dist.c
   dmach_dist.c
   colamd.c
-  superlu_dist_version.c						
+  superlu_dist_version.c
 )
 if (MSVC)
   list(APPEND sources wingetopt.c)
@@ -169,7 +169,7 @@ foreach(target ${targets})
                               VERSION ${PROJECT_VERSION}
                               SOVERSION ${VERSION_MAJOR}
 			      )
-    endif()	   
+    endif()
 endforeach(target)
 
 target_compile_definitions(superlu_dist PRIVATE SUPERLU_DIST_EXPORTS)

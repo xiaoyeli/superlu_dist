@@ -1,4 +1,4 @@
-# SuperLU_DIST (version 5.4)
+# SuperLU_DIST (version 6.0)
 
 [![Build Status](https://travis-ci.org/xiaoyeli/superlu_dist.svg?branch=master)](https://travis-ci.org/xiaoyeli/superlu_dist) 
 [Nightly tests](http://my.cdash.org/index.php?project=superlu_dist)
@@ -47,7 +47,95 @@ There are two ways to install the package. One requires users to
 edit makefile manually, the other uses CMake automatic build system.
 The procedures are described below.
 
-### Installation option 1: Manual installation with makefile.
+### Installation option 1: Using CMake build system.
+You will need to create a build tree from which to invoke CMake.
+
+First, in order to use parallel symbolic factorization function, you
+need to install ParMETIS parallel ordering package and define the
+two environment variables: PARMETIS_ROOT and PARMETIS_BUILD_DIR
+
+```
+export PARMETIS_ROOT=<Prefix directory of the ParMETIS installation>
+export PARMETIS_BUILD_DIR=${PARMETIS_ROOT}/build/Linux-x86_64
+```
+
+Second, in order to use parallel weighted matching AWPM for numerical
+pre-pivoting, you need to install CombBLAS and define the environment
+variable:
+
+```
+export COMBBLAS_ROOT=<Prefix directory of the CombBLAS installation>
+export COMBBLAS_BUILD_DIR=${COMBBLAS_ROOT}/_build
+```
+
+Once these needed third-party libraries are in place, SuperLU installation
+can be done as follows from the top level directory:
+
+For a simple installation with default setting, do:
+(ParMETIS is needed, i.e., TPL_ENABLE_PARMETISLIB=ON)
+```
+mkdir build ; cd build;
+cmake .. \
+    -DTPL_PARMETIS_INCLUDE_DIRS="${PARMETIS_ROOT}/include;${PARMETIS_ROOT}/metis/include" \
+    -DTPL_PARMETIS_LIBRARIES="${PARMETIS_BUILD_DIR}/libparmetis/libparmetis.a;${PARMETIS_BUILD_DIR}/libmetis/libmetis.a" \
+```
+
+For a more sophisticated installation including third-part libraries, do:
+```
+cmake .. \
+    -DTPL_PARMETIS_INCLUDE_DIRS="${PARMETIS_ROOT}/include;${PARMETIS_ROOT}/metis/include" \
+    -DTPL_PARMETIS_LIBRARIES="${PARMETIS_BUILD_DIR}/libparmetis/libparmetis.a;${PARMETIS_BUILD_DIR}/libmetis/libmetis.a" \
+    -DTPL_ENABLE_COMBBLASLIB=ON \
+    -DTPL_COMBBLAS_INCLUDE_DIRS="${COMBBLAS_ROOT}/_install/include;${COMBBLAS_R\
+OOT}/Applications/BipartiteMatchings" \
+    -DTPL_COMBBLAS_LIBRARIES="${COMBBLAS_BUILD_DIR}/libCombBLAS.a" \
+    -DCMAKE_C_FLAGS="-std=c99 -g -DPRNTlevel=0 -DDEBUGlevel=0" \
+    -DCMAKE_C_COMPILER=mpicc \
+    -DCMAKE_CXX_COMPILER=mpicxx \
+    -DCMAKE_CXX_FLAGS="-std=c++11" \
+    -DTPL_ENABLE_BLASLIB=OFF \
+    -DBUILD_SHARED_LIBS=OFF \
+    -DCMAKE_INSTALL_PREFIX=.
+
+( see example cmake script: run_cmake_build.sh )
+```
+You can disable LAPACK, ParMetis or CombBLAS with the following cmake option:
+`-DTPL_ENABLE_LAPACKLIB=FALSE`
+`-DTPL_ENABLE_PARMETISLIB=FALSE`
+`-DTPL_ENABLE_COMBBLASLIB=FALSE`
+
+To actually build (compile), type:
+`make`
+
+To install the libraries, type:
+`make install`
+
+To run the installation test, type:
+`ctest`
+(The outputs are in file: `build/Testing/Temporary/LastTest.log`)
+or,
+`ctest -D Experimental`
+or,
+`ctest -D Nightly`
+
+**NOTE:**
+The parallel execution in ctest is invoked by "mpiexec" command which is
+from MPICH environment. If your MPI is not MPICH/mpiexec based, the test
+execution may fail. You can always go to TEST/ directory to perform
+testing manually.
+
+**Note on the C-Fortran name mangling handled by C preprocessor definition:**  
+In the default setting, we assume that Fortran expects a C routine
+to have an underscore postfixed to the name. Depending on the
+compiler, you may need to define one of the following flags in
+during the cmake build to overwrite default setting:
+```
+cmake .. -DCMAKE_C_FLAGS="-DNoChange" 
+cmake .. -DCMAKE_C_FLAGS="-DUpCase"
+```
+
+
+### Installation option 2: Manual installation with makefile.
 Before installing the package, please examine the three things dependent 
 on your system setup:
 
@@ -112,7 +200,20 @@ to make the BLAS library from the routines in the
 
 #### 1.3. External libraries. 
 
- ##### 1.3.1 Metis and ParMetis.
+  ##### 1.3.1 LAPACK.
+  Starting Version 6.0, the triangular solve routine can perform explicit
+  inversion on the diagonal blocks, using LAPACK's xTRTRI inversion routine.
+  To use this feature, you should define the following in make.inc:
+```
+HAVE_LAPACK = TRUE
+LAPACKLIB = <lapack library you wish to link with>
+```
+You can disable LAPACK with the following line in SRC/superlu_dist_config.h:
+```
+#undef HAVE_LAPACK
+```
+
+  ##### 1.3.2 Metis and ParMetis.
 
 If you will use Metis or ParMetis for sparsity ordering, you will
 need to install them yourself. Since ParMetis package already
@@ -122,6 +223,7 @@ download and compile ParMetis from:
 
 After you have installed it, you should define the following in make.inc:
 ```
+HAVE_PARMETIS = TRUE
 METISLIB = -L<metis directory> -lmetis
 PARMETISLIB = -L<parmetis directory> -lparmetis
 I_PARMETIS = -I<parmetis directory>/include -I<parmetis directory>/metis/include
@@ -131,7 +233,7 @@ You can disable ParMetis with the following line in SRC/superlu_dist_config.h:
 #undef HAVE_PARMETIS
 ```
 
- ##### 1.3.2 CombBLAS.
+ ##### 1.3.3 CombBLAS.
 
 You can use parallel approximate weight perfect matching (AWPM) algorithm
 to perform numerical pre-pivoting for stability. The default pre-pivoting
@@ -142,6 +244,7 @@ download site:
 
 After you have installed it, you should define the following in make.inc:
 ```
+HAVE_COMBBLAS = TRUE
 COMBBLASLIB = <combblas root>/_build/libCombBLAS.a
 I_COMBBLAS=-I<combblas root>/_install/include -I<combblas root>/Applications/BipartiteMatchings
 ```
@@ -149,6 +252,7 @@ You can disable CombBLAS with the following line in SRC/superlu_dist_config.h:
 ```
 #undef HAVE_COMBBLAS
 ```
+
 
 #### 1.4. C preprocessor definition CDEFS.
 
@@ -189,91 +293,8 @@ endif
 A Makefile is provided in each subdirectory. The installation can be done
 completely automatically by simply typing "make" at the top level.
 
-### Installation option 2: Using CMake build system.
-You will need to create a build tree from which to invoke CMake.
 
-First, in order to use parallel symbolic factorization function, you
-need to install ParMETIS parallel ordering package and define the
-two environment variables: PARMETIS_ROOT and PARMETIS_BUILD_DIR
 
-```
-export PARMETIS_ROOT=<Prefix directory of the ParMETIS installation>
-export PARMETIS_BUILD_DIR=${PARMETIS_ROOT}/build/Linux-x86_64
-```
-
-Second, in order to use parallel weighted matching AWPM for numerical
-pre-pivoting, you need to install CombBLAS and define the environment
-variable:
-
-```
-export COMBBLAS_ROOT=<Prefix directory of the CombBLAS installation>
-export COMBBLAS_BUILD_DIR=${COMBBLAS_ROOT}/_build
-```
-
-Once these needed third-party libraries are in place, SuperLU installation
-can be done as follows from the top level directory:
-
-For a simple installation with default setting, do:
-(ParMETIS is needed, i.e., enable_parmetislib=ON)
-```
-mkdir build ; cd build;
-cmake .. \
-    -DTPL_PARMETIS_INCLUDE_DIRS="${PARMETIS_ROOT}/include;${PARMETIS_ROOT}/metis/include" \
-    -DTPL_PARMETIS_LIBRARIES="${PARMETIS_BUILD_DIR}/libparmetis/libparmetis.a;${PARMETIS_BUILD_DIR}/libmetis/libmetis.a" \
-```
-
-For a more sophisticated installation including third-part libraries, do:
-```
-cmake .. \
-    -DTPL_PARMETIS_INCLUDE_DIRS="${PARMETIS_ROOT}/include;${PARMETIS_ROOT}/metis/include" \
-    -DTPL_PARMETIS_LIBRARIES="${PARMETIS_BUILD_DIR}/libparmetis/libparmetis.a;${PARMETIS_BUILD_DIR}/libmetis/libmetis.a" \
-    -Denable_combblaslib=ON \
-    -DTPL_COMBBLAS_INCLUDE_DIRS="${COMBBLAS_ROOT}/_install/include;${COMBBLAS_R\
-OOT}/Applications/BipartiteMatchings" \
-    -DTPL_COMBBLAS_LIBRARIES="${COMBBLAS_BUILD_DIR}/libCombBLAS.a" \
-    -DCMAKE_C_FLAGS="-std=c99 -g -DPRNTlevel=0 -DDEBUGlevel=0" \
-    -DCMAKE_C_COMPILER=mpicc \
-    -DCMAKE_CXX_COMPILER=mpicxx \
-    -DCMAKE_CXX_FLAGS="-std=c++11" \
-    -Denable_blaslib=OFF \
-    -DBUILD_SHARED_LIBS=OFF \
-    -DCMAKE_INSTALL_PREFIX=.
-
-( see example cmake script: see run_cmake_build.sh )
-```
-You can disable ParMetis or CombBLAS with the following cmake option:
-`-Denable_parmetislib=FALSE`
-`-Denable_combblaslib=FALSE`
-
-To actually build (compile), type:
-`make`
-
-To install the libraries, type:
-`make install`
-
-To run the installation test, type:
-`ctest`
-(The outputs are in file: `build/Testing/Temporary/LastTest.log`)
-or,
-`ctest -D Experimental`
-or,
-`ctest -D Nightly`
-
-**NOTE:**
-The parallel execution in ctest is invoked by "mpiexec" command which is
-from MPICH environment. If your MPI is not MPICH/mpiexec based, the test
-execution may fail. You can always go to TEST/ directory to perform
-testing manually.
-
-**Note on the C-Fortran name mangling handled by C preprocessor definition:**  
-In the default setting, we assume that Fortran expects a C routine
-to have an underscore postfixed to the name. Depending on the
-compiler, you may need to define one of the following flags in
-during the cmake build to overwrite default setting:
-```
-cmake .. -DCMAKE_C_FLAGS="-DNoChange" 
-cmake .. -DCMAKE_C_FLAGS="-DUpCase"
-```
 ## Windows Usage
 Prerequisites: CMake, Visual Studio, Microsoft HPC Pack
 This has been tested with Visual Studio 2017, without Parmetis,
@@ -289,7 +310,7 @@ The cmake configuration line used was
   -Denable_openmp:BOOL=FALSE \
   -DCMAKE_C_COMPILER:FILEPATH='C:/Program Files (x86)/Microsoft Visual Studio/2017/Professional/VC/Tools/MSVC/14.11.25503/bin/HostX64/x64/cl.exe' \
   -DCMAKE_C_FLAGS:STRING='/DWIN32 /D_WINDOWS /W3' \
-  -Denable_parmetislib:BOOL=FALSE \
+  -DTPL_ENABLE_PARMETISLIB:BOOL=FALSE \
   -DXSDK_ENABLE_Fortran=OFF \
   -G 'NMake Makefiles JOM' \
   C:/path/to/superlu_dist

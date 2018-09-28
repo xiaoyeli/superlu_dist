@@ -565,10 +565,9 @@ void zDumpLblocks(int iam, int_t nsupers, gridinfo_t *grid,
 		
 		for (j = 0; j < nsupc; ++j) {
 		for (i=0; i<len; ++i){
-		
-			fprintf(fp, "%d %d %e\n", index[k+LB_DESCRIPTOR+i]+1, xsup[gb]+j+1, (double)iam);
+			fprintf(fp, IFMT IFMT " %e\n", index[k+LB_DESCRIPTOR+i]+1, xsup[gb]+j+1, (double)iam);
 #if 0		
-			fprintf(fp, "%d %d %e %e\n", index[k+LB_DESCRIPTOR+i]+1, xsup[gb]+j+1, nzval[r +i+ j*nsupr].r,nzval[r +i+ j*nsupr].i);
+			fprintf(fp, IFMT IFMT " %e %e\n", index[k+LB_DESCRIPTOR+i]+1, xsup[gb]+j+1, nzval[r +i+ j*nsupr].r,nzval[r +i+ j*nsupr].i);
 #endif		
 		}
 		}

@@ -822,8 +822,8 @@ pdgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
 
 #if ( PRNTlevel>=1 )
     if(!iam) {
-	printf("max_nrows in L panel " IFMT "\n", max_row_size);
-	printf("\t.. GEMM buffer size: max_nrows X max_ncols = " IFMT "x" IFMT "\n",
+	printf("max_nrows in L panel %d\n", max_row_size);
+	printf("\t.. GEMM buffer size: max_nrows X max_ncols = %d x " IFMT "\n",
 	       max_row_size, (bigu_size / ldt));
 	printf(".. BIG U size " IFMT "\t BIG V size " IFMT "\n", bigu_size, bigv_size);
 	fflush(stdout);

@@ -58,6 +58,7 @@ at the top-level directory.
  *
  * Return value
  * ============
+ *        = 0: successful exit
  * </pre>
  */
 int_t
@@ -99,8 +100,8 @@ dReDistribute_A(SuperMatrix *A, ScalePermstruct_t *ScalePermstruct,
     m_loc = Astore->m_loc;
     fst_row = Astore->fst_row;
     nnzToRecv = intCalloc_dist(2*procs);
-    nnzToSend = nnzToRecv + procs;	
-	
+    nnzToSend = nnzToRecv + procs;
+
     /* ------------------------------------------------------------
        COUNT THE NUMBER OF NONZEROS TO BE SENT TO EACH PROCESS,
        THEN ALLOCATE SPACE.

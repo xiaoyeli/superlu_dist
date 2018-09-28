@@ -17,6 +17,7 @@
 #
 SuperLUroot	= /home/xiaoye/Dropbox/Codes/SuperLU/superlu_dist.git
 DSUPERLULIB   	= $(SuperLUroot)/lib/libsuperlu_dist.a
+INCLUDEDIR   	= $(SuperLUroot)/SRC
 
 LIBS		= $(DSUPERLULIB) /usr/lib/libf77blas.so /usr/lib/libatlas.so /home/xiaoye/lib/static/parmetis-4.0.3/build/Linux-x86_64/libparmetis/libparmetis.a /home/xiaoye/lib/static/parmetis-4.0.3/build/Linux-x86_64/libmetis/libmetis.a
 

@@ -257,7 +257,7 @@ void LUstructFree(LUstruct_t *LUstruct)
  */
 void
 countnz_dist(const int_t n, int_t *xprune,
-	     int64_t *nnzL, int64_t *nnzU, 
+	     int_t *nnzL, int_t *nnzU, 
 	     Glu_persist_t *Glu_persist, Glu_freeable_t *Glu_freeable)
 {
     int_t  fnz, fsupc, i, j, nsuper;
@@ -373,7 +373,11 @@ void set_default_options_dist(superlu_dist_options_t *options)
     options->num_lookaheads    = 10;
     options->lookahead_etree   = NO;
     options->SymPattern        = NO;
+#ifdef HAVE_LAPACK
     options->DiagInv           = YES;
+#else
+    options->DiagInv           = NO;
+#endif
 }
 
 /*! \brief Print the options setting.
@@ -1182,14 +1186,13 @@ arrive_at_ublock (int_t j,      /* j-th block in a U panel */
         /* Reinitilize the pointers to the beginning of the 
 	 * k-th column/row of L/U factors.
 	 * usub[] - index array for panel U(k,:)
-		*/        
-	    // printf("iukp %d \n",*iukp );
-		*jb = usub[*iukp];      /* Global block number of block U(k,j). */
+	 */
+        // printf("iukp %d \n",*iukp );
+        *jb = usub[*iukp];      /* Global block number of block U(k,jj). */
         // printf("jb %d \n",*jb );
         *nsupc = SuperSize (*jb);
         // printf("nsupc %d \n",*nsupc );
         *iukp += UB_DESCRIPTOR; /* Start fstnz of block U(k,j). */
-
         *rukp += usub[*iukp - 1]; /* Jump # of nonzeros in block U(k,jj);
 				     Move to block U(k,jj+1) in nzval[] */ 
         *iukp += *nsupc;
@@ -1282,13 +1285,11 @@ int_t estimate_bigu_size(int_t nsupers,
 
 #if ( PRNTlevel>=1 )
 	if(iam==0)
-    printf("max_ncols %d, max_ldu %d, ldt %d, bigu_size=%d\n",
+    printf("max_ncols " IFMT ", max_ldu " IFMT ", ldt " IFMT ", bigu_size " IFMT "\n",
 	   max_ncols, max_ldu, ldt, max_ldu*max_ncols);
 #endif
     return(max_ldu * max_ncols);
 }
-
-
 
 void quickSort( int_t* a, int_t l, int_t r, int_t dir)
 {
@@ -1387,7 +1388,4 @@ int_t partitionM( int_t* a, int_t l, int_t r, int_t lda, int_t dir, int_t dims) 
 	   return j;		
 	}
 }
-
-
-
 

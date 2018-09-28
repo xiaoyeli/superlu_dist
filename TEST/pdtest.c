@@ -32,7 +32,7 @@ at the top-level directory.
 #include <getopt.h>
 #endif
 #include <math.h>
-#include "superlu_dist_config.h"					
+#include "superlu_dist_config.h"
 #include "superlu_ddefs.h"
 
 #define NTESTS 1 /*5*/      /* Number of test types */
@@ -55,7 +55,7 @@ pdcompute_resid(int m, int n, int nrhs, SuperMatrix *A,
 		double *x, int ldx, double *b, int ldb,
 		gridinfo_t *grid, SOLVEstruct_t *SOLVEstruct, double *resid);
 
-#if 0	 
+#if 0
 /*! \brief Copy matrix A into matrix B, in distributed compressed row format. */
 void
 dCopy_CompRowLoc_Matrix_dist(SuperMatrix *A, SuperMatrix *B)
@@ -515,7 +515,7 @@ parse_command_line(int argc, char *argv[], int *nprow, int *npcol,
 		    genvstr = (char*) malloc((8+strlen(optarg))*sizeof(char));
 		    strcpy(genvstr, "N_GEMM=");
 		    strcat(genvstr, optarg);
-		    putenv(genvstr);		  
+		    putenv(genvstr);
 		    //printf("Reset min_gemm_gpu_offload env. variable to %d\n", c);
 	            break;
 	  case 's': *nrhs = atoi(optarg); 

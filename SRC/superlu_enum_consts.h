@@ -14,6 +14,7 @@ at the top-level directory.
  * -- SuperLU routine (version 4.1) --
  * Lawrence Berkeley National Lab, Univ. of California Berkeley, 
  * October 1, 2010
+ * January 28, 2018
  * January 28, 2018				   
  *
  */

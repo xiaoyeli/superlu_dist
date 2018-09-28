@@ -10,7 +10,6 @@
 .SUFFIXES: 
 .SUFFIXES: .f90 .c .o
 include ../make.inc
-					 
 
 #F90FLAGS	= $(FFLAGS) -qfree -qsuffix=f=f90  -qflag=w:w
 
