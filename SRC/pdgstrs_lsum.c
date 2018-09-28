@@ -417,10 +417,8 @@ void dlsum_fmod_inv
  double *xk,      /* X[k].                                              */
  double *rtemp,   /* Result of full matrix-vector multiply.             */
  int   nrhs,      /* Number of right-hand sides.                        */
- int   knsupc,    /* Size of supernode k.                               */
  int_t k,         /* The k-th component of X.                           */
  int_t *fmod,     /* Modification count for L-solve.                    */
- int_t nlb,       /* Number of L blocks.                                */
  int_t *xsup,
  gridinfo_t *grid,
  LocalLU_t *Llu,
@@ -429,7 +427,10 @@ void dlsum_fmod_inv
  int_t *nleaf_send,
  int_t sizelsum,
  int_t sizertemp,
- int_t recurlevel
+ int_t recurlevel,
+ int_t maxsuper,
+ int thread_id,
+ int num_thread 
 )
 {
     double alpha = 1.0, beta = 0.0,malpha=-1.0;
@@ -443,7 +444,7 @@ void dlsum_fmod_inv
     int_t  *frecv = Llu->frecv;
     int_t  **fsendx_plist = Llu->fsendx_plist;
 	int_t  luptr_tmp,luptr_tmp1,lptr1_tmp,maxrecvsz, idx_i, idx_v,idx_n,  idx_l, fmod_tmp, lbstart,lbend,nn,Nchunk,nlb_loc,remainder;
-	int thread_id,thread_id1,num_thread;
+	int thread_id1;
 	flops_t ops_loc=0.0;    	
     MPI_Status status;
     int test_flag;
@@ -452,7 +453,7 @@ void dlsum_fmod_inv
 	RdTree  *LRtree_ptr = Llu->LRtree_ptr;
 	int_t* idx_lsum,idx_lsum1;
 	double *rtemp_loc;
-	int_t ldalsum,maxsuper;
+	int_t ldalsum;
 	int_t nleaf_send_tmp;
 	int_t lptr;      /* Starting position in lsub[*].                      */
 	int_t luptr;     /* Starting position in lusup[*].                     */
@@ -461,15 +462,16 @@ void dlsum_fmod_inv
 	int_t aln_d,aln_i;
 	aln_d = ceil(CACHELINE/(double)dword);
 	aln_i = ceil(CACHELINE/(double)iword);
+	int   knsupc;    /* Size of supernode k.                               */
+	int_t nlb;       /* Number of L blocks.                                */
 	
-	maxsuper = sp_ienv_dist(3);
-#ifdef _OPENMP
-	thread_id = omp_get_thread_num ();
-	num_thread = omp_get_num_threads ();
-#else
-	thread_id = 0;
-	num_thread = 1;
-#endif
+	
+	knsupc = SuperSize( k );
+	
+	lk = LBj( k, grid ); /* Local block number, column-wise. */
+	lsub = Llu->Lrowind_bc_ptr[lk];
+	nlb = lsub[0] - 1;
+	
 	ldalsum=Llu->ldalsum;
 
 	rtemp_loc = &rtemp[sizertemp* thread_id];
@@ -480,23 +482,11 @@ void dlsum_fmod_inv
 	// #endif 
 
 	if(nlb>0){
-		maxrecvsz = sp_ienv_dist(3) * nrhs + SUPERLU_MAX( XK_H, LSUM_H );
-
 		iam = grid->iam;
 		myrow = MYROW( iam, grid );
-		lk = LBj( k, grid ); /* Local block number, column-wise. */
-
-		// printf("ya1 %5d k %5d lk %5d\n",thread_id,k,lk);
-		// fflush(stdout);	
-
-		lsub = Llu->Lrowind_bc_ptr[lk];
-
-		// printf("ya2 %5d k %5d lk %5d\n",thread_id,k,lk);
-		// fflush(stdout);	
-
+		
 		lusup = Llu->Lnzval_bc_ptr[lk];
 		lloc = Llu->Lindval_loc_bc_ptr[lk];
-		// idx_lsum = Llu->Lrowind_bc_2_lsum[lk];
 
 		nsupr = lsub[1];
 
@@ -521,9 +511,11 @@ void dlsum_fmod_inv
 		assert(m>0);
 				
 		if(m>8*maxsuper){ 
-			// if(m<1){
-			// TIC(t1);
-			Nchunk=num_thread;
+		// if(0){ 
+
+			// Nchunk=floor(num_thread/2.0)+1;
+			Nchunk=SUPERLU_MIN(num_thread,nlb);
+			// Nchunk=1;
 			nlb_loc = floor(((double)nlb)/Nchunk);
 			remainder = nlb % Nchunk;
 
@@ -586,10 +578,12 @@ void dlsum_fmod_inv
 						iknsupc = SuperSize( ik );
 						il = LSUM_BLK( lk );
 
-						RHS_ITERATE(j)					
+						RHS_ITERATE(j){
+							#pragma omp simd							
 							for (i = 0; i < nbrow1; ++i) {
 								irow = lsub[lptr+i] - rel; /* Relative row. */
 								lsum[il+irow + j*iknsupc+sizelsum*thread_id1] -= rtemp_loc[nbrow_ref+i + j*nbrow];
+							}
 							}
 						nbrow_ref+=nbrow1;
 					}
@@ -619,10 +613,11 @@ void dlsum_fmod_inv
 							ikcol = PCOL( ik, grid );
 							p = PNUM( myrow, ikcol, grid );
 							if ( iam != p ) {
-								for (ii=1;ii<num_thread;ii++)
+								for (ii=1;ii<num_thread;ii++){
+									#pragma omp simd	
 									for (jj=0;jj<iknsupc*nrhs;jj++)
 										lsum[il + jj ] += lsum[il + jj + ii*sizelsum];
-								
+								}
 #ifdef _OPENMP
 #pragma omp atomic capture
 #endif
@@ -635,17 +630,18 @@ void dlsum_fmod_inv
 #if ( PROFlevel>=1 )
 								TIC(t1);
 #endif		
-								for (ii=1;ii<num_thread;ii++)
-									// if(ii!=thread_id1)
+								for (ii=1;ii<num_thread;ii++){
+								#pragma omp simd	
 									for (jj=0;jj<iknsupc*nrhs;jj++)
 										lsum[il + jj ] += lsum[il + jj + ii*sizelsum];
-
+								}
 								ii = X_BLK( lk );
-								// for (jj=0;jj<num_thread;jj++)
-								RHS_ITERATE(j)
+								
+								RHS_ITERATE(j){
+									#pragma omp simd	
 									for (i = 0; i < iknsupc; ++i)	
 										x[i + ii + j*iknsupc] += lsum[i + il + j*iknsupc ];
-										
+								}		
 
 								// fmod[lk] = -1; /* Do not solve X[k] in the future. */
 								lk = LBj( ik, grid );/* Local block number, column-wise. */
@@ -670,6 +666,7 @@ void dlsum_fmod_inv
 											&alpha, Linv, &iknsupc, &x[ii],
 											&iknsupc, &beta, rtemp_loc, &iknsupc );
 #endif  
+									#pragma omp simd	
 									for (i=0 ; i<iknsupc*nrhs ; i++){
 										x[ii+i] = rtemp_loc[i];
 									}
@@ -715,7 +712,6 @@ void dlsum_fmod_inv
 #endif
 									nleaf_send_tmp = ++nleaf_send[0];
 									leaf_send[(nleaf_send_tmp-1)*aln_i] = lk;
-									// BcTree_forwardMessageSimple(LBtree_ptr[lk],&x[ii - XK_H],'d');
 								}
 
 								/*
@@ -726,11 +722,10 @@ void dlsum_fmod_inv
 								// #pragma	omp	task firstprivate (Llu,sizelsum,iknsupc,ii,ik,lsub1,x,rtemp,fmod,lsum,stat,nrhs,grid,xsup,recurlevel) private(lptr1,luptr1,nlb1,thread_id1) untied priority(1) 	
 								// #endif
 								{
-
-									nlb1 = lsub1[0] - 1;						
-									dlsum_fmod_inv(lsum, x, &x[ii], rtemp, nrhs, iknsupc, ik,
-											fmod, nlb1, xsup,
-											grid, Llu, stat, leaf_send, nleaf_send ,sizelsum,sizertemp,1+recurlevel);
+		
+									dlsum_fmod_inv(lsum, x, &x[ii], rtemp, nrhs, ik,
+											fmod, xsup,
+											grid, Llu, stat, leaf_send, nleaf_send ,sizelsum,sizertemp,1+recurlevel,maxsuper,thread_id1,num_thread);
 								}		   
 
 								// } /* if frecv[lk] == 0 */
@@ -779,11 +774,12 @@ void dlsum_fmod_inv
 				iknsupc = SuperSize( ik );
 				il = LSUM_BLK( lk );
 
-				RHS_ITERATE(j)					
+				RHS_ITERATE(j){					
+					#pragma omp simd				
 					for (i = 0; i < nbrow1; ++i) {
 						irow = lsub[lptr+i] - rel; /* Relative row. */
-
-								lsum[il+irow + j*iknsupc+sizelsum*thread_id] -= rtemp_loc[nbrow_ref+i + j*nbrow];
+						lsum[il+irow + j*iknsupc+sizelsum*thread_id] -= rtemp_loc[nbrow_ref+i + j*nbrow];
+					}
 					}
 				nbrow_ref+=nbrow1;
 			}			
@@ -795,8 +791,8 @@ void dlsum_fmod_inv
 			stat[thread_id]->utime[SOL_GEMM] += t2;
 #endif		
 
-			thread_id1 = omp_get_thread_num ();
-			rtemp_loc = &rtemp[sizertemp* thread_id1];
+			
+			// rtemp_loc = &rtemp[sizertemp* thread_id];
 			for (lb=0;lb<nlb;lb++){
 				lk = lloc[lb+idx_n];
 
@@ -818,10 +814,11 @@ void dlsum_fmod_inv
 					ikcol = PCOL( ik, grid );
 					p = PNUM( myrow, ikcol, grid );
 					if ( iam != p ) {
-						for (ii=1;ii<num_thread;ii++)
-							// if(ii!=thread_id1)
+						for (ii=1;ii<num_thread;ii++){
+							#pragma omp simd
 							for (jj=0;jj<iknsupc*nrhs;jj++)
 								lsum[il + jj ] += lsum[il + jj + ii*sizelsum];
+						}
 								
 #ifdef _OPENMP
 #pragma omp atomic capture
@@ -829,25 +826,26 @@ void dlsum_fmod_inv
 						nleaf_send_tmp = ++nleaf_send[0];
 						leaf_send[(nleaf_send_tmp-1)*aln_i] = -lk-1;						
 
-						// RdTree_forwardMessageSimple(LRtree_ptr[lk],&lsum[il - LSUM_H ],'d');
 					} else { /* Diagonal process: X[i] += lsum[i]. */
 
 #if ( PROFlevel>=1 )
 						TIC(t1);
 #endif		
-						for (ii=1;ii<num_thread;ii++)
-							// if(ii!=thread_id1)
+						for (ii=1;ii<num_thread;ii++){
+							#pragma omp simd
 							for (jj=0;jj<iknsupc*nrhs;jj++)
 								lsum[il + jj ] += lsum[il + jj + ii*sizelsum];
+						}
 					
 						ii = X_BLK( lk );
-						// for (jj=0;jj<num_thread;jj++)
-						RHS_ITERATE(j)
+
+						RHS_ITERATE(j){
+							#pragma omp simd
 							for (i = 0; i < iknsupc; ++i)	
 								x[i + ii + j*iknsupc] += lsum[i + il + j*iknsupc ];
-								
+						}		
 
-						// fmod[lk] = -1; /* Do not solve X[k] in the future. */
+						
 						lk = LBj( ik, grid );/* Local block number, column-wise. */
 						lsub1 = Llu->Lrowind_bc_ptr[lk];
 						lusup1 = Llu->Lnzval_bc_ptr[lk];
@@ -868,6 +866,8 @@ void dlsum_fmod_inv
 									&alpha, Linv, &iknsupc, &x[ii],
 									&iknsupc, &beta, rtemp_loc, &iknsupc );
 #endif   
+							// #pragma omp simd aligned(rtemp_loc:64)
+							#pragma omp simd
 							for (i=0 ; i<iknsupc*nrhs ; i++){
 								x[ii+i] = rtemp_loc[i];
 							}		
@@ -892,10 +892,10 @@ void dlsum_fmod_inv
 
 #if ( PROFlevel>=1 )
 						TOC(t2, t1);
-						stat[thread_id1]->utime[SOL_TRSM] += t2;
+						stat[thread_id]->utime[SOL_TRSM] += t2;
 #endif	
 
-						stat[thread_id1]->ops[SOLVE] += iknsupc * (iknsupc - 1) * nrhs;
+						stat[thread_id]->ops[SOLVE] += iknsupc * (iknsupc - 1) * nrhs;
 
 #if ( DEBUGlevel>=2 )
 						printf("(%2d) Solve X[%2d]\n", iam, ik);
@@ -921,21 +921,21 @@ void dlsum_fmod_inv
 						 */
 
 						// #ifdef _OPENMP
-						// #pragma	omp	task firstprivate (Llu,sizelsum,iknsupc,ii,ik,lsub1,x,rtemp,fmod,lsum,send_req,stat,nrhs,grid,xsup,recurlevel) private(lptr1,luptr1,nlb1,thread_id1) untied priority(1) 	
+						// #pragma	omp	task firstprivate (Llu,sizelsum,iknsupc,ii,ik,lsub1,x,rtemp,fmod,lsum,send_req,stat,nrhs,grid,xsup,recurlevel) private(lptr1,luptr1,nlb1) untied priority(1) 	
 						// #endif
 
 						{
-							nlb1 = lsub1[0] - 1;
-							dlsum_fmod_inv(lsum, x, &x[ii], rtemp, nrhs, iknsupc, ik,
-									fmod, nlb1, xsup,
-									grid, Llu, stat, leaf_send, nleaf_send ,sizelsum,sizertemp,1+recurlevel);
+							// nlb1 = lsub1[0] - 1;
+							dlsum_fmod_inv(lsum, x, &x[ii], rtemp, nrhs, ik,
+									fmod, xsup,
+									grid, Llu, stat, leaf_send, nleaf_send ,sizelsum,sizertemp,1+recurlevel,maxsuper,thread_id,num_thread);
 						}		   
 
 						// } /* if frecv[lk] == 0 */
 				} /* if iam == p */
 			} /* if fmod[lk] == 0 */				
 		}
-		// }
+
 }
 
 	stat[thread_id]->ops[SOLVE] += 2 * m * nrhs * knsupc;
@@ -972,7 +972,8 @@ void dlsum_fmod_inv_master
  SuperLUStat_t **stat,
  int_t sizelsum,
  int_t sizertemp,
- int_t recurlevel
+ int_t recurlevel,
+ int_t maxsuper
 )
 {
     double alpha = 1.0, beta = 0.0,malpha=-1.0;
@@ -996,7 +997,7 @@ void dlsum_fmod_inv_master
 	RdTree  *LRtree_ptr = Llu->LRtree_ptr;
 	int_t* idx_lsum,idx_lsum1;
 	double *rtemp_loc;
-	int_t ldalsum,maxsuper;	
+	int_t ldalsum;	
 	int_t nleaf_send_tmp;
 	int_t lptr;      /* Starting position in lsub[*].                      */
 	int_t luptr;     /* Starting position in lusup[*].                     */
@@ -1005,7 +1006,7 @@ void dlsum_fmod_inv_master
 	int_t aln_d,aln_i;
 	aln_d = ceil(CACHELINE/(double)dword);
 	aln_i = ceil(CACHELINE/(double)iword);
-	maxsuper = sp_ienv_dist(3);
+	// maxsuper = sp_ienv_dist(3);
 #ifdef _OPENMP
 	thread_id = omp_get_thread_num ();
 	num_thread = omp_get_num_threads ();
@@ -1023,7 +1024,7 @@ void dlsum_fmod_inv_master
 	// #endif 
 
 	if(nlb>0){
-		maxrecvsz = sp_ienv_dist(3) * nrhs + SUPERLU_MAX( XK_H, LSUM_H );
+		// maxrecvsz = sp_ienv_dist(3) * nrhs + SUPERLU_MAX( XK_H, LSUM_H );
 
 		iam = grid->iam;
 		myrow = MYROW( iam, grid );
@@ -1336,7 +1337,7 @@ void dlsum_fmod_inv_master
 
 						dlsum_fmod_inv_master(lsum, x, &x[ii], rtemp, nrhs, iknsupc, ik,
 								fmod, nlb1, xsup,
-								grid, Llu, stat,sizelsum,sizertemp,1+recurlevel);
+								grid, Llu, stat,sizelsum,sizertemp,1+recurlevel,maxsuper);
 					}		   
 
 					// } /* if frecv[lk] == 0 */

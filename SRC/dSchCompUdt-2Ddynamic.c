@@ -587,11 +587,12 @@ if ( msg0 && msg2 ) { /* L(:,k) and U(k,:) are not empty. */
 	tt_start = SuperLU_timer_();
 #endif
 
+#if 0
 #ifdef USE_VTUNE
 	__SSC_MARK(0x111);// start SDE tracing, note uses 2 underscores
 	__itt_resume(); // start VTune, again use 2 underscores
 #endif
-
+#endif
 	/* Scatter into destination block-by-block. */
 #ifdef _OPENMP
 #pragma omp parallel default(shared) private(thread_id)
@@ -695,9 +696,11 @@ if ( msg0 && msg2 ) { /* L(:,k) and U(k,:) are not empty. */
 	RemainScatterTimer += SuperLU_timer_() - tt_start;
 #endif
 
+#if 0
 #ifdef USE_VTUNE
 	__itt_pause(); // stop VTune
 	__SSC_MARK(0x222); // stop SDE tracing
+#endif
 #endif
 
     } /* end if Rnbrow>0 ... update remaining block */

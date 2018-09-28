@@ -46,12 +46,9 @@ at the top-level directory.
 #include <math.h>
 #include <stdint.h>
 // /* Following is for vtune */
-// #if 0
-// #include <ittnotify.h>
-// #define USE_VTUNE
-// #endif
-#if ( VTUNE>=1 )
-#include <ittnotify.h>			 
+#if 0
+#include <ittnotify.h>
+#define USE_VTUNE
 #endif
 /*************************************************************************
  * Constants

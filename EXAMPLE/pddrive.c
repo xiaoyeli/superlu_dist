@@ -82,8 +82,9 @@ int main(int argc, char *argv[])
     VT_traceoff(); 
 #endif
 
-#if ( VTUNE>=1 )
-	__itt_pause();
+#ifdef USE_VTUNE
+	__itt_pause(); // stop VTune
+	__SSC_MARK(0x222); // stop SDE tracing
 #endif
 	
     /* Parse command line argv[]. */

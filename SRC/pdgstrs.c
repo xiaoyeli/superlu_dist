@@ -729,7 +729,9 @@ pdgstrs(int_t n, LUstruct_t *LUstruct,
 	double beta = 0.0;	
     double zero = 0.0;
     double *lsum;  /* Local running sum of the updates to B-components */
-    double *x;     /* X component at step k. */
+    
+	//__restrict__
+	double *x;     /* X component at step k. */
 		    /* NOTE: x and lsum are of same size. */
     double *lusup, *dest;
 	double *recvbuf,*recvbuf_on, *tempv, *recvbufall, *recvbuf_BC_fwd, *recvbuf0, *xin;
@@ -753,7 +755,7 @@ pdgstrs(int_t n, LUstruct_t *LUstruct,
 	int_t  **Ucb_valptr = Llu->Ucb_valptr;      /* Vertical linked list pointing to Unzval[] */
 	int_t  kcol, krow, mycol, myrow;
 	int_t  i, ii, il, j, jj, k, kk, lb, ljb, lk, lib, lptr, luptr, gb, nn;
-	int_t  nb, nlb,nlb_nodiag, nub, nsupers, nsupers_j, nsupers_i;
+	int_t  nb, nlb,nlb_nodiag, nub, nsupers, nsupers_j, nsupers_i, maxsuper;
 	int_t  *xsup, *supno, *lsub, *usub;
 	int_t  *ilsum;    /* Starting position of each supernode in lsum (LOCAL)*/
 	int    Pc, Pr, iam;
@@ -836,13 +838,19 @@ pdgstrs(int_t n, LUstruct_t *LUstruct,
 	int_t  ik, rel, idx_r, jb, nrbl, irow, pc,iknsupc;
 	int_t  lptr1_tmp, idx_i, idx_v,m; 
 
-	int_t thread_id,ready;
+	int_t ready;
+	static int thread_id;
 	yes_no_t empty;
 	int_t sizelsum,sizertemp,aln_d,aln_i;
 
 	aln_d = ceil(CACHELINE/(double)dword);
 	aln_i = ceil(CACHELINE/(double)iword);
 	int num_thread = 1;
+	
+	maxsuper = sp_ienv_dist(3);
+	
+	#pragma omp threadprivate(thread_id)
+	
 #ifdef _OPENMP
 #pragma omp parallel default(shared)
 	{
@@ -939,7 +947,7 @@ pdgstrs(int_t n, LUstruct_t *LUstruct,
 #ifdef _OPENMP
 	if ( !(lsum = (double*)SUPERLU_MALLOC(sizelsum*num_thread * sizeof(double))))
 		ABORT("Malloc fails for lsum[].");	
-#pragma omp parallel default(shared) private(thread_id,ii)
+#pragma omp parallel default(shared) private(ii)
 	{
 		thread_id = omp_get_thread_num ();
 		for(ii=0;ii<sizelsum;ii++)
@@ -959,7 +967,7 @@ pdgstrs(int_t n, LUstruct_t *LUstruct,
 #ifdef _OPENMP
 	if ( !(rtemp = (double*)SUPERLU_MALLOC(sizertemp*num_thread * sizeof(double))) )
 		ABORT("Malloc fails for rtemp[].");		
-#pragma omp parallel default(shared) private(thread_id,ii)
+#pragma omp parallel default(shared) private(ii)
 	{
 		thread_id = omp_get_thread_num ();
 		for(ii=0;ii<sizertemp;ii++)
@@ -1054,6 +1062,7 @@ pdgstrs(int_t n, LUstruct_t *LUstruct,
 		}
 	}	
 
+#pragma omp simd
 	for (i = 0; i < nlb; ++i) fmod[i*aln_i] += frecv[i];
 
 	if ( !(recvbuf_BC_fwd = (double*)SUPERLU_MALLOC(maxrecvsz*(nfrecvx+1) * sizeof(double))) )  // this needs to be optimized for 1D row mapping
@@ -1082,6 +1091,11 @@ pdgstrs(int_t n, LUstruct_t *LUstruct,
 	VT_traceon();	
 #endif
 
+#ifdef USE_VTUNE
+	__SSC_MARK(0x111);// start SDE tracing, note uses 2 underscores
+	__itt_resume(); // start VTune, again use 2 underscores
+#endif
+
 
 	/* ---------------------------------------------------------
 	   Solve the leaf nodes first by all the diagonal processes.
@@ -1096,17 +1110,32 @@ pdgstrs(int_t n, LUstruct_t *LUstruct,
 #pragma omp parallel default (shared) 
 #endif
 	{	
-#ifdef _OPENMP
-#pragma omp master
-#endif
+	
+// #ifdef _OPENMP
+					// thread_id = omp_get_thread_num ();
+// #else
+					// thread_id = 0;
+// #endif	
+	
+// #ifdef _OPENMP
+// #pragma omp master
+// #endif
 		{
-
+ 
+		
+if(Llu->inv == 1){
+// if(0){
+		
 #ifdef _OPENMP
-#pragma	omp	taskloop firstprivate (nrhs,beta,alpha,x,rtemp,ldalsum) private (ii,k,knsupc,lk,luptr,lsub,nsupr,lusup,thread_id,t1,t2,Linv,i,lib,rtemp_loc,nleaf_send_tmp) nogroup	
+// #pragma	omp	taskloop firstprivate (nrhs,beta,alpha,x,rtemp,ldalsum) private (ii,k,knsupc,lk,luptr,lsub,nsupr,lusup,t1,t2,Linv,i,lib,rtemp_loc,nleaf_send_tmp) nogroup	
+#pragma	omp	for firstprivate(nrhs,beta,alpha,x,rtemp,ldalsum) private (ii,k,knsupc,lk,luptr,lsub,nsupr,lusup,t1,t2,Linv,i,lib,rtemp_loc,nleaf_send_tmp) nowait	
 #endif
+
 			for (jj=0;jj<nleaf;jj++){
 				k=leafsups[jj];
 
+				
+				
 				// #ifdef _OPENMP
 				// #pragma	omp	task firstprivate (k,nrhs,beta,alpha,x,rtemp,ldalsum) private (ii,knsupc,lk,luptr,lsub,nsupr,lusup,thread_id,t1,t2,Linv,i,lib,rtemp_loc)	 	
 				// #endif
@@ -1115,11 +1144,7 @@ pdgstrs(int_t n, LUstruct_t *LUstruct,
 #if ( PROFlevel>=1 )
 					TIC(t1);
 #endif	 
-#ifdef _OPENMP
-					thread_id = omp_get_thread_num ();
-#else
-					thread_id = 0;
-#endif
+
 					rtemp_loc = &rtemp[sizertemp* thread_id];
 
 
@@ -1135,38 +1160,110 @@ pdgstrs(int_t n, LUstruct_t *LUstruct,
 
 					nsupr = lsub[1];
 
-
-
-					if(Llu->inv == 1){
-						Linv = Linv_bc_ptr[lk];
+					Linv = Linv_bc_ptr[lk];
 #ifdef _CRAY
-						SGEMM( ftcs2, ftcs2, &knsupc, &nrhs, &knsupc,
-								&alpha, Linv, &knsupc, &x[ii],
-								&knsupc, &beta, rtemp_loc, &knsupc );
+					SGEMM( ftcs2, ftcs2, &knsupc, &nrhs, &knsupc,
+							&alpha, Linv, &knsupc, &x[ii],
+							&knsupc, &beta, rtemp_loc, &knsupc );
 #elif defined (USE_VENDOR_BLAS)
-						dgemm_( "N", "N", &knsupc, &nrhs, &knsupc,
-								&alpha, Linv, &knsupc, &x[ii],
-								&knsupc, &beta, rtemp_loc, &knsupc, 1, 1 );
+					dgemm_( "N", "N", &knsupc, &nrhs, &knsupc,
+							&alpha, Linv, &knsupc, &x[ii],
+							&knsupc, &beta, rtemp_loc, &knsupc, 1, 1 );
 #else
-						dgemm_( "N", "N", &knsupc, &nrhs, &knsupc,
-								&alpha, Linv, &knsupc, &x[ii],
-								&knsupc, &beta, rtemp_loc, &knsupc );
+					dgemm_( "N", "N", &knsupc, &nrhs, &knsupc,
+							&alpha, Linv, &knsupc, &x[ii],
+							&knsupc, &beta, rtemp_loc, &knsupc );
 #endif		   
-						for (i=0 ; i<knsupc*nrhs ; i++){
-							x[ii+i] = rtemp_loc[i];
-						}		
-					}else{
-#ifdef _CRAY
-						STRSM(ftcs1, ftcs1, ftcs2, ftcs3, &knsupc, &nrhs, &alpha,
-								lusup, &nsupr, &x[ii], &knsupc);
-#elif defined (USE_VENDOR_BLAS)
-						dtrsm_("L", "L", "N", "U", &knsupc, &nrhs, &alpha, 
-								lusup, &nsupr, &x[ii], &knsupc, 1, 1, 1, 1);	
-#else
-						dtrsm_("L", "L", "N", "U", &knsupc, &nrhs, &alpha, 
-								lusup, &nsupr, &x[ii], &knsupc);
+					#pragma omp simd
+					for (i=0 ; i<knsupc*nrhs ; i++){
+						x[ii+i] = rtemp_loc[i];
+					}		
+					// memcpy(&x[ii], rtemp_loc, knsupc*nrhs*8);
+					
+					// for (i=0 ; i<knsupc*nrhs ; i++){
+					// printf("x_l: %f\n",x[ii+i]);
+					// fflush(stdout);
+					// }
+
+
+#if ( PROFlevel>=1 )
+					TOC(t2, t1);
+					stat_loc[thread_id]->utime[SOL_TRSM] += t2;
+
+#endif	
+
+					stat_loc[thread_id]->ops[SOLVE] += knsupc * (knsupc - 1) * nrhs;
+			
+					
+					
+#if ( DEBUGlevel>=2 )
+					printf("(%2d) Solve X[%2d]\n", iam, k);
 #endif
+
+					/*
+					 * Send Xk to process column Pc[k].
+					 */
+
+					if(LBtree_ptr[lk]!=NULL){ 
+						lib = LBi( k, grid ); /* Local block number, row-wise. */
+						ii = X_BLK( lib );	
+
+#ifdef _OPENMP
+#pragma omp atomic capture
+#endif
+						nleaf_send_tmp = ++nleaf_send;
+						leaf_send[(nleaf_send_tmp-1)*aln_i] = lk;
+						// BcTree_forwardMessageSimple(LBtree_ptr[lk],&x[ii - XK_H],'d');
 					}
+				}		
+				}
+
+}else{
+
+		
+#ifdef _OPENMP
+#pragma	omp	for firstprivate (nrhs,beta,alpha,x,rtemp,ldalsum) private (ii,k,knsupc,lk,luptr,lsub,nsupr,lusup,t1,t2,Linv,i,lib,rtemp_loc,nleaf_send_tmp) nowait	
+// #pragma	omp	taskloop firstprivate (nrhs,beta,alpha,x,rtemp,ldalsum) private (ii,k,knsupc,lk,luptr,lsub,nsupr,lusup,t1,t2,Linv,i,lib,rtemp_loc,nleaf_send_tmp) nogroup	
+#endif
+
+			for (jj=0;jj<nleaf;jj++){
+				k=leafsups[jj];
+
+				// #ifdef _OPENMP
+				// #pragma	omp	task firstprivate (k,nrhs,beta,alpha,x,rtemp,ldalsum) private (ii,knsupc,lk,luptr,lsub,nsupr,lusup,t1,t2,Linv,i,lib,rtemp_loc)	 	
+				// #endif
+				{
+
+#if ( PROFlevel>=1 )
+					TIC(t1);
+#endif	 
+
+					rtemp_loc = &rtemp[sizertemp* thread_id];
+
+
+					knsupc = SuperSize( k );
+					lk = LBi( k, grid );
+
+					// if ( frecv[lk]==0 && fmod[lk]==0 ) { 
+					// fmod[lk] = -1;  /* Do not solve X[k] in the future. */
+					ii = X_BLK( lk );
+					lk = LBj( k, grid ); /* Local block number, column-wise. */
+					lsub = Lrowind_bc_ptr[lk];
+					lusup = Lnzval_bc_ptr[lk];
+
+					nsupr = lsub[1];
+
+#ifdef _CRAY
+					STRSM(ftcs1, ftcs1, ftcs2, ftcs3, &knsupc, &nrhs, &alpha,
+							lusup, &nsupr, &x[ii], &knsupc);
+#elif defined (USE_VENDOR_BLAS)
+					dtrsm_("L", "L", "N", "U", &knsupc, &nrhs, &alpha, 
+							lusup, &nsupr, &x[ii], &knsupc, 1, 1, 1, 1);	
+#else
+					dtrsm_("L", "L", "N", "U", &knsupc, &nrhs, &alpha, 
+							lusup, &nsupr, &x[ii], &knsupc);
+#endif
+				
 					
 					// for (i=0 ; i<knsupc*nrhs ; i++){
 					// printf("x_l: %f\n",x[ii+i]);
@@ -1205,65 +1302,55 @@ pdgstrs(int_t n, LUstruct_t *LUstruct,
 					}
 				}		
 				}
+
+
+} 		
+		
+
 			}	
 		}
 
 
-#if ( VTUNE>=1 )
-		__itt_resume();
-#endif
+
 
 		jj=0;
 #ifdef _OPENMP
-#pragma omp parallel default (shared) private(thread_id)
-		{
-			thread_id = omp_get_thread_num ();
-#else
-			{
-				thread_id = 0;
+#pragma omp parallel default (shared) 
 #endif
+		{
+		
+// #ifdef _OPENMP
+			// thread_id = omp_get_thread_num ();
+// #else
+			// thread_id = 0;
+// #endif			
 
 #ifdef _OPENMP
 #pragma omp master
-#endif
+#endif 
 				{
 
 #ifdef _OPENMP
-#pragma	omp	taskloop private (i,k,ii,knsupc,lk,nb,lptr,luptr,lsub,lusup,thread_id) untied num_tasks(num_thread*8) nogroup
+#pragma	omp	taskloop private (k,ii,lk) untied num_tasks(num_thread*8) nogroup
+// #pragma	omp	for private (k,ii,lk) nowait
 #endif
-
 					for (jj=0;jj<nleaf;jj++){
 						k=leafsups[jj];		
 
 						// #ifdef _OPENMP
-						// #pragma	omp	task firstprivate (k) private (ii,knsupc,lk,nb,lptr,luptr,lsub,lusup,thread_id) untied	 	
+						// #pragma	omp	task firstprivate (k) private (ii,knsupc,lk,nb,lptr,luptr,lsub,lusup) untied	 	
 						// #endif
-						{
-
-#ifdef _OPENMP
-							thread_id = omp_get_thread_num ();
-#else
-							thread_id = 0;
-#endif								
-
+						{					
 							/* Diagonal process */
-							knsupc = SuperSize( k );
 							lk = LBi( k, grid );
-
-							// if ( frecv[lk]==0 && fmod[lk]==0 ) { 
-							// fmod[lk] = -1;  /* Do not solve X[k] in the future. */
 							ii = X_BLK( lk );
-							lk = LBj( k, grid ); /* Local block number, column-wise. */
-							lsub = Lrowind_bc_ptr[lk];
-							lusup = Lnzval_bc_ptr[lk];
-
 							/*
 							 * Perform local block modifications: lsum[i] -= L_i,k * X[k]
 							 */
-							nb = lsub[0] - 1;
-							dlsum_fmod_inv(lsum, x, &x[ii], rtemp, nrhs, knsupc, k,
-									fmod, nb, xsup, grid, Llu, 
-									stat_loc, leaf_send, &nleaf_send,sizelsum,sizertemp,0);	
+							// nb = lsub[0] - 1;
+							dlsum_fmod_inv(lsum, x, &x[ii], rtemp, nrhs, k,
+									fmod, xsup, grid, Llu, 
+									stat_loc, leaf_send, &nleaf_send,sizelsum,sizertemp,0,maxsuper,thread_id,num_thread);	
 						}
 
 						// } /* if diagonal process ... */
@@ -1287,9 +1374,9 @@ pdgstrs(int_t n, LUstruct_t *LUstruct,
 			}
 
 
-
-#if ( VTUNE>=1 )
-			__itt_pause();
+#ifdef USE_VTUNE
+	__itt_pause(); // stop VTune
+	__SSC_MARK(0x222); // stop SDE tracing
 #endif
 
 			/* -----------------------------------------------------------
@@ -1373,7 +1460,7 @@ pdgstrs(int_t n, LUstruct_t *LUstruct,
 
 										dlsum_fmod_inv_master(lsum, x, xin, rtemp, nrhs, knsupc, k,
 												fmod, nb, xsup, grid, Llu,
-												stat_loc,sizelsum,sizertemp,0);	
+												stat_loc,sizelsum,sizertemp,0,maxsuper);	
 
 									} /* if lsub */
 								}
@@ -1485,7 +1572,7 @@ pdgstrs(int_t n, LUstruct_t *LUstruct,
 												xin = &x[ii];		
 												dlsum_fmod_inv_master(lsum, x, xin, rtemp, nrhs, knsupc, k,
 														fmod, nb, xsup, grid, Llu,
-														stat_loc,sizelsum,sizertemp,0);	
+														stat_loc,sizelsum,sizertemp,0,maxsuper);	
 											} /* if lsub */
 											// }
 
@@ -1603,9 +1690,9 @@ pdgstrs(int_t n, LUstruct_t *LUstruct,
 		
 #ifdef _OPENMP
 
-	#pragma omp parallel default(shared) private(thread_id,k,krow,knsupc,lk,il,dest,j,i)
+	#pragma omp parallel default(shared) private(k,krow,knsupc,lk,il,dest,j,i)
 	{
-		thread_id = omp_get_thread_num ();
+		// thread_id = omp_get_thread_num ();
 		for (k = 0; k < nsupers; ++k) {
 			krow = PROW( k, grid );
 			if ( myrow == krow ) {
@@ -1764,7 +1851,8 @@ pdgstrs(int_t n, LUstruct_t *LUstruct,
 #endif
 		{
 #ifdef _OPENMP
-#pragma	omp	taskloop firstprivate (nrhs,beta,alpha,x,rtemp,ldalsum) private (ii,jj,k,knsupc,lk,luptr,lsub,nsupr,lusup,thread_id,t1,t2,Uinv,i,lib,rtemp_loc,nroot_send_tmp) nogroup	
+#pragma	omp	taskloop firstprivate (nrhs,beta,alpha,x,rtemp,ldalsum) private (ii,jj,k,knsupc,lk,luptr,lsub,nsupr,lusup,t1,t2,Uinv,i,lib,rtemp_loc,nroot_send_tmp) nogroup	
+// #pragma	omp	for firstprivate (nrhs,beta,alpha,x,rtemp,ldalsum) private (ii,jj,k,knsupc,lk,luptr,lsub,nsupr,lusup,t1,t2,Uinv,i,lib,rtemp_loc,nroot_send_tmp) nowait	
 #endif		
 		for (jj=0;jj<nroot;jj++){
 			k=rootsups[jj];	
@@ -1772,11 +1860,11 @@ pdgstrs(int_t n, LUstruct_t *LUstruct,
 #if ( PROFlevel>=1 )
 			TIC(t1);
 #endif	
-#ifdef _OPENMP
-			thread_id = omp_get_thread_num ();
-#else
-			thread_id = 0;
-#endif
+// #ifdef _OPENMP
+			// thread_id = omp_get_thread_num ();
+// #else
+			// thread_id = 0;
+// #endif
 			rtemp_loc = &rtemp[sizertemp* thread_id];
 
 
