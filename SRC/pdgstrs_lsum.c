@@ -579,7 +579,9 @@ void dlsum_fmod_inv
 						il = LSUM_BLK( lk );
 
 						RHS_ITERATE(j){
+							#ifdef _OPENMP
 							#pragma omp simd							
+							#endif
 							for (i = 0; i < nbrow1; ++i) {
 								irow = lsub[lptr+i] - rel; /* Relative row. */
 								lsum[il+irow + j*iknsupc+sizelsum*thread_id1] -= rtemp_loc[nbrow_ref+i + j*nbrow];
@@ -614,7 +616,9 @@ void dlsum_fmod_inv
 							p = PNUM( myrow, ikcol, grid );
 							if ( iam != p ) {
 								for (ii=1;ii<num_thread;ii++){
-									#pragma omp simd	
+									#ifdef _OPENMP
+									#pragma omp simd							
+									#endif
 									for (jj=0;jj<iknsupc*nrhs;jj++)
 										lsum[il + jj ] += lsum[il + jj + ii*sizelsum];
 								}
@@ -631,14 +635,18 @@ void dlsum_fmod_inv
 								TIC(t1);
 #endif		
 								for (ii=1;ii<num_thread;ii++){
-								#pragma omp simd	
+									#ifdef _OPENMP
+									#pragma omp simd							
+									#endif
 									for (jj=0;jj<iknsupc*nrhs;jj++)
 										lsum[il + jj ] += lsum[il + jj + ii*sizelsum];
 								}
 								ii = X_BLK( lk );
 								
 								RHS_ITERATE(j){
-									#pragma omp simd	
+									#ifdef _OPENMP
+									#pragma omp simd							
+									#endif
 									for (i = 0; i < iknsupc; ++i)	
 										x[i + ii + j*iknsupc] += lsum[i + il + j*iknsupc ];
 								}		
@@ -666,7 +674,9 @@ void dlsum_fmod_inv
 											&alpha, Linv, &iknsupc, &x[ii],
 											&iknsupc, &beta, rtemp_loc, &iknsupc );
 #endif  
-									#pragma omp simd	
+									#ifdef _OPENMP
+									#pragma omp simd							
+									#endif	
 									for (i=0 ; i<iknsupc*nrhs ; i++){
 										x[ii+i] = rtemp_loc[i];
 									}
@@ -775,7 +785,9 @@ void dlsum_fmod_inv
 				il = LSUM_BLK( lk );
 
 				RHS_ITERATE(j){					
-					#pragma omp simd				
+					#ifdef _OPENMP
+					#pragma omp simd							
+					#endif			
 					for (i = 0; i < nbrow1; ++i) {
 						irow = lsub[lptr+i] - rel; /* Relative row. */
 						lsum[il+irow + j*iknsupc+sizelsum*thread_id] -= rtemp_loc[nbrow_ref+i + j*nbrow];
@@ -813,7 +825,9 @@ void dlsum_fmod_inv
 					p = PNUM( myrow, ikcol, grid );
 					if ( iam != p ) {
 						for (ii=1;ii<num_thread;ii++){
-							#pragma omp simd
+							#ifdef _OPENMP
+							#pragma omp simd							
+							#endif
 							for (jj=0;jj<iknsupc*nrhs;jj++)
 								lsum[il + jj ] += lsum[il + jj + ii*sizelsum];
 						}
@@ -830,7 +844,9 @@ void dlsum_fmod_inv
 						TIC(t1);
 #endif		
 						for (ii=1;ii<num_thread;ii++){
-							#pragma omp simd
+							#ifdef _OPENMP
+							#pragma omp simd							
+							#endif
 							for (jj=0;jj<iknsupc*nrhs;jj++)
 								lsum[il + jj ] += lsum[il + jj + ii*sizelsum];
 						}
@@ -838,7 +854,9 @@ void dlsum_fmod_inv
 						ii = X_BLK( lk );
 
 						RHS_ITERATE(j){
-							#pragma omp simd
+							#ifdef _OPENMP
+							#pragma omp simd							
+							#endif
 							for (i = 0; i < iknsupc; ++i)	
 								x[i + ii + j*iknsupc] += lsum[i + il + j*iknsupc ];
 						}		
@@ -865,7 +883,9 @@ void dlsum_fmod_inv
 									&iknsupc, &beta, rtemp_loc, &iknsupc );
 #endif   
 							// #pragma omp simd aligned(rtemp_loc:64)
-							#pragma omp simd
+							#ifdef _OPENMP
+							#pragma omp simd							
+							#endif
 							for (i=0 ; i<iknsupc*nrhs ; i++){
 								x[ii+i] = rtemp_loc[i];
 							}		
@@ -1371,7 +1391,9 @@ void dlsum_bmod_inv
  int_t* root_send, 
  int_t* nroot_send, 
  int_t sizelsum,
- int_t sizertemp
+ int_t sizertemp,
+ int thread_id,
+ int num_thread
  )
 {
 	/*
@@ -1395,7 +1417,7 @@ void dlsum_bmod_inv
 	MPI_Status status;
 	int test_flag;
 	int_t bmod_tmp;
-	int thread_id,thread_id1,num_thread;
+	int thread_id1;
 	double *rtemp_loc;
 	int_t nroot_send_tmp;	
 	double *Uinv;/* Inverse of diagonal block */    
@@ -1408,15 +1430,7 @@ void dlsum_bmod_inv
 	int_t aln_d,aln_i;
 	aln_d = ceil(CACHELINE/(double)dword);
 	aln_i = ceil(CACHELINE/(double)iword);	
-#ifdef _OPENMP
-	thread_id = omp_get_thread_num ();
-	num_thread = omp_get_num_threads ();
-#else
-	thread_id = 0;
-	num_thread = 1;
-#endif	
-	rtemp_loc = &rtemp[sizertemp* thread_id];
-	
+
 	
 	iam = grid->iam;
 	myrow = MYROW( iam, grid );
@@ -1424,10 +1438,11 @@ void dlsum_bmod_inv
 	lk = LBj( k, grid ); /* Local block number, column-wise. */
 	nub = Urbs[lk];      /* Number of U blocks in block column lk */	
 	
-	if(nub>num_thread){
+	// if(nub>num_thread){
+	if(nub>16){ 
 	// // // // if(Urbs2[lk]>num_thread){
 	// if(Urbs2[lk]>0){
-		Nchunk=num_thread;
+		Nchunk=SUPERLU_MIN(num_thread,nub);
 		nub_loc = floor(((double)nub)/Nchunk);
 		remainder = nub % Nchunk;
 
@@ -1474,6 +1489,9 @@ void dlsum_bmod_inv
 						fnz = usub[i + jj];
 						if ( fnz < iklrow ) { /* Nonzero segment. */
 							/* AXPY */
+							#ifdef _OPENMP
+							#pragma omp simd							
+							#endif	
 							for (irow = fnz; irow < iklrow; ++irow)
 								dest[irow - ikfrow] -= uval[uptr++] * y[jj];
 								stat[thread_id1]->ops[SOLVE] += 2 * (iklrow - fnz);
@@ -1499,6 +1517,9 @@ void dlsum_bmod_inv
 					if ( iam != p ) {
 						for (ii=1;ii<num_thread;ii++)
 							// if(ii!=thread_id1)
+							#ifdef _OPENMP
+							#pragma omp simd							
+							#endif	
 							for (jj=0;jj<iknsupc*nrhs;jj++)
 								lsum[il + jj ] += lsum[il + jj + ii*sizelsum];
 								
@@ -1521,6 +1542,9 @@ void dlsum_bmod_inv
 						
 						for (ii=1;ii<num_thread;ii++)
 							// if(ii!=thread_id1)
+							#ifdef _OPENMP
+							#pragma omp simd							
+							#endif								
 							for (jj=0;jj<iknsupc*nrhs;jj++)
 								lsum[il + jj ] += lsum[il + jj + ii*sizelsum];
 
@@ -1528,6 +1552,9 @@ void dlsum_bmod_inv
 						dest = &x[ii];
 								
 						RHS_ITERATE(j)
+							#ifdef _OPENMP
+							#pragma omp simd							
+							#endif								
 							for (i = 0; i < iknsupc; ++i)
 								dest[i + j*iknsupc] += lsum[i + il + j*iknsupc];
 								
@@ -1553,6 +1580,9 @@ void dlsum_bmod_inv
 										&alpha, Uinv, &iknsupc, &x[ii],
 										&iknsupc, &beta, rtemp_loc, &iknsupc );
 		#endif	   
+								#ifdef _OPENMP
+								#pragma omp simd							
+								#endif	
 								for (i=0 ; i<iknsupc*nrhs ; i++){
 									x[ii+i] = rtemp_loc[i];
 								}		
@@ -1610,7 +1640,7 @@ void dlsum_bmod_inv
 								{
 								dlsum_bmod_inv(lsum, x, &x[ii], rtemp, nrhs, gik, bmod, Urbs,Urbs2,
 										Ucb_indptr, Ucb_valptr, xsup, grid, Llu,
-										send_req, stat, root_send, nroot_send, sizelsum,sizertemp);
+										send_req, stat, root_send, nroot_send, sizelsum,sizertemp,thread_id1,num_thread);
 								}
 							}
 						// } /* if brecv[ik] == 0 */
@@ -1620,13 +1650,9 @@ void dlsum_bmod_inv
 		}
 
 	} else { 
-#ifdef _OPENMP	
-		thread_id1 = omp_get_thread_num ();
-#else
-		thread_id1 = 0;
-#endif
 
-		rtemp_loc = &rtemp[sizertemp* thread_id1];
+
+		rtemp_loc = &rtemp[sizertemp* thread_id];
 
 		for (ub = 0; ub < nub; ++ub) {
 			ik = Ucb_indptr[lk][ub].lbnum; /* Local block number, row-wise. */
@@ -1644,24 +1670,24 @@ void dlsum_bmod_inv
 		TIC(t1);
 #endif					
 			RHS_ITERATE(j) {
-				dest = &lsum[il + j*iknsupc+sizelsum*thread_id1];
+				dest = &lsum[il + j*iknsupc+sizelsum*thread_id];
 				y = &xk[j*knsupc];
 				uptr = Ucb_valptr[lk][ub]; /* Start of the block in uval[]. */
 				for (jj = 0; jj < knsupc; ++jj) {
 					fnz = usub[i + jj];
 					if ( fnz < iklrow ) { /* Nonzero segment. */
 						/* AXPY */
+						#pragma omp simd
 						for (irow = fnz; irow < iklrow; ++irow)
-						
 								dest[irow - ikfrow] -= uval[uptr++] * y[jj];
-								stat[thread_id1]->ops[SOLVE] += 2 * (iklrow - fnz);
+								stat[thread_id]->ops[SOLVE] += 2 * (iklrow - fnz);
 					}
 				} /* for jj ... */
 			}
 
 #if ( PROFlevel>=1 )
 		TOC(t2, t1);
-		stat[thread_id1]->utime[SOL_GEMM] += t2;
+		stat[thread_id]->utime[SOL_GEMM] += t2;
 #endif				
 			
 	#ifdef _OPENMP
@@ -1674,7 +1700,10 @@ void dlsum_bmod_inv
 				p = PNUM( myrow, gikcol, grid );
 				if ( iam != p ) {
 					for (ii=1;ii<num_thread;ii++)
-						// if(ii!=thread_id1)
+						// if(ii!=thread_id)
+						#ifdef _OPENMP
+						#pragma omp simd							
+						#endif
 						for (jj=0;jj<iknsupc*nrhs;jj++)		
 							lsum[il + jj ] += lsum[il + jj + ii*sizelsum];
 #ifdef _OPENMP
@@ -1695,7 +1724,10 @@ void dlsum_bmod_inv
 #endif							
 					
 					for (ii=1;ii<num_thread;ii++)
-						// if(ii!=thread_id1)
+						// if(ii!=thread_id)
+						#ifdef _OPENMP
+						#pragma omp simd							
+						#endif
 						for (jj=0;jj<iknsupc*nrhs;jj++)
 								lsum[il + jj ] += lsum[il + jj + ii*sizelsum];
 
@@ -1703,6 +1735,9 @@ void dlsum_bmod_inv
 					dest = &x[ii];
 							
 					RHS_ITERATE(j)
+						#ifdef _OPENMP
+						#pragma omp simd							
+						#endif
 						for (i = 0; i < iknsupc; ++i)
 							dest[i + j*iknsupc] += lsum[i + il + j*iknsupc];
 					
@@ -1727,7 +1762,10 @@ void dlsum_bmod_inv
 							dgemm_( "N", "N", &iknsupc, &nrhs, &iknsupc,
 									&alpha, Uinv, &iknsupc, &x[ii],
 									&iknsupc, &beta, rtemp_loc, &iknsupc );
-	#endif	   
+	#endif
+							#ifdef _OPENMP
+							#pragma omp simd							
+							#endif
 							for (i=0 ; i<iknsupc*nrhs ; i++){
 								x[ii+i] = rtemp_loc[i];
 							}		
@@ -1746,9 +1784,9 @@ void dlsum_bmod_inv
 				
 	#if ( PROFlevel>=1 )
 						TOC(t2, t1);
-						stat[thread_id1]->utime[SOL_TRSM] += t2;
+						stat[thread_id]->utime[SOL_TRSM] += t2;
 	#endif	
-						stat[thread_id1]->ops[SOLVE] += iknsupc * (iknsupc + 1) * nrhs;
+						stat[thread_id]->ops[SOLVE] += iknsupc * (iknsupc + 1) * nrhs;
 	#if ( DEBUGlevel>=2 )
 						printf("(%2d) Solve X[%2d]\n", iam, gik);
 	#endif
@@ -1775,18 +1813,26 @@ void dlsum_bmod_inv
 						 */
 						if ( Urbs[lk1] )
 						
-							if(Urbs[lk1]>num_thread){
-							#ifdef _OPENMP
-							#pragma	omp	task firstprivate (Ucb_indptr,Ucb_valptr,Llu,sizelsum,ii,gik,x,rtemp,bmod,Urbs,Urbs2,lsum,stat,nrhs,grid,xsup) untied 
-							#endif						
+							// if(Urbs[lk1]>16){
+							// #ifdef _OPENMP
+							// #pragma	omp	task firstprivate (Ucb_indptr,Ucb_valptr,Llu,sizelsum,ii,gik,x,rtemp,bmod,Urbs,Urbs2,lsum,stat,nrhs,grid,xsup,thread_id1) untied 
+							// #endif
+
+								// {
+								// #ifdef _OPENMP				 
+											// thread_id1 = omp_get_thread_num ();
+								// #else
+											// thread_id1 = 0;
+								// #endif									
+								// dlsum_bmod_inv(lsum, x, &x[ii], rtemp, nrhs, gik, bmod, Urbs,Urbs2,
+										// Ucb_indptr, Ucb_valptr, xsup, grid, Llu,
+										// send_req, stat, root_send, nroot_send, sizelsum,sizertemp,thread_id1,num_thread);
+								// }
+							// }else{
 								dlsum_bmod_inv(lsum, x, &x[ii], rtemp, nrhs, gik, bmod, Urbs,Urbs2,
 										Ucb_indptr, Ucb_valptr, xsup, grid, Llu,
-										send_req, stat, root_send, nroot_send, sizelsum,sizertemp);
-							}else{
-								dlsum_bmod_inv(lsum, x, &x[ii], rtemp, nrhs, gik, bmod, Urbs,Urbs2,
-										Ucb_indptr, Ucb_valptr, xsup, grid, Llu,
-										send_req, stat, root_send, nroot_send, sizelsum,sizertemp);							
-							}		
+										send_req, stat, root_send, nroot_send, sizelsum,sizertemp,thread_id,num_thread);							
+							// }		
 									
 					// } /* if brecv[ik] == 0 */
 				}

@@ -309,7 +309,7 @@ extern void dlsum_fmod_inv_master(double *, double *, double *, double *,
 extern void dlsum_bmod_inv(double *, double *, double *, double *,
                        int, int_t, int_t *, int_t *, int_t *, Ucb_indptr_t **,
                        int_t **, int_t *, gridinfo_t *, LocalLU_t *,
-		       MPI_Request [], SuperLUStat_t **, int_t *, int_t *, int_t, int_t);
+		       MPI_Request [], SuperLUStat_t **, int_t *, int_t *, int_t, int_t, int, int);
 extern void dlsum_bmod_inv_master(double *, double *, double *, double *,
                        int, int_t, int_t *, int_t *, int_t *, Ucb_indptr_t **,
                        int_t **, int_t *, gridinfo_t *, LocalLU_t *,
@@ -358,6 +358,8 @@ extern void    pdinf_norm_error(int, int_t, int_t, double [], int_t,
 extern void  dreadhb_dist (int, FILE *, int_t *, int_t *, int_t *, 
 			   double **, int_t **, int_t **);
 extern void  dreadtriple_dist(FILE *, int_t *, int_t *, int_t *,
+			 double **, int_t **, int_t **);
+extern void  dreadtriple_noheader(FILE *, int_t *, int_t *, int_t *,
 			 double **, int_t **, int_t **);
 extern void  dreadrb_dist(int, FILE *, int_t *, int_t *, int_t *,
 		     double **, int_t **, int_t **);

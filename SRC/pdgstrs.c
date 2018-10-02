@@ -210,15 +210,14 @@ pdReDistribute_B_to_X(double *B, int_t m_loc, int nrhs, int_t ldb,
 	{	
 		// t = SuperLU_timer_();
 #ifdef _OPENMP
-#pragma	omp	taskloop private (i,l,irow,k,j,knsupc,lk) untied 
+#pragma	omp	taskloop private (i,l,irow,k,j,knsupc) untied 
 #endif
 		for (i = 0; i < m_loc; ++i) {
 			irow = perm_c[perm_r[i+fst_row]]; /* Row number in Pc*Pr*B */
 	   
 			k = BlockNum( irow );
 			knsupc = SuperSize( k );
-			lk = LBi( k, grid );  /* Local block number. */
-			l = X_BLK( lk );
+			l = X_BLK( k );
 			
 			x[l - XK_H] = k;      /* Block number prepended in the header. */
 			
@@ -837,7 +836,9 @@ pdgstrs(int_t n, LUstruct_t *LUstruct,
 	int iword = sizeof (int_t);
 	int dword = sizeof (double);	
 	int Nwork;
-
+	
+	int_t procs = grid->nprow * grid->npcol;
+	
 	yes_no_t done;
 	yes_no_t startforward;
 
@@ -864,6 +865,7 @@ pdgstrs(int_t n, LUstruct_t *LUstruct,
     	if (omp_get_thread_num () == 0) {
     		num_thread = omp_get_num_threads ();
     	}
+		thread_id = omp_get_thread_num ();
     }
 #endif
 
@@ -875,7 +877,7 @@ pdgstrs(int_t n, LUstruct_t *LUstruct,
 #endif
 	
     MPI_Barrier( grid->comm );
-    TIC(t1_sol);
+	t1_sol = SuperLU_timer_();
     t = SuperLU_timer_();
 
     /* Test input parameters. */
@@ -954,17 +956,16 @@ pdgstrs(int_t n, LUstruct_t *LUstruct,
 		ABORT("Malloc fails for lsum[].");	
 #pragma omp parallel default(shared) private(ii)
 	{
-		thread_id = omp_get_thread_num ();
 		for(ii=0;ii<sizelsum;ii++)
 			lsum[thread_id*sizelsum+ii]=0;
 	}
 #else	
-    if ( !(lsum = (double*)SUPERLU_MALLOC(sizelsum*num_thread * sizeof(double))))
+    if ( !(lsum = (double*)SUPERLU_MALLOC(sizelsum * sizeof(double))))
   	    ABORT("Malloc fails for lsum[].");
-    for ( ii=0; ii < sizelsum*num_thread; ii++ )
+    for ( ii=0; ii < sizelsum; ii++ )
 	lsum[ii]=0;
 #endif	
-    if ( !(x = doubleCalloc_dist(ldalsum * nrhs + nlb * XK_H)) )
+    if ( !(x = (double*)SUPERLU_MALLOC((ldalsum * nrhs + nlb * XK_H) * sizeof(double))) ) 
 	ABORT("Calloc fails for x[].");
 	
     sizertemp=ldalsum * nrhs;
@@ -974,14 +975,13 @@ pdgstrs(int_t n, LUstruct_t *LUstruct,
 		ABORT("Malloc fails for rtemp[].");		
 #pragma omp parallel default(shared) private(ii)
 	{
-		thread_id = omp_get_thread_num ();
 		for(ii=0;ii<sizertemp;ii++)
 				rtemp[thread_id*sizertemp+ii]=0;
 	}
 #else	
-    if ( !(rtemp = (double*)SUPERLU_MALLOC(sizertemp*num_thread * sizeof(double))) )
+    if ( !(rtemp = (double*)SUPERLU_MALLOC(sizertemp * sizeof(double))) )
 	ABORT("Malloc fails for rtemp[].");
-    for ( ii=0; ii<sizertemp*num_thread; ii++ )
+    for ( ii=0; ii<sizertemp; ii++ )
 	rtemp[ii]=0;
 #endif	
 
@@ -1005,25 +1005,27 @@ pdgstrs(int_t n, LUstruct_t *LUstruct,
     pdReDistribute_B_to_X(B, m_loc, nrhs, ldb, fst_row, ilsum, x, 
 			  ScalePermstruct, Glu_persist, grid, SOLVEstruct);
 
+
 #if ( PRNTlevel>=1 )
     t = SuperLU_timer_() - t;
     if ( !iam) printf(".. B to X redistribute time\t%8.4f\n", t);
     fflush(stdout);
     t = SuperLU_timer_();
-#endif	
+#endif		
 
     /* Set up the headers in lsum[]. */
-    ii = 0;
+#ifdef _OPENMP	
+	#pragma omp simd lastprivate(krow,lk,il)
+#endif	
     for (k = 0; k < nsupers; ++k) {
-	knsupc = SuperSize( k );
 	krow = PROW( k, grid );
 	if ( myrow == krow ) {
 	    lk = LBi( k, grid );   /* Local block number. */
 	    il = LSUM_BLK( lk );
 	    lsum[il - LSUM_H] = k; /* Block number prepended in the header. */
 	}
-	ii += knsupc;
     }
+
 
 	/* ---------------------------------------------------------
 	   Initialize the async Bcast trees on all processes.
@@ -1048,6 +1050,21 @@ pdgstrs(int_t n, LUstruct_t *LUstruct,
 
 	nrtree = 0;
 	nleaf=0;
+	nfrecvmod=0;
+	
+	
+	
+if(procs==1){
+	for (lk=0;lk<nsupers_i;++lk){
+		gb = myrow+lk*grid->nprow;  /* not sure */
+		if(gb<nsupers){
+			if (fmod[lk*aln_i]==0){
+				leafsups[nleaf]=gb;				
+				++nleaf;
+			}
+		}
+	}
+}else{
 	for (lk=0;lk<nsupers_i;++lk){
 		if(LRtree_ptr[lk]!=NULL){
 			nrtree++;
@@ -1066,9 +1083,13 @@ pdgstrs(int_t n, LUstruct_t *LUstruct,
 				}
 			}
 		}
-	}	
-
+	}
+}	
+	
+	
+#ifdef _OPENMP	
 #pragma omp simd
+#endif
 	for (i = 0; i < nlb; ++i) fmod[i*aln_i] += frecv[i];
 
 	if ( !(recvbuf_BC_fwd = (double*)SUPERLU_MALLOC(maxrecvsz*(nfrecvx+1) * sizeof(double))) )  // this needs to be optimized for 1D row mapping
@@ -1087,7 +1108,8 @@ pdgstrs(int_t n, LUstruct_t *LUstruct,
 	fflush(stdout);
 	MPI_Barrier( grid->comm );	
 	t = SuperLU_timer_();
-#endif
+#endif	
+
 
 #if ( VAMPIR>=1 )
 	// VT_initialize(); 
@@ -1176,7 +1198,10 @@ if(Llu->inv == 1){
 							&alpha, Linv, &knsupc, &x[ii],
 							&knsupc, &beta, rtemp_loc, &knsupc );
 #endif		   
+
+				#ifdef _OPENMP
 					#pragma omp simd
+				#endif	
 					for (i=0 ; i<knsupc*nrhs ; i++){
 						x[ii+i] = rtemp_loc[i];
 					}		
@@ -1319,13 +1344,7 @@ if(Llu->inv == 1){
 #ifdef _OPENMP
 #pragma omp parallel default (shared) 
 #endif
-		{
-		
-// #ifdef _OPENMP
-			// thread_id = omp_get_thread_num ();
-// #else
-			// thread_id = 0;
-// #endif			
+		{		
 
 #ifdef _OPENMP
 #pragma omp master
@@ -1333,7 +1352,7 @@ if(Llu->inv == 1){
 				{
 
 #ifdef _OPENMP
-#pragma	omp	taskloop private (k,ii,lk) untied num_tasks(num_thread*8) nogroup
+#pragma	omp	taskloop private (k,ii,lk) num_tasks(num_thread*8) nogroup
 // #pragma	omp	for private (k,ii,lk) nowait
 #endif
 					for (jj=0;jj<nleaf;jj++){
@@ -1692,23 +1711,13 @@ if(Llu->inv == 1){
 		
 #ifdef _OPENMP
 
-	#pragma omp parallel default(shared) private(k,krow,knsupc,lk,il,dest,j,i)
+
+#pragma omp parallel default(shared) private(ii)
 	{
-		// thread_id = omp_get_thread_num ();
-		for (k = 0; k < nsupers; ++k) {
-			krow = PROW( k, grid );
-			if ( myrow == krow ) {
-				knsupc = SuperSize( k );
-				lk = LBi( k, grid );
-				il = LSUM_BLK( lk );
-				dest = &lsum[il];
-					
-				RHS_ITERATE(j) {
-					for (i = 0; i < knsupc; ++i) dest[i + j*knsupc + thread_id*sizelsum] = zero;
-				}	
-			}
-		}	
-	}	
+		for(ii=0;ii<sizelsum;ii++)
+			lsum[thread_id*sizelsum+ii]=0;
+	}
+
 
 #else	
 	for (k = 0; k < nsupers; ++k) {
@@ -1810,7 +1819,9 @@ if(Llu->inv == 1){
 		}
 	}	
 
-
+	#ifdef _OPENMP	
+	#pragma omp simd
+	#endif
 	for (i = 0; i < nlb; ++i) bmod[i*aln_i] += brecv[i];
 	// for (i = 0; i < nlb; ++i)printf("bmod[i]: %5d\n",bmod[i]);
 	
@@ -1862,11 +1873,6 @@ if(Llu->inv == 1){
 #if ( PROFlevel>=1 )
 			TIC(t1);
 #endif	
-// #ifdef _OPENMP
-			// thread_id = omp_get_thread_num ();
-// #else
-			// thread_id = 0;
-// #endif
 			rtemp_loc = &rtemp[sizertemp* thread_id];
 
 
@@ -1914,15 +1920,6 @@ if(Llu->inv == 1){
 						lusup, &nsupr, &x[ii], &knsupc);
 #endif
 			}
-			// for (i=0 ; i<knsupc*nrhs ; i++){
-			// printf("x_u: %f\n",x[ii+i]);
-			// fflush(stdout);
-			// }
-
-			// for (i=0 ; i<knsupc*nrhs ; i++){
-				// printf("x: %f\n",x[ii+i]);
-				// fflush(stdout);
-			// }
 
 #if ( PROFlevel>=1 )
 			TOC(t2, t1);
@@ -1945,10 +1942,33 @@ if(Llu->inv == 1){
 				nroot_send_tmp = ++nroot_send;
 				root_send[(nroot_send_tmp-1)*aln_i] = lk;
 				
-				// lib = LBi( k, grid ); /* Local block number, row-wise. */
-				// ii = X_BLK( lib );				
-				// BcTree_forwardMessageSimple(UBtree_ptr[lk],&x[ii - XK_H],'d');
 			}
+						
+		} /* for k ... */
+		
+	}	
+		
+}
+		
+		
+
+		
+#ifdef _OPENMP
+#pragma omp parallel default (shared) 
+#endif
+	{			
+#ifdef _OPENMP
+#pragma omp master
+#endif
+		{
+#ifdef _OPENMP
+#pragma	omp	taskloop private (ii,jj,k,lk) nogroup		
+#endif		
+		for (jj=0;jj<nroot;jj++){
+			k=rootsups[jj];	
+			lk = LBi( k, grid ); /* Local block number, row-wise. */		
+			ii = X_BLK( lk );
+			lk = LBj( k, grid ); /* Local block number, column-wise */
 
 			/*
 			 * Perform local block modifications: lsum[i] -= U_i,k * X[k]
@@ -1956,9 +1976,10 @@ if(Llu->inv == 1){
 			if ( Urbs[lk] ) 
 				dlsum_bmod_inv(lsum, x, &x[ii], rtemp, nrhs, k, bmod, Urbs,Urbs2, 
 						Ucb_indptr, Ucb_valptr, xsup, grid, Llu,
-						send_req, stat_loc, root_send, &nroot_send, sizelsum,sizertemp);
+						send_req, stat_loc, root_send, &nroot_send, sizelsum,sizertemp,thread_id,num_thread);
 									
 		} /* for k ... */
+		
 	}
 }
 
@@ -2289,8 +2310,7 @@ for (i=0;i<nroot_send;i++){
 		}
 #endif	
 
-    TOC(t2_sol,t1_sol);
-    stat->utime[SOLVE] = t2_sol;
+    stat->utime[SOLVE] = SuperLU_timer_() - t1_sol;
 
 #if ( DEBUGlevel>=1 )
     CHECK_MALLOC(iam, "Exit pdgstrs()");

@@ -112,10 +112,18 @@ void superlu_free_dist(void *addr)
     }
 
 }
-
+ 
 #else  /* The production mode. */
 
-#if defined (__INTEL_COMPILER)
+ 
+
+
+#if (__STDC_VERSION__ >= 201112L)
+
+void * superlu_malloc_dist(size_t size) {void* ptr;int alignment=1<<12;if(size>1<<19){alignment=1<<21;}posix_memalign( (void**)&(ptr), alignment, size );return(ptr);}
+void   superlu_free_dist(void * ptr)    {free(ptr);}
+
+#elif defined (__INTEL_COMPILER)
 #include <immintrin.h>
 void * superlu_malloc_dist(size_t size) {
     void* ptr;
@@ -125,10 +133,6 @@ void * superlu_malloc_dist(size_t size) {
 }
 void  superlu_free_dist(void * ptr)  { _mm_free(ptr); }
 
-// #elif (_POSIX_C_SOURCE>=200112L)
-//
-// void * MALLOC(size_t size) {void* ptr;int alignment=1<<12;if(size>1<<19){alignment=1<<21;}posix_memalign( (void**)&(ptr), alignment, size );return(ptr);}
-//void   FREE(void * ptr)    {free(ptr);}
 
 #else // normal malloc/free 
 
