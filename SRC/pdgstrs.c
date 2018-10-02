@@ -957,13 +957,13 @@ pdgstrs(int_t n, LUstruct_t *LUstruct,
 #pragma omp parallel default(shared) private(ii)
 	{
 		for(ii=0;ii<sizelsum;ii++)
-			lsum[thread_id*sizelsum+ii]=0;
+			lsum[thread_id*sizelsum+ii]=zero;
 	}
 #else	
     if ( !(lsum = (double*)SUPERLU_MALLOC(sizelsum * sizeof(double))))
   	    ABORT("Malloc fails for lsum[].");
     for ( ii=0; ii < sizelsum; ii++ )
-	lsum[ii]=0;
+	lsum[ii]=zero;
 #endif	
     if ( !(x = (double*)SUPERLU_MALLOC((ldalsum * nrhs + nlb * XK_H) * sizeof(double))) ) 
 	ABORT("Calloc fails for x[].");
@@ -976,13 +976,13 @@ pdgstrs(int_t n, LUstruct_t *LUstruct,
 #pragma omp parallel default(shared) private(ii)
 	{
 		for(ii=0;ii<sizertemp;ii++)
-				rtemp[thread_id*sizertemp+ii]=0;
+				rtemp[thread_id*sizertemp+ii]=zero;
 	}
 #else	
     if ( !(rtemp = (double*)SUPERLU_MALLOC(sizertemp * sizeof(double))) )
 	ABORT("Malloc fails for rtemp[].");
     for ( ii=0; ii<sizertemp; ii++ )
-	rtemp[ii]=0;
+	rtemp[ii]=zero;
 #endif	
 
     if ( !(stat_loc = (SuperLUStat_t**) SUPERLU_MALLOC(num_thread*sizeof(SuperLUStat_t*))) )
@@ -1715,8 +1715,18 @@ if(Llu->inv == 1){
 #pragma omp parallel default(shared) private(ii)
 	{
 		for(ii=0;ii<sizelsum;ii++)
-			lsum[thread_id*sizelsum+ii]=0;
+			lsum[thread_id*sizelsum+ii]=zero;
 	}
+    /* Set up the headers in lsum[]. */
+	#pragma omp simd lastprivate(krow,lk,il)
+    for (k = 0; k < nsupers; ++k) {
+	krow = PROW( k, grid );
+	if ( myrow == krow ) {
+	    lk = LBi( k, grid );   /* Local block number. */
+	    il = LSUM_BLK( lk );
+	    lsum[il - LSUM_H] = k; /* Block number prepended in the header. */
+	}
+    }	
 
 
 #else	
