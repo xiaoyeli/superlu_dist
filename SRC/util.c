@@ -165,6 +165,7 @@ Destroy_LU(int_t n, gridinfo_t *grid, LUstruct_t *LUstruct)
 	}
 	SUPERLU_FREE(Llu->Linv_bc_ptr);
 	SUPERLU_FREE(Llu->Uinv_bc_ptr);
+	SUPERLU_FREE(Llu->Unnz);
 	
 	
 	nb = CEILING(nsupers, grid->npcol);

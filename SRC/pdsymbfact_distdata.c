@@ -1205,6 +1205,7 @@ ddist_psymbtonum(fact_t fact, int_t n, SuperMatrix *A,
   int_t nrbu; /* number of U blocks in current block column */
   int_t gb;   /* global block number; 0 < gb <= nsuper */
   int_t lb;   /* local block number; 0 < lb <= ceil(NSUPERS/Pr) */
+  int_t ub,gik,iklrow,fnz;  
   int iam, jbrow, jbcol, jcol, kcol, krow, mycol, myrow, pc, pr, ljb_i, ljb_j, p;
   int_t mybufmax[NBUFFERS];
   NRformat_loc *Astore;
@@ -1231,6 +1232,7 @@ ddist_psymbtonum(fact_t fact, int_t n, SuperMatrix *A,
   double *lusup_srt; /* nonzero values in L and U */    
   double **Unzval_br_ptr;  /* size ceil(NSUPERS/Pr) */
   int_t  **Ufstnz_br_ptr;  /* size ceil(NSUPERS/Pr) */
+  int_t  *Unnz;  /* size ceil(NSUPERS/Pc) */
 
   BcTree  *LBtree_ptr;       /* size ceil(NSUPERS/Pc)                */
   RdTree  *LRtree_ptr;		  /* size ceil(NSUPERS/Pr)                */
@@ -1506,6 +1508,11 @@ double *dense, *dense_col; /* SPA */
     fprintf(stderr, "Malloc fails for Lindval_loc_bc_ptr[].");
     return (memDist + memNLU);
   }  
+  
+  if ( !(Unnz = (int_t*)SUPERLU_MALLOC(nsupers_j * sizeof(int_t))) ){
+    fprintf(stderr, "Malloc fails for Unnz[].");
+    return (memDist + memNLU);
+  }    
   
   memNLU += nsupers_j * sizeof(double*) + nsupers_j * sizeof(int_t*)+ nsupers_j * sizeof(int_t*);
   Lnzval_bc_ptr[nsupers_j-1] = NULL;
@@ -2115,7 +2122,26 @@ double *dense, *dense_col; /* SPA */
 			}
 		}			
 		
-		
+
+/* Count the nnzs per block column */	
+	for (lb = 0; lb < nub; ++lb) {
+		Unnz[lb] = 0;
+		k = lb * grid->npcol + mycol;/* Global block number, column-wise. */
+		knsupc = SuperSize( k );	
+		for (ub = 0; ub < Urbs[lb]; ++ub) {
+			ik = Ucb_indptr[lb][ub].lbnum; /* Local block number, row-wise. */
+			i = Ucb_indptr[lb][ub].indpos; /* Start of the block in usub[]. */
+			i += UB_DESCRIPTOR;
+			gik = ik * grid->nprow + myrow;/* Global block number, row-wise. */
+			iklrow = FstBlockC( gik+1 );
+			for (jj = 0; jj < knsupc; ++jj) {
+				fnz = Ufstnz_br_ptr[ik][i + jj];
+				if ( fnz < iklrow ) {
+					Unnz[lb] +=iklrow-fnz;
+				}
+			} /* for jj ... */
+		}
+	}				
 		
 		
 		/////////////////////////////////////////////////////////////////
@@ -2755,6 +2781,7 @@ double *dense, *dense_col; /* SPA */
   Llu->Uinv_bc_ptr = Uinv_bc_ptr;  
   Llu->Ufstnz_br_ptr = Ufstnz_br_ptr;
   Llu->Unzval_br_ptr = Unzval_br_ptr;
+  Llu->Unnz = Unnz;
   Llu->ToRecv = ToRecv;
   Llu->ToSendD = ToSendD;
   Llu->ToSendR = ToSendR;
