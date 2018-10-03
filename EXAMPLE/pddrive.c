@@ -82,9 +82,8 @@ int main(int argc, char *argv[])
     VT_traceoff(); 
 #endif
 
-#ifdef USE_VTUNE
-	__itt_pause(); // stop VTune
-	__SSC_MARK(0x222); // stop SDE tracing
+#if ( VTUNE>=1 )
+	__itt_pause();
 #endif
 	
     /* Parse command line argv[]. */
@@ -195,17 +194,15 @@ int main(int argc, char *argv[])
      */
     set_default_options_dist(&options);
 	options.IterRefine = NOREFINE;				   
-	options.DiagInv       = YES;
+	options.DiagInv       = YES;							 
 #if 0
     options.RowPerm = NOROWPERM;
-    options.RowPerm = LargeDiag_AWPM;
+    options.RowPerm = LargeDiag_AWPM;									 
     options.IterRefine = NOREFINE;
     options.ColPerm = NATURAL;
     options.Equil = NO; 
     options.ReplaceTinyPivot = YES;
 #endif
-
-	
 
     if (!iam) {
 	print_sp_ienv_dist(&options);

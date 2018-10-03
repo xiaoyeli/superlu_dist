@@ -545,9 +545,7 @@ void dDumpLblocks(int iam, int_t nsupers, gridinfo_t *grid,
 	FILE *fp, *fopen();	
  
 	// assert(grid->npcol*grid->nprow==1);
-	
-	
-	
+
 	// count nonzeros in the first pass
 	nnzL = 0;
 	n = 0;
@@ -583,15 +581,14 @@ void dDumpLblocks(int iam, int_t nsupers, gridinfo_t *grid,
 	}	
     }	
 	MPI_Allreduce(MPI_IN_PLACE,&nnzL,1,mpi_int_t,MPI_SUM,grid->comm);
-	MPI_Allreduce(MPI_IN_PLACE,&n,1,mpi_int_t,MPI_MAX,grid->comm);
+	MPI_Allreduce(MPI_IN_PLACE,&n,1,mpi_int_t,MPI_MAX,grid->comm);	
 	
 	snprintf(filename, sizeof(filename), "%s-%d", "L", iam);    
     printf("Dumping L factor to --> %s\n", filename);
-
  	if ( !(fp = fopen(filename, "w")) ) {
 			ABORT("File open failed");
 		}
-		
+
 	if(grid->iam==0){
 		fprintf(fp, "%d %d %d\n", n,n,nnzL);
 	}

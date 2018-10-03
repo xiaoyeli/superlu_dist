@@ -49,8 +49,8 @@ typedef struct {
     double **Lnzval_bc_ptr;  /* size ceil(NSUPERS/Pc)                 */
     double **Linv_bc_ptr;  /* size ceil(NSUPERS/Pc)                 */
     int_t   **Lindval_loc_bc_ptr; /* size ceil(NSUPERS/Pc)  pointers to locations in Lrowind_bc_ptr and Lnzval_bc_ptr */
-	int_t   *Unnz; /* number of nonzeros per block column in U*/
-    int_t   **Lrowind_bc_2_lsum; /* size ceil(NSUPERS/Pc)  map indices of Lrowind_bc_ptr to indices of lsum  */  
+    int_t   *Unnz; /* number of nonzeros per block column in U*/
+	int_t   **Lrowind_bc_2_lsum; /* size ceil(NSUPERS/Pc)  map indices of Lrowind_bc_ptr to indices of lsum  */  
     double  **Uinv_bc_ptr;  /* size ceil(NSUPERS/Pc)     	*/
     int_t   **Ufstnz_br_ptr;  /* size ceil(NSUPERS/Pr)                 */
     double  **Unzval_br_ptr;  /* size ceil(NSUPERS/Pr)                 */
@@ -314,7 +314,7 @@ extern void dlsum_bmod_inv(double *, double *, double *, double *,
 extern void dlsum_bmod_inv_master(double *, double *, double *, double *,
                        int, int_t, int_t *, int_t *, int_t *, Ucb_indptr_t **,
                        int_t **, int_t *, gridinfo_t *, LocalLU_t *,
-		       MPI_Request [], SuperLUStat_t **, int_t, int_t, int, int);				   
+		       MPI_Request [], SuperLUStat_t **, int_t, int_t, int, int);			   
 			   
 extern void pdgsrfs(int_t, SuperMatrix *, double, LUstruct_t *,
 		    ScalePermstruct_t *, gridinfo_t *,
@@ -361,7 +361,7 @@ extern void  dreadhb_dist (int, FILE *, int_t *, int_t *, int_t *,
 extern void  dreadtriple_dist(FILE *, int_t *, int_t *, int_t *,
 			 double **, int_t **, int_t **);
 extern void  dreadtriple_noheader(FILE *, int_t *, int_t *, int_t *,
-			 double **, int_t **, int_t **);
+			 double **, int_t **, int_t **);			 
 extern void  dreadrb_dist(int, FILE *, int_t *, int_t *, int_t *,
 		     double **, int_t **, int_t **);
 extern void  dreadMM_dist(FILE *, int_t *, int_t *, int_t *,

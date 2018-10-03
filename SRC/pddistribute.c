@@ -58,7 +58,6 @@ at the top-level directory.
  *
  * Return value
  * ============
- *        = 0: successful exit
  * </pre>
  */
 int_t
@@ -100,8 +99,8 @@ dReDistribute_A(SuperMatrix *A, ScalePermstruct_t *ScalePermstruct,
     m_loc = Astore->m_loc;
     fst_row = Astore->fst_row;
     nnzToRecv = intCalloc_dist(2*procs);
-    nnzToSend = nnzToRecv + procs;
-
+    nnzToSend = nnzToRecv + procs;	
+	
     /* ------------------------------------------------------------
        COUNT THE NUMBER OF NONZEROS TO BE SENT TO EACH PROCESS,
        THEN ALLOCATE SPACE.
@@ -382,8 +381,8 @@ pddistribute(fact_t fact, int_t n, SuperMatrix *A,
     int_t nrbu; /* number of U blocks in current block column */
     int_t gb;   /* global block number; 0 < gb <= nsuper */
     int_t lb;   /* local block number; 0 < lb <= ceil(NSUPERS/Pr) */
-	int_t ub,gik,iklrow,fnz;
-    int iam, jbrow, kcol, krow, mycol, myrow, pc, pr;
+	int_t ub,gik,iklrow,fnz;    
+	int iam, jbrow, kcol, krow, mycol, myrow, pc, pr;
     int_t mybufmax[NBUFFERS];
     NRformat_loc *Astore;
     double *a;
@@ -402,7 +401,7 @@ pddistribute(fact_t fact, int_t n, SuperMatrix *A,
     double **Lnzval_bc_ptr;  /* size ceil(NSUPERS/Pc) */
     int_t  **Lrowind_bc_ptr; /* size ceil(NSUPERS/Pc) */
 	int_t   **Lindval_loc_bc_ptr; /* size ceil(NSUPERS/Pc)                 */		    
-	int_t   *Unnz; /* size ceil(NSUPERS/Pc)                 */		    
+	int_t   *Unnz; /* size ceil(NSUPERS/Pc)                 */	
 	double **Unzval_br_ptr;  /* size ceil(NSUPERS/Pr) */
     int_t  **Ufstnz_br_ptr;  /* size ceil(NSUPERS/Pr) */
 
@@ -528,7 +527,7 @@ pddistribute(fact_t fact, int_t n, SuperMatrix *A,
 	Lnzval_bc_ptr = Llu->Lnzval_bc_ptr;
 	Ufstnz_br_ptr = Llu->Ufstnz_br_ptr;
 	Unzval_br_ptr = Llu->Unzval_br_ptr;
-	Unnz = Llu->Unnz;		
+	Unnz = Llu->Unnz;	
 #if ( PRNTlevel>=1 )
 	mem_use += 2.0*nrbu*iword + ldaspa*sp_ienv_dist(3)*dword;
 #endif
@@ -843,7 +842,7 @@ pddistribute(fact_t fact, int_t n, SuperMatrix *A,
 	if ( !(Unnz = 
 			(int_t*)SUPERLU_MALLOC(k * sizeof(int_t))) )
 	ABORT("Malloc fails for Unnz[].");
-	
+		
 	
 	/* These lists of processes will be used for triangular solves. */
 	if ( !(fsendx_plist = (int_t **) SUPERLU_MALLOC(k*sizeof(int_t*))) )
@@ -1202,10 +1201,9 @@ pddistribute(fact_t fact, int_t n, SuperMatrix *A,
 				i += UB_DESCRIPTOR + SuperSize( k );
 			}
 		}
-	}
-
-
+	}				
 	
+
 /* Count the nnzs per block column */	
 	for (lb = 0; lb < nub; ++lb) {
 		Unnz[lb] = 0;
@@ -1224,8 +1222,7 @@ pddistribute(fact_t fact, int_t n, SuperMatrix *A,
 				}
 			} /* for jj ... */
 		}
-	}		
-
+	}			
 	
 	/////////////////////////////////////////////////////////////////
 

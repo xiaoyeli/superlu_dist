@@ -49,7 +49,8 @@ typedef struct {
     doublecomplex **Lnzval_bc_ptr;  /* size ceil(NSUPERS/Pc)                 */
     doublecomplex **Linv_bc_ptr;  /* size ceil(NSUPERS/Pc)                 */
     int_t   **Lindval_loc_bc_ptr; /* size ceil(NSUPERS/Pc)  pointers to locations in Lrowind_bc_ptr and Lnzval_bc_ptr */
-    int_t   **Lrowind_bc_2_lsum; /* size ceil(NSUPERS/Pc)  map indices of Lrowind_bc_ptr to indices of lsum  */  
+    int_t   *Unnz; /* number of nonzeros per block column in U*/
+	int_t   **Lrowind_bc_2_lsum; /* size ceil(NSUPERS/Pc)  map indices of Lrowind_bc_ptr to indices of lsum  */  
     doublecomplex  **Uinv_bc_ptr;  /* size ceil(NSUPERS/Pc)     	*/
     int_t   **Ufstnz_br_ptr;  /* size ceil(NSUPERS/Pr)                 */
     doublecomplex  **Unzval_br_ptr;  /* size ceil(NSUPERS/Pr)                 */
@@ -299,21 +300,21 @@ extern void zlsum_bmod(doublecomplex *, doublecomplex *, doublecomplex *,
 		       MPI_Request [], SuperLUStat_t *);
 
 extern void zlsum_fmod_inv(doublecomplex *, doublecomplex *, doublecomplex *, doublecomplex *,
-		       int, int, int_t , int_t *, int_t,
+		       int, int_t , int_t *,
 		       int_t *, gridinfo_t *, LocalLU_t *, 
-		       SuperLUStat_t **, int_t *, int_t *, int_t, int_t, int_t);
+		       SuperLUStat_t **, int_t *, int_t *, int_t, int_t, int_t, int_t, int, int);
 extern void zlsum_fmod_inv_master(doublecomplex *, doublecomplex *, doublecomplex *, doublecomplex *,
 		       int, int, int_t , int_t *, int_t, 
 		       int_t *, gridinfo_t *, LocalLU_t *, 
-		       SuperLUStat_t **, int_t, int_t, int_t);
+		       SuperLUStat_t **, int_t, int_t, int_t, int_t, int, int);
 extern void zlsum_bmod_inv(doublecomplex *, doublecomplex *, doublecomplex *, doublecomplex *,
                        int, int_t, int_t *, int_t *, int_t *, Ucb_indptr_t **,
                        int_t **, int_t *, gridinfo_t *, LocalLU_t *,
-		       MPI_Request [], SuperLUStat_t **, int_t *, int_t *, int_t, int_t);
+		       MPI_Request [], SuperLUStat_t **, int_t *, int_t *, int_t, int_t, int, int);
 extern void zlsum_bmod_inv_master(doublecomplex *, doublecomplex *, doublecomplex *, doublecomplex *,
                        int, int_t, int_t *, int_t *, int_t *, Ucb_indptr_t **,
                        int_t **, int_t *, gridinfo_t *, LocalLU_t *,
-		       MPI_Request [], SuperLUStat_t **, int_t, int_t);				   
+		       MPI_Request [], SuperLUStat_t **, int_t, int_t, int, int);			   
 			   
 extern void pzgsrfs(int_t, SuperMatrix *, double, LUstruct_t *,
 		    ScalePermstruct_t *, gridinfo_t *,
@@ -361,6 +362,8 @@ extern void  zreadhb_dist (int, FILE *, int_t *, int_t *, int_t *,
 			   doublecomplex **, int_t **, int_t **);
 extern void  zreadtriple_dist(FILE *, int_t *, int_t *, int_t *,
 			 doublecomplex **, int_t **, int_t **);
+extern void  zreadtriple_noheader(FILE *, int_t *, int_t *, int_t *,
+			 doublecomplex **, int_t **, int_t **);			 
 extern void  zreadrb_dist(int, FILE *, int_t *, int_t *, int_t *,
 		     doublecomplex **, int_t **, int_t **);
 extern void  zreadMM_dist(FILE *, int_t *, int_t *, int_t *,
