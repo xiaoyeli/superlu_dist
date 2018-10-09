@@ -19,10 +19,7 @@ at the top-level directory.
  */
 
 #include "superlu_zdefs.h"
-
-#ifndef CACHELINE
-#define CACHELINE 64  /* bytes, Xeon Phi KNL, Cori haswell, Edision */
-#endif	  
+	  
 
 /*! \brief
  *
@@ -463,7 +460,7 @@ pzdistribute(fact_t fact, int_t n, SuperMatrix *A,
 	int_t idx_indx,idx_lusup;
 	int_t nbrow;
 	int_t  ik, il, lk, rel, knsupc, idx_r;
-	int_t  lptr1_tmp, idx_i, idx_v,m, uu, aln_i;
+	int_t  lptr1_tmp, idx_i, idx_v,m, uu;
 	int_t nub;
 	int tag;	
 	
@@ -485,8 +482,7 @@ pzdistribute(fact_t fact, int_t n, SuperMatrix *A,
 
 //#if ( PRNTlevel>=1 )
     iword = sizeof(int_t);
-    dword = sizeof(doublecomplex);
-	aln_i = ceil(CACHELINE/(double)iword);											
+    dword = sizeof(doublecomplex);					
 //#endif
 
 #if ( DEBUGlevel>=1 )
@@ -1012,7 +1008,7 @@ pzdistribute(fact_t fact, int_t n, SuperMatrix *A,
 				ABORT("Malloc fails for index[]");												 			 
 			if (!(lusup = (doublecomplex*)SUPERLU_MALLOC(len*nsupc * sizeof(doublecomplex))))
 				ABORT("Malloc fails for lusup[]");			
-			if ( !(Lindval_loc_bc_ptr[ljb] = intCalloc_dist(((nrbl*3 + (aln_i - 1)) / aln_i) * aln_i)) ) 
+			if ( !(Lindval_loc_bc_ptr[ljb] = intCalloc_dist(nrbl*3)) ) 
 				ABORT("Malloc fails for Lindval_loc_bc_ptr[ljb][]");
 			if (!(Linv_bc_ptr[ljb] = (doublecomplex*)SUPERLU_MALLOC(nsupc*nsupc * sizeof(doublecomplex))))
 				ABORT("Malloc fails for Linv_bc_ptr[ljb][]");

@@ -21,9 +21,6 @@ at the top-level directory.
  */
 #include "superlu_ddefs.h"
 
-#ifndef CACHELINE
-#define CACHELINE 64  /* bytes, Xeon Phi KNL, Cori haswell, Edision */
-#endif	
 
 /*! \brief
  *
@@ -160,7 +157,7 @@ ddistribute(fact_t fact, int_t n, SuperMatrix *A,
 	int_t idx_indx,idx_lusup;
 	int_t nbrow;
 	int_t  ik, il, lk, rel, knsupc, idx_r;
-	int_t  lptr1_tmp, idx_i, idx_v,m, uu, aln_i;
+	int_t  lptr1_tmp, idx_i, idx_v,m, uu;
 	int_t nub;
 	int tag;		
 	
@@ -186,7 +183,6 @@ ddistribute(fact_t fact, int_t n, SuperMatrix *A,
 //#if ( PRNTlevel>=1 )
     iword = sizeof(int_t);
     dword = sizeof(double);
-	aln_i = ceil(CACHELINE/(double)iword);				
 //#endif
 
 #if ( DEBUGlevel>=1 )
@@ -697,7 +693,7 @@ ddistribute(fact_t fact, int_t n, SuperMatrix *A,
 				ABORT("Malloc fails for index[]");												 			 
 			if (!(lusup = (double*)SUPERLU_MALLOC(len*nsupc * sizeof(double))))
 				ABORT("Malloc fails for lusup[]");			
-			if ( !(Lindval_loc_bc_ptr[ljb] = intCalloc_dist(((nrbl*3 + (aln_i - 1)) / aln_i) * aln_i)) ) 
+			if ( !(Lindval_loc_bc_ptr[ljb] = intCalloc_dist(nrbl*3) )) 
 				ABORT("Malloc fails for Lindval_loc_bc_ptr[ljb][]");
 			if (!(Linv_bc_ptr[ljb] = (double*)SUPERLU_MALLOC(nsupc*nsupc * sizeof(double))))
 				ABORT("Malloc fails for Linv_bc_ptr[ljb][]");

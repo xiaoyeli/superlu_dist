@@ -844,7 +844,7 @@ pdgstrs(int_t n, LUstruct_t *LUstruct,
     	static int thread_id;
     yes_no_t empty;
     int_t sizelsum,sizertemp,aln_d,aln_i;
-    	aln_d = ceil(CACHELINE/(double)dword);
+    aln_d = ceil(CACHELINE/(double)dword);
     aln_i = ceil(CACHELINE/(double)iword);
     int num_thread = 1;
 	

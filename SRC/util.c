@@ -149,7 +149,7 @@ Destroy_LU(int_t n, gridinfo_t *grid, LUstruct_t *LUstruct)
 	
     nb = CEILING(nsupers, grid->npcol);
     for (i = 0; i < nb; ++i) 
-	if ( Llu->Lindval_loc_bc_ptr[i] ) {
+	if ( Llu->Lindval_loc_bc_ptr[i]!=NULL) {
 	    SUPERLU_FREE (Llu->Lindval_loc_bc_ptr[i]);
 	}	
 	SUPERLU_FREE(Llu->Lindval_loc_bc_ptr);

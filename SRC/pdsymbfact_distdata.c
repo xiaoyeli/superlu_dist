@@ -32,9 +32,6 @@ at the top-level directory.
 #include "superlu_ddefs.h"
 #include "psymbfact.h"
 
-#ifndef CACHELINE
-#define CACHELINE 64  /* bytes, Xeon Phi KNL, Cori haswell, Edision */
-#endif
 
 /*! \brief
  *
@@ -1290,7 +1287,7 @@ double *dense, *dense_col; /* SPA */
   int_t idx_indx,idx_lusup;
   int_t nbrow;
   int_t  ik, il, lk, rel, knsupc, idx_r;
-  int_t  lptr1_tmp, idx_i, idx_v,m, uu, aln_i;	
+  int_t  lptr1_tmp, idx_i, idx_v,m, uu;	
   int_t	nub;
 
   float memStrLU, memA,
@@ -1323,8 +1320,6 @@ double *dense, *dense_col; /* SPA */
   iword = sizeof(int_t);
   dword = sizeof(double);
 
-  aln_i = ceil(CACHELINE/(double)iword);  
-  
   if (fact == SamePattern_SameRowPerm) {
     ABORT ("ERROR: call of dist_psymbtonum with fact equals SamePattern_SameRowPerm.");  
   }
@@ -1816,7 +1811,7 @@ double *dense, *dense_col; /* SPA */
 	
 	memNLU += len1*iword + len*nsupc*dword;
 
-	if ( !(Lindval_loc_bc_ptr[ljb_j] = intCalloc_dist(((nrbl*3 + (aln_i - 1)) / aln_i) * aln_i)) ) 
+	if ( !(Lindval_loc_bc_ptr[ljb_j] = intCalloc_dist(nrbl*3))) 
 		ABORT("Malloc fails for Lindval_loc_bc_ptr[ljb_j][]");
 	
 	
