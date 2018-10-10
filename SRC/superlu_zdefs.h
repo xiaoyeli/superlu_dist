@@ -137,6 +137,7 @@ typedef struct {
     int_t *etree;
     Glu_persist_t *Glu_persist;
     LocalLU_t *Llu;
+	char dt;
 } LUstruct_t;
 
 
@@ -278,7 +279,7 @@ extern int  static_schedule(superlu_dist_options_t *, int, int,
 extern void LUstructInit(const int_t, LUstruct_t *);
 extern void LUstructFree(LUstruct_t *);
 extern void Destroy_LU(int_t, gridinfo_t *, LUstruct_t *);
-extern void zDestroy_Tree(int_t, gridinfo_t *, LUstruct_t *);
+extern void Destroy_Tree(int_t, gridinfo_t *, LUstruct_t *);
 
 /* #define GPU_PROF
 #define IPM_PROF */

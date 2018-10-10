@@ -94,7 +94,7 @@ install:
     cmake .. \
     -DTPL_PARMETIS_INCLUDE_DIRS="$TRAVIS_BUILD_DIR/installDir/parmetis-4.0.3/metis/include;$TRAVIS_BUILD_DIR/installDir/parmetis-4.0.3/install/include" \
     -DTPL_PARMETIS_LIBRARIES="$TRAVIS_BUILD_DIR/installDir/parmetis-4.0.3/install/lib/libparmetis.so" \
-    -DCMAKE_C_FLAGS="-std=c11 -DPRNTlevel=1 -DPROFlevel=1 -DDEBUGlevel=0" \
+    -DCMAKE_C_FLAGS="-std=c11 -DPRNTlevel=1 -DPROFlevel=1 -DDEBUGlevel=1" \
     -DCMAKE_CXX_FLAGS="-Ofast -std=c++11 -DAdd_ -DRELEASE" \
     -DTPL_BLAS_LIBRARIES="$BLAS_LIB" \
     -DTPL_LAPACK_LIBRARIES="$LAPACK_LIB" \

@@ -211,8 +211,7 @@ int main(int argc, char *argv[])
        ------------------------------------------------------------*/
     PStatFree(&stat);
     Destroy_CompRowLoc_Matrix_dist(&A);
-    ScalePermstructFree(&ScalePermstruct);
-	zDestroy_Tree(n, &grid, &LUstruct);      
+    ScalePermstructFree(&ScalePermstruct);   
 	Destroy_LU(n, &grid, &LUstruct);
     LUstructFree(&LUstruct);
     if ( options.SolveInitialized ) {

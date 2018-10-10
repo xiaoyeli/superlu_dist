@@ -189,8 +189,7 @@ int main(int argc, char *argv[])
     
     PStatPrint(&options, &stat, &grid);        /* Print the statistics. */
     PStatFree(&stat);
-    Destroy_CompRowLoc_Matrix_dist(&A); /* Deallocate storage of matrix A.  */
-	dDestroy_Tree(n, &grid, &LUstruct);      
+    Destroy_CompRowLoc_Matrix_dist(&A); /* Deallocate storage of matrix A.  */ 
 	Destroy_LU(n, &grid, &LUstruct); /* Deallocate storage associated with 
 					the L and U matrices.               */
     SUPERLU_FREE(b);                 /* Free storage of right-hand side.    */
@@ -239,7 +238,6 @@ int main(int argc, char *argv[])
        ------------------------------------------------------------*/
     PStatFree(&stat);
     Destroy_CompRowLoc_Matrix_dist(&A); /* Deallocate storage of matrix A.  */
-	dDestroy_Tree(n, &grid, &LUstruct);  
 	Destroy_LU(n, &grid, &LUstruct); /* Deallocate storage associated with    
 					the L and U matrices.               */
     ScalePermstructFree(&ScalePermstruct);
