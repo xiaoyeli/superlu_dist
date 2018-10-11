@@ -28,7 +28,8 @@ at the top-level directory.
 #include "superlu_defs.h"
 
 #ifndef CACHELINE
-#define CACHELINE 64  /* bytes, Xeon Phi KNL, Cori haswell, Edision */
+// #define CACHELINE 64  /* bytes, Xeon Phi KNL, Cori haswell, Edision */
+#define CACHELINE 1  /* bytes, Xeon Phi KNL, Cori haswell, Edision */
 #endif	
 
 #define ISEND_IRECV
