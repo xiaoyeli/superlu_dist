@@ -193,18 +193,13 @@ int main(int argc, char *argv[])
 		options.DiagInv       = NO;
      */
     set_default_options_dist(&options);
-	options.IterRefine = NOREFINE;				   
-	options.DiagInv       = YES;
 #if 0
     options.RowPerm = NOROWPERM;
-    options.RowPerm = LargeDiag_AWPM;
     options.IterRefine = NOREFINE;
     options.ColPerm = NATURAL;
     options.Equil = NO; 
     options.ReplaceTinyPivot = YES;
 #endif
-
-	
 
     if (!iam) {
 	print_sp_ienv_dist(&options);
@@ -240,7 +235,6 @@ int main(int argc, char *argv[])
     PStatFree(&stat);
     Destroy_CompRowLoc_Matrix_dist(&A);
     ScalePermstructFree(&ScalePermstruct);
-	dDestroy_Tree(n, &grid, &LUstruct);      
 	Destroy_LU(n, &grid, &LUstruct);
     LUstructFree(&LUstruct);
     if ( options.SolveInitialized ) {

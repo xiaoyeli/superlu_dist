@@ -31,9 +31,6 @@ at the top-level directory.
 #include "superlu_zdefs.h"
 #include "psymbfact.h"
 
-#ifndef CACHELINE
-#define CACHELINE 64  /* bytes, Xeon Phi KNL, Cori haswell, Edision */
-#endif
 
 /*! \brief
  *
@@ -1204,6 +1201,7 @@ zdist_psymbtonum(fact_t fact, int_t n, SuperMatrix *A,
   int_t nrbu; /* number of U blocks in current block column */
   int_t gb;   /* global block number; 0 < gb <= nsuper */
   int_t lb;   /* local block number; 0 < lb <= ceil(NSUPERS/Pr) */
+  int_t ub,gik,iklrow,fnz;   
   int iam, jbrow, jbcol, jcol, kcol, krow, mycol, myrow, pc, pr, ljb_i, ljb_j, p;
   int_t mybufmax[NBUFFERS];
   NRformat_loc *Astore;
@@ -1230,7 +1228,8 @@ zdist_psymbtonum(fact_t fact, int_t n, SuperMatrix *A,
   doublecomplex *lusup_srt; /* nonzero values in L and U */    
   doublecomplex **Unzval_br_ptr;  /* size ceil(NSUPERS/Pr) */
   int_t  **Ufstnz_br_ptr;  /* size ceil(NSUPERS/Pr) */
-
+  int_t  *Unnz;  /* size ceil(NSUPERS/Pc) */
+  
   BcTree  *LBtree_ptr;       /* size ceil(NSUPERS/Pc)                */
   RdTree  *LRtree_ptr;		  /* size ceil(NSUPERS/Pr)                */
   BcTree  *UBtree_ptr;       /* size ceil(NSUPERS/Pc)                */
@@ -1287,7 +1286,7 @@ doublecomplex *dense, *dense_col; /* SPA */
   int_t idx_indx,idx_lusup;
   int_t nbrow;
   int_t  ik, il, lk, rel, knsupc, idx_r;
-  int_t  lptr1_tmp, idx_i, idx_v,m, uu, aln_i;	
+  int_t  lptr1_tmp, idx_i, idx_v,m, uu;	
   int_t	nub;
 
   float memStrLU, memA,
@@ -1320,8 +1319,6 @@ doublecomplex *dense, *dense_col; /* SPA */
   iword = sizeof(int_t);
   dword = sizeof(doublecomplex);
 
-  aln_i = ceil(CACHELINE/(double)iword);  
-  
   if (fact == SamePattern_SameRowPerm) {
     ABORT ("ERROR: call of dist_psymbtonum with fact equals SamePattern_SameRowPerm.");  
   }
@@ -1505,6 +1502,12 @@ doublecomplex *dense, *dense_col; /* SPA */
     fprintf(stderr, "Malloc fails for Lindval_loc_bc_ptr[].");
     return (memDist + memNLU);
   }  
+  
+  if ( !(Unnz = (int_t*)SUPERLU_MALLOC(nsupers_j * sizeof(int_t))) ){
+    fprintf(stderr, "Malloc fails for Unnz[].");
+    return (memDist + memNLU);
+  }    
+    
   
   memNLU += nsupers_j * sizeof(double*) + nsupers_j * sizeof(int_t*)+ nsupers_j * sizeof(int_t*);
   Lnzval_bc_ptr[nsupers_j-1] = NULL;
@@ -1807,7 +1810,7 @@ doublecomplex *dense, *dense_col; /* SPA */
 	
 	memNLU += len1*iword + len*nsupc*dword;
 
-	if ( !(Lindval_loc_bc_ptr[ljb_j] = intCalloc_dist(((nrbl*3 + (aln_i - 1)) / aln_i) * aln_i)) ) 
+	if ( !(Lindval_loc_bc_ptr[ljb_j] = intCalloc_dist(nrbl*3))) 
 		ABORT("Malloc fails for Lindval_loc_bc_ptr[ljb_j][]");
 	
 	
@@ -2115,7 +2118,26 @@ doublecomplex *dense, *dense_col; /* SPA */
 		}			
 		
 		
-		
+
+/* Count the nnzs per block column */	
+	for (lb = 0; lb < nub; ++lb) {
+		Unnz[lb] = 0;
+		k = lb * grid->npcol + mycol;/* Global block number, column-wise. */
+		knsupc = SuperSize( k );	
+		for (ub = 0; ub < Urbs[lb]; ++ub) {
+			ik = Ucb_indptr[lb][ub].lbnum; /* Local block number, row-wise. */
+			i = Ucb_indptr[lb][ub].indpos; /* Start of the block in usub[]. */
+			i += UB_DESCRIPTOR;
+			gik = ik * grid->nprow + myrow;/* Global block number, row-wise. */
+			iklrow = FstBlockC( gik+1 );
+			for (jj = 0; jj < knsupc; ++jj) {
+				fnz = Ufstnz_br_ptr[ik][i + jj];
+				if ( fnz < iklrow ) {
+					Unnz[lb] +=iklrow-fnz;
+				}
+			} /* for jj ... */
+		}
+	}						
 		
 		/////////////////////////////////////////////////////////////////
 
@@ -2754,6 +2776,7 @@ doublecomplex *dense, *dense_col; /* SPA */
   Llu->Uinv_bc_ptr = Uinv_bc_ptr;  
   Llu->Ufstnz_br_ptr = Ufstnz_br_ptr;
   Llu->Unzval_br_ptr = Unzval_br_ptr;
+  Llu->Unnz = Unnz;  
   Llu->ToRecv = ToRecv;
   Llu->ToSendD = ToSendD;
   Llu->ToSendR = ToSendR;

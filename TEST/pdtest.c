@@ -55,10 +55,9 @@ pdcompute_resid(int m, int n, int nrhs, SuperMatrix *A,
 		double *x, int ldx, double *b, int ldb,
 		gridinfo_t *grid, SOLVEstruct_t *SOLVEstruct, double *resid);
 
-#if 0
 /*! \brief Copy matrix A into matrix B, in distributed compressed row format. */
 void
-dCopy_CompRowLoc_Matrix_dist(SuperMatrix *A, SuperMatrix *B)
+dCopy_CompRowLoc_NoAllocation(SuperMatrix *A, SuperMatrix *B)
 {
     NRformat_loc *Astore;
     NRformat_loc *Bstore;
@@ -80,7 +79,6 @@ dCopy_CompRowLoc_Matrix_dist(SuperMatrix *A, SuperMatrix *B)
     memcpy(Bstore->colind, Astore->colind, nnz_loc * sizeof(int_t));
     memcpy(Bstore->rowptr, Astore->rowptr, (m_loc+1) * sizeof(int_t));
 }
-#endif	  
 
 /*! \brief Print a summary of the testing results. */
 void
@@ -214,7 +212,7 @@ int main(int argc, char *argv[])
 	dCreate_CompRowLoc_Matrix_dist(&Asave, m, n, nnz_loc, m_loc, Astore->fst_row,
 				       nzval_save, colind_save, rowptr_save,
 				       SLU_NR_loc, SLU_D, SLU_GE);
-	dCopy_CompRowLoc_Matrix_dist(&A, &Asave);
+	dCopy_CompRowLoc_NoAllocation(&A, &Asave);
 
 	for (iequed = 0; iequed < 4; ++iequed) {
 	    int what_equil = equils[iequed];
@@ -241,7 +239,7 @@ int main(int argc, char *argv[])
 				  options.Fact == SamePattern_SameRowPerm );
 
 		    /* Restore the matrix A. */
-		    dCopy_CompRowLoc_Matrix_dist(&Asave, &A);
+		    dCopy_CompRowLoc_NoAllocation(&Asave, &A);
 
 		    /* Initialize ScalePermstruct and LUstruct. */
 		    ScalePermstructInit(m, n, &ScalePermstruct);
@@ -320,7 +318,6 @@ int main(int argc, char *argv[])
 			options.Fact = fact;
 			if ( fact == SamePattern ) {
 			    // {L,U} not re-used in subsequent call to PDGSSVX.
-				dDestroy_Tree(n, &grid, &LUstruct);  				
 			    Destroy_LU(n, &grid, &LUstruct);
 			}
 
@@ -332,7 +329,7 @@ int main(int argc, char *argv[])
 
 		    if ( options.Fact != FACTORED ) {
 			/* Restore the matrix A. */
-			dCopy_CompRowLoc_Matrix_dist(&Asave, &A);
+			dCopy_CompRowLoc_NoAllocation(&Asave, &A);
 		    } 
 
 		    /* Set the right-hand side. */
@@ -357,7 +354,7 @@ int main(int argc, char *argv[])
 			printf(FMT3, "pdgssvx",info,izero,n,nrhs,imat,nfail);
 		    } else {
 			/* Restore the matrix A. */
-			dCopy_CompRowLoc_Matrix_dist(&Asave, &A);
+			dCopy_CompRowLoc_NoAllocation(&Asave, &A);
 
 			/* Compute residual of the computed solution.*/
 			solx = b;
@@ -395,8 +392,7 @@ int main(int argc, char *argv[])
 			ScalePermstruct.DiagScale = NOEQUIL; /* Avoid free R/C again. */
 		    }
 		    ScalePermstructFree(&ScalePermstruct);
-		    dDestroy_Tree(n, &grid, &LUstruct);  
-			Destroy_LU(n, &grid, &LUstruct);
+		    Destroy_LU(n, &grid, &LUstruct);
 		    LUstructFree(&LUstruct);
 		    if ( options.SolveInitialized ) {
 			dSolveFinalize(&options, &SOLVEstruct);

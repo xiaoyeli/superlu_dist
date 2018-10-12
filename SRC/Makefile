@@ -61,8 +61,8 @@ DPLUSRC = pdgssvx.o pdgssvx_ABglobal.o \
 	  pdsymbfact_distdata.o ddistribute.o pddistribute.o \
 	  pdgstrf.o pdgstrf2.o pdGetDiagU.o \
 	  pdgstrs.o pdgstrs1.o pdgstrs_lsum.o pdgstrs_Bglobal.o \
-	  pdgsrfs.o pdgsmv.o pdgsrfs_ABXglobal.o pdgsmv_AXglobal.o 
-
+	  pdgsrfs.o pdgsmv.o pdgsrfs_ABXglobal.o pdgsmv_AXglobal.o \
+	  dreadtriple_noheader.o
 #
 # Routines for double complex parallel SuperLU
 ZPLUSRC = pzgssvx.o pzgssvx_ABglobal.o \
@@ -71,7 +71,8 @@ ZPLUSRC = pzgssvx.o pzgssvx_ABglobal.o \
 	  pzsymbfact_distdata.o zdistribute.o pzdistribute.o \
 	  pzgstrf.o pzgstrf2.o pzGetDiagU.o \
 	  pzgstrs.o pzgstrs1.o pzgstrs_lsum.o pzgstrs_Bglobal.o \
-	  pzgsrfs.o pzgsmv.o pzgsrfs_ABXglobal.o pzgsmv_AXglobal.o 
+	  pzgsrfs.o pzgsmv.o pzgsrfs_ABXglobal.o pzgsmv_AXglobal.o \
+	  zreadtriple_noheader.o
 
 all:  double complex16
 

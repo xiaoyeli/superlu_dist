@@ -19,10 +19,7 @@ at the top-level directory.
  */
 
 #include "superlu_zdefs.h"
-
-#ifndef CACHELINE
-#define CACHELINE 64  /* bytes, Xeon Phi KNL, Cori haswell, Edision */
-#endif	  
+	  
 
 /*! \brief
  *
@@ -380,7 +377,8 @@ pzdistribute(fact_t fact, int_t n, SuperMatrix *A,
     int_t nrbu; /* number of U blocks in current block column */
     int_t gb;   /* global block number; 0 < gb <= nsuper */
     int_t lb;   /* local block number; 0 < lb <= ceil(NSUPERS/Pr) */
-    int iam, jbrow, kcol, krow, mycol, myrow, pc, pr;
+	int_t ub,gik,iklrow,fnz;    
+	int iam, jbrow, kcol, krow, mycol, myrow, pc, pr;
     int_t mybufmax[NBUFFERS];
     NRformat_loc *Astore;
     doublecomplex *a;
@@ -399,6 +397,7 @@ pzdistribute(fact_t fact, int_t n, SuperMatrix *A,
     doublecomplex **Lnzval_bc_ptr;  /* size ceil(NSUPERS/Pc) */
     int_t  **Lrowind_bc_ptr; /* size ceil(NSUPERS/Pc) */
 	int_t   **Lindval_loc_bc_ptr; /* size ceil(NSUPERS/Pc)                 */		    
+	int_t   *Unnz; /* size ceil(NSUPERS/Pc)                 */	
 	doublecomplex **Unzval_br_ptr;  /* size ceil(NSUPERS/Pr) */
     int_t  **Ufstnz_br_ptr;  /* size ceil(NSUPERS/Pr) */
 
@@ -461,7 +460,7 @@ pzdistribute(fact_t fact, int_t n, SuperMatrix *A,
 	int_t idx_indx,idx_lusup;
 	int_t nbrow;
 	int_t  ik, il, lk, rel, knsupc, idx_r;
-	int_t  lptr1_tmp, idx_i, idx_v,m, uu, aln_i;
+	int_t  lptr1_tmp, idx_i, idx_v,m, uu;
 	int_t nub;
 	int tag;	
 	
@@ -483,8 +482,7 @@ pzdistribute(fact_t fact, int_t n, SuperMatrix *A,
 
 //#if ( PRNTlevel>=1 )
     iword = sizeof(int_t);
-    dword = sizeof(doublecomplex);
-	aln_i = ceil(CACHELINE/(double)iword);											
+    dword = sizeof(doublecomplex);					
 //#endif
 
 #if ( DEBUGlevel>=1 )
@@ -524,6 +522,7 @@ pzdistribute(fact_t fact, int_t n, SuperMatrix *A,
 	Lnzval_bc_ptr = Llu->Lnzval_bc_ptr;
 	Ufstnz_br_ptr = Llu->Ufstnz_br_ptr;
 	Unzval_br_ptr = Llu->Unzval_br_ptr;
+	Unnz = Llu->Unnz;	
 #if ( PRNTlevel>=1 )
 	mem_use += 2.0*nrbu*iword + ldaspa*sp_ienv_dist(3)*dword;
 #endif
@@ -835,7 +834,10 @@ pzdistribute(fact_t fact, int_t n, SuperMatrix *A,
 	Linv_bc_ptr[k-1] = NULL;
 	Uinv_bc_ptr[k-1] = NULL;	
 	
-	
+	if ( !(Unnz = 
+			(int_t*)SUPERLU_MALLOC(k * sizeof(int_t))) )
+	ABORT("Malloc fails for Unnz[].");
+		
 	
 	/* These lists of processes will be used for triangular solves. */
 	if ( !(fsendx_plist = (int_t **) SUPERLU_MALLOC(k*sizeof(int_t*))) )
@@ -1006,7 +1008,7 @@ pzdistribute(fact_t fact, int_t n, SuperMatrix *A,
 				ABORT("Malloc fails for index[]");												 			 
 			if (!(lusup = (doublecomplex*)SUPERLU_MALLOC(len*nsupc * sizeof(doublecomplex))))
 				ABORT("Malloc fails for lusup[]");			
-			if ( !(Lindval_loc_bc_ptr[ljb] = intCalloc_dist(((nrbl*3 + (aln_i - 1)) / aln_i) * aln_i)) ) 
+			if ( !(Lindval_loc_bc_ptr[ljb] = intCalloc_dist(nrbl*3)) ) 
 				ABORT("Malloc fails for Lindval_loc_bc_ptr[ljb][]");
 			if (!(Linv_bc_ptr[ljb] = (doublecomplex*)SUPERLU_MALLOC(nsupc*nsupc * sizeof(doublecomplex))))
 				ABORT("Malloc fails for Linv_bc_ptr[ljb][]");
@@ -1195,6 +1197,27 @@ pzdistribute(fact_t fact, int_t n, SuperMatrix *A,
 			}
 		}
 	}				
+	
+
+/* Count the nnzs per block column */	
+	for (lb = 0; lb < nub; ++lb) {
+		Unnz[lb] = 0;
+		k = lb * grid->npcol + mycol;/* Global block number, column-wise. */
+		knsupc = SuperSize( k );	
+		for (ub = 0; ub < Urbs[lb]; ++ub) {
+			ik = Ucb_indptr[lb][ub].lbnum; /* Local block number, row-wise. */
+			i = Ucb_indptr[lb][ub].indpos; /* Start of the block in usub[]. */
+			i += UB_DESCRIPTOR;
+			gik = ik * grid->nprow + myrow;/* Global block number, row-wise. */
+			iklrow = FstBlockC( gik+1 );
+			for (jj = 0; jj < knsupc; ++jj) {
+				fnz = Ufstnz_br_ptr[ik][i + jj];
+				if ( fnz < iklrow ) {
+					Unnz[lb] +=iklrow-fnz;
+				}
+			} /* for jj ... */
+		}
+	}			
 	
 	/////////////////////////////////////////////////////////////////
 
@@ -1877,6 +1900,7 @@ if ( !iam) printf(".. Construct Reduce tree for U: %.2f\t\n", t);
 	Llu->Lnzval_bc_ptr = Lnzval_bc_ptr;
 	Llu->Ufstnz_br_ptr = Ufstnz_br_ptr;
 	Llu->Unzval_br_ptr = Unzval_br_ptr;
+	Llu->Unnz = Unnz;
 	Llu->ToRecv = ToRecv;
 	Llu->ToSendD = ToSendD;
 	Llu->ToSendR = ToSendR;

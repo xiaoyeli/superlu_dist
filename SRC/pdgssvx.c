@@ -558,6 +558,8 @@ pdgssvx(superlu_dist_options_t *options, SuperMatrix *A,
     double   dmin, dsum, dprod;
 #endif
 
+	LUstruct->dt = 'd';
+
     /* Structures needed for parallel symbolic factorization */
     int_t *sizes, *fstVtxSep, parSymbFact;
     int   noDomains, nprocs_num;
@@ -579,7 +581,7 @@ pdgssvx(superlu_dist_options_t *options, SuperMatrix *A,
     sizes   = NULL;
     fstVtxSep = NULL;
     symb_comm = MPI_COMM_NULL;
-
+	
     /* Test the input parameters. */
     *info = 0;
     Fact = options->Fact;

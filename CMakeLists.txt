@@ -49,6 +49,11 @@ INCLUDE(CTest)
 set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)    ## ????
 set(CMAKE_INSTALL_NAME_DIR "${CMAKE_INSTALL_PREFIX}/lib")
 
+# set the position independent code property on all targets, so that
+# -fPIC is added in compiler flag.
+set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+
+
 #---- For shared library
 
 # use, i.e. don't skip the full RPATH for the build tree

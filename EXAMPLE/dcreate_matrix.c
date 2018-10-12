@@ -276,6 +276,9 @@ int dcreate_matrix_postfix(SuperMatrix *A, int nrhs, double **rhs,
 	}else if(!strcmp(postfix,"dat")){
 		/* Read the matrix stored on disk in triplet format. */
 		dreadtriple_dist(fp, &m, &n, &nnz, &nzval, &rowind, &colptr);
+	}else if(!strcmp(postfix,"datnh")){
+		/* Read the matrix stored on disk in triplet format (without header). */
+		dreadtriple_noheader(fp, &m, &n, &nnz, &nzval, &rowind, &colptr);		
 	}else if(!strcmp(postfix,"bin")){
 		/* Read the matrix stored on disk in binary format. */
 		dread_binary(fp, &m, &n, &nnz, &nzval, &rowind, &colptr);		
