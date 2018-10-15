@@ -91,6 +91,56 @@ Destroy_Dense_Matrix_dist(SuperMatrix *A)
     SUPERLU_FREE ( A->Store );
 }
 
+
+
+/*! \brief Destroy distributed L & U matrices. */
+void
+Destroy_Tree(int_t n, gridinfo_t *grid, LUstruct_t *LUstruct)
+{
+    int_t i, nb, nsupers;
+    Glu_persist_t *Glu_persist = LUstruct->Glu_persist;
+    LocalLU_t *Llu = LUstruct->Llu;
+#if ( DEBUGlevel>=1 )
+    int iam;
+    MPI_Comm_rank( MPI_COMM_WORLD, &iam );
+    CHECK_MALLOC(iam, "Enter Destroy_Tree()");
+#endif
+
+    nsupers = Glu_persist->supno[n-1] + 1;
+
+	nb = CEILING(nsupers, grid->npcol);
+	for (i=0;i<nb;++i){
+		if(Llu->LBtree_ptr[i]!=NULL){
+			BcTree_Destroy(Llu->LBtree_ptr[i],LUstruct->dt);
+		}
+		if(Llu->UBtree_ptr[i]!=NULL){
+			BcTree_Destroy(Llu->UBtree_ptr[i],LUstruct->dt);
+		}		
+	}
+	SUPERLU_FREE(Llu->LBtree_ptr);
+	SUPERLU_FREE(Llu->UBtree_ptr);
+	
+ 	nb = CEILING(nsupers, grid->nprow);
+	for (i=0;i<nb;++i){
+		if(Llu->LRtree_ptr[i]!=NULL){
+			RdTree_Destroy(Llu->LRtree_ptr[i],LUstruct->dt);
+		}
+		if(Llu->URtree_ptr[i]!=NULL){
+			RdTree_Destroy(Llu->URtree_ptr[i],LUstruct->dt);
+		}		
+	}
+	SUPERLU_FREE(Llu->LRtree_ptr);
+	SUPERLU_FREE(Llu->URtree_ptr);
+
+
+
+#if ( DEBUGlevel>=1 )
+    CHECK_MALLOC(iam, "Exit Destroy_Tree()");
+#endif
+}
+
+
+
 /*! \brief Destroy distributed L & U matrices. */
 void
 Destroy_LU(int_t n, gridinfo_t *grid, LUstruct_t *LUstruct)
@@ -104,6 +154,8 @@ Destroy_LU(int_t n, gridinfo_t *grid, LUstruct_t *LUstruct)
     MPI_Comm_rank( MPI_COMM_WORLD, &iam );
     CHECK_MALLOC(iam, "Enter Destroy_LU()");
 #endif
+
+	Destroy_Tree(n, grid, LUstruct);
 
     nsupers = Glu_persist->supno[n-1] + 1;
 
@@ -149,7 +201,7 @@ Destroy_LU(int_t n, gridinfo_t *grid, LUstruct_t *LUstruct)
 	
     nb = CEILING(nsupers, grid->npcol);
     for (i = 0; i < nb; ++i) 
-	if ( Llu->Lindval_loc_bc_ptr[i] ) {
+	if ( Llu->Lindval_loc_bc_ptr[i]!=NULL) {
 	    SUPERLU_FREE (Llu->Lindval_loc_bc_ptr[i]);
 	}	
 	SUPERLU_FREE(Llu->Lindval_loc_bc_ptr);
@@ -165,6 +217,7 @@ Destroy_LU(int_t n, gridinfo_t *grid, LUstruct_t *LUstruct)
 	}
 	SUPERLU_FREE(Llu->Linv_bc_ptr);
 	SUPERLU_FREE(Llu->Uinv_bc_ptr);
+	SUPERLU_FREE(Llu->Unnz);
 	
 	
 	nb = CEILING(nsupers, grid->npcol);
@@ -373,7 +426,7 @@ void set_default_options_dist(superlu_dist_options_t *options)
     options->num_lookaheads    = 10;
     options->lookahead_etree   = NO;
     options->SymPattern        = NO;
-#ifdef SLU_HAVE_LAPACK
+#ifdef HAVE_LAPACK
     options->DiagInv           = YES;
 #else
     options->DiagInv           = NO;
