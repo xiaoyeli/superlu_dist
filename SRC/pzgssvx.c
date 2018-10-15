@@ -1402,11 +1402,13 @@ pzgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 	       For repeated call to pzgssvx(), no need to re-initialilze
 	       the Solve data & communication structures, unless a new
 	       factorization with Fact == DOFACT or SamePattern is asked for. */
-	} 
+	}
+
 	if ( options->DiagInv==YES && (options->SolveInitialized == NO || (options->SolveInitialized == YES && Fact == SamePattern_SameRowPerm))) {
 	pzCompute_Diag_Inv(n, LUstruct, grid, stat, info);
-	}	
- 
+	}
+
+
     // #pragma omp parallel  
     // {  	
 	// #pragma omp master

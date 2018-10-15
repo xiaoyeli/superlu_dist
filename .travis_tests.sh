@@ -24,5 +24,6 @@ case "${TEST_NUMBER}" in
 12) mpirun "-n" "4" "$EXAMPLE_FOLDER/pzdrive1" "-r" "2" "-c" "2" "$DATA_FOLDER/cg20.cua" ;;
 13) mpirun "-n" "4" "$EXAMPLE_FOLDER/pzdrive2" "-r" "2" "-c" "2" "$DATA_FOLDER/cg20.cua" ;;
 14) mpirun "-n" "4" "$EXAMPLE_FOLDER/pzdrive3" "-r" "2" "-c" "2" "$DATA_FOLDER/cg20.cua" ;;
+15) mpirun "-n" "4" "$EXAMPLE_FOLDER/pddrive_ABglobal" "-r" "2" "-c" "2" "$DATA_FOLDER/big.rua" ;;
 *) printf "${RED} ###GC: Unknown test\n" ;;
 esac

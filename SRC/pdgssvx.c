@@ -1396,12 +1396,13 @@ pdgssvx(superlu_dist_options_t *options, SuperMatrix *A,
             /* Inside this routine, SolveInitialized is set to YES.
 	       For repeated call to pdgssvx(), no need to re-initialilze
 	       the Solve data & communication structures, unless a new
-	       factorization with Fact == DOFACT or SamePattern is asked for. */	
+	       factorization with Fact == DOFACT or SamePattern is asked for. */
 	}
-	
+
 	if ( options->DiagInv==YES && (options->SolveInitialized == NO || (options->SolveInitialized == YES && Fact == SamePattern_SameRowPerm))) {
 	pdCompute_Diag_Inv(n, LUstruct, grid, stat, info);
-	}	 
+	}
+
 
     // #pragma omp parallel  
     // {  	
