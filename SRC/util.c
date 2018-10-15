@@ -373,7 +373,7 @@ void set_default_options_dist(superlu_dist_options_t *options)
     options->num_lookaheads    = 10;
     options->lookahead_etree   = NO;
     options->SymPattern        = NO;
-#ifdef HAVE_LAPACK
+#ifdef SLU_HAVE_LAPACK
     options->DiagInv           = YES;
 #else
     options->DiagInv           = NO;

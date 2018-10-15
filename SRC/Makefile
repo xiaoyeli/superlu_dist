@@ -83,10 +83,10 @@ ifeq ($(XSDK_INDEX_SIZE),64)
 else
 		printf "/* #define XSDK_INDEX_SIZE 64 */\n" >> superlu_dist_config.h
 endif
-ifeq ($(HAVE_LAPACK),TRUE)
-		printf "#define HAVE_LAPACK TRUE\n" >> superlu_dist_config.h
+ifeq ($(SLU_HAVE_LAPACK),TRUE)
+		printf "#define SLU_HAVE_LAPACK TRUE\n" >> superlu_dist_config.h
 else
-		printf "/* #define HAVE_LAPACK TRUE */\n" >> superlu_dist_config.h
+		printf "/* #define SLU_HAVE_LAPACK TRUE */\n" >> superlu_dist_config.h
 endif
 ifeq ($(HAVE_PARMETIS),TRUE)
 		printf "#define HAVE_PARMETIS TRUE\n" >> superlu_dist_config.h

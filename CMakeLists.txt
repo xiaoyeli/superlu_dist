@@ -205,7 +205,7 @@ if(TPL_ENABLE_LAPACKLIB)  ## want to use LAPACK
   endif()
 else()  ## not to use LAPACK
   set(LAPACK_FOUND FALSE)
-  set(HAVE_LAPACK FALSE)
+  set(SLU_HAVE_LAPACK FALSE)
 endif()
 
 if(LAPACK_FOUND)
@@ -214,7 +214,7 @@ if(LAPACK_FOUND)
     # fix up LAPACK library name
     string (REPLACE ";" " " LAPACK_LIB_STR "${LAPACK_LIB}")
     set(LAPACK_LIB_EXPORT ${LAPACK_LIB_STR})
-    set(HAVE_LAPACK TRUE)
+    set(SLU_HAVE_LAPACK TRUE)
 else()
     message("-- Will not link with LAPACK.")
 endif()

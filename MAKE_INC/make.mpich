@@ -29,7 +29,7 @@ PARMETISLIB := -L${PARMETIS_DIR}/build/Linux-x86_64/libparmetis -lparmetis
 # HAVE_PARMETIS = TRUE
 
 # LAPACKLIB   =
-# HAVE_lAPACK = TRUE
+# SLU_HAVE_LAPACK = TRUE
 
 LIBS		= $(DSUPERLULIB) /usr/lib/libf77blas.so /usr/lib/libatlas.so \
 		${PARMETISLIB} ${METISLIB} $(LAPACKLIB)

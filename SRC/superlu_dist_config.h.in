@@ -4,7 +4,7 @@
 #cmakedefine HAVE_PARMETIS @HAVE_PARMETIS@
 
 /* Enable LAPACK */
-#cmakedefine HAVE_LAPACK @HAVE_LAPACK@
+#cmakedefine SLU_HAVE_LAPACK @SLU_HAVE_LAPACK@
 
 /* Enable CombBLAS */
 #cmakedefine HAVE_COMBBLAS @HAVE_COMBBLAS@

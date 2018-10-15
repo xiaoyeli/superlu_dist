@@ -233,11 +233,6 @@ static const int RD_U=4;	/* MPI tag for lsum in U-solve*/
 #define SuperLU_timer_  SuperLU_timer_dist_
 #define LOG2(x)   (log10((double) x) / log10(2.0))
 
-#define MIN(a,b) ((a) <= (b) ? (a) : (b))
-#define MAX(a,b) ((a) >= (b) ? (a) : (b))
-
-
-
 #if ( VAMPIR>=1 ) 
 #define VT_TRACEON    VT_traceon()
 #define VT_TRACEOFF   VT_traceoff()

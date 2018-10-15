@@ -2182,7 +2182,7 @@ doublecomplex *dense, *dense_col; /* SPA */
 				irow = lsub[i];
 				gb = BlockNum( irow );
 				pr = PROW( gb, grid );
-				ActiveFlagAll[pr+ljb*grid->nprow]=MIN(ActiveFlagAll[pr+ljb*grid->nprow],gb);
+				ActiveFlagAll[pr+ljb*grid->nprow]=SUPERLU_MIN(ActiveFlagAll[pr+ljb*grid->nprow],gb);
 			} /* for j ... */
 			}
 		}			
@@ -2355,7 +2355,7 @@ doublecomplex *dense, *dense_col; /* SPA */
 					pr = PROW( ib, grid );
 					if ( myrow == pr ) { /* Block row ib in my process row */
 						lib = LBi( ib, grid ); /* Local block number */
-						ActiveFlagAll[pc+lib*grid->npcol]=MAX(ActiveFlagAll[pc+lib*grid->npcol],jb);
+						ActiveFlagAll[pc+lib*grid->npcol]=SUPERLU_MAX(ActiveFlagAll[pc+lib*grid->npcol],jb);
 					}
 				}
 			}
@@ -2496,14 +2496,14 @@ doublecomplex *dense, *dense_col; /* SPA */
 				  pc = PCOL( jb, grid );
 				  pr = PROW( ib, grid );
 				  if ( mycol == pc ) { /* Block column ib in my process column */		
-					ActiveFlagAll[pr+ljb*grid->nprow]=MAX(ActiveFlagAll[pr+ljb*grid->nprow],ib);			  
+					ActiveFlagAll[pr+ljb*grid->nprow]=SUPERLU_MAX(ActiveFlagAll[pr+ljb*grid->nprow],ib);			  
 				  }
 				}  /* for i ... */
 				pr = PROW( ib, grid ); // take care of diagonal node stored as L
 				pc = PCOL( ib, grid );
 				if ( mycol == pc ) { /* Block column ib in my process column */					
 					ljb = LBj( ib, grid );    /* local block number */
-					ActiveFlagAll[pr+ljb*grid->nprow]=MAX(ActiveFlagAll[pr+ljb*grid->nprow],ib);					
+					ActiveFlagAll[pr+ljb*grid->nprow]=SUPERLU_MAX(ActiveFlagAll[pr+ljb*grid->nprow],ib);					
 					// if(pr+ljb*grid->nprow==0)printf("iam %5d ib %5d ActiveFlagAll %5d pr %5d ljb %5d\n",iam,ib,ActiveFlagAll[pr+ljb*grid->nprow],pr,ljb);
 					// fflush(stdout);	
 				}					
@@ -2660,12 +2660,12 @@ doublecomplex *dense, *dense_col; /* SPA */
 				  jb = BlockNum( jcol );
 				  pc = PCOL( jb, grid );
 				  if ( mycol == pc ) { /* Block column ib in my process column */	
-					ActiveFlagAll[pc+lib*grid->npcol]=MIN(ActiveFlagAll[pc+lib*grid->npcol],jb);			  
+					ActiveFlagAll[pc+lib*grid->npcol]=SUPERLU_MIN(ActiveFlagAll[pc+lib*grid->npcol],jb);			  
 				  }	
 				}  /* for i ... */
 				pc = PCOL( ib, grid );
 				if ( mycol == pc ) { /* Block column ib in my process column */						
-					ActiveFlagAll[pc+lib*grid->npcol]=MIN(ActiveFlagAll[pc+lib*grid->npcol],ib);
+					ActiveFlagAll[pc+lib*grid->npcol]=SUPERLU_MIN(ActiveFlagAll[pc+lib*grid->npcol],ib);
 				}						
 			}	
 		}

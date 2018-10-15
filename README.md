@@ -205,12 +205,12 @@ to make the BLAS library from the routines in the
   inversion on the diagonal blocks, using LAPACK's xTRTRI inversion routine.
   To use this feature, you should define the following in make.inc:
 ```
-HAVE_LAPACK = TRUE
+SLU_HAVE_LAPACK = TRUE
 LAPACKLIB = <lapack library you wish to link with>
 ```
 You can disable LAPACK with the following line in SRC/superlu_dist_config.h:
 ```
-#undef HAVE_LAPACK
+#undef SLU_HAVE_LAPACK
 ```
 
   ##### 1.3.2 Metis and ParMetis.

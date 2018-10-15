@@ -1264,7 +1264,7 @@ pddistribute(fact_t fact, int_t n, SuperMatrix *A,
 			irow = lsub[i];
 			gb = BlockNum( irow );
 			pr = PROW( gb, grid );
-			ActiveFlagAll[pr+ljb*grid->nprow]=MIN(ActiveFlagAll[pr+ljb*grid->nprow],gb);
+			ActiveFlagAll[pr+ljb*grid->nprow]=SUPERLU_MIN(ActiveFlagAll[pr+ljb*grid->nprow],gb);
 		} /* for j ... */
 		}
 	}			
@@ -1448,7 +1448,7 @@ if ( !iam) printf(".. Construct Bcast tree for L: %.2f\t\n", t);
 			pr = PROW( ib, grid );
 			if ( myrow == pr ) { /* Block row ib in my process row */
 				lib = LBi( ib, grid ); /* Local block number */
-				ActiveFlagAll[pc+lib*grid->npcol]=MAX(ActiveFlagAll[pc+lib*grid->npcol],jb);
+				ActiveFlagAll[pc+lib*grid->npcol]=SUPERLU_MAX(ActiveFlagAll[pc+lib*grid->npcol],jb);
 			}
 		}
 	}
@@ -1592,7 +1592,7 @@ if ( !iam) printf(".. Construct Reduce tree for L: %.2f\t\n", t);
 				irow = usub[i]; /* First nonzero in the segment. */
 				gb = BlockNum( irow );
 				pr = PROW( gb, grid );
-				ActiveFlagAll[pr+ljb*grid->nprow]=MAX(ActiveFlagAll[pr+ljb*grid->nprow],gb);
+				ActiveFlagAll[pr+ljb*grid->nprow]=SUPERLU_MAX(ActiveFlagAll[pr+ljb*grid->nprow],gb);
 			// printf("gb:%5d jb: %5d nsupers: %5d\n",gb,jb,nsupers);
 			// fflush(stdout);								
 				//if(gb==jb)Root=pr;
@@ -1603,7 +1603,7 @@ if ( !iam) printf(".. Construct Reduce tree for L: %.2f\t\n", t);
 		pr = PROW( jb, grid ); // take care of diagonal node stored as L
 		// printf("jb %5d current: %5d",jb,ActiveFlagAll[pr+ljb*grid->nprow]);
 		// fflush(stdout);
-		ActiveFlagAll[pr+ljb*grid->nprow]=MAX(ActiveFlagAll[pr+ljb*grid->nprow],jb);	
+		ActiveFlagAll[pr+ljb*grid->nprow]=SUPERLU_MAX(ActiveFlagAll[pr+ljb*grid->nprow],jb);	
 		}
 	}	
 		
@@ -1800,7 +1800,7 @@ if ( !iam) printf(".. Construct Bcast tree for U: %.2f\t\n", t);
 				pr = PROW( ib, grid );
 				if ( myrow == pr ) { /* Block row ib in my process row */
 					lib = LBi( ib, grid ); /* Local block number */
-					ActiveFlagAll[pc+lib*grid->npcol]=MIN(ActiveFlagAll[pc+lib*grid->npcol],jb);
+					ActiveFlagAll[pc+lib*grid->npcol]=SUPERLU_MIN(ActiveFlagAll[pc+lib*grid->npcol],jb);
 				}						
 			}
 		}
@@ -1808,7 +1808,7 @@ if ( !iam) printf(".. Construct Bcast tree for U: %.2f\t\n", t);
 		pr = PROW( jb, grid );
 		if ( myrow == pr ) { /* Block row ib in my process row */
 			lib = LBi( jb, grid ); /* Local block number */
-			ActiveFlagAll[pc+lib*grid->npcol]=MIN(ActiveFlagAll[pc+lib*grid->npcol],jb);
+			ActiveFlagAll[pc+lib*grid->npcol]=SUPERLU_MIN(ActiveFlagAll[pc+lib*grid->npcol],jb);
 		}					
 	}
 		

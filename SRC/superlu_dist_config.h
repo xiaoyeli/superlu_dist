@@ -4,7 +4,7 @@
 #define HAVE_PARMETIS TRUE
 
 /* Enable LAPACK */
-#define HAVE_LAPACK TRUE
+#define SLU_HAVE_LAPACK TRUE
 
 /* Enable CombBLAS */
 /* #undef HAVE_COMBBLAS */
