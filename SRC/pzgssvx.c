@@ -1175,7 +1175,7 @@ pzgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 	// }
 	
 	
-#if ( PRNTlevel>=1 )
+#if ( PRNTlevel>=2 )
     /* ------------------------------------------------------------
        SUM OVER ALL ENTRIES OF A AND PRINT NNZ AND SIZE OF A.
        ------------------------------------------------------------*/

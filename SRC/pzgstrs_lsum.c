@@ -1987,9 +1987,9 @@ void zlsum_bmod_inv_master
 		nub_loc = floor(((double)nub)/Nchunk);
 		remainder = nub % Nchunk;
 
-#ifdef _OPENMP
-#pragma	omp	taskloop firstprivate (send_req,stat) private (thread_id1,nn,lbstart,lbend,ub,temp,rtemp_loc,ik,gik,usub,uval,iknsupc,il,i,irow,jj,t1,t2,j,ikfrow,iklrow,dest,y,uptr,fnz) untied	
-#endif	
+//#ifdef _OPENMP
+//#pragma	omp	taskloop firstprivate (send_req,stat) private (thread_id1,nn,lbstart,lbend,ub,temp,rtemp_loc,ik,gik,usub,uval,iknsupc,il,i,irow,jj,t1,t2,j,ikfrow,iklrow,dest,y,uptr,fnz) untied	
+//#endif	
 		for (nn=0;nn<Nchunk;++nn){
 
 #ifdef _OPENMP				 

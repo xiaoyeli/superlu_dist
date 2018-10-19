@@ -168,7 +168,7 @@ pzReDistribute_B_to_X(doublecomplex *B, int_t m_loc, int nrhs, int_t ldb,
     pxgstrs_comm_t *gstrs_comm = SOLVEstruct->gstrs_comm;
 	MPI_Request req_i, req_d, *req_send, *req_recv;
 	MPI_Status status, *status_send, *status_recv;
-	int Nreq_recv, Nreq_send, pp;
+	int Nreq_recv, Nreq_send, pp, pps, ppr;
 	double t;
 #if ( DEBUGlevel>=1 )
     CHECK_MALLOC(grid->iam, "Enter pzReDistribute_B_to_X()");
@@ -270,7 +270,8 @@ pzReDistribute_B_to_X(doublecomplex *B, int_t m_loc, int nrhs, int_t ldb,
 		
 		// t = SuperLU_timer_() - t;
 		// printf(".. copy to send buffer time\t%8.4f\n", t);	
-		
+
+#if 0	
 	#if 1
 		/* Communicate the (permuted) row indices. */
 		MPI_Alltoallv(send_ibuf, SendCnt, sdispls, mpi_int_t,
@@ -289,7 +290,63 @@ pzReDistribute_B_to_X(doublecomplex *B, int_t m_loc, int nrhs, int_t ldb,
 				grid->comm, &req_d);	
 		MPI_Wait(&req_i,&status);
 		MPI_Wait(&req_d,&status);
- 	#endif	    
+ 	#endif	 
+#endif
+	MPI_Barrier( grid->comm );
+
+
+	Nreq_send=0;
+	Nreq_recv=0;
+	for (pp=0;pp<procs;pp++){
+		pps = grid->iam+1+pp;
+		if(pps>=procs)pps-=procs;
+		if(pps<0)pps+=procs;
+		ppr = grid->iam-1+pp;
+		if(ppr>=procs)ppr-=procs;
+		if(ppr<0)ppr+=procs;
+		
+		if(SendCnt[pps]>0){
+			MPI_Isend(&send_ibuf[sdispls[pps]], SendCnt[pps], mpi_int_t, pps, 0, grid->comm,
+			&req_send[Nreq_send] );
+			Nreq_send++;
+		}
+		if(RecvCnt[ppr]>0){
+			MPI_Irecv(&recv_ibuf[rdispls[ppr]], RecvCnt[ppr], mpi_int_t, ppr, 0, grid->comm,
+			&req_recv[Nreq_recv] );
+			Nreq_recv++;
+		}		
+	}
+
+
+	if(Nreq_send>0)MPI_Waitall(Nreq_send,req_send,status_send);
+	if(Nreq_recv>0)MPI_Waitall(Nreq_recv,req_recv,status_recv);
+
+
+	Nreq_send=0;
+	Nreq_recv=0;	
+	for (pp=0;pp<procs;pp++){
+		pps = grid->iam+1+pp;
+		if(pps>=procs)pps-=procs;
+		if(pps<0)pps+=procs;
+		ppr = grid->iam-1+pp;
+		if(ppr>=procs)ppr-=procs;
+		if(ppr<0)ppr+=procs;
+		if(SendCnt_nrhs[pps]>0){
+			MPI_Isend(&send_dbuf[sdispls_nrhs[pps]], SendCnt_nrhs[pps], SuperLU_MPI_DOUBLE_COMPLEX, pps, 1, grid->comm,
+			&req_send[Nreq_send] );
+			Nreq_send++;
+		}
+		if(RecvCnt_nrhs[ppr]>0){
+			MPI_Irecv(&recv_dbuf[rdispls_nrhs[ppr]], RecvCnt_nrhs[ppr], SuperLU_MPI_DOUBLE_COMPLEX, ppr, 1, grid->comm,
+			&req_recv[Nreq_recv] );
+			Nreq_recv++;
+		}		
+	}
+
+	if(Nreq_send>0)MPI_Waitall(Nreq_send,req_send,status_send);
+	if(Nreq_recv>0)MPI_Waitall(Nreq_recv,req_recv,status_recv);
+
+	
 		/* ------------------------------------------------------------
 		   Copy buffer into X on the diagonal processes.
 		   ------------------------------------------------------------*/
@@ -370,7 +427,7 @@ pzReDistribute_X_to_B(int_t n, doublecomplex *B, int_t m_loc, int_t ldb, int_t f
     int_t  num_diag_procs, *diag_procs;
 	MPI_Request req_i, req_d, *req_send, *req_recv;
 	MPI_Status status, *status_send, *status_recv;
-	int Nreq_recv, Nreq_send, pp;
+	int Nreq_recv, Nreq_send, pp,pps,ppr;
 	
 #if ( DEBUGlevel>=1 )
     CHECK_MALLOC(grid->iam, "Enter pzReDistribute_X_to_B()");
@@ -479,6 +536,7 @@ pzReDistribute_X_to_B(int_t n, doublecomplex *B, int_t m_loc, int_t ldb, int_t f
 		/* ------------------------------------------------------------
 			COMMUNICATE THE (PERMUTED) ROW INDICES AND NUMERICAL VALUES.
 		   ------------------------------------------------------------*/
+#if 0	
 	#if 1
 		MPI_Alltoallv(send_ibuf, SendCnt, sdispls, mpi_int_t,
 			  recv_ibuf, RecvCnt, rdispls, mpi_int_t, grid->comm);
@@ -494,6 +552,62 @@ pzReDistribute_X_to_B(int_t n, doublecomplex *B, int_t m_loc, int_t ldb, int_t f
  		MPI_Wait(&req_i,&status);
 		MPI_Wait(&req_d,&status);		 
 	#endif	
+#endif
+
+	MPI_Barrier( grid->comm );
+	Nreq_send=0;
+	Nreq_recv=0;
+	for (pp=0;pp<procs;pp++){
+		pps = grid->iam+1+pp;
+		if(pps>=procs)pps-=procs;
+		if(pps<0)pps+=procs;
+		ppr = grid->iam-1+pp;
+		if(ppr>=procs)ppr-=procs;
+		if(ppr<0)ppr+=procs;
+		if(SendCnt[pps]>0){
+			MPI_Isend(&send_ibuf[sdispls[pps]], SendCnt[pps], mpi_int_t, pps, 0, grid->comm,
+			&req_send[Nreq_send] );
+			Nreq_send++;
+		}
+		if(RecvCnt[ppr]>0){
+			MPI_Irecv(&recv_ibuf[rdispls[ppr]], RecvCnt[ppr], mpi_int_t, ppr, 0, grid->comm,
+			&req_recv[Nreq_recv] );
+			Nreq_recv++;
+		}	
+	}
+
+
+	if(Nreq_send>0)MPI_Waitall(Nreq_send,req_send,status_send);
+	if(Nreq_recv>0)MPI_Waitall(Nreq_recv,req_recv,status_recv);
+	// MPI_Barrier( grid->comm );
+
+	Nreq_send=0;
+	Nreq_recv=0;
+	for (pp=0;pp<procs;pp++){
+		pps = grid->iam+1+pp;
+		if(pps>=procs)pps-=procs;
+		if(pps<0)pps+=procs;
+		ppr = grid->iam-1+pp;
+		if(ppr>=procs)ppr-=procs;
+		if(ppr<0)ppr+=procs;
+		if(SendCnt_nrhs[pps]>0){
+			MPI_Isend(&send_dbuf[sdispls_nrhs[pps]], SendCnt_nrhs[pps], SuperLU_MPI_DOUBLE_COMPLEX, pps, 1, grid->comm,
+			&req_send[Nreq_send] );
+			Nreq_send++;
+		}
+		if(RecvCnt_nrhs[ppr]>0){
+			MPI_Irecv(&recv_dbuf[rdispls_nrhs[ppr]], RecvCnt_nrhs[ppr], SuperLU_MPI_DOUBLE_COMPLEX, ppr, 1, grid->comm,
+			&req_recv[Nreq_recv] );
+			Nreq_recv++;
+		}	
+	}
+
+
+	if(Nreq_send>0)MPI_Waitall(Nreq_send,req_send,status_send);
+	if(Nreq_recv>0)MPI_Waitall(Nreq_recv,req_recv,status_recv);
+	// MPI_Barrier( grid->comm );
+		
+	
 		/* ------------------------------------------------------------
 		   COPY THE BUFFER INTO B.
 		   ------------------------------------------------------------*/
