@@ -527,6 +527,40 @@ void zPrintLblocks(int iam, int_t nsupers, gridinfo_t *grid,
 } /* ZPRINTLBLOCKS */
 
 
+/*! \brief Sets all entries of matrix L to zero.
+ */
+void zZeroLblocks(int iam, int_t n, gridinfo_t *grid, LUstruct_t *LUstruct)
+{
+    doublecomplex zero = {0.0, 0.0};
+    register int extra, gb, j, lb, nsupc, nsupr, ncb;
+    register int_t k, mycol, r;
+    LocalLU_t *Llu = LUstruct->Llu;
+    Glu_persist_t *Glu_persist = LUstruct->Glu_persist;
+    int_t *xsup = Glu_persist->xsup;
+    int_t *index;
+    doublecomplex *nzval;
+    int_t nsupers = Glu_persist->supno[n-1] + 1;
+
+    ncb = nsupers / grid->npcol;
+    extra = nsupers % grid->npcol;
+    mycol = MYCOL( iam, grid );
+    if ( mycol < extra ) ++ncb;
+    for (lb = 0; lb < ncb; ++lb) {
+	index = Llu->Lrowind_bc_ptr[lb];
+	if ( index ) { /* Not an empty column */
+	    nzval = Llu->Lnzval_bc_ptr[lb];
+	    nsupr = index[1];
+	    gb = lb * grid->npcol + mycol;
+	    nsupc = SuperSize( gb );
+	    for (j = 0; j < nsupc; ++j) {
+                for (r = 0; r < nsupr; ++r) {
+                    nzval[r + j*nsupc] = zero;
+		}
+            }
+	}
+    }
+} /* zZeroLblocks */
+
 
 /*! \Dump the factored matrix L using matlab triple-let format
  */

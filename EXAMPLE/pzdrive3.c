@@ -238,7 +238,7 @@ int main(int argc, char *argv[])
        ------------------------------------------------------------*/
     PStatFree(&stat);
     Destroy_CompRowLoc_Matrix_dist(&A); /* Deallocate storage of matrix A.  */
-	Destroy_LU(n, &grid, &LUstruct); /* Deallocate storage associated with    
+    Destroy_LU(n, &grid, &LUstruct); /* Deallocate storage associated with    
 					the L and U matrices.               */
     ScalePermstructFree(&ScalePermstruct);
     LUstructFree(&LUstruct);         /* Deallocate the structure of L and U.*/

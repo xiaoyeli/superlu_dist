@@ -200,7 +200,7 @@ int main(int argc, char *argv[])
 	   ------------------------------------------------------------*/
 	PStatFree(&stat);
         Destroy_CompRowLoc_Matrix_dist(&A);
-        ScalePermstructFree(&ScalePermstruct);											
+        ScalePermstructFree(&ScalePermstruct);
 	Destroy_LU(n, &grid1, &LUstruct);
 	LUstructFree(&LUstruct);
         if ( options.SolveInitialized ) {
@@ -265,7 +265,7 @@ int main(int argc, char *argv[])
 	   ------------------------------------------------------------*/
 	PStatFree(&stat);
         Destroy_CompRowLoc_Matrix_dist(&A);
-        ScalePermstructFree(&ScalePermstruct);							
+        ScalePermstructFree(&ScalePermstruct);
 	Destroy_LU(n, &grid2, &LUstruct);
 	LUstructFree(&LUstruct);
         if ( options.SolveInitialized ) {

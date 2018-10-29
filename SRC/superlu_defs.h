@@ -494,6 +494,10 @@ typedef struct {
  *        Specifies whether to equilibrate the system (scale A's row and
  *        columns to have unit norm).
  *
+ * DiagInv (yes_no_t)
+ *        Specifies whether to invert the diagonal blocks of the LU
+ *        triangular matrices.
+ *
  * ColPerm (colperm_t)
  *        Specifies what type of column permutation to use to reduce fill.
  *        = NATURAL: use the natural ordering 

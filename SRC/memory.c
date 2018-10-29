@@ -66,6 +66,10 @@ void *superlu_malloc_dist(size_t size)
     int iam;
 
     MPI_Comm_rank(MPI_COMM_WORLD, &iam);
+    if ( size <= 0 ) {
+	printf("(%d) superlu_malloc size %lld\n", iam, size);
+	ABORT("superlu_malloc: nonpositive size");
+    }
     buf = (char *) malloc(size + DWORD);
     if ( !buf ) {
 	printf("(%d) superlu_malloc fails: malloc_total %.0f MB, size %lld\n",
@@ -95,8 +99,10 @@ void superlu_free_dist(void *addr)
     { 
 	int_t n = ((size_t *) p)[0];
 	
-	if ( !n )
-	    ABORT("superlu_free: tried to free a freed pointer");
+	if ( n==0 ) {
+	    printf("n %d, tried to free a freed pointer\n", n);
+	    // ABORT("superlu_free: tried to free a freed pointer");
+	}
 	*((size_t *) p) = 0; /* Set to zero to detect duplicate free's. */
 #if 0	
 	superlu_malloc_total -= (n + DWORD);
@@ -114,9 +120,6 @@ void superlu_free_dist(void *addr)
 }
  
 #else  /* The production mode. */
-
- 
-
 
 #if (__STDC_VERSION__ >= 201112L)
 

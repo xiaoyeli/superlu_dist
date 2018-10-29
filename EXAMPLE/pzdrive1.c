@@ -212,7 +212,7 @@ int main(int argc, char *argv[])
     PStatFree(&stat);
     Destroy_CompRowLoc_Matrix_dist(&A);
     ScalePermstructFree(&ScalePermstruct);   
-	Destroy_LU(n, &grid, &LUstruct);
+    Destroy_LU(n, &grid, &LUstruct);
     LUstructFree(&LUstruct);
     if ( options.SolveInitialized ) {
         zSolveFinalize(&options, &SOLVEstruct);

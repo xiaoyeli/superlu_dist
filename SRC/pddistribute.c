@@ -630,7 +630,7 @@ pddistribute(fact_t fact, int_t n, SuperMatrix *A,
 			   t_l, t_u, u_blks, nrbu);
 #endif
 
-    } else {
+    } else { /* fact is not SamePattern_SameRowPerm */
         /* ------------------------------------------------------------
 	   FIRST TIME CREATING THE L AND U DATA STRUCTURES.
 	   ------------------------------------------------------------*/
@@ -1005,16 +1005,16 @@ pddistribute(fact_t fact, int_t n, SuperMatrix *A,
 		       index[] and nzval[]. */
 		    /* Add room for descriptors */
 		    len1 = len + BC_HEADER + nrbl * LB_DESCRIPTOR;
-			if ( !(index = intMalloc_dist(len1)) ) 
-				ABORT("Malloc fails for index[]");												 			 
-			if (!(lusup = (double*)SUPERLU_MALLOC(len*nsupc * sizeof(double))))
-				ABORT("Malloc fails for lusup[]");			
-			if ( !(Lindval_loc_bc_ptr[ljb] = intCalloc_dist(nrbl*3)) ) 
-				ABORT("Malloc fails for Lindval_loc_bc_ptr[ljb][]");
-			if (!(Linv_bc_ptr[ljb] = (double*)SUPERLU_MALLOC(nsupc*nsupc * sizeof(double))))
-				ABORT("Malloc fails for Linv_bc_ptr[ljb][]");
-			if (!(Uinv_bc_ptr[ljb] = (double*)SUPERLU_MALLOC(nsupc*nsupc * sizeof(double))))
-				ABORT("Malloc fails for Uinv_bc_ptr[ljb][]");
+		    if ( !(index = intMalloc_dist(len1)) ) 
+			ABORT("Malloc fails for index[]");
+		    if (!(lusup = (double*)SUPERLU_MALLOC(len*nsupc * sizeof(double))))
+			ABORT("Malloc fails for lusup[]");
+		    if ( !(Lindval_loc_bc_ptr[ljb] = intCalloc_dist(nrbl*3)) ) 
+			ABORT("Malloc fails for Lindval_loc_bc_ptr[ljb][]");
+  		    if (!(Linv_bc_ptr[ljb] = (double*)SUPERLU_MALLOC(nsupc*nsupc * sizeof(double))))
+			ABORT("Malloc fails for Linv_bc_ptr[ljb][]");
+		    if (!(Uinv_bc_ptr[ljb] = (double*)SUPERLU_MALLOC(nsupc*nsupc * sizeof(double))))
+			ABORT("Malloc fails for Uinv_bc_ptr[ljb][]");
 		    mybufmax[0] = SUPERLU_MAX( mybufmax[0], len1 );
 		    mybufmax[1] = SUPERLU_MAX( mybufmax[1], len*nsupc );
 		    mybufmax[4] = SUPERLU_MAX( mybufmax[4], len );
@@ -1058,11 +1058,11 @@ pddistribute(fact_t fact, int_t n, SuperMatrix *A,
 			}
 		    } /* for i ... */
 			
-			Lrowind_bc_ptr[ljb] = index;
-			Lnzval_bc_ptr[ljb] = lusup; 
+		    Lrowind_bc_ptr[ljb] = index;
+		    Lnzval_bc_ptr[ljb] = lusup; 
 
-
-			/* sort Lindval_loc_bc_ptr[ljb], Lrowind_bc_ptr[ljb] and Lnzval_bc_ptr[ljb] here*/
+			/* sort Lindval_loc_bc_ptr[ljb], Lrowind_bc_ptr[ljb]
+                           and Lnzval_bc_ptr[ljb] here.  */
 			if(nrbl>1){
 				krow = PROW( jb, grid );
 				if(myrow==krow){ /* skip the diagonal block */

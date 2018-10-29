@@ -155,7 +155,7 @@ Destroy_LU(int_t n, gridinfo_t *grid, LUstruct_t *LUstruct)
     CHECK_MALLOC(iam, "Enter Destroy_LU()");
 #endif
 
-	Destroy_Tree(n, grid, LUstruct);
+    Destroy_Tree(n, grid, LUstruct);
 
     nsupers = Glu_persist->supno[n-1] + 1;
 
@@ -197,30 +197,27 @@ Destroy_LU(int_t n, gridinfo_t *grid, LUstruct_t *LUstruct)
     SUPERLU_FREE(Llu->bsendx_plist);
     SUPERLU_FREE(Llu->mod_bit);
 
-	
-	
     nb = CEILING(nsupers, grid->npcol);
     for (i = 0; i < nb; ++i) 
 	if ( Llu->Lindval_loc_bc_ptr[i]!=NULL) {
 	    SUPERLU_FREE (Llu->Lindval_loc_bc_ptr[i]);
 	}	
-	SUPERLU_FREE(Llu->Lindval_loc_bc_ptr);
+    SUPERLU_FREE(Llu->Lindval_loc_bc_ptr);
 	
-	nb = CEILING(nsupers, grid->npcol);
-	for (i=0;i<nb;++i){
-		if(Llu->Linv_bc_ptr[i]!=NULL){
-			SUPERLU_FREE(Llu->Linv_bc_ptr[i]);
-		}
-		if(Llu->Uinv_bc_ptr[i]!=NULL){
-			SUPERLU_FREE(Llu->Uinv_bc_ptr[i]);
-		}	
+    nb = CEILING(nsupers, grid->npcol);
+    for (i=0; i<nb; ++i) {
+	if(Llu->Linv_bc_ptr[i]!=NULL) {
+	    SUPERLU_FREE(Llu->Linv_bc_ptr[i]);
 	}
-	SUPERLU_FREE(Llu->Linv_bc_ptr);
-	SUPERLU_FREE(Llu->Uinv_bc_ptr);
-	SUPERLU_FREE(Llu->Unnz);
+	if(Llu->Uinv_bc_ptr[i]!=NULL){
+	    SUPERLU_FREE(Llu->Uinv_bc_ptr[i]);
+	}	
+    }
+    SUPERLU_FREE(Llu->Linv_bc_ptr);
+    SUPERLU_FREE(Llu->Uinv_bc_ptr);
+    SUPERLU_FREE(Llu->Unnz);
 	
-	
-	nb = CEILING(nsupers, grid->npcol);
+    nb = CEILING(nsupers, grid->npcol);
     for (i = 0; i < nb; ++i)
 	if ( Llu->Urbs[i] ) {
 	    SUPERLU_FREE(Llu->Ucb_indptr[i]);
@@ -228,9 +225,8 @@ Destroy_LU(int_t n, gridinfo_t *grid, LUstruct_t *LUstruct)
 	}
     SUPERLU_FREE(Llu->Ucb_indptr);
     SUPERLU_FREE(Llu->Ucb_valptr);	
-	SUPERLU_FREE(Llu->Urbs);
+    SUPERLU_FREE(Llu->Urbs);
 
-	
     SUPERLU_FREE(Glu_persist->xsup);
     SUPERLU_FREE(Glu_persist->supno);
 
@@ -426,7 +422,7 @@ void set_default_options_dist(superlu_dist_options_t *options)
     options->num_lookaheads    = 10;
     options->lookahead_etree   = NO;
     options->SymPattern        = NO;
-#ifdef HAVE_LAPACK
+#ifdef SLU_HAVE_LAPACK
     options->DiagInv           = YES;
 #else
     options->DiagInv           = NO;
@@ -443,6 +439,7 @@ void print_options_dist(superlu_dist_options_t *options)
     printf(".. options:\n");
     printf("**    Fact             : %4d\n", options->Fact);
     printf("**    Equil            : %4d\n", options->Equil);
+    printf("**    DiagInv          : %4d\n", options->DiagInv);
     printf("**    ParSymbFact      : %4d\n", options->ParSymbFact);
     printf("**    ColPerm          : %4d\n", options->ColPerm);
     printf("**    RowPerm          : %4d\n", options->RowPerm);
