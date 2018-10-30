@@ -54,7 +54,8 @@ at the top-level directory.
  *
  * Return value
  * ============
- *   > 0, working storage required (in bytes).
+ *   > 0, working storage (in bytes) required to perform redistribution.
+ *        (excluding LU factor size)
  * </pre>
  */
 
@@ -149,17 +150,17 @@ ddistribute(fact_t fact, int_t n, SuperMatrix *A,
     int_t iword, dword;
     float mem_use = 0.0;
 
-	int_t *mod_bit;
-	int_t *frecv, *brecv, *lloc;
-	double **Linv_bc_ptr;  /* size ceil(NSUPERS/Pc) */
-	double **Uinv_bc_ptr;  /* size ceil(NSUPERS/Pc) */
-	double *SeedSTD_BC,*SeedSTD_RD;				 
-	int_t idx_indx,idx_lusup;
-	int_t nbrow;
-	int_t  ik, il, lk, rel, knsupc, idx_r;
-	int_t  lptr1_tmp, idx_i, idx_v,m, uu;
-	int_t nub;
-	int tag;		
+    int_t *mod_bit;
+    int_t *frecv, *brecv, *lloc;
+    double **Linv_bc_ptr;  /* size ceil(NSUPERS/Pc) */
+    double **Uinv_bc_ptr;  /* size ceil(NSUPERS/Pc) */
+    double *SeedSTD_BC,*SeedSTD_RD;				 
+    int_t idx_indx,idx_lusup;
+    int_t nbrow;
+    int_t  ik, il, lk, rel, knsupc, idx_r;
+    int_t  lptr1_tmp, idx_i, idx_v,m, uu;
+    int_t nub;
+    int tag;		
 	
 #if ( PRNTlevel>=1 )
     int_t nLblocks = 0, nUblocks = 0;
@@ -214,9 +215,9 @@ ddistribute(fact_t fact, int_t n, SuperMatrix *A,
 	Ufstnz_br_ptr = Llu->Ufstnz_br_ptr;
 	Unzval_br_ptr = Llu->Unzval_br_ptr;
 	Unnz = Llu->Unnz;	
-#if ( PRNTlevel>=1 )
+
 	mem_use += 2.0*nrbu*iword + ldaspa*sp_ienv_dist(3)*dword;
-#endif
+
 #if ( PROFlevel>=1 )
 	t = SuperLU_timer_();
 #endif
@@ -346,9 +347,9 @@ ddistribute(fact_t fact, int_t n, SuperMatrix *A,
 	j = k * grid->npcol;
 	if ( !(index1 = SUPERLU_MALLOC(j * sizeof(int))) )
 	    ABORT("Malloc fails for index[].");
-#if ( PRNTlevel>=1 )
+
 	mem_use += (float) k*sizeof(int_t*) + (j + nsupers)*iword;
-#endif
+
 	for (i = 0; i < j; ++i) index1[i] = EMPTY;
 	for (i = 0,j = 0; i < k; ++i, j += grid->npcol) ToSendR[i] = &index1[j];
 	k = CEILING( nsupers, grid->nprow ); /* Number of local block rows */
@@ -378,9 +379,9 @@ ddistribute(fact_t fact, int_t n, SuperMatrix *A,
 	    ABORT("Calloc fails for Urb_fstnz[].");
 	if ( !(Ucbs = intCalloc_dist(k)) )
 	    ABORT("Calloc fails for Ucbs[].");
-#if ( PRNTlevel>=1 )	
+
 	mem_use += 2.0*k*sizeof(int_t*) + (7.0*k+1)*iword;
-#endif
+
 	/* Compute ldaspa and ilsum[]. */
 	ldaspa = 0;
 	ilsum[0] = 0;
@@ -470,9 +471,9 @@ ddistribute(fact_t fact, int_t n, SuperMatrix *A,
 	t = SuperLU_timer_() - t;
 	if ( !iam) printf(".. Phase 2 - setup U strut time: %.2f\t\n", t);
 #endif
-#if ( PRNTlevel>=1 )
+
         mem_use -= 2.0*k * iword;
-#endif
+
 	/* Auxiliary arrays used to set up L block data structures.
 	   They are freed on return.
 	   k is the number of local row blocks.   */
@@ -541,9 +542,9 @@ ddistribute(fact_t fact, int_t n, SuperMatrix *A,
 	for (i = 0; i < len; ++i) index[i] = EMPTY;
 	for (i = 0, j = 0; i < k; ++i, j += grid->nprow)
 	    bsendx_plist[i] = &index[j];
-#if ( PRNTlevel>=1 )
+
 	mem_use += 4.0*k*sizeof(int_t*) + 2.0*len*iword;
-#endif
+
 	/*------------------------------------------------------------
 	  PROPAGATE ROW SUBSCRIPTS AND VALUES OF A INTO L AND U BLOCKS.
 	  THIS ACCOUNTS FOR ONE-PASS PROCESSING OF A, L AND U.

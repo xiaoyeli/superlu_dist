@@ -1099,6 +1099,7 @@ void isort1(int_t N, int_t *ARRAY)
   }
 }
 
+/* Only log the memory for the buffer space, excluding the LU factors */
 void log_memory(int64_t cur_bytes, SuperLUStat_t *stat) {
     stat->current_buffer += (float) cur_bytes;
     if (cur_bytes > 0) {
