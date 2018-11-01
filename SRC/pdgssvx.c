@@ -581,6 +581,8 @@ pdgssvx(superlu_dist_options_t *options, SuperMatrix *A,
     sizes   = NULL;
     fstVtxSep = NULL;
     symb_comm = MPI_COMM_NULL;
+    num_mem_usage.for_lu = num_mem_usage.total = 0.0;
+    symb_mem_usage.for_lu = symb_mem_usage.total = 0.0;
 	
     /* Test the input parameters. */
     *info = 0;

@@ -819,7 +819,9 @@ pdgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
                       bigU has the same size either on CPU or on CPU. */
     double* bigV; /* for storing GEMM output matrix, i.e. update matrix. 
 	              bigV is large to hold the aggregate GEMM output.*/
-
+	bigU = NULL;
+	bigV = NULL;
+				  
 #if ( PRNTlevel>=1 )
     if(!iam) {
 	printf("max_nrows in L panel %d\n", max_row_size);
@@ -898,17 +900,17 @@ pdgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
     bigu_size += (gemm_k_pad * (j + ldt + gemm_n_pad));
     bigv_size += (gemm_m_pad * (j + max_row_size + gemm_n_pad));
 
-#ifdef __INTEL_COMPILER
-    bigU = _mm_malloc(bigu_size * sizeof(double), 1<<12); // align at 4K page
-    bigV = _mm_malloc(bigv_size * sizeof(double), 1<<12);
-#else
+//#ifdef __INTEL_COMPILER
+//    bigU = _mm_malloc(bigu_size * sizeof(double), 1<<12); // align at 4K page
+//    bigV = _mm_malloc(bigv_size * sizeof(double), 1<<12);
+//#else
     if ( !(bigU = doubleMalloc_dist(bigu_size)) )
         ABORT ("Malloc fails for dgemm U buffer"); 
           //Maximum size of bigU= sqrt(buffsize) ?
     // int bigv_size = 8 * ldt * ldt * num_threads;
     if ( !(bigV = doubleMalloc_dist(bigv_size)) )
         ABORT ("Malloc failed for dgemm V buffer");
-#endif
+//#endif
 
 #endif /* end ifdef GPU_ACC */
 
@@ -1879,13 +1881,13 @@ pdgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
     SUPERLU_FREE( streams );
     SUPERLU_FREE( stream_end_col );
 #else
-  #ifdef __INTEL_COMPILER
-    _mm_free (bigU);
-    _mm_free (bigV);
-  #else
+//  #ifdef __INTEL_COMPILER
+//    _mm_free (bigU);
+//    _mm_free (bigV);
+//  #else
     SUPERLU_FREE (bigV);
     SUPERLU_FREE (bigU);
-  #endif
+//  #endif
     /* Decrement freed memory from memory stat. */
     log_memory(-(bigv_size + bigu_size) * dword, stat);
 #endif
