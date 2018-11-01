@@ -1201,7 +1201,9 @@ if(procs==1){
 	if ( !(recvbuf_BC_fwd = (double*)SUPERLU_MALLOC(maxrecvsz*(nfrecvx+1) * sizeof(double))) )  // this needs to be optimized for 1D row mapping
 		ABORT("Malloc fails for recvbuf_BC_fwd[].");	
 	nfrecvx_buf=0;			
-									
+
+	log_memory(nlb*aln_i*iword+nlb*iword+(CEILING( nsupers, Pr )+CEILING( nsupers, Pc ))*aln_i*2.0*iword+ nsupers_i*iword + sizelsum*num_thread * dword + (ldalsum * nrhs + nlb * XK_H) *dword + (sizertemp*num_thread + 1)*dword+maxrecvsz*(nfrecvx+1)*dword, stat);	//account for fmod, frecv, leaf_send, root_send, leafsups, recvbuf_BC_fwd	, lsum, x, rtemp
+	
 #if ( DEBUGlevel>=2 )
 	printf("(%2d) nfrecvx %4d,  nfrecvmod %4d,  nleaf %4d\n,  nbtree %4d\n,  nrtree %4d\n",
 			iam, nfrecvx, nfrecvmod, nleaf, nbtree, nrtree);
@@ -1738,6 +1740,8 @@ if(procs==1){
 		SUPERLU_FREE(leafsups);
 		SUPERLU_FREE(recvbuf_BC_fwd);
 
+		log_memory(-nlb*aln_i*iword-nlb*iword-(CEILING( nsupers, Pr )-CEILING( nsupers, Pc ))*aln_i*iword- nsupers_i*iword -maxrecvsz*(nfrecvx+1)*dword, stat);	//account for fmod, frecv, leaf_send, leafsups, recvbuf_BC_fwd				
+		
 		for (lk=0;lk<nsupers_j;++lk){
 			if(LBtree_ptr[lk]!=NULL){
 				// if(BcTree_IsRoot(LBtree_ptr[lk],'d')==YES){			
@@ -1913,6 +1917,8 @@ if(procs==1){
 		ABORT("Malloc fails for recvbuf_BC_fwd[].");	
 	nbrecvx_buf=0;			
 
+	log_memory(nlb*aln_i*iword+nlb*iword + nsupers_i*iword + maxrecvsz*(nbrecvx+1)*dword, stat);	//account for bmod, brecv, rootsups, recvbuf_BC_fwd	
+	
 #if ( DEBUGlevel>=2 )
 	printf("(%2d) nbrecvx %4d,  nbrecvmod %4d,  nroot %4d\n,  nbtree %4d\n,  nrtree %4d\n",
 			iam, nbrecvx, nbrecvmod, nroot, nbtree, nrtree);
@@ -2368,6 +2374,8 @@ for (i=0;i<nroot_send;i++){
 		
 		SUPERLU_FREE(rootsups);
 		SUPERLU_FREE(recvbuf_BC_fwd);		
+
+		log_memory(-nlb*aln_i*iword-nlb*iword - nsupers_i*iword - (CEILING( nsupers, Pr )+CEILING( nsupers, Pc ))*aln_i*iword - maxrecvsz*(nbrecvx+1)*dword - sizelsum*num_thread * dword - (ldalsum * nrhs + nlb * XK_H) *dword + (sizertemp*num_thread - 1)*dword, stat);	//account for bmod, brecv, root_send, rootsups, recvbuf_BC_fwd,rtemp,lsum,x			
 		
 		for (lk=0;lk<nsupers_j;++lk){
 			if(UBtree_ptr[lk]!=NULL){
@@ -2416,6 +2424,31 @@ for (i=0;i<nroot_send;i++){
 #if ( DEBUGlevel>=1 )
     CHECK_MALLOC(iam, "Exit pdgstrs()");
 #endif
+
+
+#if ( PRNTlevel>=2 )	
+	    float for_lu, total, max, avg, temp;
+		superlu_dist_mem_usage_t num_mem_usage;
+		
+	    dQuerySpace_dist(n, LUstruct, grid, stat, &num_mem_usage);
+	    temp = num_mem_usage.total;
+
+	    MPI_Reduce( &temp, &max,
+		       1, MPI_FLOAT, MPI_MAX, 0, grid->comm );
+	    MPI_Reduce( &temp, &avg,
+		       1, MPI_FLOAT, MPI_SUM, 0, grid->comm );
+            if (!iam) {
+		printf("\n** Memory Usage **********************************\n");
+                printf("** Total highmark (MB):\n"
+		       "    Sum-of-all : %8.2f | Avg : %8.2f  | Max : %8.2f\n",
+		       avg * 1e-6,  
+		       avg / grid->nprow / grid->npcol * 1e-6,
+		       max * 1e-6);
+		printf("**************************************************\n");
+		fflush(stdout);
+            }
+#endif	
+
 
     return;
 } /* PDGSTRS */
