@@ -44,8 +44,8 @@ echo "host: $THISHOST"
 if [ "$THISHOST" == "ssg1" ]
 then
   rm -fr ssg1-build; mkdir ssg1-build; cd ssg1-build;
-  export PARMETIS_ROOT=~/lib/static/64-bit/parmetis-4.0.3 
-#  export PARMETIS_ROOT=~/lib/static/parmetis-4.0.3 
+#  export PARMETIS_ROOT=~/lib/static/64-bit/parmetis-4.0.3 
+  export PARMETIS_ROOT=~/lib/static/parmetis-4.0.3 
   export PARMETIS_BUILD_DIR=${PARMETIS_ROOT}/build/Linux-x86_64
   echo "ParMetis root: $PARMETIS_ROOT"
   cmake .. \
@@ -54,7 +54,7 @@ then
     -DTPL_COMBBLAS_INCLUDE_DIRS="${COMBBLAS_ROOT}/_install/include;${COMBBLAS_R\
 OOT}/Applications/BipartiteMatchings" \
     -DTPL_COMBBLAS_LIBRARIES="${COMBBLAS_BUILD_DIR}/libCombBLAS.a" \
-    -DCMAKE_C_FLAGS="-std=c99 -g -DPRNTlevel=0 -DDEBUGlevel=0" \
+    -DCMAKE_C_FLAGS="-std=c99 -g -DPRNTlevel=0 -DDEBUGlevel=1" \
     -DCMAKE_C_COMPILER=mpicc \
     -DCMAKE_CXX_COMPILER=mpicxx \
     -DCMAKE_CXX_FLAGS="-std=c++11" \
@@ -62,10 +62,10 @@ OOT}/Applications/BipartiteMatchings" \
     -DTPL_ENABLE_COMBBLASLIB=OFF \
     -DTPL_ENABLE_LAPACKLIB=OFF \
     -DBUILD_SHARED_LIBS=OFF \
-   -DXSDK_INDEX_SIZE=64 \
     -DCMAKE_INSTALL_PREFIX=.
 fi
 #   -DTPL_ENABLE_PARMETISLIB=OFF
+#   -DXSDK_INDEX_SIZE=64 \
 
 # make VERBOSE=1
 # make test

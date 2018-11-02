@@ -218,6 +218,16 @@ int main(int argc, char *argv[])
     PStatInit(&stat); /* Initialize the statistics variables. */
 
     /* Set up the local A in NR_loc format */
+
+    /* Perturb the 1st diagonal of the matrix to larger value.
+       Intention is to change values of A.   */
+    if (iam == 0) {
+        nzval1[0] += 1.0e-8;
+    }
+
+    /* Zero the numerical values in L.  */
+    dZeroLblocks(iam, n, &grid, &LUstruct);
+
     dCreate_CompRowLoc_Matrix_dist(&A, m, n, nnz_loc, m_loc, fst_row,
 				   nzval1, colind1, rowptr1,
 				   SLU_NR_loc, SLU_D, SLU_GE);

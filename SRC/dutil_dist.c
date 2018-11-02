@@ -556,7 +556,7 @@ void dZeroLblocks(int iam, int_t n, gridinfo_t *grid, LUstruct_t *LUstruct)
 	    nsupc = SuperSize( gb );
 	    for (j = 0; j < nsupc; ++j) {
                 for (r = 0; r < nsupr; ++r) {
-                    nzval[r + j*nsupc] = zero;
+                    nzval[r + j*nsupr] = zero;
 		}
             }
 	}

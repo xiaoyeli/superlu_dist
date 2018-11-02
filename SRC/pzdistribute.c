@@ -1018,7 +1018,7 @@ pzdistribute(fact_t fact, int_t n, SuperMatrix *A,
 		    mybufmax[0] = SUPERLU_MAX( mybufmax[0], len1 );
 		    mybufmax[1] = SUPERLU_MAX( mybufmax[1], len*nsupc );
 		    mybufmax[4] = SUPERLU_MAX( mybufmax[4], len );
-			memTRS += nrbl*3.0*iword + 2.0*nsupc*nsupc*dword;  //acount for Lindval_loc_bc_ptr[ljb],Linv_bc_ptr[ljb],Uinv_bc_ptr[ljb]			
+	  	    memTRS += nrbl*3.0*iword + 2.0*nsupc*nsupc*dword;  //acount for Lindval_loc_bc_ptr[ljb],Linv_bc_ptr[ljb],Uinv_bc_ptr[ljb]			
 		    index[0] = nrbl;  /* Number of row blocks */
 		    index[1] = len;   /* LDA of the nzval[] */
 		    next_lind = BC_HEADER;
