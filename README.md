@@ -1,4 +1,4 @@
-# SuperLU_DIST (version 6.0)
+# SuperLU_DIST (version 6.1)
 
 [![Build Status](https://travis-ci.org/xiaoyeli/superlu_dist.svg?branch=master)](https://travis-ci.org/xiaoyeli/superlu_dist) 
 [Nightly tests](http://my.cdash.org/index.php?project=superlu_dist)

@@ -35,6 +35,9 @@ at the top-level directory.
         } \
     } while(0);
 
+int full;
+double gemm_timer = 0.0;
+double scatter_timer = 0.0;
 
 if ( msg0 && msg2 ) {  /* L(:,k) and U(k,:) are not empty. */
     ldu   =0;

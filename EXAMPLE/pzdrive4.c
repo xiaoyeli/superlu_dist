@@ -13,7 +13,7 @@ at the top-level directory.
  * \brief This example illustrates how to divide up the processes into subgroups
  *
  * <pre>
- * -- Distributed SuperLU routine (version 4.1) --
+ * -- Distributed SuperLU routine (version 6.1) --
  * Lawrence Berkeley National Lab, Univ. of California Berkeley.
  * March 15, 2003
  * April 5, 2015
@@ -58,11 +58,12 @@ int main(int argc, char *argv[])
     double   *berr;
     doublecomplex   *a, *b, *xtrue;
     int_t    *asub, *xa;
-    int_t    i, j, ii, m, n;
+    int_t    i, j, m, n;
     int      nprow, npcol, ldumap, p;
     int_t    usermap[6];
     int      iam, info, ldb, ldx, nprocs;
     int      nrhs = 1;   /* Number of right-hand side. */
+    int ii, omp_mpi_level;
     char     **cpp, c, *postfix;
     FILE *fp, *fopen();
     int cpp_defs();
@@ -71,7 +72,8 @@ int main(int argc, char *argv[])
     /* ------------------------------------------------------------
        INITIALIZE MPI ENVIRONMENT. 
        ------------------------------------------------------------*/
-    MPI_Init( &argc, &argv );
+    MPI_Init_thread( &argc, &argv, MPI_THREAD_MULTIPLE, &omp_mpi_level); 
+
     MPI_Comm_size( MPI_COMM_WORLD, &nprocs );
     if ( nprocs < 10 ) {
 	fprintf(stderr, "Requires at least 10 processes\n");
@@ -133,12 +135,12 @@ int main(int argc, char *argv[])
     CHECK_MALLOC(iam, "Enter main()");
 #endif
 
-	for(ii = 0;ii<strlen(*cpp);ii++){
-		if((*cpp)[ii]=='.'){
-			postfix = &((*cpp)[ii+1]);
-		}
+    for(ii = 0;ii<strlen(*cpp);ii++){
+	if((*cpp)[ii]=='.'){
+	    postfix = &((*cpp)[ii+1]);
 	}
-	// printf("%s\n", postfix);
+    }
+    // printf("%s\n", postfix);
 
     if ( iam >= 0 && iam < 6 ) { /* I am in grid 1. */
 	iam = grid1.iam;  /* Get the logical number in the new grid. */

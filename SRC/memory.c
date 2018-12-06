@@ -98,10 +98,10 @@ void superlu_free_dist(void *addr)
 
     { 
 	int_t n = ((size_t *) p)[0];
+	//printf("superlu_free-dist: n %d\n", n);
 	
 	if ( n==0 ) {
-	    printf("n %d, tried to free a freed pointer\n", n);
-	    // ABORT("superlu_free: tried to free a freed pointer");
+	    ABORT("superlu_free: tried to free a freed pointer");
 	}
 	*((size_t *) p) = 0; /* Set to zero to detect duplicate free's. */
 #if 0	
@@ -121,6 +121,7 @@ void superlu_free_dist(void *addr)
  
 #else  /* The production mode. */
 
+//#if  0 
 #if (__STDC_VERSION__ >= 201112L)
 
 void * superlu_malloc_dist(size_t size) {void* ptr;int alignment=1<<12;if(size>1<<19){alignment=1<<21;}posix_memalign( (void**)&(ptr), alignment, size );return(ptr);}
@@ -135,7 +136,6 @@ void * superlu_malloc_dist(size_t size) {
     return (_mm_malloc(size, alignment));
 }
 void  superlu_free_dist(void * ptr)  { _mm_free(ptr); }
-
 
 #else // normal malloc/free 
 

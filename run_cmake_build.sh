@@ -57,7 +57,6 @@ OOT}/Applications/BipartiteMatchings" \
     -DCMAKE_C_FLAGS="-std=c99 -g -DPRNTlevel=0 -DDEBUGlevel=1" \
     -DCMAKE_C_COMPILER=mpicc \
     -DCMAKE_CXX_COMPILER=mpicxx \
-    -DCMAKE_CXX_FLAGS="-std=c++11" \
     -DTPL_ENABLE_BLASLIB=OFF \
     -DTPL_ENABLE_COMBBLASLIB=OFF \
     -DTPL_ENABLE_LAPACKLIB=OFF \
@@ -66,6 +65,7 @@ OOT}/Applications/BipartiteMatchings" \
 fi
 #   -DTPL_ENABLE_PARMETISLIB=OFF
 #   -DXSDK_INDEX_SIZE=64 \
+#    -DCMAKE_CXX_FLAGS="-std=c++11" \
 
 # make VERBOSE=1
 # make test

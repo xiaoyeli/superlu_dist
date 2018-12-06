@@ -13,7 +13,7 @@ at the top-level directory.
  * \brief Driver program for PZGSSVX example
  *
  * <pre>
- * -- Distributed SuperLU routine (version 4.1) --
+ * -- Distributed SuperLU routine (version 6.1) --
  * Lawrence Berkeley National Lab, Univ. of California Berkeley.
  * November 1, 2007
  * April 5, 2015
@@ -63,9 +63,8 @@ int main(int argc, char *argv[])
     char     **cpp, c, *postfix;;
     FILE *fp, *fopen();
     int cpp_defs();
-	int ii;
-	int omp_mpi_level;
-	
+    int ii, omp_mpi_level;
+
     nprow = 1;  /* Default process rows.      */
     npcol = 1;  /* Default process columns.   */
     nrhs = 1;   /* Number of right-hand side. */
@@ -73,8 +72,8 @@ int main(int argc, char *argv[])
     /* ------------------------------------------------------------
        INITIALIZE MPI ENVIRONMENT. 
        ------------------------------------------------------------*/
-    MPI_Init( &argc, &argv );
-    //MPI_Init_thread( &argc, &argv, MPI_THREAD_MULTIPLE, &omp_mpi_level); 
+    //MPI_Init( &argc, &argv );
+    MPI_Init_thread( &argc, &argv, MPI_THREAD_MULTIPLE, &omp_mpi_level); 
 	
 
 #if ( VAMPIR>=1 )
@@ -115,7 +114,7 @@ int main(int argc, char *argv[])
        ------------------------------------------------------------*/
     superlu_gridinit(MPI_COMM_WORLD, nprow, npcol, &grid);
 	
-	if(grid.iam==0){
+    if(grid.iam==0){
 	MPI_Query_thread(&omp_mpi_level);
     switch (omp_mpi_level) {
       case MPI_THREAD_SINGLE:
@@ -158,12 +157,12 @@ int main(int argc, char *argv[])
     CHECK_MALLOC(iam, "Enter main()");
 #endif
 
-	for(ii = 0;ii<strlen(*cpp);ii++){
-		if((*cpp)[ii]=='.'){
-			postfix = &((*cpp)[ii+1]);
-		}
+    for(ii = 0;ii<strlen(*cpp);ii++){
+	if((*cpp)[ii]=='.'){
+		postfix = &((*cpp)[ii+1]);
 	}
-	// printf("%s\n", postfix);
+    }
+    // printf("%s\n", postfix);
 	
     /* ------------------------------------------------------------
        GET THE MATRIX FROM FILE AND SETUP THE RIGHT HAND SIDE. 
