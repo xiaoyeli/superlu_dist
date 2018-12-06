@@ -16,7 +16,7 @@ at the top-level directory.
  * -- Distributed SuperLU routine (version 6.1) --
  * Lawrence Berkeley National Lab, Univ. of California Berkeley.
  * November 1, 2007
- * April 5, 2015
+ * December 6, 2018
  * </pre>
  */
 
@@ -141,6 +141,11 @@ int main(int argc, char *argv[])
     if ( iam >= nprow * npcol )	goto out;
     if ( !iam ) {
 	int v_major, v_minor, v_bugfix;
+#ifdef __INTEL_COMPILER
+	printf("__INTEL_COMPILER is defined\n");
+#endif
+	printf("__STDC_VERSION__ %ld\n", __STDC_VERSION__);
+
 	superlu_dist_GetVersionNumber(&v_major, &v_minor, &v_bugfix);
 	printf("Library version:\t%d.%d.%d\n", v_major, v_minor, v_bugfix);
 

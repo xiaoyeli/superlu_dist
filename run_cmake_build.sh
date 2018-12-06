@@ -24,7 +24,7 @@ then
 elif [ "$NERSC_HOST" == "cori" ]
 then
     rm -fr cori-build; mkdir cori-build; cd cori-build;
-    export PARMETIS_ROOT=~/Cori/lib/parmetis-4.0.3-64
+    export PARMETIS_ROOT=~/Cori/lib/parmetis-4.0.3
 #    export PARMETIS_BUILD_DIR=${PARMETIS_ROOT}/shared-build
     export PARMETIS_BUILD_DIR=${PARMETIS_ROOT}/build/Linux-x86_64
     cmake .. \
@@ -33,9 +33,9 @@ then
     -DTPL_ENABLE_BLASLIB=OFF \
     -DTPL_BLAS_LIBRARIES="-mkl" \
     -DCMAKE_Fortran_COMPILER=ftn \
-    -DCMAKE_C_FLAGS="-std=c99 -fPIC -DPRNTlevel=1" \
-    -DCMAKE_INSTALL_PREFIX=. \
-    -DXSDK_INDEX_SIZE=64
+    -DCMAKE_C_FLAGS="-std=c99 -fPIC -DPRNTlevel=0" \
+    -DCMAKE_INSTALL_PREFIX=.
+#    -DXSDK_INDEX_SIZE=64
 #    -DCMAKE_EXE_LINKER_FLAGS="-shared" \
 fi
 
@@ -54,7 +54,7 @@ then
     -DTPL_COMBBLAS_INCLUDE_DIRS="${COMBBLAS_ROOT}/_install/include;${COMBBLAS_R\
 OOT}/Applications/BipartiteMatchings" \
     -DTPL_COMBBLAS_LIBRARIES="${COMBBLAS_BUILD_DIR}/libCombBLAS.a" \
-    -DCMAKE_C_FLAGS="-std=c99 -g -DPRNTlevel=0 -DDEBUGlevel=1" \
+    -DCMAKE_C_FLAGS="-std=c99 -O3 -DPRNTlevel=0 -DDEBUGlevel=0" \
     -DCMAKE_C_COMPILER=mpicc \
     -DCMAKE_CXX_COMPILER=mpicxx \
     -DTPL_ENABLE_BLASLIB=OFF \
