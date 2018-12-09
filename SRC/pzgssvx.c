@@ -557,6 +557,8 @@ pzgssvx(superlu_dist_options_t *options, SuperMatrix *A,
     double   dmin, dsum, dprod;
 #endif
 
+	LUstruct->dt = 'z';
+
     /* Structures needed for parallel symbolic factorization */
     int_t *sizes, *fstVtxSep, parSymbFact;
     int   noDomains, nprocs_num;
@@ -578,7 +580,9 @@ pzgssvx(superlu_dist_options_t *options, SuperMatrix *A,
     sizes   = NULL;
     fstVtxSep = NULL;
     symb_comm = MPI_COMM_NULL;
-
+    num_mem_usage.for_lu = num_mem_usage.total = 0.0;
+    symb_mem_usage.for_lu = symb_mem_usage.total = 0.0;
+	
     /* Test the input parameters. */
     *info = 0;
     Fact = options->Fact;
@@ -1002,7 +1006,7 @@ pzgssvx(superlu_dist_options_t *options, SuperMatrix *A,
     // {  	
 	// #pragma omp master
 	// {	
-		  /* Get column permutation vector in perm_c.                    *
+	      /* Get column permutation vector in perm_c.                    *
 	       * This routine takes as input the distributed input matrix A  *
 	       * and does not modify it.  It also allocates memory for       *
 	       * sizes[] and fstVtxSep[] arrays, that contain information    *
@@ -1026,16 +1030,17 @@ pzgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 
 	stat->utime[COLPERM] = SuperLU_timer_() - t;
 
-	/* Compute the elimination tree of Pc*(A^T+A)*Pc^T or Pc*A^T*A*Pc^T
-	   (a.k.a. column etree), depending on the choice of ColPerm.
-	   Adjust perm_c[] to be consistent with a postorder of etree.
-	   Permute columns of A to form A*Pc'. */
+	/* Symbolic factorization. */
 	if ( Fact != SamePattern_SameRowPerm ) {
 	    if ( parSymbFact == NO ) { /* Perform serial symbolic factorization */
 		/* GA = Pr*A, perm_r[] is already applied. */
 	        int_t *GACcolbeg, *GACcolend, *GACrowind;
 
-		/* After this routine, GAC = GA*Pc^T.  */
+	        /* Compute the elimination tree of Pc*(A^T+A)*Pc^T or Pc*A^T*A*Pc^T
+	           (a.k.a. column etree), depending on the choice of ColPerm.
+	           Adjust perm_c[] to be consistent with a postorder of etree.
+	           Permute columns of A to form A*Pc'. 
+		   After this routine, GAC = GA*Pc^T.  */
 	        sp_colorder(options, &GA, perm_c, etree, &GAC); 
 
 	        /* Form Pc*A*Pc^T to preserve the diagonal of the matrix GAC. */
@@ -1118,14 +1123,15 @@ pzgssvx(superlu_dist_options_t *options, SuperMatrix *A,
             if ( parSymbFact == NO )
  	        Destroy_CompCol_Permuted_dist(&GAC);
 
-	} /* end if Fact ... */
+	} /* end if Fact != SamePattern_SameRowPerm ... */
 
         if (sizes) SUPERLU_FREE (sizes);
         if (fstVtxSep) SUPERLU_FREE (fstVtxSep);
-	if (symb_comm != MPI_COMM_NULL)
-	  MPI_Comm_free (&symb_comm); 
+	if (symb_comm != MPI_COMM_NULL) MPI_Comm_free (&symb_comm); 
 
-	if (parSymbFact == NO || Fact == SamePattern_SameRowPerm) {
+	/* Distribute entries of A into L & U data structures. */
+	//if (parSymbFact == NO || ???? Fact == SamePattern_SameRowPerm) {
+	if ( parSymbFact == NO ) {
 	    /* CASE OF SERIAL SYMBOLIC */
   	    /* Apply column permutation to the original distributed A */
 	    for (j = 0; j < nnz_loc; ++j) colind[j] = perm_c[colind[j]];
@@ -1173,7 +1179,7 @@ pzgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 	// }
 	
 	
-#if ( PRNTlevel>=1 )
+#if ( PRNTlevel>=2 )
     /* ------------------------------------------------------------
        SUM OVER ALL ENTRIES OF A AND PRINT NNZ AND SIZE OF A.
        ------------------------------------------------------------*/
@@ -1400,10 +1406,14 @@ pzgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 	       For repeated call to pzgssvx(), no need to re-initialilze
 	       the Solve data & communication structures, unless a new
 	       factorization with Fact == DOFACT or SamePattern is asked for. */
-    	    if ( options->DiagInv==YES ) {
-		pzCompute_Diag_Inv(n, LUstruct, grid, stat, info);
-	    }	
-	} 
+	}
+
+	if ( options->DiagInv==YES && 
+             (options->SolveInitialized == NO || Fact == SamePattern ||
+              Fact == SamePattern_SameRowPerm) ) {
+	    pzCompute_Diag_Inv(n, LUstruct, grid, stat, info);
+	}
+
 
     // #pragma omp parallel  
     // {  	

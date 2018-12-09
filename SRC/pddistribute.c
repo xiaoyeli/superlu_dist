@@ -20,10 +20,7 @@ at the top-level directory.
  */
 
 #include "superlu_ddefs.h"
-
-#ifndef CACHELINE
-#define CACHELINE 64  /* bytes, Xeon Phi KNL, Cori haswell, Edision */
-#endif	  
+	  
 
 /*! \brief
  *
@@ -58,7 +55,8 @@ at the top-level directory.
  *
  * Return value
  * ============
- *        = 0: successful exit
+ *   > 0, working storage (in bytes) required to perform redistribution.
+ *        (excluding LU factor size)
  * </pre>
  */
 int_t
@@ -100,8 +98,8 @@ dReDistribute_A(SuperMatrix *A, ScalePermstruct_t *ScalePermstruct,
     m_loc = Astore->m_loc;
     fst_row = Astore->fst_row;
     nnzToRecv = intCalloc_dist(2*procs);
-    nnzToSend = nnzToRecv + procs;
-
+    nnzToSend = nnzToRecv + procs;	
+	
     /* ------------------------------------------------------------
        COUNT THE NUMBER OF NONZEROS TO BE SENT TO EACH PROCESS,
        THEN ALLOCATE SPACE.
@@ -382,7 +380,8 @@ pddistribute(fact_t fact, int_t n, SuperMatrix *A,
     int_t nrbu; /* number of U blocks in current block column */
     int_t gb;   /* global block number; 0 < gb <= nsuper */
     int_t lb;   /* local block number; 0 < lb <= ceil(NSUPERS/Pr) */
-    int iam, jbrow, kcol, krow, mycol, myrow, pc, pr;
+	int_t ub,gik,iklrow,fnz;    
+	int iam, jbrow, kcol, krow, mycol, myrow, pc, pr;
     int_t mybufmax[NBUFFERS];
     NRformat_loc *Astore;
     double *a;
@@ -401,6 +400,7 @@ pddistribute(fact_t fact, int_t n, SuperMatrix *A,
     double **Lnzval_bc_ptr;  /* size ceil(NSUPERS/Pc) */
     int_t  **Lrowind_bc_ptr; /* size ceil(NSUPERS/Pc) */
 	int_t   **Lindval_loc_bc_ptr; /* size ceil(NSUPERS/Pc)                 */		    
+	int_t   *Unnz; /* size ceil(NSUPERS/Pc)                 */	
 	double **Unzval_br_ptr;  /* size ceil(NSUPERS/Pr) */
     int_t  **Ufstnz_br_ptr;  /* size ceil(NSUPERS/Pr) */
 
@@ -454,18 +454,19 @@ pddistribute(fact_t fact, int_t n, SuperMatrix *A,
     int_t ldaspa;     /* LDA of SPA */
     int_t iword, dword;
     float mem_use = 0.0;
-
-	int_t *mod_bit;
-	int_t *frecv, *brecv, *lloc;
-	double **Linv_bc_ptr;  /* size ceil(NSUPERS/Pc) */
-	double **Uinv_bc_ptr;  /* size ceil(NSUPERS/Pc) */
-	double *SeedSTD_BC,*SeedSTD_RD;				 
-	int_t idx_indx,idx_lusup;
-	int_t nbrow;
-	int_t  ik, il, lk, rel, knsupc, idx_r;
-	int_t  lptr1_tmp, idx_i, idx_v,m, uu, aln_i;
-	int_t nub;
-	int tag;	
+    float memTRS = 0.; /* memory allocated for storing the meta-data for triangular solve (positive number)*/
+	
+    int_t *mod_bit;
+    int_t *frecv, *brecv, *lloc;
+    double **Linv_bc_ptr;  /* size ceil(NSUPERS/Pc) */
+    double **Uinv_bc_ptr;  /* size ceil(NSUPERS/Pc) */
+    double *SeedSTD_BC,*SeedSTD_RD;				 
+    int_t idx_indx,idx_lusup;
+    int_t nbrow;
+    int_t  ik, il, lk, rel, knsupc, idx_r;
+    int_t  lptr1_tmp, idx_i, idx_v,m, uu;
+    int_t nub;
+    int tag;	
 	
 #if ( PRNTlevel>=1 )
     int_t nLblocks = 0, nUblocks = 0;
@@ -485,8 +486,7 @@ pddistribute(fact_t fact, int_t n, SuperMatrix *A,
 
 //#if ( PRNTlevel>=1 )
     iword = sizeof(int_t);
-    dword = sizeof(double);
-	aln_i = ceil(CACHELINE/(double)iword);											
+    dword = sizeof(double);					
 //#endif
 
 #if ( DEBUGlevel>=1 )
@@ -526,9 +526,10 @@ pddistribute(fact_t fact, int_t n, SuperMatrix *A,
 	Lnzval_bc_ptr = Llu->Lnzval_bc_ptr;
 	Ufstnz_br_ptr = Llu->Ufstnz_br_ptr;
 	Unzval_br_ptr = Llu->Unzval_br_ptr;
-#if ( PRNTlevel>=1 )
+	Unnz = Llu->Unnz;	
+
 	mem_use += 2.0*nrbu*iword + ldaspa*sp_ienv_dist(3)*dword;
-#endif
+
 #if ( PROFlevel>=1 )
 	t = SuperLU_timer_();
 #endif
@@ -632,7 +633,7 @@ pddistribute(fact_t fact, int_t n, SuperMatrix *A,
 			   t_l, t_u, u_blks, nrbu);
 #endif
 
-    } else {
+    } else { /* fact is not SamePattern_SameRowPerm */
         /* ------------------------------------------------------------
 	   FIRST TIME CREATING THE L AND U DATA STRUCTURES.
 	   ------------------------------------------------------------*/
@@ -658,9 +659,9 @@ pddistribute(fact_t fact, int_t n, SuperMatrix *A,
 	j = k * grid->npcol;
 	if ( !(index1 = SUPERLU_MALLOC(j * sizeof(int))) )
 	    ABORT("Malloc fails for index[].");
-#if ( PRNTlevel>=1 )
+
 	mem_use += (float) k*sizeof(int_t*) + (j + nsupers)*iword;
-#endif
+
 	for (i = 0; i < j; ++i) index1[i] = EMPTY;
 	for (i = 0,j = 0; i < k; ++i, j += grid->npcol) ToSendR[i] = &index1[j];
 	k = CEILING( nsupers, grid->nprow ); /* Number of local block rows */
@@ -690,9 +691,9 @@ pddistribute(fact_t fact, int_t n, SuperMatrix *A,
 	    ABORT("Calloc fails for Urb_fstnz[].");
 	if ( !(Ucbs = intCalloc_dist(k)) )
 	    ABORT("Calloc fails for Ucbs[].");
-#if ( PRNTlevel>=1 )	
+
 	mem_use += 2.0*k*sizeof(int_t*) + (7*k+1)*iword;
-#endif
+
 	/* Compute ldaspa and ilsum[]. */
 	ldaspa = 0;
 	ilsum[0] = 0;
@@ -784,9 +785,9 @@ pddistribute(fact_t fact, int_t n, SuperMatrix *A,
 	t = SuperLU_timer_() - t;
 	if ( !iam) printf(".. Phase 2 - setup U strut time: %.2f\t\n", t);
 #endif
-#if ( PRNTlevel>=1 )
+
         mem_use -= 2.0*k * iword;
-#endif
+
 	/* Auxiliary arrays used to set up L block data structures.
 	   They are freed on return.
 	   k is the number of local row blocks.   */
@@ -808,9 +809,8 @@ pddistribute(fact_t fact, int_t n, SuperMatrix *A,
 	    ABORT("Calloc fails for bmod[].");
 
 	/* ------------------------------------------------ */
-#if ( PRNTlevel>=1 )	
 	mem_use += 6.0*k*iword + ldaspa*sp_ienv_dist(3)*dword;
-#endif
+
 	k = CEILING( nsupers, grid->npcol );/* Number of local block columns */
 
 	/* Pointers to the beginning of each block column of L. */
@@ -837,7 +837,10 @@ pddistribute(fact_t fact, int_t n, SuperMatrix *A,
 	Linv_bc_ptr[k-1] = NULL;
 	Uinv_bc_ptr[k-1] = NULL;	
 	
-	
+	if ( !(Unnz = 
+			(int_t*)SUPERLU_MALLOC(k * sizeof(int_t))) )
+	ABORT("Malloc fails for Unnz[].");
+		
 	
 	/* These lists of processes will be used for triangular solves. */
 	if ( !(fsendx_plist = (int_t **) SUPERLU_MALLOC(k*sizeof(int_t*))) )
@@ -856,10 +859,9 @@ pddistribute(fact_t fact, int_t n, SuperMatrix *A,
 	for (i = 0, j = 0; i < k; ++i, j += grid->nprow)
 	    bsendx_plist[i] = &index[j];
 	/* -------------------------------------------------------------- */
-#if ( PRNTlevel>=1 )
 	mem_use += 4.0*k*sizeof(int_t*) + 2.0*len*iword;
-#endif
-
+	memTRS += k*sizeof(int_t*) + 2.0*k*sizeof(double*) + k*iword;  //acount for Lindval_loc_bc_ptr, Unnz, Linv_bc_ptr,Uinv_bc_ptr
+	
 	/*------------------------------------------------------------
 	  PROPAGATE ROW SUBSCRIPTS AND VALUES OF A INTO L AND U BLOCKS.
 	  THIS ACCOUNTS FOR ONE-PASS PROCESSING OF A, L AND U.
@@ -1004,19 +1006,20 @@ pddistribute(fact_t fact, int_t n, SuperMatrix *A,
 		       index[] and nzval[]. */
 		    /* Add room for descriptors */
 		    len1 = len + BC_HEADER + nrbl * LB_DESCRIPTOR;
-			if ( !(index = intMalloc_dist(len1)) ) 
-				ABORT("Malloc fails for index[]");												 			 
-			if (!(lusup = (double*)SUPERLU_MALLOC(len*nsupc * sizeof(double))))
-				ABORT("Malloc fails for lusup[]");			
-			if ( !(Lindval_loc_bc_ptr[ljb] = intCalloc_dist(((nrbl*3 + (aln_i - 1)) / aln_i) * aln_i)) ) 
-				ABORT("Malloc fails for Lindval_loc_bc_ptr[ljb][]");
-			if (!(Linv_bc_ptr[ljb] = (double*)SUPERLU_MALLOC(nsupc*nsupc * sizeof(double))))
-				ABORT("Malloc fails for Linv_bc_ptr[ljb][]");
-			if (!(Uinv_bc_ptr[ljb] = (double*)SUPERLU_MALLOC(nsupc*nsupc * sizeof(double))))
-				ABORT("Malloc fails for Uinv_bc_ptr[ljb][]");
+		    if ( !(index = intMalloc_dist(len1)) ) 
+			ABORT("Malloc fails for index[]");
+		    if (!(lusup = (double*)SUPERLU_MALLOC(len*nsupc * sizeof(double))))
+			ABORT("Malloc fails for lusup[]");
+		    if ( !(Lindval_loc_bc_ptr[ljb] = intCalloc_dist(nrbl*3)) ) 
+			ABORT("Malloc fails for Lindval_loc_bc_ptr[ljb][]");
+  		    if (!(Linv_bc_ptr[ljb] = (double*)SUPERLU_MALLOC(nsupc*nsupc * sizeof(double))))
+			ABORT("Malloc fails for Linv_bc_ptr[ljb][]");
+		    if (!(Uinv_bc_ptr[ljb] = (double*)SUPERLU_MALLOC(nsupc*nsupc * sizeof(double))))
+			ABORT("Malloc fails for Uinv_bc_ptr[ljb][]");
 		    mybufmax[0] = SUPERLU_MAX( mybufmax[0], len1 );
 		    mybufmax[1] = SUPERLU_MAX( mybufmax[1], len*nsupc );
 		    mybufmax[4] = SUPERLU_MAX( mybufmax[4], len );
+	  	    memTRS += nrbl*3.0*iword + 2.0*nsupc*nsupc*dword;  //acount for Lindval_loc_bc_ptr[ljb],Linv_bc_ptr[ljb],Uinv_bc_ptr[ljb]			
 		    index[0] = nrbl;  /* Number of row blocks */
 		    index[1] = len;   /* LDA of the nzval[] */
 		    next_lind = BC_HEADER;
@@ -1057,11 +1060,11 @@ pddistribute(fact_t fact, int_t n, SuperMatrix *A,
 			}
 		    } /* for i ... */
 			
-			Lrowind_bc_ptr[ljb] = index;
-			Lnzval_bc_ptr[ljb] = lusup; 
+		    Lrowind_bc_ptr[ljb] = index;
+		    Lnzval_bc_ptr[ljb] = lusup; 
 
-
-			/* sort Lindval_loc_bc_ptr[ljb], Lrowind_bc_ptr[ljb] and Lnzval_bc_ptr[ljb] here*/
+			/* sort Lindval_loc_bc_ptr[ljb], Lrowind_bc_ptr[ljb]
+                           and Lnzval_bc_ptr[ljb] here.  */
 			if(nrbl>1){
 				krow = PROW( jb, grid );
 				if(myrow==krow){ /* skip the diagonal block */
@@ -1198,6 +1201,27 @@ pddistribute(fact_t fact, int_t n, SuperMatrix *A,
 		}
 	}				
 	
+
+/* Count the nnzs per block column */	
+	for (lb = 0; lb < nub; ++lb) {
+		Unnz[lb] = 0;
+		k = lb * grid->npcol + mycol;/* Global block number, column-wise. */
+		knsupc = SuperSize( k );	
+		for (ub = 0; ub < Urbs[lb]; ++ub) {
+			ik = Ucb_indptr[lb][ub].lbnum; /* Local block number, row-wise. */
+			i = Ucb_indptr[lb][ub].indpos; /* Start of the block in usub[]. */
+			i += UB_DESCRIPTOR;
+			gik = ik * grid->nprow + myrow;/* Global block number, row-wise. */
+			iklrow = FstBlockC( gik+1 );
+			for (jj = 0; jj < knsupc; ++jj) {
+				fnz = Ufstnz_br_ptr[ik][i + jj];
+				if ( fnz < iklrow ) {
+					Unnz[lb] +=iklrow-fnz;
+				}
+			} /* for jj ... */
+		}
+	}			
+	
 	/////////////////////////////////////////////////////////////////
 
 #if ( PROFlevel>=1 )
@@ -1228,7 +1252,8 @@ pddistribute(fact_t fact, int_t n, SuperMatrix *A,
 	
 
 	if ( !(ActiveFlagAll = intMalloc_dist(grid->nprow*k)) )
-		ABORT("Calloc fails for ActiveFlag[].");				
+		ABORT("Calloc fails for ActiveFlag[].");	
+	memTRS += k*sizeof(BcTree) + k*dword + grid->nprow*k*iword;  //acount for LBtree_ptr, SeedSTD_BC, ActiveFlagAll		
 	for (j=0;j<grid->nprow*k;++j)ActiveFlagAll[j]=3*nsupers;	
 	for (ljb = 0; ljb < k; ++ljb) { /* for each local block column ... */
 		jb = mycol+ljb*grid->npcol;  /* not sure */
@@ -1242,7 +1267,7 @@ pddistribute(fact_t fact, int_t n, SuperMatrix *A,
 			irow = lsub[i];
 			gb = BlockNum( irow );
 			pr = PROW( gb, grid );
-			ActiveFlagAll[pr+ljb*grid->nprow]=MIN(ActiveFlagAll[pr+ljb*grid->nprow],gb);
+			ActiveFlagAll[pr+ljb*grid->nprow]=SUPERLU_MIN(ActiveFlagAll[pr+ljb*grid->nprow],gb);
 		} /* for j ... */
 		}
 	}			
@@ -1330,7 +1355,7 @@ pddistribute(fact_t fact, int_t n, SuperMatrix *A,
 	SUPERLU_FREE(ActiveFlagAll);
 	SUPERLU_FREE(ranks);
 	SUPERLU_FREE(SeedSTD_BC);
-	
+	memTRS -= k*dword + grid->nprow*k*iword;  //acount for SeedSTD_BC, ActiveFlagAll	
 	
 #if ( PROFlevel>=1 )
 t = SuperLU_timer_() - t;
@@ -1416,7 +1441,7 @@ if ( !iam) printf(".. Construct Bcast tree for L: %.2f\t\n", t);
 	if ( !(ActiveFlagAll = intMalloc_dist(grid->npcol*k)) )
 		ABORT("Calloc fails for ActiveFlagAll[].");				
 	for (j=0;j<grid->npcol*k;++j)ActiveFlagAll[j]=-3*nsupers;	
-				
+	memTRS += k*sizeof(RdTree) + k*dword + grid->npcol*k*iword;  //acount for LRtree_ptr, SeedSTD_RD, ActiveFlagAll						
 	for (jb = 0; jb < nsupers; ++jb) { /* for each block column ... */
 		fsupc = FstBlockC( jb );
 		pc = PCOL( jb, grid );
@@ -1426,7 +1451,7 @@ if ( !iam) printf(".. Construct Bcast tree for L: %.2f\t\n", t);
 			pr = PROW( ib, grid );
 			if ( myrow == pr ) { /* Block row ib in my process row */
 				lib = LBi( ib, grid ); /* Local block number */
-				ActiveFlagAll[pc+lib*grid->npcol]=MAX(ActiveFlagAll[pc+lib*grid->npcol],jb);
+				ActiveFlagAll[pc+lib*grid->npcol]=SUPERLU_MAX(ActiveFlagAll[pc+lib*grid->npcol],jb);
 			}
 		}
 	}
@@ -1517,7 +1542,7 @@ if ( !iam) printf(".. Construct Bcast tree for L: %.2f\t\n", t);
 		// if(nzrows[i])SUPERLU_FREE(nzrows[i]);
 	// }
 	// SUPERLU_FREE(nzrows);
-
+	memTRS -= k*dword + grid->nprow*k*iword;  //acount for SeedSTD_RD, ActiveFlagAll	
 		////////////////////////////////////////////////////////
 
 #if ( PROFlevel>=1 )
@@ -1555,6 +1580,7 @@ if ( !iam) printf(".. Construct Reduce tree for L: %.2f\t\n", t);
 	if ( !(ActiveFlagAll = intMalloc_dist(grid->nprow*k)) )
 		ABORT("Calloc fails for ActiveFlagAll[].");				
 	for (j=0;j<grid->nprow*k;++j)ActiveFlagAll[j]=-3*nsupers;	
+	memTRS += k*sizeof(BcTree) + k*dword + grid->nprow*k*iword;  //acount for UBtree_ptr, SeedSTD_BC, ActiveFlagAll	
 	
 	for (ljb = 0; ljb < k; ++ljb) { /* for each local block column ... */
 		jb = mycol+ljb*grid->npcol;  /* not sure */
@@ -1570,7 +1596,7 @@ if ( !iam) printf(".. Construct Reduce tree for L: %.2f\t\n", t);
 				irow = usub[i]; /* First nonzero in the segment. */
 				gb = BlockNum( irow );
 				pr = PROW( gb, grid );
-				ActiveFlagAll[pr+ljb*grid->nprow]=MAX(ActiveFlagAll[pr+ljb*grid->nprow],gb);
+				ActiveFlagAll[pr+ljb*grid->nprow]=SUPERLU_MAX(ActiveFlagAll[pr+ljb*grid->nprow],gb);
 			// printf("gb:%5d jb: %5d nsupers: %5d\n",gb,jb,nsupers);
 			// fflush(stdout);								
 				//if(gb==jb)Root=pr;
@@ -1581,7 +1607,7 @@ if ( !iam) printf(".. Construct Reduce tree for L: %.2f\t\n", t);
 		pr = PROW( jb, grid ); // take care of diagonal node stored as L
 		// printf("jb %5d current: %5d",jb,ActiveFlagAll[pr+ljb*grid->nprow]);
 		// fflush(stdout);
-		ActiveFlagAll[pr+ljb*grid->nprow]=MAX(ActiveFlagAll[pr+ljb*grid->nprow],jb);	
+		ActiveFlagAll[pr+ljb*grid->nprow]=SUPERLU_MAX(ActiveFlagAll[pr+ljb*grid->nprow],jb);	
 		}
 	}	
 		
@@ -1659,7 +1685,8 @@ if ( !iam) printf(".. Construct Reduce tree for L: %.2f\t\n", t);
 	SUPERLU_FREE(ActiveFlagAll);
 	SUPERLU_FREE(ranks);				
 	SUPERLU_FREE(SeedSTD_BC);				
-		
+	memTRS -= k*dword + grid->nprow*k*iword;  //acount for SeedSTD_BC, ActiveFlagAll
+	
 #if ( PROFlevel>=1 )
 t = SuperLU_timer_() - t;
 if ( !iam) printf(".. Construct Bcast tree for U: %.2f\t\n", t);
@@ -1762,7 +1789,8 @@ if ( !iam) printf(".. Construct Bcast tree for U: %.2f\t\n", t);
 	if ( !(ActiveFlagAll = intMalloc_dist(grid->npcol*k)) )
 		ABORT("Calloc fails for ActiveFlagAll[].");				
 	for (j=0;j<grid->npcol*k;++j)ActiveFlagAll[j]=3*nsupers;	
-				
+	memTRS += k*sizeof(RdTree) + k*dword + grid->npcol*k*iword;  //acount for URtree_ptr, SeedSTD_RD, ActiveFlagAll
+	
 	for (jb = 0; jb < nsupers; ++jb) { /* for each block column ... */
 		fsupc = FstBlockC( jb );
 		pc = PCOL( jb, grid );
@@ -1778,7 +1806,7 @@ if ( !iam) printf(".. Construct Bcast tree for U: %.2f\t\n", t);
 				pr = PROW( ib, grid );
 				if ( myrow == pr ) { /* Block row ib in my process row */
 					lib = LBi( ib, grid ); /* Local block number */
-					ActiveFlagAll[pc+lib*grid->npcol]=MIN(ActiveFlagAll[pc+lib*grid->npcol],jb);
+					ActiveFlagAll[pc+lib*grid->npcol]=SUPERLU_MIN(ActiveFlagAll[pc+lib*grid->npcol],jb);
 				}						
 			}
 		}
@@ -1786,7 +1814,7 @@ if ( !iam) printf(".. Construct Bcast tree for U: %.2f\t\n", t);
 		pr = PROW( jb, grid );
 		if ( myrow == pr ) { /* Block row ib in my process row */
 			lib = LBi( jb, grid ); /* Local block number */
-			ActiveFlagAll[pc+lib*grid->npcol]=MIN(ActiveFlagAll[pc+lib*grid->npcol],jb);
+			ActiveFlagAll[pc+lib*grid->npcol]=SUPERLU_MIN(ActiveFlagAll[pc+lib*grid->npcol],jb);
 		}					
 	}
 		
@@ -1866,6 +1894,8 @@ if ( !iam) printf(".. Construct Bcast tree for U: %.2f\t\n", t);
 	// }
 	// SUPERLU_FREE(nzrows);				
 		
+	memTRS -= k*dword + grid->nprow*k*iword;  //acount for SeedSTD_RD, ActiveFlagAll			
+		
 #if ( PROFlevel>=1 )
 t = SuperLU_timer_() - t;
 if ( !iam) printf(".. Construct Reduce tree for U: %.2f\t\n", t);
@@ -1879,6 +1909,7 @@ if ( !iam) printf(".. Construct Reduce tree for U: %.2f\t\n", t);
 	Llu->Lnzval_bc_ptr = Lnzval_bc_ptr;
 	Llu->Ufstnz_br_ptr = Ufstnz_br_ptr;
 	Llu->Unzval_br_ptr = Unzval_br_ptr;
+	Llu->Unnz = Unnz;
 	Llu->ToRecv = ToRecv;
 	Llu->ToSendD = ToSendD;
 	Llu->ToSendR = ToSendR;
@@ -1948,5 +1979,6 @@ if ( !iam) printf(".. Construct Reduce tree for U: %.2f\t\n", t);
     CHECK_MALLOC(iam, "Exit pddistribute()");
 #endif
     
-    return (mem_use);
+    return (mem_use+memTRS);
+
 } /* PDDISTRIBUTE */

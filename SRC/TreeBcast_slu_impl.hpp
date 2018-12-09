@@ -197,8 +197,9 @@ namespace SuperLU_ASYNCOMM {
   template< typename T> 
     inline void TreeBcast_slu<T>::allocateRequest(){
         if(this->sendRequests_.size()!=this->GetDestCount()){
-          this->sendRequests_.assign(this->GetDestCount(),MPI_REQUEST_NULL);
+          this->sendRequests_.resize(this->GetDestCount());
         }
+		this->sendRequests_.assign(this->GetDestCount(),MPI_REQUEST_NULL);
     }
 	
 	

@@ -13,7 +13,7 @@ at the top-level directory.
  * \brief Driver program for PZGSSVX example
  *
  * <pre>
- * -- Distributed SuperLU routine (version 4.1) --
+ * -- Distributed SuperLU routine (version 6.1) --
  * Lawrence Berkeley National Lab, Univ. of California Berkeley.
  * March 15, 2003
  * April 5, 2015
@@ -54,10 +54,11 @@ int main(int argc, char *argv[])
     gridinfo_t grid;
     double   *berr;
     doublecomplex   *b, *xtrue, *b1;
-    int    i, j, m, n, ii;
+    int    i, j, m, n;
     int    nprow, npcol;
     int    iam, info, ldb, ldx, nrhs;
     char     **cpp, c, *postfix;
+    int ii, omp_mpi_level;
     FILE *fp, *fopen();
     int cpp_defs();
 
@@ -68,7 +69,7 @@ int main(int argc, char *argv[])
     /* ------------------------------------------------------------
        INITIALIZE MPI ENVIRONMENT. 
        ------------------------------------------------------------*/
-    MPI_Init( &argc, &argv );
+    MPI_Init_thread( &argc, &argv, MPI_THREAD_MULTIPLE, &omp_mpi_level); 
 
     /* Parse command line argv[]. */
     for (cpp = argv+1; *cpp; ++cpp) {
@@ -105,6 +106,11 @@ int main(int argc, char *argv[])
     if ( iam >= nprow * npcol )	goto out;
     if ( !iam ) {
 	int v_major, v_minor, v_bugfix;
+#ifdef __INTEL_COMPILER
+	printf("__INTEL_COMPILER is defined\n");
+#endif
+	printf("__STDC_VERSION__ %ld\n", __STDC_VERSION__);
+
 	superlu_dist_GetVersionNumber(&v_major, &v_minor, &v_bugfix);
 	printf("Library version:\t%d.%d.%d\n", v_major, v_minor, v_bugfix);
 
@@ -121,12 +127,12 @@ int main(int argc, char *argv[])
     CHECK_MALLOC(iam, "Enter main()");
 #endif
 
-	for(ii = 0;ii<strlen(*cpp);ii++){
-		if((*cpp)[ii]=='.'){
-			postfix = &((*cpp)[ii+1]);
-		}
-	}	
-	// printf("%s\n", postfix);
+    for(ii = 0;ii<strlen(*cpp);ii++){
+	if((*cpp)[ii]=='.'){
+		postfix = &((*cpp)[ii+1]);
+	}
+    }	
+    // printf("%s\n", postfix);
 
     /* ------------------------------------------------------------
        GET THE MATRIX FROM FILE AND SETUP THE RIGHT HAND SIDE. 
@@ -211,9 +217,8 @@ int main(int argc, char *argv[])
        ------------------------------------------------------------*/
     PStatFree(&stat);
     Destroy_CompRowLoc_Matrix_dist(&A);
-    ScalePermstructFree(&ScalePermstruct);
-	zDestroy_Tree(n, &grid, &LUstruct);      
-	Destroy_LU(n, &grid, &LUstruct);
+    ScalePermstructFree(&ScalePermstruct);   
+    Destroy_LU(n, &grid, &LUstruct);
     LUstructFree(&LUstruct);
     if ( options.SolveInitialized ) {
         zSolveFinalize(&options, &SOLVEstruct);

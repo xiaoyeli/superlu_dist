@@ -527,6 +527,40 @@ void zPrintLblocks(int iam, int_t nsupers, gridinfo_t *grid,
 } /* ZPRINTLBLOCKS */
 
 
+/*! \brief Sets all entries of matrix L to zero.
+ */
+void zZeroLblocks(int iam, int_t n, gridinfo_t *grid, LUstruct_t *LUstruct)
+{
+    doublecomplex zero = {0.0, 0.0};
+    register int extra, gb, j, lb, nsupc, nsupr, ncb;
+    register int_t k, mycol, r;
+    LocalLU_t *Llu = LUstruct->Llu;
+    Glu_persist_t *Glu_persist = LUstruct->Glu_persist;
+    int_t *xsup = Glu_persist->xsup;
+    int_t *index;
+    doublecomplex *nzval;
+    int_t nsupers = Glu_persist->supno[n-1] + 1;
+
+    ncb = nsupers / grid->npcol;
+    extra = nsupers % grid->npcol;
+    mycol = MYCOL( iam, grid );
+    if ( mycol < extra ) ++ncb;
+    for (lb = 0; lb < ncb; ++lb) {
+	index = Llu->Lrowind_bc_ptr[lb];
+	if ( index ) { /* Not an empty column */
+	    nzval = Llu->Lnzval_bc_ptr[lb];
+	    nsupr = index[1];
+	    gb = lb * grid->npcol + mycol;
+	    nsupc = SuperSize( gb );
+	    for (j = 0; j < nsupc; ++j) {
+                for (r = 0; r < nsupr; ++r) {
+                    nzval[r + j*nsupr] = zero;
+		}
+            }
+	}
+    }
+} /* zZeroLblocks */
+
 
 /*! \Dump the factored matrix L using matlab triple-let format
  */
@@ -535,6 +569,7 @@ void zDumpLblocks(int iam, int_t nsupers, gridinfo_t *grid,
 {
     register int c, extra, gb, j, i, lb, nsupc, nsupr, len, nb, ncb;
     register int_t k, mycol, r;
+	int_t nnzL, n,nmax;
     int_t *xsup = Glu_persist->xsup;
     int_t *index;
     doublecomplex *nzval;
@@ -542,12 +577,54 @@ void zDumpLblocks(int iam, int_t nsupers, gridinfo_t *grid,
 	FILE *fp, *fopen();	
  
 	// assert(grid->npcol*grid->nprow==1);
+
+	// count nonzeros in the first pass
+	nnzL = 0;
+	n = 0;
+    ncb = nsupers / grid->npcol;
+    extra = nsupers % grid->npcol;
+    mycol = MYCOL( iam, grid );
+    if ( mycol < extra ) ++ncb;
+    for (lb = 0; lb < ncb; ++lb) {
+	index = Llu->Lrowind_bc_ptr[lb];
+	if ( index ) { /* Not an empty column */
+	    nzval = Llu->Lnzval_bc_ptr[lb];
+	    nb = index[0];
+	    nsupr = index[1];
+	    gb = lb * grid->npcol + mycol;
+	    nsupc = SuperSize( gb );
+	    for (c = 0, k = BC_HEADER, r = 0; c < nb; ++c) {
+		len = index[k+1];
+		
+		for (j = 0; j < nsupc; ++j) {
+		for (i=0; i<len; ++i){
+		
+		if(index[k+LB_DESCRIPTOR+i]+1>=xsup[gb]+j+1){
+			nnzL ++; 
+			nmax = SUPERLU_MAX(n,index[k+LB_DESCRIPTOR+i]+1);  
+			n = nmax;
+		}
+		
+		}
+		}
+		k += LB_DESCRIPTOR + len;
+		r += len;
+	    }
+	}	
+    }	
+	MPI_Allreduce(MPI_IN_PLACE,&nnzL,1,mpi_int_t,MPI_SUM,grid->comm);
+	MPI_Allreduce(MPI_IN_PLACE,&n,1,mpi_int_t,MPI_MAX,grid->comm);	
 	
 	snprintf(filename, sizeof(filename), "%s-%d", "L", iam);    
     printf("Dumping L factor to --> %s\n", filename);
  	if ( !(fp = fopen(filename, "w")) ) {
 			ABORT("File open failed");
 		}
+
+	if(grid->iam==0){
+		fprintf(fp, "%d %d %d\n", n,n,nnzL);
+	}
+	
      ncb = nsupers / grid->npcol;
     extra = nsupers % grid->npcol;
     mycol = MYCOL( iam, grid );

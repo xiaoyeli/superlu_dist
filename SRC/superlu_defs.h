@@ -12,7 +12,7 @@ at the top-level directory.
  * \brief Definitions which are precision-neutral
  *
  * <pre>
- * -- Distributed SuperLU routine (version 6.0) --
+ * -- Distributed SuperLU routine (version 6.1) --
  * Lawrence Berkeley National Lab, Univ. of California Berkeley.
  * November 1, 2007
  *
@@ -69,9 +69,9 @@ at the top-level directory.
  * Versions 4.x and earlier do not include a #define'd version numbers.
  */
 #define SUPERLU_DIST_MAJOR_VERSION     6
-#define SUPERLU_DIST_MINOR_VERSION     0
+#define SUPERLU_DIST_MINOR_VERSION     1
 #define SUPERLU_DIST_PATCH_VERSION     0
-#define SUPERLU_DIST_RELEASE_DATE      "September 18, 2018"
+#define SUPERLU_DIST_RELEASE_DATE      "December 6, 2018"
 
 #include "superlu_dist_config.h"
 /* Define my integer size int_t */
@@ -232,11 +232,6 @@ static const int RD_U=4;	/* MPI tag for lsum in U-solve*/
 
 #define SuperLU_timer_  SuperLU_timer_dist_
 #define LOG2(x)   (log10((double) x) / log10(2.0))
-
-#define MIN(a,b) ((a) <= (b) ? (a) : (b))
-#define MAX(a,b) ((a) >= (b) ? (a) : (b))
-
-
 
 #if ( VAMPIR>=1 ) 
 #define VT_TRACEON    VT_traceon()
@@ -499,6 +494,10 @@ typedef struct {
  *        Specifies whether to equilibrate the system (scale A's row and
  *        columns to have unit norm).
  *
+ * DiagInv (yes_no_t)
+ *        Specifies whether to invert the diagonal blocks of the LU
+ *        triangular matrices.
+ *
  * ColPerm (colperm_t)
  *        Specifies what type of column permutation to use to reduce fill.
  *        = NATURAL: use the natural ordering 
@@ -733,8 +732,8 @@ extern int     c2cpp_GetAWPM(SuperMatrix *, gridinfo_t *, ScalePermstruct_t *);
 extern void  arrive_at_ublock (int_t, int_t *, int_t *, int_t *,
 			       int_t *, int_t *, int_t, int_t, 
 			       int_t *, int_t *, int_t *, gridinfo_t *);
-extern int_t estimate_bigu_size (int_t, int_t, int_t **, Glu_persist_t *,
-				 gridinfo_t *, int_t *);
+extern int_t estimate_bigu_size (int_t, int_t **, Glu_persist_t *,
+				 gridinfo_t *, int_t *, int_t*);
 
 /* Auxiliary routines */
 extern double SuperLU_timer_ ();

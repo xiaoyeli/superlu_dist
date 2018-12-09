@@ -14,7 +14,7 @@ at the top-level directory.
  * \brief Driver program for PDGSSVX example
  *
  * <pre>
- * -- Distributed SuperLU routine (version 4.1) --
+ * -- Distributed SuperLU routine (version 6.1) --
  * Lawrence Berkeley National Lab, Univ. of California Berkeley.
  * March 15, 2003
  * April 5, 2015
@@ -64,10 +64,11 @@ int main(int argc, char *argv[])
     double   *berr;
     double   *b, *b1, *xtrue, *nzval, *nzval1;
     int_t    *colind, *colind1, *rowptr, *rowptr1;
-    int_t    i, j, ii, m, n, nnz_loc, m_loc, fst_row;
+    int_t    i, j, m, n, nnz_loc, m_loc, fst_row;
     int      nprow, npcol;
     int      iam, info, ldb, ldx, nrhs;
     char     **cpp, c, *postfix;
+    int ii, omp_mpi_level;
     FILE *fp, *fopen();
     int cpp_defs();
 
@@ -78,7 +79,7 @@ int main(int argc, char *argv[])
     /* ------------------------------------------------------------
        INITIALIZE MPI ENVIRONMENT. 
        ------------------------------------------------------------*/
-    MPI_Init( &argc, &argv );
+    MPI_Init_thread( &argc, &argv, MPI_THREAD_MULTIPLE, &omp_mpi_level); 
 
     /* Parse command line argv[]. */
     for (cpp = argv+1; *cpp; ++cpp) {
@@ -115,6 +116,11 @@ int main(int argc, char *argv[])
     if ( iam >= nprow * npcol )	goto out;
     if ( !iam ) {
 	int v_major, v_minor, v_bugfix;
+#ifdef __INTEL_COMPILER
+	printf("__INTEL_COMPILER is defined\n");
+#endif
+	printf("__STDC_VERSION__ %ld\n", __STDC_VERSION__);
+
 	superlu_dist_GetVersionNumber(&v_major, &v_minor, &v_bugfix);
 	printf("Library version:\t%d.%d.%d\n", v_major, v_minor, v_bugfix);
 
@@ -127,12 +133,12 @@ int main(int argc, char *argv[])
     CHECK_MALLOC(iam, "Enter main()");
 #endif
 
-	for(ii = 0;ii<strlen(*cpp);ii++){
-		if((*cpp)[ii]=='.'){
-			postfix = &((*cpp)[ii+1]);
-		}
-	}	
-	// printf("%s\n", postfix);
+    for(ii = 0;ii<strlen(*cpp);ii++){
+	if((*cpp)[ii]=='.'){
+  	    postfix = &((*cpp)[ii+1]);
+	}
+    }	
+    // printf("%s\n", postfix);
 
     /* ------------------------------------------------------------
        GET THE MATRIX FROM FILE AND SETUP THE RIGHT HAND SIDE. 
@@ -218,6 +224,16 @@ int main(int argc, char *argv[])
     PStatInit(&stat); /* Initialize the statistics variables. */
 
     /* Set up the local A in NR_loc format */
+
+    /* Perturb the 1st diagonal of the matrix to larger value.
+       Intention is to change values of A.   */
+    if (iam == 0) {
+        nzval1[0] += 1.0e-8;
+    }
+
+    /* Zero the numerical values in L.  */
+    dZeroLblocks(iam, n, &grid, &LUstruct);
+
     dCreate_CompRowLoc_Matrix_dist(&A, m, n, nnz_loc, m_loc, fst_row,
 				   nzval1, colind1, rowptr1,
 				   SLU_NR_loc, SLU_D, SLU_GE);
@@ -239,8 +255,7 @@ int main(int argc, char *argv[])
        ------------------------------------------------------------*/
     PStatFree(&stat);
     Destroy_CompRowLoc_Matrix_dist(&A); /* Deallocate storage of matrix A.  */
-    dDestroy_Tree(n, &grid, &LUstruct);      
-	Destroy_LU(n, &grid, &LUstruct); /* Deallocate storage associated with    
+    Destroy_LU(n, &grid, &LUstruct); /* Deallocate storage associated with    
 					the L and U matrices.               */
     ScalePermstructFree(&ScalePermstruct);
     LUstructFree(&LUstruct);         /* Deallocate the structure of L and U.*/

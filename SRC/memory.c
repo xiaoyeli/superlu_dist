@@ -66,6 +66,10 @@ void *superlu_malloc_dist(size_t size)
     int iam;
 
     MPI_Comm_rank(MPI_COMM_WORLD, &iam);
+    if ( size <= 0 ) {
+	printf("(%d) superlu_malloc size %lld\n", iam, size);
+	ABORT("superlu_malloc: nonpositive size");
+    }
     buf = (char *) malloc(size + DWORD);
     if ( !buf ) {
 	printf("(%d) superlu_malloc fails: malloc_total %.0f MB, size %lld\n",
@@ -94,9 +98,11 @@ void superlu_free_dist(void *addr)
 
     { 
 	int_t n = ((size_t *) p)[0];
+	//printf("superlu_free-dist: n %d\n", n);
 	
-	if ( !n )
+	if ( n==0 ) {
 	    ABORT("superlu_free: tried to free a freed pointer");
+	}
 	*((size_t *) p) = 0; /* Set to zero to detect duplicate free's. */
 #if 0	
 	superlu_malloc_total -= (n + DWORD);
@@ -112,10 +118,16 @@ void superlu_free_dist(void *addr)
     }
 
 }
-
+ 
 #else  /* The production mode. */
 
-#if defined (__INTEL_COMPILER)
+//#if  0 
+#if (__STDC_VERSION__ >= 201112L)
+
+void * superlu_malloc_dist(size_t size) {void* ptr;int alignment=1<<12;if(size>1<<19){alignment=1<<21;}posix_memalign( (void**)&(ptr), alignment, size );return(ptr);}
+void   superlu_free_dist(void * ptr)    {free(ptr);}
+
+#elif defined (__INTEL_COMPILER)
 #include <immintrin.h>
 void * superlu_malloc_dist(size_t size) {
     void* ptr;
@@ -124,11 +136,6 @@ void * superlu_malloc_dist(size_t size) {
     return (_mm_malloc(size, alignment));
 }
 void  superlu_free_dist(void * ptr)  { _mm_free(ptr); }
-
-// #elif (_POSIX_C_SOURCE>=200112L)
-//
-// void * MALLOC(size_t size) {void* ptr;int alignment=1<<12;if(size>1<<19){alignment=1<<21;}posix_memalign( (void**)&(ptr), alignment, size );return(ptr);}
-//void   FREE(void * ptr)    {free(ptr);}
 
 #else // normal malloc/free 
 

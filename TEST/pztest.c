@@ -35,7 +35,6 @@ at the top-level directory.
 #include "superlu_zdefs.h"
 
 #define NTESTS 1 /*5*/      /* Number of test types */
-#define NTYPES 11     /* Number of matrix types */
 #define NTRAN  2    
 #define THRESH 20.0
 #define FMT1   "%10s:n=%d, test(%d)=%12.5g\n"
@@ -54,10 +53,9 @@ pzcompute_resid(int m, int n, int nrhs, SuperMatrix *A,
 		doublecomplex *x, int ldx, doublecomplex *b, int ldb,
 		gridinfo_t *grid, SOLVEstruct_t *SOLVEstruct, double *resid);
 
-#if 0	 
 /*! \brief Copy matrix A into matrix B, in distributed compressed row format. */
 void
-zCopy_CompRowLoc_Matrix_dist(SuperMatrix *A, SuperMatrix *B)
+zCopy_CompRowLoc_NoAllocation(SuperMatrix *A, SuperMatrix *B)
 {
     NRformat_loc *Astore;
     NRformat_loc *Bstore;
@@ -79,7 +77,6 @@ zCopy_CompRowLoc_Matrix_dist(SuperMatrix *A, SuperMatrix *B)
     memcpy(Bstore->colind, Astore->colind, nnz_loc * sizeof(int_t));
     memcpy(Bstore->rowptr, Astore->rowptr, (m_loc+1) * sizeof(int_t));
 }
-#endif	  
 
 /*! \brief Print a summary of the testing results. */
 void
@@ -129,8 +126,9 @@ int main(int argc, char *argv[])
     char matrix_type[8], equed[1];
     int  relax, maxsuper=sp_ienv_dist(3), fill_ratio=sp_ienv_dist(6),
          min_gemm_gpu_offload=0;
-    int    equil, ifact, nfact, iequil, iequed, prefact, notfactored;
-    int    nt, nrun=0, nfail=0, nerrs=0, imat, fimat=0, nimat=1;
+    int    equil, ifact, nfact, iequil, iequed, prefact, notfactored, diaginv;
+    int    nt, nrun=0, nfail=0, nerrs=0, imat, fimat=0;
+    int    nimat=1;  /* Currently only test a sparse matrix read from a file. */
     fact_t fact;
     double rowcnd, colcnd, amax;
     double result[NTESTS];
@@ -213,7 +211,7 @@ int main(int argc, char *argv[])
 	zCreate_CompRowLoc_Matrix_dist(&Asave, m, n, nnz_loc, m_loc, Astore->fst_row,
 				       nzval_save, colind_save, rowptr_save,
 				       SLU_NR_loc, SLU_D, SLU_GE);
-	zCopy_CompRowLoc_Matrix_dist(&A, &Asave);
+	zCopy_CompRowLoc_NoAllocation(&A, &Asave);
 
 	for (iequed = 0; iequed < 4; ++iequed) {
 	    int what_equil = equils[iequed];
@@ -228,180 +226,192 @@ int main(int argc, char *argv[])
 		fact = facts[ifact];
 		options.Fact = fact;
 		//if (!iam) printf("ifact loop ... %d\n", ifact);
+#ifdef SLU_HAVE_LAPACK 
+	        for (diaginv = 0; diaginv < 2; ++diaginv) {
+#endif
+		    for (equil = 0; equil < 2; ++equil) {
 
-		for (equil = 0; equil < 2; ++equil) {
+		    	//if (!iam) printf("equil loop ... %d\n", equil);
 
-		    //if (!iam) printf("equil loop ... %d\n", equil);
+		    	options.Equil = equil;
 
-		    options.Equil = equil;
-		    /* Need a first factor */
-		    prefact   = ( options.Fact == FACTORED ||
-				  options.Fact == SamePattern ||
-				  options.Fact == SamePattern_SameRowPerm );
+		    	/* Need a first factor */
+		    	prefact   = ( options.Fact == FACTORED ||
+				     options.Fact == SamePattern ||
+				     options.Fact == SamePattern_SameRowPerm );
 
-		    /* Restore the matrix A. */
-		    zCopy_CompRowLoc_Matrix_dist(&Asave, &A);
+		        /* Restore the matrix A. */
+		        zCopy_CompRowLoc_NoAllocation(&Asave, &A);
 
-		    /* Initialize ScalePermstruct and LUstruct. */
-		    ScalePermstructInit(m, n, &ScalePermstruct);
-		    LUstructInit(n, &LUstruct);
+		        /* Initialize ScalePermstruct and LUstruct. */
+		        ScalePermstructInit(m, n, &ScalePermstruct);
+		        LUstructInit(n, &LUstruct);
 
-		    //if ( options.Fact == FACTORED || 
-		    // options.Fact == SamePattern_SameRowPerm ) {
+		        if ( prefact ) {
 
-		    if ( prefact ) {
-
-			R = (double *) SUPERLU_MALLOC(m*sizeof(double));
-			C = (double *) SUPERLU_MALLOC(n*sizeof(double));
+			    R = (double *) SUPERLU_MALLOC(m*sizeof(double));
+			    C = (double *) SUPERLU_MALLOC(n*sizeof(double));
 			
-			/* Later call to PZGSSVX only needs to solve. */
-                        if ( equil || iequed ) {
-			    /* Compute row and column scale factors to
-			       equilibrate matrix A.    */
-			    pzgsequ(&A, R, C, &rowcnd, &colcnd, &amax, &iinfo,
-				    &grid);
+			    /* Later call to PZGSSVX only needs to solve. */
+                            if ( equil || iequed ) {
+			        /* Compute row and column scale factors to
+			           equilibrate matrix A.    */
+			        pzgsequ(&A, R, C, &rowcnd, &colcnd, &amax,
+                                    &iinfo,&grid);
 
-			    /* Force equilibration. */
-			    if ( iinfo==0 && n > 0 ) {
-				if ( what_equil == ROW ) {
-				    rowcnd = 0.;
-				    colcnd = 1.;
-				    ScalePermstruct.DiagScale = ROW;
-				    ScalePermstruct.R = R;
-				} else if ( what_equil == COL ) {
-				    rowcnd = 1.;
-				    colcnd = 0.;
-				    ScalePermstruct.DiagScale = COL;
-				    ScalePermstruct.C = C;
-				} else if ( what_equil == BOTH ) {
-				    rowcnd = 0.;
-				    colcnd = 0.;
-				    ScalePermstruct.DiagScale = BOTH;
-				    ScalePermstruct.R = R;
-				    ScalePermstruct.C = C;
-				}
-			    }
+			        /* Force equilibration. */
+			    	if ( iinfo==0 && n > 0 ) {
+				   if ( what_equil == ROW ) {
+				      rowcnd = 0.;
+				      colcnd = 1.;
+				      ScalePermstruct.DiagScale = ROW;
+				      ScalePermstruct.R = R;
+				   } else if ( what_equil == COL ) {
+				      rowcnd = 1.;
+				      colcnd = 0.;
+				      ScalePermstruct.DiagScale = COL;
+				      ScalePermstruct.C = C;
+				   } else if ( what_equil == BOTH ) {
+				      rowcnd = 0.;
+				      colcnd = 0.;
+				      ScalePermstruct.DiagScale = BOTH;
+				      ScalePermstruct.R = R;
+				      ScalePermstruct.C = C;
+				   }
+			        }
 			
-			    /* Equilibrate the matrix. */
-			    pzlaqgs(&A, R, C, rowcnd, colcnd, amax, equed);
-			    // printf("after pdlaqgs: *equed %c\n", *equed);
+			        /* Equilibrate the matrix. */
+			    	pzlaqgs(&A, R, C, rowcnd, colcnd, amax, equed);
+			    	// printf("after pdlaqgs: *equed %c\n", *equed);
 
-			    /* Not equilibrate anymore when calling PDGSSVX,.
-			     * so, no malloc/free {R,C} inside PDGSSVX. */
-			    options.Equil = NO;
-			} /* end if (equil || iequed) */
-		    } /* end if prefact */
+			    	/* Not equilibrate anymore when calling 
+				   PDGSSVX, so, no malloc/free {R,C}
+				   inside PDGSSVX. */
+			    	options.Equil = NO;
+			    } /* end if (equil || iequed) */
+		    	} /* end if prefact */
 
-		    if ( prefact ) { /* Need a first factor */
+		        if ( prefact ) { /* Need a first factor */
 			
-		        /* Save Fact option. */
-		        fact = options.Fact;
-			options.Fact = DOFACT;
+			    /* Save Fact option. */
+		            fact = options.Fact;
+			    options.Fact = DOFACT;
 
-			/* Initialize the statistics variables. */
-			PStatInit(&stat);
+			    /* Initialize the statistics variables. */
+			    PStatInit(&stat);
 	
-			int nrhs1 = 0; /* Only performs factorization */
-			pzgssvx(&options, &A, &ScalePermstruct, b, ldb, nrhs1,
-				&grid, &LUstruct, &SOLVEstruct,
+			    int nrhs1 = 0; /* Only performs factorization */
+			    pzgssvx(&options, &A, &ScalePermstruct, b,
+                                ldb, nrhs1, &grid, &LUstruct, &SOLVEstruct,
 				berr, &stat, &info);
 
-			if ( info ) {
-			    printf("** First factor: nrun %d: fact %d, info %d, "
+			    if ( info ) {
+			        printf("** First factor: nrun %d: fact %d, info %d, "
 				   "equil %d, what_equil %d, DiagScale %d \n",
 				   nrun, fact, info, equil, what_equil,
 				   ScalePermstruct.DiagScale);
-			}
+			    }
 
-			PStatFree(&stat);
+			    PStatFree(&stat);
 
-		        /* Restore Fact option. */
-			options.Fact = fact;
-			if ( fact == SamePattern ) {
-			    // {L,U} not re-used in subsequent call to PDGSSVX.
-				zDestroy_Tree(n, &grid, &LUstruct);  					    Destroy_LU(n, &grid, &LUstruct);
-			}
+		            /* Restore Fact option. */
+			    options.Fact = fact;
+			    if ( fact == SamePattern ) {
+			        // {L,U} not re-used in subsequent call to PDGSSVX.
+			        Destroy_LU(n, &grid, &LUstruct);
+			    } else if (fact == SamePattern_SameRowPerm) {
+			        // {L,U} structure is re-used in subsequent call to PDGSSVX.
+				zZeroLblocks(iam, n, &grid, &LUstruct);
+                            }
 
-		    } /* end if .. first time factor */
+		        } /* end if .. first time factor */
 
-		    /*----------------
-		     * Test pzgssvx
-		     *----------------*/
+		        /*----------------
+		     	 * Test pzgssvx
+		         *----------------*/
 
-		    if ( options.Fact != FACTORED ) {
-			/* Restore the matrix A. */
-			zCopy_CompRowLoc_Matrix_dist(&Asave, &A);
-		    } 
+		        if ( options.Fact != FACTORED ) {
+			    /* Restore the matrix A. */
+			    zCopy_CompRowLoc_NoAllocation(&Asave, &A);
+			    if (fact == SamePattern_SameRowPerm && iam == 0) {
+                                /* Perturb the 1st diagonal of the matrix 
+                                   to larger value, so to have a different A. */
+                                (doublecomplex *) Astore->nzval)[0].r += 1.0e-8;
+                                (doublecomplex *) Astore->nzval)[0].i += 1.0e-8;
+                             }
 
-		    /* Set the right-hand side. */
-		    zCopy_Dense_Matrix_dist(m_loc, nrhs, bsave, ldb, b, ldb);
+		        } 
 
-		    PStatInit(&stat);
+		        /* Set the right-hand side. */
+		        zCopy_Dense_Matrix_dist(m_loc, nrhs, bsave, ldb, b, ldb);
+
+		        PStatInit(&stat);
 
 		    /*if ( !iam ) printf("\ttest pdgssvx: nrun %d, iequed %d, equil %d, fact %d\n", 
 		      nrun, iequed, equil, options.Fact);*/
-		    /* Testing PDGSSVX: solve and compute the error bounds. */
-		    pzgssvx(&options, &A, &ScalePermstruct, b, ldb, nrhs,
+		        /* Testing PDGSSVX: solve and compute the error bounds. */
+		        pzgssvx(&options, &A, &ScalePermstruct, b, ldb, nrhs,
 			    &grid, &LUstruct, &SOLVEstruct,
 			    berr, &stat, &info);
 
-		    PStatFree(&stat);
+		        PStatFree(&stat);
 #if 0
-		    pdinf_norm_error(iam, ((NRformat_loc *)A.Store)->m_loc,
+		        pdinf_norm_error(iam, ((NRformat_loc *)A.Store)->m_loc,
 				     nrhs, b, ldb, xtrue, ldx, &grid);
 #endif
-		    /*		    if ( info && info != izero ) {*/
-		    if ( info ) {
-			printf(FMT3, "pzgssvx",info,izero,n,nrhs,imat,nfail);
-		    } else {
-			/* Restore the matrix A. */
-			zCopy_CompRowLoc_Matrix_dist(&Asave, &A);
+		        if ( info ) {
+			    printf(FMT3, "pzgssvx",info,izero,n,nrhs,imat,nfail);
+		        } else {
+			    /* Restore the matrix A. */
+			    zCopy_CompRowLoc_NoAllocation(&Asave, &A);
 
-			/* Compute residual of the computed solution.*/
-			solx = b;
-			pzcompute_resid(m, n, nrhs, &A, solx, ldx, bsave, ldb,
-					&grid, &SOLVEstruct, &result[0]);
+			    /* Compute residual of the computed solution.*/
+			    solx = b;
+			    pzcompute_resid(m, n, nrhs, &A, solx, ldx,
+                                        bsave, ldb, &grid, &SOLVEstruct, &result[0]);
 			
 #if 0  /* how to get RCOND? */
 			/* Check solution accuracy from generated exact solution. */
-			dgst04(n, nrhs, solx, ldx, xact, ldx, rcond,
+			    dgst04(n, nrhs, solx, ldx, xact, ldx, rcond,
 					  &result[2]);
-			pdinf_norm_error(iam, ((NRformat_loc *)A.Store)->m_loc,
+			    pdinf_norm_error(iam, ((NRformat_loc *)A.Store)->m_loc,
 					 nrhs, b, ldb, xtrue, ldx, &grid);
 #endif
 
-			/* Print information about the tests that did
-			   not pass the threshold.    */
-			int k1 = 0;
-			for (i = k1; i < NTESTS; ++i) {
-			    if ( result[i] >= THRESH ) {
-				printf(FMT2, "pzgssvx", options.Fact, 
+			    /* Print information about the tests that did
+			       not pass the threshold.    */
+			    int k1 = 0;
+			    for (i = k1; i < NTESTS; ++i) {
+			        if ( result[i] >= THRESH ) {
+				    printf(FMT2, "pzgssvx", options.Fact, 
 				       ScalePermstruct.DiagScale,
 				       n, imat, i, result[i], berr[0]);
-				++nfail;
+				    ++nfail;
+			        }
 			    }
-			}
-			nrun += NTESTS;
-		    } /* end else .. info == 0 */
+			    nrun += NTESTS;
+		        } /* end else .. info == 0 */
 		   
-		    /* -----------------------------------------------------
-		       Deallocate storage associated with {L,U}.
-		       ----------------------------------------------------- */
-		    if ( prefact ) {
-			SUPERLU_FREE(R);
-			SUPERLU_FREE(C);
-			ScalePermstruct.DiagScale = NOEQUIL; /* Avoid free R/C again. */
-		    }
-		    ScalePermstructFree(&ScalePermstruct);
-		    zDestroy_Tree(n, &grid, &LUstruct);  
-		    Destroy_LU(n, &grid, &LUstruct);
-		    LUstructFree(&LUstruct);
-		    if ( options.SolveInitialized ) {
-			zSolveFinalize(&options, &SOLVEstruct);
-		    }
+		        /* -------------------------------------------------
+		           Deallocate storage associated with {L,U}.
+		           ------------------------------------------------- */
+		        if ( prefact ) {
+			    SUPERLU_FREE(R);
+			    SUPERLU_FREE(C);
+			    ScalePermstruct.DiagScale = NOEQUIL; /* Avoid free R/C again. */
+		        }
+		        ScalePermstructFree(&ScalePermstruct);
+		        Destroy_LU(n, &grid, &LUstruct);
+		        LUstructFree(&LUstruct);
+		        if ( options.SolveInitialized ) {
+			    zSolveFinalize(&options, &SOLVEstruct);
+		        }
 
-		} /* end for equil ... */
-		    
+		    } /* end for equil ... */
+
+#ifdef SLU_HAVE_LAPACK 
+                } /* end for diaginv ... */
+#endif
 	    } /* end for ifact ... */
 		
 	} /* end for iequed ... */

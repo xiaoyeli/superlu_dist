@@ -10,7 +10,7 @@ cmake_minimum_required(VERSION 2.8.12 FATAL_ERROR)
 # Project version numbers
 project(SuperLU_DIST C CXX)
 set(VERSION_MAJOR "6")
-set(VERSION_MINOR "0")
+set(VERSION_MINOR "1")
 set(VERSION_BugFix "0")
 set(PROJECT_VERSION ${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_BugFix})
 
@@ -48,6 +48,11 @@ INCLUDE(CTest)
 ######################################################################
 set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)    ## ????
 set(CMAKE_INSTALL_NAME_DIR "${CMAKE_INSTALL_PREFIX}/lib")
+
+# set the position independent code property on all targets, so that
+# -fPIC is added in compiler flag.
+set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+
 
 #---- For shared library
 
@@ -118,6 +123,7 @@ set(INSTALL_BIN_DIR "${default_install_bin_dir}" CACHE STRING "The folder where 
 # Set up required compiler defines and options.
 ## get_directory_property( DirDefs COMPILE_DEFINITIONS )
 # set(CMAKE_C_FLAGS "-DDEBUGlevel=0 -DPRNTlevel=0 ${CMAKE_C_FLAGS}")
+set(CMAKE_CXX_FLAGS "-std=c++11 ${CMAKE_CXX_FLAGS}")
 if(XSDK_INDEX_SIZE EQUAL 64)
     message("-- Using 64 bit integer for index size.")
 endif()	
@@ -200,7 +206,7 @@ if(TPL_ENABLE_LAPACKLIB)  ## want to use LAPACK
   endif()
 else()  ## not to use LAPACK
   set(LAPACK_FOUND FALSE)
-  set(HAVE_LAPACK FALSE)
+  set(SLU_HAVE_LAPACK FALSE)
 endif()
 
 if(LAPACK_FOUND)
@@ -209,7 +215,7 @@ if(LAPACK_FOUND)
     # fix up LAPACK library name
     string (REPLACE ";" " " LAPACK_LIB_STR "${LAPACK_LIB}")
     set(LAPACK_LIB_EXPORT ${LAPACK_LIB_STR})
-    set(HAVE_LAPACK TRUE)
+    set(SLU_HAVE_LAPACK TRUE)
 else()
     message("-- Will not link with LAPACK.")
 endif()

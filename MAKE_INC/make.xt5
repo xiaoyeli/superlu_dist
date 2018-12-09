@@ -28,7 +28,7 @@ INCLUDEDIR   	= $(SuperLUroot)/SRC
 BLASDEF	     	= -DUSE_VENDOR_BLAS
 BLASLIB	        =
 # LAPACKLIB	=
-# HAVE_LAPACK 	= TRUE
+# SLU_HAVE_LAPACK 	= TRUE
 
 ############################################################################
 ## parmetis 4.x.x, 32-bit integer

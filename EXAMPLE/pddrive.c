@@ -14,10 +14,10 @@ at the top-level directory.
  * \brief Driver program for PDGSSVX example
  *
  * <pre>
- * -- Distributed SuperLU routine (version 4.1) --
+ * -- Distributed SuperLU routine (version 6.1) --
  * Lawrence Berkeley National Lab, Univ. of California Berkeley.
  * November 1, 2007
- * April 5, 2015
+ * December 6, 2018
  * </pre>
  */
 
@@ -64,9 +64,8 @@ int main(int argc, char *argv[])
     char     **cpp, c, *postfix;;
     FILE *fp, *fopen();
     int cpp_defs();
-	int ii;
-	int omp_mpi_level;
-	
+    int ii, omp_mpi_level;
+
     nprow = 1;  /* Default process rows.      */
     npcol = 1;  /* Default process columns.   */
     nrhs = 1;   /* Number of right-hand side. */
@@ -74,8 +73,8 @@ int main(int argc, char *argv[])
     /* ------------------------------------------------------------
        INITIALIZE MPI ENVIRONMENT. 
        ------------------------------------------------------------*/
-    MPI_Init( &argc, &argv );
-    //MPI_Init_thread( &argc, &argv, MPI_THREAD_MULTIPLE, &omp_mpi_level); 
+    //MPI_Init( &argc, &argv );
+    MPI_Init_thread( &argc, &argv, MPI_THREAD_MULTIPLE, &omp_mpi_level); 
 	
 
 #if ( VAMPIR>=1 )
@@ -116,7 +115,7 @@ int main(int argc, char *argv[])
        ------------------------------------------------------------*/
     superlu_gridinit(MPI_COMM_WORLD, nprow, npcol, &grid);
 	
-	if(grid.iam==0){
+    if(grid.iam==0){
 	MPI_Query_thread(&omp_mpi_level);
     switch (omp_mpi_level) {
       case MPI_THREAD_SINGLE:
@@ -143,6 +142,11 @@ int main(int argc, char *argv[])
     if ( iam >= nprow * npcol )	goto out;
     if ( !iam ) {
 	int v_major, v_minor, v_bugfix;
+#ifdef __INTEL_COMPILER
+	printf("__INTEL_COMPILER is defined\n");
+#endif
+	printf("__STDC_VERSION__ %ld\n", __STDC_VERSION__);
+
 	superlu_dist_GetVersionNumber(&v_major, &v_minor, &v_bugfix);
 	printf("Library version:\t%d.%d.%d\n", v_major, v_minor, v_bugfix);
 
@@ -159,12 +163,12 @@ int main(int argc, char *argv[])
     CHECK_MALLOC(iam, "Enter main()");
 #endif
 
-	for(ii = 0;ii<strlen(*cpp);ii++){
-		if((*cpp)[ii]=='.'){
-			postfix = &((*cpp)[ii+1]);
-		}
+    for(ii = 0;ii<strlen(*cpp);ii++){
+	if((*cpp)[ii]=='.'){
+		postfix = &((*cpp)[ii+1]);
 	}
-	// printf("%s\n", postfix);
+    }
+    // printf("%s\n", postfix);
 	
     /* ------------------------------------------------------------
        GET THE MATRIX FROM FILE AND SETUP THE RIGHT HAND SIDE. 
@@ -193,18 +197,13 @@ int main(int argc, char *argv[])
 		options.DiagInv       = NO;
      */
     set_default_options_dist(&options);
-	options.IterRefine = NOREFINE;				   
-	options.DiagInv       = YES;
 #if 0
     options.RowPerm = NOROWPERM;
-    options.RowPerm = LargeDiag_AWPM;
     options.IterRefine = NOREFINE;
     options.ColPerm = NATURAL;
     options.Equil = NO; 
     options.ReplaceTinyPivot = YES;
 #endif
-
-	
 
     if (!iam) {
 	print_sp_ienv_dist(&options);
@@ -240,8 +239,7 @@ int main(int argc, char *argv[])
     PStatFree(&stat);
     Destroy_CompRowLoc_Matrix_dist(&A);
     ScalePermstructFree(&ScalePermstruct);
-	dDestroy_Tree(n, &grid, &LUstruct);      
-	Destroy_LU(n, &grid, &LUstruct);
+    Destroy_LU(n, &grid, &LUstruct);
     LUstructFree(&LUstruct);
     if ( options.SolveInitialized ) {
         dSolveFinalize(&options, &SOLVEstruct);

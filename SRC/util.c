@@ -12,7 +12,7 @@ at the top-level directory.
  * \brief Utilities functions
  *
  * <pre>
- * -- Distributed SuperLU routine (version 5.4) --
+ * -- Distributed SuperLU routine (version 6.1) --
  * Lawrence Berkeley National Lab, Univ. of California Berkeley.
  * February 1, 2003
  *
@@ -91,6 +91,56 @@ Destroy_Dense_Matrix_dist(SuperMatrix *A)
     SUPERLU_FREE ( A->Store );
 }
 
+
+
+/*! \brief Destroy distributed L & U matrices. */
+void
+Destroy_Tree(int_t n, gridinfo_t *grid, LUstruct_t *LUstruct)
+{
+    int_t i, nb, nsupers;
+    Glu_persist_t *Glu_persist = LUstruct->Glu_persist;
+    LocalLU_t *Llu = LUstruct->Llu;
+#if ( DEBUGlevel>=1 )
+    int iam;
+    MPI_Comm_rank( MPI_COMM_WORLD, &iam );
+    CHECK_MALLOC(iam, "Enter Destroy_Tree()");
+#endif
+
+    nsupers = Glu_persist->supno[n-1] + 1;
+
+	nb = CEILING(nsupers, grid->npcol);
+	for (i=0;i<nb;++i){
+		if(Llu->LBtree_ptr[i]!=NULL){
+			BcTree_Destroy(Llu->LBtree_ptr[i],LUstruct->dt);
+		}
+		if(Llu->UBtree_ptr[i]!=NULL){
+			BcTree_Destroy(Llu->UBtree_ptr[i],LUstruct->dt);
+		}		
+	}
+	SUPERLU_FREE(Llu->LBtree_ptr);
+	SUPERLU_FREE(Llu->UBtree_ptr);
+	
+ 	nb = CEILING(nsupers, grid->nprow);
+	for (i=0;i<nb;++i){
+		if(Llu->LRtree_ptr[i]!=NULL){
+			RdTree_Destroy(Llu->LRtree_ptr[i],LUstruct->dt);
+		}
+		if(Llu->URtree_ptr[i]!=NULL){
+			RdTree_Destroy(Llu->URtree_ptr[i],LUstruct->dt);
+		}		
+	}
+	SUPERLU_FREE(Llu->LRtree_ptr);
+	SUPERLU_FREE(Llu->URtree_ptr);
+
+
+
+#if ( DEBUGlevel>=1 )
+    CHECK_MALLOC(iam, "Exit Destroy_Tree()");
+#endif
+}
+
+
+
 /*! \brief Destroy distributed L & U matrices. */
 void
 Destroy_LU(int_t n, gridinfo_t *grid, LUstruct_t *LUstruct)
@@ -104,6 +154,8 @@ Destroy_LU(int_t n, gridinfo_t *grid, LUstruct_t *LUstruct)
     MPI_Comm_rank( MPI_COMM_WORLD, &iam );
     CHECK_MALLOC(iam, "Enter Destroy_LU()");
 #endif
+
+    Destroy_Tree(n, grid, LUstruct);
 
     nsupers = Glu_persist->supno[n-1] + 1;
 
@@ -145,29 +197,27 @@ Destroy_LU(int_t n, gridinfo_t *grid, LUstruct_t *LUstruct)
     SUPERLU_FREE(Llu->bsendx_plist);
     SUPERLU_FREE(Llu->mod_bit);
 
-	
-	
     nb = CEILING(nsupers, grid->npcol);
     for (i = 0; i < nb; ++i) 
-	if ( Llu->Lindval_loc_bc_ptr[i] ) {
+	if ( Llu->Lindval_loc_bc_ptr[i]!=NULL) {
 	    SUPERLU_FREE (Llu->Lindval_loc_bc_ptr[i]);
 	}	
-	SUPERLU_FREE(Llu->Lindval_loc_bc_ptr);
+    SUPERLU_FREE(Llu->Lindval_loc_bc_ptr);
 	
-	nb = CEILING(nsupers, grid->npcol);
-	for (i=0;i<nb;++i){
-		if(Llu->Linv_bc_ptr[i]!=NULL){
-			SUPERLU_FREE(Llu->Linv_bc_ptr[i]);
-		}
-		if(Llu->Uinv_bc_ptr[i]!=NULL){
-			SUPERLU_FREE(Llu->Uinv_bc_ptr[i]);
-		}	
+    nb = CEILING(nsupers, grid->npcol);
+    for (i=0; i<nb; ++i) {
+	if(Llu->Linv_bc_ptr[i]!=NULL) {
+	    SUPERLU_FREE(Llu->Linv_bc_ptr[i]);
 	}
-	SUPERLU_FREE(Llu->Linv_bc_ptr);
-	SUPERLU_FREE(Llu->Uinv_bc_ptr);
+	if(Llu->Uinv_bc_ptr[i]!=NULL){
+	    SUPERLU_FREE(Llu->Uinv_bc_ptr[i]);
+	}	
+    }
+    SUPERLU_FREE(Llu->Linv_bc_ptr);
+    SUPERLU_FREE(Llu->Uinv_bc_ptr);
+    SUPERLU_FREE(Llu->Unnz);
 	
-	
-	nb = CEILING(nsupers, grid->npcol);
+    nb = CEILING(nsupers, grid->npcol);
     for (i = 0; i < nb; ++i)
 	if ( Llu->Urbs[i] ) {
 	    SUPERLU_FREE(Llu->Ucb_indptr[i]);
@@ -175,9 +225,8 @@ Destroy_LU(int_t n, gridinfo_t *grid, LUstruct_t *LUstruct)
 	}
     SUPERLU_FREE(Llu->Ucb_indptr);
     SUPERLU_FREE(Llu->Ucb_valptr);	
-	SUPERLU_FREE(Llu->Urbs);
+    SUPERLU_FREE(Llu->Urbs);
 
-	
     SUPERLU_FREE(Glu_persist->xsup);
     SUPERLU_FREE(Glu_persist->supno);
 
@@ -373,7 +422,7 @@ void set_default_options_dist(superlu_dist_options_t *options)
     options->num_lookaheads    = 10;
     options->lookahead_etree   = NO;
     options->SymPattern        = NO;
-#ifdef HAVE_LAPACK
+#ifdef SLU_HAVE_LAPACK
     options->DiagInv           = YES;
 #else
     options->DiagInv           = NO;
@@ -390,6 +439,7 @@ void print_options_dist(superlu_dist_options_t *options)
     printf(".. options:\n");
     printf("**    Fact             : %4d\n", options->Fact);
     printf("**    Equil            : %4d\n", options->Equil);
+    printf("**    DiagInv          : %4d\n", options->DiagInv);
     printf("**    ParSymbFact      : %4d\n", options->ParSymbFact);
     printf("**    ColPerm          : %4d\n", options->ColPerm);
     printf("**    RowPerm          : %4d\n", options->RowPerm);
@@ -1049,6 +1099,7 @@ void isort1(int_t N, int_t *ARRAY)
   }
 }
 
+/* Only log the memory for the buffer space, excluding the LU factors */
 void log_memory(int64_t cur_bytes, SuperLUStat_t *stat) {
     stat->current_buffer += (float) cur_bytes;
     if (cur_bytes > 0) {
@@ -1207,14 +1258,15 @@ arrive_at_ublock (int_t j,      /* j-th block in a U panel */
 
 
 /*
- * Count the maximum size of U(k,:) across all the MPI processes.
- * September 28, 2016
+ * Count the maximum size of U(kk,:) that I own locally.
+ * September 28, 2016.
+ * Modified December 4, 2018.
  */
 static int_t num_full_cols_U
 (
  int_t kk,  int_t **Ufstnz_br_ptr, int_t *xsup,
  gridinfo_t *grid, int_t *perm_u,
- int_t *ldu /* max. size of nonzero columns in U(kk,:) */
+ int_t *ldu   /* max. segment size of nonzero columns in U(kk,:) */
 )
 {
     int_t lk = LBi (kk, grid);
@@ -1252,11 +1304,14 @@ static int_t num_full_cols_U
     return temp_ncols;
 }
 
-int_t estimate_bigu_size(int_t nsupers,
-			 int_t ldt, /* Largest segment of all U(k,:) columns */
-			 int_t**Ufstnz_br_ptr, /* point to U index[] array */
-			 Glu_persist_t *Glu_persist,
-			 gridinfo_t* grid, int_t* perm_u)
+int_t estimate_bigu_size(
+      int_t nsupers,
+      int_t**Ufstnz_br_ptr, /* point to U index[] array */
+      Glu_persist_t *Glu_persist,
+      gridinfo_t* grid, int_t* perm_u, 
+      int_t *max_ncols /* Output: Max. number of columns in among all U(k,:).
+			     This is used for allocating GEMM V buffer.  */
+			 )
 {
     int_t iam = grid->iam;
     int_t Pc = grid->npcol;
@@ -1267,28 +1322,33 @@ int_t estimate_bigu_size(int_t nsupers,
     int_t* xsup = Glu_persist->xsup;
 
     int_t ncols = 0; /* Count local number of nonzero columns */
-    int_t ldu = 0;   /* Count local max. size of nonzero columns */
-
-    /*initialize perm_u*/
-    for (int i = 0; i < nsupers; ++i) perm_u[i] = i;
-
-    for (int lk = myrow; lk < nsupers; lk += Pr ) {
-        ncols = SUPERLU_MAX(ncols, num_full_cols_U(lk, Ufstnz_br_ptr,
-						   xsup, grid, perm_u, &ldu) );
-    }
-
-    int_t max_ncols = 0;
+    int_t ldu = 0;   /* Count max. segment size in one row U(k,:) */
+    int_t my_max_ldu = 0;
     int_t max_ldu = 0;
 
-    MPI_Allreduce(&ncols, &max_ncols, 1, mpi_int_t, MPI_MAX, grid->cscp.comm);
-    MPI_Allreduce(&ldu, &max_ldu, 1, mpi_int_t, MPI_MAX, grid->cscp.comm);
+    /* Initialize perm_u */
+    for (int i = 0; i < nsupers; ++i) perm_u[i] = i;
+
+    for (int lk = myrow; lk < nsupers; lk += Pr) {/* Go through my block rows */
+        ncols = SUPERLU_MAX(ncols, num_full_cols_U(lk, Ufstnz_br_ptr,
+						   xsup, grid, perm_u, &ldu) );
+	my_max_ldu = SUPERLU_MAX(ldu, my_max_ldu);
+    }
+
+    /* Need U buffer size large enough to hold all U(k,:) transferred from
+       other processes. */
+    MPI_Allreduce(&my_max_ldu, &max_ldu, 1, mpi_int_t, MPI_MAX, grid->cscp.comm);
+    MPI_Allreduce(&ncols, max_ncols, 1, mpi_int_t, MPI_MAX, grid->cscp.comm);
 
 #if ( PRNTlevel>=1 )
-	if(iam==0)
-    printf("max_ncols " IFMT ", max_ldu " IFMT ", ldt " IFMT ", bigu_size " IFMT "\n",
-	   max_ncols, max_ldu, ldt, max_ldu*max_ncols);
+    if ( iam==0 ) {
+	printf("max_ncols " IFMT ",  max_ldu " IFMT ", bigu_size " IFMT "\n",
+	       *max_ncols, max_ldu, max_ldu * (*max_ncols));
+	fflush(stdout);
+    }
 #endif
-    return(max_ldu * max_ncols);
+
+    return(max_ldu * (*max_ncols));
 }
 
 void quickSort( int_t* a, int_t l, int_t r, int_t dir)

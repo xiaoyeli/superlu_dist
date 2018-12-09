@@ -61,8 +61,8 @@ DPLUSRC = pdgssvx.o pdgssvx_ABglobal.o \
 	  pdsymbfact_distdata.o ddistribute.o pddistribute.o \
 	  pdgstrf.o pdgstrf2.o pdGetDiagU.o \
 	  pdgstrs.o pdgstrs1.o pdgstrs_lsum.o pdgstrs_Bglobal.o \
-	  pdgsrfs.o pdgsmv.o pdgsrfs_ABXglobal.o pdgsmv_AXglobal.o 
-
+	  pdgsrfs.o pdgsmv.o pdgsrfs_ABXglobal.o pdgsmv_AXglobal.o \
+	  dreadtriple_noheader.o
 #
 # Routines for double complex parallel SuperLU
 ZPLUSRC = pzgssvx.o pzgssvx_ABglobal.o \
@@ -71,7 +71,8 @@ ZPLUSRC = pzgssvx.o pzgssvx_ABglobal.o \
 	  pzsymbfact_distdata.o zdistribute.o pzdistribute.o \
 	  pzgstrf.o pzgstrf2.o pzGetDiagU.o \
 	  pzgstrs.o pzgstrs1.o pzgstrs_lsum.o pzgstrs_Bglobal.o \
-	  pzgsrfs.o pzgsmv.o pzgsrfs_ABXglobal.o pzgsmv_AXglobal.o 
+	  pzgsrfs.o pzgsmv.o pzgsrfs_ABXglobal.o pzgsmv_AXglobal.o \
+	  zreadtriple_noheader.o
 
 all:  double complex16
 
@@ -82,10 +83,10 @@ ifeq ($(XSDK_INDEX_SIZE),64)
 else
 		printf "/* #define XSDK_INDEX_SIZE 64 */\n" >> superlu_dist_config.h
 endif
-ifeq ($(HAVE_LAPACK),TRUE)
-		printf "#define HAVE_LAPACK TRUE\n" >> superlu_dist_config.h
+ifeq ($(SLU_HAVE_LAPACK),TRUE)
+		printf "#define SLU_HAVE_LAPACK TRUE\n" >> superlu_dist_config.h
 else
-		printf "/* #define HAVE_LAPACK TRUE */\n" >> superlu_dist_config.h
+		printf "/* #define SLU_HAVE_LAPACK TRUE */\n" >> superlu_dist_config.h
 endif
 ifeq ($(HAVE_PARMETIS),TRUE)
 		printf "#define HAVE_PARMETIS TRUE\n" >> superlu_dist_config.h

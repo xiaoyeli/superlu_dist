@@ -68,8 +68,9 @@ namespace SuperLU_ASYNCOMM {
   template< typename T> 
     inline void TreeReduce_slu<T>::allocateRequest(){
         if(this->sendRequests_.size()==0){
-          this->sendRequests_.assign(1,MPI_REQUEST_NULL);
+          this->sendRequests_.resize(1);
         }
+		this->sendRequests_.assign(1,MPI_REQUEST_NULL);
     }
 		
 	

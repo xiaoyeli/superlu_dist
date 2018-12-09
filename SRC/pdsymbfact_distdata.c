@@ -32,9 +32,6 @@ at the top-level directory.
 #include "superlu_ddefs.h"
 #include "psymbfact.h"
 
-#ifndef CACHELINE
-#define CACHELINE 64  /* bytes, Xeon Phi KNL, Cori haswell, Edision */
-#endif
 
 /*! \brief
  *
@@ -1205,6 +1202,7 @@ ddist_psymbtonum(fact_t fact, int_t n, SuperMatrix *A,
   int_t nrbu; /* number of U blocks in current block column */
   int_t gb;   /* global block number; 0 < gb <= nsuper */
   int_t lb;   /* local block number; 0 < lb <= ceil(NSUPERS/Pr) */
+  int_t ub,gik,iklrow,fnz;   
   int iam, jbrow, jbcol, jcol, kcol, krow, mycol, myrow, pc, pr, ljb_i, ljb_j, p;
   int_t mybufmax[NBUFFERS];
   NRformat_loc *Astore;
@@ -1231,7 +1229,8 @@ ddist_psymbtonum(fact_t fact, int_t n, SuperMatrix *A,
   double *lusup_srt; /* nonzero values in L and U */    
   double **Unzval_br_ptr;  /* size ceil(NSUPERS/Pr) */
   int_t  **Ufstnz_br_ptr;  /* size ceil(NSUPERS/Pr) */
-
+  int_t  *Unnz;  /* size ceil(NSUPERS/Pc) */
+  
   BcTree  *LBtree_ptr;       /* size ceil(NSUPERS/Pc)                */
   RdTree  *LRtree_ptr;		  /* size ceil(NSUPERS/Pr)                */
   BcTree  *UBtree_ptr;       /* size ceil(NSUPERS/Pc)                */
@@ -1288,7 +1287,7 @@ double *dense, *dense_col; /* SPA */
   int_t idx_indx,idx_lusup;
   int_t nbrow;
   int_t  ik, il, lk, rel, knsupc, idx_r;
-  int_t  lptr1_tmp, idx_i, idx_v,m, uu, aln_i;	
+  int_t  lptr1_tmp, idx_i, idx_v,m, uu;	
   int_t	nub;
 
   float memStrLU, memA,
@@ -1298,7 +1297,8 @@ double *dense, *dense_col; /* SPA */
   float  memNLU = 0.; /* memory allocated for storing the numerical values of 
 		         L and U, that will be used in the numeric
                          factorization (positive number) */
-
+  float  memTRS = 0.; /* memory allocated for storing the meta-data for triangular solve (positive number)*/		
+  
 #if ( PRNTlevel>=1 )
   int_t nLblocks = 0, nUblocks = 0;
 #endif
@@ -1321,8 +1321,6 @@ double *dense, *dense_col; /* SPA */
   iword = sizeof(int_t);
   dword = sizeof(double);
 
-  aln_i = ceil(CACHELINE/(double)iword);  
-  
   if (fact == SamePattern_SameRowPerm) {
     ABORT ("ERROR: call of dist_psymbtonum with fact equals SamePattern_SameRowPerm.");  
   }
@@ -1340,12 +1338,12 @@ double *dense, *dense_col; /* SPA */
   nsupers_ij = SUPERLU_MAX(nsupers_i, nsupers_j);
   if ( !(ilsum = intMalloc_dist(nsupers_i+1)) ) {
     fprintf (stderr, "Malloc fails for ilsum[].");  
-    return (memDist + memNLU);
+    return (memDist + memNLU + memTRS);
   }
   memNLU += (nsupers_i+1) * iword;
   if ( !(ilsum_j = intMalloc_dist(nsupers_j+1)) ) {
     fprintf (stderr, "Malloc fails for ilsum_j[].");
-    return (memDist + memNLU);
+    return (memDist + memNLU + memTRS);
   }
   memDist += (nsupers_j+1) * iword;
 
@@ -1375,7 +1373,7 @@ double *dense, *dense_col; /* SPA */
 		      grid, &ainf_colptr, &ainf_rowind, &ainf_val,
 		      &asup_rowptr, &asup_colind, &asup_val,
 		      ilsum, ilsum_j)) > 0)
-    return (memDist + memA + memNLU);
+    return (memDist + memA + memNLU + memTRS);
   memDist += (-memA);
 
   /* ------------------------------------------------------------
@@ -1387,7 +1385,7 @@ double *dense, *dense_col; /* SPA */
    */
   if ( !(ToRecv = SUPERLU_MALLOC(nsupers * sizeof(int))) ) {
     fprintf(stderr, "Calloc fails for ToRecv[].");
-    return (memDist + memNLU);
+    return (memDist + memNLU + memTRS);
   }
   for (i = 0; i < nsupers; ++i) ToRecv[i] = 0;
   memNLU += nsupers * iword;
@@ -1395,13 +1393,13 @@ double *dense, *dense_col; /* SPA */
   k = CEILING( nsupers, grid->npcol ); /* Number of local column blocks */
   if ( !(ToSendR = (int **) SUPERLU_MALLOC(k*sizeof(int*))) ) {
     fprintf(stderr, "Malloc fails for ToSendR[].");
-    return (memDist + memNLU);
+    return (memDist + memNLU + memTRS);
   }
   memNLU += k*sizeof(int_t*);
   j = k * grid->npcol;
   if ( !(index1 = SUPERLU_MALLOC(j * sizeof(int))) ) {
     fprintf(stderr, "Malloc fails for index[].");
-    return (memDist + memNLU);
+    return (memDist + memNLU + memTRS);
   }
   memNLU += j*iword;
   
@@ -1412,19 +1410,19 @@ double *dense, *dense_col; /* SPA */
      They are freed on return. */
   if ( !(LUb_length = intCalloc_dist(nsupers_ij)) ) {
     fprintf(stderr, "Calloc fails for LUb_length[].");
-    return (memDist + memNLU);
+    return (memDist + memNLU + memTRS);
   }
   if ( !(LUb_indptr = intMalloc_dist(nsupers_ij)) ) {
     fprintf(stderr, "Malloc fails for LUb_indptr[].");
-    return (memDist + memNLU);
+    return (memDist + memNLU + memTRS);
   }
   if ( !(LUb_number = intCalloc_dist(nsupers_ij)) ) {
     fprintf(stderr, "Calloc fails for LUb_number[].");
-    return (memDist + memNLU);
+    return (memDist + memNLU + memTRS);
   }    
   if ( !(LUb_valptr = intCalloc_dist(nsupers_ij)) ) {
     fprintf(stderr, "Calloc fails for LUb_valptr[].");
-    return (memDist + memNLU);
+    return (memDist + memNLU + memTRS);
   }
   memDist += 4 * nsupers_ij * iword;
   
@@ -1433,11 +1431,11 @@ double *dense, *dense_col; /* SPA */
   if ( !(Unzval_br_ptr = 
 	 (double**)SUPERLU_MALLOC(nsupers_i * sizeof(double*))) ) {
     fprintf(stderr, "Malloc fails for Unzval_br_ptr[].");
-    return (memDist + memNLU);
+    return (memDist + memNLU + memTRS);
   }
   if ( !(Ufstnz_br_ptr = (int_t**)SUPERLU_MALLOC(nsupers_i * sizeof(int_t*))) ) {
     fprintf(stderr, "Malloc fails for Ufstnz_br_ptr[].");
-    return (memDist + memNLU);
+    return (memDist + memNLU + memTRS);
   }
   memNLU += nsupers_i*sizeof(double*) + nsupers_i*sizeof(int_t*);
   Unzval_br_ptr[nsupers_i-1] = NULL;
@@ -1445,18 +1443,18 @@ double *dense, *dense_col; /* SPA */
 
   if ( !(ToSendD = SUPERLU_MALLOC(nsupers_i * sizeof(int))) ) {
     fprintf(stderr, "Malloc fails for ToSendD[].");
-    return (memDist + memNLU);
+    return (memDist + memNLU + memTRS);
   }
   for (i = 0; i < nsupers_i; ++i) ToSendD[i] = NO;
 
   memNLU += nsupers_i*iword;  
   if ( !(Urb_marker = intCalloc_dist(nsupers_j))) {
     fprintf(stderr, "Calloc fails for rb_marker[].");
-    return (memDist + memNLU);
+    return (memDist + memNLU + memTRS);
   }
   if ( !(Lrb_marker = intCalloc_dist( nsupers_i ))) {
     fprintf(stderr, "Calloc fails for rb_marker[].");
-    return (memDist + memNLU);
+    return (memDist + memNLU + memTRS);
   }
   memDist += (nsupers_i + nsupers_j)*iword;
   
@@ -1466,16 +1464,16 @@ double *dense, *dense_col; /* SPA */
   if ( !(dense = doubleCalloc_dist(SUPERLU_MAX(ldaspa, ldaspa_j) 
 				   * sp_ienv_dist(3))) ) {
     fprintf(stderr, "Calloc fails for SPA dense[].");
-    return (memDist + memNLU);
+    return (memDist + memNLU + memTRS);
   }
   /* These counts will be used for triangular solves. */
   if ( !(fmod = intCalloc_dist(nsupers_i)) ) {
     fprintf(stderr, "Calloc fails for fmod[].");
-    return (memDist + memNLU);
+    return (memDist + memNLU + memTRS);
   }
   if ( !(bmod = intCalloc_dist(nsupers_i)) ) {
     fprintf(stderr, "Calloc fails for bmod[].");
-    return (memDist + memNLU);
+    return (memDist + memNLU + memTRS);
   }
   /* ------------------------------------------------ */
   memNLU += 2*nsupers_i*iword + 
@@ -1485,27 +1483,33 @@ double *dense, *dense_col; /* SPA */
   if ( !(Lnzval_bc_ptr = 
 	 (double**)SUPERLU_MALLOC(nsupers_j * sizeof(double*))) ) {
     fprintf(stderr, "Malloc fails for Lnzval_bc_ptr[].");
-    return (memDist + memNLU);
+    return (memDist + memNLU + memTRS);
   }
   if ( !(Lrowind_bc_ptr = (int_t**)SUPERLU_MALLOC(nsupers_j * sizeof(int_t*))) ) {
     fprintf(stderr, "Malloc fails for Lrowind_bc_ptr[].");
-    return (memDist + memNLU);
+    return (memDist + memNLU + memTRS);
   }
  
   if ( !(Linv_bc_ptr = 
 			(double**)SUPERLU_MALLOC(nsupers_j * sizeof(double*))) ) {
 	fprintf(stderr, "Malloc fails for Linv_bc_ptr[].");
-	return (memDist + memNLU);
+	return (memDist + memNLU + memTRS);
   }  
   if ( !(Uinv_bc_ptr = 
 			(double**)SUPERLU_MALLOC(nsupers_j * sizeof(double*))) ) {
 	fprintf(stderr, "Malloc fails for Uinv_bc_ptr[].");
-	return (memDist + memNLU);
+	return (memDist + memNLU + memTRS);
   }   
   if ( !(Lindval_loc_bc_ptr = (int_t**)SUPERLU_MALLOC(nsupers_j * sizeof(int_t*))) ){
     fprintf(stderr, "Malloc fails for Lindval_loc_bc_ptr[].");
-    return (memDist + memNLU);
+    return (memDist + memNLU + memTRS);
   }  
+  
+  if ( !(Unnz = (int_t*)SUPERLU_MALLOC(nsupers_j * sizeof(int_t))) ){
+    fprintf(stderr, "Malloc fails for Unnz[].");
+    return (memDist + memNLU + memTRS);
+  }    
+  memTRS += nsupers_j*sizeof(int_t*) + 2.0*nsupers_j*sizeof(double*) + nsupers_j*iword;  //acount for Lindval_loc_bc_ptr, Unnz, Linv_bc_ptr,Uinv_bc_ptr    
   
   memNLU += nsupers_j * sizeof(double*) + nsupers_j * sizeof(int_t*)+ nsupers_j * sizeof(int_t*);
   Lnzval_bc_ptr[nsupers_j-1] = NULL;
@@ -1517,23 +1521,23 @@ double *dense, *dense_col; /* SPA */
   /* These lists of processes will be used for triangular solves. */
   if ( !(fsendx_plist = (int_t **) SUPERLU_MALLOC(nsupers_j*sizeof(int_t*))) ) {
     fprintf(stderr, "Malloc fails for fsendx_plist[].");
-    return (memDist + memNLU);
+    return (memDist + memNLU + memTRS);
   }
   len = nsupers_j * grid->nprow;
   if ( !(index = intMalloc_dist(len)) ) {
     fprintf(stderr, "Malloc fails for fsendx_plist[0]");
-    return (memDist + memNLU);
+    return (memDist + memNLU + memTRS);
   }
   for (i = 0; i < len; ++i) index[i] = EMPTY;
   for (i = 0, j = 0; i < nsupers_j; ++i, j += grid->nprow)
     fsendx_plist[i] = &index[j];
   if ( !(bsendx_plist = (int_t **) SUPERLU_MALLOC(nsupers_j*sizeof(int_t*))) ) {
     fprintf(stderr, "Malloc fails for bsendx_plist[].");
-    return (memDist + memNLU);
+    return (memDist + memNLU + memTRS);
   }
   if ( !(index = intMalloc_dist(len)) ) {
     fprintf(stderr, "Malloc fails for bsendx_plist[0]");
-    return (memDist + memNLU);
+    return (memDist + memNLU + memTRS);
   }
   for (i = 0; i < len; ++i) index[i] = EMPTY;
   for (i = 0, j = 0; i < nsupers_j; ++i, j += grid->nprow)
@@ -1639,13 +1643,13 @@ double *dense, *dense_col; /* SPA */
 	len1 += BR_HEADER + nrbu * UB_DESCRIPTOR;
 	if ( !(index = intMalloc_dist(len1+1)) ) {
 	  fprintf (stderr, "Malloc fails for Uindex[]");
-	  return (memDist + memNLU);
+	  return (memDist + memNLU + memTRS);
 	}
 	Ufstnz_br_ptr[ljb_i] = index;
 	if (!(Unzval_br_ptr[ljb_i] =
 	      doubleMalloc_dist(len))) {
 	  fprintf (stderr, "Malloc fails for Unzval_br_ptr[*][]");
-	  return (memDist + memNLU);
+	  return (memDist + memNLU + memTRS);
 	}
 	memNLU += (len1+1)*iword + len*dword;
 	uval = Unzval_br_ptr[ljb_i];
@@ -1792,13 +1796,13 @@ double *dense, *dense_col; /* SPA */
 	len1 = len + BC_HEADER + nrbl * LB_DESCRIPTOR;
 	if ( !(index = intMalloc_dist(len1)) ) {
 	  fprintf (stderr, "Malloc fails for index[]");
-	  return (memDist + memNLU);
+	  return (memDist + memNLU + memTRS);
 	}
 	Lrowind_bc_ptr[ljb_j] = index;
 	if (!(Lnzval_bc_ptr[ljb_j] = 
 	      doubleMalloc_dist(len*nsupc))) {
 	  fprintf(stderr, "Malloc fails for Lnzval_bc_ptr[*][] col block " IFMT, jb);
-	  return (memDist + memNLU);
+	  return (memDist + memNLU + memTRS);
 	}
 	
 	if (!(Linv_bc_ptr[ljb_j] = (double*)SUPERLU_MALLOC(nsupc*nsupc * sizeof(double))))
@@ -1808,9 +1812,9 @@ double *dense, *dense_col; /* SPA */
 	
 	memNLU += len1*iword + len*nsupc*dword;
 
-	if ( !(Lindval_loc_bc_ptr[ljb_j] = intCalloc_dist(((nrbl*3 + (aln_i - 1)) / aln_i) * aln_i)) ) 
+	if ( !(Lindval_loc_bc_ptr[ljb_j] = intCalloc_dist(nrbl*3))) 
 		ABORT("Malloc fails for Lindval_loc_bc_ptr[ljb_j][]");
-	
+	memTRS += nrbl*3.0*iword + 2.0*nsupc*nsupc*dword;  //acount for Lindval_loc_bc_ptr[ljb],Linv_bc_ptr[ljb],Uinv_bc_ptr[ljb]	
 	
 	lusup = Lnzval_bc_ptr[ljb_j];
 	mybufmax[0] = SUPERLU_MAX( mybufmax[0], len1 );
@@ -1945,23 +1949,23 @@ double *dense, *dense_col; /* SPA */
   k = SUPERLU_MAX( grid->nprow, grid->npcol);
   if ( !(recvBuf = (int_t *) SUPERLU_MALLOC(nsupers*k*iword)) ) {
     fprintf (stderr, "Malloc fails for recvBuf[].");
-    return (memDist + memNLU);
+    return (memDist + memNLU + memTRS);
   }
   if ( !(nnzToRecv = (int *) SUPERLU_MALLOC(nprocs*sizeof(int))) ) {
     fprintf (stderr, "Malloc fails for nnzToRecv[].");
-    return (memDist + memNLU);
+    return (memDist + memNLU + memTRS);
   }
   if ( !(ptrToRecv = (int *) SUPERLU_MALLOC(nprocs*sizeof(int))) ) {
     fprintf (stderr, "Malloc fails for ptrToRecv[].");
-    return (memDist + memNLU);
+    return (memDist + memNLU + memTRS);
   }
   if ( !(nnzToSend = (int *) SUPERLU_MALLOC(nprocs*sizeof(int))) ) {
     fprintf (stderr, "Malloc fails for nnzToRecv[].");
-    return (memDist + memNLU);
+    return (memDist + memNLU + memTRS);
   }
   if ( !(ptrToSend = (int *) SUPERLU_MALLOC(nprocs*sizeof(int))) ) {
     fprintf (stderr, "Malloc fails for ptrToRecv[].");
-    return (memDist + memNLU);
+    return (memDist + memNLU + memTRS);
   }
   
   if (memDist < (nsupers*k*iword +4*nprocs * sizeof(int)))
@@ -2116,7 +2120,26 @@ double *dense, *dense_col; /* SPA */
 		}			
 		
 		
-		
+
+/* Count the nnzs per block column */	
+	for (lb = 0; lb < nub; ++lb) {
+		Unnz[lb] = 0;
+		k = lb * grid->npcol + mycol;/* Global block number, column-wise. */
+		knsupc = SuperSize( k );	
+		for (ub = 0; ub < Urbs[lb]; ++ub) {
+			ik = Ucb_indptr[lb][ub].lbnum; /* Local block number, row-wise. */
+			i = Ucb_indptr[lb][ub].indpos; /* Start of the block in usub[]. */
+			i += UB_DESCRIPTOR;
+			gik = ik * grid->nprow + myrow;/* Global block number, row-wise. */
+			iklrow = FstBlockC( gik+1 );
+			for (jj = 0; jj < knsupc; ++jj) {
+				fnz = Ufstnz_br_ptr[ik][i + jj];
+				if ( fnz < iklrow ) {
+					Unnz[lb] +=iklrow-fnz;
+				}
+			} /* for jj ... */
+		}
+	}						
 		
 		/////////////////////////////////////////////////////////////////
 
@@ -2151,6 +2174,7 @@ double *dense, *dense_col; /* SPA */
 		if ( !(ActiveFlagAll = intMalloc_dist(grid->nprow*k)) )
 			ABORT("Calloc fails for ActiveFlag[].");				
 		for (j=0;j<grid->nprow*k;++j)ActiveFlagAll[j]=3*nsupers;	
+		memTRS += k*sizeof(BcTree) + k*dword + grid->nprow*k*iword;  //acount for LBtree_ptr, SeedSTD_BC, ActiveFlagAll		
 		for (ljb = 0; ljb < k; ++ljb) { /* for each local block column ... */
 			jb = mycol+ljb*grid->npcol;  /* not sure */
 			if(jb<nsupers){
@@ -2161,7 +2185,7 @@ double *dense, *dense_col; /* SPA */
 				irow = lsub[i];
 				gb = BlockNum( irow );
 				pr = PROW( gb, grid );
-				ActiveFlagAll[pr+ljb*grid->nprow]=MIN(ActiveFlagAll[pr+ljb*grid->nprow],gb);
+				ActiveFlagAll[pr+ljb*grid->nprow]=SUPERLU_MIN(ActiveFlagAll[pr+ljb*grid->nprow],gb);
 			} /* for j ... */
 			}
 		}			
@@ -2254,7 +2278,7 @@ double *dense, *dense_col; /* SPA */
 		SUPERLU_FREE(ActiveFlagAll);
 		SUPERLU_FREE(ranks);
 		SUPERLU_FREE(SeedSTD_BC);
-		
+		memTRS -= k*dword + grid->nprow*k*iword;  //acount for SeedSTD_BC, ActiveFlagAll		
 		
 #if ( PROFlevel>=1 )
 	t = SuperLU_timer_() - t;
@@ -2321,7 +2345,7 @@ double *dense, *dense_col; /* SPA */
 		if ( !(ActiveFlagAll = intMalloc_dist(grid->npcol*k)) )
 			ABORT("Calloc fails for ActiveFlagAll[].");				
 		for (j=0;j<grid->npcol*k;++j)ActiveFlagAll[j]=-3*nsupers;	
-			
+		memTRS += k*sizeof(RdTree) + k*dword + grid->npcol*k*iword;  //acount for LRtree_ptr, SeedSTD_RD, ActiveFlagAll					
 			
 			
 		for (ljb = 0; ljb < CEILING( nsupers, grid->npcol); ++ljb) { /* for each local block column ... */
@@ -2334,7 +2358,7 @@ double *dense, *dense_col; /* SPA */
 					pr = PROW( ib, grid );
 					if ( myrow == pr ) { /* Block row ib in my process row */
 						lib = LBi( ib, grid ); /* Local block number */
-						ActiveFlagAll[pc+lib*grid->npcol]=MAX(ActiveFlagAll[pc+lib*grid->npcol],jb);
+						ActiveFlagAll[pc+lib*grid->npcol]=SUPERLU_MAX(ActiveFlagAll[pc+lib*grid->npcol],jb);
 					}
 				}
 			}
@@ -2420,7 +2444,7 @@ double *dense, *dense_col; /* SPA */
 			// if(nzrows[i])SUPERLU_FREE(nzrows[i]);
 		// }
 		// SUPERLU_FREE(nzrows);
-
+		memTRS -= k*dword + grid->nprow*k*iword;  //acount for SeedSTD_RD, ActiveFlagAll
 			////////////////////////////////////////////////////////
 
 #if ( PROFlevel>=1 )
@@ -2458,7 +2482,7 @@ double *dense, *dense_col; /* SPA */
 		if ( !(ActiveFlagAll = intMalloc_dist(grid->nprow*k)) )
 			ABORT("Calloc fails for ActiveFlagAll[].");				
 		for (j=0;j<grid->nprow*k;++j)ActiveFlagAll[j]=-3*nsupers;	
-		
+		memTRS += k*sizeof(BcTree) + k*dword + grid->nprow*k*iword;  //acount for UBtree_ptr, SeedSTD_BC, ActiveFlagAll				
 		
 		
 		for (lib = 0; lib < CEILING( nsupers, grid->nprow); ++lib) { /* for each local block row ... */
@@ -2475,14 +2499,14 @@ double *dense, *dense_col; /* SPA */
 				  pc = PCOL( jb, grid );
 				  pr = PROW( ib, grid );
 				  if ( mycol == pc ) { /* Block column ib in my process column */		
-					ActiveFlagAll[pr+ljb*grid->nprow]=MAX(ActiveFlagAll[pr+ljb*grid->nprow],ib);			  
+					ActiveFlagAll[pr+ljb*grid->nprow]=SUPERLU_MAX(ActiveFlagAll[pr+ljb*grid->nprow],ib);			  
 				  }
 				}  /* for i ... */
 				pr = PROW( ib, grid ); // take care of diagonal node stored as L
 				pc = PCOL( ib, grid );
 				if ( mycol == pc ) { /* Block column ib in my process column */					
 					ljb = LBj( ib, grid );    /* local block number */
-					ActiveFlagAll[pr+ljb*grid->nprow]=MAX(ActiveFlagAll[pr+ljb*grid->nprow],ib);					
+					ActiveFlagAll[pr+ljb*grid->nprow]=SUPERLU_MAX(ActiveFlagAll[pr+ljb*grid->nprow],ib);					
 					// if(pr+ljb*grid->nprow==0)printf("iam %5d ib %5d ActiveFlagAll %5d pr %5d ljb %5d\n",iam,ib,ActiveFlagAll[pr+ljb*grid->nprow],pr,ljb);
 					// fflush(stdout);	
 				}					
@@ -2566,6 +2590,7 @@ double *dense, *dense_col; /* SPA */
 		SUPERLU_FREE(ActiveFlagAll);
 		SUPERLU_FREE(ranks);				
 		SUPERLU_FREE(SeedSTD_BC);				
+		memTRS -= k*dword + grid->nprow*k*iword;  //acount for SeedSTD_BC, ActiveFlagAll		
 			
 #if ( PROFlevel>=1 )
 	t = SuperLU_timer_() - t;
@@ -2630,7 +2655,8 @@ double *dense, *dense_col; /* SPA */
 		if ( !(ActiveFlagAll = intMalloc_dist(grid->npcol*k)) )
 			ABORT("Calloc fails for ActiveFlagAll[].");				
 		for (j=0;j<grid->npcol*k;++j)ActiveFlagAll[j]=3*nsupers;	
-						
+		memTRS += k*sizeof(RdTree) + k*dword + grid->npcol*k*iword;  //acount for URtree_ptr, SeedSTD_RD, ActiveFlagAll				
+				
 		for (lib = 0; lib < CEILING( nsupers, grid->nprow); ++lib) { /* for each local block row ... */
 			ib = myrow+lib*grid->nprow;  /* not sure */
 			if(ib<nsupers){
@@ -2639,12 +2665,12 @@ double *dense, *dense_col; /* SPA */
 				  jb = BlockNum( jcol );
 				  pc = PCOL( jb, grid );
 				  if ( mycol == pc ) { /* Block column ib in my process column */	
-					ActiveFlagAll[pc+lib*grid->npcol]=MIN(ActiveFlagAll[pc+lib*grid->npcol],jb);			  
+					ActiveFlagAll[pc+lib*grid->npcol]=SUPERLU_MIN(ActiveFlagAll[pc+lib*grid->npcol],jb);			  
 				  }	
 				}  /* for i ... */
 				pc = PCOL( ib, grid );
 				if ( mycol == pc ) { /* Block column ib in my process column */						
-					ActiveFlagAll[pc+lib*grid->npcol]=MIN(ActiveFlagAll[pc+lib*grid->npcol],ib);
+					ActiveFlagAll[pc+lib*grid->npcol]=SUPERLU_MIN(ActiveFlagAll[pc+lib*grid->npcol],ib);
 				}						
 			}	
 		}
@@ -2726,6 +2752,7 @@ double *dense, *dense_col; /* SPA */
 			// if(nzrows[i])SUPERLU_FREE(nzrows[i]);
 		// }
 		// SUPERLU_FREE(nzrows);				
+		memTRS -= k*dword + grid->nprow*k*iword;  //acount for SeedSTD_RD, ActiveFlagAll		
 			
 #if ( PROFlevel>=1 )
 	t = SuperLU_timer_() - t;
@@ -2755,6 +2782,7 @@ double *dense, *dense_col; /* SPA */
   Llu->Uinv_bc_ptr = Uinv_bc_ptr;  
   Llu->Ufstnz_br_ptr = Ufstnz_br_ptr;
   Llu->Unzval_br_ptr = Unzval_br_ptr;
+  Llu->Unnz = Unnz;  
   Llu->ToRecv = ToRecv;
   Llu->ToSendD = ToSendD;
   Llu->ToSendR = ToSendR;

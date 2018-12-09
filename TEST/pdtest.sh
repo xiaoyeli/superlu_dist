@@ -23,25 +23,11 @@ MINGEMM="10000"
 # Loop through all matrices ...
 #
 for mat in $MATRICES; do
-
-  #--------------------------------------------
-  # Test matrix types generated in LAPACK-style
-  #--------------------------------------------
-  if  [ "$mat" == "LAPACK" ]; then
-      echo '== LAPACK test matrices' >> $ofile
-      for n in $NVAL ; do
-        for s in $NRHS ; do
-	    echo '' >> $ofile
-            echo 'n='$n 'nrhs='$s >> $ofile
-	      mpiexec -n 2 pdtest -r 1 -c 2 -x 4 -m 10 -b 5 -s 1 >> $ofile
-        done
-      done
   #--------------------------------------------
   # Test a specified sparse matrix
   #--------------------------------------------
-  else
-    echo '' >> $ofile
-    echo '== sparse matrix:' $m >> $ofile
+  echo '' >> $ofile
+  echo '== sparse matrix:' $m >> $ofile
     for s in $NRHS; do
       for r in $NPROWS; do
 	for c in $NPCOLS; do
@@ -59,6 +45,5 @@ for mat in $MATRICES; do
 	done
       done
     done
-  fi
 done
 

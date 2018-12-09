@@ -73,6 +73,7 @@ if(enable_double)
     dreadhb.c
     dreadrb.c
     dreadtriple.c
+    dreadtriple_noheader.c
     dbinary_io.c	
     dreadMM.c
     pdgsequ.c
@@ -115,6 +116,7 @@ if(enable_complex16)
     zreadhb.c
     zreadrb.c
     zreadtriple.c
+    zreadtriple_noheader.c
     zbinary_io.c	
     zreadMM.c
     pzgsequ.c
