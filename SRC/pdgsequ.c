@@ -217,8 +217,7 @@ pdgsequ(SuperMatrix *A, double *r, double *c, double *rowcnd,
     /* gather R from each process to get the global R.  */
 
     procs = grid->nprow * grid->npcol;
-    // Sherry   if ( !(r_sizes = SUPERLU_MALLOC(2 * procs * sizeof(int))))
-    if ( !(r_sizes = intCalloc_dist(2 * procs)) )
+    if ( !(r_sizes = SUPERLU_MALLOC(2 * procs * sizeof(int))))
       ABORT("Malloc fails for r_sizes[].");
     displs = r_sizes + procs;
     if ( !(loc_r = doubleMalloc_dist(m_loc)))
@@ -227,8 +226,7 @@ pdgsequ(SuperMatrix *A, double *r, double *c, double *rowcnd,
     for (i = 0; i < m_loc; ++i) loc_r[i] = r[j++];
 
     /* First gather the size of each piece. */
-    // Sherry   MPI_Allgather(&m_loc, 1, MPI_INT, r_sizes, 1, MPI_INT, grid->comm);
-    MPI_Allgather(&m_loc, 1, mpi_int_t, r_sizes, 1, mpi_int_t, grid->comm);
+    MPI_Allgather(&m_loc, 1, MPI_INT, r_sizes, 1, MPI_INT, grid->comm);
       
     /* Set up the displacements for allgatherv */
     displs[0] = 0;
