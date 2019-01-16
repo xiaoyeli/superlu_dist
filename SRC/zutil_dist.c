@@ -316,15 +316,13 @@ void zClone_CompRowLoc_Matrix_dist(SuperMatrix *A, SuperMatrix *B)
     return;
 }
 
-/* \brief Copy: Call the clone operation and then copies all entries,
- *  row pointers, and column indices of a matrix into another matrix of
- *  the same type, B_{i,j}=A_{i,j}, for i,j=1,...,n
+/* \brief Copy: copies all entries, row pointers, and column indices of
+ *  a matrix into another matrix of the same type, 
+ *  B_{i,j}=A_{i,j}, for i,j=1,...,n
  */
 void zCopy_CompRowLoc_Matrix_dist(SuperMatrix *A, SuperMatrix *B)
 {
     NRformat_loc  *Astore, *Bstore;
-
-    zClone_CompRowLoc_Matrix_dist(A, B);
 
     Astore = (NRformat_loc *) A->Store;
     Bstore = (NRformat_loc *) B->Store;
