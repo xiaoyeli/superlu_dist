@@ -304,7 +304,7 @@ gemm_division_cpu_gpu(
     int num_blks            /*Number of work load */
 )
 {
-    int Ngem = sp_ienv(7);  /*get_mnk_dgemm ();*/
+    int Ngem = sp_ienv_dist(7);  /*get_mnk_dgemm ();*/
     int min_gpu_col = get_cublas_nb ();
 
     // Ngem = 1000000000;
@@ -431,7 +431,7 @@ gemm_division_new (int * num_streams_used,   /*number of streams that will be us
                    int num_blks  /*Number of work load */
     )
 {
-    int Ngem = sp_ienv(7); /*get_mnk_dgemm ();*/
+    int Ngem = sp_ienv_dist(7); /*get_mnk_dgemm ();*/
     int min_gpu_col = get_cublas_nb ();
 
     // Ngem = 1000000000;
