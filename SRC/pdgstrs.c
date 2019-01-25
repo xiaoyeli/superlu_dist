@@ -680,7 +680,7 @@ pdCompute_Diag_Inv(int_t n, LUstruct_t *LUstruct,gridinfo_t *grid,
     t = SuperLU_timer_();
 #endif
 
-#if ( PRNTlevel>=1 )
+#if ( PRNTlevel>=2 )
     if ( grid->iam==0 ) {
 	printf("computing inverse of diagonal blocks...\n");
 	fflush(stdout);
@@ -1202,6 +1202,8 @@ if(procs==1){
 	nfrecvx_buf=0;
 
 	log_memory(nlb*aln_i*iword+nlb*iword+(CEILING( nsupers, Pr )+CEILING( nsupers, Pc ))*aln_i*2.0*iword+ nsupers_i*iword + sizelsum*num_thread * dword + (ldalsum * nrhs + nlb * XK_H) *dword + (sizertemp*num_thread + 1)*dword+maxrecvsz*(nfrecvx+1)*dword, stat);	//account for fmod, frecv, leaf_send, root_send, leafsups, recvbuf_BC_fwd	, lsum, x, rtemp
+
+
 
 #if ( DEBUGlevel>=2 )
 	printf("(%2d) nfrecvx %4d,  nfrecvmod %4d,  nleaf %4d\n,  nbtree %4d\n,  nrtree %4d\n",
@@ -1738,8 +1740,7 @@ if(procs==1){
 		SUPERLU_FREE(leaf_send);
 		SUPERLU_FREE(leafsups);
 		SUPERLU_FREE(recvbuf_BC_fwd);
-
-		log_memory(-nlb*aln_i*iword-nlb*iword-(CEILING( nsupers, Pr )-CEILING( nsupers, Pc ))*aln_i*iword- nsupers_i*iword -maxrecvsz*(nfrecvx+1)*dword, stat);	//account for fmod, frecv, leaf_send, leafsups, recvbuf_BC_fwd
+		log_memory(-nlb*aln_i*iword-nlb*iword-(CEILING( nsupers, Pr )+CEILING( nsupers, Pc ))*aln_i*iword- nsupers_i*iword -maxrecvsz*(nfrecvx+1)*dword, stat);	//account for fmod, frecv, leaf_send, leafsups, recvbuf_BC_fwd
 
 		for (lk=0;lk<nsupers_j;++lk){
 			if(LBtree_ptr[lk]!=NULL){
@@ -2328,7 +2329,7 @@ for (i=0;i<nroot_send;i++){
 				ScalePermstruct, Glu_persist, grid, SOLVEstruct);
 
 
-#if ( PRNTlevel>=1 )
+#if ( PRNTlevel>=2 )
 		t = SuperLU_timer_() - t;
 		if ( !iam) printf(".. X to B redistribute time\t%8.4f\n", t);
 		t = SuperLU_timer_();
@@ -2374,7 +2375,7 @@ for (i=0;i<nroot_send;i++){
 		SUPERLU_FREE(rootsups);
 		SUPERLU_FREE(recvbuf_BC_fwd);
 
-		log_memory(-nlb*aln_i*iword-nlb*iword - nsupers_i*iword - (CEILING( nsupers, Pr )+CEILING( nsupers, Pc ))*aln_i*iword - maxrecvsz*(nbrecvx+1)*dword - sizelsum*num_thread * dword - (ldalsum * nrhs + nlb * XK_H) *dword + (sizertemp*num_thread - 1)*dword, stat);	//account for bmod, brecv, root_send, rootsups, recvbuf_BC_fwd,rtemp,lsum,x
+		log_memory(-nlb*aln_i*iword-nlb*iword - nsupers_i*iword - (CEILING( nsupers, Pr )+CEILING( nsupers, Pc ))*aln_i*iword - maxrecvsz*(nbrecvx+1)*dword - sizelsum*num_thread * dword - (ldalsum * nrhs + nlb * XK_H) *dword - (sizertemp*num_thread + 1)*dword, stat);	//account for bmod, brecv, root_send, rootsups, recvbuf_BC_fwd,rtemp,lsum,x
 
 		for (lk=0;lk<nsupers_j;++lk){
 			if(UBtree_ptr[lk]!=NULL){

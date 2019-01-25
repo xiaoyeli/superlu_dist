@@ -1629,24 +1629,4 @@ if ( !iam) printf(".. Construct Reduce tree for U: %.2f\t\n", t);
 	    ABORT("Malloc fails for mod_bit[].");
 
 	/* Find the maximum buffer size. */
-	MPI_Allreduce(mybufmax, Llu->bufmax, NBUFFERS, mpi_int_t, 
-		      MPI_MAX, grid->comm);
-
-#if ( PROFlevel>=1 )
-	if ( !iam ) printf(".. 1st distribute time:\n "
-			   "\tL\t%.2f\n\tU\t%.2f\n"
-			   "\tu_blks %d\tnrbu %d\n--------\n",
-  			   t_l, t_u, u_blks, nrbu);
-#endif
-
-    } /* else fact != SamePattern_SameRowPerm */
-
-#if ( DEBUGlevel>=1 )
-    /* Memory allocated but not freed:
-       ilsum, fmod, fsendx_plist, bmod, bsendx_plist  */
-    CHECK_MALLOC(iam, "Exit zdistribute()");
-#endif
-
-    return (mem_use);
-} /* ZDISTRIBUTE */
-
+	MPI_Allreduc

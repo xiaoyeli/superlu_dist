@@ -1,16 +1,16 @@
 /*! \file
 Copyright (c) 2003, The Regents of the University of California, through
-Lawrence Berkeley National Laboratory (subject to receipt of any required 
-approvals from U.S. Dept. of Energy) 
+Lawrence Berkeley National Laboratory (subject to receipt of any required
+approvals from U.S. Dept. of Energy)
 
-All rights reserved. 
+All rights reserved.
 
 The source code is distributed under BSD license, see the file License.txt
 at the top-level directory.
 */
 
 /************************************************************************/
-/*! @file 
+/*! @file
  * \brief Look-ahead update of the Schur complement.
  *
  * <pre>
@@ -21,7 +21,7 @@ at the top-level directory.
  * Modified:
  *  September 18, 2017
  *  June 1, 2018  add parallel AWPM pivoting; add back arrive_at_ublock()
- *   
+ *
  */
 
 #include <assert.h>  /* assertion doesn't work if NDEBUG is defined */
@@ -139,7 +139,7 @@ while (j < nub && perm_u[2 * j] <= k0 + num_look_aheads)
             luptr += temp_nbrow;  /* move to next block */
         }
 
-#ifdef _OPENMP        
+#ifdef _OPENMP
         int_t thread_id = omp_get_thread_num ();
 #else
         int_t thread_id = 0;
@@ -147,7 +147,7 @@ while (j < nub && perm_u[2 * j] <= k0 + num_look_aheads)
         doublecomplex * tempv = bigV + ldt*ldt*thread_id;
 
         int *indirect_thread  = indirect + ldt * thread_id;
-        int *indirect2_thread = indirect2 + ldt * thread_id;        
+        int *indirect2_thread = indirect2 + ldt * thread_id;
         ib = lsub[lptr];        /* block number of L(i,k) */
         temp_nbrow = lsub[lptr + 1];    /* Number of full rows. */
 	/* assert (temp_nbrow <= nbrow); */
@@ -173,7 +173,7 @@ while (j < nub && perm_u[2 * j] <= k0 + num_look_aheads)
 	    tt_end = SuperLU_timer_();
 	    LookAheadGEMMTimer += tt_end - tt_start;
 	    tt_start = tt_end;
-	} 
+	}
 #endif
         /* Now scattering the output. */
         if (ib < jb) {    /* A(i,j) is in U. */
@@ -185,7 +185,7 @@ while (j < nub && perm_u[2 * j] <= k0 + num_look_aheads)
         } else {          /* A(i,j) is in L. */
             zscatter_l (ib, ljb, nsupc, iukp, xsup, klst, temp_nbrow, lptr,
                        temp_nbrow, usub, lsub, tempv,
-                       indirect_thread, indirect2_thread, 
+                       indirect_thread, indirect2_thread,
                        Lrowind_bc_ptr, Lnzval_bc_ptr, grid);
         }
 
@@ -228,7 +228,7 @@ while (j < nub && perm_u[2 * j] <= k0 + num_look_aheads)
         PZGSTRF2(options, kk0, kk, thresh, Glu_persist, grid, Llu,
                   U_diag_blk_send_req, tag_ub, stat, info);
 
-        pdgstrf2_timer += SuperLU_timer_() - tt1; 
+        pdgstrf2_timer += SuperLU_timer_() - tt1;
 
         /* stat->time7 += SuperLU_timer_() - ttt1; */
 
