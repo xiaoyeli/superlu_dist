@@ -1,0 +1,1864 @@
+!_TAG_FILE_FORMAT	2	/extended format; --format=1 will not append ;" to lines/
+!_TAG_FILE_SORTED	1	/0=unsorted, 1=sorted, 2=foldcase/
+!_TAG_PROGRAM_AUTHOR	Darren Hiebert	/dhiebert@users.sourceforge.net/
+!_TAG_PROGRAM_NAME	Exuberant Ctags	//
+!_TAG_PROGRAM_URL	http://ctags.sourceforge.net	/official site/
+!_TAG_PROGRAM_VERSION	5.8	//
+ABORT	./util_dist.h	31;"	d
+ADD_	./Cnames.h	34;"	d
+ALIVE	./colamd.c	677;"	d	file:
+ALIVE	./old_colamd.c	366;"	d	file:
+ALLAUX	./Makefile	/^ALLAUX 	= sp_ienv.o etree.o sp_colorder.o get_perm_c.o \\$/;"	m
+ASSERT	./colamd.c	824;"	d	file:
+ASSERT	./colamd.c	826;"	d	file:
+ASSERT	./colamd.c	883;"	d	file:
+AWPM_CombBLAS_h	./AWPM_CombBLAS.hpp	2;"	d
+A_colind_gsmv	./superlu_ddefs.h	/^    int_t *A_colind_gsmv; \/* After pdgsmv_init(), the global column$/;"	m	struct:__anon24
+A_colind_gsmv	./superlu_zdefs.h	/^    int_t *A_colind_gsmv; \/* After pzgsmv_init(), the global column$/;"	m	struct:__anon53
+AllocateBuffer	./TreeBcast_slu_impl.hpp	/^    inline void TreeBcast_slu<T>::AllocateBuffer()$/;"	f	class:SuperLU_ASYNCOMM::TreeBcast_slu
+BC_HEADER	./superlu_defs.h	148;"	d
+BC_L	./superlu_defs.h	/^static const int BC_L=1;	\/* MPI tag for x in L-solve*\/	$/;"	v
+BC_U	./superlu_defs.h	/^static const int BC_U=3;	\/* MPI tag for x in U-solve*\/$/;"	v
+BOTH	./superlu_enum_consts.h	/^typedef enum {NOEQUIL, ROW, COL, BOTH}                          DiagScale_t;$/;"	e	enum:__anon41
+BR_HEADER	./superlu_defs.h	150;"	d
+BSEND	./pdgstrs_Bglobal_Bsend.c	32;"	d	file:
+BTreeBcast2	./TreeBcast_slu.hpp	/^    class BTreeBcast2: public TreeBcast_slu<T>{$/;"	c	namespace:SuperLU_ASYNCOMM
+BTreeBcast2	./TreeBcast_slu_impl.hpp	/^    inline BTreeBcast2<T>::BTreeBcast2(const MPI_Comm & pComm, Int * ranks, Int rank_cnt, Int msgSize):TreeBcast_slu<T>(pComm,ranks,rank_cnt,msgSize){$/;"	f	class:SuperLU_ASYNCOMM::BTreeBcast2
+BTreeReduce_slu	./TreeReduce_slu.hpp	/^class BTreeReduce_slu: public TreeReduce_slu<T>{$/;"	c	namespace:SuperLU_ASYNCOMM
+BTreeReduce_slu	./TreeReduce_slu_impl.hpp	/^    BTreeReduce_slu<T>::BTreeReduce_slu(const MPI_Comm & pComm, Int * ranks, Int rank_cnt, Int msgSize):TreeReduce_slu<T>(pComm, ranks, rank_cnt, msgSize){$/;"	f	class:SuperLU_ASYNCOMM::BTreeReduce_slu
+B_to_X_SendCnt	./superlu_defs.h	/^    int  *B_to_X_SendCnt;$/;"	m	struct:__anon30
+BcTree	./superlu_defs.h	/^typedef void* BcTree;$/;"	t
+BcTree_Create	./TreeInterface.cpp	/^	BcTree BcTree_Create(MPI_Comm comm, Int* ranks, Int rank_cnt, Int msgSize, double rseed, char precision){$/;"	f
+BcTree_Destroy	./TreeInterface.cpp	/^	void BcTree_Destroy(BcTree Tree, char precision){$/;"	f
+BcTree_GetMsgSize	./TreeInterface.cpp	/^	int BcTree_GetMsgSize(BcTree Tree, char precision){$/;"	f
+BcTree_IsRoot	./TreeInterface.cpp	/^	yes_no_t BcTree_IsRoot(BcTree Tree, char precision){$/;"	f
+BcTree_SetTag	./TreeInterface.cpp	/^	void BcTree_SetTag(BcTree Tree, Int tag, char precision){$/;"	f
+BcTree_allocateRequest	./TreeInterface.cpp	/^	void BcTree_allocateRequest(BcTree Tree, char precision){$/;"	f
+BcTree_forwardMessageOneSide	./TreeInterface.cpp	/^	void BcTree_forwardMessageOneSide(BcTree Tree, void* localBuffer, Int msgSize, char precision, int* BCsendoffset, int* BClocal_buf_id, int* BCcount, int* BCbase, int* maxrecvsz, int Pc){$/;"	f
+BcTree_forwardMessageSimple	./TreeInterface.cpp	/^	void BcTree_forwardMessageSimple(BcTree Tree, void* localBuffer, Int msgSize, char precision){$/;"	f
+BcTree_getDestCount	./TreeInterface.cpp	/^	int BcTree_getDestCount(BcTree Tree, char precision){$/;"	f
+BcTree_waitSendRequest	./TreeInterface.cpp	/^	void BcTree_waitSendRequest(BcTree Tree, char precision){$/;"	f
+BlockNum	./superlu_defs.h	216;"	d
+C	./superlu_defs.h	/^    double *C; $/;"	m	struct:__anon29
+CACHELINE	./pddistribute.c	25;"	d	file:
+CACHELINE	./pdgstrf.c	147;"	d	file:
+CACHELINE	./pdgstrs.c	27;"	d	file:
+CACHELINE	./pdgstrs_lsum.c	34;"	d	file:
+CACHELINE	./pdsymbfact_distdata.c	36;"	d	file:
+CACHELINE	./pzdistribute.c	24;"	d	file:
+CACHELINE	./pzgstrf.c	146;"	d	file:
+CACHELINE	./pzgstrs.c	26;"	d	file:
+CACHELINE	./pzgstrs_lsum.c	30;"	d	file:
+CACHELINE	./pzsymbfact_distdata.c	35;"	d	file:
+CEILING	./superlu_defs.h	224;"	d
+CHECK_MALLOC	./util_dist.h	49;"	d
+COL	./superlu_enum_consts.h	/^typedef enum {NOEQUIL, ROW, COL, BOTH}                          DiagScale_t;$/;"	e	enum:__anon41
+COLAMD	./superlu_enum_consts.h	/^typedef enum {NATURAL, MMD_ATA, MMD_AT_PLUS_A, COLAMD,$/;"	e	enum:__anon39
+COLAMD_C	./colamd.h	193;"	d
+COLAMD_DEFRAG_COUNT	./colamd.h	91;"	d
+COLAMD_DEFRAG_COUNT	./old_colamd.h	50;"	d
+COLAMD_DENSE_COL	./colamd.h	88;"	d
+COLAMD_DENSE_COL	./old_colamd.h	47;"	d
+COLAMD_DENSE_ROW	./colamd.h	85;"	d
+COLAMD_DENSE_ROW	./old_colamd.h	44;"	d
+COLAMD_ERROR_A_not_present	./colamd.h	104;"	d
+COLAMD_ERROR_A_too_small	./colamd.h	110;"	d
+COLAMD_ERROR_col_length_negative	./colamd.h	111;"	d
+COLAMD_ERROR_internal_error	./colamd.h	114;"	d
+COLAMD_ERROR_ncol_negative	./colamd.h	107;"	d
+COLAMD_ERROR_nnz_negative	./colamd.h	108;"	d
+COLAMD_ERROR_nrow_negative	./colamd.h	106;"	d
+COLAMD_ERROR_out_of_memory	./colamd.h	113;"	d
+COLAMD_ERROR_p0_nonzero	./colamd.h	109;"	d
+COLAMD_ERROR_p_not_present	./colamd.h	105;"	d
+COLAMD_ERROR_row_index_out_of_bounds	./colamd.h	112;"	d
+COLAMD_H	./colamd.h	66;"	d
+COLAMD_INFO1	./colamd.h	97;"	d
+COLAMD_INFO2	./colamd.h	98;"	d
+COLAMD_INFO3	./colamd.h	99;"	d
+COLAMD_JUMBLED_COLS	./old_colamd.h	53;"	d
+COLAMD_KNOBS	./colamd.h	79;"	d
+COLAMD_KNOBS	./old_colamd.h	38;"	d
+COLAMD_OK	./colamd.h	102;"	d
+COLAMD_OK_BUT_JUMBLED	./colamd.h	103;"	d
+COLAMD_R	./colamd.h	194;"	d
+COLAMD_RECOMMENDED	./colamd.h	196;"	d
+COLAMD_STATS	./colamd.h	82;"	d
+COLAMD_STATS	./old_colamd.h	41;"	d
+COLAMD_STATUS	./colamd.h	94;"	d
+COLPERM	./superlu_enum_consts.h	/^    COLPERM, \/* find a column ordering that minimizes fills *\/$/;"	e	enum:__anon48
+COL_IS_ALIVE	./colamd.c	689;"	d	file:
+COL_IS_ALIVE	./old_colamd.c	378;"	d	file:
+COL_IS_DEAD	./colamd.c	688;"	d	file:
+COL_IS_DEAD	./old_colamd.c	377;"	d	file:
+COL_IS_DEAD_PRINCIPAL	./colamd.c	690;"	d	file:
+COL_IS_DEAD_PRINCIPAL	./old_colamd.c	379;"	d	file:
+COMM	./superlu_enum_consts.h	/^    COMM,    \/* communication for factorization *\/$/;"	e	enum:__anon48
+COMM_ALL	./superlu_defs.h	193;"	d
+COMM_COLUMN	./superlu_defs.h	194;"	d
+COMM_DIAG	./superlu_enum_consts.h	/^    COMM_DIAG, \/* Bcast diagonal block to process column *\/$/;"	e	enum:__anon48
+COMM_DOWN	./superlu_enum_consts.h	/^    COMM_DOWN, \/* communicate U panel *\/$/;"	e	enum:__anon48
+COMM_RIGHT	./superlu_enum_consts.h	/^    COMM_RIGHT, \/* communicate L panel *\/$/;"	e	enum:__anon48
+COMM_ROW	./superlu_defs.h	195;"	d
+CONJ	./superlu_enum_consts.h	/^typedef enum {NOTRANS, TRANS, CONJ}                             trans_t;$/;"	e	enum:__anon40
+CRAY_T3E	./machines.h	30;"	d
+CRAY_X1	./pdgstrf_X1.c	104;"	d	file:
+CUBLAS_UTILS_H	./cublas_utils.h	20;"	d
+C_CALL	./Cnames.h	37;"	d
+CheckZeroDiagonal	./util.c	/^CheckZeroDiagonal(int_t n, int_t *rowind, int_t *colbeg, int_t *colcnt)$/;"	f
+ColInfo	./old_colamd.c	/^} ColInfo ;$/;"	t	typeref:struct:ColInfo_struct	file:
+ColInfo_struct	./old_colamd.c	/^typedef struct ColInfo_struct$/;"	s	file:
+ColPerm	./superlu_defs.h	/^    colperm_t     ColPerm;$/;"	m	struct:__anon31
+Colamd_Col	./colamd.h	/^} Colamd_Col ;$/;"	t	typeref:struct:Colamd_Col_struct
+Colamd_Col_struct	./colamd.h	/^typedef struct Colamd_Col_struct$/;"	s
+Colamd_Row	./colamd.h	/^} Colamd_Row ;$/;"	t	typeref:struct:Colamd_Row_struct
+Colamd_Row_struct	./colamd.h	/^typedef struct Colamd_Row_struct$/;"	s
+ConditionNumber	./superlu_defs.h	/^    yes_no_t      ConditionNumber;$/;"	m	struct:__anon31
+Copy	./TreeBcast_slu_impl.hpp	/^    inline void TreeBcast_slu<T>::Copy(const TreeBcast_slu & Tree){$/;"	f	class:SuperLU_ASYNCOMM::TreeBcast_slu
+Copy	./TreeReduce_slu_impl.hpp	/^    inline void ModBTreeReduce_slu<T>::Copy(const ModBTreeReduce_slu<T> & Tree){$/;"	f	class:SuperLU_ASYNCOMM::ModBTreeReduce_slu
+Copy	./TreeReduce_slu_impl.hpp	/^    inline void TreeReduce_slu<T>::Copy(const TreeReduce_slu<T> & Tree){$/;"	f	class:SuperLU_ASYNCOMM::TreeReduce_slu
+Create	./TreeBcast_slu_impl.hpp	/^    inline TreeBcast_slu<T> * TreeBcast_slu<T>::Create(const MPI_Comm & pComm, Int * ranks, Int rank_cnt, Int msgSize, double rseed){$/;"	f	class:SuperLU_ASYNCOMM::TreeBcast_slu
+Create	./TreeReduce_slu_impl.hpp	/^    inline TreeReduce_slu<T> * TreeReduce_slu<T>::Create(const MPI_Comm & pComm, Int * ranks, Int rank_cnt, Int msgSize, double rseed){$/;"	f	class:SuperLU_ASYNCOMM::TreeReduce_slu
+DEAD	./colamd.c	678;"	d	file:
+DEAD	./old_colamd.c	367;"	d	file:
+DEAD_NON_PRINCIPAL	./colamd.c	682;"	d	file:
+DEAD_NON_PRINCIPAL	./old_colamd.c	371;"	d	file:
+DEAD_PRINCIPAL	./colamd.c	681;"	d	file:
+DEAD_PRINCIPAL	./old_colamd.c	370;"	d	file:
+DEBUG0	./colamd.c	817;"	d	file:
+DEBUG0	./colamd.c	877;"	d	file:
+DEBUG0	./old_colamd.c	524;"	d	file:
+DEBUG0	./old_colamd.c	534;"	d	file:
+DEBUG1	./colamd.c	818;"	d	file:
+DEBUG1	./colamd.c	878;"	d	file:
+DEBUG1	./old_colamd.c	525;"	d	file:
+DEBUG1	./old_colamd.c	535;"	d	file:
+DEBUG2	./colamd.c	819;"	d	file:
+DEBUG2	./colamd.c	879;"	d	file:
+DEBUG2	./old_colamd.c	526;"	d	file:
+DEBUG2	./old_colamd.c	536;"	d	file:
+DEBUG3	./colamd.c	820;"	d	file:
+DEBUG3	./colamd.c	880;"	d	file:
+DEBUG3	./old_colamd.c	527;"	d	file:
+DEBUG3	./old_colamd.c	537;"	d	file:
+DEBUG4	./colamd.c	821;"	d	file:
+DEBUG4	./colamd.c	881;"	d	file:
+DEBUG4	./old_colamd.c	528;"	d	file:
+DEBUG4	./old_colamd.c	538;"	d	file:
+DEC	./machines.h	29;"	d
+DEG_TREE	./TreeBcast_slu.hpp	/^  const Int DEG_TREE = 2; \/\/number of children of each tree node$/;"	m	namespace:SuperLU_ASYNCOMM
+DIAG_IND	./psymbfact.h	270;"	d
+DIST	./superlu_enum_consts.h	/^    DIST,    \/* distribute matrix. *\/$/;"	e	enum:__anon48
+DNS_CURSEP	./psymbfact.h	299;"	d
+DNS_UPSEPS	./psymbfact.h	298;"	d
+DNformat	./supermatrix.h	/^} DNformat;$/;"	t	typeref:struct:__anon63
+DOFACT	./superlu_enum_consts.h	/^typedef enum {DOFACT, SamePattern, SamePattern_SameRowPerm, FACTORED} fact_t;$/;"	e	enum:__anon37
+DOMAIN_SYMB	./psymbfact.h	296;"	d
+DPLUSRC	./Makefile	/^DPLUSRC = pdgssvx.o pdgssvx_ABglobal.o \\$/;"	m
+DSLUSRC	./Makefile	/^DSLUSRC	= dlangs_dist.o dgsequ_dist.o dlaqgs_dist.o dutil_dist.o \\$/;"	m
+DWORD	./memory.c	61;"	d	file:
+Destroy_CompCol_Matrix_dist	./util.c	/^Destroy_CompCol_Matrix_dist(SuperMatrix *A)$/;"	f
+Destroy_CompCol_Permuted_dist	./util.c	/^Destroy_CompCol_Permuted_dist(SuperMatrix *A)$/;"	f
+Destroy_CompRowLoc_Matrix_dist	./util.c	/^Destroy_CompRowLoc_Matrix_dist(SuperMatrix *A)$/;"	f
+Destroy_CompRow_Matrix_dist	./util.c	/^Destroy_CompRow_Matrix_dist(SuperMatrix *A)$/;"	f
+Destroy_Dense_Matrix_dist	./util.c	/^Destroy_Dense_Matrix_dist(SuperMatrix *A)$/;"	f
+Destroy_LU	./util.c	/^Destroy_LU(int_t n, gridinfo_t *grid, LUstruct_t *LUstruct)$/;"	f
+Destroy_SuperMatrix_Store_dist	./util.c	/^Destroy_SuperMatrix_Store_dist(SuperMatrix *A)$/;"	f
+Destroy_SuperNode_Matrix_dist	./util.c	/^Destroy_SuperNode_Matrix_dist(SuperMatrix *A)$/;"	f
+DiagInv	./superlu_defs.h	/^    yes_no_t      DiagInv;$/;"	m	struct:__anon31
+DiagPivotThresh	./superlu_defs.h	/^    double        DiagPivotThresh;$/;"	m	struct:__anon31
+DiagScale	./superlu_defs.h	/^    DiagScale_t DiagScale;$/;"	m	struct:__anon29
+DiagScale_t	./superlu_enum_consts.h	/^typedef enum {NOEQUIL, ROW, COL, BOTH}                          DiagScale_t;$/;"	t	typeref:enum:__anon41
+DisplayHeader	./cublas_utils.c	/^ void DisplayHeader()$/;"	f
+Dtype	./supermatrix.h	/^	Dtype_t Dtype; \/* Data type. *\/$/;"	m	struct:__anon57
+Dtype_t	./supermatrix.h	/^} Dtype_t;$/;"	t	typeref:enum:__anon55
+DumpLine	./dreadhb.c	/^static int DumpLine(FILE *fp)$/;"	f	file:
+DumpLine	./dreadrb.c	/^static int DumpLine(FILE *fp)$/;"	f	file:
+DumpLine	./zreadhb.c	/^static int DumpLine(FILE *fp)$/;"	f	file:
+DumpLine	./zreadrb.c	/^static int DumpLine(FILE *fp)$/;"	f	file:
+EMPTY	./colamd.c	674;"	d	file:
+EMPTY	./old_colamd.c	363;"	d	file:
+EMPTY	./util_dist.h	63;"	d
+EQUIL	./superlu_enum_consts.h	/^    EQUIL,   \/* equilibrate the original matrix *\/$/;"	e	enum:__anon48
+ERROR_RET	./psymbfact.h	275;"	d
+ETREE	./superlu_enum_consts.h	/^    ETREE,   \/* compute column etree *\/$/;"	e	enum:__anon48
+EXPAND_SYM	./dreadMM.c	23;"	d	file:
+EXPAND_SYM	./dreadtriple.c	20;"	d	file:
+EXPAND_SYM	./dreadtriple_noheader.c	20;"	d	file:
+EXPAND_SYM	./zreadMM.c	22;"	d	file:
+EXPAND_SYM	./zreadtriple.c	19;"	d	file:
+EXPAND_SYM	./zreadtriple_noheader.c	19;"	d	file:
+Equil	./superlu_defs.h	/^    yes_no_t      Equil;$/;"	m	struct:__anon31
+F77_CALL_C	./Cnames.h	40;"	d
+F77_CALL_C	./Cnames.h	44;"	d
+F77_CALL_C	./Cnames.h	48;"	d
+F77_CALL_C	./Cnames.h	52;"	d
+FACT	./superlu_enum_consts.h	/^    FACT,    \/* perform LU factorization *\/$/;"	e	enum:__anon48
+FACTORED	./superlu_enum_consts.h	/^typedef enum {DOFACT, SamePattern, SamePattern_SameRowPerm, FACTORED} fact_t;$/;"	e	enum:__anon37
+FALSE	./colamd.c	669;"	d	file:
+FALSE	./old_colamd.c	362;"	d	file:
+FALSE	./util_dist.h	65;"	d
+FERR	./superlu_enum_consts.h	/^    FERR,    \/* estimate error bounds after iterative refinement *\/$/;"	e	enum:__anon48
+FILLED_SEP	./psymbfact.h	276;"	d
+FILLED_SEPS	./psymbfact.h	277;"	d
+FRECV	./superlu_ddefs.h	/^    int_t FRECV;$/;"	m	struct:__anon21
+FRECV	./superlu_zdefs.h	/^    int_t FRECV;$/;"	m	struct:__anon50
+FTREE_LIMIT	./TreeBcast_slu.hpp	22;"	d
+FTreeBcast2	./TreeBcast_slu.hpp	/^    class FTreeBcast2: public TreeBcast_slu<T>{$/;"	c	namespace:SuperLU_ASYNCOMM
+FTreeBcast2	./TreeBcast_slu_impl.hpp	/^    FTreeBcast2<T>::FTreeBcast2(const MPI_Comm & pComm, Int * ranks, Int rank_cnt, Int msgSize):TreeBcast_slu<T>(pComm,ranks,rank_cnt,msgSize){$/;"	f	class:SuperLU_ASYNCOMM::FTreeBcast2
+FTreeReduce_slu	./TreeReduce_slu.hpp	/^class FTreeReduce_slu: public TreeReduce_slu<T>{$/;"	c	namespace:SuperLU_ASYNCOMM
+FTreeReduce_slu	./TreeReduce_slu_impl.hpp	/^    FTreeReduce_slu<T>::FTreeReduce_slu(const MPI_Comm & pComm, Int * ranks, Int rank_cnt, Int msgSize):TreeReduce_slu<T>(pComm, ranks, rank_cnt, msgSize){$/;"	f	class:SuperLU_ASYNCOMM::FTreeReduce_slu
+Fact	./superlu_defs.h	/^    fact_t        Fact;$/;"	m	struct:__anon31
+FormFullA	./dreadhb.c	/^FormFullA(int_t n, int_t *nonz, double **nzval, int_t **rowind, int_t **colptr)$/;"	f
+FormFullA	./dreadrb.c	/^FormFullA(int_t n, int_t *nonz, double **nzval, int_t **rowind, int_t **colptr)$/;"	f	file:
+FormFullA	./zreadrb.c	/^FormFullA(int_t n, int_t *nonz, doublecomplex **nzval, int_t **rowind, int_t **colptr)$/;"	f	file:
+FstBlockC	./superlu_defs.h	217;"	d
+FullRow	./superlu_defs.h	/^    int_t FullRow;$/;"	m	struct:__anon34
+GEMM_PADLEN	./pdgstrf.c	150;"	d	file:
+GEMM_PADLEN	./pzgstrf.c	149;"	d	file:
+GEMV	./superlu_enum_consts.h	/^    GEMV,    \/* fraction of FACT spent in xGEMV *\/$/;"	e	enum:__anon48
+GSUM	./superlu_defs.h	179;"	d
+GenXtrueRHS	./dutil_dist.c	/^GenXtrueRHS(int nrhs, SuperMatrix *A, Glu_persist_t *Glu_persist,$/;"	f
+GetAWPM	./AWPM_CombBLAS.hpp	/^GetAWPM(SuperMatrix *A, gridinfo_t *grid, ScalePermstruct_t *ScalePermstruct)$/;"	f
+GetDest	./TreeBcast_slu_impl.hpp	/^    inline Int TreeBcast_slu<T>::GetDest(Int i){$/;"	f	class:SuperLU_ASYNCOMM::TreeBcast_slu
+GetDestCount	./TreeBcast_slu_impl.hpp	/^    inline Int TreeBcast_slu<T>::GetDestCount(){$/;"	f	class:SuperLU_ASYNCOMM::TreeBcast_slu
+GetDests	./TreeBcast_slu_impl.hpp	/^    inline Int * TreeBcast_slu<T>::GetDests(){$/;"	f	class:SuperLU_ASYNCOMM::TreeBcast_slu
+GetLocalBuffer	./TreeReduce_slu_impl.hpp	/^    inline T * TreeReduce_slu<T>::GetLocalBuffer(){ $/;"	f	class:SuperLU_ASYNCOMM::TreeReduce_slu
+GetMsgSize	./TreeBcast_slu_impl.hpp	/^    inline Int TreeBcast_slu<T>::GetMsgSize(){$/;"	f	class:SuperLU_ASYNCOMM::TreeBcast_slu
+GetNumMsgToRecv	./TreeBcast_slu_impl.hpp	/^    inline Int TreeBcast_slu<T>::GetNumMsgToRecv(){$/;"	f	class:SuperLU_ASYNCOMM::TreeBcast_slu
+GetNumMsgToRecv	./TreeReduce_slu.hpp	/^        virtual inline Int GetNumMsgToRecv(){return this->GetDestCount();}$/;"	f	class:SuperLU_ASYNCOMM::TreeReduce_slu
+GetNumMsgToSend	./TreeBcast_slu_impl.hpp	/^    inline Int TreeBcast_slu<T>::GetNumMsgToSend(){$/;"	f	class:SuperLU_ASYNCOMM::TreeBcast_slu
+GetNumMsgToSend	./TreeReduce_slu.hpp	/^        virtual inline Int GetNumMsgToSend(){return this->myRank_==this->myRoot_?0:1;}$/;"	f	class:SuperLU_ASYNCOMM::TreeReduce_slu
+GetNumRecvMsg	./TreeBcast_slu_impl.hpp	/^    inline Int TreeBcast_slu<T>::GetNumRecvMsg(){$/;"	f	class:SuperLU_ASYNCOMM::TreeBcast_slu
+GetNumSendMsg	./TreeBcast_slu_impl.hpp	/^    inline Int TreeBcast_slu<T>::GetNumSendMsg(){$/;"	f	class:SuperLU_ASYNCOMM::TreeBcast_slu
+GetRoot	./TreeBcast_slu_impl.hpp	/^    inline Int TreeBcast_slu<T>::GetRoot(){$/;"	f	class:SuperLU_ASYNCOMM::TreeBcast_slu
+GetTag	./TreeBcast_slu_impl.hpp	/^    inline Int TreeBcast_slu<T>::GetTag(){$/;"	f	class:SuperLU_ASYNCOMM::TreeBcast_slu
+Glu_freeable_t	./superlu_defs.h	/^} Glu_freeable_t;$/;"	t	typeref:struct:__anon28
+Glu_persist	./superlu_ddefs.h	/^    Glu_persist_t *Glu_persist;$/;"	m	struct:__anon22
+Glu_persist	./superlu_zdefs.h	/^    Glu_persist_t *Glu_persist;$/;"	m	struct:__anon51
+Glu_persist_t	./superlu_defs.h	/^} Glu_persist_t;$/;"	t	typeref:struct:__anon27
+HAVE_LAPACK	./superlu_dist_config.h	7;"	d
+HAVE_PARMETIS	./superlu_dist_config.h	4;"	d
+HEAD	./superlu_enum_consts.h	/^typedef enum {HEAD, TAIL}                                       stack_end_t;$/;"	e	enum:__anon44
+IAM	./superlu_defs.h	213;"	d
+IBM	./machines.h	33;"	d
+IFMT	./superlu_defs.h	85;"	d
+IFMT	./superlu_defs.h	89;"	d
+ILU_DropRule	./superlu_defs.h	/^    int 	  ILU_DropRule;$/;"	m	struct:__anon31
+ILU_DropTol	./superlu_defs.h	/^    double	  ILU_DropTol;    \/* threshold for dropping *\/$/;"	m	struct:__anon31
+ILU_FillFactor	./superlu_defs.h	/^    double	  ILU_FillFactor; \/* gamma in the secondary dropping *\/$/;"	m	struct:__anon31
+ILU_FillTol	./superlu_defs.h	/^    double	  ILU_FillTol;    \/* threshold for zero pivot perturbation *\/$/;"	m	struct:__anon31
+ILU_MILU	./superlu_defs.h	/^    milu_t	  ILU_MILU;$/;"	m	struct:__anon31
+ILU_MILU_Dim	./superlu_defs.h	/^    double	  ILU_MILU_Dim;   \/* Dimension of PDE (if available) *\/$/;"	m	struct:__anon31
+ILU_Norm	./superlu_defs.h	/^    norm_t	  ILU_Norm;       \/* infinity-norm, 1-norm, or 2-norm *\/$/;"	m	struct:__anon31
+INDEX	./colamd.c	705;"	d	file:
+INDEX	./colamd.c	715;"	d	file:
+INF_NORM	./superlu_enum_consts.h	/^typedef enum {ONE_NORM, TWO_NORM, INF_NORM}			norm_t;$/;"	e	enum:__anon46
+ISEND_IRECV	./pdgstrs1.c	30;"	d	file:
+ISEND_IRECV	./pdgstrsL.c	26;"	d	file:
+ISEND_IRECV	./pdgstrs_Bglobal.c	30;"	d	file:
+ISEND_IRECV	./pdgstrs_lsum.c	37;"	d	file:
+ISEND_IRECV	./pzgstrs1.c	29;"	d	file:
+ISEND_IRECV	./pzgstrs_Bglobal.c	29;"	d	file:
+ISEND_IRECV	./pzgstrs_lsum.c	33;"	d	file:
+ISORT	./superlu_defs.h	98;"	d
+ITMAX	./pdgsrfs.c	126;"	d	file:
+ITMAX	./pdgsrfs_ABXglobal.c	131;"	d	file:
+ITMAX	./pzgsrfs.c	125;"	d	file:
+ITMAX	./pzgsrfs_ABXglobal.c	130;"	d	file:
+Iam	./superlu_defs.h	/^    int Iam;              \/* my process number *\/$/;"	m	struct:__anon25
+Int	./TreeBcast_slu.hpp	/^  typedef    int  Int;$/;"	t	namespace:SuperLU_ASYNCOMM
+IsAllocated	./TreeReduce_slu.hpp	/^        bool IsAllocated(){return this->isAllocated_;}$/;"	f	class:SuperLU_ASYNCOMM::TreeReduce_slu
+IsReady	./TreeBcast_slu.hpp	/^        bool IsReady(){ return this->isReady_;}$/;"	f	class:SuperLU_ASYNCOMM::TreeBcast_slu
+IsRoot	./TreeBcast_slu_impl.hpp	/^    inline bool TreeBcast_slu<T>::IsRoot(){$/;"	f	class:SuperLU_ASYNCOMM::TreeBcast_slu
+IterRefine	./superlu_defs.h	/^    IterRefine_t  IterRefine;$/;"	m	struct:__anon31
+IterRefine_t	./superlu_enum_consts.h	/^typedef enum {NOREFINE, SLU_SINGLE=1, SLU_DOUBLE, SLU_EXTRA}    IterRefine_t;$/;"	t	typeref:enum:__anon42
+KILL_NON_PRINCIPAL_COL	./colamd.c	693;"	d	file:
+KILL_NON_PRINCIPAL_COL	./old_colamd.c	382;"	d	file:
+KILL_PRINCIPAL_COL	./colamd.c	692;"	d	file:
+KILL_PRINCIPAL_COL	./old_colamd.c	381;"	d	file:
+KILL_ROW	./colamd.c	691;"	d	file:
+KILL_ROW	./old_colamd.c	380;"	d	file:
+LB_DESCRIPTOR	./superlu_defs.h	149;"	d
+LBi	./superlu_defs.h	219;"	d
+LBj	./superlu_defs.h	220;"	d
+LBtree_ptr	./superlu_ddefs.h	/^    BcTree  *LBtree_ptr;       \/* size ceil(NSUPERS\/Pc)                *\/$/;"	m	struct:__anon21
+LBtree_ptr	./superlu_zdefs.h	/^    BcTree  *LBtree_ptr;       \/* size ceil(NSUPERS\/Pc)                *\/$/;"	m	struct:__anon50
+LLVL	./superlu_enum_consts.h	/^typedef enum {USUB, LSUB, UCOL, LUSUP, LLVL, ULVL, NO_MEMTYPE}  MemType;$/;"	e	enum:__anon43
+LL_SYMB	./psymbfact.h	297;"	d
+LOCAL_IND	./psymbfact.h	251;"	d
+LOG2	./superlu_defs.h	234;"	d
+LRtree_ptr	./superlu_ddefs.h	/^    RdTree  *LRtree_ptr;       \/* size ceil(NSUPERS\/Pr)                *\/$/;"	m	struct:__anon21
+LRtree_ptr	./superlu_zdefs.h	/^    RdTree  *LRtree_ptr;       \/* size ceil(NSUPERS\/Pr)                *\/$/;"	m	struct:__anon50
+LSUB	./superlu_enum_consts.h	/^typedef enum {USUB, LSUB, UCOL, LUSUP, LLVL, ULVL, NO_MEMTYPE}  MemType;$/;"	e	enum:__anon43
+LSUB_PR	./psymbfact.h	282;"	d
+LSUM	./superlu_defs.h	182;"	d
+LSUM_BLK	./superlu_defs.h	230;"	d
+LSUM_H	./superlu_defs.h	178;"	d
+LUSUP	./superlu_enum_consts.h	/^typedef enum {USUB, LSUB, UCOL, LUSUP, LLVL, ULVL, NO_MEMTYPE}  MemType;$/;"	e	enum:__anon43
+LU_space_t	./superlu_enum_consts.h	/^typedef enum {SYSTEM, USER}                                     LU_space_t;$/;"	t	typeref:enum:__anon45
+LUstructFree	./util.c	/^void LUstructFree(LUstruct_t *LUstruct)$/;"	f
+LUstructInit	./util.c	/^void LUstructInit(const int_t n, LUstruct_t *LUstruct)$/;"	f
+LUstruct_t	./superlu_ddefs.h	/^} LUstruct_t;$/;"	t	typeref:struct:__anon22
+LUstruct_t	./superlu_zdefs.h	/^} LUstruct_t;$/;"	t	typeref:struct:__anon51
+L_SOLVE	./superlu_ddefs.h	/^    int_t L_SOLVE;$/;"	m	struct:__anon21
+L_SOLVE	./superlu_zdefs.h	/^    int_t L_SOLVE;$/;"	m	struct:__anon50
+LargeDiag_AWPM	./superlu_enum_consts.h	/^typedef enum {NOROWPERM, LargeDiag_MC64, LargeDiag_AWPM, MY_PERMR} rowperm_t;$/;"	e	enum:__anon38
+LargeDiag_MC64	./superlu_enum_consts.h	/^typedef enum {NOROWPERM, LargeDiag_MC64, LargeDiag_AWPM, MY_PERMR} rowperm_t;$/;"	e	enum:__anon38
+Lindval_loc_bc_ptr	./superlu_ddefs.h	/^    int_t   **Lindval_loc_bc_ptr; \/* size ceil(NSUPERS\/Pc)  pointers to locations in Lrowind_bc_ptr and Lnzval_bc_ptr *\/$/;"	m	struct:__anon21
+Lindval_loc_bc_ptr	./superlu_zdefs.h	/^    int_t   **Lindval_loc_bc_ptr; \/* size ceil(NSUPERS\/Pc)  pointers to locations in Lrowind_bc_ptr and Lnzval_bc_ptr *\/$/;"	m	struct:__anon50
+Linv_bc_ptr	./superlu_ddefs.h	/^    double **Linv_bc_ptr;  \/* size ceil(NSUPERS\/Pc)                 *\/$/;"	m	struct:__anon21
+Linv_bc_ptr	./superlu_zdefs.h	/^    doublecomplex **Linv_bc_ptr;  \/* size ceil(NSUPERS\/Pc)                 *\/$/;"	m	struct:__anon50
+LkSUB	./superlu_defs.h	173;"	d
+LkVAL	./superlu_defs.h	174;"	d
+LkkDIAG	./superlu_defs.h	175;"	d
+Llu	./superlu_ddefs.h	/^    LocalLU_t *Llu;$/;"	m	struct:__anon22
+Llu	./superlu_zdefs.h	/^    LocalLU_t *Llu;$/;"	m	struct:__anon51
+Llu_symbfact_t	./psymbfact.h	/^} Llu_symbfact_t;$/;"	t	typeref:struct:__anon15
+Lnzval_bc_ptr	./superlu_ddefs.h	/^    double **Lnzval_bc_ptr;  \/* size ceil(NSUPERS\/Pc)                 *\/$/;"	m	struct:__anon21
+Lnzval_bc_ptr	./superlu_zdefs.h	/^    doublecomplex **Lnzval_bc_ptr;  \/* size ceil(NSUPERS\/Pc)                 *\/$/;"	m	struct:__anon50
+LocalLU_t	./superlu_ddefs.h	/^} LocalLU_t;$/;"	t	typeref:struct:__anon21
+LocalLU_t	./superlu_zdefs.h	/^} LocalLU_t;$/;"	t	typeref:struct:__anon50
+Logical	./util_dist.h	/^typedef unsigned char Logical;$/;"	t
+Lrowind_bc_2_lsum	./superlu_ddefs.h	/^	int_t   **Lrowind_bc_2_lsum; \/* size ceil(NSUPERS\/Pc)  map indices of Lrowind_bc_ptr to indices of lsum  *\/  $/;"	m	struct:__anon21
+Lrowind_bc_2_lsum	./superlu_zdefs.h	/^	int_t   **Lrowind_bc_2_lsum; \/* size ceil(NSUPERS\/Pc)  map indices of Lrowind_bc_ptr to indices of lsum  *\/  $/;"	m	struct:__anon50
+Lrowind_bc_ptr	./superlu_ddefs.h	/^    int_t   **Lrowind_bc_ptr; \/* size ceil(NSUPERS\/Pc)                 *\/$/;"	m	struct:__anon21
+Lrowind_bc_ptr	./superlu_zdefs.h	/^    int_t   **Lrowind_bc_ptr; \/* size ceil(NSUPERS\/Pc)                 *\/$/;"	m	struct:__anon50
+Lsub_buf_2	./superlu_ddefs.h	/^    int_t   *Lsub_buf_2[MAX_LOOKAHEADS];   \/* Buffers for the remote subscripts of L*\/$/;"	m	struct:__anon21
+Lsub_buf_2	./superlu_zdefs.h	/^    int_t   *Lsub_buf_2[MAX_LOOKAHEADS];   \/* Buffers for the remote subscripts of L*\/$/;"	m	struct:__anon50
+Lval_buf_2	./superlu_ddefs.h	/^    double  *Lval_buf_2[MAX_LOOKAHEADS];   \/* Buffers for the remote nonzeros of L  *\/$/;"	m	struct:__anon21
+Lval_buf_2	./superlu_zdefs.h	/^    doublecomplex  *Lval_buf_2[MAX_LOOKAHEADS];   \/* Buffers for the remote nonzeros of L  *\/$/;"	m	struct:__anon50
+MACH	./machines.h	36;"	d
+MACH	./machines.h	40;"	d
+MACH	./machines.h	44;"	d
+MACH	./machines.h	48;"	d
+MACH	./machines.h	52;"	d
+MACH	./machines.h	56;"	d
+MACH	./machines.h	60;"	d
+MAX	./colamd.c	655;"	d	file:
+MAX	./old_colamd.c	356;"	d	file:
+MAX	./superlu_defs.h	237;"	d
+MAX_LOOKAHEADS	./superlu_ddefs.h	46;"	d
+MAX_LOOKAHEADS	./superlu_zdefs.h	46;"	d
+MEM_LSUB	./psymbfact.h	254;"	d
+MEM_USUB	./psymbfact.h	255;"	d
+METISOPTIONS	./get_perm_c.c	41;"	d	file:
+METIS_AT_PLUS_A	./superlu_enum_consts.h	/^	      METIS_AT_PLUS_A, PARMETIS, ZOLTAN, MY_PERMC}      colperm_t;$/;"	e	enum:__anon39
+MIN	./colamd.c	656;"	d	file:
+MIN	./old_colamd.c	357;"	d	file:
+MIN	./superlu_defs.h	236;"	d
+MMD_ATA	./superlu_enum_consts.h	/^typedef enum {NATURAL, MMD_ATA, MMD_AT_PLUS_A, COLAMD,$/;"	e	enum:__anon39
+MMD_AT_PLUS_A	./superlu_enum_consts.h	/^typedef enum {NATURAL, MMD_ATA, MMD_AT_PLUS_A, COLAMD,$/;"	e	enum:__anon39
+MYCOL	./superlu_defs.h	215;"	d
+MYROW	./superlu_defs.h	214;"	d
+MY_PERMC	./superlu_enum_consts.h	/^	      METIS_AT_PLUS_A, PARMETIS, ZOLTAN, MY_PERMC}      colperm_t;$/;"	e	enum:__anon39
+MY_PERMR	./superlu_enum_consts.h	/^typedef enum {NOROWPERM, LargeDiag_MC64, LargeDiag_AWPM, MY_PERMR} rowperm_t;$/;"	e	enum:__anon38
+MaxActiveBTrees	./util_dist.h	/^	int_t MaxActiveBTrees;$/;"	m	struct:__anon65
+MaxActiveRTrees	./util_dist.h	/^	int_t MaxActiveRTrees;	$/;"	m	struct:__anon65
+MemModel	./psymbfact.h	/^  LU_space_t MemModel; \/* 0 - system malloc'd; 1 - user provided *\/$/;"	m	struct:__anon15
+MemModel	./superlu_defs.h	/^    LU_space_t MemModel; \/* 0 - system malloc'd; 1 - user provided *\/$/;"	m	struct:__anon28
+MemType	./superlu_enum_consts.h	/^typedef enum {USUB, LSUB, UCOL, LUSUP, LLVL, ULVL, NO_MEMTYPE}  MemType;$/;"	t	typeref:enum:__anon43
+ModBTreeBcast2	./TreeBcast_slu.hpp	/^    class ModBTreeBcast2: public TreeBcast_slu<T>{$/;"	c	namespace:SuperLU_ASYNCOMM
+ModBTreeBcast2	./TreeBcast_slu_impl.hpp	/^    ModBTreeBcast2<T>::ModBTreeBcast2(const MPI_Comm & pComm, Int * ranks, Int rank_cnt, Int msgSize, double rseed):TreeBcast_slu<T>(pComm,ranks,rank_cnt,msgSize){$/;"	f	class:SuperLU_ASYNCOMM::ModBTreeBcast2
+ModBTreeReduce_slu	./TreeReduce_slu.hpp	/^class ModBTreeReduce_slu: public TreeReduce_slu<T>{$/;"	c	namespace:SuperLU_ASYNCOMM
+ModBTreeReduce_slu	./TreeReduce_slu_impl.hpp	/^    ModBTreeReduce_slu<T>::ModBTreeReduce_slu(const MPI_Comm & pComm, Int * ranks, Int rank_cnt, Int msgSize, double rseed):TreeReduce_slu<T>(pComm, ranks, rank_cnt, msgSize){$/;"	f	class:SuperLU_ASYNCOMM::ModBTreeReduce_slu
+Mtype	./supermatrix.h	/^	Mtype_t Mtype; \/* Matrix type: describes the mathematical property of $/;"	m	struct:__anon57
+Mtype_t	./supermatrix.h	/^} Mtype_t;$/;"	t	typeref:enum:__anon56
+NATURAL	./superlu_enum_consts.h	/^typedef enum {NATURAL, MMD_ATA, MMD_AT_PLUS_A, COLAMD,$/;"	e	enum:__anon39
+NBUCKS	./util.c	839;"	d	file:
+NBUFFERS	./superlu_defs.h	152;"	d
+NCPformat	./supermatrix.h	/^} NCPformat;$/;"	t	typeref:struct:__anon62
+NCformat	./supermatrix.h	/^} NCformat;$/;"	t	typeref:struct:__anon58
+NDEBUG	./colamd.c	598;"	d	file:
+NDEBUG	./old_colamd.c	269;"	d	file:
+NELTS_IND	./psymbfact.h	271;"	d
+NO	./superlu_enum_consts.h	/^typedef enum {NO, YES}                                          yes_no_t;$/;"	e	enum:__anon36
+NOCHANGE	./Cnames.h	35;"	d
+NOEQUIL	./superlu_enum_consts.h	/^typedef enum {NOEQUIL, ROW, COL, BOTH}                          DiagScale_t;$/;"	e	enum:__anon41
+NOREFINE	./superlu_enum_consts.h	/^typedef enum {NOREFINE, SLU_SINGLE=1, SLU_DOUBLE, SLU_EXTRA}    IterRefine_t;$/;"	e	enum:__anon42
+NOROWPERM	./superlu_enum_consts.h	/^typedef enum {NOROWPERM, LargeDiag_MC64, LargeDiag_AWPM, MY_PERMR} rowperm_t;$/;"	e	enum:__anon38
+NOTRANS	./superlu_enum_consts.h	/^typedef enum {NOTRANS, TRANS, CONJ}                             trans_t;$/;"	e	enum:__anon40
+NO_MARKER	./superlu_defs.h	206;"	d
+NO_MEMTYPE	./superlu_enum_consts.h	/^typedef enum {USUB, LSUB, UCOL, LUSUP, LLVL, ULVL, NO_MEMTYPE}  MemType;$/;"	e	enum:__anon43
+NPHASES	./superlu_enum_consts.h	/^    NPHASES  \/* total number of phases *\/$/;"	e	enum:__anon48
+NRformat	./supermatrix.h	/^} NRformat;$/;"	t	typeref:struct:__anon59
+NRformat_loc	./supermatrix.h	/^} NRformat_loc;$/;"	t	typeref:struct:__anon64
+NTAGS	./superlu_defs.h	168;"	d
+Ngem	./dscatter.c	/^int Ngem = 2;$/;"	v
+Ngem	./zscatter.c	/^int Ngem = 2;$/;"	v
+Np	./superlu_defs.h	/^    int Np;               \/* number of processes *\/$/;"	m	struct:__anon25
+ONES_COMPLEMENT	./colamd.c	658;"	d	file:
+ONES_COMPLEMENT	./old_colamd.c	359;"	d	file:
+ONE_NORM	./superlu_enum_consts.h	/^typedef enum {ONE_NORM, TWO_NORM, INF_NORM}			norm_t;$/;"	e	enum:__anon46
+ORIGIN	./machines.h	28;"	d
+OWNER	./psymbfact.h	250;"	d
+PAD_FACTOR	./memory.c	60;"	d	file:
+PARMETIS	./superlu_enum_consts.h	/^	      METIS_AT_PLUS_A, PARMETIS, ZOLTAN, MY_PERMC}      colperm_t;$/;"	e	enum:__anon39
+PCOL	./superlu_defs.h	222;"	d
+PDGSTRF2	./pdgstrf.c	152;"	d	file:
+PDGSTRS2	./pdgstrf.c	153;"	d	file:
+PHI_FRAMEWORK	./pdgstrf.c	142;"	d	file:
+PHI_FRAMEWORK	./pzgstrf.c	141;"	d	file:
+PNUM	./superlu_defs.h	223;"	d
+PRINTF	./colamd.c	702;"	d	file:
+PRINTF	./colamd.c	712;"	d	file:
+PRIVATE	./colamd.c	653;"	d	file:
+PRIVATE	./old_colamd.c	386;"	d	file:
+PROW	./superlu_defs.h	221;"	d
+PStatFree	./util.c	/^PStatFree(SuperLUStat_t *stat)$/;"	f
+PStatInit	./util.c	/^PStatInit(SuperLUStat_t *stat)$/;"	f
+PStatPrint	./util.c	/^PStatPrint(superlu_dist_options_t *options, SuperLUStat_t *stat, gridinfo_t *grid)$/;"	f
+PTHREAD	./machines.h	32;"	d
+PUBLIC	./colamd.c	652;"	d	file:
+PUBLIC	./old_colamd.c	385;"	d	file:
+PZGSTRF2	./pzgstrf.c	151;"	d	file:
+PZGSTRS2	./pzgstrf.c	152;"	d	file:
+ParSymbFact	./superlu_defs.h	/^    yes_no_t      ParSymbFact;$/;"	m	struct:__anon31
+ParseFloatFormat	./dreadhb.c	/^static int ParseFloatFormat(char *buf, int_t *num, int_t *size)$/;"	f	file:
+ParseFloatFormat	./dreadrb.c	/^static int ParseFloatFormat(char *buf, int_t *num, int_t *size)$/;"	f	file:
+ParseFloatFormat	./zreadhb.c	/^static int ParseFloatFormat(char *buf, int_t *num, int_t *size)$/;"	f	file:
+ParseFloatFormat	./zreadrb.c	/^static int ParseFloatFormat(char *buf, int_t *num, int_t *size)$/;"	f	file:
+ParseIntFormat	./dreadhb.c	/^static int ParseIntFormat(char *buf, int_t *num, int_t *size)$/;"	f	file:
+ParseIntFormat	./dreadrb.c	/^static int ParseIntFormat(char *buf, int_t *num, int_t *size)$/;"	f	file:
+ParseIntFormat	./zreadhb.c	/^static int ParseIntFormat(char *buf, int_t *num, int_t *size)$/;"	f	file:
+ParseIntFormat	./zreadrb.c	/^static int ParseIntFormat(char *buf, int_t *num, int_t *size)$/;"	f	file:
+PhaseType	./superlu_enum_consts.h	/^} PhaseType;$/;"	t	typeref:enum:__anon48
+PivotGrowth	./superlu_defs.h	/^    yes_no_t      PivotGrowth;$/;"	m	struct:__anon31
+PrintDouble5	./dutil_dist.c	/^void PrintDouble5(char *name, int_t len, double *x)$/;"	f
+PrintDoublecomplex	./zutil_dist.c	/^void PrintDoublecomplex(char *name, int_t len, doublecomplex *x)$/;"	f
+PrintInt10	./util.c	/^void PrintInt10(char *name, int_t len, int_t *x)$/;"	f
+PrintInt32	./util.c	/^void PrintInt32(char *name, int len, int *x)$/;"	f
+PrintStat	./superlu_defs.h	/^    yes_no_t      PrintStat;$/;"	m	struct:__anon31
+Pslu_freeable_t	./psymbfact.h	/^} Pslu_freeable_t;$/;"	t	typeref:struct:__anon14
+QuerySpace_dist	./memory.c	/^int_t QuerySpace_dist(int_t n, int_t lsub_size, Glu_freeable_t *Glu_freeable,$/;"	f
+R	./superlu_defs.h	/^    double *R;$/;"	m	struct:__anon29
+RCOND	./superlu_enum_consts.h	/^    RCOND,   \/* estimate reciprocal condition number *\/$/;"	e	enum:__anon48
+RCVD_IND	./psymbfact.h	272;"	d
+RD_L	./superlu_defs.h	/^static const int RD_L=2;	\/* MPI tag for lsum in L-solve*\/	$/;"	v
+RD_U	./superlu_defs.h	/^static const int RD_U=4;	\/* MPI tag for lsum in U-solve*\/	$/;"	v
+REFINE	./superlu_enum_consts.h	/^    REFINE,  \/* perform iterative refinement *\/$/;"	e	enum:__anon48
+RELAX	./superlu_enum_consts.h	/^    RELAX,   \/* find artificial supernodes *\/$/;"	e	enum:__anon48
+RHS_ITERATE	./superlu_defs.h	226;"	d
+RL_SYMB	./psymbfact.h	295;"	d
+ROW	./superlu_enum_consts.h	/^typedef enum {NOEQUIL, ROW, COL, BOTH}                          DiagScale_t;$/;"	e	enum:__anon41
+ROWPERM	./superlu_enum_consts.h	/^    ROWPERM, \/* find a row ordering maximizes diagonal. *\/$/;"	e	enum:__anon48
+ROW_IS_ALIVE	./colamd.c	687;"	d	file:
+ROW_IS_ALIVE	./old_colamd.c	376;"	d	file:
+ROW_IS_DEAD	./colamd.c	685;"	d	file:
+ROW_IS_DEAD	./old_colamd.c	374;"	d	file:
+ROW_IS_MARKED_DEAD	./colamd.c	686;"	d	file:
+ROW_IS_MARKED_DEAD	./old_colamd.c	375;"	d	file:
+RdTree	./superlu_defs.h	/^typedef void* RdTree;$/;"	t
+RdTree_Create	./TreeInterface.cpp	/^	RdTree RdTree_Create(MPI_Comm comm, Int* ranks, Int rank_cnt, Int msgSize, double rseed, char precision){$/;"	f
+RdTree_Destroy	./TreeInterface.cpp	/^	void RdTree_Destroy(RdTree Tree, char precision){$/;"	f
+RdTree_GetDestCount	./TreeInterface.cpp	/^	int  RdTree_GetDestCount(RdTree Tree, char precision){$/;"	f
+RdTree_GetMsgSize	./TreeInterface.cpp	/^	int  RdTree_GetMsgSize(RdTree Tree, char precision){$/;"	f
+RdTree_IsRoot	./TreeInterface.cpp	/^	yes_no_t RdTree_IsRoot(RdTree Tree, char precision){$/;"	f
+RdTree_SetTag	./TreeInterface.cpp	/^	void RdTree_SetTag(RdTree Tree, Int tag, char precision){$/;"	f
+RdTree_allocateRequest	./TreeInterface.cpp	/^	void RdTree_allocateRequest(RdTree Tree, char precision){$/;"	f
+RdTree_forwardMessageOneSide	./TreeInterface.cpp	/^	void RdTree_forwardMessageOneSide(RdTree Tree, void* localBuffer, Int msgSize, char precision, int* RDsendoffset, int* RDlocal_buf_id, int* RDcount, int* RDbase, int* maxrecvsz, int Pc){$/;"	f
+RdTree_forwardMessageSimple	./TreeInterface.cpp	/^	void RdTree_forwardMessageSimple(RdTree Tree, void* localBuffer, Int msgSize, char precision){$/;"	f
+RdTree_waitSendRequest	./TreeInterface.cpp	/^	void RdTree_waitSendRequest(RdTree Tree, char precision){$/;"	f
+ReadVector	./dreadhb.c	/^ReadVector(FILE *fp, int_t n, int_t *where, int_t perline, int_t persize)$/;"	f	file:
+ReadVector	./dreadrb.c	/^static int ReadVector(FILE *fp, int_t n, int_t *where, int_t perline, int_t persize)$/;"	f	file:
+ReadVector	./zreadhb.c	/^ReadVector(FILE *fp, int_t n, int_t *where, int_t perline, int_t persize)$/;"	f	file:
+ReadVector	./zreadrb.c	/^static int ReadVector(FILE *fp, int_t n, int_t *where, int_t perline, int_t persize)$/;"	f	file:
+RecvCounts	./superlu_ddefs.h	/^    int   *RecvCounts;    \/* Numbers of X indices to be received$/;"	m	struct:__anon23
+RecvCounts	./superlu_zdefs.h	/^    int   *RecvCounts;    \/* Numbers of X indices to be received$/;"	m	struct:__anon52
+RefineInitialized	./superlu_defs.h	/^    yes_no_t      RefineInitialized;$/;"	m	struct:__anon31
+RefineSteps	./util_dist.h	/^    int     RefineSteps;  \/* number of iterative refinement steps *\/$/;"	m	struct:__anon65
+Remain_info_t	./superlu_defs.h	/^} Remain_info_t;$/;"	t	typeref:struct:__anon34
+ReplaceTinyPivot	./superlu_defs.h	/^    yes_no_t      ReplaceTinyPivot; \/* used in SuperLU_DIST *\/$/;"	m	struct:__anon31
+Reset	./TreeBcast_slu_impl.hpp	/^    inline void TreeBcast_slu<T>::Reset(){$/;"	f	class:SuperLU_ASYNCOMM::TreeBcast_slu
+Reset	./TreeReduce_slu_impl.hpp	/^    inline void TreeReduce_slu<T>::Reset(){$/;"	f	class:SuperLU_ASYNCOMM::TreeReduce_slu
+RowInfo	./old_colamd.c	/^} RowInfo ;$/;"	t	typeref:struct:RowInfo_struct	file:
+RowInfo_struct	./old_colamd.c	/^typedef struct RowInfo_struct$/;"	s	file:
+RowPerm	./superlu_defs.h	/^    rowperm_t     RowPerm;$/;"	m	struct:__anon31
+SCHEDULE_STRATEGY	./dSchCompUdt-2Ddynamic.c	33;"	d	file:
+SCHEDULE_STRATEGY	./zSchCompUdt-2Ddynamic.c	32;"	d	file:
+SCHEDULE_STRATEGY	./zSchCompUdt-cuda.c	24;"	d	file:
+SCPformat	./supermatrix.h	/^} SCPformat;$/;"	t	typeref:struct:__anon61
+SCformat	./supermatrix.h	/^} SCformat;$/;"	t	typeref:struct:__anon60
+SGI	./machines.h	27;"	d
+SILU	./superlu_enum_consts.h	/^typedef enum {SILU, SMILU_1, SMILU_2, SMILU_3}			milu_t;$/;"	e	enum:__anon47
+SLU_C	./supermatrix.h	/^    SLU_C,     \/* single complex *\/$/;"	e	enum:__anon55
+SLU_D	./supermatrix.h	/^    SLU_D,     \/* double *\/$/;"	e	enum:__anon55
+SLU_DN	./supermatrix.h	/^    SLU_DN,     \/* Fortran style column-wise storage for dense matrix *\/$/;"	e	enum:__anon54
+SLU_DOUBLE	./superlu_enum_consts.h	/^typedef enum {NOREFINE, SLU_SINGLE=1, SLU_DOUBLE, SLU_EXTRA}    IterRefine_t;$/;"	e	enum:__anon42
+SLU_EXTRA	./superlu_enum_consts.h	/^typedef enum {NOREFINE, SLU_SINGLE=1, SLU_DOUBLE, SLU_EXTRA}    IterRefine_t;$/;"	e	enum:__anon42
+SLU_GE	./supermatrix.h	/^    SLU_GE,    \/* general *\/$/;"	e	enum:__anon56
+SLU_HEL	./supermatrix.h	/^    SLU_HEL,   \/* Hermitian, store lower half *\/$/;"	e	enum:__anon56
+SLU_HEU	./supermatrix.h	/^    SLU_HEU    \/* Hermitian, store upper half *\/$/;"	e	enum:__anon56
+SLU_MPI_TAG	./superlu_defs.h	162;"	d
+SLU_NC	./supermatrix.h	/^    SLU_NC,    \/* column-wise, no supernode *\/$/;"	e	enum:__anon54
+SLU_NCP	./supermatrix.h	/^    SLU_NCP,   \/* column-wise, column-permuted, no supernode $/;"	e	enum:__anon54
+SLU_NR	./supermatrix.h	/^    SLU_NR,    \/* row-wize, no supernode *\/$/;"	e	enum:__anon54
+SLU_NR_loc	./supermatrix.h	/^    SLU_NR_loc  \/* distributed compressed row format  *\/ $/;"	e	enum:__anon54
+SLU_S	./supermatrix.h	/^    SLU_S,     \/* single *\/$/;"	e	enum:__anon55
+SLU_SC	./supermatrix.h	/^    SLU_SC,    \/* column-wise, supernode *\/$/;"	e	enum:__anon54
+SLU_SCP	./supermatrix.h	/^    SLU_SCP,   \/* supernode, column-wise, permuted *\/    $/;"	e	enum:__anon54
+SLU_SINGLE	./superlu_enum_consts.h	/^typedef enum {NOREFINE, SLU_SINGLE=1, SLU_DOUBLE, SLU_EXTRA}    IterRefine_t;$/;"	e	enum:__anon42
+SLU_SR	./supermatrix.h	/^    SLU_SR,    \/* row-wise, supernode *\/$/;"	e	enum:__anon54
+SLU_SYL	./supermatrix.h	/^    SLU_SYL,   \/* symmetric, store lower half *\/$/;"	e	enum:__anon56
+SLU_SYU	./supermatrix.h	/^    SLU_SYU,   \/* symmetric, store upper half *\/$/;"	e	enum:__anon56
+SLU_TRL	./supermatrix.h	/^    SLU_TRL,   \/* lower triangular *\/$/;"	e	enum:__anon56
+SLU_TRLU	./supermatrix.h	/^    SLU_TRLU,  \/* lower triangular, unit diagonal *\/$/;"	e	enum:__anon56
+SLU_TRU	./supermatrix.h	/^    SLU_TRU,   \/* upper triangular *\/$/;"	e	enum:__anon56
+SLU_TRUU	./supermatrix.h	/^    SLU_TRUU,  \/* upper triangular, unit diagonal *\/$/;"	e	enum:__anon56
+SLU_Z	./supermatrix.h	/^    SLU_Z      \/* double complex *\/$/;"	e	enum:__anon55
+SMILU_1	./superlu_enum_consts.h	/^typedef enum {SILU, SMILU_1, SMILU_2, SMILU_3}			milu_t;$/;"	e	enum:__anon47
+SMILU_2	./superlu_enum_consts.h	/^typedef enum {SILU, SMILU_1, SMILU_2, SMILU_3}			milu_t;$/;"	e	enum:__anon47
+SMILU_3	./superlu_enum_consts.h	/^typedef enum {SILU, SMILU_1, SMILU_2, SMILU_3}			milu_t;$/;"	e	enum:__anon47
+SOLVE	./superlu_enum_consts.h	/^    SOLVE,   \/* forward and back solves *\/$/;"	e	enum:__anon48
+SOLVEstruct_t	./superlu_ddefs.h	/^} SOLVEstruct_t;$/;"	t	typeref:struct:__anon24
+SOLVEstruct_t	./superlu_zdefs.h	/^} SOLVEstruct_t;$/;"	t	typeref:struct:__anon53
+SOL_COMM	./superlu_enum_consts.h	/^    SOL_COMM,\/* communication for solve *\/$/;"	e	enum:__anon48
+SOL_GEMM	./superlu_enum_consts.h	/^    SOL_GEMM,\/* gemm for solve *\/$/;"	e	enum:__anon48
+SOL_TOT	./superlu_enum_consts.h	/^	SOL_TOT,	\/* LU-solve time*\/$/;"	e	enum:__anon48
+SOL_TRSM	./superlu_enum_consts.h	/^    SOL_TRSM,\/* trsm for solve *\/$/;"	e	enum:__anon48
+SUCCES_RET	./psymbfact.h	274;"	d
+SUN	./machines.h	31;"	d
+SUPERLU_DIST_EXPORT	./superlu_defs.h	253;"	d
+SUPERLU_DIST_EXPORT	./superlu_defs.h	255;"	d
+SUPERLU_DIST_EXPORT	./superlu_defs.h	258;"	d
+SUPERLU_DIST_MAJOR_VERSION	./superlu_defs.h	71;"	d
+SUPERLU_DIST_MINOR_VERSION	./superlu_defs.h	72;"	d
+SUPERLU_DIST_PATCH_VERSION	./superlu_defs.h	73;"	d
+SUPERLU_DIST_RELEASE_DATE	./superlu_defs.h	74;"	d
+SUPERLU_FREE	./util_dist.h	47;"	d
+SUPERLU_MALLOC	./util_dist.h	41;"	d
+SUPERLU_MAX	./util_dist.h	56;"	d
+SUPERLU_MIN	./util_dist.h	57;"	d
+SUPER_BLOCK	./superlu_defs.h	201;"	d
+SUPER_LINEAR	./superlu_defs.h	200;"	d
+SYMBFAC	./superlu_enum_consts.h	/^    SYMBFAC, \/* symbolic factorization. *\/$/;"	e	enum:__anon48
+SYSTEM	./superlu_enum_consts.h	/^typedef enum {SYSTEM, USER}                                     LU_space_t;$/;"	e	enum:__anon45
+SamePattern	./superlu_enum_consts.h	/^typedef enum {DOFACT, SamePattern, SamePattern_SameRowPerm, FACTORED} fact_t;$/;"	e	enum:__anon37
+SamePattern_SameRowPerm	./superlu_enum_consts.h	/^typedef enum {DOFACT, SamePattern, SamePattern_SameRowPerm, FACTORED} fact_t;$/;"	e	enum:__anon37
+ScalePermstructFree	./util.c	/^void ScalePermstructFree(ScalePermstruct_t *ScalePermstruct)$/;"	f
+ScalePermstructInit	./util.c	/^void ScalePermstructInit(const int_t m, const int_t n,$/;"	f
+ScalePermstruct_t	./superlu_defs.h	/^} ScalePermstruct_t;$/;"	t	typeref:struct:__anon29
+SendCounts	./superlu_ddefs.h	/^    int   *SendCounts;    \/* Numbers of X indices to be sent$/;"	m	struct:__anon23
+SendCounts	./superlu_zdefs.h	/^    int   *SendCounts;    \/* Numbers of X indices to be sent$/;"	m	struct:__anon52
+SetDataReady	./TreeBcast_slu_impl.hpp	/^    inline void TreeBcast_slu<T>::SetDataReady(bool rdy){ $/;"	f	class:SuperLU_ASYNCOMM::TreeBcast_slu
+SetMsgSize	./TreeBcast_slu.hpp	/^        void SetMsgSize(Int msgSize){ this->msgSize_ = msgSize;}$/;"	f	class:SuperLU_ASYNCOMM::TreeBcast_slu
+SetTag	./TreeBcast_slu_impl.hpp	/^    inline void TreeBcast_slu<T>::SetTag(Int tag){$/;"	f	class:SuperLU_ASYNCOMM::TreeBcast_slu
+SetupSpace	./memory.c	/^void SetupSpace(void *work, int_t lwork, LU_space_t *MemModel)$/;"	f
+SolveInitialized	./superlu_defs.h	/^    yes_no_t      SolveInitialized;$/;"	m	struct:__anon31
+SolveMsgSent	./superlu_ddefs.h	/^    int_t   SolveMsgSent;     \/* Number of actual messages sent in LU-solve *\/$/;"	m	struct:__anon21
+SolveMsgSent	./superlu_zdefs.h	/^    int_t   SolveMsgSent;     \/* Number of actual messages sent in LU-solve *\/$/;"	m	struct:__anon50
+SolveMsgVol	./superlu_ddefs.h	/^    int_t   SolveMsgVol;      \/* Volume of messages sent in the solve phase *\/$/;"	m	struct:__anon21
+SolveMsgVol	./superlu_zdefs.h	/^    int_t   SolveMsgVol;      \/* Volume of messages sent in the solve phase *\/$/;"	m	struct:__anon50
+StdList	./superlu_defs.h	/^typedef void* StdList;$/;"	t
+StdList_Empty	./TreeInterface.cpp	/^	yes_no_t StdList_Empty(StdList lst){$/;"	f
+StdList_Find	./TreeInterface.cpp	/^	yes_no_t StdList_Find(StdList lst, int_t dat){$/;"	f
+StdList_Init	./TreeInterface.cpp	/^	StdList StdList_Init(){$/;"	f
+StdList_Popfront	./TreeInterface.cpp	/^	int_t StdList_Popfront(StdList lst){$/;"	f
+StdList_Pushback	./TreeInterface.cpp	/^	void StdList_Pushback(StdList lst, int_t dat){$/;"	f
+StdList_Pushfront	./TreeInterface.cpp	/^	void StdList_Pushfront(StdList lst, int_t dat){$/;"	f
+StdList_Size	./TreeInterface.cpp	/^	int_t StdList_Size(StdList lst){$/;"	f
+Store	./supermatrix.h	/^	void *Store;   \/* pointer to the actual storage of the matrix *\/$/;"	m	struct:__anon57
+Stype	./supermatrix.h	/^	Stype_t Stype; \/* Storage type: interprets the storage structure $/;"	m	struct:__anon57
+Stype_t	./supermatrix.h	/^} Stype_t;$/;"	t	typeref:enum:__anon54
+SuperLUStat_t	./util_dist.h	/^} SuperLUStat_t;$/;"	t	typeref:struct:__anon65
+SuperLU_ASYNCOMM	./TreeBcast_slu.hpp	/^namespace SuperLU_ASYNCOMM {$/;"	n
+SuperLU_ASYNCOMM	./TreeBcast_slu_impl.hpp	/^namespace SuperLU_ASYNCOMM {$/;"	n
+SuperLU_ASYNCOMM	./TreeInterface.cpp	/^namespace SuperLU_ASYNCOMM{$/;"	n	file:
+SuperLU_ASYNCOMM	./TreeReduce_slu.hpp	/^namespace SuperLU_ASYNCOMM{$/;"	n
+SuperLU_ASYNCOMM	./TreeReduce_slu_impl.hpp	/^namespace SuperLU_ASYNCOMM {$/;"	n
+SuperLU_DoubleAlign	./util_dist.h	128;"	d
+SuperLU_ExpHeader	./util_dist.h	/^} SuperLU_ExpHeader;$/;"	t	typeref:struct:e_node
+SuperLU_FIRSTCOL_OF_SNODE	./util_dist.h	133;"	d
+SuperLU_GluIntArray	./util_dist.h	113;"	d
+SuperLU_LU_stack_t	./util_dist.h	/^} SuperLU_LU_stack_t;$/;"	t	typeref:struct:__anon66
+SuperLU_L_FST_SUPC	./util_dist.h	149;"	d
+SuperLU_L_NZ_START	./util_dist.h	148;"	d
+SuperLU_L_SUB	./util_dist.h	147;"	d
+SuperLU_L_SUB_START	./util_dist.h	146;"	d
+SuperLU_MPI_DOUBLE_COMPLEX	./superlu_grid.c	/^MPI_Datatype SuperLU_MPI_DOUBLE_COMPLEX = MPI_DATATYPE_NULL;$/;"	v
+SuperLU_NotDoubleAlign	./util_dist.h	127;"	d
+SuperLU_Reduce	./util_dist.h	131;"	d
+SuperLU_StackFull	./util_dist.h	126;"	d
+SuperLU_TempSpace	./util_dist.h	129;"	d
+SuperLU_U_NZ_START	./util_dist.h	150;"	d
+SuperLU_U_SUB	./util_dist.h	151;"	d
+SuperLU_timer_	./superlu_defs.h	233;"	d
+SuperLU_timer_	./superlu_timer.c	/^double SuperLU_timer_() {$/;"	f
+SuperLU_timer_	./superlu_timer.c	/^double SuperLU_timer_()$/;"	f
+SuperMatrix	./supermatrix.h	/^} SuperMatrix;$/;"	t	typeref:struct:__anon57
+SuperSize	./superlu_defs.h	218;"	d
+SymPattern	./superlu_defs.h	/^    yes_no_t      SymPattern;      \/* symmetric factorization          *\/$/;"	m	struct:__anon31
+SymmetricMode	./superlu_defs.h	/^    yes_no_t      SymmetricMode;$/;"	m	struct:__anon31
+T2_SUPER	./symbfact.c	39;"	d	file:
+TAIL	./superlu_enum_consts.h	/^typedef enum {HEAD, TAIL}                                       stack_end_t;$/;"	e	enum:__anon44
+THRESH	./dlaqgs_dist.c	85;"	d	file:
+THRESH	./pdlaqgs.c	89;"	d	file:
+THRESH	./pzlaqgs.c	88;"	d	file:
+THRESH	./zlaqgs_dist.c	85;"	d	file:
+TIC	./util_dist.h	136;"	d
+TIC	./util_dist.h	139;"	d
+TOC	./util_dist.h	137;"	d
+TOC	./util_dist.h	140;"	d
+TRANS	./superlu_enum_consts.h	/^typedef enum {NOTRANS, TRANS, CONJ}                             trans_t;$/;"	e	enum:__anon40
+TRSV	./superlu_enum_consts.h	/^    TRSV,    \/* fraction of FACT spent in xTRSV *\/$/;"	e	enum:__anon48
+TRUE	./colamd.c	665;"	d	file:
+TRUE	./old_colamd.c	361;"	d	file:
+TRUE	./util_dist.h	68;"	d
+TWO_NORM	./superlu_enum_consts.h	/^typedef enum {ONE_NORM, TWO_NORM, INF_NORM}			norm_t;$/;"	e	enum:__anon46
+TinyPivots	./util_dist.h	/^    int     TinyPivots;   \/* number of tiny pivots *\/$/;"	m	struct:__anon65
+ToRecv	./superlu_ddefs.h	/^    int   *ToRecv;          \/* Recv from no one (0), left (1), and up (2).*\/$/;"	m	struct:__anon21
+ToRecv	./superlu_zdefs.h	/^    int   *ToRecv;          \/* Recv from no one (0), left (1), and up (2).*\/$/;"	m	struct:__anon50
+ToSendD	./superlu_ddefs.h	/^    int   *ToSendD;         \/* Whether need to send down block row.       *\/$/;"	m	struct:__anon21
+ToSendD	./superlu_zdefs.h	/^    int   *ToSendD;         \/* Whether need to send down block row.       *\/$/;"	m	struct:__anon50
+ToSendR	./superlu_ddefs.h	/^    int   **ToSendR;        \/* List of processes to send right block col. *\/$/;"	m	struct:__anon21
+ToSendR	./superlu_zdefs.h	/^    int   **ToSendR;        \/* List of processes to send right block col. *\/$/;"	m	struct:__anon50
+TotalIndSend	./superlu_ddefs.h	/^    int_t TotalIndSend;   \/* Total number of indices to be sent$/;"	m	struct:__anon23
+TotalIndSend	./superlu_zdefs.h	/^    int_t TotalIndSend;   \/* Total number of indices to be sent$/;"	m	struct:__anon52
+TotalValSend	./superlu_ddefs.h	/^    int_t TotalValSend;   \/* Total number of values to be sent.$/;"	m	struct:__anon23
+TotalValSend	./superlu_zdefs.h	/^    int_t TotalValSend;   \/* Total number of values to be sent.$/;"	m	struct:__anon52
+Trans	./superlu_defs.h	/^    trans_t       Trans;$/;"	m	struct:__anon31
+TreeBcast_slu	./TreeBcast_slu.hpp	/^    class TreeBcast_slu{$/;"	c	namespace:SuperLU_ASYNCOMM
+TreeBcast_slu	./TreeBcast_slu_impl.hpp	/^    TreeBcast_slu<T>::TreeBcast_slu(){$/;"	f	class:SuperLU_ASYNCOMM::TreeBcast_slu
+TreeBcast_slu	./TreeBcast_slu_impl.hpp	/^    TreeBcast_slu<T>::TreeBcast_slu(const MPI_Comm & pComm, Int * ranks, Int rank_cnt,Int msgSize):TreeBcast_slu(){$/;"	f	class:SuperLU_ASYNCOMM::TreeBcast_slu
+TreeBcast_slu	./TreeBcast_slu_impl.hpp	/^    TreeBcast_slu<T>::TreeBcast_slu(const TreeBcast_slu & Tree){$/;"	f	class:SuperLU_ASYNCOMM::TreeBcast_slu
+TreePostorder_dist	./etree.c	/^int_t *TreePostorder_dist($/;"	f
+TreeReduce_slu	./TreeReduce_slu.hpp	/^    class TreeReduce_slu: public TreeBcast_slu<T>{$/;"	c	namespace:SuperLU_ASYNCOMM
+TreeReduce_slu	./TreeReduce_slu_impl.hpp	/^    TreeReduce_slu<T>::TreeReduce_slu():TreeBcast_slu<T>(){$/;"	f	class:SuperLU_ASYNCOMM::TreeReduce_slu
+TreeReduce_slu	./TreeReduce_slu_impl.hpp	/^    TreeReduce_slu<T>::TreeReduce_slu(const MPI_Comm & pComm, Int * ranks, Int rank_cnt, Int msgSize):TreeBcast_slu<T>(pComm,ranks,rank_cnt,msgSize){$/;"	f	class:SuperLU_ASYNCOMM::TreeReduce_slu
+TreeReduce_slu	./TreeReduce_slu_impl.hpp	/^    TreeReduce_slu<T>::TreeReduce_slu(const TreeReduce_slu<T> & Tree){$/;"	f	class:SuperLU_ASYNCOMM::TreeReduce_slu
+UB_DESCRIPTOR	./superlu_defs.h	151;"	d
+UBtree_ptr	./superlu_ddefs.h	/^    BcTree  *UBtree_ptr;       \/* size ceil(NSUPERS\/Pc)                *\/$/;"	m	struct:__anon21
+UBtree_ptr	./superlu_zdefs.h	/^    BcTree  *UBtree_ptr;       \/* size ceil(NSUPERS\/Pc)                *\/$/;"	m	struct:__anon50
+UCOL	./superlu_enum_consts.h	/^typedef enum {USUB, LSUB, UCOL, LUSUP, LLVL, ULVL, NO_MEMTYPE}  MemType;$/;"	e	enum:__anon43
+ULVL	./superlu_enum_consts.h	/^typedef enum {USUB, LSUB, UCOL, LUSUP, LLVL, ULVL, NO_MEMTYPE}  MemType;$/;"	e	enum:__anon43
+UPCASE	./Cnames.h	36;"	d
+URtree_ptr	./superlu_ddefs.h	/^    RdTree  *URtree_ptr;       \/* size ceil(NSUPERS\/Pr)			*\/$/;"	m	struct:__anon21
+URtree_ptr	./superlu_zdefs.h	/^    RdTree  *URtree_ptr;       \/* size ceil(NSUPERS\/Pr)			*\/$/;"	m	struct:__anon50
+USEEND	./get_perm_c.c	79;"	d	file:
+USER	./superlu_enum_consts.h	/^typedef enum {SYSTEM, USER}                                     LU_space_t;$/;"	e	enum:__anon45
+USER_ABORT	./util_dist.h	28;"	d
+USER_FREE	./util_dist.h	44;"	d
+USER_MALLOC	./util_dist.h	38;"	d
+USUB	./superlu_enum_consts.h	/^typedef enum {USUB, LSUB, UCOL, LUSUP, LLVL, ULVL, NO_MEMTYPE}  MemType;$/;"	e	enum:__anon43
+USUB_PR	./psymbfact.h	281;"	d
+UT_SOLVE	./superlu_ddefs.h	/^    int_t UT_SOLVE;$/;"	m	struct:__anon21
+UT_SOLVE	./superlu_zdefs.h	/^    int_t UT_SOLVE;$/;"	m	struct:__anon50
+Ublock_info_t	./superlu_defs.h	/^} Ublock_info_t;$/;"	t	typeref:struct:__anon33
+Ucb_indptr	./superlu_ddefs.h	/^    Ucb_indptr_t **Ucb_indptr;\/* Vertical linked list pointing to Uindex[] *\/$/;"	m	struct:__anon21
+Ucb_indptr	./superlu_zdefs.h	/^    Ucb_indptr_t **Ucb_indptr;\/* Vertical linked list pointing to Uindex[] *\/$/;"	m	struct:__anon50
+Ucb_indptr_t	./superlu_ddefs.h	/^} Ucb_indptr_t;$/;"	t	typeref:struct:__anon20
+Ucb_indptr_t	./superlu_zdefs.h	/^} Ucb_indptr_t;$/;"	t	typeref:struct:__anon49
+Ucb_valptr	./superlu_ddefs.h	/^    int_t  **Ucb_valptr;      \/* Vertical linked list pointing to Unzval[] *\/$/;"	m	struct:__anon21
+Ucb_valptr	./superlu_zdefs.h	/^    int_t  **Ucb_valptr;      \/* Vertical linked list pointing to Unzval[] *\/$/;"	m	struct:__anon50
+Ufstnz_br_ptr	./superlu_ddefs.h	/^    int_t   **Ufstnz_br_ptr;  \/* size ceil(NSUPERS\/Pr)                 *\/$/;"	m	struct:__anon21
+Ufstnz_br_ptr	./superlu_zdefs.h	/^    int_t   **Ufstnz_br_ptr;  \/* size ceil(NSUPERS\/Pr)                 *\/$/;"	m	struct:__anon50
+Uinv_bc_ptr	./superlu_ddefs.h	/^    double  **Uinv_bc_ptr;  \/* size ceil(NSUPERS\/Pc)     	*\/$/;"	m	struct:__anon21
+Uinv_bc_ptr	./superlu_zdefs.h	/^    doublecomplex  **Uinv_bc_ptr;  \/* size ceil(NSUPERS\/Pc)     	*\/$/;"	m	struct:__anon50
+UjROW	./superlu_defs.h	170;"	d
+UkSUB	./superlu_defs.h	171;"	d
+UkVAL	./superlu_defs.h	172;"	d
+Unnz	./superlu_ddefs.h	/^    int_t   *Unnz; \/* number of nonzeros per block column in U*\/$/;"	m	struct:__anon21
+Unnz	./superlu_zdefs.h	/^    int_t   *Unnz; \/* number of nonzeros per block column in U*\/$/;"	m	struct:__anon50
+Unzval_br_ptr	./superlu_ddefs.h	/^    double  **Unzval_br_ptr;  \/* size ceil(NSUPERS\/Pr)                 *\/$/;"	m	struct:__anon21
+Unzval_br_ptr	./superlu_zdefs.h	/^    doublecomplex  **Unzval_br_ptr;  \/* size ceil(NSUPERS\/Pr)                 *\/$/;"	m	struct:__anon50
+Urbs	./superlu_ddefs.h	/^    int_t *Urbs;$/;"	m	struct:__anon21
+Urbs	./superlu_zdefs.h	/^    int_t *Urbs;$/;"	m	struct:__anon50
+Usub_buf_2	./superlu_ddefs.h	/^    int_t   *Usub_buf_2[MAX_LOOKAHEADS];   \/* Buffer for the remote subscripts of U *\/$/;"	m	struct:__anon21
+Usub_buf_2	./superlu_zdefs.h	/^    int_t   *Usub_buf_2[MAX_LOOKAHEADS];   \/* Buffer for the remote subscripts of U *\/$/;"	m	struct:__anon50
+Uval_buf_2	./superlu_ddefs.h	/^    double  *Uval_buf_2[MAX_LOOKAHEADS];   \/* Buffer for the remote nonzeros of U   *\/$/;"	m	struct:__anon21
+Uval_buf_2	./superlu_zdefs.h	/^    doublecomplex  *Uval_buf_2[MAX_LOOKAHEADS];   \/* Buffer for the remote nonzeros of U   *\/$/;"	m	struct:__anon50
+VT_TRACEOFF	./superlu_defs.h	243;"	d
+VT_TRACEOFF	./superlu_defs.h	246;"	d
+VT_TRACEON	./superlu_defs.h	242;"	d
+VT_TRACEON	./superlu_defs.h	245;"	d
+WINGETOPT_H__	./wingetopt.h	23;"	d
+XK_H	./superlu_defs.h	177;"	d
+XSDK_INDEX_SIZE	./superlu_dist_config.h	13;"	d
+X_BLK	./superlu_defs.h	228;"	d
+X_to_B_SendCnt	./superlu_defs.h	/^    int  *X_to_B_SendCnt;$/;"	m	struct:__anon30
+X_to_B_iSendCnt	./superlu_defs.h	/^    int *X_to_B_iSendCnt;$/;"	m	struct:__anon30
+X_to_B_vSendCnt	./superlu_defs.h	/^    int *X_to_B_vSendCnt;$/;"	m	struct:__anon30
+Xk	./superlu_defs.h	180;"	d
+YES	./superlu_enum_consts.h	/^typedef enum {NO, YES}                                          yes_no_t;$/;"	e	enum:__anon36
+Yk	./superlu_defs.h	181;"	d
+ZOLTAN	./superlu_enum_consts.h	/^	      METIS_AT_PLUS_A, PARMETIS, ZOLTAN, MY_PERMC}      colperm_t;$/;"	e	enum:__anon39
+ZPLUSRC	./Makefile	/^ZPLUSRC = pzgssvx.o pzgssvx_ABglobal.o \\$/;"	m
+ZSLUSRC	./Makefile	/^ZSLUSRC	= dcomplex_dist.o zlangs_dist.o zgsequ_dist.o zlaqgs_dist.o \\$/;"	m
+_LONGINT	./superlu_dist_config.h	16;"	d
+__SUPERLU_ASYNC_TREE	./superlu_defs.h	821;"	d
+__SUPERLU_CNAMES	./Cnames.h	22;"	d
+__SUPERLU_DCOMPLEX	./dcomplex.h	25;"	d
+__SUPERLU_DDEFS	./superlu_ddefs.h	26;"	d
+__SUPERLU_DEFS	./superlu_defs.h	27;"	d
+__SUPERLU_DIST_PSYMBFACT	./psymbfact.h	22;"	d
+__SUPERLU_ENUM_CONSTS	./superlu_enum_consts.h	23;"	d
+__SUPERLU_MACHINES	./machines.h	25;"	d
+__SUPERLU_SUPERMATRIX	./supermatrix.h	16;"	d
+__SUPERLU_TREEBCAST	./TreeBcast_slu.hpp	2;"	d
+__SUPERLU_TREEBCAST_IMPL	./TreeBcast_slu_impl.hpp	2;"	d
+__SUPERLU_TREEREDUCE	./TreeReduce_slu.hpp	2;"	d
+__SUPERLU_TREEREDUCE_IMPL	./TreeReduce_slu_impl.hpp	2;"	d
+__SUPERLU_UTIL	./util_dist.h	16;"	d
+__SUPERLU_ZDEFS	./superlu_zdefs.h	25;"	d
+a_plus_at_CompRow_loc	./get_perm_c_parmetis.c	/^a_plus_at_CompRow_loc$/;"	f	file:
+abs	./mc64ad_dist.c	15;"	d	file:
+allocMem	./psymbfact.h	/^  float  allocMem; \/* size of the total memory allocated (in bytes) *\/$/;"	m	struct:__anon19
+allocPrune_domain	./psymbfact.c	/^allocPrune_domain$/;"	f	file:
+allocPrune_lvl	./psymbfact.c	/^float allocPrune_lvl$/;"	f	file:
+allocateRequest	./TreeBcast_slu_impl.hpp	/^    inline void TreeBcast_slu<T>::allocateRequest(){$/;"	f	class:SuperLU_ASYNCOMM::TreeBcast_slu
+allocateRequest	./TreeReduce_slu_impl.hpp	/^    inline void TreeReduce_slu<T>::allocateRequest(){$/;"	f	class:SuperLU_ASYNCOMM::TreeReduce_slu
+array	./util_dist.h	/^    void *array;$/;"	m	struct:__anon66
+arrive_at_ublock	./util.c	/^arrive_at_ublock (int_t j,      \/* j-th block in a U panel *\/$/;"	f
+at_plus_a_dist	./get_perm_c.c	/^at_plus_a_dist($/;"	f
+b2x	./superlu_defs.h	/^    int_t  x2b, b2x;$/;"	m	struct:__anon30
+bcast_tree	./comm.c	/^bcast_tree(void *buf, int count, MPI_Datatype dtype, int root, int tag,$/;"	f
+begEndBlks_loc	./psymbfact.h	/^  int_t  *begEndBlks_loc; \/* Begin and end vertex of each local block.$/;"	m	struct:__anon16
+blk_symbfact	./psymbfact.c	/^blk_symbfact$/;"	f	file:
+bmod	./superlu_ddefs.h	/^    int_t   *bmod;            \/* Modification count for U-solve            *\/$/;"	m	struct:__anon21
+bmod	./superlu_zdefs.h	/^    int_t   *bmod;            \/* Modification count for U-solve            *\/$/;"	m	struct:__anon50
+brecv	./superlu_ddefs.h	/^    int_t   *brecv;           \/* Modifications to be recv'd in proc row    *\/$/;"	m	struct:__anon21
+brecv	./superlu_zdefs.h	/^    int_t   *brecv;           \/* Modifications to be recv'd in proc row    *\/$/;"	m	struct:__anon50
+bsendx_plist	./superlu_ddefs.h	/^    int_t   **bsendx_plist;   \/* Column process list to send down Xk       *\/$/;"	m	struct:__anon21
+bsendx_plist	./superlu_zdefs.h	/^    int_t   **bsendx_plist;   \/* Column process list to send down Xk       *\/$/;"	m	struct:__anon50
+bufmax	./superlu_ddefs.h	/^    int_t   bufmax[NBUFFERS]; \/* Maximum buffer size across all MPI ranks:$/;"	m	struct:__anon21
+bufmax	./superlu_zdefs.h	/^    int_t   bufmax[NBUFFERS]; \/* Maximum buffer size across all MPI ranks:$/;"	m	struct:__anon50
+buildTree	./TreeBcast_slu_impl.hpp	/^    inline void BTreeBcast2<T>::buildTree(Int * ranks, Int rank_cnt){$/;"	f	class:SuperLU_ASYNCOMM::BTreeBcast2
+buildTree	./TreeBcast_slu_impl.hpp	/^    inline void FTreeBcast2<T>::buildTree(Int * ranks, Int rank_cnt){$/;"	f	class:SuperLU_ASYNCOMM::FTreeBcast2
+buildTree	./TreeBcast_slu_impl.hpp	/^    inline void ModBTreeBcast2<T>::buildTree(Int * ranks, Int rank_cnt){$/;"	f	class:SuperLU_ASYNCOMM::ModBTreeBcast2
+buildTree	./TreeReduce_slu_impl.hpp	/^    inline void BTreeReduce_slu<T>::buildTree(Int * ranks, Int rank_cnt){$/;"	f	class:SuperLU_ASYNCOMM::BTreeReduce_slu
+buildTree	./TreeReduce_slu_impl.hpp	/^    inline void FTreeReduce_slu<T>::buildTree(Int * ranks, Int rank_cnt){$/;"	f	class:SuperLU_ASYNCOMM::FTreeReduce_slu
+buildTree	./TreeReduce_slu_impl.hpp	/^    inline void ModBTreeReduce_slu<T>::buildTree(Int * ranks, Int rank_cnt){$/;"	f	class:SuperLU_ASYNCOMM::ModBTreeReduce_slu
+c2cpp_GetAWPM	./c2cpp_GetAWPM.cpp	/^c2cpp_GetAWPM(SuperMatrix *A, gridinfo_t *grid,$/;"	f
+c__1	./mc64ad_dist.c	/^static int_t c__1 = 1;$/;"	v	file:
+c__2	./mc64ad_dist.c	/^static int_t c__2 = 2;$/;"	v	file:
+c_bridge_dgssv_	./Cnames.h	186;"	d
+c_bridge_dgssv_	./Cnames.h	315;"	d
+c_fortran_pdgssvx_	./Cnames.h	188;"	d
+c_fortran_pdgssvx_	./Cnames.h	317;"	d
+c_fortran_pdgssvx_ABglobal_	./Cnames.h	189;"	d
+c_fortran_pdgssvx_ABglobal_	./Cnames.h	318;"	d
+c_fortran_pzgssvx_	./Cnames.h	190;"	d
+c_fortran_pzgssvx_	./Cnames.h	319;"	d
+c_fortran_pzgssvx_ABglobal_	./Cnames.h	191;"	d
+c_fortran_pzgssvx_ABglobal_	./Cnames.h	320;"	d
+c_fortran_slugrid_	./Cnames.h	187;"	d
+c_fortran_slugrid_	./Cnames.h	316;"	d
+caxpy_	./Cnames.h	158;"	d
+caxpy_	./Cnames.h	286;"	d
+ccopy_	./Cnames.h	155;"	d
+ccopy_	./Cnames.h	283;"	d
+cgemm_	./Cnames.h	161;"	d
+cgemm_	./Cnames.h	289;"	d
+cgemv_	./Cnames.h	159;"	d
+cgemv_	./Cnames.h	287;"	d
+cgerc_	./Cnames.h	163;"	d
+cgerc_	./Cnames.h	291;"	d
+checkCublas	./cublas_utils.c	/^cublasStatus_t checkCublas(cublasStatus_t result)$/;"	f
+checkCuda	./cublas_utils.c	/^cudaError_t checkCuda(cudaError_t result)$/;"	f
+check_perm_dist	./sp_colorder.c	/^check_perm_dist(char *what, int_t n, int_t *perm)$/;"	f
+check_repfnz_dist	./util.c	/^void check_repfnz_dist(int_t n, int_t w, int_t jcol, int_t *repfnz)$/;"	f
+chemv_	./Cnames.h	164;"	d
+chemv_	./Cnames.h	292;"	d
+cher2_	./Cnames.h	165;"	d
+cher2_	./Cnames.h	293;"	d
+cleanupBuffers	./TreeBcast_slu_impl.hpp	/^    inline void TreeBcast_slu<T>::cleanupBuffers(){$/;"	f	class:SuperLU_ASYNCOMM::TreeBcast_slu
+clear_mark	./colamd.c	/^PRIVATE int clear_mark	\/* return the new value for tag_mark *\/$/;"	f
+clear_mark	./old_colamd.c	/^PRIVATE int clear_mark	\/* return the new value for tag_mark *\/$/;"	f
+clone	./TreeBcast_slu_impl.hpp	/^    inline BTreeBcast2<T> * BTreeBcast2<T>::clone() const{$/;"	f	class:SuperLU_ASYNCOMM::BTreeBcast2
+clone	./TreeBcast_slu_impl.hpp	/^    inline FTreeBcast2<T> * FTreeBcast2<T>::clone() const{$/;"	f	class:SuperLU_ASYNCOMM::FTreeBcast2
+clone	./TreeBcast_slu_impl.hpp	/^    inline ModBTreeBcast2<T> * ModBTreeBcast2<T>::clone() const{$/;"	f	class:SuperLU_ASYNCOMM::ModBTreeBcast2
+clone	./TreeReduce_slu_impl.hpp	/^    inline BTreeReduce_slu<T> * BTreeReduce_slu<T>::clone() const{$/;"	f	class:SuperLU_ASYNCOMM::BTreeReduce_slu
+clone	./TreeReduce_slu_impl.hpp	/^    inline FTreeReduce_slu<T> * FTreeReduce_slu<T>::clone() const{$/;"	f	class:SuperLU_ASYNCOMM::FTreeReduce_slu
+clone	./TreeReduce_slu_impl.hpp	/^    inline ModBTreeReduce_slu<T> * ModBTreeReduce_slu<T>::clone() const{$/;"	f	class:SuperLU_ASYNCOMM::ModBTreeReduce_slu
+cmax	./superlu_defs.h	268;"	d
+cntelt_vtcs	./psymbfact.h	/^  int_t     *cntelt_vtcs; \/* size of column\/row for each vertex *\/$/;"	m	struct:__anon15
+cntelt_vtcsA_lvl	./psymbfact.h	/^  int_t     *cntelt_vtcsA_lvl; \/* size of column\/row of A for each vertex at the$/;"	m	struct:__anon15
+cntsVtcs	./psymbfact.c	/^cntsVtcs $/;"	f	file:
+col_to_sup	./supermatrix.h	/^  int_t *col_to_sup;   \/* col_to_sup[j] is the supernode number to which column $/;"	m	struct:__anon60
+col_to_sup	./supermatrix.h	/^  int_t *col_to_sup;   \/* col_to_sup[j] is the supernode number to which column$/;"	m	struct:__anon61
+colamd	./colamd.c	/^PUBLIC int colamd		\/* returns TRUE if successful, FALSE otherwise*\/$/;"	f
+colamd	./old_colamd.c	/^PUBLIC int colamd		\/* returns TRUE if successful *\/$/;"	f
+colamd_debug	./colamd.c	/^PRIVATE int colamd_debug ;	\/* debug print level *\/$/;"	v
+colamd_get_debug	./colamd.c	/^PRIVATE void colamd_get_debug$/;"	f
+colamd_recommended	./colamd.c	/^PUBLIC int colamd_recommended	\/* returns recommended value of Alen. *\/$/;"	f
+colamd_recommended	./old_colamd.c	/^PUBLIC int colamd_recommended	\/* returns recommended value of Alen. *\/$/;"	f
+colamd_report	./colamd.c	/^PUBLIC void colamd_report$/;"	f
+colamd_set_defaults	./colamd.c	/^PUBLIC void colamd_set_defaults$/;"	f
+colamd_set_defaults	./old_colamd.c	/^PUBLIC void colamd_set_defaults$/;"	f
+colbeg	./supermatrix.h	/^    int_t *colbeg;\/* colbeg[j] points to the beginning of column j in nzval[] $/;"	m	struct:__anon62
+colend	./supermatrix.h	/^    int_t *colend;\/* colend[j] points to one past the last element of column$/;"	m	struct:__anon62
+colind	./supermatrix.h	/^    int_t  *colind; \/* pointer to array of columns indices of the nonzeros *\/$/;"	m	struct:__anon59
+colind	./supermatrix.h	/^    int_t *colind;   \/* pointer to array of column indices of the nonzeros *\/$/;"	m	struct:__anon64
+colperm_t	./superlu_enum_consts.h	/^	      METIS_AT_PLUS_A, PARMETIS, ZOLTAN, MY_PERMC}      colperm_t;$/;"	t	typeref:enum:__anon39
+colptr	./supermatrix.h	/^    int_t  *colptr; \/* pointer to array of beginning of columns in nzval[] $/;"	m	struct:__anon58
+column_dfs	./symbfact.c	/^static int_t column_dfs$/;"	f	file:
+comm	./superlu_defs.h	/^    MPI_Comm comm;        \/* MPI communicator *\/$/;"	m	struct:__anon25
+comm	./superlu_defs.h	/^    MPI_Comm comm;        \/* MPI communicator *\/$/;"	m	struct:__anon26
+comm_	./TreeBcast_slu.hpp	/^        MPI_Comm comm_;$/;"	m	class:SuperLU_ASYNCOMM::TreeBcast_slu
+comm_group	./pdgstrs.c	/^MPI_Group comm_group;$/;"	v
+comm_symbfact_t	./psymbfact.h	/^} comm_symbfact_t;$/;"	t	typeref:struct:__anon18
+compare_pair	./util.c	/^int compare_pair (const void *a, const void *b)$/;"	f
+copy_mem_int	./memory.c	/^copy_mem_int(int_t howmany, void *old, void *new)$/;"	f	file:
+copy_mem_int	./psymbfact_util.c	/^copy_mem_int(int_t howmany, int_t* old, int_t* new)$/;"	f	file:
+countnz_dist	./util.c	/^countnz_dist(const int_t n, int_t *xprune,$/;"	f
+createComm	./psymbfact.c	/^createComm $/;"	f	file:
+create_handle	./cublas_utils.c	/^cublasHandle_t create_handle ()$/;"	f
+cscal_	./Cnames.h	156;"	d
+cscal_	./Cnames.h	284;"	d
+cscp	./superlu_defs.h	/^    superlu_scope_t cscp; \/* process scope in columnwise, vertical direction *\/$/;"	m	struct:__anon26
+ctrsm_	./Cnames.h	162;"	d
+ctrsm_	./Cnames.h	290;"	d
+ctrsv_	./Cnames.h	160;"	d
+ctrsv_	./Cnames.h	288;"	d
+cublasCheckErrors	./zSchCompUdt-cuda.c	26;"	d	file:
+cublasGetErrorString	./cublas_utils.c	/^const char* cublasGetErrorString(cublasStatus_t status)$/;"	f
+curblk_loc	./psymbfact.h	/^  int_t  curblk_loc;      \/* Index of current block in the level under computation *\/$/;"	m	struct:__anon16
+current_buffer	./util_dist.h	/^    float   current_buffer; \/* bytes allocated for buffer in numerical factorization *\/$/;"	m	struct:__anon65
+dClone_CompRowLoc_Matrix_dist	./dutil_dist.c	/^void dClone_CompRowLoc_Matrix_dist(SuperMatrix *A, SuperMatrix *B)$/;"	f
+dCompRow_to_CompCol_dist	./dutil_dist.c	/^dCompRow_to_CompCol_dist(int_t m, int_t n, int_t nnz, $/;"	f
+dCopy_CompCol_Matrix_dist	./dutil_dist.c	/^dCopy_CompCol_Matrix_dist(SuperMatrix *A, SuperMatrix *B)$/;"	f
+dCopy_CompRowLoc_Matrix_dist	./dutil_dist.c	/^void dCopy_CompRowLoc_Matrix_dist(SuperMatrix *A, SuperMatrix *B)$/;"	f
+dCopy_Dense_Matrix_dist	./dutil_dist.c	/^dCopy_Dense_Matrix_dist(int_t M, int_t N, double *X, int_t ldx,$/;"	f
+dCreate_CompCol_Matrix_dist	./dutil_dist.c	/^dCreate_CompCol_Matrix_dist(SuperMatrix *A, int_t m, int_t n, int_t nnz, $/;"	f
+dCreate_CompRowLoc_Matrix_dist	./dutil_dist.c	/^dCreate_CompRowLoc_Matrix_dist(SuperMatrix *A, int_t m, int_t n,$/;"	f
+dCreate_Dense_Matrix_dist	./dutil_dist.c	/^dCreate_Dense_Matrix_dist(SuperMatrix *X, int_t m, int_t n, double *x,$/;"	f
+dCreate_SuperNode_Matrix_dist	./dutil_dist.c	/^dCreate_SuperNode_Matrix_dist(SuperMatrix *L, int_t m, int_t n, int_t nnz, $/;"	f
+dDestroy_Tree	./pdutil.c	/^dDestroy_Tree(int_t n, gridinfo_t *grid, LUstruct_t *LUstruct)$/;"	f
+dDumpLblocks	./dutil_dist.c	/^void dDumpLblocks(int iam, int_t nsupers, gridinfo_t *grid,$/;"	f
+dFillRHS_dist	./dutil_dist.c	/^dFillRHS_dist(char *trans, int_t nrhs, double *x, int_t ldx,$/;"	f
+dGenXtrue_dist	./dutil_dist.c	/^dGenXtrue_dist(int_t n, int_t nrhs, double *x, int_t ldx)$/;"	f
+dPrintLblocks	./dutil_dist.c	/^void dPrintLblocks(int iam, int_t nsupers, gridinfo_t *grid,$/;"	f
+dPrintMSRmatrix	./pdgsmv_AXglobal.c	/^static void dPrintMSRmatrix$/;"	f	file:
+dPrintUblocks	./dutil_dist.c	/^void dPrintUblocks(int iam, int_t nsupers, gridinfo_t *grid, $/;"	f
+dPrint_CompCol_Matrix_dist	./dutil_dist.c	/^void dPrint_CompCol_Matrix_dist(SuperMatrix *A)$/;"	f
+dPrint_CompRowLoc_Matrix_dist	./dutil_dist.c	/^int dPrint_CompRowLoc_Matrix_dist(SuperMatrix *A)$/;"	f
+dPrint_Dense_Matrix_dist	./dutil_dist.c	/^void dPrint_Dense_Matrix_dist(SuperMatrix *A)$/;"	f
+dQuerySpace_dist	./dmemory_dist.c	/^int_t dQuerySpace_dist(int_t n, LUstruct_t *LUstruct, gridinfo_t *grid,$/;"	f
+dReDistribute_A	./pddistribute.c	/^dReDistribute_A(SuperMatrix *A, ScalePermstruct_t *ScalePermstruct,$/;"	f
+dReadValues	./dreadhb.c	/^dReadValues(FILE *fp, int_t n, double *destination, $/;"	f
+dReadValues	./dreadrb.c	/^static int dReadValues(FILE *fp, int_t n, double *destination,$/;"	f	file:
+dScaleAddId_CompRowLoc_Matrix_dist	./dutil_dist.c	/^void dScaleAddId_CompRowLoc_Matrix_dist(SuperMatrix *A, double c)$/;"	f
+dScaleAdd_CompRowLoc_Matrix_dist	./dutil_dist.c	/^void dScaleAdd_CompRowLoc_Matrix_dist(SuperMatrix *A, SuperMatrix *B, double c)$/;"	f
+dSolveFinalize	./pdutil.c	/^void dSolveFinalize(superlu_dist_options_t *options, SOLVEstruct_t *SOLVEstruct)$/;"	f
+dSolveInit	./pdutil.c	/^int dSolveInit(superlu_dist_options_t *options, SuperMatrix *A, $/;"	f
+dZero_CompRowLoc_Matrix_dist	./dutil_dist.c	/^void dZero_CompRowLoc_Matrix_dist(SuperMatrix *A)$/;"	f
+dallocateA_dist	./dmemory_dist.c	/^dallocateA_dist(int_t n, int_t nnz, double **a, int_t **asub, int_t **xa)$/;"	f
+dasum_	./Cnames.h	136;"	d
+dasum_	./Cnames.h	264;"	d
+daxpy_	./Cnames.h	144;"	d
+daxpy_	./Cnames.h	272;"	d
+dcopy_	./Cnames.h	138;"	d
+dcopy_	./Cnames.h	266;"	d
+dcreate_msr_matrix	./pdgsmv_AXglobal.c	/^static void dcreate_msr_matrix$/;"	f	file:
+ddist_A	./pdsymbfact_distdata.c	/^ddist_A(SuperMatrix *A, ScalePermstruct_t *ScalePermstruct,$/;"	f	file:
+ddist_psymbtonum	./pdsymbfact_distdata.c	/^ddist_psymbtonum(fact_t fact, int_t n, SuperMatrix *A,$/;"	f
+ddistribute	./ddistribute.c	/^ddistribute(fact_t fact, int_t n, SuperMatrix *A, $/;"	f
+ddot_	./Cnames.h	143;"	d
+ddot_	./Cnames.h	271;"	d
+debug_colamd	./old_colamd.c	/^PRIVATE int debug_colamd ;	\/* debug print level *\/$/;"	v
+debug_deg_lists	./colamd.c	/^PRIVATE void debug_deg_lists$/;"	f
+debug_deg_lists	./old_colamd.c	/^PRIVATE void debug_deg_lists$/;"	f
+debug_mark	./colamd.c	/^PRIVATE void debug_mark$/;"	f
+debug_mark	./old_colamd.c	/^PRIVATE void debug_mark$/;"	f
+debug_matrix	./colamd.c	/^PRIVATE void debug_matrix$/;"	f
+debug_matrix	./old_colamd.c	/^PRIVATE void debug_matrix$/;"	f
+debug_structures	./colamd.c	/^PRIVATE void debug_structures$/;"	f
+debug_structures	./old_colamd.c	/^PRIVATE void debug_structures$/;"	f
+degree	./colamd.h	/^	int degree ;	\/* number of principal & non-principal columns in row *\/$/;"	m	union:Colamd_Row_struct::__anon5
+degree	./old_colamd.c	/^	int degree ;	\/* number of principal & non-principal columns in row *\/$/;"	m	union:RowInfo_struct::__anon12	file:
+degree_next	./colamd.h	/^	int degree_next ;	\/* next column, if col is in a degree list *\/$/;"	m	union:Colamd_Col_struct::__anon4
+degree_next	./old_colamd.c	/^	int degree_next ;	\/* next column, if col is in a degree list *\/$/;"	m	union:ColInfo_struct::__anon11	file:
+denseSep_symbfact	./psymbfact.c	/^denseSep_symbfact $/;"	f	file:
+destroy_handle	./cublas_utils.c	/^ void destroy_handle (cublasHandle_t handle)$/;"	f
+detect_super_cols	./colamd.c	/^PRIVATE void detect_super_cols$/;"	f
+detect_super_cols	./old_colamd.c	/^PRIVATE void detect_super_cols$/;"	f
+dfill_dist	./dutil_dist.c	/^dfill_dist(double *a, int_t alen, double dval)$/;"	f
+dgemm_	./Cnames.h	149;"	d
+dgemm_	./Cnames.h	277;"	d
+dgemv_	./Cnames.h	147;"	d
+dgemv_	./Cnames.h	275;"	d
+dger_	./Cnames.h	140;"	d
+dger_	./Cnames.h	268;"	d
+dgsequ_dist	./dgsequ_dist.c	/^dgsequ_dist(SuperMatrix *A, double *r, double *c, double *rowcnd,$/;"	f
+diag_len	./superlu_ddefs.h	/^    int_t num_diag_procs, *diag_procs, *diag_len;$/;"	m	struct:__anon24
+diag_len	./superlu_zdefs.h	/^    int_t num_diag_procs, *diag_procs, *diag_len;$/;"	m	struct:__anon53
+diag_procs	./superlu_ddefs.h	/^    int_t num_diag_procs, *diag_procs, *diag_len;$/;"	m	struct:__anon24
+diag_procs	./superlu_zdefs.h	/^    int_t num_diag_procs, *diag_procs, *diag_len;$/;"	m	struct:__anon53
+dinf_norm_error_dist	./dutil_dist.c	/^void dinf_norm_error_dist(int_t n, int_t nrhs, double *x, int_t ldx,$/;"	f
+disp_ibuf	./superlu_defs.h	/^    int    *disp_ibuf;$/;"	m	struct:__anon30
+dist_symbLU	./pdsymbfact_distdata.c	/^dist_symbLU (int_t n, Pslu_freeable_t *Pslu_freeable, $/;"	f	file:
+dist_symbLU	./pzsymbfact_distdata.c	/^dist_symbLU (int_t n, Pslu_freeable_t *Pslu_freeable, $/;"	f	file:
+dlangs_dist	./dlangs_dist.c	/^double dlangs_dist(char *norm, SuperMatrix *A)$/;"	f
+dlaqgs_dist	./dlaqgs_dist.c	/^dlaqgs_dist(SuperMatrix *A, double *r, double *c, $/;"	f
+dldperm_dist	./dldperm_dist.c	/^dldperm_dist(int_t job, int_t n, int_t nnz, int_t colptr[], int_t adjncy[],$/;"	f
+dlsolve	./dmyblas2_dist.c	/^void dlsolve ( int ldm, int ncol, double *M, double *rhs )$/;"	f
+dlsum_bmod	./pdgstrs_lsum.c	/^void dlsum_bmod$/;"	f
+dlsum_bmod_inv	./pdgstrs_lsum.c	/^void dlsum_bmod_inv$/;"	f
+dlsum_bmod_inv_master	./pdgstrs_lsum.c	/^void dlsum_bmod_inv_master$/;"	f
+dlsum_fmod	./pdgstrs_lsum.c	/^void dlsum_fmod$/;"	f
+dlsum_fmod_inv	./pdgstrs_lsum.c	/^void dlsum_fmod_inv$/;"	f
+dlsum_fmod_inv_master	./pdgstrs_lsum.c	/^void dlsum_fmod_inv_master$/;"	f
+dmach_dist	./dmach_dist.c	/^double dmach_dist(char *cmach)$/;"	f
+dmatvec	./dmyblas2_dist.c	/^void dmatvec ($/;"	f
+dnrm2_	./Cnames.h	141;"	d
+dnrm2_	./Cnames.h	269;"	d
+dnsCurSep_symbfact	./psymbfact.c	/^dnsCurSep_symbfact$/;"	f	file:
+dnsUpSeps_symbfact	./psymbfact.c	/^dnsUpSeps_symbfact$/;"	f	file:
+domain_symbfact	./psymbfact.c	/^domain_symbfact$/;"	f	file:
+done_	./TreeBcast_slu.hpp	/^        bool done_;$/;"	m	class:SuperLU_ASYNCOMM::TreeBcast_slu
+doubleCalloc_dist	./dmemory_dist.c	/^double *doubleCalloc_dist(int_t n)$/;"	f
+doubleMalloc_dist	./dmemory_dist.c	/^double *doubleMalloc_dist(int_t n)$/;"	f
+doublecomplex	./dcomplex.h	/^typedef struct { double r, i; } doublecomplex;$/;"	t	typeref:struct:__anon7
+doublecomplexCalloc_dist	./zmemory_dist.c	/^doublecomplex *doublecomplexCalloc_dist(int_t n)$/;"	f
+doublecomplexMalloc_dist	./zmemory_dist.c	/^doublecomplex *doublecomplexMalloc_dist(int_t n)$/;"	f
+dprint_gsmv_comm	./dutil_dist.c	/^dprint_gsmv_comm(FILE *fp, int_t m_loc, pdgsmv_comm_t *gsmv_comm,$/;"	f
+dreadMM_dist	./dreadMM.c	/^dreadMM_dist(FILE *fp, int_t *m, int_t *n, int_t *nonz,$/;"	f
+dread_binary	./dbinary_io.c	/^dread_binary(FILE *fp, int_t *m, int_t *n, int_t *nnz, $/;"	f
+dreadhb_dist	./dreadhb.c	/^dreadhb_dist(int iam, FILE *fp, int_t *nrow, int_t *ncol, int_t *nonz,$/;"	f
+dreadrb_dist	./dreadrb.c	/^dreadrb_dist(int iam, FILE *fp, int_t *nrow, int_t *ncol, int_t *nonz,$/;"	f
+dreadrhs	./dreadMM.c	/^static void dreadrhs(int m, double *b)$/;"	f	file:
+dreadrhs	./dreadtriple.c	/^void dreadrhs(int m, double *b)$/;"	f
+dreadtriple_dist	./dreadtriple.c	/^dreadtriple_dist(FILE *fp, int_t *m, int_t *n, int_t *nonz,$/;"	f
+dreadtriple_noheader	./dreadtriple_noheader.c	/^dreadtriple_noheader(FILE *fp, int_t *m, int_t *n, int_t *nonz,$/;"	f
+drot_	./Cnames.h	146;"	d
+drot_	./Cnames.h	274;"	d
+dscal_	./Cnames.h	139;"	d
+dscal_	./Cnames.h	267;"	d
+dscatter_l	./dscatter.c	/^dscatter_l ($/;"	f	file:
+dscatter_l_1	./dscatter.c	/^dscatter_l_1 (int ib,$/;"	f	file:
+dscatter_u	./dscatter.c	/^dscatter_u (int ib,$/;"	f	file:
+dsymv_	./Cnames.h	142;"	d
+dsymv_	./Cnames.h	270;"	d
+dsyr2_	./Cnames.h	145;"	d
+dsyr2_	./Cnames.h	273;"	d
+dtrsm_	./Cnames.h	150;"	d
+dtrsm_	./Cnames.h	278;"	d
+dtrsv_	./Cnames.h	148;"	d
+dtrsv_	./Cnames.h	276;"	d
+dtrtri_	./Cnames.h	151;"	d
+dtrtri_	./Cnames.h	279;"	d
+duser_free_dist	./dmemory_dist.c	/^void duser_free_dist(int_t bytes, int_t which_end)$/;"	f
+duser_malloc_dist	./dmemory_dist.c	/^void *duser_malloc_dist(int_t bytes, int_t which_end)$/;"	f
+dusolve	./dmyblas2_dist.c	/^dusolve ($/;"	f
+dwrite_binary	./dbinary_io.c	/^dwrite_binary(int_t n, int_t nnz,$/;"	f
+dzasum_	./Cnames.h	167;"	d
+dzasum_	./Cnames.h	295;"	d
+dznrm2_	./Cnames.h	171;"	d
+dznrm2_	./Cnames.h	299;"	d
+e_node	./util_dist.h	/^typedef struct e_node {$/;"	s
+estimLSz	./psymbfact.h	/^  int_t  estimLSz; \/* size of lsub due to right looking overestimation *\/$/;"	m	struct:__anon19
+estimUSz	./psymbfact.h	/^  int_t  estimUSz; \/* size of usub due to right looking overestimation *\/$/;"	m	struct:__anon19
+estimate_bigu_size	./util.c	/^int_t estimate_bigu_size(int_t nsupers,$/;"	f
+estimate_memUsage	./psymbfact.c	/^estimate_memUsage$/;"	f	file:
+etdfs	./etree.c	/^void etdfs ($/;"	f	file:
+etree	./superlu_ddefs.h	/^    int_t *etree;$/;"	m	struct:__anon22
+etree	./superlu_zdefs.h	/^    int_t *etree;$/;"	m	struct:__anon51
+etree_node	./superlu_defs.h	/^} etree_node;$/;"	t	typeref:struct:__anon35
+expand	./memory.c	/^static void *expand$/;"	f	file:
+expand	./psymbfact_util.c	/^static int_t *expand$/;"	f	file:
+expand_RL	./psymbfact.c	/^expand_RL $/;"	f	file:
+expanders	./memory.c	/^SuperLU_ExpHeader *expanders; \/* Array of pointers to 4 types of memory *\/$/;"	v
+expansions	./superlu_defs.h	/^    int_t expansions;$/;"	m	struct:__anon32
+extern_start	./superlu_ddefs.h	/^    int_t *extern_start;$/;"	m	struct:__anon23
+extern_start	./superlu_zdefs.h	/^    int_t *extern_start;$/;"	m	struct:__anon52
+f_Destroy_CompRowLoc_Mat_dist	./Cnames.h	100;"	d
+f_Destroy_CompRowLoc_Mat_dist	./Cnames.h	228;"	d
+f_Destroy_CompRowLoc_Mat_dist	./Cnames.h	356;"	d
+f_Destroy_LU	./Cnames.h	225;"	d
+f_Destroy_LU	./Cnames.h	354;"	d
+f_Destroy_LU	./Cnames.h	97;"	d
+f_Destroy_SuperMat_Store_dist	./Cnames.h	101;"	d
+f_Destroy_SuperMat_Store_dist	./Cnames.h	229;"	d
+f_Destroy_SuperMat_Store_dist	./Cnames.h	357;"	d
+f_LUstructFree	./Cnames.h	224;"	d
+f_LUstructFree	./Cnames.h	353;"	d
+f_LUstructFree	./Cnames.h	96;"	d
+f_LUstructInit	./Cnames.h	223;"	d
+f_LUstructInit	./Cnames.h	352;"	d
+f_LUstructInit	./Cnames.h	95;"	d
+f_PStatFree	./Cnames.h	222;"	d
+f_PStatFree	./Cnames.h	351;"	d
+f_PStatFree	./Cnames.h	94;"	d
+f_PStatInit	./Cnames.h	221;"	d
+f_PStatInit	./Cnames.h	350;"	d
+f_PStatInit	./Cnames.h	93;"	d
+f_ScalePermstructFree	./Cnames.h	220;"	d
+f_ScalePermstructFree	./Cnames.h	349;"	d
+f_ScalePermstructFree	./Cnames.h	92;"	d
+f_ScalePermstructInit	./Cnames.h	219;"	d
+f_ScalePermstructInit	./Cnames.h	348;"	d
+f_ScalePermstructInit	./Cnames.h	91;"	d
+f_check_malloc	./Cnames.h	108;"	d
+f_check_malloc	./Cnames.h	236;"	d
+f_check_malloc	./Cnames.h	364;"	d
+f_create_LUstruct_handle	./Cnames.h	197;"	d
+f_create_LUstruct_handle	./Cnames.h	326;"	d
+f_create_LUstruct_handle	./Cnames.h	69;"	d
+f_create_SOLVEstruct_handle	./Cnames.h	198;"	d
+f_create_SOLVEstruct_handle	./Cnames.h	327;"	d
+f_create_SOLVEstruct_handle	./Cnames.h	70;"	d
+f_create_ScalePerm_handle	./Cnames.h	196;"	d
+f_create_ScalePerm_handle	./Cnames.h	325;"	d
+f_create_ScalePerm_handle	./Cnames.h	68;"	d
+f_create_SuperLUStat_handle	./Cnames.h	206;"	d
+f_create_SuperLUStat_handle	./Cnames.h	335;"	d
+f_create_SuperLUStat_handle	./Cnames.h	78;"	d
+f_create_SuperMatrix_handle	./Cnames.h	199;"	d
+f_create_SuperMatrix_handle	./Cnames.h	328;"	d
+f_create_SuperMatrix_handle	./Cnames.h	71;"	d
+f_create_gridinfo_handle	./Cnames.h	194;"	d
+f_create_gridinfo_handle	./Cnames.h	323;"	d
+f_create_gridinfo_handle	./Cnames.h	66;"	d
+f_create_options_handle	./Cnames.h	195;"	d
+f_create_options_handle	./Cnames.h	324;"	d
+f_create_options_handle	./Cnames.h	67;"	d
+f_dCreate_CompRowLoc_Mat_dist	./Cnames.h	226;"	d
+f_dCreate_CompRowLoc_Mat_dist	./Cnames.h	355;"	d
+f_dCreate_CompRowLoc_Mat_dist	./Cnames.h	98;"	d
+f_dSolveFinalize	./Cnames.h	102;"	d
+f_dSolveFinalize	./Cnames.h	230;"	d
+f_dSolveFinalize	./Cnames.h	358;"	d
+f_dcreate_dist_matrix	./Cnames.h	106;"	d
+f_dcreate_dist_matrix	./Cnames.h	234;"	d
+f_dcreate_dist_matrix	./Cnames.h	362;"	d
+f_destroy_LUstruct_handle	./Cnames.h	203;"	d
+f_destroy_LUstruct_handle	./Cnames.h	332;"	d
+f_destroy_LUstruct_handle	./Cnames.h	75;"	d
+f_destroy_SOLVEstruct_handle	./Cnames.h	204;"	d
+f_destroy_SOLVEstruct_handle	./Cnames.h	333;"	d
+f_destroy_SOLVEstruct_handle	./Cnames.h	76;"	d
+f_destroy_ScalePerm_handle	./Cnames.h	202;"	d
+f_destroy_ScalePerm_handle	./Cnames.h	331;"	d
+f_destroy_ScalePerm_handle	./Cnames.h	74;"	d
+f_destroy_SuperLUStat_handle	./Cnames.h	207;"	d
+f_destroy_SuperLUStat_handle	./Cnames.h	336;"	d
+f_destroy_SuperLUStat_handle	./Cnames.h	79;"	d
+f_destroy_SuperMatrix_handle	./Cnames.h	205;"	d
+f_destroy_SuperMatrix_handle	./Cnames.h	334;"	d
+f_destroy_SuperMatrix_handle	./Cnames.h	77;"	d
+f_destroy_gridinfo_handle	./Cnames.h	200;"	d
+f_destroy_gridinfo_handle	./Cnames.h	329;"	d
+f_destroy_gridinfo_handle	./Cnames.h	72;"	d
+f_destroy_options_handle	./Cnames.h	201;"	d
+f_destroy_options_handle	./Cnames.h	330;"	d
+f_destroy_options_handle	./Cnames.h	73;"	d
+f_get_CompRowLoc_Matrix	./Cnames.h	211;"	d
+f_get_CompRowLoc_Matrix	./Cnames.h	340;"	d
+f_get_CompRowLoc_Matrix	./Cnames.h	83;"	d
+f_get_SuperMatrix	./Cnames.h	209;"	d
+f_get_SuperMatrix	./Cnames.h	338;"	d
+f_get_SuperMatrix	./Cnames.h	81;"	d
+f_get_gridinfo	./Cnames.h	208;"	d
+f_get_gridinfo	./Cnames.h	337;"	d
+f_get_gridinfo	./Cnames.h	80;"	d
+f_get_superlu_options	./Cnames.h	213;"	d
+f_get_superlu_options	./Cnames.h	342;"	d
+f_get_superlu_options	./Cnames.h	85;"	d
+f_pdgssvx	./Cnames.h	104;"	d
+f_pdgssvx	./Cnames.h	232;"	d
+f_pdgssvx	./Cnames.h	360;"	d
+f_pzgssvx	./Cnames.h	105;"	d
+f_pzgssvx	./Cnames.h	233;"	d
+f_pzgssvx	./Cnames.h	361;"	d
+f_set_CompRowLoc_Matrix	./Cnames.h	212;"	d
+f_set_CompRowLoc_Matrix	./Cnames.h	341;"	d
+f_set_CompRowLoc_Matrix	./Cnames.h	84;"	d
+f_set_SuperMatrix	./Cnames.h	210;"	d
+f_set_SuperMatrix	./Cnames.h	339;"	d
+f_set_SuperMatrix	./Cnames.h	82;"	d
+f_set_default_options	./Cnames.h	215;"	d
+f_set_default_options	./Cnames.h	344;"	d
+f_set_default_options	./Cnames.h	87;"	d
+f_set_superlu_options	./Cnames.h	214;"	d
+f_set_superlu_options	./Cnames.h	343;"	d
+f_set_superlu_options	./Cnames.h	86;"	d
+f_superlu_gridexit	./Cnames.h	218;"	d
+f_superlu_gridexit	./Cnames.h	347;"	d
+f_superlu_gridexit	./Cnames.h	90;"	d
+f_superlu_gridinit	./Cnames.h	216;"	d
+f_superlu_gridinit	./Cnames.h	345;"	d
+f_superlu_gridinit	./Cnames.h	88;"	d
+f_superlu_gridmap	./Cnames.h	217;"	d
+f_superlu_gridmap	./Cnames.h	346;"	d
+f_superlu_gridmap	./Cnames.h	89;"	d
+f_zCreate_CompRowLoc_Mat_dist	./Cnames.h	227;"	d
+f_zCreate_CompRowLoc_Mat_dist	./Cnames.h	99;"	d
+f_zSolveFinalize	./Cnames.h	103;"	d
+f_zSolveFinalize	./Cnames.h	231;"	d
+f_zSolveFinalize	./Cnames.h	359;"	d
+f_zcreate_dist_matrix	./Cnames.h	107;"	d
+f_zcreate_dist_matrix	./Cnames.h	235;"	d
+f_zcreate_dist_matrix	./Cnames.h	363;"	d
+fact_t	./superlu_enum_consts.h	/^typedef enum {DOFACT, SamePattern, SamePattern_SameRowPerm, FACTORED} fact_t;$/;"	t	typeref:enum:__anon37
+file_PrintDouble5	./dutil_dist.c	/^int file_PrintDouble5(FILE *fp, char *name, int_t len, double *x)$/;"	f
+file_PrintDoublecomplex	./zutil_dist.c	/^int file_PrintDoublecomplex(FILE *fp, char *name, int_t len, doublecomplex *x)$/;"	f
+file_PrintInt10	./util.c	/^int file_PrintInt10(FILE *fp, char *name, int_t len, int_t *x)$/;"	f
+file_PrintInt32	./util.c	/^int file_PrintInt32(FILE *fp, char *name, int len, int *x)$/;"	f
+file_dPrint_CompRowLoc_Matrix_dist	./dutil_dist.c	/^int file_dPrint_CompRowLoc_Matrix_dist(FILE *fp, SuperMatrix *A)$/;"	f
+file_zPrint_CompRowLoc_Matrix_dist	./zutil_dist.c	/^int file_zPrint_CompRowLoc_Matrix_dist(FILE *fp, SuperMatrix *A)$/;"	f
+fill_par	./psymbfact.h	/^  int_t  fill_par;     \/* Estimation of fill.  It corresponds to sp_ienv_dist(6) *\/$/;"	m	struct:__anon19
+fill_pelt	./psymbfact.h	/^  float  fill_pelt[6];$/;"	m	struct:__anon19
+filledSep	./psymbfact.h	/^  int    filledSep;       \/* determines if curent or all separators are filled *\/$/;"	m	struct:__anon16
+finalize_disjoint_sets	./etree.c	/^void finalize_disjoint_sets ($/;"	f	file:
+find	./etree.c	/^int_t find ($/;"	f	file:
+find_ordering	./colamd.c	/^PRIVATE int find_ordering	\/* return the number of garbage collections *\/$/;"	f
+find_ordering	./old_colamd.c	/^PRIVATE int find_ordering	\/* return the number of garbage collections *\/$/;"	f
+first_column	./colamd.h	/^	int first_column ;\/* first column in row (used in garbage collection) *\/$/;"	m	union:Colamd_Row_struct::__anon6
+first_column	./old_colamd.c	/^	int first_column ;\/* first column in row (used in garbage collection) *\/$/;"	m	union:RowInfo_struct::__anon13	file:
+first_kid	./etree.c	/^static int_t	*first_kid, *next_kid;	\/* Linked list of children.	*\/$/;"	v	file:
+fixupL_dist	./util.c	/^fixupL_dist(const int_t n, const int_t *perm_r, $/;"	f
+flops_t	./util_dist.h	/^typedef float    flops_t;$/;"	t
+fmod	./superlu_ddefs.h	/^    int_t   *fmod;            \/* Modification count for L-solve            *\/$/;"	m	struct:__anon21
+fmod	./superlu_zdefs.h	/^    int_t   *fmod;            \/* Modification count for L-solve            *\/$/;"	m	struct:__anon50
+for_lu	./superlu_defs.h	/^    float for_lu;$/;"	m	struct:__anon32
+forwardMessageOneSide	./TreeBcast_slu_impl.hpp	/^    inline void TreeBcast_slu<T>::forwardMessageOneSide(T * locBuffer, Int msgSize, int* BCsendoffset, int* BClocal_buf_id, int* BCcount, int* BCbase, int* maxrecvsz, int Pc){$/;"	f	class:SuperLU_ASYNCOMM::TreeBcast_slu
+forwardMessageOneSide	./TreeReduce_slu_impl.hpp	/^    inline void TreeReduce_slu<T>::forwardMessageOneSide(T * locBuffer, Int msgSize, int* RDsendoffset, int* RDlocal_buf_id, int* RDcount, int* RDbase, int* maxrecvsz, int Pc){$/;"	f	class:SuperLU_ASYNCOMM::TreeReduce_slu
+forwardMessageSimple	./TreeBcast_slu_impl.hpp	/^    inline void TreeBcast_slu<T>::forwardMessageSimple(T * locBuffer, Int msgSize){$/;"	f	class:SuperLU_ASYNCOMM::TreeBcast_slu
+forwardMessageSimple	./TreeReduce_slu_impl.hpp	/^    inline void TreeReduce_slu<T>::forwardMessageSimple(T * locBuffer, Int msgSize){$/;"	f	class:SuperLU_ASYNCOMM::TreeReduce_slu
+frecv	./superlu_ddefs.h	/^    int_t   *frecv;           \/* Modifications to be recv'd in proc row    *\/$/;"	m	struct:__anon21
+frecv	./superlu_zdefs.h	/^    int_t   *frecv;           \/* Modifications to be recv'd in proc row    *\/$/;"	m	struct:__anon50
+freeComm	./psymbfact.c	/^freeComm$/;"	f	file:
+fsendx_plist	./superlu_ddefs.h	/^    int_t   **fsendx_plist;   \/* Column process list to send down Xk       *\/$/;"	m	struct:__anon21
+fsendx_plist	./superlu_zdefs.h	/^    int_t   **fsendx_plist;   \/* Column process list to send down Xk       *\/$/;"	m	struct:__anon50
+fstVtx_nextLvl	./psymbfact.h	/^  int_t  fstVtx_nextLvl;  \/* First vertex of the next level *\/$/;"	m	struct:__anon16
+fst_row	./supermatrix.h	/^    int_t fst_row;   \/* global index of the first row *\/$/;"	m	struct:__anon64
+ftcs1	./pdgstrs.c	/^_fcd ftcs1;$/;"	v
+ftcs1	./pdgstrs1.c	/^_fcd ftcs1;$/;"	v
+ftcs1	./pdgstrsL.c	/^_fcd ftcs1;$/;"	v
+ftcs1	./pdgstrs_Bglobal.c	/^_fcd ftcs1;$/;"	v
+ftcs1	./pdgstrs_Bglobal_Bsend.c	/^_fcd ftcs1;$/;"	v
+ftcs1	./pdgstrs_lsum.c	/^_fcd ftcs1;$/;"	v
+ftcs1	./pzgstrs.c	/^_fcd ftcs1;$/;"	v
+ftcs1	./pzgstrs1.c	/^_fcd ftcs1;$/;"	v
+ftcs1	./pzgstrs_Bglobal.c	/^_fcd ftcs1;$/;"	v
+ftcs1	./pzgstrs_lsum.c	/^_fcd ftcs1;$/;"	v
+ftcs2	./pdgstrs.c	/^_fcd ftcs2;$/;"	v
+ftcs2	./pdgstrs1.c	/^_fcd ftcs2;$/;"	v
+ftcs2	./pdgstrsL.c	/^_fcd ftcs2;$/;"	v
+ftcs2	./pdgstrs_Bglobal.c	/^_fcd ftcs2;$/;"	v
+ftcs2	./pdgstrs_Bglobal_Bsend.c	/^_fcd ftcs2;$/;"	v
+ftcs2	./pdgstrs_lsum.c	/^_fcd ftcs2;$/;"	v
+ftcs2	./pzgstrs.c	/^_fcd ftcs2;$/;"	v
+ftcs2	./pzgstrs1.c	/^_fcd ftcs2;$/;"	v
+ftcs2	./pzgstrs_Bglobal.c	/^_fcd ftcs2;$/;"	v
+ftcs2	./pzgstrs_lsum.c	/^_fcd ftcs2;$/;"	v
+ftcs3	./pdgstrs.c	/^_fcd ftcs3;$/;"	v
+ftcs3	./pdgstrs1.c	/^_fcd ftcs3;$/;"	v
+ftcs3	./pdgstrsL.c	/^_fcd ftcs3;$/;"	v
+ftcs3	./pdgstrs_Bglobal.c	/^_fcd ftcs3;$/;"	v
+ftcs3	./pdgstrs_Bglobal_Bsend.c	/^_fcd ftcs3;$/;"	v
+ftcs3	./pdgstrs_lsum.c	/^_fcd ftcs3;$/;"	v
+ftcs3	./pzgstrs.c	/^_fcd ftcs3;$/;"	v
+ftcs3	./pzgstrs1.c	/^_fcd ftcs3;$/;"	v
+ftcs3	./pzgstrs_Bglobal.c	/^_fcd ftcs3;$/;"	v
+ftcs3	./pzgstrs_lsum.c	/^_fcd ftcs3;$/;"	v
+full_u_cols	./superlu_defs.h	/^    int_t full_u_cols;$/;"	m	struct:__anon33
+fwded_	./TreeBcast_slu.hpp	/^        bool fwded_;$/;"	m	class:SuperLU_ASYNCOMM::TreeBcast_slu
+garbage_collection	./colamd.c	/^PRIVATE int garbage_collection  \/* returns the new value of pfree *\/$/;"	f
+garbage_collection	./old_colamd.c	/^PRIVATE int garbage_collection  \/* returns the new value of pfree *\/$/;"	f
+gather_1rhs_diag_to_all	./pdgsrfs_ABXglobal.c	/^gather_1rhs_diag_to_all(int_t n, double x[],$/;"	f	file:
+gather_1rhs_diag_to_all	./pzgsrfs_ABXglobal.c	/^gather_1rhs_diag_to_all(int_t n, doublecomplex x[],$/;"	f	file:
+gather_diag_to_all	./pdgstrs_Bglobal.c	/^gather_diag_to_all(int_t n, int_t nrhs, double x[],$/;"	f	file:
+gather_diag_to_all	./pdgstrs_Bglobal_Bsend.c	/^gather_diag_to_all(int_t n, int_t nrhs, double x[],$/;"	f	file:
+gather_diag_to_all	./pzgstrs_Bglobal.c	/^gather_diag_to_all(int_t n, int_t nrhs, doublecomplex x[],$/;"	f	file:
+gemm_division_cpu_gpu	./dscatter.c	/^gemm_division_cpu_gpu($/;"	f
+gemm_division_cpu_gpu	./zscatter.c	/^gemm_division_cpu_gpu($/;"	f
+gemm_division_new	./dscatter.c	/^gemm_division_new (int * num_streams_used,   \/*number of streams that will be used *\/$/;"	f
+gemm_division_new	./zscatter.c	/^gemm_division_new (int * num_streams_used,   \/*number of streams that will be used *\/$/;"	f
+genmmd_dist_	./mmd.c	/^\/* Subroutine *\/ int genmmd_dist_(int_t *neqns, int_t *xadj, int_t *adjncy, $/;"	f
+get_colamd_dist	./get_perm_c.c	/^get_colamd_dist($/;"	f
+get_cublas_nb	./util.c	/^get_cublas_nb ()$/;"	f
+get_diag_procs	./util.c	/^get_diag_procs(int_t n, Glu_persist_t *Glu_persist, gridinfo_t *grid,$/;"	f
+get_max_buffer_size	./util.c	/^get_max_buffer_size ()$/;"	f
+get_metis	./get_perm_c.c	/^get_metis($/;"	f
+get_min	./util.c	/^get_min (int_t * sums, int_t nprocs)$/;"	f
+get_num_cuda_streams	./util.c	/^get_num_cuda_streams ()$/;"	f
+get_perm_c_dist	./get_perm_c.c	/^get_perm_c_dist(int_t pnum, int_t ispec, SuperMatrix *A, int_t *perm_c)$/;"	f
+get_perm_c_parmetis	./get_perm_c_parmetis.c	/^get_perm_c_parmetis (SuperMatrix *A, int_t *perm_r, int_t *perm_c,$/;"	f
+get_thread_per_process	./util.c	/^int get_thread_per_process()$/;"	f
+getata_dist	./get_perm_c.c	/^getata_dist($/;"	f
+getopt	./wingetopt.c	/^int getopt(int argc, char *const argv[], const char *optstring)$/;"	f
+globToLoc	./psymbfact.h	/^  int_t     *globToLoc;      \/* global to local indexing *\/$/;"	m	struct:__anon14
+gpu_buffer	./util_dist.h	/^    float   gpu_buffer;     \/* monitor the buffer allocated on GPU (bytes) *\/$/;"	m	struct:__anon65
+gridinfo_t	./superlu_defs.h	/^} gridinfo_t;$/;"	t	typeref:struct:__anon26
+gsmv_comm	./superlu_ddefs.h	/^    pdgsmv_comm_t *gsmv_comm; \/* communication metadata for SpMV, $/;"	m	struct:__anon24
+gsmv_comm	./superlu_zdefs.h	/^    pzgsmv_comm_t *gsmv_comm; \/* communication metadata for SpMV, $/;"	m	struct:__anon53
+gstrs_comm	./superlu_ddefs.h	/^    pxgstrs_comm_t *gstrs_comm;  \/* communication metadata for SpTRSV. *\/$/;"	m	struct:__anon24
+gstrs_comm	./superlu_zdefs.h	/^    pxgstrs_comm_t *gstrs_comm;  \/* communication metadata for SpTRSV. *\/$/;"	m	struct:__anon53
+hash	./colamd.h	/^	int hash ;	\/* hash value, if col is not in a degree list *\/$/;"	m	union:Colamd_Col_struct::__anon3
+hash	./old_colamd.c	/^	int hash ;	\/* hash value, if col is not in a degree list *\/$/;"	m	union:ColInfo_struct::__anon10	file:
+hash_next	./colamd.h	/^	int hash_next ;		\/* next column, if col is in a hash list *\/$/;"	m	union:Colamd_Col_struct::__anon4
+hash_next	./old_colamd.c	/^	int hash_next ;		\/* next column, if col is in a hash list *\/$/;"	m	union:ColInfo_struct::__anon11	file:
+headhash	./colamd.h	/^	int headhash ;	\/* head of a hash bucket, if col is at the head of *\/$/;"	m	union:Colamd_Col_struct::__anon3
+headhash	./old_colamd.c	/^	int headhash ;	\/* head of a hash bucket, if col is at the head of *\/$/;"	m	union:ColInfo_struct::__anon10	file:
+i	./dcomplex.h	/^typedef struct { double r, i; } doublecomplex;$/;"	m	struct:__anon7
+iam	./superlu_defs.h	/^    int iam;              \/* my process number in this scope *\/$/;"	m	struct:__anon26
+ib	./superlu_defs.h	/^    int_t ib;$/;"	m	struct:__anon34
+icamax_	./Cnames.h	154;"	d
+icamax_	./Cnames.h	282;"	d
+id	./superlu_defs.h	/^    int id, key;$/;"	m	struct:__anon35
+idamax_	./Cnames.h	137;"	d
+idamax_	./Cnames.h	265;"	d
+ifill_dist	./util.c	/^void ifill_dist(int_t *a, int_t alen, int_t ival)$/;"	f
+ilsum	./superlu_ddefs.h	/^    int_t   *ilsum;           \/* Starting position of each supernode in lsum$/;"	m	struct:__anon21
+ilsum	./superlu_zdefs.h	/^    int_t   *ilsum;           \/* Starting position of each supernode in lsum$/;"	m	struct:__anon50
+ind	./superlu_defs.h	/^    int ind;$/;"	m	struct:superlu_pair
+indLsubPr	./psymbfact.h	/^  int_t     indLsubPr; \/* current index in lsubPr *\/$/;"	m	struct:__anon15
+indUsubPr	./psymbfact.h	/^  int_t     indUsubPr; \/* current index in usubPr *\/$/;"	m	struct:__anon15
+ind_ainf	./psymbfact.h	/^  int_t  *ind_ainf; \/* column indices of Ainf *\/$/;"	m	struct:__anon17
+ind_asup	./psymbfact.h	/^  int_t  *ind_asup; \/* row indices of Asup *\/$/;"	m	struct:__anon17
+ind_torecv	./superlu_ddefs.h	/^    int_t *ind_torecv;    \/* X indeices to be received from other processes *\/$/;"	m	struct:__anon23
+ind_torecv	./superlu_zdefs.h	/^    int_t *ind_torecv;    \/* X indeices to be received from other processes *\/$/;"	m	struct:__anon52
+ind_tosend	./superlu_ddefs.h	/^    int_t *ind_tosend;    \/* X indeices to be sent to other processes *\/$/;"	m	struct:__anon23
+ind_tosend	./superlu_zdefs.h	/^    int_t *ind_tosend;    \/* X indeices to be sent to other processes *\/$/;"	m	struct:__anon52
+indpos	./superlu_ddefs.h	/^    int_t indpos; \/* Starting position in Uindex[]. *\/$/;"	m	struct:__anon20
+indpos	./superlu_zdefs.h	/^    int_t indpos; \/* Starting position in Uindex[]. *\/$/;"	m	struct:__anon49
+initLvl_symbfact	./psymbfact.c	/^initLvl_symbfact$/;"	f	file:
+initParmsAndStats	./psymbfact.c	/^initParmsAndStats$/;"	f	file:
+init_rows_cols	./colamd.c	/^PRIVATE int init_rows_cols	\/* returns TRUE if OK, or FALSE otherwise *\/$/;"	f
+init_rows_cols	./old_colamd.c	/^PRIVATE int init_rows_cols	\/* returns status code *\/$/;"	f
+init_scoring	./colamd.c	/^PRIVATE void init_scoring$/;"	f
+init_scoring	./old_colamd.c	/^PRIVATE void init_scoring$/;"	f
+initialize_disjoint_sets	./etree.c	/^void initialize_disjoint_sets ($/;"	f	file:
+int	./old_colamd.h	60;"	d
+int	./old_colamd.h	62;"	d
+intCalloc_dist	./memory.c	/^int_t *intCalloc_dist(int_t n)$/;"	f
+intCalloc_symbfact	./psymbfact.c	/^intCalloc_symbfact(int_t n)$/;"	f	file:
+intMalloc_dist	./memory.c	/^int_t *intMalloc_dist(int_t n)$/;"	f
+intMalloc_symbfact	./psymbfact.c	/^intMalloc_symbfact(int_t n)$/;"	f	file:
+int_t	./superlu_defs.h	/^  typedef int int_t;$/;"	t
+int_t	./superlu_defs.h	/^  typedef int64_t int_t;$/;"	t
+int_t	./superlu_defs.h	/^  typedef short int_t;$/;"	t
+interLvl_symbfact	./psymbfact.c	/^interLvl_symbfact$/;"	f	file:
+intraLvl_symbfact	./psymbfact.c	/^intraLvl_symbfact $/;"	f	file:
+inv	./superlu_ddefs.h	/^    int_t inv; \/* whether the diagonal block is inverted*\/	$/;"	m	struct:__anon21
+inv	./superlu_zdefs.h	/^    int_t inv; \/* whether the diagonal block is inverted*\/	$/;"	m	struct:__anon50
+inv_perm_c	./superlu_ddefs.h	/^    int_t *inv_perm_c;$/;"	m	struct:__anon24
+inv_perm_c	./superlu_zdefs.h	/^    int_t *inv_perm_c;$/;"	m	struct:__anon53
+isAllocated_	./TreeReduce_slu.hpp	/^        bool isAllocated_;$/;"	m	class:SuperLU_ASYNCOMM::TreeReduce_slu
+isBufferSet_	./TreeReduce_slu.hpp	/^        bool isBufferSet_;$/;"	m	class:SuperLU_ASYNCOMM::TreeReduce_slu
+isReady_	./TreeBcast_slu.hpp	/^        bool isReady_;$/;"	m	class:SuperLU_ASYNCOMM::TreeBcast_slu
+isamax_	./Cnames.h	121;"	d
+isamax_	./Cnames.h	249;"	d
+isort	./util.c	/^void isort(int_t N, int_t *ARRAY1, int_t *ARRAY2)$/;"	f
+isort1	./util.c	/^void isort1(int_t N, int_t *ARRAY)$/;"	f
+iukp	./superlu_defs.h	/^    int_t iukp;$/;"	m	struct:__anon33
+izamax_	./Cnames.h	168;"	d
+izamax_	./Cnames.h	296;"	d
+jb	./superlu_defs.h	/^    int_t jb;$/;"	m	struct:__anon33
+key	./superlu_defs.h	/^    int id, key;$/;"	m	struct:__anon35
+lbnum	./superlu_ddefs.h	/^    int_t lbnum;  \/* Row block number (local).      *\/$/;"	m	struct:__anon20
+lbnum	./superlu_zdefs.h	/^    int_t lbnum;  \/* Row block number (local).      *\/$/;"	m	struct:__anon49
+lda	./supermatrix.h	/^    int_t lda;    \/* leading dimension *\/$/;"	m	struct:__anon63
+ldalsum	./superlu_ddefs.h	/^    int_t   ldalsum;          \/* LDA of lsum (local) *\/$/;"	m	struct:__anon21
+ldalsum	./superlu_zdefs.h	/^    int_t   ldalsum;          \/* LDA of lsum (local) *\/$/;"	m	struct:__anon50
+length	./colamd.h	/^    int length ;	\/* number of principal columns in this row *\/$/;"	m	struct:Colamd_Row_struct
+length	./colamd.h	/^    int length ;	\/* number of rows in this column *\/$/;"	m	struct:Colamd_Col_struct
+length	./old_colamd.c	/^    int length ;	\/* number of principal columns in this row *\/$/;"	m	struct:RowInfo_struct	file:
+length	./old_colamd.c	/^    int length ;	\/* number of rows in this column *\/$/;"	m	struct:ColInfo_struct	file:
+link	./etree.c	/^int_t link ($/;"	f	file:
+llvl	./superlu_defs.h	/^    int_t     *llvl;     \/* keep track of level in L for level-based ILU *\/$/;"	m	struct:__anon28
+log_memory	./util.c	/^void log_memory(int64_t cur_bytes, SuperLUStat_t *stat) {$/;"	f
+lookahead_etree	./superlu_defs.h	/^    yes_no_t      lookahead_etree; \/* use etree computed from the$/;"	m	struct:__anon31
+lptr	./superlu_defs.h	/^    int_t lptr;$/;"	m	struct:__anon34
+lsub	./psymbfact.h	/^  int_t     *lsub;      \/* structure of L, stored by columns *\/$/;"	m	struct:__anon15
+lsub	./psymbfact.h	/^  int_t     *lsub;   \/* compressed L subscripts, stored by columns *\/$/;"	m	struct:__anon14
+lsub	./superlu_defs.h	/^    int_t     *lsub;     \/* compressed L subscripts *\/$/;"	m	struct:__anon28
+lsubPr	./psymbfact.h	/^  int_t     *lsubPr;   \/* pruned structure of L *\/$/;"	m	struct:__anon15
+m_loc	./supermatrix.h	/^    int_t m_loc;     \/* number of rows local to this processor *\/$/;"	m	struct:__anon64
+mainRoot_	./TreeBcast_slu.hpp	/^        Int mainRoot_;$/;"	m	class:SuperLU_ASYNCOMM::TreeBcast_slu
+make_set	./etree.c	/^int_t make_set ($/;"	f	file:
+mark	./colamd.h	/^	int mark ;	\/* for computing set differences and marking dead rows*\/$/;"	m	union:Colamd_Row_struct::__anon6
+mark	./old_colamd.c	/^	int mark ;	\/* for computing set differences and marking dead rows*\/$/;"	m	union:RowInfo_struct::__anon13	file:
+matrix_symbfact_t	./psymbfact.h	/^} matrix_symbfact_t;$/;"	t	typeref:struct:__anon17
+maxNeltsVtx	./psymbfact.h	/^  int_t  maxNeltsVtx;     \/* Max number of elements of a vertex,$/;"	m	struct:__anon16
+maxNvtcsNds_loc	./psymbfact.h	/^  int_t  maxNvtcsNds_loc; \/* Max number of vertices of a node distributed on one$/;"	m	struct:__anon16
+maxNvtcsPProc	./psymbfact.h	/^  int_t     maxNvtcsPProc;   \/* max number of vertices on the processors *\/$/;"	m	struct:__anon14
+maxSzBlk	./psymbfact.h	/^  int_t  maxSzBlk;        \/* Max no of vertices in a block *\/$/;"	m	struct:__anon16
+maxSzBuf	./psymbfact.h	/^  int_t  maxSzBuf; \/* maximum size of the send and receive buffers *\/$/;"	m	struct:__anon19
+maxSzLPr	./psymbfact.h	/^  int_t  maxSzLPr; \/* maximum size of pruned L *\/$/;"	m	struct:__anon19
+maxSzUPr	./psymbfact.h	/^  int_t  maxSzUPr; \/* maximum size of pruned U *\/$/;"	m	struct:__anon19
+max_sup_size	./util.c	/^static 	int_t	max_sup_size;$/;"	v	file:
+maxsz_msgCol	./psymbfact.h	/^  int_t  maxsz_msgCol; \/* Average size of messages counted in$/;"	m	struct:__anon19
+maxsz_msgRcvd	./psymbfact.h	/^  int_t  maxsz_msgRcvd;\/* Max size of messages receiving data *\/$/;"	m	struct:__anon19
+maxsz_msgSnd	./psymbfact.h	/^  int_t  maxsz_msgSnd; \/* Max size of messages sending data *\/$/;"	m	struct:__anon19
+mc64ad_dist	./mc64ad_dist.c	/^\/* Subroutine *\/ int_t mc64ad_dist(int_t *job, int_t *n, int_t *ne, int_t *$/;"	f
+mc64bd_dist	./mc64ad_dist.c	/^\/* Subroutine *\/ int_t mc64bd_dist(int_t *n, int_t *ne, int_t *ip, int_t *$/;"	f
+mc64dd_dist	./mc64ad_dist.c	/^\/* Subroutine *\/ int_t mc64dd_dist(int_t *i__, int_t *n, int_t *q, double $/;"	f
+mc64ed_dist	./mc64ad_dist.c	/^\/* Subroutine *\/ int_t mc64ed_dist(int_t *qlen, int_t *n, int_t *q, $/;"	f
+mc64fd_dist	./mc64ad_dist.c	/^\/* Subroutine *\/ int_t mc64fd_dist(int_t *pos0, int_t *qlen, int_t *n, $/;"	f
+mc64id_dist	./mc64ad_dist.c	/^\/* Subroutine *\/ int_t mc64id_dist(int_t *icntl)$/;"	f
+mc64qd_dist	./mc64ad_dist.c	/^\/* Subroutine *\/ int_t mc64qd_dist(int_t *ip, int_t *lenl, int_t *lenh, $/;"	f
+mc64rd_dist	./mc64ad_dist.c	/^\/* Subroutine *\/ int_t mc64rd_dist(int_t *n, int_t *ne, int_t *ip,$/;"	f
+mc64sd_dist	./mc64ad_dist.c	/^\/* Subroutine *\/ int_t mc64sd_dist(int_t *n, int_t *ne, int_t *ip, int_t *$/;"	f
+mc64ud_dist	./mc64ad_dist.c	/^\/* Subroutine *\/ int_t mc64ud_dist(int_t *id, int_t *mod, int_t *n, int_t *$/;"	f
+mc64wd_dist	./mc64ad_dist.c	/^\/* Subroutine *\/ int_t mc64wd_dist(int_t *n, int_t *ne, int_t *ip, int_t *$/;"	f
+mem	./util_dist.h	/^    void *mem;     \/* pointer to the new malloc'd store *\/$/;"	m	struct:e_node
+memory_usage	./memory.c	/^memory_usage(const int_t nzlmax, const int_t nzumax, const int_t n)$/;"	f	file:
+milu_t	./superlu_enum_consts.h	/^typedef enum {SILU, SMILU_1, SMILU_2, SMILU_3}			milu_t;$/;"	t	typeref:enum:__anon47
+min	./mc64ad_dist.c	16;"	d	file:
+min_gpu_col	./dscatter.c	/^int min_gpu_col = 6;$/;"	v
+min_gpu_col	./zscatter.c	/^int min_gpu_col = 6;$/;"	v
+mmdelm_dist	./mmd.c	/^\/* Subroutine *\/ int mmdelm_dist(int_t *mdnode, int_t *xadj, int_t *adjncy,$/;"	f
+mmdint_dist	./mmd.c	/^\/* Subroutine *\/ int mmdint_dist(int_t *neqns, int_t *xadj, int_t *adjncy, $/;"	f
+mmdnum_dist	./mmd.c	/^\/* Subroutine *\/ int mmdnum_dist(int_t *neqns, int_t *perm, int_t *invp,$/;"	f
+mmdupd_dist	./mmd.c	/^\/* Subroutine *\/ int mmdupd_dist(int_t *ehead, int_t *neqns, int_t *xadj, $/;"	f
+mod_bit	./superlu_ddefs.h	/^    int_t   *mod_bit;         \/* Flag contribution from each row blocks    *\/$/;"	m	struct:__anon21
+mod_bit	./superlu_zdefs.h	/^    int_t   *mod_bit;         \/* Flag contribution from each row blocks    *\/$/;"	m	struct:__anon50
+mpi_int_t	./superlu_defs.h	81;"	d
+mpi_int_t	./superlu_defs.h	84;"	d
+mpi_int_t	./superlu_defs.h	88;"	d
+msgSize_	./TreeBcast_slu.hpp	/^        Int msgSize_;$/;"	m	class:SuperLU_ASYNCOMM::TreeBcast_slu
+mxCallocInt	./etree.c	/^int_t *mxCallocInt(int_t n)$/;"	f	file:
+myDests_	./TreeBcast_slu.hpp	/^        std::vector<Int> myDests_;$/;"	m	class:SuperLU_ASYNCOMM::TreeBcast_slu
+myRank_	./TreeBcast_slu.hpp	/^        Int myRank_;$/;"	m	class:SuperLU_ASYNCOMM::TreeBcast_slu
+myRoot_	./TreeBcast_slu.hpp	/^        Int myRoot_;$/;"	m	class:SuperLU_ASYNCOMM::TreeBcast_slu
+n	./superlu_ddefs.h	/^    int_t n;$/;"	m	struct:__anon21
+n	./superlu_zdefs.h	/^    int_t n;$/;"	m	struct:__anon50
+nDnsCurSep	./psymbfact.h	/^  int_t nDnsCurSep;$/;"	m	struct:__anon19
+nDnsUpSeps	./psymbfact.h	/^  int_t  nDnsUpSeps;$/;"	m	struct:__anon19
+n_utrecvmod	./superlu_ddefs.h	/^    int_t n_utrecvmod;$/;"	m	struct:__anon21
+n_utrecvmod	./superlu_zdefs.h	/^    int_t n_utrecvmod;$/;"	m	struct:__anon50
+n_utrecvx	./superlu_ddefs.h	/^    int_t n_utrecvx;         \/* Number of Xk I will send                    *\/$/;"	m	struct:__anon21
+n_utrecvx	./superlu_zdefs.h	/^    int_t n_utrecvx;         \/* Number of Xk I will send                    *\/$/;"	m	struct:__anon50
+n_utsendx	./superlu_ddefs.h	/^    int_t n_utsendx;         \/* Number of Xk I will receive                 *\/$/;"	m	struct:__anon21
+n_utsendx	./superlu_zdefs.h	/^    int_t n_utsendx;         \/* Number of Xk I will receive                 *\/$/;"	m	struct:__anon50
+nblks_loc	./psymbfact.h	/^  int_t  nblks_loc;       \/* Number of local blocks *\/$/;"	m	struct:__anon16
+nbrecvx	./superlu_ddefs.h	/^    int_t   nbrecvx;          \/* Number of Xk I will receive in U-solve    *\/$/;"	m	struct:__anon21
+nbrecvx	./superlu_zdefs.h	/^    int_t   nbrecvx;          \/* Number of Xk I will receive in U-solve    *\/$/;"	m	struct:__anon50
+nbsendx	./superlu_ddefs.h	/^    int_t   nbsendx;          \/* Number of Xk I will send in U-solve       *\/$/;"	m	struct:__anon21
+nbsendx	./superlu_zdefs.h	/^    int_t   nbsendx;          \/* Number of Xk I will send in U-solve       *\/$/;"	m	struct:__anon50
+ncol	./supermatrix.h	/^	int_t  ncol;   \/* number of columns *\/$/;"	m	struct:__anon57
+next	./superlu_defs.h	/^    void *next;$/;"	m	struct:__anon35
+next_kid	./etree.c	/^static int_t	*first_kid, *next_kid;	\/* Linked list of children.	*\/$/;"	v	file:
+nextl	./psymbfact.h	/^  int_t     nextl;      \/* pointer to current computation in lsub *\/$/;"	m	struct:__anon15
+nextu	./psymbfact.h	/^  int_t     nextu;       \/* pointer to current computation in usub *\/$/;"	m	struct:__anon15
+nfrecvmod	./superlu_ddefs.h	/^    int_t nfrecvmod;$/;"	m	struct:__anon21
+nfrecvmod	./superlu_zdefs.h	/^    int_t nfrecvmod;$/;"	m	struct:__anon50
+nfrecvx	./superlu_ddefs.h	/^    int_t   nfrecvx;          \/* Number of Xk I will receive in L-solve    *\/$/;"	m	struct:__anon21
+nfrecvx	./superlu_zdefs.h	/^    int_t   nfrecvx;          \/* Number of Xk I will receive in L-solve    *\/$/;"	m	struct:__anon50
+nfsendx	./superlu_ddefs.h	/^    int_t   nfsendx;          \/* Number of Xk I will send in L-solve       *\/$/;"	m	struct:__anon21
+nfsendx	./superlu_zdefs.h	/^    int_t   nfsendx;          \/* Number of Xk I will send in L-solve       *\/$/;"	m	struct:__anon50
+nleaf	./superlu_ddefs.h	/^    int_t nleaf;$/;"	m	struct:__anon21
+nleaf	./superlu_zdefs.h	/^    int_t nleaf;$/;"	m	struct:__anon50
+nnz	./supermatrix.h	/^    int_t  nnz;	    \/* number of nonzeros in the matrix *\/$/;"	m	struct:__anon58
+nnz	./supermatrix.h	/^    int_t  nnz;	    \/* number of nonzeros in the matrix *\/$/;"	m	struct:__anon59
+nnz	./supermatrix.h	/^    int_t nnz;	  \/* number of nonzeros in the matrix *\/$/;"	m	struct:__anon62
+nnz	./supermatrix.h	/^  int_t  nnz;	     \/* number of nonzeros in the matrix *\/$/;"	m	struct:__anon60
+nnz	./supermatrix.h	/^  int_t  nnz;	     \/* number of nonzeros in the matrix *\/$/;"	m	struct:__anon61
+nnzL	./superlu_defs.h	/^    int           nnzL, nnzU;      \/* used to store nnzs for now       *\/$/;"	m	struct:__anon31
+nnzL	./superlu_defs.h	/^    int64_t nnzL, nnzU;$/;"	m	struct:__anon32
+nnzLU	./psymbfact.h	/^  int64_t nnzLU;   \/* number of nonzeros in L+U*\/$/;"	m	struct:__anon14
+nnzLU	./superlu_defs.h	/^    int64_t nnzLU;   \/* number of nonzeros in L+U*\/$/;"	m	struct:__anon28
+nnzU	./superlu_defs.h	/^    int           nnzL, nnzU;      \/* used to store nnzs for now       *\/$/;"	m	struct:__anon31
+nnzU	./superlu_defs.h	/^    int64_t nnzL, nnzU;$/;"	m	struct:__anon32
+nnz_ainf_loc	./psymbfact.h	/^  int_t  nnz_ainf_loc;    \/* Number of nonzeros in ainf.  Similar to nnz_asup_loc. *\/$/;"	m	struct:__anon16
+nnz_asup_loc	./psymbfact.h	/^  int_t  nnz_asup_loc;    \/* Number of nonzeros in asup not yet consumed.  Used during$/;"	m	struct:__anon16
+nnz_loc	./supermatrix.h	/^    int_t nnz_loc;   \/* number of nonzeros in the local submatrix *\/$/;"	m	struct:__anon64
+no_expand	./memory.c	/^int_t no_expand;$/;"	v
+no_expand	./psymbfact.h	/^  int_t  no_expand;    \/* Number of memory expansions *\/$/;"	m	struct:__anon15
+no_expand_pr	./psymbfact.h	/^  int_t  no_expand_pr; \/* Number of memory expansions of the pruned structures *\/$/;"	m	struct:__anon15
+no_expcp	./psymbfact.h	/^  int_t  no_expcp;     \/* Number of memory expansions due to the right looking $/;"	m	struct:__anon15
+no_msgsCol	./psymbfact.h	/^  float  no_msgsCol;   \/* Number of messages sent for estimating size$/;"	m	struct:__anon19
+no_msgsRcvd	./psymbfact.h	/^  float  no_msgsRcvd;  \/* Number of messages receiving data *\/$/;"	m	struct:__anon19
+no_msgsSnd	./psymbfact.h	/^  float  no_msgsSnd;   \/* Number of messages sending data *\/$/;"	m	struct:__anon19
+no_shmRcvd	./psymbfact.h	/^  float  no_shmRcvd;   \/* Number of auxiliary messages for rcvd data *\/$/;"	m	struct:__anon19
+no_shmSnd	./psymbfact.h	/^  float  no_shmSnd;    \/* Number of auxiliary messages for send data *\/$/;"	m	struct:__anon19
+nops	./psymbfact.h	/^  float  nops;$/;"	m	struct:__anon19
+norm_t	./superlu_enum_consts.h	/^typedef enum {ONE_NORM, TWO_NORM, INF_NORM}			norm_t;$/;"	t	typeref:enum:__anon46
+npcol	./superlu_defs.h	/^    int_t npcol;          \/* number of process columns *\/$/;"	m	struct:__anon26
+nprow	./superlu_defs.h	/^    int_t nprow;          \/* number of process rows *\/$/;"	m	struct:__anon26
+nr_etdfs	./etree.c	/^void nr_etdfs (int_t n, int_t *parent,$/;"	f	file:
+nroot	./superlu_ddefs.h	/^    int_t nroot;$/;"	m	struct:__anon21
+nroot	./superlu_zdefs.h	/^    int_t nroot;$/;"	m	struct:__anon50
+nrow	./supermatrix.h	/^	int_t  nrow;   \/* number of rows *\/$/;"	m	struct:__anon57
+nsuper	./supermatrix.h	/^  int_t  nsuper;     \/* number of supernodes *\/$/;"	m	struct:__anon61
+nsuper	./supermatrix.h	/^  int_t  nsuper;     \/* number of supernodes, minus 1 *\/$/;"	m	struct:__anon60
+num_diag_procs	./superlu_ddefs.h	/^    int_t num_diag_procs, *diag_procs, *diag_len;$/;"	m	struct:__anon24
+num_diag_procs	./superlu_zdefs.h	/^    int_t num_diag_procs, *diag_procs, *diag_len;$/;"	m	struct:__anon53
+num_full_cols_U	./util.c	/^static int_t num_full_cols_U$/;"	f	file:
+num_look_aheads	./util_dist.h	/^    int     num_look_aheads; \/* number of look ahead *\/$/;"	m	struct:__anon65
+num_lookaheads	./superlu_defs.h	/^    int           num_lookaheads;  \/* num of levels in look-ahead      *\/$/;"	m	struct:__anon31
+nvtcsLvl_loc	./psymbfact.h	/^  int_t  nvtcsLvl_loc;    \/* Number of local vertices for current$/;"	m	struct:__anon16
+nvtcs_loc	./psymbfact.h	/^  int_t     nvtcs_loc;       \/* number of local vertices *\/$/;"	m	struct:__anon14
+nvtcs_loc	./psymbfact.h	/^  int_t  nvtcs_loc;       \/* Number of local vertices distributed on a processor *\/$/;"	m	struct:__anon16
+nzlmax	./superlu_defs.h	/^    int_t     nzlmax;    \/* current max size of lsub *\/$/;"	m	struct:__anon28
+nzumax	./superlu_defs.h	/^    int_t     nzumax;    \/*    "    "    "      usub *\/$/;"	m	struct:__anon28
+nzval	./supermatrix.h	/^    void  *nzval;    \/* pointer to array of nonzero values, packed by row *\/$/;"	m	struct:__anon64
+nzval	./supermatrix.h	/^    void *nzval;    \/* pointer to array of nonzero values, packed by column *\/$/;"	m	struct:__anon58
+nzval	./supermatrix.h	/^    void *nzval;    \/* pointer to array of nonzero values, packed by raw *\/$/;"	m	struct:__anon59
+nzval	./supermatrix.h	/^    void *nzval;  \/* array of size lda*ncol to represent a dense matrix *\/$/;"	m	struct:__anon63
+nzval	./supermatrix.h	/^    void *nzval;  \/* pointer to array of nonzero values, packed by column *\/$/;"	m	struct:__anon62
+nzval	./supermatrix.h	/^  void *nzval;       \/* pointer to array of nonzero values, packed by column *\/$/;"	m	struct:__anon60
+nzval	./supermatrix.h	/^  void *nzval;       \/* pointer to array of nonzero values, packed by column *\/$/;"	m	struct:__anon61
+nzval_colbeg	./supermatrix.h	/^  int_t  *nzval_colbeg;\/* nzval_colbeg[j] points to beginning of column j$/;"	m	struct:__anon61
+nzval_colend	./supermatrix.h	/^  int_t  *nzval_colend;\/* nzval_colend[j] points to one past the last element$/;"	m	struct:__anon61
+nzval_colptr	./supermatrix.h	/^  int_t *nzval_colptr;\/* pointer to array of beginning of columns in nzval[] *\/$/;"	m	struct:__anon60
+ops	./util_dist.h	/^    flops_t *ops;         \/* operation count at various phases *\/$/;"	m	struct:__anon65
+optarg	./wingetopt.c	/^char* optarg = NULL;$/;"	v
+optind	./wingetopt.c	/^int optind = 1;$/;"	v
+order	./colamd.h	/^	int order ;	\/* pivot ordering of this column, if col is dead *\/$/;"	m	union:Colamd_Col_struct::__anon2
+order	./old_colamd.c	/^	int order ;	\/* pivot ordering of this column, if col is dead *\/$/;"	m	union:ColInfo_struct::__anon9	file:
+order_children	./colamd.c	/^PRIVATE void order_children$/;"	f
+order_children	./old_colamd.c	/^PRIVATE void order_children$/;"	f
+p	./colamd.h	/^	int p ;		\/* used as a row pointer in init_rows_cols () *\/$/;"	m	union:Colamd_Row_struct::__anon5
+p	./old_colamd.c	/^	int p ;		\/* used as a row pointer in init_rows_cols () *\/$/;"	m	union:RowInfo_struct::__anon12	file:
+panel_histo	./util_dist.h	/^    int     *panel_histo; \/* histogram of panel size distribution *\/$/;"	m	struct:__anon65
+parent	./colamd.h	/^	int parent ;	\/* parent in parent tree super-column structure, if *\/$/;"	m	union:Colamd_Col_struct::__anon1
+parent	./old_colamd.c	/^	int parent ;	\/* parent in parent tree super-column structure, if *\/$/;"	m	union:ColInfo_struct::__anon8	file:
+partition	./util.c	/^int_t partition( int_t* a, int_t l, int_t r, int_t dir) {$/;"	f
+partitionM	./util.c	/^int_t partitionM( int_t* a, int_t l, int_t r, int_t lda, int_t dir, int_t dims) {$/;"	f
+pdCompRow_loc_to_CompCol_global	./pdutil.c	/^int pdCompRow_loc_to_CompCol_global$/;"	f
+pdCompute_Diag_Inv	./pdgstrs.c	/^pdCompute_Diag_Inv(int_t n, LUstruct_t *LUstruct,gridinfo_t *grid,$/;"	f
+pdGetDiagU	./pdGetDiagU.c	/^void pdGetDiagU(int_t n, LUstruct_t *LUstruct, gridinfo_t *grid,$/;"	f
+pdPermute_Dense_Matrix	./pdutil.c	/^int pdPermute_Dense_Matrix$/;"	f
+pdReDistribute_B_to_X	./pdgstrs.c	/^pdReDistribute_B_to_X(double *B, int_t m_loc, int nrhs, int_t ldb,$/;"	f
+pdReDistribute_B_to_X	./pdgstrsL.c	/^pdReDistribute_B_to_X(double *B, int_t m_loc, int nrhs, int_t ldb,$/;"	f
+pdReDistribute_X_to_B	./pdgstrs.c	/^pdReDistribute_X_to_B(int_t n, double *B, int_t m_loc, int_t ldb, int_t fst_row,$/;"	f
+pdReDistribute_X_to_B	./pdgstrsL.c	/^pdReDistribute_X_to_B(int_t n, double *B, int_t m_loc, int_t ldb, int_t fst_row,$/;"	f
+pddistribute	./pddistribute.c	/^pddistribute(fact_t fact, int_t n, SuperMatrix *A,$/;"	f
+pdgsequ	./pdgsequ.c	/^pdgsequ(SuperMatrix *A, double *r, double *c, double *rowcnd,$/;"	f
+pdgsmv	./pdgsmv.c	/^pdgsmv$/;"	f
+pdgsmv_AXglobal	./pdgsmv_AXglobal.c	/^pdgsmv_AXglobal(int_t m, int_t update[], double val[], int_t bindx[],$/;"	f
+pdgsmv_AXglobal_abs	./pdgsmv_AXglobal.c	/^pdgsmv_AXglobal_abs(int_t m, int_t update[], double val[], int_t bindx[],$/;"	f
+pdgsmv_AXglobal_setup	./pdgsmv_AXglobal.c	/^int pdgsmv_AXglobal_setup$/;"	f
+pdgsmv_comm_t	./superlu_ddefs.h	/^} pdgsmv_comm_t;$/;"	t	typeref:struct:__anon23
+pdgsmv_finalize	./pdgsmv.c	/^void pdgsmv_finalize(pdgsmv_comm_t *gsmv_comm)$/;"	f
+pdgsmv_init	./pdgsmv.c	/^void pdgsmv_init$/;"	f
+pdgsrfs	./pdgsrfs.c	/^pdgsrfs(int_t n, SuperMatrix *A, double anorm, LUstruct_t *LUstruct,$/;"	f
+pdgsrfs_ABXglobal	./pdgsrfs_ABXglobal.c	/^pdgsrfs_ABXglobal(int_t n, SuperMatrix *A, double anorm, LUstruct_t *LUstruct,$/;"	f
+pdgssvx	./pdgssvx.c	/^pdgssvx(superlu_dist_options_t *options, SuperMatrix *A, $/;"	f
+pdgssvx_ABglobal	./pdgssvx_ABglobal.c	/^pdgssvx_ABglobal(superlu_dist_options_t *options, SuperMatrix *A, $/;"	f
+pdgstrf	./pdgstrf.c	/^pdgstrf(superlu_dist_options_t * options, int m, int n, double anorm,$/;"	f
+pdgstrf	./pdgstrf_X1.c	/^void pdgstrf$/;"	f
+pdgstrf	./pdgstrf_irecv.c	/^int_t pdgstrf$/;"	f
+pdgstrf	./pdgstrf_sherry.c	/^int_t pdgstrf$/;"	f
+pdgstrf2	./pdgstrf_X1.c	/^static void pdgstrf2$/;"	f	file:
+pdgstrf2	./pdgstrf_irecv.c	/^static void pdgstrf2$/;"	f	file:
+pdgstrf2	./pdgstrf_sherry.c	/^static void pdgstrf2$/;"	f	file:
+pdgstrf2_trsm	./pdgstrf2.c	/^pdgstrf2_trsm$/;"	f
+pdgstrs	./pdgstrs.c	/^pdgstrs(int_t n, LUstruct_t *LUstruct, $/;"	f
+pdgstrs1	./pdgstrs1.c	/^void pdgstrs1(int_t n, LUstruct_t *LUstruct, gridinfo_t *grid,$/;"	f
+pdgstrs2	./pdgstrf_X1.c	/^static void pdgstrs2$/;"	f	file:
+pdgstrs2	./pdgstrf_irecv.c	/^static void pdgstrs2$/;"	f	file:
+pdgstrs2	./pdgstrf_sherry.c	/^static void pdgstrs2$/;"	f	file:
+pdgstrs2_omp	./pdgstrf2.c	/^void pdgstrs2_omp$/;"	f
+pdgstrsL	./pdgstrsL.c	/^pdgstrsL(int_t n, LUstruct_t *LUstruct, $/;"	f
+pdgstrs_Bglobal	./pdgstrs_Bglobal.c	/^pdgstrs_Bglobal(int_t n, LUstruct_t *LUstruct, gridinfo_t *grid, $/;"	f
+pdgstrs_Bglobal	./pdgstrs_Bglobal_Bsend.c	/^pdgstrs_Bglobal(int_t n, LUstruct_t *LUstruct, gridinfo_t *grid, double *B,$/;"	f
+pdinf_norm_error	./pdutil.c	/^void pdinf_norm_error(int iam, int_t n, int_t nrhs, double x[], int_t ldx,$/;"	f
+pdlangs	./pdlangs.c	/^double pdlangs(char *norm, SuperMatrix *A, gridinfo_t *grid)$/;"	f
+pdlaqgs	./pdlaqgs.c	/^pdlaqgs(SuperMatrix *A, double *r, double *c, $/;"	f
+peak_buffer	./util_dist.h	/^    float   peak_buffer;    \/* monitor the peak buffer size (bytes) *\/$/;"	m	struct:__anon65
+perm_c	./superlu_defs.h	/^    int_t  *perm_c;$/;"	m	struct:__anon29
+perm_r	./superlu_defs.h	/^    int_t  *perm_r;$/;"	m	struct:__anon29
+pivotL	./symbfact.c	/^static int_t pivotL$/;"	f	file:
+post	./etree.c	/^static int_t	*post, postnum;$/;"	v	file:
+postnum	./etree.c	/^static int_t	*post, postnum;$/;"	v	file:
+prev	./colamd.h	/^	int prev ;	\/* previous column in degree list, if col is in a *\/$/;"	m	union:Colamd_Col_struct::__anon3
+prev	./old_colamd.c	/^	int prev ;	\/* previous column in degree list, if col is in a *\/$/;"	m	union:ColInfo_struct::__anon10	file:
+print_memorylog	./util.c	/^void print_memorylog(SuperLUStat_t *stat, char *msg) {$/;"	f
+print_options_dist	./util.c	/^void print_options_dist(superlu_dist_options_t *options)$/;"	f
+print_panel_seg_dist	./util.c	/^void print_panel_seg_dist(int_t n, int_t w, int_t jcol, int_t nseg, $/;"	f
+print_report	./colamd.c	/^PRIVATE void print_report$/;"	f
+print_sp_ienv_dist	./util.c	/^void print_sp_ienv_dist(superlu_dist_options_t *options)$/;"	f
+probe_recv	./pdgstrf_X1.c	/^probe_recv(int iam, int source, int tag, MPI_Datatype datatype, MPI_Comm comm,$/;"	f	file:
+probe_recv	./pdgstrf_irecv.c	/^probe_recv(int iam, int source, int tag, MPI_Datatype datatype, MPI_Comm comm,$/;"	f	file:
+probe_recv	./pdgstrf_sherry.c	/^probe_recv(int iam, int source, int tag, MPI_Datatype datatype, MPI_Comm comm,$/;"	f	file:
+probe_recv	./pzgstrf_irecv.c	/^probe_recv(int iam, int source, int tag, MPI_Datatype datatype, MPI_Comm comm,$/;"	f	file:
+pruneL	./symbfact.c	/^static void pruneL$/;"	f	file:
+psymbfact_LUXpand	./psymbfact_util.c	/^int_t psymbfact_LUXpand$/;"	f
+psymbfact_LUXpandMem	./psymbfact_util.c	/^int_t psymbfact_LUXpandMem$/;"	f
+psymbfact_LUXpand_RL	./psymbfact_util.c	/^int_t psymbfact_LUXpand_RL$/;"	f
+psymbfact_prLUXpand	./psymbfact_util.c	/^int_t psymbfact_prLUXpand$/;"	f
+psymbfact_stat_t	./psymbfact.h	/^} psymbfact_stat_t;$/;"	t	typeref:struct:__anon19
+ptr_ind_torecv	./superlu_ddefs.h	/^    int_t *ptr_ind_torecv;\/* Printers to ind_torecv[] (Size procs)$/;"	m	struct:__anon23
+ptr_ind_torecv	./superlu_zdefs.h	/^    int_t *ptr_ind_torecv;\/* Printers to ind_torecv[] (Size procs)$/;"	m	struct:__anon52
+ptr_ind_tosend	./superlu_ddefs.h	/^    int_t *ptr_ind_tosend;\/* Printers to ind_tosend[] (Size procs)$/;"	m	struct:__anon23
+ptr_ind_tosend	./superlu_zdefs.h	/^    int_t *ptr_ind_tosend;\/* Printers to ind_tosend[] (Size procs)$/;"	m	struct:__anon52
+ptr_rcvBuf	./psymbfact.h	/^  int_t  *ptr_rcvBuf;   \/* pointer to rcv_buf, the buffer to receive data *\/$/;"	m	struct:__anon18
+ptr_to_dbuf	./superlu_defs.h	/^    int  *ptr_to_ibuf, *ptr_to_dbuf;$/;"	m	struct:__anon30
+ptr_to_ibuf	./superlu_defs.h	/^    int  *ptr_to_ibuf, *ptr_to_dbuf;$/;"	m	struct:__anon30
+pxerr_dist	./pxerr_dist.c	/^void pxerr_dist(char *srname, gridinfo_t *grid, int_t info)$/;"	f
+pxgstrs_comm_t	./superlu_defs.h	/^} pxgstrs_comm_t;$/;"	t	typeref:struct:__anon30
+pxgstrs_finalize	./util.c	/^void pxgstrs_finalize(pxgstrs_comm_t *gstrs_comm)$/;"	f
+pxgstrs_init	./util.c	/^pxgstrs_init(int_t n, int_t m_loc, int_t nrhs, int_t fst_row,$/;"	f
+pzCompRow_loc_to_CompCol_global	./pzutil.c	/^int pzCompRow_loc_to_CompCol_global$/;"	f
+pzCompute_Diag_Inv	./pzgstrs.c	/^pzCompute_Diag_Inv(int_t n, LUstruct_t *LUstruct,gridinfo_t *grid,$/;"	f
+pzGetDiagU	./pzGetDiagU.c	/^void pzGetDiagU(int_t n, LUstruct_t *LUstruct, gridinfo_t *grid,$/;"	f
+pzPermute_Dense_Matrix	./pzutil.c	/^int pzPermute_Dense_Matrix$/;"	f
+pzReDistribute_B_to_X	./pzgstrs.c	/^pzReDistribute_B_to_X(doublecomplex *B, int_t m_loc, int nrhs, int_t ldb,$/;"	f
+pzReDistribute_X_to_B	./pzgstrs.c	/^pzReDistribute_X_to_B(int_t n, doublecomplex *B, int_t m_loc, int_t ldb, int_t fst_row,$/;"	f
+pzdistribute	./pzdistribute.c	/^pzdistribute(fact_t fact, int_t n, SuperMatrix *A,$/;"	f
+pzgsequ	./pzgsequ.c	/^pzgsequ(SuperMatrix *A, double *r, double *c, double *rowcnd,$/;"	f
+pzgsmv	./pzgsmv.c	/^pzgsmv$/;"	f
+pzgsmv_AXglobal	./pzgsmv_AXglobal.c	/^pzgsmv_AXglobal(int_t m, int_t update[], doublecomplex val[], int_t bindx[],$/;"	f
+pzgsmv_AXglobal_abs	./pzgsmv_AXglobal.c	/^pzgsmv_AXglobal_abs(int_t m, int_t update[], doublecomplex val[], int_t bindx[],$/;"	f
+pzgsmv_AXglobal_setup	./pzgsmv_AXglobal.c	/^int pzgsmv_AXglobal_setup$/;"	f
+pzgsmv_comm_t	./superlu_zdefs.h	/^} pzgsmv_comm_t;$/;"	t	typeref:struct:__anon52
+pzgsmv_finalize	./pzgsmv.c	/^void pzgsmv_finalize(pzgsmv_comm_t *gsmv_comm)$/;"	f
+pzgsmv_init	./pzgsmv.c	/^void pzgsmv_init$/;"	f
+pzgsrfs	./pzgsrfs.c	/^pzgsrfs(int_t n, SuperMatrix *A, double anorm, LUstruct_t *LUstruct,$/;"	f
+pzgsrfs_ABXglobal	./pzgsrfs_ABXglobal.c	/^pzgsrfs_ABXglobal(int_t n, SuperMatrix *A, double anorm, LUstruct_t *LUstruct,$/;"	f
+pzgssvx	./pzgssvx.c	/^pzgssvx(superlu_dist_options_t *options, SuperMatrix *A, $/;"	f
+pzgssvx_ABglobal	./pzgssvx_ABglobal.c	/^pzgssvx_ABglobal(superlu_dist_options_t *options, SuperMatrix *A, $/;"	f
+pzgstrf	./pzgstrf.c	/^pzgstrf(superlu_dist_options_t * options, int m, int n, double anorm,$/;"	f
+pzgstrf	./pzgstrf_irecv.c	/^int_t pzgstrf$/;"	f
+pzgstrf2	./pzgstrf_irecv.c	/^static void pzgstrf2$/;"	f	file:
+pzgstrf2_trsm	./pzgstrf2.c	/^pzgstrf2_trsm$/;"	f
+pzgstrs	./pzgstrs.c	/^pzgstrs(int_t n, LUstruct_t *LUstruct, $/;"	f
+pzgstrs1	./pzgstrs1.c	/^void pzgstrs1(int_t n, LUstruct_t *LUstruct, gridinfo_t *grid,$/;"	f
+pzgstrs2	./pzgstrf_irecv.c	/^static void pzgstrs2$/;"	f	file:
+pzgstrs2_omp	./pzgstrf2.c	/^void pzgstrs2_omp$/;"	f
+pzgstrs_Bglobal	./pzgstrs_Bglobal.c	/^pzgstrs_Bglobal(int_t n, LUstruct_t *LUstruct, gridinfo_t *grid, $/;"	f
+pzinf_norm_error	./pzutil.c	/^void pzinf_norm_error(int iam, int_t n, int_t nrhs, doublecomplex x[], int_t ldx,$/;"	f
+pzlangs	./pzlangs.c	/^double pzlangs(char *norm, SuperMatrix *A, gridinfo_t *grid)$/;"	f
+pzlaqgs	./pzlaqgs.c	/^pzlaqgs(SuperMatrix *A, double *r, double *c, $/;"	f
+quickSort	./util.c	/^void quickSort( int_t* a, int_t l, int_t r, int_t dir)$/;"	f
+quickSortM	./util.c	/^void quickSortM( int_t* a, int_t l, int_t r, int_t lda, int_t dir, int_t dims)$/;"	f
+r	./dcomplex.h	/^typedef struct { double r, i; } doublecomplex;$/;"	m	struct:__anon7
+rcv_buf	./psymbfact.h	/^  int_t  *rcv_buf;      \/* buffer to receive data *\/$/;"	m	struct:__anon18
+rcv_bufSz	./psymbfact.h	/^  int_t  rcv_bufSz;     \/* size of the buffer to receive data *\/$/;"	m	struct:__anon18
+rcv_interLvl	./psymbfact.h	/^  int_t  *rcv_interLvl; \/* from which processors iam receives data *\/$/;"	m	struct:__anon18
+rcv_intraLvl	./psymbfact.h	/^  int_t  *rcv_intraLvl; \/* from which processors iam receives data *\/$/;"	m	struct:__anon18
+recvCount_	./TreeBcast_slu.hpp	/^        Int recvCount_;$/;"	m	class:SuperLU_ASYNCOMM::TreeBcast_slu
+recvDataPtrs_	./TreeBcast_slu.hpp	/^        std::vector<T *> recvDataPtrs_;$/;"	m	class:SuperLU_ASYNCOMM::TreeBcast_slu
+recvDoneIdx_	./TreeBcast_slu.hpp	/^        std::vector<Int> recvDoneIdx_;$/;"	m	class:SuperLU_ASYNCOMM::TreeBcast_slu
+recvPostedCount_	./TreeBcast_slu.hpp	/^        Int recvPostedCount_;$/;"	m	class:SuperLU_ASYNCOMM::TreeBcast_slu
+recvRequests_	./TreeBcast_slu.hpp	/^        std::vector<MPI_Request> recvRequests_;$/;"	m	class:SuperLU_ASYNCOMM::TreeBcast_slu
+recvStatuses_	./TreeBcast_slu.hpp	/^        std::vector<MPI_Status> recvStatuses_;$/;"	m	class:SuperLU_ASYNCOMM::TreeBcast_slu
+recvTempBuffer_	./TreeBcast_slu.hpp	/^        std::vector<T> recvTempBuffer_;$/;"	m	class:SuperLU_ASYNCOMM::TreeBcast_slu
+recv_dbuf2	./superlu_defs.h	/^    void   *recv_dbuf2;$/;"	m	struct:__anon30
+recv_ibuf2	./superlu_defs.h	/^    int_t  *recv_ibuf2;$/;"	m	struct:__anon30
+redist_all_to_diag	./pdgsrfs_ABXglobal.c	/^redist_all_to_diag(int_t n, double r[], Glu_persist_t *Glu_persist,$/;"	f	file:
+redist_all_to_diag	./pzgsrfs_ABXglobal.c	/^redist_all_to_diag(int_t n, doublecomplex r[], Glu_persist_t *Glu_persist,$/;"	f	file:
+relax_curSep	./psymbfact.h	/^  float  relax_curSep; \/* relaxation parameter -not used in this version *\/$/;"	m	struct:__anon19
+relax_gen	./psymbfact.h	/^  float  relax_gen;    \/* relaxation parameter -not used in this version *\/$/;"	m	struct:__anon19
+relax_seps	./psymbfact.h	/^  float  relax_seps;   \/* relaxation parameter -not used in this version *\/$/;"	m	struct:__anon19
+relax_snode	./symbfact.c	/^static void relax_snode$/;"	f	file:
+rl_update	./psymbfact.c	/^rl_update$/;"	f	file:
+row_to_proc	./superlu_ddefs.h	/^    int_t *row_to_proc;$/;"	m	struct:__anon24
+row_to_proc	./superlu_zdefs.h	/^    int_t *row_to_proc;$/;"	m	struct:__anon53
+rowind	./supermatrix.h	/^    int_t  *rowind; \/* pointer to array of row indices of the nonzeros *\/$/;"	m	struct:__anon58
+rowind	./supermatrix.h	/^    int_t *rowind;\/* pointer to array of row indices of the nonzeros *\/$/;"	m	struct:__anon62
+rowind	./supermatrix.h	/^  int_t  *rowind;      \/* pointer to array of compressed row indices of $/;"	m	struct:__anon61
+rowind	./supermatrix.h	/^  int_t *rowind;     \/* pointer to array of compressed row indices of $/;"	m	struct:__anon60
+rowind_colbeg	./supermatrix.h	/^  int_t *rowind_colbeg;\/* rowind_colbeg[j] points to beginning of column j$/;"	m	struct:__anon61
+rowind_colend	./supermatrix.h	/^  int_t *rowind_colend;\/* rowind_colend[j] points to one past the last element$/;"	m	struct:__anon61
+rowind_colptr	./supermatrix.h	/^  int_t *rowind_colptr;\/* pointer to array of beginning of columns in rowind[] *\/$/;"	m	struct:__anon60
+rowperm_t	./superlu_enum_consts.h	/^typedef enum {NOROWPERM, LargeDiag_MC64, LargeDiag_AWPM, MY_PERMR} rowperm_t;$/;"	t	typeref:enum:__anon38
+rowptr	./supermatrix.h	/^    int_t  *rowptr; \/* pointer to array of beginning of rows in nzval[] $/;"	m	struct:__anon59
+rowptr	./supermatrix.h	/^    int_t *rowptr;   \/* pointer to array of beginning of rows in nzval[] $/;"	m	struct:__anon64
+rscp	./superlu_defs.h	/^    superlu_scope_t rscp; \/* process scope in rowwise, horizontal directon *\/$/;"	m	struct:__anon26
+rseed_	./TreeBcast_slu.hpp	/^        double rseed_;$/;"	m	class:SuperLU_ASYNCOMM::ModBTreeBcast2
+rseed_	./TreeReduce_slu.hpp	/^  double rseed_;$/;"	m	class:SuperLU_ASYNCOMM::ModBTreeReduce_slu
+rukp	./superlu_defs.h	/^    int_t rukp;$/;"	m	struct:__anon33
+sasum_	./Cnames.h	120;"	d
+sasum_	./Cnames.h	248;"	d
+saxpy_	./Cnames.h	128;"	d
+saxpy_	./Cnames.h	256;"	d
+scasum_	./Cnames.h	153;"	d
+scasum_	./Cnames.h	281;"	d
+scnrm2_	./Cnames.h	157;"	d
+scnrm2_	./Cnames.h	285;"	d
+scopy_	./Cnames.h	122;"	d
+scopy_	./Cnames.h	250;"	d
+score	./colamd.h	/^	int score ;	\/* the score used to maintain heap, if col is alive *\/$/;"	m	union:Colamd_Col_struct::__anon2
+score	./old_colamd.c	/^	int score ;	\/* the score used to maintain heap, if col is alive *\/$/;"	m	union:ColInfo_struct::__anon9	file:
+sdot_	./Cnames.h	127;"	d
+sdot_	./Cnames.h	255;"	d
+sendCount_	./TreeBcast_slu.hpp	/^        Int sendCount_;$/;"	m	class:SuperLU_ASYNCOMM::TreeBcast_slu
+sendDataPtrs_	./TreeBcast_slu.hpp	/^        std::vector<T *> sendDataPtrs_;$/;"	m	class:SuperLU_ASYNCOMM::TreeBcast_slu
+sendDoneIdx_	./TreeBcast_slu.hpp	/^        std::vector<Int> sendDoneIdx_;$/;"	m	class:SuperLU_ASYNCOMM::TreeBcast_slu
+sendPostedCount_	./TreeBcast_slu.hpp	/^        Int sendPostedCount_;$/;"	m	class:SuperLU_ASYNCOMM::TreeBcast_slu
+sendRequests_	./TreeBcast_slu.hpp	/^        std::vector<MPI_Request> sendRequests_;$/;"	m	class:SuperLU_ASYNCOMM::TreeBcast_slu
+sendStatuses_	./TreeBcast_slu.hpp	/^        std::vector<MPI_Status> sendStatuses_;$/;"	m	class:SuperLU_ASYNCOMM::TreeBcast_slu
+sendTempBuffer_	./TreeBcast_slu.hpp	/^        std::vector<T> sendTempBuffer_;$/;"	m	class:SuperLU_ASYNCOMM::TreeBcast_slu
+send_dbuf	./superlu_defs.h	/^    void   *send_dbuf;$/;"	m	struct:__anon30
+send_dbuf2	./superlu_defs.h	/^    void   *send_dbuf2;$/;"	m	struct:__anon30
+send_ibuf	./superlu_defs.h	/^    int_t  *send_ibuf;$/;"	m	struct:__anon30
+send_ibuf2	./superlu_defs.h	/^    int_t  *send_ibuf2;$/;"	m	struct:__anon30
+set_default_options_dist	./util.c	/^void set_default_options_dist(superlu_dist_options_t *options)$/;"	f
+set_usub	./symbfact.c	/^static int_t set_usub$/;"	f	file:
+sgemm_	./Cnames.h	133;"	d
+sgemm_	./Cnames.h	261;"	d
+sgemv_	./Cnames.h	131;"	d
+sgemv_	./Cnames.h	259;"	d
+sger_	./Cnames.h	124;"	d
+sger_	./Cnames.h	252;"	d
+shared1	./colamd.h	/^    } shared1 ;$/;"	m	struct:Colamd_Col_struct	typeref:union:Colamd_Col_struct::__anon1
+shared1	./colamd.h	/^    } shared1 ;$/;"	m	struct:Colamd_Row_struct	typeref:union:Colamd_Row_struct::__anon5
+shared1	./old_colamd.c	/^    } shared1 ;$/;"	m	struct:ColInfo_struct	typeref:union:ColInfo_struct::__anon8	file:
+shared1	./old_colamd.c	/^    } shared1 ;$/;"	m	struct:RowInfo_struct	typeref:union:RowInfo_struct::__anon12	file:
+shared2	./colamd.h	/^    } shared2 ;$/;"	m	struct:Colamd_Col_struct	typeref:union:Colamd_Col_struct::__anon2
+shared2	./colamd.h	/^    } shared2 ;$/;"	m	struct:Colamd_Row_struct	typeref:union:Colamd_Row_struct::__anon6
+shared2	./old_colamd.c	/^    } shared2 ;$/;"	m	struct:ColInfo_struct	typeref:union:ColInfo_struct::__anon9	file:
+shared2	./old_colamd.c	/^    } shared2 ;$/;"	m	struct:RowInfo_struct	typeref:union:RowInfo_struct::__anon13	file:
+shared3	./colamd.h	/^    } shared3 ;$/;"	m	struct:Colamd_Col_struct	typeref:union:Colamd_Col_struct::__anon3
+shared3	./old_colamd.c	/^    } shared3 ;$/;"	m	struct:ColInfo_struct	typeref:union:ColInfo_struct::__anon10	file:
+shared4	./colamd.h	/^    } shared4 ;$/;"	m	struct:Colamd_Col_struct	typeref:union:Colamd_Col_struct::__anon4
+shared4	./old_colamd.c	/^    } shared4 ;$/;"	m	struct:ColInfo_struct	typeref:union:ColInfo_struct::__anon11	file:
+size	./util_dist.h	/^    int  size;$/;"	m	struct:__anon66
+size	./util_dist.h	/^    int size;      \/* length of the memory that has been used *\/$/;"	m	struct:e_node
+slud_z_abs	./dcomplex_dist.c	/^double slud_z_abs(doublecomplex *z)$/;"	f
+slud_z_abs1	./dcomplex_dist.c	/^double slud_z_abs1(doublecomplex *z)$/;"	f
+slud_z_div	./dcomplex_dist.c	/^void slud_z_div(doublecomplex *c, doublecomplex *a, doublecomplex *b)$/;"	f
+smach_dist	./smach_dist.c	/^float smach_dist(char *cmach)$/;"	f
+snd_LinterSz	./psymbfact.h	/^  int_t  *snd_LinterSz; \/* size of data in L part to be send *\/$/;"	m	struct:__anon18
+snd_LintraSz	./psymbfact.h	/^  int_t  snd_LintraSz;  \/* size of data to send *\/$/;"	m	struct:__anon18
+snd_buf	./psymbfact.h	/^  int_t  *snd_buf;      \/* buffer to send data *\/$/;"	m	struct:__anon18
+snd_bufSz	./psymbfact.h	/^  int_t  snd_bufSz;     \/* size of the buffer to send data *\/$/;"	m	struct:__anon18
+snd_interLvl	./psymbfact.h	/^  int_t  *snd_interLvl; \/* to which processors iam sends data *\/$/;"	m	struct:__anon18
+snd_interSz	./psymbfact.h	/^  int_t  *snd_interSz;  \/* size of data to be send *\/$/;"	m	struct:__anon18
+snd_intraLvl	./psymbfact.h	/^  int_t  *snd_intraLvl; \/* to which processors iam sends data *\/$/;"	m	struct:__anon18
+snd_intraSz	./psymbfact.h	/^  int_t  snd_intraSz;   \/* size of data to send *\/$/;"	m	struct:__anon18
+snd_vtxinter	./psymbfact.h	/^  int_t  *snd_vtxinter; \/* first vertex from where to send data *\/$/;"	m	struct:__anon18
+snode_dfs	./symbfact.c	/^static int_t snode_dfs$/;"	f	file:
+snrm2_	./Cnames.h	125;"	d
+snrm2_	./Cnames.h	253;"	d
+sp_coletree_dist	./etree.c	/^sp_coletree_dist($/;"	f
+sp_colorder	./sp_colorder.c	/^sp_colorder(superlu_dist_options_t *options,  SuperMatrix *A, int_t *perm_c, $/;"	f
+sp_dgemm_dist	./dsp_blas3_dist.c	/^sp_dgemm_dist(char *transa, int n, double alpha, SuperMatrix *A,$/;"	f
+sp_dgemv_dist	./dsp_blas2_dist.c	/^sp_dgemv_dist(char *trans, double alpha, SuperMatrix *A, double *x, $/;"	f
+sp_dtrsv_dist	./dsp_blas2_dist.c	/^sp_dtrsv_dist(char *uplo, char *trans, char *diag, SuperMatrix *L, $/;"	f
+sp_ienv_dist	./sp_ienv.c	/^sp_ienv_dist(int_t ispec)$/;"	f
+sp_symetree_dist	./etree.c	/^sp_symetree_dist($/;"	f
+sp_zgemm_dist	./zsp_blas3_dist.c	/^sp_zgemm_dist(char *transa, int n, doublecomplex alpha, SuperMatrix *A,$/;"	f
+sp_zgemv_dist	./zsp_blas2_dist.c	/^sp_zgemv_dist(char *trans, doublecomplex alpha, SuperMatrix *A,$/;"	f
+sp_ztrsv_dist	./zsp_blas2_dist.c	/^sp_ztrsv_dist(char *uplo, char *trans, char *diag, SuperMatrix *L, $/;"	f
+srot_	./Cnames.h	130;"	d
+srot_	./Cnames.h	258;"	d
+sscal_	./Cnames.h	123;"	d
+sscal_	./Cnames.h	251;"	d
+ssymv_	./Cnames.h	126;"	d
+ssymv_	./Cnames.h	254;"	d
+ssyr2_	./Cnames.h	129;"	d
+ssyr2_	./Cnames.h	257;"	d
+stack	./memory.c	/^SuperLU_LU_stack_t stack;$/;"	v
+stack_end_t	./superlu_enum_consts.h	/^typedef enum {HEAD, TAIL}                                       stack_end_t;$/;"	t	typeref:enum:__anon44
+start	./colamd.h	/^    int start ;		\/* index for A of first col in this row *\/$/;"	m	struct:Colamd_Row_struct
+start	./colamd.h	/^    int start ;		\/* index for A of first row in this column, or DEAD *\/$/;"	m	struct:Colamd_Col_struct
+start	./old_colamd.c	/^    int start ;		\/* index for A of first col in this row *\/$/;"	m	struct:RowInfo_struct	file:
+start	./old_colamd.c	/^    int start ;		\/* index for A of first row in this column, or DEAD *\/$/;"	m	struct:ColInfo_struct	file:
+static_partition	./util.c	/^static_partition (struct superlu_pair *work_load, int_t nwl, int_t *partition,$/;"	f
+static_schedule	./static_schedule.c	/^static_schedule(superlu_dist_options_t * options, int m, int n, $/;"	f
+strsm_	./Cnames.h	134;"	d
+strsm_	./Cnames.h	262;"	d
+strsv_	./Cnames.h	132;"	d
+strsv_	./Cnames.h	260;"	d
+sup_to_col	./supermatrix.h	/^  int_t *sup_to_col;   \/* sup_to_col[s] points to the start of the s-th $/;"	m	struct:__anon60
+sup_to_colbeg	./supermatrix.h	/^  int_t *sup_to_colbeg; \/* sup_to_colbeg[s] points to the start of the s-th $/;"	m	struct:__anon61
+sup_to_colend	./supermatrix.h	/^  int_t *sup_to_colend; \/* sup_to_colend[s] points to one past the end of the$/;"	m	struct:__anon61
+super_stats_dist	./util.c	/^void super_stats_dist(int_t nsuper, int_t *xsup)$/;"	f
+superlu_abort_and_exit_dist	./memory.c	/^superlu_abort_and_exit_dist(char *msg)$/;"	f
+superlu_dist_GetVersionNumber	./superlu_dist_version.c	/^int superlu_dist_GetVersionNumber(int *major, int *minor, int *bugfix)$/;"	f
+superlu_dist_mem_usage_t	./superlu_defs.h	/^} superlu_dist_mem_usage_t;$/;"	t	typeref:struct:__anon32
+superlu_dist_options_t	./superlu_defs.h	/^} superlu_dist_options_t;$/;"	t	typeref:struct:__anon31
+superlu_free_dist	./memory.c	/^void   superlu_free_dist(void * ptr)    {free(ptr);}$/;"	f
+superlu_free_dist	./memory.c	/^void  superlu_free_dist(void * ptr)  { _mm_free(ptr); }$/;"	f
+superlu_free_dist	./memory.c	/^void superlu_free_dist(void *addr) { free (addr); }$/;"	f
+superlu_free_dist	./memory.c	/^void superlu_free_dist(void *addr)$/;"	f
+superlu_gridexit	./superlu_grid.c	/^void superlu_gridexit(gridinfo_t *grid)$/;"	f
+superlu_gridinit	./superlu_grid.c	/^void superlu_gridinit(MPI_Comm Bcomm, \/* The base communicator upon which$/;"	f
+superlu_gridmap	./superlu_grid.c	/^void superlu_gridmap($/;"	f
+superlu_malloc_dist	./memory.c	/^void * superlu_malloc_dist(size_t size) {$/;"	f
+superlu_malloc_dist	./memory.c	/^void * superlu_malloc_dist(size_t size) {void* ptr;int alignment=1<<12;if(size>1<<19){alignment=1<<21;}posix_memalign( (void**)&(ptr), alignment, size );return(ptr);}$/;"	f
+superlu_malloc_dist	./memory.c	/^void *superlu_malloc_dist(size_t size) {$/;"	f
+superlu_malloc_dist	./memory.c	/^void *superlu_malloc_dist(size_t size)$/;"	f
+superlu_malloc_total	./memory.c	/^long int superlu_malloc_total = 0;$/;"	v
+superlu_pair	./superlu_defs.h	/^struct superlu_pair$/;"	s
+superlu_scope_t	./superlu_defs.h	/^} superlu_scope_t;$/;"	t	typeref:struct:__anon25
+superlu_sort_perm	./pdgstrf.c	/^superlu_sort_perm (const void *arg1, const void *arg2)$/;"	f
+superlu_sort_perm	./pzgstrf.c	/^superlu_sort_perm (const void *arg1, const void *arg2)$/;"	f
+superlu_sort_perm	./static_schedule.c	/^superlu_sort_perm (const void *arg1, const void *arg2)$/;"	f
+supno	./superlu_defs.h	/^    int_t     *supno;$/;"	m	struct:__anon27
+supno_loc	./psymbfact.h	/^  int_t     *supno_loc;  $/;"	m	struct:__anon14
+symamd	./colamd.c	/^PUBLIC int symamd			\/* return TRUE if OK, FALSE otherwise *\/$/;"	f
+symamd_report	./colamd.c	/^PUBLIC void symamd_report$/;"	f
+symbfact	./symbfact.c	/^int_t symbfact$/;"	f
+symbfact_SubFree	./memory.c	/^int_t symbfact_SubFree(Glu_freeable_t *Glu_freeable)$/;"	f
+symbfact_SubInit	./memory.c	/^int_t symbfact_SubInit$/;"	f
+symbfact_SubXpand	./memory.c	/^int_t symbfact_SubXpand$/;"	f
+symbfact_alloc	./psymbfact.c	/^int symbfact_alloc$/;"	f	file:
+symbfact_dist	./psymbfact.c	/^float symbfact_dist$/;"	f
+symbfact_distributeMatrix	./psymbfact.c	/^symbfact_distributeMatrix$/;"	f	file:
+symbfact_free	./psymbfact.c	/^symbfact_free $/;"	f	file:
+symbfact_mapVtcs	./psymbfact.c	/^symbfact_mapVtcs$/;"	f	file:
+symbfact_vtx	./psymbfact.c	/^symbfact_vtx$/;"	f	file:
+szDnsSep	./psymbfact.h	/^  int_t  szDnsSep; \/* size of memory used when there are dense separators *\/$/;"	m	struct:__anon19
+szLsub	./psymbfact.h	/^  int_t     szLsub;     \/* current max size of lsub *\/$/;"	m	struct:__anon15
+szLsub	./psymbfact.h	/^  int_t     szLsub;  \/* current max size of lsub *\/$/;"	m	struct:__anon14
+szLsubPr	./psymbfact.h	/^  int_t     szLsubPr;  \/* size of lsubPr array *\/$/;"	m	struct:__anon15
+szUsub	./psymbfact.h	/^  int_t     szUsub;      \/* current max size of usub *\/$/;"	m	struct:__anon15
+szUsub	./psymbfact.h	/^  int_t     szUsub;  \/* current max size of usub *\/$/;"	m	struct:__anon14
+szUsubPr	./psymbfact.h	/^  int_t     szUsubPr;  \/* size of usubPr array *\/$/;"	m	struct:__anon15
+sz_msgsCol	./psymbfact.h	/^  float  sz_msgsCol;   \/* Max size of messages counted in no_msgsCol *\/$/;"	m	struct:__anon19
+sz_msgsRcvd	./psymbfact.h	/^  float  sz_msgsRcvd;  \/* Average size of messages receiving data *\/$/;"	m	struct:__anon19
+sz_msgsSnd	./psymbfact.h	/^  float  sz_msgsSnd;   \/* Average size of messages sending data *\/$/;"	m	struct:__anon19
+tag_	./TreeBcast_slu.hpp	/^        Int tag_;$/;"	m	class:SuperLU_ASYNCOMM::TreeBcast_slu
+tag_interLvl	./psymbfact.h	257;"	d
+tag_interLvl_LData	./psymbfact.h	258;"	d
+tag_interLvl_UData	./psymbfact.h	259;"	d
+tag_intraLvl	./psymbfact.h	264;"	d
+tag_intraLvl_LData	./psymbfact.h	261;"	d
+tag_intraLvl_UData	./psymbfact.h	262;"	d
+tag_intraLvl_szMsg	./psymbfact.h	260;"	d
+thickness	./colamd.h	/^	int thickness ;	\/* number of original columns represented by this *\/$/;"	m	union:Colamd_Col_struct::__anon1
+thickness	./old_colamd.c	/^	int thickness ;	\/* number of original columns represented by this *\/$/;"	m	union:ColInfo_struct::__anon8	file:
+top1	./util_dist.h	/^    int  top1;  \/* grow upward, relative to &array[0] *\/$/;"	m	struct:__anon66
+top2	./util_dist.h	/^    int  top2;  \/* grow downward *\/$/;"	m	struct:__anon66
+total	./superlu_defs.h	/^    float total;$/;"	m	struct:__anon32
+trans_t	./superlu_enum_consts.h	/^typedef enum {NOTRANS, TRANS, CONJ}                             trans_t;$/;"	t	typeref:enum:__anon40
+type_	./TreeBcast_slu.hpp	/^        MPI_Datatype type_;$/;"	m	class:SuperLU_ASYNCOMM::TreeBcast_slu
+ujrow	./superlu_ddefs.h	/^    double  *ujrow;           \/* used in panel factorization.          *\/$/;"	m	struct:__anon21
+ujrow	./superlu_zdefs.h	/^    doublecomplex  *ujrow;           \/* used in panel factorization.          *\/$/;"	m	struct:__anon50
+ulvl	./superlu_defs.h	/^    int_t     *ulvl;     \/* keep track of level in U for level-based ILU *\/$/;"	m	struct:__anon28
+updateRcvd_prGraph	./psymbfact.c	/^updateRcvd_prGraph$/;"	f	file:
+update_prGraph	./psymbfact.c	/^update_prGraph $/;"	f	file:
+used	./util_dist.h	/^    int  used;$/;"	m	struct:__anon66
+user_bcopy	./memory.c	/^user_bcopy(char *src, char *dest, int_t bytes)$/;"	f	file:
+user_free_dist	./memory.c	/^void user_free_dist(int_t bytes, int_t which_end)$/;"	f
+user_malloc_dist	./memory.c	/^void *user_malloc_dist(int_t bytes, int_t which_end)$/;"	f
+usub	./psymbfact.h	/^  int_t     *usub;       \/* structure of U, stored by rows *\/$/;"	m	struct:__anon15
+usub	./psymbfact.h	/^  int_t     *usub;   \/* compressed U subscripts, stored by rows *\/$/;"	m	struct:__anon14
+usub	./superlu_defs.h	/^    int_t     *usub;     \/* compressed U subscripts *\/$/;"	m	struct:__anon28
+usubPr	./psymbfact.h	/^  int_t     *usubPr;   \/* pruned structure of U *\/$/;"	m	struct:__anon15
+ut_ilsum	./superlu_ddefs.h	/^    int_t *ut_ilsum;         \/* ilsum in column-wise                        *\/$/;"	m	struct:__anon21
+ut_ilsum	./superlu_zdefs.h	/^    int_t *ut_ilsum;         \/* ilsum in column-wise                        *\/$/;"	m	struct:__anon50
+ut_ldalsum	./superlu_ddefs.h	/^    int_t ut_ldalsum;        \/* LDA of lsum (local) *\/$/;"	m	struct:__anon21
+ut_ldalsum	./superlu_zdefs.h	/^    int_t ut_ldalsum;        \/* LDA of lsum (local) *\/$/;"	m	struct:__anon50
+ut_modbit	./superlu_ddefs.h	/^    int_t *ut_modbit;$/;"	m	struct:__anon21
+ut_modbit	./superlu_zdefs.h	/^    int_t *ut_modbit;$/;"	m	struct:__anon50
+ut_sendx_plist	./superlu_ddefs.h	/^    int_t **ut_sendx_plist;  \/* Row process list to send down Xk            *\/$/;"	m	struct:__anon21
+ut_sendx_plist	./superlu_zdefs.h	/^    int_t **ut_sendx_plist;  \/* Row process list to send down Xk            *\/$/;"	m	struct:__anon50
+utime	./util_dist.h	/^    double  *utime;       \/* running time at various phases *\/$/;"	m	struct:__anon65
+utmod	./superlu_ddefs.h	/^    int_t *utmod;            \/* Modification count for Ut-solve.            *\/$/;"	m	struct:__anon21
+utmod	./superlu_zdefs.h	/^    int_t *utmod;            \/* Modification count for Ut-solve.            *\/$/;"	m	struct:__anon50
+utrecv	./superlu_ddefs.h	/^    int_t *utrecv;           \/* Modifications to be recev'd in proc column. *\/$/;"	m	struct:__anon21
+utrecv	./superlu_zdefs.h	/^    int_t *utrecv;           \/* Modifications to be recev'd in proc column. *\/$/;"	m	struct:__anon50
+val	./superlu_defs.h	/^    int val;$/;"	m	struct:superlu_pair
+val_torecv	./superlu_ddefs.h	/^    double *val_torecv;   \/* X values to be received from other processes *\/$/;"	m	struct:__anon23
+val_torecv	./superlu_zdefs.h	/^    doublecomplex *val_torecv;   \/* X values to be received from other processes *\/$/;"	m	struct:__anon52
+val_tosend	./superlu_ddefs.h	/^    double *val_tosend;   \/* X values to be sent to other processes *\/$/;"	m	struct:__anon23
+val_tosend	./superlu_zdefs.h	/^    doublecomplex *val_tosend;   \/* X values to be sent to other processes *\/$/;"	m	struct:__anon52
+vtcsInfo_symbfact_t	./psymbfact.h	/^} vtcsInfo_symbfact_t;$/;"	t	typeref:struct:__anon16
+waitSendRequest	./TreeBcast_slu_impl.hpp	/^    inline void TreeBcast_slu<T>::waitSendRequest(){$/;"	f	class:SuperLU_ASYNCOMM::TreeBcast_slu
+waitSendRequest	./TreeReduce_slu_impl.hpp	/^    inline void TreeReduce_slu<T>::waitSendRequest(){$/;"	f	class:SuperLU_ASYNCOMM::TreeReduce_slu
+winl	./pdgstrs.c	/^MPI_Win winl;$/;"	v
+winl_rd	./pdgstrs.c	/^MPI_Win winl_rd;$/;"	v
+x2b	./superlu_defs.h	/^    int_t  x2b, b2x;$/;"	m	struct:__anon30
+x_ainf	./psymbfact.h	/^  int_t  *x_ainf;   \/* pointers to columns of Ainf *\/$/;"	m	struct:__anon17
+x_asup	./psymbfact.h	/^  int_t  *x_asup;   \/* pointers to rows of Asup *\/$/;"	m	struct:__anon17
+xerr_dist	./xerr_dist.c	/^int xerr_dist(char *srname, int *info)$/;"	f
+xlsub	./psymbfact.h	/^  int_t     *xlsub;     \/* pointer to structure of L, stored by columns *\/$/;"	m	struct:__anon15
+xlsub	./psymbfact.h	/^  int_t     *xlsub;  \/* pointer to the beginning of each column of L *\/$/;"	m	struct:__anon14
+xlsub	./superlu_defs.h	/^    int_t     *xlsub;$/;"	m	struct:__anon28
+xlsubPr	./psymbfact.h	/^  int_t     *xlsubPr;  \/* pointer to pruned structure of L *\/$/;"	m	struct:__anon15
+xlsub_nextLvl	./psymbfact.h	/^  int_t  xlsub_nextLvl;   \/* Pointer to lsub of the next level *\/$/;"	m	struct:__anon16
+xlsub_rcvd	./psymbfact.h	/^  int_t     *xlsub_rcvd;$/;"	m	struct:__anon15
+xrow_to_proc	./superlu_ddefs.h	/^    int_t *xrow_to_proc; \/* used by PDSLin *\/$/;"	m	struct:__anon24
+xrow_to_proc	./superlu_zdefs.h	/^    int_t *xrow_to_proc; \/* used by PDSLin *\/$/;"	m	struct:__anon53
+xsup	./superlu_defs.h	/^    int_t     *xsup;$/;"	m	struct:__anon27
+xsup_beg_loc	./psymbfact.h	/^  int_t     *xsup_beg_loc;$/;"	m	struct:__anon14
+xsup_end_loc	./psymbfact.h	/^  int_t     *xsup_end_loc;$/;"	m	struct:__anon14
+xusub	./psymbfact.h	/^  int_t     *xusub;      \/* pointer to structure of U, stored by rows *\/$/;"	m	struct:__anon15
+xusub	./psymbfact.h	/^  int_t     *xusub;  \/* pointer to the beginning of each row of U *\/$/;"	m	struct:__anon14
+xusub	./superlu_defs.h	/^    int_t     *xusub;$/;"	m	struct:__anon28
+xusubPr	./psymbfact.h	/^  int_t     *xusubPr;  \/* pointer to pruned structure of U *\/$/;"	m	struct:__anon15
+xusub_nextLvl	./psymbfact.h	/^  int_t  xusub_nextLvl;   \/* Pointer to usub of the next level *\/$/;"	m	struct:__anon16
+xusub_rcvd	./psymbfact.h	/^  int_t     *xusub_rcvd; \/* *\/$/;"	m	struct:__anon15
+yes_no_t	./superlu_enum_consts.h	/^typedef enum {NO, YES}                                          yes_no_t;$/;"	t	typeref:enum:__anon36
+zClone_CompRowLoc_Matrix_dist	./zutil_dist.c	/^void zClone_CompRowLoc_Matrix_dist(SuperMatrix *A, SuperMatrix *B)$/;"	f
+zCompRow_to_CompCol_dist	./zutil_dist.c	/^zCompRow_to_CompCol_dist(int_t m, int_t n, int_t nnz, $/;"	f
+zCopy_CompCol_Matrix_dist	./zutil_dist.c	/^zCopy_CompCol_Matrix_dist(SuperMatrix *A, SuperMatrix *B)$/;"	f
+zCopy_CompRowLoc_Matrix_dist	./zutil_dist.c	/^void zCopy_CompRowLoc_Matrix_dist(SuperMatrix *A, SuperMatrix *B)$/;"	f
+zCopy_Dense_Matrix_dist	./zutil_dist.c	/^zCopy_Dense_Matrix_dist(int_t M, int_t N, doublecomplex *X, int_t ldx,$/;"	f
+zCreate_CompCol_Matrix_dist	./zutil_dist.c	/^zCreate_CompCol_Matrix_dist(SuperMatrix *A, int_t m, int_t n, int_t nnz, $/;"	f
+zCreate_CompRowLoc_Matrix_dist	./zutil_dist.c	/^zCreate_CompRowLoc_Matrix_dist(SuperMatrix *A, int_t m, int_t n,$/;"	f
+zCreate_Dense_Matrix_dist	./zutil_dist.c	/^zCreate_Dense_Matrix_dist(SuperMatrix *X, int_t m, int_t n, doublecomplex *x,$/;"	f
+zCreate_SuperNode_Matrix_dist	./zutil_dist.c	/^zCreate_SuperNode_Matrix_dist(SuperMatrix *L, int_t m, int_t n, int_t nnz, $/;"	f
+zDestroy_Tree	./pzutil.c	/^zDestroy_Tree(int_t n, gridinfo_t *grid, LUstruct_t *LUstruct)$/;"	f
+zDumpLblocks	./zutil_dist.c	/^void zDumpLblocks(int iam, int_t nsupers, gridinfo_t *grid,$/;"	f
+zFillRHS_dist	./zutil_dist.c	/^zFillRHS_dist(char *trans, int_t nrhs, doublecomplex *x, int_t ldx,$/;"	f
+zGenXtrue_dist	./zutil_dist.c	/^zGenXtrue_dist(int_t n, int_t nrhs, doublecomplex *x, int_t ldx)$/;"	f
+zPrintLblocks	./zutil_dist.c	/^void zPrintLblocks(int iam, int_t nsupers, gridinfo_t *grid,$/;"	f
+zPrintMSRmatrix	./pzgsmv_AXglobal.c	/^static void zPrintMSRmatrix$/;"	f	file:
+zPrintUblocks	./zutil_dist.c	/^void zPrintUblocks(int iam, int_t nsupers, gridinfo_t *grid, $/;"	f
+zPrint_CompCol_Matrix_dist	./zutil_dist.c	/^void zPrint_CompCol_Matrix_dist(SuperMatrix *A)$/;"	f
+zPrint_CompRowLoc_Matrix_dist	./zutil_dist.c	/^int zPrint_CompRowLoc_Matrix_dist(SuperMatrix *A)$/;"	f
+zPrint_Dense_Matrix_dist	./zutil_dist.c	/^void zPrint_Dense_Matrix_dist(SuperMatrix *A)$/;"	f
+zQuerySpace_dist	./zmemory_dist.c	/^int_t zQuerySpace_dist(int_t n, LUstruct_t *LUstruct, gridinfo_t *grid,$/;"	f
+zReDistribute_A	./pzdistribute.c	/^zReDistribute_A(SuperMatrix *A, ScalePermstruct_t *ScalePermstruct,$/;"	f
+zReadValues	./zreadhb.c	/^zReadValues(FILE *fp, int_t n, doublecomplex *destination, $/;"	f
+zReadValues	./zreadrb.c	/^static int zReadValues(FILE *fp, int n, doublecomplex *destination, int perline, int persize)$/;"	f	file:
+zScaleAddId_CompRowLoc_Matrix_dist	./zutil_dist.c	/^void zScaleAddId_CompRowLoc_Matrix_dist(SuperMatrix *A, doublecomplex c)$/;"	f
+zScaleAdd_CompRowLoc_Matrix_dist	./zutil_dist.c	/^void zScaleAdd_CompRowLoc_Matrix_dist(SuperMatrix *A, SuperMatrix *B, doublecomplex c)$/;"	f
+zSolveFinalize	./pzutil.c	/^void zSolveFinalize(superlu_dist_options_t *options, SOLVEstruct_t *SOLVEstruct)$/;"	f
+zSolveInit	./pzutil.c	/^int zSolveInit(superlu_dist_options_t *options, SuperMatrix *A, $/;"	f
+zZero_CompRowLoc_Matrix_dist	./zutil_dist.c	/^void zZero_CompRowLoc_Matrix_dist(SuperMatrix *A)$/;"	f
+z_add	./dcomplex.h	51;"	d
+z_copy	./dcomplex.h	47;"	d
+z_eq	./dcomplex.h	72;"	d
+z_sub	./dcomplex.h	55;"	d
+zallocateA_dist	./zmemory_dist.c	/^zallocateA_dist(int_t n, int_t nnz, doublecomplex **a, int_t **asub, int_t **xa)$/;"	f
+zaxpy_	./Cnames.h	172;"	d
+zaxpy_	./Cnames.h	300;"	d
+zcopy_	./Cnames.h	169;"	d
+zcopy_	./Cnames.h	297;"	d
+zcreate_msr_matrix	./pzgsmv_AXglobal.c	/^static void zcreate_msr_matrix$/;"	f	file:
+zd_mult	./dcomplex.h	59;"	d
+zdist_A	./pzsymbfact_distdata.c	/^zdist_A(SuperMatrix *A, ScalePermstruct_t *ScalePermstruct,$/;"	f	file:
+zdist_psymbtonum	./pzsymbfact_distdata.c	/^zdist_psymbtonum(fact_t fact, int_t n, SuperMatrix *A,$/;"	f
+zdistribute	./zdistribute.c	/^zdistribute(fact_t fact, int_t n, SuperMatrix *A, $/;"	f
+zdistribute	./zdistribute_mark.c	/^zdistribute(fact_t fact, int_t n, SuperMatrix *A, Glu_freeable_t *Glu_freeable,$/;"	f
+zfill_dist	./zutil_dist.c	/^zfill_dist(doublecomplex *a, int_t alen, doublecomplex dval)$/;"	f
+zgemm_	./Cnames.h	175;"	d
+zgemm_	./Cnames.h	303;"	d
+zgemv_	./Cnames.h	173;"	d
+zgemv_	./Cnames.h	301;"	d
+zgerc_	./Cnames.h	177;"	d
+zgerc_	./Cnames.h	305;"	d
+zgeru_	./Cnames.h	180;"	d
+zgeru_	./Cnames.h	308;"	d
+zgsequ_dist	./zgsequ_dist.c	/^zgsequ_dist(SuperMatrix *A, double *r, double *c, double *rowcnd,$/;"	f
+zhemv_	./Cnames.h	178;"	d
+zhemv_	./Cnames.h	306;"	d
+zher2_	./Cnames.h	179;"	d
+zher2_	./Cnames.h	307;"	d
+zinf_norm_error_dist	./zutil_dist.c	/^void zinf_norm_error_dist(int_t n, int_t nrhs, doublecomplex *x, int_t ldx,$/;"	f
+zlangs_dist	./zlangs_dist.c	/^double zlangs_dist(char *norm, SuperMatrix *A)$/;"	f
+zlaqgs_dist	./zlaqgs_dist.c	/^zlaqgs_dist(SuperMatrix *A, double *r, double *c, $/;"	f
+zldperm_dist	./zldperm_dist.c	/^zldperm_dist(int_t job, int_t n, int_t nnz, int_t colptr[], int_t adjncy[],$/;"	f
+zlsolve	./zmyblas2_dist.c	/^void zlsolve ( int ldm, int ncol, doublecomplex *M, doublecomplex *rhs )$/;"	f
+zlsum_bmod	./pzgstrs_lsum.c	/^void zlsum_bmod$/;"	f
+zlsum_bmod_inv	./pzgstrs_lsum.c	/^void zlsum_bmod_inv$/;"	f
+zlsum_bmod_inv_master	./pzgstrs_lsum.c	/^void zlsum_bmod_inv_master$/;"	f
+zlsum_fmod	./pzgstrs_lsum.c	/^void zlsum_fmod$/;"	f
+zlsum_fmod_inv	./pzgstrs_lsum.c	/^void zlsum_fmod_inv$/;"	f
+zlsum_fmod_inv_master	./pzgstrs_lsum.c	/^void zlsum_fmod_inv_master$/;"	f
+zmatvec	./zmyblas2_dist.c	/^void zmatvec ($/;"	f
+zprint_gsmv_comm	./zutil_dist.c	/^zprint_gsmv_comm(FILE *fp, int_t m_loc, pzgsmv_comm_t *gsmv_comm,$/;"	f
+zreadMM_dist	./zreadMM.c	/^zreadMM_dist(FILE *fp, int_t *m, int_t *n, int_t *nonz,$/;"	f
+zread_binary	./zbinary_io.c	/^zread_binary(FILE *fp, int_t *m, int_t *n, int_t *nnz, $/;"	f
+zreadhb_dist	./zreadhb.c	/^zreadhb_dist(int iam, FILE *fp, int_t *nrow, int_t *ncol, int_t *nonz,$/;"	f
+zreadrb_dist	./zreadrb.c	/^zreadrb_dist(int iam, FILE *fp, int_t *nrow, int_t *ncol, int_t *nonz,$/;"	f
+zreadrhs	./zreadMM.c	/^static void zreadrhs(int m, doublecomplex *b)$/;"	f	file:
+zreadrhs	./zreadtriple.c	/^void zreadrhs(int m, doublecomplex *b)$/;"	f
+zreadtriple_dist	./zreadtriple.c	/^zreadtriple_dist(FILE *fp, int_t *m, int_t *n, int_t *nonz,$/;"	f
+zreadtriple_noheader	./zreadtriple_noheader.c	/^zreadtriple_noheader(FILE *fp, int_t *m, int_t *n, int_t *nonz,$/;"	f
+zscal_	./Cnames.h	170;"	d
+zscal_	./Cnames.h	298;"	d
+zscatter_l	./zscatter.c	/^zscatter_l ($/;"	f	file:
+zscatter_l_1	./zscatter.c	/^zscatter_l_1 (int ib,$/;"	f	file:
+zscatter_u	./zscatter.c	/^zscatter_u (int ib,$/;"	f	file:
+ztrsm_	./Cnames.h	176;"	d
+ztrsm_	./Cnames.h	304;"	d
+ztrsv_	./Cnames.h	174;"	d
+ztrsv_	./Cnames.h	302;"	d
+zuser_free_dist	./zmemory_dist.c	/^void zuser_free_dist(int_t bytes, int_t which_end)$/;"	f
+zuser_malloc_dist	./zmemory_dist.c	/^void *zuser_malloc_dist(int_t bytes, int_t which_end)$/;"	f
+zusolve	./zmyblas2_dist.c	/^zusolve ($/;"	f
+zwrite_binary	./zbinary_io.c	/^zwrite_binary(int_t n, int_t nnz,$/;"	f
+zz_mult	./dcomplex.h	63;"	d
+~TreeBcast_slu	./TreeBcast_slu_impl.hpp	/^    TreeBcast_slu<T>::~TreeBcast_slu(){$/;"	f	class:SuperLU_ASYNCOMM::TreeBcast_slu
+~TreeReduce_slu	./TreeReduce_slu_impl.hpp	/^    TreeReduce_slu<T>::~TreeReduce_slu(){$/;"	f	class:SuperLU_ASYNCOMM::TreeReduce_slu

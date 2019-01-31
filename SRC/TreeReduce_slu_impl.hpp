@@ -1,3 +1,4 @@
+#include "fompi.h"
 #ifndef __SUPERLU_TREEREDUCE_IMPL
 #define __SUPERLU_TREEREDUCE_IMPL
 
@@ -39,17 +40,45 @@ namespace SuperLU_ASYNCOMM {
 
       this->cleanupBuffers();
     }
-	
+#ifdef oneside
+  template< typename T> 
+    inline void TreeReduce_slu<T>::forwardMessageOneSide(T * locBuffer, Int msgSize, int* iam_row, int* RDcount, long* RDbase, int* maxrecvsz, int Pc){
+        int iam;
+        MPI_Comm_rank(MPI_COMM_WORLD, &iam);        
+        double my_RDtasktail = 1.0;
+	double t1, t2;
+        long RDsendoffset=0;
+        Int new_iProc;
+        if(this->myRank_!=this->myRoot_){
+		Int iProc = this->myRoot_;
+		new_iProc = iProc%Pc;
+		RDsendoffset = RDbase[new_iProc] + RDcount[new_iProc]*(*maxrecvsz);
+ 		//printf("I am %d, row_id %d, send to world rank %d/%d, RDcount[%d]=%d, RDbase[%d]=%ld,RDsendoffset=%ld, maxrecvsz=%d\n",iam, *iam_row, iProc, new_iProc, new_iProc, RDcount[new_iProc], new_iProc, RDbase[new_iProc], RDsendoffset, *maxrecvsz);
+		//fflush(stdout);
+		
+                t1 = SuperLU_timer_();
+                foMPI_Accumulate(locBuffer, msgSize+1, this->type_, new_iProc, RDsendoffset, msgSize+1, this->type_, foMPI_REPLACE, rd_winl);		  
+		///foMPI_Accumulate(locBuffer, msgSize, this->type_, new_iProc, RDsendoffset, msgSize, this->type_, foMPI_REPLACE, rd_winl);		  
+		///foMPI_Accumulate(&my_RDtasktail, 1, MPI_DOUBLE, new_iProc, *iam_row, 1, MPI_DOUBLE, foMPI_SUM, rd_winl);		  
+	        onesidecomm_bc[iam] += SuperLU_timer_() - t1;
+		RDcount[new_iProc] += 1; 
+ 		//printf("End---I am %d, row_id %d, send to world rank %d/%d \n",iam, *iam_row,iProc, new_iProc);
+		//fflush(stdout);
+	}
+    }
+ #endif  
   template< typename T> 
     inline void TreeReduce_slu<T>::forwardMessageSimple(T * locBuffer, Int msgSize){
         MPI_Status status;
 		Int flag;
+        int dn_rank;
+        MPI_Comm_rank(MPI_COMM_WORLD, &dn_rank);        
 		if(this->myRank_!=this->myRoot_){
 			// if(this->recvCount_== this->GetDestCount()){		
 			  //forward to my root if I have reseived everything
 			  Int iProc = this->myRoot_;
+ //printf("I am %d, will send to %d\n",dn_rank, iProc);
 			  // Use Isend to send to multiple targets
-
 			  Int error_code = MPI_Isend(locBuffer, msgSize, this->type_, 
 				  iProc, this->tag_,this->comm_, &this->sendRequests_[0] );
 				  
@@ -63,7 +92,6 @@ namespace SuperLU_ASYNCOMM {
 		}
       }
 	
- 
 
   template< typename T> 
     inline void TreeReduce_slu<T>::allocateRequest(){

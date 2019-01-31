@@ -5,6 +5,9 @@
 // #include "blas.hpp"
 // #include "timer.h"
 #include "superlu_defs.h"
+#ifdef oneside
+#include "oneside.h"
+#endif
 
 #include <vector>
 #include <list>
@@ -67,13 +70,12 @@ namespace SuperLU_ASYNCOMM {
 
 
       protected:
-        virtual void buildTree(Int * ranks, Int rank_cnt)=0;
-
+	virtual void buildTree(Int * ranks, Int rank_cnt)=0;
 
       public:
         static TreeBcast_slu<T> * Create(const MPI_Comm & pComm, Int * ranks, Int rank_cnt, Int msgSize,double rseed);
-        TreeBcast_slu();
         TreeBcast_slu(const MPI_Comm & pComm, Int * ranks, Int rank_cnt,Int msgSize);
+        TreeBcast_slu();
         TreeBcast_slu(const TreeBcast_slu & Tree);
         virtual ~TreeBcast_slu();
         virtual TreeBcast_slu * clone() const = 0; 
@@ -98,17 +100,16 @@ namespace SuperLU_ASYNCOMM {
         bool IsReady(){ return this->isReady_;}
 
         //async wait and forward
-		virtual void AllocateBuffer();															
-
-
-        virtual void cleanupBuffers();
-
-		virtual void allocateRequest();
-		virtual void forwardMessageSimple(T * locBuffer, Int msgSize);	
-		virtual void waitSendRequest();	
+ 	virtual void AllocateBuffer();
+	virtual void cleanupBuffers();
+	virtual void allocateRequest();
+#ifdef oneside
+	virtual void forwardMessageOneSide(T * locBuffer, Int msgSize,  int* iam_col, int *BCcount, long* BCbase, int* maxrecvsz, int Pc);
+#endif
+        virtual void forwardMessageSimple(T * locBuffer, Int msgSize);
+	virtual void waitSendRequest();	
 
     };
-
 
   template< typename T>
     class FTreeBcast2: public TreeBcast_slu<T>{
@@ -140,7 +141,6 @@ namespace SuperLU_ASYNCOMM {
         ModBTreeBcast2(const MPI_Comm & pComm, Int * ranks, Int rank_cnt, Int msgSize, double rseed);
         virtual ModBTreeBcast2<T> * clone() const;
     };
-
 } // namespace SuperLU_ASYNCOMM
 
 #include "TreeBcast_slu_impl.hpp"

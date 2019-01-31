@@ -1,6 +1,9 @@
 #include "TreeReduce_slu.hpp"
 #include "dcomplex.h"
-
+#ifdef oneside
+#include "oneside.h"
+#endif
+#include "mpi.h"
 namespace SuperLU_ASYNCOMM{
 	
 	
@@ -8,6 +11,21 @@ namespace SuperLU_ASYNCOMM{
 #ifdef __cplusplus
 	extern "C" {
 #endif
+
+	BcTree BcTree_Create_oneside(MPI_Comm comm, Int* ranks, Int rank_cnt, Int msgSize, double rseed, char precision, int* BufSize, int Pc){
+		assert(msgSize>0);
+		if(precision=='d'){
+			TreeBcast_slu<double>* BcastTree = TreeBcast_slu<double>::Create(comm,ranks,rank_cnt,msgSize,rseed);
+ 			//printf("Out my root is %d/%d\n",BcastTree->GetRoot(),BcastTree->GetRoot()/Pc);
+ 			BufSize[BcastTree->GetRoot()/Pc] += 1;
+			return (BcTree) BcastTree;
+		}
+		if(precision=='z'){
+			TreeBcast_slu<doublecomplex>* BcastTree = TreeBcast_slu<doublecomplex>::Create(comm,ranks,rank_cnt,msgSize,rseed);		
+ 			BufSize[BcastTree->GetRoot()/Pc] += 1;
+			return (BcTree) BcastTree;
+		}
+	}
 
 	BcTree BcTree_Create(MPI_Comm comm, Int* ranks, Int rank_cnt, Int msgSize, double rseed, char precision){
 		assert(msgSize>0);
@@ -20,6 +38,7 @@ namespace SuperLU_ASYNCOMM{
 			return (BcTree) BcastTree;
 		}
 	}
+
 
 	void BcTree_Destroy(BcTree Tree, char precision){
 		if(precision=='d'){
@@ -57,6 +76,30 @@ namespace SuperLU_ASYNCOMM{
 	}
 
 	
+#ifdef oneside
+	void BcTree_forwardMessageOneSide(BcTree Tree, void* localBuffer, Int msgSize, char precision, int* iam_col, int* BCcount, long* BCbase, int* maxrecvsz, int Pc){
+		if(precision=='d'){
+			TreeBcast_slu<double>* BcastTree = (TreeBcast_slu<double>*) Tree;
+                        double *sendbuf = (double*) localBuffer;
+                        double *sendbufval;
+                        if ( !(sendbufval = (double*)SUPERLU_MALLOC( (msgSize+1) * sizeof(double))) )
+                                ABORT("Malloc fails for sendbuf[]");
+                        for(Int i = 0; i<msgSize;i++){
+                                sendbufval[i] = sendbuf[i];
+                        }
+                        sendbufval[msgSize] = 1;
+                        //printf("HERE!!! send=%lf,%lf,loc=%lf\n",sendbufval[msgSize-1],sendbufval[msgSize],sendbuf[msgSize-1]);
+                        //fflush(stdout);
+			//msgSize += 1;
+                        BcastTree->forwardMessageOneSide(sendbufval,msgSize, iam_col, BCcount, BCbase, maxrecvsz, Pc);	
+			//BcastTree->forwardMessageOneSide((double*)localBuffer,msgSize, iam_col, BCcount, BCbase, maxrecvsz, Pc);	
+		}
+		if(precision=='z'){
+			TreeBcast_slu<doublecomplex>* BcastTree = (TreeBcast_slu<doublecomplex>*) Tree;
+			BcastTree->forwardMessageOneSide((doublecomplex*)localBuffer,msgSize, iam_col, BCcount, BCbase, maxrecvsz, Pc);	
+		}	
+	}
+#endif
 	void BcTree_forwardMessageSimple(BcTree Tree, void* localBuffer, Int msgSize, char precision){
 		if(precision=='d'){
 		TreeBcast_slu<double>* BcastTree = (TreeBcast_slu<double>*) Tree;
@@ -67,6 +110,7 @@ namespace SuperLU_ASYNCOMM{
 		BcastTree->forwardMessageSimple((doublecomplex*)localBuffer,msgSize);	
 		}	
 	}
+
 
 	void BcTree_waitSendRequest(BcTree Tree, char precision){
 		if(precision=='d'){
@@ -159,8 +203,27 @@ namespace SuperLU_ASYNCOMM{
 		return (*list).begin()==(*list).end()?YES:NO;
 	}		
 	
-
-	RdTree RdTree_Create(MPI_Comm comm, Int* ranks, Int rank_cnt, Int msgSize, double rseed, char precision){
+	RdTree RdTree_Create_oneside(MPI_Comm comm, Int* ranks, Int rank_cnt, Int msgSize, double rseed, char precision, int* BufSize_rd, int Pc){
+		assert(msgSize>0);
+		if(precision=='d'){
+		        TreeReduce_slu<double>* ReduceTree = TreeReduce_slu<double>::Create(comm,ranks,rank_cnt,msgSize,rseed);
+                        //int dn_rank;
+                        //MPI_Comm_rank(MPI_COMM_WORLD,&dn_rank);
+                        for(Int i=0;i<ReduceTree->GetDestCount();++i){
+ 			   //     printf("Total=%d, Pc=%d,iam=%d, my root is %d/%d\n",ReduceTree->GetDestCount(), Pc, dn_rank,ReduceTree->GetDest(i),ReduceTree->GetDest(i)%Pc);
+                           //     fflush(stdout);
+                                BufSize_rd[ReduceTree->GetDest(i)%Pc] += 1;
+		        }
+                        
+                        return (RdTree) ReduceTree;
+		}
+		if(precision=='z'){
+		TreeReduce_slu<doublecomplex>* ReduceTree = TreeReduce_slu<doublecomplex>::Create(comm,ranks,rank_cnt,msgSize,rseed);
+		return (RdTree) ReduceTree;
+		}
+	}
+	
+        RdTree RdTree_Create(MPI_Comm comm, Int* ranks, Int rank_cnt, Int msgSize, double rseed, char precision){
 		assert(msgSize>0);
 		if(precision=='d'){
 		TreeReduce_slu<double>* ReduceTree = TreeReduce_slu<double>::Create(comm,ranks,rank_cnt,msgSize,rseed);
@@ -229,14 +292,36 @@ namespace SuperLU_ASYNCOMM{
 		return ReduceTree->IsRoot()?YES:NO;
 		}
 	}
-
-
+#ifdef oneside
+	void RdTree_forwardMessageOneSide(RdTree Tree, void* localBuffer, Int msgSize, char precision, int* iam_row, int* RDcount, long* RDbase, int* maxrecvsz, int Pc){
+		if(precision=='d'){
+		        TreeReduce_slu<double>* ReduceTree = (TreeReduce_slu<double>*) Tree;
+                        double *sendbuf = (double*) localBuffer;
+                        double *sendbufval;
+                        if ( !(sendbufval = (double*)SUPERLU_MALLOC( (msgSize+1) * sizeof(double))) )
+                                ABORT("Malloc fails for sendbuf[]");
+                        for(Int i = 0; i<msgSize;i++){
+                                sendbufval[i] = sendbuf[i];
+                        }
+                        sendbufval[msgSize] = 1;
+                        //printf("HERE!!! send=%lf,%lf,loc=%lf\n",sendbufval[msgSize-1],sendbufval[msgSize],sendbuf[msgSize-1]);
+                        //fflush(stdout);
+		        ReduceTree->forwardMessageOneSide(sendbufval, msgSize, iam_row, RDcount, RDbase, maxrecvsz, Pc);	
+		        //ReduceTree->forwardMessageOneSide((double*)localBuffer,msgSize, iam_row, RDcount, RDbase, maxrecvsz, Pc);	
+		}
+		if(precision=='z'){
+		TreeReduce_slu<doublecomplex>* ReduceTree = (TreeReduce_slu<doublecomplex>*) Tree;
+		ReduceTree->forwardMessageOneSide((doublecomplex*)localBuffer,msgSize, iam_row, RDcount, RDbase, maxrecvsz, Pc);	
+		}
+	}
+#endif
 	void RdTree_forwardMessageSimple(RdTree Tree, void* localBuffer, Int msgSize, char precision){
 		if(precision=='d'){
 		TreeReduce_slu<double>* ReduceTree = (TreeReduce_slu<double>*) Tree;
 		ReduceTree->forwardMessageSimple((double*)localBuffer,msgSize);	
 		}
-		if(precision=='z'){TreeReduce_slu<doublecomplex>* ReduceTree = (TreeReduce_slu<doublecomplex>*) Tree;
+		if(precision=='z'){
+		TreeReduce_slu<doublecomplex>* ReduceTree = (TreeReduce_slu<doublecomplex>*) Tree;
 		ReduceTree->forwardMessageSimple((doublecomplex*)localBuffer,msgSize);	
 		}
 	}

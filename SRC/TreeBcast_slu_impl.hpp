@@ -1,6 +1,9 @@
+#include <iostream>
+
 #ifndef __SUPERLU_TREEBCAST_IMPL
 #define __SUPERLU_TREEBCAST_IMPL
 
+using namespace std;
 
 namespace SuperLU_ASYNCOMM {
 
@@ -27,8 +30,8 @@ namespace SuperLU_ASYNCOMM {
       MPI_Type_commit( &type_ );
 
     }
-
-  template< typename T> 
+  
+ template< typename T> 
     TreeBcast_slu<T>::TreeBcast_slu(const MPI_Comm & pComm, Int * ranks, Int rank_cnt,Int msgSize):TreeBcast_slu(){
       comm_ = pComm;
       MPI_Comm_rank(comm_,&myRank_);
@@ -43,9 +46,8 @@ namespace SuperLU_ASYNCOMM {
           MPI_Errhandler_set(MPI_COMM_WORLD, MPI_ERRORS_RETURN);
 #endif
     }
-
-
-  template< typename T> 
+  
+ template< typename T> 
     TreeBcast_slu<T>::TreeBcast_slu(const TreeBcast_slu & Tree){
       this->Copy(Tree);
     }
@@ -165,23 +167,51 @@ namespace SuperLU_ASYNCOMM {
 
 	
 	
+#ifdef oneside
+ // int MPI_Accumulate(const void *origin_addr, int origin_count, MPI_Datatype origin_datatype, 
+ //                    int target_rank, MPI_Aint target_disp, int target_count, 
+ //                    MPI_Datatype  target_datatype, MPI_Op op, MPI_Win win) 
+  template< typename T> 
+    inline void TreeBcast_slu<T>::forwardMessageOneSide(T * locBuffer, Int msgSize, int* iam_col, int* BCcount, long* BCbase, int* maxrecvsz, int Pc){
+        int iam;
+        MPI_Comm_rank(MPI_COMM_WORLD, &iam);        
+        double my_BCtasktail = 1.0;
+	double t1, t2;
+        long BCsendoffset=0;
+       // MPI_Status status;
+        Int new_iProc;
+        for( Int idxRecv = 0; idxRecv < this->myDests_.size(); ++idxRecv ){
+                Int iProc = this->myDests_[idxRecv];
+		new_iProc = iProc/Pc;
+                BCsendoffset = BCbase[new_iProc] + BCcount[new_iProc]*(*maxrecvsz);
+                //fflush(stdout);
+ 		//printf("I am %d, col_id %d, send to world rank %d/%d, BCcount[%d]=%d, BCbase[%d]=%ld,BCsendoffset=%ld, maxrecvsz=%d\n",iam, *iam_col,iProc, new_iProc, new_iProc,BCcount[new_iProc], new_iProc,BCbase[new_iProc], BCsendoffset, *maxrecvsz);
+		//fflush(stdout);
+                t1 = SuperLU_timer_();
+                foMPI_Accumulate(locBuffer, msgSize+1, this->type_, new_iProc, BCsendoffset, msgSize+1, this->type_, foMPI_REPLACE, bc_winl);		  
+	        onesidecomm_bc[iam] += SuperLU_timer_() - t1;
+                BCcount[new_iProc] += 1;
+ 		//printf("End--I am %d, col_id %d, send to world rank %d/%d \n",iam, *iam_col,iProc, new_iProc);
+		//fflush(stdout);
+	} // for (iProc)
+    }
+  
+#endif
   template< typename T> 
     inline void TreeBcast_slu<T>::forwardMessageSimple(T * locBuffer, Int msgSize){
         MPI_Status status;
-		Int flag;
-		for( Int idxRecv = 0; idxRecv < this->myDests_.size(); ++idxRecv ){
-          Int iProc = this->myDests_[idxRecv];
+        int dn_rank;
+        MPI_Comm_rank(MPI_COMM_WORLD, &dn_rank);        
+	Int flag;
+	for( Int idxRecv = 0; idxRecv < this->myDests_.size(); ++idxRecv ){
+          	Int iProc = this->myDests_[idxRecv];
           // Use Isend to send to multiple targets
-          Int error_code = MPI_Isend( locBuffer, msgSize, this->type_, 
-              iProc, this->tag_,this->comm_, &this->sendRequests_[idxRecv] );
-			  
-			  MPI_Test(&this->sendRequests_[idxRecv],&flag,&status) ; 
-			  
-			  // MPI_Wait(&this->sendRequests_[idxRecv],&status) ; 
-			  // std::cout<<this->myRank_<<" FWD to "<<iProc<<" on tag "<<this->tag_<<std::endl;
+        	Int error_code = MPI_Isend( locBuffer, msgSize, this->type_, 
+              				    iProc, this->tag_,this->comm_, &this->sendRequests_[idxRecv] );
+		MPI_Test(&this->sendRequests_[idxRecv],&flag,&status) ; 
         } // for (iProc)
     }	  
-
+  
   template< typename T> 
     inline void TreeBcast_slu<T>::waitSendRequest(){
         MPI_Status status;
@@ -201,11 +231,6 @@ namespace SuperLU_ASYNCOMM {
         }
     }
 	
-	
-
-	
-	
-	
   template< typename T> 
     inline void TreeBcast_slu<T>::cleanupBuffers(){
       this->recvRequests_.clear();
@@ -218,7 +243,6 @@ namespace SuperLU_ASYNCOMM {
       this->sendDoneIdx_.clear();
       this->sendDataPtrs_.clear();
       this->sendTempBuffer_.clear();
-
       this->recvRequests_.shrink_to_fit();
       this->recvStatuses_.shrink_to_fit();
       this->recvDoneIdx_.shrink_to_fit();
@@ -229,8 +253,7 @@ namespace SuperLU_ASYNCOMM {
       this->sendDoneIdx_.shrink_to_fit();
       this->sendDataPtrs_.shrink_to_fit();
       this->sendTempBuffer_.shrink_to_fit();
-	  
-	  this->myDests_.clear();
+      this->myDests_.clear();
 	  
     }
 
@@ -240,16 +263,16 @@ namespace SuperLU_ASYNCOMM {
     {
 
       if(!this->IsRoot()){
-
-        if(this->recvDataPtrs_[0]==NULL){
-          this->recvTempBuffer_.resize(this->msgSize_);
-          this->recvDataPtrs_[0] = (T*)this->recvTempBuffer_.data();
-        }
+              if(this->recvDataPtrs_[0]==NULL){
+                        this->recvTempBuffer_.resize(this->msgSize_);
+                        this->recvDataPtrs_[0] = (T*)this->recvTempBuffer_.data();
+                }
       }
     }	
 	
-  template< typename T>
-    inline TreeBcast_slu<T> * TreeBcast_slu<T>::Create(const MPI_Comm & pComm, Int * ranks, Int rank_cnt, Int msgSize, double rseed){
+
+    template< typename T>
+        inline TreeBcast_slu<T> * TreeBcast_slu<T>::Create(const MPI_Comm & pComm, Int * ranks, Int rank_cnt, Int msgSize, double rseed){
       //get communicator size
       Int nprocs = 0;
       MPI_Comm_size(pComm, &nprocs);
@@ -269,7 +292,6 @@ namespace SuperLU_ASYNCOMM {
 		return new BTreeBcast2<T>(pComm,ranks,rank_cnt,msgSize);
       }
     }
-
 
 
   template< typename T>
@@ -302,13 +324,6 @@ namespace SuperLU_ASYNCOMM {
       FTreeBcast2 * out = new FTreeBcast2(*this);
       return out;
     } 
-
-
-
-
-
-
-
 
   template< typename T>
     inline BTreeBcast2<T>::BTreeBcast2(const MPI_Comm & pComm, Int * ranks, Int rank_cnt, Int msgSize):TreeBcast_slu<T>(pComm,ranks,rank_cnt,msgSize){
@@ -346,6 +361,7 @@ namespace SuperLU_ASYNCOMM {
 	  }else{
 		  this->myRoot_ = this->myRank_;
 	  } 
+                  //printf("I am %d, root is%d\n",this->myRank_,this->myRoot_);
 	  
     }
 
