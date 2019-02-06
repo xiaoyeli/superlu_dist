@@ -426,7 +426,7 @@ pdgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
     s_eps = smach_dist("Epsilon");
     thresh = s_eps * anorm;
 
-    MPI_Attr_get (MPI_COMM_WORLD, MPI_TAG_UB, &attr_val, &flag);
+    MPI_Comm_get_attr (MPI_COMM_WORLD, MPI_TAG_UB, &attr_val, &flag);
     if (!flag) {
         fprintf (stderr, "Could not get TAG_UB\n");
         return (-1);
