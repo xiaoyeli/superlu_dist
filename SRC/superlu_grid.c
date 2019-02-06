@@ -150,7 +150,7 @@ void superlu_gridmap(
     {
 	int tag_ub;
 	if ( !grid->iam ) {
-	    MPI_Attr_get(Bcomm, MPI_TAG_UB, &tag_ub, &info);
+	    MPI_Comm_get_attr(Bcomm, MPI_TAG_UB, &tag_ub, &info);
 	    printf("MPI_TAG_UB %d\n", tag_ub);
 	    /* returns 4295677672
 	       In reality it is restricted to no greater than 16384. */
