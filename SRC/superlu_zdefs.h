@@ -1,23 +1,24 @@
 /*! \file
 Copyright (c) 2003, The Regents of the University of California, through
-Lawrence Berkeley National Laboratory (subject to receipt of any required 
-approvals from U.S. Dept. of Energy) 
+Lawrence Berkeley National Laboratory (subject to receipt of any required
+approvals from U.S. Dept. of Energy)
 
-All rights reserved. 
+All rights reserved.
 
 The source code is distributed under BSD license, see the file License.txt
 at the top-level directory.
 */
 
-/*! @file 
+/*! @file
  * \brief  Distributed SuperLU data types and function prototypes
  *
  * <pre>
- * -- Distributed SuperLU routine (version 6.0) --
+ * -- Distributed SuperLU routine (version 6.1) --
  * Lawrence Berkeley National Lab, Univ. of California Berkeley.
  * November 1, 2007
  * April 5, 2015
  * September 18, 2018  version 6.0
+ * February 8, 2019  version 6.1.1
  * </pre>
  */
 
@@ -39,7 +40,7 @@ typedef struct {
     int_t indpos; /* Starting position in Uindex[]. */
 } Ucb_indptr_t;
 
-/* 
+/*
  * On each processor, the blocks in L are stored in compressed block
  * column format, the blocks in U are stored in compressed block row format.
  */
@@ -50,7 +51,7 @@ typedef struct {
     doublecomplex **Linv_bc_ptr;  /* size ceil(NSUPERS/Pc)                 */
     int_t   **Lindval_loc_bc_ptr; /* size ceil(NSUPERS/Pc)  pointers to locations in Lrowind_bc_ptr and Lnzval_bc_ptr */
     int_t   *Unnz; /* number of nonzeros per block column in U*/
-	int_t   **Lrowind_bc_2_lsum; /* size ceil(NSUPERS/Pc)  map indices of Lrowind_bc_ptr to indices of lsum  */  
+	int_t   **Lrowind_bc_2_lsum; /* size ceil(NSUPERS/Pc)  map indices of Lrowind_bc_ptr to indices of lsum  */
     doublecomplex  **Uinv_bc_ptr;  /* size ceil(NSUPERS/Pc)     	*/
     int_t   **Ufstnz_br_ptr;  /* size ceil(NSUPERS/Pr)                 */
     doublecomplex  **Unzval_br_ptr;  /* size ceil(NSUPERS/Pr)                 */
@@ -73,7 +74,7 @@ typedef struct {
     int_t   bufmax[NBUFFERS]; /* Maximum buffer size across all MPI ranks:
 			       *  0 : maximum size of Lsub_buf[]
 			       *  1 : maximum size of Lval_buf[]
-			       *  2 : maximum size of Usub_buf[] 
+			       *  2 : maximum size of Usub_buf[]
 			       *  3 : maximum size of Uval_buf[]
 			       *  4 : maximum size of tempv[LDA]
 			       */
@@ -104,7 +105,7 @@ typedef struct {
     int_t   SolveMsgVol;      /* Volume of messages sent in the solve phase */
 
 
-    /*********************/	
+    /*********************/
     /* The following variables are used in the hybrid solver */
 
     /*-- Counts to be used in U^{-T} triangular solve. -- */
@@ -129,7 +130,7 @@ typedef struct {
     int_t n;
     int_t nleaf;
     int_t nfrecvmod;
-    int_t inv; /* whether the diagonal block is inverted*/	
+    int_t inv; /* whether the diagonal block is inverted*/
 } LocalLU_t;
 
 
@@ -167,7 +168,7 @@ typedef struct {
     int_t *row_to_proc;
     int_t *inv_perm_c;
     int_t num_diag_procs, *diag_procs, *diag_len;
-    pzgsmv_comm_t *gsmv_comm; /* communication metadata for SpMV, 
+    pzgsmv_comm_t *gsmv_comm; /* communication metadata for SpMV,
          	       		      required by IterRefine.          */
     pxgstrs_comm_t *gstrs_comm;  /* communication metadata for SpTRSV. */
     int_t *A_colind_gsmv; /* After pzgsmv_init(), the global column
@@ -207,7 +208,7 @@ extern void
 zCreate_Dense_Matrix_dist(SuperMatrix *, int_t, int_t, doublecomplex *, int_t,
 			  Stype_t, Dtype_t, Mtype_t);
 extern void
-zCreate_SuperNode_Matrix_dist(SuperMatrix *, int_t, int_t, int_t, doublecomplex *, 
+zCreate_SuperNode_Matrix_dist(SuperMatrix *, int_t, int_t, int_t, doublecomplex *,
 			      int_t *, int_t *, int_t *, int_t *, int_t *,
 			      Stype_t, Dtype_t, Mtype_t);
 extern void
@@ -218,16 +219,16 @@ extern void    zallocateA_dist (int_t, int_t, doublecomplex **, int_t **, int_t 
 extern void    zGenXtrue_dist (int_t, int_t, doublecomplex *, int_t);
 extern void    zFillRHS_dist (char *, int_t, doublecomplex *, int_t,
                               SuperMatrix *, doublecomplex *, int_t);
-extern int     zcreate_matrix(SuperMatrix *, int, doublecomplex **, int *, 
+extern int     zcreate_matrix(SuperMatrix *, int, doublecomplex **, int *,
 			      doublecomplex **, int *, FILE *, gridinfo_t *);
-extern int     zcreate_matrix_rb(SuperMatrix *, int, doublecomplex **, int *, 
+extern int     zcreate_matrix_rb(SuperMatrix *, int, doublecomplex **, int *,
 			      doublecomplex **, int *, FILE *, gridinfo_t *);
-extern int     zcreate_matrix_dat(SuperMatrix *, int, doublecomplex **, int *, 
+extern int     zcreate_matrix_dat(SuperMatrix *, int, doublecomplex **, int *,
 			      doublecomplex **, int *, FILE *, gridinfo_t *);
-extern int 	   zcreate_matrix_postfix(SuperMatrix *, int, doublecomplex **, int *, 
-				  doublecomplex **, int *, FILE *, char *, gridinfo_t *);				  
-				  
-	
+extern int 	   zcreate_matrix_postfix(SuperMatrix *, int, doublecomplex **, int *,
+				  doublecomplex **, int *, FILE *, char *, gridinfo_t *);
+
+
 /* Driver related */
 extern void    zgsequ_dist (SuperMatrix *, double *, double *, double *,
 			    double *, double *, int_t *);
@@ -250,16 +251,16 @@ extern int     sp_zgemv_dist (char *, doublecomplex, SuperMatrix *, doublecomple
 extern int     sp_zgemm_dist (char *, int, doublecomplex, SuperMatrix *,
                         doublecomplex *, int, doublecomplex, doublecomplex *, int);
 
-extern float zdistribute(fact_t, int_t, SuperMatrix *, Glu_freeable_t *, 
+extern float zdistribute(fact_t, int_t, SuperMatrix *, Glu_freeable_t *,
 			 LUstruct_t *, gridinfo_t *);
-extern void  pzgssvx_ABglobal(superlu_dist_options_t *, SuperMatrix *, 
+extern void  pzgssvx_ABglobal(superlu_dist_options_t *, SuperMatrix *,
 			      ScalePermstruct_t *, doublecomplex *,
 			      int, int, gridinfo_t *, LUstruct_t *, double *,
 			      SuperLUStat_t *, int *);
-extern float pzdistribute(fact_t, int_t, SuperMatrix *, 
-			 ScalePermstruct_t *, Glu_freeable_t *, 
+extern float pzdistribute(fact_t, int_t, SuperMatrix *,
+			 ScalePermstruct_t *, Glu_freeable_t *,
 			 LUstruct_t *, gridinfo_t *);
-extern void  pzgssvx(superlu_dist_options_t *, SuperMatrix *, 
+extern void  pzgssvx(superlu_dist_options_t *, SuperMatrix *,
 		     ScalePermstruct_t *, doublecomplex *,
 		     int, int, gridinfo_t *, LUstruct_t *,
 		     SOLVEstruct_t *, double *, SuperLUStat_t *, int *);
@@ -273,7 +274,7 @@ extern int_t pxgstrs_init(int_t, int_t, int_t, int_t,
 extern void pxgstrs_finalize(pxgstrs_comm_t *);
 extern int  zldperm_dist(int_t, int_t, int_t, int_t [], int_t [],
 		    doublecomplex [], int_t *, double [], double []);
-extern int  static_schedule(superlu_dist_options_t *, int, int, 
+extern int  static_schedule(superlu_dist_options_t *, int, int,
 		            LUstruct_t *, gridinfo_t *, SuperLUStat_t *,
 			    int_t *, int_t *, int *);
 extern void LUstructInit(const int_t, LUstruct_t *);
@@ -293,7 +294,7 @@ extern void pzgstrs(int_t, LUstruct_t *, ScalePermstruct_t *, gridinfo_t *,
 		    SuperLUStat_t *, int *);
 extern void zlsum_fmod(doublecomplex *, doublecomplex *, doublecomplex *, doublecomplex *,
 		       int, int, int_t , int_t *, int_t, int_t, int_t,
-		       int_t *, gridinfo_t *, LocalLU_t *, 
+		       int_t *, gridinfo_t *, LocalLU_t *,
 		       MPI_Request [], SuperLUStat_t *);
 extern void zlsum_bmod(doublecomplex *, doublecomplex *, doublecomplex *,
                        int, int_t, int_t *, int_t *, Ucb_indptr_t **,
@@ -302,21 +303,21 @@ extern void zlsum_bmod(doublecomplex *, doublecomplex *, doublecomplex *,
 
 extern void zlsum_fmod_inv(doublecomplex *, doublecomplex *, doublecomplex *, doublecomplex *,
 		       int, int_t , int_t *,
-		       int_t *, gridinfo_t *, LocalLU_t *, 
+		       int_t *, gridinfo_t *, LocalLU_t *,
 		       SuperLUStat_t **, int_t *, int_t *, int_t, int_t, int_t, int_t, int, int);
 extern void zlsum_fmod_inv_master(doublecomplex *, doublecomplex *, doublecomplex *, doublecomplex *,
-		       int, int, int_t , int_t *, int_t, 
-		       int_t *, gridinfo_t *, LocalLU_t *, 
+		       int, int, int_t , int_t *, int_t,
+		       int_t *, gridinfo_t *, LocalLU_t *,
 		       SuperLUStat_t **, int_t, int_t, int_t, int_t, int, int);
 extern void zlsum_bmod_inv(doublecomplex *, doublecomplex *, doublecomplex *, doublecomplex *,
-                       int, int_t, int_t *, int_t *, int_t *, Ucb_indptr_t **,
+                       int, int_t, int_t *, int_t *, Ucb_indptr_t **,
                        int_t **, int_t *, gridinfo_t *, LocalLU_t *,
-		       MPI_Request [], SuperLUStat_t **, int_t *, int_t *, int_t, int_t, int, int);
+		       SuperLUStat_t **, int_t *, int_t *, int_t, int_t, int, int);
 extern void zlsum_bmod_inv_master(doublecomplex *, doublecomplex *, doublecomplex *, doublecomplex *,
-                       int, int_t, int_t *, int_t *, int_t *, Ucb_indptr_t **,
+                       int, int_t, int_t *, int_t *, Ucb_indptr_t **,
                        int_t **, int_t *, gridinfo_t *, LocalLU_t *,
-		       MPI_Request [], SuperLUStat_t **, int_t, int_t, int, int);			   
-			   
+		       SuperLUStat_t **, int_t, int_t, int, int);
+
 extern void pzgsrfs(int_t, SuperMatrix *, double, LUstruct_t *,
 		    ScalePermstruct_t *, gridinfo_t *,
 		    doublecomplex [], int_t, doublecomplex [], int_t, int,
@@ -360,22 +361,22 @@ extern void    zinf_norm_error_dist (int_t, int_t, doublecomplex*, int_t,
                                      doublecomplex*, int_t, gridinfo_t*);
 extern void    pzinf_norm_error(int, int_t, int_t, doublecomplex [], int_t,
 				doublecomplex [], int_t , gridinfo_t *);
-extern void  zreadhb_dist (int, FILE *, int_t *, int_t *, int_t *, 
+extern void  zreadhb_dist (int, FILE *, int_t *, int_t *, int_t *,
 			   doublecomplex **, int_t **, int_t **);
 extern void  zreadtriple_dist(FILE *, int_t *, int_t *, int_t *,
 			 doublecomplex **, int_t **, int_t **);
 extern void  zreadtriple_noheader(FILE *, int_t *, int_t *, int_t *,
-			 doublecomplex **, int_t **, int_t **);			 
+			 doublecomplex **, int_t **, int_t **);
 extern void  zreadrb_dist(int, FILE *, int_t *, int_t *, int_t *,
 		     doublecomplex **, int_t **, int_t **);
 extern void  zreadMM_dist(FILE *, int_t *, int_t *, int_t *,
 	                  doublecomplex **, int_t **, int_t **);
 extern int  zread_binary(FILE *, int_t *, int_t *, int_t *,
-	                  doublecomplex **, int_t **, int_t **);	
-					  
+	                  doublecomplex **, int_t **, int_t **);
+
 /* Distribute the data for numerical factorization */
 extern float zdist_psymbtonum(fact_t, int_t, SuperMatrix *,
-                                ScalePermstruct_t *, Pslu_freeable_t *, 
+                                ScalePermstruct_t *, Pslu_freeable_t *,
                                 LUstruct_t *, gridinfo_t *);
 extern void pzGetDiagU(int_t, LUstruct_t *, gridinfo_t *, doublecomplex *);
 
@@ -388,7 +389,7 @@ extern void  zPrintUblocks(int, int_t, gridinfo_t *, Glu_persist_t *,
 extern void  zPrint_CompCol_Matrix_dist(SuperMatrix *);
 extern void  zPrint_Dense_Matrix_dist(SuperMatrix *);
 extern int   zPrint_CompRowLoc_Matrix_dist(SuperMatrix *);
-extern int   file_zPrint_CompRowLoc_Matrix_dist(FILE *fp, SuperMatrix *A);																			   
+extern int   file_zPrint_CompRowLoc_Matrix_dist(FILE *fp, SuperMatrix *A);
 extern void  PrintDoublecomplex(char *, int_t, doublecomplex *);
 extern int   file_PrintDoublecomplex(FILE *fp, char *, int_t, doublecomplex *);
 
@@ -401,12 +402,12 @@ extern void zgemm_(const char*, const char*, const int*, const int*, const int*,
                   const int*, const doublecomplex*, doublecomplex*, const int*, int, int);
 extern void ztrsv_(char*, char*, char*, int*, doublecomplex*, int*,
                   doublecomplex*, int*, int, int, int);
-extern void ztrsm_(char*, char*, char*, char*, int*, int*, 
-                  doublecomplex*, doublecomplex*, int*, doublecomplex*, 
+extern void ztrsm_(char*, char*, char*, char*, int*, int*,
+                  doublecomplex*, doublecomplex*, int*, doublecomplex*,
                   int*, int, int, int, int);
-extern void zgemv_(char *, int *, int *, doublecomplex *, doublecomplex *a, int *, 
+extern void zgemv_(char *, int *, int *, doublecomplex *, doublecomplex *a, int *,
                   doublecomplex *, int *, doublecomplex *, doublecomplex *, int *, int);
-extern void ztrtri_(char*, char*, int*, doublecomplex*, int*,int*);				 
+extern void ztrtri_(char*, char*, int*, doublecomplex*, int*,int*);
 
 extern void zgeru_(int*, int*, doublecomplex*, doublecomplex*, int*,
                  doublecomplex*, int*, doublecomplex*, int*);
@@ -417,9 +418,9 @@ extern int zgemm_(const char*, const char*, const int*, const int*, const int*,
                    const int*,  const doublecomplex*, doublecomplex*, const int*);
 extern int ztrsv_(char*, char*, char*, int*, doublecomplex*, int*,
                   doublecomplex*, int*);
-extern int ztrsm_(char*, char*, char*, char*, int*, int*, 
+extern int ztrsm_(char*, char*, char*, char*, int*, int*,
                   doublecomplex*, doublecomplex*, int*, doublecomplex*, int*);
-extern int zgemv_(char *, int *, int *, doublecomplex *, doublecomplex *a, int *, 
+extern int zgemv_(char *, int *, int *, doublecomplex *, doublecomplex *a, int *,
                   doublecomplex *, int *, doublecomplex *, doublecomplex *, int *);
 extern int zgeru_(int*, int*, doublecomplex*, doublecomplex*, int*,
                  doublecomplex*, int*, doublecomplex*, int*);

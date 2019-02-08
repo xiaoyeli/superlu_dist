@@ -1,15 +1,15 @@
 /*! \file
 Copyright (c) 2003, The Regents of the University of California, through
-Lawrence Berkeley National Laboratory (subject to receipt of any required 
-approvals from U.S. Dept. of Energy) 
+Lawrence Berkeley National Laboratory (subject to receipt of any required
+approvals from U.S. Dept. of Energy)
 
-All rights reserved. 
+All rights reserved.
 
 The source code is distributed under BSD license, see the file License.txt
 at the top-level directory.
 */
 
-/*! @file 
+/*! @file
  * \brief Solves a system of linear equations A*X=B
  *
  * <pre>
@@ -64,7 +64,7 @@ at the top-level directory.
  *                   |    .      |        |. |
  *                   |    .      |        |. |
  *                 ---------------       ------
- * 
+ *
  * where, fst_row is the row number of the first row,
  *        m_loc is the number of rows local to this processor
  * These are defined in the 'SuperMatrix' structure, see supermatrix.h.
@@ -79,7 +79,7 @@ at the top-level directory.
  *            and its dimensions ldb (local) and nrhs (global)
  *      -  grid, a structure describing the 2D processor mesh
  *      -  options->IterRefine, which determines whether or not to
- *            improve the accuracy of the computed solution using 
+ *            improve the accuracy of the computed solution using
  *            iterative refinement
  *
  *      On output, B is overwritten with the solution X.
@@ -87,8 +87,8 @@ at the top-level directory.
  *   2. Depending on options->Fact, the user has four options
  *      for solving A*X=B. The standard option is for factoring
  *      A "from scratch". (The other options, described below,
- *      are used when A is sufficiently similar to a previously 
- *      solved problem to save time by reusing part or all of 
+ *      are used when A is sufficiently similar to a previously
+ *      solved problem to save time by reusing part or all of
  *      the previous factorization.)
  *
  *      -  options->Fact = DOFACT: A is factored "from scratch"
@@ -117,7 +117,7 @@ at the top-level directory.
  *                             (to control numerical stability)
  *
  *      The outputs returned include
- *         
+ *
  *        o  ScalePermstruct,  modified to describe how the input matrix A
  *                             was equilibrated and permuted:
  *          .  ScalePermstruct->DiagScale, indicates whether the rows and/or
@@ -128,15 +128,15 @@ at the top-level directory.
  *          .  ScalePermstruct->perm_c, column permutation vector
  *
  *          (part of ScalePermstruct may also need to be supplied on input,
- *           depending on options->RowPerm and options->ColPerm as described 
+ *           depending on options->RowPerm and options->ColPerm as described
  *           later).
  *
  *        o  A, the input matrix A overwritten by the scaled and permuted
- *              matrix diag(R)*A*diag(C)*Pc^T, where 
+ *              matrix diag(R)*A*diag(C)*Pc^T, where
  *              Pc is the row permutation matrix determined by
  *                  ScalePermstruct->perm_c
  *              diag(R) and diag(C) are diagonal scaling matrices determined
- *                  by ScalePermstruct->DiagScale, ScalePermstruct->R and 
+ *                  by ScalePermstruct->DiagScale, ScalePermstruct->R and
  *                  ScalePermstruct->C
  *
  *        o  LUstruct, which contains the L and U factorization of A1 where
@@ -148,7 +148,7 @@ at the top-level directory.
  *
  *   3. The second value of options->Fact assumes that a matrix with the same
  *      sparsity pattern as A has already been factored:
- *     
+ *
  *      -  options->Fact = SamePattern: A is factored, assuming that it has
  *            the same nonzero pattern as a previously factored matrix. In
  *            this case the algorithm saves time by reusing the previously
@@ -165,14 +165,14 @@ at the top-level directory.
  *
  *      but not options->ColPerm, whose value is ignored. This is because the
  *      previous column permutation from ScalePermstruct->perm_c is used as
- *      input. The user must also supply 
+ *      input. The user must also supply
  *
  *        o  A, the input matrix
  *        o  ScalePermstruct->perm_c, the column permutation
  *        o  LUstruct->etree, the elimination tree
  *
  *      The outputs returned include
- *         
+ *
  *        o  A, the input matrix A overwritten by the scaled and permuted
  *              matrix as described above
  *        o  ScalePermstruct, modified to describe how the input matrix A was
@@ -200,25 +200,25 @@ at the top-level directory.
  *      ignored. This is because the permutations from ScalePermstruct->perm_r
  *      and ScalePermstruct->perm_c are used as input.
  *
- *      The user must also supply 
+ *      The user must also supply
  *
  *        o  A, the input matrix
  *        o  ScalePermstruct->DiagScale, how the previous matrix was row
  *                                       and/or column scaled
  *        o  ScalePermstruct->R, the row scalings of the previous matrix,
  *                               if any
- *        o  ScalePermstruct->C, the columns scalings of the previous matrix, 
+ *        o  ScalePermstruct->C, the columns scalings of the previous matrix,
  *                               if any
  *        o  ScalePermstruct->perm_r, the row permutation of the previous
  *                                    matrix
- *        o  ScalePermstruct->perm_c, the column permutation of the previous 
+ *        o  ScalePermstruct->perm_c, the column permutation of the previous
  *                                    matrix
  *        o  all of LUstruct, the previously computed information about
  *                            L and U (the actual numerical values of L and U
  *                            stored in LUstruct->Llu are ignored)
  *
  *      The outputs returned include
- *         
+ *
  *        o  A, the input matrix A overwritten by the scaled and permuted
  *              matrix as described above
  *        o  ScalePermstruct,  modified to describe how the input matrix A was
@@ -227,7 +227,7 @@ at the top-level directory.
  *        o  LUstruct, modified to contain the new L and U factors
  *
  *   5. The fourth and last value of options->Fact assumes that A is
- *      identical to a matrix that has already been factored on a previous 
+ *      identical to a matrix that has already been factored on a previous
  *      call, and reuses its entire LU factorization
  *
  *      -  options->Fact = Factored: A is identical to a previously
@@ -235,10 +235,10 @@ at the top-level directory.
  *            can be reused.
  *
  *      In this case all the other options mentioned above are ignored
- *      (options->Equil, options->RowPerm, options->ColPerm, 
+ *      (options->Equil, options->RowPerm, options->ColPerm,
  *       options->ReplaceTinyPivot)
  *
- *      The user must also supply 
+ *      The user must also supply
  *
  *        o  A, the unfactored matrix, only in the case that iterative
  *              refinement is to be done (specifically A must be the output
@@ -248,7 +248,7 @@ at the top-level directory.
  *           L and U
  *
  *      all of which are unmodified on output.
- *         
+ *
  * Arguments
  * =========
  *
@@ -256,7 +256,7 @@ at the top-level directory.
  *         The structure defines the input parameters to control
  *         how the LU decomposition will be performed.
  *         The following fields should be defined for this structure:
- *         
+ *
  *         o Fact (fact_t)
  *           Specifies whether or not the factored form of the matrix
  *           A is supplied on entry, and if not, how the matrix A should
@@ -266,7 +266,7 @@ at the top-level directory.
  *                 Inputs:  A
  *                          options->Equil, RowPerm, ColPerm, ReplaceTinyPivot
  *                 Outputs: modified A
- *                             (possibly row and/or column scaled and/or 
+ *                             (possibly row and/or column scaled and/or
  *                              permuted)
  *                          all of ScalePermstruct
  *                          all of LUstruct
@@ -274,7 +274,7 @@ at the top-level directory.
  *           = SamePattern: the matrix A will be factorized assuming
  *             that a factorization of a matrix with the same sparsity
  *             pattern was performed prior to this one. Therefore, this
- *             factorization will reuse column permutation vector 
+ *             factorization will reuse column permutation vector
  *             ScalePermstruct->perm_c and the elimination tree
  *             LUstruct->etree
  *                 Inputs:  A
@@ -282,7 +282,7 @@ at the top-level directory.
  *                          ScalePermstruct->perm_c
  *                          LUstruct->etree
  *                 Outputs: modified A
- *                             (possibly row and/or column scaled and/or 
+ *                             (possibly row and/or column scaled and/or
  *                              permuted)
  *                          rest of ScalePermstruct (DiagScale, R, C, perm_r)
  *                          rest of LUstruct (GLU_persist, Llu)
@@ -300,7 +300,7 @@ at the top-level directory.
  *                          all of ScalePermstruct
  *                          all of LUstruct
  *                 Outputs: modified A
- *                             (possibly row and/or column scaled and/or 
+ *                             (possibly row and/or column scaled and/or
  *                              permuted)
  *                          modified LUstruct->Llu
  *           = FACTORED: the matrix A is already factored.
@@ -326,20 +326,20 @@ at the top-level directory.
  *           = LargeDiag_APWM: use the parallel approximate-weight perfect
  *                        matching to permute rows of the original matrix
  *                        to make the diagonal large relative to the
- *                        off-diagonal.								   
+ *                        off-diagonal.
  *           = MY_PERMR:  use the ordering given in ScalePermstruct->perm_r
  *                        input by the user.
- *           
+ *
  *         o ColPerm (colperm_t)
  *           Specifies what type of column permutation to use to reduce fill.
  *           = NATURAL:       natural ordering.
  *           = MMD_AT_PLUS_A: minimum degree ordering on structure of A'+A.
  *           = MMD_ATA:       minimum degree ordering on structure of A'*A.
  *           = MY_PERMC:      the ordering given in ScalePermstruct->perm_c.
- *         
+ *
  *         o ReplaceTinyPivot (yes_no_t)
  *           = NO:  do not modify pivots
- *           = YES: replace tiny pivots by sqrt(epsilon)*norm(A) during 
+ *           = YES: replace tiny pivots by sqrt(epsilon)*norm(A) during
  *                  LU factorization.
  *
  *         o IterRefine (IterRefine_t)
@@ -380,7 +380,7 @@ at the top-level directory.
  *                      diag(R).
  *           = COL:     Column equilibration, i.e., A was postmultiplied
  *                      by diag(C).
- *           = BOTH:    both row and column equilibration, i.e., A was 
+ *           = BOTH:    both row and column equilibration, i.e., A was
  *                      replaced by diag(R)*A*diag(C).
  *           If options->Fact = FACTORED or SamePattern_SameRowPerm,
  *           DiagScale is an input argument; otherwise it is an output
@@ -394,8 +394,8 @@ at the top-level directory.
  *           input argument; otherwise it is an output argument.
  *
  *         o perm_c (int*)
- *           Column permutation vector, which defines the 
- *           permutation matrix Pc; perm_c[i] = j means column i of A is 
+ *           Column permutation vector, which defines the
+ *           permutation matrix Pc; perm_c[i] = j means column i of A is
  *           in position j in A*Pc.
  *           If options->ColPerm = MY_PERMC or options->Fact = SamePattern
  *           or options->Fact = SamePattern_SameRowPerm, perm_c is an
@@ -407,7 +407,7 @@ at the top-level directory.
  *
  *         o R (double*) dimension (A->nrow)
  *           The row scale factors for A.
- *           If DiagScale = ROW or BOTH, A is multiplied on the left by 
+ *           If DiagScale = ROW or BOTH, A is multiplied on the left by
  *                          diag(R).
  *           If DiagScale = NOEQUIL or COL, R is not defined.
  *           If options->Fact = FACTORED or SamePattern_SameRowPerm, R is
@@ -415,12 +415,12 @@ at the top-level directory.
  *
  *         o C (double*) dimension (A->ncol)
  *           The column scale factors for A.
- *           If DiagScale = COL or BOTH, A is multiplied on the right by 
+ *           If DiagScale = COL or BOTH, A is multiplied on the right by
  *                          diag(C).
  *           If DiagScale = NOEQUIL or ROW, C is not defined.
  *           If options->Fact = FACTORED or SamePattern_SameRowPerm, C is
  *           an input argument; otherwise, C is an output argument.
- *         
+ *
  * B       (input/output) doublecomplex* (local)
  *         On entry, the right-hand side matrix of dimension (m_loc, nrhs),
  *           where, m_loc is the number of rows stored locally on my
@@ -479,8 +479,8 @@ at the top-level directory.
  *         argument. See superlu_zdefs.h for the definition of 'SOLVEstruct_t'.
  *
  * berr    (output) double*, dimension (nrhs) (global)
- *         The componentwise relative backward error of each solution   
- *         vector X(j) (i.e., the smallest relative change in   
+ *         The componentwise relative backward error of each solution
+ *         vector X(j) (i.e., the smallest relative change in
  *         any element of A or B that makes X(j) an exact solution).
  *
  * stat   (output) SuperLUStat_t*
@@ -501,7 +501,7 @@ at the top-level directory.
  */
 
 void
-pzgssvx(superlu_dist_options_t *options, SuperMatrix *A, 
+pzgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 	ScalePermstruct_t *ScalePermstruct,
 	doublecomplex B[], int ldb, int nrhs, gridinfo_t *grid,
 	LUstruct_t *LUstruct, SOLVEstruct_t *SOLVEstruct, double *berr,
@@ -521,7 +521,7 @@ pzgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 		                 supernodes in L.
           	   (usub, xusub) contains the compressed subscript of
 		                 nonzero segments in U.
-	      If options->Fact != SamePattern_SameRowPerm, they are 
+	      If options->Fact != SamePattern_SameRowPerm, they are
 	      computed by SYMBFACT routine, and then used by PDDISTRIBUTE
 	      routine. They will be freed after PDDISTRIBUTE routine.
 	      If options->Fact == SamePattern_SameRowPerm, these
@@ -552,7 +552,7 @@ pzgssvx(superlu_dist_options_t *options, SuperMatrix *A,
     int_t nsupers,nsupers_j;
     int_t lk,k,knsupc,nsupr;
     int_t  *lsub,*xsup;
-    doublecomplex *lusup;	
+    doublecomplex *lusup;
 #if ( PRNTlevel>= 2 )
     double   dmin, dsum, dprod;
 #endif
@@ -566,7 +566,7 @@ pzgssvx(superlu_dist_options_t *options, SuperMatrix *A,
     int   col, key; /* parameters for creating a new communicator */
     Pslu_freeable_t Pslu_freeable;
     float  flinfo;
-	
+
     /* Initialization. */
     m       = A->nrow;
     n       = A->ncol;
@@ -582,7 +582,7 @@ pzgssvx(superlu_dist_options_t *options, SuperMatrix *A,
     symb_comm = MPI_COMM_NULL;
     num_mem_usage.for_lu = num_mem_usage.total = 0.0;
     symb_mem_usage.for_lu = symb_mem_usage.total = 0.0;
-	
+
     /* Test the input parameters. */
     *info = 0;
     Fact = options->Fact;
@@ -619,7 +619,7 @@ pzgssvx(superlu_dist_options_t *options, SuperMatrix *A,
     Equil = (!factored && options->Equil == YES);
     notran = (options->Trans == NOTRANS);
     parSymbFact = options->ParSymbFact;
-	
+
     iam = grid->iam;
     job = 5;
     if ( factored || (Fact == SamePattern_SameRowPerm && Equil) ) {
@@ -642,7 +642,7 @@ pzgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 #endif
 
     /* Not factored & ask for equilibration */
-    if ( Equil && Fact != SamePattern_SameRowPerm ) { 
+    if ( Equil && Fact != SamePattern_SameRowPerm ) {
 	/* Allocate storage if not done so before. */
 	switch ( ScalePermstruct->DiagScale ) {
 	    case NOEQUIL:
@@ -653,12 +653,12 @@ pzgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 		ScalePermstruct->R = R;
 		ScalePermstruct->C = C;
 		break;
-	    case ROW: 
+	    case ROW:
 	        if ( !(C = (double *) doubleMalloc_dist(n)) )
 		    ABORT("Malloc fails for C[].");
 		ScalePermstruct->C = C;
 		break;
-	    case COL: 
+	    case COL:
 		if ( !(R = (double *) doubleMalloc_dist(m)) )
 		    ABORT("Malloc fails for R[].");
 		ScalePermstruct->R = R;
@@ -728,7 +728,7 @@ pzgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 
 	    /* Now iinfo == 0 */
 
-            /* Equilibrate matrix A if it is badly-scaled. 
+            /* Equilibrate matrix A if it is badly-scaled.
                A <-- diag(R)*A*diag(C)                     */
 	    pzlaqgs(A, R, C, rowcnd, colcnd, amax, equed);
 
@@ -795,7 +795,7 @@ pzgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 	        if ( options->RowPerm == MY_PERMR ) { /* Use user's perm_r. */
 	            /* Permute the global matrix GA for symbfact() */
 	            for (i = 0; i < colptr[n]; ++i) {
-	            	irow = rowind[i]; 
+	            	irow = rowind[i];
 		    	rowind[i] = perm_r[irow];
 	            }
 	        } else if ( options->RowPerm == LargeDiag_MC64 ) {
@@ -811,7 +811,7 @@ pzgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 	            if ( !iam ) { /* Process 0 finds a row permutation */
 		        iinfo = zldperm_dist(job, m, nnz, colptr, rowind, a_GA,
 		                perm_r, R1, C1);
-		
+
                         MPI_Bcast( &iinfo, 1, mpi_int_t, 0, grid->comm );
 		        if ( iinfo == 0 ) {
 		            MPI_Bcast( perm_r, m, mpi_int_t, 0, grid->comm );
@@ -876,7 +876,7 @@ pzgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 		            else for (i = 0; i < m; ++i) R[i] = R1[i];
 		            if ( colequ ) for (i = 0; i < n; ++i) C[i] *= C1[i];
 		            else for (i = 0; i < n; ++i) C[i] = C1[i];
-		    
+
 		            ScalePermstruct->DiagScale = BOTH;
 		            rowequ = colequ = 1;
 
@@ -952,14 +952,14 @@ pzgssvx(superlu_dist_options_t *options, SuperMatrix *A,
     }
 
     /* ------------------------------------------------------------
-       Perform the LU factorization: symbolic factorization, 
+       Perform the LU factorization: symbolic factorization,
        redistribution, and numerical factorization.
        ------------------------------------------------------------*/
     if ( !factored ) {
 	t = SuperLU_timer_();
 	/*
 	 * Get column permutation vector perm_c[], according to permc_spec:
-	 *   permc_spec = NATURAL:  natural ordering 
+	 *   permc_spec = NATURAL:  natural ordering
 	 *   permc_spec = MMD_AT_PLUS_A: minimum degree on structure of A'+A
 	 *   permc_spec = MMD_ATA:  minimum degree on structure of A'*A
 	 *   permc_spec = METIS_AT_PLUS_A: METIS on structure of A'+A
@@ -983,7 +983,7 @@ pzgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 		if ( permc_spec == NATURAL ) {
 		     for (j = 0; j < n; ++j) perm_c[j] = j;
                 }
-		if ( !(sizes = intMalloc_dist(2 * noDomains)) ) 
+		if ( !(sizes = intMalloc_dist(2 * noDomains)) )
 		     ABORT("SUPERLU_MALLOC fails for sizes.");
 		if ( !(fstVtxSep = intMalloc_dist(2 * noDomains)) )
 		    ABORT("SUPERLU_MALLOC fails for fstVtxSep.");
@@ -1002,10 +1002,10 @@ pzgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 	if ( permc_spec != MY_PERMC && Fact == DOFACT ) {
           /* Reuse perm_c if Fact == SamePattern, or SamePattern_SameRowPerm */
 	  if ( permc_spec == PARMETIS ) {
-	// #pragma omp parallel  
-    // {  	
+	// #pragma omp parallel
+    // {
 	// #pragma omp master
-	// {	
+	// {
 	      /* Get column permutation vector in perm_c.                    *
 	       * This routine takes as input the distributed input matrix A  *
 	       * and does not modify it.  It also allocates memory for       *
@@ -1039,9 +1039,9 @@ pzgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 	        /* Compute the elimination tree of Pc*(A^T+A)*Pc^T or Pc*A^T*A*Pc^T
 	           (a.k.a. column etree), depending on the choice of ColPerm.
 	           Adjust perm_c[] to be consistent with a postorder of etree.
-	           Permute columns of A to form A*Pc'. 
+	           Permute columns of A to form A*Pc'.
 		   After this routine, GAC = GA*Pc^T.  */
-	        sp_colorder(options, &GA, perm_c, etree, &GAC); 
+	        sp_colorder(options, &GA, perm_c, etree, &GAC);
 
 	        /* Form Pc*A*Pc^T to preserve the diagonal of the matrix GAC. */
 	        GACstore = (NCPformat *) GAC.Store;
@@ -1057,7 +1057,7 @@ pzgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 
 	        /* Perform a symbolic factorization on Pc*Pr*A*Pc^T and set up
                    the nonzero data structures for L & U. */
-#if ( PRNTlevel>=1 ) 
+#if ( PRNTlevel>=1 )
                 if ( !iam ) {
 		    printf(".. symbfact(): relax " IFMT ", maxsuper " IFMT ", fill " IFMT "\n",
 		          sp_ienv_dist(2), sp_ienv_dist(3), sp_ienv_dist(6));
@@ -1070,7 +1070,7 @@ pzgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 		    ABORT("Malloc fails for Glu_freeable.");
 
 	    	/* Every process does this. */
-	    	iinfo = symbfact(options, iam, &GAC, perm_c, etree, 
+	    	iinfo = symbfact(options, iam, &GAC, perm_c, etree,
 			     	 Glu_persist, Glu_freeable);
 			nnzLU = Glu_freeable->nnzLU;
 	    	stat->utime[SYMBFAC] = SuperLU_timer_() - t;
@@ -1081,11 +1081,11 @@ pzgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 		    	printf("\tNo of supers " IFMT "\n", Glu_persist->supno[n-1]+1);
 		    	printf("\tSize of G(L) " IFMT "\n", Glu_freeable->xlsub[n]);
 		    	printf("\tSize of G(U) " IFMT "\n", Glu_freeable->xusub[n]);
-		    	printf("\tint %d, short %d, float %d, double %d\n", 
+		    	printf("\tint %d, short %d, float %d, double %d\n",
 			       (int) sizeof(int_t), (int) sizeof(short),
         		       (int) sizeof(float), (int) sizeof(double));
 		    	printf("\tSYMBfact (MB):\tL\\U %.2f\ttotal %.2f\texpansions " IFMT "\n",
-			   	symb_mem_usage.for_lu*1e-6, 
+			   	symb_mem_usage.for_lu*1e-6,
 			   	symb_mem_usage.total*1e-6,
 			   	symb_mem_usage.expansions);
 			fflush(stdout);
@@ -1103,9 +1103,9 @@ pzgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 	    else {  /* parallel symbolic factorization */
 	    	t = SuperLU_timer_();
 	    	flinfo = symbfact_dist(nprocs_num, noDomains, A, perm_c, perm_r,
-				       sizes, fstVtxSep, &Pslu_freeable, 
+				       sizes, fstVtxSep, &Pslu_freeable,
 				       &(grid->comm), &symb_comm,
-				       &symb_mem_usage); 
+				       &symb_mem_usage);
 			nnzLU = Pslu_freeable.nnzLU;
 	    	stat->utime[SYMBFAC] = SuperLU_timer_() - t;
 	    	if (flinfo > 0) {
@@ -1127,7 +1127,7 @@ pzgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 
         if (sizes) SUPERLU_FREE (sizes);
         if (fstVtxSep) SUPERLU_FREE (fstVtxSep);
-	if (symb_comm != MPI_COMM_NULL) MPI_Comm_free (&symb_comm); 
+	if (symb_comm != MPI_COMM_NULL) MPI_Comm_free (&symb_comm);
 
 	/* Distribute entries of A into L & U data structures. */
 	//if (parSymbFact == NO || ???? Fact == SamePattern_SameRowPerm) {
@@ -1136,7 +1136,7 @@ pzgssvx(superlu_dist_options_t *options, SuperMatrix *A,
   	    /* Apply column permutation to the original distributed A */
 	    for (j = 0; j < nnz_loc; ++j) colind[j] = perm_c[colind[j]];
 
-	    /* Distribute Pc*Pr*diag(R)*A*diag(C)*Pc^T into L and U storage. 
+	    /* Distribute Pc*Pr*diag(R)*A*diag(C)*Pc^T into L and U storage.
 	       NOTE: the row permutation Pc*Pr is applied internally in the
   	       distribution routine. */
 	    t = SuperLU_timer_();
@@ -1150,7 +1150,7 @@ pzgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 	        SUPERLU_FREE(Glu_freeable);
 	    }
 	} else { /* CASE OF PARALLEL SYMBOLIC */
-	    /* Distribute Pc*Pr*diag(R)*A*diag(C)*Pc' into L and U storage. 
+	    /* Distribute Pc*Pr*diag(R)*A*diag(C)*Pc' into L and U storage.
 	       NOTE: the row permutation Pc*Pr is applied internally in the
 	       distribution routine. */
 	    /* Apply column permutation to the original distributed A */
@@ -1161,7 +1161,7 @@ pzgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 		  			   &Pslu_freeable, LUstruct, grid);
 	    if (dist_mem_use > 0)
 	        ABORT ("Not enough memory available for dist_psymbtonum\n");
-            
+
 	    stat->utime[DIST] = SuperLU_timer_() - t;
 	}
 
@@ -1169,16 +1169,16 @@ pzgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 
 	/* Perform numerical factorization in parallel. */
 	t = SuperLU_timer_();
-    // #pragma omp parallel  
-    // {  	
+    // #pragma omp parallel
+    // {
 	// #pragma omp master
 	// {
 	pzgstrf(options, m, n, anorm, LUstruct, grid, stat, info);
 	stat->utime[FACT] = SuperLU_timer_() - t;
 	// }
 	// }
-	
-	
+
+
 #if ( PRNTlevel>=2 )
     /* ------------------------------------------------------------
        SUM OVER ALL ENTRIES OF A AND PRINT NNZ AND SIZE OF A.
@@ -1195,15 +1195,15 @@ pzgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 		z_add(&asum,&asum,&nzval_a[j]);
 	}
     }
-	
+
 	nsupers = Glu_persist->supno[n-1] + 1;
 	nsupers_j = CEILING( nsupers, grid->npcol ); /* Number of local block columns */
-	
-	
-	
+
+
+
 	lsum.r=0.0;
 	lsum.i=0.0;
-	for (lk=0;lk<nsupers_j;++lk){	
+	for (lk=0;lk<nsupers_j;++lk){
 		lsub = LUstruct->Llu->Lrowind_bc_ptr[lk];
 		lusup = LUstruct->Llu->Lnzval_bc_ptr[lk];
 		if(lsub){
@@ -1211,23 +1211,23 @@ pzgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 			knsupc = SuperSize( k );
 			nsupr = lsub[1];
 			for (j=0; j<knsupc; ++j)
-				for (i = 0; i < nsupr; ++i) 
+				for (i = 0; i < nsupr; ++i)
 					z_add(&lsum,&lsum,&lusup[j*nsupr+i]);
 		}
 	}
-	
-	
+
+
 	MPI_Allreduce( &(asum.r), &(asum_tot.r),1, MPI_DOUBLE, MPI_SUM, grid->comm );
 	MPI_Allreduce( &(asum.i), &(asum_tot.i),1, MPI_DOUBLE, MPI_SUM, grid->comm );
 	MPI_Allreduce( &(lsum.r), &(lsum_tot.r),1, MPI_DOUBLE, MPI_SUM, grid->comm );
 	MPI_Allreduce( &(lsum.i), &(lsum_tot.i),1, MPI_DOUBLE, MPI_SUM, grid->comm );
-	
+
 
 	MPI_Allreduce( &Astore->rowptr[Astore->m_loc], &nnz_tot,1, mpi_int_t, MPI_SUM, grid->comm );
 	// MPI_Bcast( &nnzLU, 1, mpi_int_t, 0, grid->comm );
-	
+
 	MPI_Comm_rank( MPI_COMM_WORLD, &iam_g );
-	
+
     if (!iam_g) {
 	print_options_dist(options);
 	fflush(stdout);
@@ -1235,8 +1235,8 @@ pzgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 
     printf(".. Ainfo mygid %5d   mysid %5d   nnz_loc " IFMT "  sum_loc  %e lsum_loc   %e nnz "IFMT " nnzLU %ld sum %e  lsum %e  N "IFMT "\n", iam_g,iam,Astore->rowptr[Astore->m_loc],asum.r+asum.i, lsum.r+lsum.i, nnz_tot,nnzLU,asum_tot.r+asum_tot.i,lsum_tot.r+lsum_tot.i,A->ncol);
 	fflush(stdout);
-#endif				
-			
+#endif
+
 #if 0
 
 // #ifdef GPU_PROF
@@ -1247,7 +1247,7 @@ pzgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 
 //      ttemp = getenv("IO_FILE");
 //      if(ttemp!=NULL)
-//      {   
+//      {
 //          printf("File being opend is %s\n",ttemp );
 //          FILE* fp;
 //          fp = fopen(ttemp,"w");
@@ -1297,7 +1297,7 @@ pzgssvx(superlu_dist_options_t *options, SuperMatrix *A,
                              num_mem_usage.for_lu  /* distribution step */
                        );
             }
-            
+
 	    temp = SUPERLU_MAX(temp, num_mem_usage.total);
 
 	    MPI_Reduce( &temp, &max,
@@ -1320,17 +1320,17 @@ pzgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 		       for_lu * 1e-6, total * 1e-6);
                 printf("** Total highmark (MB):\n"
 		       "    Sum-of-all : %8.2f | Avg : %8.2f  | Max : %8.2f\n",
-		       avg * 1e-6,  
+		       avg * 1e-6,
 		       avg / grid->nprow / grid->npcol * 1e-6,
 		       max * 1e-6);
 		printf("**************************************************\n");
 		fflush(stdout);
             }
 	} /* end printing stats */
-    
+
     } /* end if (!factored) */
 
-    
+
     if ( options->Fact == DOFACT || options->Fact == SamePattern ) {
 	/* Need to reset the solve's communication pattern,
 	   because perm_r[] and/or perm_c[] is changed.    */
@@ -1343,11 +1343,11 @@ pzgssvx(superlu_dist_options_t *options, SuperMatrix *A,
     /* Need to revisit: Why the following is not good enough for X-to-B
        distribution -- inv_perm_c changed */
 	pxgstrs_finalize(SOLVEstruct->gstrs_comm);
-	pxgstrs_init(A->ncol, m_loc, nrhs, fst_row, perm_r, perm_c, grid, 
+	pxgstrs_init(A->ncol, m_loc, nrhs, fst_row, perm_r, perm_c, grid,
 	             LUstruct->Glu_persist, SOLVEstruct);
 #endif
 
-	
+
     /* ------------------------------------------------------------
        Compute the solution matrix X.
        ------------------------------------------------------------*/
@@ -1357,7 +1357,7 @@ pzgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 	    ABORT("Malloc fails for b_work[]");
 
 	/* ------------------------------------------------------------
-	   Scale the right-hand side if equilibration was performed. 
+	   Scale the right-hand side if equilibration was performed.
 	   ------------------------------------------------------------*/
 	if ( notran ) {
 	    if ( rowequ ) {
@@ -1408,22 +1408,22 @@ pzgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 	       factorization with Fact == DOFACT or SamePattern is asked for. */
 	}
 
-	if ( options->DiagInv==YES && 
+	if ( options->DiagInv==YES &&
              (options->SolveInitialized == NO || Fact == SamePattern ||
               Fact == SamePattern_SameRowPerm) ) {
 	    pzCompute_Diag_Inv(n, LUstruct, grid, stat, info);
 	}
 
 
-    // #pragma omp parallel  
-    // {  	
+    // #pragma omp parallel
+    // {
 	// #pragma omp master
 	// {
-	pzgstrs(n, LUstruct, ScalePermstruct, grid, X, m_loc, 
+	pzgstrs(n, LUstruct, ScalePermstruct, grid, X, m_loc,
 		fst_row, ldb, nrhs, SOLVEstruct, stat, info);
 	// }
 	// }
-	
+
 	/* ------------------------------------------------------------
 	   Use iterative refinement to improve the computed solution and
 	   compute error bounds and backward error estimates for it.
@@ -1442,7 +1442,7 @@ pzgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 		    pzgsmv_finalize(SOLVEstruct->gsmv_comm);
 	        pzgsmv_init(A, SOLVEstruct->row_to_proc, grid,
 			    SOLVEstruct->gsmv_comm);
-	       
+
                 /* Save a copy of the transformed local col indices
 		   in colind_gsmv[]. */
 	        if ( colind_gsmv ) SUPERLU_FREE(colind_gsmv);
@@ -1468,7 +1468,7 @@ pzgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 		        }
 		    }
 	        }
-	      
+
 	        /* Re-use the local col indices of A obtained from the
 		   previous call to pzgsmv_init() */
 	        for (i = 0; i < nnz_loc; ++i) colind[i] = colind_gsmv[i];
@@ -1478,10 +1478,10 @@ pzgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 	        SOLVEstruct1 = SOLVEstruct;
 	    } else { /* For nrhs > 1, since refinement is performed for RHS
 			one at a time, the communication structure for pdgstrs
-			is different than the solve with nrhs RHS. 
+			is different than the solve with nrhs RHS.
 			So we use SOLVEstruct1 for the refinement step.
 		     */
-	        if ( !(SOLVEstruct1 = (SOLVEstruct_t *) 
+	        if ( !(SOLVEstruct1 = (SOLVEstruct_t *)
 		                       SUPERLU_MALLOC(sizeof(SOLVEstruct_t))) )
 		    ABORT("Malloc fails for SOLVEstruct1");
 	        /* Copy the same stuff */
@@ -1492,12 +1492,12 @@ pzgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 	        SOLVEstruct1->diag_len = SOLVEstruct->diag_len;
 	        SOLVEstruct1->gsmv_comm = SOLVEstruct->gsmv_comm;
 	        SOLVEstruct1->A_colind_gsmv = SOLVEstruct->A_colind_gsmv;
-		
+
 		/* Initialize the *gstrs_comm for 1 RHS. */
 		if ( !(SOLVEstruct1->gstrs_comm = (pxgstrs_comm_t *)
 		       SUPERLU_MALLOC(sizeof(pxgstrs_comm_t))) )
 		    ABORT("Malloc fails for gstrs_comm[]");
-		pxgstrs_init(n, m_loc, 1, fst_row, perm_r, perm_c, grid, 
+		pxgstrs_init(n, m_loc, 1, fst_row, perm_r, perm_c, grid,
 			     Glu_persist, SOLVEstruct1);
 	    }
 
@@ -1522,7 +1522,7 @@ pzgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 	for (i = 0; i < m_loc; ++i)
 	  printf("\t(%d)\t%4d\t%.10f\n", iam, i+fst_row, B[i]);
 #endif
-	
+
 	/* Transform the solution matrix X to a solution of the original
 	   system before equilibration. */
 	if ( notran ) {
@@ -1565,10 +1565,10 @@ pzgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 	        SUPERLU_FREE(R);
 		SUPERLU_FREE(C);
 		break;
-	    case ROW: 
+	    case ROW:
 		SUPERLU_FREE(C);
 		break;
-	    case COL: 
+	    case COL:
 		SUPERLU_FREE(R);
 		break;
 	}

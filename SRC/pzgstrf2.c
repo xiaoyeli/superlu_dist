@@ -1,15 +1,15 @@
 /*! \file
 Copyright (c) 2003, The Regents of the University of California, through
-Lawrence Berkeley National Laboratory (subject to receipt of any required 
-approvals from U.S. Dept. of Energy) 
+Lawrence Berkeley National Laboratory (subject to receipt of any required
+approvals from U.S. Dept. of Energy)
 
-All rights reserved. 
+All rights reserved.
 
 The source code is distributed under BSD license, see the file License.txt
 at the top-level directory.
 */
 
-/*! @file 
+/*! @file
  * \brief Performs panel LU factorization.
  *
  * <pre>
@@ -128,7 +128,7 @@ pzgstrf2_trsm
     u_diag_cnt = 0;
     incy = ld_ujrow;
 
-    if ( U_diag_blk_send_req && 
+    if ( U_diag_blk_send_req &&
 	 U_diag_blk_send_req[myrow] != MPI_REQUEST_NULL ) {
         /* There are pending sends - wait for all Isend to complete */
 #if ( PROFlevel>=1 )
@@ -154,7 +154,7 @@ pzgstrf2_trsm
             /* Diagonal pivot */
             i = luptr;
            if ( options->ReplaceTinyPivot == YES ) {
-                if ( slud_z_abs1(&lusup[i]) < thresh && 
+                if ( slud_z_abs1(&lusup[i]) < thresh &&
 		     lusup[i].r != 0.0 && lusup[i].i != 0.0 ) { /* Diagonal */
 
 #if ( PRNTlevel>=2 )
@@ -260,7 +260,7 @@ pzgstrf2_trsm
 	stat->ops[FACT] += 4.0 * ((flops_t) nsupc * (nsupc+1) * l);
     } else {  /* non-diagonal process */
         /* ================================================================== *
-         * Receive the diagonal block of U for panel factorization of L(:,k). * 
+         * Receive the diagonal block of U for panel factorization of L(:,k). *
          * Note: we block for panel factorization of L(:,k), but panel        *
 	 * factorization of U(:,k) do not block                               *
          * ================================================================== */
@@ -359,7 +359,7 @@ void pzgstrs2_omp
     nb = usub[0];
     iukp = BR_HEADER;
     rukp = 0;
-    
+
     int* blocks_index_pointers = SUPERLU_MALLOC (3 * nb * sizeof(int));
     int* blocks_value_pointers = blocks_index_pointers + nb;
     int* nsupc_temp = blocks_value_pointers + nb;

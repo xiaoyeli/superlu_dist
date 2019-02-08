@@ -1,15 +1,15 @@
 /*! \file
 Copyright (c) 2003, The Regents of the University of California, through
-Lawrence Berkeley National Laboratory (subject to receipt of any required 
-approvals from U.S. Dept. of Energy) 
+Lawrence Berkeley National Laboratory (subject to receipt of any required
+approvals from U.S. Dept. of Energy)
 
-All rights reserved. 
+All rights reserved.
 
 The source code is distributed under BSD license, see the file License.txt
 at the top-level directory.
 */
 
-/*! @file 
+/*! @file
  * \brief Returns the value of the one norm, or the Frobenius norm, or the infinity norm, or the element of largest value
  *
  * <pre>
@@ -22,47 +22,47 @@ at the top-level directory.
 
 /*! \brief
 
-<pre> 
-    Purpose   
-    =======   
+<pre>
+    Purpose
+    =======
 
-    PZLANGS returns the value of the one norm, or the Frobenius norm, or 
-    the infinity norm, or the element of largest absolute value of a 
-    real matrix A.   
+    PZLANGS returns the value of the one norm, or the Frobenius norm, or
+    the infinity norm, or the element of largest absolute value of a
+    real matrix A.
 
-    Description   
-    ===========   
+    Description
+    ===========
 
-    PZLANGE returns the value   
+    PZLANGE returns the value
 
-       PZLANGE = ( max(abs(A(i,j))), NORM = 'M' or 'm'   
-                 (   
-                 ( norm1(A),         NORM = '1', 'O' or 'o'   
-                 (   
-                 ( normI(A),         NORM = 'I' or 'i'   
-                 (   
-                 ( normF(A),         NORM = 'F', 'f', 'E' or 'e'   
+       PZLANGE = ( max(abs(A(i,j))), NORM = 'M' or 'm'
+                 (
+                 ( norm1(A),         NORM = '1', 'O' or 'o'
+                 (
+                 ( normI(A),         NORM = 'I' or 'i'
+                 (
+                 ( normF(A),         NORM = 'F', 'f', 'E' or 'e'
 
-    where  norm1  denotes the  one norm of a matrix (maximum column sum), 
-    normI  denotes the  infinity norm  of a matrix  (maximum row sum) and 
-    normF  denotes the  Frobenius norm of a matrix (square root of sum of 
-    squares).  Note that  max(abs(A(i,j)))  is not a  matrix norm.   
+    where  norm1  denotes the  one norm of a matrix (maximum column sum),
+    normI  denotes the  infinity norm  of a matrix  (maximum row sum) and
+    normF  denotes the  Frobenius norm of a matrix (square root of sum of
+    squares).  Note that  max(abs(A(i,j)))  is not a  matrix norm.
 
-    Arguments   
-    =========   
+    Arguments
+    =========
 
-    NORM    (input) CHARACTER*1   
-            Specifies the value to be returned in DLANGE as described above.   
+    NORM    (input) CHARACTER*1
+            Specifies the value to be returned in DLANGE as described above.
     A       (input) SuperMatrix*
-            The M by N sparse matrix A. 
+            The M by N sparse matrix A.
     GRID    (input) gridinof_t*
             The 2D process mesh.
-   ===================================================================== 
+   =====================================================================
 </pre>
 */
 
 double pzlangs(char *norm, SuperMatrix *A, gridinfo_t *grid)
-{   
+{
     /* Local variables */
     NRformat_loc *Astore;
     int_t    m_loc;
@@ -76,7 +76,7 @@ double pzlangs(char *norm, SuperMatrix *A, gridinfo_t *grid)
     Astore = (NRformat_loc *) A->Store;
     m_loc = Astore->m_loc;
     Aval   = (doublecomplex *) Astore->nzval;
-    
+
     if ( SUPERLU_MIN(A->nrow, A->ncol) == 0) {
 	value = 0.;
     } else if ( strncmp(norm, "M", 1)==0 ) {
@@ -96,7 +96,7 @@ double pzlangs(char *norm, SuperMatrix *A, gridinfo_t *grid)
 #if 0
 	for (j = 0; j < A->ncol; ++j) {
 	    sum = 0.;
-	    for (i = Astore->colptr[j]; i < Astore->colptr[j+1]; i++) 
+	    for (i = Astore->colptr[j]; i < Astore->colptr[j+1]; i++)
 		sum += fabs(Aval[i]);
 	    value = SUPERLU_MAX(value,sum);
 	}
@@ -119,7 +119,7 @@ double pzlangs(char *norm, SuperMatrix *A, gridinfo_t *grid)
 	}
 	SUPERLU_FREE (temprwork);
 	SUPERLU_FREE (rwork);
-#endif	
+#endif
     } else if ( strncmp(norm, "I", 1)==0 ) {
 	/* Find normI(A). */
 	value = 0.;
@@ -138,7 +138,7 @@ double pzlangs(char *norm, SuperMatrix *A, gridinfo_t *grid)
     } else {
 	ABORT("Illegal norm specified.");
     }
-    
+
     return (value);
 
 } /* pzlangs */

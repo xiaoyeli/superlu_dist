@@ -1,16 +1,16 @@
 /*! \file
 Copyright (c) 2003, The Regents of the University of California, through
-Lawrence Berkeley National Laboratory (subject to receipt of any required 
-approvals from U.S. Dept. of Energy) 
+Lawrence Berkeley National Laboratory (subject to receipt of any required
+approvals from U.S. Dept. of Energy)
 
-All rights reserved. 
+All rights reserved.
 
 The source code is distributed under BSD license, see the file License.txt
 at the top-level directory.
 */
 
 
-/*! @file 
+/*! @file
  * \brief  Parallel sparse matrix-vector multiplication
  *
  * <pre>
@@ -144,7 +144,7 @@ void pdgsmv_init
 	    }
 	}
     }
-    
+
     /* ------------------------------------------------------------
        TRANSFORM THE COLUMN INDICES OF MATRIX A INTO LOCAL INDICES.
        THIS ACCOUNTS FOR THE THIRD PASS OF ACCESSING MATRIX A.
@@ -212,7 +212,7 @@ void pdgsmv_init
     gsmv_comm->val_torecv = val_torecv;
     gsmv_comm->TotalIndSend = TotalIndSend;
     gsmv_comm->TotalValSend = TotalValSend;
-    
+
     SUPERLU_FREE(spa);
     SUPERLU_FREE(send_req);
 
@@ -311,7 +311,7 @@ pdgsmv
                       grid->comm, &recv_req[p]);
 	}
     }
-    
+
     /* ------------------------------------------------------------
        PERFORM THE ACTUAL MULTIPLICATION.
        ------------------------------------------------------------*/

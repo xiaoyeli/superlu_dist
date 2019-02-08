@@ -1,16 +1,16 @@
 /*! \file
 Copyright (c) 2003, The Regents of the University of California, through
-Lawrence Berkeley National Laboratory (subject to receipt of any required 
-approvals from U.S. Dept. of Energy) 
+Lawrence Berkeley National Laboratory (subject to receipt of any required
+approvals from U.S. Dept. of Energy)
 
-All rights reserved. 
+All rights reserved.
 
 The source code is distributed under BSD license, see the file License.txt
 at the top-level directory.
 */
 
 
-/*! @file 
+/*! @file
  * \brief Computes row and column scalings
  *
  * File name:	pdgsequ.c
@@ -21,64 +21,64 @@ at the top-level directory.
 
 /*! \brief
 
- <pre>    
-    Purpose   
-    =======   
+ <pre>
+    Purpose
+    =======
 
-    PDGSEQU computes row and column scalings intended to equilibrate an   
+    PDGSEQU computes row and column scalings intended to equilibrate an
     M-by-N sparse matrix A and reduce its condition number. R returns the row
-    scale factors and C the column scale factors, chosen to try to make   
-    the largest element in each row and column of the matrix B with   
-    elements B(i,j)=R(i)*A(i,j)*C(j) have absolute value 1.   
+    scale factors and C the column scale factors, chosen to try to make
+    the largest element in each row and column of the matrix B with
+    elements B(i,j)=R(i)*A(i,j)*C(j) have absolute value 1.
 
-    R(i) and C(j) are restricted to be between SMLNUM = smallest safe   
-    number and BIGNUM = largest safe number.  Use of these scaling   
-    factors is not guaranteed to reduce the condition number of A but   
-    works well in practice.   
+    R(i) and C(j) are restricted to be between SMLNUM = smallest safe
+    number and BIGNUM = largest safe number.  Use of these scaling
+    factors is not guaranteed to reduce the condition number of A but
+    works well in practice.
 
     See supermatrix.h for the definition of 'SuperMatrix' structure.
- 
-    Arguments   
-    =========   
+
+    Arguments
+    =========
 
     A       (input) SuperMatrix*
             The matrix of dimension (A->nrow, A->ncol) whose equilibration
             factors are to be computed. The type of A can be:
             Stype = SLU_NR_loc; Dtype = SLU_D; Mtype = SLU_GE.
-	    
+
     R       (output) double*, size A->nrow
-            If INFO = 0 or INFO > M, R contains the row scale factors   
+            If INFO = 0 or INFO > M, R contains the row scale factors
             for A.
-	    
+
     C       (output) double*, size A->ncol
             If INFO = 0,  C contains the column scale factors for A.
-	    
+
     ROWCND  (output) double*
-            If INFO = 0 or INFO > M, ROWCND contains the ratio of the   
-            smallest R(i) to the largest R(i).  If ROWCND >= 0.1 and   
-            AMAX is neither too large nor too small, it is not worth   
+            If INFO = 0 or INFO > M, ROWCND contains the ratio of the
+            smallest R(i) to the largest R(i).  If ROWCND >= 0.1 and
+            AMAX is neither too large nor too small, it is not worth
             scaling by R.
-	    
+
     COLCND  (output) double*
-            If INFO = 0, COLCND contains the ratio of the smallest   
-            C(i) to the largest C(i).  If COLCND >= 0.1, it is not   
+            If INFO = 0, COLCND contains the ratio of the smallest
+            C(i) to the largest C(i).  If COLCND >= 0.1, it is not
             worth scaling by C.
-	    
+
     AMAX    (output) double*
-            Absolute value of largest matrix element.  If AMAX is very   
-            close to overflow or very close to underflow, the matrix   
+            Absolute value of largest matrix element.  If AMAX is very
+            close to overflow or very close to underflow, the matrix
             should be scaled.
-	    
+
     INFO    (output) int*
-            = 0:  successful exit   
-            < 0:  if INFO = -i, the i-th argument had an illegal value   
-            > 0:  if INFO = i,  and i is   
-                  <= M:  the i-th row of A is exactly zero   
-                  >  M:  the (i-M)-th column of A is exactly zero   
+            = 0:  successful exit
+            < 0:  if INFO = -i, the i-th argument had an illegal value
+            > 0:  if INFO = i,  and i is
+                  <= M:  the i-th row of A is exactly zero
+                  >  M:  the (i-M)-th column of A is exactly zero
 
     GRID    (input) gridinof_t*
             The 2D process mesh.
-    ===================================================================== 
+    =====================================================================
 </pre>
 */
 
@@ -98,7 +98,7 @@ pdgsequ(SuperMatrix *A, double *r, double *c, double *rowcnd,
     int *r_sizes, *displs;
     double *loc_r;
     int_t  procs;
-    
+
     /* Test the input parameters. */
     *info = 0;
     if ( A->nrow < 0 || A->ncol < 0 ||
@@ -121,7 +121,7 @@ pdgsequ(SuperMatrix *A, double *r, double *c, double *rowcnd,
     Astore = A->Store;
     Aval = Astore->nzval;
     m_loc = Astore->m_loc;
-    
+
     /* Get machine constants. */
     smlnum = dmach_dist("S");
     bignum = 1. / smlnum;
@@ -144,13 +144,13 @@ pdgsequ(SuperMatrix *A, double *r, double *c, double *rowcnd,
 	rcmax = SUPERLU_MAX(rcmax, r[i]);
 	rcmin = SUPERLU_MIN(rcmin, r[i]);
     }
-  
+
     /* Get the global MAX and MIN for R */
     tempmax = rcmax;
     tempmin = rcmin;
-    MPI_Allreduce( &tempmax, &rcmax, 
+    MPI_Allreduce( &tempmax, &rcmax,
 		1, MPI_DOUBLE, MPI_MAX, grid->comm);
-    MPI_Allreduce( &tempmin, &rcmin, 
+    MPI_Allreduce( &tempmin, &rcmin,
 		1, MPI_DOUBLE, MPI_MIN, grid->comm);
 
     *amax = rcmax;
@@ -227,7 +227,7 @@ pdgsequ(SuperMatrix *A, double *r, double *c, double *rowcnd,
 
     /* First gather the size of each piece. */
     MPI_Allgather(&m_loc, 1, MPI_INT, r_sizes, 1, MPI_INT, grid->comm);
-      
+
     /* Set up the displacements for allgatherv */
     displs[0] = 0;
     for (i = 1; i < procs; ++i) displs[i] = displs[i-1] + r_sizes[i-1];
@@ -235,7 +235,7 @@ pdgsequ(SuperMatrix *A, double *r, double *c, double *rowcnd,
     /* Now gather the actual data */
     MPI_Allgatherv(loc_r, m_loc, MPI_DOUBLE, r, r_sizes, displs,
                 MPI_DOUBLE, grid->comm);
-      
+
     SUPERLU_FREE(r_sizes);
     SUPERLU_FREE(loc_r);
 

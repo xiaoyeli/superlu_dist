@@ -1,25 +1,25 @@
 /*! \file
 Copyright (c) 2003, The Regents of the University of California, through
-Lawrence Berkeley National Laboratory (subject to receipt of any required 
-approvals from U.S. Dept. of Energy) 
+Lawrence Berkeley National Laboratory (subject to receipt of any required
+approvals from U.S. Dept. of Energy)
 
-All rights reserved. 
+All rights reserved.
 
 The source code is distributed under BSD license, see the file License.txt
 at the top-level directory.
 */
 
-/*! @file 
+/*! @file
  * \brief Scatter the computed blocks into LU destination.
  *
  * <pre>
- * -- Distributed SuperLU routine (version 5.2) --
+ * -- Distributed SuperLU routine (version 6.1.1) --
  * Lawrence Berkeley National Lab, Univ. of California Berkeley.
  * October 1, 2014
  *
- * Modified: 
+ * Modified:
  *   September 18, 2017, enable SIMD vectorized scatter operation.
- *   
+ *
  */
 #include <math.h>
 #include "superlu_zdefs.h"
@@ -125,7 +125,7 @@ zscatter_l (
            int_t ** Lrowind_bc_ptr, doublecomplex **Lnzval_bc_ptr,
            gridinfo_t * grid)
 {
-    
+
     int_t rel, i, segsize, jj;
     doublecomplex *nzval;
     int_t *index = Lrowind_bc_ptr[ljb];
@@ -133,23 +133,23 @@ zscatter_l (
     int_t lptrj = BC_HEADER;
     int_t luptrj = 0;
     int_t ijb = index[lptrj];
-    
+
     while (ijb != ib)  /* Search for destination block L(i,j) */
     {
         luptrj += index[lptrj + 1];
         lptrj += LB_DESCRIPTOR + index[lptrj + 1];
         ijb = index[lptrj];
     }
-    
+
     /*
      * Build indirect table. This is needed because the indices are not sorted
      * in the L blocks.
      */
     int_t fnz = FstBlockC (ib);
-    int_t dest_nbrow; 
+    int_t dest_nbrow;
     lptrj += LB_DESCRIPTOR;
     dest_nbrow=index[lptrj - 1];
-    
+
 #if (_OPENMP>=201307)
 #pragma omp simd
 #endif
@@ -165,7 +165,7 @@ zscatter_l (
     /* can be precalculated? */
     for (i = 0; i < temp_nbrow; ++i) { /* Source index is a subset of dest. */
         rel = lsub[lptr + i] - fnz;
-        indirect2[i] =indirect_thread[rel]; 
+        indirect2[i] =indirect_thread[rel];
     }
 
     nzval = Lnzval_bc_ptr[ljb] + luptrj; /* Destination block L(i,j) */
@@ -185,7 +185,7 @@ zscatter_l (
         }
         nzval += ldv;
     }
-    
+
 } /* zscatter_l */
 
 
@@ -299,12 +299,12 @@ gemm_division_cpu_gpu(
     /*input */
     int nbrow,              /*number of row in A matrix */
     int ldu,                /*number of k in dgemm */
-    int nstreams, 
+    int nstreams,
     int* full_u_cols,       /*array containing prefix sum of work load */
     int num_blks            /*Number of work load */
 )
 {
-    int Ngem = sp_ienv(7);  /*get_mnk_dgemm ();*/
+    int Ngem = sp_ienv_dist(7);  /*get_mnk_dgemm ();*/
     int min_gpu_col = get_cublas_nb ();
 
     // Ngem = 1000000000;
@@ -312,7 +312,7 @@ gemm_division_cpu_gpu(
        cpu is to gpu dgemm should be ideally 0:1 ratios to hide the total cost
        However since there is gpu latency of around 20,000 ns implying about
        200000 floating point calculation be done in that time so ~200,000/(2*nbrow*ldu)
-       should be done in cpu to hide the latency; we Ngem =200,000/2 
+       should be done in cpu to hide the latency; we Ngem =200,000/2
      */
     int i, j;
 
@@ -431,7 +431,7 @@ gemm_division_new (int * num_streams_used,   /*number of streams that will be us
                    int num_blks  /*Number of work load */
     )
 {
-    int Ngem = sp_ienv(7); /*get_mnk_dgemm ();*/
+    int Ngem = sp_ienv_dist(7); /*get_mnk_dgemm ();*/
     int min_gpu_col = get_cublas_nb ();
 
     // Ngem = 1000000000;
@@ -439,7 +439,7 @@ gemm_division_new (int * num_streams_used,   /*number of streams that will be us
        cpu is to gpu dgemm should be ideally 0:1 ratios to hide the total cost
        However since there is gpu latency of around 20,000 ns implying about
        200000 floating point calculation be done in that time so ~200,000/(2*nbrow*ldu)
-       should be done in cpu to hide the latency; we Ngem =200,000/2 
+       should be done in cpu to hide the latency; we Ngem =200,000/2
      */
     int_t i, j;
 

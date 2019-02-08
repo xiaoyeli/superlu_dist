@@ -1,16 +1,16 @@
 /*! \file
 Copyright (c) 2003, The Regents of the University of California, through
-Lawrence Berkeley National Laboratory (subject to receipt of any required 
-approvals from U.S. Dept. of Energy) 
+Lawrence Berkeley National Laboratory (subject to receipt of any required
+approvals from U.S. Dept. of Energy)
 
-All rights reserved. 
+All rights reserved.
 
 The source code is distributed under BSD license, see the file License.txt
 at the top-level directory.
 */
 
-/*! @file 
- * \brief 
+/*! @file
+ * \brief
  *
  */
 #include <stdio.h>
@@ -38,7 +38,7 @@ zreadtriple_dist(FILE *fp, int_t *m, int_t *n, int_t *nonz,
     doublecomplex *a, *val;
     int_t    *asub, *xa, *row, *col;
     int_t    zero_base = 0;
-    
+
     /* 	File format:
      *    First line:  #rows    #non-zero
      *    Triplet in the rest of lines:
@@ -95,7 +95,7 @@ zreadtriple_dist(FILE *fp, int_t *m, int_t *n, int_t *nonz,
 
 	if (row[nz] < 0 || row[nz] >= *m || col[nz] < 0 || col[nz] >= *n
 	    /*|| val[nz] == 0.*/) {
-	    fprintf(stderr, "nz " IFMT ", (" IFMT ", " IFMT ") = {%e\t%e} out of bound, removed\n", 
+	    fprintf(stderr, "nz " IFMT ", (" IFMT ", " IFMT ") = {%e\t%e} out of bound, removed\n",
 		    nz, row[nz], col[nz], val[nz].r, val[nz].i);
 	    exit(-1);
 	} else {
@@ -108,7 +108,7 @@ zreadtriple_dist(FILE *fp, int_t *m, int_t *n, int_t *nonz,
 	      val[nz] = val[nz-1];
 	      ++xa[col[nz]];
 	    }
-#endif	
+#endif
 	    ++nz;
 	}
     }
@@ -117,7 +117,7 @@ zreadtriple_dist(FILE *fp, int_t *m, int_t *n, int_t *nonz,
 #ifdef EXPAND_SYM
     printf("new_nonz after symmetric expansion:\t%d\n", *nonz);
 #endif
-    
+
 
     /* Initialize the array of column pointers */
     k = 0;
@@ -128,7 +128,7 @@ zreadtriple_dist(FILE *fp, int_t *m, int_t *n, int_t *nonz,
 	jsize = xa[j];
 	xa[j] = k;
     }
-    
+
     /* Copy the triplets into the column oriented storage */
     for (nz = 0; nz < *nonz; ++nz) {
 	j = col[nz];

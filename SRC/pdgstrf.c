@@ -1,9 +1,9 @@
 /*! \file
 Copyright (c) 2003, The Regents of the University of California, through
-Lawrence Berkeley National Laboratory (subject to receipt of any required 
-approvals from U.S. Dept. of Energy) 
+Lawrence Berkeley National Laboratory (subject to receipt of any required
+approvals from U.S. Dept. of Energy)
 
-All rights reserved. 
+All rights reserved.
 
 The source code is distributed under BSD license, see the file License.txt
 at the top-level directory.
@@ -28,11 +28,12 @@ at the top-level directory.
  *   December 31, 2015 rename xMACH to xMACH_DIST.
  *   September 30, 2017 optimization for Intel Knights Landing (KNL) node .
  *   June 1, 2018      add parallel AWPM pivoting; add back arrive_at_ublock()
+ *   February 8, 2019  version 6.1.1
  *
- * Sketch of the algorithm 
+ * Sketch of the algorithm
  *
- * ======================= 
- *    
+ * =======================
+ *
  * The following relations hold:
  *     * A_kk = L_kk * U_kk
  *     * L_ik = Aik * U_kk^(-1)
@@ -116,25 +117,25 @@ at the top-level directory.
 /*#include "cublas_dgemm.h"*/
 // #define NUM_CUDA_STREAMS 16
 // #define NUM_CUDA_STREAMS 16
-#endif 
+#endif
 
 /* Various defininations     */
-/* 
-    Name    : SUPERNODE_PROFILE  
+/*
+    Name    : SUPERNODE_PROFILE
     Purpose : For SuperNode Level profiling of various measurements such as gigaflop/sec
     obtained,bandwidth achieved:
-    Overhead : Low 
+    Overhead : Low
 */
-// #define SUPERNODE_PROFILE   
+// #define SUPERNODE_PROFILE
 
-/* 
+/*
     Name    :   BAELINE
     Purpose : baseline to compare performance against
     Overhead : NA : this won't be used for running experiments
 */
 // #define BASELINE
 
-/* 
+/*
     Name    :   PHI_FRAMEWORK
     Purpose : To simulate and test algorithm used for offloading Phi
     Overhead : NA : this won't be used for running experiments
@@ -412,12 +413,12 @@ pdgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
     if (m == 0 || n == 0) return 0;
 
     double tt1 = SuperLU_timer_ ();
- 
-    /* 
-     * Initialization.  
+
+    /*
+     * Initialization.
      */
     iam = grid->iam;
-    Pc = grid->npcol; 
+    Pc = grid->npcol;
     Pr = grid->nprow;
     myrow = MYROW (iam, grid);
     mycol = MYCOL (iam, grid);
@@ -426,7 +427,7 @@ pdgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
     s_eps = smach_dist("Epsilon");
     thresh = s_eps * anorm;
 
-    MPI_Attr_get (MPI_COMM_WORLD, MPI_TAG_UB, &attr_val, &flag);
+    MPI_Comm_get_attr (MPI_COMM_WORLD, MPI_TAG_UB, &attr_val, &flag);
     if (!flag) {
         fprintf (stderr, "Could not get TAG_UB\n");
         return (-1);
@@ -504,9 +505,9 @@ pdgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
         }
     }
 
-    log_memory( (Llu->bufmax[0] + Llu->bufmax[2]) * (num_look_aheads + 1) 
+    log_memory( (Llu->bufmax[0] + Llu->bufmax[2]) * (num_look_aheads + 1)
 		* iword +
-		(Llu->bufmax[1] + Llu->bufmax[3]) * (num_look_aheads + 1) 
+		(Llu->bufmax[1] + Llu->bufmax[3]) * (num_look_aheads + 1)
 		* dword, stat );
 
     /* creating pointers to the look-ahead buffers */
@@ -626,7 +627,7 @@ pdgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
 
 #if ( DEBUGlevel >= 2 )
     PrintInt10("schedule:perm_c_supno", nsupers, perm_c_supno);
-    
+
     /* Turn off static schedule */
     printf("[%d] .. Turn off static schedule for debugging ..\n", iam);
     for (i = 0; i < nsupers; ++i) perm_c_supno[i] = iperm_c_supno[i] = i;
@@ -642,7 +643,7 @@ pdgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
     for (lb = 0; lb < nsupers; lb++) look_ahead_l[lb] = -1; /* vectorized */
     log_memory(3 * nsupers * iword, stat);
 
-    /* Sherry: omp parallel? 
+    /* Sherry: omp parallel?
        not worth doing, due to concurrent write to look_ahead_l[jb] */
     for (lb = 0; lb < nrb; ++lb) { /* go through U-factor */
         ib = lb * Pr + myrow;
@@ -739,12 +740,12 @@ pdgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
         fflush(stdout);
     }
 #endif
-   
+
     Lrowind_bc_ptr = Llu->Lrowind_bc_ptr;
     Lnzval_bc_ptr = Llu->Lnzval_bc_ptr;
     Ufstnz_br_ptr = Llu->Ufstnz_br_ptr;
     Unzval_br_ptr = Llu->Unzval_br_ptr;
-    ToRecv = Llu->ToRecv; 
+    ToRecv = Llu->ToRecv;
     ToSendD = Llu->ToSendD;
     ToSendR = Llu->ToSendR;
 
@@ -757,7 +758,7 @@ pdgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
 
 #if 0
 #if defined _OPENMP  // Sherry: parallel reduction -- seems slower?
-#pragma omp parallel for reduction(max :local_max_row_size) private(lk,lsub) 
+#pragma omp parallel for reduction(max :local_max_row_size) private(lk,lsub)
 #endif
 #endif
     for (int i = mycol; i < nsupers; i += Pc) { /* grab my local columns */
@@ -778,7 +779,7 @@ pdgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
     /* int_t buffer_size =
          SUPERLU_MAX (max_row_size * num_threads * ldt,
                       get_max_buffer_size ());           */
-            
+
 #ifdef GPU_ACC
     int cublas_nb = get_cublas_nb();
     int nstreams = get_num_cuda_streams ();
@@ -817,11 +818,11 @@ pdgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
     /* bigU and bigV are either on CPU or on GPU, not both. */
     double* bigU; /* for storing entire U(k,:) panel, prepare for GEMM.
                       bigU has the same size either on CPU or on CPU. */
-    double* bigV; /* for storing GEMM output matrix, i.e. update matrix. 
+    double* bigV; /* for storing GEMM output matrix, i.e. update matrix.
 	              bigV is large to hold the aggregate GEMM output.*/
     bigU = NULL;
     bigV = NULL;
-				  
+
 #if ( PRNTlevel>=1 )
     if(!iam) {
 	printf("\t.. GEMM buffer size: max_row_size X max_ncols = %d x " IFMT "\n",
@@ -842,7 +843,7 @@ pdgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
 #endif
     if ( checkCuda(cudaHostAlloc((void**)&bigV, bigv_size * sizeof(double) ,cudaHostAllocDefault)) )
         ABORT("Malloc fails for dgemm buffer V");
- 
+
     DisplayHeader();
 
 #if ( PRNTlevel>=1 )
@@ -853,19 +854,19 @@ pdgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
     handle = (cublasHandle_t *) SUPERLU_MALLOC(sizeof(cublasHandle_t)*nstreams);
     for(int i = 0; i < nstreams; i++) handle[i] = create_handle();
 
-    // creating streams 
+    // creating streams
     cudaStream_t *streams;
     streams = (cudaStream_t *) SUPERLU_MALLOC(sizeof(cudaStream_t)*nstreams);
     for (int i = 0; i < nstreams; ++i)
         checkCuda( cudaStreamCreate(&streams[i]) );
-    
-    // allocating data in device 
+
+    // allocating data in device
     double *dA, *dB, *dC;
     cudaError_t cudaStat;
 #if 0
     // cudaStat = cudaMalloc( (void**)&dA, m*k*sizeof(double));
     // HOw much should be the size of dA?
-    // for time being just making it 
+    // for time being just making it
     // cudaStat = cudaMalloc( (void**)&dA, ((max_row_size*sp_ienv_dist(3)))* sizeof(double));
 #endif
 
@@ -889,11 +890,11 @@ pdgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
         return 1;
     }
 
-    stat->gpu_buffer += ( max_row_size * sp_ienv_dist(3) 
+    stat->gpu_buffer += ( max_row_size * sp_ienv_dist(3)
 			  + bigu_size + buffer_size ) * dword;
 
 #else  /* not CUDA */
-    
+
     // for GEMM padding 0
     j = bigu_size / ldt;
     bigu_size += (gemm_k_pad * (j + ldt + gemm_n_pad));
@@ -904,7 +905,7 @@ pdgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
 //    bigV = _mm_malloc(bigv_size * sizeof(double), 1<<12);
 //#else
     if ( !(bigU = doubleMalloc_dist(bigu_size)) )
-        ABORT ("Malloc fails for dgemm U buffer"); 
+        ABORT ("Malloc fails for dgemm U buffer");
           //Maximum size of bigU= sqrt(buffsize) ?
     // int bigv_size = 8 * ldt * ldt * num_threads;
     if ( !(bigV = doubleMalloc_dist(bigv_size)) )
@@ -915,7 +916,7 @@ pdgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
 
     log_memory((bigv_size + bigu_size) * dword, stat);
 
-    // mlock(bigU,(bigu_size) * sizeof (double));   
+    // mlock(bigU,(bigu_size) * sizeof (double));
 
 #if ( PRNTlevel>=1 )
     if(!iam) {
@@ -951,7 +952,7 @@ pdgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
 
     int_t mrb = (nsupers + Pr - 1) / Pr;
     int_t mcb = (nsupers + Pc - 1) / Pc;
-    
+
     RemainStRow     = intMalloc_dist(mrb);
 #if 0
     Remain_lptr     = (int *) _mm_malloc(sizeof(int)*mrb,1);
@@ -960,7 +961,7 @@ pdgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
 #endif
     // mlock(Remain_lptr, sizeof(int)*mrb );
     Remain_ib       = intMalloc_dist(mrb);
-    
+
     Remain_info_t *Remain_info;
 #if 0
     Remain_info = (Remain_info_t *) _mm_malloc(mrb*sizeof(Remain_info_t),64);
@@ -1017,7 +1018,7 @@ pdgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
         PDGSTRF2 (options, k0, k, thresh, Glu_persist, grid, Llu,
                   U_diag_blk_send_req, tag_ub, stat, info);
 
-        pdgstrf2_timer += SuperLU_timer_()-ttt1; 
+        pdgstrf2_timer += SuperLU_timer_()-ttt1;
 
         scp = &grid->rscp;      /* The scope of process row. */
 
@@ -1142,7 +1143,7 @@ pdgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
                     PDGSTRF2 (options, kk0, kk, thresh, Glu_persist,
                               grid, Llu, U_diag_blk_send_req, tag_ub, stat, info);
 
-                     pdgstrf2_timer += SuperLU_timer_() - ttt1; 
+                     pdgstrf2_timer += SuperLU_timer_() - ttt1;
 
                     /* Multicasts numeric values of L(:,kk) to process rows. */
                     /* ttt1 = SuperLU_timer_(); */
@@ -1243,7 +1244,7 @@ pdgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
         kk1 = k0;
         kk2 = SUPERLU_MIN (k0 + num_look_aheads, nsupers - 1);
         for (kk0 = kk1; kk0 < kk2; kk0++) {
-            kk = perm_c_supno[kk0]; /* order determined from static schedule */  
+            kk = perm_c_supno[kk0]; /* order determined from static schedule */
             if (factoredU[kk0] != 1 && look_ahead[kk] < k0) {
 		/* does not depend on current column k */
                 kcol = PCOL (kk, grid);
@@ -1309,7 +1310,7 @@ pdgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
                             PDGSTRS2 (kk0, kk, Glu_persist, grid, Llu,
                                       stat);
                         }
-    
+
                         pdgstrs2_timer += SuperLU_timer_()-ttt2;
                         /* stat->time8 += SuperLU_timer_()-ttt2; */
 
@@ -1415,7 +1416,7 @@ pdgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
                 } else {
                     msgcnt[0] = msgcntsU[look_id][0];
 #if (DEBUGlevel>=2)
-		    printf("\t[%d] k=%d, look_id=%d, recv_req[0] == MPI_REQUEST_NULL, msgcnt[0] = %d\n", 
+		    printf("\t[%d] k=%d, look_id=%d, recv_req[0] == MPI_REQUEST_NULL, msgcnt[0] = %d\n",
 			   iam, k, look_id, msgcnt[0]);
 #endif
                 }
@@ -1427,7 +1428,7 @@ pdgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
                 } else {
                     msgcnt[1] = msgcntsU[look_id][1];
 #if (DEBUGlevel>=2)
-		    printf("\t[%d] k=%d, look_id=%d, recv_req[1] == MPI_REQUEST_NULL, msgcnt[1] = %d\n", 
+		    printf("\t[%d] k=%d, look_id=%d, recv_req[1] == MPI_REQUEST_NULL, msgcnt[1] = %d\n",
 			   iam, k, look_id, msgcnt[1]);
 #endif
                 }
@@ -1467,14 +1468,14 @@ pdgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
             if (factoredU[k0] == -1) {
                 /* Parallel triangular solve across process row *krow* --
                    U(k,j) = L(k,k) \ A(k,j).  */
-                 double ttt2 = SuperLU_timer_(); 
+                 double ttt2 = SuperLU_timer_();
 #ifdef _OPENMP
 /* #pragma omp parallel */ /* Sherry -- parallel done inside pdgstrs2 */
 #endif
                 {
                     PDGSTRS2 (k0, k, Glu_persist, grid, Llu, stat);
                 }
-                pdgstrs2_timer += SuperLU_timer_() - ttt2; 
+                pdgstrs2_timer += SuperLU_timer_() - ttt2;
 
 	        /* Sherry -- need to set factoredU[k0] = 1; ?? */
 
@@ -1496,7 +1497,7 @@ pdgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
                                       SLU_MPI_TAG (2, k0), /* (4*k0+2)%tag_ub */
                                       scp->comm);
                             MPI_Send (uval, msgcnt[3], MPI_DOUBLE, pi,
-                                      SLU_MPI_TAG (3, k0), /* (4*k0+3)%tag_ub */ 
+                                      SLU_MPI_TAG (3, k0), /* (4*k0+3)%tag_ub */
                                       scp->comm);
 #if ( PROFlevel>=1 )
                             TOC (t2, t1);
@@ -1624,9 +1625,9 @@ pdgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
             }
             iukp = iukp0;
 #ifdef ISORT
-            /* iperm_u is sorted based on elimination order; 
+            /* iperm_u is sorted based on elimination order;
                perm_u reorders the U blocks to match the elimination order. */
-            isort (nub, iperm_u, perm_u); 
+            isort (nub, iperm_u, perm_u);
 #else
             qsort (perm_u, (size_t) nub, 2 * sizeof (int_t),
                    &superlu_sort_perm);
@@ -1686,11 +1687,11 @@ pdgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
                         /* Factor diagonal and subdiagonal blocks and
 			   test for exact singularity.  */
                         factored[kk] = 0; /* flag column kk as factored */
-                        double ttt1 = SuperLU_timer_(); 
+                        double ttt1 = SuperLU_timer_();
                         PDGSTRF2 (options, kk0, kk, thresh,
                                   Glu_persist, grid, Llu, U_diag_blk_send_req,
                                   tag_ub, stat, info);
-                        pdgstrf2_timer += SuperLU_timer_() - ttt1; 
+                        pdgstrf2_timer += SuperLU_timer_() - ttt1;
 
                         /* Process column *kcol+1* multicasts numeric
 			   values of L(:,k+1) to process rows. */
@@ -1739,18 +1740,18 @@ pdgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
 
 #include "dSchCompUdt-cuda.c"
 
-#else 
+#else
 
 /*#include "SchCompUdt--Phi-2Ddynamic-alt.c"*/
 //#include "dSchCompUdt-2Ddynamic_v6.c"
 
 #include "dSchCompUdt-2Ddynamic.c"
 
-#endif 
+#endif
 	/*uncomment following to compare against SuperLU 3.3 baseline*/
         /* #include "SchCompUdt--baseline.c"  */
 	/************************************************************************/
-        
+
         NetSchurUpTimer += SuperLU_timer_() - tsch;
 
     }  /* MAIN LOOP for k0 = 0, ... */
@@ -1758,7 +1759,7 @@ pdgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
     /* ##################################################################
        ** END MAIN LOOP: for k0 = ...
        ################################################################## */
-    
+
     pxgstrfTimer = SuperLU_timer_() - pxgstrfTimer;
 
 #if ( PRNTlevel>=2 )
@@ -1779,13 +1780,13 @@ pdgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
         printf("Time in Schur update \t\t %8.2lf seconds\n", NetSchurUpTimer);
         printf(".. Time to Gather L buffer\t %8.2lf  (Separate L panel by Lookahead/Remain)\n", GatherLTimer);
         printf(".. Time to Gather U buffer\t %8.2lf \n", GatherUTimer);
-	       
+
         printf(".. Time in GEMM %8.2lf \n",
 	       LookAheadGEMMTimer + RemainGEMMTimer);
         printf("\t* Look-ahead\t %8.2lf \n", LookAheadGEMMTimer);
-        printf("\t* Remain\t %8.2lf\tFlops %8.2le\tGflops %8.2lf\n", 
+        printf("\t* Remain\t %8.2lf\tFlops %8.2le\tGflops %8.2lf\n",
 	       RemainGEMMTimer, allflops, allflops/RemainGEMMTimer*1e-9);
-        printf(".. Time to Scatter %8.2lf \n", 
+        printf(".. Time to Scatter %8.2lf \n",
 	       LookAheadScatterTimer + RemainScatterTimer);
         printf("\t* Look-ahead\t %8.2lf \n", LookAheadScatterTimer);
         printf("\t* Remain\t %8.2lf \n", RemainScatterTimer);
@@ -1795,7 +1796,7 @@ pdgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
 	printf("GEMM maximum block: %d-%d-%d\n", gemm_max_m, gemm_max_k, gemm_max_n);
     }
 #endif
-    
+
 #if ( DEBUGlevel>=3 )
     for (i = 0; i < Pr * Pc; ++i) {
         if (iam == i) {
@@ -1832,7 +1833,7 @@ pdgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
     log_memory( -((Llu->bufmax[0] + Llu->bufmax[2]) * (num_look_aheads + 1) * iword +
 		  (Llu->bufmax[1] + Llu->bufmax[3]) * (num_look_aheads + 1) * dword),
 		stat );
-    
+
     SUPERLU_FREE (Lsub_buf_2);
     SUPERLU_FREE (Lval_buf_2);
     SUPERLU_FREE (Usub_buf_2);
@@ -1914,7 +1915,7 @@ pdgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
     SUPERLU_FREE(Remain_info);
     SUPERLU_FREE(lookAhead_L_buff);
     SUPERLU_FREE(Remain_L_buff);
-    log_memory( -(3 * mrb * iword + mrb * sizeof(Remain_info_t) + 
+    log_memory( -(3 * mrb * iword + mrb * sizeof(Remain_info_t) +
 		  ldt * ldt * (num_look_aheads + 1) * dword +
 		  Llu->bufmax[1] * dword), stat );
 
@@ -1966,7 +1967,7 @@ pdgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
 	    for (i = 0; i < gemm_count; ++i)
 		fprintf(fgemm, "%8d%8d%8d\t %20.16e\t%8d\n", gemm_stats[i].m, gemm_stats[i].n,
 			gemm_stats[i].k, gemm_stats[i].microseconds, prof_sendR[i]);
-	    
+
 	    fclose(fgemm);
         }
 	SUPERLU_FREE(gemm_stats);

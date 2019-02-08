@@ -17,9 +17,10 @@ at the top-level directory.
  * November 1, 2007
  *
  * Modified:
- *     Feburary 20, 2008
+ *     February 20, 2008
  *     October 11, 2014
  *     September 18, 2018  version 6.0
+ *     February 8, 2019
  * </pre>
  */
 
@@ -70,8 +71,8 @@ at the top-level directory.
  */
 #define SUPERLU_DIST_MAJOR_VERSION     6
 #define SUPERLU_DIST_MINOR_VERSION     1
-#define SUPERLU_DIST_PATCH_VERSION     0
-#define SUPERLU_DIST_RELEASE_DATE      "December 6, 2018"
+#define SUPERLU_DIST_PATCH_VERSION     1
+#define SUPERLU_DIST_RELEASE_DATE      "February 8, 2019"
 
 #include "superlu_dist_config.h"
 /* Define my integer size int_t */

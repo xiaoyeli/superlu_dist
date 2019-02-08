@@ -1,19 +1,19 @@
 /*! \file
 Copyright (c) 2003, The Regents of the University of California, through
-Lawrence Berkeley National Laboratory (subject to receipt of any required 
-approvals from U.S. Dept. of Energy) 
+Lawrence Berkeley National Laboratory (subject to receipt of any required
+approvals from U.S. Dept. of Energy)
 
-All rights reserved. 
+All rights reserved.
 
 The source code is distributed under BSD license, see the file License.txt
 at the top-level directory.
 */
 
-/*! @file 
+/*! @file
  * \brief Several matrix utilities
  *
  * <pre>
- * -- Distributed SuperLU routine (version 2.0) --
+ * -- Distributed SuperLU routine (version 6.1.1) --
  * Lawrence Berkeley National Lab, Univ. of California Berkeley.
  * March 15, 2003
  *
@@ -23,7 +23,7 @@ at the top-level directory.
 #include "superlu_zdefs.h"
 
 void
-zCreate_CompCol_Matrix_dist(SuperMatrix *A, int_t m, int_t n, int_t nnz, 
+zCreate_CompCol_Matrix_dist(SuperMatrix *A, int_t m, int_t n, int_t nnz,
 			    doublecomplex *nzval, int_t *rowind, int_t *colptr,
 			    Stype_t stype, Dtype_t dtype, Mtype_t mtype)
 {
@@ -70,7 +70,7 @@ zCreate_CompRowLoc_Matrix_dist(SuperMatrix *A, int_t m, int_t n,
 /*! \brief Convert a row compressed storage into a column compressed storage.
  */
 void
-zCompRow_to_CompCol_dist(int_t m, int_t n, int_t nnz, 
+zCompRow_to_CompCol_dist(int_t m, int_t n, int_t nnz,
                          doublecomplex *a, int_t *colind, int_t *rowptr,
                          doublecomplex **at, int_t **rowind, int_t **colptr)
 {
@@ -82,7 +82,7 @@ zCompRow_to_CompCol_dist(int_t m, int_t n, int_t nnz,
     *rowind = intMalloc_dist(nnz);
     *colptr = intMalloc_dist(n+1);
     marker = intCalloc_dist(n);
-    
+
     /* Get counts of each column of A, and set up column pointers */
     for (i = 0; i < m; ++i)
 	for (j = rowptr[i]; j < rowptr[i+1]; ++j) ++marker[colind[j]];
@@ -133,7 +133,7 @@ void zPrint_CompCol_Matrix_dist(SuperMatrix *A)
     NCformat     *Astore;
     register int i;
     doublecomplex       *dp;
-    
+
     printf("\nCompCol matrix: ");
     printf("Stype %d, Dtype %d, Mtype %d\n", A->Stype,A->Dtype,A->Mtype);
     Astore = (NCformat *) A->Store;
@@ -144,10 +144,10 @@ void zPrint_CompCol_Matrix_dist(SuperMatrix *A)
         for (i = 0; i < Astore->nnz; ++i) printf("%f\t%f\n", dp[i].r, dp[i].i);
     }
     printf("\nrowind:\n");
-    for (i = 0; i < Astore->nnz; ++i) 
+    for (i = 0; i < Astore->nnz; ++i)
         printf("%lld  ", (long long) Astore->rowind[i]);
     printf("\ncolptr:\n");
-    for (i = 0; i <= A->ncol; ++i) 
+    for (i = 0; i <= A->ncol; ++i)
         printf("%lld  ", (long long) Astore->colptr[i]);
     printf("\nend CompCol matrix.\n");
 }
@@ -157,12 +157,12 @@ void zPrint_Dense_Matrix_dist(SuperMatrix *A)
     DNformat     *Astore;
     register int i;
     doublecomplex       *dp;
-    
+
     printf("\nDense matrix: ");
     printf("Stype %d, Dtype %d, Mtype %d\n", A->Stype,A->Dtype,A->Mtype);
     Astore = (DNformat *) A->Store;
     dp = (doublecomplex *) Astore->nzval;
-    printf("nrow %lld, ncol %lld, lda %lld\n", 
+    printf("nrow %lld, ncol %lld, lda %lld\n",
         (long long) A->nrow, (long long) A->ncol, (long long) Astore->lda);
     printf("\nnzval: ");
     for (i = 0; i < A->nrow; ++i) printf("%f\t%f\n", dp[i].r, dp[i].i);
@@ -174,14 +174,14 @@ int zPrint_CompRowLoc_Matrix_dist(SuperMatrix *A)
     NRformat_loc  *Astore;
     int_t  nnz_loc, m_loc;
     doublecomplex  *dp;
-    
+
     printf("\n==== CompRowLoc matrix: ");
     printf("Stype %d, Dtype %d, Mtype %d\n", A->Stype,A->Dtype,A->Mtype);
     Astore = (NRformat_loc *) A->Store;
-    printf("nrow %ld, ncol %ld\n", 
+    printf("nrow %ld, ncol %ld\n",
             (long int) A->nrow, (long int) A->ncol);
     nnz_loc = Astore->nnz_loc; m_loc = Astore->m_loc;
-    printf("nnz_loc %ld, m_loc %ld, fst_row %ld\n", (long int) nnz_loc, 
+    printf("nnz_loc %ld, m_loc %ld, fst_row %ld\n", (long int) nnz_loc,
             (long int) m_loc, (long int) Astore->fst_row);
     PrintInt10("rowptr", m_loc+1, Astore->rowptr);
     PrintInt10("colind", nnz_loc, Astore->colind);
@@ -196,7 +196,7 @@ int file_zPrint_CompRowLoc_Matrix_dist(FILE *fp, SuperMatrix *A)
     NRformat_loc     *Astore;
     int_t  nnz_loc, m_loc;
     doublecomplex       *dp;
-    
+
     fprintf(fp, "\n==== CompRowLoc matrix: ");
     fprintf(fp, "Stype %d, Dtype %d, Mtype %d\n", A->Stype,A->Dtype,A->Mtype);
     Astore = (NRformat_loc *) A->Store;
@@ -218,7 +218,7 @@ zCreate_Dense_Matrix_dist(SuperMatrix *X, int_t m, int_t n, doublecomplex *x,
 			  Mtype_t mtype)
 {
     DNformat    *Xstore;
-    
+
     X->Stype = stype;
     X->Dtype = dtype;
     X->Mtype = mtype;
@@ -245,14 +245,14 @@ zCopy_Dense_Matrix_dist(int_t M, int_t N, doublecomplex *X, int_t ldx,
  * </pre>
  */
     int    i, j;
-    
+
     for (j = 0; j < N; ++j)
         for (i = 0; i < M; ++i)
             Y[i + j*ldy] = X[i + j*ldx];
 }
 
 void
-zCreate_SuperNode_Matrix_dist(SuperMatrix *L, int_t m, int_t n, int_t nnz, 
+zCreate_SuperNode_Matrix_dist(SuperMatrix *L, int_t m, int_t n, int_t nnz,
 			      doublecomplex *nzval, int_t *nzval_colptr,
 			      int_t *rowind, int_t *rowind_colptr,
 			      int_t *col_to_sup, int_t *sup_to_col,
@@ -285,7 +285,7 @@ zCreate_SuperNode_Matrix_dist(SuperMatrix *L, int_t m, int_t n, int_t nnz,
  *  and shape as A.
  *  The clone operation would copy all the non-pointer structure members like
  *  nrow, ncol, Stype, Dtype, Mtype from A and allocate a new nested Store
- *  structure. It would also copy nnz_loc, m_loc, fst_row from A->Store 
+ *  structure. It would also copy nnz_loc, m_loc, fst_row from A->Store
  *  into B->Store. It does not copy the matrix entries, row pointers,
  *  or column indices.
  */
@@ -316,15 +316,13 @@ void zClone_CompRowLoc_Matrix_dist(SuperMatrix *A, SuperMatrix *B)
     return;
 }
 
-/* \brief Copy: Call the clone operation and then copies all entries,
- *  row pointers, and column indices of a matrix into another matrix of
- *  the same type, B_{i,j}=A_{i,j}, for i,j=1,...,n
+/* \brief Copy: copies all entries, row pointers, and column indices of
+ *  a matrix into another matrix of the same type,
+ *  B_{i,j}=A_{i,j}, for i,j=1,...,n
  */
 void zCopy_CompRowLoc_Matrix_dist(SuperMatrix *A, SuperMatrix *B)
 {
     NRformat_loc  *Astore, *Bstore;
-
-    zClone_CompRowLoc_Matrix_dist(A, B);
 
     Astore = (NRformat_loc *) A->Store;
     Bstore = (NRformat_loc *) B->Store;
@@ -425,7 +423,7 @@ zFillRHS_dist(char *trans, int_t nrhs, doublecomplex *x, int_t ldx,
 
 /*! \brief Fills a doublecomplex precision array with a given value.
  */
-void 
+void
 zfill_dist(doublecomplex *a, int_t alen, doublecomplex dval)
 {
     register int_t i;
@@ -434,7 +432,7 @@ zfill_dist(doublecomplex *a, int_t alen, doublecomplex dval)
 
 
 
-/*! \brief Check the inf-norm of the error vector 
+/*! \brief Check the inf-norm of the error vector
  */
 void zinf_norm_error_dist(int_t n, int_t nrhs, doublecomplex *x, int_t ldx,
 			  doublecomplex *xtrue, int_t ldxtrue,
@@ -462,7 +460,7 @@ void zinf_norm_error_dist(int_t n, int_t nrhs, doublecomplex *x, int_t ldx,
 void PrintDoublecomplex(char *name, int_t len, doublecomplex *x)
 {
     register int_t i;
-    
+
     printf("%10s:\tReal\tImag\n", name);
     for (i = 0; i < len; ++i)
 	printf("\t" IFMT "\t%.4f\t%.4f\n", i, x[i].r, x[i].i);
@@ -471,7 +469,7 @@ void PrintDoublecomplex(char *name, int_t len, doublecomplex *x)
 int file_PrintDoublecomplex(FILE *fp, char *name, int_t len, doublecomplex *x)
 {
     register int_t i;
-    
+
     fprintf(fp, "%10s:\tReal\tImag\n", name);
     for (i = 0; i < len; ++i)
 	fprintf(fp, "\t" IFMT "\t%.4f\t%.4f\n", i, x[i].r, x[i].i);
@@ -506,7 +504,7 @@ void zPrintLblocks(int iam, int_t nsupers, gridinfo_t *grid,
 		   iam, gb, lb, nsupc, nb);
 	    for (c = 0, k = BC_HEADER, r = 0; c < nb; ++c) {
 		len = index[k+1];
-		printf("[%d] row-block %d: block # " IFMT "\tlength %d\n", 
+		printf("[%d] row-block %d: block # " IFMT "\tlength %d\n",
 		       iam, c, index[k], len);
 		PrintInt10("lsub", len, &index[k+LB_DESCRIPTOR]);
 		for (j = 0; j < nsupc; ++j) {
@@ -523,7 +521,7 @@ void zPrintLblocks(int iam, int_t nsupers, gridinfo_t *grid,
     printf("nfrecvx " IFMT "\n", Llu->nfrecvx);
     k = CEILING( nsupers, grid->nprow );
     PrintInt10("fmod", k, Llu->fmod);
-    
+
 } /* ZPRINTLBLOCKS */
 
 
@@ -574,8 +572,8 @@ void zDumpLblocks(int iam, int_t nsupers, gridinfo_t *grid,
     int_t *index;
     doublecomplex *nzval;
 	char filename[256];
-	FILE *fp, *fopen();	
- 
+	FILE *fp, *fopen();
+
 	// assert(grid->npcol*grid->nprow==1);
 
 	// count nonzeros in the first pass
@@ -595,27 +593,27 @@ void zDumpLblocks(int iam, int_t nsupers, gridinfo_t *grid,
 	    nsupc = SuperSize( gb );
 	    for (c = 0, k = BC_HEADER, r = 0; c < nb; ++c) {
 		len = index[k+1];
-		
+
 		for (j = 0; j < nsupc; ++j) {
 		for (i=0; i<len; ++i){
-		
+
 		if(index[k+LB_DESCRIPTOR+i]+1>=xsup[gb]+j+1){
-			nnzL ++; 
-			nmax = SUPERLU_MAX(n,index[k+LB_DESCRIPTOR+i]+1);  
+			nnzL ++;
+			nmax = SUPERLU_MAX(n,index[k+LB_DESCRIPTOR+i]+1);
 			n = nmax;
 		}
-		
+
 		}
 		}
 		k += LB_DESCRIPTOR + len;
 		r += len;
 	    }
-	}	
-    }	
+	}
+    }
 	MPI_Allreduce(MPI_IN_PLACE,&nnzL,1,mpi_int_t,MPI_SUM,grid->comm);
-	MPI_Allreduce(MPI_IN_PLACE,&n,1,mpi_int_t,MPI_MAX,grid->comm);	
-	
-	snprintf(filename, sizeof(filename), "%s-%d", "L", iam);    
+	MPI_Allreduce(MPI_IN_PLACE,&n,1,mpi_int_t,MPI_MAX,grid->comm);
+
+	snprintf(filename, sizeof(filename), "%s-%d", "L", iam);
     printf("Dumping L factor to --> %s\n", filename);
  	if ( !(fp = fopen(filename, "w")) ) {
 			ABORT("File open failed");
@@ -624,7 +622,7 @@ void zDumpLblocks(int iam, int_t nsupers, gridinfo_t *grid,
 	if(grid->iam==0){
 		fprintf(fp, "%d %d %d\n", n,n,nnzL);
 	}
-	
+
      ncb = nsupers / grid->npcol;
     extra = nsupers % grid->npcol;
     mycol = MYCOL( iam, grid );
@@ -639,29 +637,29 @@ void zDumpLblocks(int iam, int_t nsupers, gridinfo_t *grid,
 	    nsupc = SuperSize( gb );
 	    for (c = 0, k = BC_HEADER, r = 0; c < nb; ++c) {
 		len = index[k+1];
-		
+
 		for (j = 0; j < nsupc; ++j) {
 		for (i=0; i<len; ++i){
 			fprintf(fp, IFMT IFMT " %e\n", index[k+LB_DESCRIPTOR+i]+1, xsup[gb]+j+1, (double)iam);
-#if 0		
+#if 0
 			fprintf(fp, IFMT IFMT " %e %e\n", index[k+LB_DESCRIPTOR+i]+1, xsup[gb]+j+1, nzval[r +i+ j*nsupr].r,nzval[r +i+ j*nsupr].i);
-#endif		
+#endif
 		}
 		}
 		k += LB_DESCRIPTOR + len;
 		r += len;
 	    }
-	}	
+	}
     }
  	fclose(fp);
- 	
+
 } /* zDumpLblocks */
 
 
 
 /*! \brief Print the blocks in the factored matrix U.
  */
-void zPrintUblocks(int iam, int_t nsupers, gridinfo_t *grid, 
+void zPrintUblocks(int iam, int_t nsupers, gridinfo_t *grid,
 		  Glu_persist_t *Glu_persist, LocalLU_t *Llu)
 {
     register int c, extra, jb, k, lb, len, nb, nrb, nsupc;
@@ -686,7 +684,7 @@ void zPrintUblocks(int iam, int_t nsupers, gridinfo_t *grid,
 	    for (c = 0, k = BR_HEADER; c < nb; ++c) {
 		jb = index[k];
 		len = index[k+1];
-		printf("[%d] col-block %d: block # %d\tlength " IFMT "\n", 
+		printf("[%d] col-block %d: block # %d\tlength " IFMT "\n",
 		       iam, c, jb, index[k+1]);
 		nsupc = SuperSize( jb );
 		PrintInt10("fstnz", nsupc, &index[k+UB_DESCRIPTOR]);

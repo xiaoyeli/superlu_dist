@@ -1,16 +1,16 @@
 /*! \file
 Copyright (c) 2003, The Regents of the University of California, through
-Lawrence Berkeley National Laboratory (subject to receipt of any required 
-approvals from U.S. Dept. of Energy) 
+Lawrence Berkeley National Laboratory (subject to receipt of any required
+approvals from U.S. Dept. of Energy)
 
-All rights reserved. 
+All rights reserved.
 
 The source code is distributed under BSD license, see the file License.txt
 at the top-level directory.
 */
 
 
-/*! @file 
+/*! @file
  * \brief Several matrix utilities
  *
  * <pre>
@@ -43,11 +43,11 @@ int pdCompRow_loc_to_CompCol_global
     double *a_recv;  /* Buffer to receive the blocks of values. */
     double *a_buf;   /* Buffer to merge blocks into block columns. */
     int_t *itemp;
-    int_t *colptr_send; /* Buffer to redistribute the column pointers of the 
+    int_t *colptr_send; /* Buffer to redistribute the column pointers of the
 			   local block rows.
 			   Use n_loc+1 pointers for each block. */
     int_t *colptr_blk;  /* The column pointers for each block, after
-			   redistribution to the local block columns. 
+			   redistribution to the local block columns.
 			   Use n_loc+1 pointers for each block. */
     int_t *rowind_recv; /* Buffer to receive the blocks of row indices. */
     int_t *rowind_buf;  /* Buffer to merge blocks into block columns. */
@@ -152,8 +152,7 @@ int pdCompRow_loc_to_CompCol_global
     for (i = 0; i < procs-1; ++i) rdispls[i+1] = rdispls[i] + recvcnts[i];
 
     k = rdispls[procs-1] + recvcnts[procs-1]; /* Total received */
-    //    if ( !(rowind_recv = (int_t *) intMalloc_dist(2*k)) )
-    if ( !(rowind_recv = (int_t *) intCalloc_dist(2*k)) )
+    if ( !(rowind_recv = (int_t *) intMalloc_dist(2*k)) )
         ABORT("Malloc fails for rowind_recv[]");
     rowind_buf = rowind_recv + k;
     MPI_Alltoallv(rowind_loc, sendcnts, sdispls, mpi_int_t,
@@ -166,7 +165,7 @@ int pdCompRow_loc_to_CompCol_global
                       a_recv, recvcnts, rdispls, MPI_DOUBLE,
                       grid->comm);
     }
-      
+
     /* Reset colptr_loc[] to point to the n_loc global columns. */
     colptr_loc[0] = 0;
     itemp = colptr_send;
@@ -180,7 +179,7 @@ int pdCompRow_loc_to_CompCol_global
 	itemp[j] = colptr_loc[j]; /* Save a copy of the column starts */
     }
     itemp[n_loc] = colptr_loc[n_loc];
-      
+
     /* Merge blocks of row indices into columns of row indices. */
     for (i = 0; i < procs; ++i) {
         k = i * (n_loc + 1);
@@ -221,12 +220,12 @@ int pdCompRow_loc_to_CompCol_global
     MPI_Allgather(&nnz_loc, 1, mpi_int_t, itemp, 1, mpi_int_t, grid->comm);
     for (i = 0, nnz = 0; i < procs; ++i) nnz += itemp[i];
     GAstore->nnz = nnz;
-    
+
     if ( !(GAstore->rowind = (int_t *) intMalloc_dist (nnz)) )
         ABORT ("SUPERLU_MALLOC fails for GAstore->rowind[]");
     if ( !(GAstore->colptr = (int_t *) intMalloc_dist (n+1)) )
         ABORT ("SUPERLU_MALLOC fails for GAstore->colptr[]");
-      
+
     /* Allgatherv for row indices. */
     rdispls[0] = 0;
     for (i = 0; i < procs-1; ++i) {
@@ -235,12 +234,12 @@ int pdCompRow_loc_to_CompCol_global
     }
     itemp_32[procs-1] = itemp[procs-1];
     it = nnz_loc;
-    MPI_Allgatherv(rowind_buf, it, mpi_int_t, GAstore->rowind, 
+    MPI_Allgatherv(rowind_buf, it, mpi_int_t, GAstore->rowind,
 		   itemp_32, rdispls, mpi_int_t, grid->comm);
     if ( need_value ) {
       if ( !(GAstore->nzval = (double *) doubleMalloc_dist (nnz)) )
           ABORT ("SUPERLU_MALLOC fails for GAstore->rnzval[]");
-      MPI_Allgatherv(a_buf, it, MPI_DOUBLE, GAstore->nzval, 
+      MPI_Allgatherv(a_buf, it, MPI_DOUBLE, GAstore->nzval,
 		     itemp_32, rdispls, MPI_DOUBLE, grid->comm);
     } else GAstore->nzval = NULL;
 
@@ -251,7 +250,7 @@ int pdCompRow_loc_to_CompCol_global
         itemp_32[i] = n_locs[i];
     }
     itemp_32[procs-1] = n_locs[procs-1];
-    MPI_Allgatherv(colptr_loc, n_loc, mpi_int_t, GAstore->colptr, 
+    MPI_Allgatherv(colptr_loc, n_loc, mpi_int_t, GAstore->colptr,
 		   itemp_32, rdispls, mpi_int_t, grid->comm);
 
     /* Recompute column pointers. */
@@ -373,7 +372,7 @@ int pdPermute_Dense_Matrix
 	++ptr_to_ibuf[p];
 	ptr_to_dbuf[p] += nrhs;
     }
-	  
+
     /* Transfer the (permuted) row indices and numerical values. */
     MPI_Alltoallv(send_ibuf, sendcnts, sdispls, mpi_int_t,
 		  recv_ibuf, recvcnts, rdispls, mpi_int_t, grid->comm);
@@ -401,7 +400,7 @@ int pdPermute_Dense_Matrix
 
 /*! \brief Initialize the data structure for the solution phase.
  */
-int dSolveInit(superlu_dist_options_t *options, SuperMatrix *A, 
+int dSolveInit(superlu_dist_options_t *options, SuperMatrix *A,
 	       int_t perm_r[], int_t perm_c[], int_t nrhs,
 	       LUstruct_t *LUstruct, gridinfo_t *grid,
 	       SOLVEstruct_t *SOLVEstruct)
@@ -415,7 +414,7 @@ int dSolveInit(superlu_dist_options_t *options, SuperMatrix *A,
     fst_row = Astore->fst_row;
     m_loc = Astore->m_loc;
     procs = grid->nprow * grid->npcol;
-    
+
     if ( !(row_to_proc = intMalloc_dist(A->nrow)) )
 	ABORT("Malloc fails for row_to_proc[]");
     SOLVEstruct->row_to_proc = row_to_proc;
@@ -427,9 +426,9 @@ int dSolveInit(superlu_dist_options_t *options, SuperMatrix *A,
     /* ------------------------------------------------------------
        EVERY PROCESS NEEDS TO KNOW GLOBAL PARTITION.
        SET UP THE MAPPING BETWEEN ROWS AND PROCESSES.
-       
+
        NOTE: For those processes that do not own any row, it must
-             must be set so that fst_row == A->nrow. 
+             must be set so that fst_row == A->nrow.
        ------------------------------------------------------------*/
     if ( !(itemp = intMalloc_dist(procs+1)) )
         ABORT("Malloc fails for itemp[]");
@@ -464,7 +463,7 @@ int dSolveInit(superlu_dist_options_t *options, SuperMatrix *A,
 	    for (i = j ; i < k; ++i) row_to_proc[i] = p;
 	}
     }
-#endif    
+#endif
 
     get_diag_procs(A->ncol, LUstruct->Glu_persist, grid,
 		   &SOLVEstruct->num_diag_procs,
@@ -475,14 +474,14 @@ int dSolveInit(superlu_dist_options_t *options, SuperMatrix *A,
     if ( !(SOLVEstruct->gstrs_comm = (pxgstrs_comm_t *)
 	   SUPERLU_MALLOC(sizeof(pxgstrs_comm_t))) )
         ABORT("Malloc fails for gstrs_comm[]");
-    pxgstrs_init(A->ncol, m_loc, nrhs, fst_row, perm_r, perm_c, grid, 
+    pxgstrs_init(A->ncol, m_loc, nrhs, fst_row, perm_r, perm_c, grid,
 		 LUstruct->Glu_persist, SOLVEstruct);
 
     if ( !(SOLVEstruct->gsmv_comm = (pdgsmv_comm_t *)
            SUPERLU_MALLOC(sizeof(pdgsmv_comm_t))) )
         ABORT("Malloc fails for gsmv_comm[]");
     SOLVEstruct->A_colind_gsmv = NULL;
-    
+
     options->SolveInitialized = YES;
     return 0;
 } /* dSolveInit */
@@ -508,10 +507,10 @@ void dSolveFinalize(superlu_dist_options_t *options, SOLVEstruct_t *SOLVEstruct)
     options->SolveInitialized = NO;
 } /* dSolveFinalize */
 
-/*! \brief Check the inf-norm of the error vector 
+/*! \brief Check the inf-norm of the error vector
  */
 void pdinf_norm_error(int iam, int_t n, int_t nrhs, double x[], int_t ldx,
-		      double xtrue[], int_t ldxtrue, gridinfo_t *grid) 
+		      double xtrue[], int_t ldxtrue, gridinfo_t *grid)
 {
     double err, xnorm, temperr, tempxnorm;
     double *x_work, *xtrue_work;

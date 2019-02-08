@@ -1,15 +1,15 @@
 /*! \file
 Copyright (c) 2003, The Regents of the University of California, through
-Lawrence Berkeley National Laboratory (subject to receipt of any required 
-approvals from U.S. Dept. of Energy) 
+Lawrence Berkeley National Laboratory (subject to receipt of any required
+approvals from U.S. Dept. of Energy)
 
-All rights reserved. 
+All rights reserved.
 
 The source code is distributed under BSD license, see the file License.txt
 at the top-level directory.
 */
 
-/*! @file 
+/*! @file
  * \brief Improves the computed solution to a system of linear equations and provides error bounds and backward error estimates
  *
  * <pre>
@@ -25,15 +25,15 @@ at the top-level directory.
 #include <math.h>
 #include "superlu_zdefs.h"
 
-/*! \brief 
+/*! \brief
  *
  * <pre>
  * Purpose
  * =======
  *
- * PZGSRFS improves the computed solution to a system of linear   
+ * PZGSRFS improves the computed solution to a system of linear
  * equations and provides error bounds and backward error estimates
- * for the solution. 
+ * for the solution.
  *
  * Arguments
  * =========
@@ -71,7 +71,7 @@ at the top-level directory.
  * B      (input) doublecomplex* (local)
  *        The m_loc-by-NRHS right-hand side matrix of the possibly
  *        equilibrated system. That is, B may be overwritten by diag(R)*B.
- *       
+ *
  * ldb    (input) int (local)
  *        Leading dimension of matrix B.
  *
@@ -97,8 +97,8 @@ at the top-level directory.
  *        solution phase.
  *
  * berr   (output) double*, dimension (nrhs)
- *         The componentwise relative backward error of each solution   
- *         vector X(j) (i.e., the smallest relative change in   
+ *         The componentwise relative backward error of each solution
+ *         vector X(j) (i.e., the smallest relative change in
  *         any element of A or B that makes X(j) an exact solution).
  *
  * stat   (output) SuperLUStat_t*
@@ -108,22 +108,22 @@ at the top-level directory.
  * info   (output) int*
  *        = 0: successful exit
  *        < 0: if info = -i, the i-th argument had an illegal value
- *        
- * Internal Parameters   
- * ===================   
  *
- * ITMAX is the maximum number of steps of iterative refinement.   
+ * Internal Parameters
+ * ===================
+ *
+ * ITMAX is the maximum number of steps of iterative refinement.
  * </pre>
  */
 void
 pzgsrfs(int_t n, SuperMatrix *A, double anorm, LUstruct_t *LUstruct,
 	ScalePermstruct_t *ScalePermstruct, gridinfo_t *grid,
-	doublecomplex *B, int_t ldb, doublecomplex *X, int_t ldx, int nrhs, 
+	doublecomplex *B, int_t ldb, doublecomplex *X, int_t ldx, int nrhs,
 	SOLVEstruct_t *SOLVEstruct,
 	double *berr, SuperLUStat_t *stat, int *info)
 {
 #define ITMAX 20
-    
+
     Glu_persist_t *Glu_persist = LUstruct->Glu_persist;
     LocalLU_t *Llu = LUstruct->Llu;
     doublecomplex *ax, *R, *dx, *temp, *work, *B_col, *X_col;
@@ -201,12 +201,12 @@ pzgsrfs(int_t n, SuperMatrix *A, double anorm, LUstruct_t *LUstruct,
 
 	while (1) { /* Loop until stopping criterion is satisfied. */
 
-	    /* Compute residual R = B - op(A) * X,   
+	    /* Compute residual R = B - op(A) * X,
 	       where op(A) = A, A**T, or A**H, depending on TRANS. */
 
 	    /* Matrix-vector multiply. */
 	    pzgsmv(0, A, grid, gsmv_comm, X_col, ax);
-	    
+
 	    /* Compute residual, stored in R[]. */
 	    for (i = 0; i < m_loc; ++i) z_sub(&R[i], &B_col[i], &ax[i]);
 
@@ -214,7 +214,7 @@ pzgsrfs(int_t n, SuperMatrix *A, double anorm, LUstruct_t *LUstruct,
 	    pzgsmv(1, A, grid, gsmv_comm, X_col, temp);
             /* NOTE: rtemp is aliased to temp */
 	    for (i = 0; i < m_loc; ++i) rtemp[i] += slud_z_abs1(&B_col[i]);
-	    
+
 	    s = 0.0;
 	    for (i = 0; i < m_loc; ++i) {
 		if ( rtemp[i] > safe2 ) {
@@ -226,7 +226,7 @@ pzgsrfs(int_t n, SuperMatrix *A, double anorm, LUstruct_t *LUstruct,
                    we know the true residual also must be exactly 0.0. */
 	    }
 	    MPI_Allreduce( &s, &berr[j], 1, MPI_DOUBLE, MPI_MAX, grid->comm );
-		
+
 #if ( PRNTlevel>= 1 )
 	    if ( !iam )
 		printf("(%2d) .. Step " IFMT ": berr[j] = %e\n", iam, count, berr[j]);
@@ -234,7 +234,7 @@ pzgsrfs(int_t n, SuperMatrix *A, double anorm, LUstruct_t *LUstruct,
 	    if ( berr[j] > eps && berr[j] * 2 <= lstres && count < ITMAX ) {
 		/* Compute new dx. */
 		pzgstrs(n, LUstruct, ScalePermstruct, grid,
-			dx, m_loc, fst_row, m_loc, 1, 
+			dx, m_loc, fst_row, m_loc, 1,
 			SOLVEstruct, stat, info);
 
 		/* Update solution. */

@@ -1,9 +1,9 @@
 /*! \file
 Copyright (c) 2003, The Regents of the University of California, through
-Lawrence Berkeley National Laboratory (subject to receipt of any required 
-approvals from U.S. Dept. of Energy) 
+Lawrence Berkeley National Laboratory (subject to receipt of any required
+approvals from U.S. Dept. of Energy)
 
-All rights reserved. 
+All rights reserved.
 
 The source code is distributed under BSD license, see the file License.txt
 at the top-level directory.
@@ -29,7 +29,7 @@ extern SuperLU_LU_stack_t stack;
 void *zuser_malloc_dist(int_t bytes, int_t which_end)
 {
     void *buf;
-    
+
     if ( SuperLU_StackFull(bytes) ) return (NULL);
 
     if ( which_end == HEAD ) {
@@ -39,7 +39,7 @@ void *zuser_malloc_dist(int_t bytes, int_t which_end)
 	stack.top2 -= bytes;
 	buf = (char*) stack.array + stack.top2;
     }
-    
+
     stack.used += bytes;
     return buf;
 }
@@ -154,7 +154,7 @@ zallocateA_dist(int_t n, int_t nnz, doublecomplex **a, int_t **asub, int_t **xa)
 doublecomplex *doublecomplexMalloc_dist(int_t n)
 {
     doublecomplex *buf;
-    buf = (doublecomplex *) SUPERLU_MALLOC( SUPERLU_MAX(1, n) * sizeof(doublecomplex) ); 
+    buf = (doublecomplex *) SUPERLU_MALLOC( SUPERLU_MAX(1, n) * sizeof(doublecomplex) );
     return (buf);
 }
 

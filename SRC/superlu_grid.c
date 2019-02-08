@@ -12,9 +12,10 @@ at the top-level directory.
  * \brief SuperLU grid utilities
  *
  * <pre>
- * -- Distributed SuperLU routine (version 1.0) --
+ * -- Distributed SuperLU routine (version 6.1) --
  * Lawrence Berkeley National Lab, Univ. of California Berkeley.
  * September 1, 1999
+ * February 8, 2019  version 6.1.1
  * </pre>
  */
 
@@ -150,7 +151,7 @@ void superlu_gridmap(
     {
 	int tag_ub;
 	if ( !grid->iam ) {
-	    MPI_Attr_get(Bcomm, MPI_TAG_UB, &tag_ub, &info);
+	    MPI_Comm_get_attr(Bcomm, MPI_TAG_UB, &tag_ub, &info);
 	    printf("MPI_TAG_UB %d\n", tag_ub);
 	    /* returns 4295677672
 	       In reality it is restricted to no greater than 16384. */

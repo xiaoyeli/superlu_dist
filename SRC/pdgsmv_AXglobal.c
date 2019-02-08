@@ -1,16 +1,16 @@
 /*! \file
 Copyright (c) 2003, The Regents of the University of California, through
-Lawrence Berkeley National Laboratory (subject to receipt of any required 
-approvals from U.S. Dept. of Energy) 
+Lawrence Berkeley National Laboratory (subject to receipt of any required
+approvals from U.S. Dept. of Energy)
 
-All rights reserved. 
+All rights reserved.
 
 The source code is distributed under BSD license, see the file License.txt
 at the top-level directory.
 */
 
 
-/*! @file 
+/*! @file
  * \brief Performs sparse matrix-vector multiplication
  *
  * <pre>
@@ -97,14 +97,14 @@ int pdgsmv_AXglobal_setup
 		    mv_sup_to_proc[i] = p;
 #if ( DEBUGlevel>=3 )
 		    if ( mv_sup_to_proc[i] == p-1 ) {
-			fprintf(stderr, 
+			fprintf(stderr,
 				"mv_sup_to_proc conflicts at supno %d\n", i);
 			exit(-1);
 		    }
 #endif
 		}
 	    }
-	    
+
 	    if ( iam == p ) {
 		N_update = t1;
 		if ( N_update ) {
@@ -163,7 +163,7 @@ int pdgsmv_AXglobal_setup
  *    val[m]        = not used
  *    val[ki]       = A(k, bindx[ki]), where ks <= ki <= ke
  * Both arrays are of length nnz + 1.
- * </pre> 
+ * </pre>
 */
 static void dcreate_msr_matrix
 (
@@ -181,7 +181,7 @@ static void dcreate_msr_matrix
     double *nzval;
     int_t *rowcnt;
     double zero = 0.0;
-    
+
     if ( !N_update ) return;
 
     n = A->ncol;
@@ -274,7 +274,7 @@ pdgsmv_AXglobal(int_t m, int_t update[], double val[], int_t bindx[],
     }
     return 0;
 } /* PDGSMV_AXglobal */
- 
+
 /*
  * Performs sparse matrix-vector multiplication.
  *   - val/bindx stores the distributed MSR matrix A
@@ -297,7 +297,7 @@ pdgsmv_AXglobal_abs(int_t m, int_t update[], double val[], int_t bindx[],
 	}
 	ax[i] += fabs(val[i]) * fabs(X[update[i]]); /* diagonal */
     }
-    
+
     return 0;
 } /* PDGSMV_AXglobal_ABS */
 

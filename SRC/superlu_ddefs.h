@@ -1,24 +1,25 @@
 /*! \file
 Copyright (c) 2003, The Regents of the University of California, through
-Lawrence Berkeley National Laboratory (subject to receipt of any required 
-approvals from U.S. Dept. of Energy) 
+Lawrence Berkeley National Laboratory (subject to receipt of any required
+approvals from U.S. Dept. of Energy)
 
-All rights reserved. 
+All rights reserved.
 
 The source code is distributed under BSD license, see the file License.txt
 at the top-level directory.
 */
 
 
-/*! @file 
+/*! @file
  * \brief  Distributed SuperLU data types and function prototypes
  *
  * <pre>
- * -- Distributed SuperLU routine (version 6.0) --
+ * -- Distributed SuperLU routine (version 6.1) --
  * Lawrence Berkeley National Lab, Univ. of California Berkeley.
  * November 1, 2007
  * April 5, 2015
  * September 18, 2018  version 6.0
+ * February 8, 2019  version 6.1.1
  * </pre>
  */
 
@@ -39,7 +40,7 @@ typedef struct {
     int_t indpos; /* Starting position in Uindex[]. */
 } Ucb_indptr_t;
 
-/* 
+/*
  * On each processor, the blocks in L are stored in compressed block
  * column format, the blocks in U are stored in compressed block row format.
  */
@@ -50,7 +51,7 @@ typedef struct {
     double **Linv_bc_ptr;  /* size ceil(NSUPERS/Pc)                 */
     int_t   **Lindval_loc_bc_ptr; /* size ceil(NSUPERS/Pc)  pointers to locations in Lrowind_bc_ptr and Lnzval_bc_ptr */
     int_t   *Unnz; /* number of nonzeros per block column in U*/
-	int_t   **Lrowind_bc_2_lsum; /* size ceil(NSUPERS/Pc)  map indices of Lrowind_bc_ptr to indices of lsum  */  
+	int_t   **Lrowind_bc_2_lsum; /* size ceil(NSUPERS/Pc)  map indices of Lrowind_bc_ptr to indices of lsum  */
     double  **Uinv_bc_ptr;  /* size ceil(NSUPERS/Pc)     	*/
     int_t   **Ufstnz_br_ptr;  /* size ceil(NSUPERS/Pr)                 */
     double  **Unzval_br_ptr;  /* size ceil(NSUPERS/Pr)                 */
@@ -73,7 +74,7 @@ typedef struct {
     int_t   bufmax[NBUFFERS]; /* Maximum buffer size across all MPI ranks:
 			       *  0 : maximum size of Lsub_buf[]
 			       *  1 : maximum size of Lval_buf[]
-			       *  2 : maximum size of Usub_buf[] 
+			       *  2 : maximum size of Usub_buf[]
 			       *  3 : maximum size of Uval_buf[]
 			       *  4 : maximum size of tempv[LDA]
 			       */
@@ -104,7 +105,7 @@ typedef struct {
     int_t   SolveMsgVol;      /* Volume of messages sent in the solve phase */
 
 
-    /*********************/	
+    /*********************/
     /* The following variables are used in the hybrid solver */
 
     /*-- Counts to be used in U^{-T} triangular solve. -- */
@@ -129,7 +130,7 @@ typedef struct {
     int_t n;
     int_t nleaf;
     int_t nfrecvmod;
-    int_t inv; /* whether the diagonal block is inverted*/	
+    int_t inv; /* whether the diagonal block is inverted*/
 } LocalLU_t;
 
 
@@ -167,7 +168,7 @@ typedef struct {
     int_t *row_to_proc;
     int_t *inv_perm_c;
     int_t num_diag_procs, *diag_procs, *diag_len;
-    pdgsmv_comm_t *gsmv_comm; /* communication metadata for SpMV, 
+    pdgsmv_comm_t *gsmv_comm; /* communication metadata for SpMV,
          	       		      required by IterRefine.          */
     pxgstrs_comm_t *gstrs_comm;  /* communication metadata for SpTRSV. */
     int_t *A_colind_gsmv; /* After pdgsmv_init(), the global column
@@ -207,7 +208,7 @@ extern void
 dCreate_Dense_Matrix_dist(SuperMatrix *, int_t, int_t, double *, int_t,
 			  Stype_t, Dtype_t, Mtype_t);
 extern void
-dCreate_SuperNode_Matrix_dist(SuperMatrix *, int_t, int_t, int_t, double *, 
+dCreate_SuperNode_Matrix_dist(SuperMatrix *, int_t, int_t, int_t, double *,
 			      int_t *, int_t *, int_t *, int_t *, int_t *,
 			      Stype_t, Dtype_t, Mtype_t);
 extern void
@@ -218,16 +219,16 @@ extern void    dallocateA_dist (int_t, int_t, double **, int_t **, int_t **);
 extern void    dGenXtrue_dist (int_t, int_t, double *, int_t);
 extern void    dFillRHS_dist (char *, int_t, double *, int_t,
                               SuperMatrix *, double *, int_t);
-extern int     dcreate_matrix(SuperMatrix *, int, double **, int *, 
+extern int     dcreate_matrix(SuperMatrix *, int, double **, int *,
 			      double **, int *, FILE *, gridinfo_t *);
-extern int     dcreate_matrix_rb(SuperMatrix *, int, double **, int *, 
+extern int     dcreate_matrix_rb(SuperMatrix *, int, double **, int *,
 			      double **, int *, FILE *, gridinfo_t *);
-extern int     dcreate_matrix_dat(SuperMatrix *, int, double **, int *, 
+extern int     dcreate_matrix_dat(SuperMatrix *, int, double **, int *,
 			      double **, int *, FILE *, gridinfo_t *);
-extern int 	   dcreate_matrix_postfix(SuperMatrix *, int, double **, int *, 
-				  double **, int *, FILE *, char *, gridinfo_t *);				  
-				  
-	
+extern int 	   dcreate_matrix_postfix(SuperMatrix *, int, double **, int *,
+				  double **, int *, FILE *, char *, gridinfo_t *);
+
+
 /* Driver related */
 extern void    dgsequ_dist (SuperMatrix *, double *, double *, double *,
 			    double *, double *, int_t *);
@@ -250,16 +251,16 @@ extern int     sp_dgemv_dist (char *, double, SuperMatrix *, double *,
 extern int     sp_dgemm_dist (char *, int, double, SuperMatrix *,
                         double *, int, double, double *, int);
 
-extern float ddistribute(fact_t, int_t, SuperMatrix *, Glu_freeable_t *, 
+extern float ddistribute(fact_t, int_t, SuperMatrix *, Glu_freeable_t *,
 			 LUstruct_t *, gridinfo_t *);
-extern void  pdgssvx_ABglobal(superlu_dist_options_t *, SuperMatrix *, 
+extern void  pdgssvx_ABglobal(superlu_dist_options_t *, SuperMatrix *,
 			      ScalePermstruct_t *, double *,
 			      int, int, gridinfo_t *, LUstruct_t *, double *,
 			      SuperLUStat_t *, int *);
-extern float pddistribute(fact_t, int_t, SuperMatrix *, 
-			 ScalePermstruct_t *, Glu_freeable_t *, 
+extern float pddistribute(fact_t, int_t, SuperMatrix *,
+			 ScalePermstruct_t *, Glu_freeable_t *,
 			 LUstruct_t *, gridinfo_t *);
-extern void  pdgssvx(superlu_dist_options_t *, SuperMatrix *, 
+extern void  pdgssvx(superlu_dist_options_t *, SuperMatrix *,
 		     ScalePermstruct_t *, double *,
 		     int, int, gridinfo_t *, LUstruct_t *,
 		     SOLVEstruct_t *, double *, SuperLUStat_t *, int *);
@@ -273,7 +274,7 @@ extern int_t pxgstrs_init(int_t, int_t, int_t, int_t,
 extern void pxgstrs_finalize(pxgstrs_comm_t *);
 extern int  dldperm_dist(int_t, int_t, int_t, int_t [], int_t [],
 		    double [], int_t *, double [], double []);
-extern int  static_schedule(superlu_dist_options_t *, int, int, 
+extern int  static_schedule(superlu_dist_options_t *, int, int,
 		            LUstruct_t *, gridinfo_t *, SuperLUStat_t *,
 			    int_t *, int_t *, int *);
 extern void LUstructInit(const int_t, LUstruct_t *);
@@ -293,7 +294,7 @@ extern void pdgstrs(int_t, LUstruct_t *, ScalePermstruct_t *, gridinfo_t *,
 		    SuperLUStat_t *, int *);
 extern void dlsum_fmod(double *, double *, double *, double *,
 		       int, int, int_t , int_t *, int_t, int_t, int_t,
-		       int_t *, gridinfo_t *, LocalLU_t *, 
+		       int_t *, gridinfo_t *, LocalLU_t *,
 		       MPI_Request [], SuperLUStat_t *);
 extern void dlsum_bmod(double *, double *, double *,
                        int, int_t, int_t *, int_t *, Ucb_indptr_t **,
@@ -302,21 +303,21 @@ extern void dlsum_bmod(double *, double *, double *,
 
 extern void dlsum_fmod_inv(double *, double *, double *, double *,
 		       int, int_t , int_t *,
-		       int_t *, gridinfo_t *, LocalLU_t *, 
+		       int_t *, gridinfo_t *, LocalLU_t *,
 		       SuperLUStat_t **, int_t *, int_t *, int_t, int_t, int_t, int_t, int, int);
 extern void dlsum_fmod_inv_master(double *, double *, double *, double *,
-		       int, int, int_t , int_t *, int_t, 
-		       int_t *, gridinfo_t *, LocalLU_t *, 
+		       int, int, int_t , int_t *, int_t,
+		       int_t *, gridinfo_t *, LocalLU_t *,
 		       SuperLUStat_t **, int_t, int_t, int_t, int_t, int, int);
 extern void dlsum_bmod_inv(double *, double *, double *, double *,
-                       int, int_t, int_t *, int_t *, int_t *, Ucb_indptr_t **,
+                       int, int_t, int_t *, int_t *, Ucb_indptr_t **,
                        int_t **, int_t *, gridinfo_t *, LocalLU_t *,
-		       MPI_Request [], SuperLUStat_t **, int_t *, int_t *, int_t, int_t, int, int);
+		       SuperLUStat_t **, int_t *, int_t *, int_t, int_t, int, int);
 extern void dlsum_bmod_inv_master(double *, double *, double *, double *,
-                       int, int_t, int_t *, int_t *, int_t *, Ucb_indptr_t **,
+                       int, int_t, int_t *, int_t *, Ucb_indptr_t **,
                        int_t **, int_t *, gridinfo_t *, LocalLU_t *,
-		       MPI_Request [], SuperLUStat_t **, int_t, int_t, int, int);			   
-			   
+		       SuperLUStat_t **, int_t, int_t, int, int);
+
 extern void pdgsrfs(int_t, SuperMatrix *, double, LUstruct_t *,
 		    ScalePermstruct_t *, gridinfo_t *,
 		    double [], int_t, double [], int_t, int,
@@ -358,22 +359,22 @@ extern void    dinf_norm_error_dist (int_t, int_t, double*, int_t,
                                      double*, int_t, gridinfo_t*);
 extern void    pdinf_norm_error(int, int_t, int_t, double [], int_t,
 				double [], int_t , gridinfo_t *);
-extern void  dreadhb_dist (int, FILE *, int_t *, int_t *, int_t *, 
+extern void  dreadhb_dist (int, FILE *, int_t *, int_t *, int_t *,
 			   double **, int_t **, int_t **);
 extern void  dreadtriple_dist(FILE *, int_t *, int_t *, int_t *,
 			 double **, int_t **, int_t **);
 extern void  dreadtriple_noheader(FILE *, int_t *, int_t *, int_t *,
-			 double **, int_t **, int_t **);			 
+			 double **, int_t **, int_t **);
 extern void  dreadrb_dist(int, FILE *, int_t *, int_t *, int_t *,
 		     double **, int_t **, int_t **);
 extern void  dreadMM_dist(FILE *, int_t *, int_t *, int_t *,
 	                  double **, int_t **, int_t **);
 extern int  dread_binary(FILE *, int_t *, int_t *, int_t *,
-	                  double **, int_t **, int_t **);	
-					  
+	                  double **, int_t **, int_t **);
+
 /* Distribute the data for numerical factorization */
 extern float ddist_psymbtonum(fact_t, int_t, SuperMatrix *,
-                                ScalePermstruct_t *, Pslu_freeable_t *, 
+                                ScalePermstruct_t *, Pslu_freeable_t *,
                                 LUstruct_t *, gridinfo_t *);
 extern void pdGetDiagU(int_t, LUstruct_t *, gridinfo_t *, double *);
 
@@ -386,7 +387,7 @@ extern void  dPrintUblocks(int, int_t, gridinfo_t *, Glu_persist_t *,
 extern void  dPrint_CompCol_Matrix_dist(SuperMatrix *);
 extern void  dPrint_Dense_Matrix_dist(SuperMatrix *);
 extern int   dPrint_CompRowLoc_Matrix_dist(SuperMatrix *);
-extern int   file_dPrint_CompRowLoc_Matrix_dist(FILE *fp, SuperMatrix *A);																			   
+extern int   file_dPrint_CompRowLoc_Matrix_dist(FILE *fp, SuperMatrix *A);
 extern int   file_PrintDouble5(FILE *, char *, int_t, double *);
 
 
@@ -398,12 +399,12 @@ extern void dgemm_(const char*, const char*, const int*, const int*, const int*,
                   const int*, const double*, double*, const int*, int, int);
 extern void dtrsv_(char*, char*, char*, int*, double*, int*,
                   double*, int*, int, int, int);
-extern void dtrsm_(char*, char*, char*, char*, int*, int*, 
-                  double*, double*, int*, double*, 
+extern void dtrsm_(char*, char*, char*, char*, int*, int*,
+                  double*, double*, int*, double*,
                   int*, int, int, int, int);
-extern void dgemv_(char *, int *, int *, double *, double *a, int *, 
+extern void dgemv_(char *, int *, int *, double *, double *a, int *,
                   double *, int *, double *, double *, int *, int);
-extern void dtrtri_(char*, char*, int*, double*, int*,int*);				 
+extern void dtrtri_(char*, char*, int*, double*, int*,int*);
 
 extern void dger_(int*, int*, double*, double*, int*,
                  double*, int*, double*, int*);
@@ -414,9 +415,9 @@ extern int dgemm_(const char*, const char*, const int*, const int*, const int*,
                    const int*,  const double*, double*, const int*);
 extern int dtrsv_(char*, char*, char*, int*, double*, int*,
                   double*, int*);
-extern int dtrsm_(char*, char*, char*, char*, int*, int*, 
+extern int dtrsm_(char*, char*, char*, char*, int*, int*,
                   double*, double*, int*, double*, int*);
-extern int dgemv_(char *, int *, int *, double *, double *a, int *, 
+extern int dgemv_(char *, int *, int *, double *, double *a, int *,
                   double *, int *, double *, double *, int *);
 extern void dger_(int*, int*, double*, double*, int*,
                  double*, int*, double*, int*);

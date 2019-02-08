@@ -1,15 +1,15 @@
 /*! \file
 Copyright (c) 2003, The Regents of the University of California, through
-Lawrence Berkeley National Laboratory (subject to receipt of any required 
-approvals from U.S. Dept. of Energy) 
+Lawrence Berkeley National Laboratory (subject to receipt of any required
+approvals from U.S. Dept. of Energy)
 
-All rights reserved. 
+All rights reserved.
 
 The source code is distributed under BSD license, see the file License.txt
 at the top-level directory.
 */
 
-/*! @file 
+/*! @file
  * \brief Several matrix utilities
  *
  * <pre>
@@ -42,11 +42,11 @@ int pzCompRow_loc_to_CompCol_global
     doublecomplex *a_recv;  /* Buffer to receive the blocks of values. */
     doublecomplex *a_buf;   /* Buffer to merge blocks into block columns. */
     int_t *itemp;
-    int_t *colptr_send; /* Buffer to redistribute the column pointers of the 
+    int_t *colptr_send; /* Buffer to redistribute the column pointers of the
 			   local block rows.
 			   Use n_loc+1 pointers for each block. */
     int_t *colptr_blk;  /* The column pointers for each block, after
-			   redistribution to the local block columns. 
+			   redistribution to the local block columns.
 			   Use n_loc+1 pointers for each block. */
     int_t *rowind_recv; /* Buffer to receive the blocks of row indices. */
     int_t *rowind_buf;  /* Buffer to merge blocks into block columns. */
@@ -164,7 +164,7 @@ int pzCompRow_loc_to_CompCol_global
                       a_recv, recvcnts, rdispls, SuperLU_MPI_DOUBLE_COMPLEX,
                       grid->comm);
     }
-      
+
     /* Reset colptr_loc[] to point to the n_loc global columns. */
     colptr_loc[0] = 0;
     itemp = colptr_send;
@@ -178,7 +178,7 @@ int pzCompRow_loc_to_CompCol_global
 	itemp[j] = colptr_loc[j]; /* Save a copy of the column starts */
     }
     itemp[n_loc] = colptr_loc[n_loc];
-      
+
     /* Merge blocks of row indices into columns of row indices. */
     for (i = 0; i < procs; ++i) {
         k = i * (n_loc + 1);
@@ -219,12 +219,12 @@ int pzCompRow_loc_to_CompCol_global
     MPI_Allgather(&nnz_loc, 1, mpi_int_t, itemp, 1, mpi_int_t, grid->comm);
     for (i = 0, nnz = 0; i < procs; ++i) nnz += itemp[i];
     GAstore->nnz = nnz;
-    
+
     if ( !(GAstore->rowind = (int_t *) intMalloc_dist (nnz)) )
         ABORT ("SUPERLU_MALLOC fails for GAstore->rowind[]");
     if ( !(GAstore->colptr = (int_t *) intMalloc_dist (n+1)) )
         ABORT ("SUPERLU_MALLOC fails for GAstore->colptr[]");
-      
+
     /* Allgatherv for row indices. */
     rdispls[0] = 0;
     for (i = 0; i < procs-1; ++i) {
@@ -233,12 +233,12 @@ int pzCompRow_loc_to_CompCol_global
     }
     itemp_32[procs-1] = itemp[procs-1];
     it = nnz_loc;
-    MPI_Allgatherv(rowind_buf, it, mpi_int_t, GAstore->rowind, 
+    MPI_Allgatherv(rowind_buf, it, mpi_int_t, GAstore->rowind,
 		   itemp_32, rdispls, mpi_int_t, grid->comm);
     if ( need_value ) {
       if ( !(GAstore->nzval = (doublecomplex *) doublecomplexMalloc_dist (nnz)) )
           ABORT ("SUPERLU_MALLOC fails for GAstore->rnzval[]");
-      MPI_Allgatherv(a_buf, it, SuperLU_MPI_DOUBLE_COMPLEX, GAstore->nzval, 
+      MPI_Allgatherv(a_buf, it, SuperLU_MPI_DOUBLE_COMPLEX, GAstore->nzval,
 		     itemp_32, rdispls, SuperLU_MPI_DOUBLE_COMPLEX, grid->comm);
     } else GAstore->nzval = NULL;
 
@@ -249,7 +249,7 @@ int pzCompRow_loc_to_CompCol_global
         itemp_32[i] = n_locs[i];
     }
     itemp_32[procs-1] = n_locs[procs-1];
-    MPI_Allgatherv(colptr_loc, n_loc, mpi_int_t, GAstore->colptr, 
+    MPI_Allgatherv(colptr_loc, n_loc, mpi_int_t, GAstore->colptr,
 		   itemp_32, rdispls, mpi_int_t, grid->comm);
 
     /* Recompute column pointers. */
@@ -371,7 +371,7 @@ int pzPermute_Dense_Matrix
 	++ptr_to_ibuf[p];
 	ptr_to_dbuf[p] += nrhs;
     }
-	  
+
     /* Transfer the (permuted) row indices and numerical values. */
     MPI_Alltoallv(send_ibuf, sendcnts, sdispls, mpi_int_t,
 		  recv_ibuf, recvcnts, rdispls, mpi_int_t, grid->comm);
@@ -399,7 +399,7 @@ int pzPermute_Dense_Matrix
 
 /*! \brief Initialize the data structure for the solution phase.
  */
-int zSolveInit(superlu_dist_options_t *options, SuperMatrix *A, 
+int zSolveInit(superlu_dist_options_t *options, SuperMatrix *A,
 	       int_t perm_r[], int_t perm_c[], int_t nrhs,
 	       LUstruct_t *LUstruct, gridinfo_t *grid,
 	       SOLVEstruct_t *SOLVEstruct)
@@ -413,7 +413,7 @@ int zSolveInit(superlu_dist_options_t *options, SuperMatrix *A,
     fst_row = Astore->fst_row;
     m_loc = Astore->m_loc;
     procs = grid->nprow * grid->npcol;
-    
+
     if ( !(row_to_proc = intMalloc_dist(A->nrow)) )
 	ABORT("Malloc fails for row_to_proc[]");
     SOLVEstruct->row_to_proc = row_to_proc;
@@ -425,9 +425,9 @@ int zSolveInit(superlu_dist_options_t *options, SuperMatrix *A,
     /* ------------------------------------------------------------
        EVERY PROCESS NEEDS TO KNOW GLOBAL PARTITION.
        SET UP THE MAPPING BETWEEN ROWS AND PROCESSES.
-       
+
        NOTE: For those processes that do not own any row, it must
-             must be set so that fst_row == A->nrow. 
+             must be set so that fst_row == A->nrow.
        ------------------------------------------------------------*/
     if ( !(itemp = intMalloc_dist(procs+1)) )
         ABORT("Malloc fails for itemp[]");
@@ -462,7 +462,7 @@ int zSolveInit(superlu_dist_options_t *options, SuperMatrix *A,
 	    for (i = j ; i < k; ++i) row_to_proc[i] = p;
 	}
     }
-#endif    
+#endif
 
     get_diag_procs(A->ncol, LUstruct->Glu_persist, grid,
 		   &SOLVEstruct->num_diag_procs,
@@ -473,14 +473,14 @@ int zSolveInit(superlu_dist_options_t *options, SuperMatrix *A,
     if ( !(SOLVEstruct->gstrs_comm = (pxgstrs_comm_t *)
 	   SUPERLU_MALLOC(sizeof(pxgstrs_comm_t))) )
         ABORT("Malloc fails for gstrs_comm[]");
-    pxgstrs_init(A->ncol, m_loc, nrhs, fst_row, perm_r, perm_c, grid, 
+    pxgstrs_init(A->ncol, m_loc, nrhs, fst_row, perm_r, perm_c, grid,
 		 LUstruct->Glu_persist, SOLVEstruct);
 
     if ( !(SOLVEstruct->gsmv_comm = (pzgsmv_comm_t *)
            SUPERLU_MALLOC(sizeof(pzgsmv_comm_t))) )
         ABORT("Malloc fails for gsmv_comm[]");
     SOLVEstruct->A_colind_gsmv = NULL;
-    
+
     options->SolveInitialized = YES;
     return 0;
 } /* zSolveInit */
@@ -506,10 +506,10 @@ void zSolveFinalize(superlu_dist_options_t *options, SOLVEstruct_t *SOLVEstruct)
     options->SolveInitialized = NO;
 } /* zSolveFinalize */
 
-/*! \brief Check the inf-norm of the error vector 
+/*! \brief Check the inf-norm of the error vector
  */
 void pzinf_norm_error(int iam, int_t n, int_t nrhs, doublecomplex x[], int_t ldx,
-		      doublecomplex xtrue[], int_t ldxtrue, gridinfo_t *grid) 
+		      doublecomplex xtrue[], int_t ldxtrue, gridinfo_t *grid)
 {
     double err, xnorm, temperr, tempxnorm;
     doublecomplex *x_work, *xtrue_work;

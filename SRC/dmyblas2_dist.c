@@ -1,16 +1,16 @@
 /*! \file
 Copyright (c) 2003, The Regents of the University of California, through
-Lawrence Berkeley National Laboratory (subject to receipt of any required 
-approvals from U.S. Dept. of Energy) 
+Lawrence Berkeley National Laboratory (subject to receipt of any required
+approvals from U.S. Dept. of Energy)
 
-All rights reserved. 
+All rights reserved.
 
 The source code is distributed under BSD license, see the file License.txt
 at the top-level directory.
 */
 
 
-/*! @file 
+/*! @file
  * \brief Level 2 BLAS operations: solves and matvec, written in C
  *
  * <pre>
@@ -31,8 +31,8 @@ at the top-level directory.
 /*! \brief
  *
  * <pre>
- * Solves a dense UNIT lower triangular system. The unit lower 
- * triangular matrix is stored in a 2D array M(1:nrow,1:ncol). 
+ * Solves a dense UNIT lower triangular system. The unit lower
+ * triangular matrix is stored in a 2D array M(1:nrow,1:ncol).
  * The solution will be returned in the rhs vector.
  * </pre>
  */
@@ -78,13 +78,13 @@ void dlsolve ( int ldm, int ncol, double *M, double *rhs )
       rhs[++firstcol] = x6;
       rhs[++firstcol] = x7;
       ++firstcol;
-    
+
       for (k = firstcol; k < ncol; k++)
 	rhs[k] = rhs[k] - x0 * *Mki0++ - x1 * *Mki1++
 	                - x2 * *Mki2++ - x3 * *Mki3++
                         - x4 * *Mki4++ - x5 * *Mki5++
 			- x6 * *Mki6++ - x7 * *Mki7++;
- 
+
       M0 += 8 * ldm + 8;
     }
 
@@ -103,11 +103,11 @@ void dlsolve ( int ldm, int ncol, double *M, double *rhs )
       rhs[++firstcol] = x2;
       rhs[++firstcol] = x3;
       ++firstcol;
-    
+
       for (k = firstcol; k < ncol; k++)
 	rhs[k] = rhs[k] - x0 * *Mki0++ - x1 * *Mki1++
 	                - x2 * *Mki2++ - x3 * *Mki3++;
- 
+
       M0 += 4 * ldm + 4;
     }
 
@@ -120,12 +120,12 @@ void dlsolve ( int ldm, int ncol, double *M, double *rhs )
 
       rhs[++firstcol] = x1;
       ++firstcol;
-    
+
       for (k = firstcol; k < ncol; k++)
 	rhs[k] = rhs[k] - x0 * *Mki0++ - x1 * *Mki1++;
- 
+
     }
-    return;    
+    return;
 }
 
 /*! \brief
@@ -153,7 +153,7 @@ dusolve (
 
 	xj = rhs[jcol] / M[jcol + jcol*ldm]; 		/* M(jcol, jcol) */
 	rhs[jcol] = xj;
-	
+
 	for (irow = 0; irow < jcol; irow++)
 	    rhs[irow] -= xj * M[irow + jcol*ldm];	/* M(irow, jcol) */
 
@@ -173,7 +173,7 @@ dusolve (
  */
 void dmatvec (
 	int ldm,	/* in -- leading dimension of M */
-	int nrow,	/* in */ 
+	int nrow,	/* in */
 	int ncol,	/* in */
 	double *M,	/* in */
 	double *vec,	/* in */
@@ -201,15 +201,15 @@ void dmatvec (
 	vi0 = vec[firstcol++];
 	vi1 = vec[firstcol++];
 	vi2 = vec[firstcol++];
-	vi3 = vec[firstcol++];	
+	vi3 = vec[firstcol++];
 	vi4 = vec[firstcol++];
 	vi5 = vec[firstcol++];
 	vi6 = vec[firstcol++];
-	vi7 = vec[firstcol++];	
+	vi7 = vec[firstcol++];
 
-	for (k = 0; k < nrow; k++) 
+	for (k = 0; k < nrow; k++)
 	    Mxvec[k] += vi0 * *Mki0++ + vi1 * *Mki1++
-		      + vi2 * *Mki2++ + vi3 * *Mki3++ 
+		      + vi2 * *Mki2++ + vi3 * *Mki3++
 		      + vi4 * *Mki4++ + vi5 * *Mki5++
 		      + vi6 * *Mki6++ + vi7 * *Mki7++;
 
@@ -226,8 +226,8 @@ void dmatvec (
 	vi0 = vec[firstcol++];
 	vi1 = vec[firstcol++];
 	vi2 = vec[firstcol++];
-	vi3 = vec[firstcol++];	
-	for (k = 0; k < nrow; k++) 
+	vi3 = vec[firstcol++];
+	for (k = 0; k < nrow; k++)
 	    Mxvec[k] += vi0 * *Mki0++ + vi1 * *Mki1++
 		      + vi2 * *Mki2++ + vi3 * *Mki3++ ;
 
@@ -243,6 +243,6 @@ void dmatvec (
 
 	M0 += ldm;
     }
-    return;	
+    return;
 }
 
