@@ -1,16 +1,16 @@
 /*! \file
 Copyright (c) 2003, The Regents of the University of California, through
-Lawrence Berkeley National Laboratory (subject to receipt of any required 
-approvals from U.S. Dept. of Energy) 
+Lawrence Berkeley National Laboratory (subject to receipt of any required
+approvals from U.S. Dept. of Energy)
 
-All rights reserved. 
+All rights reserved.
 
 The source code is distributed under BSD license, see the file License.txt
 at the top-level directory.
 */
 
 
-/*! @file 
+/*! @file
  * \brief Solves a system of distributed linear equations
  *
  * <pre>
@@ -35,7 +35,7 @@ at the top-level directory.
 #ifdef _CRAY
 fortran void STRSM(_fcd, _fcd, _fcd, _fcd, int*, int*, double*,
 		   double*, int*, double*, int*);
-fortran void SGEMM(_fcd, _fcd, int*, int*, int*, double*, double*, 
+fortran void SGEMM(_fcd, _fcd, int*, int*, int*, double*, double*,
 		   int*, double*, int*, double*, double*, int*);
 _fcd ftcs1;
 _fcd ftcs2;
@@ -59,7 +59,7 @@ _fcd ftcs3;
  * This routine is used only in the iterative refinement routine
  * pdgsrfs_ABXglobal, assuming that the right-hand side is already
  * distributed in the diagonal processes.
- * 
+ *
  * Arguments
  * =========
  *
@@ -85,13 +85,13 @@ _fcd ftcs3;
  *        Number of right-hand sides.
  *
  * stat   (output) SuperLUStat_t*
- *        Record the statistics about the triangular solves; 
+ *        Record the statistics about the triangular solves;
  *        See SuperLUStat_t structure defined in util.h.
  *
  * info   (output) int*
  * 	   = 0: successful exit
  *	   < 0: if info = -i, the i-th argument had an illegal value
- * </pre>      
+ * </pre>
  */
 
 void pdgstrs1(int_t n, LUstruct_t *LUstruct, gridinfo_t *grid,
@@ -157,7 +157,7 @@ void pdgstrs1(int_t n, LUstruct_t *LUstruct, gridinfo_t *grid,
 	pxerr_dist("PDGSTRS1", grid, -*info);
 	return;
     }
-	
+
     /*
      * Initialization.
      */
@@ -205,7 +205,7 @@ void pdgstrs1(int_t n, LUstruct_t *LUstruct, gridinfo_t *grid,
 
     /* Allocate working storage. */
     knsupc = sp_ienv_dist(3);
-    if ( !(lsum = doubleCalloc_dist(((size_t)ldalsum) * nrhs 
+    if ( !(lsum = doubleCalloc_dist(((size_t)ldalsum) * nrhs
         + nlb * LSUM_H)) )
 	ABORT("Calloc fails for lsum[].");
     maxrecvsz = knsupc * nrhs + SUPERLU_MAX(XK_H, LSUM_H);
@@ -214,7 +214,7 @@ void pdgstrs1(int_t n, LUstruct_t *LUstruct, gridinfo_t *grid,
     if ( !(rtemp = doubleCalloc_dist(maxrecvsz)) )
 	ABORT("Malloc fails for rtemp[].");
 
-    
+
     /*---------------------------------------------------
      * Forward solve Ly = b.
      *---------------------------------------------------*/
@@ -228,7 +228,7 @@ void pdgstrs1(int_t n, LUstruct_t *LUstruct, gridinfo_t *grid,
 	if ( myrow == krow ) {
 	    lk = LBi( k, grid );   /* Local block number. */
 	    il = LSUM_BLK( lk );
-	    lsum[il - LSUM_H] = k; 
+	    lsum[il - LSUM_H] = k;
 	}
     }
 
@@ -250,7 +250,7 @@ void pdgstrs1(int_t n, LUstruct_t *LUstruct, gridinfo_t *grid,
 	    }
 	}
 	/*PrintInt10("mod_bit", nlb, mod_bit);*/
-	
+
 	/* Every process receives the count, but it is only useful on the
 	   diagonal processes.  */
 	MPI_Allreduce( mod_bit, frecv, nlb, mpi_int_t, MPI_SUM, scp->comm );
@@ -315,10 +315,10 @@ void pdgstrs1(int_t n, LUstruct_t *LUstruct, gridinfo_t *grid,
 		STRSM(ftcs1, ftcs1, ftcs2, ftcs3, &knsupc, &nrhs, &alpha,
 		      lusup, &nsupr, &x[ii], &knsupc);
 #elif defined (USE_VENDOR_BLAS)
-		dtrsm_("L", "L", "N", "U", &knsupc, &nrhs, &alpha, 
+		dtrsm_("L", "L", "N", "U", &knsupc, &nrhs, &alpha,
 		       lusup, &nsupr, &x[ii], &knsupc, 1, 1, 1, 1);
 #else
-		dtrsm_("L", "L", "N", "U", &knsupc, &nrhs, &alpha, 
+		dtrsm_("L", "L", "N", "U", &knsupc, &nrhs, &alpha,
 		       lusup, &nsupr, &x[ii], &knsupc);
 #endif
 		/*stat->ops[SOLVE] += knsupc * (knsupc - 1) * nrhs;*/
@@ -326,7 +326,7 @@ void pdgstrs1(int_t n, LUstruct_t *LUstruct, gridinfo_t *grid,
 #if ( DEBUGlevel>=2 )
 		printf("(%2d) Solve X[%2d]\n", iam, k);
 #endif
-		
+
 		/*
 		 * Send Xk to process column Pc[k].
 		 */
@@ -339,7 +339,7 @@ void pdgstrs1(int_t n, LUstruct_t *LUstruct, gridinfo_t *grid,
                                    &send_req[Llu->SolveMsgSent++]);
 #else
 			MPI_Send( &x[ii - XK_H], knsupc * nrhs + XK_H,
-				 MPI_DOUBLE, 
+				 MPI_DOUBLE,
                                  pi, Xk, grid->comm );
 #endif
 #if ( DEBUGlevel>=2 )
@@ -347,14 +347,14 @@ void pdgstrs1(int_t n, LUstruct_t *LUstruct, gridinfo_t *grid,
 			       iam, x[ii-XK_H], pi);
 #endif
 		    }
-		
+
 		/*
 		 * Perform local block modifications: lsum[i] -= L_i,k * X[k]
 		 */
 		nb = lsub[0] - 1;
 		lptr = BC_HEADER + LB_DESCRIPTOR + knsupc;
 		luptr = knsupc; /* Skip diagonal block L(k,k). */
-		
+
 		dlsum_fmod(lsum, x, &x[ii], rtemp, nrhs, knsupc, k,
 			   fmod, nb, lptr, luptr, xsup, grid, Llu,
 			   send_req, stat);
@@ -388,7 +388,7 @@ void pdgstrs1(int_t n, LUstruct_t *LUstruct, gridinfo_t *grid,
 #if ( DEBUGlevel>=2 )
 	printf("(%2d) Recv'd block %d, tag %2d\n", iam, k, status.MPI_TAG);
 #endif
-	
+
 	switch ( status.MPI_TAG ) {
 	  case Xk:
 	      --nfrecvx;
@@ -431,17 +431,17 @@ void pdgstrs1(int_t n, LUstruct_t *LUstruct, gridinfo_t *grid,
 		  STRSM(ftcs1, ftcs1, ftcs2, ftcs3, &knsupc, &nrhs, &alpha,
 			lusup, &nsupr, &x[ii], &knsupc);
 #elif defined (USE_VENDOR_BLAS)
-		  dtrsm_("L", "L", "N", "U", &knsupc, &nrhs, &alpha, 
+		  dtrsm_("L", "L", "N", "U", &knsupc, &nrhs, &alpha,
 			 lusup, &nsupr, &x[ii], &knsupc, 1, 1, 1, 1);
 #else
-		  dtrsm_("L", "L", "N", "U", &knsupc, &nrhs, &alpha, 
+		  dtrsm_("L", "L", "N", "U", &knsupc, &nrhs, &alpha,
 			 lusup, &nsupr, &x[ii], &knsupc);
 #endif
 		  /*stat->ops[SOLVE] += knsupc * (knsupc - 1) * nrhs;*/
 #if ( DEBUGlevel>=2 )
 		  printf("(%2d) Solve X[%2d]\n", iam, k);
 #endif
-		
+
 		  /*
 		   * Send Xk to process column Pc[k].
 		   */
@@ -623,7 +623,7 @@ void pdgstrs1(int_t n, LUstruct_t *LUstruct, gridinfo_t *grid,
     if ( !(Ucb_valptr = SUPERLU_MALLOC(nub * sizeof(int_t *))) )
         ABORT("Malloc fails for Ucb_valptr[]");
 
-    /* Count number of row blocks in a block column. 
+    /* Count number of row blocks in a block column.
        One pass of the skeleton graph of U. */
     for (lk = 0; lk < nlb; ++lk) {
 	usub = Ufstnz_br_ptr[lk];
@@ -680,7 +680,7 @@ void pdgstrs1(int_t n, LUstruct_t *LUstruct, gridinfo_t *grid,
 		    for (i = 0; i < Urbs[lb]; ++i)
 			printf("(%2d) .. row blk %2d:\
                                lbnum %d, indpos %d, valpos %d\n",
-			       iam, i, 
+			       iam, i,
 			       Ucb_indptr[lb][i].lbnum,
 			       Ucb_indptr[lb][i].indpos,
 			       Ucb_valptr[lb][i]);
@@ -733,10 +733,10 @@ void pdgstrs1(int_t n, LUstruct_t *LUstruct, gridinfo_t *grid,
 		STRSM(ftcs1, ftcs3, ftcs2, ftcs2, &knsupc, &nrhs, &alpha,
 		      lusup, &nsupr, &x[ii], &knsupc);
 #elif defined (USE_VENDOR_BLAS)
-		dtrsm_("L", "U", "N", "N", &knsupc, &nrhs, &alpha, 
+		dtrsm_("L", "U", "N", "N", &knsupc, &nrhs, &alpha,
 		       lusup, &nsupr, &x[ii], &knsupc, 1, 1, 1, 1);
 #else
-		dtrsm_("L", "U", "N", "N", &knsupc, &nrhs, &alpha, 
+		dtrsm_("L", "U", "N", "N", &knsupc, &nrhs, &alpha,
 		       lusup, &nsupr, &x[ii], &knsupc);
 #endif
 		/*stat->ops[SOLVE] += knsupc * (knsupc + 1) * nrhs;*/
@@ -763,11 +763,11 @@ void pdgstrs1(int_t n, LUstruct_t *LUstruct, gridinfo_t *grid,
 			       iam, x[ii-XK_H], pi);
 #endif
 		    }
-		
+
 		/*
 		 * Perform local block modifications: lsum[i] -= U_i,k * X[k]
 		 */
-		if ( Urbs[lk] ) 
+		if ( Urbs[lk] )
 		    dlsum_bmod(lsum, x, &x[ii], nrhs, k, bmod, Urbs,
 			       Ucb_indptr, Ucb_valptr, xsup, grid, Llu,
 			       send_req, stat);
@@ -782,7 +782,7 @@ void pdgstrs1(int_t n, LUstruct_t *LUstruct, gridinfo_t *grid,
     while ( nbrecvx || nbrecvmod ) { /* While not finished. */
 
 	/* Receive a message. */
-	MPI_Recv( recvbuf, maxrecvsz, MPI_DOUBLE, 
+	MPI_Recv( recvbuf, maxrecvsz, MPI_DOUBLE,
                  MPI_ANY_SOURCE, MPI_ANY_TAG, grid->comm, &status );
 	k = *recvbuf;
 
@@ -824,10 +824,10 @@ void pdgstrs1(int_t n, LUstruct_t *LUstruct, gridinfo_t *grid,
 		    STRSM(ftcs1, ftcs3, ftcs2, ftcs2, &knsupc, &nrhs, &alpha,
 			  lusup, &nsupr, &x[ii], &knsupc);
 #elif defined (USE_VENDOR_BLAS)
-		    dtrsm_("L", "U", "N", "N", &knsupc, &nrhs, &alpha, 
+		    dtrsm_("L", "U", "N", "N", &knsupc, &nrhs, &alpha,
 			   lusup, &nsupr, &x[ii], &knsupc, 1, 1, 1, 1);
 #else
-		    dtrsm_("L", "U", "N", "N", &knsupc, &nrhs, &alpha, 
+		    dtrsm_("L", "U", "N", "N", &knsupc, &nrhs, &alpha,
 			   lusup, &nsupr, &x[ii], &knsupc);
 #endif
 		    /*stat->ops[SOLVE] += knsupc * (knsupc + 1) * nrhs;*/
@@ -854,9 +854,9 @@ void pdgstrs1(int_t n, LUstruct_t *LUstruct, gridinfo_t *grid,
 				   iam, x[ii - XK_H], pi);
 #endif
 			}
-		
+
 		    /*
-		     * Perform local block modifications: 
+		     * Perform local block modifications:
 		     *         lsum[i] -= U_i,k * X[k]
 		     */
 		    if ( Urbs[lk] )
@@ -864,14 +864,14 @@ void pdgstrs1(int_t n, LUstruct_t *LUstruct, gridinfo_t *grid,
 				   Ucb_indptr, Ucb_valptr, xsup, grid, Llu,
 				   send_req, stat);
 		} /* if becomes solvable */
-		
+
 		break;
 
 #if ( DEBUGlevel>=2 )
 	      default:
 		printf("(%2d) Recv'd wrong message tag %4d\n", iam, status.MPI_TAG);
 		break;
-#endif		
+#endif
 
 	} /* switch */
 
@@ -902,7 +902,7 @@ void pdgstrs1(int_t n, LUstruct_t *LUstruct, gridinfo_t *grid,
     for (i = 0; i < Llu->SolveMsgSent; ++i) MPI_Request_free(&send_req[i]);
     SUPERLU_FREE(send_req);
 #endif
-    
+
 #if ( DEBUGlevel>=1 )
     CHECK_MALLOC(iam, "Exit pdgstrs1()");
 #endif

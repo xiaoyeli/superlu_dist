@@ -12,9 +12,10 @@ at the top-level directory.
  * \brief SuperLU grid utilities
  *
  * <pre>
- * -- Distributed SuperLU routine (version 1.0) --
+ * -- Distributed SuperLU routine (version 6.1) --
  * Lawrence Berkeley National Lab, Univ. of California Berkeley.
  * September 1, 1999
+ * February 8, 2019  version 6.1.1
  * </pre>
  */
 

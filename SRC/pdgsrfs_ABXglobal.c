@@ -1,16 +1,16 @@
 /*! \file
 Copyright (c) 2003, The Regents of the University of California, through
-Lawrence Berkeley National Laboratory (subject to receipt of any required 
-approvals from U.S. Dept. of Energy) 
+Lawrence Berkeley National Laboratory (subject to receipt of any required
+approvals from U.S. Dept. of Energy)
 
-All rights reserved. 
+All rights reserved.
 
 The source code is distributed under BSD license, see the file License.txt
 at the top-level directory.
 */
 
 
-/*! @file 
+/*! @file
  * \brief Improves the computed solution and provies error bounds
  *
  * <pre>
@@ -39,9 +39,9 @@ static void redist_all_to_diag(int_t, double [], Glu_persist_t *,
  * Purpose
  * =======
  *
- * pdgsrfs_ABXglobal improves the computed solution to a system of linear   
+ * pdgsrfs_ABXglobal improves the computed solution to a system of linear
  * equations and provides error bounds and backward error estimates
- * for the solution. 
+ * for the solution.
  *
  * Arguments
  * =========
@@ -79,7 +79,7 @@ static void redist_all_to_diag(int_t, double [], Glu_persist_t *,
  * B      (input) double* (global)
  *        The N-by-NRHS right-hand side matrix of the possibly equilibrated
  *        and row permuted system.
- *       
+ *
  *        NOTE: Currently, B must reside on all processes when calling
  *              this routine.
  *
@@ -102,8 +102,8 @@ static void redist_all_to_diag(int_t, double [], Glu_persist_t *,
  *        Number of right-hand sides.
  *
  * berr   (output) double*, dimension (nrhs)
- *         The componentwise relative backward error of each solution   
- *         vector X(j) (i.e., the smallest relative change in   
+ *         The componentwise relative backward error of each solution
+ *         vector X(j) (i.e., the smallest relative change in
  *         any element of A or B that makes X(j) an exact solution).
  *
  * stat   (output) SuperLUStat_t*
@@ -113,11 +113,11 @@ static void redist_all_to_diag(int_t, double [], Glu_persist_t *,
  * info   (output) int*
  *        = 0: successful exit
  *        < 0: if info = -i, the i-th argument had an illegal value
- *        
- * Internal Parameters   
- * ===================   
  *
- * ITMAX is the maximum number of steps of iterative refinement.   
+ * Internal Parameters
+ * ===================
+ *
+ * ITMAX is the maximum number of steps of iterative refinement.
  * </pre>
  */
 
@@ -129,14 +129,14 @@ pdgsrfs_ABXglobal(int_t n, SuperMatrix *A, double anorm, LUstruct_t *LUstruct,
 
 
 #define ITMAX 20
-    
+
     Glu_persist_t *Glu_persist = LUstruct->Glu_persist;
     LocalLU_t *Llu = LUstruct->Llu;
-    /* 
+    /*
      * Data structures used by matrix-vector multiply routine.
      */
     int_t  N_update; /* Number of variables updated on this process */
-    int_t  *update;  /* vector elements (global index) updated 
+    int_t  *update;  /* vector elements (global index) updated
 			on this processor.                     */
     int_t  *bindx;
     double *val;
@@ -159,7 +159,7 @@ pdgsrfs_ABXglobal(int_t n, SuperMatrix *A, double anorm, LUstruct_t *LUstruct,
     /*-- Function prototypes --*/
     extern void pdgstrs1(int_t, LUstruct_t *, gridinfo_t *,
 			 double *, int, SuperLUStat_t *, int *);
-    
+
     /* Test the input parameters. */
     *info = 0;
     if ( n < 0 ) *info = -1;
@@ -283,19 +283,19 @@ pdgsrfs_ABXglobal(int_t n, SuperMatrix *A, double anorm, LUstruct_t *LUstruct,
 
 	while (1) { /* Loop until stopping criterion is satisfied. */
 
-	    /* Compute residual R = B - op(A) * X,   
+	    /* Compute residual R = B - op(A) * X,
 	       where op(A) = A, A**T, or A**H, depending on TRANS. */
 
 	    /* Matrix-vector multiply. */
 	    pdgsmv_AXglobal(N_update, update, val, bindx, X_col, ax);
-	    
+
 	    /* Compute residual. */
 	    for (i = 0; i < N_update; ++i) R[i] = b[i] - ax[i];
 
 	    /* Compute abs(op(A))*abs(X) + abs(B). */
 	    pdgsmv_AXglobal_abs(N_update, update, val, bindx, X_col, temp);
 	    for (i = 0; i < N_update; ++i) temp[i] += fabs(b[i]);
-	    
+
 	    s = 0.0;
 	    for (i = 0; i < N_update; ++i) {
 		if ( temp[i] > safe2 ) {
@@ -309,7 +309,7 @@ pdgsrfs_ABXglobal(int_t n, SuperMatrix *A, double anorm, LUstruct_t *LUstruct,
                    we know the true residual also must be exactly 0.0. */
 	    }
 	    MPI_Allreduce( &s, &berr[j], 1, MPI_DOUBLE, MPI_MAX, grid->comm );
-		
+
 #if ( PRNTlevel>= 1 )
 	    if ( !iam )
 		printf("(%2d) .. Step " IFMT ": berr[j] = %e\n", iam, count, berr[j]);
@@ -321,7 +321,7 @@ pdgsrfs_ABXglobal(int_t n, SuperMatrix *A, double anorm, LUstruct_t *LUstruct,
 		pdgstrs1(n, LUstruct, grid, dx_trs, 1, stat, info);
 
 		/* Update solution. */
-		for (p = 0; p < num_diag_procs; ++p) 
+		for (p = 0; p < num_diag_procs; ++p)
 		    if ( iam == diag_procs[p] )
 			for (k = p; k < nsupers; k += num_diag_procs) {
 			    lk = LBi( k, grid );
@@ -334,7 +334,7 @@ pdgsrfs_ABXglobal(int_t n, SuperMatrix *A, double anorm, LUstruct_t *LUstruct,
 		++count;
 		/* Transfer x_trs (on diagonal processes) into X
 		   (on all processes). */
-		gather_1rhs_diag_to_all(n, x_trs, Glu_persist, Llu, grid, 
+		gather_1rhs_diag_to_all(n, x_trs, Glu_persist, Llu, grid,
 					num_diag_procs, diag_procs, diag_len,
 					X_col, temp);
 	    } else {
@@ -381,7 +381,7 @@ redist_all_to_diag(int_t n, double r[], Glu_persist_t *Glu_persist,
     int_t *ilsum, *xsup;
     int iam, knsupc, psrc, pkk;
     MPI_Status status;
-    
+
     iam = grid->iam;
     nsupers = Glu_persist->supno[n-1] + 1;
     xsup = Glu_persist->xsup;
@@ -430,7 +430,7 @@ gather_1rhs_diag_to_all(int_t n, double x[],
     int_t i, ii, k, lk, lwork, nsupers, p;
     int_t *ilsum, *xsup;
     int iam, knsupc, pkk;
-    
+
     iam = grid->iam;
     nsupers = Glu_persist->supno[n-1] + 1;
     xsup = Glu_persist->xsup;

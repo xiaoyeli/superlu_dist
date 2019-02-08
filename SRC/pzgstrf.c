@@ -27,6 +27,7 @@ at the top-level directory.
  *   December 31, 2015 rename xMACH to xMACH_DIST.
  *   September 30, 2017 optimization for Intel Knights Landing (KNL) node .
  *   June 1, 2018      add parallel AWPM pivoting; add back arrive_at_ublock()
+ *   February 8, 2019  version 6.1.1
  *
  * Sketch of the algorithm
  *

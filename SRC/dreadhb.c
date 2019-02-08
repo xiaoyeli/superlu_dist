@@ -1,16 +1,16 @@
 /*! \file
 Copyright (c) 2003, The Regents of the University of California, through
-Lawrence Berkeley National Laboratory (subject to receipt of any required 
-approvals from U.S. Dept. of Energy) 
+Lawrence Berkeley National Laboratory (subject to receipt of any required
+approvals from U.S. Dept. of Energy)
 
-All rights reserved. 
+All rights reserved.
 
 The source code is distributed under BSD license, see the file License.txt
 at the top-level directory.
 */
 
 
-/*! @file 
+/*! @file
  * \brief Read a DOUBLE PRECISION matrix stored in Harwell-Boeing format
  *
  * <pre>
@@ -39,67 +39,67 @@ static int ParseFloatFormat(char *, int_t *, int_t *);
  * <pre>
  * Purpose
  * =======
- * 
- * Read a DOUBLE PRECISION matrix stored in Harwell-Boeing format 
+ *
+ * Read a DOUBLE PRECISION matrix stored in Harwell-Boeing format
  * as described below.
- * 
- * Line 1 (A72,A8) 
- *  	Col. 1 - 72   Title (TITLE) 
- *	Col. 73 - 80  Key (KEY) 
- * 
- * Line 2 (5I14) 
- * 	Col. 1 - 14   Total number of lines excluding header (TOTCRD) 
- * 	Col. 15 - 28  Number of lines for pointers (PTRCRD) 
- * 	Col. 29 - 42  Number of lines for row (or variable) indices (INDCRD) 
- * 	Col. 43 - 56  Number of lines for numerical values (VALCRD) 
- *	Col. 57 - 70  Number of lines for right-hand sides (RHSCRD) 
- *                    (including starting guesses and solution vectors 
- *		       if present) 
- *           	      (zero indicates no right-hand side data is present) 
  *
- * Line 3 (A3, 11X, 4I14) 
- *   	Col. 1 - 3    Matrix type (see below) (MXTYPE) 
- * 	Col. 15 - 28  Number of rows (or variables) (NROW) 
- * 	Col. 29 - 42  Number of columns (or elements) (NCOL) 
- *	Col. 43 - 56  Number of row (or variable) indices (NNZERO) 
- *	              (equal to number of entries for assembled matrices) 
- * 	Col. 57 - 70  Number of elemental matrix entries (NELTVL) 
- *	              (zero in the case of assembled matrices) 
- * Line 4 (2A16, 2A20) 
- * 	Col. 1 - 16   Format for pointers (PTRFMT) 
- *	Col. 17 - 32  Format for row (or variable) indices (INDFMT) 
- *	Col. 33 - 52  Format for numerical values of coefficient matrix (VALFMT) 
- * 	Col. 53 - 72 Format for numerical values of right-hand sides (RHSFMT) 
+ * Line 1 (A72,A8)
+ *  	Col. 1 - 72   Title (TITLE)
+ *	Col. 73 - 80  Key (KEY)
  *
- * Line 5 (A3, 11X, 2I14) Only present if there are right-hand sides present 
- *    	Col. 1 	      Right-hand side type: 
- *	         	  F for full storage or M for same format as matrix 
- *    	Col. 2        G if a starting vector(s) (Guess) is supplied. (RHSTYP) 
- *    	Col. 3        X if an exact solution vector(s) is supplied. 
- *	Col. 15 - 28  Number of right-hand sides (NRHS) 
- *	Col. 29 - 42  Number of row indices (NRHSIX) 
- *          	      (ignored in case of unassembled matrices) 
+ * Line 2 (5I14)
+ * 	Col. 1 - 14   Total number of lines excluding header (TOTCRD)
+ * 	Col. 15 - 28  Number of lines for pointers (PTRCRD)
+ * 	Col. 29 - 42  Number of lines for row (or variable) indices (INDCRD)
+ * 	Col. 43 - 56  Number of lines for numerical values (VALCRD)
+ *	Col. 57 - 70  Number of lines for right-hand sides (RHSCRD)
+ *                    (including starting guesses and solution vectors
+ *		       if present)
+ *           	      (zero indicates no right-hand side data is present)
  *
- * The three character type field on line 3 describes the matrix type. 
- * The following table lists the permitted values for each of the three 
- * characters. As an example of the type field, RSA denotes that the matrix 
- * is real, symmetric, and assembled. 
+ * Line 3 (A3, 11X, 4I14)
+ *   	Col. 1 - 3    Matrix type (see below) (MXTYPE)
+ * 	Col. 15 - 28  Number of rows (or variables) (NROW)
+ * 	Col. 29 - 42  Number of columns (or elements) (NCOL)
+ *	Col. 43 - 56  Number of row (or variable) indices (NNZERO)
+ *	              (equal to number of entries for assembled matrices)
+ * 	Col. 57 - 70  Number of elemental matrix entries (NELTVL)
+ *	              (zero in the case of assembled matrices)
+ * Line 4 (2A16, 2A20)
+ * 	Col. 1 - 16   Format for pointers (PTRFMT)
+ *	Col. 17 - 32  Format for row (or variable) indices (INDFMT)
+ *	Col. 33 - 52  Format for numerical values of coefficient matrix (VALFMT)
+ * 	Col. 53 - 72 Format for numerical values of right-hand sides (RHSFMT)
  *
- * First Character: 
- *	R Real matrix 
- *	C Complex matrix 
- *	P Pattern only (no numerical values supplied) 
+ * Line 5 (A3, 11X, 2I14) Only present if there are right-hand sides present
+ *    	Col. 1 	      Right-hand side type:
+ *	         	  F for full storage or M for same format as matrix
+ *    	Col. 2        G if a starting vector(s) (Guess) is supplied. (RHSTYP)
+ *    	Col. 3        X if an exact solution vector(s) is supplied.
+ *	Col. 15 - 28  Number of right-hand sides (NRHS)
+ *	Col. 29 - 42  Number of row indices (NRHSIX)
+ *          	      (ignored in case of unassembled matrices)
  *
- * Second Character: 
- *	S Symmetric 
- *	U Unsymmetric 
- *	H Hermitian 
- *	Z Skew symmetric 
- *	R Rectangular 
+ * The three character type field on line 3 describes the matrix type.
+ * The following table lists the permitted values for each of the three
+ * characters. As an example of the type field, RSA denotes that the matrix
+ * is real, symmetric, and assembled.
  *
- * Third Character: 
- *	A Assembled 
- *	E Elemental matrices (unassembled) 
+ * First Character:
+ *	R Real matrix
+ *	C Complex matrix
+ *	P Pattern only (no numerical values supplied)
+ *
+ * Second Character:
+ *	S Symmetric
+ *	U Unsymmetric
+ *	H Hermitian
+ *	Z Skew symmetric
+ *	R Rectangular
+ *
+ * Third Character:
+ *	A Assembled
+ *	E Elemental matrices (unassembled)
  * </pre>
  */
 
@@ -136,12 +136,12 @@ dreadhb_dist(int iam, FILE *fp, int_t *nrow, int_t *ncol, int_t *nonz,
 #if ( DEBUGlevel>=1 )
     if ( !iam ) printf("Matrix type %s\n", type);
 #endif
-    
-    fscanf(fp, "%14c", buf); *nrow = atoi(buf); 
-    fscanf(fp, "%14c", buf); *ncol = atoi(buf); 
-    fscanf(fp, "%14c", buf); *nonz = atoi(buf); 
-    fscanf(fp, "%14c", buf); tmp = atoi(buf);   
-    
+
+    fscanf(fp, "%14c", buf); *nrow = atoi(buf);
+    fscanf(fp, "%14c", buf); *ncol = atoi(buf);
+    fscanf(fp, "%14c", buf); *nonz = atoi(buf);
+    fscanf(fp, "%14c", buf); tmp = atoi(buf);
+
     if (tmp != 0)
 	if ( !iam ) printf("This is not an assembled matrix!\n");
     if (*nrow != *ncol)
@@ -161,7 +161,7 @@ dreadhb_dist(int iam, FILE *fp, int_t *nrow, int_t *ncol, int_t *nonz,
     fscanf(fp, "%20c", buf);
     DumpLine(fp);
 
-    /* Line 5: right-hand side */    
+    /* Line 5: right-hand side */
     if ( rhscrd ) DumpLine(fp); /* skip RHSFMT */
 
 #if ( DEBUGlevel>=1 )
@@ -172,7 +172,7 @@ dreadhb_dist(int iam, FILE *fp, int_t *nrow, int_t *ncol, int_t *nonz,
 	printf("valnum " IFMT ", valsize " IFMT "\n", valnum, valsize);
     }
 #endif
-    
+
     ReadVector(fp, *ncol+1, *colptr, colnum, colsize);
 #if ( DEBUGlevel>=1 )
     if ( !iam )	printf("read colptr[" IFMT "] = " IFMT "\n", *ncol, (*colptr)[*ncol]);
@@ -212,20 +212,20 @@ static int ParseIntFormat(char *buf, int_t *num, int_t *size)
 
     tmp = buf;
     while (*tmp++ != '(') ;
-    *num = atoi(tmp); 
+    *num = atoi(tmp);
     while (*tmp != 'I' && *tmp != 'i') ++tmp;
     ++tmp;
-    *size = atoi(tmp); 
+    *size = atoi(tmp);
     return 0;
 }
 
 static int ParseFloatFormat(char *buf, int_t *num, int_t *size)
 {
     char *tmp, *period;
-    
+
     tmp = buf;
     while (*tmp++ != '(') ;
-    *num = atoi(tmp); 
+    *num = atoi(tmp);
     while (*tmp != 'E' && *tmp != 'e' && *tmp != 'D' && *tmp != 'd'
 	   && *tmp != 'F' && *tmp != 'f') {
        /* May find kP before nE/nD/nF, like (1P6F13.6). In this case the
@@ -241,7 +241,7 @@ static int ParseFloatFormat(char *buf, int_t *num, int_t *size)
     period = tmp;
     while (*period != '.' && *period != ')') ++period ;
     *period = '\0';
-    *size = atoi(tmp); 
+    *size = atoi(tmp);
 
     return 0;
 }
@@ -251,14 +251,14 @@ ReadVector(FILE *fp, int_t n, int_t *where, int_t perline, int_t persize)
 {
     register int_t i, j, item;
     char tmp, buf[100];
-    
+
     i = 0;
     while (i < n) {
 	fgets(buf, 100, fp);    /* read a line at a time */
 	for (j=0; j<perline && i<n; j++) {
 	    tmp = buf[(j+1)*persize];     /* save the char at that place */
 	    buf[(j+1)*persize] = 0;       /* null terminate */
-	    item = atoi(&buf[j*persize]); 
+	    item = atoi(&buf[j*persize]);
 	    buf[(j+1)*persize] = tmp;     /* recover the char at that place */
 	    where[i++] = item - 1;
 	}
@@ -266,12 +266,12 @@ ReadVector(FILE *fp, int_t n, int_t *where, int_t perline, int_t persize)
 }
 
 void
-dReadValues(FILE *fp, int_t n, double *destination, 
+dReadValues(FILE *fp, int_t n, double *destination,
              int_t perline, int_t persize)
 {
     register int_t i, j, k, s;
     char tmp, buf[100];
-    
+
     i = 0;
     while (i < n) {
 	fgets(buf, 100, fp);    /* read a line at a time */
@@ -343,7 +343,7 @@ FormFullA(int_t n, int_t *nonz, double **nzval, int_t **rowind, int_t **colptr)
 	ABORT("SUPERLU_MALLOC fails for a_rowind[]");
     if ( !(a_val = (double*) SUPERLU_MALLOC( new_nnz * sizeof(double)) ) )
 	ABORT("SUPERLU_MALLOC fails for a_val[]");
-    
+
     a_colptr[0] = 0;
     k = 0;
     for (j = 0; j < n; ++j) {
@@ -368,7 +368,7 @@ FormFullA(int_t n, int_t *nonz, double **nzval, int_t **rowind, int_t **colptr)
 #endif
 	++k;
       }
-      
+
       a_colptr[j+1] = k;
     }
 

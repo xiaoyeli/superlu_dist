@@ -1,15 +1,15 @@
 /*! \file
 Copyright (c) 2003, The Regents of the University of California, through
-Lawrence Berkeley National Laboratory (subject to receipt of any required 
-approvals from U.S. Dept. of Energy) 
+Lawrence Berkeley National Laboratory (subject to receipt of any required
+approvals from U.S. Dept. of Energy)
 
-All rights reserved. 
+All rights reserved.
 
 The source code is distributed under BSD license, see the file License.txt
 at the top-level directory.
 */
 /*! @file p@(pre)GetDiagU.c
- * \brief Extracts the main diagonal of matrix U 
+ * \brief Extracts the main diagonal of matrix U
  *
  * <pre>
  * -- Auxiliary routine in distributed SuperLU (version 5.1.0) --
@@ -30,7 +30,7 @@ at the top-level directory.
  * =======
  *
  * GetDiagU extracts the main diagonal of matrix U of the LU factorization.
- *  
+ *
  * Arguments
  * =========
  *

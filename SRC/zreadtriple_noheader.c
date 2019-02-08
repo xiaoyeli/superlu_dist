@@ -1,16 +1,16 @@
 /*! \file
 Copyright (c) 2003, The Regents of the University of California, through
-Lawrence Berkeley National Laboratory (subject to receipt of any required 
-approvals from U.S. Dept. of Energy) 
+Lawrence Berkeley National Laboratory (subject to receipt of any required
+approvals from U.S. Dept. of Energy)
 
-All rights reserved. 
+All rights reserved.
 
 The source code is distributed under BSD license, see the file License.txt
 at the top-level directory.
 */
 
-/*! @file 
- * \brief 
+/*! @file
+ * \brief
  *
  */
 #include <stdio.h>
@@ -66,7 +66,7 @@ zreadtriple_noheader(FILE *fp, int_t *m, int_t *n, int_t *nonz,
         ret_val = fscanf(fp, "%d%d%lf%lf\n", &i, &j, &vali.r, &vali.i);
 #endif
     }
-    
+
     if ( minn == 0 ) { /* zero-based indexing */
 	zero_base = 1;
 	++(*n);
@@ -117,7 +117,7 @@ zreadtriple_noheader(FILE *fp, int_t *m, int_t *n, int_t *nonz,
 
 	if (row[nz] < 0 || row[nz] >= *m || col[nz] < 0 || col[nz] >= *n
 	    /*|| val[nz] == 0.*/) {
-	    fprintf(stderr, "nz %d, (%d, %d) = %e out of bound, removed\n", 
+	    fprintf(stderr, "nz %d, (%d, %d) = %e out of bound, removed\n",
 		    nz, row[nz], col[nz], val[nz]);
 	    exit(-1);
 	} else {
@@ -130,7 +130,7 @@ zreadtriple_noheader(FILE *fp, int_t *m, int_t *n, int_t *nonz,
 	      val[nz] = val[nz-1];
 	      ++xa[col[nz]];
 	    }
-#endif	
+#endif
 	    ++nz;
 	}
     }
@@ -139,7 +139,7 @@ zreadtriple_noheader(FILE *fp, int_t *m, int_t *n, int_t *nonz,
 #ifdef EXPAND_SYM
     printf("new_nonz after symmetric expansion:\t%d\n", *nonz);
 #endif
-    
+
 
     /* Initialize the array of column pointers */
     k = 0;
@@ -150,7 +150,7 @@ zreadtriple_noheader(FILE *fp, int_t *m, int_t *n, int_t *nonz,
 	jsize = xa[j];
 	xa[j] = k;
     }
-    
+
     /* Copy the triplets into the column oriented storage */
     for (nz = 0; nz < *nonz; ++nz) {
 	j = col[nz];
