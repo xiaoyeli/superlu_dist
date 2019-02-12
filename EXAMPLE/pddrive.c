@@ -23,7 +23,7 @@ at the top-level directory.
 
 #include <math.h>
 #include "superlu_ddefs.h"
-
+#include "fompi.h"
 /*! \brief
  *
  * <pre>
@@ -74,7 +74,7 @@ int main(int argc, char *argv[])
     /* ------------------------------------------------------------
        INITIALIZE MPI ENVIRONMENT. 
        ------------------------------------------------------------*/
-    MPI_Init( &argc, &argv );
+    foMPI_Init( &argc, &argv );
     //MPI_Init_thread( &argc, &argv, MPI_THREAD_MULTIPLE, &omp_mpi_level); 
 	
 
@@ -82,9 +82,6 @@ int main(int argc, char *argv[])
     VT_traceoff(); 
 #endif
 
-#if ( VTUNE>=1 )
-	__itt_pause();
-#endif
 	
     /* Parse command line argv[]. */
     for (cpp = argv+1; *cpp; ++cpp) {
@@ -194,17 +191,15 @@ int main(int argc, char *argv[])
      */
     set_default_options_dist(&options);
 	options.IterRefine = NOREFINE;				   
-	options.DiagInv       = YES;
+	options.DiagInv       = YES;							 
 #if 0
     options.RowPerm = NOROWPERM;
-    options.RowPerm = LargeDiag_AWPM;
+    options.RowPerm = LargeDiag_AWPM;									 
     options.IterRefine = NOREFINE;
     options.ColPerm = NATURAL;
     options.Equil = NO; 
     options.ReplaceTinyPivot = YES;
 #endif
-
-	
 
     if (!iam) {
 	print_sp_ienv_dist(&options);
