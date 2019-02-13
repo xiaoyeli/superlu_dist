@@ -1,4 +1,3 @@
-#include "fompi.h"
 #ifndef __SUPERLU_TREEREDUCE_IMPL
 #define __SUPERLU_TREEREDUCE_IMPL
 
@@ -57,7 +56,7 @@ namespace SuperLU_ASYNCOMM {
 		//fflush(stdout);
 		
                 t1 = SuperLU_timer_();
-                foMPI_Accumulate(locBuffer, msgSize+1, this->type_, new_iProc, RDsendoffset, msgSize+1, this->type_, foMPI_REPLACE, rd_winl);		  
+                MPI_Accumulate(locBuffer, msgSize+1, this->type_, new_iProc, RDsendoffset, msgSize+1, this->type_, MPI_REPLACE, rd_winl);		  
 		///foMPI_Accumulate(locBuffer, msgSize, this->type_, new_iProc, RDsendoffset, msgSize, this->type_, foMPI_REPLACE, rd_winl);		  
 		///foMPI_Accumulate(&my_RDtasktail, 1, MPI_DOUBLE, new_iProc, *iam_row, 1, MPI_DOUBLE, foMPI_SUM, rd_winl);		  
 	        onesidecomm_bc[iam] += SuperLU_timer_() - t1;

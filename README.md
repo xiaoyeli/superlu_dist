@@ -4,7 +4,7 @@
 [Nightly tests](http://my.cdash.org/index.php?project=superlu_dist)
 
 SuperLU_DIST contains a set of subroutines to solve a sparse linear system 
-A*X=B. It uses Gaussian elimination with static pivoting (GESP). 
+A\*X=B. It uses Gaussian elimination with static pivoting (GESP). 
 Static pivoting is a technique that combines the numerical stability of
 partial pivoting with the scalability of Cholesky (no pivoting),
 to run accurately and efficiently on large numbers of processors. 
