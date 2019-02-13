@@ -1101,7 +1101,14 @@ if(procs==1){
 #endif
 	for (i = 0; i < nlb; ++i) fmod[i*aln_i] += frecv[i];
 	
+#ifdef onesidedebug
+    printf("before setting oneside...");
+#endif    
+
 #ifdef oneside
+#ifdef onesidedebug
+    printf("setting oneside...");
+#endif    
 	MPI_Request *col_req;
 	MPI_Request *row_req;
         col_req=(MPI_Request *) malloc(2*(Pr-1) * sizeof(MPI_Request));        
