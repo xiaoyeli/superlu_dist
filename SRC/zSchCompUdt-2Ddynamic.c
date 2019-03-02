@@ -135,7 +135,7 @@ if ( msg0 && msg2 ) { /* L(:,k) and U(k,:) are not empty. */
 	 /*
 	  * Counting U blocks
 	  */
-	 ldu = 0; /* Calculate ldu for U(k,:) after look-ahead window. */
+     	 ldu = 0; /* Calculate ldu for U(k,:) after look-ahead window. */
 	 ncols = 0; /* Total number of nonzero columns in U(k,:) */
 	 int temp_ncols = 0;
 
@@ -282,14 +282,15 @@ if ( msg0 && msg2 ) { /* L(:,k) and U(k,:) are not empty. */
 	if (ldu==0) printf("[%d] .. k0 %d, before updating: ldu %d, Lnbrow %d, Rnbrow %d, ncols %d\n",iam,k0,ldu,Lnbrow,Rnbrow, ncols);
 	fflush(stdout);
 #endif
+
+        GatherMOP += 2*ldu*ncols;
+
     }  /* end if (nbrow>0), end gather U blocks */
 
     GatherUTimer += SuperLU_timer_() - tt_start;
-    GatherMOP += 2*ldu*ncols;
     int jj_cpu = nub;       /* limit between CPU and GPU */
     int thread_id;
     /*tempv = bigV;*/
-
 
     /**********************
      * Gather L blocks    *
