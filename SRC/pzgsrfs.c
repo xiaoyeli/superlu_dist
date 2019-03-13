@@ -124,8 +124,6 @@ pzgsrfs(int_t n, SuperMatrix *A, double anorm, LUstruct_t *LUstruct,
 {
 #define ITMAX 20
 
-    Glu_persist_t *Glu_persist = LUstruct->Glu_persist;
-    LocalLU_t *Llu = LUstruct->Llu;
     doublecomplex *ax, *R, *dx, *temp, *work, *B_col, *X_col;
     double *rtemp;
     int_t count, i, j, lwork, nz;

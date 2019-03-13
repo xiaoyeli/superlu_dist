@@ -543,8 +543,8 @@ pdgssvx(superlu_dist_options_t *options, SuperMatrix *A,
     double   *C, *R, *C1, *R1, amax, anorm, colcnd, rowcnd;
     double   *X, *b_col, *b_work, *x_col;
     double   t;
-    float    GA_mem_use;    /* memory usage by global A */
-    float    dist_mem_use; /* memory usage during distribution */
+    float    GA_mem_use = 0.0;    /* memory usage by global A */
+    float    dist_mem_use = 0.0;  /* memory usage during distribution */
     superlu_dist_mem_usage_t num_mem_usage, symb_mem_usage;
     int64_t  nnzLU;
     int_t    nnz_tot;
