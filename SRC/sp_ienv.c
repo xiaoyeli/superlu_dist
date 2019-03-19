@@ -62,10 +62,8 @@ at the top-level directory.
 </pre>
 */
 
-
 #include <stdlib.h>
 #include <stdio.h>
-
 
 int_t
 sp_ienv_dist(int_t ispec)
@@ -118,7 +116,6 @@ sp_ienv_dist(int_t ispec)
     i = 1;
     xerr_dist("sp_ienv", &i);
     return 0;
-
 
 } /* sp_ienv_dist */
 
