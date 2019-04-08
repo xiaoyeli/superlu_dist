@@ -1,6 +1,6 @@
-#include "mpi.h"
-extern MPI_Win bc_winl;
-extern MPI_Win rd_winl;
+#include "fompi.h"
+extern foMPI_Win bc_winl;
+extern foMPI_Win rd_winl;
 extern MPI_Comm row_comm;
 extern MPI_Comm col_comm;
 extern int *BufSize;

@@ -2,6 +2,8 @@
 #include "dcomplex.h"
 #ifdef oneside
 #include "oneside.h"
+#include <math.h>
+using namespace std;
 #endif
 #include "mpi.h"
 namespace SuperLU_ASYNCOMM{
@@ -80,24 +82,67 @@ namespace SuperLU_ASYNCOMM{
 	void BcTree_forwardMessageOneSide(BcTree Tree, void* localBuffer, Int msgSize, char precision, int* iam_col, int* BCcount, long* BCbase, int* maxrecvsz, int Pc){
 		if(precision=='d'){
 			TreeBcast_slu<double>* BcastTree = (TreeBcast_slu<double>*) Tree;
-                        double *sendbuf = (double*) localBuffer;
-                        double *sendbufval;
-                        if ( !(sendbufval = (double*)SUPERLU_MALLOC( (msgSize+1) * sizeof(double))) )
-                                ABORT("Malloc fails for sendbuf[]");
-                        for(Int i = 0; i<msgSize;i++){
-                                sendbufval[i] = sendbuf[i];
-                        }
-                        sendbufval[msgSize] = 1;
-                        //printf("HERE!!! send=%lf,%lf,loc=%lf\n",sendbufval[msgSize-1],sendbufval[msgSize],sendbuf[msgSize-1]);
-                        //fflush(stdout);
-			//msgSize += 1;
-                        BcastTree->forwardMessageOneSide(sendbufval,msgSize, iam_col, BCcount, BCbase, maxrecvsz, Pc);	
+            double *sendbuf = (double*) localBuffer;
+            double *sendbufval;
+            double checksum = 0.0;
+            if ( !(sendbufval = (double*)SUPERLU_MALLOC( (msgSize+1) * sizeof(double))) )
+                    ABORT("Malloc fails for sendbuf[]");
+            for(Int i = 0; i<msgSize;++i){
+                if(std::isnan(sendbuf[i])) {
+                    sendbufval[i] = sendbuf[i];
+                    //printf("isnan,sendbuf=%lf,ori=%lf",sendbufval[i],sendbuf[i]);
+                    //fflush(stdout);
+                    continue;
+                }
+                    sendbufval[i] = sendbuf[i];
+                    //printf("sendbuf=%lf,ori=%lf",sendbufval[i],sendbuf[i]);
+                    //fflush(stdout);
+                    checksum += sendbuf[i];
+            }
+            sendbufval[msgSize] = checksum;
+            //printf("\n HERE!!! send=%lf,%lf,loc=%lf\n",sendbufval[0],sendbufval[msgSize],checksum);
+            //fflush(stdout);
+			////msgSize += 1;
+            BcastTree->forwardMessageOneSide(sendbufval,msgSize, iam_col, BCcount, BCbase, maxrecvsz, Pc);	
+            //printf("END HERE!!! send=%lf,%lf,loc=%lf\n",sendbufval[0],sendbufval[msgSize],checksum);
+            //fflush(stdout);
 			//BcastTree->forwardMessageOneSide((double*)localBuffer,msgSize, iam_col, BCcount, BCbase, maxrecvsz, Pc);	
 		}
 		if(precision=='z'){
 			TreeBcast_slu<doublecomplex>* BcastTree = (TreeBcast_slu<doublecomplex>*) Tree;
 			BcastTree->forwardMessageOneSide((doublecomplex*)localBuffer,msgSize, iam_col, BCcount, BCbase, maxrecvsz, Pc);	
 		}	
+	}
+	void RdTree_forwardMessageOneSide(RdTree Tree, void* localBuffer, Int msgSize, char precision, int* iam_row, int* RDcount, long* RDbase, int* maxrecvsz, int Pc){
+		if(precision=='d'){
+		        TreeReduce_slu<double>* ReduceTree = (TreeReduce_slu<double>*) Tree;
+                double *sendbuf = (double*) localBuffer;
+                double *sendbufval;
+                double checksum = 0.0;
+                if ( !(sendbufval = (double*)SUPERLU_MALLOC( (msgSize+1) * sizeof(double))) )
+                        ABORT("Malloc fails for sendbuf[]");
+                for(Int i = 0; i<msgSize;++i){
+                    sendbufval[i] = sendbuf[i];
+                    if(std::isnan(sendbuf[i])) {
+                        //printf("isnan,sendbuf=%lf,ori=%lf",sendbufval[i],sendbuf[i]);
+                        //fflush(stdout);
+                        continue;
+                    }
+                        //printf("sendbuf=%lf,ori=%lf",sendbufval[i],sendbuf[i]);
+                        //fflush(stdout);
+                    checksum += sendbuf[i];
+                }
+                sendbufval[msgSize] = checksum;
+                //printf("\n HERE!!! send=%lf,%lf,loc=%lf\n",sendbufval[0],sendbufval[msgSize],checksum);
+                //fflush(stdout);
+			    //msgSize += 1;
+		        ReduceTree->forwardMessageOneSide(sendbufval, msgSize, iam_row, RDcount, RDbase, maxrecvsz, Pc);	
+		        //ReduceTree->forwardMessageOneSide((double*)localBuffer,msgSize, iam_row, RDcount, RDbase, maxrecvsz, Pc);	
+		}
+		if(precision=='z'){
+		    TreeReduce_slu<doublecomplex>* ReduceTree = (TreeReduce_slu<doublecomplex>*) Tree;
+		    ReduceTree->forwardMessageOneSide((doublecomplex*)localBuffer,msgSize, iam_row, RDcount, RDbase, maxrecvsz, Pc);	
+		}
 	}
 #endif
 	void BcTree_forwardMessageSimple(BcTree Tree, void* localBuffer, Int msgSize, char precision){
@@ -292,29 +337,6 @@ namespace SuperLU_ASYNCOMM{
 		return ReduceTree->IsRoot()?YES:NO;
 		}
 	}
-#ifdef oneside
-	void RdTree_forwardMessageOneSide(RdTree Tree, void* localBuffer, Int msgSize, char precision, int* iam_row, int* RDcount, long* RDbase, int* maxrecvsz, int Pc){
-		if(precision=='d'){
-		        TreeReduce_slu<double>* ReduceTree = (TreeReduce_slu<double>*) Tree;
-                        double *sendbuf = (double*) localBuffer;
-                        double *sendbufval;
-                        if ( !(sendbufval = (double*)SUPERLU_MALLOC( (msgSize+1) * sizeof(double))) )
-                                ABORT("Malloc fails for sendbuf[]");
-                        for(Int i = 0; i<msgSize;i++){
-                                sendbufval[i] = sendbuf[i];
-                        }
-                        sendbufval[msgSize] = 1;
-                        //printf("HERE!!! send=%lf,%lf,loc=%lf\n",sendbufval[msgSize-1],sendbufval[msgSize],sendbuf[msgSize-1]);
-                        //fflush(stdout);
-		        ReduceTree->forwardMessageOneSide(sendbufval, msgSize, iam_row, RDcount, RDbase, maxrecvsz, Pc);	
-		        //ReduceTree->forwardMessageOneSide((double*)localBuffer,msgSize, iam_row, RDcount, RDbase, maxrecvsz, Pc);	
-		}
-		if(precision=='z'){
-		TreeReduce_slu<doublecomplex>* ReduceTree = (TreeReduce_slu<doublecomplex>*) Tree;
-		ReduceTree->forwardMessageOneSide((doublecomplex*)localBuffer,msgSize, iam_row, RDcount, RDbase, maxrecvsz, Pc);	
-		}
-	}
-#endif
 	void RdTree_forwardMessageSimple(RdTree Tree, void* localBuffer, Int msgSize, char precision){
 		if(precision=='d'){
 		TreeReduce_slu<double>* ReduceTree = (TreeReduce_slu<double>*) Tree;
