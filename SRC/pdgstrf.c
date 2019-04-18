@@ -153,17 +153,6 @@ at the top-level directory.
 #define PDGSTRF2 pdgstrf2_trsm
 #define PDGSTRS2 pdgstrs2_omp
 
-extern void PDGSTRF2 (superlu_dist_options_t *, int_t, int_t, double,
-                        Glu_persist_t *, gridinfo_t *, LocalLU_t *,
-                        MPI_Request *, int, SuperLUStat_t *, int *);
-#ifdef _CRAY
-extern void PDGSTRS2 (int_t, int_t, Glu_persist_t *, gridinfo_t *,
-                      LocalLU_t *, SuperLUStat_t *, _fcd, _fcd, _fcd);
-#else
-extern void PDGSTRS2 (int_t, int_t, Glu_persist_t *, gridinfo_t *,
-                      LocalLU_t *, SuperLUStat_t *);
-#endif
-
 #ifdef ISORT
 extern void isort (int_t N, int_t * ARRAY1, int_t * ARRAY2);
 extern void isort1 (int_t N, int_t * ARRAY);

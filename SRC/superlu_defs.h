@@ -35,9 +35,9 @@ at the top-level directory.
     #include <fortran.h>
 #endif
 
-#ifdef _OPENMP
+//#ifdef _OPENMP
    #include <omp.h>
-#endif
+//#endif
 
 #include <mpi.h>
 #include <stdlib.h>
@@ -47,6 +47,7 @@ at the top-level directory.
 //#include <stdatomic.h>
 #include <math.h>
 #include <stdint.h>
+//#include <malloc.h>  Sherry: not available on Mac OS
 // /* Following is for vtune */
 // #if 0
 // #include <ittnotify.h>
@@ -90,9 +91,14 @@ at the top-level directory.
   #define IFMT "%8d"
 #endif
 
+/* This is defined in superlu_grid.c */
+extern MPI_Datatype SuperLU_MPI_DOUBLE_COMPLEX;
+
 #ifdef __INTEL_COMPILER
 #include "mkl.h"
+
 #else
+
 //#include "cblas.h"
 #if 0 // Sherry: the following does not work with gcc on Linux.
 #define  _mm_malloc(a,b) malloc(a)
@@ -865,6 +871,33 @@ typedef struct
     int* msgcntU;
 } msgs_t;
 
+typedef struct xtrsTimer_t
+{
+    double trsDataSendXY;
+    double trsDataSendZ;
+    double trsDataRecvXY;
+    double trsDataRecvZ;
+    double t_pdReDistribute_X_to_B;
+    double t_pdReDistribute_B_to_X;
+    double t_forwardSolve;
+    double tfs_compute;
+    double tfs_comm;
+    double t_backwardSolve;
+    double tbs_compute;
+    double tbs_comm;
+    double tbs_tree[2*MAX_3D_LEVEL];
+    double tfs_tree[2*MAX_3D_LEVEL];
+    
+    // counters for communication and computation volume 
+    
+    int_t trsMsgSentXY;
+    int_t trsMsgSentZ;
+    int_t trsMsgRecvXY;
+    int_t trsMsgRecvZ;
+    
+    double ppXmem;		// perprocess X-memory
+} xtrsTimer_t;
+
 /*====================*/
 
 /***********************************************************************
@@ -1148,11 +1181,11 @@ extern sForest_t**  getGreedyLoadBalForests( int_t maxLvl, int_t nsupers, int_t*
 extern sForest_t**  getForests( int_t maxLvl, int_t nsupers, int_t*setree, treeList_t* treeList);
     
     /* from trfAux.h */
-extern void set_tag_ub();
+extern int set_tag_ub();
 extern int getNumThreads(int);
-#if 0 // Sherry: conflicting with existing routine
 extern int_t num_full_cols_U(int_t kk, int_t **Ufstnz_br_ptr, int_t *xsup,
-			     gridinfo_t *, int_t *);
+			     gridinfo_t *, int_t *, int_t *);
+#if 0 // Sherry: conflicting with existing routine
 extern int_t estimate_bigu_size(int_t nsupers, int_t ldt, int_t**Ufstnz_br_ptr,
 				Glu_persist_t *, gridinfo_t*, int_t* perm_u);
 #endif
@@ -1166,6 +1199,18 @@ extern int_t initMsgs(msgs_t* msgs);
 extern int_t getNumLookAhead();
 extern commRequests_t** initCommRequestsArr(int_t mxLeafNode, int_t ldt, gridinfo_t* grid);
 extern msgs_t** initMsgsArr(int_t numLA);
+
+    /* from sec_structs.h */
+extern int Cmpfunc_R_info (const void * a, const void * b);
+extern int Cmpfunc_U_info (const void * a, const void * b);
+extern int sort_R_info( Remain_info_t* Remain_info, int n );
+extern int sort_U_info( Ublock_info_t* Ublock_info, int n );
+extern int sort_R_info_elm( Remain_info_t* Remain_info, int n );
+extern int sort_U_info_elm( Ublock_info_t* Ublock_info, int n );
+
+    /* from pdgstrs.h */
+extern void printTRStimer(xtrsTimer_t *xtrsTimer, gridinfo3d_t *grid3d);
+extern void initTRStimer(xtrsTimer_t *xtrsTimer, gridinfo_t *grid);
 
 /*=====================*/
 

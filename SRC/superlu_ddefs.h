@@ -393,6 +393,14 @@ extern void pdgstrs_Bglobal(int_t, LUstruct_t *, gridinfo_t *,
 extern void pdgstrs(int_t, LUstruct_t *, ScalePermstruct_t *, gridinfo_t *,
 		    double *, int_t, int_t, int_t, int, SOLVEstruct_t *,
 		    SuperLUStat_t *, int *);
+extern int_t pdReDistribute_B_to_X(double *B, int_t m_loc, int nrhs, int_t ldb,
+				   int_t fst_row, int_t *ilsum, double *x,
+				   ScalePermstruct_t *, Glu_persist_t *,
+				   gridinfo_t *, SOLVEstruct_t *);
+    // Sherry: to be removed 
+extern void pdgstrs_vecpar(int_t, LUstruct_t *, ScalePermstruct_t *, gridinfo_t *,
+		    double *, int_t, int_t, int_t, int, SOLVEstruct_t *,
+		    SuperLUStat_t *, int *);
 extern void dlsum_fmod(double *, double *, double *, double *,
 		       int, int, int_t , int_t *, int_t, int_t, int_t,
 		       int_t *, gridinfo_t *, LocalLU_t *,
@@ -407,12 +415,12 @@ extern void dlsum_fmod_inv(double *, double *, double *, double *,
 		       int_t *, gridinfo_t *, LocalLU_t *,
 		       SuperLUStat_t **, int_t *, int_t *, int_t, int_t, int_t, int_t, int, int);
 extern void dlsum_fmod_inv_master(double *, double *, double *, double *,
-		       int, int, int_t , int_t *, int_t,
-		       int_t *, gridinfo_t *, LocalLU_t *,
-		       SuperLUStat_t **, int_t, int_t, int_t, int_t, int, int);
+				  int, int, int_t , int_t *, int_t, int_t *,
+				  gridinfo_t *, LocalLU_t *, SuperLUStat_t **,
+				  int_t, int_t, int_t, int_t, int, int);
 extern void dlsum_bmod_inv(double *, double *, double *, double *,
-                       int, int_t, int_t *, int_t *, Ucb_indptr_t **,
-                       int_t **, int_t *, gridinfo_t *, LocalLU_t *,
+			   int, int_t, int_t *, int_t *, Ucb_indptr_t **,
+			   int_t **, int_t *, gridinfo_t *, LocalLU_t *,
 		       SuperLUStat_t **, int_t *, int_t *, int_t, int_t, int, int);
 extern void dlsum_bmod_inv_master(double *, double *, double *, double *,
                        int, int_t, int_t *, int_t *, Ucb_indptr_t **,
@@ -527,9 +535,13 @@ extern void dger_(int*, int*, double*, double*, int*,
 
 /*==== For 3D code ====*/
 
+extern void pdgssvx3d (superlu_dist_options_t *, SuperMatrix *,
+		       ScalePermstruct_t *, double B[], int ldb, int nrhs,
+		       gridinfo3d_t *, LUstruct_t *, SOLVEstruct_t *, 
+		       double *berr, SuperLUStat_t *, int *info);
 extern int_t pdgstrf3d(superlu_dist_options_t *, int m, int n, double anorm,
-		       trf3Dpartition_t*, SCT_t *, LUstruct_t *, gridinfo3d_t *,
-		       SuperLUStat_t *, int *);
+		       trf3Dpartition_t*, SCT_t *, LUstruct_t *,
+		       gridinfo3d_t *, SuperLUStat_t *, int *);
 extern int_t zSendLPanel(int_t, int_t, LUstruct_t*,  gridinfo3d_t*, SCT_t*);
 extern int_t zRecvLPanel(int_t, int_t, double, double, double*,
 			 LUstruct_t*,  gridinfo3d_t*, SCT_t* SCT);
@@ -667,7 +679,7 @@ extern int_t gatherAllFactoredLUFr(int_t* myZeroTrIdxs, sForest_t* sForests,
 extern void pdgstrf2_trsm(superlu_dist_options_t *options, int_t, int_t,
                           int_t k, double thresh, Glu_persist_t *,
 			  gridinfo_t *, LocalLU_t *, MPI_Request *U_diag_blk_send_req,
-			  SuperLUStat_t *, int *info, SCT_t *);
+			  int tag_ub, SuperLUStat_t *, int *info, SCT_t *);
 #ifdef _CRAY
 void pdgstrs2_omp (int_t, int_t, int_t, Glu_persist_t *, gridinfo_t *,
                       LocalLU_t *, SuperLUStat_t *, _fcd, _fcd, _fcd);
@@ -676,6 +688,13 @@ void pdgstrs2_omp (int_t, int_t, int_t, int_t *, double*, Glu_persist_t *, gridi
                       LocalLU_t *, SuperLUStat_t *, Ublock_info_t *, double *bigV, int_t ldt, SCT_t *SCT );
 #endif
 
+#else 
+extern void pdgstrf2_trsm(superlu_dist_options_t * options, int_t k0, int_t k,
+			  double thresh, Glu_persist_t *, gridinfo_t *,
+			  LocalLU_t *, MPI_Request *, int tag_ub,
+			  SuperLUStat_t *, int *info);
+extern void pdgstrs2_omp(int_t k0, int_t k, Glu_persist_t *, gridinfo_t *,
+			 LocalLU_t *, SuperLUStat_t *);
 #endif // same routine names   !!!!!!!!
 
 extern int_t LpanelUpdate(int_t off0, int_t nsupc, double* ublk_ptr,
@@ -717,7 +736,7 @@ extern void pdgstrs2
 
 extern void pdgstrf2(superlu_dist_options_t *, int_t nsupers, int_t k0,
 		     int_t k, double thresh, Glu_persist_t *, gridinfo_t *,
-		     LocalLU_t *, MPI_Request *, SuperLUStat_t *, int *);
+		     LocalLU_t *, MPI_Request *, int, SuperLUStat_t *, int *);
 
     /* from p3dcomm.h */
 int_t AllocLlu(int_t nsupers, LUstruct_t * LUstruct, gridinfo3d_t* grid3d);
@@ -817,6 +836,57 @@ int_t zRecvUPanel(int_t k, int_t sender, double alpha, double beta,
                   double* Uval_buf,
                   LUstruct_t* LUstruct,  gridinfo3d_t* grid3d, SCT_t* SCT);
 
+    /* from communication_aux.h */
+extern int_t IBcast_LPanel (int_t k, int_t k0, int_t* lsub, double* lusup,
+			    gridinfo_t *, int* msgcnt, MPI_Request *,
+			    int_t **ToSendR, int_t *xsup, int );
+extern int_t Bcast_LPanel(int_t k, int_t k0, int_t* lsub, double* lusup,
+			  gridinfo_t *, int* msgcnt, int_t **ToSendR,
+			  int_t *xsup , SCT_t*, int);
+extern int_t IBcast_UPanel(int_t k, int_t k0, int_t* usub, double* uval,
+			   gridinfo_t *, int* msgcnt, MPI_Request *,
+			   int_t *ToSendD, int );
+extern int_t Bcast_UPanel(int_t k, int_t k0, int_t* usub, double* uval,
+			  gridinfo_t *, int* msgcnt, int_t *ToSendD, SCT_t*, int);
+extern int_t Irecv_LPanel (int_t k, int_t k0,  int_t* Lsub_buf, 
+			   double* Lval_buf, gridinfo_t *,
+			   MPI_Request *, LocalLU_t *, int);
+extern int_t Irecv_UPanel(int_t k, int_t k0, int_t* Usub_buf, double*,
+			  LocalLU_t *, gridinfo_t*, MPI_Request *, int);
+extern int_t Wait_LSend(int_t k, gridinfo_t *grid, int_t **ToSendR,
+			MPI_Request *s, SCT_t*);
+extern int_t Wait_USend(MPI_Request *, gridinfo_t *, SCT_t *);
+extern int_t Wait_URecv(MPI_Request *, int* msgcnt, SCT_t *);
+extern int_t Check_LRecv(MPI_Request*, int* msgcnt);
+extern int_t Wait_LRecv(MPI_Request*, int* msgcnt, int* msgcntsU,
+			gridinfo_t *, SCT_t*);
+extern int_t ISend_UDiagBlock(int_t k0, double *ublk_ptr, int_t size,
+			      MPI_Request *, gridinfo_t *, int);
+extern int_t Recv_UDiagBlock(int_t k0, double *ublk_ptr, int_t size,
+			     int_t src, gridinfo_t *, SCT_t*, int);
+extern int_t Wait_UDiagBlockSend(MPI_Request *, gridinfo_t *, SCT_t *);
+extern int_t Wait_LDiagBlockSend(MPI_Request *, gridinfo_t *, SCT_t *);
+extern int_t PackLBlock(int_t k, double* Dest, Glu_persist_t *,
+			gridinfo_t *, LocalLU_t *);
+extern int_t ISend_LDiagBlock(int_t k0, double *lblk_ptr, int_t size,
+			      MPI_Request *, gridinfo_t *, int);
+extern int_t IRecv_UDiagBlock(int_t k0, double *ublk_ptr, int_t size,
+			      int_t src, MPI_Request *, gridinfo_t *,
+			      SCT_t*, int);
+extern int_t Wait_UDiagBlock_Recv(MPI_Request *, SCT_t *);
+extern int_t Test_UDiagBlock_Recv(MPI_Request *, SCT_t *);
+extern int_t IRecv_LDiagBlock(int_t k0, double *L_blk_ptr, int_t size,
+			      int_t src, MPI_Request *, gridinfo_t*, SCT_t*,
+			      int);
+extern int_t Wait_LDiagBlock_Recv(MPI_Request *, SCT_t *);
+extern int_t Test_LDiagBlock_Recv(MPI_Request *, SCT_t *);
+#if (MPI_VERSION>2)
+extern int_t IBcast_UDiagBlock(int_t k, double *ublk_ptr, int_t size,
+			       MPI_Request *, gridinfo_t *);
+extern int_t IBcast_LDiagBlock(int_t k, double *lblk_ptr, int_t size,
+			       MPI_Request *, gridinfo_t *);
+#endif
+
     /* from trfCommWrapper.h */
 extern int_t DiagFactIBCast(int_t k,  int_t k0,
 			    double *BlockUFactor, double *BlockLFactor,
@@ -824,7 +894,7 @@ extern int_t DiagFactIBCast(int_t k,  int_t k0,
 			    MPI_Request *, MPI_Request *, gridinfo_t *,
 			    superlu_dist_options_t *, double thresh,
 			    LUstruct_t *LUstruct, SuperLUStat_t *, int *info,
-			    SCT_t *);
+			    SCT_t *, int tag_ub);
 extern int_t UPanelTrSolve( int_t k, double* BlockLFactor, double* bigV,
 			    int_t ldt, Ublock_info_t*, gridinfo_t *,
 			    LUstruct_t *, SuperLUStat_t *, SCT_t *);
@@ -841,16 +911,17 @@ extern int_t IBcastRecvLPanel(int_t k, int_t k0, int* msgcnt,
 			      MPI_Request *, MPI_Request *,
 			      int_t* Lsub_buf, double* Lval_buf,
 			      int_t * factored, gridinfo_t *, LUstruct_t *,
-			      SCT_t *);
+			      SCT_t *, int tag_ub);
 extern int_t IBcastRecvUPanel(int_t k, int_t k0, int* msgcnt, MPI_Request *,
 			      MPI_Request *, int_t* Usub_buf, double* Uval_buf,
-			      gridinfo_t *, LUstruct_t *, SCT_t *);
+			      gridinfo_t *, LUstruct_t *, SCT_t *, int tag_ub);
 extern int_t WaitL(int_t k, int* msgcnt, int* msgcntU, MPI_Request *,
 		   MPI_Request *, gridinfo_t *, LUstruct_t *, SCT_t *);
 extern int_t WaitU(int_t k, int* msgcnt, MPI_Request *, MPI_Request *,
 		   gridinfo_t *, LUstruct_t *, SCT_t *);
 extern int_t LPanelTrSolve(int_t k, int_t* factored_L, double* BlockUFactor,
 			   gridinfo_t *, LUstruct_t *);
+
 
     /* from trfAux.h */
 extern int_t getNsupers(int, LUstruct_t *);
@@ -879,27 +950,6 @@ extern int_t initScuBufs(int_t ldt, int_t num_threads, int_t nsupers,
                   LUstruct_t* LUstruct,
                   gridinfo_t * grid);
 extern int_t initPackLUInfo(int_t nsupers, packLUInfo_t* packLUInfo);
-
-extern int_t ancestorFactor(
-    int_t ilvl,             // level of factorization 
-    sForest_t* sforest,
-    commRequests_t **comReqss, // lists of communication requests, size maxEtree level
-    scuBufs_t *scuBufs,        // contains buffers for schur complement update
-    packLUInfo_t*packLUInfo,
-    msgs_t**msgss,             // size=num Look ahead
-    LUValSubBuf_t**LUvsbs,     // size=num Look ahead
-    diagFactBufs_t **dFBufs,   // size maxEtree level
-    factStat_t *factStat,
-    factNodelists_t  *fNlists,
-    gEtreeInfo_t* gEtreeInfo,  // global etree info
-    superlu_dist_options_t *options,
-    int_t * gIperm_c_supno,
-    int_t ldt,
-    HyP_t* HyP,
-    LUstruct_t *LUstruct, gridinfo3d_t * grid3d, SuperLUStat_t *stat,
-    double thresh,  SCT_t *SCT,
-    int *info
-);
 
 // the generic tree factoring code 
 extern int_t treeFactor(
@@ -956,7 +1006,7 @@ extern int_t denseTreeFactor(
     int_t * gIperm_c_supno,
     int_t ldt,
     LUstruct_t *LUstruct, gridinfo3d_t * grid3d, SuperLUStat_t *stat,
-    double thresh,  SCT_t *SCT,
+    double thresh,  SCT_t *SCT, int tag_ub,
     int *info
 );
 
@@ -976,7 +1026,7 @@ extern int_t sparseTreeFactor_ASYNC(
     int_t ldt,
     HyP_t* HyP,
     LUstruct_t *LUstruct, gridinfo3d_t * grid3d, SuperLUStat_t *stat,
-    double thresh,  SCT_t *SCT,
+    double thresh,  SCT_t *SCT, int tag_ub,
     int *info
 );
 extern LUValSubBuf_t** LluBufInitArr(int_t numLA, LUstruct_t *LUstruct);
@@ -990,8 +1040,7 @@ extern int_t sDiagFactIBCast(int_t k, diagFactBufs_t *dFBuf,
                       double thresh,
                       LUstruct_t *LUstruct,
                       SuperLUStat_t *stat, int *info,
-                      SCT_t *SCT
-                     );
+			     SCT_t *SCT, int tag_ub);
 extern int_t sLPanelUpdate( int_t k, diagFactBufs_t *dFBuf,
                      factStat_t *factStat,
                      commRequests_t *comReqs,
@@ -1014,7 +1063,7 @@ extern int_t sIBcastRecvLPanel(
     msgs_t* msgs,
     factStat_t *factStat,
     gridinfo_t *grid,
-    LUstruct_t *LUstruct, SCT_t *SCT);
+    LUstruct_t *LUstruct, SCT_t *SCT, int tag_ub);
 
 extern int_t sIBcastRecvUPanel(
     int_t k,
@@ -1023,7 +1072,7 @@ extern int_t sIBcastRecvUPanel(
     msgs_t* msgs,
     factStat_t *factStat,
     gridinfo_t *grid,
-    LUstruct_t *LUstruct, SCT_t *SCT);
+    LUstruct_t *LUstruct, SCT_t *SCT, int tag_ub);
 extern int_t sWaitL(int_t k,
              commRequests_t *comReqs,
              msgs_t* msgs,
@@ -1062,7 +1111,7 @@ extern int_t sUPanelTrSolve( int_t k,
                       LUstruct_t *LUstruct,
                       SuperLUStat_t *stat, SCT_t *SCT);
     /* from ancFactorization.h */
-int_t ancestorFactor(
+extern int_t ancestorFactor(
     int_t ilvl,             // level of factorization 
     sForest_t* sforest,
     commRequests_t **comReqss,    // lists of communication requests // size maxEtree level
@@ -1079,8 +1128,7 @@ int_t ancestorFactor(
     int_t ldt,
     HyP_t* HyP,
     LUstruct_t *LUstruct, gridinfo3d_t * grid3d, SuperLUStat_t *stat,
-    double thresh,  SCT_t *SCT,
-    int *info
+    double thresh,  SCT_t *SCT, int tag_ub, int *info
 );
 
 /*=====================*/

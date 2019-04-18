@@ -21,7 +21,7 @@ at the top-level directory.
 
 #include "superlu_ddefs.h"
 
-/* Define global variables */
+/* Define global variable for MPI double complex derived data type */
 MPI_Datatype SuperLU_MPI_DOUBLE_COMPLEX = MPI_DATATYPE_NULL;
 
 /*! \brief All processes in the MPI communicator must call this routine.

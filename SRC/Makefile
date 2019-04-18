@@ -26,6 +26,16 @@
 #
 #######################################################################
 include ../make.inc
+
+FACT3D = pdgssvx3d.o pdgstrf3d.o ancFactorization.o treeFactorization.o \
+	p3dcomm.o gather.o sec_structs.o trfCommWrapper.o trfAux.o \
+	communication_aux.o superlu_grid3d.o \
+	supernodal_etree.o supernodalForest.o xtrf3Dpartition.o	scatter.o
+#	pdgstrs_vecpar.o
+
+#  pddrive_params.o
+# scatter.o 
+
 #
 # Precision independent routines
 #
@@ -62,7 +72,7 @@ DPLUSRC = pdgssvx.o pdgssvx_ABglobal.o \
 	  pdgstrf.o pdgstrf2.o pdGetDiagU.o \
 	  pdgstrs.o pdgstrs1.o pdgstrs_lsum.o pdgstrs_Bglobal.o \
 	  pdgsrfs.o pdgsmv.o pdgsrfs_ABXglobal.o pdgsmv_AXglobal.o \
-	  dreadtriple_noheader.o
+	  dreadtriple_noheader.o $(FACT3D)
 #
 # Routines for double complex parallel SuperLU
 ZPLUSRC = pzgssvx.o pzgssvx_ABglobal.o \
