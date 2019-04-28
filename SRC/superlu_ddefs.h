@@ -211,7 +211,8 @@ typedef struct
     int_t last_offload ;
     int_t *Lblock_dirty_bit, * Ublock_dirty_bit;
     double *lookAhead_L_buff, *Remain_L_buff;
-    int_t lookAheadBlk , RemainBlk ;
+    int_t lookAheadBlk;  /* number of blocks in look-ahead window */
+    int_t RemainBlk ;    /* number of blocks outside look-ahead window */
     int_t  num_look_aheads, nsupers;
     int_t ldu, ldu_Phi;
     int_t num_u_blks, num_u_blks_Phi;
@@ -227,8 +228,7 @@ typedef struct
     int_t offloadCondition;
     int_t superlu_acc_offload;
     int_t nCudaStreams;
-
-} HyP_t;
+} HyP_t;  /* Data structures for Schur complement update. */
 
 typedef struct 
 {
@@ -634,39 +634,39 @@ int_t block_gemm_scatterBottomRight( int_t lb,  int_t j,
                                      SCT_t*SCT, SuperLUStat_t *stat
                                    );
 
-extern void gather_u(int_t num_u_blks,
+extern void dgather_u(int_t num_u_blks,
               Ublock_info_t *Ublock_info, int_t * usub,
               double *uval,  double *bigU,  int_t ldu,
               int_t *xsup, int_t klst                /* for SuperSize */
              );
 
-extern void gather_l( int_t num_LBlk, int_t knsupc,
+extern void dgather_l( int_t num_LBlk, int_t knsupc,
                Remain_info_t *L_info,
                double * lval, int_t LD_lval,
                double * L_buff );
 
     /* from gather.h */
-extern void Rgather_L(int_t k, int_t *lsub, double *lusup, gEtreeInfo_t*,
+extern void dRgather_L(int_t k, int_t *lsub, double *lusup, gEtreeInfo_t*,
 		      Glu_persist_t *, gridinfo_t *, HyP_t *,
 		      int_t *myIperm, int_t *iperm_c_supno );
-extern void Rgather_U(int_t k, int_t jj0, int_t *usub, double *uval,
+extern void dRgather_U(int_t k, int_t jj0, int_t *usub, double *uval,
 		      double *bigU, gEtreeInfo_t*, Glu_persist_t *,
 		      gridinfo_t *, HyP_t *, int_t *myIperm,
 		      int_t *iperm_c_supno, int_t *perm_u);
 
     /* from xtrf3Dpartition.h */
-extern trf3Dpartition_t* initTrf3Dpartition(int_t nsupers,
-					    superlu_dist_options_t *options,
-					    LUstruct_t *LUstruct, gridinfo3d_t * grid3d);
-extern void printMemUse(trf3Dpartition_t*  trf3Dpartition,
-			 LUstruct_t *LUstruct, gridinfo3d_t * grid3d);
+extern trf3Dpartition_t* dinitTrf3Dpartition(int_t nsupers,
+					     superlu_dist_options_t *options,
+					     LUstruct_t *LUstruct, gridinfo3d_t * grid3d);
+extern void d3D_printMemUse(trf3Dpartition_t*  trf3Dpartition,
+			    LUstruct_t *LUstruct, gridinfo3d_t * grid3d);
 
 extern int* getLastDep(gridinfo_t *grid, SuperLUStat_t *stat,
 		       superlu_dist_options_t *options, LocalLU_t *Llu,
 		       int_t* xsup, int_t num_look_aheads, int_t nsupers,
 		       int_t * iperm_c_supno);
 
-extern void init3DLUstructForest( int_t* myTreeIdxs, int_t* myZeroTrIdxs,
+extern void dinit3DLUstructForest( int_t* myTreeIdxs, int_t* myZeroTrIdxs,
 				  sForest_t**  sForests, LUstruct_t* LUstruct,
 				  gridinfo3d_t* grid3d);
 
@@ -694,7 +694,7 @@ extern void pdgstrf2_trsm(superlu_dist_options_t * options, int_t k0, int_t k,
 			  LocalLU_t *, MPI_Request *, int tag_ub,
 			  SuperLUStat_t *, int *info);
 extern void pdgstrs2_omp(int_t k0, int_t k, Glu_persist_t *, gridinfo_t *,
-			 LocalLU_t *, SuperLUStat_t *);
+			 LocalLU_t *, Ublock_info_t *, SuperLUStat_t *);
 #endif // same routine names   !!!!!!!!
 
 extern int_t LpanelUpdate(int_t off0, int_t nsupc, double* ublk_ptr,
@@ -739,90 +739,53 @@ extern void pdgstrf2(superlu_dist_options_t *, int_t nsupers, int_t k0,
 		     LocalLU_t *, MPI_Request *, int, SuperLUStat_t *, int *);
 
     /* from p3dcomm.h */
-int_t AllocLlu(int_t nsupers, LUstruct_t * LUstruct, gridinfo3d_t* grid3d);
-int_t AllocGlu(int_t n, int_t nsupers, LUstruct_t * LUstruct, gridinfo3d_t* grid3d);
-
-int_t p3dScatter(int_t n, LUstruct_t * LUstruct, gridinfo3d_t* grid3d);
-
-
-int_t scatter3dLPanels(int_t nsupers,
+extern int_t dAllocLlu(int_t nsupers, LUstruct_t * LUstruct, gridinfo3d_t* grid3d);
+extern int_t dp3dScatter(int_t n, LUstruct_t * LUstruct, gridinfo3d_t* grid3d);
+extern int_t dscatter3dLPanels(int_t nsupers,
                        LUstruct_t * LUstruct, gridinfo3d_t* grid3d);
-
-int_t scatter3dUPanels(int_t nsupers,
+extern int_t dscatter3dUPanels(int_t nsupers,
                        LUstruct_t * LUstruct, gridinfo3d_t* grid3d);
-
-int_t collect3dLpanels(int_t layer, int_t nsupers, LUstruct_t * LUstruct, gridinfo3d_t* grid3d);
-
-int_t collect3dUpanels(int_t layer, int_t nsupers, LUstruct_t * LUstruct, gridinfo3d_t* grid3d);
-
-int_t p3dCollect(int_t layer, int_t n, LUstruct_t * LUstruct, gridinfo3d_t* grid3d);
-
+extern int_t dcollect3dLpanels(int_t layer, int_t nsupers, LUstruct_t * LUstruct, gridinfo3d_t* grid3d);
+extern int_t dcollect3dUpanels(int_t layer, int_t nsupers, LUstruct_t * LUstruct, gridinfo3d_t* grid3d);
+extern int_t dp3dCollect(int_t layer, int_t n, LUstruct_t * LUstruct, gridinfo3d_t* grid3d);
 /*zero out LU non zero entries*/
-int_t zeroSetLU(int_t nnodes, int_t* nodeList , LUstruct_t *LUstruct, gridinfo3d_t* grid3d);
-
+extern int_t dzeroSetLU(int_t nnodes, int_t* nodeList , LUstruct_t *LUstruct, gridinfo3d_t* grid3d);
+extern int_t AllocGlu(int_t n, int_t nsupers, LUstruct_t * LUstruct, gridinfo3d_t* grid3d);
 
 /* Reduces L and U panels of nodes in the List nodeList (size=nnnodes)
 receiver[L(nodelist)] =sender[L(nodelist)] +receiver[L(nodelist)]
 receiver[U(nodelist)] =sender[U(nodelist)] +receiver[U(nodelist)]
 */
-
-int_t reduceAncestors3d(int_t sender, int_t receiver,
+int_t dreduceAncestors3d(int_t sender, int_t receiver,
                         int_t nnodes, int_t* nodeList,
                         double* Lval_buf, double* Uval_buf,
                         LUstruct_t* LUstruct,  gridinfo3d_t* grid3d, SCT_t* SCT);
-
-
 /*reduces all nodelists required in a level*/
-int_t reduceAllAncestors3d(int_t ilvl, int_t* myNodeCount,
+int_t dreduceAllAncestors3d(int_t ilvl, int_t* myNodeCount,
                            int_t** treePerm,
                            LUValSubBuf_t*LUvsb,
                            LUstruct_t* LUstruct,
                            gridinfo3d_t* grid3d,
                            SCT_t* SCT );
-
 /*
 	Copies factored L and U panels from sender grid to receiver grid
 	receiver[L(nodelist)] <-- sender[L(nodelist)];
 	receiver[U(nodelist)] <-- sender[U(nodelist)];
 */
-int_t gatherFactoredLU(int_t sender, int_t receiver,
+int_t dgatherFactoredLU(int_t sender, int_t receiver,
                        int_t nnodes, int_t *nodeList, LUValSubBuf_t*LUvsb,
                        LUstruct_t* LUstruct, gridinfo3d_t* grid3d,SCT_t* SCT );
 
 /*Gathers all the L and U factors to grid 0 for solve stage 
-	By  repeatidly calling above function
-
-*/
-int_t gatherAllFactoredLU(
-    trf3Dpartition_t*  trf3Dpartition,
-    LUstruct_t* LUstruct,
-    gridinfo3d_t* grid3d,
-    SCT_t* SCT );
-
+	By  repeatidly calling above function*/
+int_t dgatherAllFactoredLU(trf3Dpartition_t*  trf3Dpartition, LUstruct_t* LUstruct,
+			   gridinfo3d_t* grid3d, SCT_t* SCT );
 
 /*Distributes data in each layer and initilizes ancestors
  as zero in required nodes*/
-int_t init3DLUstruct( int_t* myTreeIdxs, int_t* myZeroTrIdxs,
+int_t dinit3DLUstruct( int_t* myTreeIdxs, int_t* myZeroTrIdxs,
                       int_t* nodeCount, int_t** nodeList,
                       LUstruct_t* LUstruct, gridinfo3d_t* grid3d);
-
-/*
-Returns list of permutation for each
-tree that I update
-*/
-int_t** getTreePerm( int_t* myTreeIdxs, int_t* myZeroTrIdxs,
-                     int_t* nodeCount, int_t** nodeList,
-                     int_t* perm_c_supno, int_t* iperm_c_supno,
-                     gridinfo3d_t* grid3d);
-
-/*number of nodes in each level of the trees which I update*/
-int_t* getMyNodeCounts(int_t maxLvl, int_t* myTreeIdxs, int_t* gNodeCount);
-
-
-int_t checkIntVector3d(int_t* vec, int_t len,  gridinfo3d_t* grid3d);
-
-int_t reduceStat(PhaseType PHASE, 
-  SuperLUStat_t *stat, gridinfo3d_t * grid3d);
 
 int_t zSendLPanel(int_t k, int_t receiver,
                      LUstruct_t* LUstruct,  gridinfo3d_t* grid3d, SCT_t* SCT);
@@ -837,118 +800,120 @@ int_t zRecvUPanel(int_t k, int_t sender, double alpha, double beta,
                   LUstruct_t* LUstruct,  gridinfo3d_t* grid3d, SCT_t* SCT);
 
     /* from communication_aux.h */
-extern int_t IBcast_LPanel (int_t k, int_t k0, int_t* lsub, double* lusup,
+extern int_t dIBcast_LPanel (int_t k, int_t k0, int_t* lsub, double* lusup,
+			     gridinfo_t *, int* msgcnt, MPI_Request *,
+			     int_t **ToSendR, int_t *xsup, int );
+extern int_t dBcast_LPanel(int_t k, int_t k0, int_t* lsub, double* lusup,
+			   gridinfo_t *, int* msgcnt, int_t **ToSendR,
+			   int_t *xsup , SCT_t*, int);
+extern int_t dIBcast_UPanel(int_t k, int_t k0, int_t* usub, double* uval,
 			    gridinfo_t *, int* msgcnt, MPI_Request *,
-			    int_t **ToSendR, int_t *xsup, int );
-extern int_t Bcast_LPanel(int_t k, int_t k0, int_t* lsub, double* lusup,
-			  gridinfo_t *, int* msgcnt, int_t **ToSendR,
-			  int_t *xsup , SCT_t*, int);
-extern int_t IBcast_UPanel(int_t k, int_t k0, int_t* usub, double* uval,
-			   gridinfo_t *, int* msgcnt, MPI_Request *,
-			   int_t *ToSendD, int );
-extern int_t Bcast_UPanel(int_t k, int_t k0, int_t* usub, double* uval,
-			  gridinfo_t *, int* msgcnt, int_t *ToSendD, SCT_t*, int);
-extern int_t Irecv_LPanel (int_t k, int_t k0,  int_t* Lsub_buf, 
-			   double* Lval_buf, gridinfo_t *,
-			   MPI_Request *, LocalLU_t *, int);
-extern int_t Irecv_UPanel(int_t k, int_t k0, int_t* Usub_buf, double*,
-			  LocalLU_t *, gridinfo_t*, MPI_Request *, int);
+			    int_t *ToSendD, int );
+extern int_t dBcast_UPanel(int_t k, int_t k0, int_t* usub, double* uval,
+			   gridinfo_t *, int* msgcnt, int_t *ToSendD, SCT_t*, int);
+extern int_t dIrecv_LPanel (int_t k, int_t k0,  int_t* Lsub_buf, 
+			    double* Lval_buf, gridinfo_t *,
+			    MPI_Request *, LocalLU_t *, int);
+extern int_t dIrecv_UPanel(int_t k, int_t k0, int_t* Usub_buf, double*,
+			   LocalLU_t *, gridinfo_t*, MPI_Request *, int);
 extern int_t Wait_LSend(int_t k, gridinfo_t *grid, int_t **ToSendR,
 			MPI_Request *s, SCT_t*);
 extern int_t Wait_USend(MPI_Request *, gridinfo_t *, SCT_t *);
-extern int_t Wait_URecv(MPI_Request *, int* msgcnt, SCT_t *);
+extern int_t dWait_URecv(MPI_Request *, int* msgcnt, SCT_t *);
 extern int_t Check_LRecv(MPI_Request*, int* msgcnt);
-extern int_t Wait_LRecv(MPI_Request*, int* msgcnt, int* msgcntsU,
-			gridinfo_t *, SCT_t*);
-extern int_t ISend_UDiagBlock(int_t k0, double *ublk_ptr, int_t size,
-			      MPI_Request *, gridinfo_t *, int);
-extern int_t Recv_UDiagBlock(int_t k0, double *ublk_ptr, int_t size,
-			     int_t src, gridinfo_t *, SCT_t*, int);
+extern int_t dWait_LRecv(MPI_Request*, int* msgcnt, int* msgcntsU,
+			 gridinfo_t *, SCT_t*);
+extern int_t dISend_UDiagBlock(int_t k0, double *ublk_ptr, int_t size,
+			       MPI_Request *, gridinfo_t *, int);
+extern int_t dRecv_UDiagBlock(int_t k0, double *ublk_ptr, int_t size,
+			      int_t src, gridinfo_t *, SCT_t*, int);
 extern int_t Wait_UDiagBlockSend(MPI_Request *, gridinfo_t *, SCT_t *);
 extern int_t Wait_LDiagBlockSend(MPI_Request *, gridinfo_t *, SCT_t *);
-extern int_t PackLBlock(int_t k, double* Dest, Glu_persist_t *,
-			gridinfo_t *, LocalLU_t *);
-extern int_t ISend_LDiagBlock(int_t k0, double *lblk_ptr, int_t size,
-			      MPI_Request *, gridinfo_t *, int);
-extern int_t IRecv_UDiagBlock(int_t k0, double *ublk_ptr, int_t size,
-			      int_t src, MPI_Request *, gridinfo_t *,
-			      SCT_t*, int);
+extern int_t dPackLBlock(int_t k, double* Dest, Glu_persist_t *,
+			 gridinfo_t *, LocalLU_t *);
+extern int_t dISend_LDiagBlock(int_t k0, double *lblk_ptr, int_t size,
+			       MPI_Request *, gridinfo_t *, int);
+extern int_t dIRecv_UDiagBlock(int_t k0, double *ublk_ptr, int_t size,
+			       int_t src, MPI_Request *, gridinfo_t *,
+			       SCT_t*, int);
 extern int_t Wait_UDiagBlock_Recv(MPI_Request *, SCT_t *);
 extern int_t Test_UDiagBlock_Recv(MPI_Request *, SCT_t *);
-extern int_t IRecv_LDiagBlock(int_t k0, double *L_blk_ptr, int_t size,
-			      int_t src, MPI_Request *, gridinfo_t*, SCT_t*,
-			      int);
+extern int_t dIRecv_LDiagBlock(int_t k0, double *L_blk_ptr, int_t size,
+			       int_t src, MPI_Request *, gridinfo_t*, SCT_t*, int);
 extern int_t Wait_LDiagBlock_Recv(MPI_Request *, SCT_t *);
 extern int_t Test_LDiagBlock_Recv(MPI_Request *, SCT_t *);
+
+extern int_t dUDiagBlockRecvWait( int_t k,  int_t* IrecvPlcd_D, int_t* factored_L,
+				  MPI_Request *, gridinfo_t *, LUstruct_t *, SCT_t *);
+extern int_t LDiagBlockRecvWait( int_t k, int_t* factored_U, MPI_Request *, gridinfo_t *);
 #if (MPI_VERSION>2)
-extern int_t IBcast_UDiagBlock(int_t k, double *ublk_ptr, int_t size,
-			       MPI_Request *, gridinfo_t *);
+extern int_t dIBcast_UDiagBlock(int_t k, double *ublk_ptr, int_t size,
+				MPI_Request *, gridinfo_t *);
 extern int_t IBcast_LDiagBlock(int_t k, double *lblk_ptr, int_t size,
 			       MPI_Request *, gridinfo_t *);
 #endif
 
     /* from trfCommWrapper.h */
-extern int_t DiagFactIBCast(int_t k,  int_t k0,
-			    double *BlockUFactor, double *BlockLFactor,
-			    int_t* IrecvPlcd_D, MPI_Request *, MPI_Request *,
-			    MPI_Request *, MPI_Request *, gridinfo_t *,
-			    superlu_dist_options_t *, double thresh,
-			    LUstruct_t *LUstruct, SuperLUStat_t *, int *info,
-			    SCT_t *, int tag_ub);
-extern int_t UPanelTrSolve( int_t k, double* BlockLFactor, double* bigV,
-			    int_t ldt, Ublock_info_t*, gridinfo_t *,
-			    LUstruct_t *, SuperLUStat_t *, SCT_t *);
+extern int_t dDiagFactIBCast(int_t k,  int_t k0,
+			     double *BlockUFactor, double *BlockLFactor,
+			     int_t* IrecvPlcd_D, MPI_Request *, MPI_Request *,
+			     MPI_Request *, MPI_Request *, gridinfo_t *,
+			     superlu_dist_options_t *, double thresh,
+			     LUstruct_t *LUstruct, SuperLUStat_t *, int *info,
+			     SCT_t *, int tag_ub);
+extern int_t dUPanelTrSolve( int_t k, double* BlockLFactor, double* bigV,
+			     int_t ldt, Ublock_info_t*, gridinfo_t *,
+			     LUstruct_t *, SuperLUStat_t *, SCT_t *);
 extern int_t Wait_LUDiagSend(int_t k, MPI_Request *, MPI_Request *,
 			     gridinfo_t *, SCT_t *);
-extern int_t LPanelUpdate(int_t k,  int_t* IrecvPlcd_D, int_t* factored_L,
-			  MPI_Request *, double* BlockUFactor, gridinfo_t *,
-			  LUstruct_t *, SCT_t *);
-extern int_t UPanelUpdate(int_t k, int_t* factored_U, MPI_Request *,
-			  double* BlockLFactor, double* bigV,
-			  int_t ldt, Ublock_info_t*, gridinfo_t *,
-			  LUstruct_t *, SuperLUStat_t *, SCT_t *);
-extern int_t IBcastRecvLPanel(int_t k, int_t k0, int* msgcnt,
-			      MPI_Request *, MPI_Request *,
-			      int_t* Lsub_buf, double* Lval_buf,
+extern int_t dLPanelUpdate(int_t k,  int_t* IrecvPlcd_D, int_t* factored_L,
+			   MPI_Request *, double* BlockUFactor, gridinfo_t *,
+			   LUstruct_t *, SCT_t *);
+extern int_t dUPanelUpdate(int_t k, int_t* factored_U, MPI_Request *,
+			   double* BlockLFactor, double* bigV,
+			   int_t ldt, Ublock_info_t*, gridinfo_t *,
+			   LUstruct_t *, SuperLUStat_t *, SCT_t *);
+extern int_t dIBcastRecvLPanel(int_t k, int_t k0, int* msgcnt,
+			       MPI_Request *, MPI_Request *,
+			       int_t* Lsub_buf, double* Lval_buf,
 			      int_t * factored, gridinfo_t *, LUstruct_t *,
 			      SCT_t *, int tag_ub);
-extern int_t IBcastRecvUPanel(int_t k, int_t k0, int* msgcnt, MPI_Request *,
-			      MPI_Request *, int_t* Usub_buf, double* Uval_buf,
-			      gridinfo_t *, LUstruct_t *, SCT_t *, int tag_ub);
-extern int_t WaitL(int_t k, int* msgcnt, int* msgcntU, MPI_Request *,
-		   MPI_Request *, gridinfo_t *, LUstruct_t *, SCT_t *);
-extern int_t WaitU(int_t k, int* msgcnt, MPI_Request *, MPI_Request *,
+extern int_t dIBcastRecvUPanel(int_t k, int_t k0, int* msgcnt, MPI_Request *,
+			       MPI_Request *, int_t* Usub_buf, double* Uval_buf,
+			       gridinfo_t *, LUstruct_t *, SCT_t *, int tag_ub);
+extern int_t dWaitL(int_t k, int* msgcnt, int* msgcntU, MPI_Request *,
+		    MPI_Request *, gridinfo_t *, LUstruct_t *, SCT_t *);
+extern int_t dWaitU(int_t k, int* msgcnt, MPI_Request *, MPI_Request *,
 		   gridinfo_t *, LUstruct_t *, SCT_t *);
-extern int_t LPanelTrSolve(int_t k, int_t* factored_L, double* BlockUFactor,
-			   gridinfo_t *, LUstruct_t *);
+extern int_t dLPanelTrSolve(int_t k, int_t* factored_L, double* BlockUFactor,
+			    gridinfo_t *, LUstruct_t *);
 
 
     /* from trfAux.h */
 extern int_t getNsupers(int, LUstruct_t *);
-extern int_t SchurComplementSetup(int_t k, int *msgcnt, Ublock_info_t*,
-				  Remain_info_t*, uPanelInfo_t *,
-				  lPanelInfo_t *, int_t*, int_t *, int_t *,
-				  double *bigU, int_t* Lsub_buf,
-				  double* Lval_buf, int_t* Usub_buf,
-				  double* Uval_buf, gridinfo_t *, LUstruct_t *);
-extern int_t SchurComplementSetupGPU(int_t k, msgs_t* msgs, packLUInfo_t*,
-				     int_t*, int_t*, int_t*, gEtreeInfo_t*,
-				     factNodelists_t*, scuBufs_t*,
-				     LUValSubBuf_t* LUvsb, gridinfo_t *,
-				     LUstruct_t *, HyP_t*);
-extern double* getBigV(int_t, int_t);
-extern double* getBigU(int_t, gridinfo_t *, LUstruct_t *);
+extern int_t dSchurComplementSetup(int_t k, int *msgcnt, Ublock_info_t*,
+				   Remain_info_t*, uPanelInfo_t *,
+				   lPanelInfo_t *, int_t*, int_t *, int_t *,
+				   double *bigU, int_t* Lsub_buf,
+				   double* Lval_buf, int_t* Usub_buf,
+				   double* Uval_buf, gridinfo_t *, LUstruct_t *);
+extern int_t dSchurComplementSetupGPU(int_t k, msgs_t* msgs, packLUInfo_t*,
+				      int_t*, int_t*, int_t*, gEtreeInfo_t*,
+				      factNodelists_t*, scuBufs_t*,
+				      LUValSubBuf_t* LUvsb, gridinfo_t *,
+				      LUstruct_t *, HyP_t*);
+extern double* dgetBigV(int_t, int_t);
+extern double* dgetBigU(int_t, gridinfo_t *, LUstruct_t *);
 extern int_t getBigUSize(int_t, gridinfo_t *, LUstruct_t *);
 // permutation from superLU default
 extern int_t* getPerm_c_supno(int_t nsupers, superlu_dist_options_t *,
 			      LUstruct_t *, gridinfo_t *);
+extern void getSCUweight(int_t nsupers, treeList_t* treeList, LUstruct_t *, gridinfo3d_t *);
 
     /* from treeFactorization.h */
-extern int_t LluBufInit(LUValSubBuf_t*, LUstruct_t *);
-extern int_t initScuBufs(int_t ldt, int_t num_threads, int_t nsupers,
-                  scuBufs_t* scuBufs,
-                  LUstruct_t* LUstruct,
-                  gridinfo_t * grid);
+extern int_t dLluBufInit(LUValSubBuf_t*, LUstruct_t *);
+extern int_t dinitScuBufs(int_t ldt, int_t num_threads, int_t nsupers,
+			  scuBufs_t*, LUstruct_t*, gridinfo_t *);
 extern int_t initPackLUInfo(int_t nsupers, packLUInfo_t* packLUInfo);
 
 // the generic tree factoring code 
@@ -971,7 +936,7 @@ extern int_t treeFactor(
     int *info
 );
 
-extern int_t sparseTreeFactor(
+extern int_t dsparseTreeFactor(
     int_t nnodes,          // number of nodes in the tree
     int_t *perm_c_supno,    // list of nodes in the order of factorization
     treeTopoInfo_t* treeTopoInfo,
@@ -1010,7 +975,7 @@ extern int_t denseTreeFactor(
     int *info
 );
 
-extern int_t sparseTreeFactor_ASYNC(
+extern int_t dsparseTreeFactor_ASYNC(
     sForest_t* sforest,
     commRequests_t **comReqss,    // lists of communication requests // size maxEtree level
     scuBufs_t *scuBufs,          // contains buffers for schur complement update
@@ -1029,9 +994,9 @@ extern int_t sparseTreeFactor_ASYNC(
     double thresh,  SCT_t *SCT, int tag_ub,
     int *info
 );
-extern LUValSubBuf_t** LluBufInitArr(int_t numLA, LUstruct_t *LUstruct);
-extern diagFactBufs_t** initDiagFactBufsArr(int_t mxLeafNode, int_t ldt, gridinfo_t* grid);
-extern int_t initDiagFactBufs(int_t ldt, diagFactBufs_t* dFBuf);
+extern LUValSubBuf_t** dLluBufInitArr(int_t numLA, LUstruct_t *LUstruct);
+extern diagFactBufs_t** dinitDiagFactBufsArr(int_t mxLeafNode, int_t ldt, gridinfo_t* grid);
+extern int_t dinitDiagFactBufs(int_t ldt, diagFactBufs_t* dFBuf);
 extern int_t sDiagFactIBCast(int_t k, diagFactBufs_t *dFBuf,
                       factStat_t *factStat,
                       commRequests_t *comReqs,

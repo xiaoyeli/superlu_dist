@@ -1451,3 +1451,97 @@ int_t partitionM( int_t* a, int_t l, int_t r, int_t lda, int_t dir, int_t dims) 
 	}
 }
 
+
+/*
+ * The following are from 3D code p3dcomm.c
+ */
+
+int_t AllocGlu(int_t n, int_t nsupers, LUstruct_t * LUstruct, gridinfo3d_t* grid3d)
+{
+    /*broadcasting Glu_persist*/
+    LUstruct->Glu_persist->xsup  = intMalloc_dist(nsupers+1); //INT_T_ALLOC(nsupers+1);
+    LUstruct->Glu_persist->supno = intMalloc_dist(n); //INT_T_ALLOC(n);
+    return 0;
+}
+
+int_t** getTreePerm( int_t* myTreeIdxs, int_t* myZeroTrIdxs,
+                     int_t* nodeCount, int_t** nodeList,
+                     int_t* perm_c_supno, int_t* iperm_c_supno,
+                     gridinfo3d_t* grid3d)
+{
+    int_t maxLvl = log2i(grid3d->zscp.Np) + 1;
+    
+    int_t** treePerm = SUPERLU_MALLOC(sizeof(int_t*)*maxLvl);
+    for (int_t lvl = 0; lvl < maxLvl; lvl++)
+	{
+	    // treePerm[lvl] = NULL;
+	    int_t treeId = myTreeIdxs[lvl];
+	    treePerm[lvl] = getPermNodeList(nodeCount[treeId], nodeList[treeId],
+	    		                    perm_c_supno, iperm_c_supno);
+	    
+	}
+    return treePerm;
+}
+
+int_t* getMyNodeCounts(int_t maxLvl, int_t* myTreeIdxs, int_t* gNodeCount)
+{
+    int_t* myNodeCount = INT_T_ALLOC(maxLvl);
+    for (int i = 0; i < maxLvl; ++i)
+    {
+	myNodeCount[i] = gNodeCount[myTreeIdxs[i]];
+    }
+    return myNodeCount;
+}
+
+/*chekc a vector vec of len across different process grids*/
+int_t checkIntVector3d(int_t* vec, int_t len,  gridinfo3d_t* grid3d)
+{
+    int_t nP = grid3d->zscp.Np;
+    int_t myGrid = grid3d->zscp.Iam;
+    int_t * buf = intMalloc_dist(len);
+    
+    if (!myGrid) {
+	for (int_t p = 1; p < nP; ++p)
+	    {
+		MPI_Status status;
+		MPI_Recv(buf, len, mpi_int_t, p, p, grid3d->zscp.comm, &status);
+
+		for (int_t i = 0; i < len ; ++i)  {
+		    /* code */
+	            if (buf[i] != vec[i]) {
+		        /* code */
+		        printf("Error occured at (%d) Loc %d \n", (int) p, (int) i);
+			exit(0);
+		    }
+		}
+	    }
+    }
+    else
+	{
+	    MPI_Send(vec, len, mpi_int_t, 0, myGrid, grid3d->zscp.comm);
+	}
+    
+    return 0;
+}
+
+/**
+ * reduce the states from all the two grids before prinitng it out
+ * See the defenition of enum PhaseType in superlu_enum_const.h
+ */
+int_t reduceStat(PhaseType PHASE, 
+	SuperLUStat_t *stat, gridinfo3d_t * grid3d)
+{
+    flops_t *ops = stat->ops;
+    
+    flops_t flopcnt;
+    MPI_Reduce(&ops[PHASE], &flopcnt, 1, MPI_FLOAT, MPI_SUM, 0, grid3d->zscp.comm);
+    
+    if (!grid3d->zscp.Iam)
+	{
+	    ops[PHASE] = flopcnt;
+	}
+    
+    return 0;
+}
+
+/*---- end from 3D code p3dcomm.c ----*/

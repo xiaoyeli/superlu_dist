@@ -323,7 +323,7 @@ int_t LpanelUpdate(int_t off0,  int_t nsupc, double* ublk_ptr, int_t ld_ujrow,
     unsigned long long t1 = _rdtsc();
 
 #define GT  32
-    #pragma omp parallel for
+#pragma omp parallel for
     for (int i = 0; i < CEILING(l, GT); ++i)
     {
         int_t off = i * GT;
@@ -563,7 +563,7 @@ void pdgstrf2_dtrsm
 
         if (U_diag_blk_send_req && iam == pkk)  /* Send the U block */
         {
-            ISend_UDiagBlock(k0, ublk_ptr, nsupc * nsupc, U_diag_blk_send_req,
+            dISend_UDiagBlock(k0, ublk_ptr, nsupc * nsupc, U_diag_blk_send_req,
 			     grid, tag_ub);
             U_diag_blk_send_req[krow] = (MPI_Request) TRUE; /* flag outstanding Isend */
         }
@@ -580,7 +580,7 @@ void pdgstrf2_dtrsm
          * but panel factorization of U(:,k) don't          *
          * ================================================ */
 
-        Recv_UDiagBlock( k0, ublk_ptr, (nsupc * nsupc),  krow, grid, SCT, tag_ub);
+        dRecv_UDiagBlock( k0, ublk_ptr, (nsupc * nsupc),  krow, grid, SCT, tag_ub);
 
         if (nsupr > 0)
         {
@@ -668,13 +668,10 @@ int_t Trs2_GatherTrsmScatter(int_t klst, int_t iukp, int_t rukp,
     for (int_t jj = iukp; jj < iukp + nsupc; ++jj)
     {
         ldu = SUPERLU_MAX( klst - usub[jj], ldu) ;
-
     }
 
     /*pack U block into a dense Block*/
     int_t ncols = Trs2_GatherU(iukp, rukp, klst, nsupc, ldu, usub, uval, tempv);
-
-
 
     /*now call dtrsm on packed dense block*/
     int_t luptr = (knsupc - ldu) * (nsupr + 1);
@@ -709,7 +706,10 @@ int_t Trs2_InitUblock_info(int_t klst, int_t nb,
         // Ublock_info[b].nsupc = nsupc;
 
         iukp += UB_DESCRIPTOR;
-        for (int_t j = 0; j < nsupc; ++j)
+	/* Sherry: can remove this loop for rukp
+	   rukp += usub[iukp-1];
+	 */
+       for (int_t j = 0; j < nsupc; ++j)
         {
             int_t segsize = klst - usub[iukp++];
             rukp += segsize;
@@ -721,15 +721,12 @@ int_t Trs2_InitUblock_info(int_t klst, int_t nb,
 
 #if 1 
 /*****************************************************************************
- * The following pdgstrf2_omp is in version 6 and earlier.
+ * The following pdgstrf2_omp is improved for KNL, since Version 5.2.0.
  *****************************************************************************/
 void pdgstrs2_omp
-(int_t k0, int_t k, Glu_persist_t * Glu_persist,
- gridinfo_t * grid, LocalLU_t * Llu, SuperLUStat_t * stat)
+(int_t k0, int_t k, Glu_persist_t * Glu_persist, gridinfo_t * grid,
+ LocalLU_t * Llu, Ublock_info_t *Ublock_info, SuperLUStat_t * stat)
 {
-#ifdef PI_DEBUG
-    printf("====Entering pdgstrs2==== \n");
-#endif
     int iam, pkk;
     int incx = 1;
     int nsupr;                /* number of rows in the block L(:,k) (LDA) */
@@ -777,6 +774,13 @@ void pdgstrs2_omp
     iukp = BR_HEADER;
     rukp = 0;
 
+    /* Sherry: can use the existing  Ublock_info[] array, call
+       Trs2_InitUblock_info();                                 */
+#undef USE_Ublock_info
+#ifdef USE_Ublock_info /** 4/19/2019 **/
+    /* Loop through all the row blocks. to get the iukp and rukp*/
+    Trs2_InitUblock_info(klst, nb, Ublock_info, usub, Glu_persist, stat );
+#else
     int* blocks_index_pointers = SUPERLU_MALLOC (3 * nb * sizeof(int));
     int* blocks_value_pointers = blocks_index_pointers + nb;
     int* nsupc_temp = blocks_value_pointers + nb;
@@ -789,6 +793,7 @@ void pdgstrs2_omp
 	nsupc_temp[b] = nsupc;
 	iukp += (UB_DESCRIPTOR + nsupc);  /* move to the next block */
     }
+#endif
 
     // Sherry: this version is more NUMA friendly compared to pdgstrf2_v2.c
     // https://stackoverflow.com/questions/13065943/task-based-programming-pragma-omp-task-versus-pragma-omp-parallel-for
@@ -796,11 +801,23 @@ void pdgstrs2_omp
     private(b,j,iukp,rukp,segsize)
     /* Loop through all the blocks in the row. */
     for (b = 0; b < nb; ++b) {
+#ifdef USE_Ublock_info
+	iukp = Ublock_info[b].iukp;
+	rukp = Ublock_info[b].rukp;
+#else
 	iukp = blocks_index_pointers[b];
 	rukp = blocks_value_pointers[b];
+#endif
 
         /* Loop through all the segments in the block. */
+#ifdef USE_Ublock_info
+	gb = usub[iukp];
+	nsupc = SuperSize( gb );
+	iukp += UB_DESCRIPTOR;
+        for (j = 0; j < nsupc; j++) {
+#else	
         for (j = 0; j < nsupc_temp[b]; j++) {
+#endif
             segsize = klst - usub[iukp++];
 	    if (segsize) {
 #pragma omp task default(shared) firstprivate(segsize,rukp) if (segsize > 30)
@@ -823,8 +840,10 @@ void pdgstrs2_omp
 /* #pragma omp taskwait */
     }  /* end for b ... */
 
+#ifndef USE_Ublock_info
     /* Deallocate memory */
     SUPERLU_FREE(blocks_index_pointers);
+#endif
 
 #if 0
     //#ifdef USE_VTUNE
@@ -834,9 +853,9 @@ void pdgstrs2_omp
 
 } /* pdgstrs2_omp */
 
-#else  /*==== Use the new version from Piyush ====*/
+#else  /*==== new version from Piyush ====*/
 
-void pdgstrs2_omp(int_t m, int_t k0, int_t k, int_t* Lsub_buf, 
+void pdgstrs2_omp(int_t k0, int_t k, int_t* Lsub_buf, 
 		  double *Lval_buf, Glu_persist_t *Glu_persist,
 		  gridinfo_t *grid, LocalLU_t *Llu, SuperLUStat_t *stat,
 		  Ublock_info_t *Ublock_info, double *bigV, int_t ldt, SCT_t *SCT)
@@ -859,10 +878,10 @@ void pdgstrs2_omp(int_t m, int_t k0, int_t k, int_t* Lsub_buf,
     double *lusup = Lval_buf;
 
     /* Loop through all the row blocks. to get the iukp and rukp*/
-    Trs2_InitUblock_info(klst, nb, Ublock_info, usub, Glu_persist, stat );
+    Trs2_InitUbloc_kinfo(klst, nb, Ublock_info, usub, Glu_persist, stat );
 
     /* Loop through all the row blocks. */
-    #pragma omp parallel for schedule(dynamic,2)
+#pragma omp parallel for schedule(dynamic,2)
     for (int_t b = 0; b < nb; ++b)
     {
         int_t thread_id = omp_get_thread_num();
@@ -874,7 +893,7 @@ void pdgstrs2_omp(int_t m, int_t k0, int_t k, int_t* Lsub_buf,
     } /* for b ... */
 
     SCT->PDGSTRS2_tl += (double) ( _rdtsc() - t1);
-} /* pdgstrs2_omp */
+} /* pdgstrs2_omp new version from Piyush */
 
 #endif
 

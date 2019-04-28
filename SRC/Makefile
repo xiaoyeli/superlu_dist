@@ -27,11 +27,8 @@
 #######################################################################
 include ../make.inc
 
-FACT3D = pdgssvx3d.o pdgstrf3d.o ancFactorization.o treeFactorization.o \
-	p3dcomm.o gather.o sec_structs.o trfCommWrapper.o trfAux.o \
-	communication_aux.o superlu_grid3d.o \
-	supernodal_etree.o supernodalForest.o xtrf3Dpartition.o	scatter.o
-#	pdgstrs_vecpar.o
+FACT3D = 	scatter.o
+#	pdgstrs_vecpar.o ancFactorization.o
 
 #  pddrive_params.o
 # scatter.o 
@@ -45,6 +42,9 @@ ALLAUX 	= sp_ienv.o etree.o sp_colorder.o get_perm_c.o \
 	  psymbfact.o psymbfact_util.o get_perm_c_parmetis.o mc64ad_dist.o \
 	  static_schedule.o xerr_dist.o smach_dist.o dmach_dist.o \
 	  superlu_dist_version.o TreeInterface.o
+# Following are from 3D code
+ALLAUX += superlu_grid3d.o supernodal_etree.o supernodalForest.o \
+	trfAux.o communication_aux.o treeFactorization.o sec_structs.o
 
 ifeq "${ACC}" "GPU"
 ALLAUX += cublas_utils.o
@@ -73,6 +73,10 @@ DPLUSRC = pdgssvx.o pdgssvx_ABglobal.o \
 	  pdgstrs.o pdgstrs1.o pdgstrs_lsum.o pdgstrs_Bglobal.o \
 	  pdgsrfs.o pdgsmv.o pdgsrfs_ABXglobal.o pdgsmv_AXglobal.o \
 	  dreadtriple_noheader.o $(FACT3D)
+# from 3D code
+DPLUSRC += pdgssvx3d.o pdgstrf3d.o dtreeFactorization.o \
+	dgather.o pd3dcomm.o dtrfAux.o dcommunication_aux.o dtrfCommWrapper.o
+
 #
 # Routines for double complex parallel SuperLU
 ZPLUSRC = pzgssvx.o pzgssvx_ABglobal.o \
@@ -83,6 +87,9 @@ ZPLUSRC = pzgssvx.o pzgssvx_ABglobal.o \
 	  pzgstrs.o pzgstrs1.o pzgstrs_lsum.o pzgstrs_Bglobal.o \
 	  pzgsrfs.o pzgsmv.o pzgsrfs_ABXglobal.o pzgsmv_AXglobal.o \
 	  zreadtriple_noheader.o
+# from 3D code
+DPLUSRC += pzgssvx3d.o pzgstrf3d.o ztreeFactorization.o \
+	zgather.o pz3dcomm.o ztrfAux.o zcommunication_aux.o ztrfCommWrapper.o
 
 all:  double complex16
 

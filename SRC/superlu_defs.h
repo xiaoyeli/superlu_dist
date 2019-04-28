@@ -348,7 +348,7 @@ typedef struct {
     int iam;              /* my process number in this grid */
     int_t nprow;          /* number of process rows */
     int_t npcol;          /* number of process columns */
-    int_t npdep;          /* number of process columns */
+    int_t npdep;          /* number of replication factor in Z-dimension  */
     gridinfo_t grid2d;    /* for using 2D functions */
 } gridinfo3d_t;
 
@@ -1196,7 +1196,7 @@ extern int_t initCommRequests(commRequests_t* comReqs, gridinfo_t * grid);
 extern int_t initFactStat(int_t nsupers, factStat_t* factStat);
 extern int_t initFactNodelists(int_t, int_t, int_t, factNodelists_t*);
 extern int_t initMsgs(msgs_t* msgs);
-extern int_t getNumLookAhead();
+extern int_t getNumLookAhead(superlu_dist_options_t*);
 extern commRequests_t** initCommRequestsArr(int_t mxLeafNode, int_t ldt, gridinfo_t* grid);
 extern msgs_t** initMsgsArr(int_t numLA);
 
@@ -1211,6 +1211,15 @@ extern int sort_U_info_elm( Ublock_info_t* Ublock_info, int n );
     /* from pdgstrs.h */
 extern void printTRStimer(xtrsTimer_t *xtrsTimer, gridinfo3d_t *grid3d);
 extern void initTRStimer(xtrsTimer_t *xtrsTimer, gridinfo_t *grid);
+
+    /* from p3dcomm.c */
+extern int_t** getTreePerm( int_t* myTreeIdxs, int_t* myZeroTrIdxs,
+                     int_t* nodeCount, int_t** nodeList,
+                     int_t* perm_c_supno, int_t* iperm_c_supno,
+                     gridinfo3d_t* grid3d);
+extern int_t* getMyNodeCounts(int_t maxLvl, int_t* myTreeIdxs, int_t* gNodeCount);
+extern int_t checkIntVector3d(int_t* vec, int_t len,  gridinfo3d_t* grid3d);
+extern int_t reduceStat(PhaseType PHASE, SuperLUStat_t *stat, gridinfo3d_t * grid3d);
 
 /*=====================*/
 
