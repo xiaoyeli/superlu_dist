@@ -16,6 +16,7 @@ at the top-level directory.
 #include "trfAux.h"
 #endif
 
+
 int_t getslu25D_enabled()
 {
     if ( getenv("SLU25D") != NULL)
@@ -334,7 +335,7 @@ int_t* getPerm_c_supno(int_t nsupers,
                     k = BC_HEADER;
                     krow = PROW( jb, grid );
                     if ( krow == myrow )  /* skip the diagonal block */
-                    {
+		    {
                         k += LB_DESCRIPTOR + index[k + 1];
                         i--;
                     }
@@ -1219,3 +1220,36 @@ void getSCUweight(int_t nsupers, treeList_t* treeList,
     SUPERLU_FREE(perm_u);
 
 } /* getSCUweight */
+
+int_t Trs2_InitUblock_info(int_t klst, int_t nb,
+			    Ublock_info_t *Ublock_info,
+			    int_t *usub,
+			    Glu_persist_t *Glu_persist, SuperLUStat_t *stat )
+{
+    int_t *xsup = Glu_persist->xsup;
+    int_t iukp, rukp;
+    iukp = BR_HEADER;
+    rukp = 0;
+
+    for (int_t b = 0; b < nb; ++b)
+    {
+        int_t gb = usub[iukp];
+        int_t nsupc = SuperSize (gb);
+
+        Ublock_info[b].iukp = iukp;
+        Ublock_info[b].rukp = rukp;
+        // Ublock_info[b].nsupc = nsupc;
+
+        iukp += UB_DESCRIPTOR;
+	/* Sherry: can remove this loop for rukp
+	   rukp += usub[iukp-1];
+	 */
+       for (int_t j = 0; j < nsupc; ++j)
+        {
+            int_t segsize = klst - usub[iukp++];
+            rukp += segsize;
+            stat->ops[FACT] += segsize * (segsize + 1);
+        }
+    }
+    return 0;
+}

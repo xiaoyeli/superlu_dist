@@ -425,10 +425,10 @@ int_t zSchurComplementSetupGPU(
         HyP->num_u_blks_Phi=0;
 	HyP->num_u_blks=0;
 
-        dRgather_L(k, lsub, lusup,  gEtreeInfo, Glu_persist, grid, HyP, myIperm, iperm_c_supno);
+        zRgather_L(k, lsub, lusup,  gEtreeInfo, Glu_persist, grid, HyP, myIperm, iperm_c_supno);
         if (HyP->Lnbrow + HyP->Rnbrow > 0)
         {
-            dRgather_U( k, 0, usub, uval, bigU,  gEtreeInfo, Glu_persist, grid, HyP, myIperm, iperm_c_supno, perm_u);
+            zRgather_U( k, 0, usub, uval, bigU,  gEtreeInfo, Glu_persist, grid, HyP, myIperm, iperm_c_supno, perm_u);
         }/*if(nbrow>0) */
 
     }

@@ -15,6 +15,7 @@ at the top-level directory.
 #include "trfCommWrapper.h"
 #endif
 
+#if 0 /******** Sherry: Remove extra layer of function calls.  *******/
 int_t sDiagFactIBCast(int_t k,  diagFactBufs_t *dFBuf,
                       factStat_t *factStat,
                       commRequests_t *comReqs,
@@ -180,6 +181,38 @@ int_t sSchurComplementSetup(int_t k, msgs_t* msgs,
 				 bigU, Lsub_buf, Lval_buf, Usub_buf, Uval_buf,
 				 grid, LUstruct);
 }
+int_t sLPanelTrSolve( int_t k,  diagFactBufs_t *dFBuf,
+                      factStat_t *factStat,
+                      commRequests_t *comReqs,
+                      gridinfo_t *grid,
+                      LUstruct_t *LUstruct, SCT_t *SCT)
+{
+    int_t * factored_L = factStat->factored_L;
+    double * BlockUFactor =  dFBuf->BlockUFactor;
+    dLPanelTrSolve( k, factored_L, BlockUFactor, grid, LUstruct);
+
+    return 0;
+}
+
+int_t sUPanelTrSolve( int_t k,
+                      int_t ldt,
+                      diagFactBufs_t *dFBuf,
+                      scuBufs_t* scuBufs,
+                      packLUInfo_t* packLUInfo,
+                      gridinfo_t *grid,
+                      LUstruct_t *LUstruct,
+                      SuperLUStat_t *stat, SCT_t *SCT)
+{
+    double* bigV = scuBufs->bigV;
+    Ublock_info_t* Ublock_info = packLUInfo->Ublock_info;
+    double * BlockLFactor =  dFBuf->BlockLFactor;
+
+    dUPanelTrSolve( k, BlockLFactor, bigV, ldt, Ublock_info, grid, LUstruct, stat, SCT);
+    return 0;
+}
+
+#endif /******** End removing extra layer of function calls.  *******/
+
 
 int_t initCommRequests(commRequests_t* comReqs, gridinfo_t * grid)
 {
@@ -310,19 +343,6 @@ int_t checkRecvUDiag(int_t k, commRequests_t *comReqs,
     return 1;
 }
 
-int_t sLPanelTrSolve( int_t k,  diagFactBufs_t *dFBuf,
-                      factStat_t *factStat,
-                      commRequests_t *comReqs,
-                      gridinfo_t *grid,
-                      LUstruct_t *LUstruct, SCT_t *SCT)
-{
-    int_t * factored_L = factStat->factored_L;
-    double * BlockUFactor =  dFBuf->BlockUFactor;
-    dLPanelTrSolve( k, factored_L, BlockUFactor, grid, LUstruct);
-
-    return 0;
-}
-
 int_t checkRecvLDiag(int_t k,
                      commRequests_t *comReqs,
                      gridinfo_t *grid,
@@ -347,20 +367,4 @@ int_t checkRecvLDiag(int_t k,
     return 1;
 }
 
-int_t sUPanelTrSolve( int_t k,
-                      int_t ldt,
-                      diagFactBufs_t *dFBuf,
-                      scuBufs_t* scuBufs,
-                      packLUInfo_t* packLUInfo,
-                      gridinfo_t *grid,
-                      LUstruct_t *LUstruct,
-                      SuperLUStat_t *stat, SCT_t *SCT)
-{
-    double* bigV = scuBufs->bigV;
-    Ublock_info_t* Ublock_info = packLUInfo->Ublock_info;
-    double * BlockLFactor =  dFBuf->BlockLFactor;
-
-    dUPanelTrSolve( k, BlockLFactor, bigV, ldt, Ublock_info, grid, LUstruct, stat, SCT);
-    return 0;
-}
 

@@ -40,7 +40,8 @@ void zgather_u(int_t num_u_blks,
 {
     // return;
     //  private(j,iukp,rukp,tempu, jb, nsupc,ljb,segsize,lead_zero, \
-    // jj, i) \
+    // jj, i)
+    doublecomplex zero = {0.0, 0.0};
 
 #pragma omp parallel for default (shared) schedule(dynamic)
     for (int_t j = 0; j < num_u_blks; ++j)
@@ -60,7 +61,7 @@ void zgather_u(int_t num_u_blks,
             if ( segsize )
             {
                 int_t lead_zero = ldu - segsize;
-                for (int_t i = 0; i < lead_zero; ++i) tempu[i] = 0.0;
+                for (int_t i = 0; i < lead_zero; ++i) tempu[i] = zero;
                 tempu += lead_zero;
                 for (int_t i = 0; i < segsize; ++i)
                 {

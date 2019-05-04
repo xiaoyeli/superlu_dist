@@ -88,7 +88,7 @@ ZPLUSRC = pzgssvx.o pzgssvx_ABglobal.o \
 	  pzgsrfs.o pzgsmv.o pzgsrfs_ABXglobal.o pzgsmv_AXglobal.o \
 	  zreadtriple_noheader.o
 # from 3D code
-DPLUSRC += pzgssvx3d.o pzgstrf3d.o ztreeFactorization.o \
+ZPLUSRC += pzgssvx3d.o pzgstrf3d.o ztreeFactorization.o \
 	zgather.o pz3dcomm.o ztrfAux.o zcommunication_aux.o ztrfCommWrapper.o
 
 all:  double complex16

@@ -9,7 +9,7 @@ The source code is distributed under BSD license, see the file License.txt
 at the top-level directory.
 */
 
-#include "superlu_ddefs.h"
+#include "superlu_zdefs.h"
 #include "cblas.h"
 #if 0
 #include "p3dcomm.h"
@@ -195,7 +195,7 @@ int_t zzSendLPanel(int_t k, int_t receiver,
 }
 
 
-int_t zzRecvLPanel(int_t k, int_t sender, double alpha, double beta,
+int_t zzRecvLPanel(int_t k, int_t sender, doublecomplex alpha, doublecomplex beta,
                     doublecomplex* Lval_buf,
                     LUstruct_t* LUstruct,  gridinfo3d_t* grid3d, SCT_t* SCT)
 {
@@ -230,8 +230,8 @@ int_t zzRecvLPanel(int_t k, int_t sender, double alpha, double beta,
 			     grid3d->zscp.comm, &status);
 		    
 		    /*reduce the updates*/
-		    cblas_dscal (len2, alpha, lnzval, 1);
-		    cblas_daxpy (len2, beta, Lval_buf, 1, lnzval, 1);
+		    cblas_zscal (len2, (void*) &alpha, lnzval, 1);
+		    cblas_zaxpy (len2, (void*) &beta, Lval_buf, 1, lnzval, 1);
 		}
 	}
 
@@ -271,7 +271,7 @@ int_t zzSendUPanel(int_t k, int_t receiver,
 }
 
 
-int_t zzRecvUPanel(int_t k, int_t sender, double alpha, double beta,
+int_t zzRecvUPanel(int_t k, int_t sender, doublecomplex alpha, doublecomplex beta,
                     doublecomplex* Uval_buf, LUstruct_t* LUstruct,
                     gridinfo3d_t* grid3d, SCT_t* SCT)
 {
@@ -299,8 +299,8 @@ int_t zzRecvUPanel(int_t k, int_t sender, double alpha, double beta,
 			     grid3d->zscp.comm, &status);
 		    
 		    /*reduce the updates*/
-		    cblas_dscal (lenv, alpha, unzval, 1);
-		    cblas_daxpy (lenv, beta, Uval_buf, 1, unzval, 1);
+		    cblas_zscal (lenv, (void*) &alpha, unzval, 1);
+		    cblas_zaxpy (lenv, (void*) &beta, Uval_buf, 1, unzval, 1);
 		}
 	}
     return 0;
@@ -433,7 +433,7 @@ int_t zscatter3dUPanels(int_t nsupers,
 #ifdef MPI_MALLOC
 		MPI_DATATYPE_ALLOC(uval, lenv);
 #else
-	        uval = DOUBLE_ALLOC(lenv);
+	        uval = doublecomplexMalloc_dist(lenv); //DOUBLE_ALLOC(lenv);
 #endif
 	    /*broadcast uval*/
 	    MPI_Bcast( uval, lenv, SuperLU_MPI_DOUBLE_COMPLEX, 0,  grid3d->zscp.comm);
@@ -691,6 +691,7 @@ int_t zreduceAncestors3d(int_t sender, int_t receiver,
                         doublecomplex* Lval_buf, doublecomplex* Uval_buf,
                         LUstruct_t* LUstruct,  gridinfo3d_t* grid3d, SCT_t* SCT)
 {
+    doublecomplex alpha = {1.0, 0.0}, beta = {1.0, 0.0};
     int_t myGrid = grid3d->zscp.Iam;
     
     /*first setting the L blocks to zero*/
@@ -704,9 +705,10 @@ int_t zreduceAncestors3d(int_t sender, int_t receiver,
 		    zzSendUPanel(jb, receiver, LUstruct,  grid3d, SCT);
 		}
 	    else {
-	        zzRecvLPanel(jb, sender, 1.0, 1.0, Lval_buf, LUstruct, grid3d, SCT);
-		zzRecvUPanel(jb, sender, 1.0, 1.0,
-				Uval_buf, LUstruct,  grid3d, SCT);
+	        zzRecvLPanel(jb, sender, alpha, beta, Lval_buf,
+                                LUstruct, grid3d, SCT);
+		zzRecvUPanel(jb, sender, alpha, beta, Uval_buf,
+                                LUstruct,  grid3d, SCT);
 	    }
 	    
 	}
@@ -720,6 +722,7 @@ int_t zgatherFactoredLU(int_t sender, int_t receiver,
                         LUValSubBuf_t*LUvsb,
                         LUstruct_t* LUstruct, gridinfo3d_t* grid3d, SCT_t* SCT)
 {
+    doublecomplex alpha = {0.0, 0.0}, beta = {1.0, 0.0};
     doublecomplex * Lval_buf  = LUvsb->Lval_buf;
     doublecomplex * Uval_buf  = LUvsb->Uval_buf;
     int_t myGrid = grid3d->zscp.Iam;
@@ -734,10 +737,10 @@ int_t zgatherFactoredLU(int_t sender, int_t receiver,
 		}
 	    else
 		{
-		    zzRecvLPanel(jb, sender, 0.0, 1.0, Lval_buf, LUstruct,
-        	    		     grid3d, SCT);
-		    zzRecvUPanel(jb, sender, 0.0, 1.0, Uval_buf, LUstruct,
-		    		     grid3d, SCT);
+		    zzRecvLPanel(jb, sender, alpha, beta, Lval_buf,
+                                     LUstruct, grid3d, SCT);
+		    zzRecvUPanel(jb, sender, alpha, beta, Uval_buf,
+                                     LUstruct, grid3d, SCT);
 		}
 	}
     return 0;

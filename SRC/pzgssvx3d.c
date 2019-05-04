@@ -598,7 +598,7 @@ pzgssvx3d (superlu_dist_options_t * options, SuperMatrix * A,
 		     "Extra precise iterative refinement yet to support.");
 	}
 	else if (A->nrow != A->ncol || A->nrow < 0 || A->Stype != SLU_NR_loc
-		 || A->Dtype != SLU_D || A->Mtype != SLU_GE)
+		 || A->Dtype != SLU_Z || A->Mtype != SLU_GE)
 	    *info = -2;
 	else if (ldb < m_loc)
 	    *info = -5;
@@ -606,7 +606,7 @@ pzgssvx3d (superlu_dist_options_t * options, SuperMatrix * A,
 	    *info = -6;
 	if (*info) {
 	    i = -(*info);
-	    pxerr_dist ("pdgssvx", grid, -*info);
+	    pxerr_dist ("pzgssvx3d", grid, -*info);
 	    return;
 	}
 	
@@ -636,7 +636,7 @@ pzgssvx3d (superlu_dist_options_t * options, SuperMatrix * A,
 	/********/
 	
 #if ( DEBUGlevel>=1 )
-	CHECK_MALLOC (iam, "Enter pdgssvx()");
+	CHECK_MALLOC (iam, "Enter pzgssvx3d()");
 #endif
 	
 	/* Not factored & ask for equilibration */
@@ -645,20 +645,20 @@ pzgssvx3d (superlu_dist_options_t * options, SuperMatrix * A,
 	    switch (ScalePermstruct->DiagScale)
 		{
 		case NOEQUIL:
-		    if (!(R = (doublecomplex *) doublecomplexMalloc_dist (m)))
+		    if (!(R = (double *) doubleMalloc_dist (m)))
 			ABORT ("Malloc fails for R[].");
-		    if (!(C = (doublecomplex *) doublecomplexMalloc_dist (n)))
+		    if (!(C = (double *) doubleMalloc_dist (n)))
 			ABORT ("Malloc fails for C[].");
 		    ScalePermstruct->R = R;
 		    ScalePermstruct->C = C;
 		    break;
 		case ROW:
-		    if (!(C = (doublecomplex *) doublecomplexMalloc_dist (n)))
+		    if (!(C = (double *) doubleMalloc_dist (n)))
 			ABORT ("Malloc fails for C[].");
 		    ScalePermstruct->C = C;
 		    break;
 		case COL:
-		    if (!(R = (doublecomplex *) doublecomplexMalloc_dist (m)))
+		    if (!(R = (double *) doubleMalloc_dist (m)))
 			ABORT ("Malloc fails for R[].");
 		    ScalePermstruct->R = R;
 		    break;
@@ -778,7 +778,7 @@ pzgssvx3d (superlu_dist_options_t * options, SuperMatrix * A,
 		GA_mem_use = (nnz + n + 1) * sizeof (int_t);
 		
 		if (need_value) {
-		    a_GA = (double *) GAstore->nzval;
+		    a_GA = (doublecomplex *) GAstore->nzval;
 		    GA_mem_use += nnz * sizeof (double);
 		}
 		else
@@ -810,7 +810,7 @@ pzgssvx3d (superlu_dist_options_t * options, SuperMatrix * A,
 			
 			if ( iam==0 ) {
 			    /* Process 0 finds a row permutation */
-			    iinfo = dldperm_dist (job, m, nnz, colptr, rowind, a_GA,
+			    iinfo = zldperm_dist (job, m, nnz, colptr, rowind, a_GA,
 						  perm_r, R1, C1);
 			    MPI_Bcast( &iinfo, 1, mpi_int_t, 0, grid->comm );
 			    if ( iinfo == 0 ) {
@@ -955,7 +955,7 @@ pzgssvx3d (superlu_dist_options_t * options, SuperMatrix * A,
 		*(unsigned char *) norm = '1';
 	    else
 		*(unsigned char *) norm = 'I';
-	    anorm = pdlangs (norm, A, grid);
+	    anorm = pzlangs (norm, A, grid);
 #if ( PRNTlevel>=1 )
 	    if (!iam) {
 		printf (".. anorm %e\n", anorm); fflush(stdout);
@@ -1011,9 +1011,8 @@ pzgssvx3d (superlu_dist_options_t * options, SuperMatrix * A,
 		    fstVtxSep[2 * noDomains - 2] = 0;
 		} else if (permc_spec != PARMETIS) {
 		    /* same as before */
-		    printf
-			("{%4d,%4d}: pdgssvx: invalid ColPerm option when ParSymbfact is used\n",
-			 (int) MYROW (grid->iam, grid), (int) MYCOL (grid->iam, grid));
+		    printf("{%4d,%4d}: pzgssvx3d: invalid ColPerm option when ParSymbfact is used\n",
+			 (int) MYROW(grid->iam, grid), (int) MYCOL(grid->iam, grid));
 		}
 	    } /* end ... use parmetis */
 
@@ -1146,7 +1145,7 @@ pzgssvx3d (superlu_dist_options_t * options, SuperMatrix * A,
 		   NOTE: the row permutation Pc*Pr is applied internally in the
 		   distribution routine. */
 		t = SuperLU_timer_ ();
-		dist_mem_use = pddistribute (Fact, n, A, ScalePermstruct,
+		dist_mem_use = pzdistribute (Fact, n, A, ScalePermstruct,
 					     Glu_freeable, LUstruct, grid);
 		stat->utime[DIST] = SuperLU_timer_ () - t;
 		
@@ -1165,7 +1164,7 @@ pzgssvx3d (superlu_dist_options_t * options, SuperMatrix * A,
 		    colind[j] = perm_c[colind[j]];
 		
 		t = SuperLU_timer_ ();
-		dist_mem_use = ddist_psymbtonum (Fact, n, A, ScalePermstruct,
+		dist_mem_use = zdist_psymbtonum (Fact, n, A, ScalePermstruct,
 						 &Pslu_freeable, LUstruct, grid);
 		if (dist_mem_use > 0)
 		    ABORT ("Not enough memory available for dist_psymbtonum\n");
@@ -1371,7 +1370,7 @@ pzgssvx3d (superlu_dist_options_t * options, SuperMatrix * A,
 			if (options->RefineInitialized == NO || Fact == DOFACT) {
 			    /* All these cases need to re-initialize gsmv structure */
 			    if (options->RefineInitialized)
-				pdgsmv_finalize (SOLVEstruct->gsmv_comm);
+				pzgsmv_finalize (SOLVEstruct->gsmv_comm);
 			    pzgsmv_init (A, SOLVEstruct->row_to_proc, grid,
 					 SOLVEstruct->gsmv_comm);
 
@@ -1385,7 +1384,7 @@ pzgssvx3d (superlu_dist_options_t * options, SuperMatrix * A,
 			    options->RefineInitialized = YES;
 			}
 			else if (Fact == SamePattern || Fact == SamePattern_SameRowPerm) {
-			    double at;
+			    doublecomplex at;
 			    int_t k, jcol, p;
 			    /* Swap to beginning the part of A corresponding to the
 			       local part of X, as was done in pdgsmv_init() */

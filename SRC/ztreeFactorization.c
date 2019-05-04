@@ -19,9 +19,9 @@ int_t zLluBufInit(LUValSubBuf_t* LUvsb, LUstruct_t *LUstruct)
 {
     LocalLU_t *Llu = LUstruct->Llu;
     LUvsb->Lsub_buf = intMalloc_dist(Llu->bufmax[0]); //INT_T_ALLOC(Llu->bufmax[0]);
-    LUvsb->Lval_buf = doubleMalloc_dist(Llu->bufmax[1]); //DOUBLE_ALLOC(Llu->bufmax[1]);
+    LUvsb->Lval_buf = doublecomplexMalloc_dist(Llu->bufmax[1]); //DOUBLE_ALLOC(Llu->bufmax[1]);
     LUvsb->Usub_buf = intMalloc_dist(Llu->bufmax[2]); //INT_T_ALLOC(Llu->bufmax[2]);
-    LUvsb->Uval_buf = doubleMalloc_dist(Llu->bufmax[3]); //DOUBLE_ALLOC(Llu->bufmax[3]);
+    LUvsb->Uval_buf = doublecomplexMalloc_dist(Llu->bufmax[3]); //DOUBLE_ALLOC(Llu->bufmax[3]);
     return 0;
 }
 
@@ -60,14 +60,14 @@ int_t zinitScuBufs(int_t ldt, int_t num_threads, int_t nsupers,
                   LUstruct_t* LUstruct,
                   gridinfo_t * grid)
 {
-    scuBufs->bigV = dgetBigV(ldt, num_threads);
-    scuBufs->bigU = dgetBigU(nsupers, grid, LUstruct);
+    scuBufs->bigV = zgetBigV(ldt, num_threads);
+    scuBufs->bigU = zgetBigU(nsupers, grid, LUstruct);
     return 0;
 }
-int_t dinitDiagFactBufs(int_t ldt, diagFactBufs_t* dFBuf)
+int_t zinitDiagFactBufs(int_t ldt, diagFactBufs_t* dFBuf)
 {
-    dFBuf->BlockUFactor = doubleMalloc_dist(ldt * ldt); //DOUBLE_ALLOC( ldt * ldt);
-    dFBuf->BlockLFactor = doubleMalloc_dist(ldt * ldt); //DOUBLE_ALLOC( ldt * ldt);
+    dFBuf->BlockUFactor = doublecomplexMalloc_dist(ldt * ldt); //DOUBLE_ALLOC( ldt * ldt);
+    dFBuf->BlockLFactor = doublecomplexMalloc_dist(ldt * ldt); //DOUBLE_ALLOC( ldt * ldt);
     return 0;
 }
 
@@ -415,7 +415,7 @@ int_t zsparseTreeFactor_ASYNC(
 		   comReqss[offset]->recv_requ, grid, LUstruct, SCT);
 #endif
             double tsch = SuperLU_timer_();
-            int_t LU_nonempty = dSchurComplementSetupGPU(k,
+            int_t LU_nonempty = zSchurComplementSetupGPU(k,
 							 msgss[offset], packLUInfo,
 							 myIperm, gIperm_c_supno, 
 							 perm_c_supno, gEtreeInfo,

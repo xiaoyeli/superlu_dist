@@ -7,20 +7,71 @@ All rights reserved.
 
 The source code is distributed under BSD license, see the file License.txt
 at the top-level directory.
-
 */
+
 
 /*! @file
  * \brief Performs panel LU factorization.
  *
  * <pre>
- * -- Distributed SuperLU routine (version 5.2) --
+ * -- Distributed SuperLU routine (version 7.0) --
  * Lawrence Berkeley National Lab, Univ. of California Berkeley.
  * August 15, 2014
  *
  * Modified:
  *   September 30, 2017
- *   March 31, 2019  version 7.0.0
+ *   May 5, 2019 version 7.0.0
+ *
+ * <pre>
+ * Purpose
+ * =======
+ *   Panel factorization -- block column k
+ *
+ *   Factor diagonal and subdiagonal blocks and test for exact singularity.
+ *   Only the column processes that own block column *k* participate
+ *   in the work.
+ *
+ * Arguments
+ * =========
+ * options (input) superlu_dist_options_t* (global)
+ *         The structure defines the input parameters to control
+ *         how the LU decomposition will be performed.
+ *
+ * k0     (input) int (global)
+ *        Counter of the next supernode to be factorized.
+ *
+ * k      (input) int (global)
+ *        The column number of the block column to be factorized.
+ *
+ * thresh (input) double (global)
+ *        The threshold value = s_eps * anorm.
+ *
+ * Glu_persist (input) Glu_persist_t*
+ *        Global data structures (xsup, supno) replicated on all processes.
+ *
+ * grid   (input) gridinfo_t*
+ *        The 2D process mesh.
+ *
+ * Llu    (input/output) LocalLU_t*
+ *        Local data structures to store distributed L and U matrices.
+ *
+ * U_diag_blk_send_req (input/output) MPI_Request*
+ *        List of send requests to send down the diagonal block of U.
+ *
+ * tag_ub (input) int
+ *        Upper bound of MPI tag values.
+ *
+ * stat   (output) SuperLUStat_t*
+ *        Record the statistics about the factorization.
+ *        See SuperLUStat_t structure defined in util.h.
+ *
+ * info   (output) int*
+ *        = 0: successful exit
+ *        < 0: if info = -i, the i-th argument had an illegal value
+ *        > 0: if info = i, U(i,i) is exactly zero. The factorization has
+ *             been completed, but the factor U is exactly singular,
+ *             and division by zero will occur if it is used to solve a
+ *             system of equations.
  * </pre>
  */
 
@@ -97,8 +148,8 @@ pdgstrf2_trsm
     int cols_left, iam, l, pkk, pr;
     int incx = 1, incy = 1;
 
-    int nsupr;                /* number of rows in the block (LDA) */
-    int nsupc;                /* number of columns in the block */
+    int nsupr;            /* number of rows in the block (LDA) */
+    int nsupc;            /* number of columns in the block */
     int luptr;
     int_t i, myrow, krow, j, jfst, jlst, u_diag_cnt;
     int_t *xsup = Glu_persist->xsup;
@@ -310,16 +361,15 @@ pdgstrf2_trsm
 
 }  /* PDGSTRF2_trsm */
 
-
 /*****************************************************************************
  * The following functions are for the new pdgstrf2_dtrsm in the 3D code.
  *****************************************************************************/
-
+static
 int_t LpanelUpdate(int_t off0,  int_t nsupc, double* ublk_ptr, int_t ld_ujrow,
                    double* lusup, int_t nsupr, SCT_t* SCT)
 {
     int_t l = nsupr - off0;
-
+    double alpha = 1.0;
     unsigned long long t1 = _rdtsc();
 
 #define GT  32
@@ -329,24 +379,22 @@ int_t LpanelUpdate(int_t off0,  int_t nsupc, double* ublk_ptr, int_t ld_ujrow,
         int_t off = i * GT;
         int_t len = SUPERLU_MIN(GT, l - i * GT);
         cblas_dtrsm (CblasColMajor, CblasRight, CblasUpper, CblasNoTrans, CblasNonUnit,
-                     len, nsupc, 1.0, ublk_ptr, ld_ujrow, &lusup[off0 + off], nsupr);
+                     len, nsupc, alpha, ublk_ptr, ld_ujrow, &lusup[off0 + off], nsupr);
     }
 
     t1 = _rdtsc() - t1;
-
 
     SCT->trf2_flops += (double) l * (double)nsupc * (double)nsupc;
     SCT->trf2_time += t1;
     SCT->L_PanelUpdate_tl += t1;
     return 0;
-
 }
 
 #pragma GCC push_options
 #pragma GCC optimize ("O0")
 /*factorizes the diagonal block; called from process that owns the (k,k) block*/
 void Local_Dgstrf2(superlu_dist_options_t *options, int_t k, double thresh,
-                   double *BlockUFactor, /*factored U is over writen here*/
+                   double *BlockUFactor, /*factored U is overwritten here*/
                    Glu_persist_t *Glu_persist, gridinfo_t *grid, LocalLU_t *Llu,
                    SuperLUStat_t *stat, int *info, SCT_t* SCT)
 {
@@ -377,30 +425,31 @@ void Local_Dgstrf2(superlu_dist_options_t *options, int_t k, double thresh,
 
     for (int_t j = 0; j < jlst - jfst; ++j)   /* for each column in panel */
     {
-
         /* Diagonal pivot */
         int_t i = luptr;
-        if (options->ReplaceTinyPivot == YES || lusup[i] == 0.0)
+        /* Not to replace zero pivot.  */
+        if (options->ReplaceTinyPivot == YES && lusup[i] != 0.0)
         {
-            if (fabs (lusup[i]) < thresh)   /* Diagonal */
-            {
+            if (fabs (lusup[i]) < thresh) {  /* Diagonal */
 
+#if ( PRNTlevel>=2 )
+                    printf ("(%d) .. col %d, tiny pivot %e  ",
+                            iam, jfst + j, lusup[i]);
+#endif
                 /* Keep the new diagonal entry with the same sign. */
-                if (lusup[i] < 0)
-                    lusup[i] = -thresh;
-                else
-                    lusup[i] = thresh;
+                if (lusup[i] < 0) lusup[i] = -thresh;
+                else lusup[i] = thresh;
+#if ( PRNTlevel>=2 )
+                    printf ("replaced by %e\n", lusup[i]);
+#endif
                 ++(stat->TinyPivots);
             }
         }
-
-
 
         for (int_t l = 0; l < cols_left; ++l, i += nsupr, ++u_diag_cnt)
         {
             int_t st = j * ld_ujrow + j;
             ublk_ptr[st + l * ld_ujrow] = lusup[i]; /* copy one row of U */
-
         }
 
         if (ujrow[0] == zero)   /* Test for singularity. */
@@ -409,7 +458,8 @@ void Local_Dgstrf2(superlu_dist_options_t *options, int_t k, double thresh,
         }
         else                /* Scale the j-th column. */
         {
-            double temp = 1.0 / ujrow[0];
+            double temp;
+            temp = 1.0 / ujrow[0];
             for (int_t i = luptr + 1; i < luptr - j + nsupc; ++i)
                 lusup[i] *= temp;
             stat->ops[FACT] += nsupc - j - 1;
@@ -421,15 +471,15 @@ void Local_Dgstrf2(superlu_dist_options_t *options, int_t k, double thresh,
             /*following must be int*/
             int_t l = nsupc - j - 1;
 
-
+	    /* Rank-1 update */
             cblas_dger (CblasColMajor, l, cols_left, alpha, &lusup[luptr + 1], incx,
                         &ujrow[ld_ujrow], incy, &lusup[luptr + nsupr + 1],
                         nsupr);
             stat->ops[FACT] += 2 * l * cols_left;
         }
 
-        ujrow = ujrow + ld_ujrow + 1;
-        luptr += nsupr + 1; /* move to next column */
+        ujrow = ujrow + ld_ujrow + 1; /* move to next row of U */
+        luptr += nsupr + 1;           /* move to next column */
 
     }                       /* for column j ...  first loop */
 
@@ -501,7 +551,7 @@ void Local_Dgstrf2(superlu_dist_options_t *options, int_t k, double thresh,
  *
  * </pre>
  */
-void pdgstrf2_dtrsm
+void pdgstrf2_xtrsm
 (superlu_dist_options_t *options, int_t nsupers,
  int_t k0, int_t k, double thresh, Glu_persist_t *Glu_persist,
  gridinfo_t *grid, LocalLU_t *Llu, MPI_Request *U_diag_blk_send_req,
@@ -549,17 +599,14 @@ void pdgstrf2_dtrsm
     {
         /* There are pending sends - wait for all Isend to complete */
         Wait_UDiagBlockSend(U_diag_blk_send_req, grid, SCT);
-
     }
 
     if (iam == pkk)             /* diagonal process */
     {
-
         /*factorize the diagonal block*/
         Local_Dgstrf2(options, k, thresh, Llu->ujrow, Glu_persist,
                       grid, Llu, stat, info, SCT);
         ublk_ptr = ujrow = Llu->ujrow;
-
 
         if (U_diag_blk_send_req && iam == pkk)  /* Send the U block */
         {
@@ -569,7 +616,6 @@ void pdgstrf2_dtrsm
         }
 
         LpanelUpdate(nsupc,  nsupc, ublk_ptr, ld_ujrow, lusup, nsupr, SCT);
-
     }
     else                        /* non-diagonal process */
     {
@@ -588,7 +634,7 @@ void pdgstrf2_dtrsm
         }
     } /* end if pkk ... */
 
-} /* pdgstrf2_dtrsm */
+} /* pdgstrf2_xtrsm */
 
 /*****************************************************************************
  * The following functions are for the new pdgstrs2_omp in the 3D code.
@@ -596,11 +642,12 @@ void pdgstrf2_dtrsm
 
 /* PDGSTRS2 helping kernels*/
 
-int_t Trs2_GatherU(int_t iukp, int_t rukp, int_t klst,
-                   int_t nsupc, int_t ldu,
-                   int_t *usub,
-                   double* uval, double *tempv)
+int_t dTrs2_GatherU(int_t iukp, int_t rukp, int_t klst,
+		    int_t nsupc, int_t ldu,
+		    int_t *usub,
+		    double* uval, double *tempv)
 {
+    double zero = 0.0;
     int_t ncols = 0;
     for (int_t jj = iukp; jj < iukp + nsupc; ++jj)
     {
@@ -608,7 +655,7 @@ int_t Trs2_GatherU(int_t iukp, int_t rukp, int_t klst,
         if ( segsize )
         {
             int_t lead_zero = ldu - segsize;
-            for (int_t i = 0; i < lead_zero; ++i) tempv[i] = 0.0;
+            for (int_t i = 0; i < lead_zero; ++i) tempv[i] = zero;
             tempv += lead_zero;
             for (int_t i = 0; i < segsize; ++i)
                 tempv[i] = uval[rukp + i];
@@ -617,14 +664,12 @@ int_t Trs2_GatherU(int_t iukp, int_t rukp, int_t klst,
             ncols++;
         }
     }
-
     return ncols;
 }
 
-int_t Trs2_ScatterU(int_t iukp, int_t rukp, int_t klst,
-                    int_t nsupc, int_t ldu,
-                    int_t *usub,
-                    double* uval, double *tempv)
+int_t dTrs2_ScatterU(int_t iukp, int_t rukp, int_t klst,
+		     int_t nsupc, int_t ldu,
+		     int_t *usub, double* uval, double *tempv)
 {
     for (int_t jj = 0; jj < nsupc; ++jj)
     {
@@ -635,26 +680,21 @@ int_t Trs2_ScatterU(int_t iukp, int_t rukp, int_t klst,
             tempv += lead_zero;
             for (int i = 0; i < segsize; ++i)
             {
-
                 uval[rukp + i] = tempv[i];
-
             }
             tempv += segsize;
             rukp += segsize;
-
         }
-
-
     } /*for jj=0:nsupc */
     return 0;
 }
 
-int_t Trs2_GatherTrsmScatter(int_t klst, int_t iukp, int_t rukp,
-                             int_t *usub,
-                             double* uval, double *tempv,
-                             int_t knsupc, int_t nsupr, double*lusup,
-                             Glu_persist_t *Glu_persist)    /*glupersist for xsup for supersize*/
+int_t dTrs2_GatherTrsmScatter(int_t klst, int_t iukp, int_t rukp,
+			      int_t *usub, double *uval, double *tempv,
+			      int_t knsupc, int_t nsupr, double *lusup,
+			      Glu_persist_t *Glu_persist)    /*glupersist for xsup for supersize*/
 {
+    double alpha = 1.0;
     int_t *xsup = Glu_persist->xsup;
     // int_t iukp = Ublock_info.iukp;
     // int_t rukp = Ublock_info.rukp;
@@ -671,55 +711,23 @@ int_t Trs2_GatherTrsmScatter(int_t klst, int_t iukp, int_t rukp,
     }
 
     /*pack U block into a dense Block*/
-    int_t ncols = Trs2_GatherU(iukp, rukp, klst, nsupc, ldu, usub, uval, tempv);
+    int_t ncols = dTrs2_GatherU(iukp, rukp, klst, nsupc, ldu, usub,
+    	                           uval, tempv);
 
     /*now call dtrsm on packed dense block*/
     int_t luptr = (knsupc - ldu) * (nsupr + 1);
     // if(ldu>nsupr) printf("nsupr %d ldu %d\n",nsupr,ldu );
     cblas_dtrsm (CblasColMajor, CblasLeft, CblasLower, CblasNoTrans, CblasUnit,
-                 ldu, ncols, 1.0, &lusup[luptr], nsupr, tempv, ldu);
+                 ldu, ncols, alpha, &lusup[luptr], nsupr, tempv, ldu);
 
     /*now scatter the output into sparse U block*/
-    Trs2_ScatterU(iukp, rukp, klst, nsupc, ldu, usub, uval, tempv);
+    dTrs2_ScatterU(iukp, rukp, klst, nsupc, ldu, usub, uval, tempv);
 
-    return 0;
-
-}
-
-int_t Trs2_InitUblock_info(int_t klst, int_t nb,
-                           Ublock_info_t *Ublock_info,
-                           int_t *usub,
-                           Glu_persist_t *Glu_persist, SuperLUStat_t *stat )
-{
-    int_t *xsup = Glu_persist->xsup;
-    int_t iukp, rukp;
-    iukp = BR_HEADER;
-    rukp = 0;
-
-    for (int_t b = 0; b < nb; ++b)
-    {
-        int_t gb = usub[iukp];
-        int_t nsupc = SuperSize (gb);
-
-        Ublock_info[b].iukp = iukp;
-        Ublock_info[b].rukp = rukp;
-        // Ublock_info[b].nsupc = nsupc;
-
-        iukp += UB_DESCRIPTOR;
-	/* Sherry: can remove this loop for rukp
-	   rukp += usub[iukp-1];
-	 */
-       for (int_t j = 0; j < nsupc; ++j)
-        {
-            int_t segsize = klst - usub[iukp++];
-            rukp += segsize;
-            stat->ops[FACT] += segsize * (segsize + 1);
-        }
-    }
     return 0;
 }
 
 #if 1 
+
 /*****************************************************************************
  * The following pdgstrf2_omp is improved for KNL, since Version 5.2.0.
  *****************************************************************************/
@@ -727,6 +735,9 @@ void pdgstrs2_omp
 (int_t k0, int_t k, Glu_persist_t * Glu_persist, gridinfo_t * grid,
  LocalLU_t * Llu, Ublock_info_t *Ublock_info, SuperLUStat_t * stat)
 {
+#ifdef PI_DEBUG
+    printf("====Entering pdgstrs2==== \n");
+#endif
     int iam, pkk;
     int incx = 1;
     int nsupr;                /* number of rows in the block L(:,k) (LDA) */
@@ -834,7 +845,9 @@ void pdgstrs2_omp
 #endif
 		} /* end task */
 		rukp += segsize;
+#ifndef USE_Ublock_info
 		stat->ops[FACT] += segsize * (segsize + 1);
+#endif
 	    } /* end if segsize > 0 */
 	} /* end for j in parallel ... */
 /* #pragma omp taskwait */
@@ -878,7 +891,7 @@ void pdgstrs2_omp(int_t k0, int_t k, int_t* Lsub_buf,
     double *lusup = Lval_buf;
 
     /* Loop through all the row blocks. to get the iukp and rukp*/
-    Trs2_InitUbloc_kinfo(klst, nb, Ublock_info, usub, Glu_persist, stat );
+    Trs2_InitUbloc_info(klst, nb, Ublock_info, usub, Glu_persist, stat );
 
     /* Loop through all the row blocks. */
 #pragma omp parallel for schedule(dynamic,2)
@@ -886,14 +899,11 @@ void pdgstrs2_omp(int_t k0, int_t k, int_t* Lsub_buf,
     {
         int_t thread_id = omp_get_thread_num();
         double *tempv = bigV +  thread_id * ldt * ldt;
-        Trs2_GatherTrsmScatter(klst, Ublock_info[b].iukp, Ublock_info[b].rukp,
-                               usub, uval, tempv,
-                               knsupc, nsupr, lusup,
-                               Glu_persist);
+        dTrs2_GatherTrsmScatter(klst, Ublock_info[b].iukp, Ublock_info[b].rukp,
+				usub, uval, tempv, knsupc, nsupr, lusup, Glu_persist);
     } /* for b ... */
 
     SCT->PDGSTRS2_tl += (double) ( _rdtsc() - t1);
 } /* pdgstrs2_omp new version from Piyush */
 
 #endif
-

@@ -898,6 +898,8 @@ typedef struct xtrsTimer_t
     double ppXmem;		// perprocess X-memory
 } xtrsTimer_t;
 
+/*==== For 3D code ====*/
+
 /*====================*/
 
 /***********************************************************************
@@ -1093,6 +1095,11 @@ yes_no_t 		StdList_Empty(StdList lst);
 
 /*==== For 3D code ====*/
 
+extern void DistPrint(char* function_name,  double value, char* Units, gridinfo_t* grid);
+extern void DistPrint3D(char* function_name,  double value, char* Units, gridinfo3d_t* grid3d);
+extern void treeImbalance3D(gridinfo3d_t *grid3d, SCT_t* SCT);
+extern void SCT_printComm3D(gridinfo3d_t *grid3d, SCT_t* SCT);
+
 /* Manipulate counters */
 extern void SCT_init(SCT_t*);
 extern void SCT_print(gridinfo_t *grid, SCT_t* SCT);
@@ -1199,6 +1206,9 @@ extern int_t initMsgs(msgs_t* msgs);
 extern int_t getNumLookAhead(superlu_dist_options_t*);
 extern commRequests_t** initCommRequestsArr(int_t mxLeafNode, int_t ldt, gridinfo_t* grid);
 extern msgs_t** initMsgsArr(int_t numLA);
+
+extern int_t Trs2_InitUblock_info(int_t klst, int_t nb, Ublock_info_t *,
+                                  int_t *usub, Glu_persist_t *, SuperLUStat_t*);
 
     /* from sec_structs.h */
 extern int Cmpfunc_R_info (const void * a, const void * b);

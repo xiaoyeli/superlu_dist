@@ -434,7 +434,7 @@ int_t dscatter3dUPanels(int_t nsupers,
 #ifdef MPI_MALLOC
 		MPI_DATATYPE_ALLOC(uval, lenv);
 #else
-	        uval = DOUBLE_ALLOC(lenv);
+	        uval = doubleMalloc_dist(lenv); //DOUBLE_ALLOC(lenv);
 #endif
 	    /*broadcast uval*/
 	    MPI_Bcast( uval, lenv, MPI_DOUBLE, 0,  grid3d->zscp.comm);
@@ -692,6 +692,7 @@ int_t dreduceAncestors3d(int_t sender, int_t receiver,
                         double* Lval_buf, double* Uval_buf,
                         LUstruct_t* LUstruct,  gridinfo3d_t* grid3d, SCT_t* SCT)
 {
+    double alpha = 1.0, beta = 1.0;	
     int_t myGrid = grid3d->zscp.Iam;
     
     /*first setting the L blocks to zero*/
@@ -705,9 +706,10 @@ int_t dreduceAncestors3d(int_t sender, int_t receiver,
 		    dzSendUPanel(jb, receiver, LUstruct,  grid3d, SCT);
 		}
 	    else {
-	        dzRecvLPanel(jb, sender, 1.0, 1.0, Lval_buf, LUstruct, grid3d, SCT);
-		dzRecvUPanel(jb, sender, 1.0, 1.0,
-				Uval_buf, LUstruct,  grid3d, SCT);
+	        dzRecvLPanel(jb, sender, alpha, beta, Lval_buf,
+                                LUstruct, grid3d, SCT);
+		dzRecvUPanel(jb, sender, alpha, beta, Uval_buf,
+                                LUstruct,  grid3d, SCT);
 	    }
 	    
 	}
@@ -721,6 +723,7 @@ int_t dgatherFactoredLU(int_t sender, int_t receiver,
                         LUValSubBuf_t*LUvsb,
                         LUstruct_t* LUstruct, gridinfo3d_t* grid3d, SCT_t* SCT)
 {
+    double alpha = 0.0, beta = 1.0;	
     double * Lval_buf  = LUvsb->Lval_buf;
     double * Uval_buf  = LUvsb->Uval_buf;
     int_t myGrid = grid3d->zscp.Iam;
@@ -735,10 +738,10 @@ int_t dgatherFactoredLU(int_t sender, int_t receiver,
 		}
 	    else
 		{
-		    dzRecvLPanel(jb, sender, 0.0, 1.0, Lval_buf, LUstruct,
-        	    		     grid3d, SCT);
-		    dzRecvUPanel(jb, sender, 0.0, 1.0, Uval_buf, LUstruct,
-		    		     grid3d, SCT);
+		    dzRecvLPanel(jb, sender, alpha, beta, Lval_buf,
+                                     LUstruct, grid3d, SCT);
+		    dzRecvUPanel(jb, sender, alpha, beta, Uval_buf,
+                                     LUstruct, grid3d, SCT);
 		}
 	}
     return 0;

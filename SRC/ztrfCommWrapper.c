@@ -89,12 +89,12 @@ int_t zDiagFactIBCast(int_t k,  int_t k0,      // supernode to be factored
         // printf("Entering factorization %d\n", k);
         // int_t offset = (k0 - k_st); // offset is input
         /*factorize A[kk]*/
-        Local_Dgstrf2(options, k, thresh,
+        Local_Zgstrf2(options, k, thresh,
                       BlockUFactor, /*factored U is over writen here*/
                       Glu_persist, grid, Llu, stat, info, SCT);
 
         /*Pack L[kk] into blockLfactor*/
-        dPackLBlock(k, BlockLFactor, Glu_persist, grid, Llu);
+        zPackLBlock(k, BlockLFactor, Glu_persist, grid, Llu);
 
         /*Isend U blocks to the process row*/
         int_t nsupc = SuperSize(k);
@@ -115,6 +115,7 @@ int_t zLPanelTrSolve( int_t k,   int_t* factored_L,
 		      gridinfo_t *grid,
 		      LUstruct_t *LUstruct)
 {
+    doublecomplex alpha = {1.0, 0.0};
     Glu_persist_t *Glu_persist = LUstruct->Glu_persist;
     LocalLU_t *Llu = LUstruct->Llu;
     int_t* xsup = Glu_persist->xsup;
@@ -161,8 +162,8 @@ int_t zLPanelTrSolve( int_t k,   int_t* factored_L,
                 int_t off = i * BL;
                 // Sherry: int_t len = MY_MIN(BL, l - i * BL);
                 int_t len = SUPERLU_MIN(BL, l - i * BL);
-                cblas_dtrsm (CblasColMajor, CblasRight, CblasUpper, CblasNoTrans, CblasNonUnit,
-                len, nsupc, 1.0, ublk_ptr, ld_ujrow, &lusup[off], nsupr);
+                cblas_ztrsm (CblasColMajor, CblasRight, CblasUpper, CblasNoTrans, CblasNonUnit,
+                len, nsupc, (void*) &alpha, ublk_ptr, ld_ujrow, &lusup[off], nsupr);
             }
         }
     }
@@ -198,8 +199,9 @@ int_t zLPanelTrSolve( int_t k,   int_t* factored_L,
             int_t len = SUPERLU_MIN(BL, (l - i * BL));
             #pragma omp task
             {
-                cblas_dtrsm (CblasColMajor, CblasRight, CblasUpper, CblasNoTrans, CblasNonUnit,
-                             len, nsupc, 1.0, ublk_ptr, ld_ujrow, &lusup[nsupc + off], nsupr);
+                cblas_ztrsm (CblasColMajor, CblasRight, CblasUpper, CblasNoTrans, CblasNonUnit,
+                             len, nsupc, (void*) &alpha, ublk_ptr, ld_ujrow, &lusup[nsupc + off], nsupr);
+
             }
         }
     }
@@ -269,7 +271,7 @@ int_t zUPanelTrSolve( int_t k,
             {
                 int_t thread_id = omp_get_thread_num();
                 doublecomplex *tempv = bigV +  thread_id * ldt * ldt;
-                Trs2_GatherTrsmScatter(klst, Ublock_info[b].iukp, Ublock_info[b].rukp,
+                zTrs2_GatherTrsmScatter(klst, Ublock_info[b].iukp, Ublock_info[b].rukp,
 				       usub, uval, tempv, nsupc, nsupc, lusup, Glu_persist);
             }
         }
@@ -316,7 +318,7 @@ int_t zUPanelTrSolve( int_t k,
                 {
                     int_t thread_id = omp_get_thread_num();
                     doublecomplex *tempv = bigV +  thread_id * ldt * ldt;
-                    Trs2_GatherTrsmScatter(klst, Ublock_info[b].iukp, Ublock_info[b].rukp,
+                    zTrs2_GatherTrsmScatter(klst, Ublock_info[b].iukp, Ublock_info[b].rukp,
 					   usub, uval, tempv, nsupc, nsupr, lusup, Glu_persist);
                 }
 

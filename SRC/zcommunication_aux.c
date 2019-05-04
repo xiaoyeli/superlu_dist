@@ -308,7 +308,7 @@ int_t zRecv_UDiagBlock(int_t k0, doublecomplex *ublk_ptr, /*pointer for the diag
 }
 
 
-int_t zPackLBlock(int_t k, double* Dest, Glu_persist_t *Glu_persist,
+int_t zPackLBlock(int_t k, doublecomplex* Dest, Glu_persist_t *Glu_persist,
                   gridinfo_t *grid, LocalLU_t *Llu)
 /*Copies src matrix into dest matrix*/
 {
@@ -406,7 +406,7 @@ int_t zIRecv_LDiagBlock(int_t k0, doublecomplex *L_blk_ptr, /*pointer for the di
 #if (MPI_VERSION>2)
 
 /****Ibcast based on mpi ibcast****/
-int_t zIBcast_UDiagBlock(int_t k, double *ublk_ptr, /*pointer for the diagonal block*/
+int_t zIBcast_UDiagBlock(int_t k, doublecomplex *ublk_ptr, /*pointer for the diagonal block*/
                         int_t size,  /*number of elements to be broadcasted*/
                         MPI_Request *L_diag_blk_ibcast_req,
                         gridinfo_t * grid)

@@ -150,18 +150,6 @@ at the top-level directory.
 #define GEMM_PADLEN 8
 
 #define PZGSTRF2 pzgstrf2_trsm
-#define PZGSTRS2 pzgstrs2_omp
-
-extern void PZGSTRF2 (superlu_dist_options_t *, int_t, int_t, double,
-                        Glu_persist_t *, gridinfo_t *, LocalLU_t *,
-                        MPI_Request *, int, SuperLUStat_t *, int *);
-#ifdef _CRAY
-extern void PZGSTRS2 (int_t, int_t, Glu_persist_t *, gridinfo_t *,
-                      LocalLU_t *, SuperLUStat_t *, _fcd, _fcd, _fcd);
-#else
-extern void PZGSTRS2 (int_t, int_t, Glu_persist_t *, gridinfo_t *,
-                      LocalLU_t *, SuperLUStat_t *);
-#endif
 
 #ifdef ISORT
 extern void isort (int_t N, int_t * ARRAY1, int_t * ARRAY2);
@@ -978,16 +966,16 @@ pzgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
 #if 0
     Remain_L_buff = (doublecomplex *) _mm_malloc( sizeof(doublecomplex)*(Llu->bufmax[1]),64);
     Ublock_info = (Ublock_info_t *) _mm_malloc(mcb*sizeof(Ublock_info_t),64);
-    int * Ublock_info_iukp = (int *) _mm_malloc(mcb*sizeof(int),64);
-    int * Ublock_info_rukp = (int *) _mm_malloc(mcb*sizeof(int),64);
-    int * Ublock_info_jb = (int *) _mm_malloc(mcb*sizeof(int),64);
+    /*int * Ublock_info_iukp = (int *) _mm_malloc(mcb*sizeof(int),64);
+      int * Ublock_info_rukp = (int *) _mm_malloc(mcb*sizeof(int),64);
+      int * Ublock_info_jb = (int *) _mm_malloc(mcb*sizeof(int),64); */
 #else
     j = gemm_m_pad * (ldt + max_row_size + gemm_k_pad);
     Remain_L_buff = doublecomplexMalloc_dist(Llu->bufmax[1] + j); /* This is loose */
     Ublock_info = (Ublock_info_t *) SUPERLU_MALLOC(mcb*sizeof(Ublock_info_t));
-    int *Ublock_info_iukp = (int *) SUPERLU_MALLOC(mcb*sizeof(int));
-    int *Ublock_info_rukp = (int *) SUPERLU_MALLOC(mcb*sizeof(int));
-    int *Ublock_info_jb = (int *) SUPERLU_MALLOC(mcb*sizeof(int));
+    /*int *Ublock_info_iukp = (int *) SUPERLU_MALLOC(mcb*sizeof(int));
+      int *Ublock_info_rukp = (int *) SUPERLU_MALLOC(mcb*sizeof(int));
+      int *Ublock_info_jb = (int *) SUPERLU_MALLOC(mcb*sizeof(int)); */
 #endif
 
     long long alloc_mem = 3 * mrb * iword + mrb * sizeof(Remain_info_t)
@@ -1307,8 +1295,8 @@ pzgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
 /* #pragma omp parallel */ /* Sherry -- parallel done inside pzgstrs2 */
 #endif
 			{
-                            PZGSTRS2 (kk0, kk, Glu_persist, grid, Llu,
-                                      stat);
+                            pzgstrs2_omp (kk0, kk, Glu_persist, grid, Llu,
+                                        Ublock_info, stat);
                         }
 
                         pdgstrs2_timer += SuperLU_timer_()-ttt2;
@@ -1473,7 +1461,8 @@ pzgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
 /* #pragma omp parallel */ /* Sherry -- parallel done inside pzgstrs2 */
 #endif
                 {
-                    PZGSTRS2 (k0, k, Glu_persist, grid, Llu, stat);
+                    pzgstrs2_omp (k0, k, Glu_persist, grid, Llu, 
+		                    Ublock_info, stat);
                 }
                 pdgstrs2_timer += SuperLU_timer_() - ttt2;
 
@@ -1920,9 +1909,9 @@ pzgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
 		  Llu->bufmax[1] * dword), stat );
 
     SUPERLU_FREE(Ublock_info);
-    SUPERLU_FREE(Ublock_info_iukp);
-    SUPERLU_FREE(Ublock_info_rukp);
-    SUPERLU_FREE(Ublock_info_jb);
+    /*SUPERLU_FREE(Ublock_info_iukp);
+      SUPERLU_FREE(Ublock_info_rukp);
+      SUPERLU_FREE(Ublock_info_jb);  */
 
 
 #if ( PROFlevel>=1 )

@@ -193,7 +193,7 @@ int main(int argc, char *argv[])
         options.SolveInitialized  = NO;
         options.RefineInitialized = NO;
         options.PrintStat         = YES;
-		options.DiagInv       = NO;
+	options.DiagInv           = NO;
      */
     set_default_options_dist(&options);
 #if 0

@@ -150,7 +150,6 @@ at the top-level directory.
 //#define GEMM_PADLEN 1
 #define GEMM_PADLEN 8
 
-/* #define PDGSTRF2 pdgstrf2_dtrsm */
 #define PDGSTRF2 pdgstrf2_trsm
 
 #ifdef ISORT
@@ -967,13 +966,16 @@ pdgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
 #if 0
     Remain_L_buff = (double *) _mm_malloc( sizeof(double)*(Llu->bufmax[1]),64);
     Ublock_info = (Ublock_info_t *) _mm_malloc(mcb*sizeof(Ublock_info_t),64);
+    /*int * Ublock_info_iukp = (int *) _mm_malloc(mcb*sizeof(int),64);
+      int * Ublock_info_rukp = (int *) _mm_malloc(mcb*sizeof(int),64);
+      int * Ublock_info_jb = (int *) _mm_malloc(mcb*sizeof(int),64); */
 #else
     j = gemm_m_pad * (ldt + max_row_size + gemm_k_pad);
     Remain_L_buff = doubleMalloc_dist(Llu->bufmax[1] + j); /* This is loose */
     Ublock_info = (Ublock_info_t *) SUPERLU_MALLOC(mcb*sizeof(Ublock_info_t));
     /*int *Ublock_info_iukp = (int *) SUPERLU_MALLOC(mcb*sizeof(int));
       int *Ublock_info_rukp = (int *) SUPERLU_MALLOC(mcb*sizeof(int));
-      int *Ublock_info_jb = (int *) SUPERLU_MALLOC(mcb*sizeof(int));  */
+      int *Ublock_info_jb = (int *) SUPERLU_MALLOC(mcb*sizeof(int)); */
 #endif
 
     long long alloc_mem = 3 * mrb * iword + mrb * sizeof(Remain_info_t)
@@ -1294,7 +1296,7 @@ pdgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
 #endif
 			{
                             pdgstrs2_omp (kk0, kk, Glu_persist, grid, Llu,
-					  Ublock_info, stat);
+                                        Ublock_info, stat);
                         }
 
                         pdgstrs2_timer += SuperLU_timer_()-ttt2;
@@ -1455,10 +1457,14 @@ pdgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
                 /* Parallel triangular solve across process row *krow* --
                    U(k,j) = L(k,k) \ A(k,j).  */
                  double ttt2 = SuperLU_timer_();
-
-		 pdgstrs2_omp (k0, k, Glu_persist, grid, Llu, Ublock_info, stat);
-
-		 pdgstrs2_timer += SuperLU_timer_() - ttt2;
+#ifdef _OPENMP
+/* #pragma omp parallel */ /* Sherry -- parallel done inside pdgstrs2 */
+#endif
+                {
+                    pdgstrs2_omp (k0, k, Glu_persist, grid, Llu, 
+		                    Ublock_info, stat);
+                }
+                pdgstrs2_timer += SuperLU_timer_() - ttt2;
 
 	        /* Sherry -- need to set factoredU[k0] = 1; ?? */
 
@@ -1726,7 +1732,7 @@ pdgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
 #else
 
 /*#include "SchCompUdt--Phi-2Ddynamic-alt.c"*/
-/*#include "dSchCompUdt-2Ddynamic_v6.c"*/
+//#include "dSchCompUdt-2Ddynamic_v6.c"
 
 #include "dSchCompUdt-2Ddynamic.c"
 
@@ -1903,9 +1909,9 @@ pdgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
 		  Llu->bufmax[1] * dword), stat );
 
     SUPERLU_FREE(Ublock_info);
-    /* SUPERLU_FREE(Ublock_info_iukp);
-       SUPERLU_FREE(Ublock_info_rukp);
-       SUPERLU_FREE(Ublock_info_jb);  */
+    /*SUPERLU_FREE(Ublock_info_iukp);
+      SUPERLU_FREE(Ublock_info_rukp);
+      SUPERLU_FREE(Ublock_info_jb);  */
 
 
 #if ( PROFlevel>=1 )

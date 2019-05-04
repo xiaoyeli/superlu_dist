@@ -116,6 +116,7 @@ int_t dLPanelTrSolve( int_t k,   int_t* factored_L,
 		      gridinfo_t *grid,
 		      LUstruct_t *LUstruct)
 {
+    double alpha = 1.0;
     Glu_persist_t *Glu_persist = LUstruct->Glu_persist;
     LocalLU_t *Llu = LUstruct->Llu;
     int_t* xsup = Glu_persist->xsup;
@@ -163,7 +164,7 @@ int_t dLPanelTrSolve( int_t k,   int_t* factored_L,
                 // Sherry: int_t len = MY_MIN(BL, l - i * BL);
                 int_t len = SUPERLU_MIN(BL, l - i * BL);
                 cblas_dtrsm (CblasColMajor, CblasRight, CblasUpper, CblasNoTrans, CblasNonUnit,
-                len, nsupc, 1.0, ublk_ptr, ld_ujrow, &lusup[off], nsupr);
+                len, nsupc, alpha, ublk_ptr, ld_ujrow, &lusup[off], nsupr);
             }
         }
     }
@@ -200,7 +201,8 @@ int_t dLPanelTrSolve( int_t k,   int_t* factored_L,
             #pragma omp task
             {
                 cblas_dtrsm (CblasColMajor, CblasRight, CblasUpper, CblasNoTrans, CblasNonUnit,
-                             len, nsupc, 1.0, ublk_ptr, ld_ujrow, &lusup[nsupc + off], nsupr);
+                             len, nsupc, alpha, ublk_ptr, ld_ujrow, &lusup[nsupc + off], nsupr);
+
             }
         }
     }
@@ -270,7 +272,7 @@ int_t dUPanelTrSolve( int_t k,
             {
                 int_t thread_id = omp_get_thread_num();
                 double *tempv = bigV +  thread_id * ldt * ldt;
-                Trs2_GatherTrsmScatter(klst, Ublock_info[b].iukp, Ublock_info[b].rukp,
+                dTrs2_GatherTrsmScatter(klst, Ublock_info[b].iukp, Ublock_info[b].rukp,
 				       usub, uval, tempv, nsupc, nsupc, lusup, Glu_persist);
             }
         }
@@ -317,7 +319,7 @@ int_t dUPanelTrSolve( int_t k,
                 {
                     int_t thread_id = omp_get_thread_num();
                     double *tempv = bigV +  thread_id * ldt * ldt;
-                    Trs2_GatherTrsmScatter(klst, Ublock_info[b].iukp, Ublock_info[b].rukp,
+                    dTrs2_GatherTrsmScatter(klst, Ublock_info[b].iukp, Ublock_info[b].rukp,
 					   usub, uval, tempv, nsupc, nsupr, lusup, Glu_persist);
                 }
 

@@ -607,7 +607,7 @@ pdgssvx3d (superlu_dist_options_t * options, SuperMatrix * A,
 	    *info = -6;
 	if (*info) {
 	    i = -(*info);
-	    pxerr_dist ("pdgssvx", grid, -*info);
+	    pxerr_dist ("pdgssvx3d", grid, -*info);
 	    return;
 	}
 	
@@ -637,7 +637,7 @@ pdgssvx3d (superlu_dist_options_t * options, SuperMatrix * A,
 	/********/
 	
 #if ( DEBUGlevel>=1 )
-	CHECK_MALLOC (iam, "Enter pdgssvx()");
+	CHECK_MALLOC (iam, "Enter pdgssvx3d()");
 #endif
 	
 	/* Not factored & ask for equilibration */
@@ -1010,9 +1010,8 @@ pdgssvx3d (superlu_dist_options_t * options, SuperMatrix * A,
 		    fstVtxSep[2 * noDomains - 2] = 0;
 		} else if (permc_spec != PARMETIS) {
 		    /* same as before */
-		    printf
-			("{%4d,%4d}: pdgssvx: invalid ColPerm option when ParSymbfact is used\n",
-			 (int) MYROW (grid->iam, grid), (int) MYCOL (grid->iam, grid));
+		    printf("{%4d,%4d}: pdgssvx3d: invalid ColPerm option when ParSymbfact is used\n",
+			 (int) MYROW(grid->iam, grid), (int) MYCOL(grid->iam, grid));
 		}
 	    } /* end ... use parmetis */
 
