@@ -9,6 +9,15 @@ The source code is distributed under BSD license, see the file License.txt
 at the top-level directory.
 */
 
+/*! @file
+ * \brief Performs LU factorization in 3D process grid.
+ *
+ * <pre>
+ * -- Distributed SuperLU routine (version 7.0) --
+ * Lawrence Berkeley National Lab, Georgia Institute of Technology.
+ * May 10, 2019
+ */
+
 #include "superlu_zdefs.h"
 #if 0
 #include "pdgstrf3d.h"

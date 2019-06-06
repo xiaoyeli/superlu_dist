@@ -10,6 +10,14 @@ at the top-level directory.
 */
 
 
+/*! @file
+ * \brief Various gather routines.
+ *
+ * <pre>
+ * -- Distributed SuperLU routine (version 7.0) --
+ * Lawrence Berkeley National Lab, Georgia Institute of Technology.
+ * May 10, 2019
+ */
 #include <stdio.h>
 #include "superlu_ddefs.h"
 #if 0

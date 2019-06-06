@@ -11,7 +11,7 @@ at the top-level directory.
 
 
 /*! @file
- * \brief Performs LU factorization in parallel
+ * \brief Performs LU factorization in parallel.
  *
  * <pre>
  * -- Distributed SuperLU routine (version 6.1) --

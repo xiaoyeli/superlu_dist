@@ -11,18 +11,13 @@ at the top-level directory.
 
 
 /*! @file
- * \brief Solves a system of linear equations A*X=B
+ * \brief Solves a system of linear equations A*X=B using 3D process grid.
  *
  * <pre>
- * -- Distributed SuperLU routine (version 7.0.0) --
- * Lawrence Berkeley National Lab, Univ. of California Berkeley.
- * November 1, 2007
- * October 22, 2012
- * March 31, 2019
- * </pre>
+ * -- Distributed SuperLU routine (version 7.0) --
+ * Lawrence Berkeley National Lab, Georgia Institute of Technology.
+ * May 10, 2019
  */
-
-#include <math.h>
 #include "superlu_ddefs.h"
 #if 0
 #include "p3dcomm.h"

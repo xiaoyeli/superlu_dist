@@ -15,7 +15,7 @@ at the top-level directory.
  *
  * <pre>
  * -- Distributed SuperLU routine (version 7.0.0) --
- * Lawrence Berkeley National Lab, Univ. of California Berkeley.
+ * Lawrence Berkeley National Lab, Georgia Institute of Technology.
  * May 10, 2019
  *
  */

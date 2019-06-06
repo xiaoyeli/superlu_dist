@@ -31,7 +31,6 @@ FACT3D = 	scatter.o
 #	pdgstrs_vecpar.o ancFactorization.o
 
 #  pddrive_params.o
-# scatter.o 
 
 #
 # Precision independent routines
