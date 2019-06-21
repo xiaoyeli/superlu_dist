@@ -123,7 +123,7 @@ if ( msg0 && msg2 ) {  /* L(:,k) and U(k,:) are not empty. */
             jjj = jjj_global;
             // printf("thread_id %d, jjj %d \n",thread_id,jjj );
             if (jjj == jjj_st+1 && full_u_cols[jjj_st] > ncol_max) {
-                printf("allocate more memory for buffer !!!!\n");
+                // printf("allocate more memory for buffer !!!!\n"); -- Sherry
                 if(nbrow * full_u_cols[jjj_st] > buffer_size)
                     printf("%d buffer_size %d\n",nbrow*full_u_cols[jjj_st],buffer_size );
             }
