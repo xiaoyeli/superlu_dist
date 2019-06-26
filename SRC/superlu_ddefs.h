@@ -383,12 +383,24 @@ extern void LUstructInit(const int_t, LUstruct_t *);
 extern void LUstructFree(LUstruct_t *);
 extern void Destroy_LU(int_t, gridinfo_t *, LUstruct_t *);
 extern void Destroy_Tree(int_t, gridinfo_t *, LUstruct_t *);
+extern void dscatter_l (int ib, int ljb, int nsupc, int_t iukp, int_t* xsup,
+			int klst, int nbrow, int_t lptr, int temp_nbrow,
+			int_t* usub, int_t* lsub, double *tempv,
+			int* indirect_thread, int* indirect2,
+			int_t ** Lrowind_bc_ptr, double **Lnzval_bc_ptr,
+			gridinfo_t * grid);
+extern void dscatter_u (int ib, int jb, int nsupc, int_t iukp, int_t * xsup,
+                        int klst, int nbrow, int_t lptr, int temp_nbrow,
+                        int_t* lsub, int_t* usub, double* tempv,
+                        int_t ** Ufstnz_br_ptr, double **Unzval_br_ptr,
+                        gridinfo_t * grid);
+extern int_t pdgstrf(superlu_dist_options_t *, int, int, double,
+		    LUstruct_t*, gridinfo_t*, SuperLUStat_t*, int*);
 
 /* #define GPU_PROF
 #define IPM_PROF */
 
-extern int_t pdgstrf(superlu_dist_options_t *, int, int, double,
-		    LUstruct_t*, gridinfo_t*, SuperLUStat_t*, int*);
+/* Solve related */
 extern void pdgstrs_Bglobal(int_t, LUstruct_t *, gridinfo_t *,
 			     double *, int_t, int, SuperLUStat_t *, int *);
 extern void pdgstrs(int_t, LUstruct_t *, ScalePermstruct_t *, gridinfo_t *,
@@ -545,81 +557,68 @@ extern int updateDirtyBit(int_t k0, HyP_t* HyP, gridinfo_t* grid);
 
     /* from scatter.h */
 extern void
-block_gemm_scatter( int_t lb, int_t j,
-                    Ublock_info_t *Ublock_info,
-                    Remain_info_t *Remain_info,
-                    double *L_mat, int_t ldl,
-                    double *U_mat, int_t ldu,
-                    double *bigV,
+dblock_gemm_scatter( int_t lb, int_t j, Ublock_info_t *Ublock_info,
+                    Remain_info_t *Remain_info, double *L_mat, int_t ldl,
+                    double *U_mat, int_t ldu,  double *bigV,
                     // int_t jj0,
                     int_t knsupc,  int_t klst,
                     int_t *lsub, int_t *usub, int_t ldt,
                     int_t thread_id,
-                    int_t *indirect,
-                    int_t *indirect2,
+                    int_t *indirect, int_t *indirect2,
                     int_t **Lrowind_bc_ptr, double **Lnzval_bc_ptr,
                     int_t **Ufstnz_br_ptr, double **Unzval_br_ptr,
-                    int_t *xsup, gridinfo_t *grid,
-                    SuperLUStat_t *stat
+                    int_t *xsup, gridinfo_t *, SuperLUStat_t *
 #ifdef SCATTER_PROFILE
                     , double *Host_TheadScatterMOP, double *Host_TheadScatterTimer
 #endif
                   );
 /*this version uses a lock to prevent multiple thread updating the same block*/
-void
-block_gemm_scatter_lock( int_t lb, int_t j,
-                         omp_lock_t* lock,
-                         Ublock_info_t *Ublock_info,
-                         Remain_info_t *Remain_info,
-                         double *L_mat, int_t ldl,
-                         double *U_mat, int_t ldu,
+extern void
+dblock_gemm_scatter_lock( int_t lb, int_t j, omp_lock_t* lock,
+                         Ublock_info_t *Ublock_info,  Remain_info_t *Remain_info,
+                         double *L_mat, int_t ldl, double *U_mat, int_t ldu,
                          double *bigV,
                          // int_t jj0,
                          int_t knsupc,  int_t klst,
                          int_t *lsub, int_t *usub, int_t ldt,
                          int_t thread_id,
-                         int_t *indirect,
-                         int_t *indirect2,
+                         int_t *indirect, int_t *indirect2,
                          int_t **Lrowind_bc_ptr, double **Lnzval_bc_ptr,
                          int_t **Ufstnz_br_ptr, double **Unzval_br_ptr,
-                         int_t *xsup, gridinfo_t *grid
+                         int_t *xsup, gridinfo_t *
 #ifdef SCATTER_PROFILE
                          , double *Host_TheadScatterMOP, double *Host_TheadScatterTimer
 #endif
                        );
-
-int_t block_gemm_scatterTopLeft( int_t lb,  int_t j,
-                                 double* bigV, int_t knsupc,  int_t klst, int_t* lsub,
-                                 int_t * usub, int_t ldt,  int_t* indirect, int_t* indirect2,
-                                 HyP_t* HyP,
-                                 LUstruct_t *LUstruct,
-                                 gridinfo_t* grid,
-                                 SCT_t*SCT, SuperLUStat_t *stat
+extern int_t
+dblock_gemm_scatterTopLeft( int_t lb,  int_t j, double* bigV,
+				 int_t knsupc,  int_t klst, int_t* lsub,
+                                 int_t * usub, int_t ldt,
+				 int_t* indirect, int_t* indirect2,
+                                 HyP_t* HyP, LUstruct_t *, gridinfo_t*,
+                                 SCT_t*SCT, SuperLUStat_t *
                                );
-int_t block_gemm_scatterTopRight( int_t lb,  int_t j,
-                                  double* bigV, int_t knsupc,  int_t klst, int_t* lsub,
-                                  int_t * usub, int_t ldt,  int_t* indirect, int_t* indirect2,
-                                  HyP_t* HyP,
-                                  LUstruct_t *LUstruct,
-                                  gridinfo_t* grid,
-                                  SCT_t*SCT, SuperLUStat_t *stat
-                                );
-int_t block_gemm_scatterBottomLeft( int_t lb,  int_t j,
-                                    double* bigV, int_t knsupc,  int_t klst, int_t* lsub,
-                                    int_t * usub, int_t ldt,  int_t* indirect, int_t* indirect2,
-                                    HyP_t* HyP,
-                                    LUstruct_t *LUstruct,
-                                    gridinfo_t* grid,
-                                    SCT_t*SCT, SuperLUStat_t *stat
-                                  );
-int_t block_gemm_scatterBottomRight( int_t lb,  int_t j,
-                                     double* bigV, int_t knsupc,  int_t klst, int_t* lsub,
-                                     int_t * usub, int_t ldt,  int_t* indirect, int_t* indirect2,
-                                     HyP_t* HyP,
-                                     LUstruct_t *LUstruct,
-                                     gridinfo_t* grid,
-                                     SCT_t*SCT, SuperLUStat_t *stat
-                                   );
+extern int_t 
+dblock_gemm_scatterTopRight( int_t lb,  int_t j, double* bigV,
+				  int_t knsupc,  int_t klst, int_t* lsub,
+                                  int_t * usub, int_t ldt,
+				  int_t* indirect, int_t* indirect2,
+                                  HyP_t* HyP, LUstruct_t *, gridinfo_t*,
+                                  SCT_t*SCT, SuperLUStat_t * );
+extern int_t
+dblock_gemm_scatterBottomLeft( int_t lb,  int_t j, double* bigV,
+				    int_t knsupc,  int_t klst, int_t* lsub,
+                                    int_t * usub, int_t ldt, 
+				    int_t* indirect, int_t* indirect2,
+                                    HyP_t* HyP, LUstruct_t *, gridinfo_t*,
+                                    SCT_t*SCT, SuperLUStat_t * );
+extern int_t 
+dblock_gemm_scatterBottomRight( int_t lb,  int_t j, double* bigV,
+				     int_t knsupc,  int_t klst, int_t* lsub,
+                                     int_t * usub, int_t ldt,
+				     int_t* indirect, int_t* indirect2,
+                                     HyP_t* HyP, LUstruct_t *, gridinfo_t*,
+                                     SCT_t*SCT, SuperLUStat_t * );
 
     /* from gather.h */
 extern void dgather_u(int_t num_u_blks,
@@ -978,7 +977,7 @@ extern int_t checkRecvUDiag(int_t k, commRequests_t *comReqs,
 			    gridinfo_t *grid, SCT_t *SCT);
 extern int_t checkRecvLDiag(int_t k, commRequests_t *comReqs, gridinfo_t *, SCT_t *);
 
-    /* from ancFactorization.h */
+    /* from ancFactorization.h (not called) */
 extern int_t ancestorFactor(
     int_t ilvl,             // level of factorization 
     sForest_t* sforest,

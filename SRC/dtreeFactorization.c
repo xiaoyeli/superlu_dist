@@ -205,7 +205,7 @@ int_t ddenseTreeFactor(
                 int_t *lsub = lPanelInfo->lsub;
                 int_t *usub = uPanelInfo->usub;
                 int_t thread_id = omp_get_thread_num();
-                block_gemm_scatter( lb, ub,
+                dblock_gemm_scatter( lb, ub,
                                     Ublock_info,
                                     Remain_info,
                                     &L_mat[luptr0], ldl,
@@ -462,7 +462,7 @@ int_t dsparseTreeFactor_ASYNC(
                     int_t j   = ij / HyP->lookAheadBlk; 
 							   
                     int_t lb  = ij % HyP->lookAheadBlk;
-                    block_gemm_scatterTopLeft( lb,  j, bigV, knsupc, klst, lsub,
+                    dblock_gemm_scatterTopLeft( lb,  j, bigV, knsupc, klst, lsub,
 					       usub, ldt,  indirect, indirect2, HyP,
 					       LUstruct, grid, SCT, stat );
                 }
@@ -472,7 +472,7 @@ int_t dsparseTreeFactor_ASYNC(
                 {
                     int_t j   = ij / HyP->lookAheadBlk ;
                     int_t lb  = ij % HyP->lookAheadBlk;
-                    block_gemm_scatterTopRight( lb,  j, bigV, knsupc, klst, lsub,
+                    dblock_gemm_scatterTopRight( lb,  j, bigV, knsupc, klst, lsub,
                                                 usub, ldt,  indirect, indirect2, HyP,
 						LUstruct, grid, SCT, stat);
                 }
@@ -482,7 +482,7 @@ int_t dsparseTreeFactor_ASYNC(
                 {
                     int_t j   = ij / HyP->RemainBlk;
                     int_t lb  = ij % HyP->RemainBlk;
-                    block_gemm_scatterBottomLeft( lb,  j, bigV, knsupc, klst, lsub,
+                    dblock_gemm_scatterBottomLeft( lb,  j, bigV, knsupc, klst, lsub,
                                                   usub, ldt,  indirect, indirect2,
 						  HyP, LUstruct, grid, SCT, stat);
                 } /*for (int_t ij =*/
@@ -526,7 +526,7 @@ int_t dsparseTreeFactor_ASYNC(
                 {
                     int_t j   = ij / HyP->RemainBlk + jj_cpu;
                     int_t lb  = ij % HyP->RemainBlk;
-                    block_gemm_scatterBottomRight( lb,  j, bigV, knsupc, klst, lsub,
+                    dblock_gemm_scatterBottomRight( lb,  j, bigV, knsupc, klst, lsub,
                                                    usub, ldt,  indirect, indirect2,
 						   HyP, LUstruct, grid, SCT, stat);
                 } /*for (int_t ij =*/

@@ -107,7 +107,7 @@ zscatter_l_1 (int ib,
     // TAU_STATIC_TIMER_STOP("SCATTER_LB");
 } /* zscatter_l_1 */
 
-static void
+void
 zscatter_l (
            int ib,    /* row block number of source block L(i,k) */
            int ljb,   /* local column block number of dest. block L(i,j) */
@@ -189,7 +189,7 @@ zscatter_l (
 } /* zscatter_l */
 
 
-static void
+void
 zscatter_u (int ib,
            int jb,
            int nsupc,
