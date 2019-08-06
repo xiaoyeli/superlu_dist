@@ -5,8 +5,8 @@ includedir=@CMAKE_INSTALL_PREFIX@/@CMAKE_INSTALL_INCLUDEDIR@
 Name: @CMAKE_PROJECT_NAME@
 Description: Distributed-memory direct solution of sparse systems of linear equations
 Version: @PROJECT_VERSION@
-URL: http://crd-legacy.lbl.gov/~xiaoye/SuperLU/
+URL: https://portal.nersc.gov/project/sparse/superlu/
 
-Libs: -L${libdir} -lsuperlu
+Libs: -L${libdir} -lsuperlu_dist
 Libs.private: @BLAS_LIB@ -lm
 Cflags: -I${includedir}
