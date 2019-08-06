@@ -562,7 +562,7 @@ void dZeroLblocks(int iam, int_t n, gridinfo_t *grid, LUstruct_t *LUstruct)
 } /* dZeroLblocks */
 
 
-/*! \Dump the factored matrix L using matlab triple-let format
+/*! \brief Dump the factored matrix L using matlab triple-let format
  */
 void dDumpLblocks(int iam, int_t nsupers, gridinfo_t *grid,
 		  Glu_persist_t *Glu_persist, LocalLU_t *Llu)
