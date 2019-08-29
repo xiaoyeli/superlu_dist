@@ -14,14 +14,13 @@ at the top-level directory.
  * \brief Perform local block modifications: lsum[i] -= L_i,k * X[k]
  *
  * <pre>
- * -- Distributed SuperLU routine (version 6.1) --
+ * -- Distributed SuperLU routine (version 2.0) --
  * Lawrence Berkeley National Lab, Univ. of California Berkeley.
  * March 15, 2003
  *
  * Modified:
  *     Feburary 7, 2001    use MPI_Isend/MPI_Irecv
  *     October 2, 2001     use MPI_Isend/MPI_Irecv with MPI_Test
- * February 8, 2019  version 6.1.1
  * </pre>
  */
 
@@ -1504,6 +1503,7 @@ void dlsum_bmod_inv
 #if ( PROFlevel>=1 )
 				TOC(t2, t1);
 				stat[thread_id1]->utime[SOL_GEMM] += t2;
+				// stat[thread_id1]->utime[SOL_COMM] += t2;
 #endif
 
 
@@ -1908,6 +1908,8 @@ void dlsum_bmod_inv_master
 	knsupc = SuperSize( k );
 	lk = LBj( k, grid ); /* Local block number, column-wise. */
 	nub = Urbs[lk];      /* Number of U blocks in block column lk */
+
+
 
 	// printf("Urbs2[lk] %5d lk %5d nub %5d\n",Urbs2[lk],lk,nub);
 	// fflush(stdout);

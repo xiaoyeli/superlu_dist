@@ -136,7 +136,7 @@ if ( msg0 && msg2 ) { /* L(:,k) and U(k,:) are not empty. */
 	 /*
 	  * Counting U blocks
 	  */
-     	 ldu = 0; /* Calculate ldu for U(k,:) after look-ahead window. */
+	 ldu = 0; /* Calculate ldu for U(k,:) after look-ahead window. */
 	 ncols = 0; /* Total number of nonzero columns in U(k,:) */
 	 int temp_ncols = 0;
 
@@ -238,6 +238,91 @@ if ( msg0 && msg2 ) { /* L(:,k) and U(k,:) are not empty. */
 
 	 tempu = bigU; /* buffer the entire row block U(k,:) */
 
+	 
+     // double fs = 0.5 ; // This is the static fraction, or statically scheduled part of the loop. A number between 0.0 and 1.0. 
+         // /* Gather U(k,:) into buffer bigU[] to prepare for GEMM */
+// #ifdef _OPENMP
+// // #define SCHEDULE_STRATEGY static 
+// #pragma omp parallel firstprivate(iukp, rukp)  private(j,tempu, jb, nsupc,ljb,segsize, lead_zero, jj, i) default (shared) 
+// #pragma omp for schedule(static) nowait
+// #endif
+        // for (j = jj0; j < (int) (ceil(fs*nub)); ++j) { /* jj0 starts after look-ahead window. */
+
+            // if (j==jj0) tempu = bigU;
+            // //else tempu = bigU + ldu * Ublock_info[j-1].full_u_cols;
+            // else tempu = bigU + gemm_k_pad * Ublock_info[j-1].full_u_cols;
+
+            // /* == processing each of the remaining columns in parallel == */
+// #if 0
+	    // /* Can remove following call, since search was already done.  */
+            // arrive_at_ublock(j, &iukp, &rukp, &jb, &ljb, &nsupc,
+			     // iukp0, rukp0, usub,perm_u, xsup, grid);
+// #else
+	    // iukp = Ublock_info[j].iukp;
+	    // rukp = Ublock_info[j].rukp;
+	    // jb = Ublock_info[j].jb;
+	    // nsupc = SuperSize (jb );
+// #endif
+            // /* Copy from U(k,j) to tempu[], padding zeros.  */
+            // for (jj = iukp; jj < iukp+nsupc; ++jj) {
+                // segsize = klst - usub[jj];
+                // if ( segsize ) {
+                    // lead_zero = ldu - segsize;
+                    // for (i = 0; i < lead_zero; ++i) tempu[i] = zero;
+		    // //tempu += lead_zero;
+// #if (_OPENMP>=201307)
+// #pragma omp simd
+// #endif
+		    // for (i = 0; i < segsize; ++i)
+                    	// tempu[i+lead_zero] = uval[rukp+i];
+                    // rukp += segsize;
+                    // tempu += gemm_k_pad;
+                // }
+	    // }
+        // }   /* parallel for j = jj0 .. nub */
+		
+// // define SCHEDULE_STRATEGY dynamic 
+// #ifdef _OPENMP
+// #pragma omp parallel for firstprivate(iukp, rukp) \
+    // private(j,tempu, jb, nsupc,ljb,segsize, lead_zero, jj, i) \
+    // default (shared) schedule(dynamic)
+// #endif
+// for (j = (int)(ceil(fs*nub)); j < nub; ++j) { /* jj0 starts after look-ahead window. */
+
+            // if (j==jj0) tempu = bigU;
+            // //else tempu = bigU + ldu * Ublock_info[j-1].full_u_cols;
+            // else tempu = bigU + gemm_k_pad * Ublock_info[j-1].full_u_cols;
+
+            // /* == processing each of the remaining columns in parallel == */
+// #if 0
+	    // /* Can remove following call, since search was already done.  */
+            // arrive_at_ublock(j, &iukp, &rukp, &jb, &ljb, &nsupc,
+			     // iukp0, rukp0, usub,perm_u, xsup, grid);
+// #else
+	    // iukp = Ublock_info[j].iukp;
+	    // rukp = Ublock_info[j].rukp;
+	    // jb = Ublock_info[j].jb;
+	    // nsupc = SuperSize (jb );
+// #endif
+            // /* Copy from U(k,j) to tempu[], padding zeros.  */
+            // for (jj = iukp; jj < iukp+nsupc; ++jj) {
+                // segsize = klst - usub[jj];
+                // if ( segsize ) {
+                    // lead_zero = ldu - segsize;
+                    // for (i = 0; i < lead_zero; ++i) tempu[i] = zero;
+		    // //tempu += lead_zero;
+// #if (_OPENMP>=201307)
+// #pragma omp simd
+// #endif
+		    // for (i = 0; i < segsize; ++i)
+                    	// tempu[i+lead_zero] = uval[rukp+i];
+                    // rukp += segsize;
+                    // tempu += gemm_k_pad;
+                // }
+	    // }
+        // }	 
+	 
+	 
          /* Gather U(k,:) into buffer bigU[] to prepare for GEMM */
 #ifdef _OPENMP
 #pragma omp parallel for firstprivate(iukp, rukp) \
@@ -283,15 +368,14 @@ if ( msg0 && msg2 ) { /* L(:,k) and U(k,:) are not empty. */
 	if (ldu==0) printf("[%d] .. k0 %d, before updating: ldu %d, Lnbrow %d, Rnbrow %d, ncols %d\n",iam,k0,ldu,Lnbrow,Rnbrow, ncols);
 	fflush(stdout);
 #endif
-
-        GatherMOP += 2*ldu*ncols;
-
     }  /* end if (nbrow>0), end gather U blocks */
 
     GatherUTimer += SuperLU_timer_() - tt_start;
+    GatherMOP += 2*ldu*ncols;
     int jj_cpu = nub;       /* limit between CPU and GPU */
     int thread_id;
     /*tempv = bigV;*/
+
 
     /**********************
      * Gather L blocks    *
@@ -341,7 +425,7 @@ if ( msg0 && msg2 ) { /* L(:,k) and U(k,:) are not empty. */
      /* Loop through the remaining blocks to copy Lval into the buffer */
 #ifdef _OPENMP
 #pragma omp parallel for private(i,j,jj,tempu,tempv) default (shared) \
-    schedule(SCHEDULE_STRATEGY)
+    schedule(SCHEDULE_STRATEGY,4)
 #endif
      for (int i = 0; i < RemainBlk; ++i) {
          int StRowDest, temp_nbrow;

@@ -1325,15 +1325,30 @@ int_t estimate_bigu_size(
     int_t ldu = 0;   /* Count max. segment size in one row U(k,:) */
     int_t my_max_ldu = 0;
     int_t max_ldu = 0;
-
+double t;
     /* Initialize perm_u */
     for (int i = 0; i < nsupers; ++i) perm_u[i] = i;
 
+    // t = SuperLU_timer_();
+
+ 
+
+	
+	
+	
+#ifdef _OPENMP
+#pragma omp parallel for \
+    default(shared) reduction(max:ncols,my_max_ldu) 
+#endif	
     for (int lk = myrow; lk < nsupers; lk += Pr) {/* Go through my block rows */
         ncols = SUPERLU_MAX(ncols, num_full_cols_U(lk, Ufstnz_br_ptr,
 						   xsup, grid, perm_u, &ldu) );
 	my_max_ldu = SUPERLU_MAX(ldu, my_max_ldu);
     }
+	 
+	 // t = SuperLU_timer_()-t;
+	// printf("estimate_bigu_size time %9.5f\n",t);
+	// fflush(stdout);
 
     /* Need U buffer size large enough to hold all U(k,:) transferred from
        other processes. */

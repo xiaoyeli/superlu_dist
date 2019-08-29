@@ -15,11 +15,10 @@ at the top-level directory.
  * general N-by-N matrix A using the LU factors computed previously.
  *
  * <pre>
- * -- Distributed SuperLU routine (version 6.1) --
+ * -- Distributed SuperLU routine (version 6.0) --
  * Lawrence Berkeley National Lab, Univ. of California Berkeley.
  * October 15, 2008
  * September 18, 2018  version 6.0
- * February 8, 2019  version 6.1.1
  * </pre>
  */
 #include <math.h>
@@ -1113,7 +1112,7 @@ pdgstrs(int_t n, LUstruct_t *LUstruct,
     pdReDistribute_B_to_X(B, m_loc, nrhs, ldb, fst_row, ilsum, x,
 			  ScalePermstruct, Glu_persist, grid, SOLVEstruct);
 
-#if ( PRNTlevel>=2 )
+#if ( PRNTlevel>=1 )
     t = SuperLU_timer_() - t;
     if ( !iam) printf(".. B to X redistribute time\t%8.4f\n", t);
     fflush(stdout);
@@ -1212,7 +1211,7 @@ if(procs==1){
 	fflush(stdout);
 #endif
 
-#if ( PRNTlevel>=2 )
+#if ( PRNTlevel>=1 )
 	t = SuperLU_timer_() - t;
 	if ( !iam) printf(".. Setup L-solve time\t%8.4f\n", t);
 	fflush(stdout);
@@ -1696,7 +1695,7 @@ if(procs==1){
 			}
 		}
 
-#if ( PRNTlevel>=2 )
+#if ( PRNTlevel>=1 )
 		t = SuperLU_timer_() - t;
 		stat->utime[SOL_TOT] += t;
 		if ( !iam ) {
@@ -1927,7 +1926,7 @@ if(procs==1){
 #endif
 
 
-#if ( PRNTlevel>=2 )
+#if ( PRNTlevel>=1 )
 	t = SuperLU_timer_() - t;
 	if ( !iam) printf(".. Setup U-solve time\t%8.4f\n", t);
 	fflush(stdout);
@@ -2284,7 +2283,7 @@ for (i=0;i<nroot_send;i++){
 			}
 		} /* while not finished ... */
 	}
-#if ( PRNTlevel>=2 )
+#if ( PRNTlevel>=1 )
 		t = SuperLU_timer_() - t;
 		stat->utime[SOL_TOT] += t;
 		if ( !iam ) printf(".. U-solve time\t%8.4f\n", t);
@@ -2330,7 +2329,7 @@ for (i=0;i<nroot_send;i++){
 				ScalePermstruct, Glu_persist, grid, SOLVEstruct);
 
 
-#if ( PRNTlevel>=2 )
+#if ( PRNTlevel>=1 )
 		t = SuperLU_timer_() - t;
 		if ( !iam) printf(".. X to B redistribute time\t%8.4f\n", t);
 		t = SuperLU_timer_();
@@ -2346,8 +2345,9 @@ for (i=0;i<nroot_send;i++){
 			tmp2 = SUPERLU_MAX(tmp2,stat_loc[i]->utime[SOL_GEMM]);
 			tmp3 = SUPERLU_MAX(tmp3,stat_loc[i]->utime[SOL_COMM]);
 			tmp4 += stat_loc[i]->ops[SOLVE];
-#if ( PRNTlevel>=2 )
+#if ( PRNTlevel>=1 )
 			if(iam==0)printf("thread %5d gemm %9.5f\n",i,stat_loc[i]->utime[SOL_GEMM]);
+			if(iam==0)printf("thread %5d comm %9.5f\n",i,stat_loc[i]->utime[SOL_COMM]);
 #endif
 		}
 
