@@ -170,14 +170,12 @@ double *doubleCalloc_dist(int_t n)
     return (buf);
 }
 
-
 /***************************************
  * The following are from 3D code.
  ***************************************/
 
 double dgetLUMem(int_t nodeId, LUstruct_t *LUstruct, gridinfo3d_t *grid3d)
 {
-
     double memlu = 0.0;
     gridinfo_t* grid = &(grid3d->grid2d);
     LocalLU_t *Llu = LUstruct->Llu;
@@ -190,7 +188,6 @@ double dgetLUMem(int_t nodeId, LUstruct_t *LUstruct, gridinfo3d_t *grid3d)
 
     int_t myrow = MYROW (iam, grid);
     int_t mycol = MYCOL (iam, grid);
-
 
     int_t pc = PCOL( nodeId, grid );
     if (mycol == pc)
@@ -219,7 +216,6 @@ double dgetLUMem(int_t nodeId, LUstruct_t *LUstruct, gridinfo3d_t *grid3d)
         // double* unzval;
         usub = Ufstnz_br_ptr[lib];
 
-
         if (usub != NULL)
         {
             int_t lenv = usub[1];
@@ -229,7 +225,6 @@ double dgetLUMem(int_t nodeId, LUstruct_t *LUstruct, gridinfo3d_t *grid3d)
     }
     return memlu;
 }
-
 
 double  dmemForest(sForest_t*sforest, LUstruct_t *LUstruct, gridinfo3d_t *grid3d)
 {

@@ -317,7 +317,7 @@ at the top-level directory.
  *         o RowPerm (rowperm_t)
  *           Specifies how to permute rows of the matrix A.
  *           = NATURAL:   use the natural ordering.
- *           = LargeDiag: use the Duff/Koster algorithm to permute rows of
+ *           = LargeDiag_MC64: use the Duff/Koster algorithm to permute rows of
  *                        the original matrix to make the diagonal large
  *                        relative to the off-diagonal.
  *           = MY_PERMR:  use the ordering given in ScalePermstruct->perm_r
@@ -344,7 +344,7 @@ at the top-level directory.
  *         NOTE: all options must be indentical on all processes when
  *               calling this routine.
  *
- * A (input/output) SuperMatrix* (local)
+ * A (input/output) SuperMatrix* (local); A resides only on process layer 0.
  *         On entry, matrix A in A*X=B, of dimension (A->nrow, A->ncol).
  *           The number of linear equations is A->nrow. The type of A must be:
  *           Stype = SLU_NR_loc; Dtype = SLU_D; Mtype = SLU_GE.
@@ -497,8 +497,8 @@ void
 pdgssvx3d (superlu_dist_options_t * options, SuperMatrix * A,
            ScalePermstruct_t * ScalePermstruct,
            double B[], int ldb, int nrhs, gridinfo3d_t * grid3d,
-           LUstruct_t * LUstruct, SOLVEstruct_t * SOLVEstruct, double *berr,
-           SuperLUStat_t * stat, int *info)
+           LUstruct_t * LUstruct, SOLVEstruct_t * SOLVEstruct,
+           double *berr, SuperLUStat_t * stat, int *info)
 {
     NRformat_loc *Astore;
     SuperMatrix GA;        /* Global A in NC format */
@@ -519,6 +519,7 @@ pdgssvx3d (superlu_dist_options_t * options, SuperMatrix * A,
        routine. They will be freed after PDDISTRIBUTE routine.
        If options->Fact == SamePattern_SameRowPerm, these
        structures are not used.                                  */
+    yes_no_t parSymbFact = options->ParSymbFact;
     fact_t Fact;
     double *a;
     int_t *colptr, *rowind;
@@ -541,75 +542,85 @@ pdgssvx3d (superlu_dist_options_t * options, SuperMatrix * A,
 #if ( PRNTlevel>= 2 )
     double dmin, dsum, dprod;
 #endif
-    
-    /* Structures needed for parallel symbolic factorization */
-    int_t *sizes, *fstVtxSep, parSymbFact;
-    int noDomains, nprocs_num;
-    MPI_Comm symb_comm;  /* communicator for symbolic factorization */
-    int col, key;        /* parameters for creating a new communicator */
-    Pslu_freeable_t Pslu_freeable;
-    float flinfo;
-    
-    /* Initialization. */
 
-    /* definifition of factored seen by each process layer */
-    Fact = options->Fact;
-    factored = (Fact == FACTORED);
-    
     // get the 2d grid
     gridinfo_t *grid  = &(grid3d->grid2d);
     iam = grid->iam;
     
+    /* Initialization. */
+
+    /* definition of factored seen by each process layer */
+    Fact = options->Fact;
+    factored = (Fact == FACTORED);
+
+    /* Test the options choices. */
+    *info = 0;
+    Fact = options->Fact;
+    if (Fact < 0 || Fact > FACTORED)
+	*info = -1;
+    else if (options->RowPerm < 0 || options->RowPerm > MY_PERMR)
+	*info = -1;
+    else if (options->ColPerm < 0 || options->ColPerm > MY_PERMC)
+	*info = -1;
+    else if (options->IterRefine < 0 || options->IterRefine > SLU_EXTRA)
+	*info = -1;
+    else if (options->IterRefine == SLU_EXTRA) {
+	*info = -1;
+        fprintf (stderr,
+	         "Extra precise iterative refinement yet to support.");
+    }
+    if (*info) {
+	i = -(*info);
+	pxerr_dist ("pdgssvx3d", grid, -*info);
+	return;
+    }
+
+#if ( DEBUGlevel>=1 )
+	CHECK_MALLOC (iam, "Enter pdgssvx3d()");
+#endif
+	
     /* Perform preprocessing steps on process layer zero, including:
        ordering, symbolic factorization, distribution of L & U */
     if (grid3d->zscp.Iam == 0)
     {
-	m = A->nrow;
-	n = A->ncol;
-	Astore = (NRformat_loc *) A->Store;
-	nnz_loc = Astore->nnz_loc;
-	m_loc = Astore->m_loc;
-	fst_row = Astore->fst_row;
-	a = (double *) Astore->nzval;
-	rowptr = Astore->rowptr;
-	colind = Astore->colind;
+        m = A->nrow;
+    	n = A->ncol;
+    	Astore = (NRformat_loc *) A->Store;
+    	nnz_loc = Astore->nnz_loc;
+    	m_loc = Astore->m_loc;
+    	fst_row = Astore->fst_row;
+    	a = (double *) Astore->nzval;
+    	rowptr = Astore->rowptr;
+    	colind = Astore->colind;
+
+	/* Test the other input parameters. */
+	if (A->nrow != A->ncol || A->nrow < 0 || A->Stype != SLU_NR_loc
+	     || A->Dtype != SLU_D || A->Mtype != SLU_GE)
+	     *info = -2;
+    	else if (ldb < m_loc)
+	     *info = -5;
+    	else if (nrhs < 0)
+	     *info = -6;
+	if (*info) {
+	   i = -(*info);
+	   pxerr_dist ("pdgssvx3d", grid, -*info);
+	   return;
+	}
+
+        /* Structures needed for parallel symbolic factorization */
+    	int_t *sizes, *fstVtxSep;
+	int noDomains, nprocs_num;
+    	MPI_Comm symb_comm;  /* communicator for symbolic factorization */
+    	int col, key; /* parameters for creating a new communicator */
+    	Pslu_freeable_t Pslu_freeable;
+    	float flinfo;
+    
 	sizes = NULL;
 	fstVtxSep = NULL;
 	symb_comm = MPI_COMM_NULL;
 	
-	/* Test the input parameters. */
-	*info = 0;
-	Fact = options->Fact;
-	if (Fact < 0 || Fact > FACTORED)
-	    *info = -1;
-	else if (options->RowPerm < 0 || options->RowPerm > MY_PERMR)
-	    *info = -1;
-	else if (options->ColPerm < 0 || options->ColPerm > MY_PERMC)
-	    *info = -1;
-	else if (options->IterRefine < 0 || options->IterRefine > SLU_EXTRA)
-	    *info = -1;
-	else if (options->IterRefine == SLU_EXTRA) {
-	    *info = -1;
-	    fprintf (stderr,
-		     "Extra precise iterative refinement yet to support.");
-	}
-	else if (A->nrow != A->ncol || A->nrow < 0 || A->Stype != SLU_NR_loc
-		 || A->Dtype != SLU_D || A->Mtype != SLU_GE)
-	    *info = -2;
-	else if (ldb < m_loc)
-	    *info = -5;
-	else if (nrhs < 0)
-	    *info = -6;
-	if (*info) {
-	    i = -(*info);
-	    pxerr_dist ("pdgssvx3d", grid, -*info);
-	    return;
-	}
-	
-	factored = (Fact == FACTORED);
 	Equil = (!factored && options->Equil == YES);
 	notran = (options->Trans == NOTRANS);
-	parSymbFact = options->ParSymbFact;
 	
 	iam = grid->iam;
 	job = 5;
@@ -630,10 +641,6 @@ pdgssvx3d (superlu_dist_options_t * options, SuperMatrix * A,
 	R = ScalePermstruct->R;
 	C = ScalePermstruct->C;
 	/********/
-	
-#if ( DEBUGlevel>=1 )
-	CHECK_MALLOC (iam, "Enter pdgssvx3d()");
-#endif
 	
 	/* Not factored & ask for equilibration */
 	if (Equil && Fact != SamePattern_SameRowPerm) {
@@ -776,6 +783,7 @@ pdgssvx3d (superlu_dist_options_t * options, SuperMatrix * A,
 		    a_GA = (double *) GAstore->nzval;
 		    GA_mem_use += nnz * sizeof (double);
 		}
+
 		else
 		    assert (GAstore->nzval == NULL);
 	    }
@@ -1172,8 +1180,8 @@ pdgssvx3d (superlu_dist_options_t * options, SuperMatrix * A,
 
     trf3Dpartition_t*  trf3Dpartition;
 
-    /* Perform numerical factorization in parallel on all process layers. */
-    if (!factored ) {
+    /* Perform numerical factorization in parallel on all process layers.*/
+    if ( !factored ) {
 
 	/* send the data across all the layers */
 	MPI_Bcast( &m, 1, mpi_int_t, 0,  grid3d->zscp.comm);
@@ -1217,16 +1225,20 @@ pdgssvx3d (superlu_dist_options_t * options, SuperMatrix * A,
 		SCT_print3D(grid3d, SCT);
 	    }
 	SCT_printComm3D(grid3d, SCT);
+
 	/*print memory usage*/
-	printMemUse( trf3Dpartition, LUstruct, grid3d );
+	d3D_printMemUse( trf3Dpartition, LUstruct, grid3d );
+
 	/*print forest weight and costs*/
 	printForestWeightCost(trf3Dpartition->sForests, SCT, grid3d);
 	/*reduces stat from all the layers*/
 #endif
 
+	dDestroy_trf3Dpartition(trf3Dpartition, grid3d);
+
     } /* end if not Factored */
     
-    if ( grid3d->zscp.Iam == 0 ) {
+    if ( grid3d->zscp.Iam == 0 ) { // only process layer 0
 	if (!factored) {
 	    if (options->PrintStat) {
 		int_t TinyPivots;
@@ -1272,19 +1284,18 @@ pdgssvx3d (superlu_dist_options_t * options, SuperMatrix * A,
 		}
 	    }
 	    
-	}   /* end if (!factored) */
+	}   /* end if not Factored */
 
 	/* ------------------------------------------------------------
 	   Compute the solution matrix X.
 	   ------------------------------------------------------------ */
-	if (nrhs)
-	    {
+	if (nrhs) {
 		if (!(b_work = doubleMalloc_dist (n)))
 		    ABORT ("Malloc fails for b_work[]");
 
 		/* ------------------------------------------------------
-		   Scale the right-hand side if equilibration was performed.
-		   ------------------------------------------------------ */
+		   Scale the right-hand side if equilibration was performed
+		   ------------------------------------------------------*/
 		if (notran)
 		    {
 			if (rowequ)
@@ -1329,9 +1340,9 @@ pdgssvx3d (superlu_dist_options_t * options, SuperMatrix * A,
 		    b_col += ldb;
 		}
 
-		/* ------------------------------------------------------------
+		/* ------------------------------------------------------
 		   Solve the linear system.
-		   ------------------------------------------------------------ */
+		   ------------------------------------------------------*/
 		if (options->SolveInitialized == NO) /* First time */
                    /* Inside this routine, SolveInitialized is set to YES.
 	              For repeated call to pdgssvx(), no need to re-initialilze
@@ -1408,12 +1419,12 @@ pdgssvx3d (superlu_dist_options_t * options, SuperMatrix * A,
 			    {	/* Use the existing solve structure */
 				SOLVEstruct1 = SOLVEstruct;
 			    }
-			else
-			    {	/* For nrhs > 1, since refinement is performed for RHS
-				   one at a time, the communication structure for pdgstrs
-				   is different than the solve with nrhs RHS.
-				   So we use SOLVEstruct1 for the refinement step.
-				*/
+			else {
+             /* For nrhs > 1, since refinement is performed for RHS
+		one at a time, the communication structure for pdgstrs
+		is different than the solve with nrhs RHS.
+		So we use SOLVEstruct1 for the refinement step.
+	      */
 				if (!(SOLVEstruct1 = (SOLVEstruct_t *)
 				      SUPERLU_MALLOC (sizeof (SOLVEstruct_t))))
 				    ABORT ("Malloc fails for SOLVEstruct1");
@@ -1523,9 +1534,11 @@ pdgssvx3d (superlu_dist_options_t * options, SuperMatrix * A,
 	if (!factored && Fact != SamePattern_SameRowPerm && !parSymbFact)
 	    Destroy_CompCol_Permuted_dist (&GAC);
 #endif
+
+    } /* process layer 0 done solve */
+
 #if ( DEBUGlevel>=1 )
 	CHECK_MALLOC (iam, "Exit pdgssvx3d()");
 #endif
 
-    } /* process layer 0 */
 }

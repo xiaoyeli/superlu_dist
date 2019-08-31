@@ -2403,6 +2403,8 @@ for (i=0;i<nroot_send;i++){
 
 		log_memory(-nlb*aln_i*iword-nlb*iword - nsupers_i*iword - (CEILING( nsupers, Pr )+CEILING( nsupers, Pc ))*aln_i*iword - maxrecvsz*(nbrecvx+1)*dword*2.0 - sizelsum*num_thread * dword*2.0 - (ldalsum * nrhs + nlb * XK_H) *dword*2.0 - (sizertemp*num_thread + 1)*dword*2.0, stat);	//account for bmod, brecv, root_send, rootsups, recvbuf_BC_fwd,rtemp,lsum,x
 
+		//		if (!iam) { printf("DBG: pzgstrs: after free memory\n"); fflush(stdout);}
+		
 		for (lk=0;lk<nsupers_j;++lk){
 			if(UBtree_ptr[lk]!=NULL){
 				// if(BcTree_IsRoot(LBtree_ptr[lk],'z')==YES){
@@ -2420,7 +2422,7 @@ for (i=0;i<nroot_send;i++){
 		}
 		MPI_Barrier( grid->comm );
 
-
+		//		if (!iam) { printf("DBG: pzgstrs: after Barrier\n"); fflush(stdout);}
 #if ( PROFlevel>=2 )
 		{
 			float msg_vol_max, msg_vol_sum, msg_cnt_max, msg_cnt_sum;

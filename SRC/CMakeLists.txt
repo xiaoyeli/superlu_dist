@@ -22,7 +22,6 @@ endif ()
 # first: precision-independent files
 #  global.cpp
 set(sources
-  TreeInterface.cpp
   sp_ienv.c
   etree.c 
   sp_colorder.c
@@ -45,6 +44,14 @@ set(sources
   dmach_dist.c
   colamd.c
   superlu_dist_version.c
+  TreeInterface.cpp
+  superlu_grid3d.c    ## 3D code
+  supernodal_etree.c
+  supernodalForest.c
+  trfAux.c 
+  communication_aux.c
+  treeFactorization.c 
+  sec_structs.o
 )
 if (MSVC)
   list(APPEND sources wingetopt.c)
@@ -95,6 +102,15 @@ if(enable_double)
     pdgsrfs_ABXglobal.c
     pdgsmv_AXglobal.c
     pdGetDiagU.c
+    pdgssvx3d.c     ## 3D code
+    pdgstrf3d.c 
+    dtreeFactorization.c
+    dgather.c
+    dscatter3d.c
+    pd3dcomm.c
+    dtrfAux.c	
+    dcommunication_aux.c 
+    dtrfCommWrapper.c
   )
 endif()
 
@@ -138,6 +154,14 @@ if(enable_complex16)
     pzgsrfs_ABXglobal.c
     pzgsmv_AXglobal.c
     pzGetDiagU.c
+    pzgssvx3d.c   ## 3D code
+    pzgstrf3d.c
+    ztreeFactorization.c 
+    zscatter3d.c
+    zgather.c 
+    pz3dcomm.c ztrfAux.c
+    zcommunication_aux.c
+    ztrfCommWrapper.c
   )
 endif()
 

@@ -294,7 +294,7 @@ int_t zSchurComplementSetupGPU(
     int_t* myIperm, 
     int_t* iperm_c_supno, int_t*perm_c_supno,
     gEtreeInfo_t*   gEtreeInfo, factNodelists_t* fNlists,
-    scuBufs_t* scuBufs, LUValSubBuf_t* LUvsb,
+    scuBufs_t* scuBufs, zLUValSubBuf_t* LUvsb,
     gridinfo_t *grid, LUstruct_t *LUstruct,
     HyP_t* HyP)
 {
@@ -508,7 +508,7 @@ trf3Dpartition_t* zinitTrf3Dpartition(int_t nsupers,
 
 #if ( DEBUGlevel>=1 )
     int iam = grid3d->iam;
-    CHECK_MALLOC (iam, "Enter initTrf3Dpartition()");
+    CHECK_MALLOC (iam, "Enter zinitTrf3Dpartition()");
 #endif
     int_t* perm_c_supno = getPerm_c_supno(nsupers, options, LUstruct, grid);
     int_t* iperm_c_supno = getFactIperm(perm_c_supno, nsupers);
@@ -544,7 +544,7 @@ trf3Dpartition_t* zinitTrf3Dpartition(int_t nsupers,
     int_t* myNodeCount = getMyNodeCountsFr(maxLvl, myTreeIdxs, sForests);
     int_t** treePerm = getTreePermFr( myTreeIdxs, sForests, grid3d);
 
-    LUValSubBuf_t *LUvsb = SUPERLU_MALLOC(sizeof(LUValSubBuf_t));
+    zLUValSubBuf_t *LUvsb = SUPERLU_MALLOC(sizeof(zLUValSubBuf_t));
     zLluBufInit(LUvsb, LUstruct);
 
     int_t* supernode2treeMap = SUPERLU_MALLOC(nsupers*sizeof(int_t));
@@ -571,11 +571,51 @@ trf3Dpartition_t* zinitTrf3Dpartition(int_t nsupers,
     trf3Dpartition->LUvsb = LUvsb;
     trf3Dpartition->supernode2treeMap = supernode2treeMap;
 
+    SUPERLU_FREE(treeList);  // Sherry added
+
 #if ( DEBUGlevel>=1 )
-    CHECK_MALLOC (iam, "Exit initTrf3Dpartition()");
+    CHECK_MALLOC (iam, "Exit zinitTrf3Dpartition()");
 #endif
     return trf3Dpartition;
 } /* zinitTrf3Dpartition */
+
+/* Free memory allocated for trf3Dpartition structure. Sherry added this routine */
+void zDestroy_trf3Dpartition(trf3Dpartition_t *trf3Dpartition, gridinfo3d_t *grid3d)
+{
+#if ( DEBUGlevel>=1 )
+    CHECK_MALLOC (grid3d->iam, "Enter zDestroy_trf3Dpartition()");
+#endif
+    SUPERLU_FREE(trf3Dpartition->gEtreeInfo.setree);
+    SUPERLU_FREE(trf3Dpartition->gEtreeInfo.numChildLeft);
+    SUPERLU_FREE(trf3Dpartition->iperm_c_supno);
+    SUPERLU_FREE(trf3Dpartition->myNodeCount);
+    SUPERLU_FREE(trf3Dpartition->myTreeIdxs);
+    SUPERLU_FREE(trf3Dpartition->myZeroTrIdxs);
+
+    int_t maxLvl = log2i(grid3d->zscp.Np) + 1;
+    int_t numForests = (1 << maxLvl) - 1;
+    sForest_t** sForests = trf3Dpartition->sForests;
+    for (int i = 0; i < numForests; ++i) {
+	if ( sForests[i] ) {
+	    SUPERLU_FREE(sForests[i]->nodeList);
+	    //SUPERLU_FREE(sForests[i]->treeHeads); // already freed
+	    SUPERLU_FREE((sForests[i]->topoInfo).eTreeTopLims);
+	    SUPERLU_FREE((sForests[i]->topoInfo).myIperm);
+	}
+    }
+    SUPERLU_FREE(trf3Dpartition->sForests); // double pointer 
+    SUPERLU_FREE(trf3Dpartition->treePerm); // double pointer pointing to sForests->nodeList
+    SUPERLU_FREE(trf3Dpartition->supernode2treeMap);
+
+    SUPERLU_FREE((trf3Dpartition->LUvsb)->Lsub_buf);
+    SUPERLU_FREE((trf3Dpartition->LUvsb)->Lval_buf);
+    SUPERLU_FREE((trf3Dpartition->LUvsb)->Usub_buf);
+    SUPERLU_FREE((trf3Dpartition->LUvsb)->Uval_buf);
+    SUPERLU_FREE(trf3Dpartition->LUvsb); // Sherry: check this ...
+#if ( DEBUGlevel>=1 )
+    CHECK_MALLOC (grid3d->iam, "Enter zDestroy_trf3Dpartition()");
+#endif
+}
 
 
 #if 0  //**** Sherry: following two routines are old, the new ones are in util.c

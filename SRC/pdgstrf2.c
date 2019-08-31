@@ -378,9 +378,21 @@ int_t LpanelUpdate(int_t off0,  int_t nsupc, double* ublk_ptr, int_t ld_ujrow,
     {
         int_t off = i * GT;
         int_t len = SUPERLU_MIN(GT, l - i * GT);
+#if 1
+  #if defined (USE_VENDOR_BLAS)
+        dtrsm_ ("R", "U", "N", "N", &len, &nsupc, &alpha,
+		ublk_ptr, &ld_ujrow, &lusup[off0 + off], &nsupr,
+		1, 1, 1, 1);
+  #else
+        dtrsm_ ("R", "U", "N", "N", &len, &nsupc, &alpha,
+		ublk_ptr, &ld_ujrow, &lusup[off0 + off], &nsupr);
+  #endif
+#else
         cblas_dtrsm (CblasColMajor, CblasRight, CblasUpper, CblasNoTrans, CblasNonUnit,
                      len, nsupc, alpha, ublk_ptr, ld_ujrow, &lusup[off0 + off], nsupr);
-    }
+#endif
+
+    } /* for i = ... */
 
     t1 = _rdtsc() - t1;
 
@@ -472,9 +484,14 @@ void Local_Dgstrf2(superlu_dist_options_t *options, int_t k, double thresh,
             int_t l = nsupc - j - 1;
 
 	    /* Rank-1 update */
+#if 1
+	    dger_ (&l, &cols_left, &alpha, &lusup[luptr + 1], &incx,
+		   &ujrow[ld_ujrow], &incy, &lusup[luptr + nsupr + 1], &nsupr);
+#else
             cblas_dger (CblasColMajor, l, cols_left, alpha, &lusup[luptr + 1], incx,
                         &ujrow[ld_ujrow], incy, &lusup[luptr + nsupr + 1],
                         nsupr);
+#endif
             stat->ops[FACT] += 2 * l * cols_left;
         }
 
@@ -717,8 +734,21 @@ int_t dTrs2_GatherTrsmScatter(int_t klst, int_t iukp, int_t rukp,
     /*now call dtrsm on packed dense block*/
     int_t luptr = (knsupc - ldu) * (nsupr + 1);
     // if(ldu>nsupr) printf("nsupr %d ldu %d\n",nsupr,ldu );
+
+#if 1
+  #if defined (USE_VENDOR_BLAS)
+     dtrsm_ ("L", "L", "N", "U", &ldu, &ncols, &alpha,
+	     &lusup[luptr], &nsupr, tempv, &ldu,
+	     1, 1, 1, 1);
+  #else
+     dtrsm_ ("L", "L", "N", "U", &ldu, &ncols, &alpha,
+	     &lusup[luptr], &nsupr, tempv, &ldu);
+  #endif
+#else
+
     cblas_dtrsm (CblasColMajor, CblasLeft, CblasLower, CblasNoTrans, CblasUnit,
                  ldu, ncols, alpha, &lusup[luptr], nsupr, tempv, ldu);
+#endif
 
     /*now scatter the output into sparse U block*/
     dTrs2_ScatterU(iukp, rukp, klst, nsupc, ldu, usub, uval, tempv);

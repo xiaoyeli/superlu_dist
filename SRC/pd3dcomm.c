@@ -215,7 +215,7 @@ int_t dzRecvLPanel(int_t k, int_t sender, double alpha, double beta,
     int_t** Lrowind_bc_ptr = Llu->Lrowind_bc_ptr;
     double** Lnzval_bc_ptr = Llu->Lnzval_bc_ptr;
     gridinfo_t* grid = &(grid3d->grid2d);
-    
+    int inc = 1;    
     int_t iam = grid->iam;
     int_t mycol = MYCOL (iam, grid);
     
@@ -239,8 +239,13 @@ int_t dzRecvLPanel(int_t k, int_t sender, double alpha, double beta,
 			     grid3d->zscp.comm, &status);
 		    
 		    /*reduce the updates*/
+#if 1
+		    dscal_(&len2, &alpha, lnzval, &inc);
+		    daxpy_(&len2, &beta, Lval_buf, &inc, lnzval, &inc);
+#else
 		    cblas_dscal (len2, alpha, lnzval, 1);
 		    cblas_daxpy (len2, beta, Lval_buf, 1, lnzval, 1);
+#endif
 		}
 	}
 
@@ -288,10 +293,11 @@ int_t dzRecvUPanel(int_t k, int_t sender, double alpha, double beta,
     int_t** Ufstnz_br_ptr = Llu->Ufstnz_br_ptr;
     double** Unzval_br_ptr = Llu->Unzval_br_ptr;
     gridinfo_t* grid = &(grid3d->grid2d);
+    int inc = 1;
     int_t iam = grid->iam;
-
     int_t myrow = MYROW (iam, grid);
     int_t pr = PROW( k, grid );
+
     if (myrow == pr)
 	{
 	    int_t lk = LBi( k, grid ); /* Local block number */
@@ -308,8 +314,13 @@ int_t dzRecvUPanel(int_t k, int_t sender, double alpha, double beta,
 			     grid3d->zscp.comm, &status);
 		    
 		    /*reduce the updates*/
+#if 1
+		    dscal_(&lenv, &alpha, unzval, &inc);
+		    daxpy_(&lenv, &beta, Uval_buf, &inc, unzval, &inc);
+#else
 		    cblas_dscal (lenv, alpha, unzval, 1);
 		    cblas_daxpy (lenv, beta, Uval_buf, 1, unzval, 1);
+#endif
 		}
 	}
     return 0;
@@ -728,7 +739,7 @@ int_t dreduceAncestors3d(int_t sender, int_t receiver,
 
 int_t dgatherFactoredLU(int_t sender, int_t receiver,
                         int_t nnodes, int_t *nodeList,
-                        LUValSubBuf_t*LUvsb,
+                        dLUValSubBuf_t* LUvsb,
                         LUstruct_t* LUstruct, gridinfo3d_t* grid3d, SCT_t* SCT)
 {
     double alpha = 0.0, beta = 1.0;	
@@ -778,7 +789,7 @@ int_t dinit3DLUstruct( int_t* myTreeIdxs, int_t* myZeroTrIdxs,
 
 
 int_t dreduceAllAncestors3d(int_t ilvl, int_t* myNodeCount, int_t** treePerm,
-                             LUValSubBuf_t* LUvsb, LUstruct_t* LUstruct,
+                             dLUValSubBuf_t* LUvsb, LUstruct_t* LUstruct,
                              gridinfo3d_t* grid3d, SCT_t* SCT )
 {
     double * Lval_buf  = LUvsb->Lval_buf;
@@ -821,7 +832,7 @@ int_t dgatherAllFactoredLU( trf3Dpartition_t*  trf3Dpartition,
     int_t myGrid = grid3d->zscp.Iam;
     int_t* myZeroTrIdxs = trf3Dpartition->myZeroTrIdxs;
     sForest_t** sForests = trf3Dpartition->sForests;
-    LUValSubBuf_t* LUvsb =  trf3Dpartition->LUvsb;
+    dLUValSubBuf_t*  LUvsb =  trf3Dpartition->LUvsb;
     int_t*  gNodeCount = getNodeCountsFr(maxLvl, sForests);
     int_t** gNodeLists = getNodeListFr(maxLvl, sForests);
     

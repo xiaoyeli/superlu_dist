@@ -22,7 +22,8 @@ int_t log2i(int_t index)
  */
 int_t *supernodal_etree(int_t nsuper, int_t * etree, int_t* supno, int_t *xsup)
 {
-	int_t *setree = malloc(sizeof(int_t) * nsuper);
+    //	int_t *setree = malloc(sizeof(int_t) * nsuper);
+	int_t *setree = intMalloc_dist(nsuper);
 	/*initialzing the loop*/
 	for (int i = 0; i < nsuper; ++i)
 	{
@@ -59,7 +60,8 @@ int_t* topological_ordering(int_t nsuper, int_t* setree)
 
 treeList_t* setree2list(int_t nsuper, int_t* setree )
 {
-    treeList_t* treeList = 	(treeList_t* ) malloc (sizeof(treeList_t) * (nsuper + 1));
+    treeList_t* treeList = (treeList_t* ) SUPERLU_MALLOC (sizeof(treeList_t) * (nsuper + 1));
+
 	// initialize the struct
 	for (int i = 0; i < nsuper + 1; ++i)
 	{
@@ -77,6 +79,7 @@ treeList_t* setree2list(int_t nsuper, int_t* setree )
 	    treeList[parenti].numDescendents +=  treeList[i].numDescendents;
 	    treeList[parenti].numChild++;
 	}
+
 	/*allocate memory for children lists*/
 	for (int i = 0; i < nsuper + 1; ++i)
 	{
@@ -91,7 +94,9 @@ treeList_t* setree2list(int_t nsuper, int_t* setree )
 	    treeList[parenti].childrenList[treeList[parenti].numChild] = i;
 	    treeList[parenti].numChild++;
 	}
+
 	return treeList;
+
 } /* setree2list */
 
 int_t estimateWeight(int_t nsupers, int_t*setree, treeList_t* treeList, int_t* xsup)

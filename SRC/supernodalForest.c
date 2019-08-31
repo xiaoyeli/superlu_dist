@@ -64,6 +64,8 @@ sForest_t**  getNestDissForests( int_t maxLvl, int_t nsupers, int_t*setree, tree
 	int_t** gNodeLists = getNodeList(maxLvl, setree, gNodeCount,
 	                                 gTreeHeads,  treeList);
 
+	SUPERLU_FREE(gTreeHeads); // Sherry added
+
 	for (int i = 0; i < numForests; ++i)
 	{
 		sForests[i] = NULL;
@@ -170,8 +172,6 @@ int_t calcTopInfoForest(sForest_t *forest,
 	SUPERLU_FREE(myTopOrderOld);
 	myIperm = getMyIperm(nnodes, nsupers, nodeListNew);
 
-
-
 	treeTopoInfo_t ttI;
 	ttI.myIperm = myIperm;
 	ttI.numLvl = myTopOrder[nnodes - 1] + 1;
@@ -181,7 +181,6 @@ int_t calcTopInfoForest(sForest_t *forest,
 	forest->topoInfo = ttI;
 
 	return 0;
-
 }
 
 // #pragma optimize ("", off)
@@ -893,9 +892,7 @@ sForest_t**  getOneLevelBalForests( int_t maxLvl, int_t nsupers, int_t * setree,
 			rForests[0].treeHeads[nRootTrees] = i;
 			nRootTrees++;
 		}
-
 	}
-
 
 	if (maxLvl == 1)
 	{

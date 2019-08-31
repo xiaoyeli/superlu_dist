@@ -24,7 +24,7 @@ at the top-level directory.
 #include "trfCommWrapper.h"
 #endif
 
-int_t dLluBufInit(LUValSubBuf_t* LUvsb, LUstruct_t *LUstruct)
+int_t dLluBufInit(dLUValSubBuf_t* LUvsb, LUstruct_t *LUstruct)
 {
     LocalLU_t *Llu = LUstruct->Llu;
     LUvsb->Lsub_buf = intMalloc_dist(Llu->bufmax[0]); //INT_T_ALLOC(Llu->bufmax[0]);
@@ -50,13 +50,13 @@ diagFactBufs_t** dinitDiagFactBufsArr(int_t mxLeafNode, int_t ldt, gridinfo_t* g
     return dFBufs;
 }
 
-LUValSubBuf_t** dLluBufInitArr(int_t numLA, LUstruct_t *LUstruct)
+dLUValSubBuf_t** dLluBufInitArr(int_t numLA, LUstruct_t *LUstruct)
 {
-    LUValSubBuf_t** LUvsbs = (LUValSubBuf_t**) SUPERLU_MALLOC(numLA * sizeof(LUValSubBuf_t*));
+    dLUValSubBuf_t** LUvsbs = (dLUValSubBuf_t**) SUPERLU_MALLOC(numLA * sizeof(dLUValSubBuf_t*));
     for (int_t i = 0; i < numLA; ++i)
     {
         /* code */
-        LUvsbs[i] = (LUValSubBuf_t*) SUPERLU_MALLOC(sizeof(LUValSubBuf_t));
+        LUvsbs[i] = (dLUValSubBuf_t*) SUPERLU_MALLOC(sizeof(dLUValSubBuf_t));
         dLluBufInit(LUvsbs[i], LUstruct);
     } /*minor for loop-3 for (int_t i = 0; i < numLA; ++i)*/
 
@@ -87,7 +87,7 @@ int_t ddenseTreeFactor(
     scuBufs_t *scuBufs,          // contains buffers for schur complement update
     packLUInfo_t*packLUInfo,
     msgs_t*msgs,
-    LUValSubBuf_t*LUvsb,
+    dLUValSubBuf_t* LUvsb,
     diagFactBufs_t *dFBuf,
     factStat_t *factStat,
     factNodelists_t  *fNlists,
@@ -244,7 +244,7 @@ int_t dsparseTreeFactor_ASYNC(
     scuBufs_t *scuBufs,          // contains buffers for schur complement update
     packLUInfo_t*packLUInfo,
     msgs_t**msgss,                  // size=num Look ahead
-    LUValSubBuf_t**LUvsbs,          // size=num Look ahead
+    dLUValSubBuf_t** LUvsbs,          // size=num Look ahead
     diagFactBufs_t **dFBufs,         // size maxEtree level
     factStat_t *factStat,
     factNodelists_t  *fNlists,

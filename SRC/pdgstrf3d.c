@@ -130,6 +130,10 @@ int_t pdgstrf3d(superlu_dist_options_t *options, int m, int n, double anorm,
     double s_eps = smach_dist("Epsilon");
     double thresh = s_eps * anorm;
 
+#if ( DEBUGlevel>=1 )
+    CHECK_MALLOC (grid3d->iam, "Enter pdgstrf3d()");
+#endif
+
     // initilize stat
     stat->ops[FACT] = 0;
     //if (!grid3d->zscp.Iam && !grid3d->iam) printf("Using NSUP=%d\n", (int) ldt);
@@ -167,6 +171,12 @@ int_t pdgstrf3d(superlu_dist_options_t *options, int m, int n, double anorm,
     int tag_ub = set_tag_ub();
     int_t maxLvl = log2i(grid3d->zscp.Np) + 1;
 
+#if ( PRNTlevel>=1 )
+    if (!iam) {
+        printf ("MPI tag upper bound = %d\n", tag_ub); fflush(stdout);
+    }
+#endif
+
     // trf3Dpartition_t*  trf3Dpartition = initTrf3Dpartition(nsupers, options, LUstruct, grid3d);
     gEtreeInfo_t gEtreeInfo = trf3Dpartition->gEtreeInfo;
     int_t* iperm_c_supno = trf3Dpartition->iperm_c_supno;
@@ -175,16 +185,15 @@ int_t pdgstrf3d(superlu_dist_options_t *options, int m, int n, double anorm,
     int_t* myZeroTrIdxs = trf3Dpartition->myZeroTrIdxs;
     sForest_t** sForests = trf3Dpartition->sForests;
     int_t** treePerm = trf3Dpartition->treePerm ;
-    LUValSubBuf_t *LUvsb = trf3Dpartition->LUvsb;
-    /*Initializing factorization specific buffers*/
+    dLUValSubBuf_t *LUvsb = trf3Dpartition->LUvsb;
+
+    /* Initializing factorization specific buffers */
 
     int_t numLA = getNumLookAhead(options);
-    LUValSubBuf_t**LUvsbs = dLluBufInitArr( SUPERLU_MAX( numLA, grid3d->zscp.Np ), LUstruct);
+    dLUValSubBuf_t** LUvsbs = dLluBufInitArr( SUPERLU_MAX( numLA, grid3d->zscp.Np ), LUstruct);
     msgs_t**msgss = initMsgsArr(numLA);
     int_t mxLeafNode    = 0;
-    for (int ilvl = 0; ilvl < maxLvl; ++ilvl)
-    {
-        /* code */
+    for (int ilvl = 0; ilvl < maxLvl; ++ilvl) {
         if (sForests[myTreeIdxs[ilvl]] && sForests[myTreeIdxs[ilvl]]->topoInfo.eTreeTopLims[1] > mxLeafNode )
             mxLeafNode    = sForests[myTreeIdxs[ilvl]]->topoInfo.eTreeTopLims[1];
     }
@@ -192,7 +201,7 @@ int_t pdgstrf3d(superlu_dist_options_t *options, int m, int n, double anorm,
     commRequests_t** comReqss = initCommRequestsArr(SUPERLU_MAX(mxLeafNode, numLA),
                                                     ldt, grid);
 
-    /*setting up GPU related stuff*/
+    /* Setting up GPU related data structures */
 
     int_t first_l_block_acc = 0;
     int_t first_u_block_acc = 0;
@@ -237,7 +246,7 @@ int_t pdgstrf3d(superlu_dist_options_t *options, int m, int n, double anorm,
         HyP->nCudaStreams = sluGPU->nCudaStreams;
     }
 
-#endif  // GPU_ACC
+#endif  // end GPU_ACC
 
     /*====  starting main factorization loop =====*/
     MPI_Barrier( grid3d->comm);
@@ -319,6 +328,9 @@ int_t pdgstrf3d(superlu_dist_options_t *options, int m, int n, double anorm,
 
     reduceStat(FACT, stat, grid3d);
 
+#if ( DEBUGlevel>=1 )
+    CHECK_MALLOC (grid3d->iam, "Exit pdgstrf3d()");
+#endif
     return 0;
 
 } /* pdgstrf3d */

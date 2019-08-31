@@ -344,7 +344,7 @@ typedef struct {
     MPI_Comm comm;        /* MPI communicator */
     superlu_scope_t rscp; /* row scope */
     superlu_scope_t cscp; /* column scope */
-    superlu_scope_t zscp; /* scope in third dim */
+    superlu_scope_t zscp; /* scope in third dimension */
     int iam;              /* my process number in this grid */
     int_t nprow;          /* number of process rows */
     int_t npcol;          /* number of process columns */
@@ -1186,7 +1186,7 @@ extern int_t* getIsNodeInMyGrid(int_t nsupers, int_t maxLvl, int_t* myNodeCount,
 extern void printForestWeightCost(sForest_t**  sForests, SCT_t* SCT, gridinfo3d_t* grid3d);
 extern sForest_t**  getGreedyLoadBalForests( int_t maxLvl, int_t nsupers, int_t* setree, treeList_t* treeList);
 extern sForest_t**  getForests( int_t maxLvl, int_t nsupers, int_t*setree, treeList_t* treeList);
-    
+
     /* from trfAux.h */
 extern int set_tag_ub();
 extern int getNumThreads(int);

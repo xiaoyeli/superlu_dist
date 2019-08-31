@@ -431,7 +431,7 @@ pzgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
 #if ( DEBUGlevel>=1 )
     if (s_eps == 0.0)
         printf (" ***** warning s_eps = %e *****\n", s_eps);
-    CHECK_MALLOC (iam, "Enter pdgstrf()");
+    CHECK_MALLOC (iam, "Enter pzgstrf()");
 #endif
 #if (PROFlevel >= 1 )
     gemm_stats = (gemm_profile *) SUPERLU_MALLOC(nsupers * sizeof(gemm_profile));

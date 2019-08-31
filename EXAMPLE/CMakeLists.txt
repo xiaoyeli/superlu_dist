@@ -57,6 +57,10 @@ if(enable_double)
   add_executable(pddrive4 ${DEXM4})
   target_link_libraries(pddrive4 ${all_link_libs})
 
+  set(DEXM3D pddrive3d.c dcreate_matrix.c)
+  add_executable(pddrive3d ${DEXM3D})
+  target_link_libraries(pddrive3d ${all_link_libs})
+
   set(DEXMG pddrive_ABglobal.c)
   add_executable(pddrive_ABglobal ${DEXMG})
   target_link_libraries(pddrive_ABglobal ${all_link_libs})
@@ -103,6 +107,10 @@ if(enable_complex16)
   set(ZEXM4 pzdrive4.c zcreate_matrix.c)
   add_executable(pzdrive4 ${ZEXM4})
   target_link_libraries(pzdrive4 ${all_link_libs})
+
+  set(ZEXM3D pzdrive3d.c zcreate_matrix.c)
+  add_executable(pzdrive3d ${ZEXM3D})
+  target_link_libraries(pzdrive3d ${all_link_libs})
 
   set(ZEXMG pzdrive_ABglobal.c)
   add_executable(pzdrive_ABglobal ${ZEXMG})

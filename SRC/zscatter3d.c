@@ -133,7 +133,7 @@ zblock_gemm_scatter( int_t lb, int_t j,
     // int_t cum_nrow =  Remain_info[lb].StRow;
     doublecomplex alpha = {1.0, 0.0}, beta = {0.0, 0.0};
 
-    /* calling DGEMM */
+    /* calling ZGEMM */
     // printf(" m %d n %d k %d ldu %d ldl %d st_col %d \n",temp_nbrow,ncols,ldu,ldl,st_col );
 #if 1
     zgemm_("N", "N", &temp_nbrow, &ncols, &ldu, &alpha,
@@ -238,14 +238,14 @@ zblock_gemm_scatter_lock( int_t lb, int_t j,
 
     doublecomplex alpha = {1.0, 0.0}, beta = {0.0, 0.0};
 
-    /* calling DGEMM */
+    /* calling ZGEMM */
 #if 1
     // printf(" m %d n %d k %d ldl %d st_col %d \n",temp_nbrow,ncols,ldu,ldl,st_col );
     zgemm_("N", "N", &temp_nbrow, &ncols, &ldu, &alpha,
            &L_mat[(knsupc - ldu)*ldl + cum_nrow], &ldl,
            &U_mat[st_col * ldu], &ldu, &beta, tempv1, &temp_nbrow);
 #else
-    cblas_dgemm(CblasColMajor, CblasNoTrans, CblasNoTrans,
+    cblas_zgemm(CblasColMajor, CblasNoTrans, CblasNoTrans,
                 temp_nbrow, ncols, ldu, alpha,
                 &L_mat[(knsupc - ldu)*ldl + cum_nrow], ldl,
                 &U_mat[st_col * ldu], ldu,

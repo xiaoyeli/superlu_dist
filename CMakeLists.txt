@@ -9,9 +9,9 @@ cmake_minimum_required(VERSION 2.8.12 FATAL_ERROR)
 
 # Project version numbers
 project(SuperLU_DIST C CXX)
-set(VERSION_MAJOR "6")
-set(VERSION_MINOR "1")
-set(VERSION_BugFix "1")
+set(VERSION_MAJOR "7")
+set(VERSION_MINOR "0")
+set(VERSION_BugFix "0")
 set(PROJECT_VERSION ${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_BugFix})
 
 list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake")

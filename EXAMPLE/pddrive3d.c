@@ -27,7 +27,7 @@ at the top-level directory.
  * Purpose
  * =======
  *
- * The driver program PDDRIVEx3D.
+ * The driver program PDDRIVE3D.
  *
  * This example illustrates how to use PDGSSVX3D with the full
  * (default) options to solve a linear system.
@@ -50,7 +50,7 @@ main (int argc, char *argv[])
 {
     superlu_dist_options_t options;
     SuperLUStat_t stat;
-    SuperMatrix A;
+    SuperMatrix A;  // only on process layer 0
     ScalePermstruct_t ScalePermstruct;
     LUstruct_t LUstruct;
     SOLVEstruct_t SOLVEstruct;
@@ -181,9 +181,8 @@ main (int argc, char *argv[])
 	    // printf("%s\n", suffix);
 	}
     }
-    if (!grid.zscp.Iam)  // only in process layer 0
+    if ( grid.zscp.Iam == 0 )  // only in process layer 0
 	dcreate_matrix_postfix(&A, nrhs, &b, &ldb, &xtrue, &ldx, fp, suffix, &(grid.grid2d));
-	//dcreate_matrix (&A, nrhs, &b, &ldb, &xtrue, &ldx, fp, &(grid.grid2d));
 
     if (!(berr = doubleMalloc_dist (nrhs)))
         ABORT ("Malloc fails for berr[].");
@@ -197,13 +196,16 @@ main (int argc, char *argv[])
        options.Equil             = YES;
        options.ParSymbFact       = NO;
        options.ColPerm           = METIS_AT_PLUS_A;
-       options.RowPerm           = LargeDiag;
+       options.RowPerm           = LargeDiag_MC64;
        options.ReplaceTinyPivot  = YES;
        options.IterRefine        = DOUBLE;
        options.Trans             = NOTRANS;
        options.SolveInitialized  = NO;
        options.RefineInitialized = NO;
        options.PrintStat         = YES;
+       options->num_lookaheads    = 10;
+       options->lookahead_etree   = NO;
+       options->SymPattern        = NO;
        options.DiagInv           = NO;
      */
     set_default_options_dist (&options);
@@ -221,7 +223,7 @@ main (int argc, char *argv[])
 	fflush(stdout);
     }
 
-    if (!grid.zscp.Iam)
+    if ( grid.zscp.Iam == 0 )  // Process layer 0
     {
 	m = A.nrow;
         n = A.ncol;
@@ -242,31 +244,34 @@ main (int argc, char *argv[])
                &LUstruct, &SOLVEstruct, berr, &stat, &info);
 
     /* Check the accuracy of the solution. */
-    if (!grid.zscp.Iam)
+    if ( grid.zscp.Iam == 0 )  // Process layer 0
         pdinf_norm_error (iam, ((NRformat_loc *) A.Store)->m_loc,
                           nrhs, b, ldb, xtrue, ldx, &(grid.grid2d));
     fflush(stdout);
-    if (!grid.zscp.Iam)
-	PStatPrint (&options, &stat, &(grid.grid2d)); /* Print 2D statistics.*/
 
     /* ------------------------------------------------------------
        DEALLOCATE STORAGE.
        ------------------------------------------------------------ */
 
-    PStatFree (&stat);
-    if (grid.zscp.Iam == 0) {
+    if ( grid.zscp.Iam == 0 ) { // process layer 0
+
+	PStatPrint (&options, &stat, &(grid.grid2d)); /* Print 2D statistics.*/
+
         Destroy_CompRowLoc_Matrix_dist (&A);
         Destroy_LU (n, &(grid.grid2d), &LUstruct);
         SUPERLU_FREE (b);
         SUPERLU_FREE (xtrue);
         SUPERLU_FREE (berr);
+        if (options.SolveInitialized) {
+            dSolveFinalize (&options, &SOLVEstruct);
+        }
     }
+
     ScalePermstructFree (&ScalePermstruct);
     LUstructFree (&LUstruct);
-    if (options.SolveInitialized)
-    {
-        dSolveFinalize (&options, &SOLVEstruct);
-    }
+
+    PStatFree (&stat);
+    printf("(%d) after StatFree\n", iam);
 
     /* ------------------------------------------------------------
        RELEASE THE SUPERLU PROCESS GRID.
