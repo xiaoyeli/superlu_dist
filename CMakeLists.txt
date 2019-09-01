@@ -160,7 +160,7 @@ if (enable_openmp)
     message("-- CMAKE_EXE_LINKER_FLAGS='${CMAKE_EXE_LINKER_FLAGS}'")
   endif()
 endif()
-set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -lomp")
+# set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -lomp")
 
 #--------------------- BLAS ---------------------
 if(NOT TPL_ENABLE_BLASLIB)
