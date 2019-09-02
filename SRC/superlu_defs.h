@@ -1107,6 +1107,8 @@ extern void SCT_print3D(gridinfo3d_t *grid3d, SCT_t* SCT);
 extern void SCT_free(SCT_t*);
 
 extern treeList_t* setree2list(int_t nsuper, int_t* setree );
+extern int  free_treelist(int_t nsuper, treeList_t* treeList);
+
 // int_t calcTreeWeight(int_t nsupers, treeList_t* treeList, int_t* xsup);
 extern int_t calcTreeWeight(int_t nsupers, int_t*setree, treeList_t* treeList, int_t* xsup);
 extern int_t getDescendList(int_t k, int_t*dlist,  treeList_t* treeList);
@@ -1201,11 +1203,16 @@ extern int_t* getFactIperm(int_t*, int_t);
 
 extern int_t initCommRequests(commRequests_t* comReqs, gridinfo_t * grid);
 extern int_t initFactStat(int_t nsupers, factStat_t* factStat);
+extern int   freeFactStat(factStat_t* factStat);
 extern int_t initFactNodelists(int_t, int_t, int_t, factNodelists_t*);
+extern int   freeFactNodelists(factNodelists_t* fNlists);
 extern int_t initMsgs(msgs_t* msgs);
 extern int_t getNumLookAhead(superlu_dist_options_t*);
 extern commRequests_t** initCommRequestsArr(int_t mxLeafNode, int_t ldt, gridinfo_t* grid);
+extern int   freeCommRequestsArr(int_t mxLeafNode, commRequests_t** comReqss);
+
 extern msgs_t** initMsgsArr(int_t numLA);
+extern int      freeMsgsArr(int_t numLA, msgs_t **msgss);
 
 extern int_t Trs2_InitUblock_info(int_t klst, int_t nb, Ublock_info_t *,
                                   int_t *usub, Glu_persist_t *, SuperLUStat_t*);

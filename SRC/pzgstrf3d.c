@@ -133,8 +133,11 @@ int_t pzgstrf3d(superlu_dist_options_t *options, int m, int n, double anorm,
     CHECK_MALLOC (grid3d->iam, "Enter pzgstrf3d()");
 #endif
 
-    // initilize stat
+    // Initilize stat
     stat->ops[FACT] = 0;
+    stat->current_buffer = 0.0;
+    stat->peak_buffer    = 0.0;
+    stat->gpu_buffer     = 0.0;
     //if (!grid3d->zscp.Iam && !grid3d->iam) printf("Using NSUP=%d\n", (int) ldt);
 
     //getting Nsupers

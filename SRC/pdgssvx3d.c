@@ -1234,7 +1234,8 @@ pdgssvx3d (superlu_dist_options_t * options, SuperMatrix * A,
 	/*reduces stat from all the layers*/
 #endif
 
-	dDestroy_trf3Dpartition(trf3Dpartition, grid3d);
+        dDestroy_trf3Dpartition(trf3Dpartition, grid3d);
+	SCT_free(SCT);
 
     } /* end if not Factored */
     

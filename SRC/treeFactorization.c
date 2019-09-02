@@ -243,6 +243,23 @@ commRequests_t** initCommRequestsArr(int_t mxLeafNode, int_t ldt, gridinfo_t* gr
     return comReqss;
 }
 
+// sherry added
+int freeCommRequestsArr(int_t mxLeafNode, commRequests_t** comReqss)
+{
+    for (int i = 0; i < mxLeafNode; ++i) {
+	SUPERLU_FREE(comReqss[i]->U_diag_blk_recv_req);
+	SUPERLU_FREE(comReqss[i]->L_diag_blk_recv_req);
+	SUPERLU_FREE(comReqss[i]->U_diag_blk_send_req);
+	SUPERLU_FREE(comReqss[i]->L_diag_blk_send_req);
+	SUPERLU_FREE(comReqss[i]->send_req);
+	SUPERLU_FREE(comReqss[i]->recv_req);
+	SUPERLU_FREE(comReqss[i]->send_requ);
+	SUPERLU_FREE(comReqss[i]->recv_requ);
+	SUPERLU_FREE(comReqss[i]);
+    }
+    SUPERLU_FREE(comReqss);
+}
+
 int_t initFactStat(int_t nsupers, factStat_t* factStat)
 {
     factStat->IrecvPlcd_D = intMalloc_dist( nsupers);
@@ -268,6 +285,18 @@ int_t initFactStat(int_t nsupers, factStat_t* factStat)
     return 0;
 }
 
+int freeFactStat(factStat_t* factStat)
+{
+    SUPERLU_FREE(factStat->IrecvPlcd_D);
+    SUPERLU_FREE(factStat->factored_D);
+    SUPERLU_FREE(factStat->factored_L);
+    SUPERLU_FREE(factStat->factored_U);
+    SUPERLU_FREE(factStat->factored);
+    SUPERLU_FREE(factStat->IbcastPanel_L);
+    SUPERLU_FREE(factStat->IbcastPanel_U);
+    SUPERLU_FREE(factStat->gpuLUreduced);
+}
+
 int_t initFactNodelists(int_t ldt, int_t num_threads, int_t nsupers,
 			factNodelists_t* fNlists)
 {
@@ -275,6 +304,15 @@ int_t initFactNodelists(int_t ldt, int_t num_threads, int_t nsupers,
     fNlists->perm_u = INT_T_ALLOC(nsupers);
     fNlists->indirect = INT_T_ALLOC(num_threads * ldt);
     fNlists->indirect2 = INT_T_ALLOC(num_threads * ldt);
+    return 0;
+}
+
+int freeFactNodelists(factNodelists_t* fNlists)
+{
+    SUPERLU_FREE(fNlists->iperm_u);
+    SUPERLU_FREE(fNlists->perm_u);
+    SUPERLU_FREE(fNlists->indirect);
+    SUPERLU_FREE(fNlists->indirect2);
     return 0;
 }
 
@@ -297,12 +335,32 @@ msgs_t** initMsgsArr(int_t numLA)
     return msgss;
 }
 
+// sherry added
+int freeMsgsArr(int_t numLA, msgs_t **msgss)
+{
+    for (int i = 0; i < numLA; ++i) {
+        SUPERLU_FREE(msgss[i]->msgcnt);
+        SUPERLU_FREE(msgss[i]->msgcntU);
+	SUPERLU_FREE(msgss[i]);
+    }
+    SUPERLU_FREE(msgss);
+}
+
 int_t initPackLUInfo(int_t nsupers, packLUInfo_t* packLUInfo)
 {
     packLUInfo->Ublock_info =  (Ublock_info_t*) SUPERLU_MALLOC (sizeof(Ublock_info_t) * nsupers);
     packLUInfo->Remain_info = (Remain_info_t* ) SUPERLU_MALLOC(sizeof(Remain_info_t) * nsupers);
     packLUInfo->uPanelInfo = (uPanelInfo_t* ) SUPERLU_MALLOC(sizeof(uPanelInfo_t));
     packLUInfo->lPanelInfo = (lPanelInfo_t*) SUPERLU_MALLOC(sizeof(lPanelInfo_t));
+    return 0;
+}
+
+int freePackLUInfo(packLUInfo_t* packLUInfo)  // sherry added 
+{
+    SUPERLU_FREE(packLUInfo->Ublock_info);
+    SUPERLU_FREE(packLUInfo->Remain_info);
+    SUPERLU_FREE(packLUInfo->uPanelInfo);
+    SUPERLU_FREE(packLUInfo->lPanelInfo);
     return 0;
 }
 

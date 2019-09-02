@@ -872,6 +872,9 @@ int_t zgatherAllFactoredLU( trf3Dpartition_t*  trf3Dpartition,
 		}
 	} /* for ilvl ... */
     	
+    SUPERLU_FREE(gNodeCount); // sherry added
+    SUPERLU_FREE(gNodeLists);
+
     return 0;
-}
+} /* zgatherAllFactoredLU */
 

@@ -49,6 +49,18 @@ diagFactBufs_t** zinitDiagFactBufsArr(int_t mxLeafNode, int_t ldt, gridinfo_t* g
     return dFBufs;
 }
 
+// sherry added
+int zfreeDiagFactBufsArr(int_t mxLeafNode, diagFactBufs_t** dFBufs)
+{
+    for (int i = 0; i < mxLeafNode; ++i) {
+	SUPERLU_FREE(dFBufs[i]->BlockUFactor);
+	SUPERLU_FREE(dFBufs[i]->BlockLFactor);
+	SUPERLU_FREE(dFBufs[i]);
+    }
+    SUPERLU_FREE(dFBufs);
+    return 0;
+}
+
 zLUValSubBuf_t** zLluBufInitArr(int_t numLA, LUstruct_t *LUstruct)
 {
     zLUValSubBuf_t** LUvsbs = (zLUValSubBuf_t**) SUPERLU_MALLOC(numLA * sizeof(zLUValSubBuf_t*));
@@ -62,6 +74,19 @@ zLUValSubBuf_t** zLluBufInitArr(int_t numLA, LUstruct_t *LUstruct)
     return LUvsbs;
 }
 
+// sherry added
+int zLluBufFreeArr(int_t numLA, zLUValSubBuf_t **LUvsbs)
+{
+    for (int_t i = 0; i < numLA; ++i) {
+	SUPERLU_FREE(LUvsbs[i]->Lsub_buf);
+	SUPERLU_FREE(LUvsbs[i]->Lval_buf);
+	SUPERLU_FREE(LUvsbs[i]->Usub_buf);
+	SUPERLU_FREE(LUvsbs[i]->Uval_buf);
+	SUPERLU_FREE(LUvsbs[i]);
+    }
+    SUPERLU_FREE(LUvsbs);
+}
+
 
 int_t zinitScuBufs(int_t ldt, int_t num_threads, int_t nsupers,
                   scuBufs_t* scuBufs,
@@ -72,6 +97,15 @@ int_t zinitScuBufs(int_t ldt, int_t num_threads, int_t nsupers,
     scuBufs->bigU = zgetBigU(nsupers, grid, LUstruct);
     return 0;
 }
+
+// sherry added
+int zfreeScuBufs(scuBufs_t* scuBufs)
+{
+    SUPERLU_FREE(scuBufs->bigV);
+    SUPERLU_FREE(scuBufs->bigU);
+    return 0;
+}
+
 int_t zinitDiagFactBufs(int_t ldt, diagFactBufs_t* dFBuf)
 {
     dFBuf->BlockUFactor = doublecomplexMalloc_dist(ldt * ldt); //DOUBLE_ALLOC( ldt * ldt);

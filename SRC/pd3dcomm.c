@@ -873,6 +873,11 @@ int_t dgatherAllFactoredLU( trf3Dpartition_t*  trf3Dpartition,
 		}
 	} /* for ilvl ... */
     	
+    SUPERLU_FREE(gNodeCount); // sherry added
+    //int numForests = (1 << maxLvl) - 1; // sherry added  ????
+    //for (int i = 0; i < numForests; ++i) SUPERLU_FREE(gNodeLists[i]);
+    SUPERLU_FREE(gNodeLists);
+
     return 0;
-}
+} /* dgatherAllFactoredLU */
 

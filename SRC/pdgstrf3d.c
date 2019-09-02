@@ -134,8 +134,11 @@ int_t pdgstrf3d(superlu_dist_options_t *options, int m, int n, double anorm,
     CHECK_MALLOC (grid3d->iam, "Enter pdgstrf3d()");
 #endif
 
-    // initilize stat
+    // Initilize stat
     stat->ops[FACT] = 0;
+    stat->current_buffer = 0.0;
+    stat->peak_buffer    = 0.0;
+    stat->gpu_buffer     = 0.0;
     //if (!grid3d->zscp.Iam && !grid3d->iam) printf("Using NSUP=%d\n", (int) ldt);
 
     //getting Nsupers
@@ -145,14 +148,16 @@ int_t pdgstrf3d(superlu_dist_options_t *options, int m, int n, double anorm,
     int_t iam = grid->iam; // in 2D grid
     int num_threads = getNumThreads(grid3d->iam);
 
-    diagFactBufs_t dFBuf;
-    dinitDiagFactBufs(ldt, &dFBuf);
-
     factStat_t factStat;
     initFactStat(nsupers, &factStat);
 
+#if 0  // sherry: not used
+    diagFactBufs_t dFBuf;
+    dinitDiagFactBufs(ldt, &dFBuf);
+
     commRequests_t comReqs;
     initCommRequests(&comReqs, grid);
+#endif
 
     SCT->tStartup = SuperLU_timer_();
     packLUInfo_t packLUInfo;
@@ -161,8 +166,8 @@ int_t pdgstrf3d(superlu_dist_options_t *options, int m, int n, double anorm,
     scuBufs_t scuBufs;
     dinitScuBufs(ldt, num_threads, nsupers, &scuBufs, LUstruct, grid);
 
-    msgs_t msgs;
-    initMsgs(&msgs);
+    // msgs_t msgs;
+    // initMsgs(&msgs); // sherry: not used
 
     factNodelists_t  fNlists;
     initFactNodelists( ldt, num_threads, nsupers, &fNlists);
@@ -209,8 +214,10 @@ int_t pdgstrf3d(superlu_dist_options_t *options, int m, int n, double anorm,
     int_t Pr = grid->nprow;
     int_t mrb =    (nsupers + Pr - 1) / Pr;
     int_t mcb =    (nsupers + Pc - 1) / Pc;
+
     HyP_t *HyP = (HyP_t *) malloc(sizeof(HyP_t));
     Init_HyP(HyP, Llu, mcb, mrb);
+
     HyP->first_l_block_acc = first_l_block_acc;
     HyP->first_u_block_acc = first_u_block_acc;
     int_t bigu_size = getBigUSize(nsupers, grid, LUstruct);
@@ -327,6 +334,18 @@ int_t pdgstrf3d(superlu_dist_options_t *options, int m, int n, double anorm,
 #endif
 
     reduceStat(FACT, stat, grid3d);
+
+    // sherry added
+    /* Deallocate factorization specific buffers */
+    freePackLUInfo(&packLUInfo);  
+    dfreeScuBufs(&scuBufs);
+    freeFactStat(&factStat);
+    freeFactNodelists(&fNlists);
+    freeMsgsArr(numLA, msgss);
+    freeCommRequestsArr(SUPERLU_MAX(mxLeafNode, numLA), comReqss);
+    dLluBufFreeArr(numLA, LUvsbs);
+    dfreeDiagFactBufsArr(mxLeafNode, dFBufs);
+    Free_HyP(HyP);
 
 #if ( DEBUGlevel>=1 )
     CHECK_MALLOC (grid3d->iam, "Exit pdgstrf3d()");

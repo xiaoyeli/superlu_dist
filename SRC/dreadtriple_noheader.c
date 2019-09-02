@@ -87,7 +87,7 @@ dreadtriple_noheader(FILE *fp, int_t *m, int_t *n, int_t *nonz,
 #endif
 
     /* Second pass: read the actual matrix values */
-    printf("m %ld, n %ld, nonz %ld\n", *m, *n, *nonz);
+    printf("m %ld, n %ld, nonz %ld\n", (long int) *m, (long int) *n, (long int) *nonz);
     dallocateA_dist(*n, new_nonz, nzval, rowind, colptr); /* Allocate storage */
     a    = *nzval;
     asub = *rowind;

@@ -52,7 +52,7 @@ void dinit3DLUstructForest( int_t* myTreeIdxs, int_t* myZeroTrIdxs,
     dinit3DLUstruct( myTreeIdxs, myZeroTrIdxs,
 		     gNodeCount, gNodeLists, LUstruct, grid3d);
 
-    SUPERLU_FREE(gNodeCount);
+    SUPERLU_FREE(gNodeCount);  // sherry added
     SUPERLU_FREE(gNodeLists);
 }
 
@@ -538,7 +538,7 @@ trf3Dpartition_t* dinitTrf3Dpartition(int_t nsupers,
     int_t* myTreeIdxs = getGridTrees(grid3d);
     int_t* myZeroTrIdxs = getReplicatedTrees(grid3d);
     int_t*  gNodeCount = getNodeCountsFr(maxLvl, sForests);
-    int_t** gNodeLists = getNodeListFr(maxLvl, sForests);
+    int_t** gNodeLists = getNodeListFr(maxLvl, sForests); // reuse NodeLists stored in sForests[]
 
     dinit3DLUstructForest(myTreeIdxs, myZeroTrIdxs,
                          sForests, LUstruct, grid3d);
@@ -556,7 +556,7 @@ trf3Dpartition_t* dinitTrf3Dpartition(int_t nsupers,
         for (int_t nd = 0; nd < gNodeCount[Fr]; ++nd)
         {
             /* code */
-            supernode2treeMap[gNodeLists[Fr][nd]]=Fr; 
+            supernode2treeMap[gNodeLists[Fr][nd]]=Fr;
         }
     }
 
@@ -572,7 +572,12 @@ trf3Dpartition_t* dinitTrf3Dpartition(int_t nsupers,
     trf3Dpartition->LUvsb = LUvsb;
     trf3Dpartition->supernode2treeMap = supernode2treeMap;
 
-    SUPERLU_FREE(treeList);  // Sherry added
+    // Sherry added
+    // Deallocate storage
+    SUPERLU_FREE(gNodeCount); 
+    SUPERLU_FREE(gNodeLists); 
+    SUPERLU_FREE(perm_c_supno);
+    free_treelist(nsupers, treeList);
 
 #if ( DEBUGlevel>=1 )
     CHECK_MALLOC (iam, "Exit dinitTrf3Dpartition()");
@@ -613,6 +618,9 @@ void dDestroy_trf3Dpartition(trf3Dpartition_t *trf3Dpartition, gridinfo3d_t *gri
     SUPERLU_FREE((trf3Dpartition->LUvsb)->Usub_buf);
     SUPERLU_FREE((trf3Dpartition->LUvsb)->Uval_buf);
     SUPERLU_FREE(trf3Dpartition->LUvsb); // Sherry: check this ...
+
+    SUPERLU_FREE(trf3Dpartition);
+
 #if ( DEBUGlevel>=1 )
     CHECK_MALLOC (grid3d->iam, "Enter dDestroy_trf3Dpartition()");
 #endif

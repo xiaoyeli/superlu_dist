@@ -86,7 +86,7 @@ zreadtriple_noheader(FILE *fp, int_t *m, int_t *n, int_t *nonz,
 #endif
 
     /* Second pass: read the actual matrix values */
-    printf("m %ld, n %ld, nonz %ld\n", *m, *n, *nonz);
+    printf("m %ld, n %ld, nonz %ld\n", (long int) *m, (long int) *n, (long int) *nonz);
     zallocateA_dist(*n, new_nonz, nzval, rowind, colptr); /* Allocate storage */
     a    = *nzval;
     asub = *rowind;
@@ -117,8 +117,8 @@ zreadtriple_noheader(FILE *fp, int_t *m, int_t *n, int_t *nonz,
 
 	if (row[nz] < 0 || row[nz] >= *m || col[nz] < 0 || col[nz] >= *n
 	    /*|| val[nz] == 0.*/) {
-	    fprintf(stderr, "nz %d, (%d, %d) = %e out of bound, removed\n",
-		    nz, row[nz], col[nz], val[nz]);
+	    fprintf(stderr, "nz %d, (%d, %d) = (%e, %e) out of bound, removed\n",
+		    nz, row[nz], col[nz], val[nz].r, val[nz].i);
 	    exit(-1);
 	} else {
 	    ++xa[col[nz]];

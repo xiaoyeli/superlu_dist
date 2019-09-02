@@ -136,9 +136,15 @@ zblock_gemm_scatter( int_t lb, int_t j,
     /* calling ZGEMM */
     // printf(" m %d n %d k %d ldu %d ldl %d st_col %d \n",temp_nbrow,ncols,ldu,ldl,st_col );
 #if 1
+  #if defined (USE_VENDOR_BLAS)
+    zgemm_("N", "N", &temp_nbrow, &ncols, &ldu, &alpha,
+          &L_mat[(knsupc - ldu)*ldl + cum_nrow], &ldl,
+          &U_mat[st_col * ldu], &ldu, &beta, tempv1, &temp_nbrow, 1, 1);
+  #else
     zgemm_("N", "N", &temp_nbrow, &ncols, &ldu, &alpha,
           &L_mat[(knsupc - ldu)*ldl + cum_nrow], &ldl,
           &U_mat[st_col * ldu], &ldu, &beta, tempv1, &temp_nbrow);
+  #endif
 #else
     // printf("%d %d %d %d  %d %d %d %d\n", temp_nbrow, ncols, ldu,  ldl,st_col,(knsupc - ldu)*ldl + cum_nrow,cum_nrow,st_col);
 
@@ -240,10 +246,16 @@ zblock_gemm_scatter_lock( int_t lb, int_t j,
 
     /* calling ZGEMM */
 #if 1
+  #if defined (USE_VENDOR_BLAS)
     // printf(" m %d n %d k %d ldl %d st_col %d \n",temp_nbrow,ncols,ldu,ldl,st_col );
     zgemm_("N", "N", &temp_nbrow, &ncols, &ldu, &alpha,
            &L_mat[(knsupc - ldu)*ldl + cum_nrow], &ldl,
+           &U_mat[st_col * ldu], &ldu, &beta, tempv1, &temp_nbrow, 1, 1);
+  #else
+    zgemm_("N", "N", &temp_nbrow, &ncols, &ldu, &alpha,
+           &L_mat[(knsupc - ldu)*ldl + cum_nrow], &ldl,
            &U_mat[st_col * ldu], &ldu, &beta, tempv1, &temp_nbrow);
+  #endif
 #else
     cblas_zgemm(CblasColMajor, CblasNoTrans, CblasNoTrans,
                 temp_nbrow, ncols, ldu, alpha,

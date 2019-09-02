@@ -51,7 +51,7 @@ set(sources
   trfAux.c 
   communication_aux.c
   treeFactorization.c 
-  sec_structs.o
+  sec_structs.c
 )
 if (MSVC)
   list(APPEND sources wingetopt.c)

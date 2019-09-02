@@ -99,6 +99,15 @@ treeList_t* setree2list(int_t nsuper, int_t* setree )
 
 } /* setree2list */
 
+// sherry added 
+int  free_treelist(int_t nsuper, treeList_t* treeList)
+{
+    for (int i = 0; i < nsuper + 1; ++i) {
+	SUPERLU_FREE(treeList[i].childrenList);
+    }
+    SUPERLU_FREE(treeList);
+}
+
 int_t estimateWeight(int_t nsupers, int_t*setree, treeList_t* treeList, int_t* xsup)
 {
 	if (getenv("WF"))
@@ -984,8 +993,8 @@ void printEtree(int_t nsuper, int_t *setree, treeList_t* treeList)
 	{
 		/* code */
 		// fprintf(fp, "%lld -> %lld;\n",iperm[i],iperm[setree[i]]);
-		fprintf(fp, " \"%lld|%lld\" -> \"%lld|%lld\";\n", i, treeList[i].depth,
-		        setree[i], treeList[setree[i]].depth);
+		fprintf(fp, " \"%d|%ld\" -> \"%ld|%ld\";\n", i, treeList[i].depth,
+		        (long int) setree[i], (long int) treeList[setree[i]].depth);
 	}
 
 	/*end of the file */

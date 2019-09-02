@@ -180,6 +180,8 @@ int_t calcTopInfoForest(sForest_t *forest,
 	forest->nodeList = nodeListNew;
 	forest->topoInfo = ttI;
 
+	SUPERLU_FREE(myTopOrder); // sherry added
+
 	return 0;
 }
 
@@ -617,7 +619,6 @@ forestPartition_t iterativeFrPartitioning(rForest_t* rforest, int_t nsupers, int
 	int_t nTreeSet = rforest->ntrees;
 	int_t* treeHeads =  rforest->treeHeads;
 
-
 	int_t nAnc = 0;
 	int_t* ancTreeCount = INT_T_ALLOC(MAX_TREE_ALLOWED);
 	int_t** ancNodeLists = SUPERLU_MALLOC(MAX_TREE_ALLOWED * sizeof(int_t*));
@@ -682,8 +683,6 @@ forestPartition_t iterativeFrPartitioning(rForest_t* rforest, int_t nsupers, int
 	// Create the Ancestor forest
 	sForest_t* aforest = createForestNew(nAnc, nsupers, ancTreeCount, ancNodeLists, setree, treeList);
 
-
-
 	// create the weight array;
 	double* sWeightArr = DOUBLE_ALLOC(nTreeSet);
 	for (int i = 0; i < nTreeSet ; ++i)
@@ -713,13 +712,13 @@ forestPartition_t iterativeFrPartitioning(rForest_t* rforest, int_t nsupers, int
 	frPr_t.S[0] = rforestS1;
 	frPr_t.S[1]	= rforestS2;
 
+	SUPERLU_FREE(weightArr);
+	SUPERLU_FREE(treeSet);
+	SUPERLU_FREE(sWeightArr);
+
 	// free stuff
 	// 	int_t* ancTreeCount = INT_T_ALLOC(MAX_TREE_ALLOWED);
 	// int_t** ancNodeLists = SUPERLU_MALLOC(MAX_TREE_ALLOWED * sizeof(int_t*));
-
-	SUPERLU_FREE(weightArr);
-	SUPERLU_FREE (treeSet);
-	SUPERLU_FREE (sWeightArr);
 
 	for (int i = 0; i < nAnc ; ++i)
 	{
@@ -731,7 +730,7 @@ forestPartition_t iterativeFrPartitioning(rForest_t* rforest, int_t nsupers, int
 	SUPERLU_FREE(ancNodeLists);
 
 	return frPr_t;
-}
+} /* iterativeFrPartitioning */
 
 
 
@@ -805,11 +804,13 @@ sForest_t**  getGreedyLoadBalForests( int_t maxLvl, int_t nsupers, int_t * setre
 
 	}
 
-
 	if (maxLvl == 1)
 	{
 		/* code */
 		sForests[0] = r2sForest(&rForests[0], nsupers, setree, treeList);
+
+		freeRforest(&rForests[0]);  // sherry added
+		SUPERLU_FREE(rForests);
 		return sForests;
 	}
 
@@ -849,8 +850,6 @@ sForest_t**  getGreedyLoadBalForests( int_t maxLvl, int_t nsupers, int_t * setre
 	}
 
 	SUPERLU_FREE(rForests);
-
-
 
 	return sForests;
 

@@ -1236,6 +1236,7 @@ pzgssvx3d (superlu_dist_options_t * options, SuperMatrix * A,
 #endif
 
         zDestroy_trf3Dpartition(trf3Dpartition, grid3d);
+	SCT_free(SCT);
 
     } /* end if not Factored */
     

@@ -127,6 +127,8 @@ double getFreq(void)
         }
 
     }
+
+    free(line); // sherry added
     return 0;
 }
 
@@ -263,9 +265,16 @@ void SCT_free(SCT_t* SCT)
     free(SCT->Host_TheadScatterMOP);
     free(SCT->Host_TheadScatterTimer);
 #endif
+#if 0
     _mm_free(SCT->SchurCompUdtThreadTime);
     _mm_free(SCT->Local_Dgstrf2_Thread_tl);
     _mm_free(SCT->GetAijLock_Thread_tl);
+#else
+    SUPERLU_FREE(SCT->SchurCompUdtThreadTime);
+    SUPERLU_FREE(SCT->Local_Dgstrf2_Thread_tl);
+    SUPERLU_FREE(SCT->GetAijLock_Thread_tl);
+#endif
+    SUPERLU_FREE(SCT); // sherry added
 }
 
 
@@ -560,6 +569,7 @@ void Init_HyP(HyP_t* HyP, LocalLU_t *Llu, int_t mcb, int_t mrb )
     HyP->Ublock_info_Phi = (Ublock_info_t *) _mm_malloc(mcb * sizeof(Ublock_info_t), 64);
     HyP->Ublock_info = (Ublock_info_t *) _mm_malloc(mcb * sizeof(Ublock_info_t), 64);
     HyP->Lblock_dirty_bit = (int_t *) _mm_malloc(mcb * sizeof(int_t), 64);
+    HyP->Ublock_dirty_bit = (int_t *) _mm_malloc(mrb * sizeof(int_t), 64);
 #else
     HyP->lookAhead_info = (Remain_info_t *) SUPERLU_MALLOC((mrb) * sizeof(Remain_info_t));
     HyP->lookAhead_L_buff = (double *) doubleMalloc_dist((Llu->bufmax[1]));
@@ -568,14 +578,13 @@ void Init_HyP(HyP_t* HyP, LocalLU_t *Llu, int_t mcb, int_t mrb )
     HyP->Ublock_info_Phi = (Ublock_info_t *) SUPERLU_MALLOC(mcb * sizeof(Ublock_info_t));
     HyP->Ublock_info = (Ublock_info_t *) SUPERLU_MALLOC(mcb * sizeof(Ublock_info_t));
     HyP->Lblock_dirty_bit = (int_t *) intMalloc_dist(mcb);
+    HyP->Ublock_dirty_bit = (int_t *) intMalloc_dist(mrb);
 #endif
 
     for (int_t i = 0; i < mcb; ++i)
     {
         HyP->Lblock_dirty_bit[i] = -1;
     }
-
-    HyP->Ublock_dirty_bit = (int_t *) _mm_malloc(mrb * sizeof(int_t), 64);
 
     for (int_t i = 0; i < mrb; ++i)
     {
@@ -590,7 +599,7 @@ void Init_HyP(HyP_t* HyP, LocalLU_t *Llu, int_t mcb, int_t mrb )
 
 void Free_HyP(HyP_t* HyP)
 {
-
+#if 0
     _mm_free(HyP->lookAhead_info );
     _mm_free(HyP->Remain_info );
     _mm_free(HyP->lookAhead_L_buff );
@@ -599,9 +608,17 @@ void Free_HyP(HyP_t* HyP)
     _mm_free(HyP->Ublock_info_Phi );
     _mm_free(HyP->Lblock_dirty_bit );
     _mm_free(HyP->Ublock_dirty_bit );
-
-    // #endif
-
+#else
+    SUPERLU_FREE(HyP->lookAhead_info );
+    SUPERLU_FREE(HyP->Remain_info );
+    SUPERLU_FREE(HyP->lookAhead_L_buff );
+    SUPERLU_FREE(HyP->Remain_L_buff );
+    SUPERLU_FREE(HyP->Ublock_info );
+    SUPERLU_FREE(HyP->Ublock_info_Phi );
+    SUPERLU_FREE(HyP->Lblock_dirty_bit );
+    SUPERLU_FREE(HyP->Ublock_dirty_bit );
+#endif
+    SUPERLU_FREE(HyP);
 }
 
 int updateDirtyBit(int_t k0, HyP_t* HyP, gridinfo_t* grid)

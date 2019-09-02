@@ -880,6 +880,7 @@ extern int_t zLPanelTrSolve(int_t k, int_t* factored_L, doublecomplex* BlockUFac
     /* from trfAux.h */
 extern int_t getNsupers(int, LUstruct_t *);
 extern int_t initPackLUInfo(int_t nsupers, packLUInfo_t* packLUInfo);
+extern int   freePackLUInfo(packLUInfo_t* packLUInfo);
 extern int_t zSchurComplementSetup(int_t k, int *msgcnt, Ublock_info_t*,
 				   Remain_info_t*, uPanelInfo_t *,
 				   lPanelInfo_t *, int_t*, int_t *, int_t *,
@@ -903,6 +904,7 @@ extern void getSCUweight(int_t nsupers, treeList_t* treeList, LUstruct_t *, grid
 extern int_t zLluBufInit(zLUValSubBuf_t*, LUstruct_t *);
 extern int_t zinitScuBufs(int_t ldt, int_t num_threads, int_t nsupers,
 			  scuBufs_t*, LUstruct_t*, gridinfo_t *);
+extern int zfreeScuBufs(scuBufs_t* scuBufs);
 
 // the generic tree factoring code 
 extern int_t treeFactor(
@@ -983,7 +985,9 @@ extern int_t zsparseTreeFactor_ASYNC(
     int *info
 );
 extern zLUValSubBuf_t** zLluBufInitArr(int_t numLA, LUstruct_t *LUstruct);
+extern int zLluBufFreeArr(int_t numLA, zLUValSubBuf_t **LUvsbs);
 extern diagFactBufs_t** zinitDiagFactBufsArr(int_t mxLeafNode, int_t ldt, gridinfo_t* grid);
+extern int zfreeDiagFactBufsArr(int_t mxLeafNode, diagFactBufs_t** dFBufs);
 extern int_t zinitDiagFactBufs(int_t ldt, diagFactBufs_t* dFBuf);
 extern int_t checkRecvUDiag(int_t k, commRequests_t *comReqs,
 			    gridinfo_t *grid, SCT_t *SCT);
