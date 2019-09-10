@@ -70,7 +70,12 @@ void *superlu_malloc_dist(size_t size)
 	printf("(%d) superlu_malloc size %lld\n", iam, size);
 	ABORT("superlu_malloc: nonpositive size");
     }
-    buf = (char *) malloc(size + DWORD);
+#ifdef GPU_ACC    
+	cudaMallocManaged(buf, size + DWORD);
+#else 
+	buf = (char *) malloc(size + DWORD);
+#endif
+	
     if ( !buf ) {
 	printf("(%d) superlu_malloc fails: malloc_total %.0f MB, size %lld\n",
 	       iam, superlu_malloc_total*1e-6, size);

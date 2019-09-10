@@ -39,6 +39,13 @@ at the top-level directory.
    #include <omp.h>
 #endif
 
+#ifdef GPU_ACC
+#include "cuda.h"
+#include "cuda_runtime_api.h"
+#include "cuda_runtime.h"
+#endif
+
+
 #include <mpi.h>
 #include <stdlib.h>
 #include <stdio.h>

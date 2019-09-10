@@ -40,6 +40,44 @@ typedef struct {
     int_t indpos; /* Starting position in Uindex[]. */
 } Ucb_indptr_t;
 
+
+
+/*
+ * CONSTANTS in MAGMA
+ */
+#ifndef MAGMA_CONST
+#define MAGMA_CONST
+
+ 
+
+#define DIM_X  16
+#define DIM_Y  16
+
+// #define DIM_X  16
+// #define DIM_Y  16
+
+
+#define BLK_M  DIM_X*4
+#define BLK_N  DIM_Y*4
+#define BLK_K 2048/(BLK_M)
+
+#define DIM_XA  DIM_X
+#define DIM_YA  DIM_Y
+#define DIM_XB  DIM_X
+#define DIM_YB  DIM_Y
+
+
+// // // // // // #define TILE_SIZE  32
+
+
+#define THR_M ( BLK_M / DIM_X )
+#define THR_N ( BLK_N / DIM_Y )
+
+#define fetch(A, m, n, bound) offs_d##A[min(n*LD##A+m, bound)]
+#define fma(A, B, C) C += (A*B)
+#endif
+
+
 /*
  * On each processor, the blocks in L are stored in compressed block
  * column format, the blocks in U are stored in compressed block row format.
@@ -305,6 +343,9 @@ extern void dlsum_fmod_inv(double *, double *, double *, double *,
 		       int, int_t , int_t *,
 		       int_t *, gridinfo_t *, LocalLU_t *,
 		       SuperLUStat_t **, int_t *, int_t *, int_t, int_t, int_t, int_t, int, int);
+			   
+extern void dlsum_fmod_inv_cuda_wrap(int_t, int_t, int_t, double *,double *,double *,int,int, int_t , int_t *, int_t *, gridinfo_t *, LocalLU_t *);			   
+			   
 extern void dlsum_fmod_inv_master(double *, double *, double *, double *,
 		       int, int, int_t , int_t *, int_t,
 		       int_t *, gridinfo_t *, LocalLU_t *,
@@ -389,7 +430,8 @@ extern void  dPrint_Dense_Matrix_dist(SuperMatrix *);
 extern int   dPrint_CompRowLoc_Matrix_dist(SuperMatrix *);
 extern int   file_dPrint_CompRowLoc_Matrix_dist(FILE *fp, SuperMatrix *A);
 extern int   file_PrintDouble5(FILE *, char *, int_t, double *);
-
+extern void dGenCOOLblocks(int, int_t, gridinfo_t*,
+		  Glu_persist_t*, LocalLU_t *, int_t* , int_t* , double * , int_t* , int_t* , int_t );
 
 /* BLAS */
 

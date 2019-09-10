@@ -5,10 +5,10 @@
 ######################################################################
 
 # Required version
-cmake_minimum_required(VERSION 2.8.12 FATAL_ERROR)
+cmake_minimum_required(VERSION 3.8 FATAL_ERROR)
 
 # Project version numbers
-project(SuperLU_DIST C CXX)
+project(SuperLU_DIST C CXX CUDA)
 set(VERSION_MAJOR "6")
 set(VERSION_MINOR "1")
 set(VERSION_BugFix "1")
@@ -24,6 +24,7 @@ option(enable_tests  "Build tests" ON)
 option(enable_examples  "Build examples" ON)
 option(TPL_ENABLE_BLASLIB  "Build the CBLAS library" ${enable_blaslib_DEFAULT})
 option(TPL_ENABLE_PARMETISLIB   "Build the ParMETIS library" ON)
+option(TPL_ENABLE_CUDALIB   "Enable the CUDA libraries" ON)
 option(TPL_ENABLE_LAPACKLIB "Enable LAPACK library" ON)
 option(TPL_PARMETIS_LIBRARIES "List of absolute paths to ParMETIS link libraries [].")
 option(TPL_PARMETIS_INCLUDE_DIRS "List of absolute paths to ParMETIS include directories [].")
@@ -178,6 +179,7 @@ endif()
 if(BLAS_FOUND)
     message("-- Using TPL_BLAS_LIBRARIES='${TPL_BLAS_LIBRARIES}'")
     set(CMAKE_C_FLAGS "-DUSE_VENDOR_BLAS ${CMAKE_C_FLAGS}")
+    set(CMAKE_CUDA_FLAGS "-DUSE_VENDOR_BLAS ${CMAKE_CUDA_FLAGS}")
     set(BLAS_LIB ${TPL_BLAS_LIBRARIES})
     # fix up BLAS library name
     string (REPLACE ";" " " BLAS_LIB_STR "${BLAS_LIB}")
@@ -235,6 +237,8 @@ if (TPL_ENABLE_PARMETISLIB)   ## want to use parmetis
     endif()
     set(CMAKE_C_FLAGS "-I${dir} ${CMAKE_C_FLAGS}")
   endforeach()
+  
+
 
   message("-- Enabled support for PARMETIS.")
   set(PARMETIS_FOUND TRUE)
@@ -258,6 +262,33 @@ endif()
 if(PARMETIS_FOUND)
   set(HAVE_PARMETIS TRUE)
 endif()
+
+
+
+#--------------------- CUDA libraries ---------------------
+if (TPL_ENABLE_CUDALIB)   ## want to use cuda
+  if (NOT TPL_CUDA_LIBRARIES)
+    message(FATAL_ERROR "TPL_CUDA_LIBRARIES option should be set for CUDA support to be enabled.")
+  endif()
+  message("-- Enabled support for CUDA.")
+  set(CUDA_LIB ${TPL_CUDA_LIBRARIES})
+  # fix up PARMETIS library names
+  string (REPLACE ";" " " CUDA_LIB_STR "${CUDA_LIB}")
+  set(CUDA_LIB_EXPORT ${CUDA_LIB_STR}) 
+  set(HAVE_CUDA TRUE)
+endif()
+
+
+#---------------------- Additional C linker library ---------
+SET(_c_libs ${CMAKE_C_IMPLICIT_LINK_LIBRARIES})
+FOREACH(_lib ${_c_libs})
+  set(EXTRA_LIB "-l${_lib} ${EXTRA_LIB}")
+ENDFOREACH()
+message("-- EXTRA_LIB='${EXTRA_LIB}'")
+string (REPLACE ";" " " EXTRA_LIB_STR "${EXTRA_LIB}")
+set(EXTRA_LIB_EXPORT ${EXTRA_LIB_STR}) 
+message("-- EXTRA_LIB_EXPORT='${EXTRA_LIB_EXPORT}'")
+
 
 #--------------------- CombBLAS ---------------------
 if (TPL_ENABLE_COMBBLASLIB)   ## want to use CombBLAS
@@ -343,3 +374,5 @@ configure_file(${SuperLU_DIST_SOURCE_DIR}/SRC/superlu_dist_config.h.in ${SuperLU
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/superlu_dist.pc.in ${CMAKE_CURRENT_BINARY_DIR}/superlu_dist.pc @ONLY)
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/superlu_dist.pc
 	DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig)
+	
+	

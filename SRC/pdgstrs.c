@@ -22,11 +22,18 @@ at the top-level directory.
  * February 8, 2019  version 6.1.1
  * </pre>
  */
+#include "cublas_utils.h" 
 #include <math.h>
+#include <cusparse.h>				 
+#include <cuda_profiler_api.h>				 
 #include "superlu_ddefs.h"
 #ifndef CACHELINE
 #define CACHELINE 64  /* bytes, Xeon Phi KNL, Cori haswell, Edision */
 #endif
+
+// #ifndef GPUREF
+// #define GPUREF 1  
+// #endif
 
 /*
  * Sketch of the algorithm for L-solve:
@@ -97,6 +104,24 @@ _fcd ftcs1;
 _fcd ftcs2;
 _fcd ftcs3;
 #endif
+
+
+
+
+inline
+cudaError_t checkCuda1(cudaError_t result)
+{
+#if defined(DEBUG) || defined(_DEBUG)
+    if (result != cudaSuccess) {
+        fprintf(stderr, "CUDA Runtime Error: %s\n", cudaGetErrorString(result));
+        assert(result == cudaSuccess);
+    }
+#endif
+    return result;
+}
+
+
+
 
 /*! \brief
  *
@@ -681,7 +706,7 @@ pdCompute_Diag_Inv(int_t n, LUstruct_t *LUstruct,gridinfo_t *grid,
     t = SuperLU_timer_();
 #endif
 
-#if ( PRNTlevel>=2 )
+#if ( PRNTlevel>=1 )
     if ( grid->iam==0 ) {
 	printf("computing inverse of diagonal blocks...\n");
 	fflush(stdout);
@@ -935,7 +960,7 @@ pdgstrs(int_t n, LUstruct_t *LUstruct,
     int_t tmpresult;
 
     // #if ( PROFlevel>=1 )
-    double t1, t2;
+    double t1, t2, t3;
     float msg_vol = 0, msg_cnt = 0;
     // #endif
 
@@ -958,10 +983,61 @@ pdgstrs(int_t n, LUstruct_t *LUstruct,
     	static int thread_id;
     yes_no_t empty;
     int_t sizelsum,sizertemp,aln_d,aln_i;
-    aln_d = ceil(CACHELINE/(double)dword);
-    aln_i = ceil(CACHELINE/(double)iword);
+    aln_d = 1;//ceil(CACHELINE/(double)dword);
+    aln_i = 1;//ceil(CACHELINE/(double)iword);
     int num_thread = 1;
 
+	
+#ifdef GPU_ACC
+
+#ifdef GPUREF
+	int_t *cooCols,*cooRows;
+	double *cooVals;
+	int_t ntmp,nnzL;
+	
+    cusparseHandle_t handle = NULL;
+    cudaStream_t stream = NULL;
+    cusparseStatus_t status1 = CUSPARSE_STATUS_SUCCESS;	
+	cudaError_t cudaStat = cudaSuccess;
+    cusparseMatDescr_t descrA = NULL;
+    csrsm2Info_t info1 = NULL;	
+	
+	
+	int_t *d_csrRowPtr = NULL;
+	int_t *d_cooRows = NULL;
+    int_t *d_cooCols = NULL;
+    int_t *d_P       = NULL;
+    double *d_cooVals = NULL;
+    double *d_csrVals = NULL;
+    double *d_B = NULL;
+    double *Btmp;
+    size_t pBufferSizeInBytes = 0;
+    void *pBuffer = NULL;	
+    int_t *perm_r = ScalePermstruct->perm_r;
+    int_t *perm_c = ScalePermstruct->perm_c;
+	int_t l;
+	
+	
+    size_t lworkInBytes = 0;
+    char *d_work = NULL;
+
+    const int algo = 0; /* non-block version */	
+	const double h_one = 1.0;
+	const cusparseSolvePolicy_t policy = CUSPARSE_SOLVE_POLICY_NO_LEVEL;
+
+#else	
+	
+	const int nwrp_block = 1; /* number of warps in each block */
+	const int warp_size = 32; /* number of threads per warp*/
+	cudaStream_t sid=0;
+	int gid=0;
+#endif		
+#endif
+
+
+// cudaProfilerStart();
+
+	
 	maxsuper = sp_ienv_dist(3);
 
 #ifdef _OPENMP
@@ -1076,7 +1152,7 @@ pdgstrs(int_t n, LUstruct_t *LUstruct,
 #endif
     if ( !(x = (double*)SUPERLU_MALLOC((ldalsum * nrhs + nlb * XK_H) * sizeof(double))) )
 	ABORT("Calloc fails for x[].");
-
+	
 
     sizertemp=ldalsum * nrhs;
     sizertemp = ((sizertemp + (aln_d - 1)) / aln_d) * aln_d;
@@ -1113,7 +1189,7 @@ pdgstrs(int_t n, LUstruct_t *LUstruct,
     pdReDistribute_B_to_X(B, m_loc, nrhs, ldb, fst_row, ilsum, x,
 			  ScalePermstruct, Glu_persist, grid, SOLVEstruct);
 
-#if ( PRNTlevel>=2 )
+#if ( PRNTlevel>=1 )
     t = SuperLU_timer_() - t;
     if ( !iam) printf(".. B to X redistribute time\t%8.4f\n", t);
     fflush(stdout);
@@ -1212,7 +1288,7 @@ if(procs==1){
 	fflush(stdout);
 #endif
 
-#if ( PRNTlevel>=2 )
+#if ( PRNTlevel>=1 )
 	t = SuperLU_timer_() - t;
 	if ( !iam) printf(".. Setup L-solve time\t%8.4f\n", t);
 	fflush(stdout);
@@ -1237,6 +1313,316 @@ if(procs==1){
 	printf("(%2d) nleaf %4d\n", iam, nleaf);
 	fflush(stdout);
 #endif
+
+
+
+	// ii = X_BLK( 0 );
+	// knsupc = SuperSize( 0 );
+	// for (i=0 ; i<knsupc*nrhs ; i++){
+	// printf("x_l: %f\n",x[ii+i]);
+	// fflush(stdout);
+	// }
+
+
+
+
+
+#ifdef GPU_ACC /* CPU trisolve*/
+// #if 0 /* CPU trisolve*/
+
+#ifdef GPUREF /* use cuSparse*/
+
+	if ( !(Btmp = (double*)SUPERLU_MALLOC((nrhs*m_loc) * sizeof(double))) )
+		ABORT("Calloc fails for Btmp[].");			
+	if(procs>1){
+	printf("procs>1 with GPU not implemented for trisolve using CuSparse\n");
+	fflush(stdout);
+	exit(1);
+	}
+	
+	t1 = SuperLU_timer_();
+dGenCOOLblocks(iam, nsupers, grid,Glu_persist,Llu, cooRows, cooCols, cooVals, &ntmp, &nnzL, 1);
+
+if ( !(cooRows = (int_t*)SUPERLU_MALLOC(nnzL * sizeof(int_t))) )
+	ABORT("Malloc fails for cooRows[].");
+if ( !(cooCols = (int_t*)SUPERLU_MALLOC(nnzL * sizeof(int_t))) )
+	ABORT("Malloc fails for cooCols[].");
+if ( !(cooVals = (double*)SUPERLU_MALLOC(nnzL * sizeof(double))) )
+	ABORT("Malloc fails for cooVals[].");
+dGenCOOLblocks(iam, nsupers, grid,Glu_persist,Llu, cooRows, cooCols, cooVals, &ntmp, &nnzL, 2);
+
+	
+	t1 = SuperLU_timer_() - t1;	
+	if ( !iam ) {
+		printf(".. convert to COO time\t%15.7f\n", t1);
+		fflush(stdout);
+	}		
+	
+	t1 = SuperLU_timer_();
+	checkCuda1(cudaStreamCreateWithFlags(&stream, cudaStreamDefault));		
+	status1 = cusparseCreate(&handle);
+    assert(CUSPARSE_STATUS_SUCCESS == status1);			
+    status1 = cusparseSetStream(handle, stream);
+    assert(CUSPARSE_STATUS_SUCCESS == status1);	
+    status1 = cusparseCreateCsrsm2Info(&info1);
+    assert(CUSPARSE_STATUS_SUCCESS == status1);	
+	status1 = cusparseCreateMatDescr(&descrA);
+    assert(CUSPARSE_STATUS_SUCCESS == status1);
+	
+	t1 = SuperLU_timer_() - t1;	
+	if ( !iam ) {
+		printf(".. cuda initialize time\t%15.7f\n", t1);
+		fflush(stdout);
+	}		
+	t1 = SuperLU_timer_();
+	
+	
+	checkCuda1(cudaMalloc( (void**)&d_B, sizeof(double)*ntmp*nrhs));
+	checkCuda1(cudaMalloc( (void**)&d_cooRows, sizeof(int)*nnzL));
+	checkCuda1(cudaMalloc( (void**)&d_cooCols, sizeof(int)*nnzL));
+	checkCuda1(cudaMalloc( (void**)&d_P      , sizeof(int)*nnzL));
+	checkCuda1(cudaMalloc( (void**)&d_cooVals, sizeof(double)*nnzL));
+	checkCuda1(cudaMalloc( (void**)&d_csrVals, sizeof(double)*nnzL));
+	
+
+	for (i = 0; i < ntmp; ++i) {
+		irow = perm_c[perm_r[i+fst_row]]; /* Row number in Pc*Pr*B */
+		RHS_ITERATE(j) {
+		Btmp[irow + j*ldb]=B[i + j*ldb];
+		// printf("%d %e\n",irow + j*ldb,Btmp[irow + j*ldb]);
+		}
+	}
+
+	t1 = SuperLU_timer_() - t1;	
+	if ( !iam ) {
+		printf(".. cudaMalloc time\t%15.7f\n", t1);
+		fflush(stdout);
+	}	
+	t1 = SuperLU_timer_();
+	
+	checkCuda1(cudaMemcpy(d_B, Btmp, sizeof(double)*nrhs*ntmp, cudaMemcpyHostToDevice));	
+	checkCuda1(cudaMemcpy(d_cooRows, cooRows, sizeof(int)*nnzL   , cudaMemcpyHostToDevice));
+	checkCuda1(cudaMemcpy(d_cooCols, cooCols, sizeof(int)*nnzL   , cudaMemcpyHostToDevice));
+	checkCuda1(cudaMemcpy(d_cooVals, cooVals, sizeof(double)*nnzL, cudaMemcpyHostToDevice));
+	
+	
+	// checkCuda1(cudaDeviceSynchronize);
+	checkCuda1(cudaStreamSynchronize(stream));
+	
+	t1 = SuperLU_timer_() - t1;	
+	if ( !iam ) {
+		printf(".. HostToDevice time\t%15.7f\n", t1);
+		fflush(stdout);
+	}		
+	t1 = SuperLU_timer_();
+	
+	status1 = cusparseXcoosort_bufferSizeExt(
+        handle,
+        ntmp, 
+        ntmp,
+        nnzL,
+        d_cooRows,
+        d_cooCols,
+        &pBufferSizeInBytes
+    );
+    assert( CUSPARSE_STATUS_SUCCESS == status1);		
+	checkCuda1(cudaMalloc( (void**)&pBuffer, sizeof(char)* pBufferSizeInBytes));	
+	
+	
+    status1 = cusparseCreateIdentityPermutation(
+        handle,
+        nnzL,
+        d_P);
+    assert( CUSPARSE_STATUS_SUCCESS == status1);	
+    status1 = cusparseXcoosortByRow(
+        handle, 
+        ntmp, 
+        ntmp, 
+        nnzL, 
+        d_cooRows, 
+        d_cooCols, 
+        d_P, 
+        pBuffer
+    ); 
+    assert( CUSPARSE_STATUS_SUCCESS == status1);	
+
+    status1 = cusparseDgthr(
+        handle, 
+        nnzL, 
+        d_cooVals, 
+        d_csrVals, 
+        d_P, 
+        CUSPARSE_INDEX_BASE_ZERO
+    ); 
+    assert( CUSPARSE_STATUS_SUCCESS == status1);
+
+
+	
+	// checkCuda1(cudaMalloc( (void**)&d_cooRows, sizeof(int)*nnzL));
+	
+	checkCuda1(cudaMalloc( (void**)&d_csrRowPtr,(ntmp+1)*sizeof(d_csrRowPtr[0])));
+	
+	status1= cusparseXcoo2csr(handle,d_cooRows,nnzL,ntmp,d_csrRowPtr,CUSPARSE_INDEX_BASE_ZERO);
+	assert( CUSPARSE_STATUS_SUCCESS == status1);
+	
+
+
+
+	// checkCuda1(cudaDeviceSynchronize);
+	checkCuda1(cudaStreamSynchronize(stream));
+	
+	t1 = SuperLU_timer_() - t1;	
+	if ( !iam ) {
+		printf(".. Cusparse convert time\t%15.7f\n", t1);
+		fflush(stdout);
+	}		
+	t1 = SuperLU_timer_();
+	
+	
+	
+/* A is base-0*/
+    cusparseSetMatIndexBase(descrA,CUSPARSE_INDEX_BASE_ZERO);
+
+    cusparseSetMatType(descrA, CUSPARSE_MATRIX_TYPE_GENERAL);
+/* A is lower triangle */
+    cusparseSetMatFillMode(descrA, CUSPARSE_FILL_MODE_LOWER);
+/* A has non unit diagonal */
+    cusparseSetMatDiagType(descrA, CUSPARSE_DIAG_TYPE_UNIT);
+
+    status1 = cusparseDcsrsm2_bufferSizeExt(
+        handle,
+        algo,
+        CUSPARSE_OPERATION_NON_TRANSPOSE, /* transA */
+        CUSPARSE_OPERATION_NON_TRANSPOSE, /* transB */
+        ntmp,
+        nrhs,
+        nnzL,
+        &h_one,
+        descrA,
+        d_csrVals,
+        d_csrRowPtr,
+        d_cooCols,
+        d_B,
+        ntmp,   /* ldb */
+        info1,
+        policy,
+        &lworkInBytes);
+    assert(CUSPARSE_STATUS_SUCCESS == status1);	
+	
+	printf("lworkInBytes  = %lld \n", (long long)lworkInBytes);
+    if (NULL != d_work) { cudaFree(d_work); }	
+	checkCuda1(cudaMalloc( (void**)&d_work, lworkInBytes));
+	
+    status1 = cusparseDcsrsm2_analysis(
+        handle,
+        algo,
+        CUSPARSE_OPERATION_NON_TRANSPOSE, /* transA */
+        CUSPARSE_OPERATION_NON_TRANSPOSE, /* transB */
+        ntmp,
+        nrhs,
+        nnzL,
+        &h_one,
+        descrA,
+        d_csrVals,
+        d_csrRowPtr,
+        d_cooCols,
+        d_B,
+        ntmp,   /* ldb */
+        info1,
+        policy,
+        d_work);
+    assert(CUSPARSE_STATUS_SUCCESS == status1);	
+	
+
+	t1 = SuperLU_timer_() - t1;	
+	if ( !iam ) {
+		printf(".. Cusparse analysis time\t%15.7f\n", t1);
+		fflush(stdout);
+	}			
+	
+	t1 = SuperLU_timer_();
+    status1 = cusparseDcsrsm2_solve(
+        handle,
+        algo,
+        CUSPARSE_OPERATION_NON_TRANSPOSE, /* transA */
+        CUSPARSE_OPERATION_NON_TRANSPOSE, /* transB */
+        ntmp,
+        nrhs,
+        nnzL,
+        &h_one,
+        descrA,
+        d_csrVals,
+        d_csrRowPtr,
+        d_cooCols,
+        d_B,
+        ntmp,   /* ldb */
+        info1,
+        policy,
+        d_work);
+    assert(CUSPARSE_STATUS_SUCCESS == status1);
+    // checkCuda1(cudaDeviceSynchronize);
+	checkCuda1(cudaStreamSynchronize(stream));
+	
+	t1 = SuperLU_timer_() - t1;	
+	if ( !iam ) {
+		printf(".. Cusparse solve time\t%15.7f\n", t1);
+		fflush(stdout);
+	}	
+	
+	t1 = SuperLU_timer_();
+	checkCuda1(cudaMemcpy(Btmp, d_B, sizeof(double)*ntmp*nrhs, cudaMemcpyDeviceToHost));
+	// checkCuda1(cudaDeviceSynchronize);
+	checkCuda1(cudaStreamSynchronize(stream));
+	t1 = SuperLU_timer_() - t1;	
+	if ( !iam ) {
+		printf(".. DeviceToHost time\t%15.7f\n", t1);
+		fflush(stdout);
+	}		
+
+	
+	for (i = 0; i < m_loc; ++i) {
+		irow = i+fst_row; 
+
+		k = BlockNum( irow );
+		knsupc = SuperSize( k );
+		l = X_BLK( k );
+
+		irow = irow - FstBlockC(k); /* Relative row number in X-block */
+		RHS_ITERATE(j) {
+		x[l + irow + j*knsupc] = Btmp[i + j*ldb];
+		// printf("%d %e\n",l + irow + j*knsupc,x[l + irow + j*knsupc]);
+		// fflush(stdout);
+		}
+	}
+	SUPERLU_FREE(Btmp); 
+	
+	  
+#else
+
+	cudaMemPrefetchAsync(lsum, sizelsum*num_thread * sizeof(double), gid, sid);
+	cudaMemPrefetchAsync(x, (ldalsum * nrhs + nlb * XK_H) * sizeof(double), gid, sid);
+	cudaMemPrefetchAsync(fmod, (nlb*aln_i) * sizeof(int_t), gid, sid);
+	for(lk=0;lk<CEILING(nsupers, grid->npcol);lk++){
+		if(!Llu->Linv_bc_ptr[lk]){
+			k = mycol+lk*grid->npcol;  /* not sure */
+			knsupc = SuperSize( k );
+			cudaMemPrefetchAsync(Llu->Linv_bc_ptr[lk], knsupc*knsupc*sizeof (double), gid, sid);
+		}
+	}
+ 
+ 
+
+k = CEILING( nsupers, grid->npcol );/* Number of local block columns divided by #warps per block used as number of thread blocks*/
+knsupc = sp_ienv_dist(3);
+dlsum_fmod_inv_cuda_wrap(k,DIM_X,DIM_Y,lsum,x,rtemp,nrhs,knsupc,nsupers,fmod,xsup,grid,Llu);
+ 
+
+#endif 	
+
+
+
+
+#else  /* CPU trisolve*/
 
 
 #ifdef _OPENMP
@@ -1295,8 +1681,9 @@ if(procs==1){
 					for (i=0 ; i<knsupc*nrhs ; i++){
 						x[ii+i] = rtemp_loc[i];
 					}
-
-					// for (i=0 ; i<knsupc*nrhs ; i++){
+							// printf("\n");
+							// printf("k: %5d\n",k);	
+					// for (i=0 ; i<knsupc*nrhs ; i++){				
 					// printf("x_l: %f\n",x[ii+i]);
 					// fflush(stdout);
 					// }
@@ -1696,7 +2083,8 @@ if(procs==1){
 			}
 		}
 
-#if ( PRNTlevel>=2 )
+#endif			
+#if ( PRNTlevel>=1 )
 		t = SuperLU_timer_() - t;
 		stat->utime[SOL_TOT] += t;
 		if ( !iam ) {
@@ -1927,7 +2315,7 @@ if(procs==1){
 #endif
 
 
-#if ( PRNTlevel>=2 )
+#if ( PRNTlevel>=1 )
 	t = SuperLU_timer_() - t;
 	if ( !iam) printf(".. Setup U-solve time\t%8.4f\n", t);
 	fflush(stdout);
@@ -2284,7 +2672,7 @@ for (i=0;i<nroot_send;i++){
 			}
 		} /* while not finished ... */
 	}
-#if ( PRNTlevel>=2 )
+#if ( PRNTlevel>=1 )
 		t = SuperLU_timer_() - t;
 		stat->utime[SOL_TOT] += t;
 		if ( !iam ) printf(".. U-solve time\t%8.4f\n", t);
@@ -2330,7 +2718,7 @@ for (i=0;i<nroot_send;i++){
 				ScalePermstruct, Glu_persist, grid, SOLVEstruct);
 
 
-#if ( PRNTlevel>=2 )
+#if ( PRNTlevel>=1 )
 		t = SuperLU_timer_() - t;
 		if ( !iam) printf(".. X to B redistribute time\t%8.4f\n", t);
 		t = SuperLU_timer_();
@@ -2448,7 +2836,7 @@ for (i=0;i<nroot_send;i++){
             }
 #endif
 
-
+// cudaProfilerStop(); 
     return;
 } /* PDGSTRS */
 

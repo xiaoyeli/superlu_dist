@@ -36,8 +36,8 @@ ALLAUX 	= sp_ienv.o etree.o sp_colorder.o get_perm_c.o \
 	  static_schedule.o xerr_dist.o smach_dist.o dmach_dist.o \
 	  superlu_dist_version.o TreeInterface.o
 
-ifeq "${ACC}" "GPU"
-ALLAUX += cublas_utils.o
+ifeq ($(HAVE_CUDA),TRUE)
+ALLAUX += cublas_utils.o pdgstrs_lsum_cuda.o pdgstrs_lsum_cuda_dlink.o
 endif
 
 ifeq ($(HAVE_COMBBLAS),TRUE)
@@ -60,7 +60,7 @@ DPLUSRC = pdgssvx.o pdgssvx_ABglobal.o \
 	  pdgsequ.o pdlaqgs.o dldperm_dist.o pdlangs.o pdutil.o \
 	  pdsymbfact_distdata.o ddistribute.o pddistribute.o \
 	  pdgstrf.o pdgstrf2.o pdGetDiagU.o \
-	  pdgstrs.o pdgstrs1.o pdgstrs_lsum.o pdgstrs_Bglobal.o \
+	  pdgstrs.o  pdgstrs1.o pdgstrs_lsum.o pdgstrs_Bglobal.o \
 	  pdgsrfs.o pdgsmv.o pdgsrfs_ABXglobal.o pdgsmv_AXglobal.o \
 	  dreadtriple_noheader.o
 #
@@ -115,16 +115,23 @@ complex16: config_h $(ZSLUSRC) $(ZPLUSRC) $(ALLAUX)
 	$(RANLIB) $(DSUPERLULIB)
 
 pdgstrf.o: dscatter.c dlook_ahead_update.c dSchCompUdt-2Ddynamic.c pdgstrf.c
-	$(CC) $(CFLAGS) $(CDEFS) $(BLASDEF) -I$(INCLUDEDIR) -c pdgstrf.c $(VERBOSE)
+	$(CC) $(CFLAGS) $(CDEFS) $(BLASDEF) $(INCLUDEDIR) -c pdgstrf.c $(VERBOSE)
 
 pzgstrf.o: zscatter.c zlook_ahead_update.c zSchCompUdt-2Ddynamic.c pzgstrf.c
-	$(CC) $(CFLAGS) $(CDEFS) $(BLASDEF) -I$(INCLUDEDIR) -c pzgstrf.c $(VERBOSE)
+	$(CC) $(CFLAGS) $(CDEFS) $(BLASDEF) $(INCLUDEDIR) -c pzgstrf.c $(VERBOSE)
 
 .c.o:
-	$(CC) $(CFLAGS) $(CDEFS) $(BLASDEF) -I$(INCLUDEDIR) -c $< $(VERBOSE)
+	$(CC) $(CFLAGS) $(CDEFS) $(BLASDEF) $(INCLUDEDIR) -c $< $(VERBOSE)
 
+pdgstrs_lsum_cuda.o: pdgstrs_lsum_cuda.cu
+	$(NVCC) $(CUDACFLAGS) -dc $(CDEFS) $(BLASDEF) $(INCLUDEDIR) -c pdgstrs_lsum_cuda.cu $(VERBOSE)
+
+pdgstrs_lsum_cuda_dlink.o:	
+	$(NVCC) $(CUDACFLAGS) -dlink $(CUDALIBS) -o pdgstrs_lsum_cuda_dlink.o pdgstrs_lsum_cuda.o $(VERBOSE)	
+	
+	
 .cpp.o:
-	$(CXX) $(CXXFLAGS) $(CPPFLAGS) $(CDEFS) $(BLASDEF) -I$(INCLUDEDIR) -c $< $(VERBOSE)
+	$(CXX) $(CXXFLAGS) $(CPPFLAGS) $(CDEFS) $(BLASDEF) $(INCLUDEDIR) -c $< $(VERBOSE)
 
 .f.o:
 	$(FORTRAN) $(FFLAGS) -c $< $(VERBOSE)

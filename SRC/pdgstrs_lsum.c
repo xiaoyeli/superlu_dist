@@ -461,8 +461,8 @@ void dlsum_fmod_inv
 	int_t iword = sizeof(int_t);
 	int_t dword = sizeof (double);
 	int_t aln_d,aln_i;
-	aln_d = ceil(CACHELINE/(double)dword);
-	aln_i = ceil(CACHELINE/(double)iword);
+	aln_d = 1;//ceil(CACHELINE/(double)dword);
+	aln_i = 1;//ceil(CACHELINE/(double)iword);
 	int   knsupc;    /* Size of supernode k.                               */
 	int_t nlb;       /* Number of L blocks.                                */
 
@@ -897,7 +897,8 @@ void dlsum_fmod_inv
 									lusup1, &nsupr1, &x[ii], &iknsupc);
 #endif
 						}
-
+							// printf("\n");
+							// printf("k: %5d\n",ik);
 							// for (i=0 ; i<iknsupc*nrhs ; i++){
 							// printf("x_lsum: %f\n",x[ii+i]);
 							// fflush(stdout);
@@ -1019,8 +1020,8 @@ void dlsum_fmod_inv_master
 	int_t iword = sizeof(int_t);
 	int_t dword = sizeof (double);
 	int_t aln_d,aln_i;
-	aln_d = ceil(CACHELINE/(double)dword);
-	aln_i = ceil(CACHELINE/(double)iword);
+	aln_d = 1;//ceil(CACHELINE/(double)dword);
+	aln_i = 1;//ceil(CACHELINE/(double)iword);
 
 	ldalsum=Llu->ldalsum;
 
@@ -1428,8 +1429,8 @@ void dlsum_bmod_inv
 	int_t iword = sizeof(int_t);
 	int_t dword = sizeof (double);
 	int_t aln_d,aln_i;
-	aln_d = ceil(CACHELINE/(double)dword);
-	aln_i = ceil(CACHELINE/(double)iword);
+	aln_d = 1;//ceil(CACHELINE/(double)dword);
+	aln_i = 1;//ceil(CACHELINE/(double)iword);
 
 
 	iam = grid->iam;
@@ -1896,8 +1897,8 @@ void dlsum_bmod_inv_master
 	int_t iword = sizeof(int_t);
 	int_t dword = sizeof (double);
 	int_t aln_d,aln_i;
-	aln_d = ceil(CACHELINE/(double)dword);
-	aln_i = ceil(CACHELINE/(double)iword);
+	aln_d = 1;//ceil(CACHELINE/(double)dword);
+	aln_i = 1;//ceil(CACHELINE/(double)iword);
 
 
 	rtemp_loc = &rtemp[sizertemp* thread_id];

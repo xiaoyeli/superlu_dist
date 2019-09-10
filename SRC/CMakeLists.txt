@@ -31,6 +31,7 @@ set(sources
   comm.c
   memory.c
   util.c
+  cublas_utils.c
   superlu_grid.c
   pxerr_dist.c
   superlu_timer.c
@@ -86,6 +87,7 @@ if(enable_double)
     pddistribute.c
     pdgstrf.c
     pdgstrf2.c
+    pdgstrs_lsum_cuda.cu	
     pdgstrs.c
     pdgstrs1.c
     pdgstrs_lsum.c
@@ -150,7 +152,7 @@ if (BUILD_SHARED_LIBS AND BUILD_STATIC_LIBS)
 endif()
 
 set(superlu_dist_libs ${MPI_C_LIBRARIES} ${BLAS_LIB} ${LAPACK_LIB}
-    ${PARMETIS_LIB} ${COMBBLAS_LIB})
+    ${PARMETIS_LIB} ${COMBBLAS_LIB} ${CUDA_LIB}) 
 
 if (NOT MSVC)
   list(APPEND superlu_dist_libs m)
@@ -160,13 +162,15 @@ foreach(target ${targets})
     target_link_libraries(${target} ${superlu_dist_libs})
     if (HAVE_COMBBLAS)
         set_target_properties(${target} PROPERTIES
-                              OUTPUT_NAME superlu_dist
+                              CUDA_SEPARABLE_COMPILATION ON
+							  OUTPUT_NAME superlu_dist
                               VERSION ${PROJECT_VERSION}
                               SOVERSION ${VERSION_MAJOR}
 			      LINKER_LANGUAGE CXX
 			      )
     else()
         set_target_properties(${target} PROPERTIES
+		                      CUDA_SEPARABLE_COMPILATION ON
                               OUTPUT_NAME superlu_dist
                               VERSION ${PROJECT_VERSION}
                               SOVERSION ${VERSION_MAJOR}

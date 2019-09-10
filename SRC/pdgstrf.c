@@ -114,6 +114,7 @@ at the top-level directory.
 
 #ifdef GPU_ACC
 #include "cublas_utils.h"
+#include <cuda_profiler_api.h>	
 /*#include "cublas_dgemm.h"*/
 // #define NUM_CUDA_STREAMS 16
 // #define NUM_CUDA_STREAMS 16
@@ -397,6 +398,9 @@ pdgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
     } gemm_profile;
     gemm_profile *gemm_stats;
 #endif
+
+// cudaProfilerStart();
+
 
     /* Test the input parameters. */
     *info = 0;
@@ -2002,6 +2006,9 @@ pdgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
 #if ( DEBUGlevel>=1 )
     CHECK_MALLOC (iam, "Exit pdgstrf()");
 #endif
+
+
+// cudaProfilerStop();
 
     return 0;
 } /* PDGSTRF */

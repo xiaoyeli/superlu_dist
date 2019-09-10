@@ -197,6 +197,12 @@ int main(int argc, char *argv[])
 		options.DiagInv       = NO;
      */
     set_default_options_dist(&options);
+	options.IterRefine = NOREFINE;
+	options.DiagInv = YES;
+	
+	// options.Equil = NO; 
+	// options.ColPerm = NATURAL;
+	// options.RowPerm = NOROWPERM;  						  
 #if 0
     options.RowPerm = NOROWPERM;
     options.IterRefine = NOREFINE;
