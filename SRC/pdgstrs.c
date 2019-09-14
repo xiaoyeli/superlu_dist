@@ -2105,6 +2105,8 @@ dlsum_fmod_inv_cuda_wrap(k,DIM_X,DIM_Y,lsum,x,rtemp,nrhs,knsupc,nsupers,fmod,xsu
 #endif
 
 
+stat->utime[SOLVE] = SuperLU_timer_() - t1_sol;
+
 #if ( DEBUGlevel==2 )
 		{
 			printf("(%d) .. After L-solve: y =\n", iam);
@@ -2414,7 +2416,7 @@ dlsum_fmod_inv_cuda_wrap(k,DIM_X,DIM_Y,lsum,x,rtemp,nrhs,knsupc,nsupers,fmod,xsu
 			TOC(t2, t1);
 			stat_loc[thread_id]->utime[SOL_TRSM] += t2;
 #endif
-			stat_loc[thread_id]->ops[SOLVE] += knsupc * (knsupc + 1) * nrhs;
+			// stat_loc[thread_id]->ops[SOLVE] += knsupc * (knsupc + 1) * nrhs;
 
 #if ( DEBUGlevel>=2 )
 			printf("(%2d) Solve X[%2d]\n", iam, k);
@@ -2631,7 +2633,7 @@ for (i=0;i<nroot_send;i++){
 							TOC(t2, t1);
 							stat_loc[thread_id]->utime[SOL_TRSM] += t2;
 #endif
-							stat_loc[thread_id]->ops[SOLVE] += knsupc * (knsupc + 1) * nrhs;
+							// stat_loc[thread_id]->ops[SOLVE] += knsupc * (knsupc + 1) * nrhs;
 
 #if ( DEBUGlevel>=2 )
 						printf("(%2d) Solve X[%2d]\n", iam, k);
@@ -2806,7 +2808,7 @@ for (i=0;i<nroot_send;i++){
 		}
 #endif
 
-    stat->utime[SOLVE] = SuperLU_timer_() - t1_sol;
+    // stat->utime[SOLVE] = SuperLU_timer_() - t1_sol;
 
 #if ( DEBUGlevel>=1 )
     CHECK_MALLOC(iam, "Exit pdgstrs()");

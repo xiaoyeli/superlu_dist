@@ -354,7 +354,7 @@ void dlsum_bmod
 		    dtrsm_("L", "U", "N", "N", &iknsupc, &nrhs, &alpha,
 			   lusup, &nsupr, &x[ii], &iknsupc);
 #endif
-		    stat->ops[SOLVE] += iknsupc * (iknsupc + 1) * nrhs;
+		    // stat->ops[SOLVE] += iknsupc * (iknsupc + 1) * nrhs;
 #if ( DEBUGlevel>=2 )
 		    printf("(%2d) Solve X[%2d]\n", iam, gik);
 #endif
@@ -1496,7 +1496,7 @@ void dlsum_bmod_inv
 							#endif
 							for (irow = fnz; irow < iklrow; ++irow)
 								dest[irow - ikfrow] -= uval[uptr++] * y[jj];
-								stat[thread_id1]->ops[SOLVE] += 2 * (iklrow - fnz);
+								// stat[thread_id1]->ops[SOLVE] += 2 * (iklrow - fnz);
 
 						}
 					} /* for jj ... */
@@ -1609,7 +1609,7 @@ void dlsum_bmod_inv
 							TOC(t2, t1);
 							stat[thread_id1]->utime[SOL_TRSM] += t2;
 		#endif
-							stat[thread_id1]->ops[SOLVE] += iknsupc * (iknsupc + 1) * nrhs;
+							// stat[thread_id1]->ops[SOLVE] += iknsupc * (iknsupc + 1) * nrhs;
 
 		#if ( DEBUGlevel>=2 )
 							printf("(%2d) Solve X[%2d]\n", iam, gik);
@@ -1684,7 +1684,7 @@ void dlsum_bmod_inv
 						for (irow = fnz; irow < iklrow; ++irow)
 
 								dest[irow - ikfrow] -= uval[uptr++] * y[jj];
-								stat[thread_id]->ops[SOLVE] += 2 * (iklrow - fnz);
+								// stat[thread_id]->ops[SOLVE] += 2 * (iklrow - fnz);
 					}
 				} /* for jj ... */
 			}
@@ -1790,7 +1790,7 @@ void dlsum_bmod_inv
 						TOC(t2, t1);
 						stat[thread_id]->utime[SOL_TRSM] += t2;
 	#endif
-						stat[thread_id]->ops[SOLVE] += iknsupc * (iknsupc + 1) * nrhs;
+						// stat[thread_id]->ops[SOLVE] += iknsupc * (iknsupc + 1) * nrhs;
 	#if ( DEBUGlevel>=2 )
 						printf("(%2d) Solve X[%2d]\n", iam, gik);
 	#endif
@@ -1967,7 +1967,7 @@ void dlsum_bmod_inv_master
 							#endif
 							for (irow = fnz; irow < iklrow; ++irow)
 								dest[irow - ikfrow] -= uval[uptr++] * y[jj];
-							stat[thread_id1]->ops[SOLVE] += 2 * (iklrow - fnz);
+							// stat[thread_id1]->ops[SOLVE] += 2 * (iklrow - fnz);
 
 						}
 					} /* for jj ... */
@@ -2009,7 +2009,7 @@ void dlsum_bmod_inv_master
 						#endif
 						for (irow = fnz; irow < iklrow; ++irow)
 							dest[irow - ikfrow] -= uval[uptr++] * y[jj];
-						stat[thread_id]->ops[SOLVE] += 2 * (iklrow - fnz);
+						// stat[thread_id]->ops[SOLVE] += 2 * (iklrow - fnz);
 
 					}
 				} /* for jj ... */
@@ -2119,7 +2119,7 @@ void dlsum_bmod_inv_master
 					TOC(t2, t1);
 					stat[thread_id]->utime[SOL_TRSM] += t2;
 #endif
-					stat[thread_id]->ops[SOLVE] += iknsupc * (iknsupc + 1) * nrhs;
+					// stat[thread_id]->ops[SOLVE] += iknsupc * (iknsupc + 1) * nrhs;
 #if ( DEBUGlevel>=2 )
 					printf("(%2d) Solve X[%2d]\n", iam, gik);
 #endif

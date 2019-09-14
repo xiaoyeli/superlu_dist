@@ -367,529 +367,6 @@ void gemm_device_dlsum_fmod(
 
 
 
-	
-	
-	
-	
-// /************************************************************************/
-// /*! \brief
- // *
- // * <pre>
- // * Purpose
- // * =======
- // *   Perform local block modifications: lsum[i] -= L_i,k * X[k].
- // * </pre>
- // */
-// __global__ void dlsum_fmod_inv_cuda
-// /************************************************************************/
-// (
- // double *lsum,    /* Sum of local modifications.                        */
- // double *x,       /* X array (local)                                    */
- // double *rtemp,   /* Result of full matrix-vector multiply.             */
- // int   nrhs,      /* Number of right-hand sides.                        */
- // int   maxsup,      /* Max supernode size.                        */
- // int_t   nsupers,      /* Number of total supernodes.                        */
- // int_t *fmod,     /* Modification count for L-solve.                    */
- // int_t *xsup,
- // gridinfo_t *grid,
- // LocalLU_t *Llu
-// )
-// {
-    // double alpha = 1.0, beta = 0.0,malpha=-1.0;
-    // double *lusup, *lusup1;
-    // double *dest;
-	// double *Linv;/* Inverse of diagonal block */
-	// int    iam, iknsupc, myrow, mycol, krow, nbrow, nbrow1, nbrow_ref, nsupr, nsupr1, p, pi, idx_r,m;
-	// int_t  k,i, l,ii,jj, ik, il, ikcol, irow, j, lb, lk, rel, lib,lready;
-	// int_t  *lsub, *lsub1, nlb1, lptr1, luptr1,*lloc;
-	// int_t  luptr_tmp,luptr_tmp1,lptr1_tmp,maxrecvsz, idx_i, idx_v,idx_n,  idx_l, fmod_tmp, lbstart,lbend,nn,Nchunk,nlb_loc,remainder;
-	// int thread_id1;
-	// flops_t ops_loc=0.0;
-    // MPI_Status status;
-    // int test_flag;
-	// yes_no_t done;
-	// BcTree  *LBtree_ptr = Llu->LBtree_ptr;
-	// RdTree  *LRtree_ptr = Llu->LRtree_ptr;
-	// int_t* idx_lsum,idx_lsum1;
-	// const int Nbk=1;
-	// double rtemp_loc[128]; 
-	// double temp;
-	// int_t ldalsum;
-	// int_t nleaf_send_tmp;
-	// int_t lptr;      /* Starting position in lsub[*].                      */
-	// int_t luptr;     /* Starting position in lusup[*].                     */
-	// int_t iword = sizeof(int_t);
-	// int_t dword = sizeof (double);
-	// int_t aln_d,aln_i;
-	// aln_d = ceil(CACHELINE/(double)dword);
-	// aln_i = ceil(CACHELINE/(double)iword);
-	// int   knsupc;    /* Size of supernode k.                               */
-	// int_t nlb;       /* Number of L blocks.                                */
-	// int_t  *ilsum = Llu->ilsum; /* Starting position of each supernode in lsum.   */
-	
-	// int_t wrp;
-	// int_t tmp;
-	// int_t lne = threadIdx.x & 0x1f ;
-	// int_t ready = 0;
-	// int_t lock = 0;
-	// const int warp_size = 32; /* number of threads per warp*/
-	// double zero = 0.0;
-	
-
-	// cudaError_t error;
-	
-	// wrp= threadIdx.x + blockIdx.x * blockDim.x;
-	// wrp/=warp_size;
-	
-	
-	// // printf("  Entering kernel:   %i %i %i %i %i %i %i %i\n", threadIdx.x, blockIdx.x, grid->npcol, nsupers,myrow,krow,wrp,lne);
-	
-	
-	// // rtemp_loc = (double*)malloc(maxsup*nrhs*Nbk*sizeof(double));
-	
-	// if(wrp>=CEILING(nsupers, grid->npcol)){
-	// return;
-	// }else if(!Llu->Lrowind_bc_ptr[wrp]){
-	// return;
-	// }
-	
-	
-
-	// lk=wrp;
-	// iam = grid->iam;
-	// mycol = MYCOL( iam, grid );
-	// myrow = MYROW( iam, grid );
-	// k = mycol+lk*grid->npcol;
-	// knsupc = SuperSize( k );
-	// lsub = Llu->Lrowind_bc_ptr[lk];
-	// iam = grid->iam;
-	// krow = PROW( k, grid );	
-	// lusup = Llu->Lnzval_bc_ptr[lk];
-	// lloc = Llu->Lindval_loc_bc_ptr[lk];
-	// nsupr = lsub[1];
-	
-	// if(myrow==krow){
-		// nlb = lsub[0] - 1;
-		// idx_n = 1;
-		// idx_i = nlb+2;
-		// idx_v = 2*nlb+3;
-		// luptr_tmp = lloc[idx_v];
-		// m = nsupr-knsupc;
-	// }else{
-		// nlb = lsub[0];
-		// idx_n = 0;
-		// idx_i = nlb;
-		// idx_v = 2*nlb;
-		// luptr_tmp = lloc[idx_v];
-		// m = nsupr;
-	// }	
-	
-	// // printf("  Before kernel:   %i %i %i %i %i %i %i %i\n", threadIdx.x, blockIdx.x, grid->npcol, nsupers,myrow,krow,wrp,lne);
-	
-
-
-	// ready = 0;
-	// lock = 0;
-	// if(lne==0){  /*only the first thread in a warp handles the lock */
-
-	// // printf("bk: %5d r: %5d %5d %5d\n",mycol+wrp*grid->npcol,fmod[2*aln_i],myrow,krow);
-	// for (i=0 ; i<maxsup*nrhs*Nbk ; i++){
-		// rtemp_loc[i]=0.0;
-	// }	
-	// if(myrow==krow){   /* diagonal block performs trsm and forward the message*/
-		// lib = LBi( k, grid ); /* Local block number, row-wise. */
-		// tmp=fmod[lib*aln_i];
-		// while(tmp>0){
-			// tmp=fmod[lib*aln_i];
-			// __threadfence();
-			// // clock();
-			// // printf("loop: %5d\n",tmp);
-			// // tmp=threadIdx.x + blockIdx.x * blockDim.x;
-			// // tmp++;
-			
-			
-		// }
-		// ready = 1;	
-		// il = LSUM_BLK( lib );
-		// ii = X_BLK( lib );
-		// RHS_ITERATE(j)
-			// for (i = 0; i < knsupc; ++i)
-				// x[i + ii + j*knsupc] += lsum[i + il + j*knsupc ];
-				// // temp=atomicAdd(&x[i + ii + j*knsupc],lsum[i + il + j*knsupc ]);
-					
-		// if(Llu->inv == 1){
-			// Linv = Llu->Linv_bc_ptr[lk];
-
-	   	  // // for (j=0 ; j<knsupc; j++){
-		      
-		      // // for (i=0 ; i<knsupc; i++){
-		          // // printf("%d %d %f\n",i,j,Linv[j*knsupc+i]);
-		      // // }
- 		  // // }				
-				
-
-				// RHS_ITERATE(j)
-				// for (i=0 ; i<knsupc ; i++){
-					// rtemp_loc[j*knsupc+i]=zero;
-					// for (l=0 ; l<knsupc ; l++){
-						// rtemp_loc[j*knsupc+i]+= Linv[l*knsupc+i]*x[ii+j*knsupc+l];
-					// }
-				// }				
-								
-			// // if(mycol+lk*grid->npcol==2){
-			// // printf("\n");
-			// // printf("k: %5d\n",mycol+lk*grid->npcol);
-			// for (i=0 ; i<knsupc*nrhs ; i++){
-				// x[ii+i] = rtemp_loc[i];
-				// // printf("x_l: %lf\n",rtemp_loc[i]);
-			// }
-			// // }
-
-		// }
-	
-	
-	// }else{   /* off-diagonal block forward the message*/
-		// /* waiting for the x subvector and forward*/ 
-	// }
-	
-	// }
-	
-	// lock = __any_sync(0xffffffff, ready);
-	
-	// if(lock){
-	
-		// if(nlb>0){
-			// Nchunk=SUPERLU_MIN(warp_size,nlb);
-			// // Nchunk=1;
-			// nlb_loc = floor(((double)nlb)/Nchunk);
-			// remainder = nlb % Nchunk;
-
-			// if(lne<Nchunk){
-				// if(lne<remainder){
-					// lbstart = lne*(nlb_loc+1);
-					// lbend = (lne+1)*(nlb_loc+1);
-				// }else{
-					// lbstart = remainder+lne*nlb_loc;
-					// lbend = remainder + (lne+1)*nlb_loc;
-				// }
-
-
-					// for (lb = lbstart; lb < lbend; lb=lb+Nbk){
-						// luptr_tmp1 = lloc[lb+idx_v];
-						// nbrow=0;					
-					
-						// for (ii = 0; ii < Nbk && lb+ii<lbend; ii++){
-						// lptr1_tmp = lloc[lb+ii+idx_i];
-						// nbrow += lsub[lptr1_tmp+1];
-						// }
-					
-
-							// lib = LBi( k, grid ); /* Local block number, row-wise. */
-							// ii = X_BLK( lib );
-							// // dgemm_( "N", "N", &nbrow, &nrhs, &knsupc,
-							   // // &alpha, &lusup[luptr_tmp1], &nsupr, x[ii],
-							   // // &knsupc, &beta, rtemp_loc, &nbrow, 1, 1 );
-							   
-							  // // status2=cublasDgemm(handle2,
-									  // // CUBLAS_OP_N, CUBLAS_OP_N,
-									  // // nbrow, nrhs, knsupc,
-									  // // &alpha, &lusup[luptr_tmp1], nsupr,
-									  // // &x[ii], knsupc, 
-									  // // &beta, rtemp_loc,nbrow);	
-
-				// RHS_ITERATE(j)
-				// for (i=0 ; i<nbrow ; i++){
-					// rtemp_loc[j*nbrow+i]=zero;
-					// for (l=0 ; l<knsupc ; l++){
-						// rtemp_loc[j*nbrow+i]+= lusup[luptr_tmp1+l*nsupr+i]*x[ii+j*knsupc+l];
-					// }
-				// }	
-
-						// nbrow_ref=0;
-						// for (ii = 0; ii < Nbk && lb+ii<lbend; ii++){
-							// lptr1_tmp = lloc[lb+ii+idx_i];
-							// lptr= lptr1_tmp+2;
-							// nbrow1 = lsub[lptr1_tmp+1];
-							// ik = lsub[lptr1_tmp]; /* Global block number, row-wise. */
-							// rel = xsup[ik]; /* Global row index of block ik. */
-
-							// lk = LBi( ik, grid ); /* Local block number, row-wise. */
-
-							// iknsupc = SuperSize( ik );
-							// il = LSUM_BLK( lk );
-
-							// RHS_ITERATE(j)
-								// for (i = 0; i < nbrow1; ++i) {
-									// irow = lsub[lptr+i] - rel; /* Relative row. */
-									// temp=atomicAdd(&lsum[il+irow + j*iknsupc],-rtemp_loc[nbrow_ref+i + j*nbrow]);
-								// }
-							// nbrow_ref+=nbrow1;
-						// }					   
-					   
-					// }
-
-
-					// for (lb = lbstart; lb < lbend; lb=lb+1){
-							// lptr1_tmp = lloc[lb+idx_i];
-							// ik = lsub[lptr1_tmp]; /* Global block number, row-wise. */
-							// lk = LBi( ik, grid ); /* Local block number, row-wise. */
-							// fmod_tmp=atomicSub(&fmod[lk*aln_i],1);
-							// // printf("k: %5d r: %5d\n",mycol+wrp*grid->npcol,fmod[2*aln_i]);
-					// }				
-			// } /*if lne<Nchunk*/
-		// } /* if nlb>0*/		
-		
-		
-	// } /* lock */
-	
-	
-
-	
-	// // free(rtemp_loc);
-	// // cublasDestroy(handle1);
-	// // cublasDestroy(handle2);
-	
-	
-// } /* dlsum_fmod_inv_cuda */
-
-
-	
-// /************************************************************************/
-// /*! \brief
- // *
- // * <pre>
- // * Purpose
- // * =======
- // *   Perform local block modifications: lsum[i] -= L_i,k * X[k].
- // * </pre>
- // */
-// __global__ void dlsum_fmod_inv_cuda
-// /************************************************************************/
-// (
- // double *lsum,    /* Sum of local modifications.                        */
- // double *x,       /* X array (local)                                    */
- // double *rtemp,   /* Result of full matrix-vector multiply.             */
- // int   nrhs,      /* Number of right-hand sides.                        */
- // int   maxsup,      /* Max supernode size.                        */
- // int_t   nsupers,      /* Number of total supernodes.                        */
- // int_t *fmod,     /* Modification count for L-solve.                    */
- // int_t *xsup,
- // gridinfo_t *grid,
- // LocalLU_t *Llu
-// )
-// {
-    // double alpha = 1.0, beta = 0.0,malpha=-1.0;
-    // double *lusup, *lusup1;
-    // double *dest;
-	// double *Linv;/* Inverse of diagonal block */
-	// int    iam, iknsupc, myrow, mycol, krow, nbrow, nbrow1, nbrow_ref, nsupr, nsupr1, p, pi, idx_r,m;
-	// int_t  k,i, l,ii,jj, ik, il, ikcol, irow, j, lb, lk, rel, lib,lready;
-	// int_t  *lsub, *lsub1, nlb1, lptr1, luptr1,*lloc;
-	// int_t  luptr_tmp,luptr_tmp1,lptr1_tmp,maxrecvsz, idx_i, idx_v,idx_n,  idx_l, fmod_tmp, lbstart,lbend,nn,Nchunk,nlb_loc,remainder;
-	// int thread_id1;
-	// flops_t ops_loc=0.0;
-    // MPI_Status status;
-    // int test_flag;
-	// yes_no_t done;
-	// BcTree  *LBtree_ptr = Llu->LBtree_ptr;
-	// RdTree  *LRtree_ptr = Llu->LRtree_ptr;
-	// int_t* idx_lsum,idx_lsum1;
-	// const int Nbk=1;
-	// double rtemp_loc[128]; 
-	// double temp,temp1;
-	// int_t ldalsum;
-	// int_t nleaf_send_tmp;
-	// int_t lptr;      /* Starting position in lsub[*].                      */
-	// int_t luptr;     /* Starting position in lusup[*].                     */
-	// int_t iword = sizeof(int_t);
-	// int_t dword = sizeof (double);
-	// int_t aln_d,aln_i;
-	// aln_d = ceil(CACHELINE/(double)dword);
-	// aln_i = ceil(CACHELINE/(double)iword);
-	// int   knsupc;    /* Size of supernode k.                               */
-	// int_t nlb;       /* Number of L blocks.                                */
-	// int_t  *ilsum = Llu->ilsum; /* Starting position of each supernode in lsum.   */
-	
-	// int_t bid;
-	// int_t tmp;
-	// int_t tid = threadIdx.x + threadIdx.y * blockDim.x; 
-	// int_t ready = 0;
-	// int_t lock = 0;
-	// const int block_size = blockDim.x*blockDim.y; /* number of threads per warp*/
-	// double zero = 0.0;
-	
-
-
-	// cudaError_t error;
-	
-	// bid= blockIdx.x;
-	
-	
-	// // printf("  Entering kernel:   %i %i %i %i %i %i %i %i\n", threadIdx.x, blockIdx.x, grid->npcol, nsupers,myrow,krow,bid,tid);
-	
-	
-	// // rtemp_loc = (double*)malloc(maxsup*nrhs*Nbk*sizeof(double));
-	
-	// if(bid>=CEILING(nsupers, grid->npcol)){
-	// return;
-	// }else if(!Llu->Lrowind_bc_ptr[bid]){
-	// return;
-	// }
-	
-	
-
-	// lk=bid;
-	// iam = grid->iam;
-	// mycol = MYCOL( iam, grid );
-	// myrow = MYROW( iam, grid );
-	// k = mycol+lk*grid->npcol;
-	// knsupc = SuperSize( k );
-	// lsub = Llu->Lrowind_bc_ptr[lk];
-	// iam = grid->iam;
-	// krow = PROW( k, grid );	
-	// lusup = Llu->Lnzval_bc_ptr[lk];
-	// lloc = Llu->Lindval_loc_bc_ptr[lk];
-	// nsupr = lsub[1];
-	
-	// if(myrow==krow){
-		// nlb = lsub[0] - 1;
-		// idx_n = 1;
-		// idx_i = nlb+2;
-		// idx_v = 2*nlb+3;
-		// luptr_tmp = lloc[idx_v];
-		// m = nsupr-knsupc;
-	// }else{
-		// nlb = lsub[0];
-		// idx_n = 0;
-		// idx_i = nlb;
-		// idx_v = 2*nlb;
-		// luptr_tmp = lloc[idx_v];
-		// m = nsupr;
-	// }	
-	
-	// // printf("  Before kernel:   %i %i %i %i %i %i %i %i\n", threadIdx.x, blockIdx.x, grid->npcol, nsupers,myrow,krow,bid,tid);
-	
-	// if(myrow==krow){   /* diagonal block performs trsm and forward the message*/
-
-		// if(tid==0){  /*only the first thread in a warp handles the lock */
-
-		// // printf("bk: %5d r: %5d %5d %5d\n",mycol+bid*grid->npcol,fmod[2*aln_i],myrow,krow);
-		// // for (i=0 ; i<maxsup ; i++){
-			// // rtemp_loc[i]=0.0;
-		// // }	
-		
-			// lib = LBi( k, grid ); /* Local block number, row-wise. */
-			// tmp=fmod[lib*aln_i];
-			// while(tmp>0){
-				// tmp=fmod[lib*aln_i];
-				// __threadfence();
-				// // clock();
-				// // printf("loop: %5d\n",tmp);
-				// // tmp=threadIdx.x + blockIdx.x * blockDim.x;
-				// // tmp++;
-				
-				
-			// }
-		// }
-		// __syncthreads();
-		
-			
-			// lib = LBi( k, grid ); /* Local block number, row-wise. */
-			// il = LSUM_BLK( lib );
-			// ii = X_BLK( lib );
-			// RHS_ITERATE(j)
-				// for (i = tid; i < knsupc; i+=block_size)
-					// x[i + ii + j*knsupc] += lsum[i + il + j*knsupc ];
-			
-		
-				// // temp=atomicAdd(&x[i + ii + j*knsupc],lsum[i + il + j*knsupc ]);
-						
-			// if(Llu->inv == 1){
-				// Linv = Llu->Linv_bc_ptr[lk];
-
-			  // // for (j=0 ; j<knsupc; j++){
-				  
-				  // // for (i=0 ; i<knsupc; i++){
-					  // // printf("%d %d %f\n",i,j,Linv[j*knsupc+i]);
-				  // // }
-			  // // }				
-					
-
-					// RHS_ITERATE(j){
-					// for (i = tid; i < knsupc; i+=block_size){
-						// rtemp_loc[i]=zero;
-						// for (l=0 ; l<knsupc ; l++){
-							// rtemp_loc[i]+= Linv[l*knsupc+i]*x[ii+j*knsupc+l];
-						// }
-					// }
-					// __syncthreads(); 
-					// for (i = tid; i < knsupc; i+=block_size)
-						// x[i + ii + j*knsupc] = rtemp_loc[i];
-					// }					
-
-			// // }		
-		
-		
-		// }
-		// __syncthreads();	
-	// }else{   /* off-diagonal block forward the message*/
-		// /* waiting for the x subvector and forward*/ 
-	// }
-	
-	
-	// if(nlb>0){
-			// for (lb = 0; lb < nlb; lb++){
-				// luptr_tmp1 = lloc[lb+idx_v];
-				// nbrow=0;					
-			
-				// lptr1_tmp = lloc[lb+idx_i];
-				// nbrow += lsub[lptr1_tmp+1];
-			
-
-				// lib = LBi( k, grid ); /* Local block number, row-wise. */
-				// ii = X_BLK( lib );
-
-			// // for (ii = 0; ii < Nbk && lb+ii<lbend; ii++){
-				// lptr1_tmp = lloc[lb+idx_i];
-				// lptr= lptr1_tmp+2;
-				// nbrow1 = lsub[lptr1_tmp+1];
-				// ik = lsub[lptr1_tmp]; /* Global block number, row-wise. */
-				// rel = xsup[ik]; /* Global row index of block ik. */
-
-				// lk = LBi( ik, grid ); /* Local block number, row-wise. */
-
-				// iknsupc = SuperSize( ik );
-				// il = LSUM_BLK( lk );
-
-				// RHS_ITERATE(j)
-					// // for (i = 0; i < nbrow1; ++i) {
-					// for (i = tid; i < nbrow1; i+=block_size){
-						// irow = lsub[lptr+i] - rel; /* Relative row. */
-						// temp1=zero;
-						// for (l=0 ; l<knsupc ; l++){
-							// temp1+= lusup[luptr_tmp1+l*nsupr+i]*x[ii+j*knsupc+l];
-						// }								
-						// temp=atomicAdd(&lsum[il+irow + j*iknsupc],-temp1);
-					// }
-			// }
-
-			// // if(tid==0){
-			// for (lb = tid; lb < nlb; lb+=block_size){
-					// lptr1_tmp = lloc[lb+idx_i];
-					// ik = lsub[lptr1_tmp]; /* Global block number, row-wise. */
-					// lk = LBi( ik, grid ); /* Local block number, row-wise. */
-					// fmod_tmp=atomicSub(&fmod[lk*aln_i],1);
-					// // printf("k: %5d r: %5d\n",mycol+bid*grid->npcol,fmod[2*aln_i]);
-			// }
-			// // }
-			// __syncthreads();
-		// // } /*if tid<Nchunk*/
-	// } /* if nlb>0*/		
-		
-	
-// } /* dlsum_fmod_inv_cuda */
-
-
 /************************************************************************/
 /*! \brief
  *
@@ -1040,7 +517,7 @@ __global__ void dlsum_fmod_inv_cuda
 			RHS_ITERATE(j)
 				for (i = tid; i < knsupc; i+=block_size)
 					x[i + ii + j*knsupc] += lsum[i + il + j*knsupc ];
-			__syncthreads();
+			// __syncthreads();
 			
 			
 			if(Llu->inv == 1){
@@ -1056,13 +533,13 @@ __global__ void dlsum_fmod_inv_cuda
 						}								
 						lsum[il+i]=temp1; //reuse lsum as temporary output as it's no longer accessed
 					}
-					__syncthreads();					
+					// __syncthreads();					
 						
 					for (i = tid; i < knsupc; i+=block_size){
 						x[i + ii] = lsum[il+i];
 						// printf("lk %5d %lf\n",lk,x[i + ii + j*knsupc]);
 						}					
-					__syncthreads();		
+					// __syncthreads();		
 						
 
 					
@@ -1130,10 +607,7 @@ __global__ void dlsum_fmod_inv_cuda
 			lib = LBi( k, grid ); /* Local block number, row-wise. */
 			ii = X_BLK( lib );	
 			
-			
 			if(nrhs==1){
-			
-		
 				luptr_tmp1 = lloc[idx_v];
 				lb = 0;
 				nbrow=0;
@@ -1167,10 +641,14 @@ __global__ void dlsum_fmod_inv_cuda
 					}								
 					temp=atomicAdd(&lsum[il+irow + j*iknsupc],-temp1);
 					}
+					if(i==nbrow+lsub[lptr1_tmp+1]-1){
+						fmod_tmp=atomicSub(&fmod[lk*aln_i],1);
+						// __threadfence();
+					}
 				}
 				__syncthreads();
 		
-			}else{				
+			}else {				
 				for (lb = 0; lb < nlb; lb++){
 					luptr_tmp1 = lloc[lb+idx_v];
 					
@@ -1235,6 +713,10 @@ __global__ void dlsum_fmod_inv_cuda
 							}
 						}
 					// }//if(nrhs==1)
+					
+					if(tid==0)fmod_tmp=atomicSub(&fmod[lk*aln_i],1);
+					
+					
 		
 				}
 
@@ -1242,13 +724,13 @@ __global__ void dlsum_fmod_inv_cuda
 		
 			
 			// if(tid==0){
-			for (lb = tid; lb < nlb; lb+=block_size){
-					lptr1_tmp = lloc[lb+idx_i];
-					ik = lsub[lptr1_tmp]; /* Global block number, row-wise. */
-					lk = LBi( ik, grid ); /* Local block number, row-wise. */
-					fmod_tmp=atomicSub(&fmod[lk*aln_i],1);
-					// printf("k: %5d r: %5d\n",mycol+bid*grid->npcol,fmod[2*aln_i]);
-			}
+			// for (lb = tid; lb < nlb; lb+=block_size){
+					// lptr1_tmp = lloc[lb+idx_i];
+					// ik = lsub[lptr1_tmp]; /* Global block number, row-wise. */
+					// lk = LBi( ik, grid ); /* Local block number, row-wise. */
+					// fmod_tmp=atomicSub(&fmod[lk*aln_i],1);
+					// // printf("k: %5d r: %5d\n",mycol+bid*grid->npcol,fmod[2*aln_i]);
+			// }
 			// }
 			__syncthreads();
 		// } /*if tid<Nchunk*/
