@@ -297,6 +297,10 @@ int_t dsparseTreeFactor_ASYNC(
         return 1;
     }
 
+#if ( DEBUGlevel>=1 )
+    CHECK_MALLOC (grid3d->iam, "Enter dsparseTreeFactor_ASYNC()");
+#endif
+    
     int_t *perm_c_supno = sforest->nodeList ;  // list of nodes in the order of factorization
     treeTopoInfo_t* treeTopoInfo = &sforest->topoInfo;
     int_t* myIperm = treeTopoInfo->myIperm;
@@ -327,6 +331,8 @@ int_t dsparseTreeFactor_ASYNC(
         sDiagFactIBCast(k,  dFBufs[offset], factStat, comReqss[offset], grid,
                         options, thresh, LUstruct, stat, info, SCT, tag_ub);
 #else
+
+	//	printf("[1] (iam %d) k0 %d  offset %d\n", grid3d->iam, k0, offset); fflush(stdout);
 	dDiagFactIBCast(k, k, dFBufs[offset]->BlockUFactor, dFBufs[offset]->BlockLFactor,
 			factStat->IrecvPlcd_D,
 			comReqss[offset]->U_diag_blk_recv_req, 
@@ -356,6 +362,7 @@ int_t dsparseTreeFactor_ASYNC(
                 sDiagFactIBCast(k, dFBufs[offset], factStat, comReqss[offset], grid,
                                 options, thresh, LUstruct, stat, info, SCT, tag_ub);
 #else
+		//	printf("[2] (iam %d) topoLvl %d\n", grid3d->iam, topoLvl); fflush(stdout);
 		dDiagFactIBCast(k, k, dFBufs[offset]->BlockUFactor,
 				dFBufs[offset]->BlockLFactor, factStat->IrecvPlcd_D,
 				comReqss[offset]->U_diag_blk_recv_req, 
@@ -380,6 +387,7 @@ int_t dsparseTreeFactor_ASYNC(
 		sLPanelUpdate(k, dFBufs[offset], factStat, comReqss[offset],
 			      grid, LUstruct, SCT);
 #else
+	printf("[3] (iam %d) k0 %d\n", grid3d->iam, k0); fflush(stdout);
 		dLPanelUpdate(k, factStat->IrecvPlcd_D, factStat->factored_L,
 			      comReqss[offset]->U_diag_blk_recv_req, 
 			      dFBufs[offset]->BlockUFactor, grid, LUstruct, SCT);

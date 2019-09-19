@@ -749,7 +749,7 @@ pdgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
 #pragma omp parallel for reduction(max :local_max_row_size) private(lk,lsub)
 #endif
 #endif
-    for (int i = mycol; i < nsupers; i += Pc) { /* grab my local columns */
+    for (i = mycol; i < nsupers; i += Pc) { /* grab my local columns */
         //int tpc = PCOL (i, grid);
 	lk = LBj (i, grid);
 	lsub = Lrowind_bc_ptr[lk];

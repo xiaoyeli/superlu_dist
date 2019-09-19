@@ -1190,10 +1190,11 @@ pdgssvx3d (superlu_dist_options_t * options, SuperMatrix * A,
 	
 	/* send the LU structure to all the grids */
 	dp3dScatter(n, LUstruct, grid3d);
+
 	int_t nsupers = getNsupers(n, LUstruct);
 	trf3Dpartition = dinitTrf3Dpartition(nsupers, options, LUstruct, grid3d);
-	SCT_t *SCT = (SCT_t *) SUPERLU_MALLOC(sizeof(SCT_t));
 
+	SCT_t *SCT = (SCT_t *) SUPERLU_MALLOC(sizeof(SCT_t));
 	SCT_init(SCT);
 	
 #if ( PRNTlevel>=1 )

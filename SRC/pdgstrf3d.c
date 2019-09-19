@@ -347,6 +347,10 @@ int_t pdgstrf3d(superlu_dist_options_t *options, int m, int n, double anorm,
     dfreeDiagFactBufsArr(mxLeafNode, dFBufs);
     Free_HyP(HyP);
 
+    if (!iam) {
+        printf ("exit pdgstrf3d()\n"); fflush(stdout);
+    }
+
 #if ( DEBUGlevel>=1 )
     CHECK_MALLOC (grid3d->iam, "Exit pdgstrf3d()");
 #endif

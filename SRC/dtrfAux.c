@@ -577,7 +577,7 @@ trf3Dpartition_t* dinitTrf3Dpartition(int_t nsupers,
     SUPERLU_FREE(gNodeCount); 
     SUPERLU_FREE(gNodeLists); 
     SUPERLU_FREE(perm_c_supno);
-    free_treelist(nsupers, treeList);
+    //   free_treelist(nsupers, treeList);
 
 #if ( DEBUGlevel>=1 )
     CHECK_MALLOC (iam, "Exit dinitTrf3Dpartition()");
