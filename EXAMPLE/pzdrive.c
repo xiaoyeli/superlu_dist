@@ -22,7 +22,9 @@ at the top-level directory.
 
 #include <math.h>
 #include "superlu_zdefs.h"
-
+#ifdef oneside
+#include "fompi.h"
+#endif
 /*! \brief
  *
  * <pre>
@@ -45,7 +47,6 @@ at the top-level directory.
  *    mpiexec -n <np> pzdrive -r <proc rows> -c <proc columns> big.rua
  * </pre>
  */
-
 int main(int argc, char *argv[])
 {
     superlu_dist_options_t options;
@@ -73,7 +74,11 @@ int main(int argc, char *argv[])
     /* ------------------------------------------------------------
        INITIALIZE MPI ENVIRONMENT. 
        ------------------------------------------------------------*/
+#ifdef oneside
+    foMPI_Init( &argc, &argv );
+#else    
     MPI_Init( &argc, &argv );
+#endif 
     //MPI_Init_thread( &argc, &argv, MPI_THREAD_MULTIPLE, &omp_mpi_level); 
 	
 
@@ -192,6 +197,12 @@ int main(int argc, char *argv[])
 		options.DiagInv       = NO;
      */
     set_default_options_dist(&options);
+	options.IterRefine = NOREFINE;				   
+    options.ColPerm           = METIS_AT_PLUS_A;
+    options.RowPerm           = NO;
+	options.DiagInv    = YES;
+    //options.SymPattern = YES;
+    options.ReplaceTinyPivot = YES;
 #if 0
     options.RowPerm = NOROWPERM;
     options.IterRefine = NOREFINE;
