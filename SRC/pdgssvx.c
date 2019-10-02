@@ -1133,9 +1133,15 @@ pdgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 	       NOTE: the row permutation Pc*Pr is applied internally in the
   	       distribution routine. */
 	    t = SuperLU_timer_();
+#ifdef oneside        
+	    dist_mem_use = pddistribute(Fact, n, A, ScalePermstruct,
+                                      Glu_freeable, LUstruct, grid, nrhs);
+#else	    
 	    dist_mem_use = pddistribute(Fact, n, A, ScalePermstruct,
                                       Glu_freeable, LUstruct, grid);
-	    stat->utime[DIST] = SuperLU_timer_() - t;
+#endif         
+        
+        stat->utime[DIST] = SuperLU_timer_() - t;
 
   	    /* Deallocate storage used in symbolic factorization. */
 	    if ( Fact != SamePattern_SameRowPerm ) {

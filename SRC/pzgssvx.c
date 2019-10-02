@@ -500,6 +500,9 @@ at the top-level directory.
  * </pre>
  */
 
+#ifdef oneside
+int num_refine=0;
+#endif
 void
 pzgssvx(superlu_dist_options_t *options, SuperMatrix *A, 
 	ScalePermstruct_t *ScalePermstruct,
@@ -1134,9 +1137,14 @@ pzgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 	       NOTE: the row permutation Pc*Pr is applied internally in the
   	       distribution routine. */
 	    t = SuperLU_timer_();
-	    dist_mem_use = pzdistribute(Fact, n, A, ScalePermstruct,
+#ifdef oneside    
+        dist_mem_use = pzdistribute(Fact, n, A, ScalePermstruct,
+                                      Glu_freeable, LUstruct, grid, nrhs);
+#else
+        dist_mem_use = pzdistribute(Fact, n, A, ScalePermstruct,
                                       Glu_freeable, LUstruct, grid);
-	    stat->utime[DIST] = SuperLU_timer_() - t;
+#endif
+        stat->utime[DIST] = SuperLU_timer_() - t;
 
   	    /* Deallocate storage used in symbolic factorization. */
 	    if ( Fact != SamePattern_SameRowPerm ) {
@@ -1227,8 +1235,8 @@ pzgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 	fflush(stdout);
     }
 
-    printf(".. Ainfo mygid %5d   mysid %5d   nnz_loc " IFMT "  sum_loc  %e lsum_loc   %e nnz "IFMT " nnzLU %ld sum %e  lsum %e  N "IFMT "\n", iam_g,iam,Astore->rowptr[Astore->m_loc],asum.r+asum.i, lsum.r+lsum.i, nnz_tot,nnzLU,asum_tot.r+asum_tot.i,lsum_tot.r+lsum_tot.i,A->ncol);
-	fflush(stdout);
+    //printf(".. Ainfo mygid %5d   mysid %5d   nnz_loc " IFMT "  sum_loc  %e lsum_loc   %e nnz "IFMT " nnzLU %ld sum %e  lsum %e  N "IFMT "\n", iam_g,iam,Astore->rowptr[Astore->m_loc],asum.r+asum.i, lsum.r+lsum.i, nnz_tot,nnzLU,asum_tot.r+asum_tot.i,lsum_tot.r+lsum_tot.i,A->ncol);
+	//fflush(stdout);
 #endif				
 			
 #if 0

@@ -25,9 +25,11 @@ namespace SuperLU_ASYNCOMM{
 
       public:
         static TreeReduce_slu<T> * Create(const MPI_Comm & pComm, Int * ranks, Int rank_cnt, Int msgSize,double rseed);
+        static TreeReduce_slu<T> * Create(const MPI_Comm & pComm, Int * ranks, Int rank_cnt, Int msgSize,double rseed,Int Pc);
 
         TreeReduce_slu();
         TreeReduce_slu(const MPI_Comm & pComm, Int * ranks, Int rank_cnt, Int msgSize);
+        TreeReduce_slu(const MPI_Comm & pComm, Int * ranks, Int rank_cnt, Int msgSize, Int Pc);
         TreeReduce_slu(const TreeReduce_slu & Tree);
 
         virtual ~TreeReduce_slu();
@@ -44,6 +46,7 @@ namespace SuperLU_ASYNCOMM{
 
 #ifdef oneside
 	virtual void forwardMessageOneSide(T * locBuffer, Int msgSize, int* iam_row, int* RDcount, long* RDbase, int* maxrecvsz, int Pc);
+	virtual void forwardMessageOneSideU(T * locBuffer, Int msgSize, int* iam_row, int* RDcount, long* RDbase, int* maxrecvsz, int Pc);
 #endif
             virtual void forwardMessageSimple(T * locBuffer, Int msgSize);
 		virtual void allocateRequest();	
@@ -55,8 +58,10 @@ template< typename T>
 class FTreeReduce_slu: public TreeReduce_slu<T>{
 protected:
   virtual void buildTree(Int * ranks, Int rank_cnt);
+  virtual void buildTree(Int * ranks, Int rank_cnt, Int Pc);
 public:
   FTreeReduce_slu(const MPI_Comm & pComm, Int * ranks, Int rank_cnt, Int msgSize);
+  FTreeReduce_slu(const MPI_Comm & pComm, Int * ranks, Int rank_cnt, Int msgSize, Int Pc);
   virtual FTreeReduce_slu<T> * clone() const;
 };
 
@@ -66,9 +71,11 @@ template< typename T>
 class BTreeReduce_slu: public TreeReduce_slu<T>{
 protected:
   virtual void buildTree(Int * ranks, Int rank_cnt);
+  virtual void buildTree(Int * ranks, Int rank_cnt, Int Pc);
 
 public:
   BTreeReduce_slu(const MPI_Comm & pComm, Int * ranks, Int rank_cnt, Int msgSize);
+  BTreeReduce_slu(const MPI_Comm & pComm, Int * ranks, Int rank_cnt, Int msgSize, Int Pc);
 
 
   virtual BTreeReduce_slu<T> * clone() const;

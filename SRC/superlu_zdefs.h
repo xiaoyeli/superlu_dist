@@ -248,16 +248,39 @@ extern int     sp_zgemv_dist (char *, doublecomplex, SuperMatrix *, doublecomple
 			      int, doublecomplex, doublecomplex *, int);
 extern int     sp_zgemm_dist (char *, int, doublecomplex, SuperMatrix *,
                         doublecomplex *, int, doublecomplex, doublecomplex *, int);
-
 extern float zdistribute(fact_t, int_t, SuperMatrix *, Glu_freeable_t *, 
 			 LUstruct_t *, gridinfo_t *);
 extern void  pzgssvx_ABglobal(superlu_dist_options_t *, SuperMatrix *, 
 			      ScalePermstruct_t *, doublecomplex *,
 			      int, int, gridinfo_t *, LUstruct_t *, double *,
 			      SuperLUStat_t *, int *);
+#ifdef oneside
+extern float pzdistribute(fact_t, int_t, SuperMatrix *, 
+			 ScalePermstruct_t *, Glu_freeable_t *, 
+			 LUstruct_t *, gridinfo_t *, int);
+extern void zlsum_fmod_inv_master(doublecomplex *, doublecomplex *, doublecomplex *, doublecomplex *,
+		       int, int, int_t , int_t *, int_t, 
+		       int_t *, gridinfo_t *, LocalLU_t *, 
+		       SuperLUStat_t **, int_t, int_t, int_t, int_t, int, int,
+               int*, int*, long*, int*, int*, long*, int,int);
+extern void zlsum_bmod_inv_master(doublecomplex *, doublecomplex *, doublecomplex *, doublecomplex *,
+                       int, int_t, int_t *, int_t *, int_t *, Ucb_indptr_t **,
+                       int_t **, int_t *, gridinfo_t *, LocalLU_t *,
+		       MPI_Request [], SuperLUStat_t **, int_t, int_t, int, int, 
+               int*, int*, long*, int*, int*, long*, int,int);
+#else
 extern float pzdistribute(fact_t, int_t, SuperMatrix *, 
 			 ScalePermstruct_t *, Glu_freeable_t *, 
 			 LUstruct_t *, gridinfo_t *);
+extern void zlsum_fmod_inv_master(doublecomplex *, doublecomplex *, doublecomplex *, doublecomplex *,
+		       int, int, int_t , int_t *, int_t, 
+		       int_t *, gridinfo_t *, LocalLU_t *, 
+		       SuperLUStat_t **, int_t, int_t, int_t, int_t, int, int);
+extern void zlsum_bmod_inv_master(doublecomplex *, doublecomplex *, doublecomplex *, doublecomplex *,
+                       int, int_t, int_t *, int_t *, int_t *, Ucb_indptr_t **,
+                       int_t **, int_t *, gridinfo_t *, LocalLU_t *,
+		       MPI_Request [], SuperLUStat_t **, int_t, int_t, int, int);			   
+#endif
 extern void  pzgssvx(superlu_dist_options_t *, SuperMatrix *, 
 		     ScalePermstruct_t *, doublecomplex *,
 		     int, int, gridinfo_t *, LUstruct_t *,
@@ -303,18 +326,10 @@ extern void zlsum_fmod_inv(doublecomplex *, doublecomplex *, doublecomplex *, do
 		       int, int_t , int_t *,
 		       int_t *, gridinfo_t *, LocalLU_t *, 
 		       SuperLUStat_t **, int_t *, int_t *, int_t, int_t, int_t, int_t, int, int);
-extern void zlsum_fmod_inv_master(doublecomplex *, doublecomplex *, doublecomplex *, doublecomplex *,
-		       int, int, int_t , int_t *, int_t, 
-		       int_t *, gridinfo_t *, LocalLU_t *, 
-		       SuperLUStat_t **, int_t, int_t, int_t, int_t, int, int);
 extern void zlsum_bmod_inv(doublecomplex *, doublecomplex *, doublecomplex *, doublecomplex *,
                        int, int_t, int_t *, int_t *, int_t *, Ucb_indptr_t **,
                        int_t **, int_t *, gridinfo_t *, LocalLU_t *,
 		       MPI_Request [], SuperLUStat_t **, int_t *, int_t *, int_t, int_t, int, int);
-extern void zlsum_bmod_inv_master(doublecomplex *, doublecomplex *, doublecomplex *, doublecomplex *,
-                       int, int_t, int_t *, int_t *, int_t *, Ucb_indptr_t **,
-                       int_t **, int_t *, gridinfo_t *, LocalLU_t *,
-		       MPI_Request [], SuperLUStat_t **, int_t, int_t, int, int);			   
 			   
 extern void pzgsrfs(int_t, SuperMatrix *, double, LUstruct_t *,
 		    ScalePermstruct_t *, gridinfo_t *,

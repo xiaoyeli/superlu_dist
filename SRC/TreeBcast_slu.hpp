@@ -70,11 +70,16 @@ namespace SuperLU_ASYNCOMM {
 
 
       protected:
-	virtual void buildTree(Int * ranks, Int rank_cnt)=0;
+    	virtual void buildTree(Int * ranks, Int rank_cnt)=0;
+    	virtual void buildTree(Int * ranks, Int rank_cnt, Int Pc)=0;
 
       public:
         static TreeBcast_slu<T> * Create(const MPI_Comm & pComm, Int * ranks, Int rank_cnt, Int msgSize,double rseed);
+        static TreeBcast_slu<T> * Create(const MPI_Comm & pComm, Int * ranks, Int rank_cnt, Int msgSize,double rseed, Int Pc);
+
         TreeBcast_slu(const MPI_Comm & pComm, Int * ranks, Int rank_cnt,Int msgSize);
+        TreeBcast_slu(const MPI_Comm & pComm, Int * ranks, Int rank_cnt,Int msgSize, Int Pc);
+        
         TreeBcast_slu();
         TreeBcast_slu(const TreeBcast_slu & Tree);
         virtual ~TreeBcast_slu();
@@ -105,6 +110,7 @@ namespace SuperLU_ASYNCOMM {
 	virtual void allocateRequest();
 #ifdef oneside
 	virtual void forwardMessageOneSide(T * locBuffer, Int msgSize,  int* iam_col, int *BCcount, long* BCbase, int* maxrecvsz, int Pc);
+	virtual void forwardMessageOneSideU(T * locBuffer, Int msgSize,  int* iam_col, int *BCcount, long* BCbase, int* maxrecvsz, int Pc);
 #endif
         virtual void forwardMessageSimple(T * locBuffer, Int msgSize);
 	virtual void waitSendRequest();	
@@ -115,9 +121,11 @@ namespace SuperLU_ASYNCOMM {
     class FTreeBcast2: public TreeBcast_slu<T>{
       protected:
         virtual void buildTree(Int * ranks, Int rank_cnt);
+        virtual void buildTree(Int * ranks, Int rank_cnt,Int Pc);
 
       public:
         FTreeBcast2(const MPI_Comm & pComm, Int * ranks, Int rank_cnt, Int msgSize);
+        FTreeBcast2(const MPI_Comm & pComm, Int * ranks, Int rank_cnt, Int msgSize, Int Pc);
         virtual FTreeBcast2<T> * clone() const;
     };
 
@@ -125,9 +133,11 @@ namespace SuperLU_ASYNCOMM {
     class BTreeBcast2: public TreeBcast_slu<T>{
       protected:
         virtual void buildTree(Int * ranks, Int rank_cnt);
+        virtual void buildTree(Int * ranks, Int rank_cnt, Int Pc);
 
       public:
         BTreeBcast2(const MPI_Comm & pComm, Int * ranks, Int rank_cnt, Int msgSize);
+        BTreeBcast2(const MPI_Comm & pComm, Int * ranks, Int rank_cnt, Int msgSize, Int Pc);
         virtual BTreeBcast2<T> * clone() const;
     };
 

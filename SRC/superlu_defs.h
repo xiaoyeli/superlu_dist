@@ -174,8 +174,13 @@ at the top-level directory.
 #define LkVAL    14
 #define LkkDIAG  15
     /* For triangular solves. */
+#ifdef oneside
+#define XK_H     3 /* The header preceding each X block. */
+#define LSUM_H   3  /* The header preceding each MOD block. */
+#else
 #define XK_H     2  /* The header preceding each X block. */
 #define LSUM_H   2  /* The header preceding each MOD block. */
+#endif
 #define GSUM     20 
 #define Xk       21
 #define Yk       22
@@ -841,8 +846,9 @@ extern void   	BcTree_Destroy(BcTree Tree, char precision);
 extern void 	BcTree_SetTag(BcTree Tree, int tag, char precision);
 extern yes_no_t BcTree_IsRoot(BcTree Tree, char precision);
 #ifdef oneside
-extern void 	BcTree_forwardMessageOneSide(BcTree Tree, void* localBuffer, int msgSize, char precision, int* BClocal_buf_id, int* BCcount, long* BCbase, int* maxrecvsz, int Pc );
-extern void 	RdTree_forwardMessageOneSide(RdTree Tree, void* localBuffer, int msgSize, char precision, int* RDlocal_buf_id, int* RDcount, long* RDbase, int* maxrecvsz, int Pc );
+unsigned long long calcul_hash(const void* buffer, size_t length);
+extern void 	BcTree_forwardMessageOneSide(BcTree Tree, double* localBuffer, int msgSize, char precision, int* BClocal_buf_id, int* BCcount, long* BCbase, int* maxrecvsz, int Pc );
+extern void 	RdTree_forwardMessageOneSide(RdTree Tree, double* localBuffer, int msgSize, char precision, int* RDlocal_buf_id, int* RDcount, long* RDbase, int* maxrecvsz, int Pc);
 #endif
 extern void 	BcTree_forwardMessageSimple(BcTree Tree, void* localBuffer, int msgSize, char precision);
 extern void 	RdTree_forwardMessageSimple(RdTree Tree, void* localBuffer, int msgSize, char precision);

@@ -9,6 +9,7 @@ The source code is distributed under BSD license, see the file License.txt
 at the top-level directory.
 */
 
+
 /*! @file 
  * \brief Re-distribute A on the 2D process mesh.
  * <pre>
@@ -18,7 +19,7 @@ at the top-level directory.
  * </pre>
  */
 
-#include "superlu_zdefs.h"
+#include "superlu_ddefs.h"
 
 #ifndef CACHELINE
 #define CACHELINE 64  /* bytes, Xeon Phi KNL, Cori haswell, Edision */
@@ -37,7 +38,7 @@ at the top-level directory.
  * A      (input) SuperMatrix*
  *	  The distributed input matrix A of dimension (A->nrow, A->ncol).
  *        A may be overwritten by diag(R)*A*diag(C)*Pc^T.
- *        The type of A can be: Stype = SLU_NR_loc; Dtype = SLU_Z; Mtype = SLU_GE.
+ *        The type of A can be: Stype = SLU_NR_loc; Dtype = SLU_D; Mtype = SLU_GE.
  *
  * ScalePermstruct (input) ScalePermstruct_t*
  *        The data structure to store the scaling and permutation vectors
@@ -53,17 +54,17 @@ at the top-level directory.
  *
  * rowind (output) int*
  *
- * a      (output) doublecomplex*
+ * a      (output) double*
  *
  * Return value
  * ============
  * </pre>
  */
 int_t
-zReDistribute_A(SuperMatrix *A, ScalePermstruct_t *ScalePermstruct,
+dReDistribute_A(SuperMatrix *A, ScalePermstruct_t *ScalePermstruct,
                 Glu_freeable_t *Glu_freeable, int_t *xsup, int_t *supno,
                 gridinfo_t *grid, int_t *colptr[], int_t *rowind[],
-                doublecomplex *a[])
+                double *a[])
 {
     NRformat_loc *Astore;
     int_t  *perm_r; /* row permutation vector */
@@ -75,9 +76,9 @@ zReDistribute_A(SuperMatrix *A, ScalePermstruct_t *ScalePermstruct,
     int_t  *nnzToSend, *nnzToRecv, maxnnzToRecv;
     int_t  *ia, *ja, **ia_send, *index, *itemp;
     int_t  *ptr_to_send;
-    doublecomplex *aij, **aij_send, *nzval, *dtemp;
-    doublecomplex *nzval_a;
-	doublecomplex asum,asum_tot;
+    double *aij, **aij_send, *nzval, *dtemp;
+    double *nzval_a;
+	double asum,asum_tot;
     int    iam, it, p, procs, iam_g;
     MPI_Request *send_req;
     MPI_Status  status;
@@ -88,7 +89,7 @@ zReDistribute_A(SuperMatrix *A, ScalePermstruct_t *ScalePermstruct,
        ------------------------------------------------------------*/
     iam = grid->iam;
 #if ( DEBUGlevel>=1 )
-    CHECK_MALLOC(iam, "Enter zReDistribute_A()");
+    CHECK_MALLOC(iam, "Enter dReDistribute_A()");
 #endif
     perm_r = ScalePermstruct->perm_r;
     perm_c = ScalePermstruct->perm_c;
@@ -139,7 +140,7 @@ zReDistribute_A(SuperMatrix *A, ScalePermstruct_t *ScalePermstruct,
     if ( k ) { /* count can be zero. */
         if ( !(ia = intMalloc_dist(2*k)) )
             ABORT("Malloc fails for ia[].");
-        if ( !(aij = doublecomplexMalloc_dist(k)) )
+        if ( !(aij = doubleMalloc_dist(k)) )
             ABORT("Malloc fails for aij[].");
     }
     ja = ia + k;
@@ -151,12 +152,12 @@ zReDistribute_A(SuperMatrix *A, ScalePermstruct_t *ScalePermstruct,
 	ABORT("Malloc fails for send_req[].");
       if ( !(ia_send = (int_t **) SUPERLU_MALLOC(procs*sizeof(int_t*))) )
         ABORT("Malloc fails for ia_send[].");
-      if ( !(aij_send = (doublecomplex **)SUPERLU_MALLOC(procs*sizeof(doublecomplex*))) )
+      if ( !(aij_send = (double **)SUPERLU_MALLOC(procs*sizeof(double*))) )
         ABORT("Malloc fails for aij_send[].");
       if ( SendCnt ) { /* count can be zero */
           if ( !(index = intMalloc_dist(2*SendCnt)) )
               ABORT("Malloc fails for index[].");
-          if ( !(nzval = doublecomplexMalloc_dist(SendCnt)) )
+          if ( !(nzval = doubleMalloc_dist(SendCnt)) )
               ABORT("Malloc fails for nzval[].");
       }
       if ( !(ptr_to_send = intCalloc_dist(procs)) )
@@ -164,7 +165,7 @@ zReDistribute_A(SuperMatrix *A, ScalePermstruct_t *ScalePermstruct,
       if ( maxnnzToRecv ) { /* count can be zero */
           if ( !(itemp = intMalloc_dist(2*maxnnzToRecv)) )
               ABORT("Malloc fails for itemp[].");
-          if ( !(dtemp = doublecomplexMalloc_dist(maxnnzToRecv)) )
+          if ( !(dtemp = doubleMalloc_dist(maxnnzToRecv)) )
               ABORT("Malloc fails for dtemp[].");
       }
 
@@ -221,7 +222,7 @@ zReDistribute_A(SuperMatrix *A, ScalePermstruct_t *ScalePermstruct,
 	    MPI_Isend( ia_send[p], it, mpi_int_t,
 		       p, iam, grid->comm, &send_req[p] );
 	    it = nnzToSend[p];
-	    MPI_Isend( aij_send[p], it, SuperLU_MPI_DOUBLE_COMPLEX,
+	    MPI_Isend( aij_send[p], it, MPI_DOUBLE,
 	               p, iam+procs, grid->comm, &send_req[procs+p] ); 
 	}
     }
@@ -231,7 +232,7 @@ zReDistribute_A(SuperMatrix *A, ScalePermstruct_t *ScalePermstruct,
 	    it = 2*nnzToRecv[p];
 	    MPI_Recv( itemp, it, mpi_int_t, p, p, grid->comm, &status ); 
 	    it = nnzToRecv[p];
-            MPI_Recv( dtemp, it, SuperLU_MPI_DOUBLE_COMPLEX, p, p+procs,
+            MPI_Recv( dtemp, it, MPI_DOUBLE, p, p+procs,
 		      grid->comm, &status );
 	    for (i = 0; i < nnzToRecv[p]; ++i) {
 	        ia[nnz_loc] = itemp[i];
@@ -279,7 +280,7 @@ zReDistribute_A(SuperMatrix *A, ScalePermstruct_t *ScalePermstruct,
     if ( nnz_loc ) { /* nnz_loc can be zero */
         if ( !(*rowind = intMalloc_dist(nnz_loc)) )
             ABORT("Malloc fails for *rowind[].");
-        if ( !(*a = doublecomplexMalloc_dist(nnz_loc)) )
+        if ( !(*a = doubleMalloc_dist(nnz_loc)) )
             ABORT("Malloc fails for *a[].");
     }
 
@@ -312,44 +313,25 @@ zReDistribute_A(SuperMatrix *A, ScalePermstruct_t *ScalePermstruct,
     }
 
 #if ( DEBUGlevel>=1 )
-    CHECK_MALLOC(iam, "Exit zReDistribute_A()");
+    CHECK_MALLOC(iam, "Exit dReDistribute_A()");
 #endif
  
     return 0;
-} /* zReDistribute_A */
+} /* dReDistribute_A */
 
 #ifdef oneside
-foMPI_Win bc_winl;
-foMPI_Win rd_winl;
-foMPI_Win bc_winl_u;
-foMPI_Win rd_winl_u;
-MPI_Comm row_comm;
-MPI_Comm col_comm;
-int* BufSize;
-int* BufSize_rd;
-int *keep_validBCQindex;
-int *keep_validRDQindex;
-int *recv_size_all;
-int* BufSize_u;
-int* BufSize_urd;
-int *keep_validBCQindex_u;
-int *keep_validRDQindex_u;
-int *recv_size_all_u;
-double* BC_taskq;
-double* RD_taskq;
+        MPI_Comm row_comm;
+        MPI_Comm col_comm;
+        int* BufSize;
+        int* BufSize_rd;
+        int *recv_size_all;
+#endif        
 float
-pzdistribute(fact_t fact, int_t n, SuperMatrix *A,
-	     ScalePermstruct_t *ScalePermstruct,
-	     Glu_freeable_t *Glu_freeable, LUstruct_t *LUstruct,
-	     gridinfo_t *grid, int nrhs)
-#else        
-float
-pzdistribute(fact_t fact, int_t n, SuperMatrix *A,
+pddistribute(fact_t fact, int_t n, SuperMatrix *A,
 	     ScalePermstruct_t *ScalePermstruct,
 	     Glu_freeable_t *Glu_freeable, LUstruct_t *LUstruct,
 	     gridinfo_t *grid)
-#endif
-    /*
+/*
  * -- Distributed SuperLU routine (version 2.0) --
  * Lawrence Berkeley National Lab, Univ. of California Berkeley.
  * March 15, 2003
@@ -374,7 +356,7 @@ pzdistribute(fact_t fact, int_t n, SuperMatrix *A,
  * A      (input) SuperMatrix*
  *	  The distributed input matrix A of dimension (A->nrow, A->ncol).
  *        A may be overwritten by diag(R)*A*diag(C)*Pc^T. The type of A can be:
- *        Stype = SLU_NR_loc; Dtype = SLU_Z; Mtype = SLU_GE.
+ *        Stype = SLU_NR_loc; Dtype = SLU_D; Mtype = SLU_GE.
  *
  * ScalePermstruct (input) ScalePermstruct_t*
  *        The data structure to store the scaling and permutation vectors
@@ -410,7 +392,7 @@ pzdistribute(fact_t fact, int_t n, SuperMatrix *A,
 	int iam, jbrow, kcol, krow, mycol, myrow, pc, pr;
     int_t mybufmax[NBUFFERS];
     NRformat_loc *Astore;
-    doublecomplex *a;
+    double *a;
     int_t *asub, *xa;
     int_t *xa_begin, *xa_end;							 
     int_t *xsup = Glu_persist->xsup;    /* supernode and column mapping */
@@ -422,12 +404,12 @@ pzdistribute(fact_t fact, int_t n, SuperMatrix *A,
     int_t *index;         /* indices consist of headers and row subscripts */
 	int_t *index_srt;         /* indices consist of headers and row subscripts */    
 	int   *index1;        /* temporary pointer to array of int */
-    doublecomplex *lusup, *lusup_srt, *uval; /* nonzero values in L and U */
-    doublecomplex **Lnzval_bc_ptr;  /* size ceil(NSUPERS/Pc) */
+    double *lusup, *lusup_srt, *uval; /* nonzero values in L and U */
+    double **Lnzval_bc_ptr;  /* size ceil(NSUPERS/Pc) */
     int_t  **Lrowind_bc_ptr; /* size ceil(NSUPERS/Pc) */
 	int_t   **Lindval_loc_bc_ptr; /* size ceil(NSUPERS/Pc)                 */		    
 	int_t   *Unnz; /* size ceil(NSUPERS/Pc)                 */	
-	doublecomplex **Unzval_br_ptr;  /* size ceil(NSUPERS/Pr) */
+	double **Unzval_br_ptr;  /* size ceil(NSUPERS/Pr) */
     int_t  **Ufstnz_br_ptr;  /* size ceil(NSUPERS/Pr) */
 
 	BcTree  *LBtree_ptr;       /* size ceil(NSUPERS/Pc)                */
@@ -475,16 +457,16 @@ pzdistribute(fact_t fact, int_t n, SuperMatrix *A,
 	int_t **nzrows;
 	double rseed;
 	int rank_cnt,rank_cnt_ref,Root;    
-	doublecomplex *dense, *dense_col; /* SPA */
-    doublecomplex zero = {0.0, 0.0};
+	double *dense, *dense_col; /* SPA */
+    double zero = 0.0;
     int_t ldaspa;     /* LDA of SPA */
     int_t iword, dword;
     float mem_use = 0.0;
 
 	int_t *mod_bit;
 	int_t *frecv, *brecv, *lloc;
-	doublecomplex **Linv_bc_ptr;  /* size ceil(NSUPERS/Pc) */
-	doublecomplex **Uinv_bc_ptr;  /* size ceil(NSUPERS/Pc) */
+	double **Linv_bc_ptr;  /* size ceil(NSUPERS/Pc) */
+	double **Uinv_bc_ptr;  /* size ceil(NSUPERS/Pc) */
 	double *SeedSTD_BC,*SeedSTD_RD;				 
 	int_t idx_indx,idx_lusup;
 	int_t nbrow;
@@ -492,7 +474,7 @@ pzdistribute(fact_t fact, int_t n, SuperMatrix *A,
 	int_t  lptr1_tmp, idx_i, idx_v,m, uu, aln_i;
 	int_t nub;
 	int tag;	
-	
+        
 #if ( PRNTlevel>=1 )
     int_t nLblocks = 0, nUblocks = 0;
 #endif
@@ -511,56 +493,22 @@ pzdistribute(fact_t fact, int_t n, SuperMatrix *A,
 
 //#if ( PRNTlevel>=1 )
     iword = sizeof(int_t);
-    dword = sizeof(doublecomplex);
+    dword = sizeof(double);
 	aln_i = ceil(CACHELINE/(double)iword);											
 //#endif
-
 #ifdef oneside
-#if ( DEBUGlevel>=1 )
-    printf("iam=%d,Init oneside...\n",iam);
-    fflush(stdout);
-#endif    
     int Pr, Pc;
-    int BC_buffer_size=0; //= Pr * maxrecvsz*(nfrecvx+1) + Pr; 
-    int RD_buffer_size=0; //= Pc * maxrecvsz*(nfrecvmod+1) + Pc; 
     Pc = grid->npcol;
     Pr = grid->nprow;
     
-    if ( !(BufSize = (int*)SUPERLU_MALLOC( Pr * sizeof(int))) )  
+    if ( !(BufSize = (int*)SUPERLU_MALLOC( Pr * Pc * sizeof(int))) )  
     	ABORT("Malloc fails for BufSize[]");	
-    memset(BufSize, 0, Pr  * sizeof(int));
+    memset(BufSize, 0, Pr * Pc * sizeof(int));
     
-    if ( !(BufSize_rd = (int*)SUPERLU_MALLOC( Pc*sizeof(int))) )  
-    	ABORT("Malloc fails for BufSize_rd[]");	
-    memset(BufSize_rd, 0, Pc * sizeof(int));
+    if ( !(BufSize_rd = (int*)SUPERLU_MALLOC( Pc * Pr*sizeof(int))) )  
+    	ABORT("Malloc fails for BufSiz_rd[]");	
+    memset(BufSize_rd, 0, Pc * Pr * sizeof(int));
 	
-    if ( !(keep_validBCQindex = (int*)SUPERLU_MALLOC( Pr * sizeof(int))) )  
-    	ABORT("Malloc fails for  keep_validBCQindex[]");	
-    if ( !(keep_validRDQindex = (int*)SUPERLU_MALLOC( Pc *sizeof(int))) )  
-    	ABORT("Malloc fails for keep_validRDQindex[]");	
-    
-    if ( !(BufSize_u = (int*)SUPERLU_MALLOC( Pr * sizeof(int))) )  
-    	ABORT("Malloc fails for BufSize_u[]");	
-    memset(BufSize_u, 0, Pr  * sizeof(int));
-    
-    if ( !(BufSize_urd = (int*)SUPERLU_MALLOC( Pc*sizeof(int))) )  
-    	ABORT("Malloc fails for BufSize_urd[]");	
-    memset(BufSize_urd, 0, Pc * sizeof(int));
-	
-    if ( !(keep_validBCQindex_u = (int*)SUPERLU_MALLOC( Pr * sizeof(int))) )  
-    	ABORT("Malloc fails for  keep_validBCQindex_u[]");	
-    if ( !(keep_validRDQindex_u = (int*)SUPERLU_MALLOC( Pc *sizeof(int))) )  
-    	ABORT("Malloc fails for keep_validRDQindex_u[]");	
-    
-    for (i=0; i< Pr; i++){
-        keep_validBCQindex[i]=-1; 
-        keep_validBCQindex_u[i]=-1; 
-    } 
-    for (i=0; i< Pc; i++){
-        keep_validRDQindex[i]=-1; 
-        keep_validRDQindex_u[i]=-1; 
-    } 
-    
     MPI_Request *col_req;
 	MPI_Request *row_req;
     col_req=(MPI_Request *) malloc(2*(Pr-1) * sizeof(MPI_Request));        
@@ -585,27 +533,21 @@ pzdistribute(fact_t fact, int_t n, SuperMatrix *A,
 	    ABORT("Malloc fails for recv_size_all[].");	
 	memset(recv_size_all, 0, (Pr+Pc) * sizeof(int));
     
-    if ( !(recv_size_all_u = (int*)SUPERLU_MALLOC( ( Pr+Pc) * sizeof(int))) )  
-	    ABORT("Malloc fails for recv_size_all[].");	
-	memset(recv_size_all_u, 0, (Pr+Pc) * sizeof(int));
     int *oneside_buf_offset;
     if ( !(oneside_buf_offset = (int*)SUPERLU_MALLOC( ( Pr+Pc) * sizeof(int))) )  
 	    ABORT("Malloc fails for oneside_buf_offset[].");	
 	memset(oneside_buf_offset, 0, (Pr+Pc) * sizeof(int));
-#if ( DEBUGlevel>=1 )
-    printf("iam=%d,Init oneside END...\n",iam);
-    fflush(stdout);
-#endif    
         
 #endif
+
 #if ( DEBUGlevel>=1 )
-    CHECK_MALLOC(iam, "Enter pzdistribute()");
+    CHECK_MALLOC(iam, "Enter pddistribute()");
 #endif
 #if ( PROFlevel>=1 )
     t = SuperLU_timer_();
 #endif
 
-    zReDistribute_A(A, ScalePermstruct, Glu_freeable, xsup, supno,
+    dReDistribute_A(A, ScalePermstruct, Glu_freeable, xsup, supno,
 		      grid, &xa, &asub, &a);
 
 #if ( PROFlevel>=1 )
@@ -623,7 +565,7 @@ pzdistribute(fact_t fact, int_t n, SuperMatrix *A,
 	   L and U data structures.            */
 	ilsum = Llu->ilsum;
 	ldaspa = Llu->ldalsum;
-	if ( !(dense = doublecomplexCalloc_dist(ldaspa * sp_ienv_dist(3))) )
+	if ( !(dense = doubleCalloc_dist(ldaspa * sp_ienv_dist(3))) )
 	    ABORT("Calloc fails for SPA dense[].");
 	nrbu = CEILING( nsupers, grid->nprow ); /* No. of local block rows */
 	if ( !(Urb_length = intCalloc_dist(nrbu)) )
@@ -777,7 +719,7 @@ pzdistribute(fact_t fact, int_t n, SuperMatrix *A,
 
 	/* Pointers to the beginning of each block row of U. */
 	if ( !(Unzval_br_ptr = 
-              (doublecomplex**)SUPERLU_MALLOC(k * sizeof(doublecomplex*))) )
+              (double**)SUPERLU_MALLOC(k * sizeof(double*))) )
 	    ABORT("Malloc fails for Unzval_br_ptr[].");
 	if ( !(Ufstnz_br_ptr = (int_t**)SUPERLU_MALLOC(k * sizeof(int_t*))) )
 	    ABORT("Malloc fails for Ufstnz_br_ptr[].");
@@ -871,7 +813,7 @@ pzdistribute(fact_t fact, int_t n, SuperMatrix *A,
 		if ( !(index = intMalloc_dist(len1+1)) )
 		    ABORT("Malloc fails for Uindex[].");
 		Ufstnz_br_ptr[lb] = index;
-		if ( !(Unzval_br_ptr[lb] = doublecomplexMalloc_dist(len)) )
+		if ( !(Unzval_br_ptr[lb] = doubleMalloc_dist(len)) )
 		    ABORT("Malloc fails for Unzval_br_ptr[*][].");
 		mybufmax[2] = SUPERLU_MAX( mybufmax[2], len1 );
 		mybufmax[3] = SUPERLU_MAX( mybufmax[3], len );
@@ -908,7 +850,7 @@ pzdistribute(fact_t fact, int_t n, SuperMatrix *A,
 	    ABORT("Malloc fails for Lrb_indptr[].");
 	if ( !(Lrb_valptr = intMalloc_dist(k)) )
 	    ABORT("Malloc fails for Lrb_valptr[].");
-	if ( !(dense = doublecomplexCalloc_dist(ldaspa * sp_ienv_dist(3))) )
+	if ( !(dense = doubleCalloc_dist(ldaspa * sp_ienv_dist(3))) )
 	    ABORT("Calloc fails for SPA dense[].");
 
 	/* These counts will be used for triangular solves. */
@@ -925,7 +867,7 @@ pzdistribute(fact_t fact, int_t n, SuperMatrix *A,
 
 	/* Pointers to the beginning of each block column of L. */
 	if ( !(Lnzval_bc_ptr = 
-              (doublecomplex**)SUPERLU_MALLOC(k * sizeof(doublecomplex*))) )
+              (double**)SUPERLU_MALLOC(k * sizeof(double*))) )
 	    ABORT("Malloc fails for Lnzval_bc_ptr[].");
 	if ( !(Lrowind_bc_ptr = (int_t**)SUPERLU_MALLOC(k * sizeof(int_t*))) )
 	    ABORT("Malloc fails for Lrowind_bc_ptr[].");
@@ -937,11 +879,11 @@ pzdistribute(fact_t fact, int_t n, SuperMatrix *A,
 	Lindval_loc_bc_ptr[k-1] = NULL;
 
 	if ( !(Linv_bc_ptr = 
-				(doublecomplex**)SUPERLU_MALLOC(k * sizeof(doublecomplex*))) ) {
+				(double**)SUPERLU_MALLOC(k * sizeof(double*))) ) {
 		fprintf(stderr, "Malloc fails for Linv_bc_ptr[].");
 	}  
 	if ( !(Uinv_bc_ptr = 
-				(doublecomplex**)SUPERLU_MALLOC(k * sizeof(doublecomplex*))) ) {
+				(double**)SUPERLU_MALLOC(k * sizeof(double*))) ) {
 		fprintf(stderr, "Malloc fails for Uinv_bc_ptr[].");
 	}  
 	Linv_bc_ptr[k-1] = NULL;
@@ -1119,13 +1061,13 @@ pzdistribute(fact_t fact, int_t n, SuperMatrix *A,
 		    len1 = len + BC_HEADER + nrbl * LB_DESCRIPTOR;
 			if ( !(index = intMalloc_dist(len1)) ) 
 				ABORT("Malloc fails for index[]");												 			 
-			if (!(lusup = (doublecomplex*)SUPERLU_MALLOC(len*nsupc * sizeof(doublecomplex))))
+			if (!(lusup = (double*)SUPERLU_MALLOC(len*nsupc * sizeof(double))))
 				ABORT("Malloc fails for lusup[]");			
 			if ( !(Lindval_loc_bc_ptr[ljb] = intCalloc_dist(((nrbl*3 + (aln_i - 1)) / aln_i) * aln_i)) ) 
 				ABORT("Malloc fails for Lindval_loc_bc_ptr[ljb][]");
-			if (!(Linv_bc_ptr[ljb] = (doublecomplex*)SUPERLU_MALLOC(nsupc*nsupc * sizeof(doublecomplex))))
+			if (!(Linv_bc_ptr[ljb] = (double*)SUPERLU_MALLOC(nsupc*nsupc * sizeof(double))))
 				ABORT("Malloc fails for Linv_bc_ptr[ljb][]");
-			if (!(Uinv_bc_ptr[ljb] = (doublecomplex*)SUPERLU_MALLOC(nsupc*nsupc * sizeof(doublecomplex))))
+			if (!(Uinv_bc_ptr[ljb] = (double*)SUPERLU_MALLOC(nsupc*nsupc * sizeof(double))))
 				ABORT("Malloc fails for Uinv_bc_ptr[ljb][]");
 		    mybufmax[0] = SUPERLU_MAX( mybufmax[0], len1 );
 		    mybufmax[1] = SUPERLU_MAX( mybufmax[1], len*nsupc );
@@ -1163,7 +1105,7 @@ pzdistribute(fact_t fact, int_t n, SuperMatrix *A,
 			    irow = ilsum[lb] + irow - FstBlockC( gb );
 			    for (j = 0, dense_col = dense; j < nsupc; ++j) {
 				lusup[k] = dense_col[irow];
-				dense_col[irow] = zero;
+				dense_col[irow] = 0.0;
 				k += len;
 				dense_col += ldaspa;
 			    }
@@ -1190,7 +1132,7 @@ pzdistribute(fact_t fact, int_t n, SuperMatrix *A,
 
 			if ( !(index_srt = intMalloc_dist(len1)) ) 
 				ABORT("Malloc fails for index_srt[]");				
-			if (!(lusup_srt = (doublecomplex*)SUPERLU_MALLOC(len*nsupc * sizeof(doublecomplex))))
+			if (!(lusup_srt = (double*)SUPERLU_MALLOC(len*nsupc * sizeof(double))))
 				ABORT("Malloc fails for lusup_srt[]");
 
 			idx_indx = BC_HEADER;
@@ -1426,18 +1368,19 @@ pzdistribute(fact_t fact, int_t n, SuperMatrix *A,
 				// rseed=rand();
 				// rseed=1.0;
 				msgsize = SuperSize( jb );
-#ifdef oneside				
-                LBtree_ptr[ljb] = BcTree_Create_oneside(grid->comm, ranks, rank_cnt, msgsize,SeedSTD_BC[ljb],'z',BufSize,Pc);  	
-#else				
-                LBtree_ptr[ljb] = BcTree_Create(grid->comm, ranks, rank_cnt, msgsize,SeedSTD_BC[ljb],'z');  	
+#ifdef oneside                                
+				LBtree_ptr[ljb] = BcTree_Create_oneside(grid->comm, ranks, rank_cnt, msgsize,SeedSTD_BC[ljb],'d',BufSize,Pc);  	
+#else                                
+				LBtree_ptr[ljb] = BcTree_Create(grid->comm, ranks, rank_cnt, msgsize,SeedSTD_BC[ljb],'d');  	
+                                //BcTree_GetBufSize(*BufSize);  	
 #endif
-                BcTree_SetTag(LBtree_ptr[ljb],BC_L,'z');
+                                BcTree_SetTag(LBtree_ptr[ljb],BC_L,'d');
 
 				// printf("iam %5d btree rank_cnt %5d \n",iam,rank_cnt);
 				// fflush(stdout);
 
 				// if(iam==15 || iam==3){
-				// printf("iam %5d btree lk %5d tag %5d root %5d\n",iam, ljb,jb,BcTree_IsRoot(LBtree_ptr[ljb],'z'));
+				// printf("iam %5d btree lk %5d tag %5d root %5d\n",iam, ljb,jb,BcTree_IsRoot(LBtree_ptr[ljb],'d'));
 				// fflush(stdout);
 				// }
 
@@ -1469,12 +1412,6 @@ pzdistribute(fact_t fact, int_t n, SuperMatrix *A,
 	SUPERLU_FREE(ranks);
 	SUPERLU_FREE(SeedSTD_BC);
 	
-#ifdef oneside	
-#if ( DEBUGlevel>=1 )
-    printf("iam=%d,Get number of tasks from parents, get valid parents rank number...\n",iam);
-    fflush(stdout);
-#endif    
-    req_count = 0;
     BufSize[iam_col]=0;
     for (i=0; i<Pr;i++){
              for(j=0;j<i;j++){
@@ -1482,30 +1419,12 @@ pzdistribute(fact_t fact, int_t n, SuperMatrix *A,
              }
              if (iam_col!=i){ 
                      MPI_Irecv(&recv_size_all[i], 1, MPI_INT, i, 0, col_comm, &col_req[req_count]);
-     	             MPI_Isend(&oneside_buf_offset[i],1, MPI_INT, i, 0, col_comm, &col_req[req_count+1]);
+     	            MPI_Isend(&oneside_buf_offset[i],1, MPI_INT, i, 0, col_comm, &col_req[req_count+1]);
                      req_count += 2;
              }
      }        
      MPI_Waitall(2*(Pr-1), col_req, col_status);
      recv_size_all[iam_col]=0;
-
-     j=0; 
-     for(i=0; i<Pr; i++){
-        //printf("Bufsuze=%d\n",BufSize[i]);
-         if(BufSize[i]>0){
-            keep_validBCQindex[j]=i;
-#if ( DEBUGlevel>=1 )
-            printf("iam=%d, iam_col=%d, I need to check from %d, size=%d\n",iam, iam_col,keep_validBCQindex[j],BufSize[i]);
-            fflush(stdout);
-#endif
-            j += 1;
-        }    
-     }
-#if ( DEBUGlevel>=1 )
-    printf("iam=%d,End Get number of tasks from parents, get valid parents rank number...\n",iam);
-    fflush(stdout);
-#endif    
-#endif
 	
 #if ( PROFlevel>=1 )
 t = SuperLU_timer_() - t;
@@ -1650,11 +1569,11 @@ if ( !iam) printf(".. Construct Bcast tree for L: %.2f\t\n", t);
 
 					// if(ib==0){
 #ifdef oneside
-					LRtree_ptr[lib] = RdTree_Create_oneside(grid->comm, ranks, rank_cnt, msgsize,SeedSTD_RD[lib],'z',BufSize_rd,Pc);  	
-#else			
-                    LRtree_ptr[lib] = RdTree_Create(grid->comm, ranks, rank_cnt, msgsize,SeedSTD_RD[lib],'z');  	
-#endif
-                    RdTree_SetTag(LRtree_ptr[lib], RD_L,'z');
+                                        LRtree_ptr[lib] = RdTree_Create_oneside(grid->comm, ranks, rank_cnt, msgsize,SeedSTD_RD[lib],'d',BufSize_rd,Pc);  	
+#else     
+                                        LRtree_ptr[lib] = RdTree_Create(grid->comm, ranks, rank_cnt, msgsize,SeedSTD_RD[lib],'d');  	
+#endif					
+                                        RdTree_SetTag(LRtree_ptr[lib], RD_L,'d');
 					// }
 
 					// printf("iam %5d rtree rank_cnt %5d \n",iam,rank_cnt);
@@ -1663,7 +1582,7 @@ if ( !iam) printf(".. Construct Bcast tree for L: %.2f\t\n", t);
 					// if(ib==15  || ib ==16){
 
 					// if(iam==15 || iam==3){
-					// printf("iam %5d rtree lk %5d tag %5d root %5d\n",iam,lib,ib,RdTree_IsRoot(LRtree_ptr[lib],'z'));
+					// printf("iam %5d rtree lk %5d tag %5d root %5d\n",iam,lib,ib,RdTree_IsRoot(LRtree_ptr[lib],'d'));
 					// fflush(stdout);
 					// }		
 
@@ -1695,13 +1614,6 @@ if ( !iam) printf(".. Construct Bcast tree for L: %.2f\t\n", t);
 		// if(nzrows[i])SUPERLU_FREE(nzrows[i]);
 	// }
 	// SUPERLU_FREE(nzrows);
-
-		////////////////////////////////////////////////////////
-#ifdef oneside     
-#if ( DEBUGlevel>=1 )
-    printf("iam=%d,L_RD Get number of tasks from parents, get valid parents rank number...\n",iam);
-    fflush(stdout);
-#endif    
     req_count = 0;
     BufSize_rd[iam_row]=0;
     for (i=0; i<Pc;i++){
@@ -1717,23 +1629,8 @@ if ( !iam) printf(".. Construct Bcast tree for L: %.2f\t\n", t);
     }        
     MPI_Waitall(2*(Pc-1), row_req, row_status);
     recv_size_all[Pr+iam_row]=0; 
-    j=0;
-    
-    for(i=0; i<Pc; i++){
-        if(BufSize_rd[i]!=0){
-           keep_validRDQindex[j]=i;
-#if ( DEBUGlevel>=1 )
-            printf("iam=%d, iam_row=%d, I need to check from %d, size=%d\n",iam, iam_row,keep_validRDQindex[j],BufSize_rd[i]);
-            fflush(stdout);
-#endif
-           j += 1;
-       }    
-    }
-#if ( DEBUGlevel>=1 )
-    printf("iam=%d,End L_RD Get number of tasks from parents, get valid parents rank number...\n",iam);
-    fflush(stdout);
-#endif    
-#endif
+
+		////////////////////////////////////////////////////////
 
 #if ( PROFlevel>=1 )
 t = SuperLU_timer_() - t;
@@ -1847,12 +1744,8 @@ if ( !iam) printf(".. Construct Reduce tree for L: %.2f\t\n", t);
 				// rseed=rand();
 				// rseed=1.0;
 				msgsize = SuperSize( jb );
-#ifdef oneside				
-                UBtree_ptr[ljb] = BcTree_Create_oneside(grid->comm, ranks, rank_cnt, msgsize,SeedSTD_BC[ljb],'z',BufSize_u, Pc);  	
-#else				
-                UBtree_ptr[ljb] = BcTree_Create(grid->comm, ranks, rank_cnt, msgsize,SeedSTD_BC[ljb],'z');  	
-#endif				
-                BcTree_SetTag(UBtree_ptr[ljb],BC_U,'z');
+				UBtree_ptr[ljb] = BcTree_Create(grid->comm, ranks, rank_cnt, msgsize,SeedSTD_BC[ljb],'d');  	
+				BcTree_SetTag(UBtree_ptr[ljb],BC_U,'d');
 
 				// printf("iam %5d btree rank_cnt %5d \n",iam,rank_cnt);
 				// fflush(stdout);
@@ -1878,41 +1771,6 @@ if ( !iam) printf(".. Construct Reduce tree for L: %.2f\t\n", t);
 	SUPERLU_FREE(ActiveFlagAll);
 	SUPERLU_FREE(ranks);				
 	SUPERLU_FREE(SeedSTD_BC);				
-#ifdef oneside	
-#if ( DEBUGlevel>=1 )
-    printf("iam=%d,U_BC Get number of tasks from parents, get valid parents rank number...\n",iam);
-    fflush(stdout);
-#endif    
-    req_count = 0;
-	memset(oneside_buf_offset, 0, (Pr+Pc) * sizeof(int));
-    BufSize_u[iam_col]=0;
-    for (i=0; i<Pr;i++){
-             for(j=0;j<i;j++){
-                     oneside_buf_offset[i] += BufSize_u[j];
-             }
-             if (iam_col!=i){ 
-                     MPI_Irecv(&recv_size_all_u[i], 1, MPI_INT, i, 0, col_comm, &col_req[req_count]);
-     	             MPI_Isend(&oneside_buf_offset[i],1, MPI_INT, i, 0, col_comm, &col_req[req_count+1]);
-                     req_count += 2;
-             }
-     }        
-     MPI_Waitall(2*(Pr-1), col_req, col_status);
-     recv_size_all_u[iam_col]=0;
-
-     j=0; 
-     for(i=0; i<Pr; i++){
-         if(BufSize_u[i]>0){
-            keep_validBCQindex_u[j]=i;
-            //printf("iam=%d, iam_col=%d, I need to check from %d, size=%d\n",iam, iam_col,keep_validBCQindex_u[j],BufSize_u[i]);
-            //fflush(stdout);
-            j += 1;
-        }    
-     }
-#if ( DEBUGlevel>=1 )
-    printf("iam=%d,End U_BC Get number of tasks from parents, get valid parents rank number...\n",iam);
-    fflush(stdout);
-#endif    
-#endif
 		
 #if ( PROFlevel>=1 )
 t = SuperLU_timer_() - t;
@@ -2086,12 +1944,9 @@ if ( !iam) printf(".. Construct Bcast tree for U: %.2f\t\n", t);
 					msgsize = SuperSize( ib );
 
 					// if(ib==0){
-#ifdef oneside
-					URtree_ptr[lib] = RdTree_Create_oneside(grid->comm, ranks, rank_cnt, msgsize,SeedSTD_RD[lib],'z',BufSize_urd,Pc);  	
-#else					
-                    URtree_ptr[lib] = RdTree_Create(grid->comm, ranks, rank_cnt, msgsize,SeedSTD_RD[lib],'z');  	
-#endif					
-                    RdTree_SetTag(URtree_ptr[lib], RD_U,'z');
+
+					URtree_ptr[lib] = RdTree_Create(grid->comm, ranks, rank_cnt, msgsize,SeedSTD_RD[lib],'d');  	
+					RdTree_SetTag(URtree_ptr[lib], RD_U,'d');
 					// }
 
 					// #if ( PRNTlevel>=1 )
@@ -2122,38 +1977,6 @@ if ( !iam) printf(".. Construct Bcast tree for U: %.2f\t\n", t);
 		// if(nzrows[i])SUPERLU_FREE(nzrows[i]);
 	// }
 	// SUPERLU_FREE(nzrows);				
-#ifdef oneside     
-#if ( DEBUGlevel>=1 )
-    printf("iam=%d,U_RD Get number of tasks from parents, get valid parents rank number...\n",iam);
-    fflush(stdout);
-#endif    
-    req_count = 0;
-    BufSize_urd[iam_row]=0;
-    for (i=0; i<Pc;i++){
-            for(j=0;j<i;j++){
-                    oneside_buf_offset[i+Pr] += BufSize_urd[j];
-            }
-            if (iam_row!=i){ 
-                    MPI_Irecv(&recv_size_all_u[Pr+i],  1, MPI_INT, i, 0, row_comm, &row_req[req_count]);
-    	            MPI_Isend(&oneside_buf_offset[i+Pr],1, MPI_INT, i, 0, row_comm, &row_req[req_count+1]);
-                    req_count += 2;
-                    //MPI_Sendrecv(&nfrecvmod,1, MPI_INT, i, 0,&recv_size_all[Pr+i], 1, MPI_INT, i, 0, row_comm,&status); 
-            }
-    }        
-    MPI_Waitall(2*(Pc-1), row_req, row_status);
-    recv_size_all_u[Pr+iam_row]=0; 
-    j=0; 
-    for(i=0; i<Pc; i++){
-       if(BufSize_urd[i]!=0){
-           keep_validRDQindex_u[j]=i;
-           j += 1;
-       }    
-    }
-#if ( DEBUGlevel>=1 )
-    printf("iam=%d,End U_RD Get number of tasks from parents, get valid parents rank number...\n",iam);
-    fflush(stdout);
-#endif    
-#endif
 		
 #if ( PROFlevel>=1 )
 t = SuperLU_timer_() - t;
@@ -2231,67 +2054,12 @@ if ( !iam) printf(".. Construct Reduce tree for U: %.2f\t\n", t);
         SUPERLU_FREE(a);
     }
     SUPERLU_FREE(xa);
-#ifdef oneside
-    int maxrecvsz = sp_ienv_dist(3)* nrhs + SUPERLU_MAX( XK_H, LSUM_H ) + 1; 
-    BC_buffer_size = maxrecvsz * ( (nfrecvx>nbrecvx?nfrecvx:nbrecvx) + 1 );
-    BC_taskq = (double*)SUPERLU_MALLOC( 2*BC_buffer_size * sizeof(double));   // this needs to be optimized for 1D row mapping
-    
-    for(i=0; i<2*BC_buffer_size; i++){
-            BC_taskq[i] = -1.00;
-    }
-#if ( DEBUGlevel>=1 )
-    printf("iam=%d,Create RMA window for block column, taskqsize=%d, maxrecvsz=%d, nfrecvx=%d, nbrecvx=%d,doublecomplexsize=%d\n",iam,2*BC_buffer_size, maxrecvsz, nfrecvx, nbrecvx,sizeof(doublecomplex));
-    fflush(stdout);
-#endif    
-    //foMPI_Win_create(BC_taskq, (2*BC_buffer_size)*sizeof(double), sizeof(double), MPI_INFO_NULL, col_comm, &bc_winl);
-    foMPI_Win_create(BC_taskq, (2*BC_buffer_size)*sizeof(double), sizeof(double), MPI_INFO_NULL, col_comm, &bc_winl);
-	
-#if ( DEBUGlevel>=1 )
-    printf("iam=%d, End Create RMA window for block column, size=%d, doublecomplexsize=%d\n",iam,2*BC_buffer_size, sizeof(doublecomplex));
-    fflush(stdout);
-#endif    
-    
-    
-#if ( DEBUGlevel>=1 )
-    printf("iam=%d,Create RMA window for block row, size=%d, doublecomplexsize=%d\n",iam,2*RD_buffer_size, sizeof(doublecomplex));
-    fflush(stdout);
-#endif    
-    int nfrecvmod=0;
-    for (lk=0;lk<CEILING( nsupers, grid->nprow );++lk){
-        if(LRtree_ptr[lk]!=NULL){
-            RdTree_allocateRequest(LRtree_ptr[lk],'d');
-            nfrecvmod += RdTree_GetDestCount(LRtree_ptr[lk],'d');
-        }
-    }
-    int nbrecvmod=0 ;
-	for (lk=0;lk<CEILING( nsupers, grid->nprow );++lk){
-		if(URtree_ptr[lk]!=NULL){
-			RdTree_allocateRequest(URtree_ptr[lk],'d');			
-			nbrecvmod += RdTree_GetDestCount(URtree_ptr[lk],'d');
-		}
-    }
-    RD_buffer_size=((nfrecvmod>nbrecvmod?nfrecvmod:nbrecvmod)+1)*maxrecvsz;
-    //printf("iam=%d, newRD_buffer_size=%d\n",iam,RD_buffer_size);
-    //fflush(stdout);
-    RD_taskq = (double*)SUPERLU_MALLOC( 2*RD_buffer_size * sizeof(double));   // this needs to be optimized for 1D row mapping
-    for(i=0; i<2*RD_buffer_size; i++){
-            RD_taskq[i] = -1.0;
-    }
-	foMPI_Win_create(RD_taskq, (2*RD_buffer_size)*sizeof(double), sizeof(double), MPI_INFO_NULL, row_comm, &rd_winl);
-    
-#if ( DEBUGlevel>=1 )
-    printf("iam=%d, End Create RMA window for block row, size=%d, doublecomplexsize=%d\n",iam,2*RD_buffer_size, sizeof(doublecomplex));
-    fflush(stdout);
-#endif    
-    
-#endif
 
 #if ( DEBUGlevel>=1 )
     /* Memory allocated but not freed:
        ilsum, fmod, fsendx_plist, bmod, bsendx_plist  */
-    CHECK_MALLOC(iam, "Exit pzdistribute()");
-    fflush(stdout);
+    CHECK_MALLOC(iam, "Exit pddistribute()");
 #endif
     
     return (mem_use);
-} /* PZDISTRIBUTE */
+} /* PDDISTRIBUTE */

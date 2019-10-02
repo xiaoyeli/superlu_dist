@@ -800,7 +800,6 @@ void dlsum_fmod_inv
 
 #if ( PROFlevel>=1 )
 			TOC(t2, t1);
-			onesidedgemm[iam] += t2;
 			stat[thread_id]->utime[SOL_GEMM] += t2;
 #endif		
 
@@ -906,7 +905,6 @@ void dlsum_fmod_inv
 
 #if ( PROFlevel>=1 )
 						TOC(t2, t1);
-			                        onesidedgemm[iam] += t2;
 						stat[thread_id]->utime[SOL_TRSM] += t2;
 #endif	
 
@@ -997,7 +995,7 @@ void dlsum_fmod_inv_master
  int* BCcount, 
  long* BCbase, 
  int Pc, 
- int maxrecvsz    
+ int maxrecvsz
 )
 {
     double alpha = 1.0, beta = 0.0,malpha=-1.0;
@@ -1218,7 +1216,6 @@ void dlsum_fmod_inv_master
 			}			
 #if ( PROFlevel>=1 )
 			TOC(t2, t1);
-			onesidedgemm[iam] += t2;
 			stat[thread_id]->utime[SOL_GEMM] += t2;
 #endif	
 		}	
@@ -1342,7 +1339,6 @@ void dlsum_fmod_inv_master
 
 #if ( PROFlevel>=1 )
 					TOC(t2, t1);
-					onesidedgemm[iam] += t2;
 					stat[thread_id]->utime[SOL_TRSM] += t2;
 
 #endif	
@@ -1891,7 +1887,15 @@ void dlsum_bmod_inv_master
  int_t sizelsum,
  int_t sizertemp,
  int thread_id,
- int num_thread
+ int num_thread,
+ int* iam_row,
+ int* RDcount, 
+ long* RDbase, 
+ int* iam_col, 
+ int* BCcount, 
+ long* BCbase, 
+ int Pc, 
+ int maxrecvsz
  )
 {
 	/*
@@ -2006,7 +2010,6 @@ void dlsum_bmod_inv_master
 			}
 #if ( PROFlevel>=1 )
 			TOC(t2, t1);
-			onesidedgemm[iam] += t2;
 			stat[thread_id1]->utime[SOL_GEMM] += t2;
 #endif	
 		}
@@ -2049,7 +2052,6 @@ void dlsum_bmod_inv_master
 		}	
 #if ( PROFlevel>=1 )
 		TOC(t2, t1);
-			onesidedgemm[iam] += t2;
 		stat[thread_id]->utime[SOL_GEMM] += t2;
 #endif				
 	}
@@ -2078,8 +2080,11 @@ void dlsum_bmod_inv_master
 					#endif					
 					for (jj=0;jj<iknsupc*nrhs;jj++)
 						lsum[il + jj ] += lsum[il + jj + ii*sizelsum];
-				RdTree_forwardMessageSimple(URtree_ptr[ik],&lsum[il - LSUM_H ],RdTree_GetMsgSize(URtree_ptr[ik],'d')*nrhs+LSUM_H,'d');
-
+#ifdef oneside				
+                RdTree_forwardMessageOneSide(URtree_ptr[ik],&lsum[il - LSUM_H ],RdTree_GetMsgSize(URtree_ptr[ik],'d')*nrhs+LSUM_H,'d', iam_row, RDcount, RDbase, &maxrecvsz, Pc);
+#else				
+                RdTree_forwardMessageSimple(URtree_ptr[ik],&lsum[il - LSUM_H ],RdTree_GetMsgSize(URtree_ptr[ik],'d')*nrhs+LSUM_H,'d');
+#endif
 #if ( DEBUGlevel>=2 )
 				printf("(%2d) Sent LSUM[%2.0f], size %2d, to P %2d\n",
 						iam, lsum[il-LSUM_H], iknsupc*nrhs+LSUM_H, p);
@@ -2150,7 +2155,6 @@ void dlsum_bmod_inv_master
 			
 #if ( PROFlevel>=1 )
 					TOC(t2, t1);
-			onesidedgemm[iam] += t2;
 					stat[thread_id]->utime[SOL_TRSM] += t2;
 #endif					
 					stat[thread_id]->ops[SOLVE] += iknsupc * (iknsupc + 1) * nrhs;
@@ -2167,8 +2171,12 @@ void dlsum_bmod_inv_master
 						// fflush(stdout);
 					// }
 					if(UBtree_ptr[lk1]!=NULL){
-					BcTree_forwardMessageSimple(UBtree_ptr[lk1],&x[ii - XK_H],BcTree_GetMsgSize(UBtree_ptr[lk1],'d')*nrhs+XK_H,'d'); 
-					} 
+#ifdef oneside					
+                        BcTree_forwardMessageOneSide(UBtree_ptr[lk1],&x[ii - XK_H],BcTree_GetMsgSize(UBtree_ptr[lk1],'d')*nrhs+XK_H,'d',iam_col, BCcount, BCbase, &maxrecvsz, Pc); 
+#else					
+                        BcTree_forwardMessageSimple(UBtree_ptr[lk1],&x[ii - XK_H],BcTree_GetMsgSize(UBtree_ptr[lk1],'d')*nrhs+XK_H,'d'); 
+#endif
+                    } 
 
 					/*
 					 * Perform local block modifications.
@@ -2180,7 +2188,8 @@ void dlsum_bmod_inv_master
 						{
 						dlsum_bmod_inv_master(lsum, x, &x[ii], rtemp, nrhs, gik, bmod, Urbs,Urbs2,
 								Ucb_indptr, Ucb_valptr, xsup, grid, Llu,
-								send_req, stat, sizelsum,sizertemp,thread_id,num_thread);
+								send_req, stat, sizelsum,sizertemp,thread_id,num_thread,
+                                iam_row, RDcount, RDbase, iam_col, BCcount, BCbase, Pc, maxrecvsz);
 						}
 					}
 				// } /* if brecv[ik] == 0 */

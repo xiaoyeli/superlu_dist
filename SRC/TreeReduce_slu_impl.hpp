@@ -13,6 +13,13 @@ namespace SuperLU_ASYNCOMM {
     }
 
 
+  template<typename T>
+    TreeReduce_slu<T>::TreeReduce_slu(const MPI_Comm & pComm, Int * ranks, Int rank_cnt, Int msgSize, Int Pc):TreeBcast_slu<T>(pComm,ranks,rank_cnt,msgSize, Pc){
+      this->sendDataPtrs_.assign(1,NULL);
+      this->sendRequests_.assign(1,MPI_REQUEST_NULL);
+      this->isAllocated_=false;
+      this->isBufferSet_=false;
+    }
 
 
   template<typename T>
@@ -43,31 +50,62 @@ namespace SuperLU_ASYNCOMM {
 #ifdef oneside
   template< typename T> 
     inline void TreeReduce_slu<T>::forwardMessageOneSide(T * locBuffer, Int msgSize, int* iam_row, int* RDcount, long* RDbase, int* maxrecvsz, int Pc){
-        int iam;
-        MPI_Comm_rank(MPI_COMM_WORLD, &iam);        
-        double my_RDtasktail = 1.0;
-	    double t1, t2;
+	    //double t1;
         long RDsendoffset=0;
         Int new_iProc;
-        Int new_msgSize = msgSize + 1;
+        //Int new_msgSize = msgSize + 1;
         if(this->myRank_!=this->myRoot_){
+            //t1 = SuperLU_timer_();
 		    Int iProc = this->myRoot_;
 		    new_iProc = iProc%Pc;
+            msgSize = msgSize * 2;
+            *maxrecvsz = *maxrecvsz * 2;
 		    RDsendoffset = RDbase[new_iProc] + RDcount[new_iProc]*(*maxrecvsz);
  		    
             //printf("I am %d, row_id %d, send to world rank %d/%d, RDcount[%d]=%d, RDbase[%d]=%ld,RDsendoffset=%ld, maxrecvsz=%d\n",iam, *iam_row, iProc, new_iProc, new_iProc, RDcount[new_iProc], new_iProc, RDbase[new_iProc], RDsendoffset, *maxrecvsz);
 		    //fflush(stdout);
 		
-            t1 = SuperLU_timer_();
-            foMPI_Accumulate(locBuffer, new_msgSize, this->type_, new_iProc, RDsendoffset, new_msgSize, this->type_, foMPI_REPLACE, rd_winl);		  
+            //t1 = SuperLU_timer_();
+            //foMPI_Accumulate(locBuffer, new_msgSize, MPI_DOUBLE, new_iProc, RDsendoffset, new_msgSize, MPI_DOUBLE, foMPI_REPLACE, rd_winl);		  
+            foMPI_Put(locBuffer, msgSize, MPI_DOUBLE, new_iProc, RDsendoffset, msgSize, MPI_DOUBLE,rd_winl);		  
+            //foMPI_Put(locBuffer, new_msgSize, MPI_DOUBLE, new_iProc, RDsendoffset, new_msgSize, MPI_DOUBLE,rd_winl);		  
+	        //onesidecomm_bc += SuperLU_timer_() - t1;
 		///foMPI_Accumulate(locBuffer, msgSize, this->type_, new_iProc, RDsendoffset, msgSize, this->type_, foMPI_REPLACE, rd_winl);		  
 		///foMPI_Accumulate(&my_RDtasktail, 1, MPI_DOUBLE, new_iProc, *iam_row, 1, MPI_DOUBLE, foMPI_SUM, rd_winl);		  
-	        onesidecomm_rd[iam] += SuperLU_timer_() - t1;
+	        //onesidecomm_bc[iam] += SuperLU_timer_() - t1;
 		    RDcount[new_iProc] += 1; 
  		    //printf("End---I am %d, row_id %d, send to world rank %d/%d \n",iam, *iam_row,iProc, new_iProc);
 		    //fflush(stdout);
 	}
-    }
+ }
+
+  template< typename T> 
+    inline void TreeReduce_slu<T>::forwardMessageOneSideU(T * locBuffer, Int msgSize, int* iam_row, int* RDcount, long* RDbase, int* maxrecvsz, int Pc){
+        long RDsendoffset=0;
+        Int new_iProc;
+        int new_msgSize = msgSize * 2;
+        int new_maxrecvsz = *maxrecvsz *2;
+	    //double t1;
+        //t1 = SuperLU_timer_();
+        if(this->myRank_!=this->myRoot_){
+            //t1 = SuperLU_timer_();
+		    Int iProc = this->myRoot_;
+		    new_iProc = iProc%Pc;
+		    RDsendoffset = RDbase[new_iProc] + RDcount[new_iProc]*(new_maxrecvsz);
+ 		    
+            //printf("I row_id %d, send to world rank %d/%d, RDcount[%d]=%d, RDbase[%d]=%ld,RDsendoffset=%ld, maxrecvsz=%d\n",*iam_row, iProc, new_iProc, new_iProc, RDcount[new_iProc], new_iProc, RDbase[new_iProc], RDsendoffset, new_maxrecvsz);
+		    //fflush(stdout);
+		
+            //foMPI_Accumulate(locBuffer, new_msgSize, MPI_DOUBLE, new_iProc, RDsendoffset, new_msgSize, MPI_DOUBLE, foMPI_REPLACE, rd_winl);		  
+            foMPI_Put(locBuffer, new_msgSize, MPI_DOUBLE, new_iProc, RDsendoffset, new_msgSize, MPI_DOUBLE,rd_winl);		  
+		    //foMPI_Accumulate(&my_RDtasktail, 1, MPI_DOUBLE, new_iProc, *iam_row, 1, MPI_DOUBLE, foMPI_SUM, rd_winl);		  
+		    RDcount[new_iProc] += 1; 
+ 		    //printf("End---I row_id %d, send to world rank %d/%d \n", *iam_row,iProc, new_iProc);
+		    //fflush(stdout);
+	}
+	//onesidecomm_bc += SuperLU_timer_() - t1;
+ }
+
  #endif  
   template< typename T> 
     inline void TreeReduce_slu<T>::forwardMessageSimple(T * locBuffer, Int msgSize){
@@ -148,9 +186,35 @@ namespace SuperLU_ASYNCOMM {
       }
     }
 
+
+  template< typename T>
+    inline TreeReduce_slu<T> * TreeReduce_slu<T>::Create(const MPI_Comm & pComm, Int * ranks, Int rank_cnt, Int msgSize, double rseed,Int Pc){
+      //get communicator size
+      Int nprocs = 0;
+      MPI_Comm_size(pComm, &nprocs);
+
+      if(nprocs<=FTREE_LIMIT){
+#if ( _DEBUGlevel_ >= 1 ) || defined(REDUCE_VERBOSE)
+        statusOFS<<"FLAT TREE USED"<<std::endl;
+#endif
+        return new FTreeReduce_slu<T>(pComm,ranks,rank_cnt,msgSize,Pc);
+      }
+      else{
+#if ( _DEBUGlevel_ >= 1 ) || defined(REDUCE_VERBOSE)
+        statusOFS<<"BINARY TREE USED"<<std::endl;
+#endif
+        // return new ModBTreeReduce_slu<T>(pComm,ranks,rank_cnt,msgSize, rseed);
+		return new BTreeReduce_slu<T>(pComm,ranks,rank_cnt,msgSize,Pc);
+      }
+    }
+
   template< typename T>
     FTreeReduce_slu<T>::FTreeReduce_slu(const MPI_Comm & pComm, Int * ranks, Int rank_cnt, Int msgSize):TreeReduce_slu<T>(pComm, ranks, rank_cnt, msgSize){
       buildTree(ranks,rank_cnt);
+    }
+  template< typename T>
+    FTreeReduce_slu<T>::FTreeReduce_slu(const MPI_Comm & pComm, Int * ranks, Int rank_cnt, Int msgSize, Int Pc):TreeReduce_slu<T>(pComm, ranks, rank_cnt, msgSize, Pc){
+      buildTree(ranks,rank_cnt,Pc);
     }
 
   template< typename T>
@@ -182,8 +246,35 @@ namespace SuperLU_ASYNCOMM {
     }
 
   template< typename T>
+    inline void FTreeReduce_slu<T>::buildTree(Int * ranks, Int rank_cnt, Int Pc){
+
+      Int idxStart = 0;
+      Int idxEnd = rank_cnt;
+
+      this->myRoot_ = ranks[0];
+
+      if(this->myRank_==this->myRoot_){
+          for (Int i=1; i<rank_cnt; i++){
+            this->myDests_.push_back(ranks[i]%Pc) ; 
+          }
+       // this->myDests_.insert(this->myDests_.end(),&ranks[1],&ranks[0]+rank_cnt);
+      }
+
+#if (defined(REDUCE_VERBOSE))
+      statusOFS<<"My root is "<<this->myRoot_<<std::endl;
+      statusOFS<<"My dests are ";
+      for(Int i =0;i<this->myDests_.size();++i){statusOFS<<this->myDests_[i]<<" ";}
+      statusOFS<<std::endl;
+#endif
+    }
+
+  template< typename T>
     BTreeReduce_slu<T>::BTreeReduce_slu(const MPI_Comm & pComm, Int * ranks, Int rank_cnt, Int msgSize):TreeReduce_slu<T>(pComm, ranks, rank_cnt, msgSize){
       buildTree(ranks,rank_cnt);
+    }
+  template< typename T>
+    BTreeReduce_slu<T>::BTreeReduce_slu(const MPI_Comm & pComm, Int * ranks, Int rank_cnt, Int msgSize, Int Pc):TreeReduce_slu<T>(pComm, ranks, rank_cnt, msgSize, Pc){
+      buildTree(ranks,rank_cnt,Pc);
     }
 
   template< typename T>
@@ -225,6 +316,36 @@ namespace SuperLU_ASYNCOMM {
     }
 
 
+	template< typename T>
+    inline void BTreeReduce_slu<T>::buildTree(Int * ranks, Int rank_cnt,Int Pc){
+      Int myIdx = 0;
+      Int ii=0; 
+	  Int child,root;
+	  for (ii=0;ii<rank_cnt;ii++)
+		  if(this->myRank_ == ranks[ii]){
+			  myIdx = ii;
+			  break;
+		  }
+
+		  
+	  for (ii=0;ii<DEG_TREE;ii++){
+		  if(myIdx*DEG_TREE+1+ii<rank_cnt){
+			   child = ranks[myIdx*DEG_TREE+1+ii]%Pc;
+			   this->myDests_.push_back(child);
+		  }		
+	  }		  
+		  
+	  if(myIdx!=0){
+		  this->myRoot_ = ranks[(Int)floor((double)(myIdx-1.0)/(double)DEG_TREE)];
+	  }else{
+		  this->myRoot_ = this->myRank_;
+	  } 
+	  
+	  // for(Int i =0;i<this->myDests_.size();++i){std::cout<<this->myRank_<<" "<<this->myDests_[i]<<" "<<std::endl;}
+
+	  // {std::cout<<this->myRank_<<" "<<this->myRoot_<<" "<<std::endl;}	  
+	  
+    }
   template< typename T>
     ModBTreeReduce_slu<T>::ModBTreeReduce_slu(const MPI_Comm & pComm, Int * ranks, Int rank_cnt, Int msgSize, double rseed):TreeReduce_slu<T>(pComm, ranks, rank_cnt, msgSize){
       this->rseed_ = rseed;
