@@ -263,9 +263,6 @@ int_t* getNodeToForstMap(int_t nsupers, sForest_t**  sForests, gridinfo3d_t* gri
 
 }
 
-
-
-
 int_t* getMyNodeCountsFr(int_t maxLvl, int_t* myTreeIdxs, sForest_t**  sForests)
 {
 	int_t* myNodeCount = INT_T_ALLOC(maxLvl);
@@ -283,7 +280,6 @@ int_t* getMyNodeCountsFr(int_t maxLvl, int_t* myTreeIdxs, sForest_t**  sForests)
 int_t** getTreePermFr( int_t* myTreeIdxs,
                        sForest_t**  sForests, gridinfo3d_t* grid3d)
 {
-
 	int_t maxLvl = log2i(grid3d->zscp.Np) + 1;
 
 	int_t** treePerm = (int_t** ) SUPERLU_MALLOC(sizeof(int_t*)*maxLvl);
@@ -313,7 +309,6 @@ int_t* getIsNodeInMyGrid(int_t nsupers, int_t maxLvl, int_t* myNodeCount, int_t*
 	}
 
 	return isNodeInMyGrid;
-
 }
 
 double pearsonCoeff(int_t numForests, double* frCost, double* frWeight)
@@ -561,7 +556,7 @@ sForest_t*  createForestNew(int_t numTrees, int_t nsupers, int_t * nodeCounts,  
 
 
 	// using the nodelist create factorization ordering
-	calcTopInfoForest(forest,  nsupers, setree);
+	calcTopInfoForest(forest, nsupers, setree);
 
 	return forest;
 }
@@ -611,21 +606,29 @@ void oneLeveltreeFrPartition( int_t nTrees, int_t * trCount, int_t** trList,
 
 	SUPERLU_FREE(wSortIdx);
 
-}
+} /* oneLeveltreeFrPartition */
 
 forestPartition_t iterativeFrPartitioning(rForest_t* rforest, int_t nsupers, int_t * setree, treeList_t* treeList)
 {
 
-	int_t nTreeSet = rforest->ntrees;
-	int_t* treeHeads =  rforest->treeHeads;
+    int_t nTreeSet = rforest->ntrees;
+    int_t* treeHeads =  rforest->treeHeads;
 
-	int_t nAnc = 0;
-	int_t* ancTreeCount = INT_T_ALLOC(MAX_TREE_ALLOWED);
-	int_t** ancNodeLists = SUPERLU_MALLOC(MAX_TREE_ALLOWED * sizeof(int_t*));
+    int_t nAnc = 0;
+#if 0
+    int_t* ancTreeCount = INT_T_ALLOC(MAX_TREE_ALLOWED);
+    int_t** ancNodeLists = SUPERLU_MALLOC(MAX_TREE_ALLOWED * sizeof(int_t*));
 
-	double * weightArr = DOUBLE_ALLOC (MAX_TREE_ALLOWED);
-	// int_t* treeSet = INT_T_ALLOC(nTreeSet);
-	int_t* treeSet = INT_T_ALLOC(MAX_TREE_ALLOWED);
+    double * weightArr = DOUBLE_ALLOC (MAX_TREE_ALLOWED);
+    // int_t* treeSet = INT_T_ALLOC(nTreeSet);
+    int_t* treeSet = INT_T_ALLOC(MAX_TREE_ALLOWED);
+#else  // Sherry fix
+    int_t* ancTreeCount = intMalloc_dist(MAX_TREE_ALLOWED);
+    int_t** ancNodeLists = SUPERLU_MALLOC(MAX_TREE_ALLOWED * sizeof(int_t*));
+
+    double * weightArr = doubleMalloc_dist(MAX_TREE_ALLOWED);
+    int_t* treeSet = intMalloc_dist(MAX_TREE_ALLOWED);
+#endif
 
 	for (int i = 0; i < nTreeSet; ++i)
 	{
@@ -658,7 +661,8 @@ forestPartition_t iterativeFrPartitioning(rForest_t* rforest, int_t nsupers, int
 		}
 
 		ancTreeCount[nAnc] = getCommonAncsCount(MaxTree, treeList);
-		int_t * alist = INT_T_ALLOC (ancTreeCount[nAnc]);
+		//int_t * alist = INT_T_ALLOC (ancTreeCount[nAnc]);
+		int_t * alist = intMalloc_dist(ancTreeCount[nAnc]);
 		getCommonAncestorList(MaxTree, alist, setree, treeList);
 		ancNodeLists[nAnc] = alist;
 		nAnc++;
@@ -684,22 +688,33 @@ forestPartition_t iterativeFrPartitioning(rForest_t* rforest, int_t nsupers, int
 	sForest_t* aforest = createForestNew(nAnc, nsupers, ancTreeCount, ancNodeLists, setree, treeList);
 
 	// create the weight array;
-	double* sWeightArr = DOUBLE_ALLOC(nTreeSet);
+	//double* sWeightArr = DOUBLE_ALLOC(nTreeSet);
+	double* sWeightArr = doubleMalloc_dist(nTreeSet); // Sherry fix
 	for (int i = 0; i < nTreeSet ; ++i)
 		sWeightArr[i] = treeList[treeSet[i]].iWeight;
 
 	int_t trCount[2] = {0, 0};
 	int_t* trList[2];
+#if 0
 	trList[0] = INT_T_ALLOC(nTreeSet);
 	trList[1] = INT_T_ALLOC(nTreeSet);
+#else  // Sherry fix
+	trList[0] = intMalloc_dist(nTreeSet);
+	trList[1] = intMalloc_dist(nTreeSet);
+#endif
 
 	oneLeveltreeFrPartition( nTreeSet, trCount, trList,
 	                         treeSet,
 	                         sWeightArr);
 
 	rForest_t *rforestS1, *rforestS2;
+#if 0
 	rforestS1 = SUPERLU_MALLOC(sizeof(rforest));
 	rforestS2 = SUPERLU_MALLOC(sizeof(rforest));
+#else
+	rforestS1 = (rForest_t *) SUPERLU_MALLOC(sizeof(rForest_t));  // Sherry fix
+	rforestS2 = (rForest_t *) SUPERLU_MALLOC(sizeof(rForest_t));
+#endif
 
 	rforestS1->ntrees = trCount[0];
 	rforestS1->treeHeads = trList[0];
@@ -709,7 +724,7 @@ forestPartition_t iterativeFrPartitioning(rForest_t* rforest, int_t nsupers, int
 
 	forestPartition_t frPr_t;
 	frPr_t.Ans 	= aforest;
-	frPr_t.S[0] = rforestS1;
+	frPr_t.S[0]     = rforestS1;
 	frPr_t.S[1]	= rforestS2;
 
 	SUPERLU_FREE(weightArr);
@@ -733,7 +748,7 @@ forestPartition_t iterativeFrPartitioning(rForest_t* rforest, int_t nsupers, int
 } /* iterativeFrPartitioning */
 
 
-
+/* Create a single sforest */
 sForest_t* r2sForest(rForest_t* rforest, int_t nsupers, int_t * setree, treeList_t* treeList)
 {
 	int_t nTree = rforest->ntrees;
@@ -747,10 +762,10 @@ sForest_t* r2sForest(rForest_t* rforest, int_t nsupers, int_t * setree, treeList
 
 	for (int i = 0; i < nTree; ++i)
 	{
-		/* code */
-		nodeCounts[i] = treeList[treeHeads[i]].numDescendents;
-		NodeLists[i] = INT_T_ALLOC(nodeCounts[i]);
-		getDescendList(treeHeads[i], NodeLists[i], treeList);
+	    /* code */
+	    nodeCounts[i] = treeList[treeHeads[i]].numDescendents;
+	    NodeLists[i] = INT_T_ALLOC(nodeCounts[i]);
+	    getDescendList(treeHeads[i], NodeLists[i], treeList);
 	}
 
 
@@ -766,7 +781,7 @@ sForest_t* r2sForest(rForest_t* rforest, int_t nsupers, int_t * setree, treeList
 	SUPERLU_FREE(nodeCounts);
 
 	return sforest;
-}
+} /* r2sForest */
 
 
 sForest_t**  getGreedyLoadBalForests( int_t maxLvl, int_t nsupers, int_t * setree, treeList_t* treeList)
@@ -823,37 +838,42 @@ sForest_t**  getGreedyLoadBalForests( int_t maxLvl, int_t nsupers, int_t * setre
 
 		for (int_t tr = lvlSt; tr < lvlEnd; ++tr)
 		{
+		    /* code */
+		    forestPartition_t frPr_t = iterativeFrPartitioning(&rForests[tr], nsupers, setree, treeList);
+		    sForests[tr] = frPr_t.Ans;
+
+		    if (lvl == maxLvl - 2) {
 			/* code */
-			forestPartition_t frPr_t = iterativeFrPartitioning(&rForests[tr], nsupers, setree, treeList);
-			sForests[tr] = frPr_t.Ans;
-
-			if (lvl == maxLvl - 2)
-			{
-				/* code */
-				sForests[2 * tr + 1] = r2sForest(frPr_t.S[0], nsupers, setree, treeList);
-				sForests[2 * tr + 2] = r2sForest(frPr_t.S[1], nsupers, setree, treeList);
-			}
-			else
-			{
-				rForests[2 * tr + 1] = *(frPr_t.S[0]);
-				rForests[2 * tr + 2] = *(frPr_t.S[1]);
-			}
-
+			sForests[2 * tr + 1] = r2sForest(frPr_t.S[0], nsupers, setree, treeList);
+			sForests[2 * tr + 2] = r2sForest(frPr_t.S[1], nsupers, setree, treeList);
+			freeRforest(frPr_t.S[0]); // Sherry added
+			freeRforest(frPr_t.S[1]);
+#if 0
+			SUPERLU_FREE(frPr_t.S[0]); // Sherry added
+			SUPERLU_FREE(frPr_t.S[1]);
+#endif
+		    } else {
+			rForests[2 * tr + 1] = *(frPr_t.S[0]);
+			rForests[2 * tr + 2] = *(frPr_t.S[1]);
+			
+		    }
+		    SUPERLU_FREE(frPr_t.S[0]); // Sherry added
+		    SUPERLU_FREE(frPr_t.S[1]);
 		}
 
 	}
 
 	for (int i = 0; i < numRForests; ++i)
 	{
-		/* code */
-		freeRforest(&rForests[i]);
+	    /* code */
+	    freeRforest(&rForests[i]);  // Sherry added
 	}
 
-	SUPERLU_FREE(rForests);
+	SUPERLU_FREE(rForests);  // Sherry added
 
 	return sForests;
 
-}
+} /* getGreedyLoadBalForests */
 
 // balanced forests at one level
 sForest_t**  getOneLevelBalForests( int_t maxLvl, int_t nsupers, int_t * setree, treeList_t* treeList)

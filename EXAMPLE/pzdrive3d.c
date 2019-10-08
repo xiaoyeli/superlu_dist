@@ -39,8 +39,11 @@ at the top-level directory.
  *   5. Release the process grid and terminate the MPI environment
  *
  * The program may be run by typing
- *    mpiexec -np <p> pzdrive -r <proc rows> -c <proc columns> \
- *                                 -d <proc Z-dimension> <input_file>
+ *    mpiexec -np <p> pzdrive3d -r <proc rows> -c <proc columns> \
+ *                                   -d <proc Z-dimension> <input_file>
+ * NOTE: total number of processes p = r * c * d
+ *       d must be a power-of-two, e.g., 1, 2, 4, ...
+ *
  * </pre>
  */
 
@@ -260,12 +263,15 @@ main (int argc, char *argv[])
         Destroy_LU (n, &(grid.grid2d), &LUstruct);
         SUPERLU_FREE (b);
         SUPERLU_FREE (xtrue);
-        SUPERLU_FREE (berr);
         if (options.SolveInitialized) {
             zSolveFinalize (&options, &SOLVEstruct);
         }
+    } else { // Process layers not equal 0
+        DeAllocLlu_3d(n, &LUstruct, &grid);
+        DeAllocGlu_3d(&LUstruct);
     }
 
+    SUPERLU_FREE (berr);
     ScalePermstructFree (&ScalePermstruct);
     LUstructFree (&LUstruct);
     PStatFree (&stat);

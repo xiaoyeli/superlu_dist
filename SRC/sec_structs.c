@@ -2,7 +2,6 @@
 #include "superlu_ddefs.h"
 #if 0
 #include "sec_structs.h"
-#include <stdio.h> /*for printfs*/
 #include <stdlib.h> /*for Qsort */
 #include <mpi.h>
 #include <omp.h>
@@ -12,6 +11,8 @@
 //#include "load-balance/supernodal_etree.h"
 #include "supernodal_etree.h"
 #endif
+
+#include <stdio.h> /*for printfs*/
 
 double CPU_CLOCK_RATE;
 /*for sorting structures */
@@ -100,8 +101,13 @@ double getFreq(void)
     }
 
     char *arg = 0;
-    char *line = NULL;
+#if 1
     size_t len = 0;
+    char *line = NULL;
+#else
+    size_t len = 100;   // Sherry fix
+    char *line = SUPERLU_MALLOC(len * sizeof(char));
+#endif
     size_t read;
     while ((read = getline(&line, &len, fp)) != -1)
     {
@@ -125,10 +131,11 @@ double getFreq(void)
                 break;
             }
         }
-
+	free(line);
+	line = NULL;
     }
 
-    free(line); // sherry added
+    //SUPERLU_FREE(line); // sherry added
     return 0;
 }
 

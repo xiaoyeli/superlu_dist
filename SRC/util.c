@@ -93,7 +93,8 @@ Destroy_Dense_Matrix_dist(SuperMatrix *A)
 
 
 
-/*! \brief Destroy distributed L & U matrices. */
+/*! \brief Destroy the binary trees associated with the panel. 
+  These are used in triangular solve. */
 void
 Destroy_Tree(int_t n, gridinfo_t *grid, LUstruct_t *LUstruct)
 {
@@ -108,37 +109,34 @@ Destroy_Tree(int_t n, gridinfo_t *grid, LUstruct_t *LUstruct)
 
     nsupers = Glu_persist->supno[n-1] + 1;
 
-	nb = CEILING(nsupers, grid->npcol);
-	for (i=0;i<nb;++i){
-		if(Llu->LBtree_ptr[i]!=NULL){
-			BcTree_Destroy(Llu->LBtree_ptr[i],LUstruct->dt);
-		}
-		if(Llu->UBtree_ptr[i]!=NULL){
-			BcTree_Destroy(Llu->UBtree_ptr[i],LUstruct->dt);
-		}		
+    nb = CEILING(nsupers, grid->npcol);
+    for (i=0;i<nb;++i){
+	if(Llu->LBtree_ptr[i]!=NULL){
+	    BcTree_Destroy(Llu->LBtree_ptr[i],LUstruct->dt);
 	}
-	SUPERLU_FREE(Llu->LBtree_ptr);
-	SUPERLU_FREE(Llu->UBtree_ptr);
+	if(Llu->UBtree_ptr[i]!=NULL){
+	    BcTree_Destroy(Llu->UBtree_ptr[i],LUstruct->dt);
+	}		
+    }
+    SUPERLU_FREE(Llu->LBtree_ptr);
+    SUPERLU_FREE(Llu->UBtree_ptr);
 	
- 	nb = CEILING(nsupers, grid->nprow);
-	for (i=0;i<nb;++i){
-		if(Llu->LRtree_ptr[i]!=NULL){
-			RdTree_Destroy(Llu->LRtree_ptr[i],LUstruct->dt);
-		}
-		if(Llu->URtree_ptr[i]!=NULL){
-			RdTree_Destroy(Llu->URtree_ptr[i],LUstruct->dt);
-		}		
+    nb = CEILING(nsupers, grid->nprow);
+    for (i=0;i<nb;++i){
+	if(Llu->LRtree_ptr[i]!=NULL){
+	    RdTree_Destroy(Llu->LRtree_ptr[i],LUstruct->dt);
 	}
-	SUPERLU_FREE(Llu->LRtree_ptr);
-	SUPERLU_FREE(Llu->URtree_ptr);
-
-
+	if(Llu->URtree_ptr[i]!=NULL){
+	    RdTree_Destroy(Llu->URtree_ptr[i],LUstruct->dt);
+	}		
+    }
+    SUPERLU_FREE(Llu->LRtree_ptr);
+    SUPERLU_FREE(Llu->URtree_ptr);
 
 #if ( DEBUGlevel>=1 )
     CHECK_MALLOC(iam, "Exit Destroy_Tree()");
 #endif
 }
-
 
 
 /*! \brief Destroy distributed L & U matrices. */
@@ -155,7 +153,7 @@ Destroy_LU(int_t n, gridinfo_t *grid, LUstruct_t *LUstruct)
     CHECK_MALLOC(iam, "Enter Destroy_LU()");
 #endif
 
-    Destroy_Tree(n, grid, LUstruct);
+    Destroy_Tree(n, grid, LUstruct); // from asynchronous triangular solve
 
     nsupers = Glu_persist->supno[n-1] + 1;
 
@@ -233,6 +231,42 @@ Destroy_LU(int_t n, gridinfo_t *grid, LUstruct_t *LUstruct)
 #if ( DEBUGlevel>=1 )
     CHECK_MALLOC(iam, "Exit Destroy_LU()");
 #endif
+}
+
+int DeAllocLlu_3d(int_t n, LUstruct_t * LUstruct, gridinfo3d_t* grid3d)
+{
+    int i, nbc, nbr, nsupers;
+    LocalLU_t *Llu = LUstruct->Llu;
+
+    nsupers = (LUstruct->Glu_persist)->supno[n-1] + 1;
+
+    nbc = CEILING(nsupers, grid3d->npcol);
+    for (i = 0; i < nbc; ++i) 
+	if ( Llu->Lrowind_bc_ptr[i] ) {
+	    SUPERLU_FREE (Llu->Lrowind_bc_ptr[i]);
+#ifdef GPU_ACC
+	    checkCuda(cudaFreeHost(Llu->Lnzval_bc_ptr[i]));
+#else
+	    SUPERLU_FREE (Llu->Lnzval_bc_ptr[i]);
+#endif
+	}
+    SUPERLU_FREE (Llu->Lrowind_bc_ptr);
+    SUPERLU_FREE (Llu->Lnzval_bc_ptr);
+
+    nbr = CEILING(nsupers, grid3d->nprow);
+    for (i = 0; i < nbr; ++i)
+	if ( Llu->Ufstnz_br_ptr[i] ) {
+	    SUPERLU_FREE (Llu->Ufstnz_br_ptr[i]);
+	    SUPERLU_FREE (Llu->Unzval_br_ptr[i]);
+	}
+    SUPERLU_FREE (Llu->Ufstnz_br_ptr);
+    SUPERLU_FREE (Llu->Unzval_br_ptr);
+
+    /* The following can be freed after factorization. */
+    SUPERLU_FREE(Llu->ToRecv);
+    SUPERLU_FREE(Llu->ToSendD);
+    for (i = 0; i < nbc; ++i) SUPERLU_FREE(Llu->ToSendR[i]);
+    SUPERLU_FREE(Llu->ToSendR);
 }
 
 /*! \brief Allocate storage in ScalePermstruct */
@@ -1456,11 +1490,19 @@ int_t partitionM( int_t* a, int_t l, int_t r, int_t lda, int_t dir, int_t dims) 
  * The following are from 3D code p3dcomm.c
  */
 
-int_t AllocGlu(int_t n, int_t nsupers, LUstruct_t * LUstruct, gridinfo3d_t* grid3d)
+int AllocGlu_3d(int_t n, int_t nsupers, LUstruct_t * LUstruct)
 {
     /*broadcasting Glu_persist*/
     LUstruct->Glu_persist->xsup  = intMalloc_dist(nsupers+1); //INT_T_ALLOC(nsupers+1);
     LUstruct->Glu_persist->supno = intMalloc_dist(n); //INT_T_ALLOC(n);
+    return 0;
+}
+
+// Sherry added
+int DeAllocGlu_3d(LUstruct_t * LUstruct)
+{
+    SUPERLU_FREE(LUstruct->Glu_persist->xsup);
+    SUPERLU_FREE(LUstruct->Glu_persist->supno);
     return 0;
 }
 

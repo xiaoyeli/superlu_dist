@@ -147,14 +147,19 @@ int_t pzgstrf3d(superlu_dist_options_t *options, int m, int n, double anorm,
     int_t iam = grid->iam; // in 2D grid
     int num_threads = getNumThreads(grid3d->iam);
 
-    diagFactBufs_t dFBuf;
-    zinitDiagFactBufs(ldt, &dFBuf);
-
     factStat_t factStat;
     initFactStat(nsupers, &factStat);
 
-    commRequests_t comReqs;
+#if 0  // sherry: not used
+    diagFactBufs_t dFBuf;
+    zinitDiagFactBufs(ldt, &dFBuf);
+
+    commRequests_t comReqs;   
     initCommRequests(&comReqs, grid);
+
+    msgs_t msgs;
+    initMsgs(&msgs);
+#endif
 
     SCT->tStartup = SuperLU_timer_();
     packLUInfo_t packLUInfo;
@@ -162,9 +167,6 @@ int_t pzgstrf3d(superlu_dist_options_t *options, int m, int n, double anorm,
 
     scuBufs_t scuBufs;
     zinitScuBufs(ldt, num_threads, nsupers, &scuBufs, LUstruct, grid);
-
-    msgs_t msgs;
-    initMsgs(&msgs);
 
     factNodelists_t  fNlists;
     initFactNodelists( ldt, num_threads, nsupers, &fNlists);
@@ -200,8 +202,7 @@ int_t pzgstrf3d(superlu_dist_options_t *options, int m, int n, double anorm,
             mxLeafNode    = sForests[myTreeIdxs[ilvl]]->topoInfo.eTreeTopLims[1];
     }
     diagFactBufs_t** dFBufs = zinitDiagFactBufsArr(mxLeafNode, ldt, grid);
-    commRequests_t** comReqss = initCommRequestsArr(SUPERLU_MAX(mxLeafNode, numLA),
-                                                    ldt, grid);
+    commRequests_t** comReqss = initCommRequestsArr(SUPERLU_MAX(mxLeafNode, numLA), ldt, grid);
 
     /* Setting up GPU related data structures */
 
@@ -211,7 +212,7 @@ int_t pzgstrf3d(superlu_dist_options_t *options, int m, int n, double anorm,
     int_t Pr = grid->nprow;
     int_t mrb =    (nsupers + Pr - 1) / Pr;
     int_t mcb =    (nsupers + Pc - 1) / Pc;
-    HyP_t *HyP = (HyP_t *) malloc(sizeof(HyP_t));
+    HyP_t *HyP = (HyP_t *) SUPERLU_MALLOC(sizeof(HyP_t));
     Init_HyP(HyP, Llu, mcb, mrb);
     HyP->first_l_block_acc = first_l_block_acc;
     HyP->first_u_block_acc = first_u_block_acc;
@@ -329,6 +330,18 @@ int_t pzgstrf3d(superlu_dist_options_t *options, int m, int n, double anorm,
 #endif
 
     reduceStat(FACT, stat, grid3d);
+
+    // sherry added
+    /* Deallocate factorization specific buffers */
+    freePackLUInfo(&packLUInfo);
+    zfreeScuBufs(&scuBufs);
+    freeFactStat(&factStat);
+    freeFactNodelists(&fNlists);
+    freeMsgsArr(numLA, msgss);
+    freeCommRequestsArr(SUPERLU_MAX(mxLeafNode, numLA), comReqss);
+    zLluBufFreeArr(numLA, LUvsbs);
+    zfreeDiagFactBufsArr(mxLeafNode, dFBufs);
+    Free_HyP(HyP);
 
 #if ( DEBUGlevel>=1 )
     CHECK_MALLOC (grid3d->iam, "Exit pzgstrf3d()");

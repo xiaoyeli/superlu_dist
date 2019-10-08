@@ -729,7 +729,7 @@ extern void pzgstrf2(superlu_dist_options_t *, int_t nsupers, int_t k0,
 		     LocalLU_t *, MPI_Request *, int, SuperLUStat_t *, int *);
 
     /* from p3dcomm.h */
-extern int_t zAllocLlu(int_t nsupers, LUstruct_t * LUstruct, gridinfo3d_t* grid3d);
+extern int_t zAllocLlu_3d(int_t nsupers, LUstruct_t * LUstruct, gridinfo3d_t* grid3d);
 extern int_t zp3dScatter(int_t n, LUstruct_t * LUstruct, gridinfo3d_t* grid3d);
 extern int_t zscatter3dLPanels(int_t nsupers,
                        LUstruct_t * LUstruct, gridinfo3d_t* grid3d);
@@ -740,7 +740,9 @@ extern int_t zcollect3dUpanels(int_t layer, int_t nsupers, LUstruct_t * LUstruct
 extern int_t zp3dCollect(int_t layer, int_t n, LUstruct_t * LUstruct, gridinfo3d_t* grid3d);
 /*zero out LU non zero entries*/
 extern int_t zzeroSetLU(int_t nnodes, int_t* nodeList , LUstruct_t *, gridinfo3d_t*);
-extern int_t AllocGlu(int_t n, int_t nsupers, LUstruct_t *, gridinfo3d_t*);
+extern int AllocGlu_3d(int_t n, int_t nsupers, LUstruct_t *);
+extern int DeAllocLlu_3d(int_t n, LUstruct_t *, gridinfo3d_t*);
+extern int DeAllocGlu_3d(LUstruct_t *);
 
 /* Reduces L and U panels of nodes in the List nodeList (size=nnnodes)
 receiver[L(nodelist)] =sender[L(nodelist)] +receiver[L(nodelist)]

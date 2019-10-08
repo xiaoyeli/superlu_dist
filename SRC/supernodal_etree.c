@@ -23,7 +23,7 @@ int_t log2i(int_t index)
 int_t *supernodal_etree(int_t nsuper, int_t * etree, int_t* supno, int_t *xsup)
 {
     //	int_t *setree = malloc(sizeof(int_t) * nsuper);
-	int_t *setree = intMalloc_dist(nsuper);
+    int_t *setree = intMalloc_dist(nsuper);  // Sherry fix
 	/*initialzing the loop*/
 	for (int i = 0; i < nsuper; ++i)
 	{
@@ -44,7 +44,8 @@ int_t *supernodal_etree(int_t nsuper, int_t * etree, int_t* supno, int_t *xsup)
 supernode calculates "level" in elimination tree*/
 int_t* topological_ordering(int_t nsuper, int_t* setree)
 {
-	int_t *tsort_setree = malloc(sizeof(int_t) * nsuper);
+    // int_t *tsort_setree = malloc(sizeof(int_t) * nsuper);
+    int_t *tsort_setree = intMalloc_dist(nsuper); // Sherry fix
 	for (int i = 0; i < nsuper; ++i)
 	{
 	    tsort_setree[i] = 0; /*initializing all levels to zero*/
@@ -83,7 +84,8 @@ treeList_t* setree2list(int_t nsuper, int_t* setree )
 	/*allocate memory for children lists*/
 	for (int i = 0; i < nsuper + 1; ++i)
 	{
-	    treeList[i].childrenList = INT_T_ALLOC (treeList[i].numChild);
+	    //treeList[i].childrenList = INT_T_ALLOC (treeList[i].numChild);
+	    treeList[i].childrenList = intMalloc_dist(treeList[i].numChild);
 	    treeList[i].numChild = 0;
 	}
 
@@ -99,7 +101,7 @@ treeList_t* setree2list(int_t nsuper, int_t* setree )
 
 } /* setree2list */
 
-// sherry added 
+// Sherry added 
 int  free_treelist(int_t nsuper, treeList_t* treeList)
 {
     for (int i = 0; i < nsuper + 1; ++i) {
@@ -329,7 +331,8 @@ int_t* getEtreeLB(int_t nnodes, int_t* perm_l, int_t* gTopOrder)
 	minTop = gTopOrder[perm_l[0]];
 	maxTop = gTopOrder[perm_l[nnodes - 1]];
 	int_t numLB = maxTop - minTop + 2;
-	int_t* lEtreeLB = (int_t *) malloc( sizeof(int_t) * numLB);
+	//int_t* lEtreeLB = (int_t *) malloc( sizeof(int_t) * numLB);
+	int_t* lEtreeLB = (int_t *) intMalloc_dist(numLB); // Sherry fix
 	for (int i = 0; i < numLB; ++i)
 	{
 		/* initalize */
@@ -391,7 +394,8 @@ int_t* getSubTreeRoots(int_t k, treeList_t* treeList)
 int_t testSubtreeNodelist(int_t nsupers, int_t numList, int_t** nodeList, int_t* nodeCount)
 // tests disjoint and union
 {
-	int_t* slist = (int_t* ) malloc(sizeof(int_t) * nsupers);
+    //int_t* slist = (int_t* ) malloc(sizeof(int_t) * nsupers);
+    int_t* slist = intMalloc_dist(nsupers); // Sherry fix
 	/*intialize each entry with zero */
 	for (int_t i = 0; i < nsupers; ++i)
 	{
@@ -413,7 +417,7 @@ int_t testSubtreeNodelist(int_t nsupers, int_t numList, int_t** nodeList, int_t*
 		assert(slist[i] == 1);
 	}
 	printf("testSubtreeNodelist Passed\n");
-	free(slist);
+	SUPERLU_FREE(slist);
 	return 0;
 }
 int_t testListPerm(int_t nodeCount, int_t* nodeList, int_t* permList, int_t* gTopLevel)
@@ -430,9 +434,13 @@ int_t testListPerm(int_t nodeCount, int_t* nodeList, int_t* permList, int_t* gTo
 		}
 		assert( gTopLevel[permList[i]] <= gTopLevel[permList[i + 1]]);
 	}
-
+#if 0
 	int_t* slist = (int_t* ) malloc(sizeof(int_t) * nodeCount);
 	int_t* plist = (int_t* ) malloc(sizeof(int_t) * nodeCount);
+#else
+	int_t* slist = intMalloc_dist(nodeCount);
+	int_t* plist = intMalloc_dist(nodeCount);
+#endif
 	// copy lists
 	for (int_t i = 0; i < nodeCount; ++i)
 	{
@@ -447,13 +455,17 @@ int_t testListPerm(int_t nodeCount, int_t* nodeList, int_t* permList, int_t* gTo
 		assert( slist[i] == plist[i]);
 	}
 	printf("permList Test Passed\n");
-	free(slist);
-	free(plist);
+
+	SUPERLU_FREE(slist);
+	SUPERLU_FREE(plist);
+
 	return 0;
 }
 
 
 int_t mergPermTest(int_t nperms, int_t* gperms, int_t* nnodes);
+
+// Sherry: the following routine is not called ??
 int_t* merg_perms(int_t nperms, int_t* nnodes, int_t** perms)
 {
 	// merges three permutations
@@ -463,8 +475,11 @@ int_t* merg_perms(int_t nperms, int_t* nnodes, int_t** perms)
 	{
 		nn += nnodes[i];
 	}
+
 	// alloc address
-	int_t* gperm = (int_t*) malloc(nn * sizeof(int_t));
+	//int_t* gperm = (int_t*) malloc(nn * sizeof(int_t));
+	int_t* gperm = intMalloc_dist(nn);  // Sherry fix
+
 	//now concatenat arrays
 	int_t ptr = 0;
 	for (int_t tr = 0; tr < nperms; ++tr)
@@ -480,7 +495,8 @@ int_t* merg_perms(int_t nperms, int_t* nnodes, int_t** perms)
 	}
 	mergPermTest( nperms, gperm, nnodes);
 	return gperm;
-}
+} /* merg_perms */
+
 int_t mergPermTest(int_t nperms, int_t* gperms, int_t* nnodes)
 {
 	// merges three permutations
@@ -490,8 +506,11 @@ int_t mergPermTest(int_t nperms, int_t* gperms, int_t* nnodes)
 	{
 		nn += nnodes[i];
 	}
+
 	// alloc address
-	int_t* tperm = (int_t*) malloc(nn * sizeof(int_t));
+	// int_t* tperm = (int_t*) malloc(nn * sizeof(int_t));
+	int_t* tperm = intMalloc_dist(nn);  // Sherry fix
+
 	for (int i = 0; i < nn; ++i)
 	{
 		tperm[i] = 0;
@@ -507,9 +526,9 @@ int_t mergPermTest(int_t nperms, int_t* gperms, int_t* nnodes)
 		/* code */
 		assert(tperm[i] == 1);
 	}
-	free(tperm);
+	SUPERLU_FREE(tperm);
 	return nn;
-}
+} /* mergPermTest */
 
 int* getLastDep(gridinfo_t *grid, SuperLUStat_t *stat,
 		superlu_dist_options_t *options,
@@ -886,12 +905,13 @@ treeTopoInfo_t getMyTreeTopoInfo(int_t nnodes, int_t  nsupers,
 	return ttI;
 }
 
-
-int_t* Etree_LevelBoundry(int_t* perm, int_t* tsort_etree, int_t nsuper)
+// Sherry: the following function is not called ??
 /*calculated boundries of the topological levels*/
+int_t* Etree_LevelBoundry(int_t* perm, int_t* tsort_etree, int_t nsuper)
 {
 	int_t max_level =  tsort_etree[nsuper - 1] + 1;
-	int_t *Etree_LvlBdry = malloc(sizeof(int_t) * (max_level + 1));
+	//int_t *Etree_LvlBdry = malloc(sizeof(int_t) * (max_level + 1));
+	int_t *Etree_LvlBdry = intMalloc_dist(max_level + 1); // Sherry fix
 	Etree_LvlBdry[0] = 0;
 	/*calculate end of boundries for each level*/
 	for (int_t i = 0; i < max_level; ++i)
@@ -920,7 +940,8 @@ int_t* Etree_LevelBoundry(int_t* perm, int_t* tsort_etree, int_t nsuper)
 
 int_t* calculate_num_children(int_t nsuper, int_t* setree)
 {
-	int_t* etree_num_children = malloc(sizeof(int_t) * (nsuper));
+    //int_t* etree_num_children = malloc(sizeof(int_t) * (nsuper));
+    int_t* etree_num_children = intMalloc_dist(nsuper); // Sherry fix
 	for (int_t i = 0; i < nsuper; ++i)
 	{
 		/*initialize num children to zero*/

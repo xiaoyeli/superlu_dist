@@ -57,7 +57,11 @@ int zfreeDiagFactBufsArr(int_t mxLeafNode, diagFactBufs_t** dFBufs)
 	SUPERLU_FREE(dFBufs[i]->BlockLFactor);
 	SUPERLU_FREE(dFBufs[i]);
     }
-    SUPERLU_FREE(dFBufs);
+
+    /* Sherry fix:
+     * mxLeafNode can be 0 for the replicated layers of the processes ?? */
+    if ( mxLeafNode ) SUPERLU_FREE(dFBufs);
+
     return 0;
 }
 
@@ -269,7 +273,7 @@ int_t zdenseTreeFactor(
 } /* zdenseTreeFactor */
 
 /*
- * 2D factorization at individual subtree.
+ * 2D factorization at individual subtree. -- CPU only
  */
 int_t zsparseTreeFactor_ASYNC(
     sForest_t* sforest,
@@ -296,6 +300,10 @@ int_t zsparseTreeFactor_ASYNC(
     {
         return 1;
     }
+
+#if ( DEBUGlevel>=1 )
+    CHECK_MALLOC (grid3d->iam, "Enter zsparseTreeFactor_ASYNC()");
+#endif
 
     int_t *perm_c_supno = sforest->nodeList ;  // list of nodes in the order of factorization
     treeTopoInfo_t* treeTopoInfo = &sforest->topoInfo;
@@ -717,5 +725,10 @@ int_t zsparseTreeFactor_ASYNC(
         }/*for main loop (int_t k0 = 0; k0 < gNodeCount[tree]; ++k0)*/
 
     }
+
+#if ( DEBUGlevel>=1 )
+    CHECK_MALLOC (grid3d->iam, "Exit zsparseTreeFactor_ASYNC()");
+#endif
+
     return 0;
 } /* zsparseTreeFactor_ASYNC */

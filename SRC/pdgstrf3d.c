@@ -155,8 +155,11 @@ int_t pdgstrf3d(superlu_dist_options_t *options, int m, int n, double anorm,
     diagFactBufs_t dFBuf;
     dinitDiagFactBufs(ldt, &dFBuf);
 
-    commRequests_t comReqs;
+    commRequests_t comReqs;   
     initCommRequests(&comReqs, grid);
+
+    msgs_t msgs;
+    initMsgs(&msgs);
 #endif
 
     SCT->tStartup = SuperLU_timer_();
@@ -165,9 +168,6 @@ int_t pdgstrf3d(superlu_dist_options_t *options, int m, int n, double anorm,
 
     scuBufs_t scuBufs;
     dinitScuBufs(ldt, num_threads, nsupers, &scuBufs, LUstruct, grid);
-
-    // msgs_t msgs;
-    // initMsgs(&msgs); // sherry: not used
 
     factNodelists_t  fNlists;
     initFactNodelists( ldt, num_threads, nsupers, &fNlists);
@@ -203,8 +203,7 @@ int_t pdgstrf3d(superlu_dist_options_t *options, int m, int n, double anorm,
             mxLeafNode    = sForests[myTreeIdxs[ilvl]]->topoInfo.eTreeTopLims[1];
     }
     diagFactBufs_t** dFBufs = dinitDiagFactBufsArr(mxLeafNode, ldt, grid);
-    commRequests_t** comReqss = initCommRequestsArr(SUPERLU_MAX(mxLeafNode, numLA),
-                                                    ldt, grid);
+    commRequests_t** comReqss = initCommRequestsArr(SUPERLU_MAX(mxLeafNode, numLA), ldt, grid);
 
     /* Setting up GPU related data structures */
 
@@ -214,10 +213,8 @@ int_t pdgstrf3d(superlu_dist_options_t *options, int m, int n, double anorm,
     int_t Pr = grid->nprow;
     int_t mrb =    (nsupers + Pr - 1) / Pr;
     int_t mcb =    (nsupers + Pc - 1) / Pc;
-
-    HyP_t *HyP = (HyP_t *) malloc(sizeof(HyP_t));
+    HyP_t *HyP = (HyP_t *) SUPERLU_MALLOC(sizeof(HyP_t));
     Init_HyP(HyP, Llu, mcb, mrb);
-
     HyP->first_l_block_acc = first_l_block_acc;
     HyP->first_u_block_acc = first_u_block_acc;
     int_t bigu_size = getBigUSize(nsupers, grid, LUstruct);
@@ -337,7 +334,7 @@ int_t pdgstrf3d(superlu_dist_options_t *options, int m, int n, double anorm,
 
     // sherry added
     /* Deallocate factorization specific buffers */
-    freePackLUInfo(&packLUInfo);  
+    freePackLUInfo(&packLUInfo);
     dfreeScuBufs(&scuBufs);
     freeFactStat(&factStat);
     freeFactNodelists(&fNlists);
@@ -346,10 +343,6 @@ int_t pdgstrf3d(superlu_dist_options_t *options, int m, int n, double anorm,
     dLluBufFreeArr(numLA, LUvsbs);
     dfreeDiagFactBufsArr(mxLeafNode, dFBufs);
     Free_HyP(HyP);
-
-    if (!iam) {
-        printf ("exit pdgstrf3d()\n"); fflush(stdout);
-    }
 
 #if ( DEBUGlevel>=1 )
     CHECK_MALLOC (grid3d->iam, "Exit pdgstrf3d()");

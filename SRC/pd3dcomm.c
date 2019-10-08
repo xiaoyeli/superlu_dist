@@ -347,8 +347,8 @@ int_t dp3dScatter(int_t n, LUstruct_t * LUstruct, gridinfo3d_t* grid3d)
     MPI_Bcast( &nsupers, 1, mpi_int_t, 0,  grid3d->zscp.comm);
     
     /* Scatter and alloc Glu_persist */
-    if (grid3d->zscp.Iam)
-	AllocGlu(n, nsupers, LUstruct, grid3d);
+    if ( grid3d->zscp.Iam ) // all other process layers not equal 0
+	AllocGlu_3d(n, nsupers, LUstruct);
     
     /* broadcast Glu_persist */
     int_t *xsup = LUstruct->Glu_persist->xsup;
@@ -359,7 +359,7 @@ int_t dp3dScatter(int_t n, LUstruct_t * LUstruct, gridinfo3d_t* grid3d)
     
     /* now broadcast localLu_t */
     /* first allocating space for it */
-    if (grid3d->zscp.Iam)
+    if ( grid3d->zscp.Iam ) // all other process layers not equal 0
 	dAllocLlu(nsupers, LUstruct, grid3d);
     
     LocalLU_t *Llu = LUstruct->Llu;
@@ -396,7 +396,7 @@ int_t dp3dScatter(int_t n, LUstruct_t * LUstruct, gridinfo3d_t* grid3d)
 	mpiMallocLUStruct(nsupers, LUstruct, grid3d);
 #endif
     return 0;
-}
+} /* dp3dScatter */
 
 
 int_t dscatter3dUPanels(int_t nsupers,
@@ -874,8 +874,6 @@ int_t dgatherAllFactoredLU( trf3Dpartition_t*  trf3Dpartition,
 	} /* for ilvl ... */
     	
     SUPERLU_FREE(gNodeCount); // sherry added
-    //int numForests = (1 << maxLvl) - 1; // sherry added  ????
-    //for (int i = 0; i < numForests; ++i) SUPERLU_FREE(gNodeLists[i]);
     SUPERLU_FREE(gNodeLists);
 
     return 0;

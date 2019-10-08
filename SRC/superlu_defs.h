@@ -828,13 +828,17 @@ typedef struct
 	/* data */
 	int_t nNodes; 			// total number of nodes
 	int_t* nodeList;		// list of nodes, should be in order of factorization
+#if 0 // Sherry: the following array is used on rForest_t. ???
 	int_t* treeHeads;
-	/*topological information about the tree*/
+#endif
+                            /*topological information about the tree*/
 	int_t numLvl;  			// number of Topological levels in the forest
 	int_t numTrees; 		// number of tree in the forest
 	treeTopoInfo_t  topoInfo; //
+#if 0  // Sherry fix: the following two structures are in treeTopoInfo_t. ???
 	int_t* eTreeTopLims; 	// boundaries of each level  of size 
 	int_t* myIperm;			// Iperm for my tree size nsupers;
+#endif
 
 	/*information about load balance*/
 	double weight;		// estimated cost 

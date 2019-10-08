@@ -37,7 +37,12 @@ int_t dLluBufInit(dLUValSubBuf_t* LUvsb, LUstruct_t *LUstruct)
 diagFactBufs_t** dinitDiagFactBufsArr(int_t mxLeafNode, int_t ldt, gridinfo_t* grid)
 {
     diagFactBufs_t** dFBufs;
-    dFBufs = (diagFactBufs_t** ) SUPERLU_MALLOC(mxLeafNode * sizeof(diagFactBufs_t*));
+
+    /* Sherry fix:
+     * mxLeafNode can be 0 for the replicated layers of the processes ?? */
+    if ( mxLeafNode ) dFBufs = (diagFactBufs_t** ) 
+			  SUPERLU_MALLOC(mxLeafNode * sizeof(diagFactBufs_t*));
+
     for (int i = 0; i < mxLeafNode; ++i)
     {
         /* code */
@@ -58,7 +63,11 @@ int dfreeDiagFactBufsArr(int_t mxLeafNode, diagFactBufs_t** dFBufs)
 	SUPERLU_FREE(dFBufs[i]->BlockLFactor);
 	SUPERLU_FREE(dFBufs[i]);
     }
-    SUPERLU_FREE(dFBufs);
+
+    /* Sherry fix:
+     * mxLeafNode can be 0 for the replicated layers of the processes ?? */
+    if ( mxLeafNode ) SUPERLU_FREE(dFBufs);
+
     return 0;
 }
 
@@ -87,6 +96,7 @@ int dLluBufFreeArr(int_t numLA, dLUValSubBuf_t **LUvsbs)
     }
     SUPERLU_FREE(LUvsbs);
 }
+
 
 int_t dinitScuBufs(int_t ldt, int_t num_threads, int_t nsupers,
                   scuBufs_t* scuBufs,
@@ -269,7 +279,7 @@ int_t ddenseTreeFactor(
 } /* ddenseTreeFactor */
 
 /*
- * 2D factorization at individual subtree.
+ * 2D factorization at individual subtree. -- CPU only
  */
 int_t dsparseTreeFactor_ASYNC(
     sForest_t* sforest,
@@ -300,7 +310,7 @@ int_t dsparseTreeFactor_ASYNC(
 #if ( DEBUGlevel>=1 )
     CHECK_MALLOC (grid3d->iam, "Enter dsparseTreeFactor_ASYNC()");
 #endif
-    
+
     int_t *perm_c_supno = sforest->nodeList ;  // list of nodes in the order of factorization
     treeTopoInfo_t* treeTopoInfo = &sforest->topoInfo;
     int_t* myIperm = treeTopoInfo->myIperm;
@@ -331,8 +341,6 @@ int_t dsparseTreeFactor_ASYNC(
         sDiagFactIBCast(k,  dFBufs[offset], factStat, comReqss[offset], grid,
                         options, thresh, LUstruct, stat, info, SCT, tag_ub);
 #else
-
-	//	printf("[1] (iam %d) k0 %d  offset %d\n", grid3d->iam, k0, offset); fflush(stdout);
 	dDiagFactIBCast(k, k, dFBufs[offset]->BlockUFactor, dFBufs[offset]->BlockLFactor,
 			factStat->IrecvPlcd_D,
 			comReqss[offset]->U_diag_blk_recv_req, 
@@ -362,7 +370,6 @@ int_t dsparseTreeFactor_ASYNC(
                 sDiagFactIBCast(k, dFBufs[offset], factStat, comReqss[offset], grid,
                                 options, thresh, LUstruct, stat, info, SCT, tag_ub);
 #else
-		//	printf("[2] (iam %d) topoLvl %d\n", grid3d->iam, topoLvl); fflush(stdout);
 		dDiagFactIBCast(k, k, dFBufs[offset]->BlockUFactor,
 				dFBufs[offset]->BlockLFactor, factStat->IrecvPlcd_D,
 				comReqss[offset]->U_diag_blk_recv_req, 
@@ -387,7 +394,6 @@ int_t dsparseTreeFactor_ASYNC(
 		sLPanelUpdate(k, dFBufs[offset], factStat, comReqss[offset],
 			      grid, LUstruct, SCT);
 #else
-	printf("[3] (iam %d) k0 %d\n", grid3d->iam, k0); fflush(stdout);
 		dLPanelUpdate(k, factStat->IrecvPlcd_D, factStat->factored_L,
 			      comReqss[offset]->U_diag_blk_recv_req, 
 			      dFBufs[offset]->BlockUFactor, grid, LUstruct, SCT);
@@ -725,5 +731,10 @@ int_t dsparseTreeFactor_ASYNC(
         }/*for main loop (int_t k0 = 0; k0 < gNodeCount[tree]; ++k0)*/
 
     }
+
+#if ( DEBUGlevel>=1 )
+    CHECK_MALLOC (grid3d->iam, "Exit dsparseTreeFactor_ASYNC()");
+#endif
+
     return 0;
 } /* dsparseTreeFactor_ASYNC */

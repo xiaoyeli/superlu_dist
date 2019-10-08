@@ -15,7 +15,6 @@ at the top-level directory.
  * Lawrence Berkeley National Lab, Univ. of California Berkeley, 
  * October 1, 2010
  * January 28, 2018
- * January 28, 2018				   
  *
  */
 
@@ -76,7 +75,7 @@ typedef enum {
     SOL_COMM,/* communication for solve */
     SOL_GEMM,/* gemm for solve */
     SOL_TRSM,/* trsm for solve */
-	SOL_TOT,	/* LU-solve time*/
+    SOL_TOT,	/* LU-solve time*/
     RCOND,   /* estimate reciprocal condition number */
     SOLVE,   /* forward and back solves */
     REFINE,  /* perform iterative refinement */

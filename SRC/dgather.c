@@ -378,14 +378,19 @@ void dRgather_U( int_t k, int_t jj0, int_t *usub,	double *uval,
         HyP->Ublock_info_Phi[j].full_u_cols = HyP->Ublock_info_Phi[j ].ncols + HyP->Ublock_info_Phi[j - 1].full_u_cols;
     }
 
-    //    if (!grid->iam) { // Sherry to remove 
-    //	printf(".. k %d  jj0 %d\t num_u_blks_phi %d\t mcb %d\n", k, jj0, HyP->num_u_blks_Phi,
-    //	       (HyP->nsupers + grid->npcol - 1) / grid->npcol);
-    //fflush(stdout);
-    //}
+#if 0
+    if (!grid->iam) { // Sherry to remove 
+	printf(".. k %d  jj0 %d\t num_u_blks_phi %d\t mcb %d\n", k, jj0, HyP->num_u_blks_Phi,
+	       (HyP->nsupers + grid->npcol - 1) / grid->npcol);
+	fflush(stdout);
+    }
+#endif
 
     HyP->bigU_Phi = bigU;
-    HyP->bigU_host = bigU + HyP->ldu_Phi * HyP->Ublock_info_Phi[HyP->num_u_blks_Phi - 1].full_u_cols;
+    if ( HyP->num_u_blks_Phi == 0 )
+	HyP->bigU_host = bigU;
+    else
+	HyP->bigU_host = bigU + HyP->ldu_Phi * HyP->Ublock_info_Phi[HyP->num_u_blks_Phi - 1].full_u_cols;
 
     dgather_u(HyP->num_u_blks, HyP->Ublock_info, usub, uval, HyP->bigU_host,
                HyP->ldu, xsup, klst );
