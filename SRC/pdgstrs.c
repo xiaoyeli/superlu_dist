@@ -1612,7 +1612,8 @@ dGenCOOLblocks(iam, nsupers, grid,Glu_persist,Llu, cooRows, cooCols, cooVals, &n
  
  
 
-k = CEILING( nsupers, grid->npcol );/* Number of local block columns divided by #warps per block used as number of thread blocks*/
+// k = CEILING(CEILING( nsupers, grid->npcol),NWARP);/* Number of local block columns divided by #warps per block used as number of thread blocks*/
+k = CEILING( nsupers, grid->npcol);/* Number of local block columns divided by #warps per block used as number of thread blocks*/
 knsupc = sp_ienv_dist(3);
 dlsum_fmod_inv_cuda_wrap(k,DIM_X,DIM_Y,lsum,x,rtemp,nrhs,knsupc,nsupers,fmod,xsup,grid,Llu);
  
