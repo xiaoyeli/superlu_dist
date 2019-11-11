@@ -1032,10 +1032,10 @@ pzgstrs(int_t n, LUstruct_t *LUstruct,
     /* Save the count to be altered so it can be used by
        subsequent call to PDGSTRS. */
     if ( !(fmod = intMalloc_dist(nlb*aln_i)) )
-	ABORT("Calloc fails for fmod[].");
+	ABORT("Malloc fails for fmod[].");
     for (i = 0; i < nlb; ++i) fmod[i*aln_i] = Llu->fmod[i];
     if ( !(frecv = intCalloc_dist(nlb)) )
-	ABORT("Malloc fails for frecv[].");
+	ABORT("Calloc fails for frecv[].");
     Llu->frecv = frecv;
 
     if ( !(leaf_send = intMalloc_dist((CEILING( nsupers, Pr )+CEILING( nsupers, Pc ))*aln_i)) )
@@ -1076,9 +1076,8 @@ pzgstrs(int_t n, LUstruct_t *LUstruct,
     for ( ii=0; ii < sizelsum*num_thread; ii++ )
 	lsum[ii]=zero;
 #endif
-    if ( !(x = (doublecomplex*)SUPERLU_MALLOC((ldalsum * nrhs + nlb * XK_H) * sizeof(doublecomplex))) )
+    if ( !(x = doublecomplexCalloc_dist(ldalsum * nrhs + nlb * XK_H)) )
 	ABORT("Calloc fails for x[].");
-
 
     sizertemp=ldalsum * nrhs;
     sizertemp = ((sizertemp + (aln_d - 1)) / aln_d) * aln_d;
@@ -1791,10 +1790,10 @@ if(procs==1){
 		/* Save the count to be altered so it can be used by
 		   subsequent call to PDGSTRS. */
 		if ( !(bmod = intMalloc_dist(nlb*aln_i)) )
-			ABORT("Calloc fails for bmod[].");
+			ABORT("Malloc fails for bmod[].");
 		for (i = 0; i < nlb; ++i) bmod[i*aln_i] = Llu->bmod[i];
 		if ( !(brecv = intCalloc_dist(nlb)) )
-			ABORT("Malloc fails for brecv[].");
+			ABORT("Calloc fails for brecv[].");
 		Llu->brecv = brecv;
 
 		k = SUPERLU_MAX( Llu->nfsendx, Llu->nbsendx ) + nlb;

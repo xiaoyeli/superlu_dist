@@ -49,10 +49,6 @@ INCLUDE(CTest)
 set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)    ## ????
 set(CMAKE_INSTALL_NAME_DIR "${CMAKE_INSTALL_PREFIX}/lib")
 
-# set the position independent code property on all targets, so that
-# -fPIC is added in compiler flag.
-set(CMAKE_POSITION_INDEPENDENT_CODE ON)
-
 
 #---- For shared library
 
@@ -75,6 +71,10 @@ SET(BUILD_STATIC_LIBS TRUE CACHE BOOL "Include static libs when building shared"
 
 if (BUILD_SHARED_LIBS)
   message("-- SuperLU_DIST will be built as a shared library.")
+  # set the position independent code property on all targets, so that
+  # -fPIC is added in compiler flag.
+  set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+
   set(PROJECT_NAME_LIB_EXPORT libsuperlu_dist.so)
   if (BUILD_STATIC_LIBS)
     message("-- SuperLU_DIST will also be built as a static library.")
