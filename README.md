@@ -1,4 +1,4 @@
-# SuperLU_DIST (version 6.1)
+# SuperLU_DIST (version 6.2)
 
 [![Build Status](https://travis-ci.org/xiaoyeli/superlu_dist.svg?branch=master)](https://travis-ci.org/xiaoyeli/superlu_dist) 
 [Nightly tests](http://my.cdash.org/index.php?project=superlu_dist)
@@ -254,7 +254,7 @@ You can disable CombBLAS with the following line in SRC/superlu_dist_config.h:
 ```
 
 
-#### 1.4. C preprocessor definition CDEFS.
+#### 1.4. C preprocessor definition CDEFS. (Replaced by cmake module FortranCInterface.)
 
 In the header file SRC/Cnames.h, we use macros to determine how
 C routines should be named so that they are callable by Fortran.
