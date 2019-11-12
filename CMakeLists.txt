@@ -36,7 +36,7 @@ option(TPL_COMBBLAS_INCLUDE_DIRS "List of absolute paths to CombBLAS include dir
 #
 # IDEAS: xSDK standards module
 MESSAGE("\nProcess XSDK defaults ...")
-# SET(USE_XSDK_DEFAULTS_DEFAULT TRUE) # Set to false if desired
+SET(USE_XSDK_DEFAULTS_DEFAULT TRUE) # Set to false if desired
 INCLUDE("cmake/XSDKDefaults.cmake")
 INCLUDE(CTest)
 ######################################################################
@@ -87,6 +87,7 @@ endif()
 set(CMAKE_CXX_STANDARD 11)
 
 if (XSDK_ENABLE_Fortran)
+   message("+++ XSDK fortran enabled")
   enable_language (Fortran)
   set(NOFORTRAN FALSE)
 endif()
@@ -296,7 +297,7 @@ endif()
 
 ######################################################################
 #
-# Fortran - C name mangling 
+# Fortran-C name mangling 
 #
 ######################################################################
 include(FortranCInterface)
