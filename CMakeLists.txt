@@ -294,6 +294,18 @@ else()
   set(LOADER $(CC))
 endif()
 
+######################################################################
+#
+# Fortran - C name mangling 
+#
+######################################################################
+include(FortranCInterface)
+#FortranCInterface_HEADER(${PROJECT_BINARY_DIR}/SLU_Fortran_names.h
+#  MACRO_NAMESPACE "FC_")
+FortranCInterface_HEADER(${SuperLU_DIST_SOURCE_DIR}/SRC/superlu_FortranCInterface.h
+  MACRO_NAMESPACE "FC_")
+#include_directories(${PROJECT_BINARY_DIR} ${PROJECT_SOURCE_DIR}/src)
+FortranCInterface_VERIFY(CXX)
 
 ######################################################################
 #

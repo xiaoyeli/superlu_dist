@@ -90,8 +90,10 @@ at the top-level directory.
   #define IFMT "%8d"
 #endif
 
+#include "superlu_FortranCInterface.h"
+//#include "Cnames.h"
+#include "superlu_FCnames.h"
 #include "superlu_enum_consts.h"
-#include "Cnames.h"
 #include "supermatrix.h"
 #include "util_dist.h"
 #include "psymbfact.h"
