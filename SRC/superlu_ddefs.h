@@ -66,6 +66,7 @@ typedef struct {
 #define DIM_XB  DIM_X
 #define DIM_YB  DIM_Y
 
+#define NWARP  DIM_X*DIM_Y/32
 
 // // // // // // #define TILE_SIZE  32
 
