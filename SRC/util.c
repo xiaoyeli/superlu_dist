@@ -668,6 +668,7 @@ PStatInit(SuperLUStat_t *stat)
         stat->ops[i] = 0.;
     }
     stat->TinyPivots = stat->RefineSteps = 0;
+    stat->current_buffer = stat->peak_buffer = 0.0;
 }
 
 void

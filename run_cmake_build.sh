@@ -43,10 +43,10 @@ THISHOST=`hostname -s`
 echo "host: $THISHOST"
 if [ "$THISHOST" == "ssg1" ]
 then
-#  rm -fr ssg1-build; mkdir ssg1-build; cd ssg1-build;
-#  export PARMETIS_ROOT=~/lib/static/parmetis-4.0.3 
-  rm -fr int64-build; mkdir int64-build; cd int64-build;
-  export PARMETIS_ROOT=~/lib/static/64-bit/parmetis-4.0.3 
+  rm -fr ssg1-build; mkdir ssg1-build; cd ssg1-build;
+  export PARMETIS_ROOT=~/lib/static/parmetis-4.0.3 
+#  rm -fr int64-build; mkdir int64-build; cd int64-build;
+#  export PARMETIS_ROOT=~/lib/static/64-bit/parmetis-4.0.3 
   export PARMETIS_BUILD_DIR=${PARMETIS_ROOT}/build/Linux-x86_64
   echo "ParMetis root: $PARMETIS_ROOT"
   cmake .. \
@@ -56,19 +56,23 @@ then
 OOT}/Applications/BipartiteMatchings" \
     -DTPL_COMBBLAS_LIBRARIES="${COMBBLAS_BUILD_DIR}/libCombBLAS.a" \
 <<<<<<< HEAD
+<<<<<<< HEAD
     -DCMAKE_C_FLAGS="-std=c99 -O3 -DPRNTlevel=1 -DDEBUGlevel=0" \
 =======
     -DCMAKE_C_FLAGS="-std=c99 -O3 -g -DPRNTlevel=1 -DDEBUGlevel=0" \
 >>>>>>> c22c5ab... + update run_cmake_build.sh, add "-O" in C_FLAGS; CBLAS/ has problem with "-g" only
+=======
+    -DCMAKE_C_FLAGS="-std=c99 -O3 -g -DPRNTlevel=1 -DDEBUGlevel=0" \
+>>>>>>> master
     -DCMAKE_C_COMPILER=mpicc \
     -DCMAKE_CXX_COMPILER=mpicxx \
     -DTPL_ENABLE_BLASLIB=OFF \
     -DTPL_ENABLE_COMBBLASLIB=OFF \
     -DTPL_ENABLE_LAPACKLIB=OFF \
     -DBUILD_SHARED_LIBS=OFF \
-    -DXSDK_INDEX_SIZE=64 \
     -DCMAKE_INSTALL_PREFIX=.
 fi
+#    -DXSDK_INDEX_SIZE=64 \
 #   -DTPL_ENABLE_PARMETISLIB=OFF
 #    -DCMAKE_CXX_FLAGS="-std=c++11" \
 

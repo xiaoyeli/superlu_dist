@@ -1,5 +1,5 @@
 set(headers
-    Cnames.h
+    superlu_FCnames.h
     cublas_utils.h
     dcomplex.h
     machines.h
@@ -14,6 +14,7 @@ set(headers
     TreeBcast_slu_impl.hpp
     TreeReduce_slu_impl.hpp	
     ${CMAKE_CURRENT_BINARY_DIR}/superlu_dist_config.h
+    ${PROJECT_SOURCE_DIR}/SRC/superlu_FortranCInterface.h
 )
 if (MSVC)
   list(APPEND headers wingetopt.h)

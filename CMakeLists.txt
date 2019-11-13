@@ -10,8 +10,8 @@ cmake_minimum_required(VERSION 2.8.12 FATAL_ERROR)
 # Project version numbers
 project(SuperLU_DIST C CXX)
 set(VERSION_MAJOR "6")
-set(VERSION_MINOR "1")
-set(VERSION_BugFix "1")
+set(VERSION_MINOR "2")
+set(VERSION_BugFix "0")
 set(PROJECT_VERSION ${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_BugFix})
 
 list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake")
@@ -38,7 +38,7 @@ option(TPL_COMBBLAS_INCLUDE_DIRS "List of absolute paths to CombBLAS include dir
 #
 # IDEAS: xSDK standards module
 MESSAGE("\nProcess XSDK defaults ...")
-# SET(USE_XSDK_DEFAULTS_DEFAULT TRUE) # Set to false if desired
+SET(USE_XSDK_DEFAULTS_DEFAULT TRUE) # Set to false if desired
 INCLUDE("cmake/XSDKDefaults.cmake")
 INCLUDE(CTest)
 ######################################################################
@@ -296,6 +296,18 @@ else()
   set(LOADER $(CC))
 endif()
 
+######################################################################
+#
+# Fortran-C name mangling 
+#
+######################################################################
+include(FortranCInterface)
+#FortranCInterface_HEADER(${PROJECT_BINARY_DIR}/SLU_Fortran_names.h
+#  MACRO_NAMESPACE "FC_")
+FortranCInterface_HEADER(${SuperLU_DIST_SOURCE_DIR}/SRC/superlu_FortranCInterface.h
+  MACRO_NAMESPACE "FC_")
+#include_directories(${PROJECT_BINARY_DIR} ${PROJECT_SOURCE_DIR}/src)
+FortranCInterface_VERIFY(CXX)
 
 ######################################################################
 #
@@ -342,6 +354,11 @@ configure_file(${SuperLU_DIST_SOURCE_DIR}/SRC/superlu_dist_config.h.in ${SuperLU
 configure_file(${SuperLU_DIST_SOURCE_DIR}/SRC/superlu_dist_config.h.in ${SuperLU_DIST_SOURCE_DIR}/SRC/superlu_dist_config.h)
 
 # Add pkg-config support
+if(IS_ABSOLUTE ${CMAKE_INSTALL_LIBDIR})
+  set(pkgconfig_libdir ${CMAKE_INSTALL_LIBDIR})
+else()
+  set(pkgconfig_libdir ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR})
+endif()
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/superlu_dist.pc.in ${CMAKE_CURRENT_BINARY_DIR}/superlu_dist.pc @ONLY)
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/superlu_dist.pc
 	DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig)

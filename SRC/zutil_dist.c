@@ -560,7 +560,7 @@ void zZeroLblocks(int iam, int_t n, gridinfo_t *grid, LUstruct_t *LUstruct)
 } /* zZeroLblocks */
 
 
-/*! \Dump the factored matrix L using matlab triple-let format
+/*! \brief Dump the factored matrix L using matlab triple-let format
  */
 void zDumpLblocks(int iam, int_t nsupers, gridinfo_t *grid,
 		  Glu_persist_t *Glu_persist, LocalLU_t *Llu)
