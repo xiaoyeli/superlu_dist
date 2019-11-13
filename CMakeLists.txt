@@ -87,7 +87,6 @@ endif()
 set(CMAKE_CXX_STANDARD 11)
 
 if (XSDK_ENABLE_Fortran)
-   message("+++ XSDK fortran enabled")
   enable_language (Fortran)
   set(NOFORTRAN FALSE)
 endif()
