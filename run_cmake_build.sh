@@ -55,15 +55,7 @@ then
     -DTPL_COMBBLAS_INCLUDE_DIRS="${COMBBLAS_ROOT}/_install/include;${COMBBLAS_R\
 OOT}/Applications/BipartiteMatchings" \
     -DTPL_COMBBLAS_LIBRARIES="${COMBBLAS_BUILD_DIR}/libCombBLAS.a" \
-<<<<<<< HEAD
-<<<<<<< HEAD
-    -DCMAKE_C_FLAGS="-std=c99 -O3 -DPRNTlevel=1 -DDEBUGlevel=0" \
-=======
     -DCMAKE_C_FLAGS="-std=c99 -O3 -g -DPRNTlevel=1 -DDEBUGlevel=0" \
->>>>>>> c22c5ab... + update run_cmake_build.sh, add "-O" in C_FLAGS; CBLAS/ has problem with "-g" only
-=======
-    -DCMAKE_C_FLAGS="-std=c99 -O3 -g -DPRNTlevel=1 -DDEBUGlevel=0" \
->>>>>>> master
     -DCMAKE_C_COMPILER=mpicc \
     -DCMAKE_CXX_COMPILER=mpicxx \
     -DTPL_ENABLE_BLASLIB=OFF \
