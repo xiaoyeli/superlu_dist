@@ -11,6 +11,9 @@ at the top-level directory.
 #include <stdio.h>
 #include "cublas_utils.h"
 
+
+#ifdef GPU_ACC
+
  void DisplayHeader()
 {
     const int kb = 1024;
@@ -106,4 +109,4 @@ cublasHandle_t create_handle ()
  {
       checkCublas(cublasDestroy(handle));
  }
-
+#endif
