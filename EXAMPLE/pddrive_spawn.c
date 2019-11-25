@@ -269,7 +269,7 @@ int main(int argc, char *argv[])
 			printf("**************************************************\n");
 			fflush(stdout);
 		}	
-		MPI_Bcast(result,2,MPI_FLOAT,0,&parent);
+		MPI_Bcast(result,2,MPI_FLOAT,0,parent);
 	
 	
 	
