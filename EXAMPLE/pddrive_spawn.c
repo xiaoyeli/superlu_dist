@@ -269,8 +269,16 @@ int main(int argc, char *argv[])
 			printf("**************************************************\n");
 			fflush(stdout);
 		}	
-		MPI_Bcast(result,2,MPI_FLOAT,0,parent);
 	
+	MPI_Reduce(result, MPI_BOTTOM, 2, MPI_FLOAT,MPI_MAX, 0, parent);
+	
+		//MPI_Bcast(result,2,MPI_FLOAT,0,parent);
+		
+    		//if (!iam) {
+                 //   MPI_Send( result, 2, MPI_FLOAT, 0,
+                  //           2, &parent);
+    	//	}
+
 	
 	
     /* ------------------------------------------------------------
