@@ -163,6 +163,10 @@ typedef struct {
 
 /***********************************************************************
  * For 3D code */
+/* SCT_t was initially Schur-complement counter to compute different 
+   metrics of Schur-complement Update.
+   Later, it includes counters to keep track of many other metrics.
+*/
 typedef struct
 {
     int_t datatransfer_count;

@@ -213,7 +213,9 @@ int_t pzgstrf3d(superlu_dist_options_t *options, int m, int n, double anorm,
     int_t mrb =    (nsupers + Pr - 1) / Pr;
     int_t mcb =    (nsupers + Pc - 1) / Pc;
     HyP_t *HyP = (HyP_t *) SUPERLU_MALLOC(sizeof(HyP_t));
-    Init_HyP(HyP, Llu, mcb, mrb);
+
+    zInit_HyP(HyP, Llu, mcb, mrb);
+
     HyP->first_l_block_acc = first_l_block_acc;
     HyP->first_u_block_acc = first_u_block_acc;
     int_t bigu_size = getBigUSize(nsupers, grid, LUstruct);
@@ -273,8 +275,8 @@ int_t pzgstrf3d(superlu_dist_options_t *options, int m, int n, double anorm,
 
             sForest_t* sforest = sForests[myTreeIdxs[ilvl]];
 
-            /*main loop over all the super nodes*/
-            if (sforest)
+            /* main loop over all the supernodes */
+            if (sforest) /* 2D factorization at individual subtree */
             {
                 double tilvl = SuperLU_timer_();
 #ifdef GPU_ACC

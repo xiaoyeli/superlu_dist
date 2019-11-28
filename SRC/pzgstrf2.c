@@ -430,7 +430,7 @@ void Local_Zgstrf2(superlu_dist_options_t *options, int_t k, double thresh,
     doublecomplex *ublk_ptr = BlockUFactor;
     doublecomplex *ujrow = BlockUFactor;
     int_t luptr = 0;                  /* Point_t to the diagonal entries. */
-    int_t cols_left = nsupc;          /* supernode size */
+    int cols_left = nsupc;          /* supernode size */
     int_t u_diag_cnt = 0;
     int_t ld_ujrow = nsupc;       /* leading dimension of ujrow */
     int_t incx = 1;
@@ -439,9 +439,9 @@ void Local_Zgstrf2(superlu_dist_options_t *options, int_t k, double thresh,
     for (int_t j = 0; j < jlst - jfst; ++j)   /* for each column in panel */
     {
         /* Diagonal pivot */
-        int_t i = luptr;
-            if ( options->ReplaceTinyPivot == YES ) {
-                if ( slud_z_abs1(&lusup[i]) < thresh &&
+        int i = luptr;
+	if ( options->ReplaceTinyPivot == YES ) {
+	    if ( slud_z_abs1(&lusup[i]) < thresh &&
 		     lusup[i].r != 0.0 && lusup[i].i != 0.0 ) { /* Diagonal */
 
 #if ( PRNTlevel>=2 )
@@ -459,7 +459,7 @@ void Local_Zgstrf2(superlu_dist_options_t *options, int_t k, double thresh,
             }
         }
 
-        for (int_t l = 0; l < cols_left; ++l, i += nsupr, ++u_diag_cnt)
+        for (int l = 0; l < cols_left; ++l, i += nsupr, ++u_diag_cnt)
         {
             int_t st = j * ld_ujrow + j;
             ublk_ptr[st + l * ld_ujrow] = lusup[i]; /* copy one row of U */
@@ -470,7 +470,7 @@ void Local_Zgstrf2(superlu_dist_options_t *options, int_t k, double thresh,
         {
             *info = j + jfst + 1;
         }
-        else                /* Scale the j-th column. */
+        else                /* Scale the j-th column within diagonal block. */
         {
             doublecomplex temp;
             slud_z_div(&temp, &one, &ujrow[0]);
@@ -483,7 +483,7 @@ void Local_Zgstrf2(superlu_dist_options_t *options, int_t k, double thresh,
         if (--cols_left)
         {
             /*following must be int*/
-            int_t l = nsupc - j - 1;
+            int l = nsupc - j - 1;
 
 	    /* Rank-1 update */
 #if 1

@@ -42,7 +42,7 @@ void superlu_gridinit3d(MPI_Comm Bcomm, /* The base communicator upon which
 
     MPI_Comm_size( Bcomm, &info );
     if ( info < Np )
-        ABORT("Number of processes is smaller than NPROW * NPCOL");
+        ABORT("Number of processes is smaller than NPROW * NPCOL * NPDEP");
 
     superlu_gridmap3d(Bcomm, nprow, npcol, npdep, grid);
 

@@ -139,6 +139,7 @@ double getFreq(void)
     return 0;
 }
 
+/* Initialize various counters. */
 void SCT_init(SCT_t* SCT)
 {
 #if 1
@@ -562,47 +563,6 @@ get_acc_offload ()
         return 0;
 }
 
-
-void Init_HyP(HyP_t* HyP, LocalLU_t *Llu, int_t mcb, int_t mrb )
-{
-    HyP->last_offload = -1;
-#if 0
-    HyP->lookAhead_info = (Remain_info_t *) _mm_malloc((mrb) * sizeof(Remain_info_t), 64);
-
-    HyP->lookAhead_L_buff = (double *) _mm_malloc( sizeof(double) * (Llu->bufmax[1]), 64);
-
-    HyP->Remain_L_buff = (double *) _mm_malloc( sizeof(double) * (Llu->bufmax[1]), 64);
-    HyP->Remain_info = (Remain_info_t *) _mm_malloc(mrb * sizeof(Remain_info_t), 64);
-    HyP->Ublock_info_Phi = (Ublock_info_t *) _mm_malloc(mcb * sizeof(Ublock_info_t), 64);
-    HyP->Ublock_info = (Ublock_info_t *) _mm_malloc(mcb * sizeof(Ublock_info_t), 64);
-    HyP->Lblock_dirty_bit = (int_t *) _mm_malloc(mcb * sizeof(int_t), 64);
-    HyP->Ublock_dirty_bit = (int_t *) _mm_malloc(mrb * sizeof(int_t), 64);
-#else
-    HyP->lookAhead_info = (Remain_info_t *) SUPERLU_MALLOC((mrb) * sizeof(Remain_info_t));
-    HyP->lookAhead_L_buff = (double *) doubleMalloc_dist((Llu->bufmax[1]));
-    HyP->Remain_L_buff = (double *) doubleMalloc_dist((Llu->bufmax[1]));
-    HyP->Remain_info = (Remain_info_t *) SUPERLU_MALLOC(mrb * sizeof(Remain_info_t));
-    HyP->Ublock_info_Phi = (Ublock_info_t *) SUPERLU_MALLOC(mcb * sizeof(Ublock_info_t));
-    HyP->Ublock_info = (Ublock_info_t *) SUPERLU_MALLOC(mcb * sizeof(Ublock_info_t));
-    HyP->Lblock_dirty_bit = (int_t *) intMalloc_dist(mcb);
-    HyP->Ublock_dirty_bit = (int_t *) intMalloc_dist(mrb);
-#endif
-
-    for (int_t i = 0; i < mcb; ++i)
-    {
-        HyP->Lblock_dirty_bit[i] = -1;
-    }
-
-    for (int_t i = 0; i < mrb; ++i)
-    {
-        HyP->Ublock_dirty_bit[i] = -1;
-    }
-
-    HyP->last_offload = -1;
-    HyP->superlu_acc_offload = get_acc_offload ();
-
-    HyP->nCudaStreams =0;
-}
 
 void Free_HyP(HyP_t* HyP)
 {

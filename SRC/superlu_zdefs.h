@@ -203,6 +203,9 @@ typedef struct
     int_t nsupr;
 } lPanelInfo_t;
 
+ 
+
+/* HyP_t is the data structure to assist HALO offload of Schur-complement. */
 typedef struct
 {
     Remain_info_t *lookAhead_info, *Remain_info;
@@ -229,7 +232,7 @@ typedef struct
     int_t offloadCondition;
     int_t superlu_acc_offload;
     int_t nCudaStreams;
-} HyP_t;  /* Data structures for Schur complement update. */
+} HyP_t;
 
 typedef struct 
 {
@@ -561,7 +564,7 @@ extern void pzgssvx3d (superlu_dist_options_t *, SuperMatrix *,
 extern int_t pzgstrf3d(superlu_dist_options_t *, int m, int n, double anorm,
 		       trf3Dpartition_t*, SCT_t *, LUstruct_t *,
 		       gridinfo3d_t *, SuperLUStat_t *, int *);
-extern void Init_HyP(HyP_t* HyP, LocalLU_t *Llu, int_t mcb, int_t mrb );
+extern void zInit_HyP(HyP_t* HyP, LocalLU_t *Llu, int_t mcb, int_t mrb );
 extern void Free_HyP(HyP_t* HyP);
 extern int updateDirtyBit(int_t k0, HyP_t* HyP, gridinfo_t* grid);
 
