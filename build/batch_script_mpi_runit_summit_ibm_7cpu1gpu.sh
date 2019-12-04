@@ -26,15 +26,23 @@ FILE_NAME=pddrive
 FILE=$FILE_DIR/$FILE_NAME
 
 
-#nprows=(  2  )
-#npcols=(  3  )  
+nprows=(  2  )    # 1 node, 1MPI-1GPU
+npcols=(  3  )  
+RANK_PER_RS=1
+
+#nprows=(  6  )    # 1 node, 7MPI-1GPU
+#npcols=(  7  )  
+#RANK_PER_RS=7
+
+
+#nprows=(  6  )     # 7 nodes, 1MPI-1GPU
+#npcols=(  7  )  
 #RANK_PER_RS=1
 
-nprows=(  6  )
-npcols=(  7  )  
-RANK_PER_RS=7
 
-
+#nprows=(  16  )    # 7 nodes, 7MPI-1GPU   
+#npcols=(  18  )  
+#RANK_PER_RS=7
 
 
 for ((i = 0; i < ${#npcols[@]}; i++)); do
@@ -59,6 +67,15 @@ then
   CONSTRAINT=haswell
 fi
 
+
+#export NSUP=1024
+#export NREL=512
+
+
+#export NSUP=512
+#export NREL=128
+
+
 for NTH in 1  
 do
 
@@ -81,15 +98,14 @@ GPU_PER_RS=1
 # for MAT in matrix05_ntime=2/s1_mat_0_126936.bin A30_P0/A30_015_0_25356.bin
 # for MAT in matrix05_ntime=2/s1_mat_0_126936.bin
 #for MAT in s1_mat_0_126936.bin
-
 # for MAT in A30_P0/A30_015_0_25356.bin
  # for MAT in A64/A64_001_0_1204992.bin
   # for MAT in big.rua
 # for MAT in  StocF-1465.bin 
 # for MAT in /mathias/DG_GrapheneDisorder_8192.bin /mathias/DNA_715_64cell.bin /mathias/LU_C_BN_C_4by2.bin /mathias/Li4244.bin 
- for MAT in /mathias/DNA_715_64cell.bin /mathias/Li4244.bin 
-
 # for MAT in LU_C_BN_C_4by2.bin Li4244.bin atmosmodj.bin Ga19As19H42.bin Geo_1438.bin StocF-1465.bin
+for MAT in  Ga19As19H42.mtx Geo_1438.mtx
+#for MAT in /mathias/DNA_715_64cell.bin /mathias/Li4244.bin s1_mat_0_126936.bin
   do
     export OMP_NUM_THREADS=$OMP_NUM_THREADS
     mkdir -p ${MAT}_summit

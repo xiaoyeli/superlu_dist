@@ -844,7 +844,7 @@ pdgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
     if ( checkCuda(cudaHostAlloc((void**)&bigV, bigv_size * sizeof(double) ,cudaHostAllocDefault)) )
         ABORT("Malloc fails for dgemm buffer V");
 
-    DisplayHeader();
+    if (!iam) DisplayHeader();
 
 #if ( PRNTlevel>=1 )
     printf(" Starting with %d Cuda Streams \n",nstreams );
