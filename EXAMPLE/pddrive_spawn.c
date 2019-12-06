@@ -255,8 +255,8 @@ int main(int argc, char *argv[])
 	    float total;
 		superlu_dist_mem_usage_t num_mem_usage;
 	    dQuerySpace_dist(n, &LUstruct, &grid, &stat, &num_mem_usage);
-	    MPI_Reduce( &num_mem_usage.total, &total,
-		       1, MPI_FLOAT, MPI_SUM, 0, grid.comm );
+	    MPI_Allreduce( &num_mem_usage.total, &total,
+		       1, MPI_FLOAT, MPI_SUM, grid.comm );
 		float result[2];	   
 			   
 		result[0] = stat.utime[FACT];   
