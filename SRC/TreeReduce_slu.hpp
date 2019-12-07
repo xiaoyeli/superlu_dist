@@ -39,9 +39,10 @@ namespace SuperLU_ASYNCOMM{
 
         virtual T * GetLocalBuffer();
 
-
-		
 		virtual void forwardMessageSimple(T * locBuffer, Int msgSize);
+#ifdef GPU_ACC		
+		virtual __device__ void forwardMessageSimpleDevice(T * locBuffer, Int msgSize);
+#endif		
 		virtual void allocateRequest();	
 		virtual void waitSendRequest();
     };

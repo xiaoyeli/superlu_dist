@@ -43,6 +43,9 @@ at the top-level directory.
 #include "cuda.h"
 #include "cuda_runtime_api.h"
 #include "cuda_runtime.h"
+#define __CUDA__ __device__
+#else 
+#define __CUDA__
 #endif
 
 
@@ -835,22 +838,34 @@ typedef void* StdList;
 extern RdTree   RdTree_Create(MPI_Comm comm, int* ranks, int rank_cnt, int msgSize, double rseed, char precision);  
 extern void   	RdTree_Destroy(RdTree Tree, char precision);
 extern void 	RdTree_SetTag(RdTree Tree, int tag, char precision);
-extern yes_no_t RdTree_IsRoot(RdTree Tree, char precision);
-extern void 	RdTree_forwardMessageSimple(RdTree Tree, void* localBuffer, int msgSize, char precision);
+extern void 	RdTree_IsRoot(RdTree Tree, char precision, yes_no_t *rel);
+extern	 void 	RdTree_forwardMessageSimple(RdTree Tree, void* localBuffer, int msgSize, char precision);
 extern void 	RdTree_allocateRequest(RdTree Tree, char precision);
-extern int  	RdTree_GetDestCount(RdTree Tree, char precision);
-extern int  	RdTree_GetMsgSize(RdTree Tree, char precision);
+extern void  	RdTree_GetDestCount(RdTree Tree, char precision, int* cnt);
+extern void  	RdTree_GetMsgSize(RdTree Tree, char precision, int* cnt);
 extern void 	RdTree_waitSendRequest(RdTree Tree, char precision);
 
 extern BcTree   BcTree_Create(MPI_Comm comm, int* ranks, int rank_cnt, int msgSize, double rseed, char precision);  
 extern void   	BcTree_Destroy(BcTree Tree, char precision);
 extern void 	BcTree_SetTag(BcTree Tree, int tag, char precision);
-extern yes_no_t BcTree_IsRoot(BcTree Tree, char precision);
-extern void 	BcTree_forwardMessageSimple(BcTree Tree, void* localBuffer, int msgSize, char precision);
+extern void		BcTree_IsRoot(BcTree Tree, char precision,yes_no_t* rel);
+extern 			void 	BcTree_forwardMessageSimple(BcTree Tree, void* localBuffer, int msgSize, char precision);
 extern void 	BcTree_allocateRequest(BcTree Tree, char precision);
-extern int 		BcTree_getDestCount(BcTree Tree, char precision); 
-extern int 		BcTree_GetMsgSize(BcTree Tree, char precision); 
+extern void 	BcTree_getDestCount(BcTree Tree, char precision, int* cnt); 
+extern void 	BcTree_GetMsgSize(BcTree Tree, char precision, int* cnt); 
 extern void 	BcTree_waitSendRequest(BcTree Tree, char precision);
+
+#ifdef GPU_ACC
+extern __CUDA__ void 	RdTree_IsRoot_Device(RdTree Tree, char precision, yes_no_t *rel);
+extern __CUDA__ void 	RdTree_forwardMessageSimple_Device(RdTree Tree, void* localBuffer, int msgSize, char precision);
+extern __CUDA__ void  	RdTree_GetDestCount_Device(RdTree Tree, char precision, int* cnt);
+extern __CUDA__ void  	RdTree_GetMsgSize_Device(RdTree Tree, char precision, int* cnt);
+extern __CUDA__ void	BcTree_IsRoot_Device(BcTree Tree, char precision,yes_no_t* rel);
+extern __CUDA__ void 	BcTree_forwardMessageSimple_Device(BcTree Tree, void* localBuffer, int msgSize, char precision);
+extern __CUDA__ void 	BcTree_getDestCount_Device(BcTree Tree, char precision, int* cnt); 
+extern __CUDA__ void 	BcTree_GetMsgSize_Device(BcTree Tree, char precision, int* cnt); 
+#endif
+
  
 extern StdList 	StdList_Init();
 extern void 	StdList_Pushback(StdList lst, int_t dat);
@@ -859,6 +874,8 @@ extern int_t 		StdList_Popfront(StdList lst);
 extern yes_no_t StdList_Find(StdList lst, int_t dat);
 extern int_t 	   	StdList_Size(StdList lst);
 yes_no_t 		StdList_Empty(StdList lst);
+
+
 
 
 

@@ -14,12 +14,120 @@
 #include <memory>
 //#include <random>
 
+#include "cuda.h"
+#include "cuda_runtime_api.h"
+#include "cuda_runtime.h"
+
+
+
 // options to switch from a flat bcast/reduce tree to a binary tree
 #ifndef FTREE_LIMIT
 #define FTREE_LIMIT 8
 #endif
 
 namespace SuperLU_ASYNCOMM {
+
+
+
+
+
+// template<class T>
+// class managed_allocator
+// {
+  // public:
+    // using value_type = T;
+    // using reference = T&;
+    // using const_reference = const T&;
+
+    // managed_allocator() {}
+
+    // template<class U>
+    // managed_allocator(const managed_allocator<U>&) {}
+  
+    // value_type* allocate(size_t n)
+    // {
+      // value_type* result = nullptr;
+  
+// #ifdef GPU_ACC    
+	  // cudaError_t error = cudaMallocManaged(&result, n*sizeof(T), cudaMemAttachGlobal);
+      // if(error != cudaSuccess){
+	  // fprintf(stderr, "CUDA Runtime Error: %s\n", cudaGetErrorString(error));
+      // }
+// #else 
+	// result = (value_type*) malloc(n*sizeof(T));
+// #endif	  
+	  
+  
+      // return result;
+    // }
+  
+    // void deallocate(value_type* ptr, size_t)
+    // {
+	
+// #ifdef GPU_ACC  	
+      // cudaError_t error = cudaFree(ptr);
+      // if(error != cudaSuccess)
+      // {
+        // fprintf(stderr, "CUDA Runtime Error: %s\n", cudaGetErrorString(error));
+      // }
+// #else 
+	  // free(ptr);
+// #endif	 	  
+    // }
+// };
+
+// template<class T1, class T2>
+// bool operator==(const managed_allocator<T1>&, const managed_allocator<T2>&)
+// {
+  // return true;
+// }
+
+// template<class T1, class T2>
+// bool operator!=(const managed_allocator<T1>& lhs, const managed_allocator<T2>& rhs)
+// {
+  // return !(lhs == rhs);
+// }
+
+
+
+
+
+
+template<class T>
+    T* managed_allocate(size_t n)
+    {
+      T* result = nullptr;
+  
+#ifdef GPU_ACC    
+	  cudaError_t error = cudaMallocManaged(&result, n*sizeof(T), cudaMemAttachGlobal);
+      if(error != cudaSuccess){
+	  fprintf(stderr, "CUDA Runtime Error: %s\n", cudaGetErrorString(error));
+      }
+#else 
+	result = (T*) malloc(n*sizeof(T));
+#endif	  
+	  
+  
+      return result;
+    }
+    
+template<class T>	
+    void managed_deallocate(T* ptr)
+    {
+	
+#ifdef GPU_ACC  	
+      cudaError_t error = cudaFree(ptr);
+      if(error != cudaSuccess)
+      {
+        fprintf(stderr, "CUDA Runtime Error: %s\n", cudaGetErrorString(error));
+      }
+#else 
+	  free(ptr);
+#endif	 	  
+    }
+
+
+
 
     // Basic data types
   typedef    int  Int;
@@ -54,15 +162,14 @@ namespace SuperLU_ASYNCOMM {
         bool isReady_;
 
         MPI_Comm comm_;
-        Int myRoot_;
+        
         //not sure about this one
         Int mainRoot_;
-        std::vector<Int> myDests_;
+        
 
-        Int myRank_;
-        Int msgSize_;
+        
+        
         Int tag_;
-
         MPI_Datatype type_;
 
 
@@ -71,6 +178,14 @@ namespace SuperLU_ASYNCOMM {
 
 
       public:
+		Int msgSize_;
+		Int myRank_;
+		Int myRoot_;
+		size_t myDestsSize_;
+		std::vector<Int> myDests_;
+		Int* myDestsArray_;
+		
+		
         static TreeBcast_slu<T> * Create(const MPI_Comm & pComm, Int * ranks, Int rank_cnt, Int msgSize,double rseed);
         TreeBcast_slu();
         TreeBcast_slu(const MPI_Comm & pComm, Int * ranks, Int rank_cnt,Int msgSize);
@@ -105,6 +220,9 @@ namespace SuperLU_ASYNCOMM {
 
 		virtual void allocateRequest();
 		virtual void forwardMessageSimple(T * locBuffer, Int msgSize);	
+#ifdef GPU_ACC		
+		virtual __device__ void forwardMessageSimpleDevice(T * locBuffer, Int msgSize);
+#endif		
 		virtual void waitSendRequest();	
 
     };

@@ -879,7 +879,7 @@ pdgstrs(int_t n, LUstruct_t *LUstruct,
 		    /* NOTE: x and lsum are of same size. */
     double *lusup, *dest;
     double *recvbuf, *recvbuf_on, *tempv,
-            *recvbufall, *recvbuf_BC_fwd, *recvbuf0, *xin;
+            *recvbufall, *recvbuf_BC_fwd, *recvbuf0, *xin, *recvbuf_BC_gpu,*recvbuf_RD_gpu;
     double *rtemp, *rtemp_loc; /* Result of full matrix-vector multiply. */
     double *Linv; /* Inverse of diagonal block */
     double *Uinv; /* Inverse of diagonal block */
@@ -949,6 +949,8 @@ pdgstrs(int_t n, LUstruct_t *LUstruct,
     int_t *LBTree_active, *LRTree_active, *LBTree_finish, *LRTree_finish, *leafsups, *rootsups;
     int_t TAG;
     double t1_sol, t2_sol, t;
+	yes_no_t test;
+	
 #if ( DEBUGlevel>=2 )
     int_t Ublocks = 0;
 #endif
@@ -986,6 +988,7 @@ pdgstrs(int_t n, LUstruct_t *LUstruct,
     aln_d = 1;//ceil(CACHELINE/(double)dword);
     aln_i = 1;//ceil(CACHELINE/(double)iword);
     int num_thread = 1;
+	int cnt;
 
 	
 #ifdef GPU_ACC
@@ -1218,9 +1221,11 @@ pdgstrs(int_t n, LUstruct_t *LUstruct,
 	for (lk=0;lk<nsupers_j;++lk){
 		if(LBtree_ptr[lk]!=NULL){
 			// printf("LBtree_ptr lk %5d\n",lk);
-			if(BcTree_IsRoot(LBtree_ptr[lk],'d')==NO){
+			BcTree_IsRoot(LBtree_ptr[lk],'d',&test);
+			if(test==NO){
 				nbtree++;
-				if(BcTree_getDestCount(LBtree_ptr[lk],'d')>0)nfrecvx_buf++;
+				BcTree_getDestCount(LBtree_ptr[lk],'d',&cnt);
+				if(cnt>0)nfrecvx_buf++;
 			}
 			BcTree_allocateRequest(LBtree_ptr[lk],'d');
 		}
@@ -1251,7 +1256,7 @@ if(procs==1){
 		if(LRtree_ptr[lk]!=NULL){
 			nrtree++;
 			RdTree_allocateRequest(LRtree_ptr[lk],'d');
-			frecv[lk] = RdTree_GetDestCount(LRtree_ptr[lk],'d');
+			RdTree_GetDestCount(LRtree_ptr[lk],'d',&frecv[lk]);
 			nfrecvmod += frecv[lk];
 		}else{
 			gb = myrow+lk*grid->nprow;  /* not sure */
@@ -1599,7 +1604,15 @@ dGenCOOLblocks(iam, nsupers, grid,Glu_persist,Llu, cooRows, cooCols, cooVals, &n
 	  
 #else
 
+	if ( !(recvbuf_BC_gpu = (double*)SUPERLU_MALLOC(maxrecvsz*  CEILING( nsupers, grid->npcol) * sizeof(double))) )  // used for receiving and forwarding x on each thread
+		ABORT("Malloc fails for recvbuf_BC_gpu[].");
+	if ( !(recvbuf_RD_gpu = (double*)SUPERLU_MALLOC(2*maxrecvsz*  CEILING( nsupers, grid->nprow) * sizeof(double))) )  // used for receiving and forwarding lsum on each thread
+		ABORT("Malloc fails for recvbuf_RD_gpu[].");
+
+
 	cudaMemPrefetchAsync(lsum, sizelsum*num_thread * sizeof(double), gid, sid);
+	cudaMemPrefetchAsync(recvbuf_BC_gpu, maxrecvsz*  CEILING( nsupers, grid->npcol) * sizeof(double), gid, sid);
+	cudaMemPrefetchAsync(recvbuf_RD_gpu, 2*maxrecvsz*  CEILING( nsupers, grid->nprow) * sizeof(double), gid, sid);
 	cudaMemPrefetchAsync(x, (ldalsum * nrhs + nlb * XK_H) * sizeof(double), gid, sid);
 	cudaMemPrefetchAsync(fmod, (nlb*aln_i) * sizeof(int_t), gid, sid);
 	for(lk=0;lk<CEILING(nsupers, grid->npcol);lk++){
@@ -1615,7 +1628,10 @@ dGenCOOLblocks(iam, nsupers, grid,Glu_persist,Llu, cooRows, cooCols, cooVals, &n
 // k = CEILING(CEILING( nsupers, grid->npcol),NWARP);/* Number of local block columns divided by #warps per block used as number of thread blocks*/
 k = CEILING( nsupers, grid->npcol);/* Number of local block columns divided by #warps per block used as number of thread blocks*/
 knsupc = sp_ienv_dist(3);
-dlsum_fmod_inv_cuda_wrap(k,DIM_X,DIM_Y,lsum,x,rtemp,nrhs,knsupc,nsupers,fmod,xsup,grid,Llu);
+dlsum_fmod_inv_cuda_wrap(k,nlb,DIM_X,DIM_Y,lsum,x,rtemp,nrhs,knsupc,nsupers,fmod,xsup,grid,Llu,recvbuf_BC_gpu,recvbuf_RD_gpu,maxrecvsz);
+
+SUPERLU_FREE(recvbuf_BC_gpu);
+SUPERLU_FREE(recvbuf_RD_gpu);
  
 
 #endif 	
@@ -1838,11 +1854,13 @@ dlsum_fmod_inv_cuda_wrap(k,DIM_X,DIM_Y,lsum,x,rtemp,nrhs,knsupc,nsupers,fmod,xsu
 					gb = mycol+lk*grid->npcol;  /* not sure */
 					lib = LBi( gb, grid ); /* Local block number, row-wise. */
 					ii = X_BLK( lib );
-					BcTree_forwardMessageSimple(LBtree_ptr[lk],&x[ii - XK_H],BcTree_GetMsgSize(LBtree_ptr[lk],'d')*nrhs+XK_H,'d');
+					BcTree_GetMsgSize(LBtree_ptr[lk],'d',&cnt);
+					BcTree_forwardMessageSimple(LBtree_ptr[lk],&x[ii - XK_H],cnt*nrhs+XK_H,'d');
 				}else{ // this is a reduce forwarding
 					lk = -lk - 1;
 					il = LSUM_BLK( lk );
-					RdTree_forwardMessageSimple(LRtree_ptr[lk],&lsum[il - LSUM_H ],RdTree_GetMsgSize(LRtree_ptr[lk],'d')*nrhs+LSUM_H,'d');
+					RdTree_GetMsgSize(LRtree_ptr[lk],'d',&cnt);
+					RdTree_forwardMessageSimple(LRtree_ptr[lk],&lsum[il - LSUM_H ],cnt*nrhs+LSUM_H,'d');
 				}
 			}
 
@@ -1905,10 +1923,10 @@ dlsum_fmod_inv_cuda_wrap(k,DIM_X,DIM_Y,lsum,x,rtemp,nrhs,knsupc,nsupers,fmod,xsu
 								nfrecvx_buf++;
 								{
 									lk = LBj( k, grid );    /* local block number */
-
-									if(BcTree_getDestCount(LBtree_ptr[lk],'d')>0){
-
-										BcTree_forwardMessageSimple(LBtree_ptr[lk],recvbuf0,BcTree_GetMsgSize(LBtree_ptr[lk],'d')*nrhs+XK_H,'d');
+									BcTree_getDestCount(LBtree_ptr[lk],'d',&cnt);
+									if(cnt>0){
+										BcTree_GetMsgSize(LBtree_ptr[lk],'d',&cnt);
+										BcTree_forwardMessageSimple(LBtree_ptr[lk],recvbuf0,cnt*nrhs+XK_H,'d');
 										// nfrecvx_buf++;
 									}
 
@@ -1960,7 +1978,8 @@ dlsum_fmod_inv_cuda_wrap(k,DIM_X,DIM_Y,lsum,x,rtemp,nrhs,knsupc,nsupers,fmod,xsu
 									thread_id = 0;
 									rtemp_loc = &rtemp[sizertemp* thread_id];
 									if ( fmod_tmp==0 ) {
-										if(RdTree_IsRoot(LRtree_ptr[lk],'d')==YES){
+										RdTree_IsRoot(LRtree_ptr[lk],'d',&test);
+										if(test==YES){
 											// ii = X_BLK( lk );
 											knsupc = SuperSize( k );
 											for (ii=1;ii<num_thread;ii++)
@@ -2037,7 +2056,8 @@ dlsum_fmod_inv_cuda_wrap(k,DIM_X,DIM_Y,lsum,x,rtemp,nrhs,knsupc,nsupers,fmod,xsu
 											 * Send Xk to process column Pc[k].
 											 */
 											if(LBtree_ptr[lk]!=NULL){
-												BcTree_forwardMessageSimple(LBtree_ptr[lk],&x[ii - XK_H],BcTree_GetMsgSize(LBtree_ptr[lk],'d')*nrhs+XK_H,'d');
+												BcTree_GetMsgSize(LBtree_ptr[lk],'d',&cnt);
+												BcTree_forwardMessageSimple(LBtree_ptr[lk],&x[ii - XK_H],cnt*nrhs+XK_H,'d');
 											}
 
 
@@ -2070,7 +2090,8 @@ dlsum_fmod_inv_cuda_wrap(k,DIM_X,DIM_Y,lsum,x,rtemp,nrhs,knsupc,nsupers,fmod,xsu
 											#endif
 											for (jj=0;jj<knsupc*nrhs;jj++)
 												lsum[il + jj] += lsum[il + jj + ii*sizelsum];
-										RdTree_forwardMessageSimple(LRtree_ptr[lk],&lsum[il-LSUM_H],RdTree_GetMsgSize(LRtree_ptr[lk],'d')*nrhs+LSUM_H,'d');
+										RdTree_GetMsgSize(LRtree_ptr[lk],'d',&cnt);		
+										RdTree_forwardMessageSimple(LRtree_ptr[lk],&lsum[il-LSUM_H],cnt*nrhs+LSUM_H,'d');
 									}
 
 								}
@@ -2126,6 +2147,7 @@ stat->utime[SOLVE] = SuperLU_timer_() - t1_sol;
 			}
 		}
 #endif
+
 
 		SUPERLU_FREE(fmod);
 		SUPERLU_FREE(frecv);
@@ -2262,9 +2284,11 @@ stat->utime[SOLVE] = SuperLU_timer_() - t1_sol;
 	for (lk=0;lk<nsupers_j;++lk){
 		if(UBtree_ptr[lk]!=NULL){
 			// printf("UBtree_ptr lk %5d\n",lk);
-			if(BcTree_IsRoot(UBtree_ptr[lk],'d')==NO){
+			BcTree_IsRoot(UBtree_ptr[lk],'d',&test);
+			if(test==NO){
 				nbtree++;
-				if(BcTree_getDestCount(UBtree_ptr[lk],'d')>0)nbrecvx_buf++;
+				BcTree_getDestCount(UBtree_ptr[lk],'d',&cnt);
+				if(cnt>0)nbrecvx_buf++;
 			}
 			BcTree_allocateRequest(UBtree_ptr[lk],'d');
 		}
@@ -2282,7 +2306,7 @@ stat->utime[SOLVE] = SuperLU_timer_() - t1_sol;
 			// fflush(stdout);
 			nrtree++;
 			RdTree_allocateRequest(URtree_ptr[lk],'d');
-			brecv[lk] = RdTree_GetDestCount(URtree_ptr[lk],'d');
+			RdTree_GetDestCount(URtree_ptr[lk],'d',&brecv[lk]);
 			nbrecvmod += brecv[lk];
 		}else{
 			gb = myrow+lk*grid->nprow;  /* not sure */
@@ -2476,11 +2500,13 @@ for (i=0;i<nroot_send;i++){
 		gb = mycol+lk*grid->npcol;  /* not sure */
 		lib = LBi( gb, grid ); /* Local block number, row-wise. */
 		ii = X_BLK( lib );
-		BcTree_forwardMessageSimple(UBtree_ptr[lk],&x[ii - XK_H],BcTree_GetMsgSize(UBtree_ptr[lk],'d')*nrhs+XK_H,'d');
+		BcTree_GetMsgSize(UBtree_ptr[lk],'d',&cnt);
+		BcTree_forwardMessageSimple(UBtree_ptr[lk],&x[ii - XK_H],cnt*nrhs+XK_H,'d');
 	}else{ // this is a reduce forwarding
 		lk = -lk - 1;
 		il = LSUM_BLK( lk );
-		RdTree_forwardMessageSimple(URtree_ptr[lk],&lsum[il - LSUM_H ],RdTree_GetMsgSize(URtree_ptr[lk],'d')*nrhs+LSUM_H,'d');
+		RdTree_GetMsgSize(URtree_ptr[lk],'d',&cnt);
+		RdTree_forwardMessageSimple(URtree_ptr[lk],&lsum[il - LSUM_H ],cnt*nrhs+LSUM_H,'d');
 	}
 }
 
@@ -2534,9 +2560,10 @@ for (i=0;i<nroot_send;i++){
 
 				lk = LBj( k, grid );    /* local block number */
 
-				if(BcTree_getDestCount(UBtree_ptr[lk],'d')>0){
-
-					BcTree_forwardMessageSimple(UBtree_ptr[lk],recvbuf0,BcTree_GetMsgSize(UBtree_ptr[lk],'d')*nrhs+XK_H,'d');
+				BcTree_getDestCount(UBtree_ptr[lk],'d',&cnt);
+				if(cnt>0){
+					BcTree_GetMsgSize(UBtree_ptr[lk],'d',&cnt);
+					BcTree_forwardMessageSimple(UBtree_ptr[lk],recvbuf0,cnt*nrhs+XK_H,'d');
 					// nfrecvx_buf++;
 				}
 
@@ -2570,7 +2597,8 @@ for (i=0;i<nroot_send;i++){
 				thread_id = 0;
 				rtemp_loc = &rtemp[sizertemp* thread_id];
 				if ( bmod_tmp==0 ) {
-					if(RdTree_IsRoot(URtree_ptr[lk],'d')==YES){
+					RdTree_IsRoot(URtree_ptr[lk],'d',&test);
+					if(test==YES){
 
 						knsupc = SuperSize( k );
 						for (ii=1;ii<num_thread;ii++)
@@ -2644,7 +2672,8 @@ for (i=0;i<nroot_send;i++){
 						 * Send Xk to process column Pc[k].
 						 */
 						if(UBtree_ptr[lk]!=NULL){
-							BcTree_forwardMessageSimple(UBtree_ptr[lk],&x[ii - XK_H],BcTree_GetMsgSize(UBtree_ptr[lk],'d')*nrhs+XK_H,'d');
+							BcTree_GetMsgSize(UBtree_ptr[lk],'d',&cnt);
+							BcTree_forwardMessageSimple(UBtree_ptr[lk],&x[ii - XK_H],cnt*nrhs+XK_H,'d');
 						}
 
 
@@ -2668,7 +2697,8 @@ for (i=0;i<nroot_send;i++){
 							for (jj=0;jj<knsupc*nrhs;jj++)
 								lsum[il+ jj ] += lsum[il + jj + ii*sizelsum];
 
-						RdTree_forwardMessageSimple(URtree_ptr[lk],&lsum[il-LSUM_H],RdTree_GetMsgSize(URtree_ptr[lk],'d')*nrhs+LSUM_H,'d');
+						RdTree_GetMsgSize(URtree_ptr[lk],'d',&cnt);	
+						RdTree_forwardMessageSimple(URtree_ptr[lk],&lsum[il-LSUM_H],cnt*nrhs+LSUM_H,'d');
 					}
 
 				}

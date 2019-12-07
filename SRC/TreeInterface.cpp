@@ -45,19 +45,19 @@ namespace SuperLU_ASYNCOMM{
 	}
 
 
-	yes_no_t BcTree_IsRoot(BcTree Tree, char precision){
+	void BcTree_IsRoot(BcTree Tree, char precision, yes_no_t* rel){
 		if(precision=='d'){
 		TreeBcast_slu<double>* BcastTree = (TreeBcast_slu<double>*) Tree;
-		return BcastTree->IsRoot()?YES:NO;
+		*rel=BcastTree->myRank_ == BcastTree->myRoot_ ?YES:NO;
 		}
 		if(precision=='z'){
 		TreeBcast_slu<doublecomplex>* BcastTree = (TreeBcast_slu<doublecomplex>*) Tree;
-		return BcastTree->IsRoot()?YES:NO;
+		*rel=BcastTree->myRank_ == BcastTree->myRoot_ ?YES:NO;
 		}
 	}
 
 	
-	void BcTree_forwardMessageSimple(BcTree Tree, void* localBuffer, Int msgSize, char precision){
+		void BcTree_forwardMessageSimple(BcTree Tree, void* localBuffer, Int msgSize, char precision){
 		if(precision=='d'){
 		TreeBcast_slu<double>* BcastTree = (TreeBcast_slu<double>*) Tree;
 		BcastTree->forwardMessageSimple((double*)localBuffer,msgSize);	
@@ -67,6 +67,32 @@ namespace SuperLU_ASYNCOMM{
 		BcastTree->forwardMessageSimple((doublecomplex*)localBuffer,msgSize);	
 		}	
 	}
+
+#ifdef GPU_ACC	
+
+__CUDA__	void BcTree_IsRoot_Device(BcTree Tree, char precision, yes_no_t* rel){
+		if(precision=='d'){
+		TreeBcast_slu<double>* BcastTree = (TreeBcast_slu<double>*) Tree;
+		*rel=BcastTree->myRank_ == BcastTree->myRoot_ ?YES:NO;
+		}
+		if(precision=='z'){
+		TreeBcast_slu<doublecomplex>* BcastTree = (TreeBcast_slu<doublecomplex>*) Tree;
+		*rel=BcastTree->myRank_ == BcastTree->myRoot_ ?YES:NO;
+		}
+	}
+
+__CUDA__	void BcTree_forwardMessageSimple_Device(BcTree Tree, void* localBuffer, Int msgSize, char precision){
+		if(precision=='d'){
+		TreeBcast_slu<double>* BcastTree = (TreeBcast_slu<double>*) Tree;
+		BcastTree->forwardMessageSimpleDevice((double*)localBuffer,msgSize);	
+		}
+		if(precision=='z'){
+		TreeBcast_slu<doublecomplex>* BcastTree = (TreeBcast_slu<doublecomplex>*) Tree;
+		BcastTree->forwardMessageSimpleDevice((doublecomplex*)localBuffer,msgSize);	
+		}	
+	}	
+#endif	
+	
 
 	void BcTree_waitSendRequest(BcTree Tree, char precision){
 		if(precision=='d'){
@@ -92,25 +118,25 @@ namespace SuperLU_ASYNCOMM{
 		}			
 	}	
 	
-	int BcTree_getDestCount(BcTree Tree, char precision){
+	void BcTree_getDestCount(BcTree Tree, char precision, int* cnt){
 		if(precision=='d'){
 		TreeBcast_slu<double>* BcastTree = (TreeBcast_slu<double>*) Tree;
-		return BcastTree->GetDestCount();					
+		*cnt=BcastTree->myDestsSize_;					
 		}
 		if(precision=='z'){
 		TreeBcast_slu<doublecomplex>* BcastTree = (TreeBcast_slu<doublecomplex>*) Tree;
-		return BcastTree->GetDestCount();					
+		*cnt=BcastTree->myDestsSize_;			
 		}
 	}	
 
-	int BcTree_GetMsgSize(BcTree Tree, char precision){
+	void BcTree_GetMsgSize(BcTree Tree, char precision, int* cnt){
 		if(precision=='d'){
 		TreeBcast_slu<double>* BcastTree = (TreeBcast_slu<double>*) Tree;
-		return BcastTree->GetMsgSize();					
+		*cnt=BcastTree->msgSize_;					
 		}
 		if(precision=='z'){
 		TreeBcast_slu<doublecomplex>* BcastTree = (TreeBcast_slu<doublecomplex>*) Tree;
-		return BcastTree->GetMsgSize();					
+		*cnt=BcastTree->msgSize_;					
 		}
 	}		
 	
@@ -195,38 +221,38 @@ namespace SuperLU_ASYNCOMM{
 		}
 	}
 
-	int  RdTree_GetDestCount(RdTree Tree, char precision){
+	void  RdTree_GetDestCount(RdTree Tree, char precision, int* cnt){
 		if(precision=='d'){
 		TreeReduce_slu<double>* ReduceTree = (TreeReduce_slu<double>*) Tree;
-		return ReduceTree->GetDestCount();		
+		*cnt=ReduceTree->myDestsSize_;	
 		}
 		if(precision=='z'){
 		TreeReduce_slu<doublecomplex>* ReduceTree = (TreeReduce_slu<doublecomplex>*) Tree;
-		return ReduceTree->GetDestCount();		
+		*cnt=ReduceTree->myDestsSize_;
 		}
 	}	
 	
-	int  RdTree_GetMsgSize(RdTree Tree, char precision){
+	void  RdTree_GetMsgSize(RdTree Tree, char precision, int* cnt){
 		if(precision=='d'){
 		TreeReduce_slu<double>* ReduceTree = (TreeReduce_slu<double>*) Tree;
-		return ReduceTree->GetMsgSize();		
+		*cnt=ReduceTree->msgSize_;		
 		}
 		if(precision=='z'){
 		TreeReduce_slu<doublecomplex>* ReduceTree = (TreeReduce_slu<doublecomplex>*) Tree;
-		return ReduceTree->GetMsgSize();		
+		*cnt=ReduceTree->msgSize_;		
 		}
 	}		
 	
 	
 
-	yes_no_t RdTree_IsRoot(RdTree Tree, char precision){
+	void RdTree_IsRoot(RdTree Tree, char precision, yes_no_t *rel){
 		if(precision=='d'){
 		TreeReduce_slu<double>* ReduceTree = (TreeReduce_slu<double>*) Tree;
-		return ReduceTree->IsRoot()?YES:NO;
+		*rel=ReduceTree->myRank_ == ReduceTree->myRoot_ ?YES:NO;
 		}
 		if(precision=='z'){
 		TreeReduce_slu<doublecomplex>* ReduceTree = (TreeReduce_slu<doublecomplex>*) Tree;
-		return ReduceTree->IsRoot()?YES:NO;
+		*rel=ReduceTree->myRank_ == ReduceTree->myRoot_ ?YES:NO;
 		}
 	}
 
@@ -240,6 +266,79 @@ namespace SuperLU_ASYNCOMM{
 		ReduceTree->forwardMessageSimple((doublecomplex*)localBuffer,msgSize);	
 		}
 	}
+	
+#ifdef GPU_ACC	
+
+
+
+__CUDA__	void  RdTree_GetDestCount_Device(RdTree Tree, char precision, int* cnt){
+		if(precision=='d'){
+		TreeReduce_slu<double>* ReduceTree = (TreeReduce_slu<double>*) Tree;
+		*cnt=ReduceTree->myDestsSize_;	
+		}
+		if(precision=='z'){
+		TreeReduce_slu<doublecomplex>* ReduceTree = (TreeReduce_slu<doublecomplex>*) Tree;
+		*cnt=ReduceTree->myDestsSize_;
+		}
+	}	
+	
+__CUDA__	void  RdTree_GetMsgSize_Device(RdTree Tree, char precision, int* cnt){
+		if(precision=='d'){
+		TreeReduce_slu<double>* ReduceTree = (TreeReduce_slu<double>*) Tree;
+		*cnt=ReduceTree->msgSize_;		
+		}
+		if(precision=='z'){
+		TreeReduce_slu<doublecomplex>* ReduceTree = (TreeReduce_slu<doublecomplex>*) Tree;
+		*cnt=ReduceTree->msgSize_;		
+		}
+	}	
+
+__CUDA__	void BcTree_GetMsgSize_Device(BcTree Tree, char precision, int* cnt){
+		if(precision=='d'){
+		TreeBcast_slu<double>* BcastTree = (TreeBcast_slu<double>*) Tree;
+		*cnt=BcastTree->msgSize_;					
+		}
+		if(precision=='z'){
+		TreeBcast_slu<doublecomplex>* BcastTree = (TreeBcast_slu<doublecomplex>*) Tree;
+		*cnt=BcastTree->msgSize_;					
+		}
+	}		
+	
+__CUDA__ void BcTree_getDestCount_Device(BcTree Tree, char precision, int* cnt){
+		if(precision=='d'){
+		TreeBcast_slu<double>* BcastTree = (TreeBcast_slu<double>*) Tree;
+		*cnt=BcastTree->myDestsSize_;					
+		}
+		if(precision=='z'){
+		TreeBcast_slu<doublecomplex>* BcastTree = (TreeBcast_slu<doublecomplex>*) Tree;
+		*cnt=BcastTree->myDestsSize_;			
+		}
+	}	
+
+__CUDA__ void RdTree_forwardMessageSimple_Device(RdTree Tree, void* localBuffer, Int msgSize, char precision){
+		if(precision=='d'){
+		TreeReduce_slu<double>* ReduceTree = (TreeReduce_slu<double>*) Tree;
+		ReduceTree->forwardMessageSimpleDevice((double*)localBuffer,msgSize);	
+		}
+		if(precision=='z'){TreeReduce_slu<doublecomplex>* ReduceTree = (TreeReduce_slu<doublecomplex>*) Tree;
+		ReduceTree->forwardMessageSimpleDevice((doublecomplex*)localBuffer,msgSize);	
+		}
+	}
+
+__CUDA__ void RdTree_IsRoot_Device(RdTree Tree, char precision, yes_no_t *rel){
+		if(precision=='d'){
+		TreeReduce_slu<double>* ReduceTree = (TreeReduce_slu<double>*) Tree;
+		*rel=ReduceTree->myRank_ == ReduceTree->myRoot_ ?YES:NO;
+		}
+		if(precision=='z'){
+		TreeReduce_slu<doublecomplex>* ReduceTree = (TreeReduce_slu<doublecomplex>*) Tree;
+		*rel=ReduceTree->myRank_ == ReduceTree->myRoot_ ?YES:NO;
+		}
+	}
+	
+#endif	
+	
+	
 	void RdTree_allocateRequest(RdTree Tree, char precision){
 		if(precision=='d'){
 		TreeReduce_slu<double>* ReduceTree = (TreeReduce_slu<double>*) Tree;

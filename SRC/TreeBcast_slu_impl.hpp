@@ -76,8 +76,8 @@ namespace SuperLU_ASYNCOMM {
 
       this->fwded_= Tree.fwded_;
       this->done_= Tree.done_;
-    }
-
+    }	
+	
   template< typename T> 
     inline void TreeBcast_slu<T>::Reset(){
       assert(done_);
@@ -145,7 +145,7 @@ namespace SuperLU_ASYNCOMM {
     }
   template< typename T> 
     inline Int TreeBcast_slu<T>::GetDestCount(){
-      return this->myDests_.size();
+      return this->myDestsSize_;
     }
   template< typename T> 
     inline Int TreeBcast_slu<T>::GetRoot(){
@@ -182,6 +182,27 @@ namespace SuperLU_ASYNCOMM {
         } // for (iProc)
     }	  
 
+	
+#ifdef GPU_ACC	
+  template< typename T> 
+    __device__ void TreeBcast_slu<T>::forwardMessageSimpleDevice(T * locBuffer, Int msgSize){
+        MPI_Status status;
+		Int flag;
+		for( Int idxRecv = 0; idxRecv < this->myDestsSize_; ++idxRecv ){
+          Int iProc = this->myDestsArray_[idxRecv];
+		  
+          // YL: Use NVSHMEM to send to multiple targets
+          
+		  // Int error_code = MPI_Isend( locBuffer, msgSize, this->type_, 
+              // iProc, this->tag_,this->comm_, &this->sendRequests_[idxRecv] );
+			  
+			  // MPI_Test(&this->sendRequests_[idxRecv],&flag,&status) ; 
+			   
+			  // std::cout<<this->myRank_<<" FWD to "<<iProc<<" on tag "<<this->tag_<<std::endl;
+        } // for (iProc)
+    }		
+#endif	
+	
   template< typename T> 
     inline void TreeBcast_slu<T>::waitSendRequest(){
         MPI_Status status;
@@ -232,7 +253,7 @@ namespace SuperLU_ASYNCOMM {
       this->sendTempBuffer_.shrink_to_fit();
 	  
 	  this->myDests_.clear();
-	  
+	  managed_deallocate<Int>(this->myDestsArray_);
     }
 
 
@@ -287,6 +308,10 @@ namespace SuperLU_ASYNCOMM {
       for(Int i =0;i<this->myDests_.size();++i){statusOFS<<this->myDests_[i]<<" ";}
       statusOFS<<std::endl;
 #endif
+	this->myDestsSize_ = this->myDests_.size();
+	this->myDestsArray_ = managed_allocate<Int>(this->myDestsSize_);
+	for(int ii=0;ii<this->myDests_.size();ii++)
+		this->myDestsArray_[ii] = this->myDests_.data()[ii];	
     }
 
 
@@ -346,8 +371,12 @@ namespace SuperLU_ASYNCOMM {
 		  this->myRoot_ = ranks[(Int)floor((double)(myIdx-1.0)/(double)DEG_TREE)];
 	  }else{
 		  this->myRoot_ = this->myRank_;
-	  } 
-	  
+	  }
+
+		this->myDestsSize_ = this->myDests_.size();
+		this->myDestsArray_ = managed_allocate<Int>(this->myDestsSize_);
+		for(int ii=0;ii<this->myDests_.size();ii++)
+			this->myDestsArray_[ii] = this->myDests_.data()[ii];	
     }
 
 
@@ -438,6 +467,12 @@ namespace SuperLU_ASYNCOMM {
       for(Int i =0;i<this->myDests_.size();++i){statusOFS<<this->myDests_[i]<<" ";}
       statusOFS<<std::endl;
 #endif
+
+	this->myDestsSize_ = this->myDests_.size();
+	this->myDestsArray_ = managed_allocate<Int>(this->myDestsSize_);
+	for(int ii=0;ii<this->myDests_.size();ii++)
+		this->myDestsArray_[ii] = this->myDests_.data()[ii];	
+
     }
 
 

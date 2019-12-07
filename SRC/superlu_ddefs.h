@@ -345,7 +345,7 @@ extern void dlsum_fmod_inv(double *, double *, double *, double *,
 		       int_t *, gridinfo_t *, LocalLU_t *,
 		       SuperLUStat_t **, int_t *, int_t *, int_t, int_t, int_t, int_t, int, int);
 			   
-extern void dlsum_fmod_inv_cuda_wrap(int_t, int_t, int_t, double *,double *,double *,int,int, int_t , int_t *, int_t *, gridinfo_t *, LocalLU_t *);			   
+extern void dlsum_fmod_inv_cuda_wrap(int_t, int_t, int_t, int_t, double *,double *,double *,int,int, int_t , int_t *, int_t *, gridinfo_t *, LocalLU_t *, double *, double *, int_t);			   
 			   
 extern void dlsum_fmod_inv_master(double *, double *, double *, double *,
 		       int, int, int_t , int_t *, int_t,

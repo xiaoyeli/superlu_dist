@@ -21,8 +21,14 @@ endif ()
 
 # first: precision-independent files
 #  global.cpp
-set(sources
-  TreeInterface.cpp
+if (HAVE_CUDA)
+set(sources TreeInterface.cu)
+else()
+set(sources TreeInterface.cpp)
+endif()
+
+
+list(APPEND sources
   sp_ienv.c
   etree.c 
   sp_colorder.c

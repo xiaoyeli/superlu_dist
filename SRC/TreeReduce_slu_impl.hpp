@@ -12,8 +12,6 @@ namespace SuperLU_ASYNCOMM {
     }
 
 
-
-
   template<typename T>
     TreeReduce_slu<T>::TreeReduce_slu(const TreeReduce_slu<T> & Tree){
       this->Copy(Tree);
@@ -27,6 +25,7 @@ namespace SuperLU_ASYNCOMM {
     TreeReduce_slu<T>::~TreeReduce_slu(){
       this->cleanupBuffers();
     }
+
 
   template<typename T>
     inline void TreeReduce_slu<T>::Copy(const TreeReduce_slu<T> & Tree){
@@ -62,8 +61,28 @@ namespace SuperLU_ASYNCOMM {
 			// }
 		}
       }
-	
- 
+#ifdef GPU_ACC	
+  template< typename T> 
+    __device__ void TreeReduce_slu<T>::forwardMessageSimpleDevice(T * locBuffer, Int msgSize){
+        MPI_Status status;
+		Int flag;
+		if(this->myRank_!=this->myRoot_){
+			// if(this->recvCount_== this->GetDestCount()){		
+			  //forward to my root if I have reseived everything
+			  Int iProc = this->myRoot_;
+			  // YL: Use NVSHMEM to send to my parent
+
+			  // Int error_code = MPI_Isend(locBuffer, msgSize, this->type_, 
+				  // iProc, this->tag_,this->comm_, &this->sendRequests_[0] );
+				  
+				  // MPI_Test(&this->sendRequests_[0],&flag,&status) ; 
+				  
+				  // std::cout<<this->myRank_<<" FWD to "<<iProc<<" on tag "<<this->tag_<<std::endl;
+				  
+			// }
+		}
+      }
+#endif	  
 
   template< typename T> 
     inline void TreeReduce_slu<T>::allocateRequest(){
@@ -150,6 +169,12 @@ namespace SuperLU_ASYNCOMM {
       for(Int i =0;i<this->myDests_.size();++i){statusOFS<<this->myDests_[i]<<" ";}
       statusOFS<<std::endl;
 #endif
+
+	this->myDestsSize_ = this->myDests_.size();
+	this->myDestsArray_ = managed_allocate<Int>(this->myDestsSize_);
+	for(int ii=0;ii<this->myDests_.size();ii++)
+		this->myDestsArray_[ii] = this->myDests_.data()[ii];	
+
     }
 
   template< typename T>
@@ -193,6 +218,10 @@ namespace SuperLU_ASYNCOMM {
 
 	  // {std::cout<<this->myRank_<<" "<<this->myRoot_<<" "<<std::endl;}	  
 	  
+		this->myDestsSize_ = this->myDests_.size();
+		this->myDestsArray_ = managed_allocate<Int>(this->myDestsSize_);
+		for(int ii=0;ii<this->myDests_.size();ii++)
+			this->myDestsArray_[ii] = this->myDests_.data()[ii];	
     }
 
 
@@ -207,7 +236,7 @@ namespace SuperLU_ASYNCOMM {
       ((TreeReduce_slu<T>*)this)->Copy(*((const TreeReduce_slu<T>*)&Tree));
       this->rseed_ = Tree.rseed_;
     }
-
+	
   template< typename T>
     inline ModBTreeReduce_slu<T> * ModBTreeReduce_slu<T>::clone() const{
       ModBTreeReduce_slu<T> * out = new ModBTreeReduce_slu<T>(*this);
@@ -301,6 +330,12 @@ namespace SuperLU_ASYNCOMM {
       for(Int i =0;i<this->myDests_.size();++i){statusOFS<<this->myDests_[i]<<" ";}
       statusOFS<<std::endl;
 #endif
+
+
+	this->myDestsSize_ = this->myDests_.size();
+	this->myDestsArray_ = managed_allocate<Int>(this->myDestsSize_);
+	for(int ii=0;ii<this->myDests_.size();ii++)
+		this->myDestsArray_[ii] = this->myDests_.data()[ii];	
     }
 
 } //namespace SuperLU_ASYNCOMM
