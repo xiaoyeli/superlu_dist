@@ -191,8 +191,8 @@ if ( msg0 && msg2 ) {  /* L(:,k) and U(k,:) are not empty. */
 		size_t C_stream_size = nbrow * num_col_stream * sizeof(double);
 
 		assert(ldu*(st_col+num_col_stream) < bigu_size);
-		if(nbrow*(st_col+num_col_stream) < buffer_size)){
-			printf("assertion fail: %10d %10d %10d %10d %10d\n",nbrow,st_col,num_col_stream,nbrow*(st_col+num_col_stream), buffersize);
+		if(nbrow*(st_col+num_col_stream) < buffer_size){
+			printf("assertion fail: %10d %10d %10d %10d %10d\n",nbrow,st_col,num_col_stream,nbrow*(st_col+num_col_stream), buffer_size);
 			fflush(stdout);
 		}
 		assert(nbrow*(st_col+num_col_stream) < buffer_size);
