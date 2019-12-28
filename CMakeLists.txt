@@ -46,7 +46,6 @@ INCLUDE(CTest)
 # Usual initialization stuff
 #
 ######################################################################
-set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)    ## ????
 set(CMAKE_INSTALL_NAME_DIR "${CMAKE_INSTALL_PREFIX}/lib")
 
 
@@ -76,6 +75,9 @@ if (BUILD_SHARED_LIBS)
   set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
   set(PROJECT_NAME_LIB_EXPORT libsuperlu_dist.so)
+  SET(CMAKE_EXE_LINKER_FLAGS
+          "${CMAKE_EXE_LINKER_FLAGS} -Wl,-rpath,${CMAKE_INSTALL_PREFIX}/SRC")
+
   if (BUILD_STATIC_LIBS)
     message("-- SuperLU_DIST will also be built as a static library.")
   endif()
@@ -360,3 +362,5 @@ endif()
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/superlu_dist.pc.in ${CMAKE_CURRENT_BINARY_DIR}/superlu_dist.pc @ONLY)
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/superlu_dist.pc
 	DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig)
+
+
