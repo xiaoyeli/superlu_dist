@@ -600,8 +600,8 @@ pdgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
     full_u_cols = (int_t *) _mm_malloc (sizeof (int_t) * ncb,64);
     blk_ldu = (int_t *) _mm_malloc (sizeof (int_t) * ncb,64);
 #else
-    full_u_cols = SUPERLU_MALLOC(ncb * sizeof(int));
-    blk_ldu = SUPERLU_MALLOC(ncb * sizeof(int));
+    full_u_cols = SUPERLU_MALLOC((ncb+1) * sizeof(int));
+    blk_ldu = SUPERLU_MALLOC((ncb+1) * sizeof(int)); // Sherry: +1 to accommodate extra    
 #endif
 
     log_memory(2 * ncb * iword, stat);
