@@ -258,10 +258,13 @@ int main(int argc, char *argv[])
 	    MPI_Reduce( &num_mem_usage.total, &total,
 		       1, MPI_FLOAT, MPI_SUM, 0, grid.comm );
 		float result[2];	   
-			   
+        if(MPI_COMM_NULL==grid.comm){
+        result[0]=0.0;
+        result[1]=0.0;
+        }else{
 		result[0] = stat.utime[FACT];   
 		result[1] = total * 1e-6;   
-			   
+        }	   
 		if (!iam) {
 			printf("returning data:\n"
 		   "    Factor time :        %8.2f |  Total MEM : %8.2f\n",
