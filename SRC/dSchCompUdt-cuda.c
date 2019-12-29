@@ -54,7 +54,13 @@ if ( msg0 && msg2 ) {  /* L(:,k) and U(k,:) are not empty. */
 
     if (nbrow>0) {
 
+        // Sherry: max number of cols that can fit in BIG V on GPU              
+        #if 0  // max_ldu can be < ldt, so bigu_size/ldt may be smaller, give false alarm  
         int ncol_max = SUPERLU_MIN(buffer_size/nbrow,bigu_size/ldt);
+        #else // Sherry fix                                                
+        int ncol_max = SUPERLU_MIN(buffer_size/nbrow, max_ncols);
+	#endif
+
         int num_streams_used,        /*number of streams that will be used*/
         ncpu_blks;                     /*Number of CPU dgemm blks*/
 
