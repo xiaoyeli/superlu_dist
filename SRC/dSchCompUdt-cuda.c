@@ -54,7 +54,13 @@ if ( msg0 && msg2 ) {  /* L(:,k) and U(k,:) are not empty. */
 
     if (nbrow>0) {
 
+        // Sherry: max number of cols that can fit in BIG V on GPU              
+        #if 0  // max_ldu can be < ldt, so bigu_size/ldt may be smaller, give false alarm  
         int ncol_max = SUPERLU_MIN(buffer_size/nbrow,bigu_size/ldt);
+        #else // Sherry fix                                                
+        int ncol_max = SUPERLU_MIN(buffer_size/nbrow, max_ncols);
+	#endif
+
         int num_streams_used,        /*number of streams that will be used*/
         ncpu_blks;                     /*Number of CPU dgemm blks*/
 
@@ -191,6 +197,10 @@ if ( msg0 && msg2 ) {  /* L(:,k) and U(k,:) are not empty. */
 		size_t C_stream_size = nbrow * num_col_stream * sizeof(double);
 
 		assert(ldu*(st_col+num_col_stream) < bigu_size);
+		if(nbrow*(st_col+num_col_stream) >= buffer_size){
+			printf("assertion fail: %10d %10d %10d %10d %10d %10d %10d %10d %10d %10d\n",nbrow,st_col,num_col_stream,nbrow*(st_col+num_col_stream), buffer_size, full_u_cols[st-1],full_u_cols[jjj_st+stream_end_col[i]-1], st, stream_end_col[i],jjj_st);
+			fflush(stdout);
+		}
 		assert(nbrow*(st_col+num_col_stream) < buffer_size);
 
 		cudaMemcpyAsync(dB+b_offset, tempu+b_offset, B_stream_size,
