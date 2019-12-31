@@ -600,8 +600,8 @@ pdgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
     full_u_cols = (int_t *) _mm_malloc (sizeof (int_t) * ncb,64);
     blk_ldu = (int_t *) _mm_malloc (sizeof (int_t) * ncb,64);
 #else
-    full_u_cols = SUPERLU_MALLOC(ncb * sizeof(int));
-    blk_ldu = SUPERLU_MALLOC(ncb * sizeof(int));
+    full_u_cols = SUPERLU_MALLOC((ncb+1) * sizeof(int));
+    blk_ldu = SUPERLU_MALLOC((ncb+1) * sizeof(int)); // Sherry: +1 to accommodate extra
 #endif
 
     log_memory(2 * ncb * iword, stat);
@@ -781,7 +781,7 @@ pdgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
                       get_max_buffer_size ());           */
 
 #ifdef GPU_ACC
-    int cublas_nb = get_cublas_nb();
+    int cublas_nb = get_cublas_nb();  // Sherry: default 64
     int nstreams = get_num_cuda_streams ();
 
     int buffer_size  = SUPERLU_MAX(max_row_size*nstreams*cublas_nb,get_max_buffer_size());
@@ -815,31 +815,33 @@ pdgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
     int_t bigv_size = SUPERLU_MAX(max_row_size * max_ncols,
 				  (ldt*ldt + CACHELINE / dword) * num_threads);
 
-    /* bigU and bigV are either on CPU or on GPU, not both. */
-    double* bigU; /* for storing entire U(k,:) panel, prepare for GEMM.
-                      bigU has the same size either on CPU or on CPU. */
+    /* bigU and bigV are only allocated on CPU, but may be allocated as
+       page-locked memory accessible to GPU. */
+    double* bigU; /* for storing entire U(k,:) panel, prepare for GEMM. */
     double* bigV; /* for storing GEMM output matrix, i.e. update matrix.
-	              bigV is large to hold the aggregate GEMM output.*/
-    bigU = NULL;
+	             bigV is large enough to hold the aggregate GEMM output.*/
+    bigU = NULL; /* allocated only on CPU */
     bigV = NULL;
 
 #if ( PRNTlevel>=1 )
-    if(!iam) {
-	printf("\t.. GEMM buffer size: max_row_size X max_ncols = %d x " IFMT "\n",
-	       max_row_size, max_ncols);
-	printf(".. BIG U size " IFMT "\t BIG V size " IFMT "\n", bigu_size, bigv_size);
-	fflush(stdout);
-    }
+    if (!iam) printf("\t.. GEMM buffer size: max_row_size X max_ncols = %d x " IFMT "\n", max_row_size, max_ncols);
+    printf("[%d].. BIG U size " IFMT " (on CPU)\n", iam, bigu_size);
+    fflush(stdout);
 #endif
 
-#ifdef GPU_ACC
+#ifdef GPU_ACC /*-- use GPU --*/
 
+    // cudaHostAlloc host memory, page-locked and accessible to the device.
     if ( checkCuda(cudaHostAlloc((void**)&bigU,  bigu_size * sizeof(double), cudaHostAllocDefault)) )
         ABORT("Malloc fails for dgemm buffer U ");
 
+#if 0 // !!Sherry fix -- only dC on GPU uses buffer_size
     bigv_size = buffer_size;
+#endif
+
 #if ( PRNTlevel>=1 )
-    if (!iam) printf("[%d] .. BIG V bigv_size %d, using buffer_size %d (on GPU)\n", iam, bigv_size, buffer_size);
+    printf("[%d].. BIG V size %d (on CPU), dC buffer_size %d (on GPU)\n", iam, bigv_size, buffer_size);
+    fflush(stdout);
 #endif
     if ( checkCuda(cudaHostAlloc((void**)&bigV, bigv_size * sizeof(double) ,cudaHostAllocDefault)) )
         ABORT("Malloc fails for dgemm buffer V");
@@ -876,7 +878,7 @@ pdgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
         return 1;
     }
 
-    // size of B should be max_supernode_size*buffer
+    // size of B should be bigu_size
 
     cudaStat = cudaMalloc((void**)&dB, bigu_size * sizeof(double));
     if (cudaStat!= cudaSuccess) {
@@ -893,8 +895,12 @@ pdgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
     stat->gpu_buffer += ( max_row_size * sp_ienv_dist(3)
 			  + bigu_size + buffer_size ) * dword;
 
-#else  /* not CUDA */
+#else  /*-- not to use GPU --*/
 
+#if ( PRNTlevel>=1 )
+    printf("[%d].. BIG V size %d (on CPU)\n", iam, bigv_size);
+    fflush(stdout);
+#endif
     // for GEMM padding 0
     j = bigu_size / ldt;
     bigu_size += (gemm_k_pad * (j + ldt + gemm_n_pad));
@@ -1236,6 +1242,7 @@ pdgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
 
         }  /* end for each column in look-ahead window for L panels */
 
+
         /* stat->time4 += SuperLU_timer_()-tt1; */
 
         /* ================================= *
@@ -1359,6 +1366,7 @@ pdgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
                 } /* end if flag0 & flag1 ... */
             } /* end if factoredU[] ... */
         } /* end for kk0 ... */
+
 
         /* ============================================== *
          * == start processing the current row of U(k,:) *
@@ -1646,6 +1654,7 @@ pdgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
             /* TAU_STATIC_TIMER_STOP("LOOK_AHEAD_UPDATE"); */
         }                       /* if L(:,k) and U(k,:) not empty */
 
+
         /* stat->time3 += SuperLU_timer_()-tt1; */
 
         /* ================== */
@@ -1733,6 +1742,7 @@ pdgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
         }
 
         double tsch = SuperLU_timer_();
+
 
 	/*******************************************************************/
 

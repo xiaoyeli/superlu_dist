@@ -1310,7 +1310,7 @@ int_t estimate_bigu_size(
       int_t**Ufstnz_br_ptr, /* point to U index[] array */
       Glu_persist_t *Glu_persist,
       gridinfo_t* grid, int_t* perm_u, 
-      int_t *max_ncols /* Output: Max. number of columns in among all U(k,:).
+      int_t *max_ncols /* Output: Max. number of columns among all U(k,:).
 			     This is used for allocating GEMM V buffer.  */
 			 )
 {
@@ -1335,7 +1335,9 @@ int_t estimate_bigu_size(
 						   xsup, grid, perm_u, &ldu) );
 	my_max_ldu = SUPERLU_MAX(ldu, my_max_ldu);
     }
+#if 0
 	my_max_ldu = my_max_ldu*8;  //YL: 8 is a heuristic number  
+#endif
 	
     /* Need U buffer size large enough to hold all U(k,:) transferred from
        other processes. */
@@ -1458,26 +1460,28 @@ int_t partitionM( int_t* a, int_t l, int_t r, int_t lda, int_t dir, int_t dims) 
 
 void
 gemm_division_cpu_gpu(
-    int* num_streams_used,  /*number of streams that will be used */
-    int* stream_end_col,    /*array holding last column blk for each partition */
-    int * ncpu_blks,        /*Number of CPU dgemm blks */
-    /*input */
-    int nbrow,              /*number of row in A matrix */
-    int ldu,                /*number of k in dgemm */
+/* output */
+    int* num_streams_used, /* number of CUDA streams that will be used */
+    int* stream_end_col,   /* array holding last column blk for each stream partition */
+    int * ncpu_blks,       /* Number of CPU dgemm blks (output) */
+/*input */
+    int nbrow,             /* number of row in A matrix */
+    int ldu,               /* number of k in dgemm */
     int nstreams,
-    int* full_u_cols,       /*array containing prefix sum of work load */
-    int num_blks            /*Number of work load */
+    int* full_u_cols,      /* array containing prefix sum of GPU workload */
+    int num_blks           /* Number of block cloumns (workload) on GPU */
 )
 {
     int Ngem = sp_ienv_dist(7);  /*get_mnk_dgemm ();*/
-    int min_gpu_col = get_cublas_nb ();
+    int min_gpu_col = get_cublas_nb (); /* default 64 */
 
-    // Ngem = 1000000000;
     /*
-       cpu is to gpu dgemm should be ideally 0:1 ratios to hide the total cost
-       However since there is gpu latency of around 20,000 ns implying about
-       200000 floating point calculation be done in that time so ~200,000/(2*nbrow*ldu)
-       should be done in cpu to hide the latency; we Ngem =200,000/2
+      Sherry corrected comment:                                                  
+      CPU to GPU dgemm should be ideally 0:1 ratio to hide the total cost.
+      However since there is GPU latency of around 20,000 ns implying about
+      200000 floating point operations be done in that time, so    
+      ncols ~= 200,000/(2*nbrow*ldu) should be done on CPU to hide the
+      latency; We set Ngem =200,000/2.     
      */
     int i, j;
 
@@ -1493,21 +1497,23 @@ gemm_division_cpu_gpu(
     }
 
     *ncpu_blks = 0;
-    /*easy returns -1 when number of column are less than threshold */
+    /* Early return -1, when number of columns is smaller than threshold,
+       everything should be done on CPU. 
+       Test condition GPU Flops ~ nbrow*ldu*cols < Ngem */
     if (full_u_cols[num_blks - 1] < (Ngem / (nbrow * ldu)) || num_blks == 1 )
     {
         *num_streams_used = 0;
         *ncpu_blks = num_blks;
 #ifdef PI_DEBUG
-        printf ("full_u_cols[num_blks-1] %d  %d \n",
-                full_u_cols[num_blks - 1], (Ngem / (nbrow * ldu)));
-        printf ("Early return \n");
+        printf ("gemm_division: num_blks %d, full_u_cols[num_blks-1] %d %d \n",
+                num_blks, full_u_cols[num_blks - 1], (Ngem / (nbrow * ldu)));
+        printf ("Early return -1\n");
 #endif
         return;
 
     }
 
-    /* Easy return -2 when number of streams =0 */
+    /* Early return -2, when number of streams = 0 */
     if (nstreams == 0)
     {
         *num_streams_used = 0;
@@ -1515,9 +1521,8 @@ gemm_division_cpu_gpu(
         return;
         /* code */
     }
-    /*find first block where count > Ngem */
 
-
+    /* Find first block where count > Ngem */
     for (i = 0; i < num_blks - 1; ++i)  /*I can use binary search here */
     {
         if (full_u_cols[i + 1] > Ngem / (nbrow * ldu))
@@ -1534,7 +1539,7 @@ gemm_division_cpu_gpu(
 #endif
     if (cols_remain > 0)
     {
-        *num_streams_used = 1;  /* now atleast one stream would be used */
+        *num_streams_used = 1;  /* now at least one stream would be used */
 
 #ifdef PI_DEBUG
         printf ("%d %d  %d %d \n", full_u_cols[num_blks - 1],
@@ -1582,7 +1587,7 @@ gemm_division_cpu_gpu(
         }
 
     }
-}
+} /* gemm_division_cpu_gpu */
 
 void
 gemm_division_new (int * num_streams_used,   /*number of streams that will be used */

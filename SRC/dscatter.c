@@ -156,7 +156,6 @@ dscatter_l (
     for (i = 0; i < dest_nbrow; ++i) {
         rel = index[lptrj + i] - fnz;
         indirect_thread[rel] = i;
-
     }
 
 #if (_OPENMP>=201307)
@@ -167,6 +166,7 @@ dscatter_l (
         rel = lsub[lptr + i] - fnz;
         indirect2[i] =indirect_thread[rel];
     }
+
 
     nzval = Lnzval_bc_ptr[ljb] + luptrj; /* Destination block L(i,j) */
 #ifdef __INTEL_COMPILER
