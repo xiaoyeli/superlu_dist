@@ -66,7 +66,10 @@ int main(int argc, char *argv[])
     int cpp_defs();
     int ii, omp_mpi_level;
 	MPI_Comm parent;
-
+	float result[2];
+	result[0]=0.0;
+	result[1]=0.0;
+	
     nprow = 1;  /* Default process rows.      */
     npcol = 1;  /* Default process columns.   */
     nrhs = 1;   /* Number of right-hand side. */
@@ -257,11 +260,9 @@ int main(int argc, char *argv[])
 	    dQuerySpace_dist(n, &LUstruct, &grid, &stat, &num_mem_usage);
 	    MPI_Allreduce( &num_mem_usage.total, &total,
 		       1, MPI_FLOAT, MPI_SUM, grid.comm );
-		float result[2];	   
 			   
 		result[0] = stat.utime[FACT];   
-		result[1] = total * 1e-6;   
-			   
+		result[1] = total * 1e-6;     
 		if (!iam) {
 			printf("returning data:\n"
 		   "    Factor time :        %8.2f |  Total MEM : %8.2f\n",
@@ -270,7 +271,7 @@ int main(int argc, char *argv[])
 			fflush(stdout);
 		}	
 	
-	MPI_Reduce(result, MPI_BOTTOM, 2, MPI_FLOAT,MPI_MAX, 0, parent);
+	
 	
 		//MPI_Bcast(result,2,MPI_FLOAT,0,parent);
 		
@@ -301,6 +302,7 @@ int main(int argc, char *argv[])
        RELEASE THE SUPERLU PROCESS GRID.
        ------------------------------------------------------------*/
 out:
+	MPI_Reduce(result, MPI_BOTTOM, 2, MPI_FLOAT,MPI_MAX, 0, parent);
     superlu_gridexit(&grid);
 
     /* ------------------------------------------------------------
