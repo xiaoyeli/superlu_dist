@@ -211,6 +211,7 @@ if ( msg0 && msg2 ) {  /* L(:,k) and U(k,:) are not empty. */
 		double *tempv1 = bigV + full_u_cols[st-1]*nbrow;
 
 		/* Following is for testing purpose */
+		if ( num_col_stream > 0 ) {		
 #ifdef GPU_ACC
 		int stream_id = i;
 		int b_offset  = ldu * st_col;
@@ -218,10 +219,6 @@ if ( msg0 && msg2 ) {  /* L(:,k) and U(k,:) are not empty. */
 		size_t B_stream_size = ldu * num_col_stream * sizeof(double);
 		size_t C_stream_size = nbrow * num_col_stream * sizeof(double);
 
-		if(nbrow*(st_col+num_col_stream) >= buffer_size){
-			printf("assertion fail: %10d %10d %10d %10d %10d %10d %10d %10d %10d %10d\n",nbrow,st_col,num_col_stream,nbrow*(st_col+num_col_stream), buffer_size, full_u_cols[st-1],full_u_cols[jjj_st+stream_end_col[i]-1], st, stream_end_col[i],jjj_st);
-			fflush(stdout);
-		}
 		assert(nbrow*(st_col+num_col_stream) < buffer_size);
 
 		cudaMemcpyAsync(dB+b_offset, tempu+b_offset, B_stream_size,
@@ -248,14 +245,13 @@ if ( msg0 && msg2 ) {  /* L(:,k) and U(k,:) are not empty. */
 					   streams[stream_id]) );
 
 #else /*-- on CPU --*/
-		if ( num_col_stream > 0 ) {
+
 		    my_dgemm_("N", "N", &nbrow, &num_col_stream, &ldu,
 			      &alpha, &lusup[luptr+(knsupc-ldu)*nsupr],
 			      &nsupr, tempu+ldu*st_col, &ldu, &beta,
 			      tempv1, &nbrow, 1, 1);
-		}
-
 #endif
+		}
 
 	    } /* end for i = 1 to num_streams used */
 

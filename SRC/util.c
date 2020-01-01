@@ -1495,6 +1495,7 @@ gemm_division_cpu_gpu(
     {
         stream_end_col[i] = num_blks;
     }
+	*num_streams_used = 0;
 
     *ncpu_blks = 0;
     /* Early return -1, when number of columns is smaller than threshold,
@@ -1583,10 +1584,10 @@ gemm_division_cpu_gpu(
                 printf ("\n");
 #endif
             }
-
         }
 
     }
+	
 } /* gemm_division_cpu_gpu */
 
 void
