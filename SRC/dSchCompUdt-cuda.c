@@ -52,19 +52,19 @@ if ( msg0 && msg2 ) {  /* L(:,k) and U(k,:) are not empty. */
     nbrow= lsub[1];
     if (myrow==krow) nbrow = lsub[1]-lsub[3];
 
-    if (nbrow > 0) {
+    if (nbrow>0) {
 
-	// Maximum number of columns that can fit in dC[buffer_size] on GPU 
-#if 0  // max_ldu can be < ldt, so bigu_size/ldt may be smaller, give false alarm
+        // Maximum number of columns that can fit in dC[buffer_size] on GPU 
+#if 0   // max_ldu can be < ldt, so bigu_size/ldt may be smaller, giving false alarm
         int ncol_max = SUPERLU_MIN(buffer_size/nbrow,bigu_size/ldt);
 #else // Sherry fix
         int ncol_max = SUPERLU_MIN(buffer_size/nbrow, max_ncols);
 #endif
-
-        int num_streams_used,        /*number of streams that will be used*/
-        ncpu_blks;                     /*Number of CPU dgemm blks*/
-
-        int jjj, jjj_st, jjj_global;
+	
+        int num_streams_used, /* number of streams that will be used*/
+        ncpu_blks;            /* the leading number of CPU dgemm blks
+			         in each partition */
+        int jjj, jjj_st,jjj_global;
         for (j = jj0; j < nub; ++j) {
             arrive_at_ublock( j,&iukp,&rukp,&jb,&ljb,&nsupc,
 	    		      iukp0,rukp0,usub,perm_u,xsup,grid );
@@ -86,7 +86,7 @@ if ( msg0 && msg2 ) {  /* L(:,k) and U(k,:) are not empty. */
 
         jjj = jj0; /* jj0 is the first block column after look-ahead window */
 
-        // #pragma omp bancol_maxrrier
+        // #pragma omp barrier
         while ( jjj < nub ) {
             jjj_st=jjj;
 #ifdef _OPENMP
@@ -103,11 +103,10 @@ if ( msg0 && msg2 ) {  /* L(:,k) and U(k,:) are not empty. */
 
                     /* break condition */
                     /* the number of columns that can be processed on GPU is
-		       limited by buffer_size */
+		       limited by buffer size */
                     if (full_u_cols[j]+((j+1==nub)?0:full_u_cols[j+1]) > ncol_max) {
                         break; // block column j+1 does not fit in GPU memory */
-		    }
-
+                    }
                 } /* end for j=jjj_st to nub */
 
                 jjj_global = SUPERLU_MIN(nub, j+1); /* Maximum value of jjj < nub */
@@ -117,28 +116,23 @@ if ( msg0 && msg2 ) {  /* L(:,k) and U(k,:) are not empty. */
 		 * If there is only one block, we leave it on CPU.
 		 */
                 gemm_division_cpu_gpu(
-		       &num_streams_used, /*number of streams that will be used*/
-		       stream_end_col,    /*array holding last column blk for each partition*/
-		       &ncpu_blks,        /*Number of CPU gemm blks*/
-		       			  /*input*/
-		       nbrow,             /*number of row in A matrix*/
-		       ldu,               /*number of k in dgemm*/
+		       &num_streams_used,/*number of streams that will be used*/
+		       stream_end_col,   /*array holding last column blk for each partition*/
+		       &ncpu_blks,       /*number of CPU gemm blks*/
+		       		// Following are inputs
+		       nbrow,            /*number of rows in A matrix*/
+		       ldu,              /*value of k in dgemm*/
 		       nstreams,
-		       full_u_cols + jjj_st,/*array containing prefix sum of GPU workload*/
-		       jjj_global - jjj_st /* Number of block columns on GPU.
-					      If only one block, leave it on CPU*/
+		       full_u_cols + jjj_st, /*array containing prefix sum of GPU workload*/
+		       jjj_global - jjj_st /*number of block columns on GPU.
+		       		             If only one block, leave it on CPU*/
                 );
                 // TAU_STATIC_TIMER_STOP("work_divison");
 
             } /* pragma omp single */
-#if 0
-	    if (k0 >= 53) {
-	    printf("[%d]!!Sherry: k0 %d after gemm_division. jjj %d, jjj_st %d, jjj_global %d, ncpu_blks %d\n", iam, k0, jjj,jjj_st,jjj_global,ncpu_blks);
-	    fflush(stdout);
-	    }
-#endif
-	    jjj = jjj_global; /* Move to the next (CPU:GPU) partition */
 
+            jjj = jjj_global; /* Move to the next [ CPU : GPU ] partition */
+	    
 #if 0 // !!Sherry: this test is not necessary
 	    // if jjj_global - jjj_st == 1, everything is on CPU.
 	    // bigv_size is calculated sufficiently large.
@@ -160,7 +154,7 @@ if ( msg0 && msg2 ) {  /* L(:,k) and U(k,:) are not empty. */
 #ifdef _OPENMP
 #pragma omp for schedule( SCHEDULE_STRATEGY )
 #endif
-	    // Copy U segments into tempu, up to jjj_global block */
+	    // Copy U segments into tempu, up to jjj_global block */	
             for (j = jjj_st; j < jjj; ++j) {
                 if (j==jjj_st) tempu = bigU; /* leading block(s) on CPU */
                 else tempu = bigU + ldu*full_u_cols[j-1];
@@ -189,8 +183,7 @@ if ( msg0 && msg2 ) {  /* L(:,k) and U(k,:) are not empty. */
 
 	    if ( num_streams_used > 0 ) {
 #ifdef PI_DEBUG
-		printf("nbrow %d *ldu %d  =%d < ldt %d * max_row_size %d =%d \n",nbrow,ldu,nbrow*ldu,ldt,max_row_size,ldt*max_row_size );
-		fflush(stdout);
+		printf("nbrow %d *ldu %d  =%d < ldt %d * max_row_size %d =%d \n",nbrow,ldu,nbrow*ldu,ldt,max_row_size,ldt*max_row_size ); fflush(stdout);
 		assert(nbrow*ldu<=ldt*max_row_size);
 #endif
 		cudaMemcpy2DAsync(dA, nbrow*sizeof(double),
@@ -199,11 +192,9 @@ if ( msg0 && msg2 ) {  /* L(:,k) and U(k,:) are not empty. */
 				  ldu, cudaMemcpyHostToDevice, streams[0]);
 	    }
 
-	    for (int i = 0; i < num_streams_used; ++i) {  /* streams on GPU */
-
-		// st starts after the leading ncpu_blks
+	    for (int i = 0; i < num_streams_used; ++i) { // streams on GPU
 		int st = (i==0) ? ncpu_blks+jjj_st : jjj_st+stream_end_col[i-1];
-
+		// st starts after the leading ncpu_blks
 		int st_col = full_u_cols[st-1];
 		int num_col_stream = full_u_cols[jjj_st+stream_end_col[i]-1]-full_u_cols[st-1];
 		tempu = bigU;
@@ -213,23 +204,23 @@ if ( msg0 && msg2 ) {  /* L(:,k) and U(k,:) are not empty. */
 		/* Following is for testing purpose */
 		if ( num_col_stream > 0 ) {		
 #ifdef GPU_ACC
-		int stream_id = i;
-		int b_offset  = ldu * st_col;
-		int c_offset  = st_col * nbrow;
-		size_t B_stream_size = ldu * num_col_stream * sizeof(double);
-		size_t C_stream_size = nbrow * num_col_stream * sizeof(double);
+		    int stream_id = i;
+		    int b_offset  = ldu * st_col;
+		    int c_offset  = st_col * nbrow;
+		    size_t B_stream_size = ldu * num_col_stream * sizeof(double);
+		    size_t C_stream_size = nbrow * num_col_stream * sizeof(double);
 
-		assert(nbrow*(st_col+num_col_stream) < buffer_size);
+		    assert(nbrow*(st_col+num_col_stream) < buffer_size);
 
-		cudaMemcpyAsync(dB+b_offset, tempu+b_offset, B_stream_size,
-				cudaMemcpyHostToDevice, streams[stream_id]);
+		    cudaMemcpyAsync(dB+b_offset, tempu+b_offset, B_stream_size,
+		    		    cudaMemcpyHostToDevice, streams[stream_id]);
 
-		cublasCheckErrors(
+		    cublasCheckErrors(
 				  cublasSetStream(handle[stream_id],
 						  streams[stream_id])
-				  );
+				     );
 
-		cublasCheckErrors(
+		    cublasCheckErrors(
 				  cublasDgemm(handle[stream_id],
 					      CUBLAS_OP_N, CUBLAS_OP_N,
 					      nbrow, num_col_stream, ldu,
@@ -239,26 +230,25 @@ if ( msg0 && msg2 ) {  /* L(:,k) and U(k,:) are not empty. */
                                               nbrow)
 				  );
 
-		checkCuda( cudaMemcpyAsync(tempv1, dC+c_offset,
+		    checkCuda( cudaMemcpyAsync(tempv1, dC+c_offset,
 					   C_stream_size,
 					   cudaMemcpyDeviceToHost,
 					   streams[stream_id]) );
-
 #else /*-- on CPU --*/
 
-		    my_dgemm_("N", "N", &nbrow, &num_col_stream, &ldu,
+	            my_dgemm_("N", "N", &nbrow, &num_col_stream, &ldu,
 			      &alpha, &lusup[luptr+(knsupc-ldu)*nsupr],
 			      &nsupr, tempu+ldu*st_col, &ldu, &beta,
 			      tempv1, &nbrow, 1, 1);
 #endif
-		}
+   	        } // end if num_col_stream > 0
 
 	    } /* end for i = 1 to num_streams used */
 
 	    /* Special case for CPU -- leading block columns are computed 
 	       on CPU in order to mask the GPU data transfer latency */
 	    int num_col = full_u_cols[jjj_st+ncpu_blks-1];
-	    int st_col = 0; /* leading part on CPU */
+	    int st_col = 0; /* leading parton CPU */
 	    tempv = bigV + nbrow * st_col;
 	    tempu = bigU;
 
@@ -278,7 +268,7 @@ if ( msg0 && msg2 ) {  /* L(:,k) and U(k,:) are not empty. */
             /* Now scattering blocks computed by CPU */
             int temp_ncol;
 
-            /* scatter leadin gblocks which CPU has computated */
+            /* scatter leading blocks which CPU has computated */
             tstart = SuperLU_timer_();
 
 #ifdef _OPENMP
@@ -345,10 +335,10 @@ if ( msg0 && msg2 ) {  /* L(:,k) and U(k,:) are not empty. */
 
                             /* Now gather the result into the destination block. */
                             if ( ib < jb ) {  /* A(i,j) is in U. */
-#ifdef PI_DEBUG
-				printf("cpu scatter \n");
-				printf("A(%d,%d) goes to U block %d \n", ib,jb,ljb);
-#endif
+                                #ifdef PI_DEBUG
+                                    printf("cpu scatter \n");
+                                    printf("A(%d,%d) goes to U block %d \n", ib,jb,ljb);
+                                #endif
 
                                 tempv = tempv1+cum_nrow;
                                 dscatter_u (
@@ -469,8 +459,7 @@ if ( msg0 && msg2 ) {  /* L(:,k) and U(k,:) are not empty. */
 	    }         /* parallel region */
 
 	    scatter_timer += SuperLU_timer_() - tstart;
-
-
+	    
 	    // Scatter tempv(:, (jjj_st1 : jjj_global)) computed on GPU.
 #ifdef _OPENMP
 #pragma omp parallel							\
@@ -490,7 +479,7 @@ if ( msg0 && msg2 ) {  /* L(:,k) and U(k,:) are not empty. */
                 for(i = 0; i < num_streams_used; i++) { /* i is private variable */
                     checkCuda(cudaStreamSynchronize (streams[i]));
 		    // jjj_st1 := first block column on GPU stream[i]
-                    int jjj_st1 = (i==0) ? jjj_st + ncpu_blks : jjj_st + stream_end_col[i-1];
+		    int jjj_st1 = (i==0) ? jjj_st + ncpu_blks : jjj_st + stream_end_col[i-1];
                     int jjj_end = jjj_st + stream_end_col[i];
                     assert(jjj_end-1<nub);
                     assert(jjj_st1>jjj_st) ;
@@ -511,7 +500,7 @@ if ( msg0 && msg2 ) {  /* L(:,k) and U(k,:) are not empty. */
 					  iukp0,rukp0,usub,perm_u,xsup,grid );
                         cum_nrow =0 ;
 
-                        /* do update with the kth column of L and (k,j)th 
+                        /* do update with the kth column of L and (k,j)th
 			   block of U */
                         lptr = lptr0;
                         luptr = luptr0;
@@ -530,7 +519,7 @@ if ( msg0 && msg2 ) {  /* L(:,k) and U(k,:) are not empty. */
 			    printf("%d %d %d \n",temp_nbrow, temp_ncol,ldu);
 #endif
 
-                            /* Now scatter result into the destination block. */
+                            /* Now scatter result into destination block. */
                             if ( ib < jb ) { /* A(i,j) is in U. */
 #ifdef PI_DEBUG
 				printf("gpu scatter \n");
@@ -574,16 +563,18 @@ if ( msg0 && msg2 ) {  /* L(:,k) and U(k,:) are not empty. */
                     } /* for j = jjj_st ... */
 
                 } /* end for i = 0 to nstreams */
-
+		
                 // TAU_STATIC_TIMER_STOP("GPU_SCATTER");
                 // TAU_STATIC_TIMER_STOP("INSIDE_OMP");
-
+		
             } /* end pragma omp parallel */
             // TAU_STATIC_TIMER_STOP("OUTSIDE_OMP");
-
+	    
         }  /* end while(jjj<nub) */
 
     } /* if nbrow>0 */
 
  }   /* if msg1 and msg 2 */
+
+
 

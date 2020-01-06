@@ -292,6 +292,12 @@ extern void pzgstrs_Bglobal(int_t, LUstruct_t *, gridinfo_t *,
 extern void pzgstrs(int_t, LUstruct_t *, ScalePermstruct_t *, gridinfo_t *,
 		    doublecomplex *, int_t, int_t, int_t, int, SOLVEstruct_t *,
 		    SuperLUStat_t *, int *);
+extern void pzgstrf2_trsm(superlu_dist_options_t * options, int_t k0, int_t k,
+			  double thresh, Glu_persist_t *, gridinfo_t *,
+			  LocalLU_t *, MPI_Request *, int tag_ub,
+			  SuperLUStat_t *, int *info);
+extern void pzgstrs2_omp(int_t k0, int_t k, Glu_persist_t *, gridinfo_t *,
+			 LocalLU_t *, SuperLUStat_t *);
 extern void zlsum_fmod(doublecomplex *, doublecomplex *, doublecomplex *, doublecomplex *,
 		       int, int, int_t , int_t *, int_t, int_t, int_t,
 		       int_t *, gridinfo_t *, LocalLU_t *,
