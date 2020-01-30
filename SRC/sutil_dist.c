@@ -21,11 +21,11 @@ at the top-level directory.
  */
 
 #include <math.h>
-#include "superlu_ddefs.h"
+#include "superlu_sdefs.h"
 
 void
-dCreate_CompCol_Matrix_dist(SuperMatrix *A, int_t m, int_t n, int_t nnz,
-			    double *nzval, int_t *rowind, int_t *colptr,
+sCreate_CompCol_Matrix_dist(SuperMatrix *A, int_t m, int_t n, int_t nnz,
+			    float *nzval, int_t *rowind, int_t *colptr,
 			    Stype_t stype, Dtype_t dtype, Mtype_t mtype)
 {
     NCformat *Astore;
@@ -45,9 +45,9 @@ dCreate_CompCol_Matrix_dist(SuperMatrix *A, int_t m, int_t n, int_t nnz,
 }
 
 void
-dCreate_CompRowLoc_Matrix_dist(SuperMatrix *A, int_t m, int_t n,
+sCreate_CompRowLoc_Matrix_dist(SuperMatrix *A, int_t m, int_t n,
 			       int_t nnz_loc, int_t m_loc, int_t fst_row,
-			       double *nzval, int_t *colind, int_t *rowptr,
+			       float *nzval, int_t *colind, int_t *rowptr,
 			       Stype_t stype, Dtype_t dtype, Mtype_t mtype)
 {
     NRformat_loc *Astore;
@@ -71,15 +71,15 @@ dCreate_CompRowLoc_Matrix_dist(SuperMatrix *A, int_t m, int_t n,
 /*! \brief Convert a row compressed storage into a column compressed storage.
  */
 void
-dCompRow_to_CompCol_dist(int_t m, int_t n, int_t nnz,
-                         double *a, int_t *colind, int_t *rowptr,
-                         double **at, int_t **rowind, int_t **colptr)
+sCompRow_to_CompCol_dist(int_t m, int_t n, int_t nnz,
+                         float *a, int_t *colind, int_t *rowptr,
+                         float **at, int_t **rowind, int_t **colptr)
 {
     register int i, j, col, relpos;
     int_t *marker;
 
     /* Allocate storage for another copy of the matrix. */
-    *at = (double *) doubleMalloc_dist(nnz);
+    *at = (float *) floatMalloc_dist(nnz);
     *rowind = intMalloc_dist(nnz);
     *colptr = intMalloc_dist(n+1);
     marker = intCalloc_dist(n);
@@ -109,7 +109,7 @@ dCompRow_to_CompCol_dist(int_t m, int_t n, int_t nnz,
 
 /*! \brief Copy matrix A into matrix B. */
 void
-dCopy_CompCol_Matrix_dist(SuperMatrix *A, SuperMatrix *B)
+sCopy_CompCol_Matrix_dist(SuperMatrix *A, SuperMatrix *B)
 {
     NCformat *Astore, *Bstore;
     int      ncol, nnz, i;
@@ -123,24 +123,24 @@ dCopy_CompCol_Matrix_dist(SuperMatrix *A, SuperMatrix *B)
     Bstore   = (NCformat *) B->Store;
     Bstore->nnz = nnz = Astore->nnz;
     for (i = 0; i < nnz; ++i)
-	((double *)Bstore->nzval)[i] = ((double *)Astore->nzval)[i];
+	((float *)Bstore->nzval)[i] = ((float *)Astore->nzval)[i];
     for (i = 0; i < nnz; ++i) Bstore->rowind[i] = Astore->rowind[i];
     for (i = 0; i <= ncol; ++i) Bstore->colptr[i] = Astore->colptr[i];
 }
 
 
-void dPrint_CompCol_Matrix_dist(SuperMatrix *A)
+void sPrint_CompCol_Matrix_dist(SuperMatrix *A)
 {
     NCformat     *Astore;
     register int i;
-    double       *dp;
+    float       *dp;
 
     printf("\nCompCol matrix: ");
     printf("Stype %d, Dtype %d, Mtype %d\n", A->Stype,A->Dtype,A->Mtype);
     Astore = (NCformat *) A->Store;
     printf("nrow %lld, ncol %lld, nnz %lld\n", (long long) A->nrow,
 	    (long long) A->ncol, (long long) Astore->nnz);
-    if ( (dp = (double *) Astore->nzval) != NULL ) {
+    if ( (dp = (float *) Astore->nzval) != NULL ) {
         printf("nzval:\n");
         for (i = 0; i < Astore->nnz; ++i) printf("%f  ", dp[i]);
     }
@@ -153,16 +153,16 @@ void dPrint_CompCol_Matrix_dist(SuperMatrix *A)
     printf("\nend CompCol matrix.\n");
 }
 
-void dPrint_Dense_Matrix_dist(SuperMatrix *A)
+void sPrint_Dense_Matrix_dist(SuperMatrix *A)
 {
     DNformat     *Astore;
     register int i;
-    double       *dp;
+    float       *dp;
 
     printf("\nDense matrix: ");
     printf("Stype %d, Dtype %d, Mtype %d\n", A->Stype,A->Dtype,A->Mtype);
     Astore = (DNformat *) A->Store;
-    dp = (double *) Astore->nzval;
+    dp = (float *) Astore->nzval;
     printf("nrow %lld, ncol %lld, lda %lld\n",
         (long long) A->nrow, (long long) A->ncol, (long long) Astore->lda);
     printf("\nnzval: ");
@@ -170,11 +170,11 @@ void dPrint_Dense_Matrix_dist(SuperMatrix *A)
     printf("\nend Dense matrix.\n");
 }
 
-int dPrint_CompRowLoc_Matrix_dist(SuperMatrix *A)
+int sPrint_CompRowLoc_Matrix_dist(SuperMatrix *A)
 {
     NRformat_loc  *Astore;
     int_t  nnz_loc, m_loc;
-    double  *dp;
+    float  *dp;
 
     printf("\n==== CompRowLoc matrix: ");
     printf("Stype %d, Dtype %d, Mtype %d\n", A->Stype,A->Dtype,A->Mtype);
@@ -186,17 +186,17 @@ int dPrint_CompRowLoc_Matrix_dist(SuperMatrix *A)
             (long int) m_loc, (long int) Astore->fst_row);
     PrintInt10("rowptr", m_loc+1, Astore->rowptr);
     PrintInt10("colind", nnz_loc, Astore->colind);
-    if ( (dp = (double *) Astore->nzval) != NULL )
-        Printdouble5("nzval", nnz_loc, dp);
+    if ( (dp = (float *) Astore->nzval) != NULL )
+        Printfloat5("nzval", nnz_loc, dp);
     printf("==== end CompRowLoc matrix\n");
     return 0;
 }
 
-int file_dPrint_CompRowLoc_Matrix_dist(FILE *fp, SuperMatrix *A)
+int file_sPrint_CompRowLoc_Matrix_dist(FILE *fp, SuperMatrix *A)
 {
     NRformat_loc     *Astore;
     int_t  nnz_loc, m_loc;
-    double       *dp;
+    float       *dp;
 
     fprintf(fp, "\n==== CompRowLoc matrix: ");
     fprintf(fp, "Stype %d, Dtype %d, Mtype %d\n", A->Stype,A->Dtype,A->Mtype);
@@ -207,14 +207,14 @@ int file_dPrint_CompRowLoc_Matrix_dist(FILE *fp, SuperMatrix *A)
             (long int) m_loc, (long int) Astore->fst_row);
     file_PrintInt10(fp, "rowptr", m_loc+1, Astore->rowptr);
     file_PrintInt10(fp, "colind", nnz_loc, Astore->colind);
-    if ( (dp = (double *) Astore->nzval) != NULL )
-        file_Printdouble5(fp, "nzval", nnz_loc, dp);
+    if ( (dp = (float *) Astore->nzval) != NULL )
+        file_Printfloat5(fp, "nzval", nnz_loc, dp);
     fprintf(fp, "==== end CompRowLoc matrix\n");
     return 0;
 }
 
 void
-dCreate_Dense_Matrix_dist(SuperMatrix *X, int_t m, int_t n, double *x,
+sCreate_Dense_Matrix_dist(SuperMatrix *X, int_t m, int_t n, float *x,
 			  int_t ldx, Stype_t stype, Dtype_t dtype,
 			  Mtype_t mtype)
 {
@@ -229,12 +229,12 @@ dCreate_Dense_Matrix_dist(SuperMatrix *X, int_t m, int_t n, double *x,
     if ( !(X->Store) ) ABORT("SUPERLU_MALLOC fails for X->Store");
     Xstore = (DNformat *) X->Store;
     Xstore->lda = ldx;
-    Xstore->nzval = (double *) x;
+    Xstore->nzval = (float *) x;
 }
 
 void
-dCopy_Dense_Matrix_dist(int_t M, int_t N, double *X, int_t ldx,
-			double *Y, int_t ldy)
+sCopy_Dense_Matrix_dist(int_t M, int_t N, float *X, int_t ldx,
+			float *Y, int_t ldy)
 {
 /*! \brief
  *
@@ -253,8 +253,8 @@ dCopy_Dense_Matrix_dist(int_t M, int_t N, double *X, int_t ldx,
 }
 
 void
-dCreate_SuperNode_Matrix_dist(SuperMatrix *L, int_t m, int_t n, int_t nnz,
-			      double *nzval, int_t *nzval_colptr,
+sCreate_SuperNode_Matrix_dist(SuperMatrix *L, int_t m, int_t n, int_t nnz,
+			      float *nzval, int_t *nzval_colptr,
 			      int_t *rowind, int_t *rowind_colptr,
 			      int_t *col_to_sup, int_t *sup_to_col,
 			      Stype_t stype, Dtype_t dtype, Mtype_t mtype)
@@ -290,7 +290,7 @@ dCreate_SuperNode_Matrix_dist(SuperMatrix *L, int_t m, int_t n, int_t nnz,
  *  into B->Store. It does not copy the matrix entries, row pointers,
  *  or column indices.
  */
-void dClone_CompRowLoc_Matrix_dist(SuperMatrix *A, SuperMatrix *B)
+void sClone_CompRowLoc_Matrix_dist(SuperMatrix *A, SuperMatrix *B)
 {
     NRformat_loc  *Astore, *Bstore;
 
@@ -307,8 +307,8 @@ void dClone_CompRowLoc_Matrix_dist(SuperMatrix *A, SuperMatrix *B)
     Bstore->nnz_loc = Astore->nnz_loc;
     Bstore->m_loc = Astore->m_loc;
     Bstore->fst_row = Astore->fst_row;
-    if ( !(Bstore->nzval = (double *) doubleMalloc_dist(Bstore->nnz_loc)) )
-	ABORT("doubleMalloc_dist fails for Bstore->nzval");
+    if ( !(Bstore->nzval = (float *) floatMalloc_dist(Bstore->nnz_loc)) )
+	ABORT("floatMalloc_dist fails for Bstore->nzval");
     if ( !(Bstore->colind = (int_t *) intMalloc_dist(Bstore->nnz_loc)) )
 	ABORT("intMalloc_dist fails for Bstore->colind");
     if ( !(Bstore->rowptr = (int_t *) intMalloc_dist(Bstore->m_loc + 1)) )
@@ -321,14 +321,14 @@ void dClone_CompRowLoc_Matrix_dist(SuperMatrix *A, SuperMatrix *B)
  *  a matrix into another matrix of the same type,
  *  B_{i,j}=A_{i,j}, for i,j=1,...,n
  */
-void dCopy_CompRowLoc_Matrix_dist(SuperMatrix *A, SuperMatrix *B)
+void sCopy_CompRowLoc_Matrix_dist(SuperMatrix *A, SuperMatrix *B)
 {
     NRformat_loc  *Astore, *Bstore;
 
     Astore = (NRformat_loc *) A->Store;
     Bstore = (NRformat_loc *) B->Store;
 
-    memcpy(Bstore->nzval, Astore->nzval, Astore->nnz_loc * sizeof(double));
+    memcpy(Bstore->nzval, Astore->nzval, Astore->nnz_loc * sizeof(float));
     memcpy(Bstore->colind, Astore->colind, Astore->nnz_loc * sizeof(int_t));
     memcpy(Bstore->rowptr, Astore->rowptr, (Astore->m_loc+1) * sizeof(int_t));
 
@@ -336,14 +336,14 @@ void dCopy_CompRowLoc_Matrix_dist(SuperMatrix *A, SuperMatrix *B)
 }
 
 /*! \brief Sets all entries of a matrix to zero, A_{i,j}=0, for i,j=1,..,n */
-void dZero_CompRowLoc_Matrix_dist(SuperMatrix *A)
+void sZero_CompRowLoc_Matrix_dist(SuperMatrix *A)
 {
-    double zero = 0.0;
+    float zero = 0.0;
     NRformat_loc  *Astore = A->Store;
-    double *aval;
+    float *aval;
     int_t i;
 
-    aval = (double *) Astore->nzval;
+    aval = (float *) Astore->nzval;
     for (i = 0; i < Astore->nnz_loc; ++i) aval[i] = zero;
 
     return;
@@ -353,13 +353,13 @@ void dZero_CompRowLoc_Matrix_dist(SuperMatrix *A)
  *  A_{i,j} = c * A_{i,j} + \delta_{i,j} for i,j=1,...,n and
  *  \delta_{i,j} is the Kronecker delta.
  */
-void dScaleAddId_CompRowLoc_Matrix_dist(SuperMatrix *A, double c)
+void sScaleAddId_CompRowLoc_Matrix_dist(SuperMatrix *A, float c)
 {
-    double one = 1.0;
+    float one = 1.0;
     NRformat_loc  *Astore = A->Store;
-    double *aval = (double *) Astore->nzval;
+    float *aval = (float *) Astore->nzval;
     int i, j;
-    double temp;
+    float temp;
 
     for (i = 0; i < Astore->m_loc; ++i) { /* Loop through each row */
         for (j = Astore->rowptr[i]; j < Astore->rowptr[i+1]; ++j) {
@@ -378,13 +378,13 @@ void dScaleAddId_CompRowLoc_Matrix_dist(SuperMatrix *A, double c)
 /*! \brief Scale and add: adds a scalar multiple of one matrix to another.
  *  A_{i,j} = c * A_{i,j} + B_{i,j}$ for i,j=1,...,n
  */
-void dScaleAdd_CompRowLoc_Matrix_dist(SuperMatrix *A, SuperMatrix *B, double c)
+void sScaleAdd_CompRowLoc_Matrix_dist(SuperMatrix *A, SuperMatrix *B, float c)
 {
     NRformat_loc  *Astore = A->Store;
     NRformat_loc  *Bstore = B->Store;
-    double *aval = (double *) Astore->nzval, *bval = (double *) Bstore->nzval;
+    float *aval = (float *) Astore->nzval, *bval = (float *) Bstore->nzval;
     int_t i;
-    double temp;
+    float temp;
 
     for (i = 0; i < Astore->nnz_loc; ++i) { /* Loop through each nonzero */
         aval[i] = c * aval[i] + bval[i];
@@ -396,7 +396,7 @@ void dScaleAdd_CompRowLoc_Matrix_dist(SuperMatrix *A, SuperMatrix *B, double c)
 
 /**** Other utilities ****/
 void
-dGenXtrue_dist(int_t n, int_t nrhs, double *x, int_t ldx)
+sGenXtrue_dist(int_t n, int_t nrhs, float *x, int_t ldx)
 {
     int  i, j;
     for (j = 0; j < nrhs; ++j)
@@ -409,20 +409,20 @@ dGenXtrue_dist(int_t n, int_t nrhs, double *x, int_t ldx)
 /*! \brief Let rhs[i] = sum of i-th row of A, so the solution vector is all 1's
  */
 void
-dFillRHS_dist(char *trans, int_t nrhs, double *x, int_t ldx,
-	      SuperMatrix *A, double *rhs, int_t ldb)
+sFillRHS_dist(char *trans, int_t nrhs, float *x, int_t ldx,
+	      SuperMatrix *A, float *rhs, int_t ldb)
 {
-    double one = 1.0;
-    double zero = 0.0;
+    float one = 1.0;
+    float zero = 0.0;
 
-    sp_dgemm_dist(trans, nrhs, one, A, x, ldx, zero, rhs, ldb);
+    sp_sgemm_dist(trans, nrhs, one, A, x, ldx, zero, rhs, ldb);
 
 }
 
-/*! \brief Fills a double precision array with a given value.
+/*! \brief Fills a float precision array with a given value.
  */
 void
-dfill_dist(double *a, int_t alen, double dval)
+sfill_dist(float *a, int_t alen, float dval)
 {
     register int_t i;
     for (i = 0; i < alen; i++) a[i] = dval;
@@ -432,12 +432,12 @@ dfill_dist(double *a, int_t alen, double dval)
 
 /*! \brief Check the inf-norm of the error vector
  */
-void dinf_norm_error_dist(int_t n, int_t nrhs, double *x, int_t ldx,
-			  double *xtrue, int_t ldxtrue,
+void sinf_norm_error_dist(int_t n, int_t nrhs, float *x, int_t ldx,
+			  float *xtrue, int_t ldxtrue,
                           gridinfo_t *grid)
 {
     double err, xnorm;
-    double *x_work, *xtrue_work;
+    float *x_work, *xtrue_work;
     int i, j;
 
     for (j = 0; j < nrhs; j++) {
@@ -453,7 +453,7 @@ void dinf_norm_error_dist(int_t n, int_t nrhs, double *x, int_t ldx,
     }
 }
 
-void Printdouble5(char *name, int_t len, double *x)
+void Printfloat5(char *name, int_t len, float *x)
 {
     register int_t i;
 
@@ -465,7 +465,7 @@ void Printdouble5(char *name, int_t len, double *x)
     printf("\n");
 }
 
-int file_Printdouble5(FILE *fp, char *name, int_t len, double *x)
+int file_Printfloat5(FILE *fp, char *name, int_t len, float *x)
 {
     register int_t i;
 
@@ -480,14 +480,14 @@ int file_Printdouble5(FILE *fp, char *name, int_t len, double *x)
 
 /*! \brief Print the blocks in the factored matrix L.
  */
-void dPrintLblocks(int iam, int_t nsupers, gridinfo_t *grid,
+void sPrintLblocks(int iam, int_t nsupers, gridinfo_t *grid,
 		  Glu_persist_t *Glu_persist, LocalLU_t *Llu)
 {
     register int c, extra, gb, j, lb, nsupc, nsupr, len, nb, ncb;
     register int_t k, mycol, r;
     int_t *xsup = Glu_persist->xsup;
     int_t *index;
-    double *nzval;
+    float *nzval;
 
     printf("\n[%d] L BLOCKS IN COLUMN-MAJOR ORDER -->\n", iam);
     ncb = nsupers / grid->npcol;
@@ -510,7 +510,7 @@ void dPrintLblocks(int iam, int_t nsupers, gridinfo_t *grid,
 		       iam, c, index[k], len);
 		PrintInt10("lsub", len, &index[k+LB_DESCRIPTOR]);
 		for (j = 0; j < nsupc; ++j) {
-		    Printdouble5("nzval", len, &nzval[r + j*nsupr]);
+		    Printfloat5("nzval", len, &nzval[r + j*nsupr]);
 		}
 		k += LB_DESCRIPTOR + len;
 		r += len;
@@ -524,21 +524,21 @@ void dPrintLblocks(int iam, int_t nsupers, gridinfo_t *grid,
     k = CEILING( nsupers, grid->nprow );
     PrintInt10("fmod", k, Llu->fmod);
 
-} /* DPRINTLBLOCKS */
+} /* SPRINTLBLOCKS */
 
 
 /*! \brief Sets all entries of matrix L to zero.
  */
-void dZeroLblocks(int iam, int_t n, gridinfo_t *grid, LUstruct_t *LUstruct)
+void sZeroLblocks(int iam, int_t n, gridinfo_t *grid, LUstruct_t *LUstruct)
 {
-    double zero = 0.0;
+    float zero = 0.0;
     register int extra, gb, j, lb, nsupc, nsupr, ncb;
     register int_t k, mycol, r;
     LocalLU_t *Llu = LUstruct->Llu;
     Glu_persist_t *Glu_persist = LUstruct->Glu_persist;
     int_t *xsup = Glu_persist->xsup;
     int_t *index;
-    double *nzval;
+    float *nzval;
     int_t nsupers = Glu_persist->supno[n-1] + 1;
 
     ncb = nsupers / grid->npcol;
@@ -559,12 +559,12 @@ void dZeroLblocks(int iam, int_t n, gridinfo_t *grid, LUstruct_t *LUstruct)
             }
 	}
     }
-} /* dZeroLblocks */
+} /* sZeroLblocks */
 
 
 /*! \brief Dump the factored matrix L using matlab triple-let format
  */
-void dDumpLblocks(int iam, int_t nsupers, gridinfo_t *grid,
+void sDumpLblocks(int iam, int_t nsupers, gridinfo_t *grid,
 		  Glu_persist_t *Glu_persist, LocalLU_t *Llu)
 {
     register int c, extra, gb, j, i, lb, nsupc, nsupr, len, nb, ncb;
@@ -572,7 +572,7 @@ void dDumpLblocks(int iam, int_t nsupers, gridinfo_t *grid,
 	int_t nnzL, n,nmax;
     int_t *xsup = Glu_persist->xsup;
     int_t *index;
-    double *nzval;
+    float *nzval;
 	char filename[256];
 	FILE *fp, *fopen();
 
@@ -655,20 +655,20 @@ void dDumpLblocks(int iam, int_t nsupers, gridinfo_t *grid,
     }
  	fclose(fp);
 
-} /* dDumpLblocks */
+} /* sDumpLblocks */
 
 
 
 /*! \brief Print the blocks in the factored matrix U.
  */
-void dPrintUblocks(int iam, int_t nsupers, gridinfo_t *grid,
+void sPrintUblocks(int iam, int_t nsupers, gridinfo_t *grid,
 		  Glu_persist_t *Glu_persist, LocalLU_t *Llu)
 {
     register int c, extra, jb, k, lb, len, nb, nrb, nsupc;
     register int_t myrow, r;
     int_t *xsup = Glu_persist->xsup;
     int_t *index;
-    double *nzval;
+    float *nzval;
 
     printf("\n[%d] U BLOCKS IN ROW-MAJOR ORDER -->\n", iam);
     nrb = nsupers / grid->nprow;
@@ -690,7 +690,7 @@ void dPrintUblocks(int iam, int_t nsupers, gridinfo_t *grid,
 		       iam, c, jb, index[k+1]);
 		nsupc = SuperSize( jb );
 		PrintInt10("fstnz", nsupc, &index[k+UB_DESCRIPTOR]);
-		Printdouble5("nzval", len, &nzval[r]);
+		Printfloat5("nzval", len, &nzval[r]);
 		k += UB_DESCRIPTOR + nsupc;
 		r += len;
 	    }
@@ -698,10 +698,10 @@ void dPrintUblocks(int iam, int_t nsupers, gridinfo_t *grid,
 	    printf("[%d] ToSendD[] %d\n", iam, Llu->ToSendD[lb]);
 	}
     }
-} /* DPRINTUBLOCKS */
+} /* SPRINTUBLOCKS */
 
 int
-dprint_gsmv_comm(FILE *fp, int_t m_loc, pdgsmv_comm_t *gsmv_comm,
+sprint_gsmv_comm(FILE *fp, int_t m_loc, psgsmv_comm_t *gsmv_comm,
                  gridinfo_t *grid)
 {
   int_t procs = grid->nprow*grid->npcol;
@@ -719,15 +719,15 @@ dprint_gsmv_comm(FILE *fp, int_t m_loc, pdgsmv_comm_t *gsmv_comm,
 
 
 void
-GenXtrueRHS(int nrhs, SuperMatrix *A, Glu_persist_t *Glu_persist,
-	    gridinfo_t *grid, double **xact, int *ldx, double **b, int *ldb)
+sGenXtrueRHS(int nrhs, SuperMatrix *A, Glu_persist_t *Glu_persist,
+	    gridinfo_t *grid, float **xact, int *ldx, float **b, int *ldb)
 {
     int_t gb, gbrow, i, iam, irow, j, lb, lsup, myrow, n, nlrows,
           nsupr, nsupers, rel;
     int_t *supno, *xsup, *lxsup;
-    double *x, *bb;
+    float *x, *bb;
     NCformat *Astore;
-    double   *aval;
+    float   *aval;
 
     n = A->ncol;
     *ldb = 0;
@@ -737,7 +737,7 @@ GenXtrueRHS(int nrhs, SuperMatrix *A, Glu_persist_t *Glu_persist,
     iam = grid->iam;
     myrow = MYROW( iam, grid );
     Astore = (NCformat *) A->Store;
-    aval = (double *) Astore->nzval;
+    aval = Astore->nzval;
     lb = CEILING( nsupers, grid->nprow ) + 1;
     if ( !(lxsup = intMalloc_dist(lb)) )
 	ABORT("Malloc fails for lxsup[].");
@@ -754,9 +754,9 @@ GenXtrueRHS(int nrhs, SuperMatrix *A, Glu_persist_t *Glu_persist,
 	}
     }
     *ldx = n;
-    if ( !(x = doubleMalloc_dist(((size_t)*ldx) * nrhs)) )
+    if ( !(x = floatMalloc_dist(((size_t)*ldx) * nrhs)) )
 	ABORT("Malloc fails for x[].");
-    if ( !(bb = doubleCalloc_dist(*ldb * nrhs)) )
+    if ( !(bb = floatCalloc_dist(*ldb * nrhs)) )
 	ABORT("Calloc fails for bb[].");
     for (j = 0; j < nrhs; ++j)
 	for (i = 0; i < n; ++i) x[i + j*(*ldx)] = 1.0;
@@ -784,7 +784,7 @@ GenXtrueRHS(int nrhs, SuperMatrix *A, Glu_persist_t *Glu_persist,
     for (i = 0; i < grid->nprow*grid->npcol; ++i) {
 	if ( iam == i ) {
 	    printf("\n(%d)\n", iam);
-	    Printdouble5("rhs", *ldb, *b);
+	    Printfloat5("rhs", *ldb, *b);
 	}
 	MPI_Barrier( grid->comm );
     }

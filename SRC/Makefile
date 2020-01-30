@@ -47,12 +47,24 @@ endif
 #
 # Routines literally taken from SuperLU, but renamed with suffix _dist
 #
+SSLUSRC	= slangs_dist.o sgsequ_dist.o slaqgs_dist.o sutil_dist.o \
+	  smemory_dist.o smyblas2_dist.o ssp_blas2_dist.o ssp_blas3_dist.o
 DSLUSRC	= dlangs_dist.o dgsequ_dist.o dlaqgs_dist.o dutil_dist.o \
 	  dmemory_dist.o dmyblas2_dist.o dsp_blas2_dist.o dsp_blas3_dist.o
 ZSLUSRC	= dcomplex_dist.o zlangs_dist.o zgsequ_dist.o zlaqgs_dist.o \
 	  zutil_dist.o zmemory_dist.o zmyblas2_dist.o \
 	  zsp_blas2_dist.o zsp_blas3_dist.o
 
+#
+# Routines for single precision parallel SuperLU
+SPLUSRC = psgssvx.o psgssvx_ABglobal.o \
+	  sreadhb.o sreadrb.o sreadtriple.o sreadMM.o sbinary_io.o \
+	  psgsequ.o pslaqgs.o sldperm_dist.o pslangs.o psutil.o \
+	  pssymbfact_distdata.o sdistribute.o psdistribute.o \
+	  psgstrf.o psgstrf2.o psGetDiagU.o \
+	  psgstrs.o psgstrs1.o psgstrs_lsum.o psgstrs_Bglobal.o \
+	  psgsrfs.o psgsmv.o psgsrfs_ABXglobal.o psgsmv_AXglobal.o \
+	  sreadtriple_noheader.o
 #
 # Routines for double precision parallel SuperLU
 DPLUSRC = pdgssvx.o pdgssvx_ABglobal.o \
@@ -104,6 +116,11 @@ endif
 #config_h:
 #	cp -f superlu_dist_config_for_makefile.h superlu_dist_config.h
 
+single: config_h $(SSLUSRC) $(SPLUSRC) $(ALLAUX)
+	$(ARCH) $(ARCHFLAGS) $(DSUPERLULIB) \
+		$(SSLUSRC) $(SPLUSRC) $(ALLAUX)
+	$(RANLIB) $(DSUPERLULIB)
+
 double: config_h $(DSLUSRC) $(DPLUSRC) $(ALLAUX)
 	$(ARCH) $(ARCHFLAGS) $(DSUPERLULIB) \
 		$(DSLUSRC) $(DPLUSRC) $(ALLAUX)
@@ -113,6 +130,9 @@ complex16: config_h $(ZSLUSRC) $(ZPLUSRC) $(ALLAUX)
 	$(ARCH) $(ARCHFLAGS) $(DSUPERLULIB) \
 		$(ZSLUSRC) $(ZPLUSRC) $(ALLAUX)
 	$(RANLIB) $(DSUPERLULIB)
+
+psgstrf.o: sscatter.c slook_ahead_update.c sSchCompUdt-2Ddynamic.c psgstrf.c
+	$(CC) $(CFLAGS) $(CDEFS) $(BLASDEF) -I$(INCLUDEDIR) -c psgstrf.c $(VERBOSE)
 
 pdgstrf.o: dscatter.c dlook_ahead_update.c dSchCompUdt-2Ddynamic.c pdgstrf.c
 	$(CC) $(CFLAGS) $(CDEFS) $(BLASDEF) -I$(INCLUDEDIR) -c pdgstrf.c $(VERBOSE)

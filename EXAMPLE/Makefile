@@ -30,6 +30,8 @@
 #######################################################################
 include ../make.inc
 
+SEXM	= psdrive.o screate_matrix.o psutil.o
+
 DEXM	= pddrive.o dcreate_matrix.o sp_ienv.o #pdgstrf2.o 
 #pdgssvx.o
 # pdgstrs_lsum_X1.o pdgstrf_X1.o
@@ -42,6 +44,7 @@ DEXMG1	= pddrive1_ABglobal.o
 DEXMG2	= pddrive2_ABglobal.o
 DEXMG3	= pddrive3_ABglobal.o
 DEXMG4	= pddrive4_ABglobal.o
+
 ZEXM	= pzdrive.o zcreate_matrix.o
 	#pzgstrf2.o pzgstrf_v3.3.o pzgstrf.o
 ZEXM1	= pzdrive1.o zcreate_matrix.o
@@ -55,7 +58,9 @@ ZEXMG3	= pzdrive3_ABglobal.o
 ZEXMG4	= pzdrive4_ABglobal.o
 
 
-all: double complex16
+all: single double complex16
+
+single:    psdrive
 
 double:    pddrive pddrive1 pddrive2 pddrive3 pddrive4 \
 	   pddrive_ABglobal pddrive1_ABglobal pddrive2_ABglobal \
@@ -64,6 +69,9 @@ double:    pddrive pddrive1 pddrive2 pddrive3 pddrive4 \
 complex16: pzdrive pzdrive1 pzdrive2 pzdrive3 pzdrive4 \
 	   pzdrive_ABglobal pzdrive1_ABglobal pzdrive2_ABglobal \
 	   pzdrive3_ABglobal pzdrive4_ABglobal
+
+psdrive: $(SEXM) $(DSUPERLULIB)
+	$(LOADER) $(LOADOPTS) $(SEXM) $(LIBS) -lm -o $@
 
 pddrive: $(DEXM) $(DSUPERLULIB)
 	$(LOADER) $(LOADOPTS) $(DEXM) $(LIBS) -lm -o $@

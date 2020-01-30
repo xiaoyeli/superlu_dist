@@ -174,6 +174,9 @@ int main(int argc, char *argv[])
        GET THE MATRIX FROM FILE AND SETUP THE RIGHT HAND SIDE. 
        ------------------------------------------------------------*/
     dcreate_matrix_postfix(&A, nrhs, &b, &ldb, &xtrue, &ldx, fp, postfix, &grid);
+    printf("after dcreate_matrix xtrue[2] %e, b[0] %e\n", xtrue[2], b[0]);
+    for (int i = 0; i < A.ncol; ++i) printf("b[%d] %e\n", i, b[i]);
+
 
     if ( !(berr = doubleMalloc_dist(nrhs)) )
 	ABORT("Malloc fails for berr[].");

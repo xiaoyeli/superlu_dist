@@ -34,6 +34,52 @@ at the top-level directory.
 #include "superlu_defs.h"
 #include "dcomplex.h"
 
+/* 
+ *-- The structure used to store matrix A of the linear system and
+ *   several vectors describing the transformations done to matrix A.
+ *
+ * A      (SuperMatrix*)
+ *        Matrix A in A*X=B, of dimension (A->nrow, A->ncol).
+ *        The number of linear equations is A->nrow. The type of A can be:
+ *        Stype = SLU_NC; Dtype = SLU_D; Mtype = SLU_GE.
+ *         
+ * DiagScale  (DiagScale_t)
+ *        Specifies the form of equilibration that was done.
+ *        = NOEQUIL: No equilibration.
+ *        = ROW:  Row equilibration, i.e., A was premultiplied by diag(R).
+ *        = COL:  Column equilibration, i.e., A was postmultiplied by diag(C).
+ *        = BOTH: Both row and column equilibration, i.e., A was replaced 
+ *                 by diag(R)*A*diag(C).
+ *
+ * R      double*, dimension (A->nrow)
+ *        The row scale factors for A.
+ *        If DiagScale = ROW or BOTH, A is multiplied on the left by diag(R).
+ *        If DiagScale = NOEQUIL or COL, R is not defined.
+ *
+ * C      double*, dimension (A->ncol)
+ *        The column scale factors for A.
+ *        If DiagScale = COL or BOTH, A is multiplied on the right by diag(C).
+ *        If DiagScale = NOEQUIL or ROW, C is not defined.
+ *         
+ * perm_r (int*) dimension (A->nrow)
+ *        Row permutation vector which defines the permutation matrix Pr,
+ *        perm_r[i] = j means row i of A is in position j in Pr*A.
+ *
+ * perm_c (int*) dimension (A->ncol)
+ *	  Column permutation vector, which defines the 
+ *        permutation matrix Pc; perm_c[i] = j means column i of A is 
+ *        in position j in A*Pc.
+ *
+ */
+typedef struct {
+    DiagScale_t DiagScale;
+    double *R;
+    double *C; 
+    int_t  *perm_r;
+    int_t  *perm_c;
+} ScalePermstruct_t;
+
+
 /*-- Auxiliary data type used in PxGSTRS/PxGSTRS1. */
 typedef struct {
     int_t lbnum;  /* Row block number (local).      */

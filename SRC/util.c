@@ -25,6 +25,13 @@ at the top-level directory.
 #include <unistd.h>
 #include "superlu_ddefs.h"
 
+int_t log2i(int_t index)
+{
+    int_t targetlevel = 0;
+    while (index >>= 1) ++targetlevel;
+    return targetlevel;
+}
+
 /*! \brief Deallocate the structure pointing to the actual storage of the matrix. */
 void
 Destroy_SuperMatrix_Store_dist(SuperMatrix *A)
@@ -1263,7 +1270,7 @@ arrive_at_ublock (int_t j,      /* j-th block in a U panel */
  * September 28, 2016.
  * Modified December 4, 2018.
  */
-static int_t num_full_cols_U
+int_t num_full_cols_U
 (
  int_t kk,  int_t **Ufstnz_br_ptr, int_t *xsup,
  gridinfo_t *grid, int_t *perm_u,

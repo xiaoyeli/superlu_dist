@@ -58,6 +58,48 @@ endif()
 
 set_source_files_properties(superlu_timer.c PROPERTIES COMPILE_FLAGS -O0)
 
+if(enable_single)
+  list(APPEND headers superlu_sdefs.h)
+
+  list(APPEND sources
+    slangs_dist.c
+    sgsequ_dist.c
+    slaqgs_dist.c
+    sutil_dist.c
+    smemory_dist.c
+    smyblas2_dist.c
+    ssp_blas2_dist.c
+    ssp_blas3_dist.c
+    psgssvx.c
+    psgssvx_ABglobal.c
+    sreadhb.c
+    sreadrb.c
+    sreadtriple.c
+    sreadtriple_noheader.c
+    sbinary_io.c	
+    sreadMM.c
+    psgsequ.c
+    pslaqgs.c
+    sldperm_dist.c
+    pslangs.c
+    psutil.c
+    pssymbfact_distdata.c
+    sdistribute.c
+    psdistribute.c
+    psgstrf.c
+    psgstrf2.c
+    psgstrs.c
+    psgstrs1.c
+    psgstrs_lsum.c
+    psgstrs_Bglobal.c
+    psgsrfs.c
+    psgsmv.c
+    psgsrfs_ABXglobal.c
+    psgsmv_AXglobal.c
+    psGetDiagU.c
+  )
+endif()
+
 if(enable_double)
   list(APPEND headers superlu_ddefs.h)
 

@@ -32,6 +32,11 @@ function(add_superlu_dist_example target input nprow npcol)
 
 endfunction(add_superlu_dist_example)
 
+if(enable_single)
+  set(SEXM psdrive.c screate_matrix.c)
+  add_executable(psdrive ${SEXM})
+  target_link_libraries(psdrive ${all_link_libs})
+endif()
 
 if(enable_double)
   set(DEXM pddrive.c dcreate_matrix.c)
@@ -80,7 +85,6 @@ if(enable_double)
   set(DEXMS pddrive_spawn.c dcreate_matrix.c)
   add_executable(pddrive_spawn ${DEXMS})
   target_link_libraries(pddrive_spawn ${all_link_libs})  
-  
   
 endif()
 
