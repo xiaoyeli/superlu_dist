@@ -289,6 +289,8 @@ int min_gpu_col = 6;
 #endif
 
 
+/******* Sherry: the following functions are moved to util.c ******/
+#if 0
 #ifdef GPU_ACC
 
 void
@@ -519,3 +521,5 @@ gemm_division_new (int * num_streams_used,   /*number of streams that will be us
 }
 
 #endif  /* defined GPU_ACC */
+/******* Sherry: the above functions are moved to util.c ******/
+#endif

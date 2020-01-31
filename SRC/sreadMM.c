@@ -143,9 +143,9 @@ sreadMM_dist(FILE *fp, int_t *m, int_t *n, int_t *nonz,
     /* 4/ Read triplets of values */
     for (nnz = 0, nz = 0; nnz < *nonz; ++nnz) {
 #ifdef _LONGINT
-	j = fscanf(fp, IFMT IFMT "%lf\n", &row[nz], &col[nz], &val[nz]);
+	j = fscanf(fp, IFMT IFMT "%f\n", &row[nz], &col[nz], &val[nz]);
 #else
-	j = fscanf(fp, "%d%d%lf\n", &row[nz], &col[nz], &val[nz]);
+	j = fscanf(fp, "%d%d%f\n", &row[nz], &col[nz], &val[nz]);
 #endif
 
 	if ( nnz == 0 ) /* first nonzero */ {
@@ -161,6 +161,12 @@ sreadMM_dist(FILE *fp, int_t *m, int_t *n, int_t *nonz,
 	    /* Change to 0-based indexing. */
 	    --row[nz];
 	    --col[nz];
+	}
+
+	if (nnz < 10 ) {
+    printf( "nz " IFMT ", (" IFMT ", " IFMT ") = %e\n",
+		    nz, row[nz], col[nz], val[nz]);
+    fflush(stdout);
 	}
 
 	if (row[nz] < 0 || row[nz] >= *m || col[nz] < 0 || col[nz] >= *n

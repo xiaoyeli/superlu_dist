@@ -104,12 +104,15 @@ extern MPI_Datatype SuperLU_MPI_DOUBLE_COMPLEX;
 #define  _mm_malloc(a,b) malloc(a)
 #define _mm_free(a) free(a)
 #endif
+
+    #if 0 // Sherry: __asm__ doesn't work on Summit
 static __inline__ unsigned long long _rdtsc(void)
 {
     unsigned long long int x;
     __asm__ volatile (".byte 0x0f, 0x31" : "=A" (x));
     return x;
 }
+    #endif
 #endif
 
 #include "superlu_FortranCInterface.h"

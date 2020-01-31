@@ -24,6 +24,14 @@ at the top-level directory.
 
 #define SCHEDULE_STRATEGY dynamic
 
+#define TEST_CHECK_CUBLAS_ERR(c_) do { \
+    cublasStatus_t res = (c_); \
+    if(res != CUBLAS_STATUS_SUCCESS) { \
+    printf("returned in %s:%s:%d status is %d \n", __FILE__, __FUNCTION__, __LINE__,res); \
+    return -1; \
+    } \
+    } while(0)
+
 #define cublasCheckErrors(fn) \
     do { \
         cublasStatus_t __err = fn; \
@@ -220,6 +228,23 @@ if ( msg0 && msg2 ) {  /* L(:,k) and U(k,:) are not empty. */
 						  streams[stream_id])
 				     );
 
+		    // set mode to tensor
+		    //		    TEST_CHECK_CUBLAS_ERR( cublasSetMathMode(handle, CUBLAS_TENSOR_OP_MATH) );
+		    cublasCheckErrors( cublasSetMathMode(handle[stream_id], CUBLAS_TENSOR_OP_MATH) );
+
+#if 0
+		    int nbrow_fake = (nbrow<32) ? nbrow : (nbrow/32) *32 ;
+		    int ldu_fake = (ldu<32) ? ldu : (ldu/32) *32 ;
+		    cublasCheckErrors(
+				  cublasSgemm(handle[stream_id],
+					      CUBLAS_OP_N, CUBLAS_OP_N,
+					      nbrow_fake, num_col_stream, ldu_fake,
+                                              &alpha, dA, nbrow_fake,
+					      &dB[b_offset], ldu_fake,
+					      &beta, &dC[c_offset],
+                                              nbrow_fake)
+				      );
+#else
 		    cublasCheckErrors(
 				  cublasSgemm(handle[stream_id],
 					      CUBLAS_OP_N, CUBLAS_OP_N,
@@ -229,6 +254,10 @@ if ( msg0 && msg2 ) {  /* L(:,k) and U(k,:) are not empty. */
 					      &beta, &dC[c_offset],
                                               nbrow)
 				  );
+#endif
+
+		    // set mode back to normal mode
+		    TEST_CHECK_CUBLAS_ERR( cublasSetMathMode(handle[stream_id], CUBLAS_DEFAULT_MATH) );
 
 		    checkCuda( cudaMemcpyAsync(tempv1, dC+c_offset,
 					   C_stream_size,

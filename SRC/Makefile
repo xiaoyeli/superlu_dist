@@ -86,7 +86,7 @@ ZPLUSRC = pzgssvx.o pzgssvx_ABglobal.o \
 	  pzgsrfs.o pzgsmv.o pzgsrfs_ABXglobal.o pzgsmv_AXglobal.o \
 	  zreadtriple_noheader.o
 
-all:  double complex16
+all:  single double complex16
 
 config_h:
 	rm -f superlu_dist_config.h
