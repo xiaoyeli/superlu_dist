@@ -373,7 +373,11 @@ int_t LpanelUpdate(int_t off0,  int_t nsupc, float* ublk_ptr, int_t ld_ujrow,
 {
     int_t l = nsupr - off0;
     float alpha = 1.0;
-    unsigned long long t1 = _rdtsc();
+#if 0
+    unsigned long long t1 = _rdtsc(); // doesn't work on Summit
+#else
+    double t1 = SuperLU_timer_();
+#endif
 
 #define GT  32
 #pragma omp parallel for
@@ -397,7 +401,8 @@ int_t LpanelUpdate(int_t off0,  int_t nsupc, float* ublk_ptr, int_t ld_ujrow,
 
     } /* for i = ... */
 
-    t1 = _rdtsc() - t1;
+    //t1 = _rdtsc() - t1;
+    t1 = SuperLU_timer_() - t1
 
     SCT->trf2_flops += (double) l * (double)nsupc * (double)nsupc;
     SCT->trf2_time += t1;
@@ -909,7 +914,11 @@ void psgstrs2_omp(int_t k0, int_t k, int_t* Lsub_buf,
 		  gridinfo_t *grid, LocalLU_t *Llu, SuperLUStat_t *stat,
 		  Ublock_info_t *Ublock_info, float *bigV, int_t ldt, SCT_t *SCT)
 {
+#if 0
     unsigned long long t1 = _rdtsc();
+#else
+    double t1 = SuperLU_timer_();
+#endif
     int_t *xsup = Glu_persist->xsup;
     /* Quick return. */
     int_t lk = LBi (k, grid);         /* Local block number */
@@ -939,7 +948,7 @@ void psgstrs2_omp(int_t k0, int_t k, int_t* Lsub_buf,
 				usub, uval, tempv, knsupc, nsupr, lusup, Glu_persist);
     } /* for b ... */
 
-    SCT->PDGSTRS2_tl += (double) ( _rdtsc() - t1);
+    SCT->PDGSTRS2_tl += (double) SuperLU_timer_() - t1;   // ( _rdtsc() - t1);
 } /* pdgstrs2_omp new version from Piyush */
 
 #endif
