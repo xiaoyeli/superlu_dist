@@ -172,8 +172,7 @@ void sreadrhs(int m, float *b)
 	exit(-1);
     }
     for (i = 0; i < m; ++i)
-      fscanf(fp, "%lf\n", &b[i]);
-      /*fscanf(fp, "%d%lf\n", &j, &b[i]);*/
+      fscanf(fp, "%f\n", &b[i]);
     /*        readpair_(j, &b[i]);*/
 
     fclose(fp);
