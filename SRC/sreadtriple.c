@@ -76,9 +76,11 @@ sreadtriple_dist(FILE *fp, int_t *m, int_t *n, int_t *nonz,
     /* Read into the triplet array from a file */
     for (nnz = 0, nz = 0; nnz < *nonz; ++nnz) {
 #ifdef _LONGINT
-	fscanf(fp, "%ld%ld%lf\n", &row[nz], &col[nz], &val[nz]);
+	fscanf(fp, "%ld%ld%f\n", &row[nz], &col[nz], &val[nz]);
 #else
-	fscanf(fp, "%d%d%lf\n", &row[nz], &col[nz], &val[nz]);
+	fscanf(fp, "%d%d%f\n", &row[nz], &col[nz], &val[nz]);
+#endif
+#else
 #endif
 
 	if ( nnz == 0 ) /* first nonzero */

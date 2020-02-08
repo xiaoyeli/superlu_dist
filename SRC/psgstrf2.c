@@ -77,7 +77,7 @@ at the top-level directory.
 
 #include <math.h>
 #include "superlu_sdefs.h"
-#include "cblas.h"
+//#include "cblas.h"
 
 /*****************************************************************************
  * The following psgstrf2_trsm is in version 6 and earlier.

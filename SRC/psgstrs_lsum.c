@@ -77,7 +77,7 @@ void slsum_fmod
  SuperLUStat_t *stat
 )
 {
-    double alpha = 1.0, beta = 0.0;
+    float alpha = 1.0, beta = 0.0;
     float *lusup, *lusup1;
     float *dest;
     int    iam, iknsupc, myrow, nbrow, nsupr, nsupr1, p, pi;
@@ -264,7 +264,7 @@ void slsum_bmod
  * =======
  *   Perform local block modifications: lsum[i] -= U_i,k * X[k].
  */
-    double alpha = 1.0, beta = 0.0;
+    float alpha = 1.0, beta = 0.0;
     int    iam, iknsupc, knsupc, myrow, nsupr, p, pi;
     int_t  fnz, gik, gikcol, i, ii, ik, ikfrow, iklrow, il, irow,
            j, jj, lk, lk1, nub, ub, uptr;
@@ -434,7 +434,7 @@ void slsum_fmod_inv
  int num_thread
 )
 {
-    double alpha = 1.0, beta = 0.0,malpha=-1.0;
+    float alpha = 1.0, beta = 0.0,malpha=-1.0;
     float *lusup, *lusup1;
     float *dest;
 	float *Linv;/* Inverse of diagonal block */
@@ -981,7 +981,7 @@ void slsum_fmod_inv_master
  int num_thread
 )
 {
-    double alpha = 1.0, beta = 0.0, malpha=-1.0;
+    float alpha = 1.0, beta = 0.0, malpha=-1.0;
     float *lusup, *lusup1;
     float *dest;
 	float *Linv;/* Inverse of diagonal block */
@@ -1387,7 +1387,7 @@ void slsum_bmod_inv
 	 * =======
 	 *   Perform local block modifications: lsum[i] -= U_i,k * X[k].
 	 */
-    double alpha = 1.0, beta = 0.0;
+    float alpha = 1.0, beta = 0.0;
 	int    iam, iknsupc, knsupc, myrow, nsupr, p, pi;
 	int_t  fnz, gik, gikcol, i, ii, ik, ikfrow, iklrow, il, irow,
 	       j, jj, lk, lk1, nub, ub, uptr;
@@ -1851,7 +1851,7 @@ void slsum_bmod_inv_master
 	 * =======
 	 *   Perform local block modifications: lsum[i] -= U_i,k * X[k].
 	 */
-    double alpha = 1.0, beta = 0.0;
+    float alpha = 1.0, beta = 0.0;
 	int    iam, iknsupc, knsupc, myrow, nsupr, p, pi;
 	int_t  fnz, gik, gikcol, i, ii, ik, ikfrow, iklrow, il, irow,
 	       j, jj, lk, lk1, nub, ub, uptr;
