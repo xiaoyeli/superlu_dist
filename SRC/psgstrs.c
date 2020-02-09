@@ -1354,6 +1354,7 @@ if(procs==1){
    		    STRSM(ftcs1, ftcs1, ftcs2, ftcs3, &knsupc, &nrhs, &alpha,
 				lusup, &nsupr, &x[ii], &knsupc);
 #elif defined (USE_VENDOR_BLAS)
+#if 0
 		    for (int iii=0; iii < knsupc; ++iii) {
 			for (int jjj=0; jjj < knsupc; ++jjj) {
 			    // int jjj = iii;
@@ -1366,7 +1367,8 @@ if(procs==1){
 		    // for (int iii=0 ; iii<knsupc*nrhs ; iii++){
 		    //    printf("before STRSM x_l: %f\n",x[ii+ iii]);	fflush(stdout);
 		    // }
-	    Printfloat5("before STRSM x_l:", knsupc, &x[ii]);
+		    // Printfloat5("before STRSM x_l:", knsupc, &x[ii]);
+#endif
 
 		    strsm_("L", "L", "N", "U", &knsupc, &nrhs, &alpha,
 				lusup, &nsupr, &x[ii], &knsupc, 1, 1, 1, 1);
@@ -1375,7 +1377,6 @@ if(procs==1){
 					lusup, &nsupr, &x[ii], &knsupc);
 #endif
 
-	    Printfloat5("after STRSM x_l:", knsupc, &x[ii]);
 	    // for (int iii=0 ; iii<knsupc*nrhs ; iii++){
 	    // 	printf("after STRSM x_l: %f\n",x[ii+ iii]);	fflush(stdout);
 	    // }

@@ -174,8 +174,6 @@ int main(int argc, char *argv[])
        GET THE MATRIX FROM FILE AND SETUP THE RIGHT HAND SIDE. 
        ------------------------------------------------------------*/
     screate_matrix_postfix(&A, nrhs, &b, &ldb, &xtrue, &ldx, fp, postfix, &grid);
-    printf("after screate_matrix xtrue[2] %e, b[41] %e\n", xtrue[2], b[41]);
-
 
     if ( !(berr = floatMalloc_dist(nrhs)) )
 	ABORT("Malloc fails for berr[].");
@@ -199,10 +197,10 @@ int main(int argc, char *argv[])
 	options.DiagInv           = NO;
      */
     set_default_options_dist(&options);
+#if 0
     options.RowPerm = NOROWPERM;
     options.ColPerm = NATURAL;
     options.Equil = NO; 
-#if 0
     options.IterRefine = NOREFINE;
     options.ReplaceTinyPivot = YES;
 #endif
@@ -225,7 +223,7 @@ int main(int argc, char *argv[])
 
     //    printf("before psgssvx xtrue[2] %e, b[41] %e\n", xtrue[2], b[41]);
 
-    Printfloat5("before psgssvx b[]", n, b);
+    // Printfloat5("before psgssvx b[]", n, b);
     /* Call the linear equation solver. */
     psgssvx(&options, &A, &ScalePermstruct, b, ldb, nrhs, &grid,
 	    &LUstruct, &SOLVEstruct, berr, &stat, &info);
