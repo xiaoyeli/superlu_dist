@@ -30,7 +30,8 @@
 #######################################################################
 include ../make.inc
 
-SEXM	= psdrive.o screate_matrix.o psutil.o
+SEXM	= psdrive.o screate_matrix.o 
+	## psutil.o psgstrs.o psgstrs_lsum.o
 
 DEXM	= pddrive.o dcreate_matrix.o sp_ienv.o #pdgstrf2.o 
 #pdgssvx.o
@@ -58,7 +59,7 @@ ZEXMG3	= pzdrive3_ABglobal.o
 ZEXMG4	= pzdrive4_ABglobal.o
 
 
-all: single double complex16
+all: single #### double complex16
 
 single:    psdrive
 

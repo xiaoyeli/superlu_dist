@@ -1415,10 +1415,10 @@ psgssvx(superlu_dist_options_t *options, SuperMatrix *A,
     // {
 	// #pragma omp master
 	// {
-	printf("!! before psgstrs B[41] %e, X[41] %e\n", B[41], X[41]);
+	printf("!! before psgstrs B[0] %e, X[0] %e\n", B[0], X[0]);
 	psgstrs(n, LUstruct, ScalePermstruct, grid, X, m_loc,
 		fst_row, ldb, nrhs, SOLVEstruct, stat, info);
-	printf("!! after psgstrs X[41] %e\n", X[41]);
+	printf("!! after psgstrs X[0] %e\n", X[0]);
 	// }
 	// }
 

@@ -99,7 +99,7 @@ void psgstrs1(int_t n, LUstruct_t *LUstruct, gridinfo_t *grid,
 {
     Glu_persist_t *Glu_persist = LUstruct->Glu_persist;
     LocalLU_t *Llu = LUstruct->Llu;
-    double alpha = 1.0;
+    float alpha = 1.0;
     float *lsum;  /* Local running sum of the updates to B-components */
     float *lusup, *dest;
     float *recvbuf, *tempv;

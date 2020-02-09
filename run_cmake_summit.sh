@@ -15,12 +15,13 @@ cmake .. \
 	-DCMAKE_CXX_COMPILER=mpiCC \
 	-DCMAKE_INSTALL_PREFIX=. \
 	-DTPL_BLAS_LIBRARIES="/sw/summit/essl/6.1.0-2/essl/6.1/lib64/libessl.so;/sw/summit/essl/6.1.0-2/essl/6.1/lib64/libesslsmp.so" \
-	-DTPL_LAPACK_LIBRARIES="/sw/summit/essl/6.1.0-2/essl/6.1/lib64/libessl.so" \
 	-DCMAKE_BUILD_TYPE=Release \
 	-DCMAKE_VERBOSE_MAKEFILE:BOOL=ON \
 	-DCMAKE_CXX_FLAGS="-Ofast -DRELEASE ${INC_VTUNE}" \
         -DCMAKE_C_FLAGS="-std=c11 -DPRNTlevel=0 -DPROFlevel=0 -DDEBUGlevel=0 -DGPU_ACC" \
-        -DCMAKE_EXE_LINKER_FLAGS="-Wl,-rpath,${PARMETIS_BUILD_DIR}/libparmetis:${PARMETIS_BUILD_DIR}/libmetis"
+        -DCMAKE_EXE_LINKER_FLAGS="-Wl,-rpath,${PARMETIS_BUILD_DIR}/libparmetis:${PARMETIS_BUILD_DIR}/libmetis" \
+        -DTPL_ENABLE_LAPACKLIB=OFF
+#	-DTPL_LAPACK_LIBRARIES="/sw/summit/essl/6.1.0-2/essl/6.1/lib64/libessl.so" \
 
 # make pddrive
 

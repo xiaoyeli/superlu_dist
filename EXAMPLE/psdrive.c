@@ -199,11 +199,11 @@ int main(int argc, char *argv[])
 	options.DiagInv           = NO;
      */
     set_default_options_dist(&options);
-#if 0
     options.RowPerm = NOROWPERM;
-    options.IterRefine = NOREFINE;
     options.ColPerm = NATURAL;
     options.Equil = NO; 
+#if 0
+    options.IterRefine = NOREFINE;
     options.ReplaceTinyPivot = YES;
 #endif
 
@@ -223,13 +223,14 @@ int main(int argc, char *argv[])
     /* Initialize the statistics variables. */
     PStatInit(&stat);
 
-    printf("before psgssvx xtrue[2] %e, b[41] %e\n", xtrue[2], b[41]);
+    //    printf("before psgssvx xtrue[2] %e, b[41] %e\n", xtrue[2], b[41]);
 
+    Printfloat5("before psgssvx b[]", n, b);
     /* Call the linear equation solver. */
     psgssvx(&options, &A, &ScalePermstruct, b, ldb, nrhs, &grid,
 	    &LUstruct, &SOLVEstruct, berr, &stat, &info);
-
-    printf("after psgssvx xtrue[2] %e, b[41] %e\n", xtrue[2], b[41]);
+    Printfloat5("after psgssvx b[]", n, b);
+    Printfloat5("after psgssvx xtrue[]", n, xtrue);
 
     /* Check the accuracy of the solution. */
     psinf_norm_error(iam, ((NRformat_loc *)A.Store)->m_loc,

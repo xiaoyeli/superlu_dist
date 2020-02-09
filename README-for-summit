@@ -1,0 +1,21 @@
+1. Install:
+   (at top level directory)
+   bash run_cmake_summit.sh
+   cd summit_build
+   make
+   make install
+
+2. build example driver 'psdrive'
+   (at top level directory)
+   cd EXAMPLE
+   make
+
+3. run psdrive:
+   (at top level directory)
+   cd EXAMPLE
+   bash batch_summit_1cpu1gpu.sh
+
+   (look for the following line to try different matrices:
+     for  MAT in Geo_1438.mtx
+   )
+

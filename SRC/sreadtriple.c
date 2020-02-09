@@ -80,8 +80,6 @@ sreadtriple_dist(FILE *fp, int_t *m, int_t *n, int_t *nonz,
 #else
 	fscanf(fp, "%d%d%f\n", &row[nz], &col[nz], &val[nz]);
 #endif
-#else
-#endif
 
 	if ( nnz == 0 ) /* first nonzero */
 	    if ( row[0] == 0 || col[0] == 0 ) {
