@@ -19,3 +19,5 @@
      for  MAT in Geo_1438.mtx
    )
 
+4. SRC/sSchCompUdt-cuda.c contains the call to SGEMM
+

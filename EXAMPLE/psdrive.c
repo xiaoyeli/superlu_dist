@@ -227,8 +227,9 @@ int main(int argc, char *argv[])
     /* Call the linear equation solver. */
     psgssvx(&options, &A, &ScalePermstruct, b, ldb, nrhs, &grid,
 	    &LUstruct, &SOLVEstruct, berr, &stat, &info);
-    Printfloat5("after psgssvx b[]", n, b);
-    Printfloat5("after psgssvx xtrue[]", n, xtrue);
+
+    //Printfloat5("after psgssvx b[]", n, b);
+    //Printfloat5("after psgssvx xtrue[]", n, xtrue);
 
     /* Check the accuracy of the solution. */
     psinf_norm_error(iam, ((NRformat_loc *)A.Store)->m_loc,

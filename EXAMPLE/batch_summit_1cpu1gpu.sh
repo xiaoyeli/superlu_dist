@@ -83,7 +83,7 @@ GPU_PER_RS=1
 #export NUM_CUDA_STREAMS=1
 
 # can try these 2 matrices: Ga19As19H42.mtx, Geo_1438.mtx
-for MAT in Geo_1438.mtx
+for MAT in g20.rua Ga19As19H42.mtx  #Geo_1438.mtx
   do
     export OMP_NUM_THREADS=$OMP_NUM_THREADS
     mkdir -p ${MAT}_summit
