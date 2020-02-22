@@ -70,14 +70,14 @@ void duser_free_dist(int_t bytes, int_t which_end)
  *      Number of memory expansions during the LU factorization.
  * </pre>
  */
-int_t dQuerySpace_dist(int_t n, LUstruct_t *LUstruct, gridinfo_t *grid,
+int_t dQuerySpace_dist(int_t n, dLUstruct_t *LUstruct, gridinfo_t *grid,
 		       SuperLUStat_t *stat, superlu_dist_mem_usage_t *mem_usage)
 {
     register int_t dword, gb, iword, k, nb, nsupers;
     int_t *index, *xsup;
     int iam, mycol, myrow;
     Glu_persist_t *Glu_persist = LUstruct->Glu_persist;
-    LocalLU_t *Llu = LUstruct->Llu;
+    dLocalLU_t *Llu = LUstruct->Llu;
 
     iam = grid->iam;
     myrow = MYROW( iam, grid );
@@ -170,3 +170,120 @@ double *doubleCalloc_dist(int_t n)
     return (buf);
 }
 
+#if 0  //////////////// Sherry
+
+/***************************************
+ * The following are from 3D code.
+ ***************************************/
+
+double dgetLUMem(int_t nodeId, dLUstruct_t *LUstruct, gridinfo3d_t *grid3d)
+{
+    double memlu = 0.0;
+    gridinfo_t* grid = &(grid3d->grid2d);
+    dLocalLU_t *Llu = LUstruct->Llu;
+    int_t* xsup = LUstruct->Glu_persist->xsup;
+    int_t** Lrowind_bc_ptr = Llu->Lrowind_bc_ptr;
+    double** Lnzval_bc_ptr = Llu->Lnzval_bc_ptr;
+    int_t** Ufstnz_br_ptr = Llu->Ufstnz_br_ptr;
+    // double** Unzval_br_ptr = Llu->Unzval_br_ptr;
+    int_t iam = grid->iam;
+
+    int_t myrow = MYROW (iam, grid);
+    int_t mycol = MYCOL (iam, grid);
+
+    int_t pc = PCOL( nodeId, grid );
+    if (mycol == pc)
+    {
+        int_t ljb = LBj( nodeId, grid ); /* Local block number */
+        int_t  *lsub;
+        double* lnzval;
+        lsub = Lrowind_bc_ptr[ljb];
+        lnzval = Lnzval_bc_ptr[ljb];
+
+        if (lsub != NULL)
+        {
+            int_t nrbl  =   lsub[0]; /*number of L blocks */
+            int_t  len   = lsub[1];       /* LDA of the nzval[] */
+            int_t len1  = len + BC_HEADER + nrbl * LB_DESCRIPTOR;
+            int_t len2  = SuperSize(nodeId) * len;
+            memlu += 1.0 * (len1 * sizeof(int_t)  + len2 * sizeof(double));
+        }
+    }
+
+    int_t pr = PROW( nodeId, grid );
+    if (myrow == pr)
+    {
+        int_t lib = LBi( nodeId, grid ); /* Local block number */
+        int_t  *usub;
+        // double* unzval;
+        usub = Ufstnz_br_ptr[lib];
+
+        if (usub != NULL)
+        {
+            int_t lenv = usub[1];
+            int_t lens = usub[2];
+            memlu += 1.0 * (lenv * sizeof(int_t)  + lens * sizeof(double));
+        }
+    }
+    return memlu;
+}
+
+double  dmemForest(sForest_t*sforest, dLUstruct_t *LUstruct, gridinfo3d_t *grid3d)
+{
+    double memlu = 0;
+
+    int_t *perm_c_supno = sforest->nodeList;
+    int_t nnodes =   sforest->nNodes;
+    for (int i = 0; i < nnodes; ++i)
+    {
+        memlu += dgetLUMem(perm_c_supno[i], LUstruct, grid3d);
+    }
+
+    return memlu;
+}
+
+void d3D_printMemUse( trf3Dpartition_t*  trf3Dpartition,  dLUstruct_t *LUstruct,
+		      gridinfo3d_t * grid3d )
+{
+    int_t* myTreeIdxs = trf3Dpartition->myTreeIdxs;
+    int_t* myZeroTrIdxs = trf3Dpartition->myZeroTrIdxs;
+    sForest_t** sForests = trf3Dpartition->sForests;
+
+    double memNzLU = 0.0;
+    double memzLU = 0.0;
+    int_t maxLvl = log2i(grid3d->zscp.Np) + 1;
+
+    for (int_t ilvl = 0; ilvl < maxLvl; ++ilvl)
+    {
+        sForest_t* sforest = sForests[myTreeIdxs[ilvl]];
+
+        if (sforest)
+        {
+            if (!myZeroTrIdxs[ilvl])
+            {
+                memNzLU += dmemForest(sforest, LUstruct, grid3d);
+            }
+            else
+            {
+                memzLU += dmemForest(sforest, LUstruct, grid3d);
+            }
+        }
+    }
+    double sumMem = memNzLU + memzLU;
+    double maxMem, minMem,  avgNzLU, avgzLU;
+    /*Now reduce it among all the procs*/
+    MPI_Reduce(&sumMem, &maxMem, 1, MPI_DOUBLE, MPI_MAX, 0, grid3d->comm);
+    MPI_Reduce(&sumMem, &minMem, 1, MPI_DOUBLE, MPI_MIN, 0, grid3d->comm);
+    MPI_Reduce(&memNzLU, &avgNzLU, 1, MPI_DOUBLE, MPI_SUM, 0, grid3d->comm);
+    MPI_Reduce(&memzLU, &avgzLU, 1, MPI_DOUBLE, MPI_SUM, 0, grid3d->comm);
+
+    int_t nProcs = grid3d->nprow * grid3d->npcol * grid3d->npdep;
+    if (!(grid3d->iam))
+    {
+        /* code */
+        printf("| Total Memory \t| %.2g  \t| %.2g  \t|%.2g  \t|\n", (avgNzLU + avgzLU) / nProcs, maxMem, minMem );
+        printf("| LU-LU(repli) \t| %.2g  \t| %.2g  \t|\n", (avgNzLU) / nProcs, avgzLU / nProcs );
+    }
+}
+
+#endif

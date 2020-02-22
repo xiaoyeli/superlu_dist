@@ -369,7 +369,7 @@ at the top-level directory.
  *           If all the above condition are true, the LU decomposition is
  *           performed on the matrix Pc*Pr*diag(R)*A*diag(C)*Pc^T.
  *
- * ScalePermstruct (input/output) ScalePermstruct_t* (global)
+ * ScalePermstruct (input/output) dScalePermstruct_t* (global)
  *         The data structure to store the scaling and permutation vectors
  *         describing the transformations performed to the matrix A.
  *         It contains the following fields:
@@ -444,7 +444,7 @@ at the top-level directory.
  *         Grid can be initialized by subroutine SUPERLU_GRIDINIT.
  *         See superlu_ddefs.h for the definition of 'gridinfo_t'.
  *
- * LUstruct (input/output) LUstruct_t*
+ * LUstruct (input/output) dLUstruct_t*
  *         The data structures to store the distributed L and U factors.
  *         It contains the following fields:
  *
@@ -467,17 +467,17 @@ at the top-level directory.
  *	       xsup[s] is the leading column of the s-th supernode,
  *             supno[i] is the supernode number to which column i belongs.
  *
- *         o Llu (LocalLU_t*) (local)
+ *         o Llu (dLocalLU_t*) (local)
  *           The distributed data structures to store L and U factors.
- *           See superlu_ddefs.h for the definition of 'LocalLU_t'.
+ *           See superlu_ddefs.h for the definition of 'dLocalLU_t'.
  *
- * SOLVEstruct (input/output) SOLVEstruct_t*
+ * SOLVEstruct (input/output) dSOLVEstruct_t*
  *         The data structure to hold the communication pattern used
  *         in the phases of triangular solution and iterative refinement.
  *         This pattern should be initialized only once for repeated solutions.
  *         If options->SolveInitialized = YES, it is an input argument.
  *         If options->SolveInitialized = NO and nrhs != 0, it is an output
- *         argument. See superlu_ddefs.h for the definition of 'SOLVEstruct_t'.
+ *         argument. See superlu_ddefs.h for the definition of 'dSOLVEstruct_t'.
  *
  * berr    (output) double*, dimension (nrhs) (global)
  *         The componentwise relative backward error of each solution
@@ -503,9 +503,9 @@ at the top-level directory.
 
 void
 pdgssvx(superlu_dist_options_t *options, SuperMatrix *A,
-	ScalePermstruct_t *ScalePermstruct,
+	dScalePermstruct_t *ScalePermstruct,
 	double B[], int ldb, int nrhs, gridinfo_t *grid,
-	LUstruct_t *LUstruct, SOLVEstruct_t *SOLVEstruct, double *berr,
+	dLUstruct_t *LUstruct, dSOLVEstruct_t *SOLVEstruct, double *berr,
 	SuperLUStat_t *stat, int *info)
 {
     NRformat_loc *Astore;
@@ -1338,7 +1338,7 @@ pdgssvx(superlu_dist_options_t *options, SuperMatrix *A,
     /* Need to revisit: Why the following is not good enough for X-to-B
        distribution -- inv_perm_c changed */
 	pxgstrs_finalize(SOLVEstruct->gstrs_comm);
-	pxgstrs_init(A->ncol, m_loc, nrhs, fst_row, perm_r, perm_c, grid,
+	pdgstrs_init(A->ncol, m_loc, nrhs, fst_row, perm_r, perm_c, grid,
 	             LUstruct->Glu_persist, SOLVEstruct);
 #endif
 
@@ -1428,7 +1428,7 @@ pdgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 	    int_t *it;
             int_t *colind_gsmv = SOLVEstruct->A_colind_gsmv;
 	          /* This was allocated and set to NULL in dSolveInit() */
-	    SOLVEstruct_t *SOLVEstruct1;  /* Used by refinement. */
+	    dSOLVEstruct_t *SOLVEstruct1;  /* Used by refinement. */
 
 	    t = SuperLU_timer_();
 	    if ( options->RefineInitialized == NO || Fact == DOFACT ) {
@@ -1476,8 +1476,8 @@ pdgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 			is different than the solve with nrhs RHS.
 			So we use SOLVEstruct1 for the refinement step.
 		     */
-	        if ( !(SOLVEstruct1 = (SOLVEstruct_t *)
-		                       SUPERLU_MALLOC(sizeof(SOLVEstruct_t))) )
+	        if ( !(SOLVEstruct1 = (dSOLVEstruct_t *)
+		                       SUPERLU_MALLOC(sizeof(dSOLVEstruct_t))) )
 		    ABORT("Malloc fails for SOLVEstruct1");
 	        /* Copy the same stuff */
 	        SOLVEstruct1->row_to_proc = SOLVEstruct->row_to_proc;
@@ -1492,7 +1492,7 @@ pdgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 		if ( !(SOLVEstruct1->gstrs_comm = (pxgstrs_comm_t *)
 		       SUPERLU_MALLOC(sizeof(pxgstrs_comm_t))) )
 		    ABORT("Malloc fails for gstrs_comm[]");
-		pxgstrs_init(n, m_loc, 1, fst_row, perm_r, perm_c, grid,
+		pdgstrs_init(n, m_loc, 1, fst_row, perm_r, perm_c, grid,
 			     Glu_persist, SOLVEstruct1);
 	    }
 

@@ -107,7 +107,7 @@ _fcd ftcs3;
  *
  * Note
  * ====
- *   This routine can only be called after the routine pxgstrs_init(),
+ *   This routine can only be called after the routine pdgstrs_init(),
  *   in which the structures of the send and receive buffers are set up.
  *
  * Arguments
@@ -135,14 +135,14 @@ _fcd ftcs3;
  * x      (output) double*
  *        The solution vector. It is valid only on the diagonal processes.
  *
- * ScalePermstruct (input) ScalePermstruct_t*
+ * ScalePermstruct (input) dScalePermstruct_t*
  *        The data structure to store the scaling and permutation vectors
  *        describing the transformations performed to the original matrix A.
  *
  * grid   (input) gridinfo_t*
  *        The 2D process mesh.
  *
- * SOLVEstruct (input) SOLVEstruct_t*
+ * SOLVEstruct (input) dSOLVEstruct_t*
  *        Contains the information for the communication during the
  *        solution phase.
  *
@@ -154,9 +154,9 @@ _fcd ftcs3;
 int_t
 pdReDistribute_B_to_X(double *B, int_t m_loc, int nrhs, int_t ldb,
                       int_t fst_row, int_t *ilsum, double *x,
-		      ScalePermstruct_t *ScalePermstruct,
+		      dScalePermstruct_t *ScalePermstruct,
 		      Glu_persist_t *Glu_persist,
-		      gridinfo_t *grid, SOLVEstruct_t *SOLVEstruct)
+		      gridinfo_t *grid, dSOLVEstruct_t *SOLVEstruct)
 {
     int  *SendCnt, *SendCnt_nrhs, *RecvCnt, *RecvCnt_nrhs;
     int  *sdispls, *sdispls_nrhs, *rdispls, *rdispls_nrhs;
@@ -402,7 +402,7 @@ pdReDistribute_B_to_X(double *B, int_t m_loc, int nrhs, int_t ldb,
  *
  * Note
  * ====
- *   This routine can only be called after the routine pxgstrs_init(),
+ *   This routine can only be called after the routine pdgstrs_init(),
  *   in which the structures of the send and receive buffers are set up.
  * </pre>
  */
@@ -410,9 +410,9 @@ pdReDistribute_B_to_X(double *B, int_t m_loc, int nrhs, int_t ldb,
 int_t
 pdReDistribute_X_to_B(int_t n, double *B, int_t m_loc, int_t ldb, int_t fst_row,
 		      int_t nrhs, double *x, int_t *ilsum,
-		      ScalePermstruct_t *ScalePermstruct,
+		      dScalePermstruct_t *ScalePermstruct,
 		      Glu_persist_t *Glu_persist, gridinfo_t *grid,
-		      SOLVEstruct_t *SOLVEstruct)
+		      dSOLVEstruct_t *SOLVEstruct)
 {
     int_t  i, ii, irow, j, jj, k, knsupc, nsupers, l, lk;
     int_t  *xsup, *supno;
@@ -646,12 +646,12 @@ pdReDistribute_X_to_B(int_t n, double *B, int_t m_loc, int_t ldb, int_t fst_row,
  * </pre>
  */
 void
-pdCompute_Diag_Inv(int_t n, LUstruct_t *LUstruct,gridinfo_t *grid,
+pdCompute_Diag_Inv(int_t n, dLUstruct_t *LUstruct,gridinfo_t *grid,
                    SuperLUStat_t *stat, int *info)
 {
 #ifdef SLU_HAVE_LAPACK
     Glu_persist_t *Glu_persist = LUstruct->Glu_persist;
-    LocalLU_t *Llu = LUstruct->Llu;
+    dLocalLU_t *Llu = LUstruct->Llu;
 
     double *lusup;
     double *recvbuf, *tempv;
@@ -787,11 +787,11 @@ pdCompute_Diag_Inv(int_t n, LUstruct_t *LUstruct,gridinfo_t *grid,
  * n      (input) int (global)
  *        The order of the system of linear equations.
  *
- * LUstruct (input) LUstruct_t*
+ * LUstruct (input) dLUstruct_t*
  *        The distributed data structures storing L and U factors.
  *        The L and U factors are obtained from PDGSTRF for
  *        the possibly scaled and permuted matrix A.
- *        See superlu_ddefs.h for the definition of 'LUstruct_t'.
+ *        See superlu_ddefs.h for the definition of 'dLUstruct_t'.
  *        A may be scaled and permuted into A1, so that
  *        A1 = Pc*Pr*diag(R)*A*diag(C)*Pc^T = L*U
  *
@@ -822,7 +822,7 @@ pdCompute_Diag_Inv(int_t n, LUstruct_t *LUstruct,gridinfo_t *grid,
  * nrhs   (input) int (global)
  *        Number of right-hand sides.
  *
- * SOLVEstruct (input) SOLVEstruct_t* (global)
+ * SOLVEstruct (input) dSOLVEstruct_t* (global)
  *        Contains the information for the communication during the
  *        solution phase.
  *
@@ -837,15 +837,15 @@ pdCompute_Diag_Inv(int_t n, LUstruct_t *LUstruct,gridinfo_t *grid,
  */
 
 void
-pdgstrs(int_t n, LUstruct_t *LUstruct,
-	ScalePermstruct_t *ScalePermstruct,
+pdgstrs(int_t n, dLUstruct_t *LUstruct,
+	dScalePermstruct_t *ScalePermstruct,
 	gridinfo_t *grid, double *B,
 	int_t m_loc, int_t fst_row, int_t ldb, int nrhs,
-	SOLVEstruct_t *SOLVEstruct,
+	dSOLVEstruct_t *SOLVEstruct,
 	SuperLUStat_t *stat, int *info)
 {
     Glu_persist_t *Glu_persist = LUstruct->Glu_persist;
-    LocalLU_t *Llu = LUstruct->Llu;
+    dLocalLU_t *Llu = LUstruct->Llu;
     double alpha = 1.0;
 	double beta = 0.0;
     double zero = 0.0;
@@ -1366,12 +1366,6 @@ if(procs==1){
 					lusup, &nsupr, &x[ii], &knsupc);
 #endif
 
-		// for (i=0 ; i<knsupc*nrhs ; i++){
-		// printf("x_l: %f\n",x[ii+i]);
-		// fflush(stdout);
-		// }
-
-
 #if ( PROFlevel>=1 )
 		    TOC(t2, t1);
 		    stat_loc[thread_id]->utime[SOL_TRSM] += t2;
@@ -1640,6 +1634,7 @@ if(procs==1){
 #endif
 
 											stat_loc[thread_id]->ops[SOLVE] += knsupc * (knsupc - 1) * nrhs;
+
 #if ( DEBUGlevel>=2 )
 											printf("(%2d) Solve X[%2d]\n", iam, k);
 #endif
@@ -2011,15 +2006,6 @@ if(procs==1){
 						lusup, &nsupr, &x[ii], &knsupc);
 #endif
 			}
-			// for (i=0 ; i<knsupc*nrhs ; i++){
-			// printf("x_u: %f\n",x[ii+i]);
-			// fflush(stdout);
-			// }
-
-			// for (i=0 ; i<knsupc*nrhs ; i++){
-				// printf("x: %f\n",x[ii+i]);
-				// fflush(stdout);
-			// }
 
 #if ( PROFlevel>=1 )
 			TOC(t2, t1);
@@ -2194,7 +2180,7 @@ for (i=0;i<nroot_send;i++){
 								#pragma omp simd
 							#endif
 							for (i = 0; i < knsupc; ++i)
-								x[i + ii + j*knsupc] += lsum[i + il + j*knsupc ];
+							    x[i + ii + j*knsupc] += lsum[i + il + j*knsupc ];
 
 						lk = LBj( k, grid ); /* Local block number, column-wise. */
 						lsub = Lrowind_bc_ptr[lk];

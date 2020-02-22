@@ -204,7 +204,7 @@ superlu_sort_perm (const void *arg1, const void *arg2)
  *        The norm of the original matrix A, or the scaled A if
  *        equilibration was done.
  *
- * LUstruct (input/output) LUstruct_t*
+ * LUstruct (input/output) dLUstruct_t*
  *         The data structures to store the distributed L and U factors.
  *         The following fields should be defined:
  *
@@ -215,9 +215,9 @@ superlu_sort_perm (const void *arg1, const void *arg2)
  *         xsup[s] is the leading column of the s-th supernode,
  *             supno[i] is the supernode number to which column i belongs.
  *
- *         o Llu (input/output) LocalLU_t*
+ *         o Llu (input/output) dLocalLU_t*
  *           The distributed data structures to store L and U factors.
- *           See superlu_ddefs.h for the definition of 'LocalLU_t'.
+ *           See superlu_ddefs.h for the definition of 'dLocalLU_t'.
  *
  * grid   (input) gridinfo_t*
  *        The 2D process mesh. It contains the MPI communicator, the number
@@ -242,7 +242,7 @@ superlu_sort_perm (const void *arg1, const void *arg2)
  */
 int_t
 pdgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
-       LUstruct_t * LUstruct, gridinfo_t * grid, SuperLUStat_t * stat, int *info)
+       dLUstruct_t * LUstruct, gridinfo_t * grid, SuperLUStat_t * stat, int *info)
 {
 #ifdef _CRAY
     _fcd ftcs = _cptofcd ("N", strlen ("N"));
@@ -279,7 +279,7 @@ pdgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
     int iinfo;
     int *ToRecv, *ToSendD, **ToSendR;
     Glu_persist_t *Glu_persist = LUstruct->Glu_persist;
-    LocalLU_t *Llu = LUstruct->Llu;
+    dLocalLU_t *Llu = LUstruct->Llu;
     superlu_scope_t *scp;
     float s_eps;
     double thresh;
@@ -610,7 +610,7 @@ pdgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
     perm_c_supno = SUPERLU_MALLOC (2 * nsupers * sizeof (int_t));
     iperm_c_supno = perm_c_supno + nsupers;
 
-    static_schedule(options, m, n, LUstruct, grid, stat,
+    dstatic_schedule(options, m, n, LUstruct, grid, stat,
 		    perm_c_supno, iperm_c_supno, info);
 
 #if ( DEBUGlevel >= 2 )
@@ -1296,7 +1296,7 @@ pdgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
 #endif
 			{
                             pdgstrs2_omp (kk0, kk, Glu_persist, grid, Llu,
-                                          stat);
+                                        Ublock_info, stat);
                         }
 
                         pdgstrs2_timer += SuperLU_timer_()-ttt2;
@@ -1462,7 +1462,7 @@ pdgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
 #endif
                 {
                     pdgstrs2_omp (k0, k, Glu_persist, grid, Llu, 
-		                   stat);
+		                    Ublock_info, stat);
                 }
                 pdgstrs2_timer += SuperLU_timer_() - ttt2;
 

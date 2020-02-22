@@ -9,7 +9,7 @@
 #  Creation date:   March 1, 2016	version 5.0.0
 #
 #  Modified:	    October 13, 2017    version 5.2.1
-#		    
+#		    February 23, 2020   version 6.3.0
 #
 ############################################################################
 #
@@ -19,7 +19,7 @@ SuperLUroot = ${CMAKE_INSTALL_PREFIX}
 DSUPERLULIB = $(SuperLUroot)/SRC/${PROJECT_NAME_LIB_EXPORT}
 INCLUDEDIR  = $(SuperLUroot)/@CMAKE_INSTALL_INCLUDEDIR@
 
-LIBS 	    = $(DSUPERLULIB) ${BLAS_LIB_EXPORT} -lm -lmpi
+LIBS 	    = $(DSUPERLULIB) ${BLAS_LIB_EXPORT} -lm #-lmpi
 LIBS	    += ${LAPACK_LIB_EXPORT}
 LIBS	    += ${PARMETIS_LIB_EXPORT}
 LIBS 	    += ${COMBBLAS_LIB_EXPORT}
