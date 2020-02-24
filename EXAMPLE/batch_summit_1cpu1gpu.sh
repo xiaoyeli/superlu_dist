@@ -82,13 +82,15 @@ GPU_PER_RS=1
 
 #export NUM_CUDA_STREAMS=1
 
-# can try these 2 matrices: Ga19As19H42.mtx, Geo_1438.mtx
-for MAT in g20.rua Ga19As19H42.mtx  #Geo_1438.mtx
+# can try these 2 matrices: Ga19As19H42.mtx, Geo_1438.mtx g20.rua
+#for MAT in Ga19As19H42.mtx #Geo_1438.mtx 
+for MAT in Geo_1438.mtx 
   do
     export OMP_NUM_THREADS=$OMP_NUM_THREADS
     mkdir -p ${MAT}_summit
 	echo "jsrun --nrs $RS_VAL --tasks_per_rs $RANK_PER_RS --cpu_per_rs $RANK_PER_RS -c $TH_PER_RS --gpu_per_rs $GPU_PER_RS  --rs_per_host 6 $EX_DRIVER -c $NCOL -r $NROW $INPUT_DIR/$MAT | tee ./${MAT}_summit_new_LU/mpi_${NROW}x${NCOL}_omp_${OMP_NUM_THREADS}_gpu_${GPU_PER_RANK}"
      jsrun --nrs $RS_VAL --tasks_per_rs $RANK_PER_RS --cpu_per_rs $RANK_PER_RS -c $TH_PER_RS --gpu_per_rs $GPU_PER_RS  --rs_per_host 1 '--smpiargs=-x PAMI_DISABLE_CUDA_HOOK=1 -disable_gpu_hooks' nvprof $EX_DRIVER -c $NCOL -r $NROW $INPUT_DIR/$MAT 2>&1 | tee ./${MAT}_summit/mpi_${NROW}x${NCOL}_omp_${OMP_NUM_THREADS}_gpu
+#     jsrun --nrs $RS_VAL --tasks_per_rs $RANK_PER_RS --cpu_per_rs $RANK_PER_RS -c $TH_PER_RS --gpu_per_rs $GPU_PER_RS  --rs_per_host 1 '--smpiargs=-x PAMI_DISABLE_CUDA_HOOK=1 -disable_gpu_hooks' nvprof $EX_DRIVER -c $NCOL -r $NROW $INPUT_DIR/$MAT 2>&1 | tee ./${MAT}_summit/mpi_${NROW}x${NCOL}_omp_${OMP_NUM_THREADS}_gpu
   done ## end for MAT
 
 done  ## end for NTH

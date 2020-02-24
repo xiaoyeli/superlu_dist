@@ -233,6 +233,7 @@ if (TPL_ENABLE_PARMETISLIB)   ## want to use parmetis
     message(FATAL_ERROR "TPL_PARMETIS_INCLUDE_DIRS option be set for PARMETIS support to be enabled.")
   endif()
   foreach(dir ${TPL_PARMETIS_INCLUDE_DIRS})
+    	      message("${TPL_PARMETIS_INCLUDE_DIRS}")
     if (NOT EXISTS ${dir})
       message(FATAL_ERROR "PARMETIS include directory not found: ${dir}")
     endif()
