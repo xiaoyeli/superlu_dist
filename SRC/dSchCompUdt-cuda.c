@@ -281,13 +281,18 @@ if ( msg0 && msg2 ) {  /* L(:,k) and U(k,:) are not empty. */
     firstprivate(luptr,lptr) default (shared)
 #endif
             {
-                int thread_id = omp_get_thread_num();
+                int thread_id = 1;
+                int num_threads = 1;
+#ifdef _OPENMP
+                thread_id = omp_get_thread_num();
+                num_threads = omp_get_num_threads();
+#endif
 
                 int* indirect_thread = indirect + ldt*thread_id;
                 int* indirect2_thread = indirect2 + ldt*thread_id;
                 double* tempv1;
 
-                if (ncpu_blks< omp_get_num_threads()) {
+                if (ncpu_blks< num_threads) {
                     // TAU_STATIC_TIMER_START("SPECIAL_CPU_SCATTER");
 
                     for (j = jjj_st; j < jjj_st+ncpu_blks; ++j) {
@@ -471,7 +476,10 @@ if ( msg0 && msg2 ) {  /* L(:,k) and U(k,:) are not empty. */
     firstprivate(luptr,lptr) default (shared)
 #endif
             {
-                int thread_id = omp_get_thread_num();
+                int thread_id = 1;
+#ifdef _OPENMP
+                thread_id = omp_get_thread_num();
+#endif
 
                 int* indirect_thread = indirect + ldt*thread_id;
                 int* indirect2_thread = indirect2 + ldt*thread_id;
