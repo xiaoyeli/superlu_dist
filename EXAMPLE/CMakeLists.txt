@@ -76,6 +76,12 @@ if(enable_double)
   set(DEXMG4 pddrive4_ABglobal.c)
   add_executable(pddrive4_ABglobal ${DEXMG4})
   target_link_libraries(pddrive4_ABglobal ${all_link_libs})
+  
+  set(DEXMS pddrive_spawn.c dcreate_matrix.c)
+  add_executable(pddrive_spawn ${DEXMS})
+  target_link_libraries(pddrive_spawn ${all_link_libs})  
+  
+  
 endif()
 
 

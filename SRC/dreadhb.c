@@ -192,7 +192,7 @@ dreadhb_dist(int iam, FILE *fp, int_t *nrow, int_t *ncol, int_t *nonz,
     if ( sym ) {
 	FormFullA(*ncol, nonz, nzval, rowind, colptr);
     }
-    fclose(fp);
+
 #if ( DEBUGlevel>=1 )
     CHECK_MALLOC(0, "Exit dreadhb_dist()");
 #endif

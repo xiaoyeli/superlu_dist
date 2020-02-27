@@ -100,8 +100,8 @@ double pzlangs(char *norm, SuperMatrix *A, gridinfo_t *grid)
 		sum += fabs(Aval[i]);
 	    value = SUPERLU_MAX(value,sum);
 	}
-#else /* XSL ==> */
-	if ( !(rwork = (double *) doubleCalloc_dist(A->ncol)) )
+#else /* Sherry ==> */
+	if ( !(rwork = doubleCalloc_dist(A->ncol)) )
 	    ABORT("doubleCalloc_dist fails for rwork.");
 	for (i = 0; i < m_loc; ++i) {
 	    for (j = Astore->rowptr[i]; j < Astore->rowptr[i+1]; ++j) {
@@ -110,7 +110,7 @@ double pzlangs(char *norm, SuperMatrix *A, gridinfo_t *grid)
 	    }
 	}
 
-	if ( !(temprwork = (double *) doubleCalloc_dist(A->ncol)) )
+	if ( !(temprwork = doubleCalloc_dist(A->ncol)) )
 	    ABORT("doubleCalloc_dist fails for temprwork.");
 	MPI_Allreduce(rwork, temprwork, A->ncol, MPI_DOUBLE, MPI_SUM, grid->comm);
 	value = 0.;

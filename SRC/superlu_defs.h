@@ -12,7 +12,7 @@ at the top-level directory.
  * \brief Definitions which are precision-neutral
  *
  * <pre>
- * -- Distributed SuperLU routine (version 6.1) --
+ * -- Distributed SuperLU routine (version 6.2) --
  * Lawrence Berkeley National Lab, Univ. of California Berkeley.
  * November 1, 2007
  *
@@ -20,7 +20,8 @@ at the top-level directory.
  *     February 20, 2008
  *     October 11, 2014
  *     September 18, 2018  version 6.0
- *     February 8, 2019
+ *     February 8, 2019    version 6.1.1
+ *     November 12, 2019   version 6.2.0
  * </pre>
  */
 
@@ -70,9 +71,9 @@ at the top-level directory.
  * Versions 4.x and earlier do not include a #define'd version numbers.
  */
 #define SUPERLU_DIST_MAJOR_VERSION     6
-#define SUPERLU_DIST_MINOR_VERSION     1
-#define SUPERLU_DIST_PATCH_VERSION     1
-#define SUPERLU_DIST_RELEASE_DATE      "February 8, 2019"
+#define SUPERLU_DIST_MINOR_VERSION     3
+#define SUPERLU_DIST_PATCH_VERSION     0
+#define SUPERLU_DIST_RELEASE_DATE      "February 23, 2020"
 
 #include "superlu_dist_config.h"
 /* Define my integer size int_t */
@@ -90,8 +91,10 @@ at the top-level directory.
   #define IFMT "%8d"
 #endif
 
+#include "superlu_FortranCInterface.h"
+//#include "Cnames.h"
+#include "superlu_FCnames.h"
 #include "superlu_enum_consts.h"
-#include "Cnames.h"
 #include "supermatrix.h"
 #include "util_dist.h"
 #include "psymbfact.h"
@@ -399,7 +402,7 @@ typedef struct {
     int64_t nnzLU;   /* number of nonzeros in L+U*/
 } Glu_freeable_t;
 
-
+#if 0 // Sherry: move to precision-dependent file
 /* 
  *-- The structure used to store matrix A of the linear system and
  *   several vectors describing the transformations done to matrix A.
@@ -444,6 +447,7 @@ typedef struct {
     int_t  *perm_r;
     int_t  *perm_c;
 } ScalePermstruct_t;
+#endif
 
 /*-- Data structure for redistribution of B and X --*/
 typedef struct {
@@ -645,6 +649,12 @@ typedef struct {
     int64_t nnzL, nnzU;
 } superlu_dist_mem_usage_t;
 
+/*-- Auxiliary data type used in PxGSTRS/PxGSTRS1. */
+typedef struct {
+    int_t lbnum;  /* Row block number (local).      */
+    int_t indpos; /* Starting position in Uindex[]. */
+} Ucb_indptr_t;
+
 /* 
  *-- The new structures added in the hybrid CUDA + OpenMP + MPI code.
  */
@@ -729,7 +739,6 @@ extern void    superlu_free_dist (void*);
 extern int_t   *intMalloc_dist (int_t);
 extern int_t   *intCalloc_dist (int_t);
 extern int_t   mc64id_dist(int_t *);
-extern int     c2cpp_GetAWPM(SuperMatrix *, gridinfo_t *, ScalePermstruct_t *);
 extern void  arrive_at_ublock (int_t, int_t *, int_t *, int_t *,
 			       int_t *, int_t *, int_t, int_t, 
 			       int_t *, int_t *, int_t *, gridinfo_t *);
@@ -742,9 +751,6 @@ extern void   superlu_abort_and_exit_dist(char *);
 extern int_t  sp_ienv_dist (int_t);
 extern void   ifill_dist (int_t *, int_t, int_t);
 extern void   super_stats_dist (int_t, int_t *);
-extern void   ScalePermstructInit(const int_t, const int_t, 
-				   ScalePermstruct_t *);
-extern void   ScalePermstructFree(ScalePermstruct_t *);
 extern void  get_diag_procs(int_t, Glu_persist_t *, gridinfo_t *, int_t *,
 			    int_t **, int_t **);
 extern int_t QuerySpace_dist(int_t, int_t, Glu_freeable_t *, superlu_dist_mem_usage_t *);

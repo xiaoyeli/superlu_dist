@@ -187,7 +187,7 @@ int dPrint_CompRowLoc_Matrix_dist(SuperMatrix *A)
     PrintInt10("rowptr", m_loc+1, Astore->rowptr);
     PrintInt10("colind", nnz_loc, Astore->colind);
     if ( (dp = (double *) Astore->nzval) != NULL )
-        PrintDouble5("nzval", nnz_loc, dp);
+        Printdouble5("nzval", nnz_loc, dp);
     printf("==== end CompRowLoc matrix\n");
     return 0;
 }
@@ -208,7 +208,7 @@ int file_dPrint_CompRowLoc_Matrix_dist(FILE *fp, SuperMatrix *A)
     file_PrintInt10(fp, "rowptr", m_loc+1, Astore->rowptr);
     file_PrintInt10(fp, "colind", nnz_loc, Astore->colind);
     if ( (dp = (double *) Astore->nzval) != NULL )
-        file_PrintDouble5(fp, "nzval", nnz_loc, dp);
+        file_Printdouble5(fp, "nzval", nnz_loc, dp);
     fprintf(fp, "==== end CompRowLoc matrix\n");
     return 0;
 }
@@ -393,6 +393,36 @@ void dScaleAdd_CompRowLoc_Matrix_dist(SuperMatrix *A, SuperMatrix *B, double c)
     return;
 }
 
+/*! \brief Allocate storage in ScalePermstruct */
+void dScalePermstructInit(const int_t m, const int_t n,
+                         dScalePermstruct_t *ScalePermstruct)
+{
+    ScalePermstruct->DiagScale = NOEQUIL;
+    if ( !(ScalePermstruct->perm_r = intMalloc_dist(m)) )
+        ABORT("Malloc fails for perm_r[].");
+    if ( !(ScalePermstruct->perm_c = intMalloc_dist(n)) )
+        ABORT("Malloc fails for perm_c[].");
+}
+
+/*! \brief Deallocate ScalePermstruct */
+void dScalePermstructFree(dScalePermstruct_t *ScalePermstruct)
+{
+    SUPERLU_FREE(ScalePermstruct->perm_r);
+    SUPERLU_FREE(ScalePermstruct->perm_c);
+    switch ( ScalePermstruct->DiagScale ) {
+      case ROW:
+        SUPERLU_FREE(ScalePermstruct->R);
+        break;
+      case COL:
+        SUPERLU_FREE(ScalePermstruct->C);
+        break;
+      case BOTH:
+        SUPERLU_FREE(ScalePermstruct->R);
+        SUPERLU_FREE(ScalePermstruct->C);
+        break;
+    }
+}
+
 
 /**** Other utilities ****/
 void
@@ -453,7 +483,7 @@ void dinf_norm_error_dist(int_t n, int_t nrhs, double *x, int_t ldx,
     }
 }
 
-void PrintDouble5(char *name, int_t len, double *x)
+void Printdouble5(char *name, int_t len, double *x)
 {
     register int_t i;
 
@@ -465,7 +495,7 @@ void PrintDouble5(char *name, int_t len, double *x)
     printf("\n");
 }
 
-int file_PrintDouble5(FILE *fp, char *name, int_t len, double *x)
+int file_Printdouble5(FILE *fp, char *name, int_t len, double *x)
 {
     register int_t i;
 
@@ -481,7 +511,7 @@ int file_PrintDouble5(FILE *fp, char *name, int_t len, double *x)
 /*! \brief Print the blocks in the factored matrix L.
  */
 void dPrintLblocks(int iam, int_t nsupers, gridinfo_t *grid,
-		  Glu_persist_t *Glu_persist, LocalLU_t *Llu)
+		  Glu_persist_t *Glu_persist, dLocalLU_t *Llu)
 {
     register int c, extra, gb, j, lb, nsupc, nsupr, len, nb, ncb;
     register int_t k, mycol, r;
@@ -510,7 +540,7 @@ void dPrintLblocks(int iam, int_t nsupers, gridinfo_t *grid,
 		       iam, c, index[k], len);
 		PrintInt10("lsub", len, &index[k+LB_DESCRIPTOR]);
 		for (j = 0; j < nsupc; ++j) {
-		    PrintDouble5("nzval", len, &nzval[r + j*nsupr]);
+		    Printdouble5("nzval", len, &nzval[r + j*nsupr]);
 		}
 		k += LB_DESCRIPTOR + len;
 		r += len;
@@ -529,12 +559,12 @@ void dPrintLblocks(int iam, int_t nsupers, gridinfo_t *grid,
 
 /*! \brief Sets all entries of matrix L to zero.
  */
-void dZeroLblocks(int iam, int_t n, gridinfo_t *grid, LUstruct_t *LUstruct)
+void dZeroLblocks(int iam, int_t n, gridinfo_t *grid, dLUstruct_t *LUstruct)
 {
     double zero = 0.0;
     register int extra, gb, j, lb, nsupc, nsupr, ncb;
     register int_t k, mycol, r;
-    LocalLU_t *Llu = LUstruct->Llu;
+    dLocalLU_t *Llu = LUstruct->Llu;
     Glu_persist_t *Glu_persist = LUstruct->Glu_persist;
     int_t *xsup = Glu_persist->xsup;
     int_t *index;
@@ -562,10 +592,10 @@ void dZeroLblocks(int iam, int_t n, gridinfo_t *grid, LUstruct_t *LUstruct)
 } /* dZeroLblocks */
 
 
-/*! \Dump the factored matrix L using matlab triple-let format
+/*! \brief Dump the factored matrix L using matlab triple-let format
  */
 void dDumpLblocks(int iam, int_t nsupers, gridinfo_t *grid,
-		  Glu_persist_t *Glu_persist, LocalLU_t *Llu)
+		  Glu_persist_t *Glu_persist, dLocalLU_t *Llu)
 {
     register int c, extra, gb, j, i, lb, nsupc, nsupr, len, nb, ncb;
     register int_t k, mycol, r;
@@ -662,7 +692,7 @@ void dDumpLblocks(int iam, int_t nsupers, gridinfo_t *grid,
 /*! \brief Print the blocks in the factored matrix U.
  */
 void dPrintUblocks(int iam, int_t nsupers, gridinfo_t *grid,
-		  Glu_persist_t *Glu_persist, LocalLU_t *Llu)
+		  Glu_persist_t *Glu_persist, dLocalLU_t *Llu)
 {
     register int c, extra, jb, k, lb, len, nb, nrb, nsupc;
     register int_t myrow, r;
@@ -690,7 +720,7 @@ void dPrintUblocks(int iam, int_t nsupers, gridinfo_t *grid,
 		       iam, c, jb, index[k+1]);
 		nsupc = SuperSize( jb );
 		PrintInt10("fstnz", nsupc, &index[k+UB_DESCRIPTOR]);
-		PrintDouble5("nzval", len, &nzval[r]);
+		Printdouble5("nzval", len, &nzval[r]);
 		k += UB_DESCRIPTOR + nsupc;
 		r += len;
 	    }
@@ -719,7 +749,7 @@ dprint_gsmv_comm(FILE *fp, int_t m_loc, pdgsmv_comm_t *gsmv_comm,
 
 
 void
-GenXtrueRHS(int nrhs, SuperMatrix *A, Glu_persist_t *Glu_persist,
+dGenXtrueRHS(int nrhs, SuperMatrix *A, Glu_persist_t *Glu_persist,
 	    gridinfo_t *grid, double **xact, int *ldx, double **b, int *ldb)
 {
     int_t gb, gbrow, i, iam, irow, j, lb, lsup, myrow, n, nlrows,
@@ -737,7 +767,7 @@ GenXtrueRHS(int nrhs, SuperMatrix *A, Glu_persist_t *Glu_persist,
     iam = grid->iam;
     myrow = MYROW( iam, grid );
     Astore = (NCformat *) A->Store;
-    aval = (double *) Astore->nzval;
+    aval = Astore->nzval;
     lb = CEILING( nsupers, grid->nprow ) + 1;
     if ( !(lxsup = intMalloc_dist(lb)) )
 	ABORT("Malloc fails for lxsup[].");
@@ -784,7 +814,7 @@ GenXtrueRHS(int nrhs, SuperMatrix *A, Glu_persist_t *Glu_persist,
     for (i = 0; i < grid->nprow*grid->npcol; ++i) {
 	if ( iam == i ) {
 	    printf("\n(%d)\n", iam);
-	    PrintDouble5("rhs", *ldb, *b);
+	    Printdouble5("rhs", *ldb, *b);
 	}
 	MPI_Barrier( grid->comm );
     }

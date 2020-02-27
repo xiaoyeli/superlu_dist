@@ -23,7 +23,6 @@ at the top-level directory.
 
 #include <math.h>
 #include "superlu_ddefs.h"
-//#include "superlu_zdefs.h"
 
 /*! \brief
  *
@@ -60,22 +59,30 @@ int main(int argc, char *argv[])
     double   *berr;
     double   *b, *xtrue;
     int    m, n;
-    int      nprow, npcol;
+    int      nprow, npcol,lookahead,colperm;
     int      iam, info, ldb, ldx, nrhs;
     char     **cpp, c, *postfix;;
     FILE *fp, *fopen();
     int cpp_defs();
     int ii, omp_mpi_level;
-
+	MPI_Comm parent;
+	float result[2];
+	result[0]=0.0;
+	result[1]=0.0;
+	
     nprow = 1;  /* Default process rows.      */
     npcol = 1;  /* Default process columns.   */
     nrhs = 1;   /* Number of right-hand side. */
+	lookahead = 10; 
+	colperm = 4;
 
     /* ------------------------------------------------------------
        INITIALIZE MPI ENVIRONMENT. 
        ------------------------------------------------------------*/
     //MPI_Init( &argc, &argv );
     MPI_Init_thread( &argc, &argv, MPI_THREAD_MULTIPLE, &omp_mpi_level); 
+	MPI_Comm_get_parent(&parent);   	
+	
 	
 
 #if ( VAMPIR>=1 )
@@ -102,6 +109,10 @@ int main(int argc, char *argv[])
 		        break;
 	      case 'c': npcol = atoi(*cpp);
 		        break;
+	      case 'l': lookahead = atoi(*cpp);
+		        break;
+	      case 'p': colperm = atoi(*cpp);
+		        break;					
 	    }
 	} else { /* Last arg is considered a filename */
 	    if ( !(fp = fopen(*cpp, "r")) ) {
@@ -195,9 +206,11 @@ int main(int argc, char *argv[])
         options.SolveInitialized  = NO;
         options.RefineInitialized = NO;
         options.PrintStat         = YES;
-	options.DiagInv           = NO;
+		options.DiagInv       = NO;
      */
     set_default_options_dist(&options);
+	options.IterRefine = NOREFINE;
+	options.DiagInv = YES;							   
 #if 0
     options.RowPerm = NOROWPERM;
     options.IterRefine = NOREFINE;
@@ -205,6 +218,11 @@ int main(int argc, char *argv[])
     options.Equil = NO; 
     options.ReplaceTinyPivot = YES;
 #endif
+
+
+	options.ColPerm           = colperm;
+	options.num_lookaheads           = lookahead;
+
 
     if (!iam) {
 	print_sp_ienv_dist(&options);
@@ -233,6 +251,37 @@ int main(int argc, char *argv[])
 
     PStatPrint(&options, &stat, &grid);        /* Print the statistics. */
 
+	
+	
+	
+	/* sending the results (numerical factorization time and total memory) to the parent process */ 
+	    float total;
+		superlu_dist_mem_usage_t num_mem_usage;
+	    dQuerySpace_dist(n, &LUstruct, &grid, &stat, &num_mem_usage);
+	    MPI_Allreduce( &num_mem_usage.total, &total,
+		       1, MPI_FLOAT, MPI_SUM, grid.comm );
+			   
+		result[0] = stat.utime[FACT];   
+		result[1] = total * 1e-6;     
+		if (!iam) {
+			printf("returning data:\n"
+		   "    Factor time :        %8.2f |  Total MEM : %8.2f\n",
+		   stat.utime[FACT], total * 1e-6);
+			printf("**************************************************\n");
+			fflush(stdout);
+		}	
+	
+	
+	
+		//MPI_Bcast(result,2,MPI_FLOAT,0,parent);
+		
+    		//if (!iam) {
+                 //   MPI_Send( result, 2, MPI_FLOAT, 0,
+                  //           2, &parent);
+    	//	}
+
+	
+	
     /* ------------------------------------------------------------
        DEALLOCATE STORAGE.
        ------------------------------------------------------------*/
@@ -248,17 +297,20 @@ int main(int argc, char *argv[])
     SUPERLU_FREE(b);
     SUPERLU_FREE(xtrue);
     SUPERLU_FREE(berr);
-    fclose(fp);
 
     /* ------------------------------------------------------------
        RELEASE THE SUPERLU PROCESS GRID.
        ------------------------------------------------------------*/
 out:
+	MPI_Reduce(result, MPI_BOTTOM, 2, MPI_FLOAT,MPI_MAX, 0, parent);
     superlu_gridexit(&grid);
 
     /* ------------------------------------------------------------
        TERMINATES THE MPI EXECUTION ENVIRONMENT.
        ------------------------------------------------------------*/
+	   
+	
+	MPI_Comm_disconnect(&parent);
     MPI_Finalize();
 
 #if ( DEBUGlevel>=1 )
