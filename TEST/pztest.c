@@ -336,8 +336,8 @@ int main(int argc, char *argv[])
 			    if (fact == SamePattern_SameRowPerm && iam == 0) {
                                 /* Perturb the 1st diagonal of the matrix 
                                    to larger value, so to have a different A. */
-                                (doublecomplex *) Astore->nzval)[0].r += 1.0e-8;
-                                (doublecomplex *) Astore->nzval)[0].i += 1.0e-8;
+                                (doublecomplex *) Astore->nzval)[0].r += 1.0e-12; //1.0e-8;
+                                (doublecomplex *) Astore->nzval)[0].i += 1.0e-12; //1.0e-8;
                              }
 
 		        } 

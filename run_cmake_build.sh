@@ -65,7 +65,7 @@ OOT}/Applications/BipartiteMatchings" \
     -DBUILD_SHARED_LIBS=OFF \
     -DCMAKE_INSTALL_PREFIX=.
 fi
-    -DXSDK_INDEX_SIZE=64 \
+#    -DXSDK_INDEX_SIZE=64 \
 #   -DTPL_ENABLE_PARMETISLIB=OFF
 #    -DCMAKE_CXX_FLAGS="-std=c++11" \
 
