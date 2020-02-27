@@ -867,7 +867,9 @@ void pdgstrs2_omp
 #endif
             segsize = klst - usub[iukp++];
 	    if (segsize) {
+#ifdef _OPENMP
 #pragma omp task default(shared) firstprivate(segsize,rukp) if (segsize > 30)
+#endif
 		{ /* Nonzero segment. */
 		    int_t luptr = (knsupc - segsize) * (nsupr + 1);
 		    //printf("[2] segsize %d, nsupr %d\n", segsize, nsupr);
