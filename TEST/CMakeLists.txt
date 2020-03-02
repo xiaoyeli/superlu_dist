@@ -8,7 +8,7 @@ endif ()
 
 set(MATRICES ../EXAMPLE/g20.rua)  # sample sparse matrix from a file
 set(NPROWS 1 2 5)	  # process rows
-set(NPCOLS 1 2 3) 	  # process columns 
+set(NPCOLS 1 2 3) 	  # process columns
 set(NVAL 9 19)	  	  # generated matrix dimensions
 set(NRHS 1 3)		  # number of RHS
 # set(FILLRATIO 2 10)	  # estimated fill ratio
@@ -44,11 +44,11 @@ function(add_superlu_dist_tests target input)
 	      foreach (m ${SUPERSIZE})
                 set(testName "${target}_${r}x${c}_${s}_${b}_${x}_${m}")
 	  	set(SINGLE_OUTPUT ${SuperLU_DIST_BINARY_DIR}/TEST/${testName}.out)
-          add_test( ${testName}_SP 
+          add_test( ${testName}_SP
 	    	    ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} ${np}
-            	    ${MPIEXEC_PREFLAGS} ${target} ${MPIEXEC_POSTFLAGS} 
+            	    ${MPIEXEC_PREFLAGS} ${TEST_LOC}/${target} ${MPIEXEC_POSTFLAGS}
 		    -r ${r} -c ${c} -s ${s} -b ${b} -x ${x} -m ${m} -f ${TEST_INPUT}
-		  ) 
+		  )
 #          add_test( ${testName}_SP "${CMAKE_COMMAND}"
 #	    -DTEST=${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} ${np}
 #            ${MPIEXEC_PREFLAGS} ${target} ${MPIEXEC_POSTFLAGS} -r ${r} -c ${c} -s ${s} -b ${b} -x ${x} -m ${m} -f ${TEST_INPUT}
