@@ -52,9 +52,9 @@ int main(int argc, char *argv[])
     superlu_dist_options_t options;
     SuperLUStat_t stat;
     SuperMatrix A;
-    ScalePermstruct_t ScalePermstruct;
-    LUstruct_t LUstruct;
-    SOLVEstruct_t SOLVEstruct;
+    zScalePermstruct_t ScalePermstruct;
+    zLUstruct_t LUstruct;
+    zSOLVEstruct_t SOLVEstruct;
     gridinfo_t grid;
     double   *berr;
     doublecomplex   *b, *xtrue;
@@ -234,8 +234,8 @@ int main(int argc, char *argv[])
     n = A.ncol;
 
     /* Initialize ScalePermstruct and LUstruct. */
-    ScalePermstructInit(m, n, &ScalePermstruct);
-    LUstructInit(n, &LUstruct);
+    zScalePermstructInit(m, n, &ScalePermstruct);
+    zLUstructInit(n, &LUstruct);
 
     /* Initialize the statistics variables. */
     PStatInit(&stat);
@@ -291,9 +291,9 @@ int main(int argc, char *argv[])
 
     PStatFree(&stat);
     Destroy_CompRowLoc_Matrix_dist(&A);
-    ScalePermstructFree(&ScalePermstruct);
-    Destroy_LU(n, &grid, &LUstruct);
-    LUstructFree(&LUstruct);
+    zScalePermstructFree(&ScalePermstruct);
+    zDestroy_LU(n, &grid, &LUstruct);
+    zLUstructFree(&LUstruct);
     if ( options.SolveInitialized ) {
         zSolveFinalize(&options, &SOLVEstruct);
     }
