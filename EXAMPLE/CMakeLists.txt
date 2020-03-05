@@ -130,4 +130,8 @@ if(enable_complex16)
   add_executable(pzdrive4_ABglobal ${ZEXMG4})
   target_link_libraries(pzdrive4_ABglobal ${all_link_libs})
 
+  set(ZEXMS pzdrive_spawn.c zcreate_matrix.c)
+  add_executable(pzdrive_spawn ${ZEXMS})
+  target_link_libraries(pzdrive_spawn ${all_link_libs})  
+
 endif()
