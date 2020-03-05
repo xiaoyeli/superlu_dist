@@ -1,4 +1,4 @@
-# SuperLU_DIST (version 6.2)
+# SuperLU_DIST (version 6.3)
 
 [![Build Status](https://travis-ci.org/xiaoyeli/superlu_dist.svg?branch=master)](https://travis-ci.org/xiaoyeli/superlu_dist) 
 [Nightly tests](http://my.cdash.org/index.php?project=superlu_dist)
@@ -392,4 +392,9 @@ December 31, 2016   Version 5.1.3
 September 30, 2017  Version 5.2.0  
 January 28, 2018    Version 5.3.0
 June 1, 2018        Version 5.4.0
+September 22, 2018  Version 6.0.0
+December 9, 2018    Version 6.1.0
+February 8, 2019    Version 6.1.1
+November 12, 2019   Version 6.2.0
+February 23, 2020   Version 6.3.0
 ```

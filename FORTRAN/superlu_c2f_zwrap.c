@@ -10,7 +10,7 @@
  */
 
 #include "superlu_zdefs.h"
-#include "Cnames.h"
+#include "superlu_FCnames.h"
 
 /* kind of integer to hold a pointer.  Use int.
    This might need to be changed on systems with large memory.
@@ -59,17 +59,17 @@ void f_create_options_handle(fptr *handle)
 
 void f_create_ScalePerm_handle(fptr *handle)
 {
-   *handle = (fptr) SUPERLU_MALLOC(sizeof(ScalePermstruct_t));
+   *handle = (fptr) SUPERLU_MALLOC(sizeof(zScalePermstruct_t));
 }
 
 void f_create_LUstruct_handle(fptr *handle)
 {
-   *handle = (fptr) SUPERLU_MALLOC(sizeof(LUstruct_t));
+   *handle = (fptr) SUPERLU_MALLOC(sizeof(zLUstruct_t));
 }
 
 void f_create_SOLVEstruct_handle(fptr *handle)
 {
-   *handle = (fptr) SUPERLU_MALLOC(sizeof(SOLVEstruct_t));
+   *handle = (fptr) SUPERLU_MALLOC(sizeof(zSOLVEstruct_t));
 }
 
 void f_create_SuperMatrix_handle(fptr *handle)
@@ -228,12 +228,12 @@ void f_superlu_gridexit(fptr *grid)
 
 void f_ScalePermstructInit(int_t *m, int_t *n, fptr *ScalePermstruct)
 {
-   ScalePermstructInit(*m, *n, (ScalePermstruct_t *) *ScalePermstruct);
+   zScalePermstructInit(*m, *n, (zScalePermstruct_t *) *ScalePermstruct);
 }
 
 void f_ScalePermstructFree(fptr *ScalePermstruct)
 {
-   ScalePermstructFree((ScalePermstruct_t *) *ScalePermstruct);
+   zScalePermstructFree((zScalePermstruct_t *) *ScalePermstruct);
 }
 
 void f_PStatInit(fptr *stat)
@@ -248,21 +248,21 @@ void f_PStatFree(fptr *stat)
 
 void f_LUstructInit(int_t *m, int_t *n, fptr *LUstruct)
 {
-   extern void LUstructInit(const int_t, LUstruct_t *);
+   extern void zLUstructInit(const int_t, zLUstruct_t *);
 
-   LUstructInit(*m, (LUstruct_t *) *LUstruct);
+   zLUstructInit(*m, (zLUstruct_t *) *LUstruct);
 }
 
 void f_LUstructFree(fptr *LUstruct)
 {
-   extern void LUstructFree(LUstruct_t *);
+   extern void zLUstructFree(zLUstruct_t *);
 
-   LUstructFree((LUstruct_t *) *LUstruct);
+   zLUstructFree((zLUstruct_t *) *LUstruct);
 }
 
 void f_Destroy_LU(int_t *n, fptr *grid, fptr *LUstruct)
 {
-   Destroy_LU(*n, (gridinfo_t *) *grid, (LUstruct_t *) *LUstruct);
+   zDestroy_LU(*n, (gridinfo_t *) *grid, (zLUstruct_t *) *LUstruct);
 }
 
 void f_zCreate_CompRowLoc_Mat_dist(fptr *A, int_t *m, int_t *n, int_t *nnz_loc,
@@ -289,7 +289,7 @@ void f_Destroy_SuperMat_Store_dist(fptr *A)
 void f_zSolveFinalize(fptr *options, fptr *SOLVEstruct)
 {
    zSolveFinalize((superlu_dist_options_t *) *options,
-                  (SOLVEstruct_t *) *SOLVEstruct);
+                  (zSOLVEstruct_t *) *SOLVEstruct);
 }
 
 void f_pzgssvx(fptr *options, fptr *A, fptr *ScalePermstruct, doublecomplex *B,
@@ -297,9 +297,9 @@ void f_pzgssvx(fptr *options, fptr *A, fptr *ScalePermstruct, doublecomplex *B,
                fptr *SOLVEstruct, double *berr, fptr *stat, int *info)
 {
     pzgssvx((superlu_dist_options_t *) *options, (SuperMatrix *) *A,
-	    (ScalePermstruct_t *) *ScalePermstruct, B, *ldb, *nrhs,
-	    (gridinfo_t *) *grid, (LUstruct_t *) *LUstruct,
-	    (SOLVEstruct_t *) *SOLVEstruct, berr,
+	    (zScalePermstruct_t *) *ScalePermstruct, B, *ldb, *nrhs,
+	    (gridinfo_t *) *grid, (zLUstruct_t *) *LUstruct,
+	    (zSOLVEstruct_t *) *SOLVEstruct, berr,
 	    (SuperLUStat_t *) *stat, info);
 
     PStatPrint((superlu_dist_options_t *) *options, (SuperLUStat_t *) *stat,

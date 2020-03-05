@@ -319,6 +319,6 @@ static void dPrintMSRmatrix
     iam = grid->iam;
     nnzp1 = bindx[m];
     printf("(%2d) MSR submatrix has %d rows -->\n", iam, m);
-    PrintDouble5("val", nnzp1, val);
+    Printdouble5("val", nnzp1, val);
     PrintInt10("bindx", nnzp1, bindx);
 }

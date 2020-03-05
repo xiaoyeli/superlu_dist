@@ -351,5 +351,4 @@ zreadrb_dist(int iam, FILE *fp, int_t *nrow, int_t *ncol, int_t *nonz,
 	FormFullA(*ncol, nonz, nzval, rowind, colptr);
     }
 
-    fclose(fp);
 }

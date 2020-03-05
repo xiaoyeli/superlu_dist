@@ -10,7 +10,7 @@ cmake_minimum_required(VERSION 2.8.12 FATAL_ERROR)
 # Project version numbers
 project(SuperLU_DIST C CXX)
 set(VERSION_MAJOR "6")
-set(VERSION_MINOR "2")
+set(VERSION_MINOR "3")
 set(VERSION_BugFix "0")
 set(PROJECT_VERSION ${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_BugFix})
 
@@ -23,8 +23,10 @@ option(enable_complex16 "Enable complex16 precision library" ON)
 option(enable_tests  "Build tests" ON)
 option(enable_examples  "Build examples" ON)
 option(TPL_ENABLE_BLASLIB  "Build the CBLAS library" ${enable_blaslib_DEFAULT})
-option(TPL_ENABLE_PARMETISLIB   "Build the ParMETIS library" ON)
+option(TPL_BLAS_LIBRARIES "List of absolute paths to blas libraries [].")
 option(TPL_ENABLE_LAPACKLIB "Enable LAPACK library" ON)
+option(TPL_LAPACK_LIBRARIES "List of absolute paths to lapack libraries [].")
+option(TPL_ENABLE_PARMETISLIB   "Build the ParMETIS library" ON)
 option(TPL_PARMETIS_LIBRARIES "List of absolute paths to ParMETIS link libraries [].")
 option(TPL_PARMETIS_INCLUDE_DIRS "List of absolute paths to ParMETIS include directories [].")
 option(TPL_ENABLE_COMBBLASLIB   "Build the CombBLAS library" OFF)
@@ -302,11 +304,8 @@ endif()
 #
 ######################################################################
 include(FortranCInterface)
-#FortranCInterface_HEADER(${PROJECT_BINARY_DIR}/SLU_Fortran_names.h
-#  MACRO_NAMESPACE "FC_")
 FortranCInterface_HEADER(${SuperLU_DIST_SOURCE_DIR}/SRC/superlu_FortranCInterface.h
   MACRO_NAMESPACE "FC_")
-#include_directories(${PROJECT_BINARY_DIR} ${PROJECT_SOURCE_DIR}/src)
 FortranCInterface_VERIFY(CXX)
 
 ######################################################################
