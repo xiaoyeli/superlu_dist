@@ -7,7 +7,7 @@
 /* #undef SLU_HAVE_LAPACK */
 
 /* Enable CombBLAS */
-/* #undef HAVE_COMBBLAS */
+#define HAVE_COMBBLAS TRUE
 
 /* enable 64bit index mode */
 /* #undef XSDK_INDEX_SIZE */

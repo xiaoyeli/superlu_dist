@@ -24,17 +24,22 @@ then
 elif [ "$NERSC_HOST" == "cori" ]
 then
     rm -fr cori-build; mkdir cori-build; cd cori-build;
-    export PARMETIS_ROOT=~/Cori/lib/parmetis-4.0.3
+    export PARMETIS_ROOT=~/Cori/lib/GNU/parmetis-4.0.3
 #    export PARMETIS_BUILD_DIR=${PARMETIS_ROOT}/shared-build
     export PARMETIS_BUILD_DIR=${PARMETIS_ROOT}/build/Linux-x86_64
+    export COMBBLAS_ROOT=~/Cori/lib/combinatorial-blas-2.0/CombBLAS
     cmake .. \
     -DTPL_PARMETIS_INCLUDE_DIRS="${PARMETIS_ROOT}/include;${PARMETIS_ROOT}/metis/include" \
     -DTPL_PARMETIS_LIBRARIES="${PARMETIS_BUILD_DIR}/libparmetis/libparmetis.a;${PARMETIS_BUILD_DIR}/libmetis/libmetis.a" \
+    -DTPL_COMBBLAS_INCLUDE_DIRS="${COMBBLAS_ROOT}/install/include;${COMBBLAS_ROOT}/install/include/CombBLAS;${COMBBLAS_ROOT}/Applications/BipartiteMatchings" \
+    -DTPL_COMBBLAS_LIBRARIES="${COMBBLAS_ROOT}/install/lib/libCombBLAS.a" \
     -DTPL_ENABLE_BLASLIB=OFF \
-    -DTPL_BLAS_LIBRARIES="-mkl" \
+    -DTPL_ENABLE_COMBBLASLIB=ON \
     -DCMAKE_Fortran_COMPILER=ftn \
-    -DCMAKE_C_FLAGS="-std=c99 -fPIC -DPRNTlevel=0" \
+    -DCMAKE_C_FLAGS="-std=c99 -fPIC -DPRNTlevel=1" \
+    -DCMAKE_CXX_FLAGS="-std=gnu++14" \
     -DCMAKE_INSTALL_PREFIX=.
+#    -DTPL_BLAS_LIBRARIES="-mkl" \
 #    -DXSDK_INDEX_SIZE=64
 #    -DCMAKE_EXE_LINKER_FLAGS="-shared" \
 fi
@@ -52,8 +57,7 @@ then
   cmake .. \
     -DTPL_PARMETIS_INCLUDE_DIRS="${PARMETIS_ROOT}/include;${PARMETIS_ROOT}/metis/include" \
     -DTPL_PARMETIS_LIBRARIES="${PARMETIS_BUILD_DIR}/libparmetis/libparmetis.a;${PARMETIS_BUILD_DIR}/libmetis/libmetis.a" \
-    -DTPL_COMBBLAS_INCLUDE_DIRS="${COMBBLAS_ROOT}/_install/include;${COMBBLAS_R\
-OOT}/Applications/BipartiteMatchings" \
+    -DTPL_COMBBLAS_INCLUDE_DIRS="${COMBBLAS_ROOT}/_install/include;${COMBBLAS_ROOT}/Applications/BipartiteMatchings" \
     -DTPL_COMBBLAS_LIBRARIES="${COMBBLAS_BUILD_DIR}/libCombBLAS.a" \
     -DCMAKE_C_FLAGS="-std=c99 -O3 -g -DPRNTlevel=0 -DDEBUGlevel=0" \
     -DCMAKE_C_COMPILER=mpicc \
@@ -67,7 +71,7 @@ OOT}/Applications/BipartiteMatchings" \
 fi
 #    -DXSDK_INDEX_SIZE=64 \
 #   -DTPL_ENABLE_PARMETISLIB=OFF
-#    -DCMAKE_CXX_FLAGS="-std=c++11" \
+#    -DCMAKE_CXX_FLAGS="-std=c++14"
 
 # make VERBOSE=1
 # make test

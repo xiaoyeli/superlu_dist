@@ -1,9 +1,9 @@
-#ifndef AWPM_CombBLAS_h
-#define AWPM_CombBLAS_h
+#ifndef zHWPM_CombBLAS_h
+#define zHWPM_CombBLAS_h
 
 #include "CombBLAS.h"
 #include "ApproxWeightPerfectMatching.h"
-#include "superlu_ddefs.h"
+#include "superlu_zdefs.h"
 
 
 /*! \brief
@@ -37,20 +37,20 @@
  * </pre>
  */
 void
-GetAWPM(SuperMatrix *A, gridinfo_t *grid, ScalePermstruct_t *ScalePermstruct)
+zGetHWPM(SuperMatrix *A, gridinfo_t *grid, zScalePermstruct_t *ScalePermstruct)
 {
     NRformat_loc *Astore;
     int_t  i, irow, fst_row, j, jcol, m, n, m_loc;
     int_t lirow, ljcol;
     int_t  nnz_loc;    /* number of local nonzeros */
-    double *nzval_a;
+    doublecompex *nzval_a;
     int    iam, p, procs;
     int_t *perm=nullptr; // placeholder for load balancing permutation for CombBLAS
     procs = grid->nprow * grid->npcol;
     
     if(grid->nprow != grid->npcol)
     {
-        printf("AWPM only supports square process grid. Retuning without a permutation.\n");
+        printf("HWPM only supports square process grid. Retuning without a permutation.\n");
     }
     combblas::SpParMat < int_t, double, combblas::SpDCCols<int_t,double> > Adcsc;
     std::vector< std::vector < std::tuple<int_t,int_t,double> > > data(procs);
@@ -73,7 +73,7 @@ GetAWPM(SuperMatrix *A, gridinfo_t *grid, ScalePermstruct_t *ScalePermstruct)
      COUNT THE NUMBER OF NONZEROS TO BE SENT TO EACH PROCESS,
      THEN ALLOCATE SPACE.
      ------------------------------------------------------------*/
-    nzval_a = (double *) Astore->nzval;
+    nzval_a = (doublecomplex *) Astore->nzval;
     nnz_loc = 0;
     for (i = 0; i < m_loc; ++i) {
         for (j = Astore->rowptr[i]; j < Astore->rowptr[i+1]; ++j) {
@@ -122,4 +122,4 @@ GetAWPM(SuperMatrix *A, gridinfo_t *grid, ScalePermstruct_t *ScalePermstruct)
 #endif
 }
 
-#endif /* AWPM_CombBLAS_h */
+#endif /* zHWPM_CombBLAS_h */
