@@ -14,16 +14,16 @@ then
     export COMBBLAS_ROOT=/project/projectdirs/sparse/xiaoye/Cori/combinatorial-blas-2.0/CombBLAS
 #    export COMBBLAS_ROOT=/project/projectdirs/sparse/xiaoye/Cori/CombBLAS_beta_16_2
     cmake .. \
+    -DCMAKE_Fortran_COMPILER=ftn \
+    -DCMAKE_C_FLAGS="-std=c99 -fPIC -DPRNTlevel=0" \
     -DTPL_PARMETIS_INCLUDE_DIRS="${PARMETIS_ROOT}/include;${PARMETIS_ROOT}/metis/include" \
     -DTPL_PARMETIS_LIBRARIES="${PARMETIS_BUILD_DIR}/libparmetis/libparmetis.a;${PARMETIS_BUILD_DIR}/libmetis/libmetis.a" \
     -DTPL_COMBBLAS_INCLUDE_DIRS="${COMBBLAS_ROOT}/_install/include;${COMBBLAS_ROOT}/Applications/BipartiteMatchings" \
     -DTPL_COMBBLAS_LIBRARIES="${COMBBLAS_ROOT}/_install/lib/libCombBLAS.a" \
     -DTPL_ENABLE_BLASLIB=OFF \
     -DTPL_ENABLE_COMBBLASLIB=ON \
-    -DCMAKE_Fortran_COMPILER=ftn \
-    -DCMAKE_C_FLAGS="-std=c99 -fPIC -DPRNTlevel=0" \
+    -Denable_fortran=ON \
     -DCMAKE_INSTALL_PREFIX=.
-#    -Denable_fortran=ON \
 #    -DTPL_BLAS_LIBRARIES="-mkl" \
 #    -DXSDK_INDEX_SIZE=64
 #    -DCMAKE_EXE_LINKER_FLAGS="-shared" \
