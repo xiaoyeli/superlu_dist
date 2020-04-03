@@ -1,7 +1,28 @@
+/*! \file
+Copyright (c) 2003, The Regents of the University of California, through
+Lawrence Berkeley National Laboratory (subject to receipt of any required
+approvals from U.S. Dept. of Energy)
+
+All rights reserved.
+
+The source code is distributed under BSD license, see the file License.txt
+at the top-level directory.
+*/
+
+/*! @file
+ * \brief Get HWPM, heavy-weight perfect matching.
+ *
+ * <pre>
+ * -- Distributed SuperLU routine (version 6.0) --
+ * Lawrence Berkeley National Lab, Univ. of California Berkeley.
+ * April 2, 2020
+ * </pre>
+ */
+
 #ifndef zHWPM_CombBLAS_h
 #define zHWPM_CombBLAS_h
 
-#include "CombBLAS.h"
+#include "CombBLAS/CombBLAS.h"
 #include "ApproxWeightPerfectMatching.h"
 #include "superlu_zdefs.h"
 
@@ -11,8 +32,8 @@
  * <pre>
  * Purpose
  * =======
- *   Re-distribute A from distributed CSR storage to 2D block storage
- *   conforming CombBLAS API.
+ *   Get perm_r from HWPM, heavy-weight perfect matching, as a
+ *   numerical pivoting permutation.
  *
  * Arguments
  * =========
@@ -32,7 +53,7 @@
  *
  * Return value
  * ============
- * ScalePermstruct       = ScalePermstruct->perm_r stores the permutation
+ * ScalePermstruct->perm_r stores the permutation obtained from HWPM algorithm.
  *
  * </pre>
  */
@@ -43,7 +64,7 @@ zGetHWPM(SuperMatrix *A, gridinfo_t *grid, zScalePermstruct_t *ScalePermstruct)
     int_t  i, irow, fst_row, j, jcol, m, n, m_loc;
     int_t lirow, ljcol;
     int_t  nnz_loc;    /* number of local nonzeros */
-    doublecompex *nzval_a;
+    doublecomplex *nzval_a;
     int    iam, p, procs;
     int_t *perm=nullptr; // placeholder for load balancing permutation for CombBLAS
     procs = grid->nprow * grid->npcol;
@@ -72,8 +93,14 @@ zGetHWPM(SuperMatrix *A, gridinfo_t *grid, zScalePermstruct_t *ScalePermstruct)
      FIRST PASS OF A:
      COUNT THE NUMBER OF NONZEROS TO BE SENT TO EACH PROCESS,
      THEN ALLOCATE SPACE.
+     Re-distribute A from distributed CSR storage to 2D block storage
+     conforming CombBLAS API.
      ------------------------------------------------------------*/
     nzval_a = (doublecomplex *) Astore->nzval;
+    nnz_loc = Astore->nnz_loc;
+    double *nzval_abs = doubleMalloc_dist(nnz_loc);
+    for (i = 0; i < nnz_loc; ++i) nzval_abs[i] = slud_z_abs1(&nzval_a[i]);
+    
     nnz_loc = 0;
     for (i = 0; i < m_loc; ++i) {
         for (j = Astore->rowptr[i]; j < Astore->rowptr[i+1]; ++j) {
@@ -88,9 +115,8 @@ zGetHWPM(SuperMatrix *A, gridinfo_t *grid, zScalePermstruct_t *ScalePermstruct)
                 jcol = Astore->colind[j];
             }
             p = Adcsc.Owner(m, n , irow, jcol, lirow, ljcol);
-            ++ nnz_loc;
-            data[p].push_back(std::make_tuple(lirow,ljcol,nzval_a[j]));
-            
+            ++nnz_loc;
+            data[p].push_back(std::make_tuple(lirow,ljcol,nzval_abs[j]));
         }
     }
     
@@ -116,9 +142,10 @@ zGetHWPM(SuperMatrix *A, gridinfo_t *grid, zScalePermstruct_t *ScalePermstruct)
     
     delete[] rdispls;
     delete[] recvcnt;
+    SUPERLU_FREE(nzval_abs);
     
 #if ( DEBUGlevel>=1 )
-    CHECK_MALLOC(iam, "Exit pdCSR_loc_to_2DBlock()");
+    CHECK_MALLOC(iam, "Exit zHWPM_CombBLAS()");
 #endif
 }
 

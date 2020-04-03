@@ -10,12 +10,13 @@ at the top-level directory.
 */
 
 /*! @file 
- * \brief Get approximate weight perfect matching (AWPM).
+ * \brief Get heavy-weight perfect matching (HWPM).
  *
  * <pre>
  * -- Distributed SuperLU routine (version 5.4) --
  * Lawrence Berkeley National Lab, Univ. of California Berkeley.
  * April 1, 2018
+ * Modified: April 2, 2020
  * </pre>
  */
 #include <math.h>
@@ -28,7 +29,7 @@ at the top-level directory.
  * Purpose
  * =======
  *
- * Get approximate weight perfect matching (AWPM).
+ * Get heavy-weight perfect matching (HWPM).
  * 
  * Reference:
  * 

@@ -45,8 +45,10 @@ void superlu_gridinit(MPI_Comm Bcomm, /* The base communicator upon which
 	ABORT("C main program must explicitly call MPI_Init()");
 
     MPI_Comm_size( Bcomm, &info );
-    if ( info < Np )
-	ABORT("Number of processes is smaller than NPROW * NPCOL");
+    if ( info < Np ) {
+	printf("Number of processes %d is smaller than NPROW * NPCOL %d", info, Np);
+	exit(-1);
+    }
 
     superlu_gridmap(Bcomm, nprow, npcol, usermap, nprow, grid);
     
