@@ -622,7 +622,7 @@ void dDumpLblocks(int iam, int_t nsupers, gridinfo_t *grid,
 		}
 
 	if(grid->iam==0){
-		fprintf(fp, "%d %d %d\n", n,n,nnzL);
+	    fprintf(fp, IFMT " " IFMT " " IFMT "\n", n,n,nnzL);
 	}
 
      ncb = nsupers / grid->npcol;

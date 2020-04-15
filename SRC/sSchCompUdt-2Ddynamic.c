@@ -212,8 +212,13 @@ if ( msg0 && msg2 ) { /* L(:,k) and U(k,:) are not empty. */
 	 /* Padding zeros to make {m,n,k} multiple of vector length. */
 	 jj = 8; //n;
 	 if (gemm_padding > 0 && Rnbrow > jj && ncols > jj && ldu > jj) {
+#if 0
 	     gemm_m_pad = Rnbrow + (Rnbrow % GEMM_PADLEN);
 	     gemm_n_pad = ncols + (ncols % GEMM_PADLEN);
+#else  // Sherry corrected
+	     gemm_m_pad = CEILING(Rnbrow,GEMM_PADLEN) * GEMM_PADLEN;
+	     gemm_n_pad = ncols + (ncols % GEMM_PADLEN);
+#endif
 	     //gemm_n_pad = ncols;
 	     //gemm_k_pad = ldu + (ldu % GEMM_PADLEN);
 	     gemm_k_pad = ldu;

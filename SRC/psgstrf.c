@@ -360,6 +360,10 @@ psgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
     double NetSchurUpTimer         = 0.0;
     double schur_flop_counter      = 0.0;
 /* #endif */
+#ifdef GPU_ACC
+    double cublasGEMMTimer         = 0.0;
+    double cpuGEMMTimer         = 0.0;
+#endif
 
 #if ( PRNTlevel>= 1)
     /* count GEMM max dimensions */
@@ -567,7 +571,7 @@ psgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
 #if 0
     omp_loop_time = (double *) _mm_malloc (sizeof (double) * num_threads,64);
 #else
-    omp_loop_time = (double *) doubleMalloc_dist(num_threads);
+    omp_loop_time = (double *) SUPERLU_MALLOC(num_threads*sizeof(double));
 #endif
 
 #if ( PRNTlevel>=1 )
@@ -768,13 +772,14 @@ psgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
          SUPERLU_MAX (max_row_size * num_threads * ldt,
                       get_max_buffer_size ());           */
 
-#ifdef GPU_ACC
+#ifdef GPU_ACC /*-------- use GPU --------*/
     int cublas_nb = get_cublas_nb(); // default 64
-    int nstreams = get_num_cuda_streams ();
+    int nstreams = get_num_cuda_streams (); // default 8
 
-    int buffer_size  = SUPERLU_MAX(max_row_size*nstreams*cublas_nb,get_max_buffer_size());
+    int_t buffer_size  = SUPERLU_MAX( max_row_size * nstreams * cublas_nb,
+				      get_max_buffer_size() );
     /* array holding last column blk for each partition,
-       used in SchCompUdt--CUDA.c         */
+       used in SchCompUdt--cuda.c         */
   #if 0
     int *stream_end_col = (int_t *) _mm_malloc (sizeof (int_t) * nstreams,64);
   #else
@@ -784,8 +789,11 @@ psgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
 #else /* not to use GPU */
 
     int Threads_per_process = get_thread_per_process();
-    int buffer_size  = SUPERLU_MAX(max_row_size*Threads_per_process*ldt,get_max_buffer_size());
-#endif /* end ifdef GPU_ACC */
+    int buffer_size  = SUPERLU_MAX(max_row_size*Threads_per_process*ldt,
+				   get_max_buffer_size());
+
+#endif /* end ifdef GPU_ACC -----------*/
+
 
     int_t max_ncols = 0;
 #if 0
@@ -811,14 +819,24 @@ psgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
     bigU = NULL; /* allocated only on CPU */
     bigV = NULL;
 
+    // for GEMM padding zeros
+    j = max_ncols;  // Sherry: bigu_size / ldt;
+    bigu_size += (gemm_k_pad * (j + gemm_n_pad) + ldt * gemm_n_pad);
+    bigv_size += (gemm_m_pad * (j + gemm_n_pad) + max_row_size * gemm_n_pad);
+
 #if ( PRNTlevel>=1 )
-    if(!iam) printf("\t.. GEMM buffer size: max_row_size X max_ncols = %d x " IFMT "\n",
+    if(!iam) {
+	printf("\t.. MAX_BUFFER_SIZE " IFMT " set for GPU\n", get_max_buffer_size());
+	printf("\t.. N_GEMM: " IFMT " flops of GEMM done on CPU (1st block always on CPU) \n", sp_ienv_dist(7));
+	printf(".. GEMM buffer size: max_row_size X max_ncols = %d x " IFMT "\n",
 	     		  max_row_size, max_ncols);
+    }
     printf("[%d].. BIG U size " IFMT " (on CPU)\n", iam, bigu_size);
     fflush(stdout);
 #endif
 
-#ifdef GPU_ACC /*-- use GPU --*/
+
+#ifdef GPU_ACC /*-------- use GPU --------*/
 
     if ( checkCuda(cudaHostAlloc((void**)&bigU,  bigu_size * sizeof(float), cudaHostAllocDefault)) )
         ABORT("Malloc fails for sgemm buffer U ");
@@ -828,7 +846,7 @@ psgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
 #endif
 
 #if ( PRNTlevel>=1 )
-    printf("[%d].. BIG V size %d (on CPU), dC buffer_size %d (on GPU)\n", iam, bigv_size, buffer_size);
+    printf("[%d].. BIG V size " IFMT " (on CPU), dC buffer_size " IFMT " (on GPU)\n", iam, bigv_size, buffer_size);
     fflush(stdout);
 #endif
 
@@ -854,14 +872,12 @@ psgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
     // allocating data in device
     float *dA, *dB, *dC;
     cudaError_t cudaStat;
-#if 0
-    // cudaStat = cudaMalloc( (void**)&dA, m*k*sizeof(double));
-    // HOw much should be the size of dA?
-    // for time being just making it
-    // cudaStat = cudaMalloc( (void**)&dA, ((max_row_size*sp_ienv_dist(3)))* sizeof(double));
-#endif
 
-    cudaStat = cudaMalloc( (void**)&dA, max_row_size*sp_ienv_dist(3)* sizeof(float));
+    size_t dA_size = max_row_size * ldt; // ldt = sp_ienv_dist(3);
+    if ( gemm_padding ) {
+	dA_size += (gemm_m_pad * (ldt + gemm_k_pad) + max_row_size * gemm_k_pad);
+    }
+    cudaStat = cudaMalloc( (void**)&dA, dA_size * sizeof(float));
     if (cudaStat!= cudaSuccess) {
         fprintf(stderr, "!!!! Error in allocating A in the device %ld \n",m*k*sizeof(float) );
         return 1;
@@ -874,21 +890,24 @@ psgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
         return 1;
     }
 
-    cudaStat = cudaMalloc((void**)&dC, buffer_size* sizeof(float) );
+    cudaStat = cudaMalloc((void**)&dC, buffer_size * sizeof(float) );
     if (cudaStat!= cudaSuccess) {
         fprintf(stderr, "!!!! Error in allocating C in the device \n" );
         return 1;
     }
 
-    stat->gpu_buffer += ( max_row_size * sp_ienv_dist(3)
-			  + bigu_size + buffer_size ) * dword;
+    stat->gpu_buffer += dword * ( max_row_size * sp_ienv_dist(3) // dA
+				  + bigu_size                    // dB
+				  + buffer_size );               // dC
 
-#else   /*-- not to use GPU --*/
+#else  /*-------- not to use GPU --------*/
 
+#if 0  // Sherry 4/7/20: need this for both CPU and GPU 
     // for GEMM padding 0
     j = bigu_size / ldt;
     bigu_size += (gemm_k_pad * (j + ldt + gemm_n_pad));
     bigv_size += (gemm_m_pad * (j + max_row_size + gemm_n_pad));
+#endif
 
 #if ( PRNTlevel>=1 )
     printf("[%d].. BIG V size %d (on CPU)\n", iam, bigv_size);
@@ -905,7 +924,8 @@ psgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
         ABORT ("Malloc failed for sgemm V buffer");
 //#endif
 
-#endif /* end ifdef GPU_ACC */
+#endif
+/*************** end ifdef GPU_ACC ****************/
 
     log_memory((bigv_size + bigu_size) * dword, stat);
 
@@ -1769,12 +1789,18 @@ psgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
         printf("Time in Schur update \t\t %8.2lf seconds\n", NetSchurUpTimer);
         printf(".. Time to Gather L buffer\t %8.2lf  (Separate L panel by Lookahead/Remain)\n", GatherLTimer);
         printf(".. Time to Gather U buffer\t %8.2lf \n", GatherUTimer);
-
+#ifdef GPU_ACC
+        printf(".. Time in GEMM %8.2lf \n",
+	       cublasGEMMTimer + cpuGEMMTimer);
+        printf("\t* cublasGEMM\t %8.2lf \n", cublasGEMMTimer);
+        printf("\t* cpuGEMM\t %8.2lf \n", cpuGEMMTimer);
+#else
         printf(".. Time in GEMM %8.2lf \n",
 	       LookAheadGEMMTimer + RemainGEMMTimer);
         printf("\t* Look-ahead\t %8.2lf \n", LookAheadGEMMTimer);
         printf("\t* Remain\t %8.2lf\tFlops %8.2le\tGflops %8.2lf\n",
 	       RemainGEMMTimer, allflops, allflops/RemainGEMMTimer*1e-9);
+#endif
         printf(".. Time to Scatter %8.2lf \n",
 	       LookAheadScatterTimer + RemainScatterTimer);
         printf("\t* Look-ahead\t %8.2lf \n", LookAheadScatterTimer);

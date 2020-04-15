@@ -349,8 +349,6 @@ countnz_dist(const int_t n, int_t *xprune,
 	nnzL0 += xprune[irep] - xlsub[irep];
     }
     
-    /* printf("\tNo of nonzeros in symm-reduced L = %ld\n", nnzL0);*/
-    
     /* For each column in U. */
     for (j = 0; j < n; ++j) {
 	for (i = xusub[j]; i < xusub[j+1]; ++i) {
@@ -359,6 +357,11 @@ countnz_dist(const int_t n, int_t *xprune,
 	    *nnzU += fsupc - fnz;
 	}
     }
+#if ( PRNTlevel>=1 )
+    printf("\tNo of nonzeros in symm-reduced L = " IFMT ", nnzL " IFMT ", nnzU " IFMT "\n",
+	   nnzL0, *nnzL, *nnzU);
+#endif
+    
 }
 
 
@@ -434,6 +437,7 @@ void set_default_options_dist(superlu_dist_options_t *options)
 #else
     options->DiagInv           = NO;
 #endif
+    options->Use_TensorCore    = YES;
 }
 
 /*! \brief Print the options setting.
@@ -1143,7 +1147,7 @@ get_max_buffer_size ()
     if (ttemp)
         return atoi (ttemp);
     else
-        return 5000000;
+        return 200000000; // 5000000
 }
 
 int_t
@@ -1318,7 +1322,7 @@ int_t estimate_bigu_size(
       Glu_persist_t *Glu_persist,
       gridinfo_t* grid, int_t* perm_u, 
       int_t *max_ncols /* Output: Max. number of columns among all U(k,:).
-			     This is used for allocating GEMM V buffer.  */
+			  This is used for allocating GEMM V buffer.  */
 			 )
 {
     int_t iam = grid->iam;
@@ -1465,16 +1469,20 @@ int_t partitionM( int_t* a, int_t l, int_t r, int_t lda, int_t dir, int_t dims) 
 
 #ifdef GPU_ACC
 
+/*
+ * Divide GEMM on GPU into multiple streams, each having sufficent work.
+ */
 void
 gemm_division_cpu_gpu(
 /* output */
-    int* num_streams_used, /* number of CUDA streams that will be used */
+    int* num_streams_used, /* number of CUDA streams to be used,
+			      it is <= nstreams   */
     int* stream_end_col,   /* array holding last column blk for each stream partition */
     int * ncpu_blks,       /* Number of CPU dgemm blks (output) */
 /*input */
     int nbrow,             /* number of row in A matrix */
     int ldu,               /* number of k in dgemm */
-    int nstreams,
+    int nstreams,          /* maximum possible GPU streams */
     int* full_u_cols,      /* array containing prefix sum of GPU workload */
     int num_blks           /* Number of block cloumns (workload) on GPU */
 )
@@ -1486,9 +1494,9 @@ gemm_division_cpu_gpu(
       Sherry corrected comment:                                                  
       CPU to GPU dgemm should be ideally 0:1 ratio to hide the total cost.
       However since there is GPU latency of around 20,000 ns implying about
-      200000 floating point operations be done in that time, so    
+      200000 floating point operations can be done in that time, so    
       ncols ~= 200,000/(2*nbrow*ldu) should be done on CPU to hide the
-      latency; We set Ngem =200,000/2.     
+      latency; We set Ngem =200,000/2.
      */
     int i, j;
 
@@ -1502,12 +1510,13 @@ gemm_division_cpu_gpu(
     {
         stream_end_col[i] = num_blks;
     }
-	*num_streams_used = 0;
+
+    *num_streams_used = 0;
 
     *ncpu_blks = 0;
     /* Early return -1, when number of columns is smaller than threshold,
        everything should be done on CPU. 
-       Test condition GPU Flops ~ nbrow*ldu*cols < Ngem */
+       Test condition CPU Flops ~ nbrow*ldu*cols < Ngem */
     if (full_u_cols[num_blks - 1] < (Ngem / (nbrow * ldu)) || num_blks == 1 )
     {
         *num_streams_used = 0;
@@ -1553,7 +1562,7 @@ gemm_division_cpu_gpu(
         printf ("%d %d  %d %d \n", full_u_cols[num_blks - 1],
                 full_u_cols[*ncpu_blks], *ncpu_blks, nstreams);
 #endif
-        int_t FP_MIN = 200000 / (nbrow * ldu);
+        int_t FP_MIN = 200000 / (nbrow * ldu); // >= 200000 flops per GPU stream
         int_t cols_per_stream = SUPERLU_MAX (min_gpu_col, cols_remain / nstreams);
         cols_per_stream = SUPERLU_MAX (cols_per_stream, FP_MIN);
 #ifdef PI_DEBUG
@@ -1569,6 +1578,7 @@ gemm_division_cpu_gpu(
         for (i = 0; i < nstreams - 1; ++i)
         {
             int_t st = (i == 0) ? (*ncpu_blks) : stream_end_col[i - 1];
+	        // ^ starting block column of next stream
 
             for (j = st; j < num_blks - 1; ++j)
             {
@@ -1585,13 +1595,13 @@ gemm_division_cpu_gpu(
                     stream_end_col[i] = j + 1;
                     *num_streams_used += 1;
                     j++;
-                    break;
+                    break;  // block column j starts a new stream
                 }
 #ifdef PI_DEBUG
                 printf ("\n");
 #endif
-            }
-        }
+            } // end for j ...
+        } // end for i ... streams
 
     }
 	

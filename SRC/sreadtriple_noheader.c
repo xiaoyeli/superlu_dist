@@ -118,7 +118,7 @@ sreadtriple_noheader(FILE *fp, int_t *m, int_t *n, int_t *nonz,
 
 	if (row[nz] < 0 || row[nz] >= *m || col[nz] < 0 || col[nz] >= *n
 	    /*|| val[nz] == 0.*/) {
-	    fprintf(stderr, "nz %d, (%d, %d) = %e out of bound, removed\n",
+	    fprintf(stderr, "nz" IFMT ", (" IFMT ", " IFMT ") = %e out of bound, removed\n",
 		    nz, row[nz], col[nz], val[nz]);
 	    exit(-1);
 	} else {
