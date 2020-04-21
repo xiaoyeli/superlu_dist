@@ -567,7 +567,7 @@ pzgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
 #if 0
     omp_loop_time = (double *) _mm_malloc (sizeof (double) * num_threads,64);
 #else
-    omp_loop_time = (double *) doubleMalloc_dist(num_threads);
+    omp_loop_time = (double *) SUPERLU_MALLOC(num_threads * sizeof(double));
 #endif
 
 #if ( PRNTlevel>=1 )
@@ -707,7 +707,7 @@ pzgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
 
     k = sp_ienv_dist (3);       /* max supernode size */
 #if 0
-    if ( !(Llu->ujrow = doubleMalloc_dist(k*(k+1)/2)) )
+    if ( !(Llu->ujrow = doublecomplexMalloc_dist(k*(k+1)/2)) )
          ABORT("Malloc fails for ujrow[].");
 #else
     /* Instead of half storage, we'll do full storage */
@@ -772,7 +772,7 @@ pzgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
     int cublas_nb = get_cublas_nb(); // default 64
     int nstreams = get_num_cuda_streams ();
 
-    int buffer_size  = SUPERLU_MAX(max_row_size*nstreams*cublas_nb,get_max_buffer_size());
+    int_t buffer_size  = SUPERLU_MAX(max_row_size*nstreams*cublas_nb,get_max_buffer_size());
     /* array holding last column blk for each partition,
        used in SchCompUdt--CUDA.c         */
   #if 0
@@ -784,7 +784,7 @@ pzgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
 #else /* not to use GPU */
 
     int Threads_per_process = get_thread_per_process();
-    int buffer_size  = SUPERLU_MAX(max_row_size*Threads_per_process*ldt,get_max_buffer_size());
+    int_t buffer_size  = SUPERLU_MAX(max_row_size*Threads_per_process*ldt,get_max_buffer_size());
 #endif /* end ifdef GPU_ACC */
 
     int_t max_ncols = 0;
@@ -874,7 +874,7 @@ pzgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
         return 1;
     }
 
-    cudaStat = cudaMalloc((void**)&dC, buffer_size* sizeof(doublecomplex) );
+    cudaStat = cudaMalloc((void**)&dC, buffer_size * sizeof(doublecomplex) );
     if (cudaStat!= cudaSuccess) {
         fprintf(stderr, "!!!! Error in allocating C in the device \n" );
         return 1;

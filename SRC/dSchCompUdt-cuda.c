@@ -248,7 +248,7 @@ if ( msg0 && msg2 ) {  /* L(:,k) and U(k,:) are not empty. */
 	    /* Special case for CPU -- leading block columns are computed 
 	       on CPU in order to mask the GPU data transfer latency */
 	    int num_col = full_u_cols[jjj_st+ncpu_blks-1];
-	    int st_col = 0; /* leading parton CPU */
+	    int st_col = 0; /* leading part on CPU */
 	    tempv = bigV + nbrow * st_col;
 	    tempu = bigU;
 
