@@ -378,7 +378,10 @@ void zRgather_U( int_t k, int_t jj0, int_t *usub,	doublecomplex *uval,
     }
 
     HyP->bigU_Phi = bigU;
-    HyP->bigU_host = bigU + HyP->ldu_Phi * HyP->Ublock_info_Phi[HyP->num_u_blks_Phi - 1].full_u_cols;
+    if ( HyP->num_u_blks_Phi == 0 )
+        HyP->bigU_host = bigU;
+    else
+        HyP->bigU_host = bigU + HyP->ldu_Phi * HyP->Ublock_info_Phi[HyP->num_u_blks_Phi - 1].full_u_cols;
 
     zgather_u(HyP->num_u_blks, HyP->Ublock_info, usub, uval, HyP->bigU_host,
                HyP->ldu, xsup, klst );
