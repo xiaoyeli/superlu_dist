@@ -35,16 +35,16 @@ at the top-level directory.
     #include <fortran.h>
 #endif
 
-//#ifdef _OPENMP
+#ifdef _OPENMP
    #include <omp.h>
-//#endif
+#endif
 
 #include <mpi.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <limits.h>
 #include <string.h>
-//#include <stdatomic.h>
+// #include <stdatomic.h>
 #include <math.h>
 #include <stdint.h>
 //#include <malloc.h>  Sherry: not available on Mac OS

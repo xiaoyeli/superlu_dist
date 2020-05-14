@@ -147,14 +147,17 @@ void SCT_init(SCT_t* SCT)
 #else
     CPU_CLOCK_RATE = 3000. * 1e-3;
 #endif
-    int num_threads;
-    #pragma omp parallel default(shared)
+    int num_threads = 1;
+
+#ifdef _OPENMP
+#pragma omp parallel default(shared)
     {
         #pragma omp master
         {
             num_threads = omp_get_num_threads ();
         }
     }
+#endif
 
     SCT->acc_load_imbal = 0.0;
 
@@ -408,14 +411,17 @@ Displays as function_name  \t value \t units;
 // #include "mkl.h"
 void SCT_print(gridinfo_t *grid, SCT_t* SCT)
 {
-    int num_threads;
-    #pragma omp parallel default(shared)
+    int num_threads = 1;
+
+#ifdef _OPENMP
+#pragma omp parallel default(shared)
     {
         #pragma omp master
         {
             num_threads = omp_get_num_threads ();
         }
     }
+#endif
     CPU_CLOCK_RATE = 1e9 * CPU_CLOCK_RATE;
 
     int iam = grid->iam;

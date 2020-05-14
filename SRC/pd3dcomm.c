@@ -19,7 +19,7 @@ at the top-level directory.
  * May 10, 2019
  */
 #include "superlu_ddefs.h"
-#include "cblas.h"
+// #include "cblas.h"
 #if 0
 #include "p3dcomm.h"
 #include "sec_structs.h"

@@ -32,7 +32,7 @@ at the top-level directory.
  * Purpose
  * =======
  *
- * PDGSSVX solves a system of linear equations A*X=B,
+ * PDGSSVX3D solves a system of linear equations A*X=B,
  * by using Gaussian elimination with "static pivoting" to
  * compute the LU factorization of A.
  *
@@ -1347,7 +1347,7 @@ pdgssvx3d (superlu_dist_options_t * options, SuperMatrix * A,
 		   ------------------------------------------------------*/
 		if (options->SolveInitialized == NO) /* First time */
                    /* Inside this routine, SolveInitialized is set to YES.
-	              For repeated call to pdgssvx(), no need to re-initialilze
+	              For repeated call to pdgssvx3d(), no need to re-initialilze
 	              the Solve data & communication structures, unless a new
 	              factorization with Fact == DOFACT or SamePattern is asked for. */
 		    {

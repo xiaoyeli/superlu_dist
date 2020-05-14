@@ -76,7 +76,7 @@ at the top-level directory.
 
 #include <math.h>
 #include "superlu_zdefs.h"
-#include "cblas.h"
+//#include "cblas.h"
 
 /*****************************************************************************
  * The following pzgstrf2_trsm is in version 6 and earlier.

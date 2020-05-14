@@ -51,7 +51,8 @@ int set_tag_ub()
 
 int getNumThreads(int iam)
 {
-    int num_threads;
+    int num_threads = 1;
+#ifdef _OPENMP
     #pragma omp parallel default(shared)
     {
         #pragma omp master
@@ -60,6 +61,7 @@ int getNumThreads(int iam)
 
         }
     }
+#endif
 
     if (!iam)
     {

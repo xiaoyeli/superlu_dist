@@ -247,7 +247,11 @@ int_t ddenseTreeFactor(
                 int_t klst = FstBlockC (k + 1);
                 int_t *lsub = lPanelInfo->lsub;
                 int_t *usub = uPanelInfo->usub;
+#ifdef _OPENMP
                 int_t thread_id = omp_get_thread_num();
+#else
+                int_t thread_id = 0;
+#endif
                 dblock_gemm_scatter( lb, ub,
                                     Ublock_info,
                                     Remain_info,

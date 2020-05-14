@@ -31,7 +31,7 @@ at the top-level directory.
  * Purpose
  * =======
  *
- * PZGSSVX solves a system of linear equations A*X=B,
+ * PZGSSVX3D solves a system of linear equations A*X=B,
  * by using Gaussian elimination with "static pivoting" to
  * compute the LU factorization of A.
  *
@@ -1191,10 +1191,11 @@ pzgssvx3d (superlu_dist_options_t * options, SuperMatrix * A,
 	
 	/* send the LU structure to all the grids */
 	zp3dScatter(n, LUstruct, grid3d);
+
 	int_t nsupers = getNsupers(n, LUstruct);
 	trf3Dpartition = zinitTrf3Dpartition(nsupers, options, LUstruct, grid3d);
-	SCT_t *SCT = (SCT_t *) SUPERLU_MALLOC(sizeof(SCT_t));
 
+	SCT_t *SCT = (SCT_t *) SUPERLU_MALLOC(sizeof(SCT_t));
 	SCT_init(SCT);
 	
 #if ( PRNTlevel>=1 )
@@ -1347,7 +1348,7 @@ pzgssvx3d (superlu_dist_options_t * options, SuperMatrix * A,
 		   ------------------------------------------------------*/
 		if (options->SolveInitialized == NO) /* First time */
                    /* Inside this routine, SolveInitialized is set to YES.
-	              For repeated call to pzgssvx(), no need to re-initialilze
+	              For repeated call to pzgssvx3d(), no need to re-initialilze
 	              the Solve data & communication structures, unless a new
 	              factorization with Fact == DOFACT or SamePattern is asked for. */
 		    {

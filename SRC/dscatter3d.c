@@ -17,9 +17,12 @@ at the top-level directory.
 #ifdef __INTEL_COMPILER
 #include "mkl.h"
 #else
-#include "cblas.h"
+//#include "cblas.h"
 #endif
+
+#ifdef _OPENMP
 #include "omp.h"
+#endif
 
 #define ISORT
 #define SCATTER_U_CPU  scatter_u
@@ -95,7 +98,11 @@ dblock_gemm_scatter( int_t lb, int_t j,
                   )
 {
     // return ;
+#ifdef _OPENMP
     thread_id = omp_get_thread_num();
+#else
+    thread_id = 0;
+#endif
     int_t *indirect_thread = indirect + ldt * thread_id;
     int_t *indirect2_thread = indirect2 + ldt * thread_id;
     double *tempv1 = bigV + thread_id * ldt * ldt;
@@ -200,6 +207,7 @@ dblock_gemm_scatter( int_t lb, int_t j,
 #endif
 } /* dblock_gemm_scatter */
 
+#ifdef _OPENMP
 /*this version uses a lock to prevent multiple thread updating the same block*/
 void
 dblock_gemm_scatter_lock( int_t lb, int_t j,
@@ -313,6 +321,7 @@ dblock_gemm_scatter_lock( int_t lb, int_t j,
     += t_s;
 #endif
 } /* dblock_gemm_scatter_lock */
+#endif // only if _OPENMP is defined
 
 // there are following three variations of block_gemm_scatter call
 /*
@@ -353,7 +362,11 @@ int_t dblock_gemm_scatterTopLeft( int_t lb, /* block number in L */
     int_t** Ufstnz_br_ptr = Llu->Ufstnz_br_ptr;
     double** Lnzval_bc_ptr = Llu->Lnzval_bc_ptr;
     double** Unzval_br_ptr = Llu->Unzval_br_ptr;
+#ifdef _OPENMP
     volatile int_t thread_id = omp_get_thread_num();
+#else
+    volatile int_t thread_id = 0;
+#endif
     
 //    printf("Thread's ID %lld \n", thread_id);
     unsigned long long t1 = _rdtsc();
@@ -389,7 +402,11 @@ int_t dblock_gemm_scatterTopRight( int_t lb,  int_t j,
     int_t** Ufstnz_br_ptr = Llu->Ufstnz_br_ptr;
     double** Lnzval_bc_ptr = Llu->Lnzval_bc_ptr;
     double** Unzval_br_ptr = Llu->Unzval_br_ptr;
+#ifdef _OPENMP
     volatile  int_t thread_id = omp_get_thread_num();
+#else
+    volatile  int_t thread_id = 0;
+#endif
     unsigned long long t1 = _rdtsc();
     dblock_gemm_scatter( lb, j, HyP->Ublock_info_Phi, HyP->lookAhead_info, HyP->lookAhead_L_buff, HyP->Lnbrow,
                         HyP->bigU_Phi, HyP->ldu_Phi,
@@ -420,7 +437,11 @@ int_t dblock_gemm_scatterBottomLeft( int_t lb,  int_t j,
     int_t** Ufstnz_br_ptr = Llu->Ufstnz_br_ptr;
     double** Lnzval_bc_ptr = Llu->Lnzval_bc_ptr;
     double** Unzval_br_ptr = Llu->Unzval_br_ptr;
+#ifdef _OPENMP
     volatile int_t thread_id = omp_get_thread_num();
+#else
+    volatile int_t thread_id = 0;
+#endif
     //printf("Thread's ID %lld \n", thread_id);
     unsigned long long t1 = _rdtsc();
     dblock_gemm_scatter( lb, j, HyP->Ublock_info, HyP->Remain_info, HyP->Remain_L_buff, HyP->Rnbrow,
@@ -453,7 +474,11 @@ int_t dblock_gemm_scatterBottomRight( int_t lb,  int_t j,
     int_t** Ufstnz_br_ptr = Llu->Ufstnz_br_ptr;
     double** Lnzval_bc_ptr = Llu->Lnzval_bc_ptr;
     double** Unzval_br_ptr = Llu->Unzval_br_ptr;
-   volatile  int_t thread_id = omp_get_thread_num();
+#ifdef _OPENMP
+    volatile  int_t thread_id = omp_get_thread_num();
+#else
+    volatile  int_t thread_id = 0;
+#endif
    // printf("Thread's ID %lld \n", thread_id);
     unsigned long long t1 = _rdtsc();
     dblock_gemm_scatter( lb, j, HyP->Ublock_info_Phi, HyP->Remain_info, HyP->Remain_L_buff, HyP->Rnbrow,

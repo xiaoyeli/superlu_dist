@@ -36,7 +36,12 @@ int_t zLluBufInit(zLUValSubBuf_t* LUvsb, LUstruct_t *LUstruct)
 diagFactBufs_t** zinitDiagFactBufsArr(int_t mxLeafNode, int_t ldt, gridinfo_t* grid)
 {
     diagFactBufs_t** dFBufs;
-    dFBufs = (diagFactBufs_t** ) SUPERLU_MALLOC(mxLeafNode * sizeof(diagFactBufs_t*));
+
+    /* Sherry fix:
+     * mxLeafNode can be 0 for the replicated layers of the processes ?? */
+    if ( mxLeafNode ) dFBufs = (diagFactBufs_t** )
+                          SUPERLU_MALLOC(mxLeafNode * sizeof(diagFactBufs_t*));
+
     for (int i = 0; i < mxLeafNode; ++i)
     {
         /* code */
@@ -241,7 +246,11 @@ int_t zdenseTreeFactor(
                 int_t klst = FstBlockC (k + 1);
                 int_t *lsub = lPanelInfo->lsub;
                 int_t *usub = uPanelInfo->usub;
+#ifdef _OPENMP
                 int_t thread_id = omp_get_thread_num();
+#else
+                int_t thread_id = 0;
+#endif
                 zblock_gemm_scatter( lb, ub,
                                     Ublock_info,
                                     Remain_info,

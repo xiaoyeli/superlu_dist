@@ -29,7 +29,7 @@ at the top-level directory.
 #ifdef __INTEL_COMPILER
 #include "mkl.h"
 #else
-#include "cblas.h"
+//#include "cblas.h"
 #endif 
 
 int_t dDiagFactIBCast(int_t k,  int_t k0,      // supernode to be factored
@@ -300,9 +300,13 @@ int_t dUPanelTrSolve( int_t k,
         // #pragma omp for schedule(dynamic,2) nowait
         for (int_t b = 0; b < nb; ++b)
         {
-            #pragma omp task
+ #pragma omp task
             {
+#ifdef _OPENMP
                 int_t thread_id = omp_get_thread_num();
+#else
+                int_t thread_id = 0;
+#endif
                 double *tempv = bigV +  thread_id * ldt * ldt;
                 dTrs2_GatherTrsmScatter(klst, Ublock_info[b].iukp, Ublock_info[b].rukp,
 				       usub, uval, tempv, nsupc, nsupc, lusup, Glu_persist);
@@ -347,9 +351,13 @@ int_t dUPanelTrSolve( int_t k,
             // printf("%d :U update \n", k);
             for (int_t b = 0; b < nb; ++b)
             {
-                #pragma omp task
+ #pragma omp task
                 {
+#ifdef _OPENMP
                     int_t thread_id = omp_get_thread_num();
+#else
+                    int_t thread_id = 0;
+#endif
                     double *tempv = bigV +  thread_id * ldt * ldt;
                     dTrs2_GatherTrsmScatter(klst, Ublock_info[b].iukp, Ublock_info[b].rukp,
 					   usub, uval, tempv, nsupc, nsupr, lusup, Glu_persist);

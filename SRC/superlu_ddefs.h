@@ -582,6 +582,8 @@ dblock_gemm_scatter( int_t lb, int_t j, Ublock_info_t *Ublock_info,
                     , double *Host_TheadScatterMOP, double *Host_TheadScatterTimer
 #endif
                   );
+
+#ifdef _OPENMP    
 /*this version uses a lock to prevent multiple thread updating the same block*/
 extern void
 dblock_gemm_scatter_lock( int_t lb, int_t j, omp_lock_t* lock,
@@ -600,6 +602,8 @@ dblock_gemm_scatter_lock( int_t lb, int_t j, omp_lock_t* lock,
                          , double *Host_TheadScatterMOP, double *Host_TheadScatterTimer
 #endif
                        );
+#endif
+    
 extern int_t
 dblock_gemm_scatterTopLeft( int_t lb,  int_t j, double* bigV,
 				 int_t knsupc,  int_t klst, int_t* lsub,
