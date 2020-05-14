@@ -27,7 +27,7 @@ zwrite_binary(int_t n, int_t nnz,
     FILE  *fp1;
     int nnz_written;
     size_t isize = sizeof(int_t), dsize = sizeof(double);
-    fp1 = fopen("/scratch/scratchdirs/xiaoye/temp.bin", "wb");
+    fp1 = fopen("cmatrix.bin", "wb");
     fwrite(&n, isize, 1, fp1);
     fwrite(&nnz, isize, 1, fp1);
     fwrite(colptr, isize, n+1, fp1);
