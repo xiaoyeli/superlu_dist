@@ -559,7 +559,6 @@ pzgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
 #pragma omp parallel default(shared)
     #pragma omp master
     {
-         //if (omp_get_thread_num () == 0)
         num_threads = omp_get_num_threads ();
     }
 #endif

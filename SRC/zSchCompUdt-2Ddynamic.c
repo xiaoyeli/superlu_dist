@@ -403,7 +403,11 @@ if ( msg0 && msg2 ) { /* L(:,k) and U(k,:) are not empty. */
 #ifdef _OPENMP
 #pragma omp parallel default (shared) private(thread_id)
 	 {
+#ifdef _OPENMP	 
 	   thread_id = omp_get_thread_num();
+#else	   
+	   thread_id = 0;
+#endif
 
 	   /* Ideally, should organize the loop as:
 	      for (j = 0; j < nub; ++j) {
@@ -596,7 +600,11 @@ if ( msg0 && msg2 ) { /* L(:,k) and U(k,:) are not empty. */
 #ifdef _OPENMP
 #pragma omp parallel default(shared) private(thread_id)
 	{
+#ifdef _OPENMP	
 	    thread_id = omp_get_thread_num();
+#else	    
+	    thread_id = 0;
+#endif
 
 	    /* Ideally, should organize the loop as:
                for (j = 0; j < jj_cpu; ++j) {

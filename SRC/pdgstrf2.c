@@ -935,7 +935,11 @@ void pdgstrs2_omp(int_t k0, int_t k, int_t* Lsub_buf,
 #pragma omp parallel for schedule(dynamic,2)
     for (int_t b = 0; b < nb; ++b)
     {
+#ifdef _OPENMP    
         int_t thread_id = omp_get_thread_num();
+#else	
+        int_t thread_id = 0;
+#endif	
         double *tempv = bigV +  thread_id * ldt * ldt;
         dTrs2_GatherTrsmScatter(klst, Ublock_info[b].iukp, Ublock_info[b].rukp,
 				usub, uval, tempv, knsupc, nsupr, lusup, Glu_persist);
