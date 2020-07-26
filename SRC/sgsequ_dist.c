@@ -83,7 +83,7 @@ at the top-level directory.
  */
 void
 sgsequ_dist(SuperMatrix *A, float *r, float *c, float *rowcnd,
-	    float *colcnd, float *amax, int *info)
+	    float *colcnd, float *amax, int_t *info)
 {
 
     /* Local variables */

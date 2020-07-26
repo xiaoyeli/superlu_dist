@@ -631,6 +631,7 @@ typedef struct {
     yes_no_t      lookahead_etree; /* use etree computed from the
 				      serial symbolic factorization */
     yes_no_t      SymPattern;      /* symmetric factorization          */
+    yes_no_t      Use_TensorCore;  /* Use Tensor Core or not  */
 } superlu_dist_options_t;
 
 typedef struct {

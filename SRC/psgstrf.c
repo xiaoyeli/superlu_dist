@@ -360,6 +360,10 @@ psgstrf(superlu_dist_options_t * options, int m, int n, float anorm,
     double NetSchurUpTimer         = 0.0;
     double schur_flop_counter      = 0.0;
 /* #endif */
+#ifdef GPU_ACC
+    double cublasGEMMTimer         = 0.0;
+    double cpuGEMMTimer         = 0.0;
+#endif
 
 #if ( PRNTlevel>= 1)
     /* count GEMM max dimensions */
@@ -784,6 +788,7 @@ psgstrf(superlu_dist_options_t * options, int m, int n, float anorm,
 #else /* not to use GPU */
 
     int Threads_per_process = get_thread_per_process();
+
     int_t buffer_size  = SUPERLU_MAX(max_row_size * Threads_per_process * ldt,
                                      get_max_buffer_size());
 #endif /* end ifdef GPU_ACC -----------*/
@@ -812,6 +817,11 @@ psgstrf(superlu_dist_options_t * options, int m, int n, float anorm,
     bigU = NULL; /* allocated only on CPU */
     bigV = NULL;
 
+    // for GEMM padding zeros
+    j = max_ncols;  // Sherry: bigu_size / ldt;
+    bigu_size += (gemm_k_pad * (j + gemm_n_pad) + ldt * gemm_n_pad);
+    bigv_size += (gemm_m_pad * (j + gemm_n_pad) + max_row_size * gemm_n_pad);
+
 #if ( PRNTlevel>=1 )
     if(!iam) {
         printf("\t.. MAX_BUFFER_SIZE " IFMT " set for GPU\n", get_max_buffer_size());
@@ -823,7 +833,8 @@ psgstrf(superlu_dist_options_t * options, int m, int n, float anorm,
     fflush(stdout);
 #endif
 
-#ifdef GPU_ACC /*-- use GPU --*/
+
+#ifdef GPU_ACC /*-------- use GPU --------*/
 
     if ( checkCuda(cudaHostAlloc((void**)&bigU,  bigu_size * sizeof(float), cudaHostAllocDefault)) )
         ABORT("Malloc fails for sgemm buffer U ");
@@ -862,14 +873,12 @@ psgstrf(superlu_dist_options_t * options, int m, int n, float anorm,
     // allocating data in device
     float *dA, *dB, *dC;
     cudaError_t cudaStat;
-#if 0
-    // cudaStat = cudaMalloc( (void**)&dA, m*k*sizeof(double));
-    // HOw much should be the size of dA?
-    // for time being just making it
-    // cudaStat = cudaMalloc( (void**)&dA, ((max_row_size*sp_ienv_dist(3)))* sizeof(double));
-#endif
 
-    cudaStat = cudaMalloc( (void**)&dA, max_row_size*sp_ienv_dist(3)* sizeof(float));
+    size_t dA_size = max_row_size * ldt; // ldt = sp_ienv_dist(3);
+    if ( gemm_padding ) {
+	dA_size += (gemm_m_pad * (ldt + gemm_k_pad) + max_row_size * gemm_k_pad);
+    }
+    cudaStat = cudaMalloc( (void**)&dA, dA_size * sizeof(float));
     if (cudaStat!= cudaSuccess) {
         fprintf(stderr, "!!!! Error in allocating A in the device %ld \n",m*k*sizeof(float) );
         return 1;
@@ -894,10 +903,12 @@ psgstrf(superlu_dist_options_t * options, int m, int n, float anorm,
 
 #else  /*-------- not to use GPU --------*/
 
+#if 0  // Sherry 4/7/20: need this for both CPU and GPU 
     // for GEMM padding 0
     j = bigu_size / ldt;
     bigu_size += (gemm_k_pad * (j + ldt + gemm_n_pad));
     bigv_size += (gemm_m_pad * (j + max_row_size + gemm_n_pad));
+#endif
 
 #if ( PRNTlevel>=1 )
     printf("[%d].. BIG V size %d (on CPU)\n", iam, bigv_size);
@@ -915,6 +926,7 @@ psgstrf(superlu_dist_options_t * options, int m, int n, float anorm,
 //#endif
 
 #endif 
+
 /*************** end ifdef GPU_ACC ****************/
 
     log_memory((bigv_size + bigu_size) * dword, stat);
@@ -1779,12 +1791,18 @@ psgstrf(superlu_dist_options_t * options, int m, int n, float anorm,
         printf("Time in Schur update \t\t %8.2lf seconds\n", NetSchurUpTimer);
         printf(".. Time to Gather L buffer\t %8.2lf  (Separate L panel by Lookahead/Remain)\n", GatherLTimer);
         printf(".. Time to Gather U buffer\t %8.2lf \n", GatherUTimer);
-
+#ifdef GPU_ACC
+        printf(".. Time in GEMM %8.2lf \n",
+	       cublasGEMMTimer + cpuGEMMTimer);
+        printf("\t* cublasGEMM\t %8.2lf \n", cublasGEMMTimer);
+        printf("\t* cpuGEMM\t %8.2lf \n", cpuGEMMTimer);
+#else
         printf(".. Time in GEMM %8.2lf \n",
 	       LookAheadGEMMTimer + RemainGEMMTimer);
         printf("\t* Look-ahead\t %8.2lf \n", LookAheadGEMMTimer);
         printf("\t* Remain\t %8.2lf\tFlops %8.2le\tGflops %8.2lf\n",
 	       RemainGEMMTimer, allflops, allflops/RemainGEMMTimer*1e-9);
+#endif
         printf(".. Time to Scatter %8.2lf \n",
 	       LookAheadScatterTimer + RemainScatterTimer);
         printf("\t* Look-ahead\t %8.2lf \n", LookAheadScatterTimer);

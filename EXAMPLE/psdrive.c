@@ -59,16 +59,19 @@ int main(int argc, char *argv[])
     float   *berr;
     float   *b, *xtrue;
     int    m, n;
-    int      nprow, npcol;
+    int      nprow, npcol, lookahead, colperm;
     int      iam, info, ldb, ldx, nrhs;
     char     **cpp, c, *postfix;;
     FILE *fp, *fopen();
     int cpp_defs();
     int ii, omp_mpi_level;
+    yes_no_t Use_TensorCore = YES;
 
     nprow = 1;  /* Default process rows.      */
     npcol = 1;  /* Default process columns.   */
     nrhs = 1;   /* Number of right-hand side. */
+    lookahead = 10;
+    colperm = METIS_AT_PLUS_A;
 
     /* ------------------------------------------------------------
        INITIALIZE MPI ENVIRONMENT. 
@@ -100,6 +103,12 @@ int main(int argc, char *argv[])
 	      case 'r': nprow = atoi(*cpp);
 		        break;
 	      case 'c': npcol = atoi(*cpp);
+		        break;
+	      case 'l': lookahead = atoi(*cpp);
+		        break;
+	      case 'p': colperm = atoi(*cpp);
+		        break;
+	      case 't': Use_TensorCore = atoi(*cpp);
 		        break;
 	    }
 	} else { /* Last arg is considered a filename */
@@ -199,11 +208,15 @@ int main(int argc, char *argv[])
     set_default_options_dist(&options);
 #if 0
     options.RowPerm = NOROWPERM;
-    options.IterRefine = NOREFINE;
     options.ColPerm = NATURAL;
     options.Equil = NO; 
+    options.IterRefine = NOREFINE;
     options.ReplaceTinyPivot = YES;
 #endif
+
+    options.ColPerm        = colperm;
+    options.num_lookaheads = lookahead;
+    options.Use_TensorCore = Use_TensorCore;
 
     if (!iam) {
 	print_sp_ienv_dist(&options);
@@ -224,7 +237,6 @@ int main(int argc, char *argv[])
     /* Call the linear equation solver. */
     psgssvx(&options, &A, &ScalePermstruct, b, ldb, nrhs, &grid,
 	    &LUstruct, &SOLVEstruct, berr, &stat, &info);
-
 
     /* Check the accuracy of the solution. */
     psinf_norm_error(iam, ((NRformat_loc *)A.Store)->m_loc,

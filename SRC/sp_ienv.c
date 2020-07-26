@@ -108,7 +108,7 @@ sp_ienv_dist(int_t ispec)
             if ( ttemp ) return(atoi(ttemp));
             else return (5);
         case 7:
-	    ttemp = getenv ("N_GEMM");
+	    ttemp = getenv ("N_GEMM"); // flops of GEMM to be done on CPU
 	    if (ttemp) return atoi (ttemp);
 	    else return 10000;
 

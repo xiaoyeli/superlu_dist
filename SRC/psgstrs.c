@@ -1243,7 +1243,7 @@ if(procs==1){
 #pragma omp parallel default (shared)
 #endif
 	{
-		{
+	    {
 
             if (Llu->inv == 1) { /* Diagonal is inverted. */
 
@@ -1295,11 +1295,6 @@ if(procs==1){
 					for (i=0 ; i<knsupc*nrhs ; i++){
 						x[ii+i] = rtemp_loc[i];
 					}
-
-					// for (i=0 ; i<knsupc*nrhs ; i++){
-					// printf("x_l: %f\n",x[ii+i]);
-					// fflush(stdout);
-					// }
 
 
 #if ( PROFlevel>=1 )
@@ -1360,12 +1355,32 @@ if(procs==1){
    		    STRSM(ftcs1, ftcs1, ftcs2, ftcs3, &knsupc, &nrhs, &alpha,
 				lusup, &nsupr, &x[ii], &knsupc);
 #elif defined (USE_VENDOR_BLAS)
+#if 0
+		    for (int iii=0; iii < knsupc; ++iii) {
+			for (int jjj=0; jjj < knsupc; ++jjj) {
+			    // int jjj = iii;
+			    printf("iii %d, jjj %d, lusup[iii,jjj] %f\n", 
+				   iii, jjj, lusup[iii+ jjj*nsupr]);
+			    fflush(stdout);
+			}
+		    }
+
+		    // for (int iii=0 ; iii<knsupc*nrhs ; iii++){
+		    //    printf("before STRSM x_l: %f\n",x[ii+ iii]);	fflush(stdout);
+		    // }
+		    // Printfloat5("before STRSM x_l:", knsupc, &x[ii]);
+#endif
+
 		    strsm_("L", "L", "N", "U", &knsupc, &nrhs, &alpha,
 				lusup, &nsupr, &x[ii], &knsupc, 1, 1, 1, 1);
 #else
  		    strsm_("L", "L", "N", "U", &knsupc, &nrhs, &alpha,
 					lusup, &nsupr, &x[ii], &knsupc);
 #endif
+
+	    // for (int iii=0 ; iii<knsupc*nrhs ; iii++){
+	    // 	printf("after STRSM x_l: %f\n",x[ii+ iii]);	fflush(stdout);
+	    // }
 
 #if ( PROFlevel>=1 )
 		    TOC(t2, t1);
@@ -1395,10 +1410,14 @@ if(procs==1){
 			leaf_send[(nleaf_send_tmp-1)*aln_i] = lk;
 		    }
 		    } /* end a block */
+
 		} /* end for jj ... */
+
 	    } /* end else ... diagonal is not invedted */
+
+
 	  }
-	}
+	} /* end omp parallel */
 
 	jj=0;
 
