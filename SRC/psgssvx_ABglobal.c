@@ -343,7 +343,7 @@ at the top-level directory.
  *         NOTE: Currently, A must reside in all processes when calling
  *               this routine.
  *
- * ScalePermstruct (input/output) ScalePermstruct_t*
+ * ScalePermstruct (input/output) sScalePermstruct_t*
  *         The data structure to store the scaling and permutation vectors
  *         describing the transformations performed to the matrix A.
  *         It contains the following fields:
@@ -419,7 +419,7 @@ at the top-level directory.
  *         Grid can be initialized by subroutine SUPERLU_GRIDINIT.
  *         See superlu_sdefs.h for the definition of 'gridinfo_t'.
  *
- * LUstruct (input/output) LUstruct_t*
+ * LUstruct (input/output) sLUstruct_t*
  *         The data structures to store the distributed L and U factors.
  *         It contains the following fields:
  *
@@ -442,9 +442,9 @@ at the top-level directory.
  *	       xsup[s] is the leading column of the s-th supernode,
  *             supno[i] is the supernode number to which column i belongs.
  *
- *         o Llu (LocalLU_t*)
+ *         o Llu (sLocalLU_t*)
  *           The distributed data structures to store L and U factors.
- *           See superlu_ddefs.h for the definition of 'LocalLU_t'.
+ *           See superlu_ddefs.h for the definition of 'sLocalLU_t'.
  *
  * berr    (output) double*, dimension (nrhs)
  *         The componentwise relative backward error of each solution
@@ -470,9 +470,9 @@ at the top-level directory.
  */
 void
 psgssvx_ABglobal(superlu_dist_options_t *options, SuperMatrix *A,
-		 ScalePermstruct_t *ScalePermstruct,
+		 sScalePermstruct_t *ScalePermstruct,
 		 float B[], int ldb, int nrhs, gridinfo_t *grid,
-		 LUstruct_t *LUstruct, float *berr,
+		 sLUstruct_t *LUstruct, float *berr,
 		 SuperLUStat_t *stat, int *info)
 {
     SuperMatrix AC;
@@ -746,7 +746,7 @@ psgssvx_ABglobal(superlu_dist_options_t *options, SuperMatrix *A,
    	    }
 
 #if ( PRNTlevel>=2 )
-	    dmin = dmach_dist("Overflow");
+	    dmin = smach_dist("Overflow");
 	    dsum = 0.0;
 	    dprod = 1.0;
 #endif

@@ -52,9 +52,9 @@ int main(int argc, char *argv[])
     superlu_dist_options_t options;
     SuperLUStat_t stat;
     SuperMatrix A;
-    ScalePermstruct_t ScalePermstruct;
-    LUstruct_t LUstruct;
-    SOLVEstruct_t SOLVEstruct;
+    sScalePermstruct_t ScalePermstruct;
+    sLUstruct_t LUstruct;
+    sSOLVEstruct_t SOLVEstruct;
     gridinfo_t grid;
     float   *berr;
     float   *b, *xtrue;
@@ -174,8 +174,6 @@ int main(int argc, char *argv[])
        GET THE MATRIX FROM FILE AND SETUP THE RIGHT HAND SIDE. 
        ------------------------------------------------------------*/
     screate_matrix_postfix(&A, nrhs, &b, &ldb, &xtrue, &ldx, fp, postfix, &grid);
-    printf("after screate_matrix xtrue[2] %e, b[41] %e\n", xtrue[2], b[41]);
-
 
     if ( !(berr = floatMalloc_dist(nrhs)) )
 	ABORT("Malloc fails for berr[].");
@@ -217,19 +215,16 @@ int main(int argc, char *argv[])
     n = A.ncol;
 
     /* Initialize ScalePermstruct and LUstruct. */
-    ScalePermstructInit(m, n, &ScalePermstruct);
-    LUstructInit(n, &LUstruct);
+    sScalePermstructInit(m, n, &ScalePermstruct);
+    sLUstructInit(n, &LUstruct);
 
     /* Initialize the statistics variables. */
     PStatInit(&stat);
-
-    printf("before psgssvx xtrue[2] %e, b[41] %e\n", xtrue[2], b[41]);
 
     /* Call the linear equation solver. */
     psgssvx(&options, &A, &ScalePermstruct, b, ldb, nrhs, &grid,
 	    &LUstruct, &SOLVEstruct, berr, &stat, &info);
 
-    printf("after psgssvx xtrue[2] %e, b[41] %e\n", xtrue[2], b[41]);
 
     /* Check the accuracy of the solution. */
     psinf_norm_error(iam, ((NRformat_loc *)A.Store)->m_loc,
@@ -243,15 +238,16 @@ int main(int argc, char *argv[])
 
     PStatFree(&stat);
     Destroy_CompRowLoc_Matrix_dist(&A);
-    ScalePermstructFree(&ScalePermstruct);
-    Destroy_LU(n, &grid, &LUstruct);
-    LUstructFree(&LUstruct);
+    sScalePermstructFree(&ScalePermstruct);
+    sDestroy_LU(n, &grid, &LUstruct);
+    sLUstructFree(&LUstruct);
     if ( options.SolveInitialized ) {
         sSolveFinalize(&options, &SOLVEstruct);
     }
     SUPERLU_FREE(b);
     SUPERLU_FREE(xtrue);
     SUPERLU_FREE(berr);
+    fclose(fp);
 
     /* ------------------------------------------------------------
        RELEASE THE SUPERLU PROCESS GRID.

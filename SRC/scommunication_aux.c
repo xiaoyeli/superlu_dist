@@ -195,7 +195,7 @@ int_t sBcast_UPanel(int_t k, int_t k0, int_t* usub,
 int_t sIrecv_LPanel
 /*it places Irecv call for L panel*/
 (int_t k, int_t k0,  int_t* Lsub_buf, float* Lval_buf,
- gridinfo_t *grid, MPI_Request *recv_req, LocalLU_t *Llu, int tag_ub )
+ gridinfo_t *grid, MPI_Request *recv_req, sLocalLU_t *Llu, int tag_ub )
 {
     int_t kcol = PCOL (k, grid);
 
@@ -212,7 +212,7 @@ int_t sIrecv_LPanel
 
 int_t sIrecv_UPanel
 /*it places Irecv calls to receive U panels*/
-(int_t k, int_t k0, int_t* Usub_buf, float* Uval_buf, LocalLU_t *Llu,
+(int_t k, int_t k0, int_t* Usub_buf, float* Uval_buf, sLocalLU_t *Llu,
  gridinfo_t* grid, MPI_Request *recv_req_u, int tag_ub )
 {
     int_t krow = PROW (k, grid);
@@ -318,7 +318,7 @@ int_t sRecv_UDiagBlock(int_t k0, float *ublk_ptr, /*pointer for the diagonal blo
 
 
 int_t sPackLBlock(int_t k, float* Dest, Glu_persist_t *Glu_persist,
-                  gridinfo_t *grid, LocalLU_t *Llu)
+                  gridinfo_t *grid, sLocalLU_t *Llu)
 /*Copies src matrix into dest matrix*/
 {
     /* Initialization. */
@@ -449,9 +449,9 @@ int_t sIBcast_LDiagBlock(int_t k, float *lblk_ptr, /*pointer for the diagonal bl
 int_t sUDiagBlockRecvWait( int_t k,  int_t* IrecvPlcd_D, int_t* factored_L,
                            MPI_Request * U_diag_blk_recv_req,
                            gridinfo_t *grid,
-                           LUstruct_t *LUstruct, SCT_t *SCT)
+                           sLUstruct_t *LUstruct, SCT_t *SCT)
 {
-    LocalLU_t *Llu = LUstruct->Llu;
+    sLocalLU_t *Llu = LUstruct->Llu;
 
     int_t iam = grid->iam;
 

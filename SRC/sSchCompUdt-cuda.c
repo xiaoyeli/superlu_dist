@@ -24,14 +24,6 @@ at the top-level directory.
 
 #define SCHEDULE_STRATEGY dynamic
 
-#define TEST_CHECK_CUBLAS_ERR(c_) do { \
-    cublasStatus_t res = (c_); \
-    if(res != CUBLAS_STATUS_SUCCESS) { \
-    printf("returned in %s:%s:%d status is %d \n", __FILE__, __FUNCTION__, __LINE__,res); \
-    return -1; \
-    } \
-    } while(0)
-
 #define cublasCheckErrors(fn) \
     do { \
         cublasStatus_t __err = fn; \
@@ -228,23 +220,6 @@ if ( msg0 && msg2 ) {  /* L(:,k) and U(k,:) are not empty. */
 						  streams[stream_id])
 				     );
 
-		    // set mode to tensor
-		    //		    TEST_CHECK_CUBLAS_ERR( cublasSetMathMode(handle, CUBLAS_TENSOR_OP_MATH) );
-		    cublasCheckErrors( cublasSetMathMode(handle[stream_id], CUBLAS_TENSOR_OP_MATH) );
-
-#if 0
-		    int nbrow_fake = (nbrow<32) ? nbrow : (nbrow/32) *32 ;
-		    int ldu_fake = (ldu<32) ? ldu : (ldu/32) *32 ;
-		    cublasCheckErrors(
-				  cublasSgemm(handle[stream_id],
-					      CUBLAS_OP_N, CUBLAS_OP_N,
-					      nbrow_fake, num_col_stream, ldu_fake,
-                                              &alpha, dA, nbrow_fake,
-					      &dB[b_offset], ldu_fake,
-					      &beta, &dC[c_offset],
-                                              nbrow_fake)
-				      );
-#else
 		    cublasCheckErrors(
 				  cublasSgemm(handle[stream_id],
 					      CUBLAS_OP_N, CUBLAS_OP_N,
@@ -254,10 +229,6 @@ if ( msg0 && msg2 ) {  /* L(:,k) and U(k,:) are not empty. */
 					      &beta, &dC[c_offset],
                                               nbrow)
 				  );
-#endif
-
-		    // set mode back to normal mode
-		    TEST_CHECK_CUBLAS_ERR( cublasSetMathMode(handle[stream_id], CUBLAS_DEFAULT_MATH) );
 
 		    checkCuda( cudaMemcpyAsync(tempv1, dC+c_offset,
 					   C_stream_size,
@@ -277,7 +248,7 @@ if ( msg0 && msg2 ) {  /* L(:,k) and U(k,:) are not empty. */
 	    /* Special case for CPU -- leading block columns are computed 
 	       on CPU in order to mask the GPU data transfer latency */
 	    int num_col = full_u_cols[jjj_st+ncpu_blks-1];
-	    int st_col = 0; /* leading parton CPU */
+	    int st_col = 0; /* leading part on CPU */
 	    tempv = bigV + nbrow * st_col;
 	    tempu = bigU;
 
@@ -310,13 +281,19 @@ if ( msg0 && msg2 ) {  /* L(:,k) and U(k,:) are not empty. */
     firstprivate(luptr,lptr) default (shared)
 #endif
             {
+#ifdef _OPENMP	    
                 int thread_id = omp_get_thread_num();
+		int num_threads = omp_get_num_threads();
+#else
+                int thread_id = 0;
+		int num_threads = 1;
+#endif		
 
                 int* indirect_thread = indirect + ldt*thread_id;
                 int* indirect2_thread = indirect2 + ldt*thread_id;
                 float* tempv1;
 
-                if (ncpu_blks< omp_get_num_threads()) {
+                if ( ncpu_blks < num_threads ) {
                     // TAU_STATIC_TIMER_START("SPECIAL_CPU_SCATTER");
 
                     for (j = jjj_st; j < jjj_st+ncpu_blks; ++j) {
@@ -500,8 +477,11 @@ if ( msg0 && msg2 ) {  /* L(:,k) and U(k,:) are not empty. */
     firstprivate(luptr,lptr) default (shared)
 #endif
             {
+#ifdef _OPENMP	    
                 int thread_id = omp_get_thread_num();
-
+#else		
+                int thread_id = 0;
+#endif
                 int* indirect_thread = indirect + ldt*thread_id;
                 int* indirect2_thread = indirect2 + ldt*thread_id;
                 float* tempv1;

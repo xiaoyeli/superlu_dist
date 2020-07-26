@@ -42,7 +42,7 @@ while (j < nub && iperm_u[j] <= k0 + num_look_aheads)
 while (j < nub && perm_u[2 * j] <= k0 + num_look_aheads)
 #endif
 {
-    double zero = 0.0;
+    float zero = 0.0;
 
 #if 1
     /* Search is needed because a permutation perm_u is involved for j  */

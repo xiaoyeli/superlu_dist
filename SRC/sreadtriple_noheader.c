@@ -49,9 +49,9 @@ sreadtriple_noheader(FILE *fp, int_t *m, int_t *n, int_t *nonz,
     nz = *n = 0;
 
 #ifdef _LONGINT
-    ret_val = fscanf(fp, "%ld%ld%lf%\n", &i, &j, &vali);
-#else
-    ret_val = fscanf(fp, "%d%d%lf\n", &i, &j, &vali);
+    ret_val = fscanf(fp, "%ld%ld%f%\n", &i, &j, &vali);
+#else  // int
+    ret_val = fscanf(fp, "%d%d%f%\n", &i, &j, &vali);
 #endif
 
     while (ret_val != EOF) {
@@ -62,14 +62,12 @@ sreadtriple_noheader(FILE *fp, int_t *m, int_t *n, int_t *nonz,
 	++nz;
 
 #ifdef _LONGINT
-        ret_val = fscanf(fp, "%ld%ld%f%\n", &i, &j, &vali);
-#else
-        ret_val = fscanf(fp, "%d%d%f\n", &i, &j, &vali);
-#endif
-#else
+    	ret_val = fscanf(fp, "%ld%ld%f%\n", &i, &j, &vali);
+#else  // int
+        ret_val = fscanf(fp, "%d%d%f%\n", &i, &j, &vali);
 #endif
     }
-
+    
     if ( minn == 0 ) { /* zero-based indexing */
 	zero_base = 1;
 	++(*n);
@@ -107,9 +105,9 @@ sreadtriple_noheader(FILE *fp, int_t *m, int_t *n, int_t *nonz,
     /* Read into the triplet array from a file */
     for (nnz = 0, nz = 0; nnz < *nonz; ++nnz) {
 #ifdef _LONGINT
-	fscanf(fp, "%ld%ld%lf\n", &row[nz], &col[nz], &val[nz]);
-#else
-	fscanf(fp, "%d%d%lf\n", &row[nz], &col[nz], &val[nz]);
+	fscanf(fp, "%ld%ld%f\n", &row[nz], &col[nz], &val[nz]);
+#else // int32
+	fscanf(fp, "%d%d%f\n", &row[nz], &col[nz], &val[nz]);
 #endif
 
 	if ( !zero_base ) {
@@ -120,7 +118,7 @@ sreadtriple_noheader(FILE *fp, int_t *m, int_t *n, int_t *nonz,
 
 	if (row[nz] < 0 || row[nz] >= *m || col[nz] < 0 || col[nz] >= *n
 	    /*|| val[nz] == 0.*/) {
-	    fprintf(stderr, "nz %d, (%d, %d) = %e out of bound, removed\n",
+	    fprintf(stderr, "nz" IFMT ", (" IFMT ", " IFMT ") = %e out of bound, removed\n",
 		    nz, row[nz], col[nz], val[nz]);
 	    exit(-1);
 	} else {
@@ -193,7 +191,7 @@ void sreadrhs(int m, float *b)
 	exit(-1);
     }
     for (i = 0; i < m; ++i)
-      fscanf(fp, "%lf\n", &b[i]);
+      fscanf(fp, "%f\n", &b[i]);
 
     fclose(fp);
 }

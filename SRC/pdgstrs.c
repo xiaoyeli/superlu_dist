@@ -107,7 +107,7 @@ _fcd ftcs3;
  *
  * Note
  * ====
- *   This routine can only be called after the routine pxgstrs_init(),
+ *   This routine can only be called after the routine pdgstrs_init(),
  *   in which the structures of the send and receive buffers are set up.
  *
  * Arguments
@@ -135,14 +135,14 @@ _fcd ftcs3;
  * x      (output) double*
  *        The solution vector. It is valid only on the diagonal processes.
  *
- * ScalePermstruct (input) ScalePermstruct_t*
+ * ScalePermstruct (input) dScalePermstruct_t*
  *        The data structure to store the scaling and permutation vectors
  *        describing the transformations performed to the original matrix A.
  *
  * grid   (input) gridinfo_t*
  *        The 2D process mesh.
  *
- * SOLVEstruct (input) SOLVEstruct_t*
+ * SOLVEstruct (input) dSOLVEstruct_t*
  *        Contains the information for the communication during the
  *        solution phase.
  *
@@ -154,9 +154,9 @@ _fcd ftcs3;
 int_t
 pdReDistribute_B_to_X(double *B, int_t m_loc, int nrhs, int_t ldb,
                       int_t fst_row, int_t *ilsum, double *x,
-		      ScalePermstruct_t *ScalePermstruct,
+		      dScalePermstruct_t *ScalePermstruct,
 		      Glu_persist_t *Glu_persist,
-		      gridinfo_t *grid, SOLVEstruct_t *SOLVEstruct)
+		      gridinfo_t *grid, dSOLVEstruct_t *SOLVEstruct)
 {
     int  *SendCnt, *SendCnt_nrhs, *RecvCnt, *RecvCnt_nrhs;
     int  *sdispls, *sdispls_nrhs, *rdispls, *rdispls_nrhs;
@@ -402,7 +402,7 @@ pdReDistribute_B_to_X(double *B, int_t m_loc, int nrhs, int_t ldb,
  *
  * Note
  * ====
- *   This routine can only be called after the routine pxgstrs_init(),
+ *   This routine can only be called after the routine pdgstrs_init(),
  *   in which the structures of the send and receive buffers are set up.
  * </pre>
  */
@@ -410,9 +410,9 @@ pdReDistribute_B_to_X(double *B, int_t m_loc, int nrhs, int_t ldb,
 int_t
 pdReDistribute_X_to_B(int_t n, double *B, int_t m_loc, int_t ldb, int_t fst_row,
 		      int_t nrhs, double *x, int_t *ilsum,
-		      ScalePermstruct_t *ScalePermstruct,
+		      dScalePermstruct_t *ScalePermstruct,
 		      Glu_persist_t *Glu_persist, gridinfo_t *grid,
-		      SOLVEstruct_t *SOLVEstruct)
+		      dSOLVEstruct_t *SOLVEstruct)
 {
     int_t  i, ii, irow, j, jj, k, knsupc, nsupers, l, lk;
     int_t  *xsup, *supno;
@@ -646,12 +646,12 @@ pdReDistribute_X_to_B(int_t n, double *B, int_t m_loc, int_t ldb, int_t fst_row,
  * </pre>
  */
 void
-pdCompute_Diag_Inv(int_t n, LUstruct_t *LUstruct,gridinfo_t *grid,
+pdCompute_Diag_Inv(int_t n, dLUstruct_t *LUstruct,gridinfo_t *grid,
                    SuperLUStat_t *stat, int *info)
 {
 #ifdef SLU_HAVE_LAPACK
     Glu_persist_t *Glu_persist = LUstruct->Glu_persist;
-    LocalLU_t *Llu = LUstruct->Llu;
+    dLocalLU_t *Llu = LUstruct->Llu;
 
     double *lusup;
     double *recvbuf, *tempv;
@@ -787,11 +787,11 @@ pdCompute_Diag_Inv(int_t n, LUstruct_t *LUstruct,gridinfo_t *grid,
  * n      (input) int (global)
  *        The order of the system of linear equations.
  *
- * LUstruct (input) LUstruct_t*
+ * LUstruct (input) dLUstruct_t*
  *        The distributed data structures storing L and U factors.
  *        The L and U factors are obtained from PDGSTRF for
  *        the possibly scaled and permuted matrix A.
- *        See superlu_ddefs.h for the definition of 'LUstruct_t'.
+ *        See superlu_ddefs.h for the definition of 'dLUstruct_t'.
  *        A may be scaled and permuted into A1, so that
  *        A1 = Pc*Pr*diag(R)*A*diag(C)*Pc^T = L*U
  *
@@ -822,7 +822,7 @@ pdCompute_Diag_Inv(int_t n, LUstruct_t *LUstruct,gridinfo_t *grid,
  * nrhs   (input) int (global)
  *        Number of right-hand sides.
  *
- * SOLVEstruct (input) SOLVEstruct_t* (global)
+ * SOLVEstruct (input) dSOLVEstruct_t* (global)
  *        Contains the information for the communication during the
  *        solution phase.
  *
@@ -837,17 +837,17 @@ pdCompute_Diag_Inv(int_t n, LUstruct_t *LUstruct,gridinfo_t *grid,
  */
 
 void
-pdgstrs(int_t n, LUstruct_t *LUstruct,
-	ScalePermstruct_t *ScalePermstruct,
+pdgstrs(int_t n, dLUstruct_t *LUstruct,
+	dScalePermstruct_t *ScalePermstruct,
 	gridinfo_t *grid, double *B,
 	int_t m_loc, int_t fst_row, int_t ldb, int nrhs,
-	SOLVEstruct_t *SOLVEstruct,
+	dSOLVEstruct_t *SOLVEstruct,
 	SuperLUStat_t *stat, int *info)
 {
     Glu_persist_t *Glu_persist = LUstruct->Glu_persist;
-    LocalLU_t *Llu = LUstruct->Llu;
+    dLocalLU_t *Llu = LUstruct->Llu;
     double alpha = 1.0;
-	double beta = 0.0;
+    double beta = 0.0;
     double zero = 0.0;
     double *lsum;  /* Local running sum of the updates to B-components */
     double *x;     /* X component at step k. */
@@ -902,8 +902,8 @@ pdgstrs(int_t n, LUstruct_t *LUstruct,
     int_t  nfrecvx = Llu->nfrecvx; /* Number of X components to be recv'd. */
     int_t  nfrecvx_buf=0;
     int_t  *frecv;        /* Count of lsum[lk] contributions to be received
-    			 from processes in this row.
-    			 It is only valid on the diagonal processes. */
+    			     from processes in this row.
+    			     It is only valid on the diagonal processes. */
     int_t  frecv_tmp;
     int_t  nfrecvmod = 0; /* Count of total modifications to be recv'd. */
     int_t  nfrecv = 0; /* Count of total messages to be recv'd. */
@@ -918,7 +918,7 @@ pdgstrs(int_t n, LUstruct_t *LUstruct,
     int_t  nbrecvx = Llu->nbrecvx; /* Number of X components to be recv'd. */
     int_t  nbrecvx_buf=0;
     int_t  *brecv;        /* Count of modifications to be recv'd from
-    			 processes in this row. */
+    			     processes in this row. */
     int_t  nbrecvmod = 0; /* Count of total modifications to be recv'd. */
     int_t flagx,flaglsum,flag;
     int_t *LBTree_active, *LRTree_active, *LBTree_finish, *LRTree_finish, *leafsups, *rootsups;
@@ -948,24 +948,24 @@ pdgstrs(int_t n, LUstruct_t *LUstruct,
     int iword = sizeof (int_t);
     int dword = sizeof (double);
     int Nwork;
-	int_t procs = grid->nprow * grid->npcol;
-    	yes_no_t done;
+    int_t procs = grid->nprow * grid->npcol;
+    yes_no_t done;
     yes_no_t startforward;
-    	int nbrow;
+    int nbrow;
     int_t  ik, rel, idx_r, jb, nrbl, irow, pc,iknsupc;
     int_t  lptr1_tmp, idx_i, idx_v,m;
-    	int_t ready;
-    	static int thread_id;
+    int_t ready;
+    static int thread_id = 0;
     yes_no_t empty;
     int_t sizelsum,sizertemp,aln_d,aln_i;
     aln_d = ceil(CACHELINE/(double)dword);
     aln_i = ceil(CACHELINE/(double)iword);
     int num_thread = 1;
 
-	maxsuper = sp_ienv_dist(3);
+    maxsuper = sp_ienv_dist(3);
 
 #ifdef _OPENMP
-	#pragma omp threadprivate(thread_id)
+#pragma omp threadprivate(thread_id)
 #endif
 
 #ifdef _OPENMP
@@ -974,11 +974,11 @@ pdgstrs(int_t n, LUstruct_t *LUstruct,
     	if (omp_get_thread_num () == 0) {
     		num_thread = omp_get_num_threads ();
     	}
-		thread_id = omp_get_thread_num ();
+	thread_id = omp_get_thread_num ();
     }
 #endif
 
-#if ( PRNTlevel>=1 )
+#if ( PRNTlevel>=2 )
     if( grid->iam==0 ) {
 	printf("num_thread: %5d\n", num_thread);
 	fflush(stdout);
@@ -1066,7 +1066,7 @@ pdgstrs(int_t n, LUstruct_t *LUstruct,
 #pragma omp parallel default(shared) private(ii)
     {
 	for (ii=0; ii<sizelsum; ii++)
-    	lsum[thread_id*sizelsum+ii]=zero;
+    	    lsum[thread_id*sizelsum+ii]=zero;
     }
 #else
     if ( !(lsum = (double*)SUPERLU_MALLOC(sizelsum*num_thread * sizeof(double))))
@@ -1074,6 +1074,7 @@ pdgstrs(int_t n, LUstruct_t *LUstruct,
     for ( ii=0; ii < sizelsum*num_thread; ii++ )
 	lsum[ii]=zero;
 #endif
+    /* intermediate solution x[] vector has same structure as lsum[], see leading comment */
     if ( !(x = doubleCalloc_dist(ldalsum * nrhs + nlb * XK_H)) )
 	ABORT("Calloc fails for x[].");
 
@@ -1249,13 +1250,13 @@ if(procs==1){
 #ifdef _OPENMP
 #pragma	omp	for firstprivate(nrhs,beta,alpha,x,rtemp,ldalsum) private (ii,k,knsupc,lk,luptr,lsub,nsupr,lusup,t1,t2,Linv,i,lib,rtemp_loc,nleaf_send_tmp) nowait
 #endif
-			for (jj=0;jj<nleaf;jj++){
-				k=leafsups[jj];
+		for (jj=0;jj<nleaf;jj++){
+		    k=leafsups[jj];
 
-				// #ifdef _OPENMP
-				// #pragma	omp	task firstprivate (k,nrhs,beta,alpha,x,rtemp,ldalsum) private (ii,knsupc,lk,luptr,lsub,nsupr,lusup,thread_id,t1,t2,Linv,i,lib,rtemp_loc)
-				// #endif
-				{
+// #ifdef _OPENMP
+// #pragma omp task firstprivate (k,nrhs,beta,alpha,x,rtemp,ldalsum) private (ii,knsupc,lk,luptr,lsub,nsupr,lusup,thread_id,t1,t2,Linv,i,lib,rtemp_loc)
+// #endif
+   		    {
 
 #if ( PROFlevel>=1 )
 					TIC(t1);
@@ -1366,12 +1367,6 @@ if(procs==1){
 					lusup, &nsupr, &x[ii], &knsupc);
 #endif
 
-		// for (i=0 ; i<knsupc*nrhs ; i++){
-		// printf("x_l: %f\n",x[ii+i]);
-		// fflush(stdout);
-		// }
-
-
 #if ( PROFlevel>=1 )
 		    TOC(t2, t1);
 		    stat_loc[thread_id]->utime[SOL_TRSM] += t2;
@@ -1412,36 +1407,32 @@ if(procs==1){
 #endif
 		{
 
-
 #ifdef _OPENMP
 #pragma omp master
 #endif
-				{
+		    {
 
 #ifdef _OPENMP
-#pragma	omp	taskloop private (k,ii,lk) num_tasks(num_thread*8) nogroup
+#pragma	omp taskloop private (k,ii,lk) num_tasks(num_thread*8) nogroup
 #endif
 
-					for (jj=0;jj<nleaf;jj++){
-						k=leafsups[jj];
+			for (jj=0;jj<nleaf;jj++){
+			    k=leafsups[jj];
 
-						{
-							/* Diagonal process */
-							lk = LBi( k, grid );
-							ii = X_BLK( lk );
-							/*
-							 * Perform local block modifications: lsum[i] -= L_i,k * X[k]
-							 */
-							dlsum_fmod_inv(lsum, x, &x[ii], rtemp, nrhs, k,
-									fmod, xsup, grid, Llu,
-									stat_loc, leaf_send, &nleaf_send,sizelsum,sizertemp,0,maxsuper,thread_id,num_thread);
-						}
+			    {
+				/* Diagonal process */
+				lk = LBi( k, grid );
+				ii = X_BLK( lk );
+				/*
+				 * Perform local block modifications: lsum[i] -= L_i,k * X[k]
+				 */
+				dlsum_fmod_inv(lsum, x, &x[ii], rtemp, nrhs, k, fmod, xsup, grid, Llu, stat_loc, leaf_send, &nleaf_send,sizelsum,sizertemp,0,maxsuper,thread_id,num_thread);
+			    }
 
-						// } /* if diagonal process ... */
-					} /* for k ... */
-				}
+			} /* for jj ... */
+		    }
 
-			}
+		}
 
 			for (i=0;i<nleaf_send;i++){
 				lk = leaf_send[i*aln_i];
@@ -1640,6 +1631,7 @@ if(procs==1){
 #endif
 
 											stat_loc[thread_id]->ops[SOLVE] += knsupc * (knsupc - 1) * nrhs;
+
 #if ( DEBUGlevel>=2 )
 											printf("(%2d) Solve X[%2d]\n", iam, k);
 #endif
@@ -2011,15 +2003,6 @@ if(procs==1){
 						lusup, &nsupr, &x[ii], &knsupc);
 #endif
 			}
-			// for (i=0 ; i<knsupc*nrhs ; i++){
-			// printf("x_u: %f\n",x[ii+i]);
-			// fflush(stdout);
-			// }
-
-			// for (i=0 ; i<knsupc*nrhs ; i++){
-				// printf("x: %f\n",x[ii+i]);
-				// fflush(stdout);
-			// }
 
 #if ( PROFlevel>=1 )
 			TOC(t2, t1);
@@ -2194,7 +2177,7 @@ for (i=0;i<nroot_send;i++){
 								#pragma omp simd
 							#endif
 							for (i = 0; i < knsupc; ++i)
-								x[i + ii + j*knsupc] += lsum[i + il + j*knsupc ];
+							    x[i + ii + j*knsupc] += lsum[i + il + j*knsupc ];
 
 						lk = LBj( k, grid ); /* Local block number, column-wise. */
 						lsub = Lrowind_bc_ptr[lk];

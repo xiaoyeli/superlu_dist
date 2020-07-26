@@ -70,14 +70,14 @@ void suser_free_dist(int_t bytes, int_t which_end)
  *      Number of memory expansions during the LU factorization.
  * </pre>
  */
-int_t sQuerySpace_dist(int_t n, LUstruct_t *LUstruct, gridinfo_t *grid,
+int_t sQuerySpace_dist(int_t n, sLUstruct_t *LUstruct, gridinfo_t *grid,
 		       SuperLUStat_t *stat, superlu_dist_mem_usage_t *mem_usage)
 {
     register int_t dword, gb, iword, k, nb, nsupers;
     int_t *index, *xsup;
     int iam, mycol, myrow;
     Glu_persist_t *Glu_persist = LUstruct->Glu_persist;
-    LocalLU_t *Llu = LUstruct->Llu;
+    sLocalLU_t *Llu = LUstruct->Llu;
 
     iam = grid->iam;
     myrow = MYROW( iam, grid );
@@ -174,11 +174,11 @@ float *floatCalloc_dist(int_t n)
  * The following are from 3D code.
  ***************************************/
 
-double sgetLUMem(int_t nodeId, LUstruct_t *LUstruct, gridinfo3d_t *grid3d)
+double sgetLUMem(int_t nodeId, sLUstruct_t *LUstruct, gridinfo3d_t *grid3d)
 {
     double memlu = 0.0;
     gridinfo_t* grid = &(grid3d->grid2d);
-    LocalLU_t *Llu = LUstruct->Llu;
+    sLocalLU_t *Llu = LUstruct->Llu;
     int_t* xsup = LUstruct->Glu_persist->xsup;
     int_t** Lrowind_bc_ptr = Llu->Lrowind_bc_ptr;
     float** Lnzval_bc_ptr = Llu->Lnzval_bc_ptr;
@@ -226,7 +226,7 @@ double sgetLUMem(int_t nodeId, LUstruct_t *LUstruct, gridinfo3d_t *grid3d)
     return memlu;
 }
 
-double  smemForest(sForest_t*sforest, LUstruct_t *LUstruct, gridinfo3d_t *grid3d)
+double  smemForest(sForest_t*sforest, sLUstruct_t *LUstruct, gridinfo3d_t *grid3d)
 {
     double memlu = 0;
 
@@ -240,7 +240,7 @@ double  smemForest(sForest_t*sforest, LUstruct_t *LUstruct, gridinfo3d_t *grid3d
     return memlu;
 }
 
-void s3D_printMemUse( trf3Dpartition_t*  trf3Dpartition,  LUstruct_t *LUstruct,
+void s3D_printMemUse( trf3Dpartition_t*  trf3Dpartition,  sLUstruct_t *LUstruct,
 		      gridinfo3d_t * grid3d )
 {
     int_t* myTreeIdxs = trf3Dpartition->myTreeIdxs;

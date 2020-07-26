@@ -62,17 +62,17 @@ at the top-level directory.
 </pre>
 */
 
-double pslangs(char *norm, SuperMatrix *A, gridinfo_t *grid)
+float pslangs(char *norm, SuperMatrix *A, gridinfo_t *grid)
 {
     /* Local variables */
     NRformat_loc *Astore;
     int_t    m_loc;
     float   *Aval;
     int_t    i, j, jcol;
-    double   value=0., sum;
-    double   *rwork;
-    double   tempvalue;
-    double   *temprwork;
+    float   value=0., sum;
+    float   *rwork;
+    float   tempvalue;
+    float   *temprwork;
 
     Astore = (NRformat_loc *) A->Store;
     m_loc = Astore->m_loc;
@@ -88,7 +88,7 @@ double pslangs(char *norm, SuperMatrix *A, gridinfo_t *grid)
 		value = SUPERLU_MAX( value, fabs(Aval[j]) );
 	}
 
-	MPI_Allreduce(&value, &tempvalue, 1, MPI_DOUBLE, MPI_MAX, grid->comm);
+	MPI_Allreduce(&value, &tempvalue, 1, MPI_FLOAT, MPI_MAX, grid->comm);
 	value = tempvalue;
 
     } else if ( strncmp(norm, "O", 1)==0 || *(unsigned char *)norm == '1') {
@@ -101,9 +101,9 @@ double pslangs(char *norm, SuperMatrix *A, gridinfo_t *grid)
 		sum += fabs(Aval[i]);
 	    value = SUPERLU_MAX(value,sum);
 	}
-#else /* XSL ==> */
-	if ( !(rwork = (double *) doubleCalloc_dist(A->ncol)) )
-	    ABORT("doubleCalloc_dist fails for rwork.");
+#else /* Sherry ==> */
+	if ( !(rwork = floatCalloc_dist(A->ncol)) )
+	    ABORT("floatCalloc_dist fails for rwork.");
 	for (i = 0; i < m_loc; ++i) {
 	    for (j = Astore->rowptr[i]; j < Astore->rowptr[i+1]; ++j) {
 	        jcol = Astore->colind[j];
@@ -111,9 +111,9 @@ double pslangs(char *norm, SuperMatrix *A, gridinfo_t *grid)
 	    }
 	}
 
-	if ( !(temprwork = (double *) doubleCalloc_dist(A->ncol)) )
-	    ABORT("doubleCalloc_dist fails for temprwork.");
-	MPI_Allreduce(rwork, temprwork, A->ncol, MPI_DOUBLE, MPI_SUM, grid->comm);
+	if ( !(temprwork = floatCalloc_dist(A->ncol)) )
+	    ABORT("floatCalloc_dist fails for temprwork.");
+	MPI_Allreduce(rwork, temprwork, A->ncol, MPI_FLOAT, MPI_SUM, grid->comm);
 	value = 0.;
 	for (j = 0; j < A->ncol; ++j) {
 	    value = SUPERLU_MAX(value, temprwork[j]);
@@ -130,7 +130,7 @@ double pslangs(char *norm, SuperMatrix *A, gridinfo_t *grid)
 	        sum += fabs(Aval[j]);
 	    value = SUPERLU_MAX(value, sum);
 	}
-	MPI_Allreduce(&value, &tempvalue, 1, MPI_DOUBLE, MPI_MAX, grid->comm);
+	MPI_Allreduce(&value, &tempvalue, 1, MPI_FLOAT, MPI_MAX, grid->comm);
 	value = tempvalue;
 
     } else if ( strncmp(norm, "F", 1)==0 || strncmp(norm, "E", 1)==0 ) {

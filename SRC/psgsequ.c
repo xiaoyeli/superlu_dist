@@ -46,25 +46,25 @@ at the top-level directory.
             factors are to be computed. The type of A can be:
             Stype = SLU_NR_loc; Dtype = SLU_S; Mtype = SLU_GE.
 
-    R       (output) double*, size A->nrow
+    R       (output) float*, size A->nrow
             If INFO = 0 or INFO > M, R contains the row scale factors
             for A.
 
-    C       (output) double*, size A->ncol
+    C       (output) float*, size A->ncol
             If INFO = 0,  C contains the column scale factors for A.
 
-    ROWCND  (output) double*
+    ROWCND  (output) float*
             If INFO = 0 or INFO > M, ROWCND contains the ratio of the
             smallest R(i) to the largest R(i).  If ROWCND >= 0.1 and
             AMAX is neither too large nor too small, it is not worth
             scaling by R.
 
-    COLCND  (output) double*
+    COLCND  (output) float*
             If INFO = 0, COLCND contains the ratio of the smallest
             C(i) to the largest C(i).  If COLCND >= 0.1, it is not
             worth scaling by C.
 
-    AMAX    (output) double*
+    AMAX    (output) float*
             Absolute value of largest matrix element.  If AMAX is very
             close to overflow or very close to underflow, the matrix
             should be scaled.
@@ -123,7 +123,7 @@ psgsequ(SuperMatrix *A, float *r, float *c, float *rowcnd,
     m_loc = Astore->m_loc;
 
     /* Get machine constants. */
-    smlnum = dmach_dist("S");
+    smlnum = smach_dist("S");
     bignum = 1. / smlnum;
 
     /* Compute row scale factors. */
@@ -149,9 +149,9 @@ psgsequ(SuperMatrix *A, float *r, float *c, float *rowcnd,
     tempmax = rcmax;
     tempmin = rcmin;
     MPI_Allreduce( &tempmax, &rcmax,
-		1, MPI_DOUBLE, MPI_MAX, grid->comm);
+		1, MPI_FLOAT, MPI_MAX, grid->comm);
     MPI_Allreduce( &tempmin, &rcmin,
-		1, MPI_DOUBLE, MPI_MIN, grid->comm);
+		1, MPI_FLOAT, MPI_MIN, grid->comm);
 
     *amax = rcmax;
 

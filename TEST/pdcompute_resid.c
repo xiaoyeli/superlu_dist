@@ -22,7 +22,7 @@ at the top-level directory.
 
 int pdcompute_resid(int m, int n, int nrhs, SuperMatrix *A,
 		    double *x, int ldx, double *b, int ldb,
-		    gridinfo_t *grid, SOLVEstruct_t *SOLVEstruct, double *resid)
+		    gridinfo_t *grid, dSOLVEstruct_t *SOLVEstruct, double *resid)
 {
 /*  
     Purpose   
@@ -67,7 +67,7 @@ int pdcompute_resid(int m, int n, int nrhs, SuperMatrix *A,
             The leading dimension of the array B.  IF TRANS = NOTRANS,
             LDB >= max(1,M); if TRANS = TRANS or CONJ, LDB >= max(1,N).
 
-    SOLVEstruct (input) SOLVEstruct_t*
+    SOLVEstruct (input) dSOLVEstruct_t*
 
     GRID    (input) gridinfo_t*
 	    

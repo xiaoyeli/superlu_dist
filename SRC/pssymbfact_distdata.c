@@ -695,7 +695,7 @@ dist_symbLU (int_t n, Pslu_freeable_t *Pslu_freeable,
  *	  The distributed input matrix A of dimension (A->nrow, A->ncol).
  *        The type of A can be: Stype = SLU_NR_loc; Dtype = SLU_S; Mtype = SLU_GE.
  *
- * ScalePermstruct (Input) ScalePermstruct_t*
+ * ScalePermstruct (Input) sScalePermstruct_t*
  *        The data structure to store the scaling and permutation vectors
  *        describing the transformations performed to the original matrix A.
  *
@@ -746,7 +746,7 @@ dist_symbLU (int_t n, Pslu_freeable_t *Pslu_freeable,
  */
 
 static float
-sdist_A(SuperMatrix *A, ScalePermstruct_t *ScalePermstruct,
+sdist_A(SuperMatrix *A, sScalePermstruct_t *ScalePermstruct,
 	Glu_persist_t *Glu_persist, gridinfo_t *grid,
 	int_t **p_ainf_colptr, int_t **p_ainf_rowind, float **p_ainf_val,
 	int_t **p_asup_rowptr, int_t **p_asup_colind, float **p_asup_val,
@@ -1162,14 +1162,14 @@ sdist_A(SuperMatrix *A, ScalePermstruct_t *ScalePermstruct,
  *        A may be overwritten by diag(R)*A*diag(C)*Pc^T.
  *        The type of A can be: Stype = NR; Dtype = SLU_D; Mtype = GE.
  *
- * ScalePermstruct (Input) ScalePermstruct_t*
+ * ScalePermstruct (Input) sScalePermstruct_t*
  *        The data structure to store the scaling and permutation vectors
  *        describing the transformations performed to the original matrix A.
  *
  * Glu_freeable (Input) *Glu_freeable_t
  *        The global structure describing the graph of L and U.
  *
- * LUstruct (Input) LUstruct_t*
+ * LUstruct (Input) sLUstruct_t*
  *        Data structures for L and U factors.
  *
  * grid   (Input) gridinfo_t*
@@ -1186,13 +1186,13 @@ sdist_A(SuperMatrix *A, ScalePermstruct_t *ScalePermstruct,
 
 float
 sdist_psymbtonum(fact_t fact, int_t n, SuperMatrix *A,
-		ScalePermstruct_t *ScalePermstruct,
+		sScalePermstruct_t *ScalePermstruct,
 		Pslu_freeable_t *Pslu_freeable,
-		LUstruct_t *LUstruct, gridinfo_t *grid)
+		sLUstruct_t *LUstruct, gridinfo_t *grid)
 {
   Glu_persist_t *Glu_persist = LUstruct->Glu_persist;
   Glu_freeable_t Glu_freeable_n;
-  LocalLU_t *Llu = LUstruct->Llu;
+  sLocalLU_t *Llu = LUstruct->Llu;
   int_t bnnz, fsupc, i, irow, istart, j, jb, ib, jj, k, k1,
     len, len1, nsupc, nsupc_gb, ii, nprocs;
   int_t lib;  /* local block row number */

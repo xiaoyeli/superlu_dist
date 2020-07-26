@@ -66,10 +66,10 @@ _fcd ftcs3;
  * n      (input) int (global)
  *        The order of the system of linear equations.
  *
- * LUstruct (input) LUstruct_t*
+ * LUstruct (input) dLUstruct_t*
  *        The distributed data structures to store L and U factors,
  *        and the permutation vectors.
- *        See superlu_ddefs.h for the definition of 'LUstruct_t' structure.
+ *        See superlu_ddefs.h for the definition of 'dLUstruct_t' structure.
  *
  * grid   (input) gridinfo_t*
  *        The 2D process mesh.
@@ -94,11 +94,11 @@ _fcd ftcs3;
  * </pre>
  */
 
-void pdgstrs1(int_t n, LUstruct_t *LUstruct, gridinfo_t *grid,
+void pdgstrs1(int_t n, dLUstruct_t *LUstruct, gridinfo_t *grid,
 	      double *x, int nrhs, SuperLUStat_t *stat, int *info)
 {
     Glu_persist_t *Glu_persist = LUstruct->Glu_persist;
-    LocalLU_t *Llu = LUstruct->Llu;
+    dLocalLU_t *Llu = LUstruct->Llu;
     double alpha = 1.0;
     double *lsum;  /* Local running sum of the updates to B-components */
     double *lusup, *dest;

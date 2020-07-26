@@ -47,6 +47,7 @@ include ../make.inc
 SBLAS1 = isamax.o sasum.o saxpy.o scopy.o sdot.o snrm2.o \
 	 srot.o sscal.o
 SBLAS2 = sgemv.o ssymv.o strsv.o sger.o ssyr2.o
+SBLAS3 = sgemm.o strsm.o
 
 DBLAS1 = idamax.o dasum.o daxpy.o dcopy.o ddot.o dnrm2.o \
 	 drot.o dscal.o

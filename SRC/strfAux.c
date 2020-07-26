@@ -27,7 +27,7 @@ at the top-level directory.
 #endif
 
 /* Inititalize the data structure to assist HALO offload of Schur-complement. */
-void sInit_HyP(HyP_t* HyP, LocalLU_t *Llu, int_t mcb, int_t mrb )
+void sInit_HyP(HyP_t* HyP, sLocalLU_t *Llu, int_t mcb, int_t mrb )
 {
     HyP->last_offload = -1;
 #if 0
@@ -70,7 +70,7 @@ void sInit_HyP(HyP_t* HyP, LocalLU_t *Llu, int_t mcb, int_t mrb )
 
 /*init3DLUstruct with forest interface */
 void sinit3DLUstructForest( int_t* myTreeIdxs, int_t* myZeroTrIdxs,
-                           sForest_t**  sForests, LUstruct_t* LUstruct,
+                           sForest_t**  sForests, sLUstruct_t* LUstruct,
                            gridinfo3d_t* grid3d)
 {
     int_t maxLvl = log2i(grid3d->zscp.Np) + 1;
@@ -114,11 +114,11 @@ int_t sSchurComplementSetup(
     int_t* Usub_buf,
     float *Uval_buf,
     gridinfo_t *grid,
-    LUstruct_t *LUstruct
+    sLUstruct_t *LUstruct
 )
 {
     Glu_persist_t *Glu_persist = LUstruct->Glu_persist;
-    LocalLU_t *Llu = LUstruct->Llu;
+    sLocalLU_t *Llu = LUstruct->Llu;
     int_t* xsup = Glu_persist->xsup;
 
     int_t* ToRecv = Llu->ToRecv;
@@ -338,7 +338,7 @@ int_t sSchurComplementSetupGPU(
     int_t* iperm_c_supno, int_t*perm_c_supno,
     gEtreeInfo_t*   gEtreeInfo, factNodelists_t* fNlists,
     scuBufs_t* scuBufs, sLUValSubBuf_t* LUvsb,
-    gridinfo_t *grid, LUstruct_t *LUstruct,
+    gridinfo_t *grid, sLUstruct_t *LUstruct,
     HyP_t* HyP)
 {
     int_t * Lsub_buf  = LUvsb->Lsub_buf;
@@ -353,7 +353,7 @@ int_t sSchurComplementSetupGPU(
     float* bigU = scuBufs->bigU;
 
     Glu_persist_t *Glu_persist = LUstruct->Glu_persist;
-    LocalLU_t *Llu = LUstruct->Llu;
+    sLocalLU_t *Llu = LUstruct->Llu;
     int_t* xsup = Glu_persist->xsup;
 
     int_t* ToRecv = Llu->ToRecv;
@@ -498,7 +498,7 @@ float* sgetBigV(int_t ldt, int_t num_threads)
 }
 
 float* sgetBigU(int_t nsupers, gridinfo_t *grid,
-                    LUstruct_t *LUstruct)
+                    sLUstruct_t *LUstruct)
 {
     int_t Pr = grid->nprow;
     int_t Pc = grid->npcol;
@@ -544,7 +544,7 @@ float* sgetBigU(int_t nsupers, gridinfo_t *grid,
 
 trf3Dpartition_t* sinitTrf3Dpartition(int_t nsupers,
 				      superlu_dist_options_t *options,
-				      LUstruct_t *LUstruct, gridinfo3d_t * grid3d
+				      sLUstruct_t *LUstruct, gridinfo3d_t * grid3d
 				      )
 {
     gridinfo_t* grid = &(grid3d->grid2d);

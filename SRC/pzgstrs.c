@@ -106,7 +106,7 @@ _fcd ftcs3;
  *
  * Note
  * ====
- *   This routine can only be called after the routine pxgstrs_init(),
+ *   This routine can only be called after the routine pzgstrs_init(),
  *   in which the structures of the send and receive buffers are set up.
  *
  * Arguments
@@ -134,14 +134,14 @@ _fcd ftcs3;
  * x      (output) doublecomplex*
  *        The solution vector. It is valid only on the diagonal processes.
  *
- * ScalePermstruct (input) ScalePermstruct_t*
+ * ScalePermstruct (input) zScalePermstruct_t*
  *        The data structure to store the scaling and permutation vectors
  *        describing the transformations performed to the original matrix A.
  *
  * grid   (input) gridinfo_t*
  *        The 2D process mesh.
  *
- * SOLVEstruct (input) SOLVEstruct_t*
+ * SOLVEstruct (input) zSOLVEstruct_t*
  *        Contains the information for the communication during the
  *        solution phase.
  *
@@ -153,9 +153,9 @@ _fcd ftcs3;
 int_t
 pzReDistribute_B_to_X(doublecomplex *B, int_t m_loc, int nrhs, int_t ldb,
                       int_t fst_row, int_t *ilsum, doublecomplex *x,
-		      ScalePermstruct_t *ScalePermstruct,
+		      zScalePermstruct_t *ScalePermstruct,
 		      Glu_persist_t *Glu_persist,
-		      gridinfo_t *grid, SOLVEstruct_t *SOLVEstruct)
+		      gridinfo_t *grid, zSOLVEstruct_t *SOLVEstruct)
 {
     int  *SendCnt, *SendCnt_nrhs, *RecvCnt, *RecvCnt_nrhs;
     int  *sdispls, *sdispls_nrhs, *rdispls, *rdispls_nrhs;
@@ -403,7 +403,7 @@ pzReDistribute_B_to_X(doublecomplex *B, int_t m_loc, int nrhs, int_t ldb,
  *
  * Note
  * ====
- *   This routine can only be called after the routine pxgstrs_init(),
+ *   This routine can only be called after the routine pzgstrs_init(),
  *   in which the structures of the send and receive buffers are set up.
  * </pre>
  */
@@ -411,9 +411,9 @@ pzReDistribute_B_to_X(doublecomplex *B, int_t m_loc, int nrhs, int_t ldb,
 int_t
 pzReDistribute_X_to_B(int_t n, doublecomplex *B, int_t m_loc, int_t ldb, int_t fst_row,
 		      int_t nrhs, doublecomplex *x, int_t *ilsum,
-		      ScalePermstruct_t *ScalePermstruct,
+		      zScalePermstruct_t *ScalePermstruct,
 		      Glu_persist_t *Glu_persist, gridinfo_t *grid,
-		      SOLVEstruct_t *SOLVEstruct)
+		      zSOLVEstruct_t *SOLVEstruct)
 {
     int_t  i, ii, irow, j, jj, k, knsupc, nsupers, l, lk;
     int_t  *xsup, *supno;
@@ -647,12 +647,12 @@ pzReDistribute_X_to_B(int_t n, doublecomplex *B, int_t m_loc, int_t ldb, int_t f
  * </pre>
  */
 void
-pzCompute_Diag_Inv(int_t n, LUstruct_t *LUstruct,gridinfo_t *grid,
+pzCompute_Diag_Inv(int_t n, zLUstruct_t *LUstruct,gridinfo_t *grid,
                    SuperLUStat_t *stat, int *info)
 {
 #ifdef SLU_HAVE_LAPACK
     Glu_persist_t *Glu_persist = LUstruct->Glu_persist;
-    LocalLU_t *Llu = LUstruct->Llu;
+    zLocalLU_t *Llu = LUstruct->Llu;
 
     doublecomplex *lusup;
     doublecomplex *recvbuf, *tempv;
@@ -789,11 +789,11 @@ pzCompute_Diag_Inv(int_t n, LUstruct_t *LUstruct,gridinfo_t *grid,
  * n      (input) int (global)
  *        The order of the system of linear equations.
  *
- * LUstruct (input) LUstruct_t*
+ * LUstruct (input) zLUstruct_t*
  *        The distributed data structures storing L and U factors.
  *        The L and U factors are obtained from PZGSTRF for
  *        the possibly scaled and permuted matrix A.
- *        See superlu_zdefs.h for the definition of 'LUstruct_t'.
+ *        See superlu_zdefs.h for the definition of 'zLUstruct_t'.
  *        A may be scaled and permuted into A1, so that
  *        A1 = Pc*Pr*diag(R)*A*diag(C)*Pc^T = L*U
  *
@@ -824,7 +824,7 @@ pzCompute_Diag_Inv(int_t n, LUstruct_t *LUstruct,gridinfo_t *grid,
  * nrhs   (input) int (global)
  *        Number of right-hand sides.
  *
- * SOLVEstruct (input) SOLVEstruct_t* (global)
+ * SOLVEstruct (input) zSOLVEstruct_t* (global)
  *        Contains the information for the communication during the
  *        solution phase.
  *
@@ -839,17 +839,17 @@ pzCompute_Diag_Inv(int_t n, LUstruct_t *LUstruct,gridinfo_t *grid,
  */
 
 void
-pzgstrs(int_t n, LUstruct_t *LUstruct,
-	ScalePermstruct_t *ScalePermstruct,
+pzgstrs(int_t n, zLUstruct_t *LUstruct,
+	zScalePermstruct_t *ScalePermstruct,
 	gridinfo_t *grid, doublecomplex *B,
 	int_t m_loc, int_t fst_row, int_t ldb, int nrhs,
-	SOLVEstruct_t *SOLVEstruct,
+	zSOLVEstruct_t *SOLVEstruct,
 	SuperLUStat_t *stat, int *info)
 {
     Glu_persist_t *Glu_persist = LUstruct->Glu_persist;
-    LocalLU_t *Llu = LUstruct->Llu;
+    zLocalLU_t *Llu = LUstruct->Llu;
     doublecomplex alpha = {1.0, 0.0};
-	doublecomplex beta = {0.0, 0.0};
+    doublecomplex beta = {0.0, 0.0};
     doublecomplex zero = {0.0, 0.0};
     doublecomplex *lsum;  /* Local running sum of the updates to B-components */
     doublecomplex *x;     /* X component at step k. */
@@ -904,8 +904,8 @@ pzgstrs(int_t n, LUstruct_t *LUstruct,
     int_t  nfrecvx = Llu->nfrecvx; /* Number of X components to be recv'd. */
     int_t  nfrecvx_buf=0;
     int_t  *frecv;        /* Count of lsum[lk] contributions to be received
-    			 from processes in this row.
-    			 It is only valid on the diagonal processes. */
+    			     from processes in this row.
+    			     It is only valid on the diagonal processes. */
     int_t  frecv_tmp;
     int_t  nfrecvmod = 0; /* Count of total modifications to be recv'd. */
     int_t  nfrecv = 0; /* Count of total messages to be recv'd. */
@@ -920,7 +920,7 @@ pzgstrs(int_t n, LUstruct_t *LUstruct,
     int_t  nbrecvx = Llu->nbrecvx; /* Number of X components to be recv'd. */
     int_t  nbrecvx_buf=0;
     int_t  *brecv;        /* Count of modifications to be recv'd from
-    			 processes in this row. */
+    			     processes in this row. */
     int_t  nbrecvmod = 0; /* Count of total modifications to be recv'd. */
     int_t flagx,flaglsum,flag;
     int_t *LBTree_active, *LRTree_active, *LBTree_finish, *LRTree_finish, *leafsups, *rootsups;
@@ -948,26 +948,26 @@ pzgstrs(int_t n, LUstruct_t *LUstruct,
 		      *     3 : transferred in Uval_buf[]
 		      */
     int iword = sizeof (int_t);
-    int dword = sizeof (double);
+    int dword = sizeof (doublecomplex);
     int Nwork;
-	int_t procs = grid->nprow * grid->npcol;
-    	yes_no_t done;
+    int_t procs = grid->nprow * grid->npcol;
+    yes_no_t done;
     yes_no_t startforward;
-    	int nbrow;
+    int nbrow;
     int_t  ik, rel, idx_r, jb, nrbl, irow, pc,iknsupc;
     int_t  lptr1_tmp, idx_i, idx_v,m;
-    	int_t ready;
-    	static int thread_id;
+    int_t ready;
+    static int thread_id = 0;
     yes_no_t empty;
     int_t sizelsum,sizertemp,aln_d,aln_i;
     aln_d = ceil(CACHELINE/(double)dword);
     aln_i = ceil(CACHELINE/(double)iword);
     int num_thread = 1;
 
-	maxsuper = sp_ienv_dist(3);
+    maxsuper = sp_ienv_dist(3);
 
 #ifdef _OPENMP
-	#pragma omp threadprivate(thread_id)
+#pragma omp threadprivate(thread_id)
 #endif
 
 #ifdef _OPENMP
@@ -976,11 +976,11 @@ pzgstrs(int_t n, LUstruct_t *LUstruct,
     	if (omp_get_thread_num () == 0) {
     		num_thread = omp_get_num_threads ();
     	}
-		thread_id = omp_get_thread_num ();
+	thread_id = omp_get_thread_num ();
     }
 #endif
 
-#if ( PRNTlevel>=1 )
+#if ( PRNTlevel>=2 )
     if( grid->iam==0 ) {
 	printf("num_thread: %5d\n", num_thread);
 	fflush(stdout);
@@ -1068,7 +1068,7 @@ pzgstrs(int_t n, LUstruct_t *LUstruct,
 #pragma omp parallel default(shared) private(ii)
     {
 	for (ii=0; ii<sizelsum; ii++)
-    	lsum[thread_id*sizelsum+ii]=zero;
+    	    lsum[thread_id*sizelsum+ii]=zero;
     }
 #else
     if ( !(lsum = (doublecomplex*)SUPERLU_MALLOC(sizelsum*num_thread * sizeof(doublecomplex))))
@@ -1076,6 +1076,7 @@ pzgstrs(int_t n, LUstruct_t *LUstruct,
     for ( ii=0; ii < sizelsum*num_thread; ii++ )
 	lsum[ii]=zero;
 #endif
+    /* intermediate solution x[] vector has same structure as lsum[], see leading comment */
     if ( !(x = doublecomplexCalloc_dist(ldalsum * nrhs + nlb * XK_H)) )
 	ABORT("Calloc fails for x[].");
 
@@ -1252,13 +1253,13 @@ if(procs==1){
 #ifdef _OPENMP
 #pragma	omp	for firstprivate(nrhs,beta,alpha,x,rtemp,ldalsum) private (ii,k,knsupc,lk,luptr,lsub,nsupr,lusup,t1,t2,Linv,i,lib,rtemp_loc,nleaf_send_tmp) nowait
 #endif
-			for (jj=0;jj<nleaf;jj++){
-				k=leafsups[jj];
+		for (jj=0;jj<nleaf;jj++){
+		    k=leafsups[jj];
 
-				// #ifdef _OPENMP
-				// #pragma	omp	task firstprivate (k,nrhs,beta,alpha,x,rtemp,ldalsum) private (ii,knsupc,lk,luptr,lsub,nsupr,lusup,thread_id,t1,t2,Linv,i,lib,rtemp_loc)
-				// #endif
-				{
+// #ifdef _OPENMP
+// #pragma omp task firstprivate (k,nrhs,beta,alpha,x,rtemp,ldalsum) private (ii,knsupc,lk,luptr,lsub,nsupr,lusup,thread_id,t1,t2,Linv,i,lib,rtemp_loc)
+// #endif
+   		    {
 
 #if ( PROFlevel>=1 )
 					TIC(t1);
@@ -1370,12 +1371,6 @@ if(procs==1){
 					lusup, &nsupr, &x[ii], &knsupc);
 #endif
 
-		// for (i=0 ; i<knsupc*nrhs ; i++){
-		// printf("x_l: %f %f\n",x[ii+i].r,x[ii+i].i);
-		// fflush(stdout);
-		// }
-
-
 #if ( PROFlevel>=1 )
 		    TOC(t2, t1);
 		    stat_loc[thread_id]->utime[SOL_TRSM] += t2;
@@ -1417,36 +1412,32 @@ if(procs==1){
 #endif
 		{
 
-
 #ifdef _OPENMP
 #pragma omp master
 #endif
-				{
+		    {
 
 #ifdef _OPENMP
-#pragma	omp	taskloop private (k,ii,lk) num_tasks(num_thread*8) nogroup
+#pragma	omp taskloop private (k,ii,lk) num_tasks(num_thread*8) nogroup
 #endif
 
-					for (jj=0;jj<nleaf;jj++){
-						k=leafsups[jj];
+			for (jj=0;jj<nleaf;jj++){
+			    k=leafsups[jj];
 
-						{
-							/* Diagonal process */
-							lk = LBi( k, grid );
-							ii = X_BLK( lk );
-							/*
-							 * Perform local block modifications: lsum[i] -= L_i,k * X[k]
-							 */
-							zlsum_fmod_inv(lsum, x, &x[ii], rtemp, nrhs, k,
-									fmod, xsup, grid, Llu,
-									stat_loc, leaf_send, &nleaf_send,sizelsum,sizertemp,0,maxsuper,thread_id,num_thread);
-						}
+			    {
+				/* Diagonal process */
+				lk = LBi( k, grid );
+				ii = X_BLK( lk );
+				/*
+				 * Perform local block modifications: lsum[i] -= L_i,k * X[k]
+				 */
+				zlsum_fmod_inv(lsum, x, &x[ii], rtemp, nrhs, k, fmod, xsup, grid, Llu, stat_loc, leaf_send, &nleaf_send,sizelsum,sizertemp,0,maxsuper,thread_id,num_thread);
+			    }
 
-						// } /* if diagonal process ... */
-					} /* for k ... */
-				}
+			} /* for jj ... */
+		    }
 
-			}
+		}
 
 			for (i=0;i<nleaf_send;i++){
 				lk = leaf_send[i*aln_i];
@@ -1652,6 +1643,7 @@ if(procs==1){
 
 											stat_loc[thread_id]->ops[SOLVE] += 4 * knsupc * (knsupc - 1) * nrhs
 											+ 10 * knsupc * nrhs; /* complex division */
+
 #if ( DEBUGlevel>=2 )
 											printf("(%2d) Solve X[%2d]\n", iam, k);
 #endif
@@ -2026,15 +2018,6 @@ if(procs==1){
 						lusup, &nsupr, &x[ii], &knsupc);
 #endif
 			}
-			// for (i=0 ; i<knsupc*nrhs ; i++){
-			// printf("x_u: %f %f\n",x[ii+i].r,x[ii+i].i);
-			// fflush(stdout);
-			// }
-
-			// for (i=0 ; i<knsupc*nrhs ; i++){
-				// printf("x: %f\n",x[ii+i]);
-				// fflush(stdout);
-			// }
 
 #if ( PROFlevel>=1 )
 			TOC(t2, t1);
@@ -2214,7 +2197,7 @@ for (i=0;i<nroot_send;i++){
 								#pragma omp simd
 							#endif
 							for (i = 0; i < knsupc; ++i)
-								z_add(&x[i + ii + j*knsupc],
+							    z_add(&x[i + ii + j*knsupc],
 									  &x[i + ii + j*knsupc],
 									  &lsum[i + il + j*knsupc] );
 
@@ -2324,7 +2307,7 @@ for (i=0;i<nroot_send;i++){
 
 #if ( DEBUGlevel>=2 )
 		{
-			double *x_col;
+			doublecomplex *x_col;
 			int diag;
 			printf("\n(%d) .. After U-solve: x (ON DIAG PROCS) = \n", iam);
 			ii = 0;
@@ -2453,7 +2436,7 @@ for (i=0;i<nroot_send;i++){
 	    float for_lu, total, max, avg, temp;
 		superlu_dist_mem_usage_t num_mem_usage;
 
-	    dQuerySpace_dist(n, LUstruct, grid, stat, &num_mem_usage);
+	    zQuerySpace_dist(n, LUstruct, grid, stat, &num_mem_usage);
 	    temp = num_mem_usage.total;
 
 	    MPI_Reduce( &temp, &max,

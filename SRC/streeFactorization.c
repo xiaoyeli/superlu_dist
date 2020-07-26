@@ -24,9 +24,9 @@ at the top-level directory.
 #include "trfCommWrapper.h"
 #endif
 
-int_t sLluBufInit(sLUValSubBuf_t* LUvsb, LUstruct_t *LUstruct)
+int_t sLluBufInit(sLUValSubBuf_t* LUvsb, sLUstruct_t *LUstruct)
 {
-    LocalLU_t *Llu = LUstruct->Llu;
+    sLocalLU_t *Llu = LUstruct->Llu;
     LUvsb->Lsub_buf = intMalloc_dist(Llu->bufmax[0]); //INT_T_ALLOC(Llu->bufmax[0]);
     LUvsb->Lval_buf = floatMalloc_dist(Llu->bufmax[1]); //DOUBLE_ALLOC(Llu->bufmax[1]);
     LUvsb->Usub_buf = intMalloc_dist(Llu->bufmax[2]); //INT_T_ALLOC(Llu->bufmax[2]);
@@ -71,7 +71,7 @@ int sfreeDiagFactBufsArr(int_t mxLeafNode, diagFactBufs_t** dFBufs)
     return 0;
 }
 
-sLUValSubBuf_t** sLluBufInitArr(int_t numLA, LUstruct_t *LUstruct)
+sLUValSubBuf_t** sLluBufInitArr(int_t numLA, sLUstruct_t *LUstruct)
 {
     sLUValSubBuf_t** LUvsbs = (sLUValSubBuf_t**) SUPERLU_MALLOC(numLA * sizeof(sLUValSubBuf_t*));
     for (int_t i = 0; i < numLA; ++i)
@@ -100,7 +100,7 @@ int sLluBufFreeArr(int_t numLA, sLUValSubBuf_t **LUvsbs)
 
 int_t sinitScuBufs(int_t ldt, int_t num_threads, int_t nsupers,
                   scuBufs_t* scuBufs,
-                  LUstruct_t* LUstruct,
+                  sLUstruct_t* LUstruct,
                   gridinfo_t * grid)
 {
     scuBufs->bigV = sgetBigV(ldt, num_threads);
@@ -137,13 +137,13 @@ int_t sdenseTreeFactor(
     superlu_dist_options_t *options,
     int_t * gIperm_c_supno,
     int_t ldt,
-    LUstruct_t *LUstruct, gridinfo3d_t * grid3d, SuperLUStat_t *stat,
+    sLUstruct_t *LUstruct, gridinfo3d_t * grid3d, SuperLUStat_t *stat,
     double thresh,  SCT_t *SCT, int tag_ub,
     int *info
 )
 {
     gridinfo_t* grid = &(grid3d->grid2d);
-    LocalLU_t *Llu = LUstruct->Llu;
+    sLocalLU_t *Llu = LUstruct->Llu;
 
     /*main loop over all the super nodes*/
     for (int_t k0 = 0; k0 < nnodes   ; ++k0)
@@ -247,7 +247,11 @@ int_t sdenseTreeFactor(
                 int_t klst = FstBlockC (k + 1);
                 int_t *lsub = lPanelInfo->lsub;
                 int_t *usub = uPanelInfo->usub;
+#ifdef _OPENMP		
                 int_t thread_id = omp_get_thread_num();
+#else		
+                int_t thread_id = 0;
+#endif		
                 sblock_gemm_scatter( lb, ub,
                                     Ublock_info,
                                     Remain_info,
@@ -296,7 +300,7 @@ int_t ssparseTreeFactor_ASYNC(
     int_t * gIperm_c_supno,
     int_t ldt,
     HyP_t* HyP,
-    LUstruct_t *LUstruct, gridinfo3d_t * grid3d, SuperLUStat_t *stat,
+    sLUstruct_t *LUstruct, gridinfo3d_t * grid3d, SuperLUStat_t *stat,
     double thresh,  SCT_t *SCT, int tag_ub,
     int *info
 )

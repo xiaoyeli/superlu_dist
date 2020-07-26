@@ -42,7 +42,7 @@ _fcd ftcs2;
 _fcd ftcs3;
 #endif
 static void gather_diag_to_all(int_t, int_t, float [], Glu_persist_t *,
-                               LocalLU_t *, gridinfo_t *, int_t, int_t [],
+                               sLocalLU_t *, gridinfo_t *, int_t, int_t [],
                                int_t [], float [], int_t, float []);
 
 /*! \brief
@@ -61,11 +61,11 @@ static void gather_diag_to_all(int_t, int_t, float [], Glu_persist_t *,
  * n      (input) int (global)
  *        The order of the system of linear equations.
  *
- * LUstruct (input) LUstruct_t*
+ * LUstruct (input) sLUstruct_t*
  *        The distributed data structures storing L and U factors.
  *        The L and U factors are obtained from psgstrf for
  *        the possibly scaled and permuted matrix A.
- *        See superlu_ddefs.h for the definition of 'LUstruct_t'.
+ *        See superlu_ddefs.h for the definition of 'sLUstruct_t'.
  *
  * grid   (input) gridinfo_t*
  *        The 2D process mesh. It contains the MPI communicator, the number
@@ -101,12 +101,12 @@ static void gather_diag_to_all(int_t, int_t, float [], Glu_persist_t *,
  */
 
 void
-psgstrs_Bglobal(int_t n, LUstruct_t *LUstruct, gridinfo_t *grid,
+psgstrs_Bglobal(int_t n, sLUstruct_t *LUstruct, gridinfo_t *grid,
                 float *B, int_t ldb, int nrhs,
                 SuperLUStat_t *stat, int *info)
 {
     Glu_persist_t *Glu_persist = LUstruct->Glu_persist;
-    LocalLU_t *Llu = LUstruct->Llu;
+    sLocalLU_t *Llu = LUstruct->Llu;
     float alpha = 1.0;
     float *lsum;  /* Local running sum of the updates to B-components */
     float *x;     /* X component at step k. */
@@ -988,7 +988,7 @@ psgstrs_Bglobal(int_t n, LUstruct_t *LUstruct, gridinfo_t *grid,
  */
 static void
 gather_diag_to_all(int_t n, int_t nrhs, float x[],
-		   Glu_persist_t *Glu_persist, LocalLU_t *Llu,
+		   Glu_persist_t *Glu_persist, sLocalLU_t *Llu,
 		   gridinfo_t *grid, int_t num_diag_procs,
 		   int_t diag_procs[], int_t diag_len[],
 		   float y[], int_t ldy, float work[])

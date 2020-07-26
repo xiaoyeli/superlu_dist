@@ -33,7 +33,7 @@ ALLAUX 	= sp_ienv.o etree.o sp_colorder.o get_perm_c.o \
 	  colamd.o mmd.o comm.o memory.o util.o superlu_grid.o \
 	  pxerr_dist.o superlu_timer.o symbfact.o \
 	  psymbfact.o psymbfact_util.o get_perm_c_parmetis.o mc64ad_dist.o \
-	  static_schedule.o xerr_dist.o smach_dist.o dmach_dist.o \
+	  xerr_dist.o smach_dist.o dmach_dist.o \
 	  superlu_dist_version.o TreeInterface.o
 
 ifeq "${ACC}" "GPU"
@@ -61,7 +61,7 @@ SPLUSRC = psgssvx.o psgssvx_ABglobal.o \
 	  sreadhb.o sreadrb.o sreadtriple.o sreadMM.o sbinary_io.o \
 	  psgsequ.o pslaqgs.o sldperm_dist.o pslangs.o psutil.o \
 	  pssymbfact_distdata.o sdistribute.o psdistribute.o \
-	  psgstrf.o psgstrf2.o psGetDiagU.o \
+	  psgstrf.o sstatic_schedule.o psgstrf2.o psGetDiagU.o \
 	  psgstrs.o psgstrs1.o psgstrs_lsum.o psgstrs_Bglobal.o \
 	  psgsrfs.o psgsmv.o psgsrfs_ABXglobal.o psgsmv_AXglobal.o \
 	  sreadtriple_noheader.o
@@ -71,7 +71,7 @@ DPLUSRC = pdgssvx.o pdgssvx_ABglobal.o \
 	  dreadhb.o dreadrb.o dreadtriple.o dreadMM.o dbinary_io.o \
 	  pdgsequ.o pdlaqgs.o dldperm_dist.o pdlangs.o pdutil.o \
 	  pdsymbfact_distdata.o ddistribute.o pddistribute.o \
-	  pdgstrf.o pdgstrf2.o pdGetDiagU.o \
+	  pdgstrf.o dstatic_schedule.o pdgstrf2.o pdGetDiagU.o \
 	  pdgstrs.o pdgstrs1.o pdgstrs_lsum.o pdgstrs_Bglobal.o \
 	  pdgsrfs.o pdgsmv.o pdgsrfs_ABXglobal.o pdgsmv_AXglobal.o \
 	  dreadtriple_noheader.o
@@ -81,7 +81,7 @@ ZPLUSRC = pzgssvx.o pzgssvx_ABglobal.o \
 	  zreadhb.o zreadrb.o zreadtriple.o zreadMM.o zbinary_io.o\
 	  pzgsequ.o pzlaqgs.o zldperm_dist.o pzlangs.o pzutil.o \
 	  pzsymbfact_distdata.o zdistribute.o pzdistribute.o \
-	  pzgstrf.o pzgstrf2.o pzGetDiagU.o \
+	  pzgstrf.o zstatic_schedule.o pzgstrf2.o pzGetDiagU.o \
 	  pzgstrs.o pzgstrs1.o pzgstrs_lsum.o pzgstrs_Bglobal.o \
 	  pzgsrfs.o pzgsmv.o pzgsrfs_ABXglobal.o pzgsmv_AXglobal.o \
 	  zreadtriple_noheader.o

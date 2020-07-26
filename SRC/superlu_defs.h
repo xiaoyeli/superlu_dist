@@ -35,9 +35,9 @@ at the top-level directory.
     #include <fortran.h>
 #endif
 
-//#ifdef _OPENMP
+#ifdef _OPENMP
    #include <omp.h>
-//#endif
+#endif
 
 #include <mpi.h>
 #include <stdlib.h>
@@ -639,6 +639,12 @@ typedef struct {
     int_t expansions;
     int64_t nnzL, nnzU;
 } superlu_dist_mem_usage_t;
+
+/*-- Auxiliary data type used in PxGSTRS/PxGSTRS1. */
+typedef struct {
+    int_t lbnum;  /* Row block number (local).      */
+    int_t indpos; /* Starting position in Uindex[]. */
+} Ucb_indptr_t;
 
 /* 
  *-- The new structures added in the hybrid CUDA + OpenMP + MPI code.

@@ -29,7 +29,7 @@ at the top-level directory.
  */
 static void ReadVector(FILE *, int_t, int_t *, int_t, int_t);
 static void sReadValues(FILE *, int_t, float *, int_t, int_t);
-static void FormFullA(int_t, int_t *, float **, int_t **, int_t **);
+extern void FormFullA(int_t, int_t *, float **, int_t **, int_t **);
 static int DumpLine(FILE *);
 static int ParseIntFormat(char *, int_t *, int_t *);
 static int ParseFloatFormat(char *, int_t *, int_t *);
@@ -192,7 +192,7 @@ sreadhb_dist(int iam, FILE *fp, int_t *nrow, int_t *ncol, int_t *nonz,
     if ( sym ) {
 	FormFullA(*ncol, nonz, nzval, rowind, colptr);
     }
-    fclose(fp);
+
 #if ( DEBUGlevel>=1 )
     CHECK_MALLOC(0, "Exit sreadhb_dist()");
 #endif
@@ -294,7 +294,7 @@ sReadValues(FILE *fp, int_t n, float *destination,
  * matrix. On exit, it represents the full matrix with lower and upper parts.
  * </pre>
  */
-static void
+extern void
 FormFullA(int_t n, int_t *nonz, float **nzval, int_t **rowind, int_t **colptr)
 {
     register int_t i, j, k, col, new_nnz;

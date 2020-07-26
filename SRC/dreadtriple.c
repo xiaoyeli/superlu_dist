@@ -75,10 +75,11 @@ dreadtriple_dist(FILE *fp, int_t *m, int_t *n, int_t *nonz,
 
     /* Read into the triplet array from a file */
     for (nnz = 0, nz = 0; nnz < *nonz; ++nnz) {
+
 #ifdef _LONGINT
-	fscanf(fp, "%ld%ld%lf\n", &row[nz], &col[nz], &val[nz]);
-#else
-	fscanf(fp, "%d%d%lf\n", &row[nz], &col[nz], &val[nz]);
+        fscanf(fp, "%ld%ld%lf\n", &row[nz], &col[nz], &val[nz]);
+#else // int 
+        fscanf(fp, "%d%d%lf\n", &row[nz], &col[nz], &val[nz]);
 #endif
 
 	if ( nnz == 0 ) /* first nonzero */
@@ -171,7 +172,6 @@ void dreadrhs(int m, double *b)
     }
     for (i = 0; i < m; ++i)
       fscanf(fp, "%lf\n", &b[i]);
-      /*fscanf(fp, "%d%lf\n", &j, &b[i]);*/
     /*        readpair_(j, &b[i]);*/
 
     fclose(fp);
