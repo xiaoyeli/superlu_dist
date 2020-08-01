@@ -29,7 +29,7 @@ at the top-level directory.
  */
 static void ReadVector(FILE *, int_t, int_t *, int_t, int_t);
 static void sReadValues(FILE *, int_t, float *, int_t, int_t);
-extern void FormFullA(int_t, int_t *, float **, int_t **, int_t **);
+static void FormFullA(int_t, int_t *, float **, int_t **, int_t **);
 static int DumpLine(FILE *);
 static int ParseIntFormat(char *, int_t *, int_t *);
 static int ParseFloatFormat(char *, int_t *, int_t *);
@@ -294,7 +294,7 @@ sReadValues(FILE *fp, int_t n, float *destination,
  * matrix. On exit, it represents the full matrix with lower and upper parts.
  * </pre>
  */
-extern void
+static void
 FormFullA(int_t n, int_t *nonz, float **nzval, int_t **rowind, int_t **colptr)
 {
     register int_t i, j, k, col, new_nnz;

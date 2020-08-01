@@ -71,9 +71,14 @@ at the top-level directory.
  * Versions 4.x and earlier do not include a #define'd version numbers.
  */
 #define SUPERLU_DIST_MAJOR_VERSION     6
-#define SUPERLU_DIST_MINOR_VERSION     1
-#define SUPERLU_DIST_PATCH_VERSION     1
-#define SUPERLU_DIST_RELEASE_DATE      "February 8, 2019"
+#define SUPERLU_DIST_MINOR_VERSION     3
+#define SUPERLU_DIST_PATCH_VERSION     0
+#define SUPERLU_DIST_RELEASE_DATE      "February 23, 2020"
+
+/* Following was v6.1.1
+ * #define SUPERLU_DIST_RELEASE_DATE      "February 8, 2019"
+ */
+
 
 #include "superlu_dist_config.h"
 /* Define my integer size int_t */
