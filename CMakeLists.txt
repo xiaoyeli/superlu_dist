@@ -28,12 +28,12 @@ option(TPL_BLAS_LIBRARIES "List of absolute paths to blas libraries [].")
 option(TPL_ENABLE_LAPACKLIB "Enable LAPACK library" ON)
 option(TPL_LAPACK_LIBRARIES "List of absolute paths to lapack libraries [].")
 option(TPL_ENABLE_PARMETISLIB   "Build the ParMETIS library" ON)
-option(TPL_ENABLE_CUDALIB   "Enable the CUDA libraries" ON)
 option(TPL_PARMETIS_LIBRARIES "List of absolute paths to ParMETIS link libraries [].")
 option(TPL_PARMETIS_INCLUDE_DIRS "List of absolute paths to ParMETIS include directories [].")
 option(TPL_ENABLE_COMBBLASLIB   "Build the CombBLAS library" OFF)
 option(TPL_COMBBLAS_LIBRARIES "List of absolute paths to CombBLAS link libraries [].")
 option(TPL_COMBBLAS_INCLUDE_DIRS "List of absolute paths to CombBLAS include directories [].")
+option(TPL_ENABLE_CUDALIB   "Enable the CUDA libraries" OFF)
 
 
 ######################################################################
