@@ -110,11 +110,13 @@ Destroy_Tree(int_t n, gridinfo_t *grid, LUstruct_t *LUstruct)
 
 	nb = CEILING(nsupers, grid->npcol);
 	for (i=0;i<nb;++i){
-		if(Llu->LBtree_ptr[i]!=NULL){
-			BcTree_Destroy(Llu->LBtree_ptr[i],LUstruct->dt);
+        if(Llu->LBtree_ptr[i].empty_==NO){    
+			// BcTree_Destroy(Llu->LBtree_ptr[i],LUstruct->dt);
+            C_BcTree_Nullify(&Llu->LBtree_ptr[i]);
 		}
-		if(Llu->UBtree_ptr[i]!=NULL){
-			BcTree_Destroy(Llu->UBtree_ptr[i],LUstruct->dt);
+        if(Llu->UBtree_ptr[i].empty_==NO){  
+			// BcTree_Destroy(Llu->UBtree_ptr[i],LUstruct->dt);
+            C_BcTree_Nullify(&Llu->UBtree_ptr[i]);
 		}		
 	}
 	SUPERLU_FREE(Llu->LBtree_ptr);
@@ -122,11 +124,13 @@ Destroy_Tree(int_t n, gridinfo_t *grid, LUstruct_t *LUstruct)
 	
  	nb = CEILING(nsupers, grid->nprow);
 	for (i=0;i<nb;++i){
-		if(Llu->LRtree_ptr[i]!=NULL){
-			RdTree_Destroy(Llu->LRtree_ptr[i],LUstruct->dt);
+        if(Llu->LRtree_ptr[i].empty_==NO){             
+			// RdTree_Destroy(Llu->LRtree_ptr[i],LUstruct->dt);
+            C_RdTree_Nullify(&Llu->LRtree_ptr[i]);
 		}
-		if(Llu->URtree_ptr[i]!=NULL){
-			RdTree_Destroy(Llu->URtree_ptr[i],LUstruct->dt);
+        if(Llu->URtree_ptr[i].empty_==NO){ 
+			// RdTree_Destroy(Llu->URtree_ptr[i],LUstruct->dt);
+            C_RdTree_Nullify(&Llu->URtree_ptr[i]);
 		}		
 	}
 	SUPERLU_FREE(Llu->LRtree_ptr);

@@ -95,10 +95,10 @@ typedef struct {
     int_t   **Ufstnz_br_ptr;  /* size ceil(NSUPERS/Pr)                 */
     double  **Unzval_br_ptr;  /* size ceil(NSUPERS/Pr)                 */
         /*-- Data structures used for broadcast and reduction trees. --*/
-    BcTree  *LBtree_ptr;       /* size ceil(NSUPERS/Pc)                */
-    RdTree  *LRtree_ptr;       /* size ceil(NSUPERS/Pr)                */
-    BcTree  *UBtree_ptr;       /* size ceil(NSUPERS/Pc)                */
-    RdTree  *URtree_ptr;       /* size ceil(NSUPERS/Pr)			*/
+    C_Tree  *LBtree_ptr;       /* size ceil(NSUPERS/Pc)                */
+    C_Tree  *LRtree_ptr;       /* size ceil(NSUPERS/Pr)                */
+    C_Tree  *UBtree_ptr;       /* size ceil(NSUPERS/Pc)                */
+    C_Tree  *URtree_ptr;       /* size ceil(NSUPERS/Pr)			*/
 #if 0
     int_t   *Lsub_buf;        /* Buffer for the remote subscripts of L */
     double  *Lval_buf;        /* Buffer for the remote nonzeros of L   */

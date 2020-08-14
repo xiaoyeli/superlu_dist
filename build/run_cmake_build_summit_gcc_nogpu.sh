@@ -1,14 +1,16 @@
 #!/bin/bash
-#module load netlib-lapack/3.8.0
-#module load gcc/6.4.0
-module load xl
-module load cmake/3.11.3
-module load cuda/10.1.168
-module load essl 
+# module load parmetis/4.0.3
+
+module load essl
+module load netlib-lapack/3.8.0
+module load gcc/7.4.0
+module load cmake
+module load cuda/9.2.148
+				 
 
 export CRAYPE_LINK_TYPE=dynamic
-export PARMETIS_ROOT=/ccs/home/liuyangz/my_software/parmetis-4.0.3_ibm
-export PARMETIS_BUILD_DIR=${PARMETIS_ROOT}/static-build/Linux-ppc64le
+export PARMETIS_ROOT=/ccs/home/liuyangz/my_software/parmetis-4.0.3
+export PARMETIS_BUILD_DIR=${PARMETIS_ROOT}/shared-build-gcc64/Linux-ppc64le
 export ACC=GPU
 rm -rf CMakeCache.txt
 rm -rf CMakeFiles
@@ -21,19 +23,19 @@ rm -rf DartConfiguration.tcl
 
 cmake .. \
 	-DTPL_PARMETIS_INCLUDE_DIRS="${PARMETIS_ROOT}/include;${PARMETIS_ROOT}/metis/include;${OLCF_CUDA_ROOT}/include" \
-	-DTPL_PARMETIS_LIBRARIES="${PARMETIS_BUILD_DIR}/libparmetis/libparmetis.a;${PARMETIS_BUILD_DIR}/libmetis/libmetis.a" \
-	-DTPL_CUDA_LIBRARIES="${OLCF_CUDA_ROOT}/lib64/libcublas.so;${OLCF_CUDA_ROOT}/lib64/libcusparse.so;${OLCF_CUDA_ROOT}/lib64/libcudart.so" \
-	-DBUILD_SHARED_LIBS=OFF \
+	-DTPL_PARMETIS_LIBRARIES="${PARMETIS_BUILD_DIR}/libparmetis/libparmetis.so;${PARMETIS_BUILD_DIR}/libmetis/libmetis.so" \
+	-Denable_blaslib=OFF \
+	-DBUILD_SHARED_LIBS=ON \
 	-DCMAKE_C_COMPILER=mpicc \
 	-DCMAKE_CXX_COMPILER=mpiCC \
 	-DCMAKE_INSTALL_PREFIX=. \
-	-DTPL_BLAS_LIBRARIES="/sw/summit/essl/6.1.0-2/essl/6.1/lib64/libessl.so;/sw/summit/essl/6.1.0-2/essl/6.1/lib64/libesslsmp.so" \
-	-DTPL_LAPACK_LIBRARIES="/sw/summit/essl/6.1.0-2/essl/6.1/lib64/libessl.so" \
+	-DTPL_BLAS_LIBRARIES="${OLCF_ESSL_ROOT}/lib64/libessl.so;${OLCF_NETLIB_LAPACK_ROOT}/lib64/libblas.so" \
+	-DTPL_LAPACK_LIBRARIES="${OLCF_ESSL_ROOT}/lib64/libessl.so;${OLCF_NETLIB_LAPACK_ROOT}/lib64/liblapack.so" \
 	-DCMAKE_BUILD_TYPE=Release \
 	-DCMAKE_VERBOSE_MAKEFILE:BOOL=ON \
-	-DCMAKE_CXX_FLAGS="-qsmp=omp -Ofast -DRELEASE ${INC_VTUNE}" \
-    -DCMAKE_C_FLAGS="-qsmp=omp -std=c11 -DPRNTlevel=1 -DPROFlevel=0 -DDEBUGlevel=0 -DGPU_ACC -fopenmp" \
-    -DCMAKE_CUDA_FLAGS="-DPRNTlevel=1 -DPROFlevel=0 -DDEBUGlevel=0 -DGPU_ACC -gencode arch=compute_70,code=sm_70" 
+	-DCMAKE_CXX_FLAGS="-Ofast -DRELEASE ${INC_VTUNE}" \
+	-DCMAKE_C_FLAGS="-std=c11 -DPRNTlevel=1 -DPROFlevel=0 -DDEBUGlevel=0" \
+	-DTPL_ENABLE_CUDALIB=OFF
 make pddrive			
 #	-DTPL_BLAS_LIBRARIES="/opt/intel/compilers_and_libraries_2017.2.174/linux/mkl/lib/intel64/libmkl_intel_lp64.so;/opt/intel/compilers_and_libraries_2017.2.174/linux/mkl/lib/intel64/libmkl_sequential.so;/opt/intel/compilers_and_libraries_2017.2.174/linux/mkl/lib/intel64/libmkl_core.so"
 

@@ -9,10 +9,6 @@ set(headers
     supermatrix.h
     util_dist.h
     colamd.h
-    TreeBcast_slu.hpp
-    TreeReduce_slu.hpp	
-    TreeBcast_slu_impl.hpp
-    TreeReduce_slu_impl.hpp	
     ${CMAKE_CURRENT_BINARY_DIR}/superlu_dist_config.h
 )
 if (MSVC)
@@ -21,14 +17,7 @@ endif ()
 
 # first: precision-independent files
 #  global.cpp
-if (HAVE_CUDA)
-set(sources TreeInterface.cu)
-else()
-set(sources TreeInterface.cpp)
-endif()
-
-
-list(APPEND sources
+set(sources
   sp_ienv.c
   etree.c 
   sp_colorder.c
@@ -52,6 +41,7 @@ list(APPEND sources
   dmach_dist.c
   colamd.c
   superlu_dist_version.c
+  comm_tree.c
 )
 if (MSVC)
   list(APPEND sources wingetopt.c)
@@ -66,6 +56,10 @@ set_source_files_properties(superlu_timer.c PROPERTIES COMPILE_FLAGS -O0)
 if(enable_double)
   list(APPEND headers superlu_ddefs.h)
 
+if(TPL_ENABLE_CUDALIB)
+  list(APPEND sources pdgstrs_lsum_cuda.cu)
+endif()
+    	
   list(APPEND sources
     dlangs_dist.c
     dgsequ_dist.c
@@ -93,7 +87,6 @@ if(enable_double)
     pddistribute.c
     pdgstrf.c
     pdgstrf2.c
-    pdgstrs_lsum_cuda.cu	
     pdgstrs.c
     pdgstrs1.c
     pdgstrs_lsum.c

@@ -70,11 +70,11 @@ void *superlu_malloc_dist(size_t size)
 	printf("(%d) superlu_malloc size %lld\n", iam, size);
 	ABORT("superlu_malloc: nonpositive size");
     }
-#ifdef GPU_ACC    
-	cudaMallocManaged(buf, size + DWORD);
-#else 
+// #ifdef GPU_ACC    
+// 	cudaMallocManaged(&buf, size + DWORD,cudaMemAttachGlobal);
+// #else 
 	buf = (char *) malloc(size + DWORD);
-#endif
+// #endif
 	
     if ( !buf ) {
 	printf("(%d) superlu_malloc fails: malloc_total %.0f MB, size %lld\n",
@@ -119,12 +119,27 @@ void superlu_free_dist(void *addr)
 	    ABORT("superlu_malloc_total went negative");
 	
 	/*free (addr);*/
+#ifdef GPU_ACC    
+    cudaError_t error = cudaFree(p);
+#else 
 	free (p);
+#endif
     }
 
 }
  
 #else  /* The production mode. */
+
+// #ifdef GPU_ACC    
+#if 0   // Yang: use cudaMallocManaged seems to make the code much slower
+void *superlu_malloc_dist(size_t size) {
+    void *buf;
+	cudaMallocManaged(&buf, size,cudaMemAttachGlobal);
+    return (buf);
+}
+void superlu_free_dist(void *addr) { cudaError_t error = cudaFree(addr);}
+
+#else 
 
 //#if  0 
 #if (__STDC_VERSION__ >= 201112L)
@@ -152,6 +167,10 @@ void *superlu_malloc_dist(size_t size) {
 void superlu_free_dist(void *addr) { free (addr); }
 
 #endif
+#endif
+
+
+
 
 #endif  /* End debug malloc/free. */
 

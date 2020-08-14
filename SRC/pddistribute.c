@@ -404,10 +404,10 @@ pddistribute(fact_t fact, int_t n, SuperMatrix *A,
 	double **Unzval_br_ptr;  /* size ceil(NSUPERS/Pr) */
     int_t  **Ufstnz_br_ptr;  /* size ceil(NSUPERS/Pr) */
 
-	BcTree  *LBtree_ptr;       /* size ceil(NSUPERS/Pc)                */
-	RdTree  *LRtree_ptr;		  /* size ceil(NSUPERS/Pr)                */
-	BcTree  *UBtree_ptr;       /* size ceil(NSUPERS/Pc)                */
-	RdTree  *URtree_ptr;		  /* size ceil(NSUPERS/Pr)                */
+	C_Tree  *LBtree_ptr;       /* size ceil(NSUPERS/Pc)                */
+	C_Tree  *LRtree_ptr;		  /* size ceil(NSUPERS/Pr)                */
+	C_Tree  *UBtree_ptr;       /* size ceil(NSUPERS/Pc)                */
+	C_Tree  *URtree_ptr;		  /* size ceil(NSUPERS/Pr)                */
 	int msgsize;
 
     int_t  *Urbs,*Urbs1; /* Number of row blocks in each block column of U. */
@@ -1230,7 +1230,7 @@ pddistribute(fact_t fact, int_t n, SuperMatrix *A,
 	/* construct the Bcast tree for L ... */
 
 	k = CEILING( nsupers, grid->npcol );/* Number of local block columns */
-	if ( !(LBtree_ptr = (BcTree*)SUPERLU_MALLOC(k * sizeof(BcTree))) )
+	if ( !(LBtree_ptr = (C_Tree*)SUPERLU_MALLOC(k * sizeof(C_Tree))) )
 		ABORT("Malloc fails for LBtree_ptr[].");
 	if ( !(ActiveFlag = intCalloc_dist(grid->nprow*2)) )
 		ABORT("Calloc fails for ActiveFlag[].");
@@ -1247,13 +1247,13 @@ pddistribute(fact_t fact, int_t n, SuperMatrix *A,
 	MPI_Allreduce(MPI_IN_PLACE,&SeedSTD_BC[0],k,MPI_DOUBLE,MPI_MAX,grid->cscp.comm);
 
 	for (ljb = 0; ljb <k ; ++ljb) {
-		LBtree_ptr[ljb]=NULL;
+		C_BcTree_Nullify(&LBtree_ptr[ljb]);
 	}
 
 
 	if ( !(ActiveFlagAll = intMalloc_dist(grid->nprow*k)) )
 		ABORT("Calloc fails for ActiveFlag[].");
-	memTRS += k*sizeof(BcTree) + k*dword + grid->nprow*k*iword;  //acount for LBtree_ptr, SeedSTD_BC, ActiveFlagAll
+	memTRS += k*sizeof(C_Tree) + k*dword + grid->nprow*k*iword;  //acount for LBtree_ptr, SeedSTD_BC, ActiveFlagAll
 	for (j=0;j<grid->nprow*k;++j)ActiveFlagAll[j]=3*nsupers;
 	for (ljb = 0; ljb < k; ++ljb) { /* for each local block column ... */
 		jb = mycol+ljb*grid->npcol;  /* not sure */
@@ -1317,8 +1317,13 @@ pddistribute(fact_t fact, int_t n, SuperMatrix *A,
 				// rseed=rand();
 				// rseed=1.0;
 				msgsize = SuperSize( jb );
-				LBtree_ptr[ljb] = BcTree_Create(grid->comm, ranks, rank_cnt, msgsize,SeedSTD_BC[ljb],'d');
-				BcTree_SetTag(LBtree_ptr[ljb],BC_L,'d');
+			
+				// LBtree_ptr[ljb] = BcTree_Create(grid->comm, ranks, rank_cnt, msgsize,SeedSTD_BC[ljb],'d');
+				// BcTree_SetTag(LBtree_ptr[ljb],BC_L,'d');
+
+				C_BcTree_Create(&LBtree_ptr[ljb], grid->comm, ranks, rank_cnt, msgsize, 'd');
+				LBtree_ptr[ljb].tag_=BC_L;
+				
 
 				// printf("iam %5d btree rank_cnt %5d \n",iam,rank_cnt);
 				// fflush(stdout);
@@ -1346,6 +1351,7 @@ pddistribute(fact_t fact, int_t n, SuperMatrix *A,
 				}
 				// #endif
 			}
+			
 		}
 		}
 	}
@@ -1391,7 +1397,7 @@ if ( !iam) printf(".. Construct Bcast tree for L: %.2f\t\n", t);
 
 
 	k = CEILING( nsupers, grid->nprow );/* Number of local block rows */
-	if ( !(LRtree_ptr = (RdTree*)SUPERLU_MALLOC(k * sizeof(RdTree))) )
+	if ( !(LRtree_ptr = (C_Tree*)SUPERLU_MALLOC(k * sizeof(C_Tree))) )
 		ABORT("Malloc fails for LRtree_ptr[].");
 	if ( !(ActiveFlag = intCalloc_dist(grid->npcol*2)) )
 		ABORT("Calloc fails for ActiveFlag[].");
@@ -1434,14 +1440,14 @@ if ( !iam) printf(".. Construct Bcast tree for L: %.2f\t\n", t);
 
 
 	for (lib = 0; lib <k ; ++lib) {
-		LRtree_ptr[lib]=NULL;
+		C_RdTree_Nullify(&LRtree_ptr[lib]);
 	}
 
 
 	if ( !(ActiveFlagAll = intMalloc_dist(grid->npcol*k)) )
 		ABORT("Calloc fails for ActiveFlagAll[].");
 	for (j=0;j<grid->npcol*k;++j)ActiveFlagAll[j]=-3*nsupers;
-	memTRS += k*sizeof(RdTree) + k*dword + grid->npcol*k*iword;  //acount for LRtree_ptr, SeedSTD_RD, ActiveFlagAll
+	memTRS += k*sizeof(C_Tree) + k*dword + grid->npcol*k*iword;  //acount for LRtree_ptr, SeedSTD_RD, ActiveFlagAll
 	for (jb = 0; jb < nsupers; ++jb) { /* for each block column ... */
 		fsupc = FstBlockC( jb );
 		pc = PCOL( jb, grid );
@@ -1500,8 +1506,12 @@ if ( !iam) printf(".. Construct Bcast tree for L: %.2f\t\n", t);
 
 					// if(ib==0){
 
-					LRtree_ptr[lib] = RdTree_Create(grid->comm, ranks, rank_cnt, msgsize,SeedSTD_RD[lib],'d');
-					RdTree_SetTag(LRtree_ptr[lib], RD_L,'d');
+					// LRtree_ptr[lib] = RdTree_Create(grid->comm, ranks, rank_cnt, msgsize,SeedSTD_RD[lib],'d');
+					// RdTree_SetTag(LRtree_ptr[lib], RD_L,'d');
+					C_RdTree_Create(&LRtree_ptr[lib], grid->comm, ranks, rank_cnt, msgsize, 'd');
+					LRtree_ptr[lib].tag_=RD_L;
+
+
 					// }
 
 					// printf("iam %5d rtree rank_cnt %5d \n",iam,rank_cnt);
@@ -1557,7 +1567,7 @@ if ( !iam) printf(".. Construct Reduce tree for L: %.2f\t\n", t);
 	/* construct the Bcast tree for U ... */
 
 	k = CEILING( nsupers, grid->npcol );/* Number of local block columns */
-	if ( !(UBtree_ptr = (BcTree*)SUPERLU_MALLOC(k * sizeof(BcTree))) )
+	if ( !(UBtree_ptr = (C_Tree*)SUPERLU_MALLOC(k * sizeof(C_Tree))) )
 		ABORT("Malloc fails for UBtree_ptr[].");
 	if ( !(ActiveFlag = intCalloc_dist(grid->nprow*2)) )
 		ABORT("Calloc fails for ActiveFlag[].");
@@ -1574,13 +1584,13 @@ if ( !iam) printf(".. Construct Reduce tree for L: %.2f\t\n", t);
 
 
 	for (ljb = 0; ljb <k ; ++ljb) {
-		UBtree_ptr[ljb]=NULL;
+		C_BcTree_Nullify(&UBtree_ptr[ljb]);
 	}
 
 	if ( !(ActiveFlagAll = intMalloc_dist(grid->nprow*k)) )
 		ABORT("Calloc fails for ActiveFlagAll[].");
 	for (j=0;j<grid->nprow*k;++j)ActiveFlagAll[j]=-3*nsupers;
-	memTRS += k*sizeof(BcTree) + k*dword + grid->nprow*k*iword;  //acount for UBtree_ptr, SeedSTD_BC, ActiveFlagAll
+	memTRS += k*sizeof(C_Tree) + k*dword + grid->nprow*k*iword;  //acount for UBtree_ptr, SeedSTD_BC, ActiveFlagAll
 
 	for (ljb = 0; ljb < k; ++ljb) { /* for each local block column ... */
 		jb = mycol+ljb*grid->npcol;  /* not sure */
@@ -1658,8 +1668,12 @@ if ( !iam) printf(".. Construct Reduce tree for L: %.2f\t\n", t);
 				// rseed=rand();
 				// rseed=1.0;
 				msgsize = SuperSize( jb );
-				UBtree_ptr[ljb] = BcTree_Create(grid->comm, ranks, rank_cnt, msgsize,SeedSTD_BC[ljb],'d');
-				BcTree_SetTag(UBtree_ptr[ljb],BC_U,'d');
+				// UBtree_ptr[ljb] = BcTree_Create(grid->comm, ranks, rank_cnt, msgsize,SeedSTD_BC[ljb],'d');
+				// BcTree_SetTag(UBtree_ptr[ljb],BC_U,'d');
+
+				C_BcTree_Create(&UBtree_ptr[ljb], grid->comm, ranks, rank_cnt, msgsize, 'd');
+				UBtree_ptr[ljb].tag_=BC_U;
+
 
 				// printf("iam %5d btree rank_cnt %5d \n",iam,rank_cnt);
 				// fflush(stdout);
@@ -1678,6 +1692,7 @@ if ( !iam) printf(".. Construct Reduce tree for L: %.2f\t\n", t);
 				assert(rank_cnt==rank_cnt_ref);
 				}
 			}
+
 		}
 		}
 	}
@@ -1720,7 +1735,7 @@ if ( !iam) printf(".. Construct Bcast tree for U: %.2f\t\n", t);
 
 
 	k = CEILING( nsupers, grid->nprow );/* Number of local block rows */
-	if ( !(URtree_ptr = (RdTree*)SUPERLU_MALLOC(k * sizeof(RdTree))) )
+	if ( !(URtree_ptr = (C_Tree*)SUPERLU_MALLOC(k * sizeof(C_Tree))) )
 		ABORT("Malloc fails for URtree_ptr[].");
 	if ( !(ActiveFlag = intCalloc_dist(grid->npcol*2)) )
 		ABORT("Calloc fails for ActiveFlag[].");
@@ -1782,14 +1797,14 @@ if ( !iam) printf(".. Construct Bcast tree for U: %.2f\t\n", t);
 
 
 	for (lib = 0; lib <k ; ++lib) {
-		URtree_ptr[lib]=NULL;
+		C_RdTree_Nullify(&URtree_ptr[lib]);
 	}
 
 
 	if ( !(ActiveFlagAll = intMalloc_dist(grid->npcol*k)) )
 		ABORT("Calloc fails for ActiveFlagAll[].");
 	for (j=0;j<grid->npcol*k;++j)ActiveFlagAll[j]=3*nsupers;
-	memTRS += k*sizeof(RdTree) + k*dword + grid->npcol*k*iword;  //acount for URtree_ptr, SeedSTD_RD, ActiveFlagAll
+	memTRS += k*sizeof(C_Tree) + k*dword + grid->npcol*k*iword;  //acount for URtree_ptr, SeedSTD_RD, ActiveFlagAll
 
 	for (jb = 0; jb < nsupers; ++jb) { /* for each block column ... */
 		fsupc = FstBlockC( jb );
@@ -1861,8 +1876,13 @@ if ( !iam) printf(".. Construct Bcast tree for U: %.2f\t\n", t);
 
 					// if(ib==0){
 
-					URtree_ptr[lib] = RdTree_Create(grid->comm, ranks, rank_cnt, msgsize,SeedSTD_RD[lib],'d');
-					RdTree_SetTag(URtree_ptr[lib], RD_U,'d');
+					// URtree_ptr[lib] = RdTree_Create(grid->comm, ranks, rank_cnt, msgsize,SeedSTD_RD[lib],'d');
+					// RdTree_SetTag(URtree_ptr[lib], RD_U,'d');
+					C_RdTree_Create(&URtree_ptr[lib], grid->comm, ranks, rank_cnt, msgsize, 'd');
+					URtree_ptr[lib].tag_=RD_U;
+
+
+					
 					// }
 
 					// #if ( PRNTlevel>=1 )

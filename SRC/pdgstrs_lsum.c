@@ -450,8 +450,8 @@ void dlsum_fmod_inv
     MPI_Status status;
     int test_flag;
 	yes_no_t done;
-	BcTree  *LBtree_ptr = Llu->LBtree_ptr;
-	RdTree  *LRtree_ptr = Llu->LRtree_ptr;
+	C_Tree  *LBtree_ptr = Llu->LBtree_ptr;
+	C_Tree  *LRtree_ptr = Llu->LRtree_ptr;
 	int_t* idx_lsum,idx_lsum1;
 	double *rtemp_loc;
 	int_t ldalsum;
@@ -716,8 +716,7 @@ void dlsum_fmod_inv
 								/*
 								 * Send Xk to process column Pc[k].
 								 */
-
-								if(LBtree_ptr[lk]!=NULL){
+								if(LBtree_ptr[lk].empty_==NO){
 #ifdef _OPENMP
 #pragma omp atomic capture
 #endif
@@ -920,7 +919,7 @@ void dlsum_fmod_inv
 						 * Send Xk to process column Pc[k].
 						 */
 
-						if(LBtree_ptr[lk]!=NULL){
+						if(LBtree_ptr[lk].empty_==NO){
 
 #ifdef _OPENMP
 #pragma omp atomic capture
@@ -1009,8 +1008,8 @@ void dlsum_fmod_inv_master
     MPI_Status status;
     int test_flag;
 	yes_no_t done;
-	BcTree  *LBtree_ptr = Llu->LBtree_ptr;
-	RdTree  *LRtree_ptr = Llu->LRtree_ptr;
+	C_Tree  *LBtree_ptr = Llu->LBtree_ptr;
+	C_Tree  *LRtree_ptr = Llu->LRtree_ptr;
 	int_t* idx_lsum,idx_lsum1;
 	double *rtemp_loc;
 	int_t ldalsum;
@@ -1022,8 +1021,7 @@ void dlsum_fmod_inv_master
 	int_t aln_d,aln_i;
 	aln_d = 1;//ceil(CACHELINE/(double)dword);
 	aln_i = 1;//ceil(CACHELINE/(double)iword);
-	int cnt;
-	
+
 	ldalsum=Llu->ldalsum;
 
 	rtemp_loc = &rtemp[sizertemp* thread_id];
@@ -1251,8 +1249,9 @@ void dlsum_fmod_inv_master
 						#endif
 						for (jj=0;jj<iknsupc*nrhs;jj++)
 							lsum[il + jj ] += lsum[il + jj + ii*sizelsum];
-					RdTree_GetMsgSize(LRtree_ptr[lk],'d',&cnt);
-					RdTree_forwardMessageSimple(LRtree_ptr[lk],&lsum[il - LSUM_H ],cnt*nrhs+LSUM_H,'d');
+
+					// RdTree_forwardMessageSimple(LRtree_ptr[lk],&lsum[il - LSUM_H ],RdTree_GetMsgSize(LRtree_ptr[lk],'d')*nrhs+LSUM_H,'d');
+					C_RdTree_forwardMessageSimple(&LRtree_ptr[lk],&lsum[il - LSUM_H ],LRtree_ptr[lk].msgSize_*nrhs+LSUM_H);
 					// }
 
 
@@ -1342,10 +1341,10 @@ void dlsum_fmod_inv_master
 					 * Send Xk to process column Pc[k].
 					 */
 
-					if(LBtree_ptr[lk]!=NULL)
-						BcTree_GetMsgSize(LBtree_ptr[lk],'d',&cnt);
-						BcTree_forwardMessageSimple(LBtree_ptr[lk],&x[ii - XK_H],cnt*nrhs+XK_H,'d');
-
+					if(LBtree_ptr[lk].empty_==NO){
+						// BcTree_forwardMessageSimple(LBtree_ptr[lk],&x[ii - XK_H],BcTree_GetMsgSize(LBtree_ptr[lk],'d')*nrhs+XK_H,'d');
+						C_BcTree_forwardMessageSimple(&LBtree_ptr[lk], &x[ii - XK_H], LBtree_ptr[lk].msgSize_*nrhs+XK_H);
+					}
 					/*
 					 * Perform local block modifications.
 					 */
@@ -1415,8 +1414,8 @@ void dlsum_bmod_inv
 	int_t  *ilsum = Llu->ilsum; /* Starting position of each supernode in lsum.   */
 	int_t  *brecv = Llu->brecv;
 	int_t  **bsendx_plist = Llu->bsendx_plist;
-	BcTree  *UBtree_ptr = Llu->UBtree_ptr;
-	RdTree  *URtree_ptr = Llu->URtree_ptr;
+	C_Tree  *UBtree_ptr = Llu->UBtree_ptr;
+	C_Tree  *URtree_ptr = Llu->URtree_ptr;
 	MPI_Status status;
 	int test_flag;
 	int_t bmod_tmp;
@@ -1625,7 +1624,7 @@ void dlsum_bmod_inv
 								// printf("xre: %f\n",x[ii+i]);
 								// fflush(stdout);
 							// }
-							if(UBtree_ptr[lk1]!=NULL){
+							if(UBtree_ptr[lk1].empty_==NO){
 #ifdef _OPENMP
 #pragma omp atomic capture
 #endif
@@ -1805,7 +1804,7 @@ void dlsum_bmod_inv
 							// printf("xre: %f\n",x[ii+i]);
 							// fflush(stdout);
 						// }
-						if(UBtree_ptr[lk1]!=NULL){
+						if(UBtree_ptr[lk1].empty_==NO){
 #ifdef _OPENMP
 #pragma omp atomic capture
 #endif
@@ -1883,8 +1882,8 @@ void dlsum_bmod_inv_master
 	int_t  *ilsum = Llu->ilsum; /* Starting position of each supernode in lsum.   */
 	int_t  *brecv = Llu->brecv;
 	int_t  **bsendx_plist = Llu->bsendx_plist;
-	BcTree  *UBtree_ptr = Llu->UBtree_ptr;
-	RdTree  *URtree_ptr = Llu->URtree_ptr;
+	C_Tree  *UBtree_ptr = Llu->UBtree_ptr;
+	C_Tree  *URtree_ptr = Llu->URtree_ptr;
 	MPI_Status status;
 	int test_flag;
 	int_t bmod_tmp;
@@ -1901,8 +1900,7 @@ void dlsum_bmod_inv_master
 	int_t aln_d,aln_i;
 	aln_d = 1;//ceil(CACHELINE/(double)dword);
 	aln_i = 1;//ceil(CACHELINE/(double)iword);
-	int cnt;
-	
+
 
 	rtemp_loc = &rtemp[sizertemp* thread_id];
 
@@ -2048,8 +2046,8 @@ void dlsum_bmod_inv_master
 					#endif
 					for (jj=0;jj<iknsupc*nrhs;jj++)
 						lsum[il + jj ] += lsum[il + jj + ii*sizelsum];
-				RdTree_GetMsgSize(URtree_ptr[ik],'d',&cnt);		
-				RdTree_forwardMessageSimple(URtree_ptr[ik],&lsum[il - LSUM_H ],cnt*nrhs+LSUM_H,'d');
+				// RdTree_forwardMessageSimple(URtree_ptr[ik],&lsum[il - LSUM_H ],RdTree_GetMsgSize(URtree_ptr[ik],'d')*nrhs+LSUM_H,'d');
+				C_RdTree_forwardMessageSimple(&URtree_ptr[ik],&lsum[il - LSUM_H ],URtree_ptr[ik].msgSize_*nrhs+LSUM_H);
 
 #if ( DEBUGlevel>=2 )
 				printf("(%2d) Sent LSUM[%2.0f], size %2d, to P %2d\n",
@@ -2136,9 +2134,9 @@ void dlsum_bmod_inv_master
 						// printf("xre: %f\n",x[ii+i]);
 						// fflush(stdout);
 					// }
-					if(UBtree_ptr[lk1]!=NULL){
-					BcTree_GetMsgSize(UBtree_ptr[lk1],'d',&cnt);	
-					BcTree_forwardMessageSimple(UBtree_ptr[lk1],&x[ii - XK_H],cnt*nrhs+XK_H,'d');
+					if(UBtree_ptr[lk1].empty_==NO){
+					// BcTree_forwardMessageSimple(UBtree_ptr[lk1],&x[ii - XK_H],BcTree_GetMsgSize(UBtree_ptr[lk1],'d')*nrhs+XK_H,'d');
+					C_BcTree_forwardMessageSimple(&UBtree_ptr[lk1], &x[ii - XK_H], UBtree_ptr[lk1].msgSize_*nrhs+XK_H);
 					}
 
 					/*

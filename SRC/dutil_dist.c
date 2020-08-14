@@ -660,6 +660,48 @@ void dDumpLblocks(int iam, int_t nsupers, gridinfo_t *grid,
 
 
 
+/*! \Compute the level sets in the L factor
+ */
+void dComputeLevelsets(int iam, int_t nsupers, gridinfo_t *grid,
+		  Glu_persist_t *Glu_persist, LocalLU_t *Llu, int_t *levels)
+{
+    register int c, extra, gb, j, i, lb, nsupc, nsupr, len, nb, ncb;
+    register int_t k, mycol, r;
+	int_t nnzL, n,nmax,lk;
+    int_t *xsup = Glu_persist->xsup;
+    int_t *index,*lloc;
+    double *nzval;
+	char filename[256];
+	FILE *fp, *fopen();
+
+	// assert(grid->npcol*grid->nprow==1);
+
+	// count nonzeros in the first pass
+	nnzL = 0;
+	n = 0;
+    ncb = nsupers / grid->npcol;
+    extra = nsupers % grid->npcol;
+    mycol = MYCOL( iam, grid );
+    if ( mycol < extra ) ++ncb;
+    for (lb = 0; lb < ncb; ++lb) {
+	index = Llu->Lrowind_bc_ptr[lb];
+	if ( index ) { /* Not an empty column */
+	    nzval = Llu->Lnzval_bc_ptr[lb];
+        lloc = Llu->Lindval_loc_bc_ptr[lb];
+	    nb = index[0];
+
+
+	    for (c = 0; c < nb; ++c) {
+        lk=lloc[c];
+		levels[lk]=SUPERLU_MAX(levels[lb]+1,levels[lk]);
+	    }
+	}
+    }
+
+
+} /* dComputeLevelsets */
+
+
 /*! \Dump the factored matrix L using matlab triple-let format
  */
 void dGenCOOLblocks(int iam, int_t nsupers, gridinfo_t *grid,
