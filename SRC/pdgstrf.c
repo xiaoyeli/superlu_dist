@@ -559,7 +559,6 @@ pdgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
 #pragma omp parallel default(shared)
     #pragma omp master
     {
-         //if (omp_get_thread_num () == 0)
         num_threads = omp_get_num_threads ();
     }
 #endif
@@ -567,7 +566,7 @@ pdgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
 #if 0
     omp_loop_time = (double *) _mm_malloc (sizeof (double) * num_threads,64);
 #else
-    omp_loop_time = (double *) doubleMalloc_dist(num_threads);
+    omp_loop_time = (double *) SUPERLU_MALLOC(num_threads * sizeof(double));
 #endif
 
 #if ( PRNTlevel>=1 )
@@ -772,7 +771,7 @@ pdgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
     int cublas_nb = get_cublas_nb(); // default 64
     int nstreams = get_num_cuda_streams ();
 
-    int buffer_size  = SUPERLU_MAX(max_row_size*nstreams*cublas_nb,get_max_buffer_size());
+    int_t buffer_size  = SUPERLU_MAX(max_row_size*nstreams*cublas_nb,get_max_buffer_size());
     /* array holding last column blk for each partition,
        used in SchCompUdt--CUDA.c         */
   #if 0
@@ -784,7 +783,7 @@ pdgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
 #else /* not to use GPU */
 
     int Threads_per_process = get_thread_per_process();
-    int buffer_size  = SUPERLU_MAX(max_row_size*Threads_per_process*ldt,get_max_buffer_size());
+    int_t buffer_size  = SUPERLU_MAX(max_row_size*Threads_per_process*ldt,get_max_buffer_size());
 #endif /* end ifdef GPU_ACC */
 
     int_t max_ncols = 0;
@@ -874,7 +873,7 @@ pdgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
         return 1;
     }
 
-    cudaStat = cudaMalloc((void**)&dC, buffer_size* sizeof(double) );
+    cudaStat = cudaMalloc((void**)&dC, buffer_size * sizeof(double) );
     if (cudaStat!= cudaSuccess) {
         fprintf(stderr, "!!!! Error in allocating C in the device \n" );
         return 1;

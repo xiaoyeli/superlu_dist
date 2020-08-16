@@ -2439,7 +2439,7 @@ for (i=0;i<nroot_send;i++){
 	    float for_lu, total, max, avg, temp;
 		superlu_dist_mem_usage_t num_mem_usage;
 
-	    dQuerySpace_dist(n, LUstruct, grid, stat, &num_mem_usage);
+	    zQuerySpace_dist(n, LUstruct, grid, stat, &num_mem_usage);
 	    temp = num_mem_usage.total;
 
 	    MPI_Reduce( &temp, &max,

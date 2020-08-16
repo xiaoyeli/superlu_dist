@@ -40,6 +40,10 @@ ifeq "${ACC}" "GPU"
 ALLAUX += cublas_utils.o
 endif
 
+ifeq ($(HAVE_CUDA),TRUE)
+ALLAUX += cublas_utils.o
+endif
+
 ifeq ($(HAVE_COMBBLAS),TRUE)
 ALLAUX += c2cpp_GetAWPM.o
 endif

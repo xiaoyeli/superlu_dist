@@ -8,10 +8,11 @@
 cmake_minimum_required(VERSION 2.8.12 FATAL_ERROR)
 
 # Project version numbers
+#project(SuperLU_DIST C CXX CUDA)
 project(SuperLU_DIST C CXX)
 set(VERSION_MAJOR "6")
 set(VERSION_MINOR "3")
-set(VERSION_BugFix "0")
+set(VERSION_BugFix "1")
 set(PROJECT_VERSION ${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_BugFix})
 
 list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake")
@@ -22,7 +23,7 @@ option(enable_double    "Enable double precision library" ON)
 option(enable_complex16 "Enable complex16 precision library" ON)
 option(enable_tests  "Build tests" ON)
 option(enable_examples  "Build examples" ON)
-option(TPL_ENABLE_BLASLIB  "Build the CBLAS library" ${enable_blaslib_DEFAULT})
+option(TPL_ENABLE_INTERNAL_BLASLIB  "Build the CBLAS library" ${enable_blaslib_DEFAULT})
 option(TPL_BLAS_LIBRARIES "List of absolute paths to blas libraries [].")
 option(TPL_ENABLE_LAPACKLIB "Enable LAPACK library" ON)
 option(TPL_LAPACK_LIBRARIES "List of absolute paths to lapack libraries [].")
@@ -32,6 +33,7 @@ option(TPL_PARMETIS_INCLUDE_DIRS "List of absolute paths to ParMETIS include dir
 option(TPL_ENABLE_COMBBLASLIB   "Build the CombBLAS library" OFF)
 option(TPL_COMBBLAS_LIBRARIES "List of absolute paths to CombBLAS link libraries [].")
 option(TPL_COMBBLAS_INCLUDE_DIRS "List of absolute paths to CombBLAS include directories [].")
+option(TPL_ENABLE_CUDALIB   "Enable the CUDA libraries" OFF)
 
 
 ######################################################################
@@ -165,7 +167,7 @@ if (enable_openmp)
   endif()
 endif()
 #--------------------- BLAS ---------------------
-if(NOT TPL_ENABLE_BLASLIB)
+if(NOT TPL_ENABLE_INTERNAL_BLASLIB)
 #  set(TPL_BLAS_LIBRARIES "" CACHE FILEPATH
 #    "Override of list of absolute path to libs for BLAS.")
   if(TPL_BLAS_LIBRARIES)
@@ -182,6 +184,7 @@ endif()
 if(BLAS_FOUND)
     message("-- Using TPL_BLAS_LIBRARIES='${TPL_BLAS_LIBRARIES}'")
     set(CMAKE_C_FLAGS "-DUSE_VENDOR_BLAS ${CMAKE_C_FLAGS}")
+    set(CMAKE_CUDA_FLAGS "-DUSE_VENDOR_BLAS ${CMAKE_CUDA_FLAGS}")
     set(BLAS_LIB ${TPL_BLAS_LIBRARIES})
     # fix up BLAS library name
     string (REPLACE ";" " " BLAS_LIB_STR "${BLAS_LIB}")
@@ -262,6 +265,32 @@ endif()
 if(PARMETIS_FOUND)
   set(HAVE_PARMETIS TRUE)
 endif()
+
+
+#--------------------- CUDA libraries ---------------------
+if (TPL_ENABLE_CUDALIB)   ## want to use cuda
+  enable_language(CUDA)
+  if (NOT TPL_CUDA_LIBRARIES)
+      message(FATAL_ERROR "TPL_CUDA_LIBRARIES option should be set for CUDA support to be enabled.")
+  endif()
+  message("-- Enabled support for CUDA.")
+  set(CUDA_LIB ${TPL_CUDA_LIBRARIES})
+# fix up CUDA library names
+  string (REPLACE ";" " " CUDA_LIB_STR "${CUDA_LIB}")
+  set(CUDA_LIB_EXPORT ${CUDA_LIB_STR})
+  set(HAVE_CUDA TRUE)
+endif()
+
+#---------------------- Additional C linker library ---------
+SET(_c_libs ${CMAKE_C_IMPLICIT_LINK_LIBRARIES})
+FOREACH(_lib ${_c_libs})
+  set(EXTRA_LIB "-l${_lib} ${EXTRA_LIB}")
+ENDFOREACH()
+message("-- EXTRA_LIB='${EXTRA_LIB}'")
+string (REPLACE ";" " " EXTRA_LIB_STR "${EXTRA_LIB}")
+set(EXTRA_LIB_EXPORT ${EXTRA_LIB_STR})
+message("-- EXTRA_LIB_EXPORT='${EXTRA_LIB_EXPORT}'")
+
 
 #--------------------- CombBLAS ---------------------
 if (TPL_ENABLE_COMBBLASLIB)   ## want to use CombBLAS

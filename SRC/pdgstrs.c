@@ -954,8 +954,8 @@ pdgstrs(int_t n, dLUstruct_t *LUstruct,
     	int nbrow;
     int_t  ik, rel, idx_r, jb, nrbl, irow, pc,iknsupc;
     int_t  lptr1_tmp, idx_i, idx_v,m;
-    	int_t ready;
-    	static int thread_id;
+    int_t ready;
+    static int thread_id = 0;
     yes_no_t empty;
     int_t sizelsum,sizertemp,aln_d,aln_i;
     aln_d = ceil(CACHELINE/(double)dword);
@@ -965,7 +965,7 @@ pdgstrs(int_t n, dLUstruct_t *LUstruct,
 	maxsuper = sp_ienv_dist(3);
 
 #ifdef _OPENMP
-	#pragma omp threadprivate(thread_id)
+#pragma omp threadprivate(thread_id)
 #endif
 
 #ifdef _OPENMP
@@ -974,7 +974,7 @@ pdgstrs(int_t n, dLUstruct_t *LUstruct,
     	if (omp_get_thread_num () == 0) {
     		num_thread = omp_get_num_threads ();
     	}
-		thread_id = omp_get_thread_num ();
+	thread_id = omp_get_thread_num ();
     }
 #endif
 
@@ -1066,7 +1066,7 @@ pdgstrs(int_t n, dLUstruct_t *LUstruct,
 #pragma omp parallel default(shared) private(ii)
     {
 	for (ii=0; ii<sizelsum; ii++)
-    	lsum[thread_id*sizelsum+ii]=zero;
+    	    lsum[thread_id*sizelsum+ii]=zero;
     }
 #else
     if ( !(lsum = (double*)SUPERLU_MALLOC(sizelsum*num_thread * sizeof(double))))
@@ -1249,13 +1249,13 @@ if(procs==1){
 #ifdef _OPENMP
 #pragma	omp	for firstprivate(nrhs,beta,alpha,x,rtemp,ldalsum) private (ii,k,knsupc,lk,luptr,lsub,nsupr,lusup,t1,t2,Linv,i,lib,rtemp_loc,nleaf_send_tmp) nowait
 #endif
-			for (jj=0;jj<nleaf;jj++){
-				k=leafsups[jj];
+		for (jj=0;jj<nleaf;jj++){
+		    k=leafsups[jj];
 
-				// #ifdef _OPENMP
-				// #pragma	omp	task firstprivate (k,nrhs,beta,alpha,x,rtemp,ldalsum) private (ii,knsupc,lk,luptr,lsub,nsupr,lusup,thread_id,t1,t2,Linv,i,lib,rtemp_loc)
-				// #endif
-				{
+// #ifdef _OPENMP
+// #pragma omp task firstprivate (k,nrhs,beta,alpha,x,rtemp,ldalsum) private (ii,knsupc,lk,luptr,lsub,nsupr,lusup,thread_id,t1,t2,Linv,i,lib,rtemp_loc)
+// #endif
+   		    {
 
 #if ( PROFlevel>=1 )
 					TIC(t1);
@@ -1406,36 +1406,32 @@ if(procs==1){
 #endif
 		{
 
-
 #ifdef _OPENMP
 #pragma omp master
 #endif
-				{
+		    {
 
 #ifdef _OPENMP
-#pragma	omp	taskloop private (k,ii,lk) num_tasks(num_thread*8) nogroup
+#pragma	omp taskloop private (k,ii,lk) num_tasks(num_thread*8) nogroup
 #endif
 
-					for (jj=0;jj<nleaf;jj++){
-						k=leafsups[jj];
+			for (jj=0;jj<nleaf;jj++){
+			    k=leafsups[jj];
 
-						{
-							/* Diagonal process */
-							lk = LBi( k, grid );
-							ii = X_BLK( lk );
-							/*
-							 * Perform local block modifications: lsum[i] -= L_i,k * X[k]
-							 */
-							dlsum_fmod_inv(lsum, x, &x[ii], rtemp, nrhs, k,
-									fmod, xsup, grid, Llu,
-									stat_loc, leaf_send, &nleaf_send,sizelsum,sizertemp,0,maxsuper,thread_id,num_thread);
-						}
+			    {
+				/* Diagonal process */
+				lk = LBi( k, grid );
+				ii = X_BLK( lk );
+				/*
+				 * Perform local block modifications: lsum[i] -= L_i,k * X[k]
+				 */
+				dlsum_fmod_inv(lsum, x, &x[ii], rtemp, nrhs, k, fmod, xsup, grid, Llu, stat_loc, leaf_send, &nleaf_send,sizelsum,sizertemp,0,maxsuper,thread_id,num_thread);
+			    }
 
-						// } /* if diagonal process ... */
-					} /* for k ... */
-				}
+			} /* for jj ... */
+		    }
 
-			}
+		}
 
 			for (i=0;i<nleaf_send;i++){
 				lk = leaf_send[i*aln_i];

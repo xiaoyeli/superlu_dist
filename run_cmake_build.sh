@@ -13,11 +13,11 @@ then
     cmake .. \
     -DTPL_PARMETIS_INCLUDE_DIRS="${PARMETIS_ROOT}/include;${PARMETIS_ROOT}/metis/include" \
     -DTPL_PARMETIS_LIBRARIES="${PARMETIS_BUILD_DIR}/libparmetis/libparmetis.a;${PARMETIS_BUILD_DIR}/libmetis/libmetis.a" \
-    -DTPL_ENABLE_BLASLIB=OFF \
+    -DTPL_ENABLE_INTERNAL_BLASLIB=OFF \
     -DTPL_BLAS_LIBRARIES="-mkl" \
     -DCMAKE_Fortran_COMPILER=ftn \
     -DCMAKE_C_FLAGS="-std=c99 -fPIC -DPRNTlevel=0" \
-    -DMPIEXEC=/usr/bin/srun \
+    -DMPIEXEC_EXECUTABLE=/usr/bin/srun \
     -DCMAKE_INSTALL_PREFIX=.
 #    -DMPIEXEC_EXECUTABLE=/usr/bin/srun \
 #    -DXSDK_INDEX_SIZE=64
@@ -44,7 +44,7 @@ OOT}/Applications/BipartiteMatchings" \
     -DCMAKE_C_COMPILER=mpicc \
     -DCMAKE_CXX_COMPILER=mpicxx \
     -DCMAKE_Fortran_COMPILER=mpif90 \
-    -DTPL_ENABLE_BLASLIB=OFF \
+    -DTPL_ENABLE_INTERNAL_BLASLIB=OFF \
     -DTPL_ENABLE_COMBBLASLIB=OFF \
     -DTPL_ENABLE_LAPACKLIB=OFF \
     -DBUILD_SHARED_LIBS=OFF \
