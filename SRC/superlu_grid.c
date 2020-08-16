@@ -175,5 +175,7 @@ void superlu_gridexit(gridinfo_t *grid)
     }
     if ( SuperLU_MPI_DOUBLE_COMPLEX != MPI_DATATYPE_NULL ) {
 	MPI_Type_free( &SuperLU_MPI_DOUBLE_COMPLEX );
+	SuperLU_MPI_DOUBLE_COMPLEX = MPI_DATATYPE_NULL; /* some MPI system does not set this
+							   to be NULL after Type_free */
     }
 }
