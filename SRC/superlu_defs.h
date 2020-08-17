@@ -91,6 +91,15 @@ at the top-level directory.
   #define IFMT "%8d"
 #endif
 
+/* MPI C complex datatype */
+#define SuperLU_MPI_COMPLEX         MPI_C_COMPLEX 
+#define SuperLU_MPI_DOUBLE_COMPLEX  MPI_C_DOUBLE_COMPLEX
+
+/* MPI_Datatype cannot be used in C typedef
+typedef MPI_C_COMPLEX         SuperLU_MPI_COMPLEX;
+typedef MPI_C_DOUBLE_COMPLEX  SuperLU_MPI_DOUBLE_COMPLEX;
+*/
+
 #include "superlu_FortranCInterface.h"
 //#include "Cnames.h"
 #include "superlu_FCnames.h"
