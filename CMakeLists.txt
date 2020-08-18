@@ -140,6 +140,8 @@ set(CMAKE_CXX_FLAGS_RELEASE "-O3" CACHE STRING "")
 #
 ######################################################################
 #
+set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG}  -O0")
+set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -O0")
 #--------------------- MPI ---------------------
 find_package(MPI)
 if(MPI_C_FOUND)
