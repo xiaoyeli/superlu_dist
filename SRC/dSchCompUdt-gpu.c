@@ -13,7 +13,7 @@ at the top-level directory.
 /*! @file
  * \brief This file contains the main loop of pdgstrf which involves
  *        rank k update of the Schur complement.
- *        Uses CUDA GPU.
+ *        Uses GPU.
  *
  * <pre>
  * -- Distributed SuperLU routine (version 4.0) --
@@ -24,17 +24,6 @@ at the top-level directory.
 
 #define SCHEDULE_STRATEGY dynamic
 
-#define cublasCheckErrors(fn) \
-    do { \
-        cublasStatus_t __err = fn; \
-        if (__err != CUBLAS_STATUS_SUCCESS) { \
-            fprintf(stderr, "Fatal cublas error: %d (at %s:%d)\n", \
-                (int)(__err), \
-                __FILE__, __LINE__); \
-            fprintf(stderr, "*** FAILED - ABORTING\n"); \
-            exit(1); \
-        } \
-    } while(0);
 
 int full;
 double gemm_timer = 0.0;
@@ -168,10 +157,10 @@ if ( msg0 && msg2 ) {  /* L(:,k) and U(k,:) are not empty. */
 		printf("nbrow %d *ldu %d  =%d < ldt %d * max_row_size %d =%d \n",nbrow,ldu,nbrow*ldu,ldt,max_row_size,ldt*max_row_size );
 		assert(nbrow*ldu<=ldt*max_row_size);
 #endif
-		cudaMemcpy2DAsync(dA, nbrow*sizeof(double),
+		gpuMemcpy2DAsync(dA, nbrow*sizeof(double),
 				  &lusup[luptr+(knsupc-ldu)*nsupr],
 				  nsupr*sizeof(double), nbrow*sizeof(double),
-				  ldu, cudaMemcpyHostToDevice, streams[0]);
+				  ldu, gpuMemcpyHostToDevice, streams[0]);
 	    }
 
 	    for (int i = 0; i < num_streams_used; ++i) {
@@ -193,17 +182,17 @@ if ( msg0 && msg2 ) {  /* L(:,k) and U(k,:) are not empty. */
 		assert(ldu*(st_col+num_col_stream) < bigu_size);
 		assert(nbrow*(st_col+num_col_stream) < buffer_size);
 
-		cudaMemcpyAsync(dB+b_offset, tempu+b_offset, B_stream_size,
-				cudaMemcpyHostToDevice, streams[stream_id]);
+		gpuMemcpyAsync(dB+b_offset, tempu+b_offset, B_stream_size,
+				gpuMemcpyHostToDevice, streams[stream_id]);
 
-		cublasCheckErrors(
-				  cublasSetStream(handle[stream_id],
+		gpublasCheckErrors(
+				  gpublasSetStream(handle[stream_id],
 						  streams[stream_id])
 				  );
 
-		cublasCheckErrors(
-				  cublasDgemm(handle[stream_id],
-					      CUBLAS_OP_N, CUBLAS_OP_N,
+		gpublasCheckErrors(
+				  gpublasDgemm(handle[stream_id],
+					      GPUBLAS_OP_N, GPUBLAS_OP_N,
 					      nbrow, num_col_stream, ldu,
                                               &alpha, dA, nbrow,
 					      &dB[b_offset], ldu,
@@ -211,9 +200,9 @@ if ( msg0 && msg2 ) {  /* L(:,k) and U(k,:) are not empty. */
                                               nbrow)
 				  );
 
-		checkCuda( cudaMemcpyAsync(tempv1, dC+c_offset,
+		checkGPU( gpuMemcpyAsync(tempv1, dC+c_offset,
 					   C_stream_size,
-					   cudaMemcpyDeviceToHost,
+					   gpuMemcpyDeviceToHost,
 					   streams[stream_id]) );
 #else
 		if ( num_col_stream > 0 ) {
@@ -457,7 +446,7 @@ if ( msg0 && msg2 ) {  /* L(:,k) and U(k,:) are not empty. */
                 int* indirect2_thread = indirect2 + ldt*thread_id;
                 double* tempv1;
                 for(i = 0; i < num_streams_used; i++) { /* i is private variable */
-                    checkCuda(cudaStreamSynchronize (streams[i]));
+                    checkGPU(gpuStreamSynchronize (streams[i]));
                     int jjj_st1 = (i==0) ? jjj_st + ncpu_blks : jjj_st + stream_end_col[i-1];
                     int jjj_end = jjj_st + stream_end_col[i];
                     assert(jjj_end-1<nub);

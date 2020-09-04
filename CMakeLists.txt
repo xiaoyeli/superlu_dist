@@ -8,7 +8,7 @@
 cmake_minimum_required(VERSION 3.8 FATAL_ERROR)
 
 # Project version numbers
-project(SuperLU_DIST C CXX CUDA)
+project(SuperLU_DIST C CXX)
 set(VERSION_MAJOR "6")
 set(VERSION_MINOR "1")
 set(VERSION_BugFix "1")
@@ -24,7 +24,8 @@ option(enable_tests  "Build tests" ON)
 option(enable_examples  "Build examples" ON)
 option(TPL_ENABLE_BLASLIB  "Build the CBLAS library" ${enable_blaslib_DEFAULT})
 option(TPL_ENABLE_PARMETISLIB   "Build the ParMETIS library" ON)
-option(TPL_ENABLE_CUDALIB   "Enable the CUDA libraries" ON)
+option(TPL_ENABLE_CUDALIB   "Enable the CUDA libraries" OFF)
+option(TPL_ENABLE_HIPLIB   "Enable the HIP libraries" OFF)
 option(TPL_ENABLE_LAPACKLIB "Enable LAPACK library" ON)
 option(TPL_PARMETIS_LIBRARIES "List of absolute paths to ParMETIS link libraries [].")
 option(TPL_PARMETIS_INCLUDE_DIRS "List of absolute paths to ParMETIS include directories [].")
@@ -161,6 +162,65 @@ if (enable_openmp)
     message("-- CMAKE_EXE_LINKER_FLAGS='${CMAKE_EXE_LINKER_FLAGS}'")
   endif()
 endif()
+
+
+ 
+include(CheckLanguage)
+
+#--------------------- CUDA libraries ---------------------
+if (TPL_ENABLE_CUDALIB)   ## want to use cuda
+  check_language(CUDA)
+  if(CMAKE_CUDA_COMPILER)
+    message("-- Enabled support for CUDA.")
+    enable_language(CUDA)
+    find_package(CUDAToolkit REQUIRED)
+
+    # make.inc exporting not yet tested
+    set(CUDA_LIB CUDA::cudart CUDA::cublas CUDA::cusolver)
+    string (REPLACE ";" " " CUDA_LIB_STR "${CUDA_LIB}")
+    set(CUDA_LIB_EXPORT ${CUDA_LIB_STR}) 
+    set(HAVE_CUDA TRUE)
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DHAVE_CUDA")
+    set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -DHAVE_CUDA")
+  else()
+    message("-- CUDA libraries not found.")
+  endif()
+endif()
+
+
+
+#--------------------- HIP libraries ---------------------
+if (TPL_ENABLE_HIPLIB)   ## want to use hip
+  list(APPEND CMAKE_MODULE_PATH "$ENV{HIP_PATH}/lib/cmake/hip")
+  find_package(hip)
+  if(hip_FOUND)
+    message("-- Enabled support for HIP.")
+    find_package(hipblas REQUIRED)
+    find_package(rocsolver REQUIRED)
+    find_package(rocblas REQUIRED)
+    set(HIP_LIB roc::hipblas roc::rocblas roc::rocsolver)
+
+    # make.inc exporting not yet tested
+    string (REPLACE ";" " " HIP_LIB_STR "${HIP_LIB}")
+    set(HIP_LIB_EXPORT ${HIP_LIB_STR}) 
+    set(HAVE_HIP TRUE)
+    if ("$ENV{HIP_PLATFORM}" STREQUAL "hcc")
+      set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DHAVE_HIP -D__HIP_PLATFORM_HCC__")
+      set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DHAVE_HIP -D__HIP_PLATFORM_HCC__")
+    elseif ("$ENV{HIP_PLATFORM}" STREQUAL "nvcc")
+      set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DHAVE_HIP -D__HIP_PLATFORM_NVCC__")
+      set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DHAVE_HIP -D__HIP_PLATFORM_NVCC__")
+    endif()
+
+
+  else()
+    message("-- HIP libraries not found.")
+  endif()
+endif()
+
+
+
+
 #--------------------- BLAS ---------------------
 if(NOT TPL_ENABLE_BLASLIB)
 #  set(TPL_BLAS_LIBRARIES "" CACHE FILEPATH
@@ -263,20 +323,6 @@ if(PARMETIS_FOUND)
   set(HAVE_PARMETIS TRUE)
 endif()
 
-
-
-#--------------------- CUDA libraries ---------------------
-if (TPL_ENABLE_CUDALIB)   ## want to use cuda
-  if (NOT TPL_CUDA_LIBRARIES)
-    message(FATAL_ERROR "TPL_CUDA_LIBRARIES option should be set for CUDA support to be enabled.")
-  endif()
-  message("-- Enabled support for CUDA.")
-  set(CUDA_LIB ${TPL_CUDA_LIBRARIES})
-  # fix up PARMETIS library names
-  string (REPLACE ";" " " CUDA_LIB_STR "${CUDA_LIB}")
-  set(CUDA_LIB_EXPORT ${CUDA_LIB_STR}) 
-  set(HAVE_CUDA TRUE)
-endif()
 
 
 #---------------------- Additional C linker library ---------

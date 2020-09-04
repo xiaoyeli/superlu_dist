@@ -16,19 +16,19 @@ at the top-level directory.
  * </pre>
  */
 
-#ifndef CUBLAS_UTILS_H
-#define CUBLAS_UTILS_H
+#ifndef GPUBLAS_UTILS_H
+#define GPUBLAS_UTILS_H
 
-#include <cublas_v2.h>
-#include "cuda.h"
-#include "cuda_runtime_api.h"
-#include "cuda_runtime.h"
+#ifdef GPU_ACC
+
+#include "gpu_wrapper.h"
 
 extern void DisplayHeader();
-extern const char* cublasGetErrorString(cublasStatus_t status);
-extern cudaError_t checkCuda(cudaError_t);
-extern cublasStatus_t checkCublas(cublasStatus_t);
-extern cublasHandle_t create_handle ();
-extern void destroy_handle (cublasHandle_t handle);
+extern const char* gpublasGetErrorString(gpublasStatus_t status);
+extern gpuError_t checkGPU(gpuError_t);
+extern gpublasStatus_t checkGPUblas(gpublasStatus_t);
+extern gpublasHandle_t create_handle ();
+extern void destroy_handle (gpublasHandle_t handle);
 
+#endif 
 #endif 

@@ -71,7 +71,7 @@ void *superlu_malloc_dist(size_t size)
 	ABORT("superlu_malloc: nonpositive size");
     }
 // #ifdef GPU_ACC    
-// 	cudaMallocManaged(&buf, size + DWORD,cudaMemAttachGlobal);
+// 	gpuMallocManaged(&buf, size + DWORD, gpuMemAttachGlobal);
 // #else 
 	buf = (char *) malloc(size + DWORD);
 // #endif
@@ -120,7 +120,7 @@ void superlu_free_dist(void *addr)
 	
 	/*free (addr);*/
 #ifdef GPU_ACC    
-    cudaError_t error = cudaFree(p);
+    gpuError_t error = gpuFree(p);
 #else 
 	free (p);
 #endif
@@ -130,19 +130,20 @@ void superlu_free_dist(void *addr)
  
 #else  /* The production mode. */
 
-// #ifdef GPU_ACC    
-#if 0   // Yang: use cudaMallocManaged seems to make the code much slower
+#ifdef GPU_ACC  // Yang: use gpuMallocManaged seems to make the code much slower  
+//#if 0  // Yang: use system malloc for managed memory access, this requires HMM (x86) or ATS (p9) supports 
 void *superlu_malloc_dist(size_t size) {
     void *buf;
-	cudaMallocManaged(&buf, size,cudaMemAttachGlobal);
+	gpuMallocManaged(&buf, size, gpuMemAttachGlobal);
+	// printf("%15d %15d\n",buf,size);
     return (buf);
 }
-void superlu_free_dist(void *addr) { cudaError_t error = cudaFree(addr);}
+void superlu_free_dist(void *addr) { gpuError_t error = gpuFree(addr);}
 
 #else 
 
-//#if  0 
-#if (__STDC_VERSION__ >= 201112L)
+#if  0 
+// #if (__STDC_VERSION__ >= 201112L)    // this is very slow on tulip
 
 void * superlu_malloc_dist(size_t size) {void* ptr;int alignment=1<<12;if(size>1<<19){alignment=1<<21;}posix_memalign( (void**)&(ptr), alignment, size );return(ptr);}
 void   superlu_free_dist(void * ptr)    {free(ptr);}

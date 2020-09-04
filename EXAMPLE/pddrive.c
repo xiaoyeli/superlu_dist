@@ -20,9 +20,9 @@ at the top-level directory.
  * December 6, 2018
  * </pre>
  */
-
 #include <math.h>
 #include "superlu_ddefs.h"
+
 
 /*! \brief
  *
@@ -55,7 +55,7 @@ int main(int argc, char *argv[])
     ScalePermstruct_t ScalePermstruct;
     LUstruct_t LUstruct;
     SOLVEstruct_t SOLVEstruct;
-    gridinfo_t grid;
+    gridinfo_t *grid;   //YL: this needs to be a pointer to be accessed from GPU, if ATS or HMM is not supported 
     double   *berr;
     double   *b, *xtrue;
     int    m, n;
@@ -75,7 +75,39 @@ int main(int argc, char *argv[])
        ------------------------------------------------------------*/
     //MPI_Init( &argc, &argv );
     MPI_Init_thread( &argc, &argv, MPI_THREAD_MULTIPLE, &omp_mpi_level); 
-	
+
+
+#ifdef GPU_ACC
+{
+    // Assign GPUs to MPI tasks on a node in a round-robin fashion
+    int size = 0;
+    MPI_Comm_size(MPI_COMM_WORLD,&size);
+    int rank = 0;
+    MPI_Comm_rank(MPI_COMM_WORLD,&rank);
+    MPI_Comm local;
+    MPI_Comm_split_type(MPI_COMM_WORLD,MPI_COMM_TYPE_SHARED,0,MPI_INFO_NULL,&local);
+    int lrank = MPI_PROC_NULL;
+    MPI_Comm_rank(local,&lrank);
+    int nd = 0;
+    gpuGetDeviceCount(&nd);
+    const int target = lrank%nd;
+    gpuSetDevice(target);
+    // Optionally print the GPU assignments
+    int myd = -1;
+    gpuGetDevice(&myd);
+    for (int i = 0; i < size; i++) {
+      MPI_Barrier(MPI_COMM_WORLD);
+      if (rank == i) {
+        printf("MPI task %d with node rank %d using gpu device %d (%d devices per node)\n",rank,lrank,myd,nd);
+        fflush(stdout);
+      }
+    }
+    MPI_Barrier(MPI_COMM_WORLD);
+}
+#endif
+
+
+
 
 #if ( VAMPIR>=1 )
     VT_traceoff(); 
@@ -113,9 +145,10 @@ int main(int argc, char *argv[])
     /* ------------------------------------------------------------
        INITIALIZE THE SUPERLU PROCESS GRID. 
        ------------------------------------------------------------*/
-    superlu_gridinit(MPI_COMM_WORLD, nprow, npcol, &grid);
+    grid = (gridinfo_t *) SUPERLU_MALLOC( sizeof(gridinfo_t) );  
+    superlu_gridinit(MPI_COMM_WORLD, nprow, npcol, grid);
 	
-    if(grid.iam==0){
+    if(grid->iam==0){
 	MPI_Query_thread(&omp_mpi_level);
     switch (omp_mpi_level) {
       case MPI_THREAD_SINGLE:
@@ -138,7 +171,7 @@ int main(int argc, char *argv[])
 	}
 	
     /* Bail out if I do not belong in the grid. */
-    iam = grid.iam;
+    iam = grid->iam;
     if ( iam >= nprow * npcol )	goto out;
     if ( !iam ) {
 	int v_major, v_minor, v_bugfix;
@@ -151,7 +184,7 @@ int main(int argc, char *argv[])
 	printf("Library version:\t%d.%d.%d\n", v_major, v_minor, v_bugfix);
 
 	printf("Input matrix file:\t%s\n", *cpp);
-        printf("Process grid:\t\t%d X %d\n", (int)grid.nprow, (int)grid.npcol);
+        printf("Process grid:\t\t%d X %d\n", (int)grid->nprow, (int)grid->npcol);
 	fflush(stdout);
     }
 
@@ -173,7 +206,7 @@ int main(int argc, char *argv[])
     /* ------------------------------------------------------------
        GET THE MATRIX FROM FILE AND SETUP THE RIGHT HAND SIDE. 
        ------------------------------------------------------------*/
-    dcreate_matrix_postfix(&A, nrhs, &b, &ldb, &xtrue, &ldx, fp, postfix, &grid);
+    dcreate_matrix_postfix(&A, nrhs, &b, &ldb, &xtrue, &ldx, fp, postfix, grid);
 
     if ( !(berr = doubleMalloc_dist(nrhs)) )
 	ABORT("Malloc fails for berr[].");
@@ -228,15 +261,15 @@ int main(int argc, char *argv[])
     PStatInit(&stat);
 
     /* Call the linear equation solver. */
-    pdgssvx(&options, &A, &ScalePermstruct, b, ldb, nrhs, &grid,
+    pdgssvx(&options, &A, &ScalePermstruct, b, ldb, nrhs, grid,
 	    &LUstruct, &SOLVEstruct, berr, &stat, &info);
 
 
     /* Check the accuracy of the solution. */
     pdinf_norm_error(iam, ((NRformat_loc *)A.Store)->m_loc,
-		     nrhs, b, ldb, xtrue, ldx, &grid);
+		     nrhs, b, ldb, xtrue, ldx, grid);
 
-    PStatPrint(&options, &stat, &grid);        /* Print the statistics. */
+    PStatPrint(&options, &stat, grid);        /* Print the statistics. */
 
     /* ------------------------------------------------------------
        DEALLOCATE STORAGE.
@@ -245,7 +278,7 @@ int main(int argc, char *argv[])
     PStatFree(&stat);
     Destroy_CompRowLoc_Matrix_dist(&A);
     ScalePermstructFree(&ScalePermstruct);
-    Destroy_LU(n, &grid, &LUstruct);
+    Destroy_LU(n, grid, &LUstruct);
     LUstructFree(&LUstruct);
     if ( options.SolveInitialized ) {
         dSolveFinalize(&options, &SOLVEstruct);
@@ -258,7 +291,8 @@ int main(int argc, char *argv[])
        RELEASE THE SUPERLU PROCESS GRID.
        ------------------------------------------------------------*/
 out:
-    superlu_gridexit(&grid);
+    superlu_gridexit(grid);
+    SUPERLU_FREE(grid);
 
     /* ------------------------------------------------------------
        TERMINATES THE MPI EXECUTION ENVIRONMENT.

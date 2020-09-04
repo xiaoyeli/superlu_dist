@@ -37,7 +37,7 @@ ALLAUX 	= sp_ienv.o etree.o sp_colorder.o get_perm_c.o \
 	  superlu_dist_version.o TreeInterface.o
 
 ifeq ($(HAVE_CUDA),TRUE)
-ALLAUX += cublas_utils.o pdgstrs_lsum_cuda.o pdgstrs_lsum_cuda_dlink.o
+ALLAUX += gpublas_utils.o pdgstrs_lsum_cuda.o pdgstrs_lsum_cuda_dlink.o
 endif
 
 ifeq ($(HAVE_COMBBLAS),TRUE)

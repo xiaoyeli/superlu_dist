@@ -167,11 +167,7 @@ Destroy_LU(int_t n, gridinfo_t *grid, LUstruct_t *LUstruct)
     for (i = 0; i < nb; ++i) 
 	if ( Llu->Lrowind_bc_ptr[i] ) {
 	    SUPERLU_FREE (Llu->Lrowind_bc_ptr[i]);
-#ifdef GPU_ACC
-	    checkCuda(cudaFreeHost(Llu->Lnzval_bc_ptr[i]));
-#else
 	    SUPERLU_FREE (Llu->Lnzval_bc_ptr[i]);
-#endif
 	}
     SUPERLU_FREE (Llu->Lrowind_bc_ptr);
     SUPERLU_FREE (Llu->Lnzval_bc_ptr);
@@ -1143,10 +1139,10 @@ get_max_buffer_size ()
 }
 
 int_t
-get_cublas_nb ()
+get_gpublas_nb ()
 {
     char *ttemp;
-    ttemp = getenv ("CUBLAS_NB");
+    ttemp = getenv ("GPUBLAS_NB");
     if (ttemp)
         return atoi (ttemp);
     else
@@ -1154,10 +1150,10 @@ get_cublas_nb ()
 }
 
 int_t
-get_num_cuda_streams ()
+get_num_gpu_streams ()
 {
     char *ttemp;
-    ttemp = getenv ("NUM_CUDA_STREAMS");
+    ttemp = getenv ("NUM_GPU_STREAMS");
     if (ttemp)
         return atoi (ttemp);
     else
@@ -1469,7 +1465,7 @@ gemm_division_cpu_gpu(
 )
 {
     int Ngem = sp_ienv_dist(7);  /*get_mnk_dgemm ();*/
-    int min_gpu_col = get_cublas_nb ();
+    int min_gpu_col = get_gpublas_nb ();
 
     // Ngem = 1000000000;
     /*
@@ -1596,7 +1592,7 @@ gemm_division_new (int * num_streams_used,   /*number of streams that will be us
     )
 {
     int Ngem = sp_ienv_dist(7); /*get_mnk_dgemm ();*/
-    int min_gpu_col = get_cublas_nb ();
+    int min_gpu_col = get_gpublas_nb ();
 
     // Ngem = 1000000000;
     /*

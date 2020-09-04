@@ -22,10 +22,7 @@ at the top-level directory.
  * February 8, 2019  version 6.1.1
  * </pre>
  */
-#include "cublas_utils.h" 
-#include <math.h>
-#include <cusparse.h>				 
-#include <cuda_profiler_api.h>				 
+#include <math.h>				 
 #include "superlu_ddefs.h"
 #ifndef CACHELINE
 #define CACHELINE 64  /* bytes, Xeon Phi KNL, Cori haswell, Edision */
@@ -104,22 +101,6 @@ _fcd ftcs1;
 _fcd ftcs2;
 _fcd ftcs3;
 #endif
-
-
-
-
-inline
-cudaError_t checkCuda1(cudaError_t result)
-{
-#if defined(DEBUG) || defined(_DEBUG)
-    if (result != cudaSuccess) {
-        fprintf(stderr, "CUDA Runtime Error: %s\n", cudaGetErrorString(result));
-        assert(result == cudaSuccess);
-    }
-#endif
-    return result;
-}
-
 
 
 
@@ -996,14 +977,16 @@ pdgstrs(int_t n, LUstruct_t *LUstruct,
 #ifdef GPU_ACC
 
 #ifdef GPUREF
+
+#ifdef HAVE_CUDA
 	int_t *cooCols,*cooRows;
 	double *cooVals;
 	int_t ntmp,nnzL;
 	
     cusparseHandle_t handle = NULL;
-    cudaStream_t stream = NULL;
+    gpuStream_t stream = NULL;
     cusparseStatus_t status1 = CUSPARSE_STATUS_SUCCESS;	
-	cudaError_t cudaStat = cudaSuccess;
+	gpuError_t gpuStat = gpuSuccess;
     cusparseMatDescr_t descrA = NULL;
     csrsm2Info_t info1 = NULL;	
 	
@@ -1029,12 +1012,15 @@ pdgstrs(int_t n, LUstruct_t *LUstruct,
     const int algo = 0; /* non-block version */	
 	const double h_one = 1.0;
 	const cusparseSolvePolicy_t policy = CUSPARSE_SOLVE_POLICY_NO_LEVEL;
-
+#else
+	printf("only cusparse is implemented\n");
+	exit(0);
+#endif
 #else	
 	
 	const int nwrp_block = 1; /* number of warps in each block */
 	const int warp_size = 32; /* number of threads per warp*/
-	cudaStream_t sid=0;
+	gpuStream_t sid=0;
 	int gid=0;
 #endif		
 #endif
@@ -1381,7 +1367,7 @@ if(procs==1){
 // #if 0 /* CPU trisolve*/
 
 #ifdef GPUREF /* use cuSparse*/
-
+#ifdef HAVE_CUDA
 	if ( !(Btmp = (double*)SUPERLU_MALLOC((nrhs*m_loc) * sizeof(double))) )
 		ABORT("Calloc fails for Btmp[].");			
 	if(procs>1){
@@ -1409,7 +1395,7 @@ dGenCOOLblocks(iam, nsupers, grid,Glu_persist,Llu, cooRows, cooCols, cooVals, &n
 	}		
 	
 	t1 = SuperLU_timer_();
-	checkCuda1(cudaStreamCreateWithFlags(&stream, cudaStreamDefault));		
+	checkGPU(gpuStreamCreateWithFlags(&stream, gpuStreamDefault));		
 	status1 = cusparseCreate(&handle);
     assert(CUSPARSE_STATUS_SUCCESS == status1);			
     status1 = cusparseSetStream(handle, stream);
@@ -1421,18 +1407,18 @@ dGenCOOLblocks(iam, nsupers, grid,Glu_persist,Llu, cooRows, cooCols, cooVals, &n
 	
 	t1 = SuperLU_timer_() - t1;	
 	if ( !iam ) {
-		printf(".. cuda initialize time\t%15.7f\n", t1);
+		printf(".. gpu initialize time\t%15.7f\n", t1);
 		fflush(stdout);
 	}		
 	t1 = SuperLU_timer_();
 	
 	
-	checkCuda1(cudaMalloc( (void**)&d_B, sizeof(double)*ntmp*nrhs));
-	checkCuda1(cudaMalloc( (void**)&d_cooRows, sizeof(int)*nnzL));
-	checkCuda1(cudaMalloc( (void**)&d_cooCols, sizeof(int)*nnzL));
-	checkCuda1(cudaMalloc( (void**)&d_P      , sizeof(int)*nnzL));
-	checkCuda1(cudaMalloc( (void**)&d_cooVals, sizeof(double)*nnzL));
-	checkCuda1(cudaMalloc( (void**)&d_csrVals, sizeof(double)*nnzL));
+	checkGPU(gpuMalloc( (void**)&d_B, sizeof(double)*ntmp*nrhs));
+	checkGPU(gpuMalloc( (void**)&d_cooRows, sizeof(int)*nnzL));
+	checkGPU(gpuMalloc( (void**)&d_cooCols, sizeof(int)*nnzL));
+	checkGPU(gpuMalloc( (void**)&d_P      , sizeof(int)*nnzL));
+	checkGPU(gpuMalloc( (void**)&d_cooVals, sizeof(double)*nnzL));
+	checkGPU(gpuMalloc( (void**)&d_csrVals, sizeof(double)*nnzL));
 	
 
 	for (i = 0; i < ntmp; ++i) {
@@ -1445,19 +1431,19 @@ dGenCOOLblocks(iam, nsupers, grid,Glu_persist,Llu, cooRows, cooCols, cooVals, &n
 
 	t1 = SuperLU_timer_() - t1;	
 	if ( !iam ) {
-		printf(".. cudaMalloc time\t%15.7f\n", t1);
+		printf(".. gpuMalloc time\t%15.7f\n", t1);
 		fflush(stdout);
 	}	
 	t1 = SuperLU_timer_();
 	
-	checkCuda1(cudaMemcpy(d_B, Btmp, sizeof(double)*nrhs*ntmp, cudaMemcpyHostToDevice));	
-	checkCuda1(cudaMemcpy(d_cooRows, cooRows, sizeof(int)*nnzL   , cudaMemcpyHostToDevice));
-	checkCuda1(cudaMemcpy(d_cooCols, cooCols, sizeof(int)*nnzL   , cudaMemcpyHostToDevice));
-	checkCuda1(cudaMemcpy(d_cooVals, cooVals, sizeof(double)*nnzL, cudaMemcpyHostToDevice));
+	checkGPU(gpuMemcpy(d_B, Btmp, sizeof(double)*nrhs*ntmp, gpuMemcpyHostToDevice));	
+	checkGPU(gpuMemcpy(d_cooRows, cooRows, sizeof(int)*nnzL   , gpuMemcpyHostToDevice));
+	checkGPU(gpuMemcpy(d_cooCols, cooCols, sizeof(int)*nnzL   , gpuMemcpyHostToDevice));
+	checkGPU(gpuMemcpy(d_cooVals, cooVals, sizeof(double)*nnzL, gpuMemcpyHostToDevice));
 	
 	
-	// checkCuda1(cudaDeviceSynchronize);
-	checkCuda1(cudaStreamSynchronize(stream));
+	// checkGPU(cudaDeviceSynchronize);
+	checkGPU(gpuStreamSynchronize(stream));
 	
 	t1 = SuperLU_timer_() - t1;	
 	if ( !iam ) {
@@ -1476,7 +1462,7 @@ dGenCOOLblocks(iam, nsupers, grid,Glu_persist,Llu, cooRows, cooCols, cooVals, &n
         &pBufferSizeInBytes
     );
     assert( CUSPARSE_STATUS_SUCCESS == status1);		
-	checkCuda1(cudaMalloc( (void**)&pBuffer, sizeof(char)* pBufferSizeInBytes));	
+	checkGPU(gpuMalloc( (void**)&pBuffer, sizeof(char)* pBufferSizeInBytes));	
 	
 	
     status1 = cusparseCreateIdentityPermutation(
@@ -1508,9 +1494,9 @@ dGenCOOLblocks(iam, nsupers, grid,Glu_persist,Llu, cooRows, cooCols, cooVals, &n
 
 
 	
-	// checkCuda1(cudaMalloc( (void**)&d_cooRows, sizeof(int)*nnzL));
+	// checkGPU(gpuMalloc( (void**)&d_cooRows, sizeof(int)*nnzL));
 	
-	checkCuda1(cudaMalloc( (void**)&d_csrRowPtr,(ntmp+1)*sizeof(d_csrRowPtr[0])));
+	checkGPU(gpuMalloc( (void**)&d_csrRowPtr,(ntmp+1)*sizeof(d_csrRowPtr[0])));
 	
 	status1= cusparseXcoo2csr(handle,d_cooRows,nnzL,ntmp,d_csrRowPtr,CUSPARSE_INDEX_BASE_ZERO);
 	assert( CUSPARSE_STATUS_SUCCESS == status1);
@@ -1518,8 +1504,8 @@ dGenCOOLblocks(iam, nsupers, grid,Glu_persist,Llu, cooRows, cooCols, cooVals, &n
 
 
 
-	// checkCuda1(cudaDeviceSynchronize);
-	checkCuda1(cudaStreamSynchronize(stream));
+	// checkGPU(gpuDeviceSynchronize);
+	checkGPU(gpuStreamSynchronize(stream));
 	
 	t1 = SuperLU_timer_() - t1;	
 	if ( !iam ) {
@@ -1560,8 +1546,8 @@ dGenCOOLblocks(iam, nsupers, grid,Glu_persist,Llu, cooRows, cooCols, cooVals, &n
     assert(CUSPARSE_STATUS_SUCCESS == status1);	
 	
 	printf("lworkInBytes  = %lld \n", (long long)lworkInBytes);
-    if (NULL != d_work) { cudaFree(d_work); }	
-	checkCuda1(cudaMalloc( (void**)&d_work, lworkInBytes));
+    if (NULL != d_work) { gpuFree(d_work); }	
+	checkGPU(gpuMalloc( (void**)&d_work, lworkInBytes));
 	
     status1 = cusparseDcsrsm2_analysis(
         handle,
@@ -1610,8 +1596,8 @@ dGenCOOLblocks(iam, nsupers, grid,Glu_persist,Llu, cooRows, cooCols, cooVals, &n
         policy,
         d_work);
     assert(CUSPARSE_STATUS_SUCCESS == status1);
-    // checkCuda1(cudaDeviceSynchronize);
-	checkCuda1(cudaStreamSynchronize(stream));
+    // checkGPU(gpuDeviceSynchronize);
+	checkGPU(gpuStreamSynchronize(stream));
 	
 	t1 = SuperLU_timer_() - t1;	
 	if ( !iam ) {
@@ -1620,9 +1606,9 @@ dGenCOOLblocks(iam, nsupers, grid,Glu_persist,Llu, cooRows, cooCols, cooVals, &n
 	}	
 	
 	t1 = SuperLU_timer_();
-	checkCuda1(cudaMemcpy(Btmp, d_B, sizeof(double)*ntmp*nrhs, cudaMemcpyDeviceToHost));
-	// checkCuda1(cudaDeviceSynchronize);
-	checkCuda1(cudaStreamSynchronize(stream));
+	checkGPU(gpuMemcpy(Btmp, d_B, sizeof(double)*ntmp*nrhs, gpuMemcpyDeviceToHost));
+	// checkGPU(gpuDeviceSynchronize);
+	checkGPU(gpuStreamSynchronize(stream));
 	t1 = SuperLU_timer_() - t1;	
 	if ( !iam ) {
 		printf(".. DeviceToHost time\t%15.7f\n", t1);
@@ -1645,7 +1631,7 @@ dGenCOOLblocks(iam, nsupers, grid,Glu_persist,Llu, cooRows, cooCols, cooVals, &n
 		}
 	}
 	SUPERLU_FREE(Btmp); 
-	
+#endif	
 	  
 #else
 	if ( !(recvbuf_BC_gpu = (double*)SUPERLU_MALLOC(maxrecvsz*  CEILING( nsupers, grid->npcol) * sizeof(double))) )  // used for receiving and forwarding x on each thread
@@ -1653,18 +1639,18 @@ dGenCOOLblocks(iam, nsupers, grid,Glu_persist,Llu, cooRows, cooCols, cooVals, &n
 	if ( !(recvbuf_RD_gpu = (double*)SUPERLU_MALLOC(2*maxrecvsz*  CEILING( nsupers, grid->nprow) * sizeof(double))) )  // used for receiving and forwarding lsum on each thread
 		ABORT("Malloc fails for recvbuf_RD_gpu[].");
 
-	cudaMemPrefetchAsync(lsum, sizelsum*num_thread * sizeof(double), gid, sid);
-	cudaMemPrefetchAsync(recvbuf_BC_gpu, maxrecvsz*  CEILING( nsupers, grid->npcol) * sizeof(double), gid, sid);
-	cudaMemPrefetchAsync(recvbuf_RD_gpu, 2*maxrecvsz*  CEILING( nsupers, grid->nprow) * sizeof(double), gid, sid);
-	cudaMemPrefetchAsync(x, (ldalsum * nrhs + nlb * XK_H) * sizeof(double), gid, sid);
-	cudaMemPrefetchAsync(fmod, (nlb*aln_i) * sizeof(int_t), gid, sid);
-	cudaMemPrefetchAsync(Llu->LRtree_ptr, CEILING( nsupers, grid->nprow ) * sizeof(C_Tree), gid, sid);
-	cudaMemPrefetchAsync(Llu->LBtree_ptr, CEILING( nsupers, grid->npcol ) * sizeof(C_Tree), gid, sid);
+	gpuMemPrefetchAsync(lsum, sizelsum*num_thread * sizeof(double), gid, sid);
+	gpuMemPrefetchAsync(recvbuf_BC_gpu, maxrecvsz*  CEILING( nsupers, grid->npcol) * sizeof(double), gid, sid);
+	gpuMemPrefetchAsync(recvbuf_RD_gpu, 2*maxrecvsz*  CEILING( nsupers, grid->nprow) * sizeof(double), gid, sid);
+	gpuMemPrefetchAsync(x, (ldalsum * nrhs + nlb * XK_H) * sizeof(double), gid, sid);
+	gpuMemPrefetchAsync(fmod, (nlb*aln_i) * sizeof(int_t), gid, sid);
+	gpuMemPrefetchAsync(Llu->LRtree_ptr, CEILING( nsupers, grid->nprow ) * sizeof(C_Tree), gid, sid);
+	gpuMemPrefetchAsync(Llu->LBtree_ptr, CEILING( nsupers, grid->npcol ) * sizeof(C_Tree), gid, sid);
 	for(lk=0;lk<CEILING(nsupers, grid->npcol);lk++){  
 		if(!Llu->Linv_bc_ptr[lk]){
 			k = mycol+lk*grid->npcol;  /* not sure */
 			knsupc = SuperSize( k );
-			cudaMemPrefetchAsync(Llu->Linv_bc_ptr[lk], knsupc*knsupc*sizeof (double), gid, sid);
+			gpuMemPrefetchAsync(Llu->Linv_bc_ptr[lk], knsupc*knsupc*sizeof (double), gid, sid);
 		}
 	}
 

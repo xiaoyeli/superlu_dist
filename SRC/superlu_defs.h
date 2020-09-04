@@ -40,10 +40,11 @@ at the top-level directory.
 #endif
 
 #ifdef GPU_ACC
-#include "cuda.h"
-#include "cuda_runtime_api.h"
-#include "cuda_runtime.h"
+
+
+#include "gpu_wrapper.h"
 #endif
+
 
 
 #include <mpi.h>
@@ -653,7 +654,7 @@ typedef struct {
 } superlu_dist_mem_usage_t;
 
 /* 
- *-- The new structures added in the hybrid CUDA + OpenMP + MPI code.
+ *-- The new structures added in the hybrid GPU + OpenMP + MPI code.
  */
 typedef struct {
     int_t rukp;
@@ -799,8 +800,8 @@ extern int_t psymbfact_prLUXpand
 #ifdef GPU_ACC   /* GPU related */
 extern void gemm_division_cpu_gpu (int *, int *, int *, int,
 				   int, int, int *, int);
-extern int_t get_cublas_nb ();
-extern int_t get_num_cuda_streams ();
+extern int_t get_gpublas_nb ();
+extern int_t get_num_gpu_streams ();
 #endif
 
 extern int get_thread_per_process();
