@@ -109,15 +109,15 @@ if ( msg0 && msg2 ) {  /* L(:,k) and U(k,:) are not empty. */
                 // TAU_STATIC_TIMER_STOP("work_divison");
 
             } /* pragma omp single */
-
             jjj = jjj_global;
+#if 0 // !!Sherry: this test is not necessary
             // printf("thread_id %d, jjj %d \n",thread_id,jjj );
             if (jjj == jjj_st+1 && full_u_cols[jjj_st] > ncol_max) {
                 printf("allocate more memory for buffer !!!!\n");
                 if(nbrow * full_u_cols[jjj_st] > buffer_size)
                     printf("%d buffer_size %d\n",nbrow*full_u_cols[jjj_st],buffer_size );
             }
-
+#endif
             // #pragma omp barrier
             /* gathering circuit */
             assert(jjj_st<nub);

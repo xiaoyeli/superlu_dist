@@ -9,7 +9,7 @@ module load cmake
 module unload cray-libsci_acc
 module load cray-libsci/19.06.1
 module load craype-accel-nvidia70
-module load rocm				 
+module load rocm/3.7.0			 
 export LD_LIBRARY_PATH="$CRAY_LD_LIBRARY_PATH:$LD_LIBRARY_PATH"
 
 export CRAYPE_LINK_TYPE=dynamic

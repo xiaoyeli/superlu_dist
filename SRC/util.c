@@ -164,13 +164,17 @@ Destroy_LU(int_t n, gridinfo_t *grid, LUstruct_t *LUstruct)
     nsupers = Glu_persist->supno[n-1] + 1;
 
     nb = CEILING(nsupers, grid->npcol);
-    for (i = 0; i < nb; ++i) 
-	if ( Llu->Lrowind_bc_ptr[i] ) {
-	    SUPERLU_FREE (Llu->Lrowind_bc_ptr[i]);
-	    SUPERLU_FREE (Llu->Lnzval_bc_ptr[i]);
-	}
+    // for (i = 0; i < nb; ++i) 
+	// if ( Llu->Lrowind_bc_ptr[i] ) {
+	    // SUPERLU_FREE (Llu->Lrowind_bc_ptr[i]);
+	    // SUPERLU_FREE (Llu->Lnzval_bc_ptr[i]);
+	// }
     SUPERLU_FREE (Llu->Lrowind_bc_ptr);
+    SUPERLU_FREE (Llu->Lrowind_bc_dat);
+    SUPERLU_FREE (Llu->Lrowind_bc_offset);    
     SUPERLU_FREE (Llu->Lnzval_bc_ptr);
+    SUPERLU_FREE (Llu->Lnzval_bc_dat);
+    SUPERLU_FREE (Llu->Lnzval_bc_offset);
 
     nb = CEILING(nsupers, grid->nprow);
     for (i = 0; i < nb; ++i)
@@ -197,23 +201,28 @@ Destroy_LU(int_t n, gridinfo_t *grid, LUstruct_t *LUstruct)
     SUPERLU_FREE(Llu->bsendx_plist);
     SUPERLU_FREE(Llu->mod_bit);
 
-    nb = CEILING(nsupers, grid->npcol);
-    for (i = 0; i < nb; ++i) 
-	if ( Llu->Lindval_loc_bc_ptr[i]!=NULL) {
-	    SUPERLU_FREE (Llu->Lindval_loc_bc_ptr[i]);
-	}	
+    // nb = CEILING(nsupers, grid->npcol);
+    // for (i = 0; i < nb; ++i) 
+	// if ( Llu->Lindval_loc_bc_ptr[i]!=NULL) {
+	//     SUPERLU_FREE (Llu->Lindval_loc_bc_ptr[i]);
+	// }	
     SUPERLU_FREE(Llu->Lindval_loc_bc_ptr);
+    SUPERLU_FREE(Llu->Lindval_loc_bc_dat);
+    SUPERLU_FREE(Llu->Lindval_loc_bc_offset);
 	
     nb = CEILING(nsupers, grid->npcol);
     for (i=0; i<nb; ++i) {
-	if(Llu->Linv_bc_ptr[i]!=NULL) {
-	    SUPERLU_FREE(Llu->Linv_bc_ptr[i]);
-	}
+	// if(Llu->Linv_bc_ptr[i]!=NULL) {
+	//     SUPERLU_FREE(Llu->Linv_bc_ptr[i]);
+	// }
+
 	if(Llu->Uinv_bc_ptr[i]!=NULL){
 	    SUPERLU_FREE(Llu->Uinv_bc_ptr[i]);
 	}	
     }
     SUPERLU_FREE(Llu->Linv_bc_ptr);
+    SUPERLU_FREE(Llu->Linv_bc_dat);
+    SUPERLU_FREE(Llu->Linv_bc_offset);
     SUPERLU_FREE(Llu->Uinv_bc_ptr);
     SUPERLU_FREE(Llu->Unnz);
 	

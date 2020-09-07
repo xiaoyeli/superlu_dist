@@ -128,7 +128,7 @@ OMP_NUM_THREADS=$NTH
     # export OMP_PLACES=threads
     # export OMP_PROC_BIND=spread
     mkdir -p $MAT
-    srun -n $CORE_VAL -c $NTH --cpu_bind=cores $FILE -c $NCOL -r $NROW $INPUT_DIR/$MAT | tee ./$MAT/SLU.o_mpi_${NROW}x${NCOL}_${OMP_NUM_THREADS}_mrhs
+    srun -n $CORE_VAL -c $NTH --cpu_bind=cores nvprof --profile-from-start off $FILE -c $NCOL -r $NROW $INPUT_DIR/$MAT | tee ./$MAT/SLU.o_mpi_${NROW}x${NCOL}_${OMP_NUM_THREADS}_mrhs
     # Add final line (srun line) to temporary slurm script
 
   done

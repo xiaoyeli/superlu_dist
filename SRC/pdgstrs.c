@@ -1634,32 +1634,105 @@ dGenCOOLblocks(iam, nsupers, grid,Glu_persist,Llu, cooRows, cooCols, cooVals, &n
 #endif	
 	  
 #else
-	if ( !(recvbuf_BC_gpu = (double*)SUPERLU_MALLOC(maxrecvsz*  CEILING( nsupers, grid->npcol) * sizeof(double))) )  // used for receiving and forwarding x on each thread
-		ABORT("Malloc fails for recvbuf_BC_gpu[].");
-	if ( !(recvbuf_RD_gpu = (double*)SUPERLU_MALLOC(2*maxrecvsz*  CEILING( nsupers, grid->nprow) * sizeof(double))) )  // used for receiving and forwarding lsum on each thread
-		ABORT("Malloc fails for recvbuf_RD_gpu[].");
 
-	gpuMemPrefetchAsync(lsum, sizelsum*num_thread * sizeof(double), gid, sid);
-	gpuMemPrefetchAsync(recvbuf_BC_gpu, maxrecvsz*  CEILING( nsupers, grid->npcol) * sizeof(double), gid, sid);
-	gpuMemPrefetchAsync(recvbuf_RD_gpu, 2*maxrecvsz*  CEILING( nsupers, grid->nprow) * sizeof(double), gid, sid);
-	gpuMemPrefetchAsync(x, (ldalsum * nrhs + nlb * XK_H) * sizeof(double), gid, sid);
-	gpuMemPrefetchAsync(fmod, (nlb*aln_i) * sizeof(int_t), gid, sid);
-	gpuMemPrefetchAsync(Llu->LRtree_ptr, CEILING( nsupers, grid->nprow ) * sizeof(C_Tree), gid, sid);
-	gpuMemPrefetchAsync(Llu->LBtree_ptr, CEILING( nsupers, grid->npcol ) * sizeof(C_Tree), gid, sid);
-	for(lk=0;lk<CEILING(nsupers, grid->npcol);lk++){  
-		if(!Llu->Linv_bc_ptr[lk]){
-			k = mycol+lk*grid->npcol;  /* not sure */
-			knsupc = SuperSize( k );
-			gpuMemPrefetchAsync(Llu->Linv_bc_ptr[lk], knsupc*knsupc*sizeof (double), gid, sid);
-		}
-	}
+// #if HAVE_CUDA
+// cudaProfilerStart(); 
+// #endif
 
+
+	gridinfo_t *d_grid = NULL;
+    int_t *d_Lrowind_bc_dat = NULL;     
+    long int *d_Lrowind_bc_offset = NULL;      
+    double *d_Lnzval_bc_dat = NULL;     
+    long int *d_Lnzval_bc_offset = NULL;     
+    double *d_Linv_bc_dat = NULL;     
+    long int *d_Linv_bc_offset = NULL;     
+    int_t *d_Lindval_loc_bc_dat = NULL;     
+    long int *d_Lindval_loc_bc_offset = NULL;     
+	int_t  *d_ilsum = NULL;
+	double *d_x = NULL;
+	double *d_lsum = NULL;
+	int_t *d_xsup = NULL;
+
+    C_Tree  *d_LBtree_ptr = NULL;
+    C_Tree  *d_LRtree_ptr = NULL;
+    C_Tree  *d_fmod = NULL;
+
+	checkGPU(gpuMalloc( (void**)&d_grid, sizeof(gridinfo_t)));
+	checkGPU(gpuMemcpy(d_grid, grid, sizeof(gridinfo_t), gpuMemcpyHostToDevice));	
+
+	checkGPU(gpuMalloc( (void**)&recvbuf_BC_gpu, maxrecvsz*  CEILING( nsupers, grid->npcol) * sizeof(double))); // used for receiving and forwarding x on each thread
+	checkGPU(gpuMalloc( (void**)&recvbuf_BC_gpu, 2*maxrecvsz*  CEILING( nsupers, grid->nprow) * sizeof(double))); // used for receiving and forwarding lsum on each thread
+
+	checkGPU(gpuMalloc( (void**)&d_LRtree_ptr, CEILING( nsupers, grid->nprow ) * sizeof(C_Tree)));
+	checkGPU(gpuMalloc( (void**)&d_LBtree_ptr, CEILING( nsupers, grid->npcol ) * sizeof(C_Tree)));
+	checkGPU(gpuMemcpy(d_LRtree_ptr, Llu->LRtree_ptr, CEILING( nsupers, grid->nprow ) * sizeof(C_Tree), gpuMemcpyHostToDevice));	
+	checkGPU(gpuMemcpy(d_LBtree_ptr, Llu->LBtree_ptr, CEILING( nsupers, grid->npcol ) * sizeof(C_Tree), gpuMemcpyHostToDevice));	
+
+	checkGPU(gpuMalloc( (void**)&d_fmod, (nlb*aln_i) * sizeof(int_t)));
+	checkGPU(gpuMemcpy(d_fmod, fmod, (nlb*aln_i) * sizeof(int_t), gpuMemcpyHostToDevice));	
+
+	checkGPU(gpuMalloc( (void**)&d_ilsum, (CEILING( nsupers, grid->nprow )+1) * sizeof(int_t)));
+	checkGPU(gpuMemcpy(d_ilsum, Llu->ilsum, (CEILING( nsupers, grid->nprow )+1) * sizeof(int_t), gpuMemcpyHostToDevice));	
+
+	checkGPU(gpuMalloc( (void**)&d_Lrowind_bc_dat, (Llu->Lrowind_bc_cnt) * sizeof(int_t)));
+	checkGPU(gpuMemcpy(d_Lrowind_bc_dat, Llu->Lrowind_bc_dat, (Llu->Lrowind_bc_cnt) * sizeof(int_t), gpuMemcpyHostToDevice));	
+	checkGPU(gpuMalloc( (void**)&d_Lindval_loc_bc_dat, (Llu->Lindval_loc_bc_cnt) * sizeof(int_t)));
+	checkGPU(gpuMemcpy(d_Lindval_loc_bc_dat, Llu->Lindval_loc_bc_dat, (Llu->Lindval_loc_bc_cnt) * sizeof(int_t), gpuMemcpyHostToDevice));	
+	checkGPU(gpuMalloc( (void**)&d_Lnzval_bc_dat, (Llu->Lnzval_bc_cnt) * sizeof(double)));
+	checkGPU(gpuMemcpy(d_Lnzval_bc_dat, Llu->Lnzval_bc_dat, (Llu->Lnzval_bc_cnt) * sizeof(double), gpuMemcpyHostToDevice));	
+	checkGPU(gpuMalloc( (void**)&d_Linv_bc_dat, (Llu->Linv_bc_cnt) * sizeof(double)));
+	checkGPU(gpuMemcpy(d_Linv_bc_dat, Llu->Linv_bc_dat, (Llu->Linv_bc_cnt) * sizeof(double), gpuMemcpyHostToDevice));	
+
+	checkGPU(gpuMalloc( (void**)&d_Lrowind_bc_offset, CEILING( nsupers, grid->npcol ) * sizeof(long int)));
+	checkGPU(gpuMemcpy(d_Lrowind_bc_offset, Llu->Lrowind_bc_offset, CEILING( nsupers, grid->npcol ) * sizeof(long int), gpuMemcpyHostToDevice));	
+	checkGPU(gpuMalloc( (void**)&d_Lindval_loc_bc_offset, CEILING( nsupers, grid->npcol ) * sizeof(long int)));
+	checkGPU(gpuMemcpy(d_Lindval_loc_bc_offset, Llu->Lindval_loc_bc_offset, CEILING( nsupers, grid->npcol ) * sizeof(long int), gpuMemcpyHostToDevice));	
+	checkGPU(gpuMalloc( (void**)&d_Lnzval_bc_offset, CEILING( nsupers, grid->npcol ) * sizeof(long int)));
+	checkGPU(gpuMemcpy(d_Lnzval_bc_offset, Llu->Lnzval_bc_offset, CEILING( nsupers, grid->npcol ) * sizeof(long int), gpuMemcpyHostToDevice));	
+	checkGPU(gpuMalloc( (void**)&d_Linv_bc_offset, CEILING( nsupers, grid->npcol ) * sizeof(long int)));
+	checkGPU(gpuMemcpy(d_Linv_bc_offset, Llu->Linv_bc_offset, CEILING( nsupers, grid->npcol ) * sizeof(long int), gpuMemcpyHostToDevice));	
+
+
+	checkGPU(gpuMalloc( (void**)&d_lsum, sizelsum*num_thread * sizeof(double)));
+	checkGPU(gpuMemcpy(d_lsum, lsum, sizelsum*num_thread * sizeof(double), gpuMemcpyHostToDevice));	
+	checkGPU(gpuMalloc( (void**)&d_x, (ldalsum * nrhs + nlb * XK_H) * sizeof(double)));
+	checkGPU(gpuMemcpy(d_x, x, (ldalsum * nrhs + nlb * XK_H) * sizeof(double), gpuMemcpyHostToDevice));	
+
+	checkGPU(gpuMalloc( (void**)&d_xsup, (n+1) * sizeof(int_t)));
+	checkGPU(gpuMemcpy(d_xsup, xsup, (n+1) * sizeof(int_t), gpuMemcpyHostToDevice));
+		
+checkGPU(gpuDeviceSynchronize);
 k = CEILING( nsupers, grid->npcol);/* Number of local block columns divided by #warps per block used as number of thread blocks*/
 knsupc = sp_ienv_dist(3);
-dlsum_fmod_inv_cuda_wrap(k,nlb,DIM_X,DIM_Y,lsum,x,rtemp,nrhs,knsupc,nsupers,fmod,xsup,grid,Llu,recvbuf_BC_gpu,recvbuf_RD_gpu,maxrecvsz);
+dlsum_fmod_inv_cuda_wrap(k,nlb,DIM_X,DIM_Y,d_lsum,d_x,nrhs,knsupc,nsupers,d_fmod,d_LBtree_ptr,d_LRtree_ptr,d_ilsum,d_Lrowind_bc_dat, d_Lrowind_bc_offset, d_Lnzval_bc_dat, d_Lnzval_bc_offset, d_Linv_bc_dat, d_Linv_bc_offset, d_Lindval_loc_bc_dat, d_Lindval_loc_bc_offset,d_xsup,d_grid,recvbuf_BC_gpu,recvbuf_RD_gpu,maxrecvsz);
 
-SUPERLU_FREE(recvbuf_BC_gpu);
-SUPERLU_FREE(recvbuf_RD_gpu);
+	checkGPU(gpuMemcpy(x, d_x, (ldalsum * nrhs + nlb * XK_H) * sizeof(double), gpuMemcpyDeviceToHost));
+
+
+
+	checkGPU (gpuFree (d_grid));
+	checkGPU (gpuFree (d_fmod));
+	checkGPU (gpuFree (d_xsup));
+	checkGPU (gpuFree (d_LRtree_ptr));
+	checkGPU (gpuFree (d_LBtree_ptr));
+	checkGPU (gpuFree (recvbuf_BC_gpu));
+	checkGPU (gpuFree (recvbuf_RD_gpu));
+	checkGPU (gpuFree (d_ilsum));
+	checkGPU (gpuFree (d_Lrowind_bc_dat));
+	checkGPU (gpuFree (d_Lrowind_bc_offset));
+	checkGPU (gpuFree (d_Lnzval_bc_dat));
+	checkGPU (gpuFree (d_Lnzval_bc_offset));
+	checkGPU (gpuFree (d_Linv_bc_dat));
+	checkGPU (gpuFree (d_Linv_bc_offset));
+	checkGPU (gpuFree (d_Lindval_loc_bc_dat));
+	checkGPU (gpuFree (d_Lindval_loc_bc_offset));
+	checkGPU (gpuFree (d_x));
+	checkGPU (gpuFree (d_lsum));
+
+// #if HAVE_CUDA
+// cudaProfilerStop(); 
+// #endif
 
 #endif 	
 

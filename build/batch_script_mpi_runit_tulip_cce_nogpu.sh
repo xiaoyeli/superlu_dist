@@ -92,8 +92,9 @@ OMP_NUM_THREADS=$NTH
 #for NSUP in 128 64 32 16 8
 #do
   # for MAT in atmosmodl.rb nlpkkt80.mtx torso3.mtx Ga19As19H42.mtx A22.mtx cage13.rb 
-  for MAT in HTS/gas_sensor.mtx HTS/vanbody.mtx HTS/ct20stif.mtx HTS/torsion1.mtx HTS/xenon1.mtx HTS/dawson5.mtx
-
+ # for MAT in HTS/gas_sensor.mtx HTS/vanbody.mtx HTS/ct20stif.mtx HTS/torsion1.mtx HTS/xenon1.mtx HTS/dawson5.mtx
+ for MAT in HTS/gas_sensor.mtx 
+#  for MAT in big.rua
 
 
 

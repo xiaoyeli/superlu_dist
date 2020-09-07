@@ -86,9 +86,25 @@ typedef struct {
 #define MAX_LOOKAHEADS 50
 typedef struct {
     int_t   **Lrowind_bc_ptr; /* size ceil(NSUPERS/Pc)                 */
+    int_t *Lrowind_bc_dat;  /* size sum of sizes of Lrowind_bc_ptr[lk])                 */   
+    long int *Lrowind_bc_offset;  /* size ceil(NSUPERS/Pc)                 */     
+	long int Lrowind_bc_cnt;
+
     double **Lnzval_bc_ptr;  /* size ceil(NSUPERS/Pc)                 */
+    double *Lnzval_bc_dat;  /* size sum of sizes of Lnzval_bc_ptr[lk])                 */   
+    long int *Lnzval_bc_offset;  /* size ceil(NSUPERS/Pc)                 */    
+	long int Lnzval_bc_cnt;
+
     double **Linv_bc_ptr;  /* size ceil(NSUPERS/Pc)                 */
+    double *Linv_bc_dat;  /* size sum of sizes of Linv_bc_ptr[lk])                 */   
+    long int *Linv_bc_offset;  /* size ceil(NSUPERS/Pc)                 */   
+	long int Linv_bc_cnt;
+
     int_t   **Lindval_loc_bc_ptr; /* size ceil(NSUPERS/Pc)  pointers to locations in Lrowind_bc_ptr and Lnzval_bc_ptr */
+    int_t *Lindval_loc_bc_dat;  /* size sum of sizes of Lindval_loc_bc_ptr[lk])                 */   
+    long int *Lindval_loc_bc_offset;  /* size ceil(NSUPERS/Pc)                 */   
+	long int Lindval_loc_bc_cnt;  
+
     int_t   *Unnz; /* number of nonzeros per block column in U*/
 	int_t   **Lrowind_bc_2_lsum; /* size ceil(NSUPERS/Pc)  map indices of Lrowind_bc_ptr to indices of lsum  */
     double  **Uinv_bc_ptr;  /* size ceil(NSUPERS/Pc)     	*/
@@ -345,7 +361,7 @@ extern void dlsum_fmod_inv(double *, double *, double *, double *,
 		       int_t *, gridinfo_t *, LocalLU_t *,
 		       SuperLUStat_t **, int_t *, int_t *, int_t, int_t, int_t, int_t, int, int);
 			   
-extern void dlsum_fmod_inv_cuda_wrap(int_t, int_t, int_t, int_t, double *,double *,double *,int,int, int_t , int_t *, int_t *, gridinfo_t *, LocalLU_t *, double *, double *, int_t);			   
+// extern void dlsum_fmod_inv_cuda_wrap(int_t, int_t, int_t, int_t, double *,double *,double *,int,int, int_t , int_t *, C_Tree  *, C_Tree  *, int_t *, gridinfo_t *, LocalLU_t *, double *, double *, int_t);			   
 			   
 extern void dlsum_fmod_inv_master(double *, double *, double *, double *,
 		       int, int, int_t , int_t *, int_t,

@@ -1000,14 +1000,23 @@ __device__ void C_RdTree_forwardMessageSimple_Device(C_Tree* Tree, void* localBu
   int_t nblock_ex,
   double *lsum,    /* Sum of local modifications.                        */
   double *x,       /* X array (local)                                    */
-  double *rtemp,   /* Result of full matrix-vector multiply.             */
   int   nrhs,      /* Number of right-hand sides.                        */
   int   maxsup,      /* Max supernode size.                        */
   int_t   nsupers,      /* Number of total supernodes.                        */
   int_t *fmod,     /* Modification count for L-solve.                    */
+  C_Tree  *LBtree_ptr,
+  C_Tree  *LRtree_ptr,
+  int_t *ilsum,
+  int_t *Lrowind_bc_dat,      
+  long int *Lrowind_bc_offset,      
+  double *Lnzval_bc_dat,     
+  long int *Lnzval_bc_offset,     
+  double *Linv_bc_dat,     
+  long int *Linv_bc_offset,     
+  int_t *Lindval_loc_bc_dat,     
+  long int *Lindval_loc_bc_offset,   
   int_t *xsup,
   gridinfo_t *grid,
-  LocalLU_t *Llu,
   double *recvbuf_BC_gpu,
   double *recvbuf_RD_gpu,
   int_t maxrecvsz
@@ -1026,8 +1035,6 @@ __device__ void C_RdTree_forwardMessageSimple_Device(C_Tree* Tree, void* localBu
 	 MPI_Status status;
 	 int test_flag;
 	 yes_no_t done;
-	 C_Tree  *LBtree_ptr = Llu->LBtree_ptr;
-	 C_Tree  *LRtree_ptr = Llu->LRtree_ptr;
 	 int_t* idx_lsum,idx_lsum1;
 	 const int Nbk=1;
 	 __shared__ double rtemp_loc[128]; 
@@ -1043,8 +1050,7 @@ __device__ void C_RdTree_forwardMessageSimple_Device(C_Tree* Tree, void* localBu
 	 aln_i = 1;//ceil(CACHELINE/(double)iword);
 	 int   knsupc;    /* Size of supernode k.                               */
 	 int_t nlb;       /* Number of L blocks.                                */
-	 int_t  *ilsum = Llu->ilsum; /* Starting position of each supernode in lsum.   */
-	 
+
 	 int_t bid;
 	 int_t tmp;
 	 int_t tid = threadIdx_x + threadIdx_y * blockDim_x; 
@@ -1076,7 +1082,7 @@ __device__ void C_RdTree_forwardMessageSimple_Device(C_Tree* Tree, void* localBu
 	 if(bid<nbcol_loc){
 	 
 	 
-		 if(!Llu->Lrowind_bc_ptr[bid]){
+		 if(Lrowind_bc_offset[bid]==-1){
 		 return;
 		 }
 		 
@@ -1087,11 +1093,11 @@ __device__ void C_RdTree_forwardMessageSimple_Device(C_Tree* Tree, void* localBu
 		 myrow = MYROW( iam, grid );
 		 k = mycol+lk*grid->npcol;
 		 knsupc = SuperSize( k );
-		 lsub = Llu->Lrowind_bc_ptr[lk];
+		 lsub = &Lrowind_bc_dat[Lrowind_bc_offset[lk]];
 		 iam = grid->iam;
 		 krow = PROW( k, grid );	
-		 lusup = Llu->Lnzval_bc_ptr[lk];
-		 lloc = Llu->Lindval_loc_bc_ptr[lk];
+		 lusup = &Lnzval_bc_dat[Lnzval_bc_offset[lk]];
+		 lloc = &Lindval_loc_bc_dat[Lindval_loc_bc_offset[lk]];
 		 nsupr = lsub[1];
 		 
 		 if(myrow==krow){
@@ -1138,12 +1144,12 @@ __device__ void C_RdTree_forwardMessageSimple_Device(C_Tree* Tree, void* localBu
 				 RHS_ITERATE(j)
 					 for (i = tid; i < knsupc; i+=block_size)
 						 x[i + ii + j*knsupc] += lsum[i + il + j*knsupc ];
-				 // __syncthreads();
+				 __syncthreads();
 				 
 				 
-				 if(Llu->inv == 1){
+				//  if(Llu->inv == 1){
 				 
-					 Linv = Llu->Linv_bc_ptr[lk];
+					 Linv = &Linv_bc_dat[Linv_bc_offset[lk]];
 						 
 					 if(nrhs==1){
 					 
@@ -1214,7 +1220,7 @@ __device__ void C_RdTree_forwardMessageSimple_Device(C_Tree* Tree, void* localBu
 							 x[i + ii + j*knsupc] = lsum[i + il + j*knsupc ];
 						 __syncthreads(); 		
 					 }//if(nrhs==1)
-				 }
+				//  }
 				 
 				 RHS_ITERATE(j)
 				 for (i = tid; i < knsupc; i+=block_size)
@@ -1436,14 +1442,23 @@ __device__ void C_RdTree_forwardMessageSimple_Device(C_Tree* Tree, void* localBu
   int_t nthread_y,     /*kernel launch parameter*/
   double *lsum,    /* Sum of local modifications.                        */
   double *x,       /* X array (local)                                    */
-  double *rtemp,   /* Result of full matrix-vector multiply.             */
   int   nrhs,      /* Number of right-hand sides.                        */
   int   maxsup,      /* Max supernode size.                        */
   int_t   nsupers,      /* Number of total supernodes.                        */
   int_t *fmod,     /* Modification count for L-solve.                    */
+  C_Tree  *LBtree_ptr,
+  C_Tree  *LRtree_ptr,
+  int_t *ilsum,
+  int_t *Lrowind_bc_dat,   
+  long int *Lrowind_bc_offset,      
+  double *Lnzval_bc_dat,     
+  long int *Lnzval_bc_offset,     
+  double *Linv_bc_dat,     
+  long int *Linv_bc_offset,     
+  int_t *Lindval_loc_bc_dat,     
+  long int *Lindval_loc_bc_offset,     
   int_t *xsup,
   gridinfo_t *grid,
-  LocalLU_t *Llu,
   double * recvbuf_BC_gpu,
   double * recvbuf_RD_gpu,
   int_t maxrecvsz
@@ -1462,7 +1477,7 @@ __device__ void C_RdTree_forwardMessageSimple_Device(C_Tree* Tree, void* localBu
  
 	 // if(nrhs>1){
 		 dim3 dimBlock(nthread_x, nthread_y);
-		 dlsum_fmod_inv_cuda_mrhs<<< nbcol_loc+nblock_ex, dimBlock >>>(nbcol_loc,nblock_ex,lsum,x,rtemp,nrhs,maxsup,nsupers,fmod,xsup,grid,Llu,recvbuf_BC_gpu,recvbuf_RD_gpu,maxrecvsz);
+		 dlsum_fmod_inv_cuda_mrhs<<< nbcol_loc+nblock_ex, dimBlock >>>(nbcol_loc,nblock_ex,lsum,x,nrhs,maxsup,nsupers,fmod,LBtree_ptr,LRtree_ptr,ilsum,Lrowind_bc_dat,Lrowind_bc_offset,Lnzval_bc_dat,Lnzval_bc_offset,Linv_bc_dat,Linv_bc_offset,Lindval_loc_bc_dat,Lindval_loc_bc_offset, xsup,grid,recvbuf_BC_gpu,recvbuf_RD_gpu,maxrecvsz);
 	 // }else{
 		 // dim3 dimBlock(nthread_x*nthread_y, 1);
 		 // dlsum_fmod_inv_cuda_1rhs<<< CEILING(nbcol_loc,NWARP), dimBlock >>>(lsum,x,rtemp,nrhs,maxsup,nsupers,fmod,xsup,grid,Llu);	
