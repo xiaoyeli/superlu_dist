@@ -120,7 +120,7 @@ int_t zSchurComplementSetup(
     LocalLU_t *Llu = LUstruct->Llu;
     int_t* xsup = Glu_persist->xsup;
 
-    int_t* ToRecv = Llu->ToRecv;
+    int* ToRecv = Llu->ToRecv;
     int_t iam = grid->iam;
 
     int_t myrow = MYROW (iam, grid);
@@ -355,7 +355,7 @@ int_t zSchurComplementSetupGPU(
     LocalLU_t *Llu = LUstruct->Llu;
     int_t* xsup = Glu_persist->xsup;
 
-    int_t* ToRecv = Llu->ToRecv;
+    int* ToRecv = Llu->ToRecv;
     int_t iam = grid->iam;
 
     int_t myrow = MYROW (iam, grid);

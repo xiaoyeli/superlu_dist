@@ -18,6 +18,7 @@ zread_binary(FILE *fp, int_t *m, int_t *n, int_t *nnz,
     nnz_read = fread(*nzval, dsize, (size_t) (2 * (*nnz)), fp);
     printf("# of doubles fread: %d\n", nnz_read);
     fclose(fp);
+    return 0;
 }
 
 int
@@ -37,4 +38,5 @@ zwrite_binary(int_t n, int_t nnz,
     printf("dump binary file ... # of doubles fwrite: %d\n", nnz_written);
     assert(nnz_written == 2*nnz);
     fclose(fp1);
+    return 0;
 }

@@ -365,8 +365,8 @@ pdgstrf2_trsm
  * The following functions are for the new pdgstrf2_dtrsm in the 3D code.
  *****************************************************************************/
 static
-int_t LpanelUpdate(int_t off0,  int_t nsupc, double* ublk_ptr, int_t ld_ujrow,
-                   double* lusup, int_t nsupr, SCT_t* SCT)
+int_t LpanelUpdate(int off0,  int nsupc, double* ublk_ptr, int ld_ujrow,
+                   double* lusup, int nsupr, SCT_t* SCT)
 {
     int_t l = nsupr - off0;
     double alpha = 1.0;
@@ -377,7 +377,7 @@ int_t LpanelUpdate(int_t off0,  int_t nsupc, double* ublk_ptr, int_t ld_ujrow,
     for (int i = 0; i < CEILING(l, GT); ++i)
     {
         int_t off = i * GT;
-        int_t len = SUPERLU_MIN(GT, l - i * GT);
+        int len = SUPERLU_MIN(GT, l - i * GT);
 #if 1
   #if defined (USE_VENDOR_BLAS)
         dtrsm_ ("R", "U", "N", "N", &len, &nsupc, &alpha,
@@ -421,7 +421,7 @@ void Local_Dgstrf2(superlu_dist_options_t *options, int_t k, double thresh,
     int_t jlst = FstBlockC (k + 1);
     double *lusup = Llu->Lnzval_bc_ptr[lk];
     int_t nsupc = SuperSize (k);
-    int_t nsupr;
+    int nsupr;
     if (Llu->Lrowind_bc_ptr[lk])
         nsupr = Llu->Lrowind_bc_ptr[lk][1];
     else
@@ -429,11 +429,11 @@ void Local_Dgstrf2(superlu_dist_options_t *options, int_t k, double thresh,
     double *ublk_ptr = BlockUFactor;
     double *ujrow = BlockUFactor;
     int_t luptr = 0;                  /* Point_t to the diagonal entries. */
-    int_t cols_left = nsupc;          /* supernode size */
+    int cols_left = nsupc;          /* supernode size */
     int_t u_diag_cnt = 0;
     int_t ld_ujrow = nsupc;       /* leading dimension of ujrow */
-    int_t incx = 1;
-    int_t incy = ld_ujrow;
+    int incx = 1;
+    int incy = ld_ujrow;
 
     for (int_t j = 0; j < jlst - jfst; ++j)   /* for each column in panel */
     {
@@ -481,7 +481,7 @@ void Local_Dgstrf2(superlu_dist_options_t *options, int_t k, double thresh,
         if (--cols_left)
         {
             /*following must be int*/
-            int_t l = nsupc - j - 1;
+            int l = nsupc - j - 1;
 
 	    /* Rank-1 update */
 #if 1
@@ -580,7 +580,7 @@ void pdgstrf2_xtrsm
     int nsupr;                  /* number of rows in the block (LDA) */
     int luptr;
     int_t myrow, krow, j, jfst, jlst, u_diag_cnt;
-    int_t nsupc;                /* number of columns in the block */
+    int nsupc;                /* number of columns in the block */
     int_t *xsup = Glu_persist->xsup;
     double *lusup;
     double *ujrow, *ublk_ptr;   /* pointer to the U block */
@@ -708,7 +708,7 @@ int_t dTrs2_ScatterU(int_t iukp, int_t rukp, int_t klst,
 
 int_t dTrs2_GatherTrsmScatter(int_t klst, int_t iukp, int_t rukp,
 			      int_t *usub, double *uval, double *tempv,
-			      int_t knsupc, int_t nsupr, double *lusup,
+			      int_t knsupc, int nsupr, double *lusup,
 			      Glu_persist_t *Glu_persist)    /*glupersist for xsup for supersize*/
 {
     double alpha = 1.0;
@@ -721,14 +721,14 @@ int_t dTrs2_GatherTrsmScatter(int_t klst, int_t iukp, int_t rukp,
 
     // printf("klst inside task%d\n", );
     /*find ldu */
-    int_t ldu = 0;
+    int ldu = 0;
     for (int_t jj = iukp; jj < iukp + nsupc; ++jj)
     {
         ldu = SUPERLU_MAX( klst - usub[jj], ldu) ;
     }
 
     /*pack U block into a dense Block*/
-    int_t ncols = dTrs2_GatherU(iukp, rukp, klst, nsupc, ldu, usub,
+    int ncols = dTrs2_GatherU(iukp, rukp, klst, nsupc, ldu, usub,
     	                           uval, tempv);
 
     /*now call dtrsm on packed dense block*/

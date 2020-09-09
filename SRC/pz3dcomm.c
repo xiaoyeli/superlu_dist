@@ -40,6 +40,7 @@ at the top-level directory.
 
 int_t zAllocLlu(int_t nsupers, LUstruct_t * LUstruct, gridinfo3d_t* grid3d)
 {
+    int i;
     int_t Pc = grid3d->npcol;
     int_t Pr = grid3d->nprow;
     
@@ -52,7 +53,7 @@ int_t zAllocLlu(int_t nsupers, LUstruct_t * LUstruct, gridinfo3d_t* grid3d)
     doublecomplex  **Lnzval_bc_ptr =
 	(doublecomplex **) SUPERLU_MALLOC(sizeof(doublecomplex*)*nbc);  /* size ceil(NSUPERS/Pc) */
 
-    for (int_t i = 0; i < nbc ; ++i)
+    for (i = 0; i < nbc ; ++i)
 	{
 	    /* code */
 	    Lrowind_bc_ptr[i] = NULL;
@@ -64,21 +65,33 @@ int_t zAllocLlu(int_t nsupers, LUstruct_t * LUstruct, gridinfo3d_t* grid3d)
     doublecomplex  **Unzval_br_ptr =
 	(doublecomplex **) SUPERLU_MALLOC(sizeof(doublecomplex*)*nbr); /* size ceil(NSUPERS/Pr) */
     
-    for (int_t i = 0; i < nbr ; ++i)
+    for (i = 0; i < nbr ; ++i)
 	{
 	    /* code */
 	    Ufstnz_br_ptr[i] = NULL;
 	    Unzval_br_ptr[i] = NULL;
 	}
     
+#if 0 // Sherry: change to int type    
     int_t *ToRecv = intCalloc_dist(nsupers); /* Recv from no one (0), left (1), and up (2).*/
     int_t *ToSendD = intCalloc_dist(nbr); /* Whether need to send down block row. */
     int_t **ToSendR = (int_t **) SUPERLU_MALLOC(nbc * sizeof(int_t*)); /* List of processes to send right block col. */
+#else
+                  /* Recv from no one (0), left (1), and up (2).*/
+    int *ToRecv = SUPERLU_MALLOC(nsupers * sizeof(int));
+    for (i = 0; i < nsupers; ++i) ToRecv[i] = 0;
+                  /* Whether need to send down block row. */
+    int *ToSendD = SUPERLU_MALLOC(nbr * sizeof(int));
+    for (i = 0; i < nbr; ++i) ToSendD[i] = 0;
+                  /* List of processes to send right block col. */
+    int **ToSendR = (int **) SUPERLU_MALLOC(nbc * sizeof(int*));
+#endif    
 
-    for (int_t i = 0; i < nbc; ++i)
+    for (i = 0; i < nbc; ++i)
 	{
 	    /* code */
-	    ToSendR[i] = INT_T_ALLOC(Pc);
+	    //ToSendR[i] = INT_T_ALLOC(Pc);
+	    ToSendR[i] = SUPERLU_MALLOC(Pc * sizeof(int));
 	}
     
     /*now setup the pointers*/
@@ -229,9 +242,8 @@ int_t zzRecvLPanel(int_t k, int_t sender, doublecomplex alpha, doublecomplex bet
 	    
 	    if (lsub != NULL)
 		{
-		    
-		    int_t len   = lsub[1];       /* LDA of the nzval[] */
-		    int_t len2  = SuperSize(k) * len;	/*size of nzval of L panels*/
+		    int len   = lsub[1];       /* LDA of the nzval[] */
+		    int len2  = SuperSize(k) * len;	/*size of nzval of L panels*/
 		    
 		    MPI_Status status;
 		    MPI_Recv(Lval_buf , len2, SuperLU_MPI_DOUBLE_COMPLEX, sender, k,
@@ -373,19 +385,19 @@ int_t zp3dScatter(int_t n, LUstruct_t * LUstruct, gridinfo3d_t* grid3d)
     MPI_Bcast( bufmax, NBUFFERS, mpi_int_t, 0,  grid3d->zscp.comm);
     
     /* now sending tosendR etc */
-    int_t** ToSendR = Llu->ToSendR;
-    int_t* ToRecv = Llu->ToRecv;
-    int_t* ToSendD = Llu->ToSendD;
+    int** ToSendR = Llu->ToSendR;
+    int* ToRecv = Llu->ToRecv;
+    int* ToSendD = Llu->ToSendD;
     
     int_t nbr = CEILING(nsupers, Pr);
     int_t nbc = CEILING(nsupers, Pc);
-    MPI_Bcast( ToRecv, nsupers, mpi_int_t, 0,  grid3d->zscp.comm);
+    MPI_Bcast( ToRecv, nsupers, MPI_INT, 0,  grid3d->zscp.comm);
     
-    MPI_Bcast( ToSendD, nbr, mpi_int_t, 0,  grid3d->zscp.comm);
+    MPI_Bcast( ToSendD, nbr, MPI_INT, 0,  grid3d->zscp.comm);
     for (int_t i = 0; i < nbc; ++i)
 	{
 	    /* code */
-	    MPI_Bcast( ToSendR[i], Pc, mpi_int_t, 0,  grid3d->zscp.comm);
+	    MPI_Bcast( ToSendR[i], Pc, MPI_INT, 0,  grid3d->zscp.comm);
 	}
     
     //

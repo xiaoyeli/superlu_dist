@@ -292,10 +292,10 @@ int_t psymbfact_LUXpand
   if (prev_len + len_texp >= prev_xsub_nextLvl) {
     /* not enough memory */
     min_new_len = prev_len + len_texp + (sz_prev_mem - prev_xsub_nextLvl);
-    if (mem_error = 
-	psymbfact_LUXpandMem (iam, n, vtxXp, next, min_new_len, 
-			      mem_type, rout_type, 0, Pslu_freeable, Llu_symbfact,
-			      VInfo, PS))
+    if ( (mem_error = 
+	  psymbfact_LUXpandMem (iam, n, vtxXp, next, min_new_len, 
+				mem_type, rout_type, 0, Pslu_freeable, Llu_symbfact,
+				VInfo, PS)) )
       return (mem_error);
     if ( mem_type == LSUB ) 
       new_mem = Llu_symbfact->lsub;
@@ -437,10 +437,10 @@ int_t psymbfact_LUXpand_RL
   if (prev_len + len_texp >= prev_xsub_nextLvl) {
     /* not enough memory */
     min_new_len = prev_len + len_texp + (sz_prev_mem - prev_xsub_nextLvl);
-    if (mem_error = 
-	psymbfact_LUXpandMem (iam, n, vtxXp, next, min_new_len, 
-			      mem_type, RL_SYMB, 0, Pslu_freeable, Llu_symbfact,
-			      VInfo, PS))
+    if ( (mem_error = 
+	  psymbfact_LUXpandMem (iam, n, vtxXp, next, min_new_len, 
+				mem_type, RL_SYMB, 0, Pslu_freeable, Llu_symbfact,
+				VInfo, PS)) )
       return (mem_error);
     if ( mem_type == LSUB ) 
       new_mem = Llu_symbfact->lsub;

@@ -267,6 +267,7 @@ int DeAllocLlu_3d(int_t n, LUstruct_t * LUstruct, gridinfo3d_t* grid3d)
     SUPERLU_FREE(Llu->ToSendD);
     for (i = 0; i < nbc; ++i) SUPERLU_FREE(Llu->ToSendR[i]);
     SUPERLU_FREE(Llu->ToSendR);
+    return 0;
 }
 
 /*! \brief Allocate storage in ScalePermstruct */
@@ -296,6 +297,7 @@ void ScalePermstructFree(ScalePermstruct_t *ScalePermstruct)
 	SUPERLU_FREE(ScalePermstruct->R);
 	SUPERLU_FREE(ScalePermstruct->C);
 	break;
+      default: break;
     }
 }
 
@@ -1427,6 +1429,7 @@ int_t partition( int_t* a, int_t l, int_t r, int_t dir) {
 	   t = a[l]; a[l] = a[j]; a[j] = t;
 	   return j;	   
    }
+   return 0;
 }
 
 
@@ -1483,6 +1486,8 @@ int_t partitionM( int_t* a, int_t l, int_t r, int_t lda, int_t dir, int_t dims) 
 	   } 
 	   return j;		
 	}
+
+	return 0;
 }
 
 

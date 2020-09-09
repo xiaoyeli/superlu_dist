@@ -664,6 +664,7 @@ pzgssvx3d (superlu_dist_options_t * options, SuperMatrix * A,
 			ABORT ("Malloc fails for R[].");
 		    ScalePermstruct->R = R;
 		    break;
+		default: break;
 		}
 	}
 	
@@ -1530,6 +1531,7 @@ pzgssvx3d (superlu_dist_options_t * options, SuperMatrix * A,
 		    case COL:
 			SUPERLU_FREE (R);
 			break;
+		    default: break;
 		    }
 	    }
 	

@@ -29,7 +29,7 @@ at the top-level directory.
 static void scatter_u (int_t ib, int_t jb, int_t nsupc, int_t iukp, int_t *xsup,
                  int_t klst, int_t nbrow, int_t lptr, int_t temp_nbrow,
  		 int_t *lsub, int_t *usub, doublecomplex *tempv,
-		 int_t *indirect,
+		 int *indirect,
            	 int_t **Ufstnz_br_ptr, doublecomplex **Unzval_br_ptr, gridinfo_t *grid);
 
 
@@ -78,15 +78,15 @@ void
 zblock_gemm_scatter( int_t lb, int_t j,
                     Ublock_info_t *Ublock_info,
                     Remain_info_t *Remain_info,
-                    doublecomplex *L_mat, int_t ldl,
-                    doublecomplex *U_mat, int_t ldu,
+                    doublecomplex *L_mat, int ldl,
+                    doublecomplex *U_mat, int ldu,
                     doublecomplex *bigV,
                     // int_t jj0,
                     int_t knsupc,  int_t klst,
                     int_t *lsub, int_t *usub, int_t ldt,
                     int_t thread_id,
-                    int_t *indirect,
-                    int_t *indirect2,
+                    int *indirect,
+                    int *indirect2,
                     int_t **Lrowind_bc_ptr, doublecomplex **Lnzval_bc_ptr,
                     int_t **Ufstnz_br_ptr, doublecomplex **Unzval_br_ptr,
                     int_t *xsup, gridinfo_t *grid,
@@ -102,8 +102,8 @@ zblock_gemm_scatter( int_t lb, int_t j,
 #else
     thread_id = 0;
 #endif
-    int_t *indirect_thread = indirect + ldt * thread_id;
-    int_t *indirect2_thread = indirect2 + ldt * thread_id;
+    int *indirect_thread = indirect + ldt * thread_id;
+    int *indirect2_thread = indirect2 + ldt * thread_id;
     doublecomplex *tempv1 = bigV + thread_id * ldt * ldt;
 
     /* Getting U block information */
@@ -113,7 +113,7 @@ zblock_gemm_scatter( int_t lb, int_t j,
     int_t nsupc = SuperSize(jb);
     int_t ljb = LBj (jb, grid);
     int_t st_col;
-    int_t ncols;
+    int ncols;
     // if (j > jj0)
     if (j > 0)
     {
@@ -129,7 +129,7 @@ zblock_gemm_scatter( int_t lb, int_t j,
     /* Getting L block information */
     int_t lptr = Remain_info[lb].lptr;
     int_t ib   = Remain_info[lb].ib;
-    int_t temp_nbrow = lsub[lptr + 1];
+    int temp_nbrow = lsub[lptr + 1];
     lptr += LB_DESCRIPTOR;
     int_t cum_nrow = (lb == 0 ? 0 : Remain_info[lb - 1].FullRow);
     /* Getting L block information */
@@ -219,8 +219,8 @@ zblock_gemm_scatter_lock( int_t lb, int_t j,
                          int_t knsupc,  int_t klst,
                          int_t *lsub, int_t *usub, int_t ldt,
                          int_t thread_id,
-                         int_t *indirect,
-                         int_t *indirect2,
+                         int *indirect,
+                         int *indirect2,
                          int_t **Lrowind_bc_ptr, doublecomplex **Lnzval_bc_ptr,
                          int_t **Ufstnz_br_ptr, doublecomplex **Unzval_br_ptr,
                          int_t *xsup, gridinfo_t *grid
@@ -229,8 +229,8 @@ zblock_gemm_scatter_lock( int_t lb, int_t j,
 #endif
                        )
 {
-    int_t *indirect_thread = indirect + ldt * thread_id;
-    int_t *indirect2_thread = indirect2 + ldt * thread_id;
+    int *indirect_thread = indirect + ldt * thread_id;
+    int *indirect2_thread = indirect2 + ldt * thread_id;
     doublecomplex *tempv1 = bigV + thread_id * ldt * ldt;
 
     /* Getting U block information */
@@ -348,7 +348,7 @@ int_t zblock_gemm_scatterTopLeft( int_t lb, /* block number in L */
 				 int_t j,  /* block number in U */
                                  doublecomplex* bigV, int_t knsupc,  int_t klst,
 				 int_t* lsub, int_t * usub, int_t ldt,
-				 int_t* indirect, int_t* indirect2, HyP_t* HyP,
+				 int* indirect, int* indirect2, HyP_t* HyP,
                                  LUstruct_t *LUstruct,
                                  gridinfo_t* grid,
                                  SCT_t*SCT, SuperLUStat_t *stat
@@ -387,7 +387,7 @@ int_t zblock_gemm_scatterTopLeft( int_t lb, /* block number in L */
 
 int_t zblock_gemm_scatterTopRight( int_t lb,  int_t j,
                                   doublecomplex* bigV, int_t knsupc,  int_t klst, int_t* lsub,
-                                  int_t * usub, int_t ldt,  int_t* indirect, int_t* indirect2,
+                                  int_t * usub, int_t ldt,  int* indirect, int* indirect2,
                                   HyP_t* HyP,
                                   LUstruct_t *LUstruct,
                                   gridinfo_t* grid,
@@ -422,7 +422,7 @@ int_t zblock_gemm_scatterTopRight( int_t lb,  int_t j,
 
 int_t zblock_gemm_scatterBottomLeft( int_t lb,  int_t j,
                                     doublecomplex* bigV, int_t knsupc,  int_t klst, int_t* lsub,
-                                    int_t * usub, int_t ldt,  int_t* indirect, int_t* indirect2,
+                                    int_t * usub, int_t ldt,  int* indirect, int* indirect2,
                                     HyP_t* HyP,
                                     LUstruct_t *LUstruct,
                                     gridinfo_t* grid,
@@ -459,7 +459,7 @@ int_t zblock_gemm_scatterBottomLeft( int_t lb,  int_t j,
 
 int_t zblock_gemm_scatterBottomRight( int_t lb,  int_t j,
                                      doublecomplex* bigV, int_t knsupc,  int_t klst, int_t* lsub,
-                                     int_t * usub, int_t ldt,  int_t* indirect, int_t* indirect2,
+                                     int_t * usub, int_t ldt,  int* indirect, int* indirect2,
                                      HyP_t* HyP,
                                      LUstruct_t *LUstruct,
                                      gridinfo_t* grid,
@@ -513,8 +513,8 @@ scatter_l (int_t ib,
            int_t *usub,
            int_t *lsub,
            double *tempv,
-           int_t *indirect_thread, int_t *indirect2,
-           int_t **Lrowind_bc_ptr, double **Lnzval_bc_ptr, gridinfo_t *grid)
+           int *indirect_thread, int_t *indirect2,
+           int **Lrowind_bc_ptr, double **Lnzval_bc_ptr, gridinfo_t *grid)
 {
     int_t rel, i, segsize, jj;
     double *nzval;
@@ -588,7 +588,7 @@ scatter_u (int_t ib,
            int_t *lsub,
            int_t *usub,
            doublecomplex *tempv,
-           int_t *indirect,
+           int *indirect,
            int_t **Ufstnz_br_ptr, doublecomplex **Unzval_br_ptr, gridinfo_t *grid)
 {
 #ifdef PI_DEBUG

@@ -29,7 +29,7 @@ int_t dIBcast_LPanel
 /*broadcasts index array lsub and non-zero value
  array lusup of a newly factored L column to my process row*/
 (int_t k, int_t k0, int_t* lsub, double* lusup, gridinfo_t *grid,
- int* msgcnt, MPI_Request *send_req, int_t **ToSendR, int_t *xsup,
+ int* msgcnt, MPI_Request *send_req, int **ToSendR, int_t *xsup,
  int tag_ub)
 {
     int_t Pc = grid->npcol;
@@ -69,7 +69,7 @@ int_t dBcast_LPanel
 /*broadcasts index array lsub and non-zero value
  array lusup of a newly factored L column to my process row*/
 (int_t k, int_t k0, int_t* lsub, double* lusup, gridinfo_t *grid,
- int* msgcnt,  int_t **ToSendR, int_t *xsup , SCT_t* SCT,
+ int* msgcnt,  int **ToSendR, int_t *xsup , SCT_t* SCT,
  int tag_ub)
 {
     unsigned long long t1 = _rdtsc();
@@ -110,7 +110,7 @@ int_t dBcast_LPanel
 int_t dIBcast_UPanel
 /*asynchronously braodcasts U panel to my process row */
 (int_t k, int_t k0, int_t* usub, double* uval, gridinfo_t *grid,
- int* msgcnt, MPI_Request *send_req_u, int_t *ToSendD, int tag_ub )
+ int* msgcnt, MPI_Request *send_req_u, int *ToSendD, int tag_ub )
 {
 
     int_t iam = grid->iam;
@@ -153,7 +153,7 @@ int_t dIBcast_UPanel
 /*Synchronously braodcasts U panel to my process row */
 int_t dBcast_UPanel(int_t k, int_t k0, int_t* usub,
                      double* uval, gridinfo_t *grid,
-		   int* msgcnt, int_t *ToSendD, SCT_t* SCT, int tag_ub)
+		    int* msgcnt, int *ToSendD, SCT_t* SCT, int tag_ub)
 
 {
     unsigned long long t1 = _rdtsc();

@@ -366,8 +366,8 @@ pzgstrf2_trsm
  * The following functions are for the new pdgstrf2_ztrsm in the 3D code.
  *****************************************************************************/
 static
-int_t LpanelUpdate(int_t off0,  int_t nsupc, doublecomplex* ublk_ptr, int_t ld_ujrow,
-                   doublecomplex* lusup, int_t nsupr, SCT_t* SCT)
+int_t LpanelUpdate(int_t off0,  int nsupc, doublecomplex* ublk_ptr, int ld_ujrow,
+                   doublecomplex* lusup, int nsupr, SCT_t* SCT)
 {
     int_t l = nsupr - off0;
     doublecomplex alpha = {1.0, 0.0};
@@ -378,7 +378,7 @@ int_t LpanelUpdate(int_t off0,  int_t nsupc, doublecomplex* ublk_ptr, int_t ld_u
     for (int i = 0; i < CEILING(l, GT); ++i)
     {
         int_t off = i * GT;
-        int_t len = SUPERLU_MIN(GT, l - i * GT);
+        int len = SUPERLU_MIN(GT, l - i * GT);
 #if 1
   #if defined (USE_VENDOR_BLAS)
         ztrsm_ ("R", "U", "N", "N", &len, &nsupc, &alpha,
@@ -421,8 +421,8 @@ void Local_Zgstrf2(superlu_dist_options_t *options, int_t k, double thresh,
     int_t jfst = FstBlockC (k);
     int_t jlst = FstBlockC (k + 1);
     doublecomplex *lusup = Llu->Lnzval_bc_ptr[lk];
-    int_t nsupc = SuperSize (k);
-    int_t nsupr;
+    int nsupc = SuperSize (k);
+    int nsupr;
     if (Llu->Lrowind_bc_ptr[lk])
         nsupr = Llu->Lrowind_bc_ptr[lk][1];
     else
@@ -433,8 +433,8 @@ void Local_Zgstrf2(superlu_dist_options_t *options, int_t k, double thresh,
     int cols_left = nsupc;          /* supernode size */
     int_t u_diag_cnt = 0;
     int_t ld_ujrow = nsupc;       /* leading dimension of ujrow */
-    int_t incx = 1;
-    int_t incy = ld_ujrow;
+    int incx = 1;
+    int incy = ld_ujrow;
 
     for (int_t j = 0; j < jlst - jfst; ++j)   /* for each column in panel */
     {
@@ -711,7 +711,7 @@ int_t zTrs2_ScatterU(int_t iukp, int_t rukp, int_t klst,
 
 int_t zTrs2_GatherTrsmScatter(int_t klst, int_t iukp, int_t rukp,
 			      int_t *usub, doublecomplex *uval, doublecomplex *tempv,
-			      int_t knsupc, int_t nsupr, doublecomplex *lusup,
+			      int_t knsupc, int nsupr, doublecomplex *lusup,
 			      Glu_persist_t *Glu_persist)    /*glupersist for xsup for supersize*/
 {
     doublecomplex alpha = {1.0, 0.0};
@@ -724,14 +724,14 @@ int_t zTrs2_GatherTrsmScatter(int_t klst, int_t iukp, int_t rukp,
 
     // printf("klst inside task%d\n", );
     /*find ldu */
-    int_t ldu = 0;
+    int ldu = 0;
     for (int_t jj = iukp; jj < iukp + nsupc; ++jj)
     {
         ldu = SUPERLU_MAX( klst - usub[jj], ldu) ;
     }
 
     /*pack U block into a dense Block*/
-    int_t ncols = zTrs2_GatherU(iukp, rukp, klst, nsupc, ldu, usub,
+    int ncols = zTrs2_GatherU(iukp, rukp, klst, nsupc, ldu, usub,
     	                           uval, tempv);
 
     /*now call ztrsm on packed dense block*/
