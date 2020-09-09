@@ -1402,11 +1402,26 @@ pdgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 	       the Solve data & communication structures, unless a new
 	       factorization with Fact == DOFACT or SamePattern is asked for. */
 	}
+
+#ifdef GPU_ACC	
+	if(options->DiagInv==NO){
+	printf("GPU trisolve requires setting options->DiagInv==YES\n");
+	exit(0);
+	}
+#endif
+
 	if ( options->DiagInv==YES &&
              (options->Fact == DOFACT || Fact == SamePattern ||
               Fact == SamePattern_SameRowPerm) ) {
 	    pdCompute_Diag_Inv(n, LUstruct, grid, stat, info);
+#ifdef GPU_ACC		
+		checkGPU(gpuMemcpy(LUstruct->Llu->d_Linv_bc_dat, LUstruct->Llu->Linv_bc_dat, (LUstruct->Llu->Linv_bc_cnt) * sizeof(double), gpuMemcpyHostToDevice));	
+		checkGPU(gpuMemcpy(LUstruct->Llu->d_Lnzval_bc_dat, LUstruct->Llu->Lnzval_bc_dat, (LUstruct->Llu->Lnzval_bc_cnt) * sizeof(double), gpuMemcpyHostToDevice));	
+#endif
+
 	}
+
+
 
 
     // #pragma omp parallel

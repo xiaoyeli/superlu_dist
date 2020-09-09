@@ -239,6 +239,22 @@ Destroy_LU(int_t n, gridinfo_t *grid, LUstruct_t *LUstruct)
     SUPERLU_FREE(Glu_persist->xsup);
     SUPERLU_FREE(Glu_persist->supno);
 
+#ifdef GPU_ACC
+	checkGPU (gpuFree (Llu->d_xsup));
+	checkGPU (gpuFree (Llu->d_LRtree_ptr));
+	checkGPU (gpuFree (Llu->d_LBtree_ptr));
+	checkGPU (gpuFree (Llu->d_ilsum));
+	checkGPU (gpuFree (Llu->d_Lrowind_bc_dat));
+	checkGPU (gpuFree (Llu->d_Lrowind_bc_offset));
+	checkGPU (gpuFree (Llu->d_Lnzval_bc_dat));
+	checkGPU (gpuFree (Llu->d_Lnzval_bc_offset));
+	checkGPU (gpuFree (Llu->d_Linv_bc_dat));
+	checkGPU (gpuFree (Llu->d_Linv_bc_offset));
+	checkGPU (gpuFree (Llu->d_Lindval_loc_bc_dat));
+	checkGPU (gpuFree (Llu->d_Lindval_loc_bc_offset));
+#endif
+
+
 #if ( DEBUGlevel>=1 )
     CHECK_MALLOC(iam, "Exit Destroy_LU()");
 #endif

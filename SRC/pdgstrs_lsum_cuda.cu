@@ -732,7 +732,7 @@ __device__ void C_RdTree_forwardMessageSimple_Device(C_Tree* Tree, void* localBu
 // 	 } /* if nlb>0*/		
 		 
 	 
-//  } /* dlsum_fmod_inv_cuda_1rhs */
+//  } /* dlsum_fmod_inv_gpu_1rhs */
  
  
  
@@ -979,7 +979,7 @@ __device__ void C_RdTree_forwardMessageSimple_Device(C_Tree* Tree, void* localBu
 	 // } /* if nlb>0*/		
 		 
 	 
- // } /* dlsum_fmod_inv_cuda_1rhs */
+ // } /* dlsum_fmod_inv_gpu_1rhs */
  
  
  
@@ -993,7 +993,7 @@ __device__ void C_RdTree_forwardMessageSimple_Device(C_Tree* Tree, void* localBu
   *   Perform local block modifications: lsum[i] -= L_i,k * X[k].
   * </pre>
   */
- __global__ void dlsum_fmod_inv_cuda_mrhs
+ __global__ void dlsum_fmod_inv_gpu_mrhs
  /************************************************************************/
  (
   int_t nbcol_loc,
@@ -1431,10 +1431,10 @@ __device__ void C_RdTree_forwardMessageSimple_Device(C_Tree* Tree, void* localBu
  
 		 
 	 
- } /* dlsum_fmod_inv_cuda_mrhs */
+ } /* dlsum_fmod_inv_gpu_mrhs */
  
  
- void dlsum_fmod_inv_cuda_wrap
+ void dlsum_fmod_inv_gpu_wrap
  (
   int_t nbcol_loc,    /*number of local supernode columns*/
   int_t nbrow_loc,    /*number of local supernode rows*/
@@ -1477,10 +1477,10 @@ __device__ void C_RdTree_forwardMessageSimple_Device(C_Tree* Tree, void* localBu
  
 	 // if(nrhs>1){
 		 dim3 dimBlock(nthread_x, nthread_y);
-		 dlsum_fmod_inv_cuda_mrhs<<< nbcol_loc+nblock_ex, dimBlock >>>(nbcol_loc,nblock_ex,lsum,x,nrhs,maxsup,nsupers,fmod,LBtree_ptr,LRtree_ptr,ilsum,Lrowind_bc_dat,Lrowind_bc_offset,Lnzval_bc_dat,Lnzval_bc_offset,Linv_bc_dat,Linv_bc_offset,Lindval_loc_bc_dat,Lindval_loc_bc_offset, xsup,grid,recvbuf_BC_gpu,recvbuf_RD_gpu,maxrecvsz);
+		 dlsum_fmod_inv_gpu_mrhs<<< nbcol_loc+nblock_ex, dimBlock >>>(nbcol_loc,nblock_ex,lsum,x,nrhs,maxsup,nsupers,fmod,LBtree_ptr,LRtree_ptr,ilsum,Lrowind_bc_dat,Lrowind_bc_offset,Lnzval_bc_dat,Lnzval_bc_offset,Linv_bc_dat,Linv_bc_offset,Lindval_loc_bc_dat,Lindval_loc_bc_offset, xsup,grid,recvbuf_BC_gpu,recvbuf_RD_gpu,maxrecvsz);
 	 // }else{
 		 // dim3 dimBlock(nthread_x*nthread_y, 1);
-		 // dlsum_fmod_inv_cuda_1rhs<<< CEILING(nbcol_loc,NWARP), dimBlock >>>(lsum,x,rtemp,nrhs,maxsup,nsupers,fmod,xsup,grid,Llu);	
+		 // dlsum_fmod_inv_gpu_1rhs<<< CEILING(nbcol_loc,NWARP), dimBlock >>>(lsum,x,rtemp,nrhs,maxsup,nsupers,fmod,xsup,grid,Llu);	
 	 // }
 
 

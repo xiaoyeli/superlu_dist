@@ -186,6 +186,22 @@ typedef struct {
     int_t nleaf;
     int_t nfrecvmod;
     int_t inv; /* whether the diagonal block is inverted*/
+
+    /* The following variables are used in GPU trisolve*/
+#ifdef GPU_ACC
+    int_t *d_Lrowind_bc_dat;     
+    long int *d_Lrowind_bc_offset;      
+    double *d_Lnzval_bc_dat;     
+    long int *d_Lnzval_bc_offset;     
+    double *d_Linv_bc_dat ;     
+    long int *d_Linv_bc_offset ;     
+    int_t *d_Lindval_loc_bc_dat ;     
+    long int *d_Lindval_loc_bc_offset ;     
+	int_t  *d_ilsum ;
+	int_t *d_xsup ;
+    C_Tree  *d_LBtree_ptr ;
+    C_Tree  *d_LRtree_ptr ;
+#endif
 } LocalLU_t;
 
 
@@ -361,8 +377,8 @@ extern void dlsum_fmod_inv(double *, double *, double *, double *,
 		       int_t *, gridinfo_t *, LocalLU_t *,
 		       SuperLUStat_t **, int_t *, int_t *, int_t, int_t, int_t, int_t, int, int);
 			   
-// extern void dlsum_fmod_inv_cuda_wrap(int_t, int_t, int_t, int_t, double *,double *,double *,int,int, int_t , int_t *, C_Tree  *, C_Tree  *, int_t *, gridinfo_t *, LocalLU_t *, double *, double *, int_t);			   
-			   
+// extern void dlsum_fmod_inv_gpu_wrap(int_t, int_t, int_t, int_t, double *,double *,double *,int,int, int_t , int_t *, C_Tree  *, C_Tree  *, int_t *, gridinfo_t *, LocalLU_t *, double *, double *, int_t);			   
+			    
 extern void dlsum_fmod_inv_master(double *, double *, double *, double *,
 		       int, int, int_t , int_t *, int_t,
 		       int_t *, gridinfo_t *, LocalLU_t *,

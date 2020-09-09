@@ -72,6 +72,9 @@
 #include "hip_runtime_api.h"
 #include "hip_runtime.h"
 #include "hipblas.h"
+#include "roctracer_ext.h"
+// roctx header file
+#include <roctx.h>
 
 #define gpuDeviceProp hipDeviceProp_t
 #define gpuGetDeviceCount hipGetDeviceCount

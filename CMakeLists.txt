@@ -139,6 +139,10 @@ set(CMAKE_CXX_FLAGS_RELEASE "-O3" CACHE STRING "")
 ######################################################################
 #
 #--------------------- MPI ---------------------
+
+find_package(Threads)
+
+
 find_package(MPI)
 if(MPI_C_FOUND)
     set(CMAKE_C_FLAGS "${MPI_C_COMPILE_FLAGS} ${CMAKE_C_FLAGS}")

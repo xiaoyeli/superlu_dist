@@ -129,9 +129,9 @@ void superlu_free_dist(void *addr)
 }
  
 #else  /* The production mode. */
-
+  
 // #ifdef GPU_ACC  // Yang: use gpuMallocManaged seems to make the code much slower  
-#if 0  // Yang: use system malloc for managed memory access, this requires HMM (x86) or ATS (p9) supports 
+#if 0  // Yang: use system malloc (for managed memory access, this requires HMM (x86) or ATS (p9) supports) 
 void *superlu_malloc_dist(size_t size) {
     void *buf;
 	gpuMallocManaged(&buf, size, gpuMemAttachGlobal);
