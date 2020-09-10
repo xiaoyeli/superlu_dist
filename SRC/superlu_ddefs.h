@@ -333,7 +333,13 @@ extern int     dcreate_matrix_dat(SuperMatrix *, int, double **, int *,
 			      double **, int *, FILE *, gridinfo_t *);
 extern int 	   dcreate_matrix_postfix(SuperMatrix *, int, double **, int *,
 				  double **, int *, FILE *, char *, gridinfo_t *);
-
+/*For 3D code */
+extern int dcreate_matrix3d(SuperMatrix *A, int nrhs, double **rhs,
+                     int *ldb, double **x, int *ldx,
+                     FILE *fp, gridinfo3d_t *grid3d);
+extern int dcreate_matrix_postfix3d(SuperMatrix *A, int nrhs, double **rhs,
+                           int *ldb, double **x, int *ldx,
+                           FILE *fp, char * postfix, gridinfo3d_t *grid3d);
 
 /* Driver related */
 extern void    dgsequ_dist (SuperMatrix *, double *, double *, double *,

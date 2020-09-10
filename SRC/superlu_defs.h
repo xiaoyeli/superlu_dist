@@ -1098,6 +1098,10 @@ extern int_t 	   	StdList_Size(StdList lst);
 yes_no_t 		StdList_Empty(StdList lst);
 
 /*==== For 3D code ====*/
+/* Matrix distributed in NRformat_loc in 3D process grid, it converts 
+it to a NRformat_loc distributed in two-D grid in grid-0 */
+NRformat_loc dGatherNRformat_loc(NRformat_loc *A, gridinfo3d_t *grid3d);
+
 
 extern void DistPrint(char* function_name,  double value, char* Units, gridinfo_t* grid);
 extern void DistPrint3D(char* function_name,  double value, char* Units, gridinfo3d_t* grid3d);

@@ -22,6 +22,7 @@ endif ()
 # first: precision-independent files
 #  global.cpp
 set(sources
+  nrformat_loc.c 
   sp_ienv.c
   etree.c 
   sp_colorder.c

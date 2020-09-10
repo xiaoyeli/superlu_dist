@@ -71,7 +71,7 @@ DPLUSRC = pdgssvx.o pdgssvx_ABglobal.o \
 	  pdgstrf.o pdgstrf2.o pdGetDiagU.o \
 	  pdgstrs.o pdgstrs1.o pdgstrs_lsum.o pdgstrs_Bglobal.o \
 	  pdgsrfs.o pdgsmv.o pdgsrfs_ABXglobal.o pdgsmv_AXglobal.o \
-	  dreadtriple_noheader.o  ##$(FACT3D)
+	  dreadtriple_noheader.o nrformat_loc.o ##$(FACT3D)
 # from 3D code
 DPLUSRC += pdgssvx3d.o pdgstrf3d.o dtreeFactorization.o dscatter3d.o \
 	dgather.o pd3dcomm.o dtrfAux.o dcommunication_aux.o dtrfCommWrapper.o
