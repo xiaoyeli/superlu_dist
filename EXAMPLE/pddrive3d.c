@@ -20,6 +20,7 @@ at the top-level directory.
  *
  */
 #include "superlu_ddefs.h"
+#include <assert.h>
 
 /*! \brief
  *
@@ -48,6 +49,38 @@ at the top-level directory.
  * </pre>
  */
 
+void checkNRFMT(NRformat_loc*A, NRformat_loc*B)
+{
+    /*
+    int_t nnz_loc;
+    int_t m_loc;
+    int_t fst_row;
+    void  *nzval;
+    int_t *rowptr;
+    int_t *colind;
+    */
+
+    assert(A->nnz_loc == B->nnz_loc);
+    assert(A->m_loc == B->m_loc);
+    assert(A->fst_row == B->fst_row);
+
+    for (int_t i = 0; i < A->nnz_loc; i++)
+    {
+        assert(((double *)A->nzval)[i] == ((double *)B->nzval)[i]);
+        assert((A->colind)[i] == (B->colind)[i]);
+    }
+
+    for (int_t i = 0; i < A->m_loc + 1; i++)
+    {
+        // assert(((double *)A->nzval)[i] ==((double *)B->nzval)[i]);
+        assert((A->rowptr)[i] == (B->rowptr)[i]);
+    }
+
+
+    printf("Matrix check passed\n");
+
+}
+
 int
 main (int argc, char *argv[])
 {
@@ -65,6 +98,7 @@ main (int argc, char *argv[])
     int iam, info, ldb, ldx, nrhs;
     char **cpp, c, *suffix;
     FILE *fp, *fopen ();
+    FILE *fp0;
     extern int cpp_defs ();
     int ii, omp_mpi_level;
 
@@ -117,7 +151,9 @@ main (int argc, char *argv[])
         else
         {
             /* Last arg is considered a filename */
-            if (!(fp = fopen (*cpp, "r")))
+            if (!(fp = fopen (*cpp, "r"))
+                    || !(fp0 = fopen (*cpp, "r"))
+               )
             {
                 ABORT ("File does not exist");
             }
@@ -190,12 +226,35 @@ main (int argc, char *argv[])
             // printf("%s\n", suffix);
         }
     }
-    #if 0
+#define NRFRMT
+#ifndef NRFRMT
     if ( grid.zscp.Iam == 0 )  // only in process layer 0
-        dcreate_matrix_postfix(&A, nrhs, &b, &ldb, &xtrue, &ldx, fp, suffix, &(grid.grid2d));
-    #else
-    dcreate_matrix_postfix3d(&A, nrhs, &b, &ldb, &xtrue, &ldx, fp, suffix, &(grid));
-    #endif 
+        dcreate_matrix_postfix(&A, nrhs, &b, &ldb, &xtrue,
+                               &ldx, fp, suffix, &(grid.grid2d));
+#else
+    NRformat_loc *Astore, *Astore0;
+
+    // *fp0 = *fp;
+    dcreate_matrix_postfix3d(&A, nrhs, &b, &ldb,
+                             &xtrue, &ldx, fp, suffix, &(grid));
+    // NRformat_loc Atmp = dGatherNRformat_loc(
+    //                         (NRformat_loc *) A.Store,
+    //                         &grid);
+    // Astore = &Atmp;
+    // SuperMatrix Aref;
+    // double *bref, *xtrueref;
+    // if ( grid.zscp.Iam == 0 )  // only in process layer 0
+    // {
+    //     dcreate_matrix_postfix(&Aref, nrhs, &bref, &ldb,
+    //                            &xtrueref, &ldx, fp0, 
+    //                            suffix, &(grid.grid2d));
+    //     for (int i = 0; i < 5; i++)
+    //         printf("%g %g\n", bref[i], b[i] );
+    //     Astore0 = (NRformat_loc *) Aref.Store;
+    //     checkNRFMT(Astore, Astore0);
+    // }
+    // MPI_Finalize(); exit(0);
+#endif
     if (!(berr = doubleMalloc_dist (nrhs)))
         ABORT ("Malloc fails for berr[].");
 

@@ -71,6 +71,8 @@ NRformat_loc dGatherNRformat_loc(NRformat_loc *A, gridinfo3d_t *grid3d)
                 A2d.rowptr[j] += row_disp[i];
             }
         }
+        A2d.nnz_loc = nnz_disp[grid3d->npdep];
+        A2d.m_loc = row_disp[grid3d->npdep];
     }
     
     A2d.fst_row = A->fst_row;
