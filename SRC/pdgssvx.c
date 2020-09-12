@@ -490,6 +490,7 @@ at the top-level directory.
  *
  * info    (output) int*
  *         = 0: successful exit
+ *         < 0: if info = -i, the i-th argument had an illegal value   
  *         > 0: if info = i, and i is
  *             <= A->ncol: U(i,i) is exactly zero. The factorization has
  *                been completed, but the factor U is exactly singular,

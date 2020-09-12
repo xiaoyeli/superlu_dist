@@ -406,8 +406,8 @@ typedef struct {
     int_t     nzlmax;    /* current max size of lsub */
     int_t     nzumax;    /*    "    "    "      usub */
     LU_space_t MemModel; /* 0 - system malloc'd; 1 - user provided */
-    int_t     *llvl;     /* keep track of level in L for level-based ILU */
-    int_t     *ulvl;     /* keep track of level in U for level-based ILU */
+    //int_t     *llvl;     /* keep track of level in L for level-based ILU */
+    //int_t     *ulvl;     /* keep track of level in U for level-based ILU */
     int64_t nnzLU;   /* number of nonzeros in L+U*/
 } Glu_freeable_t;
 
@@ -644,7 +644,7 @@ typedef struct {
     yes_no_t      SolveInitialized;
     yes_no_t      RefineInitialized;
     yes_no_t      PrintStat;
-    int           nnzL, nnzU;      /* used to store nnzs for now       */
+    //int           nnzL, nnzU;      /* used to store nnzs for now       */
     int           num_lookaheads;  /* num of levels in look-ahead      */
     yes_no_t      lookahead_etree; /* use etree computed from the
 				      serial symbolic factorization */
@@ -672,7 +672,6 @@ typedef struct {
     int_t iukp;
     int_t jb;
     int_t full_u_cols;
-
 } Ublock_info_t;
 
 typedef struct {
