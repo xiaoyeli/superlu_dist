@@ -19,6 +19,40 @@ at the top-level directory.
  * May 10, 2019
  */
 #include "superlu_ddefs.h"
+#include <assert.h>
+
+static void checkNRFMT(NRformat_loc*A, NRformat_loc*B)
+{
+    /*
+    int_t nnz_loc;
+    int_t m_loc;
+    int_t fst_row;
+    void  *nzval;
+    int_t *rowptr;
+    int_t *colind;
+    */
+
+    assert(A->nnz_loc == B->nnz_loc);
+    assert(A->m_loc == B->m_loc);
+    assert(A->fst_row == B->fst_row);
+
+    for (int_t i = 0; i < A->nnz_loc; i++)
+    {
+        assert(((double *)A->nzval)[i] == ((double *)B->nzval)[i]);
+        // printf("%lf \n", ((double *)A->nzval)[i]);
+        assert((A->colind)[i] == (B->colind)[i]);
+    }
+
+    for (int_t i = 0; i < A->m_loc + 1; i++)
+    {
+        // assert(((double *)A->nzval)[i] ==((double *)B->nzval)[i]);
+        assert((A->rowptr)[i] == (B->rowptr)[i]);
+    }
+
+
+    printf("Matrix check passed\n");
+
+}
 #if 0
 #include "p3dcomm.h"
 #include "pdgstrf3d.h"
@@ -584,23 +618,36 @@ pdgssvx3d (superlu_dist_options_t * options, SuperMatrix * A,
 	/* Perform preprocessing steps on process layer zero, including:
 	   ordering, symbolic factorization, distribution of L & U */
 #define NRFRMT
-#ifdef NRFRMT
+// #ifdef NRFRMT
 	NRformat_loc Atmp = dGatherNRformat_loc(
 	                        (NRformat_loc *) A->Store,
 	                        grid3d);
-#endif
-
+// #endif
+	NRformat_loc* Astore0 =&Atmp;
 	if (grid3d->zscp.Iam == 0)
 	{
 
 
 		m = A->nrow;
 		n = A->ncol;
-#ifdef NRFRMT
-		Astore = &Atmp;
-#else
+		// checkNRFMT(Astore0, (NRformat_loc *) A->Store);
+#ifdef NRFMT 
+		A->Store = Astore0;
+#endif 
 		Astore = (NRformat_loc *) A->Store;
-#endif
+
+// #ifdef NRFRMT
+// 		Astore = Astore0;
+// #else
+// 		Astore = Astore0;
+// 		// Astore = (NRformat_loc *) A->Store;
+// 		// Astore->nzval = Astore0->nzval;
+// 		// Astore->rowptr = Astore0->rowptr;
+// 		// Astore->colind = Astore0->colind;
+// 		// Astore->nnz_loc = Astore0->nnz_loc;
+// 		// Astore->m_loc = Astore0->m_loc;
+// 		// Astore->fst_row = Astore0->fst_row;
+// #endif
 		nnz_loc = Astore->nnz_loc;
 		m_loc = Astore->m_loc;
 		fst_row = Astore->fst_row;
