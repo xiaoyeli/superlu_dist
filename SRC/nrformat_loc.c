@@ -66,9 +66,10 @@ NRformat_loc dGatherNRformat_loc(NRformat_loc *A, gridinfo3d_t *grid3d)
     {
         for (int i = 0; i < grid3d->npdep; i++)
         {
-            for(int j = row_disp[i]; j<row_disp[i+1]; j++)
+            for(int j = row_disp[i]+1; j<row_disp[i+1]+1; j++)
             {
-                A2d.rowptr[j] += row_disp[i];
+                // A2d.rowptr[j] += row_disp[i];
+                A2d.rowptr[j] +=nnz_disp[i];
             }
         }
         A2d.nnz_loc = nnz_disp[grid3d->npdep];
