@@ -49,6 +49,19 @@ at the top-level directory.
  * </pre>
  */
 
+static void matCheck(int n, int m, double* A, int LDA
+    , double* B, int LDB)
+{
+    for(int j=0; j<m;j++)
+        for (int i = 0; i < n; ++i)
+        {
+            assert(A[i+ LDA*j] == B[i+ LDB*j]);
+        }
+
+        printf("B check passed\n");
+        return;
+}
+
 void checkNRFMT(NRformat_loc*A, NRformat_loc*B)
 {
     /*
@@ -237,23 +250,28 @@ main (int argc, char *argv[])
     // *fp0 = *fp;
     dcreate_matrix_postfix3d(&A, nrhs, &b, &ldb,
                              &xtrue, &ldx, fp, suffix, &(grid));
-    // NRformat_loc Atmp = dGatherNRformat_loc(
-    //                         (NRformat_loc *) A.Store,
-    //                         &grid);
-    // Astore = &Atmp;
-    // SuperMatrix Aref;
-    // double *bref, *xtrueref;
-    // if ( grid.zscp.Iam == 0 )  // only in process layer 0
-    // {
-    //     dcreate_matrix_postfix(&Aref, nrhs, &bref, &ldb,
-    //                            &xtrueref, &ldx, fp0, 
-    //                            suffix, &(grid.grid2d));
-    //     for (int i = 0; i < 5; i++)
-    //         printf("%g %g\n", bref[i], b[i] );
-    //     Astore0 = (NRformat_loc *) Aref.Store;
-    //     checkNRFMT(Astore, Astore0);
-    // }
+    #if 1
+    double* B2d;
+    NRformat_loc Atmp = dGatherNRformat_loc(
+                            (NRformat_loc *) A.Store,
+                            b, ldb, nrhs, &B2d,
+                            &grid);
+    Astore = &Atmp;
+    SuperMatrix Aref;
+    double *bref, *xtrueref;
+    if ( grid.zscp.Iam == 0 )  // only in process layer 0
+    {
+        dcreate_matrix_postfix(&Aref, nrhs, &bref, &ldb,
+                               &xtrueref, &ldx, fp0, 
+                               suffix, &(grid.grid2d));
+        // for (int i = 0; i < 5; i++)
+        //     printf("%g %g\n", bref[i], b[i] );
+        Astore0 = (NRformat_loc *) Aref.Store;
+        // checkNRFMT(Astore, Astore0);
+        matCheck(Astore->m_loc, nrhs, B2d, Astore->m_loc, bref, ldb);
+    }
     // MPI_Finalize(); exit(0);
+    #endif
 #endif
     if (!(berr = doubleMalloc_dist (nrhs)))
         ABORT ("Malloc fails for berr[].");

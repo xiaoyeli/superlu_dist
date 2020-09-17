@@ -23,34 +23,34 @@ at the top-level directory.
 
 static void checkNRFMT(NRformat_loc*A, NRformat_loc*B)
 {
-    /*
-    int_t nnz_loc;
-    int_t m_loc;
-    int_t fst_row;
-    void  *nzval;
-    int_t *rowptr;
-    int_t *colind;
-    */
+	/*
+	int_t nnz_loc;
+	int_t m_loc;
+	int_t fst_row;
+	void  *nzval;
+	int_t *rowptr;
+	int_t *colind;
+	*/
 
-    assert(A->nnz_loc == B->nnz_loc);
-    assert(A->m_loc == B->m_loc);
-    assert(A->fst_row == B->fst_row);
+	assert(A->nnz_loc == B->nnz_loc);
+	assert(A->m_loc == B->m_loc);
+	assert(A->fst_row == B->fst_row);
 
-    for (int_t i = 0; i < A->nnz_loc; i++)
-    {
-        assert(((double *)A->nzval)[i] == ((double *)B->nzval)[i]);
-        // printf("%lf \n", ((double *)A->nzval)[i]);
-        assert((A->colind)[i] == (B->colind)[i]);
-    }
+	for (int_t i = 0; i < A->nnz_loc; i++)
+	{
+		assert(((double *)A->nzval)[i] == ((double *)B->nzval)[i]);
+		// printf("%lf \n", ((double *)A->nzval)[i]);
+		assert((A->colind)[i] == (B->colind)[i]);
+	}
 
-    for (int_t i = 0; i < A->m_loc + 1; i++)
-    {
-        // assert(((double *)A->nzval)[i] ==((double *)B->nzval)[i]);
-        assert((A->rowptr)[i] == (B->rowptr)[i]);
-    }
+	for (int_t i = 0; i < A->m_loc + 1; i++)
+	{
+		// assert(((double *)A->nzval)[i] ==((double *)B->nzval)[i]);
+		assert((A->rowptr)[i] == (B->rowptr)[i]);
+	}
 
 
-    printf("Matrix check passed\n");
+	printf("Matrix check passed\n");
 
 }
 #if 0
@@ -618,12 +618,17 @@ pdgssvx3d (superlu_dist_options_t * options, SuperMatrix * A,
 	/* Perform preprocessing steps on process layer zero, including:
 	   ordering, symbolic factorization, distribution of L & U */
 #define NRFRMT
-// #ifdef NRFRMT
+
+	double* B2d;
+	int ldb2d;
+	int ldb3d = ldb;
+	double* B3d = B; 
 	NRformat_loc Atmp = dGatherNRformat_loc(
 	                        (NRformat_loc *) A->Store,
+	                        B, ldb, nrhs, &B2d,
 	                        grid3d);
-// #endif
-	NRformat_loc* Astore0 =&Atmp;
+
+	NRformat_loc* Astore0 = &Atmp;
 	if (grid3d->zscp.Iam == 0)
 	{
 
@@ -631,9 +636,11 @@ pdgssvx3d (superlu_dist_options_t * options, SuperMatrix * A,
 		m = A->nrow;
 		n = A->ncol;
 		// checkNRFMT(Astore0, (NRformat_loc *) A->Store);
-#ifdef NRFMT 
+#ifdef NRFRMT
 		A->Store = Astore0;
-#endif 
+		ldb = Astore0->m_loc;
+		B = B2d; 
+#endif
 		Astore = (NRformat_loc *) A->Store;
 
 // #ifdef NRFRMT
@@ -1463,7 +1470,9 @@ pdgssvx3d (superlu_dist_options_t * options, SuperMatrix * A,
 			{
 				if (rowequ)
 				{
+
 					b_col = B;
+
 					for (j = 0; j < nrhs; ++j)
 					{
 						irow = fst_row;
@@ -1478,7 +1487,9 @@ pdgssvx3d (superlu_dist_options_t * options, SuperMatrix * A,
 			}
 			else if (colequ)
 			{
+
 				b_col = B;
+
 				for (j = 0; j < nrhs; ++j)
 				{
 					irow = fst_row;
@@ -1706,6 +1717,7 @@ pdgssvx3d (superlu_dist_options_t * options, SuperMatrix * A,
 #endif
 
 	} /* process layer 0 done solve */
+	// b2d->B 
 
 #if ( DEBUGlevel>=1 )
 	CHECK_MALLOC (iam, "Exit pdgssvx3d()");
