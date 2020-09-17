@@ -56,7 +56,7 @@ NRformat_loc dGatherNRformat_loc(NRformat_loc *A, gridinfo3d_t *grid3d)
                 MPI_DOUBLE, 0, grid3d->zscp.comm);
     MPI_Gatherv(A->colind, A->nnz_loc, mpi_int_t, A2d.colind,
                 nnz_counts_int, nnz_disp,
-                MPI_DOUBLE, 0, grid3d->zscp.comm);
+                mpi_int_t, 0, grid3d->zscp.comm);
 
     MPI_Gatherv(&A->rowptr[1], A->m_loc, mpi_int_t, &A2d.rowptr[1],
                 row_counts_int, row_disp,
