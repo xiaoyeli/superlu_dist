@@ -96,7 +96,8 @@ NRformat_loc dGatherNRformat_loc(NRformat_loc *A,
     }
     
     // compacting B
-    double *Btmp =SUPERLU_MALLOC(A->m_loc*nrhs * sizeof(int_t));
+    double *Btmp;
+    Btmp =SUPERLU_MALLOC(A->m_loc*nrhs * sizeof(double));
     matCopy(A->m_loc, nrhs,  Btmp, A->m_loc,B, ldb); 
 
     double *B1;
