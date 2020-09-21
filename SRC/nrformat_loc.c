@@ -25,6 +25,10 @@ static void matCopy(int n, int m, double* Dst, int lddst
 // 			beyond the last row, so that rowptr[n_loc] = nnz_loc.*/
 // } NRformat_loc;
 
+/*
+ * Input:  {A, B, ldb} are distributed on 3D process grid
+ * Output: {A2d, B2d} are distributed on layer 0 2D process grid
+ */
 NRformat_loc dGatherNRformat_loc(NRformat_loc *A, 
     double* B, int ldb, int nrhs, double** B2d,
     gridinfo3d_t *grid3d)
@@ -75,11 +79,10 @@ NRformat_loc dGatherNRformat_loc(NRformat_loc *A,
     MPI_Gatherv(A->colind, A->nnz_loc, mpi_int_t, A2d.colind,
                 nnz_counts_int, nnz_disp,
                 mpi_int_t, 0, grid3d->zscp.comm);
-
     MPI_Gatherv(&A->rowptr[1], A->m_loc, mpi_int_t, &A2d.rowptr[1],
                 row_counts_int, row_disp,
                 mpi_int_t, 0, grid3d->zscp.comm);
-
+    
     if (grid3d->zscp.Iam == 0)
     {
         for (int i = 0; i < grid3d->npdep; i++)
@@ -92,7 +95,25 @@ NRformat_loc dGatherNRformat_loc(NRformat_loc *A,
         }   
         A2d.nnz_loc = nnz_disp[grid3d->npdep];
         A2d.m_loc = row_disp[grid3d->npdep];
-        A2d.fst_row = A->fst_row;
+#if 0	
+        A2d.fst_row = A->fst_row; // This is a bug
+#else
+	gridinfo_t *grid2d = &(grid3d->grid2d);
+	int procs2d = grid2d->nprow * grid2d->npcol;
+	int m_loc_2d = A2d.m_loc;
+	int* m_loc_2d_counts = SUPERLU_MALLOC(procs2d * sizeof(int));
+	
+	MPI_Allgather(&m_loc_2d, 1, MPI_INT, m_loc_2d_counts, 1, MPI_INT, grid2d->comm);
+
+	int fst_row = 0;
+	for (int p = 0; p < procs2d; ++p) {
+	    if (grid2d->iam == p) A2d.fst_row = fst_row;
+	    fst_row += m_loc_2d_counts[p];
+	}
+	
+	SUPERLU_FREE(m_loc_2d_counts);
+#endif	
+	
     }
     
     // compacting B
@@ -123,6 +144,16 @@ NRformat_loc dGatherNRformat_loc(NRformat_loc *A,
     }
 
 
-
+#if 0
+    /* free storage */
+    SUPERLU_FREE(nnz_counts);
+    SUPERLU_FREE(row_counts);
+    SUPERLU_FREE(nnz_counts_int);
+    SUPERLU_FREE(row_counts_int);
+    SUPERLU_FREE(nnz_disp);
+    SUPERLU_FREE(row_disp);
+    SUPERLU_FREE(b_disp);
+#endif
+    
     return A2d;
 }

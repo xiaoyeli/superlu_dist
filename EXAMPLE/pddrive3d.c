@@ -77,10 +77,18 @@ void checkNRFMT(NRformat_loc*A, NRformat_loc*B)
     assert(A->m_loc == B->m_loc);
     assert(A->fst_row == B->fst_row);
 
+#if 0
+    double *Aval = (double *)A->nzval, *Bval = (double *)B->nzval;
+    PrintDouble5("A", A->nnz_loc, Aval);
+    PrintDouble5("B", B->nnz_loc, Bval);
+    fflush(stdout);
+#endif
+    
     for (int_t i = 0; i < A->nnz_loc; i++)
     {
         assert(((double *)A->nzval)[i] == ((double *)B->nzval)[i]);
         assert((A->colind)[i] == (B->colind)[i]);
+	printf("colind[] correct\n");
     }
 
     for (int_t i = 0; i < A->m_loc + 1; i++)
@@ -88,7 +96,6 @@ void checkNRFMT(NRformat_loc*A, NRformat_loc*B)
         // assert(((double *)A->nzval)[i] ==((double *)B->nzval)[i]);
         assert((A->rowptr)[i] == (B->rowptr)[i]);
     }
-
 
     printf("Matrix check passed\n");
 
@@ -99,7 +106,7 @@ main (int argc, char *argv[])
 {
     superlu_dist_options_t options;
     SuperLUStat_t stat;
-    SuperMatrix A;  // only on process layer 0
+    SuperMatrix A;  // Now, A is on all 3D processes
     ScalePermstruct_t ScalePermstruct;
     LUstruct_t LUstruct;
     SOLVEstruct_t SOLVEstruct;
@@ -250,7 +257,9 @@ main (int argc, char *argv[])
     // *fp0 = *fp;
     dcreate_matrix_postfix3d(&A, nrhs, &b, &ldb,
                              &xtrue, &ldx, fp, suffix, &(grid));
-    #if 1
+    //printf("ldx %d, ldb %d\n", ldx, ldb);
+    
+#if 0  // following code is only for checking *Gather* routine
     double* B2d;
     NRformat_loc Atmp = dGatherNRformat_loc(
                             (NRformat_loc *) A.Store,
@@ -264,15 +273,25 @@ main (int argc, char *argv[])
         dcreate_matrix_postfix(&Aref, nrhs, &bref, &ldb,
                                &xtrueref, &ldx, fp0, 
                                suffix, &(grid.grid2d));
-        // for (int i = 0; i < 5; i++)
-        //     printf("%g %g\n", bref[i], b[i] );
         Astore0 = (NRformat_loc *) Aref.Store;
-        // checkNRFMT(Astore, Astore0);
+
+	/*
+	if ( (grid.grid2d).iam == 0 ) {
+	    printf(" iam %d\n", 0); 
+	    checkNRFMT(Astore, Astore0);
+	} else if ((grid.grid2d).iam == 1 ) {
+	    printf(" iam %d\n", 1); 
+	    checkNRFMT(Astore, Astore0);
+	} 
+	*/
+    
+	// bref, xtrueref are created on 2D
         matCheck(Astore->m_loc, nrhs, B2d, Astore->m_loc, bref, ldb);
     }
     // MPI_Finalize(); exit(0);
     #endif
 #endif
+    
     if (!(berr = doubleMalloc_dist (nrhs)))
         ABORT ("Malloc fails for berr[].");
 
@@ -313,14 +332,20 @@ main (int argc, char *argv[])
         fflush(stdout);
     }
 
+#ifdef NRFRMT  // Sherry: new 3D matrix
+    m = A.nrow;
+    n = A.ncol;
+#else
     if ( grid.zscp.Iam == 0 )  // Process layer 0
     {
         m = A.nrow;
         n = A.ncol;
     }
+    
     // broadcast m, n to all the process layers;
     MPI_Bcast( &m, 1, mpi_int_t, 0,  grid.zscp.comm);
     MPI_Bcast( &n, 1, mpi_int_t, 0,  grid.zscp.comm);
+#endif    
 
     /* Initialize ScalePermstruct and LUstruct. */
     ScalePermstructInit (m, n, &ScalePermstruct);
@@ -333,6 +358,9 @@ main (int argc, char *argv[])
     pdgssvx3d (&options, &A, &ScalePermstruct, b, ldb, nrhs, &grid,
                &LUstruct, &SOLVEstruct, berr, &stat, &info);
 
+    //PrintDouble5("After exit pdgssvx3d, solution b", ldb, b);
+    //PrintDouble5("After exit pdgssvx3d, xtrue", ldb, xtrue);
+	
     /* Check the accuracy of the solution. */
     if ( grid.zscp.Iam == 0 )  // Process layer 0
         pdinf_norm_error (iam, ((NRformat_loc *) A.Store)->m_loc,
@@ -342,16 +370,12 @@ main (int argc, char *argv[])
     /* ------------------------------------------------------------
        DEALLOCATE STORAGE.
        ------------------------------------------------------------ */
-
     if ( grid.zscp.Iam == 0 )   // process layer 0
     {
 
         PStatPrint (&options, &stat, &(grid.grid2d)); /* Print 2D statistics.*/
 
-        Destroy_CompRowLoc_Matrix_dist (&A);
         Destroy_LU (n, &(grid.grid2d), &LUstruct);
-        SUPERLU_FREE (b);
-        SUPERLU_FREE (xtrue);
         if (options.SolveInitialized)
         {
             dSolveFinalize (&options, &SOLVEstruct);
@@ -363,6 +387,9 @@ main (int argc, char *argv[])
         DeAllocGlu_3d(&LUstruct);
     }
 
+    Destroy_CompRowLoc_Matrix_dist (&A);
+    SUPERLU_FREE (b);
+    SUPERLU_FREE (xtrue);
     SUPERLU_FREE (berr);
     ScalePermstructFree (&ScalePermstruct);
     LUstructFree (&LUstruct);

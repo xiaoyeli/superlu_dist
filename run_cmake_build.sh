@@ -55,6 +55,7 @@ then
     -DCMAKE_INSTALL_PREFIX=.
 #    -DXSDK_INDEX_SIZE=64 \
 #    -DCMAKE_EXE_LINKER_FLAGS="-shared"
+    
 elif [ "$NERSC_HOST" == "cori" ]
 then
     rm -fr cori-build; mkdir cori-build; cd cori-build;
@@ -67,7 +68,7 @@ then
     -DTPL_ENABLE_BLASLIB=OFF \
     -DTPL_BLAS_LIBRARIES="-mkl" \
     -DCMAKE_Fortran_COMPILER=ftn \
-    -DCMAKE_C_FLAGS="-std=c99 -fPIC -DPRNTlevel=0" \
+    -DCMAKE_C_FLAGS="-std=c99 -fPIC -DPRNTlevel=1 -g -O0" \
     -DCMAKE_INSTALL_PREFIX=.
 #    -DXSDK_INDEX_SIZE=64
 #    -DCMAKE_EXE_LINKER_FLAGS="-shared" \

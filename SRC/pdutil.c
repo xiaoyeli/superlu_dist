@@ -82,6 +82,7 @@ int pdCompRow_loc_to_CompCol_global
     printf("Proc %d\n", grid->iam);
     PrintInt10("rowind_loc", nnz_loc, rowind_loc);
     PrintInt10("colptr_loc", n + 1, colptr_loc);
+    fflush(stdout);
 #endif
 
     procs = grid->nprow * grid->npcol;
@@ -119,9 +120,10 @@ int pdCompRow_loc_to_CompCol_global
         rdispls[i] = i * (n_loc + 1);
         j += n_locs[i]; /* First column of next block in colptr_loc[] */
     }
+
     MPI_Alltoallv(colptr_send, sendcnts, sdispls, mpi_int_t,
                   colptr_blk, recvcnts, rdispls, mpi_int_t, grid->comm);
-
+    
     /* Adjust colptr_blk[] so that they contain the local indices of the
        column pointers in the receive buffer. */
     nnz = 0; /* The running sum of the nonzeros counted by far */

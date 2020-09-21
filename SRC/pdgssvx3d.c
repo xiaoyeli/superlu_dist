@@ -619,29 +619,33 @@ pdgssvx3d (superlu_dist_options_t * options, SuperMatrix * A,
 	   ordering, symbolic factorization, distribution of L & U */
 #define NRFRMT
 
-	double* B2d;
-	int ldb2d;
+	/* Save the inputs: ldb -> ldb3d, and B -> B3d, Astore -> Astore3d 
+	   B3d and Astore3d will be restored on return  */
 	int ldb3d = ldb;
-	double* B3d = B; 
+	double* B3d = B;
+        NRformat_loc* Astore3d = (NRformat_loc *) A->Store;
+	
+	double* B2d;
+	//int ldb2d;  // not used
 	NRformat_loc Atmp = dGatherNRformat_loc(
 	                        (NRformat_loc *) A->Store,
 	                        B, ldb, nrhs, &B2d,
 	                        grid3d);
 
-	NRformat_loc* Astore0 = &Atmp;
+	NRformat_loc* Astore0 = &Atmp;  // Astore0 is on 2D
 	if (grid3d->zscp.Iam == 0)
 	{
-
-
 		m = A->nrow;
 		n = A->ncol;
 		// checkNRFMT(Astore0, (NRformat_loc *) A->Store);
 #ifdef NRFRMT
+		// On input, A->Store is on 3D, now A->Store is re-assigned to 2D store
 		A->Store = Astore0;
 		ldb = Astore0->m_loc;
-		B = B2d; 
+		B = B2d;  // B is now re-assigned to B2d
 #endif
-		Astore = (NRformat_loc *) A->Store;
+		//PrintDouble5("after gather B=B2d", ldb, B);
+		Astore = (NRformat_loc *) A->Store;  // on 2D
 
 // #ifdef NRFRMT
 // 		Astore = Astore0;
@@ -1096,7 +1100,8 @@ pdgssvx3d (superlu_dist_options_t * options, SuperMatrix * A,
 #if ( PRNTlevel>=1 )
 			if (!iam)
 			{
-				printf (".. anorm %e\n", anorm); fflush(stdout);
+			    printf (".. anorm %e\n", anorm); fflush(stdout);
+			    fflush(stdout);
 			}
 #endif
 		}
@@ -1214,10 +1219,12 @@ pdgssvx3d (superlu_dist_options_t * options, SuperMatrix * A,
 					/* Perform a symbolic factorization on Pc*Pr*A*Pc' and set up
 					   the nonzero data structures for L & U. */
 #if ( PRNTlevel>=1 )
-					if (!iam)
-						printf
+					if (!iam) {
+					    printf
 						(".. symbfact(): relax %4d, maxsuper %4d, fill %4d\n",
 						 sp_ienv_dist (2), sp_ienv_dist (3), sp_ienv_dist (6));
+					    fflush(stdout);
+					}
 #endif
 					t = SuperLU_timer_ ();
 					if (!(Glu_freeable = (Glu_freeable_t *)
@@ -1251,6 +1258,7 @@ pdgssvx3d (superlu_dist_options_t * options, SuperMatrix * A,
 							 symb_mem_usage.for_lu * 1e-6,
 							 symb_mem_usage.total * 1e-6,
 							 symb_mem_usage.expansions);
+							fflush(stdout);
 						}
 #endif
 					}
@@ -1534,6 +1542,8 @@ pdgssvx3d (superlu_dist_options_t * options, SuperMatrix * A,
 #else
 			pdgstrs(n, LUstruct, ScalePermstruct, grid, X, m_loc,
 			        fst_row, ldb, nrhs, SOLVEstruct, stat, info);
+			
+			//PrintDouble5("after pdgstrs X", ldb, X);
 #endif
 
 			/* ------------------------------------------------------------
@@ -1717,8 +1727,33 @@ pdgssvx3d (superlu_dist_options_t * options, SuperMatrix * A,
 #endif
 
 	} /* process layer 0 done solve */
-	// b2d->B 
 
+	// Sherry comment:
+	// Now, B <=> B2d, and is filled with the solution X
+	// B3d is the saved pointer of the B on input
+	// Need the following code:
+	//    - scatter the solution from 2D back to 3D: {B2d,ldb} -> {B3d,ldb3d}
+	//      (can we reuse b_count[] and b_disp[] already computed in 'Gather' routine?)
+
+#if 0 // for debugging	
+	if ( grid3d->zscp.Iam == 0 ) {  // only process layer 0
+	    PrintDouble5("Before exit pdgssvx3d, solution B2d", ldb, B2d);
+	    PrintDouble5("Before exit pdgssvx3d, solution B", ldb, B);
+	}
+	PrintDouble5("Before exit pdgssvx3d, solution B3d", ldb3d, B3d);
+	fflush(stdout);
+#endif
+
+	/* free storage, which are allocated only in layer 0 */
+	if ( grid3d->zscp.Iam == 0 ) {  // free matrix A and B2d on 2D
+	    SUPERLU_FREE( Atmp.rowptr );
+	    SUPERLU_FREE( Atmp.colind );
+	    SUPERLU_FREE( Atmp.nzval );
+	    SUPERLU_FREE(B2d);
+	}
+	
+	A->Store = Astore3d; // restore Astore to 3D
+	
 #if ( DEBUGlevel>=1 )
 	CHECK_MALLOC (iam, "Exit pdgssvx3d()");
 #endif
