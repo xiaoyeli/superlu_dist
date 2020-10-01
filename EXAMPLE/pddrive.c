@@ -68,7 +68,7 @@ int main(int argc, char *argv[])
 
     nprow = 1;  /* Default process rows.      */
     npcol = 1;  /* Default process columns.   */
-    nrhs = 100;   /* Number of right-hand side. */
+    nrhs = 1;   /* Number of right-hand side. */
 
     /* ------------------------------------------------------------
        INITIALIZE MPI ENVIRONMENT. 
@@ -197,7 +197,7 @@ int main(int argc, char *argv[])
 		options.DiagInv       = NO;
      */
     set_default_options_dist(&options);
-//	options.IterRefine = NOREFINE;
+	options.IterRefine = NOREFINE;
 	options.DiagInv = YES;
     options.ReplaceTinyPivot  = YES;
 	// options.Equil = NO; 

@@ -8,7 +8,7 @@ export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/opt/intel/compilers_and_libraries_2018.
 # module use /global/common/software/m3169/cori/modulefiles
 # module unload openmpi
 
-module load cmake/3.14.4
+module load cmake/3.18.2
 module load cuda/10.2.89
 module load openmpi/4.0.3
 
