@@ -1160,13 +1160,13 @@ __device__ void C_RdTree_forwardMessageSimple_Device(C_Tree* Tree, void* localBu
 							 }								
 							 lsum[il+i]=temp1; //reuse lsum as temporary output as it's no longer accessed
 						 }
-						 // __syncthreads();					
+						 __syncthreads();					
 							 
 						 for (i = tid; i < knsupc; i+=block_size){
 							 x[i + ii] = lsum[il+i];
 							 // printf("lk %5d %lf\n",lk,x[i + ii + j*knsupc]);
 							 }					
-						 // __syncthreads();		
+						 __syncthreads();		
 							 
  
 						 
@@ -1285,12 +1285,50 @@ __device__ void C_RdTree_forwardMessageSimple_Device(C_Tree* Tree, void* localBu
 			 
 						 temp=atomicAdd(&lsum[il+irow + j*iknsupc],-temp1);
 						 }
-						 if(i==nbrow+lsub[lptr1_tmp+1]-1){
-							 fmod_tmp=atomicSub(&fmod[lk*aln_i],1);
-							 // __threadfence();
-						 }
+						 
+						//  irow = lsub[lptr+i-nbrow] - rel; /* Relative row. */
+						//  if(i==nbrow+lsub[lptr1_tmp+1]-1){
+						// 	 fmod_tmp=atomicSub(&fmod[lk*aln_i],1);
+						// 	 // __threadfence();
+						//  }
+
+
 					 }
 					 __syncthreads();
+
+					 luptr_tmp1 = lloc[idx_v];
+					 lb = 0;
+					 nbrow=0;
+					 lptr1_tmp = lloc[lb+idx_i];
+					 lptr= lptr1_tmp+2;
+					 nbrow1 = lsub[lptr1_tmp+1];
+					 ik = lsub[lptr1_tmp]; /* Global block number, row-wise. */
+					 rel = xsup[ik]; /* Global row index of block ik. */
+					 lk = LBi( ik, grid ); /* Local block number, row-wise. */
+					 iknsupc = SuperSize( ik );
+					 il = LSUM_BLK( lk );	 
+
+					 for (i = tid; i < m; i+=block_size){
+						while(nbrow+lsub[lptr1_tmp+1]<=i){
+							lb++;
+							nbrow +=lsub[lptr1_tmp+1];
+							lptr1_tmp = lloc[lb+idx_i];
+							lptr= lptr1_tmp+2;
+							ik = lsub[lptr1_tmp]; /* Global block number, row-wise. */
+							rel = xsup[ik]; /* Global row index of block ik. */
+							lk = LBi( ik, grid ); /* Local block number, row-wise. */
+							iknsupc = SuperSize( ik );
+							il = LSUM_BLK( lk );				
+						}
+						
+						irow = lsub[lptr+i-nbrow] - rel; /* Relative row. */
+						if(i==nbrow+lsub[lptr1_tmp+1]-1){
+							fmod_tmp=atomicSub(&fmod[lk*aln_i],1);
+							// __threadfence();
+						}
+					}
+					__syncthreads();
+
 			 
 				 }else {				
 					 for (lb = 0; lb < nlb; lb++){
