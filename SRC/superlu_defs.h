@@ -1104,6 +1104,10 @@ NRformat_loc dGatherNRformat_loc(NRformat_loc *A,
     double* B, int ldb, int nrhs, double** B2d,
     gridinfo3d_t *grid3d);
 
+int dScatterB3d(NRformat_loc A2d, NRformat_loc *A,
+                         double *B, int ldb, int nrhs, double *B2d,
+                         gridinfo3d_t *grid3d);
+
 
 extern void DistPrint(char* function_name,  double value, char* Units, gridinfo_t* grid);
 extern void DistPrint3D(char* function_name,  double value, char* Units, gridinfo3d_t* grid3d);

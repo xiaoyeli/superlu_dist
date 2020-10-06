@@ -362,7 +362,9 @@ main (int argc, char *argv[])
     //PrintDouble5("After exit pdgssvx3d, xtrue", ldb, xtrue);
 	
     /* Check the accuracy of the solution. */
+    #ifndef NRFRMT
     if ( grid.zscp.Iam == 0 )  // Process layer 0
+    #endif 
         pdinf_norm_error (iam, ((NRformat_loc *) A.Store)->m_loc,
                           nrhs, b, ldb, xtrue, ldx, &(grid.grid2d));
     fflush(stdout);
