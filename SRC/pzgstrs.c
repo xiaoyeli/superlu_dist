@@ -974,6 +974,8 @@ pzgstrs(int_t n, zLUstruct_t *LUstruct,
     		num_thread = omp_get_num_threads ();
     	}
     }
+#else
+	num_thread=1;
 #endif
 
 #if ( PRNTlevel>=1 )
@@ -1061,13 +1063,12 @@ pzgstrs(int_t n, zLUstruct_t *LUstruct,
 #ifdef _OPENMP
     if ( !(lsum = (doublecomplex*)SUPERLU_MALLOC(sizelsum*num_thread * sizeof(doublecomplex))))
 	ABORT("Malloc fails for lsum[].");
-#pragma omp parallel default(shared) private(ii,thread_id)
+#pragma omp parallel default(shared) private(ii)
     {
-	for (ii=0; ii<sizelsum; ii++){
-			thread_id = omp_get_thread_num ();
+	int thread_id = omp_get_thread_num(); //mjc
+	for (ii=0; ii<sizelsum; ii++)
     	    lsum[thread_id*sizelsum+ii]=zero;
-		}
-	}
+    }
 #else
     if ( !(lsum = (doublecomplex*)SUPERLU_MALLOC(sizelsum*num_thread * sizeof(doublecomplex))))
   	    ABORT("Malloc fails for lsum[].");
@@ -1082,12 +1083,11 @@ pzgstrs(int_t n, zLUstruct_t *LUstruct,
     if ( !(rtemp = (doublecomplex*)SUPERLU_MALLOC((sizertemp*num_thread + 1) * sizeof(doublecomplex))) )
 	ABORT("Malloc fails for rtemp[].");
 #ifdef _OPENMP
-#pragma omp parallel default(shared) private(ii,thread_id)
+#pragma omp parallel default(shared) private(ii)
     {
-	for ( ii=0; ii<sizertemp; ii++ ){
-		thread_id = omp_get_thread_num ();
+	int thread_id=omp_get_thread_num();
+	for ( ii=0; ii<sizertemp; ii++ )
 		rtemp[thread_id*sizertemp+ii]=zero;
-		}
     }
 #else
     for ( ii=0; ii<sizertemp*num_thread; ii++ )
@@ -1122,9 +1122,6 @@ pzgstrs(int_t n, zLUstruct_t *LUstruct,
 #endif
 
     /* Set up the headers in lsum[]. */
-#ifdef _OPENMP
-	#pragma omp simd lastprivate(krow,lk,il)
-#endif
     for (k = 0; k < nsupers; ++k) {
 	krow = PROW( k, grid );
 	if ( myrow == krow ) {
@@ -1195,9 +1192,7 @@ if(procs==1){
 }
 
 
-#ifdef _OPENMP
-#pragma omp simd
-#endif
+
 	for (i = 0; i < nlb; ++i) fmod[i*aln_i] += frecv[i];
 
 	if ( !(recvbuf_BC_fwd = (doublecomplex*)SUPERLU_MALLOC(maxrecvsz*(nfrecvx+1) * sizeof(doublecomplex))) )  // this needs to be optimized for 1D row mapping
@@ -1243,14 +1238,18 @@ if(procs==1){
 
 #ifdef _OPENMP
 #pragma omp parallel default (shared)
+{
+int thread_id = omp_get_thread_num();
+#else
+{
+thread_id=0;
 #endif
-	{
 		{
 
             if (Llu->inv == 1) { /* Diagonal is inverted. */
 
 #ifdef _OPENMP
-#pragma	omp	for firstprivate(nrhs,beta,alpha,x,rtemp,ldalsum) private (ii,k,knsupc,lk,luptr,lsub,nsupr,lusup,t1,t2,Linv,i,lib,rtemp_loc,nleaf_send_tmp,thread_id) nowait
+#pragma	omp	for firstprivate(nrhs,beta,alpha,x,rtemp,ldalsum) private (ii,k,knsupc,lk,luptr,lsub,nsupr,lusup,t1,t2,Linv,i,lib,rtemp_loc,nleaf_send_tmp) nowait
 #endif
 			for (jj=0;jj<nleaf;jj++){
 				k=leafsups[jj];
@@ -1263,7 +1262,6 @@ if(procs==1){
 #if ( PROFlevel>=1 )
 					TIC(t1);
 #endif
-					thread_id = omp_get_thread_num ();
 					rtemp_loc = &rtemp[sizertemp* thread_id];
 
 
@@ -1292,9 +1290,7 @@ if(procs==1){
 							&knsupc, &beta, rtemp_loc, &knsupc );
 #endif
 
-				#ifdef _OPENMP
-					#pragma omp simd
-				#endif
+
 					for (i=0 ; i<knsupc*nrhs ; i++){
 						z_copy(&x[ii+i],&rtemp_loc[i]);
 					}
@@ -1339,7 +1335,7 @@ if(procs==1){
 			}
 	} else { /* Diagonal is not inverted. */
 #ifdef _OPENMP
-#pragma	omp	for firstprivate (nrhs,beta,alpha,x,rtemp,ldalsum) private (ii,k,knsupc,lk,luptr,lsub,nsupr,lusup,t1,t2,Linv,i,lib,rtemp_loc,nleaf_send_tmp,thread_id) nowait
+#pragma	omp	for firstprivate (nrhs,beta,alpha,x,rtemp,ldalsum) private (ii,k,knsupc,lk,luptr,lsub,nsupr,lusup,t1,t2,Linv,i,lib,rtemp_loc,nleaf_send_tmp) nowait
 #endif
 	    for (jj=0;jj<nleaf;jj++) {
 		k=leafsups[jj];
@@ -1348,7 +1344,6 @@ if(procs==1){
 #if ( PROFlevel>=1 )
 		    TIC(t1);
 #endif
-			thread_id = omp_get_thread_num ();
 			rtemp_loc = &rtemp[sizertemp* thread_id];
 
 		    knsupc = SuperSize( k );
@@ -1410,8 +1405,10 @@ if(procs==1){
 
 #ifdef _OPENMP
 #pragma omp parallel default (shared)
+	{
+#else
+	{
 #endif
-		{
 
 
 #ifdef _OPENMP
@@ -1425,9 +1422,13 @@ if(procs==1){
 
 					for (jj=0;jj<nleaf;jj++){
 						k=leafsups[jj];
-						thread_id = omp_get_thread_num ();
 
 						{
+#ifdef _OPENMP
+							thread_id=omp_get_thread_num();
+#else
+							thread_id=0;
+#endif							
 							/* Diagonal process */
 							lk = LBi( k, grid );
 							ii = X_BLK( lk );
@@ -1472,8 +1473,12 @@ if(procs==1){
 
 #ifdef _OPENMP
 #pragma omp parallel default (shared)
-#endif
 			{
+	int thread_id = omp_get_thread_num();
+#else
+	{
+	thread_id=0;
+#endif
 #ifdef _OPENMP
 #pragma omp master
 #endif
@@ -1579,9 +1584,7 @@ if(procs==1){
 											// ii = X_BLK( lk );
 											knsupc = SuperSize( k );
 											for (ii=1;ii<num_thread;ii++)
-											#ifdef _OPENMP
-												#pragma omp simd
-											#endif
+
 												for (jj=0;jj<knsupc*nrhs;jj++)
 													z_add(&lsum[il + jj ],
 														  &lsum[il + jj ],
@@ -1589,9 +1592,7 @@ if(procs==1){
 
 											ii = X_BLK( lk );
 											RHS_ITERATE(j)
-												#ifdef _OPENMP
-													#pragma omp simd
-												#endif
+
 												for (i = 0; i < knsupc; ++i)
 													z_add(&x[i + ii + j*knsupc],
 														  &x[i + ii + j*knsupc],
@@ -1622,9 +1623,7 @@ if(procs==1){
 														&alpha, Linv, &knsupc, &x[ii],
 														&knsupc, &beta, rtemp_loc, &knsupc );
 #endif
-												#ifdef _OPENMP
-													#pragma omp simd
-												#endif
+
 												for (i=0 ; i<knsupc*nrhs ; i++){
 													z_copy(&x[ii+i],&rtemp_loc[i]);
 												}
@@ -1686,9 +1685,7 @@ if(procs==1){
 										knsupc = SuperSize( k );
 
 										for (ii=1;ii<num_thread;ii++)
-											#ifdef _OPENMP
-												#pragma omp simd
-											#endif
+
 											for (jj=0;jj<knsupc*nrhs;jj++)
 												z_add(&lsum[il + jj ],
 													  &lsum[il + jj ],
@@ -1802,15 +1799,12 @@ if(procs==1){
 
 #pragma omp parallel default(shared) private(ii,thread_id)
 	{
-		for(ii=0;ii<sizelsum;ii++){
-			thread_id = omp_get_thread_num ();
+		int thread_id = omp_get_thread_num();
+		for(ii=0;ii<sizelsum;ii++)
 			lsum[thread_id*sizelsum+ii]=zero;
-		}
 	}
     /* Set up the headers in lsum[]. */
-#ifdef _OPENMP
-	#pragma omp simd lastprivate(krow,lk,il)
-#endif
+
     for (k = 0; k < nsupers; ++k) {
 	krow = PROW( k, grid );
 	if ( myrow == krow ) {
@@ -1921,9 +1915,6 @@ if(procs==1){
 		}
 	}
 
-	#ifdef _OPENMP
-	#pragma omp simd
-	#endif
 	for (i = 0; i < nlb; ++i) bmod[i*aln_i] += brecv[i];
 	// for (i = 0; i < nlb; ++i)printf("bmod[i]: %5d\n",bmod[i]);
 
@@ -1961,8 +1952,10 @@ if(procs==1){
 
 #ifdef _OPENMP
 #pragma omp parallel default (shared)
-#endif
 	{
+#else
+	{
+#endif
 #ifdef _OPENMP
 #pragma omp master
 #endif
@@ -1976,8 +1969,12 @@ if(procs==1){
 #if ( PROFlevel>=1 )
 			TIC(t1);
 #endif
+#ifdef _OPENMP
+			thread_id=omp_get_thread_num();
+#else
+			thread_id=0;
+#endif
 
-			thread_id = omp_get_thread_num ();
 			rtemp_loc = &rtemp[sizertemp* thread_id];
 
 
@@ -2009,9 +2006,7 @@ if(procs==1){
 						&alpha, Uinv, &knsupc, &x[ii],
 						&knsupc, &beta, rtemp_loc, &knsupc );
 #endif
-				#ifdef _OPENMP
-					#pragma omp simd
-				#endif
+
 				for (i=0 ; i<knsupc*nrhs ; i++){
 					z_copy(&x[ii+i],&rtemp_loc[i]);
 				}
@@ -2058,8 +2053,10 @@ if(procs==1){
 
 #ifdef _OPENMP
 #pragma omp parallel default (shared)
-#endif
 	{
+#else
+	{
+#endif
 #ifdef _OPENMP
 #pragma omp master
 #endif
@@ -2072,7 +2069,11 @@ if(procs==1){
 			lk = LBi( k, grid ); /* Local block number, row-wise. */
 			ii = X_BLK( lk );
 			lk = LBj( k, grid ); /* Local block number, column-wise */
-			thread_id = omp_get_thread_num ();
+#ifdef _OPENMP
+			thread_id=omp_get_thread_num();
+#else
+			thread_id=0;
+#endif
 			/*
 			 * Perform local block modifications: lsum[i] -= U_i,k * X[k]
 			 */
@@ -2107,8 +2108,12 @@ for (i=0;i<nroot_send;i++){
 
 #ifdef _OPENMP
 #pragma omp parallel default (shared)
-#endif
 	{
+	int thread_id=omp_get_thread_num();
+#else
+	{
+	thread_id=0;
+#endif
 #ifdef _OPENMP
 #pragma omp master
 #endif
@@ -2172,9 +2177,7 @@ for (i=0;i<nroot_send;i++){
 				tempv = &recvbuf0[LSUM_H];
 				il = LSUM_BLK( lk );
 				RHS_ITERATE(j) {
-					#ifdef _OPENMP
-						#pragma omp simd
-					#endif
+
 					for (i = 0; i < knsupc; ++i)
 						z_add(&lsum[i + il + j*knsupc + thread_id*sizelsum],
 							  &lsum[i + il + j*knsupc + thread_id*sizelsum],
@@ -2192,9 +2195,7 @@ for (i=0;i<nroot_send;i++){
 
 						knsupc = SuperSize( k );
 						for (ii=1;ii<num_thread;ii++)
-							#ifdef _OPENMP
-								#pragma omp simd
-							#endif
+
 							for (jj=0;jj<knsupc*nrhs;jj++)
 								z_add(&lsum[il+ jj ],
 									  &lsum[il+ jj ],
@@ -2202,9 +2203,6 @@ for (i=0;i<nroot_send;i++){
 
 						ii = X_BLK( lk );
 						RHS_ITERATE(j)
-							#ifdef _OPENMP
-								#pragma omp simd
-							#endif
 							for (i = 0; i < knsupc; ++i)
 							    z_add(&x[i + ii + j*knsupc],
 									  &x[i + ii + j*knsupc],
@@ -2233,9 +2231,7 @@ for (i=0;i<nroot_send;i++){
 									&knsupc, &beta, rtemp_loc, &knsupc );
 #endif
 
-							#ifdef _OPENMP
-								#pragma omp simd
-							#endif
+
 							for (i=0 ; i<knsupc*nrhs ; i++){
 								z_copy(&x[ii+i],&rtemp_loc[i]);
 							}
@@ -2285,9 +2281,6 @@ for (i=0;i<nroot_send;i++){
 						knsupc = SuperSize( k );
 
 						for (ii=1;ii<num_thread;ii++)
-							#ifdef _OPENMP
-								#pragma omp simd
-							#endif
 							for (jj=0;jj<knsupc*nrhs;jj++)
 								z_add(&lsum[il+ jj ],
 									  &lsum[il+ jj ],
