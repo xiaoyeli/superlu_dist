@@ -198,7 +198,6 @@ pdReDistribute_B_to_X(double *B, int_t m_loc, int nrhs, int_t ldb,
     /* ------------------------------------------------------------
        NOW COMMUNICATE THE ACTUAL DATA.
        ------------------------------------------------------------*/
-printf("in pdReDistribute_B_to_X\n");//mjc
 	if(procs==1){ // faster memory copy when procs=1
 
 #ifdef _OPENMP
@@ -455,7 +454,6 @@ pdReDistribute_X_to_B(int_t n, double *B, int_t m_loc, int_t ldb, int_t fst_row,
 
 
 	if(procs==1){ //faster memory copy when procs=1
-printf("in pdReDistribute_X_to_B\n");//mjc
 #ifdef _OPENMP
 #pragma omp parallel default (shared)
 #endif
