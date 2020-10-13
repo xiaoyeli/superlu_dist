@@ -619,19 +619,26 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 	   B3d and Astore3d will be restored on return  */
 	int ldb3d = ldb;
 	double *B3d = B;
+
 	NRformat_loc *Astore3d = (NRformat_loc *)A->Store;
 
 	double *B2d;
-	//int ldb2d;  // not used
+//int ldb2d;  // not used
+#if 0
 	NRformat_loc Atmp = dGatherNRformat_loc(
 		(NRformat_loc *)A->Store,
 		B, ldb, nrhs, &B2d,
 		grid3d);
 
-	// dGatherNRformat_loc(NRformat_loc3d * A3d, grid3d);
-	// dScatterBNRformat_loc(NRformat_loc3d * A3d, grid3d);
-
 	NRformat_loc *Astore0 = &Atmp; // Astore0 is on 2D
+#else
+	NRformat_loc3d *A3d = dGatherNRformat_loc3d(
+		(NRformat_loc *)A->Store,
+		B, ldb, nrhs, grid3d);
+	B2d = A3d->B2d; 
+	NRformat_loc *Astore0 = A3d->A_nfmt; 
+#endif
+
 	NRformat_loc *A_orig = A->Store;
 	if (grid3d->zscp.Iam == 0)
 	{
@@ -1739,11 +1746,12 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 	} /* process layer 0 done solve */
 
 #ifdef NRFRMT
-	dScatterB3d(Atmp,
-				A_orig,
-				B3d, ldb, nrhs, B2d,
-				grid3d);
-#endif 
+dScatterB3d_(A3d, grid3d);
+	// dScatterB3d(*(A3d->A_nfmt),
+	// 			A_orig,
+	// 			B3d, ldb, nrhs, B2d,
+	// 			grid3d);
+#endif
 	//  double *B, int ldb, int nrhs, double *B2d,
 	//  gridinfo3d_t *grid3d);
 
@@ -1766,9 +1774,9 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 	/* free storage, which are allocated only in layer 0 */
 	if (grid3d->zscp.Iam == 0)
 	{ // free matrix A and B2d on 2D
-		SUPERLU_FREE(Atmp.rowptr);
-		SUPERLU_FREE(Atmp.colind);
-		SUPERLU_FREE(Atmp.nzval);
+		// SUPERLU_FREE(Atmp.rowptr);
+		// SUPERLU_FREE(Atmp.colind);
+		// SUPERLU_FREE(Atmp.nzval);
 		// SUPERLU_FREE(B2d);
 	}
 

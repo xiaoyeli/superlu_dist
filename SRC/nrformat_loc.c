@@ -146,6 +146,8 @@ NRformat_loc dGatherNRformat_loc(NRformat_loc *A,
         SUPERLU_FREE(B1);
     }
 
+
+
 #if 0
     /* free storage */
     SUPERLU_FREE(nnz_counts);
@@ -162,10 +164,63 @@ NRformat_loc dGatherNRformat_loc(NRformat_loc *A,
 
 // X2d <- A^{-1} B2D
 
-int dScatterB3d(NRformat_loc A2d, NRformat_loc *A,
-                         double *B, int ldb, int nrhs, double *B2d,
-                         gridinfo3d_t *grid3d)
+int dScatterB3d_(NRformat_loc3d *A3d, gridinfo3d_t *grid3d)
 {
+
+    double *B = A3d->B;
+    int ldb = A3d->ldb;
+    int nrhs = A3d->nrhs;
+    double *B2d = A3d->B2d;
+    NRformat_loc A2d = *(A3d->A_nfmt);
+    int m_loc = A3d->m_loc;
+    int *b_counts_int = A3d->b_counts_int;
+    int *b_disp = A3d->b_disp;
+    int *row_counts_int = A3d->row_counts_int;
+    int *row_disp = A3d->row_disp;
+
+    double *B1;
+    if (grid3d->zscp.Iam == 0)
+    {
+        B1 = SUPERLU_MALLOC(A2d.m_loc * nrhs * sizeof(double));
+    }
+
+    // B1 <- blockByBock(b2d)
+    if (grid3d->zscp.Iam == 0)
+    {
+        for (int i = 0; i < grid3d->npdep; ++i)
+        {
+            /* code */
+            matCopy(row_counts_int[i], nrhs, B1 + nrhs * row_disp[i], row_counts_int[i],
+                    B2d + row_disp[i], A2d.m_loc);
+        }
+    }
+
+    //
+    double *Btmp;
+    Btmp = SUPERLU_MALLOC(A3d->m_loc * nrhs * sizeof(double));
+
+    // Bttmp <- scatterv(B1)
+    MPI_Scatterv(B1, b_counts_int, b_disp, MPI_DOUBLE,
+                 Btmp, nrhs * A3d->m_loc, MPI_DOUBLE, 0, grid3d->zscp.comm);
+
+    // B <- colMajor(Btmp)
+    matCopy(A3d->m_loc, nrhs, B, ldb, Btmp, A3d->m_loc);
+
+    return 0;
+}
+
+NRformat_loc3d *dGatherNRformat_loc3d(NRformat_loc *A,
+                                      double *B, int ldb, int nrhs,
+                                      gridinfo3d_t *grid3d)
+{
+    NRformat_loc3d *A3d = SUPERLU_MALLOC(sizeof(NRformat_loc3d));
+    NRformat_loc *A2d = SUPERLU_MALLOC(sizeof(NRformat_loc));
+    A3d->m_loc = A->m_loc;
+    A3d->B = B;
+    A3d->ldb = ldb;
+    A3d->nrhs = nrhs;
+
+    // find number of nnzs
     int_t *nnz_counts, *row_counts;
     int *nnz_disp, *row_disp, *nnz_counts_int, *row_counts_int;
     int *b_counts_int, *b_disp;
@@ -195,34 +250,94 @@ int dScatterB3d(NRformat_loc A2d, NRformat_loc *A,
         b_counts_int[i] = nrhs * row_counts[i];
     }
 
+    if (grid3d->zscp.Iam == 0)
+    {
+        A2d->colind = SUPERLU_MALLOC(nnz_disp[grid3d->npdep] * sizeof(int_t));
+        A2d->nzval = SUPERLU_MALLOC(nnz_disp[grid3d->npdep] * sizeof(double));
+        A2d->rowptr = SUPERLU_MALLOC((row_disp[grid3d->npdep] + 1) * sizeof(int_t));
+        A2d->rowptr[0] = 0;
+    }
+
+    MPI_Gatherv(A->nzval, A->nnz_loc, MPI_DOUBLE, A2d->nzval,
+                nnz_counts_int, nnz_disp,
+                MPI_DOUBLE, 0, grid3d->zscp.comm);
+    MPI_Gatherv(A->colind, A->nnz_loc, mpi_int_t, A2d->colind,
+                nnz_counts_int, nnz_disp,
+                mpi_int_t, 0, grid3d->zscp.comm);
+    MPI_Gatherv(&A->rowptr[1], A->m_loc, mpi_int_t, &A2d->rowptr[1],
+                row_counts_int, row_disp,
+                mpi_int_t, 0, grid3d->zscp.comm);
+
+    if (grid3d->zscp.Iam == 0)
+    {
+        for (int i = 0; i < grid3d->npdep; i++)
+        {
+            for (int j = row_disp[i] + 1; j < row_disp[i + 1] + 1; j++)
+            {
+                // A2d->rowptr[j] += row_disp[i];
+                A2d->rowptr[j] += nnz_disp[i];
+            }
+        }
+        A2d->nnz_loc = nnz_disp[grid3d->npdep];
+        A2d->m_loc = row_disp[grid3d->npdep];
+#if 0	
+        A2d->fst_row = A->fst_row; // This is a bug
+#else
+        gridinfo_t *grid2d = &(grid3d->grid2d);
+        int procs2d = grid2d->nprow * grid2d->npcol;
+        int m_loc_2d = A2d->m_loc;
+        int *m_loc_2d_counts = SUPERLU_MALLOC(procs2d * sizeof(int));
+
+        MPI_Allgather(&m_loc_2d, 1, MPI_INT, m_loc_2d_counts, 1, MPI_INT, grid2d->comm);
+
+        int fst_row = 0;
+        for (int p = 0; p < procs2d; ++p)
+        {
+            if (grid2d->iam == p)
+                A2d->fst_row = fst_row;
+            fst_row += m_loc_2d_counts[p];
+        }
+
+        SUPERLU_FREE(m_loc_2d_counts);
+#endif
+    }
+    // Btmp <- compact(B)
+    // compacting B
+    double *Btmp;
+    Btmp = SUPERLU_MALLOC(A->m_loc * nrhs * sizeof(double));
+    matCopy(A->m_loc, nrhs, Btmp, A->m_loc, B, ldb);
+
     double *B1;
     if (grid3d->zscp.Iam == 0)
     {
-        B1 = SUPERLU_MALLOC(A2d.m_loc * nrhs * sizeof(double));
+        B1 = SUPERLU_MALLOC(A2d->m_loc * nrhs * sizeof(double));
+        A3d->B2d = SUPERLU_MALLOC(A2d->m_loc * nrhs * sizeof(double));
     }
 
-    // B1 <- blockByBock(b2d)
+    // B1 <- gatherv(Btmp)
+    MPI_Gatherv(Btmp, nrhs * A->m_loc, MPI_DOUBLE, B1,
+                b_counts_int, b_disp,
+                MPI_DOUBLE, 0, grid3d->zscp.comm);
+
+    // B2d <- colMajor(B1)
     if (grid3d->zscp.Iam == 0)
     {
         for (int i = 0; i < grid3d->npdep; ++i)
         {
             /* code */
-            matCopy(row_counts_int[i], nrhs, B1 + nrhs * row_disp[i], row_counts_int[i],
-             B2d + row_disp[i], A2d.m_loc);
+            matCopy(row_counts_int[i], nrhs, A3d->B2d + row_disp[i], A2d->m_loc,
+                    B1 + nrhs * row_disp[i], row_counts_int[i]);
         }
-    
+
+        SUPERLU_FREE(B1);
     }
 
-    //
-    double *Btmp;
-    Btmp = SUPERLU_MALLOC(A->m_loc * nrhs * sizeof(double));
+    A3d->A_nfmt = A2d;
+    A3d->b_counts_int = b_counts_int;
+    A3d->b_disp = b_disp;
+    A3d->row_counts_int = row_counts_int;
+    A3d->row_disp = row_disp;
 
-    // Bttmp <- scatterv(B1)
-    MPI_Scatterv(B1, b_counts_int, b_disp, MPI_DOUBLE,  
-        Btmp, nrhs * A->m_loc, MPI_DOUBLE, 0, grid3d->zscp.comm);
-
-    // B <- colMajor(Btmp)
-    matCopy(A->m_loc, nrhs, B, ldb,Btmp, A->m_loc);
-
-    return 0;
+    return A3d;
+    // , double **B2d,
 }

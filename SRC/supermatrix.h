@@ -188,4 +188,20 @@ typedef struct {
 } NRformat_loc;
 
 
+typedef struct NRformat_loc3d
+{
+    NRformat_loc* A_nfmt; 
+    double* B;
+    int  ldb;
+    int nrhs;
+    int m_loc; 
+    double* B2d;
+
+    int* row_counts_int;
+    int* row_disp;
+    int* b_counts_int;
+    int* b_disp;
+} NRformat_loc3d;
+
+
 #endif  /* __SUPERLU_SUPERMATRIX */
