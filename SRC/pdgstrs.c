@@ -1179,7 +1179,7 @@ if(procs==1){
     
     for (bcidx=0;bcidx<Pr;bcidx++){
         for(int tmp=0;tmp<bcidx;tmp++){
-            BC_taskbuf_offset[bcidx] += BufSize[tmp]*maxrecvsz*2;
+            BC_taskbuf_offset[bcidx] += BufSize[tmp]*maxrecvsz;
         }       
 #if ( DEBUGlevel>=1 )        
         printf("iam=%d, BC_taskbuf_offset[%d]=%lu\n",iam,bcidx,BC_taskbuf_offset[bcidx]);
@@ -1188,7 +1188,7 @@ if(procs==1){
     }
     for (rdidx=0;rdidx<Pc;rdidx++){
         for(int tmp=0;tmp<rdidx;tmp++){ 
-                RD_taskbuf_offset[rdidx] += BufSize_rd[tmp]*maxrecvsz*2; 
+                RD_taskbuf_offset[rdidx] += BufSize_rd[tmp]*maxrecvsz; 
         }        
 #if ( DEBUGlevel>=1 )        
         printf("iam=%d, RD_taskbuf_offset[%d]=%lu\n",iam,rdidx,RD_taskbuf_offset[rdidx]);
