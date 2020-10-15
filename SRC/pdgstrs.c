@@ -1148,7 +1148,7 @@ if(procs==1){
     
     if( Pr > 1){
         for (i=0;i<Pr;i++){
-                BCbase[i] = recv_size_all[i]*maxrecvsz*2;
+                BCbase[i] = recv_size_all[i]*maxrecvsz;
                 validBCQindex[i]=keep_validBCQindex[i];
                 validBCQindex_u[i]=keep_validBCQindex_u[i];
 #if ( DEBUGlevel>=1 )        
@@ -1159,7 +1159,7 @@ if(procs==1){
     }
     if(Pc > 1){
             for (i=0;i<Pc;i++){
-                    RDbase[i] = recv_size_all[Pr+i]*maxrecvsz*2;
+                    RDbase[i] = recv_size_all[Pr+i]*maxrecvsz;
                     validRDQindex[i]=keep_validRDQindex[i];
                     validRDQindex_u[i]=keep_validRDQindex_u[i];
 #if ( DEBUGlevel>=1 )        
