@@ -1,17 +1,20 @@
 #!/bin/bash
-# module load parmetis/4.0.3
+# Bash script to submit many files to Cori/Edison/Queue
+module unload cray-mpich/7.7.6
+module swap PrgEnv-intel PrgEnv-gnu
+export MKLROOT=/opt/intel/compilers_and_libraries_2018.1.163/linux/mkl
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/opt/intel/compilers_and_libraries_2018.1.163/linux/mkl/lib/intel64
 
-module load essl
-module load netlib-lapack/3.8.0
-module load gcc/7.4.0
-module load cmake
-module load cuda/10.1.243
-				 
+# module use /global/common/software/m3169/cori/modulefiles
+# module unload openmpi
+
+module load cmake/3.18.2
+module load cuda/10.2.89
+module load openmpi/4.0.3
 
 export CRAYPE_LINK_TYPE=dynamic
-export PARMETIS_ROOT=/ccs/home/liuyangz/my_software/parmetis-4.0.3
-export PARMETIS_BUILD_DIR=${PARMETIS_ROOT}/shared-build-gcc64/Linux-ppc64le
-export ACC=GPU
+export PARMETIS_ROOT=~/Cori/my_software/parmetis-4.0.3_dynamic_openmpi403_gnu
+export PARMETIS_BUILD_DIR=${PARMETIS_ROOT}/build/Linux-x86_64 
 rm -rf CMakeCache.txt
 rm -rf CMakeFiles
 rm -rf CTestTestfile.cmake
@@ -19,25 +22,20 @@ rm -rf cmake_install.cmake
 rm -rf DartConfiguration.tcl 
 
 
-
-
 cmake .. \
-	-DTPL_PARMETIS_INCLUDE_DIRS="${PARMETIS_ROOT}/include;${PARMETIS_ROOT}/metis/include;${OLCF_CUDA_ROOT}/include" \
-	-DTPL_PARMETIS_LIBRARIES="${PARMETIS_BUILD_DIR}/libparmetis/libparmetis.so;${PARMETIS_BUILD_DIR}/libmetis/libmetis.so" \
-	-DTPL_CUDA_LIBRARIES="${OLCF_CUDA_ROOT}/lib64/libcublas.so;${OLCF_CUDA_ROOT}/lib64/libcusparse.so;${OLCF_CUDA_ROOT}/lib64/libcudart.so" \
-	-Denable_blaslib=OFF \
+	-DTPL_PARMETIS_INCLUDE_DIRS="${PARMETIS_ROOT}/include;${PARMETIS_ROOT}/metis/include" \
+	-DTPL_PARMETIS_LIBRARIES="${PARMETIS_BUILD_DIR}/libparmetis/libparmetis.so;${PARMETIS_BUILD_DIR}/libmetis/libmetis.so;${LIB_VTUNE}" \
 	-DBUILD_SHARED_LIBS=ON \
+	-DTPL_BLAS_LIBRARIES="${MKLROOT}/lib/intel64/libmkl_gf_lp64.so;${MKLROOT}/lib/intel64/libmkl_gnu_thread.so;${MKLROOT}/lib/intel64/libmkl_core.so;${MKLROOT}/lib/intel64/libmkl_def.so;${MKLROOT}/lib/intel64/libmkl_avx.so" \
+	-DTPL_LAPACK_LIBRARIES="${MKLROOT}/lib/intel64/libmkl_gf_lp64.so;${MKLROOT}/lib/intel64/libmkl_gnu_thread.so;${MKLROOT}/lib/intel64/libmkl_core.so;${MKLROOT}/lib/intel64/libmkl_def.so;${MKLROOT}/lib/intel64/libmkl_avx.so" \
 	-DCMAKE_C_COMPILER=mpicc \
-	-DCMAKE_CXX_COMPILER=mpiCC \
+    -DCMAKE_CXX_COMPILER=mpic++ \
+    -DCMAKE_Fortran_COMPILER=mpif90 \
 	-DCMAKE_INSTALL_PREFIX=. \
-	-DTPL_BLAS_LIBRARIES="${OLCF_ESSL_ROOT}/lib64/libessl.so;${OLCF_NETLIB_LAPACK_ROOT}/lib64/libblas.so" \
-	-DTPL_LAPACK_LIBRARIES="${OLCF_ESSL_ROOT}/lib64/libessl.so;${OLCF_NETLIB_LAPACK_ROOT}/lib64/liblapack.so" \
 	-DCMAKE_BUILD_TYPE=Release \
-	-DTPL_ENABLE_CUDALIB=ON \
 	-DCMAKE_VERBOSE_MAKEFILE:BOOL=ON \
 	-DCMAKE_CXX_FLAGS="-Ofast -DRELEASE ${INC_VTUNE}" \
-	-DCMAKE_C_FLAGS="-std=c11 -DPRNTlevel=1 -DPROFlevel=0 -DDEBUGlevel=0 -DGPU_ACC" \
-	-DCMAKE_CUDA_FLAGS="--disable-warnings -DPRNTlevel=1 -DPROFlevel=0 -DDEBUGlevel=0 -DGPU_ACC -gencode arch=compute_70,code=sm_70"
+    -DCMAKE_C_FLAGS="-std=c11 -DPRNTlevel=1 -DPROFlevel=0 -DDEBUGlevel=0 ${INC_VTUNE}" 
 make pddrive			
 #	-DTPL_BLAS_LIBRARIES="/opt/intel/compilers_and_libraries_2017.2.174/linux/mkl/lib/intel64/libmkl_intel_lp64.so;/opt/intel/compilers_and_libraries_2017.2.174/linux/mkl/lib/intel64/libmkl_sequential.so;/opt/intel/compilers_and_libraries_2017.2.174/linux/mkl/lib/intel64/libmkl_core.so"
 

@@ -199,7 +199,7 @@ int main(int argc, char *argv[])
     set_default_options_dist(&options);
 	options.IterRefine = NOREFINE;
 	options.DiagInv = YES;
-	
+    options.ReplaceTinyPivot  = YES;
 	// options.Equil = NO; 
 	// options.ColPerm = NATURAL;
 	// options.RowPerm = NOROWPERM;  						  

@@ -2,13 +2,15 @@
 # module load parmetis/4.0.3
 
 
-module load PrgEnv-cray
+module load PrgEnv-cray/1.0.6
+module load gcc/8.1.0
 module load cmake
 module unload cray-libsci_acc
-module load cray-libsci/19.06.1
+module load cray-libsci/20.03.1
 module load cuda10.2/toolkit/10.2.89
 module load craype-accel-nvidia70
 module load rocm				 
+
 export LD_LIBRARY_PATH="$CRAY_LD_LIBRARY_PATH:$LD_LIBRARY_PATH"
 
 export CRAYPE_LINK_TYPE=dynamic
@@ -16,6 +18,7 @@ export PARMETIS_ROOT=/home/users/coe0238/my_software/parmetis-4.0.3_cce_dynamic
 export PARMETIS_BUILD_DIR=${PARMETIS_ROOT}/build/Linux-x86_64
 export CRAY_CUDATOOLKIT_INCLUDE_OPTS="-I$CUDA_ROOT/include/ -I$CUDA_ROOT/extras/CUPTI/include/ -I$CUDA_ROOT/extras/Debugger/include/"
 export CRAY_CUDATOOLKIT_POST_LINK_OPTS="-L$CUDA_ROOT/lib64/ -L$CUDA_ROOT/extras/CUPTI/lib64/ -Wl,--as-needed -Wl,-lcupti -Wl,-lcudart -Wl,--no-as-needed -L$CUDA_CMLOCAL_ROOT//lib64 -lcuda"
+
 
 
 export ACC=GPU
@@ -36,8 +39,8 @@ cmake .. \
 	-DCMAKE_C_COMPILER=cc \
 	-DCMAKE_CXX_COMPILER=CC \
 	-Denable_openmp=OFF \
-	-DTPL_BLAS_LIBRARIES="/opt/cray/pe/libsci/19.06.1/CRAY/8.5/x86_64/lib/libsci_cray.so" \
-	-DTPL_LAPACK_LIBRARIES="/opt/cray/pe/libsci/19.06.1/CRAY/8.5/x86_64/lib/libsci_cray.so" \
+	-DTPL_BLAS_LIBRARIES="/opt/cray/pe/libsci/20.03.1/CRAY/8.5/x86_64/lib/libsci_cray.so" \
+	-DTPL_LAPACK_LIBRARIES="/opt/cray/pe/libsci/20.03.1/CRAY/8.5/x86_64/lib/libsci_cray.so" \
 	-DCMAKE_INSTALL_PREFIX=. \
 	-DCMAKE_BUILD_TYPE=Release \
 	-DCMAKE_VERBOSE_MAKEFILE:BOOL=ON \
