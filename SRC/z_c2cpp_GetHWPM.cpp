@@ -10,17 +10,18 @@ at the top-level directory.
 */
 
 /*! @file 
- * \brief Get approximate weight perfect matching (AWPM).
+ * \brief Get heavy-weight perfect matching (HWPM).
  *
  * <pre>
  * -- Distributed SuperLU routine (version 5.4) --
  * Lawrence Berkeley National Lab, Univ. of California Berkeley.
  * April 1, 2018
+ * Modified: April 2, 2020
  * </pre>
  */
 #include <math.h>
-#include "AWPM_CombBLAS.hpp"
-#include "superlu_ddefs.h"
+#include "zHWPM_CombBLAS.hpp"
+#include "superlu_zdefs.h"
 
 /*! \brief
  *
@@ -28,7 +29,7 @@ at the top-level directory.
  * Purpose
  * =======
  *
- * Get approximate weight perfect matching (AWPM).
+ * Get heavy-weight perfect matching (HWPM).
  * 
  * Reference:
  * 
@@ -55,9 +56,8 @@ at the top-level directory.
  * </pre>
  */
 int
-c2cpp_GetAWPM(SuperMatrix *A, gridinfo_t *grid,
-	     ScalePermstruct_t *ScalePermstruct)
+z_c2cpp_GetHWPM(SuperMatrix *A, gridinfo_t *grid, zScalePermstruct_t *ScalePermstruct)
 {
-    GetAWPM(A, grid, ScalePermstruct);
+    zGetHWPM(A, grid, ScalePermstruct);
     return 0;
 }

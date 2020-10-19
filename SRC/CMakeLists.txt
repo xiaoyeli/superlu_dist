@@ -51,9 +51,6 @@ if (MSVC)
   list(APPEND sources wingetopt.c)
 endif ()
 
-if (HAVE_COMBBLAS)
-  list(APPEND sources c2cpp_GetAWPM.cpp AWPM_CombBLAS.hpp)
-endif()
 
 set_source_files_properties(superlu_timer.c PROPERTIES COMPILE_FLAGS -O0)
 
@@ -98,7 +95,12 @@ if(enable_double)
     pdgsmv_AXglobal.c
     pdGetDiagU.c
   )
+if (HAVE_COMBBLAS)
+  list(APPEND sources d_c2cpp_GetHWPM.cpp dHWPM_CombBLAS.hpp)
 endif()
+
+endif() ## enable double
+
 
 if(enable_complex16)
   list(APPEND headers superlu_zdefs.h)
@@ -142,7 +144,11 @@ if(enable_complex16)
     pzgsmv_AXglobal.c
     pzGetDiagU.c
   )
+if (HAVE_COMBBLAS)
+  list(APPEND sources z_c2cpp_GetHWPM.cpp zHWPM_CombBLAS.hpp)
 endif()
+
+endif() ## enable compex16
 
 add_library(superlu_dist ${sources} ${HEADERS})
 set(targets superlu_dist)

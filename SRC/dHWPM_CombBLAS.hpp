@@ -1,7 +1,28 @@
-#ifndef AWPM_CombBLAS_h
-#define AWPM_CombBLAS_h
+/*! \file
+Copyright (c) 2003, The Regents of the University of California, through
+Lawrence Berkeley National Laboratory (subject to receipt of any required
+approvals from U.S. Dept. of Energy)
 
-#include "CombBLAS.h"
+All rights reserved.
+
+The source code is distributed under BSD license, see the file License.txt
+at the top-level directory.
+*/
+
+/*! @file
+ * \brief Get HWPM, heavy-weight perfect matching.
+ *
+ * <pre>
+ * -- Distributed SuperLU routine (version 6.0) --
+ * Lawrence Berkeley National Lab, Univ. of California Berkeley.
+ * April 2, 2020
+ * </pre>
+ */
+
+#ifndef dHWPM_CombBLAS_h
+#define dHWPM_CombBLAS_h
+
+#include "CombBLAS/CombBLAS.h"
 #include "ApproxWeightPerfectMatching.h"
 #include "superlu_ddefs.h"
 
@@ -11,9 +32,9 @@
  * <pre>
  * Purpose
  * =======
- *   Re-distribute A from distributed CSR storage to 2D block storage
- *   conforming CombBLAS API.
- *
+ *   Get perm_r from HWPM, heavy-weight perfect matching, as a
+ *   numerical pivoting permutation.
+ * 
  * Arguments
  * =========
  *
@@ -32,12 +53,12 @@
  *
  * Return value
  * ============
- * ScalePermstruct       = ScalePermstruct->perm_r stores the permutation
+ * ScalePermstruct->perm_r stores the permutation obtained from HWPM algorithm.
  *
  * </pre>
  */
 void
-GetAWPM(SuperMatrix *A, gridinfo_t *grid, ScalePermstruct_t *ScalePermstruct)
+dGetHWPM(SuperMatrix *A, gridinfo_t *grid, dScalePermstruct_t *ScalePermstruct)
 {
     NRformat_loc *Astore;
     int_t  i, irow, fst_row, j, jcol, m, n, m_loc;
@@ -50,7 +71,7 @@ GetAWPM(SuperMatrix *A, gridinfo_t *grid, ScalePermstruct_t *ScalePermstruct)
     
     if(grid->nprow != grid->npcol)
     {
-        printf("AWPM only supports square process grid. Retuning without a permutation.\n");
+        printf("HWPM only supports square process grid. Retuning without a permutation.\n");
     }
     combblas::SpParMat < int_t, double, combblas::SpDCCols<int_t,double> > Adcsc;
     std::vector< std::vector < std::tuple<int_t,int_t,double> > > data(procs);
@@ -72,6 +93,8 @@ GetAWPM(SuperMatrix *A, gridinfo_t *grid, ScalePermstruct_t *ScalePermstruct)
      FIRST PASS OF A:
      COUNT THE NUMBER OF NONZEROS TO BE SENT TO EACH PROCESS,
      THEN ALLOCATE SPACE.
+     Re-distribute A from distributed CSR storage to 2D block storage
+     conforming CombBLAS API.
      ------------------------------------------------------------*/
     nzval_a = (double *) Astore->nzval;
     nnz_loc = 0;
@@ -118,8 +141,8 @@ GetAWPM(SuperMatrix *A, gridinfo_t *grid, ScalePermstruct_t *ScalePermstruct)
     delete[] recvcnt;
     
 #if ( DEBUGlevel>=1 )
-    CHECK_MALLOC(iam, "Exit pdCSR_loc_to_2DBlock()");
+    CHECK_MALLOC(iam, "Exit dHWPM_CombBLAS()");
 #endif
 }
 
-#endif /* AWPM_CombBLAS_h */
+#endif /* dHWPM_CombBLAS_h */

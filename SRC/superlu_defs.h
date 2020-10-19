@@ -72,8 +72,8 @@ at the top-level directory.
  */
 #define SUPERLU_DIST_MAJOR_VERSION     6
 #define SUPERLU_DIST_MINOR_VERSION     3
-#define SUPERLU_DIST_PATCH_VERSION     0
-#define SUPERLU_DIST_RELEASE_DATE      "February 23, 2020"
+#define SUPERLU_DIST_PATCH_VERSION     1
+#define SUPERLU_DIST_RELEASE_DATE      "April 2, 2020"
 
 #include "superlu_dist_config.h"
 /* Define my integer size int_t */

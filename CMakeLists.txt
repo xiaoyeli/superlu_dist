@@ -24,6 +24,7 @@ option(enable_complex16 "Enable complex16 precision library" ON)
 option(enable_tests  "Build tests" ON)
 option(enable_examples  "Build examples" ON)
 option(TPL_ENABLE_INTERNAL_BLASLIB  "Build the CBLAS library" ${enable_blaslib_DEFAULT})
+option(enable_fortran  "Build fortran90 interface" OFF)
 option(TPL_BLAS_LIBRARIES "List of absolute paths to blas libraries [].")
 option(TPL_ENABLE_LAPACKLIB "Enable LAPACK library" ON)
 option(TPL_LAPACK_LIBRARIES "List of absolute paths to lapack libraries [].")
@@ -90,7 +91,8 @@ else()
   set(PROJECT_NAME_LIB_EXPORT libsuperlu_dist.a)
 endif()
 
-set(CMAKE_CXX_STANDARD 11)
+#set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD 14)
 
 if (XSDK_ENABLE_Fortran)
   enable_language (Fortran)
@@ -129,7 +131,7 @@ set(INSTALL_BIN_DIR "${default_install_bin_dir}" CACHE STRING "The folder where 
 # Set up required compiler defines and options.
 ## get_directory_property( DirDefs COMPILE_DEFINITIONS )
 # set(CMAKE_C_FLAGS "-DDEBUGlevel=0 -DPRNTlevel=0 ${CMAKE_C_FLAGS}")
-set(CMAKE_CXX_FLAGS "-std=c++11 ${CMAKE_CXX_FLAGS}")
+# set(CMAKE_CXX_FLAGS "-std=c++11 ${CMAKE_CXX_FLAGS}")
 if(XSDK_INDEX_SIZE EQUAL 64)
     message("-- Using 64 bit integer for index size.")
 endif()	
@@ -376,6 +378,11 @@ if(enable_examples)
   add_subdirectory(EXAMPLE)
 endif()
 
+if(enable_fortran)
+  add_subdirectory(FORTRAN)
+  SET(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -lstdc++")
+endif()
+
 # configure_file(${CMAKE_SOURCE_DIR}/make.inc.in ${CMAKE_BINARY_DIR}/make.inc)
 configure_file(${SuperLU_DIST_SOURCE_DIR}/make.inc.in ${SuperLU_DIST_SOURCE_DIR}/make.inc)
 configure_file(${SuperLU_DIST_SOURCE_DIR}/SRC/superlu_dist_config.h.in ${SuperLU_DIST_BINARY_DIR}/SRC/superlu_dist_config.h)
@@ -391,4 +398,4 @@ configure_file(${CMAKE_CURRENT_SOURCE_DIR}/superlu_dist.pc.in ${CMAKE_CURRENT_BI
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/superlu_dist.pc
 	DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig)
 
-
+message("CMAKE_CXX_LINK_FLAGS '${CMAKE_CXX_LINK_FLAGS}'")
