@@ -1,0 +1,190 @@
+Compiling the Fortran compiler identification source file "CMakeFortranCompilerId.F" failed.
+Compiler: /usr/local/bin/gfortran 
+Build flags: 
+Id flags: -v 
+
+The output was:
+1
+Driving: /usr/local/bin/gfortran -v CMakeFortranCompilerId.F -mmacosx-version-min=10.15.0 -asm_macosx_version_min=10.15 -l gfortran -shared-libgcc
+Using built-in specs.
+COLLECT_GCC=/usr/local/bin/gfortran
+COLLECT_LTO_WRAPPER=/usr/local/Cellar/gcc/8.2.0/libexec/gcc/x86_64-apple-darwin18.0.0/8.2.0/lto-wrapper
+Target: x86_64-apple-darwin18.0.0
+Configured with: ../configure --build=x86_64-apple-darwin18.0.0 --prefix=/usr/local/Cellar/gcc/8.2.0 --libdir=/usr/local/Cellar/gcc/8.2.0/lib/gcc/8 --enable-languages=c,c++,objc,obj-c++,fortran --program-suffix=-8 --with-gmp=/usr/local/opt/gmp --with-mpfr=/usr/local/opt/mpfr --with-mpc=/usr/local/opt/libmpc --with-isl=/usr/local/opt/isl --with-system-zlib --enable-checking=release --with-pkgversion='Homebrew GCC 8.2.0' --with-bugurl=https://github.com/Homebrew/homebrew-core/issues --disable-nls --disable-multilib --with-native-system-header-dir=/usr/include --with-sysroot=/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk
+Thread model: posix
+gcc version 8.2.0 (Homebrew GCC 8.2.0) 
+COLLECT_GCC_OPTIONS='-v' '-mmacosx-version-min=10.15.0' '-asm_macosx_version_min=10.15' '-shared-libgcc' '-mtune=core2'
+ /usr/local/Cellar/gcc/8.2.0/libexec/gcc/x86_64-apple-darwin18.0.0/8.2.0/f951 CMakeFortranCompilerId.F -ffixed-form -cpp=/var/folders/yy/_gqt7jyj62s5sp1g91lddjkw0000gn/T//ccQE6FwR.f90 -quiet -v -D__DYNAMIC__ CMakeFortranCompilerId.F -fPIC -quiet -dumpbase CMakeFortranCompilerId.F -mmacosx-version-min=10.15.0 -mtune=core2 -auxbase CMakeFortranCompilerId -version -fintrinsic-modules-path /usr/local/Cellar/gcc/8.2.0/lib/gcc/8/gcc/x86_64-apple-darwin18.0.0/8.2.0/finclude -o /var/folders/yy/_gqt7jyj62s5sp1g91lddjkw0000gn/T//ccHMHtTw.s
+GNU Fortran (Homebrew GCC 8.2.0) version 8.2.0 (x86_64-apple-darwin18.0.0)
+	compiled by GNU C version 8.2.0, GMP version 6.1.2, MPFR version 4.0.1, MPC version 1.1.0, isl version isl-0.20-GMP
+
+GGC heuristics: --param ggc-min-expand=100 --param ggc-min-heapsize=131072
+ignoring nonexistent directory "/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/local/include"
+ignoring nonexistent directory "/usr/local/Cellar/gcc/8.2.0/lib/gcc/8/gcc/x86_64-apple-darwin18.0.0/8.2.0/../../../../../../x86_64-apple-darwin18.0.0/include"
+ignoring nonexistent directory "/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/include"
+#include "..." search starts here:
+#include <...> search starts here:
+ /usr/local/Cellar/gcc/8.2.0/lib/gcc/8/gcc/x86_64-apple-darwin18.0.0/8.2.0/finclude
+ /usr/local/Cellar/gcc/8.2.0/lib/gcc/8/gcc/x86_64-apple-darwin18.0.0/8.2.0/include
+ /usr/local/Cellar/gcc/8.2.0/lib/gcc/8/gcc/x86_64-apple-darwin18.0.0/8.2.0/include-fixed
+End of search list.
+GNU Fortran2008 (Homebrew GCC 8.2.0) version 8.2.0 (x86_64-apple-darwin18.0.0)
+	compiled by GNU C version 8.2.0, GMP version 6.1.2, MPFR version 4.0.1, MPC version 1.1.0, isl version isl-0.20-GMP
+
+GGC heuristics: --param ggc-min-expand=100 --param ggc-min-heapsize=131072
+COLLECT_GCC_OPTIONS='-v' '-mmacosx-version-min=10.15.0'  '-shared-libgcc' '-mtune=core2'
+ as -arch x86_64 -v -force_cpusubtype_ALL -mmacosx-version-min=10.15 -o /var/folders/yy/_gqt7jyj62s5sp1g91lddjkw0000gn/T//ccV0rnd5.o /var/folders/yy/_gqt7jyj62s5sp1g91lddjkw0000gn/T//ccHMHtTw.s
+Apple clang version 12.0.0 (clang-1200.0.32.2)
+Target: x86_64-apple-darwin19.6.0
+Thread model: posix
+InstalledDir: /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin
+ "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang" -cc1as -triple x86_64-apple-macosx10.15.0 -filetype obj -main-file-name ccHMHtTw.s -target-cpu penryn -fdebug-compilation-dir /Users/nanding/CLionProjects/superlu_dist_amd/cmake-build-debug/CMakeFiles/3.15.3/CompilerIdFortran -dwarf-debug-producer "Apple clang version 12.0.0 (clang-1200.0.32.2)" -dwarf-version=4 -mrelocation-model pic -o /var/folders/yy/_gqt7jyj62s5sp1g91lddjkw0000gn/T//ccV0rnd5.o /var/folders/yy/_gqt7jyj62s5sp1g91lddjkw0000gn/T//ccHMHtTw.s
+Reading specs from /usr/local/Cellar/gcc/8.2.0/lib/gcc/8/gcc/x86_64-apple-darwin18.0.0/8.2.0/../../../libgfortran.spec
+rename spec lib to liborig
+COLLECT_GCC_OPTIONS='-v' '-mmacosx-version-min=10.15.0'  '-shared-libgcc' '-mtune=core2'
+COMPILER_PATH=/usr/local/Cellar/gcc/8.2.0/libexec/gcc/x86_64-apple-darwin18.0.0/8.2.0/:/usr/local/Cellar/gcc/8.2.0/libexec/gcc/x86_64-apple-darwin18.0.0/8.2.0/:/usr/local/Cellar/gcc/8.2.0/libexec/gcc/x86_64-apple-darwin18.0.0/:/usr/local/Cellar/gcc/8.2.0/lib/gcc/8/gcc/x86_64-apple-darwin18.0.0/8.2.0/:/usr/local/Cellar/gcc/8.2.0/lib/gcc/8/gcc/x86_64-apple-darwin18.0.0/
+LIBRARY_PATH=/usr/local/Cellar/gcc/8.2.0/lib/gcc/8/gcc/x86_64-apple-darwin18.0.0/8.2.0/:/usr/local/Cellar/gcc/8.2.0/lib/gcc/8/gcc/x86_64-apple-darwin18.0.0/8.2.0/../../../
+COLLECT_GCC_OPTIONS='-v' '-mmacosx-version-min=10.15.0'  '-shared-libgcc' '-mtune=core2'
+ /usr/local/Cellar/gcc/8.2.0/libexec/gcc/x86_64-apple-darwin18.0.0/8.2.0/collect2 -syslibroot /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/ -dynamic -arch x86_64 -macosx_version_min 10.15.0 -weak_reference_mismatches non-weak -o a.out -L/usr/local/Cellar/gcc/8.2.0/lib/gcc/8/gcc/x86_64-apple-darwin18.0.0/8.2.0 -L/usr/local/Cellar/gcc/8.2.0/lib/gcc/8/gcc/x86_64-apple-darwin18.0.0/8.2.0/../../.. /var/folders/yy/_gqt7jyj62s5sp1g91lddjkw0000gn/T//ccV0rnd5.o -lgfortran -no_compact_unwind -lSystem -lgcc_ext.10.5 -lgcc -lquadmath -lm -lgcc_ext.10.5 -lgcc -lSystem -v
+collect2 version 8.2.0
+/usr/bin/ld -syslibroot /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/ -dynamic -arch x86_64 -macosx_version_min 10.15.0 -weak_reference_mismatches non-weak -o a.out -L/usr/local/Cellar/gcc/8.2.0/lib/gcc/8/gcc/x86_64-apple-darwin18.0.0/8.2.0 -L/usr/local/Cellar/gcc/8.2.0/lib/gcc/8/gcc/x86_64-apple-darwin18.0.0/8.2.0/../../.. /var/folders/yy/_gqt7jyj62s5sp1g91lddjkw0000gn/T//ccV0rnd5.o -lgfortran -no_compact_unwind -lSystem -lgcc_ext.10.5 -lgcc -lquadmath -lm -lgcc_ext.10.5 -lgcc -lSystem -v
+@(#)PROGRAM:ld  PROJECT:ld64-609
+BUILD 07:59:13 Aug 25 2020
+configured to support archs: armv6 armv7 armv7s arm64 arm64e arm64_32 i386 x86_64 x86_64h armv6m armv7k armv7m armv7em
+Library search paths:
+	/usr/local/Cellar/gcc/8.2.0/lib/gcc/8/gcc/x86_64-apple-darwin18.0.0/8.2.0
+	/usr/local/Cellar/gcc/8.2.0/lib/gcc/8
+Framework search paths:
+ld: library not found for -lSystem
+collect2: error: ld returned 1 exit status
+
+
+Compiling the Fortran compiler identification source file "CMakeFortranCompilerId.F" failed.
+Compiler: /usr/local/bin/gfortran 
+Build flags: 
+Id flags:  
+
+The output was:
+1
+ld: library not found for -lSystem
+collect2: error: ld returned 1 exit status
+
+
+Detecting C OpenMP failed with the following output:
+Change Dir: /Users/nanding/CLionProjects/superlu_dist_amd/cmake-build-debug/CMakeFiles/CMakeTmp
+
+Run Build Command(s):/usr/bin/make cmTC_2797f/fast && /Applications/Xcode.app/Contents/Developer/usr/bin/make -f CMakeFiles/cmTC_2797f.dir/build.make CMakeFiles/cmTC_2797f.dir/build
+Building C object CMakeFiles/cmTC_2797f.dir/OpenMPTryFlag.c.o
+/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/cc   -fopenmp=libomp -v -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.15.sdk -fPIE   -o CMakeFiles/cmTC_2797f.dir/OpenMPTryFlag.c.o   -c /Users/nanding/CLionProjects/superlu_dist_amd/cmake-build-debug/CMakeFiles/FindOpenMP/OpenMPTryFlag.c
+Apple clang version 12.0.0 (clang-1200.0.32.2)
+Target: x86_64-apple-darwin19.6.0
+Thread model: posix
+InstalledDir: /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin
+clang: error: unsupported argument 'libomp' to option 'fopenmp='
+make[1]: *** [CMakeFiles/cmTC_2797f.dir/OpenMPTryFlag.c.o] Error 1
+make: *** [cmTC_2797f/fast] Error 2
+
+
+
+Detecting C OpenMP failed with the following output:
+Change Dir: /Users/nanding/CLionProjects/superlu_dist_amd/cmake-build-debug/CMakeFiles/CMakeTmp
+
+Run Build Command(s):/usr/bin/make cmTC_b9e9f/fast && /Applications/Xcode.app/Contents/Developer/usr/bin/make -f CMakeFiles/cmTC_b9e9f.dir/build.make CMakeFiles/cmTC_b9e9f.dir/build
+Building C object CMakeFiles/cmTC_b9e9f.dir/OpenMPTryFlag.c.o
+/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/cc   -fopenmp=libiomp5 -v -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.15.sdk -fPIE   -o CMakeFiles/cmTC_b9e9f.dir/OpenMPTryFlag.c.o   -c /Users/nanding/CLionProjects/superlu_dist_amd/cmake-build-debug/CMakeFiles/FindOpenMP/OpenMPTryFlag.c
+Apple clang version 12.0.0 (clang-1200.0.32.2)
+Target: x86_64-apple-darwin19.6.0
+Thread model: posix
+InstalledDir: /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin
+clang: error: unsupported argument 'libiomp5' to option 'fopenmp='
+make[1]: *** [CMakeFiles/cmTC_b9e9f.dir/OpenMPTryFlag.c.o] Error 1
+make: *** [cmTC_b9e9f/fast] Error 2
+
+
+
+Detecting C OpenMP failed with the following output:
+Change Dir: /Users/nanding/CLionProjects/superlu_dist_amd/cmake-build-debug/CMakeFiles/CMakeTmp
+
+Run Build Command(s):/usr/bin/make cmTC_f90b2/fast && /Applications/Xcode.app/Contents/Developer/usr/bin/make -f CMakeFiles/cmTC_f90b2.dir/build.make CMakeFiles/cmTC_f90b2.dir/build
+Building C object CMakeFiles/cmTC_f90b2.dir/OpenMPTryFlag.c.o
+/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/cc   -fopenmp -v -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.15.sdk -fPIE   -o CMakeFiles/cmTC_f90b2.dir/OpenMPTryFlag.c.o   -c /Users/nanding/CLionProjects/superlu_dist_amd/cmake-build-debug/CMakeFiles/FindOpenMP/OpenMPTryFlag.c
+Apple clang version 12.0.0 (clang-1200.0.32.2)
+Target: x86_64-apple-darwin19.6.0
+Thread model: posix
+InstalledDir: /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin
+clang: error: unsupported option '-fopenmp'
+make[1]: *** [CMakeFiles/cmTC_f90b2.dir/OpenMPTryFlag.c.o] Error 1
+make: *** [cmTC_f90b2/fast] Error 2
+
+
+
+Detecting CXX OpenMP failed with the following output:
+Change Dir: /Users/nanding/CLionProjects/superlu_dist_amd/cmake-build-debug/CMakeFiles/CMakeTmp
+
+Run Build Command(s):/usr/bin/make cmTC_c5b74/fast && /Applications/Xcode.app/Contents/Developer/usr/bin/make -f CMakeFiles/cmTC_c5b74.dir/build.make CMakeFiles/cmTC_c5b74.dir/build
+Building CXX object CMakeFiles/cmTC_c5b74.dir/OpenMPTryFlag.cpp.o
+/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/c++    -std=c++11  -fopenmp=libomp -v -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.15.sdk -fPIE   -o CMakeFiles/cmTC_c5b74.dir/OpenMPTryFlag.cpp.o -c /Users/nanding/CLionProjects/superlu_dist_amd/cmake-build-debug/CMakeFiles/FindOpenMP/OpenMPTryFlag.cpp
+Apple clang version 12.0.0 (clang-1200.0.32.2)
+Target: x86_64-apple-darwin19.6.0
+Thread model: posix
+InstalledDir: /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin
+ignoring nonexistent directory "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.15.sdk/usr/include/c++/v1"
+clang: error: unsupported argument 'libomp' to option 'fopenmp='
+make[1]: *** [CMakeFiles/cmTC_c5b74.dir/OpenMPTryFlag.cpp.o] Error 1
+make: *** [cmTC_c5b74/fast] Error 2
+
+
+
+Detecting CXX OpenMP failed with the following output:
+Change Dir: /Users/nanding/CLionProjects/superlu_dist_amd/cmake-build-debug/CMakeFiles/CMakeTmp
+
+Run Build Command(s):/usr/bin/make cmTC_f6188/fast && /Applications/Xcode.app/Contents/Developer/usr/bin/make -f CMakeFiles/cmTC_f6188.dir/build.make CMakeFiles/cmTC_f6188.dir/build
+Building CXX object CMakeFiles/cmTC_f6188.dir/OpenMPTryFlag.cpp.o
+/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/c++    -std=c++11  -fopenmp=libiomp5 -v -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.15.sdk -fPIE   -o CMakeFiles/cmTC_f6188.dir/OpenMPTryFlag.cpp.o -c /Users/nanding/CLionProjects/superlu_dist_amd/cmake-build-debug/CMakeFiles/FindOpenMP/OpenMPTryFlag.cpp
+Apple clang version 12.0.0 (clang-1200.0.32.2)
+Target: x86_64-apple-darwin19.6.0
+Thread model: posix
+InstalledDir: /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin
+ignoring nonexistent directory "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.15.sdk/usr/include/c++/v1"
+clang: error: unsupported argument 'libiomp5' to option 'fopenmp='
+make[1]: *** [CMakeFiles/cmTC_f6188.dir/OpenMPTryFlag.cpp.o] Error 1
+make: *** [cmTC_f6188/fast] Error 2
+
+
+
+Detecting CXX OpenMP failed with the following output:
+Change Dir: /Users/nanding/CLionProjects/superlu_dist_amd/cmake-build-debug/CMakeFiles/CMakeTmp
+
+Run Build Command(s):/usr/bin/make cmTC_cdf47/fast && /Applications/Xcode.app/Contents/Developer/usr/bin/make -f CMakeFiles/cmTC_cdf47.dir/build.make CMakeFiles/cmTC_cdf47.dir/build
+Building CXX object CMakeFiles/cmTC_cdf47.dir/OpenMPTryFlag.cpp.o
+/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/c++    -std=c++11  -fopenmp -v -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.15.sdk -fPIE   -o CMakeFiles/cmTC_cdf47.dir/OpenMPTryFlag.cpp.o -c /Users/nanding/CLionProjects/superlu_dist_amd/cmake-build-debug/CMakeFiles/FindOpenMP/OpenMPTryFlag.cpp
+Apple clang version 12.0.0 (clang-1200.0.32.2)
+Target: x86_64-apple-darwin19.6.0
+Thread model: posix
+InstalledDir: /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin
+ignoring nonexistent directory "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.15.sdk/usr/include/c++/v1"
+clang: error: unsupported option '-fopenmp'
+make[1]: *** [CMakeFiles/cmTC_cdf47.dir/OpenMPTryFlag.cpp.o] Error 1
+make: *** [cmTC_cdf47/fast] Error 2
+
+
+
+Determining if the Fortran sgemm exists failed with the following output:
+Change Dir: /Users/nanding/CLionProjects/superlu_dist_amd/cmake-build-debug/CMakeFiles/CMakeTmp
+
+Run Build Command(s):/usr/bin/make cmTC_e8b90/fast && /Applications/Xcode.app/Contents/Developer/usr/bin/make -f CMakeFiles/cmTC_e8b90.dir/build.make CMakeFiles/cmTC_e8b90.dir/build
+Building Fortran object CMakeFiles/cmTC_e8b90.dir/testFortranCompiler.f.o
+/usr/local/bin/gfortran   -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.15.sdk -fPIE   -c /Users/nanding/CLionProjects/superlu_dist_amd/cmake-build-debug/CMakeFiles/CMakeTmp/testFortranCompiler.f -o CMakeFiles/cmTC_e8b90.dir/testFortranCompiler.f.o
+Linking Fortran executable cmTC_e8b90
+/Applications/CLion.app/Contents/bin/cmake/mac/bin/cmake -E cmake_link_script CMakeFiles/cmTC_e8b90.dir/link.txt --verbose=1
+/usr/local/bin/gfortran      -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.15.sdk CMakeFiles/cmTC_e8b90.dir/testFortranCompiler.f.o  -o cmTC_e8b90 
+Undefined symbols for architecture x86_64:
+  "_sgemm_", referenced from:
+      _MAIN__ in testFortranCompiler.f.o
+ld: symbol(s) not found for architecture x86_64
+collect2: error: ld returned 1 exit status
+make[1]: *** [cmTC_e8b90] Error 1
+make: *** [cmTC_e8b90/fast] Error 2
+
+
+

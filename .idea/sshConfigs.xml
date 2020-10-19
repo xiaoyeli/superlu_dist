@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="SshConfigs">
+    <configs>
+      <sshConfig authType="PASSWORD" host="summit.olcf.ornl.gov" id="52045d8b-f568-4184-a708-cffaf9fa5fda" port="22" customName="summit.olcf.ornl.gov" nameFormat="CUSTOM" username="nanding">
+        <option name="customName" value="summit.olcf.ornl.gov" />
+      </sshConfig>
+    </configs>
+  </component>
+</project>

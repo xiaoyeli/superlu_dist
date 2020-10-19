@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="PublishConfigData" autoUpload="Always" serverName="summit.olcf.ornl.gov">
+    <serverData>
+      <paths name="Cori (f73758e0-2cba-4717-a18f-1de020247f35)">
+        <serverdata>
+          <mappings>
+            <mapping deploy="/tmp/superlu_dist_amd" local="$PROJECT_DIR$" />
+          </mappings>
+          <excludedPaths>
+            <excludedPath local="true" path="$PROJECT_DIR$/cmake-build-debug" />
+          </excludedPaths>
+        </serverdata>
+      </paths>
+      <paths name="summit.olcf.ornl.gov">
+        <serverdata>
+          <mappings>
+            <mapping deploy="/ccs/home/nanding/myproject/superLU/superlu_amd" local="$PROJECT_DIR$" web="/" />
+          </mappings>
+        </serverdata>
+      </paths>
+    </serverData>
+    <option name="myAutoUpload" value="ALWAYS" />
+  </component>
+</project>
