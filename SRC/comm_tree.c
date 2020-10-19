@@ -26,22 +26,22 @@
 	  }
       MPI_Type_commit( &tree->type_ );
 
-      int myIdx = 0;
+      tree->myIdx = 0;
       int ii=0; 
 	  int child,root;
 	  for (ii=0;ii<rank_cnt;ii++)
 		  if(tree->myRank_ == ranks[ii]){
-			  myIdx = ii;
+			  tree->myIdx = ii;
 			  break;
 		  }
 	  for (ii=0;ii<DEG_TREE;ii++){
-		  if(myIdx*DEG_TREE+1+ii<rank_cnt){
-			   child = ranks[myIdx*DEG_TREE+1+ii];
+		  if(tree->myIdx*DEG_TREE+1+ii<rank_cnt){
+			   child = ranks[tree->myIdx*DEG_TREE+1+ii];
 			   tree->myDests_[tree->destCnt_++]=child;
 		  }		
 	  }
-	  if(myIdx!=0){
-		  tree->myRoot_ = ranks[(int)floor((double)(myIdx-1.0)/(double)DEG_TREE)];
+	  if(tree->myIdx!=0){
+		  tree->myRoot_ = ranks[(int)floor((double)(tree->myIdx-1.0)/(double)DEG_TREE)];
 	  }else{
 		  tree->myRoot_ = tree->myRank_;
 	  } 
@@ -115,25 +115,25 @@
 	  }
       MPI_Type_commit( &tree->type_ );
 
-      int myIdx = 0;
+      //int myIdx = 0;
       int ii=0; 
 	  int child,root;
 	  for (ii=0;ii<rank_cnt;ii++)
 		  if(tree->myRank_ == ranks[ii]){
-			  myIdx = ii;
+              tree->myIdx = ii;
 			  break;
 		  }
 
 		  
 	  for (ii=0;ii<DEG_TREE;ii++){
-		  if(myIdx*DEG_TREE+1+ii<rank_cnt){
-			   child = ranks[myIdx*DEG_TREE+1+ii];
+		  if(tree->myIdx*DEG_TREE+1+ii<rank_cnt){
+			   child = ranks[tree->myIdx*DEG_TREE+1+ii];
 			   tree->myDests_[tree->destCnt_++]=child;
 		  }		
 	  }		  
 		  
-	  if(myIdx!=0){
-		  tree->myRoot_ = ranks[(int)floor((double)(myIdx-1.0)/(double)DEG_TREE)];
+	  if(tree->myIdx!=0){
+		  tree->myRoot_ = ranks[(int)floor((double)(tree->myIdx-1.0)/(double)DEG_TREE)];
 	  }else{
 		  tree->myRoot_ = tree->myRank_;
 	  }  

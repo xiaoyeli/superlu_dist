@@ -19,6 +19,7 @@
 #define gpuSuccess cudaSuccess
 #define gpuGetErrorString cudaGetErrorString
 #define gpuMalloc cudaMalloc
+#define gpuMemset cudaMemset
 #define gpuHostMalloc cudaHostAlloc
 #define gpuHostMallocDefault cudaHostAllocDefault
 #define gpuMallocManaged cudaMallocManaged

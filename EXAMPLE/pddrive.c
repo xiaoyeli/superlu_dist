@@ -68,14 +68,14 @@ int main(int argc, char *argv[])
 
     nprow = 1;  /* Default process rows.      */
     npcol = 1;  /* Default process columns.   */
-    nrhs = 100;   /* Number of right-hand side. */
+    nrhs = 1;   /* Number of right-hand side. */
 
     /* ------------------------------------------------------------
        INITIALIZE MPI ENVIRONMENT. 
        ------------------------------------------------------------*/
     //MPI_Init( &argc, &argv );
-    MPI_Init_thread( &argc, &argv, MPI_THREAD_MULTIPLE, &omp_mpi_level); 
-	
+    //MPI_Init_thread( &argc, &argv, MPI_THREAD_MULTIPLE, &omp_mpi_level);
+    nv_init_wrapper(&argc,argv,&omp_mpi_level);
 
 #if ( VAMPIR>=1 )
     VT_traceoff(); 

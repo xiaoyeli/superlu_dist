@@ -392,6 +392,7 @@ extern void dlsum_bmod_inv_master(double *, double *, double *, double *,
                        int_t **, int_t *, gridinfo_t *, LocalLU_t *,
 		       SuperLUStat_t **, int_t, int_t, int, int);
 
+
 extern void pdgsrfs(int_t, SuperMatrix *, double, LUstruct_t *,
 		    ScalePermstruct_t *, gridinfo_t *,
 		    double [], int_t, double [], int_t, int,
@@ -465,6 +466,10 @@ extern int   file_dPrint_CompRowLoc_Matrix_dist(FILE *fp, SuperMatrix *A);
 extern int   file_PrintDouble5(FILE *, char *, int_t, double *);
 extern void dGenCOOLblocks(int, int_t, gridinfo_t*,
 		  Glu_persist_t*, LocalLU_t *, int_t* , int_t* , double * , int_t* , int_t* , int_t );
+
+/* multi-GPU */
+extern void create_nv_buffer(int* , int*, int* , int* );
+extern void  nv_init_wrapper(int*, char**, int*);
 
 /* BLAS */
 

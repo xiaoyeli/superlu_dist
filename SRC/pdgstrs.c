@@ -1313,7 +1313,7 @@ if(procs==1){
 	if ( !(recvbuf_BC_fwd = (double*)SUPERLU_MALLOC(maxrecvsz*(nfrecvx+1) * sizeof(double))) )  // this needs to be optimized for 1D row mapping
 		ABORT("Malloc fails for recvbuf_BC_fwd[].");
 	nfrecvx_buf=0;
-
+    //printf("(%d),nfrecvx=%d\n",iam,nfrecvx);
 	log_memory(nlb*aln_i*iword+nlb*iword+(CEILING( nsupers, Pr )+CEILING( nsupers, Pc ))*aln_i*2.0*iword+ nsupers_i*iword + sizelsum*num_thread * dword + (ldalsum * nrhs + nlb * XK_H) *dword + (sizertemp*num_thread + 1)*dword+maxrecvsz*(nfrecvx+1)*dword, stat);	//account for fmod, frecv, leaf_send, root_send, leafsups, recvbuf_BC_fwd	, lsum, x, rtemp
 
 
@@ -1654,23 +1654,64 @@ dGenCOOLblocks(iam, nsupers, grid,Glu_persist,Llu, cooRows, cooCols, cooVals, &n
 	double *d_lsum = NULL;
     int_t  *d_fmod = NULL;
 
+	k = CEILING( nsupers, grid->npcol);/* Number of local block columns divided by #warps per block used as number of thread blocks*/
+	knsupc = sp_ienv_dist(3);
+
+	int *nvshmem_buffer_size;
+    if ( !(nvshmem_buffer_size = (int*)SUPERLU_MALLOC( NVSHMEM_SIZES * sizeof(int))) )
+        ABORT("Malloc fails for nvshmem_buffer_size[]");
+    nvshmem_buffer_size[0] = RDMA_FLAG_SIZE * (k+1); //* (mysendmsg_num>mysendmsg_num_u?mysendmsg_num:mysendmsg_num_u); // flag size for BC, sender
+    nvshmem_buffer_size[1] = RDMA_FLAG_SIZE * nlb * 2; //* (mysendmsg_num_rd>mysendmsg_num_urd?mysendmsg_num_rd:mysendmsg_num_urd); // flag size for RD, sender
+    nvshmem_buffer_size[2] = maxrecvsz*CEILING( nsupers, grid->npcol); // x buffer size, sender, make sure data is not evicted when receiver comes to get the data
+    nvshmem_buffer_size[3] = 2*maxrecvsz*CEILING( nsupers, grid->nprow); // lsum buffer size, sender, make sure data is not evicted when receiver comes to get the data
+
+    double tot_size=0;
+    tot_size=(nvshmem_buffer_size[0]*sizeof(int)+nvshmem_buffer_size[1]*sizeof(int)+
+              nvshmem_buffer_size[2]*sizeof(double)+nvshmem_buffer_size[3]*sizeof(double))/1e6;
+    printf("iam=%d,nvshmem buffer size(MB):%lf, nfrecvx=%d\n",iam,tot_size,nfrecvx);
+
+    int *my_flag_bc, *my_flag_rd, *flag_bc_q, *flag_rd_q;
+    double *ready_x, *ready_lsum;
+    int* d_bcqmod;
+    if (nvshmem_buffer_size[0] > 0){
+        flag_bc_q = (int *) nvshmem_malloc ( nvshmem_buffer_size[0] * sizeof(int)); // for sender
+        my_flag_bc = (int *) nvshmem_malloc ( nvshmem_buffer_size[0] * sizeof(int)); // for sender
+        checkGPU(gpuMemset(my_flag_bc, 0, nvshmem_buffer_size[0] * sizeof(int)));
+    }
+    if (nvshmem_buffer_size[1] > 0){
+        flag_rd_q = (int *)nvshmem_malloc( nvshmem_buffer_size[1] * sizeof(int)); // for sender
+        my_flag_rd = (int *) nvshmem_malloc ( nvshmem_buffer_size[1] * sizeof(int)); // for sender
+        checkGPU(gpuMemset(my_flag_rd, 0, nvshmem_buffer_size[1] * sizeof(int)));
+    }
+
+    ready_x = (double *)nvshmem_malloc(nvshmem_buffer_size[2] * sizeof(double)); // for receiver
+    checkGPU(gpuMemset(ready_x, 0, nvshmem_buffer_size[2] * sizeof(double)));
+
+    ready_lsum = (double *)nvshmem_malloc(nvshmem_buffer_size[3] * sizeof(double)); // for receiver
+    checkGPU(gpuMemset(ready_lsum, 0, nvshmem_buffer_size[3] * sizeof(double)));
+
+    create_nv_buffer(nvshmem_buffer_size,my_flag_bc,flag_bc_q, flag_rd_q);
+
+
+
 	checkGPU(gpuMalloc( (void**)&d_grid, sizeof(gridinfo_t)));
 	
-	checkGPU(gpuMalloc( (void**)&recvbuf_BC_gpu, maxrecvsz*  CEILING( nsupers, grid->npcol) * sizeof(double))); // used for receiving and forwarding x on each thread
-	checkGPU(gpuMalloc( (void**)&recvbuf_RD_gpu, 2*maxrecvsz*  CEILING( nsupers, grid->nprow) * sizeof(double))); // used for receiving and forwarding lsum on each thread
+	//checkGPU(gpuMalloc( (void**)&recvbuf_BC_gpu, maxrecvsz*  CEILING( nsupers, grid->npcol) * sizeof(double))); // used for receiving and forwarding x on each thread
+	//checkGPU(gpuMalloc( (void**)&recvbuf_RD_gpu, 2*maxrecvsz*  CEILING( nsupers, grid->nprow) * sizeof(double))); // used for receiving and forwarding lsum on each thread
 	checkGPU(gpuMalloc( (void**)&d_lsum, sizelsum*num_thread * sizeof(double)));
 	checkGPU(gpuMalloc( (void**)&d_x, (ldalsum * nrhs + nlb * XK_H) * sizeof(double)));
 	checkGPU(gpuMalloc( (void**)&d_fmod, (nlb*aln_i) * sizeof(int_t)));
-	
+	checkGPU(gpuMalloc( (void**)&d_bcqmod,  1 * sizeof(int_t)));
+	checkGPU(gpuMemset( d_bcqmod, 0,  1 * sizeof(int_t)));
+
 
 	checkGPU(gpuMemcpy(d_grid, grid, sizeof(gridinfo_t), gpuMemcpyHostToDevice));	
 	checkGPU(gpuMemcpy(d_lsum, lsum, sizelsum*num_thread * sizeof(double), gpuMemcpyHostToDevice));	
 	checkGPU(gpuMemcpy(d_x, x, (ldalsum * nrhs + nlb * XK_H) * sizeof(double), gpuMemcpyHostToDevice));	
 	checkGPU(gpuMemcpy(d_fmod, fmod, (nlb*aln_i) * sizeof(int_t), gpuMemcpyHostToDevice));
 
-	k = CEILING( nsupers, grid->npcol);/* Number of local block columns divided by #warps per block used as number of thread blocks*/
-	knsupc = sp_ienv_dist(3);
-	dlsum_fmod_inv_gpu_wrap(k,nlb,DIM_X,DIM_Y,d_lsum,d_x,nrhs,knsupc,nsupers,d_fmod,Llu->d_LBtree_ptr,Llu->d_LRtree_ptr,Llu->d_ilsum,Llu->d_Lrowind_bc_dat, Llu->d_Lrowind_bc_offset, Llu->d_Lnzval_bc_dat, Llu->d_Lnzval_bc_offset, Llu->d_Linv_bc_dat, Llu->d_Linv_bc_offset, Llu->d_Lindval_loc_bc_dat, Llu->d_Lindval_loc_bc_offset,Llu->d_xsup,d_grid,recvbuf_BC_gpu,recvbuf_RD_gpu,maxrecvsz);
+	dlsum_fmod_inv_gpu_wrap(k,nlb,DIM_X,DIM_Y,d_lsum,d_x,nrhs,knsupc,nsupers,d_fmod,Llu->d_LBtree_ptr,Llu->d_LRtree_ptr,Llu->d_ilsum,Llu->d_Lrowind_bc_dat, Llu->d_Lrowind_bc_offset, Llu->d_Lnzval_bc_dat, Llu->d_Lnzval_bc_offset, Llu->d_Linv_bc_dat, Llu->d_Linv_bc_offset, Llu->d_Lindval_loc_bc_dat, Llu->d_Lindval_loc_bc_offset,Llu->d_xsup,d_grid,maxrecvsz,
+	                        flag_bc_q, flag_rd_q, ready_x, ready_lsum,my_flag_bc, my_flag_rd, d_bcqmod);
 
 	checkGPU(gpuMemcpy(x, d_x, (ldalsum * nrhs + nlb * XK_H) * sizeof(double), gpuMemcpyDeviceToHost));
 

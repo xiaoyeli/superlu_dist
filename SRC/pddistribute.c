@@ -1634,10 +1634,12 @@ if ( !iam) printf(".. Construct Bcast tree for L: %.2f\t\n", t);
 					// LRtree_ptr[lib] = RdTree_Create(grid->comm, ranks, rank_cnt, msgsize,SeedSTD_RD[lib],'d');
 					// RdTree_SetTag(LRtree_ptr[lib], RD_L,'d');
 					C_RdTree_Create(&LRtree_ptr[lib], grid->comm, ranks, rank_cnt, msgsize, 'd');
+
 					LRtree_ptr[lib].tag_=RD_L;
 
-
-					// }
+                    printf("on CPU, iam=%d,lib=%d,cnt=%d\n",iam,lib,LRtree_ptr[lib].destCnt_);
+					fflush(stdout);
+                    // }
 
 					// printf("iam %5d rtree rank_cnt %5d \n",iam,rank_cnt);
 					// fflush(stdout);

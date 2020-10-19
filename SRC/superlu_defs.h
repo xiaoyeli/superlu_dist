@@ -41,7 +41,7 @@ at the top-level directory.
 
 #ifdef GPU_ACC
 
-
+#include "oneside.h"
 #include "gpu_wrapper.h"
 #endif
 
@@ -839,6 +839,7 @@ typedef struct
     int tag_;
     yes_no_t empty_;
     MPI_Datatype type_;
+    int myIdx;
 } C_Tree;
 
 #ifndef DEG_TREE
