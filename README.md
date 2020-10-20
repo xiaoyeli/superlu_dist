@@ -1,4 +1,4 @@
-# SuperLU_DIST (version 6.3)
+# SuperLU_DIST (version 6.4)
 
 [![Build Status](https://travis-ci.org/xiaoyeli/superlu_dist.svg?branch=master)](https://travis-ci.org/xiaoyeli/superlu_dist) 
 [Nightly tests](http://my.cdash.org/index.php?project=superlu_dist)
@@ -99,6 +99,9 @@ OOT}/Applications/BipartiteMatchings" \
 
 ( see example cmake script: run_cmake_build.sh )
 ```
+You can enable GPU with CUDA with the following cmake option:
+`-DTPL_ENABLE_CUDALIB=TRUE`
+
 You can disable LAPACK, ParMetis or CombBLAS with the following cmake option:
 `-DTPL_ENABLE_LAPACKLIB=FALSE`
 `-DTPL_ENABLE_PARMETISLIB=FALSE`

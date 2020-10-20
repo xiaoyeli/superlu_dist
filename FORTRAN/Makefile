@@ -23,15 +23,14 @@ F_5x5 	= $(F_MOD) f_5x5.o sp_ienv.o
 
 all: f_pddrive f_pzdrive f_5x5
 
-f_pddrive: $(F_DEXM) $(C_DWRAP) $(DSUPERLULIB)
-	$(FORTRAN) $(LOADOPTS) $(F_DEXM) $(C_DWRAP) $(LIBS) -o $@
-#	$(LOADER) $(LOADOPTS) $(F_DEXM) $(C_DWRAP) $(LIBS) -o $@
-
 f_5x5: $(F_5x5) $(C_DWRAP) $(DSUPERLULIB)
-	$(FORTRAN) $(LOADOPTS) $(F_5x5) $(C_DWRAP) $(LIBS) -o $@
+	$(LOADER) $(LOADOPTS) $(F_5x5) $(C_DWRAP) $(LIBS) -o $@
+
+f_pddrive: $(F_DEXM) $(C_DWRAP) $(DSUPERLULIB)
+	$(LOADER) $(LOADOPTS) $(F_DEXM) $(C_DWRAP) $(LIBS) -o $@
 
 f_pzdrive: $(F_ZEXM) $(C_ZWRAP) $(DSUPERLULIB)
-	$(FORTRAN) $(LOADOPTS) $(F_ZEXM) $(C_ZWRAP) $(LIBS) -o $@
+	$(LOADER) $(LOADOPTS) $(F_ZEXM) $(C_ZWRAP) $(LIBS) -o $@
 
 .c.o:
 	$(CC) $(CFLAGS) $(CDEFS) $(BLASDEF) -I$(INCLUDEDIR) -c $< $(VERBOSE)

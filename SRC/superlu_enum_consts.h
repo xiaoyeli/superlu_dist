@@ -22,6 +22,8 @@ at the top-level directory.
 #ifndef __SUPERLU_ENUM_CONSTS /* allow multiple inclusions */
 #define __SUPERLU_ENUM_CONSTS
 
+#define LargeDiag_AWPM LargeDiag_HWPM  /* backward compatibility */
+
 /***********************************************************************
  * Enumerate types
  ***********************************************************************/

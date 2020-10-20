@@ -25,8 +25,12 @@ then
     -Denable_fortran=ON \
     -DMPIEXEC_EXECUTABLE=/usr/bin/srun \
     -DCMAKE_INSTALL_PREFIX=.
+#   -DTPL_ENABLE_CUDALIB=TRUE \
 #    -DTPL_BLAS_LIBRARIES="-mkl" \
 #    -DXSDK_INDEX_SIZE=64
+#    -DTPL_ENABLE_INTERNAL_BLASLIB=OFF \
+#    -DTPL_ENABLE_COMBBLASLIB=FALSE \
+#    -DTPL_ENABLE_LAPACKLIB=FALSE \
 #    -DCMAKE_EXE_LINKER_FLAGS="-shared" \
 #    -DCMAKE_CXX_FLAGS="-std=c++14" \
 #    -DTPL_COMBBLAS_INCLUDE_DIRS="${COMBBLAS_ROOT}/_install/include;${COMBBLAS_ROOT}/_install/include/CombBLAS;${COMBBLAS_ROOT}/BipartiteMatchings"

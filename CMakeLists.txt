@@ -11,8 +11,8 @@ cmake_minimum_required(VERSION 2.8.12 FATAL_ERROR)
 #project(SuperLU_DIST C CXX CUDA)
 project(SuperLU_DIST C CXX)
 set(VERSION_MAJOR "6")
-set(VERSION_MINOR "3")
-set(VERSION_BugFix "1")
+set(VERSION_MINOR "4")
+set(VERSION_BugFix "0")
 set(PROJECT_VERSION ${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_BugFix})
 
 list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake")
@@ -44,7 +44,12 @@ MESSAGE("\nProcess XSDK defaults ...")
 SET(USE_XSDK_DEFAULTS_DEFAULT TRUE) # Set to false if desired
 INCLUDE("cmake/XSDKDefaults.cmake")
 INCLUDE(CTest)
+
+if (NOT enable_fortran)
+   SET(XSDK_ENABLE_Fortran OFF)
+endif()
 ######################################################################
+
 
 ######################################################################
 #
@@ -145,12 +150,20 @@ set(CMAKE_CXX_FLAGS_RELEASE "-O3" CACHE STRING "")
 ######################################################################
 #
 #--------------------- MPI ---------------------
-find_package(MPI)
+find_package(MPI REQUIRED)
 if(MPI_C_FOUND)
     set(CMAKE_C_FLAGS "${MPI_C_COMPILE_FLAGS} ${CMAKE_C_FLAGS}")
     set(CMAKE_CXX_FLAGS "${MPI_CXX_COMPILE_FLAGS} ${CMAKE_CXX_FLAGS}")
     set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${MPI_C_LINK_FLAGS}" )
 endif()
+if (enable_fortran)
+  if(MPI_Fortran_FOUND)
+    add_definitions(${MPI_Fortran_COMPILE_FLAGS})
+    include_directories(${MPI_Fortran_INCLUDE_PATH})
+    set(CMAKE_Fortran_FLAGS "${MPI_Fortran_COMPILE_FLAGS} ${CMAKE_Fortran_FLAGS}")
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${MPI_Fortran_LINK_FLAGS}")
+  endif()
+endif()  
 #--------------------- OpenMP ---------------------
 if (NOT DEFINED enable_openmp)
   set(enable_openmp TRUE)
@@ -293,6 +306,15 @@ string (REPLACE ";" " " EXTRA_LIB_STR "${EXTRA_LIB}")
 set(EXTRA_LIB_EXPORT ${EXTRA_LIB_STR})
 message("-- EXTRA_LIB_EXPORT='${EXTRA_LIB_EXPORT}'")
 
+#---------------------- Additional Fortran linker library ---------
+SET(_f_libs ${CMAKE_Fortran_IMPLICIT_LINK_LIBRARIES})
+FOREACH(_lib ${_f_libs})
+  set(EXTRA_FLIB "${EXTRA_FLIB} -l${_lib}")
+ENDFOREACH()
+message("-- EXTRA_FLIB='${EXTRA_FLIB}'")
+string (REPLACE ";" " " EXTRA_FLIB_STR "${EXTRA_FLIB}")
+set(EXTRA_FLIB_EXPORT ${EXTRA_FLIB_STR})
+message("-- EXTRA_FLIB_EXPORT='${EXTRA_FLIB_EXPORT}'")
 
 #--------------------- CombBLAS ---------------------
 if (TPL_ENABLE_COMBBLASLIB)   ## want to use CombBLAS
@@ -379,9 +401,13 @@ if(enable_examples)
 endif()
 
 if(enable_fortran)
+#  SET(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -lstdc++")
+  SET(MPI_Fortran_LINK_FLAGS "${CMAKE_EXE_LINKER_FLAGS}")
   add_subdirectory(FORTRAN)
-  SET(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -lstdc++")
 endif()
+
+# superlu_dist uses c++11. PUBLIC means that the other codes linking to it need c++11
+#target_compile_features(SuperLU_DIST PUBLIC cxx_std_11)
 
 # configure_file(${CMAKE_SOURCE_DIR}/make.inc.in ${CMAKE_BINARY_DIR}/make.inc)
 configure_file(${SuperLU_DIST_SOURCE_DIR}/make.inc.in ${SuperLU_DIST_SOURCE_DIR}/make.inc)
