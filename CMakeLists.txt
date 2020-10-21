@@ -24,15 +24,14 @@ option(enable_complex16 "Enable complex16 precision library" ON)
 option(enable_tests  "Build tests" ON)
 option(enable_examples  "Build examples" ON)
 option(TPL_ENABLE_INTERNAL_BLASLIB  "Build the CBLAS library" ${enable_blaslib_DEFAULT})
-option(enable_fortran  "Build fortran90 interface" OFF)
 option(TPL_BLAS_LIBRARIES "List of absolute paths to blas libraries [].")
-option(TPL_ENABLE_LAPACKLIB "Enable LAPACK library" ON)
+option(TPL_ENABLE_LAPACKLIB "Enable lapack library" ON)
 option(TPL_LAPACK_LIBRARIES "List of absolute paths to lapack libraries [].")
 option(TPL_ENABLE_PARMETISLIB   "Build the ParMETIS library" ON)
 option(TPL_PARMETIS_LIBRARIES "List of absolute paths to ParMETIS link libraries [].")
 option(TPL_PARMETIS_INCLUDE_DIRS "List of absolute paths to ParMETIS include directories [].")
-option(TPL_ENABLE_COMBBLASLIB   "Build the CombBLAS library" OFF)
-option(TPL_COMBBLAS_LIBRARIES "List of absolute paths to CombBLAS link libraries [].")
+option(TPL_ENABLE_COMBBLASLIB   "BUILD THE COMBBLAS LIBRARY" OFF)
+OPTION(TPL_COMBBLAS_LIBRARIES "List of absolute paths to CombBLAS link libraries [].")
 option(TPL_COMBBLAS_INCLUDE_DIRS "List of absolute paths to CombBLAS include directories [].")
 option(TPL_ENABLE_CUDALIB   "Enable the CUDA libraries" OFF)
 
@@ -40,16 +39,12 @@ option(TPL_ENABLE_CUDALIB   "Enable the CUDA libraries" OFF)
 ######################################################################
 #
 # IDEAS: xSDK standards module
-MESSAGE("\nProcess XSDK defaults ...")
-SET(USE_XSDK_DEFAULTS_DEFAULT TRUE) # Set to false if desired
-INCLUDE("cmake/XSDKDefaults.cmake")
-INCLUDE(CTest)
-
-if (NOT enable_fortran)
-   SET(XSDK_ENABLE_Fortran OFF)
-endif()
+#MESSAGE("\nProcess XSDK defaults ...")
+#SET(USE_XSDK_DEFAULTS_DEFAULT TRUE) # Set to false if desired
+#INCLUDE("cmake/XSDKDefaults.cmake")
 ######################################################################
 
+INCLUDE(CTest)
 
 ######################################################################
 #
@@ -57,7 +52,6 @@ endif()
 #
 ######################################################################
 set(CMAKE_INSTALL_NAME_DIR "${CMAKE_INSTALL_PREFIX}/lib")
-
 
 #---- For shared library
 
@@ -98,6 +92,8 @@ endif()
 
 #set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+#message("!!!! top: cxx_implicit='${CMAKE_CXX_IMPLICIT_LINK_LIBRARIES}'")
 
 if (XSDK_ENABLE_Fortran)
   enable_language (Fortran)
@@ -156,7 +152,7 @@ if(MPI_C_FOUND)
     set(CMAKE_CXX_FLAGS "${MPI_CXX_COMPILE_FLAGS} ${CMAKE_CXX_FLAGS}")
     set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${MPI_C_LINK_FLAGS}" )
 endif()
-if (enable_fortran)
+if (XSDK_ENABLE_Fortran)
   if(MPI_Fortran_FOUND)
     add_definitions(${MPI_Fortran_COMPILE_FLAGS})
     include_directories(${MPI_Fortran_INCLUDE_PATH})
@@ -301,20 +297,20 @@ SET(_c_libs ${CMAKE_C_IMPLICIT_LINK_LIBRARIES})
 FOREACH(_lib ${_c_libs})
   set(EXTRA_LIB "-l${_lib} ${EXTRA_LIB}")
 ENDFOREACH()
-message("-- EXTRA_LIB='${EXTRA_LIB}'")
 string (REPLACE ";" " " EXTRA_LIB_STR "${EXTRA_LIB}")
 set(EXTRA_LIB_EXPORT ${EXTRA_LIB_STR})
 message("-- EXTRA_LIB_EXPORT='${EXTRA_LIB_EXPORT}'")
 
 #---------------------- Additional Fortran linker library ---------
-SET(_f_libs ${CMAKE_Fortran_IMPLICIT_LINK_LIBRARIES})
-FOREACH(_lib ${_f_libs})
-  set(EXTRA_FLIB "${EXTRA_FLIB} -l${_lib}")
-ENDFOREACH()
-message("-- EXTRA_FLIB='${EXTRA_FLIB}'")
-string (REPLACE ";" " " EXTRA_FLIB_STR "${EXTRA_FLIB}")
-set(EXTRA_FLIB_EXPORT ${EXTRA_FLIB_STR})
-message("-- EXTRA_FLIB_EXPORT='${EXTRA_FLIB_EXPORT}'")
+if (XSDK_ENABLE_Fortran)
+   SET(_f_libs ${CMAKE_Fortran_IMPLICIT_LINK_LIBRARIES})
+   FOREACH(_lib ${_f_libs})
+       set(EXTRA_FLIB "${EXTRA_FLIB} -l${_lib}")
+   ENDFOREACH()
+   string (REPLACE ";" " " EXTRA_FLIB_STR "${EXTRA_FLIB}")
+   set(EXTRA_FLIB_EXPORT ${EXTRA_FLIB_STR})
+   message("-- EXTRA_FLIB_EXPORT='${EXTRA_FLIB_EXPORT}'")
+endif()
 
 #--------------------- CombBLAS ---------------------
 if (TPL_ENABLE_COMBBLASLIB)   ## want to use CombBLAS
@@ -356,10 +352,12 @@ endif()
 # Fortran-C name mangling 
 #
 ######################################################################
-include(FortranCInterface)
-FortranCInterface_HEADER(${SuperLU_DIST_SOURCE_DIR}/SRC/superlu_FortranCInterface.h
+if (XSDK_ENABLE_Fortran)
+  include(FortranCInterface)
+  FortranCInterface_HEADER(${SuperLU_DIST_SOURCE_DIR}/SRC/superlu_FortranCInterface.h
   MACRO_NAMESPACE "FC_")
-FortranCInterface_VERIFY(CXX)
+  FortranCInterface_VERIFY(CXX)
+endif()
 
 ######################################################################
 #
@@ -400,7 +398,7 @@ if(enable_examples)
   add_subdirectory(EXAMPLE)
 endif()
 
-if(enable_fortran)
+if (XSDK_ENABLE_Fortran)
 #  SET(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -lstdc++")
   SET(MPI_Fortran_LINK_FLAGS "${CMAKE_EXE_LINKER_FLAGS}")
   add_subdirectory(FORTRAN)
@@ -424,4 +422,4 @@ configure_file(${CMAKE_CURRENT_SOURCE_DIR}/superlu_dist.pc.in ${CMAKE_CURRENT_BI
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/superlu_dist.pc
 	DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig)
 
-message("CMAKE_CXX_LINK_FLAGS '${CMAKE_CXX_LINK_FLAGS}'")
+#message("CMAKE_CXX_LINK_FLAGS '${CMAKE_CXX_LINK_FLAGS}'")
