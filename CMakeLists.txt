@@ -124,15 +124,15 @@ set(INSTALL_BIN_DIR "${default_install_bin_dir}" CACHE STRING "The folder where 
 
 # Set up required compiler defines and options.
 ## get_directory_property( DirDefs COMPILE_DEFINITIONS )
-# set(CMAKE_C_FLAGS "-DDEBUGlevel=0 -DPRNTlevel=0 ${CMAKE_C_FLAGS}")
-set(CMAKE_CXX_FLAGS "-std=c++11 ${CMAKE_CXX_FLAGS}")
+# set(CMAKE_C_FLAGS "-g -DDEBUGlevel=0 -DPRNTlevel=0 ${CMAKE_C_FLAGS}")
+set(CMAKE_CXX_FLAGS "-g -std=c++11 ${CMAKE_CXX_FLAGS}")
 if(XSDK_INDEX_SIZE EQUAL 64)
     message("-- Using 64 bit integer for index size.")
 endif()	
-set(CMAKE_C_FLAGS_RELEASE "-O3" CACHE STRING "")
+set(CMAKE_C_FLAGS_RELEASE "-O3 -g" CACHE STRING "")
 message("cmake_c_flags_release '${CMAKE_C_FLAGS_RELEASE}'")
 message("cmake_shared_library_c_flags '${CMAKE_SHARED_LIBRARY_C_FLAGS}'")
-set(CMAKE_CXX_FLAGS_RELEASE "-O3" CACHE STRING "")
+set(CMAKE_CXX_FLAGS_RELEASE "-O3 -g" CACHE STRING "")
 
 ######################################################################
 #
