@@ -71,10 +71,11 @@ DPLUSRC = pdgssvx.o pdgssvx_ABglobal.o \
 	  pdgstrf.o pdgstrf2.o pdGetDiagU.o \
 	  pdgstrs.o pdgstrs1.o pdgstrs_lsum.o pdgstrs_Bglobal.o \
 	  pdgsrfs.o pdgsmv.o pdgsrfs_ABXglobal.o pdgsmv_AXglobal.o \
-	  dreadtriple_noheader.o nrformat_loc.o ##$(FACT3D)
+	  dreadtriple_noheader.o 
 # from 3D code
 DPLUSRC += pdgssvx3d.o pdgstrf3d.o dtreeFactorization.o dscatter3d.o \
-	dgather.o pd3dcomm.o dtrfAux.o dcommunication_aux.o dtrfCommWrapper.o
+	dgather.o pd3dcomm.o dtrfAux.o dcommunication_aux.o dtrfCommWrapper.o \
+	dnrformat_loc3d.o ##$(FACT3D)
 
 #
 # Routines for double complex parallel SuperLU
@@ -88,7 +89,8 @@ ZPLUSRC = pzgssvx.o pzgssvx_ABglobal.o \
 	  zreadtriple_noheader.o
 # from 3D code
 ZPLUSRC += pzgssvx3d.o pzgstrf3d.o ztreeFactorization.o zscatter3d.o \
-	zgather.o pz3dcomm.o ztrfAux.o zcommunication_aux.o ztrfCommWrapper.o
+	zgather.o pz3dcomm.o ztrfAux.o zcommunication_aux.o ztrfCommWrapper.o \
+	znrformat_loc3d.o ##$(FACT3D)
 
 all:  double complex16
 

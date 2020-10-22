@@ -1105,13 +1105,14 @@ NRformat_loc dGatherNRformat_loc(NRformat_loc *A,
     gridinfo3d_t *grid3d);
 
 int dScatterB3d(NRformat_loc A2d, NRformat_loc *A,
-                         double *B, int ldb, int nrhs, double *B2d,
+		 double *B, int ldb, int nrhs, double *B2d,
                          gridinfo3d_t *grid3d);
 
 NRformat_loc3d*  dGatherNRformat_loc3d(NRformat_loc *A,
                                  double *B, int ldb, int nrhs,
                                  gridinfo3d_t *grid3d);
 extern int dScatterB3d_(NRformat_loc3d *A3d, gridinfo3d_t *grid3d);
+    
 extern void DistPrint(char* function_name,  double value, char* Units, gridinfo_t* grid);
 extern void DistPrint3D(char* function_name,  double value, char* Units, gridinfo3d_t* grid3d);
 extern void treeImbalance3D(gridinfo3d_t *grid3d, SCT_t* SCT);

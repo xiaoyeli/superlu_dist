@@ -633,7 +633,7 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 	NRformat_loc *Astore0 = &Atmp; // Astore0 is on 2D
 #else
 	NRformat_loc3d *A3d = dGatherNRformat_loc3d(
-		(NRformat_loc *)A->Store,
+	(NRformat_loc *)A->Store,
 		B, ldb, nrhs, grid3d);
 	B2d = A3d->B2d; 
 	NRformat_loc *Astore0 = A3d->A_nfmt; 
@@ -1746,7 +1746,7 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 	} /* process layer 0 done solve */
 
 #ifdef NRFRMT
-dScatterB3d_(A3d, grid3d);
+	dScatter_B3d(A3d, grid3d);
 	// dScatterB3d(*(A3d->A_nfmt),
 	// 			A_orig,
 	// 			B3d, ldb, nrhs, B2d,

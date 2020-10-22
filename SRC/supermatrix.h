@@ -188,16 +188,19 @@ typedef struct {
 } NRformat_loc;
 
 
+/* Data structure for storing 3D matrix on layer 0 of the 2D process grid */
 typedef struct NRformat_loc3d
 {
     NRformat_loc* A_nfmt; 
-    double* B;
+    void* B;   // distributed on 3D process grid
+    //double* B;   // distributed on 3D process grid
     int  ldb;
     int nrhs;
     int m_loc; 
-    double* B2d;
+    void* B2d; // on 2D process layer
+    //double* B2d; // on 2D process layer
 
-    int* row_counts_int;
+    int* row_counts_int; // these counts are for {A, B} distributed on 2D layer 0
     int* row_disp;
     int* b_counts_int;
     int* b_disp;

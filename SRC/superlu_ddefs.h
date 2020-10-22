@@ -340,6 +340,14 @@ extern int dcreate_matrix3d(SuperMatrix *A, int nrhs, double **rhs,
 extern int dcreate_matrix_postfix3d(SuperMatrix *A, int nrhs, double **rhs,
                            int *ldb, double **x, int *ldx,
                            FILE *fp, char * postfix, gridinfo3d_t *grid3d);
+    
+/* Matrix distributed in NRformat_loc in 3D process grid. It converts 
+   it to a NRformat_loc distributed in 2D grid in grid-0 */
+extern NRformat_loc3d *dGatherNRformat_loc3d(NRformat_loc *A, double *B,
+					     int ldb, int nrhs,
+					     gridinfo3d_t *grid3d);
+extern int dScatter_B3d(NRformat_loc3d *A3d, gridinfo3d_t *grid3d);
+    
 
 /* Driver related */
 extern void    dgsequ_dist (SuperMatrix *, double *, double *, double *,

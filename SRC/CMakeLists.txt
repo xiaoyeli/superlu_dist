@@ -22,7 +22,6 @@ endif ()
 # first: precision-independent files
 #  global.cpp
 set(sources
-  nrformat_loc.c 
   sp_ienv.c
   etree.c 
   sp_colorder.c
@@ -104,6 +103,7 @@ if(enable_double)
     pdgsmv_AXglobal.c
     pdGetDiagU.c
     pdgssvx3d.c     ## 3D code
+    dnrformat_loc3d.c 
     pdgstrf3d.c 
     dtreeFactorization.c
     dgather.c
@@ -156,6 +156,7 @@ if(enable_complex16)
     pzgsmv_AXglobal.c
     pzGetDiagU.c
     pzgssvx3d.c   ## 3D code
+    znrformat_loc3d.c 
     pzgstrf3d.c
     ztreeFactorization.c 
     zscatter3d.c
