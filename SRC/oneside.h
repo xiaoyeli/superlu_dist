@@ -2,6 +2,11 @@
 #include "cuda.h"
 #include "cuda_runtime.h"
 
+extern int mysendmsg_num;
+extern int mysendmsg_num_u;
+extern int mysendmsg_num_rd;
+extern int mysendmsg_num_urd;
+extern int *mystatus;
 #define RDMA_FLAG_SIZE 4
 #define NVSHMEM_SIZES 10
 

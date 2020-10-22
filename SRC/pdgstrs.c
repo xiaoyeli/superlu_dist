@@ -1666,21 +1666,23 @@ dGenCOOLblocks(iam, nsupers, grid,Glu_persist,Llu, cooRows, cooCols, cooVals, &n
     nvshmem_buffer_size[2] = maxrecvsz*CEILING( nsupers, grid->npcol); // x buffer size, sender, make sure data is not evicted when receiver comes to get the data
     nvshmem_buffer_size[3] = 2*maxrecvsz*CEILING( nsupers, grid->nprow); // lsum buffer size, sender, make sure data is not evicted when receiver comes to get the data
 
-    double tot_size=0;
-    tot_size=(nvshmem_buffer_size[0]*sizeof(int)+nvshmem_buffer_size[1]*sizeof(int)+
-              nvshmem_buffer_size[2]*sizeof(double)+nvshmem_buffer_size[3]*sizeof(double))/1e6;
-    printf("iam=%d,nvshmem buffer size(MB):%lf, nfrecvx=%d\n",iam,tot_size,nfrecvx);
 
-    int *my_flag_bc, *my_flag_rd, *flag_bc_q, *flag_rd_q;
+    int *flag_bc_q, *flag_rd_q;
+    int *my_flag_bc, *my_flag_rd;
     double *ready_x, *ready_lsum;
-    int* d_bcqmod;
+    int* d_bcqmod, *d_nfrecv, *d_mysendmsg_num,*d_mysendmsg_num_u,*d_mysendmsg_num_rd,*d_mysendmsg_num_urd;
+    int totrecv=nfrecvx+nfrecvmod;
+    int* d_status;
+    int* d_launch_flag;
     if (nvshmem_buffer_size[0] > 0){
         flag_bc_q = (int *) nvshmem_malloc ( nvshmem_buffer_size[0] * sizeof(int)); // for sender
+        checkGPU(gpuMemset(flag_bc_q, 0, nvshmem_buffer_size[0] * sizeof(int)));
         my_flag_bc = (int *) nvshmem_malloc ( nvshmem_buffer_size[0] * sizeof(int)); // for sender
         checkGPU(gpuMemset(my_flag_bc, 0, nvshmem_buffer_size[0] * sizeof(int)));
     }
     if (nvshmem_buffer_size[1] > 0){
         flag_rd_q = (int *)nvshmem_malloc( nvshmem_buffer_size[1] * sizeof(int)); // for sender
+        checkGPU(gpuMemset(flag_rd_q, 0, nvshmem_buffer_size[1] * sizeof(int)));
         my_flag_rd = (int *) nvshmem_malloc ( nvshmem_buffer_size[1] * sizeof(int)); // for sender
         checkGPU(gpuMemset(my_flag_rd, 0, nvshmem_buffer_size[1] * sizeof(int)));
     }
@@ -1691,9 +1693,7 @@ dGenCOOLblocks(iam, nsupers, grid,Glu_persist,Llu, cooRows, cooCols, cooVals, &n
     ready_lsum = (double *)nvshmem_malloc(nvshmem_buffer_size[3] * sizeof(double)); // for receiver
     checkGPU(gpuMemset(ready_lsum, 0, nvshmem_buffer_size[3] * sizeof(double)));
 
-    create_nv_buffer(nvshmem_buffer_size,my_flag_bc,flag_bc_q, flag_rd_q);
-
-
+    //create_nv_buffer(nvshmem_buffer_size,my_flag_bc,flag_bc_q, flag_rd_q);
 
 	checkGPU(gpuMalloc( (void**)&d_grid, sizeof(gridinfo_t)));
 	
@@ -1702,17 +1702,37 @@ dGenCOOLblocks(iam, nsupers, grid,Glu_persist,Llu, cooRows, cooCols, cooVals, &n
 	checkGPU(gpuMalloc( (void**)&d_lsum, sizelsum*num_thread * sizeof(double)));
 	checkGPU(gpuMalloc( (void**)&d_x, (ldalsum * nrhs + nlb * XK_H) * sizeof(double)));
 	checkGPU(gpuMalloc( (void**)&d_fmod, (nlb*aln_i) * sizeof(int_t)));
-	checkGPU(gpuMalloc( (void**)&d_bcqmod,  1 * sizeof(int_t)));
-	checkGPU(gpuMemset( d_bcqmod, 0,  1 * sizeof(int_t)));
+
+	checkGPU(gpuMalloc( (void**)&d_bcqmod,  4 * sizeof(int)));
+	checkGPU(gpuMemset( d_bcqmod, 0,  4 * sizeof(int)));
+	checkGPU(gpuMalloc( (void**)&d_status,  k * sizeof(int)));
+
+	checkGPU(gpuMalloc( (void**)&d_nfrecv,  1 * sizeof(int)));
+	checkGPU(gpuMalloc( (void**)&d_launch_flag,  1 * sizeof(int)));
+	checkGPU(gpuMemset( d_launch_flag, 0,  1 * sizeof(int)));
+	checkGPU(gpuMalloc( (void**)&d_mysendmsg_num,  1 * sizeof(int)));
+	checkGPU(gpuMalloc( (void**)&d_mysendmsg_num_rd,  1 * sizeof(int)));
+	checkGPU(gpuMalloc( (void**)&d_mysendmsg_num_u,  1 * sizeof(int)));
+	checkGPU(gpuMalloc( (void**)&d_mysendmsg_num_urd,  1 * sizeof(int)));
 
 
 	checkGPU(gpuMemcpy(d_grid, grid, sizeof(gridinfo_t), gpuMemcpyHostToDevice));	
 	checkGPU(gpuMemcpy(d_lsum, lsum, sizelsum*num_thread * sizeof(double), gpuMemcpyHostToDevice));	
 	checkGPU(gpuMemcpy(d_x, x, (ldalsum * nrhs + nlb * XK_H) * sizeof(double), gpuMemcpyHostToDevice));	
 	checkGPU(gpuMemcpy(d_fmod, fmod, (nlb*aln_i) * sizeof(int_t), gpuMemcpyHostToDevice));
+	checkGPU(gpuMemcpy(d_nfrecv, &totrecv, 1 * sizeof(int), gpuMemcpyHostToDevice));
+    printf("iam=%d,totrecv=%d, nfrecvx=%d,nfrecvmod=%d,mysendmsg_num=%d\n",iam,totrecv,nfrecvx,nfrecvmod,mysendmsg_num);
+    for(int i=0;i<k;i++) printf("(%d),status[%d]=%d\n",iam,i,mystatus[i]);
+    int local_msg=mysendmsg_num;
+    int local_msg_rd=mysendmsg_num_rd;
+	checkGPU(gpuMemcpy(d_mysendmsg_num, &local_msg, 1 * sizeof(int), gpuMemcpyHostToDevice));
+	checkGPU(gpuMemcpy(d_mysendmsg_num_rd, &local_msg_rd, 1 * sizeof(int), gpuMemcpyHostToDevice));
+	checkGPU(gpuMemcpy(d_mysendmsg_num_u, &mysendmsg_num_u, 1 * sizeof(int), gpuMemcpyHostToDevice));
+	checkGPU(gpuMemcpy(d_mysendmsg_num_urd, &mysendmsg_num_urd, 1 * sizeof(int), gpuMemcpyHostToDevice));
+	checkGPU(gpuMemcpy(d_status, &mystatus, k * sizeof(int), gpuMemcpyHostToDevice));
 
 	dlsum_fmod_inv_gpu_wrap(k,nlb,DIM_X,DIM_Y,d_lsum,d_x,nrhs,knsupc,nsupers,d_fmod,Llu->d_LBtree_ptr,Llu->d_LRtree_ptr,Llu->d_ilsum,Llu->d_Lrowind_bc_dat, Llu->d_Lrowind_bc_offset, Llu->d_Lnzval_bc_dat, Llu->d_Lnzval_bc_offset, Llu->d_Linv_bc_dat, Llu->d_Linv_bc_offset, Llu->d_Lindval_loc_bc_dat, Llu->d_Lindval_loc_bc_offset,Llu->d_xsup,d_grid,maxrecvsz,
-	                        flag_bc_q, flag_rd_q, ready_x, ready_lsum,my_flag_bc, my_flag_rd, d_bcqmod);
+	                        flag_bc_q, flag_rd_q, ready_x, ready_lsum,my_flag_bc, my_flag_rd, d_bcqmod,d_nfrecv,d_mysendmsg_num,d_mysendmsg_num_rd,d_status,d_launch_flag);
 
 	checkGPU(gpuMemcpy(x, d_x, (ldalsum * nrhs + nlb * XK_H) * sizeof(double), gpuMemcpyDeviceToHost));
 

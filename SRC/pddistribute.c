@@ -317,7 +317,8 @@ dReDistribute_A(SuperMatrix *A, ScalePermstruct_t *ScalePermstruct,
 
     return 0;
 } /* dReDistribute_A */
-
+int mysendmsg_num, mysendmsg_num_u, mysendmsg_num_rd, mysendmsg_num_urd;
+int* mystatus;
 float
 pddistribute(fact_t fact, int_t n, SuperMatrix *A,
 	     ScalePermstruct_t *ScalePermstruct,
@@ -495,7 +496,10 @@ pddistribute(fact_t fact, int_t n, SuperMatrix *A,
     for (i = 0; i < NBUFFERS; ++i) mybufmax[i] = 0;
     nsupers  = supno[n-1] + 1;
     Astore   = (NRformat_loc *) A->Store;
-
+    mysendmsg_num=0;
+    mysendmsg_num_u=0;
+    mysendmsg_num_rd=0;
+    mysendmsg_num_urd=0;
 //#if ( PRNTlevel>=1 )
     iword = sizeof(int_t);
     dword = sizeof(double);
@@ -1364,9 +1368,13 @@ pddistribute(fact_t fact, int_t n, SuperMatrix *A,
 	if ( !(SeedSTD_BC = (double*)SUPERLU_MALLOC(k * sizeof(double))) )
 		ABORT("Malloc fails for SeedSTD_BC[].");
 
+    if ( !(mystatus = (int*)SUPERLU_MALLOC(k * sizeof(int))) )
+    ABORT("Malloc fails for SeedSTD_BC[].");
+
 
 	for (i=0;i<k;i++){
 		SeedSTD_BC[i]=rand();
+        mystatus[i]=1;
 	}
 
 	MPI_Allreduce(MPI_IN_PLACE,&SeedSTD_BC[0],k,MPI_DOUBLE,MPI_MAX,grid->cscp.comm);
@@ -1446,7 +1454,11 @@ pddistribute(fact_t fact, int_t n, SuperMatrix *A,
 				// LBtree_ptr[ljb] = BcTree_Create(grid->comm, ranks, rank_cnt, msgsize,SeedSTD_BC[ljb],'d');
 				// BcTree_SetTag(LBtree_ptr[ljb],BC_L,'d');
 
-				C_BcTree_Create(&LBtree_ptr[ljb], grid->comm, ranks, rank_cnt, msgsize, 'd');
+				int needrecv=0;
+				C_BcTree_Create_nv(&LBtree_ptr[ljb], grid->comm, ranks, rank_cnt, msgsize, 'd',&mysendmsg_num,&needrecv);
+                //C_BcTree_Create(&LBtree_ptr[ljb], grid->comm, ranks, rank_cnt, msgsize, 'd');
+                printf("(%d) HOST create:ljb=%d,msg=%d,needrecv=%d\n",iam,ljb,mysendmsg_num,needrecv);
+			    if (needrecv==1) mystatus[ljb]=0;
 				LBtree_ptr[ljb].tag_=BC_L;
 				
 
@@ -1481,7 +1493,7 @@ pddistribute(fact_t fact, int_t n, SuperMatrix *A,
 		}
 	}
 
-
+	 printf("HOST, iam=%d,msg=%d\n",iam,mysendmsg_num);
 	SUPERLU_FREE(ActiveFlag);
 	SUPERLU_FREE(ActiveFlagAll);
 	SUPERLU_FREE(ranks);
@@ -1633,7 +1645,8 @@ if ( !iam) printf(".. Construct Bcast tree for L: %.2f\t\n", t);
 
 					// LRtree_ptr[lib] = RdTree_Create(grid->comm, ranks, rank_cnt, msgsize,SeedSTD_RD[lib],'d');
 					// RdTree_SetTag(LRtree_ptr[lib], RD_L,'d');
-					C_RdTree_Create(&LRtree_ptr[lib], grid->comm, ranks, rank_cnt, msgsize, 'd');
+					C_RdTree_Create_nv(&LRtree_ptr[lib], grid->comm, ranks, rank_cnt, msgsize, 'd',&mysendmsg_num_rd);
+                    //C_RdTree_Create(&LRtree_ptr[lib], grid->comm, ranks, rank_cnt, msgsize, 'd');
 
 					LRtree_ptr[lib].tag_=RD_L;
 
@@ -1797,8 +1810,9 @@ if ( !iam) printf(".. Construct Reduce tree for L: %.2f\t\n", t);
 				msgsize = SuperSize( jb );
 				// UBtree_ptr[ljb] = BcTree_Create(grid->comm, ranks, rank_cnt, msgsize,SeedSTD_BC[ljb],'d');
 				// BcTree_SetTag(UBtree_ptr[ljb],BC_U,'d');
-
-				C_BcTree_Create(&UBtree_ptr[ljb], grid->comm, ranks, rank_cnt, msgsize, 'd');
+                int needrecv=0;
+				C_BcTree_Create_nv(&UBtree_ptr[ljb], grid->comm, ranks, rank_cnt, msgsize, 'd',&mysendmsg_num_u,&needrecv);
+                //C_BcTree_Create(&UBtree_ptr[ljb], grid->comm, ranks, rank_cnt, msgsize, 'd');
 				UBtree_ptr[ljb].tag_=BC_U;
 
 
@@ -2005,11 +2019,10 @@ if ( !iam) printf(".. Construct Bcast tree for U: %.2f\t\n", t);
 
 					// URtree_ptr[lib] = RdTree_Create(grid->comm, ranks, rank_cnt, msgsize,SeedSTD_RD[lib],'d');
 					// RdTree_SetTag(URtree_ptr[lib], RD_U,'d');
-					C_RdTree_Create(&URtree_ptr[lib], grid->comm, ranks, rank_cnt, msgsize, 'd');
+					C_RdTree_Create_nv(&URtree_ptr[lib], grid->comm, ranks, rank_cnt, msgsize, 'd',&mysendmsg_num_urd);
+                    //C_RdTree_Create(&URtree_ptr[lib], grid->comm, ranks, rank_cnt, msgsize, 'd');
 					URtree_ptr[lib].tag_=RD_U;
 
-
-					
 					// }
 
 					// #if ( PRNTlevel>=1 )
@@ -2050,7 +2063,8 @@ if ( !iam) printf(".. Construct Reduce tree for U: %.2f\t\n", t);
 
 	////////////////////////////////////////////////////////
 
-
+        printf("In distribute (%d), mysendmsg_num=%d,mysendmsg_num_rd=%d,mysendmsg_num_u=%d,mysendmsg_num_urd=%d\n",iam,mysendmsg_num, mysendmsg_num_rd, mysendmsg_num_u, mysendmsg_num_urd);
+        fflush(stdout);
 	Llu->Lrowind_bc_ptr = Lrowind_bc_ptr;
 	Llu->Lrowind_bc_dat = Lrowind_bc_dat;
 	Llu->Lrowind_bc_offset = Lrowind_bc_offset;
