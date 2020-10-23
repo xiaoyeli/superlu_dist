@@ -101,6 +101,7 @@ OOT}/Applications/BipartiteMatchings" \
 ```
 You can enable GPU with CUDA with the following cmake option:
 `-DTPL_ENABLE_CUDALIB=TRUE`
+`-DTPL_CUDA_LIBRARIES="<path>/libcublas.so;<path>/libcudart.so"`
 
 You can disable LAPACK, ParMetis or CombBLAS with the following cmake option:
 `-DTPL_ENABLE_LAPACKLIB=FALSE`
@@ -285,14 +286,10 @@ set the number of threads you wish to use as follows (bash):
 
 `export OMP_NUM_THREADS=<##>`
 
-To enable NVIDIA GPU access, need to take the following 2 step:
-1) Set the following Linux environment variable:
-`export ACC=GPU`
-
-2) Add the CUDA library location in make.inc:
+To enable NVIDIA GPU access, need to take the following step:
+Add the CUDA library location in make.inc:
 ```
-ifeq "${ACC}" "GPU"
-CFLAGS += -DGPU_ACC
+HAVE_CUDA=TRUE
 INCS += -I<CUDA directory>/include
 LIBS += -L<CUDA directory>/lib64 -lcublas -lcudart 
 endif

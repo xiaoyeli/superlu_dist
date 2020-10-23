@@ -36,10 +36,6 @@ ALLAUX 	= sp_ienv.o etree.o sp_colorder.o get_perm_c.o \
 	  xerr_dist.o smach_dist.o dmach_dist.o \
 	  superlu_dist_version.o TreeInterface.o
 
-ifeq "${ACC}" "GPU"
-ALLAUX += cublas_utils.o
-endif
-
 ifeq ($(HAVE_CUDA),TRUE)
 ALLAUX += cublas_utils.o
 endif

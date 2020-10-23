@@ -90,8 +90,8 @@ else()
   set(PROJECT_NAME_LIB_EXPORT libsuperlu_dist.a)
 endif()
 
-#set(CMAKE_CXX_STANDARD 11)
-set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD 11)
+#set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 #message("!!!! top: cxx_implicit='${CMAKE_CXX_IMPLICIT_LINK_LIBRARIES}'")
 
