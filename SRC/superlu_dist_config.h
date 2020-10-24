@@ -1,13 +1,13 @@
 /* superlu_dist_config.h.in */
 
 /* Enable CUDA */
-#define HAVE_CUDA TRUE
+/* #undef HAVE_CUDA */
 
 /* Enable parmetis */
 #define HAVE_PARMETIS TRUE
 
 /* Enable LAPACK */
-#define SLU_HAVE_LAPACK TRUE
+/* #undef SLU_HAVE_LAPACK */
 
 /* Enable CombBLAS */
 /* #undef HAVE_COMBBLAS */

@@ -401,4 +401,5 @@ December 9, 2018    Version 6.1.0
 February 8, 2019    Version 6.1.1
 November 12, 2019   Version 6.2.0
 February 23, 2020   Version 6.3.0
+October 23, 2020    Version 6.4.0
 ```
