@@ -263,6 +263,7 @@ out:
     /* ------------------------------------------------------------
        TERMINATES THE MPI EXECUTION ENVIRONMENT.
        ------------------------------------------------------------*/
+    nvshmem_finalize();
     MPI_Finalize();
 
 #if ( DEBUGlevel>=1 )

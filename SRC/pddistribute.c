@@ -1457,7 +1457,7 @@ pddistribute(fact_t fact, int_t n, SuperMatrix *A,
 				int needrecv=0;
 				C_BcTree_Create_nv(&LBtree_ptr[ljb], grid->comm, ranks, rank_cnt, msgsize, 'd',&mysendmsg_num,&needrecv);
                 //C_BcTree_Create(&LBtree_ptr[ljb], grid->comm, ranks, rank_cnt, msgsize, 'd');
-                printf("(%d) HOST create:ljb=%d,msg=%d,needrecv=%d\n",iam,ljb,mysendmsg_num,needrecv);
+                //printf("(%d) HOST create:ljb=%d,msg=%d,needrecv=%d\n",iam,ljb,mysendmsg_num,needrecv);
 			    if (needrecv==1) mystatus[ljb]=0;
 				LBtree_ptr[ljb].tag_=BC_L;
 				

@@ -1673,7 +1673,7 @@ dGenCOOLblocks(iam, nsupers, grid,Glu_persist,Llu, cooRows, cooCols, cooVals, &n
     int* d_bcqmod, *d_nfrecv, *d_mysendmsg_num,*d_mysendmsg_num_u,*d_mysendmsg_num_rd,*d_mysendmsg_num_urd;
     int totrecv=nfrecvx+nfrecvmod;
     int* d_status;
-    int* d_launch_flag;
+    int* d_launch_flag,*launch_flag;
     if (nvshmem_buffer_size[0] > 0){
         flag_bc_q = (int *) nvshmem_malloc ( nvshmem_buffer_size[0] * sizeof(int)); // for sender
         checkGPU(gpuMemset(flag_bc_q, 0, nvshmem_buffer_size[0] * sizeof(int)));
@@ -1710,6 +1710,9 @@ dGenCOOLblocks(iam, nsupers, grid,Glu_persist,Llu, cooRows, cooCols, cooVals, &n
 	checkGPU(gpuMalloc( (void**)&d_nfrecv,  1 * sizeof(int)));
 	checkGPU(gpuMalloc( (void**)&d_launch_flag,  1 * sizeof(int)));
 	checkGPU(gpuMemset( d_launch_flag, 0,  1 * sizeof(int)));
+    //cudaHostAlloc( (void**)&launch_flag,1*sizeof(int),cudaHostAllocWriteCombined | cudaHostAllocMapped);
+    //cudaHostGetDevicePointer( &d_launch_flag, launch_flag, 0);
+    //launch_flag[0]=0;
 	checkGPU(gpuMalloc( (void**)&d_mysendmsg_num,  1 * sizeof(int)));
 	checkGPU(gpuMalloc( (void**)&d_mysendmsg_num_rd,  1 * sizeof(int)));
 	checkGPU(gpuMalloc( (void**)&d_mysendmsg_num_u,  1 * sizeof(int)));
@@ -1721,28 +1724,38 @@ dGenCOOLblocks(iam, nsupers, grid,Glu_persist,Llu, cooRows, cooCols, cooVals, &n
 	checkGPU(gpuMemcpy(d_x, x, (ldalsum * nrhs + nlb * XK_H) * sizeof(double), gpuMemcpyHostToDevice));	
 	checkGPU(gpuMemcpy(d_fmod, fmod, (nlb*aln_i) * sizeof(int_t), gpuMemcpyHostToDevice));
 	checkGPU(gpuMemcpy(d_nfrecv, &totrecv, 1 * sizeof(int), gpuMemcpyHostToDevice));
-    printf("iam=%d,totrecv=%d, nfrecvx=%d,nfrecvmod=%d,mysendmsg_num=%d\n",iam,totrecv,nfrecvx,nfrecvmod,mysendmsg_num);
-    for(int i=0;i<k;i++) printf("(%d),status[%d]=%d\n",iam,i,mystatus[i]);
-    int local_msg=mysendmsg_num;
-    int local_msg_rd=mysendmsg_num_rd;
-	checkGPU(gpuMemcpy(d_mysendmsg_num, &local_msg, 1 * sizeof(int), gpuMemcpyHostToDevice));
-	checkGPU(gpuMemcpy(d_mysendmsg_num_rd, &local_msg_rd, 1 * sizeof(int), gpuMemcpyHostToDevice));
+    //printf("iam=%d,totrecv=%d, nfrecvx=%d,nfrecvmod=%d,mysendmsg_num=%d\n",iam,totrecv,nfrecvx,nfrecvmod,mysendmsg_num);
+    //for(int i=0;i<k;i++) printf("(%d),status[%d]=%d\n",iam,i,mystatus[i]);
+	checkGPU(gpuMemcpy(d_mysendmsg_num, &mysendmsg_num, 1 * sizeof(int), gpuMemcpyHostToDevice));
+	checkGPU(gpuMemcpy(d_mysendmsg_num_rd, &mysendmsg_num_rd, 1 * sizeof(int), gpuMemcpyHostToDevice));
 	checkGPU(gpuMemcpy(d_mysendmsg_num_u, &mysendmsg_num_u, 1 * sizeof(int), gpuMemcpyHostToDevice));
 	checkGPU(gpuMemcpy(d_mysendmsg_num_urd, &mysendmsg_num_urd, 1 * sizeof(int), gpuMemcpyHostToDevice));
-	checkGPU(gpuMemcpy(d_status, &mystatus, k * sizeof(int), gpuMemcpyHostToDevice));
+	checkGPU(gpuMemcpy(d_status, mystatus, k * sizeof(int), gpuMemcpyHostToDevice));
 
 	dlsum_fmod_inv_gpu_wrap(k,nlb,DIM_X,DIM_Y,d_lsum,d_x,nrhs,knsupc,nsupers,d_fmod,Llu->d_LBtree_ptr,Llu->d_LRtree_ptr,Llu->d_ilsum,Llu->d_Lrowind_bc_dat, Llu->d_Lrowind_bc_offset, Llu->d_Lnzval_bc_dat, Llu->d_Lnzval_bc_offset, Llu->d_Linv_bc_dat, Llu->d_Linv_bc_offset, Llu->d_Lindval_loc_bc_dat, Llu->d_Lindval_loc_bc_offset,Llu->d_xsup,d_grid,maxrecvsz,
-	                        flag_bc_q, flag_rd_q, ready_x, ready_lsum,my_flag_bc, my_flag_rd, d_bcqmod,d_nfrecv,d_mysendmsg_num,d_mysendmsg_num_rd,d_status,d_launch_flag);
+	                        flag_bc_q, flag_rd_q, ready_x, ready_lsum,my_flag_bc, my_flag_rd, d_bcqmod,d_nfrecv,d_mysendmsg_num,d_mysendmsg_num_rd,d_status,d_launch_flag,launch_flag);
 
 	checkGPU(gpuMemcpy(x, d_x, (ldalsum * nrhs + nlb * XK_H) * sizeof(double), gpuMemcpyDeviceToHost));
 
+	//if(iam==0) {
+    //    gpuDeviceSynchronize();
+    //    double host[nvshmem_buffer_size[2]];
+    //    CUDA_CHECK(cudaMemcpy(host, ready_x, nvshmem_buffer_size[2] * sizeof(double), cudaMemcpyDefault));
+    //    for (int i = 0; i < nvshmem_buffer_size[2]; ++i) {
+    //        printf("(%d)CHECK_DATA 4 ----(%d,%lf)\n", iam, i, host[i]);
+    //    }
+    //}
 
 	checkGPU (gpuFree (d_grid));
-	checkGPU (gpuFree (recvbuf_BC_gpu));
-	checkGPU (gpuFree (recvbuf_RD_gpu));
+	//checkGPU (gpuFree (recvbuf_BC_gpu));
+	//checkGPU (gpuFree (recvbuf_RD_gpu));
 	checkGPU (gpuFree (d_x));
 	checkGPU (gpuFree (d_lsum));
 	checkGPU (gpuFree (d_fmod));
+	//nvshmem_free(my_flag_bc);
+	//nvshmem_free(my_flag_rd);
+	//nvshmem_free(flag_bc_q);
+	//nvshmem_free(flag_rd_q);
 
 // #if HAVE_CUDA
 // cudaProfilerStop(); 

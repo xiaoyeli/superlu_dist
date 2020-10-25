@@ -3,11 +3,10 @@
   <component name="WebServers">
     <option name="servers">
       <webServer id="e8c1e03a-5afa-4c8c-bb32-b796c99c7860" name="summit.olcf.ornl.gov" url="http://summit.olcf.ornl.gov">
-        <fileTransfer host="summit.olcf.ornl.gov" port="22" accessType="SFTP">
+        <fileTransfer accessType="SFTP" host="summit.olcf.ornl.gov" port="22" sshConfigId="52045d8b-f568-4184-a708-cffaf9fa5fda" sshConfig="summit.olcf.ornl.gov">
           <advancedOptions>
-            <advancedOptions dataProtectionLevel="Private" passiveMode="true" shareSSLContext="true" />
+            <advancedOptions dataProtectionLevel="Private" keepAliveTimeout="0" passiveMode="true" shareSSLContext="true" />
           </advancedOptions>
-          <option name="port" value="22" />
         </fileTransfer>
       </webServer>
     </option>
