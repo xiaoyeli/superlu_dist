@@ -100,13 +100,17 @@ OOT}/Applications/BipartiteMatchings" \
 ( see example cmake script: run_cmake_build.sh )
 ```
 You can enable GPU with CUDA with the following cmake option:
+```
 `-DTPL_ENABLE_CUDALIB=TRUE`
 `-DTPL_CUDA_LIBRARIES="<path>/libcublas.so;<path>/libcudart.so"`
+```
 
 You can disable LAPACK, ParMetis or CombBLAS with the following cmake option:
+```
 `-DTPL_ENABLE_LAPACKLIB=FALSE`
 `-DTPL_ENABLE_PARMETISLIB=FALSE`
 `-DTPL_ENABLE_COMBBLASLIB=FALSE`
+```
 
 To actually build (compile), type:
 `make`
