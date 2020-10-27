@@ -1724,8 +1724,8 @@ dGenCOOLblocks(iam, nsupers, grid,Glu_persist,Llu, cooRows, cooCols, cooVals, &n
 	checkGPU(gpuMemcpy(d_x, x, (ldalsum * nrhs + nlb * XK_H) * sizeof(double), gpuMemcpyHostToDevice));	
 	checkGPU(gpuMemcpy(d_fmod, fmod, (nlb*aln_i) * sizeof(int_t), gpuMemcpyHostToDevice));
 	checkGPU(gpuMemcpy(d_nfrecv, &totrecv, 1 * sizeof(int), gpuMemcpyHostToDevice));
-    //printf("iam=%d,totrecv=%d, nfrecvx=%d,nfrecvmod=%d,mysendmsg_num=%d\n",iam,totrecv,nfrecvx,nfrecvmod,mysendmsg_num);
-    //for(int i=0;i<k;i++) printf("(%d),status[%d]=%d\n",iam,i,mystatus[i]);
+    printf("iam=%d,totrecv=%d, nfrecvx=%d,nfrecvmod=%d,mysendmsg_num=%d\n",iam,totrecv,nfrecvx,nfrecvmod,mysendmsg_num);
+    for(int i=0;i<k;i++) printf("(%d),status[%d]=%d\n",iam,i,mystatus[i]);
 	checkGPU(gpuMemcpy(d_mysendmsg_num, &mysendmsg_num, 1 * sizeof(int), gpuMemcpyHostToDevice));
 	checkGPU(gpuMemcpy(d_mysendmsg_num_rd, &mysendmsg_num_rd, 1 * sizeof(int), gpuMemcpyHostToDevice));
 	checkGPU(gpuMemcpy(d_mysendmsg_num_u, &mysendmsg_num_u, 1 * sizeof(int), gpuMemcpyHostToDevice));
@@ -1737,13 +1737,11 @@ dGenCOOLblocks(iam, nsupers, grid,Glu_persist,Llu, cooRows, cooCols, cooVals, &n
 
 	checkGPU(gpuMemcpy(x, d_x, (ldalsum * nrhs + nlb * XK_H) * sizeof(double), gpuMemcpyDeviceToHost));
 
-	//if(iam==0) {
-    //    gpuDeviceSynchronize();
-    //    double host[nvshmem_buffer_size[2]];
-    //    CUDA_CHECK(cudaMemcpy(host, ready_x, nvshmem_buffer_size[2] * sizeof(double), cudaMemcpyDefault));
-    //    for (int i = 0; i < nvshmem_buffer_size[2]; ++i) {
-    //        printf("(%d)CHECK_DATA 4 ----(%d,%lf)\n", iam, i, host[i]);
-    //    }
+    //gpuDeviceSynchronize();
+    //double host[nvshmem_buffer_size[2]];
+    //CUDA_CHECK(cudaMemcpy(host, ready_x, nvshmem_buffer_size[2] * sizeof(double), cudaMemcpyDefault));
+    //for (int i = 0; i < nvshmem_buffer_size[2]; ++i) {
+    //    printf("(%d)CHECK_DATA 4 ----(%d,%lf)\n", iam, i, host[i]);
     //}
 
 	checkGPU (gpuFree (d_grid));
