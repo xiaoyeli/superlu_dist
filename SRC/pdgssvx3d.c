@@ -578,6 +578,17 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 	iam = grid->iam;
 
 	/* Initialization. */
+	/* Save the inputs: ldb -> ldb3d, and B -> B3d, Astore -> Astore3d 
+	   B3d and Astore3d will be restored on return  */
+	int ldb3d = ldb;
+	double *B3d = B;
+	NRformat_loc *Astore3d = (NRformat_loc *)A->Store;
+	double *B2d;
+	NRformat_loc3d *A3d = dGatherNRformat_loc3d((NRformat_loc *)A->Store,
+						    B, ldb, nrhs, grid3d);
+	B2d = A3d->B2d; 
+	NRformat_loc *Astore0 = A3d->A_nfmt; 
+	NRformat_loc *A_orig = A->Store;
 
 	/* definition of factored seen by each process layer */
 	Fact = options->Fact;
@@ -600,6 +611,14 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 		fprintf(stderr,
 				"Extra precise iterative refinement yet to support.");
 	}
+	/* Test the other input parameters. */
+	else if (A->nrow != A->ncol || A->nrow < 0 || A->Stype != SLU_NR_loc || A->Dtype != SLU_D || A->Mtype != SLU_GE)
+	    *info = -2;
+	else if (ldb < Astore3d->m_loc)
+	    *info = -5;
+	else if (nrhs < 0) {
+	    *info = -6;
+	}
 	if (*info)
 	{
 		i = -(*info);
@@ -615,31 +634,6 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 	   ordering, symbolic factorization, distribution of L & U */
 #define NRFRMT
 
-	/* Save the inputs: ldb -> ldb3d, and B -> B3d, Astore -> Astore3d 
-	   B3d and Astore3d will be restored on return  */
-	int ldb3d = ldb;
-	double *B3d = B;
-
-	NRformat_loc *Astore3d = (NRformat_loc *)A->Store;
-
-	double *B2d;
-//int ldb2d;  // not used
-#if 0
-	NRformat_loc Atmp = dGatherNRformat_loc(
-		(NRformat_loc *)A->Store,
-		B, ldb, nrhs, &B2d,
-		grid3d);
-
-	NRformat_loc *Astore0 = &Atmp; // Astore0 is on 2D
-#else
-	NRformat_loc3d *A3d = dGatherNRformat_loc3d(
-	(NRformat_loc *)A->Store,
-		B, ldb, nrhs, grid3d);
-	B2d = A3d->B2d; 
-	NRformat_loc *Astore0 = A3d->A_nfmt; 
-#endif
-
-	NRformat_loc *A_orig = A->Store;
 	if (grid3d->zscp.Iam == 0)
 	{
 		m = A->nrow;
@@ -672,20 +666,6 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 		a = (double *)Astore->nzval;
 		rowptr = Astore->rowptr;
 		colind = Astore->colind;
-
-		/* Test the other input parameters. */
-		if (A->nrow != A->ncol || A->nrow < 0 || A->Stype != SLU_NR_loc || A->Dtype != SLU_D || A->Mtype != SLU_GE)
-			*info = -2;
-		else if (ldb < m_loc)
-			*info = -5;
-		else if (nrhs < 0)
-			*info = -6;
-		if (*info)
-		{
-			i = -(*info);
-			pxerr_dist("pdgssvx3d", grid, -*info);
-			return;
-		}
 
 		/* Structures needed for parallel symbolic factorization */
 		int_t *sizes, *fstVtxSep;

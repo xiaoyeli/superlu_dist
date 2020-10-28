@@ -46,13 +46,65 @@ at the top-level directory.
  *
  * </pre>
  */
+ 
+static void matCheck(int n, int m, doublecomplex* A, int LDA,
+       doublecomplex* B, int LDB)
+{
+    for(int j=0; j<m;j++)
+        for (int i = 0; i < n; ++i) {
+	    assert( (A[i+ LDA*j].r == B[i+ LDB*j].r)
+	    	    && (A[i+ LDA*j].i == B[i+ LDB*j].i) );
+	}
+    printf("B check passed\n");
+    return;
+}
+
+static void checkNRFMT(NRformat_loc*A, NRformat_loc*B)
+{
+    /*
+    int_t nnz_loc;
+    int_t m_loc;
+    int_t fst_row;
+    void  *nzval;
+    int_t *rowptr;
+    int_t *colind;
+    */
+
+    assert(A->nnz_loc == B->nnz_loc);
+    assert(A->m_loc == B->m_loc);
+    assert(A->fst_row == B->fst_row);
+
+#if 0
+    double *Aval = (double *)A->nzval, *Bval = (double *)B->nzval;
+    PrintDouble5("A", A->nnz_loc, Aval);
+    PrintDouble5("B", B->nnz_loc, Bval);
+    fflush(stdout);
+#endif
+
+    doublecomplex * Aval = (doublecomplex *) A->nzval;
+    doublecomplex * Bval = (doublecomplex *) B->nzval;
+    for (int_t i = 0; i < A->nnz_loc; i++)
+    {
+        assert( (Aval[i].r == Bval[i].r) && (Aval[i].i == Bval[i].i) );
+        assert((A->colind)[i] == (B->colind)[i]);
+	printf("colind[] correct\n");
+    }
+
+    for (int_t i = 0; i < A->m_loc + 1; i++)
+    {
+        assert((A->rowptr)[i] == (B->rowptr)[i]);
+    }
+
+    printf("Matrix check passed\n");
+
+}
 
 int
 main (int argc, char *argv[])
 {
     superlu_dist_options_t options;
     SuperLUStat_t stat;
-    SuperMatrix A;  // only on process layer 0
+    SuperMatrix A;  // Now, A is on all 3D processes  
     ScalePermstruct_t ScalePermstruct;
     LUstruct_t LUstruct;
     SOLVEstruct_t SOLVEstruct;
@@ -183,8 +235,52 @@ main (int argc, char *argv[])
 	    // printf("%s\n", suffix);
 	}
     }
+
+#define NRFRMT
+#ifndef NRFRMT
     if ( grid.zscp.Iam == 0 )  // only in process layer 0
 	zcreate_matrix_postfix(&A, nrhs, &b, &ldb, &xtrue, &ldx, fp, suffix, &(grid.grid2d));
+	
+#else
+    NRformat_loc *Astore, *Astore0;
+
+    // *fp0 = *fp;
+    zcreate_matrix_postfix3d(&A, nrhs, &b, &ldb,
+                             &xtrue, &ldx, fp, suffix, &(grid));
+    //printf("ldx %d, ldb %d\n", ldx, ldb);
+    
+#if 0  // following code is only for checking *Gather* routine
+    doublecomplex* B2d;
+    NRformat_loc Atmp = dGatherNRformat_loc(
+                            (NRformat_loc *) A.Store,
+                            b, ldb, nrhs, &B2d,
+                            &grid);
+    Astore = &Atmp;
+    SuperMatrix Aref;
+    doublecomplex *bref, *xtrueref;
+    if ( grid.zscp.Iam == 0 )  // only in process layer 0
+    {
+        zcreate_matrix_postfix(&Aref, nrhs, &bref, &ldb,
+                               &xtrueref, &ldx, fp0, 
+                               suffix, &(grid.grid2d));
+        Astore0 = (NRformat_loc *) Aref.Store;
+
+	/*
+	if ( (grid.grid2d).iam == 0 ) {
+	    printf(" iam %d\n", 0); 
+	    checkNRFMT(Astore, Astore0);
+	} else if ((grid.grid2d).iam == 1 ) {
+	    printf(" iam %d\n", 1); 
+	    checkNRFMT(Astore, Astore0);
+	} 
+	*/
+    
+	// bref, xtrueref are created on 2D
+        matCheck(Astore->m_loc, nrhs, B2d, Astore->m_loc, bref, ldb);
+    }
+    // MPI_Finalize(); exit(0);
+    #endif
+#endif
 
     if (!(berr = doubleMalloc_dist (nrhs)))
         ABORT ("Malloc fails for berr[].");
@@ -225,6 +321,10 @@ main (int argc, char *argv[])
 	fflush(stdout);
     }
 
+#ifdef NRFRMT  // matrix is on 3D process grid
+    m = A.nrow;
+    n = A.ncol;
+#else
     if ( grid.zscp.Iam == 0 )  // Process layer 0
     {
 	m = A.nrow;
@@ -233,6 +333,7 @@ main (int argc, char *argv[])
     // broadcast m, n to all the process layers;
     MPI_Bcast( &m, 1, mpi_int_t, 0,  grid.zscp.comm);
     MPI_Bcast( &n, 1, mpi_int_t, 0,  grid.zscp.comm);
+#endif    
 
     /* Initialize ScalePermstruct and LUstruct. */
     ScalePermstructInit (m, n, &ScalePermstruct);
@@ -246,7 +347,9 @@ main (int argc, char *argv[])
                &LUstruct, &SOLVEstruct, berr, &stat, &info);
 
     /* Check the accuracy of the solution. */
+#ifndef NRFRMT
     if ( grid.zscp.Iam == 0 )  // Process layer 0
+#endif    
         pzinf_norm_error (iam, ((NRformat_loc *) A.Store)->m_loc,
                           nrhs, b, ldb, xtrue, ldx, &(grid.grid2d));
     fflush(stdout);
@@ -259,10 +362,7 @@ main (int argc, char *argv[])
 
 	PStatPrint (&options, &stat, &(grid.grid2d)); /* Print 2D statistics.*/
 
-        Destroy_CompRowLoc_Matrix_dist (&A);
         Destroy_LU (n, &(grid.grid2d), &LUstruct);
-        SUPERLU_FREE (b);
-        SUPERLU_FREE (xtrue);
         if (options.SolveInitialized) {
             zSolveFinalize (&options, &SOLVEstruct);
         }
@@ -271,6 +371,9 @@ main (int argc, char *argv[])
         DeAllocGlu_3d(&LUstruct);
     }
 
+    Destroy_CompRowLoc_Matrix_dist (&A);
+    SUPERLU_FREE (b);
+    SUPERLU_FREE (xtrue);
     SUPERLU_FREE (berr);
     ScalePermstructFree (&ScalePermstruct);
     LUstructFree (&LUstruct);

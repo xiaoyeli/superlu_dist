@@ -1,9 +1,9 @@
 /*! \file
 Copyright (c) 2003, The Regents of the University of California, through
-Lawrence Berkeley National Laboratory (subject to receipt of any required
-approvals from U.S. Dept. of Energy)
+Lawrence Berkeley National Laboratory (subject to receipt of any required 
+approvals from U.S. Dept. of Energy) 
 
-All rights reserved.
+All rights reserved. 
 
 The source code is distributed under BSD license, see the file License.txt
 at the top-level directory.
@@ -19,8 +19,7 @@ at the top-level directory.
  * May 10, 2019
  *
  */
-#include "superlu_ddefs.h"
-#include <assert.h>
+#include "superlu_ddefs.h"  
 
 /*! \brief
  *
@@ -48,21 +47,19 @@ at the top-level directory.
  *
  * </pre>
  */
-
-static void matCheck(int n, int m, double* A, int LDA
-    , double* B, int LDB)
+ 
+static void matCheck(int n, int m, double* A, int LDA,
+       double* B, int LDB)
 {
     for(int j=0; j<m;j++)
-        for (int i = 0; i < n; ++i)
-        {
-            assert(A[i+ LDA*j] == B[i+ LDB*j]);
-        }
-
-        printf("B check passed\n");
-        return;
+        for (int i = 0; i < n; ++i) {
+	    assert(A[i+ LDA*j] == B[i+ LDB*j]);
+	}
+    printf("B check passed\n");
+    return;
 }
 
-void checkNRFMT(NRformat_loc*A, NRformat_loc*B)
+static void checkNRFMT(NRformat_loc*A, NRformat_loc*B)
 {
     /*
     int_t nnz_loc;
@@ -83,17 +80,18 @@ void checkNRFMT(NRformat_loc*A, NRformat_loc*B)
     PrintDouble5("B", B->nnz_loc, Bval);
     fflush(stdout);
 #endif
-    
+
+    double * Aval = (double *) A->nzval;
+    double * Bval = (double *) B->nzval;
     for (int_t i = 0; i < A->nnz_loc; i++)
     {
-        assert(((double *)A->nzval)[i] == ((double *)B->nzval)[i]);
+        assert( Aval[i] == Bval[i] );
         assert((A->colind)[i] == (B->colind)[i]);
 	printf("colind[] correct\n");
     }
 
     for (int_t i = 0; i < A->m_loc + 1; i++)
     {
-        // assert(((double *)A->nzval)[i] ==((double *)B->nzval)[i]);
         assert((A->rowptr)[i] == (B->rowptr)[i]);
     }
 
@@ -106,7 +104,7 @@ main (int argc, char *argv[])
 {
     superlu_dist_options_t options;
     SuperLUStat_t stat;
-    SuperMatrix A;  // Now, A is on all 3D processes
+    SuperMatrix A;  // Now, A is on all 3D processes  
     ScalePermstruct_t ScalePermstruct;
     LUstruct_t LUstruct;
     SOLVEstruct_t SOLVEstruct;
@@ -118,7 +116,6 @@ main (int argc, char *argv[])
     int iam, info, ldb, ldx, nrhs;
     char **cpp, c, *suffix;
     FILE *fp, *fopen ();
-    FILE *fp0;
     extern int cpp_defs ();
     int ii, omp_mpi_level;
 
@@ -169,11 +166,8 @@ main (int argc, char *argv[])
             }
         }
         else
-        {
-            /* Last arg is considered a filename */
-            if (!(fp = fopen (*cpp, "r"))
-                    || !(fp0 = fopen (*cpp, "r"))
-               )
+        {   /* Last arg is considered a filename */
+            if (!(fp = fopen (*cpp, "r")))
             {
                 ABORT ("File does not exist");
             }
@@ -186,49 +180,46 @@ main (int argc, char *argv[])
        ------------------------------------------------------------ */
     superlu_gridinit3d (MPI_COMM_WORLD, nprow, npcol, npdep, &grid);
 
-    if (grid.iam == 0)
-    {
-        MPI_Query_thread(&omp_mpi_level);
-        switch (omp_mpi_level)
-        {
-        case MPI_THREAD_SINGLE:
-            printf("MPI_Query_thread with MPI_THREAD_SINGLE\n");
-            fflush(stdout);
-            break;
-        case MPI_THREAD_FUNNELED:
-            printf("MPI_Query_thread with MPI_THREAD_FUNNELED\n");
-            fflush(stdout);
-            break;
-        case MPI_THREAD_SERIALIZED:
-            printf("MPI_Query_thread with MPI_THREAD_SERIALIZED\n");
-            fflush(stdout);
-            break;
-        case MPI_THREAD_MULTIPLE:
-            printf("MPI_Query_thread with MPI_THREAD_MULTIPLE\n");
-            fflush(stdout);
-            break;
-        }
+    if(grid.iam==0) {
+	MPI_Query_thread(&omp_mpi_level);
+	switch (omp_mpi_level) {
+	case MPI_THREAD_SINGLE:
+	    printf("MPI_Query_thread with MPI_THREAD_SINGLE\n");
+	    fflush(stdout);
+	    break;
+	case MPI_THREAD_FUNNELED:
+	    printf("MPI_Query_thread with MPI_THREAD_FUNNELED\n");
+	    fflush(stdout);
+	    break;
+	case MPI_THREAD_SERIALIZED:
+	    printf("MPI_Query_thread with MPI_THREAD_SERIALIZED\n");
+	    fflush(stdout);
+	    break;
+	case MPI_THREAD_MULTIPLE:
+	    printf("MPI_Query_thread with MPI_THREAD_MULTIPLE\n");
+	    fflush(stdout);
+	    break;
+	}
     }
-
+	
     /* Bail out if I do not belong in the grid. */
     iam = grid.iam;
-    if (iam >= nprow * npcol * npdep)
+    if (iam >= nprow * npcol *npdep)
         goto out;
-    if (!iam)
-    {
-        int v_major, v_minor, v_bugfix;
+    if (!iam) {
+	int v_major, v_minor, v_bugfix;
 #ifdef __INTEL_COMPILER
-        printf("__INTEL_COMPILER is defined\n");
+	printf("__INTEL_COMPILER is defined\n");
 #endif
-        printf("__STDC_VERSION__ %ld\n", __STDC_VERSION__);
+	printf("__STDC_VERSION__ %ld\n", __STDC_VERSION__);
 
-        superlu_dist_GetVersionNumber(&v_major, &v_minor, &v_bugfix);
-        printf("Library version:\t%d.%d.%d\n", v_major, v_minor, v_bugfix);
+	superlu_dist_GetVersionNumber(&v_major, &v_minor, &v_bugfix);
+	printf("Library version:\t%d.%d.%d\n", v_major, v_minor, v_bugfix);
 
-        printf("Input matrix file:\t%s\n", *cpp);
-        printf("3D process grid: %d X %d X %d\n", nprow, npcol, npdep);
+	printf("Input matrix file:\t%s\n", *cpp);
+	printf("3D process grid: %d X %d X %d\n", nprow, npcol, npdep);
         printf("2D Process grid: %d X %d\n", (int)grid.nprow, (int)grid.npcol);
-        fflush(stdout);
+	fflush(stdout);
     }
 
 #if ( DEBUGlevel>=1 )
@@ -238,19 +229,18 @@ main (int argc, char *argv[])
     /* ------------------------------------------------------------
        GET THE MATRIX FROM FILE AND SETUP THE RIGHT HAND SIDE.
        ------------------------------------------------------------ */
-    for (ii = 0; ii < strlen(*cpp); ii++)
-    {
-        if ((*cpp)[ii] == '.')
-        {
-            suffix = &((*cpp)[ii + 1]);
-            // printf("%s\n", suffix);
-        }
+    for (ii = 0; ii<strlen(*cpp); ii++) {
+	if((*cpp)[ii]=='.'){
+	    suffix = &((*cpp)[ii+1]);
+	    // printf("%s\n", suffix);
+	}
     }
+
 #define NRFRMT
 #ifndef NRFRMT
     if ( grid.zscp.Iam == 0 )  // only in process layer 0
-        dcreate_matrix_postfix(&A, nrhs, &b, &ldb, &xtrue,
-                               &ldx, fp, suffix, &(grid.grid2d));
+	dcreate_matrix_postfix(&A, nrhs, &b, &ldb, &xtrue, &ldx, fp, suffix, &(grid.grid2d));
+	
 #else
     NRformat_loc *Astore, *Astore0;
 
@@ -291,7 +281,7 @@ main (int argc, char *argv[])
     // MPI_Finalize(); exit(0);
     #endif
 #endif
-    
+
     if (!(berr = doubleMalloc_dist (nrhs)))
         ABORT ("Malloc fails for berr[].");
 
@@ -325,23 +315,21 @@ main (int argc, char *argv[])
     options.ReplaceTinyPivot = NO;
 #endif
 
-    if (!iam)
-    {
-        print_sp_ienv_dist(&options);
-        print_options_dist(&options);
-        fflush(stdout);
+    if (!iam) {
+	print_sp_ienv_dist(&options);
+	print_options_dist(&options);
+	fflush(stdout);
     }
 
-#ifdef NRFRMT  // Sherry: new 3D matrix
+#ifdef NRFRMT  // matrix is on 3D process grid
     m = A.nrow;
     n = A.ncol;
 #else
     if ( grid.zscp.Iam == 0 )  // Process layer 0
     {
-        m = A.nrow;
+	m = A.nrow;
         n = A.ncol;
     }
-    
     // broadcast m, n to all the process layers;
     MPI_Bcast( &m, 1, mpi_int_t, 0,  grid.zscp.comm);
     MPI_Bcast( &n, 1, mpi_int_t, 0,  grid.zscp.comm);
@@ -358,13 +346,10 @@ main (int argc, char *argv[])
     pdgssvx3d (&options, &A, &ScalePermstruct, b, ldb, nrhs, &grid,
                &LUstruct, &SOLVEstruct, berr, &stat, &info);
 
-    //PrintDouble5("After exit pdgssvx3d, solution b", ldb, b);
-    //PrintDouble5("After exit pdgssvx3d, xtrue", ldb, xtrue);
-	
     /* Check the accuracy of the solution. */
-    #ifndef NRFRMT
+#ifndef NRFRMT
     if ( grid.zscp.Iam == 0 )  // Process layer 0
-    #endif 
+#endif    
         pdinf_norm_error (iam, ((NRformat_loc *) A.Store)->m_loc,
                           nrhs, b, ldb, xtrue, ldx, &(grid.grid2d));
     fflush(stdout);
@@ -372,19 +357,16 @@ main (int argc, char *argv[])
     /* ------------------------------------------------------------
        DEALLOCATE STORAGE.
        ------------------------------------------------------------ */
-    if ( grid.zscp.Iam == 0 )   // process layer 0
-    {
 
-        PStatPrint (&options, &stat, &(grid.grid2d)); /* Print 2D statistics.*/
+    if ( grid.zscp.Iam == 0 ) { // process layer 0
+
+	PStatPrint (&options, &stat, &(grid.grid2d)); /* Print 2D statistics.*/
 
         Destroy_LU (n, &(grid.grid2d), &LUstruct);
-        if (options.SolveInitialized)
-        {
+        if (options.SolveInitialized) {
             dSolveFinalize (&options, &SOLVEstruct);
         }
-    }
-    else     // Process layers not equal 0
-    {
+    } else { // Process layers not equal 0
         DeAllocLlu_3d(n, &LUstruct, &grid);
         DeAllocGlu_3d(&LUstruct);
     }

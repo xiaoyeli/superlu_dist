@@ -10,7 +10,6 @@ at the top-level directory.
 */
 
 
-
 /*! @file
  * \brief Read the matrix from data file
  *
@@ -22,7 +21,7 @@ at the top-level directory.
  * </pre>
  */
 #include <math.h>
-#include "superlu_ddefs.h"
+#include "superlu_zdefs.h"
 
 /* \brief
  *
@@ -30,7 +29,7 @@ at the top-level directory.
  * Purpose
  * =======
  *
- * DCREATE_MATRIX read the matrix from data file in Harwell-Boeing format,
+ * ZCREATE_MATRIX read the matrix from data file in Harwell-Boeing format,
  * and distribute it to processors in a distributed compressed row format.
  * It also generate the distributed true solution X and the right-hand
  * side RHS.
@@ -65,15 +64,15 @@ at the top-level directory.
  * </pre>
  */
 
-int dcreate_matrix3d(SuperMatrix *A, int nrhs, double **rhs,
-                     int *ldb, double **x, int *ldx,
+int zcreate_matrix3d(SuperMatrix *A, int nrhs, doublecomplex **rhs,
+                     int *ldb, doublecomplex **x, int *ldx,
                      FILE *fp, gridinfo3d_t *grid3d)
 {
     SuperMatrix GA;              /* global A */
-    double   *b_global, *xtrue_global;  /* replicated on all processes */
+    doublecomplex   *b_global, *xtrue_global;  /* replicated on all processes */
     int_t    *rowind, *colptr;   /* global */
-    double   *nzval;             /* global */
-    double   *nzval_loc;         /* local */
+    doublecomplex   *nzval;             /* global */
+    doublecomplex   *nzval_loc;         /* local */
     int_t    *colind, *rowptr;   /* local */
     int_t    m, n, nnz;
     int_t    m_loc, fst_row, nnz_loc;
@@ -95,7 +94,7 @@ int dcreate_matrix3d(SuperMatrix *A, int nrhs, double **rhs,
         double t = SuperLU_timer_();
 
         /* Read the matrix stored on disk in Harwell-Boeing format. */
-        dreadhb_dist(iam, fp, &m, &n, &nnz, &nzval, &rowind, &colptr);
+        zreadhb_dist(iam, fp, &m, &n, &nnz, &nzval, &rowind, &colptr);
 
         printf("Time to read and distribute matrix %.2f\n",
                SuperLU_timer_() - t);  fflush(stdout);
@@ -104,7 +103,7 @@ int dcreate_matrix3d(SuperMatrix *A, int nrhs, double **rhs,
         MPI_Bcast( &m,     1,   mpi_int_t,  0, grid3d->comm );
         MPI_Bcast( &n,     1,   mpi_int_t,  0, grid3d->comm );
         MPI_Bcast( &nnz,   1,   mpi_int_t,  0, grid3d->comm );
-        MPI_Bcast( nzval,  nnz, MPI_DOUBLE, 0, grid3d->comm );
+        MPI_Bcast( nzval,  nnz, SuperLU_MPI_DOUBLE_COMPLEX, 0, grid3d->comm );
         MPI_Bcast( rowind, nnz, mpi_int_t,  0, grid3d->comm );
         MPI_Bcast( colptr, n + 1, mpi_int_t,  0, grid3d->comm );
     }
@@ -116,9 +115,9 @@ int dcreate_matrix3d(SuperMatrix *A, int nrhs, double **rhs,
         MPI_Bcast( &nnz, 1,   mpi_int_t,  0, grid3d->comm );
 
         /* Allocate storage for compressed column representation. */
-        dallocateA_dist(n, nnz, &nzval, &rowind, &colptr);
+        zallocateA_dist(n, nnz, &nzval, &rowind, &colptr);
 
-        MPI_Bcast( nzval,   nnz, MPI_DOUBLE, 0, grid3d->comm );
+        MPI_Bcast( nzval,   nnz, SuperLU_MPI_DOUBLE_COMPLEX, 0, grid3d->comm );
         MPI_Bcast( rowind,  nnz, mpi_int_t,  0, grid3d->comm );
         MPI_Bcast( colptr,  n + 1, mpi_int_t,  0, grid3d->comm );
     }
@@ -140,18 +139,18 @@ int dcreate_matrix3d(SuperMatrix *A, int nrhs, double **rhs,
     }
 
     /* Create compressed column matrix for GA. */
-    dCreate_CompCol_Matrix_dist(&GA, m, n, nnz, nzval, rowind, colptr,
-                                SLU_NC, SLU_D, SLU_GE);
+    zCreate_CompCol_Matrix_dist(&GA, m, n, nnz, nzval, rowind, colptr,
+                                SLU_NC, SLU_Z, SLU_GE);
 
     /* Generate the exact solution and compute the right-hand side. */
-    if ( !(b_global = doubleMalloc_dist(m * nrhs)) )
+    if ( !(b_global = doublecomplexMalloc_dist(m * nrhs)) )
         ABORT("Malloc fails for b[]");
-    if ( !(xtrue_global = doubleMalloc_dist(n * nrhs)) )
+    if ( !(xtrue_global = doublecomplexMalloc_dist(n * nrhs)) )
         ABORT("Malloc fails for xtrue[]");
     *trans = 'N';
 
-    dGenXtrue_dist(n, nrhs, xtrue_global, n);
-    dFillRHS_dist(trans, nrhs, xtrue_global, n, &GA, b_global, m);
+    zGenXtrue_dist(n, nrhs, xtrue_global, n);
+    zFillRHS_dist(trans, nrhs, xtrue_global, n, &GA, b_global, m);
 
     /*************************************************
      * Change GA to a local A with NR_loc format     *
@@ -175,7 +174,7 @@ int dcreate_matrix3d(SuperMatrix *A, int nrhs, double **rhs,
     }
     nnz_loc = rowptr[m_loc];
 
-    nzval_loc = (double *) doubleMalloc_dist(nnz_loc);
+    nzval_loc = (doublecomplex *) doublecomplexMalloc_dist(nnz_loc);
     colind = (int_t *) intMalloc_dist(nnz_loc);
 
     /* Transfer the matrix into the compressed row storage */
@@ -207,12 +206,12 @@ int dcreate_matrix3d(SuperMatrix *A, int nrhs, double **rhs,
     /******************************************************/
 
     /* Set up the local A in NR_loc format */
-    dCreate_CompRowLoc_Matrix_dist(A, m, n, nnz_loc, m_loc, fst_row,
+    zCreate_CompRowLoc_Matrix_dist(A, m, n, nnz_loc, m_loc, fst_row,
                                    nzval_loc, colind, rowptr,
                                    SLU_NR_loc, SLU_D, SLU_GE);
 
     /* Get the local B */
-    if ( !((*rhs) = doubleMalloc_dist(m_loc * nrhs)) )
+    if ( !((*rhs) = doublecomplexMalloc_dist(m_loc * nrhs)) )
         ABORT("Malloc fails for rhs[]");
     for (j = 0; j < nrhs; ++j)
     {
@@ -226,7 +225,7 @@ int dcreate_matrix3d(SuperMatrix *A, int nrhs, double **rhs,
 
     /* Set the true X */
     *ldx = m_loc;
-    if ( !((*x) = doubleMalloc_dist(*ldx * nrhs)) )
+    if ( !((*x) = doublecomplexMalloc_dist(*ldx * nrhs)) )
         ABORT("Malloc fails for x_loc[]");
 
     /* Get the local part of xtrue_global */
@@ -248,15 +247,15 @@ int dcreate_matrix3d(SuperMatrix *A, int nrhs, double **rhs,
 }
 
 
-int dcreate_matrix_postfix3d(SuperMatrix *A, int nrhs, double **rhs,
-                           int *ldb, double **x, int *ldx,
+int zcreate_matrix_postfix3d(SuperMatrix *A, int nrhs, doublecomplex **rhs,
+                           int *ldb, doublecomplex **x, int *ldx,
                            FILE *fp, char * postfix, gridinfo3d_t *grid3d)
 {
     SuperMatrix GA;              /* global A */
-    double   *b_global, *xtrue_global;  /* replicated on all processes */
+    doublecomplex   *b_global, *xtrue_global;  /* replicated on all processes */
     int_t    *rowind, *colptr;   /* global */
-    double   *nzval;             /* global */
-    double   *nzval_loc;         /* local */
+    doublecomplex   *nzval;             /* global */
+    doublecomplex   *nzval_loc;         /* local */
     int_t    *colind, *rowptr;   /* local */
     int_t    m, n, nnz;
     int_t    m_loc, fst_row, nnz_loc;
@@ -277,35 +276,35 @@ int dcreate_matrix_postfix3d(SuperMatrix *A, int nrhs, double **rhs,
     {
         double t = SuperLU_timer_();
 
-        if (!strcmp(postfix, "rua"))
+        if(!strcmp(postfix,"cua"))
         {
             /* Read the matrix stored on disk in Harwell-Boeing format. */
-            dreadhb_dist(iam, fp, &m, &n, &nnz, &nzval, &rowind, &colptr);
+            zreadhb_dist(iam, fp, &m, &n, &nnz, &nzval, &rowind, &colptr);
         }
         else if (!strcmp(postfix, "mtx"))
         {
             /* Read the matrix stored on disk in Matrix Market format. */
-            dreadMM_dist(fp, &m, &n, &nnz, &nzval, &rowind, &colptr);
+            zreadMM_dist(fp, &m, &n, &nnz, &nzval, &rowind, &colptr);
         }
         else if (!strcmp(postfix, "rb"))
         {
             /* Read the matrix stored on disk in Rutherford-Boeing format. */
-            dreadrb_dist(iam, fp, &m, &n, &nnz, &nzval, &rowind, &colptr);
+            zreadrb_dist(iam, fp, &m, &n, &nnz, &nzval, &rowind, &colptr);
         }
         else if (!strcmp(postfix, "dat"))
         {
             /* Read the matrix stored on disk in triplet format. */
-            dreadtriple_dist(fp, &m, &n, &nnz, &nzval, &rowind, &colptr);
+            zreadtriple_dist(fp, &m, &n, &nnz, &nzval, &rowind, &colptr);
         }
         else if (!strcmp(postfix, "datnh"))
         {
             /* Read the matrix stored on disk in triplet format (without header). */
-            dreadtriple_noheader(fp, &m, &n, &nnz, &nzval, &rowind, &colptr);
+            zreadtriple_noheader(fp, &m, &n, &nnz, &nzval, &rowind, &colptr);
         }
         else if (!strcmp(postfix, "bin"))
         {
             /* Read the matrix stored on disk in binary format. */
-            dread_binary(fp, &m, &n, &nnz, &nzval, &rowind, &colptr);
+            zread_binary(fp, &m, &n, &nnz, &nzval, &rowind, &colptr);
         }
         else
         {
@@ -319,7 +318,7 @@ int dcreate_matrix_postfix3d(SuperMatrix *A, int nrhs, double **rhs,
         MPI_Bcast( &m,     1,   mpi_int_t,  0, grid3d->comm );
         MPI_Bcast( &n,     1,   mpi_int_t,  0, grid3d->comm );
         MPI_Bcast( &nnz,   1,   mpi_int_t,  0, grid3d->comm );
-        MPI_Bcast( nzval,  nnz, MPI_DOUBLE, 0, grid3d->comm );
+        MPI_Bcast( nzval,  nnz, SuperLU_MPI_DOUBLE_COMPLEX, 0, grid3d->comm );
         MPI_Bcast( rowind, nnz, mpi_int_t,  0, grid3d->comm );
         MPI_Bcast( colptr, n + 1, mpi_int_t,  0, grid3d->comm );
     }
@@ -331,9 +330,9 @@ int dcreate_matrix_postfix3d(SuperMatrix *A, int nrhs, double **rhs,
         MPI_Bcast( &nnz, 1,   mpi_int_t,  0, grid3d->comm );
 
         /* Allocate storage for compressed column representation. */
-        dallocateA_dist(n, nnz, &nzval, &rowind, &colptr);
+        zallocateA_dist(n, nnz, &nzval, &rowind, &colptr);
 
-        MPI_Bcast( nzval,   nnz, MPI_DOUBLE, 0, grid3d->comm );
+        MPI_Bcast( nzval,   nnz, SuperLU_MPI_DOUBLE_COMPLEX, 0, grid3d->comm );
         MPI_Bcast( rowind,  nnz, mpi_int_t,  0, grid3d->comm );
         MPI_Bcast( colptr,  n + 1, mpi_int_t,  0, grid3d->comm );
     }
@@ -355,18 +354,18 @@ int dcreate_matrix_postfix3d(SuperMatrix *A, int nrhs, double **rhs,
     }
 
     /* Create compressed column matrix for GA. */
-    dCreate_CompCol_Matrix_dist(&GA, m, n, nnz, nzval, rowind, colptr,
+    zCreate_CompCol_Matrix_dist(&GA, m, n, nnz, nzval, rowind, colptr,
                                 SLU_NC, SLU_D, SLU_GE);
 
     /* Generate the exact solution and compute the right-hand side. */
-    if ( !(b_global = doubleMalloc_dist(m * nrhs)) )
+    if ( !(b_global = doublecomplexMalloc_dist(m * nrhs)) )
         ABORT("Malloc fails for b[]");
-    if ( !(xtrue_global = doubleMalloc_dist(n * nrhs)) )
+    if ( !(xtrue_global = doublecomplexMalloc_dist(n * nrhs)) )
         ABORT("Malloc fails for xtrue[]");
     *trans = 'N';
 
-    dGenXtrue_dist(n, nrhs, xtrue_global, n);
-    dFillRHS_dist(trans, nrhs, xtrue_global, n, &GA, b_global, m);
+    zGenXtrue_dist(n, nrhs, xtrue_global, n);
+    zFillRHS_dist(trans, nrhs, xtrue_global, n, &GA, b_global, m);
 
     /*************************************************
      * Change GA to a local A with NR_loc format     *
@@ -390,7 +389,7 @@ int dcreate_matrix_postfix3d(SuperMatrix *A, int nrhs, double **rhs,
     }
     nnz_loc = rowptr[m_loc];
 
-    nzval_loc = (double *) doubleMalloc_dist(nnz_loc);
+    nzval_loc = (doublecomplex *) doublecomplexMalloc_dist(nnz_loc);
     colind = (int_t *) intMalloc_dist(nnz_loc);
 
     /* Transfer the matrix into the compressed row storage */
@@ -422,12 +421,12 @@ int dcreate_matrix_postfix3d(SuperMatrix *A, int nrhs, double **rhs,
     /******************************************************/
 
     /* Set up the local A in NR_loc format */
-    dCreate_CompRowLoc_Matrix_dist(A, m, n, nnz_loc, m_loc, fst_row,
+    zCreate_CompRowLoc_Matrix_dist(A, m, n, nnz_loc, m_loc, fst_row,
                                    nzval_loc, colind, rowptr,
-                                   SLU_NR_loc, SLU_D, SLU_GE);
+                                   SLU_NR_loc, SLU_Z, SLU_GE);
 
     /* Get the local B */
-    if ( !((*rhs) = doubleMalloc_dist(m_loc * nrhs)) )
+    if ( !((*rhs) = doublecomplexMalloc_dist(m_loc * nrhs)) )
         ABORT("Malloc fails for rhs[]");
     for (j = 0; j < nrhs; ++j)
     {
@@ -441,7 +440,7 @@ int dcreate_matrix_postfix3d(SuperMatrix *A, int nrhs, double **rhs,
 
     /* Set the true X */
     *ldx = m_loc;
-    if ( !((*x) = doubleMalloc_dist(*ldx * nrhs)) )
+    if ( !((*x) = doublecomplexMalloc_dist(*ldx * nrhs)) )
         ABORT("Malloc fails for x_loc[]");
 
     /* Get the local part of xtrue_global */

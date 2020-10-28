@@ -108,7 +108,7 @@ if(enable_complex16)
   add_executable(pzdrive4 ${ZEXM4})
   target_link_libraries(pzdrive4 ${all_link_libs})
 
-  set(ZEXM3D pzdrive3d.c zcreate_matrix.c)
+  set(ZEXM3D pzdrive3d.c zcreate_matrix.c zcreate_matrix3d.c)
   add_executable(pzdrive3d ${ZEXM3D})
   target_link_libraries(pzdrive3d ${all_link_libs})
 

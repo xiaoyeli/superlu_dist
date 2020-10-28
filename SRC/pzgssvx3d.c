@@ -547,7 +547,18 @@ pzgssvx3d (superlu_dist_options_t * options, SuperMatrix * A,
     iam = grid->iam;
     
     /* Initialization. */
-
+    /* Save the inputs: ldb -> ldb3d, and B -> B3d, Astore -> Astore3d 
+       B3d and Astore3d will be restored on return  */
+    int ldb3d = ldb;
+    doublecomplex *B3d = B;
+    NRformat_loc *Astore3d = (NRformat_loc *)A->Store;
+    doublecomplex *B2d;
+    NRformat_loc3d *A3d = zGatherNRformat_loc3d((NRformat_loc *)A->Store,
+		   	  			B, ldb, nrhs, grid3d);
+    B2d = (doublecomplex *) A3d->B2d; 
+    NRformat_loc *Astore0 = A3d->A_nfmt; // on 2D grid-0
+    NRformat_loc *A_orig = A->Store;
+	
     /* definition of factored seen by each process layer */
     Fact = options->Fact;
     factored = (Fact == FACTORED);
@@ -568,6 +579,15 @@ pzgssvx3d (superlu_dist_options_t * options, SuperMatrix * A,
         fprintf (stderr,
 	         "Extra precise iterative refinement yet to support.");
     }
+    /* Test the other input parameters. */
+    else if (A->nrow != A->ncol || A->nrow < 0 || A->Stype != SLU_NR_loc
+	     || A->Dtype != SLU_Z || A->Mtype != SLU_GE)
+	     *info = -2;
+    else if (ldb < Astore3d->m_loc)
+	     *info = -5;
+    else if (nrhs < 0) {
+	     *info = -6;
+    }
     if (*info) {
 	i = -(*info);
 	pxerr_dist ("pzgssvx3d", grid, -*info);
@@ -580,10 +600,22 @@ pzgssvx3d (superlu_dist_options_t * options, SuperMatrix * A,
 	
     /* Perform preprocessing steps on process layer zero, including:
        ordering, symbolic factorization, distribution of L & U */
+	
+#define NRFRMT
+
     if (grid3d->zscp.Iam == 0)
     {
         m = A->nrow;
     	n = A->ncol;
+#ifdef NRFRMT
+	// On input, A->Store is on 3D, now A->Store is re-assigned to 2D store
+	A->Store = Astore0;
+	ldb = Astore0->m_loc;
+	B = B2d; // B is now re-assigned to B2d
+	//PrintDouble5("after gather B=B2d", ldb, B);
+#endif
+
+	/* The following code now works on 2D grid-0 */
     	Astore = (NRformat_loc *) A->Store;
     	nnz_loc = Astore->nnz_loc;
     	m_loc = Astore->m_loc;
@@ -591,20 +623,6 @@ pzgssvx3d (superlu_dist_options_t * options, SuperMatrix * A,
     	a = (doublecomplex *) Astore->nzval;
     	rowptr = Astore->rowptr;
     	colind = Astore->colind;
-
-	/* Test the other input parameters. */
-	if (A->nrow != A->ncol || A->nrow < 0 || A->Stype != SLU_NR_loc
-	     || A->Dtype != SLU_Z || A->Mtype != SLU_GE)
-	     *info = -2;
-    	else if (ldb < m_loc)
-	     *info = -5;
-    	else if (nrhs < 0)
-	     *info = -6;
-	if (*info) {
-	   i = -(*info);
-	   pxerr_dist ("pzgssvx3d", grid, -*info);
-	   return;
-	}
 
         /* Structures needed for parallel symbolic factorization */
     	int_t *sizes, *fstVtxSep;
@@ -1540,6 +1558,23 @@ pzgssvx3d (superlu_dist_options_t * options, SuperMatrix * A,
 
     } /* process layer 0 done solve */
 
+#ifdef NRFRMT
+	zScatter_B3d(A3d, grid3d);
+	
+	/* free storage, which are allocated only in layer 0 */
+	if (grid3d->zscp.Iam == 0)
+	{ // free matrix A and B2d on 2D
+		// SUPERLU_FREE(Atmp.rowptr);
+		// SUPERLU_FREE(Atmp.colind);
+		// SUPERLU_FREE(Atmp.nzval);
+		// SUPERLU_FREE(B2d);
+	}
+
+	A->Store = Astore3d; // restore Astore to 3D
+	
+#endif
+
+    
 #if ( DEBUGlevel>=1 )
 	CHECK_MALLOC (iam, "Exit pzgssvx3d()");
 #endif

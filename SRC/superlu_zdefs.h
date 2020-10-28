@@ -331,9 +331,8 @@ extern int     zcreate_matrix_rb(SuperMatrix *, int, doublecomplex **, int *,
 			      doublecomplex **, int *, FILE *, gridinfo_t *);
 extern int     zcreate_matrix_dat(SuperMatrix *, int, doublecomplex **, int *,
 			      doublecomplex **, int *, FILE *, gridinfo_t *);
-extern int 	   zcreate_matrix_postfix(SuperMatrix *, int, doublecomplex **, int *,
+extern int zcreate_matrix_postfix(SuperMatrix *, int, doublecomplex **, int *,
 				  doublecomplex **, int *, FILE *, char *, gridinfo_t *);
-
 
 /* Driver related */
 extern void    zgsequ_dist (SuperMatrix *, double *, double *, double *,
@@ -556,7 +555,20 @@ extern void ztrtri_(char*, char*, int*, doublecomplex*, int*, int*);
 
 
 /*==== For 3D code ====*/
-
+extern int zcreate_matrix3d(SuperMatrix *A, int nrhs, doublecomplex **rhs,
+                     int *ldb, doublecomplex **x, int *ldx,
+                     FILE *fp, gridinfo3d_t *grid3d);
+extern int zcreate_matrix_postfix3d(SuperMatrix *A, int nrhs,
+             doublecomplex **rhs, int *ldb, doublecomplex **x, int *ldx,
+	     FILE *fp, char * postfix, gridinfo3d_t *grid3d);
+    
+/* Matrix distributed in NRformat_loc in 3D process grid. It converts 
+   it to a NRformat_loc distributed in 2D grid in grid-0 */
+extern NRformat_loc3d *zGatherNRformat_loc3d(NRformat_loc *A, doublecomplex *B,
+					     int ldb, int nrhs,
+					     gridinfo3d_t *grid3d);
+extern int zScatter_B3d(NRformat_loc3d *A3d, gridinfo3d_t *grid3d);
+    
 extern void pzgssvx3d (superlu_dist_options_t *, SuperMatrix *,
 		       ScalePermstruct_t *, doublecomplex B[], int ldb, int nrhs,
 		       gridinfo3d_t *, LUstruct_t *, SOLVEstruct_t *, 
