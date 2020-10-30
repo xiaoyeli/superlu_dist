@@ -35,8 +35,9 @@ sForest_t**  getForests( int_t maxLvl, int_t nsupers, int_t*setree, treeList_t* 
 	{
 		return getGreedyLoadBalForests( maxLvl, nsupers, setree, treeList);
 	}
-
+	return 0;
 }
+
 double calcNodeListWeight(int_t nnodes, int_t* nodeList, treeList_t* treeList)
 {
 	double trWeight = 0;

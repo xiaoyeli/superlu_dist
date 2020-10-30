@@ -528,8 +528,8 @@ static int_t column_dfs
 	     */
 	    lsub[nextl++] = krow; 	/* krow is indexed into A */
 	    if ( nextl >= nzlmax ) {
-		if ( mem_error = symbfact_SubXpand(A->ncol, jcol, nextl, (MemType) LSUB,
-						   &nzlmax, Glu_freeable) )
+		if ( (mem_error = symbfact_SubXpand(A->ncol, jcol, nextl, (MemType) LSUB,
+						    &nzlmax, Glu_freeable)) )
 		    return (mem_error);
 		lsub = Glu_freeable->lsub;
 	    }
@@ -570,10 +570,10 @@ static int_t column_dfs
 			    if ( chperm == EMPTY ) {
 				lsub[nextl++] = kchild;
 				if ( nextl >= nzlmax ) {
-				    if ( mem_error =
+				    if ( (mem_error =
 					symbfact_SubXpand(A->ncol, jcol, nextl,
 							  (MemType) LSUB, &nzlmax,
-							  Glu_freeable) )
+							  Glu_freeable)) )
 					return (mem_error);
 				    lsub = Glu_freeable->lsub;
 				}
@@ -786,8 +786,8 @@ static int_t set_usub
 
     new_next = nextu + nseg;
     while ( new_next > nzumax ) {
-	if (mem_error = symbfact_SubXpand(n, jcol, nextu, (MemType) USUB, &nzumax,
-					  Glu_freeable))
+	if ( (mem_error = symbfact_SubXpand(n, jcol, nextu, (MemType) USUB, &nzumax,
+					    Glu_freeable)) )
 	    return (mem_error);
 	usub = Glu_freeable->usub;
     }

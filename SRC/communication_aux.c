@@ -19,7 +19,7 @@ at the top-level directory.
 
 int_t Wait_LSend
 /*wait till broadcast of L finished*/
-(int_t k, gridinfo_t *grid, int_t **ToSendR, MPI_Request *send_req, SCT_t* SCT)
+(int_t k, gridinfo_t *grid, int **ToSendR, MPI_Request *send_req, SCT_t* SCT)
 {
     unsigned long long t1 = _rdtsc();
     int_t Pc = grid->npcol;

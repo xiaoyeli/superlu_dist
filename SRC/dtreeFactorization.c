@@ -218,8 +218,8 @@ int_t ddenseTreeFactor(
             Remain_info_t*  Remain_info = packLUInfo->Remain_info;
             uPanelInfo_t* uPanelInfo = packLUInfo->uPanelInfo;
             lPanelInfo_t* lPanelInfo = packLUInfo->lPanelInfo;
-            int_t* indirect  = fNlists->indirect;
-            int_t* indirect2  = fNlists->indirect2;
+            int* indirect  = fNlists->indirect;
+            int* indirect2  = fNlists->indirect2;
             /*Schurcomplement Update*/
             int_t nub = uPanelInfo->nub;
             int_t nlb = lPanelInfo->nlb;
@@ -490,8 +490,8 @@ int_t dsparseTreeFactor_ASYNC(
             lPanelInfo_t* lPanelInfo = packLUInfo->lPanelInfo;
             int_t *lsub = lPanelInfo->lsub;
             int_t *usub = uPanelInfo->usub;
-            int_t* indirect  = fNlists->indirect;
-            int_t* indirect2  = fNlists->indirect2;
+            int* indirect  = fNlists->indirect;
+            int* indirect2  = fNlists->indirect2;
 
             /*Schurcomplement Update*/
 

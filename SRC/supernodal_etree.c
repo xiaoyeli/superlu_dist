@@ -108,6 +108,7 @@ int  free_treelist(int_t nsuper, treeList_t* treeList)
 	SUPERLU_FREE(treeList[i].childrenList);
     }
     SUPERLU_FREE(treeList);
+    return 0;
 }
 
 int_t estimateWeight(int_t nsupers, int_t*setree, treeList_t* treeList, int_t* xsup)
@@ -165,6 +166,8 @@ int_t estimateWeight(int_t nsupers, int_t*setree, treeList_t* treeList, int_t* x
 
 		}
 	}
+
+	return 0;
 } /* estimateWeight */
 
 

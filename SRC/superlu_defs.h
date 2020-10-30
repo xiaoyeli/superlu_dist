@@ -84,7 +84,7 @@ at the top-level directory.
 #elif defined (_LONGINT)
   typedef int64_t int_t;
   #define mpi_int_t   MPI_LONG_LONG_INT
-  #define IFMT "%ld"
+  #define IFMT "%lld"
 #else /* Default */
   typedef int int_t;
   #define mpi_int_t   MPI_INT
@@ -864,8 +864,8 @@ typedef struct
     int_t *iperm_c_supno;
     int_t *iperm_u;
     int_t *perm_u;
-    int_t *indirect;
-    int_t *indirect2;
+    int *indirect;
+    int *indirect2;
     
 } factNodelists_t;
 
@@ -1047,6 +1047,8 @@ extern int_t get_min (int_t *, int_t);
 extern int compare_pair (const void *, const void *);
 extern int_t static_partition (struct superlu_pair *, int_t, int_t *, int_t,
 			       int_t *, int_t *, int);
+extern int get_acc_offload();
+    
 
 /* Routines for debugging */
 extern void  print_panel_seg_dist(int_t, int_t, int_t, int_t, int_t *, int_t *);

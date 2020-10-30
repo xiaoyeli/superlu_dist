@@ -538,7 +538,7 @@ void dSolveFinalize(superlu_dist_options_t *options, SOLVEstruct_t *SOLVEstruct)
     SUPERLU_FREE(SOLVEstruct->inv_perm_c);
     SUPERLU_FREE(SOLVEstruct->diag_procs);
     SUPERLU_FREE(SOLVEstruct->diag_len);
-    if ( it = SOLVEstruct->A_colind_gsmv ) SUPERLU_FREE(it);
+    if ( (it = SOLVEstruct->A_colind_gsmv) ) SUPERLU_FREE(it);
     options->SolveInitialized = NO;
 } /* dSolveFinalize */
 

@@ -258,6 +258,7 @@ int freeCommRequestsArr(int_t mxLeafNode, commRequests_t** comReqss)
 	SUPERLU_FREE(comReqss[i]);
     }
     SUPERLU_FREE(comReqss);
+    return 0;
 }
 
 int_t initFactStat(int_t nsupers, factStat_t* factStat)
@@ -295,6 +296,7 @@ int freeFactStat(factStat_t* factStat)
     SUPERLU_FREE(factStat->IbcastPanel_L);
     SUPERLU_FREE(factStat->IbcastPanel_U);
     SUPERLU_FREE(factStat->gpuLUreduced);
+    return 0;
 }
 
 int_t initFactNodelists(int_t ldt, int_t num_threads, int_t nsupers,
@@ -302,8 +304,13 @@ int_t initFactNodelists(int_t ldt, int_t num_threads, int_t nsupers,
 {
     fNlists->iperm_u = INT_T_ALLOC(nsupers);
     fNlists->perm_u = INT_T_ALLOC(nsupers);
+#if 0 // Sherry: change to int type
     fNlists->indirect = INT_T_ALLOC(num_threads * ldt);
     fNlists->indirect2 = INT_T_ALLOC(num_threads * ldt);
+#else
+    fNlists->indirect = (int*) SUPERLU_MALLOC(num_threads * ldt * sizeof(int));
+    fNlists->indirect2 = (int*) SUPERLU_MALLOC(num_threads * ldt * sizeof(int));
+#endif    
     return 0;
 }
 
@@ -344,6 +351,7 @@ int freeMsgsArr(int_t numLA, msgs_t **msgss)
 	SUPERLU_FREE(msgss[i]);
     }
     SUPERLU_FREE(msgss);
+    return 0;
 }
 
 int_t initPackLUInfo(int_t nsupers, packLUInfo_t* packLUInfo)

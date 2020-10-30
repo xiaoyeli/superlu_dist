@@ -583,13 +583,13 @@ extern int updateDirtyBit(int_t k0, HyP_t* HyP, gridinfo_t* grid);
     /* from scatter.h */
 extern void
 zblock_gemm_scatter( int_t lb, int_t j, Ublock_info_t *Ublock_info,
-                    Remain_info_t *Remain_info, doublecomplex *L_mat, int_t ldl,
-                    doublecomplex *U_mat, int_t ldu,  doublecomplex *bigV,
+                    Remain_info_t *Remain_info, doublecomplex *L_mat, int ldl,
+                    doublecomplex *U_mat, int ldu,  doublecomplex *bigV,
                     // int_t jj0,
                     int_t knsupc,  int_t klst,
                     int_t *lsub, int_t *usub, int_t ldt,
                     int_t thread_id,
-                    int_t *indirect, int_t *indirect2,
+                    int *indirect, int *indirect2,
                     int_t **Lrowind_bc_ptr, doublecomplex **Lnzval_bc_ptr,
                     int_t **Ufstnz_br_ptr, doublecomplex **Unzval_br_ptr,
                     int_t *xsup, gridinfo_t *, SuperLUStat_t *
@@ -609,7 +609,7 @@ zblock_gemm_scatter_lock( int_t lb, int_t j, omp_lock_t* lock,
                          int_t knsupc,  int_t klst,
                          int_t *lsub, int_t *usub, int_t ldt,
                          int_t thread_id,
-                         int_t *indirect, int_t *indirect2,
+                         int *indirect, int *indirect2,
                          int_t **Lrowind_bc_ptr, doublecomplex **Lnzval_bc_ptr,
                          int_t **Ufstnz_br_ptr, doublecomplex **Unzval_br_ptr,
                          int_t *xsup, gridinfo_t *
@@ -623,7 +623,7 @@ extern int_t
 zblock_gemm_scatterTopLeft( int_t lb,  int_t j, doublecomplex* bigV,
 				 int_t knsupc,  int_t klst, int_t* lsub,
                                  int_t * usub, int_t ldt,
-				 int_t* indirect, int_t* indirect2,
+				 int* indirect, int* indirect2,
                                  HyP_t* HyP, LUstruct_t *, gridinfo_t*,
                                  SCT_t*SCT, SuperLUStat_t *
                                );
@@ -631,21 +631,21 @@ extern int_t
 zblock_gemm_scatterTopRight( int_t lb,  int_t j, doublecomplex* bigV,
 				  int_t knsupc,  int_t klst, int_t* lsub,
                                   int_t * usub, int_t ldt,
-				  int_t* indirect, int_t* indirect2,
+				  int* indirect, int* indirect2,
                                   HyP_t* HyP, LUstruct_t *, gridinfo_t*,
                                   SCT_t*SCT, SuperLUStat_t * );
 extern int_t
 zblock_gemm_scatterBottomLeft( int_t lb,  int_t j, doublecomplex* bigV,
 				    int_t knsupc,  int_t klst, int_t* lsub,
                                     int_t * usub, int_t ldt, 
-				    int_t* indirect, int_t* indirect2,
+				    int* indirect, int* indirect2,
                                     HyP_t* HyP, LUstruct_t *, gridinfo_t*,
                                     SCT_t*SCT, SuperLUStat_t * );
 extern int_t 
 zblock_gemm_scatterBottomRight( int_t lb,  int_t j, doublecomplex* bigV,
 				     int_t knsupc,  int_t klst, int_t* lsub,
                                      int_t * usub, int_t ldt,
-				     int_t* indirect, int_t* indirect2,
+				     int* indirect, int* indirect2,
                                      HyP_t* HyP, LUstruct_t *, gridinfo_t*,
                                      SCT_t*SCT, SuperLUStat_t * );
 
@@ -728,7 +728,7 @@ extern int_t zTrs2_ScatterU(int_t iukp, int_t rukp, int_t klst,
 			   doublecomplex* uval, doublecomplex *tempv);
 extern int_t zTrs2_GatherTrsmScatter(int_t klst, int_t iukp, int_t rukp,
                              int_t *usub, doublecomplex* uval, doublecomplex *tempv,
-                             int_t knsupc, int_t nsupr, doublecomplex* lusup,
+                             int_t knsupc, int nsupr, doublecomplex* lusup,
                              Glu_persist_t *Glu_persist)  ;
 extern void pzgstrs2
 #ifdef _CRAY
@@ -812,21 +812,21 @@ int_t zzRecvUPanel(int_t k, int_t sender, doublecomplex alpha,
     /* from communication_aux.h */
 extern int_t zIBcast_LPanel (int_t k, int_t k0, int_t* lsub, doublecomplex* lusup,
 			     gridinfo_t *, int* msgcnt, MPI_Request *,
-			     int_t **ToSendR, int_t *xsup, int );
+			     int **ToSendR, int_t *xsup, int );
 extern int_t zBcast_LPanel(int_t k, int_t k0, int_t* lsub, doublecomplex* lusup,
-			   gridinfo_t *, int* msgcnt, int_t **ToSendR,
+			   gridinfo_t *, int* msgcnt, int **ToSendR,
 			   int_t *xsup , SCT_t*, int);
 extern int_t zIBcast_UPanel(int_t k, int_t k0, int_t* usub, doublecomplex* uval,
 			    gridinfo_t *, int* msgcnt, MPI_Request *,
-			    int_t *ToSendD, int );
+			    int *ToSendD, int );
 extern int_t zBcast_UPanel(int_t k, int_t k0, int_t* usub, doublecomplex* uval,
-			   gridinfo_t *, int* msgcnt, int_t *ToSendD, SCT_t*, int);
+			   gridinfo_t *, int* msgcnt, int *ToSendD, SCT_t*, int);
 extern int_t zIrecv_LPanel (int_t k, int_t k0,  int_t* Lsub_buf, 
 			    doublecomplex* Lval_buf, gridinfo_t *,
 			    MPI_Request *, LocalLU_t *, int);
 extern int_t zIrecv_UPanel(int_t k, int_t k0, int_t* Usub_buf, doublecomplex*,
 			   LocalLU_t *, gridinfo_t*, MPI_Request *, int);
-extern int_t Wait_LSend(int_t k, gridinfo_t *grid, int_t **ToSendR,
+extern int_t Wait_LSend(int_t k, gridinfo_t *grid, int **ToSendR,
 			MPI_Request *s, SCT_t*);
 extern int_t Wait_USend(MPI_Request *, gridinfo_t *, SCT_t *);
 extern int_t zWait_URecv(MPI_Request *, int* msgcnt, SCT_t *);

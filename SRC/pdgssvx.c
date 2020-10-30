@@ -664,6 +664,7 @@ pdgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 		    ABORT("Malloc fails for R[].");
 		ScalePermstruct->R = R;
 		break;
+	    default: break;
 	}
     }
 
