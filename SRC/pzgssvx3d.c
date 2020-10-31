@@ -1563,17 +1563,18 @@ pzgssvx3d (superlu_dist_options_t * options, SuperMatrix * A,
 #ifdef NRFRMT
 	zScatter_B3d(A3d, grid3d);
 	
-	/* free storage, which are allocated only in layer 0 */
-	if (grid3d->zscp.Iam == 0)
-	{ // free matrix A and B2d on 2D
-		// SUPERLU_FREE(Atmp.rowptr);
-		// SUPERLU_FREE(Atmp.colind);
-		// SUPERLU_FREE(Atmp.nzval);
-		// SUPERLU_FREE(B2d);
-	}
-
 	A->Store = Astore3d; // restore Astore to 3D
 	
+	/* free A2d and B2d, which are allocated only in 2D layer Grid_0 */
+	if (grid3d->zscp.Iam == 0) {
+	    NRformat_loc *A2d = A3d->A_nfmt;
+	    SUPERLU_FREE( A2d->rowptr );
+	    SUPERLU_FREE( A2d->colind );
+	    SUPERLU_FREE( A2d->nzval );
+	    SUPERLU_FREE( A2d );         // free 2D structure
+	    SUPERLU_FREE(A3d->B2d);
+	    SUPERLU_FREE(A3d);           // free 3D structure
+	}
 #endif
 
     

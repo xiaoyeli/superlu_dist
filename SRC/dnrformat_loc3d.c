@@ -41,6 +41,7 @@ static void matCopy(int n, int m, double *Dst, int lddst, double *Src, int ldsrc
  *     Input:  {A, B, ldb} are distributed on 3D process grid
  *     Output: {A2d, B2d} are distributed on layer 0 2D process grid
  *             output is in the returned A3d->{} structure.
+ *             see supermatrix.h for nrformat_loc3d{} structure.
  */
 NRformat_loc3d *dGatherNRformat_loc3d(NRformat_loc *A, // input
                                       double *B,       // input
@@ -172,12 +173,14 @@ NRformat_loc3d *dGatherNRformat_loc3d(NRformat_loc *A, // input
     A3d->row_counts_int = row_counts_int;
     A3d->row_disp = row_disp;
 
-#if 0
+#if 1
     /* free storage */
     SUPERLU_FREE(nnz_counts);
     SUPERLU_FREE(nnz_counts_int);
     SUPERLU_FREE(row_counts);
     SUPERLU_FREE(nnz_disp);
+    SUPERLU_FREE(Btmp);
+    SUPERLU_FREE(B1);
 #endif
 
     return A3d;
@@ -224,19 +227,21 @@ int dScatter_B3d(NRformat_loc3d *A3d,  // modified
     double *Btmp;
     Btmp = SUPERLU_MALLOC(A3d->m_loc * nrhs * sizeof(double));
 
-    // Bttmp <- scatterv(B1)
+    // Btmp <- scatterv(B1)
     MPI_Scatterv(B1, b_counts_int, b_disp, MPI_DOUBLE,
                  Btmp, nrhs * A3d->m_loc, MPI_DOUBLE, 0, grid3d->zscp.comm);
 
     // B <- colMajor(Btmp)
     matCopy(A3d->m_loc, nrhs, B, ldb, Btmp, A3d->m_loc);
 
-#if 0
+#if 1
     /* free storage */
     SUPERLU_FREE(A3d->b_counts_int);
     SUPERLU_FREE(A3d->b_disp);
     SUPERLU_FREE(A3d->row_counts_int);
     SUPERLU_FREE(A3d->row_disp);
+    SUPERLU_FREE(B1);
+    SUPERLU_FREE(Btmp);
 #endif
 
     return 0;

@@ -38,7 +38,7 @@ DEXM2	= pddrive2.o dcreate_matrix.o dcreate_matrix_perturbed.o
 DEXM3	= pddrive3.o dcreate_matrix.o
 DEXM4	= pddrive4.o dcreate_matrix.o
 
-DEXM3D	= pddrive3d.o dcreate_matrix.o  dscatter3d.o dcreate_matrix3d.o 
+DEXM3D	= pddrive3d.o dcreate_matrix.o dcreate_matrix3d.o 
 
 #	   dtrfAux.o dtreeFactorization.o treeFactorization.o pd3dcomm.o superlu_grid3d.o pdgstrf3d.o
 DEXMG	= pddrive_ABglobal.o

@@ -40,6 +40,7 @@ static void matCopy(int n, int m, doublecomplex *Dst, int lddst, doublecomplex *
  *     Input:  {A, B, ldb} are distributed on 3D process grid
  *     Output: {A2d, B2d} are distributed on layer 0 2D process grid
  *             output is in the returned A3d->{} structure.
+ *             see supermatrix.h for nrformat_loc3d{} structure.
  */
 NRformat_loc3d *zGatherNRformat_loc3d(NRformat_loc *A, // input
                                       doublecomplex *B,       // input
@@ -171,13 +172,13 @@ NRformat_loc3d *zGatherNRformat_loc3d(NRformat_loc *A, // input
     A3d->row_counts_int = row_counts_int;
     A3d->row_disp = row_disp;
 
-#if 0
     /* free storage */
     SUPERLU_FREE(nnz_counts);
     SUPERLU_FREE(nnz_counts_int);
     SUPERLU_FREE(row_counts);
     SUPERLU_FREE(nnz_disp);
-#endif
+    SUPERLU_FREE(Btmp);
+    SUPERLU_FREE(B1);
 
     return A3d;
 
@@ -230,13 +231,13 @@ int zScatter_B3d(NRformat_loc3d *A3d,  // modified
     // B <- colMajor(Btmp)
     matCopy(A3d->m_loc, nrhs, B, ldb, Btmp, A3d->m_loc);
 
-#if 0
     /* free storage */
     SUPERLU_FREE(A3d->b_counts_int);
     SUPERLU_FREE(A3d->b_disp);
     SUPERLU_FREE(A3d->row_counts_int);
     SUPERLU_FREE(A3d->row_disp);
-#endif
+    SUPERLU_FREE(Btmp);
+    SUPERLU_FREE(B1);
 
     return 0;
 } /* dScatter_B3d */
