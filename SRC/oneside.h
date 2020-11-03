@@ -1,12 +1,16 @@
 #include "mpi.h"
 #include "cuda.h"
 #include "cuda_runtime.h"
-
-extern int mysendmsg_num;
-extern int mysendmsg_num_u;
-extern int mysendmsg_num_rd;
-extern int mysendmsg_num_urd;
+extern int *flag_bc_q;
+extern int *flag_rd_q;
+extern int *my_flag_bc;
+extern int *my_flag_rd;
+extern double *ready_x;
+extern double *ready_lsum;
 extern int *mystatus;
+extern int *d_launch_flag;
+extern int *d_nfrecv;
+extern int *d_status;
 #define RDMA_FLAG_SIZE 4
 #define NVSHMEM_SIZES 10
 

@@ -2,7 +2,7 @@
 #include "dcomplex.h"
 #include "superlu_defs.h"
 
-	void C_BcTree_Create_nv(C_Tree* tree, MPI_Comm comm, int* ranks, int rank_cnt, int msgSize, char precision,int* mysendmsg_num, int* needrecv){
+	void C_BcTree_Create_nv(C_Tree* tree, MPI_Comm comm, int* ranks, int rank_cnt, int msgSize, char precision, int* needrecv){
 		assert(msgSize>0);
 
       int nprocs = 0;
@@ -40,7 +40,7 @@
 		  if((tree->myIdx)*DEG_TREE+1+ii<rank_cnt){
 			   child = ranks[(tree->myIdx)*DEG_TREE+1+ii];
 			   tree->myDests_[tree->destCnt_++]=child;
-               *mysendmsg_num+=1;
+               //*mysendmsg_num+=1;
                 //printf("Tree,destCnt=%d,mymsg=%d\n",tree->destCnt_,*mysendmsg_num);
 		  }
 	  }
@@ -213,7 +213,7 @@ void C_BcTree_Create(C_Tree* tree, MPI_Comm comm, int* ranks, int rank_cnt, int 
 	  }
     }
 
-void C_RdTree_Create_nv(C_Tree* tree, MPI_Comm comm, int* ranks, int rank_cnt, int msgSize, char precision,int* mysendmsg_num_rd){
+void C_RdTree_Create_nv(C_Tree* tree, MPI_Comm comm, int* ranks, int rank_cnt, int msgSize, char precision){
     assert(msgSize>0);
 
     int nprocs = 0;
@@ -259,7 +259,7 @@ void C_RdTree_Create_nv(C_Tree* tree, MPI_Comm comm, int* ranks, int rank_cnt, i
     }else{
         tree->myRoot_ = tree->myRank_;
     }
-    *mysendmsg_num_rd+=1;
+    //*mysendmsg_num_rd+=1;
 }
 
 	void C_RdTree_Nullify(C_Tree* tree){

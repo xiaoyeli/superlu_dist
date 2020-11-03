@@ -1190,7 +1190,7 @@ pdgstrs(int_t n, LUstruct_t *LUstruct,
     // if ( !(x = (double*)SUPERLU_MALLOC((ldalsum * nrhs + nlb * XK_H) * sizeof(double))) )
 	if ( !(x = doubleCalloc_dist(ldalsum * nrhs + nlb * XK_H)) )
 	ABORT("Calloc fails for x[].");
-	
+	//printf("x size is %lf KB", maxrecvsz*(ldalsum * nrhs + nlb * XK_H)*sizeof(double)/1e3);
 
     sizertemp=ldalsum * nrhs;
     sizertemp = ((sizertemp + (aln_d - 1)) / aln_d) * aln_d;
@@ -1636,11 +1636,6 @@ dGenCOOLblocks(iam, nsupers, grid,Glu_persist,Llu, cooRows, cooCols, cooVals, &n
 	  
 #else
 
-
-
-
-
-
 // #if HAVE_CUDA
 // cudaProfilerStart(); 
 // #elif defined(HAVE_HIP)
@@ -1648,7 +1643,6 @@ dGenCOOLblocks(iam, nsupers, grid,Glu_persist,Llu, cooRows, cooCols, cooVals, &n
 // roctxMark("before hipLaunchKernel");
 // roctxRangePush("hipLaunchKernel");
 // #endif
-
 
 	gridinfo_t *d_grid = NULL;
 	double *d_x = NULL;
@@ -1658,102 +1652,53 @@ dGenCOOLblocks(iam, nsupers, grid,Glu_persist,Llu, cooRows, cooCols, cooVals, &n
 	k = CEILING( nsupers, grid->npcol);/* Number of local block columns divided by #warps per block used as number of thread blocks*/
 	knsupc = sp_ienv_dist(3);
 
-	int *nvshmem_buffer_size;
-    if ( !(nvshmem_buffer_size = (int*)SUPERLU_MALLOC( NVSHMEM_SIZES * sizeof(int))) )
-        ABORT("Malloc fails for nvshmem_buffer_size[]");
-    nvshmem_buffer_size[0] = RDMA_FLAG_SIZE * (k+1); //* (mysendmsg_num>mysendmsg_num_u?mysendmsg_num:mysendmsg_num_u); // flag size for BC, sender
-    nvshmem_buffer_size[1] = RDMA_FLAG_SIZE * nlb * 2; //* (mysendmsg_num_rd>mysendmsg_num_urd?mysendmsg_num_rd:mysendmsg_num_urd); // flag size for RD, sender
-    nvshmem_buffer_size[2] = maxrecvsz*CEILING( nsupers, grid->npcol); // x buffer size, sender, make sure data is not evicted when receiver comes to get the data
-    nvshmem_buffer_size[3] = 2*maxrecvsz*CEILING( nsupers, grid->nprow); // lsum buffer size, sender, make sure data is not evicted when receiver comes to get the data
-
-
-    int *flag_bc_q, *flag_rd_q;
-    int *my_flag_bc, *my_flag_rd;
-    double *ready_x, *ready_lsum;
-    int* d_bcqmod, *d_nfrecv, *d_mysendmsg_num,*d_mysendmsg_num_u,*d_mysendmsg_num_rd,*d_mysendmsg_num_urd;
-    int totrecv=nfrecvx+nfrecvmod;
-    int* d_status;
-    int* d_launch_flag,*launch_flag;
-    if (nvshmem_buffer_size[0] > 0){
-        flag_bc_q = (int *) nvshmem_malloc ( nvshmem_buffer_size[0] * sizeof(int)); // for sender
-        checkGPU(gpuMemset(flag_bc_q, 0, nvshmem_buffer_size[0] * sizeof(int)));
-        my_flag_bc = (int *) nvshmem_malloc ( nvshmem_buffer_size[0] * sizeof(int)); // for sender
-        checkGPU(gpuMemset(my_flag_bc, 0, nvshmem_buffer_size[0] * sizeof(int)));
-    }
-    if (nvshmem_buffer_size[1] > 0){
-        flag_rd_q = (int *)nvshmem_malloc( nvshmem_buffer_size[1] * sizeof(int)); // for sender
-        checkGPU(gpuMemset(flag_rd_q, 0, nvshmem_buffer_size[1] * sizeof(int)));
-        my_flag_rd = (int *) nvshmem_malloc ( nvshmem_buffer_size[1] * sizeof(int)); // for sender
-        checkGPU(gpuMemset(my_flag_rd, 0, nvshmem_buffer_size[1] * sizeof(int)));
-    }
-
-    ready_x = (double *)nvshmem_malloc(nvshmem_buffer_size[2] * sizeof(double)); // for receiver
-    checkGPU(gpuMemset(ready_x, 0, nvshmem_buffer_size[2] * sizeof(double)));
-
-    ready_lsum = (double *)nvshmem_malloc(nvshmem_buffer_size[3] * sizeof(double)); // for receiver
-    checkGPU(gpuMemset(ready_lsum, 0, nvshmem_buffer_size[3] * sizeof(double)));
-
-    //create_nv_buffer(nvshmem_buffer_size,my_flag_bc,flag_bc_q, flag_rd_q);
-
 	checkGPU(gpuMalloc( (void**)&d_grid, sizeof(gridinfo_t)));
-	
-	//checkGPU(gpuMalloc( (void**)&recvbuf_BC_gpu, maxrecvsz*  CEILING( nsupers, grid->npcol) * sizeof(double))); // used for receiving and forwarding x on each thread
-	//checkGPU(gpuMalloc( (void**)&recvbuf_RD_gpu, 2*maxrecvsz*  CEILING( nsupers, grid->nprow) * sizeof(double))); // used for receiving and forwarding lsum on each thread
+	//checkGPU(gpuMalloc( (void**)&ready_x, maxrecvsz*  CEILING( nsupers, grid->npcol) * sizeof(double))); // used for receiving and forwarding x on each thread
+	//checkGPU(gpuMalloc( (void**)&ready_lsum, 2*maxrecvsz*  CEILING( nsupers, grid->nprow) * sizeof(double))); // used for receiving and forwarding lsum on each thread
 	checkGPU(gpuMalloc( (void**)&d_lsum, sizelsum*num_thread * sizeof(double)));
 	checkGPU(gpuMalloc( (void**)&d_x, (ldalsum * nrhs + nlb * XK_H) * sizeof(double)));
 	checkGPU(gpuMalloc( (void**)&d_fmod, (nlb*aln_i) * sizeof(int_t)));
-
-	checkGPU(gpuMalloc( (void**)&d_bcqmod,  4 * sizeof(int)));
-	checkGPU(gpuMemset( d_bcqmod, 0,  4 * sizeof(int)));
-	checkGPU(gpuMalloc( (void**)&d_status,  k * sizeof(int)));
-
-	checkGPU(gpuMalloc( (void**)&d_nfrecv,  1 * sizeof(int)));
-	checkGPU(gpuMalloc( (void**)&d_launch_flag,  1 * sizeof(int)));
-	checkGPU(gpuMemset( d_launch_flag, 0,  1 * sizeof(int)));
-    //cudaHostAlloc( (void**)&launch_flag,1*sizeof(int),cudaHostAllocWriteCombined | cudaHostAllocMapped);
-    //cudaHostGetDevicePointer( &d_launch_flag, launch_flag, 0);
-    //launch_flag[0]=0;
-	checkGPU(gpuMalloc( (void**)&d_mysendmsg_num,  1 * sizeof(int)));
-	checkGPU(gpuMalloc( (void**)&d_mysendmsg_num_rd,  1 * sizeof(int)));
-	checkGPU(gpuMalloc( (void**)&d_mysendmsg_num_u,  1 * sizeof(int)));
-	checkGPU(gpuMalloc( (void**)&d_mysendmsg_num_urd,  1 * sizeof(int)));
 
 
 	checkGPU(gpuMemcpy(d_grid, grid, sizeof(gridinfo_t), gpuMemcpyHostToDevice));	
 	checkGPU(gpuMemcpy(d_lsum, lsum, sizelsum*num_thread * sizeof(double), gpuMemcpyHostToDevice));	
 	checkGPU(gpuMemcpy(d_x, x, (ldalsum * nrhs + nlb * XK_H) * sizeof(double), gpuMemcpyHostToDevice));	
 	checkGPU(gpuMemcpy(d_fmod, fmod, (nlb*aln_i) * sizeof(int_t), gpuMemcpyHostToDevice));
-	checkGPU(gpuMemcpy(d_nfrecv, &totrecv, 1 * sizeof(int), gpuMemcpyHostToDevice));
-    printf("iam=%d,totrecv=%d, nfrecvx=%d,nfrecvmod=%d,mysendmsg_num=%d\n",iam,totrecv,nfrecvx,nfrecvmod,mysendmsg_num);
-    for(int i=0;i<k;i++) printf("(%d),status[%d]=%d\n",iam,i,mystatus[i]);
-	checkGPU(gpuMemcpy(d_mysendmsg_num, &mysendmsg_num, 1 * sizeof(int), gpuMemcpyHostToDevice));
-	checkGPU(gpuMemcpy(d_mysendmsg_num_rd, &mysendmsg_num_rd, 1 * sizeof(int), gpuMemcpyHostToDevice));
-	checkGPU(gpuMemcpy(d_mysendmsg_num_u, &mysendmsg_num_u, 1 * sizeof(int), gpuMemcpyHostToDevice));
-	checkGPU(gpuMemcpy(d_mysendmsg_num_urd, &mysendmsg_num_urd, 1 * sizeof(int), gpuMemcpyHostToDevice));
-	checkGPU(gpuMemcpy(d_status, mystatus, k * sizeof(int), gpuMemcpyHostToDevice));
 
-	dlsum_fmod_inv_gpu_wrap(k,nlb,DIM_X,DIM_Y,d_lsum,d_x,nrhs,knsupc,nsupers,d_fmod,Llu->d_LBtree_ptr,Llu->d_LRtree_ptr,Llu->d_ilsum,Llu->d_Lrowind_bc_dat, Llu->d_Lrowind_bc_offset, Llu->d_Lnzval_bc_dat, Llu->d_Lnzval_bc_offset, Llu->d_Linv_bc_dat, Llu->d_Linv_bc_offset, Llu->d_Lindval_loc_bc_dat, Llu->d_Lindval_loc_bc_offset,Llu->d_xsup,d_grid,maxrecvsz,
-	                        flag_bc_q, flag_rd_q, ready_x, ready_lsum,my_flag_bc, my_flag_rd, d_bcqmod,d_nfrecv,d_mysendmsg_num,d_mysendmsg_num_rd,d_status,d_launch_flag,launch_flag);
+
+	//flag_bc_q = (int *) nvshmem_malloc (RDMA_FLAG_SIZE * (k+1) * sizeof(int)); // for sender
+    //flag_rd_q = (int *)nvshmem_malloc( RDMA_FLAG_SIZE * nlb * 2 * sizeof(int)); // for sender
+    //ready_x = (double *)nvshmem_malloc(maxrecvsz*CEILING( nsupers, grid->npcol) * sizeof(double)); // for receiver
+    //ready_lsum = (double *)nvshmem_malloc(2*maxrecvsz*CEILING( nsupers, grid->nprow) * sizeof(double)); // for receiver
+    //my_flag_bc = (int *) nvshmem_malloc ( RDMA_FLAG_SIZE * (k+1)  * sizeof(int)); // for sender
+    //my_flag_rd = (int *) nvshmem_malloc (RDMA_FLAG_SIZE * nlb * 2 * sizeof(int)); // for sender
+	////checkGPU(gpuMalloc( (void**)&my_flag_bc,  RDMA_FLAG_SIZE * (k+1) * sizeof(int)));
+	////checkGPU(gpuMalloc( (void**)&my_flag_rd,  RDMA_FLAG_SIZE * nlb * 2 * sizeof(int)));
+    //checkGPU(gpuMemset(my_flag_bc, 0, RDMA_FLAG_SIZE * (k+1)  * sizeof(int)));
+    //checkGPU(gpuMemset(my_flag_rd, 0, RDMA_FLAG_SIZE * nlb * 2 * sizeof(int)));
+    //checkGPU(gpuMemset(ready_x, 0, maxrecvsz*CEILING( nsupers, grid->npcol) * sizeof(double)));
+    //checkGPU(gpuMemset(ready_lsum, 0, 2*maxrecvsz*CEILING( nsupers, grid->nprow) * sizeof(double)));
+
+	//checkGPU(gpuMalloc( (void**)&d_launch_flag,  1 * sizeof(int)));
+	//checkGPU(gpuMalloc( (void**)&d_status,  k * sizeof(int)));
+	//checkGPU(gpuMalloc( (void**)&d_nfrecv,  1 * sizeof(int)));
+	//checkGPU(gpuMemset( d_launch_flag, 0,  1 * sizeof(int)));
+	//checkGPU(gpuMemcpy(d_nfrecv, &nfrecvx, 1 * sizeof(int), gpuMemcpyHostToDevice));
+	checkGPU(gpuMemcpy(d_status, mystatus, k * sizeof(int), gpuMemcpyHostToDevice));
+	checkGPU(gpuMemset(flag_rd_q, 0, RDMA_FLAG_SIZE * nlb * 2 * sizeof(int)));
+    checkGPU(gpuMemset(flag_bc_q, 0, RDMA_FLAG_SIZE * (k+1)  * sizeof(int)));
+	//printf("2-(%d) maxrecvsz=%d,ready_x=%d, RDMA_FLAG_SIZE=%d,k=%d\n",iam,maxrecvsz,maxrecvsz*CEILING( nsupers, grid->npcol),RDMA_FLAG_SIZE,k);
+	//fflush(stdout);
+
+    dlsum_fmod_inv_gpu_wrap(k,nlb,DIM_X,DIM_Y,d_lsum,d_x,nrhs,knsupc,nsupers,d_fmod,Llu->d_LBtree_ptr,Llu->d_LRtree_ptr,Llu->d_ilsum,Llu->d_Lrowind_bc_dat, Llu->d_Lrowind_bc_offset, Llu->d_Lnzval_bc_dat, Llu->d_Lnzval_bc_offset, Llu->d_Linv_bc_dat, Llu->d_Linv_bc_offset, Llu->d_Lindval_loc_bc_dat, Llu->d_Lindval_loc_bc_offset,Llu->d_xsup,d_grid,maxrecvsz,
+	                        flag_bc_q, flag_rd_q, ready_x, ready_lsum,my_flag_bc, my_flag_rd, d_launch_flag, d_nfrecv, d_status);
 
 	checkGPU(gpuMemcpy(x, d_x, (ldalsum * nrhs + nlb * XK_H) * sizeof(double), gpuMemcpyDeviceToHost));
 
-    //gpuDeviceSynchronize();
-    //double host[nvshmem_buffer_size[2]];
-    //CUDA_CHECK(cudaMemcpy(host, ready_x, nvshmem_buffer_size[2] * sizeof(double), cudaMemcpyDefault));
-    //for (int i = 0; i < nvshmem_buffer_size[2]; ++i) {
-    //    printf("(%d)CHECK_DATA 4 ----(%d,%lf)\n", iam, i, host[i]);
-    //}
-
 	checkGPU (gpuFree (d_grid));
-	//checkGPU (gpuFree (recvbuf_BC_gpu));
-	//checkGPU (gpuFree (recvbuf_RD_gpu));
 	checkGPU (gpuFree (d_x));
 	checkGPU (gpuFree (d_lsum));
 	checkGPU (gpuFree (d_fmod));
-	//nvshmem_free(my_flag_bc);
-	//nvshmem_free(my_flag_rd);
-	//nvshmem_free(flag_bc_q);
-	//nvshmem_free(flag_rd_q);
 
 // #if HAVE_CUDA
 // cudaProfilerStop(); 

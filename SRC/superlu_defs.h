@@ -849,14 +849,14 @@ typedef struct
 #endif
 
 extern void C_RdTree_Create(C_Tree* tree, MPI_Comm comm, int* ranks, int rank_cnt, int msgSize, char precision);
-extern void C_RdTree_Create_nv(C_Tree* tree, MPI_Comm comm, int* ranks, int rank_cnt, int msgSize, char precision,int* mysendmsg_num_rd);
+extern void C_RdTree_Create_nv(C_Tree* tree, MPI_Comm comm, int* ranks, int rank_cnt, int msgSize, char precision);
 extern void C_RdTree_Nullify(C_Tree* tree);
 extern yes_no_t C_RdTree_IsRoot(C_Tree* tree);
 extern void C_RdTree_forwardMessageSimple(C_Tree* Tree, void* localBuffer, int msgSize);
 extern void C_RdTree_waitSendRequest(C_Tree* Tree);
 
 extern void C_BcTree_Create(C_Tree* tree, MPI_Comm comm, int* ranks, int rank_cnt, int msgSize, char precision);
-extern void C_BcTree_Create_nv(C_Tree* tree, MPI_Comm comm, int* ranks, int rank_cnt, int msgSize, char precision, int* mysendmsg_num, int* needrecv);
+extern void C_BcTree_Create_nv(C_Tree* tree, MPI_Comm comm, int* ranks, int rank_cnt, int msgSize, char precision,int* needrecv);
 extern void C_BcTree_Nullify(C_Tree* tree);
 extern yes_no_t C_BcTree_IsRoot(C_Tree* tree);
 extern void C_BcTree_forwardMessageSimple(C_Tree* tree, void* localBuffer, int msgSize);

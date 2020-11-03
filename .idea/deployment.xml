@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
-  <component name="PublishConfigData" autoUpload="Always" serverName="summit.olcf.ornl.gov">
+  <component name="PublishConfigData" autoUpload="Always" serverName="summit">
     <serverData>
-      <paths name="summit.olcf.ornl.gov">
+      <paths name="summit">
         <serverdata>
           <mappings>
-            <mapping deploy="/ccs/home/nanding/myproject/superLU/superlu_amd" local="$PROJECT_DIR$" web="/" />
+            <mapping deploy="/ccs/home/nanding/myproject/superLU/superlu_amd/" local="$PROJECT_DIR$" />
           </mappings>
         </serverdata>
       </paths>

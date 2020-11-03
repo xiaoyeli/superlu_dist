@@ -1140,7 +1140,7 @@ pdgssvx(superlu_dist_options_t *options, SuperMatrix *A,
   	       distribution routine. */
 	    t = SuperLU_timer_();
 	    dist_mem_use = pddistribute(Fact, n, A, ScalePermstruct,
-                                      Glu_freeable, LUstruct, grid);
+                                      Glu_freeable, LUstruct, grid,nrhs);
 	    stat->utime[DIST] = SuperLU_timer_() - t;
 
   	    /* Deallocate storage used in symbolic factorization. */

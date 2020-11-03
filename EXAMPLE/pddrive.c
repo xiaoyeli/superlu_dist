@@ -263,6 +263,11 @@ out:
     /* ------------------------------------------------------------
        TERMINATES THE MPI EXECUTION ENVIRONMENT.
        ------------------------------------------------------------*/
+    //nvshmem_free(ready_x);
+    //nvshmem_free(ready_lsum);
+    //nvshmem_free(flag_bc_q);
+    //nvshmem_free(flag_rd_q);
+
     nvshmem_finalize();
     MPI_Finalize();
 
