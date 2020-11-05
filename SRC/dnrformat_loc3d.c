@@ -9,8 +9,6 @@ The source code is distributed under BSD license, see the file License.txt
 at the top-level directory.
 */
 
-
-
 /*! @file
  * \brief Preprocessing routines for the 3D factorization/solve codes:
  *        - Gather {A,B} from 3D grid to 2D process layer 0
@@ -43,15 +41,15 @@ static void matCopy(int n, int m, double *Dst, int lddst, double *Src, int ldsrc
  *             output is in the returned A3d->{} structure.
  *             see supermatrix.h for nrformat_loc3d{} structure.
  */
-NRformat_loc3d *dGatherNRformat_loc3d(NRformat_loc *A, // input
-                                      double *B,       // input
-				      int ldb, int nrhs, // input
+NRformat_loc3d *dGatherNRformat_loc3d(NRformat_loc *A,   // input
+                                      double *B,         // input
+                                      int ldb, int nrhs, // input
                                       gridinfo3d_t *grid3d)
 {
     NRformat_loc3d *A3d = SUPERLU_MALLOC(sizeof(NRformat_loc3d));
     NRformat_loc *A2d = SUPERLU_MALLOC(sizeof(NRformat_loc));
     A3d->m_loc = A->m_loc;
-    A3d->B = (double *) B; // on 3D process grid
+    A3d->B = (double *)B; // on 3D process grid
     A3d->ldb = ldb;
     A3d->nrhs = nrhs;
 
@@ -146,7 +144,7 @@ NRformat_loc3d *dGatherNRformat_loc3d(NRformat_loc *A, // input
     if (grid3d->zscp.Iam == 0)
     {
         B1 = SUPERLU_MALLOC(A2d->m_loc * nrhs * sizeof(double));
-        A3d->B2d = (double *) SUPERLU_MALLOC(A2d->m_loc * nrhs * sizeof(double));
+        A3d->B2d = (double *)SUPERLU_MALLOC(A2d->m_loc * nrhs * sizeof(double));
     }
 
     // B1 <- gatherv(Btmp)
@@ -160,8 +158,8 @@ NRformat_loc3d *dGatherNRformat_loc3d(NRformat_loc *A, // input
         for (int i = 0; i < grid3d->npdep; ++i)
         {
             /* code */
-            matCopy(row_counts_int[i], nrhs, ((double*)A3d->B2d) + row_disp[i],
-		    A2d->m_loc, B1 + nrhs * row_disp[i], row_counts_int[i]);
+            matCopy(row_counts_int[i], nrhs, ((double *)A3d->B2d) + row_disp[i],
+                    A2d->m_loc, B1 + nrhs * row_disp[i], row_counts_int[i]);
         }
 
         SUPERLU_FREE(B1);
@@ -180,7 +178,7 @@ NRformat_loc3d *dGatherNRformat_loc3d(NRformat_loc *A, // input
     SUPERLU_FREE(row_counts);
     SUPERLU_FREE(nnz_disp);
     SUPERLU_FREE(Btmp);
-    SUPERLU_FREE(B1);
+    // SUPERLU_FREE(B1);
 #endif
 
     return A3d;
@@ -191,14 +189,14 @@ NRformat_loc3d *dGatherNRformat_loc3d(NRformat_loc *A, // input
  * Scatter B (solution) from 2D process layer 0 to 3D grid
  *   Output: X2d <- A^{-1} B2d
  */
-int dScatter_B3d(NRformat_loc3d *A3d,  // modified
-		 gridinfo3d_t *grid3d)
+int dScatter_B3d(NRformat_loc3d *A3d, // modified
+                 gridinfo3d_t *grid3d)
 {
 
-    double *B = (double *) A3d->B;
+    double *B = (double *)A3d->B;
     int ldb = A3d->ldb;
     int nrhs = A3d->nrhs;
-    double *B2d = (double *) A3d->B2d;
+    double *B2d = (double *)A3d->B2d;
     NRformat_loc A2d = *(A3d->A_nfmt);
     int m_loc = A3d->m_loc;
     int *b_counts_int = A3d->b_counts_int;
@@ -240,11 +238,10 @@ int dScatter_B3d(NRformat_loc3d *A3d,  // modified
     SUPERLU_FREE(A3d->b_disp);
     SUPERLU_FREE(A3d->row_counts_int);
     SUPERLU_FREE(A3d->row_disp);
-    SUPERLU_FREE(B1);
+    if (grid3d->zscp.Iam == 0)
+        SUPERLU_FREE(B1);
     SUPERLU_FREE(Btmp);
 #endif
 
     return 0;
 } /* dScatter_B3d */
-
-
