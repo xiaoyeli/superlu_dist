@@ -72,9 +72,9 @@ zReDistribute_A(SuperMatrix *A, zScalePermstruct_t *ScalePermstruct,
     int_t  SendCnt; /* number of remote nonzeros to be sent */
     int_t  RecvCnt; /* number of remote nonzeros to be sent */
     int_t  *nnzToSend, *nnzToRecv, maxnnzToRecv;
-    int_t  *ia, *ja, **ia_send, *index, *itemp;
+    int_t  *ia, *ja, **ia_send, *index, *itemp = NULL;
     int_t  *ptr_to_send;
-    doublecomplex *aij, **aij_send, *nzval, *dtemp;
+    doublecomplex *aij, **aij_send, *nzval, *dtemp = NULL;
     doublecomplex *nzval_a;
 	doublecomplex asum,asum_tot;
     int    iam, it, p, procs, iam_g;
@@ -215,7 +215,8 @@ zReDistribute_A(SuperMatrix *A, zScalePermstruct_t *ScalePermstruct,
        NOTE: Can possibly use MPI_Alltoallv.
        ------------------------------------------------------------*/
     for (p = 0; p < procs; ++p) {
-        if ( p != iam ) {
+	if ( p != iam && nnzToSend[p] > 0 ) {
+	//if ( p != iam ) {
 	    it = 2*nnzToSend[p];
 	    MPI_Isend( ia_send[p], it, mpi_int_t,
 		       p, iam, grid->comm, &send_req[p] );
@@ -226,7 +227,8 @@ zReDistribute_A(SuperMatrix *A, zScalePermstruct_t *ScalePermstruct,
     }
 
     for (p = 0; p < procs; ++p) {
-        if ( p != iam ) {
+	if ( p != iam && nnzToRecv[p] > 0 ) {
+	    //if ( p != iam ) {
 	    it = 2*nnzToRecv[p];
 	    MPI_Recv( itemp, it, mpi_int_t, p, p, grid->comm, &status );
 	    it = nnzToRecv[p];
@@ -245,7 +247,8 @@ zReDistribute_A(SuperMatrix *A, zScalePermstruct_t *ScalePermstruct,
     }
 
     for (p = 0; p < procs; ++p) {
-        if ( p != iam ) {
+        if ( p != iam && nnzToSend[p] > 0 ) {
+	    //if ( p != iam ) {
 	    MPI_Wait( &send_req[p], &status);
 	    MPI_Wait( &send_req[procs+p], &status);
 	}
