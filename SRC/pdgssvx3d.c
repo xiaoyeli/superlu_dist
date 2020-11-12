@@ -1754,16 +1754,18 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 	A->Store = Astore3d; // restore Astore to 3D
 
     /* free A2d and B2d, which are allocated only in 2D layer Grid_0 */
+	NRformat_loc *A2d = A3d->A_nfmt;
     if (grid3d->zscp.Iam == 0) {
-       NRformat_loc *A2d = A3d->A_nfmt;
+       
        SUPERLU_FREE( A2d->rowptr );
        SUPERLU_FREE( A2d->colind );
        SUPERLU_FREE( A2d->nzval );
-       SUPERLU_FREE( A2d );         // free 2D structure
+       
        SUPERLU_FREE(A3d->B2d);
-       SUPERLU_FREE(A3d);           // free 3D structure
+       
     }
-    
+    SUPERLU_FREE( A2d );         // free 2D structure
+	SUPERLU_FREE(A3d);           // free 3D structure
 #if (DEBUGlevel >= 1)
 	CHECK_MALLOC(iam, "Exit pdgssvx3d()");
 #endif
