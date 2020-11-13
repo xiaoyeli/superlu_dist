@@ -142,27 +142,13 @@ dblock_gemm_scatter( int_t lb, int_t j,
     double alpha = 1.0;
     double beta = 0.0;
 
-    /* calling DGEMM */
-    // printf(" m %d n %d k %d ldu %d ldl %d st_col %d \n",temp_nbrow,ncols,ldu,ldl,st_col );
-#if 1
-  #if defined (USE_VENDOR_BLAS)
-    dgemm_("N", "N", &temp_nbrow, &ncols, &ldu, &alpha,
-          &L_mat[(knsupc - ldu)*ldl + cum_nrow], &ldl,
-          &U_mat[st_col * ldu], &ldu, &beta, tempv1, &temp_nbrow, 1, 1);
-  #else
-    dgemm_("N", "N", &temp_nbrow, &ncols, &ldu, &alpha,
-          &L_mat[(knsupc - ldu)*ldl + cum_nrow], &ldl,
-          &U_mat[st_col * ldu], &ldu, &beta, tempv1, &temp_nbrow);
-  #endif
-#else
-    // printf("%d %d %d %d  %d %d %d %d\n", temp_nbrow, ncols, ldu,  ldl,st_col,(knsupc - ldu)*ldl + cum_nrow,cum_nrow,st_col);
 
-    cblas_dgemm(CblasColMajor, CblasNoTrans, CblasNoTrans,
+    superlu_dgemm("N", "N",
                 temp_nbrow, ncols, ldu, alpha,
                 &L_mat[(knsupc - ldu)*ldl + cum_nrow], ldl,
                 &U_mat[st_col * ldu], ldu,
                 beta, tempv1, temp_nbrow);
-#endif
+
 
     // printf("SCU update: (%d, %d)\n",ib,jb );
 #ifdef SCATTER_PROFILE
@@ -255,24 +241,13 @@ dblock_gemm_scatter_lock( int_t lb, int_t j,
     double alpha = 1.0;  double beta = 0.0;
 
     /* calling DGEMM */
-#if 1
-  #if defined (USE_VENDOR_BLAS)
-    // printf(" m %d n %d k %d ldl %d st_col %d \n",temp_nbrow,ncols,ldu,ldl,st_col );
-    dgemm_("N", "N", &temp_nbrow, &ncols, &ldu, &alpha,
-           &L_mat[(knsupc - ldu)*ldl + cum_nrow], &ldl,
-           &U_mat[st_col * ldu], &ldu, &beta, tempv1, &temp_nbrow, 1, 1);
-  #else
-    dgemm_("N", "N", &temp_nbrow, &ncols, &ldu, &alpha,
-           &L_mat[(knsupc - ldu)*ldl + cum_nrow], &ldl,
-           &U_mat[st_col * ldu], &ldu, &beta, tempv1, &temp_nbrow);
-  #endif
-#else
-    cblas_dgemm(CblasColMajor, CblasNoTrans, CblasNoTrans,
+
+    superlu_dgemm("N", "N",
                 temp_nbrow, ncols, ldu, alpha,
                 &L_mat[(knsupc - ldu)*ldl + cum_nrow], ldl,
                 &U_mat[st_col * ldu], ldu,
                 beta, tempv1, temp_nbrow);
-#endif
+
 
     /*try to get the lock for the block*/
     if (lock)       /*lock is not null*/

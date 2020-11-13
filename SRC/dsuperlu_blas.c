@@ -1,4 +1,4 @@
-
+#include "superlu_ddefs.h"
 
 #ifdef _CRAY
 _fcd ftcs = _cptofcd("N", strlen("N"));
@@ -17,8 +17,9 @@ int superlu_dgemm(const char *transa, const char *transb,
     return SGEMM(ftcs, ftcs1, &m, &n, &k,
                  &alpha, a, &lda, b, &ldb, &beta, c, &ldc);
 #elif defined(USE_VENDOR_BLAS)
-    return dgemm_(transa, transb, &m, &n, &k,
+    dgemm_(transa, transb, &m, &n, &k,
                   &alpha, a, &lda, b, &ldb, &beta, c, &ldc, 1, 1);
+    return 0;
 #else
     return dgemm_(transa, transb, &m, &n, &k,
                   &alpha, a, &lda, b, &ldb, &beta, c, &ldc);

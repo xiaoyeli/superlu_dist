@@ -112,6 +112,7 @@ if(enable_double)
     dtrfAux.c	
     dcommunication_aux.c 
     dtrfCommWrapper.c
+    dsuperlu_blas.c
   )
 endif()
 

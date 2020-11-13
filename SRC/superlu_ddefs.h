@@ -566,6 +566,11 @@ extern int daxpy_(int *n, double *za, double *zx,
 // LAPACK routine
 extern void dtrtri_(char*, char*, int*, double*, int*, int*);
 
+// Superlu blas routines
+extern int superlu_dgemm(const char *transa, const char *transb,
+                  int m, int n, int k, double alpha, double *a, 
+                  int lda, double *b, int ldb, double beta, double *c, int ldc);
+
 
 /*==== For 3D code ====*/
 
