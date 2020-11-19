@@ -1717,20 +1717,11 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 				break;
 			}
 		}
-
-#if 0
-		if (!factored && Fact != SamePattern_SameRowPerm && !parSymbFact)
-			Destroy_CompCol_Permuted_dist (&GAC);
-#endif
-
 	} /* process layer 0 done solve */
 
 #ifdef NRFRMT
 	dScatter_B3d(A3d, grid3d);
-	// dScatterB3d(*(A3d->A_nfmt),
-	// 			A_orig,
-	// 			B3d, ldb, nrhs, B2d,
-	// 			grid3d);
+	
 #endif
 	//  double *B, int ldb, int nrhs, double *B2d,
 	//  gridinfo3d_t *grid3d);
@@ -1742,14 +1733,6 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 	//    - scatter the solution from 2D back to 3D: {B2d,ldb} -> {B3d,ldb3d}
 	//      (can we reuse b_count[] and b_disp[] already computed in 'Gather' routine?)
 
-#if 0 // for debugging	
-	if ( grid3d->zscp.Iam == 0 ) {  // only process layer 0
-	    PrintDouble5("Before exit pdgssvx3d, solution B2d", ldb, B2d);
-	    PrintDouble5("Before exit pdgssvx3d, solution B", ldb, B);
-	}
-	PrintDouble5("Before exit pdgssvx3d, solution B3d", ldb3d, B3d);
-	fflush(stdout);
-#endif
 
 	A->Store = Astore3d; // restore Astore to 3D
 
