@@ -8,7 +8,7 @@ _fcd ftcs3 = _cptofcd("U", strlen("U"));
 #endif
 
 int superlu_dgemm(const char *transa, const char *transb,
-                  int m, int n, int k, double alpha, double *a, 
+                  int m, int n, int k, double alpha, double *a,
                   int lda, double *b, int ldb, double beta, double *c, int ldc)
 {
 #ifdef _CRAY
@@ -18,7 +18,7 @@ int superlu_dgemm(const char *transa, const char *transb,
                  &alpha, a, &lda, b, &ldb, &beta, c, &ldc);
 #elif defined(USE_VENDOR_BLAS)
     dgemm_(transa, transb, &m, &n, &k,
-                  &alpha, a, &lda, b, &ldb, &beta, c, &ldc, 1, 1);
+           &alpha, a, &lda, b, &ldb, &beta, c, &ldc, 1, 1);
     return 0;
 #else
     return dgemm_(transa, transb, &m, &n, &k,
@@ -26,8 +26,80 @@ int superlu_dgemm(const char *transa, const char *transb,
 #endif
 }
 
+int superlu_dtrsm(const char *sideRL, const char *uplo,
+                  const char *transa, const char *diag,
+                  const int m, const int n,
+                  const double alpha, const double *a,
+                  const int lda, double *b, const int ldb)
 
-// dtrsm_ ("R", "U", "N", "N", &len, &nsupc, &alpha,
-//   179  			ublk_ptr, &ld_ujrow, &lusup[off], &nsupr,
+{
+#if defined(USE_VENDOR_BLAS)
+    dtrsm_(sideRL, uplo, transa, diag,
+           &m, &n, &alpha, a, &lda, b, &ldb,
+           1, 1, 1, 1);
+    return 0;
+#else
+    return dtrsm_(sideRL, uplo, transa, diag,
+                  &m, &n, &alpha, a, &lda, b, &ldb);
+#endif
+}
 
-//    dtrsv_ ("L", "N", "U", &segsize, &lusup[luptr], &nsupr
+int superlu_dger(const int m, const int n, const double alpha,
+                 const double *x, const int incx, const double *y,
+                 const int incy, double *a, const int lda)
+{
+#ifdef _CRAY
+    SGER(&m, &n, &alpha, x, &incx, y, &incy, a, &lda);
+#else
+    dger_(&m, &n, &alpha, x, &incx, y, &incy, a, &lda);
+#endif
+
+    return 0;
+}
+
+int superlu_dscal(const int n, const double alpha, double *x, const int incx)
+{
+    dscal_(&n, &alpha, x, &incx);
+    return 0;
+}
+
+int superlu_daxpy(const int n, const double alpha, const double *x, const int incx, double *y, const int incy)
+{
+    daxpy_(&n, &alpha, x, &incx, y, &incy);
+    return 0;
+}
+
+int superlu_dgemv(const char *trans, const int m,
+                  const int n, const double alpha, const double *a,
+                  const int lda, const double *x, const int incx,
+                  const double beta, double *y, const int incy)
+{
+
+#ifdef USE_VENDOR_BLAS
+		dgemv_(trans, &m, &n, &alpha, a,
+           &lda, x, &incx, 
+           &beta, y, &incy, 1);
+#else
+		dgemv_(trans, &m, &n, &alpha, a,
+           &lda, x, &incx, 
+           &beta, y, &incy);
+#endif
+    
+    return 0;
+}
+
+int superlu_dtrsv(char *uplo, char *trans, char *diag,
+                  int n, double *a, int lda, double *x, int incx)
+{
+#ifdef _CRAY
+    // _fcd ftcs = _cptofcd("N", strlen("N"));
+		STRSV(_cptofcd(uplo, strlen(uplo)), _cptofcd(trans, strlen(trans)), _cptofcd(diag, strlen(diag)), 
+         &n, a, &lda, x, &incx);
+#elif defined (USE_VENDOR_BLAS)
+		dtrsv_(uplo, trans, diag, &n, a, &lda, x, &incx, 1, 1, 1);
+#else
+		dtrsv_(uplo, trans, diag, &n, a, &lda, x, &incx);
+#endif
+    
+    return 0;
+}

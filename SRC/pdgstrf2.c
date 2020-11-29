@@ -378,19 +378,22 @@ int_t LpanelUpdate(int off0,  int nsupc, double* ublk_ptr, int ld_ujrow,
     {
         int_t off = i * GT;
         int len = SUPERLU_MIN(GT, l - i * GT);
-#if 1
-  #if defined (USE_VENDOR_BLAS)
-        dtrsm_ ("R", "U", "N", "N", &len, &nsupc, &alpha,
-		ublk_ptr, &ld_ujrow, &lusup[off0 + off], &nsupr,
-		1, 1, 1, 1);
-  #else
-        dtrsm_ ("R", "U", "N", "N", &len, &nsupc, &alpha,
-		ublk_ptr, &ld_ujrow, &lusup[off0 + off], &nsupr);
-  #endif
-#else
-        cblas_dtrsm (CblasColMajor, CblasRight, CblasUpper, CblasNoTrans, CblasNonUnit,
+// #if 1
+//   #if defined (USE_VENDOR_BLAS)
+//         dtrsm_ ("R", "U", "N", "N", &len, &nsupc, &alpha,
+// 		ublk_ptr, &ld_ujrow, &lusup[off0 + off], &nsupr,
+// 		1, 1, 1, 1);
+//   #else
+//         dtrsm_ ("R", "U", "N", "N", &len, &nsupc, &alpha,
+// 		ublk_ptr, &ld_ujrow, &lusup[off0 + off], &nsupr);
+//   #endif
+// #else
+//         cblas_dtrsm (CblasColMajor, CblasRight, CblasUpper, CblasNoTrans, CblasNonUnit,
+//                      len, nsupc, alpha, ublk_ptr, ld_ujrow, &lusup[off0 + off], nsupr);
+// #endif
+    superlu_dtrsm ("R", "U", "N", "N",
                      len, nsupc, alpha, ublk_ptr, ld_ujrow, &lusup[off0 + off], nsupr);
-#endif
+
 
     } /* for i = ... */
 
@@ -735,20 +738,23 @@ int_t dTrs2_GatherTrsmScatter(int_t klst, int_t iukp, int_t rukp,
     int_t luptr = (knsupc - ldu) * (nsupr + 1);
     // if(ldu>nsupr) printf("nsupr %d ldu %d\n",nsupr,ldu );
 
-#if 1
-  #if defined (USE_VENDOR_BLAS)
-     dtrsm_ ("L", "L", "N", "U", &ldu, &ncols, &alpha,
-	     &lusup[luptr], &nsupr, tempv, &ldu,
-	     1, 1, 1, 1);
-  #else
-     dtrsm_ ("L", "L", "N", "U", &ldu, &ncols, &alpha,
-	     &lusup[luptr], &nsupr, tempv, &ldu);
-  #endif
-#else
+// #if 1
+//   #if defined (USE_VENDOR_BLAS)
+//      dtrsm_ ("L", "L", "N", "U", &ldu, &ncols, &alpha,
+// 	     &lusup[luptr], &nsupr, tempv, &ldu,
+// 	     1, 1, 1, 1);
+//   #else
+//      dtrsm_ ("L", "L", "N", "U", &ldu, &ncols, &alpha,
+// 	     &lusup[luptr], &nsupr, tempv, &ldu);
+//   #endif
+// #else
 
-    cblas_dtrsm (CblasColMajor, CblasLeft, CblasLower, CblasNoTrans, CblasUnit,
+//     cblas_dtrsm (CblasColMajor, CblasLeft, CblasLower, CblasNoTrans, CblasUnit,
+//                  ldu, ncols, alpha, &lusup[luptr], nsupr, tempv, ldu);
+// #endif
+
+    superlu_dtrsm ("L", "L", "N", "U",
                  ldu, ncols, alpha, &lusup[luptr], nsupr, tempv, ldu);
-#endif
 
     /*now scatter the output into sparse U block*/
     dTrs2_ScatterU(iukp, rukp, klst, nsupc, ldu, usub, uval, tempv);

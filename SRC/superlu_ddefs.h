@@ -571,6 +571,15 @@ extern int superlu_dgemm(const char *transa, const char *transb,
                   int m, int n, int k, double alpha, double *a, 
                   int lda, double *b, int ldb, double beta, double *c, int ldc);
 
+extern int superlu_dtrsm(const char *sideRL, const char *uplo,
+                  const char *transa, const char *diag,
+                  const int m, const int n,
+                  const double alpha, const double *a,
+                  const int lda, double *b, const int ldb);
+extern int superlu_dger(const int m, const int n, const double alpha,
+                 const double *x, const int incx, const double *y,
+                 const int incy, double *a, const int lda);
+
 
 /*==== For 3D code ====*/
 
