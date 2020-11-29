@@ -170,22 +170,9 @@ int_t dLPanelTrSolve(int_t k, int_t *factored_L,
                 int_t off = i * BL;
                 // Sherry: int_t len = MY_MIN(BL, l - i * BL);
                 int len = SUPERLU_MIN(BL, l - i * BL);
-
-                // #if 1
-                //   #if defined (USE_VENDOR_BLAS)
-                // 		dtrsm_ ("R", "U", "N", "N", &len, &nsupc, &alpha,
-                // 			ublk_ptr, &ld_ujrow, &lusup[off], &nsupr,
-                // 			1, 1, 1, 1);
-                //   #else
-                // 		dtrsm_ ("R", "U", "N", "N", &len, &nsupc, &alpha,
-                // 			ublk_ptr, &ld_ujrow, &lusup[off], &nsupr);
-                //   #endif
-                // #else
-                //                 cblas_dtrsm (CblasColMajor, CblasRight, CblasUpper, CblasNoTrans, CblasNonUnit,
-                //                 len, nsupc, alpha, ublk_ptr, ld_ujrow, &lusup[off], nsupr);
-                // #endif
                 superlu_dtrsm("R", "U", "N", "N",
-                              len, nsupc, alpha, ublk_ptr, ld_ujrow, &lusup[off], nsupr);
+                              len, nsupc, alpha, ublk_ptr,
+                              ld_ujrow, &lusup[off], nsupr);
             }
         }
     }
@@ -221,22 +208,10 @@ int_t dLPanelTrSolve(int_t k, int_t *factored_L,
             int len = SUPERLU_MIN(BL, (l - i * BL));
 #pragma omp task
             {
-                // #if 1
-                //   #if defined (USE_VENDOR_BLAS)
-                // 		dtrsm_ ("R", "U", "N", "N", &len, &nsupc, &alpha,
-                // 			ublk_ptr, &ld_ujrow, &lusup[nsupc + off], &nsupr,
-                // 			1, 1, 1, 1);
-                //   #else
-                // 		dtrsm_ ("R", "U", "N", "N", &len, &nsupc, &alpha,
-                // 			ublk_ptr, &ld_ujrow, &lusup[nsupc + off], &nsupr);
-                //   #endif
-                // #else
-                //                 cblas_dtrsm (CblasColMajor, CblasRight, CblasUpper, CblasNoTrans, CblasNonUnit,
-                //                              len, nsupc, alpha, ublk_ptr, ld_ujrow, &lusup[nsupc + off], nsupr);
-                // #endif
 
                 superlu_dtrsm("R", "U", "N", "N",
-                              len, nsupc, alpha, ublk_ptr, ld_ujrow, &lusup[nsupc + off], nsupr);
+                              len, nsupc, alpha, ublk_ptr,
+                              ld_ujrow, &lusup[nsupc + off], nsupr);
             }
         }
     }
