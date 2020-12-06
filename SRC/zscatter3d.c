@@ -142,6 +142,13 @@ zblock_gemm_scatter( int_t lb, int_t j,
 
     /* calling ZGEMM */
     // printf(" m %d n %d k %d ldu %d ldl %d st_col %d \n",temp_nbrow,ncols,ldu,ldl,st_col );
+
+    superlu_zgemm("N", "N", temp_nbrow, ncols, ldu, alpha,
+                &L_mat[(knsupc - ldu)*ldl + cum_nrow], ldl,
+                &U_mat[st_col * ldu], ldu,
+                beta, tempv1, temp_nbrow);
+    
+#if 0    // ** replaced by superlu_zgemm
 #if 1
   #if defined (USE_VENDOR_BLAS)
     zgemm_("N", "N", &temp_nbrow, &ncols, &ldu, &alpha,
@@ -161,7 +168,8 @@ zblock_gemm_scatter( int_t lb, int_t j,
                 &U_mat[st_col * ldu], ldu,
                 beta, tempv1, temp_nbrow);
 #endif
-
+#endif // ** replaced by superlu_zgemm
+    
     // printf("SCU update: (%d, %d)\n",ib,jb );
 #ifdef SCATTER_PROFILE
     unsigned long long ttx = __rdtsc();
@@ -253,6 +261,11 @@ zblock_gemm_scatter_lock( int_t lb, int_t j,
     doublecomplex alpha = {1.0, 0.0}, beta = {0.0, 0.0};
 
     /* calling ZGEMM */
+    superlu_zgemm("N", "N", temp_nbrow, ncols, ldu, alpha,
+           L_mat[(knsupc - ldu)*ldl + cum_nrow], ldl,
+           U_mat[st_col * ldu], ldu, beta, tempv1, temp_nbrow);
+    
+#if 0 // replaced by superlu_zgemm    
 #if 1
   #if defined (USE_VENDOR_BLAS)
     // printf(" m %d n %d k %d ldl %d st_col %d \n",temp_nbrow,ncols,ldu,ldl,st_col );
@@ -271,6 +284,7 @@ zblock_gemm_scatter_lock( int_t lb, int_t j,
                 &U_mat[st_col * ldu], ldu,
                 beta, tempv1, temp_nbrow);
 #endif
+#endif // replaced by superlu_zgemm    
 
     /*try to get the lock for the block*/
     if (lock)       /*lock is not null*/

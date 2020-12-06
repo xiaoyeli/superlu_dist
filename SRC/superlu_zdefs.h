@@ -516,21 +516,19 @@ extern int   file_PrintDoublecomplex(FILE *fp, char *, int_t, doublecomplex *);
 
 
 /* BLAS */
-
+    
 #ifdef USE_VENDOR_BLAS
 extern void zgemm_(const char*, const char*, const int*, const int*, const int*,
                   const doublecomplex*, const doublecomplex*, const int*, const doublecomplex*,
                   const int*, const doublecomplex*, doublecomplex*, const int*, int, int);
 extern void ztrsv_(char*, char*, char*, int*, doublecomplex*, int*,
                   doublecomplex*, int*, int, int, int);
-extern void ztrsm_(char*, char*, char*, char*, int*, int*,
-                  doublecomplex*, doublecomplex*, int*, doublecomplex*,
-                  int*, int, int, int, int);
-extern void zgemv_(char *, int *, int *, doublecomplex *, doublecomplex *a, int *,
-                  doublecomplex *, int *, doublecomplex *, doublecomplex *, int *, int);
-
-extern void zgeru_(int*, int*, doublecomplex*, doublecomplex*, int*,
-                 doublecomplex*, int*, doublecomplex*, int*);
+extern void ztrsm_(const char*, const char*, const char*, const char*,
+                  const int*, const int*, const doublecomplex*, const doublecomplex*, const int*,
+		  doublecomplex*, const int*, int, int, int, int);
+extern void zgemv_(const char *, const int *, const int *, const doublecomplex *,
+                  const doublecomplex *a, const int *, const doublecomplex *, const int *,
+		  const doublecomplex *, doublecomplex *, const int *, int);
 
 #else
 extern int zgemm_(const char*, const char*, const int*, const int*, const int*,
@@ -538,18 +536,43 @@ extern int zgemm_(const char*, const char*, const int*, const int*, const int*,
                    const int*,  const doublecomplex*, doublecomplex*, const int*);
 extern int ztrsv_(char*, char*, char*, int*, doublecomplex*, int*,
                   doublecomplex*, int*);
-extern int ztrsm_(char*, char*, char*, char*, int*, int*,
-                  doublecomplex*, doublecomplex*, int*, doublecomplex*, int*);
-extern int zgemv_(char *, int *, int *, doublecomplex *, doublecomplex *a, int *,
-                  doublecomplex *, int *, doublecomplex *, doublecomplex *, int *);
-extern int zgeru_(int*, int*, doublecomplex*, doublecomplex*, int*,
-                 doublecomplex*, int*, doublecomplex*, int*);
-
+extern int ztrsm_(const char*, const char*, const char*, const char*,
+                  const int*, const int*, const doublecomplex*, const doublecomplex*, const int*,
+		  doublecomplex*, const int*);
+extern void zgemv_(const char *, const int *, const int *, const doublecomplex *,
+                  const doublecomplex *a, const int *, const doublecomplex *, const int *,
+		  const doublecomplex *, doublecomplex *, const int *);
 #endif
 
-extern int zscal_(int *n, doublecomplex *da, doublecomplex *dx, int *incx);
-extern int zaxpy_(int *n, doublecomplex *za, doublecomplex *zx, 
-	               int *incx, doublecomplex *zy, int *incy);
+extern void zgeru_(const int*, const int*, const doublecomplex*,
+                 const doublecomplex*, const int*, const doublecomplex*, const int*,
+		 doublecomplex*, const int*);
+
+extern int zscal_(const int *n, const doublecomplex *alpha, doublecomplex *dx, const int *incx);
+extern int zaxpy_(const int *n, const doublecomplex *alpha, const doublecomplex *x, 
+	               const int *incx, doublecomplex *y, const int *incy);
+
+/* SuperLU BLAS interface: xsuperlu_blas.c.base  */
+extern int superlu_zgemm(const char *transa, const char *transb,
+                  int m, int n, int k, doublecomplex alpha, doublecomplex *a,
+                  int lda, doublecomplex *b, int ldb, doublecomplex beta, doublecomplex *c, int ldc);
+extern int superlu_ztrsm(const char *sideRL, const char *uplo,
+                  const char *transa, const char *diag, const int m, const int n,
+                  const doublecomplex alpha, const doublecomplex *a,
+                  const int lda, doublecomplex *b, const int ldb);
+extern int superlu_zger(const int m, const int n, const doublecomplex alpha,
+                 const doublecomplex *x, const int incx, const doublecomplex *y,
+                 const int incy, doublecomplex *a, const int lda);
+extern int superlu_zscal(const int n, const doublecomplex alpha, doublecomplex *x, const int incx);
+extern int superlu_zaxpy(const int n, const doublecomplex alpha,
+    const doublecomplex *x, const int incx, doublecomplex *y, const int incy);
+extern int superlu_zgemv(const char *trans, const int m,
+                  const int n, const doublecomplex alpha, const doublecomplex *a,
+                  const int lda, const doublecomplex *x, const int incx,
+                  const doublecomplex beta, doublecomplex *y, const int incy);
+extern int superlu_ztrsv(char *uplo, char *trans, char *diag,
+                  int n, doublecomplex *a, int lda, doublecomplex *x, int incx);
+
 // LAPACK routine
 extern void ztrtri_(char*, char*, int*, doublecomplex*, int*, int*);
 

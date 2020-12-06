@@ -71,7 +71,7 @@ DPLUSRC = pdgssvx.o pdgssvx_ABglobal.o \
 	  pdgstrf.o pdgstrf2.o pdGetDiagU.o \
 	  pdgstrs.o pdgstrs1.o pdgstrs_lsum.o pdgstrs_Bglobal.o \
 	  pdgsrfs.o pdgsmv.o pdgsrfs_ABXglobal.o pdgsmv_AXglobal.o \
-	  dreadtriple_noheader.o 
+	  dreadtriple_noheader.o dsuperlu_blas.o
 # from 3D code
 DPLUSRC += pdgssvx3d.o pdgstrf3d.o dtreeFactorization.o dscatter3d.o \
 	dgather.o pd3dcomm.o dtrfAux.o dcommunication_aux.o dtrfCommWrapper.o \
@@ -86,7 +86,7 @@ ZPLUSRC = pzgssvx.o pzgssvx_ABglobal.o \
 	  pzgstrf.o pzgstrf2.o pzGetDiagU.o \
 	  pzgstrs.o pzgstrs1.o pzgstrs_lsum.o pzgstrs_Bglobal.o \
 	  pzgsrfs.o pzgsmv.o pzgsrfs_ABXglobal.o pzgsmv_AXglobal.o \
-	  zreadtriple_noheader.o
+	  zreadtriple_noheader.o zsuperlu_blas.o
 # from 3D code
 ZPLUSRC += pzgssvx3d.o pzgstrf3d.o ztreeFactorization.o zscatter3d.o \
 	zgather.o pz3dcomm.o ztrfAux.o zcommunication_aux.o ztrfCommWrapper.o \

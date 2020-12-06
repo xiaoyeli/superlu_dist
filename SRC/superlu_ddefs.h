@@ -524,63 +524,66 @@ extern "C"
     /* BLAS */
 
 #ifdef USE_VENDOR_BLAS
-    extern void dgemm_(const char *, const char *, const int *, const int *, const int *,
-                       const double *, const double *, const int *, const double *,
-                       const int *, const double *, double *, const int *, int, int);
-    extern void dtrsv_(char *, char *, char *, int *, double *, int *,
-                       double *, int *, int, int, int);
-    extern void dtrsm_(char *, char *, char *, char *, int *, int *,
-                       double *, double *, int *, double *,
-                       int *, int, int, int, int);
-    extern void dgemv_(char *, int *, int *, double *, double *a, int *,
-                       double *, int *, double *, double *, int *, int);
-
-    extern void dger_(int *, int *, double *, double *, int *,
-                      double *, int *, double *, int *);
+extern void dgemm_(const char*, const char*, const int*, const int*, const int*,
+                  const double*, const double*, const int*, const double*,
+                  const int*, const double*, double*, const int*, int, int);
+extern void dtrsv_(char*, char*, char*, int*, double*, int*,
+                  double*, int*, int, int, int);
+extern void dtrsm_(const char*, const char*, const char*, const char*,
+                  const int*, const int*, const double*, const double*, const int*,
+		  double*, const int*, int, int, int, int);
+extern void dgemv_(const char *, const int *, const int *, const double *,
+                  const double *a, const int *, const double *, const int *,
+		  const double *, double *, const int *, int);
 
 #else
-extern int dgemm_(const char *, const char *, const int *, const int *, const int *,
-                  const double *, const double *, const int *, const double *,
-                  const int *, const double *, double *, const int *);
-extern int dtrsv_(char *, char *, char *, int *, double *, int *,
-                  double *, int *);
-extern int dtrsm_(char *, char *, char *, char *, int *, int *,
-                  double *, double *, int *, double *, int *);
-extern int dgemv_(char *, int *, int *, double *, double *a, int *,
-                  double *, int *, double *, double *, int *);
-extern void dger_(int *, int *, double *, double *, int *,
-                  double *, int *, double *, int *);
-
+extern int dgemm_(const char*, const char*, const int*, const int*, const int*,
+                   const double*,  const double*,  const int*,  const double*,
+                   const int*,  const double*, double*, const int*);
+extern int dtrsv_(char*, char*, char*, int*, double*, int*,
+                  double*, int*);
+extern int dtrsm_(const char*, const char*, const char*, const char*,
+                  const int*, const int*, const double*, const double*, const int*,
+		  double*, const int*);
+extern void dgemv_(const char *, const int *, const int *, const double *,
+                  const double *a, const int *, const double *, const int *,
+		  const double *, double *, const int *);
 #endif
 
-    extern int dscal_(int *n, double *da, double *dx, int *incx);
-    extern int daxpy_(int *n, double *za, double *zx,
-                      int *incx, double *zy, int *incy);
-    // LAPACK routine
-    extern void dtrtri_(char *, char *, int *, double *, int *, int *);
+extern void dger_(const int*, const int*, const double*,
+                 const double*, const int*, const double*, const int*,
+		 double*, const int*);
 
-    // Superlu blas routines
-    extern int superlu_dgemm(const char *transa, const char *transb,
-                             int m, int n, int k, double alpha, double *a,
-                             int lda, double *b, int ldb, double beta, double *c, int ldc);
+extern int dscal_(const int *n, const double *alpha, double *dx, const int *incx);
+extern int daxpy_(const int *n, const double *alpha, const double *x, 
+	               const int *incx, double *y, const int *incy);
 
-    extern int superlu_dtrsm(const char *sideRL, const char *uplo,
-                             const char *transa, const char *diag,
-                             const int m, const int n,
-                             const double alpha, const double *a,
-                             const int lda, double *b, const int ldb);
-    extern int superlu_dger(const int m, const int n, const double alpha,
-                            const double *x, const int incx, const double *y,
-                            const int incy, double *a, const int lda);
+/* SuperLU BLAS interface: dsuperlu_blas.c  */
+extern int superlu_dgemm(const char *transa, const char *transb,
+                  int m, int n, int k, double alpha, double *a,
+                  int lda, double *b, int ldb, double beta, double *c, int ldc);
+extern int superlu_dtrsm(const char *sideRL, const char *uplo,
+                  const char *transa, const char *diag, const int m, const int n,
+                  const double alpha, const double *a,
+                  const int lda, double *b, const int ldb);
+extern int superlu_dger(const int m, const int n, const double alpha,
+                 const double *x, const int incx, const double *y,
+                 const int incy, double *a, const int lda);
+extern int superlu_dscal(const int n, const double alpha, double *x, const int incx);
+extern int superlu_daxpy(const int n, const double alpha,
+    const double *x, const int incx, double *y, const int incy);
+extern int superlu_dgemv(const char *trans, const int m,
+                  const int n, const double alpha, const double *a,
+                  const int lda, const double *x, const int incx,
+                  const double beta, double *y, const int incy);
+extern int superlu_dtrsv(char *uplo, char *trans, char *diag,
+                  int n, double *a, int lda, double *x, int incx);
 
-    extern int superlu_dscal(const int n, const double alpha, double *x, const int incx);
-    extern int superlu_dtrsv(char *uplo, char *trans, char *diag,
-                             int n, double *a, int lda, double *x, int incx);
-    extern int superlu_dgemv(const char *trans, const int m,
-                             const int n, const double alpha, const double *a,
-                             const int lda, const double *x, const int incx,
-                             const double beta, double *y, const int incy);
-    extern int superlu_daxpy(const int n, const double alpha, const double *x, const int incx, double *y, const int incy);
+// LAPACK routine
+extern void dtrtri_(char *, char *, int *, double *, int *, int *);
+
+
+    
     /*==== For 3D code ====*/
 
     extern void pdgssvx3d(superlu_dist_options_t *, SuperMatrix *,

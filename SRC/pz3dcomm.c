@@ -250,6 +250,9 @@ int_t zzRecvLPanel(int_t k, int_t sender, doublecomplex alpha, doublecomplex bet
 			     grid3d->zscp.comm, &status);
 		    
 		    /*reduce the updates*/
+		    superlu_zscal(len2, alpha, lnzval, 1);
+		    superlu_zaxpy(len2, beta, Lval_buf, 1, lnzval, 1);
+#if 0 // replaced 		    
 #if 1
 		    zscal_(&len2, &alpha, lnzval, &inc);
 		    zaxpy_(&len2, &beta, Lval_buf, &inc, lnzval, &inc);
@@ -257,6 +260,7 @@ int_t zzRecvLPanel(int_t k, int_t sender, doublecomplex alpha, doublecomplex bet
 		    cblas_zscal (len2, (void*) &alpha, lnzval, 1);
 		    cblas_zaxpy (len2, (void*) &beta, Lval_buf, 1, lnzval, 1);
 #endif
+#endif		    
 		}
 	}
 
@@ -325,12 +329,16 @@ int_t zzRecvUPanel(int_t k, int_t sender, doublecomplex alpha, doublecomplex bet
 			     grid3d->zscp.comm, &status);
 		    
 		    /*reduce the updates*/
+		    superlu_zscal(lenv, alpha, unzval, 1);
+		    superlu_zaxpy(lenv, beta, Uval_buf, 1, unzval, 1);
+#if 0 // replaced 
 #if 1
 		    zscal_(&lenv, &alpha, unzval, &inc);
 		    zaxpy_(&lenv, &beta, Uval_buf, &inc, unzval, &inc);
 #else
 		    cblas_zscal (lenv, (void*) &alpha, unzval, 1);
 		    cblas_zaxpy (lenv, (void*) &beta, Uval_buf, 1, unzval, 1);
+#endif
 #endif
 		}
 	}

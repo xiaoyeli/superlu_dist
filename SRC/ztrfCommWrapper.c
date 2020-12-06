@@ -172,6 +172,10 @@ int_t zLPanelTrSolve( int_t k,   int_t* factored_L,
                 // Sherry: int_t len = MY_MIN(BL, l - i * BL);
                 int len = SUPERLU_MIN(BL, l - i * BL);
 
+                superlu_ztrsm("R", "U", "N", "N", len, nsupc, alpha,
+			      ublk_ptr, ld_ujrow, &lusup[off], nsupr);
+		
+#if 0 // ** replaced by superlu_ztrsm 		
 #if 1
   #if defined (USE_VENDOR_BLAS)
 		ztrsm_ ("R", "U", "N", "N", &len, &nsupc, &alpha,
@@ -185,6 +189,8 @@ int_t zLPanelTrSolve( int_t k,   int_t* factored_L,
                 cblas_ztrsm (CblasColMajor, CblasRight, CblasUpper, CblasNoTrans, CblasNonUnit,
                 len, nsupc, (void*) &alpha, ublk_ptr, ld_ujrow, &lusup[off], nsupr);
 #endif
+#endif // ** replaced by superlu_ztrsm 		
+		
             }
         }
     }
@@ -218,8 +224,11 @@ int_t zLPanelTrSolve( int_t k,   int_t* factored_L,
             int_t off = i * BL;
             // Sherry: int_t len = MY_MIN(BL, l - i * BL);
             int len = SUPERLU_MIN(BL, (l - i * BL));
-            #pragma omp task
+#pragma omp task
             {
+                superlu_ztrsm("R", "U", "N", "N", len, nsupc, alpha,
+			      ublk_ptr, ld_ujrow, &lusup[nsupc + off], nsupr);
+#if 0 // ** replaced by superlu_ztrsm
 #if 1
   #if defined (USE_VENDOR_BLAS)
 		ztrsm_ ("R", "U", "N", "N", &len, &nsupc, &alpha,
@@ -233,6 +242,7 @@ int_t zLPanelTrSolve( int_t k,   int_t* factored_L,
                 cblas_ztrsm (CblasColMajor, CblasRight, CblasUpper, CblasNoTrans, CblasNonUnit,
                              len, nsupc, (void*) &alpha, ublk_ptr, ld_ujrow, &lusup[nsupc + off], nsupr);
 #endif
+#endif // ** replaced by superlu_ztrsm
 
             }
         }

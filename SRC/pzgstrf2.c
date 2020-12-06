@@ -379,6 +379,11 @@ int_t LpanelUpdate(int_t off0,  int nsupc, doublecomplex* ublk_ptr, int ld_ujrow
     {
         int_t off = i * GT;
         int len = SUPERLU_MIN(GT, l - i * GT);
+
+        superlu_ztrsm("R", "U", "N", "N", len, nsupc, alpha,
+		      ublk_ptr, ld_ujrow, &lusup[off0 + off], nsupr);
+	
+#if 0 // replaced by supelru_dtrsm	
 #if 1
   #if defined (USE_VENDOR_BLAS)
         ztrsm_ ("R", "U", "N", "N", &len, &nsupc, &alpha,
@@ -392,6 +397,7 @@ int_t LpanelUpdate(int_t off0,  int nsupc, doublecomplex* ublk_ptr, int ld_ujrow
         cblas_ztrsm (CblasColMajor, CblasRight, CblasUpper, CblasNoTrans, CblasNonUnit,
                      len, nsupc, (void*) &alpha, ublk_ptr, ld_ujrow, &lusup[off0 + off], nsupr);
 #endif
+#endif // replaced by supelru_dtrsm	
 
     } /* for i = ... */
 
@@ -486,6 +492,10 @@ void Local_Zgstrf2(superlu_dist_options_t *options, int_t k, double thresh,
             int l = nsupc - j - 1;
 
 	    /* Rank-1 update */
+            superlu_zger(l, cols_left, alpha, &lusup[luptr + 1], incx,
+                         &ujrow[ld_ujrow], incy, &lusup[luptr + nsupr + 1], nsupr);
+	    
+#if 0 // replaced by superlu_	    
 #if 1
 	    zgeru_ (&l, &cols_left, &alpha, &lusup[luptr + 1], &incx,
 		    &ujrow[ld_ujrow], &incy, &lusup[luptr + nsupr + 1],
@@ -495,6 +505,8 @@ void Local_Zgstrf2(superlu_dist_options_t *options, int_t k, double thresh,
                         &ujrow[ld_ujrow], incy, &lusup[luptr + nsupr + 1],
                         nsupr);
 #endif
+#endif // replaced by superlu_
+	    
             stat->ops[FACT] += 8 * l * cols_left;
         }
 
@@ -737,7 +749,10 @@ int_t zTrs2_GatherTrsmScatter(int_t klst, int_t iukp, int_t rukp,
     /*now call ztrsm on packed dense block*/
     int_t luptr = (knsupc - ldu) * (nsupr + 1);
     // if(ldu>nsupr) printf("nsupr %d ldu %d\n",nsupr,ldu );
-
+    
+    superlu_ztrsm("L", "L", "N", "U", ldu, ncols, alpha,
+		  &lusup[luptr], nsupr, tempv, ldu);
+#if 0 // replaced by superlu_
 #if 1
   #if defined (USE_VENDOR_BLAS)
      ztrsm_ ("L", "L", "N", "U", &ldu, &ncols, &alpha,
@@ -752,6 +767,7 @@ int_t zTrs2_GatherTrsmScatter(int_t klst, int_t iukp, int_t rukp,
     cblas_ztrsm (CblasColMajor, CblasLeft, CblasLower, CblasNoTrans, CblasUnit,
                  ldu, ncols, (void*) &alpha, &lusup[luptr], nsupr, tempv, ldu);
 #endif
+#endif // replaced by superlu_
 
     /*now scatter the output into sparse U block*/
     zTrs2_ScatterU(iukp, rukp, klst, nsupc, ldu, usub, uval, tempv);

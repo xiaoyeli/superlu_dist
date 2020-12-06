@@ -165,6 +165,7 @@ if(enable_complex16)
     pz3dcomm.c ztrfAux.c
     zcommunication_aux.c
     ztrfCommWrapper.c
+    zsuperlu_blas.c
   )
 endif()
 
