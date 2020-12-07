@@ -1,3 +1,24 @@
+/*! \file
+Copyright (c) 2003, The Regents of the University of California, through
+Lawrence Berkeley National Laboratory (subject to receipt of any required
+approvals from U.S. Dept. of Energy)
+
+All rights reserved.
+
+The source code is distributed under BSD license, see the file License.txt
+at the top-level directory.
+*/
+
+
+/*! @file
+ * \brief Wrapper functions to call BLAS.
+ *
+ * <pre>
+ * -- Distributed SuperLU routine (version 7.0) --
+ * Lawrence Berkeley National Lab, Oak Ridge National Lab
+ * December 6, 2020
+ */
+
 #include "superlu_ddefs.h"
 
 #ifdef _CRAY
@@ -63,7 +84,8 @@ int superlu_dscal(const int n, const double alpha, double *x, const int incx)
     return 0;
 }
 
-int superlu_daxpy(const int n, const double alpha, const double *x, const int incx, double *y, const int incy)
+int superlu_daxpy(const int n, const double alpha,
+    const double *x, const int incx, double *y, const int incy)
 {
     daxpy_(&n, &alpha, x, &incx, y, &incy);
     return 0;
@@ -74,15 +96,10 @@ int superlu_dgemv(const char *trans, const int m,
                   const int lda, const double *x, const int incx,
                   const double beta, double *y, const int incy)
 {
-
 #ifdef USE_VENDOR_BLAS
-		dgemv_(trans, &m, &n, &alpha, a,
-           &lda, x, &incx, 
-           &beta, y, &incy, 1);
+    dgemv_(trans, &m, &n, &alpha, a, &lda, x, &incx, &beta, y, &incy, 1);
 #else
-		dgemv_(trans, &m, &n, &alpha, a,
-           &lda, x, &incx, 
-           &beta, y, &incy);
+    dgemv_(trans, &m, &n, &alpha, a, &lda, x, &incx, &beta, y, &incy);
 #endif
     
     return 0;
@@ -93,12 +110,12 @@ int superlu_dtrsv(char *uplo, char *trans, char *diag,
 {
 #ifdef _CRAY
     // _fcd ftcs = _cptofcd("N", strlen("N"));
-		STRSV(_cptofcd(uplo, strlen(uplo)), _cptofcd(trans, strlen(trans)), _cptofcd(diag, strlen(diag)), 
+    STRSV(_cptofcd(uplo, strlen(uplo)), _cptofcd(trans, strlen(trans)), _cptofcd(diag, strlen(diag)), 
          &n, a, &lda, x, &incx);
 #elif defined (USE_VENDOR_BLAS)
-		dtrsv_(uplo, trans, diag, &n, a, &lda, x, &incx, 1, 1, 1);
+    dtrsv_(uplo, trans, diag, &n, a, &lda, x, &incx, 1, 1, 1);
 #else
-		dtrsv_(uplo, trans, diag, &n, a, &lda, x, &incx);
+    dtrsv_(uplo, trans, diag, &n, a, &lda, x, &incx);
 #endif
     
     return 0;
