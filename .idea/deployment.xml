@@ -2,10 +2,24 @@
 <project version="4">
   <component name="PublishConfigData" autoUpload="Always" serverName="summit">
     <serverData>
+      <paths name="Cori (f52dd9a7-f6fb-49fe-8b20-5162e5d22ab3)">
+        <serverdata>
+          <mappings>
+            <mapping deploy="/tmp/tmp.gTRJGeBsOX" local="$PROJECT_DIR$" />
+          </mappings>
+        </serverdata>
+      </paths>
       <paths name="summit">
         <serverdata>
           <mappings>
             <mapping deploy="/ccs/home/nanding/myproject/superLU/superlu_amd/" local="$PROJECT_DIR$" />
+          </mappings>
+        </serverdata>
+      </paths>
+      <paths name="summit (33cce29e-a6bc-4fa3-aaf9-a4c698b38717)">
+        <serverdata>
+          <mappings>
+            <mapping deploy="/tmp/tmp.PUYJcWAyPc" local="$PROJECT_DIR$" />
           </mappings>
         </serverdata>
       </paths>

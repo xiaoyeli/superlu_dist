@@ -27,7 +27,7 @@ at the top-level directory.
 #ifndef CACHELINE
 #define CACHELINE 64  /* bytes, Xeon Phi KNL, Cori haswell, Edision */
 #endif
-
+#include<cuda_profiler_api.h>
 // #ifndef GPUREF
 // #define GPUREF 1  
 // #endif
@@ -1637,7 +1637,7 @@ dGenCOOLblocks(iam, nsupers, grid,Glu_persist,Llu, cooRows, cooCols, cooVals, &n
 #else
 
 // #if HAVE_CUDA
-// cudaProfilerStart(); 
+ //cudaProfilerStart();
 // #elif defined(HAVE_HIP)
 // roctracer_mark("before HIP LaunchKernel");
 // roctxMark("before hipLaunchKernel");
@@ -1652,9 +1652,8 @@ dGenCOOLblocks(iam, nsupers, grid,Glu_persist,Llu, cooRows, cooCols, cooVals, &n
 	k = CEILING( nsupers, grid->npcol);/* Number of local block columns divided by #warps per block used as number of thread blocks*/
 	knsupc = sp_ienv_dist(3);
 
+	double memuse=0;
 	checkGPU(gpuMalloc( (void**)&d_grid, sizeof(gridinfo_t)));
-	//checkGPU(gpuMalloc( (void**)&ready_x, maxrecvsz*  CEILING( nsupers, grid->npcol) * sizeof(double))); // used for receiving and forwarding x on each thread
-	//checkGPU(gpuMalloc( (void**)&ready_lsum, 2*maxrecvsz*  CEILING( nsupers, grid->nprow) * sizeof(double))); // used for receiving and forwarding lsum on each thread
 	checkGPU(gpuMalloc( (void**)&d_lsum, sizelsum*num_thread * sizeof(double)));
 	checkGPU(gpuMalloc( (void**)&d_x, (ldalsum * nrhs + nlb * XK_H) * sizeof(double)));
 	checkGPU(gpuMalloc( (void**)&d_fmod, (nlb*aln_i) * sizeof(int_t)));
@@ -1665,35 +1664,16 @@ dGenCOOLblocks(iam, nsupers, grid,Glu_persist,Llu, cooRows, cooCols, cooVals, &n
 	checkGPU(gpuMemcpy(d_x, x, (ldalsum * nrhs + nlb * XK_H) * sizeof(double), gpuMemcpyHostToDevice));	
 	checkGPU(gpuMemcpy(d_fmod, fmod, (nlb*aln_i) * sizeof(int_t), gpuMemcpyHostToDevice));
 
-
-	//flag_bc_q = (int *) nvshmem_malloc (RDMA_FLAG_SIZE * (k+1) * sizeof(int)); // for sender
-    //flag_rd_q = (int *)nvshmem_malloc( RDMA_FLAG_SIZE * nlb * 2 * sizeof(int)); // for sender
-    //ready_x = (double *)nvshmem_malloc(maxrecvsz*CEILING( nsupers, grid->npcol) * sizeof(double)); // for receiver
-    //ready_lsum = (double *)nvshmem_malloc(2*maxrecvsz*CEILING( nsupers, grid->nprow) * sizeof(double)); // for receiver
-    //my_flag_bc = (int *) nvshmem_malloc ( RDMA_FLAG_SIZE * (k+1)  * sizeof(int)); // for sender
-    //my_flag_rd = (int *) nvshmem_malloc (RDMA_FLAG_SIZE * nlb * 2 * sizeof(int)); // for sender
-	////checkGPU(gpuMalloc( (void**)&my_flag_bc,  RDMA_FLAG_SIZE * (k+1) * sizeof(int)));
-	////checkGPU(gpuMalloc( (void**)&my_flag_rd,  RDMA_FLAG_SIZE * nlb * 2 * sizeof(int)));
-    //checkGPU(gpuMemset(my_flag_bc, 0, RDMA_FLAG_SIZE * (k+1)  * sizeof(int)));
-    //checkGPU(gpuMemset(my_flag_rd, 0, RDMA_FLAG_SIZE * nlb * 2 * sizeof(int)));
-    //checkGPU(gpuMemset(ready_x, 0, maxrecvsz*CEILING( nsupers, grid->npcol) * sizeof(double)));
-    //checkGPU(gpuMemset(ready_lsum, 0, 2*maxrecvsz*CEILING( nsupers, grid->nprow) * sizeof(double)));
-
-	//checkGPU(gpuMalloc( (void**)&d_launch_flag,  1 * sizeof(int)));
-	//checkGPU(gpuMalloc( (void**)&d_status,  k * sizeof(int)));
-	//checkGPU(gpuMalloc( (void**)&d_nfrecv,  1 * sizeof(int)));
-	//checkGPU(gpuMemset( d_launch_flag, 0,  1 * sizeof(int)));
-	//checkGPU(gpuMemcpy(d_nfrecv, &nfrecvx, 1 * sizeof(int), gpuMemcpyHostToDevice));
 	checkGPU(gpuMemcpy(d_status, mystatus, k * sizeof(int), gpuMemcpyHostToDevice));
 	checkGPU(gpuMemset(flag_rd_q, 0, RDMA_FLAG_SIZE * nlb * 2 * sizeof(int)));
     checkGPU(gpuMemset(flag_bc_q, 0, RDMA_FLAG_SIZE * (k+1)  * sizeof(int)));
 	//printf("2-(%d) maxrecvsz=%d,ready_x=%d, RDMA_FLAG_SIZE=%d,k=%d\n",iam,maxrecvsz,maxrecvsz*CEILING( nsupers, grid->npcol),RDMA_FLAG_SIZE,k);
 	//fflush(stdout);
-
     dlsum_fmod_inv_gpu_wrap(k,nlb,DIM_X,DIM_Y,d_lsum,d_x,nrhs,knsupc,nsupers,d_fmod,Llu->d_LBtree_ptr,Llu->d_LRtree_ptr,Llu->d_ilsum,Llu->d_Lrowind_bc_dat, Llu->d_Lrowind_bc_offset, Llu->d_Lnzval_bc_dat, Llu->d_Lnzval_bc_offset, Llu->d_Linv_bc_dat, Llu->d_Linv_bc_offset, Llu->d_Lindval_loc_bc_dat, Llu->d_Lindval_loc_bc_offset,Llu->d_xsup,d_grid,maxrecvsz,
-	                        flag_bc_q, flag_rd_q, ready_x, ready_lsum,my_flag_bc, my_flag_rd, d_launch_flag, d_nfrecv, d_status);
+	                        flag_bc_q, flag_rd_q, ready_x, ready_lsum,my_flag_bc, my_flag_rd, d_launch_flag, d_nfrecv, h_nfrecv,d_status,d_colnum,d_mynum,d_mymaskstart,d_mymasklength);
 
 	checkGPU(gpuMemcpy(x, d_x, (ldalsum * nrhs + nlb * XK_H) * sizeof(double), gpuMemcpyDeviceToHost));
+
 
 	checkGPU (gpuFree (d_grid));
 	checkGPU (gpuFree (d_x));
@@ -1701,7 +1681,7 @@ dGenCOOLblocks(iam, nsupers, grid,Glu_persist,Llu, cooRows, cooCols, cooVals, &n
 	checkGPU (gpuFree (d_fmod));
 
 // #if HAVE_CUDA
-// cudaProfilerStop(); 
+ //cudaProfilerStop();
 // #elif defined(HAVE_HIP)
 // roctracer_mark("after HIP LaunchKernel");
 // roctxMark("after hipLaunchKernel");

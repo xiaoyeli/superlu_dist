@@ -10,9 +10,15 @@ extern double *ready_lsum;
 extern int *mystatus;
 extern int *d_launch_flag;
 extern int *d_nfrecv;
+extern int *h_nfrecv;
 extern int *d_status;
+extern int *d_colnum;
+extern int *d_mynum;
+extern int *d_mymaskstart;
+extern int *d_mymasklength;
 #define RDMA_FLAG_SIZE 4
-#define NVSHMEM_SIZES 10
+
+
 
 #undef CUDA_CHECK
 #define CUDA_CHECK(stmt)                                                          \

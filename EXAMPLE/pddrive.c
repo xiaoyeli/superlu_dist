@@ -77,6 +77,7 @@ int main(int argc, char *argv[])
     //MPI_Init_thread( &argc, &argv, MPI_THREAD_MULTIPLE, &omp_mpi_level);
     nv_init_wrapper(&argc,argv,&omp_mpi_level);
 
+
 #if ( VAMPIR>=1 )
     VT_traceoff(); 
 #endif
@@ -267,7 +268,6 @@ out:
     //nvshmem_free(ready_lsum);
     //nvshmem_free(flag_bc_q);
     //nvshmem_free(flag_rd_q);
-
     nvshmem_finalize();
     MPI_Finalize();
 
