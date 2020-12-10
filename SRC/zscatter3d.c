@@ -262,8 +262,8 @@ zblock_gemm_scatter_lock( int_t lb, int_t j,
 
     /* calling ZGEMM */
     superlu_zgemm("N", "N", temp_nbrow, ncols, ldu, alpha,
-           L_mat[(knsupc - ldu)*ldl + cum_nrow], ldl,
-           U_mat[st_col * ldu], ldu, beta, tempv1, temp_nbrow);
+           &L_mat[(knsupc - ldu)*ldl + cum_nrow], ldl,
+           &U_mat[st_col * ldu], ldu, beta, tempv1, temp_nbrow);
     
 #if 0 // replaced by superlu_zgemm    
 #if 1
