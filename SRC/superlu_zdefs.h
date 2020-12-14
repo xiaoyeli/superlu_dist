@@ -36,11 +36,58 @@ at the top-level directory.
 #include "superlu_defs.h"
 #include "dcomplex.h"
 
+/* 
+ *-- The structure used to store matrix A of the linear system and
+ *   several vectors describing the transformations done to matrix A.
+ *
+ * A      (SuperMatrix*)
+ *        Matrix A in A*X=B, of dimension (A->nrow, A->ncol).
+ *        The number of linear equations is A->nrow. The type of A can be:
+ *        Stype = SLU_NC; Dtype = SLU_D; Mtype = SLU_GE.
+ *         
+ * DiagScale  (DiagScale_t)
+ *        Specifies the form of equilibration that was done.
+ *        = NOEQUIL: No equilibration.
+ *        = ROW:  Row equilibration, i.e., A was premultiplied by diag(R).
+ *        = COL:  Column equilibration, i.e., A was postmultiplied by diag(C).
+ *        = BOTH: Both row and column equilibration, i.e., A was replaced 
+ *                 by diag(R)*A*diag(C).
+ *
+ * R      double*, dimension (A->nrow)
+ *        The row scale factors for A.
+ *        If DiagScale = ROW or BOTH, A is multiplied on the left by diag(R).
+ *        If DiagScale = NOEQUIL or COL, R is not defined.
+ *
+ * C      double*, dimension (A->ncol)
+ *        The column scale factors for A.
+ *        If DiagScale = COL or BOTH, A is multiplied on the right by diag(C).
+ *        If DiagScale = NOEQUIL or ROW, C is not defined.
+ *         
+ * perm_r (int*) dimension (A->nrow)
+ *        Row permutation vector which defines the permutation matrix Pr,
+ *        perm_r[i] = j means row i of A is in position j in Pr*A.
+ *
+ * perm_c (int*) dimension (A->ncol)
+ *	  Column permutation vector, which defines the 
+ *        permutation matrix Pc; perm_c[i] = j means column i of A is 
+ *        in position j in A*Pc.
+ *
+ */
+typedef struct {
+    DiagScale_t DiagScale;
+    double *R;
+    double *C; 
+    int_t  *perm_r;
+    int_t  *perm_c;
+} zScalePermstruct_t;
+
+#if 0 // Sherry: move to superlu_defs.h 
 /*-- Auxiliary data type used in PxGSTRS/PxGSTRS1. */
 typedef struct {
     int_t lbnum;  /* Row block number (local).      */
     int_t indpos; /* Starting position in Uindex[]. */
 } Ucb_indptr_t;
+#endif
 
 /*
  * On each processor, the blocks in L are stored in compressed block
@@ -133,15 +180,15 @@ typedef struct {
     int_t nleaf;
     int_t nfrecvmod;
     int_t inv; /* whether the diagonal block is inverted*/
-} LocalLU_t;
+} zLocalLU_t;
 
 
 typedef struct {
     int_t *etree;
     Glu_persist_t *Glu_persist;
-    LocalLU_t *Llu;
-	char dt;
-} LUstruct_t;
+    zLocalLU_t *Llu;
+    char dt;
+} zLUstruct_t;
 
 
 /*-- Data structure for communication during matrix-vector multiplication. */
@@ -178,8 +225,112 @@ typedef struct {
                              positions in the gathered x-vector.
                              This is re-used in repeated calls to pzgsmv() */
     int_t *xrow_to_proc; /* used by PDSLin */
-} SOLVEstruct_t;
+} zSOLVEstruct_t;
 
+
+/*==== For 3D code ====*/
+
+// new structures for pdgstrf_4_8 
+
+typedef struct
+{
+    int_t nub;
+    int_t klst;
+    int_t ldu;
+    int_t* usub;
+    doublecomplex* uval;
+} uPanelInfo_t;
+
+typedef struct
+{
+    int_t *lsub;
+    doublecomplex *lusup;
+    int_t luptr0;
+    int_t nlb;  //number of l blocks
+    int_t nsupr;
+} lPanelInfo_t;
+
+ 
+
+/* HyP_t is the data structure to assist HALO offload of Schur-complement. */
+typedef struct
+{
+    Remain_info_t *lookAhead_info, *Remain_info;
+    Ublock_info_t *Ublock_info, *Ublock_info_Phi;
+    
+    int_t first_l_block_acc , first_u_block_acc;
+    int_t last_offload ;
+    int_t *Lblock_dirty_bit, * Ublock_dirty_bit;
+    doublecomplex *lookAhead_L_buff, *Remain_L_buff;
+    int_t lookAheadBlk;  /* number of blocks in look-ahead window */
+    int_t RemainBlk ;    /* number of blocks outside look-ahead window */
+    int_t  num_look_aheads, nsupers;
+    int_t ldu, ldu_Phi;
+    int_t num_u_blks, num_u_blks_Phi;
+
+    int_t jj_cpu;
+    doublecomplex *bigU_Phi;
+    doublecomplex *bigU_host;
+    int_t Lnbrow;
+    int_t Rnbrow;
+
+    int_t buffer_size;
+    int_t bigu_size;
+    int_t offloadCondition;
+    int_t superlu_acc_offload;
+    int_t nCudaStreams;
+} HyP_t;
+
+typedef struct 
+{
+    int_t * Lsub_buf ;
+    doublecomplex * Lval_buf ;
+    int_t * Usub_buf ;
+    doublecomplex * Uval_buf ;
+} zLUValSubBuf_t;
+
+int_t scuStatUpdate(
+    int_t knsupc,
+    HyP_t* HyP, 
+    SCT_t* SCT,
+    SuperLUStat_t *stat
+    );
+
+typedef struct
+{
+    gEtreeInfo_t gEtreeInfo;
+    int_t* iperm_c_supno;
+    int_t* myNodeCount;
+    int_t* myTreeIdxs;
+    int_t* myZeroTrIdxs;
+    int_t** treePerm;
+    sForest_t** sForests;
+    int_t* supernode2treeMap;
+    zLUValSubBuf_t  *LUvsb;
+} trf3Dpartition_t;
+
+typedef struct
+{
+    doublecomplex *bigU;
+    doublecomplex *bigV;
+} scuBufs_t;
+
+typedef struct
+{   
+    doublecomplex* BlockLFactor;
+    doublecomplex* BlockUFactor;
+} diagFactBufs_t;
+
+typedef struct
+{
+    Ublock_info_t* Ublock_info;
+    Remain_info_t*  Remain_info;
+    uPanelInfo_t* uPanelInfo;
+    lPanelInfo_t* lPanelInfo;
+} packLUInfo_t;
+
+#endif
+/*=====================*/
 
 /*==== For 3D code ====*/
 
@@ -334,6 +485,10 @@ extern int     zcreate_matrix_dat(SuperMatrix *, int, doublecomplex **, int *,
 extern int zcreate_matrix_postfix(SuperMatrix *, int, doublecomplex **, int *,
 				  doublecomplex **, int *, FILE *, char *, gridinfo_t *);
 
+extern void   zScalePermstructInit(const int_t, const int_t, 
+                                      zScalePermstruct_t *);
+extern void   zScalePermstructFree(zScalePermstruct_t *);
+
 /* Driver related */
 extern void    zgsequ_dist (SuperMatrix *, double *, double *, double *,
 			    double *, double *, int_t *);
@@ -357,93 +512,99 @@ extern int     sp_zgemm_dist (char *, int, doublecomplex, SuperMatrix *,
                         doublecomplex *, int, doublecomplex, doublecomplex *, int);
 
 extern float zdistribute(fact_t, int_t, SuperMatrix *, Glu_freeable_t *,
-			 LUstruct_t *, gridinfo_t *);
+			 zLUstruct_t *, gridinfo_t *);
 extern void  pzgssvx_ABglobal(superlu_dist_options_t *, SuperMatrix *,
-			      ScalePermstruct_t *, doublecomplex *,
-			      int, int, gridinfo_t *, LUstruct_t *, double *,
+			      zScalePermstruct_t *, doublecomplex *,
+			      int, int, gridinfo_t *, zLUstruct_t *, double *,
 			      SuperLUStat_t *, int *);
 extern float pzdistribute(fact_t, int_t, SuperMatrix *,
-			 ScalePermstruct_t *, Glu_freeable_t *,
-			 LUstruct_t *, gridinfo_t *);
+			 zScalePermstruct_t *, Glu_freeable_t *,
+			 zLUstruct_t *, gridinfo_t *);
 extern void  pzgssvx(superlu_dist_options_t *, SuperMatrix *,
-		     ScalePermstruct_t *, doublecomplex *,
-		     int, int, gridinfo_t *, LUstruct_t *,
-		     SOLVEstruct_t *, double *, SuperLUStat_t *, int *);
-extern void  pzCompute_Diag_Inv(int_t, LUstruct_t *,gridinfo_t *, SuperLUStat_t *, int *);
+		     zScalePermstruct_t *, doublecomplex *,
+		     int, int, gridinfo_t *, zLUstruct_t *,
+		     zSOLVEstruct_t *, double *, SuperLUStat_t *, int *);
+extern void  pzCompute_Diag_Inv(int_t, zLUstruct_t *,gridinfo_t *, SuperLUStat_t *, int *);
 extern int  zSolveInit(superlu_dist_options_t *, SuperMatrix *, int_t [], int_t [],
-		       int_t, LUstruct_t *, gridinfo_t *, SOLVEstruct_t *);
-extern void zSolveFinalize(superlu_dist_options_t *, SOLVEstruct_t *);
-extern int_t pxgstrs_init(int_t, int_t, int_t, int_t,
+		       int_t, zLUstruct_t *, gridinfo_t *, zSOLVEstruct_t *);
+extern void zSolveFinalize(superlu_dist_options_t *, zSOLVEstruct_t *);
+extern int_t pzgstrs_init(int_t, int_t, int_t, int_t,
                           int_t [], int_t [], gridinfo_t *grid,
-	                  Glu_persist_t *, SOLVEstruct_t *);
+	                  Glu_persist_t *, zSOLVEstruct_t *);
 extern void pxgstrs_finalize(pxgstrs_comm_t *);
 extern int  zldperm_dist(int_t, int_t, int_t, int_t [], int_t [],
 		    doublecomplex [], int_t *, double [], double []);
-extern int  static_schedule(superlu_dist_options_t *, int, int,
-		            LUstruct_t *, gridinfo_t *, SuperLUStat_t *,
+extern int  zstatic_schedule(superlu_dist_options_t *, int, int,
+		            zLUstruct_t *, gridinfo_t *, SuperLUStat_t *,
 			    int_t *, int_t *, int *);
-extern void LUstructInit(const int_t, LUstruct_t *);
-extern void LUstructFree(LUstruct_t *);
-extern void Destroy_LU(int_t, gridinfo_t *, LUstruct_t *);
-extern void Destroy_Tree(int_t, gridinfo_t *, LUstruct_t *);
+extern void zLUstructInit(const int_t, zLUstruct_t *);
+extern void zLUstructFree(zLUstruct_t *);
+extern void zDestroy_LU(int_t, gridinfo_t *, zLUstruct_t *);
+extern void zDestroy_Tree(int_t, gridinfo_t *, zLUstruct_t *);
 extern void zscatter_l (int ib, int ljb, int nsupc, int_t iukp, int_t* xsup,
 			int klst, int nbrow, int_t lptr, int temp_nbrow,
 			int_t* usub, int_t* lsub, doublecomplex *tempv,
 			int* indirect_thread, int* indirect2,
 			int_t ** Lrowind_bc_ptr, doublecomplex **Lnzval_bc_ptr,
 			gridinfo_t * grid);
-extern void dscatter_u (int ib, int jb, int nsupc, int_t iukp, int_t * xsup,
+extern void zscatter_u (int ib, int jb, int nsupc, int_t iukp, int_t * xsup,
                         int klst, int nbrow, int_t lptr, int temp_nbrow,
                         int_t* lsub, int_t* usub, doublecomplex* tempv,
                         int_t ** Ufstnz_br_ptr, doublecomplex **Unzval_br_ptr,
                         gridinfo_t * grid);
 extern int_t pzgstrf(superlu_dist_options_t *, int, int, double,
-		    LUstruct_t*, gridinfo_t*, SuperLUStat_t*, int*);
+		    zLUstruct_t*, gridinfo_t*, SuperLUStat_t*, int*);
 
 /* #define GPU_PROF
 #define IPM_PROF */
 
 /* Solve related */
-extern void pzgstrs_Bglobal(int_t, LUstruct_t *, gridinfo_t *,
+extern void pzgstrs_Bglobal(int_t, zLUstruct_t *, gridinfo_t *,
 			     doublecomplex *, int_t, int, SuperLUStat_t *, int *);
-extern void pzgstrs(int_t, LUstruct_t *, ScalePermstruct_t *, gridinfo_t *,
-		    doublecomplex *, int_t, int_t, int_t, int, SOLVEstruct_t *,
+extern void pzgstrs(int_t, zLUstruct_t *, zScalePermstruct_t *, gridinfo_t *,
+		    doublecomplex *, int_t, int_t, int_t, int, zSOLVEstruct_t *,
 		    SuperLUStat_t *, int *);
+extern void pzgstrf2_trsm(superlu_dist_options_t * options, int_t k0, int_t k,
+			  double thresh, Glu_persist_t *, gridinfo_t *,
+			  zLocalLU_t *, MPI_Request *, int tag_ub,
+			  SuperLUStat_t *, int *info);
+extern void pzgstrs2_omp(int_t k0, int_t k, Glu_persist_t *, gridinfo_t *,
+			 zLocalLU_t *, Ublock_info_t *, SuperLUStat_t *);
 extern int_t pzReDistribute_B_to_X(doublecomplex *B, int_t m_loc, int nrhs, int_t ldb,
 				   int_t fst_row, int_t *ilsum, doublecomplex *x,
-				   ScalePermstruct_t *, Glu_persist_t *,
-				   gridinfo_t *, SOLVEstruct_t *);
+				   zScalePermstruct_t *, Glu_persist_t *,
+				   gridinfo_t *, zSOLVEstruct_t *);
 extern void zlsum_fmod(doublecomplex *, doublecomplex *, doublecomplex *, doublecomplex *,
 		       int, int, int_t , int_t *, int_t, int_t, int_t,
-		       int_t *, gridinfo_t *, LocalLU_t *,
+		       int_t *, gridinfo_t *, zLocalLU_t *,
 		       MPI_Request [], SuperLUStat_t *);
 extern void zlsum_bmod(doublecomplex *, doublecomplex *, doublecomplex *,
                        int, int_t, int_t *, int_t *, Ucb_indptr_t **,
-                       int_t **, int_t *, gridinfo_t *, LocalLU_t *,
+                       int_t **, int_t *, gridinfo_t *, zLocalLU_t *,
 		       MPI_Request [], SuperLUStat_t *);
 
 extern void zlsum_fmod_inv(doublecomplex *, doublecomplex *, doublecomplex *, doublecomplex *,
 		       int, int_t , int_t *,
-		       int_t *, gridinfo_t *, LocalLU_t *,
+		       int_t *, gridinfo_t *, zLocalLU_t *,
 		       SuperLUStat_t **, int_t *, int_t *, int_t, int_t, int_t, int_t, int, int);
 extern void zlsum_fmod_inv_master(doublecomplex *, doublecomplex *, doublecomplex *, doublecomplex *,
 		       int, int, int_t , int_t *, int_t,
-		       int_t *, gridinfo_t *, LocalLU_t *,
+		       int_t *, gridinfo_t *, zLocalLU_t *,
 		       SuperLUStat_t **, int_t, int_t, int_t, int_t, int, int);
 extern void zlsum_bmod_inv(doublecomplex *, doublecomplex *, doublecomplex *, doublecomplex *,
                        int, int_t, int_t *, int_t *, Ucb_indptr_t **,
-                       int_t **, int_t *, gridinfo_t *, LocalLU_t *,
+                       int_t **, int_t *, gridinfo_t *, zLocalLU_t *,
 		       SuperLUStat_t **, int_t *, int_t *, int_t, int_t, int, int);
 extern void zlsum_bmod_inv_master(doublecomplex *, doublecomplex *, doublecomplex *, doublecomplex *,
                        int, int_t, int_t *, int_t *, Ucb_indptr_t **,
-                       int_t **, int_t *, gridinfo_t *, LocalLU_t *,
+                       int_t **, int_t *, gridinfo_t *, zLocalLU_t *,
 		       SuperLUStat_t **, int_t, int_t, int, int);
 
-extern void pzgsrfs(int_t, SuperMatrix *, double, LUstruct_t *,
-		    ScalePermstruct_t *, gridinfo_t *,
+extern void pzgsrfs(int_t, SuperMatrix *, double, zLUstruct_t *,
+		    zScalePermstruct_t *, gridinfo_t *,
 		    doublecomplex [], int_t, doublecomplex [], int_t, int,
-		    SOLVEstruct_t *, double *, SuperLUStat_t *, int *);
-extern void pzgsrfs_ABXglobal(int_t, SuperMatrix *, double, LUstruct_t *,
+		    zSOLVEstruct_t *, double *, SuperLUStat_t *, int *);
+extern void pzgsrfs_ABXglobal(int_t, SuperMatrix *, double, zLUstruct_t *,
 		  gridinfo_t *, doublecomplex *, int_t, doublecomplex *, int_t,
 		  int, double *, SuperLUStat_t *, int *);
 extern int   pzgsmv_AXglobal_setup(SuperMatrix *, Glu_persist_t *,
@@ -466,7 +627,7 @@ extern double  *doubleMalloc_dist(int_t);
 extern double  *doubleCalloc_dist(int_t);
 extern void  *duser_malloc_dist (int_t, int_t);
 extern void  duser_free_dist (int_t, int_t);
-extern int_t zQuerySpace_dist(int_t, LUstruct_t *, gridinfo_t *,
+extern int_t zQuerySpace_dist(int_t, zLUstruct_t *, gridinfo_t *,
 			      SuperLUStat_t *, superlu_dist_mem_usage_t *);
 
 /* Auxiliary routines */
@@ -476,7 +637,7 @@ extern void zCopy_CompRowLoc_Matrix_dist(SuperMatrix *, SuperMatrix *);
 extern void zZero_CompRowLoc_Matrix_dist(SuperMatrix *);
 extern void zScaleAddId_CompRowLoc_Matrix_dist(SuperMatrix *, doublecomplex);
 extern void zScaleAdd_CompRowLoc_Matrix_dist(SuperMatrix *, SuperMatrix *, doublecomplex);
-extern void zZeroLblocks(int, int_t, gridinfo_t *, LUstruct_t *);
+extern void zZeroLblocks(int, int_t, gridinfo_t *, zLUstruct_t *);
 extern void    zfill_dist (doublecomplex *, int_t, doublecomplex);
 extern void    zinf_norm_error_dist (int_t, int_t, doublecomplex*, int_t,
                                      doublecomplex*, int_t, gridinfo_t*);
@@ -497,16 +658,17 @@ extern int  zread_binary(FILE *, int_t *, int_t *, int_t *,
 
 /* Distribute the data for numerical factorization */
 extern float zdist_psymbtonum(fact_t, int_t, SuperMatrix *,
-                                ScalePermstruct_t *, Pslu_freeable_t *,
-                                LUstruct_t *, gridinfo_t *);
-extern void pzGetDiagU(int_t, LUstruct_t *, gridinfo_t *, doublecomplex *);
+                                zScalePermstruct_t *, Pslu_freeable_t *,
+                                zLUstruct_t *, gridinfo_t *);
+extern void pzGetDiagU(int_t, zLUstruct_t *, gridinfo_t *, doublecomplex *);
 
+extern int  z_c2cpp_GetHWPM(SuperMatrix *, gridinfo_t *, zScalePermstruct_t *);
 
 /* Routines for debugging */
 extern void  zPrintLblocks(int, int_t, gridinfo_t *, Glu_persist_t *,
-		 	   LocalLU_t *);
+		 	   zLocalLU_t *);
 extern void  zPrintUblocks(int, int_t, gridinfo_t *, Glu_persist_t *,
-			   LocalLU_t *);
+			   zLocalLU_t *);
 extern void  zPrint_CompCol_Matrix_dist(SuperMatrix *);
 extern void  zPrint_Dense_Matrix_dist(SuperMatrix *);
 extern int   zPrint_CompRowLoc_Matrix_dist(SuperMatrix *);
@@ -529,8 +691,9 @@ extern void ztrsm_(const char*, const char*, const char*, const char*,
 extern void zgemv_(const char *, const int *, const int *, const doublecomplex *,
                   const doublecomplex *a, const int *, const doublecomplex *, const int *,
 		  const doublecomplex *, doublecomplex *, const int *, int);
-
+    
 #else
+    
 extern int zgemm_(const char*, const char*, const int*, const int*, const int*,
                    const doublecomplex*,  const doublecomplex*,  const int*,  const doublecomplex*,
                    const int*,  const doublecomplex*, doublecomplex*, const int*);
@@ -542,6 +705,7 @@ extern int ztrsm_(const char*, const char*, const char*, const char*,
 extern void zgemv_(const char *, const int *, const int *, const doublecomplex *,
                   const doublecomplex *a, const int *, const doublecomplex *, const int *,
 		  const doublecomplex *, doublecomplex *, const int *);
+    
 #endif
 
 extern void zgeru_(const int*, const int*, const doublecomplex*,
@@ -706,42 +870,11 @@ extern int* getLastDep(gridinfo_t *grid, SuperLUStat_t *stat,
 		       int_t* xsup, int_t num_look_aheads, int_t nsupers,
 		       int_t * iperm_c_supno);
 
-extern void zinit3DLUstructForest( int_t* myTreeIdxs, int_t* myZeroTrIdxs,
-				  sForest_t**  sForests, LUstruct_t* LUstruct,
-				  gridinfo3d_t* grid3d);
-
-extern int_t zgatherAllFactoredLUFr(int_t* myZeroTrIdxs, sForest_t* sForests,
-				   LUstruct_t* LUstruct, gridinfo3d_t* grid3d,
-				   SCT_t* SCT );
-
-    /* The following are from pdgstrf2.h */
-#if 0 // Sherry: same routine names, but different code !!!!!!!
-extern void pzgstrf2_trsm(superlu_dist_options_t *options, int_t, int_t,
-                          int_t k, double thresh, Glu_persist_t *,
-			  gridinfo_t *, LocalLU_t *, MPI_Request *U_diag_blk_send_req,
-			  int tag_ub, SuperLUStat_t *, int *info, SCT_t *);
-#ifdef _CRAY
-void pzgstrs2_omp (int_t, int_t, int_t, Glu_persist_t *, gridinfo_t *,
-                      LocalLU_t *, SuperLUStat_t *, _fcd, _fcd, _fcd);
-#else
-void pzgstrs2_omp (int_t, int_t, int_t, int_t *, doublecomplex*, Glu_persist_t *, gridinfo_t *,
-                      LocalLU_t *, SuperLUStat_t *, Ublock_info_t *, doublecomplex *bigV, int_t ldt, SCT_t *SCT );
-#endif
-
-#else 
-extern void pzgstrf2_trsm(superlu_dist_options_t * options, int_t k0, int_t k,
-			  double thresh, Glu_persist_t *, gridinfo_t *,
-			  LocalLU_t *, MPI_Request *, int tag_ub,
-			  SuperLUStat_t *, int *info);
-extern void pzgstrs2_omp(int_t k0, int_t k, Glu_persist_t *, gridinfo_t *,
-			 LocalLU_t *, Ublock_info_t *, SuperLUStat_t *);
-#endif // same routine names   !!!!!!!!
-
 extern int_t zLpanelUpdate(int_t off0, int_t nsupc, doublecomplex* ublk_ptr,
 			  int_t ld_ujrow, doublecomplex* lusup, int_t nsupr, SCT_t*);
 extern void Local_Zgstrf2(superlu_dist_options_t *options, int_t k,
 			  double thresh, doublecomplex *BlockUFactor, Glu_persist_t *,
-			  gridinfo_t *, LocalLU_t *,
+			  gridinfo_t *, zLocalLU_t *,
                           SuperLUStat_t *, int *info, SCT_t*);
 extern int_t zTrs2_GatherU(int_t iukp, int_t rukp, int_t klst,
 			  int_t nsupc, int_t ldu, int_t *usub,
@@ -757,34 +890,34 @@ extern void pzgstrs2
 #ifdef _CRAY
 (
     int_t m, int_t k0, int_t k, Glu_persist_t *Glu_persist, gridinfo_t *grid,
-    LocalLU_t *Llu, SuperLUStat_t *stat, _fcd ftcs1, _fcd ftcs2, _fcd ftcs3
+    zLocalLU_t *Llu, SuperLUStat_t *stat, _fcd ftcs1, _fcd ftcs2, _fcd ftcs3
 );
 #else
 (
     int_t m, int_t k0, int_t k, Glu_persist_t *Glu_persist, gridinfo_t *grid,
-    LocalLU_t *Llu, SuperLUStat_t *stat
+    zLocalLU_t *Llu, SuperLUStat_t *stat
 );
 #endif
 
 extern void pzgstrf2(superlu_dist_options_t *, int_t nsupers, int_t k0,
 		     int_t k, double thresh, Glu_persist_t *, gridinfo_t *,
-		     LocalLU_t *, MPI_Request *, int, SuperLUStat_t *, int *);
+		     zLocalLU_t *, MPI_Request *, int, SuperLUStat_t *, int *);
 
     /* from p3dcomm.h */
-extern int_t zAllocLlu_3d(int_t nsupers, LUstruct_t * LUstruct, gridinfo3d_t* grid3d);
-extern int_t zp3dScatter(int_t n, LUstruct_t * LUstruct, gridinfo3d_t* grid3d);
+extern int_t zAllocLlu_3d(int_t nsupers, zLUstruct_t * LUstruct, gridinfo3d_t* grid3d);
+extern int_t zp3dScatter(int_t n, zLUstruct_t * LUstruct, gridinfo3d_t* grid3d);
 extern int_t zscatter3dLPanels(int_t nsupers,
-                       LUstruct_t * LUstruct, gridinfo3d_t* grid3d);
+                       zLUstruct_t * LUstruct, gridinfo3d_t* grid3d);
 extern int_t zscatter3dUPanels(int_t nsupers,
-                       LUstruct_t * LUstruct, gridinfo3d_t* grid3d);
-extern int_t zcollect3dLpanels(int_t layer, int_t nsupers, LUstruct_t * LUstruct, gridinfo3d_t* grid3d);
-extern int_t zcollect3dUpanels(int_t layer, int_t nsupers, LUstruct_t * LUstruct, gridinfo3d_t* grid3d);
-extern int_t zp3dCollect(int_t layer, int_t n, LUstruct_t * LUstruct, gridinfo3d_t* grid3d);
+                       zLUstruct_t * LUstruct, gridinfo3d_t* grid3d);
+extern int_t zcollect3dLpanels(int_t layer, int_t nsupers, zLUstruct_t * LUstruct, gridinfo3d_t* grid3d);
+extern int_t zcollect3dUpanels(int_t layer, int_t nsupers, zLUstruct_t * LUstruct, gridinfo3d_t* grid3d);
+extern int_t zp3dCollect(int_t layer, int_t n, zLUstruct_t * LUstruct, gridinfo3d_t* grid3d);
 /*zero out LU non zero entries*/
-extern int_t zzeroSetLU(int_t nnodes, int_t* nodeList , LUstruct_t *, gridinfo3d_t*);
-extern int AllocGlu_3d(int_t n, int_t nsupers, LUstruct_t *);
-extern int DeAllocLlu_3d(int_t n, LUstruct_t *, gridinfo3d_t*);
-extern int DeAllocGlu_3d(LUstruct_t *);
+extern int_t zzeroSetLU(int_t nnodes, int_t* nodeList , zLUstruct_t *, gridinfo3d_t*);
+extern int AllocGlu_3d(int_t n, int_t nsupers, zLUstruct_t *);
+extern int DeAllocLlu_3d(int_t n, zLUstruct_t *, gridinfo3d_t*);
+extern int DeAllocGlu_3d(zLUstruct_t *);
 
 /* Reduces L and U panels of nodes in the List nodeList (size=nnnodes)
 receiver[L(nodelist)] =sender[L(nodelist)] +receiver[L(nodelist)]
@@ -793,12 +926,13 @@ receiver[U(nodelist)] =sender[U(nodelist)] +receiver[U(nodelist)]
 int_t zreduceAncestors3d(int_t sender, int_t receiver,
                         int_t nnodes, int_t* nodeList,
                         doublecomplex* Lval_buf, doublecomplex* Uval_buf,
-                        LUstruct_t* LUstruct,  gridinfo3d_t* grid3d, SCT_t* SCT);
+                        zLUstruct_t* LUstruct,  gridinfo3d_t* grid3d, SCT_t* SCT);
+
 /*reduces all nodelists required in a level*/
 int_t zreduceAllAncestors3d(int_t ilvl, int_t* myNodeCount,
                            int_t** treePerm,
                            zLUValSubBuf_t* LUvsb,
-                           LUstruct_t* LUstruct,
+                           zLUstruct_t* LUstruct,
                            gridinfo3d_t* grid3d,
                            SCT_t* SCT );
 /*
@@ -808,29 +942,29 @@ int_t zreduceAllAncestors3d(int_t ilvl, int_t* myNodeCount,
 */
 int_t zgatherFactoredLU(int_t sender, int_t receiver,
                        int_t nnodes, int_t *nodeList, zLUValSubBuf_t*  LUvsb,
-                       LUstruct_t* LUstruct, gridinfo3d_t* grid3d,SCT_t* SCT );
+                       zLUstruct_t* LUstruct, gridinfo3d_t* grid3d,SCT_t* SCT );
 
 /*Gathers all the L and U factors to grid 0 for solve stage 
 	By  repeatidly calling above function*/
-int_t zgatherAllFactoredLU(trf3Dpartition_t*  trf3Dpartition, LUstruct_t* LUstruct,
+int_t zgatherAllFactoredLU(trf3Dpartition_t*  trf3Dpartition, zLUstruct_t* LUstruct,
 			   gridinfo3d_t* grid3d, SCT_t* SCT );
 
 /*Distributes data in each layer and initilizes ancestors
  as zero in required nodes*/
 int_t zinit3DLUstruct( int_t* myTreeIdxs, int_t* myZeroTrIdxs,
                       int_t* nodeCount, int_t** nodeList,
-                      LUstruct_t* LUstruct, gridinfo3d_t* grid3d);
+                      zLUstruct_t* LUstruct, gridinfo3d_t* grid3d);
 
 int_t zzSendLPanel(int_t k, int_t receiver,
-		   LUstruct_t* LUstruct,  gridinfo3d_t* grid3d, SCT_t* SCT);
+		   zLUstruct_t* LUstruct,  gridinfo3d_t* grid3d, SCT_t* SCT);
 int_t zzRecvLPanel(int_t k, int_t sender, doublecomplex alpha, 
                    doublecomplex beta, doublecomplex* Lval_buf,
-		   LUstruct_t* LUstruct,  gridinfo3d_t* grid3d, SCT_t* SCT);
+		   zLUstruct_t* LUstruct,  gridinfo3d_t* grid3d, SCT_t* SCT);
 int_t zzSendUPanel(int_t k, int_t receiver,
-		   LUstruct_t* LUstruct,  gridinfo3d_t* grid3d, SCT_t* SCT);
+		   zLUstruct_t* LUstruct,  gridinfo3d_t* grid3d, SCT_t* SCT);
 int_t zzRecvUPanel(int_t k, int_t sender, doublecomplex alpha,
                    doublecomplex beta, doublecomplex* Uval_buf,
-		   LUstruct_t* LUstruct,  gridinfo3d_t* grid3d, SCT_t* SCT);
+		   zLUstruct_t* LUstruct,  gridinfo3d_t* grid3d, SCT_t* SCT);
 
     /* from communication_aux.h */
 extern int_t zIBcast_LPanel (int_t k, int_t k0, int_t* lsub, doublecomplex* lusup,
@@ -863,7 +997,7 @@ extern int_t zRecv_UDiagBlock(int_t k0, doublecomplex *ublk_ptr, int_t size,
 extern int_t Wait_UDiagBlockSend(MPI_Request *, gridinfo_t *, SCT_t *);
 extern int_t Wait_LDiagBlockSend(MPI_Request *, gridinfo_t *, SCT_t *);
 extern int_t zPackLBlock(int_t k, doublecomplex* Dest, Glu_persist_t *,
-			 gridinfo_t *, LocalLU_t *);
+			 gridinfo_t *, zLocalLU_t *);
 extern int_t zISend_LDiagBlock(int_t k0, doublecomplex *lblk_ptr, int_t size,
 			       MPI_Request *, gridinfo_t *, int);
 extern int_t zIRecv_UDiagBlock(int_t k0, doublecomplex *ublk_ptr, int_t size,
@@ -877,7 +1011,7 @@ extern int_t Wait_LDiagBlock_Recv(MPI_Request *, SCT_t *);
 extern int_t Test_LDiagBlock_Recv(MPI_Request *, SCT_t *);
 
 extern int_t zUDiagBlockRecvWait( int_t k,  int_t* IrecvPlcd_D, int_t* factored_L,
-				  MPI_Request *, gridinfo_t *, LUstruct_t *, SCT_t *);
+				  MPI_Request *, gridinfo_t *, zLUstruct_t *, SCT_t *);
 extern int_t LDiagBlockRecvWait( int_t k, int_t* factored_U, MPI_Request *, gridinfo_t *);
 #if (MPI_VERSION>2)
 extern int_t zIBcast_UDiagBlock(int_t k, doublecomplex *ublk_ptr, int_t size,
@@ -892,37 +1026,37 @@ extern int_t zDiagFactIBCast(int_t k,  int_t k0,
 			     int_t* IrecvPlcd_D, MPI_Request *, MPI_Request *,
 			     MPI_Request *, MPI_Request *, gridinfo_t *,
 			     superlu_dist_options_t *, double thresh,
-			     LUstruct_t *LUstruct, SuperLUStat_t *, int *info,
+			     zLUstruct_t *LUstruct, SuperLUStat_t *, int *info,
 			     SCT_t *, int tag_ub);
 extern int_t zUPanelTrSolve( int_t k, doublecomplex* BlockLFactor, doublecomplex* bigV,
 			     int_t ldt, Ublock_info_t*, gridinfo_t *,
-			     LUstruct_t *, SuperLUStat_t *, SCT_t *);
+			     zLUstruct_t *, SuperLUStat_t *, SCT_t *);
 extern int_t Wait_LUDiagSend(int_t k, MPI_Request *, MPI_Request *,
 			     gridinfo_t *, SCT_t *);
 extern int_t zLPanelUpdate(int_t k,  int_t* IrecvPlcd_D, int_t* factored_L,
 			   MPI_Request *, doublecomplex* BlockUFactor, gridinfo_t *,
-			   LUstruct_t *, SCT_t *);
+			   zLUstruct_t *, SCT_t *);
 extern int_t zUPanelUpdate(int_t k, int_t* factored_U, MPI_Request *,
 			   doublecomplex* BlockLFactor, doublecomplex* bigV,
 			   int_t ldt, Ublock_info_t*, gridinfo_t *,
-			   LUstruct_t *, SuperLUStat_t *, SCT_t *);
+			   zLUstruct_t *, SuperLUStat_t *, SCT_t *);
 extern int_t zIBcastRecvLPanel(int_t k, int_t k0, int* msgcnt,
 			       MPI_Request *, MPI_Request *,
 			       int_t* Lsub_buf, doublecomplex* Lval_buf,
-			      int_t * factored, gridinfo_t *, LUstruct_t *,
+			      int_t * factored, gridinfo_t *, zLUstruct_t *,
 			      SCT_t *, int tag_ub);
 extern int_t zIBcastRecvUPanel(int_t k, int_t k0, int* msgcnt, MPI_Request *,
 			       MPI_Request *, int_t* Usub_buf, doublecomplex* Uval_buf,
-			       gridinfo_t *, LUstruct_t *, SCT_t *, int tag_ub);
+			       gridinfo_t *, zLUstruct_t *, SCT_t *, int tag_ub);
 extern int_t zWaitL(int_t k, int* msgcnt, int* msgcntU, MPI_Request *,
-		    MPI_Request *, gridinfo_t *, LUstruct_t *, SCT_t *);
+		    MPI_Request *, gridinfo_t *, zLUstruct_t *, SCT_t *);
 extern int_t zWaitU(int_t k, int* msgcnt, MPI_Request *, MPI_Request *,
-		   gridinfo_t *, LUstruct_t *, SCT_t *);
+		   gridinfo_t *, zLUstruct_t *, SCT_t *);
 extern int_t zLPanelTrSolve(int_t k, int_t* factored_L, doublecomplex* BlockUFactor,
-			    gridinfo_t *, LUstruct_t *);
+			    gridinfo_t *, zLUstruct_t *);
 
     /* from trfAux.h */
-extern int_t getNsupers(int, LUstruct_t *);
+extern int_t getNsupers(int, zLUstruct_t *);
 extern int_t initPackLUInfo(int_t nsupers, packLUInfo_t* packLUInfo);
 extern int   freePackLUInfo(packLUInfo_t* packLUInfo);
 extern int_t zSchurComplementSetup(int_t k, int *msgcnt, Ublock_info_t*,
@@ -930,24 +1064,24 @@ extern int_t zSchurComplementSetup(int_t k, int *msgcnt, Ublock_info_t*,
 				   lPanelInfo_t *, int_t*, int_t *, int_t *,
 				   doublecomplex *bigU, int_t* Lsub_buf,
 				   doublecomplex* Lval_buf, int_t* Usub_buf,
-				   doublecomplex* Uval_buf, gridinfo_t *, LUstruct_t *);
+				   doublecomplex* Uval_buf, gridinfo_t *, zLUstruct_t *);
 extern int_t zSchurComplementSetupGPU(int_t k, msgs_t* msgs, packLUInfo_t*,
 				      int_t*, int_t*, int_t*, gEtreeInfo_t*,
 				      factNodelists_t*, scuBufs_t*,
 				      zLUValSubBuf_t* LUvsb, gridinfo_t *,
-				      LUstruct_t *, HyP_t*);
+				      zLUstruct_t *, HyP_t*);
 extern doublecomplex* zgetBigV(int_t, int_t);
-extern doublecomplex* zgetBigU(int_t, gridinfo_t *, LUstruct_t *);
-extern int_t getBigUSize(int_t, gridinfo_t *, LUstruct_t *);
+extern doublecomplex* zgetBigU(int_t, gridinfo_t *, zLUstruct_t *);
+extern int_t getBigUSize(int_t, gridinfo_t *, zLUstruct_t *);
 // permutation from superLU default
 extern int_t* getPerm_c_supno(int_t nsupers, superlu_dist_options_t *,
-			      LUstruct_t *, gridinfo_t *);
-extern void getSCUweight(int_t nsupers, treeList_t* treeList, LUstruct_t *, gridinfo3d_t *);
+			      zLUstruct_t *, gridinfo_t *);
+extern void getSCUweight(int_t nsupers, treeList_t* treeList, zLUstruct_t *, gridinfo3d_t *);
 
     /* from treeFactorization.h */
-extern int_t zLluBufInit(zLUValSubBuf_t*, LUstruct_t *);
+extern int_t zLluBufInit(zLUValSubBuf_t*, zLUstruct_t *);
 extern int_t zinitScuBufs(int_t ldt, int_t num_threads, int_t nsupers,
-			  scuBufs_t*, LUstruct_t*, gridinfo_t *);
+			  scuBufs_t*, zLUstruct_t*, gridinfo_t *);
 extern int zfreeScuBufs(scuBufs_t* scuBufs);
 
 // the generic tree factoring code 
@@ -965,7 +1099,6 @@ extern int_t treeFactor(
     superlu_dist_options_t *options,
     int_t * gIperm_c_supno,
     int_t ldt,
-    LUstruct_t *LUstruct, gridinfo3d_t * grid3d, SuperLUStat_t *stat,
     double thresh,  SCT_t *SCT,
     int *info
 );
@@ -985,7 +1118,7 @@ extern int_t zsparseTreeFactor(
     superlu_dist_options_t *options,
     int_t * gIperm_c_supno,
     int_t ldt,
-    LUstruct_t *LUstruct, gridinfo3d_t * grid3d, SuperLUStat_t *stat,
+    zLUstruct_t *LUstruct, gridinfo3d_t * grid3d, SuperLUStat_t *stat,
     double thresh,  SCT_t *SCT,
     int *info
 );
@@ -1004,7 +1137,7 @@ extern int_t zdenseTreeFactor(
     superlu_dist_options_t *options,
     int_t * gIperm_c_supno,
     int_t ldt,
-    LUstruct_t *LUstruct, gridinfo3d_t * grid3d, SuperLUStat_t *stat,
+    zLUstruct_t *LUstruct, gridinfo3d_t * grid3d, SuperLUStat_t *stat,
     double thresh,  SCT_t *SCT, int tag_ub,
     int *info
 );
@@ -1024,11 +1157,11 @@ extern int_t zsparseTreeFactor_ASYNC(
     int_t * gIperm_c_supno,
     int_t ldt,
     HyP_t* HyP,
-    LUstruct_t *LUstruct, gridinfo3d_t * grid3d, SuperLUStat_t *stat,
+    zLUstruct_t *LUstruct, gridinfo3d_t * grid3d, SuperLUStat_t *stat,
     double thresh,  SCT_t *SCT, int tag_ub,
     int *info
 );
-extern zLUValSubBuf_t** zLluBufInitArr(int_t numLA, LUstruct_t *LUstruct);
+extern zLUValSubBuf_t** zLluBufInitArr(int_t numLA, zLUstruct_t *LUstruct);
 extern int zLluBufFreeArr(int_t numLA, zLUValSubBuf_t **LUvsbs);
 extern diagFactBufs_t** zinitDiagFactBufsArr(int_t mxLeafNode, int_t ldt, gridinfo_t* grid);
 extern int zfreeDiagFactBufsArr(int_t mxLeafNode, diagFactBufs_t** dFBufs);
@@ -1054,11 +1187,11 @@ extern int_t ancestorFactor(
     int_t * gIperm_c_supno,
     int_t ldt,
     HyP_t* HyP,
-    LUstruct_t *LUstruct, gridinfo3d_t * grid3d, SuperLUStat_t *stat,
+    zLUstruct_t *LUstruct, gridinfo3d_t * grid3d, SuperLUStat_t *stat,
     double thresh,  SCT_t *SCT, int tag_ub, int *info
 );
 
-/*=====================*/
+/*== end 3D prototypes =================*/
 
 #ifdef __cplusplus
   }

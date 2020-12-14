@@ -32,7 +32,7 @@ PROJECT_NAME           = SuperLU Distributed
 # if some version control system is used.
 
 PROJECT_NUMBER         = 7.0.0
-e
+
 # The OUTPUT_DIRECTORY tag is used to specify the (relative or absolute) 
 # base path where the generated documentation will be put. 
 # If a relative path is entered, it will be relative to the location 

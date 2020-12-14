@@ -21,7 +21,6 @@ at the top-level directory.
 </pre> 
 */
 #include <stdio.h>
-#include "Cnames.h"
 
 /* xerbla */
 int xerr_dist(char *srname, int *info)

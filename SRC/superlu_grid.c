@@ -21,8 +21,10 @@ at the top-level directory.
 
 #include "superlu_ddefs.h"
 
-/* Define global variable for MPI double complex derived data type */
+#if 0 // obsolete
+/* Define global variables */
 MPI_Datatype SuperLU_MPI_DOUBLE_COMPLEX = MPI_DATATYPE_NULL;
+#endif
 
 /*! \brief All processes in the MPI communicator must call this routine.
  */
@@ -45,8 +47,10 @@ void superlu_gridinit(MPI_Comm Bcomm, /* The base communicator upon which
 	ABORT("C main program must explicitly call MPI_Init()");
 
     MPI_Comm_size( Bcomm, &info );
-    if ( info < Np )
-	ABORT("Number of processes is smaller than NPROW * NPCOL");
+    if ( info < Np ) {
+	printf("Number of processes %d is smaller than NPROW * NPCOL %d", info, Np);
+	exit(-1);
+    }
 
     superlu_gridmap(Bcomm, nprow, npcol, usermap, nprow, grid);
     
@@ -72,13 +76,15 @@ void superlu_gridmap(
     int Np = nprow * npcol, mycol, myrow;
     int *pranks;
     int i, j, info;
-    
+
+#if 0 // older MPI doesn't support complex in C    
     /* Create datatype in C for MPI complex. */
     if ( SuperLU_MPI_DOUBLE_COMPLEX == MPI_DATATYPE_NULL ) {
 	MPI_Type_contiguous( 2, MPI_DOUBLE, &SuperLU_MPI_DOUBLE_COMPLEX );
 	MPI_Type_commit( &SuperLU_MPI_DOUBLE_COMPLEX );
     }
-
+#endif
+    
     /* Check MPI environment initialization. */
     MPI_Initialized( &info );
     if ( !info )
@@ -173,7 +179,11 @@ void superlu_gridexit(gridinfo_t *grid)
 	MPI_Comm_free( &grid->cscp.comm );
 	MPI_Comm_free( &grid->comm );
     }
+#if 0    
     if ( SuperLU_MPI_DOUBLE_COMPLEX != MPI_DATATYPE_NULL ) {
 	MPI_Type_free( &SuperLU_MPI_DOUBLE_COMPLEX );
+	SuperLU_MPI_DOUBLE_COMPLEX = MPI_DATATYPE_NULL; /* some MPI system does not set this
+							   to be NULL after Type_free */
     }
+#endif    
 }
