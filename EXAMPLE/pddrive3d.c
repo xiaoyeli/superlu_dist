@@ -105,9 +105,9 @@ main (int argc, char *argv[])
     superlu_dist_options_t options;
     SuperLUStat_t stat;
     SuperMatrix A;  // Now, A is on all 3D processes  
-    ScalePermstruct_t ScalePermstruct;
-    LUstruct_t LUstruct;
-    SOLVEstruct_t SOLVEstruct;
+    dScalePermstruct_t ScalePermstruct;
+    dLUstruct_t LUstruct;
+    dSOLVEstruct_t SOLVEstruct;
     gridinfo3d_t grid;
     double *berr;
     double *b, *xtrue;
@@ -336,8 +336,8 @@ main (int argc, char *argv[])
 #endif    
 
     /* Initialize ScalePermstruct and LUstruct. */
-    ScalePermstructInit (m, n, &ScalePermstruct);
-    LUstructInit (n, &LUstruct);
+    dScalePermstructInit (m, n, &ScalePermstruct);
+    dLUstructInit (n, &LUstruct);
 
     /* Initialize the statistics variables. */
     PStatInit (&stat);
@@ -362,21 +362,21 @@ main (int argc, char *argv[])
 
 	PStatPrint (&options, &stat, &(grid.grid2d)); /* Print 2D statistics.*/
 
-        Destroy_LU (n, &(grid.grid2d), &LUstruct);
+        dDestroy_LU (n, &(grid.grid2d), &LUstruct);
         if (options.SolveInitialized) {
             dSolveFinalize (&options, &SOLVEstruct);
         }
     } else { // Process layers not equal 0
-        DeAllocLlu_3d(n, &LUstruct, &grid);
-        DeAllocGlu_3d(&LUstruct);
+        dDeAllocLlu_3d(n, &LUstruct, &grid);
+        dDeAllocGlu_3d(&LUstruct);
     }
 
     Destroy_CompRowLoc_Matrix_dist (&A);
     SUPERLU_FREE (b);
     SUPERLU_FREE (xtrue);
     SUPERLU_FREE (berr);
-    ScalePermstructFree (&ScalePermstruct);
-    LUstructFree (&LUstruct);
+    dScalePermstructFree (&ScalePermstruct);
+    dLUstructFree (&LUstruct);
     PStatFree (&stat);
 
     /* ------------------------------------------------------------

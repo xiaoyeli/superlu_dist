@@ -424,6 +424,63 @@ void zScalePermstructFree(zScalePermstruct_t *ScalePermstruct)
     }
 }
 
+/*
+ * The following are from 3D code p3dcomm.c
+ */
+
+int zAllocGlu_3d(int_t n, int_t nsupers, zLUstruct_t * LUstruct)
+{
+    /*broadcasting Glu_persist*/
+    LUstruct->Glu_persist->xsup  = intMalloc_dist(nsupers+1); //INT_T_ALLOC(nsupers+1);
+    LUstruct->Glu_persist->supno = intMalloc_dist(n); //INT_T_ALLOC(n);
+    return 0;
+}
+
+// Sherry added
+int zDeAllocGlu_3d(zLUstruct_t * LUstruct)
+{
+    SUPERLU_FREE(LUstruct->Glu_persist->xsup);
+    SUPERLU_FREE(LUstruct->Glu_persist->supno);
+    return 0;
+}
+
+int zDeAllocLlu_3d(int_t n, zLUstruct_t * LUstruct, gridinfo3d_t* grid3d)
+{
+    int i, nbc, nbr, nsupers;
+    zLocalLU_t *Llu = LUstruct->Llu;
+
+    nsupers = (LUstruct->Glu_persist)->supno[n-1] + 1;
+
+    nbc = CEILING(nsupers, grid3d->npcol);
+    for (i = 0; i < nbc; ++i) 
+	if ( Llu->Lrowind_bc_ptr[i] ) {
+	    SUPERLU_FREE (Llu->Lrowind_bc_ptr[i]);
+#ifdef GPU_ACC
+	    checkCuda(cudaFreeHost(Llu->Lnzval_bc_ptr[i]));
+#else
+	    SUPERLU_FREE (Llu->Lnzval_bc_ptr[i]);
+#endif
+	}
+    SUPERLU_FREE (Llu->Lrowind_bc_ptr);
+    SUPERLU_FREE (Llu->Lnzval_bc_ptr);
+
+    nbr = CEILING(nsupers, grid3d->nprow);
+    for (i = 0; i < nbr; ++i)
+	if ( Llu->Ufstnz_br_ptr[i] ) {
+	    SUPERLU_FREE (Llu->Ufstnz_br_ptr[i]);
+	    SUPERLU_FREE (Llu->Unzval_br_ptr[i]);
+	}
+    SUPERLU_FREE (Llu->Ufstnz_br_ptr);
+    SUPERLU_FREE (Llu->Unzval_br_ptr);
+
+    /* The following can be freed after factorization. */
+    SUPERLU_FREE(Llu->ToRecv);
+    SUPERLU_FREE(Llu->ToSendD);
+    for (i = 0; i < nbc; ++i) SUPERLU_FREE(Llu->ToSendR[i]);
+    SUPERLU_FREE(Llu->ToSendR);
+    return 0;
+} /* zDeAllocLlu_3d */
+
 
 /**** Other utilities ****/
 void

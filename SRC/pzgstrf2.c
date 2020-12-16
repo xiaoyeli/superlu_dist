@@ -362,7 +362,6 @@ pzgstrf2_trsm
 }  /* PZGSTRF2_trsm */
 
 	
-#if 0 /* COMMENT OUT 3D CODE FOR NOW */
 
 /*****************************************************************************
  * The following functions are for the new pdgstrf2_ztrsm in the 3D code.
@@ -373,7 +372,7 @@ int_t LpanelUpdate(int_t off0,  int_t nsupc, doublecomplex* ublk_ptr, int_t ld_u
 {
     int_t l = nsupr - off0;
     doublecomplex alpha = {1.0, 0.0};
-    unsigned long long t1 = _rdtsc();
+    double t1 = SuperLU_timer_();
 
 #define GT  32
 #pragma omp parallel for
@@ -397,13 +396,13 @@ int_t LpanelUpdate(int_t off0,  int_t nsupc, doublecomplex* ublk_ptr, int_t ld_u
 
     } /* for i = ... */
 
-    t1 = _rdtsc() - t1;
+    t1 = SuperLU_timer_() - t1;
 
     SCT->trf2_flops += (double) l * (double)nsupc * (double)nsupc;
     SCT->trf2_time += t1;
     SCT->L_PanelUpdate_tl += t1;
     return 0;
-}
+} /* LpanelUpdate */
 
 #pragma GCC push_options
 #pragma GCC optimize ("O0")
@@ -413,7 +412,7 @@ void Local_Zgstrf2(superlu_dist_options_t *options, int_t k, double thresh,
                    Glu_persist_t *Glu_persist, gridinfo_t *grid, zLocalLU_t *Llu,
                    SuperLUStat_t *stat, int *info, SCT_t* SCT)
 {
-    //unsigned long long t1 = _rdtsc();
+    //double t1 = SuperLU_timer_();
     int_t *xsup = Glu_persist->xsup;
     doublecomplex alpha = {-1.0, 0.0}, zero = {0.0, 0.0}, one = {1.0, 0.0};
 
@@ -501,7 +500,7 @@ void Local_Zgstrf2(superlu_dist_options_t *options, int_t k, double thresh,
 
 
     //int_t thread_id = omp_get_thread_num();
-    // SCT->Local_Dgstrf2_Thread_tl[thread_id * CACHE_LINE_SIZE] += (double) ( _rdtsc() - t1);
+    // SCT->Local_Dgstrf2_Thread_tl[thread_id * CACHE_LINE_SIZE] += SuperLU_timer_() - t1;
 } /* Local_Zgstrf2 */
 
 #pragma GCC pop_options
@@ -743,9 +742,9 @@ int_t zTrs2_GatherTrsmScatter(int_t klst, int_t iukp, int_t rukp,
     return 0;
 }
 
-#endif /* END 3D CODE */
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 
+#if 1
 
 /*****************************************************************************
  * The following pdgstrf2_omp is improved for KNL, since Version 5.2.0.
@@ -894,7 +893,7 @@ void pzgstrs2_omp(int_t k0, int_t k, int_t* Lsub_buf,
 		  gridinfo_t *grid, zLocalLU_t *Llu, SuperLUStat_t *stat,
 		  Ublock_info_t *Ublock_info, doublecomplex *bigV, int_t ldt, SCT_t *SCT)
 {
-    unsigned long long t1 = _rdtsc();
+    double t1 = SuperLU_timer_();
     int_t *xsup = Glu_persist->xsup;
     /* Quick return. */
     int_t lk = LBi (k, grid);         /* Local block number */
@@ -928,6 +927,7 @@ void pzgstrs2_omp(int_t k0, int_t k, int_t* Lsub_buf,
 				usub, uval, tempv, knsupc, nsupr, lusup, Glu_persist);
     } /* for b ... */
 
-    SCT->PDGSTRS2_tl += (double) ( _rdtsc() - t1);
+    SCT->PDGSTRS2_tl += (double) ( SuperLU_timer_() - t1);
 } /* pdgstrs2_omp new version from Piyush */
 
+#endif

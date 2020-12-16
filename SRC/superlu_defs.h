@@ -1114,25 +1114,17 @@ extern int_t 	   	StdList_Size(StdList lst);
 yes_no_t 		StdList_Empty(StdList lst);
 
 /*==== For 3D code ====*/
-/* Matrix distributed in NRformat_loc in 3D process grid, it converts 
-it to a NRformat_loc distributed in two-D grid in grid-0 */
-NRformat_loc dGatherNRformat_loc(NRformat_loc *A, 
-    double* B, int ldb, int nrhs, double** B2d,
-    gridinfo3d_t *grid3d);
-
-int dScatterB3d(NRformat_loc A2d, NRformat_loc *A,
-		 double *B, int ldb, int nrhs, double *B2d,
-                         gridinfo3d_t *grid3d);
-
-NRformat_loc3d*  dGatherNRformat_loc3d(NRformat_loc *A,
-                                 double *B, int ldb, int nrhs,
-                                 gridinfo3d_t *grid3d);
-extern int dScatterB3d_(NRformat_loc3d *A3d, gridinfo3d_t *grid3d);
     
 extern void DistPrint(char* function_name,  double value, char* Units, gridinfo_t* grid);
 extern void DistPrint3D(char* function_name,  double value, char* Units, gridinfo3d_t* grid3d);
 extern void treeImbalance3D(gridinfo3d_t *grid3d, SCT_t* SCT);
 extern void SCT_printComm3D(gridinfo3d_t *grid3d, SCT_t* SCT);
+
+// permutation from superLU default
+extern int_t* getPerm_c_supno(int_t nsupers, superlu_dist_options_t *,
+			      int_t *etree, Glu_persist_t *Glu_persist, 
+			      int_t** Lrowind_bc_ptr, int_t** Ufstnz_br_ptr,
+			      gridinfo_t *);
 
 /* Manipulate counters */
 extern void SCT_init(SCT_t*);
@@ -1224,6 +1216,11 @@ extern sForest_t**  getGreedyLoadBalForests( int_t maxLvl, int_t nsupers, int_t*
 extern sForest_t**  getForests( int_t maxLvl, int_t nsupers, int_t*setree, treeList_t* treeList);
 
     /* from trfAux.h */
+extern int_t getBigUSize(int_t nsupers, gridinfo_t *grid, int_t **Lrowind_bc_ptr);
+extern void getSCUweight(int_t nsupers, treeList_t* treeList, int_t* xsup,
+			 int_t** Lrowind_bc_ptr, int_t** Ufstnz_br_ptr,
+			 gridinfo3d_t * grid3d);
+extern int getNsupers(int n, Glu_persist_t *Glu_persist);
 extern int set_tag_ub();
 extern int getNumThreads(int);
 extern int_t num_full_cols_U(int_t kk, int_t **Ufstnz_br_ptr, int_t *xsup,

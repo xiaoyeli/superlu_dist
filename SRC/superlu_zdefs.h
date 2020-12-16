@@ -329,112 +329,7 @@ typedef struct
     lPanelInfo_t* lPanelInfo;
 } packLUInfo_t;
 
-#endif
-/*=====================*/
-
-/*==== For 3D code ====*/
-
-// new structures for pdgstrf_4_8 
-
-typedef struct
-{
-    int_t nub;
-    int_t klst;
-    int_t ldu;
-    int_t* usub;
-    doublecomplex* uval;
-} uPanelInfo_t;
-
-typedef struct
-{
-    int_t *lsub;
-    doublecomplex *lusup;
-    int_t luptr0;
-    int_t nlb;  //number of l blocks
-    int_t nsupr;
-} lPanelInfo_t;
-
- 
-
-/* HyP_t is the data structure to assist HALO offload of Schur-complement. */
-typedef struct
-{
-    Remain_info_t *lookAhead_info, *Remain_info;
-    Ublock_info_t *Ublock_info, *Ublock_info_Phi;
-    
-    int_t first_l_block_acc , first_u_block_acc;
-    int_t last_offload ;
-    int_t *Lblock_dirty_bit, * Ublock_dirty_bit;
-    doublecomplex *lookAhead_L_buff, *Remain_L_buff;
-    int_t lookAheadBlk;  /* number of blocks in look-ahead window */
-    int_t RemainBlk ;    /* number of blocks outside look-ahead window */
-    int_t  num_look_aheads, nsupers;
-    int_t ldu, ldu_Phi;
-    int_t num_u_blks, num_u_blks_Phi;
-
-    int_t jj_cpu;
-    doublecomplex *bigU_Phi;
-    doublecomplex *bigU_host;
-    int_t Lnbrow;
-    int_t Rnbrow;
-
-    int_t buffer_size;
-    int_t bigu_size;
-    int_t offloadCondition;
-    int_t superlu_acc_offload;
-    int_t nCudaStreams;
-} HyP_t;
-
-typedef struct 
-{
-    int_t * Lsub_buf ;
-    doublecomplex * Lval_buf ;
-    int_t * Usub_buf ;
-    doublecomplex * Uval_buf ;
-} zLUValSubBuf_t;
-
-int_t scuStatUpdate(
-    int_t knsupc,
-    HyP_t* HyP, 
-    SCT_t* SCT,
-    SuperLUStat_t *stat
-    );
-
-typedef struct
-{
-    gEtreeInfo_t gEtreeInfo;
-    int_t* iperm_c_supno;
-    int_t* myNodeCount;
-    int_t* myTreeIdxs;
-    int_t* myZeroTrIdxs;
-    int_t** treePerm;
-    sForest_t** sForests;
-    int_t* supernode2treeMap;
-    zLUValSubBuf_t  *LUvsb;
-} trf3Dpartition_t;
-
-typedef struct
-{
-    doublecomplex *bigU;
-    doublecomplex *bigV;
-} scuBufs_t;
-
-typedef struct
-{   
-    doublecomplex* BlockLFactor;
-    doublecomplex* BlockUFactor;
-} diagFactBufs_t;
-
-typedef struct
-{
-    Ublock_info_t* Ublock_info;
-    Remain_info_t*  Remain_info;
-    uPanelInfo_t* uPanelInfo;
-    lPanelInfo_t* lPanelInfo;
-} packLUInfo_t;
-
-
-/*=====================*/
+/*==== End 3D structures ============*/
 
 /***********************************************************************
  * Function prototypes
@@ -757,13 +652,13 @@ extern NRformat_loc3d *zGatherNRformat_loc3d(NRformat_loc *A, doublecomplex *B,
 extern int zScatter_B3d(NRformat_loc3d *A3d, gridinfo3d_t *grid3d);
     
 extern void pzgssvx3d (superlu_dist_options_t *, SuperMatrix *,
-		       ScalePermstruct_t *, doublecomplex B[], int ldb, int nrhs,
-		       gridinfo3d_t *, LUstruct_t *, SOLVEstruct_t *, 
+		       zScalePermstruct_t *, doublecomplex B[], int ldb, int nrhs,
+		       gridinfo3d_t *, zLUstruct_t *, zSOLVEstruct_t *, 
 		       double *berr, SuperLUStat_t *, int *info);
 extern int_t pzgstrf3d(superlu_dist_options_t *, int m, int n, double anorm,
-		       trf3Dpartition_t*, SCT_t *, LUstruct_t *,
+		       trf3Dpartition_t*, SCT_t *, zLUstruct_t *,
 		       gridinfo3d_t *, SuperLUStat_t *, int *);
-extern void zInit_HyP(HyP_t* HyP, LocalLU_t *Llu, int_t mcb, int_t mrb );
+extern void zInit_HyP(HyP_t* HyP, zLocalLU_t *Llu, int_t mcb, int_t mrb );
 extern void Free_HyP(HyP_t* HyP);
 extern int updateDirtyBit(int_t k0, HyP_t* HyP, gridinfo_t* grid);
 
@@ -811,7 +706,7 @@ zblock_gemm_scatterTopLeft( int_t lb,  int_t j, doublecomplex* bigV,
 				 int_t knsupc,  int_t klst, int_t* lsub,
                                  int_t * usub, int_t ldt,
 				 int* indirect, int* indirect2,
-                                 HyP_t* HyP, LUstruct_t *, gridinfo_t*,
+                                 HyP_t* HyP, zLUstruct_t *, gridinfo_t*,
                                  SCT_t*SCT, SuperLUStat_t *
                                );
 extern int_t 
@@ -819,21 +714,21 @@ zblock_gemm_scatterTopRight( int_t lb,  int_t j, doublecomplex* bigV,
 				  int_t knsupc,  int_t klst, int_t* lsub,
                                   int_t * usub, int_t ldt,
 				  int* indirect, int* indirect2,
-                                  HyP_t* HyP, LUstruct_t *, gridinfo_t*,
+                                  HyP_t* HyP, zLUstruct_t *, gridinfo_t*,
                                   SCT_t*SCT, SuperLUStat_t * );
 extern int_t
 zblock_gemm_scatterBottomLeft( int_t lb,  int_t j, doublecomplex* bigV,
 				    int_t knsupc,  int_t klst, int_t* lsub,
                                     int_t * usub, int_t ldt, 
 				    int* indirect, int* indirect2,
-                                    HyP_t* HyP, LUstruct_t *, gridinfo_t*,
+                                    HyP_t* HyP, zLUstruct_t *, gridinfo_t*,
                                     SCT_t*SCT, SuperLUStat_t * );
 extern int_t 
 zblock_gemm_scatterBottomRight( int_t lb,  int_t j, doublecomplex* bigV,
 				     int_t knsupc,  int_t klst, int_t* lsub,
                                      int_t * usub, int_t ldt,
 				     int* indirect, int* indirect2,
-                                     HyP_t* HyP, LUstruct_t *, gridinfo_t*,
+                                     HyP_t* HyP, zLUstruct_t *, gridinfo_t*,
                                      SCT_t*SCT, SuperLUStat_t * );
 
     /* from gather.h */
@@ -859,16 +754,16 @@ extern void zRgather_U(int_t k, int_t jj0, int_t *usub, doublecomplex *uval,
     /* from xtrf3Dpartition.h */
 extern trf3Dpartition_t* zinitTrf3Dpartition(int_t nsupers,
 					     superlu_dist_options_t *options,
-					     LUstruct_t *LUstruct, gridinfo3d_t * grid3d);
+					     zLUstruct_t *LUstruct, gridinfo3d_t * grid3d);
 extern void zDestroy_trf3Dpartition(trf3Dpartition_t *trf3Dpartition, gridinfo3d_t *grid3d);
 
 extern void z3D_printMemUse(trf3Dpartition_t*  trf3Dpartition,
-			    LUstruct_t *LUstruct, gridinfo3d_t * grid3d);
+			    zLUstruct_t *LUstruct, gridinfo3d_t * grid3d);
 
-extern int* getLastDep(gridinfo_t *grid, SuperLUStat_t *stat,
-		       superlu_dist_options_t *options, LocalLU_t *Llu,
-		       int_t* xsup, int_t num_look_aheads, int_t nsupers,
-		       int_t * iperm_c_supno);
+    //extern int* getLastDep(gridinfo_t *grid, SuperLUStat_t *stat,
+    //		       superlu_dist_options_t *options, LocalLU_t *Llu,
+    //		       int_t* xsup, int_t num_look_aheads, int_t nsupers,
+    //		       int_t * iperm_c_supno);
 
 extern int_t zLpanelUpdate(int_t off0, int_t nsupc, doublecomplex* ublk_ptr,
 			  int_t ld_ujrow, doublecomplex* lusup, int_t nsupr, SCT_t*);
@@ -915,9 +810,9 @@ extern int_t zcollect3dUpanels(int_t layer, int_t nsupers, zLUstruct_t * LUstruc
 extern int_t zp3dCollect(int_t layer, int_t n, zLUstruct_t * LUstruct, gridinfo3d_t* grid3d);
 /*zero out LU non zero entries*/
 extern int_t zzeroSetLU(int_t nnodes, int_t* nodeList , zLUstruct_t *, gridinfo3d_t*);
-extern int AllocGlu_3d(int_t n, int_t nsupers, zLUstruct_t *);
-extern int DeAllocLlu_3d(int_t n, zLUstruct_t *, gridinfo3d_t*);
-extern int DeAllocGlu_3d(zLUstruct_t *);
+extern int zAllocGlu_3d(int_t n, int_t nsupers, zLUstruct_t *);
+extern int zDeAllocLlu_3d(int_t n, zLUstruct_t *, gridinfo3d_t*);
+extern int zDeAllocGlu_3d(zLUstruct_t *);
 
 /* Reduces L and U panels of nodes in the List nodeList (size=nnnodes)
 receiver[L(nodelist)] =sender[L(nodelist)] +receiver[L(nodelist)]
@@ -980,9 +875,9 @@ extern int_t zBcast_UPanel(int_t k, int_t k0, int_t* usub, doublecomplex* uval,
 			   gridinfo_t *, int* msgcnt, int *ToSendD, SCT_t*, int);
 extern int_t zIrecv_LPanel (int_t k, int_t k0,  int_t* Lsub_buf, 
 			    doublecomplex* Lval_buf, gridinfo_t *,
-			    MPI_Request *, LocalLU_t *, int);
+			    MPI_Request *, zLocalLU_t *, int);
 extern int_t zIrecv_UPanel(int_t k, int_t k0, int_t* Usub_buf, doublecomplex*,
-			   LocalLU_t *, gridinfo_t*, MPI_Request *, int);
+			   zLocalLU_t *, gridinfo_t*, MPI_Request *, int);
 extern int_t Wait_LSend(int_t k, gridinfo_t *grid, int **ToSendR,
 			MPI_Request *s, SCT_t*);
 extern int_t Wait_USend(MPI_Request *, gridinfo_t *, SCT_t *);
@@ -1056,7 +951,6 @@ extern int_t zLPanelTrSolve(int_t k, int_t* factored_L, doublecomplex* BlockUFac
 			    gridinfo_t *, zLUstruct_t *);
 
     /* from trfAux.h */
-extern int_t getNsupers(int, zLUstruct_t *);
 extern int_t initPackLUInfo(int_t nsupers, packLUInfo_t* packLUInfo);
 extern int   freePackLUInfo(packLUInfo_t* packLUInfo);
 extern int_t zSchurComplementSetup(int_t k, int *msgcnt, Ublock_info_t*,
@@ -1072,11 +966,6 @@ extern int_t zSchurComplementSetupGPU(int_t k, msgs_t* msgs, packLUInfo_t*,
 				      zLUstruct_t *, HyP_t*);
 extern doublecomplex* zgetBigV(int_t, int_t);
 extern doublecomplex* zgetBigU(int_t, gridinfo_t *, zLUstruct_t *);
-extern int_t getBigUSize(int_t, gridinfo_t *, zLUstruct_t *);
-// permutation from superLU default
-extern int_t* getPerm_c_supno(int_t nsupers, superlu_dist_options_t *,
-			      zLUstruct_t *, gridinfo_t *);
-extern void getSCUweight(int_t nsupers, treeList_t* treeList, zLUstruct_t *, gridinfo3d_t *);
 
     /* from treeFactorization.h */
 extern int_t zLluBufInit(zLUValSubBuf_t*, zLUstruct_t *);

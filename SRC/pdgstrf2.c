@@ -378,7 +378,6 @@ pdgstrf2_trsm
 
 } /* PDGSTRF2_trsm */
 
-#if 0 /* COMMENT OUT 3D CODE FOR NOW */
 
 /*****************************************************************************
  * The following functions are for the new pdgstrf2_dtrsm in the 3D code.
@@ -388,7 +387,7 @@ static int_t LpanelUpdate(int off0, int nsupc, double *ublk_ptr, int ld_ujrow,
 {
     int_t l = nsupr - off0;
     double alpha = 1.0;
-    unsigned long long t1 = _rdtsc();
+    double t1 = SuperLU_timer_();
 
 #define GT 32
 #pragma omp parallel for
@@ -402,7 +401,7 @@ static int_t LpanelUpdate(int off0, int nsupc, double *ublk_ptr, int ld_ujrow,
 
     } /* for i = ... */
 
-    t1 = _rdtsc() - t1;
+    t1 = SuperLU_timer_() - t1;
 
     SCT->trf2_flops += (double)l * (double)nsupc * (double)nsupc;
     SCT->trf2_time += t1;
@@ -418,7 +417,7 @@ void Local_Dgstrf2(superlu_dist_options_t *options, int_t k, double thresh,
                    Glu_persist_t *Glu_persist, gridinfo_t *grid, dLocalLU_t *Llu,
                    SuperLUStat_t *stat, int *info, SCT_t* SCT)
 {
-    //unsigned long long t1 = _rdtsc();
+    //double t1 = SuperLU_timer_();
     int_t *xsup = Glu_persist->xsup;
     double alpha = -1, zero = 0.0;
 
@@ -750,9 +749,9 @@ int_t dTrs2_GatherTrsmScatter(int_t klst, int_t iukp, int_t rukp,
     return 0;
 } /* dTrs2_GatherTrsmScatter */
 
-#endif /* END 3D CODE */
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 
+#if 1
 
 /*****************************************************************************
  * The following pdgstrf2_omp is improved for KNL, since Version 5.2.0.
@@ -907,7 +906,7 @@ void pdgstrs2_omp(int_t k0, int_t k, int_t* Lsub_buf,
 		  gridinfo_t *grid, dLocalLU_t *Llu, SuperLUStat_t *stat,
 		  Ublock_info_t *Ublock_info, double *bigV, int_t ldt, SCT_t *SCT)
 {
-    unsigned long long t1 = _rdtsc();
+    double t1 = SuperLU_timer_();
     int_t *xsup = Glu_persist->xsup;
     /* Quick return. */
     int_t lk = LBi (k, grid);         /* Local block number */
@@ -941,7 +940,8 @@ void pdgstrs2_omp(int_t k0, int_t k, int_t* Lsub_buf,
 				usub, uval, tempv, knsupc, nsupr, lusup, Glu_persist);
     } /* for b ... */
 
-    SCT->PDGSTRS2_tl += (double) ( _rdtsc() - t1);
+    SCT->PDGSTRS2_tl += (double) ( SuperLU_timer_() - t1);
 
 } /* pdgstrs2_omp new version from Piyush */
 
+#endif /* there are 2 versions of pdgstrs2_omp */

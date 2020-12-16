@@ -27,7 +27,7 @@ at the top-level directory.
 #endif
 
 /* Inititalize the data structure to assist HALO offload of Schur-complement. */
-void dInit_HyP(HyP_t* HyP, LocalLU_t *Llu, int_t mcb, int_t mrb )
+void dInit_HyP(HyP_t* HyP, dLocalLU_t *Llu, int_t mcb, int_t mrb )
 {
     HyP->last_offload = -1;
 #if 0
@@ -70,7 +70,7 @@ void dInit_HyP(HyP_t* HyP, LocalLU_t *Llu, int_t mcb, int_t mrb )
 
 /*init3DLUstruct with forest interface */
 void dinit3DLUstructForest( int_t* myTreeIdxs, int_t* myZeroTrIdxs,
-                           sForest_t**  sForests, LUstruct_t* LUstruct,
+                           sForest_t**  sForests, dLUstruct_t* LUstruct,
                            gridinfo3d_t* grid3d)
 {
     int_t maxLvl = log2i(grid3d->zscp.Np) + 1;
@@ -114,11 +114,11 @@ int_t dSchurComplementSetup(
     int_t* Usub_buf,
     double *Uval_buf,
     gridinfo_t *grid,
-    LUstruct_t *LUstruct
+    dLUstruct_t *LUstruct
 )
 {
     Glu_persist_t *Glu_persist = LUstruct->Glu_persist;
-    LocalLU_t *Llu = LUstruct->Llu;
+    dLocalLU_t *Llu = LUstruct->Llu;
     int_t* xsup = Glu_persist->xsup;
 
     int* ToRecv = Llu->ToRecv;
@@ -338,7 +338,7 @@ int_t dSchurComplementSetupGPU(
     int_t* iperm_c_supno, int_t*perm_c_supno,
     gEtreeInfo_t*   gEtreeInfo, factNodelists_t* fNlists,
     scuBufs_t* scuBufs, dLUValSubBuf_t* LUvsb,
-    gridinfo_t *grid, LUstruct_t *LUstruct,
+    gridinfo_t *grid, dLUstruct_t *LUstruct,
     HyP_t* HyP)
 {
     int_t * Lsub_buf  = LUvsb->Lsub_buf;
@@ -353,7 +353,7 @@ int_t dSchurComplementSetupGPU(
     double* bigU = scuBufs->bigU;
 
     Glu_persist_t *Glu_persist = LUstruct->Glu_persist;
-    LocalLU_t *Llu = LUstruct->Llu;
+    dLocalLU_t *Llu = LUstruct->Llu;
     int_t* xsup = Glu_persist->xsup;
 
     int* ToRecv = Llu->ToRecv;
@@ -497,8 +497,7 @@ double* dgetBigV(int_t ldt, int_t num_threads)
     return bigV;
 }
 
-double* dgetBigU(int_t nsupers, gridinfo_t *grid,
-                    LUstruct_t *LUstruct)
+double* dgetBigU(int_t nsupers, gridinfo_t *grid, dLUstruct_t *LUstruct)
 {
     int_t Pr = grid->nprow;
     int_t Pc = grid->npcol;
@@ -542,9 +541,10 @@ double* dgetBigU(int_t nsupers, gridinfo_t *grid,
     return bigU;
 } /* dgetBigU */
 
+
 trf3Dpartition_t* dinitTrf3Dpartition(int_t nsupers,
 				      superlu_dist_options_t *options,
-				      LUstruct_t *LUstruct, gridinfo3d_t * grid3d
+				      dLUstruct_t *LUstruct, gridinfo3d_t * grid3d
 				      )
 {
     gridinfo_t* grid = &(grid3d->grid2d);
@@ -553,7 +553,12 @@ trf3Dpartition_t* dinitTrf3Dpartition(int_t nsupers,
     int iam = grid3d->iam;
     CHECK_MALLOC (iam, "Enter dinitTrf3Dpartition()");
 #endif
-    int_t* perm_c_supno = getPerm_c_supno(nsupers, options, LUstruct, grid);
+    int_t* perm_c_supno = getPerm_c_supno(nsupers, options,
+					  LUstruct->etree,
+					  LUstruct->Glu_persist,
+					  LUstruct->Llu->Lrowind_bc_ptr,
+					  LUstruct->Llu->Ufstnz_br_ptr,
+					  grid);
     int_t* iperm_c_supno = getFactIperm(perm_c_supno, nsupers);
 
     // calculating tree factorization
@@ -561,7 +566,9 @@ trf3Dpartition_t* dinitTrf3Dpartition(int_t nsupers,
     treeList_t* treeList = setree2list(nsupers, setree );
 
     /*update treelist with weight and depth*/
-    getSCUweight(nsupers, treeList, LUstruct, grid3d);
+    getSCUweight(nsupers, treeList, LUstruct->Glu_persist->xsup,
+		  LUstruct->Llu->Lrowind_bc_ptr, LUstruct->Llu->Ufstnz_br_ptr,
+		  grid3d);
 
     calcTreeWeight(nsupers, setree, treeList, LUstruct->Glu_persist->xsup);
 

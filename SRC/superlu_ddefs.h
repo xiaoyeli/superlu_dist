@@ -648,15 +648,15 @@ extern NRformat_loc3d *dGatherNRformat_loc3d(NRformat_loc *A, double *B,
 extern int dScatter_B3d(NRformat_loc3d *A3d, gridinfo3d_t *grid3d);
 
 extern void pdgssvx3d(superlu_dist_options_t *, SuperMatrix *,
-		      ScalePermstruct_t *, double B[], int ldb, int nrhs,
-		      gridinfo3d_t *, LUstruct_t *, SOLVEstruct_t *,
+		      dScalePermstruct_t *, double B[], int ldb, int nrhs,
+		      gridinfo3d_t *, dLUstruct_t *, dSOLVEstruct_t *,
 		      double *berr, SuperLUStat_t *, int *info);
 extern int_t pdgstrf3d(superlu_dist_options_t *, int m, int n, double anorm,
-		       trf3Dpartition_t *, SCT_t *, LUstruct_t *,
+		       trf3Dpartition_t *, SCT_t *, dLUstruct_t *,
 		       gridinfo3d_t *, SuperLUStat_t *, int *);
-    extern void dInit_HyP(HyP_t *HyP, LocalLU_t *Llu, int_t mcb, int_t mrb);
-    extern void Free_HyP(HyP_t *HyP);
-    extern int updateDirtyBit(int_t k0, HyP_t *HyP, gridinfo_t *grid);
+extern void dInit_HyP(HyP_t *HyP, dLocalLU_t *Llu, int_t mcb, int_t mrb);
+extern void Free_HyP(HyP_t *HyP);
+extern int updateDirtyBit(int_t k0, HyP_t *HyP, gridinfo_t *grid);
 
     /* from scatter.h */
     extern void
@@ -704,28 +704,28 @@ extern int_t pdgstrf3d(superlu_dist_options_t *, int m, int n, double anorm,
                                int_t knsupc, int_t klst, int_t *lsub,
                                int_t *usub, int_t ldt,
                                int *indirect, int *indirect2,
-                               HyP_t *HyP, LUstruct_t *, gridinfo_t *,
+                               HyP_t *HyP, dLUstruct_t *, gridinfo_t *,
                                SCT_t *SCT, SuperLUStat_t *);
     extern int_t
     dblock_gemm_scatterTopRight(int_t lb, int_t j, double *bigV,
                                 int_t knsupc, int_t klst, int_t *lsub,
                                 int_t *usub, int_t ldt,
                                 int *indirect, int *indirect2,
-                                HyP_t *HyP, LUstruct_t *, gridinfo_t *,
+                                HyP_t *HyP, dLUstruct_t *, gridinfo_t *,
                                 SCT_t *SCT, SuperLUStat_t *);
     extern int_t
     dblock_gemm_scatterBottomLeft(int_t lb, int_t j, double *bigV,
                                   int_t knsupc, int_t klst, int_t *lsub,
                                   int_t *usub, int_t ldt,
                                   int *indirect, int *indirect2,
-                                  HyP_t *HyP, LUstruct_t *, gridinfo_t *,
+                                  HyP_t *HyP, dLUstruct_t *, gridinfo_t *,
                                   SCT_t *SCT, SuperLUStat_t *);
     extern int_t
     dblock_gemm_scatterBottomRight(int_t lb, int_t j, double *bigV,
                                    int_t knsupc, int_t klst, int_t *lsub,
                                    int_t *usub, int_t ldt,
                                    int *indirect, int *indirect2,
-                                   HyP_t *HyP, LUstruct_t *, gridinfo_t *,
+                                   HyP_t *HyP, dLUstruct_t *, gridinfo_t *,
                                    SCT_t *SCT, SuperLUStat_t *);
 
     /* from gather.h */
@@ -757,10 +757,10 @@ extern int_t pdgstrf3d(superlu_dist_options_t *, int m, int n, double anorm,
     extern void d3D_printMemUse(trf3Dpartition_t *trf3Dpartition,
                                 dLUstruct_t *LUstruct, gridinfo3d_t *grid3d);
 
-    extern int *getLastDep(gridinfo_t *grid, SuperLUStat_t *stat,
-                           superlu_dist_options_t *options, dLocalLU_t *Llu,
-                           int_t *xsup, int_t num_look_aheads, int_t nsupers,
-                           int_t *iperm_c_supno);
+    //extern int *getLastDep(gridinfo_t *grid, SuperLUStat_t *stat,
+    //                       superlu_dist_options_t *options, dLocalLU_t *Llu,
+    //                       int_t *xsup, int_t num_look_aheads, int_t nsupers,
+    //                       int_t *iperm_c_supno);
 
     extern void dinit3DLUstructForest(int_t *myTreeIdxs, int_t *myZeroTrIdxs,
                                       sForest_t **sForests, dLUstruct_t *LUstruct,
@@ -823,9 +823,9 @@ extern int_t dcollect3dUpanels(int_t layer, int_t nsupers, dLUstruct_t * LUstruc
 extern int_t dp3dCollect(int_t layer, int_t n, dLUstruct_t * LUstruct, gridinfo3d_t* grid3d);
 /*zero out LU non zero entries*/
 extern int_t dzeroSetLU(int_t nnodes, int_t* nodeList , dLUstruct_t *, gridinfo3d_t*);
-extern int AllocGlu_3d(int_t n, int_t nsupers, dLUstruct_t *);
-extern int DeAllocLlu_3d(int_t n, dLUstruct_t *, gridinfo3d_t*);
-extern int DeAllocGlu_3d(dLUstruct_t *);
+extern int dAllocGlu_3d(int_t n, int_t nsupers, dLUstruct_t *);
+extern int dDeAllocLlu_3d(int_t n, dLUstruct_t *, gridinfo3d_t*);
+extern int dDeAllocGlu_3d(dLUstruct_t *);
 
 /* Reduces L and U panels of nodes in the List nodeList (size=nnnodes)
 receiver[L(nodelist)] =sender[L(nodelist)] +receiver[L(nodelist)]
@@ -876,21 +876,21 @@ int_t dzRecvUPanel(int_t k, int_t sender, double alpha,
     /* from communication_aux.h */
 extern int_t dIBcast_LPanel (int_t k, int_t k0, int_t* lsub, double* lusup,
 			     gridinfo_t *, int* msgcnt, MPI_Request *,
-			     int_t **ToSendR, int_t *xsup, int );
+			     int **ToSendR, int_t *xsup, int );
 extern int_t dBcast_LPanel(int_t k, int_t k0, int_t* lsub, double* lusup,
-			   gridinfo_t *, int* msgcnt, int_t **ToSendR,
+			   gridinfo_t *, int* msgcnt, int **ToSendR,
 			   int_t *xsup , SCT_t*, int);
 extern int_t dIBcast_UPanel(int_t k, int_t k0, int_t* usub, double* uval,
 			    gridinfo_t *, int* msgcnt, MPI_Request *,
-			    int_t *ToSendD, int );
+			    int *ToSendD, int );
 extern int_t dBcast_UPanel(int_t k, int_t k0, int_t* usub, double* uval,
-			   gridinfo_t *, int* msgcnt, int_t *ToSendD, SCT_t*, int);
+			   gridinfo_t *, int* msgcnt, int *ToSendD, SCT_t*, int);
 extern int_t dIrecv_LPanel (int_t k, int_t k0,  int_t* Lsub_buf, 
 			    double* Lval_buf, gridinfo_t *,
 			    MPI_Request *, dLocalLU_t *, int);
 extern int_t dIrecv_UPanel(int_t k, int_t k0, int_t* Usub_buf, double*,
 			   dLocalLU_t *, gridinfo_t*, MPI_Request *, int);
-extern int_t Wait_LSend(int_t k, gridinfo_t *grid, int_t **ToSendR,
+extern int_t Wait_LSend(int_t k, gridinfo_t *grid, int **ToSendR,
 			MPI_Request *s, SCT_t*);
 extern int_t Wait_USend(MPI_Request *, gridinfo_t *, SCT_t *);
 extern int_t dWait_URecv(MPI_Request *, int* msgcnt, SCT_t *);
@@ -963,7 +963,6 @@ extern int_t dLPanelTrSolve(int_t k, int_t* factored_L, double* BlockUFactor,
 			    gridinfo_t *, dLUstruct_t *);
 
     /* from trfAux.h */
-extern int_t getNsupers(int, dLUstruct_t *);
 extern int_t initPackLUInfo(int_t nsupers, packLUInfo_t* packLUInfo);
 extern int   freePackLUInfo(packLUInfo_t* packLUInfo);
 extern int_t dSchurComplementSetup(int_t k, int *msgcnt, Ublock_info_t*,
@@ -979,12 +978,7 @@ extern int_t dSchurComplementSetupGPU(int_t k, msgs_t* msgs, packLUInfo_t*,
 				      dLUstruct_t *, HyP_t*);
 extern double* dgetBigV(int_t, int_t);
 extern double* dgetBigU(int_t, gridinfo_t *, dLUstruct_t *);
-extern int_t getBigUSize(int_t, gridinfo_t *, dLUstruct_t *);
-// permutation from superLU default
-extern int_t* getPerm_c_supno(int_t nsupers, superlu_dist_options_t *,
-			      dLUstruct_t *, gridinfo_t *);
-extern void getSCUweight(int_t nsupers, treeList_t* treeList, dLUstruct_t *, gridinfo3d_t *);
-
+    
     /* from treeFactorization.h */
 extern int_t dLluBufInit(dLUValSubBuf_t*, dLUstruct_t *);
 extern int_t dinitScuBufs(int_t ldt, int_t num_threads, int_t nsupers,

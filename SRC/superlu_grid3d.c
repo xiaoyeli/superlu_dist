@@ -65,12 +65,14 @@ void superlu_gridmap3d(
     int *pranks;
     int i, j, info;
 
+#if 0 // older MPI doesn't support complex in C    
     /* Create datatype in C for MPI complex. */
     if ( SuperLU_MPI_DOUBLE_COMPLEX == MPI_DATATYPE_NULL ) {
         MPI_Type_contiguous( 2, MPI_DOUBLE, &SuperLU_MPI_DOUBLE_COMPLEX );
         MPI_Type_commit( &SuperLU_MPI_DOUBLE_COMPLEX );
     }
-
+#endif
+    
     /* Check MPI environment initialization. */
     MPI_Initialized( &info );
     if ( !info )
@@ -283,7 +285,11 @@ void superlu_gridexit3d(gridinfo3d_t *grid)
         MPI_Comm_free( &grid->grid2d.comm );
         MPI_Comm_free( &grid->comm );
     }
+#if 0    
     if ( SuperLU_MPI_DOUBLE_COMPLEX != MPI_DATATYPE_NULL ) {
         MPI_Type_free( &SuperLU_MPI_DOUBLE_COMPLEX );
+	SuperLU_MPI_DOUBLE_COMPLEX = MPI_DATATYPE_NULL; /* some MPI system does not set this
+							   to be NULL after Type_free */
     }
+#endif    
 }

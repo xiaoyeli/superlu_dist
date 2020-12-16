@@ -23,9 +23,9 @@ at the top-level directory.
 #include "trfCommWrapper.h"
 #endif
 
-int_t zLluBufInit(zLUValSubBuf_t* LUvsb, LUstruct_t *LUstruct)
+int_t zLluBufInit(zLUValSubBuf_t* LUvsb, zLUstruct_t *LUstruct)
 {
-    LocalLU_t *Llu = LUstruct->Llu;
+    zLocalLU_t *Llu = LUstruct->Llu;
     LUvsb->Lsub_buf = intMalloc_dist(Llu->bufmax[0]); //INT_T_ALLOC(Llu->bufmax[0]);
     LUvsb->Lval_buf = doublecomplexMalloc_dist(Llu->bufmax[1]); //DOUBLE_ALLOC(Llu->bufmax[1]);
     LUvsb->Usub_buf = intMalloc_dist(Llu->bufmax[2]); //INT_T_ALLOC(Llu->bufmax[2]);
@@ -70,7 +70,7 @@ int zfreeDiagFactBufsArr(int_t mxLeafNode, diagFactBufs_t** dFBufs)
     return 0;
 }
 
-zLUValSubBuf_t** zLluBufInitArr(int_t numLA, LUstruct_t *LUstruct)
+zLUValSubBuf_t** zLluBufInitArr(int_t numLA, zLUstruct_t *LUstruct)
 {
     zLUValSubBuf_t** LUvsbs = (zLUValSubBuf_t**) SUPERLU_MALLOC(numLA * sizeof(zLUValSubBuf_t*));
     for (int_t i = 0; i < numLA; ++i)
@@ -100,7 +100,7 @@ int zLluBufFreeArr(int_t numLA, zLUValSubBuf_t **LUvsbs)
 
 int_t zinitScuBufs(int_t ldt, int_t num_threads, int_t nsupers,
                   scuBufs_t* scuBufs,
-                  LUstruct_t* LUstruct,
+                  zLUstruct_t* LUstruct,
                   gridinfo_t * grid)
 {
     scuBufs->bigV = zgetBigV(ldt, num_threads);
@@ -137,13 +137,13 @@ int_t zdenseTreeFactor(
     superlu_dist_options_t *options,
     int_t * gIperm_c_supno,
     int_t ldt,
-    LUstruct_t *LUstruct, gridinfo3d_t * grid3d, SuperLUStat_t *stat,
+    zLUstruct_t *LUstruct, gridinfo3d_t * grid3d, SuperLUStat_t *stat,
     double thresh,  SCT_t *SCT, int tag_ub,
     int *info
 )
 {
     gridinfo_t* grid = &(grid3d->grid2d);
-    LocalLU_t *Llu = LUstruct->Llu;
+    zLocalLU_t *Llu = LUstruct->Llu;
 
     /*main loop over all the super nodes*/
     for (int_t k0 = 0; k0 < nnodes   ; ++k0)
@@ -300,7 +300,7 @@ int_t zsparseTreeFactor_ASYNC(
     int_t * gIperm_c_supno,
     int_t ldt,
     HyP_t* HyP,
-    LUstruct_t *LUstruct, gridinfo3d_t * grid3d, SuperLUStat_t *stat,
+    zLUstruct_t *LUstruct, gridinfo3d_t * grid3d, SuperLUStat_t *stat,
     double thresh,  SCT_t *SCT, int tag_ub,
     int *info
 )

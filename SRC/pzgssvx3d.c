@@ -360,7 +360,7 @@ at the top-level directory.
  *           If all the above condition are true, the LU decomposition is
  *           performed on the matrix Pc*Pr*diag(R)*A*diag(C)*Pc^T.
  *
- * ScalePermstruct (input/output) ScalePermstruct_t* (global)
+ * ScalePermstruct (input/output) dScalePermstruct_t* (global)
  *         The data structure to store the scaling and permutation vectors
  *         describing the transformations performed to the matrix A.
  *         It contains the following fields:
@@ -435,7 +435,7 @@ at the top-level directory.
  *         Grid can be initialized by subroutine SUPERLU_GRIDINIT.
  *         See superlu_ddefs.h for the definition of 'gridinfo_t'.
  *
- * LUstruct (input/output) LUstruct_t*
+ * LUstruct (input/output) zLUstruct_t*
  *         The data structures to store the distributed L and U factors.
  *         It contains the following fields:
  *
@@ -462,13 +462,13 @@ at the top-level directory.
  *           The distributed data structures to store L and U factors.
  *           See superlu_ddefs.h for the definition of 'LocalLU_t'.
  *
- * SOLVEstruct (input/output) SOLVEstruct_t*
+ * SOLVEstruct (input/output) zSOLVEstruct_t*
  *         The data structure to hold the communication pattern used
  *         in the phases of triangular solution and iterative refinement.
  *         This pattern should be intialized only once for repeated solutions.
  *         If options->SolveInitialized = YES, it is an input argument.
  *         If options->SolveInitialized = NO and nrhs != 0, it is an output
- *         argument. See superlu_ddefs.h for the definition of 'SOLVEstruct_t'.
+ *         argument. See superlu_zdefs.h for the definition of 'zSOLVEstruct_t'.
  *
  * berr    (output) double*, dimension (nrhs) (global)
  *         The componentwise relative backward error of each solution
@@ -494,9 +494,9 @@ at the top-level directory.
 
 void
 pzgssvx3d (superlu_dist_options_t * options, SuperMatrix * A,
-           ScalePermstruct_t * ScalePermstruct,
+           zScalePermstruct_t * ScalePermstruct,
            doublecomplex B[], int ldb, int nrhs, gridinfo3d_t * grid3d,
-           LUstruct_t * LUstruct, SOLVEstruct_t * SOLVEstruct,
+           zLUstruct_t * LUstruct, zSOLVEstruct_t * SOLVEstruct,
            double *berr, SuperLUStat_t * stat, int *info)
 {
     NRformat_loc *Astore;
@@ -1211,7 +1211,7 @@ pzgssvx3d (superlu_dist_options_t * options, SuperMatrix * A,
 	/* send the LU structure to all the grids */
 	zp3dScatter(n, LUstruct, grid3d);
 
-	int_t nsupers = getNsupers(n, LUstruct);
+	int_t nsupers = getNsupers(n, LUstruct->Glu_persist);
 	trf3Dpartition = zinitTrf3Dpartition(nsupers, options, LUstruct, grid3d);
 
 	SCT_t *SCT = (SCT_t *) SUPERLU_MALLOC(sizeof(SCT_t));
@@ -1391,7 +1391,7 @@ pzgssvx3d (superlu_dist_options_t * options, SuperMatrix * A,
 		    {
 			/* Improve the solution by iterative refinement. */
 			int_t *it, *colind_gsmv = SOLVEstruct->A_colind_gsmv;
-			SOLVEstruct_t *SOLVEstruct1;    /* Used by refinement. */
+			zSOLVEstruct_t *SOLVEstruct1; /* Used by refinement. */
 
 			t = SuperLU_timer_ ();
 			if (options->RefineInitialized == NO || Fact == DOFACT) {
@@ -1447,8 +1447,8 @@ pzgssvx3d (superlu_dist_options_t * options, SuperMatrix * A,
 		is different than the solve with nrhs RHS.
 		So we use SOLVEstruct1 for the refinement step.
 	      */
-				if (!(SOLVEstruct1 = (SOLVEstruct_t *)
-				      SUPERLU_MALLOC (sizeof (SOLVEstruct_t))))
+				if (!(SOLVEstruct1 = (zSOLVEstruct_t *)
+				      SUPERLU_MALLOC (sizeof (zSOLVEstruct_t))))
 				    ABORT ("Malloc fails for SOLVEstruct1");
 				/* Copy the same stuff */
 				SOLVEstruct1->row_to_proc = SOLVEstruct->row_to_proc;
@@ -1463,7 +1463,7 @@ pzgssvx3d (superlu_dist_options_t * options, SuperMatrix * A,
 				if (!(SOLVEstruct1->gstrs_comm = (pxgstrs_comm_t *)
 				      SUPERLU_MALLOC (sizeof (pxgstrs_comm_t))))
 				    ABORT ("Malloc fails for gstrs_comm[]");
-				pxgstrs_init (n, m_loc, 1, fst_row, perm_r, perm_c, grid,
+				pzgstrs_init (n, m_loc, 1, fst_row, perm_r, perm_c, grid,
 					      Glu_persist, SOLVEstruct1);
 			    }
 			

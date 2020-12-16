@@ -1092,63 +1092,6 @@ int_t partitionM( int_t* a, int_t l, int_t r, int_t lda, int_t dir, int_t dims) 
 } /* partitionM */
 
 
-/*
- * The following are from 3D code p3dcomm.c
- */
-
-int AllocGlu_3d(int_t n, int_t nsupers, LUstruct_t * LUstruct)
-{
-    /*broadcasting Glu_persist*/
-    LUstruct->Glu_persist->xsup  = intMalloc_dist(nsupers+1); //INT_T_ALLOC(nsupers+1);
-    LUstruct->Glu_persist->supno = intMalloc_dist(n); //INT_T_ALLOC(n);
-    return 0;
-}
-
-// Sherry added
-int DeAllocGlu_3d(LUstruct_t * LUstruct)
-{
-    SUPERLU_FREE(LUstruct->Glu_persist->xsup);
-    SUPERLU_FREE(LUstruct->Glu_persist->supno);
-    return 0;
-}
-
-int DeAllocLlu_3d(int_t n, LUstruct_t * LUstruct, gridinfo3d_t* grid3d)
-{
-    int i, nbc, nbr, nsupers;
-    LocalLU_t *Llu = LUstruct->Llu;
-
-    nsupers = (LUstruct->Glu_persist)->supno[n-1] + 1;
-
-    nbc = CEILING(nsupers, grid3d->npcol);
-    for (i = 0; i < nbc; ++i) 
-	if ( Llu->Lrowind_bc_ptr[i] ) {
-	    SUPERLU_FREE (Llu->Lrowind_bc_ptr[i]);
-#ifdef GPU_ACC
-	    checkCuda(cudaFreeHost(Llu->Lnzval_bc_ptr[i]));
-#else
-	    SUPERLU_FREE (Llu->Lnzval_bc_ptr[i]);
-#endif
-	}
-    SUPERLU_FREE (Llu->Lrowind_bc_ptr);
-    SUPERLU_FREE (Llu->Lnzval_bc_ptr);
-
-    nbr = CEILING(nsupers, grid3d->nprow);
-    for (i = 0; i < nbr; ++i)
-	if ( Llu->Ufstnz_br_ptr[i] ) {
-	    SUPERLU_FREE (Llu->Ufstnz_br_ptr[i]);
-	    SUPERLU_FREE (Llu->Unzval_br_ptr[i]);
-	}
-    SUPERLU_FREE (Llu->Ufstnz_br_ptr);
-    SUPERLU_FREE (Llu->Unzval_br_ptr);
-
-    /* The following can be freed after factorization. */
-    SUPERLU_FREE(Llu->ToRecv);
-    SUPERLU_FREE(Llu->ToSendD);
-    for (i = 0; i < nbc; ++i) SUPERLU_FREE(Llu->ToSendR[i]);
-    SUPERLU_FREE(Llu->ToSendR);
-    return 0;
-} /* DeAllocLlu_3d */
-
 int_t** getTreePerm( int_t* myTreeIdxs, int_t* myZeroTrIdxs,
                      int_t* nodeCount, int_t** nodeList,
                      int_t* perm_c_supno, int_t* iperm_c_supno,

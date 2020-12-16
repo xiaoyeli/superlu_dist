@@ -21,7 +21,7 @@ int_t Wait_LSend
 /*wait till broadcast of L finished*/
 (int_t k, gridinfo_t *grid, int **ToSendR, MPI_Request *send_req, SCT_t* SCT)
 {
-    unsigned long long t1 = _rdtsc();
+    double t1 = SuperLU_timer_();
     int_t Pc = grid->npcol;
     int_t iam = grid->iam;
     int_t lk = LBj (k, grid);
@@ -36,7 +36,7 @@ int_t Wait_LSend
             MPI_Wait (&send_req[pj + Pc], &status);
         }
     }
-    SCT->Wait_LSend_tl += (double) ( _rdtsc() - t1);
+    SCT->Wait_LSend_tl += ( SuperLU_timer_() - t1);
     return 0;
 }
 
@@ -45,7 +45,7 @@ int_t Wait_USend
 /*wait till broadcast of U panels finished*/
 ( MPI_Request *send_req, gridinfo_t *grid, SCT_t* SCT)
 {
-    unsigned long long t1 = _rdtsc();
+    double t1 = SuperLU_timer_();
     int_t iam = grid->iam;
     int_t Pr = grid->nprow;
     int_t myrow = MYROW (iam, grid);
@@ -58,7 +58,7 @@ int_t Wait_USend
             MPI_Wait (&send_req[pi + Pr], &status);
         }
     }
-    SCT->Wait_USend_tl += (double) ( _rdtsc() - t1);
+    SCT->Wait_USend_tl += (double) (SuperLU_timer_() - t1);
     return 0;
 }
 
@@ -103,7 +103,7 @@ int_t Wait_UDiagBlockSend(MPI_Request *U_diag_blk_send_req,
                           gridinfo_t * grid, SCT_t* SCT)
 {
 
-    unsigned long long t1 = _rdtsc();
+    double t1 = SuperLU_timer_();
     int_t iam = grid->iam;
     int_t Pr = grid->nprow;
     int_t myrow = MYROW (iam, grid);
@@ -115,15 +115,14 @@ int_t Wait_UDiagBlockSend(MPI_Request *U_diag_blk_send_req,
             MPI_Wait (U_diag_blk_send_req + pr, &status);
         }
     }
-    SCT->Wait_UDiagBlockSend_tl += (double) ( _rdtsc() - t1);
+    SCT->Wait_UDiagBlockSend_tl += (double) ( SuperLU_timer_() - t1);
     return 0;
 }
 
 int_t Wait_LDiagBlockSend(MPI_Request *L_diag_blk_send_req,
                           gridinfo_t * grid, SCT_t* SCT)
 {
-
-    unsigned long long t1 = _rdtsc();
+    double t1 = SuperLU_timer_();
     int_t iam = grid->iam;
     int_t Pc = grid->npcol;
     int_t mycol = MYCOL (iam, grid);
@@ -135,51 +134,49 @@ int_t Wait_LDiagBlockSend(MPI_Request *L_diag_blk_send_req,
             MPI_Wait (L_diag_blk_send_req + pc, &status);
         }
     }
-    SCT->Wait_UDiagBlockSend_tl += (double) ( _rdtsc() - t1);
+    SCT->Wait_UDiagBlockSend_tl += (double) ( SuperLU_timer_() - t1);
     return 0;
 }
 
 
 int_t Wait_UDiagBlock_Recv( MPI_Request *request, SCT_t* SCT)
 {
-    unsigned long long t1 = _rdtsc();
+    double t1 = SuperLU_timer_();
     MPI_Status status;
     MPI_Wait(request, &status);
-    SCT->Wait_UDiagBlock_Recv_tl += (double) ( _rdtsc() - t1);
+    SCT->Wait_UDiagBlock_Recv_tl += (double) ( SuperLU_timer_() - t1);
     return 0;
-
 }
 
 int_t Test_UDiagBlock_Recv( MPI_Request *request, SCT_t* SCT)
 {
-    unsigned long long t1 = _rdtsc();
+    double t1 = SuperLU_timer_();
     MPI_Status status;
     int flag;
     MPI_Test(request,&flag, &status);
-    SCT->Wait_UDiagBlock_Recv_tl += (double) ( _rdtsc() - t1);
+    SCT->Wait_UDiagBlock_Recv_tl += (double) ( SuperLU_timer_() - t1);
     return flag;
 
 }
 
 int_t Wait_LDiagBlock_Recv( MPI_Request *request, SCT_t* SCT)
 {
-    unsigned long long t1 = _rdtsc();
+    double t1 = SuperLU_timer_();
     MPI_Status status;
     MPI_Wait(request, &status);
-    SCT->Wait_LDiagBlock_Recv_tl += (double) ( _rdtsc() - t1);
+    SCT->Wait_LDiagBlock_Recv_tl += (double) ( SuperLU_timer_() - t1);
     return 0;
 
 }
 
 int_t Test_LDiagBlock_Recv( MPI_Request *request, SCT_t* SCT)
 {
-    unsigned long long t1 = _rdtsc();
+    double t1 = SuperLU_timer_();
     MPI_Status status;
     int flag;
     MPI_Test(request, &flag, &status);
-    SCT->Wait_LDiagBlock_Recv_tl += (double) ( _rdtsc() - t1);
+    SCT->Wait_LDiagBlock_Recv_tl += (double) ( SuperLU_timer_() - t1);
     return flag;
-
 }
 
 /*

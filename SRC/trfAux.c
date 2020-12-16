@@ -29,10 +29,9 @@ int_t getslu25D_enabled()
     }
 }
 
-int_t getNsupers(int n, LUstruct_t *LUstruct)
+int getNsupers(int n, Glu_persist_t *Glu_persist)
 {
-    Glu_persist_t *Glu_persist = LUstruct->Glu_persist;
-    int_t nsupers = Glu_persist->supno[n - 1] + 1;
+    int nsupers = Glu_persist->supno[n - 1] + 1;
     return nsupers;
 }
 
@@ -150,8 +149,8 @@ int_t estimate_bigu_size( int_t nsupers, int_t ldt, int_t**Ufstnz_br_ptr,
 } /* old estimate_bigu_size. New one is in util.c */
 #endif /**** end old ones ****/
 
-int_t getBigUSize(int_t nsupers, gridinfo_t *grid,
-                  LUstruct_t *LUstruct)
+int_t getBigUSize(int_t nsupers, gridinfo_t *grid, int_t **Lrowind_bc_ptr)
+//LUstruct_t *LUstruct)
 {
 
     int_t Pr = grid->nprow;
@@ -170,7 +169,8 @@ int_t getBigUSize(int_t nsupers, gridinfo_t *grid,
         if (mycol == tpc)
         {
             int_t lk = LBj (i, grid);
-            int_t* lsub = LUstruct->Llu->Lrowind_bc_ptr[lk];
+            //int_t* lsub = LUstruct->Llu->Lrowind_bc_ptr[lk];
+            int_t* lsub = Lrowind_bc_ptr[lk];
             if (lsub != NULL)
             {
                 local_max_row_size = SUPERLU_MAX (local_max_row_size, lsub[1]);
@@ -221,17 +221,18 @@ int_t* getFactIperm(int_t* perm, int_t nsupers)
     return iperm;
 }
 
-int_t* getPerm_c_supno(int_t nsupers,
-                       superlu_dist_options_t *options,
-                       LUstruct_t *LUstruct, gridinfo_t *grid)
+int_t* getPerm_c_supno(int_t nsupers, superlu_dist_options_t *options,
+		       int_t *etree, Glu_persist_t *Glu_persist,
+		       int_t** Lrowind_bc_ptr, int_t** Ufstnz_br_ptr,
+		       gridinfo_t *grid)
 
 {
     /*I do not understand the following code in detail,
     I have just written a wrapper around it*/
 
     int_t* perm_c_supno;
-    Glu_persist_t *Glu_persist = LUstruct->Glu_persist;
-    LocalLU_t *Llu = LUstruct->Llu;
+    //Glu_persist_t *Glu_persist = LUstruct->Glu_persist;
+    //LocalLU_t *Llu = LUstruct->Llu;
     int_t* xsup = Glu_persist->xsup;
 
     int_t iam = grid->iam;
@@ -270,7 +271,7 @@ int_t* getPerm_c_supno(int_t nsupers,
         {
             /* Use the etree computed from serial symb. fact., and turn it
             into supernodal tree.  */
-            int_t *etree = LUstruct->etree;
+            //int_t *etree = LUstruct->etree;
 #if ( PRNTlevel>=1 )
             if ( grid->iam == 0 ) printf( " === using column e-tree ===\n" );
 #endif
@@ -302,7 +303,8 @@ int_t* getPerm_c_supno(int_t nsupers,
             for ( lb = 0; lb < ncb; lb++ )
             {
                 jb = lb * grid->npcol + mycol;
-                index = Llu->Lrowind_bc_ptr[lb];
+                //index = Llu->Lrowind_bc_ptr[lb];
+                index = Lrowind_bc_ptr[lb];
                 if ( index )   /* Not an empty column */
                 {
                     i = index[0];
@@ -330,7 +332,8 @@ int_t* getPerm_c_supno(int_t nsupers,
             if ( mycol < nsupers % grid->npcol )
             {
                 jb = ncb * grid->npcol + mycol;
-                index = Llu->Lrowind_bc_ptr[ncb];
+                //index = Llu->Lrowind_bc_ptr[ncb];
+                index = Lrowind_bc_ptr[ncb];
                 if ( index )   /* Not an empty column */
                 {
                     i = index[0];
@@ -466,7 +469,8 @@ int_t* getPerm_c_supno(int_t nsupers,
         {
             jb = lb * Pr + myrow;
             pc = jb % Pc;
-            index = Llu->Ufstnz_br_ptr[lb];
+            //index = Llu->Ufstnz_br_ptr[lb];
+            index = Ufstnz_br_ptr[lb];
 
             if ( index )   /* Not an empty row */
             {
@@ -488,7 +492,8 @@ int_t* getPerm_c_supno(int_t nsupers,
         {
             jb = nrb * Pr + myrow;
             pc = jb % Pc;
-            index = Llu->Ufstnz_br_ptr[nrb];
+            //index = Llu->Ufstnz_br_ptr[nrb];
+	    index = Ufstnz_br_ptr[nrb];
 
             if ( index )   /* Not an empty row */
             {
@@ -514,7 +519,8 @@ int_t* getPerm_c_supno(int_t nsupers,
         {
             jb = lb * Pr + myrow;
             pc = jb % Pc;
-            index = Llu->Ufstnz_br_ptr[lb];
+            //index = Llu->Ufstnz_br_ptr[lb];
+            index = Ufstnz_br_ptr[lb];
 
             if ( index )   /* Not an empty row */
             {
@@ -535,7 +541,8 @@ int_t* getPerm_c_supno(int_t nsupers,
         {
             jb = nrb * Pr + myrow;
             pc = jb % Pc;
-            index = Llu->Ufstnz_br_ptr[nrb];
+            //index = Llu->Ufstnz_br_ptr[nrb];
+            index = Ufstnz_br_ptr[nrb];
 
             if ( index )   /* Not an empty row */
             {
@@ -631,7 +638,8 @@ int_t* getPerm_c_supno(int_t nsupers,
         for ( lb = 0; lb < ncb; lb++ )
         {
             jb = lb * Pc + mycol;
-            index = Llu->Lrowind_bc_ptr[lb];
+            //index = Llu->Lrowind_bc_ptr[lb];
+            index = Lrowind_bc_ptr[lb];
             if ( index )   /* Not an empty column */
             {
                 nblocks += index[0];
@@ -640,7 +648,8 @@ int_t* getPerm_c_supno(int_t nsupers,
         if ( mycol < nsupers % grid->npcol )
         {
             jb = ncb * Pc + mycol;
-            index = Llu->Lrowind_bc_ptr[ncb];
+            //index = Llu->Lrowind_bc_ptr[ncb];
+            index = Lrowind_bc_ptr[ncb];
             if ( index )   /* Not an empty column */
             {
                 nblocks += index[0];
@@ -656,7 +665,8 @@ int_t* getPerm_c_supno(int_t nsupers,
             Lrows[lb] = 0;
 
             jb = lb * Pc + mycol;
-            index = Llu->Lrowind_bc_ptr[lb];
+            //index = Llu->Lrowind_bc_ptr[lb];
+            index = Lrowind_bc_ptr[lb];
             if ( index )   /* Not an empty column */
             {
                 i = index[0];
@@ -687,7 +697,8 @@ int_t* getPerm_c_supno(int_t nsupers,
         {
             Lrows[ncb] = 0;
             jb = ncb * Pc + mycol;
-            index = Llu->Lrowind_bc_ptr[ncb];
+            //index = Llu->Lrowind_bc_ptr[ncb];
+            index = Lrowind_bc_ptr[ncb];
             if ( index )   /* Not an empty column */
             {
                 i = index[0];
@@ -1148,14 +1159,48 @@ int_t* getPerm_c_supno(int_t nsupers,
 } /* getPerm_c_supno */
 
 
-void getSCUweight(int_t nsupers, treeList_t* treeList,
-                  LUstruct_t *LUstruct, gridinfo3d_t * grid3d
-                 )
+int_t Trs2_InitUblock_info(int_t klst, int_t nb,
+			    Ublock_info_t *Ublock_info,
+			    int_t *usub,
+			    Glu_persist_t *Glu_persist, SuperLUStat_t *stat )
+{
+    int_t *xsup = Glu_persist->xsup;
+    int_t iukp, rukp;
+    iukp = BR_HEADER;
+    rukp = 0;
+
+    for (int_t b = 0; b < nb; ++b)
+    {
+        int_t gb = usub[iukp];
+        int_t nsupc = SuperSize (gb);
+
+        Ublock_info[b].iukp = iukp;
+        Ublock_info[b].rukp = rukp;
+        // Ublock_info[b].nsupc = nsupc;
+
+        iukp += UB_DESCRIPTOR;
+	/* Sherry: can remove this loop for rukp
+	   rukp += usub[iukp-1];
+	 */
+       for (int_t j = 0; j < nsupc; ++j)
+        {
+            int_t segsize = klst - usub[iukp++];
+            rukp += segsize;
+            stat->ops[FACT] += segsize * (segsize + 1);
+        }
+    }
+    return 0;
+}
+
+void getSCUweight(int_t nsupers, treeList_t* treeList, int_t* xsup,
+		  int_t** Lrowind_bc_ptr, int_t** Ufstnz_br_ptr,
+		  gridinfo3d_t * grid3d
+		  )
 {
     gridinfo_t* grid = &(grid3d->grid2d);
-    int_t** Lrowind_bc_ptr = LUstruct->Llu->Lrowind_bc_ptr;
-    int_t** Ufstnz_br_ptr = LUstruct->Llu->Ufstnz_br_ptr;
-    int_t* xsup = LUstruct->Glu_persist->xsup;
+    //int_t** Lrowind_bc_ptr = LUstruct->Llu->Lrowind_bc_ptr;
+    //int_t** Ufstnz_br_ptr = LUstruct->Llu->Ufstnz_br_ptr;
+    //int_t* xsup = LUstruct->Glu_persist->xsup;
 
     int_t * perm_u = INT_T_ALLOC(nsupers);
     int_t * mylsize = INT_T_ALLOC(nsupers);
@@ -1222,37 +1267,4 @@ void getSCUweight(int_t nsupers, treeList_t* treeList,
     SUPERLU_FREE(perm_u);
 
 } /* getSCUweight */
-
-int_t Trs2_InitUblock_info(int_t klst, int_t nb,
-			    Ublock_info_t *Ublock_info,
-			    int_t *usub,
-			    Glu_persist_t *Glu_persist, SuperLUStat_t *stat )
-{
-    int_t *xsup = Glu_persist->xsup;
-    int_t iukp, rukp;
-    iukp = BR_HEADER;
-    rukp = 0;
-
-    for (int_t b = 0; b < nb; ++b)
-    {
-        int_t gb = usub[iukp];
-        int_t nsupc = SuperSize (gb);
-
-        Ublock_info[b].iukp = iukp;
-        Ublock_info[b].rukp = rukp;
-        // Ublock_info[b].nsupc = nsupc;
-
-        iukp += UB_DESCRIPTOR;
-	/* Sherry: can remove this loop for rukp
-	   rukp += usub[iukp-1];
-	 */
-       for (int_t j = 0; j < nsupc; ++j)
-        {
-            int_t segsize = klst - usub[iukp++];
-            rukp += segsize;
-            stat->ops[FACT] += segsize * (segsize + 1);
-        }
-    }
-    return 0;
-}
 
