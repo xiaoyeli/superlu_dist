@@ -206,27 +206,19 @@ int_t pdgstrf3d(superlu_dist_options_t *options, int m, int n, double anorm,
     commRequests_t** comReqss = initCommRequestsArr(SUPERLU_MAX(mxLeafNode, numLA), ldt, grid);
 
     /* Setting up GPU related data structures */
-
+#define GPU_FRAMEWORK
+#ifdef GPU_FRAMEWORK
     int_t first_l_block_acc = 0;
     int_t first_u_block_acc = 0;
-    int_t Pc = grid->npcol;
+    int_t Pc = grid->npcol; 
     int_t Pr = grid->nprow;
-    int_t mrb =    (nsupers + Pr - 1) / Pr;
+    int_t mrb =    (nsupers + Pr - 1) / Pr;  // Sherry check ... use ceiling
     int_t mcb =    (nsupers + Pc - 1) / Pc;
-    HyP_t *HyP = (HyP_t *) SUPERLU_MALLOC(sizeof(HyP_t));
-
-    dInit_HyP(HyP, Llu, mcb, mrb);
-
+    HyP_t *HyP = (HyP_t *) malloc(sizeof(HyP_t));
+    Init_HyP(HyP, Llu, mcb, mrb);
     HyP->first_l_block_acc = first_l_block_acc;
     HyP->first_u_block_acc = first_u_block_acc;
-    int_t bigu_size = getBigUSize(nsupers, grid, LUstruct);
-    // int_t buffer_size = get_max_buffer_size ();
-    // HyP->buffer_size = buffer_size;
-    HyP->bigu_size = bigu_size;
-    HyP->nsupers = nsupers;
-
-#ifdef GPU_ACC
-
+    int_t superlu_acc_offload = HyP->superlu_acc_offload;
     /*Now initialize the GPU data structure*/
     LUstruct_gpu *A_gpu, *dA_gpu;
 
@@ -235,24 +227,43 @@ int_t pdgstrf3d(superlu_dist_options_t *options, int m, int n, double anorm,
     sluGPU_t sluGPUobj;
     sluGPU_t *sluGPU = &sluGPUobj;
     sluGPU->isNodeInMyGrid = getIsNodeInMyGrid(nsupers, maxLvl, myNodeCount, treePerm);
+
+    int_t bigu_size = getBigUSize(nsupers, grid, LUstruct);
+    int_t buffer_size = get_max_buffer_size ();
+    HyP->buffer_size = buffer_size;
+    HyP->bigu_size = bigu_size;
+    HyP->nsupers = nsupers;
+
     if (superlu_acc_offload)
     {
+
+#if 0 	/* Sherry: For GPU code on titan, we do not need performance 
+	   lookup tables since due to difference in CPU-GPU performance
+	   it didn't make much sense to do any Schur-complement update
+	   on CPU, except for the lookahead-update on CPU. Same should
+	   hold for summit as well. (from Piyush)   */
+
         /*Initilize the lookup tables */
         LookUpTableInit(iam);
         acc_async_cost = get_acc_async_cost();
 #ifdef GPU_DEBUG
         if (!iam) printf("Using MIC async cost of %lf \n", acc_async_cost);
 #endif
-
+#endif
+	int_t* perm_c_supno = getPerm_c_supno(nsupers, options, LUstruct, grid);
+	/* Initialize GPU data structures */
         initSluGPU3D_t(sluGPU, LUstruct, grid3d, perm_c_supno,
                        n, buffer_size, bigu_size, ldt);
-
+        
         HyP->first_u_block_acc = sluGPU->A_gpu->first_u_block_gpu;
         HyP->first_l_block_acc = sluGPU->A_gpu->first_l_block_gpu;
         HyP->nCudaStreams = sluGPU->nCudaStreams;
-    }
 
-#endif  // end GPU_ACC
+    } /* end if superlu_acc_offload */
+
+#endif
+
+
 
     /*====  starting main factorization loop =====*/
     MPI_Barrier( grid3d->comm);

@@ -52,6 +52,7 @@ set(sources
   communication_aux.c
   treeFactorization.c 
   sec_structs.c
+  cublas_utils.c
 )
 if (MSVC)
   list(APPEND sources wingetopt.c)
@@ -113,6 +114,7 @@ if(enable_double)
     dcommunication_aux.c 
     dtrfCommWrapper.c
     dsuperlu_blas.c
+    superlu_gpu.cu 
   )
 endif()
 
@@ -178,7 +180,7 @@ if (BUILD_SHARED_LIBS AND BUILD_STATIC_LIBS)
 endif()
 
 set(superlu_dist_libs ${MPI_C_LIBRARIES} ${BLAS_LIB} ${LAPACK_LIB}
-    ${PARMETIS_LIB} ${COMBBLAS_LIB})
+    ${PARMETIS_LIB} ${COMBBLAS_LIB} ${CUDA_LIBRARIES} ${CUDA_CUBLAS_LIBRARIES})
 
 if (NOT MSVC)
   list(APPEND superlu_dist_libs m)
