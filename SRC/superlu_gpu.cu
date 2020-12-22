@@ -2,14 +2,15 @@
 
 #include "mpi.h"
 #include "omp.h"
-#include "sec_structs.h"
+// #include "sec_structs.h"
 #include <ctime>
 #include <cublas_v2.h>
 #include <cuda_runtime.h>
 #undef Reduce
-#include <cub/cub.cuh>
+// #include <cub/cub.cuh>
+#include "cub/cub.cuh"
 #include "lustruct_gpu.h"
-#include "p3dcomm.h"
+// #include "p3dcomm.h"
 // #include "mkl_cblas.h"
 
 extern "C" {
@@ -32,17 +33,17 @@ cudaError_t checkCuda(cudaError_t result)
 }
 
 
-cublasStatus_t checkCublas(cublasStatus_t result)
-{
-#if defined(DEBUG) || defined(_DEBUG)
-	if (result != CUBLAS_STATUS_SUCCESS)
-	{
-		fprintf(stderr, "CUDA Blas Runtime Error: %s\n", cublasGetErrorString(result));
-		assert(result == CUBLAS_STATUS_SUCCESS);
-	}
-#endif
-	return result;
-}
+// cublasStatus_t checkCublas(cublasStatus_t result)
+// {
+// #if defined(DEBUG) || defined(_DEBUG)
+// 	if (result != CUBLAS_STATUS_SUCCESS)
+// 	{
+// 		fprintf(stderr, "CUDA Blas Runtime Error: %s\n", cublasGetErrorString(result));
+// 		assert(result == CUBLAS_STATUS_SUCCESS);
+// 	}
+// #endif
+// 	return result;
+// }
 
 
 int_t getnCudaStreams()
@@ -1759,7 +1760,7 @@ void CopyLUToGPU3D (
 
 int_t reduceAllAncestors3d_GPU(int_t ilvl, int_t* myNodeCount,
                                int_t** treePerm,
-                               LUValSubBuf_t*LUvsb,
+                               dLUValSubBuf_t*LUvsb,
                                LUstruct_t* LUstruct,
                                gridinfo3d_t* grid3d,
                                sluGPU_t *sluGPU,
@@ -1838,7 +1839,7 @@ int_t reduceAllAncestors3d_GPU(int_t ilvl, int_t* myNodeCount,
 		}
 	} /*if (myGrid == sender)*/
 
-	reduceAllAncestors3d(ilvl, myNodeCount, treePerm,
+	dreduceAllAncestors3d(ilvl, myNodeCount, treePerm,
 	                     LUvsb, LUstruct, grid3d, SCT );
 	return 0;
 }

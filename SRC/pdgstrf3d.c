@@ -214,8 +214,8 @@ int_t pdgstrf3d(superlu_dist_options_t *options, int m, int n, double anorm,
     int_t Pr = grid->nprow;
     int_t mrb =    (nsupers + Pr - 1) / Pr;  // Sherry check ... use ceiling
     int_t mcb =    (nsupers + Pc - 1) / Pc;
-    HyP_t *HyP = (HyP_t *) malloc(sizeof(HyP_t));
-    Init_HyP(HyP, Llu, mcb, mrb);
+    HyP_t *HyP = (HyP_t *) SUPERLU_MALLOC(sizeof(HyP_t));
+    dInit_HyP(HyP, Llu, mcb, mrb);
     HyP->first_l_block_acc = first_l_block_acc;
     HyP->first_u_block_acc = first_u_block_acc;
     int_t superlu_acc_offload = HyP->superlu_acc_offload;
@@ -292,7 +292,7 @@ int_t pdgstrf3d(superlu_dist_options_t *options, int m, int n, double anorm,
             {
                 double tilvl = SuperLU_timer_();
 #ifdef GPU_ACC
-                dsparseTreeFactor_ASYNC_GPU(
+                sparseTreeFactor_ASYNC_GPU(
                     sforest,
                     comReqss, &scuBufs,  &packLUInfo,
                     msgss, LUvsbs, dFBufs,  &factStat, &fNlists,
@@ -315,7 +315,7 @@ int_t pdgstrf3d(superlu_dist_options_t *options, int m, int n, double anorm,
             if (ilvl < maxLvl - 1)     /*then reduce before factorization*/
             {
 #ifdef GPU_ACC
-                dreduceAllAncestors3d_GPU(
+                reduceAllAncestors3d_GPU(
                     ilvl, myNodeCount, treePerm, LUvsb,
                     LUstruct, grid3d, sluGPU, d2Hred, &factStat, HyP,
                     SCT );

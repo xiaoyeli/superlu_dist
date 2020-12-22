@@ -14,6 +14,7 @@ set(headers
     TreeBcast_slu_impl.hpp
     TreeReduce_slu_impl.hpp	
     ${CMAKE_CURRENT_BINARY_DIR}/superlu_dist_config.h
+    cub/cub.cuh
 )
 if (MSVC)
   list(APPEND headers wingetopt.h)
@@ -50,7 +51,8 @@ set(sources
   supernodalForest.c
   trfAux.c 
   communication_aux.c
-  treeFactorization.c 
+  treeFactorization.c
+  treeFactorizationGPU.c 
   sec_structs.c
   cublas_utils.c
 )

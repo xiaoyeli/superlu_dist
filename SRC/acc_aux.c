@@ -2,17 +2,17 @@
 
 #define CLAMP(x, low, high)  (((x) > (high)) ? (high) : (((x) < (low)) ? (low) : (x)))
 
-int
-get_thread_per_process ()
-{
-    char *ttemp;
-    ttemp = getenv ("THREAD_PER_PROCESS");
+// int
+// get_thread_per_process ()
+// {
+//     char *ttemp;
+//     ttemp = getenv ("THREAD_PER_PROCESS");
 
-    if (ttemp)
-        return atoi (ttemp);
-    else
-        return 1;
-}
+//     if (ttemp)
+//         return atoi (ttemp);
+//     else
+//         return 1;
+// }
 
 
 static inline double
@@ -33,16 +33,16 @@ load_imb (double *A, int nthreads)
 
 
 
-int_t
-get_max_buffer_size ()
-{
-    char *ttemp;
-    ttemp = getenv ("MAX_BUFFER_SIZE");
-    if (ttemp)
-        return atoi (ttemp);
-    else
-        return 5000000;
-}
+// int_t
+// get_max_buffer_size ()
+// {
+//     char *ttemp;
+//     ttemp = getenv ("MAX_BUFFER_SIZE");
+//     if (ttemp)
+//         return atoi (ttemp);
+//     else
+//         return 5000000;
+// }
 
 
 // #define ACC_ASYNC_COST 3.79e-3
