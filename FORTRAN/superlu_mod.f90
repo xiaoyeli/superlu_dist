@@ -1,7 +1,12 @@
 !> @file
 !! \brief This module contains Fortran-side wrappers for the SuperLU
 !! get/set functions.
-!
+!!
+!! <pre>
+!! -- Distributed SuperLU routine (version 7.0) --
+!! Lawrence Berkeley National Lab, Univ. of California Berkeley.
+!! Last update: December 31, 2020
+!! </pre>
 
 module superlu_mod
 
@@ -16,13 +21,18 @@ use superlupara_mod
 implicit none
 contains
 
-subroutine get_GridInfo(grid, iam, nprow, npcol)
-  integer(superlu_ptr) :: grid
+subroutine get_GridInfo(grid, iam, nprow, npcol, npdep)
+  integer(superlu_ptr) :: grid     !! can be 2D or 3D grid
   integer*4, optional :: iam
-  integer, optional :: nprow, npcol
-  integer :: l_iam, l_nprow, l_npcol
+  integer, optional :: nprow, npcol, npdep
+  integer :: l_iam, l_nprow, l_npcol, l_npdep
 
-  call  f_get_gridinfo(grid, l_iam, l_nprow, l_npcol)
+  if (present(npdep)) then
+     call f_get_gridinfo3d(grid, l_iam, l_nprow, l_npcol, l_npdep)
+     npdep = l_npdep
+  else
+     call f_get_gridinfo(grid, l_iam, l_nprow, l_npcol)
+  endif
 
   if (present(iam)) iam = l_iam
   if (present(nprow)) nprow = l_nprow

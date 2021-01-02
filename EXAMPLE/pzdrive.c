@@ -138,7 +138,7 @@ int main(int argc, char *argv[])
 	
     /* Bail out if I do not belong in the grid. */
     iam = grid.iam;
-    if ( iam >= nprow * npcol )	goto out;
+    if ( iam == -1 )	goto out;
     if ( !iam ) {
 	int v_major, v_minor, v_bugfix;
 #ifdef __INTEL_COMPILER
@@ -197,7 +197,7 @@ int main(int argc, char *argv[])
      */
     set_default_options_dist(&options);
 #if 0
-    options.RowPerm = LargeDiag_HWPM;
+    options.RowPerm = NOROWPERM;
     options.IterRefine = NOREFINE;
     options.ColPerm = NATURAL;
     options.Equil = NO; 
@@ -227,7 +227,7 @@ int main(int argc, char *argv[])
 
     /* Check the accuracy of the solution. */
     pzinf_norm_error(iam, ((NRformat_loc *)A.Store)->m_loc,
-		     nrhs, b, ldb, xtrue, ldx, &grid);
+		     nrhs, b, ldb, xtrue, ldx, grid.comm);
 
     PStatPrint(&options, &stat, &grid);        /* Print the statistics. */
 

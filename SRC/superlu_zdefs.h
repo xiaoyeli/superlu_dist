@@ -537,7 +537,7 @@ extern void    zfill_dist (doublecomplex *, int_t, doublecomplex);
 extern void    zinf_norm_error_dist (int_t, int_t, doublecomplex*, int_t,
                                      doublecomplex*, int_t, gridinfo_t*);
 extern void    pzinf_norm_error(int, int_t, int_t, doublecomplex [], int_t,
-				doublecomplex [], int_t , gridinfo_t *);
+				doublecomplex [], int_t , MPI_Comm);
 extern void  zreadhb_dist (int, FILE *, int_t *, int_t *, int_t *,
 			   doublecomplex **, int_t **, int_t **);
 extern void  zreadtriple_dist(FILE *, int_t *, int_t *, int_t *,

@@ -319,13 +319,13 @@ PStatPrint(superlu_dist_options_t *options, SuperLUStat_t *stat, gridinfo_t *gri
 	printf("**** Time (seconds) ****\n");
 
         if ( options->Equil != NO )
-	    printf("\tEQUIL time         %8.2f\n", utime[EQUIL]);
+	    printf("\tEQUIL time         %8.3f\n", utime[EQUIL]);
 	if ( options->RowPerm != NOROWPERM )
-	    printf("\tROWPERM time       %8.2f\n", utime[ROWPERM]);
+	    printf("\tROWPERM time       %8.3f\n", utime[ROWPERM]);
 	if ( options->ColPerm != NATURAL )
-	    printf("\tCOLPERM time       %8.2f\n", utime[COLPERM]);
-        printf("\tSYMBFACT time      %8.2f\n", utime[SYMBFAC]);
-	printf("\tDISTRIBUTE time    %8.2f\n", utime[DIST]);
+	    printf("\tCOLPERM time       %8.3f\n", utime[COLPERM]);
+        printf("\tSYMBFACT time      %8.3f\n", utime[SYMBFAC]);
+	printf("\tDISTRIBUTE time    %8.3f\n", utime[DIST]);
 
     }
 
@@ -333,7 +333,7 @@ PStatPrint(superlu_dist_options_t *options, SuperLUStat_t *stat, gridinfo_t *gri
 	       0, grid->comm);
     factflop = flopcnt;
     if ( !iam && options->Fact != FACTORED ) {
-	printf("\tFACTOR time        %8.2f\n", utime[FACT]);
+	printf("\tFACTOR time        %8.3f\n", utime[FACT]);
 	if ( utime[FACT] != 0.0 )
 	    printf("\tFactor flops\t%e\tMflops \t%8.2f\n",
 		   flopcnt,

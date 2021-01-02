@@ -40,8 +40,8 @@
       parameter ( maxn = 10, maxnz = 100, maxnrhs = 10 )
       integer colind(maxnz), rowptr(maxn+1)
       real*8  nzval(maxnz), b(maxn), berr(maxnrhs)
-      integer n, m, nnz, nrhs, ldb, nprow, npcol, init
-      integer*4 iam, info, i, ierr, ldb4
+      integer n, m, nnz, nrhs, nprow, npcol, init
+      integer*4 iam, info, i, ierr, ldb
       integer nnz_loc, m_loc, fst_row
       real*8  s, u, p, e, r, l
 
@@ -166,7 +166,6 @@
          b(i) = 1.0
       enddo
       nrhs = 1
-      ldb4 = ldb
 
 ! Set the default input options
       call f_set_default_options(options)
@@ -184,7 +183,7 @@
       call f_PStatInit(stat)
 
 ! Call the linear equation solver
-      call f_pdgssvx(options, A, ScalePermstruct, b, ldb4, nrhs, &
+      call f_pdgssvx(options, A, ScalePermstruct, b, ldb, nrhs, &
                      grid, LUstruct, SOLVEstruct, berr, stat, info)
 
       if (info == 0 .and. iam == 1) then
@@ -197,12 +196,12 @@
       call f_PStatFree(stat)
       call f_Destroy_SuperMat_Store_dist(A)
       call f_ScalePermstructFree(ScalePermstruct)
-      call f_Destroy_LU(n, grid, LUstruct)
-      call f_LUstructFree(LUstruct)
-      call get_superlu_options(options, SolveInitialized=init)
-      if (init == YES) then
-         call f_dSolveFinalize(options, SOLVEstruct)
-      endif
+      call f_Destroy_LU_SOLVE_struct(options, n, grid, LUstruct, SOLVEstruct)
+!      call f_LUstructFree(LUstruct)
+!      call get_superlu_options(options, SolveInitialized=init)
+!      if (init == YES) then
+!         call f_dSolveFinalize(options, SOLVEstruct)
+!      endif
 
 ! Release the SuperLU process grid
 100   call f_superlu_gridexit(grid)

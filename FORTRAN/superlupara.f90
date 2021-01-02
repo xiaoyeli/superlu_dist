@@ -2,6 +2,11 @@
 !! \brief This module contains some parameter used in SuperLU for
 !! Fortran90 user.
 !
+!! <pre>
+!! -- Distributed SuperLU routine (version 7.0) --
+!! Lawrence Berkeley National Lab, Univ. of California Berkeley.
+!! Last update: December 31, 2020
+!! </pre>
 
 module superlupara_mod
 
@@ -24,8 +29,8 @@ integer, parameter :: superlu_ptr = 8 ! 64-bit
 !----------------------------------------------------
 ! The following parameters are defined:
 
-! These values come from superlu_defs.h.  If the values in there change with
-! the version of SuperLU, then they need to be changed here, too.
+! These values come from superlu_enum_consts.h. If the values in there
+! change, then they need to be changed here, too.
 
 integer, parameter, public :: &
                       NO                      = 0, & ! yes_no_t
@@ -35,8 +40,9 @@ integer, parameter, public :: &
                       SamePattern_SameRowPerm = 2, &
                       FACTORED                = 3, &
                       NOROWPERM               = 0, & ! rowperm_t
-                      LargeDiag               = 1, &
-                      MY_PERMR                = 2, &
+                      LargeDiag_MC64          = 1, &
+                      LargeDiag_HWPM          = 2, &
+                      MY_PERMR                = 3, &
                       NATURAL                 = 0, & ! colperm_t
                       MMD_ATA                 = 1, &
                       MMD_AT_PLUS_A           = 2, &
@@ -53,15 +59,26 @@ integer, parameter, public :: &
                       COL                     = 2, &
                       BOTH                    = 3, &
                       NOREFINE                = 0, & ! IterRefine_t
-                      SINGLE                  = 1, &
-                      DOUBLE                  = 2, &
-                      EXTRA                   = 3, &
-                      LUSUP                   = 0, & ! MemType  Need?
-                      UCOL                    = 1, &
-                      LSUB                    = 2, &
-                      USUB                    = 3, &
-                      SYSTEM                  = 0, & ! LU_space_t  Need?
-                      USER                    = 1
+                      SLU_SINGLE              = 1, &
+                      SLU_DOUBLE              = 2, &
+                      SLU_EXTRA               = 3, &
+                      USUB                    = 0, & ! MemType
+                      LSUB                    = 1, &
+                      UCOL                    = 2, &
+                      LUSUP                   = 3, &
+                      LLVL                    = 4, &
+                      ULVL                    = 5, &
+                      NO_MEMTYPE              = 6, &
+                      SYSTEM                  = 0, & ! LU_space_t
+                      USER                    = 1, & 
+                      SILU                    = 0, & ! milu_t
+                      SMILU_1                 = 1, &
+                      SMILU_2                 = 2, &
+                      SMILU_3                 = 3
+                      
+! These values come from supermatrix.h. If the values in there
+! change, then they need to be changed here, too.
+
 integer, parameter, public :: &
                       SLU_NC                  = 0, & ! Stype_t
                       SLU_NCP                 = 1, &
@@ -84,7 +101,6 @@ integer, parameter, public :: &
                       SLU_SYU                 = 6, &
                       SLU_HEL                 = 7, &
                       SLU_HEU                 = 8
-
 
 !----------------------------------------------------
 

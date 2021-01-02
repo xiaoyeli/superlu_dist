@@ -204,8 +204,7 @@ main (int argc, char *argv[])
 	
     /* Bail out if I do not belong in the grid. */
     iam = grid.iam;
-    if (iam >= nprow * npcol *npdep)
-        goto out;
+    if (iam == -1)     goto out;
     if (!iam) {
 	int v_major, v_minor, v_bugfix;
 #ifdef __INTEL_COMPILER
@@ -242,14 +241,13 @@ main (int argc, char *argv[])
 	zcreate_matrix_postfix(&A, nrhs, &b, &ldb, &xtrue, &ldx, fp, suffix, &(grid.grid2d));
 	
 #else
-    NRformat_loc *Astore, *Astore0;
-
     // *fp0 = *fp;
     zcreate_matrix_postfix3d(&A, nrhs, &b, &ldb,
                              &xtrue, &ldx, fp, suffix, &(grid));
     //printf("ldx %d, ldb %d\n", ldx, ldb);
     
 #if 0  // following code is only for checking *Gather* routine
+    NRformat_loc *Astore, *Astore0;
     doublecomplex* B2d;
     NRformat_loc Atmp = dGatherNRformat_loc(
                             (NRformat_loc *) A.Store,
@@ -347,11 +345,8 @@ main (int argc, char *argv[])
                &LUstruct, &SOLVEstruct, berr, &stat, &info);
 
     /* Check the accuracy of the solution. */
-#ifndef NRFRMT
-    if ( grid.zscp.Iam == 0 )  // Process layer 0
-#endif    
-        pzinf_norm_error (iam, ((NRformat_loc *) A.Store)->m_loc,
-                          nrhs, b, ldb, xtrue, ldx, &(grid.grid2d));
+    pzinf_norm_error (iam, ((NRformat_loc *) A.Store)->m_loc,
+                          nrhs, b, ldb, xtrue, ldx, grid.comm);
     fflush(stdout);
 
     /* ------------------------------------------------------------

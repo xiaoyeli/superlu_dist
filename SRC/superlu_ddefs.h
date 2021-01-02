@@ -536,7 +536,7 @@ extern void    dfill_dist (double *, int_t, double);
 extern void    dinf_norm_error_dist (int_t, int_t, double*, int_t,
                                      double*, int_t, gridinfo_t*);
 extern void    pdinf_norm_error(int, int_t, int_t, double [], int_t,
-				double [], int_t , gridinfo_t *);
+				double [], int_t , MPI_Comm);
 extern void  dreadhb_dist (int, FILE *, int_t *, int_t *, int_t *,
 			   double **, int_t **, int_t **);
 extern void  dreadtriple_dist(FILE *, int_t *, int_t *, int_t *,

@@ -137,8 +137,8 @@ if(XSDK_INDEX_SIZE EQUAL 64)
     message("-- Using 64 bit integer for index size.")
 endif()	
 set(CMAKE_C_FLAGS_RELEASE "-O3 -g" CACHE STRING "")
-message("cmake_c_flags_release '${CMAKE_C_FLAGS_RELEASE}'")
-message("cmake_shared_library_c_flags '${CMAKE_SHARED_LIBRARY_C_FLAGS}'")
+#message("cmake_c_flags_release '${CMAKE_C_FLAGS_RELEASE}'")
+#message("cmake_shared_library_c_flags '${CMAKE_SHARED_LIBRARY_C_FLAGS}'")
 set(CMAKE_CXX_FLAGS_RELEASE "-O3 -g" CACHE STRING "")
 
 ######################################################################

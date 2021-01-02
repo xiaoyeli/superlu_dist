@@ -52,6 +52,11 @@ void f_create_gridinfo_handle(fptr *handle)
    *handle = (fptr) SUPERLU_MALLOC(sizeof(gridinfo_t));
 }
 
+void f_create_gridinfo3d_handle(fptr *handle)
+{
+   *handle = (fptr) SUPERLU_MALLOC(sizeof(gridinfo3d_t));
+}
+
 void f_create_options_handle(fptr *handle)
 {
    *handle = (fptr) SUPERLU_MALLOC(sizeof(superlu_dist_options_t));
@@ -128,6 +133,15 @@ void f_get_gridinfo(fptr *grid, int *iam, int_t *nprow, int_t *npcol)
   *iam=((gridinfo_t *) *grid)->iam;
   *npcol=((gridinfo_t *) *grid)->npcol;
   *nprow=((gridinfo_t *) *grid)->nprow;
+}
+
+void f_get_gridinfo3d(fptr *grid, int *iam,
+         	      int_t *nprow, int_t *npcol, int_t *npdep)
+{
+  *iam=((gridinfo3d_t *) *grid)->iam;
+  *npcol=((gridinfo3d_t *) *grid)->npcol;
+  *nprow=((gridinfo3d_t *) *grid)->nprow;
+  *npdep=((gridinfo3d_t *) *grid)->npdep;
 }
 
 void f_get_SuperMatrix(fptr *A, int_t *nrow, int_t *ncol)
@@ -210,13 +224,17 @@ void f_set_default_options(fptr *options)
 
 void f_superlu_gridinit(int *Bcomm, int_t *nprow, int_t *npcol, fptr *grid)
 {
-  
    superlu_gridinit(f2c_comm(Bcomm), *nprow, *npcol, (gridinfo_t *) *grid);
 }
 
+void f_superlu_gridinit3d(int *Bcomm, int_t *nprow, int_t *npcol,
+   			  int_t *npdep, fptr *grid)
+{
+    superlu_gridinit3d(f2c_comm(Bcomm), *nprow, *npcol, *npdep, (gridinfo3d_t *) *grid);
+}
+
 void f_superlu_gridmap(int *Bcomm, int_t *nprow, int_t *npcol, 
-                       int_t *usermap, int_t *ldumap,
-	 fptr *grid)
+                       int_t *usermap, int_t *ldumap, fptr *grid)
 {
    superlu_gridmap(f2c_comm(Bcomm), *nprow, *npcol, usermap, *ldumap, (gridinfo_t *) *grid);
 }
@@ -260,9 +278,35 @@ void f_LUstructFree(fptr *LUstruct)
    zLUstructFree((zLUstruct_t *) *LUstruct);
 }
 
-void f_Destroy_LU(int_t *n, fptr *grid, fptr *LUstruct)
+void f_Destroy_LU_SOLVE_struct(fptr *options, int_t *n, fptr *grid,
+                               fptr *LUstruct, fptr *SOLVEstruct)
 {
-   zDestroy_LU(*n, (gridinfo_t *) *grid, (zLUstruct_t *) *LUstruct);
+    superlu_dist_options_t *opt = (superlu_dist_options_t *) *options;
+    zDestroy_LU(*n, (gridinfo_t *) *grid, (zLUstruct_t *) *LUstruct);
+    zLUstructFree((zLUstruct_t *) *LUstruct);
+    if ( opt->SolveInitialized ) {
+        zSolveFinalize(opt, (zSOLVEstruct_t *) *SOLVEstruct);
+    }
+}
+
+void f_Destroy_LU_SOLVE_struct_3d(fptr *options, int_t *n, fptr *grid,
+		                  fptr *LUstruct, fptr *SOLVEstruct)
+{
+    gridinfo3d_t *grid3d = (gridinfo3d_t *) *grid;
+    superlu_dist_options_t *opt = (superlu_dist_options_t *) *options;
+    zLUstruct_t *LUstruct_ptr = (zLUstruct_t *) *LUstruct;
+    
+    if ( grid3d->zscp.Iam == 0 ) { // process layer 0
+	zDestroy_LU(*n, &(grid3d->grid2d), LUstruct_ptr);
+	if ( opt->SolveInitialized ) {
+	    zSolveFinalize(opt, (zSOLVEstruct_t *) *SOLVEstruct);
+	}
+    } else { // process layers not equal 0
+        zDeAllocLlu_3d(*n, LUstruct_ptr, grid3d);
+        zDeAllocGlu_3d(LUstruct_ptr);
+    }
+    
+    zLUstructFree(LUstruct_ptr);
 }
 
 void f_zCreate_CompRowLoc_Mat_dist(fptr *A, int_t *m, int_t *n, int_t *nnz_loc,
@@ -306,19 +350,62 @@ void f_pzgssvx(fptr *options, fptr *A, fptr *ScalePermstruct, doublecomplex *B,
 	       (gridinfo_t *) *grid);
 }
 
+void f_pzgssvx3d(fptr *options, fptr *A, fptr *ScalePermstruct,
+                 doublecomplex *B, int *ldb, int *nrhs,
+                 fptr *grid, fptr *LUstruct, fptr *SOLVEstruct,
+                 double *berr, fptr *stat, int *info)
+{
+    gridinfo3d_t *grid3d = (gridinfo3d_t *) *grid;
+    pzgssvx3d((superlu_dist_options_t *) *options, (SuperMatrix *) *A,
+	      (zScalePermstruct_t *) *ScalePermstruct, B, *ldb, *nrhs,
+	      grid3d, (zLUstruct_t *) *LUstruct,
+	      (zSOLVEstruct_t *) *SOLVEstruct, berr,
+	      (SuperLUStat_t *) *stat, info);
+
+    if ( grid3d->zscp.Iam == 0 ) {
+	PStatPrint((superlu_dist_options_t *) *options,
+		   (SuperLUStat_t *) *stat, &(grid3d->grid2d));
+    }
+}
+
 /* Create the distributed matrix */
 
-void f_zcreate_dist_matrix(fptr *A, int_t *m, int_t *n, int_t *nnz,
-			   doublecomplex *nzval, int_t *rowind, int_t *colptr,
-			   fptr *grid)
+void f_zcreate_matrix_x_b(char *fname, fptr *A, int *m, int *n, int_t *nnz,
+		           int *nrhs, doublecomplex *b, int *ldb,
+		           doublecomplex *xtrue, int *ldx, fptr *grid)
 {
-   int zcreate_dist_matrix(SuperMatrix *, int_t, int_t, int_t, doublecomplex *,
-			   int_t * , int_t *, gridinfo_t *);
+    extern int c2f_zcreate_matrix_x_b(char *fname, int nrhs, int nprocs,
+    	                   MPI_Comm, SuperMatrix *A, int *m_g, int *n_g,
+			   int_t *nnz_g, doublecomplex *rhs, int *ldb,
+			   doublecomplex *x, int *ldx);
 
-   zcreate_dist_matrix((SuperMatrix *) *A, (int_t) *m, *n, *nnz, 
-		       (doublecomplex *) nzval, (int_t *) rowind, (int_t *) colptr,
-		       (gridinfo_t *) *grid);
+    int iam, nprocs;
+    int_t nprow, npcol;
+    MPI_Comm slucomm = ((gridinfo_t *) *grid)->comm;
+    f_get_gridinfo(grid, &iam, &nprow, &npcol);
+    nprocs = nprow * npcol;
+			   
+    c2f_zcreate_matrix_x_b(fname, *nrhs, nprocs, slucomm,
+    	                   (SuperMatrix *) *A, m, n, nnz, b, ldb, xtrue, ldx);
+}
 
+void f_zcreate_matrix_x_b_3d(char *fname, fptr *A, int *m, int *n, int_t *nnz,
+		           int *nrhs, doublecomplex *b, int *ldb,
+		           doublecomplex *xtrue, int *ldx, fptr *grid)
+{
+    extern int c2f_zcreate_matrix_x_b(char *fname, int nrhs, int nprocs,
+    	                   MPI_Comm, SuperMatrix *A, int *m_g, int *n_g,
+			   int_t *nnz_g, doublecomplex *rhs, int *ldb,
+			   doublecomplex *x, int *ldx);
+
+    int iam, nprocs;
+    int_t nprow, npcol, npdep;
+    MPI_Comm slucomm = ((gridinfo3d_t *) *grid)->comm;
+    f_get_gridinfo3d(grid, &iam, &nprow, &npcol, &npdep);
+    nprocs = nprow * npcol * npdep;
+			   
+    c2f_zcreate_matrix_x_b(fname, *nrhs, nprocs, slucomm,
+    	                   (SuperMatrix *) *A, m, n, nnz, b, ldb, xtrue, ldx);
 }
 
 /* Check malloc */
