@@ -1,6 +1,11 @@
 # Sherry; may not need it?
 include_directories(${SuperLU_DIST_SOURCE_DIR}/SRC)
 
+set(headers
+    ${CMAKE_INSTALL_PREFIX}/FORTRAN/superlu_mod.mod
+    ${CMAKE_INSTALL_PREFIX}/FORTRAN/superlupara_mod.mod
+    )
+    
 # Fortran stuff
 add_definitions(${MPI_Fortran_COMPILE_FLAGS})
 include_directories(${MPI_Fortran_INCLUDE_PATH})
@@ -52,3 +57,8 @@ if(enable_complex16)
   set_target_properties(f_pzdrive3d PROPERTIES LINKER_LANGUAGE CXX LINK_FLAGS "${MPI_Fortran_LINK_FLAGS}")
   
 endif()
+
+install(FILES ${headers}
+# DESTINATION ${CMAKE_INSTALL_PREFIX}/include)
+  DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+)
