@@ -625,7 +625,7 @@ void dDumpLblocks(int iam, int_t nsupers, gridinfo_t *grid,
 		fprintf(fp, "%d %d %d\n", n,n,nnzL);
 	}
 
-     ncb = nsupers / grid->npcol;
+	ncb = nsupers / grid->npcol;
     extra = nsupers % grid->npcol;
     mycol = MYCOL( iam, grid );
     if ( mycol < extra ) ++ncb;
@@ -640,14 +640,16 @@ void dDumpLblocks(int iam, int_t nsupers, gridinfo_t *grid,
 	    for (c = 0, k = BC_HEADER, r = 0; c < nb; ++c) {
 		len = index[k+1];
 
-		for (j = 0; j < nsupc; ++j) {
-		for (i=0; i<len; ++i){
-			fprintf(fp, IFMT IFMT " %e\n", index[k+LB_DESCRIPTOR+i]+1, xsup[gb]+j+1, (double)iam);
-#if 0
-			fprintf(fp, IFMT IFMT " %e\n", index[k+LB_DESCRIPTOR+i]+1, xsup[gb]+j+1, nzval[r +i+ j*nsupr]);
-#endif
-		}
-		}
+
+		//for (j = 0; j < nsupc; ++j) {
+            //fprintf(fp, IFMT IFMT " %e\n", index[k+LB_DESCRIPTOR+i]+1, xsup[gb]+1, len,);
+		    //for (i=0; i<len; ++i){
+            fprintf(fp, "%d,%d,%d,%d,%d\n", index[k+LB_DESCRIPTOR+2], gb, (double)iam,len,nsupc);
+//#if 0
+		        //fprintf(fp, IFMT IFMT " %e\n", index[k+LB_DESCRIPTOR+i]+1, xsup[gb]+j+1, nzval[r +i+ j*nsupr]);
+//#endif
+		//}
+		//}
 		k += LB_DESCRIPTOR + len;
 		r += len;
 	    }

@@ -2,13 +2,6 @@
 <project version="4">
   <component name="PublishConfigData" autoUpload="Always" serverName="summit">
     <serverData>
-      <paths name="Cori (f52dd9a7-f6fb-49fe-8b20-5162e5d22ab3)">
-        <serverdata>
-          <mappings>
-            <mapping deploy="/tmp/tmp.gTRJGeBsOX" local="$PROJECT_DIR$" />
-          </mappings>
-        </serverdata>
-      </paths>
       <paths name="summit">
         <serverdata>
           <mappings>

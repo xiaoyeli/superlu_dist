@@ -1428,6 +1428,7 @@ pdgssvx(superlu_dist_options_t *options, SuperMatrix *A,
     // {
 	// #pragma omp master
 	// {
+	//for (int iter_nan=0;iter_nan<10;iter_nan++)
 	pdgstrs(n, LUstruct, ScalePermstruct, grid, X, m_loc,
 		fst_row, ldb, nrhs, SOLVEstruct, stat, info);
 	// }

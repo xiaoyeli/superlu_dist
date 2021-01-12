@@ -281,6 +281,12 @@ if(bid<nbcol_loc){
     //YL: this thread forwards the lsum subvector using NVSHMEM
     if(LRtree_ptr[lib].myRoot_ != LRtree_ptr[lib].myRank_){
         cnt=LRtree_ptr[lib].msgSize_;
+    	int tmp_myoff;
+    	if(LRtree_ptr[lib].myIdx %2 ==0){
+    	   tmp_myoff = lib*RDMA_FLAG_SIZE*2;
+    	}else{
+    	   tmp_myoff = lib*RDMA_FLAG_SIZE*2+RDMA_FLAG_SIZE;
+    	}
         C_RdTree_forwardMessageSimple_Device(&LRtree_ptr[lib],&lsum[il - LSUM_H ],cnt*nrhs+LSUM_H);
     }
 

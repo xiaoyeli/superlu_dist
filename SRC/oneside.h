@@ -8,7 +8,17 @@ extern int *my_flag_rd;
 extern double *ready_x;
 extern double *ready_lsum;
 extern int *mystatus;
+extern int *mystatusmod;
 extern int *d_launch_flag;
+
+/* ************************************************* */
+/*  for block column broadcast                       */
+/*  *_nfrecv: totol number of received msg           */
+/*  d_*: device memory                               */
+/*  h_*: host memory                                 */
+/*  d_mynum: number of msg I expected // each thread */
+/*  d_mymaskstart: start index point at d_column     */
+/* ************************************************  */
 extern int *d_nfrecv;
 extern int *h_nfrecv;
 extern int *d_status;
@@ -16,6 +26,17 @@ extern int *d_colnum;
 extern int *d_mynum;
 extern int *d_mymaskstart;
 extern int *d_mymasklength;
+
+
+extern int *d_nfrecvmod;
+extern int *h_nfrecvmod;
+extern int *d_statusmod;
+extern int *d_colnummod;
+extern int *d_mynummod;
+extern int *d_mymaskstartmod;
+extern int *d_mymasklengthmod;
+extern int *d_recv_cnt;
+extern __device__ int clockrate;
 #define RDMA_FLAG_SIZE 4
 
 

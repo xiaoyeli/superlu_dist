@@ -842,6 +842,7 @@ pdCompute_Diag_Inv(int_t n, LUstruct_t *LUstruct,gridinfo_t *grid,
  * </pre>
  */
 
+__device__ int clockrate;
 void
 pdgstrs(int_t n, LUstruct_t *LUstruct,
 	ScalePermstruct_t *ScalePermstruct,
@@ -1215,10 +1216,12 @@ pdgstrs(int_t n, LUstruct_t *LUstruct,
 	PStatInit(stat_loc[i]);
     }
 
-#if ( DEBUGlevel>=2 )
+
+//#if ( DEBUGlevel>=2 )
     /* Dump the L factor using matlab triple-let format. */
-    dDumpLblocks(iam, nsupers, grid, Glu_persist, Llu);
-#endif
+    //dDumpLblocks(iam, nsupers, grid, Glu_persist, Llu);
+    //return;
+//#endif
 
     /*---------------------------------------------------
      * Forward solve Ly = b.
@@ -1665,15 +1668,20 @@ dGenCOOLblocks(iam, nsupers, grid,Glu_persist,Llu, cooRows, cooCols, cooVals, &n
 	checkGPU(gpuMemcpy(d_fmod, fmod, (nlb*aln_i) * sizeof(int_t), gpuMemcpyHostToDevice));
 
 	checkGPU(gpuMemcpy(d_status, mystatus, k * sizeof(int), gpuMemcpyHostToDevice));
+	checkGPU(gpuMemcpy(d_statusmod, mystatusmod, 2* nlb * sizeof(int), gpuMemcpyHostToDevice));
+	//for(int i=0;i<2*nlb;i++) printf("(%d),mystatusmod[%d]=%d\n",iam,i,mystatusmod[i]);
 	checkGPU(gpuMemset(flag_rd_q, 0, RDMA_FLAG_SIZE * nlb * 2 * sizeof(int)));
     checkGPU(gpuMemset(flag_bc_q, 0, RDMA_FLAG_SIZE * (k+1)  * sizeof(int)));
-	//printf("2-(%d) maxrecvsz=%d,ready_x=%d, RDMA_FLAG_SIZE=%d,k=%d\n",iam,maxrecvsz,maxrecvsz*CEILING( nsupers, grid->npcol),RDMA_FLAG_SIZE,k);
-	//fflush(stdout);
+	checkGPU(gpuMemset(ready_x, 0, maxrecvsz*CEILING( nsupers, grid->npcol) * sizeof(double)));
+    checkGPU(gpuMemset(ready_lsum, 0, 2*maxrecvsz*CEILING( nsupers, grid->nprow) * sizeof(double)));
+	printf("2-(%d) maxrecvsz=%d,ready_x=%d, ready_lsum=%d,RDMA_FLAG_SIZE=%d,k=%d,nlb=%d\n",iam,maxrecvsz,maxrecvsz*CEILING( nsupers, grid->npcol),2*maxrecvsz*CEILING( nsupers, grid->nprow),RDMA_FLAG_SIZE,k,nlb);
+	fflush(stdout);
     dlsum_fmod_inv_gpu_wrap(k,nlb,DIM_X,DIM_Y,d_lsum,d_x,nrhs,knsupc,nsupers,d_fmod,Llu->d_LBtree_ptr,Llu->d_LRtree_ptr,Llu->d_ilsum,Llu->d_Lrowind_bc_dat, Llu->d_Lrowind_bc_offset, Llu->d_Lnzval_bc_dat, Llu->d_Lnzval_bc_offset, Llu->d_Linv_bc_dat, Llu->d_Linv_bc_offset, Llu->d_Lindval_loc_bc_dat, Llu->d_Lindval_loc_bc_offset,Llu->d_xsup,d_grid,maxrecvsz,
-	                        flag_bc_q, flag_rd_q, ready_x, ready_lsum,my_flag_bc, my_flag_rd, d_launch_flag, d_nfrecv, h_nfrecv,d_status,d_colnum,d_mynum,d_mymaskstart,d_mymasklength);
+	                        flag_bc_q, flag_rd_q, ready_x, ready_lsum, my_flag_bc, my_flag_rd, d_launch_flag, d_nfrecv, h_nfrecv,
+	                        d_status,d_colnum,d_mynum, d_mymaskstart,d_mymasklength,
+	                        d_nfrecvmod,d_statusmod,d_colnummod,d_mynummod,d_mymaskstartmod,d_mymasklengthmod,d_recv_cnt);
 
 	checkGPU(gpuMemcpy(x, d_x, (ldalsum * nrhs + nlb * XK_H) * sizeof(double), gpuMemcpyDeviceToHost));
-
 
 	checkGPU (gpuFree (d_grid));
 	checkGPU (gpuFree (d_x));
@@ -1681,7 +1689,7 @@ dGenCOOLblocks(iam, nsupers, grid,Glu_persist,Llu, cooRows, cooCols, cooVals, &n
 	checkGPU (gpuFree (d_fmod));
 
 // #if HAVE_CUDA
- //cudaProfilerStop();
+// cudaProfilerStop();
 // #elif defined(HAVE_HIP)
 // roctracer_mark("after HIP LaunchKernel");
 // roctxMark("after hipLaunchKernel");

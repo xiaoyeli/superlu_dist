@@ -179,8 +179,8 @@ if ( msg0 && msg2 ) {  /* L(:,k) and U(k,:) are not empty. */
 		size_t B_stream_size = ldu * num_col_stream * sizeof(double);
 		size_t C_stream_size = nbrow * num_col_stream * sizeof(double);
 
-		assert(ldu*(st_col+num_col_stream) < bigu_size);
-		assert(nbrow*(st_col+num_col_stream) < buffer_size);
+		//assert(ldu*(st_col+num_col_stream) < bigu_size);
+		//assert(nbrow*(st_col+num_col_stream) < buffer_size);
 
 		gpuMemcpyAsync(dB+b_offset, tempu+b_offset, B_stream_size,
 				gpuMemcpyHostToDevice, streams[stream_id]);

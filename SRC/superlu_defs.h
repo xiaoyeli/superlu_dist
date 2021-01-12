@@ -849,7 +849,7 @@ typedef struct
 #endif
 
 extern void C_RdTree_Create(C_Tree* tree, MPI_Comm comm, int* ranks, int rank_cnt, int msgSize, char precision);
-extern void C_RdTree_Create_nv(C_Tree* tree, MPI_Comm comm, int* ranks, int rank_cnt, int msgSize, char precision);
+extern void C_RdTree_Create_nv(C_Tree* tree, MPI_Comm comm, int* ranks, int rank_cnt, int msgSize, char precision,int* needrecvrd);
 extern void C_RdTree_Nullify(C_Tree* tree);
 extern yes_no_t C_RdTree_IsRoot(C_Tree* tree);
 extern void C_RdTree_forwardMessageSimple(C_Tree* Tree, void* localBuffer, int msgSize);
