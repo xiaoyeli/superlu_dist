@@ -605,32 +605,32 @@ pddistribute(fact_t fact, int_t n, SuperMatrix *A,
 		t = SuperLU_timer_();
 #endif
 
-		/* Gather the values of A from SPA into Lnzval[]. */
-		ljb = LBj( jb, grid ); /* Local block number */
-		index = Lrowind_bc_ptr[ljb];
-		if ( index ) {
-		    nrbl = index[0];   /* Number of row blocks. */
-		    len = index[1];    /* LDA of lusup[]. */
-		    lusup = Lnzval_bc_ptr[ljb];
-		    next_lind = BC_HEADER;
-		    next_lval = 0;
-		    for (jj = 0; jj < nrbl; ++jj) {
-			gb = index[next_lind++];
-			len1 = index[next_lind++]; /* Rows in the block. */
-			lb = LBi( gb, grid );
-			for (bnnz = 0; bnnz < len1; ++bnnz) {
-			    irow = index[next_lind++]; /* Global index. */
-			    irow = ilsum[lb] + irow - FstBlockC( gb );
-			    k = next_lval++;
-			    for (j = 0, dense_col = dense; j < nsupc; ++j) {
-				lusup[k] = dense_col[irow];
-				dense_col[irow] = zero;
-				k += len;
-				dense_col += ldaspa;
-			    }
-			} /* for bnnz ... */
-		    } /* for jj ... */
-		} /* if index ... */
+		// /* Gather the values of A from SPA into Lnzval[]. */
+		// ljb = LBj( jb, grid ); /* Local block number */
+		// index = Lrowind_bc_ptr[ljb];
+		// if ( index ) {
+		//     nrbl = index[0];   /* Number of row blocks. */
+		//     len = index[1];    /* LDA of lusup[]. */
+		//     lusup = Lnzval_bc_ptr[ljb];
+		//     next_lind = BC_HEADER;
+		//     next_lval = 0;
+		//     for (jj = 0; jj < nrbl; ++jj) {
+		// 	gb = index[next_lind++];
+		// 	len1 = index[next_lind++]; /* Rows in the block. */
+		// 	lb = LBi( gb, grid );
+		// 	for (bnnz = 0; bnnz < len1; ++bnnz) {
+		// 	    irow = index[next_lind++]; /* Global index. */
+		// 	    irow = ilsum[lb] + irow - FstBlockC( gb );
+		// 	    k = next_lval++;
+		// 	    for (j = 0, dense_col = dense; j < nsupc; ++j) {
+		// 		lusup[k] = dense_col[irow];
+		// 		dense_col[irow] = zero;
+		// 		k += len;
+		// 		dense_col += ldaspa;
+		// 	    }
+		// 	} /* for bnnz ... */
+		//     } /* for jj ... */
+		// } /* if index ... */
 #if ( PROFlevel>=1 )
 		t_l += SuperLU_timer_() - t;
 #endif
@@ -829,6 +829,7 @@ pddistribute(fact_t fact, int_t n, SuperMatrix *A,
 	if ( !(Lnzval_bc_ptr =
               (double**)SUPERLU_MALLOC(k * sizeof(double*))) )
 	    ABORT("Malloc fails for Lnzval_bc_ptr[].");
+	Lnzval_bc_ptr[k-1] = NULL;	
 	if ( !(Lrowind_bc_ptr = (int_t**)SUPERLU_MALLOC(k * sizeof(int_t*))) )
 	    ABORT("Malloc fails for Lrowind_bc_ptr[].");
 	Lrowind_bc_ptr[k-1] = NULL;
@@ -836,10 +837,12 @@ pddistribute(fact_t fact, int_t n, SuperMatrix *A,
 				(long int*)SUPERLU_MALLOC(k * sizeof(long int))) ) {
 		fprintf(stderr, "Malloc fails for Lrowind_bc_offset[].");
 	}
+	Lrowind_bc_offset[k-1] = NULL;	
 	if ( !(Lnzval_bc_offset =
 				(long int*)SUPERLU_MALLOC(k * sizeof(long int))) ) {
 		fprintf(stderr, "Malloc fails for Lnzval_bc_offset[].");
-	}	
+	}
+	Lnzval_bc_offset[k-1] = NULL;			
 
 
 	if ( !(Lindval_loc_bc_ptr =
@@ -850,6 +853,7 @@ pddistribute(fact_t fact, int_t n, SuperMatrix *A,
 				(long int*)SUPERLU_MALLOC(k * sizeof(long int))) ) {
 		fprintf(stderr, "Malloc fails for Lindval_loc_bc_offset[].");
 	}
+	Lindval_loc_bc_offset[k-1] = NULL;	
 
 
 	if ( !(Linv_bc_ptr =
@@ -866,6 +870,7 @@ pddistribute(fact_t fact, int_t n, SuperMatrix *A,
 	}
 	Linv_bc_ptr[k-1] = NULL;
 	Uinv_bc_ptr[k-1] = NULL;
+	Linv_bc_offset[k-1] = NULL;
 
 
 	if ( !(Unnz =
@@ -1034,7 +1039,7 @@ pddistribute(fact_t fact, int_t n, SuperMatrix *A,
 			++len;
 		    }
 		} /* for i ... */
-
+	
 		if ( nrbl ) { /* Do not ensure the blocks are sorted! */
 		    /* Set up the initial pointers for each block in
 		       index[] and nzval[]. */
@@ -1248,7 +1253,7 @@ pddistribute(fact_t fact, int_t n, SuperMatrix *A,
 			Lnzval_bc_offset[jb]=Lnzval_bc_cnt;
 			Lnzval_bc_cnt+=tmp_cnt;
 		}
-
+	
 		if(Lindval_loc_bc_ptr[jb]!=NULL){
 			for (jj = 0; jj < Lindval_loc_bc_offset[jb]; ++jj) {
 				Lindval_loc_bc_dat[Lindval_loc_bc_cnt+jj]=Lindval_loc_bc_ptr[jb][jj];
@@ -1258,10 +1263,8 @@ pddistribute(fact_t fact, int_t n, SuperMatrix *A,
 			tmp_cnt = Lindval_loc_bc_offset[jb];
 			Lindval_loc_bc_offset[jb]=Lindval_loc_bc_cnt;
 			Lindval_loc_bc_cnt+=tmp_cnt;
-		}
-
-		
-	}
+		}	
+	}	
 	
 
 	/////////////////////////////////////////////////////////////////
