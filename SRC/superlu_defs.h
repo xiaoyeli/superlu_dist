@@ -107,7 +107,8 @@ extern MPI_Datatype SuperLU_MPI_DOUBLE_COMPLEX;
 static __inline__ unsigned long long _rdtsc(void)
 {
     unsigned long long int x;
-    __asm__ volatile (".byte 0x0f, 0x31" : "=A" (x));
+    //    __asm__ volatile (".byte 0x0f, 0x31" : "=A" (x));
+    x = 0;
     return x;
 }
 #endif

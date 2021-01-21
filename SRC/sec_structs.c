@@ -1,4 +1,4 @@
-#include <mm_malloc.h>
+//#include <mm_malloc.h>
 #include "superlu_ddefs.h"
 #if 0
 #include "sec_structs.h"
