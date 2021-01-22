@@ -519,6 +519,7 @@ ddistribute(fact_t fact, int_t n, SuperMatrix *A,
 				(long int*)SUPERLU_MALLOC(k * sizeof(long int))) ) {
 		fprintf(stderr, "Malloc fails for Lrowind_bc_offset[].");
 	}
+	Lrowind_bc_offset[k-1] = NULL;
 	if ( !(Lnzval_bc_offset =
 				(long int*)SUPERLU_MALLOC(k * sizeof(long int))) ) {
 		fprintf(stderr, "Malloc fails for Lnzval_bc_offset[].");

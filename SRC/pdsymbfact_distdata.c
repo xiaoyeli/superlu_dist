@@ -1505,6 +1505,7 @@ double *dense, *dense_col; /* SPA */
 				(long int*)SUPERLU_MALLOC(nsupers_j * sizeof(long int))) ) {
 		fprintf(stderr, "Malloc fails for Lrowind_bc_offset[].");
 	}
+	Lrowind_bc_offset[k-1] = NULL;
 	if ( !(Lnzval_bc_offset =
 				(long int*)SUPERLU_MALLOC(nsupers_j * sizeof(long int))) ) {
 		fprintf(stderr, "Malloc fails for Lnzval_bc_offset[].");
