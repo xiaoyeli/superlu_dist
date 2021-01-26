@@ -36,6 +36,7 @@ extern int *d_mynummod;
 extern int *d_mymaskstartmod;
 extern int *d_mymasklengthmod;
 extern int *d_recv_cnt;
+extern int *d_msgnum;
 extern __device__ int clockrate;
 #define RDMA_FLAG_SIZE 4
 
@@ -62,5 +63,6 @@ do {                                                    \
         exit(-1);                                       \
     }                                                   \
 } while (0)
+
 
 __device__ int clockrate;
