@@ -2,7 +2,11 @@
 # module load parmetis/4.0.3
 
 
-module load PrgEnv-cray/1.0.6
+# module load PrgEnv-cray/1.0.6
+
+module restore PrgEnv-cray
+module load cray-mvapich2/2.3.4
+
 module load gcc/8.1.0
 module load cmake
 module unload cray-libsci_acc

@@ -5,7 +5,7 @@
 ######################################################################
 
 # Required version
-cmake_minimum_required(VERSION 3.8 FATAL_ERROR)
+cmake_minimum_required(VERSION 3.13 FATAL_ERROR)
 
 # Project version numbers
 project(SuperLU_DIST C CXX)
@@ -184,8 +184,8 @@ if (TPL_ENABLE_CUDALIB)   ## want to use cuda
     string (REPLACE ";" " " CUDA_LIB_STR "${CUDA_LIB}")
     set(CUDA_LIB_EXPORT ${CUDA_LIB_STR}) 
     set(HAVE_CUDA TRUE)
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DHAVE_CUDA")
-    set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -DHAVE_CUDA")
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DHAVE_CUDA -DGPU_ACC")
+    set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -DHAVE_CUDA -DGPU_ACC")
   else()
     message("-- CUDA libraries not found.")
   endif()
@@ -195,26 +195,31 @@ endif()
 
 #--------------------- HIP libraries ---------------------
 if (TPL_ENABLE_HIPLIB)   ## want to use hip
-  list(APPEND CMAKE_MODULE_PATH "$ENV{HIP_PATH}/lib/cmake/hip")
-  find_package(hip)
-  if(hip_FOUND)
+  find_package(HIP MODULE)
+  if(HIP_FOUND)
     message("-- Enabled support for HIP.")
     find_package(hipblas REQUIRED)
     find_package(rocsolver REQUIRED)
     find_package(rocblas REQUIRED)
     set(HIP_LIB roc::hipblas roc::rocblas roc::rocsolver)
+    message("HIP_LIB ${HIP_LIB}")
 
     # make.inc exporting not yet tested
     string (REPLACE ";" " " HIP_LIB_STR "${HIP_LIB}")
     set(HIP_LIB_EXPORT ${HIP_LIB_STR}) 
     set(HAVE_HIP TRUE)
-    if ("$ENV{HIP_PLATFORM}" STREQUAL "hcc")
-      set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DHAVE_HIP -D__HIP_PLATFORM_HCC__")
-      set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DHAVE_HIP -D__HIP_PLATFORM_HCC__")
-    elseif ("$ENV{HIP_PLATFORM}" STREQUAL "nvcc")
-      set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DHAVE_HIP -D__HIP_PLATFORM_NVCC__")
-      set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DHAVE_HIP -D__HIP_PLATFORM_NVCC__")
-    endif()
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DHAVE_HIP -DGPU_ACC")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DHAVE_HIP -DGPU_ACC")    
+    set(HIP_HIPCC_FLAGS "${HIP_HIPCC_FLAGS} -DHAVE_HIP -DGPU_ACC")    
+ 
+    
+    # if ("$ENV{HIP_PLATFORM}" STREQUAL "hcc")
+    #   set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DHAVE_HIP -D__HIP_PLATFORM_HCC__")
+    #   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DHAVE_HIP -D__HIP_PLATFORM_HCC__")
+    # elseif ("$ENV{HIP_PLATFORM}" STREQUAL "nvcc")
+    #   set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DHAVE_HIP -D__HIP_PLATFORM_NVCC__")
+    #   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DHAVE_HIP -D__HIP_PLATFORM_NVCC__")
+    # endif()
 
 
   else()

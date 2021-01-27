@@ -1,9 +1,14 @@
 #!/bin/bash
 
-module load PrgEnv-cray
+#module load PrgEnv-cray/1.0.6
+
+module restore PrgEnv-cray
+module load cray-mvapich2/2.3.4
+
+
 module load cmake
 module unload cray-libsci_acc
-module load cray-libsci/19.06.1
+module load cray-libsci
 export LD_LIBRARY_PATH="$CRAY_LD_LIBRARY_PATH:$LD_LIBRARY_PATH"
 
 				 
@@ -27,8 +32,8 @@ cmake .. \
 	-DCMAKE_C_COMPILER=cc \
 	-DCMAKE_CXX_COMPILER=CC \
 	-Denable_openmp=OFF \
-	-DTPL_BLAS_LIBRARIES="/opt/cray/pe/libsci/19.06.1/CRAY/8.5/x86_64/lib/libsci_cray.so" \
-	-DTPL_LAPACK_LIBRARIES="/opt/cray/pe/libsci/19.06.1/CRAY/8.5/x86_64/lib/libsci_cray.so" \
+	-DTPL_BLAS_LIBRARIES="/opt/cray/pe/libsci/20.03.1/CRAY/8.5/x86_64/lib/libsci_cray.so" \
+	-DTPL_LAPACK_LIBRARIES="/opt/cray/pe/libsci/20.03.1/CRAY/8.5/x86_64/lib/libsci_cray.so" \
 	-DCMAKE_INSTALL_PREFIX=. \
 	-DCMAKE_BUILD_TYPE=Release \
 	-DCMAKE_VERBOSE_MAKEFILE:BOOL=ON \

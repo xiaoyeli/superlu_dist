@@ -1,21 +1,22 @@
 #!/bin/bash
 # module load parmetis/4.0.3
 
-
-module load PrgEnv-cray
+module restore PrgEnv-cray
+module load cray-mvapich2/2.3.4
+# module load PrgEnv-cray/1.0.6
 module load cmake
 module unload cray-libsci_acc
-module load cray-libsci/19.06.1
+module load cray-libsci/20.03.1
 module load rocm				 
 export LD_LIBRARY_PATH="$CRAY_LD_LIBRARY_PATH:$LD_LIBRARY_PATH"
 
 export CRAYPE_LINK_TYPE=dynamic
-export PARMETIS_ROOT=/home/users/coe0238/my_software/parmetis-4.0.3_hipcc_dynamic
+export PARMETIS_ROOT=/home/users/coe0238/my_software/parmetis-4.0.3_cce_dynamic
 export PARMETIS_BUILD_DIR=${PARMETIS_ROOT}/build/Linux-x86_64
 
 
-export HIP_PLATFORM=hcc
-export ACC=GPU
+# export HIP_PLATFORM=hcc
+# export ACC=GPU
 rm -rf CMakeCache.txt
 rm -rf CMakeFiles
 rm -rf CTestTestfile.cmake
@@ -27,19 +28,20 @@ rm -rf DartConfiguration.tcl
 
 cmake .. \
 	-DTPL_PARMETIS_INCLUDE_DIRS="${PARMETIS_ROOT}/include;${PARMETIS_ROOT}/metis/include" \
-	-DTPL_PARMETIS_LIBRARIES="${PARMETIS_BUILD_DIR}/libparmetis/libparmetis.so;${PARMETIS_BUILD_DIR}/libmetis/libmetis.so;/opt/rocm-3.7.0/lib/libroctx64.so;/opt/rocm-3.7.0/lib/libroctracer64.so" \
-	-DBUILD_SHARED_LIBS=ON \
+	-DTPL_PARMETIS_LIBRARIES="${PARMETIS_BUILD_DIR}/libparmetis/libparmetis.so;${PARMETIS_BUILD_DIR}/libmetis/libmetis.so;/opt/rocm-4.0.0/lib/libroctx64.so;/opt/rocm-4.0.0/lib/libroctracer64.so" \
+	-DBUILD_SHARED_LIBS=OFF \
 	-DCMAKE_Fortran_COMPILER=ftn \
-	-DCMAKE_C_COMPILER=hipcc \
-	-DCMAKE_CXX_COMPILER=hipcc \
+	-DCMAKE_C_COMPILER=cc \
+	-DCMAKE_CXX_COMPILER=CC \
 	-Denable_openmp=ON \
-	-DTPL_BLAS_LIBRARIES="/opt/cray/pe/gcc-libs/libstdc++.so.6;/opt/cray/pe/libsci/19.06.1/CRAY/8.5/x86_64/lib/libsci_cray.so" \
-	-DTPL_LAPACK_LIBRARIES="/opt/cray/pe/libsci/19.06.1/CRAY/8.5/x86_64/lib/libsci_cray.so" \
+	-DTPL_BLAS_LIBRARIES="/opt/cray/pe/gcc-libs/libstdc++.so.6;/opt/cray/pe/libsci/20.03.1/CRAY/8.5/x86_64/lib/libsci_cray.so" \
+	-DTPL_LAPACK_LIBRARIES="/opt/cray/pe/libsci/20.03.1/CRAY/8.5/x86_64/lib/libsci_cray.so" \
 	-DCMAKE_INSTALL_PREFIX=. \
 	-DCMAKE_BUILD_TYPE=Release \
 	-DCMAKE_VERBOSE_MAKEFILE:BOOL=ON \
-	-DCMAKE_CXX_FLAGS="-DGPU_ACC -Wno-format -Wno-unused-value -Wno-return-type -Wno-unsequenced -Wno-switch -Wno-parentheses --amdgpu-target=gfx906,gfx908 -DPRNTlevel=1 -DPROFlevel=0 -DDEBUGlevel=0 -I/opt/cray/pe/cray-mvapich2/2.3.4/infiniband/crayclang/10.0/include/ -I/opt/rocm-3.7.0/hip/include/hip/ -I/opt/rocm-3.7.0/hipblas/include/ -I/opt/rocm-3.7.0/roctracer/include/" \
-	-DCMAKE_C_FLAGS="-DGPU_ACC -Wno-format -Wno-unused-value -Wno-return-type -Wno-unsequenced -Wno-switch -Wno-parentheses --amdgpu-target=gfx906,gfx908 -DPRNTlevel=1 -DPROFlevel=0 -DDEBUGlevel=0 -I/opt/cray/pe/cray-mvapich2/2.3.4/infiniband/crayclang/10.0/include/ -I/opt/rocm-3.7.0/hip/include/hip/ -I/opt/rocm-3.7.0/hipblas/include/ -I/opt/rocm-3.7.0/roctracer/include/" \
+	-DHIP_HIPCC_FLAGS="--amdgpu-target=gfx906,gfx908 -I/opt/cray/pe/cray-mvapich2/2.3.4/infiniband/crayclang/10.0/include/" \
+	-DCMAKE_CXX_FLAGS="-Wno-format -Wno-unused-value -Wno-return-type -Wno-unsequenced -Wno-switch -Wno-parentheses -DPRNTlevel=1 -DPROFlevel=0 -DDEBUGlevel=0  " \
+	-DCMAKE_C_FLAGS="-Wno-format -Wno-unused-value -Wno-return-type -Wno-unsequenced -Wno-switch -Wno-parentheses -DPRNTlevel=1 -DPROFlevel=0 -DDEBUGlevel=0 " \
 	-DTPL_ENABLE_HIPLIB=ON
 make pddrive 	
 

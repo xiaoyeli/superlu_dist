@@ -59,9 +59,9 @@ if(enable_double)
 if(TPL_ENABLE_CUDALIB)
   list(APPEND sources pdgstrs_lsum_cuda.cu)
 endif()
-if(TPL_ENABLE_HIPLIB)
-  list(APPEND sources pdgstrs_lsum_cuda.hip.cpp)
-endif()    	
+# if(TPL_ENABLE_HIPLIB)
+#   list(APPEND sources pdgstrs_lsum_cuda.hip.cpp)
+# endif()    	
 
   list(APPEND sources
     dlangs_dist.c
@@ -145,11 +145,34 @@ if(enable_complex16)
   )
 endif()
 
-add_library(superlu_dist ${sources} ${HEADERS})
+if (TPL_ENABLE_HIPLIB)
+  set_source_files_properties(
+    pdgstrs_lsum_cuda.hip.cpp
+    PROPERTIES HIP_SOURCE_PROPERTY_FORMAT 1)
+  hip_add_library(superlu_dist "pdgstrs_lsum_cuda.hip.cpp")
+else()
+  add_library(superlu_dist "")
+endif()
+# if (BUILD_SHARED_LIBS)
+#   set_property(TARGET superlu_dist PROPERTY POSITION_INDEPENDENT_CODE ON)
+# endif()
+    
+if (BUILD_SHARED_LIBS AND BUILD_STATIC_LIBS)
+if (TPL_ENABLE_HIPLIB)
+  hip_add_library(superlu_dist-static STATIC "pdgstrs_lsum_cuda.hip.cpp")
+else()
+  add_library(superlu_dist-static STATIC "")
+endif()
+endif()
+# if (BUILD_SHARED_LIBS)
+#   set_property(TARGET superlu_dist-static PROPERTY POSITION_INDEPENDENT_CODE ON)
+# endif()
+
+target_sources(superlu_dist PRIVATE ${sources} ${HEADERS})
 set(targets superlu_dist)
 if (BUILD_SHARED_LIBS AND BUILD_STATIC_LIBS)
   # build both shared and static libs
-  add_library(superlu_dist-static STATIC ${sources} ${HEADERS})
+  target_sources(superlu_dist-static PRIVATE ${sources} ${HEADERS})
   list(APPEND targets superlu_dist-static)
 endif()
 
