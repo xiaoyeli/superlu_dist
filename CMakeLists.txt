@@ -8,9 +8,10 @@
 cmake_minimum_required(VERSION 3.13 FATAL_ERROR)
 
 # Project version numbers
+#project(SuperLU_DIST C CXX CUDA)
 project(SuperLU_DIST C CXX)
 set(VERSION_MAJOR "6")
-set(VERSION_MINOR "1")
+set(VERSION_MINOR "3")
 set(VERSION_BugFix "1")
 set(PROJECT_VERSION ${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_BugFix})
 
@@ -22,23 +23,24 @@ option(enable_double    "Enable double precision library" ON)
 option(enable_complex16 "Enable complex16 precision library" ON)
 option(enable_tests  "Build tests" ON)
 option(enable_examples  "Build examples" ON)
-option(TPL_ENABLE_BLASLIB  "Build the CBLAS library" ${enable_blaslib_DEFAULT})
-option(TPL_ENABLE_PARMETISLIB   "Build the ParMETIS library" ON)
-option(TPL_ENABLE_CUDALIB   "Enable the CUDA libraries" OFF)
-option(TPL_ENABLE_HIPLIB   "Enable the HIP libraries" OFF)
+option(TPL_ENABLE_INTERNAL_BLASLIB  "Build the CBLAS library" ${enable_blaslib_DEFAULT})
+option(TPL_BLAS_LIBRARIES "List of absolute paths to blas libraries [].")
 option(TPL_ENABLE_LAPACKLIB "Enable LAPACK library" ON)
+option(TPL_LAPACK_LIBRARIES "List of absolute paths to lapack libraries [].")
+option(TPL_ENABLE_PARMETISLIB   "Build the ParMETIS library" ON)
 option(TPL_PARMETIS_LIBRARIES "List of absolute paths to ParMETIS link libraries [].")
 option(TPL_PARMETIS_INCLUDE_DIRS "List of absolute paths to ParMETIS include directories [].")
 option(TPL_ENABLE_COMBBLASLIB   "Build the CombBLAS library" OFF)
 option(TPL_COMBBLAS_LIBRARIES "List of absolute paths to CombBLAS link libraries [].")
 option(TPL_COMBBLAS_INCLUDE_DIRS "List of absolute paths to CombBLAS include directories [].")
-
+option(TPL_ENABLE_CUDALIB   "Enable the CUDA libraries" OFF)
+option(TPL_ENABLE_HIPLIB   "Enable the HIP libraries" OFF)
 
 ######################################################################
 #
 # IDEAS: xSDK standards module
 MESSAGE("\nProcess XSDK defaults ...")
-# SET(USE_XSDK_DEFAULTS_DEFAULT TRUE) # Set to false if desired
+SET(USE_XSDK_DEFAULTS_DEFAULT TRUE) # Set to false if desired
 INCLUDE("cmake/XSDKDefaults.cmake")
 INCLUDE(CTest)
 ######################################################################
@@ -48,12 +50,7 @@ INCLUDE(CTest)
 # Usual initialization stuff
 #
 ######################################################################
-set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)    ## ????
 set(CMAKE_INSTALL_NAME_DIR "${CMAKE_INSTALL_PREFIX}/lib")
-
-# set the position independent code property on all targets, so that
-# -fPIC is added in compiler flag.
-set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 
 #---- For shared library
@@ -77,7 +74,14 @@ SET(BUILD_STATIC_LIBS TRUE CACHE BOOL "Include static libs when building shared"
 
 if (BUILD_SHARED_LIBS)
   message("-- SuperLU_DIST will be built as a shared library.")
+  # set the position independent code property on all targets, so that
+  # -fPIC is added in compiler flag.
+  set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+
   set(PROJECT_NAME_LIB_EXPORT libsuperlu_dist.so)
+  SET(CMAKE_EXE_LINKER_FLAGS
+          "${CMAKE_EXE_LINKER_FLAGS} -Wl,-rpath,${CMAKE_INSTALL_PREFIX}/SRC")
+
   if (BUILD_STATIC_LIBS)
     message("-- SuperLU_DIST will also be built as a static library.")
   endif()
@@ -235,7 +239,7 @@ endif()
 
 
 #--------------------- BLAS ---------------------
-if(NOT TPL_ENABLE_BLASLIB)
+if(NOT TPL_ENABLE_INTERNAL_BLASLIB)
 #  set(TPL_BLAS_LIBRARIES "" CACHE FILEPATH
 #    "Override of list of absolute path to libs for BLAS.")
   if(TPL_BLAS_LIBRARIES)
@@ -384,6 +388,15 @@ else()
   set(LOADER $(CC))
 endif()
 
+######################################################################
+#
+# Fortran-C name mangling 
+#
+######################################################################
+include(FortranCInterface)
+FortranCInterface_HEADER(${SuperLU_DIST_SOURCE_DIR}/SRC/superlu_FortranCInterface.h
+  MACRO_NAMESPACE "FC_")
+FortranCInterface_VERIFY(CXX)
 
 ######################################################################
 #
@@ -430,6 +443,11 @@ configure_file(${SuperLU_DIST_SOURCE_DIR}/SRC/superlu_dist_config.h.in ${SuperLU
 configure_file(${SuperLU_DIST_SOURCE_DIR}/SRC/superlu_dist_config.h.in ${SuperLU_DIST_SOURCE_DIR}/SRC/superlu_dist_config.h)
 
 # Add pkg-config support
+if(IS_ABSOLUTE ${CMAKE_INSTALL_LIBDIR})
+  set(pkgconfig_libdir ${CMAKE_INSTALL_LIBDIR})
+else()
+  set(pkgconfig_libdir ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR})
+endif()
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/superlu_dist.pc.in ${CMAKE_CURRENT_BINARY_DIR}/superlu_dist.pc @ONLY)
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/superlu_dist.pc
 	DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig)

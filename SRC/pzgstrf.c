@@ -10,7 +10,7 @@ at the top-level directory.
 */
 
 /*! @file
- * \brief Performs LU factorization in parallel
+ * \brief Performs LU factorization in parallel.
  *
  * <pre>
  * -- Distributed SuperLU routine (version 6.1) --
@@ -148,18 +148,6 @@ at the top-level directory.
 #define GEMM_PADLEN 8
 
 #define PZGSTRF2 pzgstrf2_trsm
-#define PZGSTRS2 pzgstrs2_omp
-
-extern void PZGSTRF2 (superlu_dist_options_t *, int_t, int_t, double,
-                        Glu_persist_t *, gridinfo_t *, LocalLU_t *,
-                        MPI_Request *, int, SuperLUStat_t *, int *);
-#ifdef _CRAY
-extern void PZGSTRS2 (int_t, int_t, Glu_persist_t *, gridinfo_t *,
-                      LocalLU_t *, SuperLUStat_t *, _fcd, _fcd, _fcd);
-#else
-extern void PZGSTRS2 (int_t, int_t, Glu_persist_t *, gridinfo_t *,
-                      LocalLU_t *, SuperLUStat_t *);
-#endif
 
 #ifdef ISORT
 extern void isort (int_t N, int_t * ARRAY1, int_t * ARRAY2);
@@ -213,7 +201,7 @@ superlu_sort_perm (const void *arg1, const void *arg2)
  *        The norm of the original matrix A, or the scaled A if
  *        equilibration was done.
  *
- * LUstruct (input/output) LUstruct_t*
+ * LUstruct (input/output) zLUstruct_t*
  *         The data structures to store the distributed L and U factors.
  *         The following fields should be defined:
  *
@@ -224,9 +212,9 @@ superlu_sort_perm (const void *arg1, const void *arg2)
  *         xsup[s] is the leading column of the s-th supernode,
  *             supno[i] is the supernode number to which column i belongs.
  *
- *         o Llu (input/output) LocalLU_t*
+ *         o Llu (input/output) zLocalLU_t*
  *           The distributed data structures to store L and U factors.
- *           See superlu_ddefs.h for the definition of 'LocalLU_t'.
+ *           See superlu_zdefs.h for the definition of 'zLocalLU_t'.
  *
  * grid   (input) gridinfo_t*
  *        The 2D process mesh. It contains the MPI communicator, the number
@@ -251,7 +239,7 @@ superlu_sort_perm (const void *arg1, const void *arg2)
  */
 int_t
 pzgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
-       LUstruct_t * LUstruct, gridinfo_t * grid, SuperLUStat_t * stat, int *info)
+       zLUstruct_t * LUstruct, gridinfo_t * grid, SuperLUStat_t * stat, int *info)
 {
 #ifdef _CRAY
     _fcd ftcs = _cptofcd ("N", strlen ("N"));
@@ -289,7 +277,7 @@ pzgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
     int iinfo;
     int *ToRecv, *ToSendD, **ToSendR;
     Glu_persist_t *Glu_persist = LUstruct->Glu_persist;
-    LocalLU_t *Llu = LUstruct->Llu;
+    zLocalLU_t *Llu = LUstruct->Llu;
     superlu_scope_t *scp;
     float s_eps;
     double thresh;
@@ -441,7 +429,7 @@ pzgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
 #if ( DEBUGlevel>=1 )
     if (s_eps == 0.0)
         printf (" ***** warning s_eps = %e *****\n", s_eps);
-    CHECK_MALLOC (iam, "Enter pdgstrf()");
+    CHECK_MALLOC (iam, "Enter pzgstrf()");
 #endif
 #if (PROFlevel >= 1 )
     gemm_stats = (gemm_profile *) SUPERLU_MALLOC(nsupers * sizeof(gemm_profile));
@@ -569,7 +557,6 @@ pzgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
 #pragma omp parallel default(shared)
     #pragma omp master
     {
-         //if (omp_get_thread_num () == 0)
         num_threads = omp_get_num_threads ();
     }
 #endif
@@ -577,7 +564,7 @@ pzgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
 #if 0
     omp_loop_time = (double *) _mm_malloc (sizeof (double) * num_threads,64);
 #else
-    omp_loop_time = (double *) doubleMalloc_dist(num_threads);
+    omp_loop_time = (double *) SUPERLU_MALLOC(num_threads * sizeof(double));
 #endif
 
 #if ( PRNTlevel>=1 )
@@ -598,8 +585,8 @@ pzgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
     full_u_cols = (int_t *) _mm_malloc (sizeof (int_t) * ncb,64);
     blk_ldu = (int_t *) _mm_malloc (sizeof (int_t) * ncb,64);
 #else
-    full_u_cols = SUPERLU_MALLOC(ncb * sizeof(int));
-    blk_ldu = SUPERLU_MALLOC(ncb * sizeof(int));
+    full_u_cols = SUPERLU_MALLOC((ncb+1) * sizeof(int));
+    blk_ldu = SUPERLU_MALLOC((ncb+1) * sizeof(int)); // +1 to accommodate un-even division
 #endif
 
     log_memory(2 * ncb * iword, stat);
@@ -620,7 +607,7 @@ pzgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
     perm_c_supno = SUPERLU_MALLOC (2 * nsupers * sizeof (int_t));
     iperm_c_supno = perm_c_supno + nsupers;
 
-    static_schedule(options, m, n, LUstruct, grid, stat,
+    zstatic_schedule(options, m, n, LUstruct, grid, stat,
 		    perm_c_supno, iperm_c_supno, info);
 
 #if ( DEBUGlevel >= 2 )
@@ -717,7 +704,7 @@ pzgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
 
     k = sp_ienv_dist (3);       /* max supernode size */
 #if 0
-    if ( !(Llu->ujrow = doubleMalloc_dist(k*(k+1)/2)) )
+    if ( !(Llu->ujrow = doublecomplexMalloc_dist(k*(k+1)/2)) )
          ABORT("Malloc fails for ujrow[].");
 #else
     /* Instead of half storage, we'll do full storage */
@@ -759,7 +746,7 @@ pzgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
 #pragma omp parallel for reduction(max :local_max_row_size) private(lk,lsub)
 #endif
 #endif
-    for (int i = mycol; i < nsupers; i += Pc) { /* grab my local columns */
+    for (i = mycol; i < nsupers; i += Pc) { /* grab my local columns */
         //int tpc = PCOL (i, grid);
 	lk = LBj (i, grid);
 	lsub = Lrowind_bc_ptr[lk];
@@ -779,7 +766,7 @@ pzgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
                       get_max_buffer_size ());           */
 
 #ifdef GPU_ACC
-    int gpublas_nb = get_gpublas_nb();
+    int gpublas_nb = get_gpublas_nb(); // default 64
     int nstreams = get_num_gpu_streams ();
 
     int buffer_size  = SUPERLU_MAX(max_row_size*nstreams*gpublas_nb,get_max_buffer_size());
@@ -794,7 +781,7 @@ pzgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
 #else /* not to use GPU */
 
     int Threads_per_process = get_thread_per_process();
-    int buffer_size  = SUPERLU_MAX(max_row_size*Threads_per_process*ldt,get_max_buffer_size());
+    int_t buffer_size  = SUPERLU_MAX(max_row_size*Threads_per_process*ldt,get_max_buffer_size());
 #endif /* end ifdef GPU_ACC */
 
     int_t max_ncols = 0;
@@ -813,31 +800,33 @@ pzgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
     int_t bigv_size = SUPERLU_MAX(max_row_size * max_ncols,
 				  (ldt*ldt + CACHELINE / dword) * num_threads);
 
-    /* bigU and bigV are either on CPU or on GPU, not both. */
-    doublecomplex* bigU; /* for storing entire U(k,:) panel, prepare for GEMM.
-                      bigU has the same size either on CPU or on CPU. */
+    /* bigU and bigV are only allocated on CPU, but may be allocated as
+       page-locked memory accessible to GPU. */
+    doublecomplex* bigU; /* for storing entire U(k,:) panel, prepare for GEMM. */
     doublecomplex* bigV; /* for storing GEMM output matrix, i.e. update matrix.
-	              bigV is large to hold the aggregate GEMM output.*/
-    bigU = NULL;
+	              bigV is large enough to hold the aggregate GEMM output.*/
+    bigU = NULL; /* allocated only on CPU */
     bigV = NULL;
 
 #if ( PRNTlevel>=1 )
-    if(!iam) {
-	printf("\t.. GEMM buffer size: max_row_size X max_ncols = %d x " IFMT "\n",
-	       max_row_size, max_ncols);
-	printf(".. BIG U size " IFMT "\t BIG V size " IFMT "\n", bigu_size, bigv_size);
-	fflush(stdout);
-    }
+    if(!iam) printf("\t.. GEMM buffer size: max_row_size X max_ncols = %d x " IFMT "\n",
+	     		  max_row_size, max_ncols);
+    printf("[%d].. BIG U size " IFMT " (on CPU)\n", iam, bigu_size);
+    fflush(stdout);
 #endif
 
-#ifdef GPU_ACC
+#ifdef GPU_ACC /*-- use GPU --*/
 
     if ( checkGPU(gpuHostMalloc((void**)&bigU,  bigu_size * sizeof(doublecomplex), gpuHostMallocDefault)) )
         ABORT("Malloc fails for zgemm buffer U ");
 
+#if 0 // !!Sherry fix -- only dC on GPU uses buffer_size
     bigv_size = buffer_size;
+#endif
+
 #if ( PRNTlevel>=1 )
-    if (!iam) printf("[%d] .. BIG V bigv_size %d, using buffer_size %d (on GPU)\n", iam, bigv_size, buffer_size);
+    printf("[%d].. BIG V size %d (on CPU), dC buffer_size %d (on GPU)\n", iam, bigv_size, buffer_size);
+    fflush(stdout);
 #endif
     if ( checkGPU(gpuHostMalloc((void**)&bigV, bigv_size * sizeof(doublecomplex) ,gpuHostMallocDefault)) )
         ABORT("Malloc fails for zgemm buffer V");
@@ -874,7 +863,7 @@ pzgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
         return 1;
     }
 
-    // size of B should be max_supernode_size*buffer
+    // size of B should be bigu_size
 
     gpuStat = gpuMalloc((void**)&dB, bigu_size * sizeof(doublecomplex));
     if (gpuStat!= gpuSuccess) {
@@ -891,12 +880,17 @@ pzgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
     stat->gpu_buffer += ( max_row_size * sp_ienv_dist(3)
 			  + bigu_size + buffer_size ) * dword;
 
-#else  /* not GPU */
+#else   /*-- not to use GPU --*/
 
     // for GEMM padding 0
     j = bigu_size / ldt;
     bigu_size += (gemm_k_pad * (j + ldt + gemm_n_pad));
     bigv_size += (gemm_m_pad * (j + max_row_size + gemm_n_pad));
+
+#if ( PRNTlevel>=1 )
+    printf("[%d].. BIG V size %d (on CPU)\n", iam, bigv_size);
+    fflush(stdout);
+#endif
 
 //#ifdef __INTEL_COMPILER
 //    bigU = _mm_malloc(bigu_size * sizeof(doublecomplex), 1<<12); // align at 4K page
@@ -904,8 +898,6 @@ pzgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
 //#else
     if ( !(bigU = doublecomplexMalloc_dist(bigu_size)) )
         ABORT ("Malloc fails for zgemm U buffer");
-          //Maximum size of bigU= sqrt(buffsize) ?
-    // int bigv_size = 8 * ldt * ldt * num_threads;
     if ( !(bigV = doublecomplexMalloc_dist(bigv_size)) )
         ABORT ("Malloc failed for zgemm V buffer");
 //#endif
@@ -925,11 +917,6 @@ pzgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
 
 #endif
 
-#if 0 /* Sherry */
-    if (!(tempv2d = doublecomplexCalloc_dist (2 * ((size_t) ldt) * ldt)))
-        ABORT ("Calloc fails for tempv2d[].");
-    tempU2d = tempv2d + ldt * ldt;
-#endif
     /* Sherry: (ldt + 16), avoid cache line false sharing.
        KNL cacheline size = 64 bytes = 16 int */
     iinfo = ldt + CACHELINE / sizeof(int);
@@ -976,16 +963,16 @@ pzgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
 #if 0
     Remain_L_buff = (doublecomplex *) _mm_malloc( sizeof(doublecomplex)*(Llu->bufmax[1]),64);
     Ublock_info = (Ublock_info_t *) _mm_malloc(mcb*sizeof(Ublock_info_t),64);
-    int * Ublock_info_iukp = (int *) _mm_malloc(mcb*sizeof(int),64);
-    int * Ublock_info_rukp = (int *) _mm_malloc(mcb*sizeof(int),64);
-    int * Ublock_info_jb = (int *) _mm_malloc(mcb*sizeof(int),64);
+    /*int * Ublock_info_iukp = (int *) _mm_malloc(mcb*sizeof(int),64);
+      int * Ublock_info_rukp = (int *) _mm_malloc(mcb*sizeof(int),64);
+      int * Ublock_info_jb = (int *) _mm_malloc(mcb*sizeof(int),64); */
 #else
     j = gemm_m_pad * (ldt + max_row_size + gemm_k_pad);
     Remain_L_buff = doublecomplexMalloc_dist(Llu->bufmax[1] + j); /* This is loose */
     Ublock_info = (Ublock_info_t *) SUPERLU_MALLOC(mcb*sizeof(Ublock_info_t));
-    int *Ublock_info_iukp = (int *) SUPERLU_MALLOC(mcb*sizeof(int));
-    int *Ublock_info_rukp = (int *) SUPERLU_MALLOC(mcb*sizeof(int));
-    int *Ublock_info_jb = (int *) SUPERLU_MALLOC(mcb*sizeof(int));
+    /*int *Ublock_info_iukp = (int *) SUPERLU_MALLOC(mcb*sizeof(int));
+      int *Ublock_info_rukp = (int *) SUPERLU_MALLOC(mcb*sizeof(int));
+      int *Ublock_info_jb = (int *) SUPERLU_MALLOC(mcb*sizeof(int)); */
 #endif
 
     long long alloc_mem = 3 * mrb * iword + mrb * sizeof(Remain_info_t)
@@ -1305,8 +1292,8 @@ pzgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
 /* #pragma omp parallel */ /* Sherry -- parallel done inside pzgstrs2 */
 #endif
 			{
-                            PZGSTRS2 (kk0, kk, Glu_persist, grid, Llu,
-                                      stat);
+                            pzgstrs2_omp (kk0, kk, Glu_persist, grid, Llu,
+                                        Ublock_info, stat);
                         }
 
                         pdgstrs2_timer += SuperLU_timer_()-ttt2;
@@ -1471,7 +1458,8 @@ pzgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
 /* #pragma omp parallel */ /* Sherry -- parallel done inside pzgstrs2 */
 #endif
                 {
-                    PZGSTRS2 (k0, k, Glu_persist, grid, Llu, stat);
+                    pzgstrs2_omp (k0, k, Glu_persist, grid, Llu, 
+		                    Ublock_info, stat);
                 }
                 pdgstrs2_timer += SuperLU_timer_() - ttt2;
 
@@ -1734,7 +1722,7 @@ pzgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
 
 	/*******************************************************************/
 
-#ifdef GPU_ACC
+#ifdef GPU_ACC /*-- GPU --*/
 
 #include "zSchCompUdt-gpu.c"
 
@@ -1918,9 +1906,9 @@ pzgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
 		  Llu->bufmax[1] * dword), stat );
 
     SUPERLU_FREE(Ublock_info);
-    SUPERLU_FREE(Ublock_info_iukp);
-    SUPERLU_FREE(Ublock_info_rukp);
-    SUPERLU_FREE(Ublock_info_jb);
+    /*SUPERLU_FREE(Ublock_info_iukp);
+      SUPERLU_FREE(Ublock_info_rukp);
+      SUPERLU_FREE(Ublock_info_jb);  */
 
 
 #if ( PROFlevel>=1 )

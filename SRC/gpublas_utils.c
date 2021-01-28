@@ -8,6 +8,8 @@ All rights reserved.
 The source code is distributed under BSD license, see the file License.txt
 at the top-level directory.
 */
+#ifdef GPU_ACC
+
 #include <stdio.h>
 #ifdef GPU_ACC
 #include "gpublas_utils.h"

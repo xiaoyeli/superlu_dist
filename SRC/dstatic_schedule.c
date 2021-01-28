@@ -8,6 +8,8 @@ All rights reserved.
 The source code is distributed under BSD license, see the file License.txt
 at the top-level directory.
 */
+
+
 /*! @file
  * \brief Performs static scheduling for the look-ahead factorization algorithm.
  *
@@ -16,7 +18,7 @@ at the top-level directory.
  * Lawrence Berkeley National Lab, Univ. of California Berkeley.
  * August 15, 2014
  *
- * Modified:
+ * Modified: February 20, 2020, changed to be precision-dependent.
  *
  * Reference:
  * 
@@ -31,7 +33,7 @@ extern void isort1 (int_t N, int_t * ARRAY);
 
 #else
 
-int
+static int
 superlu_sort_perm (const void *arg1, const void *arg2)
 {
     const int_t *val1 = (const int_t *) arg1;
@@ -41,8 +43,8 @@ superlu_sort_perm (const void *arg1, const void *arg2)
 #endif
 
 int
-static_schedule(superlu_dist_options_t * options, int m, int n, 
-		LUstruct_t * LUstruct, gridinfo_t * grid, SuperLUStat_t * stat,
+dstatic_schedule(superlu_dist_options_t * options, int m, int n, 
+		dLUstruct_t * LUstruct, gridinfo_t * grid, SuperLUStat_t * stat,
 		int_t *perm_c_supno, int_t *iperm_c_supno, int *info)
 {
 /* 
@@ -64,7 +66,7 @@ static_schedule(superlu_dist_options_t * options, int m, int n,
     int j, k, nsupers;  /* k - current panel to work on */
     int_t *index;
     Glu_persist_t *Glu_persist = LUstruct->Glu_persist;
-    LocalLU_t *Llu = LUstruct->Llu;
+    dLocalLU_t *Llu = LUstruct->Llu;
     int ncb, nrb, p, pr, pc, nblocks;
     int_t *etree_supno_l, *etree_supno, *blocks, *blockr, *Ublock, *Urows,
         *Lblock, *Lrows, *sf_block, *sf_block_l, *nnodes_l,

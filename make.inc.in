@@ -9,7 +9,7 @@
 #  Creation date:   March 1, 2016	version 5.0.0
 #
 #  Modified:	    October 13, 2017    version 5.2.1
-#		    
+#		    February 23, 2020   version 6.3.0
 #
 ############################################################################
 #
@@ -20,12 +20,12 @@ DSUPERLULIB = $(SuperLUroot)/SRC/${PROJECT_NAME_LIB_EXPORT}
 INCLUDEDIR  = -I$(SuperLUroot)/@CMAKE_INSTALL_INCLUDEDIR@ 
 INCLUDEDIR      += -I$(SuperLUroot)/../SRC
 
-LIBS 	    = $(DSUPERLULIB) ${BLAS_LIB_EXPORT} 
+LIBS 	    = $(DSUPERLULIB) ${BLAS_LIB_EXPORT} -lm #-lmpi
 LIBS	    += ${LAPACK_LIB_EXPORT}
 LIBS	    += ${PARMETIS_LIB_EXPORT}
 LIBS 	    += ${COMBBLAS_LIB_EXPORT}
-LIBS 	    += ${CUDA_LIB_EXPORT}
 LIBS 	    += ${EXTRA_LIB_EXPORT}
+#LIBS        += ${CUDA_LIB_EXPORT}
 CUDALIBS    = ${CUDA_LIB_EXPORT}
 
 #
@@ -41,9 +41,11 @@ NVCC           = @CMAKE_CUDA_COMPILER@
 CFLAGS 	     = @CMAKE_C_FLAGS_RELEASE@ @CMAKE_C_FLAGS@
 CUDACFLAGS 	 = @CMAKE_CUDA_FLAGS@
 #CFLAGS      += -D${DirDefs}
-# CFLAGS     += @COMPILE_DEFINITIONS@ 
+# CFLAGS     += @COMPILE_DEFINITIONS@
 CXX          = @CMAKE_CXX_COMPILER@
 CXXFLAGS     = @CMAKE_CXX_FLAGS_RELEASE@ @CMAKE_CXX_FLAGS@
+NVCC	     = @CMAKE_CUDA_COMPILER@
+CUDACFLAGS   = @CMAKE_CUDA_FLAGS@
 XSDK_INDEX_SIZE=@XSDK_INDEX_SIZE@
 SLU_HAVE_LAPACK=@SLU_HAVE_LAPACK@
 HAVE_PARMETIS=@HAVE_PARMETIS@

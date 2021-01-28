@@ -71,7 +71,7 @@ void zlsum_fmod
  int_t luptr,     /* Starting position in lusup[*].                     */
  int_t *xsup,
  gridinfo_t *grid,
- LocalLU_t *Llu,
+ zLocalLU_t *Llu,
  MPI_Request send_req[], /* input/output */
  SuperLUStat_t *stat
 )
@@ -258,7 +258,7 @@ void zlsum_bmod
  int_t  **Ucb_valptr, /* Vertical linked list pointing to Unzval[].     */
  int_t  *xsup,
  gridinfo_t *grid,
- LocalLU_t *Llu,
+ zLocalLU_t *Llu,
  MPI_Request send_req[], /* input/output */
  SuperLUStat_t *stat
  )
@@ -433,7 +433,7 @@ void zlsum_fmod_inv
  int_t *fmod,     /* Modification count for L-solve.                    */
  int_t *xsup,
  gridinfo_t *grid,
- LocalLU_t *Llu,
+ zLocalLU_t *Llu,
  SuperLUStat_t **stat,
  int_t *leaf_send,
  int_t *nleaf_send,
@@ -714,10 +714,6 @@ void zlsum_fmod_inv
 
 #endif
 								}
-								// for (i=0 ; i<iknsupc*nrhs ; i++){
-								// printf("x_lsum: %f %f\n",x[ii+i].r,x[ii+i].i);
-								// fflush(stdout);
-								// }
 
 #if ( PROFlevel>=1 )
 								TOC(t2, t1);
@@ -926,12 +922,6 @@ void zlsum_fmod_inv
 #endif
 						}
 
-							// for (i=0 ; i<iknsupc*nrhs ; i++){
-							// printf("x_lsum: %f %f\n",x[ii+i].r,x[ii+i].i);
-							// fflush(stdout);
-							// }
-
-
 #if ( PROFlevel>=1 )
 						TOC(t2, t1);
 						stat[thread_id]->utime[SOL_TRSM] += t2;
@@ -1010,7 +1000,7 @@ void zlsum_fmod_inv_master
  int_t nlb,       /* Number of L blocks.                                */
  int_t *xsup,
  gridinfo_t *grid,
- LocalLU_t *Llu,
+ zLocalLU_t *Llu,
  SuperLUStat_t **stat,
  int_t sizelsum,
  int_t sizertemp,
@@ -1345,7 +1335,7 @@ void zlsum_fmod_inv_master
 							#pragma omp simd
 						#endif
 						for (i=0 ; i<iknsupc*nrhs ; i++){
-										z_copy(&x[ii+i],&rtemp_loc[i]);
+							z_copy(&x[ii+i],&rtemp_loc[i]);
 						}
 					}else{
 #ifdef _CRAY
@@ -1359,10 +1349,6 @@ void zlsum_fmod_inv_master
 								lusup1, &nsupr1, &x[ii], &iknsupc);
 #endif
 					}
-					// for (i=0 ; i<iknsupc*nrhs ; i++){
-					// printf("x_usum: %f %f\n",x[ii+i].r,x[ii+i].i);
-					// fflush(stdout);
-					// }
 
 #if ( PROFlevel>=1 )
 					TOC(t2, t1);
@@ -1428,7 +1414,7 @@ void zlsum_bmod_inv
  int_t  **Ucb_valptr, /* Vertical linked list pointing to Unzval[].     */
  int_t  *xsup,
  gridinfo_t *grid,
- LocalLU_t *Llu,
+ zLocalLU_t *Llu,
  SuperLUStat_t **stat,
  int_t* root_send,
  int_t* nroot_send,
@@ -1608,7 +1594,7 @@ void zlsum_bmod_inv
 							#pragma omp simd
 							#endif
 							for (i = 0; i < iknsupc; ++i)
-								z_add(&dest[i + j*iknsupc],
+							    z_add(&dest[i + j*iknsupc],
 									  &dest[i + j*iknsupc],
 									  &lsum[i + il + j*iknsupc]);
 
@@ -1652,10 +1638,6 @@ void zlsum_bmod_inv
 										lusup, &nsupr, &x[ii], &iknsupc);
 		#endif
 							}
-								// for (i=0 ; i<iknsupc*nrhs ; i++){
-								// printf("x_usum: %f %f\n",x[ii+i].r,x[ii+i].i);
-								// fflush(stdout);
-								// }
 
 		#if ( PROFlevel>=1 )
 							TOC(t2, t1);
@@ -1922,7 +1904,7 @@ void zlsum_bmod_inv_master
  int_t  **Ucb_valptr, /* Vertical linked list pointing to Unzval[].     */
  int_t  *xsup,
  gridinfo_t *grid,
- LocalLU_t *Llu,
+ zLocalLU_t *Llu,
  SuperLUStat_t **stat,
  int_t sizelsum,
  int_t sizertemp,

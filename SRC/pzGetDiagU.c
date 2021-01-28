@@ -37,7 +37,7 @@ at the top-level directory.
  * n        (input) int
  *          Dimension of the matrix.
  *
- * LUstruct (input) LUstruct_t*
+ * LUstruct (input) zLUstruct_t*
  *          The data structures to store the distributed L and U factors.
  *          see superlu_ddefs.h for its definition.
  *
@@ -62,7 +62,7 @@ at the top-level directory.
  * This routine is modified from gather_diag_to_all() in pzgstrs_Bglobal.c.
  * </pre>
  */
-void pzGetDiagU(int_t n, LUstruct_t *LUstruct, gridinfo_t *grid,
+void pzGetDiagU(int_t n, zLUstruct_t *LUstruct, gridinfo_t *grid,
                   doublecomplex *diagU)
 {
 
@@ -72,7 +72,7 @@ void pzGetDiagU(int_t n, LUstruct_t *LUstruct, gridinfo_t *grid,
     int_t i, j, jj, k, lk, lwork, nsupers, p;
     int_t num_diag_procs, *diag_procs, *diag_len;
     Glu_persist_t *Glu_persist = LUstruct->Glu_persist;
-    LocalLU_t *Llu = LUstruct->Llu;
+    zLocalLU_t *Llu = LUstruct->Llu;
     doublecomplex *zblock, *zwork, *lusup;
 
     iam = grid->iam;

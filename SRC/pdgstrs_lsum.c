@@ -72,7 +72,7 @@ void dlsum_fmod
  int_t luptr,     /* Starting position in lusup[*].                     */
  int_t *xsup,
  gridinfo_t *grid,
- LocalLU_t *Llu,
+ dLocalLU_t *Llu,
  MPI_Request send_req[], /* input/output */
  SuperLUStat_t *stat
 )
@@ -254,7 +254,7 @@ void dlsum_bmod
  int_t  **Ucb_valptr, /* Vertical linked list pointing to Unzval[].     */
  int_t  *xsup,
  gridinfo_t *grid,
- LocalLU_t *Llu,
+ dLocalLU_t *Llu,
  MPI_Request send_req[], /* input/output */
  SuperLUStat_t *stat
  )
@@ -422,7 +422,7 @@ void dlsum_fmod_inv
  int_t *fmod,     /* Modification count for L-solve.                    */
  int_t *xsup,
  gridinfo_t *grid,
- LocalLU_t *Llu,
+ dLocalLU_t *Llu,
  SuperLUStat_t **stat,
  int_t *leaf_send,
  int_t *nleaf_send,
@@ -695,10 +695,6 @@ void dlsum_fmod_inv
 
 #endif
 								}
-								// for (i=0 ; i<iknsupc*nrhs ; i++){
-								// printf("x_lsum: %f\n",x[ii+i]);
-								// fflush(stdout);
-								// }
 
 #if ( PROFlevel>=1 )
 								TOC(t2, t1);
@@ -855,7 +851,7 @@ void dlsum_fmod_inv
 							#pragma omp simd
 							#endif
 							for (i = 0; i < iknsupc; ++i)
-								x[i + ii + j*iknsupc] += lsum[i + il + j*iknsupc ];
+							    x[i + ii + j*iknsupc] += lsum[i + il + j*iknsupc];
 
 
 						lk = LBj( ik, grid );/* Local block number, column-wise. */
@@ -981,7 +977,7 @@ void dlsum_fmod_inv_master
  int_t nlb,       /* Number of L blocks.                                */
  int_t *xsup,
  gridinfo_t *grid,
- LocalLU_t *Llu,
+ dLocalLU_t *Llu,
  SuperLUStat_t **stat,
  int_t sizelsum,
  int_t sizertemp,
@@ -991,7 +987,7 @@ void dlsum_fmod_inv_master
  int num_thread
 )
 {
-    double alpha = 1.0, beta = 0.0,malpha=-1.0;
+    double alpha = 1.0, beta = 0.0, malpha=-1.0;
     double *lusup, *lusup1;
     double *dest;
 	double *Linv;/* Inverse of diagonal block */
@@ -1306,7 +1302,7 @@ void dlsum_fmod_inv_master
 							#pragma omp simd
 						#endif
 						for (i=0 ; i<iknsupc*nrhs ; i++){
-										x[ii+i] = rtemp_loc[i];
+							x[ii+i] = rtemp_loc[i];
 						}
 					}else{
 #ifdef _CRAY
@@ -1320,10 +1316,6 @@ void dlsum_fmod_inv_master
 								lusup1, &nsupr1, &x[ii], &iknsupc);
 #endif
 					}
-					// for (i=0 ; i<iknsupc*nrhs ; i++){
-					// printf("x_usum: %f\n",x[ii+i]);
-					// fflush(stdout);
-					// }
 
 #if ( PROFlevel>=1 )
 					TOC(t2, t1);
@@ -1388,7 +1380,7 @@ void dlsum_bmod_inv
  int_t  **Ucb_valptr, /* Vertical linked list pointing to Unzval[].     */
  int_t  *xsup,
  gridinfo_t *grid,
- LocalLU_t *Llu,
+ dLocalLU_t *Llu,
  SuperLUStat_t **stat,
  int_t* root_send,
  int_t* nroot_send,
@@ -1559,7 +1551,7 @@ void dlsum_bmod_inv
 							#pragma omp simd
 							#endif
 							for (i = 0; i < iknsupc; ++i)
-								dest[i + j*iknsupc] += lsum[i + il + j*iknsupc];
+							    dest[i + j*iknsupc] += lsum[i + il + j*iknsupc];
 
 						// if ( !brecv[ik] ) { /* Becomes a leaf node. */
 							// bmod[ik] = -1; /* Do not solve X[k] in the future. */
@@ -1601,10 +1593,6 @@ void dlsum_bmod_inv
 										lusup, &nsupr, &x[ii], &iknsupc);
 		#endif
 							}
-								// for (i=0 ; i<iknsupc*nrhs ; i++){
-								// printf("x_usum: %f\n",x[ii+i]);
-								// fflush(stdout);
-								// }
 
 		#if ( PROFlevel>=1 )
 							TOC(t2, t1);
@@ -1858,7 +1846,7 @@ void dlsum_bmod_inv_master
  int_t  **Ucb_valptr, /* Vertical linked list pointing to Unzval[].     */
  int_t  *xsup,
  gridinfo_t *grid,
- LocalLU_t *Llu,
+ dLocalLU_t *Llu,
  SuperLUStat_t **stat,
  int_t sizelsum,
  int_t sizertemp,

@@ -148,7 +148,6 @@ at the top-level directory.
 #define dtrsv_    DTRSV
 #define dgemm_    DGEMM
 #define dtrsm_    DTRSM
-#define dtrtri_   DTRTRI
 
 #define scasum_   SCASUM
 #define icamax_   ICAMAX
@@ -174,10 +173,17 @@ at the top-level directory.
 #define ztrsv_    ZTRSV
 #define zgemm_    ZGEMM
 #define ztrsm_    ZTRSM
+
 #define zgerc_    ZGERC
 #define zhemv_    ZHEMV
 #define zher2_    ZHER2
 #define zgeru_    ZGERU
+
+/* LAPACK */
+#define strtri_   STRTRI
+#define dtrtri_   DTRTRI
+#define ctrtri_   CTRTRI
+#define ztrtri_   ZTRTRI
 
 /*
 #define mc64id_dist     MC64ID_DIST
@@ -276,7 +282,6 @@ at the top-level directory.
 #define dtrsv_    dtrsv
 #define dgemm_    dgemm
 #define dtrsm_    dtrsm
-#define dtrtri_   dtrtri
 
 #define scasum_   scasum
 #define icamax_   icamax
@@ -306,6 +311,12 @@ at the top-level directory.
 #define zhemv_    zhemv
 #define zher2_    zher2
 #define zgeru_    zgeru
+
+/* LAPACK */
+#define strtri_   strtri
+#define dtrtri_   dtrtri
+#define ctrtri_   ctrtri
+#define ztrtri_   ztrtri
 
 /*
 #define mc64id_dist         mc64id_dist

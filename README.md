@@ -1,4 +1,4 @@
-# SuperLU_DIST (version 6.1)
+# SuperLU_DIST (version 6.3)
 
 [![Build Status](https://travis-ci.org/xiaoyeli/superlu_dist.svg?branch=master)](https://travis-ci.org/xiaoyeli/superlu_dist) 
 [Nightly tests](http://my.cdash.org/index.php?project=superlu_dist)
@@ -121,7 +121,11 @@ or,
 **NOTE:**
 The parallel execution in ctest is invoked by "mpiexec" command which is
 from MPICH environment. If your MPI is not MPICH/mpiexec based, the test
-execution may fail. You can always go to TEST/ directory to perform
+execution may fail. You can pass the definition option "-DMPIEXEC_EXECUTABLE"
+to cmake. For example on Cori at NERSC, you will need the following:
+`-DMPIEXEC_EXECUTABLE=/usr/bin/srun`
+
+Or, you can always go to TEST/ directory to perform
 testing manually.
 
 **Note on the C-Fortran name mangling handled by C preprocessor definition:**  
@@ -254,7 +258,7 @@ You can disable CombBLAS with the following line in SRC/superlu_dist_config.h:
 ```
 
 
-#### 1.4. C preprocessor definition CDEFS.
+#### 1.4. C preprocessor definition CDEFS. (Replaced by cmake module FortranCInterface.)
 
 In the header file SRC/Cnames.h, we use macros to determine how
 C routines should be named so that they are callable by Fortran.
@@ -392,4 +396,9 @@ December 31, 2016   Version 5.1.3
 September 30, 2017  Version 5.2.0  
 January 28, 2018    Version 5.3.0
 June 1, 2018        Version 5.4.0
+September 22, 2018  Version 6.0.0
+December 9, 2018    Version 6.1.0
+February 8, 2019    Version 6.1.1
+November 12, 2019   Version 6.2.0
+February 23, 2020   Version 6.3.0
 ```

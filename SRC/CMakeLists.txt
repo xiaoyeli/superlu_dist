@@ -1,5 +1,5 @@
 set(headers
-    Cnames.h
+    superlu_FCnames.h
     gpublas_utils.h
     dcomplex.h
     machines.h
@@ -10,6 +10,7 @@ set(headers
     util_dist.h
     colamd.h
     ${CMAKE_CURRENT_BINARY_DIR}/superlu_dist_config.h
+    ${PROJECT_SOURCE_DIR}/SRC/superlu_FortranCInterface.h
 )
 if (MSVC)
   list(APPEND headers wingetopt.h)
@@ -35,7 +36,6 @@ set(sources
   psymbfact_util.c
   get_perm_c_parmetis.c
   mc64ad_dist.c
-  static_schedule.c
   xerr_dist.c
   smach_dist.c
   dmach_dist.c
@@ -89,6 +89,7 @@ endif()
     ddistribute.c
     pddistribute.c
     pdgstrf.c
+    dstatic_schedule.c
     pdgstrf2.c
     pdgstrs.c
     pdgstrs1.c
@@ -132,6 +133,7 @@ if(enable_complex16)
     zdistribute.c
     pzdistribute.c
     pzgstrf.c
+    zstatic_schedule.c
     pzgstrf2.c
     pzgstrs.c
     pzgstrs1.c
