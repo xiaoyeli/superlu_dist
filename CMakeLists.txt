@@ -148,6 +148,7 @@ if(MPI_C_FOUND)
     set(CMAKE_C_FLAGS "${MPI_C_COMPILE_FLAGS} ${CMAKE_C_FLAGS}")
     set(CMAKE_CXX_FLAGS "${MPI_CXX_COMPILE_FLAGS} ${CMAKE_CXX_FLAGS}")
     set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${MPI_C_LINK_FLAGS}" )
+    message("MPI_C_INCLUDE_DIRS: ${MPI_C_INCLUDE_DIRS}")
 endif()
 #--------------------- OpenMP ---------------------
 if (NOT DEFINED enable_openmp)
@@ -210,8 +211,11 @@ if (TPL_ENABLE_HIPLIB)   ## want to use hip
     set(HAVE_HIP TRUE)
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DHAVE_HIP -DGPU_ACC")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DHAVE_HIP -DGPU_ACC")    
-    set(HIP_HIPCC_FLAGS "${HIP_HIPCC_FLAGS} -DHAVE_HIP -DGPU_ACC")    
- 
+    set(HIP_HIPCC_FLAGS "${HIP_HIPCC_FLAGS} -DHAVE_HIP -DGPU_ACC -fPIC")    
+
+
+
+
     
     # if ("$ENV{HIP_PLATFORM}" STREQUAL "hcc")
     #   set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DHAVE_HIP -D__HIP_PLATFORM_HCC__")
