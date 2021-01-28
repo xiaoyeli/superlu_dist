@@ -251,7 +251,7 @@ typedef struct {
     C_Tree  *d_LBtree_ptr ;
     C_Tree  *d_LRtree_ptr ;
 #endif
-} LocalLU_t;
+} dLocalLU_t;
 
 
 typedef struct {
@@ -645,7 +645,7 @@ extern int   file_dPrint_CompRowLoc_Matrix_dist(FILE *fp, SuperMatrix *A);
 extern void  Printdouble5(char *, int_t, double *);
 extern int   file_Printdouble5(FILE *, char *, int_t, double *);
 extern void dGenCOOLblocks(int, int_t, gridinfo_t*,
-		  Glu_persist_t*, LocalLU_t *, int_t* , int_t* , double * , int_t* , int_t* , int_t );
+		  Glu_persist_t*, dLocalLU_t *, int_t* , int_t* , double * , int_t* , int_t* , int_t );
 
 /* BLAS */
 

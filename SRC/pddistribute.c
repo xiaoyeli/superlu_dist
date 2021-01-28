@@ -842,7 +842,7 @@ pddistribute(fact_t fact, int_t n, SuperMatrix *A,
 				(long int*)SUPERLU_MALLOC(k * sizeof(long int))) ) {
 		fprintf(stderr, "Malloc fails for Lnzval_bc_offset[].");
 	}
-	Lnzval_bc_offset[k-1] = NULL;			
+	Lnzval_bc_offset[k-1] = -1;			
 
 
 	if ( !(Lindval_loc_bc_ptr =
@@ -853,7 +853,7 @@ pddistribute(fact_t fact, int_t n, SuperMatrix *A,
 				(long int*)SUPERLU_MALLOC(k * sizeof(long int))) ) {
 		fprintf(stderr, "Malloc fails for Lindval_loc_bc_offset[].");
 	}
-	Lindval_loc_bc_offset[k-1] = NULL;	
+	Lindval_loc_bc_offset[k-1] = -1;	
 
 
 	if ( !(Linv_bc_ptr =
@@ -870,7 +870,7 @@ pddistribute(fact_t fact, int_t n, SuperMatrix *A,
 	}
 	Linv_bc_ptr[k-1] = NULL;
 	Uinv_bc_ptr[k-1] = NULL;
-	Linv_bc_offset[k-1] = NULL;
+	Linv_bc_offset[k-1] = -1;
 
 
 	if ( !(Unnz =

@@ -693,7 +693,7 @@ void dDumpLblocks(int iam, int_t nsupers, gridinfo_t *grid,
 /*! \Compute the level sets in the L factor
  */
 void dComputeLevelsets(int iam, int_t nsupers, gridinfo_t *grid,
-		  Glu_persist_t *Glu_persist, LocalLU_t *Llu, int_t *levels)
+		  Glu_persist_t *Glu_persist, dLocalLU_t *Llu, int_t *levels)
 {
     register int c, extra, gb, j, i, lb, nsupc, nsupr, len, nb, ncb;
     register int_t k, mycol, r;
@@ -735,7 +735,7 @@ void dComputeLevelsets(int iam, int_t nsupers, gridinfo_t *grid,
 /*! \Dump the factored matrix L using matlab triple-let format
  */
 void dGenCOOLblocks(int iam, int_t nsupers, gridinfo_t *grid,
-		  Glu_persist_t *Glu_persist, LocalLU_t *Llu, int_t* cooRows, int_t* cooCols, double * cooVals, int_t* n, int_t* nnzL, int_t round)
+		  Glu_persist_t *Glu_persist, dLocalLU_t *Llu, int_t* cooRows, int_t* cooCols, double * cooVals, int_t* n, int_t* nnzL, int_t round)
 {
     register int c, extra, gb, j, i, lb, nsupc, nsupr, len, nb, ncb;
     register int_t k, mycol, r;

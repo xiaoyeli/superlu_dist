@@ -2,16 +2,15 @@
 # Bash script to submit many files to Cori/Edison/Queue
 module unload cray-mpich/7.7.6
 module swap PrgEnv-intel PrgEnv-gnu
-export MKLROOT=/opt/intel/compilers_and_libraries_2018.1.163/linux/mkl
+export MKLROOT=/opt/intel/compilers_and_libraries_2019.3.199/linux/mkl
 export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/opt/intel/compilers_and_libraries_2018.1.163/linux/mkl/lib/intel64
 
 # module use /global/common/software/m3169/cori/modulefiles
 # module unload openmpi
 module load openmpi/4.0.1
 
-
 export CRAYPE_LINK_TYPE=dynamic
-export PARMETIS_ROOT=~/Cori/my_software/parmetis-4.0.3_dynamic_openmpi4
+export PARMETIS_ROOT=~/Cori/my_software/parmetis-4.0.3_dynamic_openmpi401_gnu/ 
 export PARMETIS_BUILD_DIR=${PARMETIS_ROOT}/build/Linux-x86_64 
 rm -rf CMakeCache.txt
 rm -rf CMakeFiles
