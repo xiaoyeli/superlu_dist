@@ -555,9 +555,13 @@ extern void dlsum_fmod_inv(double *, double *, double *, double *,
 		       int, int_t , int_t *,
 		       int_t *, gridinfo_t *, dLocalLU_t *,
 		       SuperLUStat_t **, int_t *, int_t *, int_t, int_t, int_t, int_t, int, int);
+extern void dComputeLevelsets(int , int_t , gridinfo_t *,
+		  Glu_persist_t *, dLocalLU_t *, int_t *);               
 			   
-// extern void dlsum_fmod_inv_gpu_wrap(int_t, int_t, int_t, int_t, double *,double *,double *,int,int, int_t , int_t *, C_Tree  *, C_Tree  *, int_t *, gridinfo_t *, LocalLU_t *, double *, double *, int_t);			   
-			    
+#ifdef GPU_ACC               
+extern void dlsum_fmod_inv_gpu_wrap(int_t, int_t, int_t, int_t, double *,double *,int,int, int_t , int_t *, C_Tree  *, C_Tree  *, int_t *, int_t *,long int *, double *, long int *, double *, long int *, int_t *, long int *, int_t *, gridinfo_t *, double * , double * , int_t );
+#endif
+
 extern void dlsum_fmod_inv_master(double *, double *, double *, double *,
 		       int, int, int_t , int_t *, int_t,
 		       int_t *, gridinfo_t *, dLocalLU_t *,

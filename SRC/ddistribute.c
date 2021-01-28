@@ -20,7 +20,9 @@ at the top-level directory.
  * </pre>
  */
 #include "superlu_ddefs.h"
-
+#ifdef GPU_ACC
+#include "gpublas_utils.h"
+#endif
 
 /*! \brief
  *

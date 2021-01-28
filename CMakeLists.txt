@@ -196,8 +196,8 @@ if (TPL_ENABLE_CUDALIB)   ## want to use cuda
     string (REPLACE ";" " " CUDA_LIB_STR "${CUDA_LIB}")
     set(CUDA_LIB_EXPORT ${CUDA_LIB_STR}) 
     set(HAVE_CUDA TRUE)
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DHAVE_CUDA -DGPU_ACC")
-    set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -DHAVE_CUDA -DGPU_ACC")
+    # set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DHAVE_CUDA")
+    # set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -DHAVE_CUDA")
   else()
     message("-- CUDA libraries not found.")
   endif()
@@ -220,10 +220,12 @@ if (TPL_ENABLE_HIPLIB)   ## want to use hip
     string (REPLACE ";" " " HIP_LIB_STR "${HIP_LIB}")
     set(HIP_LIB_EXPORT ${HIP_LIB_STR}) 
     set(HAVE_HIP TRUE)
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DHAVE_HIP -DGPU_ACC")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DHAVE_HIP -DGPU_ACC")    
-    set(HIP_HIPCC_FLAGS "${HIP_HIPCC_FLAGS} -DHAVE_HIP -DGPU_ACC -fPIC")    
-
+    # set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DHAVE_HIP")
+    # set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DHAVE_HIP")    
+    # set(HIP_HIPCC_FLAGS "${HIP_HIPCC_FLAGS} -DHAVE_HIP")    
+    if (BUILD_SHARED_LIBS)
+    set(HIP_HIPCC_FLAGS "${HIP_HIPCC_FLAGS} -fPIC")    
+    endif()
 
 
 

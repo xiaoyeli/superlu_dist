@@ -150,6 +150,7 @@ if(enable_complex16)
 if (HAVE_COMBBLAS)
   list(APPEND sources z_c2cpp_GetHWPM.cpp zHWPM_CombBLAS.hpp)
 endif()
+endif()
 
 if (TPL_ENABLE_HIPLIB)
   set_source_files_properties(

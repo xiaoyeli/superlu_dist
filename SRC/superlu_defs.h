@@ -41,13 +41,6 @@ at the top-level directory.
    #include <omp.h>
 #endif
 
-#ifdef GPU_ACC
-
-
-#include "gpu_wrapper.h"
-#endif
-
-
 
 #include <mpi.h>
 #include <stdlib.h>
@@ -85,6 +78,23 @@ at the top-level directory.
 #define SUPERLU_DIST_RELEASE_DATE      "October 23, 2020"
 
 #include "superlu_dist_config.h"
+
+#ifdef HAVE_CUDA
+#ifndef GPU_ACC
+#define GPU_ACC
+#endif
+#endif
+#ifdef HAVE_HIP
+#ifndef GPU_ACC
+#define GPU_ACC
+#endif
+#endif
+
+#ifdef GPU_ACC
+#include "gpu_wrapper.h"
+#endif
+
+
 /* Define my integer size int_t */
 #ifdef _CRAY
   typedef short int_t;
@@ -100,9 +110,7 @@ at the top-level directory.
   #define IFMT "%8d"
 #endif
 
-#ifdef HAVE_CUDA
-#define GPU_ACC
-#endif
+
 
 /* MPI C complex datatype */
 #define SuperLU_MPI_COMPLEX         MPI_C_COMPLEX 

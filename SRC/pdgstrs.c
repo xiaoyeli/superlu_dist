@@ -28,6 +28,10 @@ at the top-level directory.
 #define CACHELINE 64  /* bytes, Xeon Phi KNL, Cori haswell, Edision */
 #endif
 
+#ifdef GPU_ACC
+#include "gpublas_utils.h"
+#endif
+
 // #ifndef GPUREF
 // #define GPUREF 1  
 // #endif
