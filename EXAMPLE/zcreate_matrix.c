@@ -254,6 +254,7 @@ int zcreate_matrix_postfix(SuperMatrix *A, int nrhs, doublecomplex **rhs,
     char     trans[1];
     int_t      *marker;
 
+
     iam = grid->iam;
 
 #if ( DEBUGlevel>=1 )
@@ -308,6 +309,7 @@ int zcreate_matrix_postfix(SuperMatrix *A, int nrhs, doublecomplex **rhs,
 	MPI_Bcast( rowind,  nnz, mpi_int_t,  0, grid->comm );
 	MPI_Bcast( colptr,  n+1, mpi_int_t,  0, grid->comm );
     }
+
 
 #if 0
     nzval[0].r = 0.1; nzval[0].i = 0.0;

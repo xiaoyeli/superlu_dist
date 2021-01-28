@@ -4,14 +4,17 @@ EXIT_SUCCESS=0
 EXIT_HOST=1
 EXIT_PARAM=2
 
+module restore PrgEnv-cray
+module load cray-mvapich2/2.3.4
 
-module load PrgEnv-cray
+module load gcc/8.1.0
 module load cmake
 module unload cray-libsci_acc
-module load cray-libsci/19.06.1
+module load cray-libsci/20.03.1
 module load cuda10.2/toolkit/10.2.89
 module load craype-accel-nvidia70
-module load rocm
+module load rocm                                 
+
 
 
 export MV2_USE_CUDA=1
@@ -90,7 +93,10 @@ then
   NODE_VAL=`expr $NODE_VAL + 1`
 fi
  
-export NUM_GPU_STREAMS=1
+export NUM_CUDA_STREAMS=1
+# export MAX_BUFFER_SIZE=500000000
+# export N_GEMM=100
+# export CUBLAS_NB=64 
 for NTH in 1 
 do
 OMP_NUM_THREADS=$NTH
@@ -99,9 +105,9 @@ OMP_NUM_THREADS=$NTH
 #for NSUP in 128 64 32 16 8
 #do
   # for MAT in atmosmodl.rb nlpkkt80.mtx torso3.mtx Ga19As19H42.mtx A22.mtx cage13.rb 
-  for MAT in HTS/gas_sensor.mtx HTS/vanbody.mtx HTS/ct20stif.mtx HTS/torsion1.mtx HTS/xenon1.mtx HTS/dawson5.mtx
+ # for MAT in HTS/gas_sensor.mtx HTS/vanbody.mtx HTS/ct20stif.mtx HTS/torsion1.mtx HTS/xenon1.mtx HTS/dawson5.mtx
 
-
+  # for MAT in HTS/gas_sensor.mtx
 
 
   # for MAT in HTS/g7jac160.mtx
@@ -117,7 +123,10 @@ OMP_NUM_THREADS=$NTH
   # for MAT in big.rua
   # for MAT in matrix121.dat matrix211.dat tdr190k.dat tdr455k.dat nlpkkt80.mtx torso3.mtx helm2d03.mtx  
   # for MAT in tdr190k.dat Ga19As19H42.mtx
- # for MAT in torso3.mtx hvdc2.mtx matrix121.dat nlpkkt80.mtx helm2d03.mtx
+  #  for MAT in StocF-1465.mtx Geo_1438.mtx globalmat118_1536.mtx 
+    for MAT in s1_mat_0_126936.bin 
+
+# for MAT in torso3.mtx hvdc2.mtx matrix121.dat nlpkkt80.mtx helm2d03.mtx
 # for MAT in A22.bin DG_GrapheneDisorder_8192.bin DNA_715_64cell.bin LU_C_BN_C_4by2.bin Li4244.bin atmosmodj.bin Ga19As19H42.bin Geo_1438.bin StocF-1465.bin    
   # for MAT in  A22.bin DNA_715_64cell.bin LU_C_BN_C_4by2.bin
  # for MAT in Ga19As19H42.mtx   

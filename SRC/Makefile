@@ -40,14 +40,6 @@ ifeq ($(HAVE_CUDA),TRUE)
 ALLAUX += gpublas_utils.o pdgstrs_lsum_cuda.o pdgstrs_lsum_cuda_dlink.o
 endif
 
-ifeq ($(HAVE_CUDA),TRUE)
-ALLAUX += cublas_utils.o
-endif
-
-ifeq ($(HAVE_COMBBLAS),TRUE)
-ALLAUX += c2cpp_GetAWPM.o
-endif
-
 #
 # Routines literally taken from SuperLU, but renamed with suffix _dist
 #
@@ -77,6 +69,11 @@ ZPLUSRC = pzgssvx.o pzgssvx_ABglobal.o \
 	  pzgstrs.o pzgstrs1.o pzgstrs_lsum.o pzgstrs_Bglobal.o \
 	  pzgsrfs.o pzgsmv.o pzgsrfs_ABXglobal.o pzgsmv_AXglobal.o \
 	  zreadtriple_noheader.o
+
+ifeq ($(HAVE_COMBBLAS),TRUE)
+DPLUSRC += d_c2cpp_GetHWPM.o
+ZPLUSRC += z_c2cpp_GetHWPM.o
+endif
 
 all:  double complex16
 

@@ -631,7 +631,7 @@ extern float ddist_psymbtonum(fact_t, int_t, SuperMatrix *,
                                 dLUstruct_t *, gridinfo_t *);
 extern void pdGetDiagU(int_t, dLUstruct_t *, gridinfo_t *, double *);
 
-extern int  dc2cpp_GetAWPM(SuperMatrix *, gridinfo_t *, dScalePermstruct_t *);
+extern int  d_c2cpp_GetHWPM(SuperMatrix *, gridinfo_t *, dScalePermstruct_t *);
 
 /* Routines for debugging */
 extern void  dPrintLblocks(int, int_t, gridinfo_t *, Glu_persist_t *,

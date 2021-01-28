@@ -559,7 +559,7 @@ extern float zdist_psymbtonum(fact_t, int_t, SuperMatrix *,
                                 zLUstruct_t *, gridinfo_t *);
 extern void pzGetDiagU(int_t, zLUstruct_t *, gridinfo_t *, doublecomplex *);
 
-extern int  zc2cpp_GetAWPM(SuperMatrix *, gridinfo_t *, zScalePermstruct_t *);
+extern int  z_c2cpp_GetHWPM(SuperMatrix *, gridinfo_t *, zScalePermstruct_t *);
 
 /* Routines for debugging */
 extern void  zPrintLblocks(int, int_t, gridinfo_t *, Glu_persist_t *,

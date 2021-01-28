@@ -1,4 +1,4 @@
-# SuperLU_DIST (version 6.3)
+# SuperLU_DIST (version 6.4)   <img align=center width="55" alt="superlu" src="https://user-images.githubusercontent.com/11741943/103982988-5a9a9d00-5139-11eb-9ac4-a55e80a79f8d.png">
 
 [![Build Status](https://travis-ci.org/xiaoyeli/superlu_dist.svg?branch=master)](https://travis-ci.org/xiaoyeli/superlu_dist) 
 [Nightly tests](http://my.cdash.org/index.php?project=superlu_dist)
@@ -99,10 +99,18 @@ OOT}/Applications/BipartiteMatchings" \
 
 ( see example cmake script: run_cmake_build.sh )
 ```
+You can enable GPU with CUDA with the following cmake option:
+```
+`-DTPL_ENABLE_CUDALIB=TRUE`
+`-DTPL_CUDA_LIBRARIES="<path>/libcublas.so;<path>/libcudart.so"`
+```
+
 You can disable LAPACK, ParMetis or CombBLAS with the following cmake option:
+```
 `-DTPL_ENABLE_LAPACKLIB=FALSE`
 `-DTPL_ENABLE_PARMETISLIB=FALSE`
 `-DTPL_ENABLE_COMBBLASLIB=FALSE`
+```
 
 To actually build (compile), type:
 `make`
@@ -282,14 +290,10 @@ set the number of threads you wish to use as follows (bash):
 
 `export OMP_NUM_THREADS=<##>`
 
-To enable NVIDIA GPU access, need to take the following 2 step:
-1) Set the following Linux environment variable:
-`export ACC=GPU`
-
-2) Add the CUDA library location in make.inc:
+To enable NVIDIA GPU access, need to take the following step:
+Add the CUDA library location in make.inc:
 ```
-ifeq "${ACC}" "GPU"
-CFLAGS += -DGPU_ACC
+HAVE_CUDA=TRUE
 INCS += -I<CUDA directory>/include
 LIBS += -L<CUDA directory>/lib64 -lcublas -lcudart 
 endif
@@ -401,4 +405,5 @@ December 9, 2018    Version 6.1.0
 February 8, 2019    Version 6.1.1
 November 12, 2019   Version 6.2.0
 February 23, 2020   Version 6.3.0
+October 23, 2020    Version 6.4.0
 ```
