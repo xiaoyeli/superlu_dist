@@ -324,12 +324,27 @@ int_t sparseTreeFactor_ASYNC_GPU(
 #endif
 
             int_t LU_nonempty = dSchurComplementSetupGPU(k,
-                                                        msgss[offset], packLUInfo,
-                                                        myIperm, gIperm_c_supno, perm_c_supno,
-                                                        gEtreeInfo, fNlists, scuBufs,
-                                                        LUvsbs[offset], grid, LUstruct, HyP);
+                                                         msgss[offset], packLUInfo,
+                                                         myIperm, gIperm_c_supno, perm_c_supno,
+                                                         gEtreeInfo, fNlists, scuBufs,
+                                                         LUvsbs[offset], grid, LUstruct, HyP);
             // initializing D2H data transfer. D2H = Device To Host.
             int_t jj_cpu; /* limit between CPU and GPU */
+
+#if 1
+            if (superlu_acc_offload)
+            {
+                jj_cpu = HyP->num_u_blks_Phi; // -1 ??
+                HyP->offloadCondition = 1;
+            }
+            else
+            {
+                /* code */
+                HyP->offloadCondition = 0;
+                jj_cpu = 0;
+            }
+
+#else
             if (superlu_acc_offload)
             {
                 jj_cpu = getAccUPartition(HyP);
@@ -345,6 +360,7 @@ int_t sparseTreeFactor_ASYNC_GPU(
             {
                 jj_cpu = 0;
             }
+#endif
 
             // int_t jj_cpu = HyP->num_u_blks_Phi-1;
             // if (HyP->Rnbrow > 0 && jj_cpu>=0)
@@ -391,7 +407,7 @@ int_t sparseTreeFactor_ASYNC_GPU(
                     int_t j = ij / HyP->lookAheadBlk;
                     int_t lb = ij % HyP->lookAheadBlk;
                     dblock_gemm_scatterTopLeft(lb, j, bigV, knsupc, klst, lsub,
-                                              usub, ldt, indirect, indirect2, HyP, LUstruct, grid, SCT, stat);
+                                               usub, ldt, indirect, indirect2, HyP, LUstruct, grid, SCT, stat);
                 }
 
 #pragma omp for
@@ -400,7 +416,7 @@ int_t sparseTreeFactor_ASYNC_GPU(
                     int_t j = ij / HyP->lookAheadBlk;
                     int_t lb = ij % HyP->lookAheadBlk;
                     dblock_gemm_scatterTopRight(lb, j, bigV, knsupc, klst, lsub,
-                                               usub, ldt, indirect, indirect2, HyP, LUstruct, grid, SCT, stat);
+                                                usub, ldt, indirect, indirect2, HyP, LUstruct, grid, SCT, stat);
                 }
 
 #pragma omp for
@@ -409,7 +425,7 @@ int_t sparseTreeFactor_ASYNC_GPU(
                     int_t j = ij / HyP->RemainBlk;
                     int_t lb = ij % HyP->RemainBlk;
                     dblock_gemm_scatterBottomLeft(lb, j, bigV, knsupc, klst, lsub,
-                                                 usub, ldt, indirect, indirect2, HyP, LUstruct, grid, SCT, stat);
+                                                  usub, ldt, indirect, indirect2, HyP, LUstruct, grid, SCT, stat);
                 } /* for int_t ij = ... */
             }     /* end parallel region ... end look-ahead update */
 
@@ -540,7 +556,7 @@ int_t sparseTreeFactor_ASYNC_GPU(
                     int_t j = ij / HyP->RemainBlk + jj_cpu;
                     int_t lb = ij % HyP->RemainBlk;
                     dblock_gemm_scatterBottomRight(lb, j, bigV, knsupc, klst, lsub,
-                                                  usub, ldt, indirect, indirect2, HyP, LUstruct, grid, SCT, stat);
+                                                   usub, ldt, indirect, indirect2, HyP, LUstruct, grid, SCT, stat);
                 } /* for int_t ij = ... */
 
             } /* end omp parallel region */
