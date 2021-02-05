@@ -26,159 +26,151 @@ at the top-level directory.
 #include "superlu_ddefs.h"
 
 /*! \brief Deallocate the structure pointing to the actual storage of the matrix. */
-void
-Destroy_SuperMatrix_Store_dist(SuperMatrix *A)
+void Destroy_SuperMatrix_Store_dist(SuperMatrix *A)
 {
-    SUPERLU_FREE ( A->Store );
+    SUPERLU_FREE(A->Store);
 }
 
-void
-Destroy_CompCol_Matrix_dist(SuperMatrix *A)
+void Destroy_CompCol_Matrix_dist(SuperMatrix *A)
 {
     NCformat *Astore = A->Store;
-    SUPERLU_FREE( Astore->rowind );
-    SUPERLU_FREE( Astore->colptr );
-    if ( Astore->nzval ) SUPERLU_FREE( Astore->nzval );
-    SUPERLU_FREE( Astore );
+    SUPERLU_FREE(Astore->rowind);
+    SUPERLU_FREE(Astore->colptr);
+    if (Astore->nzval)
+        SUPERLU_FREE(Astore->nzval);
+    SUPERLU_FREE(Astore);
 }
 
-void
-Destroy_CompRowLoc_Matrix_dist(SuperMatrix *A)
+void Destroy_CompRowLoc_Matrix_dist(SuperMatrix *A)
 {
     NRformat_loc *Astore = A->Store;
-    SUPERLU_FREE( Astore->rowptr );
-    SUPERLU_FREE( Astore->colind );
-    SUPERLU_FREE( Astore->nzval );
-    SUPERLU_FREE( Astore );
+    SUPERLU_FREE(Astore->rowptr);
+    SUPERLU_FREE(Astore->colind);
+    SUPERLU_FREE(Astore->nzval);
+    SUPERLU_FREE(Astore);
 }
 
-void
-Destroy_CompRow_Matrix_dist(SuperMatrix *A)
+void Destroy_CompRow_Matrix_dist(SuperMatrix *A)
 {
-    SUPERLU_FREE( ((NRformat *)A->Store)->rowptr );
-    SUPERLU_FREE( ((NRformat *)A->Store)->colind );
-    SUPERLU_FREE( ((NRformat *)A->Store)->nzval );
-    SUPERLU_FREE( A->Store );
+    SUPERLU_FREE(((NRformat *)A->Store)->rowptr);
+    SUPERLU_FREE(((NRformat *)A->Store)->colind);
+    SUPERLU_FREE(((NRformat *)A->Store)->nzval);
+    SUPERLU_FREE(A->Store);
 }
 
-void
-Destroy_SuperNode_Matrix_dist(SuperMatrix *A)
+void Destroy_SuperNode_Matrix_dist(SuperMatrix *A)
 {
-    SUPERLU_FREE ( ((SCformat *)A->Store)->rowind );
-    SUPERLU_FREE ( ((SCformat *)A->Store)->rowind_colptr );
-    SUPERLU_FREE ( ((SCformat *)A->Store)->nzval );
-    SUPERLU_FREE ( ((SCformat *)A->Store)->nzval_colptr );
-    SUPERLU_FREE ( ((SCformat *)A->Store)->col_to_sup );
-    SUPERLU_FREE ( ((SCformat *)A->Store)->sup_to_col );
-    SUPERLU_FREE ( A->Store );
+    SUPERLU_FREE(((SCformat *)A->Store)->rowind);
+    SUPERLU_FREE(((SCformat *)A->Store)->rowind_colptr);
+    SUPERLU_FREE(((SCformat *)A->Store)->nzval);
+    SUPERLU_FREE(((SCformat *)A->Store)->nzval_colptr);
+    SUPERLU_FREE(((SCformat *)A->Store)->col_to_sup);
+    SUPERLU_FREE(((SCformat *)A->Store)->sup_to_col);
+    SUPERLU_FREE(A->Store);
 }
 
 /*! \brief A is of type Stype==NCP */
-void
-Destroy_CompCol_Permuted_dist(SuperMatrix *A)
+void Destroy_CompCol_Permuted_dist(SuperMatrix *A)
 {
-    SUPERLU_FREE ( ((NCPformat *)A->Store)->colbeg );
-    SUPERLU_FREE ( ((NCPformat *)A->Store)->colend );
-    SUPERLU_FREE ( A->Store );
+    SUPERLU_FREE(((NCPformat *)A->Store)->colbeg);
+    SUPERLU_FREE(((NCPformat *)A->Store)->colend);
+    SUPERLU_FREE(A->Store);
 }
 
 /*! \brief A is of type Stype==DN */
-void
-Destroy_Dense_Matrix_dist(SuperMatrix *A)
+void Destroy_Dense_Matrix_dist(SuperMatrix *A)
 {
-    DNformat* Astore = A->Store;
-    SUPERLU_FREE (Astore->nzval);
-    SUPERLU_FREE ( A->Store );
+    DNformat *Astore = A->Store;
+    SUPERLU_FREE(Astore->nzval);
+    SUPERLU_FREE(A->Store);
 }
-
-
 
 /*! \brief Destroy the binary trees associated with the panel. 
   These are used in triangular solve. */
-void
-Destroy_Tree(int_t n, gridinfo_t *grid, LUstruct_t *LUstruct)
+void Destroy_Tree(int_t n, gridinfo_t *grid, LUstruct_t *LUstruct)
 {
     int_t i, nb, nsupers;
     Glu_persist_t *Glu_persist = LUstruct->Glu_persist;
     LocalLU_t *Llu = LUstruct->Llu;
-#if ( DEBUGlevel>=1 )
+#if (DEBUGlevel >= 1)
     int iam;
-    MPI_Comm_rank( MPI_COMM_WORLD, &iam );
+    MPI_Comm_rank(MPI_COMM_WORLD, &iam);
     CHECK_MALLOC(iam, "Enter Destroy_Tree()");
 #endif
 
-    nsupers = Glu_persist->supno[n-1] + 1;
+    nsupers = Glu_persist->supno[n - 1] + 1;
 
     nb = CEILING(nsupers, grid->npcol);
-    for (i=0;i<nb;++i){
-	if(Llu->LBtree_ptr[i]!=NULL){
-	    BcTree_Destroy(Llu->LBtree_ptr[i],LUstruct->dt);
-	}
-	if(Llu->UBtree_ptr[i]!=NULL){
-	    BcTree_Destroy(Llu->UBtree_ptr[i],LUstruct->dt);
-	}		
+    for (i = 0; i < nb; ++i)
+    {
+        if (Llu->LBtree_ptr[i] != NULL)
+        {
+            BcTree_Destroy(Llu->LBtree_ptr[i], LUstruct->dt);
+        }
+        if (Llu->UBtree_ptr[i] != NULL)
+        {
+            BcTree_Destroy(Llu->UBtree_ptr[i], LUstruct->dt);
+        }
     }
     SUPERLU_FREE(Llu->LBtree_ptr);
     SUPERLU_FREE(Llu->UBtree_ptr);
-	
+
     nb = CEILING(nsupers, grid->nprow);
-    for (i=0;i<nb;++i){
-	if(Llu->LRtree_ptr[i]!=NULL){
-	    RdTree_Destroy(Llu->LRtree_ptr[i],LUstruct->dt);
-	}
-	if(Llu->URtree_ptr[i]!=NULL){
-	    RdTree_Destroy(Llu->URtree_ptr[i],LUstruct->dt);
-	}		
+    for (i = 0; i < nb; ++i)
+    {
+        if (Llu->LRtree_ptr[i] != NULL)
+        {
+            RdTree_Destroy(Llu->LRtree_ptr[i], LUstruct->dt);
+        }
+        if (Llu->URtree_ptr[i] != NULL)
+        {
+            RdTree_Destroy(Llu->URtree_ptr[i], LUstruct->dt);
+        }
     }
     SUPERLU_FREE(Llu->LRtree_ptr);
     SUPERLU_FREE(Llu->URtree_ptr);
 
-#if ( DEBUGlevel>=1 )
+#if (DEBUGlevel >= 1)
     CHECK_MALLOC(iam, "Exit Destroy_Tree()");
 #endif
 }
 
-
 /*! \brief Destroy distributed L & U matrices. */
-void
-Destroy_LU(int_t n, gridinfo_t *grid, LUstruct_t *LUstruct)
+void Destroy_LU(int_t n, gridinfo_t *grid, LUstruct_t *LUstruct)
 {
     int_t i, nb, nsupers;
     Glu_persist_t *Glu_persist = LUstruct->Glu_persist;
     LocalLU_t *Llu = LUstruct->Llu;
 
-#if ( DEBUGlevel>=1 )
+#if (DEBUGlevel >= 1)
     int iam;
-    MPI_Comm_rank( MPI_COMM_WORLD, &iam );
+    MPI_Comm_rank(MPI_COMM_WORLD, &iam);
     CHECK_MALLOC(iam, "Enter Destroy_LU()");
 #endif
 
     Destroy_Tree(n, grid, LUstruct); // from asynchronous triangular solve
 
-    nsupers = Glu_persist->supno[n-1] + 1;
+    nsupers = Glu_persist->supno[n - 1] + 1;
 
     nb = CEILING(nsupers, grid->npcol);
-    for (i = 0; i < nb; ++i) 
-	if ( Llu->Lrowind_bc_ptr[i] ) {
-	    SUPERLU_FREE (Llu->Lrowind_bc_ptr[i]);
-        SUPERLU_FREE (Llu->Lnzval_bc_ptr[i]);
-// #ifdef GPU_ACC
-// 	    checkCuda(cudaFreeHost(Llu->Lnzval_bc_ptr[i]));
-// #else
-// 	    SUPERLU_FREE (Llu->Lnzval_bc_ptr[i]);
-// #endif
-	}
-    SUPERLU_FREE (Llu->Lrowind_bc_ptr);
-    SUPERLU_FREE (Llu->Lnzval_bc_ptr);
+    for (i = 0; i < nb; ++i)
+        if (Llu->Lrowind_bc_ptr[i])
+        {
+            SUPERLU_FREE(Llu->Lrowind_bc_ptr[i]);
+            SUPERLU_FREE(Llu->Lnzval_bc_ptr[i]);
+        }
+    SUPERLU_FREE(Llu->Lrowind_bc_ptr);
+    SUPERLU_FREE(Llu->Lnzval_bc_ptr);
 
     nb = CEILING(nsupers, grid->nprow);
     for (i = 0; i < nb; ++i)
-	if ( Llu->Ufstnz_br_ptr[i] ) {
-	    SUPERLU_FREE (Llu->Ufstnz_br_ptr[i]);
-	    SUPERLU_FREE (Llu->Unzval_br_ptr[i]);
-	}
-    SUPERLU_FREE (Llu->Ufstnz_br_ptr);
-    SUPERLU_FREE (Llu->Unzval_br_ptr);
+        if (Llu->Ufstnz_br_ptr[i])
+        {
+            SUPERLU_FREE(Llu->Ufstnz_br_ptr[i]);
+            SUPERLU_FREE(Llu->Unzval_br_ptr[i]);
+        }
+    SUPERLU_FREE(Llu->Ufstnz_br_ptr);
+    SUPERLU_FREE(Llu->Unzval_br_ptr);
 
     /* The following can be freed after factorization. */
     SUPERLU_FREE(Llu->ToRecv);
@@ -197,89 +189,97 @@ Destroy_LU(int_t n, gridinfo_t *grid, LUstruct_t *LUstruct)
     SUPERLU_FREE(Llu->mod_bit);
 
     nb = CEILING(nsupers, grid->npcol);
-    for (i = 0; i < nb; ++i) 
-	if ( Llu->Lindval_loc_bc_ptr[i]!=NULL) {
-	    SUPERLU_FREE (Llu->Lindval_loc_bc_ptr[i]);
-	}	
+    for (i = 0; i < nb; ++i)
+        if (Llu->Lindval_loc_bc_ptr[i] != NULL)
+        {
+            SUPERLU_FREE(Llu->Lindval_loc_bc_ptr[i]);
+        }
     SUPERLU_FREE(Llu->Lindval_loc_bc_ptr);
-	
+
     nb = CEILING(nsupers, grid->npcol);
-    for (i=0; i<nb; ++i) {
-	if(Llu->Linv_bc_ptr[i]!=NULL) {
-	    SUPERLU_FREE(Llu->Linv_bc_ptr[i]);
-	}
-	if(Llu->Uinv_bc_ptr[i]!=NULL){
-	    SUPERLU_FREE(Llu->Uinv_bc_ptr[i]);
-	}	
+    for (i = 0; i < nb; ++i)
+    {
+        if (Llu->Linv_bc_ptr[i] != NULL)
+        {
+            SUPERLU_FREE(Llu->Linv_bc_ptr[i]);
+        }
+        if (Llu->Uinv_bc_ptr[i] != NULL)
+        {
+            SUPERLU_FREE(Llu->Uinv_bc_ptr[i]);
+        }
     }
     SUPERLU_FREE(Llu->Linv_bc_ptr);
     SUPERLU_FREE(Llu->Uinv_bc_ptr);
     SUPERLU_FREE(Llu->Unnz);
-	
+
     nb = CEILING(nsupers, grid->npcol);
     for (i = 0; i < nb; ++i)
-	if ( Llu->Urbs[i] ) {
-	    SUPERLU_FREE(Llu->Ucb_indptr[i]);
-	    SUPERLU_FREE(Llu->Ucb_valptr[i]);
-	}
+        if (Llu->Urbs[i])
+        {
+            SUPERLU_FREE(Llu->Ucb_indptr[i]);
+            SUPERLU_FREE(Llu->Ucb_valptr[i]);
+        }
     SUPERLU_FREE(Llu->Ucb_indptr);
-    SUPERLU_FREE(Llu->Ucb_valptr);	
+    SUPERLU_FREE(Llu->Ucb_valptr);
     SUPERLU_FREE(Llu->Urbs);
 
     SUPERLU_FREE(Glu_persist->xsup);
     SUPERLU_FREE(Glu_persist->supno);
 
-#if ( DEBUGlevel>=1 )
+#if (DEBUGlevel >= 1)
     CHECK_MALLOC(iam, "Exit Destroy_LU()");
 #endif
 }
 
-int DeAllocLlu_3d(int_t n, LUstruct_t * LUstruct, gridinfo3d_t* grid3d)
+int DeAllocLlu_3d(int_t n, LUstruct_t *LUstruct, gridinfo3d_t *grid3d)
 {
     int i, nbc, nbr, nsupers;
     LocalLU_t *Llu = LUstruct->Llu;
 
-    nsupers = (LUstruct->Glu_persist)->supno[n-1] + 1;
+    nsupers = (LUstruct->Glu_persist)->supno[n - 1] + 1;
 
     nbc = CEILING(nsupers, grid3d->npcol);
-    for (i = 0; i < nbc; ++i) 
-	if ( Llu->Lrowind_bc_ptr[i] ) {
-	    SUPERLU_FREE (Llu->Lrowind_bc_ptr[i]);
+    for (i = 0; i < nbc; ++i)
+        if (Llu->Lrowind_bc_ptr[i])
+        {
+            SUPERLU_FREE(Llu->Lrowind_bc_ptr[i]);
 #ifdef GPU_ACC
-	    checkCuda(cudaFreeHost(Llu->Lnzval_bc_ptr[i]));
+            checkCuda(cudaFreeHost(Llu->Lnzval_bc_ptr[i]));
 #else
-	    SUPERLU_FREE (Llu->Lnzval_bc_ptr[i]);
+            SUPERLU_FREE(Llu->Lnzval_bc_ptr[i]);
 #endif
-	}
-    SUPERLU_FREE (Llu->Lrowind_bc_ptr);
-    SUPERLU_FREE (Llu->Lnzval_bc_ptr);
+        }
+    SUPERLU_FREE(Llu->Lrowind_bc_ptr);
+    SUPERLU_FREE(Llu->Lnzval_bc_ptr);
 
     nbr = CEILING(nsupers, grid3d->nprow);
     for (i = 0; i < nbr; ++i)
-	if ( Llu->Ufstnz_br_ptr[i] ) {
-	    SUPERLU_FREE (Llu->Ufstnz_br_ptr[i]);
-	    SUPERLU_FREE (Llu->Unzval_br_ptr[i]);
-	}
-    SUPERLU_FREE (Llu->Ufstnz_br_ptr);
-    SUPERLU_FREE (Llu->Unzval_br_ptr);
+        if (Llu->Ufstnz_br_ptr[i])
+        {
+            SUPERLU_FREE(Llu->Ufstnz_br_ptr[i]);
+            SUPERLU_FREE(Llu->Unzval_br_ptr[i]);
+        }
+    SUPERLU_FREE(Llu->Ufstnz_br_ptr);
+    SUPERLU_FREE(Llu->Unzval_br_ptr);
 
     /* The following can be freed after factorization. */
     SUPERLU_FREE(Llu->ToRecv);
     SUPERLU_FREE(Llu->ToSendD);
-    for (i = 0; i < nbc; ++i) SUPERLU_FREE(Llu->ToSendR[i]);
+    for (i = 0; i < nbc; ++i)
+        SUPERLU_FREE(Llu->ToSendR[i]);
     SUPERLU_FREE(Llu->ToSendR);
     return 0;
 }
 
 /*! \brief Allocate storage in ScalePermstruct */
 void ScalePermstructInit(const int_t m, const int_t n,
-			 ScalePermstruct_t *ScalePermstruct)
+                         ScalePermstruct_t *ScalePermstruct)
 {
     ScalePermstruct->DiagScale = NOEQUIL;
-    if ( !(ScalePermstruct->perm_r = intMalloc_dist(m)) )
-	ABORT("Malloc fails for perm_r[].");
-    if ( !(ScalePermstruct->perm_c = intMalloc_dist(n)) )
-	ABORT("Malloc fails for perm_c[].");
+    if (!(ScalePermstruct->perm_r = intMalloc_dist(m)))
+        ABORT("Malloc fails for perm_r[].");
+    if (!(ScalePermstruct->perm_c = intMalloc_dist(n)))
+        ABORT("Malloc fails for perm_c[].");
 }
 
 /*! \brief Deallocate ScalePermstruct */
@@ -287,41 +287,43 @@ void ScalePermstructFree(ScalePermstruct_t *ScalePermstruct)
 {
     SUPERLU_FREE(ScalePermstruct->perm_r);
     SUPERLU_FREE(ScalePermstruct->perm_c);
-    switch ( ScalePermstruct->DiagScale ) {
-      case ROW:
-	SUPERLU_FREE(ScalePermstruct->R);
-	break;
-      case COL:
-	SUPERLU_FREE(ScalePermstruct->C);
-	break;
-      case BOTH:
-	SUPERLU_FREE(ScalePermstruct->R);
-	SUPERLU_FREE(ScalePermstruct->C);
-	break;
-      default: break;
+    switch (ScalePermstruct->DiagScale)
+    {
+    case ROW:
+        SUPERLU_FREE(ScalePermstruct->R);
+        break;
+    case COL:
+        SUPERLU_FREE(ScalePermstruct->C);
+        break;
+    case BOTH:
+        SUPERLU_FREE(ScalePermstruct->R);
+        SUPERLU_FREE(ScalePermstruct->C);
+        break;
+    default:
+        break;
     }
 }
 
 /*! \brief Allocate storage in LUstruct */
 void LUstructInit(const int_t n, LUstruct_t *LUstruct)
 {
-    if ( !(LUstruct->etree = intMalloc_dist(n)) )
-	ABORT("Malloc fails for etree[].");
-    if ( !(LUstruct->Glu_persist = (Glu_persist_t *)
-	   SUPERLU_MALLOC(sizeof(Glu_persist_t))) )
-	ABORT("Malloc fails for Glu_persist_t.");
-    if ( !(LUstruct->Llu = (LocalLU_t *)
-	   SUPERLU_MALLOC(sizeof(LocalLU_t))) )
-	ABORT("Malloc fails for LocalLU_t.");
-	LUstruct->Llu->inv = 0;
+    if (!(LUstruct->etree = intMalloc_dist(n)))
+        ABORT("Malloc fails for etree[].");
+    if (!(LUstruct->Glu_persist = (Glu_persist_t *)
+              SUPERLU_MALLOC(sizeof(Glu_persist_t))))
+        ABORT("Malloc fails for Glu_persist_t.");
+    if (!(LUstruct->Llu = (LocalLU_t *)
+              SUPERLU_MALLOC(sizeof(LocalLU_t))))
+        ABORT("Malloc fails for LocalLU_t.");
+    LUstruct->Llu->inv = 0;
 }
 
 /*! \brief Deallocate LUstruct */
 void LUstructFree(LUstruct_t *LUstruct)
 {
-#if ( DEBUGlevel>=1 )
+#if (DEBUGlevel >= 1)
     int iam;
-    MPI_Comm_rank( MPI_COMM_WORLD, &iam );
+    MPI_Comm_rank(MPI_COMM_WORLD, &iam);
     CHECK_MALLOC(iam, "Enter LUstructFree()");
 #endif
 
@@ -329,7 +331,7 @@ void LUstructFree(LUstruct_t *LUstruct)
     SUPERLU_FREE(LUstruct->Glu_persist);
     SUPERLU_FREE(LUstruct->Llu);
 
-#if ( DEBUGlevel>=1 )
+#if (DEBUGlevel >= 1)
     CHECK_MALLOC(iam, "Exit LUstructFree()");
 #endif
 }
@@ -341,56 +343,59 @@ void LUstructFree(LUstruct_t *LUstruct)
  * symmetrically reduced L. 
  * </pre>
  */
-void
-countnz_dist(const int_t n, int_t *xprune,
-	     int_t *nnzL, int_t *nnzU, 
-	     Glu_persist_t *Glu_persist, Glu_freeable_t *Glu_freeable)
+void countnz_dist(const int_t n, int_t *xprune,
+                  int_t *nnzL, int_t *nnzU,
+                  Glu_persist_t *Glu_persist, Glu_freeable_t *Glu_freeable)
 {
-    int_t  fnz, fsupc, i, j, nsuper;
-    int_t  jlen, irep;
+    int_t fnz, fsupc, i, j, nsuper;
+    int_t jlen, irep;
     long long int nnzL0;
-    int_t  *supno, *xsup, *xlsub, *xusub, *usub;
+    int_t *supno, *xsup, *xlsub, *xusub, *usub;
 
-    supno  = Glu_persist->supno;
-    xsup   = Glu_persist->xsup;
-    xlsub  = Glu_freeable->xlsub;
-    xusub  = Glu_freeable->xusub;
-    usub   = Glu_freeable->usub;
-    *nnzL  = 0;
-    *nnzU  = 0;
-    nnzL0  = 0;
+    supno = Glu_persist->supno;
+    xsup = Glu_persist->xsup;
+    xlsub = Glu_freeable->xlsub;
+    xusub = Glu_freeable->xusub;
+    usub = Glu_freeable->usub;
+    *nnzL = 0;
+    *nnzU = 0;
+    nnzL0 = 0;
     nsuper = supno[n];
 
-    if ( n <= 0 ) return;
+    if (n <= 0)
+        return;
 
     /* 
      * For each supernode in L.
      */
-    for (i = 0; i <= nsuper; i++) {
-	fsupc = xsup[i];
-	jlen = xlsub[fsupc+1] - xlsub[fsupc];
+    for (i = 0; i <= nsuper; i++)
+    {
+        fsupc = xsup[i];
+        jlen = xlsub[fsupc + 1] - xlsub[fsupc];
 
-	for (j = fsupc; j < xsup[i+1]; j++) {
-	    *nnzL += jlen;
-	    *nnzU += j - fsupc + 1;
-	    jlen--;
-	}
-	irep = xsup[i+1] - 1;
-	nnzL0 += xprune[irep] - xlsub[irep];
+        for (j = fsupc; j < xsup[i + 1]; j++)
+        {
+            *nnzL += jlen;
+            *nnzU += j - fsupc + 1;
+            jlen--;
+        }
+        irep = xsup[i + 1] - 1;
+        nnzL0 += xprune[irep] - xlsub[irep];
     }
-    
+
     /* printf("\tNo of nonzeros in symm-reduced L = %ld\n", nnzL0);*/
-    
+
     /* For each column in U. */
-    for (j = 0; j < n; ++j) {
-	for (i = xusub[j]; i < xusub[j+1]; ++i) {
-	    fnz = usub[i];
-	    fsupc = xsup[supno[fnz]+1];
-	    *nnzU += fsupc - fnz;
-	}
+    for (j = 0; j < n; ++j)
+    {
+        for (i = xusub[j]; i < xusub[j + 1]; ++i)
+        {
+            fnz = usub[i];
+            fsupc = xsup[supno[fnz] + 1];
+            *nnzU += fsupc - fnz;
+        }
     }
 }
-
 
 /*! \brief
  *
@@ -401,36 +406,38 @@ countnz_dist(const int_t n, int_t *xprune,
  * </pre>
  */
 int64_t
-fixupL_dist(const int_t n, const int_t *perm_r, 
-	    Glu_persist_t *Glu_persist, Glu_freeable_t *Glu_freeable)
+fixupL_dist(const int_t n, const int_t *perm_r,
+            Glu_persist_t *Glu_persist, Glu_freeable_t *Glu_freeable)
 {
     register int_t nsuper, fsupc, nextl, i, j, k, jstrt;
     register long long int lsub_size;
-    int_t          *xsup, *lsub, *xlsub;
+    int_t *xsup, *lsub, *xlsub;
 
-    if ( n <= 1 ) return 0;
+    if (n <= 1)
+        return 0;
 
-    xsup   = Glu_persist->xsup;
-    lsub   = Glu_freeable->lsub;
-    xlsub  = Glu_freeable->xlsub;
-    nextl  = 0;
+    xsup = Glu_persist->xsup;
+    lsub = Glu_freeable->lsub;
+    xlsub = Glu_freeable->xlsub;
+    nextl = 0;
     nsuper = (Glu_persist->supno)[n];
     lsub_size = xlsub[n];
-    
+
     /* 
      * For each supernode ...
      */
-    for (i = 0; i <= nsuper; i++) {
-	fsupc = xsup[i];
-	jstrt = xlsub[fsupc];
-	xlsub[fsupc] = nextl;
-	for (j = jstrt; j < xlsub[fsupc+1]; j++) {
-	    lsub[nextl] = perm_r[lsub[j]]; /* Now indexed into P*A */
-	    nextl++;
-  	}
-	for (k = fsupc+1; k < xsup[i+1]; k++) 
-	    	xlsub[k] = nextl;	/* Other columns in supernode i */
-
+    for (i = 0; i <= nsuper; i++)
+    {
+        fsupc = xsup[i];
+        jstrt = xlsub[fsupc];
+        xlsub[fsupc] = nextl;
+        for (j = jstrt; j < xlsub[fsupc + 1]; j++)
+        {
+            lsub[nextl] = perm_r[lsub[j]]; /* Now indexed into P*A */
+            nextl++;
+        }
+        for (k = fsupc + 1; k < xsup[i + 1]; k++)
+            xlsub[k] = nextl; /* Other columns in supernode i */
     }
 
     xlsub[n] = nextl;
@@ -441,28 +448,28 @@ fixupL_dist(const int_t n, const int_t *perm_r,
  */
 void set_default_options_dist(superlu_dist_options_t *options)
 {
-    options->Fact              = DOFACT;
-    options->Equil             = YES;
-    options->ParSymbFact       = NO;
+    options->Fact = DOFACT;
+    options->Equil = YES;
+    options->ParSymbFact = NO;
 #ifdef HAVE_PARMETIS
-    options->ColPerm           = METIS_AT_PLUS_A;
+    options->ColPerm = METIS_AT_PLUS_A;
 #else
-    options->ColPerm            = MMD_AT_PLUS_A;
+    options->ColPerm = MMD_AT_PLUS_A;
 #endif
-    options->RowPerm           = LargeDiag_MC64;
-    options->ReplaceTinyPivot  = NO;
-    options->IterRefine        = SLU_DOUBLE;
-    options->Trans             = NOTRANS;
-    options->SolveInitialized  = NO;
+    options->RowPerm = LargeDiag_MC64;
+    options->ReplaceTinyPivot = NO;
+    options->IterRefine = SLU_DOUBLE;
+    options->Trans = NOTRANS;
+    options->SolveInitialized = NO;
     options->RefineInitialized = NO;
-    options->PrintStat         = YES;
-    options->num_lookaheads    = 10;
-    options->lookahead_etree   = NO;
-    options->SymPattern        = NO;
+    options->PrintStat = YES;
+    options->num_lookaheads = 10;
+    options->lookahead_etree = NO;
+    options->SymPattern = NO;
 #ifdef SLU_HAVE_LAPACK
-    options->DiagInv           = YES;
+    options->DiagInv = YES;
 #else
-    options->DiagInv           = NO;
+    options->DiagInv = NO;
 #endif
 }
 
@@ -470,7 +477,8 @@ void set_default_options_dist(superlu_dist_options_t *options)
  */
 void print_options_dist(superlu_dist_options_t *options)
 {
-    if ( options->PrintStat == NO ) return;
+    if (options->PrintStat == NO)
+        return;
 
     printf("**************************************************\n");
     printf(".. options:\n");
@@ -493,7 +501,8 @@ void print_options_dist(superlu_dist_options_t *options)
  */
 void print_sp_ienv_dist(superlu_dist_options_t *options)
 {
-    if ( options->PrintStat == NO ) return;
+    if (options->PrintStat == NO)
+        return;
 
     printf("**************************************************\n");
     printf(".. blocking parameters from sp_ienv():\n");
@@ -503,7 +512,6 @@ void print_sp_ienv_dist(superlu_dist_options_t *options)
     printf("**    min GEMM dimension for GPU : " IFMT "\n", sp_ienv_dist(7));
     printf("**************************************************\n");
 }
-
 
 /*! \brief
  *
@@ -538,10 +546,9 @@ void print_sp_ienv_dist(superlu_dist_options_t *options)
  *        The 2D process mesh.
  * </pre>
  */
-int_t
-pxgstrs_init(int_t n, int_t m_loc, int_t nrhs, int_t fst_row,
-	     int_t perm_r[], int_t perm_c[], gridinfo_t *grid,
-	     Glu_persist_t *Glu_persist, SOLVEstruct_t *SOLVEstruct)
+int_t pxgstrs_init(int_t n, int_t m_loc, int_t nrhs, int_t fst_row,
+                   int_t perm_r[], int_t perm_c[], gridinfo_t *grid,
+                   Glu_persist_t *Glu_persist, SOLVEstruct_t *SOLVEstruct)
 {
 
     int *SendCnt, *SendCnt_nrhs, *RecvCnt, *RecvCnt_nrhs;
@@ -550,7 +557,7 @@ pxgstrs_init(int_t n, int_t m_loc, int_t nrhs, int_t fst_row,
     int_t *row_to_proc;
     int_t i, gbi, k, l, num_diag_procs, *diag_procs;
     int_t irow, q, knsupc, nsupers, *xsup, *supno;
-    int   iam, p, pkk, procs;
+    int iam, p, pkk, procs;
     pxgstrs_comm_t *gstrs_comm;
 
     procs = grid->nprow * grid->npcol;
@@ -558,44 +565,48 @@ pxgstrs_init(int_t n, int_t m_loc, int_t nrhs, int_t fst_row,
     gstrs_comm = SOLVEstruct->gstrs_comm;
     xsup = Glu_persist->xsup;
     supno = Glu_persist->supno;
-    nsupers = Glu_persist->supno[n-1] + 1;
+    nsupers = Glu_persist->supno[n - 1] + 1;
     row_to_proc = SOLVEstruct->row_to_proc;
 
     /* ------------------------------------------------------------
        SET UP COMMUNICATION PATTERN FOR ReDistribute_B_to_X.
        ------------------------------------------------------------*/
-    if ( !(itemp = SUPERLU_MALLOC(8*procs * sizeof(int))) )
+    if (!(itemp = SUPERLU_MALLOC(8 * procs * sizeof(int))))
         ABORT("Malloc fails for B_to_X_itemp[].");
-    SendCnt      = itemp;
-    SendCnt_nrhs = itemp +   procs;
-    RecvCnt      = itemp + 2*procs;
-    RecvCnt_nrhs = itemp + 3*procs;
-    sdispls      = itemp + 4*procs;
-    sdispls_nrhs = itemp + 5*procs;
-    rdispls      = itemp + 6*procs;
-    rdispls_nrhs = itemp + 7*procs;
+    SendCnt = itemp;
+    SendCnt_nrhs = itemp + procs;
+    RecvCnt = itemp + 2 * procs;
+    RecvCnt_nrhs = itemp + 3 * procs;
+    sdispls = itemp + 4 * procs;
+    sdispls_nrhs = itemp + 5 * procs;
+    rdispls = itemp + 6 * procs;
+    rdispls_nrhs = itemp + 7 * procs;
 
     /* Count the number of elements to be sent to each diagonal process.*/
-    for (p = 0; p < procs; ++p) SendCnt[p] = 0;
-    for (i = 0, l = fst_row; i < m_loc; ++i, ++l) {
+    for (p = 0; p < procs; ++p)
+        SendCnt[p] = 0;
+    for (i = 0, l = fst_row; i < m_loc; ++i, ++l)
+    {
         irow = perm_c[perm_r[l]]; /* Row number in Pc*Pr*B */
-	gbi = BlockNum( irow );
-	p = PNUM( PROW(gbi,grid), PCOL(gbi,grid), grid ); /* Diagonal process */
-	++SendCnt[p];
+        gbi = BlockNum(irow);
+        p = PNUM(PROW(gbi, grid), PCOL(gbi, grid), grid); /* Diagonal process */
+        ++SendCnt[p];
     }
-  
+
     /* Set up the displacements for alltoall. */
     MPI_Alltoall(SendCnt, 1, MPI_INT, RecvCnt, 1, MPI_INT, grid->comm);
     sdispls[0] = rdispls[0] = 0;
-    for (p = 1; p < procs; ++p) {
-        sdispls[p] = sdispls[p-1] + SendCnt[p-1];
-        rdispls[p] = rdispls[p-1] + RecvCnt[p-1];
+    for (p = 1; p < procs; ++p)
+    {
+        sdispls[p] = sdispls[p - 1] + SendCnt[p - 1];
+        rdispls[p] = rdispls[p - 1] + RecvCnt[p - 1];
     }
-    for (p = 0; p < procs; ++p) {
+    for (p = 0; p < procs; ++p)
+    {
         SendCnt_nrhs[p] = SendCnt[p] * nrhs;
-	sdispls_nrhs[p] = sdispls[p] * nrhs;
+        sdispls_nrhs[p] = sdispls[p] * nrhs;
         RecvCnt_nrhs[p] = RecvCnt[p] * nrhs;
-	rdispls_nrhs[p] = rdispls[p] * nrhs;
+        rdispls_nrhs[p] = rdispls[p] * nrhs;
     }
 
     /* This is saved for repeated solves, and is freed in pxgstrs_finalize().*/
@@ -605,39 +616,44 @@ pxgstrs_init(int_t n, int_t m_loc, int_t nrhs, int_t fst_row,
        SET UP COMMUNICATION PATTERN FOR ReDistribute_X_to_B.
        ------------------------------------------------------------*/
     /* This is freed in pxgstrs_finalize(). */
-    if ( !(itemp = SUPERLU_MALLOC(8*procs * sizeof(int))) )
+    if (!(itemp = SUPERLU_MALLOC(8 * procs * sizeof(int))))
         ABORT("Malloc fails for X_to_B_itemp[].");
-    SendCnt      = itemp;
-    SendCnt_nrhs = itemp +   procs;
-    RecvCnt      = itemp + 2*procs;
-    RecvCnt_nrhs = itemp + 3*procs;
-    sdispls      = itemp + 4*procs;
-    sdispls_nrhs = itemp + 5*procs;
-    rdispls      = itemp + 6*procs;
-    rdispls_nrhs = itemp + 7*procs;
+    SendCnt = itemp;
+    SendCnt_nrhs = itemp + procs;
+    RecvCnt = itemp + 2 * procs;
+    RecvCnt_nrhs = itemp + 3 * procs;
+    sdispls = itemp + 4 * procs;
+    sdispls_nrhs = itemp + 5 * procs;
+    rdispls = itemp + 6 * procs;
+    rdispls_nrhs = itemp + 7 * procs;
 
     /* Count the number of X entries to be sent to each process.*/
-    for (p = 0; p < procs; ++p) SendCnt[p] = 0;
+    for (p = 0; p < procs; ++p)
+        SendCnt[p] = 0;
     num_diag_procs = SOLVEstruct->num_diag_procs;
     diag_procs = SOLVEstruct->diag_procs;
 
-    for (p = 0; p < num_diag_procs; ++p) { /* for all diagonal processes */
-	pkk = diag_procs[p];
-	if ( iam == pkk ) {
-	    for (k = p; k < nsupers; k += num_diag_procs) {
-		knsupc = SuperSize( k );
-		irow = FstBlockC( k );
-		for (i = 0; i < knsupc; ++i) {
+    for (p = 0; p < num_diag_procs; ++p)
+    { /* for all diagonal processes */
+        pkk = diag_procs[p];
+        if (iam == pkk)
+        {
+            for (k = p; k < nsupers; k += num_diag_procs)
+            {
+                knsupc = SuperSize(k);
+                irow = FstBlockC(k);
+                for (i = 0; i < knsupc; ++i)
+                {
 #if 0
 		    q = row_to_proc[inv_perm_c[irow]];
 #else
-		    q = row_to_proc[irow];
+                    q = row_to_proc[irow];
 #endif
-		    ++SendCnt[q];
-		    ++irow;
-		}
-	    }
-	}
+                    ++SendCnt[q];
+                    ++irow;
+                }
+            }
+        }
     }
 
     MPI_Alltoall(SendCnt, 1, MPI_INT, RecvCnt, 1, MPI_INT, grid->comm);
@@ -645,26 +661,26 @@ pxgstrs_init(int_t n, int_t m_loc, int_t nrhs, int_t fst_row,
     sdispls_nrhs[0] = rdispls_nrhs[0] = 0;
     SendCnt_nrhs[0] = SendCnt[0] * nrhs;
     RecvCnt_nrhs[0] = RecvCnt[0] * nrhs;
-    for (p = 1; p < procs; ++p) {
-        sdispls[p] = sdispls[p-1] + SendCnt[p-1];
-        rdispls[p] = rdispls[p-1] + RecvCnt[p-1];
+    for (p = 1; p < procs; ++p)
+    {
+        sdispls[p] = sdispls[p - 1] + SendCnt[p - 1];
+        rdispls[p] = rdispls[p - 1] + RecvCnt[p - 1];
         sdispls_nrhs[p] = sdispls[p] * nrhs;
         rdispls_nrhs[p] = rdispls[p] * nrhs;
-	SendCnt_nrhs[p] = SendCnt[p] * nrhs;
-	RecvCnt_nrhs[p] = RecvCnt[p] * nrhs;
+        SendCnt_nrhs[p] = SendCnt[p] * nrhs;
+        RecvCnt_nrhs[p] = RecvCnt[p] * nrhs;
     }
 
     /* This is saved for repeated solves, and is freed in pxgstrs_finalize().*/
     gstrs_comm->X_to_B_SendCnt = SendCnt;
 
-    if ( !(ptr_to_ibuf = SUPERLU_MALLOC(2*procs * sizeof(int))) )
+    if (!(ptr_to_ibuf = SUPERLU_MALLOC(2 * procs * sizeof(int))))
         ABORT("Malloc fails for ptr_to_ibuf[].");
     gstrs_comm->ptr_to_ibuf = ptr_to_ibuf;
     gstrs_comm->ptr_to_dbuf = ptr_to_ibuf + procs;
 
     return 0;
 } /* PXGSTRS_INIT */
-
 
 void pxgstrs_finalize(pxgstrs_comm_t *gstrs_comm)
 {
@@ -674,201 +690,213 @@ void pxgstrs_finalize(pxgstrs_comm_t *gstrs_comm)
     SUPERLU_FREE(gstrs_comm);
 }
 
-
 /*! \brief Diagnostic print of segment info after panel_dfs().
  */
-void print_panel_seg_dist(int_t n, int_t w, int_t jcol, int_t nseg, 
-			  int_t *segrep, int_t *repfnz)
+void print_panel_seg_dist(int_t n, int_t w, int_t jcol, int_t nseg,
+                          int_t *segrep, int_t *repfnz)
 {
     int_t j, k;
-    
-    for (j = jcol; j < jcol+w; j++) {
-	printf("\tcol " IFMT ":\n", j);
-	for (k = 0; k < nseg; k++)
-	    printf("\t\tseg " IFMT ", segrep " IFMT ", repfnz " IFMT "\n", k, 
-			segrep[k], repfnz[(j-jcol)*n + segrep[k]]);
-    }
 
+    for (j = jcol; j < jcol + w; j++)
+    {
+        printf("\tcol " IFMT ":\n", j);
+        for (k = 0; k < nseg; k++)
+            printf("\t\tseg " IFMT ", segrep " IFMT ", repfnz " IFMT "\n", k,
+                   segrep[k], repfnz[(j - jcol) * n + segrep[k]]);
+    }
 }
 
-void
-PStatInit(SuperLUStat_t *stat)
+void PStatInit(SuperLUStat_t *stat)
 {
     register int_t i;
 
-    if ( !(stat->utime = SUPERLU_MALLOC(NPHASES*sizeof(double))) )
-	ABORT("Malloc fails for stat->utime[]");
-    if ( !(stat->ops = (flops_t *) SUPERLU_MALLOC(NPHASES * sizeof(flops_t))) )
-	ABORT("SUPERLU_MALLOC fails for stat->ops[]");
-    for (i = 0; i < NPHASES; ++i) {
+    if (!(stat->utime = SUPERLU_MALLOC(NPHASES * sizeof(double))))
+        ABORT("Malloc fails for stat->utime[]");
+    if (!(stat->ops = (flops_t *)SUPERLU_MALLOC(NPHASES * sizeof(flops_t))))
+        ABORT("SUPERLU_MALLOC fails for stat->ops[]");
+    for (i = 0; i < NPHASES; ++i)
+    {
         stat->utime[i] = 0.;
         stat->ops[i] = 0.;
     }
     stat->TinyPivots = stat->RefineSteps = 0;
 }
 
-void
-PStatPrint(superlu_dist_options_t *options, SuperLUStat_t *stat, gridinfo_t *grid)
+void PStatPrint(superlu_dist_options_t *options, SuperLUStat_t *stat, gridinfo_t *grid)
 {
-    double  *utime = stat->utime;
+    double *utime = stat->utime;
     flops_t *ops = stat->ops;
-    int_t   iam = grid->iam;
+    int_t iam = grid->iam;
     flops_t flopcnt, factflop, solveflop;
 
-    if ( options->PrintStat == NO ) return;
+    if (options->PrintStat == NO)
+        return;
 
-    if ( !iam && options->Fact != FACTORED ) {
-	printf("**************************************************\n");
-	printf("**** Time (seconds) ****\n");
+    if (!iam && options->Fact != FACTORED)
+    {
+        printf("**************************************************\n");
+        printf("**** Time (seconds) ****\n");
 
-        if ( options->Equil != NO )
-	    printf("\tEQUIL time         %8.2f\n", utime[EQUIL]);
-	if ( options->RowPerm != NOROWPERM )
-	    printf("\tROWPERM time       %8.2f\n", utime[ROWPERM]);
-	if ( options->ColPerm != NATURAL )
-	    printf("\tCOLPERM time       %8.2f\n", utime[COLPERM]);
+        if (options->Equil != NO)
+            printf("\tEQUIL time         %8.2f\n", utime[EQUIL]);
+        if (options->RowPerm != NOROWPERM)
+            printf("\tROWPERM time       %8.2f\n", utime[ROWPERM]);
+        if (options->ColPerm != NATURAL)
+            printf("\tCOLPERM time       %8.2f\n", utime[COLPERM]);
         printf("\tSYMBFACT time      %8.2f\n", utime[SYMBFAC]);
-	printf("\tDISTRIBUTE time    %8.2f\n", utime[DIST]);
-
+        printf("\tDISTRIBUTE time    %8.2f\n", utime[DIST]);
     }
 
     MPI_Reduce(&ops[FACT], &flopcnt, 1, MPI_FLOAT, MPI_SUM,
-	       0, grid->comm);
+               0, grid->comm);
     factflop = flopcnt;
-    if ( !iam && options->Fact != FACTORED ) {
-	printf("\tFACTOR time        %8.2f\n", utime[FACT]);
-	if ( utime[FACT] != 0.0 )
-	    printf("\tFactor flops\t%e\tMflops \t%8.2f\n",
-		   flopcnt,
-		   flopcnt*1e-6/utime[FACT]);
-    }
-	
-    MPI_Reduce(&ops[SOLVE], &flopcnt, 1, MPI_FLOAT, MPI_SUM, 
-	       0, grid->comm);
-    solveflop = flopcnt;
-    if ( !iam ) {
-	printf("\tSOLVE time         %8.3f\n", utime[SOLVE]);
-	if ( utime[SOLVE] != 0.0 )
-	    printf("\tSolve flops\t%e\tMflops \t%8.2f\n",
-		   flopcnt,
-		   flopcnt*1e-6/utime[SOLVE]);
-	if ( options->IterRefine != NOREFINE ) {
-	    printf("\tREFINEMENT time    %8.3f\tSteps%8d\n\n",
-		   utime[REFINE], stat->RefineSteps);
-	}
-	printf("**************************************************\n");
+    if (!iam && options->Fact != FACTORED)
+    {
+        printf("\tFACTOR time        %8.2f\n", utime[FACT]);
+        if (utime[FACT] != 0.0)
+            printf("\tFactor flops\t%e\tMflops \t%8.2f\n",
+                   flopcnt,
+                   flopcnt * 1e-6 / utime[FACT]);
     }
 
-	double  *utime1,*utime2,*utime3,*utime4;
-	flops_t  *ops1;
-#if ( PROFlevel>=1 )
-	fflush(stdout);
-    MPI_Barrier( grid->comm );
+    MPI_Reduce(&ops[SOLVE], &flopcnt, 1, MPI_FLOAT, MPI_SUM,
+               0, grid->comm);
+    solveflop = flopcnt;
+    if (!iam)
+    {
+        printf("\tSOLVE time         %8.3f\n", utime[SOLVE]);
+        if (utime[SOLVE] != 0.0)
+            printf("\tSolve flops\t%e\tMflops \t%8.2f\n",
+                   flopcnt,
+                   flopcnt * 1e-6 / utime[SOLVE]);
+        if (options->IterRefine != NOREFINE)
+        {
+            printf("\tREFINEMENT time    %8.3f\tSteps%8d\n\n",
+                   utime[REFINE], stat->RefineSteps);
+        }
+        printf("**************************************************\n");
+    }
+
+    double *utime1, *utime2, *utime3, *utime4;
+    flops_t *ops1;
+#if (PROFlevel >= 1)
+    fflush(stdout);
+    MPI_Barrier(grid->comm);
 
     {
-	int_t i, P = grid->nprow*grid->npcol;
-	flops_t b, maxflop;
-	
-		
-	if ( !iam )utime1=doubleMalloc_dist(P);
-	if ( !iam )utime2=doubleMalloc_dist(P);
-	if ( !iam )utime3=doubleMalloc_dist(P);
-	if ( !iam )utime4=doubleMalloc_dist(P);
-	if ( !iam )ops1=(flops_t *) SUPERLU_MALLOC(P * sizeof(flops_t));
+        int_t i, P = grid->nprow * grid->npcol;
+        flops_t b, maxflop;
 
-	
-	// fflush(stdout); 
-	// if ( !iam ) printf("\n.. Tree max sizes:\tbtree\trtree\n");
-	// fflush(stdout);
-	// sleep(2.0); 	
-	// MPI_Barrier( grid->comm );
-	// for (i = 0; i < P; ++i) {
-	    // if ( iam == i) {
-		// printf("\t\t%d %5d %5d\n", iam, stat->MaxActiveBTrees,stat->MaxActiveRTrees);
-		// fflush(stdout);
-	    // }
-	    // MPI_Barrier( grid->comm );
-	// }	
-	
-	// sleep(2.0); 	
+        if (!iam)
+            utime1 = doubleMalloc_dist(P);
+        if (!iam)
+            utime2 = doubleMalloc_dist(P);
+        if (!iam)
+            utime3 = doubleMalloc_dist(P);
+        if (!iam)
+            utime4 = doubleMalloc_dist(P);
+        if (!iam)
+            ops1 = (flops_t *)SUPERLU_MALLOC(P * sizeof(flops_t));
 
-	
-	MPI_Barrier( grid->comm );	
-	
-	if ( !iam ) printf("\n.. FACT time breakdown:\tcomm\ttotal\n");
+        // fflush(stdout);
+        // if ( !iam ) printf("\n.. Tree max sizes:\tbtree\trtree\n");
+        // fflush(stdout);
+        // sleep(2.0);
+        // MPI_Barrier( grid->comm );
+        // for (i = 0; i < P; ++i) {
+        // if ( iam == i) {
+        // printf("\t\t%d %5d %5d\n", iam, stat->MaxActiveBTrees,stat->MaxActiveRTrees);
+        // fflush(stdout);
+        // }
+        // MPI_Barrier( grid->comm );
+        // }
 
-    MPI_Gather(&utime[COMM], 1, MPI_DOUBLE,utime1, 1 , MPI_DOUBLE, 0, grid->comm);	
-    MPI_Gather(&utime[FACT], 1, MPI_DOUBLE,utime2, 1 , MPI_DOUBLE, 0, grid->comm);	
-	if ( !iam ) 
-	for (i = 0; i < P; ++i) {
-		printf("\t\t(%d)%8.2f%8.2f\n", i, utime1[i], utime2[i]);
-	}
-	fflush(stdout);
-	MPI_Barrier( grid->comm );	
-	
-	if ( !iam ) printf("\n.. FACT ops distribution:\n");
-    MPI_Gather(&ops[FACT], 1, MPI_FLOAT,ops1, 1 , MPI_FLOAT, 0, grid->comm);
-	
-	if ( !iam ) 
-	for (i = 0; i < P; ++i) {
-		printf("\t\t(%d)\t%e\n", i, ops1[i]);
-	}
-	fflush(stdout);
-	MPI_Barrier( grid->comm );
-	
-	MPI_Reduce(&ops[FACT], &maxflop, 1, MPI_FLOAT, MPI_MAX, 0, grid->comm);
+        // sleep(2.0);
 
-	if ( !iam ) {
-	    b = factflop/P/maxflop;
-	    printf("\tFACT load balance: %.2f\n", b);
-	}
-	fflush(stdout);
-	MPI_Barrier( grid->comm );
+        MPI_Barrier(grid->comm);
 
-	
-	if ( !iam ) printf("\n.. SOLVE time breakdown:\tcommL \tgemmL\ttrsmL\ttotal\n");
+        if (!iam)
+            printf("\n.. FACT time breakdown:\tcomm\ttotal\n");
 
-    MPI_Gather(&utime[SOL_COMM], 1, MPI_DOUBLE,utime1, 1 , MPI_DOUBLE, 0, grid->comm);	
-    MPI_Gather(&utime[SOL_GEMM], 1, MPI_DOUBLE,utime2, 1 , MPI_DOUBLE, 0, grid->comm);		
-    MPI_Gather(&utime[SOL_TRSM], 1, MPI_DOUBLE,utime3, 1 , MPI_DOUBLE, 0, grid->comm);		
-    MPI_Gather(&utime[SOL_TOT], 1, MPI_DOUBLE,utime4, 1 , MPI_DOUBLE, 0, grid->comm);		
-	if ( !iam ) 	
-	for (i = 0; i < P; ++i) {
-		printf("\t\t\t%d%10.5f%10.5f%10.5f%10.5f\n", i,utime1[i],utime2[i],utime3[i], utime4[i]);
-	}
-	fflush(stdout); 
-	MPI_Barrier( grid->comm );	
-	
-	if ( !iam ) printf("\n.. SOLVE ops distribution:\n"); 
-    MPI_Gather(&ops[SOLVE], 1, MPI_FLOAT,ops1, 1 , MPI_FLOAT, 0, grid->comm);	
-	if ( !iam ) 
-	for (i = 0; i < P; ++i) {
-		printf("\t\t%d\t%e\n", i, ops1[i]);
-	}
-	MPI_Reduce(&ops[SOLVE], &maxflop, 1, MPI_FLOAT, MPI_MAX, 0,grid->comm);
-	if ( !iam ) {
-	    b = solveflop/P/maxflop;
-	    printf("\tSOLVE load balance: %.2f\n", b);
-		fflush(stdout);
-	}
-	
+        MPI_Gather(&utime[COMM], 1, MPI_DOUBLE, utime1, 1, MPI_DOUBLE, 0, grid->comm);
+        MPI_Gather(&utime[FACT], 1, MPI_DOUBLE, utime2, 1, MPI_DOUBLE, 0, grid->comm);
+        if (!iam)
+            for (i = 0; i < P; ++i)
+            {
+                printf("\t\t(%d)%8.2f%8.2f\n", i, utime1[i], utime2[i]);
+            }
+        fflush(stdout);
+        MPI_Barrier(grid->comm);
+
+        if (!iam)
+            printf("\n.. FACT ops distribution:\n");
+        MPI_Gather(&ops[FACT], 1, MPI_FLOAT, ops1, 1, MPI_FLOAT, 0, grid->comm);
+
+        if (!iam)
+            for (i = 0; i < P; ++i)
+            {
+                printf("\t\t(%d)\t%e\n", i, ops1[i]);
+            }
+        fflush(stdout);
+        MPI_Barrier(grid->comm);
+
+        MPI_Reduce(&ops[FACT], &maxflop, 1, MPI_FLOAT, MPI_MAX, 0, grid->comm);
+
+        if (!iam)
+        {
+            b = factflop / P / maxflop;
+            printf("\tFACT load balance: %.2f\n", b);
+        }
+        fflush(stdout);
+        MPI_Barrier(grid->comm);
+
+        if (!iam)
+            printf("\n.. SOLVE time breakdown:\tcommL \tgemmL\ttrsmL\ttotal\n");
+
+        MPI_Gather(&utime[SOL_COMM], 1, MPI_DOUBLE, utime1, 1, MPI_DOUBLE, 0, grid->comm);
+        MPI_Gather(&utime[SOL_GEMM], 1, MPI_DOUBLE, utime2, 1, MPI_DOUBLE, 0, grid->comm);
+        MPI_Gather(&utime[SOL_TRSM], 1, MPI_DOUBLE, utime3, 1, MPI_DOUBLE, 0, grid->comm);
+        MPI_Gather(&utime[SOL_TOT], 1, MPI_DOUBLE, utime4, 1, MPI_DOUBLE, 0, grid->comm);
+        if (!iam)
+            for (i = 0; i < P; ++i)
+            {
+                printf("\t\t\t%d%10.5f%10.5f%10.5f%10.5f\n", i, utime1[i], utime2[i], utime3[i], utime4[i]);
+            }
+        fflush(stdout);
+        MPI_Barrier(grid->comm);
+
+        if (!iam)
+            printf("\n.. SOLVE ops distribution:\n");
+        MPI_Gather(&ops[SOLVE], 1, MPI_FLOAT, ops1, 1, MPI_FLOAT, 0, grid->comm);
+        if (!iam)
+            for (i = 0; i < P; ++i)
+            {
+                printf("\t\t%d\t%e\n", i, ops1[i]);
+            }
+        MPI_Reduce(&ops[SOLVE], &maxflop, 1, MPI_FLOAT, MPI_MAX, 0, grid->comm);
+        if (!iam)
+        {
+            b = solveflop / P / maxflop;
+            printf("\tSOLVE load balance: %.2f\n", b);
+            fflush(stdout);
+        }
     }
-	
-	if ( !iam ){
-	SUPERLU_FREE(utime1);
-	SUPERLU_FREE(utime2);
-	SUPERLU_FREE(utime3);
-	SUPERLU_FREE(utime4);
-	SUPERLU_FREE(ops1);
-	}
-	
+
+    if (!iam)
+    {
+        SUPERLU_FREE(utime1);
+        SUPERLU_FREE(utime2);
+        SUPERLU_FREE(utime3);
+        SUPERLU_FREE(utime4);
+        SUPERLU_FREE(ops1);
+    }
+
 #endif
 
-/*  if ( !iam ) fflush(stdout);  CRASH THE SYSTEM pierre.  */
+    /*  if ( !iam ) fflush(stdout);  CRASH THE SYSTEM pierre.  */
 }
 
-void
-PStatFree(SuperLUStat_t *stat)
+void PStatFree(SuperLUStat_t *stat)
 {
     SUPERLU_FREE(stat->utime);
     SUPERLU_FREE(stat->ops);
@@ -879,13 +907,12 @@ PStatFree(SuperLUStat_t *stat)
 void ifill_dist(int_t *a, int_t alen, int_t ival)
 {
     register int_t i;
-    for (i = 0; i < alen; i++) a[i] = ival;
+    for (i = 0; i < alen; i++)
+        a[i] = ival;
 }
 
-
-void
-get_diag_procs(int_t n, Glu_persist_t *Glu_persist, gridinfo_t *grid,
-	       int_t *num_diag_procs, int_t **diag_procs, int_t **diag_len)
+void get_diag_procs(int_t n, Glu_persist_t *Glu_persist, gridinfo_t *grid,
+                    int_t *num_diag_procs, int_t **diag_procs, int_t **diag_len)
 {
     int_t i, j, k, knsupc, nprow, npcol, nsupers, pkk;
     int_t *xsup;
@@ -893,75 +920,81 @@ get_diag_procs(int_t n, Glu_persist_t *Glu_persist, gridinfo_t *grid,
     i = j = *num_diag_procs = pkk = 0;
     nprow = grid->nprow;
     npcol = grid->npcol;
-    nsupers = Glu_persist->supno[n-1] + 1;
+    nsupers = Glu_persist->supno[n - 1] + 1;
     xsup = Glu_persist->xsup;
 
-    do {
-	++(*num_diag_procs);
-	i = (++i) % nprow;
-	j = (++j) % npcol;
-	pkk = PNUM( i, j, grid );
-    } while ( pkk != 0 ); /* Until wrap back to process 0 */
-    if ( !(*diag_procs = intMalloc_dist(*num_diag_procs)) )
-	ABORT("Malloc fails for diag_procs[]");
-    if ( !(*diag_len = intCalloc_dist(*num_diag_procs)) )
-	ABORT("Calloc fails for diag_len[]");
-    for (i = j = k = 0; k < *num_diag_procs; ++k) {
-	pkk = PNUM( i, j, grid );
-	(*diag_procs)[k] = pkk;
-	i = (++i) % nprow;
-	j = (++j) % npcol;
+    do
+    {
+        ++(*num_diag_procs);
+        i = (++i) % nprow;
+        j = (++j) % npcol;
+        pkk = PNUM(i, j, grid);
+    } while (pkk != 0); /* Until wrap back to process 0 */
+    if (!(*diag_procs = intMalloc_dist(*num_diag_procs)))
+        ABORT("Malloc fails for diag_procs[]");
+    if (!(*diag_len = intCalloc_dist(*num_diag_procs)))
+        ABORT("Calloc fails for diag_len[]");
+    for (i = j = k = 0; k < *num_diag_procs; ++k)
+    {
+        pkk = PNUM(i, j, grid);
+        (*diag_procs)[k] = pkk;
+        i = (++i) % nprow;
+        j = (++j) % npcol;
     }
-    for (k = 0; k < nsupers; ++k) {
-	knsupc = SuperSize( k );
-	i = k % *num_diag_procs;
-	(*diag_len)[i] += knsupc;
+    for (k = 0; k < nsupers; ++k)
+    {
+        knsupc = SuperSize(k);
+        i = k % *num_diag_procs;
+        (*diag_len)[i] += knsupc;
     }
 }
-
 
 /*! \brief Get the statistics of the supernodes 
  */
 #define NBUCKS 10
-static 	int_t	max_sup_size;
+static int_t max_sup_size;
 
 void super_stats_dist(int_t nsuper, int_t *xsup)
 {
     register int_t nsup1 = 0;
-    int_t          i, isize, whichb, bl, bh;
-    int_t          bucket[NBUCKS];
+    int_t i, isize, whichb, bl, bh;
+    int_t bucket[NBUCKS];
 
     max_sup_size = 0;
 
-    for (i = 0; i <= nsuper; i++) {
-	isize = xsup[i+1] - xsup[i];
-	if ( isize == 1 ) nsup1++;
-	if ( max_sup_size < isize ) max_sup_size = isize;	
+    for (i = 0; i <= nsuper; i++)
+    {
+        isize = xsup[i + 1] - xsup[i];
+        if (isize == 1)
+            nsup1++;
+        if (max_sup_size < isize)
+            max_sup_size = isize;
     }
 
-    printf("    Supernode statistics:\n\tno of super = " IFMT "\n", nsuper+1);
+    printf("    Supernode statistics:\n\tno of super = " IFMT "\n", nsuper + 1);
     printf("\tmax supernode size = " IFMT "\n", max_sup_size);
     printf("\tno of size 1 supernodes = " IFMT "\n", nsup1);
 
     /* Histogram of the supernode sizes */
-    ifill_dist (bucket, NBUCKS, 0);
+    ifill_dist(bucket, NBUCKS, 0);
 
-    for (i = 0; i <= nsuper; i++) {
-        isize = xsup[i+1] - xsup[i];
-        whichb = (float) isize / max_sup_size * NBUCKS;
-        if (whichb >= NBUCKS) whichb = NBUCKS - 1;
+    for (i = 0; i <= nsuper; i++)
+    {
+        isize = xsup[i + 1] - xsup[i];
+        whichb = (float)isize / max_sup_size * NBUCKS;
+        if (whichb >= NBUCKS)
+            whichb = NBUCKS - 1;
         bucket[whichb]++;
     }
-    
+
     printf("\tHistogram of supernode sizes:\n");
-    for (i = 0; i < NBUCKS; i++) {
-        bl = (float) i * max_sup_size / NBUCKS;
-        bh = (float) (i+1) * max_sup_size / NBUCKS;
-        printf("\tsnode: " IFMT "-" IFMT "\t\t" IFMT "\n", bl+1, bh, bucket[i]);
+    for (i = 0; i < NBUCKS; i++)
+    {
+        bl = (float)i * max_sup_size / NBUCKS;
+        bh = (float)(i + 1) * max_sup_size / NBUCKS;
+        printf("\tsnode: " IFMT "-" IFMT "\t\t" IFMT "\n", bl + 1, bh, bucket[i]);
     }
-
 }
-
 
 /*! \brief Check whether repfnz[] == EMPTY after reset.
  */
@@ -969,23 +1002,26 @@ void check_repfnz_dist(int_t n, int_t w, int_t jcol, int_t *repfnz)
 {
     int_t jj, k;
 
-    for (jj = jcol; jj < jcol+w; jj++) 
-	for (k = 0; k < n; k++)
-	    if ( repfnz[(jj-jcol)*n + k] != EMPTY ) {
-		fprintf(stderr, "col " IFMT ", repfnz_col[" IFMT "] = " IFMT "\n",
-			jj, k, repfnz[(jj-jcol)*n + k]);
-		ABORT("check_repfnz_dist");
-	    }
+    for (jj = jcol; jj < jcol + w; jj++)
+        for (k = 0; k < n; k++)
+            if (repfnz[(jj - jcol) * n + k] != EMPTY)
+            {
+                fprintf(stderr, "col " IFMT ", repfnz_col[" IFMT "] = " IFMT "\n",
+                        jj, k, repfnz[(jj - jcol) * n + k]);
+                ABORT("check_repfnz_dist");
+            }
 }
 
 void PrintInt10(char *name, int_t len, int_t *x)
 {
     register int_t i;
-    
+
     printf("%10s:", name);
-    for (i = 0; i < len; ++i) {
-	if ( i % 10 == 0 ) printf("\n\t[" IFMT "-" IFMT "]", i, i+9);
-	printf(IFMT, x[i]);
+    for (i = 0; i < len; ++i)
+    {
+        if (i % 10 == 0)
+            printf("\n\t[" IFMT "-" IFMT "]", i, i + 9);
+        printf(IFMT, x[i]);
     }
     printf("\n");
 }
@@ -993,11 +1029,13 @@ void PrintInt10(char *name, int_t len, int_t *x)
 void PrintInt32(char *name, int len, int *x)
 {
     register int i;
-    
+
     printf("%10s:", name);
-    for (i = 0; i < len; ++i) {
-	if ( i % 10 == 0 ) printf("\n\t[%2d-%2d]", i, i+9);
-	printf("%6d", x[i]);
+    for (i = 0; i < len; ++i)
+    {
+        if (i % 10 == 0)
+            printf("\n\t[%2d-%2d]", i, i + 9);
+        printf("%6d", x[i]);
     }
     printf("\n");
 }
@@ -1005,11 +1043,13 @@ void PrintInt32(char *name, int len, int *x)
 int file_PrintInt10(FILE *fp, char *name, int_t len, int_t *x)
 {
     register int_t i;
-    
+
     fprintf(fp, "%10s:", name);
-    for (i = 0; i < len; ++i) {
-	if ( i % 10 == 0 ) fprintf(fp, "\n\t[" IFMT "-" IFMT "]", i, i+9);
-	fprintf(fp, IFMT, x[i]);
+    for (i = 0; i < len; ++i)
+    {
+        if (i % 10 == 0)
+            fprintf(fp, "\n\t[" IFMT "-" IFMT "]", i, i + 9);
+        fprintf(fp, IFMT, x[i]);
     }
     fprintf(fp, "\n");
     return 0;
@@ -1018,43 +1058,50 @@ int file_PrintInt10(FILE *fp, char *name, int_t len, int_t *x)
 int file_PrintInt32(FILE *fp, char *name, int len, int *x)
 {
     register int i;
-    
+
     fprintf(fp, "%10s:", name);
-    for (i = 0; i < len; ++i) {
-	if ( i % 10 == 0 ) fprintf(fp, "\n\t[%2d-%2d]", i, i+9);
-	fprintf(fp, "%6d", x[i]);
+    for (i = 0; i < len; ++i)
+    {
+        if (i % 10 == 0)
+            fprintf(fp, "\n\t[%2d-%2d]", i, i + 9);
+        fprintf(fp, "%6d", x[i]);
     }
     fprintf(fp, "\n");
     return 0;
 }
 
-int_t
-CheckZeroDiagonal(int_t n, int_t *rowind, int_t *colbeg, int_t *colcnt)
+int_t CheckZeroDiagonal(int_t n, int_t *rowind, int_t *colbeg, int_t *colcnt)
 {
     register int_t i, j, zd, numzd = 0;
 
-    for (j = 0; j < n; ++j) {
-	zd = 0;
-	for (i = colbeg[j]; i < colbeg[j]+colcnt[j]; ++i) {
-	    /*if ( iperm[rowind[i]] == j ) zd = 1;*/
-	    if ( rowind[i] == j ) { zd = 1; break; }
-	}
-	if ( zd == 0 ) {
-#if ( PRNTlevel>=2 )
-	    printf(".. Diagonal of column %d is zero.\n", j);
+    for (j = 0; j < n; ++j)
+    {
+        zd = 0;
+        for (i = colbeg[j]; i < colbeg[j] + colcnt[j]; ++i)
+        {
+            /*if ( iperm[rowind[i]] == j ) zd = 1;*/
+            if (rowind[i] == j)
+            {
+                zd = 1;
+                break;
+            }
+        }
+        if (zd == 0)
+        {
+#if (PRNTlevel >= 2)
+            printf(".. Diagonal of column %d is zero.\n", j);
 #endif
-	    ++numzd;
-	}
+            ++numzd;
+        }
     }
 
     return numzd;
 }
 
-
 /* --------------------------------------------------------------------------- */
 void isort(int_t N, int_t *ARRAY1, int_t *ARRAY2)
 {
-/*
+    /*
  * Purpose
  * =======
  * Use quick sort algorithm to sort ARRAY1 and ARRAY2 in the increasing
@@ -1073,34 +1120,39 @@ void isort(int_t N, int_t *ARRAY1, int_t *ARRAY2)
  *          On entry, contains the array to be sorted.
  *          On exit, contains the sorted array.
  */
-  int_t IGAP, I, J;
-  int_t TEMP;
-  IGAP = N / 2;
-  while (IGAP > 0) {
-      for (I = IGAP; I < N; I++) {
-	  J = I - IGAP;
-	  while (J >= 0) {
-	      if (ARRAY1[J] > ARRAY1[J + IGAP]) {
-		  TEMP = ARRAY1[J];
-		  ARRAY1[J] = ARRAY1[J + IGAP];
-		  ARRAY1[J + IGAP] = TEMP;
-		  TEMP = ARRAY2[J];  
-		  ARRAY2[J] = ARRAY2[J + IGAP];
-		  ARRAY2[J + IGAP] = TEMP;
-		  J = J - IGAP;
-	      } else {
-		  break;
-	      }
-	  }
-      }
-      IGAP = IGAP / 2;
-  }
+    int_t IGAP, I, J;
+    int_t TEMP;
+    IGAP = N / 2;
+    while (IGAP > 0)
+    {
+        for (I = IGAP; I < N; I++)
+        {
+            J = I - IGAP;
+            while (J >= 0)
+            {
+                if (ARRAY1[J] > ARRAY1[J + IGAP])
+                {
+                    TEMP = ARRAY1[J];
+                    ARRAY1[J] = ARRAY1[J + IGAP];
+                    ARRAY1[J + IGAP] = TEMP;
+                    TEMP = ARRAY2[J];
+                    ARRAY2[J] = ARRAY2[J + IGAP];
+                    ARRAY2[J + IGAP] = TEMP;
+                    J = J - IGAP;
+                }
+                else
+                {
+                    break;
+                }
+            }
+        }
+        IGAP = IGAP / 2;
+    }
 }
-
 
 void isort1(int_t N, int_t *ARRAY)
 {
-/*
+    /*
  * Purpose
  * =======
  * Use quick sort algorithm to sort ARRAY in increasing order.
@@ -1115,90 +1167,97 @@ void isort1(int_t N, int_t *ARRAY)
  *          On exit, contains the sorted array.
  *
  */
-  int_t IGAP, I, J;
-  int_t TEMP;
-  IGAP = N / 2;
-  while (IGAP > 0) {
-      for (I = IGAP; I < N; I++) {
-	  J = I - IGAP;
-	  while (J >= 0) {
-	      if (ARRAY[J] > ARRAY[J + IGAP]) {
-		  TEMP = ARRAY[J];
-		  ARRAY[J] = ARRAY[J + IGAP];
-		  ARRAY[J + IGAP] = TEMP;
-		  J = J - IGAP;
-	      } else {
-		  break;
-	      }
-	  }
-      }
-      IGAP = IGAP / 2;
-  }
-}
-
-/* Only log the memory for the buffer space, excluding the LU factors */
-void log_memory(int64_t cur_bytes, SuperLUStat_t *stat) {
-    stat->current_buffer += (float) cur_bytes;
-    if (cur_bytes > 0) {
-	stat->peak_buffer = 
-	    SUPERLU_MAX(stat->peak_buffer, stat->current_buffer);
+    int_t IGAP, I, J;
+    int_t TEMP;
+    IGAP = N / 2;
+    while (IGAP > 0)
+    {
+        for (I = IGAP; I < N; I++)
+        {
+            J = I - IGAP;
+            while (J >= 0)
+            {
+                if (ARRAY[J] > ARRAY[J + IGAP])
+                {
+                    TEMP = ARRAY[J];
+                    ARRAY[J] = ARRAY[J + IGAP];
+                    ARRAY[J + IGAP] = TEMP;
+                    J = J - IGAP;
+                }
+                else
+                {
+                    break;
+                }
+            }
+        }
+        IGAP = IGAP / 2;
     }
 }
 
-void print_memorylog(SuperLUStat_t *stat, char *msg) {
-    printf("__ %s (MB):\n\tcurrent_buffer : %8.2f\tpeak_buffer : %8.2f\n",
-	   msg, stat->current_buffer, stat->peak_buffer);
+/* Only log the memory for the buffer space, excluding the LU factors */
+void log_memory(int64_t cur_bytes, SuperLUStat_t *stat)
+{
+    stat->current_buffer += (float)cur_bytes;
+    if (cur_bytes > 0)
+    {
+        stat->peak_buffer =
+            SUPERLU_MAX(stat->peak_buffer, stat->current_buffer);
+    }
 }
 
-int compare_pair (const void *a, const void *b)
+void print_memorylog(SuperLUStat_t *stat, char *msg)
 {
-    return (((struct superlu_pair *) a)->val - ((struct superlu_pair *) b)->val);
+    printf("__ %s (MB):\n\tcurrent_buffer : %8.2f\tpeak_buffer : %8.2f\n",
+           msg, stat->current_buffer, stat->peak_buffer);
+}
+
+int compare_pair(const void *a, const void *b)
+{
+    return (((struct superlu_pair *)a)->val - ((struct superlu_pair *)b)->val);
 }
 
 int get_thread_per_process()
-{   
-    char* ttemp; 
-    ttemp = getenv("THREAD_PER_PROCESS");
-
-    if(ttemp) return atoi(ttemp);
-    else return 1;
-}
-
-int_t
-get_max_buffer_size ()
 {
     char *ttemp;
-    ttemp = getenv ("MAX_BUFFER_SIZE");
+    ttemp = getenv("THREAD_PER_PROCESS");
+
     if (ttemp)
-        return atoi (ttemp);
+        return atoi(ttemp);
+    else
+        return 1;
+}
+
+int_t get_max_buffer_size()
+{
+    char *ttemp;
+    ttemp = getenv("MAX_BUFFER_SIZE");
+    if (ttemp)
+        return atoi(ttemp);
     else
         return 5000000;
 }
 
-int_t
-get_cublas_nb ()
+int_t get_cublas_nb()
 {
     char *ttemp;
-    ttemp = getenv ("CUBLAS_NB");
+    ttemp = getenv("CUBLAS_NB");
     if (ttemp)
-        return atoi (ttemp);
+        return atoi(ttemp);
     else
         return 64;
 }
 
-int_t
-get_num_cuda_streams ()
+int_t get_num_cuda_streams()
 {
     char *ttemp;
-    ttemp = getenv ("NUM_CUDA_STREAMS");
+    ttemp = getenv("NUM_CUDA_STREAMS");
     if (ttemp)
-        return atoi (ttemp);
+        return atoi(ttemp);
     else
         return 8;
 }
 
-int_t
-get_min (int_t * sums, int_t nprocs)
+int_t get_min(int_t *sums, int_t nprocs)
 {
     int_t min_ind, min_val;
     min_ind = 0;
@@ -1215,9 +1274,8 @@ get_min (int_t * sums, int_t nprocs)
     return min_ind;
 }
 
-int_t
-static_partition (struct superlu_pair *work_load, int_t nwl, int_t *partition,
-		  int_t ldp, int_t * sums, int_t * counts, int nprocs)
+int_t static_partition(struct superlu_pair *work_load, int_t nwl, int_t *partition,
+                       int_t ldp, int_t *sums, int_t *counts, int nprocs)
 {
     //initialization loop
     for (int i = 0; i < nprocs; ++i)
@@ -1225,16 +1283,15 @@ static_partition (struct superlu_pair *work_load, int_t nwl, int_t *partition,
         counts[i] = 0;
         sums[i] = 0;
     }
-    qsort (work_load, nwl, sizeof (struct superlu_pair), compare_pair);
+    qsort(work_load, nwl, sizeof(struct superlu_pair), compare_pair);
     // for(int i=0;i<nwl;i++)
     for (int i = nwl - 1; i >= 0; i--)
     {
-        int_t ind = get_min (sums, nprocs);
+        int_t ind = get_min(sums, nprocs);
         // printf("ind %d\n",ind );
         partition[ldp * ind + counts[ind]] = work_load[i].ind;
         counts[ind]++;
         sums[ind] += work_load[i].val;
-
     }
 
     return 0;
@@ -1243,19 +1300,18 @@ static_partition (struct superlu_pair *work_load, int_t nwl, int_t *partition,
 /*
  * Search for the metadata of the j-th block in a U panel.
  */
-void
-arrive_at_ublock (int_t j,      /* j-th block in a U panel */
-                  int_t * iukp, /* output : point to index[] of j-th block */
-                  int_t * rukp, /* output : point to nzval[] of j-th block */ 
-		  int_t * jb,   /* Global block number of block U(k,j). */
-                  int_t * ljb,  /* Local block number of U(k,j). */
-                  int_t * nsupc,/* supernode size of destination block */
-                  int_t iukp0,  /* input : search starting point */
-                  int_t rukp0, 
-		  int_t * usub, /* U subscripts */
-                  int_t * perm_u, /* permutation vector from static schedule */
-                  int_t * xsup, /* for SuperSize and LBj */
-                  gridinfo_t * grid)
+void arrive_at_ublock(int_t j,      /* j-th block in a U panel */
+                      int_t *iukp,  /* output : point to index[] of j-th block */
+                      int_t *rukp,  /* output : point to nzval[] of j-th block */
+                      int_t *jb,    /* Global block number of block U(k,j). */
+                      int_t *ljb,   /* Local block number of U(k,j). */
+                      int_t *nsupc, /* supernode size of destination block */
+                      int_t iukp0,  /* input : search starting point */
+                      int_t rukp0,
+                      int_t *usub,   /* U subscripts */
+                      int_t *perm_u, /* permutation vector from static schedule */
+                      int_t *xsup,   /* for SuperSize and LBj */
+                      gridinfo_t *grid)
 {
     int_t jj;
     *iukp = iukp0; /* point to the first block in index[] */
@@ -1276,49 +1332,48 @@ arrive_at_ublock (int_t j,      /* j-th block in a U panel */
 	 * usub[] - index array for panel U(k,:)
 	 */
         // printf("iukp %d \n",*iukp );
-        *jb = usub[*iukp];      /* Global block number of block U(k,jj). */
+        *jb = usub[*iukp]; /* Global block number of block U(k,jj). */
         // printf("jb %d \n",*jb );
-        *nsupc = SuperSize (*jb);
+        *nsupc = SuperSize(*jb);
         // printf("nsupc %d \n",*nsupc );
-        *iukp += UB_DESCRIPTOR; /* Start fstnz of block U(k,j). */
+        *iukp += UB_DESCRIPTOR;   /* Start fstnz of block U(k,j). */
         *rukp += usub[*iukp - 1]; /* Jump # of nonzeros in block U(k,jj);
-				     Move to block U(k,jj+1) in nzval[] */ 
+				     Move to block U(k,jj+1) in nzval[] */
         *iukp += *nsupc;
     }
 
     /* Set the pointers to the beginning of U block U(k,j) */
-    *jb = usub[*iukp];          /* Global block number of block U(k,j). */
-    *ljb = LBj (*jb, grid);     /* Local block number of U(k,j). */
-    *nsupc = SuperSize (*jb);
-    *iukp += UB_DESCRIPTOR;     /* Start fstnz of block U(k,j). */
+    *jb = usub[*iukp];     /* Global block number of block U(k,j). */
+    *ljb = LBj(*jb, grid); /* Local block number of U(k,j). */
+    *nsupc = SuperSize(*jb);
+    *iukp += UB_DESCRIPTOR; /* Start fstnz of block U(k,j). */
 }
-
 
 /*
  * Count the maximum size of U(kk,:) that I own locally.
  * September 28, 2016.
  * Modified December 4, 2018.
  */
-int_t num_full_cols_U
-(
- int_t kk,  int_t **Ufstnz_br_ptr, int_t *xsup,
- gridinfo_t *grid, int_t *perm_u,
- int_t *ldu   /* max. segment size of nonzero columns in U(kk,:) */
+int_t num_full_cols_U(
+    int_t kk, int_t **Ufstnz_br_ptr, int_t *xsup,
+    gridinfo_t *grid, int_t *perm_u,
+    int_t *ldu /* max. segment size of nonzero columns in U(kk,:) */
 )
 {
-    int_t lk = LBi (kk, grid);
+    int_t lk = LBi(kk, grid);
     int_t *usub = Ufstnz_br_ptr[lk];
 
-    if (usub == NULL) return 0; /* code */
+    if (usub == NULL)
+        return 0; /* code */
 
-    int_t iukp = BR_HEADER;   /* Skip header; Pointer to index[] of U(k,:) */
-    int_t rukp = 0;           /* Pointer to nzval[] of U(k,:) */
-    int_t nub = usub[0];      /* Number of blocks in the block row U(k,:) */
-    
-    int_t klst = FstBlockC (kk + 1);
+    int_t iukp = BR_HEADER; /* Skip header; Pointer to index[] of U(k,:) */
+    int_t rukp = 0;         /* Pointer to nzval[] of U(k,:) */
+    int_t nub = usub[0];    /* Number of blocks in the block row U(k,:) */
+
+    int_t klst = FstBlockC(kk + 1);
     int_t iukp0 = iukp;
     int_t rukp0 = rukp;
-    int_t jb,ljb;
+    int_t jb, ljb;
     int_t nsupc;
     int_t full = 1;
     int_t full_Phi = 1;
@@ -1327,38 +1382,41 @@ int_t num_full_cols_U
 
     *ldu = 0;
 
-    for (int_t j = 0; j < nub; ++j) {
-        
-	/* Sherry -- no need to search from beginning ?? */
+    for (int_t j = 0; j < nub; ++j)
+    {
+
+        /* Sherry -- no need to search from beginning ?? */
         arrive_at_ublock(
-			 j, &iukp, &rukp, &jb, &ljb, &nsupc,
-			 iukp0, rukp0, usub, perm_u, xsup, grid
-			 );
-        for (int_t jj = iukp; jj < iukp + nsupc; ++jj) {
+            j, &iukp, &rukp, &jb, &ljb, &nsupc,
+            iukp0, rukp0, usub, perm_u, xsup, grid);
+        for (int_t jj = iukp; jj < iukp + nsupc; ++jj)
+        {
             segsize = klst - usub[jj];
-            if ( segsize ) ++temp_ncols;
-            if ( segsize > *ldu ) *ldu = segsize;
+            if (segsize)
+                ++temp_ncols;
+            if (segsize > *ldu)
+                *ldu = segsize;
         }
     }
     return temp_ncols;
 }
 
 int_t estimate_bigu_size(
-      int_t nsupers,
-      int_t**Ufstnz_br_ptr, /* point to U index[] array */
-      Glu_persist_t *Glu_persist,
-      gridinfo_t* grid, int_t* perm_u, 
-      int_t *max_ncols /* Output: Max. number of columns in among all U(k,:).
+    int_t nsupers,
+    int_t **Ufstnz_br_ptr, /* point to U index[] array */
+    Glu_persist_t *Glu_persist,
+    gridinfo_t *grid, int_t *perm_u,
+    int_t *max_ncols /* Output: Max. number of columns in among all U(k,:).
 			     This is used for allocating GEMM V buffer.  */
-			 )
+)
 {
     int_t iam = grid->iam;
     int_t Pc = grid->npcol;
     int_t Pr = grid->nprow;
-    int_t myrow = MYROW (iam, grid);
-    int_t mycol = MYCOL (iam, grid);
-    
-    int_t* xsup = Glu_persist->xsup;
+    int_t myrow = MYROW(iam, grid);
+    int_t mycol = MYCOL(iam, grid);
+
+    int_t *xsup = Glu_persist->xsup;
 
     int_t ncols = 0; /* Count local number of nonzero columns */
     int_t ldu = 0;   /* Count max. segment size in one row U(k,:) */
@@ -1366,12 +1424,14 @@ int_t estimate_bigu_size(
     int_t max_ldu = 0;
 
     /* Initialize perm_u */
-    for (int i = 0; i < nsupers; ++i) perm_u[i] = i;
+    for (int i = 0; i < nsupers; ++i)
+        perm_u[i] = i;
 
-    for (int lk = myrow; lk < nsupers; lk += Pr) {/* Go through my block rows */
+    for (int lk = myrow; lk < nsupers; lk += Pr)
+    { /* Go through my block rows */
         ncols = SUPERLU_MAX(ncols, num_full_cols_U(lk, Ufstnz_br_ptr,
-						   xsup, grid, perm_u, &ldu) );
-	my_max_ldu = SUPERLU_MAX(ldu, my_max_ldu);
+                                                   xsup, grid, perm_u, &ldu));
+        my_max_ldu = SUPERLU_MAX(ldu, my_max_ldu);
     }
 
     /* Need U buffer size large enough to hold all U(k,:) transferred from
@@ -1379,196 +1439,243 @@ int_t estimate_bigu_size(
     MPI_Allreduce(&my_max_ldu, &max_ldu, 1, mpi_int_t, MPI_MAX, grid->cscp.comm);
     MPI_Allreduce(&ncols, max_ncols, 1, mpi_int_t, MPI_MAX, grid->cscp.comm);
 
-#if ( PRNTlevel>=1 )
-    if ( iam==0 ) {
-	printf("max_ncols " IFMT ",  max_ldu " IFMT ", bigu_size " IFMT "\n",
-	       *max_ncols, max_ldu, max_ldu * (*max_ncols));
-	fflush(stdout);
+#if (PRNTlevel >= 1)
+    if (iam == 0)
+    {
+        printf("max_ncols " IFMT ",  max_ldu " IFMT ", bigu_size " IFMT "\n",
+               *max_ncols, max_ldu, max_ldu * (*max_ncols));
+        fflush(stdout);
     }
 #endif
 
-    return(max_ldu * (*max_ncols));
+    return (max_ldu * (*max_ncols));
 }
 
-void quickSort( int_t* a, int_t l, int_t r, int_t dir)
+void quickSort(int_t *a, int_t l, int_t r, int_t dir)
 {
-   int_t j;
+    int_t j;
 
-   if( l < r ) 
-   {
-   	// divide and conquer
-       j = partition( a, l, r, dir);
-       quickSort( a, l, j-1, dir);
-       quickSort( a, j+1, r, dir);
-   }
-	
+    if (l < r)
+    {
+        // divide and conquer
+        j = partition(a, l, r, dir);
+        quickSort(a, l, j - 1, dir);
+        quickSort(a, j + 1, r, dir);
+    }
 }
 
-int_t partition( int_t* a, int_t l, int_t r, int_t dir) {
-   int_t pivot, i, j, t;
-   pivot = a[l];
-   i = l; j = r+1;
-   
-   if(dir==0){		
-	   while( 1)
-	   {
-		do ++i; while( a[i] <= pivot && i <= r );
-		do --j; while( a[j] > pivot );
-		if( i >= j ) break;
-		t = a[i]; a[i] = a[j]; a[j] = t;
-	   }
-	   t = a[l]; a[l] = a[j]; a[j] = t;
-	   return j;
-   }else if(dir==1){
-	   while( 1)
-	   {
-		do ++i; while( a[i] >= pivot && i <= r );
-		do --j; while( a[j] < pivot );
-		if( i >= j ) break;
-		t = a[i]; a[i] = a[j]; a[j] = t;
-	   }
-	   t = a[l]; a[l] = a[j]; a[j] = t;
-	   return j;	   
-   }
-   return 0;
-}
-
-
-
-void quickSortM( int_t* a, int_t l, int_t r, int_t lda, int_t dir, int_t dims)
+int_t partition(int_t *a, int_t l, int_t r, int_t dir)
 {
-   int_t j;
+    int_t pivot, i, j, t;
+    pivot = a[l];
+    i = l;
+    j = r + 1;
 
-   if( l < r ) 
-   {
-	   	// printf("dims: %5d",dims);
-		// fflush(stdout);
-		
-   	// divide and conquer
-       j = partitionM( a, l, r,lda,dir, dims);
-       quickSortM( a, l, j-1,lda,dir,dims);
-       quickSortM( a, j+1, r,lda,dir,dims);
-   }
-	
+    if (dir == 0)
+    {
+        while (1)
+        {
+            do
+                ++i;
+            while (a[i] <= pivot && i <= r);
+            do
+                --j;
+            while (a[j] > pivot);
+            if (i >= j)
+                break;
+            t = a[i];
+            a[i] = a[j];
+            a[j] = t;
+        }
+        t = a[l];
+        a[l] = a[j];
+        a[j] = t;
+        return j;
+    }
+    else if (dir == 1)
+    {
+        while (1)
+        {
+            do
+                ++i;
+            while (a[i] >= pivot && i <= r);
+            do
+                --j;
+            while (a[j] < pivot);
+            if (i >= j)
+                break;
+            t = a[i];
+            a[i] = a[j];
+            a[j] = t;
+        }
+        t = a[l];
+        a[l] = a[j];
+        a[j] = t;
+        return j;
+    }
+    return 0;
 }
 
+void quickSortM(int_t *a, int_t l, int_t r, int_t lda, int_t dir, int_t dims)
+{
+    int_t j;
 
-int_t partitionM( int_t* a, int_t l, int_t r, int_t lda, int_t dir, int_t dims) {
-   int_t pivot, i, j, t, dd;
-   pivot = a[l];
-   i = l; j = r+1;
+    if (l < r)
+    {
+        // printf("dims: %5d",dims);
+        // fflush(stdout);
 
-	if(dir==0){
-	   while( 1)
-	   {
-		do ++i; while( a[i] <= pivot && i <= r );
-		do --j; while( a[j] > pivot );
-		if( i >= j ) break; 
-		for(dd=0;dd<dims;dd++){	
-			t = a[i+lda*dd]; a[i+lda*dd] = a[j+lda*dd]; a[j+lda*dd] = t;	
-		}
-	   }
-	   for(dd=0;dd<dims;dd++){	
-		t = a[l+lda*dd]; a[l+lda*dd] = a[j+lda*dd]; a[j+lda*dd] = t;
-	   }	   
-	   return j;		
-	}else if(dir==1){
-	   while( 1)
-	   {
-		do ++i; while( a[i] >= pivot && i <= r );
-		do --j; while( a[j] < pivot );
-		if( i >= j ) break;
-		for(dd=0;dd<dims;dd++){	
-			t = a[i+lda*dd]; a[i+lda*dd] = a[j+lda*dd]; a[j+lda*dd] = t;	
-		}
-	   }
-	   for(dd=0;dd<dims;dd++){	
-		t = a[l+lda*dd]; a[l+lda*dd] = a[j+lda*dd]; a[j+lda*dd] = t;
-	   } 
-	   return j;		
-	}
-
-	return 0;
+        // divide and conquer
+        j = partitionM(a, l, r, lda, dir, dims);
+        quickSortM(a, l, j - 1, lda, dir, dims);
+        quickSortM(a, j + 1, r, lda, dir, dims);
+    }
 }
 
+int_t partitionM(int_t *a, int_t l, int_t r, int_t lda, int_t dir, int_t dims)
+{
+    int_t pivot, i, j, t, dd;
+    pivot = a[l];
+    i = l;
+    j = r + 1;
+
+    if (dir == 0)
+    {
+        while (1)
+        {
+            do
+                ++i;
+            while (a[i] <= pivot && i <= r);
+            do
+                --j;
+            while (a[j] > pivot);
+            if (i >= j)
+                break;
+            for (dd = 0; dd < dims; dd++)
+            {
+                t = a[i + lda * dd];
+                a[i + lda * dd] = a[j + lda * dd];
+                a[j + lda * dd] = t;
+            }
+        }
+        for (dd = 0; dd < dims; dd++)
+        {
+            t = a[l + lda * dd];
+            a[l + lda * dd] = a[j + lda * dd];
+            a[j + lda * dd] = t;
+        }
+        return j;
+    }
+    else if (dir == 1)
+    {
+        while (1)
+        {
+            do
+                ++i;
+            while (a[i] >= pivot && i <= r);
+            do
+                --j;
+            while (a[j] < pivot);
+            if (i >= j)
+                break;
+            for (dd = 0; dd < dims; dd++)
+            {
+                t = a[i + lda * dd];
+                a[i + lda * dd] = a[j + lda * dd];
+                a[j + lda * dd] = t;
+            }
+        }
+        for (dd = 0; dd < dims; dd++)
+        {
+            t = a[l + lda * dd];
+            a[l + lda * dd] = a[j + lda * dd];
+            a[j + lda * dd] = t;
+        }
+        return j;
+    }
+
+    return 0;
+}
 
 /*
  * The following are from 3D code p3dcomm.c
  */
 
-int AllocGlu_3d(int_t n, int_t nsupers, LUstruct_t * LUstruct)
+int AllocGlu_3d(int_t n, int_t nsupers, LUstruct_t *LUstruct)
 {
     /*broadcasting Glu_persist*/
-    LUstruct->Glu_persist->xsup  = intMalloc_dist(nsupers+1); //INT_T_ALLOC(nsupers+1);
-    LUstruct->Glu_persist->supno = intMalloc_dist(n); //INT_T_ALLOC(n);
+    LUstruct->Glu_persist->xsup = intMalloc_dist(nsupers + 1); //INT_T_ALLOC(nsupers+1);
+    LUstruct->Glu_persist->supno = intMalloc_dist(n);          //INT_T_ALLOC(n);
     return 0;
 }
 
 // Sherry added
-int DeAllocGlu_3d(LUstruct_t * LUstruct)
+int DeAllocGlu_3d(LUstruct_t *LUstruct)
 {
     SUPERLU_FREE(LUstruct->Glu_persist->xsup);
     SUPERLU_FREE(LUstruct->Glu_persist->supno);
     return 0;
 }
 
-int_t** getTreePerm( int_t* myTreeIdxs, int_t* myZeroTrIdxs,
-                     int_t* nodeCount, int_t** nodeList,
-                     int_t* perm_c_supno, int_t* iperm_c_supno,
-                     gridinfo3d_t* grid3d)
+int_t **getTreePerm(int_t *myTreeIdxs, int_t *myZeroTrIdxs,
+                    int_t *nodeCount, int_t **nodeList,
+                    int_t *perm_c_supno, int_t *iperm_c_supno,
+                    gridinfo3d_t *grid3d)
 {
     int_t maxLvl = log2i(grid3d->zscp.Np) + 1;
-    
-    int_t** treePerm = SUPERLU_MALLOC(sizeof(int_t*)*maxLvl);
+
+    int_t **treePerm = SUPERLU_MALLOC(sizeof(int_t *) * maxLvl);
     for (int_t lvl = 0; lvl < maxLvl; lvl++)
-	{
-	    // treePerm[lvl] = NULL;
-	    int_t treeId = myTreeIdxs[lvl];
-	    treePerm[lvl] = getPermNodeList(nodeCount[treeId], nodeList[treeId],
-	    		                    perm_c_supno, iperm_c_supno);
-	    
-	}
+    {
+        // treePerm[lvl] = NULL;
+        int_t treeId = myTreeIdxs[lvl];
+        treePerm[lvl] = getPermNodeList(nodeCount[treeId], nodeList[treeId],
+                                        perm_c_supno, iperm_c_supno);
+    }
     return treePerm;
 }
 
-int_t* getMyNodeCounts(int_t maxLvl, int_t* myTreeIdxs, int_t* gNodeCount)
+int_t *getMyNodeCounts(int_t maxLvl, int_t *myTreeIdxs, int_t *gNodeCount)
 {
-    int_t* myNodeCount = INT_T_ALLOC(maxLvl);
+    int_t *myNodeCount = INT_T_ALLOC(maxLvl);
     for (int i = 0; i < maxLvl; ++i)
     {
-	myNodeCount[i] = gNodeCount[myTreeIdxs[i]];
+        myNodeCount[i] = gNodeCount[myTreeIdxs[i]];
     }
     return myNodeCount;
 }
 
 /*chekc a vector vec of len across different process grids*/
-int_t checkIntVector3d(int_t* vec, int_t len,  gridinfo3d_t* grid3d)
+int_t checkIntVector3d(int_t *vec, int_t len, gridinfo3d_t *grid3d)
 {
     int_t nP = grid3d->zscp.Np;
     int_t myGrid = grid3d->zscp.Iam;
-    int_t * buf = intMalloc_dist(len);
-    
-    if (!myGrid) {
-	for (int_t p = 1; p < nP; ++p)
-	    {
-		MPI_Status status;
-		MPI_Recv(buf, len, mpi_int_t, p, p, grid3d->zscp.comm, &status);
+    int_t *buf = intMalloc_dist(len);
 
-		for (int_t i = 0; i < len ; ++i)  {
-		    /* code */
-	            if (buf[i] != vec[i]) {
-		        /* code */
-		        printf("Error occured at (%d) Loc %d \n", (int) p, (int) i);
-			exit(0);
-		    }
-		}
-	    }
+    if (!myGrid)
+    {
+        for (int_t p = 1; p < nP; ++p)
+        {
+            MPI_Status status;
+            MPI_Recv(buf, len, mpi_int_t, p, p, grid3d->zscp.comm, &status);
+
+            for (int_t i = 0; i < len; ++i)
+            {
+                /* code */
+                if (buf[i] != vec[i])
+                {
+                    /* code */
+                    printf("Error occured at (%d) Loc %d \n", (int)p, (int)i);
+                    exit(0);
+                }
+            }
+        }
     }
     else
-	{
-	    MPI_Send(vec, len, mpi_int_t, 0, myGrid, grid3d->zscp.comm);
-	}
-    
+    {
+        MPI_Send(vec, len, mpi_int_t, 0, myGrid, grid3d->zscp.comm);
+    }
+
     return 0;
 }
 
@@ -1576,19 +1683,19 @@ int_t checkIntVector3d(int_t* vec, int_t len,  gridinfo3d_t* grid3d)
  * reduce the states from all the two grids before prinitng it out
  * See the defenition of enum PhaseType in superlu_enum_const.h
  */
-int_t reduceStat(PhaseType PHASE, 
-	SuperLUStat_t *stat, gridinfo3d_t * grid3d)
+int_t reduceStat(PhaseType PHASE,
+                 SuperLUStat_t *stat, gridinfo3d_t *grid3d)
 {
     flops_t *ops = stat->ops;
-    
+
     flops_t flopcnt;
     MPI_Reduce(&ops[PHASE], &flopcnt, 1, MPI_FLOAT, MPI_SUM, 0, grid3d->zscp.comm);
-    
+
     if (!grid3d->zscp.Iam)
-	{
-	    ops[PHASE] = flopcnt;
-	}
-    
+    {
+        ops[PHASE] = flopcnt;
+    }
+
     return 0;
 }
 
