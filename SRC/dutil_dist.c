@@ -639,12 +639,10 @@ void dDumpLblocks(int iam, int_t nsupers, gridinfo_t *grid,
 	    nsupc = SuperSize( gb );
 	    for (c = 0, k = BC_HEADER, r = 0; c < nb; ++c) {
 		len = index[k+1];
-
-
 		//for (j = 0; j < nsupc; ++j) {
             //fprintf(fp, IFMT IFMT " %e\n", index[k+LB_DESCRIPTOR+i]+1, xsup[gb]+1, len,);
 		    //for (i=0; i<len; ++i){
-            fprintf(fp, "%d,%d,%d,%d,%d\n", index[k+LB_DESCRIPTOR+2], gb, (double)iam,len,nsupc);
+            fprintf(fp, "%d,%d,%d,%d,%d\n", index[k], gb, (double)iam,len,nsupc);
 //#if 0
 		        //fprintf(fp, IFMT IFMT " %e\n", index[k+LB_DESCRIPTOR+i]+1, xsup[gb]+j+1, nzval[r +i+ j*nsupr]);
 //#endif
@@ -659,7 +657,87 @@ void dDumpLblocks(int iam, int_t nsupers, gridinfo_t *grid,
 
 } /* dDumpLblocks */
 
+/*! \Criticalpath the factored matrix L
+ */
+void cpLblocks(int iam, int_t nsupers, gridinfo_t *grid,
+                  Glu_persist_t *Glu_persist, LocalLU_t *Llu)
+{
+    register int c, extra, gb, j, i, lb, nsupc, nsupr, len, nb, ncb;
+    register int_t k, mycol, r;
+    int_t nnzL, n,nmax;
+    int_t *xsup = Glu_persist->xsup;
+    int_t *index;
+    double *nzval;
+    int *idx_block;
+    if ( !(idx_block = (int*)SUPERLU_MALLOC( h_nfrecvmod[1] *2* sizeof(int))) )
+    ABORT("Malloc fails for SeedSTD_BC[].");
+    // assert(grid->npcol*grid->nprow==1);
 
+    // count nonzeros in the first pass
+    nnzL = 0;
+    n = 0;
+    ncb = nsupers / grid->npcol;
+    extra = nsupers % grid->npcol;
+    mycol = MYCOL( iam, grid );
+    if ( mycol < extra ) ++ncb;
+    for (lb = 0; lb < ncb; ++lb) {
+        index = Llu->Lrowind_bc_ptr[lb];
+        if ( index ) { /* Not an empty column */
+            nzval = Llu->Lnzval_bc_ptr[lb];
+            nb = index[0];
+            nsupr = index[1];
+            gb = lb * grid->npcol + mycol;
+            nsupc = SuperSize( gb );
+            for (c = 0, k = BC_HEADER, r = 0; c < nb; ++c) {
+                len = index[k+1];
+
+                for (j = 0; j < nsupc; ++j) {
+                    for (i=0; i<len; ++i){
+
+                        if(index[k+LB_DESCRIPTOR+i]+1>=xsup[gb]+j+1){
+                            nnzL ++;
+                            nmax = SUPERLU_MAX(n,index[k+LB_DESCRIPTOR+i]+1);
+                            n = nmax;
+                        }
+
+                    }
+                }
+                k += LB_DESCRIPTOR + len;
+                r += len;
+            }
+        }
+    }
+    MPI_Allreduce(MPI_IN_PLACE,&nnzL,1,mpi_int_t,MPI_SUM,grid->comm);
+    MPI_Allreduce(MPI_IN_PLACE,&n,1,mpi_int_t,MPI_MAX,grid->comm);
+
+    ncb = nsupers / grid->npcol;
+    extra = nsupers % grid->npcol;
+    mycol = MYCOL( iam, grid );
+    if ( mycol < extra ) ++ncb;
+    int tmp_c=0;
+    for (lb = 0; lb < ncb; ++lb) {
+        index = Llu->Lrowind_bc_ptr[lb];
+        if ( index ) { /* Not an empty column */
+            nzval = Llu->Lnzval_bc_ptr[lb];
+            nb = index[0];
+            nsupr = index[1];
+            gb = lb * grid->npcol + mycol;
+            nsupc = SuperSize( gb );
+            for (c = 0, k = BC_HEADER, r = 0; c < nb; ++c) {
+                len = index[k+1];
+                //fprintf(fp, "%d,%d,%d,%d,%d\n", index[k+LB_DESCRIPTOR+2], gb, (double)iam,len,nsupc);
+                idx_block[tmp_c*2]=index[k+LB_DESCRIPTOR+2];
+                idx_block[tmp_c*2+1]=gb;
+                tmp_c+=1;
+                k += LB_DESCRIPTOR + len;
+                r += len;
+            }
+        }
+    }
+
+    //find_critical_path(idx_block);
+
+} /* criticalpath */
 
 
 /*! \Compute the level sets in the L factor

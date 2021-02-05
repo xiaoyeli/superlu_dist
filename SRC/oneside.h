@@ -1,6 +1,7 @@
 #include "mpi.h"
 #include "cuda.h"
 #include "cuda_runtime.h"
+
 extern int *flag_bc_q;
 extern int *flag_rd_q;
 extern int *my_flag_bc;
@@ -26,8 +27,10 @@ extern int *d_colnum;
 extern int *d_mynum;
 extern int *d_mymaskstart;
 extern int *d_mymasklength;
-
-
+extern int *d_rownum;
+extern int *d_rowstart;
+extern int *senddone;
+extern int *sumdone;
 extern int *d_nfrecvmod;
 extern int *h_nfrecvmod;
 extern int *d_statusmod;
@@ -63,6 +66,7 @@ do {                                                    \
         exit(-1);                                       \
     }                                                   \
 } while (0)
+
 
 
 __device__ int clockrate;
