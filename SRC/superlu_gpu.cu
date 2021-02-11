@@ -48,13 +48,18 @@ cudaError_t checkCuda(cudaError_t result)
 
 int_t getnCudaStreams()
 {
-	char *ttemp;
-	ttemp = getenv ("N_CUDA_STREAMS");
-
-	if (ttemp)
-		return atoi (ttemp);
-	else
+	// Disabling multiple cuda streams 
+	#if 1
 		return 1;
+	#else 
+		char *ttemp;
+		ttemp = getenv ("N_CUDA_STREAMS");
+
+		if (ttemp)
+			return atoi (ttemp);
+		else
+			return 1;
+	#endif 
 }
 
 
@@ -751,7 +756,9 @@ void printDevProp(cudaDeviceProp devProp)
 {
 	size_t mfree, mtotal;
 	cudaMemGetInfo	(&mfree, &mtotal);
-
+	
+	printf("pciBusID:                      %d\n",  devProp.pciBusID);
+	printf("pciDeviceID:                   %d\n",  devProp.pciDeviceID);
 	printf("GPU Name:                      %s\n",  devProp.name);
 	printf("Total global memory:           %zu\n",  devProp.totalGlobalMem);
 	printf("Total free memory:             %zu\n",  mfree);
@@ -1264,7 +1271,7 @@ void CopyLUToGPU3D (
 	LUstruct_gpu **dA_gpu =  &(sluGPU->dA_gpu);
 
 #ifdef GPU_DEBUG
-	if ( grid3d->iam == 0 )
+	// if ( grid3d->iam == 0 )
 	{
 		print_occupany();
 		cudaDeviceProp devProp;
@@ -1322,13 +1329,13 @@ void CopyLUToGPU3D (
 		checkCudaErrors(cudaMallocHost(  &tmp_ptr,  bigu_size * sizeof(double) )) ;
 		A_gpu->scubufs[streamId].bigU_host = (double *) tmp_ptr;
 
-		cudaMallocHost ( &tmp_ptr, sizeof(double) * (A_host->bufmax[1]));
+		checkCudaErrors(cudaMallocHost ( &tmp_ptr, sizeof(double) * (A_host->bufmax[1])));
 		A_gpu->acc_L_buff = (double *) tmp_ptr;
-		cudaMallocHost ( &tmp_ptr, sizeof(double) * (A_host->bufmax[3]));
+		checkCudaErrors(cudaMallocHost ( &tmp_ptr, sizeof(double) * (A_host->bufmax[3])));
 		A_gpu->acc_U_buff = (double *) tmp_ptr;
-		cudaMallocHost ( &tmp_ptr, sizeof(int_t) * (A_host->bufmax[0]));
+		checkCudaErrors(cudaMallocHost ( &tmp_ptr, sizeof(int_t) * (A_host->bufmax[0])));
 		A_gpu->scubufs[streamId].lsub_buf =  (int_t *) tmp_ptr;
-		cudaMallocHost ( &tmp_ptr, sizeof(int_t) * (A_host->bufmax[2]));
+		checkCudaErrors(cudaMallocHost ( &tmp_ptr, sizeof(int_t) * (A_host->bufmax[2])));
 		A_gpu->scubufs[streamId].usub_buf = (int_t *) tmp_ptr;
 
 		checkCudaErrors(cudaMalloc(  &tmp_ptr,  remain_l_max * sizeof(double) )) ;
