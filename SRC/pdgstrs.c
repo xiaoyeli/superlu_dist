@@ -1014,7 +1014,7 @@ pdgstrs(int_t n, dLUstruct_t *LUstruct,
     size_t lworkInBytes = 0;
     char *d_work = NULL;
 
-    const int algo = 1; /* non-block version */	
+    const int algo = 1; /* 0: non-block version 1: block version */	
 	const double h_one = 1.0;
 	const cusparseSolvePolicy_t policy = CUSPARSE_SOLVE_POLICY_NO_LEVEL;
 #else
