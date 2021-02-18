@@ -982,6 +982,9 @@ pdgstrs(int_t n, dLUstruct_t *LUstruct,
 
 #ifdef HAVE_CUDA
 	int_t *cooCols,*cooRows;
+	double *nzval;
+	int_t *rowind, *colptr; 
+	int_t *colind, *rowptr, *rowptr1; 
 	double *cooVals;
 	int_t ntmp,nnzL;
 	
@@ -1011,7 +1014,7 @@ pdgstrs(int_t n, dLUstruct_t *LUstruct,
     size_t lworkInBytes = 0;
     char *d_work = NULL;
 
-    const int algo = 0; /* non-block version */	
+    const int algo = 1; /* non-block version */	
 	const double h_one = 1.0;
 	const cusparseSolvePolicy_t policy = CUSPARSE_SOLVE_POLICY_NO_LEVEL;
 #else
@@ -1371,21 +1374,269 @@ if(procs==1){
 	exit(1);
 	}
 	
-	t1 = SuperLU_timer_();
-dGenCOOLblocks(iam, nsupers, grid,Glu_persist,Llu, cooRows, cooCols, cooVals, &ntmp, &nnzL, 1);
+// 	t1 = SuperLU_timer_();
+// dGenCOOLblocks(iam, nsupers, grid,Glu_persist,Llu, &cooRows, &cooCols, &cooVals, &ntmp, &nnzL);
+// 	t1 = SuperLU_timer_() - t1;	
+// 	if ( !iam ) {
+// 		printf(".. convert to COO time\t%15.7f\n", t1);
+// 		fflush(stdout);
+// 	}		
+	
+// 	t1 = SuperLU_timer_();
+// 	checkGPU(gpuStreamCreateWithFlags(&stream, gpuStreamDefault));		
+// 	status1 = cusparseCreate(&handle);
+//     assert(CUSPARSE_STATUS_SUCCESS == status1);			
+//     status1 = cusparseSetStream(handle, stream);
+//     assert(CUSPARSE_STATUS_SUCCESS == status1);	
+//     status1 = cusparseCreateCsrsm2Info(&info1);
+//     assert(CUSPARSE_STATUS_SUCCESS == status1);	
+// 	status1 = cusparseCreateMatDescr(&descrA);
+//     assert(CUSPARSE_STATUS_SUCCESS == status1);
+	
+// 	t1 = SuperLU_timer_() - t1;	
+// 	if ( !iam ) {
+// 		printf(".. gpu initialize time\t%15.7f\n", t1);
+// 		fflush(stdout);
+// 	}		
+// 	t1 = SuperLU_timer_();
+	
+	
+// 	checkGPU(gpuMalloc( (void**)&d_B, sizeof(double)*ntmp*nrhs));
+// 	checkGPU(gpuMalloc( (void**)&d_cooRows, sizeof(int)*nnzL));
+// 	checkGPU(gpuMalloc( (void**)&d_cooCols, sizeof(int)*nnzL));
+// 	checkGPU(gpuMalloc( (void**)&d_P      , sizeof(int)*nnzL));
+// 	checkGPU(gpuMalloc( (void**)&d_cooVals, sizeof(double)*nnzL));
+// 	checkGPU(gpuMalloc( (void**)&d_csrVals, sizeof(double)*nnzL));
+	
 
-if ( !(cooRows = (int_t*)SUPERLU_MALLOC(nnzL * sizeof(int_t))) )
-	ABORT("Malloc fails for cooRows[].");
-if ( !(cooCols = (int_t*)SUPERLU_MALLOC(nnzL * sizeof(int_t))) )
-	ABORT("Malloc fails for cooCols[].");
-if ( !(cooVals = (double*)SUPERLU_MALLOC(nnzL * sizeof(double))) )
-	ABORT("Malloc fails for cooVals[].");
-dGenCOOLblocks(iam, nsupers, grid,Glu_persist,Llu, cooRows, cooCols, cooVals, &ntmp, &nnzL, 2);
+// 	for (i = 0; i < ntmp; ++i) {
+// 		irow = perm_c[perm_r[i+fst_row]]; /* Row number in Pc*Pr*B */
+// 		RHS_ITERATE(j) {
+// 		Btmp[irow + j*ldb]=B[i + j*ldb];
+// 		// printf("%d %e\n",irow + j*ldb,Btmp[irow + j*ldb]);
+// 		}
+// 	}
+
+// 	t1 = SuperLU_timer_() - t1;	
+// 	if ( !iam ) {
+// 		printf(".. gpuMalloc time\t%15.7f\n", t1);
+// 		fflush(stdout);
+// 	}	
+// 	t1 = SuperLU_timer_();
+	
+// 	checkGPU(gpuMemcpy(d_B, Btmp, sizeof(double)*nrhs*ntmp, gpuMemcpyHostToDevice));	
+// 	checkGPU(gpuMemcpy(d_cooRows, cooRows, sizeof(int)*nnzL   , gpuMemcpyHostToDevice));
+// 	checkGPU(gpuMemcpy(d_cooCols, cooCols, sizeof(int)*nnzL   , gpuMemcpyHostToDevice));
+// 	checkGPU(gpuMemcpy(d_cooVals, cooVals, sizeof(double)*nnzL, gpuMemcpyHostToDevice));
+	
+	
+// 	// checkGPU(cudaDeviceSynchronize);
+// 	checkGPU(gpuStreamSynchronize(stream));
+	
+// 	t1 = SuperLU_timer_() - t1;	
+// 	if ( !iam ) {
+// 		printf(".. HostToDevice time\t%15.7f\n", t1);
+// 		fflush(stdout);
+// 	}		
+// 	t1 = SuperLU_timer_();
+	
+// 	status1 = cusparseXcoosort_bufferSizeExt(
+//         handle,
+//         ntmp, 
+//         ntmp,
+//         nnzL,
+//         d_cooRows,
+//         d_cooCols,
+//         &pBufferSizeInBytes
+//     );
+//     assert( CUSPARSE_STATUS_SUCCESS == status1);		
+// 	checkGPU(gpuMalloc( (void**)&pBuffer, sizeof(char)* pBufferSizeInBytes));	
+	
+	
+//     status1 = cusparseCreateIdentityPermutation(
+//         handle,
+//         nnzL,
+//         d_P);
+//     assert( CUSPARSE_STATUS_SUCCESS == status1);	
+//     status1 = cusparseXcoosortByRow(
+//         handle, 
+//         ntmp, 
+//         ntmp, 
+//         nnzL, 
+//         d_cooRows, 
+//         d_cooCols, 
+//         d_P, 
+//         pBuffer
+//     ); 
+//     assert( CUSPARSE_STATUS_SUCCESS == status1);	
+
+//     status1 = cusparseDgthr(
+//         handle, 
+//         nnzL, 
+//         d_cooVals, 
+//         d_csrVals, 
+//         d_P, 
+//         CUSPARSE_INDEX_BASE_ZERO
+//     ); 
+//     assert( CUSPARSE_STATUS_SUCCESS == status1);
+
 
 	
+// 	// checkGPU(gpuMalloc( (void**)&d_cooRows, sizeof(int)*nnzL));
+	
+// 	checkGPU(gpuMalloc( (void**)&d_csrRowPtr,(ntmp+1)*sizeof(d_csrRowPtr[0])));
+	
+// 	status1= cusparseXcoo2csr(handle,d_cooRows,nnzL,ntmp,d_csrRowPtr,CUSPARSE_INDEX_BASE_ZERO);
+// 	assert( CUSPARSE_STATUS_SUCCESS == status1);
+	
+
+
+
+// 	// checkGPU(gpuDeviceSynchronize);
+// 	checkGPU(gpuStreamSynchronize(stream));
+	
+// 	t1 = SuperLU_timer_() - t1;	
+// 	if ( !iam ) {
+// 		printf(".. Cusparse convert time\t%15.7f\n", t1);
+// 		fflush(stdout);
+// 	}		
+// 	t1 = SuperLU_timer_();
+	
+	
+	
+// /* A is base-0*/
+//     cusparseSetMatIndexBase(descrA,CUSPARSE_INDEX_BASE_ZERO);
+
+//     cusparseSetMatType(descrA, CUSPARSE_MATRIX_TYPE_GENERAL);
+// /* A is lower triangle */
+//     cusparseSetMatFillMode(descrA, CUSPARSE_FILL_MODE_LOWER);
+// /* A has non unit diagonal */
+//     cusparseSetMatDiagType(descrA, CUSPARSE_DIAG_TYPE_UNIT);
+
+//     status1 = cusparseDcsrsm2_bufferSizeExt(
+//         handle,
+//         algo,
+//         CUSPARSE_OPERATION_NON_TRANSPOSE, /* transA */
+//         CUSPARSE_OPERATION_NON_TRANSPOSE, /* transB */
+//         ntmp,
+//         nrhs,
+//         nnzL,
+//         &h_one,
+//         descrA,
+//         d_csrVals,
+//         d_csrRowPtr,
+//         d_cooCols,
+//         d_B,
+//         ntmp,   /* ldb */
+//         info1,
+//         policy,
+//         &lworkInBytes);
+//     assert(CUSPARSE_STATUS_SUCCESS == status1);	
+	
+// 	printf("lworkInBytes  = %lld \n", (long long)lworkInBytes);
+//     if (NULL != d_work) { gpuFree(d_work); }	
+// 	checkGPU(gpuMalloc( (void**)&d_work, lworkInBytes));
+	
+//     status1 = cusparseDcsrsm2_analysis(
+//         handle,
+//         algo,
+//         CUSPARSE_OPERATION_NON_TRANSPOSE, /* transA */
+//         CUSPARSE_OPERATION_NON_TRANSPOSE, /* transB */
+//         ntmp,
+//         nrhs,
+//         nnzL,
+//         &h_one,
+//         descrA,
+//         d_csrVals,
+//         d_csrRowPtr,
+//         d_cooCols,
+//         d_B,
+//         ntmp,   /* ldb */
+//         info1,
+//         policy,
+//         d_work);
+//     assert(CUSPARSE_STATUS_SUCCESS == status1);	
+	
+
+// 	t1 = SuperLU_timer_() - t1;	
+// 	if ( !iam ) {
+// 		printf(".. Cusparse analysis time\t%15.7f\n", t1);
+// 		fflush(stdout);
+// 	}			
+	
+// 	t1 = SuperLU_timer_();
+//     status1 = cusparseDcsrsm2_solve(
+//         handle,
+//         algo,
+//         CUSPARSE_OPERATION_NON_TRANSPOSE, /* transA */
+//         CUSPARSE_OPERATION_NON_TRANSPOSE, /* transB */
+//         ntmp,
+//         nrhs,
+//         nnzL,
+//         &h_one,
+//         descrA,
+//         d_csrVals,
+//         d_csrRowPtr,
+//         d_cooCols,
+//         d_B,
+//         ntmp,   /* ldb */
+//         info1,
+//         policy,
+//         d_work);
+//     assert(CUSPARSE_STATUS_SUCCESS == status1);
+//     // checkGPU(gpuDeviceSynchronize);
+// 	checkGPU(gpuStreamSynchronize(stream));
+	
+// 	t1 = SuperLU_timer_() - t1;	
+// 	if ( !iam ) {
+// 		printf(".. Cusparse solve time\t%15.7f\n", t1);
+// 		fflush(stdout);
+// 	}	
+	
+// 	t1 = SuperLU_timer_();
+// 	checkGPU(gpuMemcpy(Btmp, d_B, sizeof(double)*ntmp*nrhs, gpuMemcpyDeviceToHost));
+// 	// checkGPU(gpuDeviceSynchronize);
+// 	checkGPU(gpuStreamSynchronize(stream));
+// 	t1 = SuperLU_timer_() - t1;	
+// 	if ( !iam ) {
+// 		printf(".. DeviceToHost time\t%15.7f\n", t1);
+// 		fflush(stdout);
+// 	}		
+
+	
+// 	for (i = 0; i < m_loc; ++i) {
+// 		irow = i+fst_row; 
+
+// 		k = BlockNum( irow );
+// 		knsupc = SuperSize( k );
+// 		l = X_BLK( k );
+
+// 		irow = irow - FstBlockC(k); /* Relative row number in X-block */
+// 		RHS_ITERATE(j) {
+// 		x[l + irow + j*knsupc] = Btmp[i + j*ldb];
+// 		// printf("%d %e\n",l + irow + j*knsupc,x[l + irow + j*knsupc]);
+// 		// fflush(stdout);
+// 		}
+// 	}
+// 	SUPERLU_FREE(Btmp); 
+
+
+
+
+t1 = SuperLU_timer_();
+// dGenCSCLblocks(iam, nsupers, grid,Glu_persist,Llu, &nzval, &rowind, &colptr, &ntmp, &nnzL);
+dGenCSRLblocks(iam, nsupers, grid,Glu_persist,Llu, &nzval, &colind, &rowptr, &ntmp, &nnzL);
+
+    if ( !(rowptr1 = (int_t *) SUPERLU_MALLOC((ntmp+1) * sizeof(int_t))) )
+        ABORT("Malloc fails for row[]");
+	for (i=0;i<ntmp;i++)
+		rowptr1[i]=rowptr[i];
+	rowptr1[ntmp]=	nnzL; // cusparse requires n+1 elements in the row pointers, the last one is the nonzero count
+
+
 	t1 = SuperLU_timer_() - t1;	
 	if ( !iam ) {
-		printf(".. convert to COO time\t%15.7f\n", t1);
+		printf(".. convert to CSR time\t%15.7f\n", t1);
 		fflush(stdout);
 	}		
 	
@@ -1409,11 +1660,9 @@ dGenCOOLblocks(iam, nsupers, grid,Glu_persist,Llu, cooRows, cooCols, cooVals, &n
 	
 	
 	checkGPU(gpuMalloc( (void**)&d_B, sizeof(double)*ntmp*nrhs));
-	checkGPU(gpuMalloc( (void**)&d_cooRows, sizeof(int)*nnzL));
 	checkGPU(gpuMalloc( (void**)&d_cooCols, sizeof(int)*nnzL));
-	checkGPU(gpuMalloc( (void**)&d_P      , sizeof(int)*nnzL));
-	checkGPU(gpuMalloc( (void**)&d_cooVals, sizeof(double)*nnzL));
 	checkGPU(gpuMalloc( (void**)&d_csrVals, sizeof(double)*nnzL));
+	checkGPU(gpuMalloc( (void**)&d_csrRowPtr,(ntmp+1)*sizeof(double)));
 	
 
 	for (i = 0; i < ntmp; ++i) {
@@ -1432,10 +1681,10 @@ dGenCOOLblocks(iam, nsupers, grid,Glu_persist,Llu, cooRows, cooCols, cooVals, &n
 	t1 = SuperLU_timer_();
 	
 	checkGPU(gpuMemcpy(d_B, Btmp, sizeof(double)*nrhs*ntmp, gpuMemcpyHostToDevice));	
-	checkGPU(gpuMemcpy(d_cooRows, cooRows, sizeof(int)*nnzL   , gpuMemcpyHostToDevice));
-	checkGPU(gpuMemcpy(d_cooCols, cooCols, sizeof(int)*nnzL   , gpuMemcpyHostToDevice));
-	checkGPU(gpuMemcpy(d_cooVals, cooVals, sizeof(double)*nnzL, gpuMemcpyHostToDevice));
-	
+	checkGPU(gpuMemcpy(d_cooCols, colind, sizeof(int)*nnzL   , gpuMemcpyHostToDevice));
+	checkGPU(gpuMemcpy(d_csrRowPtr, rowptr1, sizeof(int)*(ntmp+1)   , gpuMemcpyHostToDevice));
+	checkGPU(gpuMemcpy(d_csrVals, nzval, sizeof(double)*nnzL, gpuMemcpyHostToDevice));
+
 	
 	// checkGPU(cudaDeviceSynchronize);
 	checkGPU(gpuStreamSynchronize(stream));
@@ -1445,71 +1694,7 @@ dGenCOOLblocks(iam, nsupers, grid,Glu_persist,Llu, cooRows, cooCols, cooVals, &n
 		printf(".. HostToDevice time\t%15.7f\n", t1);
 		fflush(stdout);
 	}		
-	t1 = SuperLU_timer_();
-	
-	status1 = cusparseXcoosort_bufferSizeExt(
-        handle,
-        ntmp, 
-        ntmp,
-        nnzL,
-        d_cooRows,
-        d_cooCols,
-        &pBufferSizeInBytes
-    );
-    assert( CUSPARSE_STATUS_SUCCESS == status1);		
-	checkGPU(gpuMalloc( (void**)&pBuffer, sizeof(char)* pBufferSizeInBytes));	
-	
-	
-    status1 = cusparseCreateIdentityPermutation(
-        handle,
-        nnzL,
-        d_P);
-    assert( CUSPARSE_STATUS_SUCCESS == status1);	
-    status1 = cusparseXcoosortByRow(
-        handle, 
-        ntmp, 
-        ntmp, 
-        nnzL, 
-        d_cooRows, 
-        d_cooCols, 
-        d_P, 
-        pBuffer
-    ); 
-    assert( CUSPARSE_STATUS_SUCCESS == status1);	
-
-    status1 = cusparseDgthr(
-        handle, 
-        nnzL, 
-        d_cooVals, 
-        d_csrVals, 
-        d_P, 
-        CUSPARSE_INDEX_BASE_ZERO
-    ); 
-    assert( CUSPARSE_STATUS_SUCCESS == status1);
-
-
-	
-	// checkGPU(gpuMalloc( (void**)&d_cooRows, sizeof(int)*nnzL));
-	
-	checkGPU(gpuMalloc( (void**)&d_csrRowPtr,(ntmp+1)*sizeof(d_csrRowPtr[0])));
-	
-	status1= cusparseXcoo2csr(handle,d_cooRows,nnzL,ntmp,d_csrRowPtr,CUSPARSE_INDEX_BASE_ZERO);
-	assert( CUSPARSE_STATUS_SUCCESS == status1);
-	
-
-
-
-	// checkGPU(gpuDeviceSynchronize);
-	checkGPU(gpuStreamSynchronize(stream));
-	
-	t1 = SuperLU_timer_() - t1;	
-	if ( !iam ) {
-		printf(".. Cusparse convert time\t%15.7f\n", t1);
-		fflush(stdout);
-	}		
-	t1 = SuperLU_timer_();
-	
-	
+	t1 = SuperLU_timer_();	
 	
 /* A is base-0*/
     cusparseSetMatIndexBase(descrA,CUSPARSE_INDEX_BASE_ZERO);
@@ -1626,6 +1811,8 @@ dGenCOOLblocks(iam, nsupers, grid,Glu_persist,Llu, cooRows, cooCols, cooVals, &n
 		}
 	}
 	SUPERLU_FREE(Btmp); 
+
+
 #endif	
 	  
 #else
