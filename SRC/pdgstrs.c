@@ -108,6 +108,188 @@ _fcd ftcs3;
 
 
 
+
+void
+dreadMM_dist_intoL_CSR(FILE *fp, int_t *m, int_t *n, int_t *nonz,
+	    double **nzval, int_t **colind, int_t **rowptr)
+{
+    int_t    i, k, isize, nnz, nz, new_nonz;
+    double *a, *val;
+    int_t    *asub, *xa, *row, *col;
+    int_t    zero_base = 0;
+    char *p, line[512], banner[64], mtx[64], crd[64], arith[64], sym[64];
+    char *cs;
+
+    /* 	File format:
+     *    %%MatrixMarket matrix coordinate real general/symmetric/...
+     *    % ...
+     *    % (optional comments)
+     *    % ...
+     *    #rows    #non-zero
+     *    Triplet in the rest of lines: row    col    value
+     */
+
+     /* 1/ read header */
+     cs = fgets(line,512,fp);
+     for (p=line; *p!='\0'; *p=tolower(*p),p++);
+
+     if (sscanf(line, "%s %s %s %s %s", banner, mtx, crd, arith, sym) != 5) {
+       printf("Invalid header (first line does not contain 5 tokens)\n");
+       exit;
+     }
+
+     if(strcmp(banner,"%%matrixmarket")) {
+       printf("Invalid header (first token is not \"%%%%MatrixMarket\")\n");
+       exit(-1);
+     }
+
+     if(strcmp(mtx,"matrix")) {
+       printf("Not a matrix; this driver cannot handle that.\n");
+       exit(-1);
+     }
+
+     if(strcmp(crd,"coordinate")) {
+       printf("Not in coordinate format; this driver cannot handle that.\n");
+       exit(-1);
+     }
+
+     if(strcmp(arith,"real")) {
+       if(!strcmp(arith,"complex")) {
+         printf("Complex matrix; use zreadMM instead!\n");
+         exit(-1);
+       }
+       else if(!strcmp(arith, "pattern")) {
+         printf("Pattern matrix; values are needed!\n");
+         exit(-1);
+       }
+       else {
+         printf("Unknown arithmetic\n");
+         exit(-1);
+       }
+     }
+
+     /* 2/ Skip comments */
+     while(banner[0]=='%') {
+       cs = fgets(line,512,fp);
+       sscanf(line,"%s",banner);
+     }
+
+     /* 3/ Read n and nnz */
+#ifdef _LONGINT
+    sscanf(line, "%ld%ld%ld",m, n, nonz);
+#else
+    sscanf(line, "%d%d%d",m, n, nonz);
+#endif
+
+    if(*m!=*n) {
+      printf("Rectangular matrix!. Abort\n");
+      exit(-1);
+   }
+
+    new_nonz = *nonz;
+
+    *m = *n;
+    printf("m %lld, n %lld, nonz %lld\n", (long long) *m, (long long) *n, (long long) *nonz);
+    fflush(stdout);
+    dallocateA_dist(*n, new_nonz, nzval, colind, rowptr); /* Allocate storage */
+    a    = *nzval;
+    asub = *colind;
+    xa   = *rowptr;
+
+    if ( !(val = doubleMalloc_dist(new_nonz)) )
+        ABORT("Malloc fails for val[]");
+    if ( !(row = (int_t *) intMalloc_dist(new_nonz)) )
+        ABORT("Malloc fails for row[]");
+    if ( !(col = (int_t *) intMalloc_dist(new_nonz)) )
+        ABORT("Malloc fails for col[]");
+
+    for (i = 0; i < *n; ++i) xa[i] = 0;
+
+    /* 4/ Read triplets of values */
+    for (nnz = 0, nz = 0; nnz < *nonz; ++nnz) {
+
+	i = fscanf(fp, IFMT IFMT "%lf\n", &row[nz], &col[nz], &val[nz]);
+
+	if ( nnz == 0 ) /* first nonzero */ {
+	    if ( row[0] == 0 || col[0] == 0 ) {
+		zero_base = 1;
+		printf("triplet file: row/col indices are zero-based.\n");
+	    } else
+		printf("triplet file: row/col indices are one-based.\n");
+	    fflush(stdout);
+	}
+
+	if ( !zero_base ) {
+	    /* Change to 0-based indexing. */
+	    --row[nz];
+	    --col[nz];
+	}
+
+	if (row[nz] < 0 || row[nz] >= *m || col[nz] < 0 || col[nz] >= *n
+	    /*|| val[nz] == 0.*/) {
+	    fprintf(stderr, "nz " IFMT ", (" IFMT ", " IFMT ") = %e out of bound, removed\n",
+		    nz, row[nz], col[nz], val[nz]);
+	    exit(-1);
+	} else {
+		if ( row[nz] >= col[nz] ) { /* Only lower triangular part */
+	    	++xa[row[nz]];
+		}
+	    ++nz;
+	}
+    }
+
+    new_nonz = nz;
+
+    /* Initialize the array of column pointers */
+    k = 0;
+    isize = xa[0];
+    xa[0] = 0;
+    for (i = 1; i < *n; ++i) {
+	k += isize;
+	isize = xa[i];
+	xa[i] = k;
+    }
+
+    /* Copy the triplets into the row oriented storage */
+	*nonz=0;
+    for (nz = 0; nz < new_nonz; ++nz) {
+	if ( row[nz] >= col[nz] ){	
+		i = row[nz];
+		k = xa[i];
+		asub[k] = col[nz];
+		a[k] = val[nz];
+		if(row[nz] == col[nz]) //force diagonal entries 
+			a[k] = 1.0;  
+		++xa[i];
+		(*nonz)++;
+		}
+    }
+
+    /* Reset the row pointers to the beginning of each row */
+    for (i = *n; i > 0; --i)
+	xa[i] = xa[i-1];
+    xa[0] = 0;
+
+    SUPERLU_FREE(val);
+    SUPERLU_FREE(row);
+    SUPERLU_FREE(col);
+
+	printf("nnz in lower triangular part of A %lld\n", (long long) *nonz);
+
+    // for (i = 0; i < *n; i++) {
+	// printf("Row %d, xa %d\n", i, xa[i]);
+	// for (k = xa[i]; k < xa[i+1]; k++)
+	//     printf("%d\t%16.10f\n", asub[k], a[k]);
+    // }
+
+
+}
+
+
+
+
+
+
 /*! \brief
  *
  * <pre>
@@ -994,6 +1176,7 @@ pdgstrs(int_t n, dLUstruct_t *LUstruct,
 	gpuError_t gpuStat = gpuSuccess;
     cusparseMatDescr_t descrA = NULL;
     csrsm2Info_t info1 = NULL;	
+    csrsv2Info_t info2 = NULL;	
 	
 	
 	int_t *d_csrRowPtr = NULL;
@@ -1003,6 +1186,7 @@ pdgstrs(int_t n, dLUstruct_t *LUstruct,
     double *d_cooVals = NULL;
     double *d_csrVals = NULL;
     double *d_B = NULL;
+    double *d_X = NULL;
     double *Btmp;
     size_t pBufferSizeInBytes = 0;
     void *pBuffer = NULL;	
@@ -1012,11 +1196,12 @@ pdgstrs(int_t n, dLUstruct_t *LUstruct,
 	
 	
     size_t lworkInBytes = 0;
+    int lworkInBytes2 = 0;
     char *d_work = NULL;
 
     const int algo = 1; /* 0: non-block version 1: block version */	
 	const double h_one = 1.0;
-	const cusparseSolvePolicy_t policy = CUSPARSE_SOLVE_POLICY_NO_LEVEL;
+	const cusparseSolvePolicy_t policy = CUSPARSE_SOLVE_POLICY_USE_LEVEL;
 #else
 	printf("only cusparse is implemented\n");
 	exit(0);
@@ -1365,273 +1550,68 @@ if(procs==1){
 // #if 0 /* CPU trisolve*/
 
 #ifdef GPUREF /* use cuSparse*/
-#ifdef HAVE_CUDA
-	if ( !(Btmp = (double*)SUPERLU_MALLOC((nrhs*m_loc) * sizeof(double))) )
-		ABORT("Calloc fails for Btmp[].");			
+#ifdef HAVE_CUDA		
 	if(procs>1){
 	printf("procs>1 with GPU not implemented for trisolve using CuSparse\n");
 	fflush(stdout);
 	exit(1);
 	}
-	
-// 	t1 = SuperLU_timer_();
-// dGenCOOLblocks(iam, nsupers, grid,Glu_persist,Llu, &cooRows, &cooCols, &cooVals, &ntmp, &nnzL);
-// 	t1 = SuperLU_timer_() - t1;	
-// 	if ( !iam ) {
-// 		printf(".. convert to COO time\t%15.7f\n", t1);
-// 		fflush(stdout);
-// 	}		
-	
-// 	t1 = SuperLU_timer_();
-// 	checkGPU(gpuStreamCreateWithFlags(&stream, gpuStreamDefault));		
-// 	status1 = cusparseCreate(&handle);
-//     assert(CUSPARSE_STATUS_SUCCESS == status1);			
-//     status1 = cusparseSetStream(handle, stream);
-//     assert(CUSPARSE_STATUS_SUCCESS == status1);	
-//     status1 = cusparseCreateCsrsm2Info(&info1);
-//     assert(CUSPARSE_STATUS_SUCCESS == status1);	
-// 	status1 = cusparseCreateMatDescr(&descrA);
-//     assert(CUSPARSE_STATUS_SUCCESS == status1);
-	
-// 	t1 = SuperLU_timer_() - t1;	
-// 	if ( !iam ) {
-// 		printf(".. gpu initialize time\t%15.7f\n", t1);
-// 		fflush(stdout);
-// 	}		
-// 	t1 = SuperLU_timer_();
-	
-	
-// 	checkGPU(gpuMalloc( (void**)&d_B, sizeof(double)*ntmp*nrhs));
-// 	checkGPU(gpuMalloc( (void**)&d_cooRows, sizeof(int)*nnzL));
-// 	checkGPU(gpuMalloc( (void**)&d_cooCols, sizeof(int)*nnzL));
-// 	checkGPU(gpuMalloc( (void**)&d_P      , sizeof(int)*nnzL));
-// 	checkGPU(gpuMalloc( (void**)&d_cooVals, sizeof(double)*nnzL));
-// 	checkGPU(gpuMalloc( (void**)&d_csrVals, sizeof(double)*nnzL));
-	
-
-// 	for (i = 0; i < ntmp; ++i) {
-// 		irow = perm_c[perm_r[i+fst_row]]; /* Row number in Pc*Pr*B */
-// 		RHS_ITERATE(j) {
-// 		Btmp[irow + j*ldb]=B[i + j*ldb];
-// 		// printf("%d %e\n",irow + j*ldb,Btmp[irow + j*ldb]);
-// 		}
-// 	}
-
-// 	t1 = SuperLU_timer_() - t1;	
-// 	if ( !iam ) {
-// 		printf(".. gpuMalloc time\t%15.7f\n", t1);
-// 		fflush(stdout);
-// 	}	
-// 	t1 = SuperLU_timer_();
-	
-// 	checkGPU(gpuMemcpy(d_B, Btmp, sizeof(double)*nrhs*ntmp, gpuMemcpyHostToDevice));	
-// 	checkGPU(gpuMemcpy(d_cooRows, cooRows, sizeof(int)*nnzL   , gpuMemcpyHostToDevice));
-// 	checkGPU(gpuMemcpy(d_cooCols, cooCols, sizeof(int)*nnzL   , gpuMemcpyHostToDevice));
-// 	checkGPU(gpuMemcpy(d_cooVals, cooVals, sizeof(double)*nnzL, gpuMemcpyHostToDevice));
-	
-	
-// 	// checkGPU(cudaDeviceSynchronize);
-// 	checkGPU(gpuStreamSynchronize(stream));
-	
-// 	t1 = SuperLU_timer_() - t1;	
-// 	if ( !iam ) {
-// 		printf(".. HostToDevice time\t%15.7f\n", t1);
-// 		fflush(stdout);
-// 	}		
-// 	t1 = SuperLU_timer_();
-	
-// 	status1 = cusparseXcoosort_bufferSizeExt(
-//         handle,
-//         ntmp, 
-//         ntmp,
-//         nnzL,
-//         d_cooRows,
-//         d_cooCols,
-//         &pBufferSizeInBytes
-//     );
-//     assert( CUSPARSE_STATUS_SUCCESS == status1);		
-// 	checkGPU(gpuMalloc( (void**)&pBuffer, sizeof(char)* pBufferSizeInBytes));	
-	
-	
-//     status1 = cusparseCreateIdentityPermutation(
-//         handle,
-//         nnzL,
-//         d_P);
-//     assert( CUSPARSE_STATUS_SUCCESS == status1);	
-//     status1 = cusparseXcoosortByRow(
-//         handle, 
-//         ntmp, 
-//         ntmp, 
-//         nnzL, 
-//         d_cooRows, 
-//         d_cooCols, 
-//         d_P, 
-//         pBuffer
-//     ); 
-//     assert( CUSPARSE_STATUS_SUCCESS == status1);	
-
-//     status1 = cusparseDgthr(
-//         handle, 
-//         nnzL, 
-//         d_cooVals, 
-//         d_csrVals, 
-//         d_P, 
-//         CUSPARSE_INDEX_BASE_ZERO
-//     ); 
-//     assert( CUSPARSE_STATUS_SUCCESS == status1);
-
-
-	
-// 	// checkGPU(gpuMalloc( (void**)&d_cooRows, sizeof(int)*nnzL));
-	
-// 	checkGPU(gpuMalloc( (void**)&d_csrRowPtr,(ntmp+1)*sizeof(d_csrRowPtr[0])));
-	
-// 	status1= cusparseXcoo2csr(handle,d_cooRows,nnzL,ntmp,d_csrRowPtr,CUSPARSE_INDEX_BASE_ZERO);
-// 	assert( CUSPARSE_STATUS_SUCCESS == status1);
-	
 
 
 
-// 	// checkGPU(gpuDeviceSynchronize);
-// 	checkGPU(gpuStreamSynchronize(stream));
 	
-// 	t1 = SuperLU_timer_() - t1;	
-// 	if ( !iam ) {
-// 		printf(".. Cusparse convert time\t%15.7f\n", t1);
-// 		fflush(stdout);
-// 	}		
-// 	t1 = SuperLU_timer_();
-	
-	
-	
-// /* A is base-0*/
-//     cusparseSetMatIndexBase(descrA,CUSPARSE_INDEX_BASE_ZERO);
-
-//     cusparseSetMatType(descrA, CUSPARSE_MATRIX_TYPE_GENERAL);
-// /* A is lower triangle */
-//     cusparseSetMatFillMode(descrA, CUSPARSE_FILL_MODE_LOWER);
-// /* A has non unit diagonal */
-//     cusparseSetMatDiagType(descrA, CUSPARSE_DIAG_TYPE_UNIT);
-
-//     status1 = cusparseDcsrsm2_bufferSizeExt(
-//         handle,
-//         algo,
-//         CUSPARSE_OPERATION_NON_TRANSPOSE, /* transA */
-//         CUSPARSE_OPERATION_NON_TRANSPOSE, /* transB */
-//         ntmp,
-//         nrhs,
-//         nnzL,
-//         &h_one,
-//         descrA,
-//         d_csrVals,
-//         d_csrRowPtr,
-//         d_cooCols,
-//         d_B,
-//         ntmp,   /* ldb */
-//         info1,
-//         policy,
-//         &lworkInBytes);
-//     assert(CUSPARSE_STATUS_SUCCESS == status1);	
-	
-// 	printf("lworkInBytes  = %lld \n", (long long)lworkInBytes);
-//     if (NULL != d_work) { gpuFree(d_work); }	
-// 	checkGPU(gpuMalloc( (void**)&d_work, lworkInBytes));
-	
-//     status1 = cusparseDcsrsm2_analysis(
-//         handle,
-//         algo,
-//         CUSPARSE_OPERATION_NON_TRANSPOSE, /* transA */
-//         CUSPARSE_OPERATION_NON_TRANSPOSE, /* transB */
-//         ntmp,
-//         nrhs,
-//         nnzL,
-//         &h_one,
-//         descrA,
-//         d_csrVals,
-//         d_csrRowPtr,
-//         d_cooCols,
-//         d_B,
-//         ntmp,   /* ldb */
-//         info1,
-//         policy,
-//         d_work);
-//     assert(CUSPARSE_STATUS_SUCCESS == status1);	
-	
-
-// 	t1 = SuperLU_timer_() - t1;	
-// 	if ( !iam ) {
-// 		printf(".. Cusparse analysis time\t%15.7f\n", t1);
-// 		fflush(stdout);
-// 	}			
-	
-// 	t1 = SuperLU_timer_();
-//     status1 = cusparseDcsrsm2_solve(
-//         handle,
-//         algo,
-//         CUSPARSE_OPERATION_NON_TRANSPOSE, /* transA */
-//         CUSPARSE_OPERATION_NON_TRANSPOSE, /* transB */
-//         ntmp,
-//         nrhs,
-//         nnzL,
-//         &h_one,
-//         descrA,
-//         d_csrVals,
-//         d_csrRowPtr,
-//         d_cooCols,
-//         d_B,
-//         ntmp,   /* ldb */
-//         info1,
-//         policy,
-//         d_work);
-//     assert(CUSPARSE_STATUS_SUCCESS == status1);
-//     // checkGPU(gpuDeviceSynchronize);
-// 	checkGPU(gpuStreamSynchronize(stream));
-	
-// 	t1 = SuperLU_timer_() - t1;	
-// 	if ( !iam ) {
-// 		printf(".. Cusparse solve time\t%15.7f\n", t1);
-// 		fflush(stdout);
-// 	}	
-	
-// 	t1 = SuperLU_timer_();
-// 	checkGPU(gpuMemcpy(Btmp, d_B, sizeof(double)*ntmp*nrhs, gpuMemcpyDeviceToHost));
-// 	// checkGPU(gpuDeviceSynchronize);
-// 	checkGPU(gpuStreamSynchronize(stream));
-// 	t1 = SuperLU_timer_() - t1;	
-// 	if ( !iam ) {
-// 		printf(".. DeviceToHost time\t%15.7f\n", t1);
-// 		fflush(stdout);
-// 	}		
-
-	
-// 	for (i = 0; i < m_loc; ++i) {
-// 		irow = i+fst_row; 
-
-// 		k = BlockNum( irow );
-// 		knsupc = SuperSize( k );
-// 		l = X_BLK( k );
-
-// 		irow = irow - FstBlockC(k); /* Relative row number in X-block */
-// 		RHS_ITERATE(j) {
-// 		x[l + irow + j*knsupc] = Btmp[i + j*ldb];
-// 		// printf("%d %e\n",l + irow + j*knsupc,x[l + irow + j*knsupc]);
-// 		// fflush(stdout);
-// 		}
-// 	}
-// 	SUPERLU_FREE(Btmp); 
-
 
 
 
 t1 = SuperLU_timer_();
-// dGenCSCLblocks(iam, nsupers, grid,Glu_persist,Llu, &nzval, &rowind, &colptr, &ntmp, &nnzL);
-dGenCSRLblocks(iam, nsupers, grid,Glu_persist,Llu, &nzval, &colind, &rowptr, &ntmp, &nnzL);
+
+
+
+#if 0  // this will readin a matrix with only lower triangular part, note that this code block is only for benchmarking cusparse performance  
+	
+	FILE *fp, *fopen();
+	if ( !(fp = fopen("/gpfs/alpine/scratch/liuyangz/csc289/matrix/HTS/copter2.mtx", "r")) ) {
+	// if ( !(fp = fopen("/gpfs/alpine/scratch/liuyangz/csc289/matrix/HTS/epb3.mtx", "r")) ) {
+	// if ( !(fp = fopen("/gpfs/alpine/scratch/liuyangz/csc289/matrix/HTS/gridgena.mtx", "r")) ) { 
+	// if ( !(fp = fopen("/gpfs/alpine/scratch/liuyangz/csc289/matrix/HTS/vanbody.mtx", "r")) ) { 
+	// if ( !(fp = fopen("/gpfs/alpine/scratch/liuyangz/csc289/matrix/HTS/shipsec1.mtx", "r")) ) { 
+	// if ( !(fp = fopen("/gpfs/alpine/scratch/liuyangz/csc289/matrix/HTS/dawson5.mtx", "r")) ) {
+	// if ( !(fp = fopen("/gpfs/alpine/scratch/liuyangz/csc289/matrix/HTS/gas_sensor.mtx", "r")) ) { 
+	// if ( !(fp = fopen("/gpfs/alpine/scratch/liuyangz/csc289/matrix/HTS/rajat16.mtx", "r")) ) {
+
+			ABORT("File does not exist");
+		}
+	int mtmp;	
+	dreadMM_dist_intoL_CSR(fp, &mtmp, &ntmp, &nnzL,&nzval, &colind, &rowptr);
+	if ( !(Btmp = (double*)SUPERLU_MALLOC((nrhs*ntmp) * sizeof(double))) )
+		ABORT("Calloc fails for Btmp[].");
+	for (i = 0; i < ntmp; ++i) {
+		irow = i;
+		RHS_ITERATE(j) {
+		Btmp[i + j*ldb]=1.0;
+		}
+	}	
+#else
+
+// //////// dGenCSCLblocks(iam, nsupers, grid,Glu_persist,Llu, &nzval, &rowind, &colptr, &ntmp, &nnzL);
+	dGenCSRLblocks(iam, nsupers, grid,Glu_persist,Llu, &nzval, &colind, &rowptr, &ntmp, &nnzL);
+	if ( !(Btmp = (double*)SUPERLU_MALLOC((nrhs*m_loc) * sizeof(double))) )
+		ABORT("Calloc fails for Btmp[].");	
+	for (i = 0; i < ntmp; ++i) {
+		irow = perm_c[perm_r[i+fst_row]]; /* Row number in Pc*Pr*B */
+		RHS_ITERATE(j) {
+		Btmp[irow + j*ldb]=B[i + j*ldb];
+		// printf("%d %e\n",irow + j*ldb,Btmp[irow + j*ldb]);
+		}
+	}
+#endif
 
     if ( !(rowptr1 = (int_t *) SUPERLU_MALLOC((ntmp+1) * sizeof(int_t))) )
         ABORT("Malloc fails for row[]");
 	for (i=0;i<ntmp;i++)
 		rowptr1[i]=rowptr[i];
 	rowptr1[ntmp]=	nnzL; // cusparse requires n+1 elements in the row pointers, the last one is the nonzero count
+	
 
 
 	t1 = SuperLU_timer_() - t1;	
@@ -1646,8 +1626,6 @@ dGenCSRLblocks(iam, nsupers, grid,Glu_persist,Llu, &nzval, &colind, &rowptr, &nt
     assert(CUSPARSE_STATUS_SUCCESS == status1);			
     status1 = cusparseSetStream(handle, stream);
     assert(CUSPARSE_STATUS_SUCCESS == status1);	
-    status1 = cusparseCreateCsrsm2Info(&info1);
-    assert(CUSPARSE_STATUS_SUCCESS == status1);	
 	status1 = cusparseCreateMatDescr(&descrA);
     assert(CUSPARSE_STATUS_SUCCESS == status1);
 	
@@ -1660,18 +1638,11 @@ dGenCSRLblocks(iam, nsupers, grid,Glu_persist,Llu, &nzval, &colind, &rowptr, &nt
 	
 	
 	checkGPU(gpuMalloc( (void**)&d_B, sizeof(double)*ntmp*nrhs));
+	checkGPU(gpuMalloc( (void**)&d_X, sizeof(double)*ntmp*nrhs));
 	checkGPU(gpuMalloc( (void**)&d_cooCols, sizeof(int)*nnzL));
 	checkGPU(gpuMalloc( (void**)&d_csrVals, sizeof(double)*nnzL));
 	checkGPU(gpuMalloc( (void**)&d_csrRowPtr,(ntmp+1)*sizeof(double)));
 	
-
-	for (i = 0; i < ntmp; ++i) {
-		irow = perm_c[perm_r[i+fst_row]]; /* Row number in Pc*Pr*B */
-		RHS_ITERATE(j) {
-		Btmp[irow + j*ldb]=B[i + j*ldb];
-		// printf("%d %e\n",irow + j*ldb,Btmp[irow + j*ldb]);
-		}
-	}
 
 	t1 = SuperLU_timer_() - t1;	
 	if ( !iam ) {
@@ -1702,9 +1673,85 @@ dGenCSRLblocks(iam, nsupers, grid,Glu_persist,Llu, &nzval, &colind, &rowptr, &nt
     cusparseSetMatType(descrA, CUSPARSE_MATRIX_TYPE_GENERAL);
 /* A is lower triangle */
     cusparseSetMatFillMode(descrA, CUSPARSE_FILL_MODE_LOWER);
-/* A has non unit diagonal */
+/* A has unit diagonal */
     cusparseSetMatDiagType(descrA, CUSPARSE_DIAG_TYPE_UNIT);
 
+
+
+#if 1  // this only works for 1 rhs
+	assert(nrhs == 1);
+    status1 = cusparseCreateCsrsv2Info(&info2);
+    assert(CUSPARSE_STATUS_SUCCESS == status1);	
+    status1 = cusparseDcsrsv2_bufferSize(
+        handle,
+        CUSPARSE_OPERATION_NON_TRANSPOSE, /* transA */
+        ntmp,
+        nnzL,
+        descrA,
+        d_csrVals,
+        d_csrRowPtr,
+        d_cooCols,
+        info2,
+        &lworkInBytes2);
+    assert(CUSPARSE_STATUS_SUCCESS == status1);	
+	printf("lworkInBytes  = %lld \n", (long long)lworkInBytes2);
+    if (NULL != d_work) { gpuFree(d_work); }	
+	checkGPU(gpuMalloc( (void**)&d_work, lworkInBytes2));
+    
+	status1 = cusparseDcsrsv2_analysis(
+        handle,
+        CUSPARSE_OPERATION_NON_TRANSPOSE, /* transA */
+        ntmp,
+        nnzL,
+        descrA,
+        d_csrVals,
+        d_csrRowPtr,
+        d_cooCols,
+        info2,
+        policy,
+        d_work);
+    assert(CUSPARSE_STATUS_SUCCESS == status1);	
+	
+
+	t1 = SuperLU_timer_() - t1;	
+	if ( !iam ) {
+		printf(".. Cusparse analysis time\t%15.7f\n", t1);
+		fflush(stdout);
+	}			
+
+	t1 = SuperLU_timer_();
+    status1 = cusparseDcsrsv2_solve(
+        handle, 
+        CUSPARSE_OPERATION_NON_TRANSPOSE, /* transA */
+        ntmp,
+        nnzL,
+		&h_one,
+        descrA,
+        d_csrVals,
+        d_csrRowPtr,
+        d_cooCols,
+        info2,
+        d_B,		
+		d_X,				
+        policy,
+        d_work);
+    assert(CUSPARSE_STATUS_SUCCESS == status1);
+    // checkGPU(gpuDeviceSynchronize);
+	checkGPU(gpuStreamSynchronize(stream));
+	checkGPU(gpuMemcpy(d_B, d_X, sizeof(double)*nrhs*ntmp, cudaMemcpyDeviceToDevice));	
+	checkGPU(gpuStreamSynchronize(stream));
+
+	t1 = SuperLU_timer_() - t1;	
+	if ( !iam ) {
+		printf(".. Cusparse solve time\t%15.7f\n", t1);
+		fflush(stdout);
+	}	
+
+
+#else
+
+    status1 = cusparseCreateCsrsm2Info(&info1);
+    assert(CUSPARSE_STATUS_SUCCESS == status1);	
     status1 = cusparseDcsrsm2_bufferSizeExt(
         handle,
         algo,
@@ -1785,6 +1832,12 @@ dGenCSRLblocks(iam, nsupers, grid,Glu_persist,Llu, &nzval, &colind, &rowptr, &nt
 		fflush(stdout);
 	}	
 	
+
+#endif
+
+
+
+
 	t1 = SuperLU_timer_();
 	checkGPU(gpuMemcpy(Btmp, d_B, sizeof(double)*ntmp*nrhs, gpuMemcpyDeviceToHost));
 	// checkGPU(gpuDeviceSynchronize);
@@ -1811,6 +1864,10 @@ dGenCSRLblocks(iam, nsupers, grid,Glu_persist,Llu, &nzval, &colind, &rowptr, &nt
 		}
 	}
 	SUPERLU_FREE(Btmp); 
+
+
+
+
 
 
 #endif	
