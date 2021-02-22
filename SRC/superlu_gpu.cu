@@ -6,9 +6,11 @@
 #include <ctime>
 #include <cublas_v2.h>
 #include <cuda_runtime.h>
+
 #undef Reduce
-// #include <cub/cub.cuh>
-#include "cub/cub.cuh"
+//#include "cub/cub.cuh"
+#include <thrust/system/cuda/detail/cub/cub.cuh>
+
 #include "lustruct_gpu.h"
 // #include "p3dcomm.h"
 // #include "mkl_cblas.h"

@@ -175,6 +175,7 @@ endif()
 
 add_library(superlu_dist ${sources} ${HEADERS})
 set(targets superlu_dist)
+
 if (BUILD_SHARED_LIBS AND BUILD_STATIC_LIBS)
   # build both shared and static libs
   add_library(superlu_dist-static STATIC ${sources} ${HEADERS})
@@ -205,6 +206,11 @@ foreach(target ${targets})
 			      )
     endif()
 endforeach(target)
+
+# Add CUDA runtime library and CUBLAS library
+if(CUDAToolkit_FOUND)  # this is found in top-level CMakeLists.txt
+    target_link_libraries(superlu_dist CUDA::cudart CUDA::cublas)
+endif()
 
 target_compile_definitions(superlu_dist PRIVATE SUPERLU_DIST_EXPORTS)
 if(MSVC AND BUILD_SHARED_LIBS)
