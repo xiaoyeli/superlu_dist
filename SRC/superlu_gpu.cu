@@ -13,7 +13,7 @@
 
 #include "lustruct_gpu.h"
 // #include "p3dcomm.h"
-// #include "mkl_cblas.h"
+
 
 extern "C" {
 	void cblas_daxpy(const int N, const double alpha, const double *X,
@@ -1145,7 +1145,7 @@ int_t reduceGPUlu(
 				int_t llen = ksup_size * len;
 
 				double alpha = 1;
-				cblas_daxpy (llen, alpha, A_gpu->acc_L_buff, 1, nzval_host, 1);
+				superlu_daxpy (llen, alpha, A_gpu->acc_L_buff, 1, nzval_host, 1);
 			}
 
 		}
@@ -1165,7 +1165,7 @@ int_t reduceGPUlu(
 				nzval_host = Unzval_br_ptr[kijb];
 
 				double alpha = 1;
-				cblas_daxpy (len, alpha, A_gpu->acc_U_buff, 1, nzval_host, 1);
+				superlu_daxpy (len, alpha, A_gpu->acc_U_buff, 1, nzval_host, 1);
 			}
 
 		}
