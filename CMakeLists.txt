@@ -19,7 +19,7 @@ list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake")
 # Set up options
 option(enable_doc       "Build doxygen documentation" OFF)
 option(enable_double    "Enable double precision library" ON)
-option(enable_complex16 "Enable complex16 precision library" ON)
+option(enable_complex16 "Enable complex16 precision library" OFF)
 option(enable_tests  "Build tests" ON)
 option(enable_examples  "Build examples" ON)
 #-- BLAS
@@ -173,18 +173,27 @@ if (TPL_ENABLE_CUDALIB)   ## want to use cuda
   if(CMAKE_CUDA_COMPILER)
     message("-- Enabled support for CUDA.")
     enable_language(CUDA)
-    find_package(CUDAToolkit REQUIRED)
+    find_package(CUDA 11.0 REQUIRED)
+    if (CUDA_FOUND)
+      if (NOT CMAKE_CUDA_FLAGS)
+        cuda_select_nvcc_arch_flags(CUDA_ARCH_FLAGS Auto)
+      endif()
+    ######  set(CUDA_NVCC_FLAGS_RELEASE "-O3 --expt-relaxed-constexpr -DNDEBUG ${CMAKE_#CUDA_FLAGS} ${CUDA_ARCH_FLAGS}")
+    #  set(CUDA_NVCC_FLAGS_DEBUG "-O0 --expt-relaxed-constexpr -DDEBUG -g ${CMAKE_CUDA_#FLAGS} ${CUDA_ARCH_FLAGS}")
+    endif()
+#     find_package(CUDAToolkit REQUIRED)
 
-    #message("toolkit include: '${CUDAToolkit_INCLUDE_DIRS}'")
-    set(CUDA_LIBRARIES "${CUDAToolkit_LIBRARY_ROOT}/lib64/libcudart.so")
-    set(CUDA_CUBLAS_LIBRARIES "${CUDAToolkit_LIBRARY_ROOT}/lib64/libcublas.so")
+    message("cuda libraries at : '${CUDA_LIBRARIES}'")
+    find_package(CUB REQUIRED)
+#     set(CUDA_LIBRARIES "${CUDAToolkit_LIBRARY_ROOT}/lib64/libcudart.so")
+#     set(CUDA_CUBLAS_LIBRARIES "${CUDAToolkit_LIBRARY_ROOT}/lib64/libcublas.so")
 
-    # The following make.inc exporting does not work
-    set(CUDA_LIB CUDA::cudart CUDA::cublas CUDA::cusolver)
-# fix up CUDA library names    
-    string (REPLACE ";" " " CUDA_LIB_STR "${CUDA_LIB}")
-    set(CUDA_LIB_EXPORT ${CUDA_LIB_STR}) 
-    set(HAVE_CUDA TRUE)
+#     # The following make.inc exporting does not work
+#     set(CUDA_LIB CUDA::cudart CUDA::cublas CUDA::cusolver)
+# # fix up CUDA library names    
+#     string (REPLACE ";" " " CUDA_LIB_STR "${CUDA_LIB}")
+#     set(CUDA_LIB_EXPORT ${CUDA_LIB_STR}) 
+#     set(HAVE_CUDA TRUE)
     # set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DHAVE_CUDA")
     # set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -DHAVE_CUDA")
   else()
@@ -192,14 +201,7 @@ if (TPL_ENABLE_CUDALIB)   ## want to use cuda
   endif()
 endif()
 
-#find_package(CUDA REQUIRED)
-#if (CUDA_FOUND)
-#  if (NOT CMAKE_CUDA_FLAGS)
-#    cuda_select_nvcc_arch_flags(CUDA_ARCH_FLAGS Auto)
-#  endif()
-#######  set(CUDA_NVCC_FLAGS_RELEASE "-O3 --expt-relaxed-constexpr -DNDEBUG ${CMAKE_#CUDA_FLAGS} ${CUDA_ARCH_FLAGS}")
-##  set(CUDA_NVCC_FLAGS_DEBUG "-O0 --expt-relaxed-constexpr -DDEBUG -g ${CMAKE_CUDA_#FLAGS} ${CUDA_ARCH_FLAGS}")
-#endif()
+
 
 #--------------------- OpenMP ---------------------
 if (NOT DEFINED enable_openmp)
