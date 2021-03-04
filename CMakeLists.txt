@@ -184,7 +184,7 @@ if (TPL_ENABLE_CUDALIB)   ## want to use cuda
 #     find_package(CUDAToolkit REQUIRED)
 
     message("cuda libraries at : '${CUDA_LIBRARIES}'")
-    find_package(CUB REQUIRED)
+    # find_package(CUB REQUIRED)
 #     set(CUDA_LIBRARIES "${CUDAToolkit_LIBRARY_ROOT}/lib64/libcudart.so")
 #     set(CUDA_CUBLAS_LIBRARIES "${CUDAToolkit_LIBRARY_ROOT}/lib64/libcublas.so")
 
