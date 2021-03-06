@@ -225,7 +225,7 @@ pdgsrfs(int_t n, SuperMatrix *A, double anorm, LUstruct_t *LUstruct,
 	    }
 	    MPI_Allreduce( &s, &berr[j], 1, MPI_DOUBLE, MPI_MAX, grid->comm );
 
-#if ( PRNTlevel>= 1 )
+#if ( PRNTlevel>= 0 )
 	    if ( !iam )
 		printf("(%2d) .. Step " IFMT ": berr[j] = %e\n", iam, count, berr[j]);
 #endif

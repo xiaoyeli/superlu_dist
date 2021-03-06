@@ -206,8 +206,12 @@ int_t pdgstrf3d(superlu_dist_options_t *options, int m, int n, double anorm,
     commRequests_t** comReqss = initCommRequestsArr(SUPERLU_MAX(mxLeafNode, numLA), ldt, grid);
 
     /* Setting up GPU related data structures */
-#define GPU_FRAMEWORK
+#define GPU_FRAMEWORK   
+// todo: remove GPU_FRAMEWORK macro
+// the macro GPU_FRAMEWORK was only defined to keep track of new codes  that 
+// were changed from CPU version.  
 #ifdef GPU_FRAMEWORK
+    /*TODO: encapsulate it in a function*/
     int_t first_l_block_acc = 0;
     int_t first_u_block_acc = 0;
     int_t Pc = grid->npcol; 
@@ -334,6 +338,13 @@ int_t pdgstrf3d(superlu_dist_options_t *options, int m, int n, double anorm,
 
     MPI_Barrier( grid3d->comm);
     SCT->pdgstrfTimer = SuperLU_timer_() - SCT->pdgstrfTimer;
+
+    if (!grid3d->zscp.Iam)
+    {
+        if (superlu_acc_offload )
+            printGPUStats(sluGPU->A_gpu);
+
+    }
 
 #ifdef ITAC_PROF
     VT_traceoff();

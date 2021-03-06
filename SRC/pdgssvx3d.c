@@ -1381,7 +1381,7 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 		SCT->gatherLUtimer += SuperLU_timer_() - tgather;
 		/*print stats for bottom grid*/
 
-#if (PRNTlevel >= 1)
+#if (PRNTlevel >= 0)
 		if (!grid3d->zscp.Iam)
 		{
 			SCT_print(grid, SCT);

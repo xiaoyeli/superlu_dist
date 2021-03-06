@@ -942,8 +942,25 @@ int_t initSluGPU3D_t(
     int_t ldt             /* NSUP read from sp_ienv(3) */
 )
 {
+
+	int deviceCount;
+	cudaGetDeviceCount(&deviceCount);               // How many GPUs?
+	int device_id = grid3d->iam % deviceCount;
+	
+	
+	cudaSetDevice(device_id);     
+#ifdef GPU_DEBUG
+	if(!grid3d->iam)
+	{
+		print_occupany();
+		printf("NUmber of GPUs =%d, setting gpu to %d-gpu\n", deviceCount,device_id);
+		cudaDeviceProp devProp;
+		cudaGetDeviceProperties(&devProp, device_id);
+		printDevProp(devProp);
+	}
+#endif
 	gridinfo_t* grid = &(grid3d->grid2d);
-	checkCudaErrors(cudaDeviceReset ())     ;
+	// checkCudaErrors(cudaDeviceReset ())     ;
 	Glu_persist_t *Glu_persist = LUstruct->Glu_persist;
 	LocalLU_t *Llu = LUstruct->Llu;
 	int_t* isNodeInMyGrid = sluGPU->isNodeInMyGrid;
@@ -1272,15 +1289,7 @@ void CopyLUToGPU3D (
 	LUstruct_gpu * A_gpu =  sluGPU->A_gpu;
 	LUstruct_gpu **dA_gpu =  &(sluGPU->dA_gpu);
 
-#ifdef GPU_DEBUG
-	// if ( grid3d->iam == 0 )
-	{
-		print_occupany();
-		cudaDeviceProp devProp;
-		cudaGetDeviceProperties(&devProp, 0);
-		printDevProp(devProp);
-	}
-#endif
+
 	int_t *xsup ;
 	xsup = Glu_persist->xsup;
 	int_t iam = grid->iam;
