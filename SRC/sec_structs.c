@@ -228,6 +228,7 @@ void SCT_init(SCT_t* SCT)
     SCT->Wait_UDiagBlockSend_tl = 0;
     /*after obtaining U block, time spent in calculating L panel;part of pdgstrf2*/
     SCT->L_PanelUpdate_tl = 0;
+    SCT->U_PanelUpdate_tl = 0;
     /*Synchronous Broadcasting U panel*/
     SCT->Bcast_UPanel_tl = 0;
     SCT->Bcast_LPanel_tl = 0;
@@ -457,7 +458,7 @@ void SCT_print(gridinfo_t *grid, SCT_t* SCT)
     DistPrint("Wait_URecv            ", SCT->Wait_URecv_tl / CPU_CLOCK_RATE, "Seconds", grid);
     DistPrint("Wait_LRecv            ", SCT->Wait_LRecv_tl / CPU_CLOCK_RATE, "Seconds", grid);
     DistPrint("L_PanelUpdate         ", SCT->L_PanelUpdate_tl , "Seconds", grid);
-    DistPrint("PDGSTRS2              ", SCT->PDGSTRS2_tl , "Seconds", grid);
+    DistPrint("U_PanelUpdate         ", SCT->U_PanelUpdate_tl , "Seconds", grid);
     
     DistPrint("wait-FunCallStream    ", SCT->PhiWaitTimer , "Seconds", grid);
     DistPrint("wait-copyStream       ", SCT->PhiWaitTimer_2 , "Seconds", grid);

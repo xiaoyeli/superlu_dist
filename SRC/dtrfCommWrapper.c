@@ -229,7 +229,9 @@ int_t dLPanelUpdate(int_t k, int_t *IrecvPlcd_D, int_t *factored_L,
     dUDiagBlockRecvWait(k, IrecvPlcd_D, factored_L,
                         U_diag_blk_recv_req, grid, LUstruct, SCT);
 
+    double t1 = SuperLU_timer_();
     dLPanelTrSolve(k, factored_L, BlockUFactor, grid, LUstruct);
+    SCT->L_PanelUpdate_tl += (SuperLU_timer_() - t1);
 
     return 0;
 } /* dLPanelUpdate */
@@ -358,8 +360,11 @@ int_t dUPanelUpdate(int_t k, int_t *factored_U,
 
     LDiagBlockRecvWait(k, factored_U, L_diag_blk_recv_req, grid);
 
+    double t1 = SuperLU_timer_();
     dUPanelTrSolve(k, BlockLFactor, bigV, ldt, Ublock_info, grid,
                    LUstruct, stat, SCT);
+    SCT->U_PanelUpdate_tl += (SuperLU_timer_() - t1);
+    
     return 0;
 }
 

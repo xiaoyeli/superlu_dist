@@ -247,6 +247,7 @@ typedef struct
     double Wait_UDiagBlockSend_tl;  
     /*after obtaining U block, time spent in calculating L panel*/
     double L_PanelUpdate_tl;
+    double U_PanelUpdate_tl;
     /*Synchronous Broadcasting L and U panel*/
     double Bcast_UPanel_tl;
     double Bcast_LPanel_tl;
