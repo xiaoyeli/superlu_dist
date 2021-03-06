@@ -249,7 +249,7 @@ cublasStatus_t checkCublas(cublasStatus_t result);
 void dPrint_matrix( char *desc, int_t m, int_t n, double *dA, int_t lda );
 
 /*to print out various statistics*/
-void printGPUStats(LUstruct_gpu *A_gpu);
+void printGPUStats(LUstruct_gpu * A_gpu, gridinfo_t* grid);
 
 #ifdef __cplusplus
 }

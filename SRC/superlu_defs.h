@@ -1124,6 +1124,7 @@ extern void SCT_printComm3D(gridinfo3d_t *grid3d, SCT_t* SCT);
 /* Manipulate counters */
 extern void SCT_init(SCT_t*);
 extern void SCT_print(gridinfo_t *grid, SCT_t* SCT);
+extern void SCT_printSummary(gridinfo_t *grid, SCT_t* SCT);
 extern void SCT_print3D(gridinfo3d_t *grid3d, SCT_t* SCT);
 extern void SCT_free(SCT_t*);
 

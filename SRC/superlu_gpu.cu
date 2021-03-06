@@ -804,6 +804,7 @@ get_acc_memory ()
 
 int_t free_LUstruct_gpu (LUstruct_gpu * A_gpu)
 {
+	printf("Freeing GPU memory\n");
 	checkCuda(cudaFree(A_gpu->LrowindVec));
 	checkCuda(cudaFree(A_gpu->LrowindPtr));
 
@@ -835,8 +836,7 @@ int_t free_LUstruct_gpu (LUstruct_gpu * A_gpu)
 	checkCuda(cudaFree(A_gpu->UrowindVec));
 	checkCuda(cudaFree(A_gpu->UrowindPtr));
 
-	free(A_gpu->UrowindPtr_host);
-
+	
 	checkCuda(cudaFree(A_gpu->UnzvalVec));
 	checkCuda(cudaFree(A_gpu->UnzvalPtr));
 
@@ -890,7 +890,7 @@ void dPrint_matrix( char *desc, int_t m, int_t n, double * dA, int_t lda )
 	free(cPtr);
 }
 
-void printGPUStats(LUstruct_gpu * A_gpu)
+void printGPUStats(LUstruct_gpu * A_gpu, gridinfo_t* grid)
 {
 	double tGemm = 0;
 	double tScatter = 0;
@@ -918,14 +918,24 @@ void printGPUStats(LUstruct_gpu * A_gpu)
 		tPCIeD2H += 1e-3 * (double) milliseconds;
 	}
 
-	printf("GPU: Flops offloaded %.3e Time spent %lf Flop rate %lf GF/sec \n",
-	       A_gpu->GemmFLOPCounter, tGemm, 1e-9 * A_gpu->GemmFLOPCounter / tGemm  );
-	printf("GPU: Mop offloaded %.3e Time spent %lf Bandwidth %lf GByte/sec \n",
-	       A_gpu->ScatterMOPCounter, tScatter, 8e-9 * A_gpu->ScatterMOPCounter / tScatter  );
-	printf("PCIe Data Transfer H2D:\n\tData Sent %.3e(GB)\n\tTime observed from CPU %lf\n\tActual time spent %lf\n\tBandwidth %lf GByte/sec \n",
-	       1e-9 * A_gpu->cPCIeH2D, A_gpu->tHost_PCIeH2D, tPCIeH2D, 1e-9 * A_gpu->cPCIeH2D / tPCIeH2D  );
-	printf("PCIe Data Transfer D2H:\n\tData Sent %.3e(GB)\n\tTime observed from CPU %lf\n\tActual time spent %lf\n\tBandwidth %lf GByte/sec \n",
-	       1e-9 * A_gpu->cPCIeD2H, A_gpu->tHost_PCIeD2H, tPCIeD2H, 1e-9 * A_gpu->cPCIeD2H / tPCIeD2H  );
+	// gridinfo_t* grid = grid3d->grid2d;
+	// DistPrint("Wait_LSend            ", SCT->Wait_LSend_tl / CPU_CLOCK_RATE, "Seconds", grid);
+
+	DistPrint("GPU: flops_Offloaded    ", 1e-9 *A_gpu->GemmFLOPCounter, "GFlop", grid);
+	DistPrint("GPU: flops_Rate        ", 1e-9 * A_gpu->GemmFLOPCounter / tGemm, "GFlop/sec", grid);
+	DistPrint("GPU: MOP_Offloaded     ", 1e-9 * A_gpu->ScatterMOPCounter, "GMemOp", grid);
+	DistPrint("GPU: MOP_Rate         ", 8e-9 * A_gpu->ScatterMOPCounter / tScatter, "GByte/sec", grid);
+	DistPrint("GPU: H2D_Rate         ", 1e-9 * A_gpu->cPCIeH2D / tPCIeH2D, "GByte/sec", grid);
+	DistPrint("GPU: D2H_Rate         ", 1e-9 * A_gpu->cPCIeD2H / tPCIeD2H, "GByte/sec", grid);
+
+	// printf("GPU: Flops offloaded %.3e Time spent %lf Flop rate %lf GF/sec \n",
+	//        A_gpu->GemmFLOPCounter, tGemm, 1e-9 * A_gpu->GemmFLOPCounter / tGemm  );
+	// printf("GPU: Mop offloaded %.3e Time spent %lf Bandwidth %lf GByte/sec \n",
+	//        A_gpu->ScatterMOPCounter, tScatter, 8e-9 * A_gpu->ScatterMOPCounter / tScatter  );
+	// printf("PCIe Data Transfer H2D:\n\tData Sent %.3e(GB)\n\tTime observed from CPU %lf\n\tActual time spent %lf\n\tBandwidth %lf GByte/sec \n",
+	//        1e-9 * A_gpu->cPCIeH2D, A_gpu->tHost_PCIeH2D, tPCIeH2D, 1e-9 * A_gpu->cPCIeH2D / tPCIeH2D  );
+	// printf("PCIe Data Transfer D2H:\n\tData Sent %.3e(GB)\n\tTime observed from CPU %lf\n\tActual time spent %lf\n\tBandwidth %lf GByte/sec \n",
+	//        1e-9 * A_gpu->cPCIeD2H, A_gpu->tHost_PCIeD2H, tPCIeD2H, 1e-9 * A_gpu->cPCIeD2H / tPCIeD2H  );
 	fflush(stdout);
 
 } /* end printGPUStats */
@@ -1270,6 +1280,7 @@ int_t sendSCUdataHost2GPU(
 
 int_t freeSluGPU(sluGPU_t *sluGPU)
 {
+	free_LUstruct_gpu (sluGPU->A_gpu);
 	return 0;
 }
 

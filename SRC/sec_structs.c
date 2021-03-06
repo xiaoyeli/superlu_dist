@@ -411,7 +411,8 @@ Displays as function_name  \t value \t units;
 
 /*for mkl_get_blocks_frequency*/
 // #include "mkl.h"
-void SCT_print(gridinfo_t *grid, SCT_t* SCT)
+
+void SCT_printSummary(gridinfo_t *grid, SCT_t* SCT)
 {
     int num_threads = 1;
 
@@ -432,11 +433,38 @@ void SCT_print(gridinfo_t *grid, SCT_t* SCT)
     MPI_Reduce( &SCT->NetSchurUpTimer, &temp_holder,  1, MPI_DOUBLE, MPI_SUM, 0, grid->comm );
     if (!iam)
     {
-        printf("CPU_CLOCK_RATE  %.1f\n", CPU_CLOCK_RATE );
-        printf("Total time in factorization \t: %5.2lf\n", SCT->pdgstrfTimer);
-        printf("MPI-communication phase \t: %5.2lf\n", SCT->pdgstrfTimer - (temp_holder / num_procs));
+        // printf("CPU_CLOCK_RATE  %.1f\n", CPU_CLOCK_RATE );
+        printf("Factorization_Time \t: %5.2lf\n", SCT->pdgstrfTimer);
+        printf("Communication_Time \t: %5.2lf\n", SCT->pdgstrfTimer - (temp_holder / num_procs));
 
     }
+}
+void SCT_print(gridinfo_t *grid, SCT_t* SCT)
+{
+    int num_threads = 1;
+
+#ifdef _OPENMP
+#pragma omp parallel default(shared)
+    {
+        #pragma omp master
+        {
+            num_threads = omp_get_num_threads ();
+        }
+    }
+#endif
+    CPU_CLOCK_RATE = 1e9 * CPU_CLOCK_RATE;
+
+    int iam = grid->iam;
+    int_t num_procs = grid->npcol * grid->nprow;
+    double temp_holder;
+    MPI_Reduce( &SCT->NetSchurUpTimer, &temp_holder,  1, MPI_DOUBLE, MPI_SUM, 0, grid->comm );
+    // if (!iam)
+    // {
+    //     // printf("CPU_CLOCK_RATE  %.1f\n", CPU_CLOCK_RATE );
+    //     printf("Total time in factorization \t: %5.2lf\n", SCT->pdgstrfTimer);
+    //     printf("MPI-communication phase \t: %5.2lf\n", SCT->pdgstrfTimer - (temp_holder / num_procs));
+
+    // }
 
     /* Printing Panel factorization profile*/
     // double CPU_CLOCK_RATE = 1e9 * mkl_get_clocks_frequency();

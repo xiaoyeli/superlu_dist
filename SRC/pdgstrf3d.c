@@ -20,19 +20,6 @@ at the top-level directory.
  */
 
 #include "superlu_ddefs.h"
-#if 0
-#include "pdgstrf3d.h"
-#include "trfCommWrapper.h"
-#include "trfAux.h"
-//#include "load-balance/supernodal_etree.h"
-//#include "load-balance/supernodalForest.h"
-#include "supernodal_etree.h"
-#include "supernodalForest.h"
-#include "p3dcomm.h"
-#include "treeFactorization.h"
-#include "ancFactorization.h"
-#include "xtrf3Dpartition.h"
-#endif
 
 #ifdef MAP_PROFILE
 #include  "mapsampler_api.h"
@@ -151,16 +138,6 @@ int_t pdgstrf3d(superlu_dist_options_t *options, int m, int n, double anorm,
     factStat_t factStat;
     initFactStat(nsupers, &factStat);
 
-#if 0  // sherry: not used
-    diagFactBufs_t dFBuf;
-    dinitDiagFactBufs(ldt, &dFBuf);
-
-    commRequests_t comReqs;   
-    initCommRequests(&comReqs, grid);
-
-    msgs_t msgs;
-    initMsgs(&msgs);
-#endif
 
     SCT->tStartup = SuperLU_timer_();
     packLUInfo_t packLUInfo;
@@ -240,22 +217,8 @@ int_t pdgstrf3d(superlu_dist_options_t *options, int m, int n, double anorm,
 
     if (superlu_acc_offload)
     {
-
-#if 0 	/* Sherry: For GPU code on titan, we do not need performance 
-	   lookup tables since due to difference in CPU-GPU performance
-	   it didn't make much sense to do any Schur-complement update
-	   on CPU, except for the lookahead-update on CPU. Same should
-	   hold for summit as well. (from Piyush)   */
-
-        /*Initilize the lookup tables */
-        LookUpTableInit(iam);
-        acc_async_cost = get_acc_async_cost();
-#ifdef GPU_DEBUG
-        if (!iam) printf("Using MIC async cost of %lf \n", acc_async_cost);
-#endif
-#endif
-	    int_t* perm_c_supno = getPerm_c_supno(nsupers, options, LUstruct, grid);
-	/* Initialize GPU data structures */
+        int_t* perm_c_supno = getPerm_c_supno(nsupers, options, LUstruct, grid);
+    	/* Initialize GPU data structures */
         SCT->tStartupGPU = SuperLU_timer_();
         initSluGPU3D_t(sluGPU, LUstruct, grid3d, perm_c_supno,
                        n, buffer_size, bigu_size, ldt);
@@ -297,12 +260,11 @@ int_t pdgstrf3d(superlu_dist_options_t *options, int m, int n, double anorm,
             {
                 double tilvl = SuperLU_timer_();
 #ifdef GPU_ACC
-                sparseTreeFactor_ASYNC_GPU(
-                    sforest,
-                    comReqss, &scuBufs,  &packLUInfo,
+                sparseTreeFactor_ASYNC_GPU( sforest, comReqss, &scuBufs,  &packLUInfo,
                     msgss, LUvsbs, dFBufs,  &factStat, &fNlists,
                     &gEtreeInfo, options,  iperm_c_supno, ldt,
-                    sluGPU,  d2Hred,  HyP, LUstruct, grid3d, stat,
+                    sluGPU,  d2Hred,            // New params for GPU
+                    HyP, LUstruct, grid3d, stat,
                     thresh,  SCT, tag_ub, info);
 #else
                 dsparseTreeFactor_ASYNC(sforest, comReqss,  &scuBufs, &packLUInfo,
@@ -320,10 +282,9 @@ int_t pdgstrf3d(superlu_dist_options_t *options, int m, int n, double anorm,
             if (ilvl < maxLvl - 1)     /*then reduce before factorization*/
             {
 #ifdef GPU_ACC
-                reduceAllAncestors3d_GPU(
-                    ilvl, myNodeCount, treePerm, LUvsb,
-                    LUstruct, grid3d, sluGPU, d2Hred, &factStat, HyP,
-                    SCT );
+                reduceAllAncestors3d_GPU( ilvl, myNodeCount, treePerm, LUvsb, LUstruct, grid3d,
+                     sluGPU, d2Hred,
+                      &factStat, HyP,SCT );
 #else
 
                 dreduceAllAncestors3d(ilvl, myNodeCount, treePerm,
@@ -340,12 +301,15 @@ int_t pdgstrf3d(superlu_dist_options_t *options, int m, int n, double anorm,
     MPI_Barrier( grid3d->comm);
     SCT->pdgstrfTimer = SuperLU_timer_() - SCT->pdgstrfTimer;
 
-    if (!grid3d->zscp.Iam)
+    if(!grid3d->zscp.Iam)
     {
+        SCT_printSummary(grid, SCT);
         if (superlu_acc_offload )
-            printGPUStats(sluGPU->A_gpu);
-
+            printGPUStats(sluGPU->A_gpu, grid);
     }
+        
+
+    
 
 #ifdef ITAC_PROF
     VT_traceoff();
@@ -368,6 +332,8 @@ int_t pdgstrf3d(superlu_dist_options_t *options, int m, int n, double anorm,
     dLluBufFreeArr(numLA, LUvsbs);
     dfreeDiagFactBufsArr(mxLeafNode, dFBufs);
     Free_HyP(HyP);
+    if (superlu_acc_offload )
+        freeSluGPU(sluGPU);
 
 #if ( DEBUGlevel>=1 )
     CHECK_MALLOC (grid3d->iam, "Exit pdgstrf3d()");
@@ -375,3 +341,6 @@ int_t pdgstrf3d(superlu_dist_options_t *options, int m, int n, double anorm,
     return 0;
 
 } /* pdgstrf3d */
+
+
+//UrowindPtr_host
