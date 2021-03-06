@@ -254,11 +254,12 @@ int_t pdgstrf3d(superlu_dist_options_t *options, int m, int n, double anorm,
         if (!iam) printf("Using MIC async cost of %lf \n", acc_async_cost);
 #endif
 #endif
-	int_t* perm_c_supno = getPerm_c_supno(nsupers, options, LUstruct, grid);
+	    int_t* perm_c_supno = getPerm_c_supno(nsupers, options, LUstruct, grid);
 	/* Initialize GPU data structures */
+        SCT->tStartupGPU = SuperLU_timer_();
         initSluGPU3D_t(sluGPU, LUstruct, grid3d, perm_c_supno,
                        n, buffer_size, bigu_size, ldt);
-        
+        SCT->tStartupGPU = SuperLU_timer_()-SCT->tStartupGPU;
         HyP->first_u_block_acc = sluGPU->A_gpu->first_u_block_gpu;
         HyP->first_l_block_acc = sluGPU->A_gpu->first_l_block_gpu;
         HyP->nCudaStreams = sluGPU->nCudaStreams;

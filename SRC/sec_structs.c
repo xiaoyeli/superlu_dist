@@ -266,6 +266,7 @@ void SCT_init(SCT_t* SCT)
 
     SCT->tAsyncPipeTail = 0.0; 
     SCT->tStartup =0.0;
+    SCT->tStartupGPU=0.0;
 
     SCT->commVolFactor =0.0;
     SCT->commVolRed =0.0;
@@ -475,6 +476,7 @@ void SCT_print(gridinfo_t *grid, SCT_t* SCT)
     double t_total = SCT->tStartup + SCT->pdgstrfTimer + SCT->gatherLUtimer; 
     DistPrintMarkupHeader("High Level Time Breakdown", t_total, grid);
     DistPrint("Startup               ", SCT->tStartup, "Seconds", grid);
+    DistPrint("StartupGPU            ", SCT->tStartupGPU, "Seconds", grid);
     DistPrint("Main-Factor loop      ", SCT->pdgstrfTimer, "Seconds", grid);
     DistPrint("3D-GatherLU           ", SCT->gatherLUtimer, "Seconds", grid);
     DistPrint("tTotal                ", t_total, "Seconds", grid);

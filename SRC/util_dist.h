@@ -283,6 +283,7 @@ typedef struct
 
     /*double t_Startup time before factorization starts*/
     double tStartup;
+    double tStartupGPU;
 
     /*keeping track of data sent*/
     double commVolFactor;
