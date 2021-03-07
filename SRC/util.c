@@ -243,7 +243,7 @@ int DeAllocLlu_3d(int_t n, LUstruct_t *LUstruct, gridinfo3d_t *grid3d)
         if (Llu->Lrowind_bc_ptr[i])
         {
             SUPERLU_FREE(Llu->Lrowind_bc_ptr[i]);
-#ifdef GPU_ACC
+#if 0
             checkCuda(cudaFreeHost(Llu->Lnzval_bc_ptr[i]));
 #else
             SUPERLU_FREE(Llu->Lnzval_bc_ptr[i]);
