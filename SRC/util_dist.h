@@ -226,6 +226,7 @@ typedef struct
     double pdgstrs2_timer;
     double pdgstrf2_timer;
     double lookaheadupdatetimer;
+    double OffloadSectionTimer;
     double pdgstrfTimer;
 
 // new timers for different wait times

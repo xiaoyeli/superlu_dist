@@ -215,6 +215,7 @@ void SCT_init(SCT_t* SCT)
     SCT->CPUOffloadTimer = 0;
     SCT->pdgstrf2_timer = 0.0;
     SCT->lookaheadupdatetimer = 0;
+    SCT->OffloadSectionTimer=0;
 
     /* diagonal block factorization; part of pdgstrf2*/
     // SCT->Local_Dgstrf2_tl = 0;
@@ -493,6 +494,9 @@ void SCT_print(gridinfo_t *grid, SCT_t* SCT)
     DistPrint("wait-copyStream       ", SCT->PhiWaitTimer_2 , "Seconds", grid);
     DistPrint("waitGPU2CPU           ", SCT->PhiWaitTimer , "Seconds", grid);
     DistPrint("SchurCompUpdate       ", SCT->NetSchurUpTimer, "Seconds", grid);
+    DistPrint("LookaheadUpdate       ", SCT->lookaheadupdatetimer, "Seconds", grid);
+    DistPrint("OffloadSecUpdate       ", SCT->OffloadSectionTimer, "Seconds", grid);
+    
     DistPrint("PanelFactorization    ", SCT->pdgstrfTimer - SCT->NetSchurUpTimer, "Seconds", grid);
     
     // DistPrint("Phase_Factor          ", SCT->Phase_Factor_tl / CPU_CLOCK_RATE, "Seconds", grid);

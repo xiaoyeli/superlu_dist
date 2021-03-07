@@ -489,6 +489,7 @@ int_t sparseTreeFactor_ASYNC_GPU(
                 } /* end if all children are done */
             }     /* end if non-root */
 
+        t1 = SuperLU_timer_();
 #pragma omp parallel
             {
                 /* Master thread performs Schur complement update on GPU. */
@@ -561,6 +562,7 @@ int_t sparseTreeFactor_ASYNC_GPU(
 
             } /* end omp parallel region */
 
+            SCT->OffloadSectionTimer += SuperLU_timer_() - t1;
             //SCT->NetSchurUpTimer += SuperLU_timer_() - tsch;
 
             // finish waiting for diag block send

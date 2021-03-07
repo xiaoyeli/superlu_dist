@@ -804,7 +804,6 @@ get_acc_memory ()
 
 int_t free_LUstruct_gpu (LUstruct_gpu * A_gpu)
 {
-	printf("Freeing GPU memory\n");
 	checkCuda(cudaFree(A_gpu->LrowindVec));
 	checkCuda(cudaFree(A_gpu->LrowindPtr));
 
@@ -921,12 +920,17 @@ void printGPUStats(LUstruct_gpu * A_gpu, gridinfo_t* grid)
 	// gridinfo_t* grid = grid3d->grid2d;
 	// DistPrint("Wait_LSend            ", SCT->Wait_LSend_tl / CPU_CLOCK_RATE, "Seconds", grid);
 
-	DistPrint("GPU: flops_Offloaded    ", 1e-9 *A_gpu->GemmFLOPCounter, "GFlop", grid);
-	DistPrint("GPU: flops_Rate        ", 1e-9 * A_gpu->GemmFLOPCounter / tGemm, "GFlop/sec", grid);
-	DistPrint("GPU: MOP_Offloaded     ", 1e-9 * A_gpu->ScatterMOPCounter, "GMemOp", grid);
-	DistPrint("GPU: MOP_Rate         ", 8e-9 * A_gpu->ScatterMOPCounter / tScatter, "GByte/sec", grid);
-	DistPrint("GPU: H2D_Rate         ", 1e-9 * A_gpu->cPCIeH2D / tPCIeH2D, "GByte/sec", grid);
-	DistPrint("GPU: D2H_Rate         ", 1e-9 * A_gpu->cPCIeD2H / tPCIeD2H, "GByte/sec", grid);
+	// DistPrint("GPU: flops_Offloaded    ", 1e-9 *A_gpu->GemmFLOPCounter, "GFlop", grid);
+	// DistPrint("GPU: MOP_Offloaded     ", 1e-9 * A_gpu->ScatterMOPCounter, "GMemOp", grid);
+	DistPrint("GPU: tGemm            ", tGemm, "Seconds", grid);
+	DistPrint("GPU: tScatter         ", tScatter, "Seconds", grid);
+	// DistPrint("GPU: MOP_Offloaded     ", 1e-9 * A_gpu->ScatterMOPCounter, "GMemOp", grid);
+
+
+	DistPrint("GPU: flops_Rate        ", 1e-9 * A_gpu->GemmFLOPCounter / tGemm, "GF/sec", grid);
+	DistPrint("GPU: MOP_Rate         ", 8e-9 * A_gpu->ScatterMOPCounter / tScatter, "GB/sec", grid);
+	DistPrint("GPU: H2D_Rate         ", 1e-9 * A_gpu->cPCIeH2D / tPCIeH2D, "GB/sec", grid);
+	DistPrint("GPU: D2H_Rate         ", 1e-9 * A_gpu->cPCIeD2H / tPCIeD2H, "GB/sec", grid);
 
 	// printf("GPU: Flops offloaded %.3e Time spent %lf Flop rate %lf GF/sec \n",
 	//        A_gpu->GemmFLOPCounter, tGemm, 1e-9 * A_gpu->GemmFLOPCounter / tGemm  );
