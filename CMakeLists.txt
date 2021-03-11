@@ -202,7 +202,6 @@ if (TPL_ENABLE_CUDALIB)   ## want to use cuda
 endif()
 
 
-
 #--------------------- OpenMP ---------------------
 if (NOT DEFINED enable_openmp)
   set(enable_openmp TRUE)

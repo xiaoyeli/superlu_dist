@@ -14,6 +14,7 @@
 #include "lustruct_gpu.h"
 // #include "p3dcomm.h"
 
+#include "dcomplex.h"
 
 extern "C" {
 	void cblas_daxpy(const int N, const double alpha, const double *X,
