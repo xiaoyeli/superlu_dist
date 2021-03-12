@@ -2,6 +2,16 @@
 <project version="4">
   <component name="PublishConfigData" autoUpload="Always" serverName="summit">
     <serverData>
+      <paths name="Cori (4088f52f-a3f4-4891-a6bd-e4955d027531)">
+        <serverdata>
+          <mappings>
+            <mapping deploy="/tmp/tmp.7E1IYKc1Xb" local="$PROJECT_DIR$" />
+          </mappings>
+          <excludedPaths>
+            <excludedPath local="true" path="$PROJECT_DIR$/cmake-build-debug" />
+          </excludedPaths>
+        </serverdata>
+      </paths>
       <paths name="summit">
         <serverdata>
           <mappings>

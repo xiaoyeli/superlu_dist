@@ -2175,6 +2175,8 @@ if ( !iam) printf(".. Construct Reduce tree for U: %.2f\t\n", t);
 	int maxrecvsz = sp_ienv_dist(3)* nrhs + SUPERLU_MAX( XK_H, LSUM_H );
     flag_bc_q = (int *) nvshmem_malloc (RDMA_FLAG_SIZE * (k+1) * sizeof(int)); // for sender
     flag_rd_q = (int *)nvshmem_malloc( RDMA_FLAG_SIZE * nlb * 2 * sizeof(int)); // for sender
+    //printf("(%d) k=%d, nlb=%d\n",iam,k,nlb);
+    //fflush(stdout);
     ready_x = (double *)nvshmem_malloc(maxrecvsz*CEILING( nsupers, grid->npcol) * sizeof(double)); // for receiver
     ready_lsum = (double *)nvshmem_malloc(2*maxrecvsz*CEILING( nsupers, grid->nprow) * sizeof(double)); // for receiver
     my_flag_bc = (int *) nvshmem_malloc ( RDMA_FLAG_SIZE * (CEILING( nsupers, grid->npcol)+1)  * sizeof(int)); // for sender
@@ -2209,9 +2211,9 @@ if ( !iam) printf(".. Construct Reduce tree for U: %.2f\t\n", t);
         }
     }
 	checkGPU(gpuMemcpy(d_colnum, my_colnum,  (nfrecvx+1) * sizeof(int), gpuMemcpyHostToDevice));
-	//printf("(%d) nfrecvx=%d\n",iam,nfrecvx);
+	printf("(%d) nfrecvx=%d,nfrecvmod=%d\n",iam,nfrecvx,nfrecvmod);
     //printf("(%d) WAIT_NUM_BLOCKS=%d,WAIT_NUM_THREADS=%d\n",iam,h_nfrecv[2],h_nfrecv[1]);
-	//fflush(stdout);
+	fflush(stdout);
 	checkGPU(gpuMalloc( (void**)&d_mynum, h_nfrecv[1]  * sizeof(int)));
 	checkGPU(gpuMalloc( (void**)&d_mymaskstart, h_nfrecv[1] * sizeof(int)));
 	checkGPU(gpuMalloc( (void**)&d_mymasklength, h_nfrecv[1]  * sizeof(int)));
@@ -2245,14 +2247,13 @@ if ( !iam) printf(".. Construct Reduce tree for U: %.2f\t\n", t);
     h_nfrecvmod[0]=nfrecvmod;
     h_nfrecvmod[1]=tmp_idx;
     h_nfrecvmod[2]=h_nfrecv[2];
-    printf("(%d) nfrecvmod=%d,%d,nfrecvx=%d\n",iam,nfrecvmod, tmp_idx,nfrecvx);
-	fflush(stdout);
+    //printf("(%d) nfrecvmod=%d,%d,nfrecvx=%d\n",iam,nfrecvmod, tmp_idx,nfrecvx);
+	//fflush(stdout);
 	checkGPU(gpuMalloc( (void**)&d_nfrecvmod,  3 * sizeof(int)));
 	checkGPU(gpuMemcpy(d_nfrecvmod, h_nfrecvmod, 3 * sizeof(int), gpuMemcpyHostToDevice));
 	checkGPU(gpuMalloc( (void**)&d_statusmod, 2*CEILING(nsupers, grid->nprow) * sizeof(int)));
 	checkGPU(gpuMalloc( (void**)&d_recv_cnt, CEILING(nsupers, grid->nprow) * sizeof(int)));
 	checkGPU(gpuMemcpy(d_recv_cnt, h_recv_cnt,  CEILING(nsupers, grid->nprow) * sizeof(int), gpuMemcpyHostToDevice));
-
 
 	checkGPU(gpuMemcpy(d_colnummod, my_colnummod,  (nfrecvmod+1) * sizeof(int), gpuMemcpyHostToDevice));
 	checkGPU(gpuMalloc( (void**)&d_mynummod, h_nfrecv[1]  * sizeof(int)));

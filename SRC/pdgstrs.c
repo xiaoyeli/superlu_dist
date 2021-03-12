@@ -28,9 +28,9 @@ at the top-level directory.
 #define CACHELINE 64  /* bytes, Xeon Phi KNL, Cori haswell, Edision */
 #endif
 #include<cuda_profiler_api.h>
-// #ifndef GPUREF
-// #define GPUREF 1  
-// #endif
+//#ifndef GPUREF
+//#define GPUREF 1
+//#endif
 
 /*
  * Sketch of the algorithm for L-solve:
@@ -987,6 +987,10 @@ pdgstrs(int_t n, LUstruct_t *LUstruct,
     cusparseHandle_t handle = NULL;
     gpuStream_t stream = NULL;
     cusparseStatus_t status1 = CUSPARSE_STATUS_SUCCESS;	
+    cusparseStatus_t status2 = CUSPARSE_STATUS_SUCCESS;
+    cusparseStatus_t status3 = CUSPARSE_STATUS_SUCCESS;
+    cusparseStatus_t status4 = CUSPARSE_STATUS_SUCCESS;
+    cusparseStatus_t status5 = CUSPARSE_STATUS_SUCCESS;
 	gpuError_t gpuStat = gpuSuccess;
     cusparseMatDescr_t descrA = NULL;
     csrsm2Info_t info1 = NULL;	
@@ -1468,12 +1472,12 @@ dGenCOOLblocks(iam, nsupers, grid,Glu_persist,Llu, cooRows, cooCols, cooVals, &n
 	checkGPU(gpuMalloc( (void**)&pBuffer, sizeof(char)* pBufferSizeInBytes));	
 	
 	
-    status1 = cusparseCreateIdentityPermutation(
+    status2 = cusparseCreateIdentityPermutation(
         handle,
         nnzL,
         d_P);
-    assert( CUSPARSE_STATUS_SUCCESS == status1);	
-    status1 = cusparseXcoosortByRow(
+    assert( CUSPARSE_STATUS_SUCCESS == status2);
+    status3 = cusparseXcoosortByRow(
         handle, 
         ntmp, 
         ntmp, 
@@ -1483,9 +1487,9 @@ dGenCOOLblocks(iam, nsupers, grid,Glu_persist,Llu, cooRows, cooCols, cooVals, &n
         d_P, 
         pBuffer
     ); 
-    assert( CUSPARSE_STATUS_SUCCESS == status1);	
+    assert( CUSPARSE_STATUS_SUCCESS == status3);
 
-    status1 = cusparseDgthr(
+    status4 = cusparseDgthr(
         handle, 
         nnzL, 
         d_cooVals, 
@@ -1493,7 +1497,7 @@ dGenCOOLblocks(iam, nsupers, grid,Glu_persist,Llu, cooRows, cooCols, cooVals, &n
         d_P, 
         CUSPARSE_INDEX_BASE_ZERO
     ); 
-    assert( CUSPARSE_STATUS_SUCCESS == status1);
+    assert( CUSPARSE_STATUS_SUCCESS == status4);
 
 
 	
@@ -1501,11 +1505,8 @@ dGenCOOLblocks(iam, nsupers, grid,Glu_persist,Llu, cooRows, cooCols, cooVals, &n
 	
 	checkGPU(gpuMalloc( (void**)&d_csrRowPtr,(ntmp+1)*sizeof(d_csrRowPtr[0])));
 	
-	status1= cusparseXcoo2csr(handle,d_cooRows,nnzL,ntmp,d_csrRowPtr,CUSPARSE_INDEX_BASE_ZERO);
-	assert( CUSPARSE_STATUS_SUCCESS == status1);
-	
-
-
+	status5= cusparseXcoo2csr(handle,d_cooRows,nnzL,ntmp,d_csrRowPtr,CUSPARSE_INDEX_BASE_ZERO);
+	assert( CUSPARSE_STATUS_SUCCESS == status5);
 
 	// checkGPU(gpuDeviceSynchronize);
 	checkGPU(gpuStreamSynchronize(stream));
@@ -1602,7 +1603,7 @@ dGenCOOLblocks(iam, nsupers, grid,Glu_persist,Llu, cooRows, cooCols, cooVals, &n
     // checkGPU(gpuDeviceSynchronize);
 	checkGPU(gpuStreamSynchronize(stream));
 	
-	t1 = SuperLU_timer_() - t1;	
+	t1 = SuperLU_timer_() - t1;
 	if ( !iam ) {
 		printf(".. Cusparse solve time\t%15.7f\n", t1);
 		fflush(stdout);
@@ -1676,12 +1677,37 @@ dGenCOOLblocks(iam, nsupers, grid,Glu_persist,Llu, cooRows, cooCols, cooVals, &n
     checkGPU(gpuMemset(d_msgnum, 0, h_nfrecv[1] * sizeof(int)));
 	//printf("2-(%d) maxrecvsz=%d,ready_x=%d, ready_lsum=%d,RDMA_FLAG_SIZE=%d,k=%d,nlb=%d\n",iam,maxrecvsz,maxrecvsz*CEILING( nsupers, grid->npcol),2*maxrecvsz*CEILING( nsupers, grid->nprow),RDMA_FLAG_SIZE,k,nlb);
 	//fflush(stdout);
-    dlsum_fmod_inv_gpu_wrap(k,nlb,DIM_X,DIM_Y,d_lsum,d_x,nrhs,knsupc,nsupers,d_fmod,Llu->d_LBtree_ptr,Llu->d_LRtree_ptr,Llu->d_ilsum,Llu->d_Lrowind_bc_dat, Llu->d_Lrowind_bc_offset, Llu->d_Lnzval_bc_dat, Llu->d_Lnzval_bc_offset, Llu->d_Linv_bc_dat, Llu->d_Linv_bc_offset, Llu->d_Lindval_loc_bc_dat, Llu->d_Lindval_loc_bc_offset,Llu->d_xsup,d_grid,maxrecvsz,
+#if ( PRNTlevel>=1 )
+	t = SuperLU_timer_() - t;
+	if ( !iam) printf(".. Setup-before L-solve time\t%8.4f\n", t);
+	fflush(stdout);
+	MPI_Barrier( grid->comm );
+	nvshmem_barrier_all();
+	t = SuperLU_timer_();
+#endif
+	dlsum_fmod_inv_gpu_wrap(k,nlb,DIM_X,DIM_Y,d_lsum,d_x,nrhs,knsupc,nsupers,d_fmod,Llu->d_LBtree_ptr,Llu->d_LRtree_ptr,Llu->d_ilsum,Llu->d_Lrowind_bc_dat, Llu->d_Lrowind_bc_offset, Llu->d_Lnzval_bc_dat, Llu->d_Lnzval_bc_offset, Llu->d_Linv_bc_dat, Llu->d_Linv_bc_offset, Llu->d_Lindval_loc_bc_dat, Llu->d_Lindval_loc_bc_offset,Llu->d_xsup,d_grid,maxrecvsz,
 	                        flag_bc_q, flag_rd_q, ready_x, ready_lsum, my_flag_bc, my_flag_rd, d_launch_flag, d_nfrecv, h_nfrecv,
 	                        d_status,d_colnum,d_mynum, d_mymaskstart,d_mymasklength,
 	                        d_nfrecvmod,d_statusmod,d_colnummod,d_mynummod,d_mymaskstartmod,d_mymasklengthmod,d_recv_cnt,d_msgnum,senddone);
-	                        //d_rownum,d_rowstart,d_validrows);
+	  		                      //d_rownum,d_rowstart,d_validrows);
+#if ( PRNTlevel>=1 )
+	nvshmem_barrier_all();
+		t = SuperLU_timer_() - t;
+		stat->utime[SOL_TOT] += t;
+		if ( !iam ) {
+			printf(".. L-solve (close) time\t%8.4f\n", t);
+			fflush(stdout);
+		}
+		MPI_Reduce (&t, &tmax, 1, MPI_DOUBLE,
+				MPI_MAX, 0, grid->comm);
+		if ( !iam ) {
+			printf(".. L-solve time  (close) (MAX) \t%8.4f\n", tmax);
+			fflush(stdout);
+		}
 
+
+		t = SuperLU_timer_();
+#endif
 	checkGPU(gpuMemcpy(x, d_x, (ldalsum * nrhs + nlb * XK_H) * sizeof(double), gpuMemcpyDeviceToHost));
 
 	checkGPU (gpuFree (d_grid));
