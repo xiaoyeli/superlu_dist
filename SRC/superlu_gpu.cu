@@ -128,8 +128,10 @@ void device_scatter_l_2D (int thread_id,
 #pragma unroll 4
 		for (int col = thread_id_y; col < nnz_cols ; col += ColPerBlock)
 		{
-			nzval[ldv * IndirectJ3[col] + indirect2_thread[thread_id_x]]
-			-= tempv[nbrow * col + thread_id_x];
+			// nzval[ldv * IndirectJ3[col] + indirect2_thread[thread_id_x]]
+			// -= tempv[nbrow * col + thread_id_x];
+			atomicAdd(&nzval[ldv * IndirectJ3[col] + indirect2_thread[thread_id_x]],
+				-tempv[nbrow * col + thread_id_x]);
 		}
 	}
 }
@@ -184,8 +186,10 @@ void device_scatter_u_2D (int thread_id,
 #pragma unroll 4
 		for (int col = thread_id_y; col < nnz_cols ; col += ColPerBlock)
 		{
-			ucol[IndirectJ1[IndirectJ3[col]] + indirect[thread_id_x]]
-			-= tempv[nbrow * col + thread_id_x];
+			// ucol[IndirectJ1[IndirectJ3[col]] + indirect[thread_id_x]]
+			// -= tempv[nbrow * col + thread_id_x];
+			atomicAdd(&ucol[IndirectJ1[IndirectJ3[col]] + indirect[thread_id_x]],
+				-tempv[nbrow * col + thread_id_x]);
 		}
 	}
 }
@@ -963,16 +967,16 @@ int_t initSluGPU3D_t(
 	
 	
 	cudaSetDevice(device_id);     
-#ifdef GPU_DEBUG
-	if(!grid3d->iam)
-	{
-		print_occupany();
-		printf("NUmber of GPUs =%d, setting gpu to %d-gpu\n", deviceCount,device_id);
-		cudaDeviceProp devProp;
-		cudaGetDeviceProperties(&devProp, device_id);
-		printDevProp(devProp);
-	}
-#endif
+// #ifdef GPU_DEBUG
+// 	if(!grid3d->iam)
+// 	{
+// 		print_occupany();
+// 		printf("NUmber of GPUs =%d, setting gpu to %d-gpu\n", deviceCount,device_id);
+// 		cudaDeviceProp devProp;
+// 		cudaGetDeviceProperties(&devProp, device_id);
+// 		printDevProp(devProp);
+// 	}
+// #endif
 	gridinfo_t* grid = &(grid3d->grid2d);
 	// checkCudaErrors(cudaDeviceReset ())     ;
 	Glu_persist_t *Glu_persist = LUstruct->Glu_persist;
@@ -982,6 +986,7 @@ int_t initSluGPU3D_t(
 	sluGPU->nCudaStreams = getnCudaStreams();
 	if (!grid->iam)
 	{
+		if(!grid3d->iam)
 		printf("initSluGPU3D_t: Using hardware acceleration, with %d cuda streams \n", sluGPU->nCudaStreams);
 		fflush(stdout);
 		if ( MAX_SUPER_SIZE < ldt )
