@@ -309,7 +309,7 @@ int_t sparseTreeFactor_ASYNC_GPU(
             int_t k = perm_c_supno[k0]; // direct computation no perm_c_supno
             int_t offset = k0 % numLA;
 
-            double tsch = SuperLU_timer_();
+            
 
 #if 0
             sWaitL(k, comReqss[offset], msgss[offset], grid, LUstruct, SCT);
@@ -322,7 +322,7 @@ int_t sparseTreeFactor_ASYNC_GPU(
             dWaitU(k, msgss[offset]->msgcnt, comReqss[offset]->send_requ,
                    comReqss[offset]->recv_requ, grid, LUstruct, SCT);
 #endif
-
+            double tsch = SuperLU_timer_();
             int_t LU_nonempty = dSchurComplementSetupGPU(k,
                                                          msgss[offset], packLUInfo,
                                                          myIperm, gIperm_c_supno, perm_c_supno,
@@ -563,7 +563,7 @@ int_t sparseTreeFactor_ASYNC_GPU(
             } /* end omp parallel region */
 
             SCT->OffloadSectionTimer += SuperLU_timer_() - t1;
-            //SCT->NetSchurUpTimer += SuperLU_timer_() - tsch;
+            SCT->NetSchurUpTimer += SuperLU_timer_() - tsch;
 
             // finish waiting for diag block send
             int_t abs_offset = k0 - k_st;
@@ -713,7 +713,7 @@ int_t sparseTreeFactor_ASYNC_GPU(
             } /* end if non-root level */
 
             /* end Schur complement update */
-            SCT->NetSchurUpTimer += SuperLU_timer_() - tsch;
+            // SCT->NetSchurUpTimer += SuperLU_timer_() - tsch;
 
         } /* end Schur update for all the nodes in level 'topoLvl' */
 
