@@ -244,6 +244,7 @@ int_t printFileList(char* sname, int_t nnodes, int_t*dlist, int_t*setree)
 	fprintf(fp, "}\n");
 	fprintf(fp, "//EOF\n");
 	fclose(fp);
+	return 0;
 }
 
 int_t getDescendList(int_t k, int_t*dlist,  treeList_t* treeList)
@@ -330,10 +331,10 @@ int_t* getEtreeLB(int_t nnodes, int_t* perm_l, int_t* gTopOrder)
 // calculates EtreeLB boundaries for given list of nodes, via perm_l
 {
 	//calculate minimum and maximum topOrder
-	int_t minTop, maxTop;
+	int minTop, maxTop;
 	minTop = gTopOrder[perm_l[0]];
 	maxTop = gTopOrder[perm_l[nnodes - 1]];
-	int_t numLB = maxTop - minTop + 2;
+	int numLB = maxTop - minTop + 2;
 	//int_t* lEtreeLB = (int_t *) malloc( sizeof(int_t) * numLB);
 	int_t* lEtreeLB = (int_t *) intMalloc_dist(numLB); // Sherry fix
 	for (int i = 0; i < numLB; ++i)
@@ -342,8 +343,8 @@ int_t* getEtreeLB(int_t nnodes, int_t* perm_l, int_t* gTopOrder)
 		lEtreeLB[i] = 0;
 	}
 	lEtreeLB[0] = 0;
-	int_t curLevel = minTop;
-	int_t curPtr = 1;
+	int curLevel = minTop;
+	int curPtr = 1;
 	for (int i = 0; i < nnodes ; ++i)
 	{
 		/* code */
@@ -426,7 +427,7 @@ int_t testSubtreeNodelist(int_t nsupers, int_t numList, int_t** nodeList, int_t*
 int_t testListPerm(int_t nodeCount, int_t* nodeList, int_t* permList, int_t* gTopLevel)
 {
 	// checking monotonicity
-	for (int_t i = 0; i < nodeCount - 1; ++i)
+	for (int i = 0; i < nodeCount - 1; ++i)
 	{
 		if (!( gTopLevel[permList[i]] <= gTopLevel[permList[i + 1]]))
 		{
@@ -485,10 +486,10 @@ int_t* merg_perms(int_t nperms, int_t* nnodes, int_t** perms)
 
 	//now concatenat arrays
 	int_t ptr = 0;
-	for (int_t tr = 0; tr < nperms; ++tr)
+	for (int tr = 0; tr < nperms; ++tr)
 	{
 		/* code */
-		for (int_t nd = 0; nd < nnodes[tr]; ++nd)
+		for (int nd = 0; nd < nnodes[tr]; ++nd)
 		{
 			/* code */
 			gperm[ptr] = perms[tr][nd];
@@ -533,6 +534,7 @@ int_t mergPermTest(int_t nperms, int_t* gperms, int_t* nnodes)
 	return nn;
 } /* mergPermTest */
 
+#if 0 // Sherry: not called anymore
 int* getLastDep(gridinfo_t *grid, SuperLUStat_t *stat,
 		superlu_dist_options_t *options,
                 LocalLU_t *Llu, int_t* xsup,
@@ -661,6 +663,9 @@ int* getLastDepBtree( int_t nsupers, treeList_t* treeList)
 	}
 	return look_ahead;
 }
+
+#endif // Sherry: not called anymore
+
 
 int_t* getGlobal_iperm(int_t nsupers, int_t nperms,  // number of permutations
                        int_t** perms, 		// array of permutations
@@ -961,8 +966,8 @@ void Print_EtreeLevelBoundry(int_t *Etree_LvlBdry, int_t max_level, int_t nsuper
 {
 	for (int i = 0; i < max_level; ++i)
 	{
-		int_t st = 0;
-		int_t ed = nsuper;
+		int st = 0;
+		int ed = nsuper;
 		st = Etree_LvlBdry[i];
 		ed = Etree_LvlBdry[i + 1];
 		printf("Level %d, NumSuperNodes=%d,\t Start=%d end=%d\n", i, ed - st, st, ed);

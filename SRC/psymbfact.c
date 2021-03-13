@@ -3157,7 +3157,8 @@ expand_RL
 	
 	if (!computeL)
 	  marker[vtx] = markl;
-	for (ii; ii < mpnelts; ii++) {
+	//for (ii; ii < mpnelts; ii++) {  // Sherry: compiler warning
+	for (; ii < mpnelts; ii++) {
 	  elt = lsub_rcvd[ii];
 	  if (elt >= vtx) {
 	    if (marker[elt] != markl) {
@@ -3456,7 +3457,8 @@ rl_update
 	if (!computeL)
 	  marker[vtx] = markl;
 	PS->nops += mpnelts - ii;
-	for (ii; ii < mpnelts; ii++) {
+	//for (ii; ii < mpnelts; ii++) { // Sherry: compiler warning
+	for (; ii < mpnelts; ii++) {
 	  elt = lsub_rcvd[ii];
 	  if (elt >= vtx) {
 	    if (marker[elt] != markl) {

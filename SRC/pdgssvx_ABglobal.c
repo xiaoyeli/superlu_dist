@@ -343,7 +343,7 @@ at the top-level directory.
  *         NOTE: Currently, A must reside in all processes when calling
  *               this routine.
  *
- * ScalePermstruct (input/output) ScalePermstruct_t*
+ * ScalePermstruct (input/output) dScalePermstruct_t*
  *         The data structure to store the scaling and permutation vectors
  *         describing the transformations performed to the matrix A.
  *         It contains the following fields:
@@ -419,7 +419,7 @@ at the top-level directory.
  *         Grid can be initialized by subroutine SUPERLU_GRIDINIT.
  *         See superlu_ddefs.h for the definition of 'gridinfo_t'.
  *
- * LUstruct (input/output) LUstruct_t*
+ * LUstruct (input/output) dLUstruct_t*
  *         The data structures to store the distributed L and U factors.
  *         It contains the following fields:
  *
@@ -442,9 +442,9 @@ at the top-level directory.
  *	       xsup[s] is the leading column of the s-th supernode,
  *             supno[i] is the supernode number to which column i belongs.
  *
- *         o Llu (LocalLU_t*)
+ *         o Llu (dLocalLU_t*)
  *           The distributed data structures to store L and U factors.
- *           See superlu_ddefs.h for the definition of 'LocalLU_t'.
+ *           See superlu_ddefs.h for the definition of 'dLocalLU_t'.
  *
  * berr    (output) double*, dimension (nrhs)
  *         The componentwise relative backward error of each solution
@@ -470,9 +470,9 @@ at the top-level directory.
  */
 void
 pdgssvx_ABglobal(superlu_dist_options_t *options, SuperMatrix *A,
-		 ScalePermstruct_t *ScalePermstruct,
+		 dScalePermstruct_t *ScalePermstruct,
 		 double B[], int ldb, int nrhs, gridinfo_t *grid,
-		 LUstruct_t *LUstruct, double *berr,
+		 dLUstruct_t *LUstruct, double *berr,
 		 SuperLUStat_t *stat, int *info)
 {
     SuperMatrix AC;
@@ -588,6 +588,7 @@ pdgssvx_ABglobal(superlu_dist_options_t *options, SuperMatrix *A,
 		    ABORT("Malloc fails for R[].");
 		ScalePermstruct->R = R;
 		break;
+	    default: break;
 	}
     }
 
@@ -1098,6 +1099,7 @@ pdgssvx_ABglobal(superlu_dist_options_t *options, SuperMatrix *A,
 	    case COL:
 		SUPERLU_FREE(R);
 		break;
+	    default: break;
 	}
     }
     if ( !factored || (factored && options->IterRefine) )

@@ -8,6 +8,7 @@
 cmake_minimum_required(VERSION 2.8.12 FATAL_ERROR)
 
 # Project version numbers
+#project(SuperLU_DIST C CXX CUDA)
 project(SuperLU_DIST C CXX)
 set(VERSION_MAJOR "7")
 set(VERSION_MINOR "0")
@@ -22,6 +23,7 @@ option(enable_double    "Enable double precision library" ON)
 option(enable_complex16 "Enable complex16 precision library" OFF)
 option(enable_tests  "Build tests" ON)
 option(enable_examples  "Build examples" ON)
+
 #-- BLAS
 option(TPL_ENABLE_INTERNAL_BLASLIB  "Build the CBLAS library" ${enable_blaslib_DEFAULT})
 option(TPL_BLAS_LIBRARIES "List of absolute paths to blas libraries [].")
@@ -58,7 +60,6 @@ include(CheckLanguage)
 
 set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)    ## ????
 set(CMAKE_INSTALL_NAME_DIR "${CMAKE_INSTALL_PREFIX}/lib")
-
 
 #---- For shared library
 
@@ -101,6 +102,8 @@ endif()
 set(CMAKE_CXX_STANDARD 11)
 #set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
+#message("!!!! top: cxx_implicit='${CMAKE_CXX_IMPLICIT_LINK_LIBRARIES}'")
 
 if (XSDK_ENABLE_Fortran)
   enable_language (Fortran)
@@ -167,6 +170,7 @@ if (XSDK_ENABLE_Fortran)
     set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${MPI_Fortran_LINK_FLAGS}")
   endif()
 endif()  
+
 #---- CUDA libraries
 if (TPL_ENABLE_CUDALIB)   ## want to use cuda
   check_language(CUDA)
@@ -200,7 +204,6 @@ if (TPL_ENABLE_CUDALIB)   ## want to use cuda
     message("-- CUDA libraries not found.")
   endif()
 endif()
-
 
 #--------------------- OpenMP ---------------------
 if (NOT DEFINED enable_openmp)
@@ -445,3 +448,4 @@ configure_file(${CMAKE_CURRENT_SOURCE_DIR}/superlu_dist.pc.in ${CMAKE_CURRENT_BI
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/superlu_dist.pc
 	DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig)
 
+#message("CMAKE_CXX_LINK_FLAGS '${CMAKE_CXX_LINK_FLAGS}'")

@@ -157,14 +157,11 @@ namespace SuperLU_ASYNCOMM {
       return this->myRoot_==this->myRank_;
     }
 	
-
   template< typename T> 
     inline Int TreeBcast_slu<T>::GetMsgSize(){
       return this->msgSize_;
     }
 
-	
-	
   template< typename T> 
     inline void TreeBcast_slu<T>::forwardMessageSimple(T * locBuffer, Int msgSize){
         MPI_Status status;

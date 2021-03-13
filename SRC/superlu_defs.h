@@ -12,7 +12,7 @@ at the top-level directory.
  * \brief Definitions which are precision-neutral
  *
  * <pre>
- * -- Distributed SuperLU routine (version 6.1) --
+ * -- Distributed SuperLU routine (version 6.2) --
  * Lawrence Berkeley National Lab, Univ. of California Berkeley.
  * November 1, 2007
  *
@@ -20,7 +20,9 @@ at the top-level directory.
  *     February 20, 2008
  *     October 11, 2014
  *     September 18, 2018  version 6.0
- *     February 8, 2019
+ *     February 8, 2019    version 6.1.1
+ *     November 12, 2019   version 6.2.0
+ *     October 23, 2020    version 6.4.0
  * </pre>
  */
 
@@ -71,9 +73,9 @@ at the top-level directory.
  * Versions 4.x and earlier do not include a #define'd version numbers.
  */
 #define SUPERLU_DIST_MAJOR_VERSION     6
-#define SUPERLU_DIST_MINOR_VERSION     1
-#define SUPERLU_DIST_PATCH_VERSION     1
-#define SUPERLU_DIST_RELEASE_DATE      "February 8, 2019"
+#define SUPERLU_DIST_MINOR_VERSION     4
+#define SUPERLU_DIST_PATCH_VERSION     0
+#define SUPERLU_DIST_RELEASE_DATE      "October 23, 2020"
 
 #include "superlu_dist_config.h"
 /* Define my integer size int_t */
@@ -91,19 +93,14 @@ at the top-level directory.
   #define IFMT "%8d"
 #endif
 
-/* This is defined in superlu_grid.c */
-extern MPI_Datatype SuperLU_MPI_DOUBLE_COMPLEX;
-
 #ifdef __INTEL_COMPILER
 #include "mkl.h"
+#endif
 
-#else
-
-//#include "cblas.h"
 #if 0 // Sherry: the following does not work with gcc on Linux.
 #define  _mm_malloc(a,b) malloc(a)
 #define _mm_free(a) free(a)
-#endif
+
 static __inline__ unsigned long long _rdtsc(void)
 {
     unsigned long long int x;
@@ -113,8 +110,22 @@ static __inline__ unsigned long long _rdtsc(void)
 }
 #endif
 
+#ifdef HAVE_CUDA
+#define GPU_ACC
+#endif
+
+/* MPI C complex datatype */
+#define SuperLU_MPI_COMPLEX         MPI_C_COMPLEX 
+#define SuperLU_MPI_DOUBLE_COMPLEX  MPI_C_DOUBLE_COMPLEX
+
+/* MPI_Datatype cannot be used in C typedef
+typedef MPI_C_COMPLEX         SuperLU_MPI_COMPLEX;
+typedef MPI_C_DOUBLE_COMPLEX  SuperLU_MPI_DOUBLE_COMPLEX;
+*/
+
+#include "superlu_FortranCInterface.h"
+#include "superlu_FCnames.h"
 #include "superlu_enum_consts.h"
-#include "Cnames.h"
 #include "supermatrix.h"
 #include "util_dist.h"
 #include "psymbfact.h"
@@ -430,12 +441,12 @@ typedef struct {
     int_t     nzlmax;    /* current max size of lsub */
     int_t     nzumax;    /*    "    "    "      usub */
     LU_space_t MemModel; /* 0 - system malloc'd; 1 - user provided */
-    int_t     *llvl;     /* keep track of level in L for level-based ILU */
-    int_t     *ulvl;     /* keep track of level in U for level-based ILU */
+    //int_t     *llvl;     /* keep track of level in L for level-based ILU */
+    //int_t     *ulvl;     /* keep track of level in U for level-based ILU */
     int64_t nnzLU;   /* number of nonzeros in L+U*/
 } Glu_freeable_t;
 
-
+#if 0 // Sherry: move to precision-dependent file
 /* 
  *-- The structure used to store matrix A of the linear system and
  *   several vectors describing the transformations done to matrix A.
@@ -480,6 +491,7 @@ typedef struct {
     int_t  *perm_r;
     int_t  *perm_c;
 } ScalePermstruct_t;
+#endif
 
 /*-- Data structure for redistribution of B and X --*/
 typedef struct {
@@ -667,7 +679,7 @@ typedef struct {
     yes_no_t      SolveInitialized;
     yes_no_t      RefineInitialized;
     yes_no_t      PrintStat;
-    int           nnzL, nnzU;      /* used to store nnzs for now       */
+    //int           nnzL, nnzU;      /* used to store nnzs for now       */
     int           num_lookaheads;  /* num of levels in look-ahead      */
     yes_no_t      lookahead_etree; /* use etree computed from the
 				      serial symbolic factorization */
@@ -680,6 +692,12 @@ typedef struct {
     int_t expansions;
     int64_t nnzL, nnzU;
 } superlu_dist_mem_usage_t;
+
+/*-- Auxiliary data type used in PxGSTRS/PxGSTRS1. */
+typedef struct {
+    int_t lbnum;  /* Row block number (local).      */
+    int_t indpos; /* Starting position in Uindex[]. */
+} Ucb_indptr_t;
 
 /* 
  *-- The new structures added in the hybrid CUDA + OpenMP + MPI code.
@@ -963,7 +981,6 @@ extern void    superlu_free_dist (void*);
 extern int_t   *intMalloc_dist (int_t);
 extern int_t   *intCalloc_dist (int_t);
 extern int_t   mc64id_dist(int_t *);
-extern int     c2cpp_GetAWPM(SuperMatrix *, gridinfo_t *, ScalePermstruct_t *);
 extern void  arrive_at_ublock (int_t, int_t *, int_t *, int_t *,
 			       int_t *, int_t *, int_t, int_t, 
 			       int_t *, int_t *, int_t *, gridinfo_t *);
@@ -976,9 +993,6 @@ extern void   superlu_abort_and_exit_dist(char *);
 extern int_t  sp_ienv_dist (int_t);
 extern void   ifill_dist (int_t *, int_t, int_t);
 extern void   super_stats_dist (int_t, int_t *);
-extern void   ScalePermstructInit(const int_t, const int_t, 
-				   ScalePermstruct_t *);
-extern void   ScalePermstructFree(ScalePermstruct_t *);
 extern void  get_diag_procs(int_t, Glu_persist_t *, gridinfo_t *, int_t *,
 			    int_t **, int_t **);
 extern int_t QuerySpace_dist(int_t, int_t, Glu_freeable_t *, superlu_dist_mem_usage_t *);
@@ -1101,25 +1115,17 @@ extern int_t 	   	StdList_Size(StdList lst);
 yes_no_t 		StdList_Empty(StdList lst);
 
 /*==== For 3D code ====*/
-/* Matrix distributed in NRformat_loc in 3D process grid, it converts 
-it to a NRformat_loc distributed in two-D grid in grid-0 */
-NRformat_loc dGatherNRformat_loc(NRformat_loc *A, 
-    double* B, int ldb, int nrhs, double** B2d,
-    gridinfo3d_t *grid3d);
-
-int dScatterB3d(NRformat_loc A2d, NRformat_loc *A,
-		 double *B, int ldb, int nrhs, double *B2d,
-                         gridinfo3d_t *grid3d);
-
-NRformat_loc3d*  dGatherNRformat_loc3d(NRformat_loc *A,
-                                 double *B, int ldb, int nrhs,
-                                 gridinfo3d_t *grid3d);
-extern int dScatterB3d_(NRformat_loc3d *A3d, gridinfo3d_t *grid3d);
     
 extern void DistPrint(char* function_name,  double value, char* Units, gridinfo_t* grid);
 extern void DistPrint3D(char* function_name,  double value, char* Units, gridinfo3d_t* grid3d);
 extern void treeImbalance3D(gridinfo3d_t *grid3d, SCT_t* SCT);
 extern void SCT_printComm3D(gridinfo3d_t *grid3d, SCT_t* SCT);
+
+// permutation from superLU default
+extern int_t* getPerm_c_supno(int_t nsupers, superlu_dist_options_t *,
+			      int_t *etree, Glu_persist_t *Glu_persist, 
+			      int_t** Lrowind_bc_ptr, int_t** Ufstnz_br_ptr,
+			      gridinfo_t *);
 
 /* Manipulate counters */
 extern void SCT_init(SCT_t*);
@@ -1211,6 +1217,11 @@ extern sForest_t**  getGreedyLoadBalForests( int_t maxLvl, int_t nsupers, int_t*
 extern sForest_t**  getForests( int_t maxLvl, int_t nsupers, int_t*setree, treeList_t* treeList);
 
     /* from trfAux.h */
+extern int_t getBigUSize(int_t nsupers, gridinfo_t *grid, int_t **Lrowind_bc_ptr);
+extern void getSCUweight(int_t nsupers, treeList_t* treeList, int_t* xsup,
+			 int_t** Lrowind_bc_ptr, int_t** Ufstnz_br_ptr,
+			 gridinfo3d_t * grid3d);
+extern int getNsupers(int n, Glu_persist_t *Glu_persist);
 extern int set_tag_ub();
 extern int getNumThreads(int);
 extern int_t num_full_cols_U(int_t kk, int_t **Ufstnz_br_ptr, int_t *xsup,

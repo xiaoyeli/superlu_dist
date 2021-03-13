@@ -61,7 +61,7 @@ dreadMM_dist(FILE *fp, int_t *m, int_t *n, int_t *nonz,
 
      if (sscanf(line, "%s %s %s %s %s", banner, mtx, crd, arith, sym) != 5) {
        printf("Invalid header (first line does not contain 5 tokens)\n");
-       exit;
+       exit(-1);
      }
 
      if(strcmp(banner,"%%matrixmarket")) {
@@ -142,11 +142,8 @@ dreadMM_dist(FILE *fp, int_t *m, int_t *n, int_t *nonz,
 
     /* 4/ Read triplets of values */
     for (nnz = 0, nz = 0; nnz < *nonz; ++nnz) {
-#ifdef _LONGINT
+
 	j = fscanf(fp, IFMT IFMT "%lf\n", &row[nz], &col[nz], &val[nz]);
-#else
-	j = fscanf(fp, "%d%d%lf\n", &row[nz], &col[nz], &val[nz]);
-#endif
 
 	if ( nnz == 0 ) /* first nonzero */ {
 	    if ( row[0] == 0 || col[0] == 0 ) {

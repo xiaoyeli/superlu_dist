@@ -184,7 +184,6 @@ void SCT_init(SCT_t* SCT)
     SCT->offloadable_flops = 0.0;
     SCT->offloadable_mops = 0.0;
 
-    SCT->SchurCompUdtThreadTime;
 #if 0
     SCT->SchurCompUdtThreadTime = (double *) _mm_malloc(num_threads * CACHE_LINE_SIZE * sizeof(double), 64);
 #else

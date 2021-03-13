@@ -1,4 +1,4 @@
-# SuperLU_DIST (version 6.1)
+# SuperLU_DIST (version 6.4)
 
 [![Build Status](https://travis-ci.org/xiaoyeli/superlu_dist.svg?branch=master)](https://travis-ci.org/xiaoyeli/superlu_dist) 
 [Nightly tests](http://my.cdash.org/index.php?project=superlu_dist)
@@ -99,10 +99,18 @@ OOT}/Applications/BipartiteMatchings" \
 
 ( see example cmake script: run_cmake_build.sh )
 ```
+You can enable GPU with CUDA with the following cmake option:
+```
+`-DTPL_ENABLE_CUDALIB=TRUE`
+`-DTPL_CUDA_LIBRARIES="<path>/libcublas.so;<path>/libcudart.so"`
+```
+
 You can disable LAPACK, ParMetis or CombBLAS with the following cmake option:
+```
 `-DTPL_ENABLE_LAPACKLIB=FALSE`
 `-DTPL_ENABLE_PARMETISLIB=FALSE`
 `-DTPL_ENABLE_COMBBLASLIB=FALSE`
+```
 
 To actually build (compile), type:
 `make`
@@ -121,7 +129,11 @@ or,
 **NOTE:**
 The parallel execution in ctest is invoked by "mpiexec" command which is
 from MPICH environment. If your MPI is not MPICH/mpiexec based, the test
-execution may fail. You can always go to TEST/ directory to perform
+execution may fail. You can pass the definition option "-DMPIEXEC_EXECUTABLE"
+to cmake. For example on Cori at NERSC, you will need the following:
+`-DMPIEXEC_EXECUTABLE=/usr/bin/srun`
+
+Or, you can always go to TEST/ directory to perform
 testing manually.
 
 **Note on the C-Fortran name mangling handled by C preprocessor definition:**  
@@ -254,7 +266,7 @@ You can disable CombBLAS with the following line in SRC/superlu_dist_config.h:
 ```
 
 
-#### 1.4. C preprocessor definition CDEFS.
+#### 1.4. C preprocessor definition CDEFS. (Replaced by cmake module FortranCInterface.)
 
 In the header file SRC/Cnames.h, we use macros to determine how
 C routines should be named so that they are callable by Fortran.
@@ -278,14 +290,10 @@ set the number of threads you wish to use as follows (bash):
 
 `export OMP_NUM_THREADS=<##>`
 
-To enable NVIDIA GPU access, need to take the following 2 step:
-1) Set the following Linux environment variable:
-`export ACC=GPU`
-
-2) Add the CUDA library location in make.inc:
+To enable NVIDIA GPU access, need to take the following step:
+Add the CUDA library location in make.inc:
 ```
-ifeq "${ACC}" "GPU"
-CFLAGS += -DGPU_ACC
+HAVE_CUDA=TRUE
 INCS += -I<CUDA directory>/include
 LIBS += -L<CUDA directory>/lib64 -lcublas -lcudart 
 endif
@@ -392,4 +400,10 @@ December 31, 2016   Version 5.1.3
 September 30, 2017  Version 5.2.0  
 January 28, 2018    Version 5.3.0
 June 1, 2018        Version 5.4.0
+September 22, 2018  Version 6.0.0
+December 9, 2018    Version 6.1.0
+February 8, 2019    Version 6.1.1
+November 12, 2019   Version 6.2.0
+February 23, 2020   Version 6.3.0
+October 23, 2020    Version 6.4.0
 ```

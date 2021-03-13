@@ -182,7 +182,7 @@ zreadhb_dist(int iam, FILE *fp, int_t *nrow, int_t *ncol, int_t *nonz,
         zReadValues(fp, *nonz, *nzval, valnum, valsize);
     }
 
-    fclose(fp);
+
 #if ( DEBUGlevel>=1 )
     CHECK_MALLOC(0, "Exit zreadhb_dist()");
 #endif

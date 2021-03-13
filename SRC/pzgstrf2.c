@@ -51,7 +51,7 @@ at the top-level directory.
  * grid   (input) gridinfo_t*
  *        The 2D process mesh.
  *
- * Llu    (input/output) LocalLU_t*
+ * Llu    (input/output) zLocalLU_t*
  *        Local data structures to store distributed L and U matrices.
  *
  * U_diag_blk_send_req (input/output) MPI_Request*
@@ -113,7 +113,7 @@ at the top-level directory.
  * grid   (input) gridinfo_t*
  *        The 2D process mesh.
  *
- * Llu    (input/output) LocalLU_t*
+ * Llu    (input/output) zLocalLU_t*
  *        Local data structures to store distributed L and U matrices.
  *
  * U_diag_blk_send_req (input/output) MPI_Request*
@@ -139,7 +139,7 @@ at the top-level directory.
 void
 pzgstrf2_trsm
     (superlu_dist_options_t * options, int_t k0, int_t k, double thresh,
-     Glu_persist_t * Glu_persist, gridinfo_t * grid, LocalLU_t * Llu,
+     Glu_persist_t * Glu_persist, gridinfo_t * grid, zLocalLU_t * Llu,
      MPI_Request * U_diag_blk_send_req, int tag_ub,
      SuperLUStat_t * stat, int *info)
 {
@@ -213,8 +213,7 @@ pzgstrf2_trsm
             /* Diagonal pivot */
             i = luptr;
            if ( options->ReplaceTinyPivot == YES ) {
-                if ( slud_z_abs1(&lusup[i]) < thresh &&
-		     lusup[i].r != 0.0 && lusup[i].i != 0.0 ) { /* Diagonal */
+                if ( slud_z_abs1(&lusup[i]) < thresh ) { /* Diagonal */
 
 #if ( PRNTlevel>=2 )
                     printf ("(%d) .. col %d, tiny pivot %e  ",
@@ -362,28 +361,25 @@ pzgstrf2_trsm
 
 }  /* PZGSTRF2_trsm */
 
+	
+
 /*****************************************************************************
  * The following functions are for the new pdgstrf2_ztrsm in the 3D code.
  *****************************************************************************/
 static
-int_t LpanelUpdate(int_t off0,  int nsupc, doublecomplex* ublk_ptr, int ld_ujrow,
-                   doublecomplex* lusup, int nsupr, SCT_t* SCT)
+int_t LpanelUpdate(int_t off0,  int_t nsupc, doublecomplex* ublk_ptr, int_t ld_ujrow,
+                   doublecomplex* lusup, int_t nsupr, SCT_t* SCT)
 {
     int_t l = nsupr - off0;
     doublecomplex alpha = {1.0, 0.0};
-    unsigned long long t1 = _rdtsc();
+    double t1 = SuperLU_timer_();
 
 #define GT  32
 #pragma omp parallel for
     for (int i = 0; i < CEILING(l, GT); ++i)
     {
         int_t off = i * GT;
-        int len = SUPERLU_MIN(GT, l - i * GT);
-
-        superlu_ztrsm("R", "U", "N", "N", len, nsupc, alpha,
-		      ublk_ptr, ld_ujrow, &lusup[off0 + off], nsupr);
-	
-#if 0 // replaced by supelru_dtrsm	
+        int_t len = SUPERLU_MIN(GT, l - i * GT);
 #if 1
   #if defined (USE_VENDOR_BLAS)
         ztrsm_ ("R", "U", "N", "N", &len, &nsupc, &alpha,
@@ -397,27 +393,26 @@ int_t LpanelUpdate(int_t off0,  int nsupc, doublecomplex* ublk_ptr, int ld_ujrow
         cblas_ztrsm (CblasColMajor, CblasRight, CblasUpper, CblasNoTrans, CblasNonUnit,
                      len, nsupc, (void*) &alpha, ublk_ptr, ld_ujrow, &lusup[off0 + off], nsupr);
 #endif
-#endif // replaced by supelru_dtrsm	
 
     } /* for i = ... */
 
-    t1 = _rdtsc() - t1;
+    t1 = SuperLU_timer_() - t1;
 
     SCT->trf2_flops += (double) l * (double)nsupc * (double)nsupc;
     SCT->trf2_time += t1;
     SCT->L_PanelUpdate_tl += t1;
     return 0;
-}
+} /* LpanelUpdate */
 
 #pragma GCC push_options
 #pragma GCC optimize ("O0")
 /*factorizes the diagonal block; called from process that owns the (k,k) block*/
 void Local_Zgstrf2(superlu_dist_options_t *options, int_t k, double thresh,
                    doublecomplex *BlockUFactor, /*factored U is overwritten here*/
-                   Glu_persist_t *Glu_persist, gridinfo_t *grid, LocalLU_t *Llu,
+                   Glu_persist_t *Glu_persist, gridinfo_t *grid, zLocalLU_t *Llu,
                    SuperLUStat_t *stat, int *info, SCT_t* SCT)
 {
-    //unsigned long long t1 = _rdtsc();
+    //double t1 = SuperLU_timer_();
     int_t *xsup = Glu_persist->xsup;
     doublecomplex alpha = {-1.0, 0.0}, zero = {0.0, 0.0}, one = {1.0, 0.0};
 
@@ -427,8 +422,8 @@ void Local_Zgstrf2(superlu_dist_options_t *options, int_t k, double thresh,
     int_t jfst = FstBlockC (k);
     int_t jlst = FstBlockC (k + 1);
     doublecomplex *lusup = Llu->Lnzval_bc_ptr[lk];
-    int nsupc = SuperSize (k);
-    int nsupr;
+    int_t nsupc = SuperSize (k);
+    int_t nsupr;
     if (Llu->Lrowind_bc_ptr[lk])
         nsupr = Llu->Lrowind_bc_ptr[lk][1];
     else
@@ -436,18 +431,18 @@ void Local_Zgstrf2(superlu_dist_options_t *options, int_t k, double thresh,
     doublecomplex *ublk_ptr = BlockUFactor;
     doublecomplex *ujrow = BlockUFactor;
     int_t luptr = 0;                  /* Point_t to the diagonal entries. */
-    int cols_left = nsupc;          /* supernode size */
+    int_t cols_left = nsupc;          /* supernode size */
     int_t u_diag_cnt = 0;
     int_t ld_ujrow = nsupc;       /* leading dimension of ujrow */
-    int incx = 1;
-    int incy = ld_ujrow;
+    int_t incx = 1;
+    int_t incy = ld_ujrow;
 
     for (int_t j = 0; j < jlst - jfst; ++j)   /* for each column in panel */
     {
         /* Diagonal pivot */
-        int i = luptr;
-	if ( options->ReplaceTinyPivot == YES ) {
-	    if ( slud_z_abs1(&lusup[i]) < thresh &&
+        int_t i = luptr;
+            if ( options->ReplaceTinyPivot == YES ) {
+                if ( slud_z_abs1(&lusup[i]) < thresh &&
 		     lusup[i].r != 0.0 && lusup[i].i != 0.0 ) { /* Diagonal */
 
 #if ( PRNTlevel>=2 )
@@ -465,7 +460,7 @@ void Local_Zgstrf2(superlu_dist_options_t *options, int_t k, double thresh,
             }
         }
 
-        for (int l = 0; l < cols_left; ++l, i += nsupr, ++u_diag_cnt)
+        for (int_t l = 0; l < cols_left; ++l, i += nsupr, ++u_diag_cnt)
         {
             int_t st = j * ld_ujrow + j;
             ublk_ptr[st + l * ld_ujrow] = lusup[i]; /* copy one row of U */
@@ -495,18 +490,6 @@ void Local_Zgstrf2(superlu_dist_options_t *options, int_t k, double thresh,
             superlu_zger(l, cols_left, alpha, &lusup[luptr + 1], incx,
                          &ujrow[ld_ujrow], incy, &lusup[luptr + nsupr + 1], nsupr);
 	    
-#if 0 // replaced by superlu_	    
-#if 1
-	    zgeru_ (&l, &cols_left, &alpha, &lusup[luptr + 1], &incx,
-		    &ujrow[ld_ujrow], &incy, &lusup[luptr + nsupr + 1],
-		    &nsupr);
-#else
-            cblas_zgeru (CblasColMajor, l, cols_left, &alpha, &lusup[luptr + 1], incx,
-                        &ujrow[ld_ujrow], incy, &lusup[luptr + nsupr + 1],
-                        nsupr);
-#endif
-#endif // replaced by superlu_
-	    
             stat->ops[FACT] += 8 * l * cols_left;
         }
 
@@ -517,8 +500,8 @@ void Local_Zgstrf2(superlu_dist_options_t *options, int_t k, double thresh,
 
 
     //int_t thread_id = omp_get_thread_num();
-    // SCT->Local_Dgstrf2_Thread_tl[thread_id * CACHE_LINE_SIZE] += (double) ( _rdtsc() - t1);
-}
+    // SCT->Local_Dgstrf2_Thread_tl[thread_id * CACHE_LINE_SIZE] += SuperLU_timer_() - t1;
+} /* Local_Zgstrf2 */
 
 #pragma GCC pop_options
 /************************************************************************/
@@ -557,7 +540,7 @@ void Local_Zgstrf2(superlu_dist_options_t *options, int_t k, double thresh,
  * grid   (input) gridinfo_t*
  *        The 2D process mesh.
  *
- * Llu    (input/output) LocalLU_t*
+ * Llu    (input/output) zLocalLU_t*
  *        Local data structures to store distributed L and U matrices.
  *
  * U_diag_blk_send_req (input/output) MPI_Request*
@@ -586,7 +569,7 @@ void Local_Zgstrf2(superlu_dist_options_t *options, int_t k, double thresh,
 void pzgstrf2_xtrsm
 (superlu_dist_options_t *options, int_t nsupers,
  int_t k0, int_t k, double thresh, Glu_persist_t *Glu_persist,
- gridinfo_t *grid, LocalLU_t *Llu, MPI_Request *U_diag_blk_send_req,
+ gridinfo_t *grid, zLocalLU_t *Llu, MPI_Request *U_diag_blk_send_req,
  int tag_ub, SuperLUStat_t *stat, int *info, SCT_t *SCT)
 {
     int cols_left, iam, pkk;
@@ -752,22 +735,6 @@ int_t zTrs2_GatherTrsmScatter(int_t klst, int_t iukp, int_t rukp,
     
     superlu_ztrsm("L", "L", "N", "U", ldu, ncols, alpha,
 		  &lusup[luptr], nsupr, tempv, ldu);
-#if 0 // replaced by superlu_
-#if 1
-  #if defined (USE_VENDOR_BLAS)
-     ztrsm_ ("L", "L", "N", "U", &ldu, &ncols, &alpha,
-	     &lusup[luptr], &nsupr, tempv, &ldu,
-	     1, 1, 1, 1);
-  #else
-     ztrsm_ ("L", "L", "N", "U", &ldu, &ncols, &alpha,
-	     &lusup[luptr], &nsupr, tempv, &ldu);
-  #endif
-#else
-
-    cblas_ztrsm (CblasColMajor, CblasLeft, CblasLower, CblasNoTrans, CblasUnit,
-                 ldu, ncols, (void*) &alpha, &lusup[luptr], nsupr, tempv, ldu);
-#endif
-#endif // replaced by superlu_
 
     /*now scatter the output into sparse U block*/
     zTrs2_ScatterU(iukp, rukp, klst, nsupc, ldu, usub, uval, tempv);
@@ -775,14 +742,16 @@ int_t zTrs2_GatherTrsmScatter(int_t klst, int_t iukp, int_t rukp,
     return 0;
 }
 
-#if 1 
+/* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
+
+#if 1
 
 /*****************************************************************************
  * The following pdgstrf2_omp is improved for KNL, since Version 5.2.0.
  *****************************************************************************/
 void pzgstrs2_omp
 (int_t k0, int_t k, Glu_persist_t * Glu_persist, gridinfo_t * grid,
- LocalLU_t * Llu, Ublock_info_t *Ublock_info, SuperLUStat_t * stat)
+ zLocalLU_t * Llu, Ublock_info_t *Ublock_info, SuperLUStat_t * stat)
 {
 #ifdef PI_DEBUG
     printf("====Entering pzgstrs2==== \n");
@@ -880,7 +849,9 @@ void pzgstrs2_omp
 #endif
             segsize = klst - usub[iukp++];
 	    if (segsize) {
+#ifdef _OPENMP
 #pragma omp task default(shared) firstprivate(segsize,rukp) if (segsize > 30)
+#endif
 		{ /* Nonzero segment. */
 		    int_t luptr = (knsupc - segsize) * (nsupr + 1);
 		    //printf("[2] segsize %d, nsupr %d\n", segsize, nsupr);
@@ -919,10 +890,10 @@ void pzgstrs2_omp
 
 void pzgstrs2_omp(int_t k0, int_t k, int_t* Lsub_buf, 
 		  doublecomplex *Lval_buf, Glu_persist_t *Glu_persist,
-		  gridinfo_t *grid, LocalLU_t *Llu, SuperLUStat_t *stat,
+		  gridinfo_t *grid, zLocalLU_t *Llu, SuperLUStat_t *stat,
 		  Ublock_info_t *Ublock_info, doublecomplex *bigV, int_t ldt, SCT_t *SCT)
 {
-    unsigned long long t1 = _rdtsc();
+    double t1 = SuperLU_timer_();
     int_t *xsup = Glu_persist->xsup;
     /* Quick return. */
     int_t lk = LBi (k, grid);         /* Local block number */
@@ -946,13 +917,17 @@ void pzgstrs2_omp(int_t k0, int_t k, int_t* Lsub_buf,
 #pragma omp parallel for schedule(dynamic,2)
     for (int_t b = 0; b < nb; ++b)
     {
+#ifdef _OPENMP    
         int_t thread_id = omp_get_thread_num();
+#else	
+        int_t thread_id = 0;
+#endif	
         doublecomplex *tempv = bigV +  thread_id * ldt * ldt;
         zTrs2_GatherTrsmScatter(klst, Ublock_info[b].iukp, Ublock_info[b].rukp,
 				usub, uval, tempv, knsupc, nsupr, lusup, Glu_persist);
     } /* for b ... */
 
-    SCT->PDGSTRS2_tl += (double) ( _rdtsc() - t1);
+    SCT->PDGSTRS2_tl += (double) ( SuperLU_timer_() - t1);
 } /* pdgstrs2_omp new version from Piyush */
 
 #endif

@@ -52,9 +52,9 @@ int main(int argc, char *argv[])
     superlu_dist_options_t options;
     SuperLUStat_t stat;
     SuperMatrix A;
-    ScalePermstruct_t ScalePermstruct;
-    LUstruct_t LUstruct;
-    SOLVEstruct_t SOLVEstruct;
+    dScalePermstruct_t ScalePermstruct;
+    dLUstruct_t LUstruct;
+    dSOLVEstruct_t SOLVEstruct;
     gridinfo_t grid1, grid2;
     double   *berr;
     double   *a, *b, *xtrue;
@@ -130,7 +130,7 @@ int main(int argc, char *argv[])
 
     /* Bail out if I do not belong in any of the 2 grids. */
     MPI_Comm_rank( MPI_COMM_WORLD, &iam );
-    if ( iam >= 10 ) goto out;
+    if ( iam == -1 ) goto out;
     
 #if ( DEBUGlevel>=1 )
     CHECK_MALLOC(iam, "Enter main()");
@@ -181,8 +181,8 @@ int main(int argc, char *argv[])
         n = A.ncol;
 
 	/* Initialize ScalePermstruct and LUstruct. */
-	ScalePermstructInit(m, n, &ScalePermstruct);
-	LUstructInit(n, &LUstruct);
+	dScalePermstructInit(m, n, &ScalePermstruct);
+	dLUstructInit(n, &LUstruct);
 
 	/* Initialize the statistics variables. */
 	PStatInit(&stat);
@@ -193,7 +193,7 @@ int main(int argc, char *argv[])
 
         /* Check the accuracy of the solution. */
         pdinf_norm_error(iam, ((NRformat_loc *)A.Store)->m_loc,
-                         nrhs, b, ldb, xtrue, ldx, &grid1);
+                         nrhs, b, ldb, xtrue, ldx, grid1.comm);
     
 	/* Print the statistics. */
 	PStatPrint(&options, &stat, &grid1);
@@ -203,9 +203,9 @@ int main(int argc, char *argv[])
 	   ------------------------------------------------------------*/
 	PStatFree(&stat);
         Destroy_CompRowLoc_Matrix_dist(&A);
-        ScalePermstructFree(&ScalePermstruct);
-	Destroy_LU(n, &grid1, &LUstruct);
-	LUstructFree(&LUstruct);
+        dScalePermstructFree(&ScalePermstruct);
+	dDestroy_LU(n, &grid1, &LUstruct);
+	dLUstructFree(&LUstruct);
         if ( options.SolveInitialized ) {
             dSolveFinalize(&options, &SOLVEstruct);
         }
@@ -246,8 +246,8 @@ int main(int argc, char *argv[])
         n = A.ncol;
 
 	/* Initialize ScalePermstruct and LUstruct. */
-	ScalePermstructInit(m, n, &ScalePermstruct);
-	LUstructInit(n, &LUstruct);
+	dScalePermstructInit(m, n, &ScalePermstruct);
+	dLUstructInit(n, &LUstruct);
 
 	/* Initialize the statistics variables. */
 	PStatInit(&stat);
@@ -258,7 +258,7 @@ int main(int argc, char *argv[])
 
         /* Check the accuracy of the solution. */
         pdinf_norm_error(iam, ((NRformat_loc *)A.Store)->m_loc,
-                         nrhs, b, ldb, xtrue, ldx, &grid2);
+                         nrhs, b, ldb, xtrue, ldx, grid2.comm);
     
 	/* Print the statistics. */
 	PStatPrint(&options, &stat, &grid2);
@@ -268,9 +268,9 @@ int main(int argc, char *argv[])
 	   ------------------------------------------------------------*/
 	PStatFree(&stat);
         Destroy_CompRowLoc_Matrix_dist(&A);
-        ScalePermstructFree(&ScalePermstruct);
-	Destroy_LU(n, &grid2, &LUstruct);
-	LUstructFree(&LUstruct);
+        dScalePermstructFree(&ScalePermstruct);
+	dDestroy_LU(n, &grid2, &LUstruct);
+	dLUstructFree(&LUstruct);
         if ( options.SolveInitialized ) {
             dSolveFinalize(&options, &SOLVEstruct);
         }
@@ -278,6 +278,9 @@ int main(int argc, char *argv[])
 	SUPERLU_FREE(xtrue);
 	SUPERLU_FREE(berr);
     }
+
+    fclose(fp);
+
 
     /* ------------------------------------------------------------
        RELEASE THE SUPERLU PROCESS GRIDS.

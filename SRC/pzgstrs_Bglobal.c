@@ -41,7 +41,7 @@ _fcd ftcs2;
 _fcd ftcs3;
 #endif
 static void gather_diag_to_all(int_t, int_t, doublecomplex [], Glu_persist_t *,
-                               LocalLU_t *, gridinfo_t *, int_t, int_t [],
+                               zLocalLU_t *, gridinfo_t *, int_t, int_t [],
                                int_t [], doublecomplex [], int_t, doublecomplex []);
 
 /*! \brief
@@ -60,11 +60,11 @@ static void gather_diag_to_all(int_t, int_t, doublecomplex [], Glu_persist_t *,
  * n      (input) int (global)
  *        The order of the system of linear equations.
  *
- * LUstruct (input) LUstruct_t*
+ * LUstruct (input) zLUstruct_t*
  *        The distributed data structures storing L and U factors.
  *        The L and U factors are obtained from pzgstrf for
  *        the possibly scaled and permuted matrix A.
- *        See superlu_ddefs.h for the definition of 'LUstruct_t'.
+ *        See superlu_ddefs.h for the definition of 'zLUstruct_t'.
  *
  * grid   (input) gridinfo_t*
  *        The 2D process mesh. It contains the MPI communicator, the number
@@ -100,12 +100,12 @@ static void gather_diag_to_all(int_t, int_t, doublecomplex [], Glu_persist_t *,
  */
 
 void
-pzgstrs_Bglobal(int_t n, LUstruct_t *LUstruct, gridinfo_t *grid,
+pzgstrs_Bglobal(int_t n, zLUstruct_t *LUstruct, gridinfo_t *grid,
                 doublecomplex *B, int_t ldb, int nrhs,
                 SuperLUStat_t *stat, int *info)
 {
     Glu_persist_t *Glu_persist = LUstruct->Glu_persist;
-    LocalLU_t *Llu = LUstruct->Llu;
+    zLocalLU_t *Llu = LUstruct->Llu;
     doublecomplex alpha = {1.0, 0.0};
     doublecomplex zero = {0.0, 0.0};
     doublecomplex *lsum;  /* Local running sum of the updates to B-components */
@@ -998,7 +998,7 @@ pzgstrs_Bglobal(int_t n, LUstruct_t *LUstruct, gridinfo_t *grid,
  */
 static void
 gather_diag_to_all(int_t n, int_t nrhs, doublecomplex x[],
-		   Glu_persist_t *Glu_persist, LocalLU_t *Llu,
+		   Glu_persist_t *Glu_persist, zLocalLU_t *Llu,
 		   gridinfo_t *grid, int_t num_diag_procs,
 		   int_t diag_procs[], int_t diag_len[],
 		   doublecomplex y[], int_t ldy, doublecomplex work[])

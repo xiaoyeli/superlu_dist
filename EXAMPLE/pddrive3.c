@@ -57,9 +57,9 @@ int main(int argc, char *argv[])
     SuperLUStat_t stat;
     SuperMatrix A;
     NRformat_loc *Astore;
-    ScalePermstruct_t ScalePermstruct;
-    LUstruct_t LUstruct;
-    SOLVEstruct_t SOLVEstruct;
+    dScalePermstruct_t ScalePermstruct;
+    dLUstruct_t LUstruct;
+    dSOLVEstruct_t SOLVEstruct;
     gridinfo_t grid;
     double   *berr;
     double   *b, *b1, *xtrue, *nzval, *nzval1;
@@ -113,7 +113,7 @@ int main(int argc, char *argv[])
 
     /* Bail out if I do not belong in the grid. */
     iam = grid.iam;
-    if ( iam >= nprow * npcol )	goto out;
+    if ( iam == -1 )	goto out;
     if ( !iam ) {
 	int v_major, v_minor, v_bugfix;
 #ifdef __INTEL_COMPILER
@@ -196,8 +196,8 @@ int main(int argc, char *argv[])
     }
 
     /* Initialize ScalePermstruct and LUstruct. */
-    ScalePermstructInit(m, n, &ScalePermstruct);
-    LUstructInit(n, &LUstruct);
+    dScalePermstructInit(m, n, &ScalePermstruct);
+    dLUstructInit(n, &LUstruct);
 
     /* Initialize the statistics variables. */
     PStatInit(&stat);
@@ -207,7 +207,7 @@ int main(int argc, char *argv[])
             &LUstruct, &SOLVEstruct, berr, &stat, &info);
 
     /* Check the accuracy of the solution. */
-    pdinf_norm_error(iam, m_loc, nrhs, b, ldb, xtrue, ldx, &grid);
+    pdinf_norm_error(iam, m_loc, nrhs, b, ldb, xtrue, ldx, grid.comm);
     
     PStatPrint(&options, &stat, &grid);        /* Print the statistics. */
     PStatFree(&stat);
@@ -245,7 +245,7 @@ int main(int argc, char *argv[])
     /* Check the accuracy of the solution. */
     if ( !iam )
         printf("Solve a system with the same pattern and similar values.\n");
-    pdinf_norm_error(iam, m_loc, nrhs, b1, ldb, xtrue, ldx, &grid);
+    pdinf_norm_error(iam, m_loc, nrhs, b1, ldb, xtrue, ldx, grid.comm);
 
     /* Print the statistics. */
     PStatPrint(&options, &stat, &grid);
@@ -255,17 +255,17 @@ int main(int argc, char *argv[])
        ------------------------------------------------------------*/
     PStatFree(&stat);
     Destroy_CompRowLoc_Matrix_dist(&A); /* Deallocate storage of matrix A.  */
-    Destroy_LU(n, &grid, &LUstruct); /* Deallocate storage associated with    
+    dDestroy_LU(n, &grid, &LUstruct); /* Deallocate storage associated with    
 					the L and U matrices.               */
-    ScalePermstructFree(&ScalePermstruct);
-    LUstructFree(&LUstruct);         /* Deallocate the structure of L and U.*/
+    dScalePermstructFree(&ScalePermstruct);
+    dLUstructFree(&LUstruct);         /* Deallocate the structure of L and U.*/
     if ( options.SolveInitialized ) {
         dSolveFinalize(&options, &SOLVEstruct);
     }
     SUPERLU_FREE(b1);	             /* Free storage of right-hand side.    */
     SUPERLU_FREE(xtrue);             /* Free storage of the exact solution. */
     SUPERLU_FREE(berr);
-
+    fclose(fp);
 
     /* ------------------------------------------------------------
        RELEASE THE SUPERLU PROCESS GRID.
@@ -303,5 +303,3 @@ int cpp_defs()
     printf("....\n");
     return 0;
 }
-
-

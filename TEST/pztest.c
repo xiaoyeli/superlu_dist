@@ -51,7 +51,7 @@ parse_command_line(int argc, char *argv[], int *nprow, int *npcol,
 extern int
 pzcompute_resid(int m, int n, int nrhs, SuperMatrix *A,
 		doublecomplex *x, int ldx, doublecomplex *b, int ldb,
-		gridinfo_t *grid, SOLVEstruct_t *SOLVEstruct, double *resid);
+		gridinfo_t *grid, zSOLVEstruct_t *SOLVEstruct, double *resid);
 
 /*! \brief Copy matrix A into matrix B, in distributed compressed row format. */
 void
@@ -109,9 +109,9 @@ int main(int argc, char *argv[])
     SuperLUStat_t stat;
     SuperMatrix A, Asave;
     NRformat_loc *Astore;
-    ScalePermstruct_t ScalePermstruct;
-    LUstruct_t LUstruct;
-    SOLVEstruct_t SOLVEstruct;
+    zScalePermstruct_t ScalePermstruct;
+    zLUstruct_t LUstruct;
+    zSOLVEstruct_t SOLVEstruct;
     gridinfo_t grid;
     doublecomplex   *nzval_save;
     int_t    *colind_save, *rowptr_save;
@@ -244,8 +244,8 @@ int main(int argc, char *argv[])
 		        zCopy_CompRowLoc_NoAllocation(&Asave, &A);
 
 		        /* Initialize ScalePermstruct and LUstruct. */
-		        ScalePermstructInit(m, n, &ScalePermstruct);
-		        LUstructInit(n, &LUstruct);
+		        zScalePermstructInit(m, n, &ScalePermstruct);
+		        zLUstructInit(n, &LUstruct);
 
 		        if ( prefact ) {
 
@@ -318,7 +318,7 @@ int main(int argc, char *argv[])
 			    options.Fact = fact;
 			    if ( fact == SamePattern ) {
 			        // {L,U} not re-used in subsequent call to PDGSSVX.
-			        Destroy_LU(n, &grid, &LUstruct);
+			        zDestroy_LU(n, &grid, &LUstruct);
 			    } else if (fact == SamePattern_SameRowPerm) {
 			        // {L,U} structure is re-used in subsequent call to PDGSSVX.
 				zZeroLblocks(iam, n, &grid, &LUstruct);
@@ -336,8 +336,8 @@ int main(int argc, char *argv[])
 			    if (fact == SamePattern_SameRowPerm && iam == 0) {
                                 /* Perturb the 1st diagonal of the matrix 
                                    to larger value, so to have a different A. */
-                                (doublecomplex *) Astore->nzval)[0].r += 1.0e-8;
-                                (doublecomplex *) Astore->nzval)[0].i += 1.0e-8;
+                                (doublecomplex *) Astore->nzval)[0].r += 1.0e-12; //1.0e-8;
+                                (doublecomplex *) Astore->nzval)[0].i += 1.0e-12; //1.0e-8;
                              }
 
 		        } 
@@ -357,7 +357,7 @@ int main(int argc, char *argv[])
 		        PStatFree(&stat);
 #if 0
 		        pdinf_norm_error(iam, ((NRformat_loc *)A.Store)->m_loc,
-				     nrhs, b, ldb, xtrue, ldx, &grid);
+				     nrhs, b, ldb, xtrue, ldx, grid.comm);
 #endif
 		        if ( info ) {
 			    printf(FMT3, "pzgssvx",info,izero,n,nrhs,imat,nfail);
@@ -375,7 +375,7 @@ int main(int argc, char *argv[])
 			    dgst04(n, nrhs, solx, ldx, xact, ldx, rcond,
 					  &result[2]);
 			    pdinf_norm_error(iam, ((NRformat_loc *)A.Store)->m_loc,
-					 nrhs, b, ldb, xtrue, ldx, &grid);
+					 nrhs, b, ldb, xtrue, ldx, grid.comm);
 #endif
 
 			    /* Print information about the tests that did
@@ -400,9 +400,9 @@ int main(int argc, char *argv[])
 			    SUPERLU_FREE(C);
 			    ScalePermstruct.DiagScale = NOEQUIL; /* Avoid free R/C again. */
 		        }
-		        ScalePermstructFree(&ScalePermstruct);
-		        Destroy_LU(n, &grid, &LUstruct);
-		        LUstructFree(&LUstruct);
+		        zScalePermstructFree(&ScalePermstruct);
+		        zDestroy_LU(n, &grid, &LUstruct);
+		        zLUstructFree(&LUstruct);
 		        if ( options.SolveInitialized ) {
 			    zSolveFinalize(&options, &SOLVEstruct);
 		        }
@@ -421,7 +421,7 @@ int main(int argc, char *argv[])
 	   ------------------------------------------------------------*/
 	Destroy_CompRowLoc_Matrix_dist(&A);
 	Destroy_CompRowLoc_Matrix_dist(&Asave);
-	//	ScalePermstructFree(&ScalePermstruct);
+	//	zScalePermstructFree(&ScalePermstruct);
 	SUPERLU_FREE(b);
 	SUPERLU_FREE(bsave);
 	SUPERLU_FREE(xtrue);

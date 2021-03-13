@@ -85,256 +85,6 @@ void Destroy_Dense_Matrix_dist(SuperMatrix *A)
     SUPERLU_FREE(A->Store);
 }
 
-/*! \brief Destroy the binary trees associated with the panel. 
-  These are used in triangular solve. */
-void Destroy_Tree(int_t n, gridinfo_t *grid, LUstruct_t *LUstruct)
-{
-    int_t i, nb, nsupers;
-    Glu_persist_t *Glu_persist = LUstruct->Glu_persist;
-    LocalLU_t *Llu = LUstruct->Llu;
-#if (DEBUGlevel >= 1)
-    int iam;
-    MPI_Comm_rank(MPI_COMM_WORLD, &iam);
-    CHECK_MALLOC(iam, "Enter Destroy_Tree()");
-#endif
-
-    nsupers = Glu_persist->supno[n - 1] + 1;
-
-    nb = CEILING(nsupers, grid->npcol);
-    for (i = 0; i < nb; ++i)
-    {
-        if (Llu->LBtree_ptr[i] != NULL)
-        {
-            BcTree_Destroy(Llu->LBtree_ptr[i], LUstruct->dt);
-        }
-        if (Llu->UBtree_ptr[i] != NULL)
-        {
-            BcTree_Destroy(Llu->UBtree_ptr[i], LUstruct->dt);
-        }
-    }
-    SUPERLU_FREE(Llu->LBtree_ptr);
-    SUPERLU_FREE(Llu->UBtree_ptr);
-
-    nb = CEILING(nsupers, grid->nprow);
-    for (i = 0; i < nb; ++i)
-    {
-        if (Llu->LRtree_ptr[i] != NULL)
-        {
-            RdTree_Destroy(Llu->LRtree_ptr[i], LUstruct->dt);
-        }
-        if (Llu->URtree_ptr[i] != NULL)
-        {
-            RdTree_Destroy(Llu->URtree_ptr[i], LUstruct->dt);
-        }
-    }
-    SUPERLU_FREE(Llu->LRtree_ptr);
-    SUPERLU_FREE(Llu->URtree_ptr);
-
-#if (DEBUGlevel >= 1)
-    CHECK_MALLOC(iam, "Exit Destroy_Tree()");
-#endif
-}
-
-/*! \brief Destroy distributed L & U matrices. */
-void Destroy_LU(int_t n, gridinfo_t *grid, LUstruct_t *LUstruct)
-{
-    int_t i, nb, nsupers;
-    Glu_persist_t *Glu_persist = LUstruct->Glu_persist;
-    LocalLU_t *Llu = LUstruct->Llu;
-
-#if (DEBUGlevel >= 1)
-    int iam;
-    MPI_Comm_rank(MPI_COMM_WORLD, &iam);
-    CHECK_MALLOC(iam, "Enter Destroy_LU()");
-#endif
-
-    Destroy_Tree(n, grid, LUstruct); // from asynchronous triangular solve
-
-    nsupers = Glu_persist->supno[n - 1] + 1;
-
-    nb = CEILING(nsupers, grid->npcol);
-    for (i = 0; i < nb; ++i)
-        if (Llu->Lrowind_bc_ptr[i])
-        {
-            SUPERLU_FREE(Llu->Lrowind_bc_ptr[i]);
-            SUPERLU_FREE(Llu->Lnzval_bc_ptr[i]);
-        }
-    SUPERLU_FREE(Llu->Lrowind_bc_ptr);
-    SUPERLU_FREE(Llu->Lnzval_bc_ptr);
-
-    nb = CEILING(nsupers, grid->nprow);
-    for (i = 0; i < nb; ++i)
-        if (Llu->Ufstnz_br_ptr[i])
-        {
-            SUPERLU_FREE(Llu->Ufstnz_br_ptr[i]);
-            SUPERLU_FREE(Llu->Unzval_br_ptr[i]);
-        }
-    SUPERLU_FREE(Llu->Ufstnz_br_ptr);
-    SUPERLU_FREE(Llu->Unzval_br_ptr);
-
-    /* The following can be freed after factorization. */
-    SUPERLU_FREE(Llu->ToRecv);
-    SUPERLU_FREE(Llu->ToSendD);
-    SUPERLU_FREE(Llu->ToSendR[0]);
-    SUPERLU_FREE(Llu->ToSendR);
-
-    /* The following can be freed only after iterative refinement. */
-    SUPERLU_FREE(Llu->ilsum);
-    SUPERLU_FREE(Llu->fmod);
-    SUPERLU_FREE(Llu->fsendx_plist[0]);
-    SUPERLU_FREE(Llu->fsendx_plist);
-    SUPERLU_FREE(Llu->bmod);
-    SUPERLU_FREE(Llu->bsendx_plist[0]);
-    SUPERLU_FREE(Llu->bsendx_plist);
-    SUPERLU_FREE(Llu->mod_bit);
-
-    nb = CEILING(nsupers, grid->npcol);
-    for (i = 0; i < nb; ++i)
-        if (Llu->Lindval_loc_bc_ptr[i] != NULL)
-        {
-            SUPERLU_FREE(Llu->Lindval_loc_bc_ptr[i]);
-        }
-    SUPERLU_FREE(Llu->Lindval_loc_bc_ptr);
-
-    nb = CEILING(nsupers, grid->npcol);
-    for (i = 0; i < nb; ++i)
-    {
-        if (Llu->Linv_bc_ptr[i] != NULL)
-        {
-            SUPERLU_FREE(Llu->Linv_bc_ptr[i]);
-        }
-        if (Llu->Uinv_bc_ptr[i] != NULL)
-        {
-            SUPERLU_FREE(Llu->Uinv_bc_ptr[i]);
-        }
-    }
-    SUPERLU_FREE(Llu->Linv_bc_ptr);
-    SUPERLU_FREE(Llu->Uinv_bc_ptr);
-    SUPERLU_FREE(Llu->Unnz);
-
-    nb = CEILING(nsupers, grid->npcol);
-    for (i = 0; i < nb; ++i)
-        if (Llu->Urbs[i])
-        {
-            SUPERLU_FREE(Llu->Ucb_indptr[i]);
-            SUPERLU_FREE(Llu->Ucb_valptr[i]);
-        }
-    SUPERLU_FREE(Llu->Ucb_indptr);
-    SUPERLU_FREE(Llu->Ucb_valptr);
-    SUPERLU_FREE(Llu->Urbs);
-
-    SUPERLU_FREE(Glu_persist->xsup);
-    SUPERLU_FREE(Glu_persist->supno);
-
-#if (DEBUGlevel >= 1)
-    CHECK_MALLOC(iam, "Exit Destroy_LU()");
-#endif
-}
-
-int DeAllocLlu_3d(int_t n, LUstruct_t *LUstruct, gridinfo3d_t *grid3d)
-{
-    int i, nbc, nbr, nsupers;
-    LocalLU_t *Llu = LUstruct->Llu;
-
-    nsupers = (LUstruct->Glu_persist)->supno[n - 1] + 1;
-
-    nbc = CEILING(nsupers, grid3d->npcol);
-    for (i = 0; i < nbc; ++i)
-        if (Llu->Lrowind_bc_ptr[i])
-        {
-            SUPERLU_FREE(Llu->Lrowind_bc_ptr[i]);
-#ifdef GPU_ACC
-            checkCuda(cudaFreeHost(Llu->Lnzval_bc_ptr[i]));
-#else
-            SUPERLU_FREE(Llu->Lnzval_bc_ptr[i]);
-#endif
-        }
-    SUPERLU_FREE(Llu->Lrowind_bc_ptr);
-    SUPERLU_FREE(Llu->Lnzval_bc_ptr);
-
-    nbr = CEILING(nsupers, grid3d->nprow);
-    for (i = 0; i < nbr; ++i)
-        if (Llu->Ufstnz_br_ptr[i])
-        {
-            SUPERLU_FREE(Llu->Ufstnz_br_ptr[i]);
-            SUPERLU_FREE(Llu->Unzval_br_ptr[i]);
-        }
-    SUPERLU_FREE(Llu->Ufstnz_br_ptr);
-    SUPERLU_FREE(Llu->Unzval_br_ptr);
-
-    /* The following can be freed after factorization. */
-    SUPERLU_FREE(Llu->ToRecv);
-    SUPERLU_FREE(Llu->ToSendD);
-    for (i = 0; i < nbc; ++i)
-        SUPERLU_FREE(Llu->ToSendR[i]);
-    SUPERLU_FREE(Llu->ToSendR);
-    return 0;
-}
-
-/*! \brief Allocate storage in ScalePermstruct */
-void ScalePermstructInit(const int_t m, const int_t n,
-                         ScalePermstruct_t *ScalePermstruct)
-{
-    ScalePermstruct->DiagScale = NOEQUIL;
-    if (!(ScalePermstruct->perm_r = intMalloc_dist(m)))
-        ABORT("Malloc fails for perm_r[].");
-    if (!(ScalePermstruct->perm_c = intMalloc_dist(n)))
-        ABORT("Malloc fails for perm_c[].");
-}
-
-/*! \brief Deallocate ScalePermstruct */
-void ScalePermstructFree(ScalePermstruct_t *ScalePermstruct)
-{
-    SUPERLU_FREE(ScalePermstruct->perm_r);
-    SUPERLU_FREE(ScalePermstruct->perm_c);
-    switch (ScalePermstruct->DiagScale)
-    {
-    case ROW:
-        SUPERLU_FREE(ScalePermstruct->R);
-        break;
-    case COL:
-        SUPERLU_FREE(ScalePermstruct->C);
-        break;
-    case BOTH:
-        SUPERLU_FREE(ScalePermstruct->R);
-        SUPERLU_FREE(ScalePermstruct->C);
-        break;
-    default:
-        break;
-    }
-}
-
-/*! \brief Allocate storage in LUstruct */
-void LUstructInit(const int_t n, LUstruct_t *LUstruct)
-{
-    if (!(LUstruct->etree = intMalloc_dist(n)))
-        ABORT("Malloc fails for etree[].");
-    if (!(LUstruct->Glu_persist = (Glu_persist_t *)
-              SUPERLU_MALLOC(sizeof(Glu_persist_t))))
-        ABORT("Malloc fails for Glu_persist_t.");
-    if (!(LUstruct->Llu = (LocalLU_t *)
-              SUPERLU_MALLOC(sizeof(LocalLU_t))))
-        ABORT("Malloc fails for LocalLU_t.");
-    LUstruct->Llu->inv = 0;
-}
-
-/*! \brief Deallocate LUstruct */
-void LUstructFree(LUstruct_t *LUstruct)
-{
-#if (DEBUGlevel >= 1)
-    int iam;
-    MPI_Comm_rank(MPI_COMM_WORLD, &iam);
-    CHECK_MALLOC(iam, "Enter LUstructFree()");
-#endif
-
-    SUPERLU_FREE(LUstruct->etree);
-    SUPERLU_FREE(LUstruct->Glu_persist);
-    SUPERLU_FREE(LUstruct->Llu);
-
-#if (DEBUGlevel >= 1)
-    CHECK_MALLOC(iam, "Exit LUstructFree()");
-#endif
-}
 
 /*! \brief
  *
@@ -513,6 +263,7 @@ void print_sp_ienv_dist(superlu_dist_options_t *options)
     printf("**************************************************\n");
 }
 
+<<<<<<< HEAD
 /*! \brief
  *
  * <pre>
@@ -682,6 +433,8 @@ int_t pxgstrs_init(int_t n, int_t m_loc, int_t nrhs, int_t fst_row,
     return 0;
 } /* PXGSTRS_INIT */
 
+=======
+>>>>>>> Version-7
 void pxgstrs_finalize(pxgstrs_comm_t *gstrs_comm)
 {
     SUPERLU_FREE(gstrs_comm->B_to_X_SendCnt);
@@ -720,6 +473,8 @@ void PStatInit(SuperLUStat_t *stat)
         stat->ops[i] = 0.;
     }
     stat->TinyPivots = stat->RefineSteps = 0;
+    stat->current_buffer = stat->peak_buffer = 0.0;
+    stat->gpu_buffer = 0.0;
 }
 
 void PStatPrint(superlu_dist_options_t *options, SuperLUStat_t *stat, gridinfo_t *grid)
@@ -732,6 +487,7 @@ void PStatPrint(superlu_dist_options_t *options, SuperLUStat_t *stat, gridinfo_t
     if (options->PrintStat == NO)
         return;
 
+<<<<<<< HEAD
     if (!iam && options->Fact != FACTORED)
     {
         printf("**************************************************\n");
@@ -745,11 +501,23 @@ void PStatPrint(superlu_dist_options_t *options, SuperLUStat_t *stat, gridinfo_t
             printf("\tCOLPERM time       %8.2f\n", utime[COLPERM]);
         printf("\tSYMBFACT time      %8.2f\n", utime[SYMBFAC]);
         printf("\tDISTRIBUTE time    %8.2f\n", utime[DIST]);
+=======
+        if ( options->Equil != NO )
+	    printf("\tEQUIL time         %8.3f\n", utime[EQUIL]);
+	if ( options->RowPerm != NOROWPERM )
+	    printf("\tROWPERM time       %8.3f\n", utime[ROWPERM]);
+	if ( options->ColPerm != NATURAL )
+	    printf("\tCOLPERM time       %8.3f\n", utime[COLPERM]);
+        printf("\tSYMBFACT time      %8.3f\n", utime[SYMBFAC]);
+	printf("\tDISTRIBUTE time    %8.3f\n", utime[DIST]);
+
+>>>>>>> Version-7
     }
 
     MPI_Reduce(&ops[FACT], &flopcnt, 1, MPI_FLOAT, MPI_SUM,
                0, grid->comm);
     factflop = flopcnt;
+<<<<<<< HEAD
     if (!iam && options->Fact != FACTORED)
     {
         printf("\tFACTOR time        %8.2f\n", utime[FACT]);
@@ -757,6 +525,14 @@ void PStatPrint(superlu_dist_options_t *options, SuperLUStat_t *stat, gridinfo_t
             printf("\tFactor flops\t%e\tMflops \t%8.2f\n",
                    flopcnt,
                    flopcnt * 1e-6 / utime[FACT]);
+=======
+    if ( !iam && options->Fact != FACTORED ) {
+	printf("\tFACTOR time        %8.3f\n", utime[FACT]);
+	if ( utime[FACT] != 0.0 )
+	    printf("\tFactor flops\t%e\tMflops \t%8.2f\n",
+		   flopcnt,
+		   flopcnt*1e-6/utime[FACT]);
+>>>>>>> Version-7
     }
 
     MPI_Reduce(&ops[SOLVE], &flopcnt, 1, MPI_FLOAT, MPI_SUM,
@@ -1402,11 +1178,19 @@ int_t num_full_cols_U(
 }
 
 int_t estimate_bigu_size(
+<<<<<<< HEAD
     int_t nsupers,
     int_t **Ufstnz_br_ptr, /* point to U index[] array */
     Glu_persist_t *Glu_persist,
     gridinfo_t *grid, int_t *perm_u,
     int_t *max_ncols /* Output: Max. number of columns in among all U(k,:).
+=======
+      int_t nsupers,
+      int_t**Ufstnz_br_ptr, /* point to U index[] array */
+      Glu_persist_t *Glu_persist,
+      gridinfo_t* grid, int_t* perm_u, 
+      int_t *max_ncols /* Output: Max. number of columns among all U(k,:).
+>>>>>>> Version-7
 			     This is used for allocating GEMM V buffer.  */
 )
 {
@@ -1433,7 +1217,10 @@ int_t estimate_bigu_size(
                                                    xsup, grid, perm_u, &ldu));
         my_max_ldu = SUPERLU_MAX(ldu, my_max_ldu);
     }
-
+#if 0
+	my_max_ldu = my_max_ldu*8;  //YL: 8 is a heuristic number  
+#endif
+	
     /* Need U buffer size large enough to hold all U(k,:) transferred from
        other processes. */
     MPI_Allreduce(&my_max_ldu, &max_ldu, 1, mpi_int_t, MPI_MAX, grid->cscp.comm);
@@ -1525,6 +1312,7 @@ void quickSortM(int_t *a, int_t l, int_t r, int_t lda, int_t dir, int_t dims)
         // printf("dims: %5d",dims);
         // fflush(stdout);
 
+<<<<<<< HEAD
         // divide and conquer
         j = partitionM(a, l, r, lda, dir, dims);
         quickSortM(a, l, j - 1, lda, dir, dims);
@@ -1616,6 +1404,46 @@ int DeAllocGlu_3d(LUstruct_t *LUstruct)
     SUPERLU_FREE(LUstruct->Glu_persist->supno);
     return 0;
 }
+=======
+int_t partitionM( int_t* a, int_t l, int_t r, int_t lda, int_t dir, int_t dims) {
+   int_t pivot, i, j, t, dd;
+   pivot = a[l];
+   i = l; j = r+1;
+
+	if(dir==0){
+	   while( 1)
+	   {
+		do ++i; while( a[i] <= pivot && i <= r );
+		do --j; while( a[j] > pivot );
+		if( i >= j ) break; 
+		for(dd=0;dd<dims;dd++){	
+			t = a[i+lda*dd]; a[i+lda*dd] = a[j+lda*dd]; a[j+lda*dd] = t;	
+		}
+	   }
+	   for(dd=0;dd<dims;dd++){	
+		t = a[l+lda*dd]; a[l+lda*dd] = a[j+lda*dd]; a[j+lda*dd] = t;
+	   }	   
+	   return j;		
+	}else if(dir==1){
+	   while( 1)
+	   {
+		do ++i; while( a[i] >= pivot && i <= r );
+		do --j; while( a[j] < pivot );
+		if( i >= j ) break;
+		for(dd=0;dd<dims;dd++){	
+			t = a[i+lda*dd]; a[i+lda*dd] = a[j+lda*dd]; a[j+lda*dd] = t;	
+		}
+	   }
+	   for(dd=0;dd<dims;dd++){	
+		t = a[l+lda*dd]; a[l+lda*dd] = a[j+lda*dd]; a[j+lda*dd] = t;
+	   } 
+	   return j;		
+	}
+
+	return 0;
+} /* partitionM */
+
+>>>>>>> Version-7
 
 int_t **getTreePerm(int_t *myTreeIdxs, int_t *myZeroTrIdxs,
                     int_t *nodeCount, int_t **nodeList,
@@ -1700,3 +1528,239 @@ int_t reduceStat(PhaseType PHASE,
 }
 
 /*---- end from 3D code p3dcomm.c ----*/
+
+
+#ifdef GPU_ACC
+
+void
+gemm_division_cpu_gpu(
+/* output */
+    int* num_streams_used, /* number of CUDA streams that will be used */
+    int* stream_end_col,   /* array holding last column blk for each stream partition */
+    int * ncpu_blks,       /* Number of CPU dgemm blks (output) */
+/*input */
+    int nbrow,             /* number of row in A matrix */
+    int ldu,               /* number of k in dgemm */
+    int nstreams,
+    int* full_u_cols,      /* array containing prefix sum of GPU workload */
+    int num_blks           /* Number of block cloumns (workload) on GPU */
+)
+{
+    int Ngem = sp_ienv_dist(7);  /*get_mnk_dgemm ();*/
+    int min_gpu_col = get_cublas_nb (); /* default 64 */
+
+    /*
+      Sherry corrected comment:                                                  
+      CPU to GPU dgemm should be ideally 0:1 ratio to hide the total cost.
+      However since there is GPU latency of around 20,000 ns implying about
+      200000 floating point operations be done in that time, so    
+      ncols ~= 200,000/(2*nbrow*ldu) should be done on CPU to hide the
+      latency; We set Ngem =200,000/2.     
+     */
+    int i, j;
+
+    // {
+    //     *num_streams_used=0;
+    //     *ncpu_blks = num_blks;
+    //     return;
+    // }
+
+    for (int i = 0; i < nstreams; ++i)
+    {
+        stream_end_col[i] = num_blks;
+    }
+	*num_streams_used = 0;
+
+    *ncpu_blks = 0;
+    /* Early return -1, when number of columns is smaller than threshold,
+       everything should be done on CPU. 
+       Test condition GPU Flops ~ nbrow*ldu*cols < Ngem */
+    if (full_u_cols[num_blks - 1] < (Ngem / (nbrow * ldu)) || num_blks == 1 )
+    {
+        *num_streams_used = 0;
+        *ncpu_blks = num_blks;
+#ifdef PI_DEBUG
+        printf ("gemm_division: num_blks %d, full_u_cols[num_blks-1] %d %d \n",
+                num_blks, full_u_cols[num_blks - 1], (Ngem / (nbrow * ldu)));
+        printf ("Early return -1\n");
+#endif
+        return;
+
+    }
+
+    /* Early return -2, when number of streams = 0 */
+    if (nstreams == 0)
+    {
+        *num_streams_used = 0;
+        *ncpu_blks = num_blks;
+        return;
+        /* code */
+    }
+
+    /* Find first block where count > Ngem */
+    for (i = 0; i < num_blks - 1; ++i)  /*I can use binary search here */
+    {
+        if (full_u_cols[i + 1] > Ngem / (nbrow * ldu))
+            break;
+    }
+    *ncpu_blks = i + 1;
+
+    int_t cols_remain =
+        full_u_cols[num_blks - 1] - full_u_cols[*ncpu_blks - 1];
+
+#ifdef PI_DEBUG
+    printf ("Remaining cols %d num_blks %d cpu_blks %d \n", cols_remain,
+            num_blks, *ncpu_blks);
+#endif
+    if (cols_remain > 0)
+    {
+        *num_streams_used = 1;  /* now at least one stream would be used */
+
+#ifdef PI_DEBUG
+        printf ("%d %d  %d %d \n", full_u_cols[num_blks - 1],
+                full_u_cols[*ncpu_blks], *ncpu_blks, nstreams);
+#endif
+        int_t FP_MIN = 200000 / (nbrow * ldu);
+        int_t cols_per_stream = SUPERLU_MAX (min_gpu_col, cols_remain / nstreams);
+        cols_per_stream = SUPERLU_MAX (cols_per_stream, FP_MIN);
+#ifdef PI_DEBUG
+        printf ("cols_per_stream :\t%d\n", cols_per_stream);
+#endif
+
+        int_t cutoff = cols_per_stream + full_u_cols[*ncpu_blks - 1];
+        for (int_t i = 0; i < nstreams; ++i)
+        {
+            stream_end_col[i] = num_blks;
+        }
+        j = *ncpu_blks;
+        for (i = 0; i < nstreams - 1; ++i)
+        {
+            int_t st = (i == 0) ? (*ncpu_blks) : stream_end_col[i - 1];
+
+            for (j = st; j < num_blks - 1; ++j)
+            {
+#ifdef PI_DEBUG
+                printf ("i %d, j %d, %d  %d ", i, j, full_u_cols[j + 1],
+                        cutoff);
+#endif
+                if (full_u_cols[j + 1] > cutoff)
+                {
+#ifdef PI_DEBUG
+                    printf ("cutoff met \n");
+#endif
+                    cutoff = cols_per_stream + full_u_cols[j];
+                    stream_end_col[i] = j + 1;
+                    *num_streams_used += 1;
+                    j++;
+                    break;
+                }
+#ifdef PI_DEBUG
+                printf ("\n");
+#endif
+            }
+        }
+
+    }
+	
+} /* gemm_division_cpu_gpu */
+
+void
+gemm_division_new (int * num_streams_used,   /*number of streams that will be used */
+                   int * stream_end_col, /*array holding last column blk for each partition */
+                   int * ncpu_blks,  /*Number of CPU dgemm blks */
+                        /*input */
+                   int nbrow,    /*number of row in A matrix */
+                   int ldu,  /*number of k in dgemm */
+                   int nstreams,
+                   Ublock_info_t *Ublock_info,    /*array containing prefix sum of work load */
+                   int num_blks  /*Number of work load */
+    )
+{
+    int Ngem = sp_ienv_dist(7); /*get_mnk_dgemm ();*/
+    int min_gpu_col = get_cublas_nb ();
+
+    // Ngem = 1000000000;
+    /*
+       cpu is to gpu dgemm should be ideally 0:1 ratios to hide the total cost
+       However since there is gpu latency of around 20,000 ns implying about
+       200000 floating point calculation be done in that time so ~200,000/(2*nbrow*ldu)
+       should be done in cpu to hide the latency; we Ngem =200,000/2
+     */
+    int_t i, j;
+
+
+    for (int i = 0; i < nstreams; ++i)
+    {
+        stream_end_col[i] = num_blks;
+    }
+
+    *ncpu_blks = 0;
+    /*easy returns -1 when number of column are less than threshold */
+    if (Ublock_info[num_blks - 1].full_u_cols < (Ngem / (nbrow * ldu)) || num_blks == 1)
+    {
+        *num_streams_used = 0;
+        *ncpu_blks = num_blks;
+
+        return;
+
+    }
+
+    /* Easy return -2 when number of streams =0 */
+    if (nstreams == 0)
+    {
+        *num_streams_used = 0;
+        *ncpu_blks = num_blks;
+        return;
+        /* code */
+    }
+    /*find first block where count > Ngem */
+
+
+    for (i = 0; i < num_blks - 1; ++i)  /*I can use binary search here */
+    {
+        if (Ublock_info[i + 1].full_u_cols > Ngem / (nbrow * ldu))
+            break;
+    }
+    *ncpu_blks = i + 1;
+
+    int_t cols_remain =
+       Ublock_info [num_blks - 1].full_u_cols - Ublock_info[*ncpu_blks - 1].full_u_cols;
+
+    if (cols_remain > 0)
+    {
+        *num_streams_used = 1;  /* now atleast one stream would be used */
+
+        int_t FP_MIN = 200000 / (nbrow * ldu);
+        int_t cols_per_stream = SUPERLU_MAX (min_gpu_col, cols_remain / nstreams);
+        cols_per_stream = SUPERLU_MAX (cols_per_stream, FP_MIN);
+
+        int_t cutoff = cols_per_stream + Ublock_info[*ncpu_blks - 1].full_u_cols;
+        for (int_t i = 0; i < nstreams; ++i)
+        {
+            stream_end_col[i] = num_blks;
+        }
+        j = *ncpu_blks;
+        for (i = 0; i < nstreams - 1; ++i)
+        {
+            int_t st = (i == 0) ? (*ncpu_blks) : stream_end_col[i - 1];
+
+            for (j = st; j < num_blks - 1; ++j)
+            {
+                if (Ublock_info[j + 1].full_u_cols > cutoff)
+                {
+
+                    cutoff = cols_per_stream + Ublock_info[j].full_u_cols;
+                    stream_end_col[i] = j + 1;
+                    *num_streams_used += 1;
+                    j++;
+                    break;
+                }
+
+            }
+
+        }
+
+    }
+}
+
+#endif  /* defined GPU_ACC */

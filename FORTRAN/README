@@ -13,16 +13,22 @@ To compile the code, type 'make'
 
 There are two examples in the directory.
 
-1. f_5x5.f90:
+1. f_5x5.f90
    A small 5x5 example appeared in the SuperLU Users Guide, Section 2.2.
-   To run the code on a Cray XT or XE, type 'aprun -n 2 f_5x5'
+   To run the code, type:
+      mpiexec -n 2 f_5x5
    (The example is set up to use 2 processors.)
 
-2. f_pddrive.f90 / f_pzdrive.f90:
-   An example Fortran driver routine that reads a matrix from a file
+2. f_pddrive.f90, f_pddrive3d.f90
+   A real example Fortran driver routine that reads a matrix from a file
    'g20.rua' in Harwell-Boeing format.
-   To run the code on a Cray XT or XE, type 'aprun -n 4 f_pddrive'
-   (The example is set up to use 4 processors.)
+   To run the code, type:
+      mpiexec -n 4 f_pddrive (or f_pddrive3d)
+   (The example is set up to use 4 MPI processes)
 
-   The complex version:
-   % aprun -n 4 f_pzdrive
+3. f_pzdrive.f90
+   A complex example Fortran driver routine that reads a matrix from a file
+   'cg20.cua' in Harwell-Boeing format.
+   To run the code, type:
+      mpiexec -n 4 f_pzdrive (or f_pddrive3d)
+   (The example is set up to use 4 MPI processes)

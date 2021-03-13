@@ -118,6 +118,9 @@ int dcreate_dist_matrix(SuperMatrix *A, int_t m, int_t n, int_t nnz,
 	MPI_Bcast( colptr,  n+1, mpi_int_t,  0, grid->comm );
     }
 
+    if (iam==0) {printf("after broadcast: m %d, nnz %d\n", m,nnz); fflush(stdout);}
+    exit(-1);
+
 #if 0
     nzval[0]=0.1;
 #endif

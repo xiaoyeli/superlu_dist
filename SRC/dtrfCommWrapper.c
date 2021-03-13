@@ -42,14 +42,14 @@ int_t dDiagFactIBCast(int_t k, int_t k0, // supernode to be factored
                       gridinfo_t *grid,
                       superlu_dist_options_t *options,
                       double thresh,
-                      LUstruct_t *LUstruct,
+                      dLUstruct_t *LUstruct,
                       SuperLUStat_t *stat, int *info,
                       SCT_t *SCT,
                       int tag_ub)
 {
     // unpacking variables
     Glu_persist_t *Glu_persist = LUstruct->Glu_persist;
-    LocalLU_t *Llu = LUstruct->Llu;
+    dLocalLU_t *Llu = LUstruct->Llu;
     int_t *xsup = Glu_persist->xsup;
 
     int_t iam = grid->iam;
@@ -121,11 +121,11 @@ int_t dDiagFactIBCast(int_t k, int_t k0, // supernode to be factored
 int_t dLPanelTrSolve(int_t k, int_t *factored_L,
                      double *BlockUFactor,
                      gridinfo_t *grid,
-                     LUstruct_t *LUstruct)
+                     dLUstruct_t *LUstruct)
 {
     double alpha = 1.0;
     Glu_persist_t *Glu_persist = LUstruct->Glu_persist;
-    LocalLU_t *Llu = LUstruct->Llu;
+    dLocalLU_t *Llu = LUstruct->Llu;
     int_t *xsup = Glu_persist->xsup;
 
     int_t iam = grid->iam;
@@ -223,7 +223,7 @@ int_t dLPanelUpdate(int_t k, int_t *IrecvPlcd_D, int_t *factored_L,
                     MPI_Request *U_diag_blk_recv_req,
                     double *BlockUFactor,
                     gridinfo_t *grid,
-                    LUstruct_t *LUstruct, SCT_t *SCT)
+                    dLUstruct_t *LUstruct, SCT_t *SCT)
 {
 
     dUDiagBlockRecvWait(k, IrecvPlcd_D, factored_L,
@@ -242,11 +242,11 @@ int_t dUPanelTrSolve(int_t k,
                      int_t ldt,
                      Ublock_info_t *Ublock_info,
                      gridinfo_t *grid,
-                     LUstruct_t *LUstruct,
+                     dLUstruct_t *LUstruct,
                      SuperLUStat_t *stat, SCT_t *SCT)
 {
     Glu_persist_t *Glu_persist = LUstruct->Glu_persist;
-    LocalLU_t *Llu = LUstruct->Llu;
+    dLocalLU_t *Llu = LUstruct->Llu;
     int_t *xsup = Glu_persist->xsup;
     int_t iam = grid->iam;
     int_t myrow = MYROW(iam, grid);
@@ -352,7 +352,7 @@ int_t dUPanelUpdate(int_t k, int_t *factored_U,
                     int_t ldt,
                     Ublock_info_t *Ublock_info,
                     gridinfo_t *grid,
-                    LUstruct_t *LUstruct,
+                    dLUstruct_t *LUstruct,
                     SuperLUStat_t *stat, SCT_t *SCT)
 {
 
@@ -373,12 +373,12 @@ int_t dIBcastRecvLPanel(
     double *Lval_buf,
     int_t *factored,
     gridinfo_t *grid,
-    LUstruct_t *LUstruct,
+    dLUstruct_t *LUstruct,
     SCT_t *SCT,
     int tag_ub)
 {
     Glu_persist_t *Glu_persist = LUstruct->Glu_persist;
-    LocalLU_t *Llu = LUstruct->Llu;
+    dLocalLU_t *Llu = LUstruct->Llu;
     int_t *xsup = Glu_persist->xsup;
     int **ToSendR = Llu->ToSendR;
     int *ToRecv = Llu->ToRecv;
@@ -431,10 +431,10 @@ int_t dIBcastRecvUPanel(int_t k, int_t k0, int *msgcnt,
                         MPI_Request *send_requ,
                         MPI_Request *recv_requ,
                         int_t *Usub_buf, double *Uval_buf,
-                        gridinfo_t *grid, LUstruct_t *LUstruct,
+                        gridinfo_t *grid, dLUstruct_t *LUstruct,
                         SCT_t *SCT, int tag_ub)
 {
-    LocalLU_t *Llu = LUstruct->Llu;
+    dLocalLU_t *Llu = LUstruct->Llu;
 
     int *ToSendD = Llu->ToSendD;
     int *ToRecv = Llu->ToRecv;
@@ -479,9 +479,9 @@ int_t dIBcastRecvUPanel(int_t k, int_t k0, int *msgcnt,
 
 int_t dWaitL(int_t k, int *msgcnt, int *msgcntU,
              MPI_Request *send_req, MPI_Request *recv_req,
-             gridinfo_t *grid, LUstruct_t *LUstruct, SCT_t *SCT)
+             gridinfo_t *grid, dLUstruct_t *LUstruct, SCT_t *SCT)
 {
-    LocalLU_t *Llu = LUstruct->Llu;
+    dLocalLU_t *Llu = LUstruct->Llu;
     int **ToSendR = Llu->ToSendR;
     int *ToRecv = Llu->ToRecv;
     int_t iam = grid->iam;
@@ -507,9 +507,9 @@ int_t dWaitL(int_t k, int *msgcnt, int *msgcntU,
 
 int_t dWaitU(int_t k, int *msgcnt,
              MPI_Request *send_requ, MPI_Request *recv_requ,
-             gridinfo_t *grid, LUstruct_t *LUstruct, SCT_t *SCT)
+             gridinfo_t *grid, dLUstruct_t *LUstruct, SCT_t *SCT)
 {
-    LocalLU_t *Llu = LUstruct->Llu;
+    dLocalLU_t *Llu = LUstruct->Llu;
 
     int *ToRecv = Llu->ToRecv;
     int *ToSendD = Llu->ToSendD;

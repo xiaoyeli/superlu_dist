@@ -35,9 +35,10 @@
       integer maxn, maxnz, maxnrhs
       parameter ( maxn = 10000, maxnz = 100000, maxnrhs = 10 )
       integer rowind(maxnz), colptr(maxn)
-      real*8  values(maxnz), b(maxn), berr(maxnrhs)
-      integer n, m, nnz, nprow, npcol, ldb, init
-      integer*4 iam, info, i, ierr, ldb4, nrhs
+      real*8  values(maxnz), b(maxn), berr(maxnrhs), xtrue(maxn)
+      integer n, m, nnz, nprow, npcol
+      integer*4 iam, info, i, ierr, ldb, nrhs
+      character*80 fname
 
       integer(superlu_ptr) :: grid
       integer(superlu_ptr) :: options
@@ -76,31 +77,15 @@
          write(*,*) ' Process grid ', nprow, ' X ', npcol
       endif
 
-! Read Harwell-Boeing matrix, and adjust the pointers and indices
-! to 0-based indexing, as required by C routines.
-      if ( iam == 0 ) then 
-         open(file = "../EXAMPLE/g20.rua", status = "old", unit = 5)
-         call dhbcode1(m, n, nnz, values, rowind, colptr)
-         close(unit = 5)
-!
-         do i = 1, n+1
-            colptr(i) = colptr(i) - 1
-         enddo
-         do i = 1, nnz
-            rowind(i) = rowind(i) - 1
-         enddo
-      endif
-
-! Distribute the matrix to the process gird
-      call  f_dcreate_dist_matrix(A, m, n, nnz, values, rowind, colptr, grid)
-
-! Setup the right hand side
-      call get_CompRowLoc_Matrix(A, nrow_loc=ldb)
-      do i = 1, ldb
-         b(i) = 1.0
-      enddo
+! Read and distribute the matrix to the process gird
       nrhs = 1
-      ldb4 = ldb
+      fname = '../EXAMPLE/g20.rua'//char(0)  !! make the string null-ended
+      call  f_dcreate_matrix_x_b(fname, A, m, n, nnz, &
+      	                            nrhs, b, ldb, xtrue, ldx, grid)
+
+      if ( iam == 0 ) then 
+         write(*,*) ' Matrix A was set up: m ', m, ' nnz ', nnz
+      endif
 
 ! Set the default input options
       call f_set_default_options(options)
@@ -118,11 +103,13 @@
       call f_PStatInit(stat)
 
 ! Call the linear equation solver
-      call f_pdgssvx(options, A, ScalePermstruct, b, ldb4, nrhs, &
+      call f_pdgssvx(options, A, ScalePermstruct, b, ldb, nrhs, &
                      grid, LUstruct, SOLVEstruct, berr, stat, info)
 
       if (info == 0) then
-         write (*,*) 'Backward error: ', (berr(i), i = 1, nrhs)
+         if ( iam == 0 ) then
+     	     write (*,*) 'Backward error: ', (berr(i), i = 1, nrhs)
+	 endif
       else
          write(*,*) 'INFO from f_pdgssvx = ', info
       endif
@@ -131,12 +118,7 @@
       call f_PStatFree(stat)
       call f_Destroy_CompRowLoc_Mat_dist(A)
       call f_ScalePermstructFree(ScalePermstruct)
-      call f_Destroy_LU(n, grid, LUstruct)
-      call f_LUstructFree(LUstruct)
-      call get_superlu_options(options, SolveInitialized=init)
-      if (init == YES) then
-         call f_dSolveFinalize(options, SOLVEstruct)
-      endif
+      call f_Destroy_LU_SOLVE_struct(options, n, grid, LUstruct, SOLVEstruct)
 
 ! Release the SuperLU process grid
 100   call f_superlu_gridexit(grid)

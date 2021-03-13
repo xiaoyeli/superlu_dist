@@ -39,18 +39,14 @@ ALLAUX 	= sp_ienv.o etree.o sp_colorder.o get_perm_c.o \
 	  colamd.o mmd.o comm.o memory.o util.o superlu_grid.o \
 	  pxerr_dist.o superlu_timer.o symbfact.o \
 	  psymbfact.o psymbfact_util.o get_perm_c_parmetis.o mc64ad_dist.o \
-	  static_schedule.o xerr_dist.o smach_dist.o dmach_dist.o \
+	  xerr_dist.o smach_dist.o dmach_dist.o \
 	  superlu_dist_version.o TreeInterface.o
 # Following are from 3D code
 ALLAUX += superlu_grid3d.o supernodal_etree.o supernodalForest.o \
 	trfAux.o communication_aux.o treeFactorization.o sec_structs.o
 
-ifeq "${ACC}" "GPU"
+ifeq ($(HAVE_CUDA),TRUE)
 ALLAUX += cublas_utils.o
-endif
-
-ifeq ($(HAVE_COMBBLAS),TRUE)
-ALLAUX += c2cpp_GetAWPM.o
 endif
 
 #
@@ -68,7 +64,7 @@ DPLUSRC = pdgssvx.o pdgssvx_ABglobal.o \
 	  dreadhb.o dreadrb.o dreadtriple.o dreadMM.o dbinary_io.o \
 	  pdgsequ.o pdlaqgs.o dldperm_dist.o pdlangs.o pdutil.o \
 	  pdsymbfact_distdata.o ddistribute.o pddistribute.o \
-	  pdgstrf.o pdgstrf2.o pdGetDiagU.o \
+	  pdgstrf.o dstatic_schedule.o pdgstrf2.o pdGetDiagU.o \
 	  pdgstrs.o pdgstrs1.o pdgstrs_lsum.o pdgstrs_Bglobal.o \
 	  pdgsrfs.o pdgsmv.o pdgsrfs_ABXglobal.o pdgsmv_AXglobal.o \
 	  dreadtriple_noheader.o dsuperlu_blas.o
@@ -83,7 +79,7 @@ ZPLUSRC = pzgssvx.o pzgssvx_ABglobal.o \
 	  zreadhb.o zreadrb.o zreadtriple.o zreadMM.o zbinary_io.o\
 	  pzgsequ.o pzlaqgs.o zldperm_dist.o pzlangs.o pzutil.o \
 	  pzsymbfact_distdata.o zdistribute.o pzdistribute.o \
-	  pzgstrf.o pzgstrf2.o pzGetDiagU.o \
+	  pzgstrf.o zstatic_schedule.o pzgstrf2.o pzGetDiagU.o \
 	  pzgstrs.o pzgstrs1.o pzgstrs_lsum.o pzgstrs_Bglobal.o \
 	  pzgsrfs.o pzgsmv.o pzgsrfs_ABXglobal.o pzgsmv_AXglobal.o \
 	  zreadtriple_noheader.o zsuperlu_blas.o
@@ -91,6 +87,11 @@ ZPLUSRC = pzgssvx.o pzgssvx_ABglobal.o \
 ZPLUSRC += pzgssvx3d.o pzgstrf3d.o ztreeFactorization.o zscatter3d.o \
 	zgather.o pz3dcomm.o ztrfAux.o zcommunication_aux.o ztrfCommWrapper.o \
 	znrformat_loc3d.o ##$(FACT3D)
+
+ifeq ($(HAVE_COMBBLAS),TRUE)
+DPLUSRC += d_c2cpp_GetHWPM.o
+ZPLUSRC += z_c2cpp_GetHWPM.o
+endif
 
 all:  double complex16
 

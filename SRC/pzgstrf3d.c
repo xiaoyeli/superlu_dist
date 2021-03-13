@@ -79,7 +79,7 @@ at the top-level directory.
  * SCT    (input/output) SCT_t*
  *        Various statistics of 3D factorization.
  *
- * LUstruct (input/output) LUstruct_t*
+ * LUstruct (input/output) zLUstruct_t*
  *         The data structures to store the distributed L and U factors.
  *         The following fields should be defined:
  *
@@ -90,9 +90,9 @@ at the top-level directory.
  *         xsup[s] is the leading column of the s-th supernode,
  *             supno[i] is the supernode number to which column i belongs.
  *
- *         o Llu (input/output) LocalLU_t*
+ *         o Llu (input/output) zLocalLU_t*
  *           The distributed data structures to store L and U factors.
- *           See superlu_ddefs.h for the definition of 'LocalLU_t'.
+ *           See superlu_zdefs.h for the definition of 'zLocalLU_t'.
  *
  * grid3d (input) gridinfo3d_t*
  *        The 3D process mesh. It contains the MPI communicator, the number
@@ -117,11 +117,11 @@ at the top-level directory.
  */
 int_t pzgstrf3d(superlu_dist_options_t *options, int m, int n, double anorm,
 		trf3Dpartition_t*  trf3Dpartition, SCT_t *SCT,
-		LUstruct_t *LUstruct, gridinfo3d_t * grid3d,
+		zLUstruct_t *LUstruct, gridinfo3d_t * grid3d,
 		SuperLUStat_t *stat, int *info)
 {
     gridinfo_t* grid = &(grid3d->grid2d);
-    LocalLU_t *Llu = LUstruct->Llu;
+    zLocalLU_t *Llu = LUstruct->Llu;
 
     // problem specific contants
     int_t ldt = sp_ienv_dist (3);     /* Size of maximum supernode */
@@ -141,7 +141,7 @@ int_t pzgstrf3d(superlu_dist_options_t *options, int m, int n, double anorm,
     //if (!grid3d->zscp.Iam && !grid3d->iam) printf("Using NSUP=%d\n", (int) ldt);
 
     //getting Nsupers
-    int_t nsupers = getNsupers(n, LUstruct);
+    int_t nsupers = getNsupers(n, LUstruct->Glu_persist);
 
     // Grid related Variables
     int_t iam = grid->iam; // in 2D grid
@@ -218,7 +218,8 @@ int_t pzgstrf3d(superlu_dist_options_t *options, int m, int n, double anorm,
 
     HyP->first_l_block_acc = first_l_block_acc;
     HyP->first_u_block_acc = first_u_block_acc;
-    int_t bigu_size = getBigUSize(nsupers, grid, LUstruct);
+    //int_t bigu_size = getBigUSize(nsupers, grid, LUstruct);
+    int_t bigu_size = getBigUSize(nsupers, grid, LUstruct->Llu->Lrowind_bc_ptr);
     // int_t buffer_size = get_max_buffer_size ();
     // HyP->buffer_size = buffer_size;
     HyP->bigu_size = bigu_size;
