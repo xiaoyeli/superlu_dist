@@ -14,6 +14,8 @@ set(headers
     TreeBcast_slu_impl.hpp
     TreeReduce_slu_impl.hpp	
     ${CMAKE_CURRENT_BINARY_DIR}/superlu_dist_config.h
+    TRF3dV100/lupanels.hpp
+    TRF3dV100/superlu_summit.h
     cub/cub.cuh
 )
 if (MSVC)
@@ -109,6 +111,9 @@ if(enable_double)
     dnrformat_loc3d.c 
     pdgstrf3d.c 
     dtreeFactorization.c
+    TRF3dV100/pdgstrf3d_summit.cpp
+    TRF3dV100/dsparseTreeFactor_summit.cpp
+    TRF3dV100/lupanels.cpp
     dgather.c
     dscatter3d.c
     pd3dcomm.c

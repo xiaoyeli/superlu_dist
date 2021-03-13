@@ -1369,9 +1369,25 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 
 		/*factorize in grid 1*/
 		// if(grid3d->zscp.Iam)
-
-		pdgstrf3d(options, m, n, anorm, trf3Dpartition, SCT, LUstruct,
+		// get environment variable TRF3DVERSION
+		int gpu3dVersion=0;
+		if(getenv("GPU3DVERSION"))
+		{
+			gpu3dVersion = atoi(getenv("GPU3DVERSION"));
+		}
+		if(gpu3dVersion==1)
+		{
+			if(!grid3d->iam) 
+			printf("Using pdgstrf3d+gpu version 1 for Summit");
+			pdgstrf3d_summit(options, m, n, anorm, trf3Dpartition, SCT, LUstruct,
 				  grid3d, stat, info);
+		}
+		else
+		{
+			pdgstrf3d(options, m, n, anorm, trf3Dpartition, SCT, LUstruct,
+				  grid3d, stat, info);
+		}
+		
 		stat->utime[FACT] = SuperLU_timer_() - t;
 
 		double tgather = SuperLU_timer_();

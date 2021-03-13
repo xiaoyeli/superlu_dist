@@ -301,11 +301,13 @@ main (int argc, char *argv[])
        options.SolveInitialized  = NO;
        options.RefineInitialized = NO;
        options.PrintStat         = YES;
+       
        options->num_lookaheads    = 10;
        options->lookahead_etree   = NO;
        options->SymPattern        = NO;
        options.DiagInv           = NO;
      */
+    //TODO: set options->num_lookaheads using an environment variable
     set_default_options_dist (&options);
 #if 0
     options.RowPerm = NOROWPERM;

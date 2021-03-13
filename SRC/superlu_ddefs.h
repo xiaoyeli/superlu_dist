@@ -1051,5 +1051,6 @@ receiver[U(nodelist)] =sender[U(nodelist)] +receiver[U(nodelist)]
 #ifdef __cplusplus
 }
 #endif
+#include "TRF3dV100/superlu_summit.h"
 
 #endif /* __SUPERLU_dDEFS */
