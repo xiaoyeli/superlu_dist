@@ -5,9 +5,32 @@ lpanel_t::lpanel_t(int_t *lsub, double *lval)
     return;
 }
 
+//TODO: can be optimized
+int_t lpanel_t::find(int_t k)
+{
+    for(int_t i=0; i<nblocks(); i++)
+    {
+        if(k==gid(i)) return i;
+    }
+    //TODO: it shouldn't come here
+    return -1;
+}
+
+
 upanel_t::upanel_t(int_t *lsub, double *uval)
 {
     return;
+}
+
+int_t upanel_t::find(int_t k)
+{
+    for(int_t i=0; i<nblocks(); i++)
+    {
+        if(k==gid(i)) return i;
+    }
+    //TODO: it shouldn't come here
+    return -1;
+    
 }
 
 int_t upanel_t::packed2skyline(int_t *usub, double *uval)
@@ -180,4 +203,6 @@ int_t LUstruct_v100::dScatter(int_t m, int_t n,
             Dst[rowS2D[i] + lddst * colS2D[j]] -= Src[i + ldsrc * j];
         }
     }
+
+    return 0;
 }
