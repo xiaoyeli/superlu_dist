@@ -446,13 +446,13 @@ void nv_init_wrapper(int* c, char *v[], int* omp_mpi_level)
     MPI_CHECK(MPI_Get_processor_name(name, &resultlength));
     int get_cur_dev;
     CUDA_CHECK(cudaGetDeviceCount(&ndevices));
-    CUDA_CHECK(cudaSetDevice(rank%ndevices));
-    //CUDA_CHECK(cudaSetDevice(mype_node));
+    //CUDA_CHECK(cudaSetDevice(rank%ndevices));
+    CUDA_CHECK(cudaSetDevice(mype_node));
     CUDA_CHECK(cudaGetDevice(&get_cur_dev));
 
     cudaDeviceProp prop;
-    CUDA_CHECK(cudaGetDeviceProperties(&prop, rank%ndevices));
-    //CUDA_CHECK(cudaGetDeviceProperties(&prop, mype_node));
+    //CUDA_CHECK(cudaGetDeviceProperties(&prop, rank%ndevices));
+    CUDA_CHECK(cudaGetDeviceProperties(&prop, mype_node));
     printf("** MPI %d/%d, NVSHMEM %d/%d, mype_node=%d, device name: %s bus id: %d, "
            "ndevices=%d,cur=%d, node=%s **\n",
            rank,nranks,mype,npes,mype_node, prop.name, prop.pciBusID,

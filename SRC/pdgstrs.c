@@ -1331,13 +1331,13 @@ if(procs==1){
 	fflush(stdout);
 #endif
 
-#if ( PRNTlevel>=1 )
-	t = SuperLU_timer_() - t;
-	if ( !iam) printf(".. Setup L-solve time\t%8.4f\n", t);
-	fflush(stdout);
-	MPI_Barrier( grid->comm );
-	t = SuperLU_timer_();
-#endif
+//#if ( PRNTlevel>=1 )
+//	t = SuperLU_timer_() - t;
+//	if ( !iam) printf(".. Setup L-solve time\t%8.4f\n", t);
+//	fflush(stdout);
+//	MPI_Barrier( grid->comm );
+//	t = SuperLU_timer_();
+//#endif
 
 #if ( VAMPIR>=1 )
 	// VT_initialize();
@@ -1679,10 +1679,10 @@ dGenCOOLblocks(iam, nsupers, grid,Glu_persist,Llu, cooRows, cooCols, cooVals, &n
 	//fflush(stdout);
 #if ( PRNTlevel>=1 )
 	t = SuperLU_timer_() - t;
-	if ( !iam) printf(".. Setup-before L-solve time\t%8.4f\n", t);
+	if ( !iam) printf(".. Setup L-solve time\t%8.4f\n", t);
 	fflush(stdout);
 	MPI_Barrier( grid->comm );
-	nvshmem_barrier_all();
+//	nvshmem_barrier_all();
 	t = SuperLU_timer_();
 #endif
 	dlsum_fmod_inv_gpu_wrap(k,nlb,DIM_X,DIM_Y,d_lsum,d_x,nrhs,knsupc,nsupers,d_fmod,Llu->d_LBtree_ptr,Llu->d_LRtree_ptr,Llu->d_ilsum,Llu->d_Lrowind_bc_dat, Llu->d_Lrowind_bc_offset, Llu->d_Lnzval_bc_dat, Llu->d_Lnzval_bc_offset, Llu->d_Linv_bc_dat, Llu->d_Linv_bc_offset, Llu->d_Lindval_loc_bc_dat, Llu->d_Lindval_loc_bc_offset,Llu->d_xsup,d_grid,maxrecvsz,
@@ -1690,24 +1690,24 @@ dGenCOOLblocks(iam, nsupers, grid,Glu_persist,Llu, cooRows, cooCols, cooVals, &n
 	                        d_status,d_colnum,d_mynum, d_mymaskstart,d_mymasklength,
 	                        d_nfrecvmod,d_statusmod,d_colnummod,d_mynummod,d_mymaskstartmod,d_mymasklengthmod,d_recv_cnt,d_msgnum,senddone);
 	  		                      //d_rownum,d_rowstart,d_validrows);
-#if ( PRNTlevel>=1 )
-	nvshmem_barrier_all();
-		t = SuperLU_timer_() - t;
-		stat->utime[SOL_TOT] += t;
-		if ( !iam ) {
-			printf(".. L-solve (close) time\t%8.4f\n", t);
-			fflush(stdout);
-		}
-		MPI_Reduce (&t, &tmax, 1, MPI_DOUBLE,
-				MPI_MAX, 0, grid->comm);
-		if ( !iam ) {
-			printf(".. L-solve time  (close) (MAX) \t%8.4f\n", tmax);
-			fflush(stdout);
-		}
-
-
-		t = SuperLU_timer_();
-#endif
+//#if ( PRNTlevel>=1 )
+//	nvshmem_barrier_all();
+//		t = SuperLU_timer_() - t;
+//		stat->utime[SOL_TOT] += t;
+//		if ( !iam ) {
+//			printf(".. L-solve (close) time\t%8.4f\n", t);
+//			fflush(stdout);
+//		}
+//		MPI_Reduce (&t, &tmax, 1, MPI_DOUBLE,
+//				MPI_MAX, 0, grid->comm);
+//		if ( !iam ) {
+//			printf(".. L-solve time  (close) (MAX) \t%8.4f\n", tmax);
+//			fflush(stdout);
+//		}
+//
+//
+//		t = SuperLU_timer_();
+//#endif
 	checkGPU(gpuMemcpy(x, d_x, (ldalsum * nrhs + nlb * XK_H) * sizeof(double), gpuMemcpyDeviceToHost));
 
 	checkGPU (gpuFree (d_grid));
@@ -2195,7 +2195,7 @@ dGenCOOLblocks(iam, nsupers, grid,Glu_persist,Llu, cooRows, cooCols, cooVals, &n
 			}
 		}
 
-#endif			
+#endif
 #if ( PRNTlevel>=1 )
 		t = SuperLU_timer_() - t;
 		stat->utime[SOL_TOT] += t;
@@ -2215,7 +2215,6 @@ dGenCOOLblocks(iam, nsupers, grid,Glu_persist,Llu, cooRows, cooCols, cooVals, &n
 
 		t = SuperLU_timer_();
 #endif
-
 
 stat->utime[SOLVE] = SuperLU_timer_() - t1_sol;
 
