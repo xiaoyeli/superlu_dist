@@ -2,7 +2,7 @@
 #include "superlu_ddefs.h"
 
 #define LPANEL_HEADER_SIZE 2
-#define UPANEL_HEADER_SIZE 2
+
 // it can be templatized for double and complex double 
 class lpanel_t
 {
@@ -41,17 +41,27 @@ public:
     // row 
     int_t* rowList(int_t k)
     {
-        return &index[LPANEL_HEADER_SIZE + nblocks() + k];
+        // LPANEL_HEADER 
+        // nblocks() : blocks list
+        // nblocks()+1 : blocks st_points 
+        // index[LPANEL_HEADER_SIZE + nblocks() + k] statrting of the block 
+        return &index[LPANEL_HEADER_SIZE + 
+                        2*nblocks() + 1 
+                        + index[LPANEL_HEADER_SIZE + nblocks() + k]];
     } 
 
-    double* blkPtr(int_t k);
-    int_t LDA();
+    double* blkPtr(int_t k)
+    {
+        return &val[index[LPANEL_HEADER_SIZE + nblocks() + k]];
+    }
+
+    int_t LDA() { return index[1];}
     int_t find(int_t k);
     // for L panel I don't need any special transformation function 
     int_t panelSolve(double* DiagBlk, int_t LDD);
 };
 
-
+#define UPANEL_HEADER_SIZE 3
 class upanel_t
 {
 public: 
@@ -73,6 +83,7 @@ public:
     }
     // number of rows
     int_t nzcols() { return index[1];}
+    int_t LDA() { return index[2];}     // is also supersize of that coloumn
     
     // global block id of k-th block in the panel
     int_t gid(int_t k) {
@@ -88,13 +99,23 @@ public:
     // row 
     int_t* colList(int_t k)
     {
-        return &index[UPANEL_HEADER_SIZE + nblocks() + k];
+        // UPANEL_HEADER 
+        // nblocks() : blocks list
+        // nblocks()+1 : blocks st_points 
+        // index[UPANEL_HEADER_SIZE + nblocks() + k] statrting of the block 
+        return &index[UPANEL_HEADER_SIZE + 
+                        2*nblocks() + 1 
+                        + index[UPANEL_HEADER_SIZE + nblocks() + k]];
     } 
 
+    double* blkPtr(int_t k)
+    {
+        return &val[index[UPANEL_HEADER_SIZE + nblocks() + k]];
+    }
     // for U panel 
     int_t packed2skyline(int_t* usub, double* uval );
-    double* blkPtr(int_t k);
-    int_t LDA();
+    // double* blkPtr(int_t k);
+    // int_t LDA();
     int_t find(int_t k);
 };
 
