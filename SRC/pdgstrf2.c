@@ -410,6 +410,90 @@ static int_t LpanelUpdate(int off0, int nsupc, double *ublk_ptr, int ld_ujrow,
 #pragma GCC push_options
 #pragma GCC optimize("O0")
 /*factorizes the diagonal block; called from process that owns the (k,k) block*/
+void dgstrf2(int_t k, double* diagBlk, int_t LDA, double* BlockUfactor, int_t LDU, 
+    double thresh, int_t* xsup,
+    superlu_dist_options_t *options,
+    SuperLUStat_t *stat, int *info
+ )
+{
+
+    int_t jfst = FstBlockC(k);
+    int_t jlst = FstBlockC(k + 1);
+    int_t nsupc = SuperSize(k);
+    
+    double *ublk_ptr = BlockUfactor;
+    double *ujrow = BlockUfactor;
+    int_t luptr = 0;       /* Point_t to the diagonal entries. */
+    int cols_left = nsupc; /* supernode size */
+
+    for (int_t j = 0; j < nsupc; ++j) /* for each column in panel */
+    {
+        /* Diagonal pivot */
+        int_t i = luptr;
+        /* Not to replace zero pivot.  */
+        if (options->ReplaceTinyPivot == YES && diagBlk[i] != 0.0)
+        {
+            if (fabs(diagBlk[i]) < thresh)
+            { /* Diagonal */
+
+#if (PRNTlevel >= 2)
+                printf("(%d) .. col %d, tiny pivot %e  ",
+                       iam, jfst + j, diagBlk[i]);
+#endif
+                /* Keep the new diagonal entry with the same sign. */
+                if (diagBlk[i] < 0)
+                    diagBlk[i] = -thresh;
+                else
+                    diagBlk[i] = thresh;
+#if (PRNTlevel >= 2)
+                printf("replaced by %e\n", diagBlk[i]);
+#endif
+                ++(stat->TinyPivots);
+            }
+        }
+
+        for (int_t l = 0; l < cols_left; ++l, i += LDA)
+        {
+            int_t st = j * LDU + j;
+            ublk_ptr[st + l * LDU] = diagBlk[i]; /* copy one row of U */
+        }
+        double zero = 0.0;
+        if (ujrow[0] == zero) /* Test for singularity. */
+        {
+            *info = j + jfst + 1;
+        }
+        else /* Scale the j-th column. */
+        {
+            double temp;
+            temp = 1.0 / ujrow[0];
+            for (int_t i = luptr + 1; i < luptr - j + nsupc; ++i)
+                diagBlk[i] *= temp;
+            stat->ops[FACT] += nsupc - j - 1;
+        }
+
+        /* Rank-1 update of the trailing submatrix. */
+        if (--cols_left)
+        {
+            /*following must be int*/
+            int l = nsupc - j - 1;
+            int incx = 1;
+            int incy = LDU;
+            /* Rank-1 update */
+            double alpha = -1;
+            superlu_dger(l, cols_left, alpha, &diagBlk[luptr + 1], incx,
+                         &ujrow[LDU], incy, &diagBlk[luptr + LDA + 1],
+                         LDA);
+            stat->ops[FACT] += 2 * l * cols_left;
+        }
+
+        ujrow = ujrow + LDU + 1; /* move to next row of U */
+        luptr += LDA + 1;           /* move to next column */
+
+    } /* for column j ...  first loop */
+
+    printf("Coming to local dgstrf2\n");
+}
+
 void Local_Dgstrf2(superlu_dist_options_t *options, int_t k, double thresh,
                    double *BlockUFactor, /*factored U is overwritten here*/
                    Glu_persist_t *Glu_persist, gridinfo_t *grid, LocalLU_t *Llu,
@@ -431,6 +515,11 @@ void Local_Dgstrf2(superlu_dist_options_t *options, int_t k, double thresh,
         nsupr = Llu->Lrowind_bc_ptr[lk][1];
     else
         nsupr = 0;
+
+#if 1
+    dgstrf2( k, lusup, nsupr, BlockUFactor, nsupc, 
+    thresh, xsup, options,stat, info);
+#else 
     double *ublk_ptr = BlockUFactor;
     double *ujrow = BlockUFactor;
     int_t luptr = 0;       /* Point_t to the diagonal entries. */
@@ -503,7 +592,7 @@ void Local_Dgstrf2(superlu_dist_options_t *options, int_t k, double thresh,
         luptr += nsupr + 1;           /* move to next column */
 
     } /* for column j ...  first loop */
-
+#endif 
     //int_t thread_id = omp_get_thread_num();
     // SCT->Local_Dgstrf2_Thread_tl[thread_id * CACHE_LINE_SIZE] += (double) ( _rdtsc() - t1);
 }
