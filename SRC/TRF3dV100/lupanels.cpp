@@ -1,43 +1,5 @@
 #include "lupanels.hpp"
 
-lpanel_t::lpanel_t(int_t *lsub, double *lval)
-{
-    return;
-}
-
-//TODO: can be optimized
-int_t lpanel_t::find(int_t k)
-{
-    for(int_t i=0; i<nblocks(); i++)
-    {
-        if(k==gid(i)) return i;
-    }
-    //TODO: it shouldn't come here
-    return -1;
-}
-
-
-upanel_t::upanel_t(int_t *lsub, double *uval)
-{
-    return;
-}
-
-int_t upanel_t::find(int_t k)
-{
-    for(int_t i=0; i<nblocks(); i++)
-    {
-        if(k==gid(i)) return i;
-    }
-    //TODO: it shouldn't come here
-    return -1;
-    
-}
-
-int_t upanel_t::packed2skyline(int_t *usub, double *uval)
-{
-    return 0;
-}
-
 LUstruct_v100::LUstruct_v100(int_t nsupers,
                              int_t *isNodeInMyGrid,
                              LUstruct_t *LUstruct,
@@ -65,7 +27,10 @@ LUstruct_v100::LUstruct_v100(int_t nsupers,
     {
         if (Lrowind_bc_ptr[i] != NULL && isNodeInMyGrid[i * Pc + mycol] == 1)
         {
-            lpanel_t lpanel(Lrowind_bc_ptr[i], Lnzval_bc_ptr[i]);
+            int_t isDiagIncluded = 0;
+            if (myrow == krow(i * Pc + mycol))
+                isDiagIncluded = 1;
+            lpanel_t lpanel(Lrowind_bc_ptr[i], Lnzval_bc_ptr[i], xsup, isDiagIncluded);
             lPanelVec[i] = lpanel;
         }
     }
@@ -75,7 +40,8 @@ LUstruct_v100::LUstruct_v100(int_t nsupers,
     {
         if (Ufstnz_br_ptr[i] != NULL && isNodeInMyGrid[i * Pr + myrow] == 1)
         {
-            upanel_t upanel(Ufstnz_br_ptr[i], Unzval_br_ptr[i]);
+            int_t globalId = i * Pr + myrow;
+            upanel_t upanel(globalId, Ufstnz_br_ptr[i], Unzval_br_ptr[i], xsup);
             uPanelVec[i] = upanel;
         }
     }
@@ -101,11 +67,11 @@ int_t LUstruct_v100::dSchurComplementUpdate(int_t k, lpanel_t &lpanel, upanel_t 
         thread_id = 0;
 #endif
 
-        double *V    = bigV + thread_id * ldt * ldt;
-        int_t  ii    = ij / nub + st_lb;
-        int_t  jj    = ij % nub;
+        double *V = bigV + thread_id * ldt * ldt;
+        int_t ii = ij / nub + st_lb;
+        int_t jj = ij % nub;
         double alpha = 1.0;
-        double beta  = 0.0;
+        double beta = 0.0;
         superlu_dgemm("N", "N",
                       lpanel.nbrow(ii), upanel.nbcol(jj), supersize(k), alpha,
                       lpanel.blkPtr(ii), lpanel.LDA(),
@@ -117,15 +83,15 @@ int_t LUstruct_v100::dSchurComplementUpdate(int_t k, lpanel_t &lpanel, upanel_t 
         int_t jb = upanel.gid(jj);
 
         dScatter(lpanel.nbrow(ii), upanel.nbcol(jj),
-                    ib, jb, V, lpanel.nbrow(ii),
-                    lpanel.rowList(ii), upanel.colList(jj));
+                 ib, jb, V, lpanel.nbrow(ii),
+                 lpanel.rowList(ii), upanel.colList(jj));
     }
 
     return 0;
 }
 
 // should be called from an openMP region
-int_t* LUstruct_v100::computeIndirectMap(indirectMapType direction, int_t srcLen, int_t *srcVec,
+int_t *LUstruct_v100::computeIndirectMap(indirectMapType direction, int_t srcLen, int_t *srcVec,
                                          int_t dstLen, int_t *dstVec)
 {
     if (dstVec == NULL) /*uncompressed dimension*/
@@ -168,25 +134,25 @@ int_t LUstruct_v100::dScatter(int_t m, int_t n,
     int_t *dstColList;
     if (gj > gi) // its in upanel
     {
-        int li         = g2lRow(gi);
-        int lj         = uPanelVec[li].find(gj);
-            Dst        = uPanelVec[li].blkPtr(lj);
-            lddst      = supersize(gi);
-            dstRowLen  = supersize(gi);
-            dstRowList = NULL;
-            dstColLen  = uPanelVec[li].nbcol(lj);
-            dstColList = uPanelVec[li].colList(lj);
+        int li = g2lRow(gi);
+        int lj = uPanelVec[li].find(gj);
+        Dst = uPanelVec[li].blkPtr(lj);
+        lddst = supersize(gi);
+        dstRowLen = supersize(gi);
+        dstRowList = NULL;
+        dstColLen = uPanelVec[li].nbcol(lj);
+        dstColList = uPanelVec[li].colList(lj);
     }
     else
     {
-        int lj         = g2lCol(gj);
-        int li         = lPanelVec[lj].find(gi);
-            Dst        = lPanelVec[lj].blkPtr(li);
-            lddst      = lPanelVec[lj].LDA();
-            dstRowLen  = lPanelVec[lj].nbrow(li);
-            dstRowList = lPanelVec[lj].rowList(li);
-            dstColLen  = supersize(gj);
-            dstColList = NULL;
+        int lj = g2lCol(gj);
+        int li = lPanelVec[lj].find(gi);
+        Dst = lPanelVec[lj].blkPtr(li);
+        lddst = lPanelVec[lj].LDA();
+        dstRowLen = lPanelVec[lj].nbrow(li);
+        dstRowList = lPanelVec[lj].rowList(li);
+        dstColLen = supersize(gj);
+        dstColList = NULL;
     }
 
     // compute source row to dest row mapping

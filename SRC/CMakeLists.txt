@@ -114,6 +114,8 @@ if(enable_double)
     TRF3dV100/pdgstrf3d_summit.cpp
     TRF3dV100/dsparseTreeFactor_summit.cpp
     TRF3dV100/lupanels.cpp
+    TRF3dV100/l_panels.cpp
+    TRF3dV100/u_panels.cpp
     dgather.c
     dscatter3d.c
     pd3dcomm.c
