@@ -491,7 +491,7 @@ void dgstrf2(int_t k, double* diagBlk, int_t LDA, double* BlockUfactor, int_t LD
 
     } /* for column j ...  first loop */
 
-    printf("Coming to local dgstrf2\n");
+    // printf("Coming to local dgstrf2\n");
 }
 
 void Local_Dgstrf2(superlu_dist_options_t *options, int_t k, double thresh,
