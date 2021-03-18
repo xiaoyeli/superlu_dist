@@ -116,7 +116,8 @@ public:
         return &val[LDA()*index[UPANEL_HEADER_SIZE + nblocks() + k]];
     }
     // for U panel 
-    int_t packed2skyline(int_t* usub, double* uval );
+    // int_t packed2skyline(int_t* usub, double* uval );
+    int_t packed2skyline(int_t k, int_t *usub, double *uval, int_t*xsup);
     int_t panelSolve(int_t ksupsz, double* DiagBlk, int_t LDD);
     // double* blkPtr(int_t k);
     // int_t LDA();
