@@ -579,6 +579,10 @@ extern int superlu_dgemv(const char *trans, const int m,
 extern int superlu_dtrsv(char *uplo, char *trans, char *diag,
                   int n, double *a, int lda, double *x, int incx);
 
+extern void dgstrf2(int_t k, double* diagBlk, int_t LDA, double* BlockUfactor, int_t LDU, 
+    double thresh, int_t* xsup,superlu_dist_options_t *options, 
+    SuperLUStat_t *stat, int *info);
+
 // LAPACK routine
 extern void dtrtri_(char *, char *, int *, double *, int *, int *);
 
