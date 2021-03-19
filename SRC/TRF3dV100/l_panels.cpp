@@ -70,3 +70,15 @@ int_t lpanel_t::panelSolve(int_t ksupsz, double *DiagBlk, int_t LDD)
     superlu_dtrsm("R", "U", "N", "N",
                   len, ksupsz, alpha, DiagBlk, LDD, lPanelStPtr, LDA());
 }
+
+
+int_t lpanel_t::diagFactor(int_t k, double* UBlk, int_t LDU, double thresh, int_t* xsup,
+    superlu_dist_options_t *options,
+    SuperLUStat_t *stat, int *info)
+{
+    dgstrf2(k, val, LDA(), UBlk, LDU, 
+        thresh, xsup, options,stat, info);
+    
+    return 0;
+
+}

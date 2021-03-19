@@ -1,21 +1,18 @@
 #include "superlu_ddefs.h"
+#include "lupanels.hpp"
 
-int_t dsparseTreeFactor_v100(
+int_t LUstruct_v100::dsparseTreeFactor(
     sForest_t* sforest,
     commRequests_t **comReqss,    // lists of communication requests // size maxEtree level
     scuBufs_t *scuBufs,          // contains buffers for schur complement update
     packLUInfo_t*packLUInfo,
-    msgs_t**msgss,                  // size=num Look ahead
+    msgs_t**msgss,                    // size=num Look ahead
     dLUValSubBuf_t** LUvsbs,          // size=num Look ahead
-    diagFactBufs_t **dFBufs,         // size maxEtree level
-    factStat_t *factStat,
-    factNodelists_t  *fNlists,
-    gEtreeInfo_t*   gEtreeInfo,        // global etree info
+    diagFactBufs_t **dFBufs,          // size maxEtree level
+    gEtreeInfo_t*   gEtreeInfo,       // global etree info
     superlu_dist_options_t *options,
     int_t * gIperm_c_supno,
-    int_t ldt,
-    HyP_t* HyP,
-    LUstruct_t *LUstruct, gridinfo3d_t * grid3d, SuperLUStat_t *stat,
+    SuperLUStat_t *stat,
     double thresh,  SCT_t *SCT, int tag_ub,
     int *info
 )
@@ -33,22 +30,27 @@ int_t dsparseTreeFactor_v100(
     int_t *perm_c_supno = sforest->nodeList ;  // list of nodes in the order of factorization
     treeTopoInfo_t* treeTopoInfo = &sforest->topoInfo;
     int_t* myIperm = treeTopoInfo->myIperm;
-
-    gridinfo_t* grid = &(grid3d->grid2d);
-    /*main loop over all the levels*/
-
     int_t maxTopoLevel = treeTopoInfo->numLvl;
     int_t* eTreeTopLims = treeTopoInfo->eTreeTopLims;
-    int_t * IrecvPlcd_D = factStat->IrecvPlcd_D;
-    int_t* factored_D = factStat->factored_D;
-    int_t * factored_L = factStat->factored_L;
-    int_t * factored_U = factStat->factored_U;
-    int_t* IbcastPanel_L = factStat->IbcastPanel_L;
-    int_t* IbcastPanel_U = factStat->IbcastPanel_U;
-    int_t* xsup = LUstruct->Glu_persist->xsup;
+    
+    /*main loop over all the levels*/
+    int_t numLA = getNumLookAhead(options);
 
-    int_t numLAMax = getNumLookAhead(options);
-    int_t numLA = numLAMax;
+#if 1
+    for (int_t topoLvl = 0; topoLvl < maxTopoLevel; ++topoLvl)
+    {
+        /* code */
+        int_t k_st = eTreeTopLims[topoLvl];
+        int_t k_end = eTreeTopLims[topoLvl + 1];
+        for (int_t k0 = k_st; k0 < k_end; ++k0)
+        {
+            int_t k = perm_c_supno[k0];   
+            int_t offset = k0 - k_st;
+        } /*for k0= k_st:k_end */
+
+    } /*for topoLvl = 0:maxTopoLevel*/
+
+#else 
 
     for (int_t k0 = 0; k0 < eTreeTopLims[1]; ++k0)
     {
@@ -450,7 +452,7 @@ int_t dsparseTreeFactor_v100(
         }/*for main loop (int_t k0 = 0; k0 < gNodeCount[tree]; ++k0)*/
 
     }
-
+#endif 
 #if ( DEBUGlevel>=1 )
     CHECK_MALLOC (grid3d->iam, "Exit dsparseTreeFactor_ASYNC()");
 #endif

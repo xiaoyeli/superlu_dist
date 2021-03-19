@@ -145,10 +145,9 @@ int_t pdgstrf3d_summit(superlu_dist_options_t *options, int m, int n, double ano
 //                     HyP, LUstruct, grid3d, stat,
 //                     thresh,  SCT, tag_ub, info);
 // #else
-                dsparseTreeFactor_v100(sforest, comReqss,  &scuBufs, &packLUInfo,
-					msgss, LUvsbs, dFBufs, &factStat, &fNlists,
-					&gEtreeInfo, options, iperm_c_supno, ldt,
-					HyP, LUstruct, grid3d, stat,
+                LU_packed.dsparseTreeFactor(sforest, comReqss,  &scuBufs, &packLUInfo,
+					msgss, LUvsbs, dFBufs,
+					&gEtreeInfo, options, iperm_c_supno, stat,
 					thresh,  SCT, tag_ub, info );
 // #endif
 
