@@ -120,6 +120,8 @@ int_t upanel_t::find(int_t k)
 }
 int_t upanel_t::panelSolve(int_t ksupsz, double *DiagBlk, int_t LDD)
 {
+    if (isEmpty()) return 0;
+    
     superlu_dtrsm("L", "L", "N", "U",
                   ksupsz, nzcols(), 1.0, DiagBlk, LDD, val, LDA());
     return 0;

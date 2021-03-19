@@ -60,9 +60,12 @@ public:
     // for L panel I don't need any special transformation function
     int_t panelSolve(int_t ksupsz, double *DiagBlk, int_t LDD);
     int_t diagFactor(int_t k, double* UBlk, int_t LDU, double thresh, int_t* xsup,
-    superlu_dist_options_t *options,
-    SuperLUStat_t *stat, int *info);
+            superlu_dist_options_t *options,SuperLUStat_t *stat, int *info);
+    int_t packDiagBlock(double *DiagLBlk, int_t LDD);
+    int_t isEmpty() {return index==NULL;}
 };
+
+
 
 #define UPANEL_HEADER_SIZE 3
 class upanel_t
@@ -122,10 +125,16 @@ public:
                      superlu_dist_options_t *options,
                      SuperLUStat_t *stat, int *info);
 
+    
+
     // double* blkPtr(int_t k);
     // int_t LDA();
     int_t find(int_t k);
+    int_t isEmpty() {return index==NULL;}
 };
+
+
+
 
 struct LUstruct_v100
 {
@@ -136,12 +145,18 @@ struct LUstruct_v100
     gridinfo_t *grid;
     int_t iam, Pc, Pr, myrow, mycol, ldt;
     int_t *xsup;
+    int_t nsupers;
     // variables for scattering ldt*THREAD_Size
+    int nThreads;
     int_t *indirect, *indirectRow, *indirectCol;
     double *bigV; // size = THREAD_Size*ldt*ldt
+    int_t *isNodeInMyGrid;
+
+
 
     int_t krow(int_t k) { return k % Pr; }
     int_t kcol(int_t k) { return k % Pc; }
+    int_t procIJ(int_t i, int_t j) { return PNUM(i,j, grid); }
     int_t supersize(int_t k) { return xsup[k + 1] - xsup[k]; }
     int_t g2lRow(int_t k) { return k / Pr; }
     int_t g2lCol(int_t k) { return k / Pc; }
@@ -190,23 +205,7 @@ struct LUstruct_v100
     SuperLUStat_t *stat,
     double thresh,  SCT_t *SCT, int tag_ub,
     int *info);
+
+    int_t packedU2skyline(LUstruct_t* LUstruct);
 };
 
-// int_t dsparseTreeFactor_v100(
-//     sForest_t *sforest,
-//     commRequests_t **comReqss, // lists of communication requests // size maxEtree level
-//     scuBufs_t *scuBufs,        // contains buffers for schur complement update
-//     packLUInfo_t *packLUInfo,
-//     msgs_t **msgss,          // size=num Look ahead
-//     dLUValSubBuf_t **LUvsbs, // size=num Look ahead
-//     diagFactBufs_t **dFBufs, // size maxEtree level
-//     factStat_t *factStat,
-//     factNodelists_t *fNlists,
-//     gEtreeInfo_t *gEtreeInfo, // global etree info
-//     superlu_dist_options_t *options,
-//     int_t *gIperm_c_supno,
-//     int_t ldt,
-//     HyP_t *HyP,
-//     LUstruct_v100 &LU_packed, gridinfo3d_t *grid3d, SuperLUStat_t *stat,
-//     double thresh, SCT_t *SCT, int tag_ub,
-//     int *info);

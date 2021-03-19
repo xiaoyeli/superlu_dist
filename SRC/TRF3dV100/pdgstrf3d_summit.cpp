@@ -178,6 +178,8 @@ int_t pdgstrf3d_summit(superlu_dist_options_t *options, int m, int n, double ano
     MPI_Barrier( grid3d->comm);
     SCT->pdgstrfTimer = SuperLU_timer_() - SCT->pdgstrfTimer;
 
+    LU_packed.packedU2skyline(LUstruct);
+
     if(!grid3d->zscp.Iam)
     {
         SCT_printSummary(grid, SCT);

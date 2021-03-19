@@ -58,6 +58,7 @@ int_t lpanel_t::find(int_t k)
 
 int_t lpanel_t::panelSolve(int_t ksupsz, double *DiagBlk, int_t LDD)
 {
+    if (isEmpty()) return 0;
     double *lPanelStPtr = blkPtr(0);
     int_t len = nzrows();
     if (haveDiag())
@@ -81,4 +82,16 @@ int_t lpanel_t::diagFactor(int_t k, double* UBlk, int_t LDU, double thresh, int_
     
     return 0;
 
+}
+
+int_t lpanel_t::packDiagBlock(double *DiagLBlk, int_t LDD)
+{
+    assert(haveDiag());
+    assert(LDD>= nbrow(0));
+    int_t nsupc = nbrow(0);
+    for (int j = 0; j < nsupc; ++j) 
+    {
+	    memcpy( &DiagLBlk[j * LDD], &val[j * LDA()], nsupc * sizeof(double) );
+    }
+    return 0;
 }

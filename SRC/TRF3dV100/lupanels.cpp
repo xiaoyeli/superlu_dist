@@ -1,7 +1,7 @@
 #include "lupanels.hpp"
 
-LUstruct_v100::LUstruct_v100(int_t nsupers,
-                             int_t *isNodeInMyGrid,
+LUstruct_v100::LUstruct_v100(int_t nsupers_,
+                             int_t *isNodeInMyGrid_,
                              LUstruct_t *LUstruct,
                              gridinfo3d_t *grid3d_in)
 {
@@ -13,8 +13,9 @@ LUstruct_v100::LUstruct_v100(int_t nsupers,
     Pr = grid->nprow;
     myrow = MYROW(iam, grid);
     mycol = MYCOL(iam, grid);
-
-    int_t *xsup = LUstruct->Glu_persist->xsup;
+    isNodeInMyGrid = isNodeInMyGrid_;
+    nsupers = nsupers_;
+    xsup = LUstruct->Glu_persist->xsup;
     int_t **Lrowind_bc_ptr = LUstruct->Llu->Lrowind_bc_ptr;
     int_t **Ufstnz_br_ptr = LUstruct->Llu->Ufstnz_br_ptr;
     double **Lnzval_bc_ptr = LUstruct->Llu->Lnzval_bc_ptr;
@@ -45,10 +46,21 @@ LUstruct_v100::LUstruct_v100(int_t nsupers,
             uPanelVec[i] = upanel;
         }
     }
+
+    // Allocate bigV, indirect 
+    nThreads    = getNumThreads(iam);
+    bigV        = dgetBigV(ldt, nThreads);
+    indirect    = (int_t*) SUPERLU_MALLOC(nThreads*ldt*sizeof(int_t));
+    indirectRow = (int_t*) SUPERLU_MALLOC(nThreads*ldt*sizeof(int_t));
+    indirectCol = (int_t*) SUPERLU_MALLOC(nThreads*ldt*sizeof(int_t));
 }
 
 int_t LUstruct_v100::dSchurComplementUpdate(int_t k, lpanel_t &lpanel, upanel_t &upanel)
 {
+    if (lpanel.isEmpty() || upanel.isEmpty())
+        return 0;
+    
+    
     int_t st_lb = 0;
     if (myrow == krow(k))
         st_lb = 1;
@@ -171,4 +183,22 @@ int_t LUstruct_v100::dScatter(int_t m, int_t n,
     }
 
     return 0;
+}
+
+
+int_t LUstruct_v100::packedU2skyline(LUstruct_t* LUstruct)
+{
+
+    int_t **Ufstnz_br_ptr = LUstruct->Llu->Ufstnz_br_ptr;
+    double **Unzval_br_ptr = LUstruct->Llu->Unzval_br_ptr;
+
+    for (int_t i = 0; i < CEILING(nsupers, Pr); ++i)
+    {
+        if (Ufstnz_br_ptr[i] != NULL && isNodeInMyGrid[i * Pr + myrow] == 1)
+        {
+            int_t globalId = i * Pr + myrow;
+            uPanelVec[i].packed2skyline(globalId, Ufstnz_br_ptr[i], Unzval_br_ptr[i], xsup);
+            
+        }
+    }
 }
