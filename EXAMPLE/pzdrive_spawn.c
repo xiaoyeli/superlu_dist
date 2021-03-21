@@ -305,6 +305,7 @@ int main(int argc, char *argv[])
        RELEASE THE SUPERLU PROCESS GRID.
        ------------------------------------------------------------*/
 out:
+	if(parent!=MPI_COMM_NULL)
 	MPI_Reduce(result, MPI_BOTTOM, 2, MPI_FLOAT,MPI_MAX, 0, parent);
     superlu_gridexit(&grid);
 
@@ -312,7 +313,7 @@ out:
        TERMINATES THE MPI EXECUTION ENVIRONMENT.
        ------------------------------------------------------------*/
 	   
-	
+    if(parent!=MPI_COMM_NULL)
 	MPI_Comm_disconnect(&parent);
     MPI_Finalize();
 
