@@ -266,7 +266,7 @@ int main(int argc, char *argv[])
 		// result[1] = total * 1e-6;     
 		if (!iam) {
 			printf("returning data:\n"
-		   "    Factor time :        %8.2f |  Total MEM : %8.2f\n",
+		   "    Factor time :        %8.2f\n    Total MEM : %8.2f\n",
 		   stat.utime[FACT], total * 1e-6);
 		   printf("    Solve time :        %8.2f \n",
 		   stat.utime[SOLVE]);           
