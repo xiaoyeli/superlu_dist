@@ -115,7 +115,7 @@ int_t pdgstrf3d_summit(superlu_dist_options_t *options, int m, int n, double ano
     * ******************************************/
     // Create the new LU structure 
     int_t* isNodeInMyGrid = getIsNodeInMyGrid(nsupers, maxLvl, myNodeCount, treePerm);
-    LUstruct_v100 LU_packed(nsupers, isNodeInMyGrid, LUstruct,grid3d);
+    LUstruct_v100 LU_packed(nsupers, ldt, isNodeInMyGrid, LUstruct,grid3d);
 
 
     /*====  starting main factorization loop =====*/

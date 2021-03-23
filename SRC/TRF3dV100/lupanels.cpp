@@ -1,20 +1,19 @@
 #include "lupanels.hpp"
 
-LUstruct_v100::LUstruct_v100(int_t nsupers_,
+LUstruct_v100::LUstruct_v100(int_t nsupers_, int_t ldt_, 
                              int_t *isNodeInMyGrid_,
                              LUstruct_t *LUstruct,
-                             gridinfo3d_t *grid3d_in)
+                             gridinfo3d_t *grid3d_in): isNodeInMyGrid (isNodeInMyGrid_)
+    ,nsupers (nsupers_) ,ldt (ldt_) ,grid3d (grid3d_in)
 {
 
-    grid3d = grid3d_in;
+    
     grid = &(grid3d->grid2d);
     iam = grid->iam;
     Pc = grid->npcol;
     Pr = grid->nprow;
     myrow = MYROW(iam, grid);
     mycol = MYCOL(iam, grid);
-    isNodeInMyGrid = isNodeInMyGrid_;
-    nsupers = nsupers_;
     xsup = LUstruct->Glu_persist->xsup;
     int_t **Lrowind_bc_ptr = LUstruct->Llu->Lrowind_bc_ptr;
     int_t **Ufstnz_br_ptr = LUstruct->Llu->Ufstnz_br_ptr;
@@ -146,25 +145,25 @@ int_t LUstruct_v100::dScatter(int_t m, int_t n,
     int_t *dstColList;
     if (gj > gi) // its in upanel
     {
-        int li = g2lRow(gi);
-        int lj = uPanelVec[li].find(gj);
-        Dst = uPanelVec[li].blkPtr(lj);
-        lddst = supersize(gi);
-        dstRowLen = supersize(gi);
-        dstRowList = NULL;
-        dstColLen = uPanelVec[li].nbcol(lj);
-        dstColList = uPanelVec[li].colList(lj);
+        int li         = g2lRow(gi);
+        int lj         = uPanelVec[li].find(gj);
+            Dst        = uPanelVec[li].blkPtr(lj);
+            lddst      = supersize(gi);
+            dstRowLen  = supersize(gi);
+            dstRowList = NULL;
+            dstColLen  = uPanelVec[li].nbcol(lj);
+            dstColList = uPanelVec[li].colList(lj);
     }
     else
     {
-        int lj = g2lCol(gj);
-        int li = lPanelVec[lj].find(gi);
-        Dst = lPanelVec[lj].blkPtr(li);
-        lddst = lPanelVec[lj].LDA();
-        dstRowLen = lPanelVec[lj].nbrow(li);
-        dstRowList = lPanelVec[lj].rowList(li);
-        dstColLen = supersize(gj);
-        dstColList = NULL;
+        int lj         = g2lCol(gj);
+        int li         = lPanelVec[lj].find(gi);
+            Dst        = lPanelVec[lj].blkPtr(li);
+            lddst      = lPanelVec[lj].LDA();
+            dstRowLen  = lPanelVec[lj].nbrow(li);
+            dstRowList = lPanelVec[lj].rowList(li);
+            dstColLen  = supersize(gj);
+            dstColList = NULL;
     }
 
     // compute source row to dest row mapping
