@@ -10,10 +10,8 @@ int_t LUstruct_v100::dsparseTreeFactor(
     dLUValSubBuf_t **LUvsbs,  // size=num Look ahead
     diagFactBufs_t **dFBufs,  // size maxEtree level
     gEtreeInfo_t *gEtreeInfo, // global etree info
-    superlu_dist_options_t *options,
     int_t *gIperm_c_supno,
-    SuperLUStat_t *stat,
-    double thresh, SCT_t *SCT, int tag_ub,
+    double thresh, int tag_ub,
     int *info)
 {
     int_t nnodes = sforest->nNodes; // number of nodes in the tree

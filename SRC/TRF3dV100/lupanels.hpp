@@ -70,6 +70,13 @@ public:
             return 0;
         return LDA() * nzrows();
     }
+
+    int_t indexSize()
+    {
+        if (index == NULL)
+            return 0;
+        return LPANEL_HEADER_SIZE + 2 * nblocks() + 1 + nzrows();
+    }
 };
 
 #define UPANEL_HEADER_SIZE 3
@@ -140,6 +147,13 @@ public:
             return 0;
         return LDA() * nzcols();
     }
+
+    int_t indexSize()
+    {
+        if (index == NULL)
+            return 0;
+        return UPANEL_HEADER_SIZE + 2 * nblocks() + 1 + nzcols();
+    }
 };
 
 struct LUstruct_v100
@@ -160,6 +174,8 @@ struct LUstruct_v100
 
     // Add SCT_t here 
     SCT_t* SCT;
+    superlu_dist_options_t *options;
+    SuperLUStat_t *stat;
 
     // buffers for communication 
     std::vector<double*> LvalRecvBufs;
@@ -184,7 +200,9 @@ struct LUstruct_v100
     *          C O N / D E S - T R U C T O R S
     */
     LUstruct_v100(int_t nsupers, int_t ldt_, int_t *isNodeInMyGrid,
-                  LUstruct_t *LUstruct, gridinfo3d_t *grid3d);
+                  LUstruct_t *LUstruct, gridinfo3d_t *grid3d,
+                  SCT_t* SCT_, superlu_dist_options_t *options_, SuperLUStat_t *stat
+                  );
 
     ~LUstruct_v100()
     {
@@ -213,10 +231,10 @@ struct LUstruct_v100
         dLUValSubBuf_t **LUvsbs,  // size=num Look ahead
         diagFactBufs_t **dFBufs,  // size maxEtree level
         gEtreeInfo_t *gEtreeInfo, // global etree info
-        superlu_dist_options_t *options,
+        
         int_t *gIperm_c_supno,
-        SuperLUStat_t *stat,
-        double thresh, SCT_t *SCT, int tag_ub,
+        
+        double thresh,  int tag_ub,
         int *info);
 
     int_t packedU2skyline(LUstruct_t *LUstruct);

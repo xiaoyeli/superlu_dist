@@ -115,7 +115,9 @@ int_t pdgstrf3d_summit(superlu_dist_options_t *options, int m, int n, double ano
     * ******************************************/
     // Create the new LU structure 
     int_t* isNodeInMyGrid = getIsNodeInMyGrid(nsupers, maxLvl, myNodeCount, treePerm);
-    LUstruct_v100 LU_packed(nsupers, ldt, isNodeInMyGrid, LUstruct,grid3d);
+    LUstruct_v100 LU_packed(nsupers, ldt, isNodeInMyGrid, LUstruct,grid3d,
+    SCT, options,  stat
+    );
 
 
     /*====  starting main factorization loop =====*/
@@ -147,8 +149,8 @@ int_t pdgstrf3d_summit(superlu_dist_options_t *options, int m, int n, double ano
 // #else
                 LU_packed.dsparseTreeFactor(sforest, comReqss,  &scuBufs, &packLUInfo,
 					msgss, LUvsbs, dFBufs,
-					&gEtreeInfo, options, iperm_c_supno, stat,
-					thresh,  SCT, tag_ub, info );
+					&gEtreeInfo, iperm_c_supno, 
+					thresh, tag_ub, info );
 // #endif
 
                 /*now reduce the updates*/

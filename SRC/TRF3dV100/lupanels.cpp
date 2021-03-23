@@ -1,13 +1,15 @@
 #include "lupanels.hpp"
 
-LUstruct_v100::LUstruct_v100(int_t nsupers_, int_t ldt_, 
-                             int_t *isNodeInMyGrid_,
-                             LUstruct_t *LUstruct,
-                             gridinfo3d_t *grid3d_in): isNodeInMyGrid (isNodeInMyGrid_)
-    ,nsupers (nsupers_) ,ldt (ldt_) ,grid3d (grid3d_in)
+LUstruct_v100::LUstruct_v100(int_t nsupers_, int_t ldt_,
+            int_t *isNodeInMyGrid_,
+            LUstruct_t *LUstruct,
+            gridinfo3d_t *grid3d_in,
+            SCT_t *SCT_, superlu_dist_options_t *options_, 
+            SuperLUStat_t *stat_) : isNodeInMyGrid(isNodeInMyGrid_), 
+            nsupers(nsupers_), ldt(ldt_), grid3d(grid3d_in), 
+            SCT(SCT_), options(options_), stat(stat_)
 {
 
-    
     grid = &(grid3d->grid2d);
     iam = grid->iam;
     Pc = grid->npcol;
@@ -46,20 +48,19 @@ LUstruct_v100::LUstruct_v100(int_t nsupers_, int_t ldt_,
         }
     }
 
-    // Allocate bigV, indirect 
-    nThreads    = getNumThreads(iam);
-    bigV        = dgetBigV(ldt, nThreads);
-    indirect    = (int_t*) SUPERLU_MALLOC(nThreads*ldt*sizeof(int_t));
-    indirectRow = (int_t*) SUPERLU_MALLOC(nThreads*ldt*sizeof(int_t));
-    indirectCol = (int_t*) SUPERLU_MALLOC(nThreads*ldt*sizeof(int_t));
+    // Allocate bigV, indirect
+    nThreads = getNumThreads(iam);
+    bigV = dgetBigV(ldt, nThreads);
+    indirect = (int_t *)SUPERLU_MALLOC(nThreads * ldt * sizeof(int_t));
+    indirectRow = (int_t *)SUPERLU_MALLOC(nThreads * ldt * sizeof(int_t));
+    indirectCol = (int_t *)SUPERLU_MALLOC(nThreads * ldt * sizeof(int_t));
 }
 
 int_t LUstruct_v100::dSchurComplementUpdate(int_t k, lpanel_t &lpanel, upanel_t &upanel)
 {
     if (lpanel.isEmpty() || upanel.isEmpty())
         return 0;
-    
-    
+
     int_t st_lb = 0;
     if (myrow == krow(k))
         st_lb = 1;
@@ -145,25 +146,25 @@ int_t LUstruct_v100::dScatter(int_t m, int_t n,
     int_t *dstColList;
     if (gj > gi) // its in upanel
     {
-        int li         = g2lRow(gi);
-        int lj         = uPanelVec[li].find(gj);
-            Dst        = uPanelVec[li].blkPtr(lj);
-            lddst      = supersize(gi);
-            dstRowLen  = supersize(gi);
-            dstRowList = NULL;
-            dstColLen  = uPanelVec[li].nbcol(lj);
-            dstColList = uPanelVec[li].colList(lj);
+        int li = g2lRow(gi);
+        int lj = uPanelVec[li].find(gj);
+        Dst = uPanelVec[li].blkPtr(lj);
+        lddst = supersize(gi);
+        dstRowLen = supersize(gi);
+        dstRowList = NULL;
+        dstColLen = uPanelVec[li].nbcol(lj);
+        dstColList = uPanelVec[li].colList(lj);
     }
     else
     {
-        int lj         = g2lCol(gj);
-        int li         = lPanelVec[lj].find(gi);
-            Dst        = lPanelVec[lj].blkPtr(li);
-            lddst      = lPanelVec[lj].LDA();
-            dstRowLen  = lPanelVec[lj].nbrow(li);
-            dstRowList = lPanelVec[lj].rowList(li);
-            dstColLen  = supersize(gj);
-            dstColList = NULL;
+        int lj = g2lCol(gj);
+        int li = lPanelVec[lj].find(gi);
+        Dst = lPanelVec[lj].blkPtr(li);
+        lddst = lPanelVec[lj].LDA();
+        dstRowLen = lPanelVec[lj].nbrow(li);
+        dstRowList = lPanelVec[lj].rowList(li);
+        dstColLen = supersize(gj);
+        dstColList = NULL;
     }
 
     // compute source row to dest row mapping
@@ -184,8 +185,7 @@ int_t LUstruct_v100::dScatter(int_t m, int_t n,
     return 0;
 }
 
-
-int_t LUstruct_v100::packedU2skyline(LUstruct_t* LUstruct)
+int_t LUstruct_v100::packedU2skyline(LUstruct_t *LUstruct)
 {
 
     int_t **Ufstnz_br_ptr = LUstruct->Llu->Ufstnz_br_ptr;
@@ -197,7 +197,6 @@ int_t LUstruct_v100::packedU2skyline(LUstruct_t* LUstruct)
         {
             int_t globalId = i * Pr + myrow;
             uPanelVec[i].packed2skyline(globalId, Ufstnz_br_ptr[i], Unzval_br_ptr[i], xsup);
-            
         }
     }
 }
