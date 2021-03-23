@@ -156,7 +156,7 @@ struct LUstruct_v100
 
     int_t krow(int_t k) { return k % Pr; }
     int_t kcol(int_t k) { return k % Pc; }
-    int_t procIJ(int_t i, int_t j) { return PNUM(i,j, grid); }
+    int_t procIJ(int_t i, int_t j) { return PNUM( krow(i), kcol(j), grid); }
     int_t supersize(int_t k) { return xsup[k + 1] - xsup[k]; }
     int_t g2lRow(int_t k) { return k / Pr; }
     int_t g2lCol(int_t k) { return k / Pc; }
@@ -170,7 +170,7 @@ struct LUstruct_v100
     /**
     *          C O N / D E S - T R U C T O R S
     */
-    LUstruct_v100(int_t nsupers, int_t *isNodeInMyGrid,
+    LUstruct_v100(int_t nsupers, int_t ldt_, int_t *isNodeInMyGrid,
                   LUstruct_t *LUstruct, gridinfo3d_t *grid3d);
 
     ~LUstruct_v100()
