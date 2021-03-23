@@ -1,4 +1,5 @@
 #pragma once
+#include <vector>
 #include "superlu_ddefs.h"
 
 #define LPANEL_HEADER_SIZE 3
@@ -59,13 +60,17 @@ public:
     int_t find(int_t k);
     // for L panel I don't need any special transformation function
     int_t panelSolve(int_t ksupsz, double *DiagBlk, int_t LDD);
-    int_t diagFactor(int_t k, double* UBlk, int_t LDU, double thresh, int_t* xsup,
-            superlu_dist_options_t *options,SuperLUStat_t *stat, int *info);
+    int_t diagFactor(int_t k, double *UBlk, int_t LDU, double thresh, int_t *xsup,
+                     superlu_dist_options_t *options, SuperLUStat_t *stat, int *info);
     int_t packDiagBlock(double *DiagLBlk, int_t LDD);
-    int_t isEmpty() {return index==NULL;}
+    int_t isEmpty() { return index == NULL; }
+    int_t nzvalSize()
+    {
+        if (index == NULL)
+            return 0;
+        return LDA() * nzrows();
+    }
 };
-
-
 
 #define UPANEL_HEADER_SIZE 3
 class upanel_t
@@ -125,16 +130,17 @@ public:
                      superlu_dist_options_t *options,
                      SuperLUStat_t *stat, int *info);
 
-    
-
     // double* blkPtr(int_t k);
     // int_t LDA();
     int_t find(int_t k);
-    int_t isEmpty() {return index==NULL;}
+    int_t isEmpty() { return index == NULL; }
+    int_t nzvalSize()
+    {
+        if (index == NULL)
+            return 0;
+        return LDA() * nzcols();
+    }
 };
-
-
-
 
 struct LUstruct_v100
 {
@@ -152,11 +158,18 @@ struct LUstruct_v100
     double *bigV; // size = THREAD_Size*ldt*ldt
     int_t *isNodeInMyGrid;
 
+    // Add SCT_t here 
+    SCT_t* SCT;
 
+    // buffers for communication 
+    std::vector<double*> LvalRecvBufs;
+    std::vector<double*> UvalRecvBufs;
+    std::vector<int_t*> LidxRecvBufs;
+    std::vector<int_t*> UidxRecvBufs;
 
     int_t krow(int_t k) { return k % Pr; }
     int_t kcol(int_t k) { return k % Pc; }
-    int_t procIJ(int_t i, int_t j) { return PNUM( krow(i), kcol(j), grid); }
+    int_t procIJ(int_t i, int_t j) { return PNUM(krow(i), kcol(j), grid); }
     int_t supersize(int_t k) { return xsup[k + 1] - xsup[k]; }
     int_t g2lRow(int_t k) { return k / Pr; }
     int_t g2lCol(int_t k) { return k / Pc; }
@@ -192,20 +205,28 @@ struct LUstruct_v100
                    int_t *srcRowList, int_t *srcColList);
 
     int_t dsparseTreeFactor(
-    sForest_t* sforest,
-    commRequests_t **comReqss,    // lists of communication requests // size maxEtree level
-    scuBufs_t *scuBufs,          // contains buffers for schur complement update
-    packLUInfo_t*packLUInfo,
-    msgs_t**msgss,                    // size=num Look ahead
-    dLUValSubBuf_t** LUvsbs,          // size=num Look ahead
-    diagFactBufs_t **dFBufs,          // size maxEtree level
-    gEtreeInfo_t*   gEtreeInfo,       // global etree info
-    superlu_dist_options_t *options,
-    int_t * gIperm_c_supno,
-    SuperLUStat_t *stat,
-    double thresh,  SCT_t *SCT, int tag_ub,
-    int *info);
+        sForest_t *sforest,
+        commRequests_t **comReqss, // lists of communication requests // size maxEtree level
+        scuBufs_t *scuBufs,        // contains buffers for schur complement update
+        packLUInfo_t *packLUInfo,
+        msgs_t **msgss,           // size=num Look ahead
+        dLUValSubBuf_t **LUvsbs,  // size=num Look ahead
+        diagFactBufs_t **dFBufs,  // size maxEtree level
+        gEtreeInfo_t *gEtreeInfo, // global etree info
+        superlu_dist_options_t *options,
+        int_t *gIperm_c_supno,
+        SuperLUStat_t *stat,
+        double thresh, SCT_t *SCT, int tag_ub,
+        int *info);
 
-    int_t packedU2skyline(LUstruct_t* LUstruct);
+    int_t packedU2skyline(LUstruct_t *LUstruct);
+
+    int_t ancestorReduction3d(int_t ilvl, int_t *myNodeCount,
+                              int_t **treePerm);
+
+    int_t zSendLPanel(int_t k0, int_t receiverGrid);
+    int_t zRecvLPanel(int_t k0, int_t senderGrid, double alpha, double beta);
+    int_t zSendUPanel(int_t k0, int_t receiverGrid);
+    int_t zRecvUPanel(int_t k0, int_t senderGrid, double alpha, double beta);
 };
 
