@@ -49,7 +49,7 @@ int_t LUstruct_v100::ancestorReduction3d(int_t ilvl, int_t *myNodeCount,
                 zRecvUPanel(k0, sender, alpha, beta);
             }
         }
-        return 0;
+        // return 0;
         SCT->ancsReduce += SuperLU_timer_() - treduce;
     }
     return 0;
@@ -128,7 +128,7 @@ int_t LUstruct_v100::zRecvUPanel(int_t k0, int_t senderGrid, double alpha, doubl
 
 			/*reduce the updates*/
 			superlu_dscal(uPanelVec[lk].nzvalSize(), alpha, uPanelVec[lk].blkPtr(0), 1);
-			superlu_daxpy(uPanelVec[lk].nzvalSize(), beta, LvalRecvBufs[0], 1, uPanelVec[lk].blkPtr(0), 1);
+			superlu_daxpy(uPanelVec[lk].nzvalSize(), beta, UvalRecvBufs[0], 1, uPanelVec[lk].blkPtr(0), 1);
 		}
 	}
 	return 0;

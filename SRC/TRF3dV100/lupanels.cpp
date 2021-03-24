@@ -1,4 +1,6 @@
+#include <algorithm>
 #include "lupanels.hpp"
+
 
 LUstruct_v100::LUstruct_v100(int_t nsupers_, int_t ldt_,
             int_t *isNodeInMyGrid_,
@@ -25,15 +27,23 @@ LUstruct_v100::LUstruct_v100(int_t nsupers_, int_t ldt_,
     lPanelVec = new lpanel_t[CEILING(nsupers, Pc)];
     uPanelVec = new upanel_t[CEILING(nsupers, Pr)];
     // create the lvectors
+    maxLvalCount =0;
+    maxLidxCount =0;
+    maxUvalCount =0;
+    maxUidxCount =0;
     for (int_t i = 0; i < CEILING(nsupers, Pc); ++i)
     {
-        if (Lrowind_bc_ptr[i] != NULL && isNodeInMyGrid[i * Pc + mycol] == 1)
+        int_t k0 = i * Pc + mycol;
+        if (Lrowind_bc_ptr[i] != NULL && isNodeInMyGrid[k0] == 1)
         {
             int_t isDiagIncluded = 0;
-            if (myrow == krow(i * Pc + mycol))
+            
+            if (myrow == krow(k0))
                 isDiagIncluded = 1;
-            lpanel_t lpanel(Lrowind_bc_ptr[i], Lnzval_bc_ptr[i], xsup, isDiagIncluded);
+            lpanel_t lpanel(k0, Lrowind_bc_ptr[i], Lnzval_bc_ptr[i], xsup, isDiagIncluded);
             lPanelVec[i] = lpanel;
+            maxLvalCount = std::max(lPanelVec[i].nzvalSize(),maxLvalCount );
+            maxLidxCount = std::max(lPanelVec[i].indexSize(),maxLidxCount );
         }
     }
 
@@ -45,6 +55,8 @@ LUstruct_v100::LUstruct_v100(int_t nsupers_, int_t ldt_,
             int_t globalId = i * Pr + myrow;
             upanel_t upanel(globalId, Ufstnz_br_ptr[i], Unzval_br_ptr[i], xsup);
             uPanelVec[i] = upanel;
+            maxUvalCount = std::max(uPanelVec[i].nzvalSize(),maxUvalCount );
+            maxUidxCount = std::max(uPanelVec[i].indexSize(),maxUidxCount );
         }
     }
 
@@ -54,6 +66,23 @@ LUstruct_v100::LUstruct_v100(int_t nsupers_, int_t ldt_,
     indirect = (int_t *)SUPERLU_MALLOC(nThreads * ldt * sizeof(int_t));
     indirectRow = (int_t *)SUPERLU_MALLOC(nThreads * ldt * sizeof(int_t));
     indirectCol = (int_t *)SUPERLU_MALLOC(nThreads * ldt * sizeof(int_t));
+
+
+    // allocating communication buffers 
+    LvalRecvBufs.resize(options->num_lookaheads);
+    UvalRecvBufs.resize(options->num_lookaheads);
+    LidxRecvBufs.resize(options->num_lookaheads);
+    UidxRecvBufs.resize(options->num_lookaheads);
+
+    for(int_t i=0; i<options->num_lookaheads; i++)
+    {
+        LvalRecvBufs[i] = (double*) SUPERLU_MALLOC(sizeof(double)*maxLvalCount);
+        UvalRecvBufs[i] = (double*) SUPERLU_MALLOC(sizeof(double)*maxUvalCount);
+        LidxRecvBufs[i] = (int_t*) SUPERLU_MALLOC(sizeof(int_t)*maxLidxCount);
+        UidxRecvBufs[i] = (int_t*) SUPERLU_MALLOC(sizeof(int_t)*maxUidxCount);
+    }
+
+    
 }
 
 int_t LUstruct_v100::dSchurComplementUpdate(int_t k, lpanel_t &lpanel, upanel_t &upanel)

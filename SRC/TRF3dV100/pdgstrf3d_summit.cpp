@@ -165,7 +165,9 @@ int_t pdgstrf3d_summit(superlu_dist_options_t *options, int m, int n, double ano
 //                      sluGPU, d2Hred,
 //                       &factStat, HyP,SCT );
 // #else
+    #if 1
                 LU_packed.ancestorReduction3d(ilvl, myNodeCount, treePerm);
+                #endif 
                 // dreduceAllAncestors3d(ilvl, myNodeCount, treePerm,
                 //                       LUvsb, LUstruct, grid3d, SCT );
 // #endif

@@ -2,7 +2,7 @@
 #include <vector>
 #include "superlu_ddefs.h"
 
-#define LPANEL_HEADER_SIZE 3
+#define LPANEL_HEADER_SIZE 4
 
 // it can be templatized for double and complex double
 class lpanel_t
@@ -12,7 +12,7 @@ public:
     double *val;
     // bool isDiagIncluded;
 
-    lpanel_t(int_t *lsub, double *nzval, int_t *xsup, int_t isDiagIncluded);
+    lpanel_t(int_t k, int_t *lsub, double *nzval, int_t *xsup, int_t isDiagIncluded);
     // default constuctor
     lpanel_t()
     {
@@ -28,6 +28,7 @@ public:
     // number of rows
     int_t nzrows() { return index[1]; }
     int_t haveDiag() { return index[2]; }
+    int_t ncols() { return index[3]; }
 
     // global block id of k-th block in the panel
     int_t gid(int_t k)
@@ -68,7 +69,7 @@ public:
     {
         if (index == NULL)
             return 0;
-        return LDA() * nzrows();
+        return ncols() * nzrows();
     }
 
     int_t indexSize()
@@ -178,6 +179,10 @@ struct LUstruct_v100
     SuperLUStat_t *stat;
 
     // buffers for communication 
+    int_t maxLvalCount =0;
+    int_t maxLidxCount =0;
+    int_t maxUvalCount =0;
+    int_t maxUidxCount =0;
     std::vector<double*> LvalRecvBufs;
     std::vector<double*> UvalRecvBufs;
     std::vector<int_t*> LidxRecvBufs;

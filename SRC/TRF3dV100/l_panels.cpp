@@ -1,6 +1,6 @@
 #include "lupanels.hpp"
 
-lpanel_t::lpanel_t(int_t *lsub, double *lval, int_t* xsup, int_t isDiagIncluded)
+lpanel_t::lpanel_t(int_t k, int_t *lsub, double *lval, int_t* xsup, int_t isDiagIncluded)
 {
     // set the value
     val = lval;
@@ -12,6 +12,7 @@ lpanel_t::lpanel_t(int_t *lsub, double *lval, int_t* xsup, int_t isDiagIncluded)
     index[0] = nlb;
     index[1] = nzrow;
     index[2] = isDiagIncluded;  //either one or zero 
+    index[3] = SuperSize(k);
     index[LPANEL_HEADER_SIZE + nlb] = 0; // starting of prefix sum is zero
     // now start the loop
     int_t blkIdPtr  = LPANEL_HEADER_SIZE;
