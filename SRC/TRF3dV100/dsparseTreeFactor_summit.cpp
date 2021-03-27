@@ -68,10 +68,19 @@ int_t LUstruct_v100::dsparseTreeFactor(
                 lPanelVec[g2lCol(k)].panelSolve(ksupc, dFBufs[offset]->BlockUFactor, ksupc);
 
             /*=======   Panel Broadcast             ======*/
+            upanel_t k_upanel(UidxRecvBufs[0], UvalRecvBufs[0]) ;
+            lpanel_t k_lpanel;
+            if (myrow == krow(k))
+            {
+                k_upanel= uPanelVec[g2lRow(k)];
+            }
+            MPI_Bcast(k_upanel.index, UidxSendCounts[k], mpi_int_t, krow(k), grid3d->cscp.comm);
+            MPI_Bcast(k_upanel.val, UvalSendCounts[k], MPI_DOUBLE, krow(k), grid3d->cscp.comm);
 
             /*=======   Schurcomplement Update      ======*/
             #warning single node only 
-            dSchurComplementUpdate(k, lPanelVec[g2lCol(k)], uPanelVec[g2lRow(k)]);
+            // dSchurComplementUpdate(k, lPanelVec[g2lCol(k)], uPanelVec[g2lRow(k)]);
+            dSchurComplementUpdate(k, lPanelVec[g2lCol(k)], k_upanel);
 
         } /*for k0= k_st:k_end */
 

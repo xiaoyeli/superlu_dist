@@ -20,6 +20,9 @@ public:
         val = NULL;
     }
 
+    lpanel_t(int_t *index_, double *val_): index(index_), val(val_) {return;};
+    
+
     // index[0] is number of blocks
     int_t nblocks()
     {
@@ -87,14 +90,15 @@ public:
     int_t *index;
     double *val;
 
-    upanel_t(int_t *usub, double *uval);
+    // upanel_t(int_t *usub, double *uval);
     upanel_t(int_t k, int_t *usub, double *uval, int_t *xsup);
     upanel_t()
     {
         index = NULL;
         val = NULL;
     }
-
+    // constructing from recevied index and val 
+    upanel_t(int_t *index_, double *val_): index(index_), val(val_) {return;};
     // index[0] is number of blocks
     int_t nblocks()
     {
@@ -187,6 +191,12 @@ struct LUstruct_v100
     std::vector<double*> UvalRecvBufs;
     std::vector<int_t*> LidxRecvBufs;
     std::vector<int_t*> UidxRecvBufs;
+
+    // send and recv count for 2d comm 
+    std::vector<int_t> LvalSendCounts;
+    std::vector<int_t> UvalSendCounts;
+    std::vector<int_t> LidxSendCounts;
+    std::vector<int_t> UidxSendCounts;
 
     int_t krow(int_t k) { return k % Pr; }
     int_t kcol(int_t k) { return k % Pc; }

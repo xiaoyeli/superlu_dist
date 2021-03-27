@@ -80,10 +80,7 @@ int_t LUstruct_v100::zRecvLPanel(int_t k0, int_t senderGrid, double alpha, doubl
 		int_t lk = g2lCol(k0);
         if (!lPanelVec[lk].isEmpty())
 		{
-            // MPI_Send(lPanelVec[lk].blkPtr(0), lPanelVec[lk].nzvalSize(), 
-            //         MPI_DOUBLE, receiverGrid, k0, grid3d->zscp.comm);
-			// SCT->commVolRed += len2 * sizeof(double);
-
+            
             MPI_Status status;
 			MPI_Recv(LvalRecvBufs[0], lPanelVec[lk].nzvalSize(), MPI_DOUBLE, senderGrid, k0,
 					 grid3d->zscp.comm, &status);

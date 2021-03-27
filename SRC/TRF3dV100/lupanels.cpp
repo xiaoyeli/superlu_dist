@@ -31,6 +31,12 @@ LUstruct_v100::LUstruct_v100(int_t nsupers_, int_t ldt_,
     maxLidxCount =0;
     maxUvalCount =0;
     maxUidxCount =0;
+
+    std::vector<int_t> localLvalSendCounts(CEILING(nsupers, Pc),0);
+    std::vector<int_t> localUvalSendCounts(CEILING(nsupers, Pr),0);
+    std::vector<int_t> localLidxSendCounts(CEILING(nsupers, Pc),0);
+    std::vector<int_t> localUidxSendCounts(CEILING(nsupers, Pr),0);
+
     for (int_t i = 0; i < CEILING(nsupers, Pc); ++i)
     {
         int_t k0 = i * Pc + mycol;
@@ -44,6 +50,8 @@ LUstruct_v100::LUstruct_v100(int_t nsupers_, int_t ldt_,
             lPanelVec[i] = lpanel;
             maxLvalCount = std::max(lPanelVec[i].nzvalSize(),maxLvalCount );
             maxLidxCount = std::max(lPanelVec[i].indexSize(),maxLidxCount );
+            localLvalSendCounts[i] =lPanelVec[i].nzvalSize();
+            localLidxSendCounts[i] =lPanelVec[i].indexSize();
         }
     }
 
@@ -57,8 +65,43 @@ LUstruct_v100::LUstruct_v100(int_t nsupers_, int_t ldt_,
             uPanelVec[i] = upanel;
             maxUvalCount = std::max(uPanelVec[i].nzvalSize(),maxUvalCount );
             maxUidxCount = std::max(uPanelVec[i].indexSize(),maxUidxCount );
+            localUvalSendCounts[i] =uPanelVec[i].nzvalSize();
+            localUidxSendCounts[i] =uPanelVec[i].indexSize();
         }
     }
+
+    // compute the send sizes
+    // send and recv count for 2d comm 
+    LvalSendCounts.resize(nsupers);
+    UvalSendCounts.resize(nsupers);
+    LidxSendCounts.resize(nsupers);
+    UidxSendCounts.resize(nsupers);
+
+    std::vector<int_t> recvBuf( std::max( CEILING(nsupers, Pr), CEILING(nsupers, Pc) ),0 );
+
+    for(int pr=0;pr<Pr; pr++)
+    {
+        int npr = CEILING(nsupers, Pr);
+        std::copy(localUvalSendCounts.begin(), localUvalSendCounts.end(), recvBuf.begin());
+        // Send the value counts ;
+        MPI_Bcast((void *) recvBuf.data(), npr, mpi_int_t, pr, grid3d->cscp.comm);
+        for(int i=0; i*Pr + pr< nsupers; i++ )
+        {
+            UvalSendCounts[i*Pr+pr] = recvBuf[i];
+        }
+
+        std::copy(localUidxSendCounts.begin(), localUidxSendCounts.end(), recvBuf.begin());
+        // send the index count 
+        MPI_Bcast((void *) recvBuf.data(), npr, mpi_int_t, pr, grid3d->cscp.comm);
+        for(int i=0; i*Pr + pr< nsupers; i++ )
+        {
+            UidxSendCounts[i*Pr+pr] = recvBuf[i];
+        }
+        
+    }
+
+    maxUvalCount = *std::max_element(UvalSendCounts.begin(), UvalSendCounts.end());
+    maxUidxCount = *std::max_element(UidxSendCounts.begin(), UidxSendCounts.end());
 
     // Allocate bigV, indirect
     nThreads = getNumThreads(iam);
@@ -82,7 +125,14 @@ LUstruct_v100::LUstruct_v100(int_t nsupers_, int_t ldt_,
         UidxRecvBufs[i] = (int_t*) SUPERLU_MALLOC(sizeof(int_t)*maxUidxCount);
     }
 
+    //
     
+
+    // for(int pc=0;pc<Pc; pc++)
+    // {
+    //     MPI_Bcast(void *buffer, int count, MPI_Datatype datatype, int root, MPI_Comm comm)
+    //     ...
+    // }
 }
 
 int_t LUstruct_v100::dSchurComplementUpdate(int_t k, lpanel_t &lpanel, upanel_t &upanel)
@@ -148,6 +198,7 @@ int_t *LUstruct_v100::computeIndirectMap(indirectMapType direction, int_t srcLen
     int_t *dstIdx = indirect + thread_id * ldt;
     for (int_t i = 0; i < dstLen; i++)
     {
+        // if(thread_id < dstLen)
         dstIdx[dstVec[i]] = i;
     }
 
