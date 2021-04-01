@@ -337,7 +337,7 @@ int_t dSchurComplementSetupGPU(
     int_t* myIperm, 
     int_t* iperm_c_supno, int_t*perm_c_supno,
     gEtreeInfo_t*   gEtreeInfo, factNodelists_t* fNlists,
-    scuBufs_t* scuBufs, dLUValSubBuf_t* LUvsb,
+    dscuBufs_t* scuBufs, dLUValSubBuf_t* LUvsb,
     gridinfo_t *grid, dLUstruct_t *LUstruct,
     HyP_t* HyP)
 {
@@ -554,11 +554,10 @@ trf3Dpartition_t* dinitTrf3Dpartition(int_t nsupers,
     CHECK_MALLOC (iam, "Enter dinitTrf3Dpartition()");
 #endif
     int_t* perm_c_supno = getPerm_c_supno(nsupers, options,
-					  LUstruct->etree,
-					  LUstruct->Glu_persist,
-					  LUstruct->Llu->Lrowind_bc_ptr,
-					  LUstruct->Llu->Ufstnz_br_ptr,
-					  grid);
+                                         LUstruct->etree,
+    	   		                 LUstruct->Glu_persist,
+		                         LUstruct->Llu->Lrowind_bc_ptr,
+					 LUstruct->Llu->Ufstnz_br_ptr, grid);
     int_t* iperm_c_supno = getFactIperm(perm_c_supno, nsupers);
 
     // calculating tree factorization

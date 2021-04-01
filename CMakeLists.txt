@@ -182,8 +182,11 @@ if (TPL_ENABLE_CUDALIB)   ## want to use cuda
       if (NOT CMAKE_CUDA_FLAGS)
         cuda_select_nvcc_arch_flags(CUDA_ARCH_FLAGS Auto)
       endif()
-    ######  set(CUDA_NVCC_FLAGS_RELEASE "-O3 --expt-relaxed-constexpr -DNDEBUG ${CMAKE_#CUDA_FLAGS} ${CUDA_ARCH_FLAGS}")
-    #  set(CUDA_NVCC_FLAGS_DEBUG "-O0 --expt-relaxed-constexpr -DDEBUG -g ${CMAKE_CUDA_#FLAGS} ${CUDA_ARCH_FLAGS}")
+      set(HAVE_CUDA TRUE)
+      set(CMAKE_CUDA_FLAGS_RELEASE "-O3 --expt-relaxed-constexpr -DNDEBUG" CACHE STRING "")
+      set(CMAKE_CUDA_FLAGS_DDEBUG "-O0 --expt-relaxed-constexpr -DDEBUG -g" CACHE STRING "")
+#      set(CUDA_NVCC_FLAGS_RELEASE "-O3 --expt-relaxed-constexpr -DNDEBUG ${CMAKE_CUDA_FLAGS} ${CUDA_ARCH_FLAGS}")
+#      set(CUDA_NVCC_FLAGS_DEBUG "-O0 --expt-relaxed-constexpr -DDEBUG -g ${CMAKE_CUDA_FLAGS} ${CUDA_ARCH_FLAGS}")
     endif()
 #     find_package(CUDAToolkit REQUIRED)
 

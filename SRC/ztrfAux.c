@@ -336,7 +336,7 @@ int_t zSchurComplementSetupGPU(
     int_t* myIperm, 
     int_t* iperm_c_supno, int_t*perm_c_supno,
     gEtreeInfo_t*   gEtreeInfo, factNodelists_t* fNlists,
-    scuBufs_t* scuBufs, zLUValSubBuf_t* LUvsb,
+    zscuBufs_t* scuBufs, zLUValSubBuf_t* LUvsb,
     gridinfo_t *grid, zLUstruct_t *LUstruct,
     HyP_t* HyP)
 {
@@ -485,7 +485,7 @@ int_t zSchurComplementSetupGPU(
     }
 
     return LU_nonempty;
-} /* dSchurComplementSetupGPU */
+} /* zSchurComplementSetupGPU */
 
 
 doublecomplex* zgetBigV(int_t ldt, int_t num_threads)
@@ -553,10 +553,10 @@ trf3Dpartition_t* zinitTrf3Dpartition(int_t nsupers,
     CHECK_MALLOC (iam, "Enter zinitTrf3Dpartition()");
 #endif
     int_t* perm_c_supno = getPerm_c_supno(nsupers, options,
-					  LUstruct->etree,
-					  LUstruct->Glu_persist,
-					  LUstruct->Llu->Lrowind_bc_ptr,
-					  LUstruct->Llu->Ufstnz_br_ptr, grid);
+                                         LUstruct->etree,
+    	   		                 LUstruct->Glu_persist,
+		                         LUstruct->Llu->Lrowind_bc_ptr,
+					 LUstruct->Llu->Ufstnz_br_ptr, grid);
     int_t* iperm_c_supno = getFactIperm(perm_c_supno, nsupers);
 
     // calculating tree factorization
@@ -564,9 +564,9 @@ trf3Dpartition_t* zinitTrf3Dpartition(int_t nsupers,
     treeList_t* treeList = setree2list(nsupers, setree );
 
     /*update treelist with weight and depth*/
-    getSCUweight(nsupers, treeList,LUstruct->Glu_persist->xsup,
-		 LUstruct->Llu->Lrowind_bc_ptr, LUstruct->Llu->Ufstnz_br_ptr,
-		 grid3d);
+    getSCUweight(nsupers, treeList, LUstruct->Glu_persist->xsup,
+		  LUstruct->Llu->Lrowind_bc_ptr, LUstruct->Llu->Ufstnz_br_ptr,
+		  grid3d);
 
     calcTreeWeight(nsupers, setree, treeList, LUstruct->Glu_persist->xsup);
 

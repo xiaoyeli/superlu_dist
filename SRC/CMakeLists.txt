@@ -53,7 +53,6 @@ set(sources
   trfAux.c 
   communication_aux.c
   treeFactorization.c
-  treeFactorizationGPU.c 
   sec_structs.c
   cublas_utils.c
 )
@@ -65,7 +64,7 @@ endif ()
 set_source_files_properties(superlu_timer.c PROPERTIES COMPILE_FLAGS -O0)
 
 if(enable_double)
-  list(APPEND headers superlu_ddefs.h)
+  list(APPEND headers superlu_ddefs.h dlustruct_gpu.h)
 
   list(APPEND sources
     dlangs_dist.c
@@ -108,6 +107,7 @@ if(enable_double)
     dnrformat_loc3d.c 
     pdgstrf3d.c 
     dtreeFactorization.c
+    dtreeFactorizationGPU.c
     dgather.c
     dscatter3d.c
     pd3dcomm.c
@@ -115,7 +115,7 @@ if(enable_double)
     dcommunication_aux.c 
     dtrfCommWrapper.c
     dsuperlu_blas.c
-    superlu_gpu.cu 
+    dsuperlu_gpu.cu 
   )
 if (HAVE_COMBBLAS)
   list(APPEND sources d_c2cpp_GetHWPM.cpp dHWPM_CombBLAS.hpp)
@@ -125,7 +125,7 @@ endif() ## enable double
 
 
 if(enable_complex16)
-  list(APPEND headers superlu_zdefs.h)
+  list(APPEND headers superlu_zdefs.h zlustruct_gpu.h)
 
   list(APPEND sources
     dcomplex_dist.c
@@ -169,12 +169,14 @@ if(enable_complex16)
     znrformat_loc3d.c 
     pzgstrf3d.c
     ztreeFactorization.c 
+    ztreeFactorizationGPU.c 
     zscatter3d.c
     zgather.c 
     pz3dcomm.c ztrfAux.c
     zcommunication_aux.c
     ztrfCommWrapper.c
     zsuperlu_blas.c
+    zsuperlu_gpu.cu
   )
 if (HAVE_COMBBLAS)
   list(APPEND sources z_c2cpp_GetHWPM.cpp zHWPM_CombBLAS.hpp)

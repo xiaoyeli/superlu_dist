@@ -263,178 +263,6 @@ void print_sp_ienv_dist(superlu_dist_options_t *options)
     printf("**************************************************\n");
 }
 
-<<<<<<< HEAD
-/*! \brief
- *
- * <pre>
- * Purpose
- * =======
- *   Set up the communication pattern for redistribution between B and X
- *   in the triangular solution.
- * 
- * Arguments
- * =========
- *
- * n      (input) int (global)
- *        The dimension of the linear system.
- *
- * m_loc  (input) int (local)
- *        The local row dimension of the distributed input matrix.
- *
- * nrhs   (input) int (global)
- *        Number of right-hand sides.
- *
- * fst_row (input) int (global)
- *        The row number of matrix B's first row in the global matrix.
- *
- * perm_r (input) int* (global)
- *        The row permutation vector.
- *
- * perm_c (input) int* (global)
- *        The column permutation vector.
- *
- * grid   (input) gridinfo_t*
- *        The 2D process mesh.
- * </pre>
- */
-int_t pxgstrs_init(int_t n, int_t m_loc, int_t nrhs, int_t fst_row,
-                   int_t perm_r[], int_t perm_c[], gridinfo_t *grid,
-                   Glu_persist_t *Glu_persist, SOLVEstruct_t *SOLVEstruct)
-{
-
-    int *SendCnt, *SendCnt_nrhs, *RecvCnt, *RecvCnt_nrhs;
-    int *sdispls, *sdispls_nrhs, *rdispls, *rdispls_nrhs;
-    int *itemp, *ptr_to_ibuf, *ptr_to_dbuf;
-    int_t *row_to_proc;
-    int_t i, gbi, k, l, num_diag_procs, *diag_procs;
-    int_t irow, q, knsupc, nsupers, *xsup, *supno;
-    int iam, p, pkk, procs;
-    pxgstrs_comm_t *gstrs_comm;
-
-    procs = grid->nprow * grid->npcol;
-    iam = grid->iam;
-    gstrs_comm = SOLVEstruct->gstrs_comm;
-    xsup = Glu_persist->xsup;
-    supno = Glu_persist->supno;
-    nsupers = Glu_persist->supno[n - 1] + 1;
-    row_to_proc = SOLVEstruct->row_to_proc;
-
-    /* ------------------------------------------------------------
-       SET UP COMMUNICATION PATTERN FOR ReDistribute_B_to_X.
-       ------------------------------------------------------------*/
-    if (!(itemp = SUPERLU_MALLOC(8 * procs * sizeof(int))))
-        ABORT("Malloc fails for B_to_X_itemp[].");
-    SendCnt = itemp;
-    SendCnt_nrhs = itemp + procs;
-    RecvCnt = itemp + 2 * procs;
-    RecvCnt_nrhs = itemp + 3 * procs;
-    sdispls = itemp + 4 * procs;
-    sdispls_nrhs = itemp + 5 * procs;
-    rdispls = itemp + 6 * procs;
-    rdispls_nrhs = itemp + 7 * procs;
-
-    /* Count the number of elements to be sent to each diagonal process.*/
-    for (p = 0; p < procs; ++p)
-        SendCnt[p] = 0;
-    for (i = 0, l = fst_row; i < m_loc; ++i, ++l)
-    {
-        irow = perm_c[perm_r[l]]; /* Row number in Pc*Pr*B */
-        gbi = BlockNum(irow);
-        p = PNUM(PROW(gbi, grid), PCOL(gbi, grid), grid); /* Diagonal process */
-        ++SendCnt[p];
-    }
-
-    /* Set up the displacements for alltoall. */
-    MPI_Alltoall(SendCnt, 1, MPI_INT, RecvCnt, 1, MPI_INT, grid->comm);
-    sdispls[0] = rdispls[0] = 0;
-    for (p = 1; p < procs; ++p)
-    {
-        sdispls[p] = sdispls[p - 1] + SendCnt[p - 1];
-        rdispls[p] = rdispls[p - 1] + RecvCnt[p - 1];
-    }
-    for (p = 0; p < procs; ++p)
-    {
-        SendCnt_nrhs[p] = SendCnt[p] * nrhs;
-        sdispls_nrhs[p] = sdispls[p] * nrhs;
-        RecvCnt_nrhs[p] = RecvCnt[p] * nrhs;
-        rdispls_nrhs[p] = rdispls[p] * nrhs;
-    }
-
-    /* This is saved for repeated solves, and is freed in pxgstrs_finalize().*/
-    gstrs_comm->B_to_X_SendCnt = SendCnt;
-
-    /* ------------------------------------------------------------
-       SET UP COMMUNICATION PATTERN FOR ReDistribute_X_to_B.
-       ------------------------------------------------------------*/
-    /* This is freed in pxgstrs_finalize(). */
-    if (!(itemp = SUPERLU_MALLOC(8 * procs * sizeof(int))))
-        ABORT("Malloc fails for X_to_B_itemp[].");
-    SendCnt = itemp;
-    SendCnt_nrhs = itemp + procs;
-    RecvCnt = itemp + 2 * procs;
-    RecvCnt_nrhs = itemp + 3 * procs;
-    sdispls = itemp + 4 * procs;
-    sdispls_nrhs = itemp + 5 * procs;
-    rdispls = itemp + 6 * procs;
-    rdispls_nrhs = itemp + 7 * procs;
-
-    /* Count the number of X entries to be sent to each process.*/
-    for (p = 0; p < procs; ++p)
-        SendCnt[p] = 0;
-    num_diag_procs = SOLVEstruct->num_diag_procs;
-    diag_procs = SOLVEstruct->diag_procs;
-
-    for (p = 0; p < num_diag_procs; ++p)
-    { /* for all diagonal processes */
-        pkk = diag_procs[p];
-        if (iam == pkk)
-        {
-            for (k = p; k < nsupers; k += num_diag_procs)
-            {
-                knsupc = SuperSize(k);
-                irow = FstBlockC(k);
-                for (i = 0; i < knsupc; ++i)
-                {
-#if 0
-		    q = row_to_proc[inv_perm_c[irow]];
-#else
-                    q = row_to_proc[irow];
-#endif
-                    ++SendCnt[q];
-                    ++irow;
-                }
-            }
-        }
-    }
-
-    MPI_Alltoall(SendCnt, 1, MPI_INT, RecvCnt, 1, MPI_INT, grid->comm);
-    sdispls[0] = rdispls[0] = 0;
-    sdispls_nrhs[0] = rdispls_nrhs[0] = 0;
-    SendCnt_nrhs[0] = SendCnt[0] * nrhs;
-    RecvCnt_nrhs[0] = RecvCnt[0] * nrhs;
-    for (p = 1; p < procs; ++p)
-    {
-        sdispls[p] = sdispls[p - 1] + SendCnt[p - 1];
-        rdispls[p] = rdispls[p - 1] + RecvCnt[p - 1];
-        sdispls_nrhs[p] = sdispls[p] * nrhs;
-        rdispls_nrhs[p] = rdispls[p] * nrhs;
-        SendCnt_nrhs[p] = SendCnt[p] * nrhs;
-        RecvCnt_nrhs[p] = RecvCnt[p] * nrhs;
-    }
-
-    /* This is saved for repeated solves, and is freed in pxgstrs_finalize().*/
-    gstrs_comm->X_to_B_SendCnt = SendCnt;
-
-    if (!(ptr_to_ibuf = SUPERLU_MALLOC(2 * procs * sizeof(int))))
-        ABORT("Malloc fails for ptr_to_ibuf[].");
-    gstrs_comm->ptr_to_ibuf = ptr_to_ibuf;
-    gstrs_comm->ptr_to_dbuf = ptr_to_ibuf + procs;
-
-    return 0;
-} /* PXGSTRS_INIT */
-
-=======
->>>>>>> Version-7
 void pxgstrs_finalize(pxgstrs_comm_t *gstrs_comm)
 {
     SUPERLU_FREE(gstrs_comm->B_to_X_SendCnt);
@@ -487,21 +315,10 @@ void PStatPrint(superlu_dist_options_t *options, SuperLUStat_t *stat, gridinfo_t
     if (options->PrintStat == NO)
         return;
 
-<<<<<<< HEAD
     if (!iam && options->Fact != FACTORED)
     {
         printf("**************************************************\n");
         printf("**** Time (seconds) ****\n");
-
-        if (options->Equil != NO)
-            printf("\tEQUIL time         %8.2f\n", utime[EQUIL]);
-        if (options->RowPerm != NOROWPERM)
-            printf("\tROWPERM time       %8.2f\n", utime[ROWPERM]);
-        if (options->ColPerm != NATURAL)
-            printf("\tCOLPERM time       %8.2f\n", utime[COLPERM]);
-        printf("\tSYMBFACT time      %8.2f\n", utime[SYMBFAC]);
-        printf("\tDISTRIBUTE time    %8.2f\n", utime[DIST]);
-=======
         if ( options->Equil != NO )
 	    printf("\tEQUIL time         %8.3f\n", utime[EQUIL]);
 	if ( options->RowPerm != NOROWPERM )
@@ -510,29 +327,17 @@ void PStatPrint(superlu_dist_options_t *options, SuperLUStat_t *stat, gridinfo_t
 	    printf("\tCOLPERM time       %8.3f\n", utime[COLPERM]);
         printf("\tSYMBFACT time      %8.3f\n", utime[SYMBFAC]);
 	printf("\tDISTRIBUTE time    %8.3f\n", utime[DIST]);
-
->>>>>>> Version-7
     }
 
     MPI_Reduce(&ops[FACT], &flopcnt, 1, MPI_FLOAT, MPI_SUM,
                0, grid->comm);
     factflop = flopcnt;
-<<<<<<< HEAD
-    if (!iam && options->Fact != FACTORED)
-    {
-        printf("\tFACTOR time        %8.2f\n", utime[FACT]);
-        if (utime[FACT] != 0.0)
-            printf("\tFactor flops\t%e\tMflops \t%8.2f\n",
-                   flopcnt,
-                   flopcnt * 1e-6 / utime[FACT]);
-=======
     if ( !iam && options->Fact != FACTORED ) {
 	printf("\tFACTOR time        %8.3f\n", utime[FACT]);
 	if ( utime[FACT] != 0.0 )
 	    printf("\tFactor flops\t%e\tMflops \t%8.2f\n",
 		   flopcnt,
 		   flopcnt*1e-6/utime[FACT]);
->>>>>>> Version-7
     }
 
     MPI_Reduce(&ops[SOLVE], &flopcnt, 1, MPI_FLOAT, MPI_SUM,
@@ -702,8 +507,10 @@ void get_diag_procs(int_t n, Glu_persist_t *Glu_persist, gridinfo_t *grid,
     do
     {
         ++(*num_diag_procs);
-        i = (++i) % nprow;
-        j = (++j) % npcol;
+        ++i;
+	i = (i) % nprow;
+        ++j;
+	j = (j) % npcol;
         pkk = PNUM(i, j, grid);
     } while (pkk != 0); /* Until wrap back to process 0 */
     if (!(*diag_procs = intMalloc_dist(*num_diag_procs)))
@@ -714,8 +521,10 @@ void get_diag_procs(int_t n, Glu_persist_t *Glu_persist, gridinfo_t *grid,
     {
         pkk = PNUM(i, j, grid);
         (*diag_procs)[k] = pkk;
-        i = (++i) % nprow;
-        j = (++j) % npcol;
+	++i;
+        i = (i) % nprow;
+	++j;
+        j = (j) % npcol;
     }
     for (k = 0; k < nsupers; ++k)
     {
@@ -1178,20 +987,12 @@ int_t num_full_cols_U(
 }
 
 int_t estimate_bigu_size(
-<<<<<<< HEAD
-    int_t nsupers,
-    int_t **Ufstnz_br_ptr, /* point to U index[] array */
-    Glu_persist_t *Glu_persist,
-    gridinfo_t *grid, int_t *perm_u,
-    int_t *max_ncols /* Output: Max. number of columns in among all U(k,:).
-=======
       int_t nsupers,
-      int_t**Ufstnz_br_ptr, /* point to U index[] array */
+      int_t **Ufstnz_br_ptr, /* point to U index[] array */
       Glu_persist_t *Glu_persist,
       gridinfo_t* grid, int_t* perm_u, 
       int_t *max_ncols /* Output: Max. number of columns among all U(k,:).
->>>>>>> Version-7
-			     This is used for allocating GEMM V buffer.  */
+			  This is used for allocating GEMM V buffer.  */
 )
 {
     int_t iam = grid->iam;
@@ -1312,11 +1113,10 @@ void quickSortM(int_t *a, int_t l, int_t r, int_t lda, int_t dir, int_t dims)
         // printf("dims: %5d",dims);
         // fflush(stdout);
 
-<<<<<<< HEAD
         // divide and conquer
         j = partitionM(a, l, r, lda, dir, dims);
-        quickSortM(a, l, j - 1, lda, dir, dims);
-        quickSortM(a, j + 1, r, lda, dir, dims);
+        quickSortM(a, l, j-1, lda, dir, dims);
+        quickSortM(a, j+1, r, lda, dir, dims);
     }
 }
 
@@ -1383,67 +1183,7 @@ int_t partitionM(int_t *a, int_t l, int_t r, int_t lda, int_t dir, int_t dims)
     }
 
     return 0;
-}
-
-/*
- * The following are from 3D code p3dcomm.c
- */
-
-int AllocGlu_3d(int_t n, int_t nsupers, LUstruct_t *LUstruct)
-{
-    /*broadcasting Glu_persist*/
-    LUstruct->Glu_persist->xsup = intMalloc_dist(nsupers + 1); //INT_T_ALLOC(nsupers+1);
-    LUstruct->Glu_persist->supno = intMalloc_dist(n);          //INT_T_ALLOC(n);
-    return 0;
-}
-
-// Sherry added
-int DeAllocGlu_3d(LUstruct_t *LUstruct)
-{
-    SUPERLU_FREE(LUstruct->Glu_persist->xsup);
-    SUPERLU_FREE(LUstruct->Glu_persist->supno);
-    return 0;
-}
-=======
-int_t partitionM( int_t* a, int_t l, int_t r, int_t lda, int_t dir, int_t dims) {
-   int_t pivot, i, j, t, dd;
-   pivot = a[l];
-   i = l; j = r+1;
-
-	if(dir==0){
-	   while( 1)
-	   {
-		do ++i; while( a[i] <= pivot && i <= r );
-		do --j; while( a[j] > pivot );
-		if( i >= j ) break; 
-		for(dd=0;dd<dims;dd++){	
-			t = a[i+lda*dd]; a[i+lda*dd] = a[j+lda*dd]; a[j+lda*dd] = t;	
-		}
-	   }
-	   for(dd=0;dd<dims;dd++){	
-		t = a[l+lda*dd]; a[l+lda*dd] = a[j+lda*dd]; a[j+lda*dd] = t;
-	   }	   
-	   return j;		
-	}else if(dir==1){
-	   while( 1)
-	   {
-		do ++i; while( a[i] >= pivot && i <= r );
-		do --j; while( a[j] < pivot );
-		if( i >= j ) break;
-		for(dd=0;dd<dims;dd++){	
-			t = a[i+lda*dd]; a[i+lda*dd] = a[j+lda*dd]; a[j+lda*dd] = t;	
-		}
-	   }
-	   for(dd=0;dd<dims;dd++){	
-		t = a[l+lda*dd]; a[l+lda*dd] = a[j+lda*dd]; a[j+lda*dd] = t;
-	   } 
-	   return j;		
-	}
-
-	return 0;
 } /* partitionM */
-
->>>>>>> Version-7
 
 int_t **getTreePerm(int_t *myTreeIdxs, int_t *myZeroTrIdxs,
                     int_t *nodeCount, int_t **nodeList,
@@ -1761,6 +1501,38 @@ gemm_division_new (int * num_streams_used,   /*number of streams that will be us
         }
 
     }
+}
+
+/* The following are moved from superlu_gpu.cu */
+
+int getnCudaStreams()
+{
+    // Disabling multiple cuda streams 
+    #if 1
+	return 1;
+    #else 
+	char *ttemp;
+	ttemp = getenv ("N_CUDA_STREAMS");
+
+	if (ttemp)
+		return atoi (ttemp);
+	else
+		return 1;
+    #endif 
+}
+
+int get_mpi_process_per_gpu ()
+{
+    char *ttemp;
+    ttemp = getenv ("MPI_PROCESS_PER_GPU");
+
+	if (ttemp)
+		return atol (ttemp);
+	else
+	{
+		printf("MPI_PROCESS_PER_GPU is not set; Using default 1 \n");
+		return 1;
+	}
 }
 
 #endif  /* defined GPU_ACC */

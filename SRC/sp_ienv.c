@@ -92,7 +92,7 @@ sp_ienv_dist(int_t ispec)
             return 20;
             
 	case 3: 
-            ttemp = getenv("NSUP");
+	  ttemp = getenv("NSUP"); // take min of MAX_SUPER_SIZE in superlu_defs.h
             if(ttemp)
             {
                 return(atoi(ttemp));

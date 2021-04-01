@@ -4776,7 +4776,11 @@ intraLvl_symbfact
 	  MPI_Irecv (&sz_msg, 1, mpi_int_t, 
 		     MPI_ANY_SOURCE, tag_intraLvl_szMsg, 
 		     (*symb_comm), &(request[0]));  
+#if defined (_LONGINT)
 	  if (sz_msg > LONG_MAX)
+#else
+	  if (sz_msg > INT_MAX)
+#endif
 	    ABORT("ERROR in intraLvl_symbfact size to send > LONG_MAX\n");
 	}
 	MPI_Waitany (2, request, index_req, status);

@@ -130,6 +130,9 @@ typedef MPI_C_DOUBLE_COMPLEX  SuperLU_MPI_DOUBLE_COMPLEX;
 #include "util_dist.h"
 #include "psymbfact.h"
 
+#define MAX_SUPER_SIZE 256   /* Sherry: moved from superlu_gpu.cu */
+
+
 #define ISORT     /* NOTE: qsort() has bug on Mac */
 
 /*********************************************************************** 
@@ -1269,6 +1272,9 @@ extern int_t** getTreePerm( int_t* myTreeIdxs, int_t* myZeroTrIdxs,
 extern int_t* getMyNodeCounts(int_t maxLvl, int_t* myTreeIdxs, int_t* gNodeCount);
 extern int_t checkIntVector3d(int_t* vec, int_t len,  gridinfo3d_t* grid3d);
 extern int_t reduceStat(PhaseType PHASE, SuperLUStat_t *stat, gridinfo3d_t * grid3d);
+
+  extern int getnCudaStreams();
+  extern int get_mpi_process_per_gpu ();
 
 /*=====================*/
 
