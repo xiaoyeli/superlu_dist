@@ -116,6 +116,8 @@ at the top-level directory.
 /*#include "cublas_zgemm.h"*/
 // #define NUM_CUDA_STREAMS 16
 // #define NUM_CUDA_STREAMS 16
+#elif defined(USE_SYCL)
+#include "onemkl_utils.hpp"
 #endif
 
 /* Various defininations     */
@@ -882,6 +884,43 @@ pzgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
     stat->gpu_buffer += ( max_row_size * sp_ienv_dist(3)
 			  + bigu_size + buffer_size ) * dword;
 
+#elif defined(USE_SYCL)
+
+    bigU = sycl::malloc_host<doublecomplex>( bigu_size );
+    if (bigU)
+      ABORT("Malloc fails for zgemm buffer U ");
+
+#if ( PRNTlevel>=1 )
+    printf("[%d].. BIG V size %d (on CPU), dC buffer_size %d (on GPU)\n", iam, bigv_size, buffer_size);
+    fflush(stdout);
+#endif
+
+    bigV = sycl::malloc_host<doublecomplex>(bigv_size);
+    if (bigV)
+      ABORT("Malloc fails for zgemm buffer V");
+
+    DisplayHeader();
+
+#if ( PRNTlevel>=1 )
+    printf(" Starting with %d Sycl Queues \n",nstreams );
+#endif
+
+    // creating streams
+    cudaStream_t *streams;
+    streams = (cudaStream_t *) SUPERLU_MALLOC(sizeof(cudaStream_t)*nstreams);
+    for (int i = 0; i < nstreams; ++i)
+        cudaStreamCreate(&streams[i]);
+
+    // allocating data in device
+    doublecomplex *dA, *dB, *dC;
+
+    dA = sycl::malloc_device<doublecomplex>( max_row_size*sp_ienv_dist(3) );
+    // size of B should be bigu_size
+    dB = sycl::malloc_device<doublecomplex>( bigu_size );
+    dC = sycl::malloc_device<doublecomplex>( buffer_size );
+
+    stat->gpu_buffer += ( max_row_size * sp_ienv_dist(3) + bigu_size + buffer_size ) * dword;
+
 #else   /*-- not to use GPU --*/
 
     // for GEMM padding 0
@@ -1460,7 +1499,7 @@ pzgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
 /* #pragma omp parallel */ /* Sherry -- parallel done inside pzgstrs2 */
 #endif
                 {
-                    pzgstrs2_omp (k0, k, Glu_persist, grid, Llu, 
+                    pzgstrs2_omp (k0, k, Glu_persist, grid, Llu,
 		                    Ublock_info, stat);
                 }
                 pdgstrs2_timer += SuperLU_timer_() - ttt2;
@@ -1728,6 +1767,10 @@ pzgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
 
 #include "zSchCompUdt-cuda.c"
 
+#elif defined(USE_SYCL)
+
+#include "zSchCompUdt-sycl.cpp"
+
 #else
 
 /*#include "SchCompUdt--Phi-2Ddynamic-alt.c"*/
@@ -1993,4 +2036,3 @@ pzgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
 
     return 0;
 } /* PZGSTRF */
-

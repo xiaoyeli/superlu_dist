@@ -12,9 +12,13 @@
 
 // #define USE_VENDOR_BLAS
 
-
+#ifdef USE_SYCL
+#include <CL/sycl.hpp>
+#include <oneapi/mkl.hpp>
+#else
 #include <cublas_v2.h>
 #include <cuda_runtime.h>
+#endif
 #include "superlu_ddefs.h"
 // #include "sec_structs.h"
 // #include "supernodal_etree.h"
@@ -24,18 +28,9 @@
 
 #define MAX_BLOCK_SIZE 10000
 
-
-static
-void check(cudaError_t result, char const *const func, const char *const file, int_t const line)
+static void check(int result, char const *const func, const char *const file,
+                  int_t const line)
 {
-    if (result)
-    {
-        fprintf(stderr, "CUDA error at file %s: line %d code=(%s) \"%s\" \n",
-                file, line, cudaGetErrorString(result), func);
-
-        // Make sure we call CUDA Device Reset before exiting
-        exit(EXIT_FAILURE);
-    }
 }
 
 #define checkCudaErrors(val)           check ( (val), #val, __FILE__, __LINE__ )
@@ -51,12 +46,12 @@ typedef struct SCUbuf_gpu_
 
     double *Remain_L_buff;  /* on GPU */
     double *Remain_L_buff_host; /* Sherry: this memory is page-locked, why need another copy on GPU ? */
-    
+
     int_t *lsub;
     int_t *usub;
 
     int_t *lsub_buf, *usub_buf;
-    
+
     Ublock_info_t *Ublock_info; /* on GPU */
     Remain_info_t *Remain_info;
     Ublock_info_t *Ublock_info_host;
@@ -70,7 +65,7 @@ typedef struct SCUbuf_gpu_
 
 #define MAX_NCUDA_STREAMS 32
 
-typedef struct LUstruct_gpu_ 
+typedef struct LUstruct_gpu_
 {
 
     int_t   *LrowindVec;      /* A single vector */
@@ -120,12 +115,20 @@ typedef struct LUstruct_gpu_
     double tHost_PCIeD2H;
 
 
-    /*cuda events to measure DGEMM and SCATTER timing */
+    /*sycl events to measure DGEMM and SCATTER timing */
     int_t *isOffloaded;       /*stores if any iteration is offloaded or not*/
-    cudaEvent_t *GemmStart, *GemmEnd, *ScatterEnd;  /*cuda events to store gemm and scatter's begin and end*/
-    cudaEvent_t *ePCIeH2D;
-    cudaEvent_t *ePCIeD2H_Start;
-    cudaEvent_t *ePCIeD2H_End;
+    sycl::event *GemmStart, *GemmEnd, *ScatterEnd;
+    std::chrono::time_point<std::chrono::steady_clock> GemmStart_k0;
+    std::chrono::time_point<std::chrono::steady_clock> GemmEnd_k0;
+    std::chrono::time_point<std::chrono::steady_clock>
+        ScatterEnd_k0; /*sycl events to store gemm and scatter's begin and
+                              end*/
+    sycl::event *ePCIeH2D;
+    std::chrono::time_point<std::chrono::steady_clock> ePCIeH2D_k0;
+    sycl::event *ePCIeD2H_Start;
+    std::chrono::time_point<std::chrono::steady_clock> ePCIeD2H_Start_k0;
+    sycl::event *ePCIeD2H_End;
+    std::chrono::time_point<std::chrono::steady_clock> ePCIeD2H_End_k0;
 
     int_t *xsup_host;
     int_t* perm_c_supno;
@@ -138,8 +141,12 @@ typedef struct sluGPU_t_
 
     int_t gpuId;        // if there are multiple GPUs
     LUstruct_gpu *A_gpu, *dA_gpu;
+#ifdef USE_SYCL
+    sycl::queue *funCallStreams[MAX_NCUDA_STREAMS], *CopyStream;
+#else
     cudaStream_t funCallStreams[MAX_NCUDA_STREAMS], CopyStream;
     cublasHandle_t cublasHandles[MAX_NCUDA_STREAMS];
+#endif
     int_t lastOffloadStream[MAX_NCUDA_STREAMS];
     int_t nCudaStreams;
     int_t* isNodeInMyGrid;
@@ -167,7 +174,7 @@ int_t initD2Hreduce(
 );
 
 int_t reduceGPUlu(
-    
+
     int_t last_flag,
     d2Hreduce_t* d2Hred,
     sluGPU_t *sluGPU,
@@ -190,7 +197,7 @@ int_t sendSCUdataHost2GPU(
 );
 
 int_t initSluGPU3D_t(
-    
+
     sluGPU_t *sluGPU,
     LUstruct_t *LUstruct,
     gridinfo3d_t * grid3d,
@@ -243,7 +250,7 @@ int_t free_LUstruct_gpu (LUstruct_gpu *A_gpu);
 
 int_t freeSluGPU(sluGPU_t *sluGPU);
 
-cublasStatus_t checkCublas(cublasStatus_t result);
+int checkCublas(int result);
 // cudaError_t checkCuda(cudaError_t result);
 
 void dPrint_matrix( char *desc, int_t m, int_t n, double *dA, int_t lda );

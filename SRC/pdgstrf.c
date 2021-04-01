@@ -117,6 +117,8 @@ at the top-level directory.
 /*#include "cublas_dgemm.h"*/
 // #define NUM_CUDA_STREAMS 16
 // #define NUM_CUDA_STREAMS 16
+#elif defined(USE_SYCL)
+#include "onemkl_utils.hpp"
 #endif
 
 /* Various defininations     */
@@ -882,6 +884,47 @@ pdgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
     stat->gpu_buffer += ( max_row_size * sp_ienv_dist(3)
 			  + bigu_size + buffer_size ) * dword;
 
+#elif defined(USE_SYCL) /*-- use SYCL --*/
+
+    bigU = sycl::malloc_host<double>(bigu_size);
+    if (bigU)
+      ABORT("Malloc fails for dgemm buffer U ");
+
+#if 0 // !!Sherry fix -- only dC on GPU uses buffer_size
+    bigv_size = buffer_size;
+#endif
+
+#if ( PRNTlevel>=1 )
+    printf("[%d].. BIG V size %d (on CPU), dC buffer_size %d (on GPU)\n", iam, bigv_size, buffer_size);
+    fflush(stdout);
+#endif
+
+    bigV = sycl::malloc_host<double>(bigv_size, );
+    if (bigV)
+      ABORT("Malloc fails for dgemm buffer V");
+
+    DisplayHeader();
+
+#if ( PRNTlevel>=1 )
+    printf(" Starting with %d Sycl Queues \n",nstreams );
+#endif
+
+    // creating streams
+    cudaStream_t *streams;
+    streams = (cudaStream_t *) SUPERLU_MALLOC(sizeof(cudaStream_t)*nstreams);
+    for (int i = 0; i < nstreams; ++i)
+        checkCuda( cudaStreamCreate(&streams[i]) );
+
+    // allocating data in device
+    double *dA, *dB, *dC;
+
+    dA = sycl::malloc_device<double>(max_row_size*sp_ienv_dist(3));
+    // size of B should be bigu_size
+    dB = sycl::malloc_device<double>(bigu_size);
+    dC = sycl::malloc_device<double>(buffer_size);
+
+    stat->gpu_buffer += ( max_row_size * sp_ienv_dist(3) + bigu_size + buffer_size ) * dword;
+
 #else   /*-- not to use GPU --*/
 
     // for GEMM padding 0
@@ -1460,7 +1503,7 @@ pdgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
 /* #pragma omp parallel */ /* Sherry -- parallel done inside pdgstrs2 */
 #endif
                 {
-                    pdgstrs2_omp (k0, k, Glu_persist, grid, Llu, 
+                    pdgstrs2_omp (k0, k, Glu_persist, grid, Llu,
 		                    Ublock_info, stat);
                 }
                 pdgstrs2_timer += SuperLU_timer_() - ttt2;
@@ -1728,6 +1771,10 @@ pdgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
 
 #include "dSchCompUdt-cuda.c"
 
+#elif defined(USE_SYCL)
+
+#include "dSchCompUdt-sycl.cpp"
+
 #else
 
 /*#include "SchCompUdt--Phi-2Ddynamic-alt.c"*/
@@ -1864,6 +1911,12 @@ pdgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
     SUPERLU_FREE( handle );
     SUPERLU_FREE( streams );
     SUPERLU_FREE( stream_end_col );
+#elif defined(USE_SYCL)
+    sycl::free( bigV );
+    sycl::free( bigU );
+    sycl::free( dA ); /* Sherry added */
+    sycl::free( dB );
+    sycl::free( dC );
 #else
 //  #ifdef __INTEL_COMPILER
 //    _mm_free (bigU);
@@ -1993,4 +2046,3 @@ pdgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
 
     return 0;
 } /* PDGSTRF */
-
