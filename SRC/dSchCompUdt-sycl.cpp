@@ -221,7 +221,7 @@ if ( msg0 && msg2 ) {  /* L(:,k) and U(k,:) are not empty. */
 
 		/* Following is for testing purpose */
 		if ( num_col_stream > 0 ) {
-#ifdef USE_SYCL
+#ifdef HAVE_SYCL
 		    int stream_id = i;
 		    int b_offset  = ldu * st_col;
 		    int c_offset  = st_col * nbrow;

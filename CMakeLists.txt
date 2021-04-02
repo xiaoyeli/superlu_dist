@@ -40,6 +40,8 @@ option(TPL_COMBBLAS_LIBRARIES "List of absolute paths to CombBLAS link libraries
 option(TPL_COMBBLAS_INCLUDE_DIRS "List of absolute paths to CombBLAS include directories [].")
 #-- CUDA
 option(TPL_ENABLE_CUDALIB   "Enable the CUDA libraries" OFF)
+#-- SYCL
+option(TPL_ENABLE_SYCLLIB   "Enable the SYCL libraries" OFF)
 
 ######################################################################
 #
@@ -68,7 +70,7 @@ SET(CMAKE_SKIP_BUILD_RPATH  FALSE)
 
 # when building, don't use the install RPATH already
 # (but later on when installing)
-SET(CMAKE_BUILD_WITH_INSTALL_RPATH FALSE) 
+SET(CMAKE_BUILD_WITH_INSTALL_RPATH FALSE)
 
 # the RPATH to be used when installing
 set(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib")
@@ -142,7 +144,7 @@ set(INSTALL_BIN_DIR "${default_install_bin_dir}" CACHE STRING "The folder where 
 ## get_directory_property( DirDefs COMPILE_DEFINITIONS )
 if(XSDK_INDEX_SIZE EQUAL 64)
     message("-- Using 64 bit integer for index size.")
-endif()	
+endif()
 set(CMAKE_C_FLAGS_RELEASE "-O3 -g" CACHE STRING "")
 set(CMAKE_CXX_FLAGS_RELEASE "-O3 -g" CACHE STRING "")
 
@@ -169,7 +171,7 @@ if (XSDK_ENABLE_Fortran)
     set(CMAKE_Fortran_FLAGS "${MPI_Fortran_COMPILE_FLAGS} ${CMAKE_Fortran_FLAGS}")
     set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${MPI_Fortran_LINK_FLAGS}")
   endif()
-endif()  
+endif()
 
 #---- CUDA libraries
 if (TPL_ENABLE_CUDALIB)   ## want to use cuda
@@ -194,15 +196,23 @@ if (TPL_ENABLE_CUDALIB)   ## want to use cuda
 
 #     # The following make.inc exporting does not work
 #     set(CUDA_LIB CUDA::cudart CUDA::cublas CUDA::cusolver)
-# # fix up CUDA library names    
+# # fix up CUDA library names
 #     string (REPLACE ";" " " CUDA_LIB_STR "${CUDA_LIB}")
-#     set(CUDA_LIB_EXPORT ${CUDA_LIB_STR}) 
+#     set(CUDA_LIB_EXPORT ${CUDA_LIB_STR})
 #     set(HAVE_CUDA TRUE)
     # set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DHAVE_CUDA")
     # set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -DHAVE_CUDA")
   else()
     message("-- CUDA libraries not found.")
   endif()
+endif()
+
+#---- SYCL libraries
+if (TPL_ENABLE_SYCLLIB)   ## want to use cuda
+    message("-- Enabled support for SYCL.")
+
+    set(HAVE_SYCL TRUE)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DHAVE_SYCL")
 endif()
 
 #--------------------- OpenMP ---------------------
@@ -240,7 +250,11 @@ endif()
 if(BLAS_FOUND)
     message("-- Using TPL_BLAS_LIBRARIES='${TPL_BLAS_LIBRARIES}'")
     set(CMAKE_C_FLAGS "-DUSE_VENDOR_BLAS ${CMAKE_C_FLAGS}")
-    set(CMAKE_CUDA_FLAGS "-DUSE_VENDOR_BLAS ${CMAKE_CUDA_FLAGS}")
+
+    if (TPL_ENABLE_CUDALIB)
+        set(CMAKE_CUDA_FLAGS "-DUSE_VENDOR_BLAS ${CMAKE_CUDA_FLAGS}")
+    endif()
+
     set(BLAS_LIB ${TPL_BLAS_LIBRARIES})
     # fix up BLAS library name
     string (REPLACE ";" " " BLAS_LIB_STR "${BLAS_LIB}")
@@ -379,7 +393,7 @@ endif()
 
 ######################################################################
 #
-# Fortran-C name mangling 
+# Fortran-C name mangling
 #
 ######################################################################
 if (XSDK_ENABLE_Fortran)

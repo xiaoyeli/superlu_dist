@@ -267,7 +267,7 @@ int_t pdgstrf3d(superlu_dist_options_t *options, int m, int n, double anorm,
         
         HyP->first_u_block_acc = sluGPU->A_gpu->first_u_block_gpu;
         HyP->first_l_block_acc = sluGPU->A_gpu->first_l_block_gpu;
-        HyP->nCudaStreams = sluGPU->nCudaStreams;
+        HyP->nGpuStreams = sluGPU->nGpuStreams;
 
     } /* end if superlu_acc_offload */
 

@@ -117,7 +117,7 @@ at the top-level directory.
 /*#include "cublas_dgemm.h"*/
 // #define NUM_CUDA_STREAMS 16
 // #define NUM_CUDA_STREAMS 16
-#elif defined(USE_SYCL)
+#elif defined(HAVE_SYCL)
 #include "onemkl_utils.hpp"
 #endif
 
@@ -769,7 +769,7 @@ pdgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
          SUPERLU_MAX (max_row_size * num_threads * ldt,
                       get_max_buffer_size ());           */
 
-#ifdef GPU_ACC
+#if defined(GPU_ACC) || defined(HAVE_SYCL)
     int cublas_nb = get_cublas_nb(); // default 64
     int nstreams = get_num_cuda_streams ();
 
@@ -884,11 +884,11 @@ pdgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
     stat->gpu_buffer += ( max_row_size * sp_ienv_dist(3)
 			  + bigu_size + buffer_size ) * dword;
 
-#elif defined(USE_SYCL) /*-- use SYCL --*/
+#elif defined(HAVE_SYCL) /*-- use SYCL --*/
 
     bigU = sycl::malloc_host<double>(bigu_size);
-    if (bigU)
-      ABORT("Malloc fails for dgemm buffer U ");
+    if (!bigU)
+      ABORT("[SYCL] Malloc fails for dgemm buffer U ");
 
 #if 0 // !!Sherry fix -- only dC on GPU uses buffer_size
     bigv_size = buffer_size;
@@ -900,8 +900,8 @@ pdgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
 #endif
 
     bigV = sycl::malloc_host<double>(bigv_size, );
-    if (bigV)
-      ABORT("Malloc fails for dgemm buffer V");
+    if (!bigV)
+      ABORT("[SYCL] Malloc fails for dgemm buffer V");
 
     DisplayHeader();
 
@@ -1771,7 +1771,7 @@ pdgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
 
 #include "dSchCompUdt-cuda.c"
 
-#elif defined(USE_SYCL)
+#elif defined(HAVE_SYCL)
 
 #include "dSchCompUdt-sycl.cpp"
 
@@ -1911,7 +1911,7 @@ pdgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
     SUPERLU_FREE( handle );
     SUPERLU_FREE( streams );
     SUPERLU_FREE( stream_end_col );
-#elif defined(USE_SYCL)
+#elif defined(HAVE_SYCL)
     sycl::free( bigV );
     sycl::free( bigU );
     sycl::free( dA ); /* Sherry added */

@@ -278,7 +278,7 @@ typedef struct
     int_t bigu_size;
     int_t offloadCondition;
     int_t superlu_acc_offload;
-    int_t nCudaStreams;
+    int_t nGpuStreams;
 } HyP_t;
 
 typedef struct 

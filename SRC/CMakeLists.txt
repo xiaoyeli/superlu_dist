@@ -1,6 +1,5 @@
 set(headers
     superlu_FCnames.h
-    cublas_utils.h
     dcomplex.h
     machines.h
     psymbfact.h
@@ -10,13 +9,18 @@ set(headers
     util_dist.h
     colamd.h
     TreeBcast_slu.hpp
-    TreeReduce_slu.hpp	
+    TreeReduce_slu.hpp
     TreeBcast_slu_impl.hpp
-    TreeReduce_slu_impl.hpp	
+    TreeReduce_slu_impl.hpp
     ${CMAKE_CURRENT_BINARY_DIR}/superlu_dist_config.h
     ${PROJECT_SOURCE_DIR}/SRC/superlu_FortranCInterface.h
-    cub/cub.cuh
 )
+if (HAVE_CUDA)
+  list(APPEND headers cublas_utils.h cub/cub.cuh)
+endif ()
+if (HAVE_SYCL)
+  list(APPEND headers onemkl_utils.hpp)
+endif ()
 if (MSVC)
   list(APPEND headers wingetopt.h)
 endif ()
@@ -25,14 +29,13 @@ endif ()
 #  global.cpp
 set(sources
   sp_ienv.c
-  etree.c 
+  etree.c
   sp_colorder.c
   get_perm_c.c
   mmd.c
   comm.c
   memory.c
   util.c
-  cublas_utils.c
   superlu_grid.c
   pxerr_dist.c
   superlu_timer.c
@@ -50,13 +53,18 @@ set(sources
   superlu_grid3d.c    ## 3D code
   supernodal_etree.c
   supernodalForest.c
-  trfAux.c 
+  trfAux.c
   communication_aux.c
   treeFactorization.c
-  treeFactorizationGPU.c 
+  treeFactorizationGPU.c
   sec_structs.c
-  cublas_utils.c
 )
+if (HAVE_CUDA)
+  list(APPEND sources cublas_utils.c)
+endif ()
+if (HAVE_SYCL)
+  list(APPEND sources onemkl_utils.cpp)
+endif ()
 if (MSVC)
   list(APPEND sources wingetopt.c)
 endif ()
@@ -82,7 +90,7 @@ if(enable_double)
     dreadrb.c
     dreadtriple.c
     dreadtriple_noheader.c
-    dbinary_io.c	
+    dbinary_io.c
     dreadMM.c
     pdgsequ.c
     pdlaqgs.c
@@ -105,18 +113,23 @@ if(enable_double)
     pdgsmv_AXglobal.c
     pdGetDiagU.c
     pdgssvx3d.c     ## 3D code
-    dnrformat_loc3d.c 
-    pdgstrf3d.c 
+    dnrformat_loc3d.c
+    pdgstrf3d.c
     dtreeFactorization.c
     dgather.c
     dscatter3d.c
     pd3dcomm.c
-    dtrfAux.c	
-    dcommunication_aux.c 
+    dtrfAux.c
+    dcommunication_aux.c
     dtrfCommWrapper.c
     dsuperlu_blas.c
-    superlu_gpu.cu 
   )
+if (HAVE_CUDA)
+  list(APPEND sources superlu_gpu.cu)
+endif()
+if (HAVE_SYCL)
+  list(APPEND sources superlu_sycl.cpp)
+endif()
 if (HAVE_COMBBLAS)
   list(APPEND sources d_c2cpp_GetHWPM.cpp dHWPM_CombBLAS.hpp)
 endif()
@@ -143,7 +156,7 @@ if(enable_complex16)
     zreadrb.c
     zreadtriple.c
     zreadtriple_noheader.c
-    zbinary_io.c	
+    zbinary_io.c
     zreadMM.c
     pzgsequ.c
     pzlaqgs.c
@@ -166,11 +179,11 @@ if(enable_complex16)
     pzgsmv_AXglobal.c
     pzGetDiagU.c
     pzgssvx3d.c   ## 3D code
-    znrformat_loc3d.c 
+    znrformat_loc3d.c
     pzgstrf3d.c
-    ztreeFactorization.c 
+    ztreeFactorization.c
     zscatter3d.c
-    zgather.c 
+    zgather.c
     pz3dcomm.c ztrfAux.c
     zcommunication_aux.c
     ztrfCommWrapper.c

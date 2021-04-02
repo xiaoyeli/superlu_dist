@@ -116,7 +116,7 @@ at the top-level directory.
 /*#include "cublas_zgemm.h"*/
 // #define NUM_CUDA_STREAMS 16
 // #define NUM_CUDA_STREAMS 16
-#elif defined(USE_SYCL)
+#elif defined(HAVE_SYCL)
 #include "onemkl_utils.hpp"
 #endif
 
@@ -884,7 +884,7 @@ pzgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
     stat->gpu_buffer += ( max_row_size * sp_ienv_dist(3)
 			  + bigu_size + buffer_size ) * dword;
 
-#elif defined(USE_SYCL)
+#elif defined(HAVE_SYCL)
 
     bigU = sycl::malloc_host<doublecomplex>( bigu_size );
     if (bigU)
@@ -1767,7 +1767,7 @@ pzgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
 
 #include "zSchCompUdt-cuda.c"
 
-#elif defined(USE_SYCL)
+#elif defined(HAVE_SYCL)
 
 #include "zSchCompUdt-sycl.cpp"
 

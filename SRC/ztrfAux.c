@@ -64,7 +64,7 @@ void zInit_HyP(HyP_t* HyP, zLocalLU_t *Llu, int_t mcb, int_t mrb )
     HyP->last_offload = -1;
     HyP->superlu_acc_offload = get_acc_offload ();
 
-    HyP->nCudaStreams =0;
+    HyP->nGpuStreams =0;
 } /* zInit_HyP */
 
 /*init3DLUstruct with forest interface */

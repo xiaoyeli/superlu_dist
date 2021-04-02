@@ -10,7 +10,7 @@ at the top-level directory.
 */
 #include "superlu_defs.h"
 
-#ifdef USE_SYCL  // enable SYCL
+#ifdef HAVE_SYCL  // enable SYCL
 
 #include <iostream>
 #include "onemkl_utils.hpp"

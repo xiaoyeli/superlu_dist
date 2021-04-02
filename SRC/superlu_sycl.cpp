@@ -21,21 +21,7 @@ extern "C" {
 	                 const int incX, double *Y, const int incY);
 }
 
-/*error reporting functions */
-static int checkCuda(int result)
-{
-#if defined(DEBUG) || defined(_DEBUG)
-	if (result != cudaSuccess)
-	{
-		fprintf(stderr, "CUDA Runtime Error: %s\n", cudaGetErrorString(result));
-		assert(result == cudaSuccess);
-	}
-#endif
-	return result;
-}
-
-
-int_t getnSyclQueues()
+int_t getnGpuStreams()
 {
 	// Disabling multiple cuda streams
 	#if 1
@@ -968,9 +954,9 @@ int_t initSluGPU3D_t(
   LocalLU_t *Llu = LUstruct->Llu;
   int_t* isNodeInMyGrid = sluGPU->isNodeInMyGrid;
 
-  sluGPU->nSyclQueues = getnSyclQueues();
+  sluGPU->nGpuStreams = getnGpuStreams();
   if (!grid->iam) {
-    printf("initSluGPU3D_t: Using hardware acceleration, with %d cuda streams \n", sluGPU->nSyclQueues);
+    printf("initSluGPU3D_t: Using hardware acceleration, with %d Sycl Queues \n", sluGPU->nGpuStreams);
     fflush(stdout);
     if ( MAX_SUPER_SIZE < ldt ) {
       ABORT("MAX_SUPER_SIZE smaller than requested NSUP");
@@ -980,7 +966,7 @@ int_t initSluGPU3D_t(
   sluGPU->CopyStream = new sycl::queue(syclctxt, syclDev,
 				       sycl::property_list{sycl::property::queue::in_order{}});
 
-  for (int_t queueId = 0; queueId < sluGPU->nSyclQueues; queueId++) {
+  for (int_t queueId = 0; queueId < sluGPU->nGpuStreams; queueId++) {
     sluGPU->funCallStreams[queueId] = new sycl::queue(syclctxt, syclDev,
 						      sycl::property_list{sycl::property::queue::in_order{}});
     sluGPU->lastOffloadStream[queueId] = -1;
@@ -1047,7 +1033,7 @@ int_t initD2Hreduce(
     {
       copyL_kljb = 1;
       int_t lastk0 = HyP->Lblock_dirty_bit[kljb];
-      int_t queueIdk0Offload =  lastk0 % sluGPU->nSyclQueues;
+      int_t queueIdk0Offload =  lastk0 % sluGPU->nGpuStreams;
       if (sluGPU->lastOffloadStream[queueIdk0Offload] == lastk0 && lastk0 != -1)
       {
 	// printf("Waiting for Offload =%d to finish StreamId=%d\n", lastk0, queueIdk0Offload);
@@ -1068,7 +1054,7 @@ int_t initD2Hreduce(
     {
       copyU_kljb = 1;
       int_t lastk0 = HyP->Ublock_dirty_bit[kijb];
-      int_t queueIdk0Offload =  lastk0 % sluGPU->nSyclQueues;
+      int_t queueIdk0Offload =  lastk0 % sluGPU->nGpuStreams;
       if (sluGPU->lastOffloadStream[queueIdk0Offload] == lastk0 && lastk0 != -1)
       {
 	// printf("Waiting for Offload =%d to finish StreamId=%d\n", lastk0, queueIdk0Offload);
@@ -1331,10 +1317,10 @@ void CopyLUToGPU3D (
 
 	A_gpu->xsup_host = xsup;
 
-	int_t nSyclQueues = sluGPU->nSyclQueues;
+	int_t nGpuStreams = sluGPU->nGpuStreams;
 	/*pinned memory allocations.
 	  Paged-locked memory by cudaMallocHost is accessible to the device.*/
-	for (int_t queueId = 0; queueId < nSyclQueues; queueId++ )
+	for (int_t queueId = 0; queueId < nGpuStreams; queueId++ )
 	{
 	  sycl::queue* q = sluGPU->funCallStreams[queueId];
 
@@ -1823,7 +1809,7 @@ int_t reduceAllAncestors3d_GPU(int_t ilvl, int_t* myNodeCount,
                                HyP_t* HyP,
                                SCT_t* SCT )
 {
-// first synchronize all cuda streams
+// first synchronize all SYCL queues
   int_t superlu_acc_offload =   HyP->superlu_acc_offload;
 
   int_t maxLvl = log2i( (int_t) grid3d->zscp.Np) + 1;
@@ -1846,7 +1832,7 @@ int_t reduceAllAncestors3d_GPU(int_t ilvl, int_t* myNodeCount,
   /*Reduce all the ancestors from the GPU*/
   if (myGrid == sender && superlu_acc_offload)
   {
-    for (int_t queueId = 0; queueId < sluGPU->nSyclQueues; queueId++)
+    for (int_t queueId = 0; queueId < sluGPU->nGpuStreams; queueId++)
     {
       double ttx = SuperLU_timer_();
       sluGPU->funCallStreams[queueId]->wait();
@@ -1894,7 +1880,7 @@ int_t reduceAllAncestors3d_GPU(int_t ilvl, int_t* myNodeCount,
 
 void syncAllfunCallStreams(sluGPU_t* sluGPU, SCT_t* SCT)
 {
-  for (int_t queueId = 0; queueId < sluGPU->nSyclQueues; queueId++)
+  for (int_t queueId = 0; queueId < sluGPU->nGpuStreams; queueId++)
   {
     double ttx = SuperLU_timer_();
     sluGPU->funCallStreams[queueId]->wait();

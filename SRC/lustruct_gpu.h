@@ -12,10 +12,10 @@
 
 // #define USE_VENDOR_BLAS
 
-#ifdef USE_SYCL
+#ifdef HAVE_SYCL
 #include <CL/sycl.hpp>
 #include <oneapi/mkl.hpp>
-#else
+#elif defined(HAVE_CUDA)
 #include <cublas_v2.h>
 #include <cuda_runtime.h>
 #endif
@@ -33,7 +33,9 @@ static void check(int result, char const *const func, const char *const file,
 {
 }
 
+#ifdef HAVE_CUDA
 #define checkCudaErrors(val)           check ( (val), #val, __FILE__, __LINE__ )
+#endif
 
 typedef struct SCUbuf_gpu_
 {
@@ -114,7 +116,7 @@ typedef struct LUstruct_gpu_
     double tHost_PCIeH2D;
     double tHost_PCIeD2H;
 
-
+#ifdef HAVE_SYCL
     /*sycl events to measure DGEMM and SCATTER timing */
     int_t *isOffloaded;       /*stores if any iteration is offloaded or not*/
     sycl::event *GemmStart, *GemmEnd, *ScatterEnd;
@@ -129,6 +131,14 @@ typedef struct LUstruct_gpu_
     std::chrono::time_point<std::chrono::steady_clock> ePCIeD2H_Start_k0;
     sycl::event *ePCIeD2H_End;
     std::chrono::time_point<std::chrono::steady_clock> ePCIeD2H_End_k0;
+#elif defined(HAVE_CUDA)
+  /*cuda events to measure DGEMM and SCATTER timing */
+    int_t *isOffloaded;       /*stores if any iteration is offloaded or not*/
+    cudaEvent_t *GemmStart, *GemmEnd, *ScatterEnd;  /*cuda events to store gemm and scatter's begin and end*/
+    cudaEvent_t *ePCIeH2D;
+    cudaEvent_t *ePCIeD2H_Start;
+    cudaEvent_t *ePCIeD2H_End;
+#endif
 
     int_t *xsup_host;
     int_t* perm_c_supno;
@@ -141,14 +151,14 @@ typedef struct sluGPU_t_
 
     int_t gpuId;        // if there are multiple GPUs
     LUstruct_gpu *A_gpu, *dA_gpu;
-#ifdef USE_SYCL
+#ifdef HAVE_SYCL
     sycl::queue *funCallStreams[MAX_NCUDA_STREAMS], *CopyStream;
-#else
+#elif defined(HAVE_CUDA)
     cudaStream_t funCallStreams[MAX_NCUDA_STREAMS], CopyStream;
     cublasHandle_t cublasHandles[MAX_NCUDA_STREAMS];
 #endif
+    int_t nGpuStreams;
     int_t lastOffloadStream[MAX_NCUDA_STREAMS];
-    int_t nCudaStreams;
     int_t* isNodeInMyGrid;
     double acc_async_cost;
 

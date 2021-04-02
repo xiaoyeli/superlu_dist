@@ -49,6 +49,10 @@ ifeq ($(HAVE_CUDA),TRUE)
 ALLAUX += cublas_utils.o
 endif
 
+ifeq ($(HAVE_SYCL),TRUE)
+ALLAUX += onemkl_utils.o
+endif
+
 #
 # Routines literally taken from SuperLU, but renamed with suffix _dist
 #

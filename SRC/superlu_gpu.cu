@@ -49,7 +49,7 @@ cudaError_t checkCuda(cudaError_t result)
 // }
 
 
-int_t getnCudaStreams()
+int_t getnGpuStreams()
 {
 	// Disabling multiple cuda streams 
 	#if 1
@@ -949,10 +949,10 @@ int_t initSluGPU3D_t(
 	LocalLU_t *Llu = LUstruct->Llu;
 	int_t* isNodeInMyGrid = sluGPU->isNodeInMyGrid;
 
-	sluGPU->nCudaStreams = getnCudaStreams();
+	sluGPU->nGpuStreams = getnGpuStreams();
 	if (!grid->iam)
 	{
-		printf("initSluGPU3D_t: Using hardware acceleration, with %d cuda streams \n", sluGPU->nCudaStreams);
+		printf("initSluGPU3D_t: Using hardware acceleration, with %d cuda streams \n", sluGPU->nGpuStreams);
 		fflush(stdout);
 		if ( MAX_SUPER_SIZE < ldt )
 		{
@@ -962,7 +962,7 @@ int_t initSluGPU3D_t(
 
 	cudaStreamCreate(&(sluGPU->CopyStream));
 
-	for (int_t streamId = 0; streamId < sluGPU->nCudaStreams; streamId++)
+	for (int_t streamId = 0; streamId < sluGPU->nGpuStreams; streamId++)
 	{
 		cudaStreamCreate(&(sluGPU->funCallStreams[streamId]));
 		cublasCreate(&(sluGPU->cublasHandles[streamId]));
@@ -1030,7 +1030,7 @@ int_t initD2Hreduce(
 		{
 			copyL_kljb = 1;
 			int_t lastk0 = HyP->Lblock_dirty_bit[kljb];
-			int_t streamIdk0Offload =  lastk0 % sluGPU->nCudaStreams;
+			int_t streamIdk0Offload =  lastk0 % sluGPU->nGpuStreams;
 			if (sluGPU->lastOffloadStream[streamIdk0Offload] == lastk0 && lastk0 != -1)
 			{
 				// printf("Waiting for Offload =%d to finish StreamId=%d\n", lastk0, streamIdk0Offload);
@@ -1051,7 +1051,7 @@ int_t initD2Hreduce(
 		{
 			copyU_kljb = 1;
 			int_t lastk0 = HyP->Ublock_dirty_bit[kijb];
-			int_t streamIdk0Offload =  lastk0 % sluGPU->nCudaStreams;
+			int_t streamIdk0Offload =  lastk0 % sluGPU->nGpuStreams;
 			if (sluGPU->lastOffloadStream[streamIdk0Offload] == lastk0 && lastk0 != -1)
 			{
 				// printf("Waiting for Offload =%d to finish StreamId=%d\n", lastk0, streamIdk0Offload);
@@ -1311,10 +1311,10 @@ void CopyLUToGPU3D (
 
 	A_gpu->xsup_host = xsup;
 
-	int_t nCudaStreams = sluGPU->nCudaStreams;
+	int_t nGpuStreams = sluGPU->nGpuStreams;
 	/*pinned memory allocations.
 	      Paged-locked memory by cudaMallocHost is accessible to the device.*/
-	for (int_t streamId = 0; streamId < nCudaStreams; streamId++ )
+	for (int_t streamId = 0; streamId < nGpuStreams; streamId++ )
 	{
 		void *tmp_ptr;
 		checkCudaErrors(cudaMallocHost(  &tmp_ptr, (n) * sizeof(int_t) )) ;
@@ -1817,7 +1817,7 @@ int_t reduceAllAncestors3d_GPU(int_t ilvl, int_t* myNodeCount,
 	/*Reduce all the ancestors from the GPU*/
 	if (myGrid == sender && superlu_acc_offload)
 	{
-		for (int_t streamId = 0; streamId < sluGPU->nCudaStreams; streamId++)
+		for (int_t streamId = 0; streamId < sluGPU->nGpuStreams; streamId++)
 		{
 			double ttx = SuperLU_timer_();
 			cudaStreamSynchronize(sluGPU->funCallStreams[streamId]);
@@ -1867,7 +1867,7 @@ int_t reduceAllAncestors3d_GPU(int_t ilvl, int_t* myNodeCount,
 
 void syncAllfunCallStreams(sluGPU_t* sluGPU, SCT_t* SCT)
 {
-	for (int_t streamId = 0; streamId < sluGPU->nCudaStreams; streamId++)
+	for (int_t streamId = 0; streamId < sluGPU->nGpuStreams; streamId++)
 	{
 		double ttx = SuperLU_timer_();
 		cudaStreamSynchronize(sluGPU->funCallStreams[streamId]);

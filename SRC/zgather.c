@@ -115,7 +115,7 @@ void zgather_l( int_t num_LBlk, int_t knsupc,
         LAPACKE_dlacpy (LAPACK_COL_MAJOR, 'A', temp_nbrow, knsupc, &lval[StRowSource], LD_lval, &L_buff[StRowDest], LD_LBuff);
 #else  /* Sherry */
 	for (int j = 0; j < knsupc; ++j) {
-            memcpy( &L_buff[StRowDest + j * LD_LBuff], 
+            memcpy( &L_buff[StRowDest + j * LD_LBuff],
 	            &lval[StRowSource + j * LD_lval],
 	            temp_nbrow * sizeof(doublecomplex) );
         }
@@ -169,7 +169,7 @@ void zRgather_L( int_t k, int_t *lsub, doublecomplex *lusup,
         if (iperm_c_supno[ib] < HyP->first_u_block_acc) look_up_flag = 0;
 
         // if it myIperm[ib] is within look ahead window
-        if (myIperm[ib]< myIperm[k] + HyP->nCudaStreams && myIperm[ib]>0) look_up_flag = 0;        
+        if (myIperm[ib]< myIperm[k] + HyP->nGpuStreams && myIperm[ib]>0) look_up_flag = 0;
 
         if (k <= HyP->nsupers - 2 && gEtreeInfo->setree[k] > 0 )
         {
@@ -248,7 +248,7 @@ void zRgather_L( int_t k, int_t *lsub, doublecomplex *lusup,
 //                int_t *perm_u)
 
 void zRgather_U( int_t k, int_t jj0, int_t *usub,	doublecomplex *uval,
-                 doublecomplex *bigU, gEtreeInfo_t* gEtreeInfo,	
+                 doublecomplex *bigU, gEtreeInfo_t* gEtreeInfo,
                  Glu_persist_t *Glu_persist, gridinfo_t *grid, HyP_t *HyP,
                  int_t* myIperm, int_t *iperm_c_supno, int_t *perm_u)
 {
@@ -290,18 +290,18 @@ void zRgather_U( int_t k, int_t jj0, int_t *usub,	doublecomplex *uval,
         /*here goes the condition wether jb block exists on Phi or not*/
         int_t u_blk_acc_cond = 0;
         // if (j == jj0) u_blk_acc_cond = 1;   /* must schedule first colum on cpu */
-        if (iperm_c_supno[jb] < HyP->first_l_block_acc) 
+        if (iperm_c_supno[jb] < HyP->first_l_block_acc)
         {
             // printf("k=%d jb=%d got at condition-1:%d, %d \n",k,jb, iperm_c_supno[jb] , HyP->first_l_block_acc);
             u_blk_acc_cond = 1;
         }
         // if jb is within lookahead window
-        if (myIperm[jb]< myIperm[k] + HyP->nCudaStreams && myIperm[jb]>0)
+        if (myIperm[jb]< myIperm[k] + HyP->nGpuStreams && myIperm[jb]>0)
         {
             // printf("k=%d jb=%d got at condition-2:%d, %d\n ",k,jb, myIperm[jb] , myIperm[k]);
             u_blk_acc_cond = 1;
         }
- 
+
         if (k <= HyP->nsupers - 2 && gEtreeInfo->setree[k] > 0 )
         {
             int_t k_parent = gEtreeInfo->setree[k];
