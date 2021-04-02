@@ -247,7 +247,7 @@ int main(int argc, char *argv[])
 
     /* Check the accuracy of the solution. */
     pdinf_norm_error(iam, ((NRformat_loc *)A.Store)->m_loc,
-		     nrhs, b, ldb, xtrue, ldx, &grid);
+		     nrhs, b, ldb, xtrue, ldx, grid.comm);
 
     PStatPrint(&options, &stat, &grid);        /* Print the statistics. */
 

@@ -121,8 +121,8 @@ void superlu_free_dist(void *addr)
  
 #else  /* The production mode. */
 
-//#if  0 
-#if (__STDC_VERSION__ >= 201112L)
+#if  0 
+//#if (__STDC_VERSION__ >= 201112L)   // cannot compile on Summit
 
 void * superlu_malloc_dist(size_t size) {void* ptr;int alignment=1<<12;if(size>1<<19){alignment=1<<21;}posix_memalign( (void**)&(ptr), alignment, size );return(ptr);}
 void   superlu_free_dist(void * ptr)    {free(ptr);}

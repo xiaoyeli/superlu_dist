@@ -360,7 +360,7 @@ at the top-level directory.
  *           If all the above condition are true, the LU decomposition is
  *           performed on the matrix Pc*Pr*diag(R)*A*diag(C)*Pc^T.
  *
- * ScalePermstruct (input/output) dScalePermstruct_t* (global)
+ * ScalePermstruct (input/output) zScalePermstruct_t* (global)
  *         The data structure to store the scaling and permutation vectors
  *         describing the transformations performed to the matrix A.
  *         It contains the following fields:
@@ -458,9 +458,9 @@ at the top-level directory.
  *	       xsup[s] is the leading column of the s-th supernode,
  *             supno[i] is the supernode number to which column i belongs.
  *
- *         o Llu (LocalLU_t*) (local)
+ *         o Llu (zLocalLU_t*) (local)
  *           The distributed data structures to store L and U factors.
- *           See superlu_ddefs.h for the definition of 'LocalLU_t'.
+ *           See superlu_ddefs.h for the definition of 'zLocalLU_t'.
  *
  * SOLVEstruct (input/output) zSOLVEstruct_t*
  *         The data structure to hold the communication pattern used
@@ -481,6 +481,7 @@ at the top-level directory.
  *
  * info    (output) int*
  *         = 0: successful exit
+ *         < 0: if info = -i, the i-th argument had an illegal value  
  *         > 0: if info = i, and i is
  *             <= A->ncol: U(i,i) is exactly zero. The factorization has
  *                been completed, but the factor U is exactly singular,
@@ -558,7 +559,7 @@ pzgssvx3d (superlu_dist_options_t * options, SuperMatrix * A,
     B2d = (doublecomplex *) A3d->B2d; 
     NRformat_loc *Astore0 = A3d->A_nfmt; // on 2D grid-0
     NRformat_loc *A_orig = A->Store;
-	
+    
     /* definition of factored seen by each process layer */
     Fact = options->Fact;
     factored = (Fact == FACTORED);
@@ -578,35 +579,35 @@ pzgssvx3d (superlu_dist_options_t * options, SuperMatrix * A,
 	*info = -1;
         fprintf (stderr,
 	         "Extra precise iterative refinement yet to support.");
-    }
-    /* Test the other input parameters. */
-    else if (A->nrow != A->ncol || A->nrow < 0 || A->Stype != SLU_NR_loc
+    } else if (A->nrow != A->ncol || A->nrow < 0 || A->Stype != SLU_NR_loc
 	     || A->Dtype != SLU_Z || A->Mtype != SLU_GE)
-	     *info = -2;
+	 *info = -2;
     else if (ldb < Astore3d->m_loc)
-	     *info = -5;
+         *info = -5;
     else if (nrhs < 0) {
-	     *info = -6;
+	 *info = -6;
     }
     if (*info) {
 	i = -(*info);
 	pxerr_dist ("pzgssvx3d", grid, -*info);
 	return;
     }
-
+    
 #if ( DEBUGlevel>=1 )
 	CHECK_MALLOC (iam, "Enter pzgssvx3d()");
 #endif
 	
     /* Perform preprocessing steps on process layer zero, including:
+       gather 3D matrices {A, B} onto 2D grid-0,
        ordering, symbolic factorization, distribution of L & U */
-	
+
 #define NRFRMT
 
     if (grid3d->zscp.Iam == 0)
     {
         m = A->nrow;
     	n = A->ncol;
+	// checkNRFMT(Astore0, (NRformat_loc *) A->Store);
 #ifdef NRFRMT
 	// On input, A->Store is on 3D, now A->Store is re-assigned to 2D store
 	A->Store = Astore0;
@@ -662,8 +663,7 @@ pzgssvx3d (superlu_dist_options_t * options, SuperMatrix * A,
 	/* Not factored & ask for equilibration */
 	if (Equil && Fact != SamePattern_SameRowPerm) {
 	    /* Allocate storage if not done so before. */
-	    switch (ScalePermstruct->DiagScale)
-		{
+	    switch (ScalePermstruct->DiagScale)	{
 		case NOEQUIL:
 		    if (!(R = (double *) doubleMalloc_dist (m)))
 			ABORT ("Malloc fails for R[].");
@@ -682,8 +682,8 @@ pzgssvx3d (superlu_dist_options_t * options, SuperMatrix * A,
 			ABORT ("Malloc fails for R[].");
 		    ScalePermstruct->R = R;
 		    break;
-		default: break;
-		}
+	        default: break;
+	    }
 	}
 	
 	/* ------------------------------------------------------------
@@ -1106,11 +1106,9 @@ pzgssvx3d (superlu_dist_options_t * options, SuperMatrix * A,
 #if ( PRNTlevel>=1 )
 			if (!iam) {
 			    printf ("\tNo of supers %ld\n",
-				    Glu_persist->supno[n - 1] + 1);
-			    printf ("\tSize of G(L) %ld\n",
-				    Glu_freeable->xlsub[n]);
-			    printf ("\tSize of G(U) %ld\n",
-				    Glu_freeable->xusub[n]);
+				    (long) Glu_persist->supno[n - 1] + 1);
+			    printf ("\tSize of G(L) %ld\n", (long) Glu_freeable->xlsub[n]);
+			    printf ("\tSize of G(U) %ld\n", (long) Glu_freeable->xusub[n]);
 			    printf ("\tint %d, short %d, float %d, double %d\n",
 				    sizeof (int_t), sizeof (short),
 				    sizeof (float), sizeof (double));
@@ -1218,7 +1216,7 @@ pzgssvx3d (superlu_dist_options_t * options, SuperMatrix * A,
 	SCT_init(SCT);
 	
 #if ( PRNTlevel>=1 )
-	if (iam==0) {
+	if (grid3d->iam == 0) {
 	    printf("after 3D initialization.\n"); fflush(stdout);
 	}
 #endif
@@ -1391,7 +1389,7 @@ pzgssvx3d (superlu_dist_options_t * options, SuperMatrix * A,
 		    {
 			/* Improve the solution by iterative refinement. */
 			int_t *it, *colind_gsmv = SOLVEstruct->A_colind_gsmv;
-			zSOLVEstruct_t *SOLVEstruct1; /* Used by refinement. */
+			zSOLVEstruct_t *SOLVEstruct1; /* Used by refinement */
 
 			t = SuperLU_timer_ ();
 			if (options->RefineInitialized == NO || Fact == DOFACT) {
@@ -1448,7 +1446,7 @@ pzgssvx3d (superlu_dist_options_t * options, SuperMatrix * A,
 		So we use SOLVEstruct1 for the refinement step.
 	      */
 				if (!(SOLVEstruct1 = (zSOLVEstruct_t *)
-				      SUPERLU_MALLOC (sizeof (zSOLVEstruct_t))))
+				      SUPERLU_MALLOC(sizeof(zSOLVEstruct_t))))
 				    ABORT ("Malloc fails for SOLVEstruct1");
 				/* Copy the same stuff */
 				SOLVEstruct1->row_to_proc = SOLVEstruct->row_to_proc;
@@ -1537,8 +1535,7 @@ pzgssvx3d (superlu_dist_options_t * options, SuperMatrix * A,
 	/* Deallocate R and/or C if it was not used. */
 	if (Equil && Fact != SamePattern_SameRowPerm)
 	    {
-		switch (ScalePermstruct->DiagScale)
-		    {
+		switch (ScalePermstruct->DiagScale) {
 		    case NOEQUIL:
 			SUPERLU_FREE (R);
 			SUPERLU_FREE (C);
@@ -1549,8 +1546,8 @@ pzgssvx3d (superlu_dist_options_t * options, SuperMatrix * A,
 		    case COL:
 			SUPERLU_FREE (R);
 			break;
-		    default: break;
-		    }
+	            default: break;
+		}
 	    }
 	
 #if 0
@@ -1561,22 +1558,23 @@ pzgssvx3d (superlu_dist_options_t * options, SuperMatrix * A,
     } /* process layer 0 done solve */
 
 #ifdef NRFRMT
-	zScatter_B3d(A3d, grid3d);
-	
-	A->Store = Astore3d; // restore Astore to 3D
-	
-	/* free A2d and B2d, which are allocated only in 2D layer Grid_0 */
-	NRformat_loc *A2d = A3d->A_nfmt;
-	if (grid3d->zscp.Iam == 0) {
-	    SUPERLU_FREE( A2d->rowptr );
-	    SUPERLU_FREE( A2d->colind );
-	    SUPERLU_FREE( A2d->nzval );
-	    SUPERLU_FREE( A3d->B2d );
-	}
-	SUPERLU_FREE( A2d );         // free 2D structure
-	SUPERLU_FREE( A3d );         // free 3D structure
-#endif
+    /* Scatter the solution from 2D grid_0 to 3D grid */
+    zScatter_B3d(A3d, grid3d);
+
+    A->Store = Astore3d; // restore Astore to 3D
     
+    /* free A2d and B2d, which are allocated only in 2D layer Grid_0 */
+    NRformat_loc *A2d = A3d->A_nfmt;
+    if (grid3d->zscp.Iam == 0) {
+       SUPERLU_FREE( A2d->rowptr );
+       SUPERLU_FREE( A2d->colind );
+       SUPERLU_FREE( A2d->nzval );
+       SUPERLU_FREE( A3d->B2d );
+    }
+    SUPERLU_FREE( A2d );         // free 2D structure
+    SUPERLU_FREE( A3d );         // free 3D structure
+#endif
+
 #if ( DEBUGlevel>=1 )
 	CHECK_MALLOC (iam, "Exit pzgssvx3d()");
 #endif

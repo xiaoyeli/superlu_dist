@@ -38,8 +38,8 @@ at the top-level directory.
 #endif
 
 #ifdef GPU_ACC
-#include "lustruct_gpu.h"
-#include "acc_aux.c"
+#include "zlustruct_gpu.h"
+//#include "acc_aux.c"  //no need anymore
 #endif
 
 
@@ -151,7 +151,7 @@ int_t pzgstrf3d(superlu_dist_options_t *options, int m, int n, double anorm,
     initFactStat(nsupers, &factStat);
 
 #if 0  // sherry: not used
-    diagFactBufs_t dFBuf;
+    zdiagFactBufs_t dFBuf;
     zinitDiagFactBufs(ldt, &dFBuf);
 
     commRequests_t comReqs;   
@@ -165,7 +165,7 @@ int_t pzgstrf3d(superlu_dist_options_t *options, int m, int n, double anorm,
     packLUInfo_t packLUInfo;
     initPackLUInfo(nsupers, &packLUInfo);
 
-    scuBufs_t scuBufs;
+    zscuBufs_t scuBufs;
     zinitScuBufs(ldt, num_threads, nsupers, &scuBufs, LUstruct, grid);
 
     factNodelists_t  fNlists;
@@ -176,7 +176,7 @@ int_t pzgstrf3d(superlu_dist_options_t *options, int m, int n, double anorm,
     int_t maxLvl = log2i(grid3d->zscp.Np) + 1;
 
 #if ( PRNTlevel>=1 )
-    if (!iam) {
+    if (grid3d->iam == 0) {
         printf ("MPI tag upper bound = %d\n", tag_ub); fflush(stdout);
     }
 #endif
@@ -201,7 +201,7 @@ int_t pzgstrf3d(superlu_dist_options_t *options, int m, int n, double anorm,
         if (sForests[myTreeIdxs[ilvl]] && sForests[myTreeIdxs[ilvl]]->topoInfo.eTreeTopLims[1] > mxLeafNode )
             mxLeafNode    = sForests[myTreeIdxs[ilvl]]->topoInfo.eTreeTopLims[1];
     }
-    diagFactBufs_t** dFBufs = zinitDiagFactBufsArr(mxLeafNode, ldt, grid);
+    zdiagFactBufs_t** dFBufs = zinitDiagFactBufsArr(mxLeafNode, ldt, grid);
     commRequests_t** comReqss = initCommRequestsArr(SUPERLU_MAX(mxLeafNode, numLA), ldt, grid);
 
     /* Setting up GPU related data structures */
@@ -215,37 +215,56 @@ int_t pzgstrf3d(superlu_dist_options_t *options, int m, int n, double anorm,
     HyP_t *HyP = (HyP_t *) SUPERLU_MALLOC(sizeof(HyP_t));
 
     zInit_HyP(HyP, Llu, mcb, mrb);
-
     HyP->first_l_block_acc = first_l_block_acc;
     HyP->first_u_block_acc = first_u_block_acc;
+
+    int superlu_acc_offload = HyP->superlu_acc_offload;
+
     //int_t bigu_size = getBigUSize(nsupers, grid, LUstruct);
-    int_t bigu_size = getBigUSize(nsupers, grid, LUstruct->Llu->Lrowind_bc_ptr);
-    // int_t buffer_size = get_max_buffer_size ();
-    // HyP->buffer_size = buffer_size;
+    int_t bigu_size = getBigUSize(nsupers, grid,
+    	  	                  LUstruct->Llu->Lrowind_bc_ptr);
     HyP->bigu_size = bigu_size;
+    int_t buffer_size = get_max_buffer_size ();
+    HyP->buffer_size = buffer_size;
     HyP->nsupers = nsupers;
 
 #ifdef GPU_ACC
 
     /*Now initialize the GPU data structure*/
-    LUstruct_gpu *A_gpu, *dA_gpu;
+    zLUstruct_gpu_t *A_gpu, *dA_gpu;
 
     d2Hreduce_t d2HredObj;
     d2Hreduce_t* d2Hred = &d2HredObj;
-    sluGPU_t sluGPUobj;
-    sluGPU_t *sluGPU = &sluGPUobj;
+    zsluGPU_t sluGPUobj;
+    zsluGPU_t *sluGPU = &sluGPUobj;
     sluGPU->isNodeInMyGrid = getIsNodeInMyGrid(nsupers, maxLvl, myNodeCount, treePerm);
     if (superlu_acc_offload)
     {
+#if 0 	/* Sherry: For GPU code on titan, we do not need performance 
+	   lookup tables since due to difference in CPU-GPU performance,
+	   it didn't make much sense to do any Schur-complement update
+	   on CPU, except for the lookahead-update on CPU. Same should
+	   hold for summit as well. (from Piyush)   */
+
         /*Initilize the lookup tables */
         LookUpTableInit(iam);
         acc_async_cost = get_acc_async_cost();
 #ifdef GPU_DEBUG
         if (!iam) printf("Using MIC async cost of %lf \n", acc_async_cost);
 #endif
+#endif
 
-        initSluGPU3D_t(sluGPU, LUstruct, grid3d, perm_c_supno,
-                       n, buffer_size, bigu_size, ldt);
+	//OLD: int_t* perm_c_supno = getPerm_c_supno(nsupers, options, LUstruct, grid);
+	int_t* perm_c_supno = getPerm_c_supno(nsupers, options,
+					      LUstruct->etree,
+					      LUstruct->Glu_persist,
+					      LUstruct->Llu->Lrowind_bc_ptr,
+					      LUstruct->Llu->Ufstnz_br_ptr,
+					      grid);
+
+	/* Initialize GPU data structures */
+        zinitSluGPU3D_t(sluGPU, LUstruct, grid3d, perm_c_supno,
+                        n, buffer_size, bigu_size, ldt);
 
         HyP->first_u_block_acc = sluGPU->A_gpu->first_u_block_gpu;
         HyP->first_l_block_acc = sluGPU->A_gpu->first_l_block_gpu;
@@ -267,7 +286,7 @@ int_t pzgstrf3d(superlu_dist_options_t *options, int m, int n, double anorm,
 #endif
     SCT->pdgstrfTimer = SuperLU_timer_();
 
-    for (int_t ilvl = 0; ilvl < maxLvl; ++ilvl)
+    for (int ilvl = 0; ilvl < maxLvl; ++ilvl)
     {
         /* if I participate in this level */
         if (!myZeroTrIdxs[ilvl])

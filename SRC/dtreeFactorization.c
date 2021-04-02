@@ -34,19 +34,19 @@ int_t dLluBufInit(dLUValSubBuf_t* LUvsb, dLUstruct_t *LUstruct)
     return 0;
 }
 
-diagFactBufs_t** dinitDiagFactBufsArr(int_t mxLeafNode, int_t ldt, gridinfo_t* grid)
+ddiagFactBufs_t** dinitDiagFactBufsArr(int_t mxLeafNode, int_t ldt, gridinfo_t* grid)
 {
-    diagFactBufs_t** dFBufs;
+    ddiagFactBufs_t** dFBufs;
 
     /* Sherry fix:
      * mxLeafNode can be 0 for the replicated layers of the processes ?? */
-    if ( mxLeafNode ) dFBufs = (diagFactBufs_t** ) 
-			  SUPERLU_MALLOC(mxLeafNode * sizeof(diagFactBufs_t*));
+    if ( mxLeafNode ) dFBufs = (ddiagFactBufs_t** )
+                          SUPERLU_MALLOC(mxLeafNode * sizeof(ddiagFactBufs_t*));
 
     for (int i = 0; i < mxLeafNode; ++i)
     {
         /* code */
-        dFBufs[i] = (diagFactBufs_t* ) SUPERLU_MALLOC(sizeof(diagFactBufs_t));
+        dFBufs[i] = (ddiagFactBufs_t* ) SUPERLU_MALLOC(sizeof(ddiagFactBufs_t));
         assert(dFBufs[i]);
         dinitDiagFactBufs(ldt, dFBufs[i]);
 
@@ -56,7 +56,7 @@ diagFactBufs_t** dinitDiagFactBufsArr(int_t mxLeafNode, int_t ldt, gridinfo_t* g
 }
 
 // sherry added
-int dfreeDiagFactBufsArr(int_t mxLeafNode, diagFactBufs_t** dFBufs)
+int dfreeDiagFactBufsArr(int_t mxLeafNode, ddiagFactBufs_t** dFBufs)
 {
     for (int i = 0; i < mxLeafNode; ++i) {
 	SUPERLU_FREE(dFBufs[i]->BlockUFactor);
@@ -95,11 +95,12 @@ int dLluBufFreeArr(int_t numLA, dLUValSubBuf_t **LUvsbs)
 	SUPERLU_FREE(LUvsbs[i]);
     }
     SUPERLU_FREE(LUvsbs);
+    return 0;
 }
 
 
 int_t dinitScuBufs(int_t ldt, int_t num_threads, int_t nsupers,
-                  scuBufs_t* scuBufs,
+                  dscuBufs_t* scuBufs,
                   dLUstruct_t* LUstruct,
                   gridinfo_t * grid)
 {
@@ -109,14 +110,14 @@ int_t dinitScuBufs(int_t ldt, int_t num_threads, int_t nsupers,
 }
 
 // sherry added
-int dfreeScuBufs(scuBufs_t* scuBufs)
+int dfreeScuBufs(dscuBufs_t* scuBufs)
 {
     SUPERLU_FREE(scuBufs->bigV);
     SUPERLU_FREE(scuBufs->bigU);
     return 0;
 }
 
-int_t dinitDiagFactBufs(int_t ldt, diagFactBufs_t* dFBuf)
+int_t dinitDiagFactBufs(int_t ldt, ddiagFactBufs_t* dFBuf)
 {
     dFBuf->BlockUFactor = doubleMalloc_dist(ldt * ldt); //DOUBLE_ALLOC( ldt * ldt);
     dFBuf->BlockLFactor = doubleMalloc_dist(ldt * ldt); //DOUBLE_ALLOC( ldt * ldt);
@@ -127,11 +128,11 @@ int_t ddenseTreeFactor(
     int_t nnodes,          // number of nodes in the tree
     int_t *perm_c_supno,    // list of nodes in the order of factorization
     commRequests_t *comReqs,    // lists of communication requests
-    scuBufs_t *scuBufs,          // contains buffers for schur complement update
+    dscuBufs_t *scuBufs,   // contains buffers for schur complement update
     packLUInfo_t*packLUInfo,
     msgs_t*msgs,
     dLUValSubBuf_t* LUvsb,
-    diagFactBufs_t *dFBuf,
+    ddiagFactBufs_t *dFBuf,
     factStat_t *factStat,
     factNodelists_t  *fNlists,
     superlu_dist_options_t *options,
@@ -247,11 +248,11 @@ int_t ddenseTreeFactor(
                 int_t klst = FstBlockC (k + 1);
                 int_t *lsub = lPanelInfo->lsub;
                 int_t *usub = uPanelInfo->usub;
-#ifdef _OPENMP
+#ifdef _OPENMP		
                 int_t thread_id = omp_get_thread_num();
-#else
+#else		
                 int_t thread_id = 0;
-#endif
+#endif		
                 dblock_gemm_scatter( lb, ub,
                                     Ublock_info,
                                     Remain_info,
@@ -288,11 +289,11 @@ int_t ddenseTreeFactor(
 int_t dsparseTreeFactor_ASYNC(
     sForest_t* sforest,
     commRequests_t **comReqss,    // lists of communication requests // size maxEtree level
-    scuBufs_t *scuBufs,          // contains buffers for schur complement update
+    dscuBufs_t *scuBufs,       // contains buffers for schur complement update
     packLUInfo_t*packLUInfo,
     msgs_t**msgss,                  // size=num Look ahead
     dLUValSubBuf_t** LUvsbs,          // size=num Look ahead
-    diagFactBufs_t **dFBufs,         // size maxEtree level
+    ddiagFactBufs_t **dFBufs,         // size maxEtree level
     factStat_t *factStat,
     factNodelists_t  *fNlists,
     gEtreeInfo_t*   gEtreeInfo,        // global etree info
