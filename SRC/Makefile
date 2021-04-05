@@ -71,7 +71,7 @@ DPLUSRC = pdgssvx.o pdgssvx_ABglobal.o \
 # from 3D code
 DPLUSRC += pdgssvx3d.o pdgstrf3d.o dtreeFactorization.o dscatter3d.o \
 	dgather.o pd3dcomm.o dtrfAux.o dcommunication_aux.o dtrfCommWrapper.o \
-	dnrformat_loc3d.o ##$(FACT3D)
+	dnrformat_loc3d.o dtreeFactorizationGPU.o ##$(FACT3D)
 
 #
 # Routines for double complex parallel SuperLU
@@ -86,7 +86,7 @@ ZPLUSRC = pzgssvx.o pzgssvx_ABglobal.o \
 # from 3D code
 ZPLUSRC += pzgssvx3d.o pzgstrf3d.o ztreeFactorization.o zscatter3d.o \
 	zgather.o pz3dcomm.o ztrfAux.o zcommunication_aux.o ztrfCommWrapper.o \
-	znrformat_loc3d.o ##$(FACT3D)
+	znrformat_loc3d.o ztreeFactorizationGPU.o ##$(FACT3D)
 
 ifeq ($(HAVE_COMBBLAS),TRUE)
 DPLUSRC += d_c2cpp_GetHWPM.o
