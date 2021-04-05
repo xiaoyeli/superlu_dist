@@ -130,6 +130,11 @@ typedef MPI_C_DOUBLE_COMPLEX  SuperLU_MPI_DOUBLE_COMPLEX;
 #include "util_dist.h"
 #include "psymbfact.h"
 
+#ifdef GPU_ACC
+#include <cuda.h>
+#endif
+
+
 #define MAX_SUPER_SIZE 256   /* Sherry: moved from superlu_gpu.cu */
 
 
