@@ -24,6 +24,7 @@ at the top-level directory.
 
 #include "superlu_zdefs.h"
 
+/* Dst <- BlockByBlock (Src), reshape the block storage. */
 static void matCopy(int n, int m, doublecomplex *Dst, int lddst, doublecomplex *Src, int ldsrc)
 {
     for (int j = 0; j < m; j++)
@@ -42,7 +43,7 @@ static void matCopy(int n, int m, doublecomplex *Dst, int lddst, doublecomplex *
  *             output is in the returned A3d->{} structure.
  *             see supermatrix.h for nrformat_loc3d{} structure.
  */
-NRformat_loc3d *zGatherNRformat_loc3d(NRformat_loc *A, // input
+NRformat_loc3d *zGatherNRformat_loc3d(NRformat_loc *A, // input, on 3D grid
                                       doublecomplex *B,       // input
 				      int ldb, int nrhs, // input
                                       gridinfo3d_t *grid3d)
@@ -55,9 +56,13 @@ NRformat_loc3d *zGatherNRformat_loc3d(NRformat_loc *A, // input
     A3d->nrhs = nrhs;
 
     // find number of nnzs
-    int_t *nnz_counts, *row_counts;
-    int *nnz_disp, *row_disp, *nnz_counts_int, *row_counts_int;
-    int *b_counts_int, *b_disp;
+    int_t *nnz_counts; // number of local nonzeros relative to all processes
+    int_t *row_counts; // number of local rows relative to all processes
+    int *nnz_counts_int, *row_counts_int; // 32-bit
+    int *nnz_disp, *row_disp; // displacement
+    int *b_counts_int; // number of local B entries relative to all processes 
+    int *b_disp;       // including 'nrhs'
+
     nnz_counts = SUPERLU_MALLOC(grid3d->npdep * sizeof(int_t));
     row_counts = SUPERLU_MALLOC(grid3d->npdep * sizeof(int_t));
     nnz_counts_int = SUPERLU_MALLOC(grid3d->npdep * sizeof(int));
@@ -190,25 +195,29 @@ NRformat_loc3d *zGatherNRformat_loc3d(NRformat_loc *A, // input
 int zScatter_B3d(NRformat_loc3d *A3d,  // modified
 		 gridinfo3d_t *grid3d)
 {
-
-    doublecomplex *B = (doublecomplex *) A3d->B;
+    doublecomplex *B = (doublecomplex *) A3d->B; // on 3D grid
     int ldb = A3d->ldb;
     int nrhs = A3d->nrhs;
-    doublecomplex *B2d = (doublecomplex *) A3d->B2d;
+    doublecomplex *B2d = (doublecomplex *) A3d->B2d; // on 2D layer 0 
     NRformat_loc A2d = *(A3d->A_nfmt);
+
+    /* The following are the number of local rows relative to all processes */
     int m_loc = A3d->m_loc;
     int *b_counts_int = A3d->b_counts_int;
     int *b_disp = A3d->b_disp;
     int *row_counts_int = A3d->row_counts_int;
     int *row_disp = A3d->row_disp;
 
-    doublecomplex *B1;
+    gridinfo_t *grid2d = &(grid3d->grid2d);
+    int iam = grid3d->iam;
+
+    doublecomplex *B1;  // on 2D layer 0
     if (grid3d->zscp.Iam == 0)
     {
         B1 = SUPERLU_MALLOC(A2d.m_loc * nrhs * sizeof(doublecomplex));
     }
 
-    // B1 <- blockByBock(b2d)
+    // B1 <- blockByBlock(b2d)
     if (grid3d->zscp.Iam == 0)
     {
         for (int i = 0; i < grid3d->npdep; ++i)
@@ -219,13 +228,37 @@ int zScatter_B3d(NRformat_loc3d *A3d,  // modified
         }
     }
 
-    //
-    doublecomplex *Btmp;
+    doublecomplex *Btmp; // on 3D grid
     Btmp = SUPERLU_MALLOC(A3d->m_loc * nrhs * sizeof(doublecomplex));
 
+#if 0 // This is a bug: the result of this scatter is a "permuted" distribution
     // Btmp <- scatterv(B1) 
     MPI_Scatterv(B1, b_counts_int, b_disp, SuperLU_MPI_DOUBLE_COMPLEX,
                  Btmp, nrhs * A3d->m_loc, SuperLU_MPI_DOUBLE_COMPLEX, 0, grid3d->zscp.comm);
+#else
+    /* For example, in 1x3x4 grid, layer 0 has procs:{0,1,2}, the process 
+       scattering pattern is:
+           0 -> {0,1,2,3}, 1 -> {4,5,6,7}, 2 -> {8,9,10,11}
+       This is different from the scattering pattern along Z-dimension.
+     */
+    if (grid3d->zscp.Iam == 0) // processes on layer 0
+    {
+      MPI_Request send_req;
+      for (int p = 0; p < grid3d->npdep; ++p) { // send to npdep procs
+	int dest = p + grid2d->iam * grid3d->npdep;
+	int tag = dest;
+
+	MPI_Isend(B1 + b_disp[p], b_counts_int[p], SuperLU_MPI_DOUBLE_COMPLEX,
+		  dest, tag, grid3d->comm, &send_req);
+      }
+    } 
+    
+    /* Everyone receives one block */
+    MPI_Status status;
+    int src = grid3d->iam / grid3d->npdep;  // which proc the data should come from
+    MPI_Recv(Btmp, nrhs * A3d->m_loc, SuperLU_MPI_DOUBLE_COMPLEX,
+	     src, grid3d->iam, grid3d->comm, &status);
+#endif
 
     // B <- colMajor(Btmp)
     matCopy(A3d->m_loc, nrhs, B, ldb, Btmp, A3d->m_loc);

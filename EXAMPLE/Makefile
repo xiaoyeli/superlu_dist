@@ -52,7 +52,7 @@ ZEXM1	= pzdrive1.o zcreate_matrix.o
 ZEXM2	= pzdrive2.o zcreate_matrix.o zcreate_matrix_perturbed.o
 ZEXM3	= pzdrive3.o zcreate_matrix.o
 ZEXM4	= pzdrive4.o zcreate_matrix.o
-ZEXM3D	= pzdrive3d.o zcreate_matrix.o zcreate_matrix3d.o pzutil.o
+ZEXM3D	= pzdrive3d.o zcreate_matrix.o zcreate_matrix3d.o pzutil.o pzgssvx3d.o znrformat_loc3d.o superlu_grid3d.o
 ZEXMG	= pzdrive_ABglobal.o
 ZEXMG1	= pzdrive1_ABglobal.o
 ZEXMG2	= pzdrive2_ABglobal.o
@@ -60,7 +60,7 @@ ZEXMG3	= pzdrive3_ABglobal.o
 ZEXMG4	= pzdrive4_ABglobal.o
 
 
-all: double complex16
+all: pzdrive3d  #double complex16
 
 double:    pddrive pddrive1 pddrive2 pddrive3 pddrive4 \
 	   pddrive3d \
