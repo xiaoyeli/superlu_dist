@@ -100,8 +100,31 @@ LUstruct_v100::LUstruct_v100(int_t nsupers_, int_t ldt_,
         
     }
 
+    for(int pc=0;pc<Pc; pc++)
+    {
+        int npc = CEILING(nsupers, Pc);
+        std::copy(localLvalSendCounts.begin(), localLvalSendCounts.end(), recvBuf.begin());
+        // Send the value counts ;
+        MPI_Bcast((void *) recvBuf.data(), npc, mpi_int_t, pc, grid3d->rscp.comm);
+        for(int i=0; i*Pc + pc< nsupers; i++ )
+        {
+            LvalSendCounts[i*Pc+pc] = recvBuf[i];
+        }
+
+        std::copy(localLidxSendCounts.begin(), localLidxSendCounts.end(), recvBuf.begin());
+        // send the index count 
+        MPI_Bcast((void *) recvBuf.data(), npc, mpi_int_t, pc, grid3d->rscp.comm);
+        for(int i=0; i*Pc + pc< nsupers; i++ )
+        {
+            LidxSendCounts[i*Pc+pc] = recvBuf[i];
+        }
+        
+    }
+
     maxUvalCount = *std::max_element(UvalSendCounts.begin(), UvalSendCounts.end());
     maxUidxCount = *std::max_element(UidxSendCounts.begin(), UidxSendCounts.end());
+    maxLvalCount = *std::max_element(LvalSendCounts.begin(), LvalSendCounts.end());
+    maxLidxCount = *std::max_element(LidxSendCounts.begin(), LidxSendCounts.end());
 
     // Allocate bigV, indirect
     nThreads = getNumThreads(iam);
