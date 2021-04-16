@@ -51,9 +51,6 @@ if (MSVC)
   list(APPEND sources wingetopt.c)
 endif ()
 
-if (HAVE_COMBBLAS)
-  list(APPEND sources c2cpp_GetAWPM.cpp AWPM_CombBLAS.hpp)
-endif()
 
 set_source_files_properties(superlu_timer.c PROPERTIES COMPILE_FLAGS -O0)
 
@@ -98,7 +95,12 @@ if(enable_double)
     pdgsmv_AXglobal.c
     pdGetDiagU.c
   )
+if (HAVE_COMBBLAS)
+  list(APPEND sources d_c2cpp_GetHWPM.cpp dHWPM_CombBLAS.hpp)
 endif()
+
+endif() ## enable double
+
 
 if(enable_complex16)
   list(APPEND headers superlu_zdefs.h)
@@ -142,7 +144,11 @@ if(enable_complex16)
     pzgsmv_AXglobal.c
     pzGetDiagU.c
   )
+if (HAVE_COMBBLAS)
+  list(APPEND sources z_c2cpp_GetHWPM.cpp zHWPM_CombBLAS.hpp)
 endif()
+
+endif() ## enable compex16
 
 add_library(superlu_dist ${sources} ${HEADERS})
 set(targets superlu_dist)
@@ -152,8 +158,8 @@ if (BUILD_SHARED_LIBS AND BUILD_STATIC_LIBS)
   list(APPEND targets superlu_dist-static)
 endif()
 
-set(superlu_dist_libs ${MPI_C_LIBRARIES} ${BLAS_LIB} ${LAPACK_LIB}
-    ${PARMETIS_LIB} ${COMBBLAS_LIB})
+set(superlu_dist_libs ${MPI_C_LIBRARIES} ${MPI_CXX_LIBRARIES} ${BLAS_LIB} ${LAPACK_LIB}
+    ${PARMETIS_LIB} ${COMBBLAS_LIB} ${CUDA_LIB})
 
 if (NOT MSVC)
   list(APPEND superlu_dist_libs m)
@@ -163,6 +169,7 @@ foreach(target ${targets})
     target_link_libraries(${target} ${superlu_dist_libs})
     if (HAVE_COMBBLAS)
         set_target_properties(${target} PROPERTIES
+			      CUDA_SEPARABLE_COMPILATION ON
                               OUTPUT_NAME superlu_dist
                               VERSION ${PROJECT_VERSION}
                               SOVERSION ${VERSION_MAJOR}
@@ -170,6 +177,7 @@ foreach(target ${targets})
 			      )
     else()
         set_target_properties(${target} PROPERTIES
+			      CUDA_SEPARABLE_COMPILATION ON
                               OUTPUT_NAME superlu_dist
                               VERSION ${PROJECT_VERSION}
                               SOVERSION ${VERSION_MAJOR}

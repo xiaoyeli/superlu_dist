@@ -489,6 +489,7 @@ at the top-level directory.
  *
  * info    (output) int*
  *         = 0: successful exit
+ *         < 0: if info = -i, the i-th argument had an illegal value   
  *         > 0: if info = i, and i is
  *             <= A->ncol: U(i,i) is exactly zero. The factorization has
  *                been completed, but the factor U is exactly singular,
@@ -914,7 +915,7 @@ pzgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 #endif
                 } else { /* use largeDiag_AWPM */
 #ifdef HAVE_COMBBLAS
-		    c2cpp_GetAWPM(A, grid, ScalePermstruct);
+		    z_c2cpp_GetHWPM(A, grid, ScalePermstruct);
 #else
 		    if ( iam == 0 ) {
 		        printf("CombBLAS is not available\n"); fflush(stdout);

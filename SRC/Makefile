@@ -36,12 +36,8 @@ ALLAUX 	= sp_ienv.o etree.o sp_colorder.o get_perm_c.o \
 	  xerr_dist.o smach_dist.o dmach_dist.o \
 	  superlu_dist_version.o TreeInterface.o
 
-ifeq "${ACC}" "GPU"
+ifeq ($(HAVE_CUDA),TRUE)
 ALLAUX += cublas_utils.o
-endif
-
-ifeq ($(HAVE_COMBBLAS),TRUE)
-ALLAUX += c2cpp_GetAWPM.o
 endif
 
 #
@@ -73,6 +69,11 @@ ZPLUSRC = pzgssvx.o pzgssvx_ABglobal.o \
 	  pzgstrs.o pzgstrs1.o pzgstrs_lsum.o pzgstrs_Bglobal.o \
 	  pzgsrfs.o pzgsmv.o pzgsrfs_ABXglobal.o pzgsmv_AXglobal.o \
 	  zreadtriple_noheader.o
+
+ifeq ($(HAVE_COMBBLAS),TRUE)
+DPLUSRC += d_c2cpp_GetHWPM.o
+ZPLUSRC += z_c2cpp_GetHWPM.o
+endif
 
 all:  double complex16
 

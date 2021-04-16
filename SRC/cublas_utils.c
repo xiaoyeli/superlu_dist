@@ -8,7 +8,9 @@ All rights reserved.
 The source code is distributed under BSD license, see the file License.txt
 at the top-level directory.
 */
-#ifdef GPU_ACC
+#include "superlu_defs.h"
+
+#ifdef GPU_ACC  // enable CUDA
 
 #include <stdio.h>
 #include "cublas_utils.h"
@@ -111,4 +113,5 @@ cublasHandle_t create_handle ()
  {
       checkCublas(cublasDestroy(handle));
  }
-#endif
+
+#endif  // enable CUDA

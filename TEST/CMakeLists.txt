@@ -44,8 +44,8 @@ function(add_superlu_dist_tests target input)
 	      foreach (m ${SUPERSIZE})
                 set(testName "${target}_${r}x${c}_${s}_${b}_${x}_${m}")
 	  	set(SINGLE_OUTPUT ${SuperLU_DIST_BINARY_DIR}/TEST/${testName}.out)
-          add_test( ${testName}_SP
-	    	    ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} ${np}
+          add_test( NAME ${testName}_SP
+	    	    COMMAND ${MPIEXEC_EXECUTABLE} ${MPIEXEC_NUMPROC_FLAG} ${np}
             	    ${MPIEXEC_PREFLAGS} ${TEST_LOC}/${target} ${MPIEXEC_POSTFLAGS}
 		    -r ${r} -c ${c} -s ${s} -b ${b} -x ${x} -m ${m} -f ${TEST_INPUT}
 		  )

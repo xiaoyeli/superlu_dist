@@ -214,7 +214,8 @@ pdgstrf2_trsm
             /* Diagonal pivot */
             i = luptr;
             /* Not to replace zero pivot.  */
-            if (options->ReplaceTinyPivot == YES && lusup[i] != 0.0 )  {
+            // if (options->ReplaceTinyPivot == YES && lusup[i] != 0.0 )  {
+            if (options->ReplaceTinyPivot == YES)  {
                 if (fabs (lusup[i]) < thresh) {  /* Diagonal */
 
 #if ( PRNTlevel>=2 )
