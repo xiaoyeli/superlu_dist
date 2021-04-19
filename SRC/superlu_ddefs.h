@@ -575,6 +575,11 @@ extern int   file_Printdouble5(FILE *, char *, int_t, double *);
 /* BLAS */
 
 #ifdef USE_VENDOR_BLAS
+#ifdef SUPERLU_USE_MKL
+#include "mkl.h"
+#include "mkl_omp_offload.h"
+
+#else
 extern void dgemm_(const char*, const char*, const int*, const int*, const int*,
                   const double*, const double*, const int*, const double*,
                   const int*, const double*, double*, const int*, int, int);
@@ -587,6 +592,7 @@ extern void dgemv_(const char *, const int *, const int *, const double *,
                   const double *a, const int *, const double *, const int *,
 		  const double *, double *, const int *, int);
 
+#endif
 #else
 extern int dgemm_(const char*, const char*, const int*, const int*, const int*,
                    const double*,  const double*,  const int*,  const double*,
@@ -599,15 +605,17 @@ extern int dtrsm_(const char*, const char*, const char*, const char*,
 extern void dgemv_(const char *, const int *, const int *, const double *,
                   const double *a, const int *, const double *, const int *,
 		  const double *, double *, const int *);
-#endif
 
 extern void dger_(const int*, const int*, const double*,
                  const double*, const int*, const double*, const int*,
 		 double*, const int*);
+#endif
 
+#ifndef SUPERLU_USE_MKL
 extern int dscal_(const int *n, const double *alpha, double *dx, const int *incx);
 extern int daxpy_(const int *n, const double *alpha, const double *x, 
 	               const int *incx, double *y, const int *incy);
+#endif
 
 /* SuperLU BLAS interface: dsuperlu_blas.c  */
 extern int superlu_dgemm(const char *transa, const char *transb,
@@ -632,8 +640,9 @@ extern int superlu_dtrsv(char *uplo, char *trans, char *diag,
 
 
 // LAPACK routine
+#ifndef SUPERLU_USE_MKL
 extern void dtrtri_(char*, char*, int*, double*, int*, int*);
-
+#endif
 
 /*==== For 3D code ====*/
 extern int dcreate_matrix3d(SuperMatrix *A, int nrhs, double **rhs,

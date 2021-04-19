@@ -13,12 +13,12 @@
 #include "dcomplex.h"
 #include <chrono>
 
-template <typename DIM>
-using localAcc = sycl::accessor<int, DIM, sycl::access::mode::read_write, sycl::access::target::local>;
+template <int T>
+using localAcc = sycl::accessor<int, T, sycl::access::mode::read_write, sycl::access::target::local>;
 
 extern "C" {
 	void cblas_daxpy(const int N, const double alpha, const double *X,
-	                 const int incX, double *Y, const int incY);
+	                 const int incX, double *Y, const int incY) noexcept;
 }
 
 int_t getnGpuStreams()
@@ -498,7 +498,7 @@ int_t SchurCompUpdate_GPU(
   /*sizeof RemainLbuf = Rnbuf*knsupc */
   double tTmp = SuperLU_timer_();
 
-  A_gpu->ePCIeH2D_k0 = std::chrono::steady_clock::now();
+  A_gpu->ePCIeH2D_ct1_k0 = std::chrono::steady_clock::now();
 
   FunCallStream->memcpy(A_gpu->scubufs[queueId].usub_IndirectJ3,
                         A_gpu->scubufs[queueId].usub_IndirectJ3_host,
@@ -636,7 +636,7 @@ int_t SchurCompUpdate_GPU(
 	}
 	assert(nrows * ncols <= buffer_size);
 
-	A_gpu->GemmStart_k0 = std::chrono::steady_clock::now();
+	A_gpu->GemmStart_ct1_k0 = std::chrono::steady_clock::now();
 	oneapi::mkl::blas::gemm(*FunCallStream,
 				oneapi::mkl::transpose::nontrans,
 				oneapi::mkl::transpose::nontrans,
@@ -656,7 +656,7 @@ int_t SchurCompUpdate_GPU(
 	FuncCallStream->wait();
 #warning this function is synchrnous
 #endif
-	A_gpu->GemmEnd_k0 = std::chrono::steady_clock::now();
+	A_gpu->GemmEnd_ct1_k0 = std::chrono::steady_clock::now();
 
 	A_gpu->GemmFLOPCounter += 2.0 * (double) nrows * ncols * ldu ;
 
@@ -693,7 +693,7 @@ int_t SchurCompUpdate_GPU(
 #warning this function is synchrnous
 #endif
 
-	A_gpu->ScatterEnd_k0 = std::chrono::steady_clock::now();
+	A_gpu->ScatterEnd_ct1_k0 = std::chrono::steady_clock::now();
 
 	A_gpu->ScatterMOPCounter +=  3.0 * (double) nrows * ncols;
       } /* endif ... none of the matrix dimension is zero. */
@@ -712,8 +712,9 @@ void print_occupany()
 	int minGridSize; /* The minimum grid size needed to achieve the
 			    best potential occupancy  */
 
-	cudaOccupancyMaxPotentialBlockSize( &minGridSize, &blockSize,
-	                                    Scatter_GPU_kernel, 0, 0);
+	// mjc, this needs updating
+	//cudaOccupancyMaxPotentialBlockSize( &minGridSize, &blockSize,
+	//                                    Scatter_GPU_kernel, 0, 0);
 #if (PRNTlevel>=1)
 	printf("Occupancy: MinGridSize %d blocksize %d \n", minGridSize, blockSize);
 #endif
@@ -722,7 +723,8 @@ void print_occupany()
 void printDevProp(dpct::device_info devProp)
 {
 	size_t mfree, mtotal;
-	cudaMemGetInfo	(&mfree, &mtotal);
+	// mjc this needs updating 
+	// cudaMemGetInfo	(&mfree, &mtotal);
 
         /*
         DPCT1051:60: DPC++ does not support the device property that would be
@@ -738,7 +740,8 @@ void printDevProp(dpct::device_info devProp)
         printf("pciDeviceID:                   %d\n", -1);
         printf("GPU Name:                      %s\n", devProp.get_name());
         printf("Total global memory:           %zu\n", devProp.get_global_mem_size());
-        printf("Total free memory:             %zu\n",  mfree);
+        // mjc this needs updating
+        // printf("Total free memory:             %zu\n",  mfree);
         printf("Clock rate:                    %d\n",
                devProp.get_max_clock_frequency());
 
@@ -770,7 +773,10 @@ get_acc_memory ()
 	size_t mfree, mtotal;
 	sycl::device syclDev(sycl::gpu_selector{});
 	mtotal = syclDev.get_info<cl::sycl::info::device::global_mem_size>();
-	cudaMemGetInfo	(&mfree, &mtotal);
+	//mjc this needs updating
+	//cudaMemGetInfo	(&mfree, &mtotal); 
+	mfree = 0; //mjc my place holder value
+
 #if 0
 	printf("Total memory %zu & free memory %zu\n", mtotal, mfree);
 #endif
@@ -879,21 +885,21 @@ void printGPUStats(LUstruct_gpu * A_gpu)
 		if (A_gpu->isOffloaded[i])
 		{
                         milliseconds = std::chrono::duration<float, std::milli>(
-                                A_gpu->GemmStart_i - A_gpu->ePCIeH2D_i).count();
+                                A_gpu->GemmStart - A_gpu->ePCIeH2D).count();
                         tPCIeH2D += 1e-3 * (double) milliseconds;
 			milliseconds = 0;
                         milliseconds = std::chrono::duration<float, std::milli>(
-                                A_gpu->GemmEnd_i - A_gpu->GemmStart_i).count();
+                                A_gpu->GemmEnd - A_gpu->GemmStart).count();
                         tGemm += 1e-3 * (double) milliseconds;
 			milliseconds = 0;
                         milliseconds = std::chrono::duration<float, std::milli>(
-                                A_gpu->ScatterEnd_i - A_gpu->GemmEnd_i).count();
+                                A_gpu->ScatterEnd - A_gpu->GemmEnd).count();
                         tScatter += 1e-3 * (double) milliseconds;
 		}
 
 		milliseconds = 0;
                 milliseconds = std::chrono::duration<float, std::milli>(
-                        A_gpu->ePCIeD2H_End_i - A_gpu->ePCIeD2H_Start_i).count();
+                        A_gpu->ePCIeD2H_End - A_gpu->ePCIeD2H_Start).count();
                 tPCIeD2H += 1e-3 * (double) milliseconds;
 	}
 
@@ -912,7 +918,7 @@ void printGPUStats(LUstruct_gpu * A_gpu)
 
 int_t initSluGPU3D_t(
     sluGPU_t *sluGPU,
-    LUstruct_t *LUstruct,
+    dLUstruct_t *LUstruct,
     gridinfo3d_t * grid3d,
     int_t* perm_c_supno,
     int_t n,
@@ -951,7 +957,7 @@ int_t initSluGPU3D_t(
 
   gridinfo_t* grid = &(grid3d->grid2d);
   Glu_persist_t *Glu_persist = LUstruct->Glu_persist;
-  LocalLU_t *Llu = LUstruct->Llu;
+  dLocalLU_t *Llu = LUstruct->Llu;
   int_t* isNodeInMyGrid = sluGPU->isNodeInMyGrid;
 
   sluGPU->nGpuStreams = getnGpuStreams();
@@ -995,12 +1001,12 @@ int_t initD2Hreduce(
     HyP_t* HyP,
     sluGPU_t *sluGPU,
     gridinfo_t *grid,
-    LUstruct_t *LUstruct
+    dLUstruct_t *LUstruct
     , SCT_t* SCT
 )
 {
   Glu_persist_t *Glu_persist = LUstruct->Glu_persist;
-  LocalLU_t *Llu = LUstruct->Llu;
+  dLocalLU_t *Llu = LUstruct->Llu;
   int_t* xsup = Glu_persist->xsup;
   int_t iam = grid->iam;
   int_t myrow = MYROW (iam, grid);
@@ -1096,11 +1102,11 @@ int_t reduceGPUlu(
     sluGPU_t *sluGPU,
     SCT_t *SCT,
     gridinfo_t *grid,
-    LUstruct_t *LUstruct
+    dLUstruct_t *LUstruct
 )
 {
 
-	LocalLU_t *Llu = LUstruct->Llu;
+	dLocalLU_t *Llu = LUstruct->Llu;
 	int_t iam = grid->iam;
 	int_t myrow = MYROW (iam, grid);
 	int_t mycol = MYCOL (iam, grid);
@@ -1205,7 +1211,7 @@ int_t sendLUpanelGPU2HOST(
         LUstruct_gpu *A_gpu = sluGPU->A_gpu;
 	double tty = SuperLU_timer_();
 
-        A_gpu->ePCIeD2H_Start_k0 = std::chrono::steady_clock::now();
+        A_gpu->ePCIeD2H_Start_ct1_k0 = std::chrono::steady_clock::now();
         if (copyL_kljb)
 	  CopyStream->memcpy(A_gpu->acc_L_buff,
 			     &A_gpu->LnzvalVec[A_gpu->LnzvalPtr_host[kljb]],
@@ -1216,7 +1222,7 @@ int_t sendLUpanelGPU2HOST(
 			     &A_gpu->UnzvalVec[A_gpu->UnzvalPtr_host[kijb]],
 			     u_copy_len * sizeof(double));
 
-        A_gpu->ePCIeD2H_End_k0 = std::chrono::steady_clock::now();
+        A_gpu->ePCIeD2H_End_ct1_k0 = std::chrono::steady_clock::now();
         A_gpu->tHost_PCIeD2H += SuperLU_timer_() - tty;
 	A_gpu->cPCIeD2H += u_copy_len * sizeof(double) + l_copy_len * sizeof(double);
 
@@ -1266,7 +1272,7 @@ int_t freeSluGPU(sluGPU_t *sluGPU)
 
 void CopyLUToGPU3D (
     int_t* isNodeInMyGrid,
-    LocalLU_t *A_host, /* distributed LU structure on host */
+    dLocalLU_t *A_host, /* distributed LU structure on host */
     sluGPU_t *sluGPU,
     Glu_persist_t *Glu_persist, int_t n,
     gridinfo3d_t *grid3d,
@@ -1385,12 +1391,12 @@ void CopyLUToGPU3D (
         for (int_t i = 0; i < nsupers; ++i)
 	{
 		A_gpu->isOffloaded[i] = 0;
-		A_gpu->GemmStart      = sycl::event();
-		A_gpu->GemmEnd        = sycl::event();
-		A_gpu->ScatterEnd     = sycl::event();
-		A_gpu->ePCIeH2D       = sycl::event();
-		A_gpu->ePCIeD2H_Start = sycl::event();
-		A_gpu->ePCIeD2H_End   = sycl::event();
+		A_gpu->GemmStart[i]      = sycl::event();
+		A_gpu->GemmEnd[i]        = sycl::event();
+		A_gpu->ScatterEnd[i]     = sycl::event();
+		A_gpu->ePCIeH2D[i]       = sycl::event();
+		A_gpu->ePCIeD2H_Start[i] = sycl::event();
+		A_gpu->ePCIeD2H_End[i]   = sycl::event();
         }
 
 	/*---- Copy L data structure to GPU ----*/

@@ -115,7 +115,6 @@ if(enable_double)
     dnrformat_loc3d.c
     pdgstrf3d.c
     dtreeFactorization.c
-    dtreeFactorizationGPU.c
     dgather.c
     dscatter3d.c
     pd3dcomm.c
@@ -123,7 +122,6 @@ if(enable_double)
     dcommunication_aux.c
     dtrfCommWrapper.c
     dsuperlu_blas.c
-    dsuperlu_gpu.cu 
   )
 if (HAVE_CUDA)
   list(APPEND sources superlu_gpu.cu)

@@ -141,7 +141,8 @@ typedef struct sluGPU_t_
     sycl::queue *funCallStreams[MAX_NCUDA_STREAMS], *CopyStream;
     sycl::queue *cublasHandles[MAX_NCUDA_STREAMS];
     int_t lastOffloadStream[MAX_NCUDA_STREAMS];
-    int_t nCudaStreams;
+//    int_t nCudaStreams;
+    int_t nGpuStreams;
     int_t* isNodeInMyGrid;
     double acc_async_cost;
 
