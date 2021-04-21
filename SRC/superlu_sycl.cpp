@@ -1460,6 +1460,9 @@ void CopyLUToGPU3D (
 
 	} /* endfor all block columns */
 
+ dpct::device_ext &dev_ct1 = dpct::get_current_device();
+ sycl::queue &q = dev_ct1.default_queue();
+
 
 	/* Allocate L memory on GPU, and copy the values from CPU to GPU */
         tmp_ptr = (void *)sycl::malloc_device(cum_num_l_blocks * sizeof(local_l_blk_info_t), q);
@@ -1807,7 +1810,7 @@ void CopyLUToGPU3D (
 int_t reduceAllAncestors3d_GPU(int_t ilvl, int_t* myNodeCount,
                                int_t** treePerm,
                                dLUValSubBuf_t*LUvsb,
-                               LUstruct_t* LUstruct,
+                               dLUstruct_t* LUstruct,
                                gridinfo3d_t* grid3d,
                                sluGPU_t *sluGPU,
                                d2Hreduce_t* d2Hred,

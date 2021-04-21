@@ -1,6 +1,7 @@
 set(headers
     superlu_FCnames.h
     dcomplex.h
+    lustruct_gpu.h
     machines.h
     psymbfact.h
     superlu_defs.h
@@ -72,7 +73,7 @@ endif ()
 set_source_files_properties(superlu_timer.c PROPERTIES COMPILE_FLAGS -O0)
 
 if(enable_double)
-  list(APPEND headers superlu_ddefs.h dlustruct_gpu.h)
+  list(APPEND headers superlu_ddefs.h lustruct_gpu.h)
 
   list(APPEND sources
     dlangs_dist.c
