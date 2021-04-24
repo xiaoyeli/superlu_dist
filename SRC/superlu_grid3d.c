@@ -120,10 +120,12 @@ void superlu_gridmap3d(
 
     if (getenv("RANKORDER") && strcmp(getenv("RANKORDER"), "XY" ))
     {
+	grid->rankorder = 1;  // XY-major 
+
         dims[0] = nprow;
         dims[1] = npcol;
         dims[2] = npdep;
-
+	
         // create the new communicator
         int error = MPI_Cart_create(grid->comm, ndim, dims, periodic, reorder, &superlu3d_comm);
 
@@ -133,7 +135,6 @@ void superlu_gridmap3d(
         grid->iam = iam;
         MPI_Cart_coords(superlu3d_comm, iam, ndim, coords3d);
 
-        // printf("My coordinats are (%d %d %d)\n", coords3d[0], coords3d[1], coords3d[2] );
         int rowc[3] = {1, 0, 0};
         int colc[3] = {0, 1, 0};
         int depc[3] = {0, 0, 1};
@@ -160,7 +161,9 @@ void superlu_gridmap3d(
         int xyc[3] = {1, 1, 0};
         MPI_Cart_sub(superlu3d_comm, xyc, &(grid->grid2d.comm));
 
-    } else {
+    } else { /* default */
+        grid->rankorder = 0; // Z-major
+
         dims[1] = nprow;
         dims[2] = npcol;
         dims[0] = npdep;
@@ -174,26 +177,28 @@ void superlu_gridmap3d(
         grid->iam = iam;
         MPI_Cart_coords(superlu3d_comm, iam, ndim, coords3d);
 
-        // create row communicator;
+	/* printf("(%d) My coordinats are (%d %d %d)\n",
+	   iam, coords3d[0], coords3d[1], coords3d[2] );
+	fflush(stdout);  */
 
-        // printf("My coordinats are (%d %d %d)\n", coords3d[0], coords3d[1], coords3d[2] );
+        // create row communicator
+
         int rowc[3] = {0, 1, 0};
         int colc[3] = {0, 0, 1};
         int depc[3] = {1, 0, 0};
-
 
         MPI_Cart_sub(superlu3d_comm, colc, &(grid->rscp.comm));
         MPI_Cart_sub(superlu3d_comm, rowc, &(grid->cscp.comm));
         MPI_Cart_sub(superlu3d_comm, depc, &(grid->zscp.comm));
 
+	//  2x3: 0,2,4 / 1,3,5  column-major
         grid->cscp.Np = nprow;
         grid->cscp.Iam = coords3d[1];
         grid->rscp.Np = npcol;
         grid->rscp.Iam = coords3d[2];
+
         grid->zscp.Np = npdep;
         grid->zscp.Iam = coords3d[0];
-
-	//printf("(Iam %d) grid->zscp.Np = %d\n", grid->iam, grid->zscp.Np);
 
         grid->nprow = nprow;
         grid->npcol = npcol;
@@ -215,6 +220,14 @@ void superlu_gridmap3d(
     MPI_Comm_rank( grid->grid2d.comm, &(grid->grid2d.iam));
 
     // grid->grid2d.cscp = grid->cscp;
+
+#if 0
+    if ( (grid->zscp).Iam == 0) {
+      printf("(3d grid: layer 0) iam %d, grid->grid2d.iam %d\n",
+	     grid->iam, (grid->grid2d).iam);
+    } 
+    fflush(stdout);
+#endif
 
  gridmap_out:    
     SUPERLU_FREE(pranks);

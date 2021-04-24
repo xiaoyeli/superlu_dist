@@ -809,22 +809,27 @@ void pzinf_norm_error(int iam, int_t n, int_t nrhs, doublecomplex x[], int_t ldx
         z_sub(&temp, &x_work[i], &xtrue_work[i]);
 	err = SUPERLU_MAX(err, slud_z_abs(&temp));
 	xnorm = SUPERLU_MAX(xnorm, slud_z_abs(&x_work[i]));
+#if 1
 	if (err > 1.e-4 && iam == 1) {
 	  ii = i;
+	  printf("(wrong proc %d) wrong index ii %d\n", iam, ii);
 	  PrintDoublecomplex("x_work(ii)", 5, &x[ii]);
 	  PrintDoublecomplex("x_true(ii)", 5, &xtrue_work[ii]);
+	  fflush(stdout);
 	  break;
 	}
+#endif
       }
 
+#if 0
       printf("\t(%d) loc n %d: err = %e\txnorm = %e\n", iam, n, err, xnorm);
-      if (iam == 1) {
+      if (iam == 4) {
 	printf("ii %d\n", ii);
 	PrintDoublecomplex("x_work", 5, x);
 	PrintDoublecomplex("x_true", 5, xtrue_work);
       }
       fflush(stdout);
-
+#endif
       /* get the golbal max err & xnrom */
       temperr = err;
       tempxnorm = xnorm;

@@ -354,7 +354,7 @@ typedef struct {
     MPI_Comm comm;        /* MPI communicator */
     superlu_scope_t rscp; /* process scope in rowwise, horizontal directon */
     superlu_scope_t cscp; /* process scope in columnwise, vertical direction */
-    int iam;              /* my process number in this scope */
+    int iam;              /* my process number in this grid */
     int_t nprow;          /* number of process rows */
     int_t npcol;          /* number of process columns */
 } gridinfo_t;
@@ -365,11 +365,22 @@ typedef struct {
     superlu_scope_t rscp; /* row scope */
     superlu_scope_t cscp; /* column scope */
     superlu_scope_t zscp; /* scope in third dimension */
+    gridinfo_t grid2d;    /* for using 2D functions */
     int iam;              /* my process number in this grid */
     int_t nprow;          /* number of process rows */
     int_t npcol;          /* number of process columns */
     int_t npdep;          /* number of replication factor in Z-dimension  */
-    gridinfo_t grid2d;    /* for using 2D functions */
+    int rankorder;        /* = 0: Z-major ( default )
+			   *    e.g. 1x3x4 grid: layer0 layer1 layer2 layer3
+			   *                     0      3      6      9
+			   *                     1      4      7      10      
+			   *                     2      5      8      11
+			   * = 1: XY-major (need set env. var.: RANKORDER=XY)
+			   *    e.g. 1x3x4 grid: layer0 layer1 layer2 layer3
+			   *                     0      1      2      4
+			   *                     5      6      7      8
+			   *                     9      10     11     12
+			   */
 } gridinfo3d_t;
 
 

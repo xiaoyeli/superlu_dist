@@ -552,7 +552,7 @@ pdgssvx3d (superlu_dist_options_t * options, SuperMatrix * A,
     /* Save the inputs: ldb -> ldb3d, and B -> B3d, Astore -> Astore3d 
        B3d and Astore3d will be restored on return  */
     int ldb3d = ldb;
-    double *B3d = B;
+    // double *B3d = B;
     NRformat_loc *Astore3d = (NRformat_loc *)A->Store;
     double *B2d;
     NRformat_loc3d *A3d = dGatherNRformat_loc3d((NRformat_loc *)A->Store,
@@ -1560,6 +1560,7 @@ pdgssvx3d (superlu_dist_options_t * options, SuperMatrix * A,
     /* Scatter the solution from 2D grid_0 to 3D grid */
     dScatter_B3d(A3d, grid3d);
 
+    B = A3d->B3d; // B is now assigned back to B3d on return
     A->Store = Astore3d; // restore Astore to 3D
     
     /* free A2d and B2d, which are allocated only in 2D layer Grid_0 */

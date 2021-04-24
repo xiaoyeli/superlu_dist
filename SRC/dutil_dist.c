@@ -489,8 +489,8 @@ dGenXtrue_dist(int_t n, int_t nrhs, double *x, int_t ldx)
     int  i, j;
     for (j = 0; j < nrhs; ++j)
 	for (i = 0; i < n; ++i) {
-	    if ( i % 2 ) x[i + j*ldx] = 1.0;/* + (double)(i+1.)/n;*/
-	    else x[i + j*ldx] = 1.0;
+	    if ( i % 2 ) x[i + j*ldx] = 1.0 + (double)(i+1.)/n;
+	    else x[i + j*ldx] = 1.0 - (double)(i+1.)/n;
 	}
 }
 

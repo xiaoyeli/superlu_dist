@@ -421,6 +421,7 @@ void zScalePermstructFree(zScalePermstruct_t *ScalePermstruct)
         SUPERLU_FREE(ScalePermstruct->R);
         SUPERLU_FREE(ScalePermstruct->C);
         break;
+      default: break;
     }
 }
 
@@ -489,9 +490,14 @@ zGenXtrue_dist(int_t n, int_t nrhs, doublecomplex *x, int_t ldx)
     int  i, j;
     for (j = 0; j < nrhs; ++j)
 	for (i = 0; i < n; ++i) {
-	    if ( i % 2 ) x[i + j*ldx].r = 1.0;
-	    else x[i + j*ldx].r = 2.0;
-	    x[i + j*ldx].i = 0.0;
+	    if ( i % 2 ) {
+	        x[i + j*ldx].r = 1.0 + (double)(i+1.)/n;
+		x[i + j*ldx].i = 1.0;
+	    }
+	    else {
+	        x[i + j*ldx].r = 2.0 + (double)(i+1.)/n;
+	        x[i + j*ldx].i = 2.0;
+            }
 	}
 }
 
@@ -653,8 +659,8 @@ void zDumpLblocks(int iam, int_t nsupers, gridinfo_t *grid,
 		  Glu_persist_t *Glu_persist, zLocalLU_t *Llu)
 {
     register int c, extra, gb, j, i, lb, nsupc, nsupr, len, nb, ncb;
-    register int_t k, mycol, r;
-	int_t nnzL, n,nmax;
+    int k, mycol, r, n, nmax;
+    int_t nnzL;
     int_t *xsup = Glu_persist->xsup;
     int_t *index;
     doublecomplex *nzval;

@@ -1503,6 +1503,8 @@ gemm_division_new (int * num_streams_used,   /*number of streams that will be us
     }
 }
 
+#endif  /* defined GPU_ACC */
+
 /* The following are moved from superlu_gpu.cu */
 
 int getnCudaStreams()
@@ -1535,4 +1537,3 @@ int get_mpi_process_per_gpu ()
 	}
 }
 
-#endif  /* defined GPU_ACC */

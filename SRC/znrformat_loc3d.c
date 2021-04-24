@@ -51,7 +51,7 @@ NRformat_loc3d *zGatherNRformat_loc3d(NRformat_loc *A, // input, on 3D grid
     NRformat_loc3d *A3d = SUPERLU_MALLOC(sizeof(NRformat_loc3d));
     NRformat_loc *A2d = SUPERLU_MALLOC(sizeof(NRformat_loc));
     A3d->m_loc = A->m_loc;
-    A3d->B = (doublecomplex *) B; // on 3D process grid
+    A3d->B3d = (doublecomplex *) B; // on 3D process grid
     A3d->ldb = ldb;
     A3d->nrhs = nrhs;
 
@@ -190,12 +190,12 @@ NRformat_loc3d *zGatherNRformat_loc3d(NRformat_loc *A, // input, on 3D grid
 
 /*
  * Scatter B (solution) from 2D process layer 0 to 3D grid
- *   Output: X2d <- A^{-1} B2d
+ *   Output: X3d <- A^{-1} B2d
  */
 int zScatter_B3d(NRformat_loc3d *A3d,  // modified
 		 gridinfo3d_t *grid3d)
 {
-    doublecomplex *B = (doublecomplex *) A3d->B; // on 3D grid
+    doublecomplex *B = (doublecomplex *) A3d->B3d; // on 3D grid
     int ldb = A3d->ldb;
     int nrhs = A3d->nrhs;
     doublecomplex *B2d = (doublecomplex *) A3d->B2d; // on 2D layer 0 
@@ -207,9 +207,10 @@ int zScatter_B3d(NRformat_loc3d *A3d,  // modified
     int *b_disp = A3d->b_disp;
     int *row_counts_int = A3d->row_counts_int;
     int *row_disp = A3d->row_disp;
-
-    gridinfo_t *grid2d = &(grid3d->grid2d);
+    int i, p;
     int iam = grid3d->iam;
+    int rankorder = grid3d->rankorder;
+    gridinfo_t *grid2d = &(grid3d->grid2d);
 
     doublecomplex *B1;  // on 2D layer 0
     if (grid3d->zscp.Iam == 0)
@@ -217,10 +218,10 @@ int zScatter_B3d(NRformat_loc3d *A3d,  // modified
         B1 = SUPERLU_MALLOC(A2d.m_loc * nrhs * sizeof(doublecomplex));
     }
 
-    // B1 <- blockByBlock(b2d)
+    // B1 <- BlockByBlock(B2d)
     if (grid3d->zscp.Iam == 0)
     {
-        for (int i = 0; i < grid3d->npdep; ++i)
+        for (i = 0; i < grid3d->npdep; ++i)
         {
             /* code */
             matCopy(row_counts_int[i], nrhs, B1 + nrhs * row_disp[i], row_counts_int[i],
@@ -231,34 +232,70 @@ int zScatter_B3d(NRformat_loc3d *A3d,  // modified
     doublecomplex *Btmp; // on 3D grid
     Btmp = SUPERLU_MALLOC(A3d->m_loc * nrhs * sizeof(doublecomplex));
 
-#if 0 // This is a bug: the result of this scatter is a "permuted" distribution
-    // Btmp <- scatterv(B1) 
-    MPI_Scatterv(B1, b_counts_int, b_disp, SuperLU_MPI_DOUBLE_COMPLEX,
-                 Btmp, nrhs * A3d->m_loc, SuperLU_MPI_DOUBLE_COMPLEX, 0, grid3d->zscp.comm);
-#else
-    /* For example, in 1x3x4 grid, layer 0 has procs:{0,1,2}, the process 
-       scattering pattern is:
-           0 -> {0,1,2,3}, 1 -> {4,5,6,7}, 2 -> {8,9,10,11}
-       This is different from the scattering pattern along Z-dimension.
-     */
-    if (grid3d->zscp.Iam == 0) // processes on layer 0
-    {
-      MPI_Request send_req;
-      for (int p = 0; p < grid3d->npdep; ++p) { // send to npdep procs
-	int dest = p + grid2d->iam * grid3d->npdep;
-	int tag = dest;
+    // Btmp <- scatterv(B1), block-by-block
+    if ( rankorder == 1 ) { /* XY-major in 3D grid */
+        /*    e.g. 1x3x4 grid: layer0 layer1 layer2 layer3
+	 *                     0      1      2      4
+	 *                     5      6      7      8
+	 *                     9      10     11     12
+	 */
+        MPI_Scatterv(B1, b_counts_int, b_disp, SuperLU_MPI_DOUBLE_COMPLEX,
+		     Btmp, nrhs * A3d->m_loc, SuperLU_MPI_DOUBLE_COMPLEX,
+		     0, grid3d->zscp.comm);
 
-	MPI_Isend(B1 + b_disp[p], b_counts_int[p], SuperLU_MPI_DOUBLE_COMPLEX,
-		  dest, tag, grid3d->comm, &send_req);
-      }
-    } 
+    } else { /* Z-major in 3D grid */
+        /*    e.g. 1x3x4 grid: layer0 layer1 layer2 layer3
+	                       0      3      6      9
+ 	                       1      4      7      10      
+	                       2      5      8      11
+	  GATHER:  {A, B} in A * X = B
+	  layer-0:
+    	       B (row space)  X (column space)  SCATTER
+	       ----           ----        ---->>
+           P0  0              0
+(equations     3              1      Proc 0 -> Procs {0, 1, 2, 3}
+ reordered     6              2
+ after gather) 9              3
+	       ----           ----
+	   P1  1              4      Proc 1 -> Procs {4, 5, 6, 7}
+	       4              5
+               7              6
+               10             7
+	       ----           ----
+	   P2  2              8      Proc 2 -> Procs {8, 9, 10, 11}
+	       5              9
+	       8             10
+	       11            11
+	       ----         ----
+	*/
+        MPI_Request recv_req;
+	MPI_Status recv_status;
+	int pxy = grid2d->nprow * grid2d->npcol;
+	int npdep = grid3d->npdep, dest, src, tag;
+	int nprocs = pxy * npdep;
+
+	/* Everyone receives one block (post non-blocking irecv) */
+	src = grid3d->iam / npdep;  // Z-major
+	tag = iam;
+	MPI_Irecv(Btmp, nrhs * A3d->m_loc, SuperLU_MPI_DOUBLE_COMPLEX,
+		 src, tag, grid3d->comm, &recv_req);
+
+	/* Layer 0 sends to npdep procs */
+	if (grid3d->zscp.Iam == 0) {
+	    int dest, tag;
+	    for (p = 0; p < npdep; ++p) { // send to npdep procs
+	        dest = p + grid2d->iam * npdep; // Z-major order
+		tag = dest;
+
+		MPI_Send(B1 + b_disp[p], b_counts_int[p], 
+			 SuperLU_MPI_DOUBLE_COMPLEX, dest, tag, grid3d->comm);
+	    }
+	}  /* end layer 0 send */
     
-    /* Everyone receives one block */
-    MPI_Status status;
-    int src = grid3d->iam / grid3d->npdep;  // which proc the data should come from
-    MPI_Recv(Btmp, nrhs * A3d->m_loc, SuperLU_MPI_DOUBLE_COMPLEX,
-	     src, grid3d->iam, grid3d->comm, &status);
-#endif
+	/* Wait for Irecv to complete */
+	MPI_Wait(&recv_req, &recv_status);
+
+    } /* else Z-major */
 
     // B <- colMajor(Btmp)
     matCopy(A3d->m_loc, nrhs, B, ldb, Btmp, A3d->m_loc);
