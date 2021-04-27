@@ -72,7 +72,7 @@ int dsparseTreeFactor_ASYNC_GPU(
     gEtreeInfo_t *gEtreeInfo, // global etree info
     superlu_dist_options_t *options,
     int_t *gIperm_c_supno,
-    int_t ldt,
+    int ldt,
     dsluGPU_t *sluGPU,
     d2Hreduce_t *d2Hred,
     HyP_t *HyP,
@@ -395,8 +395,8 @@ int dsparseTreeFactor_ASYNC_GPU(
             lPanelInfo_t *lPanelInfo = packLUInfo->lPanelInfo;
             int_t *lsub = lPanelInfo->lsub;
             int_t *usub = uPanelInfo->usub;
-            int_t *indirect = fNlists->indirect;
-            int_t *indirect2 = fNlists->indirect2;
+            int *indirect = fNlists->indirect;
+            int *indirect2 = fNlists->indirect2;
 
             /* Schur Complement Update */
 
