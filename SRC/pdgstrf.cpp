@@ -122,12 +122,6 @@ at the top-level directory.
 #include <dpct/dpct.hpp>
 #endif
 
-#if defined(GPU_ACC) || defined(HAVE_SYCL)
-extern int_t get_cublas_nb();
-extern int_t get_num_cuda_streams();
-extern void gemm_division_cpu_gpu (int *, int *, int *, int,
-                                    int, int, int *, int);
-#endif
 
 /* Various defininations     */
 /*

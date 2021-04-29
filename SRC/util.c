@@ -1270,7 +1270,7 @@ int_t reduceStat(PhaseType PHASE,
 /*---- end from 3D code p3dcomm.c ----*/
 
 
-#ifdef GPU_ACC
+#if defined(GPU_ACC) || defined(HAVE_SYCL)
 
 void
 gemm_division_cpu_gpu(

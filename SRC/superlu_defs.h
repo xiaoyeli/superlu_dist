@@ -1059,6 +1059,13 @@ extern int_t get_cublas_nb ();
 extern int_t get_num_cuda_streams ();
 #endif
 
+#ifdef HAVE_SYCL
+extern void gemm_division_cpu_gpu (int *, int *, int *, int,
+                                   int, int, int *, int);
+extern int_t get_cublas_nb ();
+extern int_t get_num_cuda_streams ();
+#endif
+
 extern int get_thread_per_process();
 extern int_t get_max_buffer_size ();
 extern int_t get_min (int_t *, int_t);
