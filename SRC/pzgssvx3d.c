@@ -1080,14 +1080,13 @@ pzgssvx3d (superlu_dist_options_t * options, SuperMatrix * A,
 			}
 		    }
 		    
-		    
 		    /* Perform a symbolic factorization on Pc*Pr*A*Pc' and set up
 		       the nonzero data structures for L & U. */
 #if ( PRNTlevel>=1 )
 		    if (!iam)
 			printf
 			    (".. symbfact(): relax %4d, maxsuper %4d, fill %4d\n",
-			     sp_ienv_dist (2), sp_ienv_dist (3), sp_ienv_dist (6));
+			     sp_ienv_dist(2), sp_ienv_dist(3), sp_ienv_dist(6));
 #endif
 		    t = SuperLU_timer_ ();
 		    if (!(Glu_freeable = (Glu_freeable_t *)
@@ -1109,9 +1108,9 @@ pzgssvx3d (superlu_dist_options_t * options, SuperMatrix * A,
 				    (long) Glu_persist->supno[n - 1] + 1);
 			    printf ("\tSize of G(L) %ld\n", (long) Glu_freeable->xlsub[n]);
 			    printf ("\tSize of G(U) %ld\n", (long) Glu_freeable->xusub[n]);
-			    printf ("\tint %d, short %d, float %d, double %d\n",
-				    sizeof (int_t), sizeof (short),
-				    sizeof (float), sizeof (double));
+			    printf ("\tint %lu, short %lu, float %lu, double %lu\n",
+				    sizeof(int_t), sizeof (short),
+				    sizeof(float), sizeof (double));
 			    printf
 				("\tSYMBfact (MB):\tL\\U %.2f\ttotal %.2f\texpansions %d\n",
 				 symb_mem_usage.for_lu * 1e-6,

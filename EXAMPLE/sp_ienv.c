@@ -67,7 +67,7 @@ at the top-level directory.
 #include <stdio.h>
 
 
-int_t
+int
 sp_ienv_dist(int_t ispec)
 {
     // printf(" this function called\n");

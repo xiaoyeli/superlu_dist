@@ -86,7 +86,7 @@ at the top-level directory.
 #elif defined (_LONGINT)
   typedef int64_t int_t;
   #define mpi_int_t   MPI_LONG_LONG_INT
-  #define IFMT "%lld"
+  #define IFMT "%ld"
 #else /* Default */
   typedef int int_t;
   #define mpi_int_t   MPI_INT
@@ -110,8 +110,9 @@ static __inline__ unsigned long long _rdtsc(void)
 }
 #endif
 
-#ifdef HAVE_CUDA
-#define GPU_ACC
+#ifdef HAVE_CUDA  
+#define GPU_ACC   // enable CUDA
+#include "cublas_utils.h"
 #endif
 
 /* MPI C complex datatype */
@@ -708,7 +709,7 @@ typedef struct {
 typedef struct {
     float for_lu;
     float total;
-    int_t expansions;
+    int expansions;
     int64_t nnzL, nnzU;
 } superlu_dist_mem_usage_t;
 
@@ -1009,7 +1010,7 @@ extern int_t estimate_bigu_size (int_t, int_t **, Glu_persist_t *,
 /* Auxiliary routines */
 extern double SuperLU_timer_ ();
 extern void   superlu_abort_and_exit_dist(char *);
-extern int_t  sp_ienv_dist (int_t);
+extern int    sp_ienv_dist (int_t);
 extern void   ifill_dist (int_t *, int_t, int_t);
 extern void   super_stats_dist (int_t, int_t *);
 extern void  get_diag_procs(int_t, Glu_persist_t *, gridinfo_t *, int_t *,

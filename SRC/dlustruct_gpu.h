@@ -33,7 +33,7 @@
 #define MAX_NCUDA_STREAMS 32
 
 static
-void check(cudaError_t result, char const *const func, const char *const file, int_t const line)
+void check(cudaError_t result, char const *const func, const char *const file, int const line)
 {
     if (result)
     {
@@ -232,9 +232,6 @@ extern void dsyncAllfunCallStreams(dsluGPU_t* sluGPU, SCT_t* SCT);
 extern int dfree_LUstruct_gpu (dLUstruct_gpu_t *A_gpu);
 
 //int freeSluGPU(dsluGPU_t *sluGPU);
-
-cublasStatus_t checkCublas(cublasStatus_t result);
-// cudaError_t checkCuda(cudaError_t result);
 
 extern void dPrint_matrix( char *desc, int_t m, int_t n, double *dA, int_t lda );
 

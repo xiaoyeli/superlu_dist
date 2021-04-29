@@ -33,7 +33,7 @@
 //}
 
 /*error reporting functions */
-static
+//static
 cudaError_t checkCuda(cudaError_t result)
 {
 #if defined(DEBUG) || defined(_DEBUG)
