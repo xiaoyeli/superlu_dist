@@ -213,9 +213,9 @@ endif()
 #---- SYCL libraries
 if (TPL_ENABLE_SYCLLIB)   ## want to use cuda
     message("-- Enabled support for SYCL.")
-
     set(HAVE_SYCL TRUE)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DHAVE_SYCL")
+    set(CMAKE_CXX_FLAGS "-DHAVE_SYCL ${CMAKE_CXX_FLAGS}")
+    set(CMAKE_C_FLAGS "-DHAVE_SYCL ${CMAKE_C_FLAGS}")
 endif()
 
 #--------------------- OpenMP ---------------------

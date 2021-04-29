@@ -188,7 +188,6 @@ void Scatter_GPU_kernel(
     int *indirect2_thread, int *IndirectJ1, int *IndirectJ3,
     int *ljb_ind, int *lib_ind)
 {
-
   /* initializing pointers */
   int_t *xsup = A_gpu->xsup;
   int_t *UrowindPtr = A_gpu->UrowindPtr;
@@ -769,13 +768,14 @@ get_mpi_process_per_gpu ()
 size_t
 get_acc_memory ()
 {
-
+printf("calling acc_memory\n");
 	size_t mfree, mtotal;
 	sycl::device syclDev(sycl::gpu_selector{});
 	mtotal = syclDev.get_info<cl::sycl::info::device::global_mem_size>();
+	mfree = mtotal; // mjc temporary for now 
 	//mjc this needs updating
 	//cudaMemGetInfo	(&mfree, &mtotal); 
-	mfree = 0; //mjc my place holder value
+	//mfree = 0; //mjc my place holder value
 
 #if 0
 	printf("Total memory %zu & free memory %zu\n", mtotal, mfree);

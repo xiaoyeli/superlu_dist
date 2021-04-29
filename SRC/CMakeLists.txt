@@ -100,7 +100,7 @@ if(enable_double)
     pdsymbfact_distdata.c
     ddistribute.c
     pddistribute.c
-    pdgstrf.c
+    pdgstrf.cpp
     dstatic_schedule.c
     pdgstrf2.c
     pdgstrs.c
