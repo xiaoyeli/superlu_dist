@@ -1,3 +1,7 @@
+#ifdef onesided
+#include "fompi.h"
+#endif
+
 #ifndef __SUPERLU_TREEREDUCE_IMPL
 #define __SUPERLU_TREEREDUCE_IMPL
 
@@ -39,7 +43,64 @@ namespace SuperLU_ASYNCOMM {
 
       this->cleanupBuffers();
     }
-	
+
+#ifdef onesided
+    template< typename T>
+    inline void TreeReduce_slu<T>::forwardMessageOneSide(T * locBuffer, Int msgSize, int* iam_row, int* RDcount, long* RDbase, int* maxrecvsz, int Pc){
+	    //double t1;
+        long RDsendoffset=0;
+        Int new_iProc;
+        //Int new_msgSize = msgSize + 1;
+        if(this->myRank_!=this->myRoot_){
+            //t1 = SuperLU_timer_();
+		    Int iProc = this->myRoot_;
+		    new_iProc = iProc%Pc;
+            msgSize = msgSize;
+            *maxrecvsz = *maxrecvsz;
+		    RDsendoffset = RDbase[new_iProc] + RDcount[new_iProc]*(*maxrecvsz);
+
+            //printf("I am %d, row_id %d, send to world rank %d/%d, RDcount[%d]=%d, RDbase[%d]=%ld,RDsendoffset=%ld, maxrecvsz=%d\n",iam, *iam_row, iProc, new_iProc, new_iProc, RDcount[new_iProc], new_iProc, RDbase[new_iProc], RDsendoffset, *maxrecvsz);
+		    //fflush(stdout);
+
+            //t1 = SuperLU_timer_();
+            //foMPI_Accumulate(locBuffer, new_msgSize, MPI_DOUBLE, new_iProc, RDsendoffset, new_msgSize, MPI_DOUBLE, foMPI_REPLACE, rd_winl);
+            foMPI_Put(locBuffer, msgSize, MPI_DOUBLE, new_iProc, RDsendoffset, msgSize, MPI_DOUBLE,rd_winl);
+            //foMPI_Put(locBuffer, new_msgSize, MPI_DOUBLE, new_iProc, RDsendoffset, new_msgSize, MPI_DOUBLE,rd_winl);
+		///foMPI_Accumulate(locBuffer, msgSize, this->type_, new_iProc, RDsendoffset, msgSize, this->type_, foMPI_REPLACE, rd_winl);
+		///foMPI_Accumulate(&my_RDtasktail, 1, MPI_DOUBLE, new_iProc, *iam_row, 1, MPI_DOUBLE, foMPI_SUM, rd_winl);
+		    RDcount[new_iProc] += 1;
+ 		    //printf("End---I am %d, row_id %d, send to world rank %d/%d \n",iam, *iam_row,iProc, new_iProc);
+		    //fflush(stdout);
+	}
+ }
+
+  template< typename T>
+    inline void TreeReduce_slu<T>::forwardMessageOneSideU(T * locBuffer, Int msgSize, int* iam_row, int* RDcount, long* RDbase, int* maxrecvsz, int Pc){
+        long RDsendoffset=0;
+        Int new_iProc;
+        int new_msgSize = msgSize * 2;
+        int new_maxrecvsz = *maxrecvsz *2;
+	    //double t1;
+        //t1 = SuperLU_timer_();
+        if(this->myRank_!=this->myRoot_){
+            //t1 = SuperLU_timer_();
+		    Int iProc = this->myRoot_;
+		    new_iProc = iProc%Pc;
+		    RDsendoffset = RDbase[new_iProc] + RDcount[new_iProc]*(new_maxrecvsz);
+
+            //printf("I row_id %d, send to world rank %d/%d, RDcount[%d]=%d, RDbase[%d]=%ld,RDsendoffset=%ld, maxrecvsz=%d\n",*iam_row, iProc, new_iProc, new_iProc, RDcount[new_iProc], new_iProc, RDbase[new_iProc], RDsendoffset, new_maxrecvsz);
+		    //fflush(stdout);
+
+            //foMPI_Accumulate(locBuffer, new_msgSize, MPI_DOUBLE, new_iProc, RDsendoffset, new_msgSize, MPI_DOUBLE, foMPI_REPLACE, rd_winl);
+            foMPI_Put(locBuffer, new_msgSize, MPI_DOUBLE, new_iProc, RDsendoffset, new_msgSize, MPI_DOUBLE,rd_winl);
+		    //foMPI_Accumulate(&my_RDtasktail, 1, MPI_DOUBLE, new_iProc, *iam_row, 1, MPI_DOUBLE, foMPI_SUM, rd_winl);
+		    RDcount[new_iProc] += 1;
+ 		    //printf("End---I row_id %d, send to world rank %d/%d \n", *iam_row,iProc, new_iProc);
+		    //fflush(stdout);
+	}
+ }
+#endif
+
   template< typename T> 
     inline void TreeReduce_slu<T>::forwardMessageSimple(T * locBuffer, Int msgSize){
         MPI_Status status;
@@ -63,7 +124,6 @@ namespace SuperLU_ASYNCOMM {
 		}
       }
 	
- 
 
   template< typename T> 
     inline void TreeReduce_slu<T>::allocateRequest(){

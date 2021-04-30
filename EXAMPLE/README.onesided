@@ -1,0 +1,59 @@
+    CPU onesided version
+    ====================
+The CPU onesided version is developed based on the foMPI library(https://spcl.inf.ethz.ch/Research/Parallel_Programming/foMPI_NA/), and it is currectly only supported by Cray Machines.
+
+1. Required libraries on Cray Machines (e.g., Cori Haswell).
+(1) foMPI
+    ----xpmem (module load xpmem)
+    ----dmapp (module load dmapp)
+    ----libmpitypes (auto installed within foMPI)
+    ----libtopodisc (auto installed within foMPI)
+
+    add "-fPIC" to CFLAGS (libmpitypes and libtopodisc)
+    make libfompi.a
+
+(2) libcrc (https://github.com/lammertb/libcrc)
+    git clone https://github.com/lammertb/libcrc.git (commit #f4a49c6)
+    ##### use commit number: b5e4186 #####
+    it reset --hard b5e4186
+    add "-fPIC" to CFLAGS
+    make
+    make install
+
+2. Add paths to superlu_dist build scripit.
+    cat run_cmake_build_haswell_fompi.sh
+        #!/bin/bash
+        ONESIDE=1
+        export CRAYPE_LINK_TYPE=dynamic
+        export PARMETIS_ROOT=/project/projectdirs/m2956/nanding/myprojects/superlu/parmetis403install
+        export PARMETIS_BUILD_DIR=${PARMETIS_ROOT}/
+        export MKL_ROOT=${MKLROOT}/lib/intel64
+        rm -rf CMakeCache.txt
+        rm -rf CMakeFiles
+        rm -rf CTestTestfile.cmake
+        rm -rf cmake_install.cmake
+        rm -rf DartConfiguration.tcl
+        if [[ ${ONESIDE} == 1 ]]; then
+            foMPI_path=/project/projectdirs/m2956/nanding/software/foMPI-0.2.1/
+            libcrc_path=/project/projectdirs/m2956/nanding/software/libcrc/
+            INC_ONESIDE="-I${foMPI_path} ${CRAY_DMAPP_INCLUDE_OPTS} ${CRAY_XPMEM_INCLUDE_OPTS} -I${libcrc_path}/include"
+            LIB_ONESIDE="${foMPI_path}/fompi.ar;-L${foMPI_path}/mpitypes/install/lib -lmpitypes;${CRAY_XPMEM_POST_LINK_OPTS} -lxpmem ;${CRAY_DMAPP_POST_LINK_OPTS} -ldmapp ;-L${foMPI_path}/libtopodisc -ltopodisc ;-L${libcrc_path}/lib -lcrc"
+        fi
+
+        cmake .. \
+            -DTPL_PARMETIS_INCLUDE_DIRS="${PARMETIS_ROOT}/include" \
+            -DTPL_PARMETIS_LIBRARIES="${PARMETIS_BUILD_DIR}/lib/libparmetis.a;${PARMETIS_BUILD_DIR}/lib/libmetis.a;${LIB_ONESIDE}" \
+            -Denable_blaslib=OFF \
+            -DBUILD_SHARED_LIBS=ON \
+            -DCMAKE_C_COMPILER=cc \
+            -DCMAKE_CXX_COMPILER=CC \
+            -DCMAKE_INSTALL_PREFIX=. \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_VERBOSE_MAKEFILE:BOOL=ON \
+            -DCMAKE_C_FLAGS="-g -O3 -fPIC -std=c11 -DPRNTlevel=1 -DPROFlevel=1 -DDEBUGlevel=0 -DHAVE_PARMETIS -Donesided ${INC_ONESIDE}" \
+            -DCMAKE_CXX_FLAGS="-Ofast -fPIC -std=c++11 -DAdd_ -DRELEASE ${INC_ONESIDE} -Donesided" \
+            -DTPL_BLAS_LIBRARIES="${MKL_ROOT}/libmkl_intel_lp64.so;${MKL_ROOT}/libmkl_sequential.so;${MKL_ROOT}/libmkl_core.so" \
+            -DTPL_ENABLE_CUDA=OFF
+        make pddrive3d
+3 on KNL
+export MPICH_GNI_FMA_SHARING=enabled

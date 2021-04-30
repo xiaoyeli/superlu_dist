@@ -593,6 +593,12 @@ pdgssvx3d (superlu_dist_options_t * options, SuperMatrix * A,
 	pxerr_dist ("pdgssvx3d", grid, -*info);
 	return;
     }
+
+    if (options->use_onesided == YES) {
+#ifndef onesided
+#define onesided
+#endif
+    }
     
 #if ( DEBUGlevel>=1 )
 	CHECK_MALLOC (iam, "Enter pdgssvx3d()");
@@ -857,11 +863,11 @@ pdgssvx3d (superlu_dist_options_t * options, SuperMatrix * A,
 			    SUPERLU_FREE(R1);
 			    SUPERLU_FREE(C1);
 			}
-#if ( PRNTlevel>=2 )
-			dmin = damch_dist ("Overflow");
-			dsum = 0.0;
-			dprod = 1.0;
-#endif
+//#if ( PRNTlevel>=2 )
+//			dmin = damch_dist ("Overflow");
+//			dsum = 0.0;
+//			dprod = 1.0;
+//#endif
 			if ( iinfo == 0 ) {
 			    if (job == 5) {
 				if ( Equil ) {
@@ -1164,9 +1170,14 @@ pdgssvx3d (superlu_dist_options_t * options, SuperMatrix * A,
 		   NOTE: the row permutation Pc*Pr is applied internally in the
 		   distribution routine. */
 		t = SuperLU_timer_ ();
-		dist_mem_use = pddistribute (Fact, n, A, ScalePermstruct,
+#ifdef onesided
+        dist_mem_use = pddistribute_onesided (Fact, n, A, ScalePermstruct,
+                                     Glu_freeable, LUstruct, grid,nrhs);
+#else
+        dist_mem_use = pddistribute (Fact, n, A, ScalePermstruct,
 					     Glu_freeable, LUstruct, grid);
-		stat->utime[DIST] = SuperLU_timer_ () - t;
+#endif
+        stat->utime[DIST] = SuperLU_timer_ () - t;
 		
 		/* Deallocate storage used in symbolic factorization. */
 		if (Fact != SamePattern_SameRowPerm)
@@ -1375,6 +1386,14 @@ pdgssvx3d (superlu_dist_options_t * options, SuperMatrix * A,
 #if 0 // Sherry: the following interface is needed by 3D trisolve.
 		pdgstrs_vecpar (n, LUstruct, ScalePermstruct, grid, X, m_loc,
 				fst_row, ldb, nrhs, SOLVEstruct, stat, info);
+#endif
+#ifdef  onesided
+        foMPI_Win_lock_all(0, bc_winl);
+        foMPI_Win_lock_all(0, rd_winl);
+        pdgstrs_onesided(n, LUstruct, ScalePermstruct, grid, X, m_loc,
+		                fst_row, ldb, nrhs, SOLVEstruct, stat, info);
+        foMPI_Win_unlock_all(bc_winl);
+        foMPI_Win_unlock_all(rd_winl);
 #else
 		pdgstrs(n, LUstruct, ScalePermstruct, grid, X, m_loc,
 			fst_row, ldb, nrhs, SOLVEstruct, stat, info);

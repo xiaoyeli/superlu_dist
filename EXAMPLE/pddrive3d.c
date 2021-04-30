@@ -21,6 +21,9 @@ at the top-level directory.
  */
 #include "superlu_ddefs.h"  
 
+#ifdef onesided
+#include "fompi.h"
+#endif
 /*! \brief
  *
  * <pre>
@@ -130,7 +133,11 @@ main (int argc, char *argv[])
     // MPI_Init (&argc, &argv);
     int required = MPI_THREAD_MULTIPLE;
     int provided;
+#ifdef onesided
+    foMPI_Init( &argc, &argv );
+#else
     MPI_Init_thread(&argc, &argv, required, &provided);
+#endif
     if (provided < required)
     {
         int rank;
@@ -305,6 +312,8 @@ main (int argc, char *argv[])
        options.DiagInv           = NO;
      */
     set_default_options_dist (&options);
+    options.IterRefine        = NOREFINE;
+    options.use_onesided          = YES;
 #if 0
     options.RowPerm = NOROWPERM;
     options.IterRefine = NOREFINE;

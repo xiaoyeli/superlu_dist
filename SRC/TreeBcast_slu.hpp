@@ -5,7 +5,9 @@
 // #include "blas.hpp"
 // #include "timer.h"
 #include "superlu_defs.h"
-
+#ifdef onesided
+#include "onesided.h"
+#endif
 #include <vector>
 #include <list>
 #include <map>
@@ -104,9 +106,12 @@ namespace SuperLU_ASYNCOMM {
         virtual void cleanupBuffers();
 
 		virtual void allocateRequest();
-		virtual void forwardMessageSimple(T * locBuffer, Int msgSize);	
-		virtual void waitSendRequest();	
-
+		virtual void forwardMessageSimple(T * locBuffer, Int msgSize);
+		virtual void waitSendRequest();
+#ifdef onesided
+        virtual void forwardMessageOneSide(T * locBuffer, Int msgSize,  int* iam_col, int *BCcount, long* BCbase, int* maxrecvsz, int Pc);
+	    virtual void forwardMessageOneSideU(T * locBuffer, Int msgSize,  int* iam_col, int *BCcount, long* BCbase, int* maxrecvsz, int Pc);
+#endif
     };
 
 

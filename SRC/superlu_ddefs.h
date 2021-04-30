@@ -414,9 +414,32 @@ extern void  pdgssvx_ABglobal(superlu_dist_options_t *, SuperMatrix *,
 			      dScalePermstruct_t *, double *,
 			      int, int, gridinfo_t *, dLUstruct_t *, double *,
 			      SuperLUStat_t *, int *);
+#ifdef onesided
+extern float pddistribute_onesided(fact_t, int_t, SuperMatrix *,
+			 dScalePermstruct_t *, Glu_freeable_t *,
+			 dLUstruct_t *, gridinfo_t *, int);
+extern void dlsum_fmod_inv_master_onesided(double *, double *, double *, double *,
+                                  int, int, int_t , int_t *, int_t,
+                                  int_t *, gridinfo_t *, dLocalLU_t *,
+                                  SuperLUStat_t **, int_t, int_t, int_t, int_t, int, int,
+                                  int*, int*, long*, int*, int*, long*, int,int);
+extern void dlsum_bmod_inv_master_onesided(double *, double *, double *, double *,
+                                  int, int_t, int_t *, int_t *, Ucb_indptr_t **,
+                                  int_t **, int_t *, gridinfo_t *, dLocalLU_t *,
+                                  SuperLUStat_t **, int_t, int_t, int, int,
+		                          int*, int*, long*, int*, int*, long*, int,int);
+#endif
 extern float pddistribute(fact_t, int_t, SuperMatrix *,
 			 dScalePermstruct_t *, Glu_freeable_t *,
 			 dLUstruct_t *, gridinfo_t *);
+extern void dlsum_bmod_inv_master(double *, double *, double *, double *,
+                                  int, int_t, int_t *, int_t *, Ucb_indptr_t **,
+                                  int_t **, int_t *, gridinfo_t *, dLocalLU_t *,
+                                  SuperLUStat_t **, int_t, int_t, int, int);
+extern void dlsum_fmod_inv_master(double *, double *, double *, double *,
+                                  int, int, int_t , int_t *, int_t,
+                                  int_t *, gridinfo_t *, dLocalLU_t *,
+                                  SuperLUStat_t **, int_t, int_t, int_t, int_t, int, int);
 extern void  pdgssvx(superlu_dist_options_t *, SuperMatrix *,
 		     dScalePermstruct_t *, double *,
 		     int, int, gridinfo_t *, dLUstruct_t *,
@@ -458,6 +481,21 @@ extern int_t pdgstrf(superlu_dist_options_t *, int, int, double anorm,
 /* Solve related */
 extern void pdgstrs_Bglobal(int_t, dLUstruct_t *, gridinfo_t *,
 			     double *, int_t, int, SuperLUStat_t *, int *);
+
+#ifdef onesided
+extern void pdgstrs_onesided(int_t, dLUstruct_t *, dScalePermstruct_t *, gridinfo_t *,
+		    double *, int_t, int_t, int_t, int, dSOLVEstruct_t *,
+		    SuperLUStat_t *, int *);
+extern int_t
+pdReDistribute_B_to_X(double *, int_t , int , int_t ,
+                      int_t , int_t *, double *, dScalePermstruct_t *,
+		      Glu_persist_t *, gridinfo_t *, dSOLVEstruct_t *);
+extern int_t pdReDistribute_X_to_B(int_t , double *, int_t , int_t , int_t ,
+		      int_t , double *, int_t *, dScalePermstruct_t *,
+		      Glu_persist_t *, gridinfo_t *, dSOLVEstruct_t *);
+#endif
+
+
 extern void pdgstrs(int_t, dLUstruct_t *, dScalePermstruct_t *, gridinfo_t *,
 		    double *, int_t, int_t, int_t, int, dSOLVEstruct_t *,
 		    SuperLUStat_t *, int *);
@@ -467,10 +505,7 @@ extern void pdgstrf2_trsm(superlu_dist_options_t * options, int_t k0, int_t k,
 			  SuperLUStat_t *, int *info);
 extern void pdgstrs2_omp(int_t k0, int_t k, Glu_persist_t *, gridinfo_t *,
 			 dLocalLU_t *, Ublock_info_t *, SuperLUStat_t *);
-extern int_t pdReDistribute_B_to_X(double *B, int_t m_loc, int nrhs, int_t ldb,
-				   int_t fst_row, int_t *ilsum, double *x,
-				   dScalePermstruct_t *, Glu_persist_t *,
-				   gridinfo_t *, dSOLVEstruct_t *);
+
 extern void dlsum_fmod(double *, double *, double *, double *,
 		       int, int, int_t , int_t *, int_t, int_t, int_t,
 		       int_t *, gridinfo_t *, dLocalLU_t *,
@@ -484,18 +519,10 @@ extern void dlsum_fmod_inv(double *, double *, double *, double *,
 		       int, int_t , int_t *,
 		       int_t *, gridinfo_t *, dLocalLU_t *,
 		       SuperLUStat_t **, int_t *, int_t *, int_t, int_t, int_t, int_t, int, int);
-extern void dlsum_fmod_inv_master(double *, double *, double *, double *,
-		       int, int, int_t , int_t *, int_t,
-		       int_t *, gridinfo_t *, dLocalLU_t *,
-		       SuperLUStat_t **, int_t, int_t, int_t, int_t, int, int);
 extern void dlsum_bmod_inv(double *, double *, double *, double *,
                        int, int_t, int_t *, int_t *, Ucb_indptr_t **,
                        int_t **, int_t *, gridinfo_t *, dLocalLU_t *,
 		       SuperLUStat_t **, int_t *, int_t *, int_t, int_t, int, int);
-extern void dlsum_bmod_inv_master(double *, double *, double *, double *,
-                       int, int_t, int_t *, int_t *, Ucb_indptr_t **,
-                       int_t **, int_t *, gridinfo_t *, dLocalLU_t *,
-		       SuperLUStat_t **, int_t, int_t, int, int);
 
 extern void pdgsrfs(int_t, SuperMatrix *, double, dLUstruct_t *,
 		    dScalePermstruct_t *, gridinfo_t *,

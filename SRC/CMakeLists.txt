@@ -95,6 +95,7 @@ if(enable_double)
     dstatic_schedule.c
     pdgstrf2.c
     pdgstrs.c
+    pdgstrs_onesided.c
     pdgstrs1.c
     pdgstrs_lsum.c
     pdgstrs_Bglobal.c
@@ -107,7 +108,6 @@ if(enable_double)
     dnrformat_loc3d.c 
     pdgstrf3d.c 
     dtreeFactorization.c
-    dtreeFactorizationGPU.c
     dgather.c
     dscatter3d.c
     pd3dcomm.c
@@ -115,7 +115,6 @@ if(enable_double)
     dcommunication_aux.c 
     dtrfCommWrapper.c
     dsuperlu_blas.c
-    dsuperlu_gpu.cu 
   )
 if (HAVE_COMBBLAS)
   list(APPEND sources d_c2cpp_GetHWPM.cpp dHWPM_CombBLAS.hpp)

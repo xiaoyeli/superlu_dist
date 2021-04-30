@@ -33,6 +33,9 @@ at the top-level directory.
  * File name:	superlu_defs.h
  * Purpose:     Definitions which are precision-neutral
  */
+#ifdef onesided
+#include "onesided.h"
+#endif
 #ifdef _CRAY
     #include <fortran.h>
 #endif
@@ -217,9 +220,14 @@ typedef MPI_C_DOUBLE_COMPLEX  SuperLU_MPI_DOUBLE_COMPLEX;
 #define LkVAL    14
 #define LkkDIAG  15
     /* For triangular solves. */
+#ifdef onesided
+#define XK_H     3 /* The header preceding each X block. */
+#define LSUM_H   3  /* The header preceding each MOD block. */
+#else
 #define XK_H     2  /* The header preceding each X block. */
 #define LSUM_H   2  /* The header preceding each MOD block. */
-#define GSUM     20 
+#endif
+#define GSUM     20
 #define Xk       21
 #define Yk       22
 #define LSUM     23    
@@ -692,6 +700,7 @@ typedef struct {
     yes_no_t      lookahead_etree; /* use etree computed from the
 				      serial symbolic factorization */
     yes_no_t      SymPattern;      /* symmetric factorization          */
+    yes_no_t      use_onesided;      /* use foMPI on Cray Aries          */
 } superlu_dist_options_t;
 
 typedef struct {
@@ -1094,7 +1103,13 @@ typedef void* StdList;
 #endif
 
 // typedef enum {NO, YES}  yes_no_t;
-extern RdTree   RdTree_Create(MPI_Comm comm, int* ranks, int rank_cnt, int msgSize, double rseed, char precision);  
+#ifdef onesided
+extern RdTree   RdTree_Create_oneside(MPI_Comm comm, int* ranks, int rank_cnt, int msgSize, double rseed, char precision, int* BufSize, int Pc);
+extern void 	RdTree_forwardMessageOneSide(RdTree Tree, double* localBuffer, int msgSize, char precision, int* RDlocal_buf_id, int* RDcount, long* RDbase, int* maxrecvsz, int Pc);
+extern BcTree   BcTree_Create_oneside(MPI_Comm comm, int* ranks, int rank_cnt, int msgSize, double rseed, char precision, int* BufSize, int Pc);
+extern void 	BcTree_forwardMessageOneSide(BcTree Tree, double* localBuffer, int msgSize, char precision, int* BClocal_buf_id, int* BCcount, long* BCbase, int* maxrecvsz, int Pc );
+#endif
+extern RdTree   RdTree_Create(MPI_Comm comm, int* ranks, int rank_cnt, int msgSize, double rseed, char precision);
 extern void   	RdTree_Destroy(RdTree Tree, char precision);
 extern void 	RdTree_SetTag(RdTree Tree, int tag, char precision);
 extern yes_no_t RdTree_IsRoot(RdTree Tree, char precision);
@@ -1104,7 +1119,7 @@ extern int  	RdTree_GetDestCount(RdTree Tree, char precision);
 extern int  	RdTree_GetMsgSize(RdTree Tree, char precision);
 extern void 	RdTree_waitSendRequest(RdTree Tree, char precision);
 
-extern BcTree   BcTree_Create(MPI_Comm comm, int* ranks, int rank_cnt, int msgSize, double rseed, char precision);  
+extern BcTree   BcTree_Create(MPI_Comm comm, int* ranks, int rank_cnt, int msgSize, double rseed, char precision);
 extern void   	BcTree_Destroy(BcTree Tree, char precision);
 extern void 	BcTree_SetTag(BcTree Tree, int tag, char precision);
 extern yes_no_t BcTree_IsRoot(BcTree Tree, char precision);
