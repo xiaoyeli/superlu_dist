@@ -953,12 +953,11 @@ typedef struct xtrsTimer_t
 extern "C" {
 #endif
 
-extern void   superlu_gridinit(MPI_Comm, int_t, int_t, gridinfo_t *);
-extern void   superlu_gridmap(MPI_Comm, int_t, int_t, int_t [], int_t,
-			      gridinfo_t *);
+extern void   superlu_gridinit(MPI_Comm, int, int, gridinfo_t *);
+extern void   superlu_gridmap(MPI_Comm, int, int, int [], int, gridinfo_t *);
 extern void   superlu_gridexit(gridinfo_t *);
-extern void   superlu_gridinit3d(MPI_Comm Bcomm,  int_t nprow,
-                               int_t npcol, int_t npdep, gridinfo3d_t *grid) ;
+extern void   superlu_gridinit3d(MPI_Comm Bcomm,  int nprow, int npcol, int npdep,
+				 gridinfo3d_t *grid) ;
 extern void   superlu_gridexit3d(gridinfo3d_t *grid);
 
 extern void   set_default_options_dist(superlu_dist_options_t *);
@@ -1076,6 +1075,8 @@ extern int_t get_cublas_nb ();
 extern int_t get_num_cuda_streams ();
 #endif
 
+extern double estimate_cpu_time(int m, int n , int k);
+
 extern int get_thread_per_process();
 extern int_t get_max_buffer_size ();
 extern int_t get_min (int_t *, int_t);
@@ -1133,6 +1134,7 @@ extern int_t 		StdList_Popfront(StdList lst);
 extern yes_no_t StdList_Find(StdList lst, int_t dat);
 extern int_t 	   	StdList_Size(StdList lst);
 yes_no_t 		StdList_Empty(StdList lst);
+
 
 /*==== For 3D code ====*/
     

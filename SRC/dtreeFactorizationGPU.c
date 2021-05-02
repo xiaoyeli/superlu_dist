@@ -19,6 +19,8 @@
 //#include "cblas.h"
 #endif
 
+#ifdef GPU_ACC ///////////////// enable GPU
+
 /* 
 /-- num_u_blks--\ /-- num_u_blks_Phi --\
 ----------------------------------------
@@ -732,3 +734,5 @@ int dsparseTreeFactor_ASYNC_GPU(
 
     return 0;
 } /* end dsparseTreeFactor_ASYNC_GPU */
+
+#endif // matching: enable GPU

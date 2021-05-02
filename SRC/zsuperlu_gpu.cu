@@ -32,21 +32,6 @@
 //	                 const int incX, double *Y, const int incY);
 //}
 
-/*error reporting functions */
-//static
-cudaError_t checkCuda(cudaError_t result)
-{
-#if defined(DEBUG) || defined(_DEBUG)
-	if (result != cudaSuccess)
-	{
-		fprintf(stderr, "CUDA Runtime Error: %s\n", cudaGetErrorString(result));
-		assert(result == cudaSuccess);
-	}
-#endif
-	return result;
-}
-
-
 // cublasStatus_t checkCublas(cublasStatus_t result)
 // {
 // #if defined(DEBUG) || defined(_DEBUG)

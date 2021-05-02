@@ -361,14 +361,14 @@ pzgstrf2_trsm
 
 }  /* PZGSTRF2_trsm */
 
-	
+
 
 /*****************************************************************************
  * The following functions are for the new pdgstrf2_ztrsm in the 3D code.
  *****************************************************************************/
 static
-int_t LpanelUpdate(int_t off0,  int_t nsupc, doublecomplex* ublk_ptr, int_t ld_ujrow,
-                   doublecomplex* lusup, int_t nsupr, SCT_t* SCT)
+int_t LpanelUpdate(int off0,  int nsupc, doublecomplex* ublk_ptr, int ld_ujrow,
+                   doublecomplex* lusup, int nsupr, SCT_t* SCT)
 {
     int_t l = nsupr - off0;
     doublecomplex alpha = {1.0, 0.0};
@@ -379,30 +379,20 @@ int_t LpanelUpdate(int_t off0,  int_t nsupc, doublecomplex* ublk_ptr, int_t ld_u
     for (int i = 0; i < CEILING(l, GT); ++i)
     {
         int_t off = i * GT;
-        int_t len = SUPERLU_MIN(GT, l - i * GT);
-#if 1
-  #if defined (USE_VENDOR_BLAS)
-        ztrsm_ ("R", "U", "N", "N", &len, &nsupc, &alpha,
-		ublk_ptr, &ld_ujrow, &lusup[off0 + off], &nsupr,
-		1, 1, 1, 1);
-  #else
-        ztrsm_ ("R", "U", "N", "N", &len, &nsupc, &alpha,
-		ublk_ptr, &ld_ujrow, &lusup[off0 + off], &nsupr);
-  #endif
-#else
-        cblas_ztrsm (CblasColMajor, CblasRight, CblasUpper, CblasNoTrans, CblasNonUnit,
-                     len, nsupc, (void*) &alpha, ublk_ptr, ld_ujrow, &lusup[off0 + off], nsupr);
-#endif
+        int len = SUPERLU_MIN(GT, l - i * GT);
+	
+        superlu_ztrsm("R", "U", "N", "N", len, nsupc, alpha,
+		      ublk_ptr, ld_ujrow, &lusup[off0 + off], nsupr);
 
     } /* for i = ... */
 
     t1 = SuperLU_timer_() - t1;
 
-    SCT->trf2_flops += (double) l * (double)nsupc * (double)nsupc;
+    SCT->trf2_flops += (double) l * (double) nsupc * (double)nsupc;
     SCT->trf2_time += t1;
     SCT->L_PanelUpdate_tl += t1;
     return 0;
-} /* LpanelUpdate */
+}
 
 #pragma GCC push_options
 #pragma GCC optimize ("O0")
@@ -422,8 +412,8 @@ void Local_Zgstrf2(superlu_dist_options_t *options, int_t k, double thresh,
     int_t jfst = FstBlockC (k);
     int_t jlst = FstBlockC (k + 1);
     doublecomplex *lusup = Llu->Lnzval_bc_ptr[lk];
-    int_t nsupc = SuperSize (k);
-    int_t nsupr;
+    int nsupc = SuperSize (k);
+    int nsupr;
     if (Llu->Lrowind_bc_ptr[lk])
         nsupr = Llu->Lrowind_bc_ptr[lk][1];
     else
@@ -431,11 +421,11 @@ void Local_Zgstrf2(superlu_dist_options_t *options, int_t k, double thresh,
     doublecomplex *ublk_ptr = BlockUFactor;
     doublecomplex *ujrow = BlockUFactor;
     int_t luptr = 0;                  /* Point_t to the diagonal entries. */
-    int_t cols_left = nsupc;          /* supernode size */
+    int cols_left = nsupc;          /* supernode size */
     int_t u_diag_cnt = 0;
     int_t ld_ujrow = nsupc;       /* leading dimension of ujrow */
-    int_t incx = 1;
-    int_t incy = ld_ujrow;
+    int incx = 1;
+    int incy = ld_ujrow;
 
     for (int_t j = 0; j < jlst - jfst; ++j)   /* for each column in panel */
     {
@@ -471,7 +461,7 @@ void Local_Zgstrf2(superlu_dist_options_t *options, int_t k, double thresh,
         {
             *info = j + jfst + 1;
         }
-        else                /* Scale the j-th column within diagonal block. */
+        else                /* Scale the j-th column. */
         {
             doublecomplex temp;
             slud_z_div(&temp, &one, &ujrow[0]);
@@ -489,7 +479,6 @@ void Local_Zgstrf2(superlu_dist_options_t *options, int_t k, double thresh,
 	    /* Rank-1 update */
             superlu_zger(l, cols_left, alpha, &lusup[luptr + 1], incx,
                          &ujrow[ld_ujrow], incy, &lusup[luptr + nsupr + 1], nsupr);
-	    
             stat->ops[FACT] += 8 * l * cols_left;
         }
 
@@ -500,8 +489,8 @@ void Local_Zgstrf2(superlu_dist_options_t *options, int_t k, double thresh,
 
 
     //int_t thread_id = omp_get_thread_num();
-    // SCT->Local_Dgstrf2_Thread_tl[thread_id * CACHE_LINE_SIZE] += SuperLU_timer_() - t1;
-} /* Local_Zgstrf2 */
+    // SCT->Local_Dgstrf2_Thread_tl[thread_id * CACHE_LINE_SIZE] += (double) ( SuperLU_timer_() - t1);
+}
 
 #pragma GCC pop_options
 /************************************************************************/
@@ -930,4 +919,4 @@ void pzgstrs2_omp(int_t k0, int_t k, int_t* Lsub_buf,
     SCT->PDGSTRS2_tl += (double) ( SuperLU_timer_() - t1);
 } /* pdgstrs2_omp new version from Piyush */
 
-#endif
+#endif /* there are 2 versions of pzgstrs2_omp */

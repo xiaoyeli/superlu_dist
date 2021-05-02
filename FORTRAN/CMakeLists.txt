@@ -6,7 +6,8 @@ set(headers
     ${CMAKE_INSTALL_PREFIX}/FORTRAN/superlupara_mod.mod
     )
 
-set(sources "")  # initialize an empty set
+set(sources "superlu_c2f_wrap.c")  # initialize precision-independent file
+
 if(enable_double)
   list(APPEND sources c2f_dcreate_matrix_x_b.c superlu_c2f_dwrap.c)
 endif()

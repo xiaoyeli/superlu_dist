@@ -35,14 +35,14 @@ MPI_Datatype SuperLU_MPI_DOUBLE_COMPLEX = MPI_DATATYPE_NULL;
  */
 void superlu_gridinit(MPI_Comm Bcomm, /* The base communicator upon which
 					 the new grid is formed. */
-		      int_t nprow, int_t npcol, gridinfo_t *grid)
+		      int nprow, int npcol, gridinfo_t *grid)
 {
     int Np = nprow * npcol;
-    int_t *usermap;
+    int *usermap;
     int i, j, info;
 
     /* Make a list of the processes in the new communicator. */
-    usermap = (int_t *) SUPERLU_MALLOC(Np*sizeof(int_t));
+    usermap = SUPERLU_MALLOC(Np*sizeof(int));
     for (j = 0; j < npcol; ++j)
 	for (i = 0; i < nprow; ++i) usermap[j*nprow+i] = i*npcol+j;
     
@@ -73,12 +73,12 @@ void superlu_gridinit(MPI_Comm Bcomm, /* The base communicator upon which
 void superlu_gridmap(
 		     MPI_Comm Bcomm, /* The base communicator upon which
 					the new grid is formed. */
-		     int_t nprow,
-		     int_t npcol,
-		     int_t usermap[], /* usermap(i,j) holds the process
+		     int nprow,
+		     int npcol,
+		     int usermap[], /* usermap(i,j) holds the process
 					 number to be placed in {i,j} of
 					 the process grid.  */
-		     int_t ldumap,    /* The leading dimension of the
+		     int ldumap,    /* The leading dimension of the
 					 2D array usermap[].  */
 		     gridinfo_t *grid)
 {

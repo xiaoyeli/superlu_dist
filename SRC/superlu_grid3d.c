@@ -13,9 +13,9 @@
 void superlu_gridmap3d(
     MPI_Comm Bcomm, /* The base communicator upon which
                     the new grid is formed. */
-    int_t nprow,
-    int_t npcol,
-    int_t npdep,
+    int nprow,
+    int npcol,
+    int npdep,
     gridinfo3d_t *grid);
 
 
@@ -23,11 +23,9 @@ void superlu_gridmap3d(
  */
 void superlu_gridinit3d(MPI_Comm Bcomm, /* The base communicator upon which
 					   the new grid is formed. */
-                        int_t nprow, int_t npcol, int_t npdep,
-			gridinfo3d_t *grid)
+                        int nprow, int npcol, int npdep, gridinfo3d_t *grid)
 {
     int Np = nprow * npcol * npdep;
-    int_t *usermap;
     int i, j, info;
 
     /* Make a list of the processes in the new communicator. */
@@ -55,9 +53,9 @@ void superlu_gridinit3d(MPI_Comm Bcomm, /* The base communicator upon which
 void superlu_gridmap3d(
     MPI_Comm Bcomm, /* The base communicator upon which
 		       the new grid is formed. */
-    int_t nprow,
-    int_t npcol,
-    int_t npdep,
+    int nprow,
+    int npcol,
+    int npdep,
     gridinfo3d_t *grid)
 {
     MPI_Group mpi_base_group, superlu_grp;
