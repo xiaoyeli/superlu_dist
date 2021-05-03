@@ -13,6 +13,7 @@
 #endif
 
 #include <stdio.h> /*for printfs*/
+#include <stdlib.h> /*for getline*/
 
 double CPU_CLOCK_RATE;
 /*for sorting structures */

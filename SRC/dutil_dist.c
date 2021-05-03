@@ -489,8 +489,8 @@ dGenXtrue_dist(int_t n, int_t nrhs, double *x, int_t ldx)
     int  i, j;
     for (j = 0; j < nrhs; ++j)
 	for (i = 0; i < n; ++i) {
-	    if ( i % 2 ) x[i + j*ldx] = 1.0;/* + (double)(i+1.)/n;*/
-	    else x[i + j*ldx] = 1.0;
+	    if ( i % 2 ) x[i + j*ldx] = 1.0 + (double)(i+1.)/n;
+	    else x[i + j*ldx] = 1.0 - (double)(i+1.)/n;
 	}
 }
 
@@ -710,7 +710,7 @@ void dDumpLblocks(int iam, int_t nsupers, gridinfo_t *grid,
 		}
 
 	if(grid->iam==0){
-		fprintf(fp, "%d %d %d\n", n,n,nnzL);
+		fprintf(fp, "%d %d " IFMT "\n", n,n,nnzL);
 	}
 
      ncb = nsupers / grid->npcol;

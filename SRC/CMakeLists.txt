@@ -54,12 +54,14 @@ set(sources
   communication_aux.c
   treeFactorization.c
   sec_structs.c
-  cublas_utils.c
 )
+if (HAVE_CUDA)
+  list(APPEND sources cublas_utils.c)
+endif()
+
 if (MSVC)
   list(APPEND sources wingetopt.c)
 endif ()
-
 
 set_source_files_properties(superlu_timer.c PROPERTIES COMPILE_FLAGS -O0)
 
@@ -116,11 +118,14 @@ if(enable_double)
     dtrfCommWrapper.c
     dsuperlu_blas.c
   )
+if (HAVE_CUDA)
+  list(APPEND sources dsuperlu_gpu.cu)
+endif()
 if (HAVE_COMBBLAS)
   list(APPEND sources d_c2cpp_GetHWPM.cpp dHWPM_CombBLAS.hpp)
 endif()
 
-endif() ## enable double
+endif() ########## enable double
 
 
 if(enable_complex16)
@@ -176,11 +181,15 @@ if(enable_complex16)
     ztrfCommWrapper.c
     zsuperlu_blas.c
   )
+if (HAVE_CUDA)
+    list(APPEND sources zsuperlu_gpu.cu)
+endif()
 if (HAVE_COMBBLAS)
-  list(APPEND sources z_c2cpp_GetHWPM.cpp zHWPM_CombBLAS.hpp)
+    list(APPEND sources z_c2cpp_GetHWPM.cpp zHWPM_CombBLAS.hpp)
 endif()
 
-endif() ## enable compex16
+endif() ######### enable compex16
+
 
 add_library(superlu_dist ${sources} ${HEADERS})
 set(targets superlu_dist)

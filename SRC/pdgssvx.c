@@ -490,7 +490,6 @@ at the top-level directory.
  *
  * info    (output) int*
  *         = 0: successful exit
- *         < 0: if info = -i, the i-th argument had an illegal value
  *         > 0: if info = i, and i is
  *             <= A->ncol: U(i,i) is exactly zero. The factorization has
  *                been completed, but the factor U is exactly singular,
@@ -1065,7 +1064,7 @@ pdgssvx(superlu_dist_options_t *options, SuperMatrix *A,
                    the nonzero data structures for L & U. */
 #if ( PRNTlevel>=1 )
                 if ( !iam ) {
-		    printf(".. symbfact(): relax " IFMT ", maxsuper " IFMT ", fill " IFMT "\n",
+		    printf(".. symbfact(): relax %d, maxsuper %d, fill %d\n",
 		          sp_ienv_dist(2), sp_ienv_dist(3), sp_ienv_dist(6));
 		    fflush(stdout);
 	        }
@@ -1087,10 +1086,10 @@ pdgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 		    	printf("\tNo of supers " IFMT "\n", Glu_persist->supno[n-1]+1);
 		    	printf("\tSize of G(L) " IFMT "\n", Glu_freeable->xlsub[n]);
 		    	printf("\tSize of G(U) " IFMT "\n", Glu_freeable->xusub[n]);
-		    	printf("\tint %d, short %d, float %d, double %d\n",
-			       (int) sizeof(int_t), (int) sizeof(short),
-        		       (int) sizeof(float), (int) sizeof(double));
-		    	printf("\tSYMBfact (MB):\tL\\U %.2f\ttotal %.2f\texpansions " IFMT "\n",
+		    	printf("\tint %lu, short %lu, float %lu, double %lu\n",
+			        sizeof(int_t), sizeof(short),
+        		        sizeof(float), sizeof(double));
+		    	printf("\tSYMBfact (MB):\tL\\U %.2f\ttotal %.2f\texpansions %d\n",
 			   	symb_mem_usage.for_lu*1e-6,
 			   	symb_mem_usage.total*1e-6,
 			   	symb_mem_usage.expansions);

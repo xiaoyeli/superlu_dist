@@ -32,21 +32,6 @@
 //	                 const int incX, double *Y, const int incY);
 //}
 
-/*error reporting functions */
-static
-cudaError_t checkCuda(cudaError_t result)
-{
-#if defined(DEBUG) || defined(_DEBUG)
-	if (result != cudaSuccess)
-	{
-		fprintf(stderr, "CUDA Runtime Error: %s\n", cudaGetErrorString(result));
-		assert(result == cudaSuccess);
-	}
-#endif
-	return result;
-}
-
-
 // cublasStatus_t checkCublas(cublasStatus_t result)
 // {
 // #if defined(DEBUG) || defined(_DEBUG)
@@ -924,7 +909,6 @@ int zinitSluGPU3D_t(
     int_t ldt             /* NSUP read from sp_ienv(3) */
 )
 {
-    gridinfo_t* grid = &(grid3d->grid2d);
     checkCudaErrors(cudaDeviceReset ())     ;
     Glu_persist_t *Glu_persist = LUstruct->Glu_persist;
     zLocalLU_t *Llu = LUstruct->Llu;
@@ -1133,7 +1117,7 @@ int zreduceGPUlu(
 } /* zreduceGPUlu */
 
 
-int zwaitGPUscu(int_t streamId, zsluGPU_t *sluGPU, SCT_t *SCT)
+int zwaitGPUscu(int streamId, zsluGPU_t *sluGPU, SCT_t *SCT)
 {
     double ttx = SuperLU_timer_();
     cudaStreamSynchronize(sluGPU->funCallStreams[streamId]);
@@ -1141,7 +1125,7 @@ int zwaitGPUscu(int_t streamId, zsluGPU_t *sluGPU, SCT_t *SCT)
     return 0;
 }
 
-int_t zsendLUpanelGPU2HOST(
+int zsendLUpanelGPU2HOST(
     int_t k0,
     d2Hreduce_t* d2Hred,
     zsluGPU_t *sluGPU

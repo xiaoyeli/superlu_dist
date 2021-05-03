@@ -60,7 +60,7 @@ int main(int argc, char *argv[])
     int_t    *asub, *xa;
     int_t    i, j, m, n;
     int      nprow, npcol, ldumap, p;
-    int_t    usermap[6];
+    int    usermap[6];
     int      iam, info, ldb, ldx, nprocs;
     int      nrhs = 1;   /* Number of right-hand side. */
     int ii, omp_mpi_level;

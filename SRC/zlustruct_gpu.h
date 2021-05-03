@@ -12,17 +12,14 @@
 
 #pragma once // so that this header file is included onle once
 
-// #ifdef DEBUG
-// #include <assert.h>
-// #endif
-// #include <math.h>
-// #include "mkl.h"
+#include "superlu_zdefs.h"
 
-// #define USE_VENDOR_BLAS
+#ifdef GPU_ACC // enable GPU
+
+// #include "mkl.h"
 
 #include <cublas_v2.h>
 #include <cuda_runtime.h>
-#include "superlu_zdefs.h"
 // #include "sec_structs.h"
 // #include "supernodal_etree.h"
 
@@ -32,7 +29,7 @@
 #define MAX_NCUDA_STREAMS 32
 
 static
-void check(cudaError_t result, char const *const func, const char *const file, int_t const line)
+void check(cudaError_t result, char const *const func, const char *const file, int const line)
 {
     if (result)
     {
@@ -174,8 +171,6 @@ extern int zsparseTreeFactor_ASYNC_GPU(
     double thresh, SCT_t *SCT, int tag_ub,
     int *info);
 
-extern double estimate_cpu_time(int m, int n , int k);
-
 int zinitD2Hreduce(
     int next_k,
     d2Hreduce_t* d2Hred,
@@ -232,9 +227,6 @@ extern int zfree_LUstruct_gpu (zLUstruct_gpu_t *A_gpu);
 
 //int freeSluGPU(zsluGPU_t *sluGPU);
 
-cublasStatus_t checkCublas(cublasStatus_t result);
-// cudaError_t checkCuda(cudaError_t result);
-
 extern void zPrint_matrix( char *desc, int_t m, int_t n, doublecomplex *dA, int_t lda );
 
 /*to print out various statistics*/
@@ -244,4 +236,4 @@ void zprintGPUStats(zLUstruct_gpu_t *A_gpu);
 }
 #endif
 
-//#undef DEBUG
+#endif // matching: enable GPU

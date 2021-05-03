@@ -192,11 +192,11 @@ typedef struct {
 typedef struct NRformat_loc3d
 {
     NRformat_loc* A_nfmt; 
-    void* B;   // distributed on 3D process grid
+    void* B3d;  // on the entire 3D process grid
     int  ldb;
     int nrhs;
     int m_loc; 
-    void* B2d; // on 2D process layer Grid_0
+    void* B2d;  // on 2D process layer Grid_0
 
     int* row_counts_int; // these counts are for {A, B} distributed on 2D layer 0
     int* row_disp;

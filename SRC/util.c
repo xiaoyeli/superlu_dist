@@ -257,10 +257,10 @@ void print_sp_ienv_dist(superlu_dist_options_t *options)
 
     printf("**************************************************\n");
     printf(".. blocking parameters from sp_ienv():\n");
-    printf("**    relaxation                 : " IFMT "\n", sp_ienv_dist(2));
-    printf("**    max supernode              : " IFMT "\n", sp_ienv_dist(3));
-    printf("**    estimated fill ratio       : " IFMT "\n", sp_ienv_dist(6));
-    printf("**    min GEMM dimension for GPU : " IFMT "\n", sp_ienv_dist(7));
+    printf("**    relaxation                 : %d\n", sp_ienv_dist(2));
+    printf("**    max supernode              : %d\n", sp_ienv_dist(3));
+    printf("**    estimated fill ratio       : %d\n", sp_ienv_dist(6));
+    printf("**    min GEMM dimension for GPU : %d\n", sp_ienv_dist(7));
     printf("**************************************************\n");
 }
 
@@ -1504,6 +1504,8 @@ gemm_division_new (int * num_streams_used,   /*number of streams that will be us
     }
 }
 
+#endif  /* defined GPU_ACC */
+
 /* The following are moved from superlu_gpu.cu */
 
 int getnCudaStreams()
@@ -1536,4 +1538,3 @@ int get_mpi_process_per_gpu ()
 	}
 }
 
-#endif  /* defined GPU_ACC */

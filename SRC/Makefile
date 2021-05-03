@@ -45,10 +45,6 @@ ALLAUX 	= sp_ienv.o etree.o sp_colorder.o get_perm_c.o \
 ALLAUX += superlu_grid3d.o supernodal_etree.o supernodalForest.o \
 	trfAux.o communication_aux.o treeFactorization.o sec_structs.o
 
-ifeq ($(HAVE_CUDA),TRUE)
-ALLAUX += cublas_utils.o
-endif
-
 #
 # Routines literally taken from SuperLU, but renamed with suffix _dist
 #
@@ -87,6 +83,12 @@ ZPLUSRC = pzgssvx.o pzgssvx_ABglobal.o \
 ZPLUSRC += pzgssvx3d.o pzgstrf3d.o ztreeFactorization.o zscatter3d.o \
 	zgather.o pz3dcomm.o ztrfAux.o zcommunication_aux.o ztrfCommWrapper.o \
 	znrformat_loc3d.o ztreeFactorizationGPU.o ##$(FACT3D)
+
+ifeq ($(HAVE_CUDA),TRUE)
+ALLAUX += cublas_utils.o
+DPLUSRC += dsuperlu_gpu.o
+ZPLUSRC += zsuperlu_gpu.o
+endif
 
 ifeq ($(HAVE_COMBBLAS),TRUE)
 DPLUSRC += d_c2cpp_GetHWPM.o
@@ -141,6 +143,9 @@ pzgstrf.o: zscatter.c zlook_ahead_update.c zSchCompUdt-2Ddynamic.c pzgstrf.c
 
 .c.o:
 	$(CC) $(CFLAGS) $(CDEFS) $(BLASDEF) -I$(INCLUDEDIR) -c $< $(VERBOSE)
+
+.cu.o:
+	$(NVCC) $(NVCCFLAGS) $(CDEFS) $(BLASDEF) -I$(INCLUDEDIR) -c $< $(VERBOSE)
 
 .cpp.o:
 	$(CXX) $(CXXFLAGS) $(CPPFLAGS) $(CDEFS) $(BLASDEF) -I$(INCLUDEDIR) -c $< $(VERBOSE)

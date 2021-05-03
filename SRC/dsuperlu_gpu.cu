@@ -33,7 +33,7 @@
 //}
 
 /*error reporting functions */
-static
+//static
 cudaError_t checkCuda(cudaError_t result)
 {
 #if defined(DEBUG) || defined(_DEBUG)
@@ -915,7 +915,6 @@ int dinitSluGPU3D_t(
     int_t ldt             /* NSUP read from sp_ienv(3) */
 )
 {
-    gridinfo_t* grid = &(grid3d->grid2d);
     checkCudaErrors(cudaDeviceReset ())     ;
     Glu_persist_t *Glu_persist = LUstruct->Glu_persist;
     dLocalLU_t *Llu = LUstruct->Llu;
@@ -1124,7 +1123,7 @@ int dreduceGPUlu(
 } /* dreduceGPUlu */
 
 
-int dwaitGPUscu(int_t streamId, dsluGPU_t *sluGPU, SCT_t *SCT)
+int dwaitGPUscu(int streamId, dsluGPU_t *sluGPU, SCT_t *SCT)
 {
     double ttx = SuperLU_timer_();
     cudaStreamSynchronize(sluGPU->funCallStreams[streamId]);
@@ -1132,7 +1131,7 @@ int dwaitGPUscu(int_t streamId, dsluGPU_t *sluGPU, SCT_t *SCT)
     return 0;
 }
 
-int_t dsendLUpanelGPU2HOST(
+int dsendLUpanelGPU2HOST(
     int_t k0,
     d2Hreduce_t* d2Hred,
     dsluGPU_t *sluGPU

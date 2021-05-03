@@ -19,7 +19,7 @@ implicit none
 public superlu_ptr
 
 !----------------------------------------------------
-! kind of integer to hold a SuperLU pointer.  Use default integer.
+! kind of integer to hold a SuperLU pointer.  Use 64-bit integer.
 ! This might need to be changed on systems with large memory.
 ! If changed, be sure to change it in superlu_c2f_wrap.c too.
 !
