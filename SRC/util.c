@@ -244,6 +244,7 @@ void print_options_dist(superlu_dist_options_t *options)
     printf("**    num_lookaheads   : %4d\n", options->num_lookaheads);
     printf("**    SymPattern       : %4d\n", options->SymPattern);
     printf("**    lookahead_etree  : %4d\n", options->lookahead_etree);
+    printf("**    onesided         : %4d\n", options->use_onesided);
     printf("**************************************************\n");
 }
 

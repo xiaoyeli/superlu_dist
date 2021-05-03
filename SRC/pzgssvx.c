@@ -489,7 +489,7 @@ at the top-level directory.
  *
  * info    (output) int*
  *         = 0: successful exit
- *         < 0: if info = -i, the i-th argument had an illegal value   
+ *         < 0: if info = -i, the i-th argument had an illegal value
  *         > 0: if info = i, and i is
  *             <= A->ncol: U(i,i) is exactly zero. The factorization has
  *                been completed, but the factor U is exactly singular,
@@ -637,6 +637,11 @@ pzgssvx(superlu_dist_options_t *options, SuperMatrix *A,
     R = ScalePermstruct->R;
     C = ScalePermstruct->C;
     /********/
+//    if (options->use_onesided == YES) {
+//#ifndef onesided
+//#define onesided
+//#endif
+//    }
 
 #if ( DEBUGlevel>=1 )
     CHECK_MALLOC(iam, "Enter pzgssvx()");
@@ -1142,10 +1147,14 @@ pzgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 	       NOTE: the row permutation Pc*Pr is applied internally in the
   	       distribution routine. */
 	    t = SuperLU_timer_();
-	    dist_mem_use = pzdistribute(Fact, n, A, ScalePermstruct,
-                                      Glu_freeable, LUstruct, grid);
-	    stat->utime[DIST] = SuperLU_timer_() - t;
-
+#ifdef onesided
+	    dist_mem_use = pzdistribute_onesided(Fact, n, A, ScalePermstruct,
+                                      Glu_freeable, LUstruct, grid,nrhs);
+#else
+        dist_mem_use = pzdistribute(Fact, n, A, ScalePermstruct,
+                Glu_freeable, LUstruct, grid);
+#endif
+        stat->utime[DIST] = SuperLU_timer_() - t;
   	    /* Deallocate storage used in symbolic factorization. */
 	    if ( Fact != SamePattern_SameRowPerm ) {
 	        iinfo = symbfact_SubFree(Glu_freeable);
@@ -1229,11 +1238,6 @@ pzgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 	// MPI_Bcast( &nnzLU, 1, mpi_int_t, 0, grid->comm );
 
 	MPI_Comm_rank( MPI_COMM_WORLD, &iam_g );
-
-    if (!iam_g) {
-	print_options_dist(options);
-	fflush(stdout);
-    }
 
     printf(".. Ainfo mygid %5d   mysid %5d   nnz_loc " IFMT "  sum_loc  %e lsum_loc   %e nnz "IFMT " nnzLU %ld sum %e  lsum %e  N "IFMT "\n", iam_g,iam,Astore->rowptr[Astore->m_loc],asum.r+asum.i, lsum.r+lsum.i, nnz_tot,nnzLU,asum_tot.r+asum_tot.i,lsum_tot.r+lsum_tot.i,A->ncol);
 	fflush(stdout);
@@ -1325,7 +1329,8 @@ pzgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 		       avg * 1e-6,
 		       avg / grid->nprow / grid->npcol * 1e-6,
 		       max * 1e-6);
-		printf("**************************************************\n");
+		printf("**************************************************\n\n");
+		printf("** number of Tiny Pivots: %8d\n\n", stat->TinyPivots);
 		fflush(stdout);
             }
 	} /* end printing stats */
@@ -1421,8 +1426,17 @@ pzgssvx(superlu_dist_options_t *options, SuperMatrix *A,
     // {
 	// #pragma omp master
 	// {
+#ifdef onesided
+    foMPI_Win_lock_all(0, bc_winl);
+    foMPI_Win_lock_all(0, rd_winl);
+    pzgstrs_onesided(n, LUstruct, ScalePermstruct, grid, X, m_loc,
+            fst_row, ldb, nrhs, SOLVEstruct, stat, info);
+    foMPI_Win_unlock_all(bc_winl);
+    foMPI_Win_unlock_all(rd_winl);
+#else
 	pzgstrs(n, LUstruct, ScalePermstruct, grid, X, m_loc,
 		fst_row, ldb, nrhs, SOLVEstruct, stat, info);
+#endif
 	// }
 	// }
 

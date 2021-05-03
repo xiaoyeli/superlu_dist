@@ -156,6 +156,7 @@ if(enable_complex16)
     zstatic_schedule.c
     pzgstrf2.c
     pzgstrs.c
+    pzgstrs_onesided.c
     pzgstrs1.c
     pzgstrs_lsum.c
     pzgstrs_Bglobal.c
@@ -168,14 +169,12 @@ if(enable_complex16)
     znrformat_loc3d.c 
     pzgstrf3d.c
     ztreeFactorization.c 
-    ztreeFactorizationGPU.c 
     zscatter3d.c
     zgather.c 
     pz3dcomm.c ztrfAux.c
     zcommunication_aux.c
     ztrfCommWrapper.c
     zsuperlu_blas.c
-    zsuperlu_gpu.cu
   )
 if (HAVE_COMBBLAS)
   list(APPEND sources z_c2cpp_GetHWPM.cpp zHWPM_CombBLAS.hpp)

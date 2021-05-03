@@ -914,7 +914,7 @@ pdgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
         ABORT ("Malloc failed for dgemm V buffer");
 //#endif
 
-#endif 
+#endif
 /*************** end ifdef GPU_ACC ****************/
 
     log_memory((bigv_size + bigu_size) * dword, stat);
@@ -1471,7 +1471,7 @@ pdgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
 /* #pragma omp parallel */ /* Sherry -- parallel done inside pdgstrs2 */
 #endif
                 {
-                    pdgstrs2_omp (k0, k, Glu_persist, grid, Llu, 
+                    pdgstrs2_omp (k0, k, Glu_persist, grid, Llu,
 		                    Ublock_info, stat);
                 }
                 pdgstrs2_timer += SuperLU_timer_() - ttt2;

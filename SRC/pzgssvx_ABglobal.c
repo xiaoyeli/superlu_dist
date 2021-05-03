@@ -1098,7 +1098,7 @@ pzgssvx_ABglobal(superlu_dist_options_t *options, SuperMatrix *A,
 	    case COL:
 		SUPERLU_FREE(R);
 		break;
-	    default: break;
+	    default:  break;
 	}
     }
     if ( !factored || (factored && options->IterRefine) )

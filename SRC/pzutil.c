@@ -448,10 +448,10 @@ zDestroy_LU(int_t n, gridinfo_t *grid, zLUstruct_t *LUstruct)
     nsupers = Glu_persist->supno[n-1] + 1;
 
     nb = CEILING(nsupers, grid->npcol);
-    for (i = 0; i < nb; ++i) 
+    for (i = 0; i < nb; ++i)
 	if ( Llu->Lrowind_bc_ptr[i] ) {
 	    SUPERLU_FREE (Llu->Lrowind_bc_ptr[i]);
-#if 0 // Sherry: the following is not allocated with cudaHostAlloc    
+#if 0 // Sherry: the following is not allocated with cudaHostAlloc
     //#ifdef GPU_ACC
 	    checkCuda(cudaFreeHost(Llu->Lnzval_bc_ptr[i]));
 #endif
@@ -486,12 +486,12 @@ zDestroy_LU(int_t n, gridinfo_t *grid, zLUstruct_t *LUstruct)
     SUPERLU_FREE(Llu->mod_bit);
 
     nb = CEILING(nsupers, grid->npcol);
-    for (i = 0; i < nb; ++i) 
+    for (i = 0; i < nb; ++i)
 	if ( Llu->Lindval_loc_bc_ptr[i]!=NULL) {
 	    SUPERLU_FREE (Llu->Lindval_loc_bc_ptr[i]);
-	}	
+	}
     SUPERLU_FREE(Llu->Lindval_loc_bc_ptr);
-	
+
     nb = CEILING(nsupers, grid->npcol);
     for (i=0; i<nb; ++i) {
 	if(Llu->Linv_bc_ptr[i]!=NULL) {
@@ -499,12 +499,12 @@ zDestroy_LU(int_t n, gridinfo_t *grid, zLUstruct_t *LUstruct)
 	}
 	if(Llu->Uinv_bc_ptr[i]!=NULL){
 	    SUPERLU_FREE(Llu->Uinv_bc_ptr[i]);
-	}	
+	}
     }
     SUPERLU_FREE(Llu->Linv_bc_ptr);
     SUPERLU_FREE(Llu->Uinv_bc_ptr);
     SUPERLU_FREE(Llu->Unnz);
-	
+
     nb = CEILING(nsupers, grid->npcol);
     for (i = 0; i < nb; ++i)
 	if ( Llu->Urbs[i] ) {
@@ -512,7 +512,7 @@ zDestroy_LU(int_t n, gridinfo_t *grid, zLUstruct_t *LUstruct)
 	    SUPERLU_FREE(Llu->Ucb_valptr[i]);
 	}
     SUPERLU_FREE(Llu->Ucb_indptr);
-    SUPERLU_FREE(Llu->Ucb_valptr);	
+    SUPERLU_FREE(Llu->Ucb_valptr);
     SUPERLU_FREE(Llu->Urbs);
 
     SUPERLU_FREE(Glu_persist->xsup);
@@ -530,7 +530,7 @@ zDestroy_LU(int_t n, gridinfo_t *grid, zLUstruct_t *LUstruct)
  * =======
  *   Set up the communication pattern for redistribution between B and X
  *   in the triangular solution.
- * 
+ *
  * Arguments
  * =========
  *
@@ -601,7 +601,7 @@ pzgstrs_init(int_t n, int_t m_loc, int_t nrhs, int_t fst_row,
 	p = PNUM( PROW(gbi,grid), PCOL(gbi,grid), grid ); /* Diagonal process */
 	++SendCnt[p];
     }
-  
+
     /* Set up the displacements for alltoall. */
     MPI_Alltoall(SendCnt, 1, MPI_INT, RecvCnt, 1, MPI_INT, grid->comm);
     sdispls[0] = rdispls[0] = 0;
@@ -844,11 +844,11 @@ zDestroy_Tree(int_t n, gridinfo_t *grid, zLUstruct_t *LUstruct)
 	}
 	if(Llu->UBtree_ptr[i]!=NULL){
 		BcTree_Destroy(Llu->UBtree_ptr[i],LUstruct->dt);
-	}		
+	}
     }
     SUPERLU_FREE(Llu->LBtree_ptr);
     SUPERLU_FREE(Llu->UBtree_ptr);
-	
+
     nb = CEILING(nsupers, grid->nprow);
     for (i=0;i<nb;++i){
 	if(Llu->LRtree_ptr[i]!=NULL){
@@ -856,7 +856,7 @@ zDestroy_Tree(int_t n, gridinfo_t *grid, zLUstruct_t *LUstruct)
 	}
 	if(Llu->URtree_ptr[i]!=NULL){
 		RdTree_Destroy(Llu->URtree_ptr[i],LUstruct->dt);
-	}		
+	}
     }
     SUPERLU_FREE(Llu->LRtree_ptr);
     SUPERLU_FREE(Llu->URtree_ptr);

@@ -421,6 +421,7 @@ void zScalePermstructFree(zScalePermstruct_t *ScalePermstruct)
         SUPERLU_FREE(ScalePermstruct->R);
         SUPERLU_FREE(ScalePermstruct->C);
         break;
+      default: break;
     }
 }
 
@@ -452,7 +453,7 @@ int zDeAllocLlu_3d(int_t n, zLUstruct_t * LUstruct, gridinfo3d_t* grid3d)
     nsupers = (LUstruct->Glu_persist)->supno[n-1] + 1;
 
     nbc = CEILING(nsupers, grid3d->npcol);
-    for (i = 0; i < nbc; ++i) 
+    for (i = 0; i < nbc; ++i)
 	if ( Llu->Lrowind_bc_ptr[i] ) {
 	    SUPERLU_FREE (Llu->Lrowind_bc_ptr[i]);
 #ifdef GPU_ACC
@@ -653,8 +654,8 @@ void zDumpLblocks(int iam, int_t nsupers, gridinfo_t *grid,
 		  Glu_persist_t *Glu_persist, zLocalLU_t *Llu)
 {
     register int c, extra, gb, j, i, lb, nsupc, nsupr, len, nb, ncb;
-    register int_t k, mycol, r;
-	int_t nnzL, n,nmax;
+    int k, mycol, r, n, nmax;
+    int_t nnzL;
     int_t *xsup = Glu_persist->xsup;
     int_t *index;
     doublecomplex *nzval;

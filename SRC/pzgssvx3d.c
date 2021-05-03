@@ -659,7 +659,11 @@ pzgssvx3d (superlu_dist_options_t * options, SuperMatrix * A,
 	R = ScalePermstruct->R;
 	C = ScalePermstruct->C;
 	/********/
-	
+//        if (options->use_onesided == YES) {
+//#ifndef onesided
+//#define onesided
+//#endif
+//        }
 	/* Not factored & ask for equilibration */
 	if (Equil && Fact != SamePattern_SameRowPerm) {
 	    /* Allocate storage if not done so before. */
@@ -1165,8 +1169,13 @@ pzgssvx3d (superlu_dist_options_t * options, SuperMatrix * A,
 		   NOTE: the row permutation Pc*Pr is applied internally in the
 		   distribution routine. */
 		t = SuperLU_timer_ ();
+#ifdef onesided
+        dist_mem_use = pzdistribute_onesided(Fact, n, A, ScalePermstruct,
+                                     Glu_freeable, LUstruct, grid,nrhs);
+#else
 		dist_mem_use = pzdistribute (Fact, n, A, ScalePermstruct,
 					     Glu_freeable, LUstruct, grid);
+#endif
 		stat->utime[DIST] = SuperLU_timer_ () - t;
 		
 		/* Deallocate storage used in symbolic factorization. */
@@ -1376,6 +1385,14 @@ pzgssvx3d (superlu_dist_options_t * options, SuperMatrix * A,
 #if 0 // Sherry: the following interface is needed by 3D trisolve.
 		pzgstrs_vecpar (n, LUstruct, ScalePermstruct, grid, X, m_loc,
 				fst_row, ldb, nrhs, SOLVEstruct, stat, info);
+#endif
+#ifdef onesided
+        foMPI_Win_lock_all(0, bc_winl);
+        foMPI_Win_lock_all(0, rd_winl);
+        pzgstrs_onesided(n, LUstruct, ScalePermstruct, grid, X, m_loc,
+                fst_row, ldb, nrhs, SOLVEstruct, stat, info);
+        foMPI_Win_unlock_all(bc_winl);
+        foMPI_Win_unlock_all(rd_winl);
 #else
 		pzgstrs(n, LUstruct, ScalePermstruct, grid, X, m_loc,
 			fst_row, ldb, nrhs, SOLVEstruct, stat, info);

@@ -594,11 +594,11 @@ pdgssvx3d (superlu_dist_options_t * options, SuperMatrix * A,
 	return;
     }
 
-    if (options->use_onesided == YES) {
-#ifndef onesided
-#define onesided
-#endif
-    }
+//    if (options->use_onesided == YES) {
+//#ifndef onesided
+//#define onesided
+//#endif
+//    }
     
 #if ( DEBUGlevel>=1 )
 	CHECK_MALLOC (iam, "Enter pdgssvx3d()");
@@ -1387,7 +1387,7 @@ pdgssvx3d (superlu_dist_options_t * options, SuperMatrix * A,
 		pdgstrs_vecpar (n, LUstruct, ScalePermstruct, grid, X, m_loc,
 				fst_row, ldb, nrhs, SOLVEstruct, stat, info);
 #endif
-#ifdef  onesided
+#ifdef onesided
         foMPI_Win_lock_all(0, bc_winl);
         foMPI_Win_lock_all(0, rd_winl);
         pdgstrs_onesided(n, LUstruct, ScalePermstruct, grid, X, m_loc,
