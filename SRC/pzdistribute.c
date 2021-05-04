@@ -1961,10 +1961,13 @@ if ( !iam) printf(".. Construct Reduce tree for U: %.2f\t\n", t);
 	    ABORT("Malloc fails for mod_bit[].");
 
 #if ( PROFlevel>=1 )
-	if ( !iam ) printf(".. 1st distribute time:\n "
+	if ( !iam ) {
+	    printf(".. 1st distribute time:\n "
 			   "\tL\t%.2f\n\tU\t%.2f\n"
 			   "\tu_blks %d\tnrbu %d\n--------\n",
   			   t_l, t_u, u_blks, nrbu);
+	    fflush(stdout);
+	}
 #endif
 
     } /* else fact != SamePattern_SameRowPerm */
@@ -2256,7 +2259,6 @@ dword = sizeof(doublecomplex);
 	    ABORT("Malloc fails for oneside_buf_offset[].");
 	memset(oneside_buf_offset, 0, (Pr+Pc) * sizeof(int));
 
-
 #if ( DEBUGlevel>=1 )
     CHECK_MALLOC(iam, "Enter pzdistribute()");
 #endif
@@ -2269,8 +2271,10 @@ dword = sizeof(doublecomplex);
 
 #if ( PROFlevel>=1 )
     t = SuperLU_timer_() - t;
-    if ( !iam ) printf("--------\n"
+    if ( !iam ) {printf("--------\n"
 		       ".. Phase 1 - ReDistribute_A time: %.2f\t\n", t);
+        fflush(stdout);
+    }
 #endif
 
 if ( fact == SamePattern_SameRowPerm ) {
@@ -3158,9 +3162,14 @@ if ( fact == SamePattern_SameRowPerm ) {
        }
     }
 
+
+
 #if ( PROFlevel>=1 )
     t = SuperLU_timer_() - t;
-    if ( !iam) printf(".. Construct Bcast tree for L: %.2f\t\n", t);
+    if ( !iam) {
+        printf(".. Construct Bcast tree for L: %.2f\t\n", t);
+        fflush(stdout);
+    }
 #endif
 
 
@@ -3359,6 +3368,7 @@ if ( fact == SamePattern_SameRowPerm ) {
             }
     }
     MPI_Waitall(2*(Pc-1), row_req, row_status);
+
     recv_size_all[Pr+iam_row]=0;
     j=0;
     for(i=0; i<Pc; i++){
@@ -3371,7 +3381,10 @@ if ( fact == SamePattern_SameRowPerm ) {
 
 #if ( PROFlevel>=1 )
     t = SuperLU_timer_() - t;
-    if ( !iam) printf(".. Construct Reduce tree for L: %.2f\t\n", t);
+    if ( !iam){
+        printf(".. Construct Reduce tree for L: %.2f\t\n", t);
+        fflush(stdout);
+    }
 #endif
 
 #if ( PROFlevel>=1 )
@@ -3544,7 +3557,10 @@ if ( fact == SamePattern_SameRowPerm ) {
 
 #if ( PROFlevel>=1 )
     t = SuperLU_timer_() - t;
-    if ( !iam) printf(".. Construct Bcast tree for U: %.2f\t\n", t);
+    if ( !iam) {
+        printf(".. Construct Bcast tree for U: %.2f\t\n", t);
+        fflush(stdout);
+    }
 #endif
 
 #if ( PROFlevel>=1 )
@@ -3776,7 +3792,10 @@ if ( fact == SamePattern_SameRowPerm ) {
     }
 #if ( PROFlevel>=1 )
     t = SuperLU_timer_() - t;
-    if ( !iam) printf(".. Construct Reduce tree for U: %.2f\t\n", t);
+    if ( !iam) {
+        printf(".. Construct Reduce tree for U: %.2f\t\n", t);
+        fflush(stdout);
+    }
 #endif
 
 ////////////////////////////////////////////////////////
@@ -3814,8 +3833,11 @@ if ( fact == SamePattern_SameRowPerm ) {
 
 
 #if ( PRNTlevel>=1 )
-    if ( !iam ) printf(".. # L blocks " IFMT "\t# U blocks " IFMT "\n",
+    if ( !iam ) {
+        printf(".. # L blocks " IFMT "\t# U blocks " IFMT "\n",
 			   nLblocks, nUblocks);
+        fflush(stdout);
+    }
 #endif
 
     SUPERLU_FREE(rb_marker);
@@ -3837,10 +3859,13 @@ if ( fact == SamePattern_SameRowPerm ) {
     ABORT("Malloc fails for mod_bit[].");
 
 #if ( PROFlevel>=1 )
-    if ( !iam ) printf(".. 1st distribute time:\n "
+    if ( !iam ) {
+        printf(".. 1st distribute time:\n "
     			   "\tL\t%.2f\n\tU\t%.2f\n"
     			   "\tu_blks %d\tnrbu %d\n--------\n",
       			   t_l, t_u, u_blks, nrbu);
+        fflush(stdout);
+    }
 #endif
 
 } /* else fact != SamePattern_SameRowPerm */
@@ -3856,11 +3881,12 @@ if ( fact == SamePattern_SameRowPerm ) {
     int size_num=2;
 
     BC_taskq = (double*)SUPERLU_MALLOC( size_num * BC_buffer_size * sizeof(double));   // this needs to be optimized for 1D row mapping
-
     for(i=0; i<BC_buffer_size*size_num; i++){
             BC_taskq[i] = -1.00;
     }
+
     foMPI_Win_create(BC_taskq, (BC_buffer_size*size_num)*sizeof(double), sizeof(double), MPI_INFO_NULL, col_comm, &bc_winl);
+
 
     int nfrecvmod=0;
     for (lk=0;lk<CEILING( nsupers, grid->nprow );++lk){
@@ -3877,8 +3903,7 @@ if ( fact == SamePattern_SameRowPerm ) {
 		}
     }
     RD_buffer_size=((nfrecvmod>nbrecvmod?nfrecvmod:nbrecvmod)+1)*maxrecvsz;
-    //printf("iam=%d, newRD_buffer_size=%d\n",iam,RD_buffer_size);
-    //fflush(stdout);
+
     RD_taskq = (double*)SUPERLU_MALLOC( size_num*RD_buffer_size * sizeof(double));   // this needs to be optimized for 1D row mapping
     for(i=0; i<RD_buffer_size*size_num; i++){
             RD_taskq[i] = -1.0;

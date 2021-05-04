@@ -481,7 +481,7 @@ if(procs==1){
     int shift=0;
     int recvRankNum=-1;
     uint16_t crc_16_val;
-    double myhash;
+    uint8_t crc_8_val;
     int *validBCQindex;
     int *validRDQindex;
     int *validBCQindex_u;
@@ -853,9 +853,11 @@ if(procs==1){
                 lk = LBj( k, grid );    /* local block number */
 
                 checkend=BcTree_GetMsgSize(LBtree_ptr[lk],'z')*nrhs;
-                crc_16_val=crc_16((unsigned char*)&recvbuf0[XK_H],sizeof(doublecomplex)*checkend);
+                crc_8_val=crc_8((unsigned char*)&recvbuf0[XK_H],sizeof(doublecomplex)*checkend);
+                //crc_16_val=crc_16((unsigned char*)&recvbuf0[XK_H],sizeof(doublecomplex)*checkend);
                 //myhash=calcul_hash(&recvbuf0[XK_H],sizeof(double)*checkend);
-                if(crc_16_val!=(uint16_t)recvbuf0[XK_H-1].r) {
+                if(crc_8_val!=(uint8_t)recvbuf0[XK_H-1].r) {
+                //if(crc_16_val!=(uint16_t)recvbuf0[XK_H-1].r) {
                     if(shift>0){
                         validBCQindex[bcidx-shift]=validBCQindex[bcidx];
                         validBCQindex[bcidx]=-1;
@@ -947,8 +949,10 @@ if(procs==1){
                 lk = LBi( k, grid );
 
                 checkend=RdTree_GetMsgSize(LRtree_ptr[lk],'z')*nrhs;
-                crc_16_val=crc_16((unsigned char*)&recvbuf0[LSUM_H],sizeof(doublecomplex)*checkend);
-                if(crc_16_val!=(uint16_t)recvbuf0[LSUM_H-1].r) {
+                //crc_16_val=crc_16((unsigned char*)&recvbuf0[LSUM_H],sizeof(doublecomplex)*checkend);
+                crc_8_val=crc_8((unsigned char*)&recvbuf0[LSUM_H],sizeof(doublecomplex)*checkend);
+                if(crc_8_val!=(uint8_t)recvbuf0[LSUM_H-1].r) {
+                //if(crc_16_val!=(uint16_t)recvbuf0[LSUM_H-1].r) {
                     if(shift>0){
                         validRDQindex[rdidx-shift]=validRDQindex[rdidx];
                         validRDQindex[rdidx]=-1;
@@ -1588,8 +1592,10 @@ for (i=0;i<nroot_send;i++){
 
                 //if (totalsolveBC % 10 == 0){
                 checkend=BcTree_GetMsgSize(UBtree_ptr[lk],'z')*nrhs;
-                crc_16_val=crc_16((unsigned char*)&recvbuf0[XK_H],sizeof(doublecomplex)*checkend);
-                if(crc_16_val!=(uint16_t)recvbuf0[XK_H-1].r) {
+                //crc_16_val=crc_16((unsigned char*)&recvbuf0[XK_H],sizeof(doublecomplex)*checkend);
+                //if(crc_16_val!=(uint16_t)recvbuf0[XK_H-1].r) {
+                crc_8_val=crc_8((unsigned char*)&recvbuf0[XK_H],sizeof(doublecomplex)*checkend);
+                if(crc_8_val!=(uint8_t)recvbuf0[XK_H-1].r) {
                     if(shift>0){
                         validBCQindex_u[bcidx-shift]=validBCQindex_u[bcidx];
                         validBCQindex_u[bcidx]=-1;
@@ -1666,9 +1672,10 @@ for (i=0;i<nroot_send;i++){
                 lk = LBi( k, grid );
                 //if (totalsolveRD %10 == 0){
                 checkend=RdTree_GetMsgSize(URtree_ptr[lk],'z')*nrhs;
-                crc_16_val=crc_16((unsigned char*)&recvbuf0[LSUM_H],sizeof(doublecomplex)*checkend);
-
-                if(crc_16_val!=(uint16_t)recvbuf0[LSUM_H-1].r) {
+                //crc_16_val=crc_16((unsigned char*)&recvbuf0[LSUM_H],sizeof(doublecomplex)*checkend);
+                //if(crc_16_val!=(uint16_t)recvbuf0[LSUM_H-1].r) {
+                crc_8_val=crc_8((unsigned char*)&recvbuf0[LSUM_H],sizeof(doublecomplex)*checkend);
+                if(crc_8_val!=(uint8_t)recvbuf0[LSUM_H-1].r) {
                     if(shift>0){
                         validRDQindex_u[rdidx-shift]=validRDQindex_u[rdidx];
                         validRDQindex_u[rdidx]=-1;

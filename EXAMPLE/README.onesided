@@ -1,6 +1,6 @@
     CPU onesided version
     ====================
-The CPU onesided version is developed based on the foMPI library(https://spcl.inf.ethz.ch/Research/Parallel_Programming/foMPI_NA/), and it is currectly only supported by Cray Machines.
+The CPU onesided version is developed based on the foMPI library(https://spcl.inf.ethz.ch/Research/Parallel_Programming/foMPI_NA/), and it is currectly only supported Cray Machines.
 
 1. Required libraries on Cray Machines (e.g., Cori Haswell).
 (1) foMPI
@@ -12,6 +12,7 @@ The CPU onesided version is developed based on the foMPI library(https://spcl.in
     add "-fPIC" to CFLAGS (libmpitypes and libtopodisc)
     make libfompi.a
 
+******************** not use libcrc\\ anymore ************************
 (2) libcrc (https://github.com/lammertb/libcrc)
     git clone https://github.com/lammertb/libcrc.git (commit #f4a49c6)
     ##### use commit number: b5e4186 #####
@@ -19,9 +20,10 @@ The CPU onesided version is developed based on the foMPI library(https://spcl.in
     add "-fPIC" to CFLAGS
     make
     make install
+*****************************************************************
 
 2. Add paths to superlu_dist build scripit.
-    cat run_cmake_build_haswell_fompi.sh
+    cat run_cmake_build_knl_fompi.sh
         #!/bin/bash
         ONESIDE=1
         export CRAYPE_LINK_TYPE=dynamic
@@ -55,5 +57,15 @@ The CPU onesided version is developed based on the foMPI library(https://spcl.in
             -DTPL_BLAS_LIBRARIES="${MKL_ROOT}/libmkl_intel_lp64.so;${MKL_ROOT}/libmkl_sequential.so;${MKL_ROOT}/libmkl_core.so" \
             -DTPL_ENABLE_CUDA=OFF
         make pddrive3d
-3 on KNL
-export MPICH_GNI_FMA_SHARING=enabled
+
+        To make pzdrive3d: add: -Denable_complex16=ON \
+3. User code:
+    MPI_init -> foMPI_init
+4. run script on knl:
+    #SBATCH -N 4
+    #SBATCH -C knl
+    #SBATCH -q regular
+    #SBATCH -t 00:30:00
+
+    export MPICH_GNI_FMA_SHARING=enabled
+    srun -n 256  -c 4 --cpu_bind=cores ./EXAMPLE/pddrive3d -c 16 -r 16 -d 1 test.mtx

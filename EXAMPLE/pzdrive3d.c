@@ -19,7 +19,9 @@ at the top-level directory.
  *
  */
 #include "superlu_zdefs.h"  
-
+#ifdef onesided
+#include "fompi.h"
+#endif
 /*! \brief
  *
  * <pre>
@@ -128,6 +130,12 @@ main (int argc, char *argv[])
        INITIALIZE MPI ENVIRONMENT.
        ------------------------------------------------------------ */
     // MPI_Init (&argc, &argv);
+#ifdef onesided
+    foMPI_Init( &argc, &argv );
+    int rank;
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    if (!rank) printf("Using foMPI \n");
+#else
     int required = MPI_THREAD_MULTIPLE;
     int provided;
     MPI_Init_thread(&argc, &argv, required, &provided);
@@ -137,7 +145,7 @@ main (int argc, char *argv[])
         MPI_Comm_rank(MPI_COMM_WORLD, &rank);
         if (!rank) printf("The MPI library doesn't provide MPI_THREAD_MULTIPLE \n");
     }
-
+#endif
     /* Parse command line argv[]. */
     for (cpp = argv + 1; *cpp; ++cpp)
     {
@@ -305,8 +313,7 @@ main (int argc, char *argv[])
        options.DiagInv           = NO;
      */
     set_default_options_dist (&options);
-    options.IterRefine        = NOREFINE;
-    options.use_onesided          = NO;
+    options.use_onesided          = YES;
 #if 0
     options.RowPerm = NOROWPERM;
     options.IterRefine = NOREFINE;
