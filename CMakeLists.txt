@@ -399,7 +399,6 @@ if (XSDK_ENABLE_Fortran)
   MACRO_NAMESPACE "FC_")
   FortranCInterface_VERIFY(CXX)
   SET(MPI_Fortran_LINK_FLAGS "${CMAKE_EXE_LINKER_FLAGS}")
-  add_subdirectory(FORTRAN)
 endif()
 
 ######################################################################
@@ -441,13 +440,23 @@ if(enable_examples)
   add_subdirectory(EXAMPLE)
 endif()
 
+if (XSDK_ENABLE_Fortran)
+  add_subdirectory(FORTRAN)
+endif()
+
 # superlu_dist uses c++11. PUBLIC means that the other codes linking to it need c++11
 #target_compile_features(SuperLU_DIST PUBLIC cxx_std_11)
 
+# Generate various configure files with proper definitions
 # configure_file(${CMAKE_SOURCE_DIR}/make.inc.in ${CMAKE_BINARY_DIR}/make.inc)
 configure_file(${SuperLU_DIST_SOURCE_DIR}/make.inc.in ${SuperLU_DIST_SOURCE_DIR}/make.inc)
+
 configure_file(${SuperLU_DIST_SOURCE_DIR}/SRC/superlu_dist_config.h.in ${SuperLU_DIST_BINARY_DIR}/SRC/superlu_dist_config.h)
 configure_file(${SuperLU_DIST_SOURCE_DIR}/SRC/superlu_dist_config.h.in ${SuperLU_DIST_SOURCE_DIR}/SRC/superlu_dist_config.h)
+
+# Following is to configure a file for FORTRAN code
+configure_file(${SuperLU_DIST_SOURCE_DIR}/SRC/superlu_dist_config.h.in ${SuperLU_DIST_BINARY_DIR}/FORTRAN/superlu_dist_config.h)
+
 
 # Add pkg-config support
 if(IS_ABSOLUTE ${CMAKE_INSTALL_LIBDIR})

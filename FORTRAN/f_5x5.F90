@@ -33,13 +33,16 @@
 !   6. Release the process grid and terminate the MPI environment
 !   7. Release all structures
 !
+      #include "superlu_dist_config.fh"
       use superlu_mod
-!      implicit none
       include 'mpif.h'
-!      include 'superlu_dist_config.fh'
       integer maxn, maxnz, maxnrhs
       parameter ( maxn = 10, maxnz = 100, maxnrhs = 10 )
+#if (XSDK_INDEX_SIZE==64)
       integer*8 colind(maxnz), rowptr(maxn+1)
+#else
+      integer colind(maxnz), rowptr(maxn+1)
+#endif
       real*8  nzval(maxnz), b(maxn), berr(maxnrhs)
       integer n, m, nnz, nrhs, nprow, npcol, init
       integer iam, info, i, ierr, ldb
@@ -82,6 +85,9 @@
       if ( iam == 0 ) then 
          write(*,*) ' Process grid ', nprow, ' X ', npcol
          write(*,*) ' default integer size ', kind(0) 
+#if (XSDK_INDEX_SIZE==64)
+         write(*,*) ' use 64-bit integer for A matrix'
+#endif 
       endif
 !
 !*************************************************************************
