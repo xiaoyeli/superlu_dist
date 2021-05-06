@@ -33,15 +33,19 @@
 !   6. Release the process grid and terminate the MPI environment
 !   7. Release all structures
 !
+      #include "superlu_dist_config.fh"
       use superlu_mod
-!      implicit none
       include 'mpif.h'
       integer maxn, maxnz, maxnrhs
       parameter ( maxn = 10, maxnz = 100, maxnrhs = 10 )
+#if (XSDK_INDEX_SIZE==64)
+      integer*8 colind(maxnz), rowptr(maxn+1)
+#else
       integer colind(maxnz), rowptr(maxn+1)
+#endif
       real*8  nzval(maxnz), b(maxn), berr(maxnrhs)
       integer n, m, nnz, nrhs, nprow, npcol, init
-      integer*4 iam, info, i, ierr, ldb
+      integer iam, info, i, ierr, ldb
       integer nnz_loc, m_loc, fst_row
       real*8  s, u, p, e, r, l
 
@@ -62,9 +66,9 @@
 ! Create Fortran handles for the C structures used in SuperLU_DIST
       call f_create_gridinfo_handle(grid)
       call f_create_options_handle(options)
-      call f_create_ScalePerm_handle(ScalePermstruct)
-      call f_create_LUstruct_handle(LUstruct)
-      call f_create_SOLVEstruct_handle(SOLVEstruct)
+      call f_dcreate_ScalePerm_handle(ScalePermstruct)
+      call f_dcreate_LUstruct_handle(LUstruct)
+      call f_dcreate_SOLVEstruct_handle(SOLVEstruct)
       call f_create_SuperMatrix_handle(A)
       call f_create_SuperLUStat_handle(stat)
 
@@ -81,6 +85,9 @@
       if ( iam == 0 ) then 
          write(*,*) ' Process grid ', nprow, ' X ', npcol
          write(*,*) ' default integer size ', kind(0) 
+#if (XSDK_INDEX_SIZE==64)
+         write(*,*) ' use 64-bit integer for A matrix'
+#endif 
       endif
 !
 !*************************************************************************
@@ -176,8 +183,8 @@
 
 ! Initialize ScalePermstruct and LUstruct
       call get_SuperMatrix(A,nrow=m,ncol=n)
-      call f_ScalePermstructInit(m, n, ScalePermstruct)
-      call f_LUstructInit(m, n, LUstruct)
+      call f_dScalePermstructInit(m, n, ScalePermstruct)
+      call f_dLUstructInit(m, n, LUstruct)
 
 ! Initialize the statistics variables
       call f_PStatInit(stat)
@@ -195,8 +202,8 @@
 ! Deallocate the storage allocated by SuperLU_DIST
       call f_PStatFree(stat)
       call f_Destroy_SuperMat_Store_dist(A)
-      call f_ScalePermstructFree(ScalePermstruct)
-      call f_Destroy_LU_SOLVE_struct(options, n, grid, LUstruct, SOLVEstruct)
+      call f_dScalePermstructFree(ScalePermstruct)
+      call f_dDestroy_LU_SOLVE_struct(options, n, grid, LUstruct, SOLVEstruct)
 !      call f_LUstructFree(LUstruct)
 !      call get_superlu_options(options, SolveInitialized=init)
 !      if (init == YES) then
@@ -212,7 +219,11 @@
       call f_destroy_ScalePerm_handle(ScalePermstruct)
       call f_destroy_LUstruct_handle(LUstruct)
       call f_destroy_SOLVEstruct_handle(SOLVEstruct)
+
+!      call f_Destroy_CompRowLoc_Mat_dist(A)
+! need to free the supermatrix Store
       call f_destroy_SuperMatrix_handle(A)
+
       call f_destroy_SuperLUStat_handle(stat)
 
 ! Check malloc

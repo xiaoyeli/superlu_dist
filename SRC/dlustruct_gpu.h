@@ -13,17 +13,14 @@
 
 #pragma once // so that this header file is included onle once
 
-// #ifdef DEBUG
-// #include <assert.h>
-// #endif
-// #include <math.h>
-// #include "mkl.h"
+#include "superlu_ddefs.h"
 
-// #define USE_VENDOR_BLAS
+#ifdef GPU_ACC // enable GPU
+
+// #include "mkl.h"
 
 #include <cublas_v2.h>
 #include <cuda_runtime.h>
-#include "superlu_ddefs.h"
 // #include "sec_structs.h"
 // #include "supernodal_etree.h"
 
@@ -175,8 +172,6 @@ extern int dsparseTreeFactor_ASYNC_GPU(
     double thresh, SCT_t *SCT, int tag_ub,
     int *info);
 
-extern double estimate_cpu_time(int m, int n , int k);
-
 int dinitD2Hreduce(
     int next_k,
     d2Hreduce_t* d2Hred,
@@ -242,4 +237,4 @@ void dprintGPUStats(dLUstruct_gpu_t *A_gpu);
 }
 #endif
 
-//#undef DEBUG
+#endif // matching: enable GPU

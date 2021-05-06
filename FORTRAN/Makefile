@@ -8,7 +8,7 @@
 #
 #######################################################################
 .SUFFIXES: 
-.SUFFIXES: .f90 .c .o
+.SUFFIXES: .f90 .F90 .c .o
 include ../make.inc
 
 #F90FLAGS	= $(FFLAGS) -qfree -qsuffix=f=f90  -qflag=w:w
@@ -45,6 +45,9 @@ f_pzdrive3d: $(F_ZEXM3D) $(DSUPERLULIB) $(DFORTRANLIB)
 	$(CC) $(CFLAGS) $(CDEFS) $(BLASDEF) -I$(INCLUDEDIR) -c $< $(VERBOSE)
 
 .f90.o:
+	$(FORTRAN) $(F90FLAGS) -c $< $(VERBOSE)
+
+.F90.o:
 	$(FORTRAN) $(F90FLAGS) -c $< $(VERBOSE)
 
 .f.o:

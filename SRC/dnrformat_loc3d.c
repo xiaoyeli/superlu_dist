@@ -120,27 +120,30 @@ NRformat_loc3d *dGatherNRformat_loc3d(NRformat_loc *A, // input, on 3D grid
         }
         A2d->nnz_loc = nnz_disp[grid3d->npdep];
         A2d->m_loc = row_disp[grid3d->npdep];
-#if 0	
-        A2d->fst_row = A->fst_row; // This is a bug
-#else
-        gridinfo_t *grid2d = &(grid3d->grid2d);
-        int procs2d = grid2d->nprow * grid2d->npcol;
-        int m_loc_2d = A2d->m_loc;
-        int *m_loc_2d_counts = SUPERLU_MALLOC(procs2d * sizeof(int));
 
-        MPI_Allgather(&m_loc_2d, 1, MPI_INT, m_loc_2d_counts, 1, MPI_INT, grid2d->comm);
+        if (grid3d->rankorder == 1) { // XY-major
+     	    A2d->fst_row = A->fst_row;
+	} else { // Z-major
+	    gridinfo_t *grid2d = &(grid3d->grid2d);
+            int procs2d = grid2d->nprow * grid2d->npcol;
+            int m_loc_2d = A2d->m_loc;
+            int *m_loc_2d_counts = SUPERLU_MALLOC(procs2d * sizeof(int));
 
-        int fst_row = 0;
-        for (int p = 0; p < procs2d; ++p)
-        {
-            if (grid2d->iam == p)
-                A2d->fst_row = fst_row;
-            fst_row += m_loc_2d_counts[p];
+            MPI_Allgather(&m_loc_2d, 1, MPI_INT, m_loc_2d_counts, 1, 
+	                  MPI_INT, grid2d->comm);
+
+            int fst_row = 0;
+            for (int p = 0; p < procs2d; ++p)
+            {
+		if (grid2d->iam == p)
+                   A2d->fst_row = fst_row;
+            	fst_row += m_loc_2d_counts[p];
+            }
+
+            SUPERLU_FREE(m_loc_2d_counts);
         }
-
-        SUPERLU_FREE(m_loc_2d_counts);
-#endif
     }
+
     // Btmp <- compact(B)
     // compacting B
     double *Btmp;
@@ -236,9 +239,9 @@ int dScatter_B3d(NRformat_loc3d *A3d,  // modified
     // Btmp <- scatterv(B1), block-by-block
     if ( rankorder == 1 ) { /* XY-major in 3D grid */
         /*    e.g. 1x3x4 grid: layer0 layer1 layer2 layer3
-	 *                     0      1      2      4
-	 *                     5      6      7      8
-	 *                     9      10     11     12
+	 *                     0      1      2      3
+	 *                     4      5      6      7
+	 *                     8      9      10     11
 	 */
         MPI_Scatterv(B1, b_counts_int, b_disp, MPI_DOUBLE,
 		     Btmp, nrhs * A3d->m_loc, MPI_DOUBLE,
