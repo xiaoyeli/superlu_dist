@@ -898,19 +898,18 @@ pdgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
 
 #elif defined(HAVE_SYCL) /*-- use SYCL --*/
 
-
-    dpct::device_ext &dev_ct1 = dpct::get_current_device();
-
-    sycl::queue *streams;
-    streams = ( sycl::queue * ) SUPERLU_MALLOC(sizeof(sycl::queue)*nstreams);
-    for(int i=0; i<nstreams; ++i)
-	streams[i] = dev_ct1.default_queue();
-
-    sycl::queue &q_ct1 = dev_ct1.default_queue();
+     auto q_ct1 = sycl::queue(sycl::default_selector());
+    sycl::queue streams[1] = {q_ct1}; // = sycl::queue(sycl::default_selector());
+//    for(int i=0; i<nstreams; ++i)
+//	{
+//	printf("%d %d\n", i+1, nstreams);
+//		streams[i] = sycl::queue(sycl::default_selector());;
+//	}
+//    auto q_ct1 = sycl::queue(sycl::default_selector());
+//streams[i] = q_ct1;
     bigU = sycl::malloc_host<double>(bigu_size,q_ct1);
     if (!bigU)
       ABORT("[SYCL] Malloc fails for dgemm buffer U ");
-
 #if 0 // !!Sherry fix -- only dC on GPU uses buffer_size
     bigv_size = buffer_size;
 #endif
@@ -939,7 +938,6 @@ pdgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
 #else
     // allocating data in device
     double *dA, *dB, *dC;
-
     dA = sycl::malloc_device<double>(max_row_size*sp_ienv_dist(3),q_ct1);
     // size of B should be bigu_size
     dB = sycl::malloc_device<double>(bigu_size,q_ct1);
@@ -1159,7 +1157,7 @@ pdgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
 #endif
         }
     }
-
+printf("main loop\n"); //mjc
     /* ##################################################################
        **** MAIN LOOP ****
        ################################################################## */
@@ -1795,9 +1793,7 @@ pdgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
 #include "dSchCompUdt-cuda.c"
 
 #elif defined(HAVE_SYCL)
-
 #include "dSchCompUdt-sycl.cpp"
-
 #else
 
 /*#include "SchCompUdt--Phi-2Ddynamic-alt.c"*/
@@ -1940,6 +1936,7 @@ pdgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
     sycl::free( dA, q_ct1 ); /* Sherry added */
     sycl::free( dB, q_ct1 );
     sycl::free( dC, q_ct1 );
+   //free(streams); 
 #else
 //  #ifdef __INTEL_COMPILER
 //    _mm_free (bigU);
