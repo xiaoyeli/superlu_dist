@@ -44,7 +44,7 @@ Created by [gh-md-toc](https://github.com/ekalinin/github-markdown-toc)
 
 
 
-# The distribution contains the following directory structure:
+# Directory structure of the source code
 
 ```
 SuperLU_DIST/README    instructions on installation
@@ -66,13 +66,13 @@ SuperLU_DIST/make.inc  compiler, compiler flags, library definitions and C
 SuperLU_DIST/MAKE_INC/ sample machine-specific make.inc files
 ```
 
-## INSTALLATION
+# INSTALLATION
 
 There are two ways to install the package. The first method is to use
 CMake automatic build system. The other method requires users to 
 The procedures are described below.
 
-### Installation option 1: Using CMake build system.
+## Installation option 1: Using CMake build system.
 You will need to create a build tree from which to invoke CMake.
 
 First, in order to use parallel symbolic factorization function, you
@@ -159,7 +159,7 @@ to cmake. For example on Cori at NERSC, you will need the following:
 
 Or, you can always go to TEST/ directory to perform testing manually.
 
-**SUMMARY of the CMake definitions:**
+### SUMMARY of the CMake definitions:
 The first one in the list of choices is the default setting.
 ```
     -DTPL_ENABLE_INTERNAL_BLASLIB=OFF | ON
@@ -183,11 +183,11 @@ The first one in the list of choices is the default setting.
 
 
 
-### Installation option 2: Manual installation with makefile.
+## Installation option 2: Manual installation with makefile.
 Before installing the package, please examine the three things dependent 
 on your system setup:
 
-#### 1.1 Edit the make.inc include file.
+### 1.1 Edit the make.inc include file.
 
 This make include file is referenced inside each of the Makefiles
 in the various subdirectories. As a result, there is no need to 
@@ -219,7 +219,7 @@ printing level to show solver's execution details. (default 0)
 diagnostic printing level for debugging purpose. (default 0)
 ```      
 
-#### 1.2. The BLAS library.
+### 1.2. The BLAS library.
 
 The parallel routines in SuperLU_DIST use some BLAS routines on each MPI
 process. Moreover, if you enable OpenMP with multiple threads, you need to
@@ -246,7 +246,7 @@ top-level SuperLU_DIST/ directory and do the following:
 to make the BLAS library from the routines in the
 ` CBLAS/ subdirectory.`
 
-#### 1.3. External libraries. 
+### 1.3. External libraries. 
 
   ##### 1.3.1 LAPACK.
   Starting Version 6.0, the triangular solve routine can perform explicit
@@ -261,7 +261,7 @@ You can disable LAPACK with the following line in SRC/superlu_dist_config.h:
 #undef SLU_HAVE_LAPACK
 ```
 
-  ##### 1.3.2 Metis and ParMetis.
+  #### 1.3.2 Metis and ParMetis.
 
 If you will use Metis or ParMetis for sparsity ordering, you will
 need to install them yourself. Since ParMetis package already
@@ -281,7 +281,7 @@ You can disable ParMetis with the following line in SRC/superlu_dist_config.h:
 #undef HAVE_PARMETIS
 ```
 
- ##### 1.3.3 CombBLAS.
+ #### 1.3.3 CombBLAS.
 
 You can use parallel approximate weight perfect matching (AWPM) algorithm
 to perform numerical pre-pivoting for stability. The default pre-pivoting
@@ -302,7 +302,7 @@ You can disable CombBLAS with the following line in SRC/superlu_dist_config.h:
 ```
 
 
-#### 1.4. C preprocessor definition CDEFS. (Replaced by cmake module FortranCInterface.)
+### 1.4. C preprocessor definition CDEFS. (Replaced by cmake module FortranCInterface.)
 
 In the header file SRC/Cnames.h, we use macros to determine how
 C routines should be named so that they are callable by Fortran.
@@ -319,7 +319,7 @@ The possible options for CDEFS are:
 -DUpCase: Fortran expects a C routine name to be all uppercase.
 ```
 
-#### 1.5. Multicore and GPU (optional).
+### 1.5. Multicore and GPU.
 
 To use OpenMP parallelism, need to link with an OpenMP library, and
 set the number of threads you wish to use as follows (bash):
@@ -441,4 +441,5 @@ February 8, 2019    Version 6.1.1
 November 12, 2019   Version 6.2.0
 February 23, 2020   Version 6.3.0
 October 23, 2020    Version 6.4.0
+May 10, 2021        Version 7.0.0
 ```
