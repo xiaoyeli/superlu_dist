@@ -1,3 +1,27 @@
+
+Table of Contents
+=================
+
+* [The distribution contains the following directory structure:](#the-distribution-contains-the-following-directory-structure)
+   * [INSTALLATION](#installation)
+      * [Installation option 1: Using CMake build system.](#installation-option-1-using-cmake-build-system)
+      * [Installation option 2: Manual installation with makefile.](#installation-option-2-manual-installation-with-makefile)
+         * [1.1 Edit the make.inc include file.](#11-edit-the-makeinc-include-file)
+         * [1.2. The BLAS library.](#12-the-blas-library)
+         * [1.3. External libraries.](#13-external-libraries)
+            * [1.3.1 LAPACK.](#131-lapack)
+            * [1.3.2 Metis and ParMetis.](#132-metis-and-parmetis)
+            * [1.3.3 CombBLAS.](#133-combblas)
+         * [1.4. C preprocessor definition CDEFS. (Replaced by cmake module FortranCInterface.)](#14-c-preprocessor-definition-cdefs-replaced-by-cmake-module-fortrancinterface)
+         * [1.5. Multicore and GPU (optional).](#15-multicore-and-gpu-optional)
+   * [Windows Usage](#windows-usage)
+   * [READING SPARSE MATRIX FILES](#reading-sparse-matrix-files)
+   * [REFERENCES](#references)
+   * [RELEASE VERSIONS](#release-versions)
+
+Created by [gh-md-toc](https://github.com/ekalinin/github-markdown-toc)
+
+
 SuperLU_DIST (version 7.0)   <img align=center width="55" alt="superlu" src="https://user-images.githubusercontent.com/11741943/103982988-5a9a9d00-5139-11eb-9ac4-a55e80a79f8d.png">
 
 [![Build Status](https://travis-ci.org/xiaoyeli/superlu_dist.svg?branch=master)](https://travis-ci.org/xiaoyeli/superlu_dist) 
