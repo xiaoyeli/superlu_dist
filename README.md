@@ -1,4 +1,4 @@
-# SuperLU_DIST (version 6.4)   <img align=center width="55" alt="superlu" src="https://user-images.githubusercontent.com/11741943/103982988-5a9a9d00-5139-11eb-9ac4-a55e80a79f8d.png">
+SuperLU_DIST (version 7.0)   <img align=center width="55" alt="superlu" src="https://user-images.githubusercontent.com/11741943/103982988-5a9a9d00-5139-11eb-9ac4-a55e80a79f8d.png">
 
 [![Build Status](https://travis-ci.org/xiaoyeli/superlu_dist.svg?branch=master)](https://travis-ci.org/xiaoyeli/superlu_dist) 
 [Nightly tests](http://my.cdash.org/index.php?project=superlu_dist)
@@ -19,7 +19,7 @@ column preordering for sparsity are performed sequentially.
 This "alpha" release contains double-precision real and double-precision
 complex data types.
 
-### The distribution contains the following directory structure:
+# The distribution contains the following directory structure:
 
 ```
 SuperLU_DIST/README    instructions on installation
@@ -43,8 +43,8 @@ SuperLU_DIST/MAKE_INC/ sample machine-specific make.inc files
 
 ## INSTALLATION
 
-There are two ways to install the package. One requires users to 
-edit makefile manually, the other uses CMake automatic build system.
+There are two ways to install the package. The first method is to use
+CMake automatic build system. The other method requires users to 
 The procedures are described below.
 
 ### Installation option 1: Using CMake build system.
@@ -59,9 +59,9 @@ export PARMETIS_ROOT=<Prefix directory of the ParMETIS installation>
 export PARMETIS_BUILD_DIR=${PARMETIS_ROOT}/build/Linux-x86_64
 ```
 
-Second, in order to use parallel weighted matching AWPM for numerical
-pre-pivoting, you need to install CombBLAS and define the environment
-variable:
+Second, in order to use parallel weighted matching HWPM (Heavy Weight
+Perfect Matching) for numerical pre-pivoting, you need to install 
+CombBLAS and define the environment variable:
 
 ```
 export COMBBLAS_ROOT=<Prefix directory of the CombBLAS installation>
@@ -79,7 +79,6 @@ cmake .. \
     -DTPL_PARMETIS_INCLUDE_DIRS="${PARMETIS_ROOT}/include;${PARMETIS_ROOT}/metis/include" \
     -DTPL_PARMETIS_LIBRARIES="${PARMETIS_BUILD_DIR}/libparmetis/libparmetis.a;${PARMETIS_BUILD_DIR}/libmetis/libmetis.a" \
 ```
-
 For a more sophisticated installation including third-part libraries, do:
 ```
 cmake .. \
@@ -133,18 +132,30 @@ execution may fail. You can pass the definition option "-DMPIEXEC_EXECUTABLE"
 to cmake. For example on Cori at NERSC, you will need the following:
 `-DMPIEXEC_EXECUTABLE=/usr/bin/srun`
 
-Or, you can always go to TEST/ directory to perform
-testing manually.
+Or, you can always go to TEST/ directory to perform testing manually.
 
-**Note on the C-Fortran name mangling handled by C preprocessor definition:**  
-In the default setting, we assume that Fortran expects a C routine
-to have an underscore postfixed to the name. Depending on the
-compiler, you may need to define one of the following flags in
-during the cmake build to overwrite default setting:
+**SUMMARY of the CMake definitions:**
+The first one in the list of choices is the default setting.
 ```
-cmake .. -DCMAKE_C_FLAGS="-DNoChange" 
-cmake .. -DCMAKE_C_FLAGS="-DUpCase"
+    -DTPL_ENABLE_INTERNAL_BLASLIB=OFF | ON
+    -TPL_ENABLE_PARMETISLIB=ON | OFF
+    -DTPL_ENABLE_LAPACKLIB=OFF | ON
+    -TPL_ENABLE_COMBBLASLIB=OFF
+    -DTPL_ENABLE_CUDALIB=OFF | ON
+    -Denable_complex16=OFF | ON
+    -DXSDK_INDEX_SIZE=32 | 64
+
+    -DXSDK_ENABLE_Fortran=OFF | ON
+    -DCMAKE_Fortran_COMPILER=<MPI F90 compiler>
+    -DBUILD_SHARED_LIBS= OFF | ON
+    -DCMAKE_INSTALL_PREFIX=<...>.
+    -DCMAKE_C_COMPILER=<MPI C compiler>
+    -DCMAKE_C_FLAGS="..." 
+    -DCMAKE_CXX_COMPILER=<MPI C++ compiler>
+    -DMAKE_CXX_FLAGS="..."
+    -DCMAKE_CUDA_FLAGS="..." 
 ```
+
 
 
 ### Installation option 2: Manual installation with makefile.
@@ -300,7 +311,6 @@ endif
 ```
 A Makefile is provided in each subdirectory. The installation can be done
 completely automatically by simply typing "make" at the top level.
-
 
 
 ## Windows Usage

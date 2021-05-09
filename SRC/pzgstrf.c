@@ -900,7 +900,7 @@ pzgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
     bigv_size += (gemm_m_pad * (j + max_row_size + gemm_n_pad));
 
 #if ( PRNTlevel>=1 )
-    printf("[%d].. BIG V size %d (on CPU)\n", iam, bigv_size);
+    printf("[%d].. BIG V size " IFMT " (on CPU)\n", iam, bigv_size);
     fflush(stdout);
 #endif
 

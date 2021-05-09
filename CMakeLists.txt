@@ -27,13 +27,13 @@ option(enable_examples  "Build examples" ON)
 #-- BLAS
 option(TPL_ENABLE_INTERNAL_BLASLIB  "Build the CBLAS library" ${enable_blaslib_DEFAULT})
 option(TPL_BLAS_LIBRARIES "List of absolute paths to blas libraries [].")
-#-- LAPACK
-option(TPL_ENABLE_LAPACKLIB "Enable LAPACK library" ON)
-option(TPL_LAPACK_LIBRARIES "List of absolute paths to LAPACK libraries [].")
 #-- ParMETIS
 option(TPL_ENABLE_PARMETISLIB   "Build the ParMETIS library" ON)
 option(TPL_PARMETIS_LIBRARIES "List of absolute paths to ParMETIS link libraries [].")
 option(TPL_PARMETIS_INCLUDE_DIRS "List of absolute paths to ParMETIS include directories [].")
+#-- LAPACK
+option(TPL_ENABLE_LAPACKLIB "Enable LAPACK library" OFF)
+option(TPL_LAPACK_LIBRARIES "List of absolute paths to LAPACK libraries [].")
 #-- CombBLAS
 option(TPL_ENABLE_COMBBLASLIB   "Build the CombBLAS library" OFF)
 option(TPL_COMBBLAS_LIBRARIES "List of absolute paths to CombBLAS link libraries [].")
