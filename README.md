@@ -1,3 +1,24 @@
+# SuperLU_DIST (version 7.0)   <img align=center width="55" alt="superlu" src="https://user-images.githubusercontent.com/11741943/103982988-5a9a9d00-5139-11eb-9ac4-a55e80a79f8d.png">
+
+[![Build Status](https://travis-ci.org/xiaoyeli/superlu_dist.svg?branch=master)](https://travis-ci.org/xiaoyeli/superlu_dist) 
+[Nightly tests](http://my.cdash.org/index.php?project=superlu_dist)
+
+SuperLU_DIST contains a set of subroutines to solve a sparse linear system 
+A*X=B. It uses Gaussian elimination with static pivoting (GESP). 
+Static pivoting is a technique that combines the numerical stability of
+partial pivoting with the scalability of Cholesky (no pivoting),
+to run accurately and efficiently on large numbers of processors. 
+
+SuperLU_DIST is a parallel extension to the serial SuperLU library.
+It is targeted for the distributed memory parallel machines.
+SuperLU_DIST is implemented in ANSI C, and MPI for communications.
+Currently, the LU factorization and triangular solution routines,
+which are the most time-consuming part of the solution process,
+are parallelized. The other routines, such as static pivoting and 
+column preordering for sparsity are performed sequentially. 
+This "alpha" release contains double-precision real and double-precision
+complex data types.
+
 
 Table of Contents
 =================
@@ -22,26 +43,6 @@ Table of Contents
 Created by [gh-md-toc](https://github.com/ekalinin/github-markdown-toc)
 
 
-SuperLU_DIST (version 7.0)   <img align=center width="55" alt="superlu" src="https://user-images.githubusercontent.com/11741943/103982988-5a9a9d00-5139-11eb-9ac4-a55e80a79f8d.png">
-
-[![Build Status](https://travis-ci.org/xiaoyeli/superlu_dist.svg?branch=master)](https://travis-ci.org/xiaoyeli/superlu_dist) 
-[Nightly tests](http://my.cdash.org/index.php?project=superlu_dist)
-
-SuperLU_DIST contains a set of subroutines to solve a sparse linear system 
-A*X=B. It uses Gaussian elimination with static pivoting (GESP). 
-Static pivoting is a technique that combines the numerical stability of
-partial pivoting with the scalability of Cholesky (no pivoting),
-to run accurately and efficiently on large numbers of processors. 
-
-SuperLU_DIST is a parallel extension to the serial SuperLU library.
-It is targeted for the distributed memory parallel machines.
-SuperLU_DIST is implemented in ANSI C, and MPI for communications.
-Currently, the LU factorization and triangular solution routines,
-which are the most time-consuming part of the solution process,
-are parallelized. The other routines, such as static pivoting and 
-column preordering for sparsity are performed sequentially. 
-This "alpha" release contains double-precision real and double-precision
-complex data types.
 
 # The distribution contains the following directory structure:
 
