@@ -420,20 +420,30 @@ dreadtriple_noheader.c : triplet, no header, which is also readable in Matlab
  Porto, Portugal.  
 **[4]** P. Sao, X.S. Li, R. Vuduc, “A Communication-Avoiding 3D Factorization
  for Sparse Matrices”, Proc. of IPDPS, May 21–25, 2018, Vancouver.   
-**[5]** Y. Liu, M. Jacquelin, P. Ghysels and X.S. Li, “Highly scalable
+**[5]** P. Sao, R. Vuduc, X. Li, "Communication-avoiding 3D algorithm for
+ sparse LU factorization on heterogeneous systems", J. Parallel and
+ Distributed Computing (JPDC), September 2019.     
+**[6]** Y. Liu, M. Jacquelin, P. Ghysels and X.S. Li, “Highly scalable
  distributed-memory sparse triangular solution algorithms”, Proc. of
  SIAM workshop on Combinatorial Scientific Computing, June 6-8, 2018,
- Bergen, Norway. 
+ Bergen, Norway.   
+**[7]** N. Ding, S. Williams, Y. Liu, X.S. Li, "Leveraging One-Sided
+ Communication for Sparse Triangular Solvers", Proc. of SIAM Conf. on
+ Parallel Processing for Scientific Computing. Feb. 12-15, 2020.   
+**[8]** A. Azad, A. Buluc, X.S. Li, X. Wang, and J. Langguth,
+"A distributed-memory algorithm for computing a heavy-weight perfect matching 
+on bipartite graphs", SIAM J. Sci. Comput., Vol. 42, No. 4, pp. C143-C168, 2020.   
 
-**Xiaoye S. Li**, Lawrence Berkeley National Lab, [xsli@lbl.gov](xsli@lbl.gov)
+
+**Xiaoye S. Li**, Lawrence Berkeley National Lab, [xsli@lbl.gov](xsli@lbl.gov)   
 **Gustavo Chavez**, Lawrence Berkeley National Lab, [gichavez@lbl.gov](gichavez@lbl.gov)   
 **Nan Ding**, Lawrence Berkeley National Lab, [nanding@lbl.gov](nanding@lbl.gov)  
 **Laura Grigori**, INRIA, France, [laura.grigori@inria.fr](laura.grigori@inria.fr)  
 **Yang Liu**, Lawrence Berkeley National Lab, [liuyangzhuan@lbl.gov](liuyangzhuan@lbl.gov)   
 **Piyush Sao**, Georgia Institute of Technology, [piyush.feynman@gmail.com](piyush.feynman@gmail.com)  
-**Meiyue Shao**, Lawrence Berkeley National Lab, [myshao@lbl.gov](myshao@lbl.gov) 
+**Meiyue Shao**, Lawrence Berkeley National Lab, [myshao@lbl.gov](myshao@lbl.gov)   
 **Ichitaro Yamazaki**, Univ. of Tennessee, [ic.yamazaki@gmail.com](ic.yamazaki@gmail.com)  
-**Jim Demmel**, UC Berkeley, [demmel@cs.berkeley.edu](demmel@cs.berkeley.edu)  
+**Jim Demmel**, UC Berkeley, [demmel@cs.berkeley.edu](demmel@cs.berkeley.edu)   
 **John Gilbert**, UC Santa Barbara, [gilbert@cs.ucsb.edu](gilbert@cs.ucsb.edu)
 
 
