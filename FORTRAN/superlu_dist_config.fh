@@ -1,4 +1,5 @@
 
+#define HAVE_CUDA TRUE
 
 #define HAVE_PARMETIS TRUE
 

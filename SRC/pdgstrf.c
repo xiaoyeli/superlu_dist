@@ -771,8 +771,8 @@ pdgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
     int cublas_nb = get_cublas_nb(); // default 64
     int nstreams = get_num_cuda_streams (); // default 8
 
-    int_t buffer_size  = SUPERLU_MAX(max_row_size * nstreams * cublas_nb,
-                                     get_max_buffer_size());
+    int_t buffer_size  = SUPERLU_MAX(max_row_size * nstreams * cublas_nb, sp_ienv_dist(8));
+                                     //   get_max_buffer_size());
     /* array holding last column blk for each partition,
        used in SchCompUdt-cuda.c         */
   #if 0
@@ -784,8 +784,8 @@ pdgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
 #else /* not to use GPU */
 
     int Threads_per_process = get_thread_per_process();
-    int_t buffer_size  = SUPERLU_MAX(max_row_size * Threads_per_process * ldt,
-                                     get_max_buffer_size());
+    int_t buffer_size  = SUPERLU_MAX(max_row_size * Threads_per_process * ldt, sp_ienv_dist(8));
+                                     // get_max_buffer_size());
 #endif /* end ifdef GPU_ACC -----------*/
 
     int_t max_ncols = 0;
@@ -814,7 +814,7 @@ pdgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
 
 #if ( PRNTlevel>=1 )
     if(!iam) {
-        printf("\t.. MAX_BUFFER_SIZE " IFMT " set for GPU\n", get_max_buffer_size());
+        printf("\t.. MAX_BUFFER_SIZE %d set for GPU\n", sp_ienv_dist(8));
 	printf("\t.. N_GEMM: %d flops of GEMM done on CPU (1st block always on CPU)\n", sp_ienv_dist(7));
         printf("\t.. GEMM buffer size: max_row_size X max_ncols = %d x " IFMT "\n",
                 max_row_size, max_ncols);

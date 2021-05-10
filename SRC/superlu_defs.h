@@ -1009,7 +1009,7 @@ extern int_t estimate_bigu_size (int_t, int_t **, Glu_persist_t *,
 /* Auxiliary routines */
 extern double SuperLU_timer_ ();
 extern void   superlu_abort_and_exit_dist(char *);
-extern int    sp_ienv_dist (int_t);
+extern int    sp_ienv_dist (int);
 extern void   ifill_dist (int_t *, int_t, int_t);
 extern void   super_stats_dist (int_t, int_t *);
 extern void  get_diag_procs(int_t, Glu_persist_t *, gridinfo_t *, int_t *,

@@ -68,7 +68,7 @@ at the top-level directory.
 
 
 int
-sp_ienv_dist(int_t ispec)
+sp_ienv_dist(int ispec)
 {
     // printf(" this function called\n");
     int i;
