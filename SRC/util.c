@@ -259,7 +259,7 @@ void print_sp_ienv_dist(superlu_dist_options_t *options)
     printf("**    relaxation                 : %d\n", sp_ienv_dist(2));
     printf("**    max supernode              : %d\n", sp_ienv_dist(3));
     printf("**    estimated fill ratio       : %d\n", sp_ienv_dist(6));
-    printf("**    min GEMM dimension for GPU : %d\n", sp_ienv_dist(7));
+    printf("**    min GEMM m*k*n to use GPU  : %d\n", sp_ienv_dist(7));
     printf("**************************************************\n");
 }
 
