@@ -57,6 +57,7 @@ SuperLU_DIST/CBLAS/    needed BLAS routines in C, not necessarily fast
 		       library with multiple OpenMP threads, performance
 		       relies on a good multithreaded BLAS implementation.)
 SuperLU_DIST/DOC/      the Users' Guide
+SuperLU_DIST/FORTRAN/  Fortran90 wrapper functions
 SuperLU_DIST/EXAMPLE/  example programs
 SuperLU_DIST/INSTALL/  test machine dependent parameters
 SuperLU_DIST/SRC/      C source code, to be compiled into libsuperlu_dist.a
@@ -340,13 +341,24 @@ endif
 A Makefile is provided in each subdirectory. The installation can be done
 completely automatically by simply typing "make" at the top level.
 
-# Summary of the environment variables.
-Several blocking parameters may affect performance. Most of them can be set
-by the user through environment variables. The SuperLU code uses an
-environment inquiry function to read these parameters. This function is
-provided in the file SRC/sp_ienv.c. Please consult that file for detailed
-description of the meanings.
 
+# Summary of the environment variables.
+A couple of environment variables affect parallel execution.
+```
+    export OMP_NUM_THREADS=<...>
+    export SUPERLU_ACC_OFFLOAD=1  // this enables use of GPU. Default is 0.
+```
+Several integer blocking parameters may affect performance. Most of them can be
+set by the user through environment variables. Oherwise the default values
+are provided. Various SuperLU routines call an environment inquiry function
+to obtain these parameters. This function is provided in the file SRC/sp_ienv.c.
+Please consult that file for detailed description of the meanings.
+```
+    export NREL=<...>   // supernode relaxation parameter
+    export NSUP=<...>   // maximum allowable supernode size
+    export FILL=<...>   // estimated fill ratio of nonzeros(L+U)/nonzeros(A)
+    export MAX_BUFFER_SIZE=<...>   // maximum buffer size on GPU for GEMM
+```
 
 # Windows Usage
 Prerequisites: CMake, Visual Studio, Microsoft HPC Pack
