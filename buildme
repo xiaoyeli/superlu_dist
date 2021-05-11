@@ -22,7 +22,7 @@ cmake .. \
  -DCMAKE_C_COMPILER=mpiicx \
  -DCMAKE_CXX_COMPILER=mpiicpx \
  -DCMAKE_Fortran_FLAGS="-I${MKLROOT}/include" \
- -DCMAKE_CXX_FLAGS="-g -fsycl -fsycl-unnamed-lambda -D__STRICT_ANSI__ -I$MKLROOT/include -DSUPERLU_USE_MKL -DPRNTlevel=0 -DDEBUGlevel=0" \
+ -DCMAKE_CXX_FLAGS="-g -std=c++14 -fsycl -fsycl-unnamed-lambda -D__STRICT_ANSI__ -I$MKLROOT/include -DSUPERLU_USE_MKL -DPRNTlevel=0 -DDEBUGlevel=0" \
  -DCMAKE_C_FLAGS="-g -D__STRICT_ANSI__ -I$MKLROOT/include -DSUPERLU_USE_MKL  -DPRNTlevel=0 -DDEBUGlevel=0" \
  -DCMAKE_EXE_LINKER_FLAGS="-g -fsycl  -L${MKLROOT}/lib/intel64 -lmkl_sycl -lmkl_intel_lp64 -lmkl_intel_thread -lmkl_core -lmkl_blacs_intelmpi_lp64 /home/mcordery/tmp/superlu_dist/build/SRC/libsuperlu_dist.a" \
  -DCMAKE_INSTALL_PREFIX=/home/mcordery/tmp/superlu_dist/build \

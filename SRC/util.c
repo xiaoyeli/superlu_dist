@@ -835,11 +835,15 @@ int_t get_cublas_nb()
 int_t get_num_cuda_streams()
 {
     char *ttemp;
+#if defined(HAVE_SYCL)
+	return 1;
+#else
     ttemp = getenv("NUM_CUDA_STREAMS");
     if (ttemp)
         return atoi(ttemp);
     else
         return 8;
+#endif
 }
 
 int_t get_min(int_t *sums, int_t nprocs)

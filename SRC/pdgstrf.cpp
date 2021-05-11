@@ -899,14 +899,7 @@ pdgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
 #elif defined(HAVE_SYCL) /*-- use SYCL --*/
 
      auto q_ct1 = sycl::queue(sycl::default_selector());
-    sycl::queue streams[1] = {q_ct1}; // = sycl::queue(sycl::default_selector());
-//    for(int i=0; i<nstreams; ++i)
-//	{
-//	printf("%d %d\n", i+1, nstreams);
-//		streams[i] = sycl::queue(sycl::default_selector());;
-//	}
-//    auto q_ct1 = sycl::queue(sycl::default_selector());
-//streams[i] = q_ct1;
+    sycl::queue streams[1] = {q_ct1}; 
     bigU = sycl::malloc_host<double>(bigu_size,q_ct1);
     if (!bigU)
       ABORT("[SYCL] Malloc fails for dgemm buffer U ");

@@ -218,7 +218,6 @@ if ( msg0 && msg2 ) {  /* L(:,k) and U(k,:) are not empty. */
 		tempu = bigU;
 
 		double *tempv1 = bigV + full_u_cols[st-1]*nbrow;
-
 		/* Following is for testing purpose */
 		if ( num_col_stream > 0 ) {
 #ifdef HAVE_SYCL
@@ -229,9 +228,8 @@ if ( msg0 && msg2 ) {  /* L(:,k) and U(k,:) are not empty. */
 		    size_t C_stream_size = nbrow * num_col_stream * sizeof(double);
 
 		    assert(nbrow*(st_col+num_col_stream) < buffer_size);
-
 		    streams[stream_id].memcpy(dB+b_offset, tempu+b_offset, B_stream_size); //mjc was memcpyAsync
-		    oneapi::mkl::blas::gemm(streams[stream_id],
+			 oneapi::mkl::blas::gemm(streams[stream_id],
 					    oneapi::mkl::transpose::nontrans,
 					    oneapi::mkl::transpose::nontrans,
 					    nbrow, num_col_stream, ldu,
@@ -241,7 +239,6 @@ if ( msg0 && msg2 ) {  /* L(:,k) and U(k,:) are not empty. */
 					    nbrow);
 		    streams[stream_id].memcpy(tempv1, dC+c_offset, C_stream_size);
 #else /*-- on CPU --*/
-
 	            my_dgemm_("N", "N", &nbrow, &num_col_stream, &ldu,
 			      &alpha, &lusup[luptr+(knsupc-ldu)*nsupr],
 			      &nsupr, tempu+ldu*st_col, &ldu, &beta,

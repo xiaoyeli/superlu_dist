@@ -768,9 +768,8 @@ get_mpi_process_per_gpu ()
 size_t
 get_acc_memory ()
 {
-printf("calling acc_memory\n");
 	size_t mfree, mtotal;
-	sycl::device syclDev(sycl::gpu_selector{});
+	sycl::device syclDev(sycl::default_selector{});
 	mtotal = syclDev.get_info<cl::sycl::info::device::global_mem_size>();
 	mfree = mtotal; // mjc temporary for now 
 	//mjc this needs updating
@@ -952,7 +951,7 @@ int_t initSluGPU3D_t(
   //   }
   // }
 
-  sycl::device syclDev(sycl::gpu_selector{});
+  sycl::device syclDev(sycl::default_selector{});
   sycl::context syclctxt(syclDev, sycl_asynchandler);
 
   gridinfo_t* grid = &(grid3d->grid2d);
