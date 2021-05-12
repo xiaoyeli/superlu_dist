@@ -14,7 +14,6 @@
 //#define GPU_DEBUG
 
 #include "mpi.h"
-#include "omp.h"
 // #include "sec_structs.h"
 #include <ctime>
 #include <cublas_v2.h>
@@ -98,9 +97,7 @@ void device_scatter_l (int_t thread_id,
 }
 #endif ///////////// not used
 
-#define THREAD_BLOCK_SIZE  256  /* Sherry: was 192. should be <= MAX_SUPER_SIZE */
-// The following is moved to superlu_defs.h
-//#define MAX_SUPER_SIZE   256    /* Sherry: was 192 on Titan */
+#define THREAD_BLOCK_SIZE  512  /* Sherry: was 192. should be <= MAX_SUPER_SIZE */
 
 __device__ inline
 void ddevice_scatter_l_2D (int thread_id,

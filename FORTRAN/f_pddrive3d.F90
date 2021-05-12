@@ -41,7 +41,7 @@
 ! The program may be run by typing
 !    mpiexec -np 8 f_pddrive3d 
 !
-      #include "superlu_dist_config.fh"
+#include "superlu_dist_config.fh"
       use superlu_mod
 !      implicit none
       include 'mpif.h'

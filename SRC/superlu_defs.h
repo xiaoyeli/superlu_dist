@@ -136,7 +136,7 @@ typedef MPI_C_DOUBLE_COMPLEX  SuperLU_MPI_DOUBLE_COMPLEX;
 #endif
 
 
-#define MAX_SUPER_SIZE 256   /* Sherry: moved from superlu_gpu.cu */
+#define MAX_SUPER_SIZE 512   /* Sherry: moved from superlu_gpu.cu */
 
 
 #define ISORT     /* NOTE: qsort() has bug on Mac */

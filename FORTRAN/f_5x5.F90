@@ -33,7 +33,7 @@
 !   6. Release the process grid and terminate the MPI environment
 !   7. Release all structures
 !
-      #include "superlu_dist_config.fh"
+#include "superlu_dist_config.fh"
       use superlu_mod
       include 'mpif.h'
       integer maxn, maxnz, maxnrhs

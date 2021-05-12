@@ -4,7 +4,6 @@
 #include "sec_structs.h"
 #include <stdlib.h> /*for Qsort */
 #include <mpi.h>
-#include <omp.h>
 #include <math.h>   /*for sqrt*/
 #include <string.h>
 #include "compiler.h"
