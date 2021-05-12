@@ -23,6 +23,7 @@ at the top-level directory.
  *     February 8, 2019    version 6.1.1
  *     November 12, 2019   version 6.2.0
  *     October 23, 2020    version 6.4.0
+ *     May 12, 2021        version 7.0.0
  * </pre>
  */
 
@@ -72,10 +73,10 @@ at the top-level directory.
  *   #endif
  * Versions 4.x and earlier do not include a #define'd version numbers.
  */
-#define SUPERLU_DIST_MAJOR_VERSION     6
-#define SUPERLU_DIST_MINOR_VERSION     4
+#define SUPERLU_DIST_MAJOR_VERSION     7
+#define SUPERLU_DIST_MINOR_VERSION     0
 #define SUPERLU_DIST_PATCH_VERSION     0
-#define SUPERLU_DIST_RELEASE_DATE      "October 23, 2020"
+#define SUPERLU_DIST_RELEASE_DATE      "May 12, 2021"
 
 #include "superlu_dist_config.h"
 /* Define my integer size int_t */

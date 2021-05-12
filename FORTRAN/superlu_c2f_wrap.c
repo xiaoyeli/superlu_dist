@@ -4,10 +4,11 @@
  * \brief C interface functions for the Fortran90 wrapper.
  *
  * <pre>
- * -- Distributed SuperLU routine (version 4.1) --
+ * -- Distributed SuperLU routine (version 7.0) --
  * Lawrence Berkeley National Lab, Univ. of California Berkeley.
  * October 2012
  * April 5, 2015
+ * May 12, 2021
  */
 
 #include "superlu_defs.h"

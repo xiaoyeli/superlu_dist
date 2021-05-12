@@ -1,7 +1,7 @@
 /* superlu_dist_config.h.in */
 
 /* Enable CUDA */
-/* #undef HAVE_CUDA */
+#define HAVE_CUDA TRUE
 
 /* Enable parmetis */
 #define HAVE_PARMETIS TRUE
@@ -13,7 +13,7 @@
 /* #undef HAVE_COMBBLAS */
 
 /* enable 64bit index mode */
-/* #undef XSDK_INDEX_SIZE */
+#define XSDK_INDEX_SIZE 64
 
 #if (XSDK_INDEX_SIZE == 64)
 #define _LONGINT 1

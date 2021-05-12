@@ -1,3 +1,12 @@
+/*! @file
+ * \brief SuperLU utilities
+ *
+ * <pre>
+ * -- Distributed SuperLU routine (version 7.0) --
+ * Lawrence Berkeley National Lab, Oak Ridge National Lab
+ * May 12, 2021
+ * </pre>
+ */
 #include <stdio.h>
 #include <assert.h>
 #include "superlu_ddefs.h"

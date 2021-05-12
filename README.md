@@ -355,7 +355,7 @@ to obtain these parameters. This function is provided in the file SRC/sp_ienv.c.
 Please consult that file for detailed description of the meanings.
 ```
     export NREL=<...>   // supernode relaxation parameter
-    export NSUP=<...>   // maximum allowable supernode size
+    export NSUP=<...>   // maximum allowable supernode size, not to exceed 512
     export FILL=<...>   // estimated fill ratio of nonzeros(L+U)/nonzeros(A)
     export MAX_BUFFER_SIZE=<...>   // maximum buffer size on GPU for GEMM
 ```
