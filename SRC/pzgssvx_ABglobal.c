@@ -342,7 +342,7 @@ at the top-level directory.
  *         NOTE: Currently, A must reside in all processes when calling
  *               this routine.
  *
- * ScalePermstruct (input/output) ScalePermstruct_t*
+ * ScalePermstruct (input/output) zScalePermstruct_t*
  *         The data structure to store the scaling and permutation vectors
  *         describing the transformations performed to the matrix A.
  *         It contains the following fields:
@@ -418,7 +418,7 @@ at the top-level directory.
  *         Grid can be initialized by subroutine SUPERLU_GRIDINIT.
  *         See superlu_zdefs.h for the definition of 'gridinfo_t'.
  *
- * LUstruct (input/output) LUstruct_t*
+ * LUstruct (input/output) zLUstruct_t*
  *         The data structures to store the distributed L and U factors.
  *         It contains the following fields:
  *
@@ -441,9 +441,9 @@ at the top-level directory.
  *	       xsup[s] is the leading column of the s-th supernode,
  *             supno[i] is the supernode number to which column i belongs.
  *
- *         o Llu (LocalLU_t*)
+ *         o Llu (zLocalLU_t*)
  *           The distributed data structures to store L and U factors.
- *           See superlu_ddefs.h for the definition of 'LocalLU_t'.
+ *           See superlu_ddefs.h for the definition of 'zLocalLU_t'.
  *
  * berr    (output) double*, dimension (nrhs)
  *         The componentwise relative backward error of each solution
@@ -469,9 +469,9 @@ at the top-level directory.
  */
 void
 pzgssvx_ABglobal(superlu_dist_options_t *options, SuperMatrix *A,
-		 ScalePermstruct_t *ScalePermstruct,
+		 zScalePermstruct_t *ScalePermstruct,
 		 doublecomplex B[], int ldb, int nrhs, gridinfo_t *grid,
-		 LUstruct_t *LUstruct, double *berr,
+		 zLUstruct_t *LUstruct, double *berr,
 		 SuperLUStat_t *stat, int *info)
 {
     SuperMatrix AC;
@@ -876,7 +876,7 @@ pzgssvx_ABglobal(superlu_dist_options_t *options, SuperMatrix *A,
 	if ( Fact != SamePattern_SameRowPerm ) {
 #if ( PRNTlevel>=1 )
 	    if ( !iam )
-		printf(".. symbfact(): relax " IFMT ", maxsuper " IFMT ", fill " IFMT "\n",
+		printf(".. symbfact(): relax %d, maxsuper %d, fill %d\n",
 		       sp_ienv_dist(2), sp_ienv_dist(3), sp_ienv_dist(6));
 #endif
 	    t = SuperLU_timer_();
@@ -899,7 +899,7 @@ pzgssvx_ABglobal(superlu_dist_options_t *options, SuperMatrix *A,
 		    printf("\tint %d, short %d, float %d, double %d\n",
 			   (int) sizeof(int_t), (int) sizeof(short),
  			   (int) sizeof(float), (int) sizeof(double));
-		    printf("\tSYMBfact (MB):\tL\\U %.2f\ttotal %.2f\texpansions " IFMT "\n",
+		    printf("\tSYMBfact (MB):\tL\\U %.2f\ttotal %.2f\texpansions %d\n",
 			   symb_mem_usage.for_lu*1e-6,
 			   symb_mem_usage.total*1e-6,
 			   symb_mem_usage.expansions);
@@ -1098,7 +1098,7 @@ pzgssvx_ABglobal(superlu_dist_options_t *options, SuperMatrix *A,
 	    case COL:
 		SUPERLU_FREE(R);
 		break;
-	    default: break;
+	    default:  break;
 	}
     }
     if ( !factored || (factored && options->IterRefine) )

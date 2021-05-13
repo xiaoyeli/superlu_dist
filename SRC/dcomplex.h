@@ -39,7 +39,7 @@ typedef struct { double r, i; } doublecomplex;
  * Introduce macro SUPERLU_DIST_EXPORT to correctly export the only
  * remaining data symbol SuperLU_MPI_DOUBLE_COMPLEX.
  */
-extern SUPERLU_DIST_EXPORT MPI_Datatype SuperLU_MPI_DOUBLE_COMPLEX;
+//extern SUPERLU_DIST_EXPORT MPI_Datatype SuperLU_MPI_DOUBLE_COMPLEX;
 
 /* Macro definitions */
 

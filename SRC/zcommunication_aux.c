@@ -71,7 +71,8 @@ int_t zBcast_LPanel
  int* msgcnt,  int **ToSendR, int_t *xsup , SCT_t* SCT,
  int tag_ub)
 {
-    unsigned long long t1 = _rdtsc();
+    //unsigned long long t1 = _rdtsc();
+    double t1 = SuperLU_timer_();
     int_t Pc = grid->npcol;
     int_t lk = LBj (k, grid);
     superlu_scope_t *scp = &grid->rscp;  /* The scope of process row. */
@@ -100,7 +101,8 @@ int_t zBcast_LPanel
 
         }
     }
-    SCT->Bcast_UPanel_tl += (double) ( _rdtsc() - t1);
+    //SCT->Bcast_UPanel_tl += (double) ( _rdtsc() - t1);
+    SCT->Bcast_UPanel_tl +=  SuperLU_timer_() - t1;
     return 0;
 }
 
@@ -155,7 +157,8 @@ int_t zBcast_UPanel(int_t k, int_t k0, int_t* usub,
 		   int* msgcnt, int *ToSendD, SCT_t* SCT, int tag_ub)
 
 {
-    unsigned long long t1 = _rdtsc();
+    //unsigned long long t1 = _rdtsc();
+    double t1 = SuperLU_timer_();
     int_t iam = grid->iam;
     int_t lk = LBi (k, grid);
     int_t Pr = grid->nprow;
@@ -187,14 +190,15 @@ int_t zBcast_UPanel(int_t k, int_t k0, int_t* usub,
             }       /* if pi ... */
         }           /* for pi ... */
     }
-    SCT->Bcast_UPanel_tl += (double) ( _rdtsc() - t1);
+    //SCT->Bcast_UPanel_tl += (double) ( _rdtsc() - t1);
+    SCT->Bcast_UPanel_tl += SuperLU_timer_() - t1;
     return 0;
 }
 
 int_t zIrecv_LPanel
 /*it places Irecv call for L panel*/
 (int_t k, int_t k0,  int_t* Lsub_buf, doublecomplex* Lval_buf,
- gridinfo_t *grid, MPI_Request *recv_req, LocalLU_t *Llu, int tag_ub )
+ gridinfo_t *grid, MPI_Request *recv_req, zLocalLU_t *Llu, int tag_ub )
 {
     int_t kcol = PCOL (k, grid);
 
@@ -211,7 +215,7 @@ int_t zIrecv_LPanel
 
 int_t zIrecv_UPanel
 /*it places Irecv calls to receive U panels*/
-(int_t k, int_t k0, int_t* Usub_buf, doublecomplex* Uval_buf, LocalLU_t *Llu,
+(int_t k, int_t k0, int_t* Usub_buf, doublecomplex* Uval_buf, zLocalLU_t *Llu,
  gridinfo_t* grid, MPI_Request *recv_req_u, int tag_ub )
 {
     int_t krow = PROW (k, grid);
@@ -229,13 +233,15 @@ int_t zIrecv_UPanel
 int_t zWait_URecv
 ( MPI_Request *recv_req, int* msgcnt, SCT_t* SCT)
 {
-    unsigned long long t1 = _rdtsc();
+    //unsigned long long t1 = _rdtsc();
+    double t1 = SuperLU_timer_();
     MPI_Status status;
     MPI_Wait (&recv_req[0], &status);
     MPI_Get_count (&status, mpi_int_t, &msgcnt[2]);
     MPI_Wait (&recv_req[1], &status);
     MPI_Get_count (&status, SuperLU_MPI_DOUBLE_COMPLEX, &msgcnt[3]);
-    SCT->Wait_URecv_tl += (double) ( _rdtsc() - t1);
+    //SCT->Wait_URecv_tl += (double) ( _rdtsc() - t1);
+    SCT->Wait_URecv_tl +=  SuperLU_timer_() - t1;
     return 0;
 }
 
@@ -243,7 +249,8 @@ int_t zWait_LRecv
 /*waits till L blocks have been received*/
 (  MPI_Request* recv_req, int* msgcnt, int* msgcntsU, gridinfo_t * grid, SCT_t* SCT)
 {
-    unsigned long long t1 = _rdtsc();
+    //unsigned long long t1 = _rdtsc();
+    double t1 = SuperLU_timer_();
     MPI_Status status;
     
     if (recv_req[0] != MPI_REQUEST_NULL)
@@ -267,7 +274,8 @@ int_t zWait_LRecv
     {
         msgcnt[1] = msgcntsU[1];
     }
-    SCT->Wait_LRecv_tl += (double) ( _rdtsc() - t1);
+    //SCT->Wait_LRecv_tl += (double) ( _rdtsc() - t1);
+    SCT->Wait_LRecv_tl +=  SuperLU_timer_() - t1;
     return 0;
 }
 
@@ -303,7 +311,8 @@ int_t zRecv_UDiagBlock(int_t k0, doublecomplex *ublk_ptr, /*pointer for the diag
                       int_t src,
                       gridinfo_t * grid, SCT_t* SCT, int tag_ub)
 {
-    unsigned long long t1 = _rdtsc();
+    //unsigned long long t1 = _rdtsc();
+    double t1 = SuperLU_timer_();
     MPI_Status status;
     MPI_Comm comm = (grid->cscp).comm;
     /* tag = ((k0<<2)+2) % tag_ub;        */
@@ -311,13 +320,14 @@ int_t zRecv_UDiagBlock(int_t k0, doublecomplex *ublk_ptr, /*pointer for the diag
 
     MPI_Recv (ublk_ptr, size, SuperLU_MPI_DOUBLE_COMPLEX, src,
               SLU_MPI_TAG (4, k0), comm, &status);
-    SCT->Recv_UDiagBlock_tl += (double) ( _rdtsc() - t1);
+    //SCT->Recv_UDiagBlock_tl += (double) ( _rdtsc() - t1);
+    SCT->Recv_UDiagBlock_tl +=  SuperLU_timer_() - t1;
     return 0;
 }
 
 
 int_t zPackLBlock(int_t k, doublecomplex* Dest, Glu_persist_t *Glu_persist,
-                  gridinfo_t *grid, LocalLU_t *Llu)
+                  gridinfo_t *grid, zLocalLU_t *Llu)
 /*Copies src matrix into dest matrix*/
 {
     /* Initialization. */
@@ -374,7 +384,8 @@ int_t zIRecv_UDiagBlock(int_t k0, doublecomplex *ublk_ptr, /*pointer for the dia
                        MPI_Request *U_diag_blk_recv_req,
                        gridinfo_t * grid, SCT_t* SCT, int tag_ub)
 {
-    unsigned long long t1 = _rdtsc();
+    //unsigned long long t1 = _rdtsc();
+    double t1 = SuperLU_timer_();
     MPI_Comm comm = (grid->cscp).comm;
     /* tag = ((k0<<2)+2) % tag_ub;        */
     /* tag = (4*(nsupers+k0)+2) % tag_ub; */
@@ -385,7 +396,8 @@ int_t zIRecv_UDiagBlock(int_t k0, doublecomplex *ublk_ptr, /*pointer for the dia
     {
         printf("Error in IRecv_UDiagBlock count\n");
     }
-    SCT->Recv_UDiagBlock_tl += (double) ( _rdtsc() - t1);
+    //SCT->Recv_UDiagBlock_tl += (double) ( _rdtsc() - t1);
+    SCT->Recv_UDiagBlock_tl += SuperLU_timer_() - t1;
     return 0;
 }
 
@@ -395,7 +407,8 @@ int_t zIRecv_LDiagBlock(int_t k0, doublecomplex *L_blk_ptr, /*pointer for the di
                        MPI_Request *L_diag_blk_recv_req,
                        gridinfo_t * grid, SCT_t* SCT, int tag_ub)
 {
-    unsigned long long t1 = _rdtsc();
+    //unsigned long long t1 = _rdtsc();
+    double t1 = SuperLU_timer_();
     MPI_Comm comm = (grid->rscp).comm;
     /* tag = ((k0<<2)+2) % tag_ub;        */
     /* tag = (4*(nsupers+k0)+2) % tag_ub; */
@@ -407,7 +420,8 @@ int_t zIRecv_LDiagBlock(int_t k0, doublecomplex *L_blk_ptr, /*pointer for the di
     {
         printf("Error in IRecv_lDiagBlock count\n");
     }
-    SCT->Recv_UDiagBlock_tl += (double) ( _rdtsc() - t1);
+    //SCT->Recv_UDiagBlock_tl += (double) ( _rdtsc() - t1);
+    SCT->Recv_UDiagBlock_tl += SuperLU_timer_() - t1;
     return 0;
 }
 
@@ -448,9 +462,9 @@ int_t zIBcast_LDiagBlock(int_t k, doublecomplex *lblk_ptr, /*pointer for the dia
 int_t zUDiagBlockRecvWait( int_t k,  int_t* IrecvPlcd_D, int_t* factored_L,
                            MPI_Request * U_diag_blk_recv_req,
                            gridinfo_t *grid,
-                           LUstruct_t *LUstruct, SCT_t *SCT)
+                           zLUstruct_t *LUstruct, SCT_t *SCT)
 {
-    LocalLU_t *Llu = LUstruct->Llu;
+    zLocalLU_t *Llu = LUstruct->Llu;
 
     int_t iam = grid->iam;
 

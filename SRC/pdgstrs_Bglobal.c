@@ -42,7 +42,7 @@ _fcd ftcs2;
 _fcd ftcs3;
 #endif
 static void gather_diag_to_all(int_t, int_t, double [], Glu_persist_t *,
-                               LocalLU_t *, gridinfo_t *, int_t, int_t [],
+                               dLocalLU_t *, gridinfo_t *, int_t, int_t [],
                                int_t [], double [], int_t, double []);
 
 /*! \brief
@@ -61,11 +61,11 @@ static void gather_diag_to_all(int_t, int_t, double [], Glu_persist_t *,
  * n      (input) int (global)
  *        The order of the system of linear equations.
  *
- * LUstruct (input) LUstruct_t*
+ * LUstruct (input) dLUstruct_t*
  *        The distributed data structures storing L and U factors.
  *        The L and U factors are obtained from pdgstrf for
  *        the possibly scaled and permuted matrix A.
- *        See superlu_ddefs.h for the definition of 'LUstruct_t'.
+ *        See superlu_ddefs.h for the definition of 'dLUstruct_t'.
  *
  * grid   (input) gridinfo_t*
  *        The 2D process mesh. It contains the MPI communicator, the number
@@ -101,12 +101,12 @@ static void gather_diag_to_all(int_t, int_t, double [], Glu_persist_t *,
  */
 
 void
-pdgstrs_Bglobal(int_t n, LUstruct_t *LUstruct, gridinfo_t *grid,
+pdgstrs_Bglobal(int_t n, dLUstruct_t *LUstruct, gridinfo_t *grid,
                 double *B, int_t ldb, int nrhs,
                 SuperLUStat_t *stat, int *info)
 {
     Glu_persist_t *Glu_persist = LUstruct->Glu_persist;
-    LocalLU_t *Llu = LUstruct->Llu;
+    dLocalLU_t *Llu = LUstruct->Llu;
     double alpha = 1.0;
     double *lsum;  /* Local running sum of the updates to B-components */
     double *x;     /* X component at step k. */
@@ -988,7 +988,7 @@ pdgstrs_Bglobal(int_t n, LUstruct_t *LUstruct, gridinfo_t *grid,
  */
 static void
 gather_diag_to_all(int_t n, int_t nrhs, double x[],
-		   Glu_persist_t *Glu_persist, LocalLU_t *Llu,
+		   Glu_persist_t *Glu_persist, dLocalLU_t *Llu,
 		   gridinfo_t *grid, int_t num_diag_procs,
 		   int_t diag_procs[], int_t diag_len[],
 		   double y[], int_t ldy, double work[])

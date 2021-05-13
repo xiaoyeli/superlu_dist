@@ -27,10 +27,10 @@ at the top-level directory.
 
 /*-- Function prototypes --*/
 static void gather_1rhs_diag_to_all(int_t, doublecomplex [], Glu_persist_t *,
-                                    LocalLU_t *, gridinfo_t *, int_t, int_t [],
+                                    zLocalLU_t *, gridinfo_t *, int_t, int_t [],
 				    int_t [], doublecomplex [], doublecomplex []);
 static void redist_all_to_diag(int_t, doublecomplex [], Glu_persist_t *,
-                               LocalLU_t *, gridinfo_t *, int_t [], doublecomplex []);
+                               zLocalLU_t *, gridinfo_t *, int_t [], doublecomplex []);
 
 /*! \brief
  *
@@ -61,11 +61,11 @@ static void redist_all_to_diag(int_t, doublecomplex [], Glu_persist_t *,
  *        The norm of the original matrix A, or the scaled A if
  *        equilibration was done.
  *
- * LUstruct (input) LUstruct_t*
+ * LUstruct (input) zLUstruct_t*
  *        The distributed data structures storing L and U factors.
  *        The L and U factors are obtained from pzgstrf for
  *        the possibly scaled and permuted matrix A.
- *        See superlu_ddefs.h for the definition of 'LUstruct_t'.
+ *        See superlu_ddefs.h for the definition of 'zLUstruct_t'.
  *
  * grid   (input) gridinfo_t*
  *        The 2D process mesh. It contains the MPI communicator, the number
@@ -121,7 +121,7 @@ static void redist_all_to_diag(int_t, doublecomplex [], Glu_persist_t *,
  */
 
 void
-pzgsrfs_ABXglobal(int_t n, SuperMatrix *A, double anorm, LUstruct_t *LUstruct,
+pzgsrfs_ABXglobal(int_t n, SuperMatrix *A, double anorm, zLUstruct_t *LUstruct,
 		  gridinfo_t *grid, doublecomplex *B, int_t ldb, doublecomplex *X, int_t ldx,
 		  int nrhs, double *berr, SuperLUStat_t *stat, int *info)
 {
@@ -130,7 +130,7 @@ pzgsrfs_ABXglobal(int_t n, SuperMatrix *A, double anorm, LUstruct_t *LUstruct,
 #define ITMAX 20
 
     Glu_persist_t *Glu_persist = LUstruct->Glu_persist;
-    LocalLU_t *Llu = LUstruct->Llu;
+    zLocalLU_t *Llu = LUstruct->Llu;
     /*
      * Data structures used by matrix-vector multiply routine.
      */
@@ -158,7 +158,7 @@ pzgsrfs_ABXglobal(int_t n, SuperMatrix *A, double anorm, LUstruct_t *LUstruct,
     int_t *diag_len; /* Length of the X vector on diagonal processes. */
 
     /*-- Function prototypes --*/
-    extern void pzgstrs1(int_t, LUstruct_t *, gridinfo_t *,
+    extern void pzgstrs1(int_t, zLUstruct_t *, gridinfo_t *,
 			 doublecomplex *, int, SuperLUStat_t *, int *);
 
     /* Test the input parameters. */
@@ -379,7 +379,7 @@ pzgsrfs_ABXglobal(int_t n, SuperMatrix *A, double anorm, LUstruct_t *LUstruct,
  */
 static void
 redist_all_to_diag(int_t n, doublecomplex r[], Glu_persist_t *Glu_persist,
-		   LocalLU_t *Llu, gridinfo_t *grid, int_t mv_sup_to_proc[],
+		   zLocalLU_t *Llu, gridinfo_t *grid, int_t mv_sup_to_proc[],
 		   doublecomplex work[])
 {
     int_t i, ii, k, lk, lr, nsupers;
@@ -427,7 +427,7 @@ redist_all_to_diag(int_t n, doublecomplex r[], Glu_persist_t *Glu_persist,
  */
 static void
 gather_1rhs_diag_to_all(int_t n, doublecomplex x[],
-			Glu_persist_t *Glu_persist, LocalLU_t *Llu,
+			Glu_persist_t *Glu_persist, zLocalLU_t *Llu,
 			gridinfo_t *grid, int_t num_diag_procs,
 			int_t diag_procs[], int_t diag_len[],
 			doublecomplex y[], doublecomplex work[])

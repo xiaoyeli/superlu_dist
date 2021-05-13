@@ -36,7 +36,7 @@ at the top-level directory.
  *        A may be overwritten by diag(R)*A*diag(C)*Pc^T.
  *        The type of A can be: Stype = SLU_NR_loc; Dtype = SLU_Z; Mtype = SLU_GE.
  *
- * ScalePermstruct (input) ScalePermstruct_t*
+ * ScalePermstruct (input) zScalePermstruct_t*
  *        The data structure to store the scaling and permutation vectors
  *        describing the transformations performed to the original matrix A.
  *
@@ -59,7 +59,7 @@ at the top-level directory.
  * </pre>
  */
 int_t
-zReDistribute_A(SuperMatrix *A, ScalePermstruct_t *ScalePermstruct,
+zReDistribute_A(SuperMatrix *A, zScalePermstruct_t *ScalePermstruct,
                 Glu_freeable_t *Glu_freeable, int_t *xsup, int_t *supno,
                 gridinfo_t *grid, int_t *colptr[], int_t *rowind[],
                 doublecomplex *a[])
@@ -72,9 +72,9 @@ zReDistribute_A(SuperMatrix *A, ScalePermstruct_t *ScalePermstruct,
     int_t  SendCnt; /* number of remote nonzeros to be sent */
     int_t  RecvCnt; /* number of remote nonzeros to be sent */
     int_t  *nnzToSend, *nnzToRecv, maxnnzToRecv;
-    int_t  *ia, *ja, **ia_send, *index, *itemp;
+    int_t  *ia, *ja, **ia_send, *index, *itemp = NULL;
     int_t  *ptr_to_send;
-    doublecomplex *aij, **aij_send, *nzval, *dtemp;
+    doublecomplex *aij, **aij_send, *nzval, *dtemp = NULL;
     doublecomplex *nzval_a;
 	doublecomplex asum,asum_tot;
     int    iam, it, p, procs, iam_g;
@@ -215,7 +215,8 @@ zReDistribute_A(SuperMatrix *A, ScalePermstruct_t *ScalePermstruct,
        NOTE: Can possibly use MPI_Alltoallv.
        ------------------------------------------------------------*/
     for (p = 0; p < procs; ++p) {
-        if ( p != iam ) {
+	if ( p != iam && nnzToSend[p] > 0 ) {
+	//if ( p != iam ) {
 	    it = 2*nnzToSend[p];
 	    MPI_Isend( ia_send[p], it, mpi_int_t,
 		       p, iam, grid->comm, &send_req[p] );
@@ -226,7 +227,8 @@ zReDistribute_A(SuperMatrix *A, ScalePermstruct_t *ScalePermstruct,
     }
 
     for (p = 0; p < procs; ++p) {
-        if ( p != iam ) {
+	if ( p != iam && nnzToRecv[p] > 0 ) {
+	    //if ( p != iam ) {
 	    it = 2*nnzToRecv[p];
 	    MPI_Recv( itemp, it, mpi_int_t, p, p, grid->comm, &status );
 	    it = nnzToRecv[p];
@@ -245,7 +247,8 @@ zReDistribute_A(SuperMatrix *A, ScalePermstruct_t *ScalePermstruct,
     }
 
     for (p = 0; p < procs; ++p) {
-        if ( p != iam ) {
+        if ( p != iam && nnzToSend[p] > 0 ) {
+	    //if ( p != iam ) {
 	    MPI_Wait( &send_req[p], &status);
 	    MPI_Wait( &send_req[procs+p], &status);
 	}
@@ -319,8 +322,8 @@ zReDistribute_A(SuperMatrix *A, ScalePermstruct_t *ScalePermstruct,
 
 float
 pzdistribute(fact_t fact, int_t n, SuperMatrix *A,
-	     ScalePermstruct_t *ScalePermstruct,
-	     Glu_freeable_t *Glu_freeable, LUstruct_t *LUstruct,
+	     zScalePermstruct_t *ScalePermstruct,
+	     Glu_freeable_t *Glu_freeable, zLUstruct_t *LUstruct,
 	     gridinfo_t *grid)
 /*
  * -- Distributed SuperLU routine (version 2.0) --
@@ -349,14 +352,14 @@ pzdistribute(fact_t fact, int_t n, SuperMatrix *A,
  *        A may be overwritten by diag(R)*A*diag(C)*Pc^T. The type of A can be:
  *        Stype = SLU_NR_loc; Dtype = SLU_Z; Mtype = SLU_GE.
  *
- * ScalePermstruct (input) ScalePermstruct_t*
+ * ScalePermstruct (input) zScalePermstruct_t*
  *        The data structure to store the scaling and permutation vectors
  *        describing the transformations performed to the original matrix A.
  *
  * Glu_freeable (input) *Glu_freeable_t
  *        The global structure describing the graph of L and U.
  *
- * LUstruct (input) LUstruct_t*
+ * LUstruct (input) zLUstruct_t*
  *        Data structures for L and U factors.
  *
  * grid   (input) gridinfo_t*
@@ -369,7 +372,7 @@ pzdistribute(fact_t fact, int_t n, SuperMatrix *A,
  */
 {
     Glu_persist_t *Glu_persist = LUstruct->Glu_persist;
-    LocalLU_t *Llu = LUstruct->Llu;
+    zLocalLU_t *Llu = LUstruct->Llu;
     int_t bnnz, fsupc, fsupc1, i, ii, irow, istart, j, ib, jb, jj, k, k1,
           len, len1, nsupc;
 	int_t lib;  /* local block row number */

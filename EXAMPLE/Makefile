@@ -30,9 +30,8 @@
 #######################################################################
 include ../make.inc
 
-DEXM	= pddrive.o dcreate_matrix.o sp_ienv.o #pdgstrf2.o 
-#pdgssvx.o
-# pdgstrs_lsum_X1.o pdgstrf_X1.o
+DEXM	= pddrive.o dcreate_matrix.o 
+	#pdgssvx.o pdgstrf2.o
 DEXM1	= pddrive1.o dcreate_matrix.o
 DEXM2	= pddrive2.o dcreate_matrix.o dcreate_matrix_perturbed.o
 DEXM3	= pddrive3.o dcreate_matrix.o
@@ -72,7 +71,7 @@ complex16: pzdrive pzdrive1 pzdrive2 pzdrive3 pzdrive4 \
 	   pzdrive_ABglobal pzdrive1_ABglobal pzdrive2_ABglobal \
 	   pzdrive3_ABglobal pzdrive4_ABglobal
 
-pddrive: $(DEXM) $(DSUPERLULIB)
+pddrive: $(DEXM) $(DSUPERLULIB) 
 	$(LOADER) $(LOADOPTS) $(DEXM) $(LIBS) -lm -o $@
 
 pddrive1: $(DEXM1) $(DSUPERLULIB)
@@ -144,10 +143,10 @@ pzdrive4_ABglobal: $(ZEXMG4) $(DSUPERLULIB)
 #pdgstrf.o: dscatter.c dSchCompUdt-cuda.c pdgstrf.c
 #	$(CC) $(CFLAGS) $(CDEFS) $(BLASDEF) -I$(INCLUDEDIR) -c pdgstrf.c $(VERBOSE)
 .c.o:
-	$(CC) $(CFLAGS) $(CDEFS) $(BLASDEF) -I $(INCLUDEDIR) -c $< $(VERBOSE)
+	$(CC) $(CFLAGS) $(CDEFS) $(BLASDEF) -I$(INCLUDEDIR) -c $< $(VERBOSE)
 
 .cpp.o:
-	$(CPP) $(CPPFLAGS) $(CDEFS) $(BLASDEF) -I $(INCLUDEDIR) -c $< $(VERBOSE)
+	$(CPP) $(CPPFLAGS) $(CDEFS) $(BLASDEF) -I$(INCLUDEDIR) -c $< $(VERBOSE)
 
 .f.o:
 	$(FORTRAN) $(FFLAGS) -c $< $(VERBOSE)

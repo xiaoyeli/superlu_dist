@@ -9,6 +9,7 @@ The source code is distributed under BSD license, see the file License.txt
 at the top-level directory.
 */
 
+
 /*! @file
  * \brief Preprocessing routines for the 3D factorization/solve codes:
  *        - Gather {A,B} from 3D grid to 2D process layer 0
@@ -23,6 +24,7 @@ at the top-level directory.
 
 #include "superlu_zdefs.h"
 
+/* Dst <- BlockByBlock (Src), reshape the block storage. */
 static void matCopy(int n, int m, doublecomplex *Dst, int lddst, doublecomplex *Src, int ldsrc)
 {
     for (int j = 0; j < m; j++)
@@ -41,22 +43,26 @@ static void matCopy(int n, int m, doublecomplex *Dst, int lddst, doublecomplex *
  *             output is in the returned A3d->{} structure.
  *             see supermatrix.h for nrformat_loc3d{} structure.
  */
-NRformat_loc3d *zGatherNRformat_loc3d(NRformat_loc *A,   // input
-                                      doublecomplex *B,  // input
-                                      int ldb, int nrhs, // input
+NRformat_loc3d *zGatherNRformat_loc3d(NRformat_loc *A, // input, on 3D grid
+                                      doublecomplex *B,       // input
+				      int ldb, int nrhs, // input
                                       gridinfo3d_t *grid3d)
 {
     NRformat_loc3d *A3d = SUPERLU_MALLOC(sizeof(NRformat_loc3d));
     NRformat_loc *A2d = SUPERLU_MALLOC(sizeof(NRformat_loc));
     A3d->m_loc = A->m_loc;
-    A3d->B = (doublecomplex *)B; // on 3D process grid
+    A3d->B3d = (doublecomplex *) B; // on 3D process grid
     A3d->ldb = ldb;
     A3d->nrhs = nrhs;
 
     // find number of nnzs
-    int_t *nnz_counts, *row_counts;
-    int *nnz_disp, *row_disp, *nnz_counts_int, *row_counts_int;
-    int *b_counts_int, *b_disp;
+    int_t *nnz_counts; // number of local nonzeros relative to all processes
+    int_t *row_counts; // number of local rows relative to all processes
+    int *nnz_counts_int, *row_counts_int; // 32-bit
+    int *nnz_disp, *row_disp; // displacement
+    int *b_counts_int; // number of local B entries relative to all processes 
+    int *b_disp;       // including 'nrhs'
+
     nnz_counts = SUPERLU_MALLOC(grid3d->npdep * sizeof(int_t));
     row_counts = SUPERLU_MALLOC(grid3d->npdep * sizeof(int_t));
     nnz_counts_int = SUPERLU_MALLOC(grid3d->npdep * sizeof(int));
@@ -113,27 +119,30 @@ NRformat_loc3d *zGatherNRformat_loc3d(NRformat_loc *A,   // input
         }
         A2d->nnz_loc = nnz_disp[grid3d->npdep];
         A2d->m_loc = row_disp[grid3d->npdep];
-#if 0	
-        A2d->fst_row = A->fst_row; // This is a bug
-#else
-        gridinfo_t *grid2d = &(grid3d->grid2d);
-        int procs2d = grid2d->nprow * grid2d->npcol;
-        int m_loc_2d = A2d->m_loc;
-        int *m_loc_2d_counts = SUPERLU_MALLOC(procs2d * sizeof(int));
 
-        MPI_Allgather(&m_loc_2d, 1, MPI_INT, m_loc_2d_counts, 1, MPI_INT, grid2d->comm);
+        if (grid3d->rankorder == 1) { // XY-major
+     	    A2d->fst_row = A->fst_row;
+	} else { // Z-major
+	    gridinfo_t *grid2d = &(grid3d->grid2d);
+            int procs2d = grid2d->nprow * grid2d->npcol;
+            int m_loc_2d = A2d->m_loc;
+            int *m_loc_2d_counts = SUPERLU_MALLOC(procs2d * sizeof(int));
 
-        int fst_row = 0;
-        for (int p = 0; p < procs2d; ++p)
-        {
-            if (grid2d->iam == p)
-                A2d->fst_row = fst_row;
-            fst_row += m_loc_2d_counts[p];
+            MPI_Allgather(&m_loc_2d, 1, MPI_INT, m_loc_2d_counts, 1, 
+	                  MPI_INT, grid2d->comm);
+
+            int fst_row = 0;
+            for (int p = 0; p < procs2d; ++p)
+            {
+		if (grid2d->iam == p)
+                   A2d->fst_row = fst_row;
+            	fst_row += m_loc_2d_counts[p];
+            }
+
+            SUPERLU_FREE(m_loc_2d_counts);
         }
-
-        SUPERLU_FREE(m_loc_2d_counts);
-#endif
     }
+
     // Btmp <- compact(B)
     // compacting B
     doublecomplex *Btmp;
@@ -144,7 +153,7 @@ NRformat_loc3d *zGatherNRformat_loc3d(NRformat_loc *A,   // input
     if (grid3d->zscp.Iam == 0)
     {
         B1 = SUPERLU_MALLOC(A2d->m_loc * nrhs * sizeof(doublecomplex));
-        A3d->B2d = (doublecomplex *)SUPERLU_MALLOC(A2d->m_loc * nrhs * sizeof(doublecomplex));
+        A3d->B2d = (doublecomplex *) SUPERLU_MALLOC(A2d->m_loc * nrhs * sizeof(doublecomplex));
     }
 
     // B1 <- gatherv(Btmp)
@@ -158,8 +167,8 @@ NRformat_loc3d *zGatherNRformat_loc3d(NRformat_loc *A,   // input
         for (int i = 0; i < grid3d->npdep; ++i)
         {
             /* code */
-            matCopy(row_counts_int[i], nrhs, ((doublecomplex *)A3d->B2d) + row_disp[i],
-                    A2d->m_loc, B1 + nrhs * row_disp[i], row_counts_int[i]);
+            matCopy(row_counts_int[i], nrhs, ((doublecomplex*)A3d->B2d) + row_disp[i],
+		    A2d->m_loc, B1 + nrhs * row_disp[i], row_counts_int[i]);
         }
 
         SUPERLU_FREE(B1);
@@ -177,7 +186,6 @@ NRformat_loc3d *zGatherNRformat_loc3d(NRformat_loc *A,   // input
     SUPERLU_FREE(row_counts);
     SUPERLU_FREE(nnz_disp);
     SUPERLU_FREE(Btmp);
-    // SUPERLU_FREE(B1);
 
     return A3d;
 
@@ -185,33 +193,38 @@ NRformat_loc3d *zGatherNRformat_loc3d(NRformat_loc *A,   // input
 
 /*
  * Scatter B (solution) from 2D process layer 0 to 3D grid
- *   Output: X2d <- A^{-1} B2d
+ *   Output: X3d <- A^{-1} B2d
  */
-int zScatter_B3d(NRformat_loc3d *A3d, // modified
-                 gridinfo3d_t *grid3d)
+int zScatter_B3d(NRformat_loc3d *A3d,  // modified
+		 gridinfo3d_t *grid3d)
 {
-
-    doublecomplex *B = (doublecomplex *)A3d->B;
+    doublecomplex *B = (doublecomplex *) A3d->B3d; // on 3D grid
     int ldb = A3d->ldb;
     int nrhs = A3d->nrhs;
-    doublecomplex *B2d = (doublecomplex *)A3d->B2d;
+    doublecomplex *B2d = (doublecomplex *) A3d->B2d; // on 2D layer 0 
     NRformat_loc A2d = *(A3d->A_nfmt);
+
+    /* The following are the number of local rows relative to all processes */
     int m_loc = A3d->m_loc;
     int *b_counts_int = A3d->b_counts_int;
     int *b_disp = A3d->b_disp;
     int *row_counts_int = A3d->row_counts_int;
     int *row_disp = A3d->row_disp;
+    int i, p;
+    int iam = grid3d->iam;
+    int rankorder = grid3d->rankorder;
+    gridinfo_t *grid2d = &(grid3d->grid2d);
 
-    doublecomplex *B1;
+    doublecomplex *B1;  // on 2D layer 0
     if (grid3d->zscp.Iam == 0)
     {
         B1 = SUPERLU_MALLOC(A2d.m_loc * nrhs * sizeof(doublecomplex));
     }
 
-    // B1 <- blockByBock(b2d)
+    // B1 <- BlockByBlock(B2d)
     if (grid3d->zscp.Iam == 0)
     {
-        for (int i = 0; i < grid3d->npdep; ++i)
+        for (i = 0; i < grid3d->npdep; ++i)
         {
             /* code */
             matCopy(row_counts_int[i], nrhs, B1 + nrhs * row_disp[i], row_counts_int[i],
@@ -219,13 +232,73 @@ int zScatter_B3d(NRformat_loc3d *A3d, // modified
         }
     }
 
-    //
-    doublecomplex *Btmp;
+    doublecomplex *Btmp; // on 3D grid
     Btmp = SUPERLU_MALLOC(A3d->m_loc * nrhs * sizeof(doublecomplex));
 
-    // Bttmp <- scatterv(B1)
-    MPI_Scatterv(B1, b_counts_int, b_disp, SuperLU_MPI_DOUBLE_COMPLEX,
-                 Btmp, nrhs * A3d->m_loc, SuperLU_MPI_DOUBLE_COMPLEX, 0, grid3d->zscp.comm);
+    // Btmp <- scatterv(B1), block-by-block
+    if ( rankorder == 1 ) { /* XY-major in 3D grid */
+        /*    e.g. 1x3x4 grid: layer0 layer1 layer2 layer3
+	 *                     0      1      2      3
+	 *                     4      5      6      7
+	 *                     8      9      10     11
+	 */
+        MPI_Scatterv(B1, b_counts_int, b_disp, SuperLU_MPI_DOUBLE_COMPLEX,
+		     Btmp, nrhs * A3d->m_loc, SuperLU_MPI_DOUBLE_COMPLEX,
+		     0, grid3d->zscp.comm);
+
+    } else { /* Z-major in 3D grid */
+        /*    e.g. 1x3x4 grid: layer0 layer1 layer2 layer3
+	                       0      3      6      9
+ 	                       1      4      7      10      
+	                       2      5      8      11
+	  GATHER:  {A, B} in A * X = B
+	  layer-0:
+    	       B (row space)  X (column space)  SCATTER
+	       ----           ----        ---->>
+           P0  0              0
+(equations     3              1      Proc 0 -> Procs {0, 1, 2, 3}
+ reordered     6              2
+ after gather) 9              3
+	       ----           ----
+	   P1  1              4      Proc 1 -> Procs {4, 5, 6, 7}
+	       4              5
+               7              6
+               10             7
+	       ----           ----
+	   P2  2              8      Proc 2 -> Procs {8, 9, 10, 11}
+	       5              9
+	       8             10
+	       11            11
+	       ----         ----
+	*/
+        MPI_Request recv_req;
+	MPI_Status recv_status;
+	int pxy = grid2d->nprow * grid2d->npcol;
+	int npdep = grid3d->npdep, dest, src, tag;
+	int nprocs = pxy * npdep;
+
+	/* Everyone receives one block (post non-blocking irecv) */
+	src = grid3d->iam / npdep;  // Z-major
+	tag = iam;
+	MPI_Irecv(Btmp, nrhs * A3d->m_loc, SuperLU_MPI_DOUBLE_COMPLEX,
+		 src, tag, grid3d->comm, &recv_req);
+
+	/* Layer 0 sends to npdep procs */
+	if (grid3d->zscp.Iam == 0) {
+	    int dest, tag;
+	    for (p = 0; p < npdep; ++p) { // send to npdep procs
+	        dest = p + grid2d->iam * npdep; // Z-major order
+		tag = dest;
+
+		MPI_Send(B1 + b_disp[p], b_counts_int[p], 
+			 SuperLU_MPI_DOUBLE_COMPLEX, dest, tag, grid3d->comm);
+	    }
+	}  /* end layer 0 send */
+    
+	/* Wait for Irecv to complete */
+	MPI_Wait(&recv_req, &recv_status);
+
+    } /* else Z-major */
 
     // B <- colMajor(Btmp)
     matCopy(A3d->m_loc, nrhs, B, ldb, Btmp, A3d->m_loc);
@@ -236,8 +309,7 @@ int zScatter_B3d(NRformat_loc3d *A3d, // modified
     SUPERLU_FREE(A3d->row_counts_int);
     SUPERLU_FREE(A3d->row_disp);
     SUPERLU_FREE(Btmp);
-    if (grid3d->zscp.Iam == 0)
-        SUPERLU_FREE(B1);
+    if (grid3d->zscp.Iam == 0) SUPERLU_FREE(B1);
 
     return 0;
-} /* dScatter_B3d */
+} /* zScatter_B3d */

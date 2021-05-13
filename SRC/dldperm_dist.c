@@ -98,6 +98,7 @@ dldperm_dist(int_t job, int_t n, int_t nnz, int_t colptr[], int_t adjncy[],
     int_t i, liw, ldw, num;
     int_t *iw, icntl[10], info[10];
     double *dw;
+    extern double *doubleMalloc_dist(int_t);
 
 #if ( DEBUGlevel>=1 )
     CHECK_MALLOC(0, "Enter dldperm_dist()");

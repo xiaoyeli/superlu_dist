@@ -7,7 +7,7 @@
 #else
 #include "cblas.h"
 #endif
-#include "omp.h"
+
 
 #define ISORT
 

@@ -18,7 +18,7 @@ at the top-level directory.
  * May 10, 2019
  */
 #include "superlu_zdefs.h"
-// #include "cblas.h"
+//#include "cblas.h"
 #if 0
 #include "p3dcomm.h"
 #include "sec_structs.h"
@@ -31,14 +31,11 @@ at the top-level directory.
 #include "xtrf3Dpartition.h"
 #endif
 
-#define INT_T_ALLOC(x)  ((int_t *) SUPERLU_MALLOC ( (x) * sizeof (int_t)))
-#define DOUBLE_ALLOC(x)  ((double *) SUPERLU_MALLOC ( (x) * sizeof (double)))
-
 // #define MPI_MALLOC
 #define MPI_INT_ALLOC(a, b) (MPI_Alloc_mem( (b)*sizeof(int_t), MPI_INFO_NULL, &(a) ))
 #define MPI_DATATYPE_ALLOC(a, b) (MPI_Alloc_mem((b)*sizeof(doublecomplex), MPI_INFO_NULL, &(a)))
 
-int_t zAllocLlu(int_t nsupers, LUstruct_t * LUstruct, gridinfo3d_t* grid3d)
+int_t zAllocLlu(int_t nsupers, zLUstruct_t * LUstruct, gridinfo3d_t* grid3d)
 {
     int i;
     int_t Pc = grid3d->npcol;
@@ -47,7 +44,7 @@ int_t zAllocLlu(int_t nsupers, LUstruct_t * LUstruct, gridinfo3d_t* grid3d)
     int_t nbc = CEILING(nsupers, Pc);
     int_t nbr = CEILING(nsupers, Pr);
     
-    LocalLU_t *Llu = LUstruct->Llu;
+    zLocalLU_t *Llu = LUstruct->Llu;
     int_t   **Lrowind_bc_ptr =
 	(int_t**) SUPERLU_MALLOC(sizeof(int_t*)*nbc); 	/* size ceil(NSUPERS/Pc) */
     doublecomplex  **Lnzval_bc_ptr =
@@ -71,12 +68,8 @@ int_t zAllocLlu(int_t nsupers, LUstruct_t * LUstruct, gridinfo3d_t* grid3d)
 	    Ufstnz_br_ptr[i] = NULL;
 	    Unzval_br_ptr[i] = NULL;
 	}
-    
-#if 0 // Sherry: change to int type    
-    int_t *ToRecv = intCalloc_dist(nsupers); /* Recv from no one (0), left (1), and up (2).*/
-    int_t *ToSendD = intCalloc_dist(nbr); /* Whether need to send down block row. */
-    int_t **ToSendR = (int_t **) SUPERLU_MALLOC(nbc * sizeof(int_t*)); /* List of processes to send right block col. */
-#else
+
+   // Sherry: use int type
                   /* Recv from no one (0), left (1), and up (2).*/
     int *ToRecv = SUPERLU_MALLOC(nsupers * sizeof(int));
     for (i = 0; i < nsupers; ++i) ToRecv[i] = 0;
@@ -85,9 +78,8 @@ int_t zAllocLlu(int_t nsupers, LUstruct_t * LUstruct, gridinfo3d_t* grid3d)
     for (i = 0; i < nbr; ++i) ToSendD[i] = 0;
                   /* List of processes to send right block col. */
     int **ToSendR = (int **) SUPERLU_MALLOC(nbc * sizeof(int*));
-#endif    
 
-    for (i = 0; i < nbc; ++i)
+    for (int_t i = 0; i < nbc; ++i)
 	{
 	    /* code */
 	    //ToSendR[i] = INT_T_ALLOC(Pc);
@@ -106,9 +98,9 @@ int_t zAllocLlu(int_t nsupers, LUstruct_t * LUstruct, gridinfo3d_t* grid3d)
     return 0;
 } /* zAllocLlu */
 
-int_t zmpiMallocLUStruct(int_t nsupers, LUstruct_t * LUstruct, gridinfo3d_t* grid3d)
+int_t zmpiMallocLUStruct(int_t nsupers, zLUstruct_t * LUstruct, gridinfo3d_t* grid3d)
 {
-    LocalLU_t *Llu = LUstruct->Llu;
+    zLocalLU_t *Llu = LUstruct->Llu;
     int_t* xsup = LUstruct->Glu_persist->xsup;
     int_t** Ufstnz_br_ptr = Llu->Ufstnz_br_ptr;
     doublecomplex** Unzval_br_ptr = Llu->Unzval_br_ptr;
@@ -184,9 +176,9 @@ int_t zmpiMallocLUStruct(int_t nsupers, LUstruct_t * LUstruct, gridinfo3d_t* gri
 
 
 int_t zzSendLPanel(int_t k, int_t receiver,
-                   LUstruct_t* LUstruct,  gridinfo3d_t* grid3d, SCT_t* SCT)
+                   zLUstruct_t* LUstruct,  gridinfo3d_t* grid3d, SCT_t* SCT)
 {
-    LocalLU_t *Llu = LUstruct->Llu;
+    zLocalLU_t *Llu = LUstruct->Llu;
     int_t* xsup = LUstruct->Glu_persist->xsup;
     int_t** Lrowind_bc_ptr = Llu->Lrowind_bc_ptr;
     doublecomplex** Lnzval_bc_ptr = Llu->Lnzval_bc_ptr;
@@ -218,11 +210,11 @@ int_t zzSendLPanel(int_t k, int_t receiver,
 
 int_t zzRecvLPanel(int_t k, int_t sender, doublecomplex alpha, doublecomplex beta,
                     doublecomplex* Lval_buf,
-                    LUstruct_t* LUstruct,  gridinfo3d_t* grid3d, SCT_t* SCT)
+                    zLUstruct_t* LUstruct,  gridinfo3d_t* grid3d, SCT_t* SCT)
 {
     
     // A(k) = alpha*A(k) + beta* A^{sender}(k)
-    LocalLU_t *Llu = LUstruct->Llu;
+    zLocalLU_t *Llu = LUstruct->Llu;
     int_t* xsup = LUstruct->Glu_persist->xsup;
     int_t** Lrowind_bc_ptr = Llu->Lrowind_bc_ptr;
     doublecomplex** Lnzval_bc_ptr = Llu->Lnzval_bc_ptr;
@@ -243,7 +235,7 @@ int_t zzRecvLPanel(int_t k, int_t sender, doublecomplex alpha, doublecomplex bet
 	    if (lsub != NULL)
 		{
 		    int len   = lsub[1];       /* LDA of the nzval[] */
-		    int len2  = SuperSize(k) * len;	/*size of nzval of L panels*/
+		    int len2  = SuperSize(k) * len; /* size of nzval of L panels */
 		    
 		    MPI_Status status;
 		    MPI_Recv(Lval_buf , len2, SuperLU_MPI_DOUBLE_COMPLEX, sender, k,
@@ -252,15 +244,6 @@ int_t zzRecvLPanel(int_t k, int_t sender, doublecomplex alpha, doublecomplex bet
 		    /*reduce the updates*/
 		    superlu_zscal(len2, alpha, lnzval, 1);
 		    superlu_zaxpy(len2, beta, Lval_buf, 1, lnzval, 1);
-#if 0 // replaced 		    
-#if 1
-		    zscal_(&len2, &alpha, lnzval, &inc);
-		    zaxpy_(&len2, &beta, Lval_buf, &inc, lnzval, &inc);
-#else
-		    cblas_zscal (len2, (void*) &alpha, lnzval, 1);
-		    cblas_zaxpy (len2, (void*) &beta, Lval_buf, 1, lnzval, 1);
-#endif
-#endif		    
 		}
 	}
 
@@ -268,9 +251,9 @@ int_t zzRecvLPanel(int_t k, int_t sender, doublecomplex alpha, doublecomplex bet
 }
 
 int_t zzSendUPanel(int_t k, int_t receiver,
-                    LUstruct_t* LUstruct,  gridinfo3d_t* grid3d, SCT_t* SCT)
+                    zLUstruct_t* LUstruct,  gridinfo3d_t* grid3d, SCT_t* SCT)
 {
-    LocalLU_t *Llu = LUstruct->Llu;
+    zLocalLU_t *Llu = LUstruct->Llu;
     int_t** Ufstnz_br_ptr = Llu->Ufstnz_br_ptr;
     doublecomplex** Unzval_br_ptr = Llu->Unzval_br_ptr;
     gridinfo_t* grid = &(grid3d->grid2d);
@@ -301,10 +284,10 @@ int_t zzSendUPanel(int_t k, int_t receiver,
 
 
 int_t zzRecvUPanel(int_t k, int_t sender, doublecomplex alpha, doublecomplex beta,
-                    doublecomplex* Uval_buf, LUstruct_t* LUstruct,
+                    doublecomplex* Uval_buf, zLUstruct_t* LUstruct,
                     gridinfo3d_t* grid3d, SCT_t* SCT)
 {
-    LocalLU_t *Llu = LUstruct->Llu;
+    zLocalLU_t *Llu = LUstruct->Llu;
     int_t** Ufstnz_br_ptr = Llu->Ufstnz_br_ptr;
     doublecomplex** Unzval_br_ptr = Llu->Unzval_br_ptr;
     gridinfo_t* grid = &(grid3d->grid2d);
@@ -331,22 +314,13 @@ int_t zzRecvUPanel(int_t k, int_t sender, doublecomplex alpha, doublecomplex bet
 		    /*reduce the updates*/
 		    superlu_zscal(lenv, alpha, unzval, 1);
 		    superlu_zaxpy(lenv, beta, Uval_buf, 1, unzval, 1);
-#if 0 // replaced 
-#if 1
-		    zscal_(&lenv, &alpha, unzval, &inc);
-		    zaxpy_(&lenv, &beta, Uval_buf, &inc, unzval, &inc);
-#else
-		    cblas_zscal (lenv, (void*) &alpha, unzval, 1);
-		    cblas_zaxpy (lenv, (void*) &beta, Uval_buf, 1, unzval, 1);
-#endif
-#endif
 		}
 	}
     return 0;
 }
 
 
-int_t zp3dScatter(int_t n, LUstruct_t * LUstruct, gridinfo3d_t* grid3d)
+int_t zp3dScatter(int_t n, zLUstruct_t * LUstruct, gridinfo3d_t* grid3d)
 /* Copies LU structure from layer 0 to all the layers */
 {
     gridinfo_t* grid = &(grid3d->grid2d);
@@ -360,14 +334,14 @@ int_t zp3dScatter(int_t n, LUstruct_t * LUstruct, gridinfo3d_t* grid3d)
     int_t nsupers;
     
     if (!grid3d->zscp.Iam)
-	nsupers = getNsupers(n, LUstruct);
+	nsupers = getNsupers(n, LUstruct->Glu_persist);
     
     /* broadcast nsupers */
     MPI_Bcast( &nsupers, 1, mpi_int_t, 0,  grid3d->zscp.comm);
     
     /* Scatter and alloc Glu_persist */
     if ( grid3d->zscp.Iam ) // all other process layers not equal 0
-	AllocGlu_3d(n, nsupers, LUstruct);
+	zAllocGlu_3d(n, nsupers, LUstruct);
     
     /* broadcast Glu_persist */
     int_t *xsup = LUstruct->Glu_persist->xsup;
@@ -376,12 +350,12 @@ int_t zp3dScatter(int_t n, LUstruct_t * LUstruct, gridinfo3d_t* grid3d)
     int_t *supno = LUstruct->Glu_persist->supno;
     MPI_Bcast( supno, n, mpi_int_t, 0,  grid3d->zscp.comm);
     
-    /* now broadcast localLu_t */
+    /* now broadcast local LU structure */
     /* first allocating space for it */
     if ( grid3d->zscp.Iam ) // all other process layers not equal 0
 	zAllocLlu(nsupers, LUstruct, grid3d);
     
-    LocalLU_t *Llu = LUstruct->Llu;
+    zLocalLU_t *Llu = LUstruct->Llu;
     
     /*scatter all the L blocks and indexes*/
     zscatter3dLPanels( nsupers, LUstruct, grid3d);
@@ -399,6 +373,7 @@ int_t zp3dScatter(int_t n, LUstruct_t * LUstruct, gridinfo3d_t* grid3d)
     
     int_t nbr = CEILING(nsupers, Pr);
     int_t nbc = CEILING(nsupers, Pc);
+    //    MPI_Bcast( ToRecv, nsupers, mpi_int_t, 0,  grid3d->zscp.comm);
     MPI_Bcast( ToRecv, nsupers, MPI_INT, 0,  grid3d->zscp.comm);
     
     MPI_Bcast( ToSendD, nbr, MPI_INT, 0,  grid3d->zscp.comm);
@@ -419,10 +394,10 @@ int_t zp3dScatter(int_t n, LUstruct_t * LUstruct, gridinfo3d_t* grid3d)
 
 
 int_t zscatter3dUPanels(int_t nsupers,
-		       LUstruct_t * LUstruct, gridinfo3d_t* grid3d)
+		       zLUstruct_t * LUstruct, gridinfo3d_t* grid3d)
 {
 
-    LocalLU_t *Llu = LUstruct->Llu;
+    zLocalLU_t *Llu = LUstruct->Llu;
     int_t** Ufstnz_br_ptr = Llu->Ufstnz_br_ptr;
     doublecomplex** Unzval_br_ptr = Llu->Unzval_br_ptr;
     gridinfo_t* grid = &(grid3d->grid2d);
@@ -488,9 +463,9 @@ int_t zscatter3dUPanels(int_t nsupers,
 
 
 int_t zscatter3dLPanels(int_t nsupers,
-                       LUstruct_t * LUstruct, gridinfo3d_t* grid3d)
+                       zLUstruct_t * LUstruct, gridinfo3d_t* grid3d)
 {
-    LocalLU_t *Llu = LUstruct->Llu;
+    zLocalLU_t *Llu = LUstruct->Llu;
     int_t* xsup = LUstruct->Glu_persist->xsup;
     gridinfo_t* grid = &(grid3d->grid2d);
     int_t** Lrowind_bc_ptr = Llu->Lrowind_bc_ptr;
@@ -570,11 +545,11 @@ int_t zscatter3dLPanels(int_t nsupers,
     return 0;
 } /* zscatter3dLPanels */
 
-int_t zcollect3dLpanels(int_t layer, int_t nsupers, LUstruct_t * LUstruct,
+int_t zcollect3dLpanels(int_t layer, int_t nsupers, zLUstruct_t * LUstruct,
 		       gridinfo3d_t* grid3d)
 {
 
-    LocalLU_t *Llu = LUstruct->Llu;
+    zLocalLU_t *Llu = LUstruct->Llu;
     int_t* xsup = LUstruct->Glu_persist->xsup;
     int_t** Lrowind_bc_ptr = Llu->Lrowind_bc_ptr;
     doublecomplex** Lnzval_bc_ptr = Llu->Lnzval_bc_ptr;
@@ -615,10 +590,10 @@ int_t zcollect3dLpanels(int_t layer, int_t nsupers, LUstruct_t * LUstruct,
     return 0;
 }
 
-int_t zcollect3dUpanels(int_t layer, int_t nsupers, LUstruct_t * LUstruct,
+int_t zcollect3dUpanels(int_t layer, int_t nsupers, zLUstruct_t * LUstruct,
       			 gridinfo3d_t* grid3d)
 {
-    LocalLU_t *Llu = LUstruct->Llu;
+    zLocalLU_t *Llu = LUstruct->Llu;
     int_t** Ufstnz_br_ptr = Llu->Ufstnz_br_ptr;
     doublecomplex** Unzval_br_ptr = Llu->Unzval_br_ptr;
     gridinfo_t* grid = &(grid3d->grid2d);
@@ -650,9 +625,9 @@ int_t zcollect3dUpanels(int_t layer, int_t nsupers, LUstruct_t * LUstruct,
 }
 
 /* Gather the LU factors on layer-0 */
-int_t zp3dCollect(int_t layer, int_t n, LUstruct_t * LUstruct, gridinfo3d_t* grid3d)
+int_t zp3dCollect(int_t layer, int_t n, zLUstruct_t * LUstruct, gridinfo3d_t* grid3d)
 {
-    int_t nsupers = getNsupers(n, LUstruct);
+    int_t nsupers = getNsupers(n, LUstruct->Glu_persist);
     zcollect3dLpanels(layer, nsupers,  LUstruct, grid3d);
     zcollect3dUpanels(layer,  nsupers, LUstruct, grid3d);
     return 0;
@@ -660,10 +635,10 @@ int_t zp3dCollect(int_t layer, int_t n, LUstruct_t * LUstruct, gridinfo3d_t* gri
 
 
 /* Zero out LU non zero entries */
-int_t zzeroSetLU(int_t nnodes, int_t* nodeList, LUstruct_t *LUstruct,
+int_t zzeroSetLU(int_t nnodes, int_t* nodeList, zLUstruct_t *LUstruct,
       		 gridinfo3d_t* grid3d)
 {
-    LocalLU_t *Llu = LUstruct->Llu;
+    zLocalLU_t *Llu = LUstruct->Llu;
     int_t** Ufstnz_br_ptr = Llu->Ufstnz_br_ptr;
     doublecomplex** Unzval_br_ptr = Llu->Unzval_br_ptr;
     
@@ -728,7 +703,7 @@ int_t zzeroSetLU(int_t nnodes, int_t* nodeList, LUstruct_t *LUstruct,
 int_t zreduceAncestors3d(int_t sender, int_t receiver,
                         int_t nnodes, int_t* nodeList,
                         doublecomplex* Lval_buf, doublecomplex* Uval_buf,
-                        LUstruct_t* LUstruct,  gridinfo3d_t* grid3d, SCT_t* SCT)
+                        zLUstruct_t* LUstruct,  gridinfo3d_t* grid3d, SCT_t* SCT)
 {
     doublecomplex alpha = {1.0, 0.0}, beta = {1.0, 0.0};
     int_t myGrid = grid3d->zscp.Iam;
@@ -759,7 +734,7 @@ int_t zreduceAncestors3d(int_t sender, int_t receiver,
 int_t zgatherFactoredLU(int_t sender, int_t receiver,
                         int_t nnodes, int_t *nodeList,
                         zLUValSubBuf_t* LUvsb,
-                        LUstruct_t* LUstruct, gridinfo3d_t* grid3d, SCT_t* SCT)
+                        zLUstruct_t* LUstruct, gridinfo3d_t* grid3d, SCT_t* SCT)
 {
     doublecomplex alpha = {0.0, 0.0}, beta = {1.0, 0.0};
     doublecomplex * Lval_buf  = LUvsb->Lval_buf;
@@ -788,7 +763,7 @@ int_t zgatherFactoredLU(int_t sender, int_t receiver,
 
 
 int_t zinit3DLUstruct( int_t* myTreeIdxs, int_t* myZeroTrIdxs,
-                      int_t* nodeCount, int_t** nodeList, LUstruct_t* LUstruct,
+                      int_t* nodeCount, int_t** nodeList, zLUstruct_t* LUstruct,
 		      gridinfo3d_t* grid3d)
 {
     int_t maxLvl = log2i(grid3d->zscp.Np) + 1;
@@ -807,8 +782,8 @@ int_t zinit3DLUstruct( int_t* myTreeIdxs, int_t* myZeroTrIdxs,
 }
 
 
-int_t zreduceAllAncestors3d(int_t ilvl, int_t* myNodeCount, int_t** treePerm,
-                             zLUValSubBuf_t* LUvsb, LUstruct_t* LUstruct,
+int zreduceAllAncestors3d(int_t ilvl, int_t* myNodeCount, int_t** treePerm,
+                             zLUValSubBuf_t* LUvsb, zLUstruct_t* LUstruct,
                              gridinfo3d_t* grid3d, SCT_t* SCT )
 {
     doublecomplex * Lval_buf  = LUvsb->Lval_buf;
@@ -845,7 +820,7 @@ int_t zreduceAllAncestors3d(int_t ilvl, int_t* myNodeCount, int_t** treePerm,
 }
 
 int_t zgatherAllFactoredLU( trf3Dpartition_t*  trf3Dpartition,
-			   LUstruct_t* LUstruct, gridinfo3d_t* grid3d, SCT_t* SCT )
+			   zLUstruct_t* LUstruct, gridinfo3d_t* grid3d, SCT_t* SCT )
 {
     int_t maxLvl = log2i(grid3d->zscp.Np) + 1;
     int_t myGrid = grid3d->zscp.Iam;

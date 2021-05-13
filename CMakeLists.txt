@@ -8,6 +8,7 @@
 cmake_minimum_required(VERSION 2.8.12 FATAL_ERROR)
 
 # Project version numbers
+#project(SuperLU_DIST C CXX CUDA)
 project(SuperLU_DIST C CXX)
 set(VERSION_MAJOR "7")
 set(VERSION_MINOR "0")
@@ -22,16 +23,17 @@ option(enable_double    "Enable double precision library" ON)
 option(enable_complex16 "Enable complex16 precision library" OFF)
 option(enable_tests  "Build tests" ON)
 option(enable_examples  "Build examples" ON)
+
 #-- BLAS
 option(TPL_ENABLE_INTERNAL_BLASLIB  "Build the CBLAS library" ${enable_blaslib_DEFAULT})
 option(TPL_BLAS_LIBRARIES "List of absolute paths to blas libraries [].")
-#-- LAPACK
-option(TPL_ENABLE_LAPACKLIB "Enable LAPACK library" ON)
-option(TPL_LAPACK_LIBRARIES "List of absolute paths to LAPACK libraries [].")
 #-- ParMETIS
 option(TPL_ENABLE_PARMETISLIB   "Build the ParMETIS library" ON)
 option(TPL_PARMETIS_LIBRARIES "List of absolute paths to ParMETIS link libraries [].")
 option(TPL_PARMETIS_INCLUDE_DIRS "List of absolute paths to ParMETIS include directories [].")
+#-- LAPACK
+option(TPL_ENABLE_LAPACKLIB "Enable LAPACK library" OFF)
+option(TPL_LAPACK_LIBRARIES "List of absolute paths to LAPACK libraries [].")
 #-- CombBLAS
 option(TPL_ENABLE_COMBBLASLIB   "Build the CombBLAS library" OFF)
 option(TPL_COMBBLAS_LIBRARIES "List of absolute paths to CombBLAS link libraries [].")
@@ -55,10 +57,19 @@ include(CheckLanguage)
 # Usual initialization stuff
 #
 ######################################################################
+set(CMAKE_CXX_STANDARD 11)
+#set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
+#message("!!!! top: cxx_implicit='${CMAKE_CXX_IMPLICIT_LINK_LIBRARIES}'")
+
+if (XSDK_ENABLE_Fortran)
+  enable_language (Fortran)
+  set(NOFORTRAN FALSE)
+endif()
 
 set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)    ## ????
 set(CMAKE_INSTALL_NAME_DIR "${CMAKE_INSTALL_PREFIX}/lib")
-
 
 #---- For shared library
 
@@ -87,7 +98,7 @@ if (BUILD_SHARED_LIBS)
 
   set(PROJECT_NAME_LIB_EXPORT libsuperlu_dist.so)
   SET(CMAKE_EXE_LINKER_FLAGS
-          "${CMAKE_EXE_LINKER_FLAGS} -Wl,-rpath,${CMAKE_INSTALL_PREFIX}/SRC")
+      "${CMAKE_EXE_LINKER_FLAGS} -Wl,-rpath,${CMAKE_INSTALL_PREFIX}/SRC")
 
   if (BUILD_STATIC_LIBS)
     message("-- SuperLU_DIST will also be built as a static library.")
@@ -98,14 +109,6 @@ else()
   set(PROJECT_NAME_LIB_EXPORT libsuperlu_dist.a)
 endif()
 
-set(CMAKE_CXX_STANDARD 11)
-#set(CMAKE_CXX_STANDARD 14)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
-
-if (XSDK_ENABLE_Fortran)
-  enable_language (Fortran)
-  set(NOFORTRAN FALSE)
-endif()
 set(SUPERLU_VERSION "${PROJECT_VERSION}")
 set(SUPERLU_REV "${PROJECT_REV}")
 
@@ -142,6 +145,7 @@ if(XSDK_INDEX_SIZE EQUAL 64)
 endif()	
 set(CMAKE_C_FLAGS_RELEASE "-O3 -g" CACHE STRING "")
 set(CMAKE_CXX_FLAGS_RELEASE "-O3 -g" CACHE STRING "")
+set(CMAKE_Fortran_FLAGS_RELEASE "-O3 -g" CACHE STRING "")
 
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG}  -O0")
 set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -O0")
@@ -161,12 +165,12 @@ if(MPI_C_FOUND)
 endif()
 if (XSDK_ENABLE_Fortran)
   if(MPI_Fortran_FOUND)
-    add_definitions(${MPI_Fortran_COMPILE_FLAGS})
-    include_directories(${MPI_Fortran_INCLUDE_PATH})
     set(CMAKE_Fortran_FLAGS "${MPI_Fortran_COMPILE_FLAGS} ${CMAKE_Fortran_FLAGS}")
     set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${MPI_Fortran_LINK_FLAGS}")
+    include_directories(${MPI_Fortran_INCLUDE_PATH})
   endif()
 endif()  
+
 #---- CUDA libraries
 if (TPL_ENABLE_CUDALIB)   ## want to use cuda
   check_language(CUDA)
@@ -174,26 +178,20 @@ if (TPL_ENABLE_CUDALIB)   ## want to use cuda
     message("-- Enabled support for CUDA.")
     enable_language(CUDA)
     find_package(CUDA REQUIRED)
-    # if (NOT CMAKE_CUDA_FLAGS)
-    #     cuda_select_nvcc_arch_flags(CUDA_ARCH_FLAGS Auto)
-    #     message("-- Cuda Flags : '${CUDA_ARCH_FLAGS}'")
-    #   endif()
-#     if (CUDA_FOUND)
-#       if (NOT CMAKE_CUDA_FLAGS)
-#         cuda_select_nvcc_arch_flags(CUDA_ARCH_FLAGS Auto)
-#         message("-- Cuda Flags : '${CUDA_ARCH_FLAGS}'")
-#       endif()
-#     set(CUDA_NVCC_FLAGS_RELEASE "-O3 --expt-relaxed-constexpr -DNDEBUG -g ${CMAKE_CUDA_FLAGS} ${CUDA_ARCH_FLAGS}")
-#     set(CUDA_NVCC_FLAGS_DEBUG "-O0 --expt-relaxed-constexpr -DDEBUG -g -G ${CMAKE_CUDA_FLAGS} ${CUDA_ARCH_FLAGS}")
-#     list(APPEND CMAKE_CUDA_FLAGS ${CUDA_ARCH_FLAGS})
-#     message("-- Cuda Flags : '${CMAKE_CUDA_FLAGS}'")
-#     endif()
-# #     find_package(CUDAToolkit REQUIRED)
+    if (CUDA_FOUND)
+      if (NOT CMAKE_CUDA_FLAGS)
+        cuda_select_nvcc_arch_flags(CUDA_ARCH_FLAGS Auto)
+      endif()
+      set(HAVE_CUDA TRUE)
+      set(CMAKE_CUDA_FLAGS_RELEASE "-O3 --expt-relaxed-constexpr -DNDEBUG" CACHE STRING "")
+      set(CMAKE_CUDA_FLAGS_DDEBUG "-O0 --expt-relaxed-constexpr -DDEBUG -g" CACHE STRING "")
+    endif()
 
-    message("-- Cuda libraries at : '${CUDA_LIBRARIES}'")
 #     find_package(CUB REQUIRED)
-#     set(CUDA_LIBRARIES "${CUDAToolkit_LIBRARY_ROOT}/lib64/libcudart.so")
-#     set(CUDA_CUBLAS_LIBRARIES "${CUDAToolkit_LIBRARY_ROOT}/lib64/libcublas.so")
+
+    find_package(CUDAToolkit REQUIRED)
+    set(CUDA_LIBRARIES "${CUDAToolkit_LIBRARY_ROOT}/lib64/libcudart.so")
+    set(CUDA_CUBLAS_LIBRARIES "${CUDAToolkit_LIBRARY_ROOT}/lib64/libcublas.so")
 
 #     # The following make.inc exporting does not work
 #     set(CUDA_LIB CUDA::cudart CUDA::cublas CUDA::cusolver)
@@ -207,8 +205,6 @@ if (TPL_ENABLE_CUDALIB)   ## want to use cuda
     message("-- CUDA libraries not found.")
   endif()
 endif()
-
-
 
 #--------------------- OpenMP ---------------------
 if (NOT DEFINED enable_openmp)
@@ -345,6 +341,16 @@ if (XSDK_ENABLE_Fortran)
    string (REPLACE ";" " " EXTRA_FLIB_STR "${EXTRA_FLIB}")
    set(EXTRA_FLIB_EXPORT ${EXTRA_FLIB_STR})
    message("-- EXTRA_FLIB_EXPORT='${EXTRA_FLIB_EXPORT}'")
+   
+   if (BUILD_SHARED_LIBS)
+      message("-- superlu_dist_fortran will be built as a dynamic library.")
+      set(PROJECT_NAME_LIB_FORTRAN libsuperlu_dist_fortran.so)
+      SET(CMAKE_EXE_LINKER_FLAGS
+          "${CMAKE_EXE_LINKER_FLAGS} -Wl,-rpath,${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}")
+   else()
+      message("-- superlu_dist_fortranwill be built as a static library.")
+      set(PROJECT_NAME_LIB_FORTRAN libsuperlu_dist_fortran.a)
+   endif()
 endif()
 
 #--------------------- CombBLAS ---------------------
@@ -393,7 +399,6 @@ if (XSDK_ENABLE_Fortran)
   MACRO_NAMESPACE "FC_")
   FortranCInterface_VERIFY(CXX)
   SET(MPI_Fortran_LINK_FLAGS "${CMAKE_EXE_LINKER_FLAGS}")
-  add_subdirectory(FORTRAN)
 endif()
 
 ######################################################################
@@ -436,13 +441,23 @@ if(enable_examples)
   add_subdirectory(EXAMPLE)
 endif()
 
+if (XSDK_ENABLE_Fortran)
+  add_subdirectory(FORTRAN)
+endif()
+
 # superlu_dist uses c++11. PUBLIC means that the other codes linking to it need c++11
 #target_compile_features(SuperLU_DIST PUBLIC cxx_std_11)
 
+# Generate various configure files with proper definitions
 # configure_file(${CMAKE_SOURCE_DIR}/make.inc.in ${CMAKE_BINARY_DIR}/make.inc)
 configure_file(${SuperLU_DIST_SOURCE_DIR}/make.inc.in ${SuperLU_DIST_SOURCE_DIR}/make.inc)
+
 configure_file(${SuperLU_DIST_SOURCE_DIR}/SRC/superlu_dist_config.h.in ${SuperLU_DIST_BINARY_DIR}/SRC/superlu_dist_config.h)
 configure_file(${SuperLU_DIST_SOURCE_DIR}/SRC/superlu_dist_config.h.in ${SuperLU_DIST_SOURCE_DIR}/SRC/superlu_dist_config.h)
+
+# Following is to configure a file for FORTRAN code
+configure_file(${SuperLU_DIST_SOURCE_DIR}/SRC/superlu_dist_config.h.in ${SuperLU_DIST_BINARY_DIR}/FORTRAN/superlu_dist_config.h)
+
 
 # Add pkg-config support
 if(IS_ABSOLUTE ${CMAKE_INSTALL_LIBDIR})
@@ -454,3 +469,4 @@ configure_file(${CMAKE_CURRENT_SOURCE_DIR}/superlu_dist.pc.in ${CMAKE_CURRENT_BI
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/superlu_dist.pc
 	DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig)
 
+#message("MPI_Fortran_LINK_FLAGS '${MPI_Fortran_LINK_FLAGS}'")

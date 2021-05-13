@@ -21,21 +21,28 @@ at the top-level directory.
 
 #include "superlu_ddefs.h"
 
-/* Define global variable for MPI double complex derived data type */
+#if 0 // obsolete
+/* Define global variables */
 MPI_Datatype SuperLU_MPI_DOUBLE_COMPLEX = MPI_DATATYPE_NULL;
+#endif
 
 /*! \brief All processes in the MPI communicator must call this routine.
+ * 
+ *  On output, if a process is not in the SuperLU group, the following 
+ *  values are assigned to it:
+ *      grid->comm = MPI_COMM_NULL
+ *      grid->iam = -1
  */
 void superlu_gridinit(MPI_Comm Bcomm, /* The base communicator upon which
 					 the new grid is formed. */
-		      int_t nprow, int_t npcol, gridinfo_t *grid)
+		      int nprow, int npcol, gridinfo_t *grid)
 {
     int Np = nprow * npcol;
-    int_t *usermap;
+    int *usermap;
     int i, j, info;
 
     /* Make a list of the processes in the new communicator. */
-    usermap = (int_t *) SUPERLU_MALLOC(Np*sizeof(int_t));
+    usermap = SUPERLU_MALLOC(Np*sizeof(int));
     for (j = 0; j < npcol; ++j)
 	for (i = 0; i < nprow; ++i) usermap[j*nprow+i] = i*npcol+j;
     
@@ -45,8 +52,10 @@ void superlu_gridinit(MPI_Comm Bcomm, /* The base communicator upon which
 	ABORT("C main program must explicitly call MPI_Init()");
 
     MPI_Comm_size( Bcomm, &info );
-    if ( info < Np )
-	ABORT("Number of processes is smaller than NPROW * NPCOL");
+    if ( info < Np ) {
+	printf("Number of processes %d is smaller than NPROW * NPCOL %d", info, Np);
+	exit(-1);
+    }
 
     superlu_gridmap(Bcomm, nprow, npcol, usermap, nprow, grid);
     
@@ -55,16 +64,21 @@ void superlu_gridinit(MPI_Comm Bcomm, /* The base communicator upon which
 
 
 /*! \brief All processes in the MPI communicator must call this routine.
+ *
+ *  On output, if a process is not in the SuperLU group, the following 
+ *  values are assigned to it:
+ *      grid->comm = MPI_COMM_NULL
+ *      grid->iam = -1
  */
 void superlu_gridmap(
 		     MPI_Comm Bcomm, /* The base communicator upon which
 					the new grid is formed. */
-		     int_t nprow,
-		     int_t npcol,
-		     int_t usermap[], /* usermap(i,j) holds the process
+		     int nprow,
+		     int npcol,
+		     int usermap[], /* usermap(i,j) holds the process
 					 number to be placed in {i,j} of
 					 the process grid.  */
-		     int_t ldumap,    /* The leading dimension of the
+		     int ldumap,    /* The leading dimension of the
 					 2D array usermap[].  */
 		     gridinfo_t *grid)
 {
@@ -72,13 +86,15 @@ void superlu_gridmap(
     int Np = nprow * npcol, mycol, myrow;
     int *pranks;
     int i, j, info;
-    
+
+#if 0 // older MPI doesn't support complex in C    
     /* Create datatype in C for MPI complex. */
     if ( SuperLU_MPI_DOUBLE_COMPLEX == MPI_DATATYPE_NULL ) {
 	MPI_Type_contiguous( 2, MPI_DOUBLE, &SuperLU_MPI_DOUBLE_COMPLEX );
 	MPI_Type_commit( &SuperLU_MPI_DOUBLE_COMPLEX );
     }
-
+#endif
+    
     /* Check MPI environment initialization. */
     MPI_Initialized( &info );
     if ( !info )
@@ -102,17 +118,17 @@ void superlu_gridmap(
     MPI_Group_incl( mpi_base_group, Np, pranks, &superlu_grp );
     /* Create the new communicator. */
     /* NOTE: The call is to be executed by all processes in Bcomm,
-       even if they do not belong in the new group -- superlu_grp. */
+       even if they do not belong in the new group -- superlu_grp.
+       The function returns MPI_COMM_NULL to processes that are not in superlu_grp. */
     MPI_Comm_create( Bcomm, superlu_grp, &grid->comm );
 
-    /* Bail out if I am not in the group, superlu_group. */
+    /* Bail out if I am not in the group "superlu_grp". */
     if ( grid->comm == MPI_COMM_NULL ) {
-	grid->comm = Bcomm;
-	MPI_Comm_rank( Bcomm, &i );
-	grid->iam = i;
-	/*grid->iam = -1;*/
-	SUPERLU_FREE(pranks);
-	return;
+	// grid->comm = Bcomm;  do not need to reassign to a valid communicator
+	grid->iam = -1;
+	//SUPERLU_FREE(pranks);
+	//return;
+	goto gridmap_out;
     }
 
     MPI_Comm_rank( grid->comm, &(grid->iam) );
@@ -160,20 +176,26 @@ void superlu_gridmap(
     }
 #endif
 
+ gridmap_out:        
     SUPERLU_FREE(pranks);
     MPI_Group_free(&superlu_grp);
     MPI_Group_free(&mpi_base_group);
-}
+    
+} /* superlu_gridmap */
 
 void superlu_gridexit(gridinfo_t *grid)
 {
-    if ( grid->comm != MPI_COMM_NULL && grid->comm != MPI_COMM_WORLD ) {
+    if ( grid->comm != MPI_COMM_NULL ) {
 	/* Marks the communicator objects for deallocation. */
 	MPI_Comm_free( &grid->rscp.comm );
 	MPI_Comm_free( &grid->cscp.comm );
 	MPI_Comm_free( &grid->comm );
     }
+#if 0    
     if ( SuperLU_MPI_DOUBLE_COMPLEX != MPI_DATATYPE_NULL ) {
 	MPI_Type_free( &SuperLU_MPI_DOUBLE_COMPLEX );
+	SuperLU_MPI_DOUBLE_COMPLEX = MPI_DATATYPE_NULL; /* some MPI system does not set this
+							   to be NULL after Type_free */
     }
+#endif    
 }

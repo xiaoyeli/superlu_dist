@@ -19,10 +19,6 @@ at the top-level directory.
 //#include "cblas.h"
 #endif
 
-#ifdef _OPENMP
-#include "omp.h"
-#endif
-
 #define ISORT
 #define SCATTER_U_CPU  scatter_u
 
@@ -97,11 +93,11 @@ zblock_gemm_scatter( int_t lb, int_t j,
                   )
 {
     // return ;
-#ifdef _OPENMP
+#ifdef _OPENMP    
     thread_id = omp_get_thread_num();
-#else
+#else    
     thread_id = 0;
-#endif
+#endif    
     int *indirect_thread = indirect + ldt * thread_id;
     int *indirect2_thread = indirect2 + ldt * thread_id;
     doublecomplex *tempv1 = bigV + thread_id * ldt * ldt;
@@ -131,48 +127,19 @@ zblock_gemm_scatter( int_t lb, int_t j,
     int_t ib   = Remain_info[lb].ib;
     int temp_nbrow = lsub[lptr + 1];
     lptr += LB_DESCRIPTOR;
-    int_t cum_nrow = (lb == 0 ? 0 : Remain_info[lb - 1].FullRow);
-    /* Getting L block information */
-    // int_t lptr = Remain_info[lb].lptr;
-    // int_t ib   = Remain_info[lb].ib;
-    // int_t temp_nbrow = lsub[lptr + 1];
-    // lptr += LB_DESCRIPTOR;
-    // int_t cum_nrow =  Remain_info[lb].StRow;
+    int cum_nrow = (lb == 0 ? 0 : Remain_info[lb - 1].FullRow);
     doublecomplex alpha = {1.0, 0.0}, beta = {0.0, 0.0};
 
     /* calling ZGEMM */
     // printf(" m %d n %d k %d ldu %d ldl %d st_col %d \n",temp_nbrow,ncols,ldu,ldl,st_col );
-
     superlu_zgemm("N", "N", temp_nbrow, ncols, ldu, alpha,
                 &L_mat[(knsupc - ldu)*ldl + cum_nrow], ldl,
                 &U_mat[st_col * ldu], ldu,
                 beta, tempv1, temp_nbrow);
     
-#if 0    // ** replaced by superlu_zgemm
-#if 1
-  #if defined (USE_VENDOR_BLAS)
-    zgemm_("N", "N", &temp_nbrow, &ncols, &ldu, &alpha,
-          &L_mat[(knsupc - ldu)*ldl + cum_nrow], &ldl,
-          &U_mat[st_col * ldu], &ldu, &beta, tempv1, &temp_nbrow, 1, 1);
-  #else
-    zgemm_("N", "N", &temp_nbrow, &ncols, &ldu, &alpha,
-          &L_mat[(knsupc - ldu)*ldl + cum_nrow], &ldl,
-          &U_mat[st_col * ldu], &ldu, &beta, tempv1, &temp_nbrow);
-  #endif
-#else
-    // printf("%d %d %d %d  %d %d %d %d\n", temp_nbrow, ncols, ldu,  ldl,st_col,(knsupc - ldu)*ldl + cum_nrow,cum_nrow,st_col);
-
-    cblas_zgemm(CblasColMajor, CblasNoTrans, CblasNoTrans,
-                temp_nbrow, ncols, ldu, alpha,
-                &L_mat[(knsupc - ldu)*ldl + cum_nrow], ldl,
-                &U_mat[st_col * ldu], ldu,
-                beta, tempv1, temp_nbrow);
-#endif
-#endif // ** replaced by superlu_zgemm
-    
     // printf("SCU update: (%d, %d)\n",ib,jb );
 #ifdef SCATTER_PROFILE
-    unsigned long long ttx = __rdtsc();
+    double ttx = SuperLU_timer_();
 #endif
     /*Now scattering the block*/
     if (ib < jb)
@@ -205,7 +172,7 @@ zblock_gemm_scatter( int_t lb, int_t j,
     // stat->ops[FACT] += 2*temp_nbrow*ncols*ldu + temp_nbrow*ncols;
 
 #ifdef SCATTER_PROFILE
-    double t_s = (double) __rdtsc() - ttx;
+    double t_s = SuperLU_timer_() - ttx;
     Host_TheadScatterMOP[thread_id * ((192 / 8) * (192 / 8)) + ((CEILING(temp_nbrow, 8) - 1)   +  (192 / 8) * (CEILING(ncols, 8) - 1))]
     += 3.0 * (double ) temp_nbrow * (double ) ncols;
     Host_TheadScatterTimer[thread_id * ((192 / 8) * (192 / 8)) + ((CEILING(temp_nbrow, 8) - 1)   +  (192 / 8) * (CEILING(ncols, 8) - 1))]
@@ -254,9 +221,9 @@ zblock_gemm_scatter_lock( int_t lb, int_t j,
     /* Getting L block information */
     int_t lptr = Remain_info[lb].lptr;
     int_t ib   = Remain_info[lb].ib;
-    int_t temp_nbrow = lsub[lptr + 1];
+    int temp_nbrow = lsub[lptr + 1];
     lptr += LB_DESCRIPTOR;
-    int_t cum_nrow =  Remain_info[lb].StRow;
+    int cum_nrow =  Remain_info[lb].StRow;
 
     doublecomplex alpha = {1.0, 0.0}, beta = {0.0, 0.0};
 
@@ -265,27 +232,6 @@ zblock_gemm_scatter_lock( int_t lb, int_t j,
            &L_mat[(knsupc - ldu)*ldl + cum_nrow], ldl,
            &U_mat[st_col * ldu], ldu, beta, tempv1, temp_nbrow);
     
-#if 0 // replaced by superlu_zgemm    
-#if 1
-  #if defined (USE_VENDOR_BLAS)
-    // printf(" m %d n %d k %d ldl %d st_col %d \n",temp_nbrow,ncols,ldu,ldl,st_col );
-    zgemm_("N", "N", &temp_nbrow, &ncols, &ldu, &alpha,
-           &L_mat[(knsupc - ldu)*ldl + cum_nrow], &ldl,
-           &U_mat[st_col * ldu], &ldu, &beta, tempv1, &temp_nbrow, 1, 1);
-  #else
-    zgemm_("N", "N", &temp_nbrow, &ncols, &ldu, &alpha,
-           &L_mat[(knsupc - ldu)*ldl + cum_nrow], &ldl,
-           &U_mat[st_col * ldu], &ldu, &beta, tempv1, &temp_nbrow);
-  #endif
-#else
-    cblas_zgemm(CblasColMajor, CblasNoTrans, CblasNoTrans,
-                temp_nbrow, ncols, ldu, alpha,
-                &L_mat[(knsupc - ldu)*ldl + cum_nrow], ldl,
-                &U_mat[st_col * ldu], ldu,
-                beta, tempv1, temp_nbrow);
-#endif
-#endif // replaced by superlu_zgemm    
-
     /*try to get the lock for the block*/
     if (lock)       /*lock is not null*/
         while (!omp_test_lock(lock))
@@ -293,7 +239,7 @@ zblock_gemm_scatter_lock( int_t lb, int_t j,
         }
 
 #ifdef SCATTER_PROFILE
-    unsigned long long ttx = __rdtsc();
+    double ttx = SuperLU_timer_();
 #endif
     /*Now scattering the block*/
     if (ib < jb)
@@ -326,14 +272,15 @@ zblock_gemm_scatter_lock( int_t lb, int_t j,
         omp_unset_lock(lock);
 
 #ifdef SCATTER_PROFILE
-    double t_s = (double) __rdtsc() - ttx;
+    //double t_s = (double) __rdtsc() - ttx;
+    double t_s = SuperLU_timer_() - ttx;
     Host_TheadScatterMOP[thread_id * ((192 / 8) * (192 / 8)) + ((CEILING(temp_nbrow, 8) - 1)   +  (192 / 8) * (CEILING(ncols, 8) - 1))]
     += 3.0 * (double ) temp_nbrow * (double ) ncols;
     Host_TheadScatterTimer[thread_id * ((192 / 8) * (192 / 8)) + ((CEILING(temp_nbrow, 8) - 1)   +  (192 / 8) * (CEILING(ncols, 8) - 1))]
     += t_s;
 #endif
 } /* zblock_gemm_scatter_lock */
-#endif // only if _OPENMP is defined
+#endif  // Only if _OPENMP is defined
 
 
 // there are following three variations of block_gemm_scatter call
@@ -363,26 +310,27 @@ int_t zblock_gemm_scatterTopLeft( int_t lb, /* block number in L */
                                  doublecomplex* bigV, int_t knsupc,  int_t klst,
 				 int_t* lsub, int_t * usub, int_t ldt,
 				 int* indirect, int* indirect2, HyP_t* HyP,
-                                 LUstruct_t *LUstruct,
+                                 zLUstruct_t *LUstruct,
                                  gridinfo_t* grid,
                                  SCT_t*SCT, SuperLUStat_t *stat
                                )
 {
     Glu_persist_t *Glu_persist = LUstruct->Glu_persist;
-    LocalLU_t *Llu = LUstruct->Llu;
+    zLocalLU_t *Llu = LUstruct->Llu;
     int_t* xsup = Glu_persist->xsup;
     int_t** Lrowind_bc_ptr = Llu->Lrowind_bc_ptr;
     int_t** Ufstnz_br_ptr = Llu->Ufstnz_br_ptr;
     doublecomplex** Lnzval_bc_ptr = Llu->Lnzval_bc_ptr;
     doublecomplex** Unzval_br_ptr = Llu->Unzval_br_ptr;
-#ifdef _OPENMP
+#ifdef _OPENMP    
     volatile int_t thread_id = omp_get_thread_num();
-#else
+#else    
     volatile int_t thread_id = 0;
-#endif
-
+#endif    
+    
 //    printf("Thread's ID %lld \n", thread_id);
-    unsigned long long t1 = _rdtsc();
+    //unsigned long long t1 = _rdtsc();
+    double t1 = SuperLU_timer_();
     zblock_gemm_scatter( lb, j, HyP->Ublock_info, HyP->lookAhead_info,
 			HyP->lookAhead_L_buff, HyP->Lnbrow,
                         HyP->bigU_host, HyP->ldu,
@@ -394,33 +342,35 @@ int_t zblock_gemm_scatterTopLeft( int_t lb, /* block number in L */
                         , SCT->Host_TheadScatterMOP, SCT->Host_TheadScatterTimer
 #endif
                       );
-    unsigned long long t2 = _rdtsc();
+    //unsigned long long t2 = _rdtsc();
+    double t2 = SuperLU_timer_();
     SCT->SchurCompUdtThreadTime[thread_id * CACHE_LINE_SIZE] += (double) (t2 - t1);
     return 0;
 } /* zgemm_scatterTopLeft */
 
 int_t zblock_gemm_scatterTopRight( int_t lb,  int_t j,
                                   doublecomplex* bigV, int_t knsupc,  int_t klst, int_t* lsub,
-                                  int_t * usub, int_t ldt,  int* indirect, int* indirect2,
+                                  int_t* usub, int_t ldt, int* indirect, int* indirect2,
                                   HyP_t* HyP,
-                                  LUstruct_t *LUstruct,
+                                  zLUstruct_t *LUstruct,
                                   gridinfo_t* grid,
                                   SCT_t*SCT, SuperLUStat_t *stat
                                 )
 {
     Glu_persist_t *Glu_persist = LUstruct->Glu_persist;
-    LocalLU_t *Llu = LUstruct->Llu;
+    zLocalLU_t *Llu = LUstruct->Llu;
     int_t* xsup = Glu_persist->xsup;
     int_t** Lrowind_bc_ptr = Llu->Lrowind_bc_ptr;
     int_t** Ufstnz_br_ptr = Llu->Ufstnz_br_ptr;
     doublecomplex** Lnzval_bc_ptr = Llu->Lnzval_bc_ptr;
     doublecomplex** Unzval_br_ptr = Llu->Unzval_br_ptr;
-#ifdef _OPENMP
+#ifdef _OPENMP    
     volatile  int_t thread_id = omp_get_thread_num();
-#else
+#else    
     volatile  int_t thread_id = 0;
-#endif
-    unsigned long long t1 = _rdtsc();
+#endif    
+    //unsigned long long t1 = _rdtsc();
+    double t1 = SuperLU_timer_();
     zblock_gemm_scatter( lb, j, HyP->Ublock_info_Phi, HyP->lookAhead_info, HyP->lookAhead_L_buff, HyP->Lnbrow,
                         HyP->bigU_Phi, HyP->ldu_Phi,
                         bigV, knsupc,  klst, lsub,  usub, ldt, thread_id, indirect, indirect2,
@@ -429,34 +379,36 @@ int_t zblock_gemm_scatterTopRight( int_t lb,  int_t j,
                         , SCT->Host_TheadScatterMOP, SCT->Host_TheadScatterTimer
 #endif
                       );
-    unsigned long long t2 = _rdtsc();
+    //unsigned long long t2 = _rdtsc();
+    double t2 = SuperLU_timer_();
     SCT->SchurCompUdtThreadTime[thread_id * CACHE_LINE_SIZE] += (double) (t2 - t1);
     return 0;
 } /* zblock_gemm_scatterTopRight */
 
 int_t zblock_gemm_scatterBottomLeft( int_t lb,  int_t j,
                                     doublecomplex* bigV, int_t knsupc,  int_t klst, int_t* lsub,
-                                    int_t * usub, int_t ldt,  int* indirect, int* indirect2,
+                                    int_t* usub, int_t ldt, int* indirect, int* indirect2,
                                     HyP_t* HyP,
-                                    LUstruct_t *LUstruct,
+                                    zLUstruct_t *LUstruct,
                                     gridinfo_t* grid,
                                     SCT_t*SCT, SuperLUStat_t *stat
                                   )
 {
     Glu_persist_t *Glu_persist = LUstruct->Glu_persist;
-    LocalLU_t *Llu = LUstruct->Llu;
+    zLocalLU_t *Llu = LUstruct->Llu;
     int_t* xsup = Glu_persist->xsup;
     int_t** Lrowind_bc_ptr = Llu->Lrowind_bc_ptr;
     int_t** Ufstnz_br_ptr = Llu->Ufstnz_br_ptr;
     doublecomplex** Lnzval_bc_ptr = Llu->Lnzval_bc_ptr;
     doublecomplex** Unzval_br_ptr = Llu->Unzval_br_ptr;
-#ifdef _OPENMP
+#ifdef _OPENMP    
     volatile int_t thread_id = omp_get_thread_num();
-#else
+#else    
     volatile int_t thread_id = 0;
-#endif
+#endif    
     //printf("Thread's ID %lld \n", thread_id);
-    unsigned long long t1 = _rdtsc();
+    //unsigned long long t1 = _rdtsc();
+    double t1 = SuperLU_timer_();
     zblock_gemm_scatter( lb, j, HyP->Ublock_info, HyP->Remain_info, HyP->Remain_L_buff, HyP->Rnbrow,
                         HyP->bigU_host, HyP->ldu,
                         bigV, knsupc,  klst, lsub,  usub, ldt, thread_id, indirect, indirect2,
@@ -465,7 +417,8 @@ int_t zblock_gemm_scatterBottomLeft( int_t lb,  int_t j,
                         , SCT->Host_TheadScatterMOP, SCT->Host_TheadScatterTimer
 #endif
                       );
-    unsigned long long t2 = _rdtsc();
+    //unsigned long long t2 = _rdtsc();
+    double t2 = SuperLU_timer_();
     SCT->SchurCompUdtThreadTime[thread_id * CACHE_LINE_SIZE] += (double) (t2 - t1);
     return 0;
 
@@ -473,27 +426,28 @@ int_t zblock_gemm_scatterBottomLeft( int_t lb,  int_t j,
 
 int_t zblock_gemm_scatterBottomRight( int_t lb,  int_t j,
                                      doublecomplex* bigV, int_t knsupc,  int_t klst, int_t* lsub,
-                                     int_t * usub, int_t ldt,  int* indirect, int* indirect2,
+                                     int_t* usub, int_t ldt, int* indirect, int* indirect2,
                                      HyP_t* HyP,
-                                     LUstruct_t *LUstruct,
+                                     zLUstruct_t *LUstruct,
                                      gridinfo_t* grid,
                                      SCT_t*SCT, SuperLUStat_t *stat
                                    )
 {
     Glu_persist_t *Glu_persist = LUstruct->Glu_persist;
-    LocalLU_t *Llu = LUstruct->Llu;
+    zLocalLU_t *Llu = LUstruct->Llu;
     int_t* xsup = Glu_persist->xsup;
     int_t** Lrowind_bc_ptr = Llu->Lrowind_bc_ptr;
     int_t** Ufstnz_br_ptr = Llu->Ufstnz_br_ptr;
     doublecomplex** Lnzval_bc_ptr = Llu->Lnzval_bc_ptr;
     doublecomplex** Unzval_br_ptr = Llu->Unzval_br_ptr;
-#ifdef _OPENMP
+#ifdef _OPENMP    
     volatile  int_t thread_id = omp_get_thread_num();
-#else
+#else    
     volatile  int_t thread_id = 0;
-#endif
+#endif    
    // printf("Thread's ID %lld \n", thread_id);
-    unsigned long long t1 = _rdtsc();
+    //unsigned long long t1 = _rdtsc();
+    double t1 = SuperLU_timer_();
     zblock_gemm_scatter( lb, j, HyP->Ublock_info_Phi, HyP->Remain_info, HyP->Remain_L_buff, HyP->Rnbrow,
                         HyP->bigU_Phi, HyP->ldu_Phi,
                         bigV, knsupc,  klst, lsub,  usub, ldt, thread_id, indirect, indirect2,
@@ -503,7 +457,8 @@ int_t zblock_gemm_scatterBottomRight( int_t lb,  int_t j,
 #endif
                       );
 
-    unsigned long long t2 = _rdtsc();
+    //unsigned long long t2 = _rdtsc();
+    double t2 = SuperLU_timer_();
     SCT->SchurCompUdtThreadTime[thread_id * CACHE_LINE_SIZE] += (double) (t2 - t1);
     return 0;
 
@@ -527,8 +482,8 @@ scatter_l (int_t ib,
            int_t *usub,
            int_t *lsub,
            double *tempv,
-           int *indirect_thread, int_t *indirect2,
-           int **Lrowind_bc_ptr, double **Lnzval_bc_ptr, gridinfo_t *grid)
+           int *indirect_thread, int *indirect2,
+           int_t **Lrowind_bc_ptr, double **Lnzval_bc_ptr, gridinfo_t *grid)
 {
     int_t rel, i, segsize, jj;
     double *nzval;
@@ -635,7 +590,6 @@ scatter_u (int_t ib,
     {
         indirect[i] = lsub[lptr + i] ;
     }
-
 
     iuip_lib += UB_DESCRIPTOR;
 

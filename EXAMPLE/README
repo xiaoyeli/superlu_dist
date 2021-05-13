@@ -1,5 +1,5 @@
-		SuperLU_DIST  EXAMPLES
-		======================
+		SuperLU_DIST EXAMPLES
+		=====================
 
 This directory contains sample programs to illustrate how to use
 various functions provided in SuperLU_DIST. You can modify these

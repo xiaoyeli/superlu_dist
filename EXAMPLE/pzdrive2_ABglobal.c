@@ -49,8 +49,8 @@ int main(int argc, char *argv[])
     superlu_dist_options_t options;
     SuperLUStat_t stat;
     SuperMatrix A;
-    ScalePermstruct_t ScalePermstruct;
-    LUstruct_t LUstruct;
+    zScalePermstruct_t ScalePermstruct;
+    zLUstruct_t LUstruct;
     gridinfo_t grid;
     double   *berr;
     doublecomplex   *a, *a1, *b, *b1, *xtrue;
@@ -62,11 +62,6 @@ int main(int argc, char *argv[])
     char     **cpp, c;
     FILE *fp, *fopen();
     extern int cpp_defs();
-
-    /* prototypes */
-    extern void LUstructInit(const int_t, LUstruct_t *);
-    extern void LUstructFree(LUstruct_t *);
-    extern void Destroy_LU(int_t, gridinfo_t *, LUstruct_t *);
 
     nprow = 1;  /* Default process rows.      */
     npcol = 1;  /* Default process columns.   */
@@ -109,8 +104,7 @@ int main(int argc, char *argv[])
 
     /* Bail out if I do not belong in the grid. */
     iam = grid.iam;
-    if ( iam >= nprow * npcol )
-	goto out;
+    if ( iam == -1 )	goto out;
     
 #if ( DEBUGlevel>=1 )
     CHECK_MALLOC(iam, "Enter main()");
@@ -203,8 +197,8 @@ int main(int argc, char *argv[])
     }
 
     /* Initialize ScalePermstruct and LUstruct. */
-    ScalePermstructInit(m, n, &ScalePermstruct);
-    LUstructInit(n, &LUstruct);
+    zScalePermstructInit(m, n, &ScalePermstruct);
+    zLUstructInit(n, &LUstruct);
 
     /* Initialize the statistics variables. */
     PStatInit(&stat);
@@ -221,7 +215,7 @@ int main(int argc, char *argv[])
     PStatPrint(&options, &stat, &grid);        /* Print the statistics. */
     PStatFree(&stat);
     Destroy_CompCol_Matrix_dist(&A); /* Deallocate storage of matrix A.     */
-    Destroy_LU(n, &grid, &LUstruct); /* Deallocate storage associated with 
+    zDestroy_LU(n, &grid, &LUstruct); /* Deallocate storage associated with 
 					the L and U matrices.               */
     SUPERLU_FREE(b);                 /* Free storage of right-hand side.    */
 
@@ -255,13 +249,14 @@ int main(int argc, char *argv[])
        ------------------------------------------------------------*/
     PStatFree(&stat);
     Destroy_CompCol_Matrix_dist(&A); /* Deallocate storage of matrix A.     */
-    Destroy_LU(n, &grid, &LUstruct); /* Deallocate storage associated with    
+    zDestroy_LU(n, &grid, &LUstruct); /* Deallocate storage associated with    
 					the L and U matrices.               */
-    ScalePermstructFree(&ScalePermstruct);
-    LUstructFree(&LUstruct);         /* Deallocate the structure of L and U.*/
+    zScalePermstructFree(&ScalePermstruct);
+    zLUstructFree(&LUstruct);         /* Deallocate the structure of L and U.*/
     SUPERLU_FREE(b1);	             /* Free storage of right-hand side.    */
     SUPERLU_FREE(xtrue);             /* Free storage of the exact solution. */
     SUPERLU_FREE(berr);
+    fclose(fp);
 
 
     /* ------------------------------------------------------------
@@ -300,5 +295,3 @@ int cpp_defs()
     printf("....\n");
     return 0;
 }
-
-

@@ -18,7 +18,7 @@ function(add_superlu_dist_example target input nprow npcol)
 
 # corresponding to mpiexec -n 4 pddrive -r <nprow> -c <npcol> g20.rua
     add_test(${target} ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} ${procs}
-             ${MPIEXEC_PREFLAGS} ${target} ${MPIEXEC_POSTFLAGS} -r "${nprow}" -c "${npcol}" "${EXAMPLE_INPUT}")
+             ${MPIEXEC_PREFLAGS} ${EXAMPLE_LOC}/${target} ${MPIEXEC_POSTFLAGS} -r "${nprow}" -c "${npcol}" "${EXAMPLE_INPUT}")
 
 #     add_test(NAME ${target} COMMAND "${CMAKE_COMMAND}"
 #              -DTEST=${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} ${procs}
@@ -80,6 +80,12 @@ if(enable_double)
   set(DEXMG4 pddrive4_ABglobal.c)
   add_executable(pddrive4_ABglobal ${DEXMG4})
   target_link_libraries(pddrive4_ABglobal ${all_link_libs})
+
+  set(DEXMS pddrive_spawn.c dcreate_matrix.c)
+  add_executable(pddrive_spawn ${DEXMS})
+  target_link_libraries(pddrive_spawn ${all_link_libs})
+
+
 endif()
 
 
@@ -131,5 +137,9 @@ if(enable_complex16)
   set(ZEXMG4 pzdrive4_ABglobal.c)
   add_executable(pzdrive4_ABglobal ${ZEXMG4})
   target_link_libraries(pzdrive4_ABglobal ${all_link_libs})
+
+  set(ZEXMS pzdrive_spawn.c zcreate_matrix.c)
+  add_executable(pzdrive_spawn ${ZEXMS})
+  target_link_libraries(pzdrive_spawn ${all_link_libs})  
 
 endif()

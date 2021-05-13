@@ -1,3 +1,12 @@
+/*! @file
+ * \brief SuperLU utilities
+ *
+ * <pre>
+ * -- Distributed SuperLU routine (version 7.0) --
+ * Lawrence Berkeley National Lab, Oak Ridge National Lab
+ * May 12, 2021
+ * </pre>
+ */
 #include <stdio.h>
 #include <assert.h>
 #include "superlu_ddefs.h"
@@ -340,7 +349,7 @@ double pearsonCoeff(int_t numForests, double* frCost, double* frWeight)
 	return covarCostWeight / sqrt(stdCost * stdWeight);
 
 }
-void printGantt(int_t root, int_t numForests, char* nodename, double scale, double* gFrstCostAcc, double* crPathCost);
+void printGantt(int root, int numForests, char* nodename, double scale, double* gFrstCostAcc, double* crPathCost);
 
 void printForestWeightCost(sForest_t**  sForests, SCT_t* SCT, gridinfo3d_t* grid3d)
 {
@@ -434,7 +443,7 @@ void printForestWeightCost(sForest_t**  sForests, SCT_t* SCT, gridinfo3d_t* grid
 }
 
 
-void printGantt(int_t root, int_t numForests, char* nodename, double scale, double* gFrstCostAcc, double* crPathCost)
+void printGantt(int root, int numForests, char* nodename, double scale, double* gFrstCostAcc, double* crPathCost)
 {
 	
 
@@ -445,12 +454,11 @@ void printGantt(int_t root, int_t numForests, char* nodename, double scale, doub
 	}
 	else
 	{
-		printGantt(2*root+1,  numForests, nodename,  scale,  gFrstCostAcc, crPathCost);
-		int_t depTree = 	crPathCost[2*root+1]> crPathCost[2*root+2]? 2*root+1:2*root+2;
-		printf("\t tree-%d  %.2g \t:%s-%d, after %s-%d, %.0fd \n", root,100*scale*crPathCost[root], nodename, root, nodename, depTree, 100*scale*gFrstCostAcc[root]  );
-		printGantt(2*root+2,  numForests,  nodename, scale,  gFrstCostAcc, crPathCost);	
+	  printGantt(2*root+1,  numForests, nodename,  scale,  gFrstCostAcc, crPathCost);
+	  int depTree =crPathCost[2*root+1]> crPathCost[2*root+2]? 2*root+1:2*root+2;
+	  printf("\t tree-%d  %.2g \t:%s-%d, after %s-%d, %.0fd \n", root,100*scale*crPathCost[root], nodename, root, nodename, depTree, 100*scale*gFrstCostAcc[root]  );
+	  printGantt(2*root+2,  numForests,  nodename, scale,  gFrstCostAcc, crPathCost);	
 	}
-	
 }
 
 #define ABS(a) ((a)<0?-(a):a)

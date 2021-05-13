@@ -3157,7 +3157,8 @@ expand_RL
 	
 	if (!computeL)
 	  marker[vtx] = markl;
-	for (ii; ii < mpnelts; ii++) {
+	//for (ii; ii < mpnelts; ii++) {  // Sherry: compiler warning
+	for (; ii < mpnelts; ii++) {
 	  elt = lsub_rcvd[ii];
 	  if (elt >= vtx) {
 	    if (marker[elt] != markl) {
@@ -3456,7 +3457,8 @@ rl_update
 	if (!computeL)
 	  marker[vtx] = markl;
 	PS->nops += mpnelts - ii;
-	for (ii; ii < mpnelts; ii++) {
+	//for (ii; ii < mpnelts; ii++) { // Sherry: compiler warning
+	for (; ii < mpnelts; ii++) {
 	  elt = lsub_rcvd[ii];
 	  if (elt >= vtx) {
 	    if (marker[elt] != markl) {
@@ -4774,7 +4776,11 @@ intraLvl_symbfact
 	  MPI_Irecv (&sz_msg, 1, mpi_int_t, 
 		     MPI_ANY_SOURCE, tag_intraLvl_szMsg, 
 		     (*symb_comm), &(request[0]));  
+#if defined (_LONGINT)
 	  if (sz_msg > LONG_MAX)
+#else
+	  if (sz_msg > INT_MAX)
+#endif
 	    ABORT("ERROR in intraLvl_symbfact size to send > LONG_MAX\n");
 	}
 	MPI_Waitany (2, request, index_req, status);

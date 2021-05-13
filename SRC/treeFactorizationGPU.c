@@ -1,6 +1,6 @@
 // #include "treeFactorization.h"
 // #include "trfCommWrapper.h"
-#include "lustruct_gpu.h"
+#include "dlustruct_gpu.h"
 #ifdef __INTEL_COMPILER
 #include "mkl.h"
 #else
@@ -46,7 +46,7 @@ static int_t getAccUPartition(HyP_t *HyP)
     return jj_cpu;
 }
 
-int_t sparseTreeFactor_ASYNC_GPU(
+int dsparseTreeFactor_ASYNC_GPU(
     sForest_t *sforest,
     commRequests_t **comReqss, // lists of communication requests,
                                // size = maxEtree level
@@ -64,7 +64,7 @@ int_t sparseTreeFactor_ASYNC_GPU(
     sluGPU_t *sluGPU,
     d2Hreduce_t *d2Hred,
     HyP_t *HyP,
-    LUstruct_t *LUstruct, gridinfo3d_t *grid3d, SuperLUStat_t *stat,
+    dLUstruct_t *LUstruct, gridinfo3d_t *grid3d, SuperLUStat_t *stat,
     double thresh, SCT_t *SCT, int tag_ub,
     int *info)
 {
