@@ -227,8 +227,8 @@ zReDistribute_A(SuperMatrix *A, zScalePermstruct_t *ScalePermstruct,
     }
 
     for (p = 0; p < procs; ++p) {
-        if ( p != iam && nnzToRecv[p] > 0 ) {
-	//if ( p != iam ) {
+	    if ( p != iam && nnzToRecv[p] > 0 ) {
+	        //if ( p != iam ) {
 	    it = 2*nnzToRecv[p];
 	    MPI_Recv( itemp, it, mpi_int_t, p, p, grid->comm, &status );
 	    it = nnzToRecv[p];

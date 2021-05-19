@@ -23,6 +23,7 @@ at the top-level directory.
  *     February 8, 2019    version 6.1.1
  *     November 12, 2019   version 6.2.0
  *     October 23, 2020    version 6.4.0
+ *     May 12, 2021        version 7.0.0
  * </pre>
  */
 
@@ -75,10 +76,10 @@ at the top-level directory.
  *   #endif
  * Versions 4.x and earlier do not include a #define'd version numbers.
  */
-#define SUPERLU_DIST_MAJOR_VERSION     6
-#define SUPERLU_DIST_MINOR_VERSION     4
+#define SUPERLU_DIST_MAJOR_VERSION     7
+#define SUPERLU_DIST_MINOR_VERSION     0
 #define SUPERLU_DIST_PATCH_VERSION     0
-#define SUPERLU_DIST_RELEASE_DATE      "October 23, 2020"
+#define SUPERLU_DIST_RELEASE_DATE      "May 12, 2021"
 
 #include "superlu_dist_config.h"
 /* Define my integer size int_t */
@@ -139,7 +140,7 @@ typedef MPI_C_DOUBLE_COMPLEX  SuperLU_MPI_DOUBLE_COMPLEX;
 #endif
 
 
-#define MAX_SUPER_SIZE 256   /* Sherry: moved from superlu_gpu.cu */
+#define MAX_SUPER_SIZE 512   /* Sherry: moved from superlu_gpu.cu */
 
 
 #define ISORT     /* NOTE: qsort() has bug on Mac */
@@ -1018,7 +1019,7 @@ extern int_t estimate_bigu_size (int_t, int_t **, Glu_persist_t *,
 /* Auxiliary routines */
 extern double SuperLU_timer_ ();
 extern void   superlu_abort_and_exit_dist(char *);
-extern int    sp_ienv_dist (int_t);
+extern int    sp_ienv_dist (int);
 extern void   ifill_dist (int_t *, int_t, int_t);
 extern void   super_stats_dist (int_t, int_t *);
 extern void  get_diag_procs(int_t, Glu_persist_t *, gridinfo_t *, int_t *,

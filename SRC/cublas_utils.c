@@ -10,7 +10,7 @@ at the top-level directory.
 */
 #include "superlu_defs.h"
 
-#ifdef GPU_ACC  // enable CUDA
+#ifdef GPU_ACC  //////////////////////////////  enable CUDA
 
  void DisplayHeader()
 {

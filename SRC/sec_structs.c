@@ -1,10 +1,31 @@
+/*! \file
+Copyright (c) 2003, The Regents of the University of California, through
+Lawrence Berkeley National Laboratory (subject to receipt of any required
+approvals from U.S. Dept. of Energy)
+
+All rights reserved.
+
+The source code is distributed under BSD license, see the file License.txt
+at the top-level directory.
+*/
+
+/*! @file
+ * \brief Auxiliary routines in 3D algorithms
+ *
+ * <pre>
+ * -- Distributed SuperLU routine (version 7.0) --
+ * Lawrence Berkeley National Lab, Oak Ridge National Lab
+ * May 12, 2021
+ * </pre>
+ */
+
+
 //#include <mm_malloc.h>
 #include "superlu_ddefs.h"
 #if 0
 #include "sec_structs.h"
 #include <stdlib.h> /*for Qsort */
 #include <mpi.h>
-#include <omp.h>
 #include <math.h>   /*for sqrt*/
 #include <string.h>
 #include "compiler.h"

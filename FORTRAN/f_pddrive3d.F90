@@ -41,6 +41,7 @@
 ! The program may be run by typing
 !    mpiexec -np 8 f_pddrive3d 
 !
+#include "superlu_dist_config.fh"
       use superlu_mod
 !      implicit none
       include 'mpif.h'
@@ -48,7 +49,12 @@
       parameter ( maxn = 10000, maxnz = 100000, maxnrhs = 10 )
       integer rowind(maxnz), colptr(maxn)
       real*8  values(maxnz), b(maxn), berr(maxnrhs), xtrue(maxn)
-      integer n, m, nnz, nprow, npcol, npdep, init
+#if (XSDK_INDEX_SIZE==64)
+      integer*8 nnz
+#else
+      integer nnz
+#endif
+      integer n, m, nprow, npcol, npdep, init
       integer*4 iam, info, i, ierr, ldb, nrhs
       character*80 fname
 

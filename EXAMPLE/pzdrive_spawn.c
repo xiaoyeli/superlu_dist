@@ -151,7 +151,7 @@ int main(int argc, char *argv[])
 	
     /* Bail out if I do not belong in the grid. */
     iam = grid.iam;
-    if ( iam >= nprow * npcol )	goto out;
+    if ( iam == -1 )	goto out;
     if ( !iam ) {
 	int v_major, v_minor, v_bugfix;
 #ifdef __INTEL_COMPILER
@@ -266,7 +266,7 @@ int main(int argc, char *argv[])
 		// result[1] = total * 1e-6;     
 		if (!iam) {
 			printf("returning data:\n"
-		   "    Factor time :        %8.2f |  Total MEM : %8.2f\n",
+		   "    Factor time :        %8.2f\n    Total MEM : %8.2f\n",
 		   stat.utime[FACT], total * 1e-6);
 		   printf("    Solve time :        %8.2f \n",
 		   stat.utime[SOLVE]);           
@@ -305,6 +305,7 @@ int main(int argc, char *argv[])
        RELEASE THE SUPERLU PROCESS GRID.
        ------------------------------------------------------------*/
 out:
+	if(parent!=MPI_COMM_NULL)
 	MPI_Reduce(result, MPI_BOTTOM, 2, MPI_FLOAT,MPI_MAX, 0, parent);
     superlu_gridexit(&grid);
 
@@ -312,7 +313,7 @@ out:
        TERMINATES THE MPI EXECUTION ENVIRONMENT.
        ------------------------------------------------------------*/
 	   
-	
+    if(parent!=MPI_COMM_NULL)
 	MPI_Comm_disconnect(&parent);
     MPI_Finalize();
 
