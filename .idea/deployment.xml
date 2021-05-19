@@ -2,6 +2,16 @@
 <project version="4">
   <component name="PublishConfigData" remoteFilesAllowedToDisappearOnAutoupload="false">
     <serverData>
+      <paths name="Ancilla (cb532c3e-a7cf-45b0-b81c-14c523f3140e)">
+        <serverdata>
+          <mappings>
+            <mapping deploy="/tmp/tmp.5sixwO5RUV" local="$PROJECT_DIR$" />
+          </mappings>
+          <excludedPaths>
+            <excludedPath local="true" path="$PROJECT_DIR$/cmake-build-debug" />
+          </excludedPaths>
+        </serverdata>
+      </paths>
       <paths name="Cori (4088f52f-a3f4-4891-a6bd-e4955d027531)">
         <serverdata>
           <mappings>
