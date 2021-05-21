@@ -18,7 +18,7 @@
 
 int_t pdgstrf3d_summit(superlu_dist_options_t *options, int m, int n, double anorm,
 		trf3Dpartition_t*  trf3Dpartition, SCT_t *SCT,
-		LUstruct_t *LUstruct, gridinfo3d_t * grid3d,
+		dLUstruct_t *LUstruct, gridinfo3d_t * grid3d,
 		SuperLUStat_t *stat, int *info)
 {
     gridinfo_t* grid = &(grid3d->grid2d);
@@ -94,7 +94,7 @@ int_t pdgstrf3d_summit(superlu_dist_options_t *options, int m, int n, double ano
         && sForests[myTreeIdxs[ilvl]]->topoInfo.eTreeTopLims[1] > mxLeafNode )
             mxLeafNode    = sForests[myTreeIdxs[ilvl]]->topoInfo.eTreeTopLims[1];
     }
-    diagFactBufs_t** dFBufs = dinitDiagFactBufsArr(mxLeafNode, ldt, grid);
+    ddiagFactBufs_t** dFBufs = dinitDiagFactBufsArr(mxLeafNode, ldt, grid);
     commRequests_t** comReqss = initCommRequestsArr(SUPERLU_MAX(mxLeafNode, numLA), ldt, grid);
 
 

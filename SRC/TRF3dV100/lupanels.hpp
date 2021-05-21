@@ -215,7 +215,7 @@ struct LUstruct_v100
     *          C O N / D E S - T R U C T O R S
     */
     LUstruct_v100(int_t nsupers, int_t ldt_, int_t *isNodeInMyGrid,
-                  LUstruct_t *LUstruct, gridinfo3d_t *grid3d,
+                  dLUstruct_t *LUstruct, gridinfo3d_t *grid3d,
                   SCT_t* SCT_, superlu_dist_options_t *options_, SuperLUStat_t *stat
                   );
 
@@ -240,11 +240,11 @@ struct LUstruct_v100
     int_t dsparseTreeFactor(
         sForest_t *sforest,
         commRequests_t **comReqss, // lists of communication requests // size maxEtree level
-        scuBufs_t *scuBufs,        // contains buffers for schur complement update
+        dscuBufs_t *scuBufs,        // contains buffers for schur complement update
         packLUInfo_t *packLUInfo,
         msgs_t **msgss,           // size=num Look ahead
         dLUValSubBuf_t **LUvsbs,  // size=num Look ahead
-        diagFactBufs_t **dFBufs,  // size maxEtree level
+        ddiagFactBufs_t **dFBufs,  // size maxEtree level
         gEtreeInfo_t *gEtreeInfo, // global etree info
         
         int_t *gIperm_c_supno,
@@ -252,7 +252,7 @@ struct LUstruct_v100
         double thresh,  int tag_ub,
         int *info);
 
-    int_t packedU2skyline(LUstruct_t *LUstruct);
+    int_t packedU2skyline(dLUstruct_t *LUstruct);
 
     int_t ancestorReduction3d(int_t ilvl, int_t *myNodeCount,
                               int_t **treePerm);

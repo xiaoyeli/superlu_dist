@@ -4,7 +4,7 @@
 
 LUstruct_v100::LUstruct_v100(int_t nsupers_, int_t ldt_,
             int_t *isNodeInMyGrid_,
-            LUstruct_t *LUstruct,
+            dLUstruct_t *LUstruct,
             gridinfo3d_t *grid3d_in,
             SCT_t *SCT_, superlu_dist_options_t *options_, 
             SuperLUStat_t *stat_) : isNodeInMyGrid(isNodeInMyGrid_), 
@@ -288,7 +288,7 @@ int_t LUstruct_v100::dScatter(int_t m, int_t n,
     return 0;
 }
 
-int_t LUstruct_v100::packedU2skyline(LUstruct_t *LUstruct)
+int_t LUstruct_v100::packedU2skyline(dLUstruct_t *LUstruct)
 {
 
     int_t **Ufstnz_br_ptr = LUstruct->Llu->Ufstnz_br_ptr;
