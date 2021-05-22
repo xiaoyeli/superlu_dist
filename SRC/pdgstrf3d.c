@@ -335,7 +335,7 @@ int_t pdgstrf3d(superlu_dist_options_t *options, int m, int n, double anorm,
     {
         SCT_printSummary(grid, SCT);
         if (superlu_acc_offload )
-            printGPUStats(sluGPU->A_gpu, grid);
+            dprintGPUStats(sluGPU->A_gpu, grid);
     }
         
 
@@ -363,7 +363,7 @@ int_t pdgstrf3d(superlu_dist_options_t *options, int m, int n, double anorm,
     dfreeDiagFactBufsArr(mxLeafNode, dFBufs);
     Free_HyP(HyP);
     if (superlu_acc_offload )
-        freeSluGPU(sluGPU);
+        dfreeSluGPU(sluGPU);
 
 #if ( DEBUGlevel>=1 )
     CHECK_MALLOC (grid3d->iam, "Exit pdgstrf3d()");
