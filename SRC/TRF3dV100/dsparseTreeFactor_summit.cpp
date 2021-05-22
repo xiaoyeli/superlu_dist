@@ -8,7 +8,7 @@ int_t LUstruct_v100::dsparseTreeFactor(
     packLUInfo_t *packLUInfo,
     msgs_t **msgss,           // size=num Look ahead
     dLUValSubBuf_t **LUvsbs,  // size=num Look ahead
-    diagFactBufs_t **dFBufs,  // size maxEtree level
+    ddiagFactBufs_t **dFBufs,  // size maxEtree level
     gEtreeInfo_t *gEtreeInfo, // global etree info
     int_t *gIperm_c_supno,
     double thresh, int tag_ub,

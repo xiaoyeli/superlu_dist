@@ -5,7 +5,7 @@
 #endif
 
 #ifdef GPU_ACC
-#include "lustruct_gpu.h"
+#include "dlustruct_gpu.h"
 #include "acc_aux.c"
 #endif
 
