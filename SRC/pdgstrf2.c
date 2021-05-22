@@ -575,8 +575,8 @@ void Local_Dgstrf2(superlu_dist_options_t *options, int_t k, double thresh,
 
     }                       /* for column j ...  first loop */
 
-
-    //int_t thread_id = omp_get_thread_num();
+#endif
+     //int_t thread_id = omp_get_thread_num();
     // SCT->Local_Dgstrf2_Thread_tl[thread_id * CACHE_LINE_SIZE] += (double) ( SuperLU_timer_() - t1);
 }
 
