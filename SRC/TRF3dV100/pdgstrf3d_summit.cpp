@@ -22,7 +22,7 @@ int_t pdgstrf3d_summit(superlu_dist_options_t *options, int m, int n, double ano
 		SuperLUStat_t *stat, int *info)
 {
     gridinfo_t* grid = &(grid3d->grid2d);
-    d©LocalLU_t *Llu = LUstruct->Llu;
+    dLocalLU_t *Llu = LUstruct->Llu;
 
     // problem specific contants
     int_t ldt = sp_ienv_dist (3);     /* Size of maximum supernode */
@@ -42,7 +42,7 @@ int_t pdgstrf3d_summit(superlu_dist_options_t *options, int m, int n, double ano
     //if (!grid3d->zscp.Iam && !grid3d->iam) printf("Using NSUP=%d\n", (int) ldt);
 
     //getting Nsupers
-    int_t nsupers = getNsupers(n, LUstruct);
+    int_t nsupers = getNsupers(n, LUstruct->Glu_persist);
 
     // Grid related Variables
     int_t iam = grid->iam; // in 2D grid
