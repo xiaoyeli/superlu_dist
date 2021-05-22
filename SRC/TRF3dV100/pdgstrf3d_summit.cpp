@@ -22,7 +22,7 @@ int_t pdgstrf3d_summit(superlu_dist_options_t *options, int m, int n, double ano
 		SuperLUStat_t *stat, int *info)
 {
     gridinfo_t* grid = &(grid3d->grid2d);
-    LocalLU_t *Llu = LUstruct->Llu;
+    d©LocalLU_t *Llu = LUstruct->Llu;
 
     // problem specific contants
     int_t ldt = sp_ienv_dist (3);     /* Size of maximum supernode */
@@ -56,7 +56,7 @@ int_t pdgstrf3d_summit(superlu_dist_options_t *options, int m, int n, double ano
     packLUInfo_t packLUInfo;
     initPackLUInfo(nsupers, &packLUInfo);
 
-    scuBufs_t scuBufs;
+    dscuBufs_t scuBufs;
     dinitScuBufs(ldt, num_threads, nsupers, &scuBufs, LUstruct, grid);
 
     factNodelists_t  fNlists;

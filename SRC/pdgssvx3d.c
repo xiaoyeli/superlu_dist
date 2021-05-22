@@ -1246,7 +1246,7 @@ pdgssvx3d (superlu_dist_options_t * options, SuperMatrix * A,
 
 	/*factorize in grid 1*/
 	// if(grid3d->zscp.Iam)
-
+		double tgather = SuperLU_timer_();
 		dgatherAllFactoredLU(trf3Dpartition, LUstruct, grid3d, SCT);
 
 		SCT->gatherLUtimer += SuperLU_timer_() - tgather;
@@ -1263,27 +1263,15 @@ pdgssvx3d (superlu_dist_options_t * options, SuperMatrix * A,
 		/*print memory usage*/
 		d3D_printMemUse(trf3Dpartition, LUstruct, grid3d);
 
-	SCT->gatherLUtimer += SuperLU_timer_() - tgather;
-	/*print stats for bottom grid*/
-	
-#if ( PRNTlevel>=1 )
-	if (!grid3d->zscp.Iam)
-	    {
-		SCT_print(grid, SCT);
-		SCT_print3D(grid3d, SCT);
-	    }
-	SCT_printComm3D(grid3d, SCT);
-
-	/*print memory usage*/
-	d3D_printMemUse( trf3Dpartition, LUstruct, grid3d );
-
-	/*print forest weight and costs*/
-	printForestWeightCost(trf3Dpartition->sForests, SCT, grid3d);
-	/*reduces stat from all the layers*/
+		SCT->gatherLUtimer += SuperLU_timer_() - tgather;
+		/*print stats for bottom grid*/
+		/*print forest weight and costs*/
+		printForestWeightCost(trf3Dpartition->sForests, SCT, grid3d);
+		/*reduces stat from all the layers*/
 #endif
 
         dDestroy_trf3Dpartition(trf3Dpartition, grid3d);
-	SCT_free(SCT);
+		SCT_free(SCT);
 
     } /* end if not Factored */
     
