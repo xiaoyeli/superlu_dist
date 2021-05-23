@@ -14,8 +14,9 @@ at the top-level directory.
  *
  * <pre>
  * -- Distributed SuperLU routine (version 7.0) --
- * Lawrence Berkeley National Lab, Georgia Institute of Technology.
- * May 10, 2019
+ * Lawrence Berkeley National Lab, Georgia Institute of Technology,
+ * Oak Ridge National Lab
+ * May 12, 2021
  */
 #include "superlu_zdefs.h"
 #if 0
@@ -319,6 +320,10 @@ at the top-level directory.
  *           = LargeDiag_MC64: use the Duff/Koster algorithm to permute rows of
  *                        the original matrix to make the diagonal large
  *                        relative to the off-diagonal.
+ *           = LargeDiag_HPWM: use the parallel approximate-weight perfect
+ *                        matching to permute rows of the original matrix
+ *                        to make the diagonal large relative to the
+ *                        off-diagonal.
  *           = MY_PERMR:  use the ordering given in ScalePermstruct->perm_r
  *                        input by the user.
  *
@@ -942,9 +947,9 @@ pzgssvx3d (superlu_dist_options_t * options, SuperMatrix * A,
 				printf ("\t product of diagonal %e\n", dprod);
 			}
 #endif
-		    } else { /* use largeDiag_AWPM */
+		    } else { /* use LargeDiag_HWPM */
 #ifdef HAVE_COMBBLAS
-			c2cpp_GetAWPM(A, grid, ScalePermstruct);
+		        z_c2cpp_GetHWPM(A, grid, ScalePermstruct);
 #else
 			if ( iam == 0 ) {
 			    printf("CombBLAS is not available\n"); fflush(stdout);
