@@ -23,6 +23,7 @@ option(enable_double    "Enable double precision library" ON)
 option(enable_complex16 "Enable complex16 precision library" OFF)
 option(enable_tests  "Build tests" ON)
 option(enable_examples  "Build examples" ON)
+option(XSDK_ENABLE_Fortran "Enable Fortran" ON)
 
 #-- BLAS
 option(TPL_ENABLE_INTERNAL_BLASLIB  "Build the CBLAS library" ${enable_blaslib_DEFAULT})

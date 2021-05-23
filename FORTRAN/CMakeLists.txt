@@ -6,7 +6,6 @@ set(headers
     ${CMAKE_INSTALL_PREFIX}/FORTRAN/superlu_mod.mod
     ${CMAKE_INSTALL_PREFIX}/FORTRAN/superlupara_mod.mod
     ${CMAKE_INSTALL_PREFIX}/FORTRAN/superlu_dist_config.fh
-#    ${CMAKE_CURRENT_BINARY_DIR}/fortran_config.h
     )
 
 set(sources "superlu_c2f_wrap.c")  # initialize precision-independent file
@@ -20,6 +19,11 @@ endif()
 
 add_library(superlu_dist_fortran ${sources})
 set(targets superlu_dist_fortran)
+get_target_property(superlu_dist_version superlu_dist VERSION)
+get_target_property(superlu_dist_soversion superlu_dist SOVERSION)
+set_target_properties(superlu_dist_fortran PROPERTIES VERSION ${superlu_dist_version})
+set_target_properties(superlu_dist_fortran PROPERTIES SOVERSION ${superlu_dist_soversion})
+target_link_libraries(superlu_dist_fortran superlu_dist)
 
 # depends on FPP defs
 add_dependencies(superlu_dist_fortran config_f)

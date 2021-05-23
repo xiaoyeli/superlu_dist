@@ -24,7 +24,7 @@ There are two examples in the directory.
    A real example Fortran driver routine that reads a matrix from a file
    'g20.rua' in Harwell-Boeing format.
    To run the code, type:
-      mpiexec -n 4 f_pddrive (or f_pddrive3d)
+      mpiexec -n 4 f_pddrive
    (The example is set up to use 4 MPI processes)
 
 2. f_pddrive3d.f90: use the 3D algorithms
