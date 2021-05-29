@@ -3,9 +3,9 @@ include_directories(${SuperLU_DIST_SOURCE_DIR}/SRC)
 include_directories(${SuperLU_DIST_BINARY_DIR}/FORTRAN)
 
 set(headers
-    ${CMAKE_INSTALL_PREFIX}/FORTRAN/superlu_mod.mod
-    ${CMAKE_INSTALL_PREFIX}/FORTRAN/superlupara_mod.mod
-    ${CMAKE_INSTALL_PREFIX}/FORTRAN/superlu_dist_config.fh
+    ${CMAKE_BINARY_DIR}/FORTRAN/superlu_mod.mod
+    ${CMAKE_BINARY_DIR}/FORTRAN/superlupara_mod.mod
+    ${CMAKE_BINARY_DIR}/FORTRAN/superlu_dist_config.fh
     )
 
 set(sources "superlu_c2f_wrap.c")  # initialize precision-independent file
@@ -56,37 +56,37 @@ if (NOT MSVC)
 endif ()
 
 
-set(F_MOD superlupara.f90 superlu_mod.f90)
+add_library(ftestmod STATIC superlupara.f90 superlu_mod.f90)
 
 if(enable_double)
   set(F_DEXM ${F_MOD} f_pddrive.F90)
   add_executable(f_pddrive ${F_DEXM})
-  target_link_libraries(f_pddrive ${all_link_libs})
+  target_link_libraries(f_pddrive ftestmod ${all_link_libs})
 #  set_target_properties(f_pddrive PROPERTIES LINKER_LANGUAGE Fortran)
   set_target_properties(f_pddrive PROPERTIES LINKER_LANGUAGE CXX LINK_FLAGS "${MPI_Fortran_LINK_FLAGS}")
   
-  set(F_DEXM3D ${F_MOD} f_pddrive3d.F90)
+  set(F_DEXM3D f_pddrive3d.F90)
   add_executable(f_pddrive3d ${F_DEXM3D})
-  target_link_libraries(f_pddrive3d ${all_link_libs})
+  target_link_libraries(f_pddrive3d ftestmod ${all_link_libs})
   set_target_properties(f_pddrive3d PROPERTIES LINKER_LANGUAGE CXX LINK_FLAGS "${MPI_Fortran_LINK_FLAGS}")
   
-  set(F_5x5 ${F_MOD} f_5x5.F90 sp_ienv.c)
+  set(F_5x5 f_5x5.F90 sp_ienv.c)
   add_executable(f_5x5 ${F_5x5})
-  target_link_libraries(f_5x5 ${all_link_libs})
+  target_link_libraries(f_5x5 ftestmod ${all_link_libs})
   set_target_properties(f_5x5 PROPERTIES LINKER_LANGUAGE CXX LINK_FLAGS "${MPI_Fortran_LINK_FLAGS}")
   
 endif()
 
 if(enable_complex16)
-  set(F_ZEXM ${F_MOD} f_pzdrive.F90)
+  set(F_ZEXM f_pzdrive.F90)
   add_executable(f_pzdrive ${F_ZEXM})
-  target_link_libraries(f_pzdrive ${all_link_libs})
+  target_link_libraries(f_pzdrive ftestmod ${all_link_libs})
 #  set_target_properties(f_pzdrive PROPERTIES LINKER_LANGUAGE Fortran)
   set_target_properties(f_pzdrive PROPERTIES LINKER_LANGUAGE CXX LINK_FLAGS "${MPI_Fortran_LINK_FLAGS}")
 
-  set(F_ZEXM3D ${F_MOD} f_pzdrive3d.F90)
+  set(F_ZEXM3D f_pzdrive3d.F90)
   add_executable(f_pzdrive3d ${F_ZEXM3D})
-  target_link_libraries(f_pzdrive3d ${all_link_libs})
+  target_link_libraries(f_pzdrive3d ftestmod ${all_link_libs})
   set_target_properties(f_pzdrive3d PROPERTIES LINKER_LANGUAGE CXX LINK_FLAGS "${MPI_Fortran_LINK_FLAGS}")
   
 endif()

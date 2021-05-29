@@ -53,8 +53,10 @@ at the top-level directory.
 	         of L and U, compared with A;
 	    = 7: the minimum value of the product M*N*K for a GEMM call
 	         to be off-loaded to accelerator (e.g., GPU, Xeon Phi).
-            = 8: the maximum buffer size on GPU that can hold the three
-	         matrices in the GEMM call for the Schur complement update.
+            = 8: the maximum buffer size on GPU that can hold the "dC"
+	         matrix in the GEMM call for the Schur complement update.
+		 If this is too small, the Schur complement update will be
+		 done in multiple partitions, may be slower.
 	    
    (SP_IENV_DIST) (output) int
             >= 0: the value of the parameter specified by ISPEC   
@@ -114,7 +116,7 @@ sp_ienv_dist(int ispec)
         case 8:
   	    ttemp = getenv ("MAX_BUFFER_SIZE");
 	    if (ttemp) return atoi (ttemp);
-	    else return 64000000; // 8000^2
+	    else return 256000000; // 16000^2
     }
 
     /* Invalid value for ISPEC */
