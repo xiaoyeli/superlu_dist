@@ -58,11 +58,12 @@ endif ()
 
 add_library(ftestmod STATIC superlupara.f90 superlu_mod.f90)
 
-if(enable_double)
+#if(enable_double)
+if(FALSE)
   set(F_DEXM ${F_MOD} f_pddrive.F90)
   add_executable(f_pddrive ${F_DEXM})
   target_link_libraries(f_pddrive ftestmod ${all_link_libs})
-#  set_target_properties(f_pddrive PROPERTIES LINKER_LANGUAGE Fortran)
+  # set_target_properties(f_pddrive PROPERTIES LINKER_LANGUAGE Fortran CUDA_RESOLVE_DEVICE_SYMBOLS ON)
   set_target_properties(f_pddrive PROPERTIES LINKER_LANGUAGE CXX LINK_FLAGS "${MPI_Fortran_LINK_FLAGS}")
   
   set(F_DEXM3D f_pddrive3d.F90)
@@ -77,7 +78,8 @@ if(enable_double)
   
 endif()
 
-if(enable_complex16)
+# if(enable_complex16)
+if(FALSE)
   set(F_ZEXM f_pzdrive.F90)
   add_executable(f_pzdrive ${F_ZEXM})
   target_link_libraries(f_pzdrive ftestmod ${all_link_libs})
