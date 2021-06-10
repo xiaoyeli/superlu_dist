@@ -185,6 +185,7 @@ int_t symbfact
 
     if ( !pnum && (options->PrintStat == YES)) {
 	nnzLU = nnzL + nnzU - min_mn;				   
+	printf("\tMatrix size min_mn  " IFMT "\n", min_mn);
 	printf("\tNonzeros in L       " IFMT "\n", nnzL);
 	printf("\tNonzeros in U       " IFMT "\n", nnzU);
 	printf("\tnonzeros in L+U     " IFMT "\n", nnzLU);
