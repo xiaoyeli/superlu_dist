@@ -1,6 +1,6 @@
 /******************************************************************************
  * Copyright (c) 2011, Duane Merrill.  All rights reserved.
- * Copyright (c) 2011-2014, NVIDIA CORPORATION.  All rights reserved.
+ * Copyright (c) 2011-2018, NVIDIA CORPORATION.  All rights reserved.
  * 
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -75,7 +75,7 @@ struct BlockHistogramSort
             4,
             (PTX_ARCH >= 350) ? true : false,
             BLOCK_SCAN_WARP_SCANS,
-            (PTX_ARCH >= 350) ? cudaSharedMemBankSizeEightByte : cudaSharedMemBankSizeFourByte,
+            cudaSharedMemBankSizeFourByte,
             BLOCK_DIM_Y,
             BLOCK_DIM_Z,
             PTX_ARCH>
@@ -114,7 +114,7 @@ struct BlockHistogramSort
 
     // Thread fields
     _TempStorage &temp_storage;
-    int linear_tid;
+    unsigned int linear_tid;
 
 
     /// Constructor
@@ -138,7 +138,7 @@ struct BlockHistogramSort
         {}
 
         // Discontinuity predicate
-        __device__ __forceinline__ bool operator()(const T &a, const T &b, unsigned int b_index)
+        __device__ __forceinline__ bool operator()(const T &a, const T &b, int b_index)
         {
             if (a != b)
             {
@@ -158,17 +158,17 @@ struct BlockHistogramSort
 
     // Composite data onto an existing histogram
     template <
-        typename            HistoCounter>
+        typename            CounterT     >
     __device__ __forceinline__ void Composite(
         T                   (&items)[ITEMS_PER_THREAD],     ///< [in] Calling thread's input values to histogram
-        HistoCounter        histogram[BINS])                 ///< [out] Reference to shared/global memory histogram
+        CounterT            histogram[BINS])                 ///< [out] Reference to shared/device-accessible memory histogram
     {
         enum { TILE_SIZE = BLOCK_THREADS * ITEMS_PER_THREAD };
 
         // Sort bytes in blocked arrangement
         BlockRadixSortT(temp_storage.sort).Sort(items);
 
-        __syncthreads();
+        CTA_SYNC();
 
         // Initialize the shared memory's run_begin and run_end for each bin
         int histo_offset = 0;
@@ -186,7 +186,7 @@ struct BlockHistogramSort
             temp_storage.run_end[histo_offset + linear_tid] = TILE_SIZE;
         }
 
-        __syncthreads();
+        CTA_SYNC();
 
         int flags[ITEMS_PER_THREAD];    // unused
 
@@ -197,7 +197,7 @@ struct BlockHistogramSort
         // Update begin for first item
         if (linear_tid == 0) temp_storage.run_begin[items[0]] = 0;
 
-        __syncthreads();
+        CTA_SYNC();
 
         // Composite into histogram
         histo_offset = 0;
@@ -206,7 +206,7 @@ struct BlockHistogramSort
         for(; histo_offset + BLOCK_THREADS <= BINS; histo_offset += BLOCK_THREADS)
         {
             int thread_offset = histo_offset + linear_tid;
-            HistoCounter count = temp_storage.run_end[thread_offset] - temp_storage.run_begin[thread_offset];
+            CounterT      count = temp_storage.run_end[thread_offset] - temp_storage.run_begin[thread_offset];
             histogram[thread_offset] += count;
         }
 
@@ -214,7 +214,7 @@ struct BlockHistogramSort
         if ((BINS % BLOCK_THREADS != 0) && (histo_offset + linear_tid < BINS))
         {
             int thread_offset = histo_offset + linear_tid;
-            HistoCounter count = temp_storage.run_end[thread_offset] - temp_storage.run_begin[thread_offset];
+            CounterT      count = temp_storage.run_end[thread_offset] - temp_storage.run_begin[thread_offset];
             histogram[thread_offset] += count;
         }
     }
