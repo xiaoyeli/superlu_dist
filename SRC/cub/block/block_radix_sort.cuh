@@ -1,6 +1,6 @@
 /******************************************************************************
  * Copyright (c) 2011, Duane Merrill.  All rights reserved.
- * Copyright (c) 2011-2014, NVIDIA CORPORATION.  All rights reserved.
+ * Copyright (c) 2011-2018, NVIDIA CORPORATION.  All rights reserved.
  * 
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -51,10 +51,10 @@ namespace cub {
  * \brief The BlockRadixSort class provides [<em>collective</em>](index.html#sec0) methods for sorting items partitioned across a CUDA thread block using a radix sorting method.  ![](sorting_logo.png)
  * \ingroup BlockModule
  *
- * \tparam Key                  Key type
+ * \tparam KeyT                 KeyT type
  * \tparam BLOCK_DIM_X          The thread block length in threads along the X dimension
  * \tparam ITEMS_PER_THREAD     The number of items per thread
- * \tparam Value                <b>[optional]</b> Value type (default: cub::NullType, which indicates a keys-only sort)
+ * \tparam ValueT               <b>[optional]</b> ValueT type (default: cub::NullType, which indicates a keys-only sort)
  * \tparam RADIX_BITS           <b>[optional]</b> The number of radix bits per digit place (default: 4 bits)
  * \tparam MEMOIZE_OUTER_SCAN   <b>[optional]</b> Whether or not to buffer outer raking scan partials to incur fewer shared memory reads at the expense of higher register pressure (default: true for architectures SM35 and newer, false otherwise).
  * \tparam INNER_SCAN_ALGORITHM <b>[optional]</b> The cub::BlockScanAlgorithm algorithm to use (default: cub::BLOCK_SCAN_WARP_SCANS)
@@ -71,8 +71,9 @@ namespace cub {
  *   given input sequence of keys and a set of rules specifying a total ordering
  *   of the symbolic alphabet, the radix sorting method produces a lexicographic
  *   ordering of those keys.
- * - BlockRadixSort can sort all of the built-in C++ numeric primitive types, e.g.:
- *   <tt>unsigned char</tt>, \p int, \p double, etc.  Within each key, the implementation treats fixed-length
+ * - BlockRadixSort can sort all of the built-in C++ numeric primitive types
+ *   (<tt>unsigned char</tt>, \p int, \p double, etc.) as well as CUDA's \p __half
+ *   half-precision floating-point type. Within each key, the implementation treats fixed-length
  *   bit-sequences of \p RADIX_BITS as radix digit places.  Although the direct radix sorting
  *   method can only be applied to unsigned integral types, BlockRadixSort
  *   is able to sort signed and floating-point types via simple bit-wise transformations
@@ -117,10 +118,10 @@ namespace cub {
  *
  */
 template <
-    typename                Key,
+    typename                KeyT,
     int                     BLOCK_DIM_X,
     int                     ITEMS_PER_THREAD,
-    typename                Value                   = NullType,
+    typename                ValueT                   = NullType,
     int                     RADIX_BITS              = 4,
     bool                    MEMOIZE_OUTER_SCAN      = (CUB_PTX_ARCH >= 350) ? true : false,
     BlockScanAlgorithm      INNER_SCAN_ALGORITHM    = BLOCK_SCAN_WARP_SCANS,
@@ -142,11 +143,11 @@ private:
         BLOCK_THREADS               = BLOCK_DIM_X * BLOCK_DIM_Y * BLOCK_DIM_Z,
 
         // Whether or not there are values to be trucked along with keys
-        KEYS_ONLY                   = Equals<Value, NullType>::VALUE,
+        KEYS_ONLY                   = Equals<ValueT, NullType>::VALUE,
     };
 
-    // Key traits and unsigned bits type
-    typedef NumericTraits<Key>                  KeyTraits;
+    // KeyT traits and unsigned bits type
+    typedef Traits<KeyT>                        KeyTraits;
     typedef typename KeyTraits::UnsignedBits    UnsignedBits;
 
     /// Ascending BlockRadixRank utility type
@@ -176,21 +177,18 @@ private:
         DescendingBlockRadixRank;
 
     /// BlockExchange utility type for keys
-    typedef BlockExchange<Key, BLOCK_DIM_X, ITEMS_PER_THREAD, false, BLOCK_DIM_Y, BLOCK_DIM_Z, PTX_ARCH> BlockExchangeKeys;
+    typedef BlockExchange<KeyT, BLOCK_DIM_X, ITEMS_PER_THREAD, false, BLOCK_DIM_Y, BLOCK_DIM_Z, PTX_ARCH> BlockExchangeKeys;
 
     /// BlockExchange utility type for values
-    typedef BlockExchange<Value, BLOCK_DIM_X, ITEMS_PER_THREAD, false, BLOCK_DIM_Y, BLOCK_DIM_Z, PTX_ARCH> BlockExchangeValues;
+    typedef BlockExchange<ValueT, BLOCK_DIM_X, ITEMS_PER_THREAD, false, BLOCK_DIM_Y, BLOCK_DIM_Z, PTX_ARCH> BlockExchangeValues;
 
     /// Shared memory storage layout type
-    struct _TempStorage
+    union _TempStorage
     {
-        union
-        {
-            typename AscendingBlockRadixRank::TempStorage  asending_ranking_storage;
-            typename DescendingBlockRadixRank::TempStorage descending_ranking_storage;
-            typename BlockExchangeKeys::TempStorage        exchange_keys;
-            typename BlockExchangeValues::TempStorage      exchange_values;
-        };
+        typename AscendingBlockRadixRank::TempStorage  asending_ranking_storage;
+        typename DescendingBlockRadixRank::TempStorage descending_ranking_storage;
+        typename BlockExchangeKeys::TempStorage        exchange_keys;
+        typename BlockExchangeValues::TempStorage      exchange_values;
     };
 
 
@@ -202,7 +200,7 @@ private:
     _TempStorage &temp_storage;
 
     /// Linear thread-id
-    int linear_tid;
+    unsigned int linear_tid;
 
     /******************************************************************************
      * Utility methods
@@ -221,7 +219,7 @@ private:
         int             (&ranks)[ITEMS_PER_THREAD],
         int             begin_bit,
         int             pass_bits,
-        Int2Type<false> is_descending)
+        Int2Type<false> /*is_descending*/)
     {
         AscendingBlockRadixRank(temp_storage.asending_ranking_storage).RankKeys(
             unsigned_keys,
@@ -236,7 +234,7 @@ private:
         int             (&ranks)[ITEMS_PER_THREAD],
         int             begin_bit,
         int             pass_bits,
-        Int2Type<true>  is_descending)
+        Int2Type<true>  /*is_descending*/)
     {
         DescendingBlockRadixRank(temp_storage.descending_ranking_storage).RankKeys(
             unsigned_keys,
@@ -247,12 +245,12 @@ private:
 
     /// ExchangeValues (specialized for key-value sort, to-blocked arrangement)
     __device__ __forceinline__ void ExchangeValues(
-        Value           (&values)[ITEMS_PER_THREAD],
+        ValueT          (&values)[ITEMS_PER_THREAD],
         int             (&ranks)[ITEMS_PER_THREAD],
-        Int2Type<false> is_keys_only,
-        Int2Type<true>  is_blocked)
+        Int2Type<false> /*is_keys_only*/,
+        Int2Type<true>  /*is_blocked*/)
     {
-        __syncthreads();
+        CTA_SYNC();
 
         // Exchange values through shared memory in blocked arrangement
         BlockExchangeValues(temp_storage.exchange_values).ScatterToBlocked(values, ranks);
@@ -260,12 +258,12 @@ private:
 
     /// ExchangeValues (specialized for key-value sort, to-striped arrangement)
     __device__ __forceinline__ void ExchangeValues(
-        Value           (&values)[ITEMS_PER_THREAD],
+        ValueT          (&values)[ITEMS_PER_THREAD],
         int             (&ranks)[ITEMS_PER_THREAD],
-        Int2Type<false> is_keys_only,
-        Int2Type<false> is_blocked)
+        Int2Type<false> /*is_keys_only*/,
+        Int2Type<false> /*is_blocked*/)
     {
-        __syncthreads();
+        CTA_SYNC();
 
         // Exchange values through shared memory in blocked arrangement
         BlockExchangeValues(temp_storage.exchange_values).ScatterToStriped(values, ranks);
@@ -274,17 +272,17 @@ private:
     /// ExchangeValues (specialized for keys-only sort)
     template <int IS_BLOCKED>
     __device__ __forceinline__ void ExchangeValues(
-        Value                   (&values)[ITEMS_PER_THREAD],
-        int                     (&ranks)[ITEMS_PER_THREAD],
-        Int2Type<true>          is_keys_only,
-        Int2Type<IS_BLOCKED>    is_blocked)
+        ValueT                  (&/*values*/)[ITEMS_PER_THREAD],
+        int                     (&/*ranks*/)[ITEMS_PER_THREAD],
+        Int2Type<true>          /*is_keys_only*/,
+        Int2Type<IS_BLOCKED>    /*is_blocked*/)
     {}
 
     /// Sort blocked arrangement
     template <int DESCENDING, int KEYS_ONLY>
     __device__ __forceinline__ void SortBlocked(
-        Key                     (&keys)[ITEMS_PER_THREAD],          ///< Keys to sort
-        Value                   (&values)[ITEMS_PER_THREAD],        ///< Values to sort
+        KeyT                    (&keys)[ITEMS_PER_THREAD],          ///< Keys to sort
+        ValueT                  (&values)[ITEMS_PER_THREAD],        ///< Values to sort
         int                     begin_bit,                          ///< The beginning (least-significant) bit index needed for key comparison
         int                     end_bit,                            ///< The past-the-end (most-significant) bit index needed for key comparison
         Int2Type<DESCENDING>    is_descending,                      ///< Tag whether is a descending-order sort
@@ -310,7 +308,7 @@ private:
             RankKeys(unsigned_keys, ranks, begin_bit, pass_bits, is_descending);
             begin_bit += RADIX_BITS;
 
-            __syncthreads();
+            CTA_SYNC();
 
             // Exchange keys through shared memory in blocked arrangement
             BlockExchangeKeys(temp_storage.exchange_keys).ScatterToBlocked(keys, ranks);
@@ -321,7 +319,7 @@ private:
             // Quit if done
             if (begin_bit >= end_bit) break;
 
-            __syncthreads();
+            CTA_SYNC();
         }
 
         // Untwiddle bits if necessary
@@ -332,11 +330,15 @@ private:
         }
     }
 
+public:
+
+#ifndef DOXYGEN_SHOULD_SKIP_THIS    // Do not document
+
     /// Sort blocked -> striped arrangement
     template <int DESCENDING, int KEYS_ONLY>
     __device__ __forceinline__ void SortBlockedToStriped(
-        Key                     (&keys)[ITEMS_PER_THREAD],          ///< Keys to sort
-        Value                   (&values)[ITEMS_PER_THREAD],        ///< Values to sort
+        KeyT                    (&keys)[ITEMS_PER_THREAD],          ///< Keys to sort
+        ValueT                  (&values)[ITEMS_PER_THREAD],        ///< Values to sort
         int                     begin_bit,                          ///< The beginning (least-significant) bit index needed for key comparison
         int                     end_bit,                            ///< The past-the-end (most-significant) bit index needed for key comparison
         Int2Type<DESCENDING>    is_descending,                      ///< Tag whether is a descending-order sort
@@ -362,7 +364,7 @@ private:
             RankKeys(unsigned_keys, ranks, begin_bit, pass_bits, is_descending);
             begin_bit += RADIX_BITS;
 
-            __syncthreads();
+            CTA_SYNC();
 
             // Check if this is the last pass
             if (begin_bit >= end_bit)
@@ -383,7 +385,7 @@ private:
             // Exchange values through shared memory in blocked arrangement
             ExchangeValues(values, ranks, is_keys_only, Int2Type<true>());
 
-            __syncthreads();
+            CTA_SYNC();
         }
 
         // Untwiddle bits if necessary
@@ -394,11 +396,9 @@ private:
         }
     }
 
+#endif // DOXYGEN_SHOULD_SKIP_THIS
 
-
-public:
-
-    /// \smemstorage{BlockScan}
+    /// \smemstorage{BlockRadixSort}
     struct TempStorage : Uninitialized<_TempStorage> {};
 
 
@@ -472,9 +472,9 @@ public:
      * <tt>{ [0,1,2,3], [4,5,6,7], [8,9,10,11], ..., [508,509,510,511] }</tt>.
      */
     __device__ __forceinline__ void Sort(
-        Key     (&keys)[ITEMS_PER_THREAD],          ///< [in-out] Keys to sort
+        KeyT    (&keys)[ITEMS_PER_THREAD],          ///< [in-out] Keys to sort
         int     begin_bit   = 0,                    ///< [in] <b>[optional]</b> The beginning (least-significant) bit index needed for key comparison
-        int     end_bit     = sizeof(Key) * 8)      ///< [in] <b>[optional]</b> The past-the-end (most-significant) bit index needed for key comparison
+        int     end_bit     = sizeof(KeyT) * 8)      ///< [in] <b>[optional]</b> The past-the-end (most-significant) bit index needed for key comparison
     {
         NullType values[ITEMS_PER_THREAD];
 
@@ -527,10 +527,10 @@ public:
      *
      */
     __device__ __forceinline__ void Sort(
-        Key     (&keys)[ITEMS_PER_THREAD],          ///< [in-out] Keys to sort
-        Value   (&values)[ITEMS_PER_THREAD],        ///< [in-out] Values to sort
+        KeyT    (&keys)[ITEMS_PER_THREAD],          ///< [in-out] Keys to sort
+        ValueT  (&values)[ITEMS_PER_THREAD],        ///< [in-out] Values to sort
         int     begin_bit   = 0,                    ///< [in] <b>[optional]</b> The beginning (least-significant) bit index needed for key comparison
-        int     end_bit     = sizeof(Key) * 8)      ///< [in] <b>[optional]</b> The past-the-end (most-significant) bit index needed for key comparison
+        int     end_bit     = sizeof(KeyT) * 8)      ///< [in] <b>[optional]</b> The past-the-end (most-significant) bit index needed for key comparison
     {
         SortBlocked(keys, values, begin_bit, end_bit, Int2Type<false>(), Int2Type<KEYS_ONLY>());
     }
@@ -573,9 +573,9 @@ public:
      * <tt>{ [511,510,509,508], [11,10,9,8], [7,6,5,4], ..., [3,2,1,0] }</tt>.
      */
     __device__ __forceinline__ void SortDescending(
-        Key     (&keys)[ITEMS_PER_THREAD],          ///< [in-out] Keys to sort
+        KeyT    (&keys)[ITEMS_PER_THREAD],          ///< [in-out] Keys to sort
         int     begin_bit   = 0,                    ///< [in] <b>[optional]</b> The beginning (least-significant) bit index needed for key comparison
-        int     end_bit     = sizeof(Key) * 8)      ///< [in] <b>[optional]</b> The past-the-end (most-significant) bit index needed for key comparison
+        int     end_bit     = sizeof(KeyT) * 8)      ///< [in] <b>[optional]</b> The past-the-end (most-significant) bit index needed for key comparison
     {
         NullType values[ITEMS_PER_THREAD];
 
@@ -628,10 +628,10 @@ public:
      *
      */
     __device__ __forceinline__ void SortDescending(
-        Key     (&keys)[ITEMS_PER_THREAD],          ///< [in-out] Keys to sort
-        Value   (&values)[ITEMS_PER_THREAD],        ///< [in-out] Values to sort
+        KeyT    (&keys)[ITEMS_PER_THREAD],          ///< [in-out] Keys to sort
+        ValueT  (&values)[ITEMS_PER_THREAD],        ///< [in-out] Values to sort
         int     begin_bit   = 0,                    ///< [in] <b>[optional]</b> The beginning (least-significant) bit index needed for key comparison
-        int     end_bit     = sizeof(Key) * 8)      ///< [in] <b>[optional]</b> The past-the-end (most-significant) bit index needed for key comparison
+        int     end_bit     = sizeof(KeyT) * 8)      ///< [in] <b>[optional]</b> The past-the-end (most-significant) bit index needed for key comparison
     {
         SortBlocked(keys, values, begin_bit, end_bit, Int2Type<true>(), Int2Type<KEYS_ONLY>());
     }
@@ -683,9 +683,9 @@ public:
      *
      */
     __device__ __forceinline__ void SortBlockedToStriped(
-        Key     (&keys)[ITEMS_PER_THREAD],          ///< [in-out] Keys to sort
+        KeyT    (&keys)[ITEMS_PER_THREAD],          ///< [in-out] Keys to sort
         int     begin_bit   = 0,                    ///< [in] <b>[optional]</b> The beginning (least-significant) bit index needed for key comparison
-        int     end_bit     = sizeof(Key) * 8)      ///< [in] <b>[optional]</b> The past-the-end (most-significant) bit index needed for key comparison
+        int     end_bit     = sizeof(KeyT) * 8)      ///< [in] <b>[optional]</b> The past-the-end (most-significant) bit index needed for key comparison
     {
         NullType values[ITEMS_PER_THREAD];
 
@@ -738,10 +738,10 @@ public:
      *
      */
     __device__ __forceinline__ void SortBlockedToStriped(
-        Key     (&keys)[ITEMS_PER_THREAD],          ///< [in-out] Keys to sort
-        Value   (&values)[ITEMS_PER_THREAD],        ///< [in-out] Values to sort
+        KeyT    (&keys)[ITEMS_PER_THREAD],          ///< [in-out] Keys to sort
+        ValueT  (&values)[ITEMS_PER_THREAD],        ///< [in-out] Values to sort
         int     begin_bit   = 0,                    ///< [in] <b>[optional]</b> The beginning (least-significant) bit index needed for key comparison
-        int     end_bit     = sizeof(Key) * 8)      ///< [in] <b>[optional]</b> The past-the-end (most-significant) bit index needed for key comparison
+        int     end_bit     = sizeof(KeyT) * 8)      ///< [in] <b>[optional]</b> The past-the-end (most-significant) bit index needed for key comparison
     {
         SortBlockedToStriped(keys, values, begin_bit, end_bit, Int2Type<false>(), Int2Type<KEYS_ONLY>());
     }
@@ -786,9 +786,9 @@ public:
      *
      */
     __device__ __forceinline__ void SortDescendingBlockedToStriped(
-        Key     (&keys)[ITEMS_PER_THREAD],          ///< [in-out] Keys to sort
+        KeyT    (&keys)[ITEMS_PER_THREAD],          ///< [in-out] Keys to sort
         int     begin_bit   = 0,                    ///< [in] <b>[optional]</b> The beginning (least-significant) bit index needed for key comparison
-        int     end_bit     = sizeof(Key) * 8)      ///< [in] <b>[optional]</b> The past-the-end (most-significant) bit index needed for key comparison
+        int     end_bit     = sizeof(KeyT) * 8)      ///< [in] <b>[optional]</b> The past-the-end (most-significant) bit index needed for key comparison
     {
         NullType values[ITEMS_PER_THREAD];
 
@@ -841,10 +841,10 @@ public:
      *
      */
     __device__ __forceinline__ void SortDescendingBlockedToStriped(
-        Key     (&keys)[ITEMS_PER_THREAD],          ///< [in-out] Keys to sort
-        Value   (&values)[ITEMS_PER_THREAD],        ///< [in-out] Values to sort
+        KeyT    (&keys)[ITEMS_PER_THREAD],          ///< [in-out] Keys to sort
+        ValueT  (&values)[ITEMS_PER_THREAD],        ///< [in-out] Values to sort
         int     begin_bit   = 0,                    ///< [in] <b>[optional]</b> The beginning (least-significant) bit index needed for key comparison
-        int     end_bit     = sizeof(Key) * 8)      ///< [in] <b>[optional]</b> The past-the-end (most-significant) bit index needed for key comparison
+        int     end_bit     = sizeof(KeyT) * 8)      ///< [in] <b>[optional]</b> The past-the-end (most-significant) bit index needed for key comparison
     {
         SortBlockedToStriped(keys, values, begin_bit, end_bit, Int2Type<true>(), Int2Type<KEYS_ONLY>());
     }
