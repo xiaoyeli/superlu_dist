@@ -34,7 +34,6 @@ set(sources
   comm.c
   memory.c
   util.c
-  cublas_utils.c
   superlu_grid.c
   pxerr_dist.c
   superlu_timer.c
