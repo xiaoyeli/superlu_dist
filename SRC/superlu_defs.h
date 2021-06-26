@@ -94,9 +94,9 @@ at the top-level directory.
   #define IFMT "%8d"
 #endif
 
-#ifdef __INTEL_COMPILER
-#include "mkl.h"
-#endif
+//#ifdef __INTEL_COMPILER
+//#include "mkl.h"
+//#endif
 
 #if 0 // Sherry: the following does not work with gcc on Linux.
 #define  _mm_malloc(a,b) malloc(a)

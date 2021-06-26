@@ -9,15 +9,22 @@ The source code is distributed under BSD license, see the file License.txt
 at the top-level directory.
 */
 
+/*! @file
+ * \brief Scatter the computed blocks into LU destination.
+ *
+ * <pre>
+ * -- Distributed SuperLU routine (version 7.0) --
+ * Lawrence Berkeley National Lab, Georgia Institute of Technology,
+ * Oak Ridge National Lab
+ * May 12, 2021
+ */
+
 #include "superlu_zdefs.h"
 //#include "scatter.h"
 //#include "compiler.h"
 
-#ifdef __INTEL_COMPILER
-#include "mkl.h"
-#else
 //#include "cblas.h"
-#endif
+
 
 #define ISORT
 #define SCATTER_U_CPU  scatter_u

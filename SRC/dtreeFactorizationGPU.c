@@ -7,17 +7,14 @@
  * -- Distributed SuperLU routine (version 7.0) --
  * Lawrence Berkeley National Lab, Univ. of California Berkeley,
  * Georgia Institute of Technology, Oak Ridge National Laboratory
- * March 14, 2021 version 7.0.0
+ * May 12, 2021
  * </pre>
  */
 // #include "treeFactorization.h"
 // #include "trfCommWrapper.h"
 #include "dlustruct_gpu.h"
-#ifdef __INTEL_COMPILER
-#include "mkl.h"
-#else
+
 //#include "cblas.h"
-#endif
 
 #ifdef GPU_ACC ///////////////// enable GPU
 
