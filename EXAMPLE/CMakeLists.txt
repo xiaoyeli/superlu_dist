@@ -86,8 +86,37 @@ if(enable_double)
   target_link_libraries(pddrive_spawn ${all_link_libs})
 
 
-endif()
+endif() #### end enable_double
 
+if(enable_single)
+  set(SEXM psdrive.c screate_matrix.c)
+  add_executable(psdrive ${SEXM})
+  target_link_libraries(psdrive ${all_link_libs})
+
+  set(SEXM1 psdrive1.c screate_matrix.c)
+  add_executable(psdrive1 ${SEXM1})
+  target_link_libraries(psdrive1 ${all_link_libs})
+  add_superlu_dist_example(psdrive1 big.rua 2 2)
+
+  set(SEXM2 psdrive2.c screate_matrix.c screate_matrix_perturbed.c)
+  add_executable(psdrive2 ${SEXM2})
+  target_link_libraries(psdrive2 ${all_link_libs})
+  add_superlu_dist_example(psdrive2 big.rua 2 2)
+
+  set(SEXM3 psdrive3.c screate_matrix.c)
+  add_executable(psdrive3 ${SEXM3})
+  target_link_libraries(psdrive3 ${all_link_libs})
+  add_superlu_dist_example(psdrive3 big.rua 2 2)
+
+  set(SEXM4 psdrive4.c screate_matrix.c)
+  add_executable(psdrive4 ${SEXM4})
+  target_link_libraries(psdrive4 ${all_link_libs})
+
+  set(SEXM3D psdrive3d.c screate_matrix.c screate_matrix3d.c)
+  add_executable(psdrive3d ${SEXM3D})
+  target_link_libraries(psdrive3d ${all_link_libs})
+
+endif() #### end enable_single
 
 if(enable_complex16)
 

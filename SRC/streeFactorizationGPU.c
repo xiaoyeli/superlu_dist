@@ -1,6 +1,22 @@
+
+
+/*! @file
+ * \brief Factorization routines for the subtree using 2D process grid, with GPUs.
+ *
+ * <pre>
+ * -- Distributed SuperLU routine (version 7.0) --
+ * Lawrence Berkeley National Lab, Univ. of California Berkeley,
+ * Georgia Institute of Technology, Oak Ridge National Laboratory
+ * May 12, 2021
+ * </pre>
+ */
 // #include "treeFactorization.h"
 // #include "trfCommWrapper.h"
-#include "dlustruct_gpu.h"
+#include "slustruct_gpu.h"
+
+//#include "cblas.h"
+
+#ifdef GPU_ACC ///////////////// enable GPU
 
 /* 
 /-- num_u_blks--\ /-- num_u_blks_Phi --\
@@ -41,25 +57,25 @@ static int_t getAccUPartition(HyP_t *HyP)
     return jj_cpu;
 }
 
-int dsparseTreeFactor_ASYNC_GPU(
+int ssparseTreeFactor_ASYNC_GPU(
     sForest_t *sforest,
     commRequests_t **comReqss, // lists of communication requests,
                                // size = maxEtree level
-    scuBufs_t *scuBufs,        // contains buffers for schur complement update
+    sscuBufs_t *scuBufs,        // contains buffers for schur complement update
     packLUInfo_t *packLUInfo,
     msgs_t **msgss,          // size = num Look ahead
-    dLUValSubBuf_t **LUvsbs, // size = num Look ahead
-    diagFactBufs_t **dFBufs, // size = maxEtree level
+    sLUValSubBuf_t **LUvsbs, // size = num Look ahead
+    sdiagFactBufs_t **dFBufs, // size = maxEtree level
     factStat_t *factStat,
     factNodelists_t *fNlists,
     gEtreeInfo_t *gEtreeInfo, // global etree info
     superlu_dist_options_t *options,
     int_t *gIperm_c_supno,
-    int_t ldt,
-    sluGPU_t *sluGPU,
+    int ldt,
+    ssluGPU_t *sluGPU,
     d2Hreduce_t *d2Hred,
     HyP_t *HyP,
-    dLUstruct_t *LUstruct, gridinfo3d_t *grid3d, SuperLUStat_t *stat,
+    sLUstruct_t *LUstruct, gridinfo3d_t *grid3d, SuperLUStat_t *stat,
     double thresh, SCT_t *SCT, int tag_ub,
     int *info)
 {
@@ -97,7 +113,7 @@ int dsparseTreeFactor_ASYNC_GPU(
     int_t nCudaStreams = sluGPU->nCudaStreams; // number of cuda streams
 
     if (superlu_acc_offload)
-        syncAllfunCallStreams(sluGPU, SCT);
+        ssyncAllfunCallStreams(sluGPU, SCT);
 
     /* Go through each leaf node */
     for (int_t k0 = 0; k0 < eTreeTopLims[1]; ++k0)
@@ -112,17 +128,16 @@ int dsparseTreeFactor_ASYNC_GPU(
         {
             double tt_start1 = SuperLU_timer_();
 
-            initD2Hreduce(k, d2Hred, last_flag,
+            sinitD2Hreduce(k, d2Hred, last_flag,
                           HyP, sluGPU, grid, LUstruct, SCT);
             int_t copyL_kljb = d2Hred->copyL_kljb;
             int_t copyU_kljb = d2Hred->copyU_kljb;
 
             if (copyL_kljb || copyU_kljb)
                 SCT->PhiMemCpyCounter++;
-            sendLUpanelGPU2HOST(k, d2Hred, sluGPU);
+            ssendLUpanelGPU2HOST(k, d2Hred, sluGPU);
 
-            reduceGPUlu(last_flag, d2Hred,
-                        sluGPU, SCT, grid, LUstruct);
+            sreduceGPUlu(last_flag, d2Hred, sluGPU, SCT, grid, LUstruct);
 
             gpuLUreduced[k] = 1;
             SCT->PhiMemCpyTimer += SuperLU_timer_() - tt_start1;
@@ -138,7 +153,7 @@ int dsparseTreeFactor_ASYNC_GPU(
         sDiagFactIBCast(k,  dFBufs[offset], factStat, comReqss[offset], grid,
                         options, thresh, LUstruct, stat, info, SCT, tag_ub);
 #else
-        dDiagFactIBCast(k, k, dFBufs[offset]->BlockUFactor, dFBufs[offset]->BlockLFactor,
+        sDiagFactIBCast(k, k, dFBufs[offset]->BlockUFactor, dFBufs[offset]->BlockLFactor,
                         factStat->IrecvPlcd_D,
                         comReqss[offset]->U_diag_blk_recv_req,
                         comReqss[offset]->L_diag_blk_recv_req,
@@ -154,19 +169,19 @@ int dsparseTreeFactor_ASYNC_GPU(
     //printf(".. SparseFactor_GPU: after leaves\n"); fflush(stdout);
 
     /* Process supernodal etree level by level */
-    for (int_t topoLvl = 0; topoLvl < maxTopoLevel; ++topoLvl)
+    for (int topoLvl = 0; topoLvl < maxTopoLevel; ++topoLvl)
     // for (int_t topoLvl = 0; topoLvl < 1; ++topoLvl)
     {
         //      printf("(%d) factor level %d, maxTopoLevel %d\n",grid3d->iam,topoLvl,maxTopoLevel); fflush(stdout);
         /* code */
-        int_t k_st = eTreeTopLims[topoLvl];
-        int_t k_end = eTreeTopLims[topoLvl + 1];
+        int k_st = eTreeTopLims[topoLvl];
+        int k_end = eTreeTopLims[topoLvl + 1];
 
         /* Process all the nodes in 'topoLvl': diagonal factorization */
-        for (int_t k0 = k_st; k0 < k_end; ++k0)
+        for (int k0 = k_st; k0 < k_end; ++k0)
         {
-            int_t k = perm_c_supno[k0]; // direct computation no perm_c_supno
-            int_t offset = k0 - k_st;
+            int k = perm_c_supno[k0]; // direct computation no perm_c_supno
+            int offset = k0 - k_st;
 
             if (!factored_D[k])
             {
@@ -175,19 +190,19 @@ int dsparseTreeFactor_ASYNC_GPU(
                 if (!gpuLUreduced[k] && superlu_acc_offload)
                 {
                     double tt_start1 = SuperLU_timer_();
-                    initD2Hreduce(k, d2Hred, last_flag,
-                                  HyP, sluGPU, grid, LUstruct, SCT);
+                    sinitD2Hreduce(k, d2Hred, last_flag,
+                                     HyP, sluGPU, grid, LUstruct, SCT);
                     int_t copyL_kljb = d2Hred->copyL_kljb;
                     int_t copyU_kljb = d2Hred->copyU_kljb;
 
                     if (copyL_kljb || copyU_kljb)
                         SCT->PhiMemCpyCounter++;
-                    sendLUpanelGPU2HOST(k, d2Hred, sluGPU);
+                    ssendLUpanelGPU2HOST(k, d2Hred, sluGPU);
                     /*
                         Reduce the LU panels from GPU
                     */
-                    reduceGPUlu(last_flag, d2Hred,
-                                sluGPU, SCT, grid, LUstruct);
+                    sreduceGPUlu(last_flag, d2Hred, sluGPU, SCT, grid,
+		    		     LUstruct);
 
                     gpuLUreduced[k] = 1;
                     SCT->PhiMemCpyTimer += SuperLU_timer_() - tt_start1;
@@ -201,7 +216,7 @@ int dsparseTreeFactor_ASYNC_GPU(
         sDiagFactIBCast(k,  dFBufs[offset], factStat, comReqss[offset], grid,
                         options, thresh, LUstruct, stat, info, SCT, tag_ub);
 #else
-                dDiagFactIBCast(k, k, dFBufs[offset]->BlockUFactor, dFBufs[offset]->BlockLFactor,
+                sDiagFactIBCast(k, k, dFBufs[offset]->BlockUFactor, dFBufs[offset]->BlockLFactor,
                                 factStat->IrecvPlcd_D,
                                 comReqss[offset]->U_diag_blk_recv_req,
                                 comReqss[offset]->L_diag_blk_recv_req,
@@ -218,10 +233,10 @@ int dsparseTreeFactor_ASYNC_GPU(
         double t_apt = SuperLU_timer_(); /* Async Pipe Timer */
 
         /* Process all the nodes in 'topoLvl': panel updates on CPU */
-        for (int_t k0 = k_st; k0 < k_end; ++k0)
+        for (int k0 = k_st; k0 < k_end; ++k0)
         {
-            int_t k = perm_c_supno[k0]; // direct computation no perm_c_supno
-            int_t offset = k0 - k_st;
+            int k = perm_c_supno[k0]; // direct computation no perm_c_supno
+            int offset = k0 - k_st;
 
             /*L update */
             if (factored_L[k] == 0)
@@ -230,7 +245,7 @@ int dsparseTreeFactor_ASYNC_GPU(
 		sLPanelUpdate(k, dFBufs[offset], factStat, comReqss[offset],
 			      grid, LUstruct, SCT);
 #else
-                dLPanelUpdate(k, factStat->IrecvPlcd_D, factStat->factored_L,
+                sLPanelUpdate(k, factStat->IrecvPlcd_D, factStat->factored_L,
                               comReqss[offset]->U_diag_blk_recv_req,
                               dFBufs[offset]->BlockUFactor, grid, LUstruct, SCT);
 #endif
@@ -244,7 +259,7 @@ int dsparseTreeFactor_ASYNC_GPU(
 		sUPanelUpdate(k, ldt, dFBufs[offset], factStat, comReqss[offset],
 			      scuBufs, packLUInfo, grid, LUstruct, stat, SCT);
 #else
-                dUPanelUpdate(k, factStat->factored_U, comReqss[offset]->L_diag_blk_recv_req,
+                sUPanelUpdate(k, factStat->factored_U, comReqss[offset]->L_diag_blk_recv_req,
                               dFBufs[offset]->BlockLFactor, scuBufs->bigV, ldt,
                               packLUInfo->Ublock_info, grid, LUstruct, stat, SCT);
 #endif
@@ -256,10 +271,10 @@ int dsparseTreeFactor_ASYNC_GPU(
 
         /* Process all the panels in look-ahead window: 
 	   broadcast L and U panels. */
-        for (int_t k0 = k_st; k0 < SUPERLU_MIN(k_end, k_st + numLA); ++k0)
+        for (int k0 = k_st; k0 < SUPERLU_MIN(k_end, k_st + numLA); ++k0)
         {
-            int_t k = perm_c_supno[k0]; // direct computation no perm_c_supno
-            int_t offset = k0 % numLA;
+            int k = perm_c_supno[k0]; // direct computation no perm_c_supno
+            int offset = k0 % numLA;
             /* diagonal factorization */
 
             /*L Ibcast*/
@@ -269,7 +284,7 @@ int dsparseTreeFactor_ASYNC_GPU(
                 sIBcastRecvLPanel( k, comReqss[offset],  LUvsbs[offset],
                                    msgss[offset], factStat, grid, LUstruct, SCT, tag_ub );
 #else
-                dIBcastRecvLPanel(k, k, msgss[offset]->msgcnt, comReqss[offset]->send_req,
+                sIBcastRecvLPanel(k, k, msgss[offset]->msgcnt, comReqss[offset]->send_req,
                                   comReqss[offset]->recv_req, LUvsbs[offset]->Lsub_buf,
                                   LUvsbs[offset]->Lval_buf, factStat->factored,
                                   grid, LUstruct, SCT, tag_ub);
@@ -284,7 +299,7 @@ int dsparseTreeFactor_ASYNC_GPU(
                 sIBcastRecvUPanel( k, comReqss[offset],  LUvsbs[offset],
                                    msgss[offset], factStat, grid, LUstruct, SCT, tag_ub );
 #else
-                dIBcastRecvUPanel(k, k, msgss[offset]->msgcnt, comReqss[offset]->send_requ,
+                sIBcastRecvUPanel(k, k, msgss[offset]->msgcnt, comReqss[offset]->send_requ,
                                   comReqss[offset]->recv_requ, LUvsbs[offset]->Usub_buf,
                                   LUvsbs[offset]->Uval_buf, grid, LUstruct, SCT, tag_ub);
 #endif
@@ -299,10 +314,10 @@ int dsparseTreeFactor_ASYNC_GPU(
 
         /* Process all the nodes in level 'topoLvl': Schur complement update
 	   (no MPI communication)  */
-        for (int_t k0 = k_st; k0 < k_end; ++k0)
+        for (int k0 = k_st; k0 < k_end; ++k0)
         {
-            int_t k = perm_c_supno[k0]; // direct computation no perm_c_supno
-            int_t offset = k0 % numLA;
+            int k = perm_c_supno[k0]; // direct computation no perm_c_supno
+            int offset = k0 % numLA;
 
             double tsch = SuperLU_timer_();
 
@@ -311,14 +326,14 @@ int dsparseTreeFactor_ASYNC_GPU(
             /*Wait for U panel*/
             sWaitU(k, comReqss[offset], msgss[offset], grid, LUstruct, SCT);
 #else
-            dWaitL(k, msgss[offset]->msgcnt, msgss[offset]->msgcntU,
+            sWaitL(k, msgss[offset]->msgcnt, msgss[offset]->msgcntU,
                    comReqss[offset]->send_req, comReqss[offset]->recv_req,
                    grid, LUstruct, SCT);
-            dWaitU(k, msgss[offset]->msgcnt, comReqss[offset]->send_requ,
+            sWaitU(k, msgss[offset]->msgcnt, comReqss[offset]->send_requ,
                    comReqss[offset]->recv_requ, grid, LUstruct, SCT);
 #endif
 
-            int_t LU_nonempty = dSchurComplementSetupGPU(k,
+            int_t LU_nonempty = sSchurComplementSetupGPU(k,
                                                          msgss[offset], packLUInfo,
                                                          myIperm, gIperm_c_supno, perm_c_supno,
                                                          gEtreeInfo, fNlists, scuBufs,
@@ -379,16 +394,16 @@ int dsparseTreeFactor_ASYNC_GPU(
             lPanelInfo_t *lPanelInfo = packLUInfo->lPanelInfo;
             int_t *lsub = lPanelInfo->lsub;
             int_t *usub = uPanelInfo->usub;
-            int_t *indirect = fNlists->indirect;
-            int_t *indirect2 = fNlists->indirect2;
+            int *indirect = fNlists->indirect;
+            int *indirect2 = fNlists->indirect2;
 
             /* Schur Complement Update */
 
             int_t knsupc = SuperSize(k);
             int_t klst = FstBlockC(k + 1);
 
-            double *bigV = scuBufs->bigV;
-            double *bigU = scuBufs->bigU;
+            float *bigV = scuBufs->bigV;
+            float *bigU = scuBufs->bigU;
 
             double t1 = SuperLU_timer_();
 
@@ -401,7 +416,7 @@ int dsparseTreeFactor_ASYNC_GPU(
                 {
                     int_t j = ij / HyP->lookAheadBlk;
                     int_t lb = ij % HyP->lookAheadBlk;
-                    dblock_gemm_scatterTopLeft(lb, j, bigV, knsupc, klst, lsub,
+                    sblock_gemm_scatterTopLeft(lb, j, bigV, knsupc, klst, lsub,
                                                usub, ldt, indirect, indirect2, HyP, LUstruct, grid, SCT, stat);
                 }
 
@@ -410,7 +425,7 @@ int dsparseTreeFactor_ASYNC_GPU(
                 {
                     int_t j = ij / HyP->lookAheadBlk;
                     int_t lb = ij % HyP->lookAheadBlk;
-                    dblock_gemm_scatterTopRight(lb, j, bigV, knsupc, klst, lsub,
+                    sblock_gemm_scatterTopRight(lb, j, bigV, knsupc, klst, lsub,
                                                 usub, ldt, indirect, indirect2, HyP, LUstruct, grid, SCT, stat);
                 }
 
@@ -419,7 +434,7 @@ int dsparseTreeFactor_ASYNC_GPU(
                 {
                     int_t j = ij / HyP->RemainBlk;
                     int_t lb = ij % HyP->RemainBlk;
-                    dblock_gemm_scatterBottomLeft(lb, j, bigV, knsupc, klst, lsub,
+                    sblock_gemm_scatterBottomLeft(lb, j, bigV, knsupc, klst, lsub,
                                                   usub, ldt, indirect, indirect2, HyP, LUstruct, grid, SCT, stat);
                 } /* for int_t ij = ... */
             }     /* end parallel region ... end look-ahead update */
@@ -442,22 +457,22 @@ int dsparseTreeFactor_ASYNC_GPU(
                         //      printf("Before assert: iam %d, k %d, k_parent %d, k0_parent %d, nnodes %d\n", grid3d->iam, k, k_parent, k0_parent, nnodes); fflush(stdout);
                         //	      exit(-1);
                         assert(k0_parent < nnodes);
-                        int_t offset = k0_parent - k_end;
+                        int offset = k0_parent - k_end;
                         if (!gpuLUreduced[k_parent] && superlu_acc_offload)
                         {
                             double tt_start1 = SuperLU_timer_();
 
-                            initD2Hreduce(k_parent, d2Hred, last_flag,
+                            sinitD2Hreduce(k_parent, d2Hred, last_flag,
                                           HyP, sluGPU, grid, LUstruct, SCT);
                             int_t copyL_kljb = d2Hred->copyL_kljb;
                             int_t copyU_kljb = d2Hred->copyU_kljb;
 
                             if (copyL_kljb || copyU_kljb)
                                 SCT->PhiMemCpyCounter++;
-                            sendLUpanelGPU2HOST(k_parent, d2Hred, sluGPU);
+                            ssendLUpanelGPU2HOST(k_parent, d2Hred, sluGPU);
 
                             /* Reduce the LU panels from GPU */
-                            reduceGPUlu(last_flag, d2Hred,
+                            sreduceGPUlu(last_flag, d2Hred,
                                         sluGPU, SCT, grid, LUstruct);
 
                             gpuLUreduced[k_parent] = 1;
@@ -470,7 +485,7 @@ int dsparseTreeFactor_ASYNC_GPU(
 					comReqss[offset], grid, options, thresh,
 					LUstruct, stat, info, SCT, tag_ub);
 #else
-                        dDiagFactIBCast(k_parent, k_parent, dFBufs[offset]->BlockUFactor,
+                        sDiagFactIBCast(k_parent, k_parent, dFBufs[offset]->BlockUFactor,
                                         dFBufs[offset]->BlockLFactor, factStat->IrecvPlcd_D,
                                         comReqss[offset]->U_diag_blk_recv_req,
                                         comReqss[offset]->L_diag_blk_recv_req,
@@ -491,18 +506,18 @@ int dsparseTreeFactor_ASYNC_GPU(
                 {
                     if (superlu_acc_offload)
                     {
-                        int_t thread_id = omp_get_thread_num();
+                        int thread_id = omp_get_thread_num();
                         double t1 = SuperLU_timer_();
 
                         if (offload_condition)
                         {
                             SCT->datatransfer_count++;
-                            int_t streamId = k0 % nCudaStreams;
+                            int streamId = k0 % nCudaStreams;
 
                             /*wait for previous offload to get finished*/
                             if (sluGPU->lastOffloadStream[streamId] != -1)
                             {
-                                waitGPUscu(streamId, sluGPU, SCT);
+                                swaitGPUscu(streamId, sluGPU, SCT);
                                 sluGPU->lastOffloadStream[streamId] = -1;
                             }
 
@@ -510,18 +525,20 @@ int dsparseTreeFactor_ASYNC_GPU(
                             int_t bigu_send_size = jj_cpu < 1 ? 0 : HyP->ldu_Phi * HyP->Ublock_info_Phi[jj_cpu - 1].full_u_cols;
                             assert(bigu_send_size < HyP->bigu_size);
 
-                            /* !! Sherry add the test to avoid seg_fault inside sendSCUdataHost2GPU */
+                            /* !! Sherry add the test to avoid seg_fault inside
+                                  sendSCUdataHost2GPU */
                             if (bigu_send_size > 0)
                             {
-                                sendSCUdataHost2GPU(streamId, lsub, usub, bigU, bigu_send_size,
-                                                    Remain_lbuf_send_size, sluGPU, HyP);
+                                ssendSCUdataHost2GPU(streamId, lsub, usub,
+                                              bigU, bigu_send_size,
+                                              Remain_lbuf_send_size, sluGPU, HyP);
 
                                 sluGPU->lastOffloadStream[streamId] = k0;
                                 int_t usub_len = usub[2];
                                 int_t lsub_len = lsub[1] + BC_HEADER + lsub[0] * LB_DESCRIPTOR;
                                 //{printf("... before SchurCompUpdate_GPU, bigu_send_size %d\n", bigu_send_size); fflush(stdout);}
 
-                                SchurCompUpdate_GPU(
+                                sSchurCompUpdate_GPU(
                                     streamId, 0, jj_cpu, klst, knsupc, HyP->Rnbrow, HyP->RemainBlk,
                                     Remain_lbuf_send_size, bigu_send_size, HyP->ldu_Phi, HyP->num_u_blks_Phi,
                                     HyP->buffer_size, lsub_len, usub_len, ldt, k0, sluGPU, grid);
@@ -550,7 +567,7 @@ int dsparseTreeFactor_ASYNC_GPU(
                     //printf(".. WARNING: should NOT get here\n");
                     int_t j = ij / HyP->RemainBlk + jj_cpu;
                     int_t lb = ij % HyP->RemainBlk;
-                    dblock_gemm_scatterBottomRight(lb, j, bigV, knsupc, klst, lsub,
+                    sblock_gemm_scatterBottomRight(lb, j, bigV, knsupc, klst, lsub,
                                                    usub, ldt, indirect, indirect2, HyP, LUstruct, grid, SCT, stat);
                 } /* for int_t ij = ... */
 
@@ -569,7 +586,7 @@ int dsparseTreeFactor_ASYNC_GPU(
 #endif
 
             /*Schedule next I bcasts within look-ahead window */
-            for (int_t next_k0 = k0 + 1; next_k0 < SUPERLU_MIN(k0 + 1 + numLA, nnodes); ++next_k0)
+            for (int next_k0 = k0 + 1; next_k0 < SUPERLU_MIN(k0 + 1 + numLA, nnodes); ++next_k0)
             {
                 /* code */
                 int_t next_k = perm_c_supno[next_k0];
@@ -583,7 +600,7 @@ int dsparseTreeFactor_ASYNC_GPU(
 				       LUvsbs[offset], msgss[offset], factStat,
 				       grid, LUstruct, SCT, tag_ub );
 #else
-                    dIBcastRecvLPanel(next_k, next_k, msgss[offset]->msgcnt,
+                    sIBcastRecvLPanel(next_k, next_k, msgss[offset]->msgcnt,
                                       comReqss[offset]->send_req, comReqss[offset]->recv_req,
                                       LUvsbs[offset]->Lsub_buf, LUvsbs[offset]->Lval_buf,
                                       factStat->factored, grid, LUstruct, SCT, tag_ub);
@@ -598,7 +615,7 @@ int dsparseTreeFactor_ASYNC_GPU(
 				       LUvsbs[offset], msgss[offset], factStat,
 				       grid, LUstruct, SCT, tag_ub );
 #else
-                    dIBcastRecvUPanel(next_k, next_k, msgss[offset]->msgcnt,
+                    sIBcastRecvUPanel(next_k, next_k, msgss[offset]->msgcnt,
                                       comReqss[offset]->send_requ, comReqss[offset]->recv_requ,
                                       LUvsbs[offset]->Usub_buf, LUvsbs[offset]->Uval_buf,
                                       grid, LUstruct, SCT, tag_ub);
@@ -610,13 +627,13 @@ int dsparseTreeFactor_ASYNC_GPU(
             if (topoLvl < maxTopoLevel - 1) /* not root */
             {
                 /*look-ahead LU factorization*/
-                int_t kx_st = eTreeTopLims[topoLvl + 1];
-                int_t kx_end = eTreeTopLims[topoLvl + 2];
-                for (int_t k0x = kx_st; k0x < kx_end; k0x++)
+                int kx_st = eTreeTopLims[topoLvl + 1];
+                int kx_end = eTreeTopLims[topoLvl + 2];
+                for (int k0x = kx_st; k0x < kx_end; k0x++)
                 {
                     /* code */
-                    int_t kx = perm_c_supno[k0x];
-                    int_t offset = k0x - kx_st;
+                    int kx = perm_c_supno[k0x];
+                    int offset = k0x - kx_st;
                     if (IrecvPlcd_D[kx] && !factored_L[kx])
                     {
                         /*check if received*/
@@ -629,7 +646,7 @@ int dsparseTreeFactor_ASYNC_GPU(
                                             factStat, comReqss[offset],
                                             grid, LUstruct, SCT);
 #else
-                            dLPanelTrSolve(kx, factStat->factored_L,
+                            sLPanelTrSolve(kx, factStat->factored_L,
                                            dFBufs[offset]->BlockUFactor, grid, LUstruct);
 #endif
 
@@ -647,7 +664,7 @@ int dsparseTreeFactor_ASYNC_GPU(
                                                    msgss[offset1], factStat,
 						   grid, LUstruct, SCT, tag_ub);
 #else
-                                dIBcastRecvLPanel(kx, kx, msgss[offset1]->msgcnt,
+                                sIBcastRecvLPanel(kx, kx, msgss[offset1]->msgcnt,
                                                   comReqss[offset1]->send_req,
                                                   comReqss[offset1]->recv_req,
                                                   LUvsbs[offset1]->Lsub_buf,
@@ -671,7 +688,7 @@ int dsparseTreeFactor_ASYNC_GPU(
                             sUPanelTrSolve( kx, ldt, dFBufs[offset], scuBufs, packLUInfo,
                                             grid, LUstruct, stat, SCT);
 #else
-                            dUPanelTrSolve(kx, dFBufs[offset]->BlockLFactor,
+                            sUPanelTrSolve(kx, dFBufs[offset]->BlockLFactor,
                                            scuBufs->bigV,
                                            ldt, packLUInfo->Ublock_info,
                                            grid, LUstruct, stat, SCT);
@@ -690,7 +707,7 @@ int dsparseTreeFactor_ASYNC_GPU(
 						   msgss[offset], factStat,
 						   grid, LUstruct, SCT, tag_ub);
 #else
-                                dIBcastRecvUPanel(kx, kx, msgss[offset]->msgcnt,
+                                sIBcastRecvUPanel(kx, kx, msgss[offset]->msgcnt,
                                                   comReqss[offset]->send_requ,
                                                   comReqss[offset]->recv_requ,
                                                   LUvsbs[offset]->Usub_buf,
@@ -713,4 +730,6 @@ int dsparseTreeFactor_ASYNC_GPU(
     } /* end for all levels of the tree */
 
     return 0;
-} /* end sparseTreeFactor_ASYNC_GPU */
+} /* end ssparseTreeFactor_ASYNC_GPU */
+
+#endif // matching: enable GPU
