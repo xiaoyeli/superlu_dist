@@ -22,56 +22,6 @@ at the top-level directory.
  *   September 30, 2017
  *   May 10, 2019 version 7.0.0
  *
- * <pre>
- * Purpose
- * =======
- *   Panel factorization -- block column k
- *
- *   Factor diagonal and subdiagonal blocks and test for exact singularity.
- *   Only the column processes that own block column *k* participate
- *   in the work.
- *
- * Arguments
- * =========
- * options (input) superlu_dist_options_t* (global)
- *         The structure defines the input parameters to control
- *         how the LU decomposition will be performed.
- *
- * k0     (input) int (global)
- *        Counter of the next supernode to be factorized.
- *
- * k      (input) int (global)
- *        The column number of the block column to be factorized.
- *
- * thresh (input) double (global)
- *        The threshold value = s_eps * anorm.
- *
- * Glu_persist (input) Glu_persist_t*
- *        Global data structures (xsup, supno) replicated on all processes.
- *
- * grid   (input) gridinfo_t*
- *        The 2D process mesh.
- *
- * Llu    (input/output) LocalLU_t*
- *        Local data structures to store distributed L and U matrices.
- *
- * U_diag_blk_send_req (input/output) MPI_Request*
- *        List of send requests to send down the diagonal block of U.
- *
- * tag_ub (input) int
- *        Upper bound of MPI tag values.
- *
- * stat   (output) SuperLUStat_t*
- *        Record the statistics about the factorization.
- *        See SuperLUStat_t structure defined in util.h.
- *
- * info   (output) int*
- *        = 0: successful exit
- *        < 0: if info = -i, the i-th argument had an illegal value
- *        > 0: if info = i, U(i,i) is exactly zero. The factorization has
- *             been completed, but the factor U is exactly singular,
- *             and division by zero will occur if it is used to solve a
- *             system of equations.
  * </pre>
  */
 

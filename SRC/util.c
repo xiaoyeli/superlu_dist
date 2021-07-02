@@ -170,7 +170,8 @@ Destroy_LU(int_t n, gridinfo_t *grid, LUstruct_t *LUstruct)
     for (i = 0; i < nb; ++i) 
 	if ( Llu->Lrowind_bc_ptr[i] ) {
 	    SUPERLU_FREE (Llu->Lrowind_bc_ptr[i]);
-#ifdef GPU_ACC
+#if 0 // Sherry: the following is not allocated with cudaHostAlloc
+    //#ifdef GPU_ACC   
 	    checkCuda(cudaFreeHost(Llu->Lnzval_bc_ptr[i]));
 #else
 	    SUPERLU_FREE (Llu->Lnzval_bc_ptr[i]);
@@ -357,7 +358,7 @@ countnz_dist(const int_t n, int_t *xprune,
 	    *nnzU += fsupc - fnz;
 	}
     }
-#if ( PRNTlevel>=1 )
+#if ( PRNTlevel>=2 )
     printf("\tNo of nonzeros in symm-reduced L = " IFMT ", nnzL " IFMT ", nnzU " IFMT "\n",
 	   nnzL0, *nnzL, *nnzU);
 #endif
@@ -437,7 +438,7 @@ void set_default_options_dist(superlu_dist_options_t *options)
 #else
     options->DiagInv           = NO;
 #endif
-    options->Use_TensorCore    = YES;
+    options->Use_TensorCore    = NO;
 }
 
 /*! \brief Print the options setting.
@@ -460,6 +461,7 @@ void print_options_dist(superlu_dist_options_t *options)
     printf("**    num_lookaheads   : %4d\n", options->num_lookaheads);
     printf("**    SymPattern       : %4d\n", options->SymPattern);
     printf("**    lookahead_etree  : %4d\n", options->lookahead_etree);
+    printf("**    Use_TensorCore   : %4d\n", options->Use_TensorCore);
     printf("**************************************************\n");
 }
 
@@ -697,13 +699,13 @@ PStatPrint(superlu_dist_options_t *options, SuperLUStat_t *stat, gridinfo_t *gri
 	printf("**** Time (seconds) ****\n");
 
         if ( options->Equil != NO )
-	    printf("\tEQUIL time         %8.2f\n", utime[EQUIL]);
+	    printf("\tEQUIL time         %8.4f\n", utime[EQUIL]);
 	if ( options->RowPerm != NOROWPERM )
-	    printf("\tROWPERM time       %8.2f\n", utime[ROWPERM]);
+	    printf("\tROWPERM time       %8.4f\n", utime[ROWPERM]);
 	if ( options->ColPerm != NATURAL )
-	    printf("\tCOLPERM time       %8.2f\n", utime[COLPERM]);
-        printf("\tSYMBFACT time      %8.2f\n", utime[SYMBFAC]);
-	printf("\tDISTRIBUTE time    %8.2f\n", utime[DIST]);
+	    printf("\tCOLPERM time       %8.4f\n", utime[COLPERM]);
+        printf("\tSYMBFACT time      %8.4f\n", utime[SYMBFAC]);
+	printf("\tDISTRIBUTE time    %8.4f\n", utime[DIST]);
 
     }
 
@@ -711,7 +713,7 @@ PStatPrint(superlu_dist_options_t *options, SuperLUStat_t *stat, gridinfo_t *gri
 	       0, grid->comm);
     factflop = flopcnt;
     if ( !iam && options->Fact != FACTORED ) {
-	printf("\tFACTOR time        %8.2f\n", utime[FACT]);
+	printf("\tFACTOR time        %8.4f\n", utime[FACT]);
 	if ( utime[FACT] != 0.0 )
 	    printf("\tFactor flops\t%e\tMflops \t%8.2f\n",
 		   flopcnt,

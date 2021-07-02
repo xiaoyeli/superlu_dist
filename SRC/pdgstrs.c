@@ -978,12 +978,6 @@ pdgstrs(int_t n, LUstruct_t *LUstruct,
     }
 #endif
 
-#if ( PRNTlevel>=1 )
-    if( grid->iam==0 ) {
-	printf("num_thread: %5d\n", num_thread);
-	fflush(stdout);
-    }
-#endif
 
     MPI_Barrier( grid->comm );
     t1_sol = SuperLU_timer_();
@@ -1112,7 +1106,7 @@ pdgstrs(int_t n, LUstruct_t *LUstruct,
     pdReDistribute_B_to_X(B, m_loc, nrhs, ldb, fst_row, ilsum, x,
 			  ScalePermstruct, Glu_persist, grid, SOLVEstruct);
 
-#if ( PRNTlevel>=2 )
+#if ( PRNTlevel>=3 )
     t = SuperLU_timer_() - t;
     if ( !iam) printf(".. B to X redistribute time\t%8.4f\n", t);
     fflush(stdout);
@@ -1204,14 +1198,13 @@ if(procs==1){
 	log_memory(nlb*aln_i*iword+nlb*iword+(CEILING( nsupers, Pr )+CEILING( nsupers, Pc ))*aln_i*2.0*iword+ nsupers_i*iword + sizelsum*num_thread * dword + (ldalsum * nrhs + nlb * XK_H) *dword + (sizertemp*num_thread + 1)*dword+maxrecvsz*(nfrecvx+1)*dword, stat);	//account for fmod, frecv, leaf_send, root_send, leafsups, recvbuf_BC_fwd	, lsum, x, rtemp
 
 
-
 #if ( DEBUGlevel>=2 )
 	printf("(%2d) nfrecvx %4d,  nfrecvmod %4d,  nleaf %4d\n,  nbtree %4d\n,  nrtree %4d\n",
 			iam, nfrecvx, nfrecvmod, nleaf, nbtree, nrtree);
 	fflush(stdout);
 #endif
 
-#if ( PRNTlevel>=2 )
+#if ( PRNTlevel>=3 )
 	t = SuperLU_timer_() - t;
 	if ( !iam) printf(".. Setup L-solve time\t%8.4f\n", t);
 	fflush(stdout);
@@ -1232,11 +1225,10 @@ if(procs==1){
 	/* ---------------------------------------------------------
 	   Solve the leaf nodes first by all the diagonal processes.
 	   --------------------------------------------------------- */
-#if ( DEBUGlevel>=2 )
+#if ( DEBUGlevel>=3 )
 	printf("(%2d) nleaf %4d\n", iam, nleaf);
 	fflush(stdout);
 #endif
-
 
 #ifdef _OPENMP
 #pragma omp parallel default (shared)
@@ -1403,9 +1395,14 @@ if(procs==1){
 		} /* end for jj ... */
 	    } /* end else ... diagonal is not invedted */
 	  }
-	}
+	} /* end omp parallel */
 
 	jj=0;
+
+#if ( DEBUGlevel>=2 )
+	printf("(%2d) end solving nleaf %4d\n", iam, nleaf);
+	fflush(stdout);
+#endif
 
 #ifdef _OPENMP
 #pragma omp parallel default (shared)
@@ -1438,10 +1435,10 @@ if(procs==1){
 						}
 
 						// } /* if diagonal process ... */
-					} /* for k ... */
-				}
+					} /* for jj ... */
+				} /* end omp master */
 
-			}
+		} /* end omp parallel */
 
 			for (i=0;i<nleaf_send;i++){
 				lk = leaf_send[i*aln_i];
@@ -1695,7 +1692,7 @@ if(procs==1){
 			}
 		}
 
-#if ( PRNTlevel>=2 )
+#if ( PRNTlevel>=3 )
 		t = SuperLU_timer_() - t;
 		stat->utime[SOL_TOT] += t;
 		if ( !iam ) {
@@ -1718,7 +1715,7 @@ if(procs==1){
 
 #if ( DEBUGlevel==2 )
 		{
-			printf("(%d) .. After L-solve: y =\n", iam);
+		  printf("(%d) .. After L-solve: y =\n", iam); fflush(stdout);
 			for (i = 0, k = 0; k < nsupers; ++k) {
 				krow = PROW( k, grid );
 				kcol = PCOL( k, grid );
@@ -1926,7 +1923,7 @@ if(procs==1){
 #endif
 
 
-#if ( PRNTlevel>=2 )
+#if ( PRNTlevel>=3 )
 	t = SuperLU_timer_() - t;
 	if ( !iam) printf(".. Setup U-solve time\t%8.4f\n", t);
 	fflush(stdout);
@@ -2283,7 +2280,7 @@ for (i=0;i<nroot_send;i++){
 			}
 		} /* while not finished ... */
 	}
-#if ( PRNTlevel>=2 )
+#if ( PRNTlevel>=3 )
 		t = SuperLU_timer_() - t;
 		stat->utime[SOL_TOT] += t;
 		if ( !iam ) printf(".. U-solve time\t%8.4f\n", t);
@@ -2329,7 +2326,7 @@ for (i=0;i<nroot_send;i++){
 				ScalePermstruct, Glu_persist, grid, SOLVEstruct);
 
 
-#if ( PRNTlevel>=2 )
+#if ( PRNTlevel>=3 )
 		t = SuperLU_timer_() - t;
 		if ( !iam) printf(".. X to B redistribute time\t%8.4f\n", t);
 		t = SuperLU_timer_();
@@ -2345,7 +2342,7 @@ for (i=0;i<nroot_send;i++){
 			tmp2 = SUPERLU_MAX(tmp2,stat_loc[i]->utime[SOL_GEMM]);
 			tmp3 = SUPERLU_MAX(tmp3,stat_loc[i]->utime[SOL_COMM]);
 			tmp4 += stat_loc[i]->ops[SOLVE];
-#if ( PRNTlevel>=2 )
+#if ( PRNTlevel>=3 )
 			if(iam==0)printf("thread %5d gemm %9.5f\n",i,stat_loc[i]->utime[SOL_GEMM]);
 #endif
 		}
@@ -2446,7 +2443,6 @@ for (i=0;i<nroot_send;i++){
 		fflush(stdout);
             }
 #endif
-
 
     return;
 } /* PDGSTRS */

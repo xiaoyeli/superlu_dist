@@ -948,14 +948,14 @@ psgstrs(int_t n, LUstruct_t *LUstruct,
     int iword = sizeof (int_t);
     int dword = sizeof (float);
     int Nwork;
-	int_t procs = grid->nprow * grid->npcol;
-    	yes_no_t done;
+    int_t procs = grid->nprow * grid->npcol;
+    yes_no_t done;
     yes_no_t startforward;
-    	int nbrow;
+    int nbrow;
     int_t  ik, rel, idx_r, jb, nrbl, irow, pc,iknsupc;
     int_t  lptr1_tmp, idx_i, idx_v,m;
-    	int_t ready;
-    	static int thread_id;
+    int_t ready;
+    static int thread_id = 0;
     yes_no_t empty;
     int_t sizelsum,sizertemp,aln_d,aln_i;
     aln_d = ceil(CACHELINE/(double)dword);
@@ -975,13 +975,6 @@ psgstrs(int_t n, LUstruct_t *LUstruct,
     		num_thread = omp_get_num_threads ();
     	}
 		thread_id = omp_get_thread_num ();
-    }
-#endif
-
-#if ( PRNTlevel>=1 )
-    if( grid->iam==0 ) {
-	printf("num_thread: %5d\n", num_thread);
-	fflush(stdout);
     }
 #endif
 
@@ -1112,7 +1105,7 @@ psgstrs(int_t n, LUstruct_t *LUstruct,
     psReDistribute_B_to_X(B, m_loc, nrhs, ldb, fst_row, ilsum, x,
 			  ScalePermstruct, Glu_persist, grid, SOLVEstruct);
 
-#if ( PRNTlevel>=2 )
+#if ( PRNTlevel>=3 )
     t = SuperLU_timer_() - t;
     if ( !iam) printf(".. B to X redistribute time\t%8.4f\n", t);
     fflush(stdout);
@@ -1158,9 +1151,8 @@ psgstrs(int_t n, LUstruct_t *LUstruct,
 	nfrecvmod=0;
 
 
-
-if(procs==1){
-	for (lk=0;lk<nsupers_i;++lk){
+	if(procs==1){
+	  for (lk=0;lk<nsupers_i;++lk){
 		gb = myrow+lk*grid->nprow;  /* not sure */
 		if(gb<nsupers){
 			if (fmod[lk*aln_i]==0){
@@ -1168,9 +1160,9 @@ if(procs==1){
 				++nleaf;
 			}
 		}
-	}
-}else{
-	for (lk=0;lk<nsupers_i;++lk){
+	  }
+	}else{
+	  for (lk=0;lk<nsupers_i;++lk){
 		if(LRtree_ptr[lk]!=NULL){
 			nrtree++;
 			RdTree_allocateRequest(LRtree_ptr[lk],'s');
@@ -1188,8 +1180,8 @@ if(procs==1){
 				}
 			}
 		}
+	  }
 	}
-}
 
 
 #ifdef _OPENMP
@@ -1204,14 +1196,13 @@ if(procs==1){
 	log_memory(nlb*aln_i*iword+nlb*iword+(CEILING( nsupers, Pr )+CEILING( nsupers, Pc ))*aln_i*2.0*iword+ nsupers_i*iword + sizelsum*num_thread * dword + (ldalsum * nrhs + nlb * XK_H) *dword + (sizertemp*num_thread + 1)*dword+maxrecvsz*(nfrecvx+1)*dword, stat);	//account for fmod, frecv, leaf_send, root_send, leafsups, recvbuf_BC_fwd	, lsum, x, rtemp
 
 
-
 #if ( DEBUGlevel>=2 )
 	printf("(%2d) nfrecvx %4d,  nfrecvmod %4d,  nleaf %4d\n,  nbtree %4d\n,  nrtree %4d\n",
 			iam, nfrecvx, nfrecvmod, nleaf, nbtree, nrtree);
 	fflush(stdout);
 #endif
 
-#if ( PRNTlevel>=2 )
+#if ( PRNTlevel>=3 )
 	t = SuperLU_timer_() - t;
 	if ( !iam) printf(".. Setup L-solve time\t%8.4f\n", t);
 	fflush(stdout);
@@ -1294,7 +1285,6 @@ if(procs==1){
 					for (i=0 ; i<knsupc*nrhs ; i++){
 						x[ii+i] = rtemp_loc[i];
 					}
-
 
 #if ( PROFlevel>=1 )
 					TOC(t2, t1);
@@ -1420,6 +1410,11 @@ if(procs==1){
 
 	jj=0;
 
+#if ( DEBUGlevel>=2 )
+	printf("(%2d) end solving nleaf %4d\n", iam, nleaf);
+	fflush(stdout);
+#endif
+
 #ifdef _OPENMP
 #pragma omp parallel default (shared)
 #endif
@@ -1428,32 +1423,32 @@ if(procs==1){
 #ifdef _OPENMP
 #pragma omp master
 #endif
-				{
+	  {
 
 #ifdef _OPENMP
 #pragma	omp	taskloop private (k,ii,lk) num_tasks(num_thread*8) nogroup
 #endif
 
-					for (jj=0;jj<nleaf;jj++){
-						k=leafsups[jj];
+	  for (jj=0;jj<nleaf;jj++){
+	    k=leafsups[jj];
 
-						{
-							/* Diagonal process */
-							lk = LBi( k, grid );
-							ii = X_BLK( lk );
-							/*
-							 * Perform local block modifications: lsum[i] -= L_i,k * X[k]
-							 */
-							slsum_fmod_inv(lsum, x, &x[ii], rtemp, nrhs, k,
-									fmod, xsup, grid, Llu,
-									stat_loc, leaf_send, &nleaf_send,sizelsum,sizertemp,0,maxsuper,thread_id,num_thread);
-						}
+	    {
+	      /* Diagonal process */
+	      lk = LBi( k, grid );
+	      ii = X_BLK( lk );
+	      /*
+	       * Perform local block modifications: lsum[i] -= L_i,k * X[k]
+	       */
+	      slsum_fmod_inv(lsum, x, &x[ii], rtemp, nrhs, k,
+			     fmod, xsup, grid, Llu,
+			     stat_loc, leaf_send, &nleaf_send,sizelsum,sizertemp,0,maxsuper,thread_id,num_thread);
+	    }
 
-						// } /* if diagonal process ... */
-					} /* for k ... */
-				}
-
-			}
+	    // } /* if diagonal process ... */
+	  } /* for jj ... */
+	} /* end omp master */
+	
+      } /* end omp parallel */
 
 			for (i=0;i<nleaf_send;i++){
 				lk = leaf_send[i*aln_i];
@@ -1708,7 +1703,7 @@ if(procs==1){
 			}
 		}
 
-#if ( PRNTlevel>=2 )
+#if ( PRNTlevel>=3 )
 		t = SuperLU_timer_() - t;
 		stat->utime[SOL_TOT] += t;
 		if ( !iam ) {
@@ -1755,8 +1750,8 @@ if(procs==1){
 		SUPERLU_FREE(recvbuf_BC_fwd);
 		log_memory(-nlb*aln_i*iword-nlb*iword-(CEILING( nsupers, Pr )+CEILING( nsupers, Pc ))*aln_i*iword- nsupers_i*iword -maxrecvsz*(nfrecvx+1)*dword, stat);	//account for fmod, frecv, leaf_send, leafsups, recvbuf_BC_fwd
 
-		for (lk=0;lk<nsupers_j;++lk){
-			if(LBtree_ptr[lk]!=NULL){
+		for (lk=0;lk<nsupers_j;++lk) {
+			if(LBtree_ptr[lk]!=NULL) {
 				// if(BcTree_IsRoot(LBtree_ptr[lk],'s')==YES){
 				BcTree_waitSendRequest(LBtree_ptr[lk],'s');
 				// }
@@ -1764,7 +1759,7 @@ if(procs==1){
 			}
 		}
 
-		for (lk=0;lk<nsupers_i;++lk){
+		for (lk=0;lk<nsupers_i;++lk) {
 			if(LRtree_ptr[lk]!=NULL){
 				RdTree_waitSendRequest(LRtree_ptr[lk],'s');
 				// deallocate requests here
@@ -1939,7 +1934,7 @@ if(procs==1){
 #endif
 
 
-#if ( PRNTlevel>=2 )
+#if ( PRNTlevel>=3 )
 	t = SuperLU_timer_() - t;
 	if ( !iam) printf(".. Setup U-solve time\t%8.4f\n", t);
 	fflush(stdout);
@@ -2287,7 +2282,7 @@ for (i=0;i<nroot_send;i++){
 			}
 		} /* while not finished ... */
 	}
-#if ( PRNTlevel>=2 )
+#if ( PRNTlevel>=3 )
 		t = SuperLU_timer_() - t;
 		stat->utime[SOL_TOT] += t;
 		if ( !iam ) printf(".. U-solve time\t%8.4f\n", t);
@@ -2303,7 +2298,7 @@ for (i=0;i<nroot_send;i++){
 
 #if ( DEBUGlevel>=2 )
 		{
-			double *x_col;
+			float *x_col;
 			int diag;
 			printf("\n(%d) .. After U-solve: x (ON DIAG PROCS) = \n", iam);
 			ii = 0;
@@ -2333,7 +2328,7 @@ for (i=0;i<nroot_send;i++){
 				ScalePermstruct, Glu_persist, grid, SOLVEstruct);
 
 
-#if ( PRNTlevel>=2 )
+#if ( PRNTlevel>=3 )
 		t = SuperLU_timer_() - t;
 		if ( !iam) printf(".. X to B redistribute time\t%8.4f\n", t);
 		t = SuperLU_timer_();
@@ -2349,7 +2344,7 @@ for (i=0;i<nroot_send;i++){
 			tmp2 = SUPERLU_MAX(tmp2,stat_loc[i]->utime[SOL_GEMM]);
 			tmp3 = SUPERLU_MAX(tmp3,stat_loc[i]->utime[SOL_COMM]);
 			tmp4 += stat_loc[i]->ops[SOLVE];
-#if ( PRNTlevel>=2 )
+#if ( PRNTlevel>=3 )
 			if(iam==0)printf("thread %5d gemm %9.5f\n",i,stat_loc[i]->utime[SOL_GEMM]);
 #endif
 		}
@@ -2450,7 +2445,6 @@ for (i=0;i<nroot_send;i++){
 		fflush(stdout);
             }
 #endif
-
 
     return;
 } /* PSGSTRS */

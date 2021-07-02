@@ -746,7 +746,7 @@ psgssvx_ABglobal(superlu_dist_options_t *options, SuperMatrix *A,
    	    }
 
 #if ( PRNTlevel>=2 )
-	    dmin = dmach_dist("Overflow");
+	    dmin = smach_dist("Overflow");
 	    dsum = 0.0;
 	    dprod = 1.0;
 #endif

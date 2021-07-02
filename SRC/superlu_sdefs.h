@@ -203,8 +203,13 @@ typedef struct {
 			     (also numbers of X values to be received) */
     int   *RecvCounts;    /* Numbers of X indices to be received
 			     (also numbers of X values to be sent) */
+#if 0
     float *val_tosend;   /* X values to be sent to other processes */
     float *val_torecv;   /* X values to be received from other processes */
+#else // FIX: can be single or double (accommodate double-ItRef)
+    void *val_tosend;   /* X values to be sent to other processes */
+    void *val_torecv;   /* X values to be received from other processes */
+#endif
     int_t TotalIndSend;   /* Total number of indices to be sent
 			     (also total number of values to be received) */
     int_t TotalValSend;   /* Total number of values to be sent.
@@ -392,7 +397,7 @@ extern void    slaqgs_dist (SuperMatrix *, float *, float *, float,
 			    float, float, char *);
 extern void    psgsequ (SuperMatrix *, float *, float *, float *,
 			float *, float *, int_t *, gridinfo_t *);
-extern double  pslangs (char *, SuperMatrix *, gridinfo_t *);
+extern float  pslangs (char *, SuperMatrix *, gridinfo_t *);
 extern void    pslaqgs (SuperMatrix *, float *, float *, float,
 			float, float, char *);
 extern int     psPermute_Dense_Matrix(int_t, int_t, int_t [], int_t[],
@@ -447,7 +452,7 @@ extern void dscatter_u (int ib, int jb, int nsupc, int_t iukp, int_t * xsup,
                         int_t* lsub, int_t* usub, float* tempv,
                         int_t ** Ufstnz_br_ptr, float **Unzval_br_ptr,
                         gridinfo_t * grid);
-extern int_t psgstrf(superlu_dist_options_t *, int, int, double,
+extern int_t psgstrf(superlu_dist_options_t *, int, int, float,
 		    LUstruct_t*, gridinfo_t*, SuperLUStat_t*, int*);
 
 /* #define GPU_PROF

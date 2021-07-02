@@ -835,7 +835,7 @@ pzgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
     if ( checkCuda(cudaHostAlloc((void**)&bigV, bigv_size * sizeof(doublecomplex) ,cudaHostAllocDefault)) )
         ABORT("Malloc fails for zgemm buffer V");
 
-    DisplayHeader();
+    //if ( iam==0 )  DisplayHeader();
 
 #if ( PRNTlevel>=1 )
     printf(" Starting with %d Cuda Streams \n",nstreams );

@@ -339,6 +339,16 @@ int dcreate_matrix_postfix(SuperMatrix *A, int nrhs, double **rhs,
     dGenXtrue_dist(n, nrhs, xtrue_global, n);
     dFillRHS_dist(trans, nrhs, xtrue_global, n, &GA, b_global, m);
 
+    if (iam == 0) {
+      double xmax = 0.0, xmin = 1.0e+15;
+      for (i = 0; i < n; ++i) {
+	xmax = SUPERLU_MAX(xmax, xtrue_global[i]);
+	xmin = SUPERLU_MIN(xmin, xtrue_global[i]);
+      }
+      printf("Kappa(x): xmax %e / xmin %e = %e\n", xmax, xmin, xmax / xmin);
+      fflush(stdout);
+    }
+
     /*************************************************
      * Change GA to a local A with NR_loc format     *
      *************************************************/

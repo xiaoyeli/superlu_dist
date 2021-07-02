@@ -462,7 +462,7 @@ void Printfloat5(char *name, int_t len, float *x)
 	if ( i % 5 == 0 ) printf("\n[%ld-%ld] ", (long int) i, (long int) i+4);
 	printf("%14e", x[i]);
     }
-    printf("\n");
+    printf("\n\n");
 }
 
 int file_Printfloat5(FILE *fp, char *name, int_t len, float *x)

@@ -34,8 +34,8 @@ endfunction(add_superlu_dist_example)
 
 if(enable_single)
   set(SEXM psdrive.c screate_matrix.c)
-  add_executable(psdrive ${SEXM})
-  target_link_libraries(psdrive ${all_link_libs})
+###  add_executable(psdrive ${SEXM})     ## !!Sherry: add this later
+##  target_link_libraries(psdrive ${all_link_libs})
 endif()
 
 if(enable_double)

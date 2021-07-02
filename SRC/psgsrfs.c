@@ -47,7 +47,7 @@ at the top-level directory.
  *        A is also permuted into diag(R)*A*diag(C)*Pc'. The type of A can be:
  *        Stype = SLU_NR_loc; Dtype = SLU_S; Mtype = SLU_GE.
  *
- * anorm  (input) double
+ * anorm  (input) float
  *        The norm of the original matrix A, or the scaled A if
  *        equilibration was done.
  *
@@ -128,8 +128,8 @@ psgsrfs(int_t n, SuperMatrix *A, float anorm, LUstruct_t *LUstruct,
     float *ax, *R, *dx, *temp, *work, *B_col, *X_col;
     int_t count, i, j, lwork, nz;
     int   iam;
-    double eps, lstres;
-    double s, safmin, safe1, safe2;
+    float eps, lstres;
+    float s, safmin, safe1, safe2;
 
     /* Data structures used by matrix-vector multiply routine. */
     psgsmv_comm_t *gsmv_comm = SOLVEstruct->gsmv_comm;
@@ -176,15 +176,15 @@ psgsrfs(int_t n, SuperMatrix *A, float anorm, LUstruct_t *LUstruct,
 
     /* NZ = maximum number of nonzero elements in each row of A, plus 1 */
     nz     = A->ncol + 1;
-    eps    = dmach_dist("Epsilon");
-    safmin = dmach_dist("Safe minimum");
+    eps    = smach_dist("Epsilon");
+    safmin = smach_dist("Safe minimum");
 
     /* Set SAFE1 essentially to be the underflow threshold times the
        number of additions in each row. */
     safe1  = nz * safmin;
     safe2  = safe1 / eps;
 
-#if ( DEBUGlevel>=1 )
+#if ( PRNTlevel>=2 )
     if ( !iam ) printf(".. eps = %e\tanorm = %e\tsafe1 = %e\tsafe2 = %e\n",
 		       eps, anorm, safe1, safe2);
 #endif
@@ -223,7 +223,7 @@ psgsrfs(int_t n, SuperMatrix *A, float anorm, LUstruct_t *LUstruct,
                 /* If temp[i] is exactly 0.0 (computed by PxGSMV), then
                    we know the true residual also must be exactly 0.0. */
 	    }
-	    MPI_Allreduce( &s, &berr[j], 1, MPI_DOUBLE, MPI_MAX, grid->comm );
+	    MPI_Allreduce( &s, &berr[j], 1, MPI_FLOAT, MPI_MAX, grid->comm );
 
 #if ( PRNTlevel>= 1 )
 	    if ( !iam )

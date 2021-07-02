@@ -40,7 +40,7 @@ extern void smatvec(int, int, int, float*, float*, float*);
  *   Purpose
  *   =======
  *
- *   ssp_strsv_dist() solves one of the systems of equations   
+ *   sp_strsv_dist() solves one of the systems of equations   
  *       A*x = b,   or   A'*x = b,
  *   where b and x are n element vectors and A is a sparse unit , or   
  *   non-unit, upper or lower triangular matrix.   
@@ -123,14 +123,14 @@ sp_strsv_dist(char *uplo, char *trans, char *diag, SuperMatrix *L,
 	return 0;
     }
 
-    Lstore = L->Store;
-    Lval = Lstore->nzval;
-    Ustore = U->Store;
-    Uval = Ustore->nzval;
+    Lstore = (SCformat *) L->Store;
+    Lval = (float *) Lstore->nzval;
+    Ustore = (NCformat *) U->Store;
+    Uval = (float *) Ustore->nzval;
     solve_ops = 0;
 
     if ( !(work = floatCalloc_dist(L->nrow)) )
-	ABORT("Malloc fails for work in sp_strsv().");
+	ABORT("Malloc fails for work in sp_strsv_dist().");
     
     if ( strncmp(trans, "N", 1)==0 ) {	/* Form x := inv(A)*x. */
 	
@@ -293,6 +293,7 @@ sp_strsv_dist(char *uplo, char *trans, char *diag, SuperMatrix *L,
 		if ( nsupc == 1 ) {
 		    x[fsupc] /= Lval[luptr];
 		} else {
+#ifdef USE_VENDOR_BLAS
 #ifdef _CRAY
                     ftcs1 = _cptofcd("U", strlen("U"));
                     ftcs2 = _cptofcd("T", strlen("T"));
@@ -302,6 +303,10 @@ sp_strsv_dist(char *uplo, char *trans, char *diag, SuperMatrix *L,
 #else
 		    strsv_("U", "T", "N", &nsupc, &Lval[luptr], &nsupr,
 			   &x[fsupc], &incx, 1, 1, 1);
+#endif
+#else
+		    strsv_("U", "T", "N", &nsupc, &Lval[luptr], &nsupr,
+			   &x[fsupc], &incx);
 #endif
 		}
 	    } /* for k ... */
@@ -388,8 +393,8 @@ sp_sgemv_dist(char *trans, float alpha, SuperMatrix *A, float *x,
     int notran;
 
     notran = ( strncmp(trans, "N", 1)==0 || strncmp(trans, "n", 1)==0 );
-    Astore = A->Store;
-    Aval = Astore->nzval;
+    Astore = (NCformat *) A->Store;
+    Aval = (float *) Astore->nzval;
     
     /* Test the input parameters */
     info = 0;

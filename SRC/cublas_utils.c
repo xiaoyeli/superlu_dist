@@ -8,12 +8,11 @@ All rights reserved.
 The source code is distributed under BSD license, see the file License.txt
 at the top-level directory.
 */
+
 #ifdef GPU_ACC
 
 #include <stdio.h>
 #include "cublas_utils.h"
-
-
 
 
  void DisplayHeader()
@@ -113,4 +112,5 @@ cublasHandle_t create_handle ()
  {
       checkCublas(cublasDestroy(handle));
  }
+
 #endif

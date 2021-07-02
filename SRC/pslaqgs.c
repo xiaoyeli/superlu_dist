@@ -46,13 +46,13 @@ at the top-level directory.
     C       (input) float*, dimension (A->ncol)
             The column scale factors for A.
 
-    ROWCND  (input) double
+    ROWCND  (input) float
             Ratio of the smallest R(i) to the largest R(i).
 
-    COLCND  (input) double
+    COLCND  (input) float
             Ratio of the smallest C(i) to the largest C(i).
 
-    AMAX    (input) double
+    AMAX    (input) float
             Absolute value of largest matrix entry.
 
     EQUED   (output) char*
@@ -92,7 +92,7 @@ pslaqgs(SuperMatrix *A, float *r, float *c,
     NRformat_loc *Astore;
     float *Aval;
     int_t i, j, irow, jcol, m_loc;
-    double large, small;
+    float large, small;
 
     /* Quick return if possible */
     if (A->nrow <= 0 || A->ncol <= 0) {
@@ -105,7 +105,7 @@ pslaqgs(SuperMatrix *A, float *r, float *c,
     m_loc = Astore->m_loc;
 
     /* Initialize LARGE and SMALL. */
-    small = dmach_dist("Safe minimum") / dmach_dist("Precision");
+    small = smach_dist("Safe minimum") / smach_dist("Precision");
     large = 1. / small;
 
     if (rowcnd >= THRESH && amax >= small && amax <= large) {

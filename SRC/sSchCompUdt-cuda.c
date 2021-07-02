@@ -124,7 +124,7 @@ if ( msg0 && msg2 ) {  /* L(:,k) and U(k,:) are not empty. */
 
                     /* Break condition:
 		       the number of columns that can be processed on GPU is
-		       limited by buffer size 
+		       limited by buffer_size 
 		       ncol_max := max. number of columns on GPU   */
                     if ( full_u_cols[j] + ((j+1==nub) ? 0 : full_u_cols[j+1])
 			 > ncol_max) { 
@@ -286,18 +286,18 @@ if ( msg0 && msg2 ) {  /* L(:,k) and U(k,:) are not empty. */
 		    cudaMemcpyAsync(dB + b_offset, tempu + b_offset, B_stream_size,
 		    		    cudaMemcpyHostToDevice, streams[stream_id]);
 
+		    tt_end = SuperLU_timer_();
+		    GatherUTimer += tt_end - tt_start;
+		    tt_start = SuperLU_timer_();
+
 		    cublasCheckErrors(
 				  cublasSetStream(handle[stream_id],
 						  streams[stream_id])
 				     );
 
-		    
-		    tt_end = SuperLU_timer_();
-		    GatherLTimer += tt_end - tt_start;
-		    tt_start = SuperLU_timer_();
-
 		    // set mode to tensor
 		    if ( options->Use_TensorCore ) {
+		      printf(" !!!! Use TensorCorer\n");
 		    // TEST_CHECK_CUBLAS_ERR( cublasSetMathMode(handle, CUBLAS_TENSOR_OP_MATH) );
 			cublasCheckErrors( cublasSetMathMode(handle[stream_id],
 							     CUBLAS_TENSOR_OP_MATH) );

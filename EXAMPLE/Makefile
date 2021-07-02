@@ -30,10 +30,15 @@
 #######################################################################
 include ../make.inc
 
-SEXM	= psdrive.o screate_matrix.o 
-	## psutil.o psgstrs.o psgstrs_lsum.o
+SEXM	= psdrive.o screate_matrix.o dcreate_matrix.o \
+	dutil_dist.o sutil_dist.o psutil.o\
+	psgssvx_d2.o psgsrfs_fp64x2.o psgsmv_fp64x2.o psgstrs.o psgstrs_lsum.o
+	## psutil.o 
 
-DEXM	= pddrive.o dcreate_matrix.o sp_ienv.o #pdgstrf2.o 
+DEXM	= pddrive.o dcreate_matrix.o sp_ienv.o
+	# pdgstrs.o pdgsrfs.o pdgstrs_lsum.o
+DEXMRHS	= pddrive_rhs.o dcreate_matrix_rhs.o sp_ienv.o 
+       # pdgstrs.o pdgsrfs.o pdgstrs_lsum.o
 #pdgssvx.o
 # pdgstrs_lsum_X1.o pdgstrf_X1.o
 DEXM1	= pddrive1.o dcreate_matrix.o
@@ -59,7 +64,7 @@ ZEXMG3	= pzdrive3_ABglobal.o
 ZEXMG4	= pzdrive4_ABglobal.o
 
 
-all: single #### double complex16
+all: psdrive #pddrive pddrive_rhs #single double complex16
 
 single:    psdrive
 
@@ -76,6 +81,9 @@ psdrive: $(SEXM) $(DSUPERLULIB)
 
 pddrive: $(DEXM) $(DSUPERLULIB)
 	$(LOADER) $(LOADOPTS) $(DEXM) $(LIBS) -lm -o $@
+
+pddrive_rhs: $(DEXMRHS) $(DSUPERLULIB)
+	$(LOADER) $(LOADOPTS) $(DEXMRHS) $(LIBS) -lm -o $@
 
 pddrive1: $(DEXM1) $(DSUPERLULIB)
 	$(LOADER) $(LOADOPTS) $(DEXM1) $(LIBS) -lm -o $@

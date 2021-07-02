@@ -47,6 +47,7 @@ at the top-level directory.
 //#include <stdatomic.h>
 #include <math.h>
 #include <stdint.h>
+#include <assert.h>
 //#include <malloc.h>  Sherry: not available on Mac OS
 // /* Following is for vtune */
 // #if 0

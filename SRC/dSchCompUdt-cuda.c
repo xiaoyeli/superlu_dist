@@ -37,7 +37,6 @@ at the top-level directory.
     } while(0);
 
 int full;
-double gemm_timer = 0.0;
 double scatter_timer = 0.0;
 
 if ( msg0 && msg2 ) {  /* L(:,k) and U(k,:) are not empty. */
@@ -151,6 +150,9 @@ if ( msg0 && msg2 ) {  /* L(:,k) and U(k,:) are not empty. */
             assert(jjj_st<nub);
             assert(jjj-1<nub);
             // TAU_STATIC_TIMER_START("GATHER_U");
+
+	    tt_start = SuperLU_timer_();
+
 #ifdef _OPENMP
 #pragma omp for schedule( SCHEDULE_STRATEGY )
 #endif
@@ -181,15 +183,22 @@ if ( msg0 && msg2 ) {  /* L(:,k) and U(k,:) are not empty. */
 
             } /* end for j=jjj_st to jjj */
 
+	    tt_end = SuperLU_timer_();
+	    GatherUTimer += tt_end - tt_start;
+
 	    if ( num_streams_used > 0 ) {
 #ifdef PI_DEBUG
 		printf("nbrow %d *ldu %d  =%d < ldt %d * max_row_size %d =%d \n",nbrow,ldu,nbrow*ldu,ldt,max_row_size,ldt*max_row_size ); fflush(stdout);
 		assert(nbrow*ldu<=ldt*max_row_size);
 #endif
+		tt_start = SuperLU_timer_();
+
 		cudaMemcpy2DAsync(dA, nbrow*sizeof(double),
 				  &lusup[luptr+(knsupc-ldu)*nsupr],
 				  nsupr*sizeof(double), nbrow*sizeof(double),
 				  ldu, cudaMemcpyHostToDevice, streams[0]);
+		tt_end = SuperLU_timer_();
+		GatherLTimer += tt_end - tt_start;
 	    }
 
 	    for (int i = 0; i < num_streams_used; ++i) { // streams on GPU
@@ -210,10 +219,17 @@ if ( msg0 && msg2 ) {  /* L(:,k) and U(k,:) are not empty. */
 		    size_t B_stream_size = ldu * num_col_stream * sizeof(double);
 		    size_t C_stream_size = nbrow * num_col_stream * sizeof(double);
 
+		    // Sherry: Check dC buffer of *buffer_size* is large enough
 		    assert(nbrow*(st_col+num_col_stream) < buffer_size);
+
+		    tt_start = SuperLU_timer_();
 
 		    cudaMemcpyAsync(dB+b_offset, tempu+b_offset, B_stream_size,
 		    		    cudaMemcpyHostToDevice, streams[stream_id]);
+
+		    tt_end = SuperLU_timer_();
+		    GatherUTimer += tt_end - tt_start;
+		    tt_start = SuperLU_timer_();
 
 		    cublasCheckErrors(
 				  cublasSetStream(handle[stream_id],
@@ -234,8 +250,13 @@ if ( msg0 && msg2 ) {  /* L(:,k) and U(k,:) are not empty. */
 					   C_stream_size,
 					   cudaMemcpyDeviceToHost,
 					   streams[stream_id]) );
-#else /*-- on CPU --*/
 
+		    cublasGEMMTimer += SuperLU_timer_() - tt_start;
+
+#else /*-- on CPU --*/
+		    // Sherry: this routine xxx-cuda.c is not called if
+		    // GPU_ACC is not defined.
+		    printf("... WHY GET HERE ???\n");
 	            my_dgemm_("N", "N", &nbrow, &num_col_stream, &ldu,
 			      &alpha, &lusup[luptr+(knsupc-ldu)*nsupr],
 			      &nsupr, tempu+ldu*st_col, &ldu, &beta,
@@ -262,7 +283,7 @@ if ( msg0 && msg2 ) {  /* L(:,k) and U(k,:) are not empty. */
 		  &lusup[luptr+(knsupc-ldu)*nsupr], &nsupr,
 		  tempu+ldu*st_col, &ldu, &beta, tempv, &nbrow);
 #endif
-	    gemm_timer += SuperLU_timer_() -tstart;
+	    cpuGEMMTimer += SuperLU_timer_() -tstart;
 	    stat->ops[FACT] += 2 * nbrow * ldu * full_u_cols[jjj-1];
 
             /* Now scattering blocks computed by CPU */
@@ -458,7 +479,7 @@ if ( msg0 && msg2 ) {  /* L(:,k) and U(k,:) are not empty. */
 		}     /* else (ncpu_blks >= omp_get_num_threads()) */
 	    }         /* parallel region */
 
-	    scatter_timer += SuperLU_timer_() - tstart;
+	    // scatter_timer += SuperLU_timer_() - tstart;
 	    
 	    // Scatter tempv(:, (jjj_st1 : jjj_global)) computed on GPU.
 #ifdef _OPENMP
@@ -570,6 +591,8 @@ if ( msg0 && msg2 ) {  /* L(:,k) and U(k,:) are not empty. */
             } /* end pragma omp parallel */
             // TAU_STATIC_TIMER_STOP("OUTSIDE_OMP");
 	    
+	    RemainScatterTimer += SuperLU_timer_() - tstart;
+
         }  /* end while(jjj<nub) */
 
     } /* if nbrow>0 */

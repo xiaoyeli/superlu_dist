@@ -459,7 +459,7 @@ void slsum_fmod_inv
 	int_t lptr;      /* Starting position in lsub[*].                      */
 	int_t luptr;     /* Starting position in lusup[*].                     */
 	int_t iword = sizeof(int_t);
-	int_t dword = sizeof (double);
+	int_t dword = sizeof (float);
 	int_t aln_d,aln_i;
 	aln_d = ceil(CACHELINE/(double)dword);
 	aln_i = ceil(CACHELINE/(double)iword);
@@ -1007,7 +1007,7 @@ void slsum_fmod_inv_master
 	int_t lptr;      /* Starting position in lsub[*].                      */
 	int_t luptr;     /* Starting position in lusup[*].                     */
 	int_t iword = sizeof(int_t);
-	int_t dword = sizeof (double);
+	int_t dword = sizeof (float);
 	int_t aln_d,aln_i;
 	aln_d = ceil(CACHELINE/(double)dword);
 	aln_i = ceil(CACHELINE/(double)iword);
@@ -1412,7 +1412,7 @@ void slsum_bmod_inv
 	float msg_vol = 0, msg_cnt = 0;
 	int_t Nchunk, nub_loc,remainder,nn,lbstart,lbend;
 	int_t iword = sizeof(int_t);
-	int_t dword = sizeof (double);
+	int_t dword = sizeof (float);
 	int_t aln_d,aln_i;
 	aln_d = ceil(CACHELINE/(double)dword);
 	aln_i = ceil(CACHELINE/(double)iword);
@@ -1481,7 +1481,7 @@ void slsum_bmod_inv
 							#endif
 							for (irow = fnz; irow < iklrow; ++irow)
 								dest[irow - ikfrow] -= uval[uptr++] * y[jj];
-								stat[thread_id1]->ops[SOLVE] += 2 * (iklrow - fnz);
+							stat[thread_id1]->ops[SOLVE] += 2 * (iklrow - fnz);
 
 						}
 					} /* for jj ... */
@@ -1663,9 +1663,8 @@ void slsum_bmod_inv
 						#pragma omp simd
 						#endif
 						for (irow = fnz; irow < iklrow; ++irow)
-
-								dest[irow - ikfrow] -= uval[uptr++] * y[jj];
-								stat[thread_id]->ops[SOLVE] += 2 * (iklrow - fnz);
+						  dest[irow - ikfrow] -= uval[uptr++] * y[jj];
+						stat[thread_id]->ops[SOLVE] += 2 * (iklrow - fnz);
 					}
 				} /* for jj ... */
 			}
@@ -1876,7 +1875,7 @@ void slsum_bmod_inv_master
 	float msg_vol = 0, msg_cnt = 0;
 	int_t Nchunk, nub_loc,remainder,nn,lbstart,lbend;
 	int_t iword = sizeof(int_t);
-	int_t dword = sizeof (double);
+	int_t dword = sizeof (float);
 	int_t aln_d,aln_i;
 	aln_d = ceil(CACHELINE/(double)dword);
 	aln_i = ceil(CACHELINE/(double)iword);

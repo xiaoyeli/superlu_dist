@@ -21,6 +21,17 @@ at the top-level directory.
  * Modified:
  *   September 30, 2017
  *
+ * </pre>
+ */
+
+#include <math.h>
+#include "superlu_ddefs.h"
+
+/*****************************************************************************
+ * The following psgstrf2_trsm is in version 6 and earlier. 
+*****************************************************************************/
+/*! \brief
+ *
  * <pre>
  * Purpose
  * =======
@@ -73,10 +84,6 @@ at the top-level directory.
  *             system of equations.
  * </pre>
  */
-
-#include <math.h>
-#include "superlu_ddefs.h"
-
 /* This pdgstrf2 is based on TRSM function */
 void
 pdgstrf2_trsm
@@ -359,6 +366,13 @@ void pdgstrs2_omp
     iukp = BR_HEADER;
     rukp = 0;
 
+    /* Sherry: can use the existing  Ublock_info[] array, call                   
+       Trs2_InitUblock_info();                                 */
+#undef USE_Ublock_info
+#ifdef USE_Ublock_info /** 4/19/2019 **/
+    /* Loop through all the row blocks. to get the iukp and rukp*/
+    Trs2_InitUblock_info(klst, nb, Ublock_info, usub, Glu_persist, stat );
+#else
     int* blocks_index_pointers = SUPERLU_MALLOC (3 * nb * sizeof(int));
     int* blocks_value_pointers = blocks_index_pointers + nb;
     int* nsupc_temp = blocks_value_pointers + nb;
@@ -371,6 +385,7 @@ void pdgstrs2_omp
 	nsupc_temp[b] = nsupc;
 	iukp += (UB_DESCRIPTOR + nsupc);  /* move to the next block */
     }
+#endif
 
     // Sherry: this version is more NUMA friendly compared to pdgstrf2_v2.c
     // https://stackoverflow.com/questions/13065943/task-based-programming-pragma-omp-task-versus-pragma-omp-parallel-for

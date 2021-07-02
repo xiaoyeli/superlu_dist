@@ -836,7 +836,7 @@ psgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 	        	SUPERLU_FREE(C1);
    	            }
 #if ( PRNTlevel>=2 )
-	            dmin = dmach_dist("Overflow");
+	            dmin = smach_dist("Overflow");
 	            dsum = 0.0;
 	            dprod = 1.0;
 #endif
@@ -1179,7 +1179,7 @@ psgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 
 	printf("after psgstrf info %d\n", *info);
 
-#if ( PRNTlevel>=2 )
+#if ( PRNTlevel>=3 )
     /* ------------------------------------------------------------
        SUM OVER ALL ENTRIES OF A AND PRINT NNZ AND SIZE OF A.
        ------------------------------------------------------------*/
@@ -1223,11 +1223,6 @@ psgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 	// MPI_Bcast( &nnzLU, 1, mpi_int_t, 0, grid->comm );
 
 	MPI_Comm_rank( MPI_COMM_WORLD, &iam_g );
-
-    if (!iam_g) {
-	print_options_dist(options);
-	fflush(stdout);
-    }
 
     printf(".. Ainfo mygid %5d   mysid %5d   nnz_loc " IFMT "  sum_loc  %e lsum_loc   %e nnz " IFMT " nnzLU %ld sum %e  lsum %e  N " IFMT "\n", iam_g,iam,Astore->rowptr[Astore->m_loc],asum, lsum, nnz_tot,nnzLU,asum_tot,lsum_tot,A->ncol);
 	fflush(stdout);

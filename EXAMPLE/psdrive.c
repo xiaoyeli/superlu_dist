@@ -21,6 +21,7 @@ at the top-level directory.
  * </pre>
  */
 
+#include<float.h>
 #include <math.h>
 #include "superlu_sdefs.h"
 
@@ -56,22 +57,30 @@ int main(int argc, char *argv[])
     LUstruct_t LUstruct;
     SOLVEstruct_t SOLVEstruct;
     gridinfo_t grid;
-    float   *berr;
+    float   *err_bounds;
     float   *b, *xtrue;
     int    m, n;
-    int      nprow, npcol, lookahead, colperm;
+    int      nprow, npcol, lookahead, colperm, rowperm, ir, use_tensorcore;
     int      iam, info, ldb, ldx, nrhs;
     char     **cpp, c, *postfix;;
     FILE *fp, *fopen();
     int cpp_defs();
-    int ii, omp_mpi_level;
-    yes_no_t Use_TensorCore = YES;
+    int ii, i, omp_mpi_level;
+    extern void psgssvx_d2(superlu_dist_options_t *options, SuperMatrix *A,
+			ScalePermstruct_t *ScalePermstruct,
+			float B[], int ldb, int nrhs, gridinfo_t *grid,
+			LUstruct_t *LUstruct, SOLVEstruct_t *SOLVEstruct,
+			float *err_bounds, SuperLUStat_t *stat, int *info,
+			float *xtrue);
 
     nprow = 1;  /* Default process rows.      */
     npcol = 1;  /* Default process columns.   */
     nrhs = 1;   /* Number of right-hand side. */
-    lookahead = 10;
-    colperm = METIS_AT_PLUS_A;
+    lookahead = -1;
+    colperm = -1;
+    rowperm = -1;
+    ir = -1;
+    use_tensorcore = -1;
 
     /* ------------------------------------------------------------
        INITIALIZE MPI ENVIRONMENT. 
@@ -106,9 +115,13 @@ int main(int argc, char *argv[])
 		        break;
 	      case 'l': lookahead = atoi(*cpp);
 		        break;
-	      case 'p': colperm = atoi(*cpp);
+	      case 'p': rowperm = atoi(*cpp);
 		        break;
-	      case 't': Use_TensorCore = atoi(*cpp);
+	      case 'q': colperm = atoi(*cpp);
+		        break;
+	      case 'i': ir = atoi(*cpp);
+		        break;
+	      case 't': use_tensorcore = atoi(*cpp);
 		        break;
 	    }
 	} else { /* Last arg is considered a filename */
@@ -177,15 +190,57 @@ int main(int argc, char *argv[])
 		postfix = &((*cpp)[ii+1]);
 	}
     }
-    // printf("%s\n", postfix);
+    //printf("%s\n", postfix);
 	
     /* ------------------------------------------------------------
        GET THE MATRIX FROM FILE AND SETUP THE RIGHT HAND SIDE. 
        ------------------------------------------------------------*/
     screate_matrix_postfix(&A, nrhs, &b, &ldb, &xtrue, &ldx, fp, postfix, &grid);
+    
+    if (iam==0) printf("dimension N = %d\n", A.nrow);
 
-    if ( !(berr = floatMalloc_dist(nrhs)) )
-	ABORT("Malloc fails for berr[].");
+#if 1
+    /* Generate a good RHS in double precision, then rounded to single */
+    {
+        double *db, *dxtrue;
+	SuperMatrix dA;
+	extern int dcreate_matrix_postfix();
+
+	fp = fopen(*cpp, "r");
+
+	dcreate_matrix_postfix(&dA, nrhs, &db, &ldb, &dxtrue, &ldx, fp, postfix, &grid);
+
+	NRformat_loc *Astore = A.Store;
+	int m_loc = Astore->m_loc;
+
+	if ( iam==(nprow*npcol-1) ) {
+	  extern void Printdouble5();
+	  printf("\ndouble x[%d]: %.16e\n", m_loc-1, dxtrue[m_loc-1]);
+	  for (i = 0; i < 5; ++i) printf("%.16e\t", dxtrue[i]);
+	  printf("\nsingle x:\n");
+	  for (i = 0; i < 5; ++i) printf("%.16e\t", xtrue[i]);
+	  printf("\ndouble b:\n"); fflush(stdout);
+	  for (i = 0; i < 5; ++i) printf("%.16e\t", db[i]);
+	  printf("\nsingle b:\n");
+	  for (i = 0; i < 5; ++i) printf("%.16e\t", b[i]);
+	  printf("\n"); fflush(stdout);
+	}
+
+	/* Rounded to single */
+	for (i = 0; i < m_loc; ++i) {
+	    b[i] = db[i];
+	    xtrue[i] = dxtrue[i];
+	}
+
+	Destroy_CompRowLoc_Matrix_dist(&dA);
+	SUPERLU_FREE(db);
+	SUPERLU_FREE(dxtrue);
+    }
+#endif
+
+    
+    if ( !(err_bounds = floatCalloc_dist(nrhs*3)) )
+	ABORT("Malloc fails for err_bounds[].");
 
     /* ------------------------------------------------------------
        NOW WE SOLVE THE LINEAR SYSTEM.
@@ -206,17 +261,21 @@ int main(int argc, char *argv[])
 	options.DiagInv           = NO;
      */
     set_default_options_dist(&options);
+    options.IterRefine = SLU_DOUBLE;
 #if 0
+    options.IterRefine = SLU_SINGLE;
+    options.Equil = NO; 
+    options.ReplaceTinyPivot  = YES;
     options.RowPerm = NOROWPERM;
     options.ColPerm = NATURAL;
-    options.Equil = NO; 
-    options.IterRefine = NOREFINE;
     options.ReplaceTinyPivot = YES;
 #endif
 
-    options.ColPerm        = colperm;
-    options.num_lookaheads = lookahead;
-    options.Use_TensorCore = Use_TensorCore;
+    if (rowperm != -1) options.RowPerm = rowperm;
+    if (colperm != -1) options.ColPerm = colperm;
+    if (lookahead != -1) options.num_lookaheads = lookahead;
+    if (ir != -1) options.IterRefine = ir;
+    if (use_tensorcore != -1) options.Use_TensorCore = use_tensorcore;
 
     if (!iam) {
 	print_sp_ienv_dist(&options);
@@ -236,10 +295,15 @@ int main(int argc, char *argv[])
 
     //    printf("before psgssvx xtrue[2] %e, b[41] %e\n", xtrue[2], b[41]);
 
-    // Printfloat5("before psgssvx b[]", n, b);
+    if (iam==0) {
+        Printfloat5("before psgssvx xtrue[]", 5, xtrue);
+        Printfloat5("before psgssvx b[]", 5, b);
+	printf("\n"); fflush(stdout);
+    }
+
     /* Call the linear equation solver. */
-    psgssvx(&options, &A, &ScalePermstruct, b, ldb, nrhs, &grid,
-	    &LUstruct, &SOLVEstruct, berr, &stat, &info);
+    psgssvx_d2(&options, &A, &ScalePermstruct, b, ldb, nrhs, &grid,
+		&LUstruct, &SOLVEstruct, err_bounds, &stat, &info, xtrue);
 
     //Printfloat5("after psgssvx b[]", n, b);
     //Printfloat5("after psgssvx xtrue[]", n, xtrue);
@@ -247,6 +311,11 @@ int main(int argc, char *argv[])
     /* Check the accuracy of the solution. */
     psinf_norm_error(iam, ((NRformat_loc *)A.Store)->m_loc,
 		     nrhs, b, ldb, xtrue, ldx, &grid);
+    if (iam == 0) {
+        printf(" Normwise error bound: %e\n", err_bounds[0]);
+	printf(" Componentwise error bound: %e\n", err_bounds[1*nrhs]);
+	printf(" Componentwise backword error: %e\n", err_bounds[2*nrhs]);
+    }
 
     PStatPrint(&options, &stat, &grid);        /* Print the statistics. */
 
@@ -264,7 +333,7 @@ int main(int argc, char *argv[])
     }
     SUPERLU_FREE(b);
     SUPERLU_FREE(xtrue);
-    SUPERLU_FREE(berr);
+    SUPERLU_FREE(err_bounds);
 
     /* ------------------------------------------------------------
        RELEASE THE SUPERLU PROCESS GRID.

@@ -19,7 +19,7 @@ at the top-level directory.
  */
 
 /*
- * File name:		sp_blas2.c
+ * File name:		dsp_blas2_dist.c
  * Purpose:		Sparse BLAS 2, using some dense BLAS 2 operations.
  */
 
@@ -421,7 +421,7 @@ sp_dgemv_dist(char *trans, double alpha, SuperMatrix *A, double *x,
     }
 
     /* Quick return if possible. */
-    if (A->nrow == 0 || A->ncol == 0 || alpha == 0. && beta == 1.)
+    if (A->nrow == 0 || A->ncol == 0 || (alpha == 0. && beta == 1.))
 	return 0;
 
     /* Set  LENX  and  LENY, the lengths of the vectors x and y, and set 

@@ -62,7 +62,7 @@ at the top-level directory.
 </pre>
 */
 
-double pslangs(char *norm, SuperMatrix *A, gridinfo_t *grid)
+float pslangs(char *norm, SuperMatrix *A, gridinfo_t *grid)
 {
     /* Local variables */
     NRformat_loc *Astore;

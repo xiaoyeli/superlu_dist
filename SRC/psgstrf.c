@@ -129,7 +129,7 @@ at the top-level directory.
 // #define SUPERNODE_PROFILE
 
 /*
-    Name    :   BAELINE
+    Name    :   BASELINE
     Purpose : baseline to compare performance against
     Overhead : NA : this won't be used for running experiments
 */
@@ -200,7 +200,7 @@ superlu_sort_perm (const void *arg1, const void *arg2)
  * n      (input) int
  *        Number of columns in the matrix.
  *
- * anorm  (input) double
+ * anorm  (input) float
  *        The norm of the original matrix A, or the scaled A if
  *        equilibration was done.
  *
@@ -241,7 +241,7 @@ superlu_sort_perm (const void *arg1, const void *arg2)
  * </pre>
  */
 int_t
-psgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
+psgstrf(superlu_dist_options_t * options, int m, int n, float anorm,
        LUstruct_t * LUstruct, gridinfo_t * grid, SuperLUStat_t * stat, int *info)
 {
 #ifdef _CRAY
@@ -828,11 +828,11 @@ psgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
     if(!iam) {
 	printf("\t.. MAX_BUFFER_SIZE " IFMT " set for GPU\n", get_max_buffer_size());
 	printf("\t.. N_GEMM: " IFMT " flops of GEMM done on CPU (1st block always on CPU) \n", sp_ienv_dist(7));
-	printf(".. GEMM buffer size: max_row_size X max_ncols = %d x " IFMT "\n",
+	printf("\t.. GEMM buffer size: max_row_size X max_ncols = %d x " IFMT "\n",
 	     		  max_row_size, max_ncols);
+	printf("[%d].. BIG U size " IFMT " (on CPU)\n", iam, bigu_size);
+	fflush(stdout);
     }
-    printf("[%d].. BIG U size " IFMT " (on CPU)\n", iam, bigu_size);
-    fflush(stdout);
 #endif
 
 
@@ -846,18 +846,21 @@ psgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
 #endif
 
 #if ( PRNTlevel>=1 )
-    printf("[%d].. BIG V size " IFMT " (on CPU), dC buffer_size " IFMT " (on GPU)\n", iam, bigv_size, buffer_size);
-    fflush(stdout);
+    if ( iam == 0 ) {
+      printf("[%d].. BIG V size " IFMT " (on CPU), dC buffer_size " IFMT " (on GPU)\n", iam, bigv_size, buffer_size);
+      fflush(stdout);
+    }
 #endif
 
     if ( checkCuda(cudaHostAlloc((void**)&bigV, bigv_size * sizeof(float) ,cudaHostAllocDefault)) )
         ABORT("Malloc fails for sgemm buffer V");
 
-    DisplayHeader();
+    if ( iam==0 ) {
+      //DisplayHeader();
+	printf(" Starting with %d Cuda Streams \n",nstreams );
+	fflush(stdout);
+    }
 
-#if ( PRNTlevel>=1 )
-    printf(" Starting with %d Cuda Streams \n",nstreams );
-#endif
 
     cublasHandle_t *handle;
     handle = (cublasHandle_t *) SUPERLU_MALLOC(sizeof(cublasHandle_t)*nstreams);
@@ -1771,7 +1774,7 @@ psgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
 
     pxgstrfTimer = SuperLU_timer_() - pxgstrfTimer;
 
-#if ( PRNTlevel>=2 )
+#if ( PRNTlevel>=1 )
     /* Print detailed statistics */
     /* Updating total flops */
     double allflops;

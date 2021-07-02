@@ -168,7 +168,7 @@ static int sReadValues(FILE *fp, int_t n, float *destination,
             s = j*persize;
             for (k = 0; k < persize; ++k) /* No D_ format in C */
                 if ( buf[s+k] == 'D' || buf[s+k] == 'd' ) buf[s+k] = 'E';
-            destination[i++] = atof(&buf[s]);
+            destination[i++] = (float) atof(&buf[s]);
             buf[(j+1)*persize] = tmp;     /* recover the char at that place */
         }
     }
