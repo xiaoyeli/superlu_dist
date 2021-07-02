@@ -74,10 +74,11 @@ zreadtriple_dist(FILE *fp, int_t *m, int_t *n, int_t *nonz,
 
     /* Read into the triplet array from a file */
     for (nnz = 0, nz = 0; nnz < *nonz; ++nnz) {
+
 #ifdef _LONGINT
-	fscanf(fp, "%ld%ld%lf%lf\n", &row[nz], &col[nz], &val[nz].r, &val[nz].i);
-#else
-	fscanf(fp, "%d%d%lf%lf\n", &row[nz], &col[nz], &val[nz].r, &val[nz].i);
+        fscanf(fp, "%ld%ld%lf%lf\n", &row[nz], &col[nz], &val[nz].r, &val[nz].i);
+#else // int 
+        fscanf(fp, "%d%d%lf%lf\n", &row[nz], &col[nz], &val[nz].r, &val[nz].i);
 #endif
 
 	if ( nnz == 0 ) /* first nonzero */
@@ -170,6 +171,7 @@ void zreadrhs(int m, doublecomplex *b)
     }
     for (i = 0; i < m; ++i)
       fscanf(fp, "%lf%lf\n", &(b[i].r), &(b[i].i));
+    /*        readpair_(j, &b[i]);*/
 
     fclose(fp);
 }

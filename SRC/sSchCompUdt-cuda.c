@@ -24,14 +24,6 @@ at the top-level directory.
 
 #define SCHEDULE_STRATEGY dynamic
 
-#define TEST_CHECK_CUBLAS_ERR(c_) do { \
-    cublasStatus_t res = (c_); \
-    if(res != CUBLAS_STATUS_SUCCESS) { \
-    printf("returned in %s:%s:%d status is %d \n", __FILE__, __FUNCTION__, __LINE__,res); \
-    return -1; \
-    } \
-    } while(0)
-
 #define cublasCheckErrors(fn) \
     do { \
         cublasStatus_t __err = fn; \
@@ -318,32 +310,33 @@ if ( msg0 && msg2 ) {  /* L(:,k) and U(k,:) are not empty. */
 #else
     #if 0
 		    cublasCheckErrors(
-				  cublasSgemm(handle[stream_id],
-					      CUBLAS_OP_N, CUBLAS_OP_N,
-					      nbrow, num_col_stream, ldu,
-                                              &alpha, dA, nbrow,
-					      &dB[b_offset], ldu,
-					      &beta, &dC[c_offset],
-                                              nbrow)
-				  );
+				      cublasSgemm(handle[stream_id],
+						  CUBLAS_OP_N, CUBLAS_OP_N,
+						  nbrow, num_col_stream, ldu,
+						  &alpha, dA, nbrow,
+						  &dB[b_offset], ldu,
+						  &beta, &dC[c_offset],
+						  nbrow)
+				      );
     #else
 		    cublasCheckErrors(
-				  cublasSgemm(handle[stream_id],
-					      CUBLAS_OP_N, CUBLAS_OP_N,
-					      gemm_m_pad, gemm_n_pad, gemm_k_pad,
-                                              &alpha, dA, gemm_m_pad,
-					      &dB[b_offset], gemm_k_pad,
-					      &beta, &dC[c_offset], gemm_m_pad)
+				      cublasSgemm(handle[stream_id],
+						  CUBLAS_OP_N, CUBLAS_OP_N,
+						  gemm_m_pad, gemm_n_pad, gemm_k_pad,
+						  &alpha, dA, gemm_m_pad,
+						  &dB[b_offset], gemm_k_pad,
+						  &beta, &dC[c_offset], gemm_m_pad)
 				      );
     #endif
 #endif
-
 		    // set mode back to normal mode
 		    if ( options->Use_TensorCore ) {
-			// TEST_CHECK_CUBLAS_ERR( cublasSetMathMode(handle[stream_id], CUBLAS_DEFAULT_MATH) );
-			cublasCheckErrors( cublasSetMathMode(handle[stream_id], CUBLAS_DEFAULT_MATH) );
+			// TEST_CHECK_CUBLAS_ERR( cublasSetMathMode(handle[stream_id]\
+, CUBLAS_DEFAULT_MATH) );
+			cublasCheckErrors( cublasSetMathMode(handle[stream_id], CUBLA\
+							     S_DEFAULT_MATH) );
 		    }
-
+		    
 		    checkCuda( cudaMemcpyAsync(tempv1, dC+c_offset,
 					   C_stream_size,
 					   cudaMemcpyDeviceToHost,
@@ -367,8 +360,9 @@ if ( msg0 && msg2 ) {  /* L(:,k) and U(k,:) are not empty. */
 	    /* Special case for CPU -- leading block columns are computed 
 	       on CPU in order to mask the GPU data transfer latency */
 	    int num_col = full_u_cols[jjj_st+ncpu_blks-1];
-	    int st_cols = 0; /* leading part on CPU */
-	    tempv = bigV + nbrow * st_cols;
+
+	    int st_col = 0; /* leading part on CPU */
+	    tempv = bigV + nbrow * st_col;
 	    tempu = bigU;
 
 	    double tstart = SuperLU_timer_();
@@ -400,13 +394,19 @@ if ( msg0 && msg2 ) {  /* L(:,k) and U(k,:) are not empty. */
     firstprivate(luptr,lptr) default (shared)
 #endif
             {
+#ifdef _OPENMP	    
                 int thread_id = omp_get_thread_num();
+		int num_threads = omp_get_num_threads();
+#else
+                int thread_id = 0;
+		int num_threads = 1;
+#endif		
 
                 int* indirect_thread = indirect + ldt*thread_id;
                 int* indirect2_thread = indirect2 + ldt*thread_id;
                 float* tempv1;
 
-                if (ncpu_blks< omp_get_num_threads()) {
+                if ( ncpu_blks < num_threads ) {
                     // TAU_STATIC_TIMER_START("SPECIAL_CPU_SCATTER");
 
                     for (j = jjj_st; j < jjj_st+ncpu_blks; ++j) {
@@ -590,8 +590,11 @@ if ( msg0 && msg2 ) {  /* L(:,k) and U(k,:) are not empty. */
     firstprivate(luptr,lptr) default (shared)
 #endif
             {
+#ifdef _OPENMP	    
                 int thread_id = omp_get_thread_num();
-
+#else		
+                int thread_id = 0;
+#endif
                 int* indirect_thread = indirect + ldt*thread_id;
                 int* indirect2_thread = indirect2 + ldt*thread_id;
                 float* tempv1;

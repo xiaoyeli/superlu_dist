@@ -95,7 +95,11 @@ sblock_gemm_scatter( int_t lb, int_t j,
                   )
 {
     // return ;
+#ifdef _OPENMP    
     thread_id = omp_get_thread_num();
+#else    
+    thread_id = 0;
+#endif    
     int_t *indirect_thread = indirect + ldt * thread_id;
     int_t *indirect2_thread = indirect2 + ldt * thread_id;
     float *tempv1 = bigV + thread_id * ldt * ldt;
@@ -200,6 +204,7 @@ sblock_gemm_scatter( int_t lb, int_t j,
 #endif
 } /* sblock_gemm_scatter */
 
+#ifdef _OPENMP
 /*this version uses a lock to prevent multiple thread updating the same block*/
 void
 sblock_gemm_scatter_lock( int_t lb, int_t j,
@@ -313,6 +318,8 @@ sblock_gemm_scatter_lock( int_t lb, int_t j,
     += t_s;
 #endif
 } /* sblock_gemm_scatter_lock */
+#endif  // Only if _OPENMP is defined
+
 
 // there are following three variations of block_gemm_scatter call
 /*
@@ -341,19 +348,23 @@ int_t sblock_gemm_scatterTopLeft( int_t lb, /* block number in L */
                                  float* bigV, int_t knsupc,  int_t klst,
 				 int_t* lsub, int_t * usub, int_t ldt,
 				 int_t* indirect, int_t* indirect2, HyP_t* HyP,
-                                 LUstruct_t *LUstruct,
+                                 sLUstruct_t *LUstruct,
                                  gridinfo_t* grid,
                                  SCT_t*SCT, SuperLUStat_t *stat
                                )
 {
     Glu_persist_t *Glu_persist = LUstruct->Glu_persist;
-    LocalLU_t *Llu = LUstruct->Llu;
+    sLocalLU_t *Llu = LUstruct->Llu;
     int_t* xsup = Glu_persist->xsup;
     int_t** Lrowind_bc_ptr = Llu->Lrowind_bc_ptr;
     int_t** Ufstnz_br_ptr = Llu->Ufstnz_br_ptr;
     float** Lnzval_bc_ptr = Llu->Lnzval_bc_ptr;
     float** Unzval_br_ptr = Llu->Unzval_br_ptr;
+#ifdef _OPENMP    
     volatile int_t thread_id = omp_get_thread_num();
+#else    
+    volatile int_t thread_id = 0;
+#endif    
     
 //    printf("Thread's ID %lld \n", thread_id);
     unsigned long long t1 = _rdtsc();
@@ -377,19 +388,23 @@ int_t sblock_gemm_scatterTopRight( int_t lb,  int_t j,
                                   float* bigV, int_t knsupc,  int_t klst, int_t* lsub,
                                   int_t * usub, int_t ldt,  int_t* indirect, int_t* indirect2,
                                   HyP_t* HyP,
-                                  LUstruct_t *LUstruct,
+                                  sLUstruct_t *LUstruct,
                                   gridinfo_t* grid,
                                   SCT_t*SCT, SuperLUStat_t *stat
                                 )
 {
     Glu_persist_t *Glu_persist = LUstruct->Glu_persist;
-    LocalLU_t *Llu = LUstruct->Llu;
+    sLocalLU_t *Llu = LUstruct->Llu;
     int_t* xsup = Glu_persist->xsup;
     int_t** Lrowind_bc_ptr = Llu->Lrowind_bc_ptr;
     int_t** Ufstnz_br_ptr = Llu->Ufstnz_br_ptr;
     float** Lnzval_bc_ptr = Llu->Lnzval_bc_ptr;
     float** Unzval_br_ptr = Llu->Unzval_br_ptr;
+#ifdef _OPENMP    
     volatile  int_t thread_id = omp_get_thread_num();
+#else    
+    volatile  int_t thread_id = 0;
+#endif    
     unsigned long long t1 = _rdtsc();
     sblock_gemm_scatter( lb, j, HyP->Ublock_info_Phi, HyP->lookAhead_info, HyP->lookAhead_L_buff, HyP->Lnbrow,
                         HyP->bigU_Phi, HyP->ldu_Phi,
@@ -408,19 +423,23 @@ int_t sblock_gemm_scatterBottomLeft( int_t lb,  int_t j,
                                     float* bigV, int_t knsupc,  int_t klst, int_t* lsub,
                                     int_t * usub, int_t ldt,  int_t* indirect, int_t* indirect2,
                                     HyP_t* HyP,
-                                    LUstruct_t *LUstruct,
+                                    sLUstruct_t *LUstruct,
                                     gridinfo_t* grid,
                                     SCT_t*SCT, SuperLUStat_t *stat
                                   )
 {
     Glu_persist_t *Glu_persist = LUstruct->Glu_persist;
-    LocalLU_t *Llu = LUstruct->Llu;
+    sLocalLU_t *Llu = LUstruct->Llu;
     int_t* xsup = Glu_persist->xsup;
     int_t** Lrowind_bc_ptr = Llu->Lrowind_bc_ptr;
     int_t** Ufstnz_br_ptr = Llu->Ufstnz_br_ptr;
     float** Lnzval_bc_ptr = Llu->Lnzval_bc_ptr;
     float** Unzval_br_ptr = Llu->Unzval_br_ptr;
+#ifdef _OPENMP    
     volatile int_t thread_id = omp_get_thread_num();
+#else    
+    volatile int_t thread_id = 0;
+#endif    
     //printf("Thread's ID %lld \n", thread_id);
     unsigned long long t1 = _rdtsc();
     sblock_gemm_scatter( lb, j, HyP->Ublock_info, HyP->Remain_info, HyP->Remain_L_buff, HyP->Rnbrow,
@@ -441,19 +460,23 @@ int_t sblock_gemm_scatterBottomRight( int_t lb,  int_t j,
                                      float* bigV, int_t knsupc,  int_t klst, int_t* lsub,
                                      int_t * usub, int_t ldt,  int_t* indirect, int_t* indirect2,
                                      HyP_t* HyP,
-                                     LUstruct_t *LUstruct,
+                                     sLUstruct_t *LUstruct,
                                      gridinfo_t* grid,
                                      SCT_t*SCT, SuperLUStat_t *stat
                                    )
 {
     Glu_persist_t *Glu_persist = LUstruct->Glu_persist;
-    LocalLU_t *Llu = LUstruct->Llu;
+    sLocalLU_t *Llu = LUstruct->Llu;
     int_t* xsup = Glu_persist->xsup;
     int_t** Lrowind_bc_ptr = Llu->Lrowind_bc_ptr;
     int_t** Ufstnz_br_ptr = Llu->Ufstnz_br_ptr;
     float** Lnzval_bc_ptr = Llu->Lnzval_bc_ptr;
     float** Unzval_br_ptr = Llu->Unzval_br_ptr;
-   volatile  int_t thread_id = omp_get_thread_num();
+#ifdef _OPENMP    
+    volatile  int_t thread_id = omp_get_thread_num();
+#else    
+    volatile  int_t thread_id = 0;
+#endif    
    // printf("Thread's ID %lld \n", thread_id);
     unsigned long long t1 = _rdtsc();
     sblock_gemm_scatter( lb, j, HyP->Ublock_info_Phi, HyP->Remain_info, HyP->Remain_L_buff, HyP->Rnbrow,

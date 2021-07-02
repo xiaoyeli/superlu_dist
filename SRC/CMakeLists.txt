@@ -41,7 +41,6 @@ set(sources
   psymbfact_util.c
   get_perm_c_parmetis.c
   mc64ad_dist.c
-  static_schedule.c
   xerr_dist.c
   smach_dist.c
   dmach_dist.c
@@ -87,6 +86,7 @@ if(enable_single)
     sdistribute.c
     psdistribute.c
     psgstrf.c
+    sstatic_schedule.c
     psgstrf2.c
     psgstrs.c
     psgstrs1.c
@@ -129,6 +129,7 @@ if(enable_double)
     ddistribute.c
     pddistribute.c
     pdgstrf.c
+    dstatic_schedule.c
     pdgstrf2.c
     pdgstrs.c
     pdgstrs1.c
@@ -172,6 +173,7 @@ if(enable_complex16)
     zdistribute.c
     pzdistribute.c
     pzgstrf.c
+    zstatic_schedule.c
     pzgstrf2.c
     pzgstrs.c
     pzgstrs1.c

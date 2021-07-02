@@ -25,7 +25,7 @@ at the top-level directory.
 #include <math.h>
 #include "superlu_sdefs.h"
 
-static void
+void
 sscatter_l_1 (int ib,
            int ljb,
            int nsupc,
@@ -289,8 +289,7 @@ int min_gpu_col = 6;
 #endif
 
 
-/******* Sherry: the following functions are moved to util.c ******/
-#if 0
+#if 0 // Sherry: moved and corrected in util.c 
 #ifdef GPU_ACC
 
 void
@@ -521,5 +520,5 @@ gemm_division_new (int * num_streams_used,   /*number of streams that will be us
 }
 
 #endif  /* defined GPU_ACC */
-/******* Sherry: the above functions are moved to util.c ******/
-#endif
+
+#endif // comment out the above code 

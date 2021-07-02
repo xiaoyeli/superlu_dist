@@ -28,10 +28,10 @@ at the top-level directory.
 
 /*-- Function prototypes --*/
 static void gather_1rhs_diag_to_all(int_t, float [], Glu_persist_t *,
-                                    LocalLU_t *, gridinfo_t *, int_t, int_t [],
+                                    sLocalLU_t *, gridinfo_t *, int_t, int_t [],
 				    int_t [], float [], float []);
 static void redist_all_to_diag(int_t, float [], Glu_persist_t *,
-                               LocalLU_t *, gridinfo_t *, int_t [], float []);
+                               sLocalLU_t *, gridinfo_t *, int_t [], float []);
 
 /*! \brief
  *
@@ -62,11 +62,11 @@ static void redist_all_to_diag(int_t, float [], Glu_persist_t *,
  *        The norm of the original matrix A, or the scaled A if
  *        equilibration was done.
  *
- * LUstruct (input) LUstruct_t*
+ * LUstruct (input) sLUstruct_t*
  *        The distributed data structures storing L and U factors.
  *        The L and U factors are obtained from psgstrf for
  *        the possibly scaled and permuted matrix A.
- *        See superlu_ddefs.h for the definition of 'LUstruct_t'.
+ *        See superlu_ddefs.h for the definition of 'sLUstruct_t'.
  *
  * grid   (input) gridinfo_t*
  *        The 2D process mesh. It contains the MPI communicator, the number
@@ -122,7 +122,7 @@ static void redist_all_to_diag(int_t, float [], Glu_persist_t *,
  */
 
 void
-psgsrfs_ABXglobal(int_t n, SuperMatrix *A, float anorm, LUstruct_t *LUstruct,
+psgsrfs_ABXglobal(int_t n, SuperMatrix *A, float anorm, sLUstruct_t *LUstruct,
 		  gridinfo_t *grid, float *B, int_t ldb, float *X, int_t ldx,
 		  int nrhs, float *berr, SuperLUStat_t *stat, int *info)
 {
@@ -131,7 +131,7 @@ psgsrfs_ABXglobal(int_t n, SuperMatrix *A, float anorm, LUstruct_t *LUstruct,
 #define ITMAX 20
 
     Glu_persist_t *Glu_persist = LUstruct->Glu_persist;
-    LocalLU_t *Llu = LUstruct->Llu;
+    sLocalLU_t *Llu = LUstruct->Llu;
     /*
      * Data structures used by matrix-vector multiply routine.
      */
@@ -157,7 +157,7 @@ psgsrfs_ABXglobal(int_t n, SuperMatrix *A, float anorm, LUstruct_t *LUstruct,
     int_t *diag_len; /* Length of the X vector on diagonal processes. */
 
     /*-- Function prototypes --*/
-    extern void psgstrs1(int_t, LUstruct_t *, gridinfo_t *,
+    extern void psgstrs1(int_t, sLUstruct_t *, gridinfo_t *,
 			 float *, int, SuperLUStat_t *, int *);
 
     /* Test the input parameters. */
@@ -374,7 +374,7 @@ psgsrfs_ABXglobal(int_t n, SuperMatrix *A, float anorm, LUstruct_t *LUstruct,
  */
 static void
 redist_all_to_diag(int_t n, float r[], Glu_persist_t *Glu_persist,
-		   LocalLU_t *Llu, gridinfo_t *grid, int_t mv_sup_to_proc[],
+		   sLocalLU_t *Llu, gridinfo_t *grid, int_t mv_sup_to_proc[],
 		   float work[])
 {
     int_t i, ii, k, lk, lr, nsupers;
@@ -422,7 +422,7 @@ redist_all_to_diag(int_t n, float r[], Glu_persist_t *Glu_persist,
  */
 static void
 gather_1rhs_diag_to_all(int_t n, float x[],
-			Glu_persist_t *Glu_persist, LocalLU_t *Llu,
+			Glu_persist_t *Glu_persist, sLocalLU_t *Llu,
 			gridinfo_t *grid, int_t num_diag_procs,
 			int_t diag_procs[], int_t diag_len[],
 			float y[], float work[])

@@ -51,13 +51,13 @@ at the top-level directory.
  *        The norm of the original matrix A, or the scaled A if
  *        equilibration was done.
  *
- * LUstruct (input) LUstruct_t*
+ * LUstruct (input) sLUstruct_t*
  *        The distributed data structures storing L and U factors.
  *        The L and U factors are obtained from pdgstrf for
  *        the possibly scaled and permuted matrix A.
- *        See superlu_sdefs.h for the definition of 'LUstruct_t'.
+ *        See superlu_sdefs.h for the definition of 'sLUstruct_t'.
  *
- * ScalePermstruct (input) ScalePermstruct_t* (global)
+ * ScalePermstruct (input) sScalePermstruct_t* (global)
  *         The data structure to store the scaling and permutation vectors
  *         describing the transformations performed to the matrix A.
  *
@@ -93,7 +93,7 @@ at the top-level directory.
  * nrhs   (input) int
  *        Number of right-hand sides.
  *
- * SOLVEstruct (output) SOLVEstruct_t* (global)
+ * SOLVEstruct (output) sSOLVEstruct_t* (global)
  *        Contains the information for the communication during the
  *        solution phase.
  *
@@ -117,10 +117,10 @@ at the top-level directory.
  * </pre>
  */
 void
-psgsrfs(int_t n, SuperMatrix *A, float anorm, LUstruct_t *LUstruct,
-	ScalePermstruct_t *ScalePermstruct, gridinfo_t *grid,
+psgsrfs(int_t n, SuperMatrix *A, float anorm, sLUstruct_t *LUstruct,
+	sScalePermstruct_t *ScalePermstruct, gridinfo_t *grid,
 	float *B, int_t ldb, float *X, int_t ldx, int nrhs,
-	SOLVEstruct_t *SOLVEstruct,
+	sSOLVEstruct_t *SOLVEstruct,
 	float *berr, SuperLUStat_t *stat, int *info)
 {
 #define ITMAX 20

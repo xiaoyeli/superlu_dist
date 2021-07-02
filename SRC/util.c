@@ -99,7 +99,7 @@ Destroy_Dense_Matrix_dist(SuperMatrix *A)
 }
 
 
-
+#if 0 // moved to precision-dependent routines
 /*! \brief Destroy distributed L & U matrices. */
 void
 Destroy_Tree(int_t n, gridinfo_t *grid, LUstruct_t *LUstruct)
@@ -145,8 +145,6 @@ Destroy_Tree(int_t n, gridinfo_t *grid, LUstruct_t *LUstruct)
     CHECK_MALLOC(iam, "Exit Destroy_Tree()");
 #endif
 }
-
-
 
 /*! \brief Destroy distributed L & U matrices. */
 void
@@ -304,6 +302,9 @@ void LUstructFree(LUstruct_t *LUstruct)
     CHECK_MALLOC(iam, "Exit LUstructFree()");
 #endif
 }
+
+#endif  // end: moved to precision-dependent files
+
 
 /*! \brief
  *
@@ -480,166 +481,6 @@ void print_sp_ienv_dist(superlu_dist_options_t *options)
     printf("**************************************************\n");
 }
 
-
-/*! \brief
- *
- * <pre>
- * Purpose
- * =======
- *   Set up the communication pattern for redistribution between B and X
- *   in the triangular solution.
- * 
- * Arguments
- * =========
- *
- * n      (input) int (global)
- *        The dimension of the linear system.
- *
- * m_loc  (input) int (local)
- *        The local row dimension of the distributed input matrix.
- *
- * nrhs   (input) int (global)
- *        Number of right-hand sides.
- *
- * fst_row (input) int (global)
- *        The row number of matrix B's first row in the global matrix.
- *
- * perm_r (input) int* (global)
- *        The row permutation vector.
- *
- * perm_c (input) int* (global)
- *        The column permutation vector.
- *
- * grid   (input) gridinfo_t*
- *        The 2D process mesh.
- * </pre>
- */
-int_t
-pxgstrs_init(int_t n, int_t m_loc, int_t nrhs, int_t fst_row,
-	     int_t perm_r[], int_t perm_c[], gridinfo_t *grid,
-	     Glu_persist_t *Glu_persist, SOLVEstruct_t *SOLVEstruct)
-{
-
-    int *SendCnt, *SendCnt_nrhs, *RecvCnt, *RecvCnt_nrhs;
-    int *sdispls, *sdispls_nrhs, *rdispls, *rdispls_nrhs;
-    int *itemp, *ptr_to_ibuf, *ptr_to_dbuf;
-    int_t *row_to_proc;
-    int_t i, gbi, k, l, num_diag_procs, *diag_procs;
-    int_t irow, q, knsupc, nsupers, *xsup, *supno;
-    int   iam, p, pkk, procs;
-    pxgstrs_comm_t *gstrs_comm;
-
-    procs = grid->nprow * grid->npcol;
-    iam = grid->iam;
-    gstrs_comm = SOLVEstruct->gstrs_comm;
-    xsup = Glu_persist->xsup;
-    supno = Glu_persist->supno;
-    nsupers = Glu_persist->supno[n-1] + 1;
-    row_to_proc = SOLVEstruct->row_to_proc;
-
-    /* ------------------------------------------------------------
-       SET UP COMMUNICATION PATTERN FOR ReDistribute_B_to_X.
-       ------------------------------------------------------------*/
-    if ( !(itemp = SUPERLU_MALLOC(8*procs * sizeof(int))) )
-        ABORT("Malloc fails for B_to_X_itemp[].");
-    SendCnt      = itemp;
-    SendCnt_nrhs = itemp +   procs;
-    RecvCnt      = itemp + 2*procs;
-    RecvCnt_nrhs = itemp + 3*procs;
-    sdispls      = itemp + 4*procs;
-    sdispls_nrhs = itemp + 5*procs;
-    rdispls      = itemp + 6*procs;
-    rdispls_nrhs = itemp + 7*procs;
-
-    /* Count the number of elements to be sent to each diagonal process.*/
-    for (p = 0; p < procs; ++p) SendCnt[p] = 0;
-    for (i = 0, l = fst_row; i < m_loc; ++i, ++l) {
-        irow = perm_c[perm_r[l]]; /* Row number in Pc*Pr*B */
-	gbi = BlockNum( irow );
-	p = PNUM( PROW(gbi,grid), PCOL(gbi,grid), grid ); /* Diagonal process */
-	++SendCnt[p];
-    }
-  
-    /* Set up the displacements for alltoall. */
-    MPI_Alltoall(SendCnt, 1, MPI_INT, RecvCnt, 1, MPI_INT, grid->comm);
-    sdispls[0] = rdispls[0] = 0;
-    for (p = 1; p < procs; ++p) {
-        sdispls[p] = sdispls[p-1] + SendCnt[p-1];
-        rdispls[p] = rdispls[p-1] + RecvCnt[p-1];
-    }
-    for (p = 0; p < procs; ++p) {
-        SendCnt_nrhs[p] = SendCnt[p] * nrhs;
-	sdispls_nrhs[p] = sdispls[p] * nrhs;
-        RecvCnt_nrhs[p] = RecvCnt[p] * nrhs;
-	rdispls_nrhs[p] = rdispls[p] * nrhs;
-    }
-
-    /* This is saved for repeated solves, and is freed in pxgstrs_finalize().*/
-    gstrs_comm->B_to_X_SendCnt = SendCnt;
-
-    /* ------------------------------------------------------------
-       SET UP COMMUNICATION PATTERN FOR ReDistribute_X_to_B.
-       ------------------------------------------------------------*/
-    /* This is freed in pxgstrs_finalize(). */
-    if ( !(itemp = SUPERLU_MALLOC(8*procs * sizeof(int))) )
-        ABORT("Malloc fails for X_to_B_itemp[].");
-    SendCnt      = itemp;
-    SendCnt_nrhs = itemp +   procs;
-    RecvCnt      = itemp + 2*procs;
-    RecvCnt_nrhs = itemp + 3*procs;
-    sdispls      = itemp + 4*procs;
-    sdispls_nrhs = itemp + 5*procs;
-    rdispls      = itemp + 6*procs;
-    rdispls_nrhs = itemp + 7*procs;
-
-    /* Count the number of X entries to be sent to each process.*/
-    for (p = 0; p < procs; ++p) SendCnt[p] = 0;
-    num_diag_procs = SOLVEstruct->num_diag_procs;
-    diag_procs = SOLVEstruct->diag_procs;
-
-    for (p = 0; p < num_diag_procs; ++p) { /* for all diagonal processes */
-	pkk = diag_procs[p];
-	if ( iam == pkk ) {
-	    for (k = p; k < nsupers; k += num_diag_procs) {
-		knsupc = SuperSize( k );
-		irow = FstBlockC( k );
-		for (i = 0; i < knsupc; ++i) {
-#if 0
-		    q = row_to_proc[inv_perm_c[irow]];
-#else
-		    q = row_to_proc[irow];
-#endif
-		    ++SendCnt[q];
-		    ++irow;
-		}
-	    }
-	}
-    }
-
-    MPI_Alltoall(SendCnt, 1, MPI_INT, RecvCnt, 1, MPI_INT, grid->comm);
-    sdispls[0] = rdispls[0] = 0;
-    sdispls_nrhs[0] = rdispls_nrhs[0] = 0;
-    SendCnt_nrhs[0] = SendCnt[0] * nrhs;
-    RecvCnt_nrhs[0] = RecvCnt[0] * nrhs;
-    for (p = 1; p < procs; ++p) {
-        sdispls[p] = sdispls[p-1] + SendCnt[p-1];
-        rdispls[p] = rdispls[p-1] + RecvCnt[p-1];
-        sdispls_nrhs[p] = sdispls[p] * nrhs;
-        rdispls_nrhs[p] = rdispls[p] * nrhs;
-	SendCnt_nrhs[p] = SendCnt[p] * nrhs;
-	RecvCnt_nrhs[p] = RecvCnt[p] * nrhs;
-    }
-
-    /* This is saved for repeated solves, and is freed in pxgstrs_finalize().*/
-    gstrs_comm->X_to_B_SendCnt = SendCnt;
-
-    if ( !(ptr_to_ibuf = SUPERLU_MALLOC(2*procs * sizeof(int))) )
-        ABORT("Malloc fails for ptr_to_ibuf[].");
-    gstrs_comm->ptr_to_ibuf = ptr_to_ibuf;
-    gstrs_comm->ptr_to_dbuf = ptr_to_ibuf + procs;
-
-    return 0;
-} /* PXGSTRS_INIT */
 
 
 void pxgstrs_finalize(pxgstrs_comm_t *gstrs_comm)

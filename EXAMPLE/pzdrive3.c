@@ -56,9 +56,9 @@ int main(int argc, char *argv[])
     SuperLUStat_t stat;
     SuperMatrix A;
     NRformat_loc *Astore;
-    ScalePermstruct_t ScalePermstruct;
-    LUstruct_t LUstruct;
-    SOLVEstruct_t SOLVEstruct;
+    zScalePermstruct_t ScalePermstruct;
+    zLUstruct_t LUstruct;
+    zSOLVEstruct_t SOLVEstruct;
     gridinfo_t grid;
     double   *berr;
     doublecomplex   *b, *b1, *xtrue, *nzval, *nzval1;
@@ -195,8 +195,8 @@ int main(int argc, char *argv[])
     }
 
     /* Initialize ScalePermstruct and LUstruct. */
-    ScalePermstructInit(m, n, &ScalePermstruct);
-    LUstructInit(n, &LUstruct);
+    zScalePermstructInit(m, n, &ScalePermstruct);
+    zLUstructInit(n, &LUstruct);
 
     /* Initialize the statistics variables. */
     PStatInit(&stat);
@@ -254,17 +254,17 @@ int main(int argc, char *argv[])
        ------------------------------------------------------------*/
     PStatFree(&stat);
     Destroy_CompRowLoc_Matrix_dist(&A); /* Deallocate storage of matrix A.  */
-    Destroy_LU(n, &grid, &LUstruct); /* Deallocate storage associated with    
+    zDestroy_LU(n, &grid, &LUstruct); /* Deallocate storage associated with    
 					the L and U matrices.               */
-    ScalePermstructFree(&ScalePermstruct);
-    LUstructFree(&LUstruct);         /* Deallocate the structure of L and U.*/
+    zScalePermstructFree(&ScalePermstruct);
+    zLUstructFree(&LUstruct);         /* Deallocate the structure of L and U.*/
     if ( options.SolveInitialized ) {
         zSolveFinalize(&options, &SOLVEstruct);
     }
     SUPERLU_FREE(b1);	             /* Free storage of right-hand side.    */
     SUPERLU_FREE(xtrue);             /* Free storage of the exact solution. */
     SUPERLU_FREE(berr);
-
+    fclose(fp);
 
     /* ------------------------------------------------------------
        RELEASE THE SUPERLU PROCESS GRID.
@@ -302,5 +302,3 @@ int cpp_defs()
     printf("....\n");
     return 0;
 }
-
-

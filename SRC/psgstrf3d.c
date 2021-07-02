@@ -80,7 +80,7 @@ at the top-level directory.
  * SCT    (input/output) SCT_t*
  *        Various statistics of 3D factorization.
  *
- * LUstruct (input/output) LUstruct_t*
+ * LUstruct (input/output) sLUstruct_t*
  *         The data structures to store the distributed L and U factors.
  *         The following fields should be defined:
  *
@@ -91,9 +91,9 @@ at the top-level directory.
  *         xsup[s] is the leading column of the s-th supernode,
  *             supno[i] is the supernode number to which column i belongs.
  *
- *         o Llu (input/output) LocalLU_t*
+ *         o Llu (input/output) sLocalLU_t*
  *           The distributed data structures to store L and U factors.
- *           See superlu_ddefs.h for the definition of 'LocalLU_t'.
+ *           See superlu_sdefs.h for the definition of 'sLocalLU_t'.
  *
  * grid3d (input) gridinfo3d_t*
  *        The 3D process mesh. It contains the MPI communicator, the number
@@ -118,11 +118,11 @@ at the top-level directory.
  */
 int_t psgstrf3d(superlu_dist_options_t *options, int m, int n, double anorm,
 		trf3Dpartition_t*  trf3Dpartition, SCT_t *SCT,
-		LUstruct_t *LUstruct, gridinfo3d_t * grid3d,
+		sLUstruct_t *LUstruct, gridinfo3d_t * grid3d,
 		SuperLUStat_t *stat, int *info)
 {
     gridinfo_t* grid = &(grid3d->grid2d);
-    LocalLU_t *Llu = LUstruct->Llu;
+    sLocalLU_t *Llu = LUstruct->Llu;
 
     // problem specific contants
     int_t ldt = sp_ienv_dist (3);     /* Size of maximum supernode */

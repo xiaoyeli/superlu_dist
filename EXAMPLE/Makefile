@@ -39,8 +39,17 @@ DEXM	= pddrive.o dcreate_matrix.o sp_ienv.o
 	# pdgstrs.o pdgsrfs.o pdgstrs_lsum.o
 DEXMRHS	= pddrive_rhs.o dcreate_matrix_rhs.o sp_ienv.o 
        # pdgstrs.o pdgsrfs.o pdgstrs_lsum.o
-#pdgssvx.o
-# pdgstrs_lsum_X1.o pdgstrf_X1.o
+
+SEXM1	= psdrive1.o screate_matrix.o
+SEXM2	= psdrive2.o screate_matrix.o screate_matrix_perturbed.o
+SEXM3	= psdrive3.o screate_matrix.o
+SEXM4	= psdrive4.o screate_matrix.o
+SEXMG	= psdrive_ABglobal.o
+SEXMG1	= psdrive1_ABglobal.o
+SEXMG2	= psdrive2_ABglobal.o
+SEXMG3	= psdrive3_ABglobal.o
+SEXMG4	= psdrive4_ABglobal.o
+
 DEXM1	= pddrive1.o dcreate_matrix.o
 DEXM2	= pddrive2.o dcreate_matrix.o dcreate_matrix_perturbed.o
 DEXM3	= pddrive3.o dcreate_matrix.o
@@ -66,7 +75,9 @@ ZEXMG4	= pzdrive4_ABglobal.o
 
 all: psdrive #pddrive pddrive_rhs #single double complex16
 
-single:    psdrive
+single:    psdrive psdrive1 psdrive2 psdrive3 psdrive4 \
+	   psdrive_ABglobal psdrive1_ABglobal psdrive2_ABglobal \
+	   psdrive3_ABglobal psdrive4_ABglobal
 
 double:    pddrive pddrive1 pddrive2 pddrive3 pddrive4 \
 	   pddrive_ABglobal pddrive1_ABglobal pddrive2_ABglobal \
@@ -78,6 +89,33 @@ complex16: pzdrive pzdrive1 pzdrive2 pzdrive3 pzdrive4 \
 
 psdrive: $(SEXM) $(DSUPERLULIB)
 	$(LOADER) $(LOADOPTS) $(SEXM) $(LIBS) -lm -o $@
+
+psdrive1: $(SEXM1) $(DSUPERLULIB)
+	$(LOADER) $(LOADOPTS) $(SEXM1) $(LIBS) -lm -o $@
+
+psdrive2: $(SEXM2) $(DSUPERLULIB)
+	$(LOADER) $(LOADOPTS) $(SEXM2) $(LIBS) -lm -o $@
+
+psdrive3: $(SEXM3) $(DSUPERLULIB)
+	$(LOADER) $(LOADOPTS) $(SEXM3) $(LIBS) -lm -o $@
+
+psdrive4: $(SEXM4) $(DSUPERLULIB)
+	$(LOADER) $(LOADOPTS) $(SEXM4) $(LIBS) -lm -o $@
+
+psdrive_ABglobal: $(SEXMG) $(DSUPERLULIB)
+	$(LOADER) $(LOADOPTS) $(SEXMG) $(LIBS) -lm -o $@
+
+psdrive1_ABglobal: $(SEXMG1) $(DSUPERLULIB)
+	$(LOADER) $(LOADOPTS) $(SEXMG1) $(LIBS) -lm -o $@
+
+psdrive2_ABglobal: $(SEXMG2) $(DSUPERLULIB)
+	$(LOADER) $(LOADOPTS) $(SEXMG2) $(LIBS) -lm -o $@
+
+psdrive3_ABglobal: $(SEXMG3) $(DSUPERLULIB)
+	$(LOADER) $(LOADOPTS) $(SEXMG3) $(LIBS) -lm -o $@
+
+psdrive4_ABglobal: $(SEXMG4) $(DSUPERLULIB)
+	$(LOADER) $(LOADOPTS) $(SEXMG4) $(LIBS) -lm -o $@
 
 pddrive: $(DEXM) $(DSUPERLULIB)
 	$(LOADER) $(LOADOPTS) $(DEXM) $(LIBS) -lm -o $@

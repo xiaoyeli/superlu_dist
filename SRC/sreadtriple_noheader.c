@@ -49,8 +49,8 @@ sreadtriple_noheader(FILE *fp, int_t *m, int_t *n, int_t *nonz,
     nz = *n = 0;
 
 #ifdef _LONGINT
-    ret_val = fscanf(fp, "%ld%ld%f%\n", &i, &j, &vali);
-#else
+    ret_val = fscanf(fp, "%ld%ld%f\n", &i, &j, &vali);
+#else  // int
     ret_val = fscanf(fp, "%d%d%f\n", &i, &j, &vali);
 #endif
 
@@ -62,12 +62,12 @@ sreadtriple_noheader(FILE *fp, int_t *m, int_t *n, int_t *nonz,
 	++nz;
 
 #ifdef _LONGINT
-        ret_val = fscanf(fp, "%ld%ld%f%\n", &i, &j, &vali);
-#else
+    	ret_val = fscanf(fp, "%ld%ld%f\n", &i, &j, &vali);
+#else  // int
         ret_val = fscanf(fp, "%d%d%f\n", &i, &j, &vali);
 #endif
     }
-
+    
     if ( minn == 0 ) { /* zero-based indexing */
 	zero_base = 1;
 	++(*n);
@@ -106,7 +106,7 @@ sreadtriple_noheader(FILE *fp, int_t *m, int_t *n, int_t *nonz,
     for (nnz = 0, nz = 0; nnz < *nonz; ++nnz) {
 #ifdef _LONGINT
 	fscanf(fp, "%ld%ld%f\n", &row[nz], &col[nz], &val[nz]);
-#else
+#else // int32
 	fscanf(fp, "%d%d%f\n", &row[nz], &col[nz], &val[nz]);
 #endif
 

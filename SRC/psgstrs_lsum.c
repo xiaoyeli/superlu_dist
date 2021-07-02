@@ -72,7 +72,7 @@ void slsum_fmod
  int_t luptr,     /* Starting position in lusup[*].                     */
  int_t *xsup,
  gridinfo_t *grid,
- LocalLU_t *Llu,
+ sLocalLU_t *Llu,
  MPI_Request send_req[], /* input/output */
  SuperLUStat_t *stat
 )
@@ -254,7 +254,7 @@ void slsum_bmod
  int_t  **Ucb_valptr, /* Vertical linked list pointing to Unzval[].     */
  int_t  *xsup,
  gridinfo_t *grid,
- LocalLU_t *Llu,
+ sLocalLU_t *Llu,
  MPI_Request send_req[], /* input/output */
  SuperLUStat_t *stat
  )
@@ -422,7 +422,7 @@ void slsum_fmod_inv
  int_t *fmod,     /* Modification count for L-solve.                    */
  int_t *xsup,
  gridinfo_t *grid,
- LocalLU_t *Llu,
+ sLocalLU_t *Llu,
  SuperLUStat_t **stat,
  int_t *leaf_send,
  int_t *nleaf_send,
@@ -971,7 +971,7 @@ void slsum_fmod_inv_master
  int_t nlb,       /* Number of L blocks.                                */
  int_t *xsup,
  gridinfo_t *grid,
- LocalLU_t *Llu,
+ sLocalLU_t *Llu,
  SuperLUStat_t **stat,
  int_t sizelsum,
  int_t sizertemp,
@@ -1372,7 +1372,7 @@ void slsum_bmod_inv
  int_t  **Ucb_valptr, /* Vertical linked list pointing to Unzval[].     */
  int_t  *xsup,
  gridinfo_t *grid,
- LocalLU_t *Llu,
+ sLocalLU_t *Llu,
  SuperLUStat_t **stat,
  int_t* root_send,
  int_t* nroot_send,
@@ -1412,11 +1412,10 @@ void slsum_bmod_inv
 	float msg_vol = 0, msg_cnt = 0;
 	int_t Nchunk, nub_loc,remainder,nn,lbstart,lbend;
 	int_t iword = sizeof(int_t);
-	int_t dword = sizeof (float);
+	int_t dword = sizeof(float);
 	int_t aln_d,aln_i;
 	aln_d = ceil(CACHELINE/(double)dword);
 	aln_i = ceil(CACHELINE/(double)iword);
-
 
 	iam = grid->iam;
 	myrow = MYROW( iam, grid );
@@ -1837,7 +1836,7 @@ void slsum_bmod_inv_master
  int_t  **Ucb_valptr, /* Vertical linked list pointing to Unzval[].     */
  int_t  *xsup,
  gridinfo_t *grid,
- LocalLU_t *Llu,
+ sLocalLU_t *Llu,
  SuperLUStat_t **stat,
  int_t sizelsum,
  int_t sizertemp,

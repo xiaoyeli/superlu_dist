@@ -258,6 +258,7 @@ sp_strsv_dist(char *uplo, char *trans, char *diag, SuperMatrix *L,
 		
 		if ( nsupc > 1 ) {
 		    solve_ops += nsupc * (nsupc - 1);
+#ifdef USE_VENDOR_BLAS
 #ifdef _CRAY
                     ftcs1 = _cptofcd("L", strlen("L"));
                     ftcs2 = _cptofcd("T", strlen("T"));
@@ -268,6 +269,11 @@ sp_strsv_dist(char *uplo, char *trans, char *diag, SuperMatrix *L,
 		    strsv_("L", "T", "U", &nsupc, &Lval[luptr], &nsupr,
 			   &x[fsupc], &incx, 1, 1, 1);
 #endif
+#else
+		    strsv_("L", "T", "U", &nsupc, &Lval[luptr], &nsupr,
+			   &x[fsupc], &incx);
+#endif
+		    
 		}
 	    }
 	} else {
@@ -293,6 +299,7 @@ sp_strsv_dist(char *uplo, char *trans, char *diag, SuperMatrix *L,
 		if ( nsupc == 1 ) {
 		    x[fsupc] /= Lval[luptr];
 		} else {
+
 #ifdef USE_VENDOR_BLAS
 #ifdef _CRAY
                     ftcs1 = _cptofcd("U", strlen("U"));
@@ -307,7 +314,8 @@ sp_strsv_dist(char *uplo, char *trans, char *diag, SuperMatrix *L,
 #else
 		    strsv_("U", "T", "N", &nsupc, &Lval[luptr], &nsupr,
 			   &x[fsupc], &incx);
-#endif
+
+#endif		    
 		}
 	    } /* for k ... */
 	}

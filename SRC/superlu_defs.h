@@ -35,9 +35,9 @@ at the top-level directory.
     #include <fortran.h>
 #endif
 
-//#ifdef _OPENMP
+#ifdef _OPENMP
    #include <omp.h>
-//#endif
+#endif
 
 #include <mpi.h>
 #include <stdlib.h>
@@ -72,9 +72,14 @@ at the top-level directory.
  * Versions 4.x and earlier do not include a #define'd version numbers.
  */
 #define SUPERLU_DIST_MAJOR_VERSION     6
-#define SUPERLU_DIST_MINOR_VERSION     1
-#define SUPERLU_DIST_PATCH_VERSION     1
-#define SUPERLU_DIST_RELEASE_DATE      "February 8, 2019"
+#define SUPERLU_DIST_MINOR_VERSION     3
+#define SUPERLU_DIST_PATCH_VERSION     0
+#define SUPERLU_DIST_RELEASE_DATE      "February 23, 2020"
+
+/* Following was v6.1.1
+ * #define SUPERLU_DIST_RELEASE_DATE      "February 8, 2019"
+ */
+
 
 #include "superlu_dist_config.h"
 /* Define my integer size int_t */
@@ -641,6 +646,12 @@ typedef struct {
     int_t expansions;
     int64_t nnzL, nnzU;
 } superlu_dist_mem_usage_t;
+
+/*-- Auxiliary data type used in PxGSTRS/PxGSTRS1. */
+typedef struct {
+    int_t lbnum;  /* Row block number (local).      */
+    int_t indpos; /* Starting position in Uindex[]. */
+} Ucb_indptr_t;
 
 /* 
  *-- The new structures added in the hybrid CUDA + OpenMP + MPI code.

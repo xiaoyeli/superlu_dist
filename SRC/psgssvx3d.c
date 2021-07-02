@@ -361,7 +361,7 @@ at the top-level directory.
  *           If all the above condition are true, the LU decomposition is
  *           performed on the matrix Pc*Pr*diag(R)*A*diag(C)*Pc^T.
  *
- * ScalePermstruct (input/output) ScalePermstruct_t* (global)
+ * ScalePermstruct (input/output) sScalePermstruct_t* (global)
  *         The data structure to store the scaling and permutation vectors
  *         describing the transformations performed to the matrix A.
  *         It contains the following fields:
@@ -436,7 +436,7 @@ at the top-level directory.
  *         Grid can be initialized by subroutine SUPERLU_GRIDINIT.
  *         See superlu_ddefs.h for the definition of 'gridinfo_t'.
  *
- * LUstruct (input/output) LUstruct_t*
+ * LUstruct (input/output) sLUstruct_t*
  *         The data structures to store the distributed L and U factors.
  *         It contains the following fields:
  *
@@ -459,17 +459,17 @@ at the top-level directory.
  *	       xsup[s] is the leading column of the s-th supernode,
  *             supno[i] is the supernode number to which column i belongs.
  *
- *         o Llu (LocalLU_t*) (local)
+ *         o Llu (sLocalLU_t*) (local)
  *           The distributed data structures to store L and U factors.
- *           See superlu_ddefs.h for the definition of 'LocalLU_t'.
+ *           See superlu_ddefs.h for the definition of 'sLocalLU_t'.
  *
- * SOLVEstruct (input/output) SOLVEstruct_t*
+ * SOLVEstruct (input/output) sSOLVEstruct_t*
  *         The data structure to hold the communication pattern used
  *         in the phases of triangular solution and iterative refinement.
  *         This pattern should be intialized only once for repeated solutions.
  *         If options->SolveInitialized = YES, it is an input argument.
  *         If options->SolveInitialized = NO and nrhs != 0, it is an output
- *         argument. See superlu_ddefs.h for the definition of 'SOLVEstruct_t'.
+ *         argument. See superlu_ddefs.h for the definition of 'sSOLVEstruct_t'.
  *
  * berr    (output) double*, dimension (nrhs) (global)
  *         The componentwise relative backward error of each solution
@@ -495,9 +495,9 @@ at the top-level directory.
 
 void
 psgssvx3d (superlu_dist_options_t * options, SuperMatrix * A,
-           ScalePermstruct_t * ScalePermstruct,
+           sScalePermstruct_t * ScalePermstruct,
            float B[], int ldb, int nrhs, gridinfo3d_t * grid3d,
-           LUstruct_t * LUstruct, SOLVEstruct_t * SOLVEstruct,
+           sLUstruct_t * LUstruct, sSOLVEstruct_t * SOLVEstruct,
            double *berr, SuperLUStat_t * stat, int *info)
 {
     NRformat_loc *Astore;
@@ -1371,7 +1371,7 @@ psgssvx3d (superlu_dist_options_t * options, SuperMatrix * A,
 		    {
 			/* Improve the solution by iterative refinement. */
 			int_t *it, *colind_gsmv = SOLVEstruct->A_colind_gsmv;
-			SOLVEstruct_t *SOLVEstruct1;    /* Used by refinement. */
+			sSOLVEstruct_t *SOLVEstruct1;    /* Used by refinement. */
 
 			t = SuperLU_timer_ ();
 			if (options->RefineInitialized == NO || Fact == DOFACT) {
@@ -1427,8 +1427,8 @@ psgssvx3d (superlu_dist_options_t * options, SuperMatrix * A,
 		is different than the solve with nrhs RHS.
 		So we use SOLVEstruct1 for the refinement step.
 	      */
-				if (!(SOLVEstruct1 = (SOLVEstruct_t *)
-				      SUPERLU_MALLOC (sizeof (SOLVEstruct_t))))
+				if (!(SOLVEstruct1 = (sSOLVEstruct_t *)
+				      SUPERLU_MALLOC (sizeof (sSOLVEstruct_t))))
 				    ABORT ("Malloc fails for SOLVEstruct1");
 				/* Copy the same stuff */
 				SOLVEstruct1->row_to_proc = SOLVEstruct->row_to_proc;

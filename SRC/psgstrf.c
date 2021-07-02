@@ -204,7 +204,7 @@ superlu_sort_perm (const void *arg1, const void *arg2)
  *        The norm of the original matrix A, or the scaled A if
  *        equilibration was done.
  *
- * LUstruct (input/output) LUstruct_t*
+ * LUstruct (input/output) sLUstruct_t*
  *         The data structures to store the distributed L and U factors.
  *         The following fields should be defined:
  *
@@ -215,9 +215,9 @@ superlu_sort_perm (const void *arg1, const void *arg2)
  *         xsup[s] is the leading column of the s-th supernode,
  *             supno[i] is the supernode number to which column i belongs.
  *
- *         o Llu (input/output) LocalLU_t*
+ *         o Llu (input/output) sLocalLU_t*
  *           The distributed data structures to store L and U factors.
- *           See superlu_ddefs.h for the definition of 'LocalLU_t'.
+ *           See superlu_sdefs.h for the definition of 'sLocalLU_t'.
  *
  * grid   (input) gridinfo_t*
  *        The 2D process mesh. It contains the MPI communicator, the number
@@ -242,7 +242,7 @@ superlu_sort_perm (const void *arg1, const void *arg2)
  */
 int_t
 psgstrf(superlu_dist_options_t * options, int m, int n, float anorm,
-       LUstruct_t * LUstruct, gridinfo_t * grid, SuperLUStat_t * stat, int *info)
+       sLUstruct_t * LUstruct, gridinfo_t * grid, SuperLUStat_t * stat, int *info)
 {
 #ifdef _CRAY
     _fcd ftcs = _cptofcd ("N", strlen ("N"));
@@ -279,7 +279,7 @@ psgstrf(superlu_dist_options_t * options, int m, int n, float anorm,
     int iinfo;
     int *ToRecv, *ToSendD, **ToSendR;
     Glu_persist_t *Glu_persist = LUstruct->Glu_persist;
-    LocalLU_t *Llu = LUstruct->Llu;
+    sLocalLU_t *Llu = LUstruct->Llu;
     superlu_scope_t *scp;
     float s_eps;
     double thresh;
@@ -563,7 +563,6 @@ psgstrf(superlu_dist_options_t * options, int m, int n, float anorm,
 #pragma omp parallel default(shared)
     #pragma omp master
     {
-         //if (omp_get_thread_num () == 0)
         num_threads = omp_get_num_threads ();
     }
 #endif
@@ -571,7 +570,7 @@ psgstrf(superlu_dist_options_t * options, int m, int n, float anorm,
 #if 0
     omp_loop_time = (double *) _mm_malloc (sizeof (double) * num_threads,64);
 #else
-    omp_loop_time = (double *) SUPERLU_MALLOC(num_threads*sizeof(double));
+    omp_loop_time = (double *) SUPERLU_MALLOC(num_threads * sizeof(double));
 #endif
 
 #if ( PRNTlevel>=1 )
@@ -614,7 +613,7 @@ psgstrf(superlu_dist_options_t * options, int m, int n, float anorm,
     perm_c_supno = SUPERLU_MALLOC (2 * nsupers * sizeof (int_t));
     iperm_c_supno = perm_c_supno + nsupers;
 
-    static_schedule(options, m, n, LUstruct, grid, stat,
+    sstatic_schedule(options, m, n, LUstruct, grid, stat,
 		    perm_c_supno, iperm_c_supno, info);
 
 #if ( DEBUGlevel >= 2 )
@@ -711,7 +710,7 @@ psgstrf(superlu_dist_options_t * options, int m, int n, float anorm,
 
     k = sp_ienv_dist (3);       /* max supernode size */
 #if 0
-    if ( !(Llu->ujrow = doubleMalloc_dist(k*(k+1)/2)) )
+    if ( !(Llu->ujrow = floatMalloc_dist(k*(k+1)/2)) )
          ABORT("Malloc fails for ujrow[].");
 #else
     /* Instead of half storage, we'll do full storage */
@@ -776,10 +775,10 @@ psgstrf(superlu_dist_options_t * options, int m, int n, float anorm,
     int cublas_nb = get_cublas_nb(); // default 64
     int nstreams = get_num_cuda_streams (); // default 8
 
-    int_t buffer_size  = SUPERLU_MAX( max_row_size * nstreams * cublas_nb,
-				      get_max_buffer_size() );
+    int_t buffer_size  = SUPERLU_MAX(max_row_size * nstreams * cublas_nb,
+                                     get_max_buffer_size());
     /* array holding last column blk for each partition,
-       used in SchCompUdt--cuda.c         */
+       used in SchCompUdt-cuda.c         */
   #if 0
     int *stream_end_col = (int_t *) _mm_malloc (sizeof (int_t) * nstreams,64);
   #else
@@ -789,11 +788,10 @@ psgstrf(superlu_dist_options_t * options, int m, int n, float anorm,
 #else /* not to use GPU */
 
     int Threads_per_process = get_thread_per_process();
-    int buffer_size  = SUPERLU_MAX(max_row_size*Threads_per_process*ldt,
-				   get_max_buffer_size());
 
+    int_t buffer_size  = SUPERLU_MAX(max_row_size * Threads_per_process * ldt,
+                                     get_max_buffer_size());
 #endif /* end ifdef GPU_ACC -----------*/
-
 
     int_t max_ncols = 0;
 #if 0
@@ -855,12 +853,13 @@ psgstrf(superlu_dist_options_t * options, int m, int n, float anorm,
     if ( checkCuda(cudaHostAlloc((void**)&bigV, bigv_size * sizeof(float) ,cudaHostAllocDefault)) )
         ABORT("Malloc fails for sgemm buffer V");
 
+#if ( PRNTlevel>=1 )
     if ( iam==0 ) {
-      //DisplayHeader();
+        DisplayHeader();
 	printf(" Starting with %d Cuda Streams \n",nstreams );
-	fflush(stdout);
+        fflush(stdout);
     }
-
+#endif
 
     cublasHandle_t *handle;
     handle = (cublasHandle_t *) SUPERLU_MALLOC(sizeof(cublasHandle_t)*nstreams);
@@ -900,8 +899,8 @@ psgstrf(superlu_dist_options_t * options, int m, int n, float anorm,
     }
 
     stat->gpu_buffer += dword * ( max_row_size * sp_ienv_dist(3) // dA
-				  + bigu_size                    // dB
-				  + buffer_size );               // dC
+                                 + bigu_size                    // dB
+                                 + buffer_size );               // dC
 
 #else  /*-------- not to use GPU --------*/
 
@@ -927,7 +926,8 @@ psgstrf(superlu_dist_options_t * options, int m, int n, float anorm,
         ABORT ("Malloc failed for sgemm V buffer");
 //#endif
 
-#endif
+#endif 
+
 /*************** end ifdef GPU_ACC ****************/
 
     log_memory((bigv_size + bigu_size) * dword, stat);

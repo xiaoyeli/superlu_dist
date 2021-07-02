@@ -55,7 +55,7 @@ at the top-level directory.
  * k      (input) int (global)
  *        The column number of the block column to be factorized.
  *
- * thresh (input) double (global)
+ * thresh (input) float (global)
  *        The threshold value = s_eps * anorm.
  *
  * Glu_persist (input) Glu_persist_t*
@@ -64,7 +64,7 @@ at the top-level directory.
  * grid   (input) gridinfo_t*
  *        The 2D process mesh.
  *
- * Llu    (input/output) LocalLU_t*
+ * Llu    (input/output) sLocalLU_t*
  *        Local data structures to store distributed L and U matrices.
  *
  * U_diag_blk_send_req (input/output) MPI_Request*
@@ -89,8 +89,8 @@ at the top-level directory.
 /* This pdgstrf2 is based on TRSM function */
 void
 psgstrf2_trsm
-    (superlu_dist_options_t * options, int_t k0, int_t k, double thresh,
-     Glu_persist_t * Glu_persist, gridinfo_t * grid, LocalLU_t * Llu,
+    (superlu_dist_options_t * options, int_t k0, int_t k, float thresh,
+     Glu_persist_t * Glu_persist, gridinfo_t * grid, sLocalLU_t * Llu,
      MPI_Request * U_diag_blk_send_req, int tag_ub,
      SuperLUStat_t * stat, int *info)
 {
@@ -323,11 +323,7 @@ int_t LpanelUpdate(int_t off0,  int_t nsupc, float* ublk_ptr, int_t ld_ujrow,
 {
     int_t l = nsupr - off0;
     float alpha = 1.0;
-#if 0
-    unsigned long long t1 = _rdtsc(); // doesn't work on Summit
-#else
-    double t1 = SuperLU_timer_();
-#endif
+    unsigned long long t1 = _rdtsc();
 
 #define GT  32
 #pragma omp parallel for
@@ -351,8 +347,7 @@ int_t LpanelUpdate(int_t off0,  int_t nsupc, float* ublk_ptr, int_t ld_ujrow,
 
     } /* for i = ... */
 
-    //t1 = _rdtsc() - t1;
-    t1 = SuperLU_timer_() - t1
+    t1 = _rdtsc() - t1;
 
     SCT->trf2_flops += (double) l * (double)nsupc * (double)nsupc;
     SCT->trf2_time += t1;
@@ -363,9 +358,9 @@ int_t LpanelUpdate(int_t off0,  int_t nsupc, float* ublk_ptr, int_t ld_ujrow,
 #pragma GCC push_options
 #pragma GCC optimize ("O0")
 /*factorizes the diagonal block; called from process that owns the (k,k) block*/
-void Local_Sgstrf2(superlu_dist_options_t *options, int_t k, double thresh,
+void Local_Sgstrf2(superlu_dist_options_t *options, int_t k, float thresh,
                    float *BlockUFactor, /*factored U is overwritten here*/
-                   Glu_persist_t *Glu_persist, gridinfo_t *grid, LocalLU_t *Llu,
+                   Glu_persist_t *Glu_persist, gridinfo_t *grid, sLocalLU_t *Llu,
                    SuperLUStat_t *stat, int *info, SCT_t* SCT)
 {
     //unsigned long long t1 = _rdtsc();
@@ -491,7 +486,7 @@ void Local_Sgstrf2(superlu_dist_options_t *options, int_t k, double thresh,
  * k      (input) int (global)
  *        The column number of the block column to be factorized.
  *
- * thresh (input) double (global)
+ * thresh (input) float (global)
  *        The threshold value = s_eps * anorm.
  *
  * Glu_persist (input) Glu_persist_t*
@@ -500,7 +495,7 @@ void Local_Sgstrf2(superlu_dist_options_t *options, int_t k, double thresh,
  * grid   (input) gridinfo_t*
  *        The 2D process mesh.
  *
- * Llu    (input/output) LocalLU_t*
+ * Llu    (input/output) sLocalLU_t*
  *        Local data structures to store distributed L and U matrices.
  *
  * U_diag_blk_send_req (input/output) MPI_Request*
@@ -528,8 +523,8 @@ void Local_Sgstrf2(superlu_dist_options_t *options, int_t k, double thresh,
  */
 void psgstrf2_xtrsm
 (superlu_dist_options_t *options, int_t nsupers,
- int_t k0, int_t k, double thresh, Glu_persist_t *Glu_persist,
- gridinfo_t *grid, LocalLU_t *Llu, MPI_Request *U_diag_blk_send_req,
+ int_t k0, int_t k, float thresh, Glu_persist_t *Glu_persist,
+ gridinfo_t *grid, sLocalLU_t *Llu, MPI_Request *U_diag_blk_send_req,
  int tag_ub, SuperLUStat_t *stat, int *info, SCT_t *SCT)
 {
     int cols_left, iam, pkk;
@@ -724,7 +719,7 @@ int_t sTrs2_GatherTrsmScatter(int_t klst, int_t iukp, int_t rukp,
  *****************************************************************************/
 void psgstrs2_omp
 (int_t k0, int_t k, Glu_persist_t * Glu_persist, gridinfo_t * grid,
- LocalLU_t * Llu, Ublock_info_t *Ublock_info, SuperLUStat_t * stat)
+ sLocalLU_t * Llu, Ublock_info_t *Ublock_info, SuperLUStat_t * stat)
 {
 #ifdef PI_DEBUG
     printf("====Entering psgstrs2==== \n");
@@ -822,7 +817,9 @@ void psgstrs2_omp
 #endif
             segsize = klst - usub[iukp++];
 	    if (segsize) {
+#ifdef _OPENMP
 #pragma omp task default(shared) firstprivate(segsize,rukp) if (segsize > 30)
+#endif
 		{ /* Nonzero segment. */
 		    int_t luptr = (knsupc - segsize) * (nsupr + 1);
 		    //printf("[2] segsize %d, nsupr %d\n", segsize, nsupr);
@@ -861,14 +858,10 @@ void psgstrs2_omp
 
 void psgstrs2_omp(int_t k0, int_t k, int_t* Lsub_buf, 
 		  float *Lval_buf, Glu_persist_t *Glu_persist,
-		  gridinfo_t *grid, LocalLU_t *Llu, SuperLUStat_t *stat,
+		  gridinfo_t *grid, sLocalLU_t *Llu, SuperLUStat_t *stat,
 		  Ublock_info_t *Ublock_info, float *bigV, int_t ldt, SCT_t *SCT)
 {
-#if 0
     unsigned long long t1 = _rdtsc();
-#else
-    double t1 = SuperLU_timer_();
-#endif
     int_t *xsup = Glu_persist->xsup;
     /* Quick return. */
     int_t lk = LBi (k, grid);         /* Local block number */
@@ -892,13 +885,17 @@ void psgstrs2_omp(int_t k0, int_t k, int_t* Lsub_buf,
 #pragma omp parallel for schedule(dynamic,2)
     for (int_t b = 0; b < nb; ++b)
     {
+#ifdef _OPENMP    
         int_t thread_id = omp_get_thread_num();
+#else	
+        int_t thread_id = 0;
+#endif	
         float *tempv = bigV +  thread_id * ldt * ldt;
         sTrs2_GatherTrsmScatter(klst, Ublock_info[b].iukp, Ublock_info[b].rukp,
 				usub, uval, tempv, knsupc, nsupr, lusup, Glu_persist);
     } /* for b ... */
 
-    SCT->PDGSTRS2_tl += (double) SuperLU_timer_() - t1;   // ( _rdtsc() - t1);
+    SCT->PDGSTRS2_tl += (double) ( _rdtsc() - t1);
 } /* pdgstrs2_omp new version from Piyush */
 
 #endif

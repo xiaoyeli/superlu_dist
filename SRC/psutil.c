@@ -398,12 +398,299 @@ int psPermute_Dense_Matrix
 } /* psPermute_Dense_Matrix */
 
 
+/*! \brief Allocate storage in LUstruct */
+void sLUstructInit(const int_t n, sLUstruct_t *LUstruct)
+{
+    if ( !(LUstruct->etree = intMalloc_dist(n)) )
+	ABORT("Malloc fails for etree[].");
+    if ( !(LUstruct->Glu_persist = (Glu_persist_t *)
+	   SUPERLU_MALLOC(sizeof(Glu_persist_t))) )
+	ABORT("Malloc fails for Glu_persist_t.");
+    if ( !(LUstruct->Llu = (sLocalLU_t *)
+	   SUPERLU_MALLOC(sizeof(sLocalLU_t))) )
+	ABORT("Malloc fails for LocalLU_t.");
+	LUstruct->Llu->inv = 0;
+}
+
+/*! \brief Deallocate LUstruct */
+void sLUstructFree(sLUstruct_t *LUstruct)
+{
+#if ( DEBUGlevel>=1 )
+    int iam;
+    MPI_Comm_rank( MPI_COMM_WORLD, &iam );
+    CHECK_MALLOC(iam, "Enter sLUstructFree()");
+#endif
+
+    SUPERLU_FREE(LUstruct->etree);
+    SUPERLU_FREE(LUstruct->Glu_persist);
+    SUPERLU_FREE(LUstruct->Llu);
+
+#if ( DEBUGlevel>=1 )
+    CHECK_MALLOC(iam, "Exit sLUstructFree()");
+#endif
+}
+
+/*! \brief Destroy distributed L & U matrices. */
+void
+sDestroy_LU(int_t n, gridinfo_t *grid, sLUstruct_t *LUstruct)
+{
+    int_t i, nb, nsupers;
+    Glu_persist_t *Glu_persist = LUstruct->Glu_persist;
+    sLocalLU_t *Llu = LUstruct->Llu;
+
+#if ( DEBUGlevel>=1 )
+    int iam;
+    MPI_Comm_rank( MPI_COMM_WORLD, &iam );
+    CHECK_MALLOC(iam, "Enter sDestroy_LU()");
+#endif
+
+    sDestroy_Tree(n, grid, LUstruct);
+
+    nsupers = Glu_persist->supno[n-1] + 1;
+
+    nb = CEILING(nsupers, grid->npcol);
+    for (i = 0; i < nb; ++i) 
+	if ( Llu->Lrowind_bc_ptr[i] ) {
+	    SUPERLU_FREE (Llu->Lrowind_bc_ptr[i]);
+#if 0 // Sherry: the following is not allocated with cudaHostAlloc    
+    //#ifdef GPU_ACC
+	    checkCuda(cudaFreeHost(Llu->Lnzval_bc_ptr[i]));
+#endif
+	    SUPERLU_FREE (Llu->Lnzval_bc_ptr[i]);
+	}
+    SUPERLU_FREE (Llu->Lrowind_bc_ptr);
+    SUPERLU_FREE (Llu->Lnzval_bc_ptr);
+
+    nb = CEILING(nsupers, grid->nprow);
+    for (i = 0; i < nb; ++i)
+	if ( Llu->Ufstnz_br_ptr[i] ) {
+	    SUPERLU_FREE (Llu->Ufstnz_br_ptr[i]);
+	    SUPERLU_FREE (Llu->Unzval_br_ptr[i]);
+	}
+    SUPERLU_FREE (Llu->Ufstnz_br_ptr);
+    SUPERLU_FREE (Llu->Unzval_br_ptr);
+
+    /* The following can be freed after factorization. */
+    SUPERLU_FREE(Llu->ToRecv);
+    SUPERLU_FREE(Llu->ToSendD);
+    SUPERLU_FREE(Llu->ToSendR[0]);
+    SUPERLU_FREE(Llu->ToSendR);
+
+    /* The following can be freed only after iterative refinement. */
+    SUPERLU_FREE(Llu->ilsum);
+    SUPERLU_FREE(Llu->fmod);
+    SUPERLU_FREE(Llu->fsendx_plist[0]);
+    SUPERLU_FREE(Llu->fsendx_plist);
+    SUPERLU_FREE(Llu->bmod);
+    SUPERLU_FREE(Llu->bsendx_plist[0]);
+    SUPERLU_FREE(Llu->bsendx_plist);
+    SUPERLU_FREE(Llu->mod_bit);
+
+    nb = CEILING(nsupers, grid->npcol);
+    for (i = 0; i < nb; ++i) 
+	if ( Llu->Lindval_loc_bc_ptr[i]!=NULL) {
+	    SUPERLU_FREE (Llu->Lindval_loc_bc_ptr[i]);
+	}	
+    SUPERLU_FREE(Llu->Lindval_loc_bc_ptr);
+	
+    nb = CEILING(nsupers, grid->npcol);
+    for (i=0; i<nb; ++i) {
+	if(Llu->Linv_bc_ptr[i]!=NULL) {
+	    SUPERLU_FREE(Llu->Linv_bc_ptr[i]);
+	}
+	if(Llu->Uinv_bc_ptr[i]!=NULL){
+	    SUPERLU_FREE(Llu->Uinv_bc_ptr[i]);
+	}	
+    }
+    SUPERLU_FREE(Llu->Linv_bc_ptr);
+    SUPERLU_FREE(Llu->Uinv_bc_ptr);
+    SUPERLU_FREE(Llu->Unnz);
+	
+    nb = CEILING(nsupers, grid->npcol);
+    for (i = 0; i < nb; ++i)
+	if ( Llu->Urbs[i] ) {
+	    SUPERLU_FREE(Llu->Ucb_indptr[i]);
+	    SUPERLU_FREE(Llu->Ucb_valptr[i]);
+	}
+    SUPERLU_FREE(Llu->Ucb_indptr);
+    SUPERLU_FREE(Llu->Ucb_valptr);	
+    SUPERLU_FREE(Llu->Urbs);
+
+    SUPERLU_FREE(Glu_persist->xsup);
+    SUPERLU_FREE(Glu_persist->supno);
+
+#if ( DEBUGlevel>=1 )
+    CHECK_MALLOC(iam, "Exit sDestroy_LU()");
+#endif
+}
+
+/*! \brief
+ *
+ * <pre>
+ * Purpose
+ * =======
+ *   Set up the communication pattern for redistribution between B and X
+ *   in the triangular solution.
+ * 
+ * Arguments
+ * =========
+ *
+ * n      (input) int (global)
+ *        The dimension of the linear system.
+ *
+ * m_loc  (input) int (local)
+ *        The local row dimension of the distributed input matrix.
+ *
+ * nrhs   (input) int (global)
+ *        Number of right-hand sides.
+ *
+ * fst_row (input) int (global)
+ *        The row number of matrix B's first row in the global matrix.
+ *
+ * perm_r (input) int* (global)
+ *        The row permutation vector.
+ *
+ * perm_c (input) int* (global)
+ *        The column permutation vector.
+ *
+ * grid   (input) gridinfo_t*
+ *        The 2D process mesh.
+ * </pre>
+ */
+int_t
+psgstrs_init(int_t n, int_t m_loc, int_t nrhs, int_t fst_row,
+	     int_t perm_r[], int_t perm_c[], gridinfo_t *grid,
+	     Glu_persist_t *Glu_persist, sSOLVEstruct_t *SOLVEstruct)
+{
+
+    int *SendCnt, *SendCnt_nrhs, *RecvCnt, *RecvCnt_nrhs;
+    int *sdispls, *sdispls_nrhs, *rdispls, *rdispls_nrhs;
+    int *itemp, *ptr_to_ibuf, *ptr_to_dbuf;
+    int_t *row_to_proc;
+    int_t i, gbi, k, l, num_diag_procs, *diag_procs;
+    int_t irow, q, knsupc, nsupers, *xsup, *supno;
+    int   iam, p, pkk, procs;
+    pxgstrs_comm_t *gstrs_comm;
+
+    procs = grid->nprow * grid->npcol;
+    iam = grid->iam;
+    gstrs_comm = SOLVEstruct->gstrs_comm;
+    xsup = Glu_persist->xsup;
+    supno = Glu_persist->supno;
+    nsupers = Glu_persist->supno[n-1] + 1;
+    row_to_proc = SOLVEstruct->row_to_proc;
+
+    /* ------------------------------------------------------------
+       SET UP COMMUNICATION PATTERN FOR ReDistribute_B_to_X.
+       ------------------------------------------------------------*/
+    if ( !(itemp = SUPERLU_MALLOC(8*procs * sizeof(int))) )
+        ABORT("Malloc fails for B_to_X_itemp[].");
+    SendCnt      = itemp;
+    SendCnt_nrhs = itemp +   procs;
+    RecvCnt      = itemp + 2*procs;
+    RecvCnt_nrhs = itemp + 3*procs;
+    sdispls      = itemp + 4*procs;
+    sdispls_nrhs = itemp + 5*procs;
+    rdispls      = itemp + 6*procs;
+    rdispls_nrhs = itemp + 7*procs;
+
+    /* Count the number of elements to be sent to each diagonal process.*/
+    for (p = 0; p < procs; ++p) SendCnt[p] = 0;
+    for (i = 0, l = fst_row; i < m_loc; ++i, ++l) {
+        irow = perm_c[perm_r[l]]; /* Row number in Pc*Pr*B */
+	gbi = BlockNum( irow );
+	p = PNUM( PROW(gbi,grid), PCOL(gbi,grid), grid ); /* Diagonal process */
+	++SendCnt[p];
+    }
+  
+    /* Set up the displacements for alltoall. */
+    MPI_Alltoall(SendCnt, 1, MPI_INT, RecvCnt, 1, MPI_INT, grid->comm);
+    sdispls[0] = rdispls[0] = 0;
+    for (p = 1; p < procs; ++p) {
+        sdispls[p] = sdispls[p-1] + SendCnt[p-1];
+        rdispls[p] = rdispls[p-1] + RecvCnt[p-1];
+    }
+    for (p = 0; p < procs; ++p) {
+        SendCnt_nrhs[p] = SendCnt[p] * nrhs;
+	sdispls_nrhs[p] = sdispls[p] * nrhs;
+        RecvCnt_nrhs[p] = RecvCnt[p] * nrhs;
+	rdispls_nrhs[p] = rdispls[p] * nrhs;
+    }
+
+    /* This is saved for repeated solves, and is freed in pxgstrs_finalize().*/
+    gstrs_comm->B_to_X_SendCnt = SendCnt;
+
+    /* ------------------------------------------------------------
+       SET UP COMMUNICATION PATTERN FOR ReDistribute_X_to_B.
+       ------------------------------------------------------------*/
+    /* This is freed in pxgstrs_finalize(). */
+    if ( !(itemp = SUPERLU_MALLOC(8*procs * sizeof(int))) )
+        ABORT("Malloc fails for X_to_B_itemp[].");
+    SendCnt      = itemp;
+    SendCnt_nrhs = itemp +   procs;
+    RecvCnt      = itemp + 2*procs;
+    RecvCnt_nrhs = itemp + 3*procs;
+    sdispls      = itemp + 4*procs;
+    sdispls_nrhs = itemp + 5*procs;
+    rdispls      = itemp + 6*procs;
+    rdispls_nrhs = itemp + 7*procs;
+
+    /* Count the number of X entries to be sent to each process.*/
+    for (p = 0; p < procs; ++p) SendCnt[p] = 0;
+    num_diag_procs = SOLVEstruct->num_diag_procs;
+    diag_procs = SOLVEstruct->diag_procs;
+
+    for (p = 0; p < num_diag_procs; ++p) { /* for all diagonal processes */
+	pkk = diag_procs[p];
+	if ( iam == pkk ) {
+	    for (k = p; k < nsupers; k += num_diag_procs) {
+		knsupc = SuperSize( k );
+		irow = FstBlockC( k );
+		for (i = 0; i < knsupc; ++i) {
+#if 0
+		    q = row_to_proc[inv_perm_c[irow]];
+#else
+		    q = row_to_proc[irow];
+#endif
+		    ++SendCnt[q];
+		    ++irow;
+		}
+	    }
+	}
+    }
+
+    MPI_Alltoall(SendCnt, 1, MPI_INT, RecvCnt, 1, MPI_INT, grid->comm);
+    sdispls[0] = rdispls[0] = 0;
+    sdispls_nrhs[0] = rdispls_nrhs[0] = 0;
+    SendCnt_nrhs[0] = SendCnt[0] * nrhs;
+    RecvCnt_nrhs[0] = RecvCnt[0] * nrhs;
+    for (p = 1; p < procs; ++p) {
+        sdispls[p] = sdispls[p-1] + SendCnt[p-1];
+        rdispls[p] = rdispls[p-1] + RecvCnt[p-1];
+        sdispls_nrhs[p] = sdispls[p] * nrhs;
+        rdispls_nrhs[p] = rdispls[p] * nrhs;
+	SendCnt_nrhs[p] = SendCnt[p] * nrhs;
+	RecvCnt_nrhs[p] = RecvCnt[p] * nrhs;
+    }
+
+    /* This is saved for repeated solves, and is freed in pxgstrs_finalize().*/
+    gstrs_comm->X_to_B_SendCnt = SendCnt;
+
+    if ( !(ptr_to_ibuf = SUPERLU_MALLOC(2*procs * sizeof(int))) )
+        ABORT("Malloc fails for ptr_to_ibuf[].");
+    gstrs_comm->ptr_to_ibuf = ptr_to_ibuf;
+    gstrs_comm->ptr_to_dbuf = ptr_to_ibuf + procs;
+
+    return 0;
+} /* PSGSTRS_INIT */
+
+
 /*! \brief Initialize the data structure for the solution phase.
  */
 int sSolveInit(superlu_dist_options_t *options, SuperMatrix *A,
 	       int_t perm_r[], int_t perm_c[], int_t nrhs,
-	       LUstruct_t *LUstruct, gridinfo_t *grid,
-	       SOLVEstruct_t *SOLVEstruct)
+	       sLUstruct_t *LUstruct, gridinfo_t *grid,
+	       sSOLVEstruct_t *SOLVEstruct)
 {
     int_t *row_to_proc, *inv_perm_c, *itemp;
     NRformat_loc *Astore;
@@ -474,7 +761,7 @@ int sSolveInit(superlu_dist_options_t *options, SuperMatrix *A,
     if ( !(SOLVEstruct->gstrs_comm = (pxgstrs_comm_t *)
 	   SUPERLU_MALLOC(sizeof(pxgstrs_comm_t))) )
         ABORT("Malloc fails for gstrs_comm[]");
-    pxgstrs_init(A->ncol, m_loc, nrhs, fst_row, perm_r, perm_c, grid,
+    psgstrs_init(A->ncol, m_loc, nrhs, fst_row, perm_r, perm_c, grid,
 		 LUstruct->Glu_persist, SOLVEstruct);
 
     if ( !(SOLVEstruct->gsmv_comm = (psgsmv_comm_t *)
@@ -488,7 +775,7 @@ int sSolveInit(superlu_dist_options_t *options, SuperMatrix *A,
 
 /*! \brief Release the resources used for the solution phase.
  */
-void sSolveFinalize(superlu_dist_options_t *options, SOLVEstruct_t *SOLVEstruct)
+void sSolveFinalize(superlu_dist_options_t *options, sSOLVEstruct_t *SOLVEstruct)
 {
     int_t *it;
 
@@ -535,3 +822,49 @@ void psinf_norm_error(int iam, int_t n, int_t nrhs, float x[], int_t ldx,
       if ( !iam ) printf("\tSol %2d: ||X-Xtrue||/||X|| = %e\n", j, err);
     }
 }
+
+/*! \brief Destroy distributed L & U matrices. */
+void
+sDestroy_Tree(int_t n, gridinfo_t *grid, sLUstruct_t *LUstruct)
+{
+    int_t i, nb, nsupers;
+    Glu_persist_t *Glu_persist = LUstruct->Glu_persist;
+    sLocalLU_t *Llu = LUstruct->Llu;
+#if ( DEBUGlevel>=1 )
+    int iam;
+    MPI_Comm_rank( MPI_COMM_WORLD, &iam );
+    CHECK_MALLOC(iam, "Enter Destroy_Tree()");
+#endif
+
+    nsupers = Glu_persist->supno[n-1] + 1;
+
+    nb = CEILING(nsupers, grid->npcol);
+    for (i=0;i<nb;++i){
+	if(Llu->LBtree_ptr[i]!=NULL){
+		BcTree_Destroy(Llu->LBtree_ptr[i],LUstruct->dt);
+	}
+	if(Llu->UBtree_ptr[i]!=NULL){
+		BcTree_Destroy(Llu->UBtree_ptr[i],LUstruct->dt);
+	}		
+    }
+    SUPERLU_FREE(Llu->LBtree_ptr);
+    SUPERLU_FREE(Llu->UBtree_ptr);
+	
+    nb = CEILING(nsupers, grid->nprow);
+    for (i=0;i<nb;++i){
+	if(Llu->LRtree_ptr[i]!=NULL){
+		RdTree_Destroy(Llu->LRtree_ptr[i],LUstruct->dt);
+	}
+	if(Llu->URtree_ptr[i]!=NULL){
+		RdTree_Destroy(Llu->URtree_ptr[i],LUstruct->dt);
+	}		
+    }
+    SUPERLU_FREE(Llu->LRtree_ptr);
+    SUPERLU_FREE(Llu->URtree_ptr);
+
+#if ( DEBUGlevel>=1 )
+    CHECK_MALLOC(iam, "Exit sDestroy_Tree()");
+#endif
+}
+
+
