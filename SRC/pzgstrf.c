@@ -108,7 +108,6 @@ at the top-level directory.
  */
 
 #include <math.h>
-/*#include "mkl.h"*/
 #include "superlu_zdefs.h"
 
 #ifdef GPU_ACC
@@ -771,8 +770,8 @@ pzgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
     int cublas_nb = get_cublas_nb(); // default 64
     int nstreams = get_num_cuda_streams (); // default 8
 
-    int_t buffer_size  = SUPERLU_MAX(max_row_size * nstreams * cublas_nb,
-                                     get_max_buffer_size());
+    int_t buffer_size  = SUPERLU_MAX(max_row_size * nstreams * cublas_nb, sp_ienv_dist(8));
+                                     //   get_max_buffer_size());
     /* array holding last column blk for each partition,
        used in SchCompUdt-cuda.c         */
   #if 0
@@ -784,8 +783,8 @@ pzgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
 #else /* not to use GPU */
 
     int Threads_per_process = get_thread_per_process();
-    int_t buffer_size  = SUPERLU_MAX(max_row_size * Threads_per_process * ldt,
-                                     get_max_buffer_size());
+    int_t buffer_size  = SUPERLU_MAX(max_row_size * Threads_per_process * ldt, sp_ienv_dist(8));
+                                     // get_max_buffer_size());
 #endif /* end ifdef GPU_ACC -----------*/
 
     int_t max_ncols = 0;
@@ -814,8 +813,8 @@ pzgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
 
 #if ( PRNTlevel>=1 )
     if(!iam) {
-        printf("\t.. MAX_BUFFER_SIZE " IFMT " set for GPU\n", get_max_buffer_size());
-	printf("\t.. N_GEMM: " IFMT " flops of GEMM done on CPU (1st block always on CPU)\n", sp_ienv_dist(7));
+        printf("\t.. MAX_BUFFER_SIZE %d set for GPU\n", sp_ienv_dist(8));
+	printf("\t.. N_GEMM: %d flops of GEMM done on CPU (1st block always on CPU)\n", sp_ienv_dist(7));
         printf("\t.. GEMM buffer size: max_row_size X max_ncols = %d x " IFMT "\n",
                 max_row_size, max_ncols);
     }
@@ -900,7 +899,7 @@ pzgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
     bigv_size += (gemm_m_pad * (j + max_row_size + gemm_n_pad));
 
 #if ( PRNTlevel>=1 )
-    printf("[%d].. BIG V size %d (on CPU)\n", iam, bigv_size);
+    printf("[%d].. BIG V size " IFMT " (on CPU)\n", iam, bigv_size);
     fflush(stdout);
 #endif
 
@@ -1768,29 +1767,29 @@ pzgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
     MPI_Reduce(&RemainGEMM_flops, &allflops, 1, MPI_DOUBLE, MPI_SUM,
 	       0, grid->comm);
     if ( iam==0 ) {
-	printf("\nInitialization time\t%8.2lf seconds\n"
+	printf("\nInitialization time\t%8.4lf seconds\n"
 	       "\t Serial: compute static schedule, allocate storage\n", InitTimer);
         printf("\n==== Time breakdown in factorization (rank 0) ====\n");
-	printf("Panel factorization \t %8.2lf seconds\n",
+	printf("Panel factorization \t %8.4lf seconds\n",
 	       pdgstrf2_timer + pdgstrs2_timer);
-	printf(".. L-panel pxgstrf2 \t %8.2lf seconds\n", pdgstrf2_timer);
-	printf(".. U-panel pxgstrs2 \t %8.2lf seconds\n", pdgstrs2_timer);
-	printf("Time in Look-ahead update \t %8.2lf seconds\n", lookaheadupdatetimer);
-        printf("Time in Schur update \t\t %8.2lf seconds\n", NetSchurUpTimer);
-        printf(".. Time to Gather L buffer\t %8.2lf  (Separate L panel by Lookahead/Remain)\n", GatherLTimer);
-        printf(".. Time to Gather U buffer\t %8.2lf \n", GatherUTimer);
+	printf(".. L-panel pxgstrf2 \t %8.4lf seconds\n", pdgstrf2_timer);
+	printf(".. U-panel pxgstrs2 \t %8.4lf seconds\n", pdgstrs2_timer);
+	printf("Time in Look-ahead update \t %8.4lf seconds\n", lookaheadupdatetimer);
+        printf("Time in Schur update \t\t %8.4lf seconds\n", NetSchurUpTimer);
+        printf(".. Time to Gather L buffer\t %8.4lf  (Separate L panel by Lookahead/Remain)\n", GatherLTimer);
+        printf(".. Time to Gather U buffer\t %8.4lf \n", GatherUTimer);
 
-        printf(".. Time in GEMM %8.2lf \n",
+        printf(".. Time in GEMM %8.4lf \n",
 	       LookAheadGEMMTimer + RemainGEMMTimer);
-        printf("\t* Look-ahead\t %8.2lf \n", LookAheadGEMMTimer);
-        printf("\t* Remain\t %8.2lf\tFlops %8.2le\tGflops %8.2lf\n",
+        printf("\t* Look-ahead\t %8.4lf \n", LookAheadGEMMTimer);
+        printf("\t* Remain\t %8.4lf\tFlops %8.4le\tGflops %8.4lf\n",
 	       RemainGEMMTimer, allflops, allflops/RemainGEMMTimer*1e-9);
-        printf(".. Time to Scatter %8.2lf \n",
+        printf(".. Time to Scatter %8.4lf \n",
 	       LookAheadScatterTimer + RemainScatterTimer);
-        printf("\t* Look-ahead\t %8.2lf \n", LookAheadScatterTimer);
-        printf("\t* Remain\t %8.2lf \n", RemainScatterTimer);
+        printf("\t* Look-ahead\t %8.4lf \n", LookAheadScatterTimer);
+        printf("\t* Remain\t %8.4lf \n", RemainScatterTimer);
 
-        printf("Total factorization time            \t: %8.2lf seconds, \n", pxgstrfTimer);
+        printf("Total factorization time            \t: %8.4lf seconds, \n", pxgstrfTimer);
         printf("--------\n");
 	printf("GEMM maximum block: %d-%d-%d\n", gemm_max_m, gemm_max_k, gemm_max_n);
     }

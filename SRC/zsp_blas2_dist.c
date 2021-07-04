@@ -426,9 +426,8 @@ sp_zgemv_dist(char *trans, doublecomplex alpha, SuperMatrix *A,
     }
 
     /* Quick return if possible. */
-    if (A->nrow == 0 || A->ncol == 0 || 
-	z_eq(&alpha, &comp_zero) && 
-	z_eq(&beta, &comp_one))
+    if ( A->nrow == 0 || A->ncol == 0 || 
+	(z_eq(&alpha, &comp_zero) && z_eq(&beta, &comp_one)) )
 	return 0;
 
 

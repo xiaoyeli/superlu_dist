@@ -15,8 +15,9 @@ at the top-level directory.
  *
  * <pre>
  * -- Distributed SuperLU routine (version 7.0) --
- * Lawrence Berkeley National Lab, Georgia Institute of Technology.
- * May 10, 2019
+ * Lawrence Berkeley National Lab, Georgia Institute of Technology,
+ * Oak Ridge National Lab
+ * May 12, 2021
  */
 #include <stdio.h>
 #include "superlu_sdefs.h"

@@ -116,7 +116,7 @@ int main(int argc, char *argv[])
 
     /* Bail out if I do not belong in the grid. */
     iam = grid.iam;
-    if ( iam >= nprow * npcol )	goto out;
+    if ( iam == -1 )	goto out;
     if ( !iam ) {
 	int v_major, v_minor, v_bugfix;
 #ifdef __INTEL_COMPILER
@@ -191,7 +191,7 @@ int main(int argc, char *argv[])
             &LUstruct, &SOLVEstruct, berr, &stat, &info);
 
     /* Check the accuracy of the solution. */
-    pdinf_norm_error(iam, m_loc, nrhs, b, ldb, xtrue, ldx, &grid);
+    pdinf_norm_error(iam, m_loc, nrhs, b, ldb, xtrue, ldx, grid.comm);
     
     PStatPrint(&options, &stat, &grid);        /* Print the statistics. */
     PStatFree(&stat);
@@ -228,7 +228,7 @@ int main(int argc, char *argv[])
 
     /* Check the accuracy of the solution. */
     if ( !iam ) printf("Solve the system with the same sparsity pattern.\n");
-    pdinf_norm_error(iam, m_loc, nrhs, b1, ldb, xtrue1, ldx, &grid);
+    pdinf_norm_error(iam, m_loc, nrhs, b1, ldb, xtrue1, ldx, grid.comm);
 
 #if ( PRNTlevel>=2 )
     if (iam==0) {

@@ -54,6 +54,10 @@ DEXM1	= pddrive1.o dcreate_matrix.o
 DEXM2	= pddrive2.o dcreate_matrix.o dcreate_matrix_perturbed.o
 DEXM3	= pddrive3.o dcreate_matrix.o
 DEXM4	= pddrive4.o dcreate_matrix.o
+
+DEXM3D	= pddrive3d.o dcreate_matrix.o dcreate_matrix3d.o 
+
+#	   dtrfAux.o dtreeFactorization.o treeFactorization.o pd3dcomm.o superlu_grid3d.o pdgstrf3d.o
 DEXMG	= pddrive_ABglobal.o
 DEXMG1	= pddrive1_ABglobal.o
 DEXMG2	= pddrive2_ABglobal.o
@@ -66,6 +70,7 @@ ZEXM1	= pzdrive1.o zcreate_matrix.o
 ZEXM2	= pzdrive2.o zcreate_matrix.o zcreate_matrix_perturbed.o
 ZEXM3	= pzdrive3.o zcreate_matrix.o
 ZEXM4	= pzdrive4.o zcreate_matrix.o
+ZEXM3D	= pzdrive3d.o zcreate_matrix.o zcreate_matrix3d.o
 ZEXMG	= pzdrive_ABglobal.o
 ZEXMG1	= pzdrive1_ABglobal.o
 ZEXMG2	= pzdrive2_ABglobal.o
@@ -73,17 +78,21 @@ ZEXMG3	= pzdrive3_ABglobal.o
 ZEXMG4	= pzdrive4_ABglobal.o
 
 
-all: psdrive #pddrive pddrive_rhs #single double complex16
+#all: psdrive #pddrive pddrive_rhs
+all: single double complex16
 
-single:    psdrive psdrive1 psdrive2 psdrive3 psdrive4 \
+single:   ## psdrive \
+	psdrive1 psdrive2 psdrive3 psdrive4 \
 	   psdrive_ABglobal psdrive1_ABglobal psdrive2_ABglobal \
 	   psdrive3_ABglobal psdrive4_ABglobal
 
 double:    pddrive pddrive1 pddrive2 pddrive3 pddrive4 \
+	   pddrive3d \
 	   pddrive_ABglobal pddrive1_ABglobal pddrive2_ABglobal \
 	   pddrive3_ABglobal pddrive4_ABglobal
 
 complex16: pzdrive pzdrive1 pzdrive2 pzdrive3 pzdrive4 \
+	   pzdrive3d \
 	   pzdrive_ABglobal pzdrive1_ABglobal pzdrive2_ABglobal \
 	   pzdrive3_ABglobal pzdrive4_ABglobal
 
@@ -118,6 +127,7 @@ psdrive4_ABglobal: $(SEXMG4) $(DSUPERLULIB)
 	$(LOADER) $(LOADOPTS) $(SEXMG4) $(LIBS) -lm -o $@
 
 pddrive: $(DEXM) $(DSUPERLULIB)
+
 	$(LOADER) $(LOADOPTS) $(DEXM) $(LIBS) -lm -o $@
 
 pddrive_rhs: $(DEXMRHS) $(DSUPERLULIB)
@@ -134,6 +144,9 @@ pddrive3: $(DEXM3) $(DSUPERLULIB)
 
 pddrive4: $(DEXM4) $(DSUPERLULIB)
 	$(LOADER) $(LOADOPTS) $(DEXM4) $(LIBS) -lm -o $@
+
+pddrive3d: $(DEXM3D) $(DSUPERLULIB)
+	$(LOADER) $(LOADOPTS) $(DEXM3D) $(LIBS) -lm -o $@
 
 pddrive_ABglobal: $(DEXMG) $(DSUPERLULIB)
 	$(LOADER) $(LOADOPTS) $(DEXMG) $(LIBS) -lm -o $@
@@ -168,6 +181,9 @@ pzdrive3: $(ZEXM3) $(DSUPERLULIB)
 pzdrive4: $(ZEXM4) $(DSUPERLULIB)
 	$(LOADER) $(LOADOPTS) $(ZEXM4) $(LIBS) -lm -o $@
 
+pzdrive3d: $(ZEXM3D) $(DSUPERLULIB)
+	$(LOADER) $(LOADOPTS) $(ZEXM3D) $(LIBS) -lm -o $@
+
 pzdrive_ABglobal: $(ZEXMG) $(DSUPERLULIB)
 	$(LOADER) $(LOADOPTS) $(ZEXMG) $(LIBS) -lm -o $@
 
@@ -186,10 +202,10 @@ pzdrive4_ABglobal: $(ZEXMG4) $(DSUPERLULIB)
 #pdgstrf.o: dscatter.c dSchCompUdt-cuda.c pdgstrf.c
 #	$(CC) $(CFLAGS) $(CDEFS) $(BLASDEF) -I$(INCLUDEDIR) -c pdgstrf.c $(VERBOSE)
 .c.o:
-	$(CC) $(CFLAGS) $(CDEFS) $(BLASDEF) -I $(INCLUDEDIR) -c $< $(VERBOSE)
+	$(CC) $(CFLAGS) $(CDEFS) $(BLASDEF) -I$(INCLUDEDIR) -c $< $(VERBOSE)
 
 .cpp.o:
-	$(CPP) $(CPPFLAGS) $(CDEFS) $(BLASDEF) -I $(INCLUDEDIR) -c $< $(VERBOSE)
+	$(CPP) $(CPPFLAGS) $(CDEFS) $(BLASDEF) -I$(INCLUDEDIR) -c $< $(VERBOSE)
 
 .f.o:
 	$(FORTRAN) $(FFLAGS) -c $< $(VERBOSE)

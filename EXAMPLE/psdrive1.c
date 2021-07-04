@@ -14,10 +14,11 @@ at the top-level directory.
  * \brief Driver program for PSGSSVX example
  *
  * <pre>
- * -- Distributed SuperLU routine (version 6.1) --
+ * -- Distributed SuperLU routine (version 7.0) --
  * Lawrence Berkeley National Lab, Univ. of California Berkeley.
  * March 15, 2003
  * April 5, 2015
+ * January 4 2020
  * </pre>
  */
 
@@ -33,7 +34,8 @@ at the top-level directory.
  * The driver program PSDRIVE1.
  *
  * This example illustrates how to use PSGSSVX to
- * solve systems with the same A but different right-hand side.
+ * solve systems with the same A but different right-hand side,
+ * possibly with different number of right-hand sides.
  * In this case, we factorize A only once in the first call to
  * PSGSSVX, and reuse the following data structures
  * in the subsequent call to PSGSSVX:
@@ -54,8 +56,8 @@ int main(int argc, char *argv[])
     sSOLVEstruct_t SOLVEstruct;
     gridinfo_t grid;
     float   *berr;
-    float   *b, *xtrue, *b1;
-    int    i, j, m, n;
+    float   *b, *xtrue, *b1, *b2;
+    int    i, j, m, n, m_loc;
     int    nprow, npcol;
     int    iam, info, ldb, ldx, nrhs;
     char     **cpp, c, *postfix;
@@ -65,7 +67,7 @@ int main(int argc, char *argv[])
 
     nprow = 1;  /* Default process rows.      */
     npcol = 1;  /* Default process columns.   */
-    nrhs = 1;   /* Number of right-hand side. */
+    nrhs  = 3;  /* Max. number of right-hand sides. */
 
     /* ------------------------------------------------------------
        INITIALIZE MPI ENVIRONMENT. 
@@ -104,7 +106,8 @@ int main(int argc, char *argv[])
 
     /* Bail out if I do not belong in the grid. */
     iam = grid.iam;
-    if ( iam >= nprow * npcol )	goto out;
+    if ( iam == -1 )	goto out;
+
     if ( !iam ) {
 	int v_major, v_minor, v_bugfix;
 #ifdef __INTEL_COMPILER
@@ -141,14 +144,24 @@ int main(int argc, char *argv[])
     screate_matrix_postfix(&A, nrhs, &b, &ldb, &xtrue, &ldx, fp, postfix, &grid);
     if ( !(b1 = floatMalloc_dist(ldb * nrhs)) )
         ABORT("Malloc fails for b1[]");
-    for (j = 0; j < nrhs; ++j)
-        for (i = 0; i < ldb; ++i) b1[i+j*ldb] = b[i+j*ldb];
+    if ( !(b2 = floatMalloc_dist(ldb * nrhs)) )
+        ABORT("Malloc fails for b1[]");
+    for (j = 0; j < nrhs; ++j) {
+        for (i = 0; i < ldb; ++i) {
+	    b1[i+j*ldb] = b[i+j*ldb];
+	    b2[i+j*ldb] = b[i+j*ldb];
+        }
+    }	    
 
     if ( !(berr = floatMalloc_dist(nrhs)) )
 	ABORT("Malloc fails for berr[].");
 
+    m = A.nrow;
+    n = A.ncol;
+    m_loc = ((NRformat_loc *)A.Store)->m_loc;
+    
     /* ------------------------------------------------------------
-       WE SOLVE THE LINEAR SYSTEM FOR THE FIRST TIME.
+       1. SOLVE THE LINEAR SYSTEM FOR THE FIRST TIME, WITH 1 RHS.
        ------------------------------------------------------------*/
 
     /* Set the default input options:
@@ -171,9 +184,6 @@ int main(int argc, char *argv[])
 	fflush(stdout);
     }
 
-    m = A.nrow;
-    n = A.ncol;
-
     /* Initialize ScalePermstruct and LUstruct. */
     sScalePermstructInit(m, n, &ScalePermstruct);
     sLUstructInit(n, &LUstruct);
@@ -182,41 +192,70 @@ int main(int argc, char *argv[])
     PStatInit(&stat);
 
     /* Call the linear equation solver. */
+    nrhs = 1;
     psgssvx(&options, &A, &ScalePermstruct, b, ldb, nrhs, &grid,
 	    &LUstruct, &SOLVEstruct, berr, &stat, &info);
 
 
     /* Check the accuracy of the solution. */
     if ( !iam ) printf("\tSolve the first system:\n");
-    psinf_norm_error(iam, ((NRformat_loc *)A.Store)->m_loc,
-		     nrhs, b, ldb, xtrue, ldx, &grid);
+    psinf_norm_error(iam, m_loc, nrhs, b, ldb, xtrue, ldx, grid.comm);
 
     PStatPrint(&options, &stat, &grid);        /* Print the statistics. */
     PStatFree(&stat);
 
     /* ------------------------------------------------------------
-       NOW WE SOLVE ANOTHER SYSTEM WITH THE SAME A BUT DIFFERENT
+       2. NOW SOLVE ANOTHER SYSTEM WITH THE SAME A BUT DIFFERENT
        RIGHT-HAND SIDE,  WE WILL USE THE EXISTING L AND U FACTORS IN
        LUSTRUCT OBTAINED FROM A PREVIOUS FATORIZATION.
        ------------------------------------------------------------*/
     options.Fact = FACTORED; /* Indicate the factored form of A is supplied. */
     PStatInit(&stat); /* Initialize the statistics variables. */
 
+    nrhs = 1;
     psgssvx(&options, &A, &ScalePermstruct, b1, ldb, nrhs, &grid,
 	    &LUstruct, &SOLVEstruct, berr, &stat, &info);
 
     /* Check the accuracy of the solution. */
     if ( !iam ) printf("\tSolve the system with a different B:\n");
-    psinf_norm_error(iam, ((NRformat_loc *)A.Store)->m_loc,
-		     nrhs, b1, ldb, xtrue, ldx, &grid);
+    psinf_norm_error(iam, m_loc, nrhs, b1, ldb, xtrue, ldx, grid.comm);
 
     PStatPrint(&options, &stat, &grid);        /* Print the statistics. */
+    PStatFree(&stat);
 
+    /* ------------------------------------------------------------
+       3. SOLVE ANOTHER SYSTEM WITH THE SAME A BUT DIFFERENT
+       NUMBER OF RIGHT-HAND SIDES,  WE WILL USE THE EXISTING L AND U
+       FACTORS IN LUSTRUCT OBTAINED FROM A PREVIOUS FATORIZATION.
+       ------------------------------------------------------------*/
+    options.Fact = FACTORED; /* Indicate the factored form of A is supplied. */
+    PStatInit(&stat); /* Initialize the statistics variables. */
+
+    nrhs = 3;
+    
+    /* When changing the number of RHS's, the following counters 
+       for communication messages must be reset. */
+    pxgstrs_comm_t *gstrs_comm = SOLVEstruct.gstrs_comm;
+    SUPERLU_FREE(gstrs_comm->B_to_X_SendCnt);
+    SUPERLU_FREE(gstrs_comm->X_to_B_SendCnt);
+    SUPERLU_FREE(gstrs_comm->ptr_to_ibuf);
+    psgstrs_init(n, m_loc, nrhs, ((NRformat_loc *)A.Store)->fst_row,
+		 ScalePermstruct.perm_r, ScalePermstruct.perm_c, &grid,
+		 LUstruct.Glu_persist, &SOLVEstruct);
+    
+    psgssvx(&options, &A, &ScalePermstruct, b2, ldb, nrhs, &grid,
+	    &LUstruct, &SOLVEstruct, berr, &stat, &info);
+
+    /* Check the accuracy of the solution. */
+    if ( !iam ) printf("\tSolve the system with 3 RHS's:\n");
+    psinf_norm_error(iam, m_loc, nrhs, b2, ldb, xtrue, ldx, grid.comm);
+
+    PStatPrint(&options, &stat, &grid);        /* Print the statistics. */
+    PStatFree(&stat);
 
     /* ------------------------------------------------------------
        DEALLOCATE STORAGE.
        ------------------------------------------------------------*/
-    PStatFree(&stat);
     Destroy_CompRowLoc_Matrix_dist(&A);
     sScalePermstructFree(&ScalePermstruct);   
     sDestroy_LU(n, &grid, &LUstruct);
@@ -226,6 +265,7 @@ int main(int argc, char *argv[])
     }
     SUPERLU_FREE(b);
     SUPERLU_FREE(b1);
+    SUPERLU_FREE(b2);
     SUPERLU_FREE(xtrue);
     SUPERLU_FREE(berr);
     fclose(fp);

@@ -15,8 +15,9 @@ at the top-level directory.
  *
  * <pre>
  * -- Distributed SuperLU routine (version 7.0) --
- * Lawrence Berkeley National Lab, Georgia Institute of Technology.
- * May 10, 2019
+ * Lawrence Berkeley National Lab, Georgia Institute of Technology,
+ * Oak Ridge National Lab
+ * May 12, 2021
  */
 
 #include "superlu_sdefs.h"
@@ -26,11 +27,7 @@ at the top-level directory.
 #include "trfCommWrapper.h"
 #endif
 
-#ifdef __INTEL_COMPILER
-#include "mkl.h"
-#else
-#include "cblas.h"
-#endif 
+//#include "cblas.h"
 
 int_t sDiagFactIBCast(int_t k,  int_t k0,      // supernode to be factored
                      float *BlockUFactor,
@@ -135,7 +132,7 @@ int_t sLPanelTrSolve( int_t k,   int_t* factored_L,
     int_t pkk = PNUM (PROW (k, grid), PCOL (k, grid), grid);
     int_t kcol = PCOL (k, grid);
     int_t mycol = MYCOL (iam, grid);
-    int_t nsupc = SuperSize(k);
+    int nsupc = SuperSize(k);
 
     /*factor the L panel*/
     if (mycol == kcol  && iam != pkk)
@@ -143,7 +140,7 @@ int_t sLPanelTrSolve( int_t k,   int_t* factored_L,
         // factored_L[k] = 1;
         int_t lk = LBj (k, grid);
         float *lusup = Llu->Lnzval_bc_ptr[lk];
-        int_t nsupr;
+        int nsupr;
         if (Llu->Lrowind_bc_ptr[lk])
             nsupr = Llu->Lrowind_bc_ptr[lk][1];
         else
@@ -159,7 +156,7 @@ int_t sLPanelTrSolve( int_t k,   int_t* factored_L,
 
         int_t l = nsupr;
         float* ublk_ptr = BlockUFactor;
-        int_t ld_ujrow = nsupc;
+        int ld_ujrow = nsupc;
 
         // unsigned long long t1 = _rdtsc();
 
@@ -171,21 +168,10 @@ int_t sLPanelTrSolve( int_t k,   int_t* factored_L,
             {
                 int_t off = i * BL;
                 // Sherry: int_t len = MY_MIN(BL, l - i * BL);
-                int_t len = SUPERLU_MIN(BL, l - i * BL);
+                int len = SUPERLU_MIN(BL, l - i * BL);
 
-#if 1
-  #if defined (USE_VENDOR_BLAS)
-		strsm_ ("R", "U", "N", "N", &len, &nsupc, &alpha,
-			ublk_ptr, &ld_ujrow, &lusup[off], &nsupr,
-			1, 1, 1, 1);
-  #else
-		strsm_ ("R", "U", "N", "N", &len, &nsupc, &alpha,
-			ublk_ptr, &ld_ujrow, &lusup[off], &nsupr);
-  #endif
-#else
-                cblas_strsm (CblasColMajor, CblasRight, CblasUpper, CblasNoTrans, CblasNonUnit,
-                len, nsupc, alpha, ublk_ptr, ld_ujrow, &lusup[off], nsupr);
-#endif
+                superlu_strsm("R", "U", "N", "N", len, nsupc, alpha,
+			      ublk_ptr, ld_ujrow, &lusup[off], nsupr);
             }
         }
     }
@@ -198,18 +184,17 @@ int_t sLPanelTrSolve( int_t k,   int_t* factored_L,
         factored_L[k] = 1;
         int_t lk = LBj (k, grid);
         float *lusup = Llu->Lnzval_bc_ptr[lk];
-        int_t nsupr;
-        if (Llu->Lrowind_bc_ptr[lk])
-            nsupr = Llu->Lrowind_bc_ptr[lk][1];
-        else
-            nsupr = 0;
+        int nsupr;
+        if (Llu->Lrowind_bc_ptr[lk]) nsupr = Llu->Lrowind_bc_ptr[lk][1];
+        else nsupr = 0;
 
         /*factorize A[kk]*/
 
         int_t l = nsupr - nsupc;
 
         float* ublk_ptr = BlockUFactor;
-        int_t ld_ujrow = nsupc;
+        int ld_ujrow = nsupc;
+
         // printf("%d: L update \n",k );
 
 #define BL  32
@@ -218,23 +203,11 @@ int_t sLPanelTrSolve( int_t k,   int_t* factored_L,
         {
             int_t off = i * BL;
             // Sherry: int_t len = MY_MIN(BL, l - i * BL);
-            int_t len = SUPERLU_MIN(BL, (l - i * BL));
-            #pragma omp task
+            int len = SUPERLU_MIN(BL, (l - i * BL));
+	    //#pragma omp task
             {
-#if 1
-  #if defined (USE_VENDOR_BLAS)
-		strsm_ ("R", "U", "N", "N", &len, &nsupc, &alpha,
-			ublk_ptr, &ld_ujrow, &lusup[nsupc + off], &nsupr,
-			1, 1, 1, 1);
-  #else
-		strsm_ ("R", "U", "N", "N", &len, &nsupc, &alpha,
-			ublk_ptr, &ld_ujrow, &lusup[nsupc + off], &nsupr);
-  #endif
-#else
-                cblas_strsm (CblasColMajor, CblasRight, CblasUpper, CblasNoTrans, CblasNonUnit,
-                             len, nsupc, alpha, ublk_ptr, ld_ujrow, &lusup[nsupc + off], nsupr);
-#endif
-
+                superlu_strsm("R", "U", "N", "N", len, nsupc, alpha,
+			      ublk_ptr, ld_ujrow, &lusup[nsupc + off], nsupr);
             }
         }
     }
@@ -406,8 +379,8 @@ int_t sIBcastRecvLPanel(
     Glu_persist_t *Glu_persist = LUstruct->Glu_persist;
     sLocalLU_t *Llu = LUstruct->Llu;
     int_t* xsup = Glu_persist->xsup;
-    int_t** ToSendR = Llu->ToSendR;
-    int_t* ToRecv = Llu->ToRecv;
+    int** ToSendR = Llu->ToSendR;
+    int* ToRecv = Llu->ToRecv;
     int_t iam = grid->iam;
     int_t Pc = grid->npcol;
     int_t mycol = MYCOL (iam, grid);
@@ -463,8 +436,8 @@ int_t sIBcastRecvUPanel(int_t k, int_t k0, int* msgcnt,
 {
     sLocalLU_t *Llu = LUstruct->Llu;
 
-    int_t* ToSendD = Llu->ToSendD;
-    int_t* ToRecv = Llu->ToRecv;
+    int* ToSendD = Llu->ToSendD;
+    int* ToRecv = Llu->ToRecv;
     int_t iam = grid->iam;
     int_t Pr = grid->nprow;
     int_t myrow = MYROW (iam, grid);
@@ -509,8 +482,8 @@ int_t sWaitL( int_t k, int* msgcnt, int* msgcntU,
     	      gridinfo_t *grid, sLUstruct_t *LUstruct, SCT_t *SCT)
 {
     sLocalLU_t *Llu = LUstruct->Llu;
-    int_t** ToSendR = Llu->ToSendR;
-    int_t* ToRecv = Llu->ToRecv;
+    int** ToSendR = Llu->ToSendR;
+    int* ToRecv = Llu->ToRecv;
     int_t iam = grid->iam;
     int_t mycol = MYCOL (iam, grid);
     int_t kcol = PCOL (k, grid);
@@ -537,9 +510,8 @@ int_t sWaitU( int_t k, int* msgcnt,
     	      gridinfo_t *grid, sLUstruct_t *LUstruct, SCT_t *SCT)
 {
     sLocalLU_t *Llu = LUstruct->Llu;
-
-    int_t* ToRecv = Llu->ToRecv;
-    int_t* ToSendD = Llu->ToSendD;
+    int* ToRecv = Llu->ToRecv;
+    int* ToSendD = Llu->ToSendD;
     int_t iam = grid->iam;
     int_t myrow = MYROW (iam, grid);
     int_t krow = PROW (k, grid);

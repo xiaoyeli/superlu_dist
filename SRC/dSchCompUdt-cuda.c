@@ -84,9 +84,14 @@ if ( msg0 && msg2 ) {  /* L(:,k) and U(k,:) are not empty. */
         } /* end for j = jj0..nub */
 
         jjj = jj0; /* jj0 is the first block column after look-ahead window */
-
+        
+        int looptime=0;
         // #pragma omp barrier
         while ( jjj < nub ) {
+            if(looptime>0){
+                printf("warning: number of partitions greater than 1, try increasing Max_Buffer_Size. \n"); 
+            }
+            looptime++;
             jjj_st=jjj;
 #ifdef _OPENMP
 #pragma omp single

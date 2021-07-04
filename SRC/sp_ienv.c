@@ -53,6 +53,10 @@ at the top-level directory.
 	         of L and U, compared with A;
 	    = 7: the minimum value of the product M*N*K for a GEMM call
 	         to be off-loaded to accelerator (e.g., GPU, Xeon Phi).
+            = 8: the maximum buffer size on GPU that can hold the "dC"
+	         matrix in the GEMM call for the Schur complement update.
+		 If this is too small, the Schur complement update will be
+		 done in multiple partitions, may be slower.
 	    
    (SP_IENV_DIST) (output) int
             >= 0: the value of the parameter specified by ISPEC   
@@ -62,13 +66,11 @@ at the top-level directory.
 </pre>
 */
 
-
 #include <stdlib.h>
 #include <stdio.h>
 
-
-int_t
-sp_ienv_dist(int_t ispec)
+int
+sp_ienv_dist(int ispec)
 {
     // printf(" this function called\n");
     int i;
@@ -94,13 +96,13 @@ sp_ienv_dist(int_t ispec)
             return 20;
             
 	case 3: 
-            ttemp = getenv("NSUP");
+	    ttemp = getenv("NSUP"); // take min of MAX_SUPER_SIZE in superlu_defs.h
             if(ttemp)
             {
-                return(atoi(ttemp));
+		int k = SUPERLU_MIN( atoi(ttemp), MAX_SUPER_SIZE );
+                return (k);
             }
-            else
-            return 128;
+            else return 128;
 
 #endif
         case 6: 
@@ -111,14 +113,16 @@ sp_ienv_dist(int_t ispec)
 	    ttemp = getenv ("N_GEMM"); // flops of GEMM to be done on CPU
 	    if (ttemp) return atoi (ttemp);
 	    else return 10000;
-
+        case 8:
+  	    ttemp = getenv ("MAX_BUFFER_SIZE");
+	    if (ttemp) return atoi (ttemp);
+	    else return 256000000; // 16000^2
     }
 
     /* Invalid value for ISPEC */
     i = 1;
     xerr_dist("sp_ienv", &i);
     return 0;
-
 
 } /* sp_ienv_dist */
 

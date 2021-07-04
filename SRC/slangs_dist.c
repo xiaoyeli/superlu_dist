@@ -9,9 +9,17 @@ The source code is distributed under BSD license, see the file License.txt
 at the top-level directory.
 */
 
-/*! @file slangs.c
- * \brief Returns the value of the one norm
+/*! @file slangs_dist.c
+ * \brief Returns the value of the one norm, the infinity norm, or the element of largest value
+ * Modified from SuperLU routine SLANGS
  *
+ * <pre>
+ * -- SuperLU routine (version 2.0) --
+ * Univ. of California Berkeley, Xerox Palo Alto Research Center,
+ * and Lawrence Berkeley National Lab.
+ * November 15, 1997
+ *
+ * </pre>
  */
 /*
  * File name:	slangs_dist.c
@@ -33,9 +41,9 @@ at the top-level directory.
  *   Description   
  *   ===========   
  *
- *   SLANGE_DIST returns the value   
+ *   SLANGE returns the value   
  *
- *      SLANGE_DIST = ( max(abs(A(i,j))), NORM = 'M' or 'm'   
+ *      SLANGE = ( max(abs(A(i,j))), NORM = 'M' or 'm'   
  *               (   
  *               ( norm1(A),         NORM = '1', 'O' or 'o'   
  *               (   
@@ -67,16 +75,15 @@ float slangs_dist(char *norm, SuperMatrix *A)
     NCformat *Astore;
     float   *Aval;
     int      i, j, irow;
-    float   value, sum;
+    float   value = 0.0, sum;
     float   *rwork;
 
-    Astore = A->Store;
-    Aval   = Astore->nzval;
+    Astore = (NCformat *) A->Store;
+    Aval   = (float *) Astore->nzval;
     
     if ( SUPERLU_MIN(A->nrow, A->ncol) == 0) {
 	value = 0.;
-	
-    } else if (strncmp(norm, "M", 1)==0) {
+    } else if ( (strncmp(norm, "M", 1)==0 ) ) {
 	/* Find max(abs(A(i,j))). */
 	value = 0.;
 	for (j = 0; j < A->ncol; ++j)

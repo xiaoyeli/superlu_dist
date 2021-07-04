@@ -12,14 +12,20 @@ at the top-level directory.
 /*! @file sgsequ_dist.c
  * \brief Computes row and column scalings
  *
+ * <pre>
+ * -- SuperLU routine (version 2.0) --
+ * Univ. of California Berkeley, Xerox Palo Alto Research Center,
+ * and Lawrence Berkeley National Lab.
+ * November 15, 1997
+ *
+ * Modified from LAPACK routine SGEEQU
+ * </pre>
  */
 /*
- * File name:	sgsequ_dist.c
  * History:     Modified from LAPACK routine SGEEQU
  */
 #include <math.h>
 #include "superlu_sdefs.h"
-
 
 /*! \brief
  *
@@ -83,9 +89,8 @@ at the top-level directory.
  */
 void
 sgsequ_dist(SuperMatrix *A, float *r, float *c, float *rowcnd,
-	    float *colcnd, float *amax, int_t *info)
+	float *colcnd, float *amax, int_t *info)
 {
-
     /* Local variables */
     NCformat *Astore;
     float   *Aval;
@@ -112,8 +117,8 @@ sgsequ_dist(SuperMatrix *A, float *r, float *c, float *rowcnd,
 	return;
     }
 
-    Astore = A->Store;
-    Aval = Astore->nzval;
+    Astore = (NCformat *) A->Store;
+    Aval = (float *) Astore->nzval;
     
     /* Get machine constants. */
     smlnum = smach_dist("S");  /* slamch_("S"); */

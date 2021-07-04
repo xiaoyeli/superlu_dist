@@ -776,8 +776,6 @@ int zSolveInit(superlu_dist_options_t *options, SuperMatrix *A,
  */
 void zSolveFinalize(superlu_dist_options_t *options, zSOLVEstruct_t *SOLVEstruct)
 {
-    int_t *it;
-
     pxgstrs_finalize(SOLVEstruct->gstrs_comm);
 
     if ( options->RefineInitialized ) {
@@ -789,14 +787,14 @@ void zSolveFinalize(superlu_dist_options_t *options, zSOLVEstruct_t *SOLVEstruct
     SUPERLU_FREE(SOLVEstruct->inv_perm_c);
     SUPERLU_FREE(SOLVEstruct->diag_procs);
     SUPERLU_FREE(SOLVEstruct->diag_len);
-    if ( it = SOLVEstruct->A_colind_gsmv ) SUPERLU_FREE(it);
+    if ( SOLVEstruct->A_colind_gsmv ) SUPERLU_FREE(SOLVEstruct->A_colind_gsmv);
     options->SolveInitialized = NO;
 } /* zSolveFinalize */
 
 /*! \brief Check the inf-norm of the error vector
  */
 void pzinf_norm_error(int iam, int_t n, int_t nrhs, doublecomplex x[], int_t ldx,
-		      doublecomplex xtrue[], int_t ldxtrue, gridinfo_t *grid)
+		      doublecomplex xtrue[], int_t ldxtrue, MPI_Comm slucomm)
 {
     double err, xnorm, temperr, tempxnorm;
     doublecomplex *x_work, *xtrue_work;
@@ -816,15 +814,15 @@ void pzinf_norm_error(int iam, int_t n, int_t nrhs, doublecomplex x[], int_t ldx
       /* get the golbal max err & xnrom */
       temperr = err;
       tempxnorm = xnorm;
-      MPI_Allreduce( &temperr, &err, 1, MPI_DOUBLE, MPI_MAX, grid->comm);
-      MPI_Allreduce( &tempxnorm, &xnorm, 1, MPI_DOUBLE, MPI_MAX, grid->comm);
+      MPI_Allreduce( &temperr, &err, 1, MPI_DOUBLE, MPI_MAX, slucomm);
+      MPI_Allreduce( &tempxnorm, &xnorm, 1, MPI_DOUBLE, MPI_MAX, slucomm);
 
       err = err / xnorm;
       if ( !iam ) printf("\tSol %2d: ||X-Xtrue||/||X|| = %e\n", j, err);
     }
 }
 
-/*! \brief Destroy distributed L & U matrices. */
+/*! \brief Destroy broadcast and reduction trees used in triangular solve */
 void
 zDestroy_Tree(int_t n, gridinfo_t *grid, zLUstruct_t *LUstruct)
 {

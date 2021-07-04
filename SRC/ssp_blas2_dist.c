@@ -20,6 +20,7 @@ at the top-level directory.
  * Last update: January 22, 2020
  * </pre>
  */
+
 /*
  * File name:		ssp_blas2_dist.c
  * Purpose:		Sparse BLAS 2, using some dense BLAS 2 operations.
@@ -60,7 +61,7 @@ extern void smatvec(int, int, int, float*, float*, float*);
  *             On entry, trans specifies the equations to be solved as   
  *             follows:   
  *                trans = 'N' or 'n'   A*x = b.   
- *                trans = 'T' or 't'   A'*x = b.
+ *                trans = 'T' or 't'   A'*x = b.   
  *                trans = 'C' or 'c'   A'*x = b.   
  *
  *   diag   - (input) char*
@@ -72,12 +73,12 @@ extern void smatvec(int, int, int, float*, float*, float*);
  *	     
  *   L       - (input) SuperMatrix*
  *	       The factor L from the factorization Pr*A*Pc=L*U. Use
- *             compressed row subscripts storage for supernodes,
- *             i.e., L has types: Stype = SC, Dtype = SLU_S, Mtype = TRLU.
+ *             compressed row subscripts storage for supernodes, i.e.,
+ *             L has types: Stype = SLU_SC, Dtype = SLU_S, Mtype = SLU_TRLU.
  *
  *   U       - (input) SuperMatrix*
  *	        The factor U from the factorization Pr*A*Pc=L*U.
- *	        U has types: Stype = NC, Dtype = SLU_S, Mtype = TRU.
+ *	        U has types: Stype = SLU_NC, Dtype = SLU_S, Mtype = SLU_TRU.
  *    
  *   x       - (input/output) float*
  *             Before entry, the incremented array X must contain the n   
@@ -93,9 +94,7 @@ sp_strsv_dist(char *uplo, char *trans, char *diag, SuperMatrix *L,
 	      SuperMatrix *U, float *x, int *info)
 {
 #ifdef _CRAY
-    _fcd ftcs1 = _cptofcd("L", strlen("L")),
-	 ftcs2 = _cptofcd("N", strlen("N")),
-	 ftcs3 = _cptofcd("U", strlen("U"));
+    _fcd ftcs1, ftcs2, ftcs3;
 #endif
     SCformat *Lstore;
     NCformat *Ustore;
@@ -110,10 +109,10 @@ sp_strsv_dist(char *uplo, char *trans, char *diag, SuperMatrix *L,
 
     /* Test the input parameters */
     *info = 0;
-    if ( strncmp(uplo,"L", 1)!=0 && strncmp(uplo, "U", 1)!=0 ) *info = -1;
-    else if ( strncmp(trans, "N", 1)!=0 && strncmp(trans, "T", 1)!=0 ) 
+    if ( strncmp(uplo,"L",1) != 0 && strncmp(uplo, "U",1) !=0 ) *info = -1;
+    else if ( strncmp(trans, "N",1) !=0 && strncmp(trans, "T", 1) !=0 )
 	*info = -2;
-    else if ( strncmp(diag, "U", 1)!=0 && strncmp(diag, "N", 1)!=0 )
+    else if ( strncmp(diag, "U", 1) !=0 && strncmp(diag, "N", 1) != 0 )
 	*info = -3;
     else if ( L->nrow != L->ncol || L->nrow < 0 ) *info = -4;
     else if ( U->nrow != U->ncol || U->nrow < 0 ) *info = -5;
@@ -130,7 +129,7 @@ sp_strsv_dist(char *uplo, char *trans, char *diag, SuperMatrix *L,
     solve_ops = 0;
 
     if ( !(work = floatCalloc_dist(L->nrow)) )
-	ABORT("Malloc fails for work in sp_strsv_dist().");
+	ABORT("Malloc fails for work in sp_dtrsv_dist().");
     
     if ( strncmp(trans, "N", 1)==0 ) {	/* Form x := inv(A)*x. */
 	
@@ -145,10 +144,10 @@ sp_strsv_dist(char *uplo, char *trans, char *diag, SuperMatrix *L,
 		nsupc = SuperLU_L_FST_SUPC(k+1) - fsupc;
 		luptr = SuperLU_L_NZ_START(fsupc);
 		nrow = nsupr - nsupc;
-
+		
 	        solve_ops += nsupc * (nsupc - 1);
 	        solve_ops += 2 * nrow * nsupc;
-
+		
 		if ( nsupc == 1 ) {
 		    for (iptr=istart+1; iptr < SuperLU_L_SUB_START(fsupc+1); ++iptr) {
 			irow = SuperLU_L_SUB(iptr);
@@ -158,6 +157,9 @@ sp_strsv_dist(char *uplo, char *trans, char *diag, SuperMatrix *L,
 		} else {
 #ifdef USE_VENDOR_BLAS
 #ifdef _CRAY
+		    ftcs1 = _cptofcd("L", strlen("L"));
+		    ftcs2 = _cptofcd("N", strlen("N"));
+		    ftcs3 = _cptofcd("U", strlen("U"));
 		    STRSV(ftcs1, ftcs2, ftcs3, &nsupc, &Lval[luptr], &nsupr,
 		       	&x[fsupc], &incx);
 		
@@ -165,16 +167,16 @@ sp_strsv_dist(char *uplo, char *trans, char *diag, SuperMatrix *L,
 		       	&nsupr, &x[fsupc], &incx, &beta, &work[0], &incy);
 #else
 		    strsv_("L", "N", "U", &nsupc, &Lval[luptr], &nsupr,
-			   &x[fsupc], &incx, 1, 1, 1);
+		       	&x[fsupc], &incx, 1, 1, 1);
 		
 		    sgemv_("N", &nrow, &nsupc, &alpha, &Lval[luptr+nsupc], 
-			   &nsupr, &x[fsupc], &incx, &beta, &work[0], &incy, 1);
-#endif
+		       	&nsupr, &x[fsupc], &incx, &beta, &work[0], &incy, 1);
+#endif /* _CRAY */		
 #else
-		    slsolve ( nsupr, nsupc, &Lval[luptr], &x[fsupc]);
+		    slsolve (nsupr, nsupc, &Lval[luptr], &x[fsupc]);
 		
-		    smatvec ( nsupr, nsupr-nsupc, nsupc, &Lval[luptr+nsupc],
-                             &x[fsupc], &work[0] );
+		    smatvec (nsupr, nsupr-nsupc, nsupc, &Lval[luptr+nsupc],
+			&x[fsupc], &work[0] );
 #endif		
 		
 		    iptr = istart + nsupc;
@@ -182,7 +184,6 @@ sp_strsv_dist(char *uplo, char *trans, char *diag, SuperMatrix *L,
 			irow = SuperLU_L_SUB(iptr);
 			x[irow] -= work[i];	/* Scatter */
 			work[i] = 0.0;
-
 		    }
 	 	}
 	    } /* for k ... */
@@ -197,7 +198,7 @@ sp_strsv_dist(char *uplo, char *trans, char *diag, SuperMatrix *L,
 	    	nsupr = SuperLU_L_SUB_START(fsupc+1) - SuperLU_L_SUB_START(fsupc);
 	    	nsupc = SuperLU_L_FST_SUPC(k+1) - fsupc;
 	    	luptr = SuperLU_L_NZ_START(fsupc);
-		
+
     	        solve_ops += nsupc * (nsupc + 1);
 
 		if ( nsupc == 1 ) {
@@ -209,11 +210,13 @@ sp_strsv_dist(char *uplo, char *trans, char *diag, SuperMatrix *L,
 		} else {
 #ifdef USE_VENDOR_BLAS
 #ifdef _CRAY
-		    STRSV(ftcs3, ftcs2, ftcs2, &nsupc, &Lval[luptr], &nsupr,
+		    ftcs1 = _cptofcd("U", strlen("U"));
+		    ftcs2 = _cptofcd("N", strlen("N"));
+		    STRSV(ftcs1, ftcs2, ftcs2, &nsupc, &Lval[luptr], &nsupr,
 		       &x[fsupc], &incx);
 #else
 		    strsv_("U", "N", "N", &nsupc, &Lval[luptr], &nsupr,
-                           &x[fsupc], &incx, 1, 1, 1);
+		       &x[fsupc], &incx, 1, 1, 1);
 #endif
 #else		
 		    susolve ( nsupr, nsupc, &Lval[luptr], &x[fsupc] );
@@ -267,13 +270,12 @@ sp_strsv_dist(char *uplo, char *trans, char *diag, SuperMatrix *L,
 			&x[fsupc], &incx);
 #else
 		    strsv_("L", "T", "U", &nsupc, &Lval[luptr], &nsupr,
-			   &x[fsupc], &incx, 1, 1, 1);
+			&x[fsupc], &incx, 1, 1, 1);
 #endif
 #else
 		    strsv_("L", "T", "U", &nsupc, &Lval[luptr], &nsupr,
-			   &x[fsupc], &incx);
+			&x[fsupc], &incx);
 #endif
-		    
 		}
 	    }
 	} else {
@@ -295,11 +297,9 @@ sp_strsv_dist(char *uplo, char *trans, char *diag, SuperMatrix *L,
 		}
 
 		solve_ops += nsupc * (nsupc + 1);
-
 		if ( nsupc == 1 ) {
 		    x[fsupc] /= Lval[luptr];
 		} else {
-
 #ifdef USE_VENDOR_BLAS
 #ifdef _CRAY
                     ftcs1 = _cptofcd("U", strlen("U"));
@@ -309,84 +309,82 @@ sp_strsv_dist(char *uplo, char *trans, char *diag, SuperMatrix *L,
 			    &x[fsupc], &incx);
 #else
 		    strsv_("U", "T", "N", &nsupc, &Lval[luptr], &nsupr,
-			   &x[fsupc], &incx, 1, 1, 1);
+			    &x[fsupc], &incx, 1, 1, 1);
 #endif
 #else
 		    strsv_("U", "T", "N", &nsupc, &Lval[luptr], &nsupr,
-			   &x[fsupc], &incx);
-
-#endif		    
+			    &x[fsupc], &incx);
+#endif
 		}
 	    } /* for k ... */
 	}
     }
 
-    /*stat->ops[SOLVE] += solve_ops;*/
+    /*SuperLUStat.ops[SOLVE] += solve_ops;*/
     SUPERLU_FREE(work);
     return 0;
-}
+} /* sp_strsv_dist */
 
 
-/*! \brief Performs one of the matrix-vector operations y := alpha*A*x + beta*y,   or   y := alpha*A'*x + beta*y,   
- *
- * <pre>
- *   Purpose   
- *   =======   
- *
- *   sp_sgemv_dist()  performs one of the matrix-vector operations   
- *      y := alpha*A*x + beta*y,   or   y := alpha*A'*x + beta*y,   
- *   where alpha and beta are scalars, x and y are vectors and A is a
- *   sparse A->nrow by A->ncol matrix.   
- *
- *   Parameters   
- *   ==========   
- *
- *   TRANS  - (input) char*
- *            On entry, TRANS specifies the operation to be performed as   
- *            follows:   
- *               TRANS = 'N' or 'n'   y := alpha*A*x + beta*y.   
- *               TRANS = 'T' or 't'   y := alpha*A'*x + beta*y.   
- *               TRANS = 'C' or 'c'   y := alpha*A'*x + beta*y.   
- *
- *   ALPHA  - (input) float
- *            On entry, ALPHA specifies the scalar alpha.   
- *
- *   A      - (input) SuperMatrix*
- *            Matrix A with a sparse format, of dimension (A->nrow, A->ncol).
- *            Currently, the type of A can be:
- *                Stype = NC or NCP; Dtype = SLU_S; Mtype = GE. 
- *            In the future, more general A can be handled.
- *
- *   X      - (input) float*, array of DIMENSION at least   
- *            ( 1 + ( n - 1 )*abs( INCX ) ) when TRANS = 'N' or 'n'   
- *            and at least   
- *            ( 1 + ( m - 1 )*abs( INCX ) ) otherwise.   
- *            Before entry, the incremented array X must contain the   
- *            vector x.   
- *
- *   INCX   - (input) int
- *            On entry, INCX specifies the increment for the elements of   
- *            X. INCX must not be zero.   
- *
- *   BETA   - (input) float
- *            On entry, BETA specifies the scalar beta. When BETA is   
- *            supplied as zero then Y need not be set on input.   
- *
- *   Y      - (output) float*,  array of DIMENSION at least   
- *            ( 1 + ( m - 1 )*abs( INCY ) ) when TRANS = 'N' or 'n'   
- *            and at least   
- *            ( 1 + ( n - 1 )*abs( INCY ) ) otherwise.   
- *            Before entry with BETA non-zero, the incremented array Y   
- *            must contain the vector y. On exit, Y is overwritten by the 
- *            updated vector y.
- *	     
- *   INCY   - (input) int
- *            On entry, INCY specifies the increment for the elements of   
- *            Y. INCY must not be zero.   
- *
- *   ==== Sparse Level 2 Blas routine.   
- * </pre>
- */
+/*! \brief SpGEMV
+<pre>
+  Purpose   
+    =======   
+
+    sp_sgemv_dist()  performs one of the matrix-vector operations   
+       y := alpha*A*x + beta*y,   or   y := alpha*A'*x + beta*y,   
+    where alpha and beta are scalars, x and y are vectors and A is a
+    sparse A->nrow by A->ncol matrix.   
+
+    Parameters   
+    ==========   
+
+    TRANS  - (input) char*
+             On entry, TRANS specifies the operation to be performed as   
+             follows:   
+                TRANS = 'N' or 'n'   y := alpha*A*x + beta*y.   
+                TRANS = 'T' or 't'   y := alpha*A'*x + beta*y.   
+                TRANS = 'C' or 'c'   y := alpha*A'*x + beta*y.   
+
+    ALPHA  - (input) double
+             On entry, ALPHA specifies the scalar alpha.   
+
+    A      - (input) SuperMatrix*
+             Matrix A with a sparse format, of dimension (A->nrow, A->ncol).
+             Currently, the type of A can be:
+                 Stype = SLU_NC or SLU_NCP; Dtype = SLU_S; Mtype = SLU_GE. 
+             In the future, more general A can be handled.
+
+    X      - (input) float*, array of DIMENSION at least   
+             ( 1 + ( n - 1 )*abs( INCX ) ) when TRANS = 'N' or 'n'   
+             and at least   
+             ( 1 + ( m - 1 )*abs( INCX ) ) otherwise.   
+             Before entry, the incremented array X must contain the   
+             vector x.   
+
+    INCX   - (input) int
+             On entry, INCX specifies the increment for the elements of   
+             X. INCX must not be zero.   
+
+    BETA   - (input) float
+             On entry, BETA specifies the scalar beta. When BETA is   
+             supplied as zero then Y need not be set on input.   
+
+    Y      - (output) float*,  array of DIMENSION at least   
+             ( 1 + ( m - 1 )*abs( INCY ) ) when TRANS = 'N' or 'n'   
+             and at least   
+             ( 1 + ( n - 1 )*abs( INCY ) ) otherwise.   
+             Before entry with BETA non-zero, the incremented array Y   
+             must contain the vector y. On exit, Y is overwritten by the 
+             updated vector y.
+	     
+    INCY   - (input) int
+             On entry, INCY specifies the increment for the elements of   
+             Y. INCY must not be zero.   
+
+    ==== Sparse Level 2 Blas routine.   
+</pre>
+*/
 int
 sp_sgemv_dist(char *trans, float alpha, SuperMatrix *A, float *x, 
 	      int incx, float beta, float *y, int incy)
@@ -395,19 +393,22 @@ sp_sgemv_dist(char *trans, float alpha, SuperMatrix *A, float *x,
     NCformat *Astore;
     float   *Aval;
     int info;
-    float temp;
+    float temp, temp1;
     int lenx, leny, i, j, irow;
     int iy, jx, jy, kx, ky;
     int notran;
+    float zero = 0.0;
+    float one = 1.0;
 
-    notran = ( strncmp(trans, "N", 1)==0 || strncmp(trans, "n", 1)==0 );
+    notran = (strncmp(trans, "N", 1)==0);
+
     Astore = (NCformat *) A->Store;
     Aval = (float *) Astore->nzval;
     
     /* Test the input parameters */
     info = 0;
-    if ( !notran && strncmp(trans, "T", 1)!=0 && strncmp(trans, "C", 1)!=0 )
-        info = 1;
+    if ( !notran && strncmp(trans, "T", 1) !=0 && strncmp(trans, "C", 1) != 0)
+	info = 1;
     else if ( A->nrow < 0 || A->ncol < 0 ) info = 3;
     else if (incx == 0) info = 5;
     else if (incy == 0)	info = 8;
@@ -422,7 +423,7 @@ sp_sgemv_dist(char *trans, float alpha, SuperMatrix *A, float *x,
 
     /* Set  LENX  and  LENY, the lengths of the vectors x and y, and set 
        up the start points in  X  and  Y. */
-    if (strncmp(trans, "N", 1)==0) {
+    if ( strncmp(trans, "N", 1)==0 ) {
 	lenx = A->ncol;
 	leny = A->nrow;
     } else {
@@ -440,14 +441,14 @@ sp_sgemv_dist(char *trans, float alpha, SuperMatrix *A, float *x,
     if (beta != 1.) {
 	if (incy == 1) {
 	    if (beta == 0.)
-		for (i = 0; i < leny; ++i) y[i] = 0.;
+		for (i = 0; i < leny; ++i) y[i] = zero;
 	    else
 		for (i = 0; i < leny; ++i) y[i] = beta * y[i];
 	} else {
 	    iy = ky;
 	    if (beta == 0.)
 		for (i = 0; i < leny; ++i) {
-		    y[iy] = 0.;
+		    y[iy] = zero;
 		    iy += incy;
 		}
 	    else
@@ -482,7 +483,7 @@ sp_sgemv_dist(char *trans, float alpha, SuperMatrix *A, float *x,
 	jy = ky;
 	if (incx == 1) {
 	    for (j = 0; j < A->ncol; ++j) {
-		temp = 0.;
+		temp = zero;
 		for (i = Astore->colptr[j]; i < Astore->colptr[j+1]; ++i) {
 		    irow = Astore->rowind[i];
 		    temp += Aval[i] * x[irow];
@@ -494,7 +495,5 @@ sp_sgemv_dist(char *trans, float alpha, SuperMatrix *A, float *x,
 	    ABORT("Not implemented.");
 	}
     }
-
     return 0;
 } /* sp_sgemv_dist */
-

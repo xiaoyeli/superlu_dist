@@ -15,8 +15,9 @@ at the top-level directory.
  *
  * <pre>
  * -- Distributed SuperLU routine (version 7.0) --
- * Lawrence Berkeley National Lab, Georgia Institute of Technology.
- * May 10, 2019
+ * Lawrence Berkeley National Lab, Georgia Institute of Technology,
+ * Oak Ridge National Lab
+ * May 12, 2021
  */
 
 #include "superlu_sdefs.h"
@@ -121,7 +122,7 @@ int_t sSchurComplementSetup(
     sLocalLU_t *Llu = LUstruct->Llu;
     int_t* xsup = Glu_persist->xsup;
 
-    int_t* ToRecv = Llu->ToRecv;
+    int* ToRecv = Llu->ToRecv;
     int_t iam = grid->iam;
 
     int_t myrow = MYROW (iam, grid);
@@ -337,7 +338,7 @@ int_t sSchurComplementSetupGPU(
     int_t* myIperm, 
     int_t* iperm_c_supno, int_t*perm_c_supno,
     gEtreeInfo_t*   gEtreeInfo, factNodelists_t* fNlists,
-    scuBufs_t* scuBufs, sLUValSubBuf_t* LUvsb,
+    sscuBufs_t* scuBufs, sLUValSubBuf_t* LUvsb,
     gridinfo_t *grid, sLUstruct_t *LUstruct,
     HyP_t* HyP)
 {
@@ -356,7 +357,7 @@ int_t sSchurComplementSetupGPU(
     sLocalLU_t *Llu = LUstruct->Llu;
     int_t* xsup = Glu_persist->xsup;
 
-    int_t* ToRecv = Llu->ToRecv;
+    int* ToRecv = Llu->ToRecv;
     int_t iam = grid->iam;
 
     int_t myrow = MYROW (iam, grid);
@@ -486,8 +487,7 @@ int_t sSchurComplementSetupGPU(
     }
 
     return LU_nonempty;
-} /* dSchurComplementSetupGPU */
-
+} /* sSchurComplementSetupGPU */
 
 float* sgetBigV(int_t ldt, int_t num_threads)
 {
@@ -497,8 +497,7 @@ float* sgetBigV(int_t ldt, int_t num_threads)
     return bigV;
 }
 
-float* sgetBigU(int_t nsupers, gridinfo_t *grid,
-                    sLUstruct_t *LUstruct)
+float* sgetBigU(int_t nsupers, gridinfo_t *grid, sLUstruct_t *LUstruct)
 {
     int_t Pr = grid->nprow;
     int_t Pc = grid->npcol;
@@ -553,7 +552,13 @@ trf3Dpartition_t* sinitTrf3Dpartition(int_t nsupers,
     int iam = grid3d->iam;
     CHECK_MALLOC (iam, "Enter sinitTrf3Dpartition()");
 #endif
-    int_t* perm_c_supno = getPerm_c_supno(nsupers, options, LUstruct, grid);
+
+    int_t* perm_c_supno = getPerm_c_supno(nsupers, options,
+                                         LUstruct->etree,
+    	   		                 LUstruct->Glu_persist,
+		                         LUstruct->Llu->Lrowind_bc_ptr,
+					 LUstruct->Llu->Ufstnz_br_ptr, grid);
+
     int_t* iperm_c_supno = getFactIperm(perm_c_supno, nsupers);
 
     // calculating tree factorization
@@ -561,7 +566,10 @@ trf3Dpartition_t* sinitTrf3Dpartition(int_t nsupers,
     treeList_t* treeList = setree2list(nsupers, setree );
 
     /*update treelist with weight and depth*/
-    getSCUweight(nsupers, treeList, LUstruct, grid3d);
+
+    getSCUweight(nsupers, treeList, LUstruct->Glu_persist->xsup,
+		  LUstruct->Llu->Lrowind_bc_ptr, LUstruct->Llu->Ufstnz_br_ptr,
+		  grid3d);
 
     calcTreeWeight(nsupers, setree, treeList, LUstruct->Glu_persist->xsup);
 

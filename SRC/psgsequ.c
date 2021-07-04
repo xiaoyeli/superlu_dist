@@ -239,10 +239,6 @@ psgsequ(SuperMatrix *A, float *r, float *c, float *rowcnd,
     SUPERLU_FREE(r_sizes);
     SUPERLU_FREE(loc_r);
 
-    if (grid->iam==0) {
-      printf("psgsequ: ROWCND %.6e, COLCND %.6e\n", *rowcnd, *colcnd);
-      fflush(stdout);
-    }
     return;
 
 } /* psgsequ */

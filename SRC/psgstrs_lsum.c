@@ -1480,8 +1480,7 @@ void slsum_bmod_inv
 							#endif
 							for (irow = fnz; irow < iklrow; ++irow)
 								dest[irow - ikfrow] -= uval[uptr++] * y[jj];
-							stat[thread_id1]->ops[SOLVE] += 2 * (iklrow - fnz);
-
+								stat[thread_id1]->ops[SOLVE] += 2 * (iklrow - fnz);
 						}
 					} /* for jj ... */
 				}
@@ -1662,7 +1661,7 @@ void slsum_bmod_inv
 						#pragma omp simd
 						#endif
 						for (irow = fnz; irow < iklrow; ++irow)
-						  dest[irow - ikfrow] -= uval[uptr++] * y[jj];
+						    dest[irow - ikfrow] -= uval[uptr++] * y[jj];
 						stat[thread_id]->ops[SOLVE] += 2 * (iklrow - fnz);
 					}
 				} /* for jj ... */

@@ -85,8 +85,9 @@ zreadtriple_dist(FILE *fp, int_t *m, int_t *n, int_t *nonz,
 	    if ( row[0] == 0 || col[0] == 0 ) {
 		zero_base = 1;
 		printf("triplet file: row/col indices are zero-based.\n");
-	    } else
+	    } else {
 		printf("triplet file: row/col indices are one-based.\n");
+	    }
 
 	if ( !zero_base ) {
 	    /* Change to 0-based indexing. */

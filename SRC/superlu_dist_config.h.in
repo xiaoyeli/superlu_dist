@@ -1,5 +1,8 @@
 /* superlu_dist_config.h.in */
 
+/* Enable CUDA */
+#cmakedefine HAVE_CUDA @HAVE_CUDA@
+
 /* Enable parmetis */
 #cmakedefine HAVE_PARMETIS @HAVE_PARMETIS@
 
@@ -14,5 +17,4 @@
 
 #if (XSDK_INDEX_SIZE == 64)
 #define _LONGINT 1
-
 #endif

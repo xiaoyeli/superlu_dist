@@ -15,8 +15,9 @@ at the top-level directory.
  *
  * <pre>
  * -- Distributed SuperLU routine (version 7.0) --
- * Lawrence Berkeley National Lab, Georgia Institute of Technology.
- * May 10, 2019
+ * Lawrence Berkeley National Lab, Georgia Institute of Technology,
+ * Oak Ridge National Lab
+ * May 12, 2021
  */
 #include "superlu_sdefs.h"
 #if 0
@@ -34,19 +35,19 @@ int_t sLluBufInit(sLUValSubBuf_t* LUvsb, sLUstruct_t *LUstruct)
     return 0;
 }
 
-diagFactBufs_t** sinitDiagFactBufsArr(int_t mxLeafNode, int_t ldt, gridinfo_t* grid)
+sdiagFactBufs_t** sinitDiagFactBufsArr(int_t mxLeafNode, int_t ldt, gridinfo_t* grid)
 {
-    diagFactBufs_t** dFBufs;
+    sdiagFactBufs_t** dFBufs;
 
     /* Sherry fix:
      * mxLeafNode can be 0 for the replicated layers of the processes ?? */
-    if ( mxLeafNode ) dFBufs = (diagFactBufs_t** )
-                          SUPERLU_MALLOC(mxLeafNode * sizeof(diagFactBufs_t*));
+    if ( mxLeafNode ) dFBufs = (sdiagFactBufs_t** )
+                          SUPERLU_MALLOC(mxLeafNode * sizeof(sdiagFactBufs_t*));
 
     for (int i = 0; i < mxLeafNode; ++i)
     {
         /* code */
-        dFBufs[i] = (diagFactBufs_t* ) SUPERLU_MALLOC(sizeof(diagFactBufs_t));
+        dFBufs[i] = (sdiagFactBufs_t* ) SUPERLU_MALLOC(sizeof(sdiagFactBufs_t));
         assert(dFBufs[i]);
         sinitDiagFactBufs(ldt, dFBufs[i]);
 
@@ -56,7 +57,7 @@ diagFactBufs_t** sinitDiagFactBufsArr(int_t mxLeafNode, int_t ldt, gridinfo_t* g
 }
 
 // sherry added
-int sfreeDiagFactBufsArr(int_t mxLeafNode, diagFactBufs_t** dFBufs)
+int sfreeDiagFactBufsArr(int_t mxLeafNode, sdiagFactBufs_t** dFBufs)
 {
     for (int i = 0; i < mxLeafNode; ++i) {
 	SUPERLU_FREE(dFBufs[i]->BlockUFactor);
@@ -95,11 +96,12 @@ int sLluBufFreeArr(int_t numLA, sLUValSubBuf_t **LUvsbs)
 	SUPERLU_FREE(LUvsbs[i]);
     }
     SUPERLU_FREE(LUvsbs);
+    return 0;
 }
 
 
 int_t sinitScuBufs(int_t ldt, int_t num_threads, int_t nsupers,
-                  scuBufs_t* scuBufs,
+                  sscuBufs_t* scuBufs,
                   sLUstruct_t* LUstruct,
                   gridinfo_t * grid)
 {
@@ -109,14 +111,14 @@ int_t sinitScuBufs(int_t ldt, int_t num_threads, int_t nsupers,
 }
 
 // sherry added
-int sfreeScuBufs(scuBufs_t* scuBufs)
+int sfreeScuBufs(sscuBufs_t* scuBufs)
 {
     SUPERLU_FREE(scuBufs->bigV);
     SUPERLU_FREE(scuBufs->bigU);
     return 0;
 }
 
-int_t sinitDiagFactBufs(int_t ldt, diagFactBufs_t* dFBuf)
+int_t sinitDiagFactBufs(int_t ldt, sdiagFactBufs_t* dFBuf)
 {
     dFBuf->BlockUFactor = floatMalloc_dist(ldt * ldt); //DOUBLE_ALLOC( ldt * ldt);
     dFBuf->BlockLFactor = floatMalloc_dist(ldt * ldt); //DOUBLE_ALLOC( ldt * ldt);
@@ -127,11 +129,11 @@ int_t sdenseTreeFactor(
     int_t nnodes,          // number of nodes in the tree
     int_t *perm_c_supno,    // list of nodes in the order of factorization
     commRequests_t *comReqs,    // lists of communication requests
-    scuBufs_t *scuBufs,          // contains buffers for schur complement update
+    sscuBufs_t *scuBufs,   // contains buffers for schur complement update
     packLUInfo_t*packLUInfo,
     msgs_t*msgs,
     sLUValSubBuf_t* LUvsb,
-    diagFactBufs_t *dFBuf,
+    sdiagFactBufs_t *dFBuf,
     factStat_t *factStat,
     factNodelists_t  *fNlists,
     superlu_dist_options_t *options,
@@ -218,8 +220,8 @@ int_t sdenseTreeFactor(
             Remain_info_t*  Remain_info = packLUInfo->Remain_info;
             uPanelInfo_t* uPanelInfo = packLUInfo->uPanelInfo;
             lPanelInfo_t* lPanelInfo = packLUInfo->lPanelInfo;
-            int_t* indirect  = fNlists->indirect;
-            int_t* indirect2  = fNlists->indirect2;
+            int* indirect  = fNlists->indirect;
+            int* indirect2  = fNlists->indirect2;
             /*Schurcomplement Update*/
             int_t nub = uPanelInfo->nub;
             int_t nlb = lPanelInfo->nlb;
@@ -288,11 +290,11 @@ int_t sdenseTreeFactor(
 int_t ssparseTreeFactor_ASYNC(
     sForest_t* sforest,
     commRequests_t **comReqss,    // lists of communication requests // size maxEtree level
-    scuBufs_t *scuBufs,          // contains buffers for schur complement update
+    sscuBufs_t *scuBufs,       // contains buffers for schur complement update
     packLUInfo_t*packLUInfo,
     msgs_t**msgss,                  // size=num Look ahead
     sLUValSubBuf_t** LUvsbs,          // size=num Look ahead
-    diagFactBufs_t **dFBufs,         // size maxEtree level
+    sdiagFactBufs_t **dFBufs,         // size maxEtree level
     factStat_t *factStat,
     factNodelists_t  *fNlists,
     gEtreeInfo_t*   gEtreeInfo,        // global etree info
@@ -490,8 +492,8 @@ int_t ssparseTreeFactor_ASYNC(
             lPanelInfo_t* lPanelInfo = packLUInfo->lPanelInfo;
             int_t *lsub = lPanelInfo->lsub;
             int_t *usub = uPanelInfo->usub;
-            int_t* indirect  = fNlists->indirect;
-            int_t* indirect2  = fNlists->indirect2;
+            int* indirect  = fNlists->indirect;
+            int* indirect2  = fNlists->indirect2;
 
             /*Schurcomplement Update*/
 

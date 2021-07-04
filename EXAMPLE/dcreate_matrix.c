@@ -235,7 +235,6 @@ int dcreate_matrix(SuperMatrix *A, int nrhs, double **rhs,
 }
 
 
-
 int dcreate_matrix_postfix(SuperMatrix *A, int nrhs, double **rhs,
                    int *ldb, double **x, int *ldx,
                    FILE *fp, char * postfix, gridinfo_t *grid)

@@ -60,7 +60,7 @@ zreadMM_dist(FILE *fp, int_t *m, int_t *n, int_t *nonz,
 
      if (sscanf(line, "%s %s %s %s %s", banner, mtx, crd, arith, sym) != 5) {
        printf("Invalid header (first line does not contain 5 tokens)\n");
-       exit;
+       exit(-1);
      }
 
      if(strcmp(banner,"%%matrixmarket")) {

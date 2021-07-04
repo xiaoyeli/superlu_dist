@@ -15,8 +15,9 @@ at the top-level directory.
  *
  * <pre>
  * -- Distributed SuperLU routine (version 7.0) --
- * Lawrence Berkeley National Lab, Georgia Institute of Technology.
- * May 10, 2019
+ * Lawrence Berkeley National Lab, Georgia Institute of Technology,
+ * Oak Ridge National Lab
+ * May 12, 2021
  */
 #include "superlu_sdefs.h"
 #if 0
@@ -29,7 +30,7 @@ int_t sIBcast_LPanel
 /*broadcasts index array lsub and non-zero value
  array lusup of a newly factored L column to my process row*/
 (int_t k, int_t k0, int_t* lsub, float* lusup, gridinfo_t *grid,
- int* msgcnt, MPI_Request *send_req, int_t **ToSendR, int_t *xsup,
+ int* msgcnt, MPI_Request *send_req, int **ToSendR, int_t *xsup,
  int tag_ub)
 {
     int_t Pc = grid->npcol;
@@ -69,10 +70,11 @@ int_t sBcast_LPanel
 /*broadcasts index array lsub and non-zero value
  array lusup of a newly factored L column to my process row*/
 (int_t k, int_t k0, int_t* lsub, float* lusup, gridinfo_t *grid,
- int* msgcnt,  int_t **ToSendR, int_t *xsup , SCT_t* SCT,
+ int* msgcnt,  int **ToSendR, int_t *xsup , SCT_t* SCT,
  int tag_ub)
 {
-    unsigned long long t1 = _rdtsc();
+    //unsigned long long t1 = _rdtsc();
+    double t1 = SuperLU_timer_();
     int_t Pc = grid->npcol;
     int_t lk = LBj (k, grid);
     superlu_scope_t *scp = &grid->rscp;  /* The scope of process row. */
@@ -101,7 +103,8 @@ int_t sBcast_LPanel
 
         }
     }
-    SCT->Bcast_UPanel_tl += (double) ( _rdtsc() - t1);
+    //SCT->Bcast_UPanel_tl += (double) ( _rdtsc() - t1);
+    SCT->Bcast_UPanel_tl += SuperLU_timer_() - t1;
     return 0;
 }
 
@@ -110,7 +113,7 @@ int_t sBcast_LPanel
 int_t sIBcast_UPanel
 /*asynchronously braodcasts U panel to my process row */
 (int_t k, int_t k0, int_t* usub, float* uval, gridinfo_t *grid,
- int* msgcnt, MPI_Request *send_req_u, int_t *ToSendD, int tag_ub )
+ int* msgcnt, MPI_Request *send_req_u, int *ToSendD, int tag_ub )
 {
 
     int_t iam = grid->iam;
@@ -153,10 +156,11 @@ int_t sIBcast_UPanel
 /*Synchronously braodcasts U panel to my process row */
 int_t sBcast_UPanel(int_t k, int_t k0, int_t* usub,
                      float* uval, gridinfo_t *grid,
-		   int* msgcnt, int_t *ToSendD, SCT_t* SCT, int tag_ub)
+		   int* msgcnt, int *ToSendD, SCT_t* SCT, int tag_ub)
 
 {
-    unsigned long long t1 = _rdtsc();
+    //unsigned long long t1 = _rdtsc();
+    double t1 = SuperLU_timer_();
     int_t iam = grid->iam;
     int_t lk = LBi (k, grid);
     int_t Pr = grid->nprow;
@@ -188,7 +192,8 @@ int_t sBcast_UPanel(int_t k, int_t k0, int_t* usub,
             }       /* if pi ... */
         }           /* for pi ... */
     }
-    SCT->Bcast_UPanel_tl += (double) ( _rdtsc() - t1);
+    //SCT->Bcast_UPanel_tl += (double) ( _rdtsc() - t1);
+    SCT->Bcast_UPanel_tl +=  SuperLU_timer_() - t1;
     return 0;
 }
 
@@ -230,13 +235,15 @@ int_t sIrecv_UPanel
 int_t sWait_URecv
 ( MPI_Request *recv_req, int* msgcnt, SCT_t* SCT)
 {
-    unsigned long long t1 = _rdtsc();
+    //unsigned long long t1 = _rdtsc();
+    double t1 = SuperLU_timer_();
     MPI_Status status;
     MPI_Wait (&recv_req[0], &status);
     MPI_Get_count (&status, mpi_int_t, &msgcnt[2]);
     MPI_Wait (&recv_req[1], &status);
     MPI_Get_count (&status, MPI_FLOAT, &msgcnt[3]);
-    SCT->Wait_URecv_tl += (double) ( _rdtsc() - t1);
+    //SCT->Wait_URecv_tl += (double) ( _rdtsc() - t1);
+    SCT->Wait_URecv_tl += SuperLU_timer_() - t1;
     return 0;
 }
 
@@ -244,7 +251,8 @@ int_t sWait_LRecv
 /*waits till L blocks have been received*/
 (  MPI_Request* recv_req, int* msgcnt, int* msgcntsU, gridinfo_t * grid, SCT_t* SCT)
 {
-    unsigned long long t1 = _rdtsc();
+    //unsigned long long t1 = _rdtsc();
+    double t1 = SuperLU_timer_();
     MPI_Status status;
     
     if (recv_req[0] != MPI_REQUEST_NULL)
@@ -268,7 +276,8 @@ int_t sWait_LRecv
     {
         msgcnt[1] = msgcntsU[1];
     }
-    SCT->Wait_LRecv_tl += (double) ( _rdtsc() - t1);
+    //SCT->Wait_LRecv_tl += (double) ( _rdtsc() - t1);
+    SCT->Wait_LRecv_tl +=  SuperLU_timer_() - t1;
     return 0;
 }
 
@@ -304,7 +313,8 @@ int_t sRecv_UDiagBlock(int_t k0, float *ublk_ptr, /*pointer for the diagonal blo
                       int_t src,
                       gridinfo_t * grid, SCT_t* SCT, int tag_ub)
 {
-    unsigned long long t1 = _rdtsc();
+    //unsigned long long t1 = _rdtsc();
+    double t1 = SuperLU_timer_();
     MPI_Status status;
     MPI_Comm comm = (grid->cscp).comm;
     /* tag = ((k0<<2)+2) % tag_ub;        */
@@ -312,7 +322,8 @@ int_t sRecv_UDiagBlock(int_t k0, float *ublk_ptr, /*pointer for the diagonal blo
 
     MPI_Recv (ublk_ptr, size, MPI_FLOAT, src,
               SLU_MPI_TAG (4, k0), comm, &status);
-    SCT->Recv_UDiagBlock_tl += (double) ( _rdtsc() - t1);
+    //SCT->Recv_UDiagBlock_tl += (double) ( _rdtsc() - t1);
+    SCT->Recv_UDiagBlock_tl += SuperLU_timer_() - t1;
     return 0;
 }
 
@@ -375,7 +386,8 @@ int_t sIRecv_UDiagBlock(int_t k0, float *ublk_ptr, /*pointer for the diagonal bl
                        MPI_Request *U_diag_blk_recv_req,
                        gridinfo_t * grid, SCT_t* SCT, int tag_ub)
 {
-    unsigned long long t1 = _rdtsc();
+    //unsigned long long t1 = _rdtsc();
+    double t1 = SuperLU_timer_();
     MPI_Comm comm = (grid->cscp).comm;
     /* tag = ((k0<<2)+2) % tag_ub;        */
     /* tag = (4*(nsupers+k0)+2) % tag_ub; */
@@ -386,7 +398,8 @@ int_t sIRecv_UDiagBlock(int_t k0, float *ublk_ptr, /*pointer for the diagonal bl
     {
         printf("Error in IRecv_UDiagBlock count\n");
     }
-    SCT->Recv_UDiagBlock_tl += (double) ( _rdtsc() - t1);
+    //SCT->Recv_UDiagBlock_tl += (double) ( _rdtsc() - t1);
+    SCT->Recv_UDiagBlock_tl += SuperLU_timer_() - t1;
     return 0;
 }
 
@@ -396,7 +409,8 @@ int_t sIRecv_LDiagBlock(int_t k0, float *L_blk_ptr, /*pointer for the diagonal b
                        MPI_Request *L_diag_blk_recv_req,
                        gridinfo_t * grid, SCT_t* SCT, int tag_ub)
 {
-    unsigned long long t1 = _rdtsc();
+    //unsigned long long t1 = _rdtsc();
+    double t1 = SuperLU_timer_();
     MPI_Comm comm = (grid->rscp).comm;
     /* tag = ((k0<<2)+2) % tag_ub;        */
     /* tag = (4*(nsupers+k0)+2) % tag_ub; */
@@ -408,7 +422,8 @@ int_t sIRecv_LDiagBlock(int_t k0, float *L_blk_ptr, /*pointer for the diagonal b
     {
         printf("Error in IRecv_lDiagBlock count\n");
     }
-    SCT->Recv_UDiagBlock_tl += (double) ( _rdtsc() - t1);
+    //SCT->Recv_UDiagBlock_tl += (double) ( _rdtsc() - t1);
+    SCT->Recv_UDiagBlock_tl += SuperLU_timer_() - t1;
     return 0;
 }
 

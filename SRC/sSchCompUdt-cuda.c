@@ -37,6 +37,7 @@ at the top-level directory.
     } while(0);
 
 int full;
+double gemm_timer = 0.0;
 double scatter_timer = 0.0;
 
 if ( msg0 && msg2 ) {  /* L(:,k) and U(k,:) are not empty. */
@@ -61,12 +62,11 @@ if ( msg0 && msg2 ) {  /* L(:,k) and U(k,:) are not empty. */
 #endif
 	
         int num_streams_used, /* number of streams that will be used*/
-	    ncpu_blks;            /* the leading number of CPU dgemm blks
-			         in each partition */
-        int jjj,        // working column index 
-	    jjj_st,     // first block column of current partition
-	    jjj_global; // first block column of next partition 
 
+        ncpu_blks;            /* the leading number of CPU dgemm blks
+			         in each partition */
+        int jjj, jjj_st,jjj_global;
+	
 	/* For each U block: count non-empty columns and
 	   leading-dimension of the block.    */
         for (j = jj0; j < nub; ++j) {
@@ -114,12 +114,11 @@ if ( msg0 && msg2 ) {  /* L(:,k) and U(k,:) are not empty. */
 
                     ldu = SUPERLU_MAX(ldu, blk_ldu[j]);
 
-                    /* Break condition:
-		       the number of columns that can be processed on GPU is
-		       limited by buffer_size 
+                    /* break condition */
+                    /* the number of columns that can be processed on GPU is
+		       limited by buffer size.
 		       ncol_max := max. number of columns on GPU   */
-                    if ( full_u_cols[j] + ((j+1==nub) ? 0 : full_u_cols[j+1])
-			 > ncol_max) { 
+                    if (full_u_cols[j]+((j+1==nub)?0:full_u_cols[j+1]) > ncol_max) {
                         break; // block column j+1 does not fit in GPU memory */
                     }
                 } /* end for j=jjj_st to nub */
@@ -169,7 +168,7 @@ if ( msg0 && msg2 ) {  /* L(:,k) and U(k,:) are not empty. */
             // TAU_STATIC_TIMER_START("GATHER_U");
 
 	    tt_start = SuperLU_timer_();
-	    
+
 #ifdef _OPENMP
 #pragma omp for schedule( SCHEDULE_STRATEGY )
 #endif
@@ -351,7 +350,6 @@ if ( msg0 && msg2 ) {  /* L(:,k) and U(k,:) are not empty. */
 	            my_sgemm_("N", "N", &nbrow, &num_col_stream, &ldu,
 			      &alpha, &lusup[luptr+(knsupc-ldu)*nsupr],
 			      &nsupr, tempu + ldu*st_cols, &ldu, &beta,
-			      tempv1, &nbrow, 1, 1);
 #endif
    	        } // end if num_col_stream > 0
 
@@ -376,6 +374,7 @@ if ( msg0 && msg2 ) {  /* L(:,k) and U(k,:) are not empty. */
 		  tempu+ldu*st_cols, &ldu, &beta, tempv, &nbrow);
 #endif
 	    cpuGEMMTimer += SuperLU_timer_() - tstart;
+
 	    stat->ops[FACT] += 2 * nbrow * ldu * full_u_cols[jjj-1];
 
             /* Now scattering blocks computed by CPU */
@@ -384,6 +383,7 @@ if ( msg0 && msg2 ) {  /* L(:,k) and U(k,:) are not empty. */
             tstart = SuperLU_timer_();  // collecting scatter time
 
             /* scatter leading blocks which CPU has computated */
+
 #ifdef _OPENMP
 #pragma omp parallel  \
     private(j,iukp,rukp, tempu, tempv, cum_nrow, jb, nsupc,ljb,	\
@@ -577,7 +577,7 @@ if ( msg0 && msg2 ) {  /* L(:,k) and U(k,:) are not empty. */
 		}     /* else (ncpu_blks >= omp_get_num_threads()) */
 	    }         /* parallel region */
 
-	    //scatter_timer += SuperLU_timer_() - tstart;
+	    scatter_timer += SuperLU_timer_() - tstart;
 	    
 	    // Scatter tempv(:, (jjj_st1 : jjj_global)) computed on GPU.
 #ifdef _OPENMP

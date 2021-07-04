@@ -18,7 +18,7 @@ function(add_superlu_dist_example target input nprow npcol)
 
 # corresponding to mpiexec -n 4 pddrive -r <nprow> -c <npcol> g20.rua
     add_test(${target} ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} ${procs}
-             ${MPIEXEC_PREFLAGS} ${target} ${MPIEXEC_POSTFLAGS} -r "${nprow}" -c "${npcol}" "${EXAMPLE_INPUT}")
+             ${MPIEXEC_PREFLAGS} ${EXAMPLE_LOC}/${target} ${MPIEXEC_POSTFLAGS} -r "${nprow}" -c "${npcol}" "${EXAMPLE_INPUT}")
 
 #     add_test(NAME ${target} COMMAND "${CMAKE_COMMAND}"
 #              -DTEST=${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} ${procs}
@@ -34,8 +34,8 @@ endfunction(add_superlu_dist_example)
 
 if(enable_single)
   set(SEXM psdrive.c screate_matrix.c)
-  add_executable(psdrive ${SEXM})
-  target_link_libraries(psdrive ${all_link_libs})
+#  add_executable(psdrive ${SEXM})
+#  target_link_libraries(psdrive ${all_link_libs})
 
   set(SEXM1 psdrive1.c screate_matrix.c)
   add_executable(psdrive1 ${SEXM1})
@@ -80,7 +80,7 @@ if(enable_single)
 #  add_executable(psdrive_spawn ${SEXMS})
 #  target_link_libraries(psdrive_spawn ${all_link_libs})
   
-endif()
+endif() #### end enable_single
 
 if(enable_double)
   set(DEXM pddrive.c dcreate_matrix.c)
@@ -106,6 +106,10 @@ if(enable_double)
   add_executable(pddrive4 ${DEXM4})
   target_link_libraries(pddrive4 ${all_link_libs})
 
+  set(DEXM3D pddrive3d.c dcreate_matrix.c dcreate_matrix3d.c)
+  add_executable(pddrive3d ${DEXM3D})
+  target_link_libraries(pddrive3d ${all_link_libs})
+
   set(DEXMG pddrive_ABglobal.c)
   add_executable(pddrive_ABglobal ${DEXMG})
   target_link_libraries(pddrive_ABglobal ${all_link_libs})
@@ -125,13 +129,12 @@ if(enable_double)
   set(DEXMG4 pddrive4_ABglobal.c)
   add_executable(pddrive4_ABglobal ${DEXMG4})
   target_link_libraries(pddrive4_ABglobal ${all_link_libs})
-  
+
   set(DEXMS pddrive_spawn.c dcreate_matrix.c)
   add_executable(pddrive_spawn ${DEXMS})
-  target_link_libraries(pddrive_spawn ${all_link_libs})  
-  
-endif()
+  target_link_libraries(pddrive_spawn ${all_link_libs})
 
+endif() #### end enable_double
 
 if(enable_complex16)
 
@@ -158,6 +161,10 @@ if(enable_complex16)
   add_executable(pzdrive4 ${ZEXM4})
   target_link_libraries(pzdrive4 ${all_link_libs})
 
+  set(ZEXM3D pzdrive3d.c zcreate_matrix.c zcreate_matrix3d.c)
+  add_executable(pzdrive3d ${ZEXM3D})
+  target_link_libraries(pzdrive3d ${all_link_libs})
+
   set(ZEXMG pzdrive_ABglobal.c)
   add_executable(pzdrive_ABglobal ${ZEXMG})
   target_link_libraries(pzdrive_ABglobal ${all_link_libs})
@@ -177,5 +184,9 @@ if(enable_complex16)
   set(ZEXMG4 pzdrive4_ABglobal.c)
   add_executable(pzdrive4_ABglobal ${ZEXMG4})
   target_link_libraries(pzdrive4_ABglobal ${all_link_libs})
+
+  set(ZEXMS pzdrive_spawn.c zcreate_matrix.c)
+  add_executable(pzdrive_spawn ${ZEXMS})
+  target_link_libraries(pzdrive_spawn ${all_link_libs})  
 
 endif()

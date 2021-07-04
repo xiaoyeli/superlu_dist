@@ -357,7 +357,7 @@ int main(int argc, char *argv[])
 		        PStatFree(&stat);
 #if 0
 		        pdinf_norm_error(iam, ((NRformat_loc *)A.Store)->m_loc,
-				     nrhs, b, ldb, xtrue, ldx, &grid);
+				     nrhs, b, ldb, xtrue, ldx, grid.comm);
 #endif
 		        if ( info ) {
 			    printf(FMT3, "pzgssvx",info,izero,n,nrhs,imat,nfail);
@@ -375,7 +375,7 @@ int main(int argc, char *argv[])
 			    dgst04(n, nrhs, solx, ldx, xact, ldx, rcond,
 					  &result[2]);
 			    pdinf_norm_error(iam, ((NRformat_loc *)A.Store)->m_loc,
-					 nrhs, b, ldb, xtrue, ldx, &grid);
+					 nrhs, b, ldb, xtrue, ldx, grid.comm);
 #endif
 
 			    /* Print information about the tests that did

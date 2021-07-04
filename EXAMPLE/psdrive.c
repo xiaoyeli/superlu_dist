@@ -21,7 +21,6 @@ at the top-level directory.
  * </pre>
  */
 
-#include<float.h>
 #include <math.h>
 #include "superlu_sdefs.h"
 
@@ -65,11 +64,12 @@ int main(int argc, char *argv[])
     char     **cpp, c, *postfix;;
     FILE *fp, *fopen();
     int cpp_defs();
+
     int ii, i, omp_mpi_level;
     extern void psgssvx_d2(superlu_dist_options_t *options, SuperMatrix *A,
-			ScalePermstruct_t *ScalePermstruct,
+			sScalePermstruct_t *ScalePermstruct,
 			float B[], int ldb, int nrhs, gridinfo_t *grid,
-			LUstruct_t *LUstruct, SOLVEstruct_t *SOLVEstruct,
+			sLUstruct_t *LUstruct, sSOLVEstruct_t *SOLVEstruct,
 			float *err_bounds, SuperLUStat_t *stat, int *info,
 			float *xtrue);
 
@@ -161,7 +161,8 @@ int main(int argc, char *argv[])
 	
     /* Bail out if I do not belong in the grid. */
     iam = grid.iam;
-    if ( iam >= nprow * npcol )	goto out;
+    if ( iam == -1 )	goto out;
+
     if ( !iam ) {
 	int v_major, v_minor, v_bugfix;
 #ifdef __INTEL_COMPILER
@@ -261,6 +262,7 @@ int main(int argc, char *argv[])
 	options.DiagInv           = NO;
      */
     set_default_options_dist(&options);
+
     options.IterRefine = SLU_DOUBLE;
 #if 0
     options.IterRefine = SLU_SINGLE;

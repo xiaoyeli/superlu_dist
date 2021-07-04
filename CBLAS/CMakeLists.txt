@@ -66,5 +66,5 @@ endif()
 
 add_library(blas ${sources} ${HEADERS})
 
-install(TARGETS blas DESTINATION ${CMAKE_INSTALL_PREFIX}/lib)
-install(FILES ${headers} DESTINATION ${CMAKE_INSTALL_PREFIX}/include)
+install(TARGETS blas DESTINATION "${INSTALL_LIB_DIR}")
+install(FILES ${headers} DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})

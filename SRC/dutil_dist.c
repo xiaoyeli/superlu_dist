@@ -420,8 +420,62 @@ void dScalePermstructFree(dScalePermstruct_t *ScalePermstruct)
         SUPERLU_FREE(ScalePermstruct->R);
         SUPERLU_FREE(ScalePermstruct->C);
         break;
+      default: break;
     }
 }
+
+/*
+ * The following are from 3D code p3dcomm.c
+ */
+
+int dAllocGlu_3d(int_t n, int_t nsupers, dLUstruct_t * LUstruct)
+{
+    /*broadcasting Glu_persist*/
+    LUstruct->Glu_persist->xsup  = intMalloc_dist(nsupers+1); //INT_T_ALLOC(nsupers+1);
+    LUstruct->Glu_persist->supno = intMalloc_dist(n); //INT_T_ALLOC(n);
+    return 0;
+}
+
+// Sherry added
+int dDeAllocGlu_3d(dLUstruct_t * LUstruct)
+{
+    SUPERLU_FREE(LUstruct->Glu_persist->xsup);
+    SUPERLU_FREE(LUstruct->Glu_persist->supno);
+    return 0;
+}
+
+int dDeAllocLlu_3d(int_t n, dLUstruct_t * LUstruct, gridinfo3d_t* grid3d)
+{
+    int i, nbc, nbr, nsupers;
+    dLocalLU_t *Llu = LUstruct->Llu;
+
+    nsupers = (LUstruct->Glu_persist)->supno[n-1] + 1;
+
+    nbc = CEILING(nsupers, grid3d->npcol);
+    for (i = 0; i < nbc; ++i) 
+	if ( Llu->Lrowind_bc_ptr[i] ) {
+	    SUPERLU_FREE (Llu->Lrowind_bc_ptr[i]);
+	    SUPERLU_FREE (Llu->Lnzval_bc_ptr[i]);
+	}
+    SUPERLU_FREE (Llu->Lrowind_bc_ptr);
+    SUPERLU_FREE (Llu->Lnzval_bc_ptr);
+
+    nbr = CEILING(nsupers, grid3d->nprow);
+    for (i = 0; i < nbr; ++i)
+	if ( Llu->Ufstnz_br_ptr[i] ) {
+	    SUPERLU_FREE (Llu->Ufstnz_br_ptr[i]);
+	    SUPERLU_FREE (Llu->Unzval_br_ptr[i]);
+	}
+    SUPERLU_FREE (Llu->Ufstnz_br_ptr);
+    SUPERLU_FREE (Llu->Unzval_br_ptr);
+
+    /* The following can be freed after factorization. */
+    SUPERLU_FREE(Llu->ToRecv);
+    SUPERLU_FREE(Llu->ToSendD);
+    for (i = 0; i < nbc; ++i) SUPERLU_FREE(Llu->ToSendR[i]);
+    SUPERLU_FREE(Llu->ToSendR);
+    return 0;
+} /* dDeAllocLlu_3d */
 
 
 /**** Other utilities ****/
@@ -431,8 +485,8 @@ dGenXtrue_dist(int_t n, int_t nrhs, double *x, int_t ldx)
     int  i, j;
     for (j = 0; j < nrhs; ++j)
 	for (i = 0; i < n; ++i) {
-	    if ( i % 2 ) x[i + j*ldx] = 1.0;/* + (double)(i+1.)/n;*/
-	    else x[i + j*ldx] = 1.0;
+	    if ( i % 2 ) x[i + j*ldx] = 1.0 + (double)(i+1.)/n;
+	    else x[i + j*ldx] = 1.0 - (double)(i+1.)/n;
 	}
 }
 
@@ -598,8 +652,8 @@ void dDumpLblocks(int iam, int_t nsupers, gridinfo_t *grid,
 		  Glu_persist_t *Glu_persist, dLocalLU_t *Llu)
 {
     register int c, extra, gb, j, i, lb, nsupc, nsupr, len, nb, ncb;
-    register int_t k, mycol, r;
-	int_t nnzL, n,nmax;
+    int k, mycol, r, n, nmax;
+    int_t nnzL;
     int_t *xsup = Glu_persist->xsup;
     int_t *index;
     double *nzval;
@@ -652,7 +706,7 @@ void dDumpLblocks(int iam, int_t nsupers, gridinfo_t *grid,
 		}
 
 	if(grid->iam==0){
-	    fprintf(fp, IFMT " " IFMT " " IFMT "\n", n,n,nnzL);
+		fprintf(fp, "%d %d " IFMT "\n", n,n,nnzL);
 	}
 
      ncb = nsupers / grid->npcol;

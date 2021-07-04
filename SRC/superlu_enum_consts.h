@@ -15,19 +15,20 @@ at the top-level directory.
  * Lawrence Berkeley National Lab, Univ. of California Berkeley, 
  * October 1, 2010
  * January 28, 2018
- * January 28, 2018				   
  *
  */
 
 #ifndef __SUPERLU_ENUM_CONSTS /* allow multiple inclusions */
 #define __SUPERLU_ENUM_CONSTS
 
+#define LargeDiag_AWPM LargeDiag_HWPM  /* backward compatibility */
+
 /***********************************************************************
  * Enumerate types
  ***********************************************************************/
 typedef enum {NO, YES}                                          yes_no_t;
 typedef enum {DOFACT, SamePattern, SamePattern_SameRowPerm, FACTORED} fact_t;
-typedef enum {NOROWPERM, LargeDiag_MC64, LargeDiag_AWPM, MY_PERMR} rowperm_t;
+typedef enum {NOROWPERM, LargeDiag_MC64, LargeDiag_HWPM, MY_PERMR} rowperm_t;
 typedef enum {NATURAL, MMD_ATA, MMD_AT_PLUS_A, COLAMD,
 	      METIS_AT_PLUS_A, PARMETIS, ZOLTAN, MY_PERMC}      colperm_t;
 typedef enum {NOTRANS, TRANS, CONJ}                             trans_t;
@@ -76,7 +77,7 @@ typedef enum {
     SOL_COMM,/* communication for solve */
     SOL_GEMM,/* gemm for solve */
     SOL_TRSM,/* trsm for solve */
-	SOL_TOT,	/* LU-solve time*/
+    SOL_TOT,	/* LU-solve time*/
     RCOND,   /* estimate reciprocal condition number */
     SOLVE,   /* forward and back solves */
     REFINE,  /* perform iterative refinement */

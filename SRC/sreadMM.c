@@ -61,7 +61,7 @@ sreadMM_dist(FILE *fp, int_t *m, int_t *n, int_t *nonz,
 
      if (sscanf(line, "%s %s %s %s %s", banner, mtx, crd, arith, sym) != 5) {
        printf("Invalid header (first line does not contain 5 tokens)\n");
-       exit;
+       exit(-1);
      }
 
      if(strcmp(banner,"%%matrixmarket")) {
@@ -237,7 +237,7 @@ static void sreadrhs(int m, float *b)
 	exit(-1);
     }
     for (i = 0; i < m; ++i)
-      i = fscanf(fp, "%lf\n", &b[i]);
+      i = fscanf(fp, "%f\n", &b[i]);
       /*fscanf(fp, "%d%lf\n", &j, &b[i]);*/
     /*        readpair_(j, &b[i]);*/
     fclose(fp);

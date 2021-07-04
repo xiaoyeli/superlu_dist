@@ -105,7 +105,7 @@ int main(int argc, char *argv[])
 
     /* Bail out if I do not belong in the grid. */
     iam = grid.iam;
-    if ( iam >= nprow * npcol )
+    if ( iam == -1 )
 	goto out;
     
 #if ( DEBUGlevel>=1 )

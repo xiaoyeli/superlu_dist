@@ -184,7 +184,7 @@ psgsrfs(int_t n, SuperMatrix *A, float anorm, sLUstruct_t *LUstruct,
     safe1  = nz * safmin;
     safe2  = safe1 / eps;
 
-#if ( PRNTlevel>=2 )
+#if ( DEBUGlevel>=1 )
     if ( !iam ) printf(".. eps = %e\tanorm = %e\tsafe1 = %e\tsafe2 = %e\n",
 		       eps, anorm, safe1, safe2);
 #endif

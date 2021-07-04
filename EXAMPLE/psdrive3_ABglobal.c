@@ -59,7 +59,7 @@ int main(int argc, char *argv[])
     sScalePermstruct_t ScalePermstruct;
     sLUstruct_t LUstruct;
     gridinfo_t grid;
-    double   *berr;
+    float   *berr;
     float   *a, *a1, *b, *b1, *xtrue;
     int_t    *asub, *asub1, *xa, *xa1;
     int_t    i, j, m, n, nnz;
@@ -111,8 +111,7 @@ int main(int argc, char *argv[])
 
     /* Bail out if I do not belong in the grid. */
     iam = grid.iam;
-    if ( iam >= nprow * npcol )
-	goto out;
+    if ( iam == -1 )	goto out;
     
 #if ( DEBUGlevel>=1 )
     CHECK_MALLOC(iam, "Enter main()");
@@ -172,7 +171,7 @@ int main(int argc, char *argv[])
     for (j = 0; j < nrhs; ++j)
 	for (i = 0; i < m; ++i) b1[i+j*ldb] = b[i+j*ldb];
     
-    if ( !(berr = doubleMalloc_dist(nrhs)) )
+    if ( !(berr = floatMalloc_dist(nrhs)) )
 	ABORT("Malloc fails for berr[].");
 
     /* Save a copy of the matrix A. */

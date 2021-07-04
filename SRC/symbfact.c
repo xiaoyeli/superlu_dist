@@ -185,6 +185,7 @@ int_t symbfact
 
     if ( !pnum && (options->PrintStat == YES)) {
 	nnzLU = nnzL + nnzU - min_mn;				   
+	printf("\tMatrix size min_mn  " IFMT "\n", min_mn);
 	printf("\tNonzeros in L       " IFMT "\n", nnzL);
 	printf("\tNonzeros in U       " IFMT "\n", nnzU);
 	printf("\tnonzeros in L+U     " IFMT "\n", nnzLU);
@@ -528,8 +529,8 @@ static int_t column_dfs
 	     */
 	    lsub[nextl++] = krow; 	/* krow is indexed into A */
 	    if ( nextl >= nzlmax ) {
-		if ( mem_error = symbfact_SubXpand(A->ncol, jcol, nextl, (MemType) LSUB,
-						   &nzlmax, Glu_freeable) )
+		if ( (mem_error = symbfact_SubXpand(A->ncol, jcol, nextl, (MemType) LSUB,
+						    &nzlmax, Glu_freeable)) )
 		    return (mem_error);
 		lsub = Glu_freeable->lsub;
 	    }
@@ -570,10 +571,10 @@ static int_t column_dfs
 			    if ( chperm == EMPTY ) {
 				lsub[nextl++] = kchild;
 				if ( nextl >= nzlmax ) {
-				    if ( mem_error =
+				    if ( (mem_error =
 					symbfact_SubXpand(A->ncol, jcol, nextl,
 							  (MemType) LSUB, &nzlmax,
-							  Glu_freeable) )
+							  Glu_freeable)) )
 					return (mem_error);
 				    lsub = Glu_freeable->lsub;
 				}
@@ -786,8 +787,8 @@ static int_t set_usub
 
     new_next = nextu + nseg;
     while ( new_next > nzumax ) {
-	if (mem_error = symbfact_SubXpand(n, jcol, nextu, (MemType) USUB, &nzumax,
-					  Glu_freeable))
+	if ( (mem_error = symbfact_SubXpand(n, jcol, nextu, (MemType) USUB, &nzumax,
+					    Glu_freeable)) )
 	    return (mem_error);
 	usub = Glu_freeable->usub;
     }

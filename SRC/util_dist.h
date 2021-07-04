@@ -19,6 +19,7 @@ at the top-level directory.
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
+
 #include "superlu_enum_consts.h"
 
 /*

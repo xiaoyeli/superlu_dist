@@ -23,6 +23,7 @@ at the top-level directory.
 #include "cuda.h"
 #include "cuda_runtime_api.h"
 #include "cuda_runtime.h"
+typedef struct LUstruct_gpu_  LUstruct_gpu;  // Sherry - not in this distribution
 
 extern void DisplayHeader();
 extern const char* cublasGetErrorString(cublasStatus_t status);

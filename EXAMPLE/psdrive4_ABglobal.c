@@ -60,7 +60,7 @@ int main(int argc, char *argv[])
     int_t    *asub, *xa;
     int_t    i, j, m, n, nnz;
     int_t    nprow, npcol, ldumap, p;
-    int_t    usermap[6];
+    int    usermap[6];
     int      iam, info, ldb, ldx, nprocs;
     int      nrhs = 1;   /* Number of right-hand side. */
     char     trans[1];
@@ -126,7 +126,7 @@ int main(int argc, char *argv[])
 
     /* Bail out if I do not belong in any of the 2 grids. */
     MPI_Comm_rank( MPI_COMM_WORLD, &iam );
-    if ( iam >= 10 ) goto out;
+    if ( iam == -1 ) goto out;
     
 #if ( DEBUGlevel>=1 )
     CHECK_MALLOC(iam, "Enter main()");

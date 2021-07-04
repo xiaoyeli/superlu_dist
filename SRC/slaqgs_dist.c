@@ -11,6 +11,15 @@ at the top-level directory.
 
 /*! @file slaqgs_dist.c
  * \brief Equlibrates a general sprase matrix
+ *
+ * <pre>
+ * -- SuperLU routine (version 2.0) --
+ * Univ. of California Berkeley, Xerox Palo Alto Research Center,
+ * and Lawrence Berkeley National Lab.
+ * November 15, 1997
+ * 
+ * Modified from LAPACK routine SLAQGE
+ * </pre>
  */
 /*
  * File name:	slaqgs_dist.c
@@ -81,18 +90,16 @@ at the top-level directory.
 
 void
 slaqgs_dist(SuperMatrix *A, float *r, float *c, 
-	    float rowcnd, float colcnd, float amax, char *equed)
+	float rowcnd, float colcnd, float amax, char *equed)
 {
-
-
+    
 #define THRESH    (0.1)
     
     /* Local variables */
     NCformat *Astore;
     float   *Aval;
-    int_t i, j, irow;
+    int i, j, irow;
     float large, small, cj;
-
 
     /* Quick return if possible */
     if (A->nrow <= 0 || A->ncol <= 0) {
@@ -100,8 +107,8 @@ slaqgs_dist(SuperMatrix *A, float *r, float *c,
 	return;
     }
 
-    Astore = A->Store;
-    Aval = Astore->nzval;
+    Astore = (NCformat *) A->Store;
+    Aval = (float *) Astore->nzval;
     
     /* Initialize LARGE and SMALL. */
     small = smach_dist("Safe minimum") / smach_dist("Precision");
