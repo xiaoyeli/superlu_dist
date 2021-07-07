@@ -204,8 +204,13 @@ typedef struct {
 			     (also numbers of X values to be received) */
     int   *RecvCounts;    /* Numbers of X indices to be received
 			     (also numbers of X values to be sent) */
+#if 0
     float *val_tosend;   /* X values to be sent to other processes */
     float *val_torecv;   /* X values to be received from other processes */
+#else // FIX: can be single or double (accommodate double-ItRef)
+    void *val_tosend;   /* X values to be sent to other processes */
+    void *val_torecv;   /* X values to be received from other processes */
+#endif
     int_t TotalIndSend;   /* Total number of indices to be sent
 			     (also total number of values to be received) */
     int_t TotalValSend;   /* Total number of values to be sent.
@@ -233,13 +238,14 @@ typedef struct {
 
 // new structures for pdgstrf_4_8 
 
+#if 0 // Moved to superlu_defs.h
 typedef struct
 {
     int_t nub;
     int_t klst;
     int_t ldu;
     int_t* usub;
-    float* uval;
+  //float* uval;
 } uPanelInfo_t;
 
 typedef struct
@@ -250,8 +256,6 @@ typedef struct
     int_t nlb;  //number of l blocks
     int_t nsupr;
 } lPanelInfo_t;
-
- 
 
 /* HyP_t is the data structure to assist HALO offload of Schur-complement. */
 typedef struct
@@ -282,6 +286,8 @@ typedef struct
     int_t nCudaStreams;
 } HyP_t;
 
+#endif
+
 typedef struct 
 {
     int_t * Lsub_buf ;
@@ -308,7 +314,7 @@ typedef struct
     sForest_t** sForests;
     int_t* supernode2treeMap;
     sLUValSubBuf_t  *LUvsb;
-} trf3Dpartition_t;
+} strf3Dpartition_t;
 
 typedef struct
 {
@@ -321,14 +327,6 @@ typedef struct
     float* BlockLFactor;
     float* BlockUFactor;
 } sdiagFactBufs_t;
-
-typedef struct
-{
-    Ublock_info_t* Ublock_info;
-    Remain_info_t*  Remain_info;
-    uPanelInfo_t* uPanelInfo;
-    lPanelInfo_t* lPanelInfo;
-} packLUInfo_t;
 
 //#endif
 /*=====================*/
@@ -655,7 +653,7 @@ extern void psgssvx3d (superlu_dist_options_t *, SuperMatrix *,
 		       gridinfo3d_t *, sLUstruct_t *, sSOLVEstruct_t *, 
 		       float *berr, SuperLUStat_t *, int *info);
 extern int_t psgstrf3d(superlu_dist_options_t *, int m, int n, float anorm,
-		       trf3Dpartition_t*, SCT_t *, sLUstruct_t *,
+		       strf3Dpartition_t*, SCT_t *, sLUstruct_t *,
 		       gridinfo3d_t *, SuperLUStat_t *, int *);
 extern void sInit_HyP(HyP_t* HyP, sLocalLU_t *Llu, int_t mcb, int_t mrb );
 extern void Free_HyP(HyP_t* HyP);
@@ -751,12 +749,12 @@ extern void sRgather_U(int_t k, int_t jj0, int_t *usub, float *uval,
 		      int_t *iperm_c_supno, int_t *perm_u);
 
     /* from xtrf3Dpartition.h */
-extern trf3Dpartition_t* sinitTrf3Dpartition(int_t nsupers,
+extern strf3Dpartition_t* sinitTrf3Dpartition(int_t nsupers,
 					     superlu_dist_options_t *options,
 					     sLUstruct_t *LUstruct, gridinfo3d_t * grid3d);
-extern void sDestroy_trf3Dpartition(trf3Dpartition_t *trf3Dpartition, gridinfo3d_t *grid3d);
+extern void sDestroy_trf3Dpartition(strf3Dpartition_t *trf3Dpartition, gridinfo3d_t *grid3d);
 
-extern void s3D_printMemUse(trf3Dpartition_t*  trf3Dpartition,
+extern void s3D_printMemUse(strf3Dpartition_t*  trf3Dpartition,
 			    sLUstruct_t *LUstruct, gridinfo3d_t * grid3d);
 
 //extern int* getLastDep(gridinfo_t *grid, SuperLUStat_t *stat,
@@ -848,7 +846,7 @@ int_t sgatherFactoredLU(int_t sender, int_t receiver,
 
 /*Gathers all the L and U factors to grid 0 for solve stage 
 	By  repeatidly calling above function*/
-int_t sgatherAllFactoredLU(trf3Dpartition_t*  trf3Dpartition, sLUstruct_t* LUstruct,
+int_t sgatherAllFactoredLU(strf3Dpartition_t*  trf3Dpartition, sLUstruct_t* LUstruct,
 			   gridinfo3d_t* grid3d, SCT_t* SCT );
 
 /*Distributes data in each layer and initilizes ancestors
@@ -982,6 +980,7 @@ extern int_t sinitScuBufs(int_t ldt, int_t num_threads, int_t nsupers,
 			  sscuBufs_t*, sLUstruct_t*, gridinfo_t *);
 extern int sfreeScuBufs(sscuBufs_t* scuBufs);
 
+#if 0 // NOT CALLED
 // the generic tree factoring code 
 extern int_t treeFactor(
     int_t nnnodes,          // number of nodes in the tree
@@ -1001,6 +1000,7 @@ extern int_t treeFactor(
     double thresh,  SCT_t *SCT,
     int *info
 );
+#endif
 
 extern int_t ssparseTreeFactor(
     int_t nnodes,          // number of nodes in the tree
@@ -1069,6 +1069,7 @@ extern int_t checkRecvUDiag(int_t k, commRequests_t *comReqs,
 			    gridinfo_t *grid, SCT_t *SCT);
 extern int_t checkRecvLDiag(int_t k, commRequests_t *comReqs, gridinfo_t *, SCT_t *);
 
+#if 0 // NOT CALLED 
     /* from ancFactorization.h (not called) */
 extern int_t ancestorFactor(
     int_t ilvl,             // level of factorization 
@@ -1089,6 +1090,7 @@ extern int_t ancestorFactor(
     sLUstruct_t *LUstruct, gridinfo3d_t * grid3d, SuperLUStat_t *stat,
     double thresh,  SCT_t *SCT, int tag_ub, int *info
 );
+#endif
 
 /*== end 3D prototypes ===================*/
 

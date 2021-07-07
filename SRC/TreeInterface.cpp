@@ -149,6 +149,7 @@ namespace SuperLU_ASYNCOMM{
 	    TreeBcast_slu<doublecomplex>* BcastTree = (TreeBcast_slu<doublecomplex>*) Tree;
 	    return BcastTree->GetMsgSize();					
 	  }
+	  return 0;
 	}		
 	
 	StdList StdList_Init(){
@@ -257,7 +258,7 @@ namespace SuperLU_ASYNCOMM{
 	    TreeReduce_slu<doublecomplex>* ReduceTree = (TreeReduce_slu<doublecomplex>*) Tree;
 	    return ReduceTree->GetDestCount();		
 	  }
-	  rreturn 0;
+	  return 0;
 	}	
 	
 	int  RdTree_GetMsgSize(RdTree Tree, char precision){

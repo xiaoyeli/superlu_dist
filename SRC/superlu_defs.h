@@ -759,6 +759,65 @@ struct superlu_pair
 
 /*==== For 3D code ====*/
 
+typedef struct
+{
+  int_t nub;
+  int_t klst;
+  int_t ldu;
+  int_t* usub;
+  //double *uval;
+} uPanelInfo_t;
+
+typedef struct
+{
+  int_t *lsub;
+  //double *lusup;
+  void *lusup;
+  int_t luptr0;
+  int_t nlb;  //number of l blocks                                                      
+  int_t nsupr;
+} lPanelInfo_t;
+
+typedef struct
+{
+    Ublock_info_t* Ublock_info;
+    Remain_info_t*  Remain_info;
+    uPanelInfo_t* uPanelInfo;
+    lPanelInfo_t* lPanelInfo;
+} packLUInfo_t;
+
+
+/* HyP_t is the data structure to assist HALO offload of Schur-complement. */
+typedef struct
+{
+  Remain_info_t *lookAhead_info, *Remain_info;
+  Ublock_info_t *Ublock_info, *Ublock_info_Phi;
+
+  int_t first_l_block_acc , first_u_block_acc;
+  int_t last_offload ;
+  int_t *Lblock_dirty_bit, * Ublock_dirty_bit;
+  void *lookAhead_L_buff, *Remain_L_buff;
+  int_t lookAheadBlk;  /* number of blocks in look-ahead window */
+  int_t RemainBlk ;    /* number of blocks outside look-ahead window */
+  int_t  num_look_aheads, nsupers;
+  int_t ldu, ldu_Phi;
+  int_t num_u_blks, num_u_blks_Phi;
+
+  int_t jj_cpu;
+  void *bigU_Phi;
+  void *bigU_host;
+  int_t Lnbrow;
+  int_t Rnbrow;
+
+  int_t buffer_size;
+  int_t bigu_size;
+  int_t offloadCondition;
+  int_t superlu_acc_offload;
+  int_t nCudaStreams;
+} HyP_t;
+
+
+
 /* return the mpi_tag assuming 5 pairs of communications and MPI_TAG_UB >= 5 *
  * for each supernodal column, the five communications are:                  *
  * 0,1: for sending L to "right"                                             *

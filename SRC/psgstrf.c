@@ -359,6 +359,8 @@ psgstrf(superlu_dist_options_t * options, int m, int n, float anorm,
     double NetSchurUpTimer         = 0.0;
     double schur_flop_counter      = 0.0;
 /* #endif */
+    double cublasGEMMTimer         = 0.0;
+    double cpuGEMMTimer         = 0.0;
 
 #if ( PRNTlevel>= 1)
     /* count GEMM max dimensions */
@@ -824,9 +826,9 @@ psgstrf(superlu_dist_options_t * options, int m, int n, float anorm,
 	printf("\t.. N_GEMM: %d flops of GEMM done on CPU (1st block always on CPU)\n", sp_ienv_dist(7));
         printf("\t.. GEMM buffer size: max_row_size X max_ncols = %d x " IFMT "\n",
                 max_row_size, max_ncols);
-    }
     printf("[%d].. BIG U size " IFMT " (on CPU)\n", iam, bigu_size);
     fflush(stdout);
+    }
 #endif
 
 #ifdef GPU_ACC /*-- use GPU --*/
@@ -839,9 +841,11 @@ psgstrf(superlu_dist_options_t * options, int m, int n, float anorm,
 #endif
 
 #if ( PRNTlevel>=1 )
-    printf("[%d].. BIG V size " IFMT " (on CPU), dC buffer_size " IFMT " (on GPU)\n",
-            iam, bigv_size, buffer_size);
-    fflush(stdout);
+    if ( iam==0 ) {
+      printf("[%d].. BIG V size " IFMT " (on CPU), dC buffer_size " IFMT " (on GPU)\n",
+	     iam, bigv_size, buffer_size);
+      fflush(stdout);
+    }
 #endif
 
     if ( checkCuda(cudaHostAlloc((void**)&bigV, bigv_size * sizeof(float) ,cudaHostAllocDefault)) )
@@ -906,8 +910,10 @@ psgstrf(superlu_dist_options_t * options, int m, int n, float anorm,
 #endif
 
 #if ( PRNTlevel>=1 )
-    printf("[%d].. BIG V size " IFMT " (on CPU)\n", iam, bigv_size);
-    fflush(stdout);
+    if ( iam==0 ) {
+      printf("[%d].. BIG V size " IFMT " (on CPU)\n", iam, bigv_size);
+      fflush(stdout);
+    }
 #endif
 
 //#ifdef __INTEL_COMPILER

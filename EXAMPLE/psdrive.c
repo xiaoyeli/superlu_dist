@@ -23,6 +23,7 @@ at the top-level directory.
 
 #include <math.h>
 #include "superlu_sdefs.h"
+#include "superlu_ddefs.h"
 
 /*! \brief
  *
@@ -56,7 +57,7 @@ int main(int argc, char *argv[])
     sLUstruct_t LUstruct;
     sSOLVEstruct_t SOLVEstruct;
     gridinfo_t grid;
-    float   *err_bounds;
+    float   *err_bounds, *berr;
     float   *b, *xtrue;
     int    m, n;
     int      nprow, npcol, lookahead, colperm, rowperm, ir, use_tensorcore;
@@ -196,56 +197,98 @@ int main(int argc, char *argv[])
     /* ------------------------------------------------------------
        GET THE MATRIX FROM FILE AND SETUP THE RIGHT HAND SIDE. 
        ------------------------------------------------------------*/
+    fp = fopen(*cpp, "r");
     screate_matrix_postfix(&A, nrhs, &b, &ldb, &xtrue, &ldx, fp, postfix, &grid);
+    fclose(fp);
     
-    if (iam==0) printf("dimension N = %d\n", A.nrow);
-
 #if 1
     /* Generate a good RHS in double precision, then rounded to single */
     {
-        double *db, *dxtrue;
+        double *db, *dxtrue, *dberr;
 	SuperMatrix dA;
-	extern int dcreate_matrix_postfix();
-
-	fp = fopen(*cpp, "r");
+	dScalePermstruct_t dScalePermstruct;
+	dLUstruct_t dLUstruct;
+	dSOLVEstruct_t dSOLVEstruct;
+	//extern int dcreate_matrix_postfix();
 
 	dcreate_matrix_postfix(&dA, nrhs, &db, &ldb, &dxtrue, &ldx, fp, postfix, &grid);
+	fclose(fp);
 
-	NRformat_loc *Astore = A.Store;
+	NRformat_loc *Astore = dA.Store;
 	int m_loc = Astore->m_loc;
-
-	if ( iam==(nprow*npcol-1) ) {
-	  extern void Printdouble5();
-	  printf("\ndouble x[%d]: %.16e\n", m_loc-1, dxtrue[m_loc-1]);
-	  for (i = 0; i < 5; ++i) printf("%.16e\t", dxtrue[i]);
-	  printf("\nsingle x:\n");
-	  for (i = 0; i < 5; ++i) printf("%.16e\t", xtrue[i]);
-	  printf("\ndouble b:\n"); fflush(stdout);
-	  for (i = 0; i < 5; ++i) printf("%.16e\t", db[i]);
-	  printf("\nsingle b:\n");
-	  for (i = 0; i < 5; ++i) printf("%.16e\t", b[i]);
-	  printf("\n"); fflush(stdout);
-	}
 
 	/* Rounded to single */
 	for (i = 0; i < m_loc; ++i) {
-	    b[i] = db[i];
-	    xtrue[i] = dxtrue[i];
+	  b[i] = (float) db[i];
 	}
 
+	/* Now, compute dxtrue via double-precision solver */
+	/* Why? dA is the double precision version of A, etc.
+	   If db = dA*dXtrue to double, then rounding db to b and dA to A introduce
+	   a perturbation of eps_single in A and b, so a perturbation of 
+	   cond(A)*eps_single in x vs dXtrue. 
+	   So need to use a computed Xtrue from a double code: dXtrue <- dA \ db,
+	   this computed Xtrue would be comparable to x, i.e., having the same cond(A)
+	   factor in the perturbation error.   See bullet 7, page 20, LAWN 165.*/
+	if ( !(dberr = doubleMalloc_dist(nrhs)) )
+	  ABORT("Malloc fails for dberr[].");
+
+	m = dA.nrow;
+	n = dA.ncol;
+
+	set_default_options_dist(&options);
+	dScalePermstructInit(m, n, &dScalePermstruct);
+	dLUstructInit(n, &dLUstruct);
+	PStatInit(&stat);
+
+	pdgssvx(&options, &dA, &dScalePermstruct, db, ldb, nrhs, &grid,
+		&dLUstruct, &dSOLVEstruct, dberr, &stat, &info);
+
+	pdinf_norm_error(iam, m_loc, nrhs, db, ldb, dxtrue, ldx, grid.comm);
+
+	/* Rounded to single */
+	for (i = 0; i < m_loc; ++i) {
+	  xtrue[i] = (float) db[i];
+	}
+
+	if ( iam==0 ) { //(nprow*npcol-1) ) {
+	  printf("\ndouble generated dxtrue[%d]: %.16e\n", m_loc-1, dxtrue[m_loc-1]);
+	  for (i = 0; i < 5; ++i) printf("%.16e\t", dxtrue[i]);
+	  printf("\ndouble computed dxtrue (stored in db):\n");
+	  for (i = 0; i < 5; ++i) printf("%.16e\t", db[i]);
+	  printf("\nsingle xtrue:\n");
+	  for (i = 0; i < 5; ++i) printf("%.16e\t", xtrue[i]);
+	  printf("\n"); fflush(stdout);
+	}
+
+	PStatPrint(&options, &stat, &grid); /* Print the statistics. */
+
+	PStatFree(&stat);
 	Destroy_CompRowLoc_Matrix_dist(&dA);
+	dScalePermstructFree(&dScalePermstruct);
+	dDestroy_LU(n, &grid, &dLUstruct);
+	dLUstructFree(&dLUstruct);
+	if ( options.SolveInitialized ) {
+	  dSolveFinalize(&options, &dSOLVEstruct);
+	}
 	SUPERLU_FREE(db);
 	SUPERLU_FREE(dxtrue);
+	SUPERLU_FREE(dberr);
     }
 #endif
 
-    
+    /* ------------------------------------------------------------
+       NOW WE SOLVE THE LINEAR SYSTEM in single precision
+       ------------------------------------------------------------*/
     if ( !(err_bounds = floatCalloc_dist(nrhs*3)) )
 	ABORT("Malloc fails for err_bounds[].");
+    if ( !(berr = floatMalloc_dist(nrhs)) )
+	ABORT("Malloc fails for berr[].");
 
-    /* ------------------------------------------------------------
-       NOW WE SOLVE THE LINEAR SYSTEM.
-       ------------------------------------------------------------*/
+    if ( iam==0 ) {
+      printf("\n Now single LU with double ItRef... N = %d\n", (int) A.nrow);
+      fflush(stdout);
+    }
 
     /* Set the default input options:
         options.Fact              = DOFACT;
@@ -295,21 +338,25 @@ int main(int argc, char *argv[])
     /* Initialize the statistics variables. */
     PStatInit(&stat);
 
-    //    printf("before psgssvx xtrue[2] %e, b[41] %e\n", xtrue[2], b[41]);
-
     if (iam==0) {
         Printfloat5("before psgssvx xtrue[]", 5, xtrue);
         Printfloat5("before psgssvx b[]", 5, b);
 	printf("\n"); fflush(stdout);
     }
 
-    /* Call the linear equation solver. */
-    psgssvx_d2(&options, &A, &ScalePermstruct, b, ldb, nrhs, &grid,
-		&LUstruct, &SOLVEstruct, err_bounds, &stat, &info, xtrue);
+    if ( options.IterRefine == SLU_DOUBLE || options.IterRefine == SLU_EXTRA ) { 
+        /* Call the linear equation solver with extra-precise iterative refinement */
+        psgssvx_d2(&options, &A, &ScalePermstruct, b, ldb, nrhs, &grid,
+		   &LUstruct, &SOLVEstruct, err_bounds, &stat, &info, xtrue);
+    } else {
+        /* Call the linear equation solver */
+        psgssvx(&options, &A, &ScalePermstruct, b, ldb, nrhs, &grid,
+		&LUstruct, &SOLVEstruct, berr, &stat, &info);
+    }
 
     /* Check the accuracy of the solution. */
     psinf_norm_error(iam, ((NRformat_loc *)A.Store)->m_loc,
-		     nrhs, b, ldb, xtrue, ldx, &grid);
+		     nrhs, b, ldb, xtrue, ldx, grid.comm);
     if (iam == 0) {
         printf(" Normwise error bound: %e\n", err_bounds[0]);
 	printf(" Componentwise error bound: %e\n", err_bounds[1*nrhs]);
@@ -333,7 +380,7 @@ int main(int argc, char *argv[])
     SUPERLU_FREE(b);
     SUPERLU_FREE(xtrue);
     SUPERLU_FREE(err_bounds);
-    fclose(fp);
+    SUPERLU_FREE(berr);
 
     /* ------------------------------------------------------------
        RELEASE THE SUPERLU PROCESS GRID.

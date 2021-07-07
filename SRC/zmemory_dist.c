@@ -239,7 +239,7 @@ double  zmemForest(sForest_t*sforest, zLUstruct_t *LUstruct, gridinfo3d_t *grid3
     return memlu;
 }
 
-void z3D_printMemUse( trf3Dpartition_t*  trf3Dpartition,  zLUstruct_t *LUstruct,
+void z3D_printMemUse( ztrf3Dpartition_t*  trf3Dpartition,  zLUstruct_t *LUstruct,
 		      gridinfo3d_t * grid3d )
 {
     int_t* myTreeIdxs = trf3Dpartition->myTreeIdxs;

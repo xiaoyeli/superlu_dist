@@ -330,10 +330,8 @@ if ( msg0 && msg2 ) {  /* L(:,k) and U(k,:) are not empty. */
 #endif
 		    // set mode back to normal mode
 		    if ( options->Use_TensorCore ) {
-			// TEST_CHECK_CUBLAS_ERR( cublasSetMathMode(handle[stream_id]\
-, CUBLAS_DEFAULT_MATH) );
-			cublasCheckErrors( cublasSetMathMode(handle[stream_id], CUBLA\
-							     S_DEFAULT_MATH) );
+			// TEST_CHECK_CUBLAS_ERR( cublasSetMathMode(handle[stream_id], CUBLAS_DEFAULT_MATH) );
+			cublasCheckErrors( cublasSetMathMode(handle[stream_id], CUBLAS_DEFAULT_MATH) );
 		    }
 		    
 		    checkCuda( cudaMemcpyAsync(tempv1, dC+c_offset,
@@ -359,8 +357,8 @@ if ( msg0 && msg2 ) {  /* L(:,k) and U(k,:) are not empty. */
 	       on CPU in order to mask the GPU data transfer latency */
 	    int num_col = full_u_cols[jjj_st+ncpu_blks-1];
 
-	    int st_col = 0; /* leading part on CPU */
-	    tempv = bigV + nbrow * st_col;
+	    int st_cols = 0; /* leading part on CPU */
+	    tempv = bigV + nbrow * st_cols;
 	    tempu = bigU;
 
 	    double tstart = SuperLU_timer_();

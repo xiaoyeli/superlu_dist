@@ -240,7 +240,7 @@ double  smemForest(sForest_t*sforest, sLUstruct_t *LUstruct, gridinfo3d_t *grid3
     return memlu;
 }
 
-void s3D_printMemUse( trf3Dpartition_t*  trf3Dpartition,  sLUstruct_t *LUstruct,
+void s3D_printMemUse( strf3Dpartition_t*  trf3Dpartition,  sLUstruct_t *LUstruct,
 		      gridinfo3d_t * grid3d )
 {
     int_t* myTreeIdxs = trf3Dpartition->myTreeIdxs;

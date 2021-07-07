@@ -31,13 +31,13 @@
 include ../make.inc
 
 SEXM	= psdrive.o screate_matrix.o dcreate_matrix.o \
-	dutil_dist.o sutil_dist.o psutil.o\
-	psgssvx_d2.o psgsrfs_fp64x2.o psgsmv_fp64x2.o psgstrs.o psgstrs_lsum.o
-	## psutil.o 
+	dutil_dist.o psutil.o\
+	psgssvx_d2.o psgsrfs_fp64x2.o psgsmv_fp64x2.o psgstrs.o 
+	#psgstrs_lsum.o  only add printing
 
-DEXM	= pddrive.o dcreate_matrix.o sp_ienv.o
+DEXM	= pddrive.o dcreate_matrix.o 
 	# pdgstrs.o pdgsrfs.o pdgstrs_lsum.o
-DEXMRHS	= pddrive_rhs.o dcreate_matrix_rhs.o sp_ienv.o 
+DEXMRHS	= pddrive_rhs.o dcreate_matrix_rhs.o #sp_ienv.o 
        # pdgstrs.o pdgsrfs.o pdgstrs_lsum.o
 
 SEXM1	= psdrive1.o screate_matrix.o
@@ -78,10 +78,10 @@ ZEXMG3	= pzdrive3_ABglobal.o
 ZEXMG4	= pzdrive4_ABglobal.o
 
 
-#all: psdrive #pddrive pddrive_rhs
-all: single double complex16
+all: psdrive pddrive #pddrive_rhs
+#all: single double complex16
 
-single:   ## psdrive \
+single:   psdrive \
 	psdrive1 psdrive2 psdrive3 psdrive4 \
 	   psdrive_ABglobal psdrive1_ABglobal psdrive2_ABglobal \
 	   psdrive3_ABglobal psdrive4_ABglobal
