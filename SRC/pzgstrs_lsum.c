@@ -1158,7 +1158,7 @@ void zlsum_fmod_inv_master
 
 						RHS_ITERATE(j)
 							#ifdef _OPENMP
-								#pragma omp simd lastprivate(irow)
+								#pragma omp simd
 							#endif
 							for (i = 0; i < nbrow1; ++i) {
 								irow = lsub[lptr+i] - rel; /* Relative row. */
