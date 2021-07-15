@@ -86,7 +86,9 @@ int_t LUstruct_v100::dsparseTreeFactor(
             #warning single node only 
             // dSchurComplementUpdate(k, lPanelVec[g2lCol(k)], uPanelVec[g2lRow(k)]);
             // dSchurComplementUpdate(k, lPanelVec[g2lCol(k)], k_upanel);
+            k_upanel.checkCorrectness();
             dSchurComplementUpdate(k, k_lpanel, k_upanel);
+            MPI_Barrier(grid3d->comm);
 
         } /*for k0= k_st:k_end */
 

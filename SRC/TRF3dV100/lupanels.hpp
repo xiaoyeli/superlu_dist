@@ -1,5 +1,6 @@
 #pragma once
 #include <vector>
+#include <iostream>
 #include "superlu_ddefs.h"
 
 #define LPANEL_HEADER_SIZE 4
@@ -157,6 +158,23 @@ public:
     {
         if (index == NULL)
             return 0;
+        return UPANEL_HEADER_SIZE + 2 * nblocks() + 1 + nzcols();
+    }
+
+    int_t checkCorrectness()
+    {
+        if (index == NULL)
+        {
+            std::cout<<"## Warning: Empty Panel" << "\n";
+            return 0;
+        }
+        int_t alternateNzcols = index[UPANEL_HEADER_SIZE + 2 * nblocks()] ;
+        std::cout<<nblocks()<<"  nzcols "<<nzcols()<<" alternate nzcols "<< alternateNzcols << "\n";
+        if(nzcols()!= alternateNzcols)
+        {
+            exit(-1);
+        }
+            
         return UPANEL_HEADER_SIZE + 2 * nblocks() + 1 + nzcols();
     }
 };
