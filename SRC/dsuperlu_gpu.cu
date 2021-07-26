@@ -224,6 +224,86 @@ void device_scatter_u (int_t thread_id,
 }
 
 
+__device__ int dnextpow2(int v)
+
+{
+    v--;
+    v |= v >> 1;
+    v |= v >> 2;
+    v |= v >> 4;
+    v |= v >> 8;
+    v |= v >> 16;
+    v++;
+
+    return v;
+}
+
+
+
+typedef int pfx_dtype ; 
+__device__ void incScan(pfx_dtype *inOutArr, pfx_dtype *temp, int n)
+{
+    // extern __shared__ pfx_dtype temp[];
+    int n_original = n;
+    n = (n & (n - 1)) == 0? n: dnextpow2(n);
+    int thread_id = threadIdx.x;
+    int offset = 1;
+    if(2*thread_id  < n_original)
+        temp[2*thread_id] = inOutArr[2*thread_id]; 
+    else 
+        temp[2*thread_id] =0;
+
+
+    if(2*thread_id+1 <n_original)
+        temp[2*thread_id+1] = inOutArr[2*thread_id+1];
+    else 
+        temp[2*thread_id+1] =0;
+    
+    for (int d = n>>1; d > 0; d >>= 1) 
+    {
+        __syncthreads();
+        if (thread_id < d)
+        {
+            int ai = offset*(2*thread_id+1)-1;
+            int bi = offset*(2*thread_id+2)-1;
+            temp[bi] += temp[ai];
+        }
+        offset *= 2;
+    }
+    
+    if (thread_id == 0) { temp[n - 1] = 0; } 
+    for (int d = 1; d < n; d *= 2) 
+    {
+        offset >>= 1;
+        __syncthreads();
+        if (thread_id < d)
+        {
+            int ai = offset*(2*thread_id+1)-1;
+            int bi = offset*(2*thread_id+2)-1;
+            pfx_dtype t = temp[ai];
+            temp[ai] = temp[bi];
+            temp[bi] += t;
+        }
+    }
+    __syncthreads();
+    if(2*thread_id  < n_original)
+    inOutArr[2*thread_id] = temp[2*thread_id]+ inOutArr[2*thread_id]; // write results to device memory
+    if(2*thread_id+1  < n_original)
+    inOutArr[2*thread_id+1] = temp[2*thread_id+1]+ inOutArr[2*thread_id+1];
+    __syncthreads();
+    // if(2*thread_id  < n_original)
+    // printf("xA[%d] = %d \n",2*thread_id , inOutArr[2*thread_id]);
+    // if(2*thread_id+1  < n_original)
+    // printf("xA[%d] = %d \n",2*thread_id+1 , inOutArr[2*thread_id+1]);
+    // __syncthreads();
+} 
+
+__global__ void gExScan(pfx_dtype *inArr, int n)
+{
+    extern __shared__ pfx_dtype temp[];
+    incScan(inArr, temp, n);
+    
+}
 __global__
 void Scatter_GPU_kernel(
     int_t streamId,
@@ -263,11 +343,19 @@ void Scatter_GPU_kernel(
 	__shared__ int indirect2_thread[MAX_SUPER_SIZE]; /* row-wise */
 	__shared__ int IndirectJ1[THREAD_BLOCK_SIZE];    /* column-wise */
 	__shared__ int IndirectJ3[THREAD_BLOCK_SIZE];    /* column-wise */
+	
+	#define MY_SCAN
+	#ifdef MY_SCAN
+	__shared__ int pfxStorage[2*THREAD_BLOCK_SIZE];    /* column-wise */
+	__shared__ int pfxTest[2*THREAD_BLOCK_SIZE];    /* column-wise */
+	typedef cub::BlockScan<int, THREAD_BLOCK_SIZE> BlockScan; /*1D int data type*/
+	__shared__ typename BlockScan::TempStorage temp_storage; /*storage temp*/
+	#else 
 
 	/* see CUB page https://nvlabs.github.io/cub/. Implement threads collectives */
 	typedef cub::BlockScan<int, THREAD_BLOCK_SIZE> BlockScan; /*1D int data type*/
 	__shared__ typename BlockScan::TempStorage temp_storage; /*storage temp*/
-
+	#endif 
 	int thread_id = threadIdx.x;
 
 	int iukp = Ublock_info[j].iukp;
@@ -372,8 +460,32 @@ void Scatter_GPU_kernel(
 		}
 
 		/* perform an inclusive block-wide prefix sum among all threads */
+		#ifdef MY_SCAN
+		if (thread_id < THREAD_BLOCK_SIZE)
+			pfxTest[thread_id] = 0;
+		if (thread_id < nsupc)
+			pfxTest[thread_id] =IndirectJ1[thread_id]; 
+		// incScan(IndirectJ1, pfxStorage, THREAD_BLOCK_SIZE);
+		__syncthreads();
+		incScan(pfxTest, pfxStorage, THREAD_BLOCK_SIZE);
 		if (thread_id < THREAD_BLOCK_SIZE)
 			BlockScan(temp_storage).InclusiveSum(IndirectJ1[thread_id], IndirectJ1[thread_id]);
+
+		// incScan(IndirectJ1, pfxStorage, THREAD_BLOCK_SIZE);
+		// if (thread_id < THREAD_BLOCK_SIZE)
+		// 	BlockScan(temp_storage).InclusiveSum(pfxTest[thread_id], pfxTest[thread_id]);
+
+		if (thread_id < nsupc)
+		{
+			if (IndirectJ1[thread_id] != pfxTest[thread_id])
+			{
+				printf(" () thread_id =%d, CUB = %d, MY =%d\n ", thread_id, IndirectJ1[thread_id], pfxTest[thread_id]);
+			}
+		}
+		#else 
+		if (thread_id < THREAD_BLOCK_SIZE)
+			BlockScan(temp_storage).InclusiveSum(IndirectJ1[thread_id], IndirectJ1[thread_id]);
+		#endif 
 
 		if (thread_id < THREAD_BLOCK_SIZE)
 			IndirectJ1[thread_id] = -IndirectJ1[thread_id] + ilst * thread_id;
