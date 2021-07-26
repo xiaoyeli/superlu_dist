@@ -175,53 +175,18 @@ void device_scatter_u_2D (int thread_id,
     if ( thread_id < temp_nbrow * ColPerBlock )
     {    
 	/* 1D threads are logically arranged in 2D shape. */
-	int thread_id_x  = thread_id % temp_nbrow;
-	int thread_id_y  = thread_id / temp_nbrow;
+		int thread_id_x  = thread_id % temp_nbrow;
+		int thread_id_y  = thread_id / temp_nbrow;
 
-#pragma unroll 4
-	for (int col = thread_id_y; col < nnz_cols ; col += ColPerBlock)
-	{
-           i = IndirectJ1[IndirectJ3[col]]-ilst + indirect[thread_id_x];
-	    ucol[i] -= tempv[nbrow * col + thread_id_x];
-	}
+		#pragma unroll 4
+		for (int col = thread_id_y; col < nnz_cols ; col += ColPerBlock)
+		{
+			i = IndirectJ1[IndirectJ3[col]]-ilst + indirect[thread_id_x];
+			ucol[i] -= tempv[nbrow * col + thread_id_x];
+		}
     }
 }
 
-
-__device__ inline
-void device_scatter_u (int_t thread_id,
-                       int_t temp_nbrow,  int_t nsupc,
-                       double * ucol,
-                       int_t * usub, int_t iukp,
-                       int_t ilst, int_t klst,
-                       int_t * index, int_t iuip_lib,
-                       double * tempv, int_t nbrow,
-                       // int_t *indirect
-                       int *indirect
-                      )
-{
-	int_t segsize, fnz, jj;
-	for (jj = 0; jj < nsupc; ++jj)
-	{
-	    segsize = klst - usub[iukp + jj];
-	    fnz = index[iuip_lib++];
-	    ucol -= fnz;
-	    if (segsize) {            /* Nonzero segment in U(k.j). */
-		if (thread_id < temp_nbrow)
-		{
-#ifndef UNIT_STRIDE
-		    ucol[indirect[thread_id]] -= tempv[thread_id];
-#else
-		    /* making access unit strided;
-		       it doesn't work; it is for measurements */
-		    ucol[thread_id] -= tempv[thread_id];
-#endif
-		}
-		tempv += nbrow;
-	    }
-	    ucol += ilst ;
-	}
-}
 
 
 __device__ int dnextpow2(int v)
@@ -291,11 +256,7 @@ __device__ void incScan(pfx_dtype *inOutArr, pfx_dtype *temp, int n)
     if(2*thread_id+1  < n_original)
     inOutArr[2*thread_id+1] = temp[2*thread_id+1]+ inOutArr[2*thread_id+1];
     __syncthreads();
-    // if(2*thread_id  < n_original)
-    // printf("xA[%d] = %d \n",2*thread_id , inOutArr[2*thread_id]);
-    // if(2*thread_id+1  < n_original)
-    // printf("xA[%d] = %d \n",2*thread_id+1 , inOutArr[2*thread_id+1]);
-    // __syncthreads();
+    
 } 
 
 __global__ void gExScan(pfx_dtype *inArr, int n)
@@ -347,9 +308,8 @@ void Scatter_GPU_kernel(
 	#define MY_SCAN
 	#ifdef MY_SCAN
 	__shared__ int pfxStorage[2*THREAD_BLOCK_SIZE];    /* column-wise */
-	__shared__ int pfxTest[2*THREAD_BLOCK_SIZE];    /* column-wise */
-	typedef cub::BlockScan<int, THREAD_BLOCK_SIZE> BlockScan; /*1D int data type*/
-	__shared__ typename BlockScan::TempStorage temp_storage; /*storage temp*/
+	// __shared__ int pfxTest[2*THREAD_BLOCK_SIZE];    /* column-wise */
+	
 	#else 
 
 	/* see CUB page https://nvlabs.github.io/cub/. Implement threads collectives */
@@ -461,36 +421,17 @@ void Scatter_GPU_kernel(
 
 		/* perform an inclusive block-wide prefix sum among all threads */
 		#ifdef MY_SCAN
-		// if (thread_id < THREAD_BLOCK_SIZE)
-		// 	pfxTest[thread_id] = 0;
-		// if (thread_id < nsupc)
-		// 	pfxTest[thread_id] =IndirectJ1[thread_id]; 
-		// incScan(IndirectJ1, pfxStorage, THREAD_BLOCK_SIZE);
+		
 		__syncthreads();
-		// incScan(pfxTest, pfxStorage, THREAD_BLOCK_SIZE);
+		
 		incScan(IndirectJ1, pfxStorage, nsupc);
-		// if (thread_id < THREAD_BLOCK_SIZE)
-		// 	BlockScan(temp_storage).InclusiveSum(IndirectJ1[thread_id], IndirectJ1[thread_id]);
-
-		// incScan(IndirectJ1, pfxStorage, THREAD_BLOCK_SIZE);
-		// if (thread_id < THREAD_BLOCK_SIZE)
-		// 	BlockScan(temp_storage).InclusiveSum(pfxTest[thread_id], pfxTest[thread_id]);
-
-		// if (thread_id < nsupc)
-		// {
-		// 	if (IndirectJ1[thread_id] != pfxTest[thread_id])
-		// 	{
-		// 		printf(" () thread_id =%d, CUB = %d, MY =%d\n ", thread_id, IndirectJ1[thread_id], pfxTest[thread_id]);
-		// 	}
-		// }
+		
 		#else 
 		if (thread_id < THREAD_BLOCK_SIZE)
 			BlockScan(temp_storage).InclusiveSum(IndirectJ1[thread_id], IndirectJ1[thread_id]);
 		#endif 
 
-		// if (thread_id < THREAD_BLOCK_SIZE)
-		// 	IndirectJ1[thread_id] = -IndirectJ1[thread_id] + ilst * thread_id;
-
+		
 		__syncthreads();
 
 		device_scatter_u_2D (
