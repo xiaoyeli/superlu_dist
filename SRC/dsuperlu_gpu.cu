@@ -181,7 +181,7 @@ void device_scatter_u_2D (int thread_id,
 #pragma unroll 4
 	for (int col = thread_id_y; col < nnz_cols ; col += ColPerBlock)
 	{
-           i = IndirectJ1[IndirectJ3[col]] + indirect[thread_id_x];
+           i = IndirectJ1[IndirectJ3[col]]-ilst + indirect[thread_id_x];
 	    ucol[i] -= tempv[nbrow * col + thread_id_x];
 	}
     }
@@ -455,7 +455,7 @@ void Scatter_GPU_kernel(
 			if (thread_id < nsupc)
 			{
 				/* fstnz subscript of each column in the block */
-				IndirectJ1[thread_id] = index[iuip_lib + thread_id];
+				IndirectJ1[thread_id] = -index[iuip_lib + thread_id] + ilst;
 			}
 		}
 
@@ -488,8 +488,8 @@ void Scatter_GPU_kernel(
 			BlockScan(temp_storage).InclusiveSum(IndirectJ1[thread_id], IndirectJ1[thread_id]);
 		#endif 
 
-		if (thread_id < THREAD_BLOCK_SIZE)
-			IndirectJ1[thread_id] = -IndirectJ1[thread_id] + ilst * thread_id;
+		// if (thread_id < THREAD_BLOCK_SIZE)
+		// 	IndirectJ1[thread_id] = -IndirectJ1[thread_id] + ilst * thread_id;
 
 		__syncthreads();
 
