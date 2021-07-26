@@ -461,27 +461,28 @@ void Scatter_GPU_kernel(
 
 		/* perform an inclusive block-wide prefix sum among all threads */
 		#ifdef MY_SCAN
-		if (thread_id < THREAD_BLOCK_SIZE)
-			pfxTest[thread_id] = 0;
-		if (thread_id < nsupc)
-			pfxTest[thread_id] =IndirectJ1[thread_id]; 
+		// if (thread_id < THREAD_BLOCK_SIZE)
+		// 	pfxTest[thread_id] = 0;
+		// if (thread_id < nsupc)
+		// 	pfxTest[thread_id] =IndirectJ1[thread_id]; 
 		// incScan(IndirectJ1, pfxStorage, THREAD_BLOCK_SIZE);
 		__syncthreads();
-		incScan(pfxTest, pfxStorage, THREAD_BLOCK_SIZE);
-		if (thread_id < THREAD_BLOCK_SIZE)
-			BlockScan(temp_storage).InclusiveSum(IndirectJ1[thread_id], IndirectJ1[thread_id]);
+		// incScan(pfxTest, pfxStorage, THREAD_BLOCK_SIZE);
+		incScan(IndirectJ1, pfxStorage, nsupc);
+		// if (thread_id < THREAD_BLOCK_SIZE)
+		// 	BlockScan(temp_storage).InclusiveSum(IndirectJ1[thread_id], IndirectJ1[thread_id]);
 
 		// incScan(IndirectJ1, pfxStorage, THREAD_BLOCK_SIZE);
 		// if (thread_id < THREAD_BLOCK_SIZE)
 		// 	BlockScan(temp_storage).InclusiveSum(pfxTest[thread_id], pfxTest[thread_id]);
 
-		if (thread_id < nsupc)
-		{
-			if (IndirectJ1[thread_id] != pfxTest[thread_id])
-			{
-				printf(" () thread_id =%d, CUB = %d, MY =%d\n ", thread_id, IndirectJ1[thread_id], pfxTest[thread_id]);
-			}
-		}
+		// if (thread_id < nsupc)
+		// {
+		// 	if (IndirectJ1[thread_id] != pfxTest[thread_id])
+		// 	{
+		// 		printf(" () thread_id =%d, CUB = %d, MY =%d\n ", thread_id, IndirectJ1[thread_id], pfxTest[thread_id]);
+		// 	}
+		// }
 		#else 
 		if (thread_id < THREAD_BLOCK_SIZE)
 			BlockScan(temp_storage).InclusiveSum(IndirectJ1[thread_id], IndirectJ1[thread_id]);
