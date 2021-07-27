@@ -77,18 +77,30 @@ int_t LUstruct_v100::dsparseTreeFactor(
             if (mycol == kcol(k))
                 k_lpanel = lPanelVec[g2lCol(k)];
 
-            MPI_Bcast(k_upanel.index, UidxSendCounts[k], mpi_int_t, krow(k), grid3d->cscp.comm);
-            MPI_Bcast(k_upanel.val, UvalSendCounts[k], MPI_DOUBLE, krow(k), grid3d->cscp.comm);
-            MPI_Bcast(k_lpanel.index, LidxSendCounts[k], mpi_int_t, kcol(k), grid3d->rscp.comm);
-            MPI_Bcast(k_lpanel.val, LvalSendCounts[k], MPI_DOUBLE, kcol(k), grid3d->rscp.comm);
+            if(UidxSendCounts[k]>0)
+            {
+                MPI_Bcast(k_upanel.index, UidxSendCounts[k], mpi_int_t, krow(k), grid3d->cscp.comm);
+                MPI_Bcast(k_upanel.val, UvalSendCounts[k], MPI_DOUBLE, krow(k), grid3d->cscp.comm);
+            }
+            
+            if(LidxSendCounts[k]>0)
+            {
+                MPI_Bcast(k_lpanel.index, LidxSendCounts[k], mpi_int_t, kcol(k), grid3d->rscp.comm);
+                MPI_Bcast(k_lpanel.val, LvalSendCounts[k], MPI_DOUBLE, kcol(k), grid3d->rscp.comm);
+            }
+            
 
             /*=======   Schurcomplement Update      ======*/
             #warning single node only 
             // dSchurComplementUpdate(k, lPanelVec[g2lCol(k)], uPanelVec[g2lRow(k)]);
             // dSchurComplementUpdate(k, lPanelVec[g2lCol(k)], k_upanel);
-            k_upanel.checkCorrectness();
-            dSchurComplementUpdate(k, k_lpanel, k_upanel);
-            MPI_Barrier(grid3d->comm);
+            if(UidxSendCounts[k]>0 && LidxSendCounts[k]>0)
+            {
+                k_upanel.checkCorrectness();
+                dSchurComplementUpdate(k, k_lpanel, k_upanel);
+                
+            }
+            // MPI_Barrier(grid3d->comm);
 
         } /*for k0= k_st:k_end */
 

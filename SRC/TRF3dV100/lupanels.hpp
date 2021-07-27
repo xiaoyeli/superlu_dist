@@ -172,6 +172,7 @@ public:
         std::cout<<nblocks()<<"  nzcols "<<nzcols()<<" alternate nzcols "<< alternateNzcols << "\n";
         if(nzcols()!= alternateNzcols)
         {
+            printf("Error 175\n");
             exit(-1);
         }
             

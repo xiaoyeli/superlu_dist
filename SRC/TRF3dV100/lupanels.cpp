@@ -258,7 +258,7 @@ int_t LUstruct_v100::dScatter(int_t m, int_t n,
         dstRowList = NULL;
         dstColLen = uPanelVec[li].nbcol(lj);
         dstColList = uPanelVec[li].colList(lj);
-        std::cout<<li<<" "<<lj<<" Dst[0] is"<<Dst[0] << "\n";
+        // std::cout<<li<<" "<<lj<<" Dst[0] is"<<Dst[0] << "\n";
     }
     else
     {
