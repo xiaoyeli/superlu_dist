@@ -1543,9 +1543,6 @@ if(procs==1){
 	// }
 
 
-
-
-
 #ifdef GPU_ACC /* CPU trisolve*/
 // #if 0 /* CPU trisolve*/
 
@@ -1887,7 +1884,6 @@ t1 = SuperLU_timer_();
 // roctxRangePush("hipLaunchKernel");
 // #endif
 
-
 	gridinfo_t *d_grid = NULL;
 	double *d_x = NULL;
 	double *d_lsum = NULL;
@@ -1913,7 +1909,6 @@ t1 = SuperLU_timer_();
 
 	checkGPU(gpuMemcpy(x, d_x, (ldalsum * nrhs + nlb * XK_H) * sizeof(double), gpuMemcpyDeviceToHost));
 
-
 	checkGPU (gpuFree (d_grid));
 	checkGPU (gpuFree (recvbuf_BC_gpu));
 	checkGPU (gpuFree (recvbuf_RD_gpu));
@@ -1921,18 +1916,8 @@ t1 = SuperLU_timer_();
 	checkGPU (gpuFree (d_lsum));
 	checkGPU (gpuFree (d_fmod));
 
-// #if HAVE_CUDA
-// cudaProfilerStop(); 
-// #elif defined(HAVE_HIP)
-// roctracer_mark("after HIP LaunchKernel");
-// roctxMark("after hipLaunchKernel");
-// roctxRangePop(); // for "hipLaunchKernel"
-// #endif
-
+	stat_loc[0]->ops[SOLVE]+=Llu->Lnzval_bc_cnt*nrhs*2; // YL: this is a rough estimate 
 #endif 	
-
-
-
 
 #else  /* CPU trisolve*/
 
@@ -2395,7 +2380,10 @@ thread_id=0;
 			}
 		} // end of parallel 
 
-#endif			
+#endif	
+
+
+
 #if ( PRNTlevel>=1 )
 		t = SuperLU_timer_() - t;
 		stat->utime[SOL_TOT] += t;
@@ -2417,7 +2405,7 @@ thread_id=0;
 #endif
 
 
-stat->utime[SOLVE] = SuperLU_timer_() - t1_sol;
+// stat->utime[SOLVE] = SuperLU_timer_() - t1_sol;
 
 #if ( DEBUGlevel==2 )
 		{
@@ -2562,8 +2550,6 @@ stat->utime[SOLVE] = SuperLU_timer_() - t1_sol;
 #endif /* DEBUGlevel */
 
 
-
-
 	/* ---------------------------------------------------------
 	   Initialize the async Bcast trees on all processes.
 	   --------------------------------------------------------- */
@@ -2644,6 +2630,51 @@ stat->utime[SOLVE] = SuperLU_timer_() - t1_sol;
 
 
 
+
+
+
+#ifdef GPU_ACC /*GPU trisolve*/
+// #if 0 /* CPU trisolve*/
+
+	d_grid = NULL;
+	d_x = NULL;
+	d_lsum = NULL;
+    int_t  *d_bmod = NULL;
+
+	checkGPU(gpuMalloc( (void**)&d_grid, sizeof(gridinfo_t)));
+	checkGPU(gpuMalloc( (void**)&d_lsum, sizelsum*num_thread * sizeof(double)));
+	checkGPU(gpuMalloc( (void**)&d_x, (ldalsum * nrhs + nlb * XK_H) * sizeof(double)));
+	checkGPU(gpuMalloc( (void**)&d_bmod, (nlb*aln_i) * sizeof(int_t)));
+	
+
+	checkGPU(gpuMemcpy(d_grid, grid, sizeof(gridinfo_t), gpuMemcpyHostToDevice));	
+	checkGPU(gpuMemcpy(d_lsum, lsum, sizelsum*num_thread * sizeof(double), gpuMemcpyHostToDevice));	
+	checkGPU(gpuMemcpy(d_x, x, (ldalsum * nrhs + nlb * XK_H) * sizeof(double), gpuMemcpyHostToDevice));	
+	checkGPU(gpuMemcpy(d_bmod, bmod, (nlb*aln_i) * sizeof(int_t), gpuMemcpyHostToDevice));
+
+	k = CEILING( nsupers, grid->npcol);/* Number of local block columns divided by #warps per block used as number of thread blocks*/
+	knsupc = sp_ienv_dist(3);
+
+    
+
+	dlsum_bmod_inv_gpu_wrap(k,nlb,DIM_X,DIM_Y,d_lsum,d_x,nrhs,knsupc,nsupers,d_bmod,Llu->d_UBtree_ptr,Llu->d_URtree_ptr,Llu->d_ilsum,Llu->d_Urbs,Llu->d_Ufstnz_br_dat,Llu->d_Ufstnz_br_offset,Llu->d_Unzval_br_dat,Llu->d_Unzval_br_offset,Llu->d_Ucb_valdat,Llu->d_Ucb_valoffset,Llu->d_Ucb_inddat,Llu->d_Ucb_indoffset,Llu->d_Uinv_bc_dat,Llu->d_Uinv_bc_offset,Llu->d_xsup,d_grid);
+
+
+	checkGPU(gpuMemcpy(x, d_x, (ldalsum * nrhs + nlb * XK_H) * sizeof(double), gpuMemcpyDeviceToHost));
+
+	checkGPU (gpuFree (d_grid));
+	checkGPU (gpuFree (d_x));
+	checkGPU (gpuFree (d_lsum));
+	checkGPU (gpuFree (d_bmod));
+
+	stat_loc[0]->ops[SOLVE]+=Llu->Unzval_br_cnt*nrhs*2; // YL: this is a rough estimate 
+
+#else  /* CPU trisolve*/
+
+
+
+
+
 #ifdef _OPENMP
 #pragma omp parallel default (shared)
 	{
@@ -2720,7 +2751,7 @@ stat->utime[SOLVE] = SuperLU_timer_() - t1_sol;
 			TOC(t2, t1);
 			stat_loc[thread_id]->utime[SOL_TRSM] += t2;
 #endif
-			// stat_loc[thread_id]->ops[SOLVE] += knsupc * (knsupc + 1) * nrhs;
+			stat_loc[thread_id]->ops[SOLVE] += knsupc * (knsupc + 1) * nrhs;
 
 #if ( DEBUGlevel>=2 )
 			printf("(%2d) Solve X[%2d]\n", iam, k);
@@ -2938,7 +2969,7 @@ for (i=0;i<nroot_send;i++){
 							TOC(t2, t1);
 							stat_loc[thread_id]->utime[SOL_TRSM] += t2;
 #endif
-							// stat_loc[thread_id]->ops[SOLVE] += knsupc * (knsupc + 1) * nrhs;
+							stat_loc[thread_id]->ops[SOLVE] += knsupc * (knsupc + 1) * nrhs;
 
 #if ( DEBUGlevel>=2 )
 						printf("(%2d) Solve X[%2d]\n", iam, k);
@@ -2978,6 +3009,9 @@ for (i=0;i<nroot_send;i++){
 			}
 		} /* while not finished ... */
 	}
+
+#endif
+
 #if ( PRNTlevel>=1 )
 		t = SuperLU_timer_() - t;
 		stat->utime[SOL_TOT] += t;
@@ -3112,7 +3146,7 @@ for (i=0;i<nroot_send;i++){
 		}
 #endif
 
-    // stat->utime[SOLVE] = SuperLU_timer_() - t1_sol;
+    stat->utime[SOLVE] = SuperLU_timer_() - t1_sol;
 
 #if ( DEBUGlevel>=1 )
     CHECK_MALLOC(iam, "Exit pdgstrs()");

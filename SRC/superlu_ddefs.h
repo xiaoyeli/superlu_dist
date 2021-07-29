@@ -157,8 +157,21 @@ typedef struct {
     int_t   *Unnz; /* number of nonzeros per block column in U*/
 	int_t   **Lrowind_bc_2_lsum; /* size ceil(NSUPERS/Pc)  map indices of Lrowind_bc_ptr to indices of lsum  */
     double  **Uinv_bc_ptr;  /* size ceil(NSUPERS/Pc)     	*/
+    double *Uinv_bc_dat;  /* size sum of sizes of Linv_bc_ptr[lk])                 */   
+    long int *Uinv_bc_offset;  /* size ceil(NSUPERS/Pc)                 */   
+	long int Uinv_bc_cnt;
+
+
     int_t   **Ufstnz_br_ptr;  /* size ceil(NSUPERS/Pr)                 */
+    int_t   *Ufstnz_br_dat;  /* size sum of sizes of Ufstnz_br_ptr[lk])                 */   
+    long int *Ufstnz_br_offset;  /* size ceil(NSUPERS/Pr)    */
+    long int Ufstnz_br_cnt;
+
     double  **Unzval_br_ptr;  /* size ceil(NSUPERS/Pr)                 */
+	double *Unzval_br_dat;  /* size sum of sizes of Unzval_br_ptr[lk])                 */   
+	long int *Unzval_br_offset;  /* size ceil(NSUPERS/Pr)    */
+    long int Unzval_br_cnt;
+
         /*-- Data structures used for broadcast and reduction trees. --*/
     C_Tree  *LBtree_ptr;       /* size ceil(NSUPERS/Pc)                */
     C_Tree  *LRtree_ptr;       /* size ceil(NSUPERS/Pr)                */
@@ -228,7 +241,16 @@ typedef struct {
     int_t *ut_modbit;
     int_t *Urbs;
     Ucb_indptr_t **Ucb_indptr;/* Vertical linked list pointing to Uindex[] */
+    Ucb_indptr_t *Ucb_inddat;
+    long int *Ucb_indoffset;
+    long int Ucb_indcnt;  
+
     int_t  **Ucb_valptr;      /* Vertical linked list pointing to Unzval[] */
+    int_t  *Ucb_valdat;      
+    long int *Ucb_valoffset;
+    long int Ucb_valcnt;
+
+    
 
     /* some additional counters for L solve */
     int_t n;
@@ -243,13 +265,29 @@ typedef struct {
     double *d_Lnzval_bc_dat;     
     long int *d_Lnzval_bc_offset;     
     double *d_Linv_bc_dat ;     
+    double *d_Uinv_bc_dat ;     
     long int *d_Linv_bc_offset ;     
+    long int *d_Uinv_bc_offset ;     
     int_t *d_Lindval_loc_bc_dat ;     
     long int *d_Lindval_loc_bc_offset ;     
+
+    int_t *d_Urbs;
+    int_t   *d_Ufstnz_br_dat;  
+    long int *d_Ufstnz_br_offset;  
+    double *d_Unzval_br_dat;   
+	long int *d_Unzval_br_offset; 
+
+    int_t  *d_Ucb_valdat;      
+    long int *d_Ucb_valoffset;    
+    Ucb_indptr_t *d_Ucb_inddat;
+    long int *d_Ucb_indoffset;
+
 	int_t  *d_ilsum ;
 	int_t *d_xsup ;
     C_Tree  *d_LBtree_ptr ;
     C_Tree  *d_LRtree_ptr ;
+    C_Tree  *d_UBtree_ptr ;
+    C_Tree  *d_URtree_ptr ;    
 #endif
 } dLocalLU_t;
 
@@ -560,6 +598,7 @@ extern void dComputeLevelsets(int , int_t , gridinfo_t *,
 			   
 #ifdef GPU_ACC               
 extern void dlsum_fmod_inv_gpu_wrap(int_t, int_t, int_t, int_t, double *,double *,int,int, int_t , int_t *, C_Tree  *, C_Tree  *, int_t *, int_t *,long int *, double *, long int *, double *, long int *, int_t *, long int *, int_t *, gridinfo_t *, double * , double * , int_t );
+extern void dlsum_bmod_inv_gpu_wrap(int_t, int_t, int_t, int_t, double *,double *,int,int, int_t , int_t *, C_Tree  *, C_Tree  *, int_t *, int_t *,int_t *, long int *,double *,long int *,int_t  *,long int *,Ucb_indptr_t *,long int *,double *,long int *,int_t *,gridinfo_t *);
 #endif
 
 extern void dlsum_fmod_inv_master(double *, double *, double *, double *,

@@ -1419,7 +1419,9 @@ pdgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 	    pdCompute_Diag_Inv(n, LUstruct, grid, stat, info);
 #ifdef GPU_ACC		
 		checkGPU(gpuMemcpy(LUstruct->Llu->d_Linv_bc_dat, LUstruct->Llu->Linv_bc_dat, (LUstruct->Llu->Linv_bc_cnt) * sizeof(double), gpuMemcpyHostToDevice));	
+		checkGPU(gpuMemcpy(LUstruct->Llu->d_Uinv_bc_dat, LUstruct->Llu->Uinv_bc_dat, (LUstruct->Llu->Uinv_bc_cnt) * sizeof(double), gpuMemcpyHostToDevice));	
 		checkGPU(gpuMemcpy(LUstruct->Llu->d_Lnzval_bc_dat, LUstruct->Llu->Lnzval_bc_dat, (LUstruct->Llu->Lnzval_bc_cnt) * sizeof(double), gpuMemcpyHostToDevice));	
+		checkGPU(gpuMemcpy(LUstruct->Llu->d_Unzval_br_dat, LUstruct->Llu->Unzval_br_dat, (LUstruct->Llu->Unzval_br_cnt) * sizeof(double), gpuMemcpyHostToDevice));	
 #endif
 
 	}
