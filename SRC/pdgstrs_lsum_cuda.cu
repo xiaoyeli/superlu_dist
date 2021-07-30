@@ -1519,6 +1519,7 @@ __device__ void C_RdTree_forwardMessageSimple_Device(C_Tree* Tree, void* localBu
   )
   {
 	  double alpha = 1.0, beta = 0.0,malpha=-1.0;
+	  double xtemp;
 	  double *lusup, *lusup1;
 	  double *dest;
 	  double *Uinv;/* Inverse of diagonal block */
@@ -1709,8 +1710,13 @@ __device__ void C_RdTree_forwardMessageSimple_Device(C_Tree* Tree, void* localBu
 				  lib = LBi( k, grid ); /* Local block number, row-wise. */
 				  ii = X_BLK( lib );	
 
-				  #if 1
-					for (ub = tid; ub < nub; ub+=block_size) {
+
+					int ngroup=SUPERLU_MIN(nub,block_size);
+					int block_size_loc = floor((double)block_size/ngroup);
+					int remainder = nub % ngroup;
+					int gid=tid/block_size_loc;
+
+					for (ub = gid; ub < nub; ub+=ngroup) {
 						ik = Ucb_inddat[Ucb_indoffset[lk]+ub].lbnum; /* Local block number, row-wise. */
 						usub = &Ufstnz_br_dat[Ufstnz_br_offset[ik]];
 						uval = &Unzval_br_dat[Unzval_br_offset[ik]];
@@ -1724,24 +1730,24 @@ __device__ void C_RdTree_forwardMessageSimple_Device(C_Tree* Tree, void* localBu
 			
 						// printf("ub %d bmod: %d \n",ub, bmod[ik*aln_i]);
 
+						if(tid % block_size_loc==0){ // parallelizing this supernode across knsupc or irow doesn't seem to have any benefit
+						fnzmin=100000000;
+						for (jj = 0; jj < knsupc; ++jj)
+							fnzmin = min(fnzmin,usub[i + jj]);
 						RHS_ITERATE(j) {
 							dest = &lsum[il + j*iknsupc];
 							uptr = Ucb_valdat[Ucb_valoffset[lk]+ub]; /* Start of the block in uval[]. */
 							
 							for (jj = 0; jj < iknsupc; ++jj) 
 								temp2[jj]=0;
-							fnzmin=100000000;
-							for (jj = 0; jj < knsupc; ++jj)
-								fnzmin = min(fnzmin,usub[i + jj]);
-
 							for (jj = 0; jj < knsupc; ++jj) {
 								fnz = usub[i + jj];
 								if ( fnz < iklrow ) { /* Nonzero segment. */
 									/* AXPY */
+									xtemp=x[ii+j*knsupc+jj];
 									for (irow = fnz; irow < iklrow; ++irow){
-										temp2[irow - ikfrow]+=uval[uptr++] * x[ii+j*knsupc+jj]; // YL: this is most expensive operation on GPU
+										temp2[irow - ikfrow]+=uval[uptr++] * xtemp; // YL: this is most expensive operation on GPU
 									}
-											// stat[thread_id]->ops[SOLVE] += 2 * (iklrow - fnz);
 								}
 							} /* for jj ... */
 
@@ -1750,72 +1756,13 @@ __device__ void C_RdTree_forwardMessageSimple_Device(C_Tree* Tree, void* localBu
 							}								
 						}
 						fmod_tmp=atomicSub(&bmod[ik*aln_i],1);
+						}
 						
 					} /* for ub ... */
 				// }
 				__syncthreads();
 
-			#else
-
-				for (ub = 0; ub < nub; ub++) {
-					ik = Ucb_inddat[Ucb_indoffset[lk]+ub].lbnum; /* Local block number, row-wise. */
-					usub = &Ufstnz_br_dat[Ufstnz_br_offset[ik]];
-					uval = &Unzval_br_dat[Unzval_br_offset[ik]];
-					i = Ucb_inddat[Ucb_indoffset[lk]+ub].indpos; /* Start of the block in usub[]. */
-					i += UB_DESCRIPTOR;
-					il = LSUM_BLK( ik );
-					gik = ik * grid->nprow + myrow;/* Global block number, row-wise. */
-					iknsupc = SuperSize( gik );
-					ikfrow = FstBlockC( gik );
-					iklrow = FstBlockC( gik+1 );
-		
-					// printf("ub %d bmod: %d \n",ub, bmod[ik*aln_i]);
-
-					RHS_ITERATE(j) {
-						dest = &lsum[il + j*iknsupc];
-						uptr = Ucb_valdat[Ucb_valoffset[lk]+ub]; /* Start of the block in uval[]. */
-						
-						for (jj = tid; jj < iknsupc; jj+=block_size) 
-						rtemp_loc[jj]=0;
-						__syncthreads();
-
-						fnzmin=10000000;
-						for (jj = 0; jj < knsupc; ++jj)
-							fnzmin = min(fnzmin,usub[i + jj]);
-
-						for (jj = 0; jj < knsupc; ++jj) {
-							fnz = usub[i + jj];
-							if ( fnz < iklrow ) { /* Nonzero segment. */
-								/* AXPY */
-								for (irow = fnz+tid; irow < iklrow; irow+=block_size){
-									rtemp_loc[irow - ikfrow]+=uval[uptr+irow-fnz] * x[ii+j*knsupc+jj];
-									// temp=atomicAdd(&rtemp_loc[irow - ikfrow],uval[uptr+irow-fnz] * x[ii+j*knsupc+jj]);
-								}
-								// __syncthreads();
-								
-								uptr+=iklrow - fnz;
-										// stat[thread_id]->ops[SOLVE] += 2 * (iklrow - fnz);
-							}
-						} /* for jj ... */
-							__syncthreads();
-
-						for (irow = fnzmin+tid; irow < iklrow; irow+=block_size){
-							temp=atomicAdd(&dest[irow - ikfrow],-rtemp_loc[irow - ikfrow]);
-						}								
-					}
-					if(tid==0)
-					fmod_tmp=atomicSub(&bmod[ik*aln_i],1);
-					
-
-				} /* for ub ... */
-			// }
-			__syncthreads();
-
-
-			#endif		
-
-
-
+			
 				//   __syncthreads();
 			  // } /*if tid<Nchunk*/
 		  } /* if nlb>0*/		
