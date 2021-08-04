@@ -50,7 +50,7 @@ int checkCuda(int result)
 
 // #define UNIT_STRIDE
 
-#if 1  ////////// this routine is not used anymore
+#if 0  ////////// this routine is not used anymore
 inline
 void device_scatter_l (int_t thread_id,
                        int_t nsupc, int_t temp_nbrow,
@@ -114,40 +114,6 @@ void ddevice_scatter_l_2D (int thread_id,
 	}
     }
 }
-
-// /* Sherry: this routine is not used */
-// #if 1
-
-// void cub_scan_test(sycl::nd_item<3> item, const sycl::stream &stream,
-// 		   *temp_storage, int *IndirectJ1, int *IndirectJ2)
-// {
-//     int thread_id = item.get_local_id(2);
-//     typedef cub::BlockScan<int, MAX_SUPER_SIZE > BlockScan; /*1D int data type*/
-
-//     /*storage temp*/
-
-//     if (thread_id < MAX_SUPER_SIZE)
-//     {
-// 	IndirectJ1[thread_id] = (thread_id + 1) % 2;
-//     }
-
-//     /*
-//       DPCT1065:0: Consider replacing sycl::nd_item::barrier() with
-//       sycl::nd_item::barrier(sycl::access::fence_space::local_space) for
-//       better performance, if there is no access to global memory.
-//     */
-//     item.barrier();
-//     if (thread_id < MAX_SUPER_SIZE)
-// 	BlockScan(temp_storage).InclusiveSum (IndirectJ1[thread_id], IndirectJ2[thread_id]);
-
-
-//     if (thread_id < MAX_SUPER_SIZE)
-// 	/*
-// 	  DPCT1015:1: Output needs adjustment.
-// 	*/
-// 	stream << "%d %d\n";
-// }
-// #endif  // not used
 
 
 inline
@@ -841,10 +807,6 @@ int dfree_LUstruct_gpu (dLUstruct_gpu_t * A_gpu, dsluGPU_t *sluGPU)
 // void dPrint_matrix( char *desc, int_t m, int_t n, double * dA, int_t lda )
 // {
 //     double *cPtr = new double[lda * n];
-//     /*
-//       DPCT1003:10: Migrated API does not return error code. (*, 0) is
-//       inserted. You may need to rewrite this code.
-//     */
 //     checkCuda((dpct::get_default_queue()
 // 	       .memcpy(cPtr, dA, lda * n * sizeof(double))
 // 	       .wait(),

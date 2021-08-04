@@ -15,12 +15,17 @@
 
 #include "superlu_sdefs.h"
 
-#ifdef GPU_ACC // enable GPU
+#if defined(GPU_ACC) || defined(HAVE_SYCL) // enable GPU
 
 // #include "mkl.h"
 
+#ifdef HAVE_SYCL
+#include <CL/sycl.hpp>
+#include <oneapi/mkl.hpp>
+#else
 #include <cublas_v2.h>
 #include <cuda_runtime.h>
+#endif
 // #include "sec_structs.h"
 // #include "supernodal_etree.h"
 
@@ -28,6 +33,8 @@
 //#define SLU_TARGET_GPU 0
 //#define MAX_BLOCK_SIZE 10000
 #define MAX_NCUDA_STREAMS 32
+
+#if !defined(HAVE_SYCL)
 
 static
 void check(cudaError_t result, char const *const func, const char *const file, int const line)
@@ -43,6 +50,7 @@ void check(cudaError_t result, char const *const func, const char *const file, i
 }
 
 #define checkCudaErrors(val)  check ( (val), #val, __FILE__, __LINE__ )
+#endif
 
 typedef struct //SCUbuf_gpu_
 {
@@ -55,12 +63,12 @@ typedef struct //SCUbuf_gpu_
 
     float *Remain_L_buff;  /* on GPU */
     float *Remain_L_buff_host; /* Sherry: this memory is page-locked, why need another copy on GPU ? */
-    
+
     int_t *lsub;
     int_t *usub;
 
     int_t *lsub_buf, *usub_buf;
-    
+
     Ublock_info_t *Ublock_info; /* on GPU */
     Remain_info_t *Remain_info;
     Ublock_info_t *Ublock_info_host;
@@ -72,7 +80,7 @@ typedef struct //SCUbuf_gpu_
 } sSCUbuf_gpu_t;
 
 
-typedef struct //LUstruct_gpu_ 
+typedef struct //LUstruct_gpu_
 {
     int_t   *LrowindVec;      /* A single vector */
     int_t   *LrowindPtr;      /* A single vector */
@@ -120,12 +128,21 @@ typedef struct //LUstruct_gpu_
     double tHost_PCIeH2D;
     double tHost_PCIeD2H;
 
-    /*cuda events to measure DGEMM and SCATTER timing */
     int *isOffloaded;  /*stores if any iteration is offloaded or not*/
+
+#ifdef HAVE_SYCL
+    /*sycl events to measure DGEMM and SCATTER timing */
+    sycl::event *GemmStart, *GemmEnd, *ScatterEnd;  /*sycl events to store gemm and scatter's begin and end*/
+    sycl::event *ePCIeH2D;
+    sycl::event *ePCIeD2H_Start;
+    sycl::event *ePCIeD2H_End;
+#else
+    /*cuda events to measure DGEMM and SCATTER timing */
     cudaEvent_t *GemmStart, *GemmEnd, *ScatterEnd;  /*cuda events to store gemm and scatter's begin and end*/
     cudaEvent_t *ePCIeH2D;
     cudaEvent_t *ePCIeD2H_Start;
     cudaEvent_t *ePCIeD2H_End;
+#endif
 
     int_t *xsup_host;
     int_t* perm_c_supno;
@@ -136,8 +153,12 @@ typedef struct //sluGPU_t_
 {
     int_t gpuId;        // if there are multiple GPUs
     sLUstruct_gpu_t *A_gpu, *dA_gpu;
+#ifdef HAVE_SYCL
+    sycl::queue *funCallStreams[MAX_NCUDA_STREAMS], *CopyStream;
+#else
     cudaStream_t funCallStreams[MAX_NCUDA_STREAMS], CopyStream;
     cublasHandle_t cublasHandles[MAX_NCUDA_STREAMS];
+#endif
     int_t lastOffloadStream[MAX_NCUDA_STREAMS];
     int_t nCudaStreams;
     int_t* isNodeInMyGrid;
@@ -167,7 +188,7 @@ extern int ssparseTreeFactor_ASYNC_GPU(
     ssluGPU_t *sluGPU,
     d2Hreduce_t *d2Hred,
     HyP_t *HyP,
-    sLUstruct_t *LUstruct, gridinfo3d_t *grid3d, 
+    sLUstruct_t *LUstruct, gridinfo3d_t *grid3d,
     SuperLUStat_t *stat,
     double thresh, SCT_t *SCT, int tag_ub,
     int *info);
@@ -224,7 +245,11 @@ extern int sreduceAllAncestors3d_GPU(int_t ilvl, int_t* myNodeCount,
                               factStat_t *factStat, HyP_t* HyP, SCT_t* SCT );
 
 extern void ssyncAllfunCallStreams(ssluGPU_t* sluGPU, SCT_t* SCT);
-extern int sfree_LUstruct_gpu (sLUstruct_gpu_t *A_gpu);
+extern int sfree_LUstruct_gpu (sLUstruct_gpu_t *A_gpu
+#ifdef HAVE_SYCL
+			       , ssluGPU_t *sluGPU
+#endif
+    );
 
 //int freeSluGPU(ssluGPU_t *sluGPU);
 

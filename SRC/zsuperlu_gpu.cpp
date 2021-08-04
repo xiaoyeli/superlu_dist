@@ -274,11 +274,6 @@ void Scatter_GPU_kernel(
 		ljb_ind[0] = thread_id * blks_per_threads + i;
 	    }
 	}
-	/*
-	  DPCT1065:0: Consider replacing sycl::nd_item::barrier() with
-	  sycl::nd_item::barrier(sycl::access::fence_space::local_space)
-	  for better performance, if there is no access to global memory.
-	*/
 	item.barrier();
 
 	int iuip_lib = local_u_blk_infoVec[local_u_blk_infoPtr[lib] + ljb_ind[0]].iuip;
@@ -299,11 +294,6 @@ void Scatter_GPU_kernel(
 	/* indirectJ3[j] == kk means the j-th nonzero segment
 	   points to column kk in this supernode */
 
-	/*
-	  DPCT1065:1: Consider replacing sycl::nd_item::barrier() with
-	  sycl::nd_item::barrier(sycl::access::fence_space::local_space)
-	  for better performance, if there is no access to global memory.
-	*/
 	item.barrier();
 
 	/* threads are divided into multiple columns */
@@ -812,10 +802,6 @@ int zfree_LUstruct_gpu (zLUstruct_gpu_t * A_gpu, zsluGPU_t *sluGPU)
 // void zPrint_matrix( char *desc, int_t m, int_t n, doublecomplex * dA, int_t lda )
 // {
 //     doublecomplex *cPtr = new doublecomplex[lda * n];
-//     /*
-//       DPCT1003:8: Migrated API does not return error code. (*, 0) is inserted.
-//       You may need to rewrite this code.
-//     */
 //     checkCuda((dpct::get_default_queue()
 // 	       .memcpy(cPtr, dA, lda * n * sizeof(doublecomplex))
 // 	       .wait(),
