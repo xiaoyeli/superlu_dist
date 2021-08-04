@@ -229,7 +229,7 @@ if ( msg0 && msg2 ) {  /* L(:,k) and U(k,:) are not empty. */
 
 		    assert(nbrow*(st_col+num_col_stream) < buffer_size);
 		    streams[stream_id].memcpy(dB+b_offset, tempu+b_offset, B_stream_size); //mjc was memcpyAsync
-			 oneapi::mkl::blas::gemm(streams[stream_id],
+		    oneapi::mkl::blas::gemm(streams[stream_id],
 					    oneapi::mkl::transpose::nontrans,
 					    oneapi::mkl::transpose::nontrans,
 					    nbrow, num_col_stream, ldu,

@@ -455,11 +455,7 @@ int dDeAllocLlu_3d(int_t n, dLUstruct_t * LUstruct, gridinfo3d_t* grid3d)
     for (i = 0; i < nbc; ++i) 
 	if ( Llu->Lrowind_bc_ptr[i] ) {
 	    SUPERLU_FREE (Llu->Lrowind_bc_ptr[i]);
-#ifdef GPU_ACC
-	    checkCuda(cudaFreeHost(Llu->Lnzval_bc_ptr[i]));
-#else
 	    SUPERLU_FREE (Llu->Lnzval_bc_ptr[i]);
-#endif
 	}
     SUPERLU_FREE (Llu->Lrowind_bc_ptr);
     SUPERLU_FREE (Llu->Lnzval_bc_ptr);
@@ -489,8 +485,8 @@ dGenXtrue_dist(int_t n, int_t nrhs, double *x, int_t ldx)
     int  i, j;
     for (j = 0; j < nrhs; ++j)
 	for (i = 0; i < n; ++i) {
-	    if ( i % 2 ) x[i + j*ldx] = 1.0;/* + (double)(i+1.)/n;*/
-	    else x[i + j*ldx] = 1.0;
+	    if ( i % 2 ) x[i + j*ldx] = 1.0 + (double)(i+1.)/n;
+	    else x[i + j*ldx] = 1.0 - (double)(i+1.)/n;
 	}
 }
 
@@ -710,7 +706,7 @@ void dDumpLblocks(int iam, int_t nsupers, gridinfo_t *grid,
 		}
 
 	if(grid->iam==0){
-		fprintf(fp, "%d %d %d\n", n,n,nnzL);
+		fprintf(fp, "%d %d " IFMT "\n", n,n,nnzL);
 	}
 
      ncb = nsupers / grid->npcol;

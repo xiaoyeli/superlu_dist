@@ -9,7 +9,7 @@
 !! October, 2012
 !! </pre>
 !
-      program f_pddrive
+      program f_psdrive
 ! 
 ! Purpose
 ! =======
@@ -29,14 +29,17 @@
 !   7. Release all structures
 !
 !
+      #include "superlu_dist_config.fh"
       use superlu_mod
-!      implicit none
       include 'mpif.h'
       integer maxn, maxnz, maxnrhs
       parameter ( maxn = 10000, maxnz = 100000, maxnrhs = 10 )
-      integer rowind(maxnz), colptr(maxn)
-      real*8  values(maxnz), b(maxn), berr(maxnrhs), xtrue(maxn)
-      integer n, m, nnz, nprow, npcol
+#if (XSDK_INDEX_SIZE==64)
+      integer*8 nnz
+#else
+      integer nnz
+#endif
+      integer n, m, nprow, npcol
       integer*4 iam, info, i, ierr, ldb, nrhs
       character*80 fname
 
@@ -57,9 +60,9 @@
 ! Create Fortran handles for the C structures used in SuperLU_DIST
       call f_create_gridinfo_handle(grid)
       call f_create_options_handle(options)
-      call f_create_ScalePerm_handle(ScalePermstruct)
-      call f_create_LUstruct_handle(LUstruct)
-      call f_create_SOLVEstruct_handle(SOLVEstruct)
+      call f_screate_ScalePerm_handle(ScalePermstruct)
+      call f_screate_LUstruct_handle(LUstruct)
+      call f_screate_SOLVEstruct_handle(SOLVEstruct)
       call f_create_SuperMatrix_handle(A)
       call f_create_SuperLUStat_handle(stat)
 
@@ -80,7 +83,7 @@
 ! Read and distribute the matrix to the process gird
       nrhs = 1
       fname = '../EXAMPLE/g20.rua'//char(0)  !! make the string null-ended
-      call  f_dcreate_matrix_x_b(fname, A, m, n, nnz, &
+      call  f_screate_matrix_x_b(fname, A, m, n, nnz, &
       	                            nrhs, b, ldb, xtrue, ldx, grid)
 
       if ( iam == 0 ) then 
@@ -96,14 +99,14 @@
 
 ! Initialize ScalePermstruct and LUstruct
       call get_SuperMatrix(A, nrow=m, ncol=n)
-      call f_ScalePermstructInit(m, n, ScalePermstruct)
-      call f_LUstructInit(m, n, LUstruct)
+      call f_sScalePermstructInit(m, n, ScalePermstruct)
+      call f_sLUstructInit(m, n, LUstruct)
 
 ! Initialize the statistics variables
       call f_PStatInit(stat)
 
 ! Call the linear equation solver
-      call f_pdgssvx(options, A, ScalePermstruct, b, ldb, nrhs, &
+      call f_psgssvx(options, A, ScalePermstruct, b, ldb, nrhs, &
                      grid, LUstruct, SOLVEstruct, berr, stat, info)
 
       if (info == 0) then
@@ -117,8 +120,8 @@
 ! Deallocate the storage allocated by SuperLU_DIST
       call f_PStatFree(stat)
       call f_Destroy_CompRowLoc_Mat_dist(A)
-      call f_ScalePermstructFree(ScalePermstruct)
-      call f_Destroy_LU_SOLVE_struct(options, n, grid, LUstruct, SOLVEstruct)
+      call f_sScalePermstructFree(ScalePermstruct)
+      call f_sDestroy_LU_SOLVE_struct(options, n, grid, LUstruct, SOLVEstruct)
 
 ! Release the SuperLU process grid
 100   call f_superlu_gridexit(grid)

@@ -9,90 +9,100 @@ The source code is distributed under BSD license, see the file License.txt
 at the top-level directory.
 */
 
-#include "superlu_ddefs.h"
-#if 0
-#include "treeFactorization.h"
-#include "trfCommWrapper.h"
-#endif
+/*! @file
+ * \brief factorization routines in 3D algorithms
+ *
+ * <pre>
+ * -- Distributed SuperLU routine (version 7.0) --
+ * Lawrence Berkeley National Lab, Oak Ridge National Lab
+ * May 12, 2021
+ * </pre>
+ */
 
-#if 0 /******** Sherry: Remove extra layer of function calls.  *******/
-int_t sDiagFactIBCast(int_t k,  diagFactBufs_t *dFBuf,
-                      factStat_t *factStat,
-                      commRequests_t *comReqs,
-                      gridinfo_t *grid,
-                      superlu_dist_options_t *options,
-                      double thresh,
-                      LUstruct_t *LUstruct,
-                      SuperLUStat_t *stat, int *info,
-                      SCT_t *SCT,
-		      int tag_ub
-                     )
-{
-    MPI_Request * U_diag_blk_recv_req  = comReqs->U_diag_blk_recv_req;
-    MPI_Request * L_diag_blk_recv_req  = comReqs->L_diag_blk_recv_req;
-    MPI_Request * U_diag_blk_send_req  = comReqs->U_diag_blk_send_req;
-    MPI_Request * L_diag_blk_send_req  = comReqs->L_diag_blk_send_req;
-    int_t * IrecvPlcd_D = factStat->IrecvPlcd_D;
+ #include "superlu_ddefs.h"
+ #if 0
+ #include "treeFactorization.h"
+ #include "trfCommWrapper.h"
+ #endif
 
-    double * BlockUFactor =  dFBuf->BlockUFactor;
-    double * BlockLFactor =  dFBuf->BlockLFactor;
-    dDiagFactIBCast(k,  k,   BlockUFactor, BlockLFactor,
-                   IrecvPlcd_D,
-                   U_diag_blk_recv_req, L_diag_blk_recv_req,
-                   U_diag_blk_send_req, L_diag_blk_send_req,
-                   grid, options, thresh, LUstruct, stat, info, SCT, tag_ub);
-    return 0;
-}
-int_t sLPanelUpdate( int_t k,  diagFactBufs_t *dFBuf,
-                     factStat_t *factStat,
-                     commRequests_t *comReqs,
-                     gridinfo_t *grid,
-                     LUstruct_t *LUstruct, SCT_t *SCT)
-{
-    MPI_Request * U_diag_blk_recv_req  = comReqs->U_diag_blk_recv_req;
-    int_t * IrecvPlcd_D = factStat->IrecvPlcd_D;
-    int_t * factored_L = factStat->factored_L;
-    double * BlockUFactor =  dFBuf->BlockUFactor;
+ #if 0 /******** Sherry: Remove extra layer of function calls.  *******/
+ int_t sDiagFactIBCast(int_t k,  diagFactBufs_t *dFBuf,
+		       factStat_t *factStat,
+		       commRequests_t *comReqs,
+		       gridinfo_t *grid,
+		       superlu_dist_options_t *options,
+		       double thresh,
+		       LUstruct_t *LUstruct,
+		       SuperLUStat_t *stat, int *info,
+		       SCT_t *SCT,
+		       int tag_ub
+		      )
+ {
+     MPI_Request * U_diag_blk_recv_req  = comReqs->U_diag_blk_recv_req;
+     MPI_Request * L_diag_blk_recv_req  = comReqs->L_diag_blk_recv_req;
+     MPI_Request * U_diag_blk_send_req  = comReqs->U_diag_blk_send_req;
+     MPI_Request * L_diag_blk_send_req  = comReqs->L_diag_blk_send_req;
+     int_t * IrecvPlcd_D = factStat->IrecvPlcd_D;
 
-    dLPanelUpdate( k,  IrecvPlcd_D, factored_L,
-		   U_diag_blk_recv_req, BlockUFactor, grid, LUstruct, SCT);
-    return 0;
-}
+     double * BlockUFactor =  dFBuf->BlockUFactor;
+     double * BlockLFactor =  dFBuf->BlockLFactor;
+     dDiagFactIBCast(k,  k,   BlockUFactor, BlockLFactor,
+		    IrecvPlcd_D,
+		    U_diag_blk_recv_req, L_diag_blk_recv_req,
+		    U_diag_blk_send_req, L_diag_blk_send_req,
+		    grid, options, thresh, LUstruct, stat, info, SCT, tag_ub);
+     return 0;
+ }
+ int_t sLPanelUpdate( int_t k,  diagFactBufs_t *dFBuf,
+		      factStat_t *factStat,
+		      commRequests_t *comReqs,
+		      gridinfo_t *grid,
+		      LUstruct_t *LUstruct, SCT_t *SCT)
+ {
+     MPI_Request * U_diag_blk_recv_req  = comReqs->U_diag_blk_recv_req;
+     int_t * IrecvPlcd_D = factStat->IrecvPlcd_D;
+     int_t * factored_L = factStat->factored_L;
+     double * BlockUFactor =  dFBuf->BlockUFactor;
 
-int_t sUPanelUpdate( int_t k,
-                     int_t ldt,
-                     diagFactBufs_t *dFBuf,
-                     factStat_t *factStat,
-                     commRequests_t *comReqs,
-                     scuBufs_t* scuBufs,
-                     packLUInfo_t* packLUInfo,
-                     gridinfo_t *grid,
-                     LUstruct_t *LUstruct,
-                     SuperLUStat_t *stat, SCT_t *SCT)
-{
-    double* bigV = scuBufs->bigV;
-    Ublock_info_t* Ublock_info = packLUInfo->Ublock_info;
+     dLPanelUpdate( k,  IrecvPlcd_D, factored_L,
+		    U_diag_blk_recv_req, BlockUFactor, grid, LUstruct, SCT);
+     return 0;
+ }
 
-    MPI_Request * L_diag_blk_recv_req  = comReqs->L_diag_blk_recv_req;
+ int_t sUPanelUpdate( int_t k,
+		      int_t ldt,
+		      diagFactBufs_t *dFBuf,
+		      factStat_t *factStat,
+		      commRequests_t *comReqs,
+		      scuBufs_t* scuBufs,
+		      packLUInfo_t* packLUInfo,
+		      gridinfo_t *grid,
+		      LUstruct_t *LUstruct,
+		      SuperLUStat_t *stat, SCT_t *SCT)
+ {
+     double* bigV = scuBufs->bigV;
+     Ublock_info_t* Ublock_info = packLUInfo->Ublock_info;
 
-    int_t * factored_U = factStat->factored_U;
+     MPI_Request * L_diag_blk_recv_req  = comReqs->L_diag_blk_recv_req;
 
-    double * BlockLFactor =  dFBuf->BlockLFactor;
-    dUPanelUpdate(k, factored_U, L_diag_blk_recv_req, BlockLFactor, bigV, ldt,
-		  Ublock_info, grid, LUstruct, stat, SCT);
-    return 0;
-}
-int_t sIBcastRecvLPanel(
-    int_t k,
-    commRequests_t *comReqs,
-    LUValSubBuf_t* LUvsb,
-    msgs_t* msgs,
-    factStat_t *factStat,
-    gridinfo_t *grid,
-    LUstruct_t *LUstruct, SCT_t *SCT, int tag_ub)
+     int_t * factored_U = factStat->factored_U;
 
-{
-    int* msgcnt  = msgs->msgcnt;
+     double * BlockLFactor =  dFBuf->BlockLFactor;
+     dUPanelUpdate(k, factored_U, L_diag_blk_recv_req, BlockLFactor, bigV, ldt,
+		   Ublock_info, grid, LUstruct, stat, SCT);
+     return 0;
+ }
+ int_t sIBcastRecvLPanel(
+     int_t k,
+     commRequests_t *comReqs,
+     LUValSubBuf_t* LUvsb,
+     msgs_t* msgs,
+     factStat_t *factStat,
+     gridinfo_t *grid,
+     LUstruct_t *LUstruct, SCT_t *SCT, int tag_ub)
+
+ {
+     int* msgcnt  = msgs->msgcnt;
     MPI_Request *send_req  = comReqs->send_req;
     MPI_Request *recv_req  = comReqs->recv_req;
     int_t * Lsub_buf  = LUvsb->Lsub_buf;

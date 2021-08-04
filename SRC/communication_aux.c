@@ -9,6 +9,16 @@ The source code is distributed under BSD license, see the file License.txt
 at the top-level directory.
 */
 
+/*! @file
+ * \brief Auxiliary routines to support communication in 3D algorithms
+ *
+ * <pre>
+ * -- Distributed SuperLU routine (version 7.0) --
+ * Lawrence Berkeley National Lab, Oak Ridge National Lab
+ * May 12, 2021
+ * </pre>
+ */
+
 #include "superlu_defs.h"
 #if 0
 #include "sec_structs.h"

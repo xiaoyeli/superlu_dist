@@ -18,7 +18,6 @@ at the top-level directory.
 #else
 //#include "cblas.h"
 #endif
-#include "omp.h"
 
 #define ISORT
 #define SCATTER_U_CPU  scatter_u

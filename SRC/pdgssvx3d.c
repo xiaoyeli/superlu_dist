@@ -15,8 +15,9 @@ at the top-level directory.
  *
  * <pre>
  * -- Distributed SuperLU routine (version 7.0) --
- * Lawrence Berkeley National Lab, Georgia Institute of Technology.
- * May 10, 2019
+ * Lawrence Berkeley National Lab, Georgia Institute of Technology,
+ * Oak Ridge National Lab
+ * May 12, 2021
  */
 #include "superlu_ddefs.h"
 #if 0
@@ -320,6 +321,10 @@ at the top-level directory.
  *           = LargeDiag_MC64: use the Duff/Koster algorithm to permute rows of
  *                        the original matrix to make the diagonal large
  *                        relative to the off-diagonal.
+ *           = LargeDiag_HPWM: use the parallel approximate-weight perfect
+ *                        matching to permute rows of the original matrix
+ *                        to make the diagonal large relative to the
+ *                        off-diagonal.
  *           = MY_PERMR:  use the ordering given in ScalePermstruct->perm_r
  *                        input by the user.
  *
@@ -552,7 +557,7 @@ pdgssvx3d (superlu_dist_options_t * options, SuperMatrix * A,
     /* Save the inputs: ldb -> ldb3d, and B -> B3d, Astore -> Astore3d 
        B3d and Astore3d will be restored on return  */
     int ldb3d = ldb;
-    double *B3d = B;
+    // double *B3d = B;
     NRformat_loc *Astore3d = (NRformat_loc *)A->Store;
     double *B2d;
     NRformat_loc3d *A3d = dGatherNRformat_loc3d((NRformat_loc *)A->Store,
@@ -941,9 +946,9 @@ pdgssvx3d (superlu_dist_options_t * options, SuperMatrix * A,
 				printf ("\t product of diagonal %e\n", dprod);
 			}
 #endif
-		    } else { /* use largeDiag_AWPM */
+		    } else { /* use LargeDiag_HWPM */
 #ifdef HAVE_COMBBLAS
-			c2cpp_GetAWPM(A, grid, ScalePermstruct);
+		        d_c2cpp_GetHWPM(A, grid, ScalePermstruct);
 #else
 			if ( iam == 0 ) {
 			    printf("CombBLAS is not available\n"); fflush(stdout);
@@ -1079,14 +1084,13 @@ pdgssvx3d (superlu_dist_options_t * options, SuperMatrix * A,
 			}
 		    }
 		    
-		    
 		    /* Perform a symbolic factorization on Pc*Pr*A*Pc' and set up
 		       the nonzero data structures for L & U. */
 #if ( PRNTlevel>=1 )
 		    if (!iam)
 			printf
 			    (".. symbfact(): relax %4d, maxsuper %4d, fill %4d\n",
-			     sp_ienv_dist (2), sp_ienv_dist (3), sp_ienv_dist (6));
+			     sp_ienv_dist(2), sp_ienv_dist(3), sp_ienv_dist(6));
 #endif
 		    t = SuperLU_timer_ ();
 		    if (!(Glu_freeable = (Glu_freeable_t *)
@@ -1108,9 +1112,9 @@ pdgssvx3d (superlu_dist_options_t * options, SuperMatrix * A,
 				    (long) Glu_persist->supno[n - 1] + 1);
 			    printf ("\tSize of G(L) %ld\n", (long) Glu_freeable->xlsub[n]);
 			    printf ("\tSize of G(U) %ld\n", (long) Glu_freeable->xusub[n]);
-			    printf ("\tint %d, short %d, float %d, double %d\n",
-				    sizeof (int_t), sizeof (short),
-				    sizeof (float), sizeof (double));
+			    printf ("\tint %lu, short %lu, float %lu, double %lu\n",
+				    sizeof(int_t), sizeof (short),
+				    sizeof(float), sizeof (double));
 			    printf
 				("\tSYMBfact (MB):\tL\\U %.2f\ttotal %.2f\texpansions %d\n",
 				 symb_mem_usage.for_lu * 1e-6,
@@ -1560,6 +1564,7 @@ pdgssvx3d (superlu_dist_options_t * options, SuperMatrix * A,
     /* Scatter the solution from 2D grid_0 to 3D grid */
     dScatter_B3d(A3d, grid3d);
 
+    B = A3d->B3d; // B is now assigned back to B3d on return
     A->Store = Astore3d; // restore Astore to 3D
     
     /* free A2d and B2d, which are allocated only in 2D layer Grid_0 */

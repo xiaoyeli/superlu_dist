@@ -39,10 +39,10 @@ at the top-level directory.
  * Arguments   
  * =========      
  *
- * FNAME (input) char*
+ * fname (input) char*
  *       File name as a character string.
  *
- * NRHS  (input) int
+ * nrhs  (input) int
  *       Number of right-hand sides.
  *
  * nprocs (input) int*
@@ -90,8 +90,7 @@ int c2f_dcreate_matrix_x_b(char *fname, int nrhs, int nprocs,
     double   *nzval_loc;         /* local */
     int_t    *colind, *rowptr;	 /* local */
     int_t     *marker;
-    int_t  nnz, nnz_loc;
-    int    m, n;
+    int_t  nnz, nnz_loc, m, n;
     int    m_loc, fst_row; 
     int    m_loc_fst; /* Record m_loc of the first p-1 processors,
 			   when mod(m, p) is not zero. */ 

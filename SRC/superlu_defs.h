@@ -23,6 +23,7 @@ at the top-level directory.
  *     February 8, 2019    version 6.1.1
  *     November 12, 2019   version 6.2.0
  *     October 23, 2020    version 6.4.0
+ *     May 12, 2021        version 7.0.0
  * </pre>
  */
 
@@ -72,10 +73,10 @@ at the top-level directory.
  *   #endif
  * Versions 4.x and earlier do not include a #define'd version numbers.
  */
-#define SUPERLU_DIST_MAJOR_VERSION     6
-#define SUPERLU_DIST_MINOR_VERSION     4
+#define SUPERLU_DIST_MAJOR_VERSION     7
+#define SUPERLU_DIST_MINOR_VERSION     0
 #define SUPERLU_DIST_PATCH_VERSION     0
-#define SUPERLU_DIST_RELEASE_DATE      "October 23, 2020"
+#define SUPERLU_DIST_RELEASE_DATE      "May 12, 2021"
 
 #include "superlu_dist_config.h"
 /* Define my integer size int_t */
@@ -86,7 +87,7 @@ at the top-level directory.
 #elif defined (_LONGINT)
   typedef int64_t int_t;
   #define mpi_int_t   MPI_LONG_LONG_INT
-  #define IFMT "%lld"
+  #define IFMT "%ld"
 #else /* Default */
   typedef int int_t;
   #define mpi_int_t   MPI_INT
@@ -110,8 +111,9 @@ static __inline__ unsigned long long _rdtsc(void)
 }
 #endif
 
-#ifdef HAVE_CUDA
-#define GPU_ACC
+#ifdef HAVE_CUDA  
+#define GPU_ACC   // enable CUDA
+#include "cublas_utils.h"
 #endif
 
 /* MPI C complex datatype */
@@ -130,7 +132,12 @@ typedef MPI_C_DOUBLE_COMPLEX  SuperLU_MPI_DOUBLE_COMPLEX;
 #include "util_dist.h"
 #include "psymbfact.h"
 
-#define MAX_SUPER_SIZE 256   /* Sherry: moved from superlu_gpu.cu */
+#ifdef GPU_ACC
+#include <cuda.h>
+#endif
+
+
+#define MAX_SUPER_SIZE 512   /* Sherry: moved from superlu_gpu.cu */
 
 
 #define ISORT     /* NOTE: qsort() has bug on Mac */
@@ -349,7 +356,7 @@ typedef struct {
     MPI_Comm comm;        /* MPI communicator */
     superlu_scope_t rscp; /* process scope in rowwise, horizontal directon */
     superlu_scope_t cscp; /* process scope in columnwise, vertical direction */
-    int iam;              /* my process number in this scope */
+    int iam;              /* my process number in this grid */
     int_t nprow;          /* number of process rows */
     int_t npcol;          /* number of process columns */
 } gridinfo_t;
@@ -360,11 +367,22 @@ typedef struct {
     superlu_scope_t rscp; /* row scope */
     superlu_scope_t cscp; /* column scope */
     superlu_scope_t zscp; /* scope in third dimension */
+    gridinfo_t grid2d;    /* for using 2D functions */
     int iam;              /* my process number in this grid */
     int_t nprow;          /* number of process rows */
     int_t npcol;          /* number of process columns */
     int_t npdep;          /* number of replication factor in Z-dimension  */
-    gridinfo_t grid2d;    /* for using 2D functions */
+    int rankorder;        /* = 0: Z-major ( default )
+			   *    e.g. 1x3x4 grid: layer0 layer1 layer2 layer3
+			   *                     0      3      6      9
+			   *                     1      4      7      10      
+			   *                     2      5      8      11
+			   * = 1: XY-major (need set env. var.: RANKORDER=XY)
+			   *    e.g. 1x3x4 grid: layer0 layer1 layer2 layer3
+			   *                     0      1      2      4
+			   *                     5      6      7      8
+			   *                     9      10     11     12
+			   */
 } gridinfo3d_t;
 
 
@@ -692,7 +710,7 @@ typedef struct {
 typedef struct {
     float for_lu;
     float total;
-    int_t expansions;
+    int expansions;
     int64_t nnzL, nnzU;
 } superlu_dist_mem_usage_t;
 
@@ -936,12 +954,11 @@ typedef struct xtrsTimer_t
 extern "C" {
 #endif
 
-extern void   superlu_gridinit(MPI_Comm, int_t, int_t, gridinfo_t *);
-extern void   superlu_gridmap(MPI_Comm, int_t, int_t, int_t [], int_t,
-			      gridinfo_t *);
+extern void   superlu_gridinit(MPI_Comm, int, int, gridinfo_t *);
+extern void   superlu_gridmap(MPI_Comm, int, int, int [], int, gridinfo_t *);
 extern void   superlu_gridexit(gridinfo_t *);
-extern void   superlu_gridinit3d(MPI_Comm Bcomm,  int_t nprow,
-                               int_t npcol, int_t npdep, gridinfo3d_t *grid) ;
+extern void   superlu_gridinit3d(MPI_Comm Bcomm,  int nprow, int npcol, int npdep,
+				 gridinfo3d_t *grid) ;
 extern void   superlu_gridexit3d(gridinfo3d_t *grid);
 
 extern void   set_default_options_dist(superlu_dist_options_t *);
@@ -993,7 +1010,7 @@ extern int_t estimate_bigu_size (int_t, int_t **, Glu_persist_t *,
 /* Auxiliary routines */
 extern double SuperLU_timer_ ();
 extern void   superlu_abort_and_exit_dist(char *);
-extern int_t  sp_ienv_dist (int_t);
+extern int    sp_ienv_dist (int);
 extern void   ifill_dist (int_t *, int_t, int_t);
 extern void   super_stats_dist (int_t, int_t *);
 extern void  get_diag_procs(int_t, Glu_persist_t *, gridinfo_t *, int_t *,
@@ -1052,19 +1069,14 @@ int superlu_sort_perm (const void *arg1, const void *arg2)
 }
 #endif
 
-#ifdef GPU_ACC   /* GPU related */
+#if defined(GPU_ACC) || defined(HAVE_SYCL)  /* GPU related */
 extern void gemm_division_cpu_gpu (int *, int *, int *, int,
 				   int, int, int *, int);
 extern int_t get_cublas_nb ();
 extern int_t get_num_cuda_streams ();
 #endif
 
-#ifdef HAVE_SYCL
-extern void gemm_division_cpu_gpu (int *, int *, int *, int,
-                                   int, int, int *, int);
-extern int_t get_cublas_nb ();
-extern int_t get_num_cuda_streams ();
-#endif
+extern double estimate_cpu_time(int m, int n , int k);
 
 extern int get_thread_per_process();
 extern int_t get_max_buffer_size ();
@@ -1123,6 +1135,7 @@ extern int_t 		StdList_Popfront(StdList lst);
 extern yes_no_t StdList_Find(StdList lst, int_t dat);
 extern int_t 	   	StdList_Size(StdList lst);
 yes_no_t 		StdList_Empty(StdList lst);
+
 
 /*==== For 3D code ====*/
     

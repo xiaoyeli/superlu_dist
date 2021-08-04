@@ -23,7 +23,7 @@ void DisplayHeader()
 
     int devCount=0;
 
-    sycl::platform platform(sycl::default_selector{});
+    sycl::platform platform(sycl::gpu_selector{});
     auto const& gpu_devices = platform.get_devices();
     for (int i = 0; i < gpu_devices.size(); i++) {
       if (gpu_devices[i].is_gpu()) {

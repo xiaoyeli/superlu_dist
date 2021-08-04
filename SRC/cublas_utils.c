@@ -10,13 +10,7 @@ at the top-level directory.
 */
 #include "superlu_defs.h"
 
-#ifdef GPU_ACC  // enable CUDA
-
-#include <stdio.h>
-#include "cublas_utils.h"
-
-
-
+#ifdef GPU_ACC  //////////////////////////////  enable CUDA
 
  void DisplayHeader()
 {
@@ -74,11 +68,14 @@ const char* cublasGetErrorString(cublasStatus_t status)
         case CUBLAS_STATUS_MAPPING_ERROR: return "CUBLAS_STATUS_MAPPING_ERROR";
         case CUBLAS_STATUS_EXECUTION_FAILED: return "CUBLAS_STATUS_EXECUTION_FAILED"; 
         case CUBLAS_STATUS_INTERNAL_ERROR: return "CUBLAS_STATUS_INTERNAL_ERROR"; 
+        case CUBLAS_STATUS_LICENSE_ERROR: return "CUBLAS_STATUS_LICENSE_ERROR"; 
+        case CUBLAS_STATUS_NOT_SUPPORTED: return "CUBLAS_STATUS_NOT_SUPPORTED"; 
     }
     return "unknown error";
 }
 
-inline
+/*error reporting functions */
+//inline
 cudaError_t checkCuda(cudaError_t result)
 {
 #if defined(DEBUG) || defined(_DEBUG)

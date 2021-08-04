@@ -253,7 +253,6 @@ pdgsequ(SuperMatrix *A, double *r, double *c, double *rowcnd,
 
     SUPERLU_FREE(r_sizes);
     SUPERLU_FREE(loc_r);
-
     return;
 
 } /* pdgsequ */

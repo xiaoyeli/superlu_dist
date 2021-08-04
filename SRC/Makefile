@@ -45,14 +45,6 @@ ALLAUX 	= sp_ienv.o etree.o sp_colorder.o get_perm_c.o \
 ALLAUX += superlu_grid3d.o supernodal_etree.o supernodalForest.o \
 	trfAux.o communication_aux.o treeFactorization.o sec_structs.o
 
-ifeq ($(HAVE_CUDA),TRUE)
-ALLAUX += cublas_utils.o
-endif
-
-ifeq ($(HAVE_SYCL),TRUE)
-ALLAUX += onemkl_utils.o
-endif
-
 #
 # Routines literally taken from SuperLU, but renamed with suffix _dist
 #
@@ -75,7 +67,7 @@ DPLUSRC = pdgssvx.o pdgssvx_ABglobal.o \
 # from 3D code
 DPLUSRC += pdgssvx3d.o pdgstrf3d.o dtreeFactorization.o dscatter3d.o \
 	dgather.o pd3dcomm.o dtrfAux.o dcommunication_aux.o dtrfCommWrapper.o \
-	dnrformat_loc3d.o ##$(FACT3D)
+	dnrformat_loc3d.o dtreeFactorizationGPU.o ##$(FACT3D)
 
 #
 # Routines for double complex parallel SuperLU
@@ -90,11 +82,23 @@ ZPLUSRC = pzgssvx.o pzgssvx_ABglobal.o \
 # from 3D code
 ZPLUSRC += pzgssvx3d.o pzgstrf3d.o ztreeFactorization.o zscatter3d.o \
 	zgather.o pz3dcomm.o ztrfAux.o zcommunication_aux.o ztrfCommWrapper.o \
-	znrformat_loc3d.o ##$(FACT3D)
+	znrformat_loc3d.o ztreeFactorizationGPU.o ##$(FACT3D)
+
+ifeq ($(HAVE_CUDA),TRUE)
+ALLAUX += cublas_utils.o
+DPLUSRC += dsuperlu_gpu.o
+ZPLUSRC += zsuperlu_gpu.o
+endif
 
 ifeq ($(HAVE_COMBBLAS),TRUE)
 DPLUSRC += d_c2cpp_GetHWPM.o
 ZPLUSRC += z_c2cpp_GetHWPM.o
+endif
+
+ifeq ($(HAVE_SYCL),TRUE)
+ALLAUX += onemkl_utils.o
+DPLUSRC += dsuperlu_sycl_gpu.o
+ZPLUSRC += zsuperlu_sycl_gpu.o
 endif
 
 all:  double complex16
@@ -145,6 +149,9 @@ pzgstrf.o: zscatter.c zlook_ahead_update.c zSchCompUdt-2Ddynamic.c pzgstrf.c
 
 .c.o:
 	$(CC) $(CFLAGS) $(CDEFS) $(BLASDEF) -I$(INCLUDEDIR) -c $< $(VERBOSE)
+
+.cu.o:
+	$(NVCC) $(NVCCFLAGS) $(CDEFS) $(BLASDEF) -I$(INCLUDEDIR) -c $< $(VERBOSE)
 
 .cpp.o:
 	$(CXX) $(CXXFLAGS) $(CPPFLAGS) $(CDEFS) $(BLASDEF) -I$(INCLUDEDIR) -c $< $(VERBOSE)

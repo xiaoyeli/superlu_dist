@@ -119,7 +119,6 @@ at the top-level directory.
 // #define NUM_CUDA_STREAMS 16
 #elif defined(HAVE_SYCL)
 #include "onemkl_utils.hpp"
-#include <dpct/dpct.hpp>
 #endif
 
 
@@ -771,12 +770,25 @@ pdgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
          SUPERLU_MAX (max_row_size * num_threads * ldt,
                       get_max_buffer_size ());           */
 
-#if defined(GPU_ACC) || defined(HAVE_SYCL)
+#if defined(GPU_ACC)
     int cublas_nb = get_cublas_nb(); // default 64
     int nstreams = get_num_cuda_streams (); // default 8
 
-    int_t buffer_size  = SUPERLU_MAX(max_row_size * nstreams * cublas_nb,
-                                     get_max_buffer_size());
+    int_t buffer_size  = SUPERLU_MAX(max_row_size * nstreams * cublas_nb, sp_ienv_dist(8));
+                                     //   get_max_buffer_size());
+    /* array holding last column blk for each partition,
+       used in SchCompUdt-cuda.c         */
+  #if 0
+    int *stream_end_col = (int_t *) _mm_malloc (sizeof (int_t) * nstreams,64);
+  #else
+    int *stream_end_col = (int *)SUPERLU_MALLOC( nstreams * sizeof(int) );
+  #endif
+
+#elif defined(HAVE_SYCL)
+    int nstreams = get_num_cuda_streams (); // default 8
+
+    int_t buffer_size  = SUPERLU_MAX(max_row_size * nstreams, sp_ienv_dist(8));
+                                     //   get_max_buffer_size());
     /* array holding last column blk for each partition,
        used in SchCompUdt-cuda.c         */
   #if 0
@@ -788,8 +800,8 @@ pdgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
 #else /* not to use GPU */
 
     int Threads_per_process = get_thread_per_process();
-    int_t buffer_size  = SUPERLU_MAX(max_row_size * Threads_per_process * ldt,
-                                     get_max_buffer_size());
+    int_t buffer_size  = SUPERLU_MAX(max_row_size * Threads_per_process * ldt, sp_ienv_dist(8));
+                                     // get_max_buffer_size());
 #endif /* end ifdef GPU_ACC -----------*/
 
     int_t max_ncols = 0;
@@ -818,8 +830,8 @@ pdgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
 
 #if ( PRNTlevel>=1 )
     if(!iam) {
-        printf("\t.. MAX_BUFFER_SIZE " IFMT " set for GPU\n", get_max_buffer_size());
-	printf("\t.. N_GEMM: " IFMT " flops of GEMM done on CPU (1st block always on CPU)\n", sp_ienv_dist(7));
+        printf("\t.. MAX_BUFFER_SIZE %d set for GPU\n", sp_ienv_dist(8));
+	printf("\t.. N_GEMM: %d flops of GEMM done on CPU (1st block always on CPU)\n", sp_ienv_dist(7));
         printf("\t.. GEMM buffer size: max_row_size X max_ncols = %d x " IFMT "\n",
                 max_row_size, max_ncols);
     }
@@ -898,9 +910,9 @@ pdgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
 
 #elif defined(HAVE_SYCL) /*-- use SYCL --*/
 
-     auto q_ct1 = sycl::queue(sycl::default_selector());
-    sycl::queue streams[1] = {q_ct1}; 
-    bigU = sycl::malloc_host<double>(bigu_size,q_ct1);
+    auto q = sycl::queue(sycl::gpu_selector());
+    sycl::queue streams[1] = {q};
+    bigU = sycl::malloc_host<double>(bigu_size,q);
     if (!bigU)
       ABORT("[SYCL] Malloc fails for dgemm buffer U ");
 #if 0 // !!Sherry fix -- only dC on GPU uses buffer_size
@@ -912,7 +924,7 @@ pdgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
     fflush(stdout);
 #endif
 
-    bigV = sycl::malloc_host<double>(bigv_size,q_ct1 );
+    bigV = sycl::malloc_host<double>(bigv_size,q );
     if (!bigV)
       ABORT("[SYCL] Malloc fails for dgemm buffer V");
 
@@ -931,10 +943,10 @@ pdgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
 #else
     // allocating data in device
     double *dA, *dB, *dC;
-    dA = sycl::malloc_device<double>(max_row_size*sp_ienv_dist(3),q_ct1);
+    dA = sycl::malloc_device<double>(max_row_size*sp_ienv_dist(3),q);
     // size of B should be bigu_size
-    dB = sycl::malloc_device<double>(bigu_size,q_ct1);
-    dC = sycl::malloc_device<double>(buffer_size,q_ct1);
+    dB = sycl::malloc_device<double>(bigu_size,q);
+    dC = sycl::malloc_device<double>(buffer_size,q);
 #endif
     stat->gpu_buffer += ( max_row_size * sp_ienv_dist(3) + bigu_size + buffer_size ) * dword;
 
@@ -946,7 +958,7 @@ pdgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
     bigv_size += (gemm_m_pad * (j + max_row_size + gemm_n_pad));
 
 #if ( PRNTlevel>=1 )
-    printf("[%d].. BIG V size %d (on CPU)\n", iam, bigv_size);
+    printf("[%d].. BIG V size " IFMT " (on CPU)\n", iam, bigv_size);
     fflush(stdout);
 #endif
 
@@ -960,7 +972,7 @@ pdgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
         ABORT ("Malloc failed for dgemm V buffer");
 //#endif
 
-#endif 
+#endif
 /*************** end ifdef GPU_ACC ****************/
 
     log_memory((bigv_size + bigu_size) * dword, stat);
@@ -1924,12 +1936,12 @@ printf("main loop\n"); //mjc
     SUPERLU_FREE( streams );
     SUPERLU_FREE( stream_end_col );
 #elif defined(HAVE_SYCL)
-    sycl::free( bigV,q_ct1 );
-    sycl::free( bigU, q_ct1 );
-    sycl::free( dA, q_ct1 ); /* Sherry added */
-    sycl::free( dB, q_ct1 );
-    sycl::free( dC, q_ct1 );
-   //free(streams); 
+    sycl::free( bigV,q );
+    sycl::free( bigU, q );
+    sycl::free( dA, q ); /* Sherry added */
+    sycl::free( dB, q );
+    sycl::free( dC, q );
+   //free(streams);
 #else
 //  #ifdef __INTEL_COMPILER
 //    _mm_free (bigU);

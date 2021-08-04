@@ -256,10 +256,10 @@ void print_sp_ienv_dist(superlu_dist_options_t *options)
 
     printf("**************************************************\n");
     printf(".. blocking parameters from sp_ienv():\n");
-    printf("**    relaxation                 : " IFMT "\n", sp_ienv_dist(2));
-    printf("**    max supernode              : " IFMT "\n", sp_ienv_dist(3));
-    printf("**    estimated fill ratio       : " IFMT "\n", sp_ienv_dist(6));
-    printf("**    min GEMM dimension for GPU : " IFMT "\n", sp_ienv_dist(7));
+    printf("**    relaxation                 : %d\n", sp_ienv_dist(2));
+    printf("**    max supernode              : %d\n", sp_ienv_dist(3));
+    printf("**    estimated fill ratio       : %d\n", sp_ienv_dist(6));
+    printf("**    min GEMM m*k*n to use GPU  : %d\n", sp_ienv_dist(7));
     printf("**************************************************\n");
 }
 
@@ -835,15 +835,11 @@ int_t get_cublas_nb()
 int_t get_num_cuda_streams()
 {
     char *ttemp;
-#if defined(HAVE_SYCL)
-	return 1;
-#else
     ttemp = getenv("NUM_CUDA_STREAMS");
     if (ttemp)
         return atoi(ttemp);
     else
         return 8;
-#endif
 }
 
 int_t get_min(int_t *sums, int_t nprocs)
@@ -1507,6 +1503,8 @@ gemm_division_new (int * num_streams_used,   /*number of streams that will be us
     }
 }
 
+#endif  /* defined GPU_ACC || defined HAVE_SYCL */
+
 /* The following are moved from superlu_gpu.cu */
 
 int getnCudaStreams()
@@ -1539,4 +1537,3 @@ int get_mpi_process_per_gpu ()
 	}
 }
 
-#endif  /* defined GPU_ACC */

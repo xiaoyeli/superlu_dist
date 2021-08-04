@@ -217,7 +217,7 @@ main (int argc, char *argv[])
 
 	printf("Input matrix file:\t%s\n", *cpp);
 	printf("3D process grid: %d X %d X %d\n", nprow, npcol, npdep);
-        printf("2D Process grid: %d X %d\n", (int)grid.nprow, (int)grid.npcol);
+	//printf("2D Process grid: %d X %d\n", (int)grid.nprow, (int)grid.npcol);
 	fflush(stdout);
     }
 

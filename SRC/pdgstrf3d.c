@@ -225,7 +225,7 @@ int_t pdgstrf3d(superlu_dist_options_t *options, int m, int n, double anorm,
     int_t bigu_size = getBigUSize(nsupers, grid,
     	  	                  LUstruct->Llu->Lrowind_bc_ptr);
     HyP->bigu_size = bigu_size;
-    int_t buffer_size = get_max_buffer_size ();
+    int_t buffer_size =sp_ienv_dist(8); // get_max_buffer_size ();
     HyP->buffer_size = buffer_size;
     HyP->nsupers = nsupers;
 
