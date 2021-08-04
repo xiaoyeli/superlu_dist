@@ -25,6 +25,7 @@
 #include <cublas_v2.h>
 #include <cuda_runtime.h>
 #endif
+
 // #include "sec_structs.h"
 // #include "supernodal_etree.h"
 
@@ -59,12 +60,12 @@ typedef struct //SCUbuf_gpu_
 
     doublecomplex *Remain_L_buff;  /* on GPU */
     doublecomplex *Remain_L_buff_host; /* Sherry: this memory is page-locked, why need another copy on GPU ? */
-
+    
     int_t *lsub;
     int_t *usub;
 
     int_t *lsub_buf, *usub_buf;
-
+    
     Ublock_info_t *Ublock_info; /* on GPU */
     Remain_info_t *Remain_info;
     Ublock_info_t *Ublock_info_host;
@@ -76,7 +77,7 @@ typedef struct //SCUbuf_gpu_
 } zSCUbuf_gpu_t;
 
 
-typedef struct //LUstruct_gpu_
+typedef struct //LUstruct_gpu_ 
 {
     int_t   *LrowindVec;      /* A single vector */
     int_t   *LrowindPtr;      /* A single vector */
@@ -149,12 +150,14 @@ typedef struct //sluGPU_t_
 {
     int_t gpuId;        // if there are multiple GPUs
     zLUstruct_gpu_t *A_gpu, *dA_gpu;
+
 #ifdef HAVE_SYCL
     sycl::queue *funCallStreams[MAX_NCUDA_STREAMS], *CopyStream;
 #else
     cudaStream_t funCallStreams[MAX_NCUDA_STREAMS], CopyStream;
     cublasHandle_t cublasHandles[MAX_NCUDA_STREAMS];
 #endif
+
     int_t lastOffloadStream[MAX_NCUDA_STREAMS];
     int_t nCudaStreams;
     int_t* isNodeInMyGrid;
@@ -184,7 +187,7 @@ extern int zsparseTreeFactor_ASYNC_GPU(
     zsluGPU_t *sluGPU,
     d2Hreduce_t *d2Hred,
     HyP_t *HyP,
-    zLUstruct_t *LUstruct, gridinfo3d_t *grid3d,
+    zLUstruct_t *LUstruct, gridinfo3d_t *grid3d, 
     SuperLUStat_t *stat,
     double thresh, SCT_t *SCT, int tag_ub,
     int *info);

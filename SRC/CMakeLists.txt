@@ -65,6 +65,7 @@ endif ()
 if (HAVE_SYCL)
   list(APPEND sources onemkl_utils.cpp)
 endif ()
+
 if (MSVC)
   list(APPEND sources wingetopt.c)
 endif ()

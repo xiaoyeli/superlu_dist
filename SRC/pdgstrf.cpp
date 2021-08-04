@@ -776,6 +776,7 @@ pdgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
 
     int_t buffer_size  = SUPERLU_MAX(max_row_size * nstreams * cublas_nb, sp_ienv_dist(8));
                                      //   get_max_buffer_size());
+
     /* array holding last column blk for each partition,
        used in SchCompUdt-cuda.c         */
   #if 0
@@ -789,6 +790,7 @@ pdgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
 
     int_t buffer_size  = SUPERLU_MAX(max_row_size * nstreams, sp_ienv_dist(8));
                                      //   get_max_buffer_size());
+
     /* array holding last column blk for each partition,
        used in SchCompUdt-cuda.c         */
   #if 0

@@ -112,17 +112,6 @@ else()
   set(PROJECT_NAME_LIB_EXPORT libsuperlu_dist.a)
 endif()
 
-#set(CMAKE_CXX_STANDARD 11)
-#set(CMAKE_CXX_STANDARD 17)
-#set(CMAKE_CXX_STANDARD_REQUIRED ON)
-
-#message("!!!! top: cxx_implicit='${CMAKE_CXX_IMPLICIT_LINK_LIBRARIES}'")
-
-if (XSDK_ENABLE_Fortran)
-  enable_language (Fortran)
-  set(NOFORTRAN FALSE)
-endif()
-
 set(SUPERLU_VERSION "${PROJECT_VERSION}")
 set(SUPERLU_REV "${PROJECT_REV}")
 
