@@ -93,7 +93,7 @@ sp_ienv_dist(int ispec)
                 return(atoi(ttemp));
             }
             else
-            return 20;
+		return 60; // 20
             
 	case 3: 
 	    ttemp = getenv("NSUP"); // take min of MAX_SUPER_SIZE in superlu_defs.h
@@ -102,7 +102,7 @@ sp_ienv_dist(int ispec)
 		int k = SUPERLU_MIN( atoi(ttemp), MAX_SUPER_SIZE );
                 return (k);
             }
-            else return 128;
+            else return 256;  // 128;
 
 #endif
         case 6: 
@@ -112,11 +112,11 @@ sp_ienv_dist(int ispec)
         case 7:
 	    ttemp = getenv ("N_GEMM");
 	    if (ttemp) return atoi (ttemp);
-	    else return 10000;
+	    else return 100;  // 10000;
         case 8:
   	    ttemp = getenv ("MAX_BUFFER_SIZE");
 	    if (ttemp) return atoi (ttemp);
-	    else return 256000000; // 16000^2
+	    else return 1000000000; // 256000000 = 16000^2
     }
 
     /* Invalid value for ISPEC */

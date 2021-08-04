@@ -136,6 +136,68 @@ endif()
 
 endif() ########## enable double
 
+if(enable_single)
+  list(APPEND headers superlu_sdefs.h slustruct_gpu.h)
+
+  list(APPEND sources
+    slangs_dist.c
+    sgsequ_dist.c
+    slaqgs_dist.c
+    sutil_dist.c
+    smemory_dist.c
+    smyblas2_dist.c
+    ssp_blas2_dist.c
+    ssp_blas3_dist.c
+    psgssvx.c
+    psgssvx_ABglobal.c
+    sreadhb.c
+    sreadrb.c
+    sreadtriple.c
+    sreadtriple_noheader.c
+    sbinary_io.c	
+    sreadMM.c
+    psgsequ.c
+    pslaqgs.c
+    sldperm_dist.c
+    pslangs.c
+    psutil.c
+    pssymbfact_distdata.c
+    sdistribute.c
+    psdistribute.c
+    psgstrf.c
+    sstatic_schedule.c
+    psgstrf2.c
+    psgstrs.c
+    psgstrs1.c
+    psgstrs_lsum.c
+    psgstrs_Bglobal.c
+    psgsrfs.c
+    psgsmv.c
+    psgsrfs_ABXglobal.c
+    psgsmv_AXglobal.c
+    psGetDiagU.c
+    psgssvx3d.c     ## 3D code
+    snrformat_loc3d.c 
+    psgstrf3d.c 
+    streeFactorization.c
+    streeFactorizationGPU.c
+    sgather.c
+    sscatter3d.c
+    ps3dcomm.c
+    strfAux.c	
+    scommunication_aux.c 
+    strfCommWrapper.c
+    ssuperlu_blas.c
+  )
+if (HAVE_CUDA)
+  list(APPEND sources ssuperlu_gpu.cu)
+endif()
+if (HAVE_COMBBLAS)
+  list(APPEND sources s_c2cpp_GetHWPM.cpp sHWPM_CombBLAS.hpp)
+endif()
+
+endif() ########## enable single
+
 
 if(enable_complex16)
   list(APPEND headers superlu_zdefs.h zlustruct_gpu.h)

@@ -109,7 +109,6 @@ at the top-level directory.
  */
 
 #include <math.h>
-/*#include "mkl.h"*/
 #include "superlu_ddefs.h"
 
 #ifdef GPU_ACC

@@ -1,6 +1,6 @@
 /******************************************************************************
  * Copyright (c) 2011, Duane Merrill.  All rights reserved.
- * Copyright (c) 2011-2014, NVIDIA CORPORATION.  All rights reserved.
+ * Copyright (c) 2011-2018, NVIDIA CORPORATION.  All rights reserved.
  * 
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -63,14 +63,14 @@ namespace cub {
  * \brief A random-access input generator for dereferencing a sequence of incrementing integer values.
  *
  * \par Overview
- * - After initializing a CountingInputIterator to a certain integer \p base, read references
+ * - After initializing a CountingInputIteratorTto a certain integer \p base, read references
  *   at \p offset will return the value \p base + \p offset.
  * - Can be constructed, manipulated, dereferenced, and exchanged within and between host and device
  *   functions.
  * - Compatible with Thrust API v1.7 or newer.
  *
  * \par Snippet
- * The code snippet below illustrates the use of \p CountingInputIterator to
+ * The code snippet below illustrates the use of \p CountingInputIteratorTto
  * dereference a sequence of incrementing integers.
  * \par
  * \code
@@ -86,18 +86,18 @@ namespace cub {
  * \endcode
  *
  * \tparam ValueType            The value type of this iterator
- * \tparam Offset               The difference type of this iterator (Default: \p ptrdiff_t)
+ * \tparam OffsetT              The difference type of this iterator (Default: \p ptrdiff_t)
  */
 template <
     typename ValueType,
-    typename Offset = ptrdiff_t>
+    typename OffsetT = ptrdiff_t>
 class CountingInputIterator
 {
 public:
 
     // Required iterator traits
     typedef CountingInputIterator               self_type;              ///< My own type
-    typedef Offset                              difference_type;        ///< Type to express the result of subtracting one iterator from another
+    typedef OffsetT                             difference_type;        ///< Type to express the result of subtracting one iterator from another
     typedef ValueType                           value_type;             ///< The type of the element the iterator can point to
     typedef ValueType*                          pointer;                ///< The type of a pointer to an element the iterator can point to
     typedef ValueType                           reference;              ///< The type of a reference to an element the iterator can point to
@@ -152,7 +152,7 @@ public:
     template <typename Distance>
     __host__ __device__ __forceinline__ self_type operator+(Distance n) const
     {
-        self_type retval(val + n);
+        self_type retval(val + (ValueType) n);
         return retval;
     }
 
@@ -160,7 +160,7 @@ public:
     template <typename Distance>
     __host__ __device__ __forceinline__ self_type& operator+=(Distance n)
     {
-        val += n;
+        val += (ValueType) n;
         return *this;
     }
 
@@ -168,7 +168,7 @@ public:
     template <typename Distance>
     __host__ __device__ __forceinline__ self_type operator-(Distance n) const
     {
-        self_type retval(val - n);
+        self_type retval(val - (ValueType) n);
         return retval;
     }
 
@@ -183,14 +183,14 @@ public:
     /// Distance
     __host__ __device__ __forceinline__ difference_type operator-(self_type other) const
     {
-        return val - other.val;
+        return (difference_type) (val - other.val);
     }
 
     /// Array subscript
     template <typename Distance>
     __host__ __device__ __forceinline__ reference operator[](Distance n) const
     {
-        return val + n;
+        return val + (ValueType) n;
     }
 
     /// Structure dereference

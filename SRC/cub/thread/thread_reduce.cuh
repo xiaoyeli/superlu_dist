@@ -1,6 +1,6 @@
 /******************************************************************************
  * Copyright (c) 2011, Duane Merrill.  All rights reserved.
- * Copyright (c) 2011-2014, NVIDIA CORPORATION.  All rights reserved.
+ * Copyright (c) 2011-2018, NVIDIA CORPORATION.  All rights reserved.
  * 
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -42,17 +42,12 @@ CUB_NS_PREFIX
 /// CUB namespace
 namespace cub {
 
-/**
- * \addtogroup UtilModule
- * @{
- */
+/// Internal namespace (to prevent ADL mishaps between static functions when mixing different CUB installations)
+namespace internal {
 
 /**
- * \name Sequential reduction over statically-sized array types
- * @{
+ * Sequential reduction over statically-sized array types
  */
-
-
 template <
     int         LENGTH,
     typename    T,
@@ -61,31 +56,22 @@ __device__ __forceinline__ T ThreadReduce(
     T*                  input,                  ///< [in] Input array
     ReductionOp         reduction_op,           ///< [in] Binary reduction operator
     T                   prefix,                 ///< [in] Prefix to seed reduction with
-    Int2Type<LENGTH>    length)
+    Int2Type<LENGTH>    /*length*/)
 {
-    T addend = *input;
-    prefix = reduction_op(prefix, addend);
+    T retval = prefix;
 
-    return ThreadReduce(input + 1, reduction_op, prefix, Int2Type<LENGTH - 1>());
-}
+    #pragma unroll
+    for (int i = 0; i < LENGTH; ++i)
+        retval = reduction_op(retval, input[i]);
 
-template <
-    typename    T,
-    typename    ReductionOp>
-__device__ __forceinline__ T ThreadReduce(
-    T*                  input,                  ///< [in] Input array
-    ReductionOp         reduction_op,           ///< [in] Binary reduction operator
-    T                   prefix,                 ///< [in] Prefix to seed reduction with
-    Int2Type<0>         length)
-{
-    return prefix;
+    return retval;
 }
 
 
 /**
  * \brief Perform a sequential reduction over \p LENGTH elements of the \p input array, seeded with the specified \p prefix.  The aggregate is returned.
  *
- * \tparam LENGTH     Length of input array
+ * \tparam LENGTH     LengthT of input array
  * \tparam T          <b>[inferred]</b> The data type to be reduced.
  * \tparam ScanOp     <b>[inferred]</b> Binary reduction operator type having member <tt>T operator()(const T &a, const T &b)</tt>
  */
@@ -105,7 +91,7 @@ __device__ __forceinline__ T ThreadReduce(
 /**
  * \brief Perform a sequential reduction over \p LENGTH elements of the \p input array.  The aggregate is returned.
  *
- * \tparam LENGTH     Length of input array
+ * \tparam LENGTH     LengthT of input array
  * \tparam T          <b>[inferred]</b> The data type to be reduced.
  * \tparam ScanOp     <b>[inferred]</b> Binary reduction operator type having member <tt>T operator()(const T &a, const T &b)</tt>
  */
@@ -125,7 +111,7 @@ __device__ __forceinline__ T ThreadReduce(
 /**
  * \brief Perform a sequential reduction over the statically-sized \p input array, seeded with the specified \p prefix.  The aggregate is returned.
  *
- * \tparam LENGTH     <b>[inferred]</b> Length of \p input array
+ * \tparam LENGTH     <b>[inferred]</b> LengthT of \p input array
  * \tparam T          <b>[inferred]</b> The data type to be reduced.
  * \tparam ScanOp     <b>[inferred]</b> Binary reduction operator type having member <tt>T operator()(const T &a, const T &b)</tt>
  */
@@ -138,14 +124,14 @@ __device__ __forceinline__ T ThreadReduce(
     ReductionOp reduction_op,           ///< [in] Binary reduction operator
     T           prefix)                 ///< [in] Prefix to seed reduction with
 {
-    return ThreadReduce<LENGTH>(input, reduction_op, prefix);
+    return ThreadReduce(input, reduction_op, prefix, Int2Type<LENGTH>());
 }
 
 
 /**
  * \brief Serial reduction with the specified operator
  *
- * \tparam LENGTH     <b>[inferred]</b> Length of \p input array
+ * \tparam LENGTH     <b>[inferred]</b> LengthT of \p input array
  * \tparam T          <b>[inferred]</b> The data type to be reduced.
  * \tparam ScanOp     <b>[inferred]</b> Binary reduction operator type having member <tt>T operator()(const T &a, const T &b)</tt>
  */
@@ -161,9 +147,6 @@ __device__ __forceinline__ T ThreadReduce(
 }
 
 
-//@}  end member group
-
-/** @} */       // end group UtilModule
-
+}               // internal namespace
 }               // CUB namespace
 CUB_NS_POSTFIX  // Optional outer namespace(s)
