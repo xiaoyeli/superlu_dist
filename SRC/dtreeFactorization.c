@@ -543,8 +543,9 @@ int_t dsparseTreeFactor_ASYNC(
             if (topoLvl < maxTopoLevel - 1)
             {
                 int_t k_parent = gEtreeInfo->setree[k];
-                gEtreeInfo->numChildLeft[k_parent]--;
-                if (gEtreeInfo->numChildLeft[k_parent] == 0)
+                if(k_parent < nnodes)
+                    gEtreeInfo->numChildLeft[k_parent]--;
+                if (gEtreeInfo->numChildLeft[k_parent] == 0  && k_parent < nnodes)
                 {
                     int_t k0_parent =  myIperm[k_parent];
                     if (k0_parent > 0)
