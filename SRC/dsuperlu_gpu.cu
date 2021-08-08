@@ -20,8 +20,7 @@
 #include <cuda_runtime.h>
 
 #undef Reduce
-#include "cub/cub.cuh"
-//#include <thrust/system/cuda/detail/cub/cub.cuh>
+
 
 #include "dlustruct_gpu.h"
 
@@ -301,31 +300,16 @@ void Scatter_GPU_kernel(
 	   assigned to block (lb, j) in 2D grid */
 	int lb = blockIdx.x + ii_st;
 	int j  = blockIdx.y + jj_st;
-	#if 1
+	
 	extern __shared__ int s[];
 	int* indirect_lptr = s;  /* row-wise */
 	int* indirect2_thread= (int*) &indirect_lptr[ldt]; /* row-wise */
 	int* IndirectJ1= (int*) &indirect2_thread[ldt];    /* column-wise */
 	int* IndirectJ3= (int*) &IndirectJ1[ldt];    /* column-wise */
 	int CHREAD_BLOCK_SIZE =ldt; 
-	#else  
-	__shared__ int indirect_lptr[MAX_SUPER_SIZE];  /* row-wise */
-	__shared__ int indirect2_thread[MAX_SUPER_SIZE]; /* row-wise */
-	__shared__ int IndirectJ1[THREAD_BLOCK_SIZE];    /* column-wise */
-	__shared__ int IndirectJ3[THREAD_BLOCK_SIZE];    /* column-wise */
-	#endif 
-
-	#define MY_SCAN
-	#ifdef MY_SCAN
-	// __shared__ int pfxStorage[2*THREAD_BLOCK_SIZE];    /* column-wise */
 	
 	int* pfxStorage = (int*) &IndirectJ3[ldt];
-	#else 
-
-	/* see CUB page https://nvlabs.github.io/cub/. Implement threads collectives */
-	typedef cub::BlockScan<int, THREAD_BLOCK_SIZE> BlockScan; /*1D int data type*/
-	__shared__ typename BlockScan::TempStorage temp_storage; /*storage temp*/
-	#endif 
+	
 	int thread_id = threadIdx.x;
 
 	int iukp = Ublock_info[j].iukp;
@@ -435,16 +419,10 @@ void Scatter_GPU_kernel(
 		}
 
 		/* perform an inclusive block-wide prefix sum among all threads */
-		#ifdef MY_SCAN
-		
 		__syncthreads();
 		
 		incScan(IndirectJ1, pfxStorage, nsupc);
 		
-		#else 
-		if (thread_id < blockDim.x)
-			BlockScan(temp_storage).InclusiveSum(IndirectJ1[thread_id], IndirectJ1[thread_id]);
-		#endif 
 
 		
 		__syncthreads();
