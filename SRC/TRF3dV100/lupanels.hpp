@@ -169,7 +169,7 @@ public:
             return 0;
         }
         int_t alternateNzcols = index[UPANEL_HEADER_SIZE + 2 * nblocks()] ;
-        std::cout<<nblocks()<<"  nzcols "<<nzcols()<<" alternate nzcols "<< alternateNzcols << "\n";
+        // std::cout<<nblocks()<<"  nzcols "<<nzcols()<<" alternate nzcols "<< alternateNzcols << "\n";
         if(nzcols()!= alternateNzcols)
         {
             printf("Error 175\n");
