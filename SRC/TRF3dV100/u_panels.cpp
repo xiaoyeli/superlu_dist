@@ -126,3 +126,30 @@ int_t upanel_t::panelSolve(int_t ksupsz, double *DiagBlk, int_t LDD)
                   ksupsz, nzcols(), 1.0, DiagBlk, LDD, val, LDA());
     return 0;
 }
+
+
+int upanel_t::getEndBlock(int iSt, int maxRows)
+{
+    int nlb = nblocks();
+    if(iSt >= nlb )
+        return nlb; 
+    int iEnd = iSt; 
+    int ii = iSt +1;
+
+    while (
+        stRow(ii) - stRow(iSt) < maxRows &&
+        ii < nlb)
+        ii++;
+
+    if (ii == nlb)
+    {
+        if (stRow(ii) - stRow(iSt) < maxRows)
+            iEnd = nlb;
+        else
+            iEnd = nlb - 1;
+    }
+    else
+        iEnd = ii - 1;
+
+    return iEnd; 
+}

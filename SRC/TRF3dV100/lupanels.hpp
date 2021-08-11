@@ -3,6 +3,9 @@
 #include <iostream>
 #include "superlu_ddefs.h"
 
+class lpanelGPU_t;
+class upanelGPU_t;
+
 #define LPANEL_HEADER_SIZE 4
 
 // it can be templatized for double and complex double
@@ -11,6 +14,8 @@ class lpanel_t
 public:
     int_t *index;
     double *val;
+    // ifdef GPU acceraleration 
+    lpanelGPU_t* lpanelGPU;
     // bool isDiagIncluded;
 
     lpanel_t(int_t k, int_t *lsub, double *nzval, int_t *xsup, int_t isDiagIncluded);
@@ -45,6 +50,12 @@ public:
     {
         return index[LPANEL_HEADER_SIZE + nblocks() + k + 1] - index[LPANEL_HEADER_SIZE + nblocks() + k];
     }
+
+    // 
+    int_t stRow(int k)
+    {
+        return index[LPANEL_HEADER_SIZE + nblocks() + k]; 
+    } 
     // row
     int_t *rowList(int_t k)
     {
@@ -82,6 +93,9 @@ public:
             return 0;
         return LPANEL_HEADER_SIZE + 2 * nblocks() + 1 + nzrows();
     }
+
+    // return the maximal iEnd such that stRow(iEnd)-stRow(iSt) < maxRow;
+    int getEndBlock(int iSt, int maxRows);
 };
 
 #define UPANEL_HEADER_SIZE 3
@@ -90,6 +104,7 @@ class upanel_t
 public:
     int_t *index;
     double *val;
+    upanelGPU_t* upanelGPU;
 
     // upanel_t(int_t *usub, double *uval);
     upanel_t(int_t k, int_t *usub, double *uval, int_t *xsup);
@@ -135,6 +150,11 @@ public:
     {
         return &val[LDA() * index[UPANEL_HEADER_SIZE + nblocks() + k]];
     }
+
+    size_t blkPtrOffset(int_t k)
+    {
+        return LDA() * index[UPANEL_HEADER_SIZE + nblocks() + k];
+    }
     // for U panel
     // int_t packed2skyline(int_t* usub, double* uval );
     int_t packed2skyline(int_t k, int_t *usub, double *uval, int_t *xsup);
@@ -178,7 +198,18 @@ public:
             
         return UPANEL_HEADER_SIZE + 2 * nblocks() + 1 + nzcols();
     }
+
+    int_t stCol(int k)
+    {
+        return index[UPANEL_HEADER_SIZE + nblocks() + k];
+    } 
+    int getEndBlock(int jSt, int maxCols);
 };
+
+
+// Defineing GPU data types 
+//lapenGPU_t has exact same structure has lapanel_t but 
+// the pointers are on GPU 
 
 struct LUstruct_v100
 {
