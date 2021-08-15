@@ -1,6 +1,6 @@
 
 
-class lpanelGPU_t : public lpanel_t
+struct lpanelGPU_t 
 {
     
     public:
@@ -119,4 +119,34 @@ class upanelGPU_t : public upanel_t
         int check(upanel_t& upanel);
     private: 
         upanel_t& upanel_CPU;
+};
+
+
+#define MAX_CUDA_STREAMS 64 
+struct LUstructGPU_t
+{
+    // all pointers are device pointers 
+
+    upanelGPU_t* uPanelVec;
+    lpanelGPU_t* lPanelVec; 
+    int_t* xsup; 
+    int Pr, Pc, Pd;
+    // TODO: get num cuda streams
+    size_t gemmBufferSize; 
+    int numCudaStreams;     
+    // double arrays are problematic 
+    double* gpuGemmBuffs[MAX_CUDA_STREAMS];  
+    double* LvalRecvBufs[MAX_CUDA_STREAMS;
+    double* UvalRecvBufs[MAX_CUDA_STREAMS;
+    int_t* LidxRecvBufs[MAX_CUDA_STREAMS;
+    int_t* UidxRecvBufs[MAX_CUDA_STREAMS;
+    
+    
+    __device__
+    int_t supersize(int_t k) { return xsup[k + 1] - xsup[k]; }
+    __device__
+    int_t g2lRow(int_t k) { return k / Pr; }
+    __device__
+    int_t g2lCol(int_t k) { return k / Pc; }
+    
 };

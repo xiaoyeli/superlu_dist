@@ -97,7 +97,7 @@ int_t pdgstrf3d_summit(superlu_dist_options_t *options, int m, int n, double ano
     ddiagFactBufs_t** dFBufs = dinitDiagFactBufsArr(mxLeafNode, ldt, grid);
     commRequests_t** comReqss = initCommRequestsArr(SUPERLU_MAX(mxLeafNode, numLA), ldt, grid);
 
-
+    // TODO: remove the following for time being 
     int_t first_l_block_acc = 0;
     int_t first_u_block_acc = 0;
     int_t Pc = grid->npcol; 
@@ -115,7 +115,8 @@ int_t pdgstrf3d_summit(superlu_dist_options_t *options, int m, int n, double ano
     * ******************************************/
     // Create the new LU structure 
     int_t* isNodeInMyGrid = getIsNodeInMyGrid(nsupers, maxLvl, myNodeCount, treePerm);
-    LUstruct_v100 LU_packed(nsupers, ldt, isNodeInMyGrid, LUstruct,grid3d,
+    int superluAccOffload= get_acc_offload ();
+    LUstruct_v100 LU_packed(nsupers, ldt, isNodeInMyGrid, superluAccOffload, LUstruct,grid3d,
     SCT, options,  stat
     );
 
@@ -131,7 +132,7 @@ int_t pdgstrf3d_summit(superlu_dist_options_t *options, int m, int n, double ano
         /* if I participate in this level */
         if (!myZeroTrIdxs[ilvl])
         {
-            //int_t tree = myTreeIdxs[ilvl];
+            
 
             sForest_t* sforest = sForests[myTreeIdxs[ilvl]];
 
@@ -139,19 +140,12 @@ int_t pdgstrf3d_summit(superlu_dist_options_t *options, int m, int n, double ano
             if (sforest) /* 2D factorization at individual subtree */
             {
                 double tilvl = SuperLU_timer_();
-// #ifdef GPU_ACC
-//                 sparseTreeFactor_v100_GPU( sforest, comReqss, &scuBufs,  &packLUInfo,
-//                     msgss, LUvsbs, dFBufs,  &factStat, &fNlists,
-//                     &gEtreeInfo, options,  iperm_c_supno, ldt,
-//                     sluGPU,  d2Hred,            // New params for GPU
-//                     HyP, LUstruct, grid3d, stat,
-//                     thresh,  SCT, tag_ub, info);
-// #else
+
                 LU_packed.dsparseTreeFactor(sforest, comReqss,  &scuBufs, &packLUInfo,
 					msgss, LUvsbs, dFBufs,
 					&gEtreeInfo, iperm_c_supno, 
 					thresh, tag_ub, info );
-// #endif
+
 
                 /*now reduce the updates*/
                 SCT->tFactor3D[ilvl] = SuperLU_timer_() - tilvl;
@@ -160,18 +154,7 @@ int_t pdgstrf3d_summit(superlu_dist_options_t *options, int m, int n, double ano
 
             if (ilvl < maxLvl - 1)     /*then reduce before factorization*/
             {
-// #ifdef GPU_ACC
-//                 reduceAllAncestors3d_GPU( ilvl, myNodeCount, treePerm, LUvsb, LUstruct, grid3d,
-//                      sluGPU, d2Hred,
-//                       &factStat, HyP,SCT );
-// #else
-    #if 1
                 LU_packed.ancestorReduction3d(ilvl, myNodeCount, treePerm);
-                #endif 
-                // dreduceAllAncestors3d(ilvl, myNodeCount, treePerm,
-                //                       LUvsb, LUstruct, grid3d, SCT );
-// #endif
-
             }
         } /*if (!myZeroTrIdxs[ilvl])  ... If I participate in this level*/
 

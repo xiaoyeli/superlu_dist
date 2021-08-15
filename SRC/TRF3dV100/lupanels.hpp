@@ -15,7 +15,8 @@ public:
     int_t *index;
     double *val;
     // ifdef GPU acceraleration 
-    lpanelGPU_t* lpanelGPU;
+    
+    lpanelGPU_t gpuPanel;
     // bool isDiagIncluded;
 
     lpanel_t(int_t k, int_t *lsub, double *nzval, int_t *xsup, int_t isDiagIncluded);
@@ -96,6 +97,9 @@ public:
 
     // return the maximal iEnd such that stRow(iEnd)-stRow(iSt) < maxRow;
     int getEndBlock(int iSt, int maxRows);
+
+    lpanelGPU_t copyToGPU();
+    lpanelGPU_t copyToGPU(void** basePtr);  // when we are doing a single allocation 
 };
 
 #define UPANEL_HEADER_SIZE 3
@@ -204,6 +208,9 @@ public:
         return index[UPANEL_HEADER_SIZE + nblocks() + k];
     } 
     int getEndBlock(int jSt, int maxCols);
+
+    upanelGPU_t copyToGPU();
+    upanelGPU_t copyToGPU(void** basePtr);
 };
 
 
@@ -255,6 +262,11 @@ struct LUstruct_v100
     int_t g2lRow(int_t k) { return k / Pr; }
     int_t g2lCol(int_t k) { return k / Pc; }
 
+    // For GPU acceleration 
+    int superluAccOffload;
+    LUstructGPU_t* dA_gpu; 
+    LUstructGPU_t A_gpu;
+
     enum indirectMapType
     {
         ROW_MAP,
@@ -264,7 +276,7 @@ struct LUstruct_v100
     /**
     *          C O N / D E S - T R U C T O R S
     */
-    LUstruct_v100(int_t nsupers, int_t ldt_, int_t *isNodeInMyGrid,
+    LUstruct_v100(int_t nsupers, int_t ldt_, int_t *isNodeInMyGrid, int superluAccOffload,
                   dLUstruct_t *LUstruct, gridinfo3d_t *grid3d,
                   SCT_t* SCT_, superlu_dist_options_t *options_, SuperLUStat_t *stat
                   );

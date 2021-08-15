@@ -14,7 +14,7 @@ int_t upanelGPU_t::find(int_t k)
 
 int_t LUstruct_v100::dSchurComplementUpdate(
     cublasHandle_t handle, cudaStream_t cuStream,
-    int_t k, lpanelGPU_t &lpanel, upanelGPU_t &upanel)
+    int_t k, lpanel_t &lpanel, upanel_t &upanel)
 {
     // TODO: redefine isEmpty so this works out 
     if (lpanel.isEmpty() || upanel.isEmpty())
@@ -38,12 +38,12 @@ int_t LUstruct_v100::dSchurComplementUpdate(
     int maxGemmRows = nrows;  
     int maxGemmCols = ncols;
     // entire gemm doesn't fit in gemm buffer
-    if(nrows* ncols > gemmBufferSize)
+    if(nrows* ncols > A_gpu.gemmBufferSize)
     {
-        int maxGemmOpSize = (int) sqrt(gemmBufferSize);
+        int maxGemmOpSize = (int) sqrt(A_gpu.gemmBufferSize);
         int numberofRowChunks = (nrows +maxGemmOpSize-1)/maxGemmOpSize;
         maxGemmRows =   nrows /numberofRowChunks;
-        maxGemmCols = gemmBufferSize/ maxGemmRows; 
+        maxGemmCols = A_gpu.gemmBufferSize/ maxGemmRows; 
     }
     
     while(iEnd< nlb)
@@ -68,9 +68,9 @@ int_t LUstruct_v100::dSchurComplementUpdate(
             // TODO: allocate gpuGemmBuffs
             cublasDgemm(cublas_handle0, CUBLAS_OP_N, CUBLAS_OP_N,
                         gemm_m, gemm_n, gemm_k, &alpha,
-                        lpanel.blkPtr(iSt), lpanel.LDA(),
-                        upanel.blkPtr(jSt), upanel.LDA(), &beta,
-                        gpuGemmBuffs[streamId], gemm_m);
+                        lpanel.blkPtrGPU(iSt), lpanel.LDA(),
+                        upanel.blkPtrGPU(jSt), upanel.LDA(), &beta,
+                        A_gpu.gpuGemmBuffs[streamId], gemm_m);
 
 
             // setting up scatter 
@@ -81,7 +81,7 @@ int_t LUstruct_v100::dSchurComplementUpdate(
             size_t sharedMemorySize=0; 
 
             scatterGPU<<<dimGrid, dimBlock, sharedMemorySize, cuStream>>>(
-                iSt, jSt, lpanel, upanel, dA);   
+                iSt, jSt, lpanel.gpuPanel, upanel.gpuPanel, dA);   
             )
             
 		}
@@ -93,7 +93,7 @@ int_t LUstruct_v100::dSchurComplementUpdate(
 __global__
 int scatterGPU(
     int iSt,  int jSt, 
-    lpanelGPU_t& lpanel, upanelGPU_t& upanel 
+    lpanelGPU_t lpanel, upanelGPU_t upanel 
     LUstruct_GPU* dA)
 {
 
@@ -198,56 +198,3 @@ int computeIndirectMapGPU(int* rcS2D,  int_t srcLen, int_t *srcVec,
     return 0;
 }
 
-__device__
-int_t LUstruct_v100::dScatter(int_t m, int_t n,
-                              int_t gi, int_t gj,
-                              double *Src, int_t ldsrc,
-                              int_t *srcRowList, int_t *srcColList)
-{
-
-    double *Dst;
-    int_t lddst;
-    int_t dstRowLen, dstColLen;
-    int_t *dstRowList;
-    int_t *dstColList;
-    if (gj > gi) // its in upanel
-    {
-        int li = g2lRow(gi);
-        int lj = uPanelVec[li].find(gj);
-        Dst = uPanelVec[li].blkPtr(lj);
-        lddst = supersize(gi);
-        dstRowLen = supersize(gi);
-        dstRowList = NULL;
-        dstColLen = uPanelVec[li].nbcol(lj);
-        dstColList = uPanelVec[li].colList(lj);
-        // std::cout<<li<<" "<<lj<<" Dst[0] is"<<Dst[0] << "\n";
-    }
-    else
-    {
-        int lj = g2lCol(gj);
-        int li = lPanelVec[lj].find(gi);
-        Dst = lPanelVec[lj].blkPtr(li);
-        lddst = lPanelVec[lj].LDA();
-        dstRowLen = lPanelVec[lj].nbrow(li);
-        dstRowList = lPanelVec[lj].rowList(li);
-        dstColLen = supersize(gj);
-        dstColList = NULL;
-    }
-
-    // compute source row to dest row mapping
-    int_t *rowS2D = computeIndirectMap(ROW_MAP, m, srcRowList,
-                                       dstRowLen, dstRowList);
-    // compute source col to dest col mapping
-    int_t *colS2D = computeIndirectMap(COL_MAP, n, srcColList,
-                                       dstColLen, dstColList);
-
-    for (int j = 0; j < n; j++)
-    {
-        for (int i = 0; i < m; i++)
-        {
-            Dst[rowS2D[i] + lddst * colS2D[j]] -= Src[i + ldsrc * j];
-        }
-    }
-
-    return 0;
-}

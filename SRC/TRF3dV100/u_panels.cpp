@@ -128,7 +128,7 @@ int_t upanel_t::panelSolve(int_t ksupsz, double *DiagBlk, int_t LDD)
 }
 
 
-int upanel_t::getEndBlock(int iSt, int maxRows)
+int upanel_t::getEndBlock(int iSt, int maxCol)
 {
     int nlb = nblocks();
     if(iSt >= nlb )
@@ -137,13 +137,13 @@ int upanel_t::getEndBlock(int iSt, int maxRows)
     int ii = iSt +1;
 
     while (
-        stRow(ii) - stRow(iSt) < maxRows &&
+        stCol(ii) - stCol(iSt) < maxCol &&
         ii < nlb)
         ii++;
 
     if (ii == nlb)
     {
-        if (stRow(ii) - stRow(iSt) < maxRows)
+        if (stCol(ii) - stCol(iSt) < maxCol)
             iEnd = nlb;
         else
             iEnd = nlb - 1;

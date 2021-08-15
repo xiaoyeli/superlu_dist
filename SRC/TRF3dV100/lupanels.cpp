@@ -1,15 +1,16 @@
 #include <algorithm>
 #include <iostream>
+#include <cassert> 
 #include "lupanels.hpp"
 
 
 LUstruct_v100::LUstruct_v100(int_t nsupers_, int_t ldt_,
-            int_t *isNodeInMyGrid_,
+            int_t *isNodeInMyGrid_, int superluAccOffload_,
             dLUstruct_t *LUstruct,
             gridinfo3d_t *grid3d_in,
             SCT_t *SCT_, superlu_dist_options_t *options_, 
             SuperLUStat_t *stat_) : isNodeInMyGrid(isNodeInMyGrid_), 
-            nsupers(nsupers_), ldt(ldt_), grid3d(grid3d_in), 
+            nsupers(nsupers_), ldt(ldt_), grid3d(grid3d_in), superluAccOffload(superluAccOffload_)
             SCT(SCT_), options(options_), stat(stat_)
 {
 
@@ -37,6 +38,8 @@ LUstruct_v100::LUstruct_v100(int_t nsupers_, int_t ldt_,
     std::vector<int_t> localUvalSendCounts(CEILING(nsupers, Pr),0);
     std::vector<int_t> localLidxSendCounts(CEILING(nsupers, Pc),0);
     std::vector<int_t> localUidxSendCounts(CEILING(nsupers, Pr),0);
+
+    
 
     for (int_t i = 0; i < CEILING(nsupers, Pc); ++i)
     {
@@ -150,6 +153,7 @@ LUstruct_v100::LUstruct_v100(int_t nsupers_, int_t ldt_,
     }
 
     //
+
     
 
     // for(int pc=0;pc<Pc; pc++)
@@ -304,4 +308,69 @@ int_t LUstruct_v100::packedU2skyline(dLUstruct_t *LUstruct)
             uPanelVec[i].packed2skyline(globalId, Ufstnz_br_ptr[i], Unzval_br_ptr[i], xsup);
         }
     }
+}
+
+
+int_t LUstruct_v100::setLUstruct_GPU()
+{
+    
+    A_gpu.Pr = Pr;
+    A_gpu.Pc = Pc;
+
+    cudaMalloc(&A_gpu.xsup, nsupers*sizeof(int_t));
+    cudaMemcpy(A_gpu.xsup, xsup, nsupers*sizeof(int_t), cudaMemcpyHostToDevice);
+
+    upanelGPU_t* uPanelVec_GPU = new upanelGPU_t[CEILING(nsupers, Pr)];
+    lpanelGPU_t* lPanelVec_GPU = new lpanelGPU_t[CEILING(nsupers, Pc)];
+    
+
+    for (int_t i = 0; i < CEILING(nsupers, Pc); ++i)
+    {
+        lPanelVec_GPU[i] = lPanelVec[i].copyToGPU();
+        
+    }
+    cudaMalloc(&A_gpu.lPanelVec, CEILING(nsupers, Pc)*sizeof(lpanelGPU_t));
+    cudaMemcpy(A_gpu.lPanelVec, lPanelVec_GPU, 
+        CEILING(nsupers, Pc)*sizeof(lpanelGPU_t), cudaMemcpyHostToDevice);
+
+    for (int_t i = 0; i < CEILING(nsupers, Pr); ++i)
+    {
+        uPanelVec_GPU[i] = uPanelVec[i].copyToGPU();
+        
+    }
+    cudaMalloc(&A_gpu.uPanelVec, CEILING(nsupers, Pr)*sizeof(upanelGPU_t));
+    cudaMemcpy(A_gpu.uPanelVec, uPanelVec_GPU, 
+        CEILING(nsupers, Pr)*sizeof(upanelGPU_t), cudaMemcpyHostToDevice);
+
+
+    // set up streams;
+    //TODO:  setup multiple cuda streams 
+    // numCudaStreams is related to num_look_aheads 
+    A_gpu.numCudaStreams = getnCudaStreams(); // this always returns 1 
+    A_gpu.gemmBufferSize = get_max_buffer_size(); 
+
+    // TODO: make cuda streams consistent with look_aheads 
+    assert(A_gpu.numCudaStreams< options->num_lookaheads);
+
+    // cudaMalloc(&A_gpu.LvalRecvBufs, sizeof(double*)*A_gpu.numCudaStreams);
+    for(int stream=0; stream<A_gpu.numCudaStreams; stream++ )
+    {
+     
+        cudaMalloc(&A_gpu.LvalRecvBufs[stream], sizeof(double)*maxLvalCount);
+        cudaMalloc(&A_gpu.UvalRecvBufs[stream], sizeof(double)*maxUvalCount);
+        cudaMalloc(&A_gpu.LidxRecvBufs[stream], sizeof(int_t)*maxLidxCount);
+        cudaMalloc(&A_gpu.UidxRecvBufs[stream], sizeof(int_t)*maxUidxCount);
+    
+
+        cudaMalloc(&A_gpu.gpuGemmBuffs[stream], A_gpu.gemmBufferSize*sizeof(double));
+    }
+
+
+    // allocate 
+    cudaMalloc(&dA_gpu, sizeof(LUstruct_GPU));
+    cudaMemcpy(dA_gpu, A_gpu, sizeof(LUstruct_GPU), cudaMemcpyHostToDevice);
+
+    // now setup the LU panels
+    dA_gpu.lPanelVec    
+    cudaMemcpy(dA_gpu.lPanelVec, A_gpu.lPanelVec, sizeof(LUstruct_GPU), cudaMemcpyHostToDevice);
 }
