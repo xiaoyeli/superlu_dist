@@ -199,8 +199,8 @@ void scatterGPU(
 } 
 
 
-int_t LUstruct_v100::dSchurComplementUpdate(
-    cublasHandle_t handle, int streamId, 
+int_t LUstruct_v100::dSchurComplementUpdateGPU(
+    int streamId, 
     int_t k, lpanel_t &lpanel, upanel_t &upanel)
 {
     // TODO: redefine isEmpty so this works out 
@@ -245,6 +245,7 @@ int_t LUstruct_v100::dSchurComplementUpdate(
         {
             jSt = jEnd; 
             jEnd = upanel.getEndBlock(jSt, maxGemmCols);
+            cublasHandle_t handle = A_gpu.cuHandles[streamId];
             cudaStream_t cuStream = A_gpu.cuStreams[streamId];
             cublasSetStream(handle, cuStream);
             int gemm_m = lpanel.stRow(iEnd) - lpanel.stRow(iSt);

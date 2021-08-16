@@ -248,6 +248,7 @@ struct LUstructGPU_t
     int maxSuperSize;
     // double arrays are problematic 
     cudaStream_t cuStreams[MAX_CUDA_STREAMS];
+    cublasHandle_t cuHandles[MAX_CUDA_STREAMS];
     double* gpuGemmBuffs[MAX_CUDA_STREAMS];  
     double* LvalRecvBufs[MAX_CUDA_STREAMS];
     double* UvalRecvBufs[MAX_CUDA_STREAMS];

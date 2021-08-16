@@ -1,6 +1,7 @@
 #include <algorithm>
 #include <iostream>
 #include <cassert> 
+
 #include "lupanels_GPU.cuh"
 #include "lupanels.hpp"
 
@@ -156,6 +157,8 @@ LUstruct_v100::LUstruct_v100(int_t nsupers_, int_t ldt_,
     //
 
     
+    if(superluAccOffload)
+        setLUstruct_GPU();
 
     // for(int pc=0;pc<Pc; pc++)
     // {
@@ -164,7 +167,8 @@ LUstruct_v100::LUstruct_v100(int_t nsupers_, int_t ldt_,
     // }
 }
 
-int_t LUstruct_v100::dSchurComplementUpdate(int_t k, lpanel_t &lpanel, upanel_t &upanel)
+int_t LUstruct_v100::dSchurComplementUpdate(
+    int_t k, lpanel_t &lpanel, upanel_t &upanel)
 {
     if (lpanel.isEmpty() || upanel.isEmpty())
         return 0;
@@ -346,12 +350,13 @@ int_t LUstruct_v100::setLUstruct_GPU()
 
 
     // set up streams;
-    //TODO:  setup multiple cuda streams 
+    //TODO:  setup multiple cuda streams,
+    // make cuda streams consistent with look_aheads  
     // numCudaStreams is related to num_look_aheads 
     A_gpu.numCudaStreams = getnCudaStreams(); // this always returns 1 
     A_gpu.gemmBufferSize = get_max_buffer_size(); 
 
-    // TODO: make cuda streams consistent with look_aheads 
+    
     assert(A_gpu.numCudaStreams< options->num_lookaheads);
 
     // cudaMalloc(&A_gpu.LvalRecvBufs, sizeof(double*)*A_gpu.numCudaStreams);
@@ -359,6 +364,7 @@ int_t LUstruct_v100::setLUstruct_GPU()
     {
      
         cudaStreamCreate ( &A_gpu.cuStreams[stream]);
+        cublasCreate(&A_gpu.cuHandles[stream]);
         cudaMalloc(&A_gpu.LvalRecvBufs[stream], sizeof(double)*maxLvalCount);
         cudaMalloc(&A_gpu.UvalRecvBufs[stream], sizeof(double)*maxUvalCount);
         cudaMalloc(&A_gpu.LidxRecvBufs[stream], sizeof(int_t)*maxLidxCount);

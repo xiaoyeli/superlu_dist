@@ -124,6 +124,10 @@ public:
     {
         return &gpuPanel.val[blkPtrOffset(k)];
     }
+
+    lpanel_t(int_t *index_, double *val_, int_t *indexGPU, double *valGPU) : 
+        index(index_), val(val_), gpuPanel(indexGPU, valGPU) 
+        { return; };
 };
 
 class upanel_t
@@ -246,6 +250,10 @@ public:
     {
         return &gpuPanel.val[blkPtrOffset(k)];
     }
+
+    upanel_t(int_t *index_, double *val_, int_t *indexGPU, double *valGPU) : 
+        index(index_), val(val_), gpuPanel(indexGPU, valGPU) 
+        { return; };
 };
 
 // Defineing GPU data types
@@ -359,8 +367,21 @@ struct LUstruct_v100
     
     // GPU related functions 
     int_t setLUstruct_GPU();
+    int_t dsparseTreeFactorGPU(
+    sForest_t *sforest,
+    commRequests_t **comReqss, // lists of communication requests // size maxEtree level
+    dscuBufs_t *scuBufs,        // contains buffers for schur complement update
+    packLUInfo_t *packLUInfo,
+    msgs_t **msgss,           // size=num Look ahead
+    dLUValSubBuf_t **LUvsbs,  // size=num Look ahead
+    ddiagFactBufs_t **dFBufs,  // size maxEtree level
+    gEtreeInfo_t *gEtreeInfo, // global etree info
+    int_t *gIperm_c_supno,
+    double thresh, int tag_ub,
+    int *info);
 
-    int_t dSchurComplementUpdate(
-    cublasHandle_t handle, int streamId, 
-        int_t k, lpanel_t &lpanel, upanel_t &upanel);
+
+    int_t dSchurComplementUpdateGPU(
+    int streamId, 
+    int_t k, lpanel_t &lpanel, upanel_t &upanel);
 };
