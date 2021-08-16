@@ -1,45 +1,55 @@
 #include <cassert>
+#include <algorithm>
+#include <cmath>
 #include <cuda_runtime.h>
 
 #include "cublas_v2.h"
 #include "lupanels.hpp"
 
+#define EPSILON 1e-3
 
+// TODO: check this function on ideone
+int checkArr(double *A, double *B, int n)
+{
+    for (int i = 0; i < n; i++)
+    {
+        assert(fabs(A[i] - B[i]) <= EPSILON * std::min(fabs(A[i]), fabs(A[i])));
+    }
 
+    return 0;
+}
 
 lpanelGPU_t lpanel_t::copyToGPU()
 {
-    
-    if(isEmpty()) return gpuPanel; 
+
+    if (isEmpty())
+        return gpuPanel;
     size_t idxSize = sizeof(int_t) * indexSize();
     size_t valSize = sizeof(double) * nzvalSize();
 
-    
-    // TODO: deal with empty arrays 
     cudaMalloc(&gpuPanel.index, idxSize);
     cudaMemcpy(gpuPanel.index, index, idxSize, cudaMemcpyHostToDevice);
 
     cudaMalloc(&gpuPanel.val, valSize);
     cudaMemcpy(gpuPanel.val, val, valSize, cudaMemcpyHostToDevice);
 
-    return gpuPanel; 
+    return gpuPanel;
 }
 
 upanelGPU_t upanel_t::copyToGPU()
 {
-    
-    if(isEmpty()) return gpuPanel; 
+
+    if (isEmpty())
+        return gpuPanel;
     size_t idxSize = sizeof(int_t) * indexSize();
     size_t valSize = sizeof(double) * nzvalSize();
 
-    
-    // TODO: deal with empty arrays 
     cudaMalloc(&gpuPanel.index, idxSize);
     cudaMemcpy(gpuPanel.index, index, idxSize, cudaMemcpyHostToDevice);
 
     cudaMalloc(&gpuPanel.val, valSize);
     cudaMemcpy(gpuPanel.val, val, valSize, cudaMemcpyHostToDevice);
-    return gpuPanel; 
+    return gpuPanel;
 }
 
 int lpanel_t::checkGPU()
@@ -47,24 +57,24 @@ int lpanel_t::checkGPU()
 
     assert(isEmpty() == gpuPanel.isEmpty());
 
-    if(isEmpty()) return 0; 
+    if (isEmpty())
+        return 0;
 
     size_t valSize = sizeof(double) * nzvalSize();
 
     double *tmpArr = new double[nzvalSize()];
     cudaMemcpy(tmpArr, gpuPanel.val, valSize, cudaMemcpyDeviceToHost);
 
-    // TODO: implemen checkArr
     int out = checkArr(tmpArr, val, nzvalSize());
     delete tmpArr;
-    
+
     return 0;
 }
 
 int_t lpanel_t::panelSolveGPU(cublasHandle_t handle, cudaStream_t cuStream,
-                            int_t ksupsz,
-                            double *DiagBlk,  // device pointer 
-                            int_t LDD)
+                              int_t ksupsz,
+                              double *DiagBlk, // device pointer
+                              int_t LDD)
 {
     if (isEmpty())
         return 0;
@@ -73,34 +83,36 @@ int_t lpanel_t::panelSolveGPU(cublasHandle_t handle, cudaStream_t cuStream,
     if (haveDiag())
     {
         /* code */
-        lPanelStPtr = blkPtrGPU(0) // &val[blkPtrOffset(1)];
+        lPanelStPtr = blkPtrGPU(0); // &val[blkPtrOffset(1)];
         len -= nbrow(0);
     }
 
     double alpha = 1.0;
-    // TODO: Add set stream
-    cublasSetStream(handle, stream);
-    cublasStatus_t cbstatus = cublasDtrsm(handle,
-                                          𝖢𝖴𝖡𝖫𝖠𝖲_𝖲𝖨𝖣𝖤_𝖱𝖨𝖦𝖧𝖳, CUBLAS_FILL_MODE_UPPER,
-                                          𝖢𝖴𝖡𝖫𝖠𝖲_𝖮𝖯_𝖭, CUBLAS_DIAG_NON_UNIT,
-                                          len, ksupsz, alpha, DiagBlk, LDD,
-                                          lPanelStPtr, LDA());
+
+    cublasSetStream(handle, cuStream);
+    cublasStatus_t cbstatus =
+        cublasDtrsm(handle,
+                    CUBLAS_SIDE_RIGHT, CUBLAS_FILL_MODE_UPPER,
+                    CUBLAS_OP_N, CUBLAS_DIAG_NON_UNIT,
+                    len, ksupsz, &alpha, DiagBlk, LDD,
+                    lPanelStPtr, LDA());
+
     return 0;
 }
 
 int_t lpanel_t::diagFactorPackDiagBlockGPU(int_t k,
-                double *UBlk, int_t LDU,            // CPU pointers 
-                double *DiagLBlk, int_t LDD,        // CPU pointers 
-                double thresh, int_t *xsup,
-                superlu_dist_options_t *options, 
-                SuperLUStat_t *stat, int *info)
+                                           double *UBlk, int_t LDU,     // CPU pointers
+                                           double *DiagLBlk, int_t LDD, // CPU pointers
+                                           double thresh, int_t *xsup,
+                                           superlu_dist_options_t *options,
+                                           SuperLUStat_t *stat, int *info)
 {
     int kSupSize = SuperSize(k);
     size_t dpitch = LDD * sizeof(double);
     size_t spitch = LDA() * sizeof(double);
     size_t width = kSupSize * sizeof(double);
     size_t height = kSupSize;
-    double* val =   blkPtrGPU(0);
+    double *val = blkPtrGPU(0);
 
     cudaMemcpy2D(DiagLBlk, dpitch, val, spitch,
                  width, height, cudaMemcpyDeviceToHost);
@@ -123,21 +135,22 @@ int_t upanel_t::panelSolveGPU(cublasHandle_t handle, cudaStream_t cuStream,
         return 0;
 
     double alpha = 1.0;
-    // TODO: Add set stream
-    cublasSetStream(handle, stream);
+    
+    cublasSetStream(handle, cuStream);
     cublasStatus_t cbstatus =
         cublasDtrsm(handle,
-                    𝖢𝖴𝖡𝖫𝖠𝖲_𝖲𝖨𝖣𝖤_LEFT, CUBLAS_FILL_MODE_LOWER,
-                    𝖢𝖴𝖡𝖫𝖠𝖲_𝖮𝖯_𝖭, CUBLAS_DIAG_UNIT,
-                    ksupsz, nzcols(), alpha, DiagBlk, LDD,
+                    CUBLAS_SIDE_LEFT, CUBLAS_FILL_MODE_LOWER,
+                    CUBLAS_OP_N, CUBLAS_DIAG_UNIT,
+                    ksupsz, nzcols(), &alpha, DiagBlk, LDD,
                     val, LDA());
 }
 
-int upanel_t::checkGPU(upanel_t &upanel)
+int upanel_t::checkGPU()
 {
     assert(isEmpty() == gpuPanel.isEmpty());
 
-    if(isEmpty()) return 0; 
+    if (isEmpty())
+        return 0;
 
     size_t valSize = sizeof(double) * nzvalSize();
 
@@ -146,7 +159,7 @@ int upanel_t::checkGPU(upanel_t &upanel)
 
     int out = checkArr(tmpArr, val, nzvalSize());
     delete tmpArr;
-    
+
     return 0;
 }
 
@@ -156,7 +169,7 @@ lpanelGPU_t::lpanelGPU_t(lpanel_t &lpanel) : lpanel_CPU(lpanel)
     size_t idxSize = sizeof(int_t) * lpanel.indexSize();
     size_t valSize = sizeof(double) * lpanel.nzvalSize();
 
-    // TODO: deal with empty arrays 
+    
     cudaMalloc(&index, idxSize);
     cudaMemcpy(index, lpanel.index, idxSize, cudaMemcpyHostToDevice);
 
@@ -174,7 +187,6 @@ int lpanelGPU_t::check(lpanel_t &lpanel)
     double *tmpArr = double[lpanel.nzvalSize()];
     cudaMemcpy(tmpArr, val, valSize, cudaMemcpyDeviceToHost);
 
-    // TODO: implemen checkArr
     int out = checkArr(tmpArr, lpanel.val, lpanel.nzvalSize());
     delete tmpArr;
     return 0;
@@ -196,10 +208,10 @@ int_t lpanelGPU_t::panelSolve(cublasHandle_t handle, cudaStream_t cuStream,
     }
 
     double alpha = 1.0;
-    // TODO: Add set stream
+    
     cublasStatus_t cbstatus = cublasDtrsm(handle,
-                                          𝖢𝖴𝖡𝖫𝖠𝖲_𝖲𝖨𝖣𝖤_𝖱𝖨𝖦𝖧𝖳, CUBLAS_FILL_MODE_UPPER,
-                                          𝖢𝖴𝖡𝖫𝖠𝖲_𝖮𝖯_𝖭, CUBLAS_DIAG_NON_UNIT,
+                                          CUBLAS_SIDE_RIGHT, CUBLAS_FILL_MODE_UPPER,
+                                          𝖢𝖴BLAS_OP_𝖭, CUBLAS_DIAG_NON_UNIT,
                                           len, ksupsz, alpha, DiagBlk, LDD,
                                           lPanelStPtr, lpanel_CPU.LDA());
 
@@ -270,7 +282,6 @@ int upanelGPU_t::check(upanel_t &upanel)
     double *tmpArr = double[upanel.nzvalSize()];
     cudaMemcpy(tmpArr, val, valSize, cudaMemcpyDeviceToHost);
 
-    // TODO: implemen checkArr
     int out = checkArr(tmpArr, upanel.val, upanel.nzvalSize());
     delete tmpArr;
     return 0;
@@ -285,11 +296,11 @@ int_t upanelGPU_t::panelSolve(cublasHandle_t handle, cudaStream_t cuStream,
         return 0;
 
     double alpha = 1.0;
-    // TODO: Add set stream
+    
     cublasStatus_t cbstatus =
         cublasDtrsm(handle,
-                    𝖢𝖴𝖡𝖫𝖠𝖲_𝖲𝖨𝖣𝖤_LEFT, CUBLAS_FILL_MODE_LOWER,
-                    𝖢𝖴𝖡𝖫𝖠𝖲_𝖮𝖯_𝖭, CUBLAS_DIAG_UNIT,
+                    𝖢𝖴BLAS_SIDE_LEFT, CUBLAS_FILL_MODE_LOWER,
+                    𝖢𝖴BLAS_OP_𝖭, CUBLAS_DIAG_UNIT,
                     ksupsz, upanel_CPU.nzcols(), alpha, DiagBlk, LDD,
                     val, upanel_CPU.LDA());
 
@@ -297,4 +308,4 @@ int_t upanelGPU_t::panelSolve(cublasHandle_t handle, cudaStream_t cuStream,
     //               ksupsz, nzcols(), 1.0, DiagBlk, LDD, val, LDA());
     return 0;
 }
-#endif 
+#endif

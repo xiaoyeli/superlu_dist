@@ -2,11 +2,11 @@
 #include <vector>
 #include <iostream>
 #include "superlu_ddefs.h"
+#include "lu_common.hpp"
+#include "lupanels_GPU.cuh"
 
-class lpanelGPU_t;
-class upanelGPU_t;
-
-#define LPANEL_HEADER_SIZE 4
+// class lpanelGPU_t;
+// class upanelGPU_t;
 
 // it can be templatized for double and complex double
 class lpanel_t
@@ -14,8 +14,8 @@ class lpanel_t
 public:
     int_t *index;
     double *val;
-    // ifdef GPU acceraleration 
-    
+    // ifdef GPU acceraleration
+
     lpanelGPU_t gpuPanel;
     // bool isDiagIncluded;
 
@@ -27,8 +27,7 @@ public:
         val = NULL;
     }
 
-    lpanel_t(int_t *index_, double *val_): index(index_), val(val_) {return;};
-    
+    lpanel_t(int_t *index_, double *val_) : index(index_), val(val_) { return; };
 
     // index[0] is number of blocks
     int_t nblocks()
@@ -52,11 +51,11 @@ public:
         return index[LPANEL_HEADER_SIZE + nblocks() + k + 1] - index[LPANEL_HEADER_SIZE + nblocks() + k];
     }
 
-    // 
+    //
     int_t stRow(int k)
     {
-        return index[LPANEL_HEADER_SIZE + nblocks() + k]; 
-    } 
+        return index[LPANEL_HEADER_SIZE + nblocks() + k];
+    }
     // row
     int_t *rowList(int_t k)
     {
@@ -71,6 +70,11 @@ public:
     double *blkPtr(int_t k)
     {
         return &val[index[LPANEL_HEADER_SIZE + nblocks() + k]];
+    }
+
+    size_t blkPtrOffset(int_t k)
+    {
+        return index[LPANEL_HEADER_SIZE + nblocks() + k];
     }
 
     int_t LDA() { return index[1]; }
@@ -99,16 +103,36 @@ public:
     int getEndBlock(int iSt, int maxRows);
 
     lpanelGPU_t copyToGPU();
-    lpanelGPU_t copyToGPU(void** basePtr);  // when we are doing a single allocation 
+    // lpanelGPU_t copyToGPU(void **basePtr); // when we are doing a single allocation
+
+    int checkGPU();
+
+    int_t panelSolveGPU(cublasHandle_t handle, cudaStream_t cuStream,
+                        int_t ksupsz,
+                        double *DiagBlk, // device pointer
+                        int_t LDD);
+
+    int_t diagFactorPackDiagBlockGPU(int_t k,
+                                     double *UBlk, int_t LDU,     // CPU pointers
+                                     double *DiagLBlk, int_t LDD, // CPU pointers
+                                     double thresh, int_t *xsup,
+                                     superlu_dist_options_t *options,
+                                     SuperLUStat_t *stat, int *info);
+
+
+    double* blkPtrGPU(int k)
+    {
+        return &gpuPanel.val[blkPtrOffset(k)];
+    }
 };
 
-#define UPANEL_HEADER_SIZE 3
 class upanel_t
 {
 public:
     int_t *index;
     double *val;
-    upanelGPU_t* upanelGPU;
+    // upanelGPU_t* upanelGPU;
+    upanelGPU_t gpuPanel;
 
     // upanel_t(int_t *usub, double *uval);
     upanel_t(int_t k, int_t *usub, double *uval, int_t *xsup);
@@ -117,8 +141,8 @@ public:
         index = NULL;
         val = NULL;
     }
-    // constructing from recevied index and val 
-    upanel_t(int_t *index_, double *val_): index(index_), val(val_) {return;};
+    // constructing from recevied index and val
+    upanel_t(int_t *index_, double *val_) : index(index_), val(val_) { return; };
     // index[0] is number of blocks
     int_t nblocks()
     {
@@ -189,34 +213,44 @@ public:
     {
         if (index == NULL)
         {
-            std::cout<<"## Warning: Empty Panel" << "\n";
+            std::cout << "## Warning: Empty Panel"
+                      << "\n";
             return 0;
         }
-        int_t alternateNzcols = index[UPANEL_HEADER_SIZE + 2 * nblocks()] ;
+        int_t alternateNzcols = index[UPANEL_HEADER_SIZE + 2 * nblocks()];
         // std::cout<<nblocks()<<"  nzcols "<<nzcols()<<" alternate nzcols "<< alternateNzcols << "\n";
-        if(nzcols()!= alternateNzcols)
+        if (nzcols() != alternateNzcols)
         {
             printf("Error 175\n");
             exit(-1);
         }
-            
+
         return UPANEL_HEADER_SIZE + 2 * nblocks() + 1 + nzcols();
     }
 
     int_t stCol(int k)
     {
         return index[UPANEL_HEADER_SIZE + nblocks() + k];
-    } 
+    }
     int getEndBlock(int jSt, int maxCols);
 
     upanelGPU_t copyToGPU();
-    upanelGPU_t copyToGPU(void** basePtr);
+    //TODO: implement with baseptr 
+    // upanelGPU_t copyToGPU(void **basePtr);
+
+    int_t panelSolveGPU(cublasHandle_t handle, cudaStream_t cuStream,
+                        int_t ksupsz, double *DiagBlk, int_t LDD);
+    int checkGPU();
+
+    double* blkPtrGPU(int k)
+    {
+        return &gpuPanel.val[blkPtrOffset(k)];
+    }
 };
 
-
-// Defineing GPU data types 
-//lapenGPU_t has exact same structure has lapanel_t but 
-// the pointers are on GPU 
+// Defineing GPU data types
+//lapenGPU_t has exact same structure has lapanel_t but
+// the pointers are on GPU
 
 struct LUstruct_v100
 {
@@ -234,22 +268,22 @@ struct LUstruct_v100
     double *bigV; // size = THREAD_Size*ldt*ldt
     int_t *isNodeInMyGrid;
 
-    // Add SCT_t here 
-    SCT_t* SCT;
+    // Add SCT_t here
+    SCT_t *SCT;
     superlu_dist_options_t *options;
     SuperLUStat_t *stat;
 
-    // buffers for communication 
-    int_t maxLvalCount =0;
-    int_t maxLidxCount =0;
-    int_t maxUvalCount =0;
-    int_t maxUidxCount =0;
-    std::vector<double*> LvalRecvBufs;
-    std::vector<double*> UvalRecvBufs;
-    std::vector<int_t*> LidxRecvBufs;
-    std::vector<int_t*> UidxRecvBufs;
+    // buffers for communication
+    int_t maxLvalCount = 0;
+    int_t maxLidxCount = 0;
+    int_t maxUvalCount = 0;
+    int_t maxUidxCount = 0;
+    std::vector<double *> LvalRecvBufs;
+    std::vector<double *> UvalRecvBufs;
+    std::vector<int_t *> LidxRecvBufs;
+    std::vector<int_t *> UidxRecvBufs;
 
-    // send and recv count for 2d comm 
+    // send and recv count for 2d comm
     std::vector<int_t> LvalSendCounts;
     std::vector<int_t> UvalSendCounts;
     std::vector<int_t> LidxSendCounts;
@@ -262,9 +296,9 @@ struct LUstruct_v100
     int_t g2lRow(int_t k) { return k / Pr; }
     int_t g2lCol(int_t k) { return k / Pc; }
 
-    // For GPU acceleration 
+    // For GPU acceleration
     int superluAccOffload;
-    LUstructGPU_t* dA_gpu; 
+    LUstructGPU_t *dA_gpu;
     LUstructGPU_t A_gpu;
 
     enum indirectMapType
@@ -278,8 +312,7 @@ struct LUstruct_v100
     */
     LUstruct_v100(int_t nsupers, int_t ldt_, int_t *isNodeInMyGrid, int superluAccOffload,
                   dLUstruct_t *LUstruct, gridinfo3d_t *grid3d,
-                  SCT_t* SCT_, superlu_dist_options_t *options_, SuperLUStat_t *stat
-                  );
+                  SCT_t *SCT_, superlu_dist_options_t *options_, SuperLUStat_t *stat);
 
     ~LUstruct_v100()
     {
@@ -302,16 +335,16 @@ struct LUstruct_v100
     int_t dsparseTreeFactor(
         sForest_t *sforest,
         commRequests_t **comReqss, // lists of communication requests // size maxEtree level
-        dscuBufs_t *scuBufs,        // contains buffers for schur complement update
+        dscuBufs_t *scuBufs,       // contains buffers for schur complement update
         packLUInfo_t *packLUInfo,
         msgs_t **msgss,           // size=num Look ahead
         dLUValSubBuf_t **LUvsbs,  // size=num Look ahead
-        ddiagFactBufs_t **dFBufs,  // size maxEtree level
+        ddiagFactBufs_t **dFBufs, // size maxEtree level
         gEtreeInfo_t *gEtreeInfo, // global etree info
-        
+
         int_t *gIperm_c_supno,
-        
-        double thresh,  int tag_ub,
+
+        double thresh, int tag_ub,
         int *info);
 
     int_t packedU2skyline(dLUstruct_t *LUstruct);
@@ -323,5 +356,11 @@ struct LUstruct_v100
     int_t zRecvLPanel(int_t k0, int_t senderGrid, double alpha, double beta);
     int_t zSendUPanel(int_t k0, int_t receiverGrid);
     int_t zRecvUPanel(int_t k0, int_t senderGrid, double alpha, double beta);
-};
+    
+    // GPU related functions 
+    int_t setLUstruct_GPU();
 
+    int_t dSchurComplementUpdate(
+    cublasHandle_t handle, int streamId, 
+        int_t k, lpanel_t &lpanel, upanel_t &upanel);
+};

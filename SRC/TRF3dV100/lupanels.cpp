@@ -1,6 +1,7 @@
 #include <algorithm>
 #include <iostream>
 #include <cassert> 
+#include "lupanels_GPU.cuh"
 #include "lupanels.hpp"
 
 
@@ -10,7 +11,7 @@ LUstruct_v100::LUstruct_v100(int_t nsupers_, int_t ldt_,
             gridinfo3d_t *grid3d_in,
             SCT_t *SCT_, superlu_dist_options_t *options_, 
             SuperLUStat_t *stat_) : isNodeInMyGrid(isNodeInMyGrid_), 
-            nsupers(nsupers_), ldt(ldt_), grid3d(grid3d_in), superluAccOffload(superluAccOffload_)
+            nsupers(nsupers_), ldt(ldt_), grid3d(grid3d_in), superluAccOffload(superluAccOffload_),
             SCT(SCT_), options(options_), stat(stat_)
 {
 
@@ -316,6 +317,7 @@ int_t LUstruct_v100::setLUstruct_GPU()
     
     A_gpu.Pr = Pr;
     A_gpu.Pc = Pc;
+    A_gpu.maxSuperSize = ldt; 
 
     cudaMalloc(&A_gpu.xsup, nsupers*sizeof(int_t));
     cudaMemcpy(A_gpu.xsup, xsup, nsupers*sizeof(int_t), cudaMemcpyHostToDevice);
@@ -356,6 +358,7 @@ int_t LUstruct_v100::setLUstruct_GPU()
     for(int stream=0; stream<A_gpu.numCudaStreams; stream++ )
     {
      
+        cudaStreamCreate ( &A_gpu.cuStreams[stream]);
         cudaMalloc(&A_gpu.LvalRecvBufs[stream], sizeof(double)*maxLvalCount);
         cudaMalloc(&A_gpu.UvalRecvBufs[stream], sizeof(double)*maxUvalCount);
         cudaMalloc(&A_gpu.LidxRecvBufs[stream], sizeof(int_t)*maxLidxCount);
@@ -367,10 +370,10 @@ int_t LUstruct_v100::setLUstruct_GPU()
 
 
     // allocate 
-    cudaMalloc(&dA_gpu, sizeof(LUstruct_GPU));
-    cudaMemcpy(dA_gpu, A_gpu, sizeof(LUstruct_GPU), cudaMemcpyHostToDevice);
+    cudaMalloc(&dA_gpu, sizeof(LUstructGPU_t));
+    cudaMemcpy(dA_gpu, &A_gpu, sizeof(LUstructGPU_t), cudaMemcpyHostToDevice);
 
     // now setup the LU panels
-    dA_gpu.lPanelVec    
-    cudaMemcpy(dA_gpu.lPanelVec, A_gpu.lPanelVec, sizeof(LUstruct_GPU), cudaMemcpyHostToDevice);
+    // dA_gpu.lPanelVec    
+    // cudaMemcpy(dA_gpu.lPanelVec, A_gpu.lPanelVec, sizeof(LUstructGPU_t), cudaMemcpyHostToDevice);
 }

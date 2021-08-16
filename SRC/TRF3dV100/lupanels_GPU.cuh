@@ -1,62 +1,75 @@
+#pragma once
+#include <vector>
+#include <iostream>
+#include "superlu_ddefs.h"
+#include "lu_common.hpp"
+// #include "lupanels.hpp" 
 
+#ifdef __CUDACC__
+#define CUDA_CALLABLE __host__ __device__
+#else
+#define CUDA_CALLABLE
+#endif
+// class lpanel_t;
+// class upanel_t;
 
-struct lpanelGPU_t 
+class lpanelGPU_t 
 {
     
     public:
         int_t *index;
         double *val;
         // bool isDiagIncluded;
-        __host__
+        CUDA_CALLABLE
         lpanelGPU_t(int_t k, int_t *lsub, double *nzval, int_t *xsup, int_t isDiagIncluded);
         // default constuctor
         
-        __host__
+        CUDA_CALLABLE
         lpanelGPU_t()
         {
             index = NULL;
             val = NULL;
         }
-        __host__
+        CUDA_CALLABLE
         lpanelGPU_t(int_t *index_, double *val_): index(index_), val(val_) {return;};
         
     
         // index[0] is number of blocks
-        __device__ 
+        CUDA_CALLABLE
         int_t nblocks()
         {
             return index[0];
         }
         // number of rows
-        __device__
+        CUDA_CALLABLE
         int_t nzrows() { return index[1]; }
-        __device__
+        CUDA_CALLABLE
         int_t haveDiag() { return index[2]; }
-        __device__
+        CUDA_CALLABLE
         int_t ncols() { return index[3]; }
     
         // global block id of k-th block in the panel
-        __device__
+        CUDA_CALLABLE
         int_t gid(int_t k)
         {
             return index[LPANEL_HEADER_SIZE + k];
         }
     
         // number of rows in the k-th block
-        __device__
+        CUDA_CALLABLE
         int_t nbrow(int_t k)
         {
             return index[LPANEL_HEADER_SIZE + nblocks() + k + 1] - index[LPANEL_HEADER_SIZE + nblocks() + k];
         }
     
         // 
-        __device__
+        CUDA_CALLABLE
         int_t stRow(int k)
         {
             return index[LPANEL_HEADER_SIZE + nblocks() + k]; 
         } 
         // row
-        __device__
+        CUDA_CALLABLE
         int_t *rowList(int_t k)
         {
             // LPANEL_HEADER
@@ -67,16 +80,16 @@ struct lpanelGPU_t
                           2 * nblocks() + 1 + index[LPANEL_HEADER_SIZE + nblocks() + k]];
         }
     
-        __device__
+        CUDA_CALLABLE
         double *blkPtr(int_t k)
         {
             return &val[index[LPANEL_HEADER_SIZE + nblocks() + k]];
         }
     
-        __device__
+        CUDA_CALLABLE
         int_t LDA() { return index[1]; }
 
-        __device__
+        CUDA_CALLABLE
         int_t find(int_t k);
         // // for L panel I don't need any special transformation function
         // int_t panelSolve(int_t ksupsz, double *DiagBlk, int_t LDD);
@@ -84,10 +97,10 @@ struct lpanelGPU_t
         //                  superlu_dist_options_t *options, SuperLUStat_t *stat, int *info);
         // int_t packDiagBlock(double *DiagLBlk, int_t LDD);
 
-        __device__
+        CUDA_CALLABLE
         int_t isEmpty() { return index == NULL; }
 
-        __device__
+        CUDA_CALLABLE
         int_t nzvalSize()
         {
             if (index == NULL)
@@ -95,7 +108,7 @@ struct lpanelGPU_t
             return ncols() * nzrows();
         }
         
-        __device__
+        CUDA_CALLABLE
         int_t indexSize()
         {
             if (index == NULL)
@@ -104,21 +117,117 @@ struct lpanelGPU_t
         }
     
         // return the maximal iEnd such that stRow(iEnd)-stRow(iSt) < maxRow;
-        __device__
+        CUDA_CALLABLE
         int getEndBlock(int iSt, int maxRows);
-        lpanelGPU_t::lpanelGPU_t(lpanel_t& lpanel);
-        int check(lpanel_t& lpanel);
-    private: 
-        lpanel_t& lpanel_CPU;
+        // lpanelGPU_t::lpanelGPU_t(lpanel_t& lpanel);
+        // int check(lpanel_t& lpanel);
+    
 };
 
-class upanelGPU_t : public upanel_t
+class upanelGPU_t 
 {
-    public: 
-    upanelGPU_t::upanelGPU_t(upanel_t& upanel);
-        int check(upanel_t& upanel);
-    private: 
-        upanel_t& upanel_CPU;
+public:
+    int_t *index;
+    double *val;
+    // upanelGPU_t* upanelGPU;
+
+    // upanelGPU_t(int_t *usub, double *uval);
+    CUDA_CALLABLE
+    upanelGPU_t(int_t k, int_t *usub, double *uval, int_t *xsup);
+
+    CUDA_CALLABLE
+    upanelGPU_t()
+    {
+        index = NULL;
+        val = NULL;
+    }
+    // classstructing from recevied index and val 
+    CUDA_CALLABLE
+    upanelGPU_t(int_t *index_, double *val_): index(index_), val(val_) {return;};
+    // index[0] is number of blocks
+    CUDA_CALLABLE
+    int_t nblocks()
+    {
+        return index[0];
+    }
+    // number of rows
+    CUDA_CALLABLE
+    int_t nzcols() { return index[1]; }
+
+    CUDA_CALLABLE
+    int_t LDA() { return index[2]; } // is also supersize of that coloumn
+
+    // global block id of k-th block in the panel
+    CUDA_CALLABLE
+    int_t gid(int_t k)
+    {
+        return index[UPANEL_HEADER_SIZE + k];
+    }
+
+    // number of rows in the k-th block
+    CUDA_CALLABLE
+    int_t nbcol(int_t k)
+    {
+        return index[UPANEL_HEADER_SIZE + nblocks() + k + 1] - index[UPANEL_HEADER_SIZE + nblocks() + k];
+    }
+    // row
+    CUDA_CALLABLE
+    int_t *colList(int_t k)
+    {
+        // UPANEL_HEADER
+        // nblocks() : blocks list
+        // nblocks()+1 : blocks st_points
+        // index[UPANEL_HEADER_SIZE + nblocks() + k] statrting of the block
+        return &index[UPANEL_HEADER_SIZE +
+                      2 * nblocks() + 1 + index[UPANEL_HEADER_SIZE + nblocks() + k]];
+    }
+
+    CUDA_CALLABLE
+    double *blkPtr(int_t k)
+    {
+        return &val[LDA() * index[UPANEL_HEADER_SIZE + nblocks() + k]];
+    }
+
+    CUDA_CALLABLE
+    size_t blkPtrOffset(int_t k)
+    {
+        return LDA() * index[UPANEL_HEADER_SIZE + nblocks() + k];
+    }
+    // for U panel
+    // int_t packed2skyline(int_t* usub, double* uval );
+    // int_t packed2skyline(int_t k, int_t *usub, double *uval, int_t *xsup);
+    // int_t panelSolve(int_t ksupsz, double *DiagBlk, int_t LDD);
+    // int_t diagFactor(int_t k, double *UBlk, int_t LDU, double thresh, int_t *xsup,
+    //                  superlu_dist_options_t *options,
+    //                  SuperLUStat_t *stat, int *info);
+
+    // double* blkPtr(int_t k);
+    // int_t LDA();
+    CUDA_CALLABLE
+    int_t find(int_t k);
+    CUDA_CALLABLE
+    int_t isEmpty() { return index == NULL; }
+    CUDA_CALLABLE
+    int_t nzvalSize()
+    {
+        if (index == NULL)
+            return 0;
+        return LDA() * nzcols();
+    }
+
+    CUDA_CALLABLE
+    int_t indexSize()
+    {
+        if (index == NULL)
+            return 0;
+        return UPANEL_HEADER_SIZE + 2 * nblocks() + 1 + nzcols();
+    }
+
+    CUDA_CALLABLE
+    int_t stCol(int k)
+    {
+        return index[UPANEL_HEADER_SIZE + nblocks() + k];
+    } 
 };
 
 
@@ -131,15 +240,19 @@ struct LUstructGPU_t
     lpanelGPU_t* lPanelVec; 
     int_t* xsup; 
     int Pr, Pc, Pd;
-    // TODO: get num cuda streams
+    
     size_t gemmBufferSize; 
     int numCudaStreams;     
+    int maxSuperSize;
     // double arrays are problematic 
+    cudaStream_t cuStreams[MAX_CUDA_STREAMS];
     double* gpuGemmBuffs[MAX_CUDA_STREAMS];  
-    double* LvalRecvBufs[MAX_CUDA_STREAMS;
-    double* UvalRecvBufs[MAX_CUDA_STREAMS;
-    int_t* LidxRecvBufs[MAX_CUDA_STREAMS;
-    int_t* UidxRecvBufs[MAX_CUDA_STREAMS;
+    double* LvalRecvBufs[MAX_CUDA_STREAMS];
+    double* UvalRecvBufs[MAX_CUDA_STREAMS];
+    int_t* LidxRecvBufs[MAX_CUDA_STREAMS];
+    int_t* UidxRecvBufs[MAX_CUDA_STREAMS];
+
+    
     
     
     __device__

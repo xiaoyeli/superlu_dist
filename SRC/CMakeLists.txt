@@ -16,6 +16,7 @@ set(headers
     ${CMAKE_CURRENT_BINARY_DIR}/superlu_dist_config.h
     TRF3dV100/lupanels.hpp
     TRF3dV100/superlu_summit.h
+    TRF3dV100/lupanels_GPU.cuh
     ${PROJECT_SOURCE_DIR}/SRC/superlu_FortranCInterface.h
     cub/cub.cuh
 )
@@ -116,6 +117,7 @@ if(enable_double)
     TRF3dV100/lupanels_comm3d.cpp
     TRF3dV100/l_panels.cpp
     TRF3dV100/u_panels.cpp
+    TRF3dV100/lupanels_GPU.cpp 
     dtreeFactorizationGPU.c
     dgather.c
     dscatter3d.c
@@ -126,7 +128,10 @@ if(enable_double)
     dsuperlu_blas.c
   )
 if (HAVE_CUDA)
-  list(APPEND sources dsuperlu_gpu.cu)
+  list(APPEND sources 
+  dsuperlu_gpu.cu
+  TRF3dV100/schurCompUpdate.cu 
+  )
 endif()
 if (HAVE_COMBBLAS)
   list(APPEND sources d_c2cpp_GetHWPM.cpp dHWPM_CombBLAS.hpp)
