@@ -2,17 +2,81 @@
 #include "lupanels_GPU.cuh"
 #include "lupanels.hpp"
 // this should be a device code
+
+// int_t lpanel_t::find(int_t k)
+// {
+//     for (int_t i = 0; i < nblocks(); i++)
+//     {
+//         if (k == gid(i))
+//             return i;
+//     }
+//     //TODO: it shouldn't come here
+//     return -1;
+// }
+
+
 __device__
 int_t lpanelGPU_t::find(int_t k)
 {
-    return 0;
+    int threadId = threadIdx.x;
+    __shared__ int idx; 
+    __shared__ int found;
+    if(!threadId)
+    {
+        idx =-1;
+        found=0;
+    }
+
+    int nThreads = blockDim.x; 
+    int blocksPerThreads = CEILING( nblocks(),    nThreads);
+    
+    for(int blk =blocksPerThreads*threadIdx.x; 
+        blk< SUPERLU_MIN( nblocks(), blocksPerThreads*(threadIdx.x +1));
+        blk++)
+    {
+        if(found) break; 
+
+        if(k == gid(blk))
+        {
+            idx = blk;
+            found =1;
+        }
+        __syncthreads();
+    }
+    return idx;
 }
 
 
 __device__
 int_t upanelGPU_t::find(int_t k)
 {
-    return 0;
+    int threadId = threadIdx.x;
+    __shared__ int idx; 
+    __shared__ int found;
+    if(!threadId)
+    {
+        idx =-1;
+        found=0;
+    }
+        
+    
+    int nThreads = blockDim.x; 
+    int blocksPerThreads = CEILING( nblocks(),    nThreads);
+    
+    for(int blk =blocksPerThreads*threadIdx.x; 
+        blk< SUPERLU_MIN( nblocks(), blocksPerThreads*(threadIdx.x +1));
+        blk++)
+    {
+        if(found) break; 
+
+        if(k == gid(blk))
+        {
+            idx = blk;
+            found =1;
+        }
+        __syncthreads();
+    }
+    return idx;
 }
 
 

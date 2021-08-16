@@ -6,9 +6,11 @@
 // #include "lupanels.hpp" 
 
 #ifdef __CUDACC__
+#define DEVICE_CALLABLE __device__
 #define CUDA_CALLABLE __host__ __device__
 #else
 #define CUDA_CALLABLE
+#define DEVICE_CALLABLE
 #endif
 // class lpanel_t;
 // class upanel_t;
@@ -89,7 +91,7 @@ class lpanelGPU_t
         CUDA_CALLABLE
         int_t LDA() { return index[1]; }
 
-        CUDA_CALLABLE
+        DEVICE_CALLABLE
         int_t find(int_t k);
         // // for L panel I don't need any special transformation function
         // int_t panelSolve(int_t ksupsz, double *DiagBlk, int_t LDD);
@@ -203,7 +205,7 @@ public:
 
     // double* blkPtr(int_t k);
     // int_t LDA();
-    CUDA_CALLABLE
+    DEVICE_CALLABLE
     int_t find(int_t k);
     CUDA_CALLABLE
     int_t isEmpty() { return index == NULL; }
