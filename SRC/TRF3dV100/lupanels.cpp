@@ -1,19 +1,18 @@
 #include <algorithm>
 #include <iostream>
-#include <cassert> 
+#include <cassert>
 
 #include "lupanels_GPU.cuh"
 #include "lupanels.hpp"
 
-
 LUstruct_v100::LUstruct_v100(int_t nsupers_, int_t ldt_,
-            int_t *isNodeInMyGrid_, int superluAccOffload_,
-            dLUstruct_t *LUstruct,
-            gridinfo3d_t *grid3d_in,
-            SCT_t *SCT_, superlu_dist_options_t *options_, 
-            SuperLUStat_t *stat_) : isNodeInMyGrid(isNodeInMyGrid_), 
-            nsupers(nsupers_), ldt(ldt_), grid3d(grid3d_in), superluAccOffload(superluAccOffload_),
-            SCT(SCT_), options(options_), stat(stat_)
+                             int_t *isNodeInMyGrid_, int superluAccOffload_,
+                             dLUstruct_t *LUstruct,
+                             gridinfo3d_t *grid3d_in,
+                             SCT_t *SCT_, superlu_dist_options_t *options_,
+                             SuperLUStat_t *stat_) : isNodeInMyGrid(isNodeInMyGrid_),
+                                                     nsupers(nsupers_), ldt(ldt_), grid3d(grid3d_in), superluAccOffload(superluAccOffload_),
+                                                     SCT(SCT_), options(options_), stat(stat_)
 {
 
     grid = &(grid3d->grid2d);
@@ -31,17 +30,15 @@ LUstruct_v100::LUstruct_v100(int_t nsupers_, int_t ldt_,
     lPanelVec = new lpanel_t[CEILING(nsupers, Pc)];
     uPanelVec = new upanel_t[CEILING(nsupers, Pr)];
     // create the lvectors
-    maxLvalCount =0;
-    maxLidxCount =0;
-    maxUvalCount =0;
-    maxUidxCount =0;
+    maxLvalCount = 0;
+    maxLidxCount = 0;
+    maxUvalCount = 0;
+    maxUidxCount = 0;
 
-    std::vector<int_t> localLvalSendCounts(CEILING(nsupers, Pc),0);
-    std::vector<int_t> localUvalSendCounts(CEILING(nsupers, Pr),0);
-    std::vector<int_t> localLidxSendCounts(CEILING(nsupers, Pc),0);
-    std::vector<int_t> localUidxSendCounts(CEILING(nsupers, Pr),0);
-
-    
+    std::vector<int_t> localLvalSendCounts(CEILING(nsupers, Pc), 0);
+    std::vector<int_t> localUvalSendCounts(CEILING(nsupers, Pr), 0);
+    std::vector<int_t> localLidxSendCounts(CEILING(nsupers, Pc), 0);
+    std::vector<int_t> localUidxSendCounts(CEILING(nsupers, Pr), 0);
 
     for (int_t i = 0; i < CEILING(nsupers, Pc); ++i)
     {
@@ -49,15 +46,15 @@ LUstruct_v100::LUstruct_v100(int_t nsupers_, int_t ldt_,
         if (Lrowind_bc_ptr[i] != NULL && isNodeInMyGrid[k0] == 1)
         {
             int_t isDiagIncluded = 0;
-            
+
             if (myrow == krow(k0))
                 isDiagIncluded = 1;
             lpanel_t lpanel(k0, Lrowind_bc_ptr[i], Lnzval_bc_ptr[i], xsup, isDiagIncluded);
             lPanelVec[i] = lpanel;
-            maxLvalCount = std::max(lPanelVec[i].nzvalSize(),maxLvalCount );
-            maxLidxCount = std::max(lPanelVec[i].indexSize(),maxLidxCount );
-            localLvalSendCounts[i] =lPanelVec[i].nzvalSize();
-            localLidxSendCounts[i] =lPanelVec[i].indexSize();
+            maxLvalCount = std::max(lPanelVec[i].nzvalSize(), maxLvalCount);
+            maxLidxCount = std::max(lPanelVec[i].indexSize(), maxLidxCount);
+            localLvalSendCounts[i] = lPanelVec[i].nzvalSize();
+            localLidxSendCounts[i] = lPanelVec[i].indexSize();
         }
     }
 
@@ -69,62 +66,60 @@ LUstruct_v100::LUstruct_v100(int_t nsupers_, int_t ldt_,
             int_t globalId = i * Pr + myrow;
             upanel_t upanel(globalId, Ufstnz_br_ptr[i], Unzval_br_ptr[i], xsup);
             uPanelVec[i] = upanel;
-            maxUvalCount = std::max(uPanelVec[i].nzvalSize(),maxUvalCount );
-            maxUidxCount = std::max(uPanelVec[i].indexSize(),maxUidxCount );
-            localUvalSendCounts[i] =uPanelVec[i].nzvalSize();
-            localUidxSendCounts[i] =uPanelVec[i].indexSize();
+            maxUvalCount = std::max(uPanelVec[i].nzvalSize(), maxUvalCount);
+            maxUidxCount = std::max(uPanelVec[i].indexSize(), maxUidxCount);
+            localUvalSendCounts[i] = uPanelVec[i].nzvalSize();
+            localUidxSendCounts[i] = uPanelVec[i].indexSize();
         }
     }
 
     // compute the send sizes
-    // send and recv count for 2d comm 
+    // send and recv count for 2d comm
     LvalSendCounts.resize(nsupers);
     UvalSendCounts.resize(nsupers);
     LidxSendCounts.resize(nsupers);
     UidxSendCounts.resize(nsupers);
 
-    std::vector<int_t> recvBuf( std::max( CEILING(nsupers, Pr), CEILING(nsupers, Pc) ),0 );
+    std::vector<int_t> recvBuf(std::max(CEILING(nsupers, Pr), CEILING(nsupers, Pc)), 0);
 
-    for(int pr=0;pr<Pr; pr++)
+    for (int pr = 0; pr < Pr; pr++)
     {
         int npr = CEILING(nsupers, Pr);
         std::copy(localUvalSendCounts.begin(), localUvalSendCounts.end(), recvBuf.begin());
         // Send the value counts ;
-        MPI_Bcast((void *) recvBuf.data(), npr, mpi_int_t, pr, grid3d->cscp.comm);
-        for(int i=0; i*Pr + pr< nsupers; i++ )
+        MPI_Bcast((void *)recvBuf.data(), npr, mpi_int_t, pr, grid3d->cscp.comm);
+        for (int i = 0; i * Pr + pr < nsupers; i++)
         {
-            UvalSendCounts[i*Pr+pr] = recvBuf[i];
+            UvalSendCounts[i * Pr + pr] = recvBuf[i];
         }
 
         std::copy(localUidxSendCounts.begin(), localUidxSendCounts.end(), recvBuf.begin());
-        // send the index count 
-        MPI_Bcast((void *) recvBuf.data(), npr, mpi_int_t, pr, grid3d->cscp.comm);
-        for(int i=0; i*Pr + pr< nsupers; i++ )
+        // send the index count
+        MPI_Bcast((void *)recvBuf.data(), npr, mpi_int_t, pr, grid3d->cscp.comm);
+        for (int i = 0; i * Pr + pr < nsupers; i++)
         {
-            UidxSendCounts[i*Pr+pr] = recvBuf[i];
+            UidxSendCounts[i * Pr + pr] = recvBuf[i];
         }
-        
     }
 
-    for(int pc=0;pc<Pc; pc++)
+    for (int pc = 0; pc < Pc; pc++)
     {
         int npc = CEILING(nsupers, Pc);
         std::copy(localLvalSendCounts.begin(), localLvalSendCounts.end(), recvBuf.begin());
         // Send the value counts ;
-        MPI_Bcast((void *) recvBuf.data(), npc, mpi_int_t, pc, grid3d->rscp.comm);
-        for(int i=0; i*Pc + pc< nsupers; i++ )
+        MPI_Bcast((void *)recvBuf.data(), npc, mpi_int_t, pc, grid3d->rscp.comm);
+        for (int i = 0; i * Pc + pc < nsupers; i++)
         {
-            LvalSendCounts[i*Pc+pc] = recvBuf[i];
+            LvalSendCounts[i * Pc + pc] = recvBuf[i];
         }
 
         std::copy(localLidxSendCounts.begin(), localLidxSendCounts.end(), recvBuf.begin());
-        // send the index count 
-        MPI_Bcast((void *) recvBuf.data(), npc, mpi_int_t, pc, grid3d->rscp.comm);
-        for(int i=0; i*Pc + pc< nsupers; i++ )
+        // send the index count
+        MPI_Bcast((void *)recvBuf.data(), npc, mpi_int_t, pc, grid3d->rscp.comm);
+        for (int i = 0; i * Pc + pc < nsupers; i++)
         {
-            LidxSendCounts[i*Pc+pc] = recvBuf[i];
+            LidxSendCounts[i * Pc + pc] = recvBuf[i];
         }
-        
     }
 
     maxUvalCount = *std::max_element(UvalSendCounts.begin(), UvalSendCounts.end());
@@ -139,26 +134,24 @@ LUstruct_v100::LUstruct_v100(int_t nsupers_, int_t ldt_,
     indirectRow = (int_t *)SUPERLU_MALLOC(nThreads * ldt * sizeof(int_t));
     indirectCol = (int_t *)SUPERLU_MALLOC(nThreads * ldt * sizeof(int_t));
 
-
-    // allocating communication buffers 
+    // allocating communication buffers
     LvalRecvBufs.resize(options->num_lookaheads);
     UvalRecvBufs.resize(options->num_lookaheads);
     LidxRecvBufs.resize(options->num_lookaheads);
     UidxRecvBufs.resize(options->num_lookaheads);
 
-    for(int_t i=0; i<options->num_lookaheads; i++)
+    for (int_t i = 0; i < options->num_lookaheads; i++)
     {
-        LvalRecvBufs[i] = (double*) SUPERLU_MALLOC(sizeof(double)*maxLvalCount);
-        UvalRecvBufs[i] = (double*) SUPERLU_MALLOC(sizeof(double)*maxUvalCount);
-        LidxRecvBufs[i] = (int_t*) SUPERLU_MALLOC(sizeof(int_t)*maxLidxCount);
-        UidxRecvBufs[i] = (int_t*) SUPERLU_MALLOC(sizeof(int_t)*maxUidxCount);
+        LvalRecvBufs[i] = (double *)SUPERLU_MALLOC(sizeof(double) * maxLvalCount);
+        UvalRecvBufs[i] = (double *)SUPERLU_MALLOC(sizeof(double) * maxUvalCount);
+        LidxRecvBufs[i] = (int_t *)SUPERLU_MALLOC(sizeof(int_t) * maxLidxCount);
+        UidxRecvBufs[i] = (int_t *)SUPERLU_MALLOC(sizeof(int_t) * maxUidxCount);
     }
 
     //
 
-    
-    if(superluAccOffload)
-        setLUstruct_GPU();
+    // if (superluAccOffload)
+        
 
     // for(int pc=0;pc<Pc; pc++)
     // {
@@ -315,71 +308,75 @@ int_t LUstruct_v100::packedU2skyline(dLUstruct_t *LUstruct)
     }
 }
 
-
 int_t LUstruct_v100::setLUstruct_GPU()
 {
-    
+
     A_gpu.Pr = Pr;
     A_gpu.Pc = Pc;
-    A_gpu.maxSuperSize = ldt; 
+    A_gpu.maxSuperSize = ldt;
 
-    cudaMalloc(&A_gpu.xsup, nsupers*sizeof(int_t));
-    cudaMemcpy(A_gpu.xsup, xsup, nsupers*sizeof(int_t), cudaMemcpyHostToDevice);
+    cudaMalloc(&A_gpu.xsup, nsupers * sizeof(int_t));
+    cudaMemcpy(A_gpu.xsup, xsup, nsupers * sizeof(int_t), cudaMemcpyHostToDevice);
 
-    upanelGPU_t* uPanelVec_GPU = new upanelGPU_t[CEILING(nsupers, Pr)];
-    lpanelGPU_t* lPanelVec_GPU = new lpanelGPU_t[CEILING(nsupers, Pc)];
-    
+    upanelGPU_t *uPanelVec_GPU = new upanelGPU_t[CEILING(nsupers, Pr)];
+    lpanelGPU_t *lPanelVec_GPU = new lpanelGPU_t[CEILING(nsupers, Pc)];
 
     for (int_t i = 0; i < CEILING(nsupers, Pc); ++i)
     {
         lPanelVec_GPU[i] = lPanelVec[i].copyToGPU();
-        
     }
-    cudaMalloc(&A_gpu.lPanelVec, CEILING(nsupers, Pc)*sizeof(lpanelGPU_t));
-    cudaMemcpy(A_gpu.lPanelVec, lPanelVec_GPU, 
-        CEILING(nsupers, Pc)*sizeof(lpanelGPU_t), cudaMemcpyHostToDevice);
+    cudaMalloc(&A_gpu.lPanelVec, CEILING(nsupers, Pc) * sizeof(lpanelGPU_t));
+    cudaMemcpy(A_gpu.lPanelVec, lPanelVec_GPU,
+               CEILING(nsupers, Pc) * sizeof(lpanelGPU_t), cudaMemcpyHostToDevice);
 
     for (int_t i = 0; i < CEILING(nsupers, Pr); ++i)
     {
         uPanelVec_GPU[i] = uPanelVec[i].copyToGPU();
-        
     }
-    cudaMalloc(&A_gpu.uPanelVec, CEILING(nsupers, Pr)*sizeof(upanelGPU_t));
-    cudaMemcpy(A_gpu.uPanelVec, uPanelVec_GPU, 
-        CEILING(nsupers, Pr)*sizeof(upanelGPU_t), cudaMemcpyHostToDevice);
-
+    cudaMalloc(&A_gpu.uPanelVec, CEILING(nsupers, Pr) * sizeof(upanelGPU_t));
+    cudaMemcpy(A_gpu.uPanelVec, uPanelVec_GPU,
+               CEILING(nsupers, Pr) * sizeof(upanelGPU_t), cudaMemcpyHostToDevice);
 
     // set up streams;
     //TODO:  setup multiple cuda streams,
-    // make cuda streams consistent with look_aheads  
-    // numCudaStreams is related to num_look_aheads 
-    A_gpu.numCudaStreams = getnCudaStreams(); // this always returns 1 
-    A_gpu.gemmBufferSize = get_max_buffer_size(); 
+    // make cuda streams consistent with look_aheads
+    // numCudaStreams is related to num_look_aheads
+    A_gpu.numCudaStreams = getnCudaStreams(); // this always returns 1
+    A_gpu.gemmBufferSize = get_max_buffer_size();
 
-    
-    assert(A_gpu.numCudaStreams< options->num_lookaheads);
+    assert(A_gpu.numCudaStreams < options->num_lookaheads);
 
     // cudaMalloc(&A_gpu.LvalRecvBufs, sizeof(double*)*A_gpu.numCudaStreams);
-    for(int stream=0; stream<A_gpu.numCudaStreams; stream++ )
+    for (int stream = 0; stream < A_gpu.numCudaStreams; stream++)
     {
-     
-        cudaStreamCreate ( &A_gpu.cuStreams[stream]);
-        cublasCreate(&A_gpu.cuHandles[stream]);
-        cudaMalloc(&A_gpu.LvalRecvBufs[stream], sizeof(double)*maxLvalCount);
-        cudaMalloc(&A_gpu.UvalRecvBufs[stream], sizeof(double)*maxUvalCount);
-        cudaMalloc(&A_gpu.LidxRecvBufs[stream], sizeof(int_t)*maxLidxCount);
-        cudaMalloc(&A_gpu.UidxRecvBufs[stream], sizeof(int_t)*maxUidxCount);
-    
 
-        cudaMalloc(&A_gpu.gpuGemmBuffs[stream], A_gpu.gemmBufferSize*sizeof(double));
+        cudaStreamCreate(&A_gpu.cuStreams[stream]);
+        cublasCreate(&A_gpu.cuHandles[stream]);
+        cudaMalloc(&A_gpu.LvalRecvBufs[stream], sizeof(double) * maxLvalCount);
+        cudaMalloc(&A_gpu.UvalRecvBufs[stream], sizeof(double) * maxUvalCount);
+        cudaMalloc(&A_gpu.LidxRecvBufs[stream], sizeof(int_t) * maxLidxCount);
+        cudaMalloc(&A_gpu.UidxRecvBufs[stream], sizeof(int_t) * maxUidxCount);
+
+        cudaMalloc(&A_gpu.gpuGemmBuffs[stream], A_gpu.gemmBufferSize * sizeof(double));
     }
 
-
-    // allocate 
+    // allocate
     cudaMalloc(&dA_gpu, sizeof(LUstructGPU_t));
     cudaMemcpy(dA_gpu, &A_gpu, sizeof(LUstructGPU_t), cudaMemcpyHostToDevice);
 
     // now setup the LU panels
-    // dA_gpu.lPanelVec    
+    // dA_gpu.lPanelVec
     // cudaMemcpy(dA_gpu.lPanelVec, A_gpu.lPanelVec, sizeof(LUstructGPU_t), cudaMemcpyHostToDevice);
 }
+
+int_t LUstruct_v100::copyLUGPUtoHost()
+{
+
+    for (int_t i = 0; i < CEILING(nsupers, Pc); ++i)
+        lPanelVec[i].copyFromGPU();
+
+    for (int_t i = 0; i < CEILING(nsupers, Pr); ++i)
+        uPanelVec[i].copyFromGPU();
+}
+
+

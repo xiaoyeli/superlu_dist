@@ -215,7 +215,7 @@ int_t LUstruct_v100::dSchurComplementUpdateGPU(
     int_t nub = upanel.nblocks();
 
     int iSt =st_lb;
-    int iEnd =0; 
+    int iEnd =iSt; 
     
     
 

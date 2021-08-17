@@ -116,6 +116,7 @@ if(enable_double)
     TRF3dV100/dsparseTreeFactorGPU.cpp
     TRF3dV100/lupanels.cpp
     TRF3dV100/lupanels_comm3d.cpp
+    TRF3dV100/lupanelsComm3dGPU.cpp
     TRF3dV100/l_panels.cpp
     TRF3dV100/u_panels.cpp
     TRF3dV100/lupanels_GPU.cpp 
