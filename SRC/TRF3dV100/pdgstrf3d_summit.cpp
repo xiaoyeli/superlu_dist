@@ -120,7 +120,11 @@ extern "C"
         LUstruct_v100 LU_packed(nsupers, ldt, isNodeInMyGrid, superlu_acc_offload, LUstruct, grid3d,
                                 SCT, options, stat);
         if(superlu_acc_offload)
+        {
             LU_packed.setLUstruct_GPU();
+            LU_packed.checkGPU();
+        }
+            
 
         /*====  starting main factorization loop =====*/
         MPI_Barrier(grid3d->comm);

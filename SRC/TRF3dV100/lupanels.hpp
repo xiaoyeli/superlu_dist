@@ -21,7 +21,7 @@ public:
 
     lpanel_t(int_t k, int_t *lsub, double *nzval, int_t *xsup, int_t isDiagIncluded);
     // default constuctor
-    lpanel_t()
+    lpanel_t() : gpuPanel(NULL, NULL)
     {
         index = NULL;
         val = NULL;
@@ -141,7 +141,7 @@ public:
 
     // upanel_t(int_t *usub, double *uval);
     upanel_t(int_t k, int_t *usub, double *uval, int_t *xsup);
-    upanel_t()
+    upanel_t() : gpuPanel(NULL, NULL)
     {
         index = NULL;
         val = NULL;
@@ -395,4 +395,5 @@ struct LUstruct_v100
     int_t zSendUPanelGPU(int_t k0, int_t receiverGrid);
     int_t zRecvUPanelGPU(int_t k0, int_t senderGrid, double alpha, double beta);
     int_t copyLUGPUtoHost();
+    int_t checkGPU();
 };

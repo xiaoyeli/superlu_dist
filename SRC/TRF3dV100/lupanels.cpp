@@ -358,6 +358,7 @@ int_t LUstruct_v100::setLUstruct_GPU()
         cudaMalloc(&A_gpu.UidxRecvBufs[stream], sizeof(int_t) * maxUidxCount);
 
         cudaMalloc(&A_gpu.gpuGemmBuffs[stream], A_gpu.gemmBufferSize * sizeof(double));
+        cudaMalloc(&A_gpu.dFBufs[stream], ldt*ldt*sizeof(double));  
     }
 
     // allocate
@@ -379,4 +380,15 @@ int_t LUstruct_v100::copyLUGPUtoHost()
         uPanelVec[i].copyFromGPU();
 }
 
+int_t LUstruct_v100::checkGPU()
+{
+
+    for (int_t i = 0; i < CEILING(nsupers, Pc); ++i)
+        lPanelVec[i].checkGPU();
+
+    for (int_t i = 0; i < CEILING(nsupers, Pr); ++i)
+        uPanelVec[i].checkGPU();
+
+    std::cout<<"Checking LU struct completed succesfully" << "\n";
+}
 

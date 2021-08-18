@@ -13,7 +13,7 @@ int checkArr(double *A, double *B, int n)
 {
     for (int i = 0; i < n; i++)
     {
-        assert(fabs(A[i] - B[i]) <= EPSILON * std::min(fabs(A[i]), fabs(A[i])));
+        assert(fabs(A[i] - B[i]) <= EPSILON * std::min(fabs(A[i]), fabs(B[i])));
     }
 
     return 0;
@@ -82,7 +82,7 @@ int lpanel_t::checkGPU()
 
     double *tmpArr = new double[nzvalSize()];
     cudaMemcpy(tmpArr, gpuPanel.val, valSize, cudaMemcpyDeviceToHost);
-
+    
     int out = checkArr(tmpArr, val, nzvalSize());
     delete tmpArr;
 
@@ -101,7 +101,7 @@ int_t lpanel_t::panelSolveGPU(cublasHandle_t handle, cudaStream_t cuStream,
     if (haveDiag())
     {
         /* code */
-        lPanelStPtr = blkPtrGPU(0); // &val[blkPtrOffset(1)];
+        lPanelStPtr = blkPtrGPU(1); // &val[blkPtrOffset(1)];
         len -= nbrow(0);
     }
 
@@ -160,7 +160,7 @@ int_t upanel_t::panelSolveGPU(cublasHandle_t handle, cudaStream_t cuStream,
                     CUBLAS_SIDE_LEFT, CUBLAS_FILL_MODE_LOWER,
                     CUBLAS_OP_N, CUBLAS_DIAG_UNIT,
                     ksupsz, nzcols(), &alpha, DiagBlk, LDD,
-                    val, LDA());
+                    blkPtrGPU(0), LDA());
 }
 
 int upanel_t::checkGPU()

@@ -14,7 +14,7 @@
 //     return -1;
 // }
 
-
+//TODO: fix bug with syncthreads
 __device__
 int_t lpanelGPU_t::find(int_t k)
 {
@@ -117,40 +117,49 @@ void scatterGPU(
     // calculate gi,gj
     int ii = iSt + blockIdx.x; 
     int jj = jSt + blockIdx.y; 
+    int threadId = threadIdx.x;
 
     int gi = lpanel.gid(ii);
     int gj = upanel.gid(jj);
-
+    if(!threadId)
+    printf("Scattering to (%d, %d) \n",gi, gj);
     double *Dst;
     int_t lddst;
     int_t dstRowLen, dstColLen;
     int_t *dstRowList;
     int_t *dstColList;
-
+    
     if (gj > gi) // its in upanel
     {
         int li = dA->g2lRow(gi);
         int lj = dA->uPanelVec[li].find(gj);
         Dst = dA->uPanelVec[li].blkPtr(lj);
+        return; 
         lddst = dA->supersize(gi);
         dstRowLen = dA->supersize(gi);
         dstRowList = NULL;
         dstColLen = dA->uPanelVec[li].nbcol(lj);
         dstColList = dA->uPanelVec[li].colList(lj);
         // std::cout<<li<<" "<<lj<<" Dst[0] is"<<Dst[0] << "\n";
+        if(!threadId)
+        printf("Ui{j}k (%d, %d) \n",li, lj);
     }
     else
     {
         int lj = dA->g2lCol(gj);
         int li = dA->lPanelVec[lj].find(gi);
         Dst = dA->lPanelVec[lj].blkPtr(li);
+        return; 
         lddst = dA->lPanelVec[lj].LDA();
         dstRowLen = dA->lPanelVec[lj].nbrow(li);
         dstRowList = dA->lPanelVec[lj].rowList(li);
         dstColLen = dA->supersize(gj);
         dstColList = NULL;
+        if(!threadId)
+        printf("L{i}jk (%d, %d) \n",li, lj);
     }
 
+    
     // compute source row to dest row mapping
     int maxSuperSize = dA->maxSuperSize; 
     extern __shared__ int baseSharedPtr[]; 
@@ -173,7 +182,7 @@ void scatterGPU(
     int nThreads = blockDim.x; 
     int colsPerThreadBlock = nThreads/ nrows;
     
-    int threadId = threadIdx.x;
+    
     
 
 
@@ -238,13 +247,14 @@ int_t LUstruct_v100::dSchurComplementUpdateGPU(
         iSt = iEnd;
         iEnd = lpanel.getEndBlock(iSt, maxGemmRows);
         
-        
+        assert(iEnd>iSt);
         int jSt =0;
         int jEnd =0; 
         while(jEnd< nub)
         {
             jSt = jEnd; 
             jEnd = upanel.getEndBlock(jSt, maxGemmCols);
+            assert(jEnd>jSt);
             cublasHandle_t handle = A_gpu.cuHandles[streamId];
             cudaStream_t cuStream = A_gpu.cuStreams[streamId];
             cublasSetStream(handle, cuStream);
@@ -264,7 +274,7 @@ int_t LUstruct_v100::dSchurComplementUpdateGPU(
             // setting up scatter 
             dim3 dimBlock(ldt); // 1d thread
             dim3 dimGrid(iEnd - iSt, jEnd - jSt);
-            size_t sharedMemorySize=3* A_gpu.maxSuperSize; 
+            size_t sharedMemorySize=3* A_gpu.maxSuperSize * sizeof(int_t); 
 
             scatterGPU<<<dimGrid, dimBlock, sharedMemorySize, cuStream>>>(
                 iSt, jSt, 
