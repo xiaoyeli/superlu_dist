@@ -106,19 +106,25 @@ int lpanel_t::getEndBlock(int iSt, int maxRows)
     int ii = iSt +1;
 
     while (
-        stRow(ii) - stRow(iSt) < maxRows &&
+        stRow(ii) - stRow(iSt) <= maxRows &&
         ii < nlb)
         ii++;
 
+#if 1
+    if (stRow(ii) - stRow(iSt) > maxRows)
+        iEnd = ii-1;
+    else 
+        iEnd =ii; 
+#else 
     if (ii == nlb)
     {
-        if (stRow(ii) - stRow(iSt) < maxRows)
+        if (stRow(ii) - stRow(iSt) <= maxRows)
             iEnd = nlb;
         else
             iEnd = nlb - 1;
     }
     else
         iEnd = ii - 1;
-
+#endif 
     return iEnd; 
 }
