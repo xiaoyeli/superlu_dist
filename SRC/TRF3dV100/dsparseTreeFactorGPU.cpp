@@ -51,10 +51,20 @@ int_t LUstruct_v100::dsparseTreeFactorGPU(
             /*=======   Diagonal Factorization      ======*/
             if (iam == procIJ(k, k))
             {
+                #ifndef NDEBUG
+                lPanelVec[g2lCol(k)].checkGPU();
+                lPanelVec[g2lCol(k)].diagFactor(k, dFBufs[offset]->BlockUFactor, ksupc,
+                                                thresh, xsup, options, stat, info);
+                lPanelVec[g2lCol(k)].packDiagBlock(dFBufs[offset]->BlockLFactor, ksupc);
+                #endif 
                 lPanelVec[g2lCol(k)].diagFactorPackDiagBlockGPU( k,
                                      dFBufs[offset]->BlockUFactor, ksupc,     // CPU pointers
                                      dFBufs[offset]->BlockLFactor, ksupc, // CPU pointers
                                     thresh, xsup, options, stat, info);
+                #ifndef NDEBUG
+                cudaStreamSynchronize(cuStream);
+                lPanelVec[g2lCol(k)].checkGPU();
+                #endif 
             }
 
             /*=======   Diagonal Broadcast          ======*/
@@ -67,14 +77,37 @@ int_t LUstruct_v100::dsparseTreeFactorGPU(
 
             /*=======   Panel Update                ======*/
             if (myrow == krow(k))
+            {
+                #ifndef NDEBUG
+                uPanelVec[g2lRow(k)].checkGPU();
+                #endif 
+                cudaMemcpy(A_gpu.dFBufs[0],dFBufs[offset]->BlockLFactor, 
+                ksupc*ksupc*sizeof(double), cudaMemcpyHostToDevice);
                 uPanelVec[g2lRow(k)].panelSolveGPU(
                     cubHandle, cuStream, 
-                    ksupc, dFBufs[offset]->BlockLFactor, ksupc);
+                    ksupc, A_gpu.dFBufs[0], ksupc);
+                #ifndef NDEBUG
+                uPanelVec[g2lRow(k)].panelSolve(ksupc, dFBufs[offset]->BlockLFactor, ksupc);
+                cudaStreamSynchronize (cuStream);
+                uPanelVec[g2lRow(k)].checkGPU();
+                #endif 
+            }
+                
 
             if (mycol == kcol(k))
+            {
+                cudaMemcpy(A_gpu.dFBufs[0],dFBufs[offset]->BlockUFactor, 
+                    ksupc*ksupc*sizeof(double), cudaMemcpyHostToDevice);
                 lPanelVec[g2lCol(k)].panelSolveGPU(
                     cubHandle, cuStream, 
-                    ksupc, dFBufs[offset]->BlockUFactor, ksupc);
+                    ksupc, A_gpu.dFBufs[0], ksupc);
+                #ifndef NDEBUG
+                lPanelVec[g2lCol(k)].panelSolve(ksupc, dFBufs[offset]->BlockUFactor, ksupc);
+                cudaStreamSynchronize(cuStream);
+                lPanelVec[g2lCol(k)].checkGPU();
+                #endif 
+            }
+                
 
             /*=======   Panel Broadcast             ======*/
             upanel_t k_upanel(UidxRecvBufs[0], UvalRecvBufs[0],
@@ -115,9 +148,17 @@ int_t LUstruct_v100::dsparseTreeFactorGPU(
             {
                 // k_upanel.checkCorrectness();
                 int streamId =0; 
+                #ifndef NDEBUG
+                checkGPU();
+                #endif 
                 dSchurComplementUpdateGPU(
                     streamId, 
                     k, k_lpanel, k_upanel);
+                #ifndef NDEBUG
+                dSchurComplementUpdate(k, k_lpanel, k_upanel);
+                cudaStreamSynchronize(cuStream);
+                checkGPU();
+                #endif 
                 
             }
             // MPI_Barrier(grid3d->comm);
