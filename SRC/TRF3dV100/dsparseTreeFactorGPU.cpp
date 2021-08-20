@@ -1,3 +1,4 @@
+#include <cstdio>
 #include "superlu_ddefs.h"
 #include "lupanels.hpp"
 #include "lupanels_GPU.cuh"
@@ -22,6 +23,7 @@ int_t LUstruct_v100::dsparseTreeFactorGPU(
         return 1;
     }
 
+    printf("Using New code V100 with GPU acceleration\n");
 #if (DEBUGlevel >= 1)
     CHECK_MALLOC(grid3d->iam, "Enter dsparseTreeFactor_ASYNC()");
 #endif
@@ -51,6 +53,7 @@ int_t LUstruct_v100::dsparseTreeFactorGPU(
             /*=======   Diagonal Factorization      ======*/
             if (iam == procIJ(k, k))
             {
+                #define NDEBUG
                 #ifndef NDEBUG
                 lPanelVec[g2lCol(k)].checkGPU();
                 lPanelVec[g2lCol(k)].diagFactor(k, dFBufs[offset]->BlockUFactor, ksupc,

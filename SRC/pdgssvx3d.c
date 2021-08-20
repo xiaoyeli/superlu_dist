@@ -493,7 +493,8 @@ at the top-level directory.
  * See superlu_ddefs.h for the definitions of varioous data types.
  * </pre>
  */
-
+// dSOLVEstruct3d_t * SOLVEstruct,
+// SOLVEstruct->A3d
 void
 pdgssvx3d (superlu_dist_options_t * options, SuperMatrix * A,
            dScalePermstruct_t * ScalePermstruct,
@@ -557,6 +558,17 @@ pdgssvx3d (superlu_dist_options_t * options, SuperMatrix * A,
     double *B2d;
     NRformat_loc3d *A3d = dGatherNRformat_loc3d((NRformat_loc *)A->Store,
 		   	  			B, ldb, nrhs, grid3d);
+	if(options->Fact)
+	{
+		SOLVEstruct->A3d = dGatherNRformat_loc3d((NRformat_loc *)A->Store,
+		   	  			B, ldb, nrhs, grid3d);
+	}
+	else
+	{
+		SOLVEstruct->A3d = dGatherNRformat_loc3d_gatherUsingComputedOffsets((NRformat_loc *)A->Store,
+		   	  			B, ldb, nrhs, grid3d);
+	}					 
+	// SOLVEstruct->A3d = 
     B2d = (double *) A3d->B2d; 
     NRformat_loc *Astore0 = A3d->A_nfmt; // on 2D grid-0
     NRformat_loc *A_orig = A->Store;

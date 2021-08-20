@@ -6,9 +6,10 @@
 #include "cublas_v2.h"
 #include "lupanels.hpp"
 
-#define EPSILON 1e-6
+//TODO: make expsilon a enviroment variable 
+#define EPSILON 1e-3
 
-// TODO: check this function on ideone
+
 int checkArr(double *A, double *B, int n)
 {
     for (int i = 0; i < n; i++)
