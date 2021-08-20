@@ -31,18 +31,22 @@ int_t lpanelGPU_t::find(int_t k)
     int blocksPerThreads = CEILING( nblocks(),    nThreads);
     
     for(int blk =blocksPerThreads*threadIdx.x; 
-        blk< SUPERLU_MIN( nblocks(), blocksPerThreads*(threadIdx.x +1));
+        blk< blocksPerThreads*(threadIdx.x +1);
         blk++)
     {
-        if(found) break; 
+        // if(found) break; 
 
-        if(k == gid(blk))
+        if(blk< nblocks())
         {
-            idx = blk;
-            found =1;
+            if(k == gid(blk))
+            {
+                idx = blk;
+                found =1;
+            }
         }
-        __syncthreads();
+        
     }
+    __syncthreads();
     return idx;
 }
 
@@ -64,18 +68,23 @@ int_t upanelGPU_t::find(int_t k)
     int blocksPerThreads = CEILING( nblocks(),    nThreads);
     
     for(int blk =blocksPerThreads*threadIdx.x; 
-        blk< SUPERLU_MIN( nblocks(), blocksPerThreads*(threadIdx.x +1));
+        blk< blocksPerThreads*(threadIdx.x +1);
         blk++)
     {
-        if(found) break; 
+        // if(found) break; 
 
-        if(k == gid(blk))
+        if(blk< nblocks())
         {
-            idx = blk;
-            found =1;
+            if(k == gid(blk))
+            {
+                idx = blk;
+                found =1;
+            }
         }
-        __syncthreads();
+        
+        
     }
+    __syncthreads();
     return idx;
 }
 
@@ -134,7 +143,7 @@ void scatterGPU(
         int li = dA->g2lRow(gi);
         int lj = dA->uPanelVec[li].find(gj);
         Dst = dA->uPanelVec[li].blkPtr(lj);
-        return; 
+        // return; 
         lddst = dA->supersize(gi);
         dstRowLen = dA->supersize(gi);
         dstRowList = NULL;
@@ -149,7 +158,7 @@ void scatterGPU(
         int lj = dA->g2lCol(gj);
         int li = dA->lPanelVec[lj].find(gi);
         Dst = dA->lPanelVec[lj].blkPtr(li);
-        return; 
+        // return; 
         lddst = dA->lPanelVec[lj].LDA();
         dstRowLen = dA->lPanelVec[lj].nbrow(li);
         dstRowList = dA->lPanelVec[lj].rowList(li);
@@ -174,10 +183,25 @@ void scatterGPU(
     computeIndirectMapGPU(rowS2D,  nrows, lpanel.rowList(ii),
         dstRowLen, dstRowList, dstIdx);
     
+    if(!threadId && !ii && !jj)
+    {
+        printf(" RowS2d nrows=%d ",nrows);
+        for(int i=0; i< SUPERLU_MIN(5, nrows); i++)
+            printf(" %d ",rowS2D[i]);
+    }
+        
+    
 // compute source col to dest col mapping
+    
     computeIndirectMapGPU(colS2D, ncols, upanel.colList(jj),
         dstColLen, dstColList, dstIdx);
     
+    if(!threadId && !ii && !jj)
+    {
+        printf(" ColS2d ncols=%d ",ncols);
+        for(int i=0; i< SUPERLU_MIN(5, ncols); i++)
+            printf(" %d ",colS2D[i]);
+    }
 
     int nThreads = blockDim.x; 
     int colsPerThreadBlock = nThreads/ nrows;
@@ -185,9 +209,9 @@ void scatterGPU(
     
     
 
-
-    double* Src = &gemmBuff[ lpanel.stRow(ii)+ 
-            upanel.stCol(jj)* LDgemmBuff];
+    int rowOff = lpanel.stRow(ii) - lpanel.stRow(iSt);
+    int colOff = upanel.stCol(jj) - upanel.stCol(jSt);
+    double* Src = &gemmBuff[ rowOff+ colOff* LDgemmBuff];
     int ldsrc = LDgemmBuff; 
     // TODO: this seems inefficient 
     if (threadId < nrows * colsPerThreadBlock)
@@ -198,13 +222,17 @@ void scatterGPU(
 
         #pragma unroll 4
         while(j<ncols)
-        {
+        {   
+            if(gi==521 && gj==521 && i+j<5)
+                printf(" (%d %d, %lf %lf)\n", i, j, Dst[rowS2D[i] + lddst * colS2D[j]], Src[i + ldsrc * j]);
+
             Dst[rowS2D[i] + lddst * colS2D[j]] -= Src[i + ldsrc * j];
             j += colsPerThreadBlock;
         }
 		
 	}
 
+    __syncthreads();
 } 
 
 
@@ -264,6 +292,7 @@ int_t LUstruct_v100::dSchurComplementUpdateGPU(
             double alpha = 1.0;
             double beta = 0.0; 
             
+            printf("m=%d, n=%d, k=%d\n", gemm_m,gemm_n,gemm_k);
             cublasDgemm(handle, CUBLAS_OP_N, CUBLAS_OP_N,
                         gemm_m, gemm_n, gemm_k, &alpha,
                         lpanel.blkPtrGPU(iSt), lpanel.LDA(),
