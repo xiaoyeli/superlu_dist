@@ -49,6 +49,7 @@ int_t LUstruct_v100::ancestorReduction3dGPU(int_t ilvl, int_t *myNodeCount,
                 zRecvUPanelGPU(k0, sender, alpha, beta);
             }
         }
+        cudaStreamSynchronize(A_gpu.cuStreams[0]) ;
         // return 0;
         SCT->ancsReduce += SuperLU_timer_() - treduce;
     }
@@ -82,13 +83,15 @@ int_t LUstruct_v100::zRecvLPanelGPU(int_t k0, int_t senderGrid, double alpha, do
 		{
             
             MPI_Status status;
-			MPI_Recv(LvalRecvBufs[0], lPanelVec[lk].nzvalSize(), MPI_DOUBLE, senderGrid, k0,
+			MPI_Recv(A_gpu.LvalRecvBufs[0], lPanelVec[lk].nzvalSize(), MPI_DOUBLE, senderGrid, k0,
 					 grid3d->zscp.comm, &status);
 
 			/*reduce the updates*/
             cublasHandle_t handle=A_gpu.cuHandles[0];
+            cudaStream_t cuStream = A_gpu.cuStreams[0];
+            cublasSetStream(handle, cuStream);
 			cublasDscal(handle, lPanelVec[lk].nzvalSize(), &alpha, lPanelVec[lk].blkPtrGPU(0), 1);
-			cublasDaxpy(handle, lPanelVec[lk].nzvalSize(), &beta, LvalRecvBufs[0], 1, lPanelVec[lk].blkPtrGPU(0), 1);
+			cublasDaxpy(handle, lPanelVec[lk].nzvalSize(), &beta, A_gpu.LvalRecvBufs[0], 1, lPanelVec[lk].blkPtrGPU(0), 1);
 
             // cublasDscal(cublasHandle_t handle, int n,
             //                 const double          *alpha,
@@ -129,13 +132,15 @@ int_t LUstruct_v100::zRecvUPanelGPU(int_t k0, int_t senderGrid, double alpha, do
 		{
 
             MPI_Status status;
-			MPI_Recv(UvalRecvBufs[0], uPanelVec[lk].nzvalSize(), MPI_DOUBLE, senderGrid, k0,
+			MPI_Recv(A_gpu.UvalRecvBufs[0], uPanelVec[lk].nzvalSize(), MPI_DOUBLE, senderGrid, k0,
 					 grid3d->zscp.comm, &status);
 
 			/*reduce the updates*/
             cublasHandle_t handle=A_gpu.cuHandles[0];
+            cudaStream_t cuStream = A_gpu.cuStreams[0];
+            cublasSetStream(handle, cuStream);
 			cublasDscal(handle, uPanelVec[lk].nzvalSize(), &alpha, uPanelVec[lk].blkPtrGPU(0), 1);
-			cublasDaxpy(handle, uPanelVec[lk].nzvalSize(), &beta, UvalRecvBufs[0], 1, uPanelVec[lk].blkPtrGPU(0), 1);
+			cublasDaxpy(handle, uPanelVec[lk].nzvalSize(), &beta, A_gpu.UvalRecvBufs[0], 1, uPanelVec[lk].blkPtrGPU(0), 1);
 		}
 	}
 	return 0;

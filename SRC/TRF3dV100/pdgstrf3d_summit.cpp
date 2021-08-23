@@ -164,7 +164,17 @@ extern "C"
                 if (ilvl < maxLvl - 1) /*then reduce before factorization*/
                 {
                     if (superlu_acc_offload)
+                    {
+                        #ifndef NDEBUG
+                        LU_packed.checkGPU();
+                        LU_packed.ancestorReduction3d(ilvl, myNodeCount, treePerm);
+                        #endif 
                         LU_packed.ancestorReduction3dGPU(ilvl, myNodeCount, treePerm);
+                        #ifndef NDEBUG
+                        LU_packed.checkGPU();
+                        #endif 
+                    }
+                        
                     else
                         LU_packed.ancestorReduction3d(ilvl, myNodeCount, treePerm);
                 }
