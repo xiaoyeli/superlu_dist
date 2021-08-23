@@ -132,14 +132,24 @@ int_t LUstruct_v100::dsparseTreeFactorGPU(
                 // copy the index to cpu 
                 cudaMemcpy(k_upanel.index, k_upanel.gpuPanel.index, 
                     sizeof(int_t)*UidxSendCounts[k], cudaMemcpyDeviceToHost);
+                
+                #ifndef NDEBUG
+                MPI_Bcast(k_upanel.index, UidxSendCounts[k], mpi_int_t, krow(k), grid3d->cscp.comm);
+                MPI_Bcast(k_upanel.val, UvalSendCounts[k], MPI_DOUBLE, krow(k), grid3d->cscp.comm);
+                #endif 
             }
-            
+
             if(LidxSendCounts[k]>0)
             {
                 MPI_Bcast(k_lpanel.gpuPanel.index, LidxSendCounts[k], mpi_int_t, kcol(k), grid3d->rscp.comm);
                 MPI_Bcast(k_lpanel.gpuPanel.val, LvalSendCounts[k], MPI_DOUBLE, kcol(k), grid3d->rscp.comm);
                 cudaMemcpy(k_lpanel.index, k_lpanel.gpuPanel.index, 
                     sizeof(int_t)*LidxSendCounts[k], cudaMemcpyDeviceToHost);
+                
+                #ifndef NDEBUG
+                MPI_Bcast(k_lpanel.index, LidxSendCounts[k], mpi_int_t, kcol(k), grid3d->rscp.comm);
+                MPI_Bcast(k_lpanel.val, LvalSendCounts[k], MPI_DOUBLE, kcol(k), grid3d->rscp.comm);
+                #endif 
             }
             
 

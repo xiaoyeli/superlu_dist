@@ -165,6 +165,7 @@ extern "C"
                 {
                     if (superlu_acc_offload)
                     {
+                        #define NDEBUG
                         #ifndef NDEBUG
                         LU_packed.checkGPU();
                         LU_packed.ancestorReduction3d(ilvl, myNodeCount, treePerm);
