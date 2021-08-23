@@ -282,6 +282,7 @@ int_t LUstruct_v100::dSchurComplementUpdateGPU(
             
 		}
     }
+    cudaStreamSynchronize(A_gpu.cuStreams[streamId]);
     return 0;
 }
 
