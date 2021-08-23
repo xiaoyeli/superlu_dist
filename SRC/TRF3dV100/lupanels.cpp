@@ -277,25 +277,18 @@ int_t LUstruct_v100::dScatter(int_t m, int_t n,
     // compute source row to dest row mapping
     int_t *rowS2D = computeIndirectMap(ROW_MAP, m, srcRowList,
                                        dstRowLen, dstRowList);
-    printf(" RowS2d nrows=%d ",m);
-    for(int i=0; i< SUPERLU_MIN(5, m); i++)
-            printf(" %d ",rowS2D[i]);
-    printf("\n");
+    
     // compute source col to dest col mapping
     int_t *colS2D = computeIndirectMap(COL_MAP, n, srcColList,
                                        dstColLen, dstColList);
 
-    printf(" ColS2d ncols=%d ",n);
-            for(int i=0; i< SUPERLU_MIN(5, n); i++)
-                printf(" %d ",colS2D[i]);
-    printf("\n");
-
+    
     for (int j = 0; j < n; j++)
     {
         for (int i = 0; i < m; i++)
         {
-            if( i+j<5 && gi==521 && gj==521)
-                printf(" (%d %d, %lf %lf)\n", i, j, Dst[rowS2D[i] + lddst * colS2D[j]], Src[i + ldsrc * j]);
+            // if( i+j<5 && gi==521 && gj==521)
+            //     printf(" (%d %d, %lf %lf)\n", i, j, Dst[rowS2D[i] + lddst * colS2D[j]], Src[i + ldsrc * j]);
             Dst[rowS2D[i] + lddst * colS2D[j]] -= Src[i + ldsrc * j];
         }
     }
