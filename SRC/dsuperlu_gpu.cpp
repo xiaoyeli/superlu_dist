@@ -31,22 +31,8 @@
 using localAcc = sycl::accessor<int, 1, sycl::access_mode::read_write, sycl::target::local>;
 
 #define MAX_SUPER_SIZE 512
-typedef int int_t;
-#define CEILING(a,b)    ( ((a)%(b)) ? ((a)/(b) + 1) : ((a)/(b)) )
 
-/*error reporting functions */
-//static
-int checkCuda(int result)
-{
-#if defined(DEBUG) || defined(_DEBUG)
-    if (result != cudaSuccess)
-    {
-	fprintf(stderr, "CUDA Runtime Error: %s\n", cudaGetErrorString(result));
-	assert(result == cudaSuccess);
-    }
-#endif
-    return result;
-}
+#define CEILING(a,b)    ( ((a)%(b)) ? ((a)/(b) + 1) : ((a)/(b)) )
 
 // #define UNIT_STRIDE
 
@@ -882,7 +868,7 @@ int dinitSluGPU3D_t(
     sluGPU->nCudaStreams = getnCudaStreams();
     if (grid3d->iam == 0)
     {
-	printf("dinitSluGPU3D_t: Using hardware acceleration, with %d cuda streams \n", sluGPU->nCudaStreams);
+	printf("dinitSluGPU3D_t: Using hardware acceleration, with %ld cuda streams \n", sluGPU->nCudaStreams);
 	fflush(stdout);
 	if ( MAX_SUPER_SIZE < ldt )
 	{
