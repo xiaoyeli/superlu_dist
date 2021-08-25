@@ -9,6 +9,7 @@ The source code is distributed under BSD license, see the file License.txt
 at the top-level directory.
 */
 
+
 /*! @file
  * \brief This file contains the main loop of pzgstrf which involves
  *        rank k update of the Schur complement.
@@ -20,8 +21,6 @@ at the top-level directory.
  * October 1, 2014
  *
  */
-
-#define SCHEDULE_STRATEGY dynamic
 
 int full;
 double gemm_timer = 0.0;
@@ -42,11 +41,7 @@ if ( msg0 && msg2 ) {  /* L(:,k) and U(k,:) are not empty. */
     if (nbrow>0) {
 
         // Maximum number of columns that can fit in dC[buffer_size] on GPU
-#if 0   // max_ldu can be < ldt, so bigu_size/ldt may be smaller, giving false alarm
-        int ncol_max = SUPERLU_MIN(buffer_size/nbrow,bigu_size/ldt);
-#else // Sherry fix
         int ncol_max = SUPERLU_MIN(buffer_size/nbrow, max_ncols);
-#endif
 
         int num_streams_used, /* number of streams that will be used*/
         ncpu_blks;            /* the leading number of CPU dgemm blks
@@ -73,12 +68,8 @@ if ( msg0 && msg2 ) {  /* L(:,k) and U(k,:) are not empty. */
 
         jjj = jj0; /* jj0 is the first block column after look-ahead window */
 
-        // #pragma omp barrier
         while ( jjj < nub ) {
             jjj_st=jjj;
-#ifdef _OPENMP
-#pragma omp single
-#endif
             {
                 ldu = blk_ldu[jjj_st];
                 for (j = jjj_st; j < nub ; ++j) {
@@ -116,31 +107,14 @@ if ( msg0 && msg2 ) {  /* L(:,k) and U(k,:) are not empty. */
                 );
                 // TAU_STATIC_TIMER_STOP("work_divison");
 
-            } /* pragma omp single */
+            }
 
             jjj = jjj_global; /* Move to the next [ CPU : GPU ] partition */
 
-#if 0 // !!Sherry: this test is not necessary
-	    // if jjj_global - jjj_st == 1, everything is on CPU.
-	    // bigv_size is calculated sufficiently large.
-            if (jjj == jjj_st+1 && full_u_cols[jjj_st] > ncol_max) {
-                printf("allocate more memory for buffer !!!!\n"
-		       ".. jjj_st %d, nbrow %d, full_u_cols[jjj_st] %d, ncol_max %d\n",
-		       jjj_st, nbrow, full_u_cols[jjj_st], ncol_max);
-                if(nbrow * full_u_cols[jjj_st] > buffer_size)
-                    printf("[%d] needed %d > buffer_size %d\n",iam,nbrow*full_u_cols[jjj_st],buffer_size );
-		fflush(stdout);
-            }
-#endif
-
-            // #pragma omp barrier
             /* gathering circuit */
             assert(jjj_st<nub);
             assert(jjj-1<nub);
             // TAU_STATIC_TIMER_START("GATHER_U");
-#ifdef _OPENMP
-#pragma omp for schedule( SCHEDULE_STRATEGY )
-#endif
 	    // Copy U segments into tempu, up to jjj_global block */
             for (j = jjj_st; j < jjj; ++j) {
                 if (j==jjj_st) tempu = bigU; /* leading block(s) on CPU */
@@ -173,34 +147,10 @@ if ( msg0 && msg2 ) {  /* L(:,k) and U(k,:) are not empty. */
 		printf("nbrow %d *ldu %d  =%d < ldt %d * max_row_size %d =%d \n",nbrow,ldu,nbrow*ldu,ldt,max_row_size,ldt*max_row_size ); fflush(stdout);
 		assert(nbrow*ldu<=ldt*max_row_size);
 #endif
-
-		void* to_ptr = dA;
-		void* from_ptr = &lusup[luptr+(knsupc-ldu)*nsupr];
-		size_t to_pitch = nbrow*sizeof(doublecomplex);
-		size_t from_pitch = nsupr*sizeof(doublecomplex);
-		size_t x = nbrow*sizeof(doublecomplex);
-		size_t y = ldu;
-		sycl::range<3> to_range = sycl::range<3>(to_pitch, y, 1);
-		sycl::range<3> from_range = sycl::range<3>(from_pitch, y, 1);
-		sycl::range<3> size = sycl::range<3>(x, y, 1);
-
-		size_t to_slice = to_range.get(1) * to_range.get(0);
-		size_t from_slice = from_range.get(1) * from_range.get(0);
-		unsigned char *to_surface = (unsigned char *)to_ptr;
-		const unsigned char *from_surface = (const unsigned char *)from_ptr;
-
-		for (size_t z = 0; z < size.get(2); ++z) {
-		  unsigned char *to_ptr = to_surface;
-		  const unsigned char *from_ptr = from_surface;
-		  for (size_t y = 0; y < size.get(1); ++y) {
-		    streams[0].memcpy(to_ptr, from_ptr, size.get(0));
-		    to_ptr += to_range.get(0);
-		    from_ptr += from_range.get(0);
-		  }
-		  to_surface += to_slice;
-		  from_surface += from_slice;
-		}
-		
+                sycl_memcpy2D_async(streams[0],
+                                    dA, nbrow*sizeof(doublecomplex),
+                                    &lusup[luptr+(knsupc-ldu)*nsupr], nsupr*sizeof(doublecomplex),
+                                    nbrow*sizeof(doublecomplex), ldu);
 	    }
 
 	    for (int i = 0; i < num_streams_used; ++i) { // streams on GPU
@@ -214,7 +164,7 @@ if ( msg0 && msg2 ) {  /* L(:,k) and U(k,:) are not empty. */
 
 		/* Following is for testing purpose */
 		if ( num_col_stream > 0 ) {
-#ifdef HAVE_SYCL
+
 		    int stream_id = i;
 		    int b_offset  = ldu * st_col;
 		    int c_offset  = st_col * nbrow;
@@ -229,24 +179,11 @@ if ( msg0 && msg2 ) {  /* L(:,k) and U(k,:) are not empty. */
 					    oneapi::mkl::transpose::nontrans,
 					    oneapi::mkl::transpose::nontrans,
 					    nbrow, num_col_stream, ldu,
-					    (const std::complex<double>) alpha,
-					    (const std::complex<double>*) dA,
-					    nbrow,
-					    (const std::complex<double>*) &dB[b_offset],
-					    ldu,
-					    (const std::complex<double>) beta,
-					    (std::complex<double>*) &dC[c_offset],
-					    nbrow);
+					    (const doublecomplex) alpha, (const doublecomplex*) dA, nbrow,
+					    (const doublecomplex*) &dB[b_offset], ldu,
+					    (const doublecomplex) beta, (doublecomplex*) &dC[c_offset], nbrow);
 
 		    streams[stream_id].memcpy(tempv1, dC+c_offset, C_stream_size);
-
-#else /*-- on CPU --*/
-
-	            my_zgemm_("N", "N", &nbrow, &num_col_stream, &ldu,
-			      &alpha, &lusup[luptr+(knsupc-ldu)*nsupr],
-			      &nsupr, tempu+ldu*st_col, &ldu, &beta,
-			      tempv1, &nbrow, 1, 1);
-#endif
    	        } // end if num_col_stream > 0
 
 	    } /* end for i = 1 to num_streams used */
@@ -277,23 +214,9 @@ if ( msg0 && msg2 ) {  /* L(:,k) and U(k,:) are not empty. */
             /* scatter leading blocks which CPU has computated */
             tstart = SuperLU_timer_();
 
-#ifdef _OPENMP
-#pragma omp parallel  \
-    private(j,iukp,rukp, tempu, tempv, cum_nrow, jb, nsupc,ljb,	\
-	    segsize,lead_zero,					\
-	    ib, temp_nbrow,ilst,lib,index,			\
-	    ijb,fnz,ucol,rel,ldv,lptrj,luptrj,			\
-	    nzval,     lb ,                     jj, i)		\
-    firstprivate(luptr,lptr) default (shared)
-#endif
             {
-#ifdef _OPENMP
-                int thread_id = omp_get_thread_num();
-		int num_threads = omp_get_num_threads();
-#else
                 int thread_id = 0;
 		int num_threads = 1;
-#endif
 
                 int* indirect_thread = indirect + ldt*thread_id;
                 int* indirect2_thread = indirect2 + ldt*thread_id;
@@ -322,9 +245,6 @@ if ( msg0 && msg2 ) {  /* L(:,k) and U(k,:) are not empty. */
                         lptr = lptr0;
                         luptr = luptr0;
 
-#ifdef _OPENMP
-#pragma omp for schedule( SCHEDULE_STRATEGY ) nowait
-#endif
                         for (lb = 0; lb < nlb; lb++ ) {
                             int cum_nrow = 0;
                             int temp_nbrow;
@@ -390,9 +310,6 @@ if ( msg0 && msg2 ) {  /* L(:,k) and U(k,:) are not empty. */
 
                     // TAU_STATIC_TIMER_STOP("SPECIAL_CPU_SCATTER");
                 } else { // ncpu_blks >= omp_get_num_threads()
-#ifdef _OPENMP
-#pragma omp for schedule(SCHEDULE_STRATEGY) nowait
-#endif
                     for (j = jjj_st; j < jjj_st+ncpu_blks; ++j) {
                         /* code */
 #ifdef PI_DEBUG
@@ -473,26 +390,16 @@ if ( msg0 && msg2 ) {  /* L(:,k) and U(k,:) are not empty. */
 	    scatter_timer += SuperLU_timer_() - tstart;
 
 	    // Scatter tempv(:, (jjj_st1 : jjj_global)) computed on GPU.
-#ifdef _OPENMP
-#pragma omp parallel							\
-    private(j,iukp,rukp, tempu, tempv, cum_nrow, jb, nsupc,ljb,		\
-	    segsize,lead_zero,						\
-	    ib, temp_nbrow,ilst,lib,index,				\
-	    ijb,fnz,ucol,rel,ldv,lptrj,luptrj,				\
-	    nzval,     lb ,                     jj, i)			\
-    firstprivate(luptr,lptr) default (shared)
-#endif
             {
-#ifdef _OPENMP
-                int thread_id = omp_get_thread_num();
-#else
                 int thread_id = 0;
-#endif
+
                 int* indirect_thread = indirect + ldt*thread_id;
                 int* indirect2_thread = indirect2 + ldt*thread_id;
                 doublecomplex* tempv1;
                 for(i = 0; i < num_streams_used; i++) { /* i is private variable */
+
 		    streams[i].wait();
+
 		    // jjj_st1 := first block column on GPU stream[i]
 		    int jjj_st1 = (i==0) ? jjj_st + ncpu_blks : jjj_st + stream_end_col[i-1];
                     int jjj_end = jjj_st + stream_end_col[i];
@@ -500,7 +407,6 @@ if ( msg0 && msg2 ) {  /* L(:,k) and U(k,:) are not empty. */
                     assert(jjj_st1>jjj_st) ;
 
                     /* now scatter it */
-#pragma omp for schedule( SCHEDULE_STRATEGY ) nowait
                     for (j = jjj_st1; j < jjj_end; ++j) {
                         /* code */
 #ifdef PI_DEBUG

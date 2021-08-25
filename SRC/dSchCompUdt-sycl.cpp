@@ -68,12 +68,7 @@ if ( msg0 && msg2 ) {  /* L(:,k) and U(k,:) are not empty. */
 
         jjj = jj0; /* jj0 is the first block column after look-ahead window */
 
-        int looptime=0;
         while ( jjj < nub ) {
-            if(looptime>0){
-                printf("warning: number of partitions greater than 1, try increasing Max_Buffer_Size. \n");
-            }
-            looptime++;
             jjj_st=jjj;
             {
                 ldu = blk_ldu[jjj_st];
@@ -156,7 +151,6 @@ if ( msg0 && msg2 ) {  /* L(:,k) and U(k,:) are not empty. */
                                     dA, nbrow*sizeof(double),
                                     &lusup[luptr+(knsupc-ldu)*nsupr], nsupr*sizeof(double),
                                     nbrow*sizeof(double), ldu);
-                streams[0].wait();
             }
 
             for (int i = 0; i < num_streams_used; ++i) { // streams on GPU
@@ -176,11 +170,10 @@ if ( msg0 && msg2 ) {  /* L(:,k) and U(k,:) are not empty. */
                     size_t B_stream_size = ldu * num_col_stream * sizeof(double);
                     size_t C_stream_size = nbrow * num_col_stream * sizeof(double);
 
-                    //assert(nbrow*(st_col+num_col_stream) < buffer_size);
-                    streams[stream_id].memcpy(dB+b_offset, tempu+b_offset, B_stream_size).wait(); //mjc was memcpyAsync
-                    streams[stream_id].wait();
+                    assert(nbrow*(st_col+num_col_stream) < buffer_size);
 
-                    auto event = oneapi::mkl::blas::gemm(streams[stream_id],
+                    streams[stream_id].memcpy(dB+b_offset, tempu+b_offset, B_stream_size); //mjc was memcpyAsync
+                    oneapi::mkl::blas::gemm(streams[stream_id],
                                             oneapi::mkl::transpose::nontrans,
                                             oneapi::mkl::transpose::nontrans,
                                             nbrow, num_col_stream, ldu,
@@ -188,10 +181,7 @@ if ( msg0 && msg2 ) {  /* L(:,k) and U(k,:) are not empty. */
                                             &dB[b_offset], ldu,
                                             beta, &dC[c_offset],
                                             nbrow);
-                    event.wait();
-                    streams[stream_id].wait();
-                    streams[stream_id].memcpy(tempv1, dC+c_offset, C_stream_size).wait();
-                    streams[stream_id].wait();
+                    streams[stream_id].memcpy(tempv1, dC+c_offset, C_stream_size);
                 } // end if num_col_stream > 0
 
             } /* end for i = 1 to num_streams used */
