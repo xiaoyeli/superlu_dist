@@ -1,5 +1,4 @@
 
-
 /*! @file
  * \brief Descriptions and declarations for structures used in GPU
  *
@@ -13,14 +12,15 @@
 
 #pragma once // so that this header file is included onle once
 
-#include "superlu_sdefs.h"
+#include "superlu_zdefs.h"
 
-#ifdef GPU_ACC // enable GPU
+#if defined(HAVE_SYCL) // enable GPU
 
 // #include "mkl.h"
 
-#include <cublas_v2.h>
-#include <cuda_runtime.h>
+#include <CL/sycl.hpp>
+#include <oneapi/mkl.hpp>
+
 // #include "sec_structs.h"
 // #include "supernodal_etree.h"
 
@@ -29,32 +29,19 @@
 //#define MAX_BLOCK_SIZE 10000
 #define MAX_NCUDA_STREAMS 32
 
-static
-void check(cudaError_t result, char const *const func, const char *const file, int const line)
-{
-    if (result)
-    {
-        fprintf(stderr, "CUDA error at file %s: line %d code=(%s) \"%s\" \n",
-                file, line, cudaGetErrorString(result), func);
-
-        // Make sure we call CUDA Device Reset before exiting
-        exit(EXIT_FAILURE);
-    }
-}
-
-#define checkCudaErrors(val)  check ( (val), #val, __FILE__, __LINE__ )
+//typedef std::complex<double> doublecomplex;
 
 typedef struct //SCUbuf_gpu_
 {
     /*Informations for various buffers*/
-    float *bigV;
-    float *bigU;
-    float *bigU_host;      /*pinned location*/
+    doublecomplex *bigV;
+    doublecomplex *bigU;
+    doublecomplex *bigU_host;      /*pinned location*/
     int_t *indirect;        /*for indirect address calculations*/
     int_t *indirect2;       /*for indirect address calculations*/
 
-    float *Remain_L_buff;  /* on GPU */
-    float *Remain_L_buff_host; /* Sherry: this memory is page-locked, why need another copy on GPU ? */
+    doublecomplex *Remain_L_buff;  /* on GPU */
+    doublecomplex *Remain_L_buff_host; /* Sherry: this memory is page-locked, why need another copy on GPU ? */
 
     int_t *lsub;
     int_t *usub;
@@ -69,7 +56,7 @@ typedef struct //SCUbuf_gpu_
     int_t* usub_IndirectJ3;  /* on GPU */
     int_t* usub_IndirectJ3_host;
 
-} sSCUbuf_gpu_t;
+} zSCUbuf_gpu_t;
 
 
 typedef struct //LUstruct_gpu_
@@ -77,7 +64,7 @@ typedef struct //LUstruct_gpu_
     int_t   *LrowindVec;      /* A single vector */
     int_t   *LrowindPtr;      /* A single vector */
 
-    float  *LnzvalVec;       /* A single vector */
+    doublecomplex  *LnzvalVec;       /* A single vector */
     int_t   *LnzvalPtr;       /* A single vector */
     int_t   *LnzvalPtr_host;  /* A single vector */
 
@@ -86,7 +73,7 @@ typedef struct //LUstruct_gpu_
     int_t   *UrowindPtr_host;       /* A single vector */
     int_t   *UnzvalPtr_host;
 
-    float  *UnzvalVec;       /* A single vector */
+    doublecomplex  *UnzvalVec;       /* A single vector */
     int_t   *UnzvalPtr;      /* A single vector */
     /*gpu pointers for easy block accesses */
     local_l_blk_info_t *local_l_blk_infoVec;
@@ -100,8 +87,8 @@ typedef struct //LUstruct_gpu_
     int_t *ijb_lookupPtr;
 
     // GPU buffers for performing Schur Complement Update on GPU
-    sSCUbuf_gpu_t scubufs[MAX_NCUDA_STREAMS];
-    float *acc_L_buff, *acc_U_buff;
+    zSCUbuf_gpu_t scubufs[MAX_NCUDA_STREAMS];
+    doublecomplex *acc_L_buff, *acc_U_buff;
 
     /*Informations for various buffers*/
     int_t buffer_size;      /**/
@@ -120,87 +107,89 @@ typedef struct //LUstruct_gpu_
     double tHost_PCIeH2D;
     double tHost_PCIeD2H;
 
-    /*cuda events to measure DGEMM and SCATTER timing */
     int *isOffloaded;  /*stores if any iteration is offloaded or not*/
-    cudaEvent_t *GemmStart, *GemmEnd, *ScatterEnd;  /*cuda events to store gemm and scatter's begin and end*/
-    cudaEvent_t *ePCIeH2D;
-    cudaEvent_t *ePCIeD2H_Start;
-    cudaEvent_t *ePCIeD2H_End;
+
+    /*sycl events to measure DGEMM and SCATTER timing */
+    sycl::event *GemmStart, *GemmEnd, *ScatterEnd;  /*sycl events to store gemm and scatter's begin and end*/
+    sycl::event *ePCIeH2D;
+    sycl::event *ePCIeD2H_Start;
+    sycl::event *ePCIeD2H_End;
 
     int_t *xsup_host;
     int_t* perm_c_supno;
     int_t first_l_block_gpu, first_u_block_gpu;
-} sLUstruct_gpu_t;
+} zLUstruct_gpu_t;
 
 typedef struct //sluGPU_t_
 {
     int_t gpuId;        // if there are multiple GPUs
-    sLUstruct_gpu_t *A_gpu, *dA_gpu;
-    cudaStream_t funCallStreams[MAX_NCUDA_STREAMS], CopyStream;
-    cublasHandle_t cublasHandles[MAX_NCUDA_STREAMS];
+    zLUstruct_gpu_t *A_gpu, *dA_gpu;
+
+    sycl::queue *funCallStreams[MAX_NCUDA_STREAMS], *CopyStream;
+
     int_t lastOffloadStream[MAX_NCUDA_STREAMS];
     int_t nCudaStreams;
     int_t* isNodeInMyGrid;
     double acc_async_cost;
-} ssluGPU_t;
+} zsluGPU_t;
 
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-extern int ssparseTreeFactor_ASYNC_GPU(
+extern int zsparseTreeFactor_ASYNC_GPU(
     sForest_t *sforest,
     commRequests_t **comReqss, // lists of communication requests,
                                // size = maxEtree level
-    sscuBufs_t *scuBufs,        // contains buffers for schur complement update
+    zscuBufs_t *scuBufs,        // contains buffers for schur complement update
     packLUInfo_t *packLUInfo,
     msgs_t **msgss,          // size = num Look ahead
-    sLUValSubBuf_t **LUvsbs, // size = num Look ahead
-    sdiagFactBufs_t **dFBufs, // size = maxEtree level
+    zLUValSubBuf_t **LUvsbs, // size = num Look ahead
+    zdiagFactBufs_t **dFBufs, // size = maxEtree level
     factStat_t *factStat,
     factNodelists_t *fNlists,
     gEtreeInfo_t *gEtreeInfo, // global etree info
     superlu_dist_options_t *options,
     int_t *gIperm_c_supno,
     int ldt,
-    ssluGPU_t *sluGPU,
+    zsluGPU_t *sluGPU,
     d2Hreduce_t *d2Hred,
     HyP_t *HyP,
-    sLUstruct_t *LUstruct, gridinfo3d_t *grid3d,
+    zLUstruct_t *LUstruct, gridinfo3d_t *grid3d,
     SuperLUStat_t *stat,
     double thresh, SCT_t *SCT, int tag_ub,
     int *info);
 
-int sinitD2Hreduce(
+int zinitD2Hreduce(
     int next_k,
     d2Hreduce_t* d2Hred,
     int last_flag,
     // int_t *perm_c_supno,
     HyP_t* HyP,
-    ssluGPU_t *sluGPU,
+    zsluGPU_t *sluGPU,
     gridinfo_t *grid,
-    sLUstruct_t *LUstruct, SCT_t* SCT
+    zLUstruct_t *LUstruct, SCT_t* SCT
 );
 
-extern int sreduceGPUlu(int last_flag, d2Hreduce_t* d2Hred,
-   	ssluGPU_t *sluGPU, SCT_t *SCT, gridinfo_t *grid,
-	 sLUstruct_t *LUstruct);
+extern int zreduceGPUlu(int last_flag, d2Hreduce_t* d2Hred,
+   	zsluGPU_t *sluGPU, SCT_t *SCT, gridinfo_t *grid,
+	 zLUstruct_t *LUstruct);
 
-extern int swaitGPUscu(int streamId, ssluGPU_t *sluGPU, SCT_t *SCT);
-extern int ssendLUpanelGPU2HOST( int_t k0, d2Hreduce_t* d2Hred, ssluGPU_t *sluGPU);
-extern int ssendSCUdataHost2GPU(
-    int_t streamId, int_t* lsub, int_t* usub, float* bigU, int_t bigu_send_size,
-    int_t Remain_lbuf_send_size,  ssluGPU_t *sluGPU, HyP_t* HyP
+extern int zwaitGPUscu(int streamId, zsluGPU_t *sluGPU, SCT_t *SCT);
+extern int zsendLUpanelGPU2HOST( int_t k0, d2Hreduce_t* d2Hred, zsluGPU_t *sluGPU);
+extern int zsendSCUdataHost2GPU(
+    int_t streamId, int_t* lsub, int_t* usub, doublecomplex* bigU, int_t bigu_send_size,
+    int_t Remain_lbuf_send_size,  zsluGPU_t *sluGPU, HyP_t* HyP
 );
 
-extern int sinitSluGPU3D_t(
-    ssluGPU_t *sluGPU,
-    sLUstruct_t *LUstruct,
+extern int zinitSluGPU3D_t(
+    zsluGPU_t *sluGPU,
+    zLUstruct_t *LUstruct,
     gridinfo3d_t * grid3d,
     int_t* perm_c_supno, int_t n, int_t buffer_size, int_t bigu_size, int_t ldt
 );
-int sSchurCompUpdate_GPU(
+int zSchurCompUpdate_GPU(
     int_t streamId,
     int_t jj_cpu, int_t nub, int_t klst, int_t knsupc,
     int_t Rnbrow, int_t RemainBlk,
@@ -209,29 +198,31 @@ int sSchurCompUpdate_GPU(
     int_t mcb,
     int_t buffer_size, int_t lsub_len, int_t usub_len,
     int_t ldt, int_t k0,
-    ssluGPU_t *sluGPU, gridinfo_t *grid
+    zsluGPU_t *sluGPU, gridinfo_t *grid
 );
 
 
-extern void sCopyLUToGPU3D (int_t* isNodeInMyGrid, sLocalLU_t *A_host,
-           ssluGPU_t *sluGPU, Glu_persist_t *Glu_persist, int_t n,
+extern void zCopyLUToGPU3D (int_t* isNodeInMyGrid, zLocalLU_t *A_host,
+           zsluGPU_t *sluGPU, Glu_persist_t *Glu_persist, int_t n,
 	   gridinfo3d_t *grid3d, int_t buffer_size, int_t bigu_size, int_t ldt);
 
-extern int sreduceAllAncestors3d_GPU(int_t ilvl, int_t* myNodeCount,
-                              int_t** treePerm,    sLUValSubBuf_t*LUvsb,
-                              sLUstruct_t* LUstruct, gridinfo3d_t* grid3d,
-                              ssluGPU_t *sluGPU,  d2Hreduce_t* d2Hred,
+extern int zreduceAllAncestors3d_GPU(int_t ilvl, int_t* myNodeCount,
+                              int_t** treePerm,    zLUValSubBuf_t*LUvsb,
+                              zLUstruct_t* LUstruct, gridinfo3d_t* grid3d,
+                              zsluGPU_t *sluGPU,  d2Hreduce_t* d2Hred,
                               factStat_t *factStat, HyP_t* HyP, SCT_t* SCT );
 
-extern void ssyncAllfunCallStreams(ssluGPU_t* sluGPU, SCT_t* SCT);
-extern int sfree_LUstruct_gpu (sLUstruct_gpu_t *A_gpu);
+extern void zsyncAllfunCallStreams(zsluGPU_t* sluGPU, SCT_t* SCT);
+extern int zfree_LUstruct_gpu (zLUstruct_gpu_t *A_gpu
+			       , zsluGPU_t *sluGPU
+    );
 
-//int freeSluGPU(ssluGPU_t *sluGPU);
+//int freeSluGPU(zsluGPU_t *sluGPU);
 
-extern void sPrint_matrix( char *desc, int_t m, int_t n, float *dA, int_t lda );
+extern void zPrint_matrix( char *desc, int_t m, int_t n, doublecomplex *dA, int_t lda );
 
 /*to print out various statistics*/
-void sprintGPUStats(sLUstruct_gpu_t *A_gpu);
+void zprintGPUStats(zLUstruct_gpu_t *A_gpu);
 
 #ifdef __cplusplus
 }

@@ -279,7 +279,7 @@ typedef struct
     int_t bigu_size;
     int_t offloadCondition;
     int_t superlu_acc_offload;
-    int_t nGpuStreams;
+    int_t nCudaStreams;
 } HyP_t;
 
 typedef struct 
@@ -634,7 +634,9 @@ extern int superlu_ztrsv(char *uplo, char *trans, char *diag,
 
 
 // LAPACK routine
+#if !defined(HAVE_SYCL)
 extern void ztrtri_(char*, char*, int*, doublecomplex*, int*, int*);
+#endif
 
 
 /*==== For 3D code ====*/

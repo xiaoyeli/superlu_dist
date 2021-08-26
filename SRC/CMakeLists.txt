@@ -1,7 +1,7 @@
 set(headers
     superlu_FCnames.h
+    cublas_utils.h
     dcomplex.h
-    lustruct_gpu.h
     machines.h
     psymbfact.h
     superlu_defs.h
@@ -15,13 +15,8 @@ set(headers
     TreeReduce_slu_impl.hpp
     ${CMAKE_CURRENT_BINARY_DIR}/superlu_dist_config.h
     ${PROJECT_SOURCE_DIR}/SRC/superlu_FortranCInterface.h
+    cub/cub.cuh
 )
-if (HAVE_CUDA)
-  list(APPEND headers cublas_utils.h cub/cub.cuh)
-endif ()
-if (HAVE_SYCL)
-  list(APPEND headers onemkl_utils.hpp syclmemcpy2D.hpp)
-endif ()
 if (MSVC)
   list(APPEND headers wingetopt.h)
 endif ()
@@ -37,6 +32,7 @@ set(sources
   comm.c
   memory.c
   util.c
+  cublas_utils.c
   superlu_grid.c
   pxerr_dist.c
   superlu_timer.c
@@ -61,9 +57,9 @@ set(sources
 )
 if (HAVE_CUDA)
   list(APPEND sources cublas_utils.c)
-endif ()
+endif()
 if (HAVE_SYCL)
-  list(APPEND sources onemkl_utils.cpp)
+  list(APPEND headers onemkl_utils.hpp syclmemcpy2D.hpp)
 endif ()
 
 if (MSVC)
@@ -73,7 +69,7 @@ endif ()
 set_source_files_properties(superlu_timer.c PROPERTIES COMPILE_FLAGS -O0)
 
 if(enable_double)
-  list(APPEND headers superlu_ddefs.h lustruct_gpu.h)
+  list(APPEND headers superlu_ddefs.h dlustruct_gpu.h)
 
   list(APPEND sources
     dlangs_dist.c
@@ -100,7 +96,7 @@ if(enable_double)
     pdsymbfact_distdata.c
     ddistribute.c
     pddistribute.c
-    pdgstrf.cpp
+    pdgstrf.c
     dstatic_schedule.c
     pdgstrf2.c
     pdgstrs.c
@@ -116,6 +112,7 @@ if(enable_double)
     dnrformat_loc3d.c
     pdgstrf3d.c
     dtreeFactorization.c
+    dtreeFactorizationGPU.c
     dgather.c
     dscatter3d.c
     pd3dcomm.c
@@ -128,7 +125,7 @@ if (HAVE_CUDA)
   list(APPEND sources dsuperlu_gpu.cu)
 endif()
 if (HAVE_SYCL)
-  list(APPEND sources dsuperlu_gpu.cpp)
+  list(APPEND sources dsuperlu_gpu.cpp pdgstrf.cpp dlustruct_gpu_sycl.hpp)
 endif()
 if (HAVE_COMBBLAS)
   list(APPEND sources d_c2cpp_GetHWPM.cpp dHWPM_CombBLAS.hpp)
@@ -154,7 +151,7 @@ if(enable_single)
     sreadrb.c
     sreadtriple.c
     sreadtriple_noheader.c
-    sbinary_io.c	
+    sbinary_io.c
     sreadMM.c
     psgsequ.c
     pslaqgs.c
@@ -177,15 +174,15 @@ if(enable_single)
     psgsmv_AXglobal.c
     psGetDiagU.c
     psgssvx3d.c     ## 3D code
-    snrformat_loc3d.c 
-    psgstrf3d.c 
+    snrformat_loc3d.c
+    psgstrf3d.c
     streeFactorization.c
     streeFactorizationGPU.c
     sgather.c
     sscatter3d.c
     ps3dcomm.c
-    strfAux.c	
-    scommunication_aux.c 
+    strfAux.c
+    scommunication_aux.c
     strfCommWrapper.c
     ssuperlu_blas.c
   )
@@ -193,7 +190,7 @@ if (HAVE_CUDA)
   list(APPEND sources ssuperlu_gpu.cu)
 endif()
 if (HAVE_SYCL)
-  list(APPEND sources ssuperlu_gpu.cpp)
+  list(APPEND sources ssuperlu_gpu.cpp slustruct_gpu_sycl.hpp)
 endif()
 if (HAVE_COMBBLAS)
   list(APPEND sources s_c2cpp_GetHWPM.cpp sHWPM_CombBLAS.hpp)
@@ -246,8 +243,8 @@ if(enable_complex16)
     pzgssvx3d.c   ## 3D code
     znrformat_loc3d.c
     pzgstrf3d.c
-    ztreeFactorization.c 
-    ztreeFactorizationGPU.c 
+    ztreeFactorization.c
+    ztreeFactorizationGPU.c
     zscatter3d.c
     zgather.c
     pz3dcomm.c ztrfAux.c
@@ -259,7 +256,7 @@ if (HAVE_CUDA)
     list(APPEND sources zsuperlu_gpu.cu)
 endif()
 if (HAVE_SYCL)
-    list(APPEND sources zsuperlu_gpu.cpp)
+    list(APPEND sources zsuperlu_gpu.cpp pzgstrf.cpp zlustruct_gpu_sycl.hpp)
 endif()
 if (HAVE_COMBBLAS)
     list(APPEND sources z_c2cpp_GetHWPM.cpp zHWPM_CombBLAS.hpp)

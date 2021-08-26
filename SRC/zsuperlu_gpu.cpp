@@ -25,48 +25,14 @@
 
 #undef Reduce
 
-#include "zlustruct_gpu.h"
+#include "zlustruct_gpu_sycl.hpp"
 
 #include "dcomplex.h"
 #include <complex>
 
+using localAcc = sycl::accessor<int, 1, sycl::access_mode::read_write, sycl::target::local>;
+
 // #define UNIT_STRIDE
-
-#if 0  ////////// this routine is not used anymore
-__device__ inline
-void device_scatter_l (int_t thread_id,
-                       int_t nsupc, int_t temp_nbrow,
-                       int_t *usub, int_t iukp, int_t klst,
-                       doublecomplex *nzval, int_t ldv,
-                       doublecomplex *tempv, int_t nbrow,
-                       // int_t *indirect2_thread
-                       int *indirect2_thread
-    )
-{
-
-
-    int_t segsize, jj;
-
-    for (jj = 0; jj < nsupc; ++jj)
-    {
-	segsize = klst - usub[iukp + jj];
-	if (segsize)
-	{
-	    if (thread_id < temp_nbrow)
-	    {
-
-#ifndef UNIT_STRIDE
-		nzval[indirect2_thread[thread_id]] -= tempv[thread_id];
-#else
-		nzval[thread_id] -= tempv[thread_id]; /*making access unit strided*/
-#endif
-	    }
-	    tempv += nbrow;
-	}
-	nzval += ldv;
-    }
-}
-#endif ///////////// not used
 
 #define THREAD_BLOCK_SIZE  256  /* Sherry: was 192. should be <= MAX_SUPER_SIZE */
 
@@ -76,9 +42,9 @@ void zdevice_scatter_l_2D (int thread_id,
 			   int_t *usub, int iukp, int_t klst,
 			   doublecomplex *nzval, int ldv,
 			   const doublecomplex *tempv, int nbrow,
-			   int *indirect2_thread,
+			   localAcc indirect2_thread,
 			   int nnz_cols, int ColPerBlock,
-			   int *IndirectJ3
+			   localAcc IndirectJ3
     )
 {
     int i;
@@ -105,10 +71,10 @@ void device_scatter_u_2D (int thread_id,
                           int_t ilst, int_t klst,
                           int_t * index, int iuip_lib,
                           doublecomplex * tempv, int nbrow,
-                          int *indirect,
+                          localAcc indirect,
                           int nnz_cols, int ColPerBlock,
-                          int *IndirectJ1,
-                          int *IndirectJ3
+                          localAcc IndirectJ1,
+                          localAcc IndirectJ3
     )
 {
     int i;
@@ -353,13 +319,13 @@ void Scatter_GPU_kernel(
 	    if (thread_id * blks_per_threads + i < num_l_blocks &&
 		local_l_blk_infoVec[ local_l_blk_infoPtr[ljb] + thread_id * blks_per_threads + i ].lib == lib)
 	    {
-		*lib_ind = thread_id * blks_per_threads + i;
+		lib_ind[0] = thread_id * blks_per_threads + i;
 	    }
 	}
 	item.barrier();
 
-	int lptrj = local_l_blk_infoVec[local_l_blk_infoPtr[ljb] + *lib_ind].lptrj;
-	int luptrj = local_l_blk_infoVec[local_l_blk_infoPtr[ljb] + *lib_ind].luptrj;
+	int lptrj = local_l_blk_infoVec[local_l_blk_infoPtr[ljb] + lib_ind[0]].lptrj;
+	int luptrj = local_l_blk_infoVec[local_l_blk_infoPtr[ljb] + lib_ind[0]].luptrj;
 	lptrj += LB_DESCRIPTOR;
 	int dest_nbrow = index[lptrj - 1];
 
@@ -522,7 +488,7 @@ int zSchurCompUpdate_GPU(
 	+ lsub_len * sizeof(int_t)
 	+ usub_len * sizeof(int_t);
 
-    doublecomplex alpha = {1.0, 0.0}, beta = {0.0, 0.0};
+    std::complex<double> alpha = {1.0, 0.0}, beta = {0.0, 0.0};
 
     /* The following are used in gemm<std::complex> call */
     std::complex<double> *cu_A, *cu_B, *cu_C; /* C <- A*B */
@@ -617,8 +583,8 @@ int zSchurCompUpdate_GPU(
 	    if (nrows > 0 && ldu > 0 && ncols > 0)
 	    {
 		if (nrows * ncols > buffer_size) {
-		    printf("!! Matrix size %lld x %lld exceeds buffer_size \n",
-			   nrows, ncols, buffer_size);
+		    std::cout << "!! Matrix size (" << nrows << " X " << ncols
+			      << ") exceeds buffer_size : " << buffer_size << std::endl;
 		    fflush(stdout);
 		}
 		assert(nrows * ncols <= buffer_size);
@@ -628,15 +594,14 @@ int zSchurCompUpdate_GPU(
 		cu_B = (std::complex<double> *) &A_gpu->scubufs[streamId].bigU[st_col * ldu];
 		cu_C = (std::complex<double> *) A_gpu->scubufs[streamId].bigV;
 		
-		oneapi::mkl::blas::gemm(
-		    *FunCallStream,
-		    oneapi::mkl::transpose::nontrans, oneapi::mkl::transpose::nontrans,
-		    nrows, ncols, ldu,
-		    alpha,
-		    cu_A, Rnbrow,
-		    cu_B, ldu,
-		    beta,
-		    cu_C, nrows);
+		oneapi::mkl::blas::gemm(*FunCallStream,
+					oneapi::mkl::transpose::nontrans, oneapi::mkl::transpose::nontrans,
+					nrows, ncols, ldu,
+					alpha,
+					cu_A, Rnbrow,
+					cu_B, ldu,
+					beta,
+					cu_C, nrows);
 
 // #define SCATTER_OPT
 #ifdef SCATTER_OPT
@@ -743,10 +708,10 @@ int zfree_LUstruct_gpu (zLUstruct_gpu_t * A_gpu, zsluGPU_t *sluGPU)
     sycl::free(A_gpu->scubufs[streamId].Remain_L_buff_host, *q);
     sycl::free(A_gpu->scubufs[streamId].bigU_host, *q);
 
-    sycl::freeHost(A_gpu->acc_L_buff, *q);
-    sycl::freeHost(A_gpu->acc_U_buff, *q);
-    sycl::freeHost(A_gpu->scubufs[streamId].lsub_buf, *q);
-    sycl::freeHost(A_gpu->scubufs[streamId].usub_buf, *q);
+    sycl::free(A_gpu->acc_L_buff, *q);
+    sycl::free(A_gpu->acc_U_buff, *q);
+    sycl::free(A_gpu->scubufs[streamId].lsub_buf, *q);
+    sycl::free(A_gpu->scubufs[streamId].usub_buf, *q);
 
 
     free(A_gpu->isOffloaded);
@@ -876,7 +841,7 @@ int zinitSluGPU3D_t(
     sluGPU->nCudaStreams = getnCudaStreams();
     if (grid3d->iam == 0)
     {
-	printf("zinitSluGPU3D_t: Using hardware acceleration, with %d cuda streams \n", sluGPU->nCudaStreams);
+	printf("zinitSluGPU3D_t: Using hardware acceleration, with %ld cuda streams \n", sluGPU->nCudaStreams);
 	fflush(stdout);
 	if ( MAX_SUPER_SIZE < ldt )
 	{
@@ -1099,8 +1064,8 @@ int zreduceGPUlu(
 int zwaitGPUscu(int streamId, zsluGPU_t *sluGPU, SCT_t *SCT)
 {
     double ttx = SuperLU_timer_();
-    (sluGPU->funCallStreams[streamId])->wait()
-	SCT->PhiWaitTimer += SuperLU_timer_() - ttx;
+    (sluGPU->funCallStreams[streamId])->wait();
+    SCT->PhiWaitTimer += SuperLU_timer_() - ttx;
     return 0;
 }
 
@@ -1719,8 +1684,8 @@ int zreduceAllAncestors3d_GPU(int_t ilvl, int_t* myNodeCount,
         for (int_t streamId = 0; streamId < sluGPU->nCudaStreams; streamId++)
 	{
 	    double ttx = SuperLU_timer_();
-	    (sluGPU->funCallStreams[streamId])->wait()
-		SCT->PhiWaitTimer += SuperLU_timer_() - ttx;
+	    (sluGPU->funCallStreams[streamId])->wait();
+	    SCT->PhiWaitTimer += SuperLU_timer_() - ttx;
 	    sluGPU->lastOffloadStream[streamId] = -1;
 	}
 
@@ -1766,8 +1731,8 @@ void zsyncAllfunCallStreams(zsluGPU_t* sluGPU, SCT_t* SCT)
     for (int streamId = 0; streamId < sluGPU->nCudaStreams; streamId++)
     {
         double ttx = SuperLU_timer_();
-        (sluGPU->funCallStreams[streamId])->wait()
-	    SCT->PhiWaitTimer += SuperLU_timer_() - ttx;
+        (sluGPU->funCallStreams[streamId])->wait();
+	SCT->PhiWaitTimer += SuperLU_timer_() - ttx;
         sluGPU->lastOffloadStream[streamId] = -1;
     }
 }

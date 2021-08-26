@@ -11,21 +11,16 @@
  * </pre>
  */
 
-#pragma once // so that this header file is included only once
+#pragma once // so that this header file is included onle once
 
 #include "superlu_ddefs.h"
 
-#if defined(GPU_ACC) || defined(HAVE_SYCL) // enable GPU
+#ifdef GPU_ACC // enable GPU
 
 // #include "mkl.h"
 
-#ifdef HAVE_SYCL
-#include <CL/sycl.hpp>
-#include <oneapi/mkl.hpp>
-#else
 #include <cublas_v2.h>
 #include <cuda_runtime.h>
-#endif
 // #include "sec_structs.h"
 // #include "supernodal_etree.h"
 
@@ -33,8 +28,6 @@
 //#define SLU_TARGET_GPU 0
 //#define MAX_BLOCK_SIZE 10000
 #define MAX_NCUDA_STREAMS 32
-
-#if !defined(HAVE_SYCL)
 
 static
 void check(cudaError_t result, char const *const func, const char *const file, int const line)
@@ -50,7 +43,6 @@ void check(cudaError_t result, char const *const func, const char *const file, i
 }
 
 #define checkCudaErrors(val)  check ( (val), #val, __FILE__, __LINE__ )
-#endif
 
 typedef struct //SCUbuf_gpu_
 {
@@ -128,21 +120,12 @@ typedef struct //LUstruct_gpu_
     double tHost_PCIeH2D;
     double tHost_PCIeD2H;
 
-    int *isOffloaded;  /*stores if any iteration is offloaded or not*/
-
-#ifdef HAVE_SYCL
-    /*sycl events to measure DGEMM and SCATTER timing */
-    sycl::event *GemmStart, *GemmEnd, *ScatterEnd;  /*sycl events to store gemm and scatter's begin and end*/
-    sycl::event *ePCIeH2D;
-    sycl::event *ePCIeD2H_Start;
-    sycl::event *ePCIeD2H_End;
-#else
     /*cuda events to measure DGEMM and SCATTER timing */
+    int *isOffloaded;  /*stores if any iteration is offloaded or not*/
     cudaEvent_t *GemmStart, *GemmEnd, *ScatterEnd;  /*cuda events to store gemm and scatter's begin and end*/
     cudaEvent_t *ePCIeH2D;
     cudaEvent_t *ePCIeD2H_Start;
     cudaEvent_t *ePCIeD2H_End;
-#endif
 
     int_t *xsup_host;
     int_t* perm_c_supno;
@@ -153,12 +136,8 @@ typedef struct //sluGPU_t_
 {
     int_t gpuId;        // if there are multiple GPUs
     dLUstruct_gpu_t *A_gpu, *dA_gpu;
-#ifdef HAVE_SYCL
-    sycl::queue *funCallStreams[MAX_NCUDA_STREAMS], *CopyStream;
-#else
     cudaStream_t funCallStreams[MAX_NCUDA_STREAMS], CopyStream;
     cublasHandle_t cublasHandles[MAX_NCUDA_STREAMS];
-#endif
     int_t lastOffloadStream[MAX_NCUDA_STREAMS];
     int_t nCudaStreams;
     int_t* isNodeInMyGrid;
@@ -245,12 +224,7 @@ extern int dreduceAllAncestors3d_GPU(int_t ilvl, int_t* myNodeCount,
                               factStat_t *factStat, HyP_t* HyP, SCT_t* SCT );
 
 extern void dsyncAllfunCallStreams(dsluGPU_t* sluGPU, SCT_t* SCT);
-
-extern int dfree_LUstruct_gpu (dLUstruct_gpu_t *A_gpu
-#ifdef HAVE_SYCL
-			       , dsluGPU_t *sluGPU
-#endif
-    );
+extern int dfree_LUstruct_gpu (dLUstruct_gpu_t *A_gpu);
 
 //int freeSluGPU(dsluGPU_t *sluGPU);
 

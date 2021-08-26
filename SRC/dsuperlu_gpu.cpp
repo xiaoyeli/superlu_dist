@@ -26,7 +26,7 @@
 
 #undef Reduce
 
-#include "dlustruct_gpu.h"
+#include "dlustruct_gpu_sycl.hpp"
 
 using localAcc = sycl::accessor<int, 1, sycl::access_mode::read_write, sycl::target::local>;
 
@@ -35,42 +35,6 @@ using localAcc = sycl::accessor<int, 1, sycl::access_mode::read_write, sycl::tar
 #define CEILING(a,b)    ( ((a)%(b)) ? ((a)/(b) + 1) : ((a)/(b)) )
 
 // #define UNIT_STRIDE
-
-#if 0  ////////// this routine is not used anymore
-inline
-void device_scatter_l (int_t thread_id,
-                       int_t nsupc, int_t temp_nbrow,
-                       int_t *usub, int_t iukp, int_t klst,
-                       double *nzval, int_t ldv,
-                       double *tempv, int_t nbrow,
-                       // int_t *indirect2_thread
-                       int *indirect2_thread
-    )
-{
-
-
-    int_t segsize, jj;
-
-    for (jj = 0; jj < nsupc; ++jj)
-    {
-	segsize = klst - usub[iukp + jj];
-	if (segsize)
-	{
-	    if (thread_id < temp_nbrow)
-	    {
-
-#ifndef UNIT_STRIDE
-		nzval[indirect2_thread[thread_id]] -= tempv[thread_id];
-#else
-		nzval[thread_id] -= tempv[thread_id]; /*making access unit strided*/
-#endif
-	    }
-	    tempv += nbrow;
-	}
-	nzval += ldv;
-    }
-}
-#endif ///////////// not used
 
 #define THREAD_BLOCK_SIZE  512  /* Sherry: was 192. should be <= MAX_SUPER_SIZE */
 
@@ -617,8 +581,8 @@ int dSchurCompUpdate_GPU(
 	    if (nrows > 0 && ldu > 0 && ncols > 0)
 	    {
 		if (nrows * ncols > buffer_size) {
-		    printf("!! Matrix size %lld x %lld exceeds buffer_size \n",
-			   nrows, ncols, buffer_size);
+		    std::cout << "!! Matrix size (" << nrows << " X " << ncols
+			      << ") exceeds buffer_size : " << buffer_size << std::endl;
 		    fflush(stdout);
 		}
 		assert(nrows * ncols <= buffer_size);
