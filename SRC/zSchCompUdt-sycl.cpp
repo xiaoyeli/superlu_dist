@@ -179,9 +179,9 @@ if ( msg0 && msg2 ) {  /* L(:,k) and U(k,:) are not empty. */
 					    oneapi::mkl::transpose::nontrans,
 					    oneapi::mkl::transpose::nontrans,
 					    nbrow, num_col_stream, ldu,
-					    (const doublecomplex) alpha, (const doublecomplex*) dA, nbrow,
-					    (const doublecomplex*) &dB[b_offset], ldu,
-					    (const doublecomplex) beta, (doublecomplex*) &dC[c_offset], nbrow);
+					    alpha, (const std::complex<double>*) dA, nbrow,
+					    (const std::complex<double>*) &dB[b_offset], ldu,
+					    beta, (std::complex<double>*) &dC[c_offset], nbrow);
 
 		    streams[stream_id].memcpy(tempv1, dC+c_offset, C_stream_size);
    	        } // end if num_col_stream > 0

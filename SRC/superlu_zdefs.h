@@ -634,9 +634,7 @@ extern int superlu_ztrsv(char *uplo, char *trans, char *diag,
 
 
 // LAPACK routine
-#if !defined(HAVE_SYCL)
 extern void ztrtri_(char*, char*, int*, doublecomplex*, int*, int*);
-#endif
 
 
 /*==== For 3D code ====*/

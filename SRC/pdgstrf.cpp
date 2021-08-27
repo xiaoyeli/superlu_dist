@@ -1,12 +1,12 @@
 /*! \file
-Copyright (c) 2003, The Regents of the University of California, through
-Lawrence Berkeley National Laboratory (subject to receipt of any required
-approvals from U.S. Dept. of Energy)
+  Copyright (c) 2003, The Regents of the University of California, through
+  Lawrence Berkeley National Laboratory (subject to receipt of any required
+  approvals from U.S. Dept. of Energy)
 
-All rights reserved.
+  All rights reserved.
 
-The source code is distributed under BSD license, see the file License.txt
-at the top-level directory.
+  The source code is distributed under BSD license, see the file License.txt
+  at the top-level directory.
 */
 
 
@@ -119,24 +119,24 @@ at the top-level directory.
 
 /* Various defininations     */
 /*
-    Name    : SUPERNODE_PROFILE
-    Purpose : For SuperNode Level profiling of various measurements such as gigaflop/sec
-    obtained,bandwidth achieved:
-    Overhead : Low
+  Name    : SUPERNODE_PROFILE
+  Purpose : For SuperNode Level profiling of various measurements such as gigaflop/sec
+  obtained,bandwidth achieved:
+  Overhead : Low
 */
 // #define SUPERNODE_PROFILE
 
 /*
-    Name    :   BASELINE
-    Purpose : baseline to compare performance against
-    Overhead : NA : this won't be used for running experiments
+  Name    :   BASELINE
+  Purpose : baseline to compare performance against
+  Overhead : NA : this won't be used for running experiments
 */
 // #define BASELINE
 
 /*
-    Name    :   PHI_FRAMEWORK
-    Purpose : To simulate and test algorithm used for offloading Phi
-    Overhead : NA : this won't be used for running experiments
+  Name    :   PHI_FRAMEWORK
+  Purpose : To simulate and test algorithm used for offloading Phi
+  Overhead : NA : this won't be used for running experiments
 */
 #define PHI_FRAMEWORK
 
@@ -570,13 +570,8 @@ pdgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
     /* in order to have dynamic scheduling */
     int *full_u_cols;
     int *blk_ldu;
-#if 0
-    full_u_cols = (int_t *) _mm_malloc (sizeof (int_t) * ncb,64);
-    blk_ldu = (int_t *) _mm_malloc (sizeof (int_t) * ncb,64);
-#else
     full_u_cols = (int *)SUPERLU_MALLOC((ncb+1) * sizeof(int));
     blk_ldu = (int *)SUPERLU_MALLOC((ncb+1) * sizeof(int)); // +1 to accommodate un-even division
-#endif
 
     log_memory(2 * ncb * iword, stat);
 
@@ -822,7 +817,7 @@ pdgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
 #if ( PRNTlevel>=1 )
     if ( iam==0 ) {
         DisplayHeader();
-        printf(" Starting with %d Sycl Streams[0] \n",nstreams[0] );
+        printf(" Starting with %d Sycl Streams \n",nstreams );
         fflush(stdout);
     }
 #endif
@@ -924,56 +919,56 @@ pdgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
     kcol = PCOL (k, grid);
     krow = PROW (k, grid);
     if (mycol == kcol) {
-    double ttt1 = SuperLU_timer_();
+	double ttt1 = SuperLU_timer_();
 
 /* panel factorization */
-    PDGSTRF2 (options, k0, k, thresh, Glu_persist, grid, Llu,
-        U_diag_blk_send_req, tag_ub, stat, info);
+	PDGSTRF2 (options, k0, k, thresh, Glu_persist, grid, Llu,
+		  U_diag_blk_send_req, tag_ub, stat, info);
 
-    pdgstrf2_timer += SuperLU_timer_()-ttt1;
+	pdgstrf2_timer += SuperLU_timer_()-ttt1;
 
-    scp = &grid->rscp;      /* The scope of process row. */
+	scp = &grid->rscp;      /* The scope of process row. */
 
 /* Multicasts numeric values of L(:,0) to process rows. */
-    lk = LBj (k, grid);     /* Local block number. */
-    lsub = Lrowind_bc_ptr[lk];
-    lusup = Lnzval_bc_ptr[lk];
-    if (lsub) {
+	lk = LBj (k, grid);     /* Local block number. */
+	lsub = Lrowind_bc_ptr[lk];
+	lusup = Lnzval_bc_ptr[lk];
+	if (lsub) {
 /* number of entries in Lsub_buf[] to be transferred */
-msgcnt[0] = lsub[1] + BC_HEADER + lsub[0] * LB_DESCRIPTOR;
+	    msgcnt[0] = lsub[1] + BC_HEADER + lsub[0] * LB_DESCRIPTOR;
 /* number of entries in Lval_buf[] to be transferred */
-msgcnt[1] = lsub[1] * SuperSize (k);
-} else {
-msgcnt[0] = msgcnt[1] = 0;
-}
+	    msgcnt[1] = lsub[1] * SuperSize (k);
+	} else {
+	    msgcnt[0] = msgcnt[1] = 0;
+	}
 
-for (pj = 0; pj < Pc; ++pj) {
-if (ToSendR[lk][pj] != EMPTY) {
+	for (pj = 0; pj < Pc; ++pj) {
+	    if (ToSendR[lk][pj] != EMPTY) {
 #if ( PROFlevel>=1 )
-TIC (t1);
+		TIC (t1);
 #endif
 
-MPI_Isend (lsub, msgcnt[0], mpi_int_t, pj,
-           SLU_MPI_TAG (0, 0) /* 0 */,
-           scp->comm, &send_req[pj]);
-           MPI_Isend (lusup, msgcnt[1], MPI_DOUBLE, pj,
-                      SLU_MPI_TAG (1, 0) /* 1 */,
-                      scp->comm, &send_req[pj + Pc]);
+		MPI_Isend (lsub, msgcnt[0], mpi_int_t, pj,
+			   SLU_MPI_TAG (0, 0) /* 0 */,
+			   scp->comm, &send_req[pj]);
+		MPI_Isend (lusup, msgcnt[1], MPI_DOUBLE, pj,
+			   SLU_MPI_TAG (1, 0) /* 1 */,
+			   scp->comm, &send_req[pj + Pc]);
 #if ( DEBUGlevel>=2 )
-printf ("[%d] first block cloumn Send L(:,%4d): lsub %4d, lusup %4d to Pc %2d\n",
-            iam, 0, msgcnt[0], msgcnt[1], pj);
+		printf ("[%d] first block cloumn Send L(:,%4d): lsub %4d, lusup %4d to Pc %2d\n",
+			iam, 0, msgcnt[0], msgcnt[1], pj);
 #endif
 
 #if ( PROFlevel>=1 )
-TOC (t2, t1);
-stat->utime[COMM] += t2;
-stat->utime[COMM_RIGHT] += t2;
-++prof_sendR[lk];
-msg_cnt += 2;
-msg_vol += msgcnt[0] * iword + msgcnt[1] * dword;
+		TOC (t2, t1);
+		stat->utime[COMM] += t2;
+		stat->utime[COMM_RIGHT] += t2;
+		++prof_sendR[lk];
+		msg_cnt += 2;
+		msg_vol += msgcnt[0] * iword + msgcnt[1] * dword;
 #endif
-} /* end if */
-}  /* end for pj ... */
+	    } /* end if */
+	}  /* end for pj ... */
     } else {  /* Post immediate receives. */
         if (ToRecv[k] >= 1) {   /* Recv block column L(:,0). */
             scp = &grid->rscp;  /* The scope of process row. */
@@ -983,511 +978,505 @@ msg_vol += msgcnt[0] * iword + msgcnt[1] * dword;
             MPI_Irecv (Lsub_buf_2[0], Llu->bufmax[0], mpi_int_t, kcol,
                        SLU_MPI_TAG (0, 0) /* 0 */ ,
                        scp->comm, &recv_req[0]);
-                       MPI_Irecv (Lval_buf_2[0], Llu->bufmax[1], MPI_DOUBLE, kcol,
-                                  SLU_MPI_TAG (1, 0) /* 1 */ ,
-                                  scp->comm, &recv_req[1]);
+	    MPI_Irecv (Lval_buf_2[0], Llu->bufmax[1], MPI_DOUBLE, kcol,
+		       SLU_MPI_TAG (1, 0) /* 1 */ ,
+		       scp->comm, &recv_req[1]);
 #if ( PROFlevel>=1 )
-                       TOC (t2, t1);
-                       stat->utime[COMM] += t2;
-                       stat->utime[COMM_RIGHT] += t2;
+	    TOC (t2, t1);
+	    stat->utime[COMM] += t2;
+	    stat->utime[COMM_RIGHT] += t2;
 #endif
         }
     } /* end if mycol == 0 */
 
-factored[k] = 0; /* flag column k as factored. */
+    factored[k] = 0; /* flag column k as factored. */
 
 /* post receive of first U-row */
-if (myrow != krow) {
-    if (ToRecv[k] == 2) {   /* Recv block row U(k,:). */
-        scp = &grid->cscp;  /* The scope of process column. */
-        Usub_buf = Llu->Usub_buf_2[0];
-        Uval_buf = Llu->Uval_buf_2[0];
+    if (myrow != krow) {
+	if (ToRecv[k] == 2) {   /* Recv block row U(k,:). */
+	    scp = &grid->cscp;  /* The scope of process column. */
+	    Usub_buf = Llu->Usub_buf_2[0];
+	    Uval_buf = Llu->Uval_buf_2[0];
 #if ( PROFlevel>=1 )
-        TIC (t1);
+	    TIC (t1);
 #endif
-        MPI_Irecv (Usub_buf, Llu->bufmax[2], mpi_int_t, krow,
-                   SLU_MPI_TAG (2, 0) /* 2%tag_ub */ ,
-                   scp->comm, &recv_reqs_u[0][0]);
-        MPI_Irecv (Uval_buf, Llu->bufmax[3], MPI_DOUBLE, krow,
-                   SLU_MPI_TAG (3, 0) /* 3%tag_ub */ ,
-                   scp->comm, &recv_reqs_u[0][1]);
+	    MPI_Irecv (Usub_buf, Llu->bufmax[2], mpi_int_t, krow,
+		       SLU_MPI_TAG (2, 0) /* 2%tag_ub */ ,
+		       scp->comm, &recv_reqs_u[0][0]);
+	    MPI_Irecv (Uval_buf, Llu->bufmax[3], MPI_DOUBLE, krow,
+		       SLU_MPI_TAG (3, 0) /* 3%tag_ub */ ,
+		       scp->comm, &recv_reqs_u[0][1]);
 #if ( PROFlevel>=1 )
-                   TOC (t2, t1);
-                   stat->utime[COMM] += t2;
-                   stat->utime[COMM_DOWN] += t2;
+	    TOC (t2, t1);
+	    stat->utime[COMM] += t2;
+	    stat->utime[COMM_DOWN] += t2;
 #endif
+	}
     }
-}
-printf("SYCL: main loop\n"); //mjc
+
 /* ##################################################################
 **** MAIN LOOP ****
 ################################################################## */
-for (k0 = 0; k0 < nsupers; ++k0) {
-k = perm_c_supno[k0];
+    for (k0 = 0; k0 < nsupers; ++k0) {
+	k = perm_c_supno[k0];
 
 /* ============================================ *
  * ======= look-ahead the new L columns ======= *
  * ============================================ */
 /* tt1 = SuperLU_timer_(); */
-if (k0 == 0) { /* look-ahead all the columns in the window */
-kk1 = k0 + 1;
-kk2 = SUPERLU_MIN (k0 + num_look_aheads, nsupers - 1);
-} else {  /* look-ahead one new column after the current window */
-kk1 = k0 + num_look_aheads;
-kk2 = SUPERLU_MIN (kk1, nsupers - 1);
-}
+	if (k0 == 0) { /* look-ahead all the columns in the window */
+	    kk1 = k0 + 1;
+	    kk2 = SUPERLU_MIN (k0 + num_look_aheads, nsupers - 1);
+	} else {  /* look-ahead one new column after the current window */
+	    kk1 = k0 + num_look_aheads;
+	    kk2 = SUPERLU_MIN (kk1, nsupers - 1);
+	}
 
-for (kk0 = kk1; kk0 <= kk2; kk0++) {
+	for (kk0 = kk1; kk0 <= kk2; kk0++) {
 /* loop through look-ahead window in L */
 
-kk = perm_c_supno[kk0]; /* use the ordering from static schedule */
-look_id = kk0 % (1 + num_look_aheads); /* which column in window */
+	    kk = perm_c_supno[kk0]; /* use the ordering from static schedule */
+	    look_id = kk0 % (1 + num_look_aheads); /* which column in window */
 
-if (look_ahead[kk] < k0) { /* does not depend on current column k */
-kcol = PCOL (kk, grid);
-if (mycol == kcol) { /* I own this panel */
+	    if (look_ahead[kk] < k0) { /* does not depend on current column k */
+		kcol = PCOL (kk, grid);
+		if (mycol == kcol) { /* I own this panel */
 
 /* Panel factorization -- Factor diagonal and subdiagonal
    L blocks and test for exact singularity.  */
-factored[kk] = 0; /* flag column kk as factored */
-double ttt1 = SuperLU_timer_();
+		    factored[kk] = 0; /* flag column kk as factored */
+		    double ttt1 = SuperLU_timer_();
 
-PDGSTRF2 (options, kk0, kk, thresh, Glu_persist,
-              grid, Llu, U_diag_blk_send_req, tag_ub, stat, info);
+		    PDGSTRF2 (options, kk0, kk, thresh, Glu_persist,
+			      grid, Llu, U_diag_blk_send_req, tag_ub, stat, info);
 
-pdgstrf2_timer += SuperLU_timer_() - ttt1;
+		    pdgstrf2_timer += SuperLU_timer_() - ttt1;
 
 /* Multicasts numeric values of L(:,kk) to process rows. */
 /* ttt1 = SuperLU_timer_(); */
-msgcnt = msgcnts[look_id];  /* point to the proper count array */
-send_req = send_reqs[look_id];
+		    msgcnt = msgcnts[look_id];  /* point to the proper count array */
+		    send_req = send_reqs[look_id];
 
-lk = LBj (kk, grid);    /* Local block number in L. */
-lsub1 = Lrowind_bc_ptr[lk];
-if (lsub1) {
-msgcnt[0] = lsub1[1] + BC_HEADER + lsub1[0] * LB_DESCRIPTOR; /* size of metadata */
-msgcnt[1] = lsub1[1] * SuperSize (kk); /* Lval_buf[] size */
-} else {
-msgcnt[0] = 0;
-msgcnt[1] = 0;
-}
-scp = &grid->rscp;  /* The scope of process row. */
-for (pj = 0; pj < Pc; ++pj) {
-if (ToSendR[lk][pj] != EMPTY) {
-lusup1 = Lnzval_bc_ptr[lk];
+		    lk = LBj (kk, grid);    /* Local block number in L. */
+		    lsub1 = Lrowind_bc_ptr[lk];
+		    if (lsub1) {
+			msgcnt[0] = lsub1[1] + BC_HEADER + lsub1[0] * LB_DESCRIPTOR; /* size of metadata */
+			msgcnt[1] = lsub1[1] * SuperSize (kk); /* Lval_buf[] size */
+		    } else {
+			msgcnt[0] = 0;
+			msgcnt[1] = 0;
+		    }
+		    scp = &grid->rscp;  /* The scope of process row. */
+		    for (pj = 0; pj < Pc; ++pj) {
+			if (ToSendR[lk][pj] != EMPTY) {
+			    lusup1 = Lnzval_bc_ptr[lk];
 #if ( PROFlevel>=1 )
-TIC (t1);
+			    TIC (t1);
 #endif
-MPI_Isend (lsub1, msgcnt[0], mpi_int_t, pj,
-               SLU_MPI_TAG (0, kk0),  /* (4*kk0)%tag_ub */
-           scp->comm, &send_req[pj]);
-MPI_Isend (lusup1, msgcnt[1], MPI_DOUBLE, pj,
-               SLU_MPI_TAG (1, kk0),  /* (4*kk0+1)%tag_ub */
-           scp->comm, &send_req[pj + Pc]);
+			    MPI_Isend (lsub1, msgcnt[0], mpi_int_t, pj,
+				       SLU_MPI_TAG (0, kk0),  /* (4*kk0)%tag_ub */
+				       scp->comm, &send_req[pj]);
+			    MPI_Isend (lusup1, msgcnt[1], MPI_DOUBLE, pj,
+				       SLU_MPI_TAG (1, kk0),  /* (4*kk0+1)%tag_ub */
+				       scp->comm, &send_req[pj + Pc]);
 #if ( PROFlevel>=1 )
-TOC (t2, t1);
-stat->utime[COMM] += t2;
-stat->utime[COMM_RIGHT] += t2;
-++prof_sendR[lk];
+			    TOC (t2, t1);
+			    stat->utime[COMM] += t2;
+			    stat->utime[COMM_RIGHT] += t2;
+			    ++prof_sendR[lk];
 #endif
 #if ( DEBUGlevel>=2 )
-printf ("[%d] -1- Send L(:,%4d): #lsub1 %4d, #lusup1 %4d right to Pj %2d\n",
-            iam, kk, msgcnt[0], msgcnt[1], pj);
+			    printf ("[%d] -1- Send L(:,%4d): #lsub1 %4d, #lusup1 %4d right to Pj %2d\n",
+				    iam, kk, msgcnt[0], msgcnt[1], pj);
 #endif
-}
-}
+			}
+		    }
 /* stat->time9 += SuperLU_timer_() - ttt1; */
-} else {     /* Post Recv of block column L(:,kk). */
+		} else {     /* Post Recv of block column L(:,kk). */
 /* double ttt1 = SuperLU_timer_(); */
-    if (ToRecv[kk] >= 1) {
-        scp = &grid->rscp;  /* The scope of process row. */
-        recv_req = recv_reqs[look_id];
+		    if (ToRecv[kk] >= 1) {
+			scp = &grid->rscp;  /* The scope of process row. */
+			recv_req = recv_reqs[look_id];
 #if ( PROFlevel>=1 )
-        TIC (t1);
+			TIC (t1);
 #endif
-        MPI_Irecv (Lsub_buf_2[look_id], Llu->bufmax[0],
-                   mpi_int_t, kcol, SLU_MPI_TAG (0, kk0), /* (4*kk0)%tag_ub */
-                   scp->comm, &recv_req[0]);
-        MPI_Irecv (Lval_buf_2[look_id], Llu->bufmax[1],
-                   MPI_DOUBLE, kcol,
-                   SLU_MPI_TAG (1, kk0), /* (4*kk0+1)%tag_ub */
-                   scp->comm, &recv_req[1]);
+			MPI_Irecv (Lsub_buf_2[look_id], Llu->bufmax[0],
+				   mpi_int_t, kcol, SLU_MPI_TAG (0, kk0), /* (4*kk0)%tag_ub */
+				   scp->comm, &recv_req[0]);
+			MPI_Irecv (Lval_buf_2[look_id], Llu->bufmax[1],
+				   MPI_DOUBLE, kcol,
+				   SLU_MPI_TAG (1, kk0), /* (4*kk0+1)%tag_ub */
+				   scp->comm, &recv_req[1]);
 #if ( PROFlevel>=1 )
-        TOC (t2, t1);
-        stat->utime[COMM] += t2;
-        stat->utime[COMM_RIGHT] += t2;
+			TOC (t2, t1);
+			stat->utime[COMM] += t2;
+			stat->utime[COMM_RIGHT] += t2;
 #endif
-    }
-    /* stat->time10 += SuperLU_timer_() - ttt1; */
-}  /* end if mycol == Pc(kk) */
-}  /* end if look-ahead in L panels */
+		    }
+		    /* stat->time10 += SuperLU_timer_() - ttt1; */
+		}  /* end if mycol == Pc(kk) */
+	    }  /* end if look-ahead in L panels */
 
 /* Pre-post irecv for U-row look-ahead */
-krow = PROW (kk, grid);
-if (myrow != krow) {
-    if (ToRecv[kk] == 2) { /* post iRecv block row U(kk,:). */
-        scp = &grid->cscp;  /* The scope of process column. */
-        Usub_buf = Llu->Usub_buf_2[look_id];
-        Uval_buf = Llu->Uval_buf_2[look_id];
+	    krow = PROW (kk, grid);
+	    if (myrow != krow) {
+		if (ToRecv[kk] == 2) { /* post iRecv block row U(kk,:). */
+		    scp = &grid->cscp;  /* The scope of process column. */
+		    Usub_buf = Llu->Usub_buf_2[look_id];
+		    Uval_buf = Llu->Uval_buf_2[look_id];
 #if ( PROFlevel>=1 )
-        TIC (t1);
+		    TIC (t1);
 #endif
-        MPI_Irecv (Usub_buf, Llu->bufmax[2], mpi_int_t, krow,
-                   SLU_MPI_TAG (2, kk0) /* (4*kk0+2)%tag_ub */ ,
-                   scp->comm, &recv_reqs_u[look_id][0]);
-        MPI_Irecv (Uval_buf, Llu->bufmax[3], MPI_DOUBLE, krow,
-                   SLU_MPI_TAG (3, kk0) /* (4*kk0+3)%tag_ub */ ,
-                   scp->comm, &recv_reqs_u[look_id][1]);
+		    MPI_Irecv (Usub_buf, Llu->bufmax[2], mpi_int_t, krow,
+			       SLU_MPI_TAG (2, kk0) /* (4*kk0+2)%tag_ub */ ,
+			       scp->comm, &recv_reqs_u[look_id][0]);
+		    MPI_Irecv (Uval_buf, Llu->bufmax[3], MPI_DOUBLE, krow,
+			       SLU_MPI_TAG (3, kk0) /* (4*kk0+3)%tag_ub */ ,
+			       scp->comm, &recv_reqs_u[look_id][1]);
 #if ( PROFlevel>=1 )
-        TOC (t2, t1);
-        stat->utime[COMM] += t2;
-        stat->utime[COMM_DOWN] += t2;
+		    TOC (t2, t1);
+		    stat->utime[COMM] += t2;
+		    stat->utime[COMM_DOWN] += t2;
 #endif
-    }
-}
+		}
+	    }
 
-}  /* end for each column in look-ahead window for L panels */
+	}  /* end for each column in look-ahead window for L panels */
 
 /* stat->time4 += SuperLU_timer_()-tt1; */
 
 /* ================================= *
  * ==== look-ahead the U rows    === *
  * ================================= */
-kk1 = k0;
-kk2 = SUPERLU_MIN (k0 + num_look_aheads, nsupers - 1);
-for (kk0 = kk1; kk0 < kk2; kk0++) {
-    kk = perm_c_supno[kk0]; /* order determined from static schedule */
-    if (factoredU[kk0] != 1 && look_ahead[kk] < k0) {
-        /* does not depend on current column k */
-        kcol = PCOL (kk, grid);
-        krow = PROW (kk, grid);
-        lk = LBj (kk, grid);  /* Local block number across row. NOT USED?? -- Sherry */
+	kk1 = k0;
+	kk2 = SUPERLU_MIN (k0 + num_look_aheads, nsupers - 1);
+	for (kk0 = kk1; kk0 < kk2; kk0++) {
+	    kk = perm_c_supno[kk0]; /* order determined from static schedule */
+	    if (factoredU[kk0] != 1 && look_ahead[kk] < k0) {
+		/* does not depend on current column k */
+		kcol = PCOL (kk, grid);
+		krow = PROW (kk, grid);
+		lk = LBj (kk, grid);  /* Local block number across row. NOT USED?? -- Sherry */
 
-        look_id = kk0 % (1 + num_look_aheads);
-        msgcnt = msgcntsU[look_id];
-        recv_req = recv_reqs[look_id];
+		look_id = kk0 % (1 + num_look_aheads);
+		msgcnt = msgcntsU[look_id];
+		recv_req = recv_reqs[look_id];
 
-        /* ================================================= *
-         * Check if diagonal block has been received         *
-         * for panel factorization of U in look-ahead window *
-         * ================================================= */
+		/* ================================================= *
+		 * Check if diagonal block has been received         *
+		 * for panel factorization of U in look-ahead window *
+		 * ================================================= */
 
-        if (mycol == kcol) {  /* I own this column panel, no need
-                                 to receive L  */
-            flag0 = flag1 = 1;
-            msgcnt[0] = msgcnt[1] = -1; /* No need to transfer Lsub, nor Lval */
-        } else { /* Check to receive L(:,kk) from the left */
-            flag0 = flag1 = 0;
-            if ( ToRecv[kk] >= 1 ) {
+		if (mycol == kcol) {  /* I own this column panel, no need
+					 to receive L  */
+		    flag0 = flag1 = 1;
+		    msgcnt[0] = msgcnt[1] = -1; /* No need to transfer Lsub, nor Lval */
+		} else { /* Check to receive L(:,kk) from the left */
+		    flag0 = flag1 = 0;
+		    if ( ToRecv[kk] >= 1 ) {
 #if ( PROFlevel>=1 )
-                TIC (t1);
+			TIC (t1);
 #endif
-                if ( recv_req[0] != MPI_REQUEST_NULL ) {
-                    MPI_Test (&recv_req[0], &flag0, &status);
-                    if ( flag0 ) {
-                        MPI_Get_count (&status, mpi_int_t, &msgcnt[0]);
-                        recv_req[0] = MPI_REQUEST_NULL;
-                    }
-                } else flag0 = 1;
+			if ( recv_req[0] != MPI_REQUEST_NULL ) {
+			    MPI_Test (&recv_req[0], &flag0, &status);
+			    if ( flag0 ) {
+				MPI_Get_count (&status, mpi_int_t, &msgcnt[0]);
+				recv_req[0] = MPI_REQUEST_NULL;
+			    }
+			} else flag0 = 1;
 
-                if ( recv_req[1] != MPI_REQUEST_NULL ) {
-                    MPI_Test (&recv_req[1], &flag1, &status);
-                    if ( flag1 ) {
-                        MPI_Get_count (&status, mpi_int_t, &msgcnt[1]);
-                        recv_req[1] = MPI_REQUEST_NULL;
-                    }
-                } else flag1 = 1;
+			if ( recv_req[1] != MPI_REQUEST_NULL ) {
+			    MPI_Test (&recv_req[1], &flag1, &status);
+			    if ( flag1 ) {
+				MPI_Get_count (&status, mpi_int_t, &msgcnt[1]);
+				recv_req[1] = MPI_REQUEST_NULL;
+			    }
+			} else flag1 = 1;
 #if ( PROFlevel>=1 )
-                TOC (t2, t1);
-                stat->utime[COMM] += t2;
-                stat->utime[COMM_RIGHT] += t2;
+			TOC (t2, t1);
+			stat->utime[COMM] += t2;
+			stat->utime[COMM_RIGHT] += t2;
 #endif
-            } else {
-                msgcnt[0] = 0;
-            }
-        }
+		    } else {
+			msgcnt[0] = 0;
+		    }
+		}
 
-        if (flag0 && flag1) { /* L(:,kk) is ready */
-            /* tt1 = SuperLU_timer_(); */
-            scp = &grid->cscp;  /* The scope of process column. */
-            if (myrow == krow) {
-                factoredU[kk0] = 1;
-                /* Parallel triangular solve across process row *krow* --
-                   U(k,j) = L(k,k) \ A(k,j).  */
-                double ttt2 = SuperLU_timer_();
-#ifdef _OPENMP
-/* #pragma omp parallel */ /* Sherry -- parallel done inside pdgstrs2 */
-#endif
-                {
-                    pdgstrs2_omp (kk0, kk, Glu_persist, grid, Llu,
-                                  Ublock_info, stat);
-                }
+		if (flag0 && flag1) { /* L(:,kk) is ready */
+		    /* tt1 = SuperLU_timer_(); */
+		    scp = &grid->cscp;  /* The scope of process column. */
+		    if (myrow == krow) {
+			factoredU[kk0] = 1;
+			/* Parallel triangular solve across process row *krow* --
+			   U(k,j) = L(k,k) \ A(k,j).  */
+			double ttt2 = SuperLU_timer_();
+			{
+			    pdgstrs2_omp (kk0, kk, Glu_persist, grid, Llu,
+					  Ublock_info, stat);
+			}
 
-                pdgstrs2_timer += SuperLU_timer_()-ttt2;
-                /* stat->time8 += SuperLU_timer_()-ttt2; */
+			pdgstrs2_timer += SuperLU_timer_()-ttt2;
+			/* stat->time8 += SuperLU_timer_()-ttt2; */
 
-                /* Multicasts U(kk,:) to process columns. */
-                lk = LBi (kk, grid);
-                usub = Ufstnz_br_ptr[lk];
-                uval = Unzval_br_ptr[lk];
-                if (usub) {
-                    msgcnt[2] = usub[2]; /* metadata size */
-                    msgcnt[3] = usub[1]; /* Uval[] size */
-                } else {
-                    msgcnt[2] = msgcnt[3] = 0;
-                }
+			/* Multicasts U(kk,:) to process columns. */
+			lk = LBi (kk, grid);
+			usub = Ufstnz_br_ptr[lk];
+			uval = Unzval_br_ptr[lk];
+			if (usub) {
+			    msgcnt[2] = usub[2]; /* metadata size */
+			    msgcnt[3] = usub[1]; /* Uval[] size */
+			} else {
+			    msgcnt[2] = msgcnt[3] = 0;
+			}
 
-                if (ToSendD[lk] == YES) {
-                    for (pi = 0; pi < Pr; ++pi) {
-                        if (pi != myrow) {
+			if (ToSendD[lk] == YES) {
+			    for (pi = 0; pi < Pr; ++pi) {
+				if (pi != myrow) {
 #if ( PROFlevel>=1 )
-                            TIC (t1);
+				    TIC (t1);
 #endif
 
-                            MPI_Isend (usub, msgcnt[2], mpi_int_t, pi,
-                                       SLU_MPI_TAG (2, kk0), /* (4*kk0+2)%tag_ub */
-                                       scp->comm, &send_reqs_u[look_id][pi]);
-                            MPI_Isend (uval, msgcnt[3], MPI_DOUBLE,
-                                       pi, SLU_MPI_TAG (3, kk0), /* (4*kk0+3)%tag_ub */
-                                       scp->comm, &send_reqs_u[look_id][pi + Pr]);
+				    MPI_Isend (usub, msgcnt[2], mpi_int_t, pi,
+					       SLU_MPI_TAG (2, kk0), /* (4*kk0+2)%tag_ub */
+					       scp->comm, &send_reqs_u[look_id][pi]);
+				    MPI_Isend (uval, msgcnt[3], MPI_DOUBLE,
+					       pi, SLU_MPI_TAG (3, kk0), /* (4*kk0+3)%tag_ub */
+					       scp->comm, &send_reqs_u[look_id][pi + Pr]);
 
 #if ( PROFlevel>=1 )
-                            TOC (t2, t1);
-                            stat->utime[COMM] += t2;
-                            msg_cnt += 2;
-                            msg_vol += msgcnt[2] * iword + msgcnt[3] * dword;
+				    TOC (t2, t1);
+				    stat->utime[COMM] += t2;
+				    msg_cnt += 2;
+				    msg_vol += msgcnt[2] * iword + msgcnt[3] * dword;
 #endif
 #if ( DEBUGlevel>=2 )
-                            printf ("[%d] Send U(%4d,:) to Pr %2d\n",
-                                    iam, k, pi);
+				    printf ("[%d] Send U(%4d,:) to Pr %2d\n",
+					    iam, k, pi);
 #endif
-                        }   /* if pi ... */
-                    }   /* for pi ... */
-                }       /* if ToSendD ... */
+				}   /* if pi ... */
+			    }   /* for pi ... */
+			}       /* if ToSendD ... */
 
                         /* stat->time2 += SuperLU_timer_()-tt1; */
 
-            } /* end if myrow == krow */
-        } /* end if flag0 & flag1 ... */
-    } /* end if factoredU[] ... */
-} /* end for kk0 ... */
+		    } /* end if myrow == krow */
+		} /* end if flag0 & flag1 ... */
+	    } /* end if factoredU[] ... */
+	} /* end for kk0 ... */
 
 /* ============================================== *
  * == start processing the current row of U(k,:) *
  * ============================================== */
-knsupc = SuperSize (k);
-krow = PROW (k, grid);
-kcol = PCOL (k, grid);
+	knsupc = SuperSize (k);
+	krow = PROW (k, grid);
+	kcol = PCOL (k, grid);
 
 /* tt1 = SuperLU_timer_(); */
-look_id = k0 % (1 + num_look_aheads);
-recv_req = recv_reqs[look_id];
-send_req = send_reqs[look_id];
-msgcnt = msgcnts[look_id];
-Usub_buf = Llu->Usub_buf_2[look_id];
-Uval_buf = Llu->Uval_buf_2[look_id];
+	look_id = k0 % (1 + num_look_aheads);
+	recv_req = recv_reqs[look_id];
+	send_req = send_reqs[look_id];
+	msgcnt = msgcnts[look_id];
+	Usub_buf = Llu->Usub_buf_2[look_id];
+	Uval_buf = Llu->Uval_buf_2[look_id];
 
-if (mycol == kcol) {
-    lk = LBj (k, grid); /* Local block number in L */
+	if (mycol == kcol) {
+	    lk = LBj (k, grid); /* Local block number in L */
 
 #if ( PROFlevel>=1 )
-    TIC(t1);
+	    TIC(t1);
 #endif
-    for (pj = 0; pj < Pc; ++pj) {
-        /* Wait for Isend to complete before using lsub/lusup buffer. */
-        if (ToSendR[lk][pj] != EMPTY) {
-            MPI_Wait (&send_req[pj], &status);
-            MPI_Wait (&send_req[pj + Pc], &status);
-        }
-    }
+	    for (pj = 0; pj < Pc; ++pj) {
+		/* Wait for Isend to complete before using lsub/lusup buffer. */
+		if (ToSendR[lk][pj] != EMPTY) {
+		    MPI_Wait (&send_req[pj], &status);
+		    MPI_Wait (&send_req[pj + Pc], &status);
+		}
+	    }
 #if ( PROFlevel>=1 )
-    TOC(t2, t1);
-    stat->utime[COMM] += t2;
-    stat->utime[COMM_RIGHT] += t2;
+	    TOC(t2, t1);
+	    stat->utime[COMM] += t2;
+	    stat->utime[COMM_RIGHT] += t2;
 #endif
-    lsub = Lrowind_bc_ptr[lk];
-    lusup = Lnzval_bc_ptr[lk];
-} else {
-    if (ToRecv[k] >= 1) { /* Recv block column L(:,k). */
+	    lsub = Lrowind_bc_ptr[lk];
+	    lusup = Lnzval_bc_ptr[lk];
+	} else {
+	    if (ToRecv[k] >= 1) { /* Recv block column L(:,k). */
 
-        scp = &grid->rscp;  /* The scope of process row. */
+		scp = &grid->rscp;  /* The scope of process row. */
 
-        /* ============================================= *
-         * Waiting for L(:,kk) for outer-product uptate  *
-         * if iam in U(kk,:), then the diagonal block    *
-         * did not reach in time for panel factorization *
-         * of U(k,:).                                    *
-         * ============================================= */
+		/* ============================================= *
+		 * Waiting for L(:,kk) for outer-product uptate  *
+		 * if iam in U(kk,:), then the diagonal block    *
+		 * did not reach in time for panel factorization *
+		 * of U(k,:).                                    *
+		 * ============================================= */
 #if ( PROFlevel>=1 )
-        TIC (t1);
+		TIC (t1);
 #endif
-        if (recv_req[0] != MPI_REQUEST_NULL) {
-            MPI_Wait (&recv_req[0], &status);
-            MPI_Get_count (&status, mpi_int_t, &msgcnt[0]);
-            recv_req[0] = MPI_REQUEST_NULL;
-        } else {
-            msgcnt[0] = msgcntsU[look_id][0];
+		if (recv_req[0] != MPI_REQUEST_NULL) {
+		    MPI_Wait (&recv_req[0], &status);
+		    MPI_Get_count (&status, mpi_int_t, &msgcnt[0]);
+		    recv_req[0] = MPI_REQUEST_NULL;
+		} else {
+		    msgcnt[0] = msgcntsU[look_id][0];
 #if (DEBUGlevel>=2)
-            printf("\t[%d] k=%d, look_id=%d, recv_req[0] == MPI_REQUEST_NULL, msgcnt[0] = %d\n",
-                   iam, k, look_id, msgcnt[0]);
+		    printf("\t[%d] k=%d, look_id=%d, recv_req[0] == MPI_REQUEST_NULL, msgcnt[0] = %d\n",
+			   iam, k, look_id, msgcnt[0]);
 #endif
-        }
+		}
 
-        if (recv_req[1] != MPI_REQUEST_NULL) {
-            MPI_Wait (&recv_req[1], &status);
-            MPI_Get_count (&status, MPI_DOUBLE, &msgcnt[1]);
-            recv_req[1] = MPI_REQUEST_NULL;
-        } else {
-            msgcnt[1] = msgcntsU[look_id][1];
+		if (recv_req[1] != MPI_REQUEST_NULL) {
+		    MPI_Wait (&recv_req[1], &status);
+		    MPI_Get_count (&status, MPI_DOUBLE, &msgcnt[1]);
+		    recv_req[1] = MPI_REQUEST_NULL;
+		} else {
+		    msgcnt[1] = msgcntsU[look_id][1];
 #if (DEBUGlevel>=2)
-            printf("\t[%d] k=%d, look_id=%d, recv_req[1] == MPI_REQUEST_NULL, msgcnt[1] = %d\n",
-                   iam, k, look_id, msgcnt[1]);
+		    printf("\t[%d] k=%d, look_id=%d, recv_req[1] == MPI_REQUEST_NULL, msgcnt[1] = %d\n",
+			   iam, k, look_id, msgcnt[1]);
 #endif
-        }
+		}
 
 #if ( PROFlevel>=1 )
-        TOC (t2, t1);
-        stat->utime[COMM] += t2;
-        stat->utime[COMM_RIGHT] += t2;
+		TOC (t2, t1);
+		stat->utime[COMM] += t2;
+		stat->utime[COMM_RIGHT] += t2;
 #endif
 #if ( DEBUGlevel>=2 )
-        printf("[%d] Recv L(:,%4d): #lsub %4d, #lusup %4d from Pc %2d\n",
-               iam, k, msgcnt[0], msgcnt[1], kcol);
-        fflush (stdout);
+		printf("[%d] Recv L(:,%4d): #lsub %4d, #lusup %4d from Pc %2d\n",
+		       iam, k, msgcnt[0], msgcnt[1], kcol);
+		fflush (stdout);
 #endif
 
 #if ( PRNTlevel==3 )
-        ++total_msg;
-        if (!msgcnt[0])  ++zero_msg;
+		++total_msg;
+		if (!msgcnt[0])  ++zero_msg;
 #endif
-    } else {
-        msgcnt[0] = 0;
-    }
+	    } else {
+		msgcnt[0] = 0;
+	    }
 
-    lsub = Lsub_buf_2[look_id];
-    lusup = Lval_buf_2[look_id];
-}  /* else if mycol = Pc(k) */
+	    lsub = Lsub_buf_2[look_id];
+	    lusup = Lval_buf_2[look_id];
+	}  /* else if mycol = Pc(k) */
 /* stat->time1 += SuperLU_timer_()-tt1; */
 
-scp = &grid->cscp;      /* The scope of process column. */
+	scp = &grid->cscp;      /* The scope of process column. */
 
 /* tt1 = SuperLU_timer_(); */
-if (myrow == krow) { /* I own U(k,:) */
-    lk = LBi (k, grid);
-    usub = Ufstnz_br_ptr[lk];
-    uval = Unzval_br_ptr[lk];
+	if (myrow == krow) { /* I own U(k,:) */
+	    lk = LBi (k, grid);
+	    usub = Ufstnz_br_ptr[lk];
+	    uval = Unzval_br_ptr[lk];
 
-    if (factoredU[k0] == -1) {
-        /* Parallel triangular solve across process row *krow* --
-           U(k,j) = L(k,k) \ A(k,j).  */
-        double ttt2 = SuperLU_timer_();
-#ifdef _OPENMP
-/* #pragma omp parallel */ /* Sherry -- parallel done inside pdgstrs2 */
-#endif
-        {
-            pdgstrs2_omp (k0, k, Glu_persist, grid, Llu,
-                          Ublock_info, stat);
-        }
-        pdgstrs2_timer += SuperLU_timer_() - ttt2;
+	    if (factoredU[k0] == -1) {
+		/* Parallel triangular solve across process row *krow* --
+		   U(k,j) = L(k,k) \ A(k,j).  */
+		double ttt2 = SuperLU_timer_();
+		{
+		    pdgstrs2_omp (k0, k, Glu_persist, grid, Llu,
+				  Ublock_info, stat);
+		}
+		pdgstrs2_timer += SuperLU_timer_() - ttt2;
 
-        /* Sherry -- need to set factoredU[k0] = 1; ?? */
+		/* Sherry -- need to set factoredU[k0] = 1; ?? */
 
-        /* Multicasts U(k,:) along process columns. */
-        if ( usub ) {
-            msgcnt[2] = usub[2]; /* metadata size */
-            msgcnt[3] = usub[1]; /* Uval[] size */
-        } else {
-            msgcnt[2] = msgcnt[3] = 0;
-        }
+		/* Multicasts U(k,:) along process columns. */
+		if ( usub ) {
+		    msgcnt[2] = usub[2]; /* metadata size */
+		    msgcnt[3] = usub[1]; /* Uval[] size */
+		} else {
+		    msgcnt[2] = msgcnt[3] = 0;
+		}
 
-        if (ToSendD[lk] == YES) {
-            for (pi = 0; pi < Pr; ++pi) {
-                if (pi != myrow) { /* Matching recv was pre-posted before */
+		if (ToSendD[lk] == YES) {
+		    for (pi = 0; pi < Pr; ++pi) {
+			if (pi != myrow) { /* Matching recv was pre-posted before */
 #if ( PROFlevel>=1 )
-                    TIC (t1);
+			    TIC (t1);
 #endif
-                    MPI_Send (usub, msgcnt[2], mpi_int_t, pi,
-                              SLU_MPI_TAG (2, k0), /* (4*k0+2)%tag_ub */
-                              scp->comm);
-                    MPI_Send (uval, msgcnt[3], MPI_DOUBLE, pi,
-                              SLU_MPI_TAG (3, k0), /* (4*k0+3)%tag_ub */
-                              scp->comm);
+			    MPI_Send (usub, msgcnt[2], mpi_int_t, pi,
+				      SLU_MPI_TAG (2, k0), /* (4*k0+2)%tag_ub */
+				      scp->comm);
+			    MPI_Send (uval, msgcnt[3], MPI_DOUBLE, pi,
+				      SLU_MPI_TAG (3, k0), /* (4*k0+3)%tag_ub */
+				      scp->comm);
 #if ( PROFlevel>=1 )
-                    TOC (t2, t1);
-                    stat->utime[COMM] += t2;
-                    stat->utime[COMM_DOWN] += t2;
-                    msg_cnt += 2;
-                    msg_vol += msgcnt[2] * iword + msgcnt[3] * dword;
+			    TOC (t2, t1);
+			    stat->utime[COMM] += t2;
+			    stat->utime[COMM_DOWN] += t2;
+			    msg_cnt += 2;
+			    msg_vol += msgcnt[2] * iword + msgcnt[3] * dword;
 #endif
 #if ( DEBUGlevel>=2 )
-                    printf ("[%d] Send U(%4d,:) down to Pr %2d\n", iam, k, pi);
+			    printf ("[%d] Send U(%4d,:) down to Pr %2d\n", iam, k, pi);
 #endif
-                } /* if pi ... */
-            } /* for pi ... */
-        } /* if ToSendD ... */
+			} /* if pi ... */
+		    } /* for pi ... */
+		} /* if ToSendD ... */
 
-    } else { /* Panel U(k,:) already factorized from previous look-ahead */
+	    } else { /* Panel U(k,:) already factorized from previous look-ahead */
 
-        /* ================================================ *
-         * Wait for downward sending of U(k,:) to complete  *
-         * for outer-product update.                        *
-         * ================================================ */
+		/* ================================================ *
+		 * Wait for downward sending of U(k,:) to complete  *
+		 * for outer-product update.                        *
+		 * ================================================ */
 
-        if (ToSendD[lk] == YES) {
+		if (ToSendD[lk] == YES) {
 #if ( PROFlevel>=1 )
-            TIC (t1);
+		    TIC (t1);
 #endif
-            for (pi = 0; pi < Pr; ++pi) {
-                if (pi != myrow) {
-                    MPI_Wait (&send_reqs_u[look_id][pi], &status);
-                    MPI_Wait (&send_reqs_u[look_id][pi + Pr], &status);
-                }
-            }
+		    for (pi = 0; pi < Pr; ++pi) {
+			if (pi != myrow) {
+			    MPI_Wait (&send_reqs_u[look_id][pi], &status);
+			    MPI_Wait (&send_reqs_u[look_id][pi + Pr], &status);
+			}
+		    }
 #if ( PROFlevel>=1 )
-            TOC (t2, t1);
-            stat->utime[COMM] += t2;
-            stat->utime[COMM_DOWN] += t2;
+		    TOC (t2, t1);
+		    stat->utime[COMM] += t2;
+		    stat->utime[COMM_DOWN] += t2;
 #endif
-        }
-        msgcnt[2] = msgcntsU[look_id][2];
-        msgcnt[3] = msgcntsU[look_id][3];
-    }
-    /* stat->time2 += SuperLU_timer_()-tt1; */
+		}
+		msgcnt[2] = msgcntsU[look_id][2];
+		msgcnt[3] = msgcntsU[look_id][3];
+	    }
+	    /* stat->time2 += SuperLU_timer_()-tt1; */
 
-} else {    /* myrow != krow */
+	} else {    /* myrow != krow */
 
             /* ========================================== *
              * Wait for U(k,:) for outer-product updates. *
              * ========================================== */
 
-    if (ToRecv[k] == 2) { /* Recv block row U(k,:). */
+	    if (ToRecv[k] == 2) { /* Recv block row U(k,:). */
 #if ( PROFlevel>=1 )
-        TIC (t1);
+		TIC (t1);
 #endif
-        MPI_Wait (&recv_reqs_u[look_id][0], &status);
-        MPI_Get_count (&status, mpi_int_t, &msgcnt[2]);
-        MPI_Wait (&recv_reqs_u[look_id][1], &status);
-        MPI_Get_count (&status, MPI_DOUBLE, &msgcnt[3]);
+		MPI_Wait (&recv_reqs_u[look_id][0], &status);
+		MPI_Get_count (&status, mpi_int_t, &msgcnt[2]);
+		MPI_Wait (&recv_reqs_u[look_id][1], &status);
+		MPI_Get_count (&status, MPI_DOUBLE, &msgcnt[3]);
 
 #if ( PROFlevel>=1 )
-        TOC (t2, t1);
-        stat->utime[COMM] += t2;
-        stat->utime[COMM_DOWN] += t2;
+		TOC (t2, t1);
+		stat->utime[COMM] += t2;
+		stat->utime[COMM_DOWN] += t2;
 #endif
-        usub = Usub_buf;
-        uval = Uval_buf;
+		usub = Usub_buf;
+		uval = Uval_buf;
 #if ( DEBUGlevel>=2 )
-        printf ("[%d] Recv U(%4d,:) from Pr %2d\n", iam, k, krow);
+		printf ("[%d] Recv U(%4d,:) from Pr %2d\n", iam, k, krow);
 #endif
 #if ( PRNTlevel==3 )
-        ++total_msg;
-        if (!msgcnt[2])  ++zero_msg;
+		++total_msg;
+		if (!msgcnt[2])  ++zero_msg;
 #endif
-    } else {
-        msgcnt[2] = 0;
-    }
-    /* stat->time6 += SuperLU_timer_()-tt1; */
-} /* end if myrow == Pr(k) */
+	    } else {
+		msgcnt[2] = 0;
+	    }
+	    /* stat->time6 += SuperLU_timer_()-tt1; */
+	} /* end if myrow == Pr(k) */
 
 /*
  * Parallel rank-k update; pair up blocks L(i,k) and U(k,j).
@@ -1497,418 +1486,401 @@ if (myrow == krow) { /* I own U(k,:) */
  *              && L(i,k) != 0 && U(k,j) != 0 )
  *             A(i,j) = A(i,j) - L(i,k) * U(k,j);
  */
-msg0 = msgcnt[0];
-msg2 = msgcnt[2];
+	msg0 = msgcnt[0];
+	msg2 = msgcnt[2];
 /* tt1 = SuperLU_timer_(); */
-if (msg0 && msg2) {     /* L(:,k) and U(k,:) are not empty. */
-    nsupr = lsub[1];    /* LDA of lusup. */
-    if (myrow == krow) { /* Skip diagonal block L(k,k). */
-        lptr0 = BC_HEADER + LB_DESCRIPTOR + lsub[BC_HEADER + 1];
-        luptr0 = knsupc;
-        nlb = lsub[0] - 1;
-    } else {
-        lptr0 = BC_HEADER;
-        luptr0 = 0;
-        nlb = lsub[0];
-    }
-    iukp = BR_HEADER;   /* Skip header; Pointer to index[] of U(k,:) */
-    rukp = 0;           /* Pointer to nzval[] of U(k,:) */
-    nub = usub[0];      /* Number of blocks in the block row U(k,:) */
-    klst = FstBlockC (k + 1);
+	if (msg0 && msg2) {     /* L(:,k) and U(k,:) are not empty. */
+	    nsupr = lsub[1];    /* LDA of lusup. */
+	    if (myrow == krow) { /* Skip diagonal block L(k,k). */
+		lptr0 = BC_HEADER + LB_DESCRIPTOR + lsub[BC_HEADER + 1];
+		luptr0 = knsupc;
+		nlb = lsub[0] - 1;
+	    } else {
+		lptr0 = BC_HEADER;
+		luptr0 = 0;
+		nlb = lsub[0];
+	    }
+	    iukp = BR_HEADER;   /* Skip header; Pointer to index[] of U(k,:) */
+	    rukp = 0;           /* Pointer to nzval[] of U(k,:) */
+	    nub = usub[0];      /* Number of blocks in the block row U(k,:) */
+	    klst = FstBlockC (k + 1);
 
-    /* -------------------------------------------------------------
-       Update the look-ahead block columns A(:,k+1:k+num_look_ahead)
-       ------------------------------------------------------------- */
-    iukp0 = iukp;
-    rukp0 = rukp;
-    /* reorder the remaining columns in bottome-up */
-    /* TAU_STATIC_TIMER_START("LOOK_AHEAD_UPDATE"); */
-    for (jj = 0; jj < nub; jj++) {
+	    /* -------------------------------------------------------------
+	       Update the look-ahead block columns A(:,k+1:k+num_look_ahead)
+	       ------------------------------------------------------------- */
+	    iukp0 = iukp;
+	    rukp0 = rukp;
+	    /* reorder the remaining columns in bottome-up */
+	    /* TAU_STATIC_TIMER_START("LOOK_AHEAD_UPDATE"); */
+	    for (jj = 0; jj < nub; jj++) {
 #ifdef ISORT
-        iperm_u[jj] = iperm_c_supno[usub[iukp]];    /* Global block number of block U(k,j). */
-        perm_u[jj] = jj;
+		iperm_u[jj] = iperm_c_supno[usub[iukp]];    /* Global block number of block U(k,j). */
+		perm_u[jj] = jj;
 #else
-        perm_u[2 * jj] = iperm_c_supno[usub[iukp]]; /* Global block number of block U(k,j). */
-        perm_u[2 * jj + 1] = jj;
+		perm_u[2 * jj] = iperm_c_supno[usub[iukp]]; /* Global block number of block U(k,j). */
+		perm_u[2 * jj + 1] = jj;
 #endif
-        jb = usub[iukp];    /* Global block number of block U(k,j). */
-        nsupc = SuperSize (jb);
-        iukp += UB_DESCRIPTOR;  /* Start fstnz of block U(k,j). */
-        iukp += nsupc;
-    }
-    iukp = iukp0;
+		jb = usub[iukp];    /* Global block number of block U(k,j). */
+		nsupc = SuperSize (jb);
+		iukp += UB_DESCRIPTOR;  /* Start fstnz of block U(k,j). */
+		iukp += nsupc;
+	    }
+	    iukp = iukp0;
 #ifdef ISORT
-    /* iperm_u is sorted based on elimination order;
-       perm_u reorders the U blocks to match the elimination order. */
-    isort (nub, iperm_u, perm_u);
+	    /* iperm_u is sorted based on elimination order;
+	       perm_u reorders the U blocks to match the elimination order. */
+	    isort (nub, iperm_u, perm_u);
 #else
-    qsort (perm_u, (size_t) nub, 2 * sizeof (int_t),
-           &superlu_sort_perm);
+	    qsort (perm_u, (size_t) nub, 2 * sizeof (int_t),
+		   &superlu_sort_perm);
 #endif
 
 /************************************************************************/
-    double ttx =SuperLU_timer_();
+	    double ttx =SuperLU_timer_();
 
 //#include "dlook_ahead_update_v4.c"
 #include "dlook_ahead_update.c"
 
-    lookaheadupdatetimer += SuperLU_timer_() - ttx;
+	    lookaheadupdatetimer += SuperLU_timer_() - ttx;
 /************************************************************************/
 
-    /*ifdef OMP_LOOK_AHEAD */
-    /* TAU_STATIC_TIMER_STOP("LOOK_AHEAD_UPDATE"); */
-}                       /* if L(:,k) and U(k,:) not empty */
+	    /*ifdef OMP_LOOK_AHEAD */
+	    /* TAU_STATIC_TIMER_STOP("LOOK_AHEAD_UPDATE"); */
+	}                       /* if L(:,k) and U(k,:) not empty */
 
 /* stat->time3 += SuperLU_timer_()-tt1; */
 /* ================== */
 /* == post receive == */
 /* ================== */
-kk1 = SUPERLU_MIN (k0 + num_look_aheads, nsupers - 1);
-for (kk0 = k0 + 1; kk0 <= kk1; kk0++) {
-    kk = perm_c_supno[kk0];
-    kcol = PCOL (kk, grid);
+	kk1 = SUPERLU_MIN (k0 + num_look_aheads, nsupers - 1);
+	for (kk0 = k0 + 1; kk0 <= kk1; kk0++) {
+	    kk = perm_c_supno[kk0];
+	    kcol = PCOL (kk, grid);
 
-    if (look_ahead[kk] == k0) {
-        if (mycol != kcol) {
-            if (ToRecv[kk] >= 1) {
-                scp = &grid->rscp;  /* The scope of process row. */
+	    if (look_ahead[kk] == k0) {
+		if (mycol != kcol) {
+		    if (ToRecv[kk] >= 1) {
+			scp = &grid->rscp;  /* The scope of process row. */
 
-                look_id = kk0 % (1 + num_look_aheads);
-                recv_req = recv_reqs[look_id];
+			look_id = kk0 % (1 + num_look_aheads);
+			recv_req = recv_reqs[look_id];
 #if ( PROFlevel>=1 )
-                TIC (t1);
+			TIC (t1);
 #endif
-                MPI_Irecv (Lsub_buf_2[look_id], Llu->bufmax[0],
-                           mpi_int_t, kcol, SLU_MPI_TAG (0, kk0), /* (4*kk0)%tag_ub */
-                           scp->comm, &recv_req[0]);
-                MPI_Irecv (Lval_buf_2[look_id], Llu->bufmax[1],
-                           MPI_DOUBLE, kcol,
-                           SLU_MPI_TAG (1, kk0), /* (4*kk0+1)%tag_ub */
-                           scp->comm, &recv_req[1]);
+			MPI_Irecv (Lsub_buf_2[look_id], Llu->bufmax[0],
+				   mpi_int_t, kcol, SLU_MPI_TAG (0, kk0), /* (4*kk0)%tag_ub */
+				   scp->comm, &recv_req[0]);
+			MPI_Irecv (Lval_buf_2[look_id], Llu->bufmax[1],
+				   MPI_DOUBLE, kcol,
+				   SLU_MPI_TAG (1, kk0), /* (4*kk0+1)%tag_ub */
+				   scp->comm, &recv_req[1]);
 #if ( PROFlevel>=1 )
-                TOC (t2, t1);
-                stat->utime[COMM] += t2;
-                stat->utime[COMM_RIGHT] += t2;
+			TOC (t2, t1);
+			stat->utime[COMM] += t2;
+			stat->utime[COMM_RIGHT] += t2;
 #endif
-            }
-        } else {
-            lk = LBj (kk, grid);    /* Local block number. */
-            lsub1 = Lrowind_bc_ptr[lk];
-            lusup1 = Lnzval_bc_ptr[lk];
-            if (factored[kk] == -1) {
-                /* Factor diagonal and subdiagonal blocks and
-                   test for exact singularity.  */
-                factored[kk] = 0; /* flag column kk as factored */
-                double ttt1 = SuperLU_timer_();
-                PDGSTRF2 (options, kk0, kk, thresh,
-                          Glu_persist, grid, Llu, U_diag_blk_send_req,
-                          tag_ub, stat, info);
-                pdgstrf2_timer += SuperLU_timer_() - ttt1;
+		    }
+		} else {
+		    lk = LBj (kk, grid);    /* Local block number. */
+		    lsub1 = Lrowind_bc_ptr[lk];
+		    lusup1 = Lnzval_bc_ptr[lk];
+		    if (factored[kk] == -1) {
+			/* Factor diagonal and subdiagonal blocks and
+			   test for exact singularity.  */
+			factored[kk] = 0; /* flag column kk as factored */
+			double ttt1 = SuperLU_timer_();
+			PDGSTRF2 (options, kk0, kk, thresh,
+				  Glu_persist, grid, Llu, U_diag_blk_send_req,
+				  tag_ub, stat, info);
+			pdgstrf2_timer += SuperLU_timer_() - ttt1;
 
-                /* Process column *kcol+1* multicasts numeric
-                   values of L(:,k+1) to process rows. */
-                look_id = kk0 % (1 + num_look_aheads);
-                send_req = send_reqs[look_id];
-                msgcnt = msgcnts[look_id];
+			/* Process column *kcol+1* multicasts numeric
+			   values of L(:,k+1) to process rows. */
+			look_id = kk0 % (1 + num_look_aheads);
+			send_req = send_reqs[look_id];
+			msgcnt = msgcnts[look_id];
 
-                if (lsub1) {
-                    msgcnt[0] = lsub1[1] + BC_HEADER + lsub1[0] * LB_DESCRIPTOR;
-                    msgcnt[1] = lsub1[1] * SuperSize (kk);
-                } else {
-                    msgcnt[0] = 0;
-                    msgcnt[1] = 0;
-                }
+			if (lsub1) {
+			    msgcnt[0] = lsub1[1] + BC_HEADER + lsub1[0] * LB_DESCRIPTOR;
+			    msgcnt[1] = lsub1[1] * SuperSize (kk);
+			} else {
+			    msgcnt[0] = 0;
+			    msgcnt[1] = 0;
+			}
 
-                scp = &grid->rscp;  /* The scope of process row. */
-                for (pj = 0; pj < Pc; ++pj) {
-                    if (ToSendR[lk][pj] != EMPTY) {
+			scp = &grid->rscp;  /* The scope of process row. */
+			for (pj = 0; pj < Pc; ++pj) {
+			    if (ToSendR[lk][pj] != EMPTY) {
 #if ( PROFlevel>=1 )
-                        TIC (t1);
+				TIC (t1);
 #endif
-                        MPI_Isend (lsub1, msgcnt[0], mpi_int_t, pj,
-                                   SLU_MPI_TAG (0, kk0), /* (4*kk0)%tag_ub */
-                                   scp->comm, &send_req[pj]);
-                        MPI_Isend (lusup1, msgcnt[1], MPI_DOUBLE, pj,
-                                   SLU_MPI_TAG (1, kk0), /* (4*kk0+1)%tag_ub */
-                                   scp->comm, &send_req[pj + Pc]);
+				MPI_Isend (lsub1, msgcnt[0], mpi_int_t, pj,
+					   SLU_MPI_TAG (0, kk0), /* (4*kk0)%tag_ub */
+					   scp->comm, &send_req[pj]);
+				MPI_Isend (lusup1, msgcnt[1], MPI_DOUBLE, pj,
+					   SLU_MPI_TAG (1, kk0), /* (4*kk0+1)%tag_ub */
+					   scp->comm, &send_req[pj + Pc]);
 #if ( PROFlevel>=1 )
-                        TOC (t2, t1);
-                        stat->utime[COMM] += t2;
-                        stat->utime[COMM_RIGHT] += t2;
-                        ++prof_sendR[lk];
+				TOC (t2, t1);
+				stat->utime[COMM] += t2;
+				stat->utime[COMM_RIGHT] += t2;
+				++prof_sendR[lk];
 #endif
-                    }
-                } /* end for pj ... */
-            } /* if    factored[kk] ... */
-        }
-    }
-}
+			    }
+			} /* end for pj ... */
+		    } /* if    factored[kk] ... */
+		}
+	    }
+	}
 
-double tsch = SuperLU_timer_();
+	double tsch = SuperLU_timer_();
 /*******************************************************************/
 
 #if defined(HAVE_SYCL)
 #include "dSchCompUdt-sycl.cpp"
-#else
-
-/*#include "SchCompUdt--Phi-2Ddynamic-alt.c"*/
-//#include "dSchCompUdt-2Ddynamic_v6.c"
-
-#include "dSchCompUdt-2Ddynamic.c"
-
 #endif
 /*uncomment following to compare against SuperLU 3.3 baseline*/
 /* #include "SchCompUdt--baseline.c"  */
 /************************************************************************/
 
-NetSchurUpTimer += SuperLU_timer_() - tsch;
+	NetSchurUpTimer += SuperLU_timer_() - tsch;
 
-}  /* MAIN LOOP for k0 = 0, ... */
+    }  /* MAIN LOOP for k0 = 0, ... */
 
 /* ##################################################################
 ** END MAIN LOOP: for k0 = ...
 ################################################################## */
 
-pxgstrfTimer = SuperLU_timer_() - pxgstrfTimer;
+    pxgstrfTimer = SuperLU_timer_() - pxgstrfTimer;
 
 #if ( PRNTlevel>=2 )
 /* Print detailed statistics */
 /* Updating total flops */
-double allflops;
-MPI_Reduce(&RemainGEMM_flops, &allflops, 1, MPI_DOUBLE, MPI_SUM,
+    double allflops;
+    MPI_Reduce(&RemainGEMM_flops, &allflops, 1, MPI_DOUBLE, MPI_SUM,
                0, grid->comm);
-if ( iam==0 ) {
-printf("\nInitialization time\t%8.4lf seconds\n"
-       "\t Serial: compute static schedule, allocate storage\n", InitTimer);
-printf("\n==== Time breakdown in factorization (rank 0) ====\n");
-printf("Panel factorization \t %8.4lf seconds\n",
-       pdgstrf2_timer + pdgstrs2_timer);
-printf(".. L-panel pxgstrf2 \t %8.4lf seconds\n", pdgstrf2_timer);
-printf(".. U-panel pxgstrs2 \t %8.4lf seconds\n", pdgstrs2_timer);
-printf("Time in Look-ahead update \t %8.4lf seconds\n", lookaheadupdatetimer);
-printf("Time in Schur update \t\t %8.4lf seconds\n", NetSchurUpTimer);
-printf(".. Time to Gather L buffer\t %8.4lf  (Separate L panel by Lookahead/Remain)\n", GatherLTimer);
-printf(".. Time to Gather U buffer\t %8.4lf \n", GatherUTimer);
+    if ( iam==0 ) {
+	printf("\nInitialization time\t%8.4lf seconds\n"
+	       "\t Serial: compute static schedule, allocate storage\n", InitTimer);
+	printf("\n==== Time breakdown in factorization (rank 0) ====\n");
+	printf("Panel factorization \t %8.4lf seconds\n",
+	       pdgstrf2_timer + pdgstrs2_timer);
+	printf(".. L-panel pxgstrf2 \t %8.4lf seconds\n", pdgstrf2_timer);
+	printf(".. U-panel pxgstrs2 \t %8.4lf seconds\n", pdgstrs2_timer);
+	printf("Time in Look-ahead update \t %8.4lf seconds\n", lookaheadupdatetimer);
+	printf("Time in Schur update \t\t %8.4lf seconds\n", NetSchurUpTimer);
+	printf(".. Time to Gather L buffer\t %8.4lf  (Separate L panel by Lookahead/Remain)\n", GatherLTimer);
+	printf(".. Time to Gather U buffer\t %8.4lf \n", GatherUTimer);
 
-printf(".. Time in GEMM %8.4lf \n",
-       LookAheadGEMMTimer + RemainGEMMTimer);
-printf("\t* Look-ahead\t %8.4lf \n", LookAheadGEMMTimer);
-printf("\t* Remain\t %8.4lf\tFlops %8.4le\tGflops %8.4lf\n",
-       RemainGEMMTimer, allflops, allflops/RemainGEMMTimer*1e-9);
-printf(".. Time to Scatter %8.4lf \n",
-       LookAheadScatterTimer + RemainScatterTimer);
-printf("\t* Look-ahead\t %8.4lf \n", LookAheadScatterTimer);
-printf("\t* Remain\t %8.4lf \n", RemainScatterTimer);
+	printf(".. Time in GEMM %8.4lf \n",
+	       LookAheadGEMMTimer + RemainGEMMTimer);
+	printf("\t* Look-ahead\t %8.4lf \n", LookAheadGEMMTimer);
+	printf("\t* Remain\t %8.4lf\tFlops %8.4le\tGflops %8.4lf\n",
+	       RemainGEMMTimer, allflops, allflops/RemainGEMMTimer*1e-9);
+	printf(".. Time to Scatter %8.4lf \n",
+	       LookAheadScatterTimer + RemainScatterTimer);
+	printf("\t* Look-ahead\t %8.4lf \n", LookAheadScatterTimer);
+	printf("\t* Remain\t %8.4lf \n", RemainScatterTimer);
 
-printf("Total factorization time            \t: %8.4lf seconds, \n", pxgstrfTimer);
-printf("--------\n");
-printf("GEMM maximum block: %d-%d-%d\n", gemm_max_m, gemm_max_k, gemm_max_n);
-}
+	printf("Total factorization time            \t: %8.4lf seconds, \n", pxgstrfTimer);
+	printf("--------\n");
+	printf("GEMM maximum block: %d-%d-%d\n", gemm_max_m, gemm_max_k, gemm_max_n);
+    }
 #endif
 
 #if ( DEBUGlevel>=3 )
-for (i = 0; i < Pr * Pc; ++i) {
-    if (iam == i) {
-        dPrintLblocks(iam, nsupers, grid, Glu_persist, Llu);
-        dPrintUblocks(iam, nsupers, grid, Glu_persist, Llu);
-        printf ("(%d)\n", iam);
-        PrintInt10 ("Recv", nsupers, Llu->ToRecv);
+    for (i = 0; i < Pr * Pc; ++i) {
+	if (iam == i) {
+	    dPrintLblocks(iam, nsupers, grid, Glu_persist, Llu);
+	    dPrintUblocks(iam, nsupers, grid, Glu_persist, Llu);
+	    printf ("(%d)\n", iam);
+	    PrintInt10 ("Recv", nsupers, Llu->ToRecv);
+	}
+	MPI_Barrier (grid->comm);
     }
-    MPI_Barrier (grid->comm);
-}
 #endif
 
 /********************************************************
  * Free memory                                          *
  ********************************************************/
 
-if (Pr * Pc > 1) {
-    SUPERLU_FREE (Lsub_buf_2[0]);   /* also free Lsub_buf_2[1] */
-    SUPERLU_FREE (Lval_buf_2[0]);   /* also free Lval_buf_2[1] */
-    if (Llu->bufmax[2] != 0)
-        SUPERLU_FREE (Usub_buf_2[0]);
-    if (Llu->bufmax[3] != 0)
-        SUPERLU_FREE (Uval_buf_2[0]);
-    if (U_diag_blk_send_req[myrow] != MPI_REQUEST_NULL) {
-        /* wait for last Isend requests to complete, deallocate objects */
-        for (krow = 0; krow < Pr; ++krow) {
-            if (krow != myrow)
-                MPI_Wait (U_diag_blk_send_req + krow, &status);
-        }
+    if (Pr * Pc > 1) {
+	SUPERLU_FREE (Lsub_buf_2[0]);   /* also free Lsub_buf_2[1] */
+	SUPERLU_FREE (Lval_buf_2[0]);   /* also free Lval_buf_2[1] */
+	if (Llu->bufmax[2] != 0)
+	    SUPERLU_FREE (Usub_buf_2[0]);
+	if (Llu->bufmax[3] != 0)
+	    SUPERLU_FREE (Uval_buf_2[0]);
+	if (U_diag_blk_send_req[myrow] != MPI_REQUEST_NULL) {
+	    /* wait for last Isend requests to complete, deallocate objects */
+	    for (krow = 0; krow < Pr; ++krow) {
+		if (krow != myrow)
+		    MPI_Wait (U_diag_blk_send_req + krow, &status);
+	    }
+	}
+	SUPERLU_FREE (U_diag_blk_send_req);
     }
-    SUPERLU_FREE (U_diag_blk_send_req);
-}
 
-log_memory( -((Llu->bufmax[0] + Llu->bufmax[2]) * (num_look_aheads + 1) * iword +
-              (Llu->bufmax[1] + Llu->bufmax[3]) * (num_look_aheads + 1) * dword),
-            stat );
+    log_memory( -((Llu->bufmax[0] + Llu->bufmax[2]) * (num_look_aheads + 1) * iword +
+		  (Llu->bufmax[1] + Llu->bufmax[3]) * (num_look_aheads + 1) * dword),
+		stat );
 
-SUPERLU_FREE (Lsub_buf_2);
-SUPERLU_FREE (Lval_buf_2);
-SUPERLU_FREE (Usub_buf_2);
-SUPERLU_FREE (Uval_buf_2);
-SUPERLU_FREE (perm_c_supno);
-SUPERLU_FREE (perm_u);
+    SUPERLU_FREE (Lsub_buf_2);
+    SUPERLU_FREE (Lval_buf_2);
+    SUPERLU_FREE (Usub_buf_2);
+    SUPERLU_FREE (Uval_buf_2);
+    SUPERLU_FREE (perm_c_supno);
+    SUPERLU_FREE (perm_u);
 #ifdef ISORT
-SUPERLU_FREE (iperm_u);
+    SUPERLU_FREE (iperm_u);
 #endif
-SUPERLU_FREE (look_ahead);
-SUPERLU_FREE (factoredU);
-SUPERLU_FREE (factored);
-log_memory(-(6 * nsupers * iword), stat);
+    SUPERLU_FREE (look_ahead);
+    SUPERLU_FREE (factoredU);
+    SUPERLU_FREE (factored);
+    log_memory(-(6 * nsupers * iword), stat);
 
-for (i = 0; i <= num_look_aheads; i++) {
-    SUPERLU_FREE (msgcnts[i]);
-    SUPERLU_FREE (msgcntsU[i]);
-}
-SUPERLU_FREE (msgcnts);
-SUPERLU_FREE (msgcntsU);
+    for (i = 0; i <= num_look_aheads; i++) {
+	SUPERLU_FREE (msgcnts[i]);
+	SUPERLU_FREE (msgcntsU[i]);
+    }
+    SUPERLU_FREE (msgcnts);
+    SUPERLU_FREE (msgcntsU);
 
-for (i = 0; i <= num_look_aheads; i++) {
-    SUPERLU_FREE (send_reqs_u[i]);
-    SUPERLU_FREE (recv_reqs_u[i]);
-    SUPERLU_FREE (send_reqs[i]);
-    SUPERLU_FREE (recv_reqs[i]);
-}
+    for (i = 0; i <= num_look_aheads; i++) {
+	SUPERLU_FREE (send_reqs_u[i]);
+	SUPERLU_FREE (recv_reqs_u[i]);
+	SUPERLU_FREE (send_reqs[i]);
+	SUPERLU_FREE (recv_reqs[i]);
+    }
 
-SUPERLU_FREE (recv_reqs_u);
-SUPERLU_FREE (send_reqs_u);
-SUPERLU_FREE (recv_reqs);
-SUPERLU_FREE (send_reqs);
+    SUPERLU_FREE (recv_reqs_u);
+    SUPERLU_FREE (send_reqs_u);
+    SUPERLU_FREE (recv_reqs);
+    SUPERLU_FREE (send_reqs);
 
 #if defined(HAVE_SYCL)
-sycl::free( bigV, streams[0] );
-sycl::free( bigU, streams[0] );
-sycl::free( dA, streams[0] ); /* Sherry added */
-sycl::free( dB, streams[0] );
-sycl::free( dC, streams[0] );
-delete[] streams;
-#else
-//  #ifdef __INTEL_COMPILER
-//    _mm_free (bigU);
-//    _mm_free (bigV);
-//  #else
-SUPERLU_FREE (bigV);
-SUPERLU_FREE (bigU);
-//  #endif
-/* Decrement freed memory from memory stat. */
-log_memory(-(bigv_size + bigu_size) * dword, stat);
+    sycl::free( bigV, streams[0] );
+    sycl::free( bigU, streams[0] );
+    sycl::free( dA, streams[0] ); /* Sherry added */
+    sycl::free( dB, streams[0] );
+    sycl::free( dC, streams[0] );
+    delete[] streams;
 #endif
 
-SUPERLU_FREE (Llu->ujrow);
+    SUPERLU_FREE (Llu->ujrow);
 // SUPERLU_FREE (tempv2d);/* Sherry */
-SUPERLU_FREE (indirect);
-SUPERLU_FREE (indirect2); /* Sherry added */
+    SUPERLU_FREE (indirect);
+    SUPERLU_FREE (indirect2); /* Sherry added */
 
-ldt = sp_ienv_dist(3);
-log_memory( -(3 * ldt *ldt * dword + 2 * ldt * num_threads * iword), stat );
+    ldt = sp_ienv_dist(3);
+    log_memory( -(3 * ldt *ldt * dword + 2 * ldt * num_threads * iword), stat );
 
 /* Sherry added */
-SUPERLU_FREE(omp_loop_time);
-SUPERLU_FREE(full_u_cols);
-SUPERLU_FREE(blk_ldu);
+    SUPERLU_FREE(omp_loop_time);
+    SUPERLU_FREE(full_u_cols);
+    SUPERLU_FREE(blk_ldu);
 #if ( PRNTlevel>=1 )
-log_memory(-2 * ncb * dword, stat);
+    log_memory(-2 * ncb * dword, stat);
 #endif
 
-SUPERLU_FREE(lookAheadFullRow);
-SUPERLU_FREE(lookAheadStRow);
-SUPERLU_FREE(lookAhead_lptr);
-SUPERLU_FREE(lookAhead_ib);
+    SUPERLU_FREE(lookAheadFullRow);
+    SUPERLU_FREE(lookAheadStRow);
+    SUPERLU_FREE(lookAhead_lptr);
+    SUPERLU_FREE(lookAhead_ib);
 
-SUPERLU_FREE(RemainStRow);
-SUPERLU_FREE(Remain_lptr);
-SUPERLU_FREE(Remain_ib);
-SUPERLU_FREE(Remain_info);
-SUPERLU_FREE(lookAhead_L_buff);
-SUPERLU_FREE(Remain_L_buff);
-log_memory( -(3 * mrb * iword + mrb * sizeof(Remain_info_t) +
-              ldt * ldt * (num_look_aheads + 1) * dword +
-              Llu->bufmax[1] * dword), stat );
+    SUPERLU_FREE(RemainStRow);
+    SUPERLU_FREE(Remain_lptr);
+    SUPERLU_FREE(Remain_ib);
+    SUPERLU_FREE(Remain_info);
+    SUPERLU_FREE(lookAhead_L_buff);
+    SUPERLU_FREE(Remain_L_buff);
+    log_memory( -(3 * mrb * iword + mrb * sizeof(Remain_info_t) +
+		  ldt * ldt * (num_look_aheads + 1) * dword +
+		  Llu->bufmax[1] * dword), stat );
 
-SUPERLU_FREE(Ublock_info);
+    SUPERLU_FREE(Ublock_info);
 /*SUPERLU_FREE(Ublock_info_iukp);
   SUPERLU_FREE(Ublock_info_rukp);
   SUPERLU_FREE(Ublock_info_jb);  */
 
 
 #if ( PROFlevel>=1 )
-TIC (t1);
+    TIC (t1);
 #endif
 
 /* Prepare error message - find the smallesr index i that U(i,i)==0 */
-if ( *info == 0 ) *info = n + 1;
-MPI_Allreduce (info, &iinfo, 1, MPI_INT, MPI_MIN, grid->comm);
-if ( iinfo == n + 1 ) *info = 0;
-else *info = iinfo;
+    if ( *info == 0 ) *info = n + 1;
+    MPI_Allreduce (info, &iinfo, 1, MPI_INT, MPI_MIN, grid->comm);
+    if ( iinfo == n + 1 ) *info = 0;
+    else *info = iinfo;
 
 #if ( PROFlevel>=1 )
-TOC (t2, t1);
-stat->utime[COMM] += t2;
-{
-    float msg_vol_max, msg_vol_sum, msg_cnt_max, msg_cnt_sum;
+    TOC (t2, t1);
+    stat->utime[COMM] += t2;
+    {
+	float msg_vol_max, msg_vol_sum, msg_cnt_max, msg_cnt_sum;
 
-    MPI_Reduce (&msg_cnt, &msg_cnt_sum,
-                1, MPI_FLOAT, MPI_SUM, 0, grid->comm);
-    MPI_Reduce (&msg_cnt, &msg_cnt_max,
-                1, MPI_FLOAT, MPI_MAX, 0, grid->comm);
-    MPI_Reduce (&msg_vol, &msg_vol_sum,
-                1, MPI_FLOAT, MPI_SUM, 0, grid->comm);
-    MPI_Reduce (&msg_vol, &msg_vol_max,
-                1, MPI_FLOAT, MPI_MAX, 0, grid->comm);
-    if ( iam==0 ) {
-        printf ("\tPDGSTRF comm stat:"
-                "\tAvg\tMax\t\tAvg\tMax\n"
-                "\t\t\tCount:\t%.0f\t%.0f\tVol(MB)\t%.2f\t%.2f\n",
-                msg_cnt_sum / Pr / Pc, msg_cnt_max,
-                msg_vol_sum / Pr / Pc * 1e-6, msg_vol_max * 1e-6);
-        printf("\t\tcomm time on task 0: %8.2lf\n"
-               "\t\t\tcomm down DIAG block %8.2lf\n"
-               "\t\t\tcomm right L panel %8.2lf\n"
-               "\t\t\tcomm down U panel %8.2lf\n",
-               stat->utime[COMM], stat->utime[COMM_DIAG],
-               stat->utime[COMM_RIGHT], stat->utime[COMM_DOWN]);
-        //#include <float.h>
-        //int Digs = DECIMAL_DIG;
-        printf("gemm_count %d\n", gemm_count);
-        for (i = 0; i < gemm_count; ++i)
-            fprintf(fgemm, "%8d%8d%8d\t %20.16e\t%8d\n", gemm_stats[i].m, gemm_stats[i].n,
-                    gemm_stats[i].k, gemm_stats[i].microseconds, prof_sendR[i]);
+	MPI_Reduce (&msg_cnt, &msg_cnt_sum,
+		    1, MPI_FLOAT, MPI_SUM, 0, grid->comm);
+	MPI_Reduce (&msg_cnt, &msg_cnt_max,
+		    1, MPI_FLOAT, MPI_MAX, 0, grid->comm);
+	MPI_Reduce (&msg_vol, &msg_vol_sum,
+		    1, MPI_FLOAT, MPI_SUM, 0, grid->comm);
+	MPI_Reduce (&msg_vol, &msg_vol_max,
+		    1, MPI_FLOAT, MPI_MAX, 0, grid->comm);
+	if ( iam==0 ) {
+	    printf ("\tPDGSTRF comm stat:"
+		    "\tAvg\tMax\t\tAvg\tMax\n"
+		    "\t\t\tCount:\t%.0f\t%.0f\tVol(MB)\t%.2f\t%.2f\n",
+		    msg_cnt_sum / Pr / Pc, msg_cnt_max,
+		    msg_vol_sum / Pr / Pc * 1e-6, msg_vol_max * 1e-6);
+	    printf("\t\tcomm time on task 0: %8.2lf\n"
+		   "\t\t\tcomm down DIAG block %8.2lf\n"
+		   "\t\t\tcomm right L panel %8.2lf\n"
+		   "\t\t\tcomm down U panel %8.2lf\n",
+		   stat->utime[COMM], stat->utime[COMM_DIAG],
+		   stat->utime[COMM_RIGHT], stat->utime[COMM_DOWN]);
+	    //#include <float.h>
+	    //int Digs = DECIMAL_DIG;
+	    printf("gemm_count %d\n", gemm_count);
+	    for (i = 0; i < gemm_count; ++i)
+		fprintf(fgemm, "%8d%8d%8d\t %20.16e\t%8d\n", gemm_stats[i].m, gemm_stats[i].n,
+			gemm_stats[i].k, gemm_stats[i].microseconds, prof_sendR[i]);
 
-        fclose(fgemm);
+	    fclose(fgemm);
+	}
+	SUPERLU_FREE(gemm_stats);
+	SUPERLU_FREE(prof_sendR);
     }
-    SUPERLU_FREE(gemm_stats);
-    SUPERLU_FREE(prof_sendR);
-}
 #endif
 
 #if ( PRNTlevel==3 )
-MPI_Allreduce (&zero_msg, &iinfo, 1, MPI_INT, MPI_SUM, grid->comm);
-if (!iam)
-    printf (".. # msg of zero size\t%d\n", iinfo);
-MPI_Allreduce (&total_msg, &iinfo, 1, MPI_INT, MPI_SUM, grid->comm);
-if (!iam)
-    printf (".. # total msg\t%d\n", iinfo);
+    MPI_Allreduce (&zero_msg, &iinfo, 1, MPI_INT, MPI_SUM, grid->comm);
+    if (!iam)
+	printf (".. # msg of zero size\t%d\n", iinfo);
+    MPI_Allreduce (&total_msg, &iinfo, 1, MPI_INT, MPI_SUM, grid->comm);
+    if (!iam)
+	printf (".. # total msg\t%d\n", iinfo);
 #endif
 
 #if ( DEBUGlevel>=3 )
-for (i = 0; i < Pr * Pc; ++i) {
-    if (iam == i) {
-        dPrintLblocks (iam, nsupers, grid, Glu_persist, Llu);
-        dPrintUblocks (iam, nsupers, grid, Glu_persist, Llu);
-        printf ("(%d)\n", iam);
-        PrintInt10 ("Recv", nsupers, Llu->ToRecv);
+    for (i = 0; i < Pr * Pc; ++i) {
+	if (iam == i) {
+	    dPrintLblocks (iam, nsupers, grid, Glu_persist, Llu);
+	    dPrintUblocks (iam, nsupers, grid, Glu_persist, Llu);
+	    printf ("(%d)\n", iam);
+	    PrintInt10 ("Recv", nsupers, Llu->ToRecv);
+	}
+	MPI_Barrier (grid->comm);
     }
-    MPI_Barrier (grid->comm);
-}
 #endif
 
 #if ( DEBUGlevel>=3 )
-printf ("(%d) num_copy=%d, num_update=%d\n", iam, num_copy, num_update);
+    printf ("(%d) num_copy=%d, num_update=%d\n", iam, num_copy, num_update);
 #endif
 #if ( DEBUGlevel>=1 )
-CHECK_MALLOC (iam, "Exit pdgstrf()");
+    CHECK_MALLOC (iam, "Exit pdgstrf()");
 #endif
 
-return 0;
+    return 0;
 } /* PDGSTRF */
