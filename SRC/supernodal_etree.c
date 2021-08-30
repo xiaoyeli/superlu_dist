@@ -835,7 +835,7 @@ int_t* getReplicatedTrees( gridinfo3d_t* grid3d)
 int_t* getMyIperm(int_t nnodes, int_t nsupers, int_t* myPerm)
 {
 	if (nnodes < 0) return NULL;
-	int_t* myIperm =  INT_T_ALLOC(nsupers);
+	int_t* myIperm =  INT_T_ALLOC(nsupers+1);
 	for (int_t i = 0; i < nsupers; ++i)
 	{
 		/* code */
@@ -847,6 +847,7 @@ int_t* getMyIperm(int_t nnodes, int_t nsupers, int_t* myPerm)
 		assert(myPerm[i] < nsupers);
 		myIperm[myPerm[i]] = i;
 	}
+	myIperm[nsupers] = nsupers; 
 	return myIperm;
 }
 int_t* getMyTopOrder(int_t nnodes, int_t* myPerm, int_t* myIperm, int_t* setree )
