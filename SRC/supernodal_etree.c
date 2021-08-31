@@ -275,7 +275,7 @@ int_t getDescendList(int_t k, int_t*dlist,  treeList_t* treeList)
 }
 
 
-int_t getCommonAncsCount(int_t k, treeList_t* treeList)
+int_t getCommonAncsCount(int_t k,  treeList_t* treeList)
 {
 	// given a supernode k, give me the list of ancestors nodes
 	int_t cur = k;
@@ -375,33 +375,35 @@ int_t* getEtreeLB(int_t nnodes, int_t* perm_l, int_t* gTopOrder)
 	return lEtreeLB;
 }
 
-int_t* getSubTreeRoots(int_t k, treeList_t* treeList)
+//TODO: add num children added to the list 
+int_t* getSubTreeRoots(int_t k, int_t *numSubtrees, treeList_t* treeList)
 {
-	int_t* srootList = (int_t* ) SUPERLU_MALLOC(sizeof(int_t) * 2);
+	
 	int_t cur = k;
 	while (treeList[cur].numChild == 1 && cur > 0)
 	{
 		cur = treeList[cur].childrenList[0];
 	}
 
-	if (treeList[cur].numChild == 2)
+	// TODO: fix it for treeList[cur].numChild>1
+	if (treeList[cur].numChild > 1)
 	{
-		/* code */
-		srootList[0] = treeList[cur].childrenList[0];
-		srootList[1] = treeList[cur].childrenList[1];
-		// printf("Last node =%d, numchilds=%d,  desc[%d] = %d, desc[%d] = %d \n ",
-		// 	cur, treeList[cur].numChild,
-		// 	srootList[0], treeList[srootList[0]].numDescendents,
-		// 	srootList[1], treeList[srootList[1]].numDescendents );
+		*numSubtrees = treeList[cur].numChild;
+		int_t* srootList = (int_t* ) SUPERLU_MALLOC(sizeof(int_t) * treeList[cur].numChild);
+		for(int i=0; i< treeList[cur].numChild; i++)
+		{
+			srootList[i] = treeList[cur].childrenList[i];	
+		}
+		
+		return srootList;
 	}
 	else
 	{
-		/* code */
-		srootList[0] = -1;
-		srootList[1] = -1;
+		*numSubtrees =0;
+		return NULL;
 	}
 
-	return srootList;
+	
 }
 
 int_t testSubtreeNodelist(int_t nsupers, int_t numList, int_t** nodeList, int_t* nodeCount)
@@ -721,7 +723,8 @@ int_t* getTreeHeads(int_t maxLvl, int_t nsupers, treeList_t* treeList)
 		{
 			/* code */
 			int_t * sroots;
-			sroots = getSubTreeRoots(treeHeads[i], treeList);
+			int_t numSroots; 
+			sroots = getSubTreeRoots(treeHeads[i], &numSroots, treeList);
 			treeHeads[2 * i + 1] = sroots[0];
 			treeHeads[2 * i + 2] = sroots[1];
 			SUPERLU_FREE(sroots);
