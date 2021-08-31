@@ -495,6 +495,101 @@ at the top-level directory.
  */
 // dSOLVEstruct3d_t * SOLVEstruct,
 // SOLVEstruct->A3d
+
+int writeLUtoDisk(int nsupers, int_t* xsup, dLUstruct_t * LUstruct)
+{
+	
+	if(getenv("LUFILE"))
+	{
+		FILE* fp = fopen( getenv("LUFILE"), "w" );
+		printf("writing to %s",getenv("LUFILE"));
+		for(int i=0; i< nsupers; i++)
+		{
+			if(LUstruct->Llu->Lrowind_bc_ptr[i])
+			{
+				int_t* lsub = LUstruct->Llu->Lrowind_bc_ptr[i];
+				double* nzval =  LUstruct->Llu->Lnzval_bc_ptr[i];
+				
+				int_t len   = lsub[1];   /* LDA of the nzval[] */
+				int_t len2  = SuperSize(i) * len;
+				fwrite( nzval, sizeof(double), len2, fp);	// assume fp will be incremented 
+			}
+			
+			if(LUstruct->Llu->Ufstnz_br_ptr[i])
+			{
+				int_t* usub = LUstruct->Llu->Ufstnz_br_ptr[i];
+				double* nzval =  LUstruct->Llu->Unzval_br_ptr[i];
+				int_t lenv = usub[1];
+				
+				fwrite( nzval, sizeof(double), lenv, fp);	// assume fp will be incremented 
+			}
+		}
+
+		fclose(fp); 
+	}	
+	else
+	{
+		printf("Please set environment variable LUFILE to write\n..bye bye");
+		exit(0);
+	}
+}
+
+#define EPSILON 1e-3
+
+static int checkArr(double *A, double *B, int n)
+{
+    for (int i = 0; i < n; i++)
+    {
+        assert(fabs(A[i] - B[i]) <= EPSILON * SUPERLU_MIN (fabs(A[i]), fabs(B[i])));
+    }
+
+    return 0;
+}
+
+int  checkLUFromDisk(int nsupers, int_t* xsup, dLUstruct_t * LUstruct)
+{
+	dLocalLU_t *Llu = LUstruct->Llu;
+    
+    double* Lval_buf = doubleMalloc_dist(Llu->bufmax[1]); //DOUBLE_ALLOC(Llu->bufmax[1]);
+    double* Uval_buf = doubleMalloc_dist(Llu->bufmax[3]); //DOUBLE_ALLOC(Llu->bufmax[3]);
+	
+	if(getenv("LUFILE"))
+	{
+		FILE* fp = fopen( getenv("LUFILE"), "r" );
+		printf("reading from %s",getenv("LUFILE"));
+		for(int i=0; i< nsupers; i++)
+		{
+			if(LUstruct->Llu->Lrowind_bc_ptr[i])
+			{
+				int_t* lsub = LUstruct->Llu->Lrowind_bc_ptr[i];
+				double* nzval =  LUstruct->Llu->Lnzval_bc_ptr[i];
+				
+				int_t len   = lsub[1];   /* LDA of the nzval[] */
+				int_t len2  = SuperSize(i) * len;
+				fread( Lval_buf, sizeof(double), len2, fp);	// assume fp will be incremented 
+				checkArr(nzval, Lval_buf, len2);
+			}
+			
+			if(LUstruct->Llu->Ufstnz_br_ptr[i])
+			{
+				int_t* usub = LUstruct->Llu->Ufstnz_br_ptr[i];
+				double* nzval =  LUstruct->Llu->Unzval_br_ptr[i];
+				int_t lenv = usub[1];
+				
+				fread( Uval_buf, sizeof(double), lenv, fp);	// assume fp will be incremented 
+				checkArr(nzval, Uval_buf, lenv);
+			}
+		}
+		printf("CHecking LU from  %s is succesful ",getenv("LUFILE"));
+		fclose(fp); 
+	}
+	else
+	{
+		printf("Please set environment variable LUFILE to read\n..bye bye");
+		exit(0); 
+	}
+}
+
 void
 pdgssvx3d (superlu_dist_options_t * options, SuperMatrix * A,
            dScalePermstruct_t * ScalePermstruct,
@@ -558,17 +653,7 @@ pdgssvx3d (superlu_dist_options_t * options, SuperMatrix * A,
     double *B2d;
     NRformat_loc3d *A3d = dGatherNRformat_loc3d((NRformat_loc *)A->Store,
 		   	  			B, ldb, nrhs, grid3d);
-	if(options->Fact)
-	{
-		SOLVEstruct->A3d = dGatherNRformat_loc3d((NRformat_loc *)A->Store,
-		   	  			B, ldb, nrhs, grid3d);
-	}
-	else
-	{
-		SOLVEstruct->A3d = dGatherNRformat_loc3d_gatherUsingComputedOffsets((NRformat_loc *)A->Store,
-		   	  			B, ldb, nrhs, grid3d);
-	}					 
-	// SOLVEstruct->A3d = 
+	
     B2d = (double *) A3d->B2d; 
     NRformat_loc *Astore0 = A3d->A_nfmt; // on 2D grid-0
     NRformat_loc *A_orig = A->Store;
@@ -1263,6 +1348,32 @@ pdgssvx3d (superlu_dist_options_t * options, SuperMatrix * A,
 
 		SCT->gatherLUtimer += SuperLU_timer_() - tgather;
 		/*print stats for bottom grid*/
+
+		// Write LU to file 
+		int writeLU=0; 
+		if(getenv("WRITELU"))
+		{
+			writeLU = atoi(getenv("WRITELU"));
+		}
+
+		if(writeLU)
+		{
+			if(!grid3d->zscp.Iam)
+				writeLUtoDisk(nsupers, Glu_persist->xsup, LUstruct);
+		}
+
+		int checkLU=0; 
+		if(getenv("CHECKLU"))
+		{
+			checkLU = atoi(getenv("CHECKLU"));
+		}
+
+		if(checkLU)
+		{
+			if(!grid3d->zscp.Iam)
+				checkLUFromDisk(nsupers, Glu_persist->xsup, LUstruct);
+		}
+	
 
 #if (PRNTlevel >= 0)
 		if (!grid3d->zscp.Iam)
