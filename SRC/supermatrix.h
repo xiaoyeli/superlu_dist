@@ -188,18 +188,19 @@ typedef struct {
 } NRformat_loc;
 
 
-/* Data structure for storing 3D matrix on layer 0 of the 2D process grid */
+/* Data structure for storing 3D matrix on layer 0 of the 2D process grid
+   Only grid-0 has meanful values of these data structures.   */
 typedef struct NRformat_loc3d
 {
-    NRformat_loc* A_nfmt; 
+    NRformat_loc* A_nfmt; // Gathered A matrix on 2D grid-0 
     void* B3d;  // on the entire 3D process grid
-    int  ldb;
+    int  ldb;   // relative to 3D process grid
     int nrhs;
-    int m_loc; 
-    void* B2d;  // on 2D process layer Grid_0
+    int m_loc;  // relative to 3D process grid
+    void* B2d;  // on 2D process layer grid-0
 
-    int* row_counts_int; // these counts are for {A, B} distributed on 2D layer 0
-    int* row_disp;
+    int* row_counts_int; // these counts are stored on 2D layer grid-0,
+    int* row_disp;       // but count the number of {A, B} rows along Z-dimension
     int* b_counts_int;
     int* b_disp;
 } NRformat_loc3d;

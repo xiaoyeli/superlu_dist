@@ -242,9 +242,8 @@ int main(int argc, char *argv[])
     dScalePermstructFree(&ScalePermstruct);
     dDestroy_LU(n, &grid, &LUstruct);
     dLUstructFree(&LUstruct);
-    if ( options.SolveInitialized ) {
-        dSolveFinalize(&options, &SOLVEstruct);
-    }
+    //if ( options.SolveInitialized ) {
+    dSolveFinalize(&options, &SOLVEstruct);
     SUPERLU_FREE(b);
     SUPERLU_FREE(xtrue);
     SUPERLU_FREE(berr);

@@ -76,8 +76,8 @@ static void checkNRFMT(NRformat_loc*A, NRformat_loc*B)
 
 #if 0
     double *Aval = (double *)A->nzval, *Bval = (double *)B->nzval;
-    PrintDouble5("A", A->nnz_loc, Aval);
-    PrintDouble5("B", B->nnz_loc, Bval);
+    Printdouble5("A", A->nnz_loc, Aval);
+    Printdouble5("B", B->nnz_loc, Bval);
     fflush(stdout);
 #endif
 
@@ -358,13 +358,13 @@ main (int argc, char *argv[])
 	PStatPrint (&options, &stat, &(grid.grid2d)); /* Print 2D statistics.*/
 
         dDestroy_LU (n, &(grid.grid2d), &LUstruct);
-        if (options.SolveInitialized) {
-            dSolveFinalize (&options, &SOLVEstruct);
-        }
+	dSolveFinalize (&options, &SOLVEstruct);
     } else { // Process layers not equal 0
         dDeAllocLlu_3d(n, &LUstruct, &grid);
         dDeAllocGlu_3d(&LUstruct);
     }
+
+    dDestroy_A3d_gathered_on_2d(&SOLVEstruct, &grid);
 
     Destroy_CompRowLoc_Matrix_dist (&A);
     SUPERLU_FREE (b);

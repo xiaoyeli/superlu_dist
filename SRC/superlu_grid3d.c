@@ -49,6 +49,10 @@ void superlu_gridinit3d(MPI_Comm Bcomm, /* The base communicator upon which
 
 
 /*! \brief All processes in the MPI communicator must call this routine.
+ *  On output, if a process is not in the SuperLU group, the following
+ *  values are assigned to it:
+ *      grid->comm = MPI_COMM_NULL
+ *      grid->iam = -1
  */
 void superlu_gridmap3d(
     MPI_Comm Bcomm, /* The base communicator upon which

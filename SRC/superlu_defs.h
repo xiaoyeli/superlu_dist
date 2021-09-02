@@ -705,6 +705,7 @@ typedef struct {
     yes_no_t      lookahead_etree; /* use etree computed from the
 				      serial symbolic factorization */
     yes_no_t      SymPattern;      /* symmetric factorization          */
+    yes_no_t      Algo3d;          /* use 3D factorization/solve algorithms */
 } superlu_dist_options_t;
 
 typedef struct {
