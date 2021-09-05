@@ -15,7 +15,7 @@
 !! <pre>
 !! -- Distributed SuperLU routine (version 7.0) --
 !! Lawrence Berkeley National Lab, Univ. of California Berkeley.
-!! January 2, 2021
+!! May 12, 2021
 !! </pre>
 !
       program f_pzdrive3d
@@ -46,7 +46,6 @@
       include 'mpif.h'
       integer maxn, maxnz, maxnrhs
       parameter ( maxn = 10000, maxnz = 100000, maxnrhs = 10 )
-      integer rowind(maxnz), colptr(maxn)
       double complex  values(maxnz), b(maxn), xtrue(maxn)
       real*8 berr(maxnrhs)
 #if (XSDK_INDEX_SIZE==64)
@@ -138,11 +137,8 @@
       call f_Destroy_CompRowLoc_Mat_dist(A)
       call f_zScalePermstructFree(ScalePermstruct)
       call f_zDestroy_LU_SOLVE_struct_3d(options, n, grid, LUstruct, SOLVEstruct)
-!      call f_LUstructFree(LUstruct)
-!      call get_superlu_options(options, SolveInitialized=init)
-!      if (init == YES) then
-!         call f_dSolveFinalize(options, SOLVEstruct)
-!      endif
+      
+      call f_zDestroy_A3d_gathered_on_2d(SOLVEstruct, grid)
 
 ! Release the SuperLU process grid
 100   call f_superlu_gridexit(grid)

@@ -223,7 +223,7 @@ void superlu_gridmap3d(
 
     // grid->grid2d.cscp = grid->cscp;
 
-#if 0
+#if 1
     if ( (grid->zscp).Iam == 0) {
       printf("(3d grid: layer 0) iam %d, grid->grid2d.iam %d\n",
 	     grid->iam, (grid->grid2d).iam);
@@ -231,11 +231,12 @@ void superlu_gridmap3d(
     fflush(stdout);
 #endif
 
+    MPI_Comm_free( &superlu3d_comm );  // Sherry added
+    
  gridmap_out:    
     SUPERLU_FREE(pranks);
     MPI_Group_free( &superlu_grp );
     MPI_Group_free( &mpi_base_group );
-    MPI_Comm_free( &superlu3d_comm );  // Sherry added
 }
 
 void superlu_gridexit3d(gridinfo3d_t *grid)

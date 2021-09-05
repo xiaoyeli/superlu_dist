@@ -225,6 +225,9 @@ typedef struct {
                              positions in the gathered x-vector.
                              This is re-used in repeated calls to pzgsmv() */
     int_t *xrow_to_proc; /* used by PDSLin */
+    NRformat_loc3d* A3d; /* Point to 3D {A, B} gathered on 2D layer 0.
+                            This needs to be peresistent between
+			    3D factorization and solve.  */
 } zSOLVEstruct_t;
 
 
@@ -425,6 +428,7 @@ extern void  pzCompute_Diag_Inv(int_t, zLUstruct_t *,gridinfo_t *, SuperLUStat_t
 extern int  zSolveInit(superlu_dist_options_t *, SuperMatrix *, int_t [], int_t [],
 		       int_t, zLUstruct_t *, gridinfo_t *, zSOLVEstruct_t *);
 extern void zSolveFinalize(superlu_dist_options_t *, zSOLVEstruct_t *);
+extern void zDestroy_A3d_gathered_on_2d(zSOLVEstruct_t *, gridinfo3d_t *);
 extern int_t pzgstrs_init(int_t, int_t, int_t, int_t,
                           int_t [], int_t [], gridinfo_t *grid,
 	                  Glu_persist_t *, zSOLVEstruct_t *);
@@ -647,9 +651,9 @@ extern int zcreate_matrix_postfix3d(SuperMatrix *A, int nrhs, doublecomplex **rh
     
 /* Matrix distributed in NRformat_loc in 3D process grid. It converts 
    it to a NRformat_loc distributed in 2D grid in grid-0 */
-extern NRformat_loc3d *zGatherNRformat_loc3d(NRformat_loc *A, doublecomplex *B,
-					     int ldb, int nrhs,
-					     gridinfo3d_t *grid3d);
+extern void zGatherNRformat_loc3d(fact_t Fact, NRformat_loc *A, doublecomplex *B,
+				   int ldb, int nrhs, gridinfo3d_t *grid3d,
+				   NRformat_loc3d **);
 extern int zScatter_B3d(NRformat_loc3d *A3d, gridinfo3d_t *grid3d);
 
 extern void pzgssvx3d (superlu_dist_options_t *, SuperMatrix *,

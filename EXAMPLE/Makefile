@@ -54,6 +54,7 @@ ZEXM3	= pzdrive3.o zcreate_matrix.o
 ZEXM4	= pzdrive4.o zcreate_matrix.o
 ZEXM3D	= pzdrive3d.o zcreate_matrix.o zcreate_matrix3d.o
 ZEXM3D1	= pzdrive3d1.o zcreate_matrix.o zcreate_matrix3d.o
+ZEXM3D1	= pzdrive3d1.o zcreate_matrix.o zcreate_matrix3d.o
 ZEXMG	= pzdrive_ABglobal.o
 ZEXMG1	= pzdrive1_ABglobal.o
 ZEXMG2	= pzdrive2_ABglobal.o
@@ -61,7 +62,7 @@ ZEXMG3	= pzdrive3_ABglobal.o
 ZEXMG4	= pzdrive4_ABglobal.o
 
 
-all: pddrive3d1 pddrive3d #double complex16
+all: pddrive3d1 pddrive3d double complex16
 
 double:    pddrive pddrive1 pddrive2 pddrive3 pddrive4 \
 	   pddrive3d pddrive3d1 \
@@ -69,7 +70,7 @@ double:    pddrive pddrive1 pddrive2 pddrive3 pddrive4 \
 	   pddrive3_ABglobal pddrive4_ABglobal
 
 complex16: pzdrive pzdrive1 pzdrive2 pzdrive3 pzdrive4 \
-	   pzdrive3d \
+	   pzdrive3d pzdrive3d1 \
 	   pzdrive_ABglobal pzdrive1_ABglobal pzdrive2_ABglobal \
 	   pzdrive3_ABglobal pzdrive4_ABglobal
 

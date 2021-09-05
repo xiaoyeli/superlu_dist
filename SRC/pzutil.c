@@ -776,20 +776,42 @@ int zSolveInit(superlu_dist_options_t *options, SuperMatrix *A,
  */
 void zSolveFinalize(superlu_dist_options_t *options, zSOLVEstruct_t *SOLVEstruct)
 {
-    pxgstrs_finalize(SOLVEstruct->gstrs_comm);
+    if ( options->SolveInitialized ) {
+        pxgstrs_finalize(SOLVEstruct->gstrs_comm);
 
-    if ( options->RefineInitialized ) {
-        pzgsmv_finalize(SOLVEstruct->gsmv_comm);
-	options->RefineInitialized = NO;
+        if ( options->RefineInitialized ) {
+            pzgsmv_finalize(SOLVEstruct->gsmv_comm);
+	    options->RefineInitialized = NO;
+        }
+        SUPERLU_FREE(SOLVEstruct->gsmv_comm);
+        SUPERLU_FREE(SOLVEstruct->row_to_proc);
+        SUPERLU_FREE(SOLVEstruct->inv_perm_c);
+        SUPERLU_FREE(SOLVEstruct->diag_procs);
+        SUPERLU_FREE(SOLVEstruct->diag_len);
+        if ( SOLVEstruct->A_colind_gsmv )
+	    SUPERLU_FREE(SOLVEstruct->A_colind_gsmv);
+        options->SolveInitialized = NO;
     }
-    SUPERLU_FREE(SOLVEstruct->gsmv_comm);
-    SUPERLU_FREE(SOLVEstruct->row_to_proc);
-    SUPERLU_FREE(SOLVEstruct->inv_perm_c);
-    SUPERLU_FREE(SOLVEstruct->diag_procs);
-    SUPERLU_FREE(SOLVEstruct->diag_len);
-    if ( SOLVEstruct->A_colind_gsmv ) SUPERLU_FREE(SOLVEstruct->A_colind_gsmv);
-    options->SolveInitialized = NO;
 } /* zSolveFinalize */
+
+void zDestroy_A3d_gathered_on_2d(zSOLVEstruct_t *SOLVEstruct, gridinfo3d_t *grid3d)
+{
+    /* free A2d and B2d, which are allocated only in 2D layer grid-0 */
+    NRformat_loc3d *A3d = SOLVEstruct->A3d;
+    NRformat_loc *A2d = A3d->A_nfmt;
+    if (grid3d->zscp.Iam == 0) {
+	SUPERLU_FREE( A2d->rowptr );
+	SUPERLU_FREE( A2d->colind );
+	SUPERLU_FREE( A2d->nzval );
+    }
+    SUPERLU_FREE(A3d->b_counts_int);  // free displacement counts 
+    SUPERLU_FREE(A3d->b_disp);
+    SUPERLU_FREE(A3d->row_counts_int);
+    SUPERLU_FREE(A3d->row_disp);
+    SUPERLU_FREE( A2d );         // free 2D structure
+    SUPERLU_FREE( A3d );         // free 3D structure
+} /* zDestroy_A3d_gathered_on_2d */
+
 
 /*! \brief Check the inf-norm of the error vector
  */

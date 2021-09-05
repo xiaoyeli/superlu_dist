@@ -18,9 +18,8 @@ at the top-level directory.
  *
  * <pre>
  * -- Distributed SuperLU routine (version 7.0) --
- * Lawrence Berkeley National Lab, Univ. of California Berkeley,
- * Oak Ridge National Lab.
- * October 22, 2020
+ * Lawrence Berkeley National Lab, Oak Ridge National Lab.
+ * May 12, 2021
  */
 
 #include "superlu_ddefs.h"
@@ -51,8 +50,8 @@ void dGatherNRformat_loc3d
  double *B,       // input
  int ldb, int nrhs, // input
  gridinfo3d_t *grid3d, 
- NRformat_loc3d **A3d_addr /* if Fact == DOFACT, it is an input.
-			      Otherwise, it is both input and may be modified */
+ NRformat_loc3d **A3d_addr /* If Fact == DOFACT, it is an input;
+ 		              Else it is both input and may be modified */
  )
 {
     NRformat_loc3d *A3d = (NRformat_loc3d *) *A3d_addr;
@@ -77,7 +76,6 @@ void dGatherNRformat_loc3d
 	A3d = SUPERLU_MALLOC(sizeof(NRformat_loc3d));
 	A2d = SUPERLU_MALLOC(sizeof(NRformat_loc));
     
-
 	// find number of nnzs
 	int_t *nnz_counts; // number of local nonzeros relative to all processes
 	int_t *row_counts; // number of local rows relative to all processes
@@ -112,9 +110,9 @@ void dGatherNRformat_loc3d
 
 	if (grid3d->zscp.Iam == 0)
 	    {
-		A2d->colind = SUPERLU_MALLOC(nnz_disp[grid3d->npdep] * sizeof(int_t));
-		A2d->nzval = SUPERLU_MALLOC(nnz_disp[grid3d->npdep] * sizeof(double));
-		A2d->rowptr = SUPERLU_MALLOC((row_disp[grid3d->npdep] + 1) * sizeof(int_t));
+		A2d->colind = intMalloc_dist(nnz_disp[grid3d->npdep]);
+		A2d->nzval = doubleMalloc_dist(nnz_disp[grid3d->npdep]);
+		A2d->rowptr = intMalloc_dist((row_disp[grid3d->npdep] + 1));
 		A2d->rowptr[0] = 0;
 	    }
 
@@ -164,11 +162,11 @@ void dGatherNRformat_loc3d
 		}
 	    } /* end 2D layer grid-0 */
 
-	A3d->A_nfmt = A2d;
-	A3d->b_counts_int = b_counts_int;
-	A3d->b_disp = b_disp;
+	A3d->A_nfmt         = A2d;
+	A3d->b_counts_int   = b_counts_int;
+	A3d->b_disp         = b_disp;
 	A3d->row_counts_int = row_counts_int;
-	A3d->row_disp = row_disp;
+	A3d->row_disp       = row_disp;
 
 	/* free storage */
 	SUPERLU_FREE(nnz_counts);
@@ -176,28 +174,24 @@ void dGatherNRformat_loc3d
 	SUPERLU_FREE(row_counts);
 	SUPERLU_FREE(nnz_disp);
 	
-	*A3d_addr = A3d;  // return the pointer to A3d matrix
+	*A3d_addr = (NRformat_loc3d *) A3d; // return pointer to A3d struct
+	
     } /* end else: Factor from scratch */
 
-	A3d->m_loc = A->m_loc;
-	A3d->B3d = (double *) B; /* save the pointer to the original B
+    A3d->m_loc = A->m_loc;
+    A3d->B3d = (double *) B; /* save the pointer to the original B
 				    stored on 3D process grid.  */
-	A3d->ldb = ldb;
-	A3d->nrhs = nrhs;
+    A3d->ldb = ldb;
+    A3d->nrhs = nrhs;
 	
-    printf("dGather_loc3d(1): Fact %d; A3d %p\n", Fact, A3d); fflush(stdout);
-    
     /********* Gather B2d **********/
     if ( nrhs > 0 ) {
 	
 	A2d = (NRformat_loc *) A3d->A_nfmt; // matrix A gathered on 2D grid-0
-	b_counts_int = A3d->b_counts_int;
-	b_disp       = A3d->b_disp;;
+	b_counts_int   = A3d->b_counts_int;
+	b_disp         = A3d->b_disp;;
 	row_counts_int = A3d->row_counts_int;
-	row_disp     = A3d->row_disp;
-	
-	if ( Fact == FACTORED ) {
-	}
+	row_disp       = A3d->row_disp;
 	
 	printf("dGather_loc3d(2): row_disp %p, A3d %p\n", row_disp, A3d); fflush(stdout);
 
@@ -210,7 +204,7 @@ void dGatherNRformat_loc3d
 	if (grid3d->zscp.Iam == 0)
 	    {
 		B1 = doubleMalloc_dist(A2d->m_loc * nrhs);
-		A3d->B2d = (double *) doubleMalloc_dist(A2d->m_loc * nrhs);
+		A3d->B2d = doubleMalloc_dist(A2d->m_loc * nrhs);
 	    }
 
 	// B1 <- gatherv(Btmp)
@@ -219,7 +213,6 @@ void dGatherNRformat_loc3d
 		    MPI_DOUBLE, 0, grid3d->zscp.comm);
 	SUPERLU_FREE(Btmp);
 
-    printf("dGather_loc3d(3): nrhs %d\n", nrhs); fflush(stdout);
 	// B2d <- colMajor(B1)
 	if (grid3d->zscp.Iam == 0)
 	    {
@@ -232,11 +225,10 @@ void dGatherNRformat_loc3d
 		
 		SUPERLU_FREE(B1);
 	    }
-    printf("dGather_loc3d(4): nrhs %d\n", nrhs); fflush(stdout);
+
     } /* end gather B2d */
 
 } /* dGatherNRformat_loc3d */
-
 
 /*
  * Scatter B (solution) from 2D process layer 0 to 3D grid
@@ -245,7 +237,7 @@ void dGatherNRformat_loc3d
 int dScatter_B3d(NRformat_loc3d *A3d,  // modified
 		 gridinfo3d_t *grid3d)
 {
-    double *B = (double *) A3d->B3d; // retrieve the original pointer on 3D grid
+    double *B = (double *) A3d->B3d; // retrieve original pointer on 3D grid
     int ldb = A3d->ldb;
     int nrhs = A3d->nrhs;
     double *B2d = (double *) A3d->B2d; // only on 2D layer grid_0 
@@ -280,7 +272,7 @@ int dScatter_B3d(NRformat_loc3d *A3d,  // modified
     }
 
     double *Btmp; // on 3D grid
-    Btmp = SUPERLU_MALLOC(A3d->m_loc * nrhs * sizeof(double));
+    Btmp = doubleMalloc_dist(A3d->m_loc * nrhs);
 
     // Btmp <- scatterv(B1), block-by-block
     if ( rankorder == 1 ) { /* XY-major in 3D grid */
@@ -350,14 +342,12 @@ int dScatter_B3d(NRformat_loc3d *A3d,  // modified
     // B <- colMajor(Btmp)
     matCopy(A3d->m_loc, nrhs, B, ldb, Btmp, A3d->m_loc);
 
-    //Printdouble5("scatter_B3d(2):: B:", 5, B);
-    
     /* free storage */
     SUPERLU_FREE(Btmp);
     if (grid3d->zscp.Iam == 0) {
 	SUPERLU_FREE(B1);
 	SUPERLU_FREE(B2d);
     }
-    
+
     return 0;
 } /* dScatter_B3d */

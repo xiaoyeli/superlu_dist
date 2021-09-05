@@ -61,6 +61,10 @@ if(enable_double)
   add_executable(pddrive3d ${DEXM3D})
   target_link_libraries(pddrive3d ${all_link_libs})
 
+  set(DEXM3D1 pddrive3d1.c dcreate_matrix.c dcreate_matrix3d.c)
+  add_executable(pddrive3d1 ${DEXM3D1})
+  target_link_libraries(pddrive3d1 ${all_link_libs})
+  
   set(DEXMG pddrive_ABglobal.c)
   add_executable(pddrive_ABglobal ${DEXMG})
   target_link_libraries(pddrive_ABglobal ${all_link_libs})
@@ -116,6 +120,10 @@ if(enable_single)
   add_executable(psdrive3d ${SEXM3D})
   target_link_libraries(psdrive3d ${all_link_libs})
 
+  set(SEXM3D1 psdrive3d1.c screate_matrix.c screate_matrix3d.c)
+  add_executable(psdrive3d1 ${SEXM3D1})
+  target_link_libraries(psdrive3d1 ${all_link_libs})
+  
 endif() #### end enable_single
 
 if(enable_complex16)
@@ -147,6 +155,10 @@ if(enable_complex16)
   add_executable(pzdrive3d ${ZEXM3D})
   target_link_libraries(pzdrive3d ${all_link_libs})
 
+  set(ZEXM3D1 pzdrive3d1.c zcreate_matrix.c zcreate_matrix3d.c)
+  add_executable(pzdrive3d1 ${ZEXM3D1})
+  target_link_libraries(pzdrive3d1 ${all_link_libs})
+  
   set(ZEXMG pzdrive_ABglobal.c)
   add_executable(pzdrive_ABglobal ${ZEXMG})
   target_link_libraries(pzdrive_ABglobal ${all_link_libs})

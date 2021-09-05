@@ -397,7 +397,7 @@ at the top-level directory.
  *           of Pc*A'*A*Pc'; perm_c is not changed if the elimination tree
  *           is already in postorder.
  *
- *         o R (double*) dimension (A->nrow)
+ *         o R (double *) dimension (A->nrow)
  *           The row scale factors for A.
  *           If DiagScale = ROW or BOTH, A is multiplied on the left by
  *                          diag(R).
@@ -405,7 +405,7 @@ at the top-level directory.
  *           If options->Fact = FACTORED or SamePattern_SameRowPerm, R is
  *           an input argument; otherwise, R is an output argument.
  *
- *         o C (double*) dimension (A->ncol)
+ *         o C (double *) dimension (A->ncol)
  *           The column scale factors for A.
  *           If DiagScale = COL or BOTH, A is multiplied on the right by
  *                          diag(C).
@@ -504,7 +504,7 @@ pdgssvx3d (superlu_dist_options_t * options, SuperMatrix * A,
     SuperMatrix GA;        /* Global A in NC format */
     NCformat *GAstore;
     double *a_GA;
-    SuperMatrix GAC;       /* Global A in NCP format (add n end pointers) */
+    SuperMatrix GAC; /* Global A in NCP format (add n end pointers) */
     NCPformat *GACstore;
     Glu_persist_t *Glu_persist = LUstruct->Glu_persist;
     Glu_freeable_t *Glu_freeable;
@@ -542,13 +542,13 @@ pdgssvx3d (superlu_dist_options_t * options, SuperMatrix * A,
 #if ( PRNTlevel>= 2 )
     double dmin, dsum, dprod;
 #endif
-    
+
     LUstruct->dt = 'd';
     
     // get the 2d grid
     gridinfo_t *grid  = &(grid3d->grid2d);
     iam = grid->iam;
-
+    
     /* Test the options choices. */
     *info = 0;
     Fact = options->Fact;
@@ -572,7 +572,6 @@ pdgssvx3d (superlu_dist_options_t * options, SuperMatrix * A,
     else if (nrhs < 0) {
 	 *info = -6;
     }
-    
     if (*info) {
 	i = -(*info);
 	pxerr_dist ("pdgssvx3d", grid, -(*info));
@@ -588,14 +587,14 @@ pdgssvx3d (superlu_dist_options_t * options, SuperMatrix * A,
     
     /* Save the inputs: ldb -> ldb3d, and B -> B3d, Astore -> Astore3d,
        so that the names {ldb, B, and Astore} can be used internally.
-       B3d and Astore3d will be assigned back to B and Astore on return.  */
+       B3d and Astore3d will be assigned back to B and Astore on return.*/
     int ldb3d = ldb;
     NRformat_loc *Astore3d = (NRformat_loc *)A->Store;
     NRformat_loc3d *A3d = SOLVEstruct->A3d;
 
     /* B3d is aliased to B;
        B2d is allocated; 
-       B is then aliased to B2d in the following 2D solve;
+       B is then aliased to B2d for the following 2D solve;
     */
     dGatherNRformat_loc3d(Fact, (NRformat_loc *)A->Store,
 			  B, ldb, nrhs, grid3d, &A3d);
@@ -606,11 +605,11 @@ pdgssvx3d (superlu_dist_options_t * options, SuperMatrix * A,
     
     SOLVEstruct->A3d = A3d; /* This structure need to be persistent across
 			       multiple calls of pdgssvx3d()   */
-    printf("pdgssvx3d(1) factored %d, A3d %p\n", factored, A3d); fflush(stdout);
     
     NRformat_loc *Astore0 = A3d->A_nfmt; // on 2D grid-0
     NRformat_loc *A_orig = A->Store;
-    
+//////    
+
 #if ( DEBUGlevel>=1 )
     CHECK_MALLOC (iam, "Enter pdgssvx3d()");
 #endif
@@ -621,6 +620,7 @@ pdgssvx3d (superlu_dist_options_t * options, SuperMatrix * A,
        - ordering, 
        - symbolic factorization,
        - distribution of L & U                                      */
+
     if (grid3d->zscp.Iam == 0)  /* on 2D grid-0 */
     {
         m = A->nrow;
@@ -630,7 +630,7 @@ pdgssvx3d (superlu_dist_options_t * options, SuperMatrix * A,
 	// On input, A->Store is on 3D, now A->Store is re-assigned to 2D store
 	A->Store = Astore0;  // on 2D grid-0
 	ldb = Astore0->m_loc;
-
+	
 	/* The following code now works on 2D grid-0 */
     	Astore = (NRformat_loc *) A->Store;
     	nnz_loc = Astore->nnz_loc;
@@ -658,12 +658,14 @@ pdgssvx3d (superlu_dist_options_t * options, SuperMatrix * A,
 	iam = grid->iam;
 	job = 5;
 	/* Extract equilibration status from a previous factorization */
-	if (factored || (Fact == SamePattern_SameRowPerm && Equil)) {
+	if (factored || (Fact == SamePattern_SameRowPerm && Equil))
+	    {
 		rowequ = (ScalePermstruct->DiagScale == ROW) ||
 		    (ScalePermstruct->DiagScale == BOTH);
 		colequ = (ScalePermstruct->DiagScale == COL) ||
 		    (ScalePermstruct->DiagScale == BOTH);
-	} else {
+	    }
+	else {
 	    rowequ = colequ = FALSE;
 	}
 	
@@ -680,15 +682,15 @@ pdgssvx3d (superlu_dist_options_t * options, SuperMatrix * A,
 	    /* Allocate storage if not done so before. */
 	    switch (ScalePermstruct->DiagScale)	{
 		case NOEQUIL:
-		    if (!(R = (double *) doubleMalloc_dist (m)))
+		    if (!(R = (double  *) doubleMalloc_dist (m)))
 			ABORT ("Malloc fails for R[].");
-		    if (!(C = (double *) doubleMalloc_dist (n)))
+		    if (!(C = (double  *) doubleMalloc_dist (n)))
 			ABORT ("Malloc fails for C[].");
 		    ScalePermstruct->R = R;
 		    ScalePermstruct->C = C;
 		    break;
 		case ROW:
-		    if (!(C = (double *) doubleMalloc_dist (n)))
+		    if (!(C = (double  *) doubleMalloc_dist (n)))
 			ABORT ("Malloc fails for C[].");
 		    ScalePermstruct->C = C;
 		    break;
@@ -998,6 +1000,7 @@ pdgssvx3d (superlu_dist_options_t * options, SuperMatrix * A,
 #endif
 	}
 	
+	
 	/* ------------------------------------------------------------
 	   Perform the LU factorization.
 	   ------------------------------------------------------------ */
@@ -1270,7 +1273,7 @@ pdgssvx3d (superlu_dist_options_t * options, SuperMatrix * A,
     } /* end if not Factored */
     
     if ( grid3d->zscp.Iam == 0 ) { // only process layer 0
-	if ( !factored ) {
+	if (!factored) {
 	    if (options->PrintStat) {
 		int_t TinyPivots;
 		float for_lu, total, max, avg, temp;
@@ -1322,226 +1325,226 @@ pdgssvx3d (superlu_dist_options_t * options, SuperMatrix * A,
 	   ------------------------------------------------------------ */
 	if ( nrhs > 0 ) {
 	    if (!(b_work = doubleMalloc_dist (n)))
-		ABORT ("Malloc fails for b_work[]");
+	        ABORT ("Malloc fails for b_work[]");
 
 	    /* ------------------------------------------------------
 	       Scale the right-hand side if equilibration was performed
 	       ------------------------------------------------------*/
 	    if (notran)
-		{
-		    if (rowequ)
-			{
+	        {
+	    	    if (rowequ)
+		        {
 			    b_col = B;
 			    for (j = 0; j < nrhs; ++j)
-				{
-				    irow = fst_row;
+			        {
+			    	    irow = fst_row;
 				    for (i = 0; i < m_loc; ++i)
-					{
-					    b_col[i] *= R[irow];
-					    ++irow;
-					}
+				    {
+		                         b_col[i] *= R[irow];
+ 					 ++irow;
+				    }
 				    b_col += ldb;
 				}
 			}
-		}
-	    else if (colequ)
-		{
-		    b_col = B;
-		    for (j = 0; j < nrhs; ++j)
-			{
-			    irow = fst_row;
-			    for (i = 0; i < m_loc; ++i)
+		    }
+		else if (colequ)
+		    {
+			b_col = B;
+			for (j = 0; j < nrhs; ++j)
+			    {
+				irow = fst_row;
+				for (i = 0; i < m_loc; ++i)
 				{
-				    b_col[i] *= C[irow];
+		                    b_col[i] *= C[irow];
 				    ++irow;
 				}
-			    b_col += ldb;
-			}
+				b_col += ldb;
+			    }
+		    }
+
+		/* Save a copy of the right-hand side. */
+		ldx = ldb;
+		if (!(X = doubleMalloc_dist (((size_t) ldx) * nrhs)))
+		    ABORT ("Malloc fails for X[]");
+		x_col = X;
+		b_col = B;
+		for (j = 0; j < nrhs; ++j) {
+		    for (i = 0; i < m_loc; ++i) x_col[i] = b_col[i];
+		    x_col += ldx;
+		    b_col += ldb;
 		}
 
-	    /* Save a copy of the right-hand side. */
-	    ldx = ldb;
-	    if (!(X = doubleMalloc_dist (((size_t) ldx) * nrhs)))
-		ABORT ("Malloc fails for X[]");
-	    x_col = X;
-	    b_col = B;
-	    for (j = 0; j < nrhs; ++j) {
-		for (i = 0; i < m_loc; ++i) x_col[i] = b_col[i];
-		x_col += ldx;
-		b_col += ldb;
-	    }
-
-	    /* ------------------------------------------------------
-	       Solve the linear system.
-	       ------------------------------------------------------*/
-	    if (options->SolveInitialized == NO) /* First time */
-		/* Inside this routine, SolveInitialized is set to YES.
-		   For repeated call to pdgssvx3d(), no need to re-initialilze
-		   the Solve data & communication structures, unless a new
-		   factorization with Fact == DOFACT or SamePattern is asked for. */
-		{
-		    dSolveInit (options, A, perm_r, perm_c, nrhs, LUstruct,
-				grid, SOLVEstruct);
-		}
-	    stat->utime[SOLVE] = 0.0;
+		/* ------------------------------------------------------
+		   Solve the linear system.
+		   ------------------------------------------------------*/
+		if (options->SolveInitialized == NO) /* First time */
+                   /* Inside this routine, SolveInitialized is set to YES.
+	              For repeated call to pdgssvx3d(), no need to re-initialilze
+	              the Solve data & communication structures, unless a new
+	              factorization with Fact == DOFACT or SamePattern is asked for. */
+		    {
+			dSolveInit (options, A, perm_r, perm_c, nrhs, LUstruct,
+			            grid, SOLVEstruct);
+		    }
+		stat->utime[SOLVE] = 0.0;
 #if 0 // Sherry: the following interface is needed by 3D trisolve.
-	    pdgstrs_vecpar (n, LUstruct, ScalePermstruct, grid, X, m_loc,
+		pdgstrs_vecpar (n, LUstruct, ScalePermstruct, grid, X, m_loc,
 				fst_row, ldb, nrhs, SOLVEstruct, stat, info);
 #else
-	    pdgstrs(n, LUstruct, ScalePermstruct, grid, X, m_loc,
-		    fst_row, ldb, nrhs, SOLVEstruct, stat, info);
+		pdgstrs(n, LUstruct, ScalePermstruct, grid, X, m_loc,
+			fst_row, ldb, nrhs, SOLVEstruct, stat, info);
 #endif
 
-	    /* ------------------------------------------------------------
-	       Use iterative refinement to improve the computed solution and
-	       compute error bounds and backward error estimates for it.
-	       ------------------------------------------------------------ */
-	    if (options->IterRefine)
-		{
-		    /* Improve the solution by iterative refinement. */
-		    int_t *it, *colind_gsmv = SOLVEstruct->A_colind_gsmv;
-		    dSOLVEstruct_t *SOLVEstruct1; /* Used by refinement */
+		/* ------------------------------------------------------------
+		   Use iterative refinement to improve the computed solution and
+		   compute error bounds and backward error estimates for it.
+		   ------------------------------------------------------------ */
+		if (options->IterRefine)
+		    {
+			/* Improve the solution by iterative refinement. */
+			int_t *it, *colind_gsmv = SOLVEstruct->A_colind_gsmv;
+			dSOLVEstruct_t *SOLVEstruct1; /* Used by refinement */
 
-		    t = SuperLU_timer_ ();
-		    if (options->RefineInitialized == NO || Fact == DOFACT) {
-			/* All these cases need to re-initialize gsmv structure */
-			if (options->RefineInitialized)
-			    pdgsmv_finalize (SOLVEstruct->gsmv_comm);
-			pdgsmv_init (A, SOLVEstruct->row_to_proc, grid,
-				     SOLVEstruct->gsmv_comm);
-			
-			/* Save a copy of the transformed local col indices
-			   in colind_gsmv[]. */
-			if (colind_gsmv) SUPERLU_FREE (colind_gsmv);
-			if (!(it = intMalloc_dist (nnz_loc)))
-			    ABORT ("Malloc fails for colind_gsmv[]");
-			colind_gsmv = SOLVEstruct->A_colind_gsmv = it;
-			for (i = 0; i < nnz_loc; ++i) colind_gsmv[i] = colind[i];
-			options->RefineInitialized = YES;
-		    }
-		    else if (Fact == SamePattern || Fact == SamePattern_SameRowPerm) {
-			double at;
-			int_t k, jcol, p;
-			/* Swap to beginning the part of A corresponding to the
-			   local part of X, as was done in pdgsmv_init() */
-			for (i = 0; i < m_loc; ++i) { /* Loop through each row */
-			    k = rowptr[i];
-			    for (j = rowptr[i]; j < rowptr[i + 1]; ++j)
-				{
-				    jcol = colind[j];
-				    p = SOLVEstruct->row_to_proc[jcol];
-				    if (p == iam)
-					{	/* Local */
-					    at = a[k];
-					    a[k] = a[j];
-					    a[j] = at;
-					    ++k;
-					}
-				}
+			t = SuperLU_timer_ ();
+			if (options->RefineInitialized == NO || Fact == DOFACT) {
+			    /* All these cases need to re-initialize gsmv structure */
+			    if (options->RefineInitialized)
+				pdgsmv_finalize (SOLVEstruct->gsmv_comm);
+			    pdgsmv_init (A, SOLVEstruct->row_to_proc, grid,
+					 SOLVEstruct->gsmv_comm);
+
+			    /* Save a copy of the transformed local col indices
+			       in colind_gsmv[]. */
+			    if (colind_gsmv) SUPERLU_FREE (colind_gsmv);
+			    if (!(it = intMalloc_dist (nnz_loc)))
+				ABORT ("Malloc fails for colind_gsmv[]");
+			    colind_gsmv = SOLVEstruct->A_colind_gsmv = it;
+			    for (i = 0; i < nnz_loc; ++i) colind_gsmv[i] = colind[i];
+			    options->RefineInitialized = YES;
 			}
+			else if (Fact == SamePattern || Fact == SamePattern_SameRowPerm) {
+			    double at;
+			    int_t k, jcol, p;
+			    /* Swap to beginning the part of A corresponding to the
+			       local part of X, as was done in pdgsmv_init() */
+			    for (i = 0; i < m_loc; ++i) { /* Loop through each row */
+				k = rowptr[i];
+				for (j = rowptr[i]; j < rowptr[i + 1]; ++j)
+				    {
+					jcol = colind[j];
+					p = SOLVEstruct->row_to_proc[jcol];
+					if (p == iam)
+					    {	/* Local */
+						at = a[k];
+						a[k] = a[j];
+						a[j] = at;
+						++k;
+					    }
+				    }
+			    }
 			    
-			/* Re-use the local col indices of A obtained from the
-			   previous call to pdgsmv_init() */
-			for (i = 0; i < nnz_loc; ++i)
-			    colind[i] = colind_gsmv[i];
-		    }
-			
-		    if (nrhs == 1)
-			{	/* Use the existing solve structure */
-			    SOLVEstruct1 = SOLVEstruct;
+			    /* Re-use the local col indices of A obtained from the
+			       previous call to pdgsmv_init() */
+			    for (i = 0; i < nnz_loc; ++i)
+				colind[i] = colind_gsmv[i];
 			}
-		    else {
-			/* For nrhs > 1, since refinement is performed for RHS
-			   one at a time, the communication structure for pdgstrs
-			   is different than the solve with nrhs RHS.
-			   So we use SOLVEstruct1 for the refinement step.
-			*/
-			if (!(SOLVEstruct1 = (dSOLVEstruct_t *)
-			      SUPERLU_MALLOC(sizeof(dSOLVEstruct_t))))
-			    ABORT ("Malloc fails for SOLVEstruct1");
-			/* Copy the same stuff */
-			SOLVEstruct1->row_to_proc = SOLVEstruct->row_to_proc;
-			SOLVEstruct1->inv_perm_c = SOLVEstruct->inv_perm_c;
-			SOLVEstruct1->num_diag_procs = SOLVEstruct->num_diag_procs;
-			SOLVEstruct1->diag_procs = SOLVEstruct->diag_procs;
-			SOLVEstruct1->diag_len = SOLVEstruct->diag_len;
-			SOLVEstruct1->gsmv_comm = SOLVEstruct->gsmv_comm;
-			SOLVEstruct1->A_colind_gsmv = SOLVEstruct->A_colind_gsmv;
+			
+			if (nrhs == 1)
+			    {	/* Use the existing solve structure */
+				SOLVEstruct1 = SOLVEstruct;
+			    }
+			else {
+             /* For nrhs > 1, since refinement is performed for RHS
+		one at a time, the communication structure for pdgstrs
+		is different than the solve with nrhs RHS.
+		So we use SOLVEstruct1 for the refinement step.
+	      */
+				if (!(SOLVEstruct1 = (dSOLVEstruct_t *)
+				      SUPERLU_MALLOC(sizeof(dSOLVEstruct_t))))
+				    ABORT ("Malloc fails for SOLVEstruct1");
+				/* Copy the same stuff */
+				SOLVEstruct1->row_to_proc = SOLVEstruct->row_to_proc;
+				SOLVEstruct1->inv_perm_c = SOLVEstruct->inv_perm_c;
+				SOLVEstruct1->num_diag_procs = SOLVEstruct->num_diag_procs;
+				SOLVEstruct1->diag_procs = SOLVEstruct->diag_procs;
+				SOLVEstruct1->diag_len = SOLVEstruct->diag_len;
+				SOLVEstruct1->gsmv_comm = SOLVEstruct->gsmv_comm;
+				SOLVEstruct1->A_colind_gsmv = SOLVEstruct->A_colind_gsmv;
 				
-			/* Initialize the *gstrs_comm for 1 RHS. */
-			if (!(SOLVEstruct1->gstrs_comm = (pxgstrs_comm_t *)
-			      SUPERLU_MALLOC (sizeof (pxgstrs_comm_t))))
-			    ABORT ("Malloc fails for gstrs_comm[]");
-			pdgstrs_init (n, m_loc, 1, fst_row, perm_r, perm_c, grid,
-				      Glu_persist, SOLVEstruct1);
-		    }
+				/* Initialize the *gstrs_comm for 1 RHS. */
+				if (!(SOLVEstruct1->gstrs_comm = (pxgstrs_comm_t *)
+				      SUPERLU_MALLOC (sizeof (pxgstrs_comm_t))))
+				    ABORT ("Malloc fails for gstrs_comm[]");
+				pdgstrs_init (n, m_loc, 1, fst_row, perm_r, perm_c, grid,
+					      Glu_persist, SOLVEstruct1);
+			    }
 			
-		    pdgsrfs (n, A, anorm, LUstruct, ScalePermstruct, grid,
-			     B, ldb, X, ldx, nrhs, SOLVEstruct1, berr, stat, info);
+			pdgsrfs (n, A, anorm, LUstruct, ScalePermstruct, grid,
+				 B, ldb, X, ldx, nrhs, SOLVEstruct1, berr, stat, info);
 			
-		    /* Deallocate the storage associated with SOLVEstruct1 */
-		    if (nrhs > 1)
-			{
-			    pxgstrs_finalize (SOLVEstruct1->gstrs_comm);
-			    SUPERLU_FREE (SOLVEstruct1);
-			}
+			/* Deallocate the storage associated with SOLVEstruct1 */
+			if (nrhs > 1)
+			    {
+				pxgstrs_finalize (SOLVEstruct1->gstrs_comm);
+				SUPERLU_FREE (SOLVEstruct1);
+			    }
 			
-		    stat->utime[REFINE] = SuperLU_timer_ () - t;
-		} /* end IterRefine */
+			stat->utime[REFINE] = SuperLU_timer_ () - t;
+		    } /* end IterRefine */
 		
-	    /* Permute the solution matrix B <= Pc'*X. */
-	    pdPermute_Dense_Matrix (fst_row, m_loc, SOLVEstruct->row_to_proc,
-				    SOLVEstruct->inv_perm_c,
-				    X, ldx, B, ldb, nrhs, grid);
+		/* Permute the solution matrix B <= Pc'*X. */
+		pdPermute_Dense_Matrix (fst_row, m_loc, SOLVEstruct->row_to_proc,
+					SOLVEstruct->inv_perm_c,
+					X, ldx, B, ldb, nrhs, grid);
 #if ( DEBUGlevel>=2 )
-	    printf ("\n (%d) .. After pdPermute_Dense_Matrix(): b =\n", iam);
-	    for (i = 0; i < m_loc; ++i)
-		printf ("\t(%d)\t%4d\t%.10f\n", iam, i + fst_row, B[i]);
+		printf ("\n (%d) .. After pdPermute_Dense_Matrix(): b =\n", iam);
+		for (i = 0; i < m_loc; ++i)
+		    printf ("\t(%d)\t%4d\t%.10f\n", iam, i + fst_row, B[i]);
 #endif
 		
-	    /* Transform the solution matrix X to a solution of the original
-	       system before the equilibration. */
-	    if (notran)
-		{
-		    if (colequ)
-			{
-			    b_col = B;
-			    for (j = 0; j < nrhs; ++j)
-				{
-				    irow = fst_row;
-				    for (i = 0; i < m_loc; ++i)
-					{
-					    b_col[i] *= C[irow];
-					    ++irow;
-					}
-				    b_col += ldb;
-				}
-			}
-		}
-	    else if (rowequ)
-		{
-		    b_col = B;
-		    for (j = 0; j < nrhs; ++j)
-			{
-			    irow = fst_row;
-			    for (i = 0; i < m_loc; ++i)
-				{
-				    b_col[i] *= R[irow];
-				    ++irow;
-				}
-			    b_col += ldb;
-			}
-		}
+		/* Transform the solution matrix X to a solution of the original
+		   system before the equilibration. */
+		if (notran)
+		    {
+			if (colequ)
+			    {
+				b_col = B;
+				for (j = 0; j < nrhs; ++j)
+				    {
+					irow = fst_row;
+					for (i = 0; i < m_loc; ++i)
+					    {
+						b_col[i] *= C[irow];
+						++irow;
+					    }
+					b_col += ldb;
+				    }
+			    }
+		    }
+		else if (rowequ)
+		    {
+			b_col = B;
+			for (j = 0; j < nrhs; ++j)
+			    {
+				irow = fst_row;
+				for (i = 0; i < m_loc; ++i)
+				    {
+					b_col[i] *= R[irow];
+					++irow;
+				    }
+				b_col += ldb;
+			    }
+		    }
 		
-	    SUPERLU_FREE (b_work);
-	    SUPERLU_FREE (X);
-
-	}    /* end if nrhs > 0 */
+		SUPERLU_FREE (b_work);
+		SUPERLU_FREE (X);
+		
+	    } /* end if nrhs > 0 */
 	
 #if ( PRNTlevel>=1 )
 	if (!iam) {
 	    printf (".. DiagScale = %d\n", ScalePermstruct->DiagScale);
-	}
+        }
 #endif
 	
 	/* Deallocate R and/or C if it was not used. */
@@ -1571,12 +1574,12 @@ pdgssvx3d (superlu_dist_options_t * options, SuperMatrix * A,
 
     /* Scatter the solution from 2D grid-0 to 3D grid */
     if ( nrhs > 0 ) dScatter_B3d(A3d, grid3d);
-    
+
     B = A3d->B3d; // B is now assigned back to B3d on return
     A->Store = Astore3d; // restore Astore to 3D
-
+    
 #if ( DEBUGlevel>=1 )
-    CHECK_MALLOC (iam, "Exit pdgssvx3d()");
+	CHECK_MALLOC (iam, "Exit pdgssvx3d()");
 #endif
 
 }

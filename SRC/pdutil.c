@@ -778,19 +778,20 @@ int dSolveInit(superlu_dist_options_t *options, SuperMatrix *A,
 void dSolveFinalize(superlu_dist_options_t *options, dSOLVEstruct_t *SOLVEstruct)
 {
     if ( options->SolveInitialized ) {
-	pxgstrs_finalize(SOLVEstruct->gstrs_comm);
+        pxgstrs_finalize(SOLVEstruct->gstrs_comm);
 
-	if ( options->RefineInitialized ) {
-	    pdgsmv_finalize(SOLVEstruct->gsmv_comm);
+        if ( options->RefineInitialized ) {
+            pdgsmv_finalize(SOLVEstruct->gsmv_comm);
 	    options->RefineInitialized = NO;
-	}
-	SUPERLU_FREE(SOLVEstruct->gsmv_comm);
-	SUPERLU_FREE(SOLVEstruct->row_to_proc);
-	SUPERLU_FREE(SOLVEstruct->inv_perm_c);
-	SUPERLU_FREE(SOLVEstruct->diag_procs);
-	SUPERLU_FREE(SOLVEstruct->diag_len);
-	if ( SOLVEstruct->A_colind_gsmv ) SUPERLU_FREE(SOLVEstruct->A_colind_gsmv);
-	options->SolveInitialized = NO;
+        }
+        SUPERLU_FREE(SOLVEstruct->gsmv_comm);
+        SUPERLU_FREE(SOLVEstruct->row_to_proc);
+        SUPERLU_FREE(SOLVEstruct->inv_perm_c);
+        SUPERLU_FREE(SOLVEstruct->diag_procs);
+        SUPERLU_FREE(SOLVEstruct->diag_len);
+        if ( SOLVEstruct->A_colind_gsmv )
+	    SUPERLU_FREE(SOLVEstruct->A_colind_gsmv);
+        options->SolveInitialized = NO;
     }
 } /* dSolveFinalize */
 

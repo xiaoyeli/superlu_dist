@@ -4,10 +4,11 @@
  * \brief C interface functions for the Fortran90 wrapper.
  *
  * <pre>
- * -- Distributed SuperLU routine (version 4.1) --
+ * -- Distributed SuperLU routine (version 7.0) --
  * Lawrence Berkeley National Lab, Univ. of California Berkeley.
  * October 2012
  * April 5, 2015
+ * May 12, 2021
  */
 
 #include "superlu_ddefs.h"
@@ -85,9 +86,7 @@ void f_dDestroy_LU_SOLVE_struct_3d(fptr *options, int *n, fptr *grid,
     
     if ( grid3d->zscp.Iam == 0 ) { // process layer 0
 	dDestroy_LU(*n, &(grid3d->grid2d), LUstruct_ptr);
-	if ( opt->SolveInitialized ) {
-	    dSolveFinalize(opt, (dSOLVEstruct_t *) *SOLVEstruct);
-	}
+    	dSolveFinalize(opt, (dSOLVEstruct_t *) *SOLVEstruct);
     } else { // process layers not equal 0
         dDeAllocLlu_3d(*n, LUstruct_ptr, grid3d);
         dDeAllocGlu_3d(LUstruct_ptr);
@@ -95,6 +94,13 @@ void f_dDestroy_LU_SOLVE_struct_3d(fptr *options, int *n, fptr *grid,
     
     dLUstructFree(LUstruct_ptr);
 }
+
+void f_dDestroy_A3d_gathered_on_2d(fptr *SOLVEstruct, fptr *grid)
+{
+    dDestroy_A3d_gathered_on_2d((dSOLVEstruct_t *) *SOLVEstruct,
+                                      (gridinfo3d_t *) *grid3d);
+}
+
 
 void f_dCreate_CompRowLoc_Mat_dist(fptr *A, int *m, int *n, int *nnz_loc,
 				   int *m_loc, int *fst_row, double *nzval,
