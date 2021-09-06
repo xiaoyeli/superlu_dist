@@ -3,7 +3,6 @@ Table of Contents
 =================
 
 * [SuperLU_DIST (version 7.0)   <a href="https://user-images.githubusercontent.com/11741943/103982988-5a9a9d00-5139-11eb-9ac4-a55e80a79f8d.png" target="_blank" rel="nofollow"><img align="center" width="55" alt="superlu" src="https://user-images.githubusercontent.com/11741943/103982988-5a9a9d00-5139-11eb-9ac4-a55e80a79f8d.png" style="max-width:100%;"></a>](#superlu_dist-version-70---)
-* [Table of Contents](#table-of-contents)
 * [Directory structure of the source code](#directory-structure-of-the-source-code)
 * [Installation](#installation)
    * [Installation option 1: Using CMake build system.](#installation-option-1-using-cmake-build-system)
@@ -27,6 +26,7 @@ Table of Contents
 * [RELEASE VERSIONS](#release-versions)
 
 Created by [gh-md-toc](https://github.com/ekalinin/github-markdown-toc)
+
 # SuperLU_DIST (version 7.0)   <img align=center width="55" alt="superlu" src="https://user-images.githubusercontent.com/11741943/103982988-5a9a9d00-5139-11eb-9ac4-a55e80a79f8d.png">
 
 [![Build Status](https://travis-ci.org/xiaoyeli/superlu_dist.svg?branch=master)](https://travis-ci.org/xiaoyeli/superlu_dist) 
@@ -49,32 +49,6 @@ acceleration capabilities.
 <!-- column preordering for sparsity are performed sequentially. -->
 <!-- This "alpha" release contains double-precision real and-->
 <!-- double-precision complex data types.-->
-
-
-Table of Contents
-=================
-
-* [SuperLU_DIST (version 7.0)   <a href="https://user-images.githubusercontent.com/11741943/103982988-5a9a9d00-5139-11eb-9ac4-a55e80a79f8d.png" target="_blank" rel="nofollow"><img align="center" width="55" alt="superlu" src="https://user-images.githubusercontent.com/11741943/103982988-5a9a9d00-5139-11eb-9ac4-a55e80a79f8d.png" style="max-width:100%;"></a>](#superlu_dist-version-70---)
-* [Directory structure of the source code](#directory-structure-of-the-source-code)
-* [Installation](#installation)
-   * [Installation option 1: Using CMake build system.](#installation-option-1-using-cmake-build-system)
-      * [Summary of the CMake definitions.](#summary-of-the-cmake-definitions)
-   * [Installation option 2: Manual installation with makefile.](#installation-option-2-manual-installation-with-makefile)
-      * [2.1 Edit the make.inc include file.](#21-edit-the-makeinc-include-file)
-      * [2.2. The BLAS library.](#22-the-blas-library)
-      * [2.3. External libraries.](#23-external-libraries)
-         * [2.3.1 Metis and ParMetis.](#231-metis-and-parmetis)
-         * [2.3.2 LAPACK.](#232-lapack)
-         * [2.3.3 CombBLAS.](#233-combblas)
-      * [2.4. C preprocessor definition CDEFS. (Replaced by cmake module FortranCInterface.)](#24-c-preprocessor-definition-cdefs-replaced-by-cmake-module-fortrancinterface)
-      * [2.5. Multicore and GPU.](#25-multicore-and-gpu)
-* [Summary of the environment variables.](#summary-of-the-environment-variables)
-* [Windows Usage](#windows-usage)
-* [Reading sparse matrix files](#reading-sparse-matrix-files)
-* [REFERENCES](#references)
-* [RELEASE VERSIONS](#release-versions)
-
-Created by [gh-md-toc](https://github.com/ekalinin/github-markdown-toc)
 
 
 # Directory structure of the source code
