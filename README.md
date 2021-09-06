@@ -89,8 +89,8 @@ with the following cmake definition:
 ```
 -DTPL_BLAS_LIBRARIES="<BLAS library name>"
 ```
-The CBLAS/ subdirectory contains the part of the C BLAS (single threaded) 
-needed by SuperLU_DIST, but they are not optimized.
+Otherwise, the CBLAS/ subdirectory contains the part of the C BLAS
+(single threaded) needed by SuperLU_DIST, but they are not optimized.
 You can compile and use it with the following cmake definition:
 ```
 -DTPL_ENABLE_INTERNAL_BLASLIB=ON
