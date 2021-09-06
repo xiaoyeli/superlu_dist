@@ -1,3 +1,32 @@
+
+Table of Contents
+=================
+
+* [SuperLU_DIST (version 7.0)   <a href="https://user-images.githubusercontent.com/11741943/103982988-5a9a9d00-5139-11eb-9ac4-a55e80a79f8d.png" target="_blank" rel="nofollow"><img align="center" width="55" alt="superlu" src="https://user-images.githubusercontent.com/11741943/103982988-5a9a9d00-5139-11eb-9ac4-a55e80a79f8d.png" style="max-width:100%;"></a>](#superlu_dist-version-70---)
+* [Table of Contents](#table-of-contents)
+* [Directory structure of the source code](#directory-structure-of-the-source-code)
+* [Installation](#installation)
+   * [Installation option 1: Using CMake build system.](#installation-option-1-using-cmake-build-system)
+      * [Dependent external libraries: BLAS and ParMETIS](#dependent-external-libraries-blas-and-parmetis)
+      * [Optional external libraries: LAPACK, CombBLAS](#optional-external-libraries-lapack-combblas)
+      * [Use GPU](#use-gpu)
+      * [Summary of the CMake definitions.](#summary-of-the-cmake-definitions)
+   * [Installation option 2: Manual installation with makefile.](#installation-option-2-manual-installation-with-makefile)
+      * [2.1 Edit the make.inc include file.](#21-edit-the-makeinc-include-file)
+      * [2.2. The BLAS library.](#22-the-blas-library)
+      * [2.3. External libraries.](#23-external-libraries)
+         * [2.3.1 Metis and ParMetis.](#231-metis-and-parmetis)
+         * [2.3.2 LAPACK.](#232-lapack)
+         * [2.3.3 CombBLAS.](#233-combblas)
+      * [2.4. C preprocessor definition CDEFS. (Replaced by cmake module FortranCInterface.)](#24-c-preprocessor-definition-cdefs-replaced-by-cmake-module-fortrancinterface)
+      * [2.5. Multicore and GPU.](#25-multicore-and-gpu)
+* [Summary of the environment variables.](#summary-of-the-environment-variables)
+* [Windows Usage](#windows-usage)
+* [Reading sparse matrix files](#reading-sparse-matrix-files)
+* [REFERENCES](#references)
+* [RELEASE VERSIONS](#release-versions)
+
+Created by [gh-md-toc](https://github.com/ekalinin/github-markdown-toc)
 # SuperLU_DIST (version 7.0)   <img align=center width="55" alt="superlu" src="https://user-images.githubusercontent.com/11741943/103982988-5a9a9d00-5139-11eb-9ac4-a55e80a79f8d.png">
 
 [![Build Status](https://travis-ci.org/xiaoyeli/superlu_dist.svg?branch=master)](https://travis-ci.org/xiaoyeli/superlu_dist) 
@@ -80,16 +109,33 @@ The procedures are described below.
 ## Installation option 1: Using CMake build system.
 You will need to create a build tree from which to invoke CMake.
 
-First, in order to use parallel symbolic factorization function, you
+### Dependent external libraries: BLAS and ParMETIS
+If you have a BLAS library on your machine, you can link with it
+with the following cmake definition:
+```
+-DTPL_BLAS_LIBRARIES="<BLAS library name>"
+```
+The CBLAS/ subdirectory contains the part of the C BLAS (single threaded) 
+needed by SuperLU_DIST, but they are not optimized.
+You can compile and use it with the following cmake definition:
+```
+-DTPL_ENABLE_INTERNAL_BLASLIB=ON
+```
+
+The default sparsity ordering is METIS. But, in order to use parallel
+symbolic factorization function, you
 need to install ParMETIS parallel ordering package and define the
 two environment variables: PARMETIS_ROOT and PARMETIS_BUILD_DIR
+
+(Note: ParMETIS library also contains serial METIS library.)
 
 ```
 export PARMETIS_ROOT=<Prefix directory of the ParMETIS installation>
 export PARMETIS_BUILD_DIR=${PARMETIS_ROOT}/build/Linux-x86_64
 ```
 
-Second, in order to use parallel weighted matching HWPM (Heavy Weight
+### Optional external libraries: LAPACK, CombBLAS
+In order to use parallel weighted matching HWPM (Heavy Weight
 Perfect Matching) for numerical pre-pivoting, you need to install 
 CombBLAS and define the environment variable:
 
@@ -98,8 +144,15 @@ export COMBBLAS_ROOT=<Prefix directory of the CombBLAS installation>
 export COMBBLAS_BUILD_DIR=${COMBBLAS_ROOT}/_build
 ```
 
-Once these needed third-party libraries are in place, SuperLU installation
-can be done as follows from the top level directory:
+### Use GPU
+You can enable GPU with CUDA with the following cmake option:
+```
+`-DTPL_ENABLE_CUDALIB=TRUE`
+`-DTPL_CUDA_LIBRARIES="<path>/libcublas.so;<path>/libcudart.so"`
+```
+
+Once these needed third-party libraries are in place, the installation
+can be done as follows at the top level directory:
 
 For a simple installation with default setting, do:
 (ParMETIS is needed, i.e., TPL_ENABLE_PARMETISLIB=ON)
@@ -109,7 +162,7 @@ cmake .. \
     -DTPL_PARMETIS_INCLUDE_DIRS="${PARMETIS_ROOT}/include;${PARMETIS_ROOT}/metis/include" \
     -DTPL_PARMETIS_LIBRARIES="${PARMETIS_BUILD_DIR}/libparmetis/libparmetis.a;${PARMETIS_BUILD_DIR}/libmetis/libmetis.a" \
 ```
-For a more sophisticated installation including third-part libraries, do:
+For a more sophisticated installation including third-party libraries, do:
 ```
 cmake .. \
     -DTPL_PARMETIS_INCLUDE_DIRS="${PARMETIS_ROOT}/include;${PARMETIS_ROOT}/metis/include" \
@@ -128,16 +181,10 @@ OOT}/Applications/BipartiteMatchings" \
 
 ( see example cmake script: run_cmake_build.sh )
 ```
-You can enable GPU with CUDA with the following cmake option:
-```
-`-DTPL_ENABLE_CUDALIB=TRUE`
-`-DTPL_CUDA_LIBRARIES="<path>/libcublas.so;<path>/libcudart.so"`
-```
 
-You can disable LAPACK, ParMetis or CombBLAS with the following cmake option:
+You can disable LAPACK or CombBLAS with the following cmake option:
 ```
 `-DTPL_ENABLE_LAPACKLIB=FALSE`
-`-DTPL_ENABLE_PARMETISLIB=FALSE`
 `-DTPL_ENABLE_COMBBLASLIB=FALSE`
 ```
 
