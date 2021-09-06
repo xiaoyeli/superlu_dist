@@ -7,7 +7,7 @@ Table of Contents
 * [Installation](#installation)
    * [Installation option 1: Using CMake build system.](#installation-option-1-using-cmake-build-system)
       * [Dependent external libraries: BLAS and ParMETIS](#dependent-external-libraries-blas-and-parmetis)
-      * [Optional external libraries: LAPACK, CombBLAS](#optional-external-libraries-lapack-combblas)
+      * [Optional external libraries: CombBLAS, LAPACK](#optional-external-libraries-combblas-lapack)
       * [Use GPU](#use-gpu)
       * [Summary of the CMake definitions.](#summary-of-the-cmake-definitions)
    * [Installation option 2: Manual installation with makefile.](#installation-option-2-manual-installation-with-makefile)
@@ -108,7 +108,8 @@ export PARMETIS_ROOT=<Prefix directory of the ParMETIS installation>
 export PARMETIS_BUILD_DIR=${PARMETIS_ROOT}/build/Linux-x86_64
 ```
 
-### Optional external libraries: LAPACK, CombBLAS
+### Optional external libraries: CombBLAS, LAPACK
+
 In order to use parallel weighted matching HWPM (Heavy Weight
 Perfect Matching) for numerical pre-pivoting, you need to install 
 CombBLAS and define the environment variable:
@@ -117,12 +118,23 @@ CombBLAS and define the environment variable:
 export COMBBLAS_ROOT=<Prefix directory of the CombBLAS installation>
 export COMBBLAS_BUILD_DIR=${COMBBLAS_ROOT}/_build
 ```
+Then, install with cmake option:
+```
+-DTPL_ENABLE_COMBBLASLIB=ON
+```
+
+By default, LAPACK is not needed. Only in triangular solve routine, we
+may use LAPACK to explicitly invert the dense diagonal block to improve
+speed. You can use it with the following cmake option:
+```
+-DTPL_ENABLE_LAPACKLIB=ON
+```
 
 ### Use GPU
 You can enable GPU with CUDA with the following cmake option:
 ```
-`-DTPL_ENABLE_CUDALIB=TRUE`
-`-DTPL_CUDA_LIBRARIES="<path>/libcublas.so;<path>/libcudart.so"`
+-DTPL_ENABLE_CUDALIB=TRUE
+-DTPL_CUDA_LIBRARIES="<path>/libcublas.so;<path>/libcudart.so"
 ```
 
 Once these needed third-party libraries are in place, the installation
@@ -156,10 +168,10 @@ OOT}/Applications/BipartiteMatchings" \
 ( see example cmake script: run_cmake_build.sh )
 ```
 
-You can disable LAPACK or CombBLAS with the following cmake option:
+You can disable CombBLAS or LAPACK with the following cmake options:
 ```
-`-DTPL_ENABLE_LAPACKLIB=FALSE`
-`-DTPL_ENABLE_COMBBLASLIB=FALSE`
+-DTPL_ENABLE_LAPACKLIB=FALSE
+-DTPL_ENABLE_COMBBLASLIB=FALSE
 ```
 
 To actually build (compile), type:
