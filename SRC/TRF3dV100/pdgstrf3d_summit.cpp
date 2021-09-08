@@ -189,7 +189,11 @@ extern "C"
         SCT->pdgstrfTimer = SuperLU_timer_() - SCT->pdgstrfTimer;
 
         if (superlu_acc_offload)
+        {
+            // cudaStreamSynchronize(LU_packed.A_gpu.cuStreams[0]);    // in theory I don't need it 
             LU_packed.copyLUGPUtoHost();
+        }
+            
         LU_packed.packedU2skyline(LUstruct);
 
         if (!grid3d->zscp.Iam)

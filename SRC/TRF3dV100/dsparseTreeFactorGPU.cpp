@@ -64,6 +64,7 @@ int_t LUstruct_v100::dsparseTreeFactorGPU(
                                      dFBufs[offset]->BlockUFactor, ksupc,     // CPU pointers
                                      dFBufs[offset]->BlockLFactor, ksupc, // CPU pointers
                                     thresh, xsup, options, stat, info);
+                // cudaStreamSynchronize(cuStream);
                 #ifndef NDEBUG
                 cudaStreamSynchronize(cuStream);
                 lPanelVec[g2lCol(k)].checkGPU();
@@ -89,6 +90,7 @@ int_t LUstruct_v100::dsparseTreeFactorGPU(
                 uPanelVec[g2lRow(k)].panelSolveGPU(
                     cubHandle, cuStream, 
                     ksupc, A_gpu.dFBufs[0], ksupc);
+                cudaStreamSynchronize(cuStream);    // synchronize befpre broadcast 
                 #ifndef NDEBUG
                 uPanelVec[g2lRow(k)].panelSolve(ksupc, dFBufs[offset]->BlockLFactor, ksupc);
                 cudaStreamSynchronize (cuStream);
@@ -104,6 +106,7 @@ int_t LUstruct_v100::dsparseTreeFactorGPU(
                 lPanelVec[g2lCol(k)].panelSolveGPU(
                     cubHandle, cuStream, 
                     ksupc, A_gpu.dFBufs[0], ksupc);
+                cudaStreamSynchronize(cuStream);
                 #ifndef NDEBUG
                 lPanelVec[g2lCol(k)].panelSolve(ksupc, dFBufs[offset]->BlockUFactor, ksupc);
                 cudaStreamSynchronize(cuStream);
@@ -167,6 +170,7 @@ int_t LUstruct_v100::dsparseTreeFactorGPU(
                 dSchurComplementUpdateGPU(
                     streamId, 
                     k, k_lpanel, k_upanel);
+                // cudaStreamSynchronize(cuStream); // there is sync inside the kernel 
                 #ifndef NDEBUG
                 dSchurComplementUpdate(k, k_lpanel, k_upanel);
                 cudaStreamSynchronize(cuStream);
