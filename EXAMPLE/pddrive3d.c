@@ -137,7 +137,12 @@ main (int argc, char *argv[])
         MPI_Comm_rank(MPI_COMM_WORLD, &rank);
         if (!rank) printf("The MPI library doesn't provide MPI_THREAD_MULTIPLE \n");
     }
-
+#ifdef GPU_ACC
+    int rank, devs;
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    cudaGetDeviceCount(&devs);
+    cudaSetDevice(rank % devs);
+#endif
     /* Parse command line argv[]. */
     for (cpp = argv + 1; *cpp; ++cpp)
     {
