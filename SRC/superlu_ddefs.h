@@ -632,7 +632,7 @@ extern int superlu_dtrsv(char *uplo, char *trans, char *diag,
 
 
 // LAPACK routine
-#if !defined(HAVE_SYCL)
+#ifdef SLU_HAVE_LAPACK
 extern void dtrtri_(char*, char*, int*, double*, int*, int*);
 #endif
 

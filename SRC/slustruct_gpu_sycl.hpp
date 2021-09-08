@@ -20,7 +20,7 @@
 // #include "mkl.h"
 
 #include <CL/sycl.hpp>
-#include <oneapi/mkl.hpp>
+#include <oneapi/mkl/blas.hpp>
 
 // #include "sec_structs.h"
 // #include "supernodal_etree.h"

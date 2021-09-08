@@ -16,7 +16,7 @@
 #include "mpi.h"
 // #include "sec_structs.h"
 #include <ctime>
-#include <oneapi/mkl.hpp>
+#include <oneapi/mkl/blas.hpp>
 
 // requires to set environment variables: ZES_ENABLE_SYSMAN=1, SYCL_DEVICE_FILTER=level_zero (only for get_acc_memory())
 #include "level_zero/ze_api.h"
@@ -488,7 +488,7 @@ int zSchurCompUpdate_GPU(
 	+ lsub_len * sizeof(int_t)
 	+ usub_len * sizeof(int_t);
 
-    std::complex<double> alpha = {1.0, 0.0}, beta = {0.0, 0.0};
+    std::complex<double> alpha_onemkl = {1.0, 0.0}, beta_onemkl = {0.0, 0.0};
 
     /* The following are used in gemm<std::complex> call */
     std::complex<double> *cu_A, *cu_B, *cu_C; /* C <- A*B */
@@ -597,10 +597,10 @@ int zSchurCompUpdate_GPU(
 		oneapi::mkl::blas::gemm(*FunCallStream,
 					oneapi::mkl::transpose::nontrans, oneapi::mkl::transpose::nontrans,
 					nrows, ncols, ldu,
-					alpha,
+					alpha_onemkl,
 					cu_A, Rnbrow,
 					cu_B, ldu,
-					beta,
+					beta_onemkl,
 					cu_C, nrows);
 
 // #define SCATTER_OPT

@@ -391,7 +391,7 @@ pdgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
     else if (n < 0)
         *info = -3;
     if (*info) {
-        pxerr_dist ("pdgstrf", grid, -*info);
+        pxerr_dist ((char *)"pdgstrf", grid, -*info);
         return (-1);
     }
 
@@ -410,7 +410,7 @@ pdgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
     mycol = MYCOL (iam, grid);
     nsupers = Glu_persist->supno[n - 1] + 1;
     xsup = Glu_persist->xsup;
-    s_eps = smach_dist("Epsilon");
+    s_eps = smach_dist((char *)"Epsilon");
     thresh = s_eps * anorm;
 
     MPI_Comm_get_attr (MPI_COMM_WORLD, MPI_TAG_UB, &attr_val, &flag);

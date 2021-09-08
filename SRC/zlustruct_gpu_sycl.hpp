@@ -10,7 +10,7 @@
  * </pre>
  */
 
-#pragma once // so that this header file is included onle once
+#pragma once // so that this header file is included only once
 
 #include "superlu_zdefs.h"
 
@@ -19,7 +19,7 @@
 // #include "mkl.h"
 
 #include <CL/sycl.hpp>
-#include <oneapi/mkl.hpp>
+#include <oneapi/mkl/blas.hpp>
 
 // #include "sec_structs.h"
 // #include "supernodal_etree.h"
@@ -28,8 +28,6 @@
 //#define SLU_TARGET_GPU 0
 //#define MAX_BLOCK_SIZE 10000
 #define MAX_NCUDA_STREAMS 32
-
-//typedef std::complex<double> doublecomplex;
 
 typedef struct //SCUbuf_gpu_
 {

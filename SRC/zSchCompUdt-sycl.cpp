@@ -26,6 +26,9 @@ int full;
 double gemm_timer = 0.0;
 double scatter_timer = 0.0;
 
+std::complex<double> alpha_onemkl = {1.0, 0.0};
+std::complex<double> beta_onemkl = {0.0, 0.0};
+
 if ( msg0 && msg2 ) {  /* L(:,k) and U(k,:) are not empty. */
     ldu   =0;
     full  =1;
@@ -179,9 +182,11 @@ if ( msg0 && msg2 ) {  /* L(:,k) and U(k,:) are not empty. */
 					    oneapi::mkl::transpose::nontrans,
 					    oneapi::mkl::transpose::nontrans,
 					    nbrow, num_col_stream, ldu,
-					    alpha, (const std::complex<double>*) dA, nbrow,
+					    alpha_onemkl,
+					    (const std::complex<double>*) dA, nbrow,
 					    (const std::complex<double>*) &dB[b_offset], ldu,
-					    beta, (std::complex<double>*) &dC[c_offset], nbrow);
+					    beta_onemkl,
+					    (std::complex<double>*) &dC[c_offset], nbrow);
 
 		    streams[stream_id].memcpy(tempv1, dC+c_offset, C_stream_size);
    	        } // end if num_col_stream > 0

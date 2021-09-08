@@ -17,7 +17,7 @@
 #include "mpi.h"
 // #include "sec_structs.h"
 #include <ctime>
-#include <oneapi/mkl.hpp>
+#include <oneapi/mkl/blas.hpp>
 
 // requires to set environment variables: ZES_ENABLE_SYSMAN=1, SYCL_DEVICE_FILTER=level_zero (only for get_acc_memory())
 #include "level_zero/ze_api.h"

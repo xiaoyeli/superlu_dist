@@ -20,7 +20,7 @@ at the top-level directory.
 #define ONEMKL_UTILS_HPP
 
 #include <CL/sycl.hpp>
-#include <oneapi/mkl.hpp>
+#include <oneapi/mkl/blas.hpp>
 typedef struct LUstruct_gpu_  LUstruct_gpu;  // Sherry - not in this distribution
 
 extern void DisplayHeader();
