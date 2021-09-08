@@ -711,7 +711,7 @@ forestPartition_t iterativeFrPartitioning(rForest_t* rforest, int_t nsupers, int
 		for(int j=0; j<numSubtrees; j++)
 		{
 			treeSet[nTreeSet - 1+j] = sroots[j];
-			weightArr[nTreeSet - 1] = treeList[sroots[j]].iWeight;		
+			weightArr[nTreeSet - 1+j] = treeList[sroots[j]].iWeight;		
 		}
 		nTreeSet = newNumTrees;
 		#else 
