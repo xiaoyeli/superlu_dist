@@ -81,11 +81,10 @@ int lpanel_t::checkGPU()
 
     size_t valSize = sizeof(double) * nzvalSize();
 
-    double *tmpArr = new double[nzvalSize()];
-    cudaMemcpy(tmpArr, gpuPanel.val, valSize, cudaMemcpyDeviceToHost);
-    
-    int out = checkArr(tmpArr, val, nzvalSize());
-    delete tmpArr;
+   std::vector<double> tmpArr(nzvalSize());
+    cudaMemcpy(tmpArr.data(), gpuPanel.val, valSize, cudaMemcpyDeviceToHost);
+
+    int out = checkArr(tmpArr.data(), val, nzvalSize());
 
     return 0;
 }
@@ -173,11 +172,12 @@ int upanel_t::checkGPU()
 
     size_t valSize = sizeof(double) * nzvalSize();
 
-    double *tmpArr = new double[nzvalSize()];
-    cudaMemcpy(tmpArr, gpuPanel.val, valSize, cudaMemcpyDeviceToHost);
+    // double *tmpArr = new double[nzvalSize()];
+    std::vector<double> tmpArr(nzvalSize());
+    cudaMemcpy(tmpArr.data(), gpuPanel.val, valSize, cudaMemcpyDeviceToHost);
 
-    int out = checkArr(tmpArr, val, nzvalSize());
-    delete tmpArr;
+    int out = checkArr(tmpArr.data(), val, nzvalSize());
+    // delete tmpArr;
 
     return 0;
 }

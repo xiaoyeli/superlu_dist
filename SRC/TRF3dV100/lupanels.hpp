@@ -327,8 +327,8 @@ struct LUstruct_v100
 
     ~LUstruct_v100()
     {
-        delete lPanelVec;
-        delete uPanelVec;
+        delete [] lPanelVec;
+        delete [] uPanelVec;
     }
 
     /**
