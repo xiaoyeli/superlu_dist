@@ -580,6 +580,15 @@ psgssvx3d (superlu_dist_options_t * options, SuperMatrix * A,
     
     /* Initialization. */
 
+#ifdef GPU_ACC
+    /* Binding each MPI to a CUDA device */
+    int devs;
+    // MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    cudaGetDeviceCount(&devs); // Returns the number of compute-capable devices
+    cudaSetDevice(iam % devs); // Set device to be used for GPU executions
+    ////
+#endif
+
     options->Algo3d = YES;
 	
     /* definition of factored seen by each process layer */

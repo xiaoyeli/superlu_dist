@@ -95,7 +95,7 @@ void f_dDestroy_LU_SOLVE_struct_3d(fptr *options, int *n, fptr *grid,
     dLUstructFree(LUstruct_ptr);
 }
 
-void f_dDestroy_A3d_gathered_on_2d(fptr *SOLVEstruct, fptr *grid)
+void f_dDestroy_A3d_gathered_on_2d(fptr *SOLVEstruct, fptr *grid3d)
 {
     dDestroy_A3d_gathered_on_2d((dSOLVEstruct_t *) *SOLVEstruct,
                                       (gridinfo3d_t *) *grid3d);

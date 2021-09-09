@@ -636,10 +636,9 @@ extern int superlu_zgemv(const char *trans, const int m,
 extern int superlu_ztrsv(char *uplo, char *trans, char *diag,
                   int n, doublecomplex *a, int lda, doublecomplex *x, int incx);
 
-
-// LAPACK routine
+#ifdef SLU_HAVE_LAPACK
 extern void ztrtri_(char*, char*, int*, doublecomplex*, int*, int*);
-
+#endif
 
 /*==== For 3D code ====*/
 extern int zcreate_matrix3d(SuperMatrix *A, int nrhs, doublecomplex **rhs,

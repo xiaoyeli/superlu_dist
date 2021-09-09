@@ -98,14 +98,17 @@ void sGatherNRformat_loc3d
 	nnz_disp[0] = 0;
 	row_disp[0] = 0;
 	b_disp[0] = 0;
+	int nrhs1 = nrhs; // input 
+	if ( nrhs <= 0 ) nrhs1 = 1; /* Make sure to compute offsets and
+	                               counts for future use.   */
 	for (int i = 0; i < grid3d->npdep; i++)
 	    {
 		nnz_disp[i + 1] = nnz_disp[i] + nnz_counts[i];
 		row_disp[i + 1] = row_disp[i] + row_counts[i];
-		b_disp[i + 1] = nrhs * row_disp[i + 1];
+		b_disp[i + 1] = nrhs1 * row_disp[i + 1];
 		nnz_counts_int[i] = nnz_counts[i];
 		row_counts_int[i] = row_counts[i];
-		b_counts_int[i] = nrhs * row_counts[i];
+		b_counts_int[i] = nrhs1 * row_counts[i];
 	    }
 
 	if (grid3d->zscp.Iam == 0)
@@ -182,7 +185,7 @@ void sGatherNRformat_loc3d
     A3d->B3d = (float *) B; /* save the pointer to the original B
 				    stored on 3D process grid.  */
     A3d->ldb = ldb;
-    A3d->nrhs = nrhs;
+    A3d->nrhs = nrhs; // record the input 
 	
     /********* Gather B2d **********/
     if ( nrhs > 0 ) {
@@ -193,8 +196,6 @@ void sGatherNRformat_loc3d
 	row_counts_int = A3d->row_counts_int;
 	row_disp       = A3d->row_disp;
 	
-	printf("dGather_loc3d(2): row_disp %p, A3d %p\n", row_disp, A3d); fflush(stdout);
-
 	/* Btmp <- compact(B), compacting B */
 	float *Btmp;
 	Btmp = SUPERLU_MALLOC(A->m_loc * nrhs * sizeof(float));

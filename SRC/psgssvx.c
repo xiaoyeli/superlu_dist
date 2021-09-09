@@ -639,6 +639,15 @@ psgssvx(superlu_dist_options_t *options, SuperMatrix *A,
     C = ScalePermstruct->C;
     /********/
 
+#ifdef GPU_ACC
+    /* Binding each MPI to a CUDA device */
+    int devs;
+    // MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    cudaGetDeviceCount(&devs); // Returns the number of compute-capable devices
+    cudaSetDevice(iam % devs); // Set device to be used for GPU executions
+    ////
+#endif
+
 #if ( DEBUGlevel>=1 )
     CHECK_MALLOC(iam, "Enter psgssvx()");
 #endif
