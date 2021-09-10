@@ -7,9 +7,10 @@
 #include "lupanels.hpp"
 
 //TODO: make expsilon a enviroment variable 
-#define EPSILON 1e-3
+// #define EPSILON 1e-3
+#define EPSILON 1e-6
 
-
+#if 0
 int checkArr(double *A, double *B, int n)
 {
     for (int i = 0; i < n; i++)
@@ -19,7 +20,21 @@ int checkArr(double *A, double *B, int n)
 
     return 0;
 }
+#else 
+int checkArr(double *A, double *B, int n)
+{
+    double nrmA = 0;
+    for (int i = 0; i < n; i++) 
+        nrmA += A[i]*A[i];
+    nrmA = sqrt(nrmA);
+    for (int i = 0; i < n; i++)
+    {
+        assert(fabs(A[i] - B[i]) <= EPSILON * nrmA/n );
+    }
 
+    return 0;
+}
+#endif 
 lpanelGPU_t lpanel_t::copyToGPU()
 {
 
