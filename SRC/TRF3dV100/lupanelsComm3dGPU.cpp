@@ -92,7 +92,7 @@ int_t LUstruct_v100::zRecvLPanelGPU(int_t k0, int_t senderGrid, double alpha, do
             cublasSetStream(handle, cuStream);
 			cublasDscal(handle, lPanelVec[lk].nzvalSize(), &alpha, lPanelVec[lk].blkPtrGPU(0), 1);
 			cublasDaxpy(handle, lPanelVec[lk].nzvalSize(), &beta, A_gpu.LvalRecvBufs[0], 1, lPanelVec[lk].blkPtrGPU(0), 1);
-
+            cudaStreamSynchronize(cuStream);
             // cublasDscal(cublasHandle_t handle, int n,
             //                 const double          *alpha,
             //                 double          *x, int incx)
@@ -141,6 +141,7 @@ int_t LUstruct_v100::zRecvUPanelGPU(int_t k0, int_t senderGrid, double alpha, do
             cublasSetStream(handle, cuStream);
 			cublasDscal(handle, uPanelVec[lk].nzvalSize(), &alpha, uPanelVec[lk].blkPtrGPU(0), 1);
 			cublasDaxpy(handle, uPanelVec[lk].nzvalSize(), &beta, A_gpu.UvalRecvBufs[0], 1, uPanelVec[lk].blkPtrGPU(0), 1);
+            cudaStreamSynchronize(cuStream);
 		}
 	}
 	return 0;

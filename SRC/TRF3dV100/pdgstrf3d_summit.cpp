@@ -190,7 +190,7 @@ extern "C"
 
         if (superlu_acc_offload)
         {
-            // cudaStreamSynchronize(LU_packed.A_gpu.cuStreams[0]);    // in theory I don't need it 
+            cudaStreamSynchronize(LU_packed.A_gpu.cuStreams[0]);    // in theory I don't need it 
             LU_packed.copyLUGPUtoHost();
         }
             
