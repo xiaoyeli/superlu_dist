@@ -27,21 +27,20 @@ at the top-level directory.
  * Purpose
  * =======
  *
- * The driver program PZDRIVE3D1.
+ * The driver program PZDRIVE3D2.
  *
- * This example illustrates how to use PZGSSVX3D to sovle the systems
- * with the same A but different right-hand side, possibly with
- * different number of right-hand sides.
- * In this case, we factorize A only once in the first call to PZGSSVX3D,
- * and reuse the following data structures in the subsequent call to
- * PZGSSVX3D:
- *        ScalePermstruct  : DiagScale, R, C, perm_r, perm_c
- *        LUstruct         : Glu_persist, Llu
- *        SOLVEstruct      : communication metadata for SpTRSV, SpMV, and
- *                           3D<->2D gather/scatter of {A,B} stored in A3d.
+ * This example illustrates how to use PZGSSVX3D to sovle 
+ * the systems with the same sparsity pattern of matrix A.
+ * In this case, the column permutation vector ScalePermstruct->perm_c is
+ * computed once. The following data structures will be reused in the
+ * subsequent call to PZGSSVX3D:
+ *        ScalePermstruct : perm_c
+ *        LUstruct        : etree
+ *        SOLVEstruct     : communication metadata for SpTRSV, SpMV, and
+ *                          3D<->2D gather/scatter of {A,B} stored in A3d.
  * 
  * The program may be run by typing:
- *    mpiexec -np <p> pzdrive3d1 -r <proc rows> -c <proc columns> \
+ *    mpiexec -np <p> pzdrive3d2 -r <proc rows> -c <proc columns> \
  *                                    -d <proc Z-dimension> <input_file>
  * NOTE: total number of processes p = r * c * d
  *       (d must be a power-of-two, e.g., 1, 2, 4, ...)
@@ -112,7 +111,7 @@ main (int argc, char *argv[])
     zSOLVEstruct_t SOLVEstruct;
     gridinfo3d_t grid;
     double *berr;
-    doublecomplex *b, *xtrue, *b1, *b2;
+    doublecomplex *b, *b1, *xtrue, *xtrue1;
     int m, n, i, j, m_loc;
     int nprow, npcol, npdep;
     int iam, info, ldb, ldx, nrhs;
@@ -120,6 +119,14 @@ main (int argc, char *argv[])
     FILE *fp, *fopen ();
     extern int cpp_defs ();
     int ii, omp_mpi_level;
+
+    /* prototypes */
+    extern int zcreate_matrix_perturbed
+        (SuperMatrix *, int, doublecomplex **, int *, doublecomplex **, int *,
+         FILE *, gridinfo_t *);
+    extern int zcreate_matrix_perturbed_postfix
+        (SuperMatrix *, int, doublecomplex **, int *, doublecomplex **, int *,
+         FILE *, char *, gridinfo_t *);
 
     nprow = 1;            /* Default process rows.      */
     npcol = 1;            /* Default process columns.   */
@@ -243,52 +250,9 @@ main (int argc, char *argv[])
     // *fp0 = *fp;
     zcreate_matrix_postfix3d(&A, nrhs, &b, &ldb,
                              &xtrue, &ldx, fp, suffix, &(grid));
+    fclose(fp);
+    
     //printf("ldx %d, ldb %d\n", ldx, ldb);
-    
-#if 0  // following code is only for checking *Gather* routine
-    NRformat_loc *Astore, *Astore0;
-    doublecomplex* B2d;
-    NRformat_loc Atmp = dGatherNRformat_loc(
-                            (NRformat_loc *) A.Store,
-                            b, ldb, nrhs, &B2d,
-                            &grid);
-    Astore = &Atmp;
-    SuperMatrix Aref;
-    doublecomplex *bref, *xtrueref;
-    if ( grid.zscp.Iam == 0 )  // only in process layer 0
-    {
-        zcreate_matrix_postfix(&Aref, nrhs, &bref, &ldb,
-                               &xtrueref, &ldx, fp0, 
-                               suffix, &(grid.grid2d));
-        Astore0 = (NRformat_loc *) Aref.Store;
-
-	/*
-	if ( (grid.grid2d).iam == 0 ) {
-	    printf(" iam %d\n", 0); 
-	    checkNRFMT(Astore, Astore0);
-	} else if ((grid.grid2d).iam == 1 ) {
-	    printf(" iam %d\n", 1); 
-	    checkNRFMT(Astore, Astore0);
-	} 
-	*/
-    
-	// bref, xtrueref are created on 2D
-        matCheck(Astore->m_loc, nrhs, B2d, Astore->m_loc, bref, ldb);
-    }
-    // MPI_Finalize(); exit(0);
-#endif
-
-    /* Save two copies of the RHS */
-    if ( !(b1 = doublecomplexMalloc_dist(ldb * nrhs)) )
-        ABORT("Malloc fails for b1[]");
-    if ( !(b2 = doublecomplexMalloc_dist(ldb * nrhs)) )
-        ABORT("Malloc fails for b1[]");
-    for (j = 0; j < nrhs; ++j) {
-        for (i = 0; i < ldb; ++i) {
-	    b1[i+j*ldb] = b[i+j*ldb];
-	    b2[i+j*ldb] = b[i+j*ldb];
-        }
-    }	    
     
     if (!(berr = doubleMalloc_dist (nrhs)))
         ABORT ("Malloc fails for berr[].");
@@ -348,18 +312,32 @@ main (int argc, char *argv[])
     pzinf_norm_error (iam, ((NRformat_loc *) A.Store)->m_loc,
                           nrhs, b, ldb, xtrue, ldx, grid.comm);
 
+    /* Deallocate some storage, keep around 2D matrix meta structure */
+    Destroy_CompRowLoc_Matrix_dist (&A);
     if ( grid.zscp.Iam == 0 ) { // process layer 0
 	PStatPrint (&options, &stat, &(grid.grid2d)); /* Print 2D statistics.*/
+        /* Deallocate storage associated with the L and U matrices.*/
+	zDestroy_LU(n, &(grid.grid2d), &LUstruct);
+    } else { // Process layers not equal 0
+        zDeAllocLlu_3d(n, &LUstruct, &grid);
+        zDeAllocGlu_3d(&LUstruct);
     }
-    PStatFree (&stat);
-    fflush(stdout);
+    
+    PStatFree(&stat);
+    SUPERLU_FREE(b);     /* Free storage of right-hand side.*/
+    SUPERLU_FREE(xtrue); /* Free storage of the exact solution.*/
 
     /* ------------------------------------------------------------
-       2. NOW SOLVE ANOTHER SYSTEM WITH THE SAME A BUT DIFFERENT
-       RIGHT-HAND SIDE,  WE WILL USE THE EXISTING L AND U FACTORS IN
-       LUSTRUCT OBTAINED FROM A PREVIOUS FATORIZATION.
+       2. NOW WE SOLVE ANOTHER LINEAR SYSTEM.
+          ONLY THE SPARSITY PATTERN OF MATRIX A IS THE SAME.
        ------------------------------------------------------------*/
-    options.Fact = FACTORED; /* Indicate the factored form of A is supplied. */
+    options.Fact = SamePattern;
+    /* Get the matrix from file, perturbed some diagonal entries to force
+       a different perm_r[]. Set up the right-hand side.   */
+    if ( !(fp = fopen(*cpp, "r")) ) ABORT("File does not exist");
+    zcreate_matrix_postfix3d(&A, nrhs, &b1, &ldb,
+                             &xtrue1, &ldx, fp, suffix, &(grid));
+    
     PStatInit(&stat); /* Initialize the statistics variables. */
 
     nrhs = 1;
@@ -367,13 +345,14 @@ main (int argc, char *argv[])
                &LUstruct, &SOLVEstruct, berr, &stat, &info);
 
     /* Check the accuracy of the solution. */
-    if ( !iam ) printf("\tSolve the system with a different B:\n");
+    if ( !iam ) printf("Solve the system with the same sparsity pattern.\n");
     pzinf_norm_error (iam, ((NRformat_loc *) A.Store)->m_loc,
-                          nrhs, b1, ldb, xtrue, ldx, grid.comm);
+                          nrhs, b1, ldb, xtrue1, ldx, grid.comm);
 
     /* ------------------------------------------------------------
        DEALLOCATE STORAGE.
        ------------------------------------------------------------ */
+    Destroy_CompRowLoc_Matrix_dist (&A);
     if ( grid.zscp.Iam == 0 ) { // process layer 0
 
 	PStatPrint (&options, &stat, &(grid.grid2d)); /* Print 2D statistics.*/
@@ -385,17 +364,15 @@ main (int argc, char *argv[])
         zDeAllocGlu_3d(&LUstruct);
     }
     
-    zDestroy_A3d_gathered_on_2d(&SOLVEstruct, &grid);
+    zDestroy_A3d_gathered_on_2d(&SOLVEstruct, &grid); // After all factorization
 
-    Destroy_CompRowLoc_Matrix_dist (&A);
-    SUPERLU_FREE (b);
-    SUPERLU_FREE (b1);
-    SUPERLU_FREE (b2);
-    SUPERLU_FREE (xtrue);
-    SUPERLU_FREE (berr);
     zScalePermstructFree (&ScalePermstruct);
     zLUstructFree (&LUstruct);
     PStatFree (&stat);
+    SUPERLU_FREE (b1);
+    SUPERLU_FREE (xtrue1);
+    SUPERLU_FREE (berr);
+    fclose(fp);
 
     /* ------------------------------------------------------------
        RELEASE THE SUPERLU PROCESS GRID.

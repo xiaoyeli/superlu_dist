@@ -38,6 +38,8 @@ DEXM4	= pddrive4.o dcreate_matrix.o
 
 DEXM3D	= pddrive3d.o dcreate_matrix.o dcreate_matrix3d.o 
 DEXM3D1	= pddrive3d1.o dcreate_matrix.o dcreate_matrix3d.o 
+DEXM3D2	= pddrive3d2.o dcreate_matrix.o dcreate_matrix3d.o
+DEXM3D3	= pddrive3d3.o dcreate_matrix.o dcreate_matrix3d.o
 
 #	   dtrfAux.o dtreeFactorization.o treeFactorization.o pd3dcomm.o superlu_grid3d.o pdgstrf3d.o
 DEXMG	= pddrive_ABglobal.o
@@ -53,7 +55,9 @@ ZEXM3	= pzdrive3.o zcreate_matrix.o
 ZEXM4	= pzdrive4.o zcreate_matrix.o
 ZEXM3D	= pzdrive3d.o zcreate_matrix.o zcreate_matrix3d.o
 ZEXM3D1	= pzdrive3d1.o zcreate_matrix.o zcreate_matrix3d.o
-ZEXM3D1	= pzdrive3d1.o zcreate_matrix.o zcreate_matrix3d.o
+ZEXM3D2	= pzdrive3d2.o zcreate_matrix.o zcreate_matrix3d.o
+ZEXM3D3	= pzdrive3d3.o zcreate_matrix.o zcreate_matrix3d.o
+
 ZEXMG	= pzdrive_ABglobal.o
 ZEXMG1	= pzdrive1_ABglobal.o
 ZEXMG2	= pzdrive2_ABglobal.o
@@ -61,15 +65,15 @@ ZEXMG3	= pzdrive3_ABglobal.o
 ZEXMG4	= pzdrive4_ABglobal.o
 
 
-all: pddrive3d1 pddrive3d double complex16
+all: double complex16
 
 double:    pddrive pddrive1 pddrive2 pddrive3 pddrive4 \
-	   pddrive3d pddrive3d1 \
+	   pddrive3d pddrive3d1 pddrive3d2 pddrive3d3 \
 	   pddrive_ABglobal pddrive1_ABglobal pddrive2_ABglobal \
 	   pddrive3_ABglobal pddrive4_ABglobal
 
 complex16: pzdrive pzdrive1 pzdrive2 pzdrive3 pzdrive4 \
-	   pzdrive3d pzdrive3d1 \
+	   pzdrive3d pzdrive3d1 pzdrive3d2 pzdrive3d3 \
 	   pzdrive_ABglobal pzdrive1_ABglobal pzdrive2_ABglobal \
 	   pzdrive3_ABglobal pzdrive4_ABglobal
 
@@ -93,6 +97,12 @@ pddrive3d: $(DEXM3D) $(DSUPERLULIB)
 
 pddrive3d1: $(DEXM3D1) $(DSUPERLULIB)
 	$(LOADER) $(LOADOPTS) $(DEXM3D1) $(LIBS) -lm -o $@
+
+pddrive3d2: $(DEXM3D2) $(DSUPERLULIB)
+	$(LOADER) $(LOADOPTS) $(DEXM3D2) $(LIBS) -lm -o $@
+
+pddrive3d3: $(DEXM3D3) $(DSUPERLULIB)
+	$(LOADER) $(LOADOPTS) $(DEXM3D3) $(LIBS) -lm -o $@
 
 pddrive_ABglobal: $(DEXMG) $(DSUPERLULIB)
 	$(LOADER) $(LOADOPTS) $(DEXMG) $(LIBS) -lm -o $@
@@ -132,6 +142,12 @@ pzdrive3d: $(ZEXM3D) $(DSUPERLULIB)
 
 pzdrive3d1: $(ZEXM3D1) $(DSUPERLULIB)
 	$(LOADER) $(LOADOPTS) $(ZEXM3D1) $(LIBS) -lm -o $@
+
+pzdrive3d2: $(ZEXM3D2) $(DSUPERLULIB)
+	$(LOADER) $(LOADOPTS) $(ZEXM3D2) $(LIBS) -lm -o $@
+
+pzdrive3d3: $(ZEXM3D3) $(DSUPERLULIB)
+	$(LOADER) $(LOADOPTS) $(ZEXM3D3) $(LIBS) -lm -o $@
 
 pzdrive_ABglobal: $(ZEXMG) $(DSUPERLULIB)
 	$(LOADER) $(LOADOPTS) $(ZEXMG) $(LIBS) -lm -o $@

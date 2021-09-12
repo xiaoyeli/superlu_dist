@@ -4,11 +4,22 @@
 This directory contains sample programs to illustrate how to use
 various functions provided in SuperLU_DIST. You can modify these
 examples to suit your applications.
+(double real: pddrive*
+ double complex: pzdrive* )
 
 The examples illustrate the following functionalities:
-  0. pddrive3d.c
-     Use PDGSSVX3D communication-avoiding 3D algorithm with the default options
-     to solve a linear system
+  0. pddrive3d.c: (invoke new communication-avoiding 3D algorithms)
+         Use PxGSSVX3D with the default options to solve a linear system
+     pddrive3d1.c:
+	 Use PxGSSVX3D to solve the systems with same A but different
+	 right-hand side. (Reuse the factored form of A)
+     pddrive3d2.c:
+	 Use PxGSSVX3D to solve the systems with same sparsity pattern
+	 of A. (Reuse the sparsity ordering)
+     pddrive3d2.c:
+	 Use PxGSSVX3D to solve the systems with same sparsity pattern
+	 and similar values. (Reuse sparsity ordering and row pivoting)
+     
   1. pddrive.c, pddrive_ABglobal.c
      Use PDGSSVX with the full (default) options to solve a linear system.
   2. pddrive1.c, pddrive1_ABglobal.c
@@ -19,6 +30,7 @@ The examples illustrate the following functionalities:
      (Reuse the sparsity ordering)
   4. pddrive3.c, pddrive3_ABglobal.c
      Solve the systems with the same sparsity pattern and similar values.
+     (Reuse sparsity ordering and row pivoting)     
   5. pddrive4.c, pddrive4_ABglobal.c
      Divide the processors into two subgroups (two grids) such that each
      subgroup solves a linear system independently from the other.

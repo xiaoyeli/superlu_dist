@@ -42,8 +42,8 @@ at the top-level directory.
  *                           3D<->2D gather/scatter of {A,B} stored in A3d.
  * 
  * The program may be run by typing:
- *    mpiexec -np <p> pddrive3d -r <proc rows> -c <proc columns> \
- *                                   -d <proc Z-dimension> <input_file>
+ *    mpiexec -np <p> pddrive3d1 -r <proc rows> -c <proc columns> \
+ *                                    -d <proc Z-dimension> <input_file>
  * NOTE: total number of processes p = r * c * d
  *       (d must be a power-of-two, e.g., 1, 2, 4, ...)
  *

@@ -65,6 +65,14 @@ if(enable_double)
   add_executable(pddrive3d1 ${DEXM3D1})
   target_link_libraries(pddrive3d1 ${all_link_libs})
   
+  set(DEXM3D2 pddrive3d2.c dcreate_matrix.c dcreate_matrix3d.c)
+  add_executable(pddrive3d2 ${DEXM3D2})
+  target_link_libraries(pddrive3d2 ${all_link_libs})
+  
+  set(DEXM3D3 pddrive3d3.c dcreate_matrix.c dcreate_matrix3d.c)
+  add_executable(pddrive3d3 ${DEXM3D3})
+  target_link_libraries(pddrive3d3 ${all_link_libs})
+  
   set(DEXMG pddrive_ABglobal.c)
   add_executable(pddrive_ABglobal ${DEXMG})
   target_link_libraries(pddrive_ABglobal ${all_link_libs})
@@ -124,6 +132,14 @@ if(enable_single)
   add_executable(psdrive3d1 ${SEXM3D1})
   target_link_libraries(psdrive3d1 ${all_link_libs})
   
+  set(SEXM3D2 psdrive3d2.c screate_matrix.c screate_matrix3d.c)
+  add_executable(psdrive3d2 ${SEXM3D2})
+  target_link_libraries(psdrive3d2 ${all_link_libs})
+  
+  set(SEXM3D3 psdrive3d3.c screate_matrix.c screate_matrix3d.c)
+  add_executable(psdrive3d3 ${SEXM3D3})
+  target_link_libraries(psdrive3d3 ${all_link_libs})
+  
 endif() #### end enable_single
 
 if(enable_complex16)
@@ -158,6 +174,14 @@ if(enable_complex16)
   set(ZEXM3D1 pzdrive3d1.c zcreate_matrix.c zcreate_matrix3d.c)
   add_executable(pzdrive3d1 ${ZEXM3D1})
   target_link_libraries(pzdrive3d1 ${all_link_libs})
+  
+  set(ZEXM3D2 pzdrive3d2.c zcreate_matrix.c zcreate_matrix3d.c)
+  add_executable(pzdrive3d2 ${ZEXM3D2})
+  target_link_libraries(pzdrive3d2 ${all_link_libs})
+  
+  set(ZEXM3D3 pzdrive3d3.c zcreate_matrix.c zcreate_matrix3d.c)
+  add_executable(pzdrive3d3 ${ZEXM3D3})
+  target_link_libraries(pzdrive3d3 ${all_link_libs})
   
   set(ZEXMG pzdrive_ABglobal.c)
   add_executable(pzdrive_ABglobal ${ZEXMG})

@@ -538,7 +538,8 @@ extern void zCopy_CompRowLoc_Matrix_dist(SuperMatrix *, SuperMatrix *);
 extern void zZero_CompRowLoc_Matrix_dist(SuperMatrix *);
 extern void zScaleAddId_CompRowLoc_Matrix_dist(SuperMatrix *, doublecomplex);
 extern void zScaleAdd_CompRowLoc_Matrix_dist(SuperMatrix *, SuperMatrix *, doublecomplex);
-extern void zZeroLblocks(int, int_t, gridinfo_t *, zLUstruct_t *);
+extern void zZeroLblocks(int, int, gridinfo_t *, zLUstruct_t *);
+extern void zZeroUblocks(int iam, int n, gridinfo_t *, zLUstruct_t *);
 extern void    zfill_dist (doublecomplex *, int_t, doublecomplex);
 extern void    zinf_norm_error_dist (int_t, int_t, doublecomplex*, int_t,
                                      doublecomplex*, int_t, gridinfo_t*);

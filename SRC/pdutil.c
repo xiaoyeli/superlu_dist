@@ -805,10 +805,12 @@ void dDestroy_A3d_gathered_on_2d(dSOLVEstruct_t *SOLVEstruct, gridinfo3d_t *grid
 	SUPERLU_FREE( A2d->colind );
 	SUPERLU_FREE( A2d->nzval );
     }
-    SUPERLU_FREE(A3d->b_counts_int);  // free displacement counts 
-    SUPERLU_FREE(A3d->b_disp);
-    SUPERLU_FREE(A3d->row_counts_int);
+    SUPERLU_FREE(A3d->row_counts_int);  // free displacements and counts 
     SUPERLU_FREE(A3d->row_disp);
+    SUPERLU_FREE(A3d->nnz_counts_int);
+    SUPERLU_FREE(A3d->nnz_disp);
+    SUPERLU_FREE(A3d->b_counts_int);
+    SUPERLU_FREE(A3d->b_disp);
     SUPERLU_FREE( A2d );         // free 2D structure
     SUPERLU_FREE( A3d );         // free 3D structure
 } /* dDestroy_A3d_gathered_on_2d */

@@ -57,20 +57,13 @@ void zGatherNRformat_loc3d
     NRformat_loc *A2d;
     int *row_counts_int; // 32-bit, number of local rows relative to all processes
     int *row_disp;       // displacement
+    int *nnz_counts_int; // number of local nnz relative to all processes
+    int *nnz_disp;       // displacement
     int *b_counts_int;   // number of local B entries relative to all processes 
     int *b_disp;         // including 'nrhs'
 	
     /********* Gather A2d *********/
-    if ( Fact == SamePattern || Fact == SamePattern_SameRowPerm ) {
-	/* A3d is input. No need to recompute count.
-	   Only need to gather A2d matrix.  */
-	b_counts_int   = A3d->b_counts_int;
-	b_disp         = A3d->b_disp;;
-	row_counts_int = A3d->row_counts_int;
-	row_disp       = A3d->row_disp;
-
-	if (grid3d->iam==0) printf("TO BE COMPLETED!\n");
-    } else if ( Fact != FACTORED ) {
+    if ( Fact == DOFACT ) { /* Factorize from scratch */
 	/* A3d is output. Compute counts from scratch */
 	A3d = SUPERLU_MALLOC(sizeof(NRformat_loc3d));
 	A2d = SUPERLU_MALLOC(sizeof(NRformat_loc));
@@ -128,7 +121,7 @@ void zGatherNRformat_loc3d
 		    row_counts_int, row_disp,
 		    mpi_int_t, 0, grid3d->zscp.comm);
 
-	if (grid3d->zscp.Iam == 0)
+	if (grid3d->zscp.Iam == 0) /* Set up rowptr[] relative to 2D grid-0 */
 	    {
 		for (int i = 0; i < grid3d->npdep; i++)
 		    {
@@ -165,20 +158,75 @@ void zGatherNRformat_loc3d
 	    } /* end 2D layer grid-0 */
 
 	A3d->A_nfmt         = A2d;
-	A3d->b_counts_int   = b_counts_int;
-	A3d->b_disp         = b_disp;
 	A3d->row_counts_int = row_counts_int;
 	A3d->row_disp       = row_disp;
+	A3d->nnz_counts_int = nnz_counts_int;
+	A3d->nnz_disp       = nnz_disp;
+	A3d->b_counts_int   = b_counts_int;
+	A3d->b_disp         = b_disp;
 
 	/* free storage */
 	SUPERLU_FREE(nnz_counts);
-	SUPERLU_FREE(nnz_counts_int);
 	SUPERLU_FREE(row_counts);
-	SUPERLU_FREE(nnz_disp);
 	
 	*A3d_addr = (NRformat_loc3d *) A3d; // return pointer to A3d struct
 	
-    } /* end else: Factor from scratch */
+    } else if ( Fact == SamePattern || Fact == SamePattern_SameRowPerm ) {
+	/* A3d is input. No need to recompute count.
+	   Only need to gather A2d matrix; the previous 2D matrix
+	   was overwritten by equilibration, perm_r and perm_c.  */
+	NRformat_loc *A2d = A3d->A_nfmt;
+	row_counts_int = A3d->row_counts_int;
+	row_disp       = A3d->row_disp;
+	nnz_counts_int = A3d->nnz_counts_int;
+	nnz_disp       = A3d->nnz_disp;
+
+	MPI_Gatherv(A->nzval, A->nnz_loc, SuperLU_MPI_DOUBLE_COMPLEX, A2d->nzval,
+		    nnz_counts_int, nnz_disp,
+		    SuperLU_MPI_DOUBLE_COMPLEX, 0, grid3d->zscp.comm);
+	MPI_Gatherv(A->colind, A->nnz_loc, mpi_int_t, A2d->colind,
+		    nnz_counts_int, nnz_disp,
+		    mpi_int_t, 0, grid3d->zscp.comm);
+	MPI_Gatherv(&A->rowptr[1], A->m_loc, mpi_int_t, &A2d->rowptr[1],
+		    row_counts_int, row_disp,
+		    mpi_int_t, 0, grid3d->zscp.comm);
+		    
+	if (grid3d->zscp.Iam == 0) { /* Set up rowptr[] relative to 2D grid-0 */
+	    A2d->rowptr[0] = 0;
+	    for (int i = 0; i < grid3d->npdep; i++)
+	    {
+		for (int j = row_disp[i] + 1; j < row_disp[i + 1] + 1; j++)
+		    {
+			// A2d->rowptr[j] += row_disp[i];
+			A2d->rowptr[j] += nnz_disp[i];
+		    }
+	    }
+	    A2d->nnz_loc = nnz_disp[grid3d->npdep];
+	    A2d->m_loc = row_disp[grid3d->npdep];
+
+	    if (grid3d->rankorder == 1) { // XY-major
+		    A2d->fst_row = A->fst_row;
+	    } else { // Z-major
+		    gridinfo_t *grid2d = &(grid3d->grid2d);
+		    int procs2d = grid2d->nprow * grid2d->npcol;
+		    int m_loc_2d = A2d->m_loc;
+		    int *m_loc_2d_counts = SUPERLU_MALLOC(procs2d * sizeof(int));
+
+		    MPI_Allgather(&m_loc_2d, 1, MPI_INT, m_loc_2d_counts, 1, 
+				  MPI_INT, grid2d->comm);
+
+		    int fst_row = 0;
+		    for (int p = 0; p < procs2d; ++p)
+			{
+			    if (grid2d->iam == p)
+				A2d->fst_row = fst_row;
+			    fst_row += m_loc_2d_counts[p];
+			}
+
+		    SUPERLU_FREE(m_loc_2d_counts);
+	    }
+	} /* end 2D layer grid-0 */
+    } /* SamePattern or SamePattern_SameRowPerm */
 
     A3d->m_loc = A->m_loc;
     A3d->B3d = (doublecomplex *) B; /* save the pointer to the original B
@@ -190,10 +238,10 @@ void zGatherNRformat_loc3d
     if ( nrhs > 0 ) {
 	
 	A2d = (NRformat_loc *) A3d->A_nfmt; // matrix A gathered on 2D grid-0
-	b_counts_int   = A3d->b_counts_int;
-	b_disp         = A3d->b_disp;;
 	row_counts_int = A3d->row_counts_int;
 	row_disp       = A3d->row_disp;
+	b_counts_int   = A3d->b_counts_int;
+	b_disp         = A3d->b_disp;;
 	
 	/* Btmp <- compact(B), compacting B */
 	doublecomplex *Btmp;

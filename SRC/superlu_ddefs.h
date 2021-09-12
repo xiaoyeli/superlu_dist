@@ -536,7 +536,8 @@ extern void dCopy_CompRowLoc_Matrix_dist(SuperMatrix *, SuperMatrix *);
 extern void dZero_CompRowLoc_Matrix_dist(SuperMatrix *);
 extern void dScaleAddId_CompRowLoc_Matrix_dist(SuperMatrix *, double);
 extern void dScaleAdd_CompRowLoc_Matrix_dist(SuperMatrix *, SuperMatrix *, double);
-extern void dZeroLblocks(int, int_t, gridinfo_t *, dLUstruct_t *);
+extern void dZeroLblocks(int, int, gridinfo_t *, dLUstruct_t *);
+extern void dZeroUblocks(int iam, int n, gridinfo_t *, dLUstruct_t *);
 extern void    dfill_dist (double *, int_t, double);
 extern void    dinf_norm_error_dist (int_t, int_t, double*, int_t,
                                      double*, int_t, gridinfo_t*);

@@ -109,7 +109,6 @@ void dGatherNRformat_loc3d
 		A2d->colind = intMalloc_dist(nnz_disp[grid3d->npdep]);
 		A2d->nzval = doubleMalloc_dist(nnz_disp[grid3d->npdep]);
 		A2d->rowptr = intMalloc_dist((row_disp[grid3d->npdep] + 1));
-		A2d->rowptr[0] = 0;
 	    }
 
 	MPI_Gatherv(A->nzval, A->nnz_loc, MPI_DOUBLE, A2d->nzval,
@@ -122,8 +121,9 @@ void dGatherNRformat_loc3d
 		    row_counts_int, row_disp,
 		    mpi_int_t, 0, grid3d->zscp.comm);
 
-	if (grid3d->zscp.Iam == 0) /* Set up rowptr[] relative to 2D grid-0 */
+	if (grid3d->zscp.Iam == 0)
 	    {
+		A2d->rowptr[0] = 0;
 		for (int i = 0; i < grid3d->npdep; i++)
 		    {
 			for (int j = row_disp[i] + 1; j < row_disp[i + 1] + 1; j++)
@@ -191,23 +191,24 @@ void dGatherNRformat_loc3d
 	MPI_Gatherv(&A->rowptr[1], A->m_loc, mpi_int_t, &A2d->rowptr[1],
 		    row_counts_int, row_disp,
 		    mpi_int_t, 0, grid3d->zscp.comm);
-		    
-	if (grid3d->zscp.Iam == 0) { /* Set up rowptr[] relative to 2D grid-0 */
-	    A2d->rowptr[0] = 0;
-	    for (int i = 0; i < grid3d->npdep; i++)
-	    {
-		for (int j = row_disp[i] + 1; j < row_disp[i + 1] + 1; j++)
+	
+	if (grid3d->zscp.Iam == 0) {
+		A2d->rowptr[0] = 0;
+		
+		for (int i = 0; i < grid3d->npdep; i++)
 		    {
-			// A2d->rowptr[j] += row_disp[i];
-			A2d->rowptr[j] += nnz_disp[i];
+			for (int j = row_disp[i] + 1; j < row_disp[i + 1] + 1; j++)
+			    {
+				// A2d->rowptr[j] += row_disp[i];
+				A2d->rowptr[j] += nnz_disp[i];
+			    }
 		    }
-	    }
-	    A2d->nnz_loc = nnz_disp[grid3d->npdep];
-	    A2d->m_loc = row_disp[grid3d->npdep];
+		A2d->nnz_loc = nnz_disp[grid3d->npdep];
+		A2d->m_loc = row_disp[grid3d->npdep];
 
-	    if (grid3d->rankorder == 1) { // XY-major
+		if (grid3d->rankorder == 1) { // XY-major
 		    A2d->fst_row = A->fst_row;
-	    } else { // Z-major
+		} else { // Z-major
 		    gridinfo_t *grid2d = &(grid3d->grid2d);
 		    int procs2d = grid2d->nprow * grid2d->npcol;
 		    int m_loc_2d = A2d->m_loc;
@@ -225,8 +226,9 @@ void dGatherNRformat_loc3d
 			}
 
 		    SUPERLU_FREE(m_loc_2d_counts);
-	    }
+		}
 	} /* end 2D layer grid-0 */
+		    
     } /* SamePattern or SamePattern_SameRowPerm */
 
     A3d->m_loc = A->m_loc;

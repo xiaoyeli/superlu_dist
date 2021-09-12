@@ -9,8 +9,9 @@ The source code is distributed under BSD license, see the file License.txt
 at the top-level directory.
 */
 
+
 /*! @file
- * \brief Driver program for PZGSSVX3D example
+ * \brief Driver program for PSGSSVX3D example
  *
  * <pre>
  * -- Distributed SuperLU routine (version 7.0) --
@@ -19,7 +20,7 @@ at the top-level directory.
  * September 10, 2021
  *
  */
-#include "superlu_zdefs.h"  
+#include "superlu_sdefs.h"  
 
 /*! \brief
  *
@@ -27,21 +28,26 @@ at the top-level directory.
  * Purpose
  * =======
  *
- * The driver program PZDRIVE3D1.
+ * The driver program PSDRIVE3D3.
  *
- * This example illustrates how to use PZGSSVX3D to sovle the systems
- * with the same A but different right-hand side, possibly with
- * different number of right-hand sides.
- * In this case, we factorize A only once in the first call to PZGSSVX3D,
- * and reuse the following data structures in the subsequent call to
- * PZGSSVX3D:
- *        ScalePermstruct  : DiagScale, R, C, perm_r, perm_c
- *        LUstruct         : Glu_persist, Llu
+ * This example illustrates how to use PSGSSVX3D to sovle 
+ * the systems with the same sparsity pattern and similar numerical
+ * values of matrix A.
+ * In this case, the row and column permutation vectors and symbolic
+ * factorization are computed only once. The following data structures
+ * will be reused in the subsequent call to PSGSSVX:
+ *        ScalePermstruct : DiagScale, R, C, perm_r, perm_c
+ *        LUstruct        : etree, Glu_persist, Llu
  *        SOLVEstruct      : communication metadata for SpTRSV, SpMV, and
  *                           3D<->2D gather/scatter of {A,B} stored in A3d.
- * 
+ *
+ * NOTE:
+ * The distributed nonzero structures of L and U remain the same,
+ * although the numerical values are different. So 'Llu' is set up once
+ * in the first call to PSGSSVX, and reused in the subsequent call.
+ *
  * The program may be run by typing:
- *    mpiexec -np <p> pzdrive3d1 -r <proc rows> -c <proc columns> \
+ *    mpiexec -np <p> psdrive3d3 -r <proc rows> -c <proc columns> \
  *                                    -d <proc Z-dimension> <input_file>
  * NOTE: total number of processes p = r * c * d
  *       (d must be a power-of-two, e.g., 1, 2, 4, ...)
@@ -49,13 +55,12 @@ at the top-level directory.
  * </pre>
  */
  
-static void matCheck(int n, int m, doublecomplex* A, int LDA,
-       doublecomplex* B, int LDB)
+static void matCheck(int n, int m, float* A, int LDA,
+       float* B, int LDB)
 {
     for(int j=0; j<m;j++)
         for (int i = 0; i < n; ++i) {
-	    assert( (A[i+ LDA*j].r == B[i+ LDB*j].r)
-	    	    && (A[i+ LDA*j].i == B[i+ LDB*j].i) );
+	    assert(A[i+ LDA*j] == B[i+ LDB*j]);
 	}
     printf("B check passed\n");
     return;
@@ -83,11 +88,11 @@ static void checkNRFMT(NRformat_loc*A, NRformat_loc*B)
     fflush(stdout);
 #endif
 
-    doublecomplex * Aval = (doublecomplex *) A->nzval;
-    doublecomplex * Bval = (doublecomplex *) B->nzval;
+    float * Aval = (float *) A->nzval;
+    float * Bval = (float *) B->nzval;
     for (int_t i = 0; i < A->nnz_loc; i++)
     {
-        assert( (Aval[i].r == Bval[i].r) && (Aval[i].i == Bval[i].i) );
+        assert( Aval[i] == Bval[i] );
         assert((A->colind)[i] == (B->colind)[i]);
 	printf("colind[] correct\n");
     }
@@ -107,20 +112,19 @@ main (int argc, char *argv[])
     superlu_dist_options_t options;
     SuperLUStat_t stat;
     SuperMatrix A;  // Now, A is on all 3D processes  
-    zScalePermstruct_t ScalePermstruct;
-    zLUstruct_t LUstruct;
-    zSOLVEstruct_t SOLVEstruct;
+    sScalePermstruct_t ScalePermstruct;
+    sLUstruct_t LUstruct;
+    sSOLVEstruct_t SOLVEstruct;
     gridinfo3d_t grid;
-    double *berr;
-    doublecomplex *b, *xtrue, *b1, *b2;
+    float *berr;
+    float *b, *b1, *xtrue, *xtrue1;
     int m, n, i, j, m_loc;
     int nprow, npcol, npdep;
-    int iam, info, ldb, ldx, nrhs;
+    int iam, info, ldb, ldx, nrhs, ii, omp_mpi_level;
     char **cpp, c, *suffix;
     FILE *fp, *fopen ();
     extern int cpp_defs ();
-    int ii, omp_mpi_level;
-
+    
     nprow = 1;            /* Default process rows.      */
     npcol = 1;            /* Default process columns.   */
     npdep = 1;            /* replication factor must be power of two */
@@ -185,7 +189,7 @@ main (int argc, char *argv[])
        ------------------------------------------------------------ */
     superlu_gridinit3d (MPI_COMM_WORLD, nprow, npcol, npdep, &grid);
 
-    if(grid.iam==0) {
+    if (grid.iam==0) {
 	MPI_Query_thread(&omp_mpi_level);
 	switch (omp_mpi_level) {
 	case MPI_THREAD_SINGLE:
@@ -241,56 +245,13 @@ main (int argc, char *argv[])
     }
 
     // *fp0 = *fp;
-    zcreate_matrix_postfix3d(&A, nrhs, &b, &ldb,
+    screate_matrix_postfix3d(&A, nrhs, &b, &ldb,
                              &xtrue, &ldx, fp, suffix, &(grid));
+    fclose(fp);
+    
     //printf("ldx %d, ldb %d\n", ldx, ldb);
     
-#if 0  // following code is only for checking *Gather* routine
-    NRformat_loc *Astore, *Astore0;
-    doublecomplex* B2d;
-    NRformat_loc Atmp = dGatherNRformat_loc(
-                            (NRformat_loc *) A.Store,
-                            b, ldb, nrhs, &B2d,
-                            &grid);
-    Astore = &Atmp;
-    SuperMatrix Aref;
-    doublecomplex *bref, *xtrueref;
-    if ( grid.zscp.Iam == 0 )  // only in process layer 0
-    {
-        zcreate_matrix_postfix(&Aref, nrhs, &bref, &ldb,
-                               &xtrueref, &ldx, fp0, 
-                               suffix, &(grid.grid2d));
-        Astore0 = (NRformat_loc *) Aref.Store;
-
-	/*
-	if ( (grid.grid2d).iam == 0 ) {
-	    printf(" iam %d\n", 0); 
-	    checkNRFMT(Astore, Astore0);
-	} else if ((grid.grid2d).iam == 1 ) {
-	    printf(" iam %d\n", 1); 
-	    checkNRFMT(Astore, Astore0);
-	} 
-	*/
-    
-	// bref, xtrueref are created on 2D
-        matCheck(Astore->m_loc, nrhs, B2d, Astore->m_loc, bref, ldb);
-    }
-    // MPI_Finalize(); exit(0);
-#endif
-
-    /* Save two copies of the RHS */
-    if ( !(b1 = doublecomplexMalloc_dist(ldb * nrhs)) )
-        ABORT("Malloc fails for b1[]");
-    if ( !(b2 = doublecomplexMalloc_dist(ldb * nrhs)) )
-        ABORT("Malloc fails for b1[]");
-    for (j = 0; j < nrhs; ++j) {
-        for (i = 0; i < ldb; ++i) {
-	    b1[i+j*ldb] = b[i+j*ldb];
-	    b2[i+j*ldb] = b[i+j*ldb];
-        }
-    }	    
-    
-    if (!(berr = doubleMalloc_dist (nrhs)))
+    if (!(berr = floatMalloc_dist (nrhs)))
         ABORT ("Malloc fails for berr[].");
 
     /* ------------------------------------------------------------
@@ -333,69 +294,91 @@ main (int argc, char *argv[])
     n = A.ncol;
 
     /* Initialize ScalePermstruct and LUstruct. */
-    zScalePermstructInit (m, n, &ScalePermstruct);
-    zLUstructInit (n, &LUstruct);
+    sScalePermstructInit (m, n, &ScalePermstruct);
+    sLUstructInit (n, &LUstruct);
 
     /* Initialize the statistics variables. */
     PStatInit (&stat);
 
     /* Call the linear equation solver. */
-    pzgssvx3d (&options, &A, &ScalePermstruct, b, ldb, nrhs, &grid,
+    psgssvx3d (&options, &A, &ScalePermstruct, b, ldb, nrhs, &grid,
                &LUstruct, &SOLVEstruct, berr, &stat, &info);
 
     /* Check the accuracy of the solution. */
     if ( !iam ) printf("\tSolve the first system:\n");
-    pzinf_norm_error (iam, ((NRformat_loc *) A.Store)->m_loc,
+    psinf_norm_error (iam, ((NRformat_loc *) A.Store)->m_loc,
                           nrhs, b, ldb, xtrue, ldx, grid.comm);
 
-    if ( grid.zscp.Iam == 0 ) { // process layer 0
+    /* Deallocate some storage, including replicated LU structure along
+       the Z dimension. keep around 2D matrix meta structure, including
+       the LU data structure on the host side.  */
+    Destroy_CompRowLoc_Matrix_dist (&A);
+    
+    if ( (grid.zscp).Iam == 0 ) { // process layer 0
 	PStatPrint (&options, &stat, &(grid.grid2d)); /* Print 2D statistics.*/
+    } else { // Process layers not equal 0
+        sDeAllocLlu_3d(n, &LUstruct, &grid);
+        sDeAllocGlu_3d(&LUstruct);
     }
-    PStatFree (&stat);
-    fflush(stdout);
+    
+    PStatFree(&stat);
+    SUPERLU_FREE(b);     /* Free storage of right-hand side.*/
+    SUPERLU_FREE(xtrue); /* Free storage of the exact solution.*/
 
     /* ------------------------------------------------------------
-       2. NOW SOLVE ANOTHER SYSTEM WITH THE SAME A BUT DIFFERENT
-       RIGHT-HAND SIDE,  WE WILL USE THE EXISTING L AND U FACTORS IN
-       LUSTRUCT OBTAINED FROM A PREVIOUS FATORIZATION.
+       2. NOW WE SOLVE ANOTHER LINEAR SYSTEM.
+          ONLY THE SPARSITY PATTERN OF MATRIX A IS THE SAME.
        ------------------------------------------------------------*/
-    options.Fact = FACTORED; /* Indicate the factored form of A is supplied. */
+    options.Fact = SamePattern_SameRowPerm;
+    
+    /* Zero the numerical values in L and U.  */
+    if ( (grid.zscp).Iam == 0 ) { /* on 2D grid-0 */
+        sZeroLblocks(iam, n, &(grid.grid2d), &LUstruct);
+        sZeroUblocks(iam, n, &(grid.grid2d), &LUstruct);
+    }
+
+    /* Get the matrix from file, perturbed some diagonal entries to force
+       a different perm_r[]. Set up the right-hand side.   */
+    if ( !(fp = fopen(*cpp, "r")) ) ABORT("File does not exist");
+    screate_matrix_postfix3d(&A, nrhs, &b1, &ldb,
+                             &xtrue1, &ldx, fp, suffix, &(grid));
+    fclose(fp);
+
     PStatInit(&stat); /* Initialize the statistics variables. */
 
     nrhs = 1;
-    pzgssvx3d (&options, &A, &ScalePermstruct, b1, ldb, nrhs, &grid,
+    psgssvx3d (&options, &A, &ScalePermstruct, b1, ldb, nrhs, &grid,
                &LUstruct, &SOLVEstruct, berr, &stat, &info);
 
     /* Check the accuracy of the solution. */
-    if ( !iam ) printf("\tSolve the system with a different B:\n");
-    pzinf_norm_error (iam, ((NRformat_loc *) A.Store)->m_loc,
-                          nrhs, b1, ldb, xtrue, ldx, grid.comm);
+    if ( !iam ) printf("Solve a system with the same pattern and similar values.\n");
+    psinf_norm_error (iam, ((NRformat_loc *) A.Store)->m_loc,
+                          nrhs, b1, ldb, xtrue1, ldx, grid.comm);
 
     /* ------------------------------------------------------------
-       DEALLOCATE STORAGE.
+       DEALLOCATE ALL STORAGE.
        ------------------------------------------------------------ */
+    Destroy_CompRowLoc_Matrix_dist (&A);
     if ( grid.zscp.Iam == 0 ) { // process layer 0
 
 	PStatPrint (&options, &stat, &(grid.grid2d)); /* Print 2D statistics.*/
 
-        zDestroy_LU (n, &(grid.grid2d), &LUstruct);
-        zSolveFinalize (&options, &SOLVEstruct);
+        sDestroy_LU (n, &(grid.grid2d), &LUstruct);
+        sSolveFinalize (&options, &SOLVEstruct);
     } else { // Process layers not equal 0
-        zDeAllocLlu_3d(n, &LUstruct, &grid);
-        zDeAllocGlu_3d(&LUstruct);
+        sDeAllocLlu_3d(n, &LUstruct, &grid);
+        sDeAllocGlu_3d(&LUstruct);
     }
     
-    zDestroy_A3d_gathered_on_2d(&SOLVEstruct, &grid);
+    sDestroy_A3d_gathered_on_2d(&SOLVEstruct, &grid);
 
-    Destroy_CompRowLoc_Matrix_dist (&A);
-    SUPERLU_FREE (b);
-    SUPERLU_FREE (b1);
-    SUPERLU_FREE (b2);
-    SUPERLU_FREE (xtrue);
-    SUPERLU_FREE (berr);
-    zScalePermstructFree (&ScalePermstruct);
-    zLUstructFree (&LUstruct);
+    sScalePermstructFree (&ScalePermstruct);
+    sLUstructFree (&LUstruct);
     PStatFree (&stat);
+    SUPERLU_FREE (b1);
+    SUPERLU_FREE (xtrue1);
+    SUPERLU_FREE (berr);
+    fclose(fp);
 
     /* ------------------------------------------------------------
        RELEASE THE SUPERLU PROCESS GRID.

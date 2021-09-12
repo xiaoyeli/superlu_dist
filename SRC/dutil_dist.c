@@ -392,6 +392,7 @@ void dScaleAdd_CompRowLoc_Matrix_dist(SuperMatrix *A, SuperMatrix *B, double c)
 
     return;
 }
+/**** end utilities added for SUNDIALS ****/
 
 /*! \brief Allocate storage in ScalePermstruct */
 void dScalePermstructInit(const int_t m, const int_t n,
@@ -437,6 +438,7 @@ int dAllocGlu_3d(int_t n, int_t nsupers, dLUstruct_t * LUstruct)
 }
 
 // Sherry added
+/* Free the replicated data on 3D process layer that is not grid-0 */
 int dDeAllocGlu_3d(dLUstruct_t * LUstruct)
 {
     SUPERLU_FREE(LUstruct->Glu_persist->xsup);
@@ -444,6 +446,7 @@ int dDeAllocGlu_3d(dLUstruct_t * LUstruct)
     return 0;
 }
 
+/* Free the replicated data on 3D process layer that is not grid-0 */
 int dDeAllocLlu_3d(int_t n, dLUstruct_t * LUstruct, gridinfo3d_t* grid3d)
 {
     int i, nbc, nbr, nsupers;
@@ -613,7 +616,7 @@ void dPrintLblocks(int iam, int_t nsupers, gridinfo_t *grid,
 
 /*! \brief Sets all entries of matrix L to zero.
  */
-void dZeroLblocks(int iam, int_t n, gridinfo_t *grid, dLUstruct_t *LUstruct)
+void dZeroLblocks(int iam, int n, gridinfo_t *grid, dLUstruct_t *LUstruct)
 {
     double zero = 0.0;
     register int extra, gb, j, lb, nsupc, nsupr, ncb;
@@ -643,7 +646,7 @@ void dZeroLblocks(int iam, int_t n, gridinfo_t *grid, dLUstruct_t *LUstruct)
             }
 	}
     }
-} /* dZeroLblocks */
+} /* end dZeroLblocks */
 
 
 /*! \brief Dump the factored matrix L using matlab triple-let format
@@ -742,7 +745,6 @@ void dDumpLblocks(int iam, int_t nsupers, gridinfo_t *grid,
 } /* dDumpLblocks */
 
 
-
 /*! \brief Print the blocks in the factored matrix U.
  */
 void dPrintUblocks(int iam, int_t nsupers, gridinfo_t *grid,
@@ -782,7 +784,37 @@ void dPrintUblocks(int iam, int_t nsupers, gridinfo_t *grid,
 	    printf("[%d] ToSendD[] %d\n", iam, Llu->ToSendD[lb]);
 	}
     }
-} /* DPRINTUBLOCKS */
+} /* end dPrintUlocks */
+
+/*! \brief Sets all entries of matrix U to zero.
+ */
+void dZeroUblocks(int iam, int n, gridinfo_t *grid, dLUstruct_t *LUstruct)
+{
+    double zero = 0.0;
+    register int i, extra, lb, len, nrb;
+    register int myrow, r;
+    dLocalLU_t *Llu = LUstruct->Llu;
+    Glu_persist_t *Glu_persist = LUstruct->Glu_persist;
+    int_t *xsup = Glu_persist->xsup;
+    int_t *index;
+    double *nzval;
+    int nsupers = Glu_persist->supno[n-1] + 1;
+
+    nrb = nsupers / grid->nprow;
+    extra = nsupers % grid->nprow;
+    myrow = MYROW( iam, grid );
+    if ( myrow < extra ) ++nrb;
+    for (lb = 0; lb < nrb; ++lb) {
+	index = Llu->Ufstnz_br_ptr[lb];
+	if ( index ) { /* Not an empty row */
+	    nzval = Llu->Unzval_br_ptr[lb];
+	    len = index[1];  // number of entries in nzval[];
+	    for (i = 0; i < len; ++i) {
+	        nzval[i] = zero;
+	    }
+	}
+    }
+} /* end dZeroUlocks */
 
 int
 dprint_gsmv_comm(FILE *fp, int_t m_loc, pdgsmv_comm_t *gsmv_comm,

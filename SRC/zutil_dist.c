@@ -393,6 +393,7 @@ void zScaleAdd_CompRowLoc_Matrix_dist(SuperMatrix *A, SuperMatrix *B, doublecomp
 
     return;
 }
+/**** end utilities added for SUNDIALS ****/
 
 /*! \brief Allocate storage in ScalePermstruct */
 void zScalePermstructInit(const int_t m, const int_t n,
@@ -438,6 +439,7 @@ int zAllocGlu_3d(int_t n, int_t nsupers, zLUstruct_t * LUstruct)
 }
 
 // Sherry added
+/* Free the replicated data on 3D process layer that is not grid-0 */
 int zDeAllocGlu_3d(zLUstruct_t * LUstruct)
 {
     SUPERLU_FREE(LUstruct->Glu_persist->xsup);
@@ -445,6 +447,7 @@ int zDeAllocGlu_3d(zLUstruct_t * LUstruct)
     return 0;
 }
 
+/* Free the replicated data on 3D process layer that is not grid-0 */
 int zDeAllocLlu_3d(int_t n, zLUstruct_t * LUstruct, gridinfo3d_t* grid3d)
 {
     int i, nbc, nbr, nsupers;
@@ -456,8 +459,7 @@ int zDeAllocLlu_3d(int_t n, zLUstruct_t * LUstruct, gridinfo3d_t* grid3d)
     for (i = 0; i < nbc; ++i) 
 	if ( Llu->Lrowind_bc_ptr[i] ) {
 	    SUPERLU_FREE (Llu->Lrowind_bc_ptr[i]);
-        SUPERLU_FREE (Llu->Lnzval_bc_ptr[i]);
-
+	    SUPERLU_FREE (Llu->Lnzval_bc_ptr[i]);
 	}
     SUPERLU_FREE (Llu->Lrowind_bc_ptr);
     SUPERLU_FREE (Llu->Lnzval_bc_ptr);
@@ -617,7 +619,7 @@ void zPrintLblocks(int iam, int_t nsupers, gridinfo_t *grid,
 
 /*! \brief Sets all entries of matrix L to zero.
  */
-void zZeroLblocks(int iam, int_t n, gridinfo_t *grid, zLUstruct_t *LUstruct)
+void zZeroLblocks(int iam, int n, gridinfo_t *grid, zLUstruct_t *LUstruct)
 {
     doublecomplex zero = {0.0, 0.0};
     register int extra, gb, j, lb, nsupc, nsupr, ncb;
@@ -647,7 +649,7 @@ void zZeroLblocks(int iam, int_t n, gridinfo_t *grid, zLUstruct_t *LUstruct)
             }
 	}
     }
-} /* zZeroLblocks */
+} /* end zZeroLblocks */
 
 
 /*! \brief Dump the factored matrix L using matlab triple-let format
@@ -746,7 +748,6 @@ void zDumpLblocks(int iam, int_t nsupers, gridinfo_t *grid,
 } /* zDumpLblocks */
 
 
-
 /*! \brief Print the blocks in the factored matrix U.
  */
 void zPrintUblocks(int iam, int_t nsupers, gridinfo_t *grid,
@@ -786,7 +787,37 @@ void zPrintUblocks(int iam, int_t nsupers, gridinfo_t *grid,
 	    printf("[%d] ToSendD[] %d\n", iam, Llu->ToSendD[lb]);
 	}
     }
-} /* ZPRINTUBLOCKS */
+} /* end zPrintUlocks */
+
+/*! \brief Sets all entries of matrix U to zero.
+ */
+void zZeroUblocks(int iam, int n, gridinfo_t *grid, zLUstruct_t *LUstruct)
+{
+    doublecomplex zero = {0.0, 0.0};
+    register int i, extra, lb, len, nrb;
+    register int myrow, r;
+    zLocalLU_t *Llu = LUstruct->Llu;
+    Glu_persist_t *Glu_persist = LUstruct->Glu_persist;
+    int_t *xsup = Glu_persist->xsup;
+    int_t *index;
+    doublecomplex *nzval;
+    int nsupers = Glu_persist->supno[n-1] + 1;
+
+    nrb = nsupers / grid->nprow;
+    extra = nsupers % grid->nprow;
+    myrow = MYROW( iam, grid );
+    if ( myrow < extra ) ++nrb;
+    for (lb = 0; lb < nrb; ++lb) {
+	index = Llu->Ufstnz_br_ptr[lb];
+	if ( index ) { /* Not an empty row */
+	    nzval = Llu->Unzval_br_ptr[lb];
+	    len = index[1];  // number of entries in nzval[];
+	    for (i = 0; i < len; ++i) {
+	        nzval[i] = zero;
+	    }
+	}
+    }
+} /* end zZeroUlocks */
 
 int
 zprint_gsmv_comm(FILE *fp, int_t m_loc, pzgsmv_comm_t *gsmv_comm,

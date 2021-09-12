@@ -31,21 +31,6 @@
 //	                 const int incX, double *Y, const int incY);
 //}
 
-/*error reporting functions */
-//static
-cudaError_t checkCuda(cudaError_t result)
-{
-#if defined(DEBUG) || defined(_DEBUG)
-	if (result != cudaSuccess)
-	{
-		fprintf(stderr, "CUDA Runtime Error: %s\n", cudaGetErrorString(result));
-		assert(result == cudaSuccess);
-	}
-#endif
-	return result;
-}
-
-
 // cublasStatus_t checkCublas(cublasStatus_t result)
 // {
 // #if defined(DEBUG) || defined(_DEBUG)
@@ -97,7 +82,7 @@ void device_scatter_l (int_t thread_id,
 }
 #endif ///////////// not used
 
-#define THREAD_BLOCK_SIZE  512  /* Sherry: was 192. should be <= MAX_SUPER_SIZE */
+#define THREAD_BLOCK_SIZE  256  /* Sherry: was 192. should be <= MAX_SUPER_SIZE */
 
 __device__ inline
 void ddevice_scatter_l_2D (int thread_id,
@@ -127,7 +112,7 @@ void ddevice_scatter_l_2D (int thread_id,
 }
 
 /* Sherry: this routine is not used */
-#if 0
+#if 0 //////////////////////////////////////////////
 __global__
 void cub_scan_test(void)
 {
@@ -153,7 +138,7 @@ void cub_scan_test(void)
 		printf("%d %d\n", thread_id, IndirectJ2[thread_id]);
 
 }
-#endif  // not used
+#endif  /////////////////////////////////// not used
 
 
 __device__ inline
@@ -900,9 +885,9 @@ void dprintGPUStats(dLUstruct_gpu_t * A_gpu)
 
 } /* end printGPUStats */
 
-
+/* Initialize the GPU side of the data structure. */
 int dinitSluGPU3D_t(
-    dsluGPU_t *sluGPU,
+    dsluGPU_t *sluGPU, // LU structures on GPU, see dlustruct_gpu.h 
     dLUstruct_t *LUstruct,
     gridinfo3d_t * grid3d,
     int_t* perm_c_supno,
@@ -920,7 +905,7 @@ int dinitSluGPU3D_t(
     sluGPU->nCudaStreams = getnCudaStreams();
     if (grid3d->iam == 0)
     {
-	printf("dinitSluGPU3D_t: Using hardware acceleration, with %d cuda streams \n", sluGPU->nCudaStreams);
+	printf("dinitSluGPU3D_t: Using hardware acceleration, with %d cuda streams, max_buffer_size %d\n", sluGPU->nCudaStreams, (int) buffer_size);
 	fflush(stdout);
 	if ( MAX_SUPER_SIZE < ldt )
 	{
@@ -939,6 +924,9 @@ int dinitSluGPU3D_t(
 
     sluGPU->A_gpu = (dLUstruct_gpu_t *) malloc (sizeof(dLUstruct_gpu_t));
     sluGPU->A_gpu->perm_c_supno = perm_c_supno;
+
+    /* Allocate GPU memory for the LU data structures, and copy
+       the host LU structure to GPU side.  */
     dCopyLUToGPU3D ( isNodeInMyGrid,
 	        Llu,             /* referred to as A_host */
 	        sluGPU, Glu_persist, n, grid3d, buffer_size, bigu_size, ldt
@@ -946,6 +934,7 @@ int dinitSluGPU3D_t(
 
     return 0;
 } /* end dinitSluGPU3D_t */
+
 
 int dinitD2Hreduce(
     int next_k,  d2Hreduce_t* d2Hred, int last_flag, HyP_t* HyP,
@@ -1200,10 +1189,14 @@ int freeSluGPU(dsluGPU_t *sluGPU)
 }
 #endif
 
+/* Allocate GPU memory for the LU data structures, and copy
+   the host LU structure to GPU side.
+   After factorization, the GPU LU structure should be freed by
+   calling dfree_LUsstruct_gpu().    */
 void dCopyLUToGPU3D (
     int_t* isNodeInMyGrid,
     dLocalLU_t *A_host, /* distributed LU structure on host */
-    dsluGPU_t *sluGPU,
+    dsluGPU_t *sluGPU,  /* hold LU structure on GPU */
     Glu_persist_t *Glu_persist, int_t n,
     gridinfo3d_t *grid3d,
     int_t buffer_size, /* bigV size on GPU for Schur complement update */

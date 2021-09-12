@@ -885,9 +885,9 @@ void sprintGPUStats(sLUstruct_gpu_t * A_gpu)
 
 } /* end printGPUStats */
 
-
+/* Initialize the GPU side of the data structure. */
 int sinitSluGPU3D_t(
-    ssluGPU_t *sluGPU,
+    ssluGPU_t *sluGPU, // LU structures on GPU, see slustruct_gpu.h 
     sLUstruct_t *LUstruct,
     gridinfo3d_t * grid3d,
     int_t* perm_c_supno,
@@ -924,6 +924,9 @@ int sinitSluGPU3D_t(
 
     sluGPU->A_gpu = (sLUstruct_gpu_t *) malloc (sizeof(sLUstruct_gpu_t));
     sluGPU->A_gpu->perm_c_supno = perm_c_supno;
+
+    /* Allocate GPU memory for the LU data structures, and copy
+       the host LU structure to GPU side.  */
     sCopyLUToGPU3D ( isNodeInMyGrid,
 	        Llu,             /* referred to as A_host */
 	        sluGPU, Glu_persist, n, grid3d, buffer_size, bigu_size, ldt
@@ -931,6 +934,7 @@ int sinitSluGPU3D_t(
 
     return 0;
 } /* end sinitSluGPU3D_t */
+
 
 int sinitD2Hreduce(
     int next_k,  d2Hreduce_t* d2Hred, int last_flag, HyP_t* HyP,
@@ -1185,10 +1189,14 @@ int freeSluGPU(ssluGPU_t *sluGPU)
 }
 #endif
 
+/* Allocate GPU memory for the LU data structures, and copy
+   the host LU structure to GPU side.
+   After factorization, the GPU LU structure should be freed by
+   calling sfree_LUsstruct_gpu().    */
 void sCopyLUToGPU3D (
     int_t* isNodeInMyGrid,
     sLocalLU_t *A_host, /* distributed LU structure on host */
-    ssluGPU_t *sluGPU,
+    ssluGPU_t *sluGPU,  /* hold LU structure on GPU */
     Glu_persist_t *Glu_persist, int_t n,
     gridinfo3d_t *grid3d,
     int_t buffer_size, /* bigV size on GPU for Schur complement update */

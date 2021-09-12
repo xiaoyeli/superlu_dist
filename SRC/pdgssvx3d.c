@@ -343,7 +343,7 @@ at the top-level directory.
  *         NOTE: all options must be indentical on all processes when
  *               calling this routine.
  *
- * A (input/output) SuperMatrix* (local); A resides only on process layer 0.
+ * A (input) SuperMatrix* (local); A resides on all 3D processes.
  *         On entry, matrix A in A*X=B, of dimension (A->nrow, A->ncol).
  *           The number of linear equations is A->nrow. The type of A must be:
  *           Stype = SLU_NR_loc; Dtype = SLU_D; Mtype = SLU_GE.
@@ -351,11 +351,13 @@ at the top-level directory.
  *           See supermatrix.h for the definition of 'SuperMatrix'.
  *           This routine only handles square A, however, the LU factorization
  *           routine PDGSTRF can factorize rectangular matrices.
- *         On exit, A may be overwtirren by diag(R)*A*diag(C)*Pc^T,
+ *
+ *	   Internally, A is gathered on 2D processs grid-0, call it A2d.
+ *         On exit, A2d may be overwtirren by diag(R)*A*diag(C)*Pc^T,
  *           depending on ScalePermstruct->DiagScale and options->ColPerm:
- *             if ScalePermstruct->DiagScale != NOEQUIL, A is overwritten by
+ *             if ScalePermstruct->DiagScale != NOEQUIL, A2d is overwritten by
  *                diag(R)*A*diag(C).
- *             if options->ColPerm != NATURAL, A is further overwritten by
+ *             if options->ColPerm != NATURAL, A2d is further overwritten by
  *                diag(R)*A*diag(C)*Pc^T.
  *           If all the above condition are true, the LU decomposition is
  *           performed on the matrix Pc*Pr*diag(R)*A*diag(C)*Pc^T.
