@@ -397,3 +397,6 @@ struct LUstruct_v100
     int_t copyLUGPUtoHost();
     int_t checkGPU();
 };
+
+
+cudaError_t checkCudaLocal(cudaError_t result);

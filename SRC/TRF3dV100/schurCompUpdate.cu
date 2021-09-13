@@ -2,6 +2,18 @@
 #include "lupanels_GPU.cuh"
 #include "lupanels.hpp"
 
+cudaError_t checkCudaLocal(cudaError_t result)
+{
+// #if defined(DEBUG) || defined(_DEBUG)
+    // printf("Checking cuda\n");
+    if (result != cudaSuccess) {
+        fprintf(stderr, "CUDA Runtime Error: %s\n", cudaGetErrorString(result));
+        assert(result == cudaSuccess);
+    }
+// #endif
+    return result;
+}
+
 #define NDEBUG
 __device__
 int_t lpanelGPU_t::find(int_t k)
@@ -149,6 +161,8 @@ void scatterGPU(
         lddst = dA->lPanelVec[lj].LDA();
         dstRowLen = dA->lPanelVec[lj].nbrow(li);
         dstRowList = dA->lPanelVec[lj].rowList(li);
+        // if(!threadId )
+        // printf("Scattering to (%d, %d) by %d li=%d\n",gi, gj,threadId,li);
         dstColLen = dA->supersize(gj);
         dstColList = NULL;
         
@@ -282,7 +296,7 @@ int_t LUstruct_v100::dSchurComplementUpdateGPU(
             
 		}
     }
-    cudaStreamSynchronize(A_gpu.cuStreams[streamId]);
+    checkCudaLocal(cudaStreamSynchronize(A_gpu.cuStreams[streamId]));
     return 0;
 }
 

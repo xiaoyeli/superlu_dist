@@ -319,15 +319,16 @@ int_t LUstruct_v100::setLUstruct_GPU()
     A_gpu.Pc = Pc;
     A_gpu.maxSuperSize = ldt;
 
-    cudaMalloc(&A_gpu.xsup, nsupers * sizeof(int_t));
-    cudaMemcpy(A_gpu.xsup, xsup, nsupers * sizeof(int_t), cudaMemcpyHostToDevice);
+    cudaMalloc(&A_gpu.xsup, (nsupers+1) * sizeof(int_t));
+    cudaMemcpy(A_gpu.xsup, xsup, (nsupers+1) * sizeof(int_t), cudaMemcpyHostToDevice);
 
     upanelGPU_t *uPanelVec_GPU = new upanelGPU_t[CEILING(nsupers, Pr)];
     lpanelGPU_t *lPanelVec_GPU = new lpanelGPU_t[CEILING(nsupers, Pc)];
 
     for (int_t i = 0; i < CEILING(nsupers, Pc); ++i)
     {
-        lPanelVec_GPU[i] = lPanelVec[i].copyToGPU();
+        if(i * Pc + mycol<nsupers && isNodeInMyGrid[i * Pc + mycol] == 1)
+            lPanelVec_GPU[i] = lPanelVec[i].copyToGPU();
     }
     cudaMalloc(&A_gpu.lPanelVec, CEILING(nsupers, Pc) * sizeof(lpanelGPU_t));
     cudaMemcpy(A_gpu.lPanelVec, lPanelVec_GPU,
@@ -335,7 +336,8 @@ int_t LUstruct_v100::setLUstruct_GPU()
 
     for (int_t i = 0; i < CEILING(nsupers, Pr); ++i)
     {
-        uPanelVec_GPU[i] = uPanelVec[i].copyToGPU();
+        if(i * Pr + myrow<nsupers && isNodeInMyGrid[i * Pr + myrow] == 1)
+            uPanelVec_GPU[i] = uPanelVec[i].copyToGPU();
     }
     cudaMalloc(&A_gpu.uPanelVec, CEILING(nsupers, Pr) * sizeof(upanelGPU_t));
     cudaMemcpy(A_gpu.uPanelVec, uPanelVec_GPU,
@@ -378,10 +380,12 @@ int_t LUstruct_v100::copyLUGPUtoHost()
 {
 
     for (int_t i = 0; i < CEILING(nsupers, Pc); ++i)
-        lPanelVec[i].copyFromGPU();
+        if(i * Pc + mycol<nsupers && isNodeInMyGrid[i * Pc + mycol] == 1)
+            lPanelVec[i].copyFromGPU();
 
     for (int_t i = 0; i < CEILING(nsupers, Pr); ++i)
-        uPanelVec[i].copyFromGPU();
+        if(i * Pr + myrow<nsupers && isNodeInMyGrid[i * Pr + myrow] == 1)
+            uPanelVec[i].copyFromGPU();
 }
 
 int_t LUstruct_v100::checkGPU()

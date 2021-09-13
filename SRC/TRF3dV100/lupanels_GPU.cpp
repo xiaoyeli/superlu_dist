@@ -57,7 +57,7 @@ int_t lpanel_t::copyFromGPU()
     if(isEmpty())
         return 0;
     size_t valSize = sizeof(double) * nzvalSize();
-    cudaMemcpy(val, gpuPanel.val,  valSize, cudaMemcpyDeviceToHost);
+    checkCudaLocal(cudaMemcpy(val, gpuPanel.val,  valSize, cudaMemcpyDeviceToHost));
    
 }
 
@@ -66,7 +66,7 @@ int_t upanel_t::copyFromGPU()
     if(isEmpty())
         return 0;
     size_t valSize = sizeof(double) * nzvalSize();
-    cudaMemcpy(val, gpuPanel.val,  valSize, cudaMemcpyDeviceToHost);
+    checkCudaLocal(cudaMemcpy(val, gpuPanel.val,  valSize, cudaMemcpyDeviceToHost));
    
 }
 
