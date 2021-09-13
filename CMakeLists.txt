@@ -5,7 +5,7 @@
 ######################################################################
 
 # Required version
-cmake_minimum_required(VERSION 2.8.12 FATAL_ERROR)
+cmake_minimum_required(VERSION 3.18.1 FATAL_ERROR)
 
 # Project version numbers
 #project(SuperLU_DIST C CXX CUDA)
@@ -20,9 +20,11 @@ list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake")
 # Set up options
 option(enable_doc       "Build doxygen documentation" OFF)
 option(enable_double    "Enable double precision library" ON)
+option(enable_single    "Enable single precision library" OFF)
 option(enable_complex16 "Enable complex16 precision library" OFF)
 option(enable_tests  "Build tests" ON)
 option(enable_examples  "Build examples" ON)
+option(XSDK_ENABLE_Fortran "Enable Fortran" ON)
 
 #-- BLAS
 option(TPL_ENABLE_INTERNAL_BLASLIB  "Build the CBLAS library" ${enable_blaslib_DEFAULT})
@@ -194,9 +196,14 @@ if (TPL_ENABLE_CUDALIB)   ## want to use cuda
 #     find_package(CUB REQUIRED)
 
     find_package(CUDAToolkit REQUIRED)
-    # message("Hello" ${CUDA::cudart})
-    # set(CUDA_LIBRARIES "${CUDAToolkit_LIBRARY_ROOT}/lib64/libcudart.so")
-    # set(CUDA_CUBLAS_LIBRARIES "${CUDAToolkit_LIBRARY_ROOT}/lib64/libcublas.so")
+    message("-- CUDAToolkit_LIBRARY_ROOT='${CUDAToolkit_LIBRARY_ROOT}'")
+    if (NOT "${CUDAToolkit_LIBRARY_ROOT}" STREQUAL "")
+    set(CUDA_LIBRARIES "${CUDAToolkit_LIBRARY_ROOT}/lib64/libcudart.so")
+    set(CUDA_CUBLAS_LIBRARIES "${CUDAToolkit_LIBRARY_ROOT}/lib64/libcublas.so")
+    else()
+    message("-- CUDAToolkit_LIBRARY_ROOT empty, not setting CUDA_LIBRARIES")
+    endif()
+
 
 #     # The following make.inc exporting does not work
     set(CUDA_LIBRARIES CUDA::cudart CUDA::cublas CUDA::cusolver)

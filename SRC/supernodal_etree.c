@@ -1,6 +1,6 @@
 /*! @file
  * \brief function to generate supernodal etree
-*
+ *
  * <pre>
  * -- Distributed SuperLU routine (version 7.0) --
  * Lawrence Berkeley National Lab, Oak Ridge National Lab

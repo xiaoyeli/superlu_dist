@@ -2,13 +2,6 @@
 #include "scatter.h"
 //#include "compiler.h"
 
-#ifdef __INTEL_COMPILER
-#include "mkl.h"
-#else
-#include "cblas.h"
-#endif
-
-
 #define ISORT
 
 #if 0 /**** Sherry: this routine is moved to util.c ****/

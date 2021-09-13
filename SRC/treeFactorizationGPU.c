@@ -1,11 +1,6 @@
 // #include "treeFactorization.h"
 // #include "trfCommWrapper.h"
 #include "dlustruct_gpu.h"
-#ifdef __INTEL_COMPILER
-#include "mkl.h"
-#else
-//#include "cblas.h"
-#endif
 
 /* 
 /-- num_u_blks--\ /-- num_u_blks_Phi --\

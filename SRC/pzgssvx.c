@@ -323,7 +323,7 @@ at the top-level directory.
  *           = LargeDiag_MC64: use the Duff/Koster algorithm to permute rows
  *                        of the original matrix to make the diagonal large
  *                        relative to the off-diagonal.
- *           = LargeDiag_APWM: use the parallel approximate-weight perfect
+ *           = LargeDiag_HPWM: use the parallel approximate-weight perfect
  *                        matching to permute rows of the original matrix
  *                        to make the diagonal large relative to the
  *                        off-diagonal.
@@ -914,7 +914,7 @@ pzgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 		        if ( !iam ) printf("\t product of diagonal %e\n", dprod);
 	            }
 #endif
-                } else { /* use largeDiag_AWPM */
+                } else { /* use LargeDiag_HWPM */
 #ifdef HAVE_COMBBLAS
 		    z_c2cpp_GetHWPM(A, grid, ScalePermstruct);
 #else

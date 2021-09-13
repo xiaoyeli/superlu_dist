@@ -91,72 +91,6 @@ __global__ void prescan(pfx_dtype *outArr, pfx_dtype *inArr, int n)
     __syncthreads();
 } 
 
-
-
-__device__ void exScan(pfx_dtype *inOutArr, pfx_dtype *temp, int n)
-{
-    // extern __shared__ pfx_dtype temp[];
-    int n_original = n;
-    n = (n & (n - 1)) == 0? n: dnextpow2(n);
-    int thread_id = threadIdx.x;
-    int offset = 1;
-    if(2*thread_id  < n_original)
-        temp[2*thread_id] = inOutArr[2*thread_id]; 
-    else 
-        temp[2*thread_id] =0;
-
-
-    if(2*thread_id+1 <n_original)
-        temp[2*thread_id+1] = inOutArr[2*thread_id+1];
-    else 
-        temp[2*thread_id+1] =0;
-    
-    for (int d = n>>1; d > 0; d >>= 1) 
-    {
-        __syncthreads();
-        if (thread_id < d)
-        {
-            int ai = offset*(2*thread_id+1)-1;
-            int bi = offset*(2*thread_id+2)-1;
-            temp[bi] += temp[ai];
-        }
-        offset *= 2;
-    }
-    
-    if (thread_id == 0) { temp[n - 1] = 0; } 
-    for (int d = 1; d < n; d *= 2) 
-    {
-        offset >>= 1;
-        __syncthreads();
-        if (thread_id < d)
-        {
-            int ai = offset*(2*thread_id+1)-1;
-            int bi = offset*(2*thread_id+2)-1;
-            pfx_dtype t = temp[ai];
-            temp[ai] = temp[bi];
-            temp[bi] += t;
-        }
-    }
-    __syncthreads();
-    if(2*thread_id  < n_original)
-    inOutArr[2*thread_id] = temp[2*thread_id]+ inOutArr[2*thread_id]; // write results to device memory
-    if(2*thread_id+1  < n_original)
-    inOutArr[2*thread_id+1] = temp[2*thread_id+1]+ inOutArr[2*thread_id+1];
-    __syncthreads();
-    if(2*thread_id  < n_original)
-    printf("xA[%d] = %d \n",2*thread_id , inOutArr[2*thread_id]);
-    if(2*thread_id+1  < n_original)
-    printf("xA[%d] = %d \n",2*thread_id+1 , inOutArr[2*thread_id+1]);
-    __syncthreads();
-} 
-
-__global__ void gExScan(pfx_dtype *inArr, int n)
-{
-    extern __shared__ pfx_dtype temp[];
-    exScan(inArr, temp, n);
-    
-}
-
 #define SELF_TEST 
 #ifdef SELF_TEST
 
@@ -242,15 +176,7 @@ int main(int argc, char* argv[])
     // prescan<<<  1,THREAD_BLOCK_SIZE/2,2*THREAD_BLOCK_SIZE*sizeof(pfx_dtype) >>> (xA, A, N);
     
     prescan<<<  1,(N+1)/2,2*N*sizeof(pfx_dtype) >>> (xA, A, N);
-    if(cudaDeviceSynchronize() != cudaSuccess)
-        std::cout<<"Error- 1\n";
     prescan<<<  1,N2,2*N*sizeof(pfx_dtype) >>> (xA, A, N);
-    if(cudaDeviceSynchronize() != cudaSuccess)
-        std::cout<<"Error- 2\n";
-    std::cout<<" inout same array\n";
-    gExScan<<<  1,N2,2*N*sizeof(pfx_dtype) >>> (A, N);
-    if(cudaDeviceSynchronize() != cudaSuccess)
-        std::cout<<"Error- 3\n";
     if(cudaDeviceSynchronize() != cudaSuccess)
         std::cout<<".....EXITING\n";   
     else

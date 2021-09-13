@@ -14,8 +14,9 @@ at the top-level directory.
  *
  * <pre>
  * -- Distributed SuperLU routine (version 7.0) --
- * Lawrence Berkeley National Lab, Georgia Institute of Technology.
- * May 10, 2019
+ * Lawrence Berkeley National Lab, Georgia Institute of Technology,
+ * Oak Ridge National Lab
+ * May 12, 2021
  */
 
 #include "superlu_zdefs.h"
@@ -25,11 +26,7 @@ at the top-level directory.
 #include "trfCommWrapper.h"
 #endif
 
-#ifdef __INTEL_COMPILER
-#include "mkl.h"
-#else
 //#include "cblas.h"
-#endif 
 
 int_t zDiagFactIBCast(int_t k,  int_t k0,      // supernode to be factored
                      doublecomplex *BlockUFactor,
@@ -174,23 +171,6 @@ int_t zLPanelTrSolve( int_t k,   int_t* factored_L,
 
                 superlu_ztrsm("R", "U", "N", "N", len, nsupc, alpha,
 			      ublk_ptr, ld_ujrow, &lusup[off], nsupr);
-		
-#if 0 // ** replaced by superlu_ztrsm 		
-#if 1
-  #if defined (USE_VENDOR_BLAS)
-		ztrsm_ ("R", "U", "N", "N", &len, &nsupc, &alpha,
-			ublk_ptr, &ld_ujrow, &lusup[off], &nsupr,
-			1, 1, 1, 1);
-  #else
-		ztrsm_ ("R", "U", "N", "N", &len, &nsupc, &alpha,
-			ublk_ptr, &ld_ujrow, &lusup[off], &nsupr);
-  #endif
-#else
-                cblas_ztrsm (CblasColMajor, CblasRight, CblasUpper, CblasNoTrans, CblasNonUnit,
-                len, nsupc, (void*) &alpha, ublk_ptr, ld_ujrow, &lusup[off], nsupr);
-#endif
-#endif // ** replaced by superlu_ztrsm 		
-		
             }
         }
     }
@@ -204,10 +184,8 @@ int_t zLPanelTrSolve( int_t k,   int_t* factored_L,
         int_t lk = LBj (k, grid);
         doublecomplex *lusup = Llu->Lnzval_bc_ptr[lk];
         int nsupr;
-        if (Llu->Lrowind_bc_ptr[lk])
-            nsupr = Llu->Lrowind_bc_ptr[lk][1];
-        else
-            nsupr = 0;
+        if (Llu->Lrowind_bc_ptr[lk]) nsupr = Llu->Lrowind_bc_ptr[lk][1];
+        else nsupr = 0;
 
         /*factorize A[kk]*/
 
@@ -228,22 +206,6 @@ int_t zLPanelTrSolve( int_t k,   int_t* factored_L,
             {
                 superlu_ztrsm("R", "U", "N", "N", len, nsupc, alpha,
 			      ublk_ptr, ld_ujrow, &lusup[nsupc + off], nsupr);
-#if 0 // ** replaced by superlu_ztrsm
-#if 1
-  #if defined (USE_VENDOR_BLAS)
-		ztrsm_ ("R", "U", "N", "N", &len, &nsupc, &alpha,
-			ublk_ptr, &ld_ujrow, &lusup[nsupc + off], &nsupr,
-			1, 1, 1, 1);
-  #else
-		ztrsm_ ("R", "U", "N", "N", &len, &nsupc, &alpha,
-			ublk_ptr, &ld_ujrow, &lusup[nsupc + off], &nsupr);
-  #endif
-#else
-                cblas_ztrsm (CblasColMajor, CblasRight, CblasUpper, CblasNoTrans, CblasNonUnit,
-                             len, nsupc, (void*) &alpha, ublk_ptr, ld_ujrow, &lusup[nsupc + off], nsupr);
-#endif
-#endif // ** replaced by superlu_ztrsm
-
             }
         }
     }
@@ -309,13 +271,13 @@ int_t zUPanelTrSolve( int_t k,
         // #pragma omp for schedule(dynamic,2) nowait
         for (int_t b = 0; b < nb; ++b)
         {
- #pragma omp task
+            #pragma omp task
             {
-#ifdef _OPENNP
+#ifdef _OPENMP	    
                 int_t thread_id = omp_get_thread_num();
-#else
+#else		
                 int_t thread_id = 0;
-#endif
+#endif		
                 doublecomplex *tempv = bigV +  thread_id * ldt * ldt;
                 zTrs2_GatherTrsmScatter(klst, Ublock_info[b].iukp, Ublock_info[b].rukp,
 				       usub, uval, tempv, nsupc, nsupc, lusup, Glu_persist);
@@ -360,13 +322,13 @@ int_t zUPanelTrSolve( int_t k,
             // printf("%d :U update \n", k);
             for (int_t b = 0; b < nb; ++b)
             {
- #pragma omp task
+                #pragma omp task
                 {
-#ifdef _OPENMP
+#ifdef _OPENMP		
                     int_t thread_id = omp_get_thread_num();
-#else
+#else		    
                     int_t thread_id = 0;
-#endif
+#endif		    
                     doublecomplex *tempv = bigV +  thread_id * ldt * ldt;
                     zTrs2_GatherTrsmScatter(klst, Ublock_info[b].iukp, Ublock_info[b].rukp,
 					   usub, uval, tempv, nsupc, nsupr, lusup, Glu_persist);
