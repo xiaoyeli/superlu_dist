@@ -396,6 +396,7 @@ main (int argc, char *argv[])
     sScalePermstructFree (&ScalePermstruct);
     sLUstructFree (&LUstruct);
     PStatFree (&stat);
+    fclose(fp);
 
     /* ------------------------------------------------------------
        RELEASE THE SUPERLU PROCESS GRID.
