@@ -27,11 +27,11 @@ cmake .. \
 	-DCMAKE_C_COMPILER=mpicc \
 	-DCMAKE_CXX_COMPILER=mpiCC \
 	-DCMAKE_INSTALL_PREFIX=. \
+	-DCMAKE_CUDA_HOST_COMPILER=mpicc \
 	-DTPL_BLAS_LIBRARIES="/sw/summit/essl/6.1.0-2/essl/6.1/lib64/libessl.so;/sw/summit/essl/6.1.0-2/essl/6.1/lib64/libesslsmp.so" \
 	-DTPL_LAPACK_LIBRARIES="/sw/summit/essl/6.1.0-2/essl/6.1/lib64/libessl.so" \
 	-DCMAKE_BUILD_TYPE=Release \
 	-DTPL_ENABLE_CUDALIB=ON \
-	-Denable_openmp=OFF \
 	-DCMAKE_VERBOSE_MAKEFILE:BOOL=ON \
 	-DCMAKE_CXX_FLAGS="-qsmp=omp -Ofast -DRELEASE ${INC_VTUNE}" \
     -DCMAKE_C_FLAGS="-qsmp=omp  -std=c11 -DPRNTlevel=1 -DPROFlevel=0 -DDEBUGlevel=0 -DGPU_ACC -fopenmp" \
@@ -51,5 +51,6 @@ make pddrive
 #	-DCMAKE_CXX_FLAGS="-Ofast -std=c++11 -DAdd_ -DRELEASE ${INC_VTUNE}" \
 # DCMAKE_BUILD_TYPE=Release or Debug compiler options set in CMAKELIST.txt
 
+#DCMAKE_CUDA_HOST_COMPILER
 #        -DCMAKE_C_FLAGS="-g -O0 -std=c99 -DPRNTlevel=2 -DPROFlevel=1 -DDEBUGlevel=0" \
 #	-DCMAKE_C_FLAGS="-g -O0 -std=c11 -DPRNTlevel=1 -DPROFlevel=1 -DDEBUGlevel=0" \
