@@ -3,7 +3,7 @@
 #module load gcc/6.4.0
 module load xl
 module load cmake
-module load cuda/10.1.168
+module load cuda
 module load essl 
 
 export CRAYPE_LINK_TYPE=dynamic
@@ -31,9 +31,10 @@ cmake .. \
 	-DTPL_LAPACK_LIBRARIES="/sw/summit/essl/6.1.0-2/essl/6.1/lib64/libessl.so" \
 	-DCMAKE_BUILD_TYPE=Release \
 	-DTPL_ENABLE_CUDALIB=ON \
+	-Denable_openmp=OFF \
 	-DCMAKE_VERBOSE_MAKEFILE:BOOL=ON \
 	-DCMAKE_CXX_FLAGS="-qsmp=omp -Ofast -DRELEASE ${INC_VTUNE}" \
-    -DCMAKE_C_FLAGS="-qsmp=omp -std=c11 -DPRNTlevel=1 -DPROFlevel=0 -DDEBUGlevel=0 -DGPU_ACC -fopenmp" \
+    -DCMAKE_C_FLAGS="-qsmp=omp  -std=c11 -DPRNTlevel=1 -DPROFlevel=0 -DDEBUGlevel=0 -DGPU_ACC -fopenmp" \
     -DCMAKE_CUDA_FLAGS="--disable-warnings -DPRNTlevel=1 -DPROFlevel=0 -DDEBUGlevel=0 -DGPU_ACC -gencode arch=compute_70,code=sm_70" 
 make pddrive			
 #	-DTPL_BLAS_LIBRARIES="/opt/intel/compilers_and_libraries_2017.2.174/linux/mkl/lib/intel64/libmkl_intel_lp64.so;/opt/intel/compilers_and_libraries_2017.2.174/linux/mkl/lib/intel64/libmkl_sequential.so;/opt/intel/compilers_and_libraries_2017.2.174/linux/mkl/lib/intel64/libmkl_core.so"
