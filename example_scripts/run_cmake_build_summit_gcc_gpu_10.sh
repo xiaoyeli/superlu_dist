@@ -3,7 +3,7 @@
 
 module load essl
 module load netlib-lapack/3.8.0
-module load gcc/7.4.0
+module load gcc/7.5.0
 module load cmake
 module load cuda/10.1.243
 				 
