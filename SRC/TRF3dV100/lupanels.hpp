@@ -278,6 +278,8 @@ struct LUstruct_v100
     int_t *indirect, *indirectRow, *indirectCol;
     double *bigV; // size = THREAD_Size*ldt*ldt
     int_t *isNodeInMyGrid;
+    double thresh;
+    int *info;
 
     // Add SCT_t here
     SCT_t *SCT;
@@ -323,7 +325,8 @@ struct LUstruct_v100
     */
     LUstruct_v100(int_t nsupers, int_t ldt_, int_t *isNodeInMyGrid, int superluAccOffload,
                   dLUstruct_t *LUstruct, gridinfo3d_t *grid3d,
-                  SCT_t *SCT_, superlu_dist_options_t *options_, SuperLUStat_t *stat);
+                  SCT_t *SCT_, superlu_dist_options_t *options_, SuperLUStat_t *stat,
+                  double thresh_, int *info_);
 
     ~LUstruct_v100()
     {
@@ -355,8 +358,22 @@ struct LUstruct_v100
 
         int_t *gIperm_c_supno,
 
-        double thresh, int tag_ub,
-        int *info);
+         int tag_ub);
+    
+    //
+    int_t dDiagFactorPanelSolve(int_t k, int_t offset, ddiagFactBufs_t **dFBufs);
+    int_t dPanelBcast(int_t k, int_t offset);
+    int_t dsparseTreeFactorBaseline(
+        sForest_t *sforest,
+        commRequests_t **comReqss, // lists of communication requests // size maxEtree level
+        dscuBufs_t *scuBufs,        // contains buffers for schur complement update
+        packLUInfo_t *packLUInfo,
+        msgs_t **msgss,           // size=num Look ahead
+        dLUValSubBuf_t **LUvsbs,  // size=num Look ahead
+        ddiagFactBufs_t **dFBufs,  // size maxEtree level
+        gEtreeInfo_t *gEtreeInfo, // global etree info
+        int_t *gIperm_c_supno,
+         int tag_ub);
 
     int_t packedU2skyline(dLUstruct_t *LUstruct);
 
@@ -380,8 +397,7 @@ struct LUstruct_v100
         ddiagFactBufs_t **dFBufs, // size maxEtree level
         gEtreeInfo_t *gEtreeInfo, // global etree info
         int_t *gIperm_c_supno,
-        double thresh, int tag_ub,
-        int *info);
+         int tag_ub);
 
     
     int_t dSchurComplementUpdateGPU(

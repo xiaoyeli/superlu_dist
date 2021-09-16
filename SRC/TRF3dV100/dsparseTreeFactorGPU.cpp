@@ -14,8 +14,7 @@ int_t LUstruct_v100::dsparseTreeFactorGPU(
     ddiagFactBufs_t **dFBufs,  // size maxEtree level
     gEtreeInfo_t *gEtreeInfo, // global etree info
     int_t *gIperm_c_supno,
-    double thresh, int tag_ub,
-    int *info)
+    int tag_ub)
 {
     int_t nnodes = sforest->nNodes; // number of nodes in the tree
     if (nnodes < 1)
@@ -36,6 +35,8 @@ int_t LUstruct_v100::dsparseTreeFactorGPU(
 
     /*main loop over all the levels*/
     int_t numLA = getNumLookAhead(options);
+    
+    // start the pipeline 
 
 
     for (int_t topoLvl = 0; topoLvl < maxTopoLevel; ++topoLvl)

@@ -118,7 +118,7 @@ extern "C"
         int_t *isNodeInMyGrid = getIsNodeInMyGrid(nsupers, maxLvl, myNodeCount, treePerm);
         int superlu_acc_offload = get_acc_offload();
         LUstruct_v100 LU_packed(nsupers, ldt, isNodeInMyGrid, superlu_acc_offload, LUstruct, grid3d,
-                                SCT, options, stat);
+                                SCT, options, stat, thresh, info);
         if(superlu_acc_offload)
         {
             LU_packed.setLUstruct_GPU();
@@ -149,12 +149,12 @@ extern "C"
                         LU_packed.dsparseTreeFactorGPU(sforest, comReqss, &scuBufs, &packLUInfo,
                                                        msgss, LUvsbs, dFBufs,
                                                        &gEtreeInfo, iperm_c_supno,
-                                                       thresh, tag_ub, info);
+                                                       tag_ub);
                     else
                         LU_packed.dsparseTreeFactor(sforest, comReqss, &scuBufs, &packLUInfo,
                                                     msgss, LUvsbs, dFBufs,
                                                     &gEtreeInfo, iperm_c_supno,
-                                                    thresh, tag_ub, info);
+                                                    tag_ub);
 
                     /*now reduce the updates*/
                     SCT->tFactor3D[ilvl] = SuperLU_timer_() - tilvl;

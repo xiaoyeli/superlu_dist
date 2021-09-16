@@ -10,9 +10,10 @@ LUstruct_v100::LUstruct_v100(int_t nsupers_, int_t ldt_,
                              dLUstruct_t *LUstruct,
                              gridinfo3d_t *grid3d_in,
                              SCT_t *SCT_, superlu_dist_options_t *options_,
-                             SuperLUStat_t *stat_) : isNodeInMyGrid(isNodeInMyGrid_),
-                                                     nsupers(nsupers_), ldt(ldt_), grid3d(grid3d_in), superluAccOffload(superluAccOffload_),
-                                                     SCT(SCT_), options(options_), stat(stat_)
+                             SuperLUStat_t *stat_, double thresh_, int *info_) : 
+                            isNodeInMyGrid(isNodeInMyGrid_),nsupers(nsupers_), 
+                            ldt(ldt_), grid3d(grid3d_in), superluAccOffload(superluAccOffload_),
+                            SCT(SCT_), options(options_), stat(stat_), thresh(thresh_), info(info_)
 {
 
     grid = &(grid3d->grid2d);
