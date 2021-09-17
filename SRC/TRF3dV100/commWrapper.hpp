@@ -13,6 +13,7 @@ public:
     collAlg bcastAlgm; 
     collCommStatus bcastStatus; 
     bcastStruct(MPI_Comm comm_, MPI_Datatype dtype_, collAlg algm);
+    bcastStruct() {};
     int init(void* buffer, int root, int count);
     int test();
     int wait(); 

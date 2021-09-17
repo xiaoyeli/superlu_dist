@@ -140,6 +140,10 @@ LUstruct_v100::LUstruct_v100(int_t nsupers_, int_t ldt_,
     UvalRecvBufs.resize(options->num_lookaheads);
     LidxRecvBufs.resize(options->num_lookaheads);
     UidxRecvBufs.resize(options->num_lookaheads);
+    bcastLval.resize(options->num_lookaheads);
+    bcastUval.resize(options->num_lookaheads);
+    bcastLidx.resize(options->num_lookaheads);
+    bcastUidx.resize(options->num_lookaheads);
 
     for (int_t i = 0; i < options->num_lookaheads; i++)
     {
@@ -158,6 +162,10 @@ LUstruct_v100::LUstruct_v100(int_t nsupers_, int_t ldt_,
         bcastStruct bcUidx(grid3d->cscp.comm, mpi_int_t, SYNC);
         bcastUidx[i]= bcUidx;
     }
+
+    diagFactBufs.resize(numDiagBufs);
+    bcastDiagRow.resize(numDiagBufs);
+    bcastDiagCol.resize(numDiagBufs);
 
     for (int_t i = 0; i < numDiagBufs; i++)
     {
