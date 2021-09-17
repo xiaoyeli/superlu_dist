@@ -89,24 +89,43 @@ int_t LUstruct_v100::dsparseTreeFactor(
     int_t* donePanelBcast = intMalloc_dist(nnodes);
     int_t* donePanelSolve = intMalloc_dist(nnodes);
     
+    //TODO: not needed, remove after testing  
     for(int_t i=0;i<nnodes;i++)
     {
         donePanelBcast[i] =0; 
         donePanelSolve[i]=0;
     }
-        
+
 
     // start the pipeline 
     int_t topoLvl =0;
     int_t k_st = eTreeTopLims[topoLvl];
     int_t k_end = eTreeTopLims[topoLvl + 1];
-    for (int_t k0 = k_st; k0 < k_end; ++k0)
+    
+    //TODO: make this asynchronous 
+    for (int_t k0 = k_st; k0 < k_end; k0++)
     {
         int_t k = perm_c_supno[k0];
-        int_t offset = k0 - k_st;
+        int_t offset = 0;
         dDiagFactorPanelSolve(k, offset,dFBufs);
         donePanelSolve[k0]=1;
+        
+        
     }
+
+    for (int k0 = k_st; k0 < SUPERLU_MIN(k_end, k_st + numLA); ++k0)
+    {
+        int_t k = perm_c_supno[k0];
+        int_t offset = k0%numLA;
+        if(!donePanelBcast[k0])
+        {
+            dPanelBcast(k, offset);
+            donePanelBcast[k0] =1;
+            
+        }             
+        
+    }/*for (int k0 = k_st; k0 < SUPERLU_MIN(k_end, k_st + numLA); ++k0)*/
+
 
     for (int_t topoLvl = 0; topoLvl < maxTopoLevel; ++topoLvl)
     {
@@ -114,36 +133,13 @@ int_t LUstruct_v100::dsparseTreeFactor(
         int_t k_st = eTreeTopLims[topoLvl];
         int_t k_end = eTreeTopLims[topoLvl + 1];
         // start the pipeline 
-        for (int k0 = k_st; k0 < SUPERLU_MIN(k_end, k_st + numLA); ++k0)
-        {
-            int_t k = perm_c_supno[k0];
-            if(!donePanelSolve[k0])
-            {
-                dDiagFactorPanelSolve(k, k0-k_st,dFBufs);
-                donePanelSolve[k0]=1;
-            }
-
-            int_t offset = k0%numLA;
-            if(!donePanelBcast[k0])
-            {
-                dPanelBcast(k, offset);
-                donePanelBcast[k0] =1;
-            }             
-            
-        }/*for (int k0 = k_st; k0 < SUPERLU_MIN(k_end, k_st + numLA); ++k0)*/
 
         for (int_t k0 = k_st; k0 < k_end; ++k0)
         {
             int_t k = perm_c_supno[k0];
-            if(!donePanelSolve[k0])
-            {
-                dDiagFactorPanelSolve(k, k0-k_st,dFBufs);
-                donePanelSolve[k0]=1;
-            }
             int_t offset = k0%numLA; 
 
-            if(!donePanelBcast[k0])
-                dPanelBcast(k, offset);
+                
             // assert(donePanelBcast[k0] ==1);
             /*=======   SchurComplement Update ======*/
             upanel_t k_upanel(UidxRecvBufs[offset], UvalRecvBufs[offset]) ;
@@ -158,10 +154,11 @@ int_t LUstruct_v100::dsparseTreeFactor(
             
 
             /*=======   Look ahead Panel Solve  ======*/
+            //TODO: following circuit is not exactly working correctly
             if (topoLvl < maxTopoLevel - 1)
             {
                 int_t k_parent = gEtreeInfo->setree[k];
-                if(k_parent < nnodes)
+                if(k_parent < nsupers)
                 {
                     gEtreeInfo->numChildLeft[k_parent]--;
                     if (gEtreeInfo->numChildLeft[k_parent] == 0)
@@ -169,9 +166,11 @@ int_t LUstruct_v100::dsparseTreeFactor(
                         int_t k0_parent =  myIperm[k_parent];
                         if (k0_parent > 0)
                         {
-                            int_t offset = k0_parent -k_end; // k_end is start of k_st of next topLevel
-                            dDiagFactorPanelSolve(k_parent, offset,dFBufs);
+                            // int_t offset = k0_parent -k_end; // k_end is start of k_st of next topLevel
+                            int_t dOffset = 0;
+                            dDiagFactorPanelSolve(k_parent, dOffset,dFBufs);
                             donePanelSolve[k0_parent]=1;
+                            
                         }
                     }
                 }
@@ -189,6 +188,7 @@ int_t LUstruct_v100::dsparseTreeFactor(
                     int offset_next = k0_next%numLA; 
                     dPanelBcast(k_next, offset_next);
                     donePanelBcast[k0_next] =1;
+                    
                 }
                 
             }
@@ -196,6 +196,8 @@ int_t LUstruct_v100::dsparseTreeFactor(
         } /*for k0= k_st:k_end */
 
     } /*for topoLvl = 0:maxTopoLevel*/
+
+    
     SUPERLU_FREE( donePanelBcast);
     SUPERLU_FREE( donePanelSolve);
     #if (DEBUGlevel >= 1)
