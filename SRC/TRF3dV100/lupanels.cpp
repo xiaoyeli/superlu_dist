@@ -147,8 +147,27 @@ LUstruct_v100::LUstruct_v100(int_t nsupers_, int_t ldt_,
         UvalRecvBufs[i] = (double *)SUPERLU_MALLOC(sizeof(double) * maxUvalCount);
         LidxRecvBufs[i] = (int_t *)SUPERLU_MALLOC(sizeof(int_t) * maxLidxCount);
         UidxRecvBufs[i] = (int_t *)SUPERLU_MALLOC(sizeof(int_t) * maxUidxCount);
+        
+        //TODO: check if setup correctly 
+        bcastStruct bcLval(grid3d->rscp.comm, MPI_DOUBLE, SYNC); 
+        bcastLval[i] = bcLval;
+        bcastStruct bcUval(grid3d->cscp.comm, MPI_DOUBLE, SYNC);
+        bcastUval[i]= bcUval;
+        bcastStruct bcLidx(grid3d->rscp.comm, mpi_int_t, SYNC); 
+        bcastLidx[i] = bcLidx;
+        bcastStruct bcUidx(grid3d->cscp.comm, mpi_int_t, SYNC);
+        bcastUidx[i]= bcUidx;
     }
 
+    for (int_t i = 0; i < numDiagBufs; i++)
+    {
+        diagFactBufs[i] = (double *)SUPERLU_MALLOC(sizeof(double) * ldt * ldt);
+        bcastStruct bcDiagRow(grid3d->rscp.comm, MPI_DOUBLE, SYNC);
+        bcastDiagRow[i] = bcDiagRow;
+        bcastStruct bcDiagCol(grid3d->cscp.comm, MPI_DOUBLE, SYNC);
+        bcastDiagCol[i] = bcDiagCol;
+
+    }
     //
 
     // if (superluAccOffload)

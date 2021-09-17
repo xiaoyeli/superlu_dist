@@ -4,7 +4,7 @@
 #include "superlu_ddefs.h"
 #include "lu_common.hpp"
 #include "lupanels_GPU.cuh"
-
+#include "commWrapper.hpp"
 // class lpanelGPU_t;
 // class upanelGPU_t;
 
@@ -280,6 +280,8 @@ struct LUstruct_v100
     int_t *isNodeInMyGrid;
     double thresh;
     int *info;
+    //TODO: get it from environment 
+    int numDiagBufs=32;
 
     // Add SCT_t here
     SCT_t *SCT;
@@ -291,6 +293,7 @@ struct LUstruct_v100
     int_t maxLidxCount = 0;
     int_t maxUvalCount = 0;
     int_t maxUidxCount = 0;
+    std::vector<double *> diagFactBufs;
     std::vector<double *> LvalRecvBufs;
     std::vector<double *> UvalRecvBufs;
     std::vector<int_t *> LidxRecvBufs;
@@ -301,6 +304,14 @@ struct LUstruct_v100
     std::vector<int_t> UvalSendCounts;
     std::vector<int_t> LidxSendCounts;
     std::vector<int_t> UidxSendCounts;
+
+    //
+    std::vector<bcastStruct> bcastDiagRow;
+    std::vector<bcastStruct> bcastDiagCol;
+    std::vector<bcastStruct> bcastLval;  
+    std::vector<bcastStruct> bcastUval; 
+    std::vector<bcastStruct> bcastLidx;  
+    std::vector<bcastStruct> bcastUidx; 
 
     int_t krow(int_t k) { return k % Pr; }
     int_t kcol(int_t k) { return k % Pc; }
