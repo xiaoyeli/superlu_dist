@@ -116,7 +116,7 @@ int_t upanel_t::find(int_t k)
             return i;
     }
     //TODO: it shouldn't come here
-    return -1;
+    return GLOBAL_BLOCK_NOT_FOUND;
 }
 int_t upanel_t::panelSolve(int_t ksupsz, double *DiagBlk, int_t LDD)
 {

@@ -32,9 +32,9 @@ int_t log2i(int_t index)
 int_t *supernodal_etree(int_t nsuper, int_t * etree, int_t* supno, int_t *xsup)
 {
     //	int_t *setree = malloc(sizeof(int_t) * nsuper);
-    int_t *setree = intMalloc_dist(nsuper);  // Sherry fix
+    int_t *setree = intMalloc_dist(nsuper+1);  // Sherry fix
 	/*initialzing the loop*/
-	for (int i = 0; i < nsuper; ++i)
+	for (int i = 0; i < nsuper+1; ++i)
 	{
 	    setree[i] = nsuper;
 	}

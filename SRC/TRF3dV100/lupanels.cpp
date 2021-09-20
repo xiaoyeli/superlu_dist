@@ -10,10 +10,9 @@ LUstruct_v100::LUstruct_v100(int_t nsupers_, int_t ldt_,
                              dLUstruct_t *LUstruct,
                              gridinfo3d_t *grid3d_in,
                              SCT_t *SCT_, superlu_dist_options_t *options_,
-                             SuperLUStat_t *stat_, double thresh_, int *info_) : 
-                            isNodeInMyGrid(isNodeInMyGrid_),nsupers(nsupers_), 
-                            ldt(ldt_), grid3d(grid3d_in), superluAccOffload(superluAccOffload_),
-                            SCT(SCT_), options(options_), stat(stat_), thresh(thresh_), info(info_)
+                             SuperLUStat_t *stat_, double thresh_, int *info_) : isNodeInMyGrid(isNodeInMyGrid_), nsupers(nsupers_),
+                                                                                 ldt(ldt_), grid3d(grid3d_in), superluAccOffload(superluAccOffload_),
+                                                                                 SCT(SCT_), options(options_), stat(stat_), thresh(thresh_), info(info_)
 {
 
     grid = &(grid3d->grid2d);
@@ -151,16 +150,16 @@ LUstruct_v100::LUstruct_v100(int_t nsupers_, int_t ldt_,
         UvalRecvBufs[i] = (double *)SUPERLU_MALLOC(sizeof(double) * maxUvalCount);
         LidxRecvBufs[i] = (int_t *)SUPERLU_MALLOC(sizeof(int_t) * maxLidxCount);
         UidxRecvBufs[i] = (int_t *)SUPERLU_MALLOC(sizeof(int_t) * maxUidxCount);
-        
-        //TODO: check if setup correctly 
-        bcastStruct bcLval(grid3d->rscp.comm, MPI_DOUBLE, SYNC); 
+
+        //TODO: check if setup correctly
+        bcastStruct bcLval(grid3d->rscp.comm, MPI_DOUBLE, SYNC);
         bcastLval[i] = bcLval;
         bcastStruct bcUval(grid3d->cscp.comm, MPI_DOUBLE, SYNC);
-        bcastUval[i]= bcUval;
-        bcastStruct bcLidx(grid3d->rscp.comm, mpi_int_t, SYNC); 
+        bcastUval[i] = bcUval;
+        bcastStruct bcLidx(grid3d->rscp.comm, mpi_int_t, SYNC);
         bcastLidx[i] = bcLidx;
         bcastStruct bcUidx(grid3d->cscp.comm, mpi_int_t, SYNC);
-        bcastUidx[i]= bcUidx;
+        bcastUidx[i] = bcUidx;
     }
 
     diagFactBufs.resize(numDiagBufs);
@@ -174,12 +173,10 @@ LUstruct_v100::LUstruct_v100(int_t nsupers_, int_t ldt_,
         bcastDiagRow[i] = bcDiagRow;
         bcastStruct bcDiagCol(grid3d->cscp.comm, MPI_DOUBLE, SYNC);
         bcastDiagCol[i] = bcDiagCol;
-
     }
     //
 
     // if (superluAccOffload)
-        
 
     // for(int pc=0;pc<Pc; pc++)
     // {
@@ -204,32 +201,10 @@ int_t LUstruct_v100::dSchurComplementUpdate(
 #pragma omp parallel for
     for (size_t ij = 0; ij < (nlb - st_lb) * nub; ij++)
     {
-        /* code */
-        int_t thread_id;
-#ifdef _OPENMP
-        thread_id = omp_get_thread_num();
-#else
-        thread_id = 0;
-#endif
-
-        double *V = bigV + thread_id * ldt * ldt;
         int_t ii = ij / nub + st_lb;
         int_t jj = ij % nub;
-        double alpha = 1.0;
-        double beta = 0.0;
-        superlu_dgemm("N", "N",
-                      lpanel.nbrow(ii), upanel.nbcol(jj), supersize(k), alpha,
-                      lpanel.blkPtr(ii), lpanel.LDA(),
-                      upanel.blkPtr(jj), upanel.LDA(), beta,
-                      V, lpanel.nbrow(ii));
-
-        // now do the scatter
-        int_t ib = lpanel.gid(ii);
-        int_t jb = upanel.gid(jj);
-
-        dScatter(lpanel.nbrow(ii), upanel.nbcol(jj),
-                 ib, jb, V, lpanel.nbrow(ii),
-                 lpanel.rowList(ii), upanel.colList(jj));
+        blockUpdate(k,ii, jj, lpanel, upanel);
+        
     }
 
     return 0;
@@ -305,12 +280,11 @@ int_t LUstruct_v100::dScatter(int_t m, int_t n,
     // compute source row to dest row mapping
     int_t *rowS2D = computeIndirectMap(ROW_MAP, m, srcRowList,
                                        dstRowLen, dstRowList);
-    
+
     // compute source col to dest col mapping
     int_t *colS2D = computeIndirectMap(COL_MAP, n, srcColList,
                                        dstColLen, dstColList);
 
-    
     for (int j = 0; j < n; j++)
     {
         for (int i = 0; i < m; i++)
@@ -347,15 +321,15 @@ int_t LUstruct_v100::setLUstruct_GPU()
     A_gpu.Pc = Pc;
     A_gpu.maxSuperSize = ldt;
 
-    cudaMalloc(&A_gpu.xsup, (nsupers+1) * sizeof(int_t));
-    cudaMemcpy(A_gpu.xsup, xsup, (nsupers+1) * sizeof(int_t), cudaMemcpyHostToDevice);
+    cudaMalloc(&A_gpu.xsup, (nsupers + 1) * sizeof(int_t));
+    cudaMemcpy(A_gpu.xsup, xsup, (nsupers + 1) * sizeof(int_t), cudaMemcpyHostToDevice);
 
     upanelGPU_t *uPanelVec_GPU = new upanelGPU_t[CEILING(nsupers, Pr)];
     lpanelGPU_t *lPanelVec_GPU = new lpanelGPU_t[CEILING(nsupers, Pc)];
 
     for (int_t i = 0; i < CEILING(nsupers, Pc); ++i)
     {
-        if(i * Pc + mycol<nsupers && isNodeInMyGrid[i * Pc + mycol] == 1)
+        if (i * Pc + mycol < nsupers && isNodeInMyGrid[i * Pc + mycol] == 1)
             lPanelVec_GPU[i] = lPanelVec[i].copyToGPU();
     }
     cudaMalloc(&A_gpu.lPanelVec, CEILING(nsupers, Pc) * sizeof(lpanelGPU_t));
@@ -364,7 +338,7 @@ int_t LUstruct_v100::setLUstruct_GPU()
 
     for (int_t i = 0; i < CEILING(nsupers, Pr); ++i)
     {
-        if(i * Pr + myrow<nsupers && isNodeInMyGrid[i * Pr + myrow] == 1)
+        if (i * Pr + myrow < nsupers && isNodeInMyGrid[i * Pr + myrow] == 1)
             uPanelVec_GPU[i] = uPanelVec[i].copyToGPU();
     }
     cudaMalloc(&A_gpu.uPanelVec, CEILING(nsupers, Pr) * sizeof(upanelGPU_t));
@@ -392,7 +366,7 @@ int_t LUstruct_v100::setLUstruct_GPU()
         cudaMalloc(&A_gpu.UidxRecvBufs[stream], sizeof(int_t) * maxUidxCount);
 
         cudaMalloc(&A_gpu.gpuGemmBuffs[stream], A_gpu.gemmBufferSize * sizeof(double));
-        cudaMalloc(&A_gpu.dFBufs[stream], ldt*ldt*sizeof(double));  
+        cudaMalloc(&A_gpu.dFBufs[stream], ldt * ldt * sizeof(double));
     }
 
     // allocate
@@ -408,11 +382,11 @@ int_t LUstruct_v100::copyLUGPUtoHost()
 {
 
     for (int_t i = 0; i < CEILING(nsupers, Pc); ++i)
-        if(i * Pc + mycol<nsupers && isNodeInMyGrid[i * Pc + mycol] == 1)
+        if (i * Pc + mycol < nsupers && isNodeInMyGrid[i * Pc + mycol] == 1)
             lPanelVec[i].copyFromGPU();
 
     for (int_t i = 0; i < CEILING(nsupers, Pr); ++i)
-        if(i * Pr + myrow<nsupers && isNodeInMyGrid[i * Pr + myrow] == 1)
+        if (i * Pr + myrow < nsupers && isNodeInMyGrid[i * Pr + myrow] == 1)
             uPanelVec[i].copyFromGPU();
 }
 
@@ -425,6 +399,109 @@ int_t LUstruct_v100::checkGPU()
     for (int_t i = 0; i < CEILING(nsupers, Pr); ++i)
         uPanelVec[i].checkGPU();
 
-    std::cout<<"Checking LU struct completed succesfully" << "\n";
+    std::cout << "Checking LU struct completed succesfully"
+              << "\n";
 }
 
+
+
+int_t LUstruct_v100::lookAheadUpdate(
+    int_t k, int_t laIdx, lpanel_t &lpanel, upanel_t &upanel)
+{
+    if (lpanel.isEmpty() || upanel.isEmpty())
+        return 0;
+
+    int_t st_lb = 0;
+    if (myrow == krow(k))
+        st_lb = 1;
+
+    int_t nlb = lpanel.nblocks();
+    int_t laILoc = lpanel.find(laIdx);
+    int_t nub = upanel.nblocks();
+    int_t laJLoc = upanel.find(laIdx);
+
+
+
+#pragma omp parallel
+    {
+        if(laILoc != GLOBAL_BLOCK_NOT_FOUND && 
+            laJLoc != GLOBAL_BLOCK_NOT_FOUND)
+            blockUpdate(k,laILoc, laJLoc, lpanel, upanel);
+#pragma omp for nowait
+        for (size_t jj = 0; jj < nub; jj++)
+        {
+            int_t ii = laILoc; 
+            if(laILoc != GLOBAL_BLOCK_NOT_FOUND &&  jj!=laJLoc)
+                blockUpdate(k,ii, jj, lpanel, upanel);
+        }
+#pragma omp for nowait
+        for (size_t ii = st_lb; ii < nlb; ii++)
+        {
+            int_t jj = laJLoc; 
+            if(laJLoc != GLOBAL_BLOCK_NOT_FOUND && ii!=laILoc)
+                blockUpdate(k, ii, jj, lpanel, upanel);
+        }
+    }
+
+    return 0;
+}
+
+int_t LUstruct_v100::blockUpdate(int_t k, 
+    int_t ii, int_t jj, lpanel_t &lpanel, upanel_t &upanel)
+{
+    int thread_id;
+#ifdef _OPENMP
+    thread_id = omp_get_thread_num();
+#else
+    thread_id = 0;
+#endif
+
+    double *V = bigV + thread_id * ldt * ldt;
+
+    double alpha = 1.0;
+    double beta = 0.0;
+    superlu_dgemm("N", "N",
+                  lpanel.nbrow(ii), upanel.nbcol(jj), supersize(k), alpha,
+                  lpanel.blkPtr(ii), lpanel.LDA(),
+                  upanel.blkPtr(jj), upanel.LDA(), beta,
+                  V, lpanel.nbrow(ii));
+
+    // now do the scatter
+    int_t ib = lpanel.gid(ii);
+    int_t jb = upanel.gid(jj);
+
+    dScatter(lpanel.nbrow(ii), upanel.nbcol(jj),
+             ib, jb, V, lpanel.nbrow(ii),
+             lpanel.rowList(ii), upanel.colList(jj));
+}
+
+
+int_t LUstruct_v100::dSchurCompUpdateExcludeOne(
+    int_t k, int_t ex,  // suypernodes to be excluded 
+    lpanel_t &lpanel, upanel_t &upanel)
+{
+    if (lpanel.isEmpty() || upanel.isEmpty())
+        return 0;
+
+    int_t st_lb = 0;
+    if (myrow == krow(k))
+        st_lb = 1;
+
+    int_t nlb = lpanel.nblocks();
+    int_t nub = upanel.nblocks();
+    
+    int_t exILoc = lpanel.find(ex);
+    int_t exJLoc = upanel.find(ex);
+
+#pragma omp parallel for
+    for (size_t ij = 0; ij < (nlb - st_lb) * nub; ij++)
+    {
+        int_t ii = ij / nub + st_lb;
+        int_t jj = ij % nub;
+
+        if(ii != exILoc && jj != exJLoc)
+            blockUpdate(k,ii, jj, lpanel, upanel);
+    }
+    return 0; 
+}
+        

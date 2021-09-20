@@ -67,6 +67,7 @@ int_t LUstruct_v100::dsparseTreeFactor(
     int_t *gIperm_c_supno,
     int tag_ub)
 {
+    
      int_t nnodes = sforest->nNodes; // number of nodes in the tree
     if (nnodes < 1)
     {
@@ -88,14 +89,24 @@ int_t LUstruct_v100::dsparseTreeFactor(
 
     int_t* donePanelBcast = intMalloc_dist(nnodes);
     int_t* donePanelSolve = intMalloc_dist(nnodes);
+    int_t* localNumChildrenLeft = intMalloc_dist(nnodes);
     
     //TODO: not needed, remove after testing  
     for(int_t i=0;i<nnodes;i++)
     {
         donePanelBcast[i] =0; 
         donePanelSolve[i]=0;
+        localNumChildrenLeft[i]=0;
     }
 
+    for(int_t k0=0;k0<nnodes;k0++)
+    {
+        int_t k = perm_c_supno[k0];
+        int_t k_parent = gEtreeInfo->setree[k];
+        int_t ik = myIperm[k_parent];
+        if(ik >-1 && ik<nnodes)
+        localNumChildrenLeft[ik]++;
+    }
 
     // start the pipeline 
     int_t topoLvl =0;
@@ -139,8 +150,6 @@ int_t LUstruct_v100::dsparseTreeFactor(
             int_t k = perm_c_supno[k0];
             int_t offset = k0%numLA; 
 
-                
-            // assert(donePanelBcast[k0] ==1);
             /*=======   SchurComplement Update ======*/
             upanel_t k_upanel(UidxRecvBufs[offset], UvalRecvBufs[offset]) ;
             lpanel_t k_lpanel(LidxRecvBufs[offset], LvalRecvBufs[offset]);
@@ -149,32 +158,37 @@ int_t LUstruct_v100::dsparseTreeFactor(
             if (mycol == kcol(k))
                 k_lpanel = lPanelVec[g2lCol(k)];
 
+            int_t k_parent = gEtreeInfo->setree[k];
             if(UidxSendCounts[k]>0 && LidxSendCounts[k]>0)
-                dSchurComplementUpdate(k, k_lpanel, k_upanel);
-            
-
-            /*=======   Look ahead Panel Solve  ======*/
-            //TODO: following circuit is not exactly working correctly
-            if (topoLvl < maxTopoLevel - 1)
             {
-                int_t k_parent = gEtreeInfo->setree[k];
+                // dSchurComplementUpdate(k, k_lpanel, k_upanel);
                 if(k_parent < nsupers)
                 {
-                    gEtreeInfo->numChildLeft[k_parent]--;
-                    if (gEtreeInfo->numChildLeft[k_parent] == 0)
+                    lookAheadUpdate(k,k_parent, k_lpanel,k_upanel);
+                    dSchurCompUpdateExcludeOne(k,k_parent, k_lpanel,k_upanel);
+                }
+            }
+                
+            
+
+            
+            if(k_parent < nsupers)
+            {
+                
+                int_t k0_parent =  myIperm[k_parent];
+                if (k0_parent > 0 && k0_parent<nnodes)
+                {
+                    localNumChildrenLeft[k0_parent]--;
+                    if (topoLvl < maxTopoLevel - 1 && !localNumChildrenLeft[k0_parent])
                     {
-                        int_t k0_parent =  myIperm[k_parent];
-                        if (k0_parent > 0)
-                        {
-                            // int_t offset = k0_parent -k_end; // k_end is start of k_st of next topLevel
-                            int_t dOffset = 0;
-                            dDiagFactorPanelSolve(k_parent, dOffset,dFBufs);
-                            donePanelSolve[k0_parent]=1;
-                            
-                        }
+                        int_t dOffset = 0;
+                        dDiagFactorPanelSolve(k_parent, dOffset,dFBufs);
+                        donePanelSolve[k0_parent]=1;
+                        
                     }
                 }
-            } /*if (topoLvl < maxTopoLevel - 1)*/
+            }
+            
 
             /*=======   Look ahead Panel Bcast  ======*/
             for(int_t k0_next=k0+1; k0_next<SUPERLU_MIN(nnodes, k0+1+numLA); k0_next++ )
@@ -182,7 +196,10 @@ int_t LUstruct_v100::dsparseTreeFactor(
                 int k_next = perm_c_supno[k0_next];
                 /* if k_next's all children are factorized and 
                 I have not done panelBcast then perform it  */
-                if (!donePanelBcast[k0_next] && !gEtreeInfo->numChildLeft[k_next])
+                if (!donePanelBcast[k0_next] &&
+                !localNumChildrenLeft[k0_next]
+                //  !gEtreeInfo->numChildLeft[k_next]
+                 )
                 {
                     /* code */
                     int offset_next = k0_next%numLA; 
@@ -200,6 +217,7 @@ int_t LUstruct_v100::dsparseTreeFactor(
     
     SUPERLU_FREE( donePanelBcast);
     SUPERLU_FREE( donePanelSolve);
+    SUPERLU_FREE(localNumChildrenLeft);
     #if (DEBUGlevel >= 1)
     CHECK_MALLOC(grid3d->iam, "Exit dsparseTreeFactor_ASYNC()");
     #endif

@@ -7,7 +7,7 @@
 #include "commWrapper.hpp"
 // class lpanelGPU_t;
 // class upanelGPU_t;
-
+#define GLOBAL_BLOCK_NOT_FOUND -1
 // it can be templatized for double and complex double
 class lpanel_t
 {
@@ -280,8 +280,8 @@ struct LUstruct_v100
     int_t *isNodeInMyGrid;
     double thresh;
     int *info;
-    //TODO: get it from environment 
-    int numDiagBufs=32;
+    //TODO: get it from environment
+    int numDiagBufs = 32;
 
     // Add SCT_t here
     SCT_t *SCT;
@@ -308,10 +308,10 @@ struct LUstruct_v100
     //
     std::vector<bcastStruct> bcastDiagRow;
     std::vector<bcastStruct> bcastDiagCol;
-    std::vector<bcastStruct> bcastLval;  
-    std::vector<bcastStruct> bcastUval; 
-    std::vector<bcastStruct> bcastLidx;  
-    std::vector<bcastStruct> bcastUidx; 
+    std::vector<bcastStruct> bcastLval;
+    std::vector<bcastStruct> bcastUval;
+    std::vector<bcastStruct> bcastLidx;
+    std::vector<bcastStruct> bcastUidx;
 
     int_t krow(int_t k) { return k % Pr; }
     int_t kcol(int_t k) { return k % Pc; }
@@ -341,8 +341,8 @@ struct LUstruct_v100
 
     ~LUstruct_v100()
     {
-        delete [] lPanelVec;
-        delete [] uPanelVec;
+        delete[] lPanelVec;
+        delete[] uPanelVec;
     }
 
     /**
@@ -357,6 +357,14 @@ struct LUstruct_v100
                    double *V, int_t ldv,
                    int_t *srcRowList, int_t *srcColList);
 
+    int_t lookAheadUpdate(
+        int_t k, int_t laIdx, lpanel_t &lpanel, upanel_t &upanel);
+    int_t blockUpdate(int_t k, 
+        int_t ii, int_t jj, lpanel_t &lpanel, upanel_t &upanel);
+    int_t dSchurCompUpdateExcludeOne(
+        int_t k, int_t ex, // suypernodes to be excluded
+        lpanel_t &lpanel, upanel_t &upanel);
+
     int_t dsparseTreeFactor(
         sForest_t *sforest,
         commRequests_t **comReqss, // lists of communication requests // size maxEtree level
@@ -369,22 +377,22 @@ struct LUstruct_v100
 
         int_t *gIperm_c_supno,
 
-         int tag_ub);
-    
+        int tag_ub);
+
     //
     int_t dDiagFactorPanelSolve(int_t k, int_t offset, ddiagFactBufs_t **dFBufs);
     int_t dPanelBcast(int_t k, int_t offset);
     int_t dsparseTreeFactorBaseline(
         sForest_t *sforest,
         commRequests_t **comReqss, // lists of communication requests // size maxEtree level
-        dscuBufs_t *scuBufs,        // contains buffers for schur complement update
+        dscuBufs_t *scuBufs,       // contains buffers for schur complement update
         packLUInfo_t *packLUInfo,
         msgs_t **msgss,           // size=num Look ahead
         dLUValSubBuf_t **LUvsbs,  // size=num Look ahead
-        ddiagFactBufs_t **dFBufs,  // size maxEtree level
+        ddiagFactBufs_t **dFBufs, // size maxEtree level
         gEtreeInfo_t *gEtreeInfo, // global etree info
         int_t *gIperm_c_supno,
-         int tag_ub);
+        int tag_ub);
 
     int_t packedU2skyline(dLUstruct_t *LUstruct);
 
@@ -408,9 +416,8 @@ struct LUstruct_v100
         ddiagFactBufs_t **dFBufs, // size maxEtree level
         gEtreeInfo_t *gEtreeInfo, // global etree info
         int_t *gIperm_c_supno,
-         int tag_ub);
+        int tag_ub);
 
-    
     int_t dSchurComplementUpdateGPU(
         int streamId,
         int_t k, lpanel_t &lpanel, upanel_t &upanel);
@@ -424,6 +431,5 @@ struct LUstruct_v100
     int_t copyLUGPUtoHost();
     int_t checkGPU();
 };
-
 
 cudaError_t checkCudaLocal(cudaError_t result);
