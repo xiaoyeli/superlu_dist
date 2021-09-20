@@ -159,22 +159,14 @@ int_t LUstruct_v100::dsparseTreeFactor(
                 k_lpanel = lPanelVec[g2lCol(k)];
 
             int_t k_parent = gEtreeInfo->setree[k];
-            if(UidxSendCounts[k]>0 && LidxSendCounts[k]>0)
-            {
-                // dSchurComplementUpdate(k, k_lpanel, k_upanel);
-                if(k_parent < nsupers)
-                {
-                    lookAheadUpdate(k,k_parent, k_lpanel,k_upanel);
-                    dSchurCompUpdateExcludeOne(k,k_parent, k_lpanel,k_upanel);
-                }
-            }
-                
-            
 
+            /* Look Ahead Panel Update */
+            if(UidxSendCounts[k]>0 && LidxSendCounts[k]>0)
+                lookAheadUpdate(k,k_parent, k_lpanel,k_upanel);
             
+            /* Look Ahead Panel Solve */
             if(k_parent < nsupers)
             {
-                
                 int_t k0_parent =  myIperm[k_parent];
                 if (k0_parent > 0 && k0_parent<nnodes)
                 {
@@ -188,6 +180,11 @@ int_t LUstruct_v100::dsparseTreeFactor(
                     }
                 }
             }
+            
+            /*proceed with remaining SchurComplement update */
+            if(UidxSendCounts[k]>0 && LidxSendCounts[k]>0)
+                    dSchurCompUpdateExcludeOne(k,k_parent, k_lpanel,k_upanel);
+            
             
 
             /*=======   Look ahead Panel Bcast  ======*/

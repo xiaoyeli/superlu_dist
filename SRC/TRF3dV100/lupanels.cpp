@@ -424,9 +424,11 @@ int_t LUstruct_v100::lookAheadUpdate(
 
 #pragma omp parallel
     {
+        //TODO: can be made a different function 
         if(laILoc != GLOBAL_BLOCK_NOT_FOUND && 
             laJLoc != GLOBAL_BLOCK_NOT_FOUND)
             blockUpdate(k,laILoc, laJLoc, lpanel, upanel);
+
 #pragma omp for nowait
         for (size_t jj = 0; jj < nub; jj++)
         {
