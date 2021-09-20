@@ -424,11 +424,16 @@ int_t LUstruct_v100::lookAheadUpdate(
 
 #pragma omp parallel
     {
-        //TODO: can be made a different function 
-        if(laILoc != GLOBAL_BLOCK_NOT_FOUND && 
-            laJLoc != GLOBAL_BLOCK_NOT_FOUND)
-            blockUpdate(k,laILoc, laJLoc, lpanel, upanel);
-
+        /*Next lpanelUpdate*/
+#pragma omp for nowait
+        for (size_t ii = st_lb; ii < nlb; ii++)
+        {
+            int_t jj = laJLoc; 
+            if(laJLoc != GLOBAL_BLOCK_NOT_FOUND)
+                blockUpdate(k, ii, jj, lpanel, upanel);
+        }
+        
+        /*Next upanelUpdate*/
 #pragma omp for nowait
         for (size_t jj = 0; jj < nub; jj++)
         {
@@ -436,13 +441,7 @@ int_t LUstruct_v100::lookAheadUpdate(
             if(laILoc != GLOBAL_BLOCK_NOT_FOUND &&  jj!=laJLoc)
                 blockUpdate(k,ii, jj, lpanel, upanel);
         }
-#pragma omp for nowait
-        for (size_t ii = st_lb; ii < nlb; ii++)
-        {
-            int_t jj = laJLoc; 
-            if(laJLoc != GLOBAL_BLOCK_NOT_FOUND && ii!=laILoc)
-                blockUpdate(k, ii, jj, lpanel, upanel);
-        }
+
     }
 
     return 0;
