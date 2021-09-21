@@ -78,8 +78,8 @@ typedef struct //LUstruct_gpu_
     int_t   *LrowindPtr;      /* A single vector */
 
     float  *LnzvalVec;       /* A single vector */
-    int_t   *LnzvalPtr;       /* A single vector */
-    int_t   *LnzvalPtr_host;  /* A single vector */
+    int_t   *LnzvalPtr;        /* A single vector */
+    int_t   *LnzvalPtr_host;   /* A single vector */
 
     int_t   *UrowindVec;            /* A single vector */
     int_t   *UrowindPtr;            /* A single vector */
@@ -87,7 +87,8 @@ typedef struct //LUstruct_gpu_
     int_t   *UnzvalPtr_host;
 
     float  *UnzvalVec;       /* A single vector */
-    int_t   *UnzvalPtr;      /* A single vector */
+    int_t   *UnzvalPtr;        /* A single vector */
+    
     /*gpu pointers for easy block accesses */
     local_l_blk_info_t *local_l_blk_infoVec;
     int_t *local_l_blk_infoPtr;
@@ -108,7 +109,6 @@ typedef struct //LUstruct_gpu_
     int_t nsupers;  /*should have number of supernodes*/
     int_t *xsup;
     gridinfo_t *grid;
-
 
     double ScatterMOPCounter;
     double ScatterMOPTimer;

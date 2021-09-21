@@ -810,6 +810,10 @@ void zDestroy_A3d_gathered_on_2d(zSOLVEstruct_t *SOLVEstruct, gridinfo3d_t *grid
     SUPERLU_FREE(A3d->nnz_disp);
     SUPERLU_FREE(A3d->b_counts_int);
     SUPERLU_FREE(A3d->b_disp);
+    SUPERLU_FREE(A3d->procs_to_send_list);
+    SUPERLU_FREE(A3d->send_count_list);
+    SUPERLU_FREE(A3d->procs_recv_from_list);
+    SUPERLU_FREE(A3d->recv_count_list);
     SUPERLU_FREE( A2d );         // free 2D structure
     SUPERLU_FREE( A3d );         // free 3D structure
 } /* zDestroy_A3d_gathered_on_2d */
@@ -889,5 +893,3 @@ zDestroy_Tree(int_t n, gridinfo_t *grid, zLUstruct_t *LUstruct)
     CHECK_MALLOC(iam, "Exit zDestroy_Tree()");
 #endif
 }
-
-

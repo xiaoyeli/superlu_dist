@@ -341,17 +341,44 @@ int zcreate_matrix_postfix3d(SuperMatrix *A, int nrhs, doublecomplex **rhs,
     nzval[0] = 0.1;
 #endif
 
-    /* Compute the number of rows to be distributed to local process */
-    m_loc = m / (grid3d->nprow * grid3d->npcol* grid3d->npdep);
-    m_loc_fst = m_loc;
-    /* When m / procs is not an integer */
-    if ((m_loc * grid3d->nprow * grid3d->npcol* grid3d->npdep) != m)
-    {
-        /*m_loc = m_loc+1;
-          m_loc_fst = m_loc;*/
-        if (iam == (grid3d->nprow * grid3d->npcol* grid3d->npdep - 1)) /* last proc. gets all*/
-            m_loc = m - m_loc * (grid3d->nprow * grid3d->npcol* grid3d->npdep - 1);
-    }
+//    /* Compute the number of rows to be distributed to local process */
+//    m_loc = m / (grid3d->nprow * grid3d->npcol* grid3d->npdep);
+//    m_loc_fst = m_loc;
+//    /* When m / procs is not an integer */
+//    if ((m_loc * grid3d->nprow * grid3d->npcol* grid3d->npdep) != m)
+//    {
+//        /*m_loc = m_loc+1;
+//          m_loc_fst = m_loc;*/
+//        if (iam == (grid3d->nprow * grid3d->npcol* grid3d->npdep - 1)) /* last proc. gets all*/
+//            m_loc = m - m_loc * (grid3d->nprow * grid3d->npcol* grid3d->npdep - 1);
+//    }
+ 
+    switch(iam) {
+      case 0:
+       m_loc=111; fst_row=0;
+       break;
+      case 1:
+       m_loc=84; fst_row=111;
+       break;
+      case 2:
+       m_loc=108; fst_row=195;
+       break;
+      case 3:
+       m_loc=84; fst_row=303;
+       break;
+      case 4:
+       m_loc=108; fst_row=387;
+       break;
+      case 5:
+       m_loc=84; fst_row=495;
+       break;
+      case 6:
+       m_loc=108; fst_row=579;
+       break;
+      case 7:
+       m_loc=84; fst_row=687;
+       break;
+     }
 
     /* Create compressed column matrix for GA. */
     zCreate_CompCol_Matrix_dist(&GA, m, n, nnz, nzval, rowind, colptr,
@@ -379,7 +406,7 @@ int zcreate_matrix_postfix3d(SuperMatrix *A, int nrhs, doublecomplex **rhs,
         for (j = colptr[i]; j < colptr[i + 1]; ++j) ++marker[rowind[j]];
     /* Set up row pointers */
     rowptr[0] = 0;
-    fst_row = iam * m_loc_fst;
+//    fst_row = iam * m_loc_fst;
     nnz_loc = 0;
     for (j = 0; j < m_loc; ++j)
     {

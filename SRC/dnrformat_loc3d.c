@@ -80,6 +80,8 @@ void dGatherNRformat_loc3d
 	nnz_counts_int = SUPERLU_MALLOC(grid3d->npdep * sizeof(int));
 	row_counts_int = SUPERLU_MALLOC(grid3d->npdep * sizeof(int));
 	b_counts_int = SUPERLU_MALLOC(grid3d->npdep * sizeof(int));
+
+	/* Gathered to layer 0. Other procs do not have these counts */
 	MPI_Gather(&A->nnz_loc, 1, mpi_int_t, nnz_counts,
 		   1, mpi_int_t, 0, grid3d->zscp.comm);
 	MPI_Gather(&A->m_loc, 1, mpi_int_t, row_counts,

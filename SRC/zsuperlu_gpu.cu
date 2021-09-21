@@ -775,6 +775,7 @@ int zfree_LUstruct_gpu (zLUstruct_gpu_t * A_gpu)
 	checkCuda(cudaFree(A_gpu->LnzvalVec));
 	checkCuda(cudaFree(A_gpu->LnzvalPtr));
 	free(A_gpu->LnzvalPtr_host);
+	
 	/*freeing the pinned memory*/
 	int_t streamId = 0;
 	checkCuda (cudaFreeHost (A_gpu->scubufs[streamId].Remain_info_host));
@@ -807,8 +808,6 @@ int zfree_LUstruct_gpu (zLUstruct_gpu_t * A_gpu)
 
 	checkCuda(cudaFree(A_gpu->grid));
 
-
-
 	checkCuda(cudaFree(A_gpu->scubufs[streamId].bigV));
 	checkCuda(cudaFree(A_gpu->scubufs[streamId].bigU));
 
@@ -822,7 +821,6 @@ int zfree_LUstruct_gpu (zLUstruct_gpu_t * A_gpu)
 
 	checkCuda(cudaFree(A_gpu->scubufs[streamId].lsub));
 	checkCuda(cudaFree(A_gpu->scubufs[streamId].usub));
-
 
 	checkCuda(cudaFree(A_gpu->local_l_blk_infoVec));
 	checkCuda(cudaFree(A_gpu->local_l_blk_infoPtr));

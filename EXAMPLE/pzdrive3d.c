@@ -183,6 +183,7 @@ main (int argc, char *argv[])
        INITIALIZE THE SUPERLU PROCESS GRID.
        ------------------------------------------------------------ */
     superlu_gridinit3d (MPI_COMM_WORLD, nprow, npcol, npdep, &grid);
+    //    grid.rankorder = 1;
 
     if(grid.iam==0) {
 	MPI_Query_thread(&omp_mpi_level);

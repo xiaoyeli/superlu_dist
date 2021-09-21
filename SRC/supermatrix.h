@@ -205,6 +205,15 @@ typedef struct NRformat_loc3d
     int *nnz_disp;
     int *b_counts_int;
     int *b_disp;
+
+    /* The following 4 structures are used for scattering
+       solution X from 2D grid-0 back to 3D processes */
+    int num_procs_to_send;  
+    int *procs_to_send_list;
+    int *send_count_list;
+    int num_procs_to_recv;
+    int *procs_recv_from_list;
+    int *recv_count_list;
 } NRformat_loc3d;
 
 

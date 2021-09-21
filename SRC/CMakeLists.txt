@@ -294,6 +294,12 @@ if(CUDAToolkit_FOUND)  # this is found in top-level CMakeLists.txt
     target_link_libraries(superlu_dist CUDA::cudart CUDA::cublas)
 endif()
 
+# This is recommended by modern cmake:
+# https://cliutils.gitlab.io/modern-cmake/chapters/packages/OpenMP.html
+if(OpenMP_FOUND) # this is found in top-level CMakeLists.txt
+  target_link_libraries(superlu_dist OpenMP::OpenMP_C)
+endif()
+  
 target_compile_definitions(superlu_dist PRIVATE SUPERLU_DIST_EXPORTS)
 if(MSVC AND BUILD_SHARED_LIBS)
   set_target_properties(superlu_dist PROPERTIES

@@ -233,7 +233,7 @@ int_t psgstrf3d(superlu_dist_options_t *options, int m, int n, float anorm,
 #ifdef GPU_ACC
 
     /*Now initialize the GPU data structure*/
-    sLUstruct_gpu_t *A_gpu, *dA_gpu;
+    // sLUstruct_gpu_t *A_gpu, *dA_gpu; // not used
 
     d2Hreduce_t d2HredObj;
     d2Hreduce_t* d2Hred = &d2HredObj;
@@ -340,8 +340,13 @@ int_t psgstrf3d(superlu_dist_options_t *options, int m, int n, float anorm,
 
         SCT->tSchCompUdt3d[ilvl] = ilvl == 0 ? SCT->NetSchurUpTimer
 	    : SCT->NetSchurUpTimer - SCT->tSchCompUdt3d[ilvl - 1];
-    } /*for (int_t ilvl = 0; ilvl < maxLvl; ++ilvl)*/
+    } /* end for (int ilvl = 0; ilvl < maxLvl; ++ilvl) */
 
+#ifdef GPU_ACC
+    /* This frees the GPU storage allocateed in initSluGPU3D_t() */
+    sfree_LUstruct_gpu (sluGPU->A_gpu);
+#endif
+    
     MPI_Barrier( grid3d->comm);
     SCT->pdgstrfTimer = SuperLU_timer_() - SCT->pdgstrfTimer;
 
