@@ -1,45 +1,38 @@
 #!/bin/bash
+# Bash script to submit many files to Cori/Edison/Queue
+module unload cray-mpich/7.7.6
+module swap PrgEnv-intel PrgEnv-gnu
+export MKLROOT=/opt/intel/compilers_and_libraries_2019.3.199/linux/mkl
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/opt/intel/compilers_and_libraries_2018.1.163/linux/mkl/lib/intel64
 
-module load PrgEnv-cray
-module load cmake
-module unload cray-libsci_acc
-module load cray-libsci/19.06.1
-export LD_LIBRARY_PATH="$CRAY_LD_LIBRARY_PATH:$LD_LIBRARY_PATH"
-
-				 
+# module use /global/common/software/m3169/cori/modulefiles
+# module unload openmpi
+module load openmpi/4.0.1
 
 export CRAYPE_LINK_TYPE=dynamic
-export PARMETIS_ROOT=/home/users/coe0238/my_software/parmetis-4.0.3_cce_dynamic
-export PARMETIS_BUILD_DIR=${PARMETIS_ROOT}/build/Linux-x86_64
-# export ACC=GPU
+export PARMETIS_ROOT=~/Cori/my_software/parmetis-4.0.3_dynamic_openmpi401_gnu/ 
+export PARMETIS_BUILD_DIR=${PARMETIS_ROOT}/build/Linux-x86_64 
 rm -rf CMakeCache.txt
 rm -rf CMakeFiles
 rm -rf CTestTestfile.cmake
 rm -rf cmake_install.cmake
 rm -rf DartConfiguration.tcl 
 
- 
+
 cmake .. \
 	-DTPL_PARMETIS_INCLUDE_DIRS="${PARMETIS_ROOT}/include;${PARMETIS_ROOT}/metis/include" \
-	-DTPL_PARMETIS_LIBRARIES="${PARMETIS_BUILD_DIR}/libparmetis/libparmetis.so;${PARMETIS_BUILD_DIR}/libmetis/libmetis.so" \
+	-DTPL_PARMETIS_LIBRARIES="${PARMETIS_BUILD_DIR}/libparmetis/libparmetis.so;${PARMETIS_BUILD_DIR}/libmetis/libmetis.so;${LIB_VTUNE}" \
 	-DBUILD_SHARED_LIBS=ON \
-	-DCMAKE_Fortran_COMPILER=ftn \
+	-DTPL_BLAS_LIBRARIES="${MKLROOT}/lib/intel64/libmkl_gf_lp64.so;${MKLROOT}/lib/intel64/libmkl_gnu_thread.so;${MKLROOT}/lib/intel64/libmkl_core.so;${MKLROOT}/lib/intel64/libmkl_def.so;${MKLROOT}/lib/intel64/libmkl_avx.so" \
+	-DTPL_LAPACK_LIBRARIES="${MKLROOT}/lib/intel64/libmkl_gf_lp64.so;${MKLROOT}/lib/intel64/libmkl_gnu_thread.so;${MKLROOT}/lib/intel64/libmkl_core.so;${MKLROOT}/lib/intel64/libmkl_def.so;${MKLROOT}/lib/intel64/libmkl_avx.so" \
 	-DCMAKE_C_COMPILER=cc \
-	-DCMAKE_CXX_COMPILER=CC \
-	-Denable_openmp=OFF \
-	-DTPL_BLAS_LIBRARIES="/opt/cray/pe/libsci/19.06.1/CRAY/8.5/x86_64/lib/libsci_cray.so" \
-	-DTPL_LAPACK_LIBRARIES="/opt/cray/pe/libsci/19.06.1/CRAY/8.5/x86_64/lib/libsci_cray.so" \
+    -DCMAKE_CXX_COMPILER=CC \
 	-DCMAKE_INSTALL_PREFIX=. \
-	-DCMAKE_BUILD_TYPE=Release \
+	-DCMAKE_BUILD_TYPE=Debug \
 	-DCMAKE_VERBOSE_MAKEFILE:BOOL=ON \
-	-DCMAKE_CXX_FLAGS="-Ofast -DRELEASE" \
-	-DCMAKE_C_FLAGS="-std=c11 -Wno-format -Wno-unused-value -Wno-return-type -Wno-unsequenced -Wno-switch -Wno-parentheses  -DPRNTlevel=1 -DPROFlevel=1 -DDEBUGlevel=0" \
-	-DTPL_ENABLE_CUDALIB=OFF
+	-DCMAKE_CXX_FLAGS="-Ofast -DRELEASE ${INC_VTUNE}" \
+    -DCMAKE_C_FLAGS="-std=c11 -DPRNTlevel=1 -DPROFlevel=0 -DDEBUGlevel=0 ${INC_VTUNE}" 
 make pddrive			
-
-	# -DTPL_ENABLE_LAPACKLIB=OFF \
-	# -DTPL_ENABLE_BLASLIB=OFF \
-
 #	-DTPL_BLAS_LIBRARIES="/opt/intel/compilers_and_libraries_2017.2.174/linux/mkl/lib/intel64/libmkl_intel_lp64.so;/opt/intel/compilers_and_libraries_2017.2.174/linux/mkl/lib/intel64/libmkl_sequential.so;/opt/intel/compilers_and_libraries_2017.2.174/linux/mkl/lib/intel64/libmkl_core.so"
 
 #	-DTPL_BLAS_LIBRARIES="/opt/intel/compilers_and_libraries_2017.2.174/linux/mkl/lib/intel64/libmkl_intel_lp64.so;/opt/intel/compilers_and_libraries_2017.2.174/linux/mkl/lib/intel64/libmkl_sequential.so;/opt/intel/compilers_and_libraries_2017.2.174/linux/mkl/lib/intel64/libmkl_core.so" \

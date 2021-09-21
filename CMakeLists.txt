@@ -5,13 +5,14 @@
 ######################################################################
 
 # Required version
-cmake_minimum_required(VERSION 3.8 FATAL_ERROR)
+cmake_minimum_required(VERSION 3.13 FATAL_ERROR)
 
 # Project version numbers
+#project(SuperLU_DIST C CXX CUDA)
 project(SuperLU_DIST C CXX)
 set(VERSION_MAJOR "6")
-set(VERSION_MINOR "1")
-set(VERSION_BugFix "1")
+set(VERSION_MINOR "4")
+set(VERSION_BugFix "0")
 set(PROJECT_VERSION ${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_BugFix})
 
 list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake")
@@ -22,39 +23,35 @@ option(enable_double    "Enable double precision library" ON)
 option(enable_complex16 "Enable complex16 precision library" ON)
 option(enable_tests  "Build tests" ON)
 option(enable_examples  "Build examples" ON)
-option(TPL_ENABLE_BLASLIB  "Build the CBLAS library" ${enable_blaslib_DEFAULT})
+option(TPL_ENABLE_INTERNAL_BLASLIB  "Build the CBLAS library" ${enable_blaslib_DEFAULT})
+option(TPL_BLAS_LIBRARIES "List of absolute paths to blas libraries [].")
+option(TPL_ENABLE_LAPACKLIB "Enable lapack library" ON)
+option(TPL_LAPACK_LIBRARIES "List of absolute paths to lapack libraries [].")
 option(TPL_ENABLE_PARMETISLIB   "Build the ParMETIS library" ON)
-option(TPL_ENABLE_CUDALIB   "Enable the CUDA libraries" OFF)
-option(TPL_ENABLE_HIPLIB   "Enable the HIP libraries" OFF)
-option(TPL_ENABLE_LAPACKLIB "Enable LAPACK library" ON)
 option(TPL_PARMETIS_LIBRARIES "List of absolute paths to ParMETIS link libraries [].")
 option(TPL_PARMETIS_INCLUDE_DIRS "List of absolute paths to ParMETIS include directories [].")
-option(TPL_ENABLE_COMBBLASLIB   "Build the CombBLAS library" OFF)
-option(TPL_COMBBLAS_LIBRARIES "List of absolute paths to CombBLAS link libraries [].")
+option(TPL_ENABLE_COMBBLASLIB   "BUILD THE COMBBLAS LIBRARY" OFF)
+OPTION(TPL_COMBBLAS_LIBRARIES "List of absolute paths to CombBLAS link libraries [].")
 option(TPL_COMBBLAS_INCLUDE_DIRS "List of absolute paths to CombBLAS include directories [].")
-
+option(TPL_ENABLE_CUDALIB   "Enable the CUDA libraries" OFF)
+option(TPL_ENABLE_HIPLIB   "Enable the HIP libraries" OFF)
 
 ######################################################################
 #
 # IDEAS: xSDK standards module
-MESSAGE("\nProcess XSDK defaults ...")
-# SET(USE_XSDK_DEFAULTS_DEFAULT TRUE) # Set to false if desired
-INCLUDE("cmake/XSDKDefaults.cmake")
-INCLUDE(CTest)
+#MESSAGE("\nProcess XSDK defaults ...")
+#SET(USE_XSDK_DEFAULTS_DEFAULT TRUE) # Set to false if desired
+#INCLUDE("cmake/XSDKDefaults.cmake")
 ######################################################################
+
+INCLUDE(CTest)
 
 ######################################################################
 #
 # Usual initialization stuff
 #
 ######################################################################
-set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)    ## ????
 set(CMAKE_INSTALL_NAME_DIR "${CMAKE_INSTALL_PREFIX}/lib")
-
-# set the position independent code property on all targets, so that
-# -fPIC is added in compiler flag.
-set(CMAKE_POSITION_INDEPENDENT_CODE ON)
-
 
 #---- For shared library
 
@@ -77,7 +74,14 @@ SET(BUILD_STATIC_LIBS TRUE CACHE BOOL "Include static libs when building shared"
 
 if (BUILD_SHARED_LIBS)
   message("-- SuperLU_DIST will be built as a shared library.")
+  # set the position independent code property on all targets, so that
+  # -fPIC is added in compiler flag.
+  set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+
   set(PROJECT_NAME_LIB_EXPORT libsuperlu_dist.so)
+  SET(CMAKE_EXE_LINKER_FLAGS
+          "${CMAKE_EXE_LINKER_FLAGS} -Wl,-rpath,${CMAKE_INSTALL_PREFIX}/SRC")
+
   if (BUILD_STATIC_LIBS)
     message("-- SuperLU_DIST will also be built as a static library.")
   endif()
@@ -87,6 +91,9 @@ else()
 endif()
 
 set(CMAKE_CXX_STANDARD 11)
+#set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+#message("!!!! top: cxx_implicit='${CMAKE_CXX_IMPLICIT_LINK_LIBRARIES}'")
 
 if (XSDK_ENABLE_Fortran)
   enable_language (Fortran)
@@ -125,7 +132,7 @@ set(INSTALL_BIN_DIR "${default_install_bin_dir}" CACHE STRING "The folder where 
 # Set up required compiler defines and options.
 ## get_directory_property( DirDefs COMPILE_DEFINITIONS )
 # set(CMAKE_C_FLAGS "-DDEBUGlevel=0 -DPRNTlevel=0 ${CMAKE_C_FLAGS}")
-set(CMAKE_CXX_FLAGS "-std=c++11 ${CMAKE_CXX_FLAGS}")
+# set(CMAKE_CXX_FLAGS "-std=c++11 ${CMAKE_CXX_FLAGS}")
 if(XSDK_INDEX_SIZE EQUAL 64)
     message("-- Using 64 bit integer for index size.")
 endif()	
@@ -139,16 +146,21 @@ set(CMAKE_CXX_FLAGS_RELEASE "-O3" CACHE STRING "")
 ######################################################################
 #
 #--------------------- MPI ---------------------
-
-find_package(Threads)
-
-
-find_package(MPI)
+find_package(MPI REQUIRED)
 if(MPI_C_FOUND)
     set(CMAKE_C_FLAGS "${MPI_C_COMPILE_FLAGS} ${CMAKE_C_FLAGS}")
     set(CMAKE_CXX_FLAGS "${MPI_CXX_COMPILE_FLAGS} ${CMAKE_CXX_FLAGS}")
     set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${MPI_C_LINK_FLAGS}" )
+#    message("MPI_C_INCLUDE_DIRS: ${MPI_C_INCLUDE_DIRS}")
 endif()
+if (XSDK_ENABLE_Fortran)
+  if(MPI_Fortran_FOUND)
+    add_definitions(${MPI_Fortran_COMPILE_FLAGS})
+    include_directories(${MPI_Fortran_INCLUDE_PATH})
+    set(CMAKE_Fortran_FLAGS "${MPI_Fortran_COMPILE_FLAGS} ${CMAKE_Fortran_FLAGS}")
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${MPI_Fortran_LINK_FLAGS}")
+  endif()
+endif()  
 #--------------------- OpenMP ---------------------
 if (NOT DEFINED enable_openmp)
   set(enable_openmp TRUE)
@@ -184,8 +196,8 @@ if (TPL_ENABLE_CUDALIB)   ## want to use cuda
     string (REPLACE ";" " " CUDA_LIB_STR "${CUDA_LIB}")
     set(CUDA_LIB_EXPORT ${CUDA_LIB_STR}) 
     set(HAVE_CUDA TRUE)
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DHAVE_CUDA")
-    set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -DHAVE_CUDA")
+    # set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DHAVE_CUDA")
+    # set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -DHAVE_CUDA")
   else()
     message("-- CUDA libraries not found.")
   endif()
@@ -195,26 +207,36 @@ endif()
 
 #--------------------- HIP libraries ---------------------
 if (TPL_ENABLE_HIPLIB)   ## want to use hip
-  list(APPEND CMAKE_MODULE_PATH "$ENV{HIP_PATH}/lib/cmake/hip")
-  find_package(hip)
-  if(hip_FOUND)
+  find_package(HIP MODULE)
+  if(HIP_FOUND)
     message("-- Enabled support for HIP.")
     find_package(hipblas REQUIRED)
     find_package(rocsolver REQUIRED)
     find_package(rocblas REQUIRED)
     set(HIP_LIB roc::hipblas roc::rocblas roc::rocsolver)
+    message("HIP_LIB ${HIP_LIB}")
 
     # make.inc exporting not yet tested
     string (REPLACE ";" " " HIP_LIB_STR "${HIP_LIB}")
     set(HIP_LIB_EXPORT ${HIP_LIB_STR}) 
     set(HAVE_HIP TRUE)
-    if ("$ENV{HIP_PLATFORM}" STREQUAL "hcc")
-      set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DHAVE_HIP -D__HIP_PLATFORM_HCC__")
-      set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DHAVE_HIP -D__HIP_PLATFORM_HCC__")
-    elseif ("$ENV{HIP_PLATFORM}" STREQUAL "nvcc")
-      set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DHAVE_HIP -D__HIP_PLATFORM_NVCC__")
-      set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DHAVE_HIP -D__HIP_PLATFORM_NVCC__")
+    # set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DHAVE_HIP")
+    # set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DHAVE_HIP")    
+    # set(HIP_HIPCC_FLAGS "${HIP_HIPCC_FLAGS} -DHAVE_HIP")    
+    if (BUILD_SHARED_LIBS)
+    set(HIP_HIPCC_FLAGS "${HIP_HIPCC_FLAGS} -fPIC")    
     endif()
+
+
+
+    
+    # if ("$ENV{HIP_PLATFORM}" STREQUAL "hcc")
+    #   set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DHAVE_HIP -D__HIP_PLATFORM_HCC__")
+    #   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DHAVE_HIP -D__HIP_PLATFORM_HCC__")
+    # elseif ("$ENV{HIP_PLATFORM}" STREQUAL "nvcc")
+    #   set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DHAVE_HIP -D__HIP_PLATFORM_NVCC__")
+    #   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DHAVE_HIP -D__HIP_PLATFORM_NVCC__")
+    # endif()
 
 
   else()
@@ -226,7 +248,7 @@ endif()
 
 
 #--------------------- BLAS ---------------------
-if(NOT TPL_ENABLE_BLASLIB)
+if(NOT TPL_ENABLE_INTERNAL_BLASLIB)
 #  set(TPL_BLAS_LIBRARIES "" CACHE FILEPATH
 #    "Override of list of absolute path to libs for BLAS.")
   if(TPL_BLAS_LIBRARIES)
@@ -334,11 +356,20 @@ SET(_c_libs ${CMAKE_C_IMPLICIT_LINK_LIBRARIES})
 FOREACH(_lib ${_c_libs})
   set(EXTRA_LIB "-l${_lib} ${EXTRA_LIB}")
 ENDFOREACH()
-message("-- EXTRA_LIB='${EXTRA_LIB}'")
 string (REPLACE ";" " " EXTRA_LIB_STR "${EXTRA_LIB}")
 set(EXTRA_LIB_EXPORT ${EXTRA_LIB_STR}) 
 message("-- EXTRA_LIB_EXPORT='${EXTRA_LIB_EXPORT}'")
 
+#---------------------- Additional Fortran linker library ---------
+if (XSDK_ENABLE_Fortran)
+   SET(_f_libs ${CMAKE_Fortran_IMPLICIT_LINK_LIBRARIES})
+   FOREACH(_lib ${_f_libs})
+       set(EXTRA_FLIB "${EXTRA_FLIB} -l${_lib}")
+   ENDFOREACH()
+   string (REPLACE ";" " " EXTRA_FLIB_STR "${EXTRA_FLIB}")
+   set(EXTRA_FLIB_EXPORT ${EXTRA_FLIB_STR})
+   message("-- EXTRA_FLIB_EXPORT='${EXTRA_FLIB_EXPORT}'")
+endif()
 
 #--------------------- CombBLAS ---------------------
 if (TPL_ENABLE_COMBBLASLIB)   ## want to use CombBLAS
@@ -375,6 +406,17 @@ else()
   set(LOADER $(CC))
 endif()
 
+######################################################################
+#
+# Fortran-C name mangling 
+#
+######################################################################
+if (XSDK_ENABLE_Fortran)
+  include(FortranCInterface)
+  FortranCInterface_HEADER(${SuperLU_DIST_SOURCE_DIR}/SRC/superlu_FortranCInterface.h
+  MACRO_NAMESPACE "FC_")
+  FortranCInterface_VERIFY(CXX)
+endif()
 
 ######################################################################
 #
@@ -415,14 +457,28 @@ if(enable_examples)
   add_subdirectory(EXAMPLE)
 endif()
 
+if (XSDK_ENABLE_Fortran)
+#  SET(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -lstdc++")
+  SET(MPI_Fortran_LINK_FLAGS "${CMAKE_EXE_LINKER_FLAGS}")
+  add_subdirectory(FORTRAN)
+endif()
+
+# superlu_dist uses c++11. PUBLIC means that the other codes linking to it need c++11
+#target_compile_features(SuperLU_DIST PUBLIC cxx_std_11)
+
 # configure_file(${CMAKE_SOURCE_DIR}/make.inc.in ${CMAKE_BINARY_DIR}/make.inc)
 configure_file(${SuperLU_DIST_SOURCE_DIR}/make.inc.in ${SuperLU_DIST_SOURCE_DIR}/make.inc)
 configure_file(${SuperLU_DIST_SOURCE_DIR}/SRC/superlu_dist_config.h.in ${SuperLU_DIST_BINARY_DIR}/SRC/superlu_dist_config.h)
 configure_file(${SuperLU_DIST_SOURCE_DIR}/SRC/superlu_dist_config.h.in ${SuperLU_DIST_SOURCE_DIR}/SRC/superlu_dist_config.h)
 
 # Add pkg-config support
+if(IS_ABSOLUTE ${CMAKE_INSTALL_LIBDIR})
+  set(pkgconfig_libdir ${CMAKE_INSTALL_LIBDIR})
+else()
+  set(pkgconfig_libdir ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR})
+endif()
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/superlu_dist.pc.in ${CMAKE_CURRENT_BINARY_DIR}/superlu_dist.pc @ONLY)
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/superlu_dist.pc
 	DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig)
-	
-	
+
+#message("CMAKE_CXX_LINK_FLAGS '${CMAKE_CXX_LINK_FLAGS}'")

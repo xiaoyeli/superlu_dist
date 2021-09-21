@@ -8,8 +8,11 @@ All rights reserved.
 The source code is distributed under BSD license, see the file License.txt
 at the top-level directory.
 */
+#include "superlu_defs.h"
+
+#ifdef GPU_ACC  // enable CUDA
+
 #include <stdio.h>
-#ifdef GPU_ACC
 #include "gpublas_utils.h"
  void DisplayHeader()
 {
@@ -108,4 +111,5 @@ gpublasHandle_t create_handle ()
  {
       checkGPUblas(gpublasDestroy(handle));
  }
-#endif /* defined GPU_ACC */
+
+#endif  // enable GPU

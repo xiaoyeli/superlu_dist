@@ -394,6 +394,36 @@ void zScaleAdd_CompRowLoc_Matrix_dist(SuperMatrix *A, SuperMatrix *B, doublecomp
     return;
 }
 
+/*! \brief Allocate storage in ScalePermstruct */
+void zScalePermstructInit(const int_t m, const int_t n,
+                         zScalePermstruct_t *ScalePermstruct)
+{
+    ScalePermstruct->DiagScale = NOEQUIL;
+    if ( !(ScalePermstruct->perm_r = intMalloc_dist(m)) )
+        ABORT("Malloc fails for perm_r[].");
+    if ( !(ScalePermstruct->perm_c = intMalloc_dist(n)) )
+        ABORT("Malloc fails for perm_c[].");
+}
+
+/*! \brief Deallocate ScalePermstruct */
+void zScalePermstructFree(zScalePermstruct_t *ScalePermstruct)
+{
+    SUPERLU_FREE(ScalePermstruct->perm_r);
+    SUPERLU_FREE(ScalePermstruct->perm_c);
+    switch ( ScalePermstruct->DiagScale ) {
+      case ROW:
+        SUPERLU_FREE(ScalePermstruct->R);
+        break;
+      case COL:
+        SUPERLU_FREE(ScalePermstruct->C);
+        break;
+      case BOTH:
+        SUPERLU_FREE(ScalePermstruct->R);
+        SUPERLU_FREE(ScalePermstruct->C);
+        break;
+    }
+}
+
 
 /**** Other utilities ****/
 void
@@ -479,7 +509,7 @@ int file_PrintDoublecomplex(FILE *fp, char *name, int_t len, doublecomplex *x)
 /*! \brief Print the blocks in the factored matrix L.
  */
 void zPrintLblocks(int iam, int_t nsupers, gridinfo_t *grid,
-		  Glu_persist_t *Glu_persist, LocalLU_t *Llu)
+		  Glu_persist_t *Glu_persist, zLocalLU_t *Llu)
 {
     register int c, extra, gb, j, lb, nsupc, nsupr, len, nb, ncb;
     register int_t k, mycol, r;
@@ -527,12 +557,12 @@ void zPrintLblocks(int iam, int_t nsupers, gridinfo_t *grid,
 
 /*! \brief Sets all entries of matrix L to zero.
  */
-void zZeroLblocks(int iam, int_t n, gridinfo_t *grid, LUstruct_t *LUstruct)
+void zZeroLblocks(int iam, int_t n, gridinfo_t *grid, zLUstruct_t *LUstruct)
 {
     doublecomplex zero = {0.0, 0.0};
     register int extra, gb, j, lb, nsupc, nsupr, ncb;
     register int_t k, mycol, r;
-    LocalLU_t *Llu = LUstruct->Llu;
+    zLocalLU_t *Llu = LUstruct->Llu;
     Glu_persist_t *Glu_persist = LUstruct->Glu_persist;
     int_t *xsup = Glu_persist->xsup;
     int_t *index;
@@ -560,10 +590,10 @@ void zZeroLblocks(int iam, int_t n, gridinfo_t *grid, LUstruct_t *LUstruct)
 } /* zZeroLblocks */
 
 
-/*! \Dump the factored matrix L using matlab triple-let format
+/*! \brief Dump the factored matrix L using matlab triple-let format
  */
 void zDumpLblocks(int iam, int_t nsupers, gridinfo_t *grid,
-		  Glu_persist_t *Glu_persist, LocalLU_t *Llu)
+		  Glu_persist_t *Glu_persist, zLocalLU_t *Llu)
 {
     register int c, extra, gb, j, i, lb, nsupc, nsupr, len, nb, ncb;
     register int_t k, mycol, r;
@@ -660,7 +690,7 @@ void zDumpLblocks(int iam, int_t nsupers, gridinfo_t *grid,
 /*! \brief Print the blocks in the factored matrix U.
  */
 void zPrintUblocks(int iam, int_t nsupers, gridinfo_t *grid,
-		  Glu_persist_t *Glu_persist, LocalLU_t *Llu)
+		  Glu_persist_t *Glu_persist, zLocalLU_t *Llu)
 {
     register int c, extra, jb, k, lb, len, nb, nrb, nsupc;
     register int_t myrow, r;

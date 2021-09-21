@@ -49,7 +49,7 @@ zreadtriple_noheader(FILE *fp, int_t *m, int_t *n, int_t *nonz,
 
 #ifdef _LONGINT
     ret_val = fscanf(fp, "%ld%ld%lf%lf\n", &i, &j, &vali.r, &vali.i);
-#else
+#else  // int
     ret_val = fscanf(fp, "%d%d%lf%lf\n", &i, &j, &vali.r, &vali.i);
 #endif
 
@@ -62,11 +62,11 @@ zreadtriple_noheader(FILE *fp, int_t *m, int_t *n, int_t *nonz,
 
 #ifdef _LONGINT
         ret_val = fscanf(fp, "%ld%ld%lf%lf\n", &i, &j, &vali.r, &vali.i);
-#else
+#else  // int
         ret_val = fscanf(fp, "%d%d%lf%lf\n", &i, &j, &vali.r, &vali.i);
 #endif
     }
-
+    
     if ( minn == 0 ) { /* zero-based indexing */
 	zero_base = 1;
 	++(*n);
@@ -86,7 +86,7 @@ zreadtriple_noheader(FILE *fp, int_t *m, int_t *n, int_t *nonz,
 #endif
 
     /* Second pass: read the actual matrix values */
-    printf("m %ld, n %ld, nonz %ld\n", *m, *n, *nonz);
+    printf("m %ld, n %ld, nonz %ld\n", (long int) *m, (long int) *n, (long int) *nonz);
     zallocateA_dist(*n, new_nonz, nzval, rowind, colptr); /* Allocate storage */
     a    = *nzval;
     asub = *rowind;
@@ -105,7 +105,7 @@ zreadtriple_noheader(FILE *fp, int_t *m, int_t *n, int_t *nonz,
     for (nnz = 0, nz = 0; nnz < *nonz; ++nnz) {
 #ifdef _LONGINT
 	fscanf(fp, "%ld%ld%lf%lf\n", &row[nz], &col[nz], &val[nz].r, &val[nz].i);
-#else
+#else // int32
 	fscanf(fp, "%d%d%lf%lf\n", &row[nz], &col[nz], &val[nz].r, &val[nz].i);
 #endif
 
@@ -117,8 +117,8 @@ zreadtriple_noheader(FILE *fp, int_t *m, int_t *n, int_t *nonz,
 
 	if (row[nz] < 0 || row[nz] >= *m || col[nz] < 0 || col[nz] >= *n
 	    /*|| val[nz] == 0.*/) {
-	    fprintf(stderr, "nz %d, (%d, %d) = %e out of bound, removed\n",
-		    nz, row[nz], col[nz], val[nz]);
+	    fprintf(stderr, "nz" IFMT ", (" IFMT ", " IFMT ") = (%e, %e) out of bound, removed\n",
+		    nz, row[nz], col[nz], val[nz].r, val[nz].i);
 	    exit(-1);
 	} else {
 	    ++xa[col[nz]];

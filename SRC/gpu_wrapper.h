@@ -71,12 +71,13 @@
 
 #elif defined(HAVE_HIP)
 
-#include "hip_runtime_api.h"
-#include "hip_runtime.h"
+#include "hip/hip_runtime_api.h"
+#include "hip/hip_runtime.h"
 #include "hipblas.h"
-#include "roctracer_ext.h"
-// roctx header file
-#include <roctx.h>
+
+// #include "roctracer_ext.h"    // need to pass the include dir directly to HIP_HIPCC_FLAGS
+// // roctx header file
+// #include <roctx.h>
 
 #define gpuDeviceProp hipDeviceProp_t
 #define gpuGetDeviceCount hipGetDeviceCount

@@ -27,10 +27,10 @@ at the top-level directory.
 #ifndef CACHELINE
 #define CACHELINE 64  /* bytes, Xeon Phi KNL, Cori haswell, Edision */
 #endif
-#include<cuda_profiler_api.h>
-//#ifndef GPUREF
-//#define GPUREF 1
-//#endif
+
+#ifdef GPU_ACC
+#include "gpublas_utils.h"
+#endif
 
 /*
  * Sketch of the algorithm for L-solve:
@@ -104,6 +104,188 @@ _fcd ftcs3;
 
 
 
+
+void
+dreadMM_dist_intoL_CSR(FILE *fp, int_t *m, int_t *n, int_t *nonz,
+	    double **nzval, int_t **colind, int_t **rowptr)
+{
+    int_t    i, k, isize, nnz, nz, new_nonz;
+    double *a, *val;
+    int_t    *asub, *xa, *row, *col;
+    int_t    zero_base = 0;
+    char *p, line[512], banner[64], mtx[64], crd[64], arith[64], sym[64];
+    char *cs;
+
+    /* 	File format:
+     *    %%MatrixMarket matrix coordinate real general/symmetric/...
+     *    % ...
+     *    % (optional comments)
+     *    % ...
+     *    #rows    #non-zero
+     *    Triplet in the rest of lines: row    col    value
+     */
+
+     /* 1/ read header */
+     cs = fgets(line,512,fp);
+     for (p=line; *p!='\0'; *p=tolower(*p),p++);
+
+     if (sscanf(line, "%s %s %s %s %s", banner, mtx, crd, arith, sym) != 5) {
+       printf("Invalid header (first line does not contain 5 tokens)\n");
+       exit;
+     }
+
+     if(strcmp(banner,"%%matrixmarket")) {
+       printf("Invalid header (first token is not \"%%%%MatrixMarket\")\n");
+       exit(-1);
+     }
+
+     if(strcmp(mtx,"matrix")) {
+       printf("Not a matrix; this driver cannot handle that.\n");
+       exit(-1);
+     }
+
+     if(strcmp(crd,"coordinate")) {
+       printf("Not in coordinate format; this driver cannot handle that.\n");
+       exit(-1);
+     }
+
+     if(strcmp(arith,"real")) {
+       if(!strcmp(arith,"complex")) {
+         printf("Complex matrix; use zreadMM instead!\n");
+         exit(-1);
+       }
+       else if(!strcmp(arith, "pattern")) {
+         printf("Pattern matrix; values are needed!\n");
+         exit(-1);
+       }
+       else {
+         printf("Unknown arithmetic\n");
+         exit(-1);
+       }
+     }
+
+     /* 2/ Skip comments */
+     while(banner[0]=='%') {
+       cs = fgets(line,512,fp);
+       sscanf(line,"%s",banner);
+     }
+
+     /* 3/ Read n and nnz */
+#ifdef _LONGINT
+    sscanf(line, "%ld%ld%ld",m, n, nonz);
+#else
+    sscanf(line, "%d%d%d",m, n, nonz);
+#endif
+
+    if(*m!=*n) {
+      printf("Rectangular matrix!. Abort\n");
+      exit(-1);
+   }
+
+    new_nonz = *nonz;
+
+    *m = *n;
+    printf("m %lld, n %lld, nonz %lld\n", (long long) *m, (long long) *n, (long long) *nonz);
+    fflush(stdout);
+    dallocateA_dist(*n, new_nonz, nzval, colind, rowptr); /* Allocate storage */
+    a    = *nzval;
+    asub = *colind;
+    xa   = *rowptr;
+
+    if ( !(val = doubleMalloc_dist(new_nonz)) )
+        ABORT("Malloc fails for val[]");
+    if ( !(row = (int_t *) intMalloc_dist(new_nonz)) )
+        ABORT("Malloc fails for row[]");
+    if ( !(col = (int_t *) intMalloc_dist(new_nonz)) )
+        ABORT("Malloc fails for col[]");
+
+    for (i = 0; i < *n; ++i) xa[i] = 0;
+
+    /* 4/ Read triplets of values */
+    for (nnz = 0, nz = 0; nnz < *nonz; ++nnz) {
+
+	i = fscanf(fp, IFMT IFMT "%lf\n", &row[nz], &col[nz], &val[nz]);
+
+	if ( nnz == 0 ) /* first nonzero */ {
+	    if ( row[0] == 0 || col[0] == 0 ) {
+		zero_base = 1;
+		printf("triplet file: row/col indices are zero-based.\n");
+	    } else
+		printf("triplet file: row/col indices are one-based.\n");
+	    fflush(stdout);
+	}
+
+	if ( !zero_base ) {
+	    /* Change to 0-based indexing. */
+	    --row[nz];
+	    --col[nz];
+	}
+
+	if (row[nz] < 0 || row[nz] >= *m || col[nz] < 0 || col[nz] >= *n
+	    /*|| val[nz] == 0.*/) {
+	    fprintf(stderr, "nz " IFMT ", (" IFMT ", " IFMT ") = %e out of bound, removed\n",
+		    nz, row[nz], col[nz], val[nz]);
+	    exit(-1);
+	} else {
+		if ( row[nz] >= col[nz] ) { /* Only lower triangular part */
+	    	++xa[row[nz]];
+		}
+	    ++nz;
+	}
+    }
+
+    new_nonz = nz;
+
+    /* Initialize the array of column pointers */
+    k = 0;
+    isize = xa[0];
+    xa[0] = 0;
+    for (i = 1; i < *n; ++i) {
+	k += isize;
+	isize = xa[i];
+	xa[i] = k;
+    }
+
+    /* Copy the triplets into the row oriented storage */
+	*nonz=0;
+    for (nz = 0; nz < new_nonz; ++nz) {
+	if ( row[nz] >= col[nz] ){	
+		i = row[nz];
+		k = xa[i];
+		asub[k] = col[nz];
+		a[k] = val[nz];
+		if(row[nz] == col[nz]) //force diagonal entries 
+			a[k] = 1.0;  
+		++xa[i];
+		(*nonz)++;
+		}
+    }
+
+    /* Reset the row pointers to the beginning of each row */
+    for (i = *n; i > 0; --i)
+	xa[i] = xa[i-1];
+    xa[0] = 0;
+
+    SUPERLU_FREE(val);
+    SUPERLU_FREE(row);
+    SUPERLU_FREE(col);
+
+	printf("nnz in lower triangular part of A %lld\n", (long long) *nonz);
+
+    // for (i = 0; i < *n; i++) {
+	// printf("Row %d, xa %d\n", i, xa[i]);
+	// for (k = xa[i]; k < xa[i+1]; k++)
+	//     printf("%d\t%16.10f\n", asub[k], a[k]);
+    // }
+
+
+}
+
+
+
+
+
+
 /*! \brief
  *
  * <pre>
@@ -113,7 +295,7 @@ _fcd ftcs3;
  *
  * Note
  * ====
- *   This routine can only be called after the routine pxgstrs_init(),
+ *   This routine can only be called after the routine pdgstrs_init(),
  *   in which the structures of the send and receive buffers are set up.
  *
  * Arguments
@@ -141,14 +323,14 @@ _fcd ftcs3;
  * x      (output) double*
  *        The solution vector. It is valid only on the diagonal processes.
  *
- * ScalePermstruct (input) ScalePermstruct_t*
+ * ScalePermstruct (input) dScalePermstruct_t*
  *        The data structure to store the scaling and permutation vectors
  *        describing the transformations performed to the original matrix A.
  *
  * grid   (input) gridinfo_t*
  *        The 2D process mesh.
  *
- * SOLVEstruct (input) SOLVEstruct_t*
+ * SOLVEstruct (input) dSOLVEstruct_t*
  *        Contains the information for the communication during the
  *        solution phase.
  *
@@ -160,9 +342,9 @@ _fcd ftcs3;
 int_t
 pdReDistribute_B_to_X(double *B, int_t m_loc, int nrhs, int_t ldb,
                       int_t fst_row, int_t *ilsum, double *x,
-		      ScalePermstruct_t *ScalePermstruct,
+		      dScalePermstruct_t *ScalePermstruct,
 		      Glu_persist_t *Glu_persist,
-		      gridinfo_t *grid, SOLVEstruct_t *SOLVEstruct)
+		      gridinfo_t *grid, dSOLVEstruct_t *SOLVEstruct)
 {
     int  *SendCnt, *SendCnt_nrhs, *RecvCnt, *RecvCnt_nrhs;
     int  *sdispls, *sdispls_nrhs, *rdispls, *rdispls_nrhs;
@@ -204,7 +386,6 @@ pdReDistribute_B_to_X(double *B, int_t m_loc, int nrhs, int_t ldb,
     /* ------------------------------------------------------------
        NOW COMMUNICATE THE ACTUAL DATA.
        ------------------------------------------------------------*/
-
 	if(procs==1){ // faster memory copy when procs=1
 
 #ifdef _OPENMP
@@ -408,7 +589,7 @@ pdReDistribute_B_to_X(double *B, int_t m_loc, int nrhs, int_t ldb,
  *
  * Note
  * ====
- *   This routine can only be called after the routine pxgstrs_init(),
+ *   This routine can only be called after the routine pdgstrs_init(),
  *   in which the structures of the send and receive buffers are set up.
  * </pre>
  */
@@ -416,9 +597,9 @@ pdReDistribute_B_to_X(double *B, int_t m_loc, int nrhs, int_t ldb,
 int_t
 pdReDistribute_X_to_B(int_t n, double *B, int_t m_loc, int_t ldb, int_t fst_row,
 		      int_t nrhs, double *x, int_t *ilsum,
-		      ScalePermstruct_t *ScalePermstruct,
+		      dScalePermstruct_t *ScalePermstruct,
 		      Glu_persist_t *Glu_persist, gridinfo_t *grid,
-		      SOLVEstruct_t *SOLVEstruct)
+		      dSOLVEstruct_t *SOLVEstruct)
 {
     int_t  i, ii, irow, j, jj, k, knsupc, nsupers, l, lk;
     int_t  *xsup, *supno;
@@ -461,7 +642,6 @@ pdReDistribute_X_to_B(int_t n, double *B, int_t m_loc, int_t ldb, int_t fst_row,
 
 
 	if(procs==1){ //faster memory copy when procs=1
-
 #ifdef _OPENMP
 #pragma omp parallel default (shared)
 #endif
@@ -652,12 +832,12 @@ pdReDistribute_X_to_B(int_t n, double *B, int_t m_loc, int_t ldb, int_t fst_row,
  * </pre>
  */
 void
-pdCompute_Diag_Inv(int_t n, LUstruct_t *LUstruct,gridinfo_t *grid,
+pdCompute_Diag_Inv(int_t n, dLUstruct_t *LUstruct,gridinfo_t *grid,
                    SuperLUStat_t *stat, int *info)
 {
 #ifdef SLU_HAVE_LAPACK
     Glu_persist_t *Glu_persist = LUstruct->Glu_persist;
-    LocalLU_t *Llu = LUstruct->Llu;
+    dLocalLU_t *Llu = LUstruct->Llu;
 
     double *lusup;
     double *recvbuf, *tempv;
@@ -793,11 +973,11 @@ pdCompute_Diag_Inv(int_t n, LUstruct_t *LUstruct,gridinfo_t *grid,
  * n      (input) int (global)
  *        The order of the system of linear equations.
  *
- * LUstruct (input) LUstruct_t*
+ * LUstruct (input) dLUstruct_t*
  *        The distributed data structures storing L and U factors.
  *        The L and U factors are obtained from PDGSTRF for
  *        the possibly scaled and permuted matrix A.
- *        See superlu_ddefs.h for the definition of 'LUstruct_t'.
+ *        See superlu_ddefs.h for the definition of 'dLUstruct_t'.
  *        A may be scaled and permuted into A1, so that
  *        A1 = Pc*Pr*diag(R)*A*diag(C)*Pc^T = L*U
  *
@@ -828,7 +1008,7 @@ pdCompute_Diag_Inv(int_t n, LUstruct_t *LUstruct,gridinfo_t *grid,
  * nrhs   (input) int (global)
  *        Number of right-hand sides.
  *
- * SOLVEstruct (input) SOLVEstruct_t* (global)
+ * SOLVEstruct (input) dSOLVEstruct_t* (global)
  *        Contains the information for the communication during the
  *        solution phase.
  *
@@ -844,15 +1024,15 @@ pdCompute_Diag_Inv(int_t n, LUstruct_t *LUstruct,gridinfo_t *grid,
 
 __device__ int clockrate;
 void
-pdgstrs(int_t n, LUstruct_t *LUstruct,
-	ScalePermstruct_t *ScalePermstruct,
+pdgstrs(int_t n, dLUstruct_t *LUstruct,
+	dScalePermstruct_t *ScalePermstruct,
 	gridinfo_t *grid, double *B,
 	int_t m_loc, int_t fst_row, int_t ldb, int nrhs,
-	SOLVEstruct_t *SOLVEstruct,
+	dSOLVEstruct_t *SOLVEstruct,
 	SuperLUStat_t *stat, int *info)
 {
     Glu_persist_t *Glu_persist = LUstruct->Glu_persist;
-    LocalLU_t *Llu = LUstruct->Llu;
+    dLocalLU_t *Llu = LUstruct->Llu;
     double alpha = 1.0;
 	double beta = 0.0;
     double zero = 0.0;
@@ -965,8 +1145,8 @@ pdgstrs(int_t n, LUstruct_t *LUstruct,
     	int nbrow;
     int_t  ik, rel, idx_r, jb, nrbl, irow, pc,iknsupc;
     int_t  lptr1_tmp, idx_i, idx_v,m;
-    	int_t ready;
-    	static int thread_id;
+    int_t ready;
+    int thread_id = 0;
     yes_no_t empty;
     int_t sizelsum,sizertemp,aln_d,aln_i;
     aln_d = 1;//ceil(CACHELINE/(double)dword);
@@ -981,6 +1161,9 @@ pdgstrs(int_t n, LUstruct_t *LUstruct,
 
 #ifdef HAVE_CUDA
 	int_t *cooCols,*cooRows;
+	double *nzval;
+	int_t *rowind, *colptr; 
+	int_t *colind, *rowptr, *rowptr1; 
 	double *cooVals;
 	int_t ntmp,nnzL;
 	
@@ -994,6 +1177,7 @@ pdgstrs(int_t n, LUstruct_t *LUstruct,
 	gpuError_t gpuStat = gpuSuccess;
     cusparseMatDescr_t descrA = NULL;
     csrsm2Info_t info1 = NULL;	
+    csrsv2Info_t info2 = NULL;	
 	
 	
 	int_t *d_csrRowPtr = NULL;
@@ -1003,6 +1187,7 @@ pdgstrs(int_t n, LUstruct_t *LUstruct,
     double *d_cooVals = NULL;
     double *d_csrVals = NULL;
     double *d_B = NULL;
+    double *d_X = NULL;
     double *Btmp;
     size_t pBufferSizeInBytes = 0;
     void *pBuffer = NULL;	
@@ -1012,11 +1197,12 @@ pdgstrs(int_t n, LUstruct_t *LUstruct,
 	
 	
     size_t lworkInBytes = 0;
+    int lworkInBytes2 = 0;
     char *d_work = NULL;
 
-    const int algo = 0; /* non-block version */	
+    const int algo = 1; /* 0: non-block version 1: block version */	
 	const double h_one = 1.0;
-	const cusparseSolvePolicy_t policy = CUSPARSE_SOLVE_POLICY_NO_LEVEL;
+	const cusparseSolvePolicy_t policy = CUSPARSE_SOLVE_POLICY_USE_LEVEL;
 #else
 	printf("only cusparse is implemented\n");
 	exit(0);
@@ -1036,9 +1222,6 @@ pdgstrs(int_t n, LUstruct_t *LUstruct,
 	
 	maxsuper = sp_ienv_dist(3);
 
-#ifdef _OPENMP
-	#pragma omp threadprivate(thread_id)
-#endif
 
 #ifdef _OPENMP
 #pragma omp parallel default(shared)
@@ -1046,8 +1229,9 @@ pdgstrs(int_t n, LUstruct_t *LUstruct,
     	if (omp_get_thread_num () == 0) {
     		num_thread = omp_get_num_threads ();
     	}
-		thread_id = omp_get_thread_num ();
     }
+#else
+	num_thread=1;
 #endif
 
 #if ( PRNTlevel>=1 )
@@ -1102,7 +1286,7 @@ pdgstrs(int_t n, LUstruct_t *LUstruct,
     /* Save the count to be altered so it can be used by
        subsequent call to PDGSTRS. */
     if ( !(fmod = intMalloc_dist(nlb*aln_i)) )
-	ABORT("Calloc fails for fmod[].");
+	ABORT("Malloc fails for fmod[].");
     for (i = 0; i < nlb; ++i) fmod[i*aln_i] = Llu->fmod[i];
 	if ( !(fmod_sort = intCalloc_dist(nlb*2)) )
 		ABORT("Calloc fails for fmod_sort[].");
@@ -1151,7 +1335,7 @@ pdgstrs(int_t n, LUstruct_t *LUstruct,
 	SUPERLU_FREE(fmod_sort);
 
     if ( !(frecv = intCalloc_dist(nlb)) )
-	ABORT("Malloc fails for frecv[].");
+	ABORT("Calloc fails for frecv[].");
     Llu->frecv = frecv;
 
     if ( !(leaf_send = intMalloc_dist((CEILING( nsupers, Pr )+CEILING( nsupers, Pc ))*aln_i)) )
@@ -1181,10 +1365,11 @@ pdgstrs(int_t n, LUstruct_t *LUstruct,
 #ifdef _OPENMP
     if ( !(lsum = (double*)SUPERLU_MALLOC(sizelsum*num_thread * sizeof(double))))
 	ABORT("Malloc fails for lsum[].");
-#pragma omp parallel default(shared) private(ii)
+#pragma omp parallel default(shared) private(ii) 
     {
+	int thread_id = omp_get_thread_num(); //mjc
 	for (ii=0; ii<sizelsum; ii++)
-    	lsum[thread_id*sizelsum+ii]=zero;
+    	    lsum[thread_id*sizelsum+ii]=zero;
     }
 #else
     if ( !(lsum = (double*)SUPERLU_MALLOC(sizelsum*num_thread * sizeof(double))))
@@ -1192,8 +1377,7 @@ pdgstrs(int_t n, LUstruct_t *LUstruct,
     for ( ii=0; ii < sizelsum*num_thread; ii++ )
 	lsum[ii]=zero;
 #endif
-    // if ( !(x = (double*)SUPERLU_MALLOC((ldalsum * nrhs + nlb * XK_H) * sizeof(double))) )
-	if ( !(x = doubleCalloc_dist(ldalsum * nrhs + nlb * XK_H)) )
+    if ( !(x = doubleCalloc_dist(ldalsum * nrhs + nlb * XK_H)) )
 	ABORT("Calloc fails for x[].");
 	//printf("x size is %lf KB", maxrecvsz*(ldalsum * nrhs + nlb * XK_H)*sizeof(double)/1e3);
 
@@ -1204,6 +1388,7 @@ pdgstrs(int_t n, LUstruct_t *LUstruct,
 #ifdef _OPENMP
 #pragma omp parallel default(shared) private(ii)
     {
+	int thread_id=omp_get_thread_num();
 	for ( ii=0; ii<sizertemp; ii++ )
 		rtemp[thread_id*sizertemp+ii]=zero;
     }
@@ -1241,9 +1426,6 @@ pdgstrs(int_t n, LUstruct_t *LUstruct,
 #endif
 
     /* Set up the headers in lsum[]. */
-#ifdef _OPENMP
-	#pragma omp simd lastprivate(krow,lk,il)
-#endif
     for (k = 0; k < nsupers; ++k) {
 	krow = PROW( k, grid );
 	if ( myrow == krow ) {
@@ -1312,9 +1494,6 @@ if(procs==1){
 }
 
 
-#ifdef _OPENMP
-#pragma omp simd
-#endif
 	for (i = 0; i < nlb; ++i) fmod[i*aln_i] += frecv[i];
 
 	if ( !(recvbuf_BC_fwd = (double*)SUPERLU_MALLOC(maxrecvsz*(nfrecvx+1) * sizeof(double))) )  // this needs to be optimized for 1D row mapping
@@ -1367,37 +1546,71 @@ if(procs==1){
 	// }
 
 
-
-
-
 #ifdef GPU_ACC /* CPU trisolve*/
 // #if 0 /* CPU trisolve*/
 
 #ifdef GPUREF /* use cuSparse*/
-#ifdef HAVE_CUDA
-	if ( !(Btmp = (double*)SUPERLU_MALLOC((nrhs*m_loc) * sizeof(double))) )
-		ABORT("Calloc fails for Btmp[].");			
+#ifdef HAVE_CUDA		
 	if(procs>1){
 	printf("procs>1 with GPU not implemented for trisolve using CuSparse\n");
 	fflush(stdout);
 	exit(1);
 	}
-	
-	t1 = SuperLU_timer_();
-dGenCOOLblocks(iam, nsupers, grid,Glu_persist,Llu, cooRows, cooCols, cooVals, &ntmp, &nnzL, 1);
 
-if ( !(cooRows = (int_t*)SUPERLU_MALLOC(nnzL * sizeof(int_t))) )
-	ABORT("Malloc fails for cooRows[].");
-if ( !(cooCols = (int_t*)SUPERLU_MALLOC(nnzL * sizeof(int_t))) )
-	ABORT("Malloc fails for cooCols[].");
-if ( !(cooVals = (double*)SUPERLU_MALLOC(nnzL * sizeof(double))) )
-	ABORT("Malloc fails for cooVals[].");
-dGenCOOLblocks(iam, nsupers, grid,Glu_persist,Llu, cooRows, cooCols, cooVals, &ntmp, &nnzL, 2);
+t1 = SuperLU_timer_();
 
+
+
+#if 0  // this will readin a matrix with only lower triangular part, note that this code block is only for benchmarking cusparse performance  
 	
+	FILE *fp, *fopen();
+	if ( !(fp = fopen("/gpfs/alpine/scratch/liuyangz/csc289/matrix/HTS/copter2.mtx", "r")) ) {
+	// if ( !(fp = fopen("/gpfs/alpine/scratch/liuyangz/csc289/matrix/HTS/epb3.mtx", "r")) ) {
+	// if ( !(fp = fopen("/gpfs/alpine/scratch/liuyangz/csc289/matrix/HTS/gridgena.mtx", "r")) ) { 
+	// if ( !(fp = fopen("/gpfs/alpine/scratch/liuyangz/csc289/matrix/HTS/vanbody.mtx", "r")) ) { 
+	// if ( !(fp = fopen("/gpfs/alpine/scratch/liuyangz/csc289/matrix/HTS/shipsec1.mtx", "r")) ) { 
+	// if ( !(fp = fopen("/gpfs/alpine/scratch/liuyangz/csc289/matrix/HTS/dawson5.mtx", "r")) ) {
+	// if ( !(fp = fopen("/gpfs/alpine/scratch/liuyangz/csc289/matrix/HTS/gas_sensor.mtx", "r")) ) { 
+	// if ( !(fp = fopen("/gpfs/alpine/scratch/liuyangz/csc289/matrix/HTS/rajat16.mtx", "r")) ) {
+
+			ABORT("File does not exist");
+		}
+	int mtmp;	
+	dreadMM_dist_intoL_CSR(fp, &mtmp, &ntmp, &nnzL,&nzval, &colind, &rowptr);
+	if ( !(Btmp = (double*)SUPERLU_MALLOC((nrhs*ntmp) * sizeof(double))) )
+		ABORT("Calloc fails for Btmp[].");
+	for (i = 0; i < ntmp; ++i) {
+		irow = i;
+		RHS_ITERATE(j) {
+		Btmp[i + j*ldb]=1.0;
+		}
+	}	
+#else
+
+// //////// dGenCSCLblocks(iam, nsupers, grid,Glu_persist,Llu, &nzval, &rowind, &colptr, &ntmp, &nnzL);
+	dGenCSRLblocks(iam, nsupers, grid,Glu_persist,Llu, &nzval, &colind, &rowptr, &ntmp, &nnzL);
+	if ( !(Btmp = (double*)SUPERLU_MALLOC((nrhs*m_loc) * sizeof(double))) )
+		ABORT("Calloc fails for Btmp[].");	
+	for (i = 0; i < ntmp; ++i) {
+		irow = perm_c[perm_r[i+fst_row]]; /* Row number in Pc*Pr*B */
+		RHS_ITERATE(j) {
+		Btmp[irow + j*ldb]=B[i + j*ldb];
+		// printf("%d %e\n",irow + j*ldb,Btmp[irow + j*ldb]);
+		}
+	}
+#endif
+
+    if ( !(rowptr1 = (int_t *) SUPERLU_MALLOC((ntmp+1) * sizeof(int_t))) )
+        ABORT("Malloc fails for row[]");
+	for (i=0;i<ntmp;i++)
+		rowptr1[i]=rowptr[i];
+	rowptr1[ntmp]=	nnzL; // cusparse requires n+1 elements in the row pointers, the last one is the nonzero count
+	
+
+
 	t1 = SuperLU_timer_() - t1;	
 	if ( !iam ) {
-		printf(".. convert to COO time\t%15.7f\n", t1);
+		printf(".. convert to CSR time\t%15.7f\n", t1);
 		fflush(stdout);
 	}		
 	
@@ -1406,8 +1619,6 @@ dGenCOOLblocks(iam, nsupers, grid,Glu_persist,Llu, cooRows, cooCols, cooVals, &n
 	status1 = cusparseCreate(&handle);
     assert(CUSPARSE_STATUS_SUCCESS == status1);			
     status1 = cusparseSetStream(handle, stream);
-    assert(CUSPARSE_STATUS_SUCCESS == status1);	
-    status1 = cusparseCreateCsrsm2Info(&info1);
     assert(CUSPARSE_STATUS_SUCCESS == status1);	
 	status1 = cusparseCreateMatDescr(&descrA);
     assert(CUSPARSE_STATUS_SUCCESS == status1);
@@ -1421,20 +1632,11 @@ dGenCOOLblocks(iam, nsupers, grid,Glu_persist,Llu, cooRows, cooCols, cooVals, &n
 	
 	
 	checkGPU(gpuMalloc( (void**)&d_B, sizeof(double)*ntmp*nrhs));
-	checkGPU(gpuMalloc( (void**)&d_cooRows, sizeof(int)*nnzL));
+	checkGPU(gpuMalloc( (void**)&d_X, sizeof(double)*ntmp*nrhs));
 	checkGPU(gpuMalloc( (void**)&d_cooCols, sizeof(int)*nnzL));
-	checkGPU(gpuMalloc( (void**)&d_P      , sizeof(int)*nnzL));
-	checkGPU(gpuMalloc( (void**)&d_cooVals, sizeof(double)*nnzL));
 	checkGPU(gpuMalloc( (void**)&d_csrVals, sizeof(double)*nnzL));
+	checkGPU(gpuMalloc( (void**)&d_csrRowPtr,(ntmp+1)*sizeof(double)));
 	
-
-	for (i = 0; i < ntmp; ++i) {
-		irow = perm_c[perm_r[i+fst_row]]; /* Row number in Pc*Pr*B */
-		RHS_ITERATE(j) {
-		Btmp[irow + j*ldb]=B[i + j*ldb];
-		// printf("%d %e\n",irow + j*ldb,Btmp[irow + j*ldb]);
-		}
-	}
 
 	t1 = SuperLU_timer_() - t1;	
 	if ( !iam ) {
@@ -1444,10 +1646,10 @@ dGenCOOLblocks(iam, nsupers, grid,Glu_persist,Llu, cooRows, cooCols, cooVals, &n
 	t1 = SuperLU_timer_();
 	
 	checkGPU(gpuMemcpy(d_B, Btmp, sizeof(double)*nrhs*ntmp, gpuMemcpyHostToDevice));	
-	checkGPU(gpuMemcpy(d_cooRows, cooRows, sizeof(int)*nnzL   , gpuMemcpyHostToDevice));
-	checkGPU(gpuMemcpy(d_cooCols, cooCols, sizeof(int)*nnzL   , gpuMemcpyHostToDevice));
-	checkGPU(gpuMemcpy(d_cooVals, cooVals, sizeof(double)*nnzL, gpuMemcpyHostToDevice));
-	
+	checkGPU(gpuMemcpy(d_cooCols, colind, sizeof(int)*nnzL   , gpuMemcpyHostToDevice));
+	checkGPU(gpuMemcpy(d_csrRowPtr, rowptr1, sizeof(int)*(ntmp+1)   , gpuMemcpyHostToDevice));
+	checkGPU(gpuMemcpy(d_csrVals, nzval, sizeof(double)*nnzL, gpuMemcpyHostToDevice));
+
 	
 	// checkGPU(cudaDeviceSynchronize);
 	checkGPU(gpuStreamSynchronize(stream));
@@ -1457,68 +1659,7 @@ dGenCOOLblocks(iam, nsupers, grid,Glu_persist,Llu, cooRows, cooCols, cooVals, &n
 		printf(".. HostToDevice time\t%15.7f\n", t1);
 		fflush(stdout);
 	}		
-	t1 = SuperLU_timer_();
-	
-	status1 = cusparseXcoosort_bufferSizeExt(
-        handle,
-        ntmp, 
-        ntmp,
-        nnzL,
-        d_cooRows,
-        d_cooCols,
-        &pBufferSizeInBytes
-    );
-    assert( CUSPARSE_STATUS_SUCCESS == status1);		
-	checkGPU(gpuMalloc( (void**)&pBuffer, sizeof(char)* pBufferSizeInBytes));	
-	
-	
-    status2 = cusparseCreateIdentityPermutation(
-        handle,
-        nnzL,
-        d_P);
-    assert( CUSPARSE_STATUS_SUCCESS == status2);
-    status3 = cusparseXcoosortByRow(
-        handle, 
-        ntmp, 
-        ntmp, 
-        nnzL, 
-        d_cooRows, 
-        d_cooCols, 
-        d_P, 
-        pBuffer
-    ); 
-    assert( CUSPARSE_STATUS_SUCCESS == status3);
-
-    status4 = cusparseDgthr(
-        handle, 
-        nnzL, 
-        d_cooVals, 
-        d_csrVals, 
-        d_P, 
-        CUSPARSE_INDEX_BASE_ZERO
-    ); 
-    assert( CUSPARSE_STATUS_SUCCESS == status4);
-
-
-	
-	// checkGPU(gpuMalloc( (void**)&d_cooRows, sizeof(int)*nnzL));
-	
-	checkGPU(gpuMalloc( (void**)&d_csrRowPtr,(ntmp+1)*sizeof(d_csrRowPtr[0])));
-	
-	status5= cusparseXcoo2csr(handle,d_cooRows,nnzL,ntmp,d_csrRowPtr,CUSPARSE_INDEX_BASE_ZERO);
-	assert( CUSPARSE_STATUS_SUCCESS == status5);
-
-	// checkGPU(gpuDeviceSynchronize);
-	checkGPU(gpuStreamSynchronize(stream));
-	
-	t1 = SuperLU_timer_() - t1;	
-	if ( !iam ) {
-		printf(".. Cusparse convert time\t%15.7f\n", t1);
-		fflush(stdout);
-	}		
-	t1 = SuperLU_timer_();
-	
-	
+	t1 = SuperLU_timer_();	
 	
 /* A is base-0*/
     cusparseSetMatIndexBase(descrA,CUSPARSE_INDEX_BASE_ZERO);
@@ -1526,9 +1667,85 @@ dGenCOOLblocks(iam, nsupers, grid,Glu_persist,Llu, cooRows, cooCols, cooVals, &n
     cusparseSetMatType(descrA, CUSPARSE_MATRIX_TYPE_GENERAL);
 /* A is lower triangle */
     cusparseSetMatFillMode(descrA, CUSPARSE_FILL_MODE_LOWER);
-/* A has non unit diagonal */
+/* A has unit diagonal */
     cusparseSetMatDiagType(descrA, CUSPARSE_DIAG_TYPE_UNIT);
 
+
+
+#if 1  // this only works for 1 rhs
+	assert(nrhs == 1);
+    status1 = cusparseCreateCsrsv2Info(&info2);
+    assert(CUSPARSE_STATUS_SUCCESS == status1);	
+    status1 = cusparseDcsrsv2_bufferSize(
+        handle,
+        CUSPARSE_OPERATION_NON_TRANSPOSE, /* transA */
+        ntmp,
+        nnzL,
+        descrA,
+        d_csrVals,
+        d_csrRowPtr,
+        d_cooCols,
+        info2,
+        &lworkInBytes2);
+    assert(CUSPARSE_STATUS_SUCCESS == status1);	
+	printf("lworkInBytes  = %lld \n", (long long)lworkInBytes2);
+    if (NULL != d_work) { gpuFree(d_work); }	
+	checkGPU(gpuMalloc( (void**)&d_work, lworkInBytes2));
+    
+	status1 = cusparseDcsrsv2_analysis(
+        handle,
+        CUSPARSE_OPERATION_NON_TRANSPOSE, /* transA */
+        ntmp,
+        nnzL,
+        descrA,
+        d_csrVals,
+        d_csrRowPtr,
+        d_cooCols,
+        info2,
+        policy,
+        d_work);
+    assert(CUSPARSE_STATUS_SUCCESS == status1);	
+	
+
+	t1 = SuperLU_timer_() - t1;	
+	if ( !iam ) {
+		printf(".. Cusparse analysis time\t%15.7f\n", t1);
+		fflush(stdout);
+	}			
+
+	t1 = SuperLU_timer_();
+    status1 = cusparseDcsrsv2_solve(
+        handle, 
+        CUSPARSE_OPERATION_NON_TRANSPOSE, /* transA */
+        ntmp,
+        nnzL,
+		&h_one,
+        descrA,
+        d_csrVals,
+        d_csrRowPtr,
+        d_cooCols,
+        info2,
+        d_B,		
+		d_X,				
+        policy,
+        d_work);
+    assert(CUSPARSE_STATUS_SUCCESS == status1);
+    // checkGPU(gpuDeviceSynchronize);
+	checkGPU(gpuStreamSynchronize(stream));
+	checkGPU(gpuMemcpy(d_B, d_X, sizeof(double)*nrhs*ntmp, cudaMemcpyDeviceToDevice));	
+	checkGPU(gpuStreamSynchronize(stream));
+
+	t1 = SuperLU_timer_() - t1;	
+	if ( !iam ) {
+		printf(".. Cusparse solve time\t%15.7f\n", t1);
+		fflush(stdout);
+	}	
+
+
+#else
+
+    status1 = cusparseCreateCsrsm2Info(&info1);
+    assert(CUSPARSE_STATUS_SUCCESS == status1);	
     status1 = cusparseDcsrsm2_bufferSizeExt(
         handle,
         algo,
@@ -1609,6 +1826,12 @@ dGenCOOLblocks(iam, nsupers, grid,Glu_persist,Llu, cooRows, cooCols, cooVals, &n
 		fflush(stdout);
 	}	
 	
+
+#endif
+
+
+
+
 	t1 = SuperLU_timer_();
 	checkGPU(gpuMemcpy(Btmp, d_B, sizeof(double)*ntmp*nrhs, gpuMemcpyDeviceToHost));
 	// checkGPU(gpuDeviceSynchronize);
@@ -1635,9 +1858,10 @@ dGenCOOLblocks(iam, nsupers, grid,Glu_persist,Llu, cooRows, cooCols, cooVals, &n
 		}
 	}
 	SUPERLU_FREE(Btmp); 
-#endif	
+
+#endif
 	  
-#else
+#else /* use cuSparse*/
 
 // #if HAVE_CUDA
  //cudaProfilerStart();
@@ -1715,26 +1939,20 @@ dGenCOOLblocks(iam, nsupers, grid,Glu_persist,Llu, cooRows, cooCols, cooVals, &n
 	checkGPU (gpuFree (d_lsum));
 	checkGPU (gpuFree (d_fmod));
 
-// #if HAVE_CUDA
-// cudaProfilerStop();
-// #elif defined(HAVE_HIP)
-// roctracer_mark("after HIP LaunchKernel");
-// roctxMark("after hipLaunchKernel");
-// roctxRangePop(); // for "hipLaunchKernel"
-// #endif
-
+	stat_loc[0]->ops[SOLVE]+=Llu->Lnzval_bc_cnt*nrhs*2; // YL: this is a rough estimate 
 #endif 	
-
-
-
 
 #else  /* CPU trisolve*/
 
 
 #ifdef _OPENMP
 #pragma omp parallel default (shared)
+{
+int thread_id = omp_get_thread_num();
+#else
+{
+thread_id=0;
 #endif
-	{
 		{
 
             if (Llu->inv == 1) { /* Diagonal is inverted. */
@@ -1742,13 +1960,13 @@ dGenCOOLblocks(iam, nsupers, grid,Glu_persist,Llu, cooRows, cooCols, cooVals, &n
 #ifdef _OPENMP
 #pragma	omp	for firstprivate(nrhs,beta,alpha,x,rtemp,ldalsum) private (ii,k,knsupc,lk,luptr,lsub,nsupr,lusup,t1,t2,Linv,i,lib,rtemp_loc,nleaf_send_tmp) nowait
 #endif
-			for (jj=0;jj<nleaf;jj++){
-				k=leafsups[jj];
+		for (jj=0;jj<nleaf;jj++){
+		    k=leafsups[jj];
 
-				// #ifdef _OPENMP
-				// #pragma	omp	task firstprivate (k,nrhs,beta,alpha,x,rtemp,ldalsum) private (ii,knsupc,lk,luptr,lsub,nsupr,lusup,thread_id,t1,t2,Linv,i,lib,rtemp_loc)
-				// #endif
-				{
+// #ifdef _OPENMP
+// #pragma omp task firstprivate (k,nrhs,beta,alpha,x,rtemp,ldalsum) private (ii,knsupc,lk,luptr,lsub,nsupr,lusup,thread_id,t1,t2,Linv,i,lib,rtemp_loc)
+// #endif
+   		    {
 
 #if ( PROFlevel>=1 )
 					TIC(t1);
@@ -1781,9 +1999,6 @@ dGenCOOLblocks(iam, nsupers, grid,Glu_persist,Llu, cooRows, cooCols, cooVals, &n
 							&knsupc, &beta, rtemp_loc, &knsupc );
 #endif
 
-				#ifdef _OPENMP
-					#pragma omp simd
-				#endif
 					for (i=0 ; i<knsupc*nrhs ; i++){
 						x[ii+i] = rtemp_loc[i];
 					}
@@ -1860,12 +2075,6 @@ dGenCOOLblocks(iam, nsupers, grid,Glu_persist,Llu, cooRows, cooCols, cooVals, &n
 					lusup, &nsupr, &x[ii], &knsupc);
 #endif
 
-		// for (i=0 ; i<knsupc*nrhs ; i++){
-		// printf("x_l: %f\n",x[ii+i]);
-		// fflush(stdout);
-		// }
-
-
 #if ( PROFlevel>=1 )
 		    TOC(t2, t1);
 		    stat_loc[thread_id]->utime[SOL_TRSM] += t2;
@@ -1903,39 +2112,44 @@ dGenCOOLblocks(iam, nsupers, grid,Glu_persist,Llu, cooRows, cooCols, cooVals, &n
 
 #ifdef _OPENMP
 #pragma omp parallel default (shared)
+	{
+#else
+	{
 #endif
-		{
-
 
 #ifdef _OPENMP
 #pragma omp master
 #endif
-				{
+		    {
 
 #ifdef _OPENMP
-#pragma	omp	taskloop private (k,ii,lk) num_tasks(num_thread*8) nogroup
+#pragma	omp taskloop private (k,ii,lk,thread_id) num_tasks(num_thread*8) nogroup
 #endif
 
-					for (jj=0;jj<nleaf;jj++){
-						k=leafsups[jj];
+			for (jj=0;jj<nleaf;jj++){
+			    k=leafsups[jj];
 
-						{
-							/* Diagonal process */
-							lk = LBi( k, grid );
-							ii = X_BLK( lk );
-							/*
-							 * Perform local block modifications: lsum[i] -= L_i,k * X[k]
-							 */
-							dlsum_fmod_inv(lsum, x, &x[ii], rtemp, nrhs, k,
-									fmod, xsup, grid, Llu,
-									stat_loc, leaf_send, &nleaf_send,sizelsum,sizertemp,0,maxsuper,thread_id,num_thread);
-						}
+			    {
 
-						// } /* if diagonal process ... */
-					} /* for k ... */
-				}
+#ifdef _OPENMP
+				thread_id=omp_get_thread_num();
+#else
+				thread_id=0;
+#endif
 
-			}
+				/* Diagonal process */
+				lk = LBi( k, grid );
+				ii = X_BLK( lk );
+				/*
+				 * Perform local block modifications: lsum[i] -= L_i,k * X[k]
+				 */
+				dlsum_fmod_inv(lsum, x, &x[ii], rtemp, nrhs, k, fmod, xsup, grid, Llu, stat_loc, leaf_send, &nleaf_send,sizelsum,sizertemp,0,maxsuper,thread_id,num_thread);
+			    }
+
+			} /* for jj ... */
+		    }
+
+		}
 
 			for (i=0;i<nleaf_send;i++){
 				lk = leaf_send[i*aln_i];
@@ -1967,8 +2181,13 @@ dGenCOOLblocks(iam, nsupers, grid,Glu_persist,Llu, cooRows, cooCols, cooVals, &n
 
 #ifdef _OPENMP
 #pragma omp parallel default (shared)
-#endif
 			{
+	int thread_id = omp_get_thread_num();
+#else
+	{
+	thread_id=0;
+#endif
+
 #ifdef _OPENMP
 #pragma omp master
 #endif
@@ -2073,17 +2292,11 @@ dGenCOOLblocks(iam, nsupers, grid,Glu_persist,Llu, cooRows, cooCols, cooVals, &n
 											// ii = X_BLK( lk );
 											knsupc = SuperSize( k );
 											for (ii=1;ii<num_thread;ii++)
-											#ifdef _OPENMP
-												#pragma omp simd
-											#endif
 												for (jj=0;jj<knsupc*nrhs;jj++)
 													lsum[il + jj ] += lsum[il + jj + ii*sizelsum];
 
 											ii = X_BLK( lk );
 											RHS_ITERATE(j)
-												#ifdef _OPENMP
-													#pragma omp simd
-												#endif
 												for (i = 0; i < knsupc; ++i)
 													x[i + ii + j*knsupc] += lsum[i + il + j*knsupc ];
 
@@ -2112,9 +2325,6 @@ dGenCOOLblocks(iam, nsupers, grid,Glu_persist,Llu, cooRows, cooCols, cooVals, &n
 														&alpha, Linv, &knsupc, &x[ii],
 														&knsupc, &beta, rtemp_loc, &knsupc );
 #endif
-												#ifdef _OPENMP
-													#pragma omp simd
-												#endif
 												for (i=0 ; i<knsupc*nrhs ; i++){
 													x[ii+i] = rtemp_loc[i];
 												}
@@ -2138,6 +2348,7 @@ dGenCOOLblocks(iam, nsupers, grid,Glu_persist,Llu, cooRows, cooCols, cooVals, &n
 #endif
 
 											stat_loc[thread_id]->ops[SOLVE] += knsupc * (knsupc - 1) * nrhs;
+
 #if ( DEBUGlevel>=2 )
 											printf("(%2d) Solve X[%2d]\n", iam, k);
 #endif
@@ -2175,9 +2386,6 @@ dGenCOOLblocks(iam, nsupers, grid,Glu_persist,Llu, cooRows, cooCols, cooVals, &n
 										knsupc = SuperSize( k );
 
 										for (ii=1;ii<num_thread;ii++)
-											#ifdef _OPENMP
-												#pragma omp simd
-											#endif
 											for (jj=0;jj<knsupc*nrhs;jj++)
 												lsum[il + jj] += lsum[il + jj + ii*sizelsum];
 										// RdTree_forwardMessageSimple(LRtree_ptr[lk],&lsum[il-LSUM_H],RdTree_GetMsgSize(LRtree_ptr[lk],'d')*nrhs+LSUM_H,'d');
@@ -2193,9 +2401,11 @@ dGenCOOLblocks(iam, nsupers, grid,Glu_persist,Llu, cooRows, cooCols, cooVals, &n
 				} /* while not finished ... */
 
 			}
-		}
+		} // end of parallel 
 
-#endif
+#endif /* CPU trisolve*/
+
+
 #if ( PRNTlevel>=1 )
 		t = SuperLU_timer_() - t;
 		stat->utime[SOL_TOT] += t;
@@ -2216,7 +2426,8 @@ dGenCOOLblocks(iam, nsupers, grid,Glu_persist,Llu, cooRows, cooCols, cooVals, &n
 		t = SuperLU_timer_();
 #endif
 
-stat->utime[SOLVE] = SuperLU_timer_() - t1_sol;
+
+// stat->utime[SOLVE] = SuperLU_timer_() - t1_sol;
 
 #if ( DEBUGlevel==2 )
 		{
@@ -2280,10 +2491,10 @@ stat->utime[SOLVE] = SuperLU_timer_() - t1_sol;
 		/* Save the count to be altered so it can be used by
 		   subsequent call to PDGSTRS. */
 		if ( !(bmod = intMalloc_dist(nlb*aln_i)) )
-			ABORT("Calloc fails for bmod[].");
+			ABORT("Malloc fails for bmod[].");
 		for (i = 0; i < nlb; ++i) bmod[i*aln_i] = Llu->bmod[i];
 		if ( !(brecv = intCalloc_dist(nlb)) )
-			ABORT("Malloc fails for brecv[].");
+			ABORT("Calloc fails for brecv[].");
 		Llu->brecv = brecv;
 
 		k = SUPERLU_MAX( Llu->nfsendx, Llu->nbsendx ) + nlb;
@@ -2294,13 +2505,11 @@ stat->utime[SOLVE] = SuperLU_timer_() - t1_sol;
 
 #pragma omp parallel default(shared) private(ii)
 	{
+		int thread_id = omp_get_thread_num();
 		for(ii=0;ii<sizelsum;ii++)
 			lsum[thread_id*sizelsum+ii]=zero;
 	}
     /* Set up the headers in lsum[]. */
-#ifdef _OPENMP
-	#pragma omp simd lastprivate(krow,lk,il)
-#endif
     for (k = 0; k < nsupers; ++k) {
 	krow = PROW( k, grid );
 	if ( myrow == krow ) {
@@ -2363,8 +2572,6 @@ stat->utime[SOLVE] = SuperLU_timer_() - t1_sol;
 #endif /* DEBUGlevel */
 
 
-
-
 	/* ---------------------------------------------------------
 	   Initialize the async Bcast trees on all processes.
 	   --------------------------------------------------------- */
@@ -2410,9 +2617,6 @@ stat->utime[SOLVE] = SuperLU_timer_() - t1_sol;
 		}
 	}
 
-	#ifdef _OPENMP
-	#pragma omp simd
-	#endif
 	for (i = 0; i < nlb; ++i) bmod[i*aln_i] += brecv[i];
 	// for (i = 0; i < nlb; ++i)printf("bmod[i]: %5d\n",bmod[i]);
 
@@ -2448,22 +2652,74 @@ stat->utime[SOLVE] = SuperLU_timer_() - t1_sol;
 
 
 
+
+
+
+#ifdef GPU_ACC /*GPU trisolve*/
+// #if 0 /* CPU trisolve*/
+
+	d_grid = NULL;
+	d_x = NULL;
+	d_lsum = NULL;
+    int_t  *d_bmod = NULL;
+
+	checkGPU(gpuMalloc( (void**)&d_grid, sizeof(gridinfo_t)));
+	checkGPU(gpuMalloc( (void**)&d_lsum, sizelsum*num_thread * sizeof(double)));
+	checkGPU(gpuMalloc( (void**)&d_x, (ldalsum * nrhs + nlb * XK_H) * sizeof(double)));
+	checkGPU(gpuMalloc( (void**)&d_bmod, (nlb*aln_i) * sizeof(int_t)));
+	
+
+	checkGPU(gpuMemcpy(d_grid, grid, sizeof(gridinfo_t), gpuMemcpyHostToDevice));	
+	checkGPU(gpuMemcpy(d_lsum, lsum, sizelsum*num_thread * sizeof(double), gpuMemcpyHostToDevice));	
+	checkGPU(gpuMemcpy(d_x, x, (ldalsum * nrhs + nlb * XK_H) * sizeof(double), gpuMemcpyHostToDevice));	
+	checkGPU(gpuMemcpy(d_bmod, bmod, (nlb*aln_i) * sizeof(int_t), gpuMemcpyHostToDevice));
+
+	k = CEILING( nsupers, grid->npcol);/* Number of local block columns divided by #warps per block used as number of thread blocks*/
+	knsupc = sp_ienv_dist(3);
+
+    
+
+	dlsum_bmod_inv_gpu_wrap(k,nlb,DIM_X,DIM_Y,d_lsum,d_x,nrhs,knsupc,nsupers,d_bmod,Llu->d_UBtree_ptr,Llu->d_URtree_ptr,Llu->d_ilsum,Llu->d_Urbs,Llu->d_Ufstnz_br_dat,Llu->d_Ufstnz_br_offset,Llu->d_Unzval_br_dat,Llu->d_Unzval_br_offset,Llu->d_Ucb_valdat,Llu->d_Ucb_valoffset,Llu->d_Ucb_inddat,Llu->d_Ucb_indoffset,Llu->d_Uinv_bc_dat,Llu->d_Uinv_bc_offset,Llu->d_xsup,d_grid);
+
+
+	checkGPU(gpuMemcpy(x, d_x, (ldalsum * nrhs + nlb * XK_H) * sizeof(double), gpuMemcpyDeviceToHost));
+
+	checkGPU (gpuFree (d_grid));
+	checkGPU (gpuFree (d_x));
+	checkGPU (gpuFree (d_lsum));
+	checkGPU (gpuFree (d_bmod));
+
+	stat_loc[0]->ops[SOLVE]+=Llu->Unzval_br_cnt*nrhs*2; // YL: this is a rough estimate 
+
+#else  /* CPU trisolve*/
+
+
+
+
+
 #ifdef _OPENMP
 #pragma omp parallel default (shared)
-#endif
 	{
+#else
+	{
+#endif
 #ifdef _OPENMP
 #pragma omp master
 #endif
 		{
 #ifdef _OPENMP
-#pragma	omp	taskloop firstprivate (nrhs,beta,alpha,x,rtemp,ldalsum) private (ii,jj,k,knsupc,lk,luptr,lsub,nsupr,lusup,t1,t2,Uinv,i,lib,rtemp_loc,nroot_send_tmp) nogroup
+#pragma	omp	taskloop firstprivate (nrhs,beta,alpha,x,rtemp,ldalsum) private (ii,jj,k,knsupc,lk,luptr,lsub,nsupr,lusup,t1,t2,Uinv,i,lib,rtemp_loc,nroot_send_tmp,thread_id) nogroup
 #endif
 		for (jj=0;jj<nroot;jj++){
 			k=rootsups[jj];
 
 #if ( PROFlevel>=1 )
 			TIC(t1);
+#endif
+#ifdef _OPENMP
+			thread_id=omp_get_thread_num();
+#else
+			thread_id=0;
 #endif
 
 			rtemp_loc = &rtemp[sizertemp* thread_id];
@@ -2497,9 +2753,6 @@ stat->utime[SOLVE] = SuperLU_timer_() - t1_sol;
 						&alpha, Uinv, &knsupc, &x[ii],
 						&knsupc, &beta, rtemp_loc, &knsupc );
 #endif
-				#ifdef _OPENMP
-					#pragma omp simd
-				#endif
 				for (i=0 ; i<knsupc*nrhs ; i++){
 					x[ii+i] = rtemp_loc[i];
 				}
@@ -2515,21 +2768,12 @@ stat->utime[SOLVE] = SuperLU_timer_() - t1_sol;
 						lusup, &nsupr, &x[ii], &knsupc);
 #endif
 			}
-			// for (i=0 ; i<knsupc*nrhs ; i++){
-			// printf("x_u: %f\n",x[ii+i]);
-			// fflush(stdout);
-			// }
-
-			// for (i=0 ; i<knsupc*nrhs ; i++){
-				// printf("x: %f\n",x[ii+i]);
-				// fflush(stdout);
-			// }
 
 #if ( PROFlevel>=1 )
 			TOC(t2, t1);
 			stat_loc[thread_id]->utime[SOL_TRSM] += t2;
 #endif
-			// stat_loc[thread_id]->ops[SOLVE] += knsupc * (knsupc + 1) * nrhs;
+			stat_loc[thread_id]->ops[SOLVE] += knsupc * (knsupc + 1) * nrhs;
 
 #if ( DEBUGlevel>=2 )
 			printf("(%2d) Solve X[%2d]\n", iam, k);
@@ -2554,21 +2798,27 @@ stat->utime[SOLVE] = SuperLU_timer_() - t1_sol;
 
 #ifdef _OPENMP
 #pragma omp parallel default (shared)
-#endif
 	{
+#else
+	{
+#endif
 #ifdef _OPENMP
 #pragma omp master
 #endif
 		{
 #ifdef _OPENMP
-#pragma	omp	taskloop private (ii,jj,k,lk) nogroup
+#pragma	omp	taskloop private (ii,jj,k,lk,thread_id) nogroup
 #endif
 		for (jj=0;jj<nroot;jj++){
 			k=rootsups[jj];
 			lk = LBi( k, grid ); /* Local block number, row-wise. */
 			ii = X_BLK( lk );
 			lk = LBj( k, grid ); /* Local block number, column-wise */
-
+#ifdef _OPENMP
+			thread_id=omp_get_thread_num();
+#else
+			thread_id=0;
+#endif
 			/*
 			 * Perform local block modifications: lsum[i] -= U_i,k * X[k]
 			 */
@@ -2605,8 +2855,12 @@ for (i=0;i<nroot_send;i++){
 
 #ifdef _OPENMP
 #pragma omp parallel default (shared)
-#endif
 	{
+	int thread_id=omp_get_thread_num();
+#else
+	{
+	thread_id=0;
+#endif
 #ifdef _OPENMP
 #pragma omp master
 #endif
@@ -2671,9 +2925,6 @@ for (i=0;i<nroot_send;i++){
 				tempv = &recvbuf0[LSUM_H];
 				il = LSUM_BLK( lk );
 				RHS_ITERATE(j) {
-					#ifdef _OPENMP
-						#pragma omp simd
-					#endif
 					for (i = 0; i < knsupc; ++i)
 						lsum[i + il + j*knsupc + thread_id*sizelsum] += tempv[i + j*knsupc];
 
@@ -2689,19 +2940,13 @@ for (i=0;i<nroot_send;i++){
 
 						knsupc = SuperSize( k );
 						for (ii=1;ii<num_thread;ii++)
-							#ifdef _OPENMP
-								#pragma omp simd
-							#endif
 							for (jj=0;jj<knsupc*nrhs;jj++)
 								lsum[il+ jj ] += lsum[il + jj + ii*sizelsum];
 
 						ii = X_BLK( lk );
 						RHS_ITERATE(j)
-							#ifdef _OPENMP
-								#pragma omp simd
-							#endif
 							for (i = 0; i < knsupc; ++i)
-								x[i + ii + j*knsupc] += lsum[i + il + j*knsupc ];
+							    x[i + ii + j*knsupc] += lsum[i + il + j*knsupc ];
 
 						lk = LBj( k, grid ); /* Local block number, column-wise. */
 						lsub = Lrowind_bc_ptr[lk];
@@ -2726,9 +2971,6 @@ for (i=0;i<nroot_send;i++){
 									&knsupc, &beta, rtemp_loc, &knsupc );
 #endif
 
-							#ifdef _OPENMP
-								#pragma omp simd
-							#endif
 							for (i=0 ; i<knsupc*nrhs ; i++){
 								x[ii+i] = rtemp_loc[i];
 							}
@@ -2749,7 +2991,7 @@ for (i=0;i<nroot_send;i++){
 							TOC(t2, t1);
 							stat_loc[thread_id]->utime[SOL_TRSM] += t2;
 #endif
-							// stat_loc[thread_id]->ops[SOLVE] += knsupc * (knsupc + 1) * nrhs;
+							stat_loc[thread_id]->ops[SOLVE] += knsupc * (knsupc + 1) * nrhs;
 
 #if ( DEBUGlevel>=2 )
 						printf("(%2d) Solve X[%2d]\n", iam, k);
@@ -2778,9 +3020,6 @@ for (i=0;i<nroot_send;i++){
 						knsupc = SuperSize( k );
 
 						for (ii=1;ii<num_thread;ii++)
-							#ifdef _OPENMP
-								#pragma omp simd
-							#endif
 							for (jj=0;jj<knsupc*nrhs;jj++)
 								lsum[il+ jj ] += lsum[il + jj + ii*sizelsum];
 
@@ -2792,6 +3031,9 @@ for (i=0;i<nroot_send;i++){
 			}
 		} /* while not finished ... */
 	}
+
+#endif
+
 #if ( PRNTlevel>=1 )
 		t = SuperLU_timer_() - t;
 		stat->utime[SOL_TOT] += t;
@@ -2926,7 +3168,7 @@ for (i=0;i<nroot_send;i++){
 		}
 #endif
 
-    // stat->utime[SOLVE] = SuperLU_timer_() - t1_sol;
+    stat->utime[SOLVE] = SuperLU_timer_() - t1_sol;
 
 #if ( DEBUGlevel>=1 )
     CHECK_MALLOC(iam, "Exit pdgstrs()");

@@ -1,5 +1,5 @@
 set(headers
-    Cnames.h
+    superlu_FCnames.h
     gpublas_utils.h
     dcomplex.h
     machines.h
@@ -10,6 +10,7 @@ set(headers
     util_dist.h
     colamd.h
     ${CMAKE_CURRENT_BINARY_DIR}/superlu_dist_config.h
+    ${PROJECT_SOURCE_DIR}/SRC/superlu_FortranCInterface.h
 )
 if (MSVC)
   list(APPEND headers wingetopt.h)
@@ -35,7 +36,6 @@ set(sources
   psymbfact_util.c
   get_perm_c_parmetis.c
   mc64ad_dist.c
-  static_schedule.c
   xerr_dist.c
   smach_dist.c
   dmach_dist.c
@@ -47,9 +47,6 @@ if (MSVC)
   list(APPEND sources wingetopt.c)
 endif ()
 
-if (HAVE_COMBBLAS)
-  list(APPEND sources c2cpp_GetAWPM.cpp AWPM_CombBLAS.hpp)
-endif()
 
 set_source_files_properties(superlu_timer.c PROPERTIES COMPILE_FLAGS -O0)
 
@@ -59,9 +56,9 @@ if(enable_double)
 if(TPL_ENABLE_CUDALIB)
   list(APPEND sources pdgstrs_lsum_cuda.cu)
 endif()
-if(TPL_ENABLE_HIPLIB)
-  list(APPEND sources pdgstrs_lsum_cuda.hip.cpp)
-endif()    	
+# if(TPL_ENABLE_HIPLIB)
+#   list(APPEND sources pdgstrs_lsum_cuda.hip.cpp)
+# endif()    	
 
   list(APPEND sources
     dlangs_dist.c
@@ -89,6 +86,7 @@ endif()
     ddistribute.c
     pddistribute.c
     pdgstrf.c
+    dstatic_schedule.c
     pdgstrf2.c
     pdgstrs.c
     pdgstrs1.c
@@ -100,7 +98,12 @@ endif()
     pdgsmv_AXglobal.c
     pdGetDiagU.c
   )
+if (HAVE_COMBBLAS)
+  list(APPEND sources d_c2cpp_GetHWPM.cpp dHWPM_CombBLAS.hpp)
 endif()
+
+endif() ## enable double
+
 
 if(enable_complex16)
   list(APPEND headers superlu_zdefs.h)
@@ -132,6 +135,7 @@ if(enable_complex16)
     zdistribute.c
     pzdistribute.c
     pzgstrf.c
+    zstatic_schedule.c
     pzgstrf2.c
     pzgstrs.c
     pzgstrs1.c
@@ -143,17 +147,43 @@ if(enable_complex16)
     pzgsmv_AXglobal.c
     pzGetDiagU.c
   )
+if (HAVE_COMBBLAS)
+  list(APPEND sources z_c2cpp_GetHWPM.cpp zHWPM_CombBLAS.hpp)
+endif()
 endif()
 
-add_library(superlu_dist ${sources} ${HEADERS})
+if (TPL_ENABLE_HIPLIB)
+  set_source_files_properties(
+    pdgstrs_lsum_cuda.hip.cpp
+    PROPERTIES HIP_SOURCE_PROPERTY_FORMAT 1)
+  hip_add_library(superlu_dist "pdgstrs_lsum_cuda.hip.cpp")
+else()
+  add_library(superlu_dist "")
+endif()
+# if (BUILD_SHARED_LIBS)
+#   set_property(TARGET superlu_dist PROPERTY POSITION_INDEPENDENT_CODE ON)
+# endif()
+    
+if (BUILD_SHARED_LIBS AND BUILD_STATIC_LIBS)
+if (TPL_ENABLE_HIPLIB)
+  hip_add_library(superlu_dist-static STATIC "pdgstrs_lsum_cuda.hip.cpp")
+else()
+  add_library(superlu_dist-static STATIC "")
+endif()
+endif()
+# if (BUILD_SHARED_LIBS)
+#   set_property(TARGET superlu_dist-static PROPERTY POSITION_INDEPENDENT_CODE ON)
+# endif()
+
+target_sources(superlu_dist PRIVATE ${sources} ${HEADERS})
 set(targets superlu_dist)
 if (BUILD_SHARED_LIBS AND BUILD_STATIC_LIBS)
   # build both shared and static libs
-  add_library(superlu_dist-static STATIC ${sources} ${HEADERS})
+  target_sources(superlu_dist-static PRIVATE ${sources} ${HEADERS})
   list(APPEND targets superlu_dist-static)
 endif()
 
-set(superlu_dist_libs ${MPI_C_LIBRARIES} ${BLAS_LIB} ${LAPACK_LIB}
+set(superlu_dist_libs ${MPI_C_LIBRARIES} ${MPI_CXX_LIBRARIES} ${BLAS_LIB} ${LAPACK_LIB}
     ${PARMETIS_LIB} ${COMBBLAS_LIB} ${CUDA_LIB} ${HIP_LIB}) 
 if (NOT MSVC)
   list(APPEND superlu_dist_libs m)

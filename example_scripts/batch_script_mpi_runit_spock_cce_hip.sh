@@ -5,34 +5,28 @@ EXIT_HOST=1
 EXIT_PARAM=2
 
 
-module load PrgEnv-cray
 module load cmake
-module unload cray-libsci_acc
-module load cray-libsci/19.06.1
-module load cuda10.2/toolkit/10.2.89
-module load craype-accel-nvidia70
-module load rocm
-
-
-export MV2_USE_CUDA=1
-export MV2_ENABLE_AFFINITY=0
+module load rocm			 
 export LD_LIBRARY_PATH="$CRAY_LD_LIBRARY_PATH:$LD_LIBRARY_PATH"
 
-export CRAY_CUDATOOLKIT_INCLUDE_OPTS="-I$CUDA_ROOT/include/ -I$CUDA_ROOT/extras/CUPTI/include/ -I$CUDA_ROOT/extras/Debugger/include/"
-export CRAY_CUDATOOLKIT_POST_LINK_OPTS="-L$CUDA_ROOT/lib64/ -L$CUDA_ROOT/extras/CUPTI/lib64/ -Wl,--as-needed -Wl,-lcupti -Wl,-lcudart -Wl,--no-as-needed -L$CUDA_CMLOCAL_ROOT//lib64 -lcuda"
+export CRAYPE_LINK_TYPE=dynamic
 
+
+# export MV2_USE_CUDA=1
+# export MV2_ENABLE_AFFINITY=0
 
 
 
 CUR_DIR=`pwd`
 FILE_DIR=$CUR_DIR/EXAMPLE
-INPUT_DIR=~/my_research/matrix
+INPUT_DIR=$MEMBERWORK/csc289/matrix
+# INPUT_DIR=$CUR_DIR/../EXAMPLE	
 FILE_NAME=pddrive
 FILE=$FILE_DIR/$FILE_NAME
 
 
 
-CORES_PER_NODE=32
+CORES_PER_NODE=64
 
 
 
@@ -99,9 +93,10 @@ OMP_NUM_THREADS=$NTH
 #for NSUP in 128 64 32 16 8
 #do
   # for MAT in atmosmodl.rb nlpkkt80.mtx torso3.mtx Ga19As19H42.mtx A22.mtx cage13.rb 
-  for MAT in HTS/gas_sensor.mtx HTS/vanbody.mtx HTS/ct20stif.mtx HTS/torsion1.mtx HTS/xenon1.mtx HTS/dawson5.mtx
-
-
+  # for MAT in s1_mat_0_253872.bin #s1_mat_0_126936.bin
+  # for MAT in matrix121.dat
+   for MAT in HTS/gas_sensor.mtx HTS/vanbody.mtx HTS/ct20stif.mtx HTS/torsion1.mtx HTS/dawson5.mtx
+ # for MAT in HTS/gas_sensor.mtx 
 
 
   # for MAT in HTS/g7jac160.mtx
@@ -128,7 +123,9 @@ OMP_NUM_THREADS=$NTH
     # export OMP_PLACES=threads
     # export OMP_PROC_BIND=spread
     mkdir -p $MAT
-    srun -n $CORE_VAL -c $NTH --cpu_bind=cores nvprof --profile-from-start off $FILE -c $NCOL -r $NROW $INPUT_DIR/$MAT | tee ./$MAT/SLU.o_mpi_${NROW}x${NCOL}_${OMP_NUM_THREADS}_mrhs
+    #srun -n $CORE_VAL -c $NTH --cpu_bind=cores /opt/rocm/bin/rocprof --hsa-trace --hip-trace $FILE -c $NCOL -r $NROW $INPUT_DIR/$MAT | tee ./$MAT/SLU.o_mpi_${NROW}x${NCOL}_${OMP_NUM_THREADS}_mrhs
+    #srun -n $CORE_VAL -c $NTH --cpu_bind=cores /opt/rocm/bin/rocprof --hsa-trace --roctx-trace $FILE -c $NCOL -r $NROW $INPUT_DIR/$MAT | tee ./$MAT/SLU.o_mpi_${NROW}x${NCOL}_${OMP_NUM_THREADS}_mrhs
+    srun -n $CORE_VAL -c $NTH --cpu_bind=cores $FILE -c $NCOL -r $NROW $INPUT_DIR/$MAT | tee ./$MAT/SLU.o_mpi_${NROW}x${NCOL}_${OMP_NUM_THREADS}_mrhs
     # Add final line (srun line) to temporary slurm script
 
   done

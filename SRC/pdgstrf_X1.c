@@ -1131,7 +1131,8 @@ static void pdgstrf2
 	   the process column. */
 	if ( iam == pkk ) { /* Diagonal process. */
 	    i = luptr;
-	    if ( options->ReplaceTinyPivot == YES || lusup[i] == 0.0 ) {
+	    if ( options->ReplaceTinyPivot == YES ) {
+	    // if ( options->ReplaceTinyPivot == YES || lusup[i] == 0.0 ) {
 		if ( fabs(lusup[i]) < thresh ) { /* Diagonal */
 #if ( PRNTlevel>=2 )
 		    printf("(%d) .. col %d, tiny pivot %e  ",

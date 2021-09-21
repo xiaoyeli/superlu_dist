@@ -131,10 +131,17 @@ pzdrive4_ABglobal: $(ZEXMG4) $(DSUPERLULIB)
 #pdgstrf.o: dscatter.c dSchCompUdt-cuda.c pdgstrf.c
 #	$(CC) $(CFLAGS) $(CDEFS) $(BLASDEF) -I$(INCLUDEDIR) -c pdgstrf.c $(VERBOSE)
 .c.o:
+<<<<<<< HEAD
 	$(CC) $(CFLAGS) $(CDEFS) $(BLASDEF) $(INCLUDEDIR) -c $< $(VERBOSE)
 
 .cpp.o:
 	$(CPP) $(CPPFLAGS) $(CDEFS) $(BLASDEF) $(INCLUDEDIR) -c $< $(VERBOSE)
+=======
+	$(CC) $(CFLAGS) $(CDEFS) $(BLASDEF) -I$(INCLUDEDIR) -c $< $(VERBOSE)
+
+.cpp.o:
+	$(CPP) $(CPPFLAGS) $(CDEFS) $(BLASDEF) -I$(INCLUDEDIR) -c $< $(VERBOSE)
+>>>>>>> master
 
 .f.o:
 	$(FORTRAN) $(FFLAGS) -c $< $(VERBOSE)

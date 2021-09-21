@@ -50,8 +50,8 @@ dreadtriple_noheader(FILE *fp, int_t *m, int_t *n, int_t *nonz,
 
 #ifdef _LONGINT
     ret_val = fscanf(fp, "%ld%ld%lf%\n", &i, &j, &vali);
-#else
-    ret_val = fscanf(fp, "%d%d%lf\n", &i, &j, &vali);
+#else  // int
+    ret_val = fscanf(fp, "%d%d%lf%\n", &i, &j, &vali);
 #endif
 
     while (ret_val != EOF) {
@@ -63,11 +63,11 @@ dreadtriple_noheader(FILE *fp, int_t *m, int_t *n, int_t *nonz,
 
 #ifdef _LONGINT
         ret_val = fscanf(fp, "%ld%ld%lf%\n", &i, &j, &vali);
-#else
-        ret_val = fscanf(fp, "%d%d%lf\n", &i, &j, &vali);
+#else  // int
+        ret_val = fscanf(fp, "%d%d%lf%\n", &i, &j, &vali);
 #endif
     }
-
+    
     if ( minn == 0 ) { /* zero-based indexing */
 	zero_base = 1;
 	++(*n);
@@ -87,7 +87,7 @@ dreadtriple_noheader(FILE *fp, int_t *m, int_t *n, int_t *nonz,
 #endif
 
     /* Second pass: read the actual matrix values */
-    printf("m %ld, n %ld, nonz %ld\n", *m, *n, *nonz);
+    printf("m %ld, n %ld, nonz %ld\n", (long int) *m, (long int) *n, (long int) *nonz);
     dallocateA_dist(*n, new_nonz, nzval, rowind, colptr); /* Allocate storage */
     a    = *nzval;
     asub = *rowind;
@@ -106,7 +106,7 @@ dreadtriple_noheader(FILE *fp, int_t *m, int_t *n, int_t *nonz,
     for (nnz = 0, nz = 0; nnz < *nonz; ++nnz) {
 #ifdef _LONGINT
 	fscanf(fp, "%ld%ld%lf\n", &row[nz], &col[nz], &val[nz]);
-#else
+#else // int32
 	fscanf(fp, "%d%d%lf\n", &row[nz], &col[nz], &val[nz]);
 #endif
 
@@ -118,7 +118,7 @@ dreadtriple_noheader(FILE *fp, int_t *m, int_t *n, int_t *nonz,
 
 	if (row[nz] < 0 || row[nz] >= *m || col[nz] < 0 || col[nz] >= *n
 	    /*|| val[nz] == 0.*/) {
-	    fprintf(stderr, "nz %d, (%d, %d) = %e out of bound, removed\n",
+	    fprintf(stderr, "nz" IFMT ", (" IFMT ", " IFMT ") = %e out of bound, removed\n",
 		    nz, row[nz], col[nz], val[nz]);
 	    exit(-1);
 	} else {

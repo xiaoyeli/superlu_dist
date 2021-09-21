@@ -36,7 +36,7 @@ at the top-level directory.
  *        A may be overwritten by diag(R)*A*diag(C)*Pc^T.
  *        The type of A can be: Stype = SLU_NR_loc; Dtype = SLU_Z; Mtype = SLU_GE.
  *
- * ScalePermstruct (input) ScalePermstruct_t*
+ * ScalePermstruct (input) zScalePermstruct_t*
  *        The data structure to store the scaling and permutation vectors
  *        describing the transformations performed to the original matrix A.
  *
@@ -59,7 +59,7 @@ at the top-level directory.
  * </pre>
  */
 int_t
-zReDistribute_A(SuperMatrix *A, ScalePermstruct_t *ScalePermstruct,
+zReDistribute_A(SuperMatrix *A, zScalePermstruct_t *ScalePermstruct,
                 Glu_freeable_t *Glu_freeable, int_t *xsup, int_t *supno,
                 gridinfo_t *grid, int_t *colptr[], int_t *rowind[],
                 doublecomplex *a[])
@@ -319,8 +319,8 @@ zReDistribute_A(SuperMatrix *A, ScalePermstruct_t *ScalePermstruct,
 
 float
 pzdistribute(fact_t fact, int_t n, SuperMatrix *A,
-	     ScalePermstruct_t *ScalePermstruct,
-	     Glu_freeable_t *Glu_freeable, LUstruct_t *LUstruct,
+	     zScalePermstruct_t *ScalePermstruct,
+	     Glu_freeable_t *Glu_freeable, zLUstruct_t *LUstruct,
 	     gridinfo_t *grid)
 /*
  * -- Distributed SuperLU routine (version 2.0) --
@@ -349,14 +349,14 @@ pzdistribute(fact_t fact, int_t n, SuperMatrix *A,
  *        A may be overwritten by diag(R)*A*diag(C)*Pc^T. The type of A can be:
  *        Stype = SLU_NR_loc; Dtype = SLU_Z; Mtype = SLU_GE.
  *
- * ScalePermstruct (input) ScalePermstruct_t*
+ * ScalePermstruct (input) zScalePermstruct_t*
  *        The data structure to store the scaling and permutation vectors
  *        describing the transformations performed to the original matrix A.
  *
  * Glu_freeable (input) *Glu_freeable_t
  *        The global structure describing the graph of L and U.
  *
- * LUstruct (input) LUstruct_t*
+ * LUstruct (input) zLUstruct_t*
  *        Data structures for L and U factors.
  *
  * grid   (input) gridinfo_t*
@@ -369,7 +369,7 @@ pzdistribute(fact_t fact, int_t n, SuperMatrix *A,
  */
 {
     Glu_persist_t *Glu_persist = LUstruct->Glu_persist;
-    LocalLU_t *Llu = LUstruct->Llu;
+    zLocalLU_t *Llu = LUstruct->Llu;
     int_t bnnz, fsupc, fsupc1, i, ii, irow, istart, j, ib, jb, jj, k, k1,
           len, len1, nsupc;
 	int_t lib;  /* local block row number */
@@ -816,6 +816,7 @@ pzdistribute(fact_t fact, int_t n, SuperMatrix *A,
 	if ( !(Lnzval_bc_ptr =
               (doublecomplex**)SUPERLU_MALLOC(k * sizeof(doublecomplex*))) )
 	    ABORT("Malloc fails for Lnzval_bc_ptr[].");
+	Lnzval_bc_ptr[k-1] = NULL;	
 	if ( !(Lrowind_bc_ptr = (int_t**)SUPERLU_MALLOC(k * sizeof(int_t*))) )
 	    ABORT("Malloc fails for Lrowind_bc_ptr[].");
 	Lrowind_bc_ptr[k-1] = NULL;
