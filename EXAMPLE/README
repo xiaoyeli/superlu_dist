@@ -7,8 +7,12 @@ examples to suit your applications.
 
 The examples illustrate the following functionalities:
   0. pddrive3d.c
-     Use PDGSSVX3D communication-avoiding 3D algorithm with the default options
-     to solve a linear system
+        Use PxGSSVX3D communication-avoiding 3D algorithm with the
+        default options to solve a linear system
+     pddrive3d1.c:
+        Use PxGSSVX3D to solve the systems with same A but different
+	right-hand side. (Reuse the factored form of A)
+     
   1. pddrive.c, pddrive_ABglobal.c
      Use PDGSSVX with the full (default) options to solve a linear system.
   2. pddrive1.c, pddrive1_ABglobal.c
