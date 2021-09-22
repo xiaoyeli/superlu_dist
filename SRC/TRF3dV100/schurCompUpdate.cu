@@ -208,7 +208,15 @@ void scatterGPU(
         #pragma unroll 4
         while(j<ncols)
         {   
+
+            #define ATOMIC_SCATTER
+            //Atomic Scatter is need if I want to perform multiple Schur Complement
+            // update concurrently  
+            #ifdef  ATOMIC_SCATTER
+            atomicAdd(&Dst[rowS2D[i] + lddst * colS2D[j]], -Src[i + ldsrc * j]);
+            #else 
             Dst[rowS2D[i] + lddst * colS2D[j]] -= Src[i + ldsrc * j];
+            #endif 
             j += colsPerThreadBlock;
         }
 		

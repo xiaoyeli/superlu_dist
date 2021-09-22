@@ -121,7 +121,12 @@ void ddevice_scatter_l_2D (int thread_id,
 	for (int col = thread_id_y; col < nnz_cols ; col += ColPerBlock)
 	{
    	    i = ldv * IndirectJ3[col] + indirect2_thread[thread_id_x];
-	    nzval[i] -= tempv[nbrow * col + thread_id_x];
+	    // nzval[i] -= tempv[nbrow * col + thread_id_x];
+		#ifdef ATOMIC_SCATTER
+		atomicAdd(&nzval[i],-tempv[nbrow * col + thread_id_x]);
+		#else 
+		nzval[i] -= tempv[nbrow * col + thread_id_x];
+		#endif 
 	}
     }
 }
@@ -182,7 +187,13 @@ void device_scatter_u_2D (int thread_id,
 		for (int col = thread_id_y; col < nnz_cols ; col += ColPerBlock)
 		{
 			i = IndirectJ1[IndirectJ3[col]]-ilst + indirect[thread_id_x];
+			#ifdef ATOMIC_SCATTER
+			atomicAdd(&ucol[i], -tempv[nbrow * col + thread_id_x]);
+			#else 
 			ucol[i] -= tempv[nbrow * col + thread_id_x];
+			#endif 
+			
+			
 		}
     }
 }
