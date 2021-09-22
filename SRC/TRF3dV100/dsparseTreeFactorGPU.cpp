@@ -152,19 +152,21 @@ int_t LUstruct_v100::dsparseTreeFactorGPU(
         for (int_t k0 = k_st; k0 < k_end; ++k0)
         {
             int_t k = perm_c_supno[k0];
-            int_t offset = k0 - k_st;
+            
             int_t ksupc = SuperSize(k);
             cublasHandle_t cubHandle = A_gpu.cuHandles[0];
             cudaStream_t cuStream = A_gpu.cuStreams[0];
             dDiagFactorPanelSolveGPU(k, 0, dFBufs);
             /*=======   Panel Broadcast             ======*/
-            panelBcastGPU(k, 0);
+            // panelBcastGPU(k, 0);
+            int_t offset = k0%numLA;
+            panelBcastGPU(k, offset);
             
             /*=======   Schurcomplement Update      ======*/
-            upanel_t k_upanel(UidxRecvBufs[0], UvalRecvBufs[0],
-                              A_gpu.UidxRecvBufs[0], A_gpu.UvalRecvBufs[0]);
-            lpanel_t k_lpanel(LidxRecvBufs[0], LvalRecvBufs[0],
-                              A_gpu.LidxRecvBufs[0], A_gpu.LvalRecvBufs[0]);
+            upanel_t k_upanel(UidxRecvBufs[offset], UvalRecvBufs[offset],
+                              A_gpu.UidxRecvBufs[offset], A_gpu.UvalRecvBufs[offset]);
+            lpanel_t k_lpanel(LidxRecvBufs[offset], LvalRecvBufs[offset],
+                              A_gpu.LidxRecvBufs[offset], A_gpu.LvalRecvBufs[offset]);
             if (myrow == krow(k))
             {
                 k_upanel = uPanelVec[g2lRow(k)];
@@ -178,7 +180,6 @@ int_t LUstruct_v100::dsparseTreeFactorGPU(
 
             if (UidxSendCounts[k] > 0 && LidxSendCounts[k] > 0)
             {
-                // k_upanel.checkCorrectness();
                 int streamId = 0;
 
 

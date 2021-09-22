@@ -349,10 +349,12 @@ int_t LUstruct_v100::setLUstruct_GPU()
     //TODO:  setup multiple cuda streams,
     // make cuda streams consistent with look_aheads
     // numCudaStreams is related to num_look_aheads
-    A_gpu.numCudaStreams = getnCudaStreams(); // this always returns 1
+    // A_gpu.numCudaStreams = getnCudaStreams(); // this always returns 1
+    #warning environment variable NUM_CUDA_STREAM is superseded by numlookahead
+    A_gpu.numCudaStreams = getNumLookAhead(options);
     A_gpu.gemmBufferSize = get_max_buffer_size();
 
-    assert(A_gpu.numCudaStreams < options->num_lookaheads);
+    // assert(A_gpu.numCudaStreams < options->num_lookaheads);
 
     // cudaMalloc(&A_gpu.LvalRecvBufs, sizeof(double*)*A_gpu.numCudaStreams);
     for (int stream = 0; stream < A_gpu.numCudaStreams; stream++)
