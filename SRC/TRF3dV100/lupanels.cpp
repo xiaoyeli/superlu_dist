@@ -367,6 +367,15 @@ int_t LUstruct_v100::setLUstruct_GPU()
 
         cudaMalloc(&A_gpu.gpuGemmBuffs[stream], A_gpu.gemmBufferSize * sizeof(double));
         cudaMalloc(&A_gpu.dFBufs[stream], ldt * ldt * sizeof(double));
+
+        /*lookAhead buffers and stream*/
+        cublasCreate(&A_gpu.lookAheadLHandle[stream]);
+        cudaStreamCreate(&A_gpu.lookAheadLStream[stream]);
+        cudaMalloc(&A_gpu.lookAheadLGemmBuffer[stream], sizeof(double) * maxLvalCount);
+        cublasCreate(&A_gpu.lookAheadUHandle[stream]);
+        cudaStreamCreate(&A_gpu.lookAheadUStream[stream]);
+        cudaMalloc(&A_gpu.lookAheadUGemmBuffer[stream], sizeof(double) * maxUvalCount);
+    
     }
 
     // allocate
@@ -432,7 +441,7 @@ int_t LUstruct_v100::lookAheadUpdate(
             if(laJLoc != GLOBAL_BLOCK_NOT_FOUND)
                 blockUpdate(k, ii, jj, lpanel, upanel);
         }
-        
+
         /*Next upanelUpdate*/
 #pragma omp for nowait
         for (size_t jj = 0; jj < nub; jj++)

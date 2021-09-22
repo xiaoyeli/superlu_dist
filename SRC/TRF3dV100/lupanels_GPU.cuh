@@ -256,7 +256,17 @@ struct LUstructGPU_t
     int_t* LidxRecvBufs[MAX_CUDA_STREAMS];
     int_t* UidxRecvBufs[MAX_CUDA_STREAMS];
 
-    
+    /*data structure for lookahead Update */
+    cublasHandle_t lookAheadLHandle[MAX_CUDA_STREAMS];
+    cudaStream_t lookAheadLStream[MAX_CUDA_STREAMS];
+
+    double *lookAheadLGemmBuffer[MAX_CUDA_STREAMS];
+
+    cublasHandle_t lookAheadUHandle[MAX_CUDA_STREAMS];
+    cudaStream_t lookAheadUStream[MAX_CUDA_STREAMS];
+
+    double *lookAheadUGemmBuffer[MAX_CUDA_STREAMS];
+
     
     
     __device__
@@ -267,3 +277,6 @@ struct LUstructGPU_t
     int_t g2lCol(int_t k) { return k / Pc; }
     
 };
+
+
+

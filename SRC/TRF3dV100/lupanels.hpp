@@ -417,10 +417,38 @@ struct LUstruct_v100
         gEtreeInfo_t *gEtreeInfo, // global etree info
         int_t *gIperm_c_supno,
         int tag_ub);
+    int_t dsparseTreeFactorGPUBaseline(
+        sForest_t *sforest,
+        commRequests_t **comReqss, // lists of communication requests // size maxEtree level
+        dscuBufs_t *scuBufs,        // contains buffers for schur complement update
+        packLUInfo_t *packLUInfo,
+        msgs_t **msgss,           // size=num Look ahead
+        dLUValSubBuf_t **LUvsbs,  // size=num Look ahead
+        ddiagFactBufs_t **dFBufs,  // size maxEtree level
+        gEtreeInfo_t *gEtreeInfo, // global etree info
+        int_t *gIperm_c_supno,
+        int tag_ub);
 
     int_t dSchurComplementUpdateGPU(
         int streamId,
         int_t k, lpanel_t &lpanel, upanel_t &upanel);
+    int_t dSchurCompUpdatePartGPU(
+        int_t  iSt, int_t iEnd, int_t jSt, int_t  jEnd, 
+        int_t k, lpanel_t &lpanel, upanel_t &upanel,
+        cublasHandle_t handle, cudaStream_t cuStream,
+        double* gemmBuff );
+    int_t lookAheadUpdateGPU(
+        int streamId, 
+        int_t k, int_t laIdx, lpanel_t &lpanel, upanel_t &upanel);
+    int_t dSchurCompUpLimitedMem(
+        int streamId, 
+        int_t lStart, int_t lEnd,
+        int_t uStart, int_t uEnd,
+        int_t k, lpanel_t &lpanel, upanel_t &upanel);
+    int_t dSchurCompUpdateExcludeOneGPU(
+    int streamId, 
+    int_t k, int_t ex,  // suypernodes to be excluded 
+    lpanel_t &lpanel, upanel_t &upanel);
 
     int_t ancestorReduction3dGPU(int_t ilvl, int_t *myNodeCount,
                                  int_t **treePerm);
