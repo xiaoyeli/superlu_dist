@@ -188,9 +188,7 @@ int_t LUstruct_v100::dsparseTreeFactorGPU(
             
 
             /*=======   Schurcomplement Update      ======*/
-            #warning single node only 
-            // dSchurComplementUpdate(k, lPanelVec[g2lCol(k)], uPanelVec[g2lRow(k)]);
-            // dSchurComplementUpdate(k, lPanelVec[g2lCol(k)], k_upanel);
+            
             if(UidxSendCounts[k]>0 && LidxSendCounts[k]>0)
             {
                 // k_upanel.checkCorrectness();
@@ -390,9 +388,7 @@ int_t LUstruct_v100::dsparseTreeFactorGPUBaseline(
             
 
             /*=======   Schurcomplement Update      ======*/
-            #warning single node only 
-            // dSchurComplementUpdate(k, lPanelVec[g2lCol(k)], uPanelVec[g2lRow(k)]);
-            // dSchurComplementUpdate(k, lPanelVec[g2lCol(k)], k_upanel);
+            
             if(UidxSendCounts[k]>0 && LidxSendCounts[k]>0)
             {
                 // k_upanel.checkCorrectness();
