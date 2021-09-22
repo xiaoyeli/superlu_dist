@@ -798,7 +798,8 @@ pdgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
     for (int i = 0; i < nstreams; ++i) {
         streams[i] = sycl::queue(super_ctxt,
                                  gpu_devices[0],
-                                 asyncHandler);
+                                 asyncHandler,
+				 sycl::property_list{sycl::property::queue::in_order{}});
     }
 
     bigU = sycl::malloc_host<double>(bigu_size, streams[0]);
