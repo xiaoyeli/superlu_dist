@@ -451,7 +451,7 @@ struct LUstruct_v100
         lpanel_t &lpanel, upanel_t &upanel);
 
     int_t dDiagFactorPanelSolveGPU(int_t k, int_t offset, ddiagFactBufs_t **dFBufs);
-    int_t panelBcastGPU(int_t k, int_t offset);
+    int_t dPanelBcastGPU(int_t k, int_t offset);
 
     int_t ancestorReduction3dGPU(int_t ilvl, int_t *myNodeCount,
                                  int_t **treePerm);
