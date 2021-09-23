@@ -321,6 +321,12 @@ int_t LUstruct_v100::setLUstruct_GPU()
     A_gpu.Pc = Pc;
     A_gpu.maxSuperSize = ldt;
 
+    /*Mapping to device*/
+    int deviceCount;
+	cudaGetDeviceCount(&deviceCount);               // How many GPUs?
+	int device_id = grid3d->iam % deviceCount;
+	cudaSetDevice(device_id);
+
     cudaMalloc(&A_gpu.xsup, (nsupers + 1) * sizeof(int_t));
     cudaMemcpy(A_gpu.xsup, xsup, (nsupers + 1) * sizeof(int_t), cudaMemcpyHostToDevice);
 
