@@ -340,6 +340,7 @@ main (int argc, char *argv[])
     PStatInit (&stat);
 
     /* Call the linear equation solver. */
+    nrhs = 0;
     pzgssvx3d (&options, &A, &ScalePermstruct, b, ldb, nrhs, &grid,
                &LUstruct, &SOLVEstruct, berr, &stat, &info);
 

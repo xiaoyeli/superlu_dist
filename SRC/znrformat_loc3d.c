@@ -361,6 +361,15 @@ int zScatter_B3d(NRformat_loc3d *A3d,  // modified
 	       8             10
 	       11            11
 	       ----         ----
+
+         In the most general case, block rows of B are not of even size, then the
+	 Layer 0 partition may overlap with 3D partition in an arbitrary manner.
+	 For example:
+	                  P0        P1        P2       P3
+             X on grid-0: |-----------|---------|---------|-----------|
+
+	     X on 3D:     |___|____|_____|_______|____|______|____|___|
+	                  P0  P1   P2    P3      P4   P5     P6   P7  P8
 	*/
 	MPI_Status recv_status;
 	int pxy = grid2d->nprow * grid2d->npcol;
@@ -460,10 +469,12 @@ int zScatter_B3d(NRformat_loc3d *A3d,  // modified
 		    procs_recv_from_list[j] = p;
 		    recv_count_list[j] = x_recv_counts[p];
 		    src = p;  tag = iam;
-		    //printf("RECV: src %d -> iam %d, x_recv_counts[p] %d, tag %d\n",
-		    //src, iam, x_recv_counts[p], tag);
-		    //fflush(stdout);
 		    ++j;
+#if 1
+		    printf("RECV: src %d -> iam %d, x_recv_counts[p] %d, tag %d\n",
+			   src, iam, x_recv_counts[p], tag);
+		    fflush(stdout);
+#endif		    
 		}
 	    }
 	    num_procs_to_recv = j;

@@ -53,9 +53,9 @@ ZEXM1	= pzdrive1.o zcreate_matrix.o
 ZEXM2	= pzdrive2.o zcreate_matrix.o zcreate_matrix_perturbed.o
 ZEXM3	= pzdrive3.o zcreate_matrix.o
 ZEXM4	= pzdrive4.o zcreate_matrix.o
-ZEXM3D	= pzdrive3d.o zcreate_matrix.o zcreate_matrix3d.o #znrformat_loc3d.o
-ZEXM3D1	= pzdrive3d1.o zcreate_matrix.o zcreate_matrix3d.o
-ZEXM3D2	= pzdrive3d2.o zcreate_matrix.o zcreate_matrix3d.o
+ZEXM3D	= pzdrive3d.o zcreate_matrix.o zcreate_matrix3d_Jake.o #znrformat_loc3d.o
+ZEXM3D1	= pzdrive3d1.o zcreate_matrix.o zcreate_matrix3d_Jake.o 
+ZEXM3D2	= pzdrive3d2.o zcreate_matrix.o zcreate_matrix3d_Jake.o
 ZEXM3D3	= pzdrive3d3.o zcreate_matrix.o zcreate_matrix3d.o
 
 ZEXMG	= pzdrive_ABglobal.o
