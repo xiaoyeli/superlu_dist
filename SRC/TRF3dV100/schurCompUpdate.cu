@@ -408,7 +408,8 @@ int_t LUstruct_v100::dSchurCompUpdateExcludeOneGPU(
         nextStI, nlb, exJLoc+1, nub,
         k, lpanel, upanel);
 
-    checkCudaLocal(cudaStreamSynchronize(A_gpu.cuStreams[streamId]));
+    // checkCudaLocal(cudaStreamSynchronize(A_gpu.cuStreams[streamId]));
+    return 0;
 
 }
         

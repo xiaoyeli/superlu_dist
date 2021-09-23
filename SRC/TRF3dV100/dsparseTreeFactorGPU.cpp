@@ -217,13 +217,14 @@ int_t LUstruct_v100::dsparseTreeFactorGPU(
             
         }
 
-        k1 = k1+winSize;
-        for (int_t k0_next = k1; k0_next < SUPERLU_MIN(nnodes, k1+winSize); ++k0_next)
+        int_t k1_next = k1+winSize;
+        int_t oldWinSize = winSize;
+        for (int_t k0_next = k1_next; k0_next < SUPERLU_MIN(nnodes, k1_next+winSize); ++k0_next)
         {
             int k_next = perm_c_supno[k0_next];
             if (!localNumChildrenLeft[k0_next])
             {   
-                int offset_next = (k0_next-k1)%winSize; 
+                int offset_next = (k0_next-k1_next)%winSize; 
                 if(!(winParity%2))
                     offset_next += halfWin; 
                 dPanelBcastGPU(k_next, offset_next);
@@ -231,11 +232,22 @@ int_t LUstruct_v100::dsparseTreeFactorGPU(
             }
             else 
             {
-                winSize = k0_next - k1;
+                winSize = k0_next - k1_next;
                 break; 
             }
         }
 
+        for (int_t k0 = k1; k0 < SUPERLU_MIN(nnodes, k1+oldWinSize); ++k0)
+        { 
+            int_t k = perm_c_supno[k0];
+            int_t offset = (k0-k1)%winSize;
+            if(winParity%2)
+                offset+= halfWin;
+            if(UidxSendCounts[k]>0 && LidxSendCounts[k]>0)
+            checkCudaLocal(cudaStreamSynchronize(A_gpu.cuStreams[offset]));
+        }
+
+        k1=k1_next;
         winParity++;
     }
 
