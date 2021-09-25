@@ -5,6 +5,15 @@
 #include "lupanels_GPU.cuh"
 #include "lupanels.hpp"
 
+#define cudaCheckError() {                                          \
+ cudaError_t e=cudaGetLastError();                                 \
+ if(e!=cudaSuccess) {                                              \
+   printf("Cuda failure %s:%d: '%s'\n",__FILE__,__LINE__,cudaGetErrorString(e));           \
+   exit(0); \
+ }                                                                 \
+}
+
+
 LUstruct_v100::LUstruct_v100(int_t nsupers_, int_t ldt_,
                              int_t *isNodeInMyGrid_, int superluAccOffload_,
                              dLUstruct_t *LUstruct,
@@ -341,7 +350,7 @@ int_t LUstruct_v100::setLUstruct_GPU()
     cudaMalloc(&A_gpu.lPanelVec, CEILING(nsupers, Pc) * sizeof(lpanelGPU_t));
     cudaMemcpy(A_gpu.lPanelVec, lPanelVec_GPU,
                CEILING(nsupers, Pc) * sizeof(lpanelGPU_t), cudaMemcpyHostToDevice);
-
+    cudaCheckError();
     for (int_t i = 0; i < CEILING(nsupers, Pr); ++i)
     {
         if (i * Pr + myrow < nsupers && isNodeInMyGrid[i * Pr + myrow] == 1)
@@ -350,7 +359,7 @@ int_t LUstruct_v100::setLUstruct_GPU()
     cudaMalloc(&A_gpu.uPanelVec, CEILING(nsupers, Pr) * sizeof(upanelGPU_t));
     cudaMemcpy(A_gpu.uPanelVec, uPanelVec_GPU,
                CEILING(nsupers, Pr) * sizeof(upanelGPU_t), cudaMemcpyHostToDevice);
-
+    cudaCheckError();
     // set up streams;
     //TODO:  setup multiple cuda streams,
     // make cuda streams consistent with look_aheads
@@ -385,7 +394,7 @@ int_t LUstruct_v100::setLUstruct_GPU()
         cudaMalloc(&A_gpu.lookAheadUGemmBuffer[stream], sizeof(double) * maxUvalCount);
     
     }
-
+    cudaCheckError();
     // allocate
     cudaMalloc(&dA_gpu, sizeof(LUstructGPU_t));
     cudaMemcpy(dA_gpu, &A_gpu, sizeof(LUstructGPU_t), cudaMemcpyHostToDevice);
