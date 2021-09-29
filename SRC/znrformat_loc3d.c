@@ -22,7 +22,6 @@ at the top-level directory.
  */
 
 #include "superlu_zdefs.h"
-#include <assert.h>
 
 /* Dst <- BlockByBlock (Src), reshape the block storage. */
 static void matCopy(int n, int m, doublecomplex *Dst, int lddst, doublecomplex *Src, int ldsrc)
@@ -111,7 +110,6 @@ void zGatherNRformat_loc3d
 		A2d->nzval = doublecomplexMalloc_dist(nnz_disp[grid3d->npdep]);
 		A2d->rowptr = intMalloc_dist((row_disp[grid3d->npdep] + 1));
 		A2d->rowptr[0] = 0;
-		printf(" Gather layer-0: iam %d\n", grid3d->iam); fflush(stdout);
 	    }
 
 	MPI_Gatherv(A->nzval, A->nnz_loc, SuperLU_MPI_DOUBLE_COMPLEX, A2d->nzval,
@@ -344,7 +342,7 @@ int zScatter_B3d(NRformat_loc3d *A3d,  // modified
 	                       2      5      8      11
 	  GATHER:  {A, B} in A * X = B
 	  layer-0:
-	  B (row space)  X (column space)  SCATTER
+    	       B (row space)  X (column space)  SCATTER
 	       ----           ----        ---->>
            P0  0              0
 (equations     3              1      Proc 0 -> Procs {0, 1, 2, 3}
@@ -361,15 +359,14 @@ int zScatter_B3d(NRformat_loc3d *A3d,  // modified
 	       8             10
 	       11            11
 	       ----         ----
-
          In the most general case, block rows of B are not of even size, then the
 	 Layer 0 partition may overlap with 3D partition in an arbitrary manner.
 	 For example:
 	                  P0        P1        P2       P3
-             X on grid-0: |-----------|---------|---------|-----------|
+             X on grid-0: |___________|__________|_________|________|
 
-	     X on 3D:     |___|____|_____|_______|____|______|____|___|
-	                  P0  P1   P2    P3      P4   P5     P6   P7  P8
+	     X on 3D:     |___|____|_____|____|__|______|_____|_____|
+	                  P0  P1   P2    P3   P4   P5     P6   P7  
 	*/
 	MPI_Status recv_status;
 	int pxy = grid2d->nprow * grid2d->npcol;
@@ -388,13 +385,13 @@ int zScatter_B3d(NRformat_loc3d *A3d,  // modified
 	       and the send counts.	
 	       - Only grid-0 processes need to send.
 	       - row_disp[] recorded the prefix sum of the block rows of RHS
-	       along the processes Z-dimension.
-	       row_disp[npdep] is the total number of X entries on my proc.
-	       (equals A2d->m_loc.)
-	       A2d->fst_row records the boundary of the partition on grid-0.
+	       	 	    along the processes Z-dimension.
+	         row_disp[npdep] is the total number of X entries on my proc.
+	       	     (equals A2d->m_loc.)
+	         A2d->fst_row records the boundary of the partition on grid-0.
 	       - Need to compute the prefix sum of the block rows of X
-	       among all the processes.
-	       A->fst_row has this info, but is available only locally.
+	       	 among all the processes.
+	       	 A->fst_row has this info, but is available only locally.
 	    */
 	
 	    int *m_loc_3d_counts = SUPERLU_MALLOC(nprocs * sizeof(int));
@@ -470,7 +467,7 @@ int zScatter_B3d(NRformat_loc3d *A3d,  // modified
 		    recv_count_list[j] = x_recv_counts[p];
 		    src = p;  tag = iam;
 		    ++j;
-#if 1
+#if 0		    
 		    printf("RECV: src %d -> iam %d, x_recv_counts[p] %d, tag %d\n",
 			   src, iam, x_recv_counts[p], tag);
 		    fflush(stdout);
@@ -532,13 +529,14 @@ int zScatter_B3d(NRformat_loc3d *A3d,  // modified
 	/* Wait for all Irecv's to complete */
 	for (i = 0; i < num_procs_to_recv; ++i)
 	    MPI_Wait(&recv_reqs[i], &recv_status);
-	    
+
+        SUPERLU_FREE(recv_reqs);
+
 	///////////	
 #if 0 // The following code works only with even block distribution of RHS 
 	/* Everyone receives one block (post non-blocking irecv) */
 	src = grid3d->iam / npdep;  // Z-major
 	tag = iam;
-	
 	MPI_Irecv(Btmp, nrhs * A3d->m_loc, SuperLU_MPI_DOUBLE_COMPLEX,
 		 src, tag, grid3d->comm, &recv_req);
 
@@ -553,11 +551,11 @@ int zScatter_B3d(NRformat_loc3d *A3d,  // modified
 			 SuperLU_MPI_DOUBLE_COMPLEX, dest, tag, grid3d->comm);
 	    }
 	}  /* end layer 0 send */
-	
+    
 	/* Wait for Irecv to complete */
 	MPI_Wait(&recv_req, &recv_status);
 #endif
-	///////////	
+	///////////
 	
     } /* else Z-major */
 

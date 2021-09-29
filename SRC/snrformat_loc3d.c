@@ -67,6 +67,7 @@ void sGatherNRformat_loc3d
     if ( Fact == DOFACT ) { /* Factorize from scratch */
 	/* A3d is output. Compute counts from scratch */
 	A3d = SUPERLU_MALLOC(sizeof(NRformat_loc3d));
+	A3d->num_procs_to_send = EMPTY; // No X(2d) -> X(3d) comm. schedule yet
 	A2d = SUPERLU_MALLOC(sizeof(NRformat_loc));
     
 	// find number of nnzs
@@ -298,7 +299,8 @@ int sScatter_B3d(NRformat_loc3d *A3d,  // modified
     int *b_disp         = A3d->b_disp;
     int *row_counts_int = A3d->row_counts_int;
     int *row_disp       = A3d->row_disp;
-    int i, p;
+    int i, j, k, p;
+    int num_procs_to_send, num_procs_to_recv; // persistent across multiple solves
     int iam = grid3d->iam;
     int rankorder = grid3d->rankorder;
     gridinfo_t *grid2d = &(grid3d->grid2d);
@@ -334,7 +336,7 @@ int sScatter_B3d(NRformat_loc3d *A3d,  // modified
 		     Btmp, nrhs * A3d->m_loc, MPI_FLOAT,
 		     0, grid3d->zscp.comm);
 
-    } else { /* Z-major in 3D grid */
+    } else { /* Z-major in 3D grid (default) */
         /*    e.g. 1x3x4 grid: layer0 layer1 layer2 layer3
 	                       0      3      6      9
  	                       1      4      7      10      
@@ -358,13 +360,181 @@ int sScatter_B3d(NRformat_loc3d *A3d,  // modified
 	       8             10
 	       11            11
 	       ----         ----
+         In the most general case, block rows of B are not of even size, then the
+	 Layer 0 partition may overlap with 3D partition in an arbitrary manner.
+	 For example:
+	                  P0        P1        P2       P3
+             X on grid-0: |___________|__________|_________|________|
+
+	     X on 3D:     |___|____|_____|____|__|______|_____|_____|
+	                  P0  P1   P2    P3   P4   P5     P6   P7  
 	*/
-        MPI_Request recv_req;
 	MPI_Status recv_status;
 	int pxy = grid2d->nprow * grid2d->npcol;
 	int npdep = grid3d->npdep, dest, src, tag;
-	int nprocs = pxy * npdep;
+	int nprocs = pxy * npdep; // all procs in 3D grid 
+	MPI_Request *recv_reqs = (MPI_Request*) SUPERLU_MALLOC(npdep * sizeof(MPI_Request));
+	int num_procs_to_send;
+	int *procs_to_send_list;
+	int *send_count_list;
+	int num_procs_to_recv;
+	int *procs_recv_from_list;
+	int *recv_count_list;
 
+	if ( A3d->num_procs_to_send == -1 ) { /* First time: set up communication schedule */
+	    /* 1. Set up the destination processes from each source process,
+	       and the send counts.	
+	       - Only grid-0 processes need to send.
+	       - row_disp[] recorded the prefix sum of the block rows of RHS
+	       	 	    along the processes Z-dimension.
+	         row_disp[npdep] is the total number of X entries on my proc.
+	       	     (equals A2d->m_loc.)
+	         A2d->fst_row records the boundary of the partition on grid-0.
+	       - Need to compute the prefix sum of the block rows of X
+	       	 among all the processes.
+	       	 A->fst_row has this info, but is available only locally.
+	    */
+	
+	    int *m_loc_3d_counts = SUPERLU_MALLOC(nprocs * sizeof(int));
+	
+	    /* related to m_loc in 3D partition */
+	    int *x_send_counts = SUPERLU_MALLOC(nprocs * sizeof(int));
+	    int *x_recv_counts = SUPERLU_MALLOC(nprocs * sizeof(int));
+	
+	    /* The following should be persistent across multiple solves.
+	       These lists avoid All-to-All communication. */
+	    procs_to_send_list = SUPERLU_MALLOC(nprocs * sizeof(int));
+	    send_count_list = SUPERLU_MALLOC(nprocs * sizeof(int));
+	    procs_recv_from_list = SUPERLU_MALLOC(nprocs * sizeof(int));
+	    recv_count_list = SUPERLU_MALLOC(nprocs * sizeof(int));
+
+	    for (p = 0; p < nprocs; ++p) {
+		x_send_counts[p] = 0;
+		x_recv_counts[p] = 0;
+		procs_to_send_list[p] = EMPTY; // (-1)
+		procs_recv_from_list[p] = EMPTY;
+	    }
+	    
+	    /* All procs participate */
+	    MPI_Allgather(&(A3d->m_loc), 1, MPI_INT, m_loc_3d_counts, 1,
+			  MPI_INT, grid3d->comm);
+	    
+	    /* Layer 0 set up sends info. The other layers have 0 send counts. */
+	    if (grid3d->zscp.Iam == 0) {
+		int x_fst_row = A2d->fst_row; // start from a layer 0 boundary
+		int x_end_row = A2d->fst_row + A2d->m_loc; // end of boundary + 1
+		int sum_m_loc; // prefix sum of m_loc among all processes
+		
+		/* Loop through all processes.
+		   Search for 1st X-interval in grid-0's B-interval */
+		num_procs_to_send = sum_m_loc = 0;
+		for (p = 0; p < nprocs; ++p) {
+		    
+		    sum_m_loc += m_loc_3d_counts[p];
+		    
+		    if (sum_m_loc > x_end_row) { // reach the 2D block boundary
+			x_send_counts[p] = x_end_row - x_fst_row;
+			procs_to_send_list[num_procs_to_send] = p;
+			send_count_list[num_procs_to_send] = x_send_counts[p];
+			num_procs_to_send++;
+			break;
+		    } else if (x_fst_row < sum_m_loc) {
+			x_send_counts[p] = sum_m_loc - x_fst_row;
+			procs_to_send_list[num_procs_to_send] = p;
+			send_count_list[num_procs_to_send] = x_send_counts[p];
+			num_procs_to_send++;
+			x_fst_row = sum_m_loc; //+= m_loc_3d_counts[p];
+			if (x_fst_row >= x_end_row) break;
+		    }
+		    
+		    //sum_m_loc += m_loc_3d_counts[p+1];
+		} /* end for p ... */
+	    } else { /* end layer 0 */
+		num_procs_to_send = 0;
+	    }
+	    
+	    /* 2. Set up the source processes from each destination process,
+	       and the recv counts.
+	       All processes may need to receive something from grid-0. */
+	    /* The following transposes x_send_counts matrix to
+	       x_recv_counts matrix */
+	    MPI_Alltoall(x_send_counts, 1, MPI_INT, x_recv_counts, 1, MPI_INT,
+			 grid3d->comm);
+	    
+	    j = 0; // tracking number procs to receive from
+	    for (p = 0; p < nprocs; ++p) {
+		if (x_recv_counts[p]) {
+		    procs_recv_from_list[j] = p;
+		    recv_count_list[j] = x_recv_counts[p];
+		    src = p;  tag = iam;
+		    ++j;
+#if 0		    
+		    printf("RECV: src %d -> iam %d, x_recv_counts[p] %d, tag %d\n",
+			   src, iam, x_recv_counts[p], tag);
+		    fflush(stdout);
+#endif		    
+		}
+	    }
+	    num_procs_to_recv = j;
+
+	    /* Persist in A3d structure */
+	    A3d->num_procs_to_send = num_procs_to_send;
+	    A3d->procs_to_send_list = procs_to_send_list;
+	    A3d->send_count_list = send_count_list;
+	    A3d->num_procs_to_recv = num_procs_to_recv;
+	    A3d->procs_recv_from_list = procs_recv_from_list;
+	    A3d->recv_count_list = recv_count_list;
+
+	    SUPERLU_FREE(m_loc_3d_counts);
+	    SUPERLU_FREE(x_send_counts);
+	    SUPERLU_FREE(x_recv_counts);
+	} else { /* Reuse the communication schedule */
+	    num_procs_to_send = A3d->num_procs_to_send;
+	    procs_to_send_list = A3d->procs_to_send_list;
+	    send_count_list = A3d->send_count_list;
+	    num_procs_to_recv = A3d->num_procs_to_recv;
+	    procs_recv_from_list = A3d->procs_recv_from_list;
+	    recv_count_list = A3d->recv_count_list;
+	}
+	
+	/* 3. Perform the acutal communication */
+	    
+	/* Post irecv first */
+	i = 0; // tracking offset in the recv buffer Btmp[]
+	for (j = 0; j < num_procs_to_recv; ++j) {
+	    src = procs_recv_from_list[j];
+	    tag = iam;
+	    k = nrhs * recv_count_list[j]; // recv count
+	    MPI_Irecv( Btmp + i, k, MPI_FLOAT,
+		       src, tag, grid3d->comm, &recv_reqs[j] );
+	    i += k;
+	}
+	    
+	/* Send */
+	/* Layer 0 sends to *num_procs_to_send* procs */
+	if (grid3d->zscp.Iam == 0) {
+	    int dest, tag;
+	    for (i = 0, p = 0; p < num_procs_to_send; ++p) { 
+		dest = procs_to_send_list[p]; //p + grid2d->iam * npdep;
+		tag = dest;
+		/*printf("SEND: iam %d -> %d, send_count_list[p] %d, tag %d\n",
+		  iam,dest, send_count_list[p], tag);
+		  fflush(stdout); */
+		    
+		MPI_Send(B1 + i, nrhs * send_count_list[p], 
+			 MPI_FLOAT, dest, tag, grid3d->comm);
+		i += nrhs * send_count_list[p];
+	    }
+	}  /* end layer 0 send */
+	    
+	/* Wait for all Irecv's to complete */
+	for (i = 0; i < num_procs_to_recv; ++i)
+	    MPI_Wait(&recv_reqs[i], &recv_status);
+
+        SUPERLU_FREE(recv_reqs);
+
+	///////////	
+#if 0 // The following code works only with even block distribution of RHS 
 	/* Everyone receives one block (post non-blocking irecv) */
 	src = grid3d->iam / npdep;  // Z-major
 	tag = iam;
@@ -385,7 +555,9 @@ int sScatter_B3d(NRformat_loc3d *A3d,  // modified
     
 	/* Wait for Irecv to complete */
 	MPI_Wait(&recv_req, &recv_status);
-
+#endif
+	///////////
+	
     } /* else Z-major */
 
     // B <- colMajor(Btmp)
