@@ -52,6 +52,27 @@ lpanelGPU_t lpanel_t::copyToGPU()
     return gpuPanel;
 }
 
+lpanelGPU_t lpanel_t::copyToGPU(void* basePtr)
+{
+
+    if (isEmpty())
+        return gpuPanel;
+    size_t idxSize = sizeof(int_t) * indexSize();
+    size_t valSize = sizeof(double) * nzvalSize();
+
+    gpuPanel.index = (int_t*) basePtr;
+    // cudaMalloc(&gpuPanel.index, idxSize);
+    cudaMemcpy(gpuPanel.index, index, idxSize, cudaMemcpyHostToDevice);
+
+    basePtr += idxSize; 
+    gpuPanel.val = (double *) basePtr; 
+    // cudaMalloc(&gpuPanel.val, valSize);
+    
+    cudaMemcpy(gpuPanel.val, val, valSize, cudaMemcpyHostToDevice);
+
+    return gpuPanel;
+}
+
 int_t lpanel_t::copyFromGPU()
 {
     if(isEmpty())
@@ -85,6 +106,28 @@ upanelGPU_t upanel_t::copyToGPU()
     cudaMemcpy(gpuPanel.val, val, valSize, cudaMemcpyHostToDevice);
     return gpuPanel;
 }
+
+upanelGPU_t upanel_t::copyToGPU(void* basePtr)
+{
+
+    if (isEmpty())
+        return gpuPanel;
+    size_t idxSize = sizeof(int_t) * indexSize();
+    size_t valSize = sizeof(double) * nzvalSize();
+
+    gpuPanel.index = (int_t*) basePtr;
+    // cudaMalloc(&gpuPanel.index, idxSize);
+    cudaMemcpy(gpuPanel.index, index, idxSize, cudaMemcpyHostToDevice);
+
+    basePtr += idxSize; 
+    gpuPanel.val = (double *) basePtr; 
+    // cudaMalloc(&gpuPanel.val, valSize);
+    
+    cudaMemcpy(gpuPanel.val, val, valSize, cudaMemcpyHostToDevice);
+
+    return gpuPanel;
+}
+
 
 int lpanel_t::checkGPU()
 {

@@ -323,6 +323,49 @@ int_t LUstruct_v100::packedU2skyline(dLUstruct_t *LUstruct)
     }
 }
 
+int numProcsPerNode(MPI_Comm baseCommunicator)
+{
+    MPI_Comm sharedComm;
+    MPI_Comm_split_type(baseCommunicator, MPI_COMM_TYPE_SHARED, 0, MPI_INFO_NULL, &sharedComm);
+    int count =0; 
+    MPI_Comm_size(sharedComm, &count);
+    return count; 
+    
+}
+
+int getMPIProcsPerGPU()
+{
+    if(!(getenv("MPI_PROCESS_PER_GPU")))
+    {
+        return 1;
+    }  
+    else 
+    {
+        int devCount;
+        cudaGetDeviceCount(&devCount);
+        int envCount  = atoi(getenv("MPI_PROCESS_PER_GPU"));
+        envCount = SUPERLU_MAX(envCount, 0);
+        return SUPERLU_MIN(envCount, devCount);
+    }
+}
+
+#define USABLE_GPU_MEM_FRACTION 0.9
+
+size_t getGPUMemPerProcs()
+{
+
+	size_t mfree, mtotal;
+	cudaMemGetInfo	(&mfree, &mtotal);
+#if 0
+	printf("Total memory %zu & free memory %zu\n", mtotal, mfree);
+#endif
+	return (size_t) (USABLE_GPU_MEM_FRACTION * (double) mfree) / getMPIProcsPerGPU();
+
+
+}
+
+
+
 int_t LUstruct_v100::setLUstruct_GPU()
 {
 
@@ -336,11 +379,161 @@ int_t LUstruct_v100::setLUstruct_GPU()
 	int device_id = grid3d->iam % deviceCount;
 	cudaSetDevice(device_id);
 
-    cudaMalloc(&A_gpu.xsup, (nsupers + 1) * sizeof(int_t));
-    cudaMemcpy(A_gpu.xsup, xsup, (nsupers + 1) * sizeof(int_t), cudaMemcpyHostToDevice);
+    size_t useableGPUMem = getGPUMemPerProcs();
+    /**
+     *  Memory is divided into two parts data memory and buffer memory 
+     *  data memory is used for useful data
+     *  bufferMemory is used for buffers
+     * */
+    size_t memReqData =0; 
+
+    /*Memory for XSUP*/        
+    memReqData += (nsupers + 1) * sizeof(int_t); 
+
+    size_t totalNzvalSize =0; 
+    /*Memory for lapenlPanel Data*/
+    for (int_t i = 0; i < CEILING(nsupers, Pc); ++i)
+    {
+        if (i * Pc + mycol < nsupers && isNodeInMyGrid[i * Pc + mycol] == 1)
+        {
+            memReqData += lPanelVec[i].totalSize();
+            totalNzvalSize += lPanelVec[i].nzvalSize();
+        }
+            
+    }
+    for (int_t i = 0; i < CEILING(nsupers, Pr); ++i)
+    {
+        if (i * Pr + myrow < nsupers && isNodeInMyGrid[i * Pr + myrow] == 1)
+        {
+            memReqData += uPanelVec[i].totalSize();
+            totalNzvalSize += uPanelVec[i].nzvalSize();
+        }
+            
+    }
+    memReqData += CEILING(nsupers, Pc) * sizeof(lpanelGPU_t); 
+    memReqData += CEILING(nsupers, Pr) * sizeof(upanelGPU_t); 
+
+    memReqData += sizeof(LUstructGPU_t); 
+
+    // Per stream data 
+    // TODO: estimate based on ancestor size
+    A_gpu.gemmBufferSize = SUPERLU_MIN(get_max_buffer_size(), totalNzvalSize);
+    size_t dataPerStream = 3*sizeof(double) * maxLvalCount
+                    +3*sizeof(double) * maxUvalCount
+                    +2*sizeof(int_t) * maxLidxCount
+                    +2*sizeof(int_t) * maxUidxCount
+                    +A_gpu.gemmBufferSize * sizeof(double)
+                    +ldt * ldt * sizeof(double); 
+    if(memReqData + 2*dataPerStream > useableGPUMem)
+    {
+        printf("Not enough memory on GPU: available = %zu,\ required for 2 streams =%zu, exiting\n"
+        ,useableGPUMem, memReqData + 2*dataPerStream);
+        exit(-1);
+    }
+
+    int_t maxNumberOfStream = (useableGPUMem-memReqData)/dataPerStream; 
+
+    int numberOfStreams = SUPERLU_MIN(getNumLookAhead(options), maxNumberOfStream);
+    numberOfStreams = SUPERLU_MIN(numberOfStreams, MAX_CUDA_STREAMS);
+    int rNumberOfStreams;
+    MPI_Allreduce(&numberOfStreams,&rNumberOfStreams, 1,
+                  MPI_INT, MPI_MIN, grid3d->comm);
+    A_gpu.numCudaStreams = rNumberOfStreams;
+
+    if(!grid3d->iam)
+        printf("Using %d CUDA LookAhead streams\n", rNumberOfStreams);
+    size_t totalMemoryRequired = memReqData + numberOfStreams*dataPerStream;
+    
+    void *gpuBasePtr, *gpuCurrentPtr;
+    cudaMalloc(&gpuBasePtr, totalMemoryRequired); 
+    gpuCurrentPtr = gpuBasePtr; 
+    
+    
+    
 
     upanelGPU_t *uPanelVec_GPU = new upanelGPU_t[CEILING(nsupers, Pr)];
     lpanelGPU_t *lPanelVec_GPU = new lpanelGPU_t[CEILING(nsupers, Pc)];
+    
+    #if 1
+    A_gpu.xsup= (int_t*) gpuCurrentPtr;
+    gpuCurrentPtr +=(nsupers + 1) * sizeof(int_t);
+    cudaMemcpy(A_gpu.xsup, xsup, (nsupers + 1) * sizeof(int_t), cudaMemcpyHostToDevice);
+
+    for (int_t i = 0; i < CEILING(nsupers, Pc); ++i)
+    {
+        if (i * Pc + mycol < nsupers && isNodeInMyGrid[i * Pc + mycol] == 1)
+        {
+            lPanelVec_GPU[i] = lPanelVec[i].copyToGPU(gpuCurrentPtr);
+            gpuCurrentPtr += lPanelVec[i].totalSize();
+        }
+            
+    }
+    A_gpu.lPanelVec= (lpanelGPU_t*) gpuCurrentPtr;
+    gpuCurrentPtr +=CEILING(nsupers, Pc) * sizeof(lpanelGPU_t);
+    cudaMemcpy(A_gpu.lPanelVec, lPanelVec_GPU,
+               CEILING(nsupers, Pc) * sizeof(lpanelGPU_t), cudaMemcpyHostToDevice);
+    
+    for (int_t i = 0; i < CEILING(nsupers, Pr); ++i)
+    {
+        if (i * Pr + myrow < nsupers && isNodeInMyGrid[i * Pr + myrow] == 1)
+        {
+            uPanelVec_GPU[i] = uPanelVec[i].copyToGPU(gpuCurrentPtr);
+            gpuCurrentPtr += uPanelVec[i].totalSize();
+        }
+            
+    }
+    A_gpu.uPanelVec= (upanelGPU_t*) gpuCurrentPtr; 
+    gpuCurrentPtr +=CEILING(nsupers, Pr) * sizeof(upanelGPU_t);
+    cudaMemcpy(A_gpu.uPanelVec, uPanelVec_GPU,
+               CEILING(nsupers, Pr) * sizeof(upanelGPU_t), cudaMemcpyHostToDevice);
+    
+    
+    for (int stream = 0; stream < A_gpu.numCudaStreams; stream++)
+    {
+
+        cudaStreamCreate(&A_gpu.cuStreams[stream]);
+        cublasCreate(&A_gpu.cuHandles[stream]);
+        A_gpu.LvalRecvBufs[stream]= (double*) gpuCurrentPtr; 
+        gpuCurrentPtr+= sizeof(double) * maxLvalCount;
+        A_gpu.UvalRecvBufs[stream]= (double*) gpuCurrentPtr; 
+        gpuCurrentPtr+= sizeof(double) * maxUvalCount;
+        A_gpu.LidxRecvBufs[stream]= (int_t*) gpuCurrentPtr; 
+        gpuCurrentPtr+= sizeof(int_t) * maxLidxCount;
+        A_gpu.UidxRecvBufs[stream]= (int_t*) gpuCurrentPtr; 
+        gpuCurrentPtr+= sizeof(int_t) * maxUidxCount;
+
+        A_gpu.gpuGemmBuffs[stream]= (double*) gpuCurrentPtr; 
+        gpuCurrentPtr+= A_gpu.gemmBufferSize * sizeof(double);
+        A_gpu.dFBufs[stream]= (double*) gpuCurrentPtr; 
+        gpuCurrentPtr+= ldt * ldt * sizeof(double);
+
+        /*lookAhead buffers and stream*/
+        cublasCreate(&A_gpu.lookAheadLHandle[stream]);
+        cudaStreamCreate(&A_gpu.lookAheadLStream[stream]);
+        A_gpu.lookAheadLGemmBuffer[stream]= (double*) gpuCurrentPtr; 
+        gpuCurrentPtr+= sizeof(double) * maxLvalCount;
+        cublasCreate(&A_gpu.lookAheadUHandle[stream]);
+        cudaStreamCreate(&A_gpu.lookAheadUStream[stream]);
+        A_gpu.lookAheadUGemmBuffer[stream]= (double*) gpuCurrentPtr; 
+        gpuCurrentPtr+= sizeof(double) * maxUvalCount;
+    
+    }
+    cudaCheckError();
+    // allocate
+    dA_gpu = (LUstructGPU_t*) gpuCurrentPtr; 
+    dA_gpu += sizeof(LUstructGPU_t); 
+    
+    cudaMemcpy(dA_gpu, &A_gpu, sizeof(LUstructGPU_t), cudaMemcpyHostToDevice);
+
+
+    
+
+    #else  
+    cudaMalloc(&A_gpu.xsup, (nsupers + 1) * sizeof(int_t));
+    cudaMemcpy(A_gpu.xsup, xsup, (nsupers + 1) * sizeof(int_t), cudaMemcpyHostToDevice);
+
+
+
 
     for (int_t i = 0; i < CEILING(nsupers, Pc); ++i)
     {
@@ -360,14 +553,7 @@ int_t LUstruct_v100::setLUstruct_GPU()
     cudaMemcpy(A_gpu.uPanelVec, uPanelVec_GPU,
                CEILING(nsupers, Pr) * sizeof(upanelGPU_t), cudaMemcpyHostToDevice);
     cudaCheckError();
-    // set up streams;
-    //TODO:  setup multiple cuda streams,
-    // make cuda streams consistent with look_aheads
-    // numCudaStreams is related to num_look_aheads
-    // A_gpu.numCudaStreams = getnCudaStreams(); // this always returns 1
-    #warning environment variable NUM_CUDA_STREAM is superseded by numlookahead
-    A_gpu.numCudaStreams = getNumLookAhead(options);
-    A_gpu.gemmBufferSize = get_max_buffer_size();
+    
 
     // assert(A_gpu.numCudaStreams < options->num_lookaheads);
 
@@ -394,14 +580,15 @@ int_t LUstruct_v100::setLUstruct_GPU()
         cudaMalloc(&A_gpu.lookAheadUGemmBuffer[stream], sizeof(double) * maxUvalCount);
     
     }
-    cudaCheckError();
+    
     // allocate
     cudaMalloc(&dA_gpu, sizeof(LUstructGPU_t));
     cudaMemcpy(dA_gpu, &A_gpu, sizeof(LUstructGPU_t), cudaMemcpyHostToDevice);
 
-    // now setup the LU panels
-    // dA_gpu.lPanelVec
-    // cudaMemcpy(dA_gpu.lPanelVec, A_gpu.lPanelVec, sizeof(LUstructGPU_t), cudaMemcpyHostToDevice);
+    
+    #endif 
+    cudaCheckError();
+    
 }
 
 int_t LUstruct_v100::copyLUGPUtoHost()

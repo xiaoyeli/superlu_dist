@@ -99,11 +99,16 @@ public:
         return LPANEL_HEADER_SIZE + 2 * nblocks() + 1 + nzrows();
     }
 
+    size_t totalSize()
+    {
+        return sizeof(int_t)*indexSize() + sizeof(double)*nzvalSize(); 
+    }
+
     // return the maximal iEnd such that stRow(iEnd)-stRow(iSt) < maxRow;
     int getEndBlock(int iSt, int maxRows);
 
     lpanelGPU_t copyToGPU();
-    // lpanelGPU_t copyToGPU(void **basePtr); // when we are doing a single allocation
+    lpanelGPU_t copyToGPU(void *basePtr); // when we are doing a single allocation
 
     int checkGPU();
 
@@ -213,7 +218,10 @@ public:
             return 0;
         return UPANEL_HEADER_SIZE + 2 * nblocks() + 1 + nzcols();
     }
-
+    size_t totalSize()
+    {
+        return sizeof(int_t)*indexSize() + sizeof(double)*nzvalSize(); 
+    }
     int_t checkCorrectness()
     {
         if (index == NULL)
@@ -241,7 +249,7 @@ public:
 
     upanelGPU_t copyToGPU();
     //TODO: implement with baseptr
-    // upanelGPU_t copyToGPU(void **basePtr);
+    upanelGPU_t copyToGPU(void *basePtr);
 
     int_t panelSolveGPU(cublasHandle_t handle, cudaStream_t cuStream,
                         int_t ksupsz, double *DiagBlk, int_t LDD);

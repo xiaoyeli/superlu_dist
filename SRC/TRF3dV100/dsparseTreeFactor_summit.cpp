@@ -68,6 +68,8 @@ int_t LUstruct_v100::dsparseTreeFactor(
         donePanelSolve[k0]=1;
     }
 
+    //TODO: its really the panels that needs to be doubled 
+    // everything else can remain as it is 
     int_t winSize =  SUPERLU_MIN(numLA/2, eTreeTopLims[1]);
     for (int k0 = k_st; k0 < winSize; ++k0)
     {
