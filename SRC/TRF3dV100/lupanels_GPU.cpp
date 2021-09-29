@@ -64,7 +64,7 @@ lpanelGPU_t lpanel_t::copyToGPU(void* basePtr)
     // cudaMalloc(&gpuPanel.index, idxSize);
     cudaMemcpy(gpuPanel.index, index, idxSize, cudaMemcpyHostToDevice);
 
-    basePtr += idxSize; 
+    basePtr = (char *)basePtr+ idxSize; 
     gpuPanel.val = (double *) basePtr; 
     // cudaMalloc(&gpuPanel.val, valSize);
     
@@ -119,7 +119,7 @@ upanelGPU_t upanel_t::copyToGPU(void* basePtr)
     // cudaMalloc(&gpuPanel.index, idxSize);
     cudaMemcpy(gpuPanel.index, index, idxSize, cudaMemcpyHostToDevice);
 
-    basePtr += idxSize; 
+    basePtr = (char *)basePtr+ idxSize; 
     gpuPanel.val = (double *) basePtr; 
     // cudaMalloc(&gpuPanel.val, valSize);
     

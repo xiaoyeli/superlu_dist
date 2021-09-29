@@ -426,7 +426,7 @@ int_t LUstruct_v100::setLUstruct_GPU()
                     +ldt * ldt * sizeof(double); 
     if(memReqData + 2*dataPerStream > useableGPUMem)
     {
-        printf("Not enough memory on GPU: available = %zu,\ required for 2 streams =%zu, exiting\n"
+        printf("Not enough memory on GPU: available = %zu, required for 2 streams =%zu, exiting\n"
         ,useableGPUMem, memReqData + 2*dataPerStream);
         exit(-1);
     }
@@ -456,7 +456,7 @@ int_t LUstruct_v100::setLUstruct_GPU()
     
     #if 1
     A_gpu.xsup= (int_t*) gpuCurrentPtr;
-    gpuCurrentPtr +=(nsupers + 1) * sizeof(int_t);
+    gpuCurrentPtr = (int_t*)gpuCurrentPtr + (nsupers + 1) ;
     cudaMemcpy(A_gpu.xsup, xsup, (nsupers + 1) * sizeof(int_t), cudaMemcpyHostToDevice);
 
     for (int_t i = 0; i < CEILING(nsupers, Pc); ++i)
@@ -464,12 +464,12 @@ int_t LUstruct_v100::setLUstruct_GPU()
         if (i * Pc + mycol < nsupers && isNodeInMyGrid[i * Pc + mycol] == 1)
         {
             lPanelVec_GPU[i] = lPanelVec[i].copyToGPU(gpuCurrentPtr);
-            gpuCurrentPtr += lPanelVec[i].totalSize();
+            gpuCurrentPtr =(char*)gpuCurrentPtr+ lPanelVec[i].totalSize();
         }
             
     }
     A_gpu.lPanelVec= (lpanelGPU_t*) gpuCurrentPtr;
-    gpuCurrentPtr +=CEILING(nsupers, Pc) * sizeof(lpanelGPU_t);
+    gpuCurrentPtr =(char*)gpuCurrentPtr + CEILING(nsupers, Pc) * sizeof(lpanelGPU_t);
     cudaMemcpy(A_gpu.lPanelVec, lPanelVec_GPU,
                CEILING(nsupers, Pc) * sizeof(lpanelGPU_t), cudaMemcpyHostToDevice);
     
@@ -478,12 +478,12 @@ int_t LUstruct_v100::setLUstruct_GPU()
         if (i * Pr + myrow < nsupers && isNodeInMyGrid[i * Pr + myrow] == 1)
         {
             uPanelVec_GPU[i] = uPanelVec[i].copyToGPU(gpuCurrentPtr);
-            gpuCurrentPtr += uPanelVec[i].totalSize();
+            gpuCurrentPtr =(char*)gpuCurrentPtr+ uPanelVec[i].totalSize();
         }
             
     }
     A_gpu.uPanelVec= (upanelGPU_t*) gpuCurrentPtr; 
-    gpuCurrentPtr +=CEILING(nsupers, Pr) * sizeof(upanelGPU_t);
+    gpuCurrentPtr =(char*)gpuCurrentPtr + CEILING(nsupers, Pr) * sizeof(upanelGPU_t);
     cudaMemcpy(A_gpu.uPanelVec, uPanelVec_GPU,
                CEILING(nsupers, Pr) * sizeof(upanelGPU_t), cudaMemcpyHostToDevice);
     
@@ -494,28 +494,28 @@ int_t LUstruct_v100::setLUstruct_GPU()
         cudaStreamCreate(&A_gpu.cuStreams[stream]);
         cublasCreate(&A_gpu.cuHandles[stream]);
         A_gpu.LvalRecvBufs[stream]= (double*) gpuCurrentPtr; 
-        gpuCurrentPtr+= sizeof(double) * maxLvalCount;
+        gpuCurrentPtr = (double *)gpuCurrentPtr +  maxLvalCount;
         A_gpu.UvalRecvBufs[stream]= (double*) gpuCurrentPtr; 
-        gpuCurrentPtr+= sizeof(double) * maxUvalCount;
+        gpuCurrentPtr = (double *)gpuCurrentPtr +  maxUvalCount;
         A_gpu.LidxRecvBufs[stream]= (int_t*) gpuCurrentPtr; 
-        gpuCurrentPtr+= sizeof(int_t) * maxLidxCount;
+        gpuCurrentPtr = (int_t *)gpuCurrentPtr +  maxLidxCount;
         A_gpu.UidxRecvBufs[stream]= (int_t*) gpuCurrentPtr; 
-        gpuCurrentPtr+= sizeof(int_t) * maxUidxCount;
+        gpuCurrentPtr = (int_t *)gpuCurrentPtr +  maxUidxCount;
 
         A_gpu.gpuGemmBuffs[stream]= (double*) gpuCurrentPtr; 
-        gpuCurrentPtr+= A_gpu.gemmBufferSize * sizeof(double);
+        gpuCurrentPtr = (double *)gpuCurrentPtr +  A_gpu.gemmBufferSize ;
         A_gpu.dFBufs[stream]= (double*) gpuCurrentPtr; 
-        gpuCurrentPtr+= ldt * ldt * sizeof(double);
+        gpuCurrentPtr = (double *)gpuCurrentPtr + ldt * ldt ;
 
         /*lookAhead buffers and stream*/
         cublasCreate(&A_gpu.lookAheadLHandle[stream]);
         cudaStreamCreate(&A_gpu.lookAheadLStream[stream]);
         A_gpu.lookAheadLGemmBuffer[stream]= (double*) gpuCurrentPtr; 
-        gpuCurrentPtr+= sizeof(double) * maxLvalCount;
+        gpuCurrentPtr = (double *)gpuCurrentPtr +  maxLvalCount;
         cublasCreate(&A_gpu.lookAheadUHandle[stream]);
         cudaStreamCreate(&A_gpu.lookAheadUStream[stream]);
         A_gpu.lookAheadUGemmBuffer[stream]= (double*) gpuCurrentPtr; 
-        gpuCurrentPtr+= sizeof(double) * maxUvalCount;
+        gpuCurrentPtr = (double *)gpuCurrentPtr +  maxUvalCount;
     
     }
     cudaCheckError();
