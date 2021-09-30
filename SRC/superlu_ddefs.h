@@ -596,10 +596,10 @@ extern void dlsum_fmod_inv(double *, double *, double *, double *,
 extern void dComputeLevelsets(int , int_t , gridinfo_t *,
 		  Glu_persist_t *, dLocalLU_t *, int_t *);               
 			   
-#ifdef GPU_ACC               
-extern void dlsum_fmod_inv_gpu_wrap(int_t, int_t, int_t, int_t, double *,double *,int,int, int_t , int_t *, C_Tree  *, C_Tree  *, int_t *, int_t *,long int *, double *, long int *, double *, long int *, int_t *, long int *, int_t *, gridinfo_t *, double * , double * , int_t );
-extern void dlsum_bmod_inv_gpu_wrap(int_t, int_t, int_t, int_t, double *,double *,int,int, int_t , int_t *, C_Tree  *, C_Tree  *, int_t *, int_t *,int_t *, long int *,double *,long int *,int_t  *,long int *,Ucb_indptr_t *,long int *,double *,long int *,int_t *,gridinfo_t *);
-#endif
+//#ifdef GPU_ACC
+////extern void dlsum_fmod_inv_gpu_wrap(int_t, int_t, int_t, int_t, double *,double *,int,int, int_t , int_t *, C_Tree  *, C_Tree  *, int_t *, int_t *,long int *, double *, long int *, double *, long int *, int_t *, long int *, int_t *, gridinfo_t *, double * , double * , int_t );
+////extern void dlsum_bmod_inv_gpu_wrap(int_t, int_t, int_t, int_t, double *,double *,int,int, int_t , int_t *, C_Tree  *, C_Tree  *, int_t *, int_t *,int_t *, long int *,double *,long int *,int_t  *,long int *,Ucb_indptr_t *,long int *,double *,long int *,int_t *,gridinfo_t *);
+//#endif
 
 extern void dlsum_fmod_inv_master(double *, double *, double *, double *,
 		       int, int, int_t , int_t *, int_t,

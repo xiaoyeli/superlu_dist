@@ -1,7 +1,9 @@
 include_directories(${SuperLU_DIST_SOURCE_DIR}/SRC)
 
 # Libs linked to all of the examples
-set(all_link_libs superlu_dist ${BLAS_LIB})
+#set(all_link_libs superlu_dist ${BLAS_LIB})
+set(NVSHMEM_LIB "-L/ccs/home/nanding/mysoftware/nvshmem203_gdr_cuda1103/lib  -lnvshmem")
+set(all_link_libs superlu_dist ${BLAS_LIB} ${NVSHMEM_LIB})
 if (NOT MSVC)
   list(APPEND all_link_libs m)
 endif ()
@@ -77,9 +79,9 @@ if(enable_double)
   add_executable(pddrive4_ABglobal ${DEXMG4})
   target_link_libraries(pddrive4_ABglobal ${all_link_libs})
 
-  set(DEXMS pddrive_spawn.c dcreate_matrix.c)
-  add_executable(pddrive_spawn ${DEXMS})
-  target_link_libraries(pddrive_spawn ${all_link_libs})
+  #set(DEXMS pddrive_spawn.c dcreate_matrix.c)
+  #add_executable(pddrive_spawn ${DEXMS})
+  #target_link_libraries(pddrive_spawn ${all_link_libs})
 
 
 endif()
@@ -130,8 +132,8 @@ if(enable_complex16)
   add_executable(pzdrive4_ABglobal ${ZEXMG4})
   target_link_libraries(pzdrive4_ABglobal ${all_link_libs})
 
-  set(ZEXMS pzdrive_spawn.c zcreate_matrix.c)
-  add_executable(pzdrive_spawn ${ZEXMS})
-  target_link_libraries(pzdrive_spawn ${all_link_libs})  
+  #set(ZEXMS pzdrive_spawn.c zcreate_matrix.c)
+  #add_executable(pzdrive_spawn ${ZEXMS})
+  #target_link_libraries(pzdrive_spawn ${all_link_libs})
 
 endif()

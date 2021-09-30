@@ -1899,6 +1899,7 @@ t1 = SuperLU_timer_();
 	checkGPU(gpuMemset(ready_x, 0, maxrecvsz*CEILING( nsupers, grid->npcol) * sizeof(double)));
     checkGPU(gpuMemset(ready_lsum, 0, 2*maxrecvsz*CEILING( nsupers, grid->nprow) * sizeof(double)));
     checkGPU(gpuMemset(d_msgnum, 0, h_nfrecv[1] * sizeof(int)));
+    checkGPU(gpuMemset( d_launch_flag, 0,  1 * sizeof(int)));
 	//printf("2-(%d) maxrecvsz=%d,ready_x=%d, ready_lsum=%d,RDMA_FLAG_SIZE=%d,k=%d,nlb=%d\n",iam,maxrecvsz,maxrecvsz*CEILING( nsupers, grid->npcol),2*maxrecvsz*CEILING( nsupers, grid->nprow),RDMA_FLAG_SIZE,k,nlb);
 	//fflush(stdout);
 #if ( PRNTlevel>=1 )
@@ -1909,10 +1910,11 @@ t1 = SuperLU_timer_();
 //	nvshmem_barrier_all();
 	t = SuperLU_timer_();
 #endif
-	dlsum_fmod_inv_gpu_wrap(k,nlb,DIM_X,DIM_Y,d_lsum,d_x,nrhs,knsupc,nsupers,d_fmod,Llu->d_LBtree_ptr,Llu->d_LRtree_ptr,Llu->d_ilsum,Llu->d_Lrowind_bc_dat, Llu->d_Lrowind_bc_offset, Llu->d_Lnzval_bc_dat, Llu->d_Lnzval_bc_offset, Llu->d_Linv_bc_dat, Llu->d_Linv_bc_offset, Llu->d_Lindval_loc_bc_dat, Llu->d_Lindval_loc_bc_offset,Llu->d_xsup,d_grid,maxrecvsz,
+	dlsum_fmod_inv_gpu_wrap(k,nlb,DIM_X,DIM_Y,d_lsum,d_x,nrhs,knsupc,nsupers,d_fmod,Llu->d_LBtree_ptr,Llu->d_LRtree_ptr,Llu->d_ilsum,Llu->d_Lrowind_bc_dat, Llu->d_Lrowind_bc_offset, Llu->d_Lnzval_bc_dat, Llu->d_Lnzval_bc_offset, Llu->d_Linv_bc_dat, Llu->d_Linv_bc_offset, Llu->d_Lindval_loc_bc_dat, Llu->d_Lindval_loc_bc_offset,Llu->d_xsup,d_grid,
+                         maxrecvsz,
 	                        flag_bc_q, flag_rd_q, ready_x, ready_lsum, my_flag_bc, my_flag_rd, d_launch_flag, d_nfrecv, h_nfrecv,
 	                        d_status,d_colnum,d_mynum, d_mymaskstart,d_mymasklength,
-	                        d_nfrecvmod,d_statusmod,d_colnummod,d_mynummod,d_mymaskstartmod,d_mymasklengthmod,d_recv_cnt,d_msgnum,senddone);
+	                        d_nfrecvmod,d_statusmod,d_colnummod,d_mynummod,d_mymaskstartmod,d_mymasklengthmod,d_recv_cnt,d_msgnum);
 	  		                      //d_rownum,d_rowstart,d_validrows);
 //#if ( PRNTlevel>=1 )
 //	nvshmem_barrier_all();
@@ -2677,10 +2679,29 @@ thread_id=0;
 	k = CEILING( nsupers, grid->npcol);/* Number of local block columns divided by #warps per block used as number of thread blocks*/
 	knsupc = sp_ienv_dist(3);
 
+
+    checkGPU(gpuMemcpy(d_status_u, mystatus_u, k * sizeof(int), gpuMemcpyHostToDevice));
+    checkGPU(gpuMemcpy(d_statusmod_u, mystatusmod_u, 2* nlb * sizeof(int), gpuMemcpyHostToDevice));
+    //for(int i=0;i<2*nlb;i++) printf("(%d),mystatusmod[%d]=%d\n",iam,i,mystatusmod[i]);
+    checkGPU(gpuMemset(flag_rd_q, 0, RDMA_FLAG_SIZE * nlb * 2 * sizeof(int)));
+    checkGPU(gpuMemset(flag_bc_q, 0, RDMA_FLAG_SIZE * (k+1)  * sizeof(int)));
+    checkGPU(gpuMemset(ready_x, 0, maxrecvsz*CEILING( nsupers, grid->npcol) * sizeof(double)));
+    checkGPU(gpuMemset(ready_lsum, 0, 2*maxrecvsz*CEILING( nsupers, grid->nprow) * sizeof(double)));
+    checkGPU(gpuMemset(d_msgnum_u, 0, h_nfrecv_u[1] * sizeof(int)));
+    checkGPU(gpuMemset(d_launch_flag, 0,  1 * sizeof(int)));
     
 
-	dlsum_bmod_inv_gpu_wrap(k,nlb,DIM_X,DIM_Y,d_lsum,d_x,nrhs,knsupc,nsupers,d_bmod,Llu->d_UBtree_ptr,Llu->d_URtree_ptr,Llu->d_ilsum,Llu->d_Urbs,Llu->d_Ufstnz_br_dat,Llu->d_Ufstnz_br_offset,Llu->d_Unzval_br_dat,Llu->d_Unzval_br_offset,Llu->d_Ucb_valdat,Llu->d_Ucb_valoffset,Llu->d_Ucb_inddat,Llu->d_Ucb_indoffset,Llu->d_Uinv_bc_dat,Llu->d_Uinv_bc_offset,Llu->d_xsup,d_grid);
-
+	dlsum_bmod_inv_gpu_wrap(k,nlb,DIM_X,DIM_Y,d_lsum,d_x,nrhs,knsupc,nsupers,d_bmod,
+                         Llu->d_UBtree_ptr,Llu->d_URtree_ptr,Llu->d_ilsum,Llu->d_Urbs,
+                         Llu->d_Ufstnz_br_dat,Llu->d_Ufstnz_br_offset,Llu->d_Unzval_br_dat,
+                         Llu->d_Unzval_br_offset,Llu->d_Ucb_valdat,Llu->d_Ucb_valoffset,Llu->d_Ucb_inddat,
+                         Llu->d_Ucb_indoffset,Llu->d_Uinv_bc_dat,Llu->d_Uinv_bc_offset,Llu->d_xsup,d_grid,
+                         maxrecvsz, flag_bc_q, flag_rd_q, ready_x, ready_lsum, my_flag_bc, my_flag_rd, d_launch_flag,
+                         d_nfrecv_u, h_nfrecv_u, d_status_u,d_colnum_u, d_mynum_u, d_mymaskstart_u,d_mymasklength_u,
+                         d_nfrecvmod_u, d_statusmod_u, d_colnummod_u, d_mynummod_u, d_mymaskstartmod_u, d_mymasklengthmod_u,
+                         d_recv_cnt_u, d_msgnum_u);
+    printf("(%d) done dlsum_bmod_inv_gpu_wrap\n",iam);
+    fflush(stdout);
 
 	checkGPU(gpuMemcpy(x, d_x, (ldalsum * nrhs + nlb * XK_H) * sizeof(double), gpuMemcpyDeviceToHost));
 

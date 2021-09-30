@@ -8,9 +8,11 @@ extern int *my_flag_bc;
 extern int *my_flag_rd;
 extern double *ready_x;
 extern double *ready_lsum;
+extern int *d_launch_flag;
 extern int *mystatus;
 extern int *mystatusmod;
-extern int *d_launch_flag;
+extern int *mystatus_u;
+extern int *mystatusmod_u;
 
 /* ************************************************* */
 /*  for block column broadcast                       */
@@ -29,8 +31,6 @@ extern int *d_mymaskstart;
 extern int *d_mymasklength;
 extern int *d_rownum;
 extern int *d_rowstart;
-extern int *senddone;
-extern int *sumdone;
 extern int *d_nfrecvmod;
 extern int *h_nfrecvmod;
 extern int *d_statusmod;
@@ -40,6 +40,35 @@ extern int *d_mymaskstartmod;
 extern int *d_mymasklengthmod;
 extern int *d_recv_cnt;
 extern int *d_msgnum;
+
+/* ************************************************* */
+/*  for block row reduction                        */
+/*  *_nfrecv: totol number of received msg           */
+/*  d_*: device memory                               */
+/*  h_*: host memory                                 */
+/*  d_mynum: number of msg I expected // each thread */
+/*  d_mymaskstart: start index point at d_column     */
+/* ************************************************  */
+extern int *d_nfrecv_u;
+extern int *h_nfrecv_u;
+extern int *d_status_u;
+extern int *d_colnum_u;
+extern int *d_mynum_u;
+extern int *d_mymaskstart_u;
+extern int *d_mymasklength_u;
+extern int *d_rownum_u;
+extern int *d_rowstart_u;
+extern int *d_nfrecvmod_u;
+extern int *h_nfrecvmod_u;
+extern int *d_statusmod_u;
+extern int *d_colnummod_u;
+extern int *d_mynummod_u;
+extern int *d_mymaskstartmod_u;
+extern int *d_mymasklengthmod_u;
+extern int *d_recv_cnt_u;
+extern int *d_msgnum_u;
+
+
 extern __device__ int clockrate;
 #define RDMA_FLAG_SIZE 4
 

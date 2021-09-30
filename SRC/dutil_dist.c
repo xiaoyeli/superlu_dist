@@ -690,7 +690,7 @@ void dDumpLblocks(int iam, int_t nsupers, gridinfo_t *grid,
 /*! \Criticalpath the factored matrix L
  */
 void cpLblocks(int iam, int_t nsupers, gridinfo_t *grid,
-                  Glu_persist_t *Glu_persist, LocalLU_t *Llu)
+                  Glu_persist_t *Glu_persist, dLocalLU_t *Llu)
 {
     register int c, extra, gb, j, i, lb, nsupc, nsupr, len, nb, ncb;
     register int_t k, mycol, r;

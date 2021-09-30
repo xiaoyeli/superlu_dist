@@ -4,8 +4,8 @@
 
 
 # Configuration directories and files
-SourceDirectory: /tmp/superlu_dist_amd
-BuildDirectory: /tmp/superlu_dist_amd/cmake-build-debug
+SourceDirectory: /tmp/tmp.OvjowiNBHd
+BuildDirectory: /tmp/tmp.OvjowiNBHd/cmake-build-debug
 
 # Where to place the cost data store
 CostDataFile: 
@@ -26,7 +26,7 @@ SubmitURL: http://
 NightlyStartTime: 00:00:00 EDT
 
 # Commands for the build/test/submit cycle
-ConfigureCommand: "/usr/bin/cmake" "/tmp/superlu_dist_amd"
+ConfigureCommand: "/usr/bin/cmake" "/tmp/tmp.OvjowiNBHd"
 MakeCommand: /usr/bin/cmake --build . --config "${CTEST_CONFIGURATION_TYPE}"
 DefaultCTestConfigurationType: Release
 

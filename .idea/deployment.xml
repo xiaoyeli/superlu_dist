@@ -2,6 +2,16 @@
 <project version="4">
   <component name="PublishConfigData" autoUpload="Always" serverName="summit">
     <serverData>
+      <paths name="Ancilla (cb532c3e-a7cf-45b0-b81c-14c523f3140e)">
+        <serverdata>
+          <mappings>
+            <mapping deploy="/tmp/tmp.OvjowiNBHd" local="$PROJECT_DIR$" />
+          </mappings>
+          <excludedPaths>
+            <excludedPath local="true" path="$PROJECT_DIR$/cmake-build-debug" />
+          </excludedPaths>
+        </serverdata>
+      </paths>
       <paths name="Cori (4088f52f-a3f4-4891-a6bd-e4955d027531)">
         <serverdata>
           <mappings>
@@ -16,13 +26,6 @@
         <serverdata>
           <mappings>
             <mapping deploy="/ccs/home/nanding/myproject/superLU/superlu_amd/" local="$PROJECT_DIR$" />
-          </mappings>
-        </serverdata>
-      </paths>
-      <paths name="summit (33cce29e-a6bc-4fa3-aaf9-a4c698b38717)">
-        <serverdata>
-          <mappings>
-            <mapping deploy="/tmp/tmp.PUYJcWAyPc" local="$PROJECT_DIR$" />
           </mappings>
         </serverdata>
       </paths>

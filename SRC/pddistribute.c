@@ -320,16 +320,23 @@ dReDistribute_A(SuperMatrix *A, dScalePermstruct_t *ScalePermstruct,
     return 0;
 } /* dReDistribute_A */
 
-int* mystatus, *mystatusmod,*d_launch_flag,*d_rownum,*d_rowstart,*senddone,*sumdone;
+int* mystatus, *mystatusmod,*d_launch_flag,*d_rownum,*d_rowstart;
+int *d_status, *d_statusmod;
+int* mystatus_u, *mystatusmod_u;
+int *d_status_u, *d_statusmod_u;
 int *flag_bc_q, *flag_rd_q ;
 int* my_flag_bc, *my_flag_rd;
-double *ready_x, *ready_lsum;
-int *d_status, *d_statusmod;
-int*d_nfrecv, *h_nfrecv, *d_colnum;
 int* d_mynum,*d_mymaskstart,*d_mymasklength;
+int* d_mynum_u,*d_mymaskstart_u,*d_mymasklength_u;
+double *ready_x, *ready_lsum;
+int*d_nfrecv, *h_nfrecv, *d_colnum;
+int*d_nfrecv_u, *h_nfrecv_u, *d_colnum_u;
 int* d_nfrecvmod, *h_nfrecvmod, *d_colnummod;
+int* d_nfrecvmod_u, *h_nfrecvmod_u, *d_colnummod_u;
 int* d_mynummod,*d_mymaskstartmod,*d_mymasklengthmod;
+int* d_mynummod_u,*d_mymaskstartmod_u,*d_mymasklengthmod_u;
 int *h_recv_cnt, *d_recv_cnt, *d_msgnum;
+int *h_recv_cnt_u, *d_recv_cnt_u, *d_msgnum_u;
 float
 pddistribute(fact_t fact, int_t n, SuperMatrix *A,
 	     dScalePermstruct_t *ScalePermstruct,
@@ -1127,7 +1134,11 @@ pddistribute(fact_t fact, int_t n, SuperMatrix *A,
 			ABORT("Malloc fails for Uinv_bc_ptr[ljb][]");
 			Uinv_bc_offset[ljb]=nsupc*nsupc;
 			Uinv_bc_cnt += Uinv_bc_offset[ljb];		    
-			
+		    if (ljb==0) {
+		        printf("!!! Uinv_bc_offset!!!  (%d),nrbl=%d, jb=%d\n", iam, nrbl, jb);
+		        fflush(stdout);
+		    }
+
 			mybufmax[0] = SUPERLU_MAX( mybufmax[0], len1 );
 		    mybufmax[1] = SUPERLU_MAX( mybufmax[1], len*nsupc );
 		    mybufmax[4] = SUPERLU_MAX( mybufmax[4], len );
@@ -1544,7 +1555,7 @@ pddistribute(fact_t fact, int_t n, SuperMatrix *A,
 		ABORT("Malloc fails for SeedSTD_BC[].");
 
     if ( !(mystatus = (int*)SUPERLU_MALLOC(k * sizeof(int))) )
-        ABORT("Malloc fails for SeedSTD_BC[].");
+        ABORT("Malloc fails for mystatus[].");
     if ( !(h_nfrecv = (int*)SUPERLU_MALLOC( 3* sizeof(int))) )
         ABORT("Malloc fails for h_nfrecv[].");
     if ( !(h_nfrecvmod = (int*)SUPERLU_MALLOC( 3* sizeof(int))) )
@@ -1911,9 +1922,16 @@ if ( !iam) printf(".. Construct Reduce tree for L: %.2f\t\n", t);
 	if ( !(SeedSTD_BC = (double*)SUPERLU_MALLOC(k * sizeof(double))) )
 		ABORT("Malloc fails for SeedSTD_BC[].");
 
+	if ( !(mystatus_u = (int*)SUPERLU_MALLOC(k * sizeof(int))) )
+        ABORT("Malloc fails for mystatus_u[].");
+    if ( !(h_nfrecv_u = (int*)SUPERLU_MALLOC( 3* sizeof(int))) )
+        ABORT("Malloc fails for h_nfrecv_u[].");
+    if ( !(h_nfrecvmod_u = (int*)SUPERLU_MALLOC( 3* sizeof(int))) )
+        ABORT("Malloc fails for h_nfrecvmod_u[].");
+
 	for (i=0;i<k;i++){
 		SeedSTD_BC[i]=rand();
-		//mystatus[i]=1;
+		mystatus_u[i]=1;
 	}
 
 	MPI_Allreduce(MPI_IN_PLACE,&SeedSTD_BC[0],k,MPI_DOUBLE,MPI_MAX,grid->cscp.comm);
@@ -2009,6 +2027,10 @@ if ( !iam) printf(".. Construct Reduce tree for L: %.2f\t\n", t);
                 int needrecv=0;
 				C_BcTree_Create_nv(&UBtree_ptr[ljb], grid->comm, ranks, rank_cnt, msgsize, 'd',&needrecv);
                 //C_BcTree_Create(&UBtree_ptr[ljb], grid->comm, ranks, rank_cnt, msgsize, 'd');
+                if (needrecv==1) {
+                    mystatus_u[ljb]=0;
+                    //printf("(%d) Col %d need one msg %d\n",iam, ljb,mystatus[ljb]);
+                }
 				UBtree_ptr[ljb].tag_=BC_U;
 
 
@@ -2087,11 +2109,17 @@ if ( !iam) printf(".. Construct Bcast tree for U: %.2f\t\n", t);
 
 	if ( !(SeedSTD_RD = (double*)SUPERLU_MALLOC(k * sizeof(double))) )
 		ABORT("Malloc fails for SeedSTD_RD[].");
+	if ( !(mystatusmod_u = (int*)SUPERLU_MALLOC(2*k * sizeof(int))) )
+        ABORT("Malloc fails for mystatusmod_u[].");
+    if ( !(h_recv_cnt_u = (int*)SUPERLU_MALLOC(k * sizeof(int))) )
+        ABORT("Malloc fails for h_recv_cnt_u[].");
 
+    int nbrecvmod=0;
 	for (i=0;i<k;i++){
 		SeedSTD_RD[i]=rand();
+        h_recv_cnt_u[i]=0;
 	}
-
+	for (i=0;i<2*k;i++) mystatusmod_u[i]=1;
 	MPI_Allreduce(MPI_IN_PLACE,&SeedSTD_RD[0],k,MPI_DOUBLE,MPI_MAX,grid->rscp.comm);
 
 
@@ -2218,6 +2246,14 @@ if ( !iam) printf(".. Construct Bcast tree for U: %.2f\t\n", t);
 					int needrecvrd=0;
 					C_RdTree_Create_nv(&URtree_ptr[lib], grid->comm, ranks, rank_cnt, msgsize, 'd', &needrecvrd);
                     //C_RdTree_Create(&URtree_ptr[lib], grid->comm, ranks, rank_cnt, msgsize, 'd');
+                    if (needrecvrd!=0) {
+                        mystatusmod_u[lib*2]=0;
+                        mystatusmod_u[lib*2+1]=0;
+                        h_recv_cnt_u[lib]=needrecvrd;
+                        //printf("(%d) on CPU, lib=%d, cnt=%d\n",iam,lib,LRtree_ptr[lib].destCnt_);
+                        nbrecvmod+=needrecvrd;
+                    }
+
 					URtree_ptr[lib].tag_=RD_U;
 
 					// }
@@ -2381,11 +2417,11 @@ if ( !iam) printf(".. Construct Reduce tree for U: %.2f\t\n", t);
 	checkGPU(gpuMalloc( (void**)&Llu->d_Unzval_br_dat, (Llu->Unzval_br_cnt) * sizeof(double)));
 	checkGPU(gpuMalloc( (void**)&Llu->d_Linv_bc_dat, (Llu->Linv_bc_cnt) * sizeof(double)));
 	checkGPU(gpuMalloc( (void**)&Llu->d_Uinv_bc_dat, (Llu->Uinv_bc_cnt) * sizeof(double)));
-	
-#endif
 
 
 
+
+	/////* reuse: L and U *////
 	int maxrecvsz = sp_ienv_dist(3)* nrhs + SUPERLU_MAX( XK_H, LSUM_H );
     flag_bc_q = (int *) nvshmem_malloc (RDMA_FLAG_SIZE * (k+1) * sizeof(int)); // for sender
     flag_rd_q = (int *)nvshmem_malloc( RDMA_FLAG_SIZE * nlb * 2 * sizeof(int)); // for sender
@@ -2397,15 +2433,15 @@ if ( !iam) printf(".. Construct Reduce tree for U: %.2f\t\n", t);
     my_flag_rd = (int *) nvshmem_malloc (RDMA_FLAG_SIZE * nlb * 2 * sizeof(int)); // for sender
     checkGPU(gpuMemset(my_flag_bc, 0, RDMA_FLAG_SIZE * (CEILING( nsupers, grid->npcol)+1)  * sizeof(int)));
     checkGPU(gpuMemset(my_flag_rd, 0, RDMA_FLAG_SIZE * nlb * 2 * sizeof(int)));
-    checkGPU(gpuMemset(ready_x, 0, maxrecvsz*CEILING( nsupers, grid->npcol) * sizeof(double)));
-    checkGPU(gpuMemset(ready_lsum, 0, 2*maxrecvsz*CEILING( nsupers, grid->nprow) * sizeof(double)));
+    //checkGPU(gpuMemset(ready_x, 0, maxrecvsz*CEILING( nsupers, grid->npcol) * sizeof(double)));
+    //checkGPU(gpuMemset(ready_lsum, 0, 2*maxrecvsz*CEILING( nsupers, grid->nprow) * sizeof(double)));
+    checkGPU(gpuMalloc( (void**)&d_launch_flag,  1 * sizeof(int)));
+    //checkGPU(gpuMemset( d_launch_flag, 0,  1 * sizeof(int)));
 
-	checkGPU(gpuMalloc( (void**)&d_launch_flag,  1 * sizeof(int)));
+    /////* for L solve *////
 	checkGPU(gpuMalloc( (void**)&d_status,  CEILING( nsupers, grid->npcol) * sizeof(int)));
 	checkGPU(gpuMalloc( (void**)&d_nfrecv,  3 * sizeof(int)));
-	checkGPU(gpuMemset( d_launch_flag, 0,  1 * sizeof(int)));
 	checkGPU(gpuMemcpy(d_status, mystatus, CEILING( nsupers, grid->npcol) * sizeof(int), gpuMemcpyHostToDevice));
-
 
 
     int *my_colnum;
@@ -2425,19 +2461,20 @@ if ( !iam) printf(".. Construct Reduce tree for U: %.2f\t\n", t);
         }
     }
 	checkGPU(gpuMemcpy(d_colnum, my_colnum,  (nfrecvx+1) * sizeof(int), gpuMemcpyHostToDevice));
-	printf("(%d) nfrecvx=%d,nfrecvmod=%d\n",iam,nfrecvx,nfrecvmod);
+	//printf("(%d) nfrecvx=%d,nfrecvmod=%d\n",iam,nfrecvx,nfrecvmod);
     //printf("(%d) WAIT_NUM_BLOCKS=%d,WAIT_NUM_THREADS=%d\n",iam,h_nfrecv[2],h_nfrecv[1]);
-	fflush(stdout);
-	checkGPU(gpuMalloc( (void**)&d_mynum, h_nfrecv[1]  * sizeof(int)));
-	checkGPU(gpuMalloc( (void**)&d_mymaskstart, h_nfrecv[1] * sizeof(int)));
-	checkGPU(gpuMalloc( (void**)&d_mymasklength, h_nfrecv[1]  * sizeof(int)));
-
-	h_nfrecv[0]=nfrecvx;
-	int max_msg=(nfrecvx > nfrecvmod ? nfrecvx: nfrecvmod);
+	//fflush(stdout);
+    h_nfrecv[0]=nfrecvx;
+    int max_msg=(nfrecvx > nfrecvmod ? nfrecvx: nfrecvmod);
     //h_nfrecv[1]=(1024 > max_msg ? max_msg : 1024); // BC
 
     h_nfrecv[1]=1024;
     h_nfrecv[2]=2;
+
+	checkGPU(gpuMalloc( (void**)&d_mynum, h_nfrecv[1]  * sizeof(int)));
+	checkGPU(gpuMalloc( (void**)&d_mymaskstart, h_nfrecv[1] * sizeof(int)));
+	checkGPU(gpuMalloc( (void**)&d_mymasklength, h_nfrecv[1]  * sizeof(int)));
+
     //printf("(%d), wait=%d,%d\n",iam,h_nfrecv[2],h_nfrecv[1]);
     //fflush(stdout);
 
@@ -2461,8 +2498,8 @@ if ( !iam) printf(".. Construct Reduce tree for U: %.2f\t\n", t);
     h_nfrecvmod[0]=nfrecvmod;
     h_nfrecvmod[1]=tmp_idx;
     h_nfrecvmod[2]=h_nfrecv[2];
-    //printf("(%d) nfrecvmod=%d,%d,nfrecvx=%d\n",iam,nfrecvmod, tmp_idx,nfrecvx);
-	//fflush(stdout);
+    printf("(%d) nfrecvmod=%d,%d,nfrecvx=%d\n",iam,nfrecvmod, tmp_idx,nfrecvx);
+	fflush(stdout);
 	checkGPU(gpuMalloc( (void**)&d_nfrecvmod,  3 * sizeof(int)));
 	checkGPU(gpuMemcpy(d_nfrecvmod, h_nfrecvmod, 3 * sizeof(int), gpuMemcpyHostToDevice));
 	checkGPU(gpuMalloc( (void**)&d_statusmod, 2*CEILING(nsupers, grid->nprow) * sizeof(int)));
@@ -2475,12 +2512,81 @@ if ( !iam) printf(".. Construct Reduce tree for U: %.2f\t\n", t);
 	checkGPU(gpuMalloc( (void**)&d_mymasklengthmod,   h_nfrecv[1] * sizeof(int)));
 
     checkGPU(gpuMalloc( (void**)&d_msgnum,  h_nfrecv[1] * sizeof(int)));
-    //checkGPU(gpuMalloc( (void**)&d_rownum,  h_nfrecv[1] * sizeof(int)));
-    //checkGPU(gpuMalloc( (void**)&d_rowstart,  h_nfrecv[1] * sizeof(int)));
 
-    //int delta = nlb % h_nfrecv[1];
-    checkGPU(gpuMalloc( (void**)&senddone,  nlb * sizeof(int)));
-    checkGPU(gpuMalloc( (void**)&sumdone,  nlb * sizeof(int)));
+
+
+
+    /////* for U solve *////
+    checkGPU(gpuMalloc( (void**)&d_status_u,  CEILING( nsupers, grid->npcol) * sizeof(int)));
+    checkGPU(gpuMalloc( (void**)&d_nfrecv_u,  3 * sizeof(int)));
+    checkGPU(gpuMemcpy(d_status_u, mystatus_u, CEILING( nsupers, grid->npcol) * sizeof(int), gpuMemcpyHostToDevice));
+
+    int *my_colnum_u;
+    if ( !(my_colnum_u = (int*)SUPERLU_MALLOC((nbrecvx+1) * sizeof(int))) )
+        ABORT("Malloc fails for my_colnum_u[].");
+    checkGPU(gpuMalloc( (void**)&d_colnum_u,  (nbrecvx+1) * sizeof(int)));
+
+    //printf("(%d),CEILING( nsupers, grid->npcol)=%d\n",iam,CEILING( nsupers, grid->npcol));
+    //fflush(stdout);
+    tmp_idx=0;
+    for(int i=0; i<CEILING( nsupers, grid->npcol);i++){
+        if(mystatus_u[i]==0) {
+            my_colnum_u[tmp_idx]=i;
+            printf("(%d),nbrecvx=%d,i=%d,my_column_u[%d]=%d\n",iam,nbrecvx,i,tmp_idx,my_colnum[tmp_idx]);
+            fflush(stdout);
+            tmp_idx += 1;
+        }
+    }
+    h_nfrecv_u[0]=nbrecvx;
+    max_msg=(nbrecvx > nbrecvmod ? nbrecvx: nbrecvmod);
+    //h_nfrecv[1]=(1024 > max_msg ? max_msg : 1024); // BC
+
+    h_nfrecv_u[1]=1024;
+    h_nfrecv_u[2]=2;
+    //printf("(%d), wait=%d,%d\n",iam,h_nfrecv[2],h_nfrecv[1]);
+    //fflush(stdout);
+
+    checkGPU(gpuMemcpy(d_colnum_u, my_colnum_u,  (nbrecvx+1) * sizeof(int), gpuMemcpyHostToDevice));
+    printf("(%d) nbrecvx=%d,nbrecvmod=%d\n",iam,nbrecvx,nbrecvmod);
+    fflush(stdout);
+    checkGPU(gpuMalloc( (void**)&d_mynum_u, h_nfrecv_u[1]  * sizeof(int)));
+    checkGPU(gpuMalloc( (void**)&d_mymaskstart_u, h_nfrecv_u[1] * sizeof(int)));
+    checkGPU(gpuMalloc( (void**)&d_mymasklength_u, h_nfrecv_u[1]  * sizeof(int)));
+    checkGPU(gpuMemcpy(d_nfrecv_u, h_nfrecv_u, 3 * sizeof(int), gpuMemcpyHostToDevice));
+
+    int *my_colnummod_u;
+    if ( !(my_colnummod_u = (int*)SUPERLU_MALLOC((nbrecvmod+1) * sizeof(int))) )
+    ABORT("Malloc fails for my_colnummod_u[].");
+    checkGPU(gpuMalloc( (void**)&d_colnummod_u,  (nbrecvmod+1) * sizeof(int)));
+
+    tmp_idx=0;
+    for(int i=0; i<CEILING( nsupers, grid->nprow);i++){
+        //printf("(%d),nfrecvmod=%d,i=%d,recv_cnt=%d\n",iam,nfrecvmod,i,h_recv_cnt[i]);
+        if(mystatusmod_u[i*2]==0) {
+            my_colnummod_u[tmp_idx]=i;
+            //printf("(%d),nfrecvmod=%d,i=%d,my_colnummod[%d]=%d\n",iam,nfrecvmod,i,tmp_idx,my_colnummod[tmp_idx]);
+            //fflush(stdout);
+            tmp_idx += 1;
+        }
+    }
+    h_nfrecvmod_u[0]=nbrecvmod;
+    h_nfrecvmod_u[1]=tmp_idx;
+    h_nfrecvmod_u[2]=h_nfrecv[2];
+    //printf("(%d) nfrecvmod=%d,%d,nfrecvx=%d\n",iam,nfrecvmod, tmp_idx,nfrecvx);
+    //fflush(stdout);
+    checkGPU(gpuMalloc( (void**)&d_nfrecvmod_u,  3 * sizeof(int)));
+    checkGPU(gpuMemcpy(d_nfrecvmod_u, h_nfrecvmod_u, 3 * sizeof(int), gpuMemcpyHostToDevice));
+    checkGPU(gpuMalloc( (void**)&d_statusmod_u, 2*CEILING(nsupers, grid->nprow) * sizeof(int)));
+    checkGPU(gpuMalloc( (void**)&d_recv_cnt_u, CEILING(nsupers, grid->nprow) * sizeof(int)));
+    checkGPU(gpuMemcpy(d_recv_cnt_u, h_recv_cnt_u,  CEILING(nsupers, grid->nprow) * sizeof(int), gpuMemcpyHostToDevice));
+
+    checkGPU(gpuMemcpy(d_colnummod_u, my_colnummod_u,  (nbrecvmod+1) * sizeof(int), gpuMemcpyHostToDevice));
+    checkGPU(gpuMalloc( (void**)&d_mynummod_u, h_nfrecv[1]  * sizeof(int)));
+    checkGPU(gpuMalloc( (void**)&d_mymaskstartmod_u, h_nfrecv[1]  * sizeof(int)));
+    checkGPU(gpuMalloc( (void**)&d_mymasklengthmod_u,   h_nfrecv[1] * sizeof(int)));
+    checkGPU(gpuMalloc( (void**)&d_msgnum_u,  h_nfrecv[1] * sizeof(int)));
+
+
 #endif
 
 #if ( PRNTlevel>=1 )
