@@ -15,8 +15,9 @@ at the top-level directory.
  *
  * <pre>
  * -- Distributed SuperLU routine (version 7.0) --
- * Lawrence Berkeley National Lab, Georgia Institute of Technology.
- * May 10, 2019
+ * Lawrence Berkeley National Lab, Georgia Institute of Technology,
+ * Oak Ridge National Lab
+ * May 12, 2021
  */
 #include "superlu_ddefs.h"
 #if 0
@@ -227,7 +228,9 @@ int_t ddenseTreeFactor(
             double* bigV = scuBufs->bigV;
             double* bigU = scuBufs->bigU;
 
+#ifdef _OPENMP    
 #pragma omp parallel for schedule(dynamic)
+#endif
             for (int_t ij = 0; ij < nub * nlb; ++ij)
             {
                 /* code */
@@ -249,9 +252,9 @@ int_t ddenseTreeFactor(
                 int_t *lsub = lPanelInfo->lsub;
                 int_t *usub = uPanelInfo->usub;
 #ifdef _OPENMP		
-                int_t thread_id = omp_get_thread_num();
+                int thread_id = omp_get_thread_num();
 #else		
-                int_t thread_id = 0;
+                int thread_id = 0;
 #endif		
                 dblock_gemm_scatter( lb, ub,
                                     Ublock_info,
@@ -500,10 +503,14 @@ int_t dsparseTreeFactor_ASYNC(
             int_t klst = FstBlockC (k + 1);
 
             double* bigV = scuBufs->bigV;
-
+	    
+#ifdef _OPENMP    
 #pragma omp parallel
+#endif
             {
+#ifdef _OPENMP    
 #pragma omp for schedule(dynamic,2) nowait
+#endif
 		/* Each thread is assigned one loop index ij, responsible for
 		   block update L(lb,k) * U(k,j) -> tempv[]. */
                 for (int_t ij = 0; ij < HyP->lookAheadBlk * HyP->num_u_blks; ++ij)
@@ -519,7 +526,9 @@ int_t dsparseTreeFactor_ASYNC(
 					       LUstruct, grid, SCT, stat );
                 }
 
+#ifdef _OPENMP    
 #pragma omp for schedule(dynamic,2) nowait
+#endif
                 for (int_t ij = 0; ij < HyP->lookAheadBlk * HyP->num_u_blks_Phi; ++ij)
                 {
                     int_t j   = ij / HyP->lookAheadBlk ;
@@ -529,7 +538,9 @@ int_t dsparseTreeFactor_ASYNC(
 						LUstruct, grid, SCT, stat);
                 }
 
+#ifdef _OPENMP    
 #pragma omp for schedule(dynamic,2) nowait
+#endif
                 for (int_t ij = 0; ij < HyP->RemainBlk * HyP->num_u_blks; ++ij) //
                 {
                     int_t j   = ij / HyP->RemainBlk;
@@ -571,9 +582,13 @@ int_t dsparseTreeFactor_ASYNC(
                 }
             }
 
+#ifdef _OPENMP    
 #pragma omp parallel
+#endif
             {
+#ifdef _OPENMP    
 #pragma omp for schedule(dynamic,2) nowait
+#endif
                 for (int_t ij = 0; ij < HyP->RemainBlk * (HyP->num_u_blks_Phi - jj_cpu) ; ++ij)
                 {
                     int_t j   = ij / HyP->RemainBlk + jj_cpu;

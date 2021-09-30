@@ -352,7 +352,7 @@ int zcreate_matrix_postfix3d(SuperMatrix *A, int nrhs, doublecomplex **rhs,
         if (iam == (grid3d->nprow * grid3d->npcol* grid3d->npdep - 1)) /* last proc. gets all*/
             m_loc = m - m_loc * (grid3d->nprow * grid3d->npcol* grid3d->npdep - 1);
     }
- 
+
     /* Create compressed column matrix for GA. */
     zCreate_CompCol_Matrix_dist(&GA, m, n, nnz, nzval, rowind, colptr,
                                 SLU_NC, SLU_D, SLU_GE);
@@ -379,7 +379,7 @@ int zcreate_matrix_postfix3d(SuperMatrix *A, int nrhs, doublecomplex **rhs,
         for (j = colptr[i]; j < colptr[i + 1]; ++j) ++marker[rowind[j]];
     /* Set up row pointers */
     rowptr[0] = 0;
-//    fst_row = iam * m_loc_fst;
+    fst_row = iam * m_loc_fst;
     nnz_loc = 0;
     for (j = 0; j < m_loc; ++j)
     {

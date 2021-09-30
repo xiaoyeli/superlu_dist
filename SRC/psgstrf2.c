@@ -375,7 +375,9 @@ int_t LpanelUpdate(int off0,  int nsupc, float* ublk_ptr, int ld_ujrow,
     double t1 = SuperLU_timer_();
 
 #define GT  32
+#ifdef _OPENMP
 #pragma omp parallel for
+#endif
     for (int i = 0; i < CEILING(l, GT); ++i)
     {
         int_t off = i * GT;
@@ -814,8 +816,10 @@ void psgstrs2_omp
 
     // Sherry: this version is more NUMA friendly compared to pdgstrf2_v2.c
     // https://stackoverflow.com/questions/13065943/task-based-programming-pragma-omp-task-versus-pragma-omp-parallel-for
+#ifdef _OPENMP
 #pragma omp parallel for schedule(static) default(shared) \
     private(b,j,iukp,rukp,segsize)
+#endif
     /* Loop through all the blocks in the row. */
     for (b = 0; b < nb; ++b) {
 #ifdef USE_Ublock_info
@@ -902,13 +906,15 @@ void psgstrs2_omp(int_t k0, int_t k, int_t* Lsub_buf,
     Trs2_InitUbloc_info(klst, nb, Ublock_info, usub, Glu_persist, stat );
 
     /* Loop through all the row blocks. */
+#ifdef _OPENMP    
 #pragma omp parallel for schedule(dynamic,2)
+#endif
     for (int_t b = 0; b < nb; ++b)
     {
 #ifdef _OPENMP    
-        int_t thread_id = omp_get_thread_num();
+        int thread_id = omp_get_thread_num();
 #else	
-        int_t thread_id = 0;
+        int thread_id = 0;
 #endif	
         float *tempv = bigV +  thread_id * ldt * ldt;
         sTrs2_GatherTrsmScatter(klst, Ublock_info[b].iukp, Ublock_info[b].rukp,

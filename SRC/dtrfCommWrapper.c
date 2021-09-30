@@ -164,7 +164,9 @@ int_t dLPanelTrSolve( int_t k,   int_t* factored_L,
 #define BL  32
         for (int i = 0; i < CEILING(l, BL); ++i)
         {
+#ifdef _OPENMP    
             #pragma omp task
+#endif	    
             {
                 int_t off = i * BL;
                 // Sherry: int_t len = MY_MIN(BL, l - i * BL);
@@ -203,7 +205,7 @@ int_t dLPanelTrSolve( int_t k,   int_t* factored_L,
             int_t off = i * BL;
             // Sherry: int_t len = MY_MIN(BL, l - i * BL);
             int len = SUPERLU_MIN(BL, (l - i * BL));
-#pragma omp task
+//#pragma omp task
             {
                 superlu_dtrsm("R", "U", "N", "N", len, nsupc, alpha,
 			      ublk_ptr, ld_ujrow, &lusup[nsupc + off], nsupr);
@@ -272,12 +274,14 @@ int_t dUPanelTrSolve( int_t k,
         // #pragma omp for schedule(dynamic,2) nowait
         for (int_t b = 0; b < nb; ++b)
         {
+#ifdef _OPENMP    
             #pragma omp task
+#endif
             {
 #ifdef _OPENMP	    
-                int_t thread_id = omp_get_thread_num();
+                int thread_id = omp_get_thread_num();
 #else		
-                int_t thread_id = 0;
+                int thread_id = 0;
 #endif		
                 double *tempv = bigV +  thread_id * ldt * ldt;
                 dTrs2_GatherTrsmScatter(klst, Ublock_info[b].iukp, Ublock_info[b].rukp,
@@ -323,12 +327,14 @@ int_t dUPanelTrSolve( int_t k,
             // printf("%d :U update \n", k);
             for (int_t b = 0; b < nb; ++b)
             {
+#ifdef _OPENMP    
                 #pragma omp task
+#endif
                 {
 #ifdef _OPENMP		
-                    int_t thread_id = omp_get_thread_num();
+                    int thread_id = omp_get_thread_num();
 #else		    
-                    int_t thread_id = 0;
+                    int thread_id = 0;
 #endif		    
                     double *tempv = bigV +  thread_id * ldt * ldt;
                     dTrs2_GatherTrsmScatter(klst, Ublock_info[b].iukp, Ublock_info[b].rukp,
