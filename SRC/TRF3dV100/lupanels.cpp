@@ -521,10 +521,10 @@ int_t LUstruct_v100::setLUstruct_GPU()
     cudaCheckError();
     // allocate
     dA_gpu = (LUstructGPU_t*) gpuCurrentPtr; 
-    dA_gpu += sizeof(LUstructGPU_t); 
+    
     
     cudaMemcpy(dA_gpu, &A_gpu, sizeof(LUstructGPU_t), cudaMemcpyHostToDevice);
-
+    gpuCurrentPtr += sizeof(LUstructGPU_t); 
 
     
 
