@@ -240,7 +240,7 @@ int_t LUstruct_v100::dsparseTreeFactorGPU(
         for (int_t k0 = k1; k0 < SUPERLU_MIN(nnodes, k1+oldWinSize); ++k0)
         { 
             int_t k = perm_c_supno[k0];
-            int_t offset = (k0-k1)%winSize;
+            int_t offset = (k0-k1)%oldWinSize;
             if(winParity%2)
                 offset+= halfWin;
             if(UidxSendCounts[k]>0 && LidxSendCounts[k]>0)
