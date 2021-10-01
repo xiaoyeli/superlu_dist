@@ -524,7 +524,7 @@ int_t LUstruct_v100::setLUstruct_GPU()
     
     
     cudaMemcpy(dA_gpu, &A_gpu, sizeof(LUstructGPU_t), cudaMemcpyHostToDevice);
-    gpuCurrentPtr += sizeof(LUstructGPU_t); 
+    gpuCurrentPtr = (LUstructGPU_t*) gpuCurrentPtr +1; 
 
     
 
