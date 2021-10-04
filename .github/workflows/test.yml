@@ -20,7 +20,6 @@ jobs:
       - name: Install dependencies
         run: |
           export BLUE="\033[34;1m"
-          export ROOT_DIR="$PWD"
           mkdir -p installDir
 
           printf "${BLUE} SLU; Installing gcc-9 via apt\n"
@@ -54,7 +53,7 @@ jobs:
           printf "${BLUE} SLU; Done installing LAPACKfrom apt\n"
 
           printf "${BLUE} SLU; Installing ParMetis-4.0 from source\n"
-          cd $ROOT_DIR/installDir
+          cd $GITHUB_WORKSPACE/installDir
           wget http://glaros.dtc.umn.edu/gkhome/fetch/sw/parmetis/parmetis-4.0.3.tar.gz
           tar -xf parmetis-4.0.3.tar.gz
           cd parmetis-4.0.3/
@@ -67,13 +66,13 @@ jobs:
         run: |
           export BLUE="\033[34;1m"
           printf "${BLUE} SLU; Installing superlu_dist from source\n"
-          cd $ROOT_DIR
+          cd $GITHUB_WORKSPACE
           rm -rf build
           mkdir -p build
           cd build 
           cmake .. \
-          -DTPL_PARMETIS_INCLUDE_DIRS="$ROOT_DIR/installDir/parmetis-4.0.3/metis/include;$ROOT_DIR/installDir/parmetis-4.0.3/install/include" \
-          -DTPL_PARMETIS_LIBRARIES="$ROOT_DIR/installDir/parmetis-4.0.3/install/lib/libparmetis.so" \
+          -DTPL_PARMETIS_INCLUDE_DIRS="$GITHUB_WORKSPACE/installDir/parmetis-4.0.3/metis/include;$GITHUB_WORKSPACE/installDir/parmetis-4.0.3/install/include" \
+          -DTPL_PARMETIS_LIBRARIES="$GITHUB_WORKSPACE/installDir/parmetis-4.0.3/install/lib/libparmetis.so" \
           -DCMAKE_C_FLAGS="-std=c11 -DPRNTlevel=1 -DPROFlevel=1 -DDEBUGlevel=1" \
           -DCMAKE_CXX_FLAGS="-Ofast -std=c++11 -DAdd_ -DRELEASE" \
           -DTPL_BLAS_LIBRARIES="$BLAS_LIB" \
@@ -91,7 +90,7 @@ jobs:
     
       - name: Test
         run: |
-          cd $ROOT_DIR
+          cd $GITHUB_WORKSPACE
           export TEST_NUMBER=${{ matrix.test }}
           ./.ci_tests.sh
 
