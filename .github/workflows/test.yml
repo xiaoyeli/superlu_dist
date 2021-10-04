@@ -20,7 +20,7 @@ jobs:
       - name: Install dependencies
         run: |
           export BLUE="\033[34;1m"
-          export ROOT_DIR="$pwd"
+          export ROOT_DIR="$PWD"
           mkdir -p installDir
 
           printf "${BLUE} SLU; Installing gcc-9 via apt\n"

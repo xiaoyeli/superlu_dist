@@ -3,7 +3,7 @@ set -e
 
 export RED="\033[31;1m"
 export BLUE="\033[34;1m"
-export ROOT_DIR="$pwd"
+export ROOT_DIR="$PWD"
 printf "${BLUE} SLU; Entered tests file:\n"
 
 
