@@ -13,14 +13,15 @@ at the top-level directory.
  * \brief Perform local block modifications: lsum[i] -= L_i,k * X[k]
  *
  * <pre>
- * -- Distributed SuperLU routine (version 6.1) --
+ * -- Distributed SuperLU routine (version 7.1.0) --
  * Lawrence Berkeley National Lab, Univ. of California Berkeley.
  * March 15, 2003
  *
  * Modified:
  *     Feburary 7, 2001    use MPI_Isend/MPI_Irecv
  *     October 2, 2001     use MPI_Isend/MPI_Irecv with MPI_Test
- * February 8, 2019  version 6.1.1
+ *     February 8, 2019  version 6.1.1
+ *     October 5, 2021   version 7.1.0  disable a few 'omp simd'
  * </pre>
  */
 

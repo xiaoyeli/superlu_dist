@@ -232,7 +232,7 @@ int_t pzgstrf3d(superlu_dist_options_t *options, int m, int n, double anorm,
 #ifdef GPU_ACC
 
     /*Now initialize the GPU data structure*/
-    // zLUstruct_gpu_t *A_gpu, *dA_gpu; // not used
+    zLUstruct_gpu_t *A_gpu, *dA_gpu;
 
     d2Hreduce_t d2HredObj;
     d2Hreduce_t* d2Hred = &d2HredObj;
