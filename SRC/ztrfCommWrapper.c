@@ -159,7 +159,9 @@ int_t zLPanelTrSolve( int_t k,   int_t* factored_L,
 
         // unsigned long long t1 = _rdtsc();
 
+#ifdef _OPENMP    
         // #pragma omp for schedule(dynamic) nowait
+#endif	
 #define BL  32
         for (int i = 0; i < CEILING(l, BL); ++i)
         {
@@ -198,13 +200,17 @@ int_t zLPanelTrSolve( int_t k,   int_t* factored_L,
         // printf("%d: L update \n",k );
 
 #define BL  32
+#ifdef _OPENMP    
         // #pragma omp parallel for
+#endif	
         for (int i = 0; i < CEILING(l, BL); ++i)
         {
             int_t off = i * BL;
             // Sherry: int_t len = MY_MIN(BL, l - i * BL);
             int len = SUPERLU_MIN(BL, (l - i * BL));
+#ifdef _OPENMP    
 //#pragma omp task
+#endif
             {
                 superlu_ztrsm("R", "U", "N", "N", len, nsupc, alpha,
 			      ublk_ptr, ld_ujrow, &lusup[nsupc + off], nsupr);
@@ -270,7 +276,9 @@ int_t zUPanelTrSolve( int_t k,
         Trs2_InitUblock_info(klst, nb, Ublock_info, usub, Glu_persist, stat );
 
         /* Loop through all the row blocks. */
+#ifdef _OPENMP    
         // #pragma omp for schedule(dynamic,2) nowait
+#endif	
         for (int_t b = 0; b < nb; ++b)
         {
 #ifdef _OPENMP    

@@ -863,7 +863,9 @@ void pzgstrs2_omp
 #endif
 	    } /* end if segsize > 0 */
 	} /* end for j in parallel ... */
+#ifdef _OPENMP    
 /* #pragma omp taskwait */
+#endif
     }  /* end for b ... */
 
 #ifndef USE_Ublock_info
