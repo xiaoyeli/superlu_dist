@@ -1213,6 +1213,10 @@ pdgstrs(int_t n, dLUstruct_t *LUstruct,
 	const int warp_size = 32; /* number of threads per warp*/
 	gpuStream_t sid=0;
 	int gid=0;
+	gridinfo_t *d_grid = NULL;
+	double *d_x = NULL;
+	double *d_lsum = NULL;
+    int_t  *d_fmod = NULL;	
 #endif		
 #endif
 
@@ -1871,15 +1875,6 @@ t1 = SuperLU_timer_();
 // roctxRangePush("hipLaunchKernel");
 // #endif
 
-	gridinfo_t *d_grid = NULL;
-	double *d_x = NULL;
-	double *d_lsum = NULL;
-    int_t  *d_fmod = NULL;
-
-	k = CEILING( nsupers, grid->npcol);/* Number of local block columns divided by #warps per block used as number of thread blocks*/
-	knsupc = sp_ienv_dist(3);
-
-	double memuse=0;
 	checkGPU(gpuMalloc( (void**)&d_grid, sizeof(gridinfo_t)));
 	checkGPU(gpuMalloc( (void**)&d_lsum, sizelsum*num_thread * sizeof(double)));
 	checkGPU(gpuMalloc( (void**)&d_x, (ldalsum * nrhs + nlb * XK_H) * sizeof(double)));

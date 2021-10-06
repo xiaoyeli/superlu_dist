@@ -1124,20 +1124,24 @@ pddistribute(fact_t fact, int_t n, SuperMatrix *A,
 			Lindval_loc_bc_offset[ljb]=nrbl*3;
 			Lindval_loc_bc_cnt += Lindval_loc_bc_offset[ljb];
 
-			
-  		    if (!(Linv_bc_ptr[ljb] = (double*)SUPERLU_MALLOC(nsupc*nsupc * sizeof(double))))
-			ABORT("Malloc fails for Linv_bc_ptr[ljb][]");
-			Linv_bc_offset[ljb]=nsupc*nsupc;
-			Linv_bc_cnt += Linv_bc_offset[ljb];
+			myrow = MYROW( iam, grid );
+			krow = PROW( jb, grid );	
+			if(myrow==krow){   /* diagonal block */
+				if (!(Linv_bc_ptr[ljb] = (double*)SUPERLU_MALLOC(nsupc*nsupc * sizeof(double))))
+				ABORT("Malloc fails for Linv_bc_ptr[ljb][]");
+				Linv_bc_offset[ljb]=nsupc*nsupc;
+				Linv_bc_cnt += Linv_bc_offset[ljb];
 
-		    if (!(Uinv_bc_ptr[ljb] = (double*)SUPERLU_MALLOC(nsupc*nsupc * sizeof(double))))
-			ABORT("Malloc fails for Uinv_bc_ptr[ljb][]");
-			Uinv_bc_offset[ljb]=nsupc*nsupc;
-			Uinv_bc_cnt += Uinv_bc_offset[ljb];		    
-		    if (ljb==0) {
-		        printf("!!! Uinv_bc_offset!!!  (%d),nrbl=%d, jb=%d\n", iam, nrbl, jb);
-		        fflush(stdout);
-		    }
+				if (!(Uinv_bc_ptr[ljb] = (double*)SUPERLU_MALLOC(nsupc*nsupc * sizeof(double))))
+				ABORT("Malloc fails for Uinv_bc_ptr[ljb][]");
+				Uinv_bc_offset[ljb]=nsupc*nsupc;
+				Uinv_bc_cnt += Uinv_bc_offset[ljb];	
+			}else{
+				Linv_bc_ptr[ljb] = NULL;
+				Linv_bc_offset[ljb] = -1;  
+				Uinv_bc_ptr[ljb] = NULL;
+				Uinv_bc_offset[ljb] = -1;  			
+			}
 
 			mybufmax[0] = SUPERLU_MAX( mybufmax[0], len1 );
 		    mybufmax[1] = SUPERLU_MAX( mybufmax[1], len*nsupc );
