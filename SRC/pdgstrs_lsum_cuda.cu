@@ -670,10 +670,10 @@ int_t  nsupers
    if (bid == 0) { // for BC
         if (WAIT_NUM_THREADS >= d_nfrecv[0]) {
             if (tid < d_nfrecv[0]) {
-                printf("WAIT1 (%d,%d) wait for col %d,flag=%d\n", mype, tid, d_colnum[tid],flag_bc_q[d_colnum[tid]]);
+                //printf("WAIT1 (%d,%d) wait for col %d,flag=%d\n", mype, tid, d_colnum[tid],flag_bc_q[d_colnum[tid]]);
                 nvshmem_int_wait_until((int *) flag_bc_q + d_colnum[tid], NVSHMEM_CMP_EQ, 1);
                 d_status[d_colnum[tid]] = 1;
-                printf("WAIT1 (%d,%d) msg arrived in col %d\n", mype, tid, d_colnum[tid]);
+                //printf("WAIT1 (%d,%d) msg arrived in col %d\n", mype, tid, d_colnum[tid]);
             }
         } else {
             int delta = d_nfrecv[0] % WAIT_NUM_THREADS;
@@ -699,7 +699,7 @@ int_t  nsupers
             }
         }
    }
-   if (tid==0) printf("(%d,%d,%d) WAIT EXIT\n",mype,bid,tid);
+   //if (tid==0) printf("(%d,%d,%d) WAIT EXIT\n",mype,bid,tid);
 #if 0
     if (bid == 1) { // for RD
         //if (tid==0) printf("RD---(%d) WAIT_NUM_THREADS=%d,tot_wait_col=%d\n",mype,WAIT_NUM_THREADS,d_nfrecvmod[1]);
@@ -2331,12 +2331,12 @@ __global__ void dlsum_bmod_inv_gpu_mrhs_nvshmem
         nub = Urbs[lk];      /* Number of U blocks in block column lk */
 
         //   printf("  Before kernel:   %i %i %i %i %i %i %i %i\n", threadIdx_x, blockIdx_x, grid->npcol, nsupers,myrow,krow,bid,tid);
-        if (tid==0) {
-            printf("Valid U (%d,%d), k=%d, Ucb_indoffset[%d]=%ld,Uinv_bc_offset[%d]=%ld, myrow=%d, krow=%d\n",
-                   mype, bid, k, bid,Ucb_indoffset[bid],bid,Uinv_bc_offset[bid], myrow, krow);
-        }
+        //if (tid==0) {
+        //    printf("Valid U (%d,%d), k=%d, Ucb_indoffset[%d]=%ld,Uinv_bc_offset[%d]=%ld, myrow=%d, krow=%d\n",
+        //           mype, bid, k, bid,Ucb_indoffset[bid],bid,Uinv_bc_offset[bid], myrow, krow);
+        //}
         if (myrow == krow) {   /* diagonal block performs trsm and forward the message*/
-            if (tid==0) printf(" Diagonal U (%d,%d), k=%d, myrow=%d, krow=%d\n", mype, bid, k, myrow, krow);
+            //if (tid==0) printf(" Diagonal U (%d,%d), k=%d, myrow=%d, krow=%d\n", mype, bid, k, myrow, krow);
 
             if (tid == 0) {  /*only the first thread in a block handles the lock */
 
@@ -2418,7 +2418,7 @@ __global__ void dlsum_bmod_inv_gpu_mrhs_nvshmem
              	  ready_x[i + maxrecvsz*lk + j*knsupc ] = x[i + ii + j*knsupc];
 
             __syncthreads();
-            if (tid==0) printf("in solve diagonal (%d,%d) done my col %d\n", mype, bid, gc);
+            //if (tid==0) printf("in solve diagonal (%d,%d) done my col %d\n", mype, bid, gc);
         } else {   /* off-diagonal block forward the message*/
             /* waiting for the x subvector and forward*/
             volatile int msg_recv = 0;
