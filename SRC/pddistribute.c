@@ -323,7 +323,6 @@ dReDistribute_A(SuperMatrix *A, dScalePermstruct_t *ScalePermstruct,
 int* mystatus, *mystatusmod,*d_launch_flag,*d_rownum,*d_rowstart;
 int *d_status, *d_statusmod;
 int* mystatus_u, *mystatusmod_u;
-int *d_status_u, *d_statusmod_u;
 int *flag_bc_q, *flag_rd_q ;
 int* my_flag_bc, *my_flag_rd;
 int* d_mynum,*d_mymaskstart,*d_mymasklength;
@@ -2473,7 +2472,7 @@ if ( !iam) printf(".. Construct Reduce tree for U: %.2f\t\n", t);
     //h_nfrecv[1]=(1024 > max_msg ? max_msg : 1024); // BC
 
     h_nfrecv[1]=1024;
-    h_nfrecv[2]=2;
+    h_nfrecv[2]=1;
 
 	checkGPU(gpuMalloc( (void**)&d_mynum, h_nfrecv[1]  * sizeof(int)));
 	checkGPU(gpuMalloc( (void**)&d_mymaskstart, h_nfrecv[1] * sizeof(int)));
@@ -2521,9 +2520,7 @@ if ( !iam) printf(".. Construct Reduce tree for U: %.2f\t\n", t);
 
 
     /////* for U solve *////
-    checkGPU(gpuMalloc( (void**)&d_status_u,  CEILING( nsupers, grid->npcol) * sizeof(int)));
     checkGPU(gpuMalloc( (void**)&d_nfrecv_u,  3 * sizeof(int)));
-    checkGPU(gpuMemcpy(d_status_u, mystatus_u, CEILING( nsupers, grid->npcol) * sizeof(int), gpuMemcpyHostToDevice));
 
     int *my_colnum_u;
     if ( !(my_colnum_u = (int*)SUPERLU_MALLOC((nbrecvx+1) * sizeof(int))) )
@@ -2546,7 +2543,7 @@ if ( !iam) printf(".. Construct Reduce tree for U: %.2f\t\n", t);
     //h_nfrecv[1]=(1024 > max_msg ? max_msg : 1024); // BC
 
     h_nfrecv_u[1]=1024;
-    h_nfrecv_u[2]=2;
+    h_nfrecv_u[2]=1;
     //printf("(%d), wait=%d,%d\n",iam,h_nfrecv[2],h_nfrecv[1]);
     //fflush(stdout);
 
@@ -2580,7 +2577,6 @@ if ( !iam) printf(".. Construct Reduce tree for U: %.2f\t\n", t);
     //fflush(stdout);
     checkGPU(gpuMalloc( (void**)&d_nfrecvmod_u,  3 * sizeof(int)));
     checkGPU(gpuMemcpy(d_nfrecvmod_u, h_nfrecvmod_u, 3 * sizeof(int), gpuMemcpyHostToDevice));
-    checkGPU(gpuMalloc( (void**)&d_statusmod_u, 2*CEILING(nsupers, grid->nprow) * sizeof(int)));
     checkGPU(gpuMalloc( (void**)&d_recv_cnt_u, CEILING(nsupers, grid->nprow) * sizeof(int)));
     checkGPU(gpuMemcpy(d_recv_cnt_u, h_recv_cnt_u,  CEILING(nsupers, grid->nprow) * sizeof(int), gpuMemcpyHostToDevice));
 
@@ -2588,7 +2584,6 @@ if ( !iam) printf(".. Construct Reduce tree for U: %.2f\t\n", t);
     checkGPU(gpuMalloc( (void**)&d_mynummod_u, h_nfrecv[1]  * sizeof(int)));
     checkGPU(gpuMalloc( (void**)&d_mymaskstartmod_u, h_nfrecv[1]  * sizeof(int)));
     checkGPU(gpuMalloc( (void**)&d_mymasklengthmod_u,   h_nfrecv[1] * sizeof(int)));
-    checkGPU(gpuMalloc( (void**)&d_msgnum_u,  h_nfrecv[1] * sizeof(int)));
 
 
 #endif

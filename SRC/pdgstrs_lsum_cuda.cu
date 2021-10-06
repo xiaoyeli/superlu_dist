@@ -30,8 +30,8 @@ at the top-level directory.
 #endif
 
 #ifndef MAXSUPER
-#define MAXSUPER 5
-//#define MAXSUPER 1024
+//#define MAXSUPER 5
+#define MAXSUPER 1024
 #endif
 
 #include <stdio.h>
@@ -1819,13 +1819,14 @@ void dlsum_fmod_inv_gpu_wrap
         //cudaStreamCreate(&stream[i]);
         cudaStreamCreateWithFlags(&stream[i], cudaStreamNonBlocking);
     }
-    //int minGridSize;
-    //int myblockSize;
-    //cudaOccupancyMaxPotentialBlockSize(&minGridSize,&myblockSize,(const void *) schedule ,0,0 );
-    //h_nfrecv[1]=myblockSize;
-    //gpuMemcpy(d_nfrecv, h_nfrecv, 3 * sizeof(int), gpuMemcpyHostToDevice);
-    //printf("(%d) solve=%d,%d, wait=%d,%d\n",mype,nbcol_loc,nthread_x*nthread_y,h_nfrecv[2],h_nfrecv[1]);
-    //fflush(stdout);
+    int minGridSize;
+    int myblockSize;
+    cudaOccupancyMaxPotentialBlockSize(&minGridSize,&myblockSize,(const void *) schedule ,0,0 );
+    h_nfrecv[1]=myblockSize;
+    gpuMemcpy(d_nfrecv, h_nfrecv, 3 * sizeof(int), gpuMemcpyHostToDevice);
+    cudaOccupancyMaxPotentialBlockSize(&minGridSize,&myblockSize,(const void *) schedule ,0,0 );
+    printf("(%d) solve=%d,%d, wait=1,1024 (%d,%d)\n",mype,nbcol_loc,nthread_x*nthread_y,minGridSize,h_nfrecv[1] );
+    fflush(stdout);
 
     dim3 dimGrid_nv(h_nfrecv[2]); //2
     dim3 dimBlock_nv(h_nfrecv[1]); //1024
@@ -2238,7 +2239,9 @@ __global__ void dlsum_bmod_inv_gpu_mrhs_nvshmem
         int* d_nfrecv,
         volatile int* d_status,
         volatile int* d_statusmod,
-        int_t nblock_ex
+        int_t nblock_ex,
+        int* temp2_offset,
+        double* temp2
 )
 {
     double alpha = 1.0, beta = 0.0,malpha=-1.0;
@@ -2262,7 +2265,7 @@ __global__ void dlsum_bmod_inv_gpu_mrhs_nvshmem
     const int Nbk=1;
     //   __shared__ double rtemp_loc[128];
     double temp,temp1;
-    double temp2[MAXSUPER];
+    //double temp2[MAXSUPER];
     //   int_t temp3[128];
     //   int_t temp4[128];
     int_t ldalsum;
@@ -2477,6 +2480,8 @@ __global__ void dlsum_bmod_inv_gpu_mrhs_nvshmem
                 iklrow = FstBlockC(gik + 1);
                 // printf("ub %d bmod: %d \n",ub, bmod[ik*aln_i]);
                 if (tid % block_size_loc == 0) { // parallelizing this supernode across knsupc or irow doesn't seem to have any benefit
+                    int myoffset=(temp2_offset[lk]+tid/block_size_loc)*MAXSUPER;
+
                     fnzmin = 100000000;
                     for (jj = 0; jj < knsupc; ++jj)
                         fnzmin = min(fnzmin, usub[i + jj]);
@@ -2485,19 +2490,20 @@ __global__ void dlsum_bmod_inv_gpu_mrhs_nvshmem
                         uptr = Ucb_valdat[Ucb_valoffset[lk] + ub]; /* Start of the block in uval[]. */
 
                         for (jj = 0; jj < iknsupc; ++jj)
-                            temp2[jj] = 0;
+                            temp2[myoffset+jj] = 0;
                         for (jj = 0; jj < knsupc; ++jj) {
                             fnz = usub[i + jj];
                             if (fnz < iklrow) { /* Nonzero segment. */
                         //        /* AXPY */
                                 xtemp = ready_x[j * knsupc + jj+ keep_lk*maxrecvsz];
                                 //xtemp = x[ii + j * knsupc + jj];
-                                printf("(%d,%d,%d) ii=%d, knsupc=%d, j * knsupc=%d, keep_lk=%d, keep_lk*maxrecvsz=%d, idx=%d, xidx=%d,val=%lf\n",
+                                printf("(%d,%d,%d) ii=%d, knsupc=%d, j * knsupc=%d, keep_lk=%d, keep_lk*maxrecvsz=%d, idx=%d, xidx=%d,val=%lf, myoffset=%d,%d,%d\n",
                                        mype,bid,tid,
                                        ii, knsupc, j * knsupc, keep_lk, keep_lk*maxrecvsz,
                                        j * knsupc + jj+ keep_lk*maxrecvsz,ii + j * knsupc + jj,
                                        //x[ii + j * knsupc + jj]);
-                                       ready_x[j * knsupc + jj+ keep_lk*maxrecvsz]);
+                                       ready_x[j * knsupc + jj+ keep_lk*maxrecvsz],
+                                       myoffset,block_size_loc, tid/block_size_loc);
                                 for (irow = fnz; irow < iklrow; ++irow) {
                                     //printf("--(%d,%d,%d) irow=%d,ikfrow=%d, sub=%d\n",mype,bid,tid,irow,ikfrow,irow - ikfrow);
                                     //double &regC = temp2[irow - ikfrow];
@@ -2505,7 +2511,7 @@ __global__ void dlsum_bmod_inv_gpu_mrhs_nvshmem
                                     //temp = atomicAdd(&old, regC);
                                     //temp2[irow - ikfrow] +=1;
                                     //double old=uval[uptr++] * xtemp;
-                                    temp2[irow - ikfrow]+=uval[uptr++] * xtemp;
+                                    temp2[myoffset+irow - ikfrow]+=uval[uptr++] * xtemp;
                                     //temp2[irow - ikfrow]=old;
                                             // // YL: this is most expensive operation on GPU
                                 }
@@ -2513,7 +2519,7 @@ __global__ void dlsum_bmod_inv_gpu_mrhs_nvshmem
                         } /* for jj ... */
 
                         for (irow = fnzmin; irow < iklrow; ++irow) {
-                            temp = atomicAdd(&dest[irow - ikfrow], -temp2[irow - ikfrow]);
+                            temp = atomicAdd(&dest[irow - ikfrow], -temp2[myoffset+irow - ikfrow]);
                         }
                     }
                     fmod_tmp = atomicSub(&bmod[ik * aln_i], 1);
@@ -2592,19 +2598,21 @@ __global__ void dlsum_bmod_inv_gpu_mrhs_nvshmem
   int* d_launch_flag,
   int* d_nfrecv_u,
   int* h_nfrecv_u,
-  int* d_status_u,
+  int* d_status,
   int* d_colnum_u,
   int* d_mynum_u,
   int* d_mymaskstart_u,
   int* d_mymasklength_u,
   int* d_nfrecvmod_u,
-  int* d_statusmod_u,
+  int* d_statusmod,
   int* d_colnummod_u,
   int* d_mynummod_u,
   int* d_mymaskstartmod_u,
   int* d_mymasklengthmod_u,
   int* d_recv_cnt_u,
-  int* d_msgnum_u
+  int* d_msgnum,
+  int* temp2_offset,
+  double* temp2
 
  ){
  
@@ -2641,13 +2649,13 @@ __global__ void dlsum_bmod_inv_gpu_mrhs_nvshmem
         //cudaStreamCreate(&stream[i]);
         cudaStreamCreateWithFlags(&stream[i], cudaStreamNonBlocking);
     }
-    //int minGridSize;
-    //int myblockSize;
-    //cudaOccupancyMaxPotentialBlockSize(&minGridSize,&myblockSize,(const void *) schedule ,0,0 );
-    //h_nfrecv[1]=myblockSize;
-    //gpuMemcpy(d_nfrecv, h_nfrecv, 3 * sizeof(int), gpuMemcpyHostToDevice);
-    //printf("(%d) solve=%d,%d, wait=%d,%d\n",mype,nbcol_loc,nthread_x*nthread_y,h_nfrecv[2],h_nfrecv[1]);
-    //fflush(stdout);
+    int minGridSize;
+    int myblockSize;
+    cudaOccupancyMaxPotentialBlockSize(&minGridSize,&myblockSize,(const void *) schedule ,0,0 );
+    h_nfrecv[1]=myblockSize;
+    gpuMemcpy(d_nfrecv, h_nfrecv, 3 * sizeof(int), gpuMemcpyHostToDevice);
+    printf("(%d) solve=%d,%d, wait=%d,%d\n",mype,nbcol_loc,nthread_x*nthread_y,h_nfrecv[2],h_nfrecv[1]);
+    fflush(stdout);
 
     dim3 dimGrid_nv(h_nfrecv_u[2]); //2
     dim3 dimBlock_nv(h_nfrecv_u[1]); //1024
@@ -2656,10 +2664,10 @@ __global__ void dlsum_bmod_inv_gpu_mrhs_nvshmem
     int launch_success = 0;
 
     void *args[] = {&nrhs, &URtree_ptr, &maxrecvsz, &mype, &flag_bc_q, &flag_rd_q, &ready_x, &ready_lsum, &my_flag_bc, &my_flag_rd,
-                    &d_nfrecv_u, &d_status_u, &d_launch_flag,
+                    &d_nfrecv_u, &d_status, &d_launch_flag,
                     &d_colnum_u, &d_mynum_u, &d_mymaskstart_u, &d_mymasklength_u,
-                    &d_nfrecvmod_u, &d_statusmod_u, &d_colnummod_u, &d_mynummod_u, &d_mymaskstartmod_u, &d_mymasklengthmod_u,
-                    &d_recv_cnt_u, &d_msgnum_u, &lsum, &bmod, &grid, &xsup, &ilsum, &nbrow_loc, &nsupers};
+                    &d_nfrecvmod_u, &d_statusmod, &d_colnummod_u, &d_mynummod_u, &d_mymaskstartmod_u, &d_mymasklengthmod_u,
+                    &d_recv_cnt_u, &d_msgnum, &lsum, &bmod, &grid, &xsup, &ilsum, &nbrow_loc, &nsupers};
 
     NVSHMEM_CHECK(
             nvshmemx_collective_launch((const void *) schedule, dimGrid_nv, dimBlock_nv, args, 0, stream[0]));
@@ -2698,8 +2706,8 @@ __global__ void dlsum_bmod_inv_gpu_mrhs_nvshmem
                                                                                ready_x, ready_lsum,
                                                                                my_flag_bc, my_flag_rd,
                                                                                d_launch_flag,
-                                                                               d_nfrecv_u, d_status_u,
-                                                                               d_statusmod_u, nblock_ex);
+                                                                               d_nfrecv_u, d_status,
+                                                                               d_statusmod, nblock_ex,temp2_offset, temp2);
     }
     //CUDA_CHECK(cudaGetLastError());
     //CUDA_CHECK(cudaDeviceSynchronize());
