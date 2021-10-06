@@ -2688,7 +2688,7 @@ thread_id=0;
     int temp2_size=0;
     int *temp2_offset_by_block;
     if ( !(temp2_offset_by_block = (int*)SUPERLU_MALLOC(k*sizeof(int))) )  // this needs to be optimized for 1D row mapping
-    ABORT("Malloc fails for temp2_offset_by_block[].");
+        ABORT("Malloc fails for temp2_offset_by_block[].");
     memset(temp2_offset_by_block, 0, ( k * sizeof(int)));
     int tmp=-1;
     for (int i=0; i<k; i++) {
@@ -2702,21 +2702,21 @@ thread_id=0;
             for (int j = 0; j < 256; j++) {
                 if (j % block_size_loc == 0) {
                     tmp++;
-                    printf("---- (%d) i=%d, nub=%d, tmp=%d\n", iam, i, Urbs[i], tmp);
-                    fflush(stdout);
+                    //printf("---- (%d) i=%d, nub=%d, tmp=%d\n", iam, i, Urbs[i], tmp);
+                    //fflush(stdout);
                 }
             }
             temp2_size+=tmp;
             for (int ii=i+1; ii<k; ii++) {
-                printf("---- before (%d) ii=%d, enterTidNum=%d,tmp=%d\n", iam, ii, temp2_offset_by_block[ii],tmp);
-                fflush(stdout);
+                //printf("---- before (%d) ii=%d, enterTidNum=%d,tmp=%d\n", iam, ii, temp2_offset_by_block[ii],tmp);
+                //fflush(stdout);
                 temp2_offset_by_block[ii]+=tmp;
-                printf("---- after (%d) ii=%d, enterTidNum=%d,tmp=%d\n", iam, ii, temp2_offset_by_block[ii],tmp);
-                fflush(stdout);
+                //printf("---- after (%d) ii=%d, enterTidNum=%d,tmp=%d\n", iam, ii, temp2_offset_by_block[ii],tmp);
+                //fflush(stdout);
             }
         }
-        printf(" (%d) i=%d, nub=%d, enterTidNum=%d, tot_size=%d, maxsuper=%d\n", iam, i, Urbs[i], temp2_offset_by_block[i],temp2_size,maxsuper);
-        fflush(stdout);
+        //printf(" (%d) i=%d, nub=%d, enterTidNum=%d, tot_size=%d, maxsuper=%d\n", iam, i, Urbs[i], temp2_offset_by_block[i],temp2_size,maxsuper);
+        //fflush(stdout);
 
     }
     int *temp2_offset;
@@ -2736,8 +2736,8 @@ thread_id=0;
                          d_nfrecv_u, h_nfrecv_u, d_status, d_colnum_u, d_mynum_u, d_mymaskstart_u,d_mymasklength_u,
                          d_nfrecvmod_u, d_statusmod, d_colnummod_u, d_mynummod_u, d_mymaskstartmod_u, d_mymasklengthmod_u,
                          d_recv_cnt_u, d_msgnum, temp2_offset, temp2);
-    printf("(%d) done dlsum_bmod_inv_gpu_wrap\n",iam);
-    fflush(stdout);
+    //printf("(%d) done dlsum_bmod_inv_gpu_wrap\n",iam);
+    //fflush(stdout);
 
 	checkGPU(gpuMemcpy(x, d_x, (ldalsum * nrhs + nlb * XK_H) * sizeof(double), gpuMemcpyDeviceToHost));
 

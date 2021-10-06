@@ -2557,7 +2557,7 @@ if ( !iam) printf(".. Construct Reduce tree for U: %.2f\t\n", t);
 
     int *my_colnummod_u;
     if ( !(my_colnummod_u = (int*)SUPERLU_MALLOC((nbrecvmod+1) * sizeof(int))) )
-    ABORT("Malloc fails for my_colnummod_u[].");
+        ABORT("Malloc fails for my_colnummod_u[].");
     checkGPU(gpuMalloc( (void**)&d_colnummod_u,  (nbrecvmod+1) * sizeof(int)));
 
     tmp_idx=0;
