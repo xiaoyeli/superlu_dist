@@ -49,13 +49,16 @@ void superlu_gridinit3d(MPI_Comm Bcomm, /* The base communicator upon which
     
 #ifdef GPU_ACC
     /* Binding each MPI to a CUDA device */
-    int devs, rank;
-    MPI_Comm_rank(Bcomm, &rank); // MPI_COMM_WORLD??
-    cudaGetDeviceCount(&devs);  // Returns the number of compute-capable devices
-    cudaSetDevice(rank % devs); // Set device to be used for GPU executions
-    ////
+    char *ttemp;
+    ttemp = getenv ("SUPERLU_BIND_MPI_GPU");
+
+    if (ttemp) {
+	int devs, rank;
+	MPI_Comm_rank(Bcomm, &rank); // MPI_COMM_WORLD??
+	cudaGetDeviceCount(&devs);  // Returns the number of compute-capable devices
+	cudaSetDevice(rank % devs); // Set device to be used for GPU executions
+    }
 #endif
-    
 }
 
 

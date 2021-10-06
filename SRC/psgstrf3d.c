@@ -344,7 +344,9 @@ int_t psgstrf3d(superlu_dist_options_t *options, int m, int n, float anorm,
 
 #ifdef GPU_ACC
     /* This frees the GPU storage allocateed in initSluGPU3D_t() */
-    sfree_LUstruct_gpu (sluGPU->A_gpu);
+    if (superlu_acc_offload) {
+         sfree_LUstruct_gpu (sluGPU->A_gpu);
+    }
 #endif
     
     MPI_Barrier( grid3d->comm);

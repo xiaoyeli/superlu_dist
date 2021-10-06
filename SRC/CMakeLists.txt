@@ -56,7 +56,7 @@ set(sources
   sec_structs.c
 )
 if (HAVE_CUDA)
-  list(APPEND sources cublas_utils.c)
+  list(APPEND sources cublas_utils.c superlu_gpu_utils.cu)
 endif()
 
 if (MSVC)

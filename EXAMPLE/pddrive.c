@@ -69,7 +69,6 @@ int main(int argc, char *argv[])
     nprow = 1;  /* Default process rows.      */
     npcol = 1;  /* Default process columns.   */
     nrhs = 1;   /* Number of right-hand side. */
-    printf("MAIN ...\n"); fflush(stdout);
 			      
     /* ------------------------------------------------------------
        INITIALIZE MPI ENVIRONMENT. 
