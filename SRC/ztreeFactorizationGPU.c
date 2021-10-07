@@ -25,6 +25,7 @@
                   ^          ^
                   0          jj_cpu
 */
+#if 0
 static int_t getAccUPartition(HyP_t *HyP)
 {
     /* Sherry: what if num_u_blks_phi == 0 ? Need to fix the bug */
@@ -55,6 +56,7 @@ static int_t getAccUPartition(HyP_t *HyP)
 
     return jj_cpu;
 }
+#endif
 
 int zsparseTreeFactor_ASYNC_GPU(
     sForest_t *sforest,
@@ -406,11 +408,19 @@ int zsparseTreeFactor_ASYNC_GPU(
 
             double t1 = SuperLU_timer_();
 
+#ifdef _OPENMP
 #pragma omp parallel /* Look-ahead update on CPU */
+#endif
             {
-                int_t thread_id = omp_get_thread_num();
+#ifdef _OPENMP
+                int thread_id = omp_get_thread_num();
+#else
+		int thread_id = 0; 
+#endif
 
+#ifdef _OPENMP
 #pragma omp for
+#endif
                 for (int_t ij = 0; ij < HyP->lookAheadBlk * HyP->num_u_blks; ++ij)
                 {
                     int_t j = ij / HyP->lookAheadBlk;
@@ -419,7 +429,9 @@ int zsparseTreeFactor_ASYNC_GPU(
                                                usub, ldt, indirect, indirect2, HyP, LUstruct, grid, SCT, stat);
                 }
 
+#ifdef _OPENMP
 #pragma omp for
+#endif
                 for (int_t ij = 0; ij < HyP->lookAheadBlk * HyP->num_u_blks_Phi; ++ij)
                 {
                     int_t j = ij / HyP->lookAheadBlk;
@@ -428,7 +440,9 @@ int zsparseTreeFactor_ASYNC_GPU(
                                                 usub, ldt, indirect, indirect2, HyP, LUstruct, grid, SCT, stat);
                 }
 
+#ifdef _OPENMP
 #pragma omp for
+#endif
                 for (int_t ij = 0; ij < HyP->RemainBlk * HyP->num_u_blks; ++ij)
                 {
                     int_t j = ij / HyP->RemainBlk;
@@ -498,14 +512,22 @@ int zsparseTreeFactor_ASYNC_GPU(
                 } /* end if all children are done */
             }     /* end if non-root */
 
+#ifdef _OPENMP
 #pragma omp parallel
+#endif
             {
                 /* Master thread performs Schur complement update on GPU. */
+#ifdef _OPENMP
 #pragma omp master
+#endif
                 {
                     if (superlu_acc_offload)
                     {
+#ifdef _OPENMP
                         int thread_id = omp_get_thread_num();
+#else			
+                        int thread_id = 0;
+#endif			
                         double t1 = SuperLU_timer_();
 
                         if (offload_condition)
@@ -557,8 +579,10 @@ int zsparseTreeFactor_ASYNC_GPU(
                     } /* endif (superlu_acc_offload) */
 
                 } /* end omp master thread */
-
+		
+#ifdef _OPENMP
 #pragma omp for
+#endif
                 /* The following update is on CPU. Should not be necessary now,
 		   because we set jj_cpu equal to num_u_blks_Phi.      		*/
                 for (int_t ij = 0; ij < HyP->RemainBlk * (HyP->num_u_blks_Phi - jj_cpu); ++ij)

@@ -70,15 +70,15 @@ typedef struct //SCUbuf_gpu_
 
 } zSCUbuf_gpu_t;
 
-
+/* Holds the L & U data structures on the GPU side */
 typedef struct //LUstruct_gpu_ 
 {
     int_t   *LrowindVec;      /* A single vector */
     int_t   *LrowindPtr;      /* A single vector */
 
     doublecomplex  *LnzvalVec;       /* A single vector */
-    int_t   *LnzvalPtr;       /* A single vector */
-    int_t   *LnzvalPtr_host;  /* A single vector */
+    int_t   *LnzvalPtr;        /* A single vector */
+    int_t   *LnzvalPtr_host;   /* A single vector */
 
     int_t   *UrowindVec;            /* A single vector */
     int_t   *UrowindPtr;            /* A single vector */
@@ -86,7 +86,8 @@ typedef struct //LUstruct_gpu_
     int_t   *UnzvalPtr_host;
 
     doublecomplex  *UnzvalVec;       /* A single vector */
-    int_t   *UnzvalPtr;      /* A single vector */
+    int_t   *UnzvalPtr;        /* A single vector */
+    
     /*gpu pointers for easy block accesses */
     local_l_blk_info_t *local_l_blk_infoVec;
     int_t *local_l_blk_infoPtr;
@@ -107,7 +108,6 @@ typedef struct //LUstruct_gpu_
     int_t nsupers;  /*should have number of supernodes*/
     int_t *xsup;
     gridinfo_t *grid;
-
 
     double ScatterMOPCounter;
     double ScatterMOPTimer;
@@ -134,7 +134,7 @@ typedef struct //LUstruct_gpu_
 typedef struct //sluGPU_t_
 {
     int_t gpuId;        // if there are multiple GPUs
-    zLUstruct_gpu_t *A_gpu, *dA_gpu;
+    zLUstruct_gpu_t *A_gpu, *dA_gpu; // holds the LU structure on GPU
     cudaStream_t funCallStreams[MAX_NCUDA_STREAMS], CopyStream;
     cublasHandle_t cublasHandles[MAX_NCUDA_STREAMS];
     int_t lastOffloadStream[MAX_NCUDA_STREAMS];

@@ -69,7 +69,7 @@ int main(int argc, char *argv[])
     nprow = 1;  /* Default process rows.      */
     npcol = 1;  /* Default process columns.   */
     nrhs = 1;   /* Number of right-hand side. */
-
+			      
     /* ------------------------------------------------------------
        INITIALIZE MPI ENVIRONMENT. 
        ------------------------------------------------------------*/
@@ -250,9 +250,8 @@ int main(int argc, char *argv[])
     dScalePermstructFree(&ScalePermstruct);
     dDestroy_LU(n, &grid, &LUstruct);
     dLUstructFree(&LUstruct);
-    if ( options.SolveInitialized ) {
-        dSolveFinalize(&options, &SOLVEstruct);
-    }
+    //if ( options.SolveInitialized ) {
+    dSolveFinalize(&options, &SOLVEstruct);
     SUPERLU_FREE(b);
     SUPERLU_FREE(xtrue);
     SUPERLU_FREE(berr);

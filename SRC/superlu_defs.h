@@ -24,6 +24,7 @@ at the top-level directory.
  *     November 12, 2019   version 6.2.0
  *     October 23, 2020    version 6.4.0
  *     May 12, 2021        version 7.0.0
+ *     October 5, 2021     version 7.1.0
  * </pre>
  */
 
@@ -74,9 +75,9 @@ at the top-level directory.
  * Versions 4.x and earlier do not include a #define'd version numbers.
  */
 #define SUPERLU_DIST_MAJOR_VERSION     7
-#define SUPERLU_DIST_MINOR_VERSION     0
+#define SUPERLU_DIST_MINOR_VERSION     1
 #define SUPERLU_DIST_PATCH_VERSION     0
-#define SUPERLU_DIST_RELEASE_DATE      "May 12, 2021"
+#define SUPERLU_DIST_RELEASE_DATE      "October 5, 2021"
 
 #include "superlu_dist_config.h"
 /* Define my integer size int_t */
@@ -705,6 +706,7 @@ typedef struct {
     yes_no_t      lookahead_etree; /* use etree computed from the
 				      serial symbolic factorization */
     yes_no_t      SymPattern;      /* symmetric factorization          */
+    yes_no_t      Algo3d;          /* use 3D factorization/solve algorithms */
 } superlu_dist_options_t;
 
 typedef struct {

@@ -112,7 +112,7 @@ void zdevice_scatter_l_2D (int thread_id,
 }
 
 /* Sherry: this routine is not used */
-#if 0
+#if 0 //////////////////////////////////////////////
 __global__
 void cub_scan_test(void)
 {
@@ -138,7 +138,7 @@ void cub_scan_test(void)
 		printf("%d %d\n", thread_id, IndirectJ2[thread_id]);
 
 }
-#endif  // not used
+#endif  /////////////////////////////////// not used
 
 
 __device__ inline
@@ -775,6 +775,7 @@ int zfree_LUstruct_gpu (zLUstruct_gpu_t * A_gpu)
 	checkCuda(cudaFree(A_gpu->LnzvalVec));
 	checkCuda(cudaFree(A_gpu->LnzvalPtr));
 	free(A_gpu->LnzvalPtr_host);
+	
 	/*freeing the pinned memory*/
 	int_t streamId = 0;
 	checkCuda (cudaFreeHost (A_gpu->scubufs[streamId].Remain_info_host));
@@ -807,8 +808,6 @@ int zfree_LUstruct_gpu (zLUstruct_gpu_t * A_gpu)
 
 	checkCuda(cudaFree(A_gpu->grid));
 
-
-
 	checkCuda(cudaFree(A_gpu->scubufs[streamId].bigV));
 	checkCuda(cudaFree(A_gpu->scubufs[streamId].bigU));
 
@@ -822,7 +821,6 @@ int zfree_LUstruct_gpu (zLUstruct_gpu_t * A_gpu)
 
 	checkCuda(cudaFree(A_gpu->scubufs[streamId].lsub));
 	checkCuda(cudaFree(A_gpu->scubufs[streamId].usub));
-
 
 	checkCuda(cudaFree(A_gpu->local_l_blk_infoVec));
 	checkCuda(cudaFree(A_gpu->local_l_blk_infoPtr));
@@ -894,9 +892,9 @@ void zprintGPUStats(zLUstruct_gpu_t * A_gpu)
 
 } /* end printGPUStats */
 
-
+/* Initialize the GPU side of the data structure. */
 int zinitSluGPU3D_t(
-    zsluGPU_t *sluGPU,
+    zsluGPU_t *sluGPU, // LU structures on GPU, see zlustruct_gpu.h 
     zLUstruct_t *LUstruct,
     gridinfo3d_t * grid3d,
     int_t* perm_c_supno,
@@ -914,7 +912,7 @@ int zinitSluGPU3D_t(
     sluGPU->nCudaStreams = getnCudaStreams();
     if (grid3d->iam == 0)
     {
-	printf("zinitSluGPU3D_t: Using hardware acceleration, with %d cuda streams \n", sluGPU->nCudaStreams);
+	printf("zinitSluGPU3D_t: Using hardware acceleration, with %d cuda streams, max_buffer_size %d\n", sluGPU->nCudaStreams, (int) buffer_size);
 	fflush(stdout);
 	if ( MAX_SUPER_SIZE < ldt )
 	{
@@ -933,6 +931,9 @@ int zinitSluGPU3D_t(
 
     sluGPU->A_gpu = (zLUstruct_gpu_t *) malloc (sizeof(zLUstruct_gpu_t));
     sluGPU->A_gpu->perm_c_supno = perm_c_supno;
+
+    /* Allocate GPU memory for the LU data structures, and copy
+       the host LU structure to GPU side.  */
     zCopyLUToGPU3D ( isNodeInMyGrid,
 	        Llu,             /* referred to as A_host */
 	        sluGPU, Glu_persist, n, grid3d, buffer_size, bigu_size, ldt
@@ -940,6 +941,7 @@ int zinitSluGPU3D_t(
 
     return 0;
 } /* end zinitSluGPU3D_t */
+
 
 int zinitD2Hreduce(
     int next_k,  d2Hreduce_t* d2Hred, int last_flag, HyP_t* HyP,
@@ -1194,10 +1196,14 @@ int freeSluGPU(zsluGPU_t *sluGPU)
 }
 #endif
 
+/* Allocate GPU memory for the LU data structures, and copy
+   the host LU structure to GPU side.
+   After factorization, the GPU LU structure should be freed by
+   calling zfree_LUsstruct_gpu().    */
 void zCopyLUToGPU3D (
     int_t* isNodeInMyGrid,
     zLocalLU_t *A_host, /* distributed LU structure on host */
-    zsluGPU_t *sluGPU,
+    zsluGPU_t *sluGPU,  /* hold LU structure on GPU */
     Glu_persist_t *Glu_persist, int_t n,
     gridinfo3d_t *grid3d,
     int_t buffer_size, /* bigV size on GPU for Schur complement update */

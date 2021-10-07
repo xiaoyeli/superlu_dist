@@ -57,7 +57,10 @@ then
     -DCMAKE_C_FLAGS="-std=c99 -O3 -g -DPRNTlevel=0 -DDEBUGlevel=0" \
     -DCMAKE_C_COMPILER=mpicc \
     -DCMAKE_CXX_COMPILER=mpicxx \
+    -DCMAKE_CXX_FLAGS="-std=c++11" \
     -DCMAKE_Fortran_COMPILER=mpif90 \
+    -DCMAKE_LINKER=mpicxx \
+    -Denable_openmp=ON \
     -DTPL_ENABLE_INTERNAL_BLASLIB=OFF \
     -DTPL_ENABLE_COMBBLASLIB=OFF \
     -DTPL_ENABLE_LAPACKLIB=OFF \
