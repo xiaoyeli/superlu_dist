@@ -239,7 +239,8 @@ int main(int argc, char *argv[])
 		     nrhs, b, ldb, xtrue, ldx, &grid);
 
     PStatPrint(&options, &stat, &grid);        /* Print the statistics. */
-
+    fflush(stdout);
+    return 0;
     /* ------------------------------------------------------------
        DEALLOCATE STORAGE.
        ------------------------------------------------------------*/
@@ -256,6 +257,7 @@ int main(int argc, char *argv[])
     SUPERLU_FREE(xtrue);
     SUPERLU_FREE(berr);
     fclose(fp);
+
 
     /* ------------------------------------------------------------
        RELEASE THE SUPERLU PROCESS GRID.
@@ -275,6 +277,7 @@ out:
 
 #if ( DEBUGlevel>=1 )
     CHECK_MALLOC(iam, "Exit main()");
+    fflush(stdout);
 #endif
 
 }

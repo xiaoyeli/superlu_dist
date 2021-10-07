@@ -1571,6 +1571,7 @@ pdgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 
 #if ( PRNTlevel>=1 )
     if ( !iam ) printf(".. DiagScale = %d\n", ScalePermstruct->DiagScale);
+    fflush(stdout);
 #endif
 
     /* Deallocate R and/or C if it was not used. */

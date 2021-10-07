@@ -2631,13 +2631,7 @@ thread_id=0;
 #endif
 
 
-#if ( PRNTlevel>=1 )
-	t = SuperLU_timer_() - t;
-	if ( !iam) printf(".. Setup U-solve time\t%8.4f\n", t);
-	fflush(stdout);
-	MPI_Barrier( grid->comm );
-	t = SuperLU_timer_();
-#endif
+
 
 		/*
 		 * Solve the roots first by all the diagonal processes.
@@ -2723,10 +2717,17 @@ thread_id=0;
     checkGPU(gpuMalloc( (void**)&temp2_offset, k*sizeof(double)));
     checkGPU(gpuMemcpy(temp2_offset, temp2_offset_by_block, k * sizeof(double), gpuMemcpyHostToDevice));
     double *temp2;
-    //checkGPU(gpuMalloc( (void**)&temp2, temp2_size*1024*sizeof(double)));
-    //checkGPU(gpuMemset(temp2, 0,  temp2_size*1024 * sizeof(double)));
-
-
+    checkGPU(gpuMalloc( (void**)&temp2, temp2_size*sp_ienv_dist(3)*sizeof(double)));
+    checkGPU(gpuMemset(temp2, 0,  temp2_size*sp_ienv_dist(3) * sizeof(double)));
+#if ( PRNTlevel>=1 )
+    t = SuperLU_timer_() - t;
+	if ( !iam) printf(".. Setup U-solve time\t%8.4f\n", t);
+	fflush(stdout);
+	MPI_Barrier( grid->comm );
+	t = SuperLU_timer_();
+#endif
+    //printf("(%d) temp2 size=%d of doubles\n", iam, temp2_size*1024);
+    //fflush(stdout);
 	dlsum_bmod_inv_gpu_wrap(k,nlb,DIM_X,DIM_Y,d_lsum,d_x,nrhs,knsupc,nsupers,d_bmod,
                          Llu->d_UBtree_ptr,Llu->d_URtree_ptr,Llu->d_ilsum,Llu->d_Urbs,
                          Llu->d_Ufstnz_br_dat,Llu->d_Ufstnz_br_offset,Llu->d_Unzval_br_dat,
@@ -3139,7 +3140,7 @@ for (i=0;i<nroot_send;i++){
 
 #if ( PRNTlevel>=1 )
 		t = SuperLU_timer_() - t;
-		if ( !iam) printf(".. X to B redistribute time\t%8.4f\n", t);
+		if ( !iam) {printf(".. X to B redistribute time\t%8.4f\n", t); fflush(stdout);}
 		t = SuperLU_timer_();
 #endif
 
@@ -3175,7 +3176,6 @@ for (i=0;i<nroot_send;i++){
 		SUPERLU_FREE(lsum);
 		SUPERLU_FREE(x);
 
-
 		SUPERLU_FREE(bmod);
 		SUPERLU_FREE(brecv);
 		SUPERLU_FREE(root_send);
@@ -3184,24 +3184,22 @@ for (i=0;i<nroot_send;i++){
 		SUPERLU_FREE(recvbuf_BC_fwd);
 
 		log_memory(-nlb*aln_i*iword-nlb*iword - nsupers_i*iword - (CEILING( nsupers, Pr )+CEILING( nsupers, Pc ))*aln_i*iword - maxrecvsz*(nbrecvx+1)*dword - sizelsum*num_thread * dword - (ldalsum * nrhs + nlb * XK_H) *dword - (sizertemp*num_thread + 1)*dword, stat);	//account for bmod, brecv, root_send, rootsups, recvbuf_BC_fwd,rtemp,lsum,x
+		//for (lk=0;lk<nsupers_j;++lk){
+		//	if(UBtree_ptr[lk].empty_==NO){
+		//		// if(BcTree_IsRoot(LBtree_ptr[lk],'d')==YES){
+		//		C_BcTree_waitSendRequest(&UBtree_ptr[lk]);
+		//		// }
+		//		// deallocate requests here
+		//	}
+		//}
 
-		for (lk=0;lk<nsupers_j;++lk){
-			if(UBtree_ptr[lk].empty_==NO){
-				// if(BcTree_IsRoot(LBtree_ptr[lk],'d')==YES){
-				C_BcTree_waitSendRequest(&UBtree_ptr[lk]);
-				// }
-				// deallocate requests here
-			}
-		}
-
-		for (lk=0;lk<nsupers_i;++lk){
-			if(URtree_ptr[lk].empty_==NO){
-				C_RdTree_waitSendRequest(&URtree_ptr[lk]);
-				// deallocate requests here
-			}
-		}
-		MPI_Barrier( grid->comm );
-
+		//for (lk=0;lk<nsupers_i;++lk){
+		//	if(URtree_ptr[lk].empty_==NO){
+		//		C_RdTree_waitSendRequest(&URtree_ptr[lk]);
+		//		// deallocate requests here
+		//	}
+		//}
+		//MPI_Barrier( grid->comm );
 
 #if ( PROFlevel>=2 )
 		{

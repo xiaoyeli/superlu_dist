@@ -2501,7 +2501,7 @@ if ( !iam) printf(".. Construct Reduce tree for U: %.2f\t\n", t);
     h_nfrecvmod[0]=nfrecvmod;
     h_nfrecvmod[1]=tmp_idx;
     h_nfrecvmod[2]=h_nfrecv[2];
-    printf("(%d) nfrecvmod=%d,%d,nfrecvx=%d\n",iam,nfrecvmod, tmp_idx,nfrecvx);
+    printf("(%d) nfrecvmod=%d,nfrecvx=%d\n",iam,nfrecvmod,nfrecvx);
 	fflush(stdout);
 	checkGPU(gpuMalloc( (void**)&d_nfrecvmod,  3 * sizeof(int)));
 	checkGPU(gpuMemcpy(d_nfrecvmod, h_nfrecvmod, 3 * sizeof(int), gpuMemcpyHostToDevice));
@@ -2533,8 +2533,8 @@ if ( !iam) printf(".. Construct Reduce tree for U: %.2f\t\n", t);
     for(int i=0; i<CEILING( nsupers, grid->npcol);i++){
         if(mystatus_u[i]==0) {
             my_colnum_u[tmp_idx]=i;
-            printf("(%d),nbrecvx=%d,i=%d,my_column_u[%d]=%d\n",iam,nbrecvx,i,tmp_idx,my_colnum[tmp_idx]);
-            fflush(stdout);
+            //printf("(%d),nbrecvx=%d,i=%d,my_column_u[%d]=%d\n",iam,nbrecvx,i,tmp_idx,my_colnum[tmp_idx]);
+            //fflush(stdout);
             tmp_idx += 1;
         }
     }
