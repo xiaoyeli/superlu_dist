@@ -1,4 +1,4 @@
-# SuperLU_DIST (version 7.1.0)   <img align=center width="55" alt="superlu" src="https://user-images.githubusercontent.com/11741943/103982988-5a9a9d00-5139-11eb-9ac4-a55e80a79f8d.png">
+# SuperLU_DIST (version 7.1.1)   <img align=center width="55" alt="superlu" src="https://user-images.githubusercontent.com/11741943/103982988-5a9a9d00-5139-11eb-9ac4-a55e80a79f8d.png">
 
 [![Build Status](https://travis-ci.org/xiaoyeli/superlu_dist.svg?branch=master)](https://travis-ci.org/xiaoyeli/superlu_dist) 
 [Nightly tests](http://my.cdash.org/index.php?project=superlu_dist)
@@ -25,7 +25,7 @@ acceleration capabilities.
 Table of Contents
 =================
 
-* [SuperLU_DIST (version 7.1.0)   <a href="https://user-images.githubusercontent.com/11741943/103982988-5a9a9d00-5139-11eb-9ac4-a55e80a79f8d.png" target="_blank" rel="nofollow"><img align="center" width="55" alt="superlu" src="https://user-images.githubusercontent.com/11741943/103982988-5a9a9d00-5139-11eb-9ac4-a55e80a79f8d.png" style="max-width:100%;"></a>](#superlu_dist-version-70---)
+* [SuperLU_DIST (version 7.1.1)   <a href="https://user-images.githubusercontent.com/11741943/103982988-5a9a9d00-5139-11eb-9ac4-a55e80a79f8d.png" target="_blank" rel="nofollow"><img align="center" width="55" alt="superlu" src="https://user-images.githubusercontent.com/11741943/103982988-5a9a9d00-5139-11eb-9ac4-a55e80a79f8d.png" style="max-width:100%;"></a>](#superlu_dist-version-70---)
 * [Directory structure of the source code](#directory-structure-of-the-source-code)
 * [Installation](#installation)
    * [Installation option 1: Using CMake build system.](#installation-option-1-using-cmake-build-system)
