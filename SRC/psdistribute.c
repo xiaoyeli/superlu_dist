@@ -13,9 +13,10 @@ at the top-level directory.
 /*! @file
  * \brief Re-distribute A on the 2D process mesh.
  * <pre>
- * -- Distributed SuperLU routine (version 2.3) --
+ * -- Distributed SuperLU routine (version 7.1.1) --
  * Lawrence Berkeley National Lab, Univ. of California Berkeley.
  * October 15, 2008
+ * October 18, 2021, minor fix, v7.1.1
  * </pre>
  */
 
@@ -141,8 +142,8 @@ sReDistribute_A(SuperMatrix *A, sScalePermstruct_t *ScalePermstruct,
             ABORT("Malloc fails for ia[].");
         if ( !(aij = floatMalloc_dist(k)) )
             ABORT("Malloc fails for aij[].");
+        ja = ia + k;
     }
-    ja = ia + k;
 
     /* Allocate temporary storage for sending/receiving the A triplets. */
     if ( procs > 1 ) {
@@ -170,9 +171,9 @@ sReDistribute_A(SuperMatrix *A, sScalePermstruct_t *ScalePermstruct,
 
       for (i = 0, j = 0, p = 0; p < procs; ++p) {
           if ( p != iam ) {
-	      ia_send[p] = &index[i];
+	      if (nnzToSend[p] > 0) ia_send[p] = &index[i];
 	      i += 2 * nnzToSend[p]; /* ia/ja indices alternate */
-	      aij_send[p] = &nzval[j];
+	      if (nnzToSend[p] > 0) aij_send[p] = &nzval[j];
 	      j += nnzToSend[p];
 	  }
       }
