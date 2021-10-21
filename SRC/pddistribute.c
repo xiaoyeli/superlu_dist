@@ -2501,8 +2501,8 @@ if ( !iam) printf(".. Construct Reduce tree for U: %.2f\t\n", t);
     h_nfrecvmod[0]=nfrecvmod;
     h_nfrecvmod[1]=tmp_idx;
     h_nfrecvmod[2]=h_nfrecv[2];
-    printf("(%d) nfrecvmod=%d,nfrecvx=%d\n",iam,nfrecvmod,nfrecvx);
-    fflush(stdout);
+    //printf("(%d) nfrecvmod=%d,nfrecvx=%d\n",iam,nfrecvmod,nfrecvx);
+    //fflush(stdout);
     checkGPU(gpuMalloc( (void**)&d_nfrecvmod, 3 * sizeof(int)));
 	checkGPU(gpuMemcpy(d_nfrecvmod, h_nfrecvmod, 3 * sizeof(int), gpuMemcpyHostToDevice));
 	checkGPU(gpuMalloc( (void**)&d_statusmod, 2*CEILING(nsupers, grid->nprow) * sizeof(int)));
@@ -2533,8 +2533,8 @@ if ( !iam) printf(".. Construct Reduce tree for U: %.2f\t\n", t);
     for(int i=0; i<CEILING( nsupers, grid->npcol);i++){
         if(mystatus_u[i]==0) {
             my_colnum_u[tmp_idx]=i;
-            printf("(%d),nbrecvx=%d,i=%d,my_column_u[%d]=%d\n",iam,nbrecvx,i,tmp_idx,my_colnum_u[tmp_idx]);
-            fflush(stdout);
+            //printf("(%d),nbrecvx=%d,i=%d,my_column_u[%d]=%d\n",iam,nbrecvx,i,tmp_idx,my_colnum_u[tmp_idx]);
+            //fflush(stdout);
             tmp_idx += 1;
         }
     }
@@ -2548,8 +2548,8 @@ if ( !iam) printf(".. Construct Reduce tree for U: %.2f\t\n", t);
     //fflush(stdout);
 
     checkGPU(gpuMemcpy(d_colnum_u, my_colnum_u,  (nbrecvx+1) * sizeof(int), gpuMemcpyHostToDevice));
-    printf("(%d) nbrecvx=%d,nbrecvmod=%d\n",iam,nbrecvx,nbrecvmod);
-    fflush(stdout);
+    //printf("(%d) nbrecvx=%d,nbrecvmod=%d\n",iam,nbrecvx,nbrecvmod);
+    //fflush(stdout);
     checkGPU(gpuMalloc( (void**)&d_mynum_u, h_nfrecv_u[1]  * sizeof(int)));
     checkGPU(gpuMalloc( (void**)&d_mymaskstart_u, h_nfrecv_u[1] * sizeof(int)));
     checkGPU(gpuMalloc( (void**)&d_mymasklength_u, h_nfrecv_u[1]  * sizeof(int)));
@@ -2585,49 +2585,49 @@ if ( !iam) printf(".. Construct Reduce tree for U: %.2f\t\n", t);
     checkGPU(gpuMalloc( (void**)&d_mymaskstartmod_u, h_nfrecv_u[1]  * sizeof(int)));
     checkGPU(gpuMalloc( (void**)&d_mymasklengthmod_u,   h_nfrecv_u[1] * sizeof(int)));
 
-    double mygpumem_L=0,mygpumem_U=0;
-    double mygpumem_L_nv=0,mygpumem_U_nv=0;
-    mygpumem_L=((Llu->Lnzval_bc_cnt) * sizeof(double)
-                +(Llu->Linv_bc_cnt) * sizeof(double)
-                +CEILING( nsupers, grid->npcol ) * sizeof(long int)
-                +(CEILING( nsupers, grid->nprow )+1) * sizeof(int_t)
-                +(n+1) * sizeof(int_t)
-                +CEILING( nsupers, grid->nprow ) * sizeof(C_Tree)*4
-                +(Llu->Lrowind_bc_cnt) * sizeof(int_t)
-                +(Llu->Lindval_loc_bc_cnt) * sizeof(int_t)
-                +CEILING( nsupers, grid->npcol ) * sizeof(long int)
-                +CEILING( nsupers, grid->npcol ) * sizeof(long int)
-                +CEILING( nsupers, grid->npcol ) * sizeof(long int)
-                )/1e6;
+    //double mygpumem_L=0,mygpumem_U=0;
+    //double mygpumem_L_nv=0,mygpumem_U_nv=0;
+    //mygpumem_L=((Llu->Lnzval_bc_cnt) * sizeof(double)
+    //            +(Llu->Linv_bc_cnt) * sizeof(double)
+    //            +CEILING( nsupers, grid->npcol ) * sizeof(long int)
+    //            +(CEILING( nsupers, grid->nprow )+1) * sizeof(int_t)
+    //            +(n+1) * sizeof(int_t)
+    //            +CEILING( nsupers, grid->nprow ) * sizeof(C_Tree)*4
+    //            +(Llu->Lrowind_bc_cnt) * sizeof(int_t)
+    //            +(Llu->Lindval_loc_bc_cnt) * sizeof(int_t)
+    //            +CEILING( nsupers, grid->npcol ) * sizeof(long int)
+    //            +CEILING( nsupers, grid->npcol ) * sizeof(long int)
+    //            +CEILING( nsupers, grid->npcol ) * sizeof(long int)
+    //            )/1e6;
 
-    mygpumem_U=((Llu->Unzval_br_cnt) * sizeof(double)
-                +(Llu->Uinv_bc_cnt) * sizeof(double)
-                +CEILING( nsupers, grid->npcol ) * sizeof(long int)
-                +CEILING( nsupers, grid->npcol ) * sizeof(long int)
-                +Llu->Ucb_indcnt * sizeof(Ucb_indptr_t)
-                +CEILING( nsupers, grid->npcol ) * sizeof(long int)
-                +Llu->Ucb_valcnt * sizeof(int_t)
-                +2* CEILING( nsupers, grid->npcol ) * sizeof(int_t)
-                +(Llu->Ufstnz_br_cnt) * sizeof(int_t)
-                +CEILING( nsupers, grid->nprow ) * sizeof(long int)
-                +CEILING( nsupers, grid->nprow ) * sizeof(long int)
-                )/1e6;
+    //mygpumem_U=((Llu->Unzval_br_cnt) * sizeof(double)
+    //            +(Llu->Uinv_bc_cnt) * sizeof(double)
+    //            +CEILING( nsupers, grid->npcol ) * sizeof(long int)
+    //            +CEILING( nsupers, grid->npcol ) * sizeof(long int)
+    //            +Llu->Ucb_indcnt * sizeof(Ucb_indptr_t)
+    //            +CEILING( nsupers, grid->npcol ) * sizeof(long int)
+    //            +Llu->Ucb_valcnt * sizeof(int_t)
+    //            +2* CEILING( nsupers, grid->npcol ) * sizeof(int_t)
+    //            +(Llu->Ufstnz_br_cnt) * sizeof(int_t)
+    //            +CEILING( nsupers, grid->nprow ) * sizeof(long int)
+    //            +CEILING( nsupers, grid->nprow ) * sizeof(long int)
+    //            )/1e6;
 
-    printf("(%d) CUDA buffer size, L= %lf MB, U= %lf MB\n",iam,mygpumem_L, mygpumem_U);
+    //printf("(%d) CUDA buffer size, L= %lf MB, U= %lf MB\n",iam,mygpumem_L, mygpumem_U);
 
-    mygpumem_L_nv=(h_nfrecv[1] * sizeof(int)*7
-                  +3*CEILING(nsupers, grid->nprow) * sizeof(int)
-                  + (nfrecvmod+1) * sizeof(int)
-                  + (nfrecvx+1) * sizeof(int)
-                  +CEILING( nsupers, grid->npcol) * sizeof(int) )/1e6;
-    mygpumem_U_nv=(h_nfrecv_u[1]*3*sizeof(int)
-                  + h_nfrecv_u[1]*3*sizeof(int)
-                  +(nbrecvmod+1) * sizeof(int)
-                   +(nbrecvx+1) * sizeof(int)
-                  +CEILING(nsupers, grid->nprow) * sizeof(int)
-                  + 3 * sizeof(int))/1e6;
-    printf("(%d) NVSHMEM buffer size, L= %lf MB, U= %lf MB\n",iam,mygpumem_L_nv, mygpumem_U_nv);
-    fflush(stdout);
+    //mygpumem_L_nv=(h_nfrecv[1] * sizeof(int)*7
+    //              +3*CEILING(nsupers, grid->nprow) * sizeof(int)
+    //              + (nfrecvmod+1) * sizeof(int)
+    //              + (nfrecvx+1) * sizeof(int)
+    //              +CEILING( nsupers, grid->npcol) * sizeof(int) )/1e6;
+    //mygpumem_U_nv=(h_nfrecv_u[1]*3*sizeof(int)
+    //              + h_nfrecv_u[1]*3*sizeof(int)
+    //              +(nbrecvmod+1) * sizeof(int)
+    //               +(nbrecvx+1) * sizeof(int)
+    //              +CEILING(nsupers, grid->nprow) * sizeof(int)
+    //              + 3 * sizeof(int))/1e6;
+    //printf("(%d) NVSHMEM buffer size, L= %lf MB, U= %lf MB\n",iam,mygpumem_L_nv, mygpumem_U_nv);
+    //fflush(stdout);
 #endif
 
 #if ( PRNTlevel>=1 )
