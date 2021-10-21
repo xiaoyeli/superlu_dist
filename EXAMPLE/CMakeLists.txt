@@ -37,6 +37,7 @@ if(enable_double)
   set(DEXM pddrive.c dcreate_matrix.c)
   add_executable(pddrive ${DEXM})
   target_link_libraries(pddrive ${all_link_libs})
+  install(TARGETS pddrive RUNTIME DESTINATION "${INSTALL_BIN_DIR}")  
 
   set(DEXM1 pddrive1.c dcreate_matrix.c)
   add_executable(pddrive1 ${DEXM1})
@@ -96,6 +97,8 @@ if(enable_double)
   set(DEXMS pddrive_spawn.c dcreate_matrix.c)
   add_executable(pddrive_spawn ${DEXMS})
   target_link_libraries(pddrive_spawn ${all_link_libs})
+  install(TARGETS pddrive_spawn RUNTIME DESTINATION "${INSTALL_BIN_DIR}")
+
 
 
 endif() #### end enable_double
