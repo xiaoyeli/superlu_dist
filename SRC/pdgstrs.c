@@ -2684,41 +2684,31 @@ thread_id=0;
     if ( !(temp2_offset_by_block = (int*)SUPERLU_MALLOC(k*sizeof(int))) )  // this needs to be optimized for 1D row mapping
         ABORT("Malloc fails for temp2_offset_by_block[].");
     memset(temp2_offset_by_block, 0, ( k * sizeof(int)));
-    int tmp=-1;
     for (int i=0; i<k; i++) {
         //temp2_offset_by_block[i] = 0;
         //printf("(%d) i=%d, nub=%d, temp2_offset_by_block=%d\n", iam, i, Urbs[i], temp2_offset_by_block[i]);
         //fflush(stdout);
         if (Urbs[i] > 0) {
-            tmp=0;
             int ngroup = SUPERLU_MIN(Urbs[i], 256);
             int block_size_loc = floor((double) 256 / ngroup);
-            for (int j = 0; j < 256; j++) {
-                if (j % block_size_loc == 0) {
-                    tmp++;
-                    //printf("---- (%d) i=%d, nub=%d, tmp=%d\n", iam, i, Urbs[i], tmp);
-                    //fflush(stdout);
-                }
-            }
-            temp2_size+=tmp;
+            temp2_size+=256/block_size_loc;
             for (int ii=i+1; ii<k; ii++) {
                 //printf("---- before (%d) ii=%d, enterTidNum=%d,tmp=%d\n", iam, ii, temp2_offset_by_block[ii],tmp);
                 //fflush(stdout);
-                temp2_offset_by_block[ii]+=tmp;
+                temp2_offset_by_block[ii]+=256/block_size_loc;
                 //printf("---- after (%d) ii=%d, enterTidNum=%d,tmp=%d\n", iam, ii, temp2_offset_by_block[ii],tmp);
                 //fflush(stdout);
             }
         }
-        //printf(" (%d) i=%d, nub=%d, enterTidNum=%d, tot_size=%d, maxsuper=%d\n", iam, i, Urbs[i], temp2_offset_by_block[i],temp2_size,maxsuper);
-        //fflush(stdout);
-
     }
-    int *temp2_offset;
-    checkGPU(gpuMalloc( (void**)&temp2_offset, k*sizeof(double)));
-    checkGPU(gpuMemcpy(temp2_offset, temp2_offset_by_block, k * sizeof(double), gpuMemcpyHostToDevice));
-    double *temp2;
-    checkGPU(gpuMalloc( (void**)&temp2, temp2_size*sp_ienv_dist(3)*sizeof(double)));
-    checkGPU(gpuMemset(temp2, 0,  temp2_size*sp_ienv_dist(3) * sizeof(double)));
+    //printf(" (%d) tot_size=%d double, maxsuper=%d\n", iam,temp2_size,maxsuper);
+    //fflush(stdout);
+    //int *temp2_offset;
+    //checkGPU(gpuMalloc( (void**)&temp2_offset, k*sizeof(double)));
+    //checkGPU(gpuMemcpy(temp2_offset, temp2_offset_by_block, k * sizeof(double), gpuMemcpyHostToDevice));
+    //double *temp2;
+    //checkGPU(gpuMalloc( (void**)&temp2, temp2_size*maxsuper*sizeof(double)));
+    //checkGPU(gpuMemset(temp2, 0,  temp2_size*maxsuper * sizeof(double)));
 #if ( PRNTlevel>=1 )
     t = SuperLU_timer_() - t;
 	if ( !iam) printf(".. Setup U-solve time\t%8.4f\n", t);
@@ -2728,7 +2718,16 @@ thread_id=0;
 #endif
     //printf("(%d) temp2 size=%d of doubles\n", iam, temp2_size*1024);
     //fflush(stdout);
-	dlsum_bmod_inv_gpu_wrap(k,nlb,DIM_X,DIM_Y,d_lsum,d_x,nrhs,knsupc,nsupers,d_bmod,
+	//dlsum_bmod_inv_gpu_wrap_pre(k,nlb,DIM_X,DIM_Y,d_lsum,d_x,nrhs,knsupc,nsupers,d_bmod,
+    //                     Llu->d_UBtree_ptr,Llu->d_URtree_ptr,Llu->d_ilsum,Llu->d_Urbs,
+    //                     Llu->d_Ufstnz_br_dat,Llu->d_Ufstnz_br_offset,Llu->d_Unzval_br_dat,
+    //                     Llu->d_Unzval_br_offset,Llu->d_Ucb_valdat,Llu->d_Ucb_valoffset,Llu->d_Ucb_inddat,
+    //                     Llu->d_Ucb_indoffset,Llu->d_Uinv_bc_dat,Llu->d_Uinv_bc_offset,Llu->d_xsup,d_grid,
+    //                     maxrecvsz, flag_bc_q, flag_rd_q, ready_x, ready_lsum, my_flag_bc, my_flag_rd, d_launch_flag,
+    //                     d_nfrecv_u, h_nfrecv_u, d_status, d_colnum_u, d_mynum_u, d_mymaskstart_u,d_mymasklength_u,
+    //                     d_nfrecvmod_u, d_statusmod, d_colnummod_u, d_mynummod_u, d_mymaskstartmod_u, d_mymasklengthmod_u,
+    //                     d_recv_cnt_u, d_msgnum, temp2_offset, temp2);
+    dlsum_bmod_inv_gpu_wrap(k,nlb,DIM_X,DIM_Y,d_lsum,d_x,nrhs,knsupc,nsupers,d_bmod,
                          Llu->d_UBtree_ptr,Llu->d_URtree_ptr,Llu->d_ilsum,Llu->d_Urbs,
                          Llu->d_Ufstnz_br_dat,Llu->d_Ufstnz_br_offset,Llu->d_Unzval_br_dat,
                          Llu->d_Unzval_br_offset,Llu->d_Ucb_valdat,Llu->d_Ucb_valoffset,Llu->d_Ucb_inddat,
@@ -2736,7 +2735,7 @@ thread_id=0;
                          maxrecvsz, flag_bc_q, flag_rd_q, ready_x, ready_lsum, my_flag_bc, my_flag_rd, d_launch_flag,
                          d_nfrecv_u, h_nfrecv_u, d_status, d_colnum_u, d_mynum_u, d_mymaskstart_u,d_mymasklength_u,
                          d_nfrecvmod_u, d_statusmod, d_colnummod_u, d_mynummod_u, d_mymaskstartmod_u, d_mymasklengthmod_u,
-                         d_recv_cnt_u, d_msgnum, temp2_offset, temp2);
+                         d_recv_cnt_u, d_msgnum);
     //printf("(%d) done dlsum_bmod_inv_gpu_wrap\n",iam);
     //fflush(stdout);
 
