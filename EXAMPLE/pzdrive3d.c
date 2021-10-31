@@ -131,6 +131,12 @@ main (int argc, char *argv[])
     int required = MPI_THREAD_MULTIPLE;
     int provided;
     MPI_Init_thread(&argc, &argv, required, &provided);
+#ifdef GPU_ACC
+    int rank, devs;
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    cudaGetDeviceCount(&devs);
+    cudaSetDevice(rank % devs);
+#endif    
     if (provided < required)
     {
         int rank;
