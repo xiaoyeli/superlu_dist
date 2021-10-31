@@ -85,7 +85,6 @@ void Destroy_Dense_Matrix_dist(SuperMatrix *A)
     SUPERLU_FREE(A->Store);
 }
 
-
 /*! \brief
  *
  * <pre>
@@ -216,6 +215,7 @@ void set_default_options_dist(superlu_dist_options_t *options)
     options->num_lookaheads = 10;
     options->lookahead_etree = NO;
     options->SymPattern = NO;
+    options->Algo3d = NO;
 #ifdef SLU_HAVE_LAPACK
     options->DiagInv = YES;
 #else

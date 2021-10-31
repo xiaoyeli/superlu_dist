@@ -14,8 +14,9 @@ at the top-level directory.
  *
  * <pre>
  * -- Distributed SuperLU routine (version 7.0) --
- * Lawrence Berkeley National Lab, Georgia Institute of Technology.
- * May 10, 2019
+ * Lawrence Berkeley National Lab, Georgia Institute of Technology,
+ * Oak Ridge National Lab
+ * May 12, 2021
  */
 
 #include "superlu_zdefs.h"
@@ -224,7 +225,7 @@ int_t pzgstrf3d(superlu_dist_options_t *options, int m, int n, double anorm,
     int_t bigu_size = getBigUSize(nsupers, grid,
     	  	                  LUstruct->Llu->Lrowind_bc_ptr);
     HyP->bigu_size = bigu_size;
-    int_t buffer_size =sp_ienv_dist(8); // get_max_buffer_size ();
+    int_t buffer_size = sp_ienv_dist(8); // get_max_buffer_size ();
     HyP->buffer_size = buffer_size;
     HyP->nsupers = nsupers;
 
@@ -338,8 +339,15 @@ int_t pzgstrf3d(superlu_dist_options_t *options, int m, int n, double anorm,
 
         SCT->tSchCompUdt3d[ilvl] = ilvl == 0 ? SCT->NetSchurUpTimer
 	    : SCT->NetSchurUpTimer - SCT->tSchCompUdt3d[ilvl - 1];
-    } /*for (int_t ilvl = 0; ilvl < maxLvl; ++ilvl)*/
+    } /* end for (int ilvl = 0; ilvl < maxLvl; ++ilvl) */
 
+#ifdef GPU_ACC
+    /* This frees the GPU storage allocateed in initSluGPU3D_t() */
+    if (superlu_acc_offload) {
+         zfree_LUstruct_gpu (sluGPU->A_gpu);
+    }
+#endif
+    
     MPI_Barrier( grid3d->comm);
     SCT->pdgstrfTimer = SuperLU_timer_() - SCT->pdgstrfTimer;
 

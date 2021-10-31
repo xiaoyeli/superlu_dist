@@ -35,9 +35,9 @@ at the top-level directory.
  * This example illustrates how to use PDGSSVX to solve
  * systems repeatedly with the same sparsity pattern and similar
  * numerical values of matrix A.
- * In this case, the column permutation vector and symbolic factorization are
- * computed only once. The following data structures will be reused in the
- * subsequent call to PDGSSVX:
+ * In this case, the row and column permutation vectors and symbolic
+ * factorization are computed only once. The following data structures
+ * will be reused in the subsequent call to PDGSSVX:
  *        ScalePermstruct : DiagScale, R, C, perm_r, perm_c
  *        LUstruct        : etree, Glu_persist, Llu
  *
@@ -236,8 +236,9 @@ int main(int argc, char *argv[])
         nzval1[0] += 1.0e-8;
     }
 
-    /* Zero the numerical values in L.  */
+    /* Zero the numerical values in L and U.  */
     dZeroLblocks(iam, n, &grid, &LUstruct);
+    dZeroUblocks(iam, n, &grid, &LUstruct);
 
     dCreate_CompRowLoc_Matrix_dist(&A, m, n, nnz_loc, m_loc, fst_row,
 				   nzval1, colind1, rowptr1,
@@ -256,7 +257,7 @@ int main(int argc, char *argv[])
     PStatPrint(&options, &stat, &grid);
 
     /* ------------------------------------------------------------
-       DEALLOCATE STORAGE.
+       DEALLOCATE ALL STORAGE.
        ------------------------------------------------------------*/
     PStatFree(&stat);
     Destroy_CompRowLoc_Matrix_dist(&A); /* Deallocate storage of matrix A.  */

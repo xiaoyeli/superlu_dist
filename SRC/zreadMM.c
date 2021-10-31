@@ -107,7 +107,7 @@ zreadMM_dist(FILE *fp, int_t *m, int_t *n, int_t *nonz,
 
      /* 3/ Read n and nnz */
 #ifdef _LONGINT
-    sscanf(line, "%ld%ld%ld",m, n, nonz);
+    sscanf(line, "%lld%lld%lld", m, n, nonz);
 #else
     sscanf(line, "%d%d%d",m, n, nonz);
 #endif

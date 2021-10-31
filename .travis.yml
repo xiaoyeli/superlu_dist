@@ -111,4 +111,4 @@ install:
 
 script: 
   - cd $TRAVIS_BUILD_DIR
-  - ./.travis_tests.sh
+  - ./.ci_tests.sh

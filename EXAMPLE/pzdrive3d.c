@@ -14,8 +14,9 @@ at the top-level directory.
  *
  * <pre>
  * -- Distributed SuperLU routine (version 7.0.0) --
- * Lawrence Berkeley National Lab, Georgia Institute of Technology.
- * May 10, 2019
+ * Lawrence Berkeley National Lab, Georgia Institute of Technology,
+ * Oak Ridge National Lab 
+ * May 12, 2021
  *
  */
 #include "superlu_zdefs.h"  
@@ -76,8 +77,8 @@ static void checkNRFMT(NRformat_loc*A, NRformat_loc*B)
 
 #if 0
     double *Aval = (double *)A->nzval, *Bval = (double *)B->nzval;
-    PrintDouble5("A", A->nnz_loc, Aval);
-    PrintDouble5("B", B->nnz_loc, Bval);
+    Printdouble5("A", A->nnz_loc, Aval);
+    Printdouble5("B", B->nnz_loc, Bval);
     fflush(stdout);
 #endif
 
@@ -141,7 +142,10 @@ main (int argc, char *argv[])
     {
         int rank;
         MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-        if (!rank) printf("The MPI library doesn't provide MPI_THREAD_MULTIPLE \n");
+        if (!rank) {
+	    printf("The MPI library doesn't provide MPI_THREAD_MULTIPLE \n");
+	    printf("\tprovided omp_mpi_level: %d\n", provided);
+        }
     }
 
     /* Parse command line argv[]. */
@@ -185,6 +189,7 @@ main (int argc, char *argv[])
        INITIALIZE THE SUPERLU PROCESS GRID.
        ------------------------------------------------------------ */
     superlu_gridinit3d (MPI_COMM_WORLD, nprow, npcol, npdep, &grid);
+    //    grid.rankorder = 1;
 
     if(grid.iam==0) {
 	MPI_Query_thread(&omp_mpi_level);
@@ -364,13 +369,13 @@ main (int argc, char *argv[])
 	PStatPrint (&options, &stat, &(grid.grid2d)); /* Print 2D statistics.*/
 
         zDestroy_LU (n, &(grid.grid2d), &LUstruct);
-        if (options.SolveInitialized) {
-            zSolveFinalize (&options, &SOLVEstruct);
-        }
+        zSolveFinalize (&options, &SOLVEstruct);
     } else { // Process layers not equal 0
         zDeAllocLlu_3d(n, &LUstruct, &grid);
         zDeAllocGlu_3d(&LUstruct);
     }
+    
+    zDestroy_A3d_gathered_on_2d(&SOLVEstruct, &grid);
 
     Destroy_CompRowLoc_Matrix_dist (&A);
     SUPERLU_FREE (b);

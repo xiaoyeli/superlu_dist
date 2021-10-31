@@ -33,8 +33,8 @@ at the top-level directory.
  *
  * The driver program PSDRIVE2.
  *
- * This example illustrates how to use  to solve
- * systems repeatedly with the same sparsity pattern of matrix A.
+ * This example illustrates how to use PSGSSVX to solve systems
+ * repeatedly with the same sparsity pattern of matrix A.
  * In this case, the column permutation vector ScalePermstruct->perm_c is
  * computed once. The following data structures will be reused in the
  * subsequent call to PSGSSVX:
@@ -147,7 +147,8 @@ int main(int argc, char *argv[])
        GET THE MATRIX FROM FILE AND SETUP THE RIGHT-HAND SIDE. 
        ------------------------------------------------------------*/
     screate_matrix_postfix(&A, nrhs, &b, &ldb, &xtrue, &ldx, fp, postfix, &grid);
-
+    fclose(fp);
+    
     if ( !(berr = floatMalloc_dist(nrhs)) )
 	ABORT("Malloc fails for berr[].");
     m = A.nrow;
@@ -156,7 +157,7 @@ int main(int argc, char *argv[])
     m_loc = Astore->m_loc;
 
     /* ------------------------------------------------------------
-       WE SOLVE THE LINEAR SYSTEM FOR THE FIRST TIME.
+       1. WE SOLVE THE LINEAR SYSTEM FOR THE FIRST TIME.
        ------------------------------------------------------------*/
 
     /* Set the default input options:
@@ -197,13 +198,13 @@ int main(int argc, char *argv[])
     PStatFree(&stat);
     Destroy_CompRowLoc_Matrix_dist(&A); /* Deallocate storage of matrix A.  */ 
     sDestroy_LU(n, &grid, &LUstruct); /* Deallocate storage associated with 
-					the L and U matrices.               */
-    SUPERLU_FREE(b);                 /* Free storage of right-hand side.    */
-    SUPERLU_FREE(xtrue);             /* Free storage of the exact solution. */
+					the L and U matrices.  */
+    SUPERLU_FREE(b);      /* Free storage of right-hand side.    */
+    SUPERLU_FREE(xtrue);  /* Free storage of the exact solution.*/
 
     /* ------------------------------------------------------------
-       NOW WE SOLVE ANOTHER LINEAR SYSTEM.
-       ONLY THE SPARSITY PATTERN OF MATRIX A IS THE SAME.
+       2. NOW WE SOLVE ANOTHER LINEAR SYSTEM.
+       	  ONLY THE SPARSITY PATTERN OF MATRIX A IS THE SAME.
        ------------------------------------------------------------*/
     options.Fact = SamePattern;
 
@@ -218,8 +219,9 @@ int main(int argc, char *argv[])
     /* Get the matrix from file, perturbed some diagonal entries to force
        a different perm_r[]. Set up the right-hand side.   */
     if ( !(fp = fopen(*cpp, "r")) ) ABORT("File does not exist");
-    screate_matrix_perturbed_postfix(&A, nrhs, &b1, &ldb, &xtrue1, &ldx, fp, postfix, &grid);
-
+    screate_matrix_perturbed_postfix(&A, nrhs, &b1, &ldb,
+                                  &xtrue1, &ldx, fp, postfix, &grid);
+			     
     PStatInit(&stat); /* Initialize the statistics variables. */
 
     /* Solve the linear system. */

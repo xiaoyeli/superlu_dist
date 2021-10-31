@@ -228,7 +228,9 @@ int_t sdenseTreeFactor(
             float* bigV = scuBufs->bigV;
             float* bigU = scuBufs->bigU;
 
+#ifdef _OPENMP    
 #pragma omp parallel for schedule(dynamic)
+#endif
             for (int_t ij = 0; ij < nub * nlb; ++ij)
             {
                 /* code */
@@ -250,9 +252,9 @@ int_t sdenseTreeFactor(
                 int_t *lsub = lPanelInfo->lsub;
                 int_t *usub = uPanelInfo->usub;
 #ifdef _OPENMP		
-                int_t thread_id = omp_get_thread_num();
+                int thread_id = omp_get_thread_num();
 #else		
-                int_t thread_id = 0;
+                int thread_id = 0;
 #endif		
                 sblock_gemm_scatter( lb, ub,
                                     Ublock_info,
@@ -501,10 +503,14 @@ int_t ssparseTreeFactor_ASYNC(
             int_t klst = FstBlockC (k + 1);
 
             float* bigV = scuBufs->bigV;
-
+	    
+#ifdef _OPENMP    
 #pragma omp parallel
+#endif
             {
+#ifdef _OPENMP    
 #pragma omp for schedule(dynamic,2) nowait
+#endif
 		/* Each thread is assigned one loop index ij, responsible for
 		   block update L(lb,k) * U(k,j) -> tempv[]. */
                 for (int_t ij = 0; ij < HyP->lookAheadBlk * HyP->num_u_blks; ++ij)
@@ -520,7 +526,9 @@ int_t ssparseTreeFactor_ASYNC(
 					       LUstruct, grid, SCT, stat );
                 }
 
+#ifdef _OPENMP    
 #pragma omp for schedule(dynamic,2) nowait
+#endif
                 for (int_t ij = 0; ij < HyP->lookAheadBlk * HyP->num_u_blks_Phi; ++ij)
                 {
                     int_t j   = ij / HyP->lookAheadBlk ;
@@ -530,7 +538,9 @@ int_t ssparseTreeFactor_ASYNC(
 						LUstruct, grid, SCT, stat);
                 }
 
+#ifdef _OPENMP    
 #pragma omp for schedule(dynamic,2) nowait
+#endif
                 for (int_t ij = 0; ij < HyP->RemainBlk * HyP->num_u_blks; ++ij) //
                 {
                     int_t j   = ij / HyP->RemainBlk;
@@ -572,9 +582,13 @@ int_t ssparseTreeFactor_ASYNC(
                 }
             }
 
+#ifdef _OPENMP    
 #pragma omp parallel
+#endif
             {
+#ifdef _OPENMP    
 #pragma omp for schedule(dynamic,2) nowait
+#endif
                 for (int_t ij = 0; ij < HyP->RemainBlk * (HyP->num_u_blks_Phi - jj_cpu) ; ++ij)
                 {
                     int_t j   = ij / HyP->RemainBlk + jj_cpu;

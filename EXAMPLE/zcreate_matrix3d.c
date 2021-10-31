@@ -17,7 +17,7 @@ at the top-level directory.
  * -- Distributed SuperLU routine (version 7.0) --
  * Lawrence Berkeley National Lab, Univ. of California Berkeley,
  * Oak Ridge National Lab.
- * October 26, 2020
+ * May 12, 2021
  * </pre>
  */
 #include <math.h>
@@ -269,7 +269,7 @@ int zcreate_matrix_postfix3d(SuperMatrix *A, int nrhs, doublecomplex **rhs,
     iam = grid3d->iam;
 
 #if ( DEBUGlevel>=1 )
-    CHECK_MALLOC(iam, "Enter dcreate_matrix()");
+    CHECK_MALLOC(iam, "Enter zcreate_matrix_postfix3d()");
 #endif
 
     if ( !iam )
