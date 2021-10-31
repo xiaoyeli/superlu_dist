@@ -19,7 +19,7 @@
 #include <ctime>
 #include <oneapi/mkl/blas.hpp>
 
-// requires to set environment variables: ZES_ENABLE_SYSMAN=1, SYCL_DEVICE_FILTER=level_zero (only for get_acc_memory())
+// requires to set environment variables: ZES_ENABLE_SYSMAN=1, (only for get_acc_memory())
 #include "level_zero/ze_api.h"
 #include "level_zero/zes_api.h"
 #include "CL/sycl/backend/level_zero.hpp"
@@ -655,8 +655,8 @@ static size_t get_acc_memory ()
     std::vector<sycl::device> gpu_devices = platform.get_devices(sycl::info::device_type::gpu);
     sycl::context super_ctxt = sycl::context(gpu_devices);
 
-    ze_context_handle_t ze_super_ctxt = super_ctxt.get_native<sycl::backend::level_zero>();
-    ze_device_handle_t ze_device = gpu_devices[0].get_native<sycl::backend::level_zero>();
+    ze_context_handle_t ze_super_ctxt = sycl::get_native<sycl::backend::ext_oneapi_level_zero>(super_ctxt);
+    ze_device_handle_t ze_device = sycl::get_native<sycl::backend::ext_oneapi_level_zero>(gpu_devices[0]);
     zes_device_handle_t zes_device = (zes_device_handle_t)ze_device;
     ze_result_t status = ZE_RESULT_SUCCESS;
 
