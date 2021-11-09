@@ -13,10 +13,11 @@ at the top-level directory.
  * \brief Solves a system of linear equations A*X=B using 3D process grid.
  *
  * <pre>
- * -- Distributed SuperLU routine (version 7.0) --
+ * -- Distributed SuperLU routine (version 7.1.0) --
  * Lawrence Berkeley National Lab, Georgia Institute of Technology,
  * Oak Ridge National Lab
  * May 12, 2021
+ * October 5, 2021 (last update: November 8, 2021)
  */
 #include "superlu_zdefs.h"
 
@@ -1274,7 +1275,7 @@ pzgssvx3d (superlu_dist_options_t * options, SuperMatrix * A,
         zDestroy_trf3Dpartition(trf3Dpartition, grid3d);
 	SCT_free(SCT);
 
-    } /* end if not Factored */
+    } /* end if not Factored ... factor on all process layers */
     
     if ( grid3d->zscp.Iam == 0 ) { // only process layer 0
 	if (!factored) {
@@ -1327,7 +1328,7 @@ pzgssvx3d (superlu_dist_options_t * options, SuperMatrix * A,
 	/* ------------------------------------------------------------
 	   Compute the solution matrix X.
 	   ------------------------------------------------------------ */
-	if ( nrhs > 0 ) {
+	if ( (nrhs > 0) && (*info == 0) ) {
 	    if (!(b_work = doublecomplexMalloc_dist (n)))
 	        ABORT ("Malloc fails for b_work[]");
 
@@ -1543,7 +1544,7 @@ pzgssvx3d (superlu_dist_options_t * options, SuperMatrix * A,
 		SUPERLU_FREE (b_work);
 		SUPERLU_FREE (X);
 		
-	    } /* end if nrhs > 0 */
+	    } /* end if nrhs > 0 and factor successful */
 	
 #if ( PRNTlevel>=1 )
 	if (!iam) {

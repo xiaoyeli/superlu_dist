@@ -74,12 +74,7 @@ int main(int argc, char *argv[])
        ------------------------------------------------------------*/
     //MPI_Init( &argc, &argv );
     MPI_Init_thread( &argc, &argv, MPI_THREAD_MULTIPLE, &omp_mpi_level); 
-#ifdef GPU_ACC
-    int rank, devs;
-    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-    cudaGetDeviceCount(&devs);
-    cudaSetDevice(rank % devs);
-#endif
+	
 
 #if ( VAMPIR>=1 )
     VT_traceoff(); 
@@ -143,7 +138,7 @@ int main(int argc, char *argv[])
 	
     /* Bail out if I do not belong in the grid. */
     iam = grid.iam;
-    if ( iam == -1 )	goto out;
+    if ( (iam >= nprow * npcol) || (iam == -1) ) goto out;
     if ( !iam ) {
 	int v_major, v_minor, v_bugfix;
 #ifdef __INTEL_COMPILER
@@ -229,10 +224,16 @@ int main(int argc, char *argv[])
     pzgssvx(&options, &A, &ScalePermstruct, b, ldb, nrhs, &grid,
 	    &LUstruct, &SOLVEstruct, berr, &stat, &info);
 
-
-    /* Check the accuracy of the solution. */
-    pzinf_norm_error(iam, ((NRformat_loc *)A.Store)->m_loc,
-		     nrhs, b, ldb, xtrue, ldx, grid.comm);
+    if ( info ) {  /* Something is wrong */
+        if ( iam==0 ) {
+	    printf("ERROR: INFO = %d returned from pzgssvx()\n", info);
+	    fflush(stdout);
+	}
+    } else {
+        /* Check the accuracy of the solution. */
+        pzinf_norm_error(iam, ((NRformat_loc *)A.Store)->m_loc,
+		         nrhs, b, ldb, xtrue, ldx, grid.comm);
+    }
 
     PStatPrint(&options, &stat, &grid);        /* Print the statistics. */
 
@@ -245,9 +246,7 @@ int main(int argc, char *argv[])
     zScalePermstructFree(&ScalePermstruct);
     zDestroy_LU(n, &grid, &LUstruct);
     zLUstructFree(&LUstruct);
-    if ( options.SolveInitialized ) {
-        zSolveFinalize(&options, &SOLVEstruct);
-    }
+    zSolveFinalize(&options, &SOLVEstruct);
     SUPERLU_FREE(b);
     SUPERLU_FREE(xtrue);
     SUPERLU_FREE(berr);
