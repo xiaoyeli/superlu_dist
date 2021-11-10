@@ -356,7 +356,7 @@ if (XSDK_ENABLE_Fortran)
       SET(CMAKE_EXE_LINKER_FLAGS
           "${CMAKE_EXE_LINKER_FLAGS} -Wl,-rpath,${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}")
    else()
-      message("-- superlu_dist_fortranwill be built as a static library.")
+      message("-- superlu_dist_fortran will be built as a static library.")
       set(PROJECT_NAME_LIB_FORTRAN libsuperlu_dist_fortran.a)
    endif()
 endif()
