@@ -5,14 +5,15 @@
 #include "lupanels_GPU.cuh"
 #include "lupanels.hpp"
 
-#define cudaCheckError() {                                          \
- cudaError_t e=cudaGetLastError();                                 \
- if(e!=cudaSuccess) {                                              \
-   printf("Cuda failure %s:%d: '%s'\n",__FILE__,__LINE__,cudaGetErrorString(e));           \
-   exit(0); \
- }                                                                 \
-}
-
+#define cudaCheckError()                                                                     \
+    {                                                                                        \
+        cudaError_t e = cudaGetLastError();                                                  \
+        if (e != cudaSuccess)                                                                \
+        {                                                                                    \
+            printf("Cuda failure %s:%d: '%s'\n", __FILE__, __LINE__, cudaGetErrorString(e)); \
+            exit(0);                                                                         \
+        }                                                                                    \
+    }
 
 LUstruct_v100::LUstruct_v100(int_t nsupers_, int_t ldt_,
                              int_t *isNodeInMyGrid_, int superluAccOffload_,
@@ -212,8 +213,7 @@ int_t LUstruct_v100::dSchurComplementUpdate(
     {
         int_t ii = ij / nub + st_lb;
         int_t jj = ij % nub;
-        blockUpdate(k,ii, jj, lpanel, upanel);
-        
+        blockUpdate(k, ii, jj, lpanel, upanel);
     }
 
     return 0;
@@ -327,23 +327,22 @@ int numProcsPerNode(MPI_Comm baseCommunicator)
 {
     MPI_Comm sharedComm;
     MPI_Comm_split_type(baseCommunicator, MPI_COMM_TYPE_SHARED, 0, MPI_INFO_NULL, &sharedComm);
-    int count =0; 
+    int count = 0;
     MPI_Comm_size(sharedComm, &count);
-    return count; 
-    
+    return count;
 }
 
 int getMPIProcsPerGPU()
 {
-    if(!(getenv("MPI_PROCESS_PER_GPU")))
+    if (!(getenv("MPI_PROCESS_PER_GPU")))
     {
         return 1;
-    }  
-    else 
+    }
+    else
     {
         int devCount;
         cudaGetDeviceCount(&devCount);
-        int envCount  = atoi(getenv("MPI_PROCESS_PER_GPU"));
+        int envCount = atoi(getenv("MPI_PROCESS_PER_GPU"));
         envCount = SUPERLU_MAX(envCount, 0);
         return SUPERLU_MIN(envCount, devCount);
     }
@@ -351,20 +350,24 @@ int getMPIProcsPerGPU()
 
 #define USABLE_GPU_MEM_FRACTION 0.9
 
-size_t getGPUMemPerProcs()
+size_t getGPUMemPerProcs(MPI_Comm baseCommunicator)
 {
 
-	size_t mfree, mtotal;
-	cudaMemGetInfo	(&mfree, &mtotal);
+    size_t mfree, mtotal;
+    //TODO: shared memory communicator should be part of
+    // LU struct 
+    // MPI_Comm sharedComm;
+    // MPI_Comm_split_type(baseCommunicator, MPI_COMM_TYPE_SHARED,
+    //                     0, MPI_INFO_NULL, &sharedComm);
+    // MPI_Barrier(sharedComm);
+    cudaMemGetInfo(&mfree, &mtotal);
+    // MPI_Barrier(sharedComm);
+    // MPI_Comm_free(&sharedComm);
 #if 0
 	printf("Total memory %zu & free memory %zu\n", mtotal, mfree);
 #endif
-	return (size_t) (USABLE_GPU_MEM_FRACTION * (double) mfree) / getMPIProcsPerGPU();
-
-
+    return (size_t)(USABLE_GPU_MEM_FRACTION * (double)mfree) / getMPIProcsPerGPU();
 }
-
-
 
 int_t LUstruct_v100::setLUstruct_GPU()
 {
@@ -375,22 +378,22 @@ int_t LUstruct_v100::setLUstruct_GPU()
 
     /*Mapping to device*/
     int deviceCount;
-	cudaGetDeviceCount(&deviceCount);               // How many GPUs?
-	int device_id = grid3d->iam % deviceCount;
-	cudaSetDevice(device_id);
+    cudaGetDeviceCount(&deviceCount); // How many GPUs?
+    int device_id = grid3d->iam % deviceCount;
+    cudaSetDevice(device_id);
 
-    size_t useableGPUMem = getGPUMemPerProcs();
+    size_t useableGPUMem = getGPUMemPerProcs(grid3d->comm);
     /**
      *  Memory is divided into two parts data memory and buffer memory 
      *  data memory is used for useful data
      *  bufferMemory is used for buffers
      * */
-    size_t memReqData =0; 
+    size_t memReqData = 0;
 
-    /*Memory for XSUP*/        
-    memReqData += (nsupers + 1) * sizeof(int_t); 
+    /*Memory for XSUP*/
+    memReqData += (nsupers + 1) * sizeof(int_t);
 
-    size_t totalNzvalSize =0; 
+    size_t totalNzvalSize = 0;
     /*Memory for lapenlPanel Data*/
     for (int_t i = 0; i < CEILING(nsupers, Pc); ++i)
     {
@@ -399,7 +402,6 @@ int_t LUstruct_v100::setLUstruct_GPU()
             memReqData += lPanelVec[i].totalSize();
             totalNzvalSize += lPanelVec[i].nzvalSize();
         }
-            
     }
     for (int_t i = 0; i < CEILING(nsupers, Pr); ++i)
     {
@@ -408,55 +410,49 @@ int_t LUstruct_v100::setLUstruct_GPU()
             memReqData += uPanelVec[i].totalSize();
             totalNzvalSize += uPanelVec[i].nzvalSize();
         }
-            
     }
-    memReqData += CEILING(nsupers, Pc) * sizeof(lpanelGPU_t); 
-    memReqData += CEILING(nsupers, Pr) * sizeof(upanelGPU_t); 
+    memReqData += CEILING(nsupers, Pc) * sizeof(lpanelGPU_t);
+    memReqData += CEILING(nsupers, Pr) * sizeof(upanelGPU_t);
 
-    memReqData += sizeof(LUstructGPU_t); 
+    memReqData += sizeof(LUstructGPU_t);
 
-    // Per stream data 
+    // Per stream data
     // TODO: estimate based on ancestor size
     A_gpu.gemmBufferSize = SUPERLU_MIN(get_max_buffer_size(), totalNzvalSize);
-    size_t dataPerStream = 3*sizeof(double) * maxLvalCount
-                    +3*sizeof(double) * maxUvalCount
-                    +2*sizeof(int_t) * maxLidxCount
-                    +2*sizeof(int_t) * maxUidxCount
-                    +A_gpu.gemmBufferSize * sizeof(double)
-                    +ldt * ldt * sizeof(double); 
-    if(memReqData + 2*dataPerStream > useableGPUMem)
+    size_t dataPerStream = 3 * sizeof(double) * maxLvalCount 
+                + 3 * sizeof(double) * maxUvalCount 
+                + 2 * sizeof(int_t) * maxLidxCount 
+                + 2 * sizeof(int_t) * maxUidxCount 
+                + A_gpu.gemmBufferSize * sizeof(double) + ldt * ldt * sizeof(double);
+    if (memReqData + 2 * dataPerStream > useableGPUMem)
     {
-        printf("Not enough memory on GPU: available = %zu, required for 2 streams =%zu, exiting\n"
-        ,useableGPUMem, memReqData + 2*dataPerStream);
+        printf("Not enough memory on GPU: available = %zu, required for 2 streams =%zu, exiting\n", useableGPUMem, memReqData + 2 * dataPerStream);
         exit(-1);
     }
 
-    int_t maxNumberOfStream = (useableGPUMem-memReqData)/dataPerStream; 
+    int_t maxNumberOfStream = (useableGPUMem - memReqData) / dataPerStream;
 
     int numberOfStreams = SUPERLU_MIN(getNumLookAhead(options), maxNumberOfStream);
     numberOfStreams = SUPERLU_MIN(numberOfStreams, MAX_CUDA_STREAMS);
     int rNumberOfStreams;
-    MPI_Allreduce(&numberOfStreams,&rNumberOfStreams, 1,
+    MPI_Allreduce(&numberOfStreams, &rNumberOfStreams, 1,
                   MPI_INT, MPI_MIN, grid3d->comm);
     A_gpu.numCudaStreams = rNumberOfStreams;
 
-    if(!grid3d->iam)
+    if (!grid3d->iam)
         printf("Using %d CUDA LookAhead streams\n", rNumberOfStreams);
-    size_t totalMemoryRequired = memReqData + numberOfStreams*dataPerStream;
-    
+    size_t totalMemoryRequired = memReqData + numberOfStreams * dataPerStream;
+
     void *gpuBasePtr, *gpuCurrentPtr;
-    cudaMalloc(&gpuBasePtr, totalMemoryRequired); 
-    gpuCurrentPtr = gpuBasePtr; 
-    
-    
-    
+    cudaMalloc(&gpuBasePtr, totalMemoryRequired);
+    gpuCurrentPtr = gpuBasePtr;
 
     upanelGPU_t *uPanelVec_GPU = new upanelGPU_t[CEILING(nsupers, Pr)];
     lpanelGPU_t *lPanelVec_GPU = new lpanelGPU_t[CEILING(nsupers, Pc)];
-    
-    #if 1
-    A_gpu.xsup= (int_t*) gpuCurrentPtr;
-    gpuCurrentPtr = (int_t*)gpuCurrentPtr + (nsupers + 1) ;
+
+#if 0
+    A_gpu.xsup = (int_t *)gpuCurrentPtr;
+    gpuCurrentPtr = (int_t *)gpuCurrentPtr + (nsupers + 1);
     cudaMemcpy(A_gpu.xsup, xsup, (nsupers + 1) * sizeof(int_t), cudaMemcpyHostToDevice);
 
     for (int_t i = 0; i < CEILING(nsupers, Pc); ++i)
@@ -464,76 +460,66 @@ int_t LUstruct_v100::setLUstruct_GPU()
         if (i * Pc + mycol < nsupers && isNodeInMyGrid[i * Pc + mycol] == 1)
         {
             lPanelVec_GPU[i] = lPanelVec[i].copyToGPU(gpuCurrentPtr);
-            gpuCurrentPtr =(char*)gpuCurrentPtr+ lPanelVec[i].totalSize();
+            gpuCurrentPtr = (char *)gpuCurrentPtr + lPanelVec[i].totalSize();
         }
-            
     }
-    A_gpu.lPanelVec= (lpanelGPU_t*) gpuCurrentPtr;
-    gpuCurrentPtr =(char*)gpuCurrentPtr + CEILING(nsupers, Pc) * sizeof(lpanelGPU_t);
+    A_gpu.lPanelVec = (lpanelGPU_t *)gpuCurrentPtr;
+    gpuCurrentPtr = (char *)gpuCurrentPtr + CEILING(nsupers, Pc) * sizeof(lpanelGPU_t);
     cudaMemcpy(A_gpu.lPanelVec, lPanelVec_GPU,
                CEILING(nsupers, Pc) * sizeof(lpanelGPU_t), cudaMemcpyHostToDevice);
-    
+
     for (int_t i = 0; i < CEILING(nsupers, Pr); ++i)
     {
         if (i * Pr + myrow < nsupers && isNodeInMyGrid[i * Pr + myrow] == 1)
         {
             uPanelVec_GPU[i] = uPanelVec[i].copyToGPU(gpuCurrentPtr);
-            gpuCurrentPtr =(char*)gpuCurrentPtr+ uPanelVec[i].totalSize();
+            gpuCurrentPtr = (char *)gpuCurrentPtr + uPanelVec[i].totalSize();
         }
-            
     }
-    A_gpu.uPanelVec= (upanelGPU_t*) gpuCurrentPtr; 
-    gpuCurrentPtr =(char*)gpuCurrentPtr + CEILING(nsupers, Pr) * sizeof(upanelGPU_t);
+    A_gpu.uPanelVec = (upanelGPU_t *)gpuCurrentPtr;
+    gpuCurrentPtr = (char *)gpuCurrentPtr + CEILING(nsupers, Pr) * sizeof(upanelGPU_t);
     cudaMemcpy(A_gpu.uPanelVec, uPanelVec_GPU,
                CEILING(nsupers, Pr) * sizeof(upanelGPU_t), cudaMemcpyHostToDevice);
-    
-    
+
     for (int stream = 0; stream < A_gpu.numCudaStreams; stream++)
     {
 
         cudaStreamCreate(&A_gpu.cuStreams[stream]);
         cublasCreate(&A_gpu.cuHandles[stream]);
-        A_gpu.LvalRecvBufs[stream]= (double*) gpuCurrentPtr; 
-        gpuCurrentPtr = (double *)gpuCurrentPtr +  maxLvalCount;
-        A_gpu.UvalRecvBufs[stream]= (double*) gpuCurrentPtr; 
-        gpuCurrentPtr = (double *)gpuCurrentPtr +  maxUvalCount;
-        A_gpu.LidxRecvBufs[stream]= (int_t*) gpuCurrentPtr; 
-        gpuCurrentPtr = (int_t *)gpuCurrentPtr +  maxLidxCount;
-        A_gpu.UidxRecvBufs[stream]= (int_t*) gpuCurrentPtr; 
-        gpuCurrentPtr = (int_t *)gpuCurrentPtr +  maxUidxCount;
+        A_gpu.LvalRecvBufs[stream] = (double *)gpuCurrentPtr;
+        gpuCurrentPtr = (double *)gpuCurrentPtr + maxLvalCount;
+        A_gpu.UvalRecvBufs[stream] = (double *)gpuCurrentPtr;
+        gpuCurrentPtr = (double *)gpuCurrentPtr + maxUvalCount;
+        A_gpu.LidxRecvBufs[stream] = (int_t *)gpuCurrentPtr;
+        gpuCurrentPtr = (int_t *)gpuCurrentPtr + maxLidxCount;
+        A_gpu.UidxRecvBufs[stream] = (int_t *)gpuCurrentPtr;
+        gpuCurrentPtr = (int_t *)gpuCurrentPtr + maxUidxCount;
 
-        A_gpu.gpuGemmBuffs[stream]= (double*) gpuCurrentPtr; 
-        gpuCurrentPtr = (double *)gpuCurrentPtr +  A_gpu.gemmBufferSize ;
-        A_gpu.dFBufs[stream]= (double*) gpuCurrentPtr; 
-        gpuCurrentPtr = (double *)gpuCurrentPtr + ldt * ldt ;
+        A_gpu.gpuGemmBuffs[stream] = (double *)gpuCurrentPtr;
+        gpuCurrentPtr = (double *)gpuCurrentPtr + A_gpu.gemmBufferSize;
+        A_gpu.dFBufs[stream] = (double *)gpuCurrentPtr;
+        gpuCurrentPtr = (double *)gpuCurrentPtr + ldt * ldt;
 
         /*lookAhead buffers and stream*/
         cublasCreate(&A_gpu.lookAheadLHandle[stream]);
         cudaStreamCreate(&A_gpu.lookAheadLStream[stream]);
-        A_gpu.lookAheadLGemmBuffer[stream]= (double*) gpuCurrentPtr; 
-        gpuCurrentPtr = (double *)gpuCurrentPtr +  maxLvalCount;
+        A_gpu.lookAheadLGemmBuffer[stream] = (double *)gpuCurrentPtr;
+        gpuCurrentPtr = (double *)gpuCurrentPtr + maxLvalCount;
         cublasCreate(&A_gpu.lookAheadUHandle[stream]);
         cudaStreamCreate(&A_gpu.lookAheadUStream[stream]);
-        A_gpu.lookAheadUGemmBuffer[stream]= (double*) gpuCurrentPtr; 
-        gpuCurrentPtr = (double *)gpuCurrentPtr +  maxUvalCount;
-    
+        A_gpu.lookAheadUGemmBuffer[stream] = (double *)gpuCurrentPtr;
+        gpuCurrentPtr = (double *)gpuCurrentPtr + maxUvalCount;
     }
     cudaCheckError();
     // allocate
-    dA_gpu = (LUstructGPU_t*) gpuCurrentPtr; 
-    
-    
+    dA_gpu = (LUstructGPU_t *)gpuCurrentPtr;
+
     cudaMemcpy(dA_gpu, &A_gpu, sizeof(LUstructGPU_t), cudaMemcpyHostToDevice);
-    gpuCurrentPtr = (LUstructGPU_t*) gpuCurrentPtr +1; 
+    gpuCurrentPtr = (LUstructGPU_t *)gpuCurrentPtr + 1;
 
-    
-
-    #else  
+#else
     cudaMalloc(&A_gpu.xsup, (nsupers + 1) * sizeof(int_t));
     cudaMemcpy(A_gpu.xsup, xsup, (nsupers + 1) * sizeof(int_t), cudaMemcpyHostToDevice);
-
-
-
 
     for (int_t i = 0; i < CEILING(nsupers, Pc); ++i)
     {
@@ -553,7 +539,6 @@ int_t LUstruct_v100::setLUstruct_GPU()
     cudaMemcpy(A_gpu.uPanelVec, uPanelVec_GPU,
                CEILING(nsupers, Pr) * sizeof(upanelGPU_t), cudaMemcpyHostToDevice);
     cudaCheckError();
-    
 
     // assert(A_gpu.numCudaStreams < options->num_lookaheads);
 
@@ -578,17 +563,14 @@ int_t LUstruct_v100::setLUstruct_GPU()
         cublasCreate(&A_gpu.lookAheadUHandle[stream]);
         cudaStreamCreate(&A_gpu.lookAheadUStream[stream]);
         cudaMalloc(&A_gpu.lookAheadUGemmBuffer[stream], sizeof(double) * maxUvalCount);
-    
     }
-    
+
     // allocate
     cudaMalloc(&dA_gpu, sizeof(LUstructGPU_t));
     cudaMemcpy(dA_gpu, &A_gpu, sizeof(LUstructGPU_t), cudaMemcpyHostToDevice);
 
-    
-    #endif 
+#endif
     cudaCheckError();
-    
 }
 
 int_t LUstruct_v100::copyLUGPUtoHost()
@@ -616,8 +598,6 @@ int_t LUstruct_v100::checkGPU()
               << "\n";
 }
 
-
-
 int_t LUstruct_v100::lookAheadUpdate(
     int_t k, int_t laIdx, lpanel_t &lpanel, upanel_t &upanel)
 {
@@ -633,16 +613,14 @@ int_t LUstruct_v100::lookAheadUpdate(
     int_t nub = upanel.nblocks();
     int_t laJLoc = upanel.find(laIdx);
 
-
-
 #pragma omp parallel
     {
         /*Next lpanelUpdate*/
 #pragma omp for nowait
         for (size_t ii = st_lb; ii < nlb; ii++)
         {
-            int_t jj = laJLoc; 
-            if(laJLoc != GLOBAL_BLOCK_NOT_FOUND)
+            int_t jj = laJLoc;
+            if (laJLoc != GLOBAL_BLOCK_NOT_FOUND)
                 blockUpdate(k, ii, jj, lpanel, upanel);
         }
 
@@ -650,18 +628,17 @@ int_t LUstruct_v100::lookAheadUpdate(
 #pragma omp for nowait
         for (size_t jj = 0; jj < nub; jj++)
         {
-            int_t ii = laILoc; 
-            if(laILoc != GLOBAL_BLOCK_NOT_FOUND &&  jj!=laJLoc)
-                blockUpdate(k,ii, jj, lpanel, upanel);
+            int_t ii = laILoc;
+            if (laILoc != GLOBAL_BLOCK_NOT_FOUND && jj != laJLoc)
+                blockUpdate(k, ii, jj, lpanel, upanel);
         }
-
     }
 
     return 0;
 }
 
-int_t LUstruct_v100::blockUpdate(int_t k, 
-    int_t ii, int_t jj, lpanel_t &lpanel, upanel_t &upanel)
+int_t LUstruct_v100::blockUpdate(int_t k,
+                                 int_t ii, int_t jj, lpanel_t &lpanel, upanel_t &upanel)
 {
     int thread_id;
 #ifdef _OPENMP
@@ -689,9 +666,8 @@ int_t LUstruct_v100::blockUpdate(int_t k,
              lpanel.rowList(ii), upanel.colList(jj));
 }
 
-
 int_t LUstruct_v100::dSchurCompUpdateExcludeOne(
-    int_t k, int_t ex,  // suypernodes to be excluded 
+    int_t k, int_t ex, // suypernodes to be excluded
     lpanel_t &lpanel, upanel_t &upanel)
 {
     if (lpanel.isEmpty() || upanel.isEmpty())
@@ -703,7 +679,7 @@ int_t LUstruct_v100::dSchurCompUpdateExcludeOne(
 
     int_t nlb = lpanel.nblocks();
     int_t nub = upanel.nblocks();
-    
+
     int_t exILoc = lpanel.find(ex);
     int_t exJLoc = upanel.find(ex);
 
@@ -713,17 +689,15 @@ int_t LUstruct_v100::dSchurCompUpdateExcludeOne(
         int_t ii = ij / nub + st_lb;
         int_t jj = ij % nub;
 
-        if(ii != exILoc && jj != exJLoc)
-            blockUpdate(k,ii, jj, lpanel, upanel);
+        if (ii != exILoc && jj != exJLoc)
+            blockUpdate(k, ii, jj, lpanel, upanel);
     }
-    return 0; 
+    return 0;
 }
-        
-
 
 int_t LUstruct_v100::dDiagFactorPanelSolve(int_t k, int_t offset, ddiagFactBufs_t **dFBufs)
 {
-    
+
     int_t ksupc = SuperSize(k);
     /*=======   Diagonal Factorization      ======*/
     if (iam == procIJ(k, k))
@@ -736,10 +710,10 @@ int_t LUstruct_v100::dDiagFactorPanelSolve(int_t k, int_t offset, ddiagFactBufs_
     /*=======   Diagonal Broadcast          ======*/
     if (myrow == krow(k))
         MPI_Bcast((void *)dFBufs[offset]->BlockLFactor, ksupc * ksupc,
-                    MPI_DOUBLE, kcol(k), (grid->rscp).comm);
+                  MPI_DOUBLE, kcol(k), (grid->rscp).comm);
     if (mycol == kcol(k))
         MPI_Bcast((void *)dFBufs[offset]->BlockUFactor, ksupc * ksupc,
-                    MPI_DOUBLE, krow(k), (grid->cscp).comm);
+                  MPI_DOUBLE, krow(k), (grid->cscp).comm);
 
     /*=======   Panel Update                ======*/
     if (myrow == krow(k))
@@ -748,30 +722,30 @@ int_t LUstruct_v100::dDiagFactorPanelSolve(int_t k, int_t offset, ddiagFactBufs_
     if (mycol == kcol(k))
         lPanelVec[g2lCol(k)].panelSolve(ksupc, dFBufs[offset]->BlockUFactor, ksupc);
 
-    return 0; 
+    return 0;
 }
 
 int_t LUstruct_v100::dPanelBcast(int_t k, int_t offset)
 {
     /*=======   Panel Broadcast             ======*/
-        upanel_t k_upanel(UidxRecvBufs[offset], UvalRecvBufs[offset]) ;
-        lpanel_t k_lpanel(LidxRecvBufs[offset], LvalRecvBufs[offset]);
-        if (myrow == krow(k))
-            k_upanel= uPanelVec[g2lRow(k)];
-        
-        if (mycol == kcol(k))
-            k_lpanel = lPanelVec[g2lCol(k)];
+    upanel_t k_upanel(UidxRecvBufs[offset], UvalRecvBufs[offset]);
+    lpanel_t k_lpanel(LidxRecvBufs[offset], LvalRecvBufs[offset]);
+    if (myrow == krow(k))
+        k_upanel = uPanelVec[g2lRow(k)];
 
-        if(UidxSendCounts[k]>0)
-        {
-            MPI_Bcast(k_upanel.index, UidxSendCounts[k], mpi_int_t, krow(k), grid3d->cscp.comm);
-            MPI_Bcast(k_upanel.val, UvalSendCounts[k], MPI_DOUBLE, krow(k), grid3d->cscp.comm);
-        }
-        
-        if(LidxSendCounts[k]>0)
-        {
-            MPI_Bcast(k_lpanel.index, LidxSendCounts[k], mpi_int_t, kcol(k), grid3d->rscp.comm);
-            MPI_Bcast(k_lpanel.val, LvalSendCounts[k], MPI_DOUBLE, kcol(k), grid3d->rscp.comm);
-        }
-    return 0; 
+    if (mycol == kcol(k))
+        k_lpanel = lPanelVec[g2lCol(k)];
+
+    if (UidxSendCounts[k] > 0)
+    {
+        MPI_Bcast(k_upanel.index, UidxSendCounts[k], mpi_int_t, krow(k), grid3d->cscp.comm);
+        MPI_Bcast(k_upanel.val, UvalSendCounts[k], MPI_DOUBLE, krow(k), grid3d->cscp.comm);
+    }
+
+    if (LidxSendCounts[k] > 0)
+    {
+        MPI_Bcast(k_lpanel.index, LidxSendCounts[k], mpi_int_t, kcol(k), grid3d->rscp.comm);
+        MPI_Bcast(k_lpanel.val, LvalSendCounts[k], MPI_DOUBLE, kcol(k), grid3d->rscp.comm);
+    }
+    return 0;
 }
