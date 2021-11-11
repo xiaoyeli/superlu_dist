@@ -290,6 +290,10 @@ typedef struct
     double commVolFactor;
     double commVolRed;
 
+    /*timer for new code */
+    double tDiagFactorPanelSolve;
+    double tPanelBcast;
+
 } SCT_t;
 
 

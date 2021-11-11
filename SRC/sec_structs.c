@@ -292,6 +292,9 @@ void SCT_init(SCT_t* SCT)
 
     SCT->commVolFactor =0.0;
     SCT->commVolRed =0.0;
+
+    SCT->tDiagFactorPanelSolve=0.0;
+    SCT->tPanelBcast=0.0;
 } /* SCT_init */
 
 void SCT_free(SCT_t* SCT)

@@ -5,6 +5,7 @@
 
 int_t LUstruct_v100::dDiagFactorPanelSolveGPU(int_t k, int_t offset, ddiagFactBufs_t **dFBufs)
 {
+    double t0 = SuperLU_timer_();
     int_t ksupc = SuperSize(k);
     cublasHandle_t cubHandle = A_gpu.cuHandles[offset];
     cudaStream_t cuStream = A_gpu.cuStreams[offset];
@@ -46,12 +47,14 @@ int_t LUstruct_v100::dDiagFactorPanelSolveGPU(int_t k, int_t offset, ddiagFactBu
             ksupc, A_gpu.dFBufs[offset], ksupc);
         cudaStreamSynchronize(cuStream);
     }
+    SCT->tDiagFactorPanelSolve += (SuperLU_timer_() - t0);
 
     return 0;
 }
 
 int_t LUstruct_v100::dPanelBcastGPU(int_t k, int_t offset)
 {
+    double t0 = SuperLU_timer_();
     /*=======   Panel Broadcast             ======*/
     upanel_t k_upanel(UidxRecvBufs[offset], UvalRecvBufs[offset],
                       A_gpu.UidxRecvBufs[offset], A_gpu.UvalRecvBufs[offset]);
@@ -81,7 +84,7 @@ int_t LUstruct_v100::dPanelBcastGPU(int_t k, int_t offset)
         cudaMemcpy(k_lpanel.index, k_lpanel.gpuPanel.index,
                    sizeof(int_t) * LidxSendCounts[k], cudaMemcpyDeviceToHost);
     }
-
+    SCT->tPanelBcast += (SuperLU_timer_() - t0);
     return 0;
 }
 
@@ -179,7 +182,7 @@ int_t LUstruct_v100::dsparseTreeFactorGPU(
             int_t offset = (k0-k1)%winSize;
             if(winParity%2)
                 offset+= halfWin;   // 
-            
+            printf("Doing %d on offset %d\n", k0, offset);
             /*=======   SchurComplement Update ======*/
             upanel_t k_upanel(UidxRecvBufs[offset], UvalRecvBufs[offset],
                               A_gpu.UidxRecvBufs[offset], A_gpu.UvalRecvBufs[offset]);
@@ -229,6 +232,7 @@ int_t LUstruct_v100::dsparseTreeFactorGPU(
                     offset_next += halfWin; 
                 dPanelBcastGPU(k_next, offset_next);
                 donePanelBcast[k0_next] =1;
+                printf("Trying  %d on offset %d\n", k0_next, offset_next);
             }
             else 
             {
