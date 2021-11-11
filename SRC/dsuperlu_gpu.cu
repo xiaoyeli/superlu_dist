@@ -972,6 +972,10 @@ int dinitSluGPU3D_t(
 )
 {
     checkCudaErrors(cudaDeviceReset ())     ;
+	int deviceCount;
+	cudaGetDeviceCount(&deviceCount);               // How many GPUs?
+	int device_id = grid3d->iam % deviceCount;
+	cudaSetDevice(device_id);
     Glu_persist_t *Glu_persist = LUstruct->Glu_persist;
     dLocalLU_t *Llu = LUstruct->Llu;
     int_t* isNodeInMyGrid = sluGPU->isNodeInMyGrid;
