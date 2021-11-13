@@ -198,6 +198,7 @@ int main(int argc, char *argv[])
      */
     set_default_options_dist(&options);
 #if 0
+    options.RowPerm           = LargeDiag_HWPM;
     options.RowPerm = NOROWPERM;
     options.IterRefine = NOREFINE;
     options.ColPerm = NATURAL;
