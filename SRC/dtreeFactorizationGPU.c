@@ -13,7 +13,7 @@
 // #include "treeFactorization.h"
 // #include "trfCommWrapper.h"
 #include "dlustruct_gpu.h"
-
+#include "omp.h"
 //#include "cblas.h"
 
 #ifdef GPU_ACC ///////////////// enable GPU

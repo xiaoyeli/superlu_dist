@@ -20,8 +20,7 @@
 #include <cuda_runtime.h>
 
 #undef Reduce
-#include "cub/cub.cuh"
-//#include <thrust/system/cuda/detail/cub/cub.cuh>
+
 
 #include "dlustruct_gpu.h"
 
@@ -82,7 +81,8 @@ void device_scatter_l (int_t thread_id,
 }
 #endif ///////////// not used
 
-#define THREAD_BLOCK_SIZE  256  /* Sherry: was 192. should be <= MAX_SUPER_SIZE */
+// #define THREAD_BLOCK_SIZE  512  /* Sherry: was 192. should be <= MAX_SUPER_SIZE */
+int SCATTER_THREAD_BLOCK_SIZE=512;
 
 __device__ inline
 void ddevice_scatter_l_2D (int thread_id,
@@ -160,55 +160,96 @@ void device_scatter_u_2D (int thread_id,
     if ( thread_id < temp_nbrow * ColPerBlock )
     {    
 	/* 1D threads are logically arranged in 2D shape. */
-	int thread_id_x  = thread_id % temp_nbrow;
-	int thread_id_y  = thread_id / temp_nbrow;
+		int thread_id_x  = thread_id % temp_nbrow;
+		int thread_id_y  = thread_id / temp_nbrow;
 
-#pragma unroll 4
-	for (int col = thread_id_y; col < nnz_cols ; col += ColPerBlock)
-	{
-           i = IndirectJ1[IndirectJ3[col]] + indirect[thread_id_x];
-	    ucol[i] -= tempv[nbrow * col + thread_id_x];
-	}
+		#pragma unroll 4
+		for (int col = thread_id_y; col < nnz_cols ; col += ColPerBlock)
+		{
+			i = IndirectJ1[IndirectJ3[col]]-ilst + indirect[thread_id_x];
+			ucol[i] -= tempv[nbrow * col + thread_id_x];
+		}
     }
 }
 
 
-__device__ inline
-void device_scatter_u (int_t thread_id,
-                       int_t temp_nbrow,  int_t nsupc,
-                       double * ucol,
-                       int_t * usub, int_t iukp,
-                       int_t ilst, int_t klst,
-                       int_t * index, int_t iuip_lib,
-                       double * tempv, int_t nbrow,
-                       // int_t *indirect
-                       int *indirect
-                      )
+
+__device__ int dnextpow2(int v)
+
 {
-	int_t segsize, fnz, jj;
-	for (jj = 0; jj < nsupc; ++jj)
-	{
-	    segsize = klst - usub[iukp + jj];
-	    fnz = index[iuip_lib++];
-	    ucol -= fnz;
-	    if (segsize) {            /* Nonzero segment in U(k.j). */
-		if (thread_id < temp_nbrow)
-		{
-#ifndef UNIT_STRIDE
-		    ucol[indirect[thread_id]] -= tempv[thread_id];
-#else
-		    /* making access unit strided;
-		       it doesn't work; it is for measurements */
-		    ucol[thread_id] -= tempv[thread_id];
-#endif
-		}
-		tempv += nbrow;
-	    }
-	    ucol += ilst ;
-	}
+    v--;
+    v |= v >> 1;
+    v |= v >> 2;
+    v |= v >> 4;
+    v |= v >> 8;
+    v |= v >> 16;
+    v++;
+
+    return v;
 }
 
 
+
+typedef int pfx_dtype ; 
+__device__ void incScan(pfx_dtype *inOutArr, pfx_dtype *temp, int n)
+{
+    // extern __shared__ pfx_dtype temp[];
+    int n_original = n;
+    n = (n & (n - 1)) == 0? n: dnextpow2(n);
+    int thread_id = threadIdx.x;
+    int offset = 1;
+    if(2*thread_id  < n_original)
+        temp[2*thread_id] = inOutArr[2*thread_id]; 
+    else 
+        temp[2*thread_id] =0;
+
+
+    if(2*thread_id+1 <n_original)
+        temp[2*thread_id+1] = inOutArr[2*thread_id+1];
+    else 
+        temp[2*thread_id+1] =0;
+    
+    for (int d = n>>1; d > 0; d >>= 1) 
+    {
+        __syncthreads();
+        if (thread_id < d)
+        {
+            int ai = offset*(2*thread_id+1)-1;
+            int bi = offset*(2*thread_id+2)-1;
+            temp[bi] += temp[ai];
+        }
+        offset *= 2;
+    }
+    
+    if (thread_id == 0) { temp[n - 1] = 0; } 
+    for (int d = 1; d < n; d *= 2) 
+    {
+        offset >>= 1;
+        __syncthreads();
+        if (thread_id < d)
+        {
+            int ai = offset*(2*thread_id+1)-1;
+            int bi = offset*(2*thread_id+2)-1;
+            pfx_dtype t = temp[ai];
+            temp[ai] = temp[bi];
+            temp[bi] += t;
+        }
+    }
+    __syncthreads();
+    if(2*thread_id  < n_original)
+    inOutArr[2*thread_id] = temp[2*thread_id]+ inOutArr[2*thread_id]; // write results to device memory
+    if(2*thread_id+1  < n_original)
+    inOutArr[2*thread_id+1] = temp[2*thread_id+1]+ inOutArr[2*thread_id+1];
+    __syncthreads();
+    
+} 
+
+__global__ void gExScan(pfx_dtype *inArr, int n)
+{
+    extern __shared__ pfx_dtype temp[];
+    incScan(inArr, temp, n);
+    
+}
 __global__
 void Scatter_GPU_kernel(
     int_t streamId,
@@ -244,15 +285,16 @@ void Scatter_GPU_kernel(
 	   assigned to block (lb, j) in 2D grid */
 	int lb = blockIdx.x + ii_st;
 	int j  = blockIdx.y + jj_st;
-	__shared__ int indirect_thread[MAX_SUPER_SIZE];  /* row-wise */
-	__shared__ int indirect2_thread[MAX_SUPER_SIZE]; /* row-wise */
-	__shared__ int IndirectJ1[THREAD_BLOCK_SIZE];    /* column-wise */
-	__shared__ int IndirectJ3[THREAD_BLOCK_SIZE];    /* column-wise */
-
-	/* see CUB page https://nvlabs.github.io/cub/. Implement threads collectives */
-	typedef cub::BlockScan<int, THREAD_BLOCK_SIZE> BlockScan; /*1D int data type*/
-	__shared__ typename BlockScan::TempStorage temp_storage; /*storage temp*/
-
+	
+	extern __shared__ int s[];
+	int* indirect_lptr = s;  /* row-wise */
+	int* indirect2_thread= (int*) &indirect_lptr[ldt]; /* row-wise */
+	int* IndirectJ1= (int*) &indirect2_thread[ldt];    /* column-wise */
+	int* IndirectJ3= (int*) &IndirectJ1[ldt];    /* column-wise */
+	int CHREAD_BLOCK_SIZE =ldt; 
+	
+	int* pfxStorage = (int*) &IndirectJ3[ldt];
+	
 	int thread_id = threadIdx.x;
 
 	int iukp = Ublock_info[j].iukp;
@@ -275,8 +317,9 @@ void Scatter_GPU_kernel(
 
 	/* # of nonzero columns in block j  */
 	int nnz_cols = (j == 0) ? Ublock_info[j].full_u_cols
-	               : (Ublock_info[j].full_u_cols - Ublock_info[j - 1].full_u_cols);
-	int cum_ncol = (j == 0) ? 0	: Ublock_info[j - 1].full_u_cols;
+	               	: (Ublock_info[j].full_u_cols - Ublock_info[j - 1].full_u_cols);
+	int cum_ncol = (j == 0) ? 0	
+					: Ublock_info[j - 1].full_u_cols;
 
 	int lptr = Remain_info[lb].lptr;
 	int ib   = Remain_info[lb].ib;
@@ -308,7 +351,9 @@ void Scatter_GPU_kernel(
 		/* Each thread is responsible for one block column */
 		__shared__ int ljb_ind;
 		/*do a search ljb_ind at local row lib*/
-		int blks_per_threads = CEILING(num_u_blocks, THREAD_BLOCK_SIZE);
+		int blks_per_threads = CEILING(num_u_blocks, blockDim.x);
+		// printf("blockDim.x =%d \n", blockDim.x);
+		
 		for (int i = 0; i < blks_per_threads; ++i)
 			/* each thread is assigned a chunk of consecutive U blocks to search */
 		{
@@ -330,7 +375,7 @@ void Scatter_GPU_kernel(
 		if (thread_id < temp_nbrow) /* row-wise */
 		{
 			/* cyclically map each thread to a row */
-			indirect_thread[thread_id] = (int) lsub[lptr + thread_id];
+			indirect_lptr[thread_id] = (int) lsub[lptr + thread_id];
 		}
 
 		/* column-wise: each thread is assigned one column */
@@ -342,27 +387,29 @@ void Scatter_GPU_kernel(
 		__syncthreads();
 
 		/* threads are divided into multiple columns */
-		int ColPerBlock = THREAD_BLOCK_SIZE / temp_nbrow;
+		int ColPerBlock = blockDim.x / temp_nbrow;
 
-		if (thread_id < THREAD_BLOCK_SIZE)
+		// if (thread_id < blockDim.x)
+		// 	IndirectJ1[thread_id] = 0;
+		if (thread_id < ldt)
 			IndirectJ1[thread_id] = 0;
 
-		if (thread_id < THREAD_BLOCK_SIZE)
+		if (thread_id < blockDim.x)
 		{
 			if (thread_id < nsupc)
 			{
 				/* fstnz subscript of each column in the block */
-				IndirectJ1[thread_id] = index[iuip_lib + thread_id];
+				IndirectJ1[thread_id] = -index[iuip_lib + thread_id] + ilst;
 			}
 		}
 
 		/* perform an inclusive block-wide prefix sum among all threads */
-		if (thread_id < THREAD_BLOCK_SIZE)
-			BlockScan(temp_storage).InclusiveSum(IndirectJ1[thread_id], IndirectJ1[thread_id]);
+		__syncthreads();
+		
+		incScan(IndirectJ1, pfxStorage, nsupc);
+		
 
-		if (thread_id < THREAD_BLOCK_SIZE)
-			IndirectJ1[thread_id] = -IndirectJ1[thread_id] + ilst * thread_id;
-
+		
 		__syncthreads();
 
 		device_scatter_u_2D (
@@ -373,7 +420,7 @@ void Scatter_GPU_kernel(
 		    ilst, klst,
 		    index, iuip_lib,
 		    tempv1, nrows,
-		    indirect_thread,
+		    indirect_lptr,
 		    nnz_cols, ColPerBlock,
 		    IndirectJ1,
 		    IndirectJ3 );
@@ -393,7 +440,7 @@ void Scatter_GPU_kernel(
 
 		__shared__ int lib_ind;
 		/*do a search lib_ind for lib*/
-		int blks_per_threads = CEILING(num_l_blocks, THREAD_BLOCK_SIZE);
+		int blks_per_threads = CEILING(num_l_blocks, blockDim.x);
 		for (int i = 0; i < blks_per_threads; ++i)
 		{
 			if (thread_id * blks_per_threads + i < num_l_blocks &&
@@ -412,7 +459,7 @@ void Scatter_GPU_kernel(
 		if (thread_id < dest_nbrow)
 		{
 			rel = index[lptrj + thread_id] - fnz;
-			indirect_thread[rel] = thread_id;
+			indirect_lptr[rel] = thread_id;
 		}
 		__syncthreads();
 
@@ -420,13 +467,13 @@ void Scatter_GPU_kernel(
 		if (thread_id < temp_nbrow)
 		{
 			rel = lsub[lptr + thread_id] - fnz;
-			indirect2_thread[thread_id] = indirect_thread[rel];
+			indirect2_thread[thread_id] = indirect_lptr[rel];
 		}
 		if (thread_id < nnz_cols)
 			IndirectJ3[thread_id] = (int) A_gpu->scubufs[streamId].usub_IndirectJ3[cum_ncol + thread_id];
 		__syncthreads();
 
-		int ColPerBlock = THREAD_BLOCK_SIZE / temp_nbrow;
+		int ColPerBlock = blockDim.x / temp_nbrow;
 
 		nzval = &LnzvalVec[LnzvalPtr[ljb]] + luptrj;
 		ddevice_scatter_l_2D(
@@ -693,11 +740,12 @@ int dSchurCompUpdate_GPU(
 		    /*
 		     * Scattering the output
 		     */
-  		    dim3 dimBlock(THREAD_BLOCK_SIZE);   // 1d thread
+  		    // dim3 dimBlock(THREAD_BLOCK_SIZE);   // 1d thread
+			dim3 dimBlock(ldt);   // 1d thread
 
 		    dim3 dimGrid(ii_end - ii_st, jj_end - jj_st);
 
-		    Scatter_GPU_kernel <<< dimGrid, dimBlock, 0, FunCallStream>>>
+		    Scatter_GPU_kernel <<< dimGrid, dimBlock, (4*ldt + 2*SCATTER_THREAD_BLOCK_SIZE)*sizeof(int), FunCallStream>>>
 			(streamId, ii_st, ii_end,  jj_st, jj_end, klst,
 			 0, nrows, ldt, npcol, nprow, dA_gpu);
 #ifdef SCATTER_OPT
@@ -901,10 +949,22 @@ int dinitSluGPU3D_t(
     int_t* isNodeInMyGrid = sluGPU->isNodeInMyGrid;
 
     sluGPU->nCudaStreams = getnCudaStreams();
+    SCATTER_THREAD_BLOCK_SIZE = ldt; 
+    if(getenv("SCATTER_THREAD_BLOCK_SIZE"))
+    {
+	int stbs = atoi(getenv("SCATTER_THREAD_BLOCK_SIZE"));
+	if(stbs>=ldt)
+	{
+		SCATTER_THREAD_BLOCK_SIZE = stbs; 
+	}
+	
+    }
     if (grid3d->iam == 0)
     {
-	printf("dinitSluGPU3D_t: Using hardware acceleration, with %d cuda streams, max_buffer_size %d\n", sluGPU->nCudaStreams, (int) buffer_size);
+	printf("dinitSluGPU3D_t: Using hardware acceleration, with %d cuda streams \n", sluGPU->nCudaStreams);
 	fflush(stdout);
+	printf("dinitSluGPU3D_t: Using %d threads per block for scatter \n", SCATTER_THREAD_BLOCK_SIZE);
+
 	if ( MAX_SUPER_SIZE < ldt )
 	{
 		ABORT("MAX_SUPER_SIZE smaller than requested NSUP");
@@ -926,9 +986,9 @@ int dinitSluGPU3D_t(
     /* Allocate GPU memory for the LU data structures, and copy
        the host LU structure to GPU side.  */
     dCopyLUToGPU3D ( isNodeInMyGrid,
-	        Llu,             /* referred to as A_host */
-	        sluGPU, Glu_persist, n, grid3d, buffer_size, bigu_size, ldt
-	);
+    	 	     Llu,   /* referred to as A_host */
+	             sluGPU, Glu_persist, n, grid3d, buffer_size,
+		     bigu_size, ldt );
 
     return 0;
 } /* end dinitSluGPU3D_t */
