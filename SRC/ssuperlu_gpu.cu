@@ -792,7 +792,7 @@ int sfree_LUstruct_gpu (sLUstruct_gpu_t * A_gpu)
 	checkCuda(cudaFree(A_gpu->UrowindVec));
 	checkCuda(cudaFree(A_gpu->UrowindPtr));
 
-	free(A_gpu->UrowindPtr_host);
+	//free(A_gpu->UrowindPtr_host);  NOT allocated
 
 	checkCuda(cudaFree(A_gpu->UnzvalVec));
 	checkCuda(cudaFree(A_gpu->UnzvalPtr));
