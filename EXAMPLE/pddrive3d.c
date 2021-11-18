@@ -307,6 +307,7 @@ main (int argc, char *argv[])
      */
     //TODO: set options->num_lookaheads using an environment variable
     set_default_options_dist (&options);
+    options.ReplaceTinyPivot = YES;
 #if 0
     options.RowPerm = NOROWPERM;
     options.IterRefine = NOREFINE;

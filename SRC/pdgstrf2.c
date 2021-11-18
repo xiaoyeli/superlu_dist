@@ -418,7 +418,7 @@ void dgstrf2(int_t k, double* diagBlk, int_t LDA, double* BlockUfactor, int_t LD
         /* Diagonal pivot */
         int_t i = luptr;
         /* Not to replace zero pivot.  */
-        if (options->ReplaceTinyPivot == YES && diagBlk[i] != 0.0)
+        if (options->ReplaceTinyPivot == YES)
         {
             if (fabs(diagBlk[i]) < thresh)
             { /* Diagonal */
