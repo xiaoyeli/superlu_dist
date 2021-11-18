@@ -8,6 +8,8 @@
  * Lawrence Berkeley National Lab, Univ. of California Berkeley,
  * Georgia Institute of Technology, Oak Ridge National Laboratory
  * March 14, 2021 version 7.0.0
+ *
+ * Last update: November 14, 2021  remove dependence on CUB/scan
  * </pre>
  */
 
@@ -21,6 +23,7 @@
 
 #undef Reduce
 
+//#include <thrust/system/cuda/detail/cub/cub.cuh>
 
 #include "dlustruct_gpu.h"
 
@@ -81,7 +84,7 @@ void device_scatter_l (int_t thread_id,
 }
 #endif ///////////// not used
 
-// #define THREAD_BLOCK_SIZE  512  /* Sherry: was 192. should be <= MAX_SUPER_SIZE */
+//#define THREAD_BLOCK_SIZE  256  /* Sherry: was 192. should be <= MAX_SUPER_SIZE */
 int SCATTER_THREAD_BLOCK_SIZE=512;
 
 __device__ inline
@@ -160,18 +163,17 @@ void device_scatter_u_2D (int thread_id,
     if ( thread_id < temp_nbrow * ColPerBlock )
     {    
 	/* 1D threads are logically arranged in 2D shape. */
-		int thread_id_x  = thread_id % temp_nbrow;
-		int thread_id_y  = thread_id / temp_nbrow;
+	int thread_id_x  = thread_id % temp_nbrow;
+	int thread_id_y  = thread_id / temp_nbrow;
 
-		#pragma unroll 4
-		for (int col = thread_id_y; col < nnz_cols ; col += ColPerBlock)
-		{
-			i = IndirectJ1[IndirectJ3[col]]-ilst + indirect[thread_id_x];
-			ucol[i] -= tempv[nbrow * col + thread_id_x];
-		}
+#pragma unroll 4
+	for (int col = thread_id_y; col < nnz_cols ; col += ColPerBlock)
+	{
+           i = IndirectJ1[IndirectJ3[col]]-ilst + indirect[thread_id_x];
+	    ucol[i] -= tempv[nbrow * col + thread_id_x];
+	}
     }
 }
-
 
 
 __device__ int dnextpow2(int v)
@@ -187,8 +189,6 @@ __device__ int dnextpow2(int v)
 
     return v;
 }
-
-
 
 typedef int pfx_dtype ; 
 __device__ void incScan(pfx_dtype *inOutArr, pfx_dtype *temp, int n)
@@ -242,7 +242,7 @@ __device__ void incScan(pfx_dtype *inOutArr, pfx_dtype *temp, int n)
     inOutArr[2*thread_id+1] = temp[2*thread_id+1]+ inOutArr[2*thread_id+1];
     __syncthreads();
     
-} 
+} /* end incScan */ 
 
 __global__ void gExScan(pfx_dtype *inArr, int n)
 {
@@ -250,6 +250,7 @@ __global__ void gExScan(pfx_dtype *inArr, int n)
     incScan(inArr, temp, n);
     
 }
+
 __global__
 void Scatter_GPU_kernel(
     int_t streamId,
@@ -291,7 +292,7 @@ void Scatter_GPU_kernel(
 	int* indirect2_thread= (int*) &indirect_lptr[ldt]; /* row-wise */
 	int* IndirectJ1= (int*) &indirect2_thread[ldt];    /* column-wise */
 	int* IndirectJ3= (int*) &IndirectJ1[ldt];    /* column-wise */
-	int CHREAD_BLOCK_SIZE =ldt; 
+	int THREAD_BLOCK_SIZE =ldt; 
 	
 	int* pfxStorage = (int*) &IndirectJ3[ldt];
 	
@@ -317,7 +318,7 @@ void Scatter_GPU_kernel(
 
 	/* # of nonzero columns in block j  */
 	int nnz_cols = (j == 0) ? Ublock_info[j].full_u_cols
-	               	: (Ublock_info[j].full_u_cols - Ublock_info[j - 1].full_u_cols);
+	               : (Ublock_info[j].full_u_cols - Ublock_info[j - 1].full_u_cols);
 	int cum_ncol = (j == 0) ? 0	
 					: Ublock_info[j - 1].full_u_cols;
 
@@ -374,8 +375,8 @@ void Scatter_GPU_kernel(
 
 		if (thread_id < temp_nbrow) /* row-wise */
 		{
-			/* cyclically map each thread to a row */
-			indirect_lptr[thread_id] = (int) lsub[lptr + thread_id];
+		    /* cyclically map each thread to a row */
+		    indirect_lptr[thread_id] = (int) lsub[lptr + thread_id];
 		}
 
 		/* column-wise: each thread is assigned one column */
@@ -396,19 +397,17 @@ void Scatter_GPU_kernel(
 
 		if (thread_id < blockDim.x)
 		{
-			if (thread_id < nsupc)
-			{
-				/* fstnz subscript of each column in the block */
-				IndirectJ1[thread_id] = -index[iuip_lib + thread_id] + ilst;
-			}
+		    if (thread_id < nsupc)
+		    {
+			/* fstnz subscript of each column in the block */
+			IndirectJ1[thread_id] = -index[iuip_lib + thread_id] + ilst;
+		    }
 		}
 
 		/* perform an inclusive block-wide prefix sum among all threads */
 		__syncthreads();
 		
 		incScan(IndirectJ1, pfxStorage, nsupc);
-		
-
 		
 		__syncthreads();
 
@@ -458,8 +457,8 @@ void Scatter_GPU_kernel(
 
 		if (thread_id < dest_nbrow)
 		{
-			rel = index[lptrj + thread_id] - fnz;
-			indirect_lptr[rel] = thread_id;
+		    rel = index[lptrj + thread_id] - fnz;
+		    indirect_lptr[rel] = thread_id;
 		}
 		__syncthreads();
 
@@ -740,8 +739,8 @@ int dSchurCompUpdate_GPU(
 		    /*
 		     * Scattering the output
 		     */
-  		    // dim3 dimBlock(THREAD_BLOCK_SIZE);   // 1d thread
-			dim3 dimBlock(ldt);   // 1d thread
+		     // dim3 dimBlock(THREAD_BLOCK_SIZE);   // 1d thread
+		    dim3 dimBlock(ldt);   // 1d thread
 
 		    dim3 dimGrid(ii_end - ii_st, jj_end - jj_st);
 
@@ -808,6 +807,7 @@ static size_t get_acc_memory ()
 
 int dfree_LUstruct_gpu (dLUstruct_gpu_t * A_gpu)
 {
+	/* Free the L data structure on GPU */
 	checkCuda(cudaFree(A_gpu->LrowindVec));
 	checkCuda(cudaFree(A_gpu->LrowindPtr));
 
@@ -828,25 +828,26 @@ int dfree_LUstruct_gpu (dLUstruct_gpu_t * A_gpu)
 	checkCuda(cudaFreeHost(A_gpu->scubufs[streamId].usub_buf));
 
 
-	free(A_gpu->isOffloaded);
-	free(A_gpu->GemmStart);
-	free(A_gpu->GemmEnd);
-	free(A_gpu->ScatterEnd);
-	free(A_gpu->ePCIeH2D);
+	SUPERLU_FREE(A_gpu->isOffloaded); // changed to SUPERLU_MALLOC/SUPERLU_FREE
+	SUPERLU_FREE(A_gpu->GemmStart);
+	SUPERLU_FREE(A_gpu->GemmEnd);
+	SUPERLU_FREE(A_gpu->ScatterEnd);
+	SUPERLU_FREE(A_gpu->ePCIeH2D);
+	SUPERLU_FREE(A_gpu->ePCIeD2H_Start);
+	SUPERLU_FREE(A_gpu->ePCIeD2H_End);
 
-	free(A_gpu->ePCIeD2H_Start);
-	free(A_gpu->ePCIeD2H_End);
-
+	/* Free the U data structure on GPU */
 	checkCuda(cudaFree(A_gpu->UrowindVec));
 	checkCuda(cudaFree(A_gpu->UrowindPtr));
 
-	free(A_gpu->UrowindPtr_host);
+	//free(A_gpu->UrowindPtr_host); // Sherry: this is NOT allocated
 
 	checkCuda(cudaFree(A_gpu->UnzvalVec));
 	checkCuda(cudaFree(A_gpu->UnzvalPtr));
 
 	checkCuda(cudaFree(A_gpu->grid));
 
+	/* Free the Schur complement structure on GPU */
 	checkCuda(cudaFree(A_gpu->scubufs[streamId].bigV));
 	checkCuda(cudaFree(A_gpu->scubufs[streamId].bigU));
 
@@ -946,25 +947,27 @@ int dinitSluGPU3D_t(
     checkCudaErrors(cudaDeviceReset ())     ;
     Glu_persist_t *Glu_persist = LUstruct->Glu_persist;
     dLocalLU_t *Llu = LUstruct->Llu;
-    int_t* isNodeInMyGrid = sluGPU->isNodeInMyGrid;
+    int* isNodeInMyGrid = sluGPU->isNodeInMyGrid;
 
     sluGPU->nCudaStreams = getnCudaStreams();
+    
     SCATTER_THREAD_BLOCK_SIZE = ldt; 
     if(getenv("SCATTER_THREAD_BLOCK_SIZE"))
     {
 	int stbs = atoi(getenv("SCATTER_THREAD_BLOCK_SIZE"));
 	if(stbs>=ldt)
 	{
-		SCATTER_THREAD_BLOCK_SIZE = stbs; 
+	    SCATTER_THREAD_BLOCK_SIZE = stbs; 
 	}
 	
     }
+    
     if (grid3d->iam == 0)
     {
 	printf("dinitSluGPU3D_t: Using hardware acceleration, with %d cuda streams \n", sluGPU->nCudaStreams);
 	fflush(stdout);
 	printf("dinitSluGPU3D_t: Using %d threads per block for scatter \n", SCATTER_THREAD_BLOCK_SIZE);
-
+	
 	if ( MAX_SUPER_SIZE < ldt )
 	{
 		ABORT("MAX_SUPER_SIZE smaller than requested NSUP");
@@ -986,9 +989,9 @@ int dinitSluGPU3D_t(
     /* Allocate GPU memory for the LU data structures, and copy
        the host LU structure to GPU side.  */
     dCopyLUToGPU3D ( isNodeInMyGrid,
-    	 	     Llu,   /* referred to as A_host */
-	             sluGPU, Glu_persist, n, grid3d, buffer_size,
-		     bigu_size, ldt );
+	        Llu,             /* referred to as A_host */
+	        sluGPU, Glu_persist, n, grid3d, buffer_size, bigu_size, ldt
+	);
 
     return 0;
 } /* end dinitSluGPU3D_t */
@@ -1252,7 +1255,7 @@ int freeSluGPU(dsluGPU_t *sluGPU)
    After factorization, the GPU LU structure should be freed by
    calling dfree_LUsstruct_gpu().    */
 void dCopyLUToGPU3D (
-    int_t* isNodeInMyGrid,
+    int* isNodeInMyGrid,
     dLocalLU_t *A_host, /* distributed LU structure on host */
     dsluGPU_t *sluGPU,  /* hold LU structure on GPU */
     Glu_persist_t *Glu_persist, int_t n,
@@ -1361,12 +1364,12 @@ void dCopyLUToGPU3D (
     } /* endfor streamID ... allocate paged-locked memory */
 
     A_gpu->isOffloaded = (int *) SUPERLU_MALLOC (sizeof(int) * nsupers);
-    A_gpu->GemmStart  = (cudaEvent_t *) malloc(sizeof(cudaEvent_t) * nsupers);
-    A_gpu->GemmEnd  = (cudaEvent_t *) malloc(sizeof(cudaEvent_t) * nsupers);
-    A_gpu->ScatterEnd  = (cudaEvent_t *) malloc(sizeof(cudaEvent_t) * nsupers);
-    A_gpu->ePCIeH2D = (cudaEvent_t *) malloc(sizeof(cudaEvent_t) * nsupers);
-    A_gpu->ePCIeD2H_Start = (cudaEvent_t *) malloc(sizeof(cudaEvent_t) * nsupers);
-    A_gpu->ePCIeD2H_End = (cudaEvent_t *) malloc(sizeof(cudaEvent_t) * nsupers);
+    A_gpu->GemmStart  = (cudaEvent_t *) SUPERLU_MALLOC(sizeof(cudaEvent_t) * nsupers);
+    A_gpu->GemmEnd  = (cudaEvent_t *) SUPERLU_MALLOC(sizeof(cudaEvent_t) * nsupers);
+    A_gpu->ScatterEnd  = (cudaEvent_t *) SUPERLU_MALLOC(sizeof(cudaEvent_t) * nsupers);
+    A_gpu->ePCIeH2D = (cudaEvent_t *) SUPERLU_MALLOC(sizeof(cudaEvent_t) * nsupers);
+    A_gpu->ePCIeD2H_Start = (cudaEvent_t *) SUPERLU_MALLOC(sizeof(cudaEvent_t) * nsupers);
+    A_gpu->ePCIeD2H_End = (cudaEvent_t *) SUPERLU_MALLOC(sizeof(cudaEvent_t) * nsupers);
     
     for (int i = 0; i < nsupers; ++i)
 	{

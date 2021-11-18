@@ -140,7 +140,7 @@ typedef struct //sluGPU_t_
     cublasHandle_t cublasHandles[MAX_NCUDA_STREAMS];
     int_t lastOffloadStream[MAX_NCUDA_STREAMS];
     int_t nCudaStreams;
-    int_t* isNodeInMyGrid;
+    int* isNodeInMyGrid;
     double acc_async_cost;
 } dsluGPU_t;
 
@@ -213,7 +213,7 @@ int dSchurCompUpdate_GPU(
 );
 
 
-extern void dCopyLUToGPU3D (int_t* isNodeInMyGrid, dLocalLU_t *A_host,
+extern void dCopyLUToGPU3D (int* isNodeInMyGrid, dLocalLU_t *A_host,
            dsluGPU_t *sluGPU, Glu_persist_t *Glu_persist, int_t n,
 	   gridinfo3d_t *grid3d, int_t buffer_size, int_t bigu_size, int_t ldt);
 

@@ -1237,7 +1237,7 @@ extern int_t* getMyNodeCountsFr(int_t maxLvl, int_t* myTreeIdxs,
 extern int_t** getNodeListFr(int_t maxLvl, sForest_t**  sForests);
 extern int_t*  getNodeCountsFr(int_t maxLvl, sForest_t**  sForests);
 // int_t* getNodeToForstMap(int_t nsupers, sForest_t**  sForests, gridinfo3d_t* grid3d);
-extern int_t* getIsNodeInMyGrid(int_t nsupers, int_t maxLvl, int_t* myNodeCount, int_t** treePerm);
+extern int* getIsNodeInMyGrid(int_t nsupers, int_t maxLvl, int_t* myNodeCount, int_t** treePerm);
 extern void printForestWeightCost(sForest_t**  sForests, SCT_t* SCT, gridinfo3d_t* grid3d);
 extern sForest_t**  getGreedyLoadBalForests( int_t maxLvl, int_t nsupers, int_t* setree, treeList_t* treeList);
 extern sForest_t**  getForests( int_t maxLvl, int_t nsupers, int_t*setree, treeList_t* treeList);
