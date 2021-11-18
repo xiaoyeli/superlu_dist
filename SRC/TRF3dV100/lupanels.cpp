@@ -443,14 +443,16 @@ int_t LUstruct_v100::setLUstruct_GPU()
         printf("Using %d CUDA LookAhead streams\n", rNumberOfStreams);
     size_t totalMemoryRequired = memReqData + numberOfStreams * dataPerStream;
 
-    void *gpuBasePtr, *gpuCurrentPtr;
-    cudaMalloc(&gpuBasePtr, totalMemoryRequired);
-    gpuCurrentPtr = gpuBasePtr;
+
 
     upanelGPU_t *uPanelVec_GPU = new upanelGPU_t[CEILING(nsupers, Pr)];
     lpanelGPU_t *lPanelVec_GPU = new lpanelGPU_t[CEILING(nsupers, Pc)];
 
 #if 0
+    void *gpuBasePtr, *gpuCurrentPtr;
+    cudaMalloc(&gpuBasePtr, totalMemoryRequired);
+    gpuCurrentPtr = gpuBasePtr;
+
     A_gpu.xsup = (int_t *)gpuCurrentPtr;
     gpuCurrentPtr = (int_t *)gpuCurrentPtr + (nsupers + 1);
     cudaMemcpy(A_gpu.xsup, xsup, (nsupers + 1) * sizeof(int_t), cudaMemcpyHostToDevice);
