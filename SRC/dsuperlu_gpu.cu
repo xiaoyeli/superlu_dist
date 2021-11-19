@@ -85,7 +85,6 @@ void device_scatter_l (int_t thread_id,
 #endif ///////////// not used
 
 //#define THREAD_BLOCK_SIZE  256  /* Sherry: was 192. should be <= MAX_SUPER_SIZE */
-int SCATTER_THREAD_BLOCK_SIZE=512;
 
 __device__ inline
 void ddevice_scatter_l_2D (int thread_id,
@@ -175,82 +174,6 @@ void device_scatter_u_2D (int thread_id,
     }
 }
 
-
-__device__ int dnextpow2(int v)
-
-{
-    v--;
-    v |= v >> 1;
-    v |= v >> 2;
-    v |= v >> 4;
-    v |= v >> 8;
-    v |= v >> 16;
-    v++;
-
-    return v;
-}
-
-typedef int pfx_dtype ; 
-__device__ void incScan(pfx_dtype *inOutArr, pfx_dtype *temp, int n)
-{
-    // extern __shared__ pfx_dtype temp[];
-    int n_original = n;
-    n = (n & (n - 1)) == 0? n: dnextpow2(n);
-    int thread_id = threadIdx.x;
-    int offset = 1;
-    if(2*thread_id  < n_original)
-        temp[2*thread_id] = inOutArr[2*thread_id]; 
-    else 
-        temp[2*thread_id] =0;
-
-
-    if(2*thread_id+1 <n_original)
-        temp[2*thread_id+1] = inOutArr[2*thread_id+1];
-    else 
-        temp[2*thread_id+1] =0;
-    
-    for (int d = n>>1; d > 0; d >>= 1) 
-    {
-        __syncthreads();
-        if (thread_id < d)
-        {
-            int ai = offset*(2*thread_id+1)-1;
-            int bi = offset*(2*thread_id+2)-1;
-            temp[bi] += temp[ai];
-        }
-        offset *= 2;
-    }
-    
-    if (thread_id == 0) { temp[n - 1] = 0; } 
-    for (int d = 1; d < n; d *= 2) 
-    {
-        offset >>= 1;
-        __syncthreads();
-        if (thread_id < d)
-        {
-            int ai = offset*(2*thread_id+1)-1;
-            int bi = offset*(2*thread_id+2)-1;
-            pfx_dtype t = temp[ai];
-            temp[ai] = temp[bi];
-            temp[bi] += t;
-        }
-    }
-    __syncthreads();
-    if(2*thread_id  < n_original)
-    inOutArr[2*thread_id] = temp[2*thread_id]+ inOutArr[2*thread_id]; // write results to device memory
-    if(2*thread_id+1  < n_original)
-    inOutArr[2*thread_id+1] = temp[2*thread_id+1]+ inOutArr[2*thread_id+1];
-    __syncthreads();
-    
-} /* end incScan */ 
-
-__global__ void gExScan(pfx_dtype *inArr, int n)
-{
-    extern __shared__ pfx_dtype temp[];
-    incScan(inArr, temp, n);
-    
-}
-
 __global__
 void Scatter_GPU_kernel(
     int_t streamId,
@@ -292,7 +215,7 @@ void Scatter_GPU_kernel(
 	int* indirect2_thread= (int*) &indirect_lptr[ldt]; /* row-wise */
 	int* IndirectJ1= (int*) &indirect2_thread[ldt];    /* column-wise */
 	int* IndirectJ3= (int*) &IndirectJ1[ldt];    /* column-wise */
-	int THREAD_BLOCK_SIZE =ldt; 
+	//int THREAD_BLOCK_SIZE =ldt; 
 	
 	int* pfxStorage = (int*) &IndirectJ3[ldt];
 	
@@ -302,6 +225,9 @@ void Scatter_GPU_kernel(
 	int jb = Ublock_info[j].jb;
 	int nsupc = SuperSize (jb);
 	int ljb = jb / npcol;
+
+	typedef int pfx_dtype ;
+        extern  __device__ void incScan(pfx_dtype *inOutArr, pfx_dtype *temp, int n);
 
 	double *tempv1;
 	if (jj_st == jj0)
@@ -504,6 +430,7 @@ int dSchurCompUpdate_GPU(
     dsluGPU_t *sluGPU, gridinfo_t *grid
 )
 {
+    int SCATTER_THREAD_BLOCK_SIZE=512;
 
 	dLUstruct_gpu_t * A_gpu = sluGPU->A_gpu;
 	dLUstruct_gpu_t * dA_gpu = sluGPU->dA_gpu;
@@ -714,7 +641,7 @@ int dSchurCompUpdate_GPU(
 		if (nrows > 0 && ldu > 0 && ncols > 0)
 		{
 		    if (nrows * ncols > buffer_size) {
-			printf("!! Matrix size %lld x %lld exceeds buffer_size \n",
+			printf("!! Matrix size %lld x %lld exceeds buffer_size %lld\n",
 			       nrows, ncols, buffer_size);
 			fflush(stdout);
 		    }
@@ -951,7 +878,7 @@ int dinitSluGPU3D_t(
 
     sluGPU->nCudaStreams = getnCudaStreams();
     
-    SCATTER_THREAD_BLOCK_SIZE = ldt; 
+    int SCATTER_THREAD_BLOCK_SIZE = ldt; 
     if(getenv("SCATTER_THREAD_BLOCK_SIZE"))
     {
 	int stbs = atoi(getenv("SCATTER_THREAD_BLOCK_SIZE"));
