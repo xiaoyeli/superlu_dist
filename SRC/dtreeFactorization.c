@@ -315,6 +315,9 @@ int_t dsparseTreeFactor_ASYNC(
         return 1;
     }
 
+    /* Test the input parameters. */
+    *info = 0;
+    
 #if ( DEBUGlevel>=1 )
     CHECK_MALLOC (grid3d->iam, "Enter dsparseTreeFactor_ASYNC()");
 #endif

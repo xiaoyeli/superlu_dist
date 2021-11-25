@@ -132,12 +132,6 @@ main (int argc, char *argv[])
     int required = MPI_THREAD_MULTIPLE;
     int provided;
     MPI_Init_thread(&argc, &argv, required, &provided);
-#ifdef GPU_ACC
-    int rank, devs;
-    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-    cudaGetDeviceCount(&devs);
-    cudaSetDevice(rank % devs);
-#endif    
     if (provided < required)
     {
         int rank;
@@ -189,7 +183,6 @@ main (int argc, char *argv[])
        INITIALIZE THE SUPERLU PROCESS GRID.
        ------------------------------------------------------------ */
     superlu_gridinit3d (MPI_COMM_WORLD, nprow, npcol, npdep, &grid);
-    //    grid.rankorder = 1;
 
     if(grid.iam==0) {
 	MPI_Query_thread(&omp_mpi_level);
@@ -304,7 +297,7 @@ main (int argc, char *argv[])
        options.ParSymbFact       = NO;
        options.ColPerm           = METIS_AT_PLUS_A;
        options.RowPerm           = LargeDiag_MC64;
-       options.ReplaceTinyPivot  = YES;
+       options.ReplaceTinyPivot  = NO;
        options.IterRefine        = DOUBLE;
        options.Trans             = NOTRANS;
        options.SolveInitialized  = NO;
@@ -321,7 +314,7 @@ main (int argc, char *argv[])
     options.IterRefine = NOREFINE;
     options.ColPerm = NATURAL;
     options.Equil = NO;
-    options.ReplaceTinyPivot = NO;
+    options.ReplaceTinyPivot = YES;
 #endif
 
     if (!iam) {
@@ -355,10 +348,16 @@ main (int argc, char *argv[])
     pzgssvx3d (&options, &A, &ScalePermstruct, b, ldb, nrhs, &grid,
                &LUstruct, &SOLVEstruct, berr, &stat, &info);
 
-    /* Check the accuracy of the solution. */
-    pzinf_norm_error (iam, ((NRformat_loc *) A.Store)->m_loc,
-                          nrhs, b, ldb, xtrue, ldx, grid.comm);
-    fflush(stdout);
+    if ( info ) {  /* Something is wrong */
+        if ( iam==0 ) {
+	    printf("ERROR: INFO = %d returned from pzgssvx3d()\n", info);
+	    fflush(stdout);
+	}
+    } else {
+        /* Check the accuracy of the solution. */
+        pzinf_norm_error (iam, ((NRformat_loc *) A.Store)->m_loc,
+                              nrhs, b, ldb, xtrue, ldx, grid.comm);
+    }
 
     /* ------------------------------------------------------------
        DEALLOCATE STORAGE.

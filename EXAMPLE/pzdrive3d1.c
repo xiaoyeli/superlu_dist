@@ -302,7 +302,7 @@ main (int argc, char *argv[])
        options.ParSymbFact       = NO;
        options.ColPerm           = METIS_AT_PLUS_A;
        options.RowPerm           = LargeDiag_MC64;
-       options.ReplaceTinyPivot  = YES;
+       options.ReplaceTinyPivot  = NO;
        options.IterRefine        = DOUBLE;
        options.Trans             = NOTRANS;
        options.SolveInitialized  = NO;
@@ -319,7 +319,7 @@ main (int argc, char *argv[])
     options.IterRefine = NOREFINE;
     options.ColPerm = NATURAL;
     options.Equil = NO;
-    options.ReplaceTinyPivot = NO;
+    options.ReplaceTinyPivot = YES;
 #endif
 
     if (!iam) {
@@ -340,26 +340,32 @@ main (int argc, char *argv[])
     PStatInit (&stat);
 
     /* Call the linear equation solver. */
-    nrhs = 0;
     pzgssvx3d (&options, &A, &ScalePermstruct, b, ldb, nrhs, &grid,
                &LUstruct, &SOLVEstruct, berr, &stat, &info);
 
-    /* Check the accuracy of the solution. */
-    if ( !iam ) printf("\tSolve the first system:\n");
-    pzinf_norm_error (iam, ((NRformat_loc *) A.Store)->m_loc,
-                          nrhs, b, ldb, xtrue, ldx, grid.comm);
-
+    if ( info ) {  /* Something is wrong */
+        if ( iam==0 ) {
+	    printf("ERROR: INFO = %d returned from pzgssvx3d()\n", info);
+	    fflush(stdout);
+	}
+    } else {
+        /* Check the accuracy of the solution. */
+        if ( !iam ) printf("\tSolve the first system:\n");
+        pzinf_norm_error (iam, ((NRformat_loc *) A.Store)->m_loc,
+                              nrhs, b, ldb, xtrue, ldx, grid.comm);
+    }
+    
     if ( grid.zscp.Iam == 0 ) { // process layer 0
 	PStatPrint (&options, &stat, &(grid.grid2d)); /* Print 2D statistics.*/
     }
     PStatFree (&stat);
     fflush(stdout);
 
-    /* ------------------------------------------------------------
-       2. NOW SOLVE ANOTHER SYSTEM WITH THE SAME A BUT DIFFERENT
-       RIGHT-HAND SIDE,  WE WILL USE THE EXISTING L AND U FACTORS IN
-       LUSTRUCT OBTAINED FROM A PREVIOUS FATORIZATION.
-       ------------------------------------------------------------*/
+   /* ------------------------------------------------------------
+     2. NOW SOLVE ANOTHER SYSTEM WITH THE SAME A BUT DIFFERENT
+     RIGHT-HAND SIDE,  WE WILL USE THE EXISTING L AND U FACTORS IN
+     LUSTRUCT OBTAINED FROM A PREVIOUS FATORIZATION.
+     ------------------------------------------------------------*/
     options.Fact = FACTORED; /* Indicate the factored form of A is supplied. */
     PStatInit(&stat); /* Initialize the statistics variables. */
 
@@ -367,11 +373,18 @@ main (int argc, char *argv[])
     pzgssvx3d (&options, &A, &ScalePermstruct, b1, ldb, nrhs, &grid,
                &LUstruct, &SOLVEstruct, berr, &stat, &info);
 
-    /* Check the accuracy of the solution. */
-    if ( !iam ) printf("\tSolve the system with a different B:\n");
-    pzinf_norm_error (iam, ((NRformat_loc *) A.Store)->m_loc,
-                          nrhs, b1, ldb, xtrue, ldx, grid.comm);
-
+    if ( info ) {  /* Something is wrong */
+        if ( iam==0 ) {
+            printf("ERROR: INFO = %d returned from pzgssvx3d()\n", info);
+            fflush(stdout);
+        }
+    } else {
+        /* Check the accuracy of the solution. */
+        if ( !iam ) printf("\tSolve the system with a different B:\n");
+        pzinf_norm_error (iam, ((NRformat_loc *) A.Store)->m_loc,
+                            nrhs, b1, ldb, xtrue, ldx, grid.comm);
+    }
+    
     /* ------------------------------------------------------------
        DEALLOCATE STORAGE.
        ------------------------------------------------------------ */

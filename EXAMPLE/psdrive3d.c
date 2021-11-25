@@ -77,8 +77,8 @@ static void checkNRFMT(NRformat_loc*A, NRformat_loc*B)
 
 #if 0
     double *Aval = (double *)A->nzval, *Bval = (double *)B->nzval;
-    PrintDouble5("A", A->nnz_loc, Aval);
-    PrintDouble5("B", B->nnz_loc, Bval);
+    Printdouble5("A", A->nnz_loc, Aval);
+    Printdouble5("B", B->nnz_loc, Bval);
     fflush(stdout);
 #endif
 
@@ -136,7 +136,10 @@ main (int argc, char *argv[])
     {
         int rank;
         MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-        if (!rank) printf("The MPI library doesn't provide MPI_THREAD_MULTIPLE \n");
+        if (!rank) {
+	    printf("The MPI library doesn't provide MPI_THREAD_MULTIPLE \n");
+	    printf("\tprovided omp_mpi_level: %d\n", provided);
+        }
     }
 
     /* Parse command line argv[]. */
@@ -294,7 +297,7 @@ main (int argc, char *argv[])
        options.ParSymbFact       = NO;
        options.ColPerm           = METIS_AT_PLUS_A;
        options.RowPerm           = LargeDiag_MC64;
-       options.ReplaceTinyPivot  = YES;
+       options.ReplaceTinyPivot  = NO;
        options.IterRefine        = DOUBLE;
        options.Trans             = NOTRANS;
        options.SolveInitialized  = NO;
@@ -311,7 +314,7 @@ main (int argc, char *argv[])
     options.IterRefine = NOREFINE;
     options.ColPerm = NATURAL;
     options.Equil = NO;
-    options.ReplaceTinyPivot = NO;
+    options.ReplaceTinyPivot = YES;
 #endif
 
     if (!iam) {
@@ -345,10 +348,16 @@ main (int argc, char *argv[])
     psgssvx3d (&options, &A, &ScalePermstruct, b, ldb, nrhs, &grid,
                &LUstruct, &SOLVEstruct, berr, &stat, &info);
 
-    /* Check the accuracy of the solution. */
-    psinf_norm_error (iam, ((NRformat_loc *) A.Store)->m_loc,
-                          nrhs, b, ldb, xtrue, ldx, grid.comm);
-    fflush(stdout);
+    if ( info ) {  /* Something is wrong */
+        if ( iam==0 ) {
+	    printf("ERROR: INFO = %d returned from psgssvx3d()\n", info);
+	    fflush(stdout);
+	}
+    } else {
+        /* Check the accuracy of the solution. */
+        psinf_norm_error (iam, ((NRformat_loc *) A.Store)->m_loc,
+                              nrhs, b, ldb, xtrue, ldx, grid.comm);
+    }
 
     /* ------------------------------------------------------------
        DEALLOCATE STORAGE.
@@ -359,13 +368,13 @@ main (int argc, char *argv[])
 	PStatPrint (&options, &stat, &(grid.grid2d)); /* Print 2D statistics.*/
 
         sDestroy_LU (n, &(grid.grid2d), &LUstruct);
-        if (options.SolveInitialized) {
-            sSolveFinalize (&options, &SOLVEstruct);
-        }
+        sSolveFinalize (&options, &SOLVEstruct);
     } else { // Process layers not equal 0
         sDeAllocLlu_3d(n, &LUstruct, &grid);
         sDeAllocGlu_3d(&LUstruct);
     }
+    
+    sDestroy_A3d_gathered_on_2d(&SOLVEstruct, &grid);
 
     Destroy_CompRowLoc_Matrix_dist (&A);
     SUPERLU_FREE (b);

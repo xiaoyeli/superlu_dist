@@ -195,11 +195,17 @@ int main(int argc, char *argv[])
     psgssvx(&options, &A, &ScalePermstruct, b, ldb, nrhs, &grid,
 	    &LUstruct, &SOLVEstruct, berr, &stat, &info);
 
-
-    /* Check the accuracy of the solution. */
-    if ( !iam ) printf("\tSolve the first system:\n");
-    psinf_norm_error(iam, m_loc, nrhs, b, ldb, xtrue, ldx, grid.comm);
-
+    if ( info ) {  /* Something is wrong */
+        if ( iam==0 ) {
+	    printf("ERROR: INFO = %d returned from psgssvx()\n", info);
+	    fflush(stdout);
+	}
+    } else {
+        /* Check the accuracy of the solution. */
+        if ( !iam ) printf("\tSolve the first system:\n");
+        psinf_norm_error(iam, m_loc, nrhs, b, ldb, xtrue, ldx, grid.comm);
+    }
+    
     PStatPrint(&options, &stat, &grid);        /* Print the statistics. */
     PStatFree(&stat);
 
@@ -215,10 +221,17 @@ int main(int argc, char *argv[])
     psgssvx(&options, &A, &ScalePermstruct, b1, ldb, nrhs, &grid,
 	    &LUstruct, &SOLVEstruct, berr, &stat, &info);
 
-    /* Check the accuracy of the solution. */
-    if ( !iam ) printf("\tSolve the system with a different B:\n");
-    psinf_norm_error(iam, m_loc, nrhs, b1, ldb, xtrue, ldx, grid.comm);
-
+    if ( info ) {  /* Something is wrong */
+        if ( iam==0 ) {
+	    printf("ERROR: INFO = %d returned from psgssvx()\n", info);
+	    fflush(stdout);
+	}
+    } else {    
+        /* Check the accuracy of the solution. */
+        if ( !iam ) printf("\tSolve the system with a different B:\n");
+        psinf_norm_error(iam, m_loc, nrhs, b1, ldb, xtrue, ldx, grid.comm);
+    }
+    
     PStatPrint(&options, &stat, &grid);        /* Print the statistics. */
     PStatFree(&stat);
 
@@ -245,10 +258,17 @@ int main(int argc, char *argv[])
     psgssvx(&options, &A, &ScalePermstruct, b2, ldb, nrhs, &grid,
 	    &LUstruct, &SOLVEstruct, berr, &stat, &info);
 
-    /* Check the accuracy of the solution. */
-    if ( !iam ) printf("\tSolve the system with 3 RHS's:\n");
-    psinf_norm_error(iam, m_loc, nrhs, b2, ldb, xtrue, ldx, grid.comm);
-
+    if ( info ) {  /* Something is wrong */
+        if ( iam==0 ) {
+	    printf("ERROR: INFO = %d returned from psgssvx()\n", info);
+	    fflush(stdout);
+	}
+    } else {
+        /* Check the accuracy of the solution. */
+        if ( !iam ) printf("\tSolve the system with 3 RHS's:\n");
+        psinf_norm_error(iam, m_loc, nrhs, b2, ldb, xtrue, ldx, grid.comm);
+    }
+    
     PStatPrint(&options, &stat, &grid);        /* Print the statistics. */
     PStatFree(&stat);
 

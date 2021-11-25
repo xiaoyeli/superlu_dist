@@ -15,7 +15,6 @@ set(headers
     TreeReduce_slu_impl.hpp
     ${CMAKE_CURRENT_BINARY_DIR}/superlu_dist_config.h
     ${PROJECT_SOURCE_DIR}/SRC/superlu_FortranCInterface.h
-    cub/cub.cuh
 )
 if (MSVC)
   list(APPEND headers wingetopt.h)

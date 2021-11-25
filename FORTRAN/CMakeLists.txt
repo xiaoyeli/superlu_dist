@@ -2,12 +2,6 @@
 include_directories(${SuperLU_DIST_SOURCE_DIR}/SRC)
 include_directories(${SuperLU_DIST_BINARY_DIR}/FORTRAN)
 
-set(headers
-    ${CMAKE_BINARY_DIR}/FORTRAN/superlu_mod.mod
-    ${CMAKE_BINARY_DIR}/FORTRAN/superlupara_mod.mod
-    ${CMAKE_BINARY_DIR}/FORTRAN/superlu_dist_config.fh
-    )
-
 set(sources "superlu_c2f_wrap.c")  # initialize precision-independent file
 
 if(enable_double)
@@ -34,11 +28,15 @@ install(TARGETS superlu_dist_fortran
     LIBRARY DESTINATION "${INSTALL_LIB_DIR}"
     ARCHIVE DESTINATION "${INSTALL_LIB_DIR}"
 )
-install(FILES ${headers}
-# DESTINATION ${CMAKE_INSTALL_PREFIX}/include)
+
+install(DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
   DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
-)
-    
+  FILES_MATCHING PATTERN *.mod
+  )
+install(FILES superlu_dist_config.fh
+  DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+  )
+
 # Fortran MPI stuff
 add_definitions(${MPI_Fortran_COMPILE_FLAGS})
 include_directories(${MPI_Fortran_INCLUDE_PATH})

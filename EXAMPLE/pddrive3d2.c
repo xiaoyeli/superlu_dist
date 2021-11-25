@@ -266,7 +266,7 @@ main (int argc, char *argv[])
        options.ParSymbFact       = NO;
        options.ColPerm           = METIS_AT_PLUS_A;
        options.RowPerm           = LargeDiag_MC64;
-       options.ReplaceTinyPivot  = YES;
+       options.ReplaceTinyPivot  = NO;
        options.IterRefine        = DOUBLE;
        options.Trans             = NOTRANS;
        options.SolveInitialized  = NO;
@@ -283,7 +283,7 @@ main (int argc, char *argv[])
     options.IterRefine = NOREFINE;
     options.ColPerm = NATURAL;
     options.Equil = NO;
-    options.ReplaceTinyPivot = NO;
+    options.ReplaceTinyPivot = YES;
 #endif
 
     if (!iam) {
@@ -307,11 +307,18 @@ main (int argc, char *argv[])
     pdgssvx3d (&options, &A, &ScalePermstruct, b, ldb, nrhs, &grid,
                &LUstruct, &SOLVEstruct, berr, &stat, &info);
 
-    /* Check the accuracy of the solution. */
-    if ( !iam ) printf("\tSolve the first system:\n");
-    pdinf_norm_error (iam, ((NRformat_loc *) A.Store)->m_loc,
-                          nrhs, b, ldb, xtrue, ldx, grid.comm);
-
+    if ( info ) {  /* Something is wrong */
+        if ( iam==0 ) {
+	    printf("ERROR: INFO = %d returned from pdgssvx3d()\n", info);
+	    fflush(stdout);
+	}
+    } else {
+        /* Check the accuracy of the solution. */
+        if ( !iam ) printf("\tSolve the first system:\n");
+        pdinf_norm_error (iam, ((NRformat_loc *) A.Store)->m_loc,
+                              nrhs, b, ldb, xtrue, ldx, grid.comm);
+    }
+    
     /* Deallocate some storage, keep around 2D matrix meta structure */
     Destroy_CompRowLoc_Matrix_dist (&A);
     if ( grid.zscp.Iam == 0 ) { // process layer 0
@@ -336,19 +343,26 @@ main (int argc, char *argv[])
        a different perm_r[]. Set up the right-hand side.   */
     if ( !(fp = fopen(*cpp, "r")) ) ABORT("File does not exist");
     dcreate_matrix_postfix3d(&A, nrhs, &b1, &ldb,
-                             &xtrue1, &ldx, fp, suffix, &(grid));
+                         &xtrue1, &ldx, fp, suffix, &(grid));
     
     PStatInit(&stat); /* Initialize the statistics variables. */
 
     nrhs = 1;
     pdgssvx3d (&options, &A, &ScalePermstruct, b1, ldb, nrhs, &grid,
                &LUstruct, &SOLVEstruct, berr, &stat, &info);
-
-    /* Check the accuracy of the solution. */
-    if ( !iam ) printf("Solve the system with the same sparsity pattern.\n");
-    pdinf_norm_error (iam, ((NRformat_loc *) A.Store)->m_loc,
-                          nrhs, b1, ldb, xtrue1, ldx, grid.comm);
-
+ 
+    if ( info ) {  /* Something is wrong */
+        if ( iam==0 ) {
+	   printf("ERROR: INFO = %d returned from pdgssvx3d()\n", info);
+    	   fflush(stdout);
+	}
+    } else {
+        /* Check the accuracy of the solution. */
+        if ( !iam ) printf("Solve the system with the same sparsity pattern.\n");
+        pdinf_norm_error (iam, ((NRformat_loc *) A.Store)->m_loc,
+                              nrhs, b1, ldb, xtrue1, ldx, grid.comm);
+    }
+    
     /* ------------------------------------------------------------
        DEALLOCATE STORAGE.
        ------------------------------------------------------------ */

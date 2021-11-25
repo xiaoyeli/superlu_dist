@@ -30,7 +30,7 @@
 #######################################################################
 include ../make.inc
 
-DEXM	= pddrive.o dcreate_matrix.o #pdgssvx.o #pdgstrf2.o
+DEXM	= pddrive.o dcreate_matrix.o #pdgstrf2.o
 DEXM1	= pddrive1.o dcreate_matrix.o
 DEXM2	= pddrive2.o dcreate_matrix.o dcreate_matrix_perturbed.o
 DEXM3	= pddrive3.o dcreate_matrix.o

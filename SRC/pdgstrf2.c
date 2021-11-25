@@ -398,7 +398,24 @@ int_t LpanelUpdate(int off0,  int nsupc, double* ublk_ptr, int ld_ujrow,
 
 #pragma GCC push_options
 #pragma GCC optimize ("O0")
-/*factorizes the diagonal block; called from process that owns the (k,k) block*/
+/************************************************************************/
+/*! \brief
+ *
+ * <pre>
+ * Purpose
+ * =======
+ *   Factorize the diagonal block; called from process that owns the (k,k) block
+ *
+ * Arguments
+ * =========
+ * 
+ * info   (output) int*
+ *        = 0: successful exit
+ *        > 0: if info = i, U(i,i) is exactly zero. The factorization has
+ *             been completed, but the factor U is exactly singular,
+ *             and division by zero will occur if it is used to solve a
+ *             system of equations.
+ */
 void Local_Dgstrf2(superlu_dist_options_t *options, int_t k, double thresh,
                    double *BlockUFactor, /*factored U is overwritten here*/
                    Glu_persist_t *Glu_persist, gridinfo_t *grid, dLocalLU_t *Llu,
@@ -433,8 +450,9 @@ void Local_Dgstrf2(superlu_dist_options_t *options, int_t k, double thresh,
     {
         /* Diagonal pivot */
         int_t i = luptr;
-        /* Not to replace zero pivot.  */
-        if (options->ReplaceTinyPivot == YES && lusup[i] != 0.0)
+        /* Allow to replace zero pivot.  */
+        //if (options->ReplaceTinyPivot == YES && lusup[i] != 0.0)
+        if (options->ReplaceTinyPivot == YES)
         {
             if (fabs (lusup[i]) < thresh) {  /* Diagonal */
 
@@ -491,7 +509,7 @@ void Local_Dgstrf2(superlu_dist_options_t *options, int_t k, double thresh,
 
     //int_t thread_id = omp_get_thread_num();
     // SCT->Local_Dgstrf2_Thread_tl[thread_id * CACHE_LINE_SIZE] += (double) ( SuperLU_timer_() - t1);
-}
+} /* end Local_Dgstrf2 */
 
 #pragma GCC pop_options
 /************************************************************************/

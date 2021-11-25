@@ -74,12 +74,7 @@ int main(int argc, char *argv[])
        INITIALIZE MPI ENVIRONMENT. 
        ------------------------------------------------------------*/
     MPI_Init_thread( &argc, &argv, MPI_THREAD_MULTIPLE, &omp_mpi_level); 
-#ifdef GPU_ACC
-    int rank, devs;
-    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-    cudaGetDeviceCount(&devs);
-    cudaSetDevice(rank % devs);
-#endif
+
     MPI_Comm_size( MPI_COMM_WORLD, &nprocs );
     if ( nprocs < 10 ) {
 	fprintf(stderr, "Requires at least 10 processes\n");
@@ -196,9 +191,16 @@ int main(int argc, char *argv[])
 	pdgssvx(&options, &A, &ScalePermstruct, b, ldb, nrhs, &grid1,
                 &LUstruct, &SOLVEstruct, berr, &stat, &info);
 
-        /* Check the accuracy of the solution. */
-        pdinf_norm_error(iam, ((NRformat_loc *)A.Store)->m_loc,
-                         nrhs, b, ldb, xtrue, ldx, grid1.comm);
+        if ( info ) {  /* Something is wrong */
+            if ( iam==0 ) {
+	        printf("ERROR: INFO = %d returned from pdgssvx()\n", info);
+    	        fflush(stdout);
+    	    }
+        } else {
+            /* Check the accuracy of the solution. */
+            pdinf_norm_error(iam, ((NRformat_loc *)A.Store)->m_loc,
+                             nrhs, b, ldb, xtrue, ldx, grid1.comm);
+	}
     
 	/* Print the statistics. */
 	PStatPrint(&options, &stat, &grid1);
@@ -261,10 +263,17 @@ int main(int argc, char *argv[])
 	pdgssvx(&options, &A, &ScalePermstruct, b, ldb, nrhs, &grid2,
                 &LUstruct, &SOLVEstruct, berr, &stat, &info);
 
-        /* Check the accuracy of the solution. */
-        pdinf_norm_error(iam, ((NRformat_loc *)A.Store)->m_loc,
-                         nrhs, b, ldb, xtrue, ldx, grid2.comm);
-    
+        if ( info ) {  /* Something is wrong */
+            if ( iam==0 ) {
+	        printf("ERROR: INFO = %d returned from pdgssvx()\n", info);
+	        fflush(stdout);
+	    }
+        } else {
+            /* Check the accuracy of the solution. */
+            pdinf_norm_error(iam, ((NRformat_loc *)A.Store)->m_loc,
+                             nrhs, b, ldb, xtrue, ldx, grid2.comm);
+        }
+	
 	/* Print the statistics. */
 	PStatPrint(&options, &stat, &grid2);
 

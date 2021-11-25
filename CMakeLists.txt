@@ -370,7 +370,7 @@ if (XSDK_ENABLE_Fortran)
       SET(CMAKE_EXE_LINKER_FLAGS
           "${CMAKE_EXE_LINKER_FLAGS} -Wl,-rpath,${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}")
    else()
-      message("-- superlu_dist_fortranwill be built as a static library.")
+      message("-- superlu_dist_fortran will be built as a static library.")
       set(PROJECT_NAME_LIB_FORTRAN libsuperlu_dist_fortran.a)
    endif()
 endif()
@@ -393,6 +393,7 @@ if (TPL_ENABLE_COMBBLASLIB)   ## want to use CombBLAS
 
   message("-- Enabled support for COMBBLAS")
   set(COMBBLAS_FOUND TRUE)
+  set(CMAKE_CXX_STANDARD 14)  # CombBLAS requires c++14
 
   set(COMBBLAS_LIB ${TPL_COMBBLAS_LIBRARIES})
   # fix up COMBBLAS library names
@@ -418,7 +419,7 @@ endif()
 if (XSDK_ENABLE_Fortran)
   include(FortranCInterface)
   FortranCInterface_HEADER(${SuperLU_DIST_SOURCE_DIR}/SRC/superlu_FortranCInterface.h
-  MACRO_NAMESPACE "FC_")
+                            MACRO_NAMESPACE "FC_")
   FortranCInterface_VERIFY(CXX)
   SET(MPI_Fortran_LINK_FLAGS "${CMAKE_EXE_LINKER_FLAGS}")
 endif()

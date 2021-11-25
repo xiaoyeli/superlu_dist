@@ -35,7 +35,7 @@ at the top-level directory.
  * values of matrix A.
  * In this case, the row and column permutation vectors and symbolic
  * factorization are computed only once. The following data structures
- * will be reused in the subsequent call to PSGSSVX:
+ * will be reused in the subsequent call to PSGSSVX3D:
  *        ScalePermstruct : DiagScale, R, C, perm_r, perm_c
  *        LUstruct        : etree, Glu_persist, Llu
  *        SOLVEstruct      : communication metadata for SpTRSV, SpMV, and
@@ -44,7 +44,7 @@ at the top-level directory.
  * NOTE:
  * The distributed nonzero structures of L and U remain the same,
  * although the numerical values are different. So 'Llu' is set up once
- * in the first call to PSGSSVX, and reused in the subsequent call.
+ * in the first call to PSGSSVX3D, and reused in the subsequent call.
  *
  * The program may be run by typing:
  *    mpiexec -np <p> psdrive3d3 -r <proc rows> -c <proc columns> \
@@ -263,7 +263,7 @@ main (int argc, char *argv[])
        options.ParSymbFact       = NO;
        options.ColPerm           = METIS_AT_PLUS_A;
        options.RowPerm           = LargeDiag_MC64;
-       options.ReplaceTinyPivot  = YES;
+       options.ReplaceTinyPivot  = NO;
        options.IterRefine        = DOUBLE;
        options.Trans             = NOTRANS;
        options.SolveInitialized  = NO;
@@ -280,7 +280,7 @@ main (int argc, char *argv[])
     options.IterRefine = NOREFINE;
     options.ColPerm = NATURAL;
     options.Equil = NO;
-    options.ReplaceTinyPivot = NO;
+    options.ReplaceTinyPivot = YES;
 #endif
 
     if (!iam) {
@@ -304,11 +304,18 @@ main (int argc, char *argv[])
     psgssvx3d (&options, &A, &ScalePermstruct, b, ldb, nrhs, &grid,
                &LUstruct, &SOLVEstruct, berr, &stat, &info);
 
-    /* Check the accuracy of the solution. */
-    if ( !iam ) printf("\tSolve the first system:\n");
-    psinf_norm_error (iam, ((NRformat_loc *) A.Store)->m_loc,
-                          nrhs, b, ldb, xtrue, ldx, grid.comm);
-
+    if ( info ) {  /* Something is wrong */
+        if ( iam==0 ) {
+	    printf("ERROR: INFO = %d returned from psgssvx3d()\n", info);
+	    fflush(stdout);
+	}
+    } else {
+        /* Check the accuracy of the solution. */
+        if ( !iam ) printf("\tSolve the first system:\n");
+        psinf_norm_error (iam, ((NRformat_loc *) A.Store)->m_loc,
+                              nrhs, b, ldb, xtrue, ldx, grid.comm);
+    }
+    
     /* Deallocate some storage, including replicated LU structure along
        the Z dimension. keep around 2D matrix meta structure, including
        the LU data structure on the host side.  */
@@ -350,11 +357,18 @@ main (int argc, char *argv[])
     psgssvx3d (&options, &A, &ScalePermstruct, b1, ldb, nrhs, &grid,
                &LUstruct, &SOLVEstruct, berr, &stat, &info);
 
-    /* Check the accuracy of the solution. */
-    if ( !iam ) printf("Solve a system with the same pattern and similar values.\n");
-    psinf_norm_error (iam, ((NRformat_loc *) A.Store)->m_loc,
-                          nrhs, b1, ldb, xtrue1, ldx, grid.comm);
-
+    if ( info ) {  /* Something is wrong */
+        if ( iam==0 ) {
+	    printf("ERROR: INFO = %d returned from psgssvx3d()\n", info);
+	    fflush(stdout);
+	}
+    } else {
+        /* Check the accuracy of the solution. */
+        if ( !iam ) printf("Solve a system with the same pattern and similar values.\n");
+        psinf_norm_error (iam, ((NRformat_loc *) A.Store)->m_loc,
+                              nrhs, b1, ldb, xtrue1, ldx, grid.comm);
+    }
+    
     /* ------------------------------------------------------------
        DEALLOCATE ALL STORAGE.
        ------------------------------------------------------------ */

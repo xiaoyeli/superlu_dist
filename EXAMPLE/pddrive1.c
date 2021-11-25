@@ -73,12 +73,7 @@ int main(int argc, char *argv[])
        INITIALIZE MPI ENVIRONMENT. 
        ------------------------------------------------------------*/
     MPI_Init_thread( &argc, &argv, MPI_THREAD_MULTIPLE, &omp_mpi_level); 
-#ifdef GPU_ACC
-    int rank, devs;
-    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-    cudaGetDeviceCount(&devs);
-    cudaSetDevice(rank % devs);
-#endif
+
     /* Parse command line argv[]. */
     for (cpp = argv+1; *cpp; ++cpp) {
 	if ( **cpp == '-' ) {
@@ -111,8 +106,7 @@ int main(int argc, char *argv[])
 
     /* Bail out if I do not belong in the grid. */
     iam = grid.iam;
-    if ( iam == -1 ) goto out;
-
+    if ( iam == -1 )	goto out;
     if ( !iam ) {
 	int v_major, v_minor, v_bugfix;
 #ifdef __INTEL_COMPILER
@@ -201,11 +195,17 @@ int main(int argc, char *argv[])
     pdgssvx(&options, &A, &ScalePermstruct, b, ldb, nrhs, &grid,
 	    &LUstruct, &SOLVEstruct, berr, &stat, &info);
 
-
-    /* Check the accuracy of the solution. */
-    if ( !iam ) printf("\tSolve the first system:\n");
-    pdinf_norm_error(iam, m_loc, nrhs, b, ldb, xtrue, ldx, grid.comm);
-
+    if ( info ) {  /* Something is wrong */
+        if ( iam==0 ) {
+	    printf("ERROR: INFO = %d returned from pdgssvx()\n", info);
+	    fflush(stdout);
+	}
+    } else {
+        /* Check the accuracy of the solution. */
+        if ( !iam ) printf("\tSolve the first system:\n");
+        pdinf_norm_error(iam, m_loc, nrhs, b, ldb, xtrue, ldx, grid.comm);
+    }
+    
     PStatPrint(&options, &stat, &grid);        /* Print the statistics. */
     PStatFree(&stat);
 
@@ -221,10 +221,17 @@ int main(int argc, char *argv[])
     pdgssvx(&options, &A, &ScalePermstruct, b1, ldb, nrhs, &grid,
 	    &LUstruct, &SOLVEstruct, berr, &stat, &info);
 
-    /* Check the accuracy of the solution. */
-    if ( !iam ) printf("\tSolve the system with a different B:\n");
-    pdinf_norm_error(iam, m_loc, nrhs, b1, ldb, xtrue, ldx, grid.comm);
-
+    if ( info ) {  /* Something is wrong */
+        if ( iam==0 ) {
+	    printf("ERROR: INFO = %d returned from pdgssvx()\n", info);
+	    fflush(stdout);
+	}
+    } else {    
+        /* Check the accuracy of the solution. */
+        if ( !iam ) printf("\tSolve the system with a different B:\n");
+        pdinf_norm_error(iam, m_loc, nrhs, b1, ldb, xtrue, ldx, grid.comm);
+    }
+    
     PStatPrint(&options, &stat, &grid);        /* Print the statistics. */
     PStatFree(&stat);
 
@@ -251,10 +258,17 @@ int main(int argc, char *argv[])
     pdgssvx(&options, &A, &ScalePermstruct, b2, ldb, nrhs, &grid,
 	    &LUstruct, &SOLVEstruct, berr, &stat, &info);
 
-    /* Check the accuracy of the solution. */
-    if ( !iam ) printf("\tSolve the system with 3 RHS's:\n");
-    pdinf_norm_error(iam, m_loc, nrhs, b2, ldb, xtrue, ldx, grid.comm);
-
+    if ( info ) {  /* Something is wrong */
+        if ( iam==0 ) {
+	    printf("ERROR: INFO = %d returned from pdgssvx()\n", info);
+	    fflush(stdout);
+	}
+    } else {
+        /* Check the accuracy of the solution. */
+        if ( !iam ) printf("\tSolve the system with 3 RHS's:\n");
+        pdinf_norm_error(iam, m_loc, nrhs, b2, ldb, xtrue, ldx, grid.comm);
+    }
+    
     PStatPrint(&options, &stat, &grid);        /* Print the statistics. */
     PStatFree(&stat);
 

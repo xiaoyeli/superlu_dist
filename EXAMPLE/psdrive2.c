@@ -191,8 +191,15 @@ int main(int argc, char *argv[])
     psgssvx(&options, &A, &ScalePermstruct, b, ldb, nrhs, &grid,
             &LUstruct, &SOLVEstruct, berr, &stat, &info);
 
-    /* Check the accuracy of the solution. */
-    psinf_norm_error(iam, m_loc, nrhs, b, ldb, xtrue, ldx, grid.comm);
+    if ( info ) {  /* Something is wrong */
+        if ( iam==0 ) {
+	    printf("ERROR: INFO = %d returned from psgssvx()\n", info);
+	    fflush(stdout);
+	}
+    } else {
+        /* Check the accuracy of the solution. */
+        psinf_norm_error(iam, m_loc, nrhs, b, ldb, xtrue, ldx, grid.comm);
+    }
     
     PStatPrint(&options, &stat, &grid);        /* Print the statistics. */
     PStatFree(&stat);
@@ -228,10 +235,16 @@ int main(int argc, char *argv[])
     psgssvx(&options, &A, &ScalePermstruct, b1, ldb, nrhs, &grid,
             &LUstruct, &SOLVEstruct, berr, &stat, &info);
 
-    /* Check the accuracy of the solution. */
-    if ( !iam ) printf("Solve the system with the same sparsity pattern.\n");
-    psinf_norm_error(iam, m_loc, nrhs, b1, ldb, xtrue1, ldx, grid.comm);
-
+    if ( info ) {  /* Something is wrong */
+        if ( iam==0 ) {
+	    printf("ERROR: INFO = %d returned from psgssvx()\n", info);
+	    fflush(stdout);
+	}
+    } else {
+        /* Check the accuracy of the solution. */
+        if ( !iam ) printf("Solve the system with the same sparsity pattern.\n");
+        psinf_norm_error(iam, m_loc, nrhs, b1, ldb, xtrue1, ldx, grid.comm);
+    }
 #if ( PRNTlevel>=2 )
     if (iam==0) {
 	PrintInt10("new perm_r", m, ScalePermstruct.perm_r);
