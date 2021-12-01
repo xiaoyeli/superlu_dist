@@ -1587,7 +1587,7 @@ __device__ void C_RdTree_forwardMessageSimple_Device(C_Tree* Tree, void* localBu
 	  
 	  // the first nbcol_loc handles all computations and broadcast communication
 	  if(bid<nbcol_loc){
-		  if(Uinv_bc_offset[bid]==-1){
+		  if(Uinv_bc_offset[bid]==-1 && Ucb_indoffset[bid]==-1){
 		  return;
 		  }
 		  

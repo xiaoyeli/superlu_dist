@@ -1900,14 +1900,24 @@ double *dense, *dense_col; /* SPA */
   Lnzval_bc_offset[ljb_j]=len*nsupc;
   Lnzval_bc_cnt += Lnzval_bc_offset[ljb_j];  
 
-	if (!(Linv_bc_ptr[ljb_j] = (double*)SUPERLU_MALLOC(nsupc*nsupc * sizeof(double))))
-		ABORT("Malloc fails for Linv_bc_ptr[ljb_j][]");
-  Linv_bc_offset[ljb_j]=nsupc*nsupc;
-  Linv_bc_cnt += Linv_bc_offset[ljb_j];	
-  if (!(Uinv_bc_ptr[ljb_j] = (double*)SUPERLU_MALLOC(nsupc*nsupc * sizeof(double))))
-		ABORT("Malloc fails for Uinv_bc_ptr[ljb_j][]");
-	Uinv_bc_offset[ljb_j]=nsupc*nsupc;
-	Uinv_bc_cnt += Uinv_bc_offset[ljb_j];			
+	myrow = MYROW( iam, grid );
+	krow = PROW( jb, grid );	
+	if(myrow==krow){   /* diagonal block */
+
+		if (!(Linv_bc_ptr[ljb_j] = (double*)SUPERLU_MALLOC(nsupc*nsupc * sizeof(double))))
+			ABORT("Malloc fails for Linv_bc_ptr[ljb_j][]");
+		Linv_bc_offset[ljb_j]=nsupc*nsupc;
+		Linv_bc_cnt += Linv_bc_offset[ljb_j];	
+		if (!(Uinv_bc_ptr[ljb_j] = (double*)SUPERLU_MALLOC(nsupc*nsupc * sizeof(double))))
+				ABORT("Malloc fails for Uinv_bc_ptr[ljb_j][]");
+		Uinv_bc_offset[ljb_j]=nsupc*nsupc;
+		Uinv_bc_cnt += Uinv_bc_offset[ljb_j];			
+	}else{
+		Linv_bc_ptr[ljb_j] = NULL;
+		Linv_bc_offset[ljb_j] = -1;  
+		Uinv_bc_ptr[ljb_j] = NULL;
+		Uinv_bc_offset[ljb_j] = -1;  			
+	}
 
 	memNLU += len1*iword + len*nsupc*dword;
 
