@@ -55,6 +55,16 @@ void superlu_gridinit(MPI_Comm Bcomm, /* The base communicator upon which
     superlu_gridmap(Bcomm, nprow, npcol, usermap, nprow, grid);
     
     SUPERLU_FREE(usermap);
+
+#ifdef GPU_ACC
+    /* Binding each MPI to a CUDA device */
+ 	int devs, rank;
+	MPI_Comm_rank(Bcomm, &rank); // MPI_COMM_WORLD??
+	gpuGetDeviceCount(&devs);  // Returns the number of compute-capable devices
+	gpuSetDevice(rank % devs); // Set device to be used for GPU executions
+#endif
+
+
 }
 
 

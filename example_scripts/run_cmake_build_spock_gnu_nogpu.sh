@@ -30,7 +30,7 @@ cmake .. \
 	-DTPL_BLAS_LIBRARIES="/opt/cray/pe/libsci/21.08.1.2/CRAY/9.0/x86_64/lib/libsci_cray.so" \
 	-DTPL_LAPACK_LIBRARIES="/opt/cray/pe/libsci/21.08.1.2/CRAY/9.0/x86_64/lib/libsci_cray.so" \
 	-DCMAKE_BUILD_TYPE=Release \
-	-DTPL_ENABLE_HIPLIB=ON \
+	-DTPL_ENABLE_HIPLIB=OFF \
 	-DHIP_HIPCC_FLAGS="--amdgpu-target=gfx906,gfx908 -I/opt/cray/pe/mpich/8.1.10/ofi/GNU/9.1/include" \
 	-DCMAKE_VERBOSE_MAKEFILE:BOOL=ON \
 	-DCMAKE_CXX_FLAGS="-Wno-format -Wno-unused-value -Wno-return-type -Wno-unsequenced -Wno-switch -Wno-parentheses -DPRNTlevel=1 -DPROFlevel=0 -DDEBUGlevel=0 " \
