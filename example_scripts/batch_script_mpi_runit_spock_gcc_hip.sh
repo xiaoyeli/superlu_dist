@@ -68,8 +68,8 @@ CORES_PER_NODE=64
 #npcols=(12 144 1)
 
 
-nprows=(1)
-npcols=(1)
+nprows=(4)
+npcols=(4)
  
 for ((i = 0; i < ${#npcols[@]}; i++)); do
 NROW=${nprows[i]}
@@ -83,7 +83,8 @@ if [[ $MOD_VAL -ne 0 ]]
 then
   NODE_VAL=`expr $NODE_VAL + 1`
 fi
- 
+
+export MAX_BUFFER_SIZE=500000000 
 export NUM_GPU_STREAMS=1
 for NTH in 1 
 do
@@ -93,9 +94,14 @@ OMP_NUM_THREADS=$NTH
 #for NSUP in 128 64 32 16 8
 #do
   # for MAT in atmosmodl.rb nlpkkt80.mtx torso3.mtx Ga19As19H42.mtx A22.mtx cage13.rb 
+  # for MAT in s1_mat_0_126936.bin 
   # for MAT in s1_mat_0_253872.bin s1_mat_0_126936.bin s1_mat_0_507744.bin
+  # for MAT in Ga19As19H42.mtx Geo_1438.mtx
+  for MAT in DNA_715_64cell.bin Li4244.bin s1_mat_0_126936.bin Ga19As19H42.mtx Geo_1438.mtx
+  # for MAT in DNA_715_64cell.bin Li4244.bin
+  # for MAT in Geo_1438.mtx
   # for MAT in matrix121.dat
-   for MAT in HTS/gas_sensor.mtx HTS/vanbody.mtx HTS/ct20stif.mtx HTS/torsion1.mtx HTS/dawson5.mtx
+  #  for MAT in HTS/gas_sensor.mtx HTS/vanbody.mtx HTS/ct20stif.mtx HTS/torsion1.mtx HTS/dawson5.mtx
  # for MAT in HTS/gas_sensor.mtx 
 
 
