@@ -212,6 +212,10 @@ int main(int argc, char *argv[])
     options.ReplaceTinyPivot = YES;
 #endif
 
+    // options.ParSymbFact       = YES;
+    // options.ColPerm           = PARMETIS;
+
+
     if (!iam) {
 	print_sp_ienv_dist(&options);
 	print_options_dist(&options);
@@ -254,7 +258,7 @@ int main(int argc, char *argv[])
     SUPERLU_FREE(b);
     SUPERLU_FREE(xtrue);
     SUPERLU_FREE(berr);
-    fclose(fp);
+    // fclose(fp);
 
     /* ------------------------------------------------------------
        RELEASE THE SUPERLU PROCESS GRID.
