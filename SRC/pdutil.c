@@ -442,7 +442,7 @@ dDestroy_Tree(int_t n, gridinfo_t *grid, dLUstruct_t *LUstruct)
 #if ( DEBUGlevel>=1 )
     int iam;
     MPI_Comm_rank( MPI_COMM_WORLD, &iam );
-    CHECK_MALLOC(iam, "Enter Destroy_Tree()");
+    CHECK_MALLOC(iam, "Enter dDestroy_Tree()");
 #endif
 
     nsupers = Glu_persist->supno[n-1] + 1;
@@ -511,6 +511,10 @@ dDestroy_LU(int_t n, gridinfo_t *grid, dLUstruct_t *LUstruct)
     SUPERLU_FREE (Llu->Lnzval_bc_dat);
     SUPERLU_FREE (Llu->Lnzval_bc_offset);
 
+#if ( DEBUGlevel>=1 )
+    CHECK_MALLOC(iam, "check1");
+#endif
+
     // nb = CEILING(nsupers, grid->nprow);
     // for (i = 0; i < nb; ++i)
 	// if ( Llu->Ufstnz_br_ptr[i] ) {
@@ -524,11 +528,19 @@ dDestroy_LU(int_t n, gridinfo_t *grid, dLUstruct_t *LUstruct)
     SUPERLU_FREE (Llu->Unzval_br_dat);
     SUPERLU_FREE (Llu->Unzval_br_offset);
 
+#if ( DEBUGlevel>=1 )
+    CHECK_MALLOC(iam, "check2");
+#endif
+
     /* The following can be freed after factorization. */
     SUPERLU_FREE(Llu->ToRecv);
     SUPERLU_FREE(Llu->ToSendD);
     SUPERLU_FREE(Llu->ToSendR[0]);
     SUPERLU_FREE(Llu->ToSendR);
+
+#if ( DEBUGlevel>=1 )
+    CHECK_MALLOC(iam, "check3");
+#endif
 
     /* The following can be freed only after iterative refinement. */
     SUPERLU_FREE(Llu->ilsum);
@@ -539,6 +551,10 @@ dDestroy_LU(int_t n, gridinfo_t *grid, dLUstruct_t *LUstruct)
     SUPERLU_FREE(Llu->bsendx_plist[0]);
     SUPERLU_FREE(Llu->bsendx_plist);
     SUPERLU_FREE(Llu->mod_bit);
+
+#if ( DEBUGlevel>=1 )
+    CHECK_MALLOC(iam, "check4");
+#endif
 
     // nb = CEILING(nsupers, grid->npcol);
     // for (i = 0; i < nb; ++i) 
@@ -566,7 +582,9 @@ dDestroy_LU(int_t n, gridinfo_t *grid, dLUstruct_t *LUstruct)
     SUPERLU_FREE(Llu->Uinv_bc_dat);
     SUPERLU_FREE(Llu->Uinv_bc_offset);
     SUPERLU_FREE(Llu->Unnz);
-	
+#if ( DEBUGlevel>=1 )
+    CHECK_MALLOC(iam, "check5");
+#endif	
     // nb = CEILING(nsupers, grid->npcol);
     // for (i = 0; i < nb; ++i)
 	// if ( Llu->Urbs[i] ) {
