@@ -1256,6 +1256,11 @@ pddistribute(fact_t fact, int_t n, SuperMatrix *A,
 	} /* for jb ... */
 
 
+	Linv_bc_cnt +=1; // safe guard
+	Uinv_bc_cnt +=1; 
+	Lrowind_bc_cnt +=1; 
+	Lindval_loc_bc_cnt +=1; 
+	Lnzval_bc_cnt +=1; 
 	if ( !(Linv_bc_dat =
 				(double*)SUPERLU_MALLOC(Linv_bc_cnt * sizeof(double))) ) {
 		fprintf(stderr, "Malloc fails for Linv_bc_dat[].");
@@ -1451,7 +1456,10 @@ pddistribute(fact_t fact, int_t n, SuperMatrix *A,
 	}
 
 
-
+	Unzval_br_cnt +=1; // safe guard
+	Ufstnz_br_cnt +=1; 
+	Ucb_valcnt +=1; 
+	Ucb_indcnt +=1; 
 	if ( !(Unzval_br_dat =
 				(double*)SUPERLU_MALLOC(Unzval_br_cnt * sizeof(double))) ) {
 		fprintf(stderr, "Malloc fails for Lnzval_bc_dat[].");
