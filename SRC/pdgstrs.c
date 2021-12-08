@@ -1158,7 +1158,13 @@ pdgstrs(int_t n, dLUstruct_t *LUstruct,
 	int_t cnt1,cnt2;
 
 	
-#ifdef GPU_ACC
+#if defined(GPU_ACC) && defined(SLU_HAVE_LAPACK) && defined(GPU_SOLVE)  /* GPU trisolve*/
+
+#if ( PRNTlevel>=1 )
+	if ( !iam) printf(".. GPU trisolve\n");
+	fflush(stdout);
+#endif
+
 
 #ifdef GPUREF
 
@@ -1546,8 +1552,7 @@ if(procs==1){
 	// fflush(stdout);
 	// }
 
-
-#ifdef GPU_ACC /* CPU trisolve*/
+#if defined(GPU_ACC) && defined(SLU_HAVE_LAPACK) && defined(GPU_SOLVE)  /* GPU trisolve*/
 // #if 0 /* CPU trisolve*/
 
 #ifdef GPUREF /* use cuSparse*/
@@ -2632,7 +2637,7 @@ thread_id=0;
 
 
 
-#ifdef GPU_ACC /*GPU trisolve*/
+#if defined(GPU_ACC) && defined(SLU_HAVE_LAPACK) && defined(GPU_SOLVE)  /* GPU trisolve*/
 // #if 0 /* CPU trisolve*/
 
 	d_grid = NULL;

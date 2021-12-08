@@ -66,8 +66,8 @@ void *superlu_malloc_dist(size_t size)
     int iam;
 
     MPI_Comm_rank(MPI_COMM_WORLD, &iam);
-    if ( size <= 0 ) {
-	printf("(%d) superlu_malloc size %lld\n", iam, size);
+    if ( size < 0 ) {
+	printf("(%d) superlu_malloc size %lu\n", iam, size);
 	ABORT("superlu_malloc: nonpositive size");
     }
 // #ifdef GPU_ACC    
@@ -77,7 +77,7 @@ void *superlu_malloc_dist(size_t size)
 // #endif
 	
     if ( !buf ) {
-	printf("(%d) superlu_malloc fails: malloc_total %.0f MB, size %lld\n",
+	printf("(%d) superlu_malloc fails: malloc_total %.0f MB, size %lu\n",
 	       iam, superlu_malloc_total*1e-6, size);
 	ABORT("superlu_malloc: out of memory");
     }
@@ -143,7 +143,7 @@ void superlu_free_dist(void *addr) { gpuError_t error = gpuFree(addr);}
 #else 
 
 #if  0 
-// #if (__STDC_VERSION__ >= 201112L)    // this is very slow on tulip
+// #if (__STDC_VERSION__ >= 201112L)   // cannot compile on Summit, also this is very slow on tulip
 
 void * superlu_malloc_dist(size_t size) {void* ptr;int alignment=1<<12;if(size>1<<19){alignment=1<<21;}posix_memalign( (void**)&(ptr), alignment, size );return(ptr);}
 void   superlu_free_dist(void * ptr)    {free(ptr);}
@@ -426,8 +426,7 @@ int_t symbfact_SubXpand
     
 #if ( DEBUGlevel>=1 )
     printf("symbfact_SubXpand(): jcol " IFMT ", next " IFMT ", maxlen " IFMT
-	   ", MemType " IFMT "\n",
-	   jcol, next, *maxlen, mem_type);
+	   ", MemType %d\n", jcol, next, *maxlen, mem_type);
 #endif    
 
     new_mem = expand(maxlen, mem_type, next, 0, Glu_freeable);

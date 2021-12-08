@@ -1,4 +1,4 @@
-# SuperLU_DIST (version 6.4)   <img align=center width="55" alt="superlu" src="https://user-images.githubusercontent.com/11741943/103982988-5a9a9d00-5139-11eb-9ac4-a55e80a79f8d.png">
+# SuperLU_DIST (version 7.1.1)   <img align=center width="55" alt="superlu" src="https://user-images.githubusercontent.com/11741943/103982988-5a9a9d00-5139-11eb-9ac4-a55e80a79f8d.png">
 
 [![Build Status](https://travis-ci.org/xiaoyeli/superlu_dist.svg?branch=master)](https://travis-ci.org/xiaoyeli/superlu_dist) 
 [Nightly tests](http://my.cdash.org/index.php?project=superlu_dist)
@@ -11,15 +11,69 @@ to run accurately and efficiently on large numbers of processors.
 
 SuperLU_DIST is a parallel extension to the serial SuperLU library.
 It is targeted for the distributed memory parallel machines.
-SuperLU_DIST is implemented in ANSI C, and MPI for communications.
-Currently, the LU factorization and triangular solution routines,
-which are the most time-consuming part of the solution process,
-are parallelized. The other routines, such as static pivoting and 
-column preordering for sparsity are performed sequentially. 
-This "alpha" release contains double-precision real and double-precision
-complex data types.
+SuperLU_DIST is implemented in ANSI C, with OpenMP for on-node parallelism
+and MPI for off-node communications. We are actively developing GPU
+acceleration capabilities.
+<!-- Currently, the LU factorization and triangular solution routines, -->
+<!-- which are the most time-consuming part of the solution process,-->
+<!-- are parallelized. The other routines, such as static pivoting and -->
+<!-- column preordering for sparsity are performed sequentially. -->
+<!-- This "alpha" release contains double-precision real and-->
+<!-- double-precision complex data types.-->
 
-### The distribution contains the following directory structure:
+Table of Contents
+=================
+
+* [SuperLU_DIST (version 7.1.1)   <a href="https://user-images.githubusercontent.com/11741943/103982988-5a9a9d00-5139-11eb-9ac4-a55e80a79f8d.png" target="_blank" rel="nofollow"><img align="center" width="55" alt="superlu" src="https://user-images.githubusercontent.com/11741943/103982988-5a9a9d00-5139-11eb-9ac4-a55e80a79f8d.png" style="max-width:100%;"></a>](#superlu_dist-version-70---)
+* [Directory structure of the source code](#directory-structure-of-the-source-code)
+* [Installation](#installation)
+   * [Installation option 1: Using CMake build system.](#installation-option-1-using-cmake-build-system)
+      * [Dependent external libraries: BLAS and ParMETIS](#dependent-external-libraries-blas-and-parmetis)
+      * [Optional external libraries: CombBLAS, LAPACK](#optional-external-libraries-combblas-lapack)
+      * [Use GPU](#use-gpu)
+      * [Summary of the CMake definitions.](#summary-of-the-cmake-definitions)
+   * [Installation option 2: Manual installation with makefile.](#installation-option-2-manual-installation-with-makefile)
+      * [2.1 Edit the make.inc include file.](#21-edit-the-makeinc-include-file)
+      * [2.2. The BLAS library.](#22-the-blas-library)
+      * [2.3. External libraries.](#23-external-libraries)
+         * [2.3.1 Metis and ParMetis.](#231-metis-and-parmetis)
+         * [2.3.2 LAPACK.](#232-lapack)
+         * [2.3.3 CombBLAS.](#233-combblas)
+      * [2.4. C preprocessor definition CDEFS. (Replaced by cmake module FortranCInterface.)](#24-c-preprocessor-definition-cdefs-replaced-by-cmake-module-fortrancinterface)
+      * [2.5. Multicore and GPU.](#25-multicore-and-gpu)
+* [Summary of the environment variables.](#summary-of-the-environment-variables)
+* [Windows Usage](#windows-usage)
+* [Reading sparse matrix files](#reading-sparse-matrix-files)
+* [REFERENCES](#references)
+* [RELEASE VERSIONS](#release-versions)
+
+Created by [gh-md-toc](https://github.com/ekalinin/github-markdown-toc)
+
+# SuperLU_DIST (version 7.0)   <img align=center width="55" alt="superlu" src="https://user-images.githubusercontent.com/11741943/103982988-5a9a9d00-5139-11eb-9ac4-a55e80a79f8d.png">
+
+[![Build Status](https://travis-ci.org/xiaoyeli/superlu_dist.svg?branch=master)](https://travis-ci.org/xiaoyeli/superlu_dist) 
+[Nightly tests](http://my.cdash.org/index.php?project=superlu_dist)
+
+SuperLU_DIST contains a set of subroutines to solve a sparse linear system 
+A*X=B. It uses Gaussian elimination with static pivoting (GESP). 
+Static pivoting is a technique that combines the numerical stability of
+partial pivoting with the scalability of Cholesky (no pivoting),
+to run accurately and efficiently on large numbers of processors. 
+
+SuperLU_DIST is a parallel extension to the serial SuperLU library.
+It is targeted for the distributed memory parallel machines.
+SuperLU_DIST is implemented in ANSI C, with OpenMP for on-node parallelism
+and MPI for off-node communications. We are actively developing GPU
+acceleration capabilities.
+<!-- Currently, the LU factorization and triangular solution routines, -->
+<!-- which are the most time-consuming part of the solution process,-->
+<!-- are parallelized. The other routines, such as static pivoting and -->
+<!-- column preordering for sparsity are performed sequentially. -->
+<!-- This "alpha" release contains double-precision real and-->
+<!-- double-precision complex data types.-->
+
+
+# Directory structure of the source code
 
 ```
 SuperLU_DIST/README    instructions on installation
@@ -28,6 +82,7 @@ SuperLU_DIST/CBLAS/    needed BLAS routines in C, not necessarily fast
 		       library with multiple OpenMP threads, performance
 		       relies on a good multithreaded BLAS implementation.)
 SuperLU_DIST/DOC/      the Users' Guide
+SuperLU_DIST/FORTRAN/  Fortran90 wrapper functions
 SuperLU_DIST/EXAMPLE/  example programs
 SuperLU_DIST/INSTALL/  test machine dependent parameters
 SuperLU_DIST/SRC/      C source code, to be compiled into libsuperlu_dist.a
@@ -41,35 +96,71 @@ SuperLU_DIST/make.inc  compiler, compiler flags, library definitions and C
 SuperLU_DIST/MAKE_INC/ sample machine-specific make.inc files
 ```
 
-## INSTALLATION
+# Installation
 
-There are two ways to install the package. One requires users to 
-edit makefile manually, the other uses CMake automatic build system.
+There are two ways to install the package. The first method is to use
+CMake automatic build system. The other method requires users to 
 The procedures are described below.
 
-### Installation option 1: Using CMake build system.
+## Installation option 1: Using CMake build system.
 You will need to create a build tree from which to invoke CMake.
 
-First, in order to use parallel symbolic factorization function, you
+### Dependent external libraries: BLAS and ParMETIS
+If you have a BLAS library on your machine, you can link with it
+with the following cmake definition:
+```
+-DTPL_BLAS_LIBRARIES="<BLAS library name>"
+```
+Otherwise, the CBLAS/ subdirectory contains the part of the C BLAS
+(single threaded) needed by SuperLU_DIST, but they are not optimized.
+You can compile and use it with the following cmake definition:
+```
+-DTPL_ENABLE_INTERNAL_BLASLIB=ON
+```
+
+The default sparsity ordering is METIS. But, in order to use parallel
+symbolic factorization function, you
 need to install ParMETIS parallel ordering package and define the
 two environment variables: PARMETIS_ROOT and PARMETIS_BUILD_DIR
+
+(Note: ParMETIS library also contains serial METIS library.)
 
 ```
 export PARMETIS_ROOT=<Prefix directory of the ParMETIS installation>
 export PARMETIS_BUILD_DIR=${PARMETIS_ROOT}/build/Linux-x86_64
 ```
 
-Second, in order to use parallel weighted matching AWPM for numerical
-pre-pivoting, you need to install CombBLAS and define the environment
-variable:
+### Optional external libraries: CombBLAS, LAPACK
+
+In order to use parallel weighted matching HWPM (Heavy Weight
+Perfect Matching) for numerical pre-pivoting, you need to install 
+CombBLAS and define the environment variable:
 
 ```
 export COMBBLAS_ROOT=<Prefix directory of the CombBLAS installation>
 export COMBBLAS_BUILD_DIR=${COMBBLAS_ROOT}/_build
 ```
+Then, install with cmake option:
+```
+-DTPL_ENABLE_COMBBLASLIB=ON
+```
 
-Once these needed third-party libraries are in place, SuperLU installation
-can be done as follows from the top level directory:
+By default, LAPACK is not needed. Only in triangular solve routine, we
+may use LAPACK to explicitly invert the dense diagonal block to improve
+speed. You can use it with the following cmake option:
+```
+-DTPL_ENABLE_LAPACKLIB=ON
+```
+
+### Use GPU
+You can enable GPU with CUDA with the following cmake option:
+```
+-DTPL_ENABLE_CUDALIB=TRUE
+-DTPL_CUDA_LIBRARIES="<path>/libcublas.so;<path>/libcudart.so"
+```
+
+Once these needed third-party libraries are in place, the installation
+can be done as follows at the top level directory:
 
 For a simple installation with default setting, do:
 (ParMETIS is needed, i.e., TPL_ENABLE_PARMETISLIB=ON)
@@ -79,8 +170,7 @@ cmake .. \
     -DTPL_PARMETIS_INCLUDE_DIRS="${PARMETIS_ROOT}/include;${PARMETIS_ROOT}/metis/include" \
     -DTPL_PARMETIS_LIBRARIES="${PARMETIS_BUILD_DIR}/libparmetis/libparmetis.a;${PARMETIS_BUILD_DIR}/libmetis/libmetis.a" \
 ```
-
-For a more sophisticated installation including third-part libraries, do:
+For a more sophisticated installation including third-party libraries, do:
 ```
 cmake .. \
     -DTPL_PARMETIS_INCLUDE_DIRS="${PARMETIS_ROOT}/include;${PARMETIS_ROOT}/metis/include" \
@@ -99,17 +189,11 @@ OOT}/Applications/BipartiteMatchings" \
 
 ( see example cmake script: run_cmake_build.sh )
 ```
-You can enable GPU with CUDA with the following cmake option:
-```
-`-DTPL_ENABLE_CUDALIB=TRUE`
-`-DTPL_CUDA_LIBRARIES="<path>/libcublas.so;<path>/libcudart.so"`
-```
 
-You can disable LAPACK, ParMetis or CombBLAS with the following cmake option:
+You can disable CombBLAS or LAPACK with the following cmake options:
 ```
-`-DTPL_ENABLE_LAPACKLIB=FALSE`
-`-DTPL_ENABLE_PARMETISLIB=FALSE`
-`-DTPL_ENABLE_COMBBLASLIB=FALSE`
+-DTPL_ENABLE_LAPACKLIB=FALSE
+-DTPL_ENABLE_COMBBLASLIB=FALSE
 ```
 
 To actually build (compile), type:
@@ -133,25 +217,38 @@ execution may fail. You can pass the definition option "-DMPIEXEC_EXECUTABLE"
 to cmake. For example on Cori at NERSC, you will need the following:
 `-DMPIEXEC_EXECUTABLE=/usr/bin/srun`
 
-Or, you can always go to TEST/ directory to perform
-testing manually.
+Or, you can always go to TEST/ directory to perform testing manually.
 
-**Note on the C-Fortran name mangling handled by C preprocessor definition:**  
-In the default setting, we assume that Fortran expects a C routine
-to have an underscore postfixed to the name. Depending on the
-compiler, you may need to define one of the following flags in
-during the cmake build to overwrite default setting:
+### Summary of the CMake definitions.
+The following list summarize the commonly used CMake definitions. In each case,
+the first choice is the default setting. After running 'cmake' installation,
+a configuration header file is generated in SRC/superlu_dist_config.h, which
+contains the key CPP definitions used throughout the code.
 ```
-cmake .. -DCMAKE_C_FLAGS="-DNoChange" 
-cmake .. -DCMAKE_C_FLAGS="-DUpCase"
+    -TPL_ENABLE_PARMETISLIB=ON | OFF
+    -DTPL_ENABLE_INTERNAL_BLASLIB=OFF | ON
+    -DTPL_ENABLE_LAPACKLIB=OFF | ON
+    -TPL_ENABLE_COMBBLASLIB=OFF
+    -DTPL_ENABLE_CUDALIB=OFF | ON
+    -Denable_complex16=OFF | ON
+    -DXSDK_INDEX_SIZE=32 | 64
+
+    -DBUILD_SHARED_LIBS= OFF | ON
+    -DCMAKE_INSTALL_PREFIX=<...>.
+    -DCMAKE_C_COMPILER=<MPI C compiler>
+    -DCMAKE_C_FLAGS="..." 
+    -DCMAKE_CXX_COMPILER=<MPI C++ compiler>
+    -DMAKE_CXX_FLAGS="..."
+    -DCMAKE_CUDA_FLAGS="..." 
+    -DXSDK_ENABLE_Fortran=OFF | ON
+    -DCMAKE_Fortran_COMPILER=<MPI F90 compiler>
 ```
 
-
-### Installation option 2: Manual installation with makefile.
+## Installation option 2: Manual installation with makefile.
 Before installing the package, please examine the three things dependent 
 on your system setup:
 
-#### 1.1 Edit the make.inc include file.
+### 2.1 Edit the make.inc include file.
 
 This make include file is referenced inside each of the Makefiles
 in the various subdirectories. As a result, there is no need to 
@@ -183,7 +280,7 @@ printing level to show solver's execution details. (default 0)
 diagnostic printing level for debugging purpose. (default 0)
 ```      
 
-#### 1.2. The BLAS library.
+### 2.2. The BLAS library.
 
 The parallel routines in SuperLU_DIST use some BLAS routines on each MPI
 process. Moreover, if you enable OpenMP with multiple threads, you need to
@@ -210,22 +307,9 @@ top-level SuperLU_DIST/ directory and do the following:
 to make the BLAS library from the routines in the
 ` CBLAS/ subdirectory.`
 
-#### 1.3. External libraries. 
+### 2.3. External libraries. 
 
-  ##### 1.3.1 LAPACK.
-  Starting Version 6.0, the triangular solve routine can perform explicit
-  inversion on the diagonal blocks, using LAPACK's xTRTRI inversion routine.
-  To use this feature, you should define the following in make.inc:
-```
-SLU_HAVE_LAPACK = TRUE
-LAPACKLIB = <lapack library you wish to link with>
-```
-You can disable LAPACK with the following line in SRC/superlu_dist_config.h:
-```
-#undef SLU_HAVE_LAPACK
-```
-
-  ##### 1.3.2 Metis and ParMetis.
+  #### 2.3.1 Metis and ParMetis.
 
 If you will use Metis or ParMetis for sparsity ordering, you will
 need to install them yourself. Since ParMetis package already
@@ -244,8 +328,20 @@ You can disable ParMetis with the following line in SRC/superlu_dist_config.h:
 ```
 #undef HAVE_PARMETIS
 ```
+  #### 2.3.2 LAPACK.
+  Starting Version 6.0, the triangular solve routine can perform explicit
+  inversion on the diagonal blocks, using LAPACK's xTRTRI inversion routine.
+  To use this feature, you should define the following in make.inc:
+```
+SLU_HAVE_LAPACK = TRUE
+LAPACKLIB = <lapack library you wish to link with>
+```
+You can disable LAPACK with the following line in SRC/superlu_dist_config.h:
+```
+#undef SLU_HAVE_LAPACK
+```
 
- ##### 1.3.3 CombBLAS.
+ #### 2.3.3 CombBLAS.
 
 You can use parallel approximate weight perfect matching (AWPM) algorithm
 to perform numerical pre-pivoting for stability. The default pre-pivoting
@@ -265,10 +361,9 @@ You can disable CombBLAS with the following line in SRC/superlu_dist_config.h:
 #undef HAVE_COMBBLAS
 ```
 
+### 2.4. C preprocessor definition CDEFS. (Replaced by cmake module FortranCInterface.)
 
-#### 1.4. C preprocessor definition CDEFS. (Replaced by cmake module FortranCInterface.)
-
-In the header file SRC/Cnames.h, we use macros to determine how
+In the header file SRC/superlu_Cnames.h, we use macros to determine how
 C routines should be named so that they are callable by Fortran.
 (Some vendor-supplied BLAS libraries do not have C interfaces. So the 
 re-naming is needed in order for the SuperLU BLAS calls (in C) to 
@@ -283,7 +378,7 @@ The possible options for CDEFS are:
 -DUpCase: Fortran expects a C routine name to be all uppercase.
 ```
 
-#### 1.5. Multicore and GPU (optional).
+### 2.5. Multicore and GPU.
 
 To use OpenMP parallelism, need to link with an OpenMP library, and
 set the number of threads you wish to use as follows (bash):
@@ -302,8 +397,25 @@ A Makefile is provided in each subdirectory. The installation can be done
 completely automatically by simply typing "make" at the top level.
 
 
+# Summary of the environment variables.
+A couple of environment variables affect parallel execution.
+```
+    export OMP_NUM_THREADS=<...>
+    export SUPERLU_ACC_OFFLOAD=1  // this enables use of GPU. Default is 0.
+```
+Several integer blocking parameters may affect performance. Most of them can be
+set by the user through environment variables. Oherwise the default values
+are provided. Various SuperLU routines call an environment inquiry function
+to obtain these parameters. This function is provided in the file SRC/sp_ienv.c.
+Please consult that file for detailed description of the meanings.
+```
+    export NREL=<...>   // supernode relaxation parameter
+    export NSUP=<...>   // maximum allowable supernode size, not to exceed 512
+    export FILL=<...>   // estimated fill ratio of nonzeros(L+U)/nonzeros(A)
+    export MAX_BUFFER_SIZE=<...>   // maximum buffer size on GPU for GEMM
+```
 
-## Windows Usage
+# Windows Usage
 Prerequisites: CMake, Visual Studio, Microsoft HPC Pack
 This has been tested with Visual Studio 2017, without Parmetis,
 without Fortran, and with OpenMP disabled. 
@@ -337,7 +449,7 @@ for the above configuration.
 If you wish to test:
   `ctest`
 
-## READING SPARSE MATRIX FILES
+# Reading sparse matrix files
 
 The SRC/ directory contains the following routines to read different file 
 formats, they all have the similar calling sequence.
@@ -350,7 +462,7 @@ dreadtriple.c          : triplet, with header
 dreadtriple_noheader.c : triplet, no header, which is also readable in Matlab
 ```
 
-## REFERENCES
+# REFERENCES
 
 **[1]** X.S. Li and J.W. Demmel, "SuperLU_DIST: A Scalable Distributed-Memory
  Sparse Direct Solver for Unsymmetric Linear Systems", ACM Trans. on Math.
@@ -363,24 +475,34 @@ dreadtriple_noheader.c : triplet, no header, which is also readable in Matlab
  Porto, Portugal.  
 **[4]** P. Sao, X.S. Li, R. Vuduc, “A Communication-Avoiding 3D Factorization
  for Sparse Matrices”, Proc. of IPDPS, May 21–25, 2018, Vancouver.   
-**[5]** Y. Liu, M. Jacquelin, P. Ghysels and X.S. Li, “Highly scalable
+**[5]** P. Sao, R. Vuduc, X. Li, "Communication-avoiding 3D algorithm for
+ sparse LU factorization on heterogeneous systems", J. Parallel and
+ Distributed Computing (JPDC), September 2019.     
+**[6]** Y. Liu, M. Jacquelin, P. Ghysels and X.S. Li, “Highly scalable
  distributed-memory sparse triangular solution algorithms”, Proc. of
  SIAM workshop on Combinatorial Scientific Computing, June 6-8, 2018,
- Bergen, Norway. 
+ Bergen, Norway.   
+**[7]** N. Ding, S. Williams, Y. Liu, X.S. Li, "Leveraging One-Sided
+ Communication for Sparse Triangular Solvers", Proc. of SIAM Conf. on
+ Parallel Processing for Scientific Computing. Feb. 12-15, 2020.   
+**[8]** A. Azad, A. Buluc, X.S. Li, X. Wang, and J. Langguth,
+"A distributed-memory algorithm for computing a heavy-weight perfect matching 
+on bipartite graphs", SIAM J. Sci. Comput., Vol. 42, No. 4, pp. C143-C168, 2020.   
 
-**Xiaoye S. Li**, Lawrence Berkeley National Lab, [xsli@lbl.gov](xsli@lbl.gov)  
+
+**Xiaoye S. Li**, Lawrence Berkeley National Lab, [xsli@lbl.gov](xsli@lbl.gov)   
 **Gustavo Chavez**, Lawrence Berkeley National Lab, [gichavez@lbl.gov](gichavez@lbl.gov)   
+**Nan Ding**, Lawrence Berkeley National Lab, [nanding@lbl.gov](nanding@lbl.gov)  
 **Laura Grigori**, INRIA, France, [laura.grigori@inria.fr](laura.grigori@inria.fr)  
 **Yang Liu**, Lawrence Berkeley National Lab, [liuyangzhuan@lbl.gov](liuyangzhuan@lbl.gov)   
-**Meiyue Shao**, Lawrence Berkeley National Lab, [myshao@lbl.gov](myshao@lbl.gov)   
 **Piyush Sao**, Georgia Institute of Technology, [piyush.feynman@gmail.com](piyush.feynman@gmail.com)  
+**Meiyue Shao**, Lawrence Berkeley National Lab, [myshao@lbl.gov](myshao@lbl.gov)   
 **Ichitaro Yamazaki**, Univ. of Tennessee, [ic.yamazaki@gmail.com](ic.yamazaki@gmail.com)  
-**Jim Demmel**, UC Berkeley, [demmel@cs.berkeley.edu](demmel@cs.berkeley.edu)  
+**Jim Demmel**, UC Berkeley, [demmel@cs.berkeley.edu](demmel@cs.berkeley.edu)   
 **John Gilbert**, UC Santa Barbara, [gilbert@cs.ucsb.edu](gilbert@cs.ucsb.edu)
 
 
-
-## RELEASE VERSIONS
+# RELEASE VERSIONS
 ```
 October 15, 2003    Version 2.0  
 October 1,  2007    Version 2.1  
@@ -406,4 +528,5 @@ February 8, 2019    Version 6.1.1
 November 12, 2019   Version 6.2.0
 February 23, 2020   Version 6.3.0
 October 23, 2020    Version 6.4.0
+May 10, 2021        Version 7.0.0
 ```

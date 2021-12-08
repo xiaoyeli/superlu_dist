@@ -2,8 +2,11 @@
 
 # You have to ignore this generated file or git will complain that it is an
 # unknown file!
-/make.inc
+make.inc
 
 # If the instructions are telling people to create this build dir under the
 # source tree, you had better put in an ignore for this.
-#/build/*
+build/*
+
+# not to commit any changes to the following file
+FORTRAN/superlu_dist_config.fh

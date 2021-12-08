@@ -37,6 +37,7 @@ if(enable_double)
   set(DEXM pddrive.c dcreate_matrix.c)
   add_executable(pddrive ${DEXM})
   target_link_libraries(pddrive ${all_link_libs})
+  install(TARGETS pddrive RUNTIME DESTINATION "${INSTALL_BIN_DIR}")  
 
   set(DEXM1 pddrive1.c dcreate_matrix.c)
   add_executable(pddrive1 ${DEXM1})
@@ -57,6 +58,22 @@ if(enable_double)
   add_executable(pddrive4 ${DEXM4})
   target_link_libraries(pddrive4 ${all_link_libs})
 
+  set(DEXM3D pddrive3d.c dcreate_matrix.c dcreate_matrix3d.c)
+  add_executable(pddrive3d ${DEXM3D})
+  target_link_libraries(pddrive3d ${all_link_libs})
+
+  set(DEXM3D1 pddrive3d1.c dcreate_matrix.c dcreate_matrix3d.c)
+  add_executable(pddrive3d1 ${DEXM3D1})
+  target_link_libraries(pddrive3d1 ${all_link_libs})
+  
+  set(DEXM3D2 pddrive3d2.c dcreate_matrix.c dcreate_matrix3d.c)
+  add_executable(pddrive3d2 ${DEXM3D2})
+  target_link_libraries(pddrive3d2 ${all_link_libs})
+  
+  set(DEXM3D3 pddrive3d3.c dcreate_matrix.c dcreate_matrix3d.c)
+  add_executable(pddrive3d3 ${DEXM3D3})
+  target_link_libraries(pddrive3d3 ${all_link_libs})
+  
   set(DEXMG pddrive_ABglobal.c)
   add_executable(pddrive_ABglobal ${DEXMG})
   target_link_libraries(pddrive_ABglobal ${all_link_libs})
@@ -80,10 +97,53 @@ if(enable_double)
   set(DEXMS pddrive_spawn.c dcreate_matrix.c)
   add_executable(pddrive_spawn ${DEXMS})
   target_link_libraries(pddrive_spawn ${all_link_libs})
+  install(TARGETS pddrive_spawn RUNTIME DESTINATION "${INSTALL_BIN_DIR}")
 
 
-endif()
 
+endif() #### end enable_double
+
+if(enable_single)
+  set(SEXM psdrive.c screate_matrix.c)
+  add_executable(psdrive ${SEXM})
+  target_link_libraries(psdrive ${all_link_libs})
+
+  set(SEXM1 psdrive1.c screate_matrix.c)
+  add_executable(psdrive1 ${SEXM1})
+  target_link_libraries(psdrive1 ${all_link_libs})
+  add_superlu_dist_example(psdrive1 big.rua 2 2)
+
+  set(SEXM2 psdrive2.c screate_matrix.c screate_matrix_perturbed.c)
+  add_executable(psdrive2 ${SEXM2})
+  target_link_libraries(psdrive2 ${all_link_libs})
+  add_superlu_dist_example(psdrive2 big.rua 2 2)
+
+  set(SEXM3 psdrive3.c screate_matrix.c)
+  add_executable(psdrive3 ${SEXM3})
+  target_link_libraries(psdrive3 ${all_link_libs})
+  add_superlu_dist_example(psdrive3 big.rua 2 2)
+
+  set(SEXM4 psdrive4.c screate_matrix.c)
+  add_executable(psdrive4 ${SEXM4})
+  target_link_libraries(psdrive4 ${all_link_libs})
+
+  set(SEXM3D psdrive3d.c screate_matrix.c screate_matrix3d.c)
+  add_executable(psdrive3d ${SEXM3D})
+  target_link_libraries(psdrive3d ${all_link_libs})
+
+  set(SEXM3D1 psdrive3d1.c screate_matrix.c screate_matrix3d.c)
+  add_executable(psdrive3d1 ${SEXM3D1})
+  target_link_libraries(psdrive3d1 ${all_link_libs})
+  
+  set(SEXM3D2 psdrive3d2.c screate_matrix.c screate_matrix3d.c)
+  add_executable(psdrive3d2 ${SEXM3D2})
+  target_link_libraries(psdrive3d2 ${all_link_libs})
+  
+  set(SEXM3D3 psdrive3d3.c screate_matrix.c screate_matrix3d.c)
+  add_executable(psdrive3d3 ${SEXM3D3})
+  target_link_libraries(psdrive3d3 ${all_link_libs})
+  
+endif() #### end enable_single
 
 if(enable_complex16)
 
@@ -110,6 +170,22 @@ if(enable_complex16)
   add_executable(pzdrive4 ${ZEXM4})
   target_link_libraries(pzdrive4 ${all_link_libs})
 
+  set(ZEXM3D pzdrive3d.c zcreate_matrix.c zcreate_matrix3d.c)
+  add_executable(pzdrive3d ${ZEXM3D})
+  target_link_libraries(pzdrive3d ${all_link_libs})
+
+  set(ZEXM3D1 pzdrive3d1.c zcreate_matrix.c zcreate_matrix3d.c)
+  add_executable(pzdrive3d1 ${ZEXM3D1})
+  target_link_libraries(pzdrive3d1 ${all_link_libs})
+  
+  set(ZEXM3D2 pzdrive3d2.c zcreate_matrix.c zcreate_matrix3d.c)
+  add_executable(pzdrive3d2 ${ZEXM3D2})
+  target_link_libraries(pzdrive3d2 ${all_link_libs})
+  
+  set(ZEXM3D3 pzdrive3d3.c zcreate_matrix.c zcreate_matrix3d.c)
+  add_executable(pzdrive3d3 ${ZEXM3D3})
+  target_link_libraries(pzdrive3d3 ${all_link_libs})
+  
   set(ZEXMG pzdrive_ABglobal.c)
   add_executable(pzdrive_ABglobal ${ZEXMG})
   target_link_libraries(pzdrive_ABglobal ${all_link_libs})

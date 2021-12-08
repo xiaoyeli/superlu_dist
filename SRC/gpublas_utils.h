@@ -22,6 +22,7 @@ at the top-level directory.
 #ifdef GPU_ACC
 
 #include "gpu_wrapper.h"
+typedef struct LUstruct_gpu_  LUstruct_gpu;  // Sherry - not in this distribution
 
 extern void DisplayHeader();
 extern const char* gpublasGetErrorString(gpublasStatus_t status);

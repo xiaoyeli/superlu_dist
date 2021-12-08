@@ -353,8 +353,8 @@ float symbfact_dist
 #endif
 
     /* Allocate storage common to the symbolic factor routines */
-    if (iinfo = symbfact_alloc (n, nprocs_symb, Pslu_freeable, 
-				&Llu_symbfact, &VInfo, &CS, &PS)) 
+    if ((iinfo = symbfact_alloc (n, nprocs_symb, Pslu_freeable, 
+				 &Llu_symbfact, &VInfo, &CS, &PS))) 
       return (PS.allocMem);
     /* Copy the redistributed input matrix AS at the end of the memory buffer
        allocated to store L and U.  That is, copy (AS.x_ainf, AS.ind_ainf) in
@@ -2067,15 +2067,15 @@ symbfact_vtx
 	/* TEST available memory */
 	if (next >= x_aind_end) {	
 	  if (domain_symb) {
-	    if (mem_error =
-		psymbfact_LUXpandMem (iam, n, vtx, next, 0,
-				      computeL, DOMAIN_SYMB, 1, 
-				      Pslu_freeable, Llu_symbfact, VInfo, PS))
-	      return (mem_error);
-	  } else if (mem_error =
-		     psymbfact_LUXpand (iam, n, EMPTY, vtx, &next, 0, 
-					computeL, LL_SYMB, 1, 
-					Pslu_freeable, Llu_symbfact, VInfo, PS))
+	      if ( (mem_error =
+		    psymbfact_LUXpandMem (iam, n, vtx, next, 0,
+					  computeL, DOMAIN_SYMB, 1, 
+					  Pslu_freeable, Llu_symbfact, VInfo, PS)) )
+		  return (mem_error);
+	  } else if ( (mem_error =
+		       psymbfact_LUXpand (iam, n, EMPTY, vtx, &next, 0, 
+					  computeL, LL_SYMB, 1, 
+					  Pslu_freeable, Llu_symbfact, VInfo, PS)) )
 	    return (mem_error);
 
 	  x_aind_end = xsub[vtx_lid + 1];
@@ -2246,9 +2246,9 @@ updateRcvd_prGraph
 
   /* test if enough memory in usubPr array */
   if (ind >= szsubPr) {
-    if (mem_error = 
-	psymbfact_prLUXpand (iam, ind, computeL, Llu_symbfact, PS))
-      return (mem_error);
+      if ( (mem_error = 
+	    psymbfact_prLUXpand (iam, ind, computeL, Llu_symbfact, PS)) )
+	  return (mem_error);
     if (computeL) 
       subPr = Llu_symbfact->lsubPr;  
     else 
@@ -2367,9 +2367,9 @@ update_prGraph
     if (sn_elt < lstVtx_blk) {
       sn_elt_prid = LOCAL_IND( globToLoc[sn_elt] ) - pr_offset;
       if ((*p_indsubPr) + 2 >= szsubPr) {
-	if (mem_error = 
-	    psymbfact_prLUXpand (iam, 0, computeL, Llu_symbfact, PS))
-	  return (mem_error);
+	  if ( (mem_error = 
+		psymbfact_prLUXpand (iam, 0, computeL, Llu_symbfact, PS)) )
+	      return (mem_error);
 	if (computeL) {
 	  subPr = Llu_symbfact->lsubPr;  szsubPr = Llu_symbfact->szLsubPr;
 	}
@@ -2523,16 +2523,16 @@ blk_symbfact
 
     prval_curvtx   = n;
     /* Compute nonzero structure L(:,vtx) */
-    if (mem_error = 
-	symbfact_vtx (n, iam, vtx, vtx_lid, vtx_prid, 1, domain_symb, 
-		      fstVtx_blk,  lstVtx,
-		      snrep_lid, szsn, &nextl,
-		      marker, 
-		      lsub_rcvd, lsub_rcvd_sz,
-		      Pslu_freeable, Llu_symbfact, VInfo, PS, &neltsVtxInit_l,
-		      &neltsVtx_L, &neltsVtx_CSep_L, &neltsZrVtx_L, 
-		      &neltsMatched_L, markl1_vtx, &prval_curvtx, 
-		      vtx_bel_snU, &vtx_bel_snL))
+    if ( (mem_error = 
+	  symbfact_vtx (n, iam, vtx, vtx_lid, vtx_prid, 1, domain_symb, 
+			fstVtx_blk,  lstVtx,
+			snrep_lid, szsn, &nextl,
+			marker, 
+			lsub_rcvd, lsub_rcvd_sz,
+			Pslu_freeable, Llu_symbfact, VInfo, PS, &neltsVtxInit_l,
+			&neltsVtx_L, &neltsVtx_CSep_L, &neltsZrVtx_L, 
+			&neltsMatched_L, markl1_vtx, &prval_curvtx, 
+			vtx_bel_snU, &vtx_bel_snL)) )
       return (mem_error);
     lsub = Llu_symbfact->lsub;
 
@@ -2541,17 +2541,17 @@ blk_symbfact
 #endif
     
     /* Compute nonzero structure of U(vtx,:) */
-    if (mem_error = 
-	symbfact_vtx (n, iam, vtx, vtx_lid, vtx_prid, 0, domain_symb, 
-		      fstVtx_blk, lstVtx,
-		      snrep_lid, szsn, &nextu,
-		      marker, 
-		      usub_rcvd, usub_rcvd_sz,
-		      Pslu_freeable, Llu_symbfact, VInfo, PS, &neltsVtxInit_u,
-		      &neltsVtx_U, &neltsVtx_CSep_U, &neltsZrVtx_U, 
-		      &neltsMatched_U, marku1_vtx, &prval_curvtx,
-		      vtx_bel_snL, &vtx_bel_snU))
-      return (mem_error);
+    if ( (mem_error = 
+	  symbfact_vtx (n, iam, vtx, vtx_lid, vtx_prid, 0, domain_symb, 
+			fstVtx_blk, lstVtx,
+			snrep_lid, szsn, &nextu,
+			marker, 
+			usub_rcvd, usub_rcvd_sz,
+			Pslu_freeable, Llu_symbfact, VInfo, PS, &neltsVtxInit_u,
+			&neltsVtx_U, &neltsVtx_CSep_U, &neltsZrVtx_U, 
+			&neltsMatched_U, marku1_vtx, &prval_curvtx,
+			vtx_bel_snL, &vtx_bel_snU)) )
+	return (mem_error);
     usub = Llu_symbfact->usub;
 
 #ifdef TEST_SYMB
@@ -2618,11 +2618,11 @@ blk_symbfact
 	*p_nextu      = xusub[vtx_lid];
 	nsuper_loc   += 1;
 	*p_nsuper_loc = nsuper_loc;
-	if (mem_error =
-	    dnsUpSeps_symbfact (n, iam, szSep, ind_sizes1, ind_sizes2, 
-				sizes, fstVtxSep, vtx,
-				Llu_symbfact, Pslu_freeable, VInfo, CS, PS,
-				p_nextl, p_nextu, p_nsuper_loc))
+	if ( (mem_error =
+	      dnsUpSeps_symbfact (n, iam, szSep, ind_sizes1, ind_sizes2, 
+				  sizes, fstVtxSep, vtx,
+				  Llu_symbfact, Pslu_freeable, VInfo, CS, PS,
+				  p_nextl, p_nextu, p_nsuper_loc)) )
 	  return (mem_error);
 	/* set up neltsZr and neltsTotal */
 	vtx = lstVtx_blk;
@@ -3157,7 +3157,8 @@ expand_RL
 	
 	if (!computeL)
 	  marker[vtx] = markl;
-	for (ii; ii < mpnelts; ii++) {
+	//for (ii; ii < mpnelts; ii++) {  // Sherry: compiler warning
+	for (; ii < mpnelts; ii++) {
 	  elt = lsub_rcvd[ii];
 	  if (elt >= vtx) {
 	    if (marker[elt] != markl) {
@@ -3201,10 +3202,10 @@ expand_RL
   }
 
   nextl = xlsub[vtxXp_lid+1];  
-  if (mem_error = 
-      psymbfact_LUXpand_RL (iam, n, vtxXp, nextl, len_texp, 
-			    computeL, Pslu_freeable, Llu_symbfact, VInfo, PS))
-    return (mem_error);		
+  if ( (mem_error = 
+	psymbfact_LUXpand_RL (iam, n, vtxXp, nextl, len_texp, 
+			      computeL, Pslu_freeable, Llu_symbfact, VInfo, PS)) )
+      return (mem_error);
 
   return 0;
 }
@@ -3332,9 +3333,9 @@ rl_update
 
   /* test if enough memory in usubPr array */
   if (ind > Llu_symbfact->szLsubPr) {
-    if (mem_error = 
-	psymbfact_prLUXpand (iam, ind, LSUB_PR, Llu_symbfact, PS))
-      return (mem_error);
+      if ( (mem_error = 
+	    psymbfact_prLUXpand (iam, ind, LSUB_PR, Llu_symbfact, PS)) )
+	  return (mem_error);
     usubPr  = Llu_symbfact->lsubPr;
   }
   
@@ -3456,19 +3457,20 @@ rl_update
 	if (!computeL)
 	  marker[vtx] = markl;
 	PS->nops += mpnelts - ii;
-	for (ii; ii < mpnelts; ii++) {
+	//for (ii; ii < mpnelts; ii++) { // Sherry: compiler warning
+	for (; ii < mpnelts; ii++) {
 	  elt = lsub_rcvd[ii];
 	  if (elt >= vtx) {
 	    if (marker[elt] != markl) {
 	      /* add elt to structure of vtx */
 	      if (nextl >= xlsub[vtx_lid + 1]) {
-		if (mem_error = 
-		    expand_RL (computeRcvd, n, iam, lsub_rcvd, lsub_rcvd_sz,
-			       usub_rcvd, usub_rcvd_sz, vtx, i,
-			       lstVtx_upd, fstVtx_srcUpd, lstVtx_srcUpd,
-			       fstVtx_toUpd, lstVtx_toUpd, nvtcs_toUpd, computeL,
-			       &markl, marker, Pslu_freeable, Llu_symbfact, VInfo, PS))
-		    return (mem_error);
+		  if ( (mem_error = 
+			expand_RL (computeRcvd, n, iam, lsub_rcvd, lsub_rcvd_sz,
+				   usub_rcvd, usub_rcvd_sz, vtx, i,
+				   lstVtx_upd, fstVtx_srcUpd, lstVtx_srcUpd,
+				   fstVtx_toUpd, lstVtx_toUpd, nvtcs_toUpd, computeL,
+				   &markl, marker, Pslu_freeable, Llu_symbfact, VInfo, PS)) )
+		      return (mem_error);
 		if (computeL) {
 		  lsub    = Llu_symbfact->lsub;
 		  if (!computeRcvd) 
@@ -3565,20 +3567,20 @@ dnsUpSeps_symbfact
     else 
       vtx_elt = fstVtx_lvl;
     if (nextl + lstVtx_lvl - vtx_elt >= Llu_symbfact->szLsub) {
-      if (mem_error =
-	  psymbfact_LUXpandMem (iam, n, fstVtx_blk, nextl, 
-				nextl + fstVtx_lvl - vtx_elt,
-				LSUB, DNS_UPSEPS, 1,
-				Pslu_freeable, Llu_symbfact, VInfo, PS))
+	if ( (mem_error =
+	      psymbfact_LUXpandMem (iam, n, fstVtx_blk, nextl, 
+				    nextl + fstVtx_lvl - vtx_elt,
+				    LSUB, DNS_UPSEPS, 1,
+				    Pslu_freeable, Llu_symbfact, VInfo, PS)) )
 	return (mem_error);
       lsub = Llu_symbfact->lsub;
     }
     if (nextu + lstVtx_lvl - vtx_elt >= Llu_symbfact->szUsub) {
-      if (mem_error =
-	  psymbfact_LUXpandMem (iam, n, fstVtx_blk, nextu, 
-				nextu + fstVtx_lvl - vtx_elt,
-				LSUB, DNS_UPSEPS, 1,
-				Pslu_freeable, Llu_symbfact, VInfo, PS))
+	if ( (mem_error =
+	      psymbfact_LUXpandMem (iam, n, fstVtx_blk, nextu, 
+				    nextu + fstVtx_lvl - vtx_elt,
+				    LSUB, DNS_UPSEPS, 1,
+				    Pslu_freeable, Llu_symbfact, VInfo, PS)) )
 	return (mem_error);
       usub = Llu_symbfact->usub;
     }
@@ -3610,10 +3612,10 @@ dnsUpSeps_symbfact
 	if (lsub[k] >= fstVtx_blk) {
 	  lsub[nextl] = lsub[k]; nextl ++;
 	  if (nextl >= MEM_LSUB( Llu_symbfact, VInfo ))
- 	    if (mem_error =
-		psymbfact_LUXpandMem (iam, n, fstVtx_blk, nextl, 0,
-				      LSUB, DNS_UPSEPS, 1,
-				      Pslu_freeable, Llu_symbfact, VInfo, PS))
+	      if ( (mem_error =
+		    psymbfact_LUXpandMem (iam, n, fstVtx_blk, nextl, 0,
+					  LSUB, DNS_UPSEPS, 1,
+					  Pslu_freeable, Llu_symbfact, VInfo, PS)) )
 	      return (mem_error);
 	  lsub = Llu_symbfact->lsub;
 	}
@@ -3621,10 +3623,10 @@ dnsUpSeps_symbfact
 	if (usub[k] > fstVtx_blk) {
 	  usub[nextu] = usub[k]; nextu ++;
 	  if (nextu >= MEM_USUB( Llu_symbfact, VInfo ))
-	    if (mem_error =
-		psymbfact_LUXpandMem (iam, n, fstVtx_blk, nextu, 0,
-				      USUB, DNS_UPSEPS, 1,
-				      Pslu_freeable, Llu_symbfact, VInfo, PS))
+	      if ( (mem_error =
+		    psymbfact_LUXpandMem (iam, n, fstVtx_blk, nextu, 0,
+					  USUB, DNS_UPSEPS, 1,
+					  Pslu_freeable, Llu_symbfact, VInfo, PS)) )
 	      return (mem_error);
 	  usub = Llu_symbfact->usub;
 	}
@@ -3892,10 +3894,10 @@ dnsCurSep_symbfact
 	  j = x_newelts[vtx_lid_x+1] + lstVtx - vtx;
 	  if ((computeL && next+j >= MEM_LSUB(Llu_symbfact, VInfo)) ||
 	      (computeU && next+j >= MEM_USUB(Llu_symbfact, VInfo))) {
-	    if (mem_error =
-		psymbfact_LUXpandMem (iam, n, vtx, next, next + j,
-				      computeL, DNS_CURSEP, 1,
-				      Pslu_freeable, Llu_symbfact, VInfo, PS))
+	      if ( (mem_error =
+		    psymbfact_LUXpandMem (iam, n, vtx, next, next + j,
+					  computeL, DNS_CURSEP, 1,
+					  Pslu_freeable, Llu_symbfact, VInfo, PS)) )
 	      return (mem_error);
 	    if (computeL) sub = Llu_symbfact->lsub;
 	    else sub = Llu_symbfact->usub; 
@@ -4131,19 +4133,19 @@ denseSep_symbfact
   }
 
   if (VInfo->filledSep == FILLED_SEP) {
-    if (mem_error = 
-	dnsCurSep_symbfact (n, iam, ind_sizes1, ind_sizes2, sizes, fstVtxSep, 
-			    szSep, lstP - fstP, rcvd_dnsSep, p_nextl, 
-			    p_nextu, p_mark, p_nsuper_loc, marker, ndCom,
-			    Llu_symbfact, Pslu_freeable, VInfo, CS, PS))
+      if ( (mem_error = 
+	    dnsCurSep_symbfact (n, iam, ind_sizes1, ind_sizes2, sizes, fstVtxSep, 
+				szSep, lstP - fstP, rcvd_dnsSep, p_nextl, 
+				p_nextu, p_mark, p_nsuper_loc, marker, ndCom,
+				Llu_symbfact, Pslu_freeable, VInfo, CS, PS)) )
       return (mem_error);
   }
   else if (rcvd_dnsSep) 
-    if (mem_error = 
-	dnsUpSeps_symbfact (n, iam, szSep, ind_sizes1, ind_sizes2, 
-			    sizes, fstVtxSep, EMPTY,
-			    Llu_symbfact, Pslu_freeable, VInfo, CS, PS,
-			    p_nextl, p_nextu, p_nsuper_loc))
+      if ( (mem_error = 
+	    dnsUpSeps_symbfact (n, iam, szSep, ind_sizes1, ind_sizes2, 
+				sizes, fstVtxSep, EMPTY,
+				Llu_symbfact, Pslu_freeable, VInfo, CS, PS,
+				p_nextl, p_nextu, p_nsuper_loc)) )
       return (mem_error);
   return 0;
 }
@@ -4251,11 +4253,11 @@ interLvl_symbfact
     /* quick return if all upper separators are dense */
     if (VInfo->filledSep != FILLED_SEPS) {
       VInfo->filledSep = FILLED_SEPS;
-      if (mem_error = 
-	  dnsUpSeps_symbfact (n, iam, szSep, ind_sizes1, ind_sizes2, sizes, 
-			      fstVtxSep,
-			      EMPTY, Llu_symbfact, Pslu_freeable, VInfo, CS, PS,
-			      p_nextl, p_nextu, p_nsuper_loc))
+      if ( (mem_error = 
+	    dnsUpSeps_symbfact (n, iam, szSep, ind_sizes1, ind_sizes2, sizes, 
+				fstVtxSep,
+				EMPTY, Llu_symbfact, Pslu_freeable, VInfo, CS, PS,
+				p_nextl, p_nextu, p_nsuper_loc)) )
 	return (mem_error);
     }
     return 0;
@@ -4774,7 +4776,11 @@ intraLvl_symbfact
 	  MPI_Irecv (&sz_msg, 1, mpi_int_t, 
 		     MPI_ANY_SOURCE, tag_intraLvl_szMsg, 
 		     (*symb_comm), &(request[0]));  
+#if defined (_LONGINT)
 	  if (sz_msg > LONG_MAX)
+#else
+	  if (sz_msg > INT_MAX)
+#endif
 	    ABORT("ERROR in intraLvl_symbfact size to send > LONG_MAX\n");
 	}
 	MPI_Waitany (2, request, index_req, status);

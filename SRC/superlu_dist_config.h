@@ -20,5 +20,4 @@
 
 #if (XSDK_INDEX_SIZE == 64)
 #define _LONGINT 1
-
 #endif

@@ -500,9 +500,9 @@ zDestroy_LU(int_t n, gridinfo_t *grid, zLUstruct_t *LUstruct)
     for (i = 0; i < nb; ++i) 
 	if ( Llu->Lrowind_bc_ptr[i] ) {
 	    SUPERLU_FREE (Llu->Lrowind_bc_ptr[i]);
-#if 0 // Sherry: the following is not allocated with cudaHostAlloc    
+#if 0 // Sherry: the following is not allocated with gpuHostAlloc    
     //#ifdef GPU_ACC
-	    checkCuda(cudaFreeHost(Llu->Lnzval_bc_ptr[i]));
+	    checkGPU(gpuFreeHost(Llu->Lnzval_bc_ptr[i]));
 #endif
 	    SUPERLU_FREE (Llu->Lnzval_bc_ptr[i]);
 	}
@@ -940,27 +940,53 @@ int zSolveInit(superlu_dist_options_t *options, SuperMatrix *A,
  */
 void zSolveFinalize(superlu_dist_options_t *options, zSOLVEstruct_t *SOLVEstruct)
 {
-    int_t *it;
+    if ( options->SolveInitialized ) {
+        pxgstrs_finalize(SOLVEstruct->gstrs_comm);
 
-    pxgstrs_finalize(SOLVEstruct->gstrs_comm);
-
-    if ( options->RefineInitialized ) {
-        pzgsmv_finalize(SOLVEstruct->gsmv_comm);
-	options->RefineInitialized = NO;
+        if ( options->RefineInitialized ) {
+            pzgsmv_finalize(SOLVEstruct->gsmv_comm);
+	    options->RefineInitialized = NO;
+        }
+        SUPERLU_FREE(SOLVEstruct->gsmv_comm);
+        SUPERLU_FREE(SOLVEstruct->row_to_proc);
+        SUPERLU_FREE(SOLVEstruct->inv_perm_c);
+        SUPERLU_FREE(SOLVEstruct->diag_procs);
+        SUPERLU_FREE(SOLVEstruct->diag_len);
+        if ( SOLVEstruct->A_colind_gsmv )
+	    SUPERLU_FREE(SOLVEstruct->A_colind_gsmv);
+        options->SolveInitialized = NO;
     }
-    SUPERLU_FREE(SOLVEstruct->gsmv_comm);
-    SUPERLU_FREE(SOLVEstruct->row_to_proc);
-    SUPERLU_FREE(SOLVEstruct->inv_perm_c);
-    SUPERLU_FREE(SOLVEstruct->diag_procs);
-    SUPERLU_FREE(SOLVEstruct->diag_len);
-    if ( it = SOLVEstruct->A_colind_gsmv ) SUPERLU_FREE(it);
-    options->SolveInitialized = NO;
 } /* zSolveFinalize */
+
+void zDestroy_A3d_gathered_on_2d(zSOLVEstruct_t *SOLVEstruct, gridinfo3d_t *grid3d)
+{
+    /* free A2d and B2d, which are allocated only in 2D layer grid-0 */
+    NRformat_loc3d *A3d = SOLVEstruct->A3d;
+    NRformat_loc *A2d = A3d->A_nfmt;
+    if (grid3d->zscp.Iam == 0) {
+	SUPERLU_FREE( A2d->rowptr );
+	SUPERLU_FREE( A2d->colind );
+	SUPERLU_FREE( A2d->nzval );
+    }
+    SUPERLU_FREE(A3d->row_counts_int);  // free displacements and counts 
+    SUPERLU_FREE(A3d->row_disp);
+    SUPERLU_FREE(A3d->nnz_counts_int);
+    SUPERLU_FREE(A3d->nnz_disp);
+    SUPERLU_FREE(A3d->b_counts_int);
+    SUPERLU_FREE(A3d->b_disp);
+    SUPERLU_FREE(A3d->procs_to_send_list);
+    SUPERLU_FREE(A3d->send_count_list);
+    SUPERLU_FREE(A3d->procs_recv_from_list);
+    SUPERLU_FREE(A3d->recv_count_list);
+    SUPERLU_FREE( A2d );         // free 2D structure
+    SUPERLU_FREE( A3d );         // free 3D structure
+} /* zDestroy_A3d_gathered_on_2d */
+
 
 /*! \brief Check the inf-norm of the error vector
  */
 void pzinf_norm_error(int iam, int_t n, int_t nrhs, doublecomplex x[], int_t ldx,
-		      doublecomplex xtrue[], int_t ldxtrue, gridinfo_t *grid)
+		      doublecomplex xtrue[], int_t ldxtrue, MPI_Comm slucomm)
 {
     double err, xnorm, temperr, tempxnorm;
     doublecomplex *x_work, *xtrue_work;
@@ -980,8 +1006,8 @@ void pzinf_norm_error(int iam, int_t n, int_t nrhs, doublecomplex x[], int_t ldx
       /* get the golbal max err & xnrom */
       temperr = err;
       tempxnorm = xnorm;
-      MPI_Allreduce( &temperr, &err, 1, MPI_DOUBLE, MPI_MAX, grid->comm);
-      MPI_Allreduce( &tempxnorm, &xnorm, 1, MPI_DOUBLE, MPI_MAX, grid->comm);
+      MPI_Allreduce( &temperr, &err, 1, MPI_DOUBLE, MPI_MAX, slucomm);
+      MPI_Allreduce( &tempxnorm, &xnorm, 1, MPI_DOUBLE, MPI_MAX, slucomm);
 
       err = err / xnorm;
       if ( !iam ) printf("\tSol %2d: ||X-Xtrue||/||X|| = %e\n", j, err);

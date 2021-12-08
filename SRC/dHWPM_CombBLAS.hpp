@@ -73,7 +73,7 @@ dGetHWPM(SuperMatrix *A, gridinfo_t *grid, dScalePermstruct_t *ScalePermstruct)
     {
         printf("HWPM only supports square process grid. Retuning without a permutation.\n");
     }
-    combblas::SpParMat < int_t, double, combblas::SpDCCols<int_t,double> > Adcsc;
+    combblas::SpParMat < int_t, double, combblas::SpDCCols<int_t,double> > Adcsc(grid->comm);
     std::vector< std::vector < std::tuple<int_t,int_t,double> > > data(procs);
     
     /* ------------------------------------------------------------

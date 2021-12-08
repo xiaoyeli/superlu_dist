@@ -326,7 +326,7 @@ at the top-level directory.
  *           = LargeDiag_MC64: use the Duff/Koster algorithm to permute rows
  *                        of the original matrix to make the diagonal large
  *                        relative to the off-diagonal.
- *           = LargeDiag_APWM: use the parallel approximate-weight perfect
+ *           = LargeDiag_HPWM: use the parallel approximate-weight perfect
  *                        matching to permute rows of the original matrix
  *                        to make the diagonal large relative to the
  *                        off-diagonal.
@@ -408,7 +408,7 @@ at the top-level directory.
  *           of Pc*A'*A*Pc'; perm_c is not changed if the elimination tree
  *           is already in postorder.
  *
- *         o R (double*) dimension (A->nrow)
+ *         o R (double *) dimension (A->nrow)
  *           The row scale factors for A.
  *           If DiagScale = ROW or BOTH, A is multiplied on the left by
  *                          diag(R).
@@ -416,7 +416,7 @@ at the top-level directory.
  *           If options->Fact = FACTORED or SamePattern_SameRowPerm, R is
  *           an input argument; otherwise, R is an output argument.
  *
- *         o C (double*) dimension (A->ncol)
+ *         o C (double *) dimension (A->ncol)
  *           The column scale factors for A.
  *           If DiagScale = COL or BOTH, A is multiplied on the right by
  *                          diag(C).
@@ -492,7 +492,7 @@ at the top-level directory.
  *
  * info    (output) int*
  *         = 0: successful exit
- *         < 0: if info = -i, the i-th argument had an illegal value   
+ *         < 0: if info = -i, the i-th argument had an illegal value  
  *         > 0: if info = i, and i is
  *             <= A->ncol: U(i,i) is exactly zero. The factorization has
  *                been completed, but the factor U is exactly singular,
@@ -590,13 +590,13 @@ pdgssvx(superlu_dist_options_t *options, SuperMatrix *A,
     /* Test the input parameters. */
     *info = 0;
     Fact = options->Fact;
-    if ( Fact < 0 || Fact > FACTORED )
+    if ( Fact < DOFACT || Fact > FACTORED )
 	*info = -1;
-    else if ( options->RowPerm < 0 || options->RowPerm > MY_PERMR )
+    else if ( options->RowPerm < NOROWPERM || options->RowPerm > MY_PERMR )
 	*info = -1;
-    else if ( options->ColPerm < 0 || options->ColPerm > MY_PERMC )
+    else if ( options->ColPerm < NATURAL || options->ColPerm > MY_PERMC )
 	*info = -1;
-    else if ( options->IterRefine < 0 || options->IterRefine > SLU_EXTRA )
+    else if ( options->IterRefine < NOREFINE || options->IterRefine > SLU_EXTRA )
 	*info = -1;
     else if ( options->IterRefine == SLU_EXTRA ) {
 	*info = -1;
@@ -667,6 +667,7 @@ pdgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 		    ABORT("Malloc fails for R[].");
 		ScalePermstruct->R = R;
 		break;
+	    default: break;
 	}
     }
 
@@ -914,7 +915,7 @@ pdgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 		        if ( !iam ) printf("\t product of diagonal %e\n", dprod);
 	            }
 #endif
-                } else { /* use largeDiag_AWPM */
+                } else { /* use LargeDiag_HWPM */
 #ifdef HAVE_COMBBLAS
 		    d_c2cpp_GetHWPM(A, grid, ScalePermstruct);
 #else
@@ -1061,7 +1062,7 @@ pdgssvx(superlu_dist_options_t *options, SuperMatrix *A,
                    the nonzero data structures for L & U. */
 #if ( PRNTlevel>=1 )
                 if ( !iam ) {
-		    printf(".. symbfact(): relax " IFMT ", maxsuper " IFMT ", fill " IFMT "\n",
+		    printf(".. symbfact(): relax %d, maxsuper %d, fill %d\n",
 		          sp_ienv_dist(2), sp_ienv_dist(3), sp_ienv_dist(6));
 		    fflush(stdout);
 	        }
@@ -1083,10 +1084,10 @@ pdgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 		    	printf("\tNo of supers " IFMT "\n", Glu_persist->supno[n-1]+1);
 		    	printf("\tSize of G(L) " IFMT "\n", Glu_freeable->xlsub[n]);
 		    	printf("\tSize of G(U) " IFMT "\n", Glu_freeable->xusub[n]);
-		    	printf("\tint %d, short %d, float %d, double %d\n",
-			       (int) sizeof(int_t), (int) sizeof(short),
-        		       (int) sizeof(float), (int) sizeof(double));
-		    	printf("\tSYMBfact (MB):\tL\\U %.2f\ttotal %.2f\texpansions " IFMT "\n",
+		    	printf("\tint %lu, short %lu, float %lu, double %lu\n",
+			        sizeof(int_t), sizeof(short),
+        		        sizeof(float), sizeof(double));
+		    	printf("\tSYMBfact (MB):\tL\\U %.2f\ttotal %.2f\texpansions %d\n",
 			   	symb_mem_usage.for_lu*1e-6,
 			   	symb_mem_usage.total*1e-6,
 			   	symb_mem_usage.expansions);
@@ -1226,11 +1227,6 @@ pdgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 
 	MPI_Comm_rank( MPI_COMM_WORLD, &iam_g );
 
-    if (!iam_g) {
-	print_options_dist(options);
-	fflush(stdout);
-    }
-
     printf(".. Ainfo mygid %5d   mysid %5d   nnz_loc " IFMT "  sum_loc  %e lsum_loc   %e nnz " IFMT " nnzLU %ld sum %e  lsum %e  N " IFMT "\n", iam_g,iam,Astore->rowptr[Astore->m_loc],asum, lsum, nnz_tot,nnzLU,asum_tot,lsum_tot,A->ncol);
 	fflush(stdout);
 #endif
@@ -1321,7 +1317,8 @@ pdgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 		       avg * 1e-6,
 		       avg / grid->nprow / grid->npcol * 1e-6,
 		       max * 1e-6);
-		printf("**************************************************\n");
+		printf("**************************************************\n\n");
+		printf("** number of Tiny Pivots: %8d\n\n", stat->TinyPivots);
 		fflush(stdout);
             }
 	} /* end printing stats */
@@ -1585,6 +1582,7 @@ pdgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 	    case COL:
 		SUPERLU_FREE(R);
 		break;
+	    default: break;
 	}
     }
 

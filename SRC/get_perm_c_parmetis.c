@@ -122,7 +122,7 @@ get_perm_c_parmetis (SuperMatrix *A, int_t *perm_r, int_t *perm_c,
   int_t m, n, bnz, i, j;
   int_t *rowptr, *colind, *l_fstVtxSep, *l_sizes;
   int_t *b_rowptr, *b_colind;
-  int_t *dist_order;
+  int_t *dist_order = NULL;
   int  *recvcnts, *displs;
   /* first row index on each processor when the matrix is distributed
      on nprocs (vtxdist_i) or noDomains processors (vtxdist_o) */
@@ -260,7 +260,8 @@ get_perm_c_parmetis (SuperMatrix *A, int_t *perm_r, int_t *perm_c,
   if (bnz) SUPERLU_FREE (b_colind);
   SUPERLU_FREE (b_rowptr);
 
-#if 0  
+#if 0  /* The following code is not needed anymore, because parmetis
+	  now supports 64bit indexing */
   if ( iam < noDomains) {
     SUPERLU_FREE (options);
   }
@@ -283,7 +284,8 @@ get_perm_c_parmetis (SuperMatrix *A, int_t *perm_r, int_t *perm_c,
   dist_order = dist_order_int;
 #endif
 
-#endif
+#endif  /* not needed any more */
+
   
   /* Allgatherv dist_order to get perm_c */
   if (!(displs = (int *) SUPERLU_MALLOC (nprocs_i * sizeof(int))))

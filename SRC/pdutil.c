@@ -873,27 +873,53 @@ int dSolveInit(superlu_dist_options_t *options, SuperMatrix *A,
  */
 void dSolveFinalize(superlu_dist_options_t *options, dSOLVEstruct_t *SOLVEstruct)
 {
-    int_t *it;
+    if ( options->SolveInitialized ) {
+        pxgstrs_finalize(SOLVEstruct->gstrs_comm);
 
-    pxgstrs_finalize(SOLVEstruct->gstrs_comm);
-
-    if ( options->RefineInitialized ) {
-        pdgsmv_finalize(SOLVEstruct->gsmv_comm);
-	options->RefineInitialized = NO;
+        if ( options->RefineInitialized ) {
+            pdgsmv_finalize(SOLVEstruct->gsmv_comm);
+	    options->RefineInitialized = NO;
+        }
+        SUPERLU_FREE(SOLVEstruct->gsmv_comm);
+        SUPERLU_FREE(SOLVEstruct->row_to_proc);
+        SUPERLU_FREE(SOLVEstruct->inv_perm_c);
+        SUPERLU_FREE(SOLVEstruct->diag_procs);
+        SUPERLU_FREE(SOLVEstruct->diag_len);
+        if ( SOLVEstruct->A_colind_gsmv )
+	    SUPERLU_FREE(SOLVEstruct->A_colind_gsmv);
+        options->SolveInitialized = NO;
     }
-    SUPERLU_FREE(SOLVEstruct->gsmv_comm);
-    SUPERLU_FREE(SOLVEstruct->row_to_proc);
-    SUPERLU_FREE(SOLVEstruct->inv_perm_c);
-    SUPERLU_FREE(SOLVEstruct->diag_procs);
-    SUPERLU_FREE(SOLVEstruct->diag_len);
-    if ( it = SOLVEstruct->A_colind_gsmv ) SUPERLU_FREE(it);
-    options->SolveInitialized = NO;
 } /* dSolveFinalize */
+
+void dDestroy_A3d_gathered_on_2d(dSOLVEstruct_t *SOLVEstruct, gridinfo3d_t *grid3d)
+{
+    /* free A2d and B2d, which are allocated only in 2D layer grid-0 */
+    NRformat_loc3d *A3d = SOLVEstruct->A3d;
+    NRformat_loc *A2d = A3d->A_nfmt;
+    if (grid3d->zscp.Iam == 0) {
+	SUPERLU_FREE( A2d->rowptr );
+	SUPERLU_FREE( A2d->colind );
+	SUPERLU_FREE( A2d->nzval );
+    }
+    SUPERLU_FREE(A3d->row_counts_int);  // free displacements and counts 
+    SUPERLU_FREE(A3d->row_disp);
+    SUPERLU_FREE(A3d->nnz_counts_int);
+    SUPERLU_FREE(A3d->nnz_disp);
+    SUPERLU_FREE(A3d->b_counts_int);
+    SUPERLU_FREE(A3d->b_disp);
+    SUPERLU_FREE(A3d->procs_to_send_list);
+    SUPERLU_FREE(A3d->send_count_list);
+    SUPERLU_FREE(A3d->procs_recv_from_list);
+    SUPERLU_FREE(A3d->recv_count_list);
+    SUPERLU_FREE( A2d );         // free 2D structure
+    SUPERLU_FREE( A3d );         // free 3D structure
+} /* dDestroy_A3d_gathered_on_2d */
+
 
 /*! \brief Check the inf-norm of the error vector
  */
 void pdinf_norm_error(int iam, int_t n, int_t nrhs, double x[], int_t ldx,
-		      double xtrue[], int_t ldxtrue, gridinfo_t *grid)
+		      double xtrue[], int_t ldxtrue, MPI_Comm slucomm)
 {
     double err, xnorm, temperr, tempxnorm;
     double *x_work, *xtrue_work;
@@ -911,8 +937,8 @@ void pdinf_norm_error(int iam, int_t n, int_t nrhs, double x[], int_t ldx,
       /* get the golbal max err & xnrom */
       temperr = err;
       tempxnorm = xnorm;
-      MPI_Allreduce( &temperr, &err, 1, MPI_DOUBLE, MPI_MAX, grid->comm);
-      MPI_Allreduce( &tempxnorm, &xnorm, 1, MPI_DOUBLE, MPI_MAX, grid->comm);
+      MPI_Allreduce( &temperr, &err, 1, MPI_DOUBLE, MPI_MAX, slucomm);
+      MPI_Allreduce( &tempxnorm, &xnorm, 1, MPI_DOUBLE, MPI_MAX, slucomm);
 
       err = err / xnorm;
       if ( !iam ) printf("\tSol %2d: ||X-Xtrue||/||X|| = %e\n", j, err);

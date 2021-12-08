@@ -170,8 +170,6 @@ double *doubleCalloc_dist(int_t n)
     return (buf);
 }
 
-#if 0  //////////////// Sherry
-
 /***************************************
  * The following are from 3D code.
  ***************************************/
@@ -286,4 +284,3 @@ void d3D_printMemUse( trf3Dpartition_t*  trf3Dpartition,  dLUstruct_t *LUstruct,
     }
 }
 
-#endif

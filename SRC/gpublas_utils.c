@@ -72,11 +72,14 @@ const char* gpublasGetErrorString(gpublasStatus_t status)
         case GPUBLAS_STATUS_MAPPING_ERROR: return "GPUBLAS_STATUS_MAPPING_ERROR";
         case GPUBLAS_STATUS_EXECUTION_FAILED: return "GPUBLAS_STATUS_EXECUTION_FAILED"; 
         case GPUBLAS_STATUS_INTERNAL_ERROR: return "GPUBLAS_STATUS_INTERNAL_ERROR"; 
+        case GPUBLAS_STATUS_LICENSE_ERROR: return "GPUBLAS_STATUS_LICENSE_ERROR"; 
+        case GPUBLAS_STATUS_NOT_SUPPORTED: return "GPUBLAS_STATUS_NOT_SUPPORTED"; 
     }
     return "unknown error";
 }
 
-inline
+/*error reporting functions */
+//inline
 gpuError_t checkGPU(gpuError_t result)
 {
 #if defined(DEBUG) || defined(_DEBUG)

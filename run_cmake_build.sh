@@ -7,6 +7,8 @@ then
     
 elif [ "$NERSC_HOST" == "cori" ]
 then
+#    rm -fr 64-build; mkdir 64-build; cd 64-build;
+#    export PARMETIS_ROOT=~/Cori/lib/parmetis-4.0.3-64
     rm -fr cori-build; mkdir cori-build; cd cori-build;
     export PARMETIS_ROOT=~/Cori/lib/parmetis-4.0.3
 #    export PARMETIS_BUILD_DIR=${PARMETIS_ROOT}/shared-build
@@ -55,7 +57,10 @@ then
     -DCMAKE_C_FLAGS="-std=c99 -O3 -g -DPRNTlevel=0 -DDEBUGlevel=0" \
     -DCMAKE_C_COMPILER=mpicc \
     -DCMAKE_CXX_COMPILER=mpicxx \
+    -DCMAKE_CXX_FLAGS="-std=c++11" \
     -DCMAKE_Fortran_COMPILER=mpif90 \
+    -DCMAKE_LINKER=mpicxx \
+    -Denable_openmp=ON \
     -DTPL_ENABLE_INTERNAL_BLASLIB=OFF \
     -DTPL_ENABLE_COMBBLASLIB=OFF \
     -DTPL_ENABLE_LAPACKLIB=OFF \

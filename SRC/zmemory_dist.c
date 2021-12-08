@@ -169,8 +169,6 @@ doublecomplex *doublecomplexCalloc_dist(int_t n)
     return (buf);
 }
 
-#if 0 ///////// Sherry
-
 /***************************************
  * The following are from 3D code.
  ***************************************/
@@ -285,4 +283,3 @@ void z3D_printMemUse( trf3Dpartition_t*  trf3Dpartition,  zLUstruct_t *LUstruct,
     }
 }
 
-#endif

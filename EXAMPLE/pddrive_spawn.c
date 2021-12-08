@@ -82,7 +82,12 @@ int main(int argc, char *argv[])
     //MPI_Init( &argc, &argv );
     MPI_Init_thread( &argc, &argv, MPI_THREAD_MULTIPLE, &omp_mpi_level); 
 	MPI_Comm_get_parent(&parent);   	
-	
+#ifdef GPU_ACC
+    int rank, devs;
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    cudaGetDeviceCount(&devs);
+    cudaSetDevice(rank % devs);
+#endif	
 	
 
 #if ( VAMPIR>=1 )
@@ -151,7 +156,7 @@ int main(int argc, char *argv[])
 	
     /* Bail out if I do not belong in the grid. */
     iam = grid.iam;
-    if ( iam >= nprow * npcol )	goto out;
+    if ( iam == -1 )	goto out;
     if ( !iam ) {
 	int v_major, v_minor, v_bugfix;
 #ifdef __INTEL_COMPILER
@@ -247,7 +252,7 @@ int main(int argc, char *argv[])
 
     /* Check the accuracy of the solution. */
     pdinf_norm_error(iam, ((NRformat_loc *)A.Store)->m_loc,
-		     nrhs, b, ldb, xtrue, ldx, &grid);
+		     nrhs, b, ldb, xtrue, ldx, grid.comm);
 
     PStatPrint(&options, &stat, &grid);        /* Print the statistics. */
 
@@ -265,7 +270,7 @@ int main(int argc, char *argv[])
 		result[1] = total * 1e-6;     
 		if (!iam) {
 			printf("returning data:\n"
-		   "    Factor time :        %8.2f |  Total MEM : %8.2f\n",
+		   "    Factor time :        %8.2f\n    Total MEM : %8.2f\n",
 		   stat.utime[FACT], total * 1e-6);
 			printf("**************************************************\n");
 			fflush(stdout);
@@ -302,6 +307,7 @@ int main(int argc, char *argv[])
        RELEASE THE SUPERLU PROCESS GRID.
        ------------------------------------------------------------*/
 out:
+if(parent!=MPI_COMM_NULL)
 	MPI_Reduce(result, MPI_BOTTOM, 2, MPI_FLOAT,MPI_MAX, 0, parent);
     superlu_gridexit(&grid);
 
@@ -309,7 +315,7 @@ out:
        TERMINATES THE MPI EXECUTION ENVIRONMENT.
        ------------------------------------------------------------*/
 	   
-	
+	if(parent!=MPI_COMM_NULL)
 	MPI_Comm_disconnect(&parent);
     MPI_Finalize();
 

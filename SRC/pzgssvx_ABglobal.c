@@ -587,6 +587,7 @@ pzgssvx_ABglobal(superlu_dist_options_t *options, SuperMatrix *A,
 		    ABORT("Malloc fails for R[].");
 		ScalePermstruct->R = R;
 		break;
+	    default: break;
 	}
     }
 
@@ -875,7 +876,7 @@ pzgssvx_ABglobal(superlu_dist_options_t *options, SuperMatrix *A,
 	if ( Fact != SamePattern_SameRowPerm ) {
 #if ( PRNTlevel>=1 )
 	    if ( !iam )
-		printf(".. symbfact(): relax " IFMT ", maxsuper " IFMT ", fill " IFMT "\n",
+		printf(".. symbfact(): relax %d, maxsuper %d, fill %d\n",
 		       sp_ienv_dist(2), sp_ienv_dist(3), sp_ienv_dist(6));
 #endif
 	    t = SuperLU_timer_();
@@ -898,7 +899,7 @@ pzgssvx_ABglobal(superlu_dist_options_t *options, SuperMatrix *A,
 		    printf("\tint %d, short %d, float %d, double %d\n",
 			   (int) sizeof(int_t), (int) sizeof(short),
  			   (int) sizeof(float), (int) sizeof(double));
-		    printf("\tSYMBfact (MB):\tL\\U %.2f\ttotal %.2f\texpansions " IFMT "\n",
+		    printf("\tSYMBfact (MB):\tL\\U %.2f\ttotal %.2f\texpansions %d\n",
 			   symb_mem_usage.for_lu*1e-6,
 			   symb_mem_usage.total*1e-6,
 			   symb_mem_usage.expansions);
@@ -1097,6 +1098,7 @@ pzgssvx_ABglobal(superlu_dist_options_t *options, SuperMatrix *A,
 	    case COL:
 		SUPERLU_FREE(R);
 		break;
+	    default:  break;
 	}
     }
     if ( !factored || (factored && options->IterRefine) )

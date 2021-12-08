@@ -26,6 +26,12 @@
 #
 #######################################################################
 include ../make.inc
+
+# FACT3D = 	scatter.o
+#	pdgstrs_vecpar.o ancFactorization.o
+
+#  pddrive_params.o
+
 #
 # Precision independent routines
 #
@@ -35,11 +41,9 @@ ALLAUX 	= sp_ienv.o etree.o sp_colorder.o get_perm_c.o \
 	  psymbfact.o psymbfact_util.o get_perm_c_parmetis.o mc64ad_dist.o \
 	  xerr_dist.o smach_dist.o dmach_dist.o \
 	  superlu_dist_version.o TreeInterface.o
-
-ifeq ($(HAVE_CUDA),TRUE)
-ALLAUX += gpublas_utils.o pdgstrs_lsum_cuda.o pdgstrs_lsum_cuda_dlink.o
-endif
-
+# Following are from 3D code
+ALLAUX += superlu_grid3d.o supernodal_etree.o supernodalForest.o \
+	trfAux.o communication_aux.o treeFactorization.o sec_structs.o
 #
 # Routines literally taken from SuperLU, but renamed with suffix _dist
 #
@@ -58,7 +62,12 @@ DPLUSRC = pdgssvx.o pdgssvx_ABglobal.o \
 	  pdgstrf.o dstatic_schedule.o pdgstrf2.o pdGetDiagU.o \
 	  pdgstrs.o pdgstrs1.o pdgstrs_lsum.o pdgstrs_Bglobal.o \
 	  pdgsrfs.o pdgsmv.o pdgsrfs_ABXglobal.o pdgsmv_AXglobal.o \
-	  dreadtriple_noheader.o
+	  dreadtriple_noheader.o dsuperlu_blas.o
+# from 3D code
+DPLUSRC += pdgssvx3d.o pdgstrf3d.o dtreeFactorization.o dscatter3d.o \
+	dgather.o pd3dcomm.o dtrfAux.o dcommunication_aux.o dtrfCommWrapper.o \
+	dnrformat_loc3d.o dtreeFactorizationGPU.o ##$(FACT3D)
+
 #
 # Routines for double complex parallel SuperLU
 ZPLUSRC = pzgssvx.o pzgssvx_ABglobal.o \
@@ -68,7 +77,17 @@ ZPLUSRC = pzgssvx.o pzgssvx_ABglobal.o \
 	  pzgstrf.o zstatic_schedule.o pzgstrf2.o pzGetDiagU.o \
 	  pzgstrs.o pzgstrs1.o pzgstrs_lsum.o pzgstrs_Bglobal.o \
 	  pzgsrfs.o pzgsmv.o pzgsrfs_ABXglobal.o pzgsmv_AXglobal.o \
-	  zreadtriple_noheader.o
+	  zreadtriple_noheader.o zsuperlu_blas.o
+# from 3D code
+ZPLUSRC += pzgssvx3d.o pzgstrf3d.o ztreeFactorization.o zscatter3d.o \
+	zgather.o pz3dcomm.o ztrfAux.o zcommunication_aux.o ztrfCommWrapper.o \
+	znrformat_loc3d.o ztreeFactorizationGPU.o ##$(FACT3D)
+
+ifeq ($(HAVE_CUDA),TRUE)
+ALLAUX += cublas_utils.o superlu_gpu_utils.o pdgstrs_lsum_cuda.o
+DPLUSRC += dsuperlu_gpu.o
+ZPLUSRC += zsuperlu_gpu.o
+endif
 
 ifeq ($(HAVE_COMBBLAS),TRUE)
 DPLUSRC += d_c2cpp_GetHWPM.o
@@ -124,13 +143,9 @@ pzgstrf.o: zscatter.c zlook_ahead_update.c zSchCompUdt-2Ddynamic.c pzgstrf.c
 .c.o:
 	$(CC) $(CFLAGS) $(CDEFS) $(BLASDEF) $(INCLUDEDIR) -c $< $(VERBOSE)
 
-pdgstrs_lsum_cuda.o: pdgstrs_lsum_cuda.cu
-	$(NVCC) $(CUDACFLAGS) -dc $(CDEFS) $(BLASDEF) $(INCLUDEDIR) -c pdgstrs_lsum_cuda.cu $(VERBOSE)
+.cu.o:
+	$(NVCC) $(NVCCFLAGS) $(CDEFS) $(BLASDEF) -I$(INCLUDEDIR) -c $< $(VERBOSE)
 
-pdgstrs_lsum_cuda_dlink.o:	
-	$(NVCC) $(CUDACFLAGS) -dlink $(CUDALIBS) -o pdgstrs_lsum_cuda_dlink.o pdgstrs_lsum_cuda.o $(VERBOSE)	
-	
-	
 .cpp.o:
 	$(CXX) $(CXXFLAGS) $(CPPFLAGS) $(CDEFS) $(BLASDEF) $(INCLUDEDIR) -c $< $(VERBOSE)
 

@@ -18,6 +18,7 @@ dread_binary(FILE *fp, int_t *m, int_t *n, int_t *nnz,
     nnz_read = fread(*nzval, dsize, (size_t) (*nnz), fp);
     printf("# of doubles fread: %d\n", nnz_read);
     fclose(fp);
+    return 0;
 }
 
 int
@@ -27,7 +28,7 @@ dwrite_binary(int_t n, int_t nnz,
       FILE  *fp1;
       int nnz_written;
       size_t isize = sizeof(int_t), dsize = sizeof(double);
-      fp1 = fopen("/scratch/scratchdirs/xiaoye/temp.bin", "wb");
+      fp1 = fopen("matrix.bin", "wb");
       fwrite(&n, isize, 1, fp1);
       fwrite(&nnz, isize, 1, fp1);
       fwrite(colptr, isize, n+1, fp1);
@@ -37,4 +38,5 @@ dwrite_binary(int_t n, int_t nnz,
       printf("dump binary file ... # of double fwrite: %d\n", nnz_written);
       assert(nnz_written==nnz);
       fclose(fp1);
+      return 0;
 }

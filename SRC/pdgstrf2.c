@@ -213,9 +213,8 @@ pdgstrf2_trsm
         for (j = 0; j < jlst - jfst; ++j) {  /* for each column in panel */
             /* Diagonal pivot */
             i = luptr;
-            /* Not to replace zero pivot.  */
-            // if (options->ReplaceTinyPivot == YES && lusup[i] != 0.0 )  {
-            if (options->ReplaceTinyPivot == YES)  {
+            /* May replace zero pivot.  */
+            if (options->ReplaceTinyPivot == YES )  {
                 if (fabs (lusup[i]) < thresh) {  /* Diagonal */
 
 #if ( PRNTlevel>=2 )
@@ -363,44 +362,35 @@ pdgstrf2_trsm
 }  /* PDGSTRF2_trsm */
 
 
-#if 0 /* COMMENT OUT 3D CODE FOR NOW */
 
 /*****************************************************************************
  * The following functions are for the new pdgstrf2_dtrsm in the 3D code.
  *****************************************************************************/
 static
-int_t LpanelUpdate(int_t off0,  int_t nsupc, double* ublk_ptr, int_t ld_ujrow,
-                   double* lusup, int_t nsupr, SCT_t* SCT)
+int_t LpanelUpdate(int off0,  int nsupc, double* ublk_ptr, int ld_ujrow,
+                   double* lusup, int nsupr, SCT_t* SCT)
 {
     int_t l = nsupr - off0;
     double alpha = 1.0;
-    unsigned long long t1 = _rdtsc();
+    double t1 = SuperLU_timer_();
 
 #define GT  32
+#ifdef _OPENMP
 #pragma omp parallel for
+#endif
     for (int i = 0; i < CEILING(l, GT); ++i)
     {
         int_t off = i * GT;
-        int_t len = SUPERLU_MIN(GT, l - i * GT);
-#if 1
-  #if defined (USE_VENDOR_BLAS)
-        dtrsm_ ("R", "U", "N", "N", &len, &nsupc, &alpha,
-		ublk_ptr, &ld_ujrow, &lusup[off0 + off], &nsupr,
-		1, 1, 1, 1);
-  #else
-        dtrsm_ ("R", "U", "N", "N", &len, &nsupc, &alpha,
-		ublk_ptr, &ld_ujrow, &lusup[off0 + off], &nsupr);
-  #endif
-#else
-        cblas_dtrsm (CblasColMajor, CblasRight, CblasUpper, CblasNoTrans, CblasNonUnit,
-                     len, nsupc, alpha, ublk_ptr, ld_ujrow, &lusup[off0 + off], nsupr);
-#endif
+        int len = SUPERLU_MIN(GT, l - i * GT);
+	
+        superlu_dtrsm("R", "U", "N", "N", len, nsupc, alpha,
+		      ublk_ptr, ld_ujrow, &lusup[off0 + off], nsupr);
 
     } /* for i = ... */
 
-    t1 = _rdtsc() - t1;
+    t1 = SuperLU_timer_() - t1;
 
-    SCT->trf2_flops += (double) l * (double)nsupc * (double)nsupc;
+    SCT->trf2_flops += (double) l * (double) nsupc * (double)nsupc;
     SCT->trf2_time += t1;
     SCT->L_PanelUpdate_tl += t1;
     return 0;
@@ -408,13 +398,30 @@ int_t LpanelUpdate(int_t off0,  int_t nsupc, double* ublk_ptr, int_t ld_ujrow,
 
 #pragma GCC push_options
 #pragma GCC optimize ("O0")
-/*factorizes the diagonal block; called from process that owns the (k,k) block*/
+/************************************************************************/
+/*! \brief
+ *
+ * <pre>
+ * Purpose
+ * =======
+ *   Factorize the diagonal block; called from process that owns the (k,k) block
+ *
+ * Arguments
+ * =========
+ * 
+ * info   (output) int*
+ *        = 0: successful exit
+ *        > 0: if info = i, U(i,i) is exactly zero. The factorization has
+ *             been completed, but the factor U is exactly singular,
+ *             and division by zero will occur if it is used to solve a
+ *             system of equations.
+ */
 void Local_Dgstrf2(superlu_dist_options_t *options, int_t k, double thresh,
                    double *BlockUFactor, /*factored U is overwritten here*/
                    Glu_persist_t *Glu_persist, gridinfo_t *grid, dLocalLU_t *Llu,
                    SuperLUStat_t *stat, int *info, SCT_t* SCT)
 {
-    //unsigned long long t1 = _rdtsc();
+    //double t1 = SuperLU_timer_();
     int_t *xsup = Glu_persist->xsup;
     double alpha = -1, zero = 0.0;
 
@@ -424,8 +431,8 @@ void Local_Dgstrf2(superlu_dist_options_t *options, int_t k, double thresh,
     int_t jfst = FstBlockC (k);
     int_t jlst = FstBlockC (k + 1);
     double *lusup = Llu->Lnzval_bc_ptr[lk];
-    int_t nsupc = SuperSize (k);
-    int_t nsupr;
+    int nsupc = SuperSize (k);
+    int nsupr;
     if (Llu->Lrowind_bc_ptr[lk])
         nsupr = Llu->Lrowind_bc_ptr[lk][1];
     else
@@ -433,18 +440,19 @@ void Local_Dgstrf2(superlu_dist_options_t *options, int_t k, double thresh,
     double *ublk_ptr = BlockUFactor;
     double *ujrow = BlockUFactor;
     int_t luptr = 0;                  /* Point_t to the diagonal entries. */
-    int_t cols_left = nsupc;          /* supernode size */
+    int cols_left = nsupc;          /* supernode size */
     int_t u_diag_cnt = 0;
     int_t ld_ujrow = nsupc;       /* leading dimension of ujrow */
-    int_t incx = 1;
-    int_t incy = ld_ujrow;
+    int incx = 1;
+    int incy = ld_ujrow;
 
     for (int_t j = 0; j < jlst - jfst; ++j)   /* for each column in panel */
     {
         /* Diagonal pivot */
         int_t i = luptr;
-        /* Not to replace zero pivot.  */
-        if (options->ReplaceTinyPivot == YES && lusup[i] != 0.0)
+        /* Allow to replace zero pivot.  */
+        //if (options->ReplaceTinyPivot == YES && lusup[i] != 0.0)
+        if (options->ReplaceTinyPivot == YES)
         {
             if (fabs (lusup[i]) < thresh) {  /* Diagonal */
 
@@ -485,17 +493,11 @@ void Local_Dgstrf2(superlu_dist_options_t *options, int_t k, double thresh,
         if (--cols_left)
         {
             /*following must be int*/
-            int_t l = nsupc - j - 1;
+            int l = nsupc - j - 1;
 
 	    /* Rank-1 update */
-#if 1
-	    dger_ (&l, &cols_left, &alpha, &lusup[luptr + 1], &incx,
-		   &ujrow[ld_ujrow], &incy, &lusup[luptr + nsupr + 1], &nsupr);
-#else
-            cblas_dger (CblasColMajor, l, cols_left, alpha, &lusup[luptr + 1], incx,
-                        &ujrow[ld_ujrow], incy, &lusup[luptr + nsupr + 1],
-                        nsupr);
-#endif
+            superlu_dger(l, cols_left, alpha, &lusup[luptr + 1], incx,
+                         &ujrow[ld_ujrow], incy, &lusup[luptr + nsupr + 1], nsupr);
             stat->ops[FACT] += 2 * l * cols_left;
         }
 
@@ -506,8 +508,8 @@ void Local_Dgstrf2(superlu_dist_options_t *options, int_t k, double thresh,
 
 
     //int_t thread_id = omp_get_thread_num();
-    // SCT->Local_Dgstrf2_Thread_tl[thread_id * CACHE_LINE_SIZE] += (double) ( _rdtsc() - t1);
-}
+    // SCT->Local_Dgstrf2_Thread_tl[thread_id * CACHE_LINE_SIZE] += (double) ( SuperLU_timer_() - t1);
+} /* end Local_Dgstrf2 */
 
 #pragma GCC pop_options
 /************************************************************************/
@@ -712,7 +714,7 @@ int_t dTrs2_ScatterU(int_t iukp, int_t rukp, int_t klst,
 
 int_t dTrs2_GatherTrsmScatter(int_t klst, int_t iukp, int_t rukp,
 			      int_t *usub, double *uval, double *tempv,
-			      int_t knsupc, int_t nsupr, double *lusup,
+			      int_t knsupc, int nsupr, double *lusup,
 			      Glu_persist_t *Glu_persist)    /*glupersist for xsup for supersize*/
 {
     double alpha = 1.0;
@@ -725,34 +727,22 @@ int_t dTrs2_GatherTrsmScatter(int_t klst, int_t iukp, int_t rukp,
 
     // printf("klst inside task%d\n", );
     /*find ldu */
-    int_t ldu = 0;
+    int ldu = 0;
     for (int_t jj = iukp; jj < iukp + nsupc; ++jj)
     {
         ldu = SUPERLU_MAX( klst - usub[jj], ldu) ;
     }
 
     /*pack U block into a dense Block*/
-    int_t ncols = dTrs2_GatherU(iukp, rukp, klst, nsupc, ldu, usub,
+    int ncols = dTrs2_GatherU(iukp, rukp, klst, nsupc, ldu, usub,
     	                           uval, tempv);
 
     /*now call dtrsm on packed dense block*/
     int_t luptr = (knsupc - ldu) * (nsupr + 1);
     // if(ldu>nsupr) printf("nsupr %d ldu %d\n",nsupr,ldu );
-
-#if 1
-  #if defined (USE_VENDOR_BLAS)
-     dtrsm_ ("L", "L", "N", "U", &ldu, &ncols, &alpha,
-	     &lusup[luptr], &nsupr, tempv, &ldu,
-	     1, 1, 1, 1);
-  #else
-     dtrsm_ ("L", "L", "N", "U", &ldu, &ncols, &alpha,
-	     &lusup[luptr], &nsupr, tempv, &ldu);
-  #endif
-#else
-
-    cblas_dtrsm (CblasColMajor, CblasLeft, CblasLower, CblasNoTrans, CblasUnit,
-                 ldu, ncols, alpha, &lusup[luptr], nsupr, tempv, ldu);
-#endif
+    
+    superlu_dtrsm("L", "L", "N", "U", ldu, ncols, alpha,
+		  &lusup[luptr], nsupr, tempv, ldu);
 
     /*now scatter the output into sparse U block*/
     dTrs2_ScatterU(iukp, rukp, klst, nsupc, ldu, usub, uval, tempv);
@@ -760,10 +750,9 @@ int_t dTrs2_GatherTrsmScatter(int_t klst, int_t iukp, int_t rukp,
     return 0;
 }
 
-#endif /* END 3D CODE */
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 
-#if 1 
+#if 1
 
 /*****************************************************************************
  * The following pdgstrf2_omp is improved for KNL, since Version 5.2.0.
@@ -845,8 +834,10 @@ void pdgstrs2_omp
 
     // Sherry: this version is more NUMA friendly compared to pdgstrf2_v2.c
     // https://stackoverflow.com/questions/13065943/task-based-programming-pragma-omp-task-versus-pragma-omp-parallel-for
+#ifdef _OPENMP
 #pragma omp parallel for schedule(static) default(shared) \
     private(b,j,iukp,rukp,segsize)
+#endif
     /* Loop through all the blocks in the row. */
     for (b = 0; b < nb; ++b) {
 #ifdef USE_Ublock_info
@@ -889,7 +880,9 @@ void pdgstrs2_omp
 #endif
 	    } /* end if segsize > 0 */
 	} /* end for j in parallel ... */
+#ifdef _OPENMP    
 /* #pragma omp taskwait */
+#endif
     }  /* end for b ... */
 
 #ifndef USE_Ublock_info
@@ -912,7 +905,7 @@ void pdgstrs2_omp(int_t k0, int_t k, int_t* Lsub_buf,
 		  gridinfo_t *grid, dLocalLU_t *Llu, SuperLUStat_t *stat,
 		  Ublock_info_t *Ublock_info, double *bigV, int_t ldt, SCT_t *SCT)
 {
-    unsigned long long t1 = _rdtsc();
+    double t1 = SuperLU_timer_();
     int_t *xsup = Glu_persist->xsup;
     /* Quick return. */
     int_t lk = LBi (k, grid);         /* Local block number */
@@ -933,20 +926,22 @@ void pdgstrs2_omp(int_t k0, int_t k, int_t* Lsub_buf,
     Trs2_InitUbloc_info(klst, nb, Ublock_info, usub, Glu_persist, stat );
 
     /* Loop through all the row blocks. */
+#ifdef _OPENMP    
 #pragma omp parallel for schedule(dynamic,2)
+#endif
     for (int_t b = 0; b < nb; ++b)
     {
 #ifdef _OPENMP    
-        int_t thread_id = omp_get_thread_num();
+        int thread_id = omp_get_thread_num();
 #else	
-        int_t thread_id = 0;
+        int thread_id = 0;
 #endif	
         double *tempv = bigV +  thread_id * ldt * ldt;
         dTrs2_GatherTrsmScatter(klst, Ublock_info[b].iukp, Ublock_info[b].rukp,
 				usub, uval, tempv, knsupc, nsupr, lusup, Glu_persist);
     } /* for b ... */
 
-    SCT->PDGSTRS2_tl += (double) ( _rdtsc() - t1);
+    SCT->PDGSTRS2_tl += (double) ( SuperLU_timer_() - t1);
 } /* pdgstrs2_omp new version from Piyush */
 
-#endif
+#endif /* there are 2 versions of pdgstrs2_omp */
