@@ -14,11 +14,7 @@
 
 //#define GPU_DEBUG
 
-#include "mpi.h"
-// #include "sec_structs.h"
-#include <ctime>
-#include <cublas_v2.h>
-#include <cuda_runtime.h>
+#include "superlu_defs.h"
 
 #undef Reduce
 
@@ -552,9 +548,9 @@ int zSchurCompUpdate_GPU(
         doublecomplex alpha = {1.0, 0.0}, beta = {0.0, 0.0};
 
         /* The following are used in gpublasZgemm() call */
-        cuDoubleComplex *cu_alpha = (cuDoubleComplex*) &alpha;
-        cuDoubleComplex *cu_beta = (cuDoubleComplex*) &beta;
-        cuDoubleComplex *cu_A, *cu_B, *cu_C; /* C <- A*B */
+        hipblasDoubleComplex *cu_alpha = (hipblasDoubleComplex*) &alpha;
+        hipblasDoubleComplex *cu_beta = (hipblasDoubleComplex*) &beta;
+        hipblasDoubleComplex *cu_A, *cu_B, *cu_C; /* C <- A*B */
 
 	int_t ii_st  = 0;
 	int_t ii_end = 0;
@@ -653,9 +649,9 @@ int zSchurCompUpdate_GPU(
 		    assert(nrows * ncols <= buffer_size);
 		    gpublasSetStream(gpublas_handle0, FunCallStream);
 		    gpuEventRecord(A_gpu->GemmStart[k0], FunCallStream);
-		    cu_A = (cuDoubleComplex*) &A_gpu->scubufs[streamId].Remain_L_buff[(knsupc - ldu) * Rnbrow + st_row];
-		    cu_B = (cuDoubleComplex*) &A_gpu->scubufs[streamId].bigU[st_col * ldu];
-		    cu_C = (cuDoubleComplex*) A_gpu->scubufs[streamId].bigV;
+		    cu_A = (hipblasDoubleComplex*) &A_gpu->scubufs[streamId].Remain_L_buff[(knsupc - ldu) * Rnbrow + st_row];
+		    cu_B = (hipblasDoubleComplex*) &A_gpu->scubufs[streamId].bigU[st_col * ldu];
+		    cu_C = (hipblasDoubleComplex*) A_gpu->scubufs[streamId].bigV;
 		    gpublasZgemm(gpublas_handle0, GPUBLAS_OP_N, GPUBLAS_OP_N,
 			            nrows, ncols, ldu, cu_alpha,
 			            cu_A, Rnbrow, cu_B, ldu, cu_beta,

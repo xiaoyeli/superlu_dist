@@ -259,33 +259,28 @@ if (TPL_ENABLE_HIPLIB)
   set_source_files_properties(
     ${MyFiles}
     PROPERTIES HIP_SOURCE_PROPERTY_FORMAT 1)
-    
-  hip_add_library(superlu_dist "pdgstrs_lsum_cuda.hip.cpp")
-  hip_add_library(superlu_dist "superlu_gpu_utils.hip.cpp")
-  hip_add_library(superlu_dist "dsuperlu_gpu.hip.cpp")
+
+  set(hipsources
+    pdgstrs_lsum_cuda.hip.cpp
+    superlu_gpu_utils.hip.cpp
+    dsuperlu_gpu.hip.cpp
+  )
   if(enable_single)
-    hip_add_library(superlu_dist "ssuperlu_gpu.hip.cpp")
+  list(APPEND hipsources ssuperlu_gpu.hip.cpp)
   endif()
   if(enable_complex16)
-    hip_add_library(superlu_dist "zsuperlu_gpu.hip.cpp")
+  list(APPEND hipsources zsuperlu_gpu.hip.cpp)
   endif()
+  hip_add_library(superlu_dist ${hipsources})
+  if (BUILD_SHARED_LIBS AND BUILD_STATIC_LIBS)
+    hip_add_library(superlu_dist-static STATIC  ${hipsources})
+  endif()
+
 else()
   add_library(superlu_dist "")
-endif()
-    
-if (BUILD_SHARED_LIBS AND BUILD_STATIC_LIBS)
-if (TPL_ENABLE_HIPLIB)
-  hip_add_library(superlu_dist-static STATIC "pdgstrs_lsum_cuda.hip.cpp")
-  hip_add_library(superlu_dist-static STATIC "dsuperlu_gpu.hip.cpp")
-  if(enable_single)
-    hip_add_library(superlu_dist-static STATIC "ssuperlu_gpu.hip.cpp")
+  if (BUILD_SHARED_LIBS AND BUILD_STATIC_LIBS)
+    add_library(superlu_dist-static STATIC "")
   endif()
-  if(enable_complex16)
-    hip_add_library(superlu_dist-static STATIC "zsuperlu_gpu.hip.cpp")
-  endif()  
-else()
-  add_library(superlu_dist-static STATIC "")
-endif()
 endif()
 
 

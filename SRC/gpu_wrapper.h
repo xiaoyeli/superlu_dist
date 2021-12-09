@@ -122,7 +122,7 @@
 #define gpuOccupancyMaxPotentialBlockSize hipOccupancyMaxPotentialBlockSize
 #define gpuEventElapsedTime hipEventElapsedTime
 #define gpuDeviceReset hipDeviceReset
-#define gpuMallocHost hipMallocHost
+#define gpuMallocHost hipHostMalloc
 #define gpuEvent_t hipEvent_t
 #define gpuMemset hipMemset
 #define  GPUBLAS_STATUS_SUCCESS HIPBLAS_STATUS_SUCCESS 
