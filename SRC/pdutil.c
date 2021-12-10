@@ -23,7 +23,7 @@ at the top-level directory.
 #include <math.h>
 #include "superlu_ddefs.h"
 #ifdef GPU_ACC
-#include "gpublas_utils.h"
+#include "gpu_api_utils.h"
 #endif
 
 /*! \brief Gather A from the distributed compressed row format to global A in compressed column format.

@@ -113,7 +113,7 @@ at the top-level directory.
 #ifdef GPU_ACC
 // #define NUM_GPU_STREAMS 16
 // #define NUM_GPU_STREAMS 16
-#include "gpublas_utils.h"
+#include "gpu_api_utils.h"
 #endif
 
 /* Various defininations     */

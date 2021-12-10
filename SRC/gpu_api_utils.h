@@ -16,8 +16,8 @@ at the top-level directory.
  * </pre>
  */
 
-#ifndef GPUBLAS_UTILS_H
-#define GPUBLAS_UTILS_H
+#ifndef gpu_api_utils_H
+#define gpu_api_utils_H
 
 #ifdef GPU_ACC
 

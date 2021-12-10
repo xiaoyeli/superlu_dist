@@ -22,7 +22,7 @@ at the top-level directory.
 
 #include "superlu_ddefs.h"
 #ifdef GPU_ACC
-#include "gpublas_utils.h"
+#include "gpu_api_utils.h"
 #endif
 
 /*! \brief

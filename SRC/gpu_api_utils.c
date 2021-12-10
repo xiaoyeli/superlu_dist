@@ -13,7 +13,7 @@ at the top-level directory.
 #ifdef GPU_ACC  // enable CUDA
 
 #include <stdio.h>
-#include "gpublas_utils.h"
+#include "gpu_api_utils.h"
  void DisplayHeader()
 {
     const int kb = 1024;

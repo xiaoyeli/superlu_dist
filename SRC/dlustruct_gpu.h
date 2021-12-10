@@ -16,7 +16,7 @@
 #include "superlu_ddefs.h"
 
 #ifdef GPU_ACC // enable GPU
-#include "gpublas_utils.h"
+#include "gpu_api_utils.h"
 
 // #include "mkl.h"
 // #include "sec_structs.h"

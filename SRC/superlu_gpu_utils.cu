@@ -1,5 +1,5 @@
 #include "superlu_defs.h"
-#include "gpublas_utils.h"
+#include "gpu_api_utils.h"
 // /*error reporting functions */
 // gpuError_t checkGPU(gpuError_t result)
 // {

@@ -29,7 +29,7 @@ at the top-level directory.
 #endif
 
 #ifdef GPU_ACC
-#include "gpublas_utils.h"
+#include "gpu_api_utils.h"
 #endif
 
 // #ifndef GPUREF
