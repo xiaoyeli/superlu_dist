@@ -1,6 +1,6 @@
 set(headers
     superlu_FCnames.h
-    gpublas_utils.h
+    gpu_api_utils.h
     dcomplex.h
     machines.h
     psymbfact.h
@@ -27,7 +27,7 @@ set(sources
   comm.c
   memory.c
   util.c
-  gpublas_utils.c
+  gpu_api_utils.c
   superlu_grid.c
   pxerr_dist.c
   superlu_timer.c

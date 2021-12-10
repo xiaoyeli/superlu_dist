@@ -22,6 +22,11 @@
 //#include <thrust/system/gpu/detail/cub/cub.cuh>
 
 #include "slustruct_gpu.h"
+#ifdef HAVE_CUDA
+#include "superlu_gpu_utils.cu"
+#elif defined(HAVE_HIP)
+#include "superlu_gpu_utils.hip.cpp"
+#endif
 
 
 //extern "C" {
@@ -221,9 +226,6 @@ void Scatter_GPU_kernel(
 	int jb = Ublock_info[j].jb;
 	int nsupc = SuperSize (jb);
 	int ljb = jb / npcol;
-
-	typedef int pfx_dtype ;
-        extern  __device__ void incScan(pfx_dtype *inOutArr, pfx_dtype *temp, int n);
 
 	float *tempv1;
 	if (jj_st == jj0)

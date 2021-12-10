@@ -1,16 +1,16 @@
 #include "superlu_defs.h"
-
-/*error reporting functions */
-gpuError_t checkGPU(gpuError_t result)
-{
-#if defined(DEBUG) || defined(_DEBUG)
-    if (result != gpuSuccess) {
-        fprintf(stderr, "GPU Runtime Error: %s\n", gpuGetErrorString(result));
-        assert(result == gpuSuccess);
-    }
-#endif
-    return result;
-}
+#include "gpublas_utils.h"
+// /*error reporting functions */
+// gpuError_t checkGPU(gpuError_t result)
+// {
+// #if defined(DEBUG) || defined(_DEBUG)
+//     if (result != gpuSuccess) {
+//         fprintf(stderr, "GPU Runtime Error: %s\n", gpuGetErrorString(result));
+//         assert(result == gpuSuccess);
+//     }
+// #endif
+//     return result;
+// }
 
 
 
