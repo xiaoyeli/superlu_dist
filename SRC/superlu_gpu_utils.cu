@@ -1,3 +1,16 @@
+/*! @file
+ * \brief Precision-independent utility routines for GPU
+ *
+ * <pre>
+ * -- Distributed SuperLU routine (version 7.2) --
+ * Lawrence Berkeley National Lab, Univ. of California Berkeley,
+ * Georgia Institute of Technology, Oak Ridge National Laboratory
+ * December 12, 2021 version 7.2.0
+ *
+ * Last update: December 12, 2021  remove dependence on CUB/scan
+ * </pre>
+ */
+ 
 #include <cuda.h>
 #include <cuda_runtime.h>
 
