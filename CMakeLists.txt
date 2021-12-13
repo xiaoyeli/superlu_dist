@@ -408,6 +408,12 @@ if (XSDK_ENABLE_Fortran)
                             MACRO_NAMESPACE "FC_")
   FortranCInterface_VERIFY(CXX)
   SET(MPI_Fortran_LINK_FLAGS "${CMAKE_EXE_LINKER_FLAGS}")
+
+  #---------------------------------------------------------------------
+  # Set default fortran format to free and preprocess all files
+  #---------------------------------------------------------------------
+  set(CMAKE_Fortran_FORMAT FREE)
+  set(CMAKE_Fortran_PREPROCESS ON)
 endif()
 
 ######################################################################
