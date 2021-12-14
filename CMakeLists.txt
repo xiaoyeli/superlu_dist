@@ -11,8 +11,8 @@ cmake_minimum_required(VERSION 3.18.1 FATAL_ERROR)
 #project(SuperLU_DIST C CXX CUDA)
 project(SuperLU_DIST C CXX)
 set(VERSION_MAJOR "7")
-set(VERSION_MINOR "1")
-set(VERSION_BugFix "1")
+set(VERSION_MINOR "2")
+set(VERSION_BugFix "0")
 set(PROJECT_VERSION ${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_BugFix})
 
 list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake")
@@ -481,6 +481,12 @@ if (XSDK_ENABLE_Fortran)
                             MACRO_NAMESPACE "FC_")
   FortranCInterface_VERIFY(CXX)
   SET(MPI_Fortran_LINK_FLAGS "${CMAKE_EXE_LINKER_FLAGS}")
+
+  #---------------------------------------------------------------------
+  # Set default fortran format to free and preprocess all files
+  #---------------------------------------------------------------------
+  set(CMAKE_Fortran_FORMAT FREE)
+  set(CMAKE_Fortran_PREPROCESS ON)
 endif()
 
 ######################################################################

@@ -12,7 +12,7 @@ at the top-level directory.
  * \brief Definitions which are precision-neutral
  *
  * <pre>
- * -- Distributed SuperLU routine (version 6.2) --
+ * -- Distributed SuperLU routine (version 7.2) --
  * Lawrence Berkeley National Lab, Univ. of California Berkeley.
  * November 1, 2007
  *
@@ -26,6 +26,7 @@ at the top-level directory.
  *     May 12, 2021        version 7.0.0
  *     October 5, 2021     version 7.1.0
  *     October 18, 2021    version 7.1.1
+ *     December 12, 2021   version 7.2.0
  * </pre>
  */
 
@@ -77,9 +78,9 @@ at the top-level directory.
  * Versions 4.x and earlier do not include a #define'd version numbers.
  */
 #define SUPERLU_DIST_MAJOR_VERSION     7
-#define SUPERLU_DIST_MINOR_VERSION     1
-#define SUPERLU_DIST_PATCH_VERSION     1
-#define SUPERLU_DIST_RELEASE_DATE      "October 18, 2021"
+#define SUPERLU_DIST_MINOR_VERSION     2
+#define SUPERLU_DIST_PATCH_VERSION     0
+#define SUPERLU_DIST_RELEASE_DATE      "December 12, 2021"
 
 #include "superlu_dist_config.h"
 
