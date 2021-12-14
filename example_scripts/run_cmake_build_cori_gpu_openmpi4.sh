@@ -11,7 +11,7 @@ export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/opt/intel/compilers_and_libraries_2019.
 module load cmake/3.18.2
 # module load cudatoolkit
 module load cgpu
-module load cuda/10.2.89
+module load cuda/11.1.1
 module load openmpi/4.0.3
 
 export ACC=GPU
@@ -41,7 +41,7 @@ cmake .. \
 	-DCMAKE_VERBOSE_MAKEFILE:BOOL=ON \
 	-DCMAKE_CXX_FLAGS="-Ofast -DRELEASE ${INC_VTUNE}" \
     -DCMAKE_C_FLAGS="-std=c11 -DGPU_SOLVE -DPRNTlevel=1 -DPROFlevel=0 -DDEBUGlevel=0 ${INC_VTUNE} -DGPU_ACC -I${CUDA_ROOT}/include" \
-	-DCMAKE_CUDA_FLAGS="--disable-warnings -DPRNTlevel=1 -DPROFlevel=0 -DDEBUGlevel=0 -DGPU_ACC -gencode arch=compute_70,code=sm_70 -I/usr/common/software/openmpi/4.0.3/gcc/8.3.0/cuda/10.2.89/include"
+	-DCMAKE_CUDA_FLAGS="-lineinfo --disable-warnings -DPRNTlevel=1 -DPROFlevel=0 -DDEBUGlevel=0 -DGPU_ACC -gencode arch=compute_70,code=sm_70 -I/usr/common/software/openmpi/4.0.3/gcc/8.3.0/cuda/10.2.89/include"
 make pddrive			
 #	-DTPL_BLAS_LIBRARIES="/opt/intel/compilers_and_libraries_2017.2.174/linux/mkl/lib/intel64/libmkl_intel_lp64.so;/opt/intel/compilers_and_libraries_2017.2.174/linux/mkl/lib/intel64/libmkl_sequential.so;/opt/intel/compilers_and_libraries_2017.2.174/linux/mkl/lib/intel64/libmkl_core.so"
 

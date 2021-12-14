@@ -1028,27 +1028,19 @@ __device__ void C_RdTree_forwardMessageSimple_Device(C_Tree* Tree, void* localBu
   int_t maxrecvsz
  )
  {
-	 double alpha = 1.0, beta = 0.0,malpha=-1.0;
-	 double *lusup, *lusup1;
+	 double alpha = 1.0, beta = 0.0;
+	 double *lusup;
 	 double *dest;
 	 double *Linv;/* Inverse of diagonal block */
-	 int    iam, iknsupc, myrow, mycol, krow, nbrow, nbrow1, nbrow_ref, nsupr, nsupr1, p, pi, idx_r,m;
-	 int_t  k,i, l,ii,jj, ik, il, ikcol, irow, j, lb, lk, rel, lib,lready;
-	 int_t  *lsub, *lsub1, nlb1, lptr1, luptr1,*lloc;
-	 int_t  luptr_tmp,luptr_tmp1,lptr1_tmp, idx_i, idx_v,idx_n,  idx_l, fmod_tmp, lbstart,lbend,nn,Nchunk,nlb_loc,remainder;
-	 int thread_id1;
-	 flops_t ops_loc=0.0;
+	 int    iam, iknsupc, myrow, mycol, krow, nbrow, nbrow1, nsupr,m;
+	 int_t  k,i, l,ii,jj, ik, il, irow, j, lb, lk, rel, lib;
+	 int_t  *lsub, *lloc;
+	 int_t  luptr_tmp,luptr_tmp1,lptr1_tmp, idx_i, idx_v,idx_n, fmod_tmp, Nchunk;
 	 MPI_Status status;
-	 int test_flag;
-	 yes_no_t done;
-	 int_t* idx_lsum,idx_lsum1;
-	 const int Nbk=1;
+	//  const int Nbk=1;
 	 __shared__ double rtemp_loc[128]; 
 	 double temp,temp1;
-	 int_t ldalsum;
-	 int_t nleaf_send_tmp;
 	 int_t lptr;      /* Starting position in lsub[*].                      */
-	 int_t luptr;     /* Starting position in lusup[*].                     */
 	 int_t iword = sizeof(int_t);
 	 int_t dword = sizeof (double);
 	 int_t aln_d,aln_i;
@@ -1068,14 +1060,11 @@ __device__ void C_RdTree_forwardMessageSimple_Device(C_Tree* Tree, void* localBu
  
 	 double rC[THR_N][THR_M];
 	 
-	 gpuError_t error;
-	 
 	 bid= blockIdx_x;
 	 int_t idx = threadIdx_x;  // thread's m dimension
 	 int_t idy = threadIdx_y;  // thread's n dimension
 	 int_t ni,mi;
 	 int cnt;
-	 yes_no_t test;
 	 
 	 
 	 // printf("  Entering kernel:   %i %i %i %i %i %i %i %i\n", threadIdx_x, blockIdx_x, grid->npcol, nsupers,myrow,krow,bid,tid);
@@ -1746,7 +1735,7 @@ __device__ void C_RdTree_forwardMessageSimple_Device(C_Tree* Tree, void* localBu
 									/* AXPY */
 									xtemp=x[ii+j*knsupc+jj];
 									for (irow = fnz; irow < iklrow; ++irow){
-										temp2[irow - ikfrow]+=uval[uptr++] * xtemp; // YL: this is most expensive operation on GPU
+										// temp2[irow - ikfrow]+=uval[uptr++] * xtemp; // YL: this is most expensive operation on GPU
 									}
 								}
 							} /* for jj ... */
