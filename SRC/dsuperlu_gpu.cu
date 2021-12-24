@@ -21,10 +21,16 @@
 //#include <thrust/system/gpu/detail/cub/cub.cuh>
 
 #include "dlustruct_gpu.h"
+
+/* Sherry - following is precision-independent file, used by both double
+   and complex. It should not included in this source code.
+   I updated CMakeLists.txt to include this for HAVE_CUDA or HAVE_HIP.  */
+#if 0
 #ifdef HAVE_CUDA
 #include "superlu_gpu_utils.cu"
 #elif defined(HAVE_HIP)
 #include "superlu_gpu_utils.hip.cpp"
+#endif
 #endif
 
 //extern "C" {
@@ -225,6 +231,9 @@ void Scatter_GPU_kernel(
 	int nsupc = SuperSize (jb);
 	int ljb = jb / npcol;
 
+	typedef int pfx_dtype ;
+        extern  __device__ void incScan(pfx_dtype *inOutArr, pfx_dtype *temp, int n);
+	
 	double *tempv1;
 	if (jj_st == jj0)
 	{

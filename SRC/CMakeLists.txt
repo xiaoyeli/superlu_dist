@@ -1,6 +1,5 @@
 set(headers
     superlu_FCnames.h
-    gpu_api_utils.h
     dcomplex.h
     machines.h
     psymbfact.h
@@ -9,6 +8,8 @@ set(headers
     supermatrix.h
     util_dist.h
     colamd.h
+    gpu_api_utils.h
+    gpu_wrapper.h
     ${CMAKE_CURRENT_BINARY_DIR}/superlu_dist_config.h
     ${PROJECT_SOURCE_DIR}/SRC/superlu_FortranCInterface.h
 )
@@ -52,6 +53,10 @@ set(sources
 )
 if (HAVE_CUDA)
   list(APPEND sources superlu_gpu_utils.cu)
+endif()
+
+if (HAVE_HIP)
+  list(APPEND sources superlu_gpu_utils.hip.cpp)
 endif()
 
 if (MSVC)

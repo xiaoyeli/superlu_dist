@@ -20,10 +20,13 @@
 //#include <thrust/system/gpu/detail/cub/cub.cuh>
 
 #include "zlustruct_gpu.h"
+
+#if 0
 #ifdef HAVE_CUDA
 #include "superlu_gpu_utils.cu"
 #elif defined(HAVE_HIP)
 #include "superlu_gpu_utils.hip.cpp"
+#endif
 #endif
 
 #include "dcomplex.h"
@@ -226,6 +229,9 @@ void Scatter_GPU_kernel(
 	int nsupc = SuperSize (jb);
 	int ljb = jb / npcol;
 
+	typedef int pfx_dtype ;
+        extern  __device__ void incScan(pfx_dtype *inOutArr, pfx_dtype *temp, int n);
+	
 	doublecomplex *tempv1;
 	if (jj_st == jj0)
 	{
@@ -549,10 +555,15 @@ int zSchurCompUpdate_GPU(
         doublecomplex alpha = {1.0, 0.0}, beta = {0.0, 0.0};
 
         /* The following are used in gpublasZgemm() call */
+#if 0	
         hipblasDoubleComplex *cu_alpha = (hipblasDoubleComplex*) &alpha;
         hipblasDoubleComplex *cu_beta = (hipblasDoubleComplex*) &beta;
         hipblasDoubleComplex *cu_A, *cu_B, *cu_C; /* C <- A*B */
-
+#else	
+        gpuDoubleComplex *cu_alpha = (gpuDoubleComplex*) &alpha;
+        gpuDoubleComplex *cu_beta = (gpuDoubleComplex*) &beta;
+        gpuDoubleComplex *cu_A, *cu_B, *cu_C; /* C <- A*B */
+#endif
 	int_t ii_st  = 0;
 	int_t ii_end = 0;
 	int_t maxGemmBlockDim = (int) sqrt(buffer_size);
@@ -650,9 +661,15 @@ int zSchurCompUpdate_GPU(
 		    assert(nrows * ncols <= buffer_size);
 		    gpublasSetStream(gpublas_handle0, FunCallStream);
 		    gpuEventRecord(A_gpu->GemmStart[k0], FunCallStream);
+#if 0		    
 		    cu_A = (hipblasDoubleComplex*) &A_gpu->scubufs[streamId].Remain_L_buff[(knsupc - ldu) * Rnbrow + st_row];
 		    cu_B = (hipblasDoubleComplex*) &A_gpu->scubufs[streamId].bigU[st_col * ldu];
 		    cu_C = (hipblasDoubleComplex*) A_gpu->scubufs[streamId].bigV;
+#else		    
+		    cu_A = (gpuDoubleComplex*) &A_gpu->scubufs[streamId].Remain_L_buff[(knsupc - ldu) * Rnbrow + st_row];
+		    cu_B = (gpuDoubleComplex*) &A_gpu->scubufs[streamId].bigU[st_col * ldu];
+		    cu_C = (gpuDoubleComplex*) A_gpu->scubufs[streamId].bigV;
+#endif		    
 		    gpublasZgemm(gpublas_handle0, GPUBLAS_OP_N, GPUBLAS_OP_N,
 			            nrows, ncols, ldu, cu_alpha,
 			            cu_A, Rnbrow, cu_B, ldu, cu_beta,
