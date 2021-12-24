@@ -1030,21 +1030,20 @@ __device__ void C_RdTree_forwardMessageSimple_Device(C_Tree* Tree, void* localBu
  {
 	 double alpha = 1.0, beta = 0.0;
 	 double *lusup;
-	 double *dest;
 	 double *Linv;/* Inverse of diagonal block */
 	 int    iam, iknsupc, myrow, mycol, krow, nbrow, nbrow1, nsupr,m;
-	 int_t  k,i, l,ii,jj, ik, il, irow, j, lb, lk, rel, lib;
+	 int_t  k,i, l,ii,ik, il, irow, j, lb, lk, rel, lib;
 	 int_t  *lsub, *lloc;
-	 int_t  luptr_tmp,luptr_tmp1,lptr1_tmp, idx_i, idx_v,idx_n, fmod_tmp, Nchunk;
-	 MPI_Status status;
+	 int_t  luptr_tmp1,lptr1_tmp, idx_i, idx_v, fmod_tmp;
+	//  MPI_Status status;
 	//  const int Nbk=1;
-	 __shared__ double rtemp_loc[128]; 
+	//  __shared__ double rtemp_loc[128]; 
 	 double temp,temp1;
 	 int_t lptr;      /* Starting position in lsub[*].                      */
-	 int_t iword = sizeof(int_t);
-	 int_t dword = sizeof (double);
-	 int_t aln_d,aln_i;
-	 aln_d = 1;//ceil(CACHELINE/(double)dword);
+	//  int_t iword = sizeof(int_t);
+	//  int_t dword = sizeof (double);
+	 int_t aln_i;
+	//  aln_d = 1;//ceil(CACHELINE/(double)dword);
 	 aln_i = 1;//ceil(CACHELINE/(double)iword);
 	 int   knsupc;    /* Size of supernode k.                               */
 	 int_t nlb;       /* Number of L blocks.                                */
@@ -1052,7 +1051,7 @@ __device__ void C_RdTree_forwardMessageSimple_Device(C_Tree* Tree, void* localBu
 	 int_t bid;
 	 int_t tmp;
 	 int_t tid = threadIdx_x + threadIdx_y * blockDim_x; 
-	 int_t ready = 0;
+	//  int_t ready = 0;
 	 // int_t lock = 0;
 	 const int block_size = blockDim_x*blockDim_y; /* number of threads per warp*/
 	 double zero = 0.0;
@@ -1097,17 +1096,17 @@ __device__ void C_RdTree_forwardMessageSimple_Device(C_Tree* Tree, void* localBu
 		 
 		 if(myrow==krow){
 			 nlb = lsub[0] - 1;
-			 idx_n = 1;
+			//  idx_n = 1;
 			 idx_i = nlb+2;
 			 idx_v = 2*nlb+3;
-			 luptr_tmp = lloc[idx_v];
+			//  luptr_tmp = lloc[idx_v];
 			 m = nsupr-knsupc;
 		 }else{
 			 nlb = lsub[0];
-			 idx_n = 0;
+			//  idx_n = 0;
 			 idx_i = nlb;
 			 idx_v = 2*nlb;
-			 luptr_tmp = lloc[idx_v];
+			//  luptr_tmp = lloc[idx_v];
 			 m = nsupr;
 		 }	
 		 
@@ -1507,46 +1506,43 @@ __device__ void C_RdTree_forwardMessageSimple_Device(C_Tree* Tree, void* localBu
   gridinfo_t *grid
   )
   {
-	  double alpha = 1.0, beta = 0.0,malpha=-1.0;
+	  double alpha = 1.0, beta = 0.0;
 	  double xtemp;
-	  double *lusup, *lusup1;
+	//   double *lusup, *lusup1;
 	  double *dest;
 	  double *Uinv;/* Inverse of diagonal block */
-	  int    iam, iknsupc, myrow, mycol, krow, nbrow, nbrow1, nbrow_ref, nsupr, nsupr1, p, pi, idx_r,m;
-	  int_t  k,i, l,ii,jj, ik, il, ikcol, irow, j, lb, lk, rel, lib,lready, ub;
-	  int_t  *lsub, *lsub1, nlb1, lptr1, luptr1,*lloc;
-	  int_t  luptr_tmp,luptr_tmp1,lptr1_tmp, idx_i, idx_v,idx_n,  idx_l, fmod_tmp, lbstart,lbend,nn,Nchunk,nlb_loc,remainder;
-	  int thread_id1;
+	  int    iam, iknsupc, myrow, mycol, krow;
+	  int_t  k,i, l,ii,jj, ik, il, irow, j, lk, lib, ub;
+	//   int thread_id1;
 	  int_t gik,ikfrow,iklrow;
 	  int_t  uptr;
 	  int_t fnz,fnzmin;
-	  flops_t ops_loc=0.0;
-	  MPI_Status status;
-	  int test_flag;
-	  yes_no_t done;
-	  int_t* idx_lsum,idx_lsum1;
-	  const int Nbk=1;
+	//   flops_t ops_loc=0.0;
+	//   MPI_Status status;
+	//   int test_flag;
+	//   yes_no_t done;
+	//   const int Nbk=1;
 	//   __shared__ double rtemp_loc[128]; 
 	  double temp,temp1;
 	  double temp2[MAXSUPER];
 	//   int_t temp3[128];
 	//   int_t temp4[128];
-	  int_t ldalsum;
-	  int_t nleaf_send_tmp;
-	  int_t lptr;      /* Starting position in lsub[*].                      */
-	  int_t luptr;     /* Starting position in lusup[*].                     */
-	  int_t iword = sizeof(int_t);
-	  int_t dword = sizeof (double);
-	  int_t aln_d,aln_i;
-	  aln_d = 1;//ceil(CACHELINE/(double)dword);
+	//   int_t nleaf_send_tmp;
+	//   int_t lptr;      /* Starting position in lsub[*].                      */
+	//   int_t luptr;     /* Starting position in lusup[*].                     */
+	//   int_t iword = sizeof(int_t);
+	//   int_t dword = sizeof (double);
+	  int_t aln_i;
+	//   aln_d = 1;//ceil(CACHELINE/(double)dword);
 	  aln_i = 1;//ceil(CACHELINE/(double)iword);
 	  int   knsupc;    /* Size of supernode k.                               */
 	  int_t nub;       /* Number of L blocks.                                */
  
 	  int_t bid;
 	  int_t tmp;
+	  int_t bmod_tmp;
 	  int_t tid = threadIdx_x + threadIdx_y * blockDim_x; 
-	  int_t ready = 0;
+	//   int_t ready = 0;
 	  // int_t lock = 0;
 	  const int block_size = blockDim_x*blockDim_y; /* number of threads per warp*/
 	  double zero = 0.0;
@@ -1554,17 +1550,15 @@ __device__ void C_RdTree_forwardMessageSimple_Device(C_Tree* Tree, void* localBu
   
 	  double rC[THR_N][THR_M];
 	  
-	  gpuError_t error;
+	//   gpuError_t error;
 	  
 	  bid= nbcol_loc-blockIdx_x-1;  // This makes sure higher block IDs are checked first in spin wait
 	  int_t idx = threadIdx_x;  // thread's m dimension
 	  int_t idy = threadIdx_y;  // thread's n dimension
 	  int_t ni,mi;
-	  int cnt;
-	  yes_no_t test;
-
+	//   int cnt;
 	  int_t  *usub;
-	  double *uval, *y;
+	  double *uval;
 
 	  
 	  
@@ -1735,7 +1729,7 @@ __device__ void C_RdTree_forwardMessageSimple_Device(C_Tree* Tree, void* localBu
 									/* AXPY */
 									xtemp=x[ii+j*knsupc+jj];
 									for (irow = fnz; irow < iklrow; ++irow){
-										// temp2[irow - ikfrow]+=uval[uptr++] * xtemp; // YL: this is most expensive operation on GPU
+										temp2[irow - ikfrow]+=uval[uptr++] * xtemp; // YL: this is most expensive operation on GPU
 									}
 								}
 							} /* for jj ... */
@@ -1744,7 +1738,7 @@ __device__ void C_RdTree_forwardMessageSimple_Device(C_Tree* Tree, void* localBu
 								temp=atomicAdd(&dest[irow - ikfrow],-temp2[irow - ikfrow]);
 							}								
 						}
-						fmod_tmp=atomicSub(&bmod[ik*aln_i],1);
+						bmod_tmp=atomicSub(&bmod[ik*aln_i],1);
 						}
 						
 					} /* for ub ... */
@@ -1808,10 +1802,8 @@ __device__ void C_RdTree_forwardMessageSimple_Device(C_Tree* Tree, void* localBu
   int_t maxrecvsz
  ){
  
- gpuStream_t sid=0;
- int gid=0;
- int mycol;
- int_t lk,k,knsupc;
+//  int mycol;
+//  int_t lk,k,knsupc;
  int_t nblock_ex=CEILING( nbrow_loc, nthread_x*nthread_y);;
  
 	 
@@ -1865,9 +1857,7 @@ __device__ void C_RdTree_forwardMessageSimple_Device(C_Tree* Tree, void* localBu
   gridinfo_t *grid
  ){
  
- gpuStream_t sid=0;
- int gid=0;
- int mycol;
+//  int mycol;
  int_t lk,k,knsupc;
 
 	 
