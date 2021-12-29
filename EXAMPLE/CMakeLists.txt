@@ -32,55 +32,6 @@ function(add_superlu_dist_example target input nprow npcol)
 
 endfunction(add_superlu_dist_example)
 
-if(enable_single)
-  set(SEXM psdrive.c screate_matrix.c)
-#  add_executable(psdrive ${SEXM})
-#  target_link_libraries(psdrive ${all_link_libs})
-
-  set(SEXM1 psdrive1.c screate_matrix.c)
-  add_executable(psdrive1 ${SEXM1})
-  target_link_libraries(psdrive1 ${all_link_libs})
-  add_superlu_dist_example(psdrive1 big.rua 2 2)
-
-  set(SEXM2 psdrive2.c screate_matrix.c screate_matrix_perturbed.c)
-  add_executable(psdrive2 ${SEXM2})
-  target_link_libraries(psdrive2 ${all_link_libs})
-  add_superlu_dist_example(psdrive2 big.rua 2 2)
-
-  set(SEXM3 psdrive3.c screate_matrix.c)
-  add_executable(psdrive3 ${SEXM3})
-  target_link_libraries(psdrive3 ${all_link_libs})
-  add_superlu_dist_example(psdrive3 big.rua 2 2)
-
-  set(SEXM4 psdrive4.c screate_matrix.c)
-  add_executable(psdrive4 ${SEXM4})
-  target_link_libraries(psdrive4 ${all_link_libs})
-
-  set(SEXMG psdrive_ABglobal.c)
-  add_executable(psdrive_ABglobal ${SEXMG})
-  target_link_libraries(psdrive_ABglobal ${all_link_libs})
-
-  set(SEXMG1 psdrive1_ABglobal.c)
-  add_executable(psdrive1_ABglobal ${SEXMG1})
-  target_link_libraries(psdrive1_ABglobal ${all_link_libs})
-
-  set(SEXMG2 psdrive2_ABglobal.c)
-  add_executable(psdrive2_ABglobal ${SEXMG2})
-  target_link_libraries(psdrive2_ABglobal ${all_link_libs})
-
-  set(SEXMG3 psdrive3_ABglobal.c)
-  add_executable(psdrive3_ABglobal ${SEXMG3})
-  target_link_libraries(psdrive3_ABglobal ${all_link_libs})
-
-  set(SEXMG4 psdrive4_ABglobal.c)
-  add_executable(psdrive4_ABglobal ${SEXMG4})
-  target_link_libraries(psdrive4_ABglobal ${all_link_libs})
-  
-#  set(SEXMS psdrive_spawn.c screate_matrix.c)
-#  add_executable(psdrive_spawn ${SEXMS})
-#  target_link_libraries(psdrive_spawn ${all_link_libs})
-  
-endif() #### end enable_single
 
 if(enable_double)
   set(DEXM pddrive.c dcreate_matrix.c)
@@ -160,7 +111,6 @@ if(enable_double)
   add_executable(pddrive_spawn ${DEXMS})
   target_link_libraries(pddrive_spawn ${all_link_libs})
   install(TARGETS pddrive_spawn RUNTIME DESTINATION "${INSTALL_LIB_DIR}/EXAMPLE")  
-
 
 endif() #### end enable_double
 
