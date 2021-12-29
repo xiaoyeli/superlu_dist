@@ -65,49 +65,6 @@ endif ()
 
 set_source_files_properties(superlu_timer.c PROPERTIES COMPILE_FLAGS -O0)
 
-if(enable_single)
-  list(APPEND headers superlu_sdefs.h)
-
-  list(APPEND sources
-    slangs_dist.c
-    sgsequ_dist.c
-    slaqgs_dist.c
-    sutil_dist.c
-    smemory_dist.c
-    smyblas2_dist.c
-    ssp_blas2_dist.c
-    ssp_blas3_dist.c
-    psgssvx.c
-    psgssvx_ABglobal.c
-    sreadhb.c
-    sreadrb.c
-    sreadtriple.c
-    sreadtriple_noheader.c
-    sbinary_io.c	
-    sreadMM.c
-    psgsequ.c
-    pslaqgs.c
-    sldperm_dist.c
-    pslangs.c
-    psutil.c
-    pssymbfact_distdata.c
-    sdistribute.c
-    psdistribute.c
-    psgstrf.c
-    sstatic_schedule.c
-    psgstrf2.c
-    psgstrs.c
-    psgstrs1.c
-    psgstrs_lsum.c
-    psgstrs_Bglobal.c
-    psgsrfs.c
-    psgsmv.c
-    psgsrfs_ABXglobal.c
-    psgsmv_AXglobal.c
-    psGetDiagU.c
-  )
-endif()
-
 if(enable_double)
   list(APPEND headers superlu_ddefs.h dlustruct_gpu.h)
 
@@ -183,6 +140,7 @@ if(enable_single)
     ssp_blas2_dist.c
     ssp_blas3_dist.c
     psgssvx.c
+    psgssvx_d2.c
     psgssvx_ABglobal.c
     sreadhb.c
     sreadrb.c
@@ -206,7 +164,9 @@ if(enable_single)
     psgstrs_lsum.c
     psgstrs_Bglobal.c
     psgsrfs.c
+    psgsrfs_d2.c
     psgsmv.c
+    psgsmv_d2.c
     psgsrfs_ABXglobal.c
     psgsmv_AXglobal.c
     psGetDiagU.c
@@ -222,6 +182,9 @@ if(enable_single)
     scommunication_aux.c 
     strfCommWrapper.c
     ssuperlu_blas.c
+    psgssvx_d2.c     # with double-precision IR
+    psgsrfs_d2.c
+    psgsmv_d2.c
   )
 if (HAVE_CUDA)
   list(APPEND sources ssuperlu_gpu.cu)
@@ -335,6 +298,12 @@ endforeach(target)
 # Add CUDA runtime library and CUBLAS library
 if(CUDAToolkit_FOUND)  # this is found in top-level CMakeLists.txt
     target_link_libraries(superlu_dist CUDA::cudart CUDA::cublas)
+endif()
+
+# This is recommended by modern cmake:
+# https://cliutils.gitlab.io/modern-cmake/chapters/packages/OpenMP.html
+if(OpenMP_FOUND) # this is found in top-level CMakeLists.txt
+  target_link_libraries(superlu_dist OpenMP::OpenMP_C)
 endif()
 
 target_compile_definitions(superlu_dist PRIVATE SUPERLU_DIST_EXPORTS)

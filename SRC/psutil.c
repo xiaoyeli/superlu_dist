@@ -799,25 +799,35 @@ void psinf_norm_error(int iam, int_t n, int_t nrhs, float x[], int_t ldx,
 {
     float err, xnorm, temperr, tempxnorm;
     float *x_work, *xtrue_work;
+    float errcomp;  // componentwise error
+    double derr;
     int i, j;
 
     for (j = 0; j < nrhs; j++) {
       x_work = &x[j*ldx];
       xtrue_work = &xtrue[j*ldxtrue];
-      err = xnorm = 0.0;
+      err = xnorm = errcomp = 0.0;
       for (i = 0; i < n; i++) {
-	err = SUPERLU_MAX(err, fabs(x_work[i] - xtrue_work[i]));
+	derr = fabs(x_work[i] - xtrue_work[i]);
+	err = SUPERLU_MAX(err, derr);
 	xnorm = SUPERLU_MAX(xnorm, fabs(x_work[i]));
+        errcomp = SUPERLU_MAX(errcomp, derr / fabs(x_work[i]));
       }
 
       /* get the golbal max err & xnrom */
       temperr = err;
-      tempxnorm = xnorm;
       MPI_Allreduce( &temperr, &err, 1, MPI_FLOAT, MPI_MAX, slucomm);
+      tempxnorm = xnorm;
       MPI_Allreduce( &tempxnorm, &xnorm, 1, MPI_FLOAT, MPI_MAX, slucomm);
+      temperr = errcomp;
+      MPI_Allreduce( &temperr, &errcomp, 1, MPI_FLOAT, MPI_MAX, slucomm);
 
       err = err / xnorm;
-      if ( !iam ) printf("\tSol %2d: ||X-Xtrue||/||X|| = %e\n", j, err);
+      if ( !iam ) {
+	printf("..Sol %2d: ||X - Xtrue|| / ||X|| = %e\t max_i |x - xtrue|_i / |x|_i = %e\n", j, err, errcomp);
+	printf("\t ||x||_inf = %e\n", xnorm);
+	fflush(stdout);
+      }
     }
 }
 

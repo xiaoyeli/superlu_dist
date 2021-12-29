@@ -65,14 +65,20 @@ int main(int argc, char *argv[])
     char     **cpp, c, *postfix;;
     FILE *fp, *fopen();
     int cpp_defs();
+    double *dxtrue, *db, *dberr;
 
     int ii, i, omp_mpi_level;
+
+    extern int screate_A_x_b(SuperMatrix *A, int nrhs, float **rhs,
+			     int *ldb, float **x, int *ldx,
+			     FILE *fp, char * postfix, gridinfo_t *grid);
+
     extern void psgssvx_d2(superlu_dist_options_t *options, SuperMatrix *A,
 			sScalePermstruct_t *ScalePermstruct,
 			float B[], int ldb, int nrhs, gridinfo_t *grid,
 			sLUstruct_t *LUstruct, sSOLVEstruct_t *SOLVEstruct,
 			float *err_bounds, SuperLUStat_t *stat, int *info,
-			float *xtrue);
+			double *dxtrue);
 
     nprow = 1;  /* Default process rows.      */
     npcol = 1;  /* Default process columns.   */
@@ -195,33 +201,53 @@ int main(int argc, char *argv[])
     //printf("%s\n", postfix);
 	
     /* ------------------------------------------------------------
-       GET THE MATRIX FROM FILE AND SETUP THE RIGHT HAND SIDE. 
+       GET THE MATRIX FROM FILE AND SETUP THE RIGHT HAND SIDE
        ------------------------------------------------------------*/
-    fp = fopen(*cpp, "r");
-    screate_matrix_postfix(&A, nrhs, &b, &ldb, &xtrue, &ldx, fp, postfix, &grid);
+    //screate_matrix_postfix(&A, nrhs, &b, &ldb, &xtrue, &ldx, fp, postfix, &grid);
+    /* The returned A, b and xtrue are in single precision
+       b <- A * xtrue in double, then rounded to single */
+    screate_A_x_b(&A, nrhs, &b, &ldb, &xtrue, &ldx, fp, postfix, &grid);
     fclose(fp);
     
+    m = A.nrow;
+    n = A.ncol;
+
 #if 1
     /* Generate a good RHS in double precision, then rounded to single */
     {
-        double *db, *dxtrue, *dberr;
 	SuperMatrix dA;
 	dScalePermstruct_t dScalePermstruct;
 	dLUstruct_t dLUstruct;
 	dSOLVEstruct_t dSOLVEstruct;
 	//extern int dcreate_matrix_postfix();
 
+#if 0 // Shouldn't use double precision A	
+	fp = fopen(*cpp, "r");
 	dcreate_matrix_postfix(&dA, nrhs, &db, &ldb, &dxtrue, &ldx, fp, postfix, &grid);
 	fclose(fp);
-
-	NRformat_loc *Astore = dA.Store;
+#else
+	/* Copy single-prec A into double-prec dA storage */
+	NRformat_loc *Astore = A.Store;  // Single-prec A
 	int m_loc = Astore->m_loc;
+	int nnz_loc = Astore->nnz_loc;
+	float *nzval = (float*) Astore->nzval;
+	int_t *rowptr = Astore->rowptr;
+	int_t *colind = Astore->colind;
 
-	/* Rounded to single */
-	for (i = 0; i < m_loc; ++i) {
-	  b[i] = (float) db[i];
+	double *nzval_loc_dble = (double *) doubleMalloc_dist(nnz_loc);
+	int_t *colind_dble = (int_t *) intMalloc_dist(nnz_loc);
+	int_t *rowptr_dble = (int_t *) intMalloc_dist(m_loc + 1);
+
+	for (i = 0; i < nnz_loc; ++i) {
+	  nzval_loc_dble[i] = nzval[i];
+	  colind_dble[i] = colind[i];
 	}
+	for (i = 0; i < m_loc + 1; ++i) rowptr_dble[i] = rowptr[i];
 
+	dCreate_CompRowLoc_Matrix_dist(&dA, m, n, nnz_loc, m_loc, Astore->fst_row,
+				       nzval_loc_dble, colind_dble, rowptr_dble,
+				       SLU_NR_loc, SLU_D, SLU_GE);
+#endif
 	/* Now, compute dxtrue via double-precision solver */
 	/* Why? dA is the double precision version of A, etc.
 	   If db = dA*dXtrue to double, then rounding db to b and dA to A introduce
@@ -232,19 +258,26 @@ int main(int argc, char *argv[])
 	   factor in the perturbation error.   See bullet 7, page 20, LAWN 165.*/
 	if ( !(dberr = doubleMalloc_dist(nrhs)) )
 	  ABORT("Malloc fails for dberr[].");
-
-	m = dA.nrow;
-	n = dA.ncol;
+	if ( !(dxtrue = doubleMalloc_dist(m * nrhs)) )
+	  ABORT("Malloc fails for dberr[].");
 
 	set_default_options_dist(&options);
 	dScalePermstructInit(m, n, &dScalePermstruct);
 	dLUstructInit(n, &dLUstruct);
 	PStatInit(&stat);
 
+	/* Need to use correct single-prec {A,b} to solve  */
+	db = doubleMalloc_dist(m_loc * nrhs);
+	for (i = 0; i < m_loc * nrhs; ++i) {
+	  db[i] = b[i];
+	}
+
 	pdgssvx(&options, &dA, &dScalePermstruct, db, ldb, nrhs, &grid,
 		&dLUstruct, &dSOLVEstruct, dberr, &stat, &info);
 
-	pdinf_norm_error(iam, m_loc, nrhs, db, ldb, dxtrue, ldx, grid.comm);
+	for (i = 0; i < m_loc * nrhs; ++i) dxtrue[i] = db[i];
+	
+	//pdinf_norm_error(iam, m_loc, nrhs, db, ldb, dxtrue, ldx, grid.comm);
 
 	/* Rounded to single */
 	for (i = 0; i < m_loc; ++i) {
@@ -252,12 +285,10 @@ int main(int argc, char *argv[])
 	}
 
 	if ( iam==0 ) { //(nprow*npcol-1) ) {
-	  printf("\ndouble generated dxtrue[%d]: %.16e\n", m_loc-1, dxtrue[m_loc-1]);
-	  for (i = 0; i < 5; ++i) printf("%.16e\t", dxtrue[i]);
+	  printf("\n(%d) single xtrue:\n", iam);
+	  for (i = 0; i < 5; ++i) printf("%.16e\t", xtrue[i]);
 	  printf("\ndouble computed dxtrue (stored in db):\n");
 	  for (i = 0; i < 5; ++i) printf("%.16e\t", db[i]);
-	  printf("\nsingle xtrue:\n");
-	  for (i = 0; i < 5; ++i) printf("%.16e\t", xtrue[i]);
 	  printf("\n"); fflush(stdout);
 	}
 
@@ -272,7 +303,6 @@ int main(int argc, char *argv[])
 	  dSolveFinalize(&options, &dSOLVEstruct);
 	}
 	SUPERLU_FREE(db);
-	SUPERLU_FREE(dxtrue);
 	SUPERLU_FREE(dberr);
     }
 #endif
@@ -339,15 +369,15 @@ int main(int argc, char *argv[])
     PStatInit(&stat);
 
     if (iam==0) {
-        Printfloat5("before psgssvx xtrue[]", 5, xtrue);
-        Printfloat5("before psgssvx b[]", 5, b);
+        Printfloat5("before psgssvx_d2 xtrue[]", 5, xtrue);
+        Printfloat5("before psgssvx_d2 b[]", 5, b);
 	printf("\n"); fflush(stdout);
     }
 
     if ( options.IterRefine == SLU_DOUBLE || options.IterRefine == SLU_EXTRA ) { 
         /* Call the linear equation solver with extra-precise iterative refinement */
         psgssvx_d2(&options, &A, &ScalePermstruct, b, ldb, nrhs, &grid,
-		   &LUstruct, &SOLVEstruct, err_bounds, &stat, &info, xtrue);
+		   &LUstruct, &SOLVEstruct, err_bounds, &stat, &info, dxtrue);
     } else {
         /* Call the linear equation solver */
         psgssvx(&options, &A, &ScalePermstruct, b, ldb, nrhs, &grid,
@@ -379,6 +409,7 @@ int main(int argc, char *argv[])
     }
     SUPERLU_FREE(b);
     SUPERLU_FREE(xtrue);
+    SUPERLU_FREE(dxtrue);
     SUPERLU_FREE(err_bounds);
     SUPERLU_FREE(berr);
 

@@ -30,9 +30,9 @@
 #######################################################################
 include ../make.inc
 
-SEXM	= psdrive.o screate_matrix.o dcreate_matrix.o \
-	dutil_dist.o psutil.o\
-	psgssvx_d2.o psgsrfs_fp64x2.o psgsmv_fp64x2.o psgstrs.o 
+SEXM	= psdrive.o screate_matrix.o dcreate_matrix.o screate_A_x_b.o \
+#	psgssvx_d2.o psgsrfs_d2.o psgsmv_d2.o \
+#	dutil_dist.o psutil.o sutil_dist.o psgstrs.o 
 	#psgstrs_lsum.o  only add printing
 
 DEXM	= pddrive.o dcreate_matrix.o 

@@ -483,11 +483,32 @@ void
 dGenXtrue_dist(int_t n, int_t nrhs, double *x, int_t ldx)
 {
     int  i, j;
-    for (j = 0; j < nrhs; ++j)
+    double exponent, tau; /* See TOMS paper on ItRef (LAWN165); testing code: 
+			     Codes/UCB-itref-xblas-etc/xiaoye/itref/driver.c  */
+    double r;
+    
+    exponent = (double)rand() / (double)((unsigned)RAND_MAX + 1); /* uniform in [0,1) */
+#if 1
+    tau = pow(2.0, 12.0 * exponent);
+#else
+    tau = 5.0;
+#endif
+    //printf("new dGenXtrue, tau %e\n", tau);
+    
+    r = (double)rand() / (double)((unsigned)RAND_MAX + 1); /* uniform in [0,1) */
+    r = r + 0.5; /* uniform in (0.5, 1.5) */
+
+    for (j = 0; j < nrhs; ++j) {
 	for (i = 0; i < n; ++i) {
-	    if ( i % 2 ) x[i + j*ldx] = 1.0 + (double)(i+1.)/n;
-	    else x[i + j*ldx] = 1.0 - (double)(i+1.)/n;
+#if 1
+	  x[i + j*ldx] = (double) pow(tau, - ((double)i / (n-1))) * r;
+
+	  //if (i % 2) x[i + j*ldx] = 1.0; else x[i + j*ldx] = -1.0;
+#else
+	  x[i + j*ldx] = (double)rand() / (double)((unsigned)RAND_MAX + 1); /* uniform in [0,1) */
+#endif
 	}
+    }
 }
 
 /*! \brief Let rhs[i] = sum of i-th row of A, so the solution vector is all 1's
@@ -543,8 +564,8 @@ void Printdouble5(char *name, int_t len, double *x)
 
     printf("%10s:", name);
     for (i = 0; i < len; ++i) {
-	if ( i % 5 == 0 ) printf("\n[%ld-%ld] ", (long int) i, (long int) i+4);
-	printf("%14e", x[i]);
+	if ( i % 5 == 0 ) printf("\n[%d-%d] ", (int) i, (int) i+4);
+	printf("%20.16e ", x[i]);
     }
     printf("\n\n");
 }

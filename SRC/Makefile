@@ -65,7 +65,9 @@ SPLUSRC = psgssvx.o psgssvx_ABglobal.o \
 	  psgstrf.o sstatic_schedule.o psgstrf2.o psGetDiagU.o \
 	  psgstrs.o psgstrs1.o psgstrs_lsum.o psgstrs_Bglobal.o \
 	  psgsrfs.o psgsmv.o psgsrfs_ABXglobal.o psgsmv_AXglobal.o \
-	  sreadtriple_noheader.o
+	  sreadtriple_noheader.o \
+	  psgssvx_d2.o psgsrfs_d2.o psgsmv_d2.o
+	  
 #
 # Routines for double precision parallel SuperLU
 DPLUSRC = pdgssvx.o pdgssvx_ABglobal.o \
