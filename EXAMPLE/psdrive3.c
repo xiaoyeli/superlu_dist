@@ -35,9 +35,9 @@ at the top-level directory.
  * This example illustrates how to use PSGSSVX to solve
  * systems repeatedly with the same sparsity pattern and similar
  * numerical values of matrix A.
- * In this case, the column permutation vector and symbolic factorization are
- * computed only once. The following data structures will be reused in the
- * subsequent call to PSGSSVX:
+ * In this case, the row and column permutation vectors and symbolic
+ * factorization are computed only once. The following data structures
+ * will be reused in the subsequent call to PSGSSVX:
  *        ScalePermstruct : DiagScale, R, C, perm_r, perm_c
  *        LUstruct        : etree, Glu_persist, Llu
  *
@@ -207,8 +207,15 @@ int main(int argc, char *argv[])
     psgssvx(&options, &A, &ScalePermstruct, b, ldb, nrhs, &grid,
             &LUstruct, &SOLVEstruct, berr, &stat, &info);
 
-    /* Check the accuracy of the solution. */
-    psinf_norm_error(iam, m_loc, nrhs, b, ldb, xtrue, ldx, grid.comm);
+    if ( info ) {  /* Something is wrong */
+        if ( iam==0 ) {
+	    printf("ERROR: INFO = %d returned from psgssvx()\n", info);
+	    fflush(stdout);
+	}
+    } else {
+        /* Check the accuracy of the solution. */
+        psinf_norm_error(iam, m_loc, nrhs, b, ldb, xtrue, ldx, grid.comm);
+    }
     
     PStatPrint(&options, &stat, &grid);        /* Print the statistics. */
     PStatFree(&stat);
@@ -231,8 +238,9 @@ int main(int argc, char *argv[])
     if (iam == 0) {
     }
 
-    /* Zero the numerical values in L.  */
+    /* Zero the numerical values in L and U.  */
     sZeroLblocks(iam, n, &grid, &LUstruct);
+    sZeroUblocks(iam, n, &grid, &LUstruct);
 
     sCreate_CompRowLoc_Matrix_dist(&A, m, n, nnz_loc, m_loc, fst_row,
 				   nzval1, colind1, rowptr1,
@@ -242,17 +250,23 @@ int main(int argc, char *argv[])
     psgssvx(&options, &A, &ScalePermstruct, b1, ldb, nrhs, &grid,
             &LUstruct, &SOLVEstruct, berr, &stat, &info);
 
-    /* Check the accuracy of the solution. */
-    if ( !iam )
-        printf("Solve a system with the same pattern and similar values.\n");
-
-    psinf_norm_error(iam, m_loc, nrhs, b1, ldb, xtrue, ldx, grid.comm);
+    if ( info ) {  /* Something is wrong */
+        if ( iam==0 ) {
+	    printf("ERROR: INFO = %d returned from psgssvx()\n", info);
+	    fflush(stdout);
+	}
+    } else {
+        /* Check the accuracy of the solution. */
+        if ( !iam )
+            printf("Solve a system with the same pattern and similar values.\n");
+        psinf_norm_error(iam, m_loc, nrhs, b1, ldb, xtrue, ldx, grid.comm);
+    }
 
     /* Print the statistics. */
     PStatPrint(&options, &stat, &grid);
 
     /* ------------------------------------------------------------
-       DEALLOCATE STORAGE.
+       DEALLOCATE ALL STORAGE.
        ------------------------------------------------------------*/
     PStatFree(&stat);
     Destroy_CompRowLoc_Matrix_dist(&A); /* Deallocate storage of matrix A.  */

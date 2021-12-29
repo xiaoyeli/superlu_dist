@@ -12,7 +12,7 @@ at the top-level directory.
  * \brief Definitions which are precision-neutral
  *
  * <pre>
- * -- Distributed SuperLU routine (version 6.1) --
+ * -- Distributed SuperLU routine (version 7.2) --
  * Lawrence Berkeley National Lab, Univ. of California Berkeley.
  * November 1, 2007
  *
@@ -24,6 +24,9 @@ at the top-level directory.
  *     November 12, 2019   version 6.2.0
  *     October 23, 2020    version 6.4.0
  *     May 12, 2021        version 7.0.0
+ *     October 5, 2021     version 7.1.0
+ *     October 18, 2021    version 7.1.1
+ *     December 12, 2021   version 7.2.0
  * </pre>
  */
 
@@ -74,9 +77,9 @@ at the top-level directory.
  * Versions 4.x and earlier do not include a #define'd version numbers.
  */
 #define SUPERLU_DIST_MAJOR_VERSION     7
-#define SUPERLU_DIST_MINOR_VERSION     0
+#define SUPERLU_DIST_MINOR_VERSION     2
 #define SUPERLU_DIST_PATCH_VERSION     0
-#define SUPERLU_DIST_RELEASE_DATE      "May 12, 2021"
+#define SUPERLU_DIST_RELEASE_DATE      "December 12, 2021"
 
 #include "superlu_dist_config.h"
 /* Define my integer size int_t */
@@ -87,7 +90,7 @@ at the top-level directory.
 #elif defined (_LONGINT)
   typedef int64_t int_t;
   #define mpi_int_t   MPI_LONG_LONG_INT
-  #define IFMT "%ld"
+  #define IFMT "%lld"
 #else /* Default */
   typedef int int_t;
   #define mpi_int_t   MPI_INT
@@ -706,6 +709,7 @@ typedef struct {
 				      serial symbolic factorization */
     yes_no_t      SymPattern;      /* symmetric factorization          */
     yes_no_t      Use_TensorCore;  /* Use Tensor Core or not  */
+    yes_no_t      Algo3d;          /* use 3D factorization/solve algorithms */
 } superlu_dist_options_t;
 
 typedef struct {
@@ -1292,7 +1296,7 @@ extern int_t* getMyNodeCountsFr(int_t maxLvl, int_t* myTreeIdxs,
 extern int_t** getNodeListFr(int_t maxLvl, sForest_t**  sForests);
 extern int_t*  getNodeCountsFr(int_t maxLvl, sForest_t**  sForests);
 // int_t* getNodeToForstMap(int_t nsupers, sForest_t**  sForests, gridinfo3d_t* grid3d);
-extern int_t* getIsNodeInMyGrid(int_t nsupers, int_t maxLvl, int_t* myNodeCount, int_t** treePerm);
+extern int* getIsNodeInMyGrid(int_t nsupers, int_t maxLvl, int_t* myNodeCount, int_t** treePerm);
 extern void printForestWeightCost(sForest_t**  sForests, SCT_t* SCT, gridinfo3d_t* grid3d);
 extern sForest_t**  getGreedyLoadBalForests( int_t maxLvl, int_t nsupers, int_t* setree, treeList_t* treeList);
 extern sForest_t**  getForests( int_t maxLvl, int_t nsupers, int_t*setree, treeList_t* treeList);

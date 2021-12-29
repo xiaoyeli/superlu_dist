@@ -225,6 +225,9 @@ typedef struct {
                              positions in the gathered x-vector.
                              This is re-used in repeated calls to pdgsmv() */
     int_t *xrow_to_proc; /* used by PDSLin */
+    NRformat_loc3d* A3d; /* Point to 3D {A, B} gathered on 2D layer 0.
+                            This needs to be peresistent between
+			    3D factorization and solve.  */
 } dSOLVEstruct_t;
 
 
@@ -418,6 +421,7 @@ extern void  pdCompute_Diag_Inv(int_t, dLUstruct_t *,gridinfo_t *, SuperLUStat_t
 extern int  dSolveInit(superlu_dist_options_t *, SuperMatrix *, int_t [], int_t [],
 		       int_t, dLUstruct_t *, gridinfo_t *, dSOLVEstruct_t *);
 extern void dSolveFinalize(superlu_dist_options_t *, dSOLVEstruct_t *);
+extern void dDestroy_A3d_gathered_on_2d(dSOLVEstruct_t *, gridinfo3d_t *);
 extern int_t pdgstrs_init(int_t, int_t, int_t, int_t,
                           int_t [], int_t [], gridinfo_t *grid,
 	                  Glu_persist_t *, dSOLVEstruct_t *);
@@ -525,7 +529,8 @@ extern void dCopy_CompRowLoc_Matrix_dist(SuperMatrix *, SuperMatrix *);
 extern void dZero_CompRowLoc_Matrix_dist(SuperMatrix *);
 extern void dScaleAddId_CompRowLoc_Matrix_dist(SuperMatrix *, double);
 extern void dScaleAdd_CompRowLoc_Matrix_dist(SuperMatrix *, SuperMatrix *, double);
-extern void dZeroLblocks(int, int_t, gridinfo_t *, dLUstruct_t *);
+extern void dZeroLblocks(int, int, gridinfo_t *, dLUstruct_t *);
+extern void dZeroUblocks(int iam, int n, gridinfo_t *, dLUstruct_t *);
 extern void    dfill_dist (double *, int_t, double);
 extern void    dinf_norm_error_dist (int_t, int_t, double*, int_t,
                                      double*, int_t, gridinfo_t*);
@@ -623,10 +628,10 @@ extern int superlu_dgemv(const char *trans, const int m,
 extern int superlu_dtrsv(char *uplo, char *trans, char *diag,
                   int n, double *a, int lda, double *x, int incx);
 
-
+#ifdef SLU_HAVE_LAPACK
 // LAPACK routine
 extern void dtrtri_(char*, char*, int*, double*, int*, int*);
-
+#endif
 
 /*==== For 3D code ====*/
 extern int dcreate_matrix3d(SuperMatrix *A, int nrhs, double **rhs,
@@ -638,9 +643,9 @@ extern int dcreate_matrix_postfix3d(SuperMatrix *A, int nrhs, double **rhs,
     
 /* Matrix distributed in NRformat_loc in 3D process grid. It converts 
    it to a NRformat_loc distributed in 2D grid in grid-0 */
-extern NRformat_loc3d *dGatherNRformat_loc3d(NRformat_loc *A, double *B,
-					     int ldb, int nrhs,
-					     gridinfo3d_t *grid3d);
+extern void dGatherNRformat_loc3d(fact_t Fact, NRformat_loc *A, double *B,
+				   int ldb, int nrhs, gridinfo3d_t *grid3d,
+				   NRformat_loc3d **);
 extern int dScatter_B3d(NRformat_loc3d *A3d, gridinfo3d_t *grid3d);
 
 extern void pdgssvx3d (superlu_dist_options_t *, SuperMatrix *,

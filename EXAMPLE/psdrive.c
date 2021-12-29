@@ -168,8 +168,7 @@ int main(int argc, char *argv[])
 	
     /* Bail out if I do not belong in the grid. */
     iam = grid.iam;
-    if ( iam == -1 )	goto out;
-
+    if ( (iam >= nprow * npcol) || (iam == -1) ) goto out;
     if ( !iam ) {
 	int v_major, v_minor, v_bugfix;
 #ifdef __INTEL_COMPILER
@@ -387,12 +386,24 @@ int main(int argc, char *argv[])
     /* Check the accuracy of the solution. */
     psinf_norm_error(iam, ((NRformat_loc *)A.Store)->m_loc,
 		     nrhs, b, ldb, xtrue, ldx, grid.comm);
-    if (iam == 0) {
-        printf(" Normwise error bound: %e\n", err_bounds[0]);
-	printf(" Componentwise error bound: %e\n", err_bounds[1*nrhs]);
-	printf(" Componentwise backword error: %e\n", err_bounds[2*nrhs]);
-    }
 
+    if ( info ) {  /* Something is wrong */
+        if ( iam==0 ) {
+	    printf("ERROR: INFO = %d returned from psgssvx()\n", info);
+	    fflush(stdout);
+	}
+    } else {
+        /* Check the accuracy of the solution. */
+        psinf_norm_error(iam, ((NRformat_loc *)A.Store)->m_loc,
+		         nrhs, b, ldb, xtrue, ldx, grid.comm);
+	if ( options.IterRefine == SLU_DOUBLE || options.IterRefine == SLU_EXTRA ||
+	     iam==0 ) {
+	  printf(" Normwise error bound: %e\n", err_bounds[0]);
+	  printf(" Componentwise error bound: %e\n", err_bounds[1*nrhs]);
+	  printf(" Componentwise backword error: %e\n", err_bounds[2*nrhs]);
+	  fflush(stdout);
+	}
+    
     PStatPrint(&options, &stat, &grid);        /* Print the statistics. */
 
     /* ------------------------------------------------------------
@@ -404,9 +415,7 @@ int main(int argc, char *argv[])
     sScalePermstructFree(&ScalePermstruct);
     sDestroy_LU(n, &grid, &LUstruct);
     sLUstructFree(&LUstruct);
-    if ( options.SolveInitialized ) {
-        sSolveFinalize(&options, &SOLVEstruct);
-    }
+    sSolveFinalize(&options, &SOLVEstruct);
     SUPERLU_FREE(b);
     SUPERLU_FREE(xtrue);
     SUPERLU_FREE(dxtrue);

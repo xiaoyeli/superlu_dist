@@ -14,8 +14,9 @@ at the top-level directory.
  *
  * <pre>
  * -- Distributed SuperLU routine (version 7.0) --
- * Lawrence Berkeley National Lab, Georgia Institute of Technology.
- * May 10, 2019
+ * Lawrence Berkeley National Lab, Georgia Institute of Technology,
+ * Oak Ridge National Lab
+ * May 12, 2021
  */
 #include <stdio.h>
 #include "superlu_zdefs.h"
@@ -51,7 +52,9 @@ void zgather_u(int_t num_u_blks,
     // jj, i)
     doublecomplex zero = {0.0, 0.0};
 
+#ifdef _OPENMP    
 #pragma omp parallel for default (shared) schedule(dynamic)
+#endif
     for (int_t j = 0; j < num_u_blks; ++j)
     {
         doublecomplex *tempu;
@@ -95,7 +98,9 @@ void zgather_l( int_t num_LBlk, int_t knsupc,
     }
 
     int_t LD_LBuff = L_info[num_LBlk - 1].FullRow;  /*leading dimension of buffer*/
+#ifdef _OPENMP    
 #pragma omp parallel for
+#endif
     for (int_t i = 0; i < num_LBlk; ++i)
     {
         int_t StRowDest  = 0;

@@ -225,6 +225,9 @@ typedef struct {
                              positions in the gathered x-vector.
                              This is re-used in repeated calls to pzgsmv() */
     int_t *xrow_to_proc; /* used by PDSLin */
+    NRformat_loc3d* A3d; /* Point to 3D {A, B} gathered on 2D layer 0.
+                            This needs to be peresistent between
+			    3D factorization and solve.  */
 } zSOLVEstruct_t;
 
 
@@ -428,6 +431,7 @@ extern void  pzCompute_Diag_Inv(int_t, zLUstruct_t *,gridinfo_t *, SuperLUStat_t
 extern int  zSolveInit(superlu_dist_options_t *, SuperMatrix *, int_t [], int_t [],
 		       int_t, zLUstruct_t *, gridinfo_t *, zSOLVEstruct_t *);
 extern void zSolveFinalize(superlu_dist_options_t *, zSOLVEstruct_t *);
+extern void zDestroy_A3d_gathered_on_2d(zSOLVEstruct_t *, gridinfo3d_t *);
 extern int_t pzgstrs_init(int_t, int_t, int_t, int_t,
                           int_t [], int_t [], gridinfo_t *grid,
 	                  Glu_persist_t *, zSOLVEstruct_t *);
@@ -537,7 +541,8 @@ extern void zCopy_CompRowLoc_Matrix_dist(SuperMatrix *, SuperMatrix *);
 extern void zZero_CompRowLoc_Matrix_dist(SuperMatrix *);
 extern void zScaleAddId_CompRowLoc_Matrix_dist(SuperMatrix *, doublecomplex);
 extern void zScaleAdd_CompRowLoc_Matrix_dist(SuperMatrix *, SuperMatrix *, doublecomplex);
-extern void zZeroLblocks(int, int_t, gridinfo_t *, zLUstruct_t *);
+extern void zZeroLblocks(int, int, gridinfo_t *, zLUstruct_t *);
+extern void zZeroUblocks(int iam, int n, gridinfo_t *, zLUstruct_t *);
 extern void    zfill_dist (doublecomplex *, int_t, doublecomplex);
 extern void    zinf_norm_error_dist (int_t, int_t, doublecomplex*, int_t,
                                      doublecomplex*, int_t, gridinfo_t*);
@@ -635,10 +640,10 @@ extern int superlu_zgemv(const char *trans, const int m,
 extern int superlu_ztrsv(char *uplo, char *trans, char *diag,
                   int n, doublecomplex *a, int lda, doublecomplex *x, int incx);
 
-
+#ifdef SLU_HAVE_LAPACK
 // LAPACK routine
 extern void ztrtri_(char*, char*, int*, doublecomplex*, int*, int*);
-
+#endif
 
 /*==== For 3D code ====*/
 extern int zcreate_matrix3d(SuperMatrix *A, int nrhs, doublecomplex **rhs,
@@ -650,9 +655,9 @@ extern int zcreate_matrix_postfix3d(SuperMatrix *A, int nrhs, doublecomplex **rh
     
 /* Matrix distributed in NRformat_loc in 3D process grid. It converts 
    it to a NRformat_loc distributed in 2D grid in grid-0 */
-extern NRformat_loc3d *zGatherNRformat_loc3d(NRformat_loc *A, doublecomplex *B,
-					     int ldb, int nrhs,
-					     gridinfo3d_t *grid3d);
+extern void zGatherNRformat_loc3d(fact_t Fact, NRformat_loc *A, doublecomplex *B,
+				   int ldb, int nrhs, gridinfo3d_t *grid3d,
+				   NRformat_loc3d **);
 extern int zScatter_B3d(NRformat_loc3d *A3d, gridinfo3d_t *grid3d);
 
 extern void pzgssvx3d (superlu_dist_options_t *, SuperMatrix *,

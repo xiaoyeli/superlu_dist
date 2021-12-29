@@ -99,7 +99,7 @@ ZPLUSRC += pzgssvx3d.o pzgstrf3d.o ztreeFactorization.o zscatter3d.o \
 	znrformat_loc3d.o ztreeFactorizationGPU.o ##$(FACT3D)
 
 ifeq ($(HAVE_CUDA),TRUE)
-ALLAUX += cublas_utils.o
+ALLAUX += cublas_utils.o superlu_gpu_utils.o
 DPLUSRC += dsuperlu_gpu.o
 ZPLUSRC += zsuperlu_gpu.o
 endif

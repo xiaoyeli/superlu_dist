@@ -15,7 +15,6 @@ set(headers
     TreeReduce_slu_impl.hpp	
     ${CMAKE_CURRENT_BINARY_DIR}/superlu_dist_config.h
     ${PROJECT_SOURCE_DIR}/SRC/superlu_FortranCInterface.h
-    cub/cub.cuh
 )
 if (MSVC)
   list(APPEND headers wingetopt.h)
@@ -56,7 +55,7 @@ set(sources
   sec_structs.c
 )
 if (HAVE_CUDA)
-  list(APPEND sources cublas_utils.c)
+  list(APPEND sources cublas_utils.c superlu_gpu_utils.cu)
 endif()
 
 if (MSVC)

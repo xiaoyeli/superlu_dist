@@ -191,10 +191,17 @@ int main(int argc, char *argv[])
 	psgssvx(&options, &A, &ScalePermstruct, b, ldb, nrhs, &grid1,
                 &LUstruct, &SOLVEstruct, berr, &stat, &info);
 
-        /* Check the accuracy of the solution. */
-        psinf_norm_error(iam, ((NRformat_loc *)A.Store)->m_loc,
-                         nrhs, b, ldb, xtrue, ldx, grid1.comm);
-
+        if ( info ) {  /* Something is wrong */
+            if ( iam==0 ) {
+	        printf("ERROR: INFO = %d returned from psgssvx()\n", info);
+    	        fflush(stdout);
+    	    }
+        } else {
+            /* Check the accuracy of the solution. */
+            psinf_norm_error(iam, ((NRformat_loc *)A.Store)->m_loc,
+                             nrhs, b, ldb, xtrue, ldx, grid1.comm);
+	}
+    
 	/* Print the statistics. */
 	PStatPrint(&options, &stat, &grid1);
 
@@ -256,10 +263,17 @@ int main(int argc, char *argv[])
 	psgssvx(&options, &A, &ScalePermstruct, b, ldb, nrhs, &grid2,
                 &LUstruct, &SOLVEstruct, berr, &stat, &info);
 
-        /* Check the accuracy of the solution. */
-        psinf_norm_error(iam, ((NRformat_loc *)A.Store)->m_loc,
-                         nrhs, b, ldb, xtrue, ldx, grid2.comm);
-    
+        if ( info ) {  /* Something is wrong */
+            if ( iam==0 ) {
+	        printf("ERROR: INFO = %d returned from psgssvx()\n", info);
+	        fflush(stdout);
+	    }
+        } else {
+            /* Check the accuracy of the solution. */
+            psinf_norm_error(iam, ((NRformat_loc *)A.Store)->m_loc,
+                             nrhs, b, ldb, xtrue, ldx, grid2.comm);
+        }
+	
 	/* Print the statistics. */
 	PStatPrint(&options, &stat, &grid2);
 

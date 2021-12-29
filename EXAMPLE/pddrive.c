@@ -151,8 +151,7 @@ int main(int argc, char *argv[])
 	
     /* Bail out if I do not belong in the grid. */
     iam = grid.iam;
-    if ( iam >= nprow * npcol || iam ==-1 ) goto out;
-
+    if ( (iam >= nprow * npcol) || (iam == -1) ) goto out;
     if ( !iam ) {
 	int v_major, v_minor, v_bugfix;
 #ifdef __INTEL_COMPILER
@@ -219,6 +218,7 @@ int main(int argc, char *argv[])
     set_default_options_dist(&options);
     options.Equil = YES; 
 #if 0
+    options.RowPerm           = LargeDiag_HWPM;
     options.RowPerm = NOROWPERM;
     options.IterRefine = NOREFINE;
     options.ColPerm = NATURAL;
@@ -256,10 +256,16 @@ int main(int argc, char *argv[])
     pdgssvx(&options, &A, &ScalePermstruct, b, ldb, nrhs, &grid,
 	    &LUstruct, &SOLVEstruct, berr, &stat, &info);
 
-
-    /* Check the accuracy of the solution. */
-    pdinf_norm_error(iam, ((NRformat_loc *)A.Store)->m_loc,
-		     nrhs, b, ldb, xtrue, ldx, grid.comm);
+    if ( info ) {  /* Something is wrong */
+        if ( iam==0 ) {
+	    printf("ERROR: INFO = %d returned from pdgssvx()\n", info);
+	    fflush(stdout);
+	}
+    } else {
+        /* Check the accuracy of the solution. */
+        pdinf_norm_error(iam, ((NRformat_loc *)A.Store)->m_loc,
+		         nrhs, b, ldb, xtrue, ldx, grid.comm);
+    }
 
     PStatPrint(&options, &stat, &grid);        /* Print the statistics. */
 
@@ -272,9 +278,7 @@ int main(int argc, char *argv[])
     dScalePermstructFree(&ScalePermstruct);
     dDestroy_LU(n, &grid, &LUstruct);
     dLUstructFree(&LUstruct);
-    if ( options.SolveInitialized ) {
-        dSolveFinalize(&options, &SOLVEstruct);
-    }
+    dSolveFinalize(&options, &SOLVEstruct);
     SUPERLU_FREE(b);
     SUPERLU_FREE(xtrue);
     SUPERLU_FREE(berr);

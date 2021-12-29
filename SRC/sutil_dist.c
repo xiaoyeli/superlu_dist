@@ -14,10 +14,10 @@ at the top-level directory.
  * \brief Several matrix utilities
  *
  * <pre>
- * -- Distributed SuperLU routine (version 6.1.1) --
+ * -- Distributed SuperLU routine (version 7.1.0) --
  * Lawrence Berkeley National Lab, Univ. of California Berkeley.
  * March 15, 2003
- *
+ * October 5, 2021
  */
 
 #include <math.h>
@@ -392,6 +392,7 @@ void sScaleAdd_CompRowLoc_Matrix_dist(SuperMatrix *A, SuperMatrix *B, float c)
 
     return;
 }
+/**** end utilities added for SUNDIALS ****/
 
 /**** end additions for SUNDIALS ****/
 
@@ -598,6 +599,7 @@ int sAllocGlu_3d(int_t n, int_t nsupers, sLUstruct_t * LUstruct)
 }
 
 // Sherry added
+/* Free the replicated data on 3D process layer that is not grid-0 */
 int sDeAllocGlu_3d(sLUstruct_t * LUstruct)
 {
     SUPERLU_FREE(LUstruct->Glu_persist->xsup);
@@ -605,6 +607,7 @@ int sDeAllocGlu_3d(sLUstruct_t * LUstruct)
     return 0;
 }
 
+/* Free the replicated data on 3D process layer that is not grid-0 */
 int sDeAllocLlu_3d(int_t n, sLUstruct_t * LUstruct, gridinfo3d_t* grid3d)
 {
     int i, nbc, nbr, nsupers;
@@ -792,6 +795,41 @@ void sPrintLblocks(int iam, int_t nsupers, gridinfo_t *grid,
 } /* SPRINTLBLOCKS */
 
 
+/*! \brief Sets all entries of matrix L to zero.
+ */
+void sZeroLblocks(int iam, int n, gridinfo_t *grid, sLUstruct_t *LUstruct)
+{
+    float zero = 0.0;
+    register int extra, gb, j, lb, nsupc, nsupr, ncb;
+    register int_t k, mycol, r;
+    sLocalLU_t *Llu = LUstruct->Llu;
+    Glu_persist_t *Glu_persist = LUstruct->Glu_persist;
+    int_t *xsup = Glu_persist->xsup;
+    int_t *index;
+    float *nzval;
+    int_t nsupers = Glu_persist->supno[n-1] + 1;
+
+    ncb = nsupers / grid->npcol;
+    extra = nsupers % grid->npcol;
+    mycol = MYCOL( iam, grid );
+    if ( mycol < extra ) ++ncb;
+    for (lb = 0; lb < ncb; ++lb) {
+	index = Llu->Lrowind_bc_ptr[lb];
+	if ( index ) { /* Not an empty column */
+	    nzval = Llu->Lnzval_bc_ptr[lb];
+	    nsupr = index[1];
+	    gb = lb * grid->npcol + mycol;
+	    nsupc = SuperSize( gb );
+	    for (j = 0; j < nsupc; ++j) {
+                for (r = 0; r < nsupr; ++r) {
+                    nzval[r + j*nsupr] = zero;
+		}
+            }
+	}
+    }
+} /* end sZeroLblocks */
+
+
 /*! \brief Dump the factored matrix L using matlab triple-let format
  */
 void sDumpLblocks(int iam, int_t nsupers, gridinfo_t *grid,
@@ -888,7 +926,6 @@ void sDumpLblocks(int iam, int_t nsupers, gridinfo_t *grid,
 } /* sDumpLblocks */
 
 
-
 /*! \brief Print the blocks in the factored matrix U.
  */
 void sPrintUblocks(int iam, int_t nsupers, gridinfo_t *grid,
@@ -928,7 +965,37 @@ void sPrintUblocks(int iam, int_t nsupers, gridinfo_t *grid,
 	    printf("[%d] ToSendD[] %d\n", iam, Llu->ToSendD[lb]);
 	}
     }
-} /* SPRINTUBLOCKS */
+} /* end sPrintUlocks */
+
+/*! \brief Sets all entries of matrix U to zero.
+ */
+void sZeroUblocks(int iam, int n, gridinfo_t *grid, sLUstruct_t *LUstruct)
+{
+    float zero = 0.0;
+    register int i, extra, lb, len, nrb;
+    register int myrow, r;
+    sLocalLU_t *Llu = LUstruct->Llu;
+    Glu_persist_t *Glu_persist = LUstruct->Glu_persist;
+    int_t *xsup = Glu_persist->xsup;
+    int_t *index;
+    float *nzval;
+    int nsupers = Glu_persist->supno[n-1] + 1;
+
+    nrb = nsupers / grid->nprow;
+    extra = nsupers % grid->nprow;
+    myrow = MYROW( iam, grid );
+    if ( myrow < extra ) ++nrb;
+    for (lb = 0; lb < nrb; ++lb) {
+	index = Llu->Ufstnz_br_ptr[lb];
+	if ( index ) { /* Not an empty row */
+	    nzval = Llu->Unzval_br_ptr[lb];
+	    len = index[1];  // number of entries in nzval[];
+	    for (i = 0; i < len; ++i) {
+	        nzval[i] = zero;
+	    }
+	}
+    }
+} /* end sZeroUlocks */
 
 int
 sprint_gsmv_comm(FILE *fp, int_t m_loc, psgsmv_comm_t *gsmv_comm,

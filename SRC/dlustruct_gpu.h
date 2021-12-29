@@ -4,10 +4,12 @@
  * \brief Descriptions and declarations for structures used in GPU
  *
  * <pre>
- * -- Distributed SuperLU routine (version 7.0) --
+ * -- Distributed SuperLU routine (version 7.2) --
  * Lawrence Berkeley National Lab, Univ. of California Berkeley,
  * Georgia Institute of Technology, Oak Ridge National Laboratory
  * March 14, 2021 version 7.0.0
+ *
+ * Last update: December 12, 2021  v7.2.0
  * </pre>
  */
 
@@ -71,15 +73,15 @@ typedef struct //SCUbuf_gpu_
 
 } dSCUbuf_gpu_t;
 
-
+/* Holds the L & U data structures on the GPU side */
 typedef struct //LUstruct_gpu_ 
 {
     int_t   *LrowindVec;      /* A single vector */
     int_t   *LrowindPtr;      /* A single vector */
 
     double  *LnzvalVec;       /* A single vector */
-    int_t   *LnzvalPtr;       /* A single vector */
-    int_t   *LnzvalPtr_host;  /* A single vector */
+    int_t   *LnzvalPtr;        /* A single vector */
+    int_t   *LnzvalPtr_host;   /* A single vector */
 
     int_t   *UrowindVec;            /* A single vector */
     int_t   *UrowindPtr;            /* A single vector */
@@ -87,7 +89,8 @@ typedef struct //LUstruct_gpu_
     int_t   *UnzvalPtr_host;
 
     double  *UnzvalVec;       /* A single vector */
-    int_t   *UnzvalPtr;      /* A single vector */
+    int_t   *UnzvalPtr;        /* A single vector */
+    
     /*gpu pointers for easy block accesses */
     local_l_blk_info_t *local_l_blk_infoVec;
     int_t *local_l_blk_infoPtr;
@@ -108,7 +111,6 @@ typedef struct //LUstruct_gpu_
     int_t nsupers;  /*should have number of supernodes*/
     int_t *xsup;
     gridinfo_t *grid;
-
 
     double ScatterMOPCounter;
     double ScatterMOPTimer;
@@ -135,12 +137,12 @@ typedef struct //LUstruct_gpu_
 typedef struct //sluGPU_t_
 {
     int_t gpuId;        // if there are multiple GPUs
-    dLUstruct_gpu_t *A_gpu, *dA_gpu;
+    dLUstruct_gpu_t *A_gpu, *dA_gpu; // holds the LU structure on GPU
     cudaStream_t funCallStreams[MAX_NCUDA_STREAMS], CopyStream;
     cublasHandle_t cublasHandles[MAX_NCUDA_STREAMS];
     int_t lastOffloadStream[MAX_NCUDA_STREAMS];
     int_t nCudaStreams;
-    int_t* isNodeInMyGrid;
+    int* isNodeInMyGrid;
     double acc_async_cost;
 } dsluGPU_t;
 
@@ -213,7 +215,7 @@ int dSchurCompUpdate_GPU(
 );
 
 
-extern void dCopyLUToGPU3D (int_t* isNodeInMyGrid, dLocalLU_t *A_host,
+extern void dCopyLUToGPU3D (int* isNodeInMyGrid, dLocalLU_t *A_host,
            dsluGPU_t *sluGPU, Glu_persist_t *Glu_persist, int_t n,
 	   gridinfo3d_t *grid3d, int_t buffer_size, int_t bigu_size, int_t ldt);
 

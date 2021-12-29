@@ -47,7 +47,7 @@ dreadtriple_dist(FILE *fp, int_t *m, int_t *n, int_t *nonz,
      */
 
 #ifdef _LONGINT
-    fscanf(fp, "%ld%ld%ld", m, n, nonz);
+    fscanf(fp, "%lld%lld%lld", m, n, nonz);
 #else
     fscanf(fp, "%d%d%d", m, n, nonz);
 #endif
@@ -77,7 +77,7 @@ dreadtriple_dist(FILE *fp, int_t *m, int_t *n, int_t *nonz,
     for (nnz = 0, nz = 0; nnz < *nonz; ++nnz) {
 
 #ifdef _LONGINT
-        fscanf(fp, "%ld%ld%lf\n", &row[nz], &col[nz], &val[nz]);
+        fscanf(fp, "%lld%lld%lf\n", &row[nz], &col[nz], &val[nz]);
 #else // int 
         fscanf(fp, "%d%d%lf\n", &row[nz], &col[nz], &val[nz]);
 #endif
@@ -88,7 +88,7 @@ dreadtriple_dist(FILE *fp, int_t *m, int_t *n, int_t *nonz,
 		printf("triplet file: row/col indices are zero-based.\n");
 	    } else {
 		printf("triplet file: row/col indices are one-based.\n");
-	    }
+     	    }
 
 	if ( !zero_base ) {
 	    /* Change to 0-based indexing. */

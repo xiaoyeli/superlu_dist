@@ -405,7 +405,7 @@ at the top-level directory.
  *           of Pc*A'*A*Pc'; perm_c is not changed if the elimination tree
  *           is already in postorder.
  *
- *         o R (double*) dimension (A->nrow)
+ *         o R (double *) dimension (A->nrow)
  *           The row scale factors for A.
  *           If DiagScale = ROW or BOTH, A is multiplied on the left by
  *                          diag(R).
@@ -413,7 +413,7 @@ at the top-level directory.
  *           If options->Fact = FACTORED or SamePattern_SameRowPerm, R is
  *           an input argument; otherwise, R is an output argument.
  *
- *         o C (double*) dimension (A->ncol)
+ *         o C (double *) dimension (A->ncol)
  *           The column scale factors for A.
  *           If DiagScale = COL or BOTH, A is multiplied on the right by
  *                          diag(C).
@@ -587,13 +587,13 @@ pzgssvx(superlu_dist_options_t *options, SuperMatrix *A,
     /* Test the input parameters. */
     *info = 0;
     Fact = options->Fact;
-    if ( Fact < 0 || Fact > FACTORED )
+    if ( Fact < DOFACT || Fact > FACTORED )
 	*info = -1;
-    else if ( options->RowPerm < 0 || options->RowPerm > MY_PERMR )
+    else if ( options->RowPerm < NOROWPERM || options->RowPerm > MY_PERMR )
 	*info = -1;
-    else if ( options->ColPerm < 0 || options->ColPerm > MY_PERMC )
+    else if ( options->ColPerm < NATURAL || options->ColPerm > MY_PERMC )
 	*info = -1;
-    else if ( options->IterRefine < 0 || options->IterRefine > SLU_EXTRA )
+    else if ( options->IterRefine < NOREFINE || options->IterRefine > SLU_EXTRA )
 	*info = -1;
     else if ( options->IterRefine == SLU_EXTRA ) {
 	*info = -1;

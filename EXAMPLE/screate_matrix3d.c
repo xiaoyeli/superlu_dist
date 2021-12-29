@@ -270,7 +270,7 @@ int screate_matrix_postfix3d(SuperMatrix *A, int nrhs, float **rhs,
     iam = grid3d->iam;
 
 #if ( DEBUGlevel>=1 )
-    CHECK_MALLOC(iam, "Enter dcreate_matrix()");
+    CHECK_MALLOC(iam, "Enter screate_matrix_postfix3d()");
 #endif
 
     if ( !iam )

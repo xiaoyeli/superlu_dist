@@ -2,9 +2,10 @@
  * \brief SuperLU grid utilities
  *
  * <pre>
- * -- Distributed SuperLU routine (version 7.0.0) --
+ * -- Distributed SuperLU routine (version 7.1.0) --
  * Lawrence Berkeley National Lab, Oak Ridge National Lab
  * May 12, 2021
+ * October 5, 2021
  * </pre>
  */
 
@@ -45,10 +46,27 @@ void superlu_gridinit3d(MPI_Comm Bcomm, /* The base communicator upon which
     superlu_gridmap3d(Bcomm, nprow, npcol, npdep, grid);
 
     // SUPERLU_FREE(usermap);
+    
+#ifdef GPU_ACC
+    /* Binding each MPI to a CUDA device */
+    char *ttemp;
+    ttemp = getenv ("SUPERLU_BIND_MPI_GPU");
+
+    if (ttemp) {
+	int devs, rank;
+	MPI_Comm_rank(Bcomm, &rank); // MPI_COMM_WORLD??
+	cudaGetDeviceCount(&devs);  // Returns the number of compute-capable devices
+	cudaSetDevice(rank % devs); // Set device to be used for GPU executions
+    }
+#endif
 }
 
 
 /*! \brief All processes in the MPI communicator must call this routine.
+ *  On output, if a process is not in the SuperLU group, the following
+ *  values are assigned to it:
+ *      grid->comm = MPI_COMM_NULL
+ *      grid->iam = -1
  */
 void superlu_gridmap3d(
     MPI_Comm Bcomm, /* The base communicator upon which
@@ -219,7 +237,7 @@ void superlu_gridmap3d(
 
     // grid->grid2d.cscp = grid->cscp;
 
-#if 0
+#if 1
     if ( (grid->zscp).Iam == 0) {
       printf("(3d grid: layer 0) iam %d, grid->grid2d.iam %d\n",
 	     grid->iam, (grid->grid2d).iam);
@@ -227,11 +245,12 @@ void superlu_gridmap3d(
     fflush(stdout);
 #endif
 
+    MPI_Comm_free( &superlu3d_comm );  // Sherry added
+    
  gridmap_out:    
     SUPERLU_FREE(pranks);
     MPI_Group_free( &superlu_grp );
     MPI_Group_free( &mpi_base_group );
-    MPI_Comm_free( &superlu3d_comm );  // Sherry added
 }
 
 void superlu_gridexit3d(gridinfo3d_t *grid)

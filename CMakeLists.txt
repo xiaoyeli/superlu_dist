@@ -11,7 +11,7 @@ cmake_minimum_required(VERSION 3.18.1 FATAL_ERROR)
 #project(SuperLU_DIST C CXX CUDA)
 project(SuperLU_DIST C CXX)
 set(VERSION_MAJOR "7")
-set(VERSION_MINOR "0")
+set(VERSION_MINOR "2")
 set(VERSION_BugFix "0")
 set(PROJECT_VERSION ${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_BugFix})
 
@@ -22,7 +22,7 @@ option(enable_doc       "Build doxygen documentation" OFF)
 option(enable_single    "Enable single precision library" ON)
 option(enable_double    "Enable double precision library" ON)
 option(enable_single    "Enable single precision library" OFF)
-option(enable_complex16 "Enable complex16 precision library" OFF)
+option(enable_complex16 "Enable complex16 precision library" ON)
 option(enable_tests  "Build tests" ON)
 option(enable_examples  "Build examples" ON)
 option(XSDK_ENABLE_Fortran "Enable Fortran" ON)
@@ -224,16 +224,17 @@ if (enable_openmp)
   find_package(OpenMP)
 ## include(FindOpenMP)  # Strumpack uses this
 
-if(OPENMP_FOUND)
-   set(CMAKE_C_FLAGS "${OpenMP_C_FLAGS} ${CMAKE_C_FLAGS}")
-   set(CMAKE_CXX_FLAGS "${OpenMP_CXX_FLAGS} ${CMAKE_CXX_FLAGS}")
-   set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${OpenMP_EXE_LINKER_FLAGS}")
-#    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${OpenMP_C_FLAGS}")
+  if(OPENMP_FOUND)
+    set(CMAKE_C_FLAGS "${OpenMP_C_FLAGS} ${CMAKE_C_FLAGS}")
+    set(CMAKE_CXX_FLAGS "${OpenMP_CXX_FLAGS} ${CMAKE_CXX_FLAGS}")
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${OpenMP_EXE_LINKER_FLAGS}")
+# The following causes problem with cmake/3.20.+
+# set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${OpenMP_C_FLAGS}")
     message("-- OpenMP_EXE_LINKER_FLAGS='${OpenMP_EXE_LINKER_FLAGS}'")
     message("-- CMAKE_EXE_LINKER_FLAGS='${CMAKE_EXE_LINKER_FLAGS}'")
-endif()  
-
+  endif()  
 endif()
+
 #--------------------- BLAS ---------------------
 if(NOT TPL_ENABLE_INTERNAL_BLASLIB)
 #  set(TPL_BLAS_LIBRARIES "" CACHE FILEPATH
@@ -360,7 +361,7 @@ if (XSDK_ENABLE_Fortran)
       SET(CMAKE_EXE_LINKER_FLAGS
           "${CMAKE_EXE_LINKER_FLAGS} -Wl,-rpath,${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}")
    else()
-      message("-- superlu_dist_fortranwill be built as a static library.")
+      message("-- superlu_dist_fortran will be built as a static library.")
       set(PROJECT_NAME_LIB_FORTRAN libsuperlu_dist_fortran.a)
    endif()
 endif()
@@ -383,6 +384,7 @@ if (TPL_ENABLE_COMBBLASLIB)   ## want to use CombBLAS
 
   message("-- Enabled support for COMBBLAS")
   set(COMBBLAS_FOUND TRUE)
+  set(CMAKE_CXX_STANDARD 14)  # CombBLAS requires c++14
 
   set(COMBBLAS_LIB ${TPL_COMBBLAS_LIBRARIES})
   # fix up COMBBLAS library names
@@ -408,9 +410,15 @@ endif()
 if (XSDK_ENABLE_Fortran)
   include(FortranCInterface)
   FortranCInterface_HEADER(${SuperLU_DIST_SOURCE_DIR}/SRC/superlu_FortranCInterface.h
-  MACRO_NAMESPACE "FC_")
+                            MACRO_NAMESPACE "FC_")
   FortranCInterface_VERIFY(CXX)
   SET(MPI_Fortran_LINK_FLAGS "${CMAKE_EXE_LINKER_FLAGS}")
+
+  #---------------------------------------------------------------------
+  # Set default fortran format to free and preprocess all files
+  #---------------------------------------------------------------------
+  set(CMAKE_Fortran_FORMAT FREE)
+  set(CMAKE_Fortran_PREPROCESS ON)
 endif()
 
 ######################################################################
