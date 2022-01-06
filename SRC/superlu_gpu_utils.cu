@@ -1,19 +1,6 @@
 #include "superlu_defs.h"
 #include "gpu_api_utils.h"
 
-/*error reporting functions */
-gpuError_t checkGPU(gpuError_t result)
-{
-#if defined(DEBUG) || defined(_DEBUG)
-    if (result != gpuSuccess) {
-        fprintf(stderr, "GPU Runtime Error: %s\n", gpuGetErrorString(result));
-        assert(result == gpuSuccess);
-    }
-#endif
-    return result;
-}
-
-
 
 __device__ int dnextpow2(int v)
 

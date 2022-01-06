@@ -24,12 +24,17 @@ at the top-level directory.
 #include "gpu_wrapper.h"
 typedef struct LUstruct_gpu_  LUstruct_gpu;  // Sherry - not in this distribution
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern void DisplayHeader();
 extern const char* gpublasGetErrorString(gpublasStatus_t status);
 extern gpuError_t checkGPU(gpuError_t);
 extern gpublasStatus_t checkGPUblas(gpublasStatus_t);
 extern gpublasHandle_t create_handle ();
 extern void destroy_handle (gpublasHandle_t handle);
-
+#ifdef __cplusplus
+}
+#endif
 #endif 
 #endif 
