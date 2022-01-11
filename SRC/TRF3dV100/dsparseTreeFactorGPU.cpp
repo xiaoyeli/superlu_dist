@@ -3,6 +3,16 @@
 #include "lupanels.hpp"
 #include "lupanels_GPU.cuh"
 
+
+int getBufferOffset(int k0, int k1, int winSize, int winParity, int halfWin)
+{
+    int_t offset = (k0-k1)%winSize;
+            if(winParity%2)
+                offset+= halfWin;
+
+    return offset;
+}
+
 int_t LUstruct_v100::dDiagFactorPanelSolveGPU(int_t k, int_t offset, ddiagFactBufs_t **dFBufs)
 {
     double t0 = SuperLU_timer_();
@@ -182,8 +192,8 @@ int_t LUstruct_v100::dsparseTreeFactorGPU(
             int_t offset = (k0-k1)%winSize;
             if(winParity%2)
                 offset+= halfWin;   // 
-            printf("Doing %d on offset %d\n", k0, offset);
-            /*=======   SchurComplement Update ======*/
+            
+            
             upanel_t k_upanel(UidxRecvBufs[offset], UvalRecvBufs[offset],
                               A_gpu.UidxRecvBufs[offset], A_gpu.UvalRecvBufs[offset]);
             lpanel_t k_lpanel(LidxRecvBufs[offset], LvalRecvBufs[offset],
@@ -197,7 +207,29 @@ int_t LUstruct_v100::dsparseTreeFactorGPU(
             /* Look Ahead Panel Update */
             if(UidxSendCounts[k]>0 && LidxSendCounts[k]>0)
                 lookAheadUpdateGPU(offset, k,k_parent, k_lpanel,k_upanel);
-            
+        }
+
+        for (int_t k0 = k1; k0 < SUPERLU_MIN(nnodes, k1+winSize); ++k0)
+        { 
+            int_t k = perm_c_supno[k0];
+            // int_t offset = (k0-k1)%winSize;
+            // if(winParity%2)
+            //     offset+= halfWin;   // 
+
+
+            int_t offset = getBufferOffset(k0, k1, winSize, winParity, halfWin);
+            printf("Doing %d on offset %d\n", k0, offset);
+            /*=======   SchurComplement Update ======*/
+            upanel_t k_upanel(UidxRecvBufs[offset], UvalRecvBufs[offset],
+                              A_gpu.UidxRecvBufs[offset], A_gpu.UvalRecvBufs[offset]);
+            lpanel_t k_lpanel(LidxRecvBufs[offset], LvalRecvBufs[offset],
+                              A_gpu.LidxRecvBufs[offset], A_gpu.LvalRecvBufs[offset]);
+            if (myrow == krow(k))
+                k_upanel = uPanelVec[g2lRow(k)];
+            if (mycol == kcol(k))
+                k_lpanel = lPanelVec[g2lCol(k)];
+
+            int_t k_parent = gEtreeInfo->setree[k];
             /* Look Ahead Panel Solve */
             if(k_parent < nsupers)
             {
@@ -207,8 +239,15 @@ int_t LUstruct_v100::dsparseTreeFactorGPU(
                     localNumChildrenLeft[k0_parent]--;
                     if (topoLvl < maxTopoLevel - 1 && !localNumChildrenLeft[k0_parent])
                     {
-                        int_t dOffset = 0;
+                        int_t dOffset = 0;  // this is wrong 
                         dDiagFactorPanelSolveGPU(k_parent, dOffset,dFBufs);
+                        // int_t k1_next = k1+winSize;
+                        // int offset_next = (k0_parent-k1_next)%winSize; 
+                        //     if(!(winParity%2))
+                        // offset_next += halfWin; 
+                        
+                        // printf("Trying dDiagFactorPanelSolveGPU  %d on offset %d\n", k0_parent, offset_next);
+                        // dDiagFactorPanelSolveGPU(k_parent, offset_next,dFBufs);
                         donePanelSolve[k0_parent]=1;
                     }
                 }
@@ -227,9 +266,11 @@ int_t LUstruct_v100::dsparseTreeFactorGPU(
             int k_next = perm_c_supno[k0_next];
             if (!localNumChildrenLeft[k0_next])
             {   
-                int offset_next = (k0_next-k1_next)%winSize; 
-                if(!(winParity%2))
-                    offset_next += halfWin; 
+                // int offset_next = (k0_next-k1_next)%winSize; 
+                // if(!(winParity%2))
+                //     offset_next += halfWin; 
+
+                int_t offset_next = getBufferOffset(k0_next, k1_next, winSize, winParity+1, halfWin);
                 dPanelBcastGPU(k_next, offset_next);
                 donePanelBcast[k0_next] =1;
                 printf("Trying  %d on offset %d\n", k0_next, offset_next);
@@ -241,14 +282,18 @@ int_t LUstruct_v100::dsparseTreeFactorGPU(
             }
         }
 
+
+
         for (int_t k0 = k1; k0 < SUPERLU_MIN(nnodes, k1+oldWinSize); ++k0)
         { 
             int_t k = perm_c_supno[k0];
-            int_t offset = (k0-k1)%oldWinSize;
-            if(winParity%2)
-                offset+= halfWin;
+            // int_t offset = (k0-k1)%oldWinSize;
+            // if(winParity%2)
+            //     offset+= halfWin;
+            int_t offset = getBufferOffset(k0, k1, oldWinSize, winParity, halfWin);
+            printf("Syncing stream %d on offset %d\n", k0, offset);
             if(UidxSendCounts[k]>0 && LidxSendCounts[k]>0)
-            checkCudaLocal(cudaStreamSynchronize(A_gpu.cuStreams[offset]));
+                checkCudaLocal(cudaStreamSynchronize(A_gpu.cuStreams[offset]));
         }
 
         k1=k1_next;
