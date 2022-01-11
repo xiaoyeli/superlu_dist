@@ -140,11 +140,11 @@ void scatterGPU(
     int_t dstRowLen, dstColLen;
     int_t *dstRowList;
     int_t *dstColList;
-    
+    int li, lj; 
     if (gj > gi) // its in upanel
     {
-        int li = dA->g2lRow(gi);
-        int lj = dA->uPanelVec[li].find(gj);
+        li = dA->g2lRow(gi);
+        lj = dA->uPanelVec[li].find(gj);
         Dst = dA->uPanelVec[li].blkPtr(lj);
         lddst = dA->supersize(gi);
         dstRowLen = dA->supersize(gi);
@@ -155,8 +155,8 @@ void scatterGPU(
     }
     else
     {
-        int lj = dA->g2lCol(gj);
-        int li = dA->lPanelVec[lj].find(gi);
+        lj = dA->g2lCol(gj);
+        li = dA->lPanelVec[lj].find(gi);
         Dst = dA->lPanelVec[lj].blkPtr(li);
         lddst = dA->lPanelVec[lj].LDA();
         dstRowLen = dA->lPanelVec[lj].nbrow(li);
