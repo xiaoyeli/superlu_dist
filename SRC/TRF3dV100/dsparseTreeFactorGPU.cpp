@@ -66,16 +66,19 @@ int_t LUstruct_v100::dPanelBcastGPU(int_t k, int_t offset)
 {
     double t0 = SuperLU_timer_();
     /*=======   Panel Broadcast             ======*/
-    upanel_t k_upanel(UidxRecvBufs[offset], UvalRecvBufs[offset],
-                      A_gpu.UidxRecvBufs[offset], A_gpu.UvalRecvBufs[offset]);
-    lpanel_t k_lpanel(LidxRecvBufs[offset], LvalRecvBufs[offset],
-                      A_gpu.LidxRecvBufs[offset], A_gpu.LvalRecvBufs[offset]);
-    if (myrow == krow(k))
-    {
-        k_upanel = uPanelVec[g2lRow(k)];
-    }
-    if (mycol == kcol(k))
-        k_lpanel = lPanelVec[g2lCol(k)];
+    // upanel_t k_upanel(UidxRecvBufs[offset], UvalRecvBufs[offset],
+    //                   A_gpu.UidxRecvBufs[offset], A_gpu.UvalRecvBufs[offset]);
+    // lpanel_t k_lpanel(LidxRecvBufs[offset], LvalRecvBufs[offset],
+    //                   A_gpu.LidxRecvBufs[offset], A_gpu.LvalRecvBufs[offset]);
+    // if (myrow == krow(k))
+    // {
+    //     k_upanel = uPanelVec[g2lRow(k)];
+    // }
+    // if (mycol == kcol(k))
+    //     k_lpanel = lPanelVec[g2lCol(k)];
+    upanel_t k_upanel = getKUpanel(k,offset);
+    lpanel_t k_lpanel = getKLpanel(k,offset);
+
 
     if (UidxSendCounts[k] > 0)
     {
@@ -189,22 +192,11 @@ int_t LUstruct_v100::dsparseTreeFactorGPU(
         for (int_t k0 = k1; k0 < SUPERLU_MIN(nnodes, k1+winSize); ++k0)
         { 
             int_t k = perm_c_supno[k0];
-            int_t offset = (k0-k1)%winSize;
-            if(winParity%2)
-                offset+= halfWin;   // 
-            
-            
-            upanel_t k_upanel(UidxRecvBufs[offset], UvalRecvBufs[offset],
-                              A_gpu.UidxRecvBufs[offset], A_gpu.UvalRecvBufs[offset]);
-            lpanel_t k_lpanel(LidxRecvBufs[offset], LvalRecvBufs[offset],
-                              A_gpu.LidxRecvBufs[offset], A_gpu.LvalRecvBufs[offset]);
-            if (myrow == krow(k))
-                k_upanel = uPanelVec[g2lRow(k)];
-            if (mycol == kcol(k))
-                k_lpanel = lPanelVec[g2lCol(k)];
-
+            int_t offset = getBufferOffset(k0, k1, winSize, winParity, halfWin);
+            upanel_t k_upanel = getKUpanel(k,offset);
+            lpanel_t k_lpanel = getKLpanel(k,offset);
             int_t k_parent = gEtreeInfo->setree[k];
-            /* Look Ahead Panel Update */
+            /* L o o k   A h e a d   P a n e l   U p d a t e */
             if(UidxSendCounts[k]>0 && LidxSendCounts[k]>0)
                 lookAheadUpdateGPU(offset, k,k_parent, k_lpanel,k_upanel);
         }
@@ -212,23 +204,9 @@ int_t LUstruct_v100::dsparseTreeFactorGPU(
         for (int_t k0 = k1; k0 < SUPERLU_MIN(nnodes, k1+winSize); ++k0)
         { 
             int_t k = perm_c_supno[k0];
-            // int_t offset = (k0-k1)%winSize;
-            // if(winParity%2)
-            //     offset+= halfWin;   // 
-
-
             int_t offset = getBufferOffset(k0, k1, winSize, winParity, halfWin);
-            printf("Doing %d on offset %d\n", k0, offset);
-            /*=======   SchurComplement Update ======*/
-            upanel_t k_upanel(UidxRecvBufs[offset], UvalRecvBufs[offset],
-                              A_gpu.UidxRecvBufs[offset], A_gpu.UvalRecvBufs[offset]);
-            lpanel_t k_lpanel(LidxRecvBufs[offset], LvalRecvBufs[offset],
-                              A_gpu.LidxRecvBufs[offset], A_gpu.LvalRecvBufs[offset]);
-            if (myrow == krow(k))
-                k_upanel = uPanelVec[g2lRow(k)];
-            if (mycol == kcol(k))
-                k_lpanel = lPanelVec[g2lCol(k)];
-
+            upanel_t k_upanel = getKUpanel(k,offset);
+            lpanel_t k_lpanel = getKLpanel(k,offset);
             int_t k_parent = gEtreeInfo->setree[k];
             /* Look Ahead Panel Solve */
             if(k_parent < nsupers)
@@ -241,13 +219,6 @@ int_t LUstruct_v100::dsparseTreeFactorGPU(
                     {
                         int_t dOffset = 0;  // this is wrong 
                         dDiagFactorPanelSolveGPU(k_parent, dOffset,dFBufs);
-                        // int_t k1_next = k1+winSize;
-                        // int offset_next = (k0_parent-k1_next)%winSize; 
-                        //     if(!(winParity%2))
-                        // offset_next += halfWin; 
-                        
-                        // printf("Trying dDiagFactorPanelSolveGPU  %d on offset %d\n", k0_parent, offset_next);
-                        // dDiagFactorPanelSolveGPU(k_parent, offset_next,dFBufs);
                         donePanelSolve[k0_parent]=1;
                     }
                 }
