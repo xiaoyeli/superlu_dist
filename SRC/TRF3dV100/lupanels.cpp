@@ -15,6 +15,26 @@
         }                                                                                    \
     }
 
+upanel_t LUstruct_v100::getKUpanel(int_t k, int_t offset)
+{
+    upanel_t k_upanel(UidxRecvBufs[offset], UvalRecvBufs[offset],
+                      A_gpu.UidxRecvBufs[offset], A_gpu.UvalRecvBufs[offset]);
+    
+    if (myrow == krow(k))
+        k_upanel = uPanelVec[g2lRow(k)];
+    
+    return k_upanel;
+}
+
+lpanel_t LUstruct_v100::getKLpanel(int_t k, int_t offset)
+{
+    lpanel_t k_lpanel(LidxRecvBufs[offset], LvalRecvBufs[offset],
+                      A_gpu.LidxRecvBufs[offset], A_gpu.LvalRecvBufs[offset]);
+    if (mycol == kcol(k))
+        k_lpanel = lPanelVec[g2lCol(k)];
+    return k_lpanel;
+}
+
 LUstruct_v100::LUstruct_v100(int_t nsupers_, int_t ldt_,
                              int_t *isNodeInMyGrid_, int superluAccOffload_,
                              dLUstruct_t *LUstruct,
@@ -448,7 +468,7 @@ int_t LUstruct_v100::setLUstruct_GPU()
     upanelGPU_t *uPanelVec_GPU = new upanelGPU_t[CEILING(nsupers, Pr)];
     lpanelGPU_t *lPanelVec_GPU = new lpanelGPU_t[CEILING(nsupers, Pc)];
 
-#if 0
+#if 1
     void *gpuBasePtr, *gpuCurrentPtr;
     cudaMalloc(&gpuBasePtr, totalMemoryRequired);
     gpuCurrentPtr = gpuBasePtr;

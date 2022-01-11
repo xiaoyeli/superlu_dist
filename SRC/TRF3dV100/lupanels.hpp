@@ -469,6 +469,11 @@ struct LUstruct_v100
     int_t zRecvUPanelGPU(int_t k0, int_t senderGrid, double alpha, double beta);
     int_t copyLUGPUtoHost();
     int_t checkGPU();
+
+
+    // some more helper functions 
+    upanel_t getKUpanel(int_t k, int_t offset);
+    lpanel_t getKLpanel(int_t k, int_t offset);
 };
 
 cudaError_t checkCudaLocal(cudaError_t result);
