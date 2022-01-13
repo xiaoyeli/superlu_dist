@@ -31,6 +31,7 @@ at the top-level directory.
 
 #ifndef __SUPERLU_DEFS /* allow multiple inclusions */
 #define __SUPERLU_DEFS
+#pragma once
 
 /*
  * File name:	superlu_defs.h
@@ -113,9 +114,9 @@ static __inline__ unsigned long long _rdtsc(void)
 }
 #endif
 
-#ifdef HAVE_CUDA  
-#define GPU_ACC   // enable CUDA
-#include "cublas_utils.h"
+#if defined(HAVE_CUDA) || defined(HAVE_SYCL)
+#define GPU_ACC
+#include "gpu_utils.h"
 #endif
 
 /* MPI C complex datatype */
@@ -134,10 +135,14 @@ typedef MPI_C_DOUBLE_COMPLEX  SuperLU_MPI_DOUBLE_COMPLEX;
 #include "util_dist.h"
 #include "psymbfact.h"
 
-#ifdef GPU_ACC
+#ifdef HAVE_CUDA
 #include <cuda.h>
+#elif defined(HAVE_SYCL)
+#include <CL/sycl.hpp>
+#include <vector>
+#include <utility>
+#include <iostream>
 #endif
-
 
 #define MAX_SUPER_SIZE 512   /* Sherry: moved from superlu_gpu.cu */
 
@@ -314,7 +319,6 @@ extern "C" {
   }
 #endif
 
-
 /***********************************************************************
  * New data types
  ***********************************************************************/
@@ -361,6 +365,9 @@ typedef struct {
     int iam;              /* my process number in this grid */
     int_t nprow;          /* number of process rows */
     int_t npcol;          /* number of process columns */
+    #if defined(HAVE_SYCL)
+    std::pair<sycl::context*, sycl::device*> sycl_dev; /* active SYCL context,device from MPI bind */
+    #endif
 } gridinfo_t;
 
 /*-- 3D process grid definition */
@@ -385,6 +392,9 @@ typedef struct {
 			   *                     5      6      7      8
 			   *                     9      10     11     12
 			   */
+    #if defined(HAVE_SYCL)
+    std::pair<sycl::context*, sycl::device*> sycl_dev; /* active SYCL context,device from MPI bind */
+    #endif
 } gridinfo3d_t;
 
 
@@ -1072,7 +1082,7 @@ int superlu_sort_perm (const void *arg1, const void *arg2)
 }
 #endif
 
-#if defined(GPU_ACC) || defined(HAVE_SYCL)  /* GPU related */
+#if defined(GPU_ACC) /* GPU related */
 extern void gemm_division_cpu_gpu (int *, int *, int *, int,
 				   int, int, int *, int);
 extern int_t get_cublas_nb ();

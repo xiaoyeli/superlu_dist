@@ -509,6 +509,7 @@ pdgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 	dLUstruct_t *LUstruct, dSOLVEstruct_t *SOLVEstruct, double *berr,
 	SuperLUStat_t *stat, int *info)
 {
+  printf("Calling PDGSSVX ???????????????????????????/\n");
     NRformat_loc *Astore;
     SuperMatrix GA;      /* Global A in NC format */
     NCformat *GAstore;
@@ -1174,7 +1175,9 @@ pdgssvx(superlu_dist_options_t *options, SuperMatrix *A,
     // {
 	// #pragma omp master
 	// {
+	printf("1. Calling pdgstrf \n");
 	pdgstrf(options, m, n, anorm, LUstruct, grid, stat, info);
+	printf("2. Calling pdgstrf \n");	
 	stat->utime[FACT] = SuperLU_timer_() - t;
 	// }
 	// }

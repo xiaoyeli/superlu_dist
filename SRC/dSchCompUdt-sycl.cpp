@@ -26,7 +26,11 @@ int full;
 double gemm_timer = 0.0;
 double scatter_timer = 0.0;
 
+//std::cout << "1. I M here \n";
 if ( msg0 && msg2 ) {  /* L(:,k) and U(k,:) are not empty. */
+
+  //std::cout << "2. I M here \n";
+  
     ldu   =0;
     full  =1;
     int cum_nrow;

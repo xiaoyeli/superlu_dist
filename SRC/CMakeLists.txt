@@ -1,6 +1,5 @@
 set(headers
     superlu_FCnames.h
-    cublas_utils.h
     dcomplex.h
     machines.h
     psymbfact.h
@@ -31,7 +30,7 @@ set(sources
   comm.c
   memory.c
   util.c
-  cublas_utils.c
+  gpublas_utils.c
   superlu_grid.c
   pxerr_dist.c
   superlu_timer.c
@@ -54,11 +53,27 @@ set(sources
   treeFactorization.c
   sec_structs.c
 )
-if (HAVE_CUDA)
-  list(APPEND sources cublas_utils.c superlu_gpu_utils.cu)
+
+if (GPU_ACC)
+  set(GPU_HDRS
+    gpublas_utils.h
+  )
+
+  set(GPU_SRCS
+    gpublas_utils.c
+  )
+  convert_filenames_to_full_paths(GPU_SRCS)
+  set(HYPRE_GPU_SOURCES ${HYPRE_GPU_SOURCES} ${GPU_SRCS} PARENT_SCOPE)
+endif ()
+
+if (HAVE_CUDA OR HAVE_SYCL)
+  set(GPU_SRCS
+	
+  list(APPEND sources gpublas_utils.c superlu_gpu_utils.cu)
 endif()
 if (HAVE_SYCL)
   list(APPEND headers onemkl_utils.hpp syclmemcpy2D.hpp)
+  list(APPEND sources onemkl_utils.cpp)
 endif ()
 
 if (MSVC)
@@ -66,6 +81,8 @@ if (MSVC)
 endif ()
 
 set_source_files_properties(superlu_timer.c PROPERTIES COMPILE_FLAGS -O0)
+
+#    pdgstrf.c
 
 if(enable_double)
   list(APPEND headers superlu_ddefs.h dlustruct_gpu.h)
@@ -95,7 +112,6 @@ if(enable_double)
     pdsymbfact_distdata.c
     ddistribute.c
     pddistribute.c
-    pdgstrf.c
     dstatic_schedule.c
     pdgstrf2.c
     pdgstrs.c
@@ -123,9 +139,9 @@ if(enable_double)
 if (HAVE_CUDA)
   list(APPEND sources dsuperlu_gpu.cu)
 endif()
-if (HAVE_SYCL)
+#if (HAVE_SYCL)
   list(APPEND sources dsuperlu_gpu.cpp pdgstrf.cpp dlustruct_gpu_sycl.hpp)
-endif()
+#endif()
 if (HAVE_COMBBLAS)
   list(APPEND sources d_c2cpp_GetHWPM.cpp dHWPM_CombBLAS.hpp)
 endif()

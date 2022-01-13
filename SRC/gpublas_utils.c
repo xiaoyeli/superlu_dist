@@ -10,7 +10,7 @@ at the top-level directory.
 */
 #include "superlu_defs.h"
 
-#ifdef GPU_ACC  //////////////////////////////  enable CUDA
+#ifdef HAVE_CUDA  //////////////////////////////  enable CUDA
 
  void DisplayHeader()
 {
@@ -111,4 +111,48 @@ cublasHandle_t create_handle ()
       checkCublas(cublasDestroy(handle));
  }
 
-#endif  // enable CUDA
+#endif  // HAVE_CUDA
+
+
+#ifdef HAVE_SYCL  // enable SYCL
+
+void DisplayHeader()
+{
+    const int kb = 1024;
+    const int mb = kb * kb;
+    // cout << "NBody.GPU" << endl << "=========" << endl << endl;
+
+    int devCount=0;
+    char *sycl_explicit_scale = nullptr;
+    sycl_explicit_scale = getenv ("SUPERLU_SYCL_EXPLICIT_SCALE");
+
+    sycl::platform platform(sycl::gpu_selector{});
+    auto const& gpu_devices = platform.get_devices(sycl::info::device_type::gpu);
+    std::vector<sycl::device> sycl_devices{}; // might include explicit or implicit devices
+    for (int i = 0; i < gpu_devices.size(); i++) {
+      if (sycl_explicit_scale != nullptr) {
+	if (gpu_devices[i].get_info<sycl::info::device::partition_max_sub_devices>() > 0) {
+	  auto subDevices = gpu_devices[i].create_sub_devices<sycl::info::partition_property::partition_by_affinity_domain>(sycl::info::partition_affinity_domain::numa);
+	  sycl_devices.insert( std::end(sycl_devices), std::begin(subDevices), std::end(subDevices) );
+	  devCount += subDevices.size();
+	}
+      } // explicit scaling
+      else {
+	sycl_devices.push_back( gpu_devices[i] );	
+	devCount++;
+      }
+    }
+    std::cout << "SYCL version:    v" << sycl_devices[0].get_info<sycl::info::device::version>() << std::endl;
+    std::cout << "SYCL Devices:     ";
+
+    for(int i = 0; i < devCount; ++i)
+    {
+	std::cout << "[" << i << "] : " << sycl_devices[i].get_info<sycl::info::device::name>() << std::endl;
+	std::cout << "  Global memory (mb):   " << sycl_devices[i].get_info<sycl::info::device::global_mem_size>() / mb << std::endl;
+	std::cout << "  Shared memory (kb):   " << sycl_devices[i].get_info<sycl::info::device::local_mem_size>() / kb << std::endl;
+	std::cout << "  Constant memory (kb): " << sycl_devices[i].get_info<sycl::info::device::max_constant_buffer_size>() / kb << std::endl;
+    }
+    std::cout << std::endl;
+}
+
+#endif  // enable SYCL

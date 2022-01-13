@@ -21,7 +21,7 @@ list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake")
 option(enable_doc       "Build doxygen documentation" OFF)
 option(enable_double    "Enable double precision library" ON)
 option(enable_single    "Enable single precision library" OFF)
-option(enable_complex16 "Enable complex16 precision library" ON)
+option(enable_complex16 "Enable complex16 precision library" OFF)
 option(enable_tests  "Build tests" ON)
 option(enable_examples  "Build examples" ON)
 option(XSDK_ENABLE_Fortran "Enable Fortran" ON)
@@ -61,7 +61,7 @@ include(CheckLanguage)
 # Usual initialization stuff
 #
 ######################################################################
-set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD 17)
 #set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 

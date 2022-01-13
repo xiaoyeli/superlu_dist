@@ -58,6 +58,45 @@ void superlu_gridinit3d(MPI_Comm Bcomm, /* The base communicator upon which
 	cudaGetDeviceCount(&devs);  // Returns the number of compute-capable devices
 	cudaSetDevice(rank % devs); // Set device to be used for GPU executions
     }
+#elif defined(HAVE_SYCL)
+    /* Binding each MPI to a SYCL device */
+    char *ttemp = nullptr;
+    ttemp = getenv ("SUPERLU_BIND_MPI_GPU");
+
+    char *sycl_explicit_scale = nullptr;
+    sycl_explicit_scale = getenv ("SUPERLU_SYCL_EXPLICIT_SCALE");
+
+    if (ttemp != nullptr) {
+      int devs=0, rank=0;
+      MPI_Comm_rank(Bcomm, &rank); // MPI_COMM_WORLD??
+
+      // Returns the number of compute-capable devices
+      sycl::platform platform(sycl::gpu_selector{});
+      auto const& gpu_devices = platform.get_devices(sycl::info::device_type::gpu);
+      std::vector<sycl::device> sycl_devices{}; // might include explicit or implicit devices
+      for (int i = 0; i < gpu_devices.size(); i++) {
+        if (sycl_explicit_scale != nullptr) {
+          if (gpu_devices[i].get_info<sycl::info::device::partition_max_sub_devices>() > 0) {
+            auto subDevices = gpu_devices[i].create_sub_devices<sycl::info::partition_property::partition_by_affinity_domain>(sycl::info::partition_affinity_domain::numa);
+	    sycl_devices.insert( std::end(sycl_devices), std::begin(subDevices), std::end(subDevices) );
+            devs += subDevices.size();
+          }
+        } // explicit scaling
+        else {
+	  sycl_devices.push_back( gpu_devices[i] );
+          devs++;
+        }
+      }
+      if (devs == 0) {
+        ABORT("[SYCL] No GPU devices found!!! ");
+      }
+
+      // Set device to be used for GPU executions (aka create SYCL queue)
+      int current_dev = rank % devs;
+      sycl::device* syclDev   = new sycl::device( sycl_devices[current_dev] );
+      sycl::context* syclCtxt = new sycl::context( sycl_devices[current_dev] );
+      grid->sycl_dev = std::make_pair( syclCtxt, syclDev );
+    }
 #endif
 }
 

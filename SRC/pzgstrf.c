@@ -111,7 +111,7 @@ at the top-level directory.
 #include "superlu_zdefs.h"
 
 #ifdef GPU_ACC
-#include "cublas_utils.h"
+#include "gpublas_utils.h"
 /*#include "cublas_zgemm.h"*/
 // #define NUM_CUDA_STREAMS 16
 // #define NUM_CUDA_STREAMS 16

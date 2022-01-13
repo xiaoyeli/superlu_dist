@@ -242,6 +242,7 @@ int_t
 pdgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
         dLUstruct_t * LUstruct, gridinfo_t * grid, SuperLUStat_t * stat, int *info)
 {
+  //std::cout << "jhdbfghjdsbgfbdfgkjhfdbgbdfghbfdhgdfhgbfhb$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ \n";
 #ifdef _CRAY
     _fcd ftcs = _cptofcd ("N", strlen ("N"));
     _fcd ftcs1 = _cptofcd ("L", strlen ("L"));
@@ -779,7 +780,14 @@ pdgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
     if (gpu_devices.size() == 0) {
         ABORT("[SYCL] No GPU devices found!!! ");
     }
-
+    for (int i = 0; i < gpu_devices.size(); i++) {
+      if(gpu_devices[i].get_info<sycl::info::device::partition_max_sub_devices>() > 0) {
+	auto subDevices = gpu_devices[i].create_sub_devices<sycl::info::partition_property::partition_by_affinity_domain>(sycl::info::partition_affinity_domain::numa);
+      }
+      else {
+      }
+    }
+    
     auto asyncHandler = [&](sycl::exception_list eL) {
         for (auto& e : eL) {
             try {
@@ -802,18 +810,20 @@ pdgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
 				 sycl::property_list{sycl::property::queue::in_order{}});
     }
 
-    bigU = sycl::malloc_host<double>(bigu_size, streams[0]);
+    bigU = new double[bigu_size];
+    //bigU = sycl::malloc_host<double>(bigu_size, streams[0]);
     if (!bigU)
-        ABORT("[SYCL] Malloc fails for dgemm buffer U ");
+        ABORT("[Host] Malloc fails for dgemm buffer U ");
 
 #if ( PRNTlevel>=1 )
-    printf("[%d].. BIG V size %d (on CPU), dC buffer_size %d (on GPU)\n", iam, bigv_size, buffer_size);
+    printf("[%d].. BIG V size %ld (on CPU), dC buffer_size %ld (on GPU)\n", iam, bigv_size, buffer_size);
     fflush(stdout);
 #endif
 
-    bigV = sycl::malloc_host<double>(bigv_size, streams[0]);
+    bigV = new double[bigv_size];
+    //bigV = sycl::malloc_host<double>(bigv_size, streams[0]);
     if (!bigV)
-        ABORT("[SYCL] Malloc fails for dgemm buffer V");
+        ABORT("[Host] Malloc fails for dgemm buffer V");
 
 #if ( PRNTlevel>=1 )
     if ( iam==0 ) {
@@ -840,8 +850,7 @@ pdgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
                                   + bigu_size                    // dB
                                   + buffer_size );               // dC
 
-#endif
-/*************** end ifdef GPU_ACC ****************/
+#endif /*************** endif HAVE_SYCL ****************/
 
     log_memory((bigv_size + bigu_size) * dword, stat);
 
@@ -1636,10 +1645,11 @@ pdgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
 
 	double tsch = SuperLU_timer_();
 /*******************************************************************/
-
+//std::cout << "0a. I M here \n";
 #if defined(HAVE_SYCL)
 #include "dSchCompUdt-sycl.cpp"
 #endif
+	// std::cout << "0b. I M here \n";
 /*uncomment following to compare against SuperLU 3.3 baseline*/
 /* #include "SchCompUdt--baseline.c"  */
 /************************************************************************/

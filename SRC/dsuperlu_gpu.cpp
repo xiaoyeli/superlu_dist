@@ -840,32 +840,23 @@ int dinitSluGPU3D_t(
 	}
     }
 
-    // create a super context from platform
-    sycl::platform platform(sycl::gpu_selector{});
-    std::vector<sycl::device> gpu_devices = platform.get_devices(sycl::info::device_type::gpu);
-    sycl::context super_ctxt = sycl::context(gpu_devices);
-
     auto asyncHandler = [&](sycl::exception_list eL) {
-	for (auto& e : eL) {
-	    try {
-		std::rethrow_exception(e);
-	    } catch (sycl::exception& e) {
-		std::cout << e.what() << std::endl;
-		std::cout << "SYCL fail" << std::endl;
-		std::terminate();
-	    }
+      for (auto& e : eL) {
+	try {
+	  std::rethrow_exception(e);
+	} catch (sycl::exception& e) {
+	  std::cout << "SYCL fail: " << e.what() << std::endl;
+	  std::terminate();
 	}
+      }
     };
 
-    sluGPU->CopyStream = new sycl::queue(super_ctxt,
-					 sycl::gpu_selector{},
-					 asyncHandler);
+    std::pair<sycl::context*, sycl::device*> syclDev = grid3d->sycl_dev;
+    sluGPU->CopyStream = new sycl::queue(*(syclDev.first), *(syclDev.second), asyncHandler);
 
     for (int streamId = 0; streamId < sluGPU->nCudaStreams; streamId++)
     {
-	sluGPU->funCallStreams[streamId] = new sycl::queue(super_ctxt,
-							   sycl::gpu_selector{},
-							   asyncHandler);
+	sluGPU->funCallStreams[streamId] = new sycl::queue(*(syclDev.first), *(syclDev.second), asyncHandler);
 	sluGPU->lastOffloadStream[streamId] = -1;
     }
 

@@ -85,7 +85,7 @@ ZPLUSRC += pzgssvx3d.o pzgstrf3d.o ztreeFactorization.o zscatter3d.o \
 	znrformat_loc3d.o ztreeFactorizationGPU.o ##$(FACT3D)
 
 ifeq ($(HAVE_CUDA),TRUE)
-ALLAUX += cublas_utils.o superlu_gpu_utils.o
+ALLAUX += gpublas_utils.o superlu_gpu_utils.o
 DPLUSRC += dsuperlu_gpu.o
 ZPLUSRC += zsuperlu_gpu.o
 endif
@@ -141,8 +141,11 @@ complex16: config_h $(ZSLUSRC) $(ZPLUSRC) $(ALLAUX)
 		$(ZSLUSRC) $(ZPLUSRC) $(ALLAUX)
 	$(RANLIB) $(DSUPERLULIB)
 
-pdgstrf.o: dscatter.cpp dlook_ahead_update.c dSchCompUdt-2Ddynamic.c pdgstrf.c
-	$(CXX) $(CXXFLAGS) $(CPPFLAGS) $(CDEFS) $(BLASDEF) -I$(INCLUDEDIR) -c pdgstrf.cpp $(VERBOSE)
+pdgstrf.o: dscatter.cpp dlook_ahead_update.c dSchCompUdt-sycl.cpp pdgstrf.cpp
+        $(CXX) $(CXXFLAGS) $(CPPFLAGS) $(CDEFS) $(BLASDEF) -I$(INCLUDEDIR) $(VERBOSE)
+
+# pdgstrf.o: dscatter.cpp dlook_ahead_update.c dSchCompUdt-2Ddynamic.c pdgstrf.c
+# 	$(CXX) $(CXXFLAGS) $(CPPFLAGS) $(CDEFS) $(BLASDEF) -I$(INCLUDEDIR) -c pdgstrf.cpp $(VERBOSE)
 
 pzgstrf.o: zscatter.c zlook_ahead_update.c zSchCompUdt-2Ddynamic.c pzgstrf.c
 	$(CC) $(CFLAGS) $(CDEFS) $(BLASDEF) -I$(INCLUDEDIR) -c pzgstrf.c $(VERBOSE)
@@ -159,5 +162,5 @@ pzgstrf.o: zscatter.c zlook_ahead_update.c zSchCompUdt-2Ddynamic.c pzgstrf.c
 .f.o:
 	$(FORTRAN) $(FFLAGS) -c $< $(VERBOSE)
 
-clean:	
+clean:
 	rm -f *.o $(DSUPERLULIB) superlu_dist_config.h
