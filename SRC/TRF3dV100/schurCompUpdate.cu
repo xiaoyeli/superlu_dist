@@ -29,7 +29,7 @@ int_t lpanelGPU_t::find(int_t k)
 
     int nThreads = blockDim.x; 
     int blocksPerThreads = CEILING( nblocks(),    nThreads);
-    
+    __syncthreads();
     for(int blk =blocksPerThreads*threadIdx.x; 
         blk< blocksPerThreads*(threadIdx.x +1);
         blk++)
@@ -62,7 +62,7 @@ int_t upanelGPU_t::find(int_t k)
         idx =-1;
         found=0;
     }
-        
+    __syncthreads();
     
     int nThreads = blockDim.x; 
     int blocksPerThreads = CEILING( nblocks(),    nThreads);
@@ -355,13 +355,19 @@ int_t LUstruct_v100::lookAheadUpdateGPU(
     }
     
     
+    // checkCudaLocal(cudaStreamSynchronize(A_gpu.lookAheadLStream[streamId]));
+    // checkCudaLocal(cudaStreamSynchronize(A_gpu.lookAheadUStream[streamId]));
+    
+    return 0;
+}
+
+int_t LUstruct_v100::SyncLookAheadUpdate(int streamId)
+{
     checkCudaLocal(cudaStreamSynchronize(A_gpu.lookAheadLStream[streamId]));
     checkCudaLocal(cudaStreamSynchronize(A_gpu.lookAheadUStream[streamId]));
     
     return 0;
 }
-
-
 
 int_t LUstruct_v100::dSchurCompUpdateExcludeOneGPU(
     int streamId, 

@@ -205,6 +205,12 @@ int_t LUstruct_v100::dsparseTreeFactorGPU(
         { 
             int_t k = perm_c_supno[k0];
             int_t offset = getBufferOffset(k0, k1, winSize, winParity, halfWin);
+            SyncLookAheadUpdate(offset);
+        }
+        for (int_t k0 = k1; k0 < SUPERLU_MIN(nnodes, k1+winSize); ++k0)
+        { 
+            int_t k = perm_c_supno[k0];
+            int_t offset = getBufferOffset(k0, k1, winSize, winParity, halfWin);
             upanel_t k_upanel = getKUpanel(k,offset);
             lpanel_t k_lpanel = getKLpanel(k,offset);
             int_t k_parent = gEtreeInfo->setree[k];

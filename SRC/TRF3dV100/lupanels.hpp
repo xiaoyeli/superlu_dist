@@ -474,6 +474,7 @@ struct LUstruct_v100
     // some more helper functions 
     upanel_t getKUpanel(int_t k, int_t offset);
     lpanel_t getKLpanel(int_t k, int_t offset);
+    int_t SyncLookAheadUpdate(int streamId);
 };
 
 cudaError_t checkCudaLocal(cudaError_t result);
