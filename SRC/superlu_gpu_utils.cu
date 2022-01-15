@@ -14,6 +14,7 @@
 #include <cuda.h>
 #include <cuda_runtime.h>
 
+#if 0 // Sherry
 /*error reporting functions */
 cudaError_t checkCuda(cudaError_t result)
 {
@@ -25,6 +26,7 @@ cudaError_t checkCuda(cudaError_t result)
 #endif
     return result;
 }
+#endif
 
 __device__ int dnextpow2(int v)
 

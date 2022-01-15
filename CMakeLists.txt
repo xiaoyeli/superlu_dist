@@ -195,10 +195,16 @@ if (TPL_ENABLE_CUDALIB)   ## want to use cuda
     message("-- CUDAToolkit_LIBRARY_ROOT='${CUDAToolkit_LIBRARY_ROOT}'")
     if (NOT "${CUDAToolkit_LIBRARY_ROOT}" STREQUAL "")
     set(CUDA_LIBRARIES "${CUDAToolkit_LIBRARY_ROOT}/lib64/libcudart.so")
-    set(CUDA_CUBLAS_LIBRARIES "${CUDAToolkit_LIBRARY_ROOT}/lib64/libcublas.so")
+#    set(CUDA_CUBLAS_LIBRARIES "${CUDAToolkit_LIBRARY_ROOT}/lib64/libcublas.so")
+
+if(CUDAToolkit_FOUND)
+  target_link_libraries(superlu PUBLIC CUDA::cudart CUDA::cusolver CUDA::cublas)
+  endif()
+  
     else()
     message("-- CUDAToolkit_LIBRARY_ROOT empty, not setting CUDA_LIBRARIES")
     endif()
+
 
 
 #     # The following make.inc exporting does not work

@@ -25,11 +25,17 @@ at the top-level directory.
 #include "cuda_runtime.h"
 typedef struct LUstruct_gpu_  LUstruct_gpu;  // Sherry - not in this distribution
 
+#ifdef __cplusplus
+extern "C" {
+#eendif
 extern void DisplayHeader();
 extern const char* cublasGetErrorString(cublasStatus_t status);
 extern cudaError_t checkCuda(cudaError_t);
 extern cublasStatus_t checkCublas(cublasStatus_t);
 extern cublasHandle_t create_handle ();
 extern void destroy_handle (cublasHandle_t handle);
+#ifdef __cplusplus
+  }
+#endif
 
 #endif 
