@@ -1230,10 +1230,10 @@ zdist_psymbtonum(fact_t fact, int_t n, SuperMatrix *A,
   int_t  **Ufstnz_br_ptr;  /* size ceil(NSUPERS/Pr) */
   int_t  *Unnz;  /* size ceil(NSUPERS/Pc) */
 
-  BcTree  *LBtree_ptr;       /* size ceil(NSUPERS/Pc)                */
-  RdTree  *LRtree_ptr;		  /* size ceil(NSUPERS/Pr)                */
-  BcTree  *UBtree_ptr;       /* size ceil(NSUPERS/Pc)                */
-  RdTree  *URtree_ptr;		  /* size ceil(NSUPERS/Pr)                */
+  C_Tree  *LBtree_ptr;       /* size ceil(NSUPERS/Pc)                */
+  C_Tree  *LRtree_ptr;		  /* size ceil(NSUPERS/Pr)                */
+  C_Tree  *UBtree_ptr;       /* size ceil(NSUPERS/Pc)                */
+  C_Tree  *URtree_ptr;		  /* size ceil(NSUPERS/Pr)                */
   int msgsize;
 
   int_t  *Urbs,*Urbs1; /* Number of row blocks in each block column of U. */
@@ -2150,7 +2150,7 @@ doublecomplex *dense, *dense_col; /* SPA */
 		/* construct the Bcast tree for L ... */
 
 		k = CEILING( nsupers, grid->npcol );/* Number of local block columns */
-		if ( !(LBtree_ptr = (BcTree*)SUPERLU_MALLOC(k * sizeof(BcTree))) )
+		if ( !(LBtree_ptr = (C_Tree*)SUPERLU_MALLOC(k * sizeof(C_Tree))) )
 			ABORT("Malloc fails for LBtree_ptr[].");
 		if ( !(ActiveFlag = intCalloc_dist(grid->nprow*2)) )
 			ABORT("Calloc fails for ActiveFlag[].");
@@ -2166,14 +2166,14 @@ doublecomplex *dense, *dense_col; /* SPA */
 		MPI_Allreduce(MPI_IN_PLACE,&SeedSTD_BC[0],k,MPI_DOUBLE,MPI_MAX,grid->cscp.comm);
 
 		for (ljb = 0; ljb <k ; ++ljb) {
-			LBtree_ptr[ljb]=NULL;
+			C_BcTree_Nullify(&LBtree_ptr[ljb]);
 		}
 
 
 		if ( !(ActiveFlagAll = intMalloc_dist(grid->nprow*k)) )
 			ABORT("Calloc fails for ActiveFlag[].");
 		for (j=0;j<grid->nprow*k;++j)ActiveFlagAll[j]=3*nsupers;
-		memTRS += k*sizeof(BcTree) + k*dword + grid->nprow*k*iword;  //acount for LBtree_ptr, SeedSTD_BC, ActiveFlagAll
+		memTRS += k*sizeof(C_Tree) + k*dword + grid->nprow*k*iword;  //acount for LBtree_ptr, SeedSTD_BC, ActiveFlagAll
 		for (ljb = 0; ljb < k; ++ljb) { /* for each local block column ... */
 			jb = mycol+ljb*grid->npcol;  /* not sure */
 			if(jb<nsupers){
@@ -2239,8 +2239,11 @@ doublecomplex *dense, *dense_col; /* SPA */
 					// rseed=rand();
 					// rseed=1.0;
 					msgsize = SuperSize( jb );
-					LBtree_ptr[ljb] = BcTree_Create(grid->comm, ranks, rank_cnt, msgsize,SeedSTD_BC[ljb],'z');
-					BcTree_SetTag(LBtree_ptr[ljb],BC_L,'z');
+				// LBtree_ptr[ljb] = BcTree_Create(grid->comm, ranks, rank_cnt, msgsize,SeedSTD_BC[ljb],'z');
+				// BcTree_SetTag(LBtree_ptr[ljb],BC_L,'z');
+
+				C_BcTree_Create(&LBtree_ptr[ljb], grid->comm, ranks, rank_cnt, msgsize, 'z');
+				LBtree_ptr[ljb].tag_=BC_L;
 
 					// printf("iam %5d btree rank_cnt %5d \n",iam,rank_cnt);
 					// fflush(stdout);
@@ -2313,7 +2316,7 @@ doublecomplex *dense, *dense_col; /* SPA */
 
 
 		k = CEILING( nsupers, grid->nprow );/* Number of local block rows */
-		if ( !(LRtree_ptr = (RdTree*)SUPERLU_MALLOC(k * sizeof(RdTree))) )
+		if ( !(LRtree_ptr = (C_Tree*)SUPERLU_MALLOC(k * sizeof(C_Tree))) )
 			ABORT("Malloc fails for LRtree_ptr[].");
 		if ( !(ActiveFlag = intCalloc_dist(grid->npcol*2)) )
 			ABORT("Calloc fails for ActiveFlag[].");
@@ -2337,14 +2340,14 @@ doublecomplex *dense, *dense_col; /* SPA */
 
 
 		for (lib = 0; lib <k ; ++lib) {
-			LRtree_ptr[lib]=NULL;
+			C_RdTree_Nullify(&LRtree_ptr[lib]);
 		}
 
 
 		if ( !(ActiveFlagAll = intMalloc_dist(grid->npcol*k)) )
 			ABORT("Calloc fails for ActiveFlagAll[].");
 		for (j=0;j<grid->npcol*k;++j)ActiveFlagAll[j]=-3*nsupers;
-		memTRS += k*sizeof(RdTree) + k*dword + grid->npcol*k*iword;  //acount for LRtree_ptr, SeedSTD_RD, ActiveFlagAll
+		memTRS += k*sizeof(C_Tree) + k*dword + grid->npcol*k*iword;  //acount for LRtree_ptr, SeedSTD_RD, ActiveFlagAll
 
 
 		for (ljb = 0; ljb < CEILING( nsupers, grid->npcol); ++ljb) { /* for each local block column ... */
@@ -2408,8 +2411,10 @@ doublecomplex *dense, *dense_col; /* SPA */
 
 						// if(ib==0){
 
-						LRtree_ptr[lib] = RdTree_Create(grid->comm, ranks, rank_cnt, msgsize,SeedSTD_RD[lib],'z');
-						RdTree_SetTag(LRtree_ptr[lib], RD_L,'z');
+						// LRtree_ptr[lib] = RdTree_Create(grid->comm, ranks, rank_cnt, msgsize,SeedSTD_RD[lib],'z');
+						// RdTree_SetTag(LRtree_ptr[lib], RD_L,'z');
+            C_RdTree_Create(&LRtree_ptr[lib], grid->comm, ranks, rank_cnt, msgsize, 'z');
+            LRtree_ptr[lib].tag_=RD_L;
 						// }
 
 						// printf("iam %5d rtree rank_cnt %5d \n",iam,rank_cnt);
@@ -2458,7 +2463,7 @@ doublecomplex *dense, *dense_col; /* SPA */
 		/* construct the Bcast tree for U ... */
 
 		k = CEILING( nsupers, grid->npcol );/* Number of local block columns */
-		if ( !(UBtree_ptr = (BcTree*)SUPERLU_MALLOC(k * sizeof(BcTree))) )
+		if ( !(UBtree_ptr = (C_Tree*)SUPERLU_MALLOC(k * sizeof(C_Tree))) )
 			ABORT("Malloc fails for UBtree_ptr[].");
 		if ( !(ActiveFlag = intCalloc_dist(grid->nprow*2)) )
 			ABORT("Calloc fails for ActiveFlag[].");
@@ -2475,13 +2480,13 @@ doublecomplex *dense, *dense_col; /* SPA */
 
 
 		for (ljb = 0; ljb <k ; ++ljb) {
-			UBtree_ptr[ljb]=NULL;
+			C_BcTree_Nullify(&UBtree_ptr[ljb]);
 		}
 
 		if ( !(ActiveFlagAll = intMalloc_dist(grid->nprow*k)) )
 			ABORT("Calloc fails for ActiveFlagAll[].");
 		for (j=0;j<grid->nprow*k;++j)ActiveFlagAll[j]=-3*nsupers;
-		memTRS += k*sizeof(BcTree) + k*dword + grid->nprow*k*iword;  //acount for UBtree_ptr, SeedSTD_BC, ActiveFlagAll
+		memTRS += k*sizeof(C_Tree) + k*dword + grid->nprow*k*iword;  //acount for UBtree_ptr, SeedSTD_BC, ActiveFlagAll
 
 
 		for (lib = 0; lib < CEILING( nsupers, grid->nprow); ++lib) { /* for each local block row ... */
@@ -2562,8 +2567,11 @@ doublecomplex *dense, *dense_col; /* SPA */
 					// rseed=rand();
 					// rseed=1.0;
 					msgsize = SuperSize( jb );
-					UBtree_ptr[ljb] = BcTree_Create(grid->comm, ranks, rank_cnt, msgsize,SeedSTD_BC[ljb],'z');
-					BcTree_SetTag(UBtree_ptr[ljb],BC_U,'z');
+				// UBtree_ptr[ljb] = BcTree_Create(grid->comm, ranks, rank_cnt, msgsize,SeedSTD_BC[ljb],'z');
+				// BcTree_SetTag(UBtree_ptr[ljb],BC_U,'z');
+
+				C_BcTree_Create(&UBtree_ptr[ljb], grid->comm, ranks, rank_cnt, msgsize, 'z');
+				UBtree_ptr[ljb].tag_=BC_U;
 
 					// printf("iam %5d btree rank_cnt %5d \n",iam,rank_cnt);
 					// fflush(stdout);
@@ -2624,7 +2632,7 @@ doublecomplex *dense, *dense_col; /* SPA */
 
 
 		k = CEILING( nsupers, grid->nprow );/* Number of local block rows */
-		if ( !(URtree_ptr = (RdTree*)SUPERLU_MALLOC(k * sizeof(RdTree))) )
+		if ( !(URtree_ptr = (C_Tree*)SUPERLU_MALLOC(k * sizeof(C_Tree))) )
 			ABORT("Malloc fails for URtree_ptr[].");
 		if ( !(ActiveFlag = intCalloc_dist(grid->npcol*2)) )
 			ABORT("Calloc fails for ActiveFlag[].");
@@ -2647,14 +2655,14 @@ doublecomplex *dense, *dense_col; /* SPA */
 		MPI_Allreduce(MPI_IN_PLACE,&SeedSTD_RD[0],k,MPI_DOUBLE,MPI_MAX,grid->rscp.comm);
 
 		for (lib = 0; lib <k ; ++lib) {
-			URtree_ptr[lib]=NULL;
+			C_RdTree_Nullify(&URtree_ptr[lib]);
 		}
 
 
 		if ( !(ActiveFlagAll = intMalloc_dist(grid->npcol*k)) )
 			ABORT("Calloc fails for ActiveFlagAll[].");
 		for (j=0;j<grid->npcol*k;++j)ActiveFlagAll[j]=3*nsupers;
-		memTRS += k*sizeof(RdTree) + k*dword + grid->npcol*k*iword;  //acount for URtree_ptr, SeedSTD_RD, ActiveFlagAll
+		memTRS += k*sizeof(C_Tree) + k*dword + grid->npcol*k*iword;  //acount for URtree_ptr, SeedSTD_RD, ActiveFlagAll
 
 		for (lib = 0; lib < CEILING( nsupers, grid->nprow); ++lib) { /* for each local block row ... */
 			ib = myrow+lib*grid->nprow;  /* not sure */
@@ -2718,8 +2726,10 @@ doublecomplex *dense, *dense_col; /* SPA */
 
 						// if(ib==0){
 
-						URtree_ptr[lib] = RdTree_Create(grid->comm, ranks, rank_cnt, msgsize,SeedSTD_RD[lib],'z');
-						RdTree_SetTag(URtree_ptr[lib], RD_U,'z');
+						// URtree_ptr[lib] = RdTree_Create(grid->comm, ranks, rank_cnt, msgsize,SeedSTD_RD[lib],'z');
+						// RdTree_SetTag(URtree_ptr[lib], RD_U,'z');
+            C_RdTree_Create(&URtree_ptr[lib], grid->comm, ranks, rank_cnt, msgsize, 'z');
+			      URtree_ptr[lib].tag_=RD_U;
 						// }
 
 						// #if ( PRNTlevel>=1 )

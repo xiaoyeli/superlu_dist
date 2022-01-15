@@ -175,7 +175,7 @@ void sRgather_L( int_t k, int_t *lsub, float *lusup,
         if (iperm_c_supno[ib] < HyP->first_u_block_acc) look_up_flag = 0;
 
         // if it myIperm[ib] is within look ahead window
-        if (myIperm[ib]< myIperm[k] + HyP->nCudaStreams && myIperm[ib]>0) look_up_flag = 0;        
+        if (myIperm[ib]< myIperm[k] + HyP->nGPUStreams && myIperm[ib]>0) look_up_flag = 0;        
 
         if (k <= HyP->nsupers - 2 && gEtreeInfo->setree[k] > 0 )
         {
@@ -302,7 +302,7 @@ void sRgather_U( int_t k, int_t jj0, int_t *usub,	float *uval,
             u_blk_acc_cond = 1;
         }
         // if jb is within lookahead window
-        if (myIperm[jb]< myIperm[k] + HyP->nCudaStreams && myIperm[jb]>0)
+        if (myIperm[jb]< myIperm[k] + HyP->nGPUStreams && myIperm[jb]>0)
         {
             // printf("k=%d jb=%d got at condition-2:%d, %d\n ",k,jb, myIperm[jb] , myIperm[k]);
             u_blk_acc_cond = 1;

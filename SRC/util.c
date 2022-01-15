@@ -822,20 +822,22 @@ int_t get_max_buffer_size()
         return 5000000;
 }
 
-int_t get_cublas_nb()
+int_t
+get_gpublas_nb ()
 {
     char *ttemp;
-    ttemp = getenv("CUBLAS_NB");
+    ttemp = getenv ("GPUBLAS_NB");
     if (ttemp)
         return atoi(ttemp);
     else
         return 64;
 }
 
-int_t get_num_cuda_streams()
+int_t
+get_num_gpu_streams ()
 {
     char *ttemp;
-    ttemp = getenv("NUM_CUDA_STREAMS");
+    ttemp = getenv ("NUM_GPU_STREAMS");
     if (ttemp)
         return atoi(ttemp);
     else
@@ -1274,20 +1276,20 @@ int_t reduceStat(PhaseType PHASE,
 
 void
 gemm_division_cpu_gpu(
-/* output */
-    int* num_streams_used, /* number of CUDA streams that will be used */
+    /* output */
+    int* num_streams_used, /* number of GPU streams that will be used */
     int* stream_end_col,   /* array holding last column blk for each stream partition */
     int * ncpu_blks,       /* Number of CPU dgemm blks (output) */
-/*input */
+    /*input */
     int nbrow,             /* number of row in A matrix */
     int ldu,               /* number of k in dgemm */
-    int nstreams,
+    int nstreams, 
     int* full_u_cols,      /* array containing prefix sum of GPU workload */
     int num_blks           /* Number of block cloumns (workload) on GPU */
 )
 {
     int Ngem = sp_ienv_dist(7);  /*get_mnk_dgemm ();*/
-    int min_gpu_col = get_cublas_nb (); /* default 64 */
+    int min_gpu_col = get_gpublas_nb (); /* default 64 */
 
     /*
       Sherry corrected comment:                                                  
@@ -1295,7 +1297,7 @@ gemm_division_cpu_gpu(
       However since there is GPU latency of around 20,000 ns implying about
       200000 floating point operations be done in that time, so    
       ncols ~= 200,000/(2*nbrow*ldu) should be done on CPU to hide the
-      latency; We set Ngem =200,000/2.     
+      latency; We set Ngem =200,000/2.  
      */
     int i, j;
 
@@ -1417,7 +1419,7 @@ gemm_division_new (int * num_streams_used,   /*number of streams that will be us
     )
 {
     int Ngem = sp_ienv_dist(7); /*get_mnk_dgemm ();*/
-    int min_gpu_col = get_cublas_nb ();
+    int min_gpu_col = get_gpublas_nb ();
 
     // Ngem = 1000000000;
     /*
@@ -1507,14 +1509,14 @@ gemm_division_new (int * num_streams_used,   /*number of streams that will be us
 
 /* The following are moved from superlu_gpu.cu */
 
-int getnCudaStreams()
+int getnGPUStreams()
 {
-    // Disabling multiple cuda streams 
+    // Disabling multiple gpu streams 
     #if 1
 	return 1;
     #else 
 	char *ttemp;
-	ttemp = getenv ("N_CUDA_STREAMS");
+	ttemp = getenv ("NUM_GPU_STREAMS");
 
 	if (ttemp)
 		return atoi (ttemp);

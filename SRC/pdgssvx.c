@@ -29,7 +29,9 @@ at the top-level directory.
 
 #include <math.h>
 #include "superlu_ddefs.h"
-
+#ifdef GPU_ACC
+#include "gpu_api_utils.h"
+#endif
 /*! \brief
  *
  * <pre>
@@ -1401,11 +1403,27 @@ pdgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 	       factorization with Fact == DOFACT or SamePattern is asked for. */
 	}
 
+#ifdef GPU_ACC	
+	if(options->DiagInv==NO){
+	printf("GPU trisolve requires setting options->DiagInv==YES\n");
+	exit(0);
+	}
+#endif
+
 	if ( options->DiagInv==YES &&
-             (options->SolveInitialized == NO || Fact == SamePattern ||
+             (options->Fact == DOFACT || Fact == SamePattern ||
               Fact == SamePattern_SameRowPerm) ) {
 	    pdCompute_Diag_Inv(n, LUstruct, grid, stat, info);
+#ifdef GPU_ACC		
+		checkGPU(gpuMemcpy(LUstruct->Llu->d_Linv_bc_dat, LUstruct->Llu->Linv_bc_dat, (LUstruct->Llu->Linv_bc_cnt) * sizeof(double), gpuMemcpyHostToDevice));	
+		checkGPU(gpuMemcpy(LUstruct->Llu->d_Uinv_bc_dat, LUstruct->Llu->Uinv_bc_dat, (LUstruct->Llu->Uinv_bc_cnt) * sizeof(double), gpuMemcpyHostToDevice));	
+		checkGPU(gpuMemcpy(LUstruct->Llu->d_Lnzval_bc_dat, LUstruct->Llu->Lnzval_bc_dat, (LUstruct->Llu->Lnzval_bc_cnt) * sizeof(double), gpuMemcpyHostToDevice));	
+		checkGPU(gpuMemcpy(LUstruct->Llu->d_Unzval_br_dat, LUstruct->Llu->Unzval_br_dat, (LUstruct->Llu->Unzval_br_cnt) * sizeof(double), gpuMemcpyHostToDevice));	
+#endif
+
 	}
+
+
 
 
     // #pragma omp parallel

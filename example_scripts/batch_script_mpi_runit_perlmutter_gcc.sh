@@ -4,6 +4,7 @@ module load cpe-cuda
 module load cuda
 module load cmake/git-20210830
 
+export MAX_BUFFER_SIZE=50000000
 export OMP_NUM_THREADS=1
 export NUM_GPU_STREAMS=1
 # srun -n 1 ./EXAMPLE/pddrive -r 1 -c 1 ../EXAMPLE/g20.rua

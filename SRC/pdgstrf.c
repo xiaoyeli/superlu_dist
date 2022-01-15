@@ -110,12 +110,11 @@ at the top-level directory.
 
 #include <math.h>
 #include "superlu_ddefs.h"
-
+#include "gpu_api_utils.h"
 #ifdef GPU_ACC
-#include "cublas_utils.h"
-/*#include "cublas_dgemm.h"*/
-// #define NUM_CUDA_STREAMS 16
-// #define NUM_CUDA_STREAMS 16
+
+// #define NUM_GPU_STREAMS 16
+// #define NUM_GPU_STREAMS 16
 #endif
 
 /* Various defininations     */
@@ -384,6 +383,9 @@ pdgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
     } gemm_profile;
     gemm_profile *gemm_stats;
 #endif
+
+// cudaProfilerStart();
+
 
     /* Test the input parameters. */
     *info = 0;
@@ -767,13 +769,13 @@ pdgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
                       get_max_buffer_size ());           */
 
 #ifdef GPU_ACC /*-------- use GPU --------*/
-    int cublas_nb = get_cublas_nb(); // default 64
-    int nstreams = get_num_cuda_streams (); // default 8
+    int gpublas_nb = get_gpublas_nb(); // default 64
+    int nstreams = get_num_gpu_streams (); // default 8
 
-    int_t buffer_size  = SUPERLU_MAX(max_row_size * nstreams * cublas_nb, sp_ienv_dist(8));
+    int_t buffer_size  = SUPERLU_MAX(max_row_size * nstreams * gpublas_nb, sp_ienv_dist(8));
                                      //   get_max_buffer_size());
     /* array holding last column blk for each partition,
-       used in SchCompUdt-cuda.c         */
+       used in SchCompUdt--GPU.c         */
   #if 0
     int *stream_end_col = (int_t *) _mm_malloc (sizeof (int_t) * nstreams,64);
   #else
@@ -824,7 +826,7 @@ pdgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
 
 #ifdef GPU_ACC /*-- use GPU --*/
 
-    if ( checkCuda(cudaHostAlloc((void**)&bigU,  bigu_size * sizeof(double), cudaHostAllocDefault)) )
+    if ( checkGPU(gpuHostMalloc((void**)&bigU,  bigu_size * sizeof(double), gpuHostMallocDefault)) )
         ABORT("Malloc fails for dgemm buffer U ");
 
 #if 0 // !!Sherry fix -- only dC on GPU uses buffer_size
@@ -836,53 +838,53 @@ pdgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
             iam, bigv_size, buffer_size);
     fflush(stdout);
 #endif
-
-    if ( checkCuda(cudaHostAlloc((void**)&bigV, bigv_size * sizeof(double) ,cudaHostAllocDefault)) )
+    if ( checkGPU(gpuHostMalloc((void**)&bigV, bigv_size * sizeof(double) ,gpuHostMallocDefault)) )
         ABORT("Malloc fails for dgemm buffer V");
 
 #if ( PRNTlevel>=1 )
     if ( iam==0 ) {
         DisplayHeader();
-	printf(" Starting with %d Cuda Streams \n",nstreams );
+	printf(" Starting with %d GPU Streams \n",nstreams );
         fflush(stdout);
     }
 #endif
 
-    cublasHandle_t *handle;
-    handle = (cublasHandle_t *) SUPERLU_MALLOC(sizeof(cublasHandle_t)*nstreams);
+    gpublasHandle_t *handle;
+    handle = (gpublasHandle_t *) SUPERLU_MALLOC(sizeof(gpublasHandle_t)*nstreams);
     for(int i = 0; i < nstreams; i++) handle[i] = create_handle();
 
     // creating streams
-    cudaStream_t *streams;
-    streams = (cudaStream_t *) SUPERLU_MALLOC(sizeof(cudaStream_t)*nstreams);
+    gpuStream_t *streams;
+    streams = (gpuStream_t *) SUPERLU_MALLOC(sizeof(gpuStream_t)*nstreams);
     for (int i = 0; i < nstreams; ++i)
-        checkCuda( cudaStreamCreate(&streams[i]) );
+        checkGPU( gpuStreamCreate(&streams[i]) );
 
     // allocating data in device
     double *dA, *dB, *dC;
-    cudaError_t cudaStat;
+    gpuError_t gpuStat;
 #if 0
-    // cudaStat = cudaMalloc( (void**)&dA, m*k*sizeof(double));
+    // gpuStat = gpuMalloc( (void**)&dA, m*k*sizeof(double));
     // HOw much should be the size of dA?
     // for time being just making it
-    // cudaStat = cudaMalloc( (void**)&dA, ((max_row_size*sp_ienv_dist(3)))* sizeof(double));
+    // gpuStat = gpuMalloc( (void**)&dA, ((max_row_size*sp_ienv_dist(3)))* sizeof(double));
 #endif
 
-    cudaStat = cudaMalloc( (void**)&dA, max_row_size*sp_ienv_dist(3)* sizeof(double));
-    if (cudaStat!= cudaSuccess) {
+    gpuStat = gpuMalloc( (void**)&dA, max_row_size*sp_ienv_dist(3)* sizeof(double));
+    if (gpuStat!= gpuSuccess) {
         fprintf(stderr, "!!!! Error in allocating A in the device %ld \n",m*k*sizeof(double) );
         return 1;
     }
 
     // size of B should be bigu_size
-    cudaStat = cudaMalloc((void**)&dB, bigu_size * sizeof(double));
-    if (cudaStat!= cudaSuccess) {
+
+    gpuStat = gpuMalloc((void**)&dB, bigu_size * sizeof(double));
+    if (gpuStat!= gpuSuccess) {
         fprintf(stderr, "!!!! Error in allocating B in the device %ld \n",n*k*sizeof(double));
         return 1;
     }
 
-    cudaStat = cudaMalloc((void**)&dC, buffer_size * sizeof(double) );
-    if (cudaStat!= cudaSuccess) {
+    gpuStat = gpuMalloc((void**)&dC, buffer_size* sizeof(double) );
+    if (gpuStat!= gpuSuccess) {
         fprintf(stderr, "!!!! Error in allocating C in the device \n" );
         return 1;
     }
@@ -1736,7 +1738,7 @@ pdgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
 
 #ifdef GPU_ACC /*-- GPU --*/
 
-#include "dSchCompUdt-cuda.c"
+#include "dSchCompUdt-gpu.c"
 
 #else
 
@@ -1866,11 +1868,11 @@ pdgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
     SUPERLU_FREE (send_reqs);
 
 #ifdef GPU_ACC
-    checkCuda (cudaFreeHost (bigV));
-    checkCuda (cudaFreeHost (bigU));
-    cudaFree( (void*)dA ); /* Sherry added */
-    cudaFree( (void*)dB );
-    cudaFree( (void*)dC );
+    checkGPU (gpuFreeHost (bigV));
+    checkGPU (gpuFreeHost (bigU));
+    gpuFree( (void*)dA ); /* Sherry added */
+    gpuFree( (void*)dB );
+    gpuFree( (void*)dC );
     SUPERLU_FREE( handle );
     SUPERLU_FREE( streams );
     SUPERLU_FREE( stream_end_col );
@@ -2000,6 +2002,9 @@ pdgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
 #if ( DEBUGlevel>=1 )
     CHECK_MALLOC (iam, "Exit pdgstrf()");
 #endif
+
+
+// cudaProfilerStop();
 
     return 0;
 } /* PDGSTRF */

@@ -197,6 +197,13 @@ int main(int argc, char *argv[])
 	options.DiagInv           = NO;
      */
     set_default_options_dist(&options);
+	// options.IterRefine = NOREFINE;
+	// options.DiagInv = YES;
+    // options.ReplaceTinyPivot  = YES;
+    
+	// options.Equil = NO; 
+	// options.ColPerm = NATURAL;
+	// options.RowPerm = NOROWPERM;  						  
 #if 0
     options.RowPerm           = LargeDiag_HWPM;
     options.RowPerm = NOROWPERM;
@@ -205,6 +212,10 @@ int main(int argc, char *argv[])
     options.Equil = NO; 
     options.ReplaceTinyPivot = YES;
 #endif
+
+    // options.ParSymbFact       = YES;
+    // options.ColPerm           = PARMETIS;
+
 
     if (!iam) {
 	print_sp_ienv_dist(&options);
@@ -252,7 +263,7 @@ int main(int argc, char *argv[])
     SUPERLU_FREE(b);
     SUPERLU_FREE(xtrue);
     SUPERLU_FREE(berr);
-    fclose(fp);
+    // fclose(fp);
 
     /* ------------------------------------------------------------
        RELEASE THE SUPERLU PROCESS GRID.

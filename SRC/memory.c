@@ -70,7 +70,12 @@ void *superlu_malloc_dist(size_t size)
 	printf("(%d) superlu_malloc size %lu\n", iam, size);
 	ABORT("superlu_malloc: nonpositive size");
     }
-    buf = (char *) malloc(size + DWORD);
+// #ifdef GPU_ACC    
+// 	gpuMallocManaged(&buf, size + DWORD, gpuMemAttachGlobal);
+// #else 
+	buf = (char *) malloc(size + DWORD);
+// #endif
+	
     if ( !buf ) {
 	printf("(%d) superlu_malloc fails: malloc_total %.0f MB, size %lu\n",
 	       iam, superlu_malloc_total*1e-6, size);
@@ -114,15 +119,31 @@ void superlu_free_dist(void *addr)
 	    ABORT("superlu_malloc_total went negative");
 	
 	/*free (addr);*/
+#ifdef GPU_ACC    
+    gpuError_t error = gpuFree(p);
+#else 
 	free (p);
+#endif
     }
 
 }
  
 #else  /* The production mode. */
+  
+// #ifdef GPU_ACC  // Yang: use gpuMallocManaged seems to make the code much slower  
+#if 0  // Yang: use system malloc (for managed memory access, this requires HMM (x86) or ATS (p9) supports) 
+void *superlu_malloc_dist(size_t size) {
+    void *buf;
+	gpuMallocManaged(&buf, size, gpuMemAttachGlobal);
+	// printf("%15d %15d\n",buf,size);
+    return (buf);
+}
+void superlu_free_dist(void *addr) { gpuError_t error = gpuFree(addr);}
+
+#else 
 
 #if  0 
-//#if (__STDC_VERSION__ >= 201112L)   // cannot compile on Summit
+// #if (__STDC_VERSION__ >= 201112L)   // cannot compile on Summit, also this is very slow on tulip
 
 void * superlu_malloc_dist(size_t size) {void* ptr;int alignment=1<<12;if(size>1<<19){alignment=1<<21;}posix_memalign( (void**)&(ptr), alignment, size );return(ptr);}
 void   superlu_free_dist(void * ptr)    {free(ptr);}
@@ -147,6 +168,10 @@ void *superlu_malloc_dist(size_t size) {
 void superlu_free_dist(void *addr) { free (addr); }
 
 #endif
+#endif
+
+
+
 
 #endif  /* End debug malloc/free. */
 
