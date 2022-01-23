@@ -5,15 +5,15 @@
 #include "lupanels_GPU.cuh"
 #include "lupanels.hpp"
 
-#define cudaCheckError()                                                                     \
-    {                                                                                        \
-        cudaError_t e = cudaGetLastError();                                                  \
-        if (e != cudaSuccess)                                                                \
-        {                                                                                    \
-            printf("Cuda failure %s:%d: '%s'\n", __FILE__, __LINE__, cudaGetErrorString(e)); \
-            exit(0);                                                                         \
-        }                                                                                    \
-    }
+// #define cudaCheckError()                                                                     \
+//     {                                                                                        \
+//         cudaError_t e = cudaGetLastError();                                                  \
+//         if (e != cudaSuccess)                                                                \
+//         {                                                                                    \
+//             printf("Cuda failure %s:%d: '%s'\n", __FILE__, __LINE__, cudaGetErrorString(e)); \
+//             exit(0);                                                                         \
+//         }                                                                                    \
+//     }
 
 upanel_t LUstruct_v100::getKUpanel(int_t k, int_t offset)
 {
@@ -341,6 +341,8 @@ int_t LUstruct_v100::packedU2skyline(dLUstruct_t *LUstruct)
             uPanelVec[i].packed2skyline(globalId, Ufstnz_br_ptr[i], Unzval_br_ptr[i], xsup);
         }
     }
+
+    return 0;
 }
 
 int numProcsPerNode(MPI_Comm baseCommunicator)
@@ -435,7 +437,6 @@ int_t LUstruct_v100::setLUstruct_GPU()
     memReqData += CEILING(nsupers, Pr) * sizeof(upanelGPU_t);
 
     memReqData += sizeof(LUstructGPU_t);
-
     // Per stream data
     // TODO: estimate based on ancestor size
     A_gpu.gemmBufferSize = SUPERLU_MIN(get_max_buffer_size(), totalNzvalSize);
@@ -449,6 +450,7 @@ int_t LUstruct_v100::setLUstruct_GPU()
         printf("Not enough memory on GPU: available = %zu, required for 2 streams =%zu, exiting\n", useableGPUMem, memReqData + 2 * dataPerStream);
         exit(-1);
     }
+
 
     int_t maxNumberOfStream = (useableGPUMem - memReqData) / dataPerStream;
 
@@ -464,10 +466,8 @@ int_t LUstruct_v100::setLUstruct_GPU()
     size_t totalMemoryRequired = memReqData + numberOfStreams * dataPerStream;
 
 
-
     upanelGPU_t *uPanelVec_GPU = new upanelGPU_t[CEILING(nsupers, Pr)];
     lpanelGPU_t *lPanelVec_GPU = new lpanelGPU_t[CEILING(nsupers, Pc)];
-
 #if 1
     void *gpuBasePtr, *gpuCurrentPtr;
     cudaMalloc(&gpuBasePtr, totalMemoryRequired);
@@ -532,7 +532,7 @@ int_t LUstruct_v100::setLUstruct_GPU()
         A_gpu.lookAheadUGemmBuffer[stream] = (double *)gpuCurrentPtr;
         gpuCurrentPtr = (double *)gpuCurrentPtr + maxUvalCount;
     }
-    cudaCheckError();
+    // cudaCheckError();
     // allocate
     dA_gpu = (LUstructGPU_t *)gpuCurrentPtr;
 
@@ -551,7 +551,7 @@ int_t LUstruct_v100::setLUstruct_GPU()
     cudaMalloc(&A_gpu.lPanelVec, CEILING(nsupers, Pc) * sizeof(lpanelGPU_t));
     cudaMemcpy(A_gpu.lPanelVec, lPanelVec_GPU,
                CEILING(nsupers, Pc) * sizeof(lpanelGPU_t), cudaMemcpyHostToDevice);
-    cudaCheckError();
+    // cudaCheckError();
     for (int_t i = 0; i < CEILING(nsupers, Pr); ++i)
     {
         if (i * Pr + myrow < nsupers && isNodeInMyGrid[i * Pr + myrow] == 1)
@@ -560,7 +560,7 @@ int_t LUstruct_v100::setLUstruct_GPU()
     cudaMalloc(&A_gpu.uPanelVec, CEILING(nsupers, Pr) * sizeof(upanelGPU_t));
     cudaMemcpy(A_gpu.uPanelVec, uPanelVec_GPU,
                CEILING(nsupers, Pr) * sizeof(upanelGPU_t), cudaMemcpyHostToDevice);
-    cudaCheckError();
+    // cudaCheckError();
 
     // assert(A_gpu.numCudaStreams < options->num_lookaheads);
 
@@ -592,7 +592,8 @@ int_t LUstruct_v100::setLUstruct_GPU()
     cudaMemcpy(dA_gpu, &A_gpu, sizeof(LUstructGPU_t), cudaMemcpyHostToDevice);
 
 #endif
-    cudaCheckError();
+    // cudaCheckError();
+    return 0; 
 }
 
 int_t LUstruct_v100::copyLUGPUtoHost()
@@ -605,6 +606,7 @@ int_t LUstruct_v100::copyLUGPUtoHost()
     for (int_t i = 0; i < CEILING(nsupers, Pr); ++i)
         if (i * Pr + myrow < nsupers && isNodeInMyGrid[i * Pr + myrow] == 1)
             uPanelVec[i].copyFromGPU();
+    return 0;
 }
 
 int_t LUstruct_v100::checkGPU()
@@ -618,6 +620,7 @@ int_t LUstruct_v100::checkGPU()
 
     std::cout << "Checking LU struct completed succesfully"
               << "\n";
+    return 0;
 }
 
 int_t LUstruct_v100::lookAheadUpdate(
@@ -686,6 +689,7 @@ int_t LUstruct_v100::blockUpdate(int_t k,
     dScatter(lpanel.nbrow(ii), upanel.nbcol(jj),
              ib, jb, V, lpanel.nbrow(ii),
              lpanel.rowList(ii), upanel.colList(jj));
+    return 0;
 }
 
 int_t LUstruct_v100::dSchurCompUpdateExcludeOne(
