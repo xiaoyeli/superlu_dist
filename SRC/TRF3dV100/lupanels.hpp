@@ -475,6 +475,12 @@ struct LUstruct_v100
     upanel_t getKUpanel(int_t k, int_t offset);
     lpanel_t getKLpanel(int_t k, int_t offset);
     int_t SyncLookAheadUpdate(int streamId);
+
+    double *gpuLvalBasePtr, *gpuUvalBasePtr;
+    int_t *gpuLidxBasePtr, *gpuUidxBasePtr;
+    size_t gpuLvalSize, gpuUvalSize, gpuLidxSize, gpuUidxSize;
+    lpanelGPU_t* copyLpanelsToGPU();
+    upanelGPU_t* copyUpanelsToGPU();
 };
 
 cudaError_t checkCudaLocal(cudaError_t result);
