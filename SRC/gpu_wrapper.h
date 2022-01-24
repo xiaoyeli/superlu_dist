@@ -62,7 +62,9 @@
 #define  gpublasHandle_t cublasHandle_t
 #define  gpublasSetStream cublasSetStream
 #define  gpublasDgemm cublasDgemm
+#define  gpublasSgemm cublasSgemm
 #define  gpublasZgemm cublasZgemm
+#define  gpublasCgemm cublasCgemm
 #define  GPUBLAS_OP_N CUBLAS_OP_N
 #define  gpuDoubleComplex cuDoubleComplex
 #define  gpuRuntimeGetVersion cudaRuntimeGetVersion
@@ -140,7 +142,9 @@
 #define  gpublasHandle_t hipblasHandle_t
 #define  gpublasSetStream hipblasSetStream
 #define  gpublasDgemm hipblasDgemm
+#define  gpublasSgemm hipblasSgemm
 #define  gpublasZgemm hipblasZgemm
+#define  gpublasCgemm hipblasCgemm
 #define  GPUBLAS_OP_N HIPBLAS_OP_N
 #define  gpuDoubleComplex hipblasDoubleComplex
 #define  gpuRuntimeGetVersion hipRuntimeGetVersion

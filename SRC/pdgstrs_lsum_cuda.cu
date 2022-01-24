@@ -1009,7 +1009,7 @@ __device__ void C_RdTree_forwardMessageSimple_Device(C_Tree* Tree, void* localBu
   int   nrhs,      /* Number of right-hand sides.                        */
   int   maxsup,      /* Max supernode size.                        */
   int_t   nsupers,      /* Number of total supernodes.                        */
-  int_t *fmod,     /* Modification count for L-solve.                    */
+  int *fmod,     /* Modification count for L-solve.                    */
   C_Tree  *LBtree_ptr,
   C_Tree  *LRtree_ptr,
   int_t *ilsum,
@@ -1034,7 +1034,8 @@ __device__ void C_RdTree_forwardMessageSimple_Device(C_Tree* Tree, void* localBu
 	 int    iam, iknsupc, myrow, mycol, krow, nbrow, nbrow1, nsupr,m;
 	 int_t  k,i, l,ii,ik, il, irow, j, lb, lk, rel, lib;
 	 int_t  *lsub, *lloc;
-	 int_t  luptr_tmp1,lptr1_tmp, idx_i, idx_v, fmod_tmp;
+	 int_t  luptr_tmp1,lptr1_tmp, idx_i, idx_v;
+	 int fmod_tmp;
 	//  MPI_Status status;
 	//  const int Nbk=1;
 	//  __shared__ double rtemp_loc[128]; 
@@ -1487,7 +1488,7 @@ __device__ void C_RdTree_forwardMessageSimple_Device(C_Tree* Tree, void* localBu
    double *x,       /* X array (local)                                    */
    int   nrhs,      /* Number of right-hand sides.                        */
    int_t   nsupers,      /* Number of total supernodes.                        */
-   int_t *bmod,     /* Modification count for U-solve.                    */
+   int *bmod,     /* Modification count for U-solve.                    */
    C_Tree  *UBtree_ptr,
    C_Tree  *URtree_ptr,
    int_t *ilsum,
@@ -1783,7 +1784,7 @@ __device__ void C_RdTree_forwardMessageSimple_Device(C_Tree* Tree, void* localBu
   int   nrhs,      /* Number of right-hand sides.                        */
   int   maxsup,      /* Max supernode size.                        */
   int_t   nsupers,      /* Number of total supernodes.                        */
-  int_t *fmod,     /* Modification count for L-solve.                    */
+  int *fmod,     /* Modification count for L-solve.                    */
   C_Tree  *LBtree_ptr,
   C_Tree  *LRtree_ptr,
   int_t *ilsum,
@@ -1838,7 +1839,7 @@ __device__ void C_RdTree_forwardMessageSimple_Device(C_Tree* Tree, void* localBu
   int   nrhs,      /* Number of right-hand sides.                        */
   int   maxsup,      /* Max supernode size.                        */
   int_t   nsupers,      /* Number of total supernodes.                        */
-  int_t *bmod,     /* Modification count for L-solve.                    */
+  int *bmod,     /* Modification count for L-solve.                    */
   C_Tree  *UBtree_ptr,
   C_Tree  *URtree_ptr,
   int_t *ilsum,

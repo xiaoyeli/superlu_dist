@@ -29,7 +29,7 @@ extern "C" {
 #endif
 extern void DisplayHeader();
 extern const char* cublasGetErrorString(cublasStatus_t status);
-extern cudaError_t checkCuda(cudaError_t);
+extern gpuError_t checkGPU(gpuError_t);
 extern cublasStatus_t checkCublas(cublasStatus_t);
 extern cublasHandle_t create_handle ();
 extern void destroy_handle (cublasHandle_t handle);
@@ -37,4 +37,5 @@ extern void destroy_handle (cublasHandle_t handle);
   }
 #endif
 
+#endif 
 #endif 

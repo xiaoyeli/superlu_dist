@@ -21,9 +21,15 @@
 	  if(precision=='d'){
       MPI_Type_contiguous( sizeof(double), MPI_BYTE, &tree->type_ );
 	  }
+	  if(precision=='s'){
+      MPI_Type_contiguous( sizeof(float), MPI_BYTE, &tree->type_ );
+	  }
 	  if(precision=='z'){
       MPI_Type_contiguous( sizeof(doublecomplex), MPI_BYTE, &tree->type_ );
 	  }
+	  //if(precision=='c'){
+	  //MPI_Type_contiguous( sizeof(complex), MPI_BYTE, &tree->type_ );
+	  //}
       MPI_Type_commit( &tree->type_ );
 
       int myIdx = 0;

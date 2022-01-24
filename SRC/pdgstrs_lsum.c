@@ -67,7 +67,7 @@ void dlsum_fmod
  int   nrhs,      /* Number of right-hand sides.                        */
  int   knsupc,    /* Size of supernode k.                               */
  int_t k,         /* The k-th component of X.                           */
- int_t *fmod,     /* Modification count for L-solve.                    */
+ int *fmod,     /* Modification count for L-solve.                    */
  int_t nlb,       /* Number of L blocks.                                */
  int_t lptr,      /* Starting position in lsub[*].                      */
  int_t luptr,     /* Starting position in lusup[*].                     */
@@ -85,8 +85,8 @@ void dlsum_fmod
     int_t  i, ii, ik, il, ikcol, irow, j, lb, lk, lib, rel;
     int_t  *lsub, *lsub1, nlb1, lptr1, luptr1;
     int_t  *ilsum = Llu->ilsum; /* Starting position of each supernode in lsum.   */
-    int_t  *frecv = Llu->frecv;
-    int_t  **fsendx_plist = Llu->fsendx_plist;
+    int  *frecv = Llu->frecv;
+    int  **fsendx_plist = Llu->fsendx_plist;
     MPI_Status status;
     int test_flag;
 
@@ -249,7 +249,7 @@ void dlsum_bmod
  double *xk,          /* X[k].                                          */
  int    nrhs,	      /* Number of right-hand sides.                    */
  int_t  k,            /* The k-th component of X.                       */
- int_t  *bmod,        /* Modification count for L-solve.                */
+ int  *bmod,        /* Modification count for L-solve.                */
  int_t  *Urbs,        /* Number of row blocks in each block column of U.*/
  Ucb_indptr_t **Ucb_indptr,/* Vertical linked list pointing to Uindex[].*/
  int_t  **Ucb_valptr, /* Vertical linked list pointing to Unzval[].     */
@@ -274,8 +274,8 @@ void dlsum_bmod
     int_t  *lsub;
     double *lusup;
     int_t  *ilsum = Llu->ilsum; /* Starting position of each supernode in lsum.   */
-    int_t  *brecv = Llu->brecv;
-    int_t  **bsendx_plist = Llu->bsendx_plist;
+    int  *brecv = Llu->brecv;
+    int    **bsendx_plist = Llu->bsendx_plist;
     MPI_Status status;
     int test_flag;
 
@@ -355,7 +355,7 @@ void dlsum_bmod
 		    dtrsm_("L", "U", "N", "N", &iknsupc, &nrhs, &alpha,
 			   lusup, &nsupr, &x[ii], &iknsupc);
 #endif
-		    // stat->ops[SOLVE] += iknsupc * (iknsupc + 1) * nrhs;
+		    stat->ops[SOLVE] += iknsupc * (iknsupc + 1) * nrhs;
 #if ( DEBUGlevel>=2 )
 		    printf("(%2d) Solve X[%2d]\n", iam, gik);
 #endif
@@ -420,7 +420,7 @@ void dlsum_fmod_inv
  double *rtemp,   /* Result of full matrix-vector multiply.             */
  int   nrhs,      /* Number of right-hand sides.                        */
  int_t k,         /* The k-th component of X.                           */
- int_t *fmod,     /* Modification count for L-solve.                    */
+ int *fmod,     /* Modification count for L-solve.                    */
  int_t *xsup,
  gridinfo_t *grid,
  dLocalLU_t *Llu,
@@ -443,8 +443,8 @@ void dlsum_fmod_inv
 	int_t  i, ii,jj, ik, il, ikcol, irow, j, lb, lk, rel, lib,lready;
 	int_t  *lsub, *lsub1, nlb1, lptr1, luptr1,*lloc;
     int_t  *ilsum = Llu->ilsum; /* Starting position of each supernode in lsum.   */
-    int_t  *frecv = Llu->frecv;
-    int_t  **fsendx_plist = Llu->fsendx_plist;
+    int  *frecv = Llu->frecv;
+    int  **fsendx_plist = Llu->fsendx_plist;
 	int_t  luptr_tmp,luptr_tmp1,lptr1_tmp,maxrecvsz, idx_i, idx_v,idx_n,  idx_l, fmod_tmp, lbstart,lbend,nn,Nchunk,nlb_loc,remainder;
 	int thread_id1;
 	flops_t ops_loc=0.0;
@@ -461,9 +461,9 @@ void dlsum_fmod_inv
 	int_t luptr;     /* Starting position in lusup[*].                     */
 	int_t iword = sizeof(int_t);
 	int_t dword = sizeof (double);
-	int_t aln_d,aln_i;
-	aln_d = 1;//ceil(CACHELINE/(double)dword);
-	aln_i = 1;//ceil(CACHELINE/(double)iword);
+	int aln_d,aln_i;
+	aln_d = 1; //ceil(CACHELINE/(double)dword);
+	aln_i = 1; //ceil(CACHELINE/(double)iword);
 	int   knsupc;    /* Size of supernode k.                               */
 	int_t nlb;       /* Number of L blocks.                                */
 
@@ -709,10 +709,11 @@ void dlsum_fmod_inv
 
 #endif
 
-								/*
-								 * Send Xk to process column Pc[k].
-								 */
-								if(LBtree_ptr[lk].empty_==NO){
+							/*
+							 * Send Xk to process column Pc[k].
+							 */
+
+							if(LBtree_ptr[lk].empty_==NO){
 #ifdef _OPENMP
 #pragma omp atomic capture
 #endif
@@ -888,14 +889,7 @@ void dlsum_fmod_inv
 					    dtrsm_("L", "L", "N", "U", &iknsupc, &nrhs, &alpha,
 									lusup1, &nsupr1, &x[ii], &iknsupc);
 #endif
-						}
-							// printf("\n");
-							// printf("k: %5d\n",ik);
-							// for (i=0 ; i<iknsupc*nrhs ; i++){
-							// printf("x_lsum: %f\n",x[ii+i]);
-							// fflush(stdout);
-							// }
-
+					} /* end else */
 
 #if ( PROFlevel>=1 )
 					TOC(t2, t1);
@@ -909,11 +903,10 @@ void dlsum_fmod_inv
 #endif
 
 					/*
-						* Send Xk to process column Pc[k].
-						*/
+					 * Send Xk to process column Pc[k].
+					 */
 
 					if(LBtree_ptr[lk].empty_==NO){
-
 #ifdef _OPENMP
 #pragma omp atomic capture
 #endif
@@ -968,7 +961,7 @@ void dlsum_fmod_inv_master
  int   nrhs,      /* Number of right-hand sides.                        */
  int   knsupc,    /* Size of supernode k.                               */
  int_t k,         /* The k-th component of X.                           */
- int_t *fmod,     /* Modification count for L-solve.                    */
+ int *fmod,     /* Modification count for L-solve.                    */
  int_t nlb,       /* Number of L blocks.                                */
  int_t *xsup,
  gridinfo_t *grid,
@@ -990,8 +983,8 @@ void dlsum_fmod_inv_master
 	int_t  i, ii,jj, ik, il, ikcol, irow, j, lb, lk, rel, lib,lready;
 	int_t  *lsub, *lsub1, nlb1, lptr1, luptr1,*lloc;
     int_t  *ilsum = Llu->ilsum; /* Starting position of each supernode in lsum.   */
-    int_t  *frecv = Llu->frecv;
-    int_t  **fsendx_plist = Llu->fsendx_plist;
+    int  *frecv = Llu->frecv;
+    int  **fsendx_plist = Llu->fsendx_plist;
 	int_t  luptr_tmp,luptr_tmp1,lptr1_tmp,maxrecvsz, idx_i, idx_v,idx_n,  idx_l, fmod_tmp, lbstart,lbend,nn,Nchunk,nlb_loc,remainder;
 	int thread_id1;
 	int m;
@@ -1009,9 +1002,9 @@ void dlsum_fmod_inv_master
 	int_t luptr;     /* Starting position in lusup[*].                     */
 	int_t iword = sizeof(int_t);
 	int_t dword = sizeof (double);
-	int_t aln_d,aln_i;
-	aln_d = 1;//ceil(CACHELINE/(double)dword);
-	aln_i = 1;//ceil(CACHELINE/(double)iword);
+	int aln_d,aln_i;
+	aln_d = 1; //ceil(CACHELINE/(double)dword);
+	aln_i = 1; //ceil(CACHELINE/(double)iword);
 
 	ldalsum=Llu->ldalsum;
 
@@ -1325,10 +1318,11 @@ void dlsum_fmod_inv_master
 					 * Send Xk to process column Pc[k].
 					 */
 
-					if(LBtree_ptr[lk].empty_==NO){
-						// BcTree_forwardMessageSimple(LBtree_ptr[lk],&x[ii - XK_H],BcTree_GetMsgSize(LBtree_ptr[lk],'d')*nrhs+XK_H,'d');
+					if(LBtree_ptr[lk].empty_==NO) {
+						//BcTree_forwardMessageSimple(LBtree_ptr[lk],&x[ii - XK_H],BcTree_GetMsgSize(LBtree_ptr[lk],'d')*nrhs+XK_H,'d');
 						C_BcTree_forwardMessageSimple(&LBtree_ptr[lk], &x[ii - XK_H], LBtree_ptr[lk].msgSize_*nrhs+XK_H);
 					}
+
 					/*
 					 * Perform local block modifications.
 					 */
@@ -1365,7 +1359,7 @@ void dlsum_bmod_inv
  double *rtemp,   /* Result of full matrix-vector multiply.             */
  int    nrhs,	      /* Number of right-hand sides.                    */
  int_t  k,            /* The k-th component of X.                       */
- int_t  *bmod,        /* Modification count for L-solve.                */
+ int *bmod,        /* Modification count for L-solve.                */
  int_t  *Urbs,        /* Number of row blocks in each block column of U.*/
  Ucb_indptr_t **Ucb_indptr,/* Vertical linked list pointing to Uindex[].*/
  int_t  **Ucb_valptr, /* Vertical linked list pointing to Unzval[].     */
@@ -1395,13 +1389,13 @@ void dlsum_bmod_inv
 	int_t  *lsub;
 	double *lusup;
 	int_t  *ilsum = Llu->ilsum; /* Starting position of each supernode in lsum.   */
-	int_t  *brecv = Llu->brecv;
-	int_t  **bsendx_plist = Llu->bsendx_plist;
+	int  *brecv = Llu->brecv;
+	int    **bsendx_plist = Llu->bsendx_plist;
 	C_Tree  *UBtree_ptr = Llu->UBtree_ptr;
 	C_Tree  *URtree_ptr = Llu->URtree_ptr;
 	MPI_Status status;
 	int test_flag;
-	int_t bmod_tmp;
+	int bmod_tmp;
 	int thread_id1;
 	double *rtemp_loc;
 	int_t nroot_send_tmp;
@@ -1412,9 +1406,9 @@ void dlsum_bmod_inv
 	int_t Nchunk, nub_loc,remainder,nn,lbstart,lbend;
 	int_t iword = sizeof(int_t);
 	int_t dword = sizeof(double);
-	int_t aln_d,aln_i;
-	aln_d = 1;//ceil(CACHELINE/(double)dword);
-	aln_i = 1;//ceil(CACHELINE/(double)iword);
+	int aln_d,aln_i;
+	aln_d = 1; //ceil(CACHELINE/(double)dword);
+	aln_i = 1; //ceil(CACHELINE/(double)iword);
 
 
 	iam = grid->iam;
@@ -1829,7 +1823,7 @@ void dlsum_bmod_inv_master
  double *rtemp,   /* Result of full matrix-vector multiply.             */
  int    nrhs,	      /* Number of right-hand sides.                    */
  int_t  k,            /* The k-th component of X.                       */
- int_t  *bmod,        /* Modification count for L-solve.                */
+ int  *bmod,        /* Modification count for L-solve.                */
  int_t  *Urbs,        /* Number of row blocks in each block column of U.*/
  Ucb_indptr_t **Ucb_indptr,/* Vertical linked list pointing to Uindex[].*/
  int_t  **Ucb_valptr, /* Vertical linked list pointing to Unzval[].     */
@@ -1857,8 +1851,8 @@ void dlsum_bmod_inv_master
 	int_t  *lsub;
 	double *lusup;
 	int_t  *ilsum = Llu->ilsum; /* Starting position of each supernode in lsum.   */
-	int_t  *brecv = Llu->brecv;
-	int_t  **bsendx_plist = Llu->bsendx_plist;
+	int *brecv = Llu->brecv;
+	int  **bsendx_plist = Llu->bsendx_plist;
 	C_Tree  *UBtree_ptr = Llu->UBtree_ptr;
 	C_Tree  *URtree_ptr = Llu->URtree_ptr;
 	MPI_Status status;
@@ -1874,9 +1868,9 @@ void dlsum_bmod_inv_master
 	int_t Nchunk, nub_loc,remainder,nn,lbstart,lbend;
 	int_t iword = sizeof(int_t);
 	int_t dword = sizeof (double);
-	int_t aln_d,aln_i;
-	aln_d = 1;//ceil(CACHELINE/(double)dword);
-	aln_i = 1;//ceil(CACHELINE/(double)iword);
+	int aln_d,aln_i;
+	aln_d = 1; //ceil(CACHELINE/(double)dword);
+	aln_i = 1; //ceil(CACHELINE/(double)iword);
 
 
 	rtemp_loc = &rtemp[sizertemp* thread_id];
@@ -2023,7 +2017,7 @@ void dlsum_bmod_inv_master
 		#endif
 					for (jj=0;jj<iknsupc*nrhs;jj++)
 						lsum[il + jj ] += lsum[il + jj + ii*sizelsum];
-				// RdTree_forwardMessageSimple(URtree_ptr[ik],&lsum[il - LSUM_H ],RdTree_GetMsgSize(URtree_ptr[ik],'d')*nrhs+LSUM_H,'d');
+				//RdTree_forwardMessageSimple(URtree_ptr[ik],&lsum[il - LSUM_H ],RdTree_GetMsgSize(URtree_ptr[ik],'d')*nrhs+LSUM_H,'d');
 				C_RdTree_forwardMessageSimple(&URtree_ptr[ik],&lsum[il - LSUM_H ],URtree_ptr[ik].msgSize_*nrhs+LSUM_H);
 
 #if ( DEBUGlevel>=2 )
@@ -2112,8 +2106,8 @@ void dlsum_bmod_inv_master
 						// fflush(stdout);
 					// }
 					if(UBtree_ptr[lk1].empty_==NO){
-					// BcTree_forwardMessageSimple(UBtree_ptr[lk1],&x[ii - XK_H],BcTree_GetMsgSize(UBtree_ptr[lk1],'d')*nrhs+XK_H,'d');
-					C_BcTree_forwardMessageSimple(&UBtree_ptr[lk1], &x[ii - XK_H], UBtree_ptr[lk1].msgSize_*nrhs+XK_H);
+					  //BcTree_forwardMessageSimple(UBtree_ptr[lk1],&x[ii - XK_H],BcTree_GetMsgSize(UBtree_ptr[lk1],'d')*nrhs+XK_H,'d');
+					  C_BcTree_forwardMessageSimple(&UBtree_ptr[lk1], &x[ii - XK_H], UBtree_ptr[lk1].msgSize_*nrhs+XK_H);
 					}
 
 					/*

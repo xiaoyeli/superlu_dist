@@ -199,6 +199,23 @@ user_bcopy(char *src, char *dest, int_t bytes)
 
 
 
+int *int32Malloc_dist(int n)
+{
+    int *buf;
+    buf = (int *) SUPERLU_MALLOC((size_t) SUPERLU_MAX(1,n) * sizeof(int));
+    return (buf);
+}
+
+int *int32Calloc_dist(int n)
+{
+    int *buf;
+    register int i;
+    buf = (int *) SUPERLU_MALLOC((size_t) SUPERLU_MAX(1,n) * sizeof(int));
+    if ( buf )
+	for (i = 0; i < n; ++i) buf[i] = 0;
+    return (buf);
+}
+
 int_t *intMalloc_dist(int_t n)
 {
     int_t *buf;

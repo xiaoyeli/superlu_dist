@@ -605,11 +605,11 @@ void dPrintLblocks(int iam, int_t nsupers, gridinfo_t *grid,
 	}
 	printf("(%d)", iam);
  	PrintInt32("ToSendR[]", grid->npcol, Llu->ToSendR[lb]);
-	PrintInt10("fsendx_plist[]", grid->nprow, Llu->fsendx_plist[lb]);
+	PrintInt32("fsendx_plist[]", grid->nprow, Llu->fsendx_plist[lb]);
     }
-    printf("nfrecvx " IFMT "\n", Llu->nfrecvx);
+    printf("nfrecvx %d\n", Llu->nfrecvx);
     k = CEILING( nsupers, grid->nprow );
-    PrintInt10("fmod", k, Llu->fmod);
+    PrintInt32("fmod", k, Llu->fmod);
 
 } /* DPRINTLBLOCKS */
 

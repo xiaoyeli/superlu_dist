@@ -18,14 +18,9 @@
 
 #undef Reduce
 
-//#include <thrust/system/gpu/detail/cub/cub.cuh>
+//#include <thrust/system/cuda/detail/cub/cub.cuh>
 
 #include "slustruct_gpu.h"
-#ifdef HAVE_CUDA
-#include "superlu_gpu_utils.cu"
-#elif defined(HAVE_HIP)
-#include "superlu_gpu_utils.hip.cpp"
-#endif
 
 
 //extern "C" {
@@ -38,7 +33,7 @@
 // #if defined(DEBUG) || defined(_DEBUG)
 // 	if (result != GPUBLAS_STATUS_SUCCESS)
 // 	{
-// 		fprintf(stderr, "CUDA Blas Runtime Error: %s\n", gpublasGetErrorString(result));
+// 		fprintf(stderr, "GPU BLAS Runtime Error: %s\n", gpublasGetErrorString(result));
 // 		assert(result == GPUBLAS_STATUS_SUCCESS);
 // 	}
 // #endif
@@ -225,6 +220,9 @@ void Scatter_GPU_kernel(
 	int jb = Ublock_info[j].jb;
 	int nsupc = SuperSize (jb);
 	int ljb = jb / npcol;
+
+	typedef int pfx_dtype ;
+        extern  __device__ void incScan(pfx_dtype *inOutArr, pfx_dtype *temp, int n);
 
 	float *tempv1;
 	if (jj_st == jj0)
@@ -868,7 +866,7 @@ int sinitSluGPU3D_t(
     int_t ldt             /* NSUP read from sp_ienv(3) */
 )
 {
-    checkGPUErrors(gpuDeviceReset ())     ;
+    checkGPUErrors(gpuDeviceReset ());
     Glu_persist_t *Glu_persist = LUstruct->Glu_persist;
     sLocalLU_t *Llu = LUstruct->Llu;
     int* isNodeInMyGrid = sluGPU->isNodeInMyGrid;

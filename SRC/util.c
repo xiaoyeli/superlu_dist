@@ -276,14 +276,14 @@ void pxgstrs_finalize(pxgstrs_comm_t *gstrs_comm)
 void print_panel_seg_dist(int_t n, int_t w, int_t jcol, int_t nseg,
                           int_t *segrep, int_t *repfnz)
 {
-    int_t j, k;
+    int j, k;
 
     for (j = jcol; j < jcol + w; j++)
     {
-        printf("\tcol " IFMT ":\n", j);
+        printf("\tcol %d:\n", j);
         for (k = 0; k < nseg; k++)
-            printf("\t\tseg " IFMT ", segrep " IFMT ", repfnz " IFMT "\n", k,
-                   segrep[k], repfnz[(j - jcol) * n + segrep[k]]);
+            printf("\t\tseg %d, segrep %d, repfnz %d\n", k,
+                   (int)segrep[k], (int)repfnz[(j - jcol) * n + segrep[k]]);
     }
 }
 
@@ -537,11 +537,11 @@ void get_diag_procs(int_t n, Glu_persist_t *Glu_persist, gridinfo_t *grid,
 /*! \brief Get the statistics of the supernodes 
  */
 #define NBUCKS 10
-static int_t max_sup_size;
+static int max_sup_size;
 
 void super_stats_dist(int_t nsuper, int_t *xsup)
 {
-    register int_t nsup1 = 0;
+    register int nsup1 = 0;
     int_t i, isize, whichb, bl, bh;
     int_t bucket[NBUCKS];
 
@@ -556,9 +556,9 @@ void super_stats_dist(int_t nsuper, int_t *xsup)
             max_sup_size = isize;
     }
 
-    printf("    Supernode statistics:\n\tno of super = " IFMT "\n", nsuper + 1);
-    printf("\tmax supernode size = " IFMT "\n", max_sup_size);
-    printf("\tno of size 1 supernodes = " IFMT "\n", nsup1);
+    printf("    Supernode statistics:\n\tno of super = %d\n", (int)nsuper + 1);
+    printf("\tmax supernode size = %d\n", max_sup_size);
+    printf("\tno of size 1 supernodes = %d\n", nsup1);
 
     /* Histogram of the supernode sizes */
     ifill_dist(bucket, NBUCKS, 0);
@@ -577,7 +577,7 @@ void super_stats_dist(int_t nsuper, int_t *xsup)
     {
         bl = (float)i * max_sup_size / NBUCKS;
         bh = (float)(i + 1) * max_sup_size / NBUCKS;
-        printf("\tsnode: " IFMT "-" IFMT "\t\t" IFMT "\n", bl + 1, bh, bucket[i]);
+        printf("\tsnode: %d-%d\t\t%d\n", (int)bl + 1, (int)bh, (int)bucket[i]);
     }
 }
 
@@ -585,14 +585,14 @@ void super_stats_dist(int_t nsuper, int_t *xsup)
  */
 void check_repfnz_dist(int_t n, int_t w, int_t jcol, int_t *repfnz)
 {
-    int_t jj, k;
+    int jj, k;
 
     for (jj = jcol; jj < jcol + w; jj++)
         for (k = 0; k < n; k++)
             if (repfnz[(jj - jcol) * n + k] != EMPTY)
             {
-                fprintf(stderr, "col " IFMT ", repfnz_col[" IFMT "] = " IFMT "\n",
-                        jj, k, repfnz[(jj - jcol) * n + k]);
+                fprintf(stderr, "col %d, repfnz_col[%d] = %d\n",
+                        jj, k, (int)repfnz[(jj - jcol) * n + k]);
                 ABORT("check_repfnz_dist");
             }
 }
@@ -1032,8 +1032,8 @@ int_t estimate_bigu_size(
 #if (PRNTlevel >= 1)
     if (iam == 0)
     {
-        printf("max_ncols " IFMT ",  max_ldu " IFMT ", bigu_size " IFMT "\n",
-               *max_ncols, max_ldu, max_ldu * (*max_ncols));
+        printf("max_ncols %d,  max_ldu %d, bigu_size " IFMT "\n",
+               (int)*max_ncols, (int)max_ldu, max_ldu * (*max_ncols));
         fflush(stdout);
     }
 #endif

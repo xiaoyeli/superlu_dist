@@ -51,6 +51,7 @@ at the top-level directory.
 #include <stdio.h>
 #include <limits.h>
 #include <string.h>
+#include <ctype.h>
 // #include <stdatomic.h>
 #include <math.h>
 #include <stdint.h>
@@ -85,10 +86,10 @@ at the top-level directory.
 #include "superlu_dist_config.h"
 
 #ifdef HAVE_CUDA
-#ifndef GPU_ACC
 #define GPU_ACC
+//#include "cublas_utils.h"
 #endif
-#endif
+
 #ifdef HAVE_HIP
 #ifndef GPU_ACC
 #define GPU_ACC
@@ -96,7 +97,6 @@ at the top-level directory.
 #endif
 
 #ifdef GPU_ACC
-//#include "gpu_wrapper.h"
 #include "gpu_api_utils.h"
 #endif
 
@@ -296,6 +296,42 @@ static const int RD_U=4;	/* MPI tag for lsum in U-solve*/
 #endif /* MSVC */
 #endif /* SUPERLU_DIST_EXPORT */
 
+
+/*
+ * CONSTANTS in MAGMA
+ */
+#ifndef MAGMA_CONST
+#define MAGMA_CONST
+
+// #define DIM_X  32
+// #define DIM_Y  16
+
+#define DIM_X  16
+#define DIM_Y  16
+
+
+#define BLK_M  DIM_X*4
+#define BLK_N  DIM_Y*4
+#define BLK_K 2048/(BLK_M)
+
+#define DIM_XA  DIM_X
+#define DIM_YA  DIM_Y
+#define DIM_XB  DIM_X
+#define DIM_YB  DIM_Y
+
+#define NWARP  DIM_X*DIM_Y/32
+
+// // // // // // #define TILE_SIZE  32
+
+
+#define THR_M ( BLK_M / DIM_X )
+#define THR_N ( BLK_N / DIM_Y )
+
+#define fetch(A, m, n, bound) offs_d##A[min(n*LD##A+m, bound)]
+#define fma(A, B, C) C += (A*B)
+#endif
+/*---- end MAGMA ----*/
+    
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -940,7 +976,7 @@ typedef struct xtrsTimer_t
     double ppXmem;		// perprocess X-memory
 } xtrsTimer_t;
 
-/*==== For 3D code ====*/
+/*==== end For 3D code ====*/
 
 /*====================*/
 
@@ -996,9 +1032,11 @@ extern float   smach_dist(char *);
 extern double  dmach_dist(char *);
 extern void    *superlu_malloc_dist (size_t);
 extern void    superlu_free_dist (void*);
+extern int   *int32Malloc_dist (int);
+extern int   *int32Calloc_dist (int);
 extern int_t   *intMalloc_dist (int_t);
 extern int_t   *intCalloc_dist (int_t);
-extern int_t   mc64id_dist(int_t *);
+extern int   mc64id_dist(int *);
 extern void  arrive_at_ublock (int_t, int_t *, int_t *, int_t *,
 			       int_t *, int_t *, int_t, int_t, 
 			       int_t *, int_t *, int_t *, gridinfo_t *);
@@ -1239,15 +1277,21 @@ extern int_t getBigUSize(int_t nsupers, gridinfo_t *grid, int_t **Lrowind_bc_ptr
 extern void getSCUweight(int_t nsupers, treeList_t* treeList, int_t* xsup,
 			 int_t** Lrowind_bc_ptr, int_t** Ufstnz_br_ptr,
 			 gridinfo3d_t * grid3d);
+extern int Wait_LUDiagSend(int_t k, MPI_Request *U_diag_blk_send_req,
+			   MPI_Request *L_diag_blk_send_req,
+			   gridinfo_t *grid, SCT_t *SCT);
+
 extern int getNsupers(int n, Glu_persist_t *Glu_persist);
 extern int set_tag_ub();
 extern int getNumThreads(int);
 extern int_t num_full_cols_U(int_t kk, int_t **Ufstnz_br_ptr, int_t *xsup,
 			     gridinfo_t *, int_t *, int_t *);
+
 #if 0 // Sherry: conflicting with existing routine
 extern int_t estimate_bigu_size(int_t nsupers, int_t ldt, int_t**Ufstnz_br_ptr,
 				Glu_persist_t *, gridinfo_t*, int_t* perm_u);
 #endif
+
 extern int_t* getFactPerm(int_t);
 extern int_t* getFactIperm(int_t*, int_t);
 
@@ -1287,6 +1331,19 @@ extern int_t** getTreePerm( int_t* myTreeIdxs, int_t* myZeroTrIdxs,
 extern int_t* getMyNodeCounts(int_t maxLvl, int_t* myTreeIdxs, int_t* gNodeCount);
 extern int_t checkIntVector3d(int_t* vec, int_t len,  gridinfo3d_t* grid3d);
 extern int_t reduceStat(PhaseType PHASE, SuperLUStat_t *stat, gridinfo3d_t * grid3d);
+
+    /* from communication_aux.h */
+extern int_t Wait_LSend(int_t k, gridinfo_t *grid, int **ToSendR,
+			MPI_Request *s, SCT_t*);
+extern int_t Wait_USend(MPI_Request *, gridinfo_t *, SCT_t *);
+extern int_t Check_LRecv(MPI_Request*, int* msgcnt);
+extern int_t Wait_UDiagBlockSend(MPI_Request *, gridinfo_t *, SCT_t *);
+extern int_t Wait_LDiagBlockSend(MPI_Request *, gridinfo_t *, SCT_t *);
+extern int_t Wait_UDiagBlock_Recv(MPI_Request *, SCT_t *);
+extern int_t Test_UDiagBlock_Recv(MPI_Request *, SCT_t *);
+extern int_t Wait_LDiagBlock_Recv(MPI_Request *, SCT_t *);
+extern int_t Test_LDiagBlock_Recv(MPI_Request *, SCT_t *);
+extern int_t LDiagBlockRecvWait( int_t k, int_t* factored_U, MPI_Request *, gridinfo_t *);
 
   extern int getnGPUStreams();
   extern int get_mpi_process_per_gpu ();

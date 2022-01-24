@@ -194,9 +194,10 @@ if (TPL_ENABLE_CUDALIB)   ## want to use cuda
 #     find_package(CUB REQUIRED)
 
     find_package(CUDAToolkit REQUIRED)
-    if(CUDAToolkit_FOUND)
-      target_link_libraries(superlu PUBLIC CUDA::cudart CUDA::cusolver CUDA::cublas)
-    endif()
+# The following appears in SRC/CMakeLists.txt
+#    if(CUDAToolkit_FOUND)
+#      target_link_libraries(superlu_dist PUBLIC CUDA::cudart CUDA::cusolver CUDA::cublas)
+#    endif()
     message("-- CUDAToolkit_LIBRARY_ROOT='${CUDAToolkit_LIBRARY_ROOT}'")
     if (NOT "${CUDAToolkit_LIBRARY_ROOT}" STREQUAL "")
        set(CUDA_LIBRARIES "${CUDAToolkit_LIBRARY_ROOT}/lib64/libcudart.so")

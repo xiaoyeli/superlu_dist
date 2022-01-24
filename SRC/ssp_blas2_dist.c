@@ -420,7 +420,7 @@ sp_sgemv_dist(char *trans, float alpha, SuperMatrix *A, float *x,
     }
 
     /* Quick return if possible. */
-    if (A->nrow == 0 || A->ncol == 0 || alpha == 0. && beta == 1.)
+    if (A->nrow == 0 || A->ncol == 0 || (alpha == 0. && beta == 1.))
 	return 0;
 
     /* Set  LENX  and  LENY, the lengths of the vectors x and y, and set 

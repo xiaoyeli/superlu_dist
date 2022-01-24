@@ -1218,7 +1218,7 @@ ddist_psymbtonum(fact_t fact, int_t n, SuperMatrix *A,
   int_t *index;        /* indices consist of headers and row subscripts */
   int   *index1;       /* temporary pointer to array of int */
   double *lusup, *uval; /* nonzero values in L and U */
-  int_t *recvBuf;
+  int *recvBuf;  //int_t *recvBuf;
   int *ptrToRecv, *nnzToRecv, *ptrToSend, *nnzToSend;
   double **Linv_bc_ptr;  /* size ceil(NSUPERS/Pc) */
   double *Linv_bc_dat;  /* size sum of sizes of Linv_bc_ptr[lk])                 */   
@@ -1274,17 +1274,18 @@ ddist_psymbtonum(fact_t fact, int_t n, SuperMatrix *A,
   int  *ToRecv, *ToSendD, **ToSendR;
 
   /*-- Counts to be used in lower triangular solve. --*/
-  int_t  *fmod;          /* Modification count for L-solve.        */
-  int_t  **fsendx_plist; /* Column process list to send down Xk.   */
-  int_t  nfrecvx = 0;    /* Number of Xk I will receive.           */
-  int_t  nfsendx = 0;    /* Number of Xk I will send               */
-  int_t  kseen;
+  int  *fmod;          /* Modification count for L-solve.        */
+  int  **fsendx_plist; /* Column process list to send down Xk.   */
+  int  nfrecvx = 0;    /* Number of Xk I will receive.           */
+  int  nfsendx = 0;    /* Number of Xk I will send               */
+  int  kseen;
 
   /*-- Counts to be used in upper triangular solve. --*/
-  int_t  *bmod;          /* Modification count for U-solve.        */
-  int_t  **bsendx_plist; /* Column process list to send down Xk.   */
-  int_t  nbrecvx = 0;    /* Number of Xk I will receive.           */
-  int_t  nbsendx = 0;    /* Number of Xk I will send               */
+  int  *bmod;          /* Modification count for U-solve.        */
+  int  **bsendx_plist; /* Column process list to send down Xk.   */
+  int  nbrecvx = 0;    /* Number of Xk I will receive.           */
+  int  nbsendx = 0;    /* Number of Xk I will send               */
+  
   int_t  *ilsum;         /* starting position of each supernode in
 			    the full array (local)                 */
   int_t  *ilsum_j, ldaspa_j; /* starting position of each supernode in
@@ -1309,8 +1310,9 @@ double *dense, *dense_col; /* SPA */
   int_t ldaspa;     /* LDA of SPA */
   int_t iword, dword;
   float mem_use = 0.0;
-  int_t *mod_bit;
-  int_t *frecv, *brecv, *lloc;
+  int *mod_bit;
+  int *frecv, *brecv;
+  int_t *lloc;
   double *SeedSTD_BC,*SeedSTD_RD;
   int_t idx_indx,idx_lusup;
   int_t nbrow;
@@ -1512,11 +1514,11 @@ double *dense, *dense_col; /* SPA */
     return (memDist + memNLU + memTRS);
   }
   /* These counts will be used for triangular solves. */
-  if ( !(fmod = intCalloc_dist(nsupers_i)) ) {
+  if ( !(fmod = int32Calloc_dist(nsupers_i)) ) {
     fprintf(stderr, "Calloc fails for fmod[].");
     return (memDist + memNLU + memTRS);
   }
-  if ( !(bmod = intCalloc_dist(nsupers_i)) ) {
+  if ( !(bmod = int32Calloc_dist(nsupers_i)) ) {
     fprintf(stderr, "Calloc fails for bmod[].");
     return (memDist + memNLU + memTRS);
   }
@@ -1595,29 +1597,29 @@ double *dense, *dense_col; /* SPA */
   Lindval_loc_bc_ptr[nsupers_j-1] = NULL;
 
   /* These lists of processes will be used for triangular solves. */
-  if ( !(fsendx_plist = (int_t **) SUPERLU_MALLOC(nsupers_j*sizeof(int_t*))) ) {
+  if ( !(fsendx_plist = (int **) SUPERLU_MALLOC(nsupers_j*sizeof(int*))) ) {
     fprintf(stderr, "Malloc fails for fsendx_plist[].");
     return (memDist + memNLU + memTRS);
   }
   len = nsupers_j * grid->nprow;
-  if ( !(index = intMalloc_dist(len)) ) {
+  if ( !(index1 = int32Malloc_dist(len)) ) {
     fprintf(stderr, "Malloc fails for fsendx_plist[0]");
     return (memDist + memNLU + memTRS);
   }
-  for (i = 0; i < len; ++i) index[i] = EMPTY;
+  for (i = 0; i < len; ++i) index1[i] = EMPTY;
   for (i = 0, j = 0; i < nsupers_j; ++i, j += grid->nprow)
-    fsendx_plist[i] = &index[j];
-  if ( !(bsendx_plist = (int_t **) SUPERLU_MALLOC(nsupers_j*sizeof(int_t*))) ) {
+    fsendx_plist[i] = &index1[j];
+  if ( !(bsendx_plist = (int **) SUPERLU_MALLOC(nsupers_j*sizeof(int*))) ) {
     fprintf(stderr, "Malloc fails for bsendx_plist[].");
     return (memDist + memNLU + memTRS);
   }
-  if ( !(index = intMalloc_dist(len)) ) {
+  if ( !(index1 = int32Malloc_dist(len)) ) {
     fprintf(stderr, "Malloc fails for bsendx_plist[0]");
     return (memDist + memNLU + memTRS);
   }
-  for (i = 0; i < len; ++i) index[i] = EMPTY;
+  for (i = 0; i < len; ++i) index1[i] = EMPTY;
   for (i = 0, j = 0; i < nsupers_j; ++i, j += grid->nprow)
-    bsendx_plist[i] = &index[j];
+    bsendx_plist[i] = &index1[j];
   /* -------------------------------------------------------------- */
   memNLU += 2*nsupers_j*sizeof(int_t*) + 2*len*iword;
 
@@ -2063,7 +2065,7 @@ double *dense, *dense_col; /* SPA */
 
   /* exchange information about bsendx_plist in between column of processors */
   k = SUPERLU_MAX( grid->nprow, grid->npcol);
-  if ( !(recvBuf = (int_t *) SUPERLU_MALLOC(nsupers*k*iword)) ) {
+  if ( !(recvBuf = (int *) SUPERLU_MALLOC(nsupers*k * sizeof(int))) ) {
     fprintf (stderr, "Malloc fails for recvBuf[].");
     return (memDist + memNLU + memTRS);
   }
@@ -2119,8 +2121,9 @@ double *dense, *dense_col; /* SPA */
     }
   }
 
-  MPI_Alltoallv (&(recvBuf[ptrToRecv[iam]]), nnzToSend, ptrToSend, mpi_int_t,
-		 recvBuf, nnzToRecv, ptrToRecv, mpi_int_t, grid->comm);
+  //MPI_Alltoallv (&(recvBuf[ptrToRecv[iam]]), nnzToSend, ptrToSend, mpi_int_t,
+  MPI_Alltoallv (&(recvBuf[ptrToRecv[iam]]), nnzToSend, ptrToSend, MPI_INT,
+		 recvBuf, nnzToRecv, ptrToRecv, MPI_INT, grid->comm);
 
   for (jb = 0; jb < nsupers; jb++) {
     jbcol = PCOL( jb, grid );
@@ -2151,7 +2154,8 @@ double *dense, *dense_col; /* SPA */
   }
 
   /* exchange information about bsendx_plist in between column of processors */
-  MPI_Allreduce ((*bsendx_plist), recvBuf, nsupers_j * grid->nprow, mpi_int_t,
+  //MPI_Allreduce ((*bsendx_plist), recvBuf, nsupers_j * grid->nprow, mpi_int_t,
+  MPI_Allreduce ((*bsendx_plist), recvBuf, nsupers_j * grid->nprow, MPI_INT,
 		 MPI_MAX, grid->cscp.comm);
 
   for (jb = 0; jb < nsupers; jb ++) {
@@ -2600,9 +2604,9 @@ double *dense, *dense_col; /* SPA */
 		/* construct the Reduce tree for L ... */
 		/* the following is used as reference */
 		nlb = CEILING( nsupers, grid->nprow );/* Number of local block rows */
-		if ( !(mod_bit = intMalloc_dist(nlb)) )
+		if ( !(mod_bit = int32Malloc_dist(nlb)) )
 			ABORT("Malloc fails for mod_bit[].");
-		if ( !(frecv = intMalloc_dist(nlb)) )
+		if ( !(frecv = int32Malloc_dist(nlb)) )
 			ABORT("Malloc fails for frecv[].");
 
 		for (k = 0; k < nlb; ++k) mod_bit[k] = 0;
@@ -2617,7 +2621,8 @@ double *dense, *dense_col; /* SPA */
 		}
 		/* Every process receives the count, but it is only useful on the
 		   diagonal processes.  */
-		MPI_Allreduce( mod_bit, frecv, nlb, mpi_int_t, MPI_SUM, grid->rscp.comm);
+		//MPI_Allreduce( mod_bit, frecv, nlb, mpi_int_t, MPI_SUM, grid->rscp.comm);
+		MPI_Allreduce( mod_bit, frecv, nlb, MPI_INT, MPI_SUM, grid->rscp.comm);
 
 
 
@@ -2916,9 +2921,9 @@ double *dense, *dense_col; /* SPA */
 		/* construct the Reduce tree for U ... */
 		/* the following is used as reference */
 		nlb = CEILING( nsupers, grid->nprow );/* Number of local block rows */
-		if ( !(mod_bit = intMalloc_dist(nlb)) )
+		if ( !(mod_bit = int32Malloc_dist(nlb)) )
 			ABORT("Malloc fails for mod_bit[].");
-		if ( !(brecv = intMalloc_dist(nlb)) )
+		if ( !(brecv = int32Malloc_dist(nlb)) )
 			ABORT("Malloc fails for brecv[].");
 
 		for (k = 0; k < nlb; ++k) mod_bit[k] = 0;
@@ -2933,7 +2938,8 @@ double *dense, *dense_col; /* SPA */
 		}
 		/* Every process receives the count, but it is only useful on the
 		   diagonal processes.  */
-		MPI_Allreduce( mod_bit, brecv, nlb, mpi_int_t, MPI_SUM, grid->rscp.comm);
+		//MPI_Allreduce( mod_bit, brecv, nlb, mpi_int_t, MPI_SUM, grid->rscp.comm);
+		MPI_Allreduce( mod_bit, brecv, nlb, MPI_INT, MPI_SUM, grid->rscp.comm);
 
 
 
@@ -3220,7 +3226,7 @@ double *dense, *dense_col; /* SPA */
 #endif
 
   k = CEILING( nsupers, grid->nprow );/* Number of local block rows */
-  if ( !(Llu->mod_bit = intMalloc_dist(k)) )
+  if ( !(Llu->mod_bit = int32Malloc_dist(k)) )
       ABORT("Malloc fails for mod_bit[].");
 
   /* Find the maximum buffer size. */

@@ -110,10 +110,11 @@ at the top-level directory.
 
 #include <math.h>
 #include "superlu_sdefs.h"
+#include "gpu_api_utils.h"
+
 #ifdef GPU_ACC
 // #define NUM_GPU_STREAMS 16
 // #define NUM_GPU_STREAMS 16
-#include "gpu_api_utils.h"
 #endif
 
 /* Various defininations     */
@@ -771,7 +772,7 @@ psgstrf(superlu_dist_options_t * options, int m, int n, float anorm,
     int_t buffer_size  = SUPERLU_MAX(max_row_size * nstreams * gpublas_nb, sp_ienv_dist(8));
                                      //   get_max_buffer_size());
     /* array holding last column blk for each partition,
-       used in SchCompUdt-cuda.c         */
+       used in SchCompUdt-GPU.c         */
   #if 0
     int *stream_end_col = (int_t *) _mm_malloc (sizeof (int_t) * nstreams,64);
   #else
@@ -815,14 +816,14 @@ psgstrf(superlu_dist_options_t * options, int m, int n, float anorm,
 	printf("\t.. N_GEMM: %d flops of GEMM done on CPU (1st block always on CPU)\n", sp_ienv_dist(7));
         printf("\t.. GEMM buffer size: max_row_size X max_ncols = %d x " IFMT "\n",
                 max_row_size, max_ncols);
+        printf("[%d].. BIG U size " IFMT " (on CPU)\n", iam, bigu_size);
+        fflush(stdout);
     }
-    printf("[%d].. BIG U size " IFMT " (on CPU)\n", iam, bigu_size);
-    fflush(stdout);
 #endif
 
 #ifdef GPU_ACC /*-- use GPU --*/
 
-    if ( checkGPU(gpuHostAlloc((void**)&bigU,  bigu_size * sizeof(float), gpuHostAllocDefault)) )
+    if ( checkGPU(gpuHostMalloc((void**)&bigU,  bigu_size * sizeof(float), gpuHostMallocDefault)) )
         ABORT("Malloc fails for sgemm buffer U ");
 
 #if 0 // !!Sherry fix -- only dC on GPU uses buffer_size
@@ -830,18 +831,20 @@ psgstrf(superlu_dist_options_t * options, int m, int n, float anorm,
 #endif
 
 #if ( PRNTlevel>=1 )
-    printf("[%d].. BIG V size " IFMT " (on CPU), dC buffer_size " IFMT " (on GPU)\n",
-            iam, bigv_size, buffer_size);
-    fflush(stdout);
+    if ( iam==0 ) {
+        printf("[%d].. BIG V size " IFMT " (on CPU), dC buffer_size " IFMT " (on GPU)\n",
+                iam, bigv_size, buffer_size);
+        fflush(stdout);
+    }
 #endif
 
-    if ( checkGPU(gpuHostAlloc((void**)&bigV, bigv_size * sizeof(float) ,gpuHostAllocDefault)) )
+    if ( checkGPU(gpuHostMalloc((void**)&bigV, bigv_size * sizeof(float), gpuHostMallocDefault)) )
         ABORT("Malloc fails for sgemm buffer V");
 
 #if ( PRNTlevel>=1 )
     if ( iam==0 ) {
         DisplayHeader();
-	printf(" Starting with %d gpu streams \n",nstreams );
+	printf(" Starting with %d GPU Streams \n", nstreams);
         fflush(stdout);
     }
 #endif
@@ -897,8 +900,10 @@ psgstrf(superlu_dist_options_t * options, int m, int n, float anorm,
     bigv_size += (gemm_m_pad * (j + max_row_size + gemm_n_pad));
 
 #if ( PRNTlevel>=1 )
-    printf("[%d].. BIG V size " IFMT " (on CPU)\n", iam, bigv_size);
-    fflush(stdout);
+    if ( iam==0 ) {
+        printf("[%d].. BIG V size " IFMT " (on CPU)\n", iam, bigv_size);
+        fflush(stdout);
+    }
 #endif
 
 //#ifdef __INTEL_COMPILER
@@ -1734,7 +1739,7 @@ psgstrf(superlu_dist_options_t * options, int m, int n, float anorm,
 
 #ifdef GPU_ACC /*-- GPU --*/
 
-#include "sSchCompUdt-cuda.c"
+#include "sSchCompUdt-gpu.c"
 
 #else
 
@@ -1928,7 +1933,7 @@ psgstrf(superlu_dist_options_t * options, int m, int n, float anorm,
     /* Prepare error message - find the smallesr index i that U(i,i)==0 */
     if ( *info == 0 ) *info = n + 1;
     MPI_Allreduce (info, &iinfo, 1, MPI_INT, MPI_MIN, grid->comm);
-    if ( iinfo == n + 1 ) *info = 0;
+    if ( iinfo == (n + 1) ) *info = 0;
     else *info = iinfo;
 
 #if ( PROFlevel>=1 )

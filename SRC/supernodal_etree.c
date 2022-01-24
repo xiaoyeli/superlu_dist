@@ -1031,7 +1031,7 @@ void printEtree(int_t nsuper, int_t *setree, treeList_t* treeList)
 	{
 		/* code */
 		// fprintf(fp, "%lld -> %lld;\n",iperm[i],iperm[setree[i]]);
-		fprintf(fp, " \"%d|%ld\" -> \"%ld|%ld\";\n", i, treeList[i].depth,
+	    fprintf(fp, " \"%d|%d\" -> \"%ld|%ld\";\n", i, (int) treeList[i].depth,
 		        (long int) setree[i], (long int) treeList[setree[i]].depth);
 	}
 

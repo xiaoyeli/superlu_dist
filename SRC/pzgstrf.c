@@ -109,11 +109,11 @@ at the top-level directory.
 
 #include <math.h>
 #include "superlu_zdefs.h"
+#include "gpu_api_utils.h"
 
 #ifdef GPU_ACC
 // #define NUM_GPU_STREAMS 16
 // #define NUM_GPU_STREAMS 16
-#include "gpu_api_utils.h"
 #endif
 
 /* Various defininations     */
@@ -772,7 +772,7 @@ pzgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
     int_t buffer_size  = SUPERLU_MAX(max_row_size * nstreams * gpublas_nb, sp_ienv_dist(8));
                                      //   get_max_buffer_size());
     /* array holding last column blk for each partition,
-       used in SchCompUdt--GPU.c         */
+       used in SchCompUdt-GPU.c         */
   #if 0
     int *stream_end_col = (int_t *) _mm_malloc (sizeof (int_t) * nstreams,64);
   #else
@@ -816,9 +816,9 @@ pzgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
 	printf("\t.. N_GEMM: %d flops of GEMM done on CPU (1st block always on CPU)\n", sp_ienv_dist(7));
         printf("\t.. GEMM buffer size: max_row_size X max_ncols = %d x " IFMT "\n",
                 max_row_size, max_ncols);
+        printf("[%d].. BIG U size " IFMT " (on CPU)\n", iam, bigu_size);
+        fflush(stdout);
     }
-    printf("[%d].. BIG U size " IFMT " (on CPU)\n", iam, bigu_size);
-    fflush(stdout);
 #endif
 
 #ifdef GPU_ACC /*-- use GPU --*/
@@ -831,17 +831,20 @@ pzgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
 #endif
 
 #if ( PRNTlevel>=1 )
-    printf("[%d].. BIG V size " IFMT " (on CPU), dC buffer_size " IFMT " (on GPU)\n",
-            iam, bigv_size, buffer_size);
-    fflush(stdout);
+    if ( iam==0 ) {
+        printf("[%d].. BIG V size " IFMT " (on CPU), dC buffer_size " IFMT " (on GPU)\n",
+                iam, bigv_size, buffer_size);
+        fflush(stdout);
+    }
 #endif
-    if ( checkGPU(gpuHostMalloc((void**)&bigV, bigv_size * sizeof(doublecomplex) ,gpuHostMallocDefault)) )
+
+    if ( checkGPU(gpuHostMalloc((void**)&bigV, bigv_size * sizeof(doublecomplex), gpuHostMallocDefault)) )
         ABORT("Malloc fails for zgemm buffer V");
 
 #if ( PRNTlevel>=1 )
     if ( iam==0 ) {
         DisplayHeader();
-	printf(" Starting with %d GPU Streams \n",nstreams );
+	printf(" Starting with %d GPU Streams \n", nstreams);
         fflush(stdout);
     }
 #endif
@@ -873,14 +876,13 @@ pzgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
     }
 
     // size of B should be bigu_size
-
     gpuStat = gpuMalloc((void**)&dB, bigu_size * sizeof(doublecomplex));
     if (gpuStat!= gpuSuccess) {
         fprintf(stderr, "!!!! Error in allocating B in the device %ld \n",n*k*sizeof(doublecomplex));
         return 1;
     }
 
-    gpuStat = gpuMalloc((void**)&dC, buffer_size* sizeof(doublecomplex) );
+    gpuStat = gpuMalloc((void**)&dC, buffer_size * sizeof(doublecomplex) );
     if (gpuStat!= gpuSuccess) {
         fprintf(stderr, "!!!! Error in allocating C in the device \n" );
         return 1;
@@ -898,8 +900,10 @@ pzgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
     bigv_size += (gemm_m_pad * (j + max_row_size + gemm_n_pad));
 
 #if ( PRNTlevel>=1 )
-    printf("[%d].. BIG V size " IFMT " (on CPU)\n", iam, bigv_size);
-    fflush(stdout);
+    if ( iam==0 ) {
+        printf("[%d].. BIG V size " IFMT " (on CPU)\n", iam, bigv_size);
+        fflush(stdout);
+    }
 #endif
 
 //#ifdef __INTEL_COMPILER
@@ -1929,7 +1933,7 @@ pzgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
     /* Prepare error message - find the smallesr index i that U(i,i)==0 */
     if ( *info == 0 ) *info = n + 1;
     MPI_Allreduce (info, &iinfo, 1, MPI_INT, MPI_MIN, grid->comm);
-    if ( iinfo == n + 1 ) *info = 0;
+    if ( iinfo == (n + 1) ) *info = 0;
     else *info = iinfo;
 
 #if ( PROFlevel>=1 )

@@ -18,20 +18,10 @@
 
 #undef Reduce
 
-//#include <thrust/system/gpu/detail/cub/cub.cuh>
+//#include <thrust/system/cuda/detail/cub/cub.cuh>
 
 #include "dlustruct_gpu.h"
 
-/* Sherry - following is precision-independent file, used by both double
-   and complex. It should not included in this source code.
-   I updated CMakeLists.txt to include this for HAVE_CUDA or HAVE_HIP.  */
-#if 0
-#ifdef HAVE_CUDA
-#include "superlu_gpu_utils.cu"
-#elif defined(HAVE_HIP)
-#include "superlu_gpu_utils.hip.cpp"
-#endif
-#endif
 
 //extern "C" {
 //	void cblas_daxpy(const int N, const double alpha, const double *X,
@@ -43,7 +33,7 @@
 // #if defined(DEBUG) || defined(_DEBUG)
 // 	if (result != GPUBLAS_STATUS_SUCCESS)
 // 	{
-// 		fprintf(stderr, "CUDA Blas Runtime Error: %s\n", gpublasGetErrorString(result));
+// 		fprintf(stderr, "GPU BLAS Runtime Error: %s\n", gpublasGetErrorString(result));
 // 		assert(result == GPUBLAS_STATUS_SUCCESS);
 // 	}
 // #endif
@@ -233,7 +223,7 @@ void Scatter_GPU_kernel(
 
 	typedef int pfx_dtype ;
         extern  __device__ void incScan(pfx_dtype *inOutArr, pfx_dtype *temp, int n);
-	
+
 	double *tempv1;
 	if (jj_st == jj0)
 	{
@@ -876,7 +866,7 @@ int dinitSluGPU3D_t(
     int_t ldt             /* NSUP read from sp_ienv(3) */
 )
 {
-    (gpuDeviceReset ())     ;
+    checkGPUErrors(gpuDeviceReset ());
     Glu_persist_t *Glu_persist = LUstruct->Glu_persist;
     dLocalLU_t *Llu = LUstruct->Llu;
     int* isNodeInMyGrid = sluGPU->isNodeInMyGrid;

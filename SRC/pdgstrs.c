@@ -135,7 +135,7 @@ dreadMM_dist_intoL_CSR(FILE *fp, int_t *m, int_t *n, int_t *nonz,
 
      if (sscanf(line, "%s %s %s %s %s", banner, mtx, crd, arith, sym) != 5) {
        printf("Invalid header (first line does not contain 5 tokens)\n");
-       exit;
+       exit(-1);
      }
 
      if(strcmp(banner,"%%matrixmarket")) {
@@ -176,7 +176,7 @@ dreadMM_dist_intoL_CSR(FILE *fp, int_t *m, int_t *n, int_t *nonz,
 
      /* 3/ Read n and nnz */
 #ifdef _LONGINT
-    sscanf(line, "%ld%ld%ld",m, n, nonz);
+    sscanf(line, "%lld%lld%lld",m, n, nonz);
 #else
     sscanf(line, "%d%d%d",m, n, nonz);
 #endif
@@ -1084,34 +1084,34 @@ pdgstrs(int_t n, dLUstruct_t *LUstruct,
 
     double tmax;
     	/*-- Counts used for L-solve --*/
-    int_t  *fmod;         /* Modification count for L-solve --
+    int  *fmod;         /* Modification count for L-solve --
     			 Count the number of local block products to
     			 be summed into lsum[lk]. */
 	int_t *fmod_sort;
 	int_t *order;
-	int_t *order1;
-	int_t *order2;
-    int_t fmod_tmp;
-    int_t  **fsendx_plist = Llu->fsendx_plist;
-    int_t  nfrecvx = Llu->nfrecvx; /* Number of X components to be recv'd. */
-    int_t  nfrecvx_buf=0;
-    int_t  *frecv;        /* Count of lsum[lk] contributions to be received
+	//int_t *order1;
+	//int_t *order2;
+    int fmod_tmp;
+    int  **fsendx_plist = Llu->fsendx_plist;
+    int  nfrecvx = Llu->nfrecvx; /* Number of X components to be recv'd. */
+    int  nfrecvx_buf=0;
+    int *frecv;        /* Count of lsum[lk] contributions to be received
     			 from processes in this row.
     			 It is only valid on the diagonal processes. */
-    int_t  frecv_tmp;
-    int_t  nfrecvmod = 0; /* Count of total modifications to be recv'd. */
-    int_t  nfrecv = 0; /* Count of total messages to be recv'd. */
-    int_t  nbrecv = 0; /* Count of total messages to be recv'd. */
-    int_t  nleaf = 0, nroot = 0;
-    int_t  nleaftmp = 0, nroottmp = 0;
+    int  frecv_tmp;
+    int  nfrecvmod = 0; /* Count of total modifications to be recv'd. */
+    int  nfrecv = 0; /* Count of total messages to be recv'd. */
+    int  nbrecv = 0; /* Count of total messages to be recv'd. */
+    int  nleaf = 0, nroot = 0;
+    int  nleaftmp = 0, nroottmp = 0;
     int_t  msgsize;
         /*-- Counts used for U-solve --*/
-    int_t  *bmod;         /* Modification count for U-solve. */
-    int_t  bmod_tmp;
-    int_t  **bsendx_plist = Llu->bsendx_plist;
-    int_t  nbrecvx = Llu->nbrecvx; /* Number of X components to be recv'd. */
-    int_t  nbrecvx_buf=0;
-    int_t  *brecv;        /* Count of modifications to be recv'd from
+    int  *bmod;         /* Modification count for U-solve. */
+    int  bmod_tmp;
+    int  **bsendx_plist = Llu->bsendx_plist;
+    int  nbrecvx = Llu->nbrecvx; /* Number of X components to be recv'd. */
+    int  nbrecvx_buf=0;
+    int  *brecv;        /* Count of modifications to be recv'd from
     			 processes in this row. */
     int_t  nbrecvmod = 0; /* Count of total modifications to be recv'd. */
     int_t flagx,flaglsum,flag;
@@ -1124,7 +1124,7 @@ pdgstrs(int_t n, dLUstruct_t *LUstruct,
 
     int_t gik,iklrow,fnz;
 
-    int_t *mod_bit = Llu->mod_bit; /* flag contribution from each row block */
+    int *mod_bit = Llu->mod_bit; /* flag contribution from each row block */
     int INFO, pad;
     int_t tmpresult;
 
@@ -1294,7 +1294,7 @@ pdgstrs(int_t n, dLUstruct_t *LUstruct,
 
     /* Save the count to be altered so it can be used by
        subsequent call to PDGSTRS. */
-    if ( !(fmod = intMalloc_dist(nlb*aln_i)) )
+    if ( !(fmod = int32Malloc_dist(nlb*aln_i)) )
 	ABORT("Malloc fails for fmod[].");
     for (i = 0; i < nlb; ++i) fmod[i*aln_i] = Llu->fmod[i];
 	if ( !(fmod_sort = intCalloc_dist(nlb*2)) )
@@ -1308,7 +1308,7 @@ pdgstrs(int_t n, dLUstruct_t *LUstruct,
 
 	if ( !(order = intCalloc_dist(nlb)) )
 		ABORT("Calloc fails for order[].");
-	for (j=0;j<nlb;++j)order[j]=fmod_sort[j+nlb];
+	for (j=0;j<nlb;++j) order[j]=fmod_sort[j+nlb];
 
 
 	// if ( !(order1 = intCalloc_dist(nlb)) )
@@ -1343,7 +1343,7 @@ pdgstrs(int_t n, dLUstruct_t *LUstruct,
 		 
 	SUPERLU_FREE(fmod_sort);
 
-    if ( !(frecv = intCalloc_dist(nlb)) )
+    if ( !(frecv = int32Calloc_dist(nlb)) )
 	ABORT("Calloc fails for frecv[].");
     Llu->frecv = frecv;
 
@@ -2472,10 +2472,10 @@ thread_id=0;
 
 		/* Save the count to be altered so it can be used by
 		   subsequent call to PDGSTRS. */
-		if ( !(bmod = intMalloc_dist(nlb*aln_i)) )
+		if ( !(bmod = int32Malloc_dist(nlb*aln_i)) )
 			ABORT("Malloc fails for bmod[].");
 		for (i = 0; i < nlb; ++i) bmod[i*aln_i] = Llu->bmod[i];
-		if ( !(brecv = intCalloc_dist(nlb)) )
+		if ( !(brecv = int32Calloc_dist(nlb)) )
 			ABORT("Calloc fails for brecv[].");
 		Llu->brecv = brecv;
 

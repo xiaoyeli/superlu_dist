@@ -118,9 +118,9 @@ typedef struct //LUstruct_gpu_
     double tHost_PCIeH2D;
     double tHost_PCIeD2H;
 
-    /*gpu events to measure DGEMM and SCATTER timing */
+    /*GPU events to measure DGEMM and SCATTER timing */
     int *isOffloaded;  /*stores if any iteration is offloaded or not*/
-    gpuEvent_t *GemmStart, *GemmEnd, *ScatterEnd;  /*gpu events to store gemm and scatter's begin and end*/
+    gpuEvent_t *GemmStart, *GemmEnd, *ScatterEnd;  /*GPU events to store gemm and scatter's begin and end*/
     gpuEvent_t *ePCIeH2D;
     gpuEvent_t *ePCIeD2H_Start;
     gpuEvent_t *ePCIeD2H_End;

@@ -356,7 +356,7 @@ int_t pzgstrf3d(superlu_dist_options_t *options, int m, int n, double anorm,
     int iinfo;
     if ( *info == 0 ) *info = n + 1;
     MPI_Allreduce (info, &iinfo, 1, MPI_INT, MPI_MIN, grid3d->comm);
-    if ( iinfo == n + 1 ) *info = 0;
+    if ( iinfo == (n + 1) ) *info = 0;
     else *info = iinfo;
     //printf("After factorization: INFO = %d\n", *info); fflush(stdout);
 

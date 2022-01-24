@@ -1,7 +1,7 @@
 /* superlu_dist_config.h.in */
 
 /* Enable CUDA */
-#define HAVE_CUDA TRUE
+/* #undef HAVE_CUDA */
 
 /* Enable HIP */
 /* #undef HAVE_HIP */

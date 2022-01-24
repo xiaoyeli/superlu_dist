@@ -12,7 +12,6 @@ cudaError_t checkCuda(cudaError_t result)
 #endif
     return result;
 }
-#endif
 
 __device__ int dnextpow2(int v)
 
