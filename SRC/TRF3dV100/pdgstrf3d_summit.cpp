@@ -117,15 +117,29 @@ extern "C"
         // Create the new LU structure
         int_t *isNodeInMyGrid = getIsNodeInMyGrid(nsupers, maxLvl, myNodeCount, treePerm);
         int superlu_acc_offload = get_acc_offload();
+        double tConst = SuperLU_timer_();
         LUstruct_v100 LU_packed(nsupers, ldt, isNodeInMyGrid, superlu_acc_offload, LUstruct, grid3d,
                                 SCT, options, stat, thresh, info);
+
+        tConst = SuperLU_timer_() -tConst;
+        printf("Time to intialize New DS= %g\n",tConst );
+
+        double tGPU = SuperLU_timer_();
         if(superlu_acc_offload)
         {
             LU_packed.setLUstruct_GPU();
-            LU_packed.checkGPU();
+            
+            if(0)
+            {
+                // TODO: remove it, checking is very slow 
+                LU_packed.checkGPU();     
+            }
+            
+            
         }
             
-
+        tGPU = SuperLU_timer_() -tGPU;
+        printf("Time to intialize GPU DS= %g\n",tGPU );
         /*====  starting main factorization loop =====*/
         MPI_Barrier(grid3d->comm);
         SCT->tStartup = SuperLU_timer_() - SCT->tStartup;
@@ -188,6 +202,7 @@ extern "C"
         MPI_Barrier(grid3d->comm);
         SCT->pdgstrfTimer = SuperLU_timer_() - SCT->pdgstrfTimer;
 
+        double tXferGpu2Host = SuperLU_timer_();
         if (superlu_acc_offload)
         {
             cudaStreamSynchronize(LU_packed.A_gpu.cuStreams[0]);    // in theory I don't need it 
@@ -195,6 +210,8 @@ extern "C"
         }
             
         LU_packed.packedU2skyline(LUstruct);
+        tXferGpu2Host = SuperLU_timer_()-tXferGpu2Host;
+        printf("Time to send data back= %g\n",tGPU );
 
         if (!grid3d->zscp.Iam)
         {

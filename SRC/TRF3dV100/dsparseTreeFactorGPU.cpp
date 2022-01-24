@@ -250,7 +250,7 @@ int_t LUstruct_v100::dsparseTreeFactorGPU(
                 int_t offset_next = getBufferOffset(k0_next, k1_next, winSize, winParity+1, halfWin);
                 dPanelBcastGPU(k_next, offset_next);
                 donePanelBcast[k0_next] =1;
-                printf("Trying  %d on offset %d\n", k0_next, offset_next);
+                // printf("Trying  %d on offset %d\n", k0_next, offset_next);
             }
             else 
             {
@@ -268,7 +268,7 @@ int_t LUstruct_v100::dsparseTreeFactorGPU(
             // if(winParity%2)
             //     offset+= halfWin;
             int_t offset = getBufferOffset(k0, k1, oldWinSize, winParity, halfWin);
-            printf("Syncing stream %d on offset %d\n", k0, offset);
+            // printf("Syncing stream %d on offset %d\n", k0, offset);
             if(UidxSendCounts[k]>0 && LidxSendCounts[k]>0)
                 checkCudaLocal(cudaStreamSynchronize(A_gpu.cuStreams[offset]));
         }
