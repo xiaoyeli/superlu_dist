@@ -1638,13 +1638,12 @@ double *dense, *dense_col; /* SPA */
     fsupc = FstBlockC( jb );
     nsupc = SuperSize( jb );
 
-	Ufstnz_br_ptr[ljb_i] = NULL;
-	Unzval_br_ptr[ljb_i] = NULL;
-	Unzval_br_offset[ljb_i]=-1;
-	Ufstnz_br_offset[ljb_i]=-1;	
-
 
     if ( myrow == jbrow ) { /* Block row jb in my process row */
+		Ufstnz_br_ptr[ljb_i] = NULL;
+		Unzval_br_ptr[ljb_i] = NULL;
+		Unzval_br_offset[ljb_i]=-1;
+		Ufstnz_br_offset[ljb_i]=-1;		
       /* Scatter A into SPA. */
       for (j = ilsum[ljb_i], dense_col = dense; j < ilsum[ljb_i]+nsupc; j++) {
 	for (i = asup_rowptr[j]; i < asup_rowptr[j+1]; i++) {
