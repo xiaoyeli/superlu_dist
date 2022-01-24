@@ -37,5 +37,6 @@ extern void destroy_handle (cublasHandle_t handle);
   }
 #endif
 
+#endif
 #endif 
 #endif 
