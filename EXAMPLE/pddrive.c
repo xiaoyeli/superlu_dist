@@ -197,8 +197,6 @@ int main(int argc, char *argv[])
 	options.DiagInv           = NO;
      */
     set_default_options_dist(&options);
-        options.ParSymbFact       = NO;
-        options.ColPerm           = PARMETIS;
 #if 0
     options.ReplaceTinyPivot  = YES;
     options.RowPerm           = LargeDiag_HWPM;
@@ -208,10 +206,6 @@ int main(int argc, char *argv[])
     options.Equil = NO; 
     options.ReplaceTinyPivot = YES;
 #endif
-
-    // options.ParSymbFact       = YES;
-    // options.ColPerm           = PARMETIS;
-
 
     if (!iam) {
 	print_sp_ienv_dist(&options);
