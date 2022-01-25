@@ -1,4 +1,4 @@
-# SuperLU_DIST (version 7.0)   <img align=center width="55" alt="superlu" src="https://user-images.githubusercontent.com/11741943/103982988-5a9a9d00-5139-11eb-9ac4-a55e80a79f8d.png">
+# SuperLU_DIST (version 7.2.0)   <img align=center width="55" alt="superlu" src="https://user-images.githubusercontent.com/11741943/103982988-5a9a9d00-5139-11eb-9ac4-a55e80a79f8d.png">
 
 [![Build Status](https://travis-ci.org/xiaoyeli/superlu_dist.svg?branch=master)](https://travis-ci.org/xiaoyeli/superlu_dist) 
 [Nightly tests](http://my.cdash.org/index.php?project=superlu_dist)
@@ -21,14 +21,16 @@ acceleration capabilities.
 <!-- This "alpha" release contains double-precision real and-->
 <!-- double-precision complex data types.-->
 
-
 Table of Contents
 =================
 
-* [SuperLU_DIST (version 7.0)   <a href="https://user-images.githubusercontent.com/11741943/103982988-5a9a9d00-5139-11eb-9ac4-a55e80a79f8d.png" target="_blank" rel="nofollow"><img align="center" width="55" alt="superlu" src="https://user-images.githubusercontent.com/11741943/103982988-5a9a9d00-5139-11eb-9ac4-a55e80a79f8d.png" style="max-width:100%;"></a>](#superlu_dist-version-70---)
+* [SuperLU_DIST (version 7.2.0)   <a href="https://user-images.githubusercontent.com/11741943/103982988-5a9a9d00-5139-11eb-9ac4-a55e80a79f8d.png" target="_blank" rel="nofollow"><img align="center" width="55" alt="superlu" src="https://user-images.githubusercontent.com/11741943/103982988-5a9a9d00-5139-11eb-9ac4-a55e80a79f8d.png" style="max-width:100%;"></a>](#superlu_dist-version-70---)
 * [Directory structure of the source code](#directory-structure-of-the-source-code)
 * [Installation](#installation)
    * [Installation option 1: Using CMake build system.](#installation-option-1-using-cmake-build-system)
+      * [Dependent external libraries: BLAS and ParMETIS](#dependent-external-libraries-blas-and-parmetis)
+      * [Optional external libraries: CombBLAS, LAPACK](#optional-external-libraries-combblas-lapack)
+      * [Use GPU](#use-gpu)
       * [Summary of the CMake definitions.](#summary-of-the-cmake-definitions)
    * [Installation option 2: Manual installation with makefile.](#installation-option-2-manual-installation-with-makefile)
       * [2.1 Edit the make.inc include file.](#21-edit-the-makeinc-include-file)
@@ -46,6 +48,29 @@ Table of Contents
 * [RELEASE VERSIONS](#release-versions)
 
 Created by [gh-md-toc](https://github.com/ekalinin/github-markdown-toc)
+
+# SuperLU_DIST (version 7.2)   <img align=center width="55" alt="superlu" src="https://user-images.githubusercontent.com/11741943/103982988-5a9a9d00-5139-11eb-9ac4-a55e80a79f8d.png">
+
+[![Build Status](https://travis-ci.org/xiaoyeli/superlu_dist.svg?branch=master)](https://travis-ci.org/xiaoyeli/superlu_dist) 
+[Nightly tests](http://my.cdash.org/index.php?project=superlu_dist)
+
+SuperLU_DIST contains a set of subroutines to solve a sparse linear system 
+A*X=B. It uses Gaussian elimination with static pivoting (GESP). 
+Static pivoting is a technique that combines the numerical stability of
+partial pivoting with the scalability of Cholesky (no pivoting),
+to run accurately and efficiently on large numbers of processors. 
+
+SuperLU_DIST is a parallel extension to the serial SuperLU library.
+It is targeted for the distributed memory parallel machines.
+SuperLU_DIST is implemented in ANSI C, with OpenMP for on-node parallelism
+and MPI for off-node communications. We are actively developing GPU
+acceleration capabilities.
+<!-- Currently, the LU factorization and triangular solution routines, -->
+<!-- which are the most time-consuming part of the solution process,-->
+<!-- are parallelized. The other routines, such as static pivoting and -->
+<!-- column preordering for sparsity are performed sequentially. -->
+<!-- This "alpha" release contains double-precision real and-->
+<!-- double-precision complex data types.-->
 
 
 # Directory structure of the source code
@@ -80,16 +105,34 @@ The procedures are described below.
 ## Installation option 1: Using CMake build system.
 You will need to create a build tree from which to invoke CMake.
 
-First, in order to use parallel symbolic factorization function, you
+### Dependent external libraries: BLAS and ParMETIS
+If you have a BLAS library on your machine, you can link with it
+with the following cmake definition:
+```
+-DTPL_BLAS_LIBRARIES="<BLAS library name>"
+```
+Otherwise, the CBLAS/ subdirectory contains the part of the C BLAS
+(single threaded) needed by SuperLU_DIST, but they are not optimized.
+You can compile and use it with the following cmake definition:
+```
+-DTPL_ENABLE_INTERNAL_BLASLIB=ON
+```
+
+The default sparsity ordering is METIS. But, in order to use parallel
+symbolic factorization function, you
 need to install ParMETIS parallel ordering package and define the
 two environment variables: PARMETIS_ROOT and PARMETIS_BUILD_DIR
+
+(Note: ParMETIS library also contains serial METIS library.)
 
 ```
 export PARMETIS_ROOT=<Prefix directory of the ParMETIS installation>
 export PARMETIS_BUILD_DIR=${PARMETIS_ROOT}/build/Linux-x86_64
 ```
 
-Second, in order to use parallel weighted matching HWPM (Heavy Weight
+### Optional external libraries: CombBLAS, LAPACK
+
+In order to use parallel weighted matching HWPM (Heavy Weight
 Perfect Matching) for numerical pre-pivoting, you need to install 
 CombBLAS and define the environment variable:
 
@@ -97,9 +140,27 @@ CombBLAS and define the environment variable:
 export COMBBLAS_ROOT=<Prefix directory of the CombBLAS installation>
 export COMBBLAS_BUILD_DIR=${COMBBLAS_ROOT}/_build
 ```
+Then, install with cmake option:
+```
+-DTPL_ENABLE_COMBBLASLIB=ON
+```
 
-Once these needed third-party libraries are in place, SuperLU installation
-can be done as follows from the top level directory:
+By default, LAPACK is not needed. Only in triangular solve routine, we
+may use LAPACK to explicitly invert the dense diagonal block to improve
+speed. You can use it with the following cmake option:
+```
+-DTPL_ENABLE_LAPACKLIB=ON
+```
+
+### Use GPU
+You can enable GPU with CUDA with the following cmake option:
+```
+-DTPL_ENABLE_CUDALIB=TRUE
+-DTPL_CUDA_LIBRARIES="<path>/libcublas.so;<path>/libcudart.so"
+```
+
+Once these needed third-party libraries are in place, the installation
+can be done as follows at the top level directory:
 
 For a simple installation with default setting, do:
 (ParMETIS is needed, i.e., TPL_ENABLE_PARMETISLIB=ON)
@@ -109,7 +170,7 @@ cmake .. \
     -DTPL_PARMETIS_INCLUDE_DIRS="${PARMETIS_ROOT}/include;${PARMETIS_ROOT}/metis/include" \
     -DTPL_PARMETIS_LIBRARIES="${PARMETIS_BUILD_DIR}/libparmetis/libparmetis.a;${PARMETIS_BUILD_DIR}/libmetis/libmetis.a" \
 ```
-For a more sophisticated installation including third-part libraries, do:
+For a more sophisticated installation including third-party libraries, do:
 ```
 cmake .. \
     -DTPL_PARMETIS_INCLUDE_DIRS="${PARMETIS_ROOT}/include;${PARMETIS_ROOT}/metis/include" \
@@ -128,17 +189,11 @@ OOT}/Applications/BipartiteMatchings" \
 
 ( see example cmake script: run_cmake_build.sh )
 ```
-You can enable GPU with CUDA with the following cmake option:
-```
-`-DTPL_ENABLE_CUDALIB=TRUE`
-`-DTPL_CUDA_LIBRARIES="<path>/libcublas.so;<path>/libcudart.so"`
-```
 
-You can disable LAPACK, ParMetis or CombBLAS with the following cmake option:
+You can disable CombBLAS or LAPACK with the following cmake options:
 ```
-`-DTPL_ENABLE_LAPACKLIB=FALSE`
-`-DTPL_ENABLE_PARMETISLIB=FALSE`
-`-DTPL_ENABLE_COMBBLASLIB=FALSE`
+-DTPL_ENABLE_LAPACKLIB=FALSE
+-DTPL_ENABLE_COMBBLASLIB=FALSE
 ```
 
 To actually build (compile), type:
@@ -474,4 +529,7 @@ November 12, 2019   Version 6.2.0
 February 23, 2020   Version 6.3.0
 October 23, 2020    Version 6.4.0
 May 10, 2021        Version 7.0.0
+October 5, 2021     Version 7.1.0
+October 18, 2021    Version 7.1.1
+December 12, 2021   Version 7.2.0
 ```

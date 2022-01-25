@@ -14,19 +14,15 @@ at the top-level directory.
  * \brief Solves a system of linear equations A*X=B using 3D process grid.
  *
  * <pre>
- * -- Distributed SuperLU routine (version 7.0) --
+ * -- Distributed SuperLU routine (version 7.2) --
  * Lawrence Berkeley National Lab, Georgia Institute of Technology,
  * Oak Ridge National Lab
  * May 12, 2021
+ * October 5, 2021
+ * Last update: November 8, 2021  v7.2.0
  */
 #include "superlu_ddefs.h"
-#if 0
-#include "p3dcomm.h"
-#include "pdgstrf3d.h"
-#include "triangularSolve/pdgstrs.h"
-#include "triangularSolve/pdgstrs3d.h"
-#include "xtrf3Dpartition.h"
-#endif
+
 /*! \brief
  *
  * <pre>
@@ -349,7 +345,7 @@ at the top-level directory.
  *         NOTE: all options must be indentical on all processes when
  *               calling this routine.
  *
- * A (input/output) SuperMatrix* (local); A resides only on process layer 0.
+ * A (input) SuperMatrix* (local); A resides on all 3D processes.
  *         On entry, matrix A in A*X=B, of dimension (A->nrow, A->ncol).
  *           The number of linear equations is A->nrow. The type of A must be:
  *           Stype = SLU_NR_loc; Dtype = SLU_D; Mtype = SLU_GE.
@@ -357,11 +353,13 @@ at the top-level directory.
  *           See supermatrix.h for the definition of 'SuperMatrix'.
  *           This routine only handles square A, however, the LU factorization
  *           routine PDGSTRF can factorize rectangular matrices.
- *         On exit, A may be overwtirren by diag(R)*A*diag(C)*Pc^T,
+ *
+ *	   Internally, A is gathered on 2D processs grid-0, call it A2d.
+ *         On exit, A2d may be overwtirren by diag(R)*A*diag(C)*Pc^T,
  *           depending on ScalePermstruct->DiagScale and options->ColPerm:
- *             if ScalePermstruct->DiagScale != NOEQUIL, A is overwritten by
+ *             if ScalePermstruct->DiagScale != NOEQUIL, A2d is overwritten by
  *                diag(R)*A*diag(C).
- *             if options->ColPerm != NATURAL, A is further overwritten by
+ *             if options->ColPerm != NATURAL, A2d is further overwritten by
  *                diag(R)*A*diag(C)*Pc^T.
  *           If all the above condition are true, the LU decomposition is
  *           performed on the matrix Pc*Pr*diag(R)*A*diag(C)*Pc^T.
@@ -403,7 +401,7 @@ at the top-level directory.
  *           of Pc*A'*A*Pc'; perm_c is not changed if the elimination tree
  *           is already in postorder.
  *
- *         o R (double*) dimension (A->nrow)
+ *         o R (double *) dimension (A->nrow)
  *           The row scale factors for A.
  *           If DiagScale = ROW or BOTH, A is multiplied on the left by
  *                          diag(R).
@@ -411,7 +409,7 @@ at the top-level directory.
  *           If options->Fact = FACTORED or SamePattern_SameRowPerm, R is
  *           an input argument; otherwise, R is an output argument.
  *
- *         o C (double*) dimension (A->ncol)
+ *         o C (double *) dimension (A->ncol)
  *           The column scale factors for A.
  *           If DiagScale = COL or BOTH, A is multiplied on the right by
  *                          diag(C).
@@ -602,11 +600,11 @@ pdgssvx3d (superlu_dist_options_t * options, SuperMatrix * A,
            dLUstruct_t * LUstruct, dSOLVEstruct_t * SOLVEstruct,
            double *berr, SuperLUStat_t * stat, int *info)
 {
-    NRformat_loc *Astore;
+    NRformat_loc *Astore = A->Store;
     SuperMatrix GA;        /* Global A in NC format */
     NCformat *GAstore;
     double *a_GA;
-    SuperMatrix GAC;       /* Global A in NCP format (add n end pointers) */
+    SuperMatrix GAC; /* Global A in NCP format (add n end pointers) */
     NCPformat *GACstore;
     Glu_persist_t *Glu_persist = LUstruct->Glu_persist;
     Glu_freeable_t *Glu_freeable;
@@ -644,29 +642,13 @@ pdgssvx3d (superlu_dist_options_t * options, SuperMatrix * A,
 #if ( PRNTlevel>= 2 )
     double dmin, dsum, dprod;
 #endif
-	LUstruct->dt = 'd';
+
+    LUstruct->dt = 'd';
+    
     // get the 2d grid
     gridinfo_t *grid  = &(grid3d->grid2d);
     iam = grid->iam;
     
-    /* Initialization. */
-    /* Save the inputs: ldb -> ldb3d, and B -> B3d, Astore -> Astore3d 
-       B3d and Astore3d will be restored on return  */
-    int ldb3d = ldb;
-    // double *B3d = B;
-    NRformat_loc *Astore3d = (NRformat_loc *)A->Store;
-    double *B2d;
-    NRformat_loc3d *A3d = dGatherNRformat_loc3d((NRformat_loc *)A->Store,
-		   	  			B, ldb, nrhs, grid3d);
-	
-    B2d = (double *) A3d->B2d; 
-    NRformat_loc *Astore0 = A3d->A_nfmt; // on 2D grid-0
-    NRformat_loc *A_orig = A->Store;
-    
-    /* definition of factored seen by each process layer */
-    Fact = options->Fact;
-    factored = (Fact == FACTORED);
-
     /* Test the options choices. */
     *info = 0;
     Fact = options->Fact;
@@ -685,40 +667,71 @@ pdgssvx3d (superlu_dist_options_t * options, SuperMatrix * A,
     } else if (A->nrow != A->ncol || A->nrow < 0 || A->Stype != SLU_NR_loc
 	     || A->Dtype != SLU_D || A->Mtype != SLU_GE)
 	 *info = -2;
-    else if (ldb < Astore3d->m_loc)
+    else if (ldb < Astore->m_loc)
          *info = -5;
     else if (nrhs < 0) {
 	 *info = -6;
     }
     if (*info) {
 	i = -(*info);
-	pxerr_dist ("pdgssvx3d", grid, -*info);
+	pxerr_dist ("pdgssvx3d", grid, -(*info));
 	return;
     }
     
+    /* Initialization. */
+
+
+    options->Algo3d = YES;
+	
+    /* definition of factored seen by each process layer */
+    factored = (Fact == FACTORED);
+    
+    /* Save the inputs: ldb -> ldb3d, and B -> B3d, Astore -> Astore3d,
+       so that the names {ldb, B, and Astore} can be used internally.
+       B3d and Astore3d will be assigned back to B and Astore on return.*/
+    int ldb3d = ldb;
+    NRformat_loc *Astore3d = (NRformat_loc *)A->Store;
+    NRformat_loc3d *A3d = SOLVEstruct->A3d;
+
+    /* B3d is aliased to B;
+       B2d is allocated; 
+       B is then aliased to B2d for the following 2D solve;
+    */
+    dGatherNRformat_loc3d(Fact, (NRformat_loc *)A->Store,
+			  B, ldb, nrhs, grid3d, &A3d);
+    
+    B = (double *) A3d->B2d; /* B is now pointing to B2d, 
+				allocated in dGatherNRformat_loc3d.  */
+    //PrintDouble5("after gather B=B2d", ldb, B);
+    
+    SOLVEstruct->A3d = A3d; /* This structure need to be persistent across
+			       multiple calls of pdgssvx3d()   */
+    
+    NRformat_loc *Astore0 = A3d->A_nfmt; // on 2D grid-0
+    NRformat_loc *A_orig = A->Store;
+//////    
+
 #if ( DEBUGlevel>=1 )
-	CHECK_MALLOC (iam, "Enter pdgssvx3d()");
+    CHECK_MALLOC (iam, "Enter pdgssvx3d()");
 #endif
 	
     /* Perform preprocessing steps on process layer zero, including:
-       gather 3D matrices {A, B} onto 2D grid-0,
-       ordering, symbolic factorization, distribution of L & U */
+       gather 3D matrices {A, B} onto 2D grid-0, preprocessing steps: 
+       - equilibration,
+       - ordering, 
+       - symbolic factorization,
+       - distribution of L & U                                      */
 
-#define NRFRMT
-
-    if (grid3d->zscp.Iam == 0)
+    if (grid3d->zscp.Iam == 0)  /* on 2D grid-0 */
     {
         m = A->nrow;
     	n = A->ncol;
 	// checkNRFMT(Astore0, (NRformat_loc *) A->Store);
-#ifdef NRFRMT
-	// On input, A->Store is on 3D, now A->Store is re-assigned to 2D store
-	A->Store = Astore0;
-	ldb = Astore0->m_loc;
-	B = B2d; // B is now re-assigned to B2d
-	//PrintDouble5("after gather B=B2d", ldb, B);
-#endif
 
+	// On input, A->Store is on 3D, now A->Store is re-assigned to 2D store
+	A->Store = Astore0;  // on 2D grid-0
+	ldb = Astore0->m_loc;
+	
 	/* The following code now works on 2D grid-0 */
     	Astore = (NRformat_loc *) A->Store;
     	nnz_loc = Astore->nnz_loc;
@@ -745,6 +758,7 @@ pdgssvx3d (superlu_dist_options_t * options, SuperMatrix * A,
 	
 	iam = grid->iam;
 	job = 5;
+	/* Extract equilibration status from a previous factorization */
 	if (factored || (Fact == SamePattern_SameRowPerm && Equil))
 	    {
 		rowequ = (ScalePermstruct->DiagScale == ROW) ||
@@ -752,8 +766,9 @@ pdgssvx3d (superlu_dist_options_t * options, SuperMatrix * A,
 		colequ = (ScalePermstruct->DiagScale == COL) ||
 		    (ScalePermstruct->DiagScale == BOTH);
 	    }
-	else
+	else {
 	    rowequ = colequ = FALSE;
+	}
 	
 	/* The following arrays are replicated on all processes. */
 	perm_r = ScalePermstruct->perm_r;
@@ -768,15 +783,15 @@ pdgssvx3d (superlu_dist_options_t * options, SuperMatrix * A,
 	    /* Allocate storage if not done so before. */
 	    switch (ScalePermstruct->DiagScale)	{
 		case NOEQUIL:
-		    if (!(R = (double *) doubleMalloc_dist (m)))
+		    if (!(R = (double  *) doubleMalloc_dist (m)))
 			ABORT ("Malloc fails for R[].");
-		    if (!(C = (double *) doubleMalloc_dist (n)))
+		    if (!(C = (double  *) doubleMalloc_dist (n)))
 			ABORT ("Malloc fails for C[].");
 		    ScalePermstruct->R = R;
 		    ScalePermstruct->C = C;
 		    break;
 		case ROW:
-		    if (!(C = (double *) doubleMalloc_dist (n)))
+		    if (!(C = (double  *) doubleMalloc_dist (n)))
 			ABORT ("Malloc fails for C[].");
 		    ScalePermstruct->C = C;
 		    break;
@@ -792,7 +807,7 @@ pdgssvx3d (superlu_dist_options_t * options, SuperMatrix * A,
 	/* ------------------------------------------------------------
 	   Diagonal scaling to equilibrate the matrix.
 	   ------------------------------------------------------------ */
-	if (Equil) {
+	if ( Equil ) {
 #if ( DEBUGlevel>=1 )
 	    CHECK_MALLOC (iam, "Enter equil");
 #endif
@@ -880,7 +895,7 @@ pdgssvx3d (superlu_dist_options_t * options, SuperMatrix * A,
 #endif
 	} /* end if Equil ... LAPACK style, not involving MC64 */
 
-	if (!factored) { /* Skip this if already factored. */
+	if ( !factored ) { /* Skip this if already factored. */
 	    /*
 	     * Gather A from the distributed compressed row format to
 	     * global A in compressed column format.
@@ -1072,7 +1087,7 @@ pdgssvx3d (superlu_dist_options_t * options, SuperMatrix * A,
 #endif
 	} /* end if (!factored) */
 
-	if (!factored || options->IterRefine) {
+	if ( !factored || options->IterRefine ) {
 	    /* Compute norm(A), which will be used to adjust small diagonal. */
 	    if (notran)
 		*(unsigned char *) norm = '1';
@@ -1090,7 +1105,7 @@ pdgssvx3d (superlu_dist_options_t * options, SuperMatrix * A,
 	/* ------------------------------------------------------------
 	   Perform the LU factorization.
 	   ------------------------------------------------------------ */
-	if (!factored) {
+	if ( !factored ) {
 	    t = SuperLU_timer_ ();
 	    /*
 	     * Get column permutation vector perm_c[], according to permc_spec:
@@ -1401,7 +1416,7 @@ pdgssvx3d (superlu_dist_options_t * options, SuperMatrix * A,
         dDestroy_trf3Dpartition(trf3Dpartition, grid3d);
 		SCT_free(SCT);
 
-    } /* end if not Factored */
+    } /* end if not Factored ... factor on all process layers */
     
     if ( grid3d->zscp.Iam == 0 ) { // only process layer 0
 	if (!factored) {
@@ -1454,29 +1469,29 @@ pdgssvx3d (superlu_dist_options_t * options, SuperMatrix * A,
 	/* ------------------------------------------------------------
 	   Compute the solution matrix X.
 	   ------------------------------------------------------------ */
-	if (nrhs) {
-		if (!(b_work = doubleMalloc_dist (n)))
-		    ABORT ("Malloc fails for b_work[]");
+	if ( (nrhs > 0) && (*info == 0) ) {
+	    if (!(b_work = doubleMalloc_dist (n)))
+	        ABORT ("Malloc fails for b_work[]");
 
-		/* ------------------------------------------------------
-		   Scale the right-hand side if equilibration was performed
-		   ------------------------------------------------------*/
-		if (notran)
-		    {
-			if (rowequ)
-			    {
-				b_col = B;
-				for (j = 0; j < nrhs; ++j)
+	    /* ------------------------------------------------------
+	       Scale the right-hand side if equilibration was performed
+	       ------------------------------------------------------*/
+	    if (notran)
+	        {
+	    	    if (rowequ)
+		        {
+			    b_col = B;
+			    for (j = 0; j < nrhs; ++j)
+			        {
+			    	    irow = fst_row;
+				    for (i = 0; i < m_loc; ++i)
 				    {
-					irow = fst_row;
-					for (i = 0; i < m_loc; ++i)
-					    {
-		                                b_col[i] *= R[irow];
-						++irow;
-					    }
-					b_col += ldb;
+		                         b_col[i] *= R[irow];
+ 					 ++irow;
 				    }
-			    }
+				    b_col += ldb;
+				}
+			}
 		    }
 		else if (colequ)
 		    {
@@ -1485,10 +1500,10 @@ pdgssvx3d (superlu_dist_options_t * options, SuperMatrix * A,
 			    {
 				irow = fst_row;
 				for (i = 0; i < m_loc; ++i)
-				    {
-		                        b_col[i] *= C[irow];
-					++irow;
-				    }
+				{
+		                    b_col[i] *= C[irow];
+				    ++irow;
+				}
 				b_col += ldb;
 			    }
 		    }
@@ -1621,7 +1636,7 @@ pdgssvx3d (superlu_dist_options_t * options, SuperMatrix * A,
 			    }
 			
 			stat->utime[REFINE] = SuperLU_timer_ () - t;
-		    }
+		    } /* end IterRefine */
 		
 		/* Permute the solution matrix B <= Pc'*X. */
 		pdPermute_Dense_Matrix (fst_row, m_loc, SOLVEstruct->row_to_proc,
@@ -1670,11 +1685,12 @@ pdgssvx3d (superlu_dist_options_t * options, SuperMatrix * A,
 		SUPERLU_FREE (b_work);
 		SUPERLU_FREE (X);
 		
-	    }                           /* end if nrhs != 0 */
+	    } /* end if nrhs > 0 and factor successful */
 	
 #if ( PRNTlevel>=1 )
-	if (!iam)
+	if (!iam) {
 	    printf (".. DiagScale = %d\n", ScalePermstruct->DiagScale);
+        }
 #endif
 	
 	/* Deallocate R and/or C if it was not used. */
@@ -1702,25 +1718,12 @@ pdgssvx3d (superlu_dist_options_t * options, SuperMatrix * A,
 
     } /* process layer 0 done solve */
 
-#ifdef NRFRMT
-    /* Scatter the solution from 2D grid_0 to 3D grid */
-    dScatter_B3d(A3d, grid3d);
+    /* Scatter the solution from 2D grid-0 to 3D grid */
+    if ( nrhs > 0 ) dScatter_B3d(A3d, grid3d);
 
     B = A3d->B3d; // B is now assigned back to B3d on return
     A->Store = Astore3d; // restore Astore to 3D
     
-    /* free A2d and B2d, which are allocated only in 2D layer Grid_0 */
-    NRformat_loc *A2d = A3d->A_nfmt;
-    if (grid3d->zscp.Iam == 0) {
-       SUPERLU_FREE( A2d->rowptr );
-       SUPERLU_FREE( A2d->colind );
-       SUPERLU_FREE( A2d->nzval );
-       SUPERLU_FREE( A3d->B2d );
-    }
-    SUPERLU_FREE( A2d );         // free 2D structure
-    SUPERLU_FREE( A3d );         // free 3D structure
-#endif
-
 #if ( DEBUGlevel>=1 )
 	CHECK_MALLOC (iam, "Exit pdgssvx3d()");
 #endif

@@ -65,6 +65,7 @@ at the top-level directory.
 #define f_dLUstructFree                FC_GLOBAL(f_dlustructfree,F_DLUSTRUCTFREE)
 #define f_dDestroy_LU_SOLVE_struct     FC_GLOBAL(f_ddestroy_lu_solve_struct,F_DDESTROY_LU_SOLVE_STRUCT)
 #define f_dDestroy_LU_SOLVE_struct_3d  FC_GLOBAL(f_ddestroy_lu_solve_struct_3d,F_DDESTROY_LU_SOLVE_STRUCT_3D)
+#define f_dDestroy_A3d_gathered_on_2d  FC_GLOBAL(f_ddestroy_a3d_gathered_on_2d,F_DDESTROY_A3D_GATHERED_ON_2D)
 
 #define f_dCreate_CompRowLoc_Mat_dist  FC_GLOBAL(f_dcreate_comprowloc_mat_dist,F_DCREATE_COMPROWLOC_MAT_DIST)
 #define f_dSolveFinalize               FC_GLOBAL(f_dsolvefinalize,F_DSOLVEFINALIZE)
@@ -84,6 +85,8 @@ at the top-level directory.
 #define f_zLUstructFree                FC_GLOBAL(f_zlustructfree,F_ZLUSTRUCTFREE)
 #define f_zDestroy_LU_SOLVE_struct     FC_GLOBAL(f_zdestroy_lu_solve_struct,F_ZDESTROY_LU_SOLVE_STRUCT)
 #define f_zDestroy_LU_SOLVE_struct_3d  FC_GLOBAL(f_zdestroy_lu_solve_struct_3d,F_ZDESTROY_LU_SOLVE_STRUCT_3D)
+#define f_zDestroy_A3d_gathered_on_2d  FC_GLOBAL(f_zdestroy_a3d_gathered_on_2d,F_ZDESTROY_A3D_GATHERED_ON_2D)
+
 #define f_zCreate_CompRowLoc_Mat_dist  FC_GLOBAL(f_zcreate_comprowloc_mat_dist,F_ZCREATE_COMPROWLOC_MAT_DIST)
 #define f_zSolveFinalize               FC_GLOBAL(f_zsolvefinalize,F_ZSOLVEFINALIZE)
 #define f_pzgssvx                      FC_GLOBAL(f_pzgssvx,F_PZGSSVX)

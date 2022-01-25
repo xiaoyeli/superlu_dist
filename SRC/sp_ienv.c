@@ -116,7 +116,7 @@ sp_ienv_dist(int ispec)
         case 8:
   	    ttemp = getenv ("MAX_BUFFER_SIZE");
 	    if (ttemp) return atoi (ttemp);
-	    else return 1000000000; // 256000000 = 16000^2
+	    else return 256000000; // 256000000 = 16000^2
     }
 
     /* Invalid value for ISPEC */

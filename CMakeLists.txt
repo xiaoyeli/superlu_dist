@@ -11,7 +11,7 @@ cmake_minimum_required(VERSION 3.18.1 FATAL_ERROR)
 #project(SuperLU_DIST C CXX CUDA)
 project(SuperLU_DIST C CXX)
 set(VERSION_MAJOR "7")
-set(VERSION_MINOR "0")
+set(VERSION_MINOR "2")
 set(VERSION_BugFix "0")
 set(PROJECT_VERSION ${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_BugFix})
 
@@ -21,7 +21,7 @@ list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake")
 option(enable_doc       "Build doxygen documentation" OFF)
 option(enable_double    "Enable double precision library" ON)
 option(enable_single    "Enable single precision library" OFF)
-option(enable_complex16 "Enable complex16 precision library" OFF)
+option(enable_complex16 "Enable complex16 precision library" ON)
 option(enable_tests  "Build tests" ON)
 option(enable_examples  "Build examples" ON)
 option(XSDK_ENABLE_Fortran "Enable Fortran" ON)
@@ -42,6 +42,7 @@ option(TPL_COMBBLAS_LIBRARIES "List of absolute paths to CombBLAS link libraries
 option(TPL_COMBBLAS_INCLUDE_DIRS "List of absolute paths to CombBLAS include directories [].")
 #-- CUDA
 option(TPL_ENABLE_CUDALIB   "Enable the CUDA libraries" OFF)
+option(TPL_ENABLE_HIPLIB   "Enable the HIP libraries" OFF)
 
 ######################################################################
 #
@@ -164,6 +165,7 @@ if(MPI_C_FOUND)
     set(CMAKE_C_FLAGS "${MPI_C_COMPILE_FLAGS} ${CMAKE_C_FLAGS}")
     set(CMAKE_CXX_FLAGS "${MPI_CXX_COMPILE_FLAGS} ${CMAKE_CXX_FLAGS}")
     set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${MPI_C_LINK_FLAGS}" )
+#    message("MPI_C_INCLUDE_DIRS: ${MPI_C_INCLUDE_DIRS}")
 endif()
 if (XSDK_ENABLE_Fortran)
   if(MPI_Fortran_FOUND)
@@ -196,14 +198,18 @@ if (TPL_ENABLE_CUDALIB)   ## want to use cuda
 #     find_package(CUB REQUIRED)
 
     find_package(CUDAToolkit REQUIRED)
+# The following appears in SRC/CMakeLists.txt
+#    if(CUDAToolkit_FOUND)
+#      target_link_libraries(superlu_dist PUBLIC CUDA::cudart CUDA::cusolver CUDA::cublas)
+#    endif()
     message("-- CUDAToolkit_LIBRARY_ROOT='${CUDAToolkit_LIBRARY_ROOT}'")
     if (NOT "${CUDAToolkit_LIBRARY_ROOT}" STREQUAL "")
-    set(CUDA_LIBRARIES "${CUDAToolkit_LIBRARY_ROOT}/lib64/libcudart.so")
-    set(CUDA_CUBLAS_LIBRARIES "${CUDAToolkit_LIBRARY_ROOT}/lib64/libcublas.so")
+       set(CUDA_LIBRARIES "${CUDAToolkit_LIBRARY_ROOT}/lib64/libcudart.so")
+       # expose the following to make.inc, but location may not be reliable
+      set(CUDA_CUBLAS_LIBRARIES "${CUDAToolkit_LIBRARY_ROOT}/lib64/libcublas.so")
     else()
-    message("-- CUDAToolkit_LIBRARY_ROOT empty, not setting CUDA_LIBRARIES")
+	message("-- CUDAToolkit_LIBRARY_ROOT empty, not setting CUDA_LIBRARIES")
     endif()
-
 
 #     # The following make.inc exporting does not work
     set(CUDA_LIBRARIES CUDA::cudart CUDA::cublas CUDA::cusolver)
@@ -229,13 +235,82 @@ if (enable_openmp)
   if(OPENMP_FOUND)
     set(CMAKE_C_FLAGS "${OpenMP_C_FLAGS} ${CMAKE_C_FLAGS}")
     set(CMAKE_CXX_FLAGS "${OpenMP_CXX_FLAGS} ${CMAKE_CXX_FLAGS}")
-# On edison, OpenMP_EXE_LINKER_FLAGS is empty
-#  set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${OpenMP_EXE_LINKER_FLAGS}")
-    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${OpenMP_C_FLAGS}")
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${OpenMP_EXE_LINKER_FLAGS}")
+# The following causes problem with cmake/3.20.+
+# set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${OpenMP_C_FLAGS}")
     message("-- OpenMP_EXE_LINKER_FLAGS='${OpenMP_EXE_LINKER_FLAGS}'")
     message("-- CMAKE_EXE_LINKER_FLAGS='${CMAKE_EXE_LINKER_FLAGS}'")
   endif()
 endif()
+
+
+ 
+include(CheckLanguage)
+
+#--------------------- CUDA libraries ---------------------
+if (TPL_ENABLE_CUDALIB)   ## want to use cuda
+  check_language(CUDA)
+  if(CMAKE_CUDA_COMPILER)
+    message("-- Enabled support for CUDA.")
+    enable_language(CUDA)
+    find_package(CUDAToolkit REQUIRED)
+
+    # make.inc exporting not yet tested
+    set(CUDA_LIB CUDA::cudart CUDA::cublas CUDA::cusolver)
+    string (REPLACE ";" " " CUDA_LIB_STR "${CUDA_LIB}")
+    set(CUDA_LIB_EXPORT ${CUDA_LIB_STR}) 
+    set(HAVE_CUDA TRUE)
+    # set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DHAVE_CUDA")
+    # set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -DHAVE_CUDA")
+  else()
+    message("-- CUDA libraries not found.")
+  endif()
+endif()
+
+
+
+#--------------------- HIP libraries ---------------------
+if (TPL_ENABLE_HIPLIB)   ## want to use hip
+  find_package(HIP MODULE)
+  if(HIP_FOUND)
+    message("-- Enabled support for HIP.")
+    find_package(hipblas REQUIRED)
+    find_package(rocsolver REQUIRED)
+    find_package(rocblas REQUIRED)
+    set(HIP_LIB roc::hipblas roc::rocblas roc::rocsolver)
+    message("HIP_LIB ${HIP_LIB}")
+
+    # make.inc exporting not yet tested
+    string (REPLACE ";" " " HIP_LIB_STR "${HIP_LIB}")
+    set(HIP_LIB_EXPORT ${HIP_LIB_STR}) 
+    set(HAVE_HIP TRUE)
+    # set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DHAVE_HIP")
+    # set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DHAVE_HIP")    
+    # set(HIP_HIPCC_FLAGS "${HIP_HIPCC_FLAGS} -DHAVE_HIP")    
+    if (BUILD_SHARED_LIBS)
+    set(HIP_HIPCC_FLAGS "${HIP_HIPCC_FLAGS} -fPIC")    
+    endif()
+
+
+
+    
+    # if ("$ENV{HIP_PLATFORM}" STREQUAL "hcc")
+    #   set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DHAVE_HIP -D__HIP_PLATFORM_HCC__")
+    #   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DHAVE_HIP -D__HIP_PLATFORM_HCC__")
+    # elseif ("$ENV{HIP_PLATFORM}" STREQUAL "nvcc")
+    #   set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DHAVE_HIP -D__HIP_PLATFORM_NVCC__")
+    #   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DHAVE_HIP -D__HIP_PLATFORM_NVCC__")
+    # endif()
+
+
+  else()
+    message("-- HIP libraries not found.")
+  endif()
+endif()
+
+
+
+
 #--------------------- BLAS ---------------------
 if(NOT TPL_ENABLE_INTERNAL_BLASLIB)
 #  set(TPL_BLAS_LIBRARIES "" CACHE FILEPATH
@@ -312,6 +387,8 @@ if (TPL_ENABLE_PARMETISLIB)   ## want to use parmetis
     endif()
     set(CMAKE_C_FLAGS "-I${dir} ${CMAKE_C_FLAGS}")
   endforeach()
+  
+
 
   message("-- Enabled support for PARMETIS.")
   set(PARMETIS_FOUND TRUE)
@@ -342,7 +419,7 @@ FOREACH(_lib ${_c_libs})
   set(EXTRA_LIB "-l${_lib} ${EXTRA_LIB}")
 ENDFOREACH()
 string (REPLACE ";" " " EXTRA_LIB_STR "${EXTRA_LIB}")
-set(EXTRA_LIB_EXPORT ${EXTRA_LIB_STR})
+set(EXTRA_LIB_EXPORT ${EXTRA_LIB_STR}) 
 message("-- EXTRA_LIB_EXPORT='${EXTRA_LIB_EXPORT}'")
 
 #---------------------- Additional Fortran linker library ---------
@@ -361,7 +438,7 @@ if (XSDK_ENABLE_Fortran)
       SET(CMAKE_EXE_LINKER_FLAGS
           "${CMAKE_EXE_LINKER_FLAGS} -Wl,-rpath,${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}")
    else()
-      message("-- superlu_dist_fortranwill be built as a static library.")
+      message("-- superlu_dist_fortran will be built as a static library.")
       set(PROJECT_NAME_LIB_FORTRAN libsuperlu_dist_fortran.a)
    endif()
 endif()
@@ -384,6 +461,7 @@ if (TPL_ENABLE_COMBBLASLIB)   ## want to use CombBLAS
 
   message("-- Enabled support for COMBBLAS")
   set(COMBBLAS_FOUND TRUE)
+  set(CMAKE_CXX_STANDARD 14)  # CombBLAS requires c++14
 
   set(COMBBLAS_LIB ${TPL_COMBBLAS_LIBRARIES})
   # fix up COMBBLAS library names
@@ -409,9 +487,15 @@ endif()
 if (XSDK_ENABLE_Fortran)
   include(FortranCInterface)
   FortranCInterface_HEADER(${SuperLU_DIST_SOURCE_DIR}/SRC/superlu_FortranCInterface.h
-  MACRO_NAMESPACE "FC_")
+                            MACRO_NAMESPACE "FC_")
   FortranCInterface_VERIFY(CXX)
   SET(MPI_Fortran_LINK_FLAGS "${CMAKE_EXE_LINKER_FLAGS}")
+
+  #---------------------------------------------------------------------
+  # Set default fortran format to free and preprocess all files
+  #---------------------------------------------------------------------
+  set(CMAKE_Fortran_FORMAT FREE)
+  set(CMAKE_Fortran_PREPROCESS ON)
 endif()
 
 ######################################################################

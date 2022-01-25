@@ -12,10 +12,11 @@ at the top-level directory.
  * \brief SuperLU grid utilities
  *
  * <pre>
- * -- Distributed SuperLU routine (version 6.1) --
+ * -- Distributed SuperLU routine (version 7.1.0) --
  * Lawrence Berkeley National Lab, Univ. of California Berkeley.
  * September 1, 1999
  * February 8, 2019  version 6.1.1
+ * October 5, 2021
  * </pre>
  */
 
@@ -60,6 +61,19 @@ void superlu_gridinit(MPI_Comm Bcomm, /* The base communicator upon which
     superlu_gridmap(Bcomm, nprow, npcol, usermap, nprow, grid);
     
     SUPERLU_FREE(usermap);
+    
+#ifdef GPU_ACC
+    /* Binding each MPI to a GPU device */
+    char *ttemp;
+    ttemp = getenv ("SUPERLU_BIND_MPI_GPU");
+
+    if (ttemp) {
+	int devs, rank;
+	MPI_Comm_rank(Bcomm, &rank); // MPI_COMM_WORLD??
+	gpuGetDeviceCount(&devs);  // Returns the number of compute-capable devices
+	gpuSetDevice(rank % devs); // Set device to be used for GPU executions
+    }
+#endif
 }
 
 

@@ -1,0 +1,97 @@
+name: Run Github CI tests. 
+
+on: [push, pull_request]
+
+jobs:
+  test:
+    name: Build and test
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        compiler:
+          - gcc
+        test: [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Install dependencies
+        run: |
+          export BLUE="\033[34;1m"
+          mkdir -p installDir
+
+          printf "${BLUE} SLU; Installing gcc-9 via apt\n"
+          sudo apt-get update
+          sudo apt-get install build-essential software-properties-common -y
+          sudo add-apt-repository ppa:ubuntu-toolchain-r/test -y
+          sudo apt-get update
+          sudo apt-get install gcc-9 g++-9 -y
+          sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-9 60 --slave /usr/bin/g++ g++ /usr/bin/g++-9
+          export CXX="g++-9"
+          export CC="gcc-9"
+          printf "${BLUE} SLU; Done installing gcc-9 via apt\n"
+
+          printf "${BLUE} SLU; Installing gfortran via apt\n"
+          sudo apt-get install gfortran-9 -y
+          sudo update-alternatives --install /usr/bin/gfortran gfortran /usr/bin/gfortran-9 60
+          printf "${BLUE} SLU; Done installing gfortran via apt\n"
+
+          printf "${BLUE} SLU; Installing openmpi\n"
+          sudo apt-get install openmpi-bin libopenmpi-dev
+          printf "${BLUE} SLU; Done installing openmpi\n"
+
+          printf "${BLUE} SLU; Installing BLASfrom apt\n"
+          sudo apt-get install libblas-dev
+          export BLAS_LIB=/usr/lib/libblas/libblas.so
+          printf "${BLUE} SLU; Done installing BLASfrom apt\n"
+
+          printf "${BLUE} SLU; Installing LAPACKfrom apt\n"
+          sudo apt-get install liblapack-dev
+          export LAPACK_LIB=/usr/lib/liblapack.so
+          printf "${BLUE} SLU; Done installing LAPACKfrom apt\n"
+
+          printf "${BLUE} SLU; Installing ParMetis-4.0 from source\n"
+          cd $GITHUB_WORKSPACE/installDir
+          wget http://glaros.dtc.umn.edu/gkhome/fetch/sw/parmetis/parmetis-4.0.3.tar.gz
+          tar -xf parmetis-4.0.3.tar.gz
+          cd parmetis-4.0.3/
+          mkdir -p install
+          make config shared=1 cc=mpicc cxx=mpic++ prefix=$PWD/install
+          make install > make_parmetis_install.log 2>&1
+          printf "${BLUE} SLU; Done installing ParMetis-4.0 from source\n"
+
+      - name: Install package
+        run: |
+          export BLUE="\033[34;1m"
+          printf "${BLUE} SLU; Installing superlu_dist from source\n"
+          cd $GITHUB_WORKSPACE
+          rm -rf build
+          mkdir -p build
+          cd build 
+          cmake .. \
+          -DTPL_PARMETIS_INCLUDE_DIRS="$GITHUB_WORKSPACE/installDir/parmetis-4.0.3/metis/include;$GITHUB_WORKSPACE/installDir/parmetis-4.0.3/install/include" \
+          -DTPL_PARMETIS_LIBRARIES="$GITHUB_WORKSPACE/installDir/parmetis-4.0.3/install/lib/libparmetis.so" \
+          -DCMAKE_C_FLAGS="-std=c11 -DPRNTlevel=1 -DPROFlevel=1 -DDEBUGlevel=1" \
+          -DCMAKE_CXX_FLAGS="-Ofast -std=c++11 -DAdd_ -DRELEASE" \
+          -DTPL_BLAS_LIBRARIES="$BLAS_LIB" \
+          -DTPL_LAPACK_LIBRARIES="$LAPACK_LIB" \
+          -DTPL_ENABLE_INTERNAL_BLASLIB=OFF \
+          -DBUILD_SHARED_LIBS=OFF \
+          -DCMAKE_C_COMPILER=mpicc \
+          -DCMAKE_CXX_COMPILER=mpic++ \
+          -DCMAKE_INSTALL_PREFIX=. \
+          -DCMAKE_BUILD_TYPE=Debug \
+          -DCMAKE_VERBOSE_MAKEFILE:BOOL=OFF
+          make
+          make install
+          printf "${BLUE} SLU; Done installing superlu_dist from source\n"
+    
+      - name: Test
+        run: |
+          cd $GITHUB_WORKSPACE
+          export TEST_NUMBER=${{ matrix.test }}
+          ./.ci_tests.sh
+
+

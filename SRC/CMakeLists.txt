@@ -1,6 +1,5 @@
 set(headers
     superlu_FCnames.h
-    cublas_utils.h
     dcomplex.h
     machines.h
     psymbfact.h
@@ -9,15 +8,9 @@ set(headers
     supermatrix.h
     util_dist.h
     colamd.h
-    TreeBcast_slu.hpp
-    TreeReduce_slu.hpp	
-    TreeBcast_slu_impl.hpp
-    TreeReduce_slu_impl.hpp	
+    gpu_api_utils.h
+    gpu_wrapper.h
     ${CMAKE_CURRENT_BINARY_DIR}/superlu_dist_config.h
-    TRF3dV100/lupanels.hpp
-    TRF3dV100/commWrapper.hpp
-    TRF3dV100/superlu_summit.h
-    TRF3dV100/lupanels_GPU.cuh
     ${PROJECT_SOURCE_DIR}/SRC/superlu_FortranCInterface.h
 )
 if (MSVC)
@@ -35,6 +28,7 @@ set(sources
   comm.c
   memory.c
   util.c
+  gpu_api_utils.c
   superlu_grid.c
   pxerr_dist.c
   superlu_timer.c
@@ -48,17 +42,21 @@ set(sources
   dmach_dist.c
   colamd.c
   superlu_dist_version.c
-  TreeInterface.cpp
+  comm_tree.c
   superlu_grid3d.c    ## 3D code
   supernodal_etree.c
   supernodalForest.c
   trfAux.c 
   communication_aux.c
   treeFactorization.c
-  sec_structs.c
+  sec_structs.c  
 )
 if (HAVE_CUDA)
-  list(APPEND sources cublas_utils.c)
+  list(APPEND sources superlu_gpu_utils.cu)
+endif()
+
+if (HAVE_HIP)
+  list(APPEND sources superlu_gpu_utils.hip.cpp)
 endif()
 
 if (MSVC)
@@ -69,6 +67,13 @@ set_source_files_properties(superlu_timer.c PROPERTIES COMPILE_FLAGS -O0)
 
 if(enable_double)
   list(APPEND headers superlu_ddefs.h dlustruct_gpu.h)
+
+if(TPL_ENABLE_CUDALIB)
+  list(APPEND sources pdgstrs_lsum_cuda.cu)
+endif()
+# if(TPL_ENABLE_HIPLIB)
+#   list(APPEND sources pdgstrs_lsum_cuda.hip.cpp)
+# endif()    	
 
   list(APPEND sources
     dlangs_dist.c
@@ -111,16 +116,6 @@ if(enable_double)
     dnrformat_loc3d.c 
     pdgstrf3d.c 
     dtreeFactorization.c
-    TRF3dV100/pdgstrf3d_summit.cpp
-    TRF3dV100/dsparseTreeFactor_summit.cpp
-    TRF3dV100/dsparseTreeFactorGPU.cpp
-    TRF3dV100/lupanels.cpp
-    TRF3dV100/lupanels_comm3d.cpp
-    TRF3dV100/lupanelsComm3dGPU.cpp
-    TRF3dV100/commWrapper.cpp 
-    TRF3dV100/l_panels.cpp
-    TRF3dV100/u_panels.cpp
-    TRF3dV100/lupanels_GPU.cpp 
     dtreeFactorizationGPU.c
     dgather.c
     dscatter3d.c
@@ -131,11 +126,9 @@ if(enable_double)
     dsuperlu_blas.c
   )
 if (HAVE_CUDA)
-  list(APPEND sources 
-  dsuperlu_gpu.cu
-  TRF3dV100/schurCompUpdate.cu 
-  )
+  list(APPEND sources dsuperlu_gpu.cu)
 endif()
+
 if (HAVE_COMBBLAS)
   list(APPEND sources d_c2cpp_GetHWPM.cpp dHWPM_CombBLAS.hpp)
 endif()
@@ -264,22 +257,49 @@ endif()
 if (HAVE_COMBBLAS)
     list(APPEND sources z_c2cpp_GetHWPM.cpp zHWPM_CombBLAS.hpp)
 endif()
-
 endif() ######### enable compex16
 
+if (TPL_ENABLE_HIPLIB)
+  file(GLOB MyFiles *.hip.cpp)
+  set_source_files_properties(
+    ${MyFiles}
+    PROPERTIES HIP_SOURCE_PROPERTY_FORMAT 1)
 
-add_library(superlu_dist ${sources} ${HEADERS})
+  set(hipsources
+    pdgstrs_lsum_cuda.hip.cpp
+    superlu_gpu_utils.hip.cpp
+    dsuperlu_gpu.hip.cpp
+  )
+  if(enable_single)
+  list(APPEND hipsources ssuperlu_gpu.hip.cpp)
+  endif()
+  if(enable_complex16)
+  list(APPEND hipsources zsuperlu_gpu.hip.cpp)
+  endif()
+  hip_add_library(superlu_dist ${hipsources})
+  if (BUILD_SHARED_LIBS AND BUILD_STATIC_LIBS)
+    hip_add_library(superlu_dist-static STATIC  ${hipsources})
+  endif()
+
+else()
+  add_library(superlu_dist "")
+  if (BUILD_SHARED_LIBS AND BUILD_STATIC_LIBS)
+    add_library(superlu_dist-static STATIC "")
+  endif()
+endif()
+
+
+target_sources(superlu_dist PRIVATE ${sources} ${HEADERS})
 set(targets superlu_dist)
 
 if (BUILD_SHARED_LIBS AND BUILD_STATIC_LIBS)
   # build both shared and static libs
-  add_library(superlu_dist-static STATIC ${sources} ${HEADERS})
+  target_sources(superlu_dist-static PRIVATE ${sources} ${HEADERS})
   list(APPEND targets superlu_dist-static)
 endif()
 
 set(superlu_dist_libs ${MPI_C_LIBRARIES} ${MPI_CXX_LIBRARIES} ${BLAS_LIB} ${LAPACK_LIB}
-    ${PARMETIS_LIB} ${COMBBLAS_LIB} ${CUDA_LIBRARIES} ${CUDA_CUBLAS_LIBRARIES})
-
+    ${PARMETIS_LIB} ${COMBBLAS_LIB} ${CUDA_LIB} ${HIP_LIB}) 
 if (NOT MSVC)
   list(APPEND superlu_dist_libs m)
 endif ()
@@ -288,15 +308,15 @@ foreach(target ${targets})
     target_link_libraries(${target} ${superlu_dist_libs})
     if (HAVE_COMBBLAS)
         set_target_properties(${target} PROPERTIES
-			      CUDA_SEPARABLE_COMPILATION ON
-                              OUTPUT_NAME superlu_dist
+                              CUDA_SEPARABLE_COMPILATION ON
+							  OUTPUT_NAME superlu_dist
                               VERSION ${PROJECT_VERSION}
                               SOVERSION ${VERSION_MAJOR}
 			      LINKER_LANGUAGE CXX
 			      )
     else()
         set_target_properties(${target} PROPERTIES
-			      CUDA_SEPARABLE_COMPILATION ON
+		                      CUDA_SEPARABLE_COMPILATION ON
                               OUTPUT_NAME superlu_dist
                               VERSION ${PROJECT_VERSION}
                               SOVERSION ${VERSION_MAJOR}
@@ -309,6 +329,12 @@ if(CUDAToolkit_FOUND)  # this is found in top-level CMakeLists.txt
     target_link_libraries(superlu_dist CUDA::cudart CUDA::cublas)
 endif()
 
+# This is recommended by modern cmake:
+# https://cliutils.gitlab.io/modern-cmake/chapters/packages/OpenMP.html
+if(OpenMP_FOUND) # this is found in top-level CMakeLists.txt
+  target_link_libraries(superlu_dist OpenMP::OpenMP_C)
+endif()
+  
 target_compile_definitions(superlu_dist PRIVATE SUPERLU_DIST_EXPORTS)
 if(MSVC AND BUILD_SHARED_LIBS)
   set_target_properties(superlu_dist PROPERTIES

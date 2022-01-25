@@ -302,23 +302,21 @@ int_t** getTreePermFr( int_t* myTreeIdxs,
 	return treePerm;
 }
 
-int_t* getIsNodeInMyGrid(int_t nsupers, int_t maxLvl, int_t* myNodeCount, int_t** treePerm)
+int* getIsNodeInMyGrid(int_t nsupers, int_t maxLvl, int_t* myNodeCount, int_t** treePerm)
 {
-	int_t* isNodeInMyGrid = INT_T_ALLOC (nsupers);
+    int* isNodeInMyGrid = SUPERLU_MALLOC(nsupers * sizeof(int));
 
-	for(int_t i=0; i<nsupers; i++) isNodeInMyGrid[i] =0;
+    for(int i=0; i<nsupers; i++) isNodeInMyGrid[i] =0;
 	
-	for (int_t i = 0; i < maxLvl; ++i)
+    for (int i = 0; i < maxLvl; ++i)
+    {
+	for(int node = 0; node< myNodeCount[i]; node++ )
 	{
-		for(int_t node = 0; node< myNodeCount[i]; node++ )
-		{
-			isNodeInMyGrid[treePerm[i][node]]=1;
-
-		}
-		
+	    isNodeInMyGrid[treePerm[i][node]]=1;
 	}
+    }
 
-	return isNodeInMyGrid;
+    return isNodeInMyGrid;
 }
 
 double pearsonCoeff(int_t numForests, double* frCost, double* frWeight)

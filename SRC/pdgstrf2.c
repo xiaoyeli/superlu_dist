@@ -14,13 +14,14 @@ at the top-level directory.
  * \brief Performs panel LU factorization.
  *
  * <pre>
- * -- Distributed SuperLU routine (version 7.0) --
+ * -- Distributed SuperLU routine (version 7.2) --
  * Lawrence Berkeley National Lab, Univ. of California Berkeley.
  * August 15, 2014
  *
  * Modified:
  *   September 30, 2017
- *   May 10, 2019 version 7.0.0
+ *   May 10, 2019  v7.0.0
+ *   December 12, 2021  v7.2.0
  *
  * <pre>
  * Purpose
@@ -375,7 +376,9 @@ int_t LpanelUpdate(int off0,  int nsupc, double* ublk_ptr, int ld_ujrow,
     double t1 = SuperLU_timer_();
 
 #define GT  32
+#ifdef _OPENMP
 #pragma omp parallel for
+#endif
     for (int i = 0; i < CEILING(l, GT); ++i)
     {
         int_t off = i * GT;
@@ -396,91 +399,24 @@ int_t LpanelUpdate(int off0,  int nsupc, double* ublk_ptr, int ld_ujrow,
 
 #pragma GCC push_options
 #pragma GCC optimize ("O0")
-/*factorizes the diagonal block; called from process that owns the (k,k) block*/
-void dgstrf2(int_t k, double* diagBlk, int_t LDA, double* BlockUfactor, int_t LDU, 
-    double thresh, int_t* xsup,
-    superlu_dist_options_t *options,
-    SuperLUStat_t *stat, int *info
- )
-{
-
-    int_t jfst = FstBlockC(k);
-    int_t jlst = FstBlockC(k + 1);
-    int_t nsupc = SuperSize(k);
-    
-    double *ublk_ptr = BlockUfactor;
-    double *ujrow = BlockUfactor;
-    int_t luptr = 0;       /* Point_t to the diagonal entries. */
-    int cols_left = nsupc; /* supernode size */
-
-    for (int_t j = 0; j < nsupc; ++j) /* for each column in panel */
-    {
-        /* Diagonal pivot */
-        int_t i = luptr;
-        /* Not to replace zero pivot.  */
-        if (options->ReplaceTinyPivot == YES)
-        {
-            if (fabs(diagBlk[i]) < thresh)
-            { /* Diagonal */
-
-#if (PRNTlevel >= 2)
-                printf("(%d) .. col %d, tiny pivot %e  ",
-                       iam, jfst + j, diagBlk[i]);
-#endif
-                /* Keep the new diagonal entry with the same sign. */
-                if (diagBlk[i] < 0)
-                    diagBlk[i] = -thresh;
-                else
-                    diagBlk[i] = thresh;
-#if (PRNTlevel >= 2)
-                printf("replaced by %e\n", diagBlk[i]);
-#endif
-                ++(stat->TinyPivots);
-            }
-        }
-
-        for (int_t l = 0; l < cols_left; ++l, i += LDA)
-        {
-            int_t st = j * LDU + j;
-            ublk_ptr[st + l * LDU] = diagBlk[i]; /* copy one row of U */
-        }
-        double zero = 0.0;
-        if (ujrow[0] == zero) /* Test for singularity. */
-        {
-            *info = j + jfst + 1;
-        }
-        else /* Scale the j-th column. */
-        {
-            double temp;
-            temp = 1.0 / ujrow[0];
-            for (int_t i = luptr + 1; i < luptr - j + nsupc; ++i)
-                diagBlk[i] *= temp;
-            stat->ops[FACT] += nsupc - j - 1;
-        }
-
-        /* Rank-1 update of the trailing submatrix. */
-        if (--cols_left)
-        {
-            /*following must be int*/
-            int l = nsupc - j - 1;
-            int incx = 1;
-            int incy = LDU;
-            /* Rank-1 update */
-            double alpha = -1;
-            superlu_dger(l, cols_left, alpha, &diagBlk[luptr + 1], incx,
-                         &ujrow[LDU], incy, &diagBlk[luptr + LDA + 1],
-                         LDA);
-            stat->ops[FACT] += 2 * l * cols_left;
-        }
-
-        ujrow = ujrow + LDU + 1; /* move to next row of U */
-        luptr += LDA + 1;           /* move to next column */
-
-    } /* for column j ...  first loop */
-
-    // printf("Coming to local dgstrf2\n");
-}
-
+/************************************************************************/
+/*! \brief
+ *
+ * <pre>
+ * Purpose
+ * =======
+ *   Factorize the diagonal block; called from process that owns the (k,k) block
+ *
+ * Arguments
+ * =========
+ * 
+ * info   (output) int*
+ *        = 0: successful exit
+ *        > 0: if info = i, U(i,i) is exactly zero. The factorization has
+ *             been completed, but the factor U is exactly singular,
+ *             and division by zero will occur if it is used to solve a
+ *             system of equations.
+ */
 void Local_Dgstrf2(superlu_dist_options_t *options, int_t k, double thresh,
                    double *BlockUFactor, /*factored U is overwritten here*/
                    Glu_persist_t *Glu_persist, gridinfo_t *grid, dLocalLU_t *Llu,
@@ -502,11 +438,6 @@ void Local_Dgstrf2(superlu_dist_options_t *options, int_t k, double thresh,
         nsupr = Llu->Lrowind_bc_ptr[lk][1];
     else
         nsupr = 0;
-
-#if 1
-    dgstrf2( k, lusup, nsupr, BlockUFactor, nsupc, 
-    thresh, xsup, options,stat, info);
-#else 
     double *ublk_ptr = BlockUFactor;
     double *ujrow = BlockUFactor;
     int_t luptr = 0;                  /* Point_t to the diagonal entries. */
@@ -520,8 +451,9 @@ void Local_Dgstrf2(superlu_dist_options_t *options, int_t k, double thresh,
     {
         /* Diagonal pivot */
         int_t i = luptr;
-        /* Not to replace zero pivot.  */
-        if (options->ReplaceTinyPivot == YES && lusup[i] != 0.0)
+        /* Allow to replace zero pivot.  */
+        //if (options->ReplaceTinyPivot == YES && lusup[i] != 0.0)
+        if (options->ReplaceTinyPivot == YES)
         {
             if (fabs (lusup[i]) < thresh) {  /* Diagonal */
 
@@ -575,10 +507,10 @@ void Local_Dgstrf2(superlu_dist_options_t *options, int_t k, double thresh,
 
     }                       /* for column j ...  first loop */
 
-#endif
-     //int_t thread_id = omp_get_thread_num();
+
+    //int_t thread_id = omp_get_thread_num();
     // SCT->Local_Dgstrf2_Thread_tl[thread_id * CACHE_LINE_SIZE] += (double) ( SuperLU_timer_() - t1);
-}
+} /* end Local_Dgstrf2 */
 
 #pragma GCC pop_options
 /************************************************************************/
@@ -903,8 +835,10 @@ void pdgstrs2_omp
 
     // Sherry: this version is more NUMA friendly compared to pdgstrf2_v2.c
     // https://stackoverflow.com/questions/13065943/task-based-programming-pragma-omp-task-versus-pragma-omp-parallel-for
+#ifdef _OPENMP
 #pragma omp parallel for schedule(static) default(shared) \
     private(b,j,iukp,rukp,segsize)
+#endif
     /* Loop through all the blocks in the row. */
     for (b = 0; b < nb; ++b) {
 #ifdef USE_Ublock_info
@@ -947,7 +881,9 @@ void pdgstrs2_omp
 #endif
 	    } /* end if segsize > 0 */
 	} /* end for j in parallel ... */
+#ifdef _OPENMP    
 /* #pragma omp taskwait */
+#endif
     }  /* end for b ... */
 
 #ifndef USE_Ublock_info
@@ -991,13 +927,15 @@ void pdgstrs2_omp(int_t k0, int_t k, int_t* Lsub_buf,
     Trs2_InitUbloc_info(klst, nb, Ublock_info, usub, Glu_persist, stat );
 
     /* Loop through all the row blocks. */
+#ifdef _OPENMP    
 #pragma omp parallel for schedule(dynamic,2)
+#endif
     for (int_t b = 0; b < nb; ++b)
     {
 #ifdef _OPENMP    
-        int_t thread_id = omp_get_thread_num();
+        int thread_id = omp_get_thread_num();
 #else	
-        int_t thread_id = 0;
+        int thread_id = 0;
 #endif	
         double *tempv = bigV +  thread_id * ldt * ldt;
         dTrs2_GatherTrsmScatter(klst, Ublock_info[b].iukp, Ublock_info[b].rukp,

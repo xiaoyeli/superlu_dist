@@ -13,10 +13,14 @@ at the top-level directory.
  * \brief Factorization routines for the subtree using 2D process grid.
  *
  * <pre>
- * -- Distributed SuperLU routine (version 7.0) --
- * Lawrence Berkeley National Lab, Georgia Institute of Technology.
- * May 10, 2019
+ * -- Distributed SuperLU routine (version 7.2) --
+ * Lawrence Berkeley National Lab, Georgia Institute of Technology,
+ * Oak Ridge National Lab
+ * May 12, 2021
+ *
+ * Last update: December 12, 2021  v7.2.0
  */
+ 
 #include "superlu_zdefs.h"
 #if 0
 #include "treeFactorization.h"
@@ -226,7 +230,9 @@ int_t zdenseTreeFactor(
             doublecomplex* bigV = scuBufs->bigV;
             doublecomplex* bigU = scuBufs->bigU;
 
+#ifdef _OPENMP    
 #pragma omp parallel for schedule(dynamic)
+#endif
             for (int_t ij = 0; ij < nub * nlb; ++ij)
             {
                 /* code */
@@ -248,9 +254,9 @@ int_t zdenseTreeFactor(
                 int_t *lsub = lPanelInfo->lsub;
                 int_t *usub = uPanelInfo->usub;
 #ifdef _OPENMP		
-                int_t thread_id = omp_get_thread_num();
+                int thread_id = omp_get_thread_num();
 #else		
-                int_t thread_id = 0;
+                int thread_id = 0;
 #endif		
                 zblock_gemm_scatter( lb, ub,
                                     Ublock_info,
@@ -311,6 +317,9 @@ int_t zsparseTreeFactor_ASYNC(
         return 1;
     }
 
+    /* Test the input parameters. */
+    *info = 0;
+    
 #if ( DEBUGlevel>=1 )
     CHECK_MALLOC (grid3d->iam, "Enter zsparseTreeFactor_ASYNC()");
 #endif
@@ -499,10 +508,14 @@ int_t zsparseTreeFactor_ASYNC(
             int_t klst = FstBlockC (k + 1);
 
             doublecomplex* bigV = scuBufs->bigV;
-
+	    
+#ifdef _OPENMP    
 #pragma omp parallel
+#endif
             {
+#ifdef _OPENMP    
 #pragma omp for schedule(dynamic,2) nowait
+#endif
 		/* Each thread is assigned one loop index ij, responsible for
 		   block update L(lb,k) * U(k,j) -> tempv[]. */
                 for (int_t ij = 0; ij < HyP->lookAheadBlk * HyP->num_u_blks; ++ij)
@@ -518,7 +531,9 @@ int_t zsparseTreeFactor_ASYNC(
 					       LUstruct, grid, SCT, stat );
                 }
 
+#ifdef _OPENMP    
 #pragma omp for schedule(dynamic,2) nowait
+#endif
                 for (int_t ij = 0; ij < HyP->lookAheadBlk * HyP->num_u_blks_Phi; ++ij)
                 {
                     int_t j   = ij / HyP->lookAheadBlk ;
@@ -528,7 +543,9 @@ int_t zsparseTreeFactor_ASYNC(
 						LUstruct, grid, SCT, stat);
                 }
 
+#ifdef _OPENMP    
 #pragma omp for schedule(dynamic,2) nowait
+#endif
                 for (int_t ij = 0; ij < HyP->RemainBlk * HyP->num_u_blks; ++ij) //
                 {
                     int_t j   = ij / HyP->RemainBlk;
@@ -570,9 +587,13 @@ int_t zsparseTreeFactor_ASYNC(
                 }
             }
 
+#ifdef _OPENMP    
 #pragma omp parallel
+#endif
             {
+#ifdef _OPENMP    
 #pragma omp for schedule(dynamic,2) nowait
+#endif
                 for (int_t ij = 0; ij < HyP->RemainBlk * (HyP->num_u_blks_Phi - jj_cpu) ; ++ij)
                 {
                     int_t j   = ij / HyP->RemainBlk + jj_cpu;

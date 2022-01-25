@@ -10,25 +10,29 @@ at the top-level directory.
 */
 #include "superlu_defs.h"
 
-#ifdef GPU_ACC  //////////////////////////////  enable CUDA
+#ifdef GPU_ACC  // enable CUDA
 
+#include <stdio.h>
+#include "gpu_api_utils.h"
  void DisplayHeader()
 {
     const int kb = 1024;
     const int mb = kb * kb;
+    int version;
     // cout << "NBody.GPU" << endl << "=========" << endl << endl;
-
-    printf("CUDA version:   v %d\n",CUDART_VERSION);
+    
+    gpuRuntimeGetVersion( &version ); 
+    printf("GPU Driver version:   v %d\n",version);
     //cout << "Thrust version: v" << THRUST_MAJOR_VERSION << "." << THRUST_MINOR_VERSION << endl << endl; 
 
     int devCount;
-    cudaGetDeviceCount(&devCount);
-    printf( "CUDA Devices: \n \n"); 
+    gpuGetDeviceCount(&devCount);
+    printf( "GPU Devices: \n \n"); 
 
     for(int i = 0; i < devCount; ++i)
     {
-        struct cudaDeviceProp props;       
-        cudaGetDeviceProperties(&props, i);
+        struct gpuDeviceProp props;       
+        gpuGetDeviceProperties(&props, i);
         printf("%d : %s %d %d\n",i, props.name,props.major,props.minor );
         // cout << i << ": " << props.name << ": " << props.major << "." << props.minor << endl;
         printf("  Global memory:   %ld mb \n", props.totalGlobalMem / mb);
@@ -56,59 +60,61 @@ at the top-level directory.
 }
 
 
-const char* cublasGetErrorString(cublasStatus_t status)
+const char* gpublasGetErrorString(gpublasStatus_t status)
 {
     switch(status)
     {
-        case CUBLAS_STATUS_SUCCESS: return "CUBLAS_STATUS_SUCCESS";
-        case CUBLAS_STATUS_NOT_INITIALIZED: return "CUBLAS_STATUS_NOT_INITIALIZED";
-        case CUBLAS_STATUS_ALLOC_FAILED: return "CUBLAS_STATUS_ALLOC_FAILED";
-        case CUBLAS_STATUS_INVALID_VALUE: return "CUBLAS_STATUS_INVALID_VALUE"; 
-        case CUBLAS_STATUS_ARCH_MISMATCH: return "CUBLAS_STATUS_ARCH_MISMATCH"; 
-        case CUBLAS_STATUS_MAPPING_ERROR: return "CUBLAS_STATUS_MAPPING_ERROR";
-        case CUBLAS_STATUS_EXECUTION_FAILED: return "CUBLAS_STATUS_EXECUTION_FAILED"; 
-        case CUBLAS_STATUS_INTERNAL_ERROR: return "CUBLAS_STATUS_INTERNAL_ERROR"; 
-        case CUBLAS_STATUS_LICENSE_ERROR: return "CUBLAS_STATUS_LICENSE_ERROR"; 
-        case CUBLAS_STATUS_NOT_SUPPORTED: return "CUBLAS_STATUS_NOT_SUPPORTED"; 
+        case GPUBLAS_STATUS_SUCCESS: return "GPUBLAS_STATUS_SUCCESS";
+        case GPUBLAS_STATUS_NOT_INITIALIZED: return "GPUBLAS_STATUS_NOT_INITIALIZED";
+        case GPUBLAS_STATUS_ALLOC_FAILED: return "GPUBLAS_STATUS_ALLOC_FAILED";
+        case GPUBLAS_STATUS_INVALID_VALUE: return "GPUBLAS_STATUS_INVALID_VALUE"; 
+        case GPUBLAS_STATUS_ARCH_MISMATCH: return "GPUBLAS_STATUS_ARCH_MISMATCH"; 
+        case GPUBLAS_STATUS_MAPPING_ERROR: return "GPUBLAS_STATUS_MAPPING_ERROR";
+        case GPUBLAS_STATUS_EXECUTION_FAILED: return "GPUBLAS_STATUS_EXECUTION_FAILED"; 
+        case GPUBLAS_STATUS_INTERNAL_ERROR: return "GPUBLAS_STATUS_INTERNAL_ERROR"; 
+#ifdef HAVE_CUDA        
+        case GPUBLAS_STATUS_LICENSE_ERROR: return "GPUBLAS_STATUS_LICENSE_ERROR"; //HIPBLAS_STATUS_LICENSE_ERROR is not a valid enum type in rocm yet
+#endif        
+        case GPUBLAS_STATUS_NOT_SUPPORTED: return "GPUBLAS_STATUS_NOT_SUPPORTED"; 
     }
     return "unknown error";
 }
 
 /*error reporting functions */
 //inline
-cudaError_t checkCuda(cudaError_t result)
+gpuError_t checkGPU(gpuError_t result)
 {
 #if defined(DEBUG) || defined(_DEBUG)
-    if (result != cudaSuccess) {
-        fprintf(stderr, "CUDA Runtime Error: %s\n", cudaGetErrorString(result));
-        assert(result == cudaSuccess);
+    if (result != gpuSuccess) {
+        fprintf(stderr, "GPU Runtime Error: %s\n", gpuGetErrorString(result));
+        assert(result == gpuSuccess);
     }
 #endif
     return result;
 }
 
-cublasStatus_t checkCublas(cublasStatus_t result)
+gpublasStatus_t checkGPUblas(gpublasStatus_t result)
 {
 #if defined(DEBUG) || defined(_DEBUG)
-  if (result != CUBLAS_STATUS_SUCCESS) {
-    fprintf(stderr, "CUDA Blas Runtime Error: %s\n", cublasGetErrorString(result));
-    assert(result == CUBLAS_STATUS_SUCCESS);
+  if (result != GPUBLAS_STATUS_SUCCESS) {
+    fprintf(stderr, "GPU Blas Runtime Error: %s\n", gpublasGetErrorString(result));
+    assert(result == GPUBLAS_STATUS_SUCCESS);
   }
 #endif
   return result;
 }
 
 
-cublasHandle_t create_handle ()
+gpublasHandle_t create_handle ()
 {
-       cublasHandle_t handle;
-       checkCublas(cublasCreate(&handle));
+       gpublasHandle_t handle;
+       checkGPUblas(gpublasCreate(&handle));
        return handle;
  }
 
- void destroy_handle (cublasHandle_t handle)
+ void destroy_handle (gpublasHandle_t handle)
  {
-      checkCublas(cublasDestroy(handle));
+      checkGPUblas(gpublasDestroy(handle));
  }
 
-#endif  // enable CUDA
+#endif  // enable GPU

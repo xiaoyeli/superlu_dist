@@ -21,9 +21,10 @@ at the top-level directory.
 
 #include "superlu_zdefs.h"
 
-extern void mc64ad_dist(int_t*, int_t*, int_t*, int_t [], int_t [], double [],
-		    int_t*, int_t [], int_t*, int_t[], int_t*, double [],
-		    int_t [], int_t []);
+extern int mc64ad_dist(int *job, int *n, int_t *ne, int_t *ip,
+       int_t *irn, double *a, int *num, int_t *cperm,
+       int_t *liw, int_t *iw, int_t *ldw, double *dw,
+       int * icntl, int *info);
 
 /*! \brief
  *
@@ -91,11 +92,12 @@ extern void mc64ad_dist(int_t*, int_t*, int_t*, int_t [], int_t [], double [],
  */
 
 int
-zldperm_dist(int_t job, int_t n, int_t nnz, int_t colptr[], int_t adjncy[],
+zldperm_dist(int job, int n, int_t nnz, int_t colptr[], int_t adjncy[],
 	doublecomplex nzval[], int_t *perm, double u[], double v[])
 {
-    int_t i, liw, ldw, num;
-    int_t *iw, icntl[10], info[10];
+    int i, num, icntl[10], info[10]; 
+    int_t liw, ldw;
+    int_t *iw;
     double *dw;
     extern double *doubleMalloc_dist(int_t);
     double *nzval_abs = doubleMalloc_dist(nnz);
@@ -148,7 +150,7 @@ zldperm_dist(int_t job, int_t n, int_t nnz, int_t colptr[], int_t adjncy[],
     printf(".. After MC64AD info %d\tsize of matching %d\n", info[0], num);
 #endif
     if ( info[0] == 1 ) { /* Structurally singular */
-        printf(".. The last " IFMT " permutations:\n", n-num);
+        printf(".. The last %d permutations:\n", n-num);
 	PrintInt10("perm", n-num, &perm[num]);
     }
 

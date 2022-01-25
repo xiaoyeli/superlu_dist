@@ -13,9 +13,11 @@ at the top-level directory.
  * \brief Performs LU factorization in 3D process grid.
  *
  * <pre>
- * -- Distributed SuperLU routine (version 7.0) --
- * Lawrence Berkeley National Lab, Georgia Institute of Technology.
- * May 10, 2019
+ * -- Distributed SuperLU routine (version 7.2) --
+ * Lawrence Berkeley National Lab, Georgia Institute of Technology,
+ * Oak Ridge National Lab
+ * May 12, 2021
+ * Last update: December 12, 2021  v7.2.0
  */
 
 #include "superlu_zdefs.h"
@@ -129,6 +131,9 @@ int_t pzgstrf3d(superlu_dist_options_t *options, int m, int n, double anorm,
     double s_eps = smach_dist("Epsilon");
     double thresh = s_eps * anorm;
 
+    /* Test the input parameters. */
+    *info = 0;
+    
 #if ( DEBUGlevel>=1 )
     CHECK_MALLOC (grid3d->iam, "Enter pzgstrf3d()");
 #endif
@@ -224,7 +229,7 @@ int_t pzgstrf3d(superlu_dist_options_t *options, int m, int n, double anorm,
     int_t bigu_size = getBigUSize(nsupers, grid,
     	  	                  LUstruct->Llu->Lrowind_bc_ptr);
     HyP->bigu_size = bigu_size;
-    int_t buffer_size =sp_ienv_dist(8); // get_max_buffer_size ();
+    int_t buffer_size = sp_ienv_dist(8); // get_max_buffer_size ();
     HyP->buffer_size = buffer_size;
     HyP->nsupers = nsupers;
 
@@ -268,7 +273,7 @@ int_t pzgstrf3d(superlu_dist_options_t *options, int m, int n, double anorm,
 
         HyP->first_u_block_acc = sluGPU->A_gpu->first_u_block_gpu;
         HyP->first_l_block_acc = sluGPU->A_gpu->first_l_block_gpu;
-        HyP->nCudaStreams = sluGPU->nCudaStreams;
+        HyP->nGPUStreams = sluGPU->nGPUStreams;
     }
 
 #endif  // end GPU_ACC
@@ -338,9 +343,23 @@ int_t pzgstrf3d(superlu_dist_options_t *options, int m, int n, double anorm,
 
         SCT->tSchCompUdt3d[ilvl] = ilvl == 0 ? SCT->NetSchurUpTimer
 	    : SCT->NetSchurUpTimer - SCT->tSchCompUdt3d[ilvl - 1];
-    } /*for (int_t ilvl = 0; ilvl < maxLvl; ++ilvl)*/
+    } /* end for (int ilvl = 0; ilvl < maxLvl; ++ilvl) */
 
-    MPI_Barrier( grid3d->comm);
+#ifdef GPU_ACC
+    /* This frees the GPU storage allocateed in initSluGPU3D_t() */
+    if (superlu_acc_offload) {
+         zfree_LUstruct_gpu (sluGPU->A_gpu);
+    }
+#endif
+    
+    /* Prepare error message - find the smallesr index i that U(i,i)==0 */
+    int iinfo;
+    if ( *info == 0 ) *info = n + 1;
+    MPI_Allreduce (info, &iinfo, 1, MPI_INT, MPI_MIN, grid3d->comm);
+    if ( iinfo == (n + 1) ) *info = 0;
+    else *info = iinfo;
+    //printf("After factorization: INFO = %d\n", *info); fflush(stdout);
+
     SCT->pdgstrfTimer = SuperLU_timer_() - SCT->pdgstrfTimer;
 
 #ifdef ITAC_PROF

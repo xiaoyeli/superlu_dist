@@ -54,9 +54,9 @@ static int_t c__2 = 2;
 /* </pre>
  */
 
-/* Subroutine */ int_t mc64id_dist(int_t *icntl)
+/* Subroutine */ int mc64id_dist(int *icntl)
 {
-    int_t i__;
+    int i__;
 
 
 /* *** Copyright (c) 1999  Council for the Central Laboratory of the */
@@ -118,10 +118,10 @@ static int_t c__2 = 2;
 } /* mc64id_ */
 
 /* ********************************************************************** */
-/* Subroutine */ int_t mc64ad_dist(int_t *job, int_t *n, int_t *ne, int_t *
-	ip, int_t *irn, double *a, int_t *num, int_t *cperm, 
-	int_t *liw, int_t *iw, int_t *ldw, double *dw, int_t *
-	icntl, int_t *info)
+/* Subroutine */ int mc64ad_dist(int *job, int *n, int_t *ne, int_t *
+	ip, int_t *irn, double *a, int *num, int_t *cperm, 
+	int_t *liw, int_t *iw, int_t *ldw, double *dw,
+				 int * icntl, int *info)
 {
     /* System generated locals */
     int_t i__1, i__2;
@@ -134,17 +134,17 @@ static int_t c__2 = 2;
     int_t i__, j, k;
     double fact, rinf;
 
-    extern /* Subroutine */ int_t mc21ad_dist(int_t *, int_t *, int_t *, 
+    extern /* Subroutine */ int mc21ad_dist(int_t *, int_t *, int_t *, 
 	    int_t *, int_t *, int_t *, int_t *, int_t *),
-	    mc64bd_dist(int_t *, int_t *, int_t *, int_t *, double *, int_t 
-	    *, int_t *, int_t *, int_t *, int_t *, int_t *, double *),
-	    mc64rd_dist(int_t *, int_t *, int_t *, int_t *, double *),
-	    mc64sd_dist(int_t *, int_t *, int_t *, int_t *
-	    , double *, int_t *, int_t *, int_t *, int_t *, 
-	    int_t *, int_t *, int_t *, int_t *, int_t *),
-	    mc64wd_dist(int_t *, int_t *, int_t *, int_t *, double *, int_t 
-	    *, int_t *, int_t *, int_t *, int_t *, int_t *, int_t 
-	    *, double *, double *);
+	    mc64bd_dist(int *, int_t *, int_t *, int_t *, double *, int_t 
+			*, int *, int_t *, int_t *, int_t *, int_t *, double *),
+	    mc64rd_dist(int *, int_t *, int_t *, int_t *, double *),
+            mc64sd_dist(int *, int_t *, int_t *, int_t *,
+			double *, int_t *, int *, int_t *, int_t *, 
+			int_t *, int_t *, int_t *, int_t *, int_t *),
+	    mc64wd_dist(int *, int_t *, int_t *, int_t *, double *, int_t *,
+			int*, int_t *, int_t *, int_t *, int_t *, int_t 
+			*, double *, double *);
 
 /* *** Copyright (c) 1999  Council for the Central Laboratory of the */
 /*     Research Councils                                             *** */
@@ -349,8 +349,8 @@ static int_t c__2 = 2;
 	info[1] = -1;
 	info[2] = *job;
 	if (icntl[1] >= 0) {
-	    printf(" ****** Error in MC64A/AD. INFO(1) = " IFMT 
-		   " because JOB = " IFMT "\n",  info[1], *job);
+	    printf(" ****** Error in MC64A/AD. INFO(1) = %d "
+		   " because JOB = %d\n",  info[1], info[2]);
 	}
 	goto L99;
     }
@@ -359,8 +359,8 @@ static int_t c__2 = 2;
 	info[1] = -2;
 	info[2] = *n;
 	if (icntl[1] >= 0) {
-	    printf(" ****** Error in MC64A/AD. INFO(1) = " IFMT 
-		   " because N = " IFMT "\n", info[1], *job);
+	    printf(" ****** Error in MC64A/AD. INFO(1) = %d "
+		   " because N = %d \n", info[1], info[2]);
 	}
 	goto L99;
     }
@@ -369,8 +369,8 @@ static int_t c__2 = 2;
 	info[1] = -3;
 	info[2] = *ne;
 	if (icntl[1] >= 0) {
-	    printf(" ****** Error in MC64A/AD. INFO(1) = " IFMT
-		   " because NE = " IFMT "\n", info[1], *job);
+	    printf(" ****** Error in MC64A/AD. INFO(1) = %d "
+		   " because NE = %d \n", info[1], info[2]);
 	}
 	goto L99;
     }
@@ -394,8 +394,8 @@ static int_t c__2 = 2;
 	info[1] = -4;
 	info[2] = k;
 	if (icntl[1] >= 0) {
-	    printf(" ****** Error in MC64A/AD. INFO(1) = " IFMT 
-		   " LIW too small, must be at least " IFMT "\n", info[1], k);
+	    printf(" ****** Error in MC64A/AD. INFO(1) = %d "
+		   " LIW too small, must be at least %d\n", info[1], (int)k);
 	}
 	goto L99;
     }
@@ -418,8 +418,8 @@ static int_t c__2 = 2;
 	    info[1] = -5;
 	    info[2] = k;
 	    if (icntl[1] >= 0) {
-		printf(" ****** Error in MC64A/AD. INFO(1) = " IFMT 
-		       " LDW too small, must be at least " IFMT "\n", info[1], k);
+		printf(" ****** Error in MC64A/AD. INFO(1) = %d " 
+		       " LDW too small, must be at least %d\n", info[1], (int)k);
 	    }
 	    goto L99;
 	}
@@ -441,10 +441,10 @@ static int_t c__2 = 2;
 		    info[1] = -6;
 		    info[2] = j;
 		    if (icntl[1] >= 0) {
-			printf(" ****** Error in MC64A/AD. INFO(1) = " IFMT 
-			       " Column " IFMT 
-			       " contains an entry with invalid row index " IFMT "\n",
-			       info[1], j, i__);
+			printf(" ****** Error in MC64A/AD. INFO(1) = %d "
+			       " Column %d"
+			       " contains an entry with invalid row index %d\n",
+			       info[1], (int)j, (int)i__);
 		    }
 		    goto L99;
 		}
@@ -453,10 +453,10 @@ static int_t c__2 = 2;
 		    info[1] = -7;
 		    info[2] = j;
 		    if (icntl[1] >= 0) {
-			printf(" ****** Error in MC64A/AD. INFO(1) = " IFMT 
-			       "        Column " IFMT
-			       " contains two or more entries with row index " IFMT "\n",
-			       info[1], j, i__);
+			printf(" ****** Error in MC64A/AD. INFO(1) = %d "
+			       "        Column %d"
+			       " contains two or more entries with row index %d\n",
+			       info[1], (int)j, (int)i__);
 		    }
 		    goto L99;
 		} else {
@@ -469,16 +469,16 @@ static int_t c__2 = 2;
     }
 /* Print diagnostics on input */
     if (icntl[3] >= 0) {
-	printf("  ****** Input parameters for MC64A/AD: JOB = " IFMT ","
-	       " N = " IFMT ", NE = " IFMT "\n", *job, *n, *ne);
+	printf("  ****** Input parameters for MC64A/AD: JOB = %d ,"
+	       " N = %d, NE = %d\n", *job, *n, (int)*ne);
 	printf(" IP(1:N+1)   = ");
 	for (j=1; j<=(*n+1); ++j) {
-	    printf(IFMT, ip[j]);
+	  printf("%d ", (int) ip[j]);
 	    if (j%8 == 0) printf("\n");
 	}
 	printf("\n IRN(1:NE) = ");
 	for (j=1; j<=(*ne); ++j) {
-	    printf(IFMT, irn[j]);
+	  printf("%d ", (int) irn[j]);
 	    if (j%8 == 0) printf("\n");
 	}
 	printf("\n");
@@ -626,25 +626,25 @@ L90:
 /* Matrix is structurally singular, return with warning */
 	info[1] = 1;
 	if (icntl[2] >= 0) {
-	    printf(" ****** Warning from MC64A/AD. INFO(1) = " IFMT
+	    printf(" ****** Warning from MC64A/AD. INFO(1) = %d "
 		   " The matrix is structurally singular.\n",  info[1]);
 	}
     }
     if (info[1] == 2) {
 /* Scaling factors are large, return with warning */
 	if (icntl[2] >= 0) {
-	    printf(" ****** Warning from MC64A/AD. INFO(1) = " IFMT "\n"
+	    printf(" ****** Warning from MC64A/AD. INFO(1) = %d\n"
 		   "        Some scaling factors may be too large.\n", info[1]);
 	}
     }
 /* Print diagnostics on output */
     if (icntl[3] >= 0) {
-	printf(" ****** Output parameters for MC64A/AD: INFO(1:2)  = " IFMT IFMT "\n",
+	printf(" ****** Output parameters for MC64A/AD: INFO(1:2)  = %d %d\n",
 	       info[1], info[2]);
-	printf(" NUM        = " IFMT, *num);
+	printf(" NUM        = %d", *num);
 	printf(" CPERM(1:N) = ");
 	for (j=1; j<=*n; ++j) {
-	    printf(IFMT, cperm[j]);
+	  printf("%d ", (int) cperm[j]);
 	    if (j%8 == 0) printf("\n");
 	}
 	if (*job == 5) {
@@ -667,8 +667,8 @@ L99:
 } /* mc64ad_ */
 
 /* ********************************************************************** */
-/* Subroutine */ int_t mc64bd_dist(int_t *n, int_t *ne, int_t *ip, int_t *
-	irn, double *a, int_t *iperm, int_t *num, int_t *jperm, 
+/* Subroutine */ int mc64bd_dist(int *n, int_t *ne, int_t *ip, int_t *
+	irn, double *a, int_t *iperm, int *num, int_t *jperm, 
 	int_t *pr, int_t *q, int_t *l, double *d__)
 {
     /* System generated locals */
@@ -690,10 +690,10 @@ L99:
     double dnew;
     int_t jord, qlen, idum, jdum;
     double rinf;
-    extern /* Subroutine */ int_t mc64dd_dist(int_t *, int_t *, int_t *, 
-	    double *, int_t *, int_t *), mc64ed_dist(int_t *, int_t *,
+    extern /* Subroutine */ int mc64dd_dist(int_t *, int *, int_t *, 
+	    double *, int_t *, int_t *), mc64ed_dist(int_t *, int *,
 	     int_t *, double *, int_t *, int_t *), mc64fd_dist(int_t *
-	    , int_t *, int_t *, int_t *, double *, int_t *, int_t *);
+	    , int_t *, int *n, int_t *, double *, int_t *, int_t *);
 
 
 /* *** Copyright (c) 1999  Council for the Central Laboratory of the */
@@ -1094,7 +1094,7 @@ L1000:
 } /* mc64bd_ */
 
 /* ********************************************************************** */
-/* Subroutine */ int_t mc64dd_dist(int_t *i__, int_t *n, int_t *q, double 
+/* Subroutine */ int mc64dd_dist(int_t *i__, int *n, int_t *q, double 
 	*d__, int_t *l, int_t *iway)
 {
     /* System generated locals */
@@ -1172,7 +1172,7 @@ L20:
 } /* mc64dd_dist */
 
 /* ********************************************************************** */
-/* Subroutine */ int_t mc64ed_dist(int_t *qlen, int_t *n, int_t *q, 
+/* Subroutine */ int mc64ed_dist(int_t *qlen, int *n, int_t *q, 
 	double *d__, int_t *l, int_t *iway)
 {
     /* System generated locals */
@@ -1267,7 +1267,7 @@ L20:
 } /* mc64ed_dist */
 
 /* ********************************************************************** */
-/* Subroutine */ int_t mc64fd_dist(int_t *pos0, int_t *qlen, int_t *n, 
+/* Subroutine */ int mc64fd_dist(int_t *pos0, int_t *qlen, int *n, 
 	int_t *q, double *d__, int_t *l, int_t *iway)
 {
     /* System generated locals */
@@ -1405,8 +1405,8 @@ L40:
 } /* mc64fd_dist */
 
 /* ********************************************************************** */
-/* Subroutine */ int_t mc64rd_dist(int_t *n, int_t *ne, int_t *ip,
-				   int_t *irn, double *a)
+/* Subroutine */ int mc64rd_dist(int *n, int_t *ne, int_t *ip,
+				 int_t *irn, double *a)
 {
     /* System generated locals */
     int_t i__1, i__2, i__3;
@@ -1553,8 +1553,8 @@ L100:
 } /* mc64rd_ */
 
 /* ********************************************************************** */
-/* Subroutine */ int_t mc64sd_dist(int_t *n, int_t *ne, int_t *ip, int_t *
-	irn, double *a, int_t *iperm, int_t *numx, int_t *w, 
+/* Subroutine */ int mc64sd_dist(int *n, int_t *ne, int_t *ip, int_t *
+	irn, double *a, int_t *iperm, int *numx, int_t *w, 
 	int_t *len, int_t *lenl, int_t *lenh, int_t *fc, int_t *iw, 
 	int_t *iw4)
 {
@@ -1562,13 +1562,14 @@ L100:
     int_t i__1, i__2, i__3, i__4;
 
     /* Local variables */
-    int_t i__, j, k, l, ii, mod, cnt, num;
+    int_t i__, j, k, l, ii, mod, cnt;
+    int num;
     double bval, bmin, bmax, rinf;
     int_t nval, wlen, idum1, idum2, idum3;
-    extern /* Subroutine */ int_t mc64qd_dist(int_t *, int_t *, int_t *, 
+    extern /* Subroutine */ int mc64qd_dist(int_t *, int_t *, int_t *, 
 	    int_t *, int_t *, double *, int_t *, double *), 
-	    mc64ud_dist(int_t *, int_t *, int_t *, int_t *, int_t *, 
-	    int_t *, int_t *, int_t *, int_t *, int_t *, int_t *, 
+	    mc64ud_dist(int_t *, int_t *, int *n, int_t *, int_t *, 
+	    int_t *, int_t *, int_t *, int_t *, int *num, int *numx, 
 	    int_t *, int_t *, int_t *, int_t *);
 
 /* *** Copyright (c) 1999  Council for the Central Laboratory of the */
@@ -1614,7 +1615,7 @@ L100:
 /* CNT is the number of calls made to MC64U/UD so far. */
 /* NUM is the cardinality of last matching found. */
 /* Set RINF to largest positive real number */
-/* XSL      RINF = FD05AD(5) */
+/* Sherry      RINF = FD05AD(5) */
     /* Parameter adjustments */
     --iw4;
     --iw;
@@ -1870,7 +1871,7 @@ L1000:
 } /* mc64sd_ */
 
 /* ********************************************************************** */
-/* Subroutine */ int_t mc64qd_dist(int_t *ip, int_t *lenl, int_t *lenh, 
+/* Subroutine */ int mc64qd_dist(int_t *ip, int_t *lenl, int_t *lenh, 
 	int_t *w, int_t *wlen, double *a, int_t *nval, double *val)
 {
     /* System generated locals */
@@ -1964,9 +1965,9 @@ L11:
 } /* mc64qd_ */
 
 /* ********************************************************************** */
-/* Subroutine */ int_t mc64ud_dist(int_t *id, int_t *mod, int_t *n, int_t *
+/* Subroutine */ int mc64ud_dist(int_t *id, int_t *mod, int *n, int_t *
 	irn, int_t *lirn, int_t *ip, int_t *lenc, int_t *fc, int_t *
-	iperm, int_t *num, int_t *numx, int_t *pr, int_t *arp, 
+	iperm, int *num, int *numx, int_t *pr, int_t *arp, 
 	int_t *cv, int_t *out)
 {
     /* System generated locals */
@@ -2167,8 +2168,8 @@ L101:
 } /* mc64ud_ */
 
 /* ********************************************************************** */
-/* Subroutine */ int_t mc64wd_dist(int_t *n, int_t *ne, int_t *ip, int_t *
-	irn, double *a, int_t *iperm, int_t *num, int_t *jperm, 
+/* Subroutine */ int mc64wd_dist(int *n, int_t *ne, int_t *ip, int_t *
+	irn, double *a, int_t *iperm, int *num, int_t *jperm, 
 	int_t *out, int_t *pr, int_t *q, int_t *l, double *u, 
 	double *d__)
 {
@@ -2188,10 +2189,10 @@ L101:
     double dmin__, dnew;
     int_t jord, qlen, jdum;
     double rinf;
-    extern /* Subroutine */ int_t mc64dd_dist(int_t *, int_t *, int_t *, 
-	    double *, int_t *, int_t *), mc64ed_dist(int_t *, int_t *,
+    extern /* Subroutine */ int mc64dd_dist(int_t *, int *n, int_t *, 
+	    double *, int_t *, int_t *), mc64ed_dist(int_t *, int *,
 	     int_t *, double *, int_t *, int_t *), mc64fd_dist(int_t *
-	    , int_t *, int_t *, int_t *, double *, int_t *, 
+	    , int_t *, int *, int_t *, double *, int_t *, 
 	    int_t *);
 
 

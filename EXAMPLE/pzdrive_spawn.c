@@ -82,7 +82,12 @@ int main(int argc, char *argv[])
     //MPI_Init( &argc, &argv );
     MPI_Init_thread( &argc, &argv, MPI_THREAD_MULTIPLE, &omp_mpi_level); 
 	MPI_Comm_get_parent(&parent);   	
-	
+#ifdef GPU_ACC
+    int rank, devs;
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    cudaGetDeviceCount(&devs);
+    cudaSetDevice(rank % devs);
+#endif	
 	
 
 #if ( VAMPIR>=1 )

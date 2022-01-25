@@ -14,10 +14,10 @@ at the top-level directory.
  * \brief Several matrix utilities
  *
  * <pre>
- * -- Distributed SuperLU routine (version 6.1.1) --
+ * -- Distributed SuperLU routine (version 7.1.0) --
  * Lawrence Berkeley National Lab, Univ. of California Berkeley.
  * March 15, 2003
- *
+ * October 5, 2021
  */
 
 #include <math.h>
@@ -392,6 +392,7 @@ void dScaleAdd_CompRowLoc_Matrix_dist(SuperMatrix *A, SuperMatrix *B, double c)
 
     return;
 }
+/**** end utilities added for SUNDIALS ****/
 
 /*! \brief Allocate storage in ScalePermstruct */
 void dScalePermstructInit(const int_t m, const int_t n,
@@ -437,6 +438,7 @@ int dAllocGlu_3d(int_t n, int_t nsupers, dLUstruct_t * LUstruct)
 }
 
 // Sherry added
+/* Free the replicated data on 3D process layer that is not grid-0 */
 int dDeAllocGlu_3d(dLUstruct_t * LUstruct)
 {
     SUPERLU_FREE(LUstruct->Glu_persist->xsup);
@@ -444,6 +446,7 @@ int dDeAllocGlu_3d(dLUstruct_t * LUstruct)
     return 0;
 }
 
+/* Free the replicated data on 3D process layer that is not grid-0 */
 int dDeAllocLlu_3d(int_t n, dLUstruct_t * LUstruct, gridinfo3d_t* grid3d)
 {
     int i, nbc, nbr, nsupers;
@@ -602,18 +605,18 @@ void dPrintLblocks(int iam, int_t nsupers, gridinfo_t *grid,
 	}
 	printf("(%d)", iam);
  	PrintInt32("ToSendR[]", grid->npcol, Llu->ToSendR[lb]);
-	PrintInt10("fsendx_plist[]", grid->nprow, Llu->fsendx_plist[lb]);
+	PrintInt32("fsendx_plist[]", grid->nprow, Llu->fsendx_plist[lb]);
     }
-    printf("nfrecvx " IFMT "\n", Llu->nfrecvx);
+    printf("nfrecvx %d\n", Llu->nfrecvx);
     k = CEILING( nsupers, grid->nprow );
-    PrintInt10("fmod", k, Llu->fmod);
+    PrintInt32("fmod", k, Llu->fmod);
 
 } /* DPRINTLBLOCKS */
 
 
 /*! \brief Sets all entries of matrix L to zero.
  */
-void dZeroLblocks(int iam, int_t n, gridinfo_t *grid, dLUstruct_t *LUstruct)
+void dZeroLblocks(int iam, int n, gridinfo_t *grid, dLUstruct_t *LUstruct)
 {
     double zero = 0.0;
     register int extra, gb, j, lb, nsupc, nsupr, ncb;
@@ -643,7 +646,7 @@ void dZeroLblocks(int iam, int_t n, gridinfo_t *grid, dLUstruct_t *LUstruct)
             }
 	}
     }
-} /* dZeroLblocks */
+} /* end dZeroLblocks */
 
 
 /*! \brief Dump the factored matrix L using matlab triple-let format
@@ -743,6 +746,463 @@ void dDumpLblocks(int iam, int_t nsupers, gridinfo_t *grid,
 
 
 
+
+/*! \Compute the level sets in the L factor
+ */
+void dComputeLevelsets(int iam, int_t nsupers, gridinfo_t *grid,
+		  Glu_persist_t *Glu_persist, dLocalLU_t *Llu, int_t *levels)
+{
+    register int c, extra, gb, j, i, lb, nsupc, nsupr, len, nb, ncb;
+    register int_t k, mycol, r;
+	int_t nnzL, n,nmax,lk;
+    int_t *xsup = Glu_persist->xsup;
+    int_t *index,*lloc;
+    double *nzval;
+	char filename[256];
+	FILE *fp, *fopen();
+
+	// assert(grid->npcol*grid->nprow==1);
+
+	// count nonzeros in the first pass
+	nnzL = 0;
+	n = 0;
+    ncb = nsupers / grid->npcol;
+    extra = nsupers % grid->npcol;
+    mycol = MYCOL( iam, grid );
+    if ( mycol < extra ) ++ncb;
+    for (lb = 0; lb < ncb; ++lb) {
+	index = Llu->Lrowind_bc_ptr[lb];
+	if ( index ) { /* Not an empty column */
+	    nzval = Llu->Lnzval_bc_ptr[lb];
+        lloc = Llu->Lindval_loc_bc_ptr[lb];
+	    nb = index[0];
+
+
+	    for (c = 0; c < nb; ++c) {
+        lk=lloc[c];
+		levels[lk]=SUPERLU_MAX(levels[lb]+1,levels[lk]);
+	    }
+	}
+    }
+
+
+} /* dComputeLevelsets */
+
+
+/*! \Dump the factored matrix L using matlab triple-let format
+ */
+void dGenCOOLblocks(int iam, int_t nsupers, gridinfo_t *grid,
+		  Glu_persist_t *Glu_persist, dLocalLU_t *Llu, int_t** cooRows, int_t** cooCols, double ** cooVals, int_t* n, int_t* nnzL)
+{
+    register int c, extra, gb, j, i, lb, nsupc, nsupr, len, nb, ncb;
+    register int_t k, mycol, r;
+	int_t nmax,cnt;
+    int_t *xsup = Glu_persist->xsup;
+    int_t *index;
+    double *nzval;
+	FILE *fp, *fopen();
+
+	assert(grid->npcol*grid->nprow==1);
+
+	 
+	// count nonzeros in the first pass
+	*nnzL = 0;
+	*n = 0;
+	ncb = nsupers / grid->npcol;
+	extra = nsupers % grid->npcol;
+	mycol = MYCOL( iam, grid );
+	if ( mycol < extra ) ++ncb;
+	for (lb = 0; lb < ncb; ++lb) {
+	index = Llu->Lrowind_bc_ptr[lb];
+	if ( index ) { /* Not an empty column */
+
+		nzval = Llu->Lnzval_bc_ptr[lb];
+		nb = index[0];
+		nsupr = index[1];
+		gb = lb * grid->npcol + mycol;
+		nsupc = SuperSize( gb );
+		for (c = 0, k = BC_HEADER, r = 0; c < nb; ++c) {
+		len = index[k+1];
+
+		for (j = 0; j < nsupc; ++j) {
+		for (i=0; i<len; ++i){
+
+		if(index[k+LB_DESCRIPTOR+i]+1>=xsup[gb]+j+1){			
+			(*nnzL) ++;
+			nmax = SUPERLU_MAX(*n,index[k+LB_DESCRIPTOR+i]+1);
+			*n = nmax;
+		}
+
+		}
+		}
+		k += LB_DESCRIPTOR + len;
+		r += len;
+		}
+	}
+	} 
+				
+	// fill the triplets in the second pass
+    if ( !(*cooRows = (int_t*)SUPERLU_MALLOC(*nnzL * sizeof(int_t))) )
+        ABORT("Malloc fails for cooRows[].");
+    if ( !(*cooCols = (int_t*)SUPERLU_MALLOC(*nnzL * sizeof(int_t))) )
+        ABORT("Malloc fails for cooCols[].");
+    if ( !(*cooVals = (double*)SUPERLU_MALLOC(*nnzL * sizeof(double))) )
+        ABORT("Malloc fails for cooVals[].");
+	*nnzL = 0;
+	*n = 0;
+	ncb = nsupers / grid->npcol;
+	extra = nsupers % grid->npcol;
+	mycol = MYCOL( iam, grid );
+	if ( mycol < extra ) ++ncb;
+	for (lb = 0; lb < ncb; ++lb) {
+	index = Llu->Lrowind_bc_ptr[lb];
+	if ( index ) { /* Not an empty column */
+
+		nzval = Llu->Lnzval_bc_ptr[lb];
+		nb = index[0];
+		nsupr = index[1];
+		gb = lb * grid->npcol + mycol;
+		nsupc = SuperSize( gb );
+		for (c = 0, k = BC_HEADER, r = 0; c < nb; ++c) {
+		len = index[k+1];
+
+		for (j = 0; j < nsupc; ++j) {
+		for (i=0; i<len; ++i){
+
+		if(index[k+LB_DESCRIPTOR+i]+1>=xsup[gb]+j+1){
+            (*cooRows)[(*nnzL)]=index[k+LB_DESCRIPTOR+i];
+            (*cooCols)[(*nnzL)]=xsup[gb]+j;
+            if((*cooRows)[(*nnzL)]==(*cooCols)[(*nnzL)]){
+                (*cooVals)[(*nnzL)]=1.0;
+            }else{
+                (*cooVals)[(*nnzL)]=nzval[r +i+ j*nsupr];								
+            }
+			
+			(*nnzL) ++;
+			nmax = SUPERLU_MAX(*n,index[k+LB_DESCRIPTOR+i]+1);
+			*n = nmax;
+		}
+
+		}
+		}
+		k += LB_DESCRIPTOR + len;
+		r += len;
+		}
+	}
+	} 
+
+} /* dGenCOOLblocks */
+
+
+
+
+/*! \Dump the factored matrix L using CSC format
+ */
+void dGenCSCLblocks(int iam, int_t nsupers, gridinfo_t *grid,
+		  Glu_persist_t *Glu_persist, dLocalLU_t *Llu, double **nzval, int_t **rowind, int_t **colptr, int_t* n, int_t* nnzL)
+{
+    register int c, extra, gb, j, i, lb, nsupc, nsupr, len, nb, ncb;
+    register int_t k, mycol, r;
+	int_t nmax,cnt, jsize;
+    int_t *xsup = Glu_persist->xsup;
+    int_t *index;
+    double *nzval0;
+	FILE *fp, *fopen();
+    
+    double *val;
+    int_t  *row, *col;
+
+    double *a;
+    int_t    *asub, *xa;
+    int_t nz;
+
+
+	assert(grid->npcol*grid->nprow==1);
+
+	// count nonzeros in the first pass
+	*nnzL = 0;
+	*n = 0;
+	ncb = nsupers / grid->npcol;
+	extra = nsupers % grid->npcol;
+	mycol = MYCOL( iam, grid );
+	if ( mycol < extra ) ++ncb;
+	for (lb = 0; lb < ncb; ++lb) {
+	index = Llu->Lrowind_bc_ptr[lb];
+	if ( index ) { /* Not an empty column */
+
+		nzval0 = Llu->Lnzval_bc_ptr[lb];
+		nb = index[0];
+		nsupr = index[1];
+		gb = lb * grid->npcol + mycol;
+		nsupc = SuperSize( gb );
+		for (c = 0, k = BC_HEADER, r = 0; c < nb; ++c) {
+		len = index[k+1];
+
+		for (j = 0; j < nsupc; ++j) {
+		for (i=0; i<len; ++i){
+
+		if(index[k+LB_DESCRIPTOR+i]+1>=xsup[gb]+j+1){			
+			(*nnzL) ++;
+			nmax = SUPERLU_MAX(*n,index[k+LB_DESCRIPTOR+i]+1);
+			*n = nmax;
+		}
+
+		}
+		}
+		k += LB_DESCRIPTOR + len;
+		r += len;
+		}
+	}
+	} 
+				
+	// get triplelets in the second pass
+    if ( !(val = (double *) SUPERLU_MALLOC(*nnzL * sizeof(double))) )
+        ABORT("Malloc fails for val[]");
+    if ( !(row = (int_t *) SUPERLU_MALLOC(*nnzL * sizeof(int_t))) )
+        ABORT("Malloc fails for row[]");
+    if ( !(col = (int_t *) SUPERLU_MALLOC(*nnzL * sizeof(int_t))) )
+        ABORT("Malloc fails for col[]");
+	*nnzL = 0;
+	*n = 0;
+	ncb = nsupers / grid->npcol;
+	extra = nsupers % grid->npcol;
+	mycol = MYCOL( iam, grid );
+	if ( mycol < extra ) ++ncb;
+	for (lb = 0; lb < ncb; ++lb) {
+	index = Llu->Lrowind_bc_ptr[lb];
+	if ( index ) { /* Not an empty column */
+
+		nzval0 = Llu->Lnzval_bc_ptr[lb];
+		nb = index[0];
+		nsupr = index[1];
+		gb = lb * grid->npcol + mycol;
+		nsupc = SuperSize( gb );
+		for (c = 0, k = BC_HEADER, r = 0; c < nb; ++c) {
+		len = index[k+1];
+
+		for (j = 0; j < nsupc; ++j) {
+		for (i=0; i<len; ++i){
+
+		if(index[k+LB_DESCRIPTOR+i]+1>=xsup[gb]+j+1){
+            row[(*nnzL)]=index[k+LB_DESCRIPTOR+i];
+            col[(*nnzL)]=xsup[gb]+j;
+            if(row[(*nnzL)]==col[(*nnzL)]){
+                val[(*nnzL)]=1.0;
+            }else{
+                val[(*nnzL)]=nzval0[r +i+ j*nsupr];								
+            }
+			
+			(*nnzL) ++;
+			nmax = SUPERLU_MAX(*n,index[k+LB_DESCRIPTOR+i]+1);
+			*n = nmax;
+		}
+		}
+		}
+		k += LB_DESCRIPTOR + len;
+		r += len;
+		}
+	}
+	}
+
+
+    dallocateA_dist(*n, *nnzL, nzval, rowind, colptr); /* Allocate storage */
+    a    = *nzval;
+    asub = *rowind;
+    xa   = *colptr;
+
+
+    for (j = 0; j < *n; ++j) xa[j] = 0;
+    /* Scan the triplet array to get nonzeros per column */
+    for (nz = 0; nz < *nnzL; ++nz) {
+	    ++xa[col[nz]];
+    }
+
+    /* Initialize the array of column pointers */
+    k = 0;
+    jsize = xa[0];
+    xa[0] = 0;
+    for (j = 1; j < *n; ++j) {
+	k += jsize;
+	jsize = xa[j];
+	xa[j] = k;
+    }
+
+    /* Copy the triplets into the column oriented storage */
+    for (nz = 0; nz < *nnzL; ++nz) {
+	j = col[nz];
+	k = xa[j];
+	asub[k] = row[nz];
+	a[k] = val[nz];
+	++xa[j];
+    }
+
+    /* Reset the column pointers to the beginning of each column */
+    for (j = *n; j > 0; --j)
+	xa[j] = xa[j-1];
+    xa[0] = 0;
+
+    SUPERLU_FREE(val);
+    SUPERLU_FREE(row);
+    SUPERLU_FREE(col);
+
+} /* dGenCSCLblocks */
+
+
+
+/*! \Dump the factored matrix L using CSR format
+ */
+void dGenCSRLblocks(int iam, int_t nsupers, gridinfo_t *grid,
+		  Glu_persist_t *Glu_persist, dLocalLU_t *Llu, double **nzval, int_t **colind, int_t **rowptr, int_t* n, int_t* nnzL)
+{
+    register int c, extra, gb, j, i, lb, nsupc, nsupr, len, nb, ncb;
+    register int_t k, mycol, r;
+	int_t nmax,cnt, isize;
+    int_t *xsup = Glu_persist->xsup;
+    int_t *index;
+    double *nzval0;
+	FILE *fp, *fopen();
+    
+    double *val;
+    int_t  *row, *col;
+
+    double *a;
+    int_t    *asub, *xa;
+    int_t nz;
+
+
+	assert(grid->npcol*grid->nprow==1);
+
+	// count nonzeros in the first pass
+	*nnzL = 0;
+	*n = 0;
+	ncb = nsupers / grid->npcol;
+	extra = nsupers % grid->npcol;
+	mycol = MYCOL( iam, grid );
+	if ( mycol < extra ) ++ncb;
+	for (lb = 0; lb < ncb; ++lb) {
+	index = Llu->Lrowind_bc_ptr[lb];
+	if ( index ) { /* Not an empty column */
+
+		nzval0 = Llu->Lnzval_bc_ptr[lb];
+		nb = index[0];
+		nsupr = index[1];
+		gb = lb * grid->npcol + mycol;
+		nsupc = SuperSize( gb );
+		for (c = 0, k = BC_HEADER, r = 0; c < nb; ++c) {
+		len = index[k+1];
+
+		for (j = 0; j < nsupc; ++j) {
+		for (i=0; i<len; ++i){
+
+		if(index[k+LB_DESCRIPTOR+i]+1>=xsup[gb]+j+1){			
+			(*nnzL) ++;
+			nmax = SUPERLU_MAX(*n,index[k+LB_DESCRIPTOR+i]+1);
+			*n = nmax;
+		}
+
+		}
+		}
+		k += LB_DESCRIPTOR + len;
+		r += len;
+		}
+	}
+	} 
+				
+	// get triplelets in the second pass
+    if ( !(val = (double *) SUPERLU_MALLOC(*nnzL * sizeof(double))) )
+        ABORT("Malloc fails for val[]");
+    if ( !(row = (int_t *) SUPERLU_MALLOC(*nnzL * sizeof(int_t))) )
+        ABORT("Malloc fails for row[]");
+    if ( !(col = (int_t *) SUPERLU_MALLOC(*nnzL * sizeof(int_t))) )
+        ABORT("Malloc fails for col[]");
+	*nnzL = 0;
+	*n = 0;
+	ncb = nsupers / grid->npcol;
+	extra = nsupers % grid->npcol;
+	mycol = MYCOL( iam, grid );
+	if ( mycol < extra ) ++ncb;
+	for (lb = 0; lb < ncb; ++lb) {
+	index = Llu->Lrowind_bc_ptr[lb];
+	if ( index ) { /* Not an empty column */
+
+		nzval0 = Llu->Lnzval_bc_ptr[lb];
+		nb = index[0];
+		nsupr = index[1];
+		gb = lb * grid->npcol + mycol;
+		nsupc = SuperSize( gb );
+		for (c = 0, k = BC_HEADER, r = 0; c < nb; ++c) {
+		len = index[k+1];
+
+		for (j = 0; j < nsupc; ++j) {
+		for (i=0; i<len; ++i){
+
+		if(index[k+LB_DESCRIPTOR+i]+1>=xsup[gb]+j+1){
+            row[(*nnzL)]=index[k+LB_DESCRIPTOR+i];
+            col[(*nnzL)]=xsup[gb]+j;
+            if(row[(*nnzL)]==col[(*nnzL)]){
+                val[(*nnzL)]=1.0;
+            }else{
+                val[(*nnzL)]=nzval0[r +i+ j*nsupr];								
+            }
+			
+			(*nnzL) ++;
+			nmax = SUPERLU_MAX(*n,index[k+LB_DESCRIPTOR+i]+1);
+			*n = nmax;
+		}
+		}
+		}
+		k += LB_DESCRIPTOR + len;
+		r += len;
+		}
+	}
+	}
+
+
+    dallocateA_dist(*n, *nnzL, nzval, colind, rowptr); /* Allocate storage */
+    a    = *nzval;
+    asub = *colind;
+    xa   = *rowptr;
+
+
+    for (i = 0; i < *n; ++i) xa[i] = 0;
+    /* Scan the triplet array to get nonzeros per row */
+    for (nz = 0; nz < *nnzL; ++nz) {
+	    ++xa[row[nz]];
+    }
+
+    /* Initialize the array of row pointers */
+    k = 0;
+    isize = xa[0];
+    xa[0] = 0;
+    for (i = 1; i < *n; ++i) {
+	k += isize;
+	isize = xa[i];
+	xa[i] = k;
+    }
+
+    /* Copy the triplets into the row oriented storage */
+    for (nz = 0; nz < *nnzL; ++nz) {
+	i = row[nz];
+	k = xa[i];
+	asub[k] = col[nz];
+	a[k] = val[nz];
+	++xa[i];
+    }
+
+    /* Reset the row pointers to the beginning of each row */
+    for (i = *n; i > 0; --i)
+	xa[i] = xa[i-1];
+    xa[0] = 0;
+
+    SUPERLU_FREE(val);
+    SUPERLU_FREE(row);
+    SUPERLU_FREE(col);
+
+} /* dGenCSRLblocks */
+
+
+
+
 /*! \brief Print the blocks in the factored matrix U.
  */
 void dPrintUblocks(int iam, int_t nsupers, gridinfo_t *grid,
@@ -782,7 +1242,37 @@ void dPrintUblocks(int iam, int_t nsupers, gridinfo_t *grid,
 	    printf("[%d] ToSendD[] %d\n", iam, Llu->ToSendD[lb]);
 	}
     }
-} /* DPRINTUBLOCKS */
+} /* end dPrintUlocks */
+
+/*! \brief Sets all entries of matrix U to zero.
+ */
+void dZeroUblocks(int iam, int n, gridinfo_t *grid, dLUstruct_t *LUstruct)
+{
+    double zero = 0.0;
+    register int i, extra, lb, len, nrb;
+    register int myrow, r;
+    dLocalLU_t *Llu = LUstruct->Llu;
+    Glu_persist_t *Glu_persist = LUstruct->Glu_persist;
+    int_t *xsup = Glu_persist->xsup;
+    int_t *index;
+    double *nzval;
+    int nsupers = Glu_persist->supno[n-1] + 1;
+
+    nrb = nsupers / grid->nprow;
+    extra = nsupers % grid->nprow;
+    myrow = MYROW( iam, grid );
+    if ( myrow < extra ) ++nrb;
+    for (lb = 0; lb < nrb; ++lb) {
+	index = Llu->Ufstnz_br_ptr[lb];
+	if ( index ) { /* Not an empty row */
+	    nzval = Llu->Unzval_br_ptr[lb];
+	    len = index[1];  // number of entries in nzval[];
+	    for (i = 0; i < len; ++i) {
+	        nzval[i] = zero;
+	    }
+	}
+    }
+} /* end dZeroUlocks */
 
 int
 dprint_gsmv_comm(FILE *fp, int_t m_loc, pdgsmv_comm_t *gsmv_comm,

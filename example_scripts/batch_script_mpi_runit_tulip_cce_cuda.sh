@@ -4,15 +4,17 @@ EXIT_SUCCESS=0
 EXIT_HOST=1
 EXIT_PARAM=2
 
+module restore PrgEnv-cray
+module load cray-mvapich2/2.3.4
 
-module load PrgEnv-cray/1.0.6
 module load gcc/8.1.0
 module load cmake
 module unload cray-libsci_acc
 module load cray-libsci/20.03.1
 module load cuda10.2/toolkit/10.2.89
 module load craype-accel-nvidia70
-module load rocm
+module load rocm                                 
+
 
 
 export MV2_USE_CUDA=1

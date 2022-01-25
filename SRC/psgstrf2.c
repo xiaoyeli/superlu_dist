@@ -14,13 +14,14 @@ at the top-level directory.
  * \brief Performs panel LU factorization.
  *
  * <pre>
- * -- Distributed SuperLU routine (version 7.0) --
+ * -- Distributed SuperLU routine (version 7.2) --
  * Lawrence Berkeley National Lab, Univ. of California Berkeley.
  * August 15, 2014
  *
  * Modified:
  *   September 30, 2017
- *   May 10, 2019 version 7.0.0
+ *   May 10, 2019  v7.0.0
+ *   December 12, 2021  v7.2.0
  *
  * <pre>
  * Purpose
@@ -375,7 +376,9 @@ int_t LpanelUpdate(int off0,  int nsupc, float* ublk_ptr, int ld_ujrow,
     double t1 = SuperLU_timer_();
 
 #define GT  32
+#ifdef _OPENMP
 #pragma omp parallel for
+#endif
     for (int i = 0; i < CEILING(l, GT); ++i)
     {
         int_t off = i * GT;
@@ -396,7 +399,24 @@ int_t LpanelUpdate(int off0,  int nsupc, float* ublk_ptr, int ld_ujrow,
 
 #pragma GCC push_options
 #pragma GCC optimize ("O0")
-/*factorizes the diagonal block; called from process that owns the (k,k) block*/
+/************************************************************************/
+/*! \brief
+ *
+ * <pre>
+ * Purpose
+ * =======
+ *   Factorize the diagonal block; called from process that owns the (k,k) block
+ *
+ * Arguments
+ * =========
+ * 
+ * info   (output) int*
+ *        = 0: successful exit
+ *        > 0: if info = i, U(i,i) is exactly zero. The factorization has
+ *             been completed, but the factor U is exactly singular,
+ *             and division by zero will occur if it is used to solve a
+ *             system of equations.
+ */
 void Local_Sgstrf2(superlu_dist_options_t *options, int_t k, double thresh,
                    float *BlockUFactor, /*factored U is overwritten here*/
                    Glu_persist_t *Glu_persist, gridinfo_t *grid, sLocalLU_t *Llu,
@@ -431,8 +451,9 @@ void Local_Sgstrf2(superlu_dist_options_t *options, int_t k, double thresh,
     {
         /* Diagonal pivot */
         int_t i = luptr;
-        /* Not to replace zero pivot.  */
-        if (options->ReplaceTinyPivot == YES && lusup[i] != 0.0)
+        /* Allow to replace zero pivot.  */
+        //if (options->ReplaceTinyPivot == YES && lusup[i] != 0.0)
+        if (options->ReplaceTinyPivot == YES)
         {
             if (fabs (lusup[i]) < thresh) {  /* Diagonal */
 
@@ -489,7 +510,7 @@ void Local_Sgstrf2(superlu_dist_options_t *options, int_t k, double thresh,
 
     //int_t thread_id = omp_get_thread_num();
     // SCT->Local_Dgstrf2_Thread_tl[thread_id * CACHE_LINE_SIZE] += (double) ( SuperLU_timer_() - t1);
-}
+} /* end Local_Sgstrf2 */
 
 #pragma GCC pop_options
 /************************************************************************/
@@ -814,8 +835,10 @@ void psgstrs2_omp
 
     // Sherry: this version is more NUMA friendly compared to pdgstrf2_v2.c
     // https://stackoverflow.com/questions/13065943/task-based-programming-pragma-omp-task-versus-pragma-omp-parallel-for
+#ifdef _OPENMP
 #pragma omp parallel for schedule(static) default(shared) \
     private(b,j,iukp,rukp,segsize)
+#endif
     /* Loop through all the blocks in the row. */
     for (b = 0; b < nb; ++b) {
 #ifdef USE_Ublock_info
@@ -858,7 +881,9 @@ void psgstrs2_omp
 #endif
 	    } /* end if segsize > 0 */
 	} /* end for j in parallel ... */
+#ifdef _OPENMP    
 /* #pragma omp taskwait */
+#endif
     }  /* end for b ... */
 
 #ifndef USE_Ublock_info
@@ -902,13 +927,15 @@ void psgstrs2_omp(int_t k0, int_t k, int_t* Lsub_buf,
     Trs2_InitUbloc_info(klst, nb, Ublock_info, usub, Glu_persist, stat );
 
     /* Loop through all the row blocks. */
+#ifdef _OPENMP    
 #pragma omp parallel for schedule(dynamic,2)
+#endif
     for (int_t b = 0; b < nb; ++b)
     {
 #ifdef _OPENMP    
-        int_t thread_id = omp_get_thread_num();
+        int thread_id = omp_get_thread_num();
 #else	
-        int_t thread_id = 0;
+        int thread_id = 0;
 #endif	
         float *tempv = bigV +  thread_id * ldt * ldt;
         sTrs2_GatherTrsmScatter(klst, Ublock_info[b].iukp, Ublock_info[b].rukp,

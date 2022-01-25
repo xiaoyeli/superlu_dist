@@ -10,6 +10,7 @@
 #
 #  Modified:	    October 13, 2017    version 5.2.1
 #		    February 20, 2021   version 7.0.0
+#		    October 5, 2021     version 7.1.0
 #
 ############################################################################
 #
@@ -25,6 +26,7 @@ SLU_HAVE_LAPACK = @SLU_HAVE_LAPACK@
 HAVE_PARMETIS   = @HAVE_PARMETIS@
 HAVE_COMBBLAS   = @HAVE_COMBBLAS@
 HAVE_CUDA       = @HAVE_CUDA@
+HAVE_HIP        = @HAVE_HIP@
 
 XSDK_ENABLE_Fortran = @XSDK_ENABLE_Fortran@
 ifeq ($(XSDK_ENABLE_Fortran),ON)
