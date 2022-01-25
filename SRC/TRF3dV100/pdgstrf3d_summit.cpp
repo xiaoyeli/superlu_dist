@@ -115,7 +115,7 @@ extern "C"
     *   New code starts 
     * ******************************************/
         // Create the new LU structure
-        int_t *isNodeInMyGrid = getIsNodeInMyGrid(nsupers, maxLvl, myNodeCount, treePerm);
+        int *isNodeInMyGrid = getIsNodeInMyGrid(nsupers, maxLvl, myNodeCount, treePerm);
         int superlu_acc_offload = get_acc_offload();
         double tConst = SuperLU_timer_();
         LUstruct_v100 LU_packed(nsupers, ldt, isNodeInMyGrid, superlu_acc_offload, LUstruct, grid3d,

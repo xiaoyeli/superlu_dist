@@ -285,7 +285,7 @@ struct LUstruct_v100
     int nThreads;
     int_t *indirect, *indirectRow, *indirectCol;
     double *bigV; // size = THREAD_Size*ldt*ldt
-    int_t *isNodeInMyGrid;
+    int *isNodeInMyGrid;
     double thresh;
     int *info;
     //TODO: get it from environment
@@ -342,7 +342,7 @@ struct LUstruct_v100
     /**
     *          C O N / D E S - T R U C T O R S
     */
-    LUstruct_v100(int_t nsupers, int_t ldt_, int_t *isNodeInMyGrid, int superluAccOffload,
+    LUstruct_v100(int_t nsupers, int_t ldt_, int *isNodeInMyGrid, int superluAccOffload,
                   dLUstruct_t *LUstruct, gridinfo3d_t *grid3d,
                   SCT_t *SCT_, superlu_dist_options_t *options_, SuperLUStat_t *stat,
                   double thresh_, int *info_);

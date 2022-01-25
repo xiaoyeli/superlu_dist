@@ -862,6 +862,9 @@ extern int_t dgatherAllFactoredLUFr(int_t* myZeroTrIdxs, sForest_t* sForests,
     /* The following are from pdgstrf2.h */
 extern int_t dLpanelUpdate(int_t off0, int_t nsupc, double* ublk_ptr,
 			  int_t ld_ujrow, double* lusup, int_t nsupr, SCT_t*);
+extern void dgstrf2(int_t k, double* diagBlk, int_t LDA, double* BlockUfactor, int_t LDU, 
+            double thresh, int_t* xsup, superlu_dist_options_t *options,
+            SuperLUStat_t *stat, int *info);
 extern void Local_Dgstrf2(superlu_dist_options_t *options, int_t k,
 			  double thresh, double *BlockUFactor, Glu_persist_t *,
 			  gridinfo_t *, dLocalLU_t *,
