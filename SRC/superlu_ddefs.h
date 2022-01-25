@@ -89,6 +89,45 @@ typedef struct {
 } Ucb_indptr_t;
 #endif
 
+
+
+/*
+ * CONSTANTS in MAGMA
+ */
+#ifndef MAGMA_CONST
+#define MAGMA_CONST
+
+ 
+
+// #define DIM_X  32
+// #define DIM_Y  16
+
+#define DIM_X  16
+#define DIM_Y  16
+
+
+#define BLK_M  DIM_X*4
+#define BLK_N  DIM_Y*4
+#define BLK_K 2048/(BLK_M)
+
+#define DIM_XA  DIM_X
+#define DIM_YA  DIM_Y
+#define DIM_XB  DIM_X
+#define DIM_YB  DIM_Y
+
+#define NWARP  DIM_X*DIM_Y/32
+
+// // // // // // #define TILE_SIZE  32
+
+
+#define THR_M ( BLK_M / DIM_X )
+#define THR_N ( BLK_N / DIM_Y )
+
+#define fetch(A, m, n, bound) offs_d##A[min(n*LD##A+m, bound)]
+#define fma(A, B, C) C += (A*B)
+#endif
+
+
 /*
  * On each processor, the blocks in L are stored in compressed block
  * column format, the blocks in U are stored in compressed block row format.
@@ -96,19 +135,48 @@ typedef struct {
 #define MAX_LOOKAHEADS 50
 typedef struct {
     int_t   **Lrowind_bc_ptr; /* size ceil(NSUPERS/Pc)                 */
+    int_t *Lrowind_bc_dat;  /* size sum of sizes of Lrowind_bc_ptr[lk])                 */   
+    long int *Lrowind_bc_offset;  /* size ceil(NSUPERS/Pc)                 */     
+	long int Lrowind_bc_cnt;
+
     double **Lnzval_bc_ptr;  /* size ceil(NSUPERS/Pc)                 */
+    double *Lnzval_bc_dat;  /* size sum of sizes of Lnzval_bc_ptr[lk])                 */   
+    long int *Lnzval_bc_offset;  /* size ceil(NSUPERS/Pc)                 */    
+	long int Lnzval_bc_cnt;
+
     double **Linv_bc_ptr;  /* size ceil(NSUPERS/Pc)                 */
+    double *Linv_bc_dat;  /* size sum of sizes of Linv_bc_ptr[lk])                 */   
+    long int *Linv_bc_offset;  /* size ceil(NSUPERS/Pc)                 */   
+	long int Linv_bc_cnt;
+
     int_t   **Lindval_loc_bc_ptr; /* size ceil(NSUPERS/Pc)  pointers to locations in Lrowind_bc_ptr and Lnzval_bc_ptr */
+    int_t *Lindval_loc_bc_dat;  /* size sum of sizes of Lindval_loc_bc_ptr[lk])                 */   
+    long int *Lindval_loc_bc_offset;  /* size ceil(NSUPERS/Pc)                 */   
+	long int Lindval_loc_bc_cnt;  
+
     int_t   *Unnz; /* number of nonzeros per block column in U*/
 	int_t   **Lrowind_bc_2_lsum; /* size ceil(NSUPERS/Pc)  map indices of Lrowind_bc_ptr to indices of lsum  */
     double  **Uinv_bc_ptr;  /* size ceil(NSUPERS/Pc)     	*/
+    double *Uinv_bc_dat;  /* size sum of sizes of Linv_bc_ptr[lk])                 */   
+    long int *Uinv_bc_offset;  /* size ceil(NSUPERS/Pc)                 */   
+	long int Uinv_bc_cnt;
+
+
     int_t   **Ufstnz_br_ptr;  /* size ceil(NSUPERS/Pr)                 */
+    int_t   *Ufstnz_br_dat;  /* size sum of sizes of Ufstnz_br_ptr[lk])                 */   
+    long int *Ufstnz_br_offset;  /* size ceil(NSUPERS/Pr)    */
+    long int Ufstnz_br_cnt;
+
     double  **Unzval_br_ptr;  /* size ceil(NSUPERS/Pr)                 */
+	double *Unzval_br_dat;  /* size sum of sizes of Unzval_br_ptr[lk])                 */   
+	long int *Unzval_br_offset;  /* size ceil(NSUPERS/Pr)    */
+    long int Unzval_br_cnt;
+
         /*-- Data structures used for broadcast and reduction trees. --*/
-    BcTree  *LBtree_ptr;       /* size ceil(NSUPERS/Pc)                */
-    RdTree  *LRtree_ptr;       /* size ceil(NSUPERS/Pr)                */
-    BcTree  *UBtree_ptr;       /* size ceil(NSUPERS/Pc)                */
-    RdTree  *URtree_ptr;       /* size ceil(NSUPERS/Pr)			*/
+    C_Tree  *LBtree_ptr;       /* size ceil(NSUPERS/Pc)                */
+    C_Tree  *LRtree_ptr;       /* size ceil(NSUPERS/Pr)                */
+    C_Tree  *UBtree_ptr;       /* size ceil(NSUPERS/Pc)                */
+    C_Tree  *URtree_ptr;       /* size ceil(NSUPERS/Pr)			*/
 #if 0
     int_t   *Lsub_buf;        /* Buffer for the remote subscripts of L */
     double  *Lval_buf;        /* Buffer for the remote nonzeros of L   */
@@ -173,13 +241,54 @@ typedef struct {
     int_t *ut_modbit;
     int_t *Urbs;
     Ucb_indptr_t **Ucb_indptr;/* Vertical linked list pointing to Uindex[] */
+    Ucb_indptr_t *Ucb_inddat;
+    long int *Ucb_indoffset;
+    long int Ucb_indcnt;  
+
     int_t  **Ucb_valptr;      /* Vertical linked list pointing to Unzval[] */
+    int_t  *Ucb_valdat;      
+    long int *Ucb_valoffset;
+    long int Ucb_valcnt;
+
+    
 
     /* some additional counters for L solve */
     int_t n;
     int_t nleaf;
     int_t nfrecvmod;
     int_t inv; /* whether the diagonal block is inverted*/
+
+    /* The following variables are used in GPU trisolve*/
+#ifdef GPU_ACC
+    int_t *d_Lrowind_bc_dat;     
+    long int *d_Lrowind_bc_offset;      
+    double *d_Lnzval_bc_dat;     
+    long int *d_Lnzval_bc_offset;     
+    double *d_Linv_bc_dat ;     
+    double *d_Uinv_bc_dat ;     
+    long int *d_Linv_bc_offset ;     
+    long int *d_Uinv_bc_offset ;     
+    int_t *d_Lindval_loc_bc_dat ;     
+    long int *d_Lindval_loc_bc_offset ;     
+
+    int_t *d_Urbs;
+    int_t   *d_Ufstnz_br_dat;  
+    long int *d_Ufstnz_br_offset;  
+    double *d_Unzval_br_dat;   
+	long int *d_Unzval_br_offset; 
+
+    int_t  *d_Ucb_valdat;      
+    long int *d_Ucb_valoffset;    
+    Ucb_indptr_t *d_Ucb_inddat;
+    long int *d_Ucb_indoffset;
+
+	int_t  *d_ilsum ;
+	int_t *d_xsup ;
+    C_Tree  *d_LBtree_ptr ;
+    C_Tree  *d_LRtree_ptr ;
+    C_Tree  *d_UBtree_ptr ;
+    C_Tree  *d_URtree_ptr ;    
+#endif
 } dLocalLU_t;
 
 
@@ -282,7 +391,7 @@ typedef struct
     int_t bigu_size;
     int_t offloadCondition;
     int_t superlu_acc_offload;
-    int_t nCudaStreams;
+    int_t nGPUStreams;
 } HyP_t;
 
 typedef struct 
@@ -488,6 +597,14 @@ extern void dlsum_fmod_inv(double *, double *, double *, double *,
 		       int, int_t , int_t *,
 		       int_t *, gridinfo_t *, dLocalLU_t *,
 		       SuperLUStat_t **, int_t *, int_t *, int_t, int_t, int_t, int_t, int, int);
+extern void dComputeLevelsets(int , int_t , gridinfo_t *,
+		  Glu_persist_t *, dLocalLU_t *, int_t *);               
+			   
+#ifdef GPU_ACC               
+extern void dlsum_fmod_inv_gpu_wrap(int_t, int_t, int_t, int_t, double *,double *,int,int, int_t , int_t *, C_Tree  *, C_Tree  *, int_t *, int_t *,long int *, double *, long int *, double *, long int *, int_t *, long int *, int_t *, gridinfo_t *, double * , double * , int_t );
+extern void dlsum_bmod_inv_gpu_wrap(int_t, int_t, int_t, int_t, double *,double *,int,int, int_t , int_t *, C_Tree  *, C_Tree  *, int_t *, int_t *,int_t *, long int *,double *,long int *,int_t  *,long int *,Ucb_indptr_t *,long int *,double *,long int *,int_t *,gridinfo_t *);
+#endif
+
 extern void dlsum_fmod_inv_master(double *, double *, double *, double *,
 		       int, int, int_t , int_t *, int_t,
 		       int_t *, gridinfo_t *, dLocalLU_t *,
@@ -575,7 +692,12 @@ extern int   dPrint_CompRowLoc_Matrix_dist(SuperMatrix *);
 extern int   file_dPrint_CompRowLoc_Matrix_dist(FILE *fp, SuperMatrix *A);
 extern void  Printdouble5(char *, int_t, double *);
 extern int   file_Printdouble5(FILE *, char *, int_t, double *);
-
+extern void dGenCOOLblocks(int, int_t, gridinfo_t*,
+		  Glu_persist_t*, dLocalLU_t *, int_t** , int_t** , double ** , int_t* , int_t* );
+extern void dGenCSCLblocks(int, int_t, gridinfo_t*,
+		  Glu_persist_t*, dLocalLU_t *, double **, int_t **, int_t **, int_t*, int_t*);
+extern void dGenCSRLblocks(int, int_t, gridinfo_t*,
+		  Glu_persist_t*, dLocalLU_t *, double **, int_t **, int_t **, int_t*, int_t*);
 
 /* BLAS */
 
@@ -637,7 +759,6 @@ extern int superlu_dtrsv(char *uplo, char *trans, char *diag,
 
 #ifdef SLU_HAVE_LAPACK
 // LAPACK routine
->>>>>>> maint
 extern void dtrtri_(char*, char*, int*, double*, int*, int*);
 #endif
 

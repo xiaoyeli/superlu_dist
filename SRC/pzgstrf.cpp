@@ -108,11 +108,20 @@ at the top-level directory.
  */
 
 #include <math.h>
+<<<<<<< HEAD:SRC/pzgstrf.cpp
 #include "superlu_zdefs.h"
 #include "syclmemcpy2D.hpp"
 
 #if defined(HAVE_SYCL)
 #include "onemkl_utils.hpp"
+=======
+#include "superlu_ddefs.h"
+#include "gpu_api_utils.h"
+#ifdef GPU_ACC
+
+// #define NUM_GPU_STREAMS 16
+// #define NUM_GPU_STREAMS 16
+>>>>>>> master:SRC/pdgstrf.c
 #endif
 
 /* Various defininations     */
@@ -382,6 +391,9 @@ pzgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
     } gemm_profile;
     gemm_profile *gemm_stats;
 #endif
+
+// cudaProfilerStart();
+
 
     /* Test the input parameters. */
     *info = 0;
@@ -733,6 +745,7 @@ pzgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
          SUPERLU_MAX (max_row_size * num_threads * ldt,
                       get_max_buffer_size ());           */
 
+<<<<<<< HEAD:SRC/pzgstrf.cpp
 #if defined(HAVE_SYCL)
     int cublas_nb = get_cublas_nb(); // default 64
     int nstreams = get_num_cuda_streams (); // default 8
@@ -742,6 +755,21 @@ pzgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
     /* array holding last column blk for each partition,
        used in SchCompUdt-cuda.c         */
     int *stream_end_col = (int *)SUPERLU_MALLOC( nstreams * sizeof(int) );
+=======
+#ifdef GPU_ACC /*-------- use GPU --------*/
+    int gpublas_nb = get_gpublas_nb(); // default 64
+    int nstreams = get_num_gpu_streams (); // default 8
+
+    int_t buffer_size  = SUPERLU_MAX(max_row_size * nstreams * gpublas_nb, sp_ienv_dist(8));
+                                     //   get_max_buffer_size());
+    /* array holding last column blk for each partition,
+       used in SchCompUdt--GPU.c         */
+  #if 0
+    int *stream_end_col = (int_t *) _mm_malloc (sizeof (int_t) * nstreams,64);
+  #else
+    int *stream_end_col = SUPERLU_MALLOC( nstreams * sizeof(int) );
+  #endif
+>>>>>>> master:SRC/pdgstrf.c
 
 #endif /* end ifdef HAVE_SYCL -----------*/
 
@@ -775,11 +803,16 @@ pzgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
 
 #if defined(HAVE_SYCL) /*-- use SYCL --*/
 
+<<<<<<< HEAD:SRC/pzgstrf.cpp
     sycl::platform platform(sycl::gpu_selector{});
     std::vector<sycl::device> gpu_devices = platform.get_devices(sycl::info::device_type::gpu);
     if (gpu_devices.size() == 0) {
         ABORT("[SYCL] No GPU devices found!!! ");
     }
+=======
+    if ( checkGPU(gpuHostMalloc((void**)&bigU,  bigu_size * sizeof(double), gpuHostMallocDefault)) )
+        ABORT("Malloc fails for dgemm buffer U ");
+>>>>>>> master:SRC/pdgstrf.c
 
     auto asyncHandler = [&](sycl::exception_list eL) {
         for (auto& e : eL) {
@@ -812,19 +845,29 @@ pzgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
             iam, bigv_size, buffer_size);
     fflush(stdout);
 #endif
+<<<<<<< HEAD:SRC/pzgstrf.cpp
 
     bigV = sycl::malloc_host<doublecomplex>(bigv_size, streams[0]);
     if (!bigV)
         ABORT("[SYCL] Malloc fails for dgemm buffer V");
+=======
+    if ( checkGPU(gpuHostMalloc((void**)&bigV, bigv_size * sizeof(double) ,gpuHostMallocDefault)) )
+        ABORT("Malloc fails for dgemm buffer V");
+>>>>>>> master:SRC/pdgstrf.c
 
 #if ( PRNTlevel>=1 )
     if ( iam==0 ) {
         DisplayHeader();
+<<<<<<< HEAD:SRC/pzgstrf.cpp
 	printf(" Starting with %d Sycl Streams \n",nstreams );
+=======
+	printf(" Starting with %d GPU Streams \n",nstreams );
+>>>>>>> master:SRC/pdgstrf.c
         fflush(stdout);
     }
 #endif
 
+<<<<<<< HEAD:SRC/pzgstrf.cpp
     // allocating data in device
     doublecomplex *dA = nullptr, *dB = nullptr, *dC = nullptr;
     dA = sycl::malloc_device<doublecomplex>(max_row_size*sp_ienv_dist(3), streams[0]);
@@ -837,6 +880,47 @@ pzgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
     dC = sycl::malloc_device<doublecomplex>(buffer_size, streams[0]);
     if( !dC )
         ABORT("[SYCL] Malloc fails for dC buffer..");
+=======
+    gpublasHandle_t *handle;
+    handle = (gpublasHandle_t *) SUPERLU_MALLOC(sizeof(gpublasHandle_t)*nstreams);
+    for(int i = 0; i < nstreams; i++) handle[i] = create_handle();
+
+    // creating streams
+    gpuStream_t *streams;
+    streams = (gpuStream_t *) SUPERLU_MALLOC(sizeof(gpuStream_t)*nstreams);
+    for (int i = 0; i < nstreams; ++i)
+        checkGPU( gpuStreamCreate(&streams[i]) );
+
+    // allocating data in device
+    double *dA, *dB, *dC;
+    gpuError_t gpuStat;
+#if 0
+    // gpuStat = gpuMalloc( (void**)&dA, m*k*sizeof(double));
+    // HOw much should be the size of dA?
+    // for time being just making it
+    // gpuStat = gpuMalloc( (void**)&dA, ((max_row_size*sp_ienv_dist(3)))* sizeof(double));
+#endif
+
+    gpuStat = gpuMalloc( (void**)&dA, max_row_size*sp_ienv_dist(3)* sizeof(double));
+    if (gpuStat!= gpuSuccess) {
+        fprintf(stderr, "!!!! Error in allocating A in the device %ld \n",m*k*sizeof(double) );
+        return 1;
+    }
+
+    // size of B should be bigu_size
+
+    gpuStat = gpuMalloc((void**)&dB, bigu_size * sizeof(double));
+    if (gpuStat!= gpuSuccess) {
+        fprintf(stderr, "!!!! Error in allocating B in the device %ld \n",n*k*sizeof(double));
+        return 1;
+    }
+
+    gpuStat = gpuMalloc((void**)&dC, buffer_size* sizeof(double) );
+    if (gpuStat!= gpuSuccess) {
+        fprintf(stderr, "!!!! Error in allocating C in the device \n" );
+        return 1;
+    }
+>>>>>>> master:SRC/pdgstrf.c
 
     stat->gpu_buffer += dword * ( max_row_size * sp_ienv_dist(3) // dA
                                  + bigu_size                     // dB
@@ -1648,8 +1732,22 @@ pzgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
 
 	/*******************************************************************/
 
+<<<<<<< HEAD:SRC/pzgstrf.cpp
 #if defined(HAVE_SYCL)
 #include "zSchCompUdt-sycl.cpp"
+=======
+#ifdef GPU_ACC /*-- GPU --*/
+
+#include "dSchCompUdt-gpu.c"
+
+#else
+
+/*#include "SchCompUdt--Phi-2Ddynamic-alt.c"*/
+//#include "dSchCompUdt-2Ddynamic_v6.c"
+
+#include "dSchCompUdt-2Ddynamic.c"
+
+>>>>>>> master:SRC/pdgstrf.c
 #endif
 	/*uncomment following to compare against SuperLU 3.3 baseline*/
         /* #include "SchCompUdt--baseline.c"  */
@@ -1770,6 +1868,7 @@ pzgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
     SUPERLU_FREE (recv_reqs);
     SUPERLU_FREE (send_reqs);
 
+<<<<<<< HEAD:SRC/pzgstrf.cpp
 #if defined(HAVE_SYCL)
     sycl::free( bigV, streams[0] );
     sycl::free( bigU, streams[0] );
@@ -1777,6 +1876,16 @@ pzgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
     sycl::free( dB, streams[0] );
     sycl::free( dC, streams[0] );
     delete[] streams;
+=======
+#ifdef GPU_ACC
+    checkGPU (gpuFreeHost (bigV));
+    checkGPU (gpuFreeHost (bigU));
+    gpuFree( (void*)dA ); /* Sherry added */
+    gpuFree( (void*)dB );
+    gpuFree( (void*)dC );
+    SUPERLU_FREE( handle );
+    SUPERLU_FREE( streams );
+>>>>>>> master:SRC/pdgstrf.c
     SUPERLU_FREE( stream_end_col );
 #endif
 
@@ -1894,6 +2003,9 @@ pzgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
 #if ( DEBUGlevel>=1 )
     CHECK_MALLOC (iam, "Exit pzgstrf()");
 #endif
+
+
+// cudaProfilerStop();
 
     return 0;
 } /* PZGSTRF */

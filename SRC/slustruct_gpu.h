@@ -4,10 +4,12 @@
  * \brief Descriptions and declarations for structures used in GPU
  *
  * <pre>
- * -- Distributed SuperLU routine (version 7.0) --
+ * -- Distributed SuperLU routine (version 7.2) --
  * Lawrence Berkeley National Lab, Univ. of California Berkeley,
  * Georgia Institute of Technology, Oak Ridge National Laboratory
  * March 14, 2021 version 7.0.0
+ *
+ * Last update: December 12, 2021  v7.2.0
  * </pre>
  */
 
@@ -16,33 +18,30 @@
 #include "superlu_sdefs.h"
 
 #ifdef GPU_ACC // enable GPU
-
+#include "gpu_api_utils.h"
 // #include "mkl.h"
-
-#include <cublas_v2.h>
-#include <cuda_runtime.h>
 // #include "sec_structs.h"
 // #include "supernodal_etree.h"
 
 /* Constants */
 //#define SLU_TARGET_GPU 0
 //#define MAX_BLOCK_SIZE 10000
-#define MAX_NCUDA_STREAMS 32
+#define MAX_NGPU_STREAMS 32
 
 static
-void check(cudaError_t result, char const *const func, const char *const file, int const line)
+void check(gpuError_t result, char const *const func, const char *const file, int const line)
 {
     if (result)
     {
-        fprintf(stderr, "CUDA error at file %s: line %d code=(%s) \"%s\" \n",
-                file, line, cudaGetErrorString(result), func);
+        fprintf(stderr, "GPU error at file %s: line %d code=(%s) \"%s\" \n",
+                file, line, gpuGetErrorString(result), func);
 
-        // Make sure we call CUDA Device Reset before exiting
+        // Make sure we call GPU Device Reset before exiting
         exit(EXIT_FAILURE);
     }
 }
 
-#define checkCudaErrors(val)  check ( (val), #val, __FILE__, __LINE__ )
+#define checkGPUErrors(val)  check ( (val), #val, __FILE__, __LINE__ )
 
 typedef struct //SCUbuf_gpu_
 {
@@ -101,7 +100,7 @@ typedef struct //LUstruct_gpu_
     int_t *ijb_lookupPtr;
 
     // GPU buffers for performing Schur Complement Update on GPU
-    sSCUbuf_gpu_t scubufs[MAX_NCUDA_STREAMS];
+    sSCUbuf_gpu_t scubufs[MAX_NGPU_STREAMS];
     float *acc_L_buff, *acc_U_buff;
 
     /*Informations for various buffers*/
@@ -120,12 +119,12 @@ typedef struct //LUstruct_gpu_
     double tHost_PCIeH2D;
     double tHost_PCIeD2H;
 
-    /*cuda events to measure DGEMM and SCATTER timing */
+    /*gpu events to measure DGEMM and SCATTER timing */
     int *isOffloaded;  /*stores if any iteration is offloaded or not*/
-    cudaEvent_t *GemmStart, *GemmEnd, *ScatterEnd;  /*cuda events to store gemm and scatter's begin and end*/
-    cudaEvent_t *ePCIeH2D;
-    cudaEvent_t *ePCIeD2H_Start;
-    cudaEvent_t *ePCIeD2H_End;
+    gpuEvent_t *GemmStart, *GemmEnd, *ScatterEnd;  /*gpu events to store gemm and scatter's begin and end*/
+    gpuEvent_t *ePCIeH2D;
+    gpuEvent_t *ePCIeD2H_Start;
+    gpuEvent_t *ePCIeD2H_End;
 
     int_t *xsup_host;
     int_t* perm_c_supno;
@@ -136,10 +135,10 @@ typedef struct //sluGPU_t_
 {
     int_t gpuId;        // if there are multiple GPUs
     sLUstruct_gpu_t *A_gpu, *dA_gpu; // holds the LU structure on GPU
-    cudaStream_t funCallStreams[MAX_NCUDA_STREAMS], CopyStream;
-    cublasHandle_t cublasHandles[MAX_NCUDA_STREAMS];
-    int_t lastOffloadStream[MAX_NCUDA_STREAMS];
-    int_t nCudaStreams;
+    gpuStream_t funCallStreams[MAX_NGPU_STREAMS], CopyStream;
+    gpublasHandle_t gpublasHandles[MAX_NGPU_STREAMS];
+    int_t lastOffloadStream[MAX_NGPU_STREAMS];
+    int_t nGPUStreams;
     int* isNodeInMyGrid;
     double acc_async_cost;
 } ssluGPU_t;

@@ -16,31 +16,25 @@ at the top-level directory.
  * </pre>
  */
 
-#ifndef GPUBLAS_UTILS_H
-#define GPUBLAS_UTILS_H
-
-#if defined(HAVE_CUDA)
-#include <cublas_v2.h>
-#include "cuda.h"
-#include "cuda_runtime_api.h"
-#include "cuda_runtime.h"
-
-extern const char* cublasGetErrorString(cublasStatus_t status);
-extern cudaError_t checkCuda(cudaError_t);
-extern cublasStatus_t checkCublas(cublasStatus_t);
-extern cublasHandle_t create_handle ();
-extern void destroy_handle (cublasHandle_t handle);
-#endif // HAVE_CUDA
-
-#if defined(HAVE_SYCL)
-#include <CL/sycl.hpp>
-#include <oneapi/mkl/blas.hpp>
-#endif // HAVE_SYCL
+#ifndef gpu_api_utils_H
+#define gpu_api_utils_H
 
 #ifdef GPU_ACC
+
+#include "gpu_wrapper.h"
 typedef struct LUstruct_gpu_  LUstruct_gpu;  // Sherry - not in this distribution
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern void DisplayHeader();
-#endif // GPU_ACC
-
-#endif // GPUBLAS_UTILS_H
+extern const char* gpublasGetErrorString(gpublasStatus_t status);
+extern gpuError_t checkGPU(gpuError_t);
+extern gpublasStatus_t checkGPUblas(gpublasStatus_t);
+extern gpublasHandle_t create_handle ();
+extern void destroy_handle (gpublasHandle_t handle);
+#ifdef __cplusplus
+}
+#endif
+#endif 
+#endif 

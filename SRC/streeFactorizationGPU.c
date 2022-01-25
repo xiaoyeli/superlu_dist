@@ -112,7 +112,7 @@ int ssparseTreeFactor_ASYNC_GPU(
     int_t numLA = numLAMax; // number of look-ahead panels
     int_t superlu_acc_offload = HyP->superlu_acc_offload;
     int_t last_flag = 1;                       /* for updating nsuper-1 only once */
-    int_t nCudaStreams = sluGPU->nCudaStreams; // number of cuda streams
+    int_t nGPUStreams = sluGPU->nGPUStreams; // number of gpu streams
 
     if (superlu_acc_offload)
         ssyncAllfunCallStreams(sluGPU, SCT);
@@ -534,7 +534,7 @@ int ssparseTreeFactor_ASYNC_GPU(
                         if (offload_condition)
                         {
                             SCT->datatransfer_count++;
-                            int streamId = k0 % nCudaStreams;
+                            int streamId = k0 % nGPUStreams;
 
                             /*wait for previous offload to get finished*/
                             if (sluGPU->lastOffloadStream[streamId] != -1)

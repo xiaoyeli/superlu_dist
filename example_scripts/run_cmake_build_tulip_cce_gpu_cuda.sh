@@ -2,7 +2,11 @@
 # module load parmetis/4.0.3
 
 
-module load PrgEnv-cray/1.0.6
+# module load PrgEnv-cray/1.0.6
+
+module restore PrgEnv-cray
+module load cray-mvapich2/2.3.4
+
 module load gcc/8.1.0
 module load cmake
 module unload cray-libsci_acc
@@ -39,7 +43,6 @@ cmake .. \
 	-DCMAKE_C_COMPILER=cc \
 	-DCMAKE_CXX_COMPILER=CC \
 	-Denable_openmp=OFF \
-	-DTPL_CUDA_LIBRARIES="${CUDA_ROOT}/lib64/libcublas.so;${CUDA_ROOT}/lib64/libcudart.so" \
 	-DTPL_BLAS_LIBRARIES="/opt/cray/pe/libsci/20.03.1/CRAY/8.5/x86_64/lib/libsci_cray.so" \
 	-DTPL_LAPACK_LIBRARIES="/opt/cray/pe/libsci/20.03.1/CRAY/8.5/x86_64/lib/libsci_cray.so" \
 	-DCMAKE_INSTALL_PREFIX=. \

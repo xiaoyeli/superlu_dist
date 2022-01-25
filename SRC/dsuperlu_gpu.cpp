@@ -4,14 +4,21 @@
  * \brief Descriptions and declarations for structures used in GPU
  *
  * <pre>
- * -- Distributed SuperLU routine (version 7.0) --
+ * -- Distributed SuperLU routine (version 7.2) --
  * Lawrence Berkeley National Lab, Univ. of California Berkeley,
  * Georgia Institute of Technology, Oak Ridge National Laboratory
- * March 14, 2021 version 7.0.0
+ *
+ * Last update: January 25, 2022
  * </pre>
  */
 
 //#define GPU_DEBUG
+
+#include "superlu_defs.h"
+
+#undef Reduce
+
+#include "dlustruct_gpu.h"
 
 #include <CL/sycl.hpp>
 #include "mpi.h"
@@ -28,7 +35,8 @@
 
 #include "dlustruct_gpu_sycl.hpp"
 
-using localAcc = sycl::accessor<int, 1, sycl::access_mode::read_write, sycl::target::local>;
+using localAcc = sycl::accessor<int, 1, sycl::access_mode::read_write,
+				sycl::target::local>;
 
 #define MAX_SUPER_SIZE 512
 
@@ -829,10 +837,10 @@ int dinitSluGPU3D_t(
     dLocalLU_t *Llu = LUstruct->Llu;
     int_t* isNodeInMyGrid = sluGPU->isNodeInMyGrid;
 
-    sluGPU->nCudaStreams = getnCudaStreams();
+    sluGPU->nGPUStreams = getnGPUStreams();
     if (grid3d->iam == 0)
     {
-	printf("dinitSluGPU3D_t: Using hardware acceleration, with %ld cuda streams \n", sluGPU->nCudaStreams);
+	printf("dinitSluGPU3D_t: Using hardware acceleration, with %ld cuda streams \n", sluGPU->nGPUStreams);
 	fflush(stdout);
 	if ( MAX_SUPER_SIZE < ldt )
 	{
@@ -854,7 +862,7 @@ int dinitSluGPU3D_t(
     std::pair<sycl::context*, sycl::device*> syclDev = grid3d->sycl_dev;
     sluGPU->CopyStream = new sycl::queue(*(syclDev.first), *(syclDev.second), asyncHandler);
 
-    for (int streamId = 0; streamId < sluGPU->nCudaStreams; streamId++)
+    for (int streamId = 0; streamId < sluGPU->nGPUStreams; streamId++)
     {
 	sluGPU->funCallStreams[streamId] = new sycl::queue(*(syclDev.first), *(syclDev.second), asyncHandler);
 	sluGPU->lastOffloadStream[streamId] = -1;
@@ -909,7 +917,7 @@ int dinitD2Hreduce(
 	{
 	    copyL_kljb = 1;
 	    int_t lastk0 = HyP->Lblock_dirty_bit[kljb];
-	    int_t streamIdk0Offload =  lastk0 % sluGPU->nCudaStreams;
+	    int_t streamIdk0Offload =  lastk0 % sluGPU->nGPUStreams;
 	    if (sluGPU->lastOffloadStream[streamIdk0Offload] == lastk0 && lastk0 != -1)
 	    {
 		// printf("Waiting for Offload =%d to finish StreamId=%d\n", lastk0, streamIdk0Offload);
@@ -930,7 +938,7 @@ int dinitD2Hreduce(
 	{
 	    copyU_kljb = 1;
 	    int_t lastk0 = HyP->Ublock_dirty_bit[kijb];
-	    int_t streamIdk0Offload =  lastk0 % sluGPU->nCudaStreams;
+	    int_t streamIdk0Offload =  lastk0 % sluGPU->nGPUStreams;
 	    if (sluGPU->lastOffloadStream[streamIdk0Offload] == lastk0 && lastk0 != -1)
 	    {
 		// printf("Waiting for Offload =%d to finish StreamId=%d\n", lastk0, streamIdk0Offload);
@@ -1174,10 +1182,10 @@ void dCopyLUToGPU3D (
 
     A_gpu->xsup_host = xsup;
 
-    int_t nCudaStreams = sluGPU->nCudaStreams;
+    int_t nGPUStreams = sluGPU->nGPUStreams;
     /*pinned memory allocations.
       Paged-locked memory by cudaMallocHost is accessible to the device.*/
-    for (int streamId = 0; streamId < nCudaStreams; streamId++ ) {
+    for (int streamId = 0; streamId < nGPUStreams; streamId++ ) {
 	
 	void *tmp_ptr;
         tmp_ptr = (void *)sycl::malloc_host((n) * sizeof(int_t), *q);
@@ -1661,7 +1669,7 @@ int dreduceAllAncestors3d_GPU(int_t ilvl, int_t* myNodeCount,
     /*Reduce all the ancestors from the GPU*/
     if (myGrid == sender && superlu_acc_offload)
     {
-        for (int_t streamId = 0; streamId < sluGPU->nCudaStreams; streamId++)
+        for (int_t streamId = 0; streamId < sluGPU->nGPUStreams; streamId++)
 	{
 	    double ttx = SuperLU_timer_();
 	    (sluGPU->funCallStreams[streamId])->wait();	    
@@ -1708,7 +1716,7 @@ int dreduceAllAncestors3d_GPU(int_t ilvl, int_t* myNodeCount,
 
 void dsyncAllfunCallStreams(dsluGPU_t* sluGPU, SCT_t* SCT)
 {
-    for (int streamId = 0; streamId < sluGPU->nCudaStreams; streamId++)
+    for (int streamId = 0; streamId < sluGPU->nGPUStreams; streamId++)
     {
         double ttx = SuperLU_timer_();
         (sluGPU->funCallStreams[streamId])->wait();

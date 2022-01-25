@@ -3,10 +3,9 @@
  * \brief Descriptions and declarations for structures used in GPU
  *
  * <pre>
- * -- Distributed SuperLU routine (version 7.0) --
+ * -- Distributed SuperLU routine (version 7.2) --
  * Lawrence Berkeley National Lab, Univ. of California Berkeley,
  * Georgia Institute of Technology, Oak Ridge National Laboratory
- * March 14, 2021 version 7.0.0
  *
  * Last update: November 14, 2021  remove dependence on CUB/scan
  * </pre>
@@ -14,17 +13,21 @@
 
 //#define GPU_DEBUG
 
-#include "mpi.h"
-// #include "sec_structs.h"
-#include <ctime>
-#include <cublas_v2.h>
-#include <cuda_runtime.h>
+#include "superlu_defs.h"
 
 #undef Reduce
 
-//#include <thrust/system/cuda/detail/cub/cub.cuh>
+//#include <thrust/system/gpu/detail/cub/cub.cuh>
 
 #include "zlustruct_gpu.h"
+
+#if 0
+#ifdef HAVE_CUDA
+#include "superlu_gpu_utils.cu"
+#elif defined(HAVE_HIP)
+#include "superlu_gpu_utils.hip.cpp"
+#endif
+#endif
 
 #include "dcomplex.h"
 
@@ -33,13 +36,13 @@
 //	                 const int incX, double *Y, const int incY);
 //}
 
-// cublasStatus_t checkCublas(cublasStatus_t result)
+// gpublasStatus_t checkGPUblas(gpublasStatus_t result)
 // {
 // #if defined(DEBUG) || defined(_DEBUG)
-// 	if (result != CUBLAS_STATUS_SUCCESS)
+// 	if (result != GPUBLAS_STATUS_SUCCESS)
 // 	{
-// 		fprintf(stderr, "CUDA Blas Runtime Error: %s\n", cublasGetErrorString(result));
-// 		assert(result == CUBLAS_STATUS_SUCCESS);
+// 		fprintf(stderr, "CUDA Blas Runtime Error: %s\n", gpublasGetErrorString(result));
+// 		assert(result == GPUBLAS_STATUS_SUCCESS);
 // 	}
 // #endif
 // 	return result;
@@ -228,7 +231,7 @@ void Scatter_GPU_kernel(
 
 	typedef int pfx_dtype ;
         extern  __device__ void incScan(pfx_dtype *inOutArr, pfx_dtype *temp, int n);
-
+	
 	doublecomplex *tempv1;
 	if (jj_st == jj0)
 	{
@@ -437,8 +440,8 @@ int zSchurCompUpdate_GPU(
 	int_t nprow = grid->nprow;
 	int_t npcol = grid->npcol;
 
-	cudaStream_t FunCallStream = sluGPU->funCallStreams[streamId];
-	cublasHandle_t cublas_handle0 = sluGPU->cublasHandles[streamId];
+	gpuStream_t FunCallStream = sluGPU->funCallStreams[streamId];
+	gpublasHandle_t gpublas_handle0 = sluGPU->gpublasHandles[streamId];
 	int_t * lsub = A_gpu->scubufs[streamId].lsub_buf;
 	int_t * usub = A_gpu->scubufs[streamId].usub_buf;
 	Remain_info_t *Remain_info = A_gpu->scubufs[streamId].Remain_info_host;
@@ -510,35 +513,35 @@ int zSchurCompUpdate_GPU(
 
 	/*sizeof RemainLbuf = Rnbuf*knsupc */
 	double tTmp = SuperLU_timer_();
-	cudaEventRecord(A_gpu->ePCIeH2D[k0], FunCallStream);
+	gpuEventRecord(A_gpu->ePCIeH2D[k0], FunCallStream);
 
-	checkCuda(cudaMemcpyAsync(A_gpu->scubufs[streamId].usub_IndirectJ3,
+	checkGPU(gpuMemcpyAsync(A_gpu->scubufs[streamId].usub_IndirectJ3,
 	                          A_gpu->scubufs[streamId].usub_IndirectJ3_host,
-	                          ncols * sizeof(int_t), cudaMemcpyHostToDevice,
+	                          ncols * sizeof(int_t), gpuMemcpyHostToDevice,
 	                          FunCallStream)) ;
 
-	checkCuda(cudaMemcpyAsync(A_gpu->scubufs[streamId].Remain_L_buff, Remain_L_buff,
+	checkGPU(gpuMemcpyAsync(A_gpu->scubufs[streamId].Remain_L_buff, Remain_L_buff,
 	                          Remain_lbuf_send_size * sizeof(doublecomplex),
-	                          cudaMemcpyHostToDevice, FunCallStream)) ;
+	                          gpuMemcpyHostToDevice, FunCallStream)) ;
 
-	checkCuda(cudaMemcpyAsync(A_gpu->scubufs[streamId].bigU, bigU,
+	checkGPU(gpuMemcpyAsync(A_gpu->scubufs[streamId].bigU, bigU,
 	                          bigu_send_size * sizeof(doublecomplex),
-	                          cudaMemcpyHostToDevice, FunCallStream) );
+	                          gpuMemcpyHostToDevice, FunCallStream) );
 
-	checkCuda(cudaMemcpyAsync(A_gpu->scubufs[streamId].Remain_info, Remain_info,
+	checkGPU(gpuMemcpyAsync(A_gpu->scubufs[streamId].Remain_info, Remain_info,
 	                          RemainBlk * sizeof(Remain_info_t),
-	                          cudaMemcpyHostToDevice, FunCallStream) );
+	                          gpuMemcpyHostToDevice, FunCallStream) );
 
-	checkCuda(cudaMemcpyAsync(A_gpu->scubufs[streamId].Ublock_info, Ublock_info,
-	                          mcb * sizeof(Ublock_info_t), cudaMemcpyHostToDevice,
+	checkGPU(gpuMemcpyAsync(A_gpu->scubufs[streamId].Ublock_info, Ublock_info,
+	                          mcb * sizeof(Ublock_info_t), gpuMemcpyHostToDevice,
 	                          FunCallStream) );
 
-	checkCuda(cudaMemcpyAsync(A_gpu->scubufs[streamId].lsub, lsub,
-	                          lsub_len * sizeof(int_t), cudaMemcpyHostToDevice,
+	checkGPU(gpuMemcpyAsync(A_gpu->scubufs[streamId].lsub, lsub,
+	                          lsub_len * sizeof(int_t), gpuMemcpyHostToDevice,
 	                          FunCallStream) );
 
-	checkCuda(cudaMemcpyAsync(A_gpu->scubufs[streamId].usub, usub,
-	                          usub_len * sizeof(int_t), cudaMemcpyHostToDevice,
+	checkGPU(gpuMemcpyAsync(A_gpu->scubufs[streamId].usub, usub,
+	                          usub_len * sizeof(int_t), gpuMemcpyHostToDevice,
 	                          FunCallStream) );
 
 	A_gpu->tHost_PCIeH2D += SuperLU_timer_() - tTmp;
@@ -551,11 +554,16 @@ int zSchurCompUpdate_GPU(
 
         doublecomplex alpha = {1.0, 0.0}, beta = {0.0, 0.0};
 
-        /* The following are used in cublasZgemm() call */
-        cuDoubleComplex *cu_alpha = (cuDoubleComplex*) &alpha;
-        cuDoubleComplex *cu_beta = (cuDoubleComplex*) &beta;
-        cuDoubleComplex *cu_A, *cu_B, *cu_C; /* C <- A*B */
-
+        /* The following are used in gpublasZgemm() call */
+#if 0	
+        hipblasDoubleComplex *cu_alpha = (hipblasDoubleComplex*) &alpha;
+        hipblasDoubleComplex *cu_beta = (hipblasDoubleComplex*) &beta;
+        hipblasDoubleComplex *cu_A, *cu_B, *cu_C; /* C <- A*B */
+#else	
+        gpuDoubleComplex *cu_alpha = (gpuDoubleComplex*) &alpha;
+        gpuDoubleComplex *cu_beta = (gpuDoubleComplex*) &beta;
+        gpuDoubleComplex *cu_A, *cu_B, *cu_C; /* C <- A*B */
+#endif
 	int_t ii_st  = 0;
 	int_t ii_end = 0;
 	int_t maxGemmBlockDim = (int) sqrt(buffer_size);
@@ -651,22 +659,28 @@ int zSchurCompUpdate_GPU(
 			fflush(stdout);
 		    }
 		    assert(nrows * ncols <= buffer_size);
-		    cublasSetStream(cublas_handle0, FunCallStream);
-		    cudaEventRecord(A_gpu->GemmStart[k0], FunCallStream);
-		    cu_A = (cuDoubleComplex*) &A_gpu->scubufs[streamId].Remain_L_buff[(knsupc - ldu) * Rnbrow + st_row];
-		    cu_B = (cuDoubleComplex*) &A_gpu->scubufs[streamId].bigU[st_col * ldu];
-		    cu_C = (cuDoubleComplex*) A_gpu->scubufs[streamId].bigV;
-		    cublasZgemm(cublas_handle0, CUBLAS_OP_N, CUBLAS_OP_N,
+		    gpublasSetStream(gpublas_handle0, FunCallStream);
+		    gpuEventRecord(A_gpu->GemmStart[k0], FunCallStream);
+#if 0		    
+		    cu_A = (hipblasDoubleComplex*) &A_gpu->scubufs[streamId].Remain_L_buff[(knsupc - ldu) * Rnbrow + st_row];
+		    cu_B = (hipblasDoubleComplex*) &A_gpu->scubufs[streamId].bigU[st_col * ldu];
+		    cu_C = (hipblasDoubleComplex*) A_gpu->scubufs[streamId].bigV;
+#else		    
+		    cu_A = (gpuDoubleComplex*) &A_gpu->scubufs[streamId].Remain_L_buff[(knsupc - ldu) * Rnbrow + st_row];
+		    cu_B = (gpuDoubleComplex*) &A_gpu->scubufs[streamId].bigU[st_col * ldu];
+		    cu_C = (gpuDoubleComplex*) A_gpu->scubufs[streamId].bigV;
+#endif		    
+		    gpublasZgemm(gpublas_handle0, GPUBLAS_OP_N, GPUBLAS_OP_N,
 			            nrows, ncols, ldu, cu_alpha,
 			            cu_A, Rnbrow, cu_B, ldu, cu_beta,
 				    cu_C, nrows);
 
 // #define SCATTER_OPT
 #ifdef SCATTER_OPT
-		    cudaStreamSynchronize(FunCallStream);
+		    gpuStreamSynchronize(FunCallStream);
 #warning this function is synchronous
 #endif
-		    cudaEventRecord(A_gpu->GemmEnd[k0], FunCallStream);
+		    gpuEventRecord(A_gpu->GemmEnd[k0], FunCallStream);
 
 		    A_gpu->GemmFLOPCounter += 8.0 * (double) nrows * ncols * ldu;
 
@@ -682,11 +696,11 @@ int zSchurCompUpdate_GPU(
 			(streamId, ii_st, ii_end,  jj_st, jj_end, klst,
 			 0, nrows, ldt, npcol, nprow, dA_gpu);
 #ifdef SCATTER_OPT
-		    cudaStreamSynchronize(FunCallStream);
+		    gpuStreamSynchronize(FunCallStream);
 #warning this function is synchrnous
 #endif
 
-		    cudaEventRecord(A_gpu->ScatterEnd[k0], FunCallStream);
+		    gpuEventRecord(A_gpu->ScatterEnd[k0], FunCallStream);
 
 		    A_gpu->ScatterMOPCounter +=  3.0 * (double) nrows * ncols;
 		} /* endif ... none of the matrix dimension is zero. */
@@ -705,15 +719,15 @@ static void print_occupancy()
     int minGridSize; /* The minimum grid size needed to achieve the
     		        best potential occupancy  */
 
-    cudaOccupancyMaxPotentialBlockSize( &minGridSize, &blockSize,
+    gpuOccupancyMaxPotentialBlockSize( &minGridSize, &blockSize,
                                         Scatter_GPU_kernel, 0, 0);
     printf("Occupancy: MinGridSize %d blocksize %d \n", minGridSize, blockSize);
 }
 
-static void printDevProp(cudaDeviceProp devProp)
+static void printDevProp(gpuDeviceProp devProp)
 {
 	size_t mfree, mtotal;
-	cudaMemGetInfo	(&mfree, &mtotal);
+	gpuMemGetInfo	(&mfree, &mtotal);
 	
 	printf("pciBusID:                      %d\n",  devProp.pciBusID);
 	printf("pciDeviceID:                   %d\n",  devProp.pciDeviceID);
@@ -730,7 +744,7 @@ static size_t get_acc_memory ()
 {
 
 	size_t mfree, mtotal;
-	cudaMemGetInfo	(&mfree, &mtotal);
+	gpuMemGetInfo	(&mfree, &mtotal);
 #if 0
 	printf("Total memory %zu & free memory %zu\n", mtotal, mfree);
 #endif
@@ -742,24 +756,24 @@ static size_t get_acc_memory ()
 int zfree_LUstruct_gpu (zLUstruct_gpu_t * A_gpu)
 {
 	/* Free the L data structure on GPU */
-	checkCuda(cudaFree(A_gpu->LrowindVec));
-	checkCuda(cudaFree(A_gpu->LrowindPtr));
+	checkGPU(gpuFree(A_gpu->LrowindVec));
+	checkGPU(gpuFree(A_gpu->LrowindPtr));
 
-	checkCuda(cudaFree(A_gpu->LnzvalVec));
-	checkCuda(cudaFree(A_gpu->LnzvalPtr));
+	checkGPU(gpuFree(A_gpu->LnzvalVec));
+	checkGPU(gpuFree(A_gpu->LnzvalPtr));
 	free(A_gpu->LnzvalPtr_host);
 	
 	/*freeing the pinned memory*/
 	int_t streamId = 0;
-	checkCuda (cudaFreeHost (A_gpu->scubufs[streamId].Remain_info_host));
-	checkCuda (cudaFreeHost (A_gpu->scubufs[streamId].Ublock_info_host));
-	checkCuda (cudaFreeHost (A_gpu->scubufs[streamId].Remain_L_buff_host));
-	checkCuda (cudaFreeHost (A_gpu->scubufs[streamId].bigU_host));
+	checkGPU (gpuFreeHost (A_gpu->scubufs[streamId].Remain_info_host));
+	checkGPU (gpuFreeHost (A_gpu->scubufs[streamId].Ublock_info_host));
+	checkGPU (gpuFreeHost (A_gpu->scubufs[streamId].Remain_L_buff_host));
+	checkGPU (gpuFreeHost (A_gpu->scubufs[streamId].bigU_host));
 
-	checkCuda(cudaFreeHost(A_gpu->acc_L_buff));
-	checkCuda(cudaFreeHost(A_gpu->acc_U_buff));
-	checkCuda(cudaFreeHost(A_gpu->scubufs[streamId].lsub_buf));
-	checkCuda(cudaFreeHost(A_gpu->scubufs[streamId].usub_buf));
+	checkGPU(gpuFreeHost(A_gpu->acc_L_buff));
+	checkGPU(gpuFreeHost(A_gpu->acc_U_buff));
+	checkGPU(gpuFreeHost(A_gpu->scubufs[streamId].lsub_buf));
+	checkGPU(gpuFreeHost(A_gpu->scubufs[streamId].usub_buf));
 
 
 	SUPERLU_FREE(A_gpu->isOffloaded); // changed to SUPERLU_MALLOC/SUPERLU_FREE
@@ -771,39 +785,39 @@ int zfree_LUstruct_gpu (zLUstruct_gpu_t * A_gpu)
 	SUPERLU_FREE(A_gpu->ePCIeD2H_End);
 
 	/* Free the U data structure on GPU */
-	checkCuda(cudaFree(A_gpu->UrowindVec));
-	checkCuda(cudaFree(A_gpu->UrowindPtr));
+	checkGPU(gpuFree(A_gpu->UrowindVec));
+	checkGPU(gpuFree(A_gpu->UrowindPtr));
 
 	//free(A_gpu->UrowindPtr_host); // Sherry: this is NOT allocated
 
-	checkCuda(cudaFree(A_gpu->UnzvalVec));
-	checkCuda(cudaFree(A_gpu->UnzvalPtr));
+	checkGPU(gpuFree(A_gpu->UnzvalVec));
+	checkGPU(gpuFree(A_gpu->UnzvalPtr));
 
-	checkCuda(cudaFree(A_gpu->grid));
+	checkGPU(gpuFree(A_gpu->grid));
 
 	/* Free the Schur complement structure on GPU */
-	checkCuda(cudaFree(A_gpu->scubufs[streamId].bigV));
-	checkCuda(cudaFree(A_gpu->scubufs[streamId].bigU));
+	checkGPU(gpuFree(A_gpu->scubufs[streamId].bigV));
+	checkGPU(gpuFree(A_gpu->scubufs[streamId].bigU));
 
-	checkCuda(cudaFree(A_gpu->scubufs[streamId].Remain_L_buff));
-	checkCuda(cudaFree(A_gpu->scubufs[streamId].Ublock_info));
-	checkCuda(cudaFree(A_gpu->scubufs[streamId].Remain_info));
+	checkGPU(gpuFree(A_gpu->scubufs[streamId].Remain_L_buff));
+	checkGPU(gpuFree(A_gpu->scubufs[streamId].Ublock_info));
+	checkGPU(gpuFree(A_gpu->scubufs[streamId].Remain_info));
 
-	// checkCuda(cudaFree(A_gpu->indirect));
-	// checkCuda(cudaFree(A_gpu->indirect2));
-	checkCuda(cudaFree(A_gpu->xsup));
+	// checkGPU(gpuFree(A_gpu->indirect));
+	// checkGPU(gpuFree(A_gpu->indirect2));
+	checkGPU(gpuFree(A_gpu->xsup));
 
-	checkCuda(cudaFree(A_gpu->scubufs[streamId].lsub));
-	checkCuda(cudaFree(A_gpu->scubufs[streamId].usub));
+	checkGPU(gpuFree(A_gpu->scubufs[streamId].lsub));
+	checkGPU(gpuFree(A_gpu->scubufs[streamId].usub));
 
-	checkCuda(cudaFree(A_gpu->local_l_blk_infoVec));
-	checkCuda(cudaFree(A_gpu->local_l_blk_infoPtr));
-	checkCuda(cudaFree(A_gpu->jib_lookupVec));
-	checkCuda(cudaFree(A_gpu->jib_lookupPtr));
-	checkCuda(cudaFree(A_gpu->local_u_blk_infoVec));
-	checkCuda(cudaFree(A_gpu->local_u_blk_infoPtr));
-	checkCuda(cudaFree(A_gpu->ijb_lookupVec));
-	checkCuda(cudaFree(A_gpu->ijb_lookupPtr));
+	checkGPU(gpuFree(A_gpu->local_l_blk_infoVec));
+	checkGPU(gpuFree(A_gpu->local_l_blk_infoPtr));
+	checkGPU(gpuFree(A_gpu->jib_lookupVec));
+	checkGPU(gpuFree(A_gpu->jib_lookupPtr));
+	checkGPU(gpuFree(A_gpu->local_u_blk_infoVec));
+	checkGPU(gpuFree(A_gpu->local_u_blk_infoPtr));
+	checkGPU(gpuFree(A_gpu->ijb_lookupVec));
+	checkGPU(gpuFree(A_gpu->ijb_lookupPtr));
 
 	return 0;
 }
@@ -813,8 +827,8 @@ int zfree_LUstruct_gpu (zLUstruct_gpu_t * A_gpu)
 void zPrint_matrix( char *desc, int_t m, int_t n, doublecomplex * dA, int_t lda )
 {
 	doublecomplex *cPtr = (doublecomplex *) malloc(sizeof(doublecomplex) * lda * n);
-	checkCuda(cudaMemcpy( cPtr, dA,
-	                      lda * n * sizeof(doublecomplex), cudaMemcpyDeviceToHost)) ;
+	checkGPU(gpuMemcpy( cPtr, dA,
+	                      lda * n * sizeof(doublecomplex), gpuMemcpyDeviceToHost)) ;
 
 	int_t i, j;
 	printf( "\n %s\n", desc );
@@ -839,18 +853,18 @@ void zprintGPUStats(zLUstruct_gpu_t * A_gpu)
 
 	    if (A_gpu->isOffloaded[i])
 		{
-			cudaEventElapsedTime(&milliseconds, A_gpu->ePCIeH2D[i], A_gpu->GemmStart[i]);
+			gpuEventElapsedTime(&milliseconds, A_gpu->ePCIeH2D[i], A_gpu->GemmStart[i]);
 			tPCIeH2D += 1e-3 * (double) milliseconds;
 			milliseconds = 0;
-			cudaEventElapsedTime(&milliseconds, A_gpu->GemmStart[i], A_gpu->GemmEnd[i]);
+			gpuEventElapsedTime(&milliseconds, A_gpu->GemmStart[i], A_gpu->GemmEnd[i]);
 			tGemm += 1e-3 * (double) milliseconds;
 			milliseconds = 0;
-			cudaEventElapsedTime(&milliseconds, A_gpu->GemmEnd[i], A_gpu->ScatterEnd[i]);
+			gpuEventElapsedTime(&milliseconds, A_gpu->GemmEnd[i], A_gpu->ScatterEnd[i]);
 			tScatter += 1e-3 * (double) milliseconds;
 		}
 
 		milliseconds = 0;
-		cudaEventElapsedTime(&milliseconds, A_gpu->ePCIeD2H_Start[i], A_gpu->ePCIeD2H_End[i]);
+		gpuEventElapsedTime(&milliseconds, A_gpu->ePCIeD2H_Start[i], A_gpu->ePCIeD2H_End[i]);
 		tPCIeD2H += 1e-3 * (double) milliseconds;
 	}
 
@@ -878,12 +892,12 @@ int zinitSluGPU3D_t(
     int_t ldt             /* NSUP read from sp_ienv(3) */
 )
 {
-    checkCudaErrors(cudaDeviceReset ())     ;
+    checkGPUErrors(gpuDeviceReset ())     ;
     Glu_persist_t *Glu_persist = LUstruct->Glu_persist;
     zLocalLU_t *Llu = LUstruct->Llu;
     int* isNodeInMyGrid = sluGPU->isNodeInMyGrid;
 
-    sluGPU->nCudaStreams = getnCudaStreams();
+    sluGPU->nGPUStreams = getnGPUStreams();
     
     int SCATTER_THREAD_BLOCK_SIZE = ldt; 
     if(getenv("SCATTER_THREAD_BLOCK_SIZE"))
@@ -898,7 +912,7 @@ int zinitSluGPU3D_t(
     
     if (grid3d->iam == 0)
     {
-	printf("dinitSluGPU3D_t: Using hardware acceleration, with %d cuda streams \n", sluGPU->nCudaStreams);
+	printf("dinitSluGPU3D_t: Using hardware acceleration, with %d gpu streams \n", sluGPU->nGPUStreams);
 	fflush(stdout);
 	printf("dinitSluGPU3D_t: Using %d threads per block for scatter \n", SCATTER_THREAD_BLOCK_SIZE);
 	
@@ -908,12 +922,12 @@ int zinitSluGPU3D_t(
 	}
     }
 
-    cudaStreamCreate(&(sluGPU->CopyStream));
+    gpuStreamCreate(&(sluGPU->CopyStream));
 
-    for (int streamId = 0; streamId < sluGPU->nCudaStreams; streamId++)
+    for (int streamId = 0; streamId < sluGPU->nGPUStreams; streamId++)
     {
-	cudaStreamCreate(&(sluGPU->funCallStreams[streamId]));
-	cublasCreate(&(sluGPU->cublasHandles[streamId]));
+	gpuStreamCreate(&(sluGPU->funCallStreams[streamId]));
+	gpublasCreate(&(sluGPU->gpublasHandles[streamId]));
 	sluGPU->lastOffloadStream[streamId] = -1;
     }
 
@@ -970,12 +984,12 @@ int zinitD2Hreduce(
 	    {
 		copyL_kljb = 1;
 		int_t lastk0 = HyP->Lblock_dirty_bit[kljb];
-		int_t streamIdk0Offload =  lastk0 % sluGPU->nCudaStreams;
+		int_t streamIdk0Offload =  lastk0 % sluGPU->nGPUStreams;
 		if (sluGPU->lastOffloadStream[streamIdk0Offload] == lastk0 && lastk0 != -1)
 		    {
 			// printf("Waiting for Offload =%d to finish StreamId=%d\n", lastk0, streamIdk0Offload);
 			double ttx = SuperLU_timer_();
-			cudaStreamSynchronize(sluGPU->funCallStreams[streamIdk0Offload]);
+			gpuStreamSynchronize(sluGPU->funCallStreams[streamIdk0Offload]);
 			SCT->PhiWaitTimer += SuperLU_timer_() - ttx;
 			sluGPU->lastOffloadStream[streamIdk0Offload] = -1;
 		    }
@@ -991,12 +1005,12 @@ int zinitD2Hreduce(
 	    {
 		copyU_kljb = 1;
 		int_t lastk0 = HyP->Ublock_dirty_bit[kijb];
-		int_t streamIdk0Offload =  lastk0 % sluGPU->nCudaStreams;
+		int_t streamIdk0Offload =  lastk0 % sluGPU->nGPUStreams;
 		if (sluGPU->lastOffloadStream[streamIdk0Offload] == lastk0 && lastk0 != -1)
 		    {
 			// printf("Waiting for Offload =%d to finish StreamId=%d\n", lastk0, streamIdk0Offload);
 			double ttx = SuperLU_timer_();
-			cudaStreamSynchronize(sluGPU->funCallStreams[streamIdk0Offload]);
+			gpuStreamSynchronize(sluGPU->funCallStreams[streamIdk0Offload]);
 			SCT->PhiWaitTimer += SuperLU_timer_() - ttx;
 			sluGPU->lastOffloadStream[streamIdk0Offload] = -1;
 		    }
@@ -1042,7 +1056,7 @@ int zreduceGPUlu(
     int_t** Ufstnz_br_ptr = Llu->Ufstnz_br_ptr;
     doublecomplex** Unzval_br_ptr = Llu->Unzval_br_ptr;
     
-    cudaStream_t CopyStream;
+    gpuStream_t CopyStream;
     zLUstruct_gpu_t *A_gpu;
     A_gpu = sluGPU->A_gpu;
     CopyStream = sluGPU->CopyStream;
@@ -1058,7 +1072,7 @@ int zreduceGPUlu(
     if ((copyL_kljb || copyU_kljb) && last_flag )
 	{
 	    double ttx = SuperLU_timer_();
-	    cudaStreamSynchronize(CopyStream);
+	    gpuStreamSynchronize(CopyStream);
 	    SCT->PhiWaitTimer_2 += SuperLU_timer_() - ttx;
 	}
 
@@ -1107,7 +1121,7 @@ int zreduceGPUlu(
 int zwaitGPUscu(int streamId, zsluGPU_t *sluGPU, SCT_t *SCT)
 {
     double ttx = SuperLU_timer_();
-    cudaStreamSynchronize(sluGPU->funCallStreams[streamId]);
+    gpuStreamSynchronize(sluGPU->funCallStreams[streamId]);
     SCT->PhiWaitTimer += SuperLU_timer_() - ttx;
     return 0;
 }
@@ -1124,18 +1138,18 @@ int zsendLUpanelGPU2HOST(
     int_t copyU_kljb = d2Hred->copyU_kljb;
     int_t l_copy_len = d2Hred->l_copy_len;
     int_t u_copy_len = d2Hred->u_copy_len;
-    cudaStream_t CopyStream = sluGPU->CopyStream;;
+    gpuStream_t CopyStream = sluGPU->CopyStream;;
     zLUstruct_gpu_t *A_gpu = sluGPU->A_gpu;
     double tty = SuperLU_timer_();
-    cudaEventRecord(A_gpu->ePCIeD2H_Start[k0], CopyStream);
+    gpuEventRecord(A_gpu->ePCIeD2H_Start[k0], CopyStream);
     if (copyL_kljb)
-	checkCuda(cudaMemcpyAsync(A_gpu->acc_L_buff, &A_gpu->LnzvalVec[A_gpu->LnzvalPtr_host[kljb]],
-				  l_copy_len * sizeof(doublecomplex), cudaMemcpyDeviceToHost, CopyStream ) );
+	checkGPU(gpuMemcpyAsync(A_gpu->acc_L_buff, &A_gpu->LnzvalVec[A_gpu->LnzvalPtr_host[kljb]],
+				  l_copy_len * sizeof(doublecomplex), gpuMemcpyDeviceToHost, CopyStream ) );
 
     if (copyU_kljb)
-	checkCuda(cudaMemcpyAsync(A_gpu->acc_U_buff, &A_gpu->UnzvalVec[A_gpu->UnzvalPtr_host[kijb]],
-				  u_copy_len * sizeof(doublecomplex), cudaMemcpyDeviceToHost, CopyStream ) );
-    cudaEventRecord(A_gpu->ePCIeD2H_End[k0], CopyStream);
+	checkGPU(gpuMemcpyAsync(A_gpu->acc_U_buff, &A_gpu->UnzvalVec[A_gpu->UnzvalPtr_host[kijb]],
+				  u_copy_len * sizeof(doublecomplex), gpuMemcpyDeviceToHost, CopyStream ) );
+    gpuEventRecord(A_gpu->ePCIeD2H_End[k0], CopyStream);
     A_gpu->tHost_PCIeD2H += SuperLU_timer_() - tty;
     A_gpu->cPCIeD2H += u_copy_len * sizeof(doublecomplex) + l_copy_len * sizeof(doublecomplex);
 
@@ -1210,8 +1224,8 @@ void zCopyLUToGPU3D (
 #ifdef GPU_DEBUG
     // if ( grid3d->iam == 0 )
     {
-	cudaDeviceProp devProp;
-	cudaGetDeviceProperties(&devProp, 0);
+	gpuDeviceProp devProp;
+	gpuGetDeviceProperties(&devProp, 0);
 	printDevProp(devProp);
     }
 #endif
@@ -1244,77 +1258,77 @@ void zCopyLUToGPU3D (
 
     A_gpu->xsup_host = xsup;
 
-    int_t nCudaStreams = sluGPU->nCudaStreams;
+    int_t nGPUStreams = sluGPU->nGPUStreams;
     /*pinned memory allocations.
-      Paged-locked memory by cudaMallocHost is accessible to the device.*/
-    for (int streamId = 0; streamId < nCudaStreams; streamId++ ) {
+      Paged-locked memory by gpuMallocHost is accessible to the device.*/
+    for (int streamId = 0; streamId < nGPUStreams; streamId++ ) {
 	void *tmp_ptr;
-	checkCudaErrors(cudaMallocHost(  &tmp_ptr, (n) * sizeof(int_t) )) ;
+	checkGPUErrors(gpuMallocHost(  &tmp_ptr, (n) * sizeof(int_t) )) ;
 	A_gpu->scubufs[streamId].usub_IndirectJ3_host = (int_t*) tmp_ptr;
 
-	checkCudaErrors(cudaMalloc( &tmp_ptr,  ( n) * sizeof(int_t) ));
+	checkGPUErrors(gpuMalloc( &tmp_ptr,  ( n) * sizeof(int_t) ));
 	A_gpu->scubufs[streamId].usub_IndirectJ3 =  (int_t*) tmp_ptr;
 	gpu_mem_used += ( n) * sizeof(int_t);
-	checkCudaErrors(cudaMallocHost(  &tmp_ptr, mrb * sizeof(Remain_info_t) )) ;
+	checkGPUErrors(gpuMallocHost(  &tmp_ptr, mrb * sizeof(Remain_info_t) )) ;
 	A_gpu->scubufs[streamId].Remain_info_host = (Remain_info_t*)tmp_ptr;
-	checkCudaErrors(cudaMallocHost(  &tmp_ptr, mcb * sizeof(Ublock_info_t) )) ;
+	checkGPUErrors(gpuMallocHost(  &tmp_ptr, mcb * sizeof(Ublock_info_t) )) ;
 	A_gpu->scubufs[streamId].Ublock_info_host = (Ublock_info_t*)tmp_ptr;
-	checkCudaErrors(cudaMallocHost(  &tmp_ptr,  remain_l_max * sizeof(doublecomplex) )) ;
+	checkGPUErrors(gpuMallocHost(  &tmp_ptr,  remain_l_max * sizeof(doublecomplex) )) ;
 	A_gpu->scubufs[streamId].Remain_L_buff_host = (doublecomplex *) tmp_ptr;
-	checkCudaErrors(cudaMallocHost(  &tmp_ptr,  bigu_size * sizeof(doublecomplex) )) ;
+	checkGPUErrors(gpuMallocHost(  &tmp_ptr,  bigu_size * sizeof(doublecomplex) )) ;
 	A_gpu->scubufs[streamId].bigU_host = (doublecomplex *) tmp_ptr;
 
-	checkCudaErrors(cudaMallocHost ( &tmp_ptr, sizeof(doublecomplex) * (A_host->bufmax[1])));
+	checkGPUErrors(gpuMallocHost ( &tmp_ptr, sizeof(doublecomplex) * (A_host->bufmax[1])));
 	A_gpu->acc_L_buff = (doublecomplex *) tmp_ptr;
-	checkCudaErrors(cudaMallocHost ( &tmp_ptr, sizeof(doublecomplex) * (A_host->bufmax[3])));
+	checkGPUErrors(gpuMallocHost ( &tmp_ptr, sizeof(doublecomplex) * (A_host->bufmax[3])));
 	A_gpu->acc_U_buff = (doublecomplex *) tmp_ptr;
-	checkCudaErrors(cudaMallocHost ( &tmp_ptr, sizeof(int_t) * (A_host->bufmax[0])));
+	checkGPUErrors(gpuMallocHost ( &tmp_ptr, sizeof(int_t) * (A_host->bufmax[0])));
 	A_gpu->scubufs[streamId].lsub_buf =  (int_t *) tmp_ptr;
-	checkCudaErrors(cudaMallocHost ( &tmp_ptr, sizeof(int_t) * (A_host->bufmax[2])));
+	checkGPUErrors(gpuMallocHost ( &tmp_ptr, sizeof(int_t) * (A_host->bufmax[2])));
 	A_gpu->scubufs[streamId].usub_buf = (int_t *) tmp_ptr;
 
-	checkCudaErrors(cudaMalloc(  &tmp_ptr,  remain_l_max * sizeof(doublecomplex) )) ;
+	checkGPUErrors(gpuMalloc(  &tmp_ptr,  remain_l_max * sizeof(doublecomplex) )) ;
 	A_gpu->scubufs[streamId].Remain_L_buff = (doublecomplex *) tmp_ptr;
 	gpu_mem_used += remain_l_max * sizeof(doublecomplex);
-	checkCudaErrors(cudaMalloc(  &tmp_ptr,  bigu_size * sizeof(doublecomplex) )) ;
+	checkGPUErrors(gpuMalloc(  &tmp_ptr,  bigu_size * sizeof(doublecomplex) )) ;
 	A_gpu->scubufs[streamId].bigU = (doublecomplex *) tmp_ptr;
 	gpu_mem_used += bigu_size * sizeof(doublecomplex);
-	checkCudaErrors(cudaMalloc(  &tmp_ptr,  mcb * sizeof(Ublock_info_t) )) ;
+	checkGPUErrors(gpuMalloc(  &tmp_ptr,  mcb * sizeof(Ublock_info_t) )) ;
 	A_gpu->scubufs[streamId].Ublock_info = (Ublock_info_t *) tmp_ptr;
 	gpu_mem_used += mcb * sizeof(Ublock_info_t);
-	checkCudaErrors(cudaMalloc(  &tmp_ptr,  mrb * sizeof(Remain_info_t) )) ;
+	checkGPUErrors(gpuMalloc(  &tmp_ptr,  mrb * sizeof(Remain_info_t) )) ;
 	A_gpu->scubufs[streamId].Remain_info = (Remain_info_t *) tmp_ptr;
 	gpu_mem_used += mrb * sizeof(Remain_info_t);
-	checkCudaErrors(cudaMalloc(  &tmp_ptr,  buffer_size * sizeof(doublecomplex))) ;
+	checkGPUErrors(gpuMalloc(  &tmp_ptr,  buffer_size * sizeof(doublecomplex))) ;
 	A_gpu->scubufs[streamId].bigV = (doublecomplex *) tmp_ptr;
 	gpu_mem_used += buffer_size * sizeof(doublecomplex);
-	checkCudaErrors(cudaMalloc(  &tmp_ptr,  A_host->bufmax[0]*sizeof(int_t))) ;
+	checkGPUErrors(gpuMalloc(  &tmp_ptr,  A_host->bufmax[0]*sizeof(int_t))) ;
 	A_gpu->scubufs[streamId].lsub = (int_t *) tmp_ptr;
 	gpu_mem_used += A_host->bufmax[0] * sizeof(int_t);
-	checkCudaErrors(cudaMalloc(  &tmp_ptr,  A_host->bufmax[2]*sizeof(int_t))) ;
+	checkGPUErrors(gpuMalloc(  &tmp_ptr,  A_host->bufmax[2]*sizeof(int_t))) ;
 	A_gpu->scubufs[streamId].usub = (int_t *) tmp_ptr;
 	gpu_mem_used += A_host->bufmax[2] * sizeof(int_t);
 	
     } /* endfor streamID ... allocate paged-locked memory */
 
     A_gpu->isOffloaded = (int *) SUPERLU_MALLOC (sizeof(int) * nsupers);
-    A_gpu->GemmStart  = (cudaEvent_t *) SUPERLU_MALLOC(sizeof(cudaEvent_t) * nsupers);
-    A_gpu->GemmEnd  = (cudaEvent_t *) SUPERLU_MALLOC(sizeof(cudaEvent_t) * nsupers);
-    A_gpu->ScatterEnd  = (cudaEvent_t *) SUPERLU_MALLOC(sizeof(cudaEvent_t) * nsupers);
-    A_gpu->ePCIeH2D = (cudaEvent_t *) SUPERLU_MALLOC(sizeof(cudaEvent_t) * nsupers);
-    A_gpu->ePCIeD2H_Start = (cudaEvent_t *) SUPERLU_MALLOC(sizeof(cudaEvent_t) * nsupers);
-    A_gpu->ePCIeD2H_End = (cudaEvent_t *) SUPERLU_MALLOC(sizeof(cudaEvent_t) * nsupers);
+    A_gpu->GemmStart  = (gpuEvent_t *) SUPERLU_MALLOC(sizeof(gpuEvent_t) * nsupers);
+    A_gpu->GemmEnd  = (gpuEvent_t *) SUPERLU_MALLOC(sizeof(gpuEvent_t) * nsupers);
+    A_gpu->ScatterEnd  = (gpuEvent_t *) SUPERLU_MALLOC(sizeof(gpuEvent_t) * nsupers);
+    A_gpu->ePCIeH2D = (gpuEvent_t *) SUPERLU_MALLOC(sizeof(gpuEvent_t) * nsupers);
+    A_gpu->ePCIeD2H_Start = (gpuEvent_t *) SUPERLU_MALLOC(sizeof(gpuEvent_t) * nsupers);
+    A_gpu->ePCIeD2H_End = (gpuEvent_t *) SUPERLU_MALLOC(sizeof(gpuEvent_t) * nsupers);
     
     for (int i = 0; i < nsupers; ++i)
 	{
 	    A_gpu->isOffloaded[i] = 0;
-	    checkCudaErrors(cudaEventCreate(&(A_gpu->GemmStart[i])));
-	    checkCudaErrors(cudaEventCreate(&(A_gpu->GemmEnd[i])));
-	    checkCudaErrors(cudaEventCreate(&(A_gpu->ScatterEnd[i])));
-	    checkCudaErrors(cudaEventCreate(&(A_gpu->ePCIeH2D[i])));
-	    checkCudaErrors(cudaEventCreate(&(A_gpu->ePCIeH2D[i])));
-	    checkCudaErrors(cudaEventCreate(&(A_gpu->ePCIeD2H_Start[i])));
-	    checkCudaErrors(cudaEventCreate(&(A_gpu->ePCIeD2H_End[i])));
+	    checkGPUErrors(gpuEventCreate(&(A_gpu->GemmStart[i])));
+	    checkGPUErrors(gpuEventCreate(&(A_gpu->GemmEnd[i])));
+	    checkGPUErrors(gpuEventCreate(&(A_gpu->ScatterEnd[i])));
+	    checkGPUErrors(gpuEventCreate(&(A_gpu->ePCIeH2D[i])));
+	    checkGPUErrors(gpuEventCreate(&(A_gpu->ePCIeH2D[i])));
+	    checkGPUErrors(gpuEventCreate(&(A_gpu->ePCIeD2H_Start[i])));
+	    checkGPUErrors(gpuEventCreate(&(A_gpu->ePCIeD2H_End[i])));
 	}
 
     /*---- Copy L data structure to GPU ----*/
@@ -1380,15 +1394,15 @@ void zCopyLUToGPU3D (
 	} /* endfor all block columns */
 
     /* Allocate L memory on GPU, and copy the values from CPU to GPU */
-    checkCudaErrors(cudaMalloc(  &tmp_ptr,  cum_num_l_blocks * sizeof(local_l_blk_info_t))) ;
+    checkGPUErrors(gpuMalloc(  &tmp_ptr,  cum_num_l_blocks * sizeof(local_l_blk_info_t))) ;
     A_gpu->local_l_blk_infoVec = (local_l_blk_info_t *) tmp_ptr;
     gpu_mem_used += cum_num_l_blocks * sizeof(local_l_blk_info_t);
-    checkCudaErrors(cudaMemcpy( (A_gpu->local_l_blk_infoVec), local_l_blk_infoVec, cum_num_l_blocks * sizeof(local_l_blk_info_t), cudaMemcpyHostToDevice)) ;
+    checkGPUErrors(gpuMemcpy( (A_gpu->local_l_blk_infoVec), local_l_blk_infoVec, cum_num_l_blocks * sizeof(local_l_blk_info_t), gpuMemcpyHostToDevice)) ;
 
-    checkCudaErrors(cudaMalloc(  &tmp_ptr,  CEILING(nsupers, Pc)*sizeof(int_t))) ;
+    checkGPUErrors(gpuMalloc(  &tmp_ptr,  CEILING(nsupers, Pc)*sizeof(int_t))) ;
     A_gpu->local_l_blk_infoPtr = (int_t *) tmp_ptr;
     gpu_mem_used += CEILING(nsupers, Pc) * sizeof(int_t);
-    checkCudaErrors(cudaMemcpy( (A_gpu->local_l_blk_infoPtr), local_l_blk_infoPtr, CEILING(nsupers, Pc)*sizeof(int_t), cudaMemcpyHostToDevice)) ;
+    checkGPUErrors(gpuMemcpy( (A_gpu->local_l_blk_infoPtr), local_l_blk_infoPtr, CEILING(nsupers, Pc)*sizeof(int_t), gpuMemcpyHostToDevice)) ;
 
     /*---- Copy U data structure to GPU ----*/
 
@@ -1449,15 +1463,15 @@ void zCopyLUToGPU3D (
 		}
 	}
 
-	checkCudaErrors(cudaMalloc( &tmp_ptr,  cum_num_u_blocks * sizeof(local_u_blk_info_t))) ;
+	checkGPUErrors(gpuMalloc( &tmp_ptr,  cum_num_u_blocks * sizeof(local_u_blk_info_t))) ;
 	A_gpu->local_u_blk_infoVec = (local_u_blk_info_t *) tmp_ptr;
 	gpu_mem_used += cum_num_u_blocks * sizeof(local_u_blk_info_t);
-	checkCudaErrors(cudaMemcpy( (A_gpu->local_u_blk_infoVec), local_u_blk_infoVec, cum_num_u_blocks * sizeof(local_u_blk_info_t), cudaMemcpyHostToDevice)) ;
+	checkGPUErrors(gpuMemcpy( (A_gpu->local_u_blk_infoVec), local_u_blk_infoVec, cum_num_u_blocks * sizeof(local_u_blk_info_t), gpuMemcpyHostToDevice)) ;
 
-	checkCudaErrors(cudaMalloc( &tmp_ptr,  CEILING(nsupers, Pr)*sizeof(int_t))) ;
+	checkGPUErrors(gpuMalloc( &tmp_ptr,  CEILING(nsupers, Pr)*sizeof(int_t))) ;
 	A_gpu->local_u_blk_infoPtr = (int_t *) tmp_ptr;
 	gpu_mem_used += CEILING(nsupers, Pr) * sizeof(int_t);
-	checkCudaErrors(cudaMemcpy( (A_gpu->local_u_blk_infoPtr), local_u_blk_infoPtr, CEILING(nsupers, Pr)*sizeof(int_t), cudaMemcpyHostToDevice)) ;
+	checkGPUErrors(gpuMemcpy( (A_gpu->local_u_blk_infoPtr), local_u_blk_infoPtr, CEILING(nsupers, Pr)*sizeof(int_t), gpuMemcpyHostToDevice)) ;
 
 	/* Copy the actual L indices and values */
 	int_t l_k = CEILING( nsupers, grid->npcol ); /* # of local block columns */
@@ -1636,21 +1650,21 @@ void zCopyLUToGPU3D (
 		}
 	}
 
-	checkCudaErrors(cudaMalloc( &tmp_ptr,  l_ind_len * sizeof(int_t))) ;
+	checkGPUErrors(gpuMalloc( &tmp_ptr,  l_ind_len * sizeof(int_t))) ;
 	A_gpu->LrowindVec = (int_t *) tmp_ptr;
-	checkCudaErrors(cudaMemcpy( (A_gpu->LrowindVec), indtemp, l_ind_len * sizeof(int_t), cudaMemcpyHostToDevice)) ;
+	checkGPUErrors(gpuMemcpy( (A_gpu->LrowindVec), indtemp, l_ind_len * sizeof(int_t), gpuMemcpyHostToDevice)) ;
 
-	checkCudaErrors(cudaMalloc(  &tmp_ptr,  l_val_len * sizeof(doublecomplex)));
+	checkGPUErrors(gpuMalloc(  &tmp_ptr,  l_val_len * sizeof(doublecomplex)));
 	A_gpu->LnzvalVec = (doublecomplex *) tmp_ptr;
-	checkCudaErrors(cudaMemset( (A_gpu->LnzvalVec), 0, l_val_len * sizeof(doublecomplex)));
+	checkGPUErrors(gpuMemset( (A_gpu->LnzvalVec), 0, l_val_len * sizeof(doublecomplex)));
 
-	checkCudaErrors(cudaMalloc(  &tmp_ptr,  l_k * sizeof(int_t))) ;
+	checkGPUErrors(gpuMalloc(  &tmp_ptr,  l_k * sizeof(int_t))) ;
 	A_gpu->LrowindPtr = (int_t *) tmp_ptr;
-	checkCudaErrors(cudaMemcpy( (A_gpu->LrowindPtr), temp_LrowindPtr, l_k * sizeof(int_t), cudaMemcpyHostToDevice)) ;
+	checkGPUErrors(gpuMemcpy( (A_gpu->LrowindPtr), temp_LrowindPtr, l_k * sizeof(int_t), gpuMemcpyHostToDevice)) ;
 
-	checkCudaErrors(cudaMalloc(  &tmp_ptr,  l_k * sizeof(int_t))) ;
+	checkGPUErrors(gpuMalloc(  &tmp_ptr,  l_k * sizeof(int_t))) ;
 	A_gpu->LnzvalPtr = (int_t *) tmp_ptr;
-	checkCudaErrors(cudaMemcpy( (A_gpu->LnzvalPtr), temp_LnzvalPtr, l_k * sizeof(int_t), cudaMemcpyHostToDevice)) ;
+	checkGPUErrors(gpuMemcpy( (A_gpu->LnzvalPtr), temp_LnzvalPtr, l_k * sizeof(int_t), gpuMemcpyHostToDevice)) ;
 
 	A_gpu->LnzvalPtr_host = temp_LnzvalPtr;
 
@@ -1667,31 +1681,31 @@ void zCopyLUToGPU3D (
 		}
 	}
 
-	checkCudaErrors(cudaMalloc(  &tmp_ptr,  u_ind_len * sizeof(int_t))) ;
+	checkGPUErrors(gpuMalloc(  &tmp_ptr,  u_ind_len * sizeof(int_t))) ;
 	A_gpu->UrowindVec = (int_t *) tmp_ptr;
-	checkCudaErrors(cudaMemcpy( (A_gpu->UrowindVec), indtemp1, u_ind_len * sizeof(int_t), cudaMemcpyHostToDevice)) ;
+	checkGPUErrors(gpuMemcpy( (A_gpu->UrowindVec), indtemp1, u_ind_len * sizeof(int_t), gpuMemcpyHostToDevice)) ;
 
-	checkCudaErrors(cudaMalloc(  &tmp_ptr,  u_val_len * sizeof(doublecomplex)));
+	checkGPUErrors(gpuMalloc(  &tmp_ptr,  u_val_len * sizeof(doublecomplex)));
 	A_gpu->UnzvalVec = (doublecomplex *) tmp_ptr;
-	checkCudaErrors(cudaMemset( (A_gpu->UnzvalVec), 0, u_val_len * sizeof(doublecomplex)));
+	checkGPUErrors(gpuMemset( (A_gpu->UnzvalVec), 0, u_val_len * sizeof(doublecomplex)));
 
-	checkCudaErrors(cudaMalloc(  &tmp_ptr,  u_k * sizeof(int_t))) ;
+	checkGPUErrors(gpuMalloc(  &tmp_ptr,  u_k * sizeof(int_t))) ;
 	A_gpu->UrowindPtr = (int_t *) tmp_ptr;
-	checkCudaErrors(cudaMemcpy( (A_gpu->UrowindPtr), temp_UrowindPtr, u_k * sizeof(int_t), cudaMemcpyHostToDevice)) ;
+	checkGPUErrors(gpuMemcpy( (A_gpu->UrowindPtr), temp_UrowindPtr, u_k * sizeof(int_t), gpuMemcpyHostToDevice)) ;
 
 	A_gpu->UnzvalPtr_host = temp_UnzvalPtr;
 
-	checkCudaErrors(cudaMalloc(  &tmp_ptr,  u_k * sizeof(int_t))) ;
+	checkGPUErrors(gpuMalloc(  &tmp_ptr,  u_k * sizeof(int_t))) ;
 	A_gpu->UnzvalPtr = (int_t *) tmp_ptr;
-	checkCudaErrors(cudaMemcpy( (A_gpu->UnzvalPtr), temp_UnzvalPtr, u_k * sizeof(int_t), cudaMemcpyHostToDevice)) ;
+	checkGPUErrors(gpuMemcpy( (A_gpu->UnzvalPtr), temp_UnzvalPtr, u_k * sizeof(int_t), gpuMemcpyHostToDevice)) ;
 
-	checkCudaErrors(cudaMalloc(  &tmp_ptr,  (nsupers + 1)*sizeof(int_t))) ;
+	checkGPUErrors(gpuMalloc(  &tmp_ptr,  (nsupers + 1)*sizeof(int_t))) ;
 	A_gpu->xsup = (int_t *) tmp_ptr;
-	checkCudaErrors(cudaMemcpy( (A_gpu->xsup), xsup, (nsupers + 1)*sizeof(int_t), cudaMemcpyHostToDevice)) ;
+	checkGPUErrors(gpuMemcpy( (A_gpu->xsup), xsup, (nsupers + 1)*sizeof(int_t), gpuMemcpyHostToDevice)) ;
 
-	checkCudaErrors(cudaMalloc( &tmp_ptr,  sizeof(zLUstruct_gpu_t))) ;
+	checkGPUErrors(gpuMalloc( &tmp_ptr,  sizeof(zLUstruct_gpu_t))) ;
 	*dA_gpu = (zLUstruct_gpu_t *) tmp_ptr;
-	checkCudaErrors(cudaMemcpy( *dA_gpu, A_gpu, sizeof(zLUstruct_gpu_t), cudaMemcpyHostToDevice)) ;
+	checkGPUErrors(gpuMemcpy( *dA_gpu, A_gpu, sizeof(zLUstruct_gpu_t), gpuMemcpyHostToDevice)) ;
 
 	free (temp_LrowindPtr);
 	free (temp_UrowindPtr);
@@ -1712,7 +1726,7 @@ int zreduceAllAncestors3d_GPU(int_t ilvl, int_t* myNodeCount,
 				   factStat_t *factStat,
 				   HyP_t* HyP, SCT_t* SCT )
 {
-    // first synchronize all cuda streams
+    // first synchronize all gpu streams
     int superlu_acc_offload =   HyP->superlu_acc_offload;
 
     int_t maxLvl = log2i( (int_t) grid3d->zscp.Np) + 1;
@@ -1734,10 +1748,10 @@ int zreduceAllAncestors3d_GPU(int_t ilvl, int_t* myNodeCount,
     /*Reduce all the ancestors from the GPU*/
     if (myGrid == sender && superlu_acc_offload)
     {
-        for (int_t streamId = 0; streamId < sluGPU->nCudaStreams; streamId++)
+        for (int_t streamId = 0; streamId < sluGPU->nGPUStreams; streamId++)
 	{
 	    double ttx = SuperLU_timer_();
-	    cudaStreamSynchronize(sluGPU->funCallStreams[streamId]);
+	    gpuStreamSynchronize(sluGPU->funCallStreams[streamId]);
 	    SCT->PhiWaitTimer += SuperLU_timer_() - ttx;
 	    sluGPU->lastOffloadStream[streamId] = -1;
 	}
@@ -1781,10 +1795,10 @@ int zreduceAllAncestors3d_GPU(int_t ilvl, int_t* myNodeCount,
 
 void zsyncAllfunCallStreams(zsluGPU_t* sluGPU, SCT_t* SCT)
 {
-    for (int streamId = 0; streamId < sluGPU->nCudaStreams; streamId++)
+    for (int streamId = 0; streamId < sluGPU->nGPUStreams; streamId++)
     {
         double ttx = SuperLU_timer_();
-        cudaStreamSynchronize(sluGPU->funCallStreams[streamId]);
+        gpuStreamSynchronize(sluGPU->funCallStreams[streamId]);
         SCT->PhiWaitTimer += SuperLU_timer_() - ttx;
         sluGPU->lastOffloadStream[streamId] = -1;
      }

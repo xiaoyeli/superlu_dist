@@ -13,13 +13,14 @@ at the top-level directory.
  * \brief Performs panel LU factorization.
  *
  * <pre>
- * -- Distributed SuperLU routine (version 7.0) --
+ * -- Distributed SuperLU routine (version 7.2) --
  * Lawrence Berkeley National Lab, Univ. of California Berkeley.
  * August 15, 2014
  *
  * Modified:
  *   September 30, 2017
- *   May 10, 2019 version 7.0.0
+ *   May 10, 2019  v7.0.0
+ *   December 12, 2021  v7.2.0
  *
  * <pre>
  * Purpose

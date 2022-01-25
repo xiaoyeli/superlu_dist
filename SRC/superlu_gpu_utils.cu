@@ -1,17 +1,6 @@
-#include <cuda.h>
-#include <cuda_runtime.h>
+#include "superlu_defs.h"
+#include "gpu_api_utils.h"
 
-/*error reporting functions */
-cudaError_t checkCuda(cudaError_t result)
-{
-#if defined(DEBUG) || defined(_DEBUG)
-    if (result != cudaSuccess) {
-        fprintf(stderr, "CUDA Runtime Error: %s\n", cudaGetErrorString(result));
-        assert(result == cudaSuccess);
-    }
-#endif
-    return result;
-}
 
 __device__ int dnextpow2(int v)
 
@@ -91,3 +80,4 @@ __global__ void gExScan(pfx_dtype *inArr, int n)
     
 }
 #endif
+

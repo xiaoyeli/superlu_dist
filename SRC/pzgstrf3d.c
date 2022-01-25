@@ -13,10 +13,11 @@ at the top-level directory.
  * \brief Performs LU factorization in 3D process grid.
  *
  * <pre>
- * -- Distributed SuperLU routine (version 7.0) --
+ * -- Distributed SuperLU routine (version 7.2) --
  * Lawrence Berkeley National Lab, Georgia Institute of Technology,
  * Oak Ridge National Lab
  * May 12, 2021
+ * Last update: December 12, 2021  v7.2.0
  */
 
 #include "superlu_zdefs.h"
@@ -272,7 +273,7 @@ int_t pzgstrf3d(superlu_dist_options_t *options, int m, int n, double anorm,
 
         HyP->first_u_block_acc = sluGPU->A_gpu->first_u_block_gpu;
         HyP->first_l_block_acc = sluGPU->A_gpu->first_l_block_gpu;
-        HyP->nGpuStreams = sluGPU->nGpuStreams;
+        HyP->nGPUStreams = sluGPU->nGPUStreams;
     }
 
 #endif  // end GPU_ACC

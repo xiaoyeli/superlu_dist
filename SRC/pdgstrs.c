@@ -22,11 +22,19 @@ at the top-level directory.
  * February 8, 2019  version 6.1.1
  * </pre>
  */
-#include <math.h>
+#include <math.h>				 
 #include "superlu_ddefs.h"
 #ifndef CACHELINE
 #define CACHELINE 64  /* bytes, Xeon Phi KNL, Cori haswell, Edision */
 #endif
+
+#ifdef GPU_ACC
+#include "gpu_api_utils.h"
+#endif
+
+// #ifndef GPUREF
+// #define GPUREF 1  
+// #endif
 
 /*
  * Sketch of the algorithm for L-solve:
@@ -97,6 +105,190 @@ _fcd ftcs1;
 _fcd ftcs2;
 _fcd ftcs3;
 #endif
+
+
+
+
+void
+dreadMM_dist_intoL_CSR(FILE *fp, int_t *m, int_t *n, int_t *nonz,
+	    double **nzval, int_t **colind, int_t **rowptr)
+{
+    int_t    i, k, isize, nnz, nz, new_nonz;
+    double *a, *val;
+    int_t    *asub, *xa, *row, *col;
+    int_t    zero_base = 0;
+    char *p, line[512], banner[64], mtx[64], crd[64], arith[64], sym[64];
+    char *cs;
+
+    /* 	File format:
+     *    %%MatrixMarket matrix coordinate real general/symmetric/...
+     *    % ...
+     *    % (optional comments)
+     *    % ...
+     *    #rows    #non-zero
+     *    Triplet in the rest of lines: row    col    value
+     */
+
+     /* 1/ read header */
+     cs = fgets(line,512,fp);
+     for (p=line; *p!='\0'; *p=tolower(*p),p++);
+
+     if (sscanf(line, "%s %s %s %s %s", banner, mtx, crd, arith, sym) != 5) {
+       printf("Invalid header (first line does not contain 5 tokens)\n");
+       exit;
+     }
+
+     if(strcmp(banner,"%%matrixmarket")) {
+       printf("Invalid header (first token is not \"%%%%MatrixMarket\")\n");
+       exit(-1);
+     }
+
+     if(strcmp(mtx,"matrix")) {
+       printf("Not a matrix; this driver cannot handle that.\n");
+       exit(-1);
+     }
+
+     if(strcmp(crd,"coordinate")) {
+       printf("Not in coordinate format; this driver cannot handle that.\n");
+       exit(-1);
+     }
+
+     if(strcmp(arith,"real")) {
+       if(!strcmp(arith,"complex")) {
+         printf("Complex matrix; use zreadMM instead!\n");
+         exit(-1);
+       }
+       else if(!strcmp(arith, "pattern")) {
+         printf("Pattern matrix; values are needed!\n");
+         exit(-1);
+       }
+       else {
+         printf("Unknown arithmetic\n");
+         exit(-1);
+       }
+     }
+
+     /* 2/ Skip comments */
+     while(banner[0]=='%') {
+       cs = fgets(line,512,fp);
+       sscanf(line,"%s",banner);
+     }
+
+     /* 3/ Read n and nnz */
+#ifdef _LONGINT
+    sscanf(line, "%ld%ld%ld",m, n, nonz);
+#else
+    sscanf(line, "%d%d%d",m, n, nonz);
+#endif
+
+    if(*m!=*n) {
+      printf("Rectangular matrix!. Abort\n");
+      exit(-1);
+   }
+
+    new_nonz = *nonz;
+
+    *m = *n;
+    printf("m %lld, n %lld, nonz %lld\n", (long long) *m, (long long) *n, (long long) *nonz);
+    fflush(stdout);
+    dallocateA_dist(*n, new_nonz, nzval, colind, rowptr); /* Allocate storage */
+    a    = *nzval;
+    asub = *colind;
+    xa   = *rowptr;
+
+    if ( !(val = doubleMalloc_dist(new_nonz)) )
+        ABORT("Malloc fails for val[]");
+    if ( !(row = (int_t *) intMalloc_dist(new_nonz)) )
+        ABORT("Malloc fails for row[]");
+    if ( !(col = (int_t *) intMalloc_dist(new_nonz)) )
+        ABORT("Malloc fails for col[]");
+
+    for (i = 0; i < *n; ++i) xa[i] = 0;
+
+    /* 4/ Read triplets of values */
+    for (nnz = 0, nz = 0; nnz < *nonz; ++nnz) {
+
+	i = fscanf(fp, IFMT IFMT "%lf\n", &row[nz], &col[nz], &val[nz]);
+
+	if ( nnz == 0 ) /* first nonzero */ {
+	    if ( row[0] == 0 || col[0] == 0 ) {
+		zero_base = 1;
+		printf("triplet file: row/col indices are zero-based.\n");
+	    } else
+		printf("triplet file: row/col indices are one-based.\n");
+	    fflush(stdout);
+	}
+
+	if ( !zero_base ) {
+	    /* Change to 0-based indexing. */
+	    --row[nz];
+	    --col[nz];
+	}
+
+	if (row[nz] < 0 || row[nz] >= *m || col[nz] < 0 || col[nz] >= *n
+	    /*|| val[nz] == 0.*/) {
+	    fprintf(stderr, "nz " IFMT ", (" IFMT ", " IFMT ") = %e out of bound, removed\n",
+		    nz, row[nz], col[nz], val[nz]);
+	    exit(-1);
+	} else {
+		if ( row[nz] >= col[nz] ) { /* Only lower triangular part */
+	    	++xa[row[nz]];
+		}
+	    ++nz;
+	}
+    }
+
+    new_nonz = nz;
+
+    /* Initialize the array of column pointers */
+    k = 0;
+    isize = xa[0];
+    xa[0] = 0;
+    for (i = 1; i < *n; ++i) {
+	k += isize;
+	isize = xa[i];
+	xa[i] = k;
+    }
+
+    /* Copy the triplets into the row oriented storage */
+	*nonz=0;
+    for (nz = 0; nz < new_nonz; ++nz) {
+	if ( row[nz] >= col[nz] ){	
+		i = row[nz];
+		k = xa[i];
+		asub[k] = col[nz];
+		a[k] = val[nz];
+		if(row[nz] == col[nz]) //force diagonal entries 
+			a[k] = 1.0;  
+		++xa[i];
+		(*nonz)++;
+		}
+    }
+
+    /* Reset the row pointers to the beginning of each row */
+    for (i = *n; i > 0; --i)
+	xa[i] = xa[i-1];
+    xa[0] = 0;
+
+    SUPERLU_FREE(val);
+    SUPERLU_FREE(row);
+    SUPERLU_FREE(col);
+
+	printf("nnz in lower triangular part of A %lld\n", (long long) *nonz);
+
+    // for (i = 0; i < *n; i++) {
+	// printf("Row %d, xa %d\n", i, xa[i]);
+	// for (k = xa[i]; k < xa[i+1]; k++)
+	//     printf("%d\t%16.10f\n", asub[k], a[k]);
+    // }
+
+
+}
+
+
+
+
+
 
 /*! \brief
  *
@@ -679,7 +871,7 @@ pdCompute_Diag_Inv(int_t n, dLUstruct_t *LUstruct,gridinfo_t *grid,
     t = SuperLU_timer_();
 #endif
 
-#if ( PRNTlevel>=2 )
+#if ( PRNTlevel>=1 )
     if ( grid->iam==0 ) {
 	printf("computing inverse of diagonal blocks...\n");
 	fflush(stdout);
@@ -852,7 +1044,7 @@ pdgstrs(int_t n, dLUstruct_t *LUstruct,
 		    /* NOTE: x and lsum are of same size. */
     double *lusup, *dest;
     double *recvbuf, *recvbuf_on, *tempv,
-            *recvbufall, *recvbuf_BC_fwd, *recvbuf0, *xin;
+            *recvbufall, *recvbuf_BC_fwd, *recvbuf0, *xin, *recvbuf_BC_gpu,*recvbuf_RD_gpu;
     double *rtemp, *rtemp_loc; /* Result of full matrix-vector multiply. */
     double *Linv; /* Inverse of diagonal block */
     double *Uinv; /* Inverse of diagonal block */
@@ -863,10 +1055,10 @@ pdgstrs(int_t n, dLUstruct_t *LUstruct,
     int_t nroot_send, nroot_send_tmp;
     int_t  **Ufstnz_br_ptr = Llu->Ufstnz_br_ptr;
         /*-- Data structures used for broadcast and reduction trees. --*/
-    BcTree  *LBtree_ptr = Llu->LBtree_ptr;
-    RdTree  *LRtree_ptr = Llu->LRtree_ptr;
-    BcTree  *UBtree_ptr = Llu->UBtree_ptr;
-    RdTree  *URtree_ptr = Llu->URtree_ptr;
+    C_Tree  *LBtree_ptr = Llu->LBtree_ptr;
+    C_Tree  *LRtree_ptr = Llu->LRtree_ptr;
+    C_Tree  *UBtree_ptr = Llu->UBtree_ptr;
+    C_Tree  *URtree_ptr = Llu->URtree_ptr;
     int_t  *Urbs1; /* Number of row blocks in each block column of U. */
     int_t  *Urbs = Llu->Urbs; /* Number of row blocks in each block column of U. */
     Ucb_indptr_t **Ucb_indptr = Llu->Ucb_indptr;/* Vertical linked list pointing to Uindex[] */
@@ -895,6 +1087,10 @@ pdgstrs(int_t n, dLUstruct_t *LUstruct,
     int_t  *fmod;         /* Modification count for L-solve --
     			 Count the number of local block products to
     			 be summed into lsum[lk]. */
+	int_t *fmod_sort;
+	int_t *order;
+	int_t *order1;
+	int_t *order2;
     int_t fmod_tmp;
     int_t  **fsendx_plist = Llu->fsendx_plist;
     int_t  nfrecvx = Llu->nfrecvx; /* Number of X components to be recv'd. */
@@ -933,7 +1129,7 @@ pdgstrs(int_t n, dLUstruct_t *LUstruct,
     int_t tmpresult;
 
     // #if ( PROFlevel>=1 )
-    double t1, t2;
+    double t1, t2, t3;
     float msg_vol = 0, msg_cnt = 0;
     // #endif
 
@@ -956,10 +1152,83 @@ pdgstrs(int_t n, dLUstruct_t *LUstruct,
     int thread_id = 0;
     yes_no_t empty;
     int_t sizelsum,sizertemp,aln_d,aln_i;
-    aln_d = ceil(CACHELINE/(double)dword);
-    aln_i = ceil(CACHELINE/(double)iword);
+    aln_d = 1;//ceil(CACHELINE/(double)dword);
+    aln_i = 1;//ceil(CACHELINE/(double)iword);
     int num_thread = 1;
+	int_t cnt1,cnt2;
 
+	
+#if defined(GPU_ACC) && defined(SLU_HAVE_LAPACK) && defined(GPU_SOLVE)  /* GPU trisolve*/
+
+#if ( PRNTlevel>=1 )
+	if ( !iam) printf(".. GPU trisolve\n");
+	fflush(stdout);
+#endif
+
+
+#ifdef GPUREF
+
+#ifdef HAVE_CUDA
+	int_t *cooCols,*cooRows;
+	double *nzval;
+	int_t *rowind, *colptr; 
+	int_t *colind, *rowptr, *rowptr1; 
+	double *cooVals;
+	int_t ntmp,nnzL;
+	
+    cusparseHandle_t handle = NULL;
+    gpuStream_t stream = NULL;
+    cusparseStatus_t status1 = CUSPARSE_STATUS_SUCCESS;	
+	gpuError_t gpuStat = gpuSuccess;
+    cusparseMatDescr_t descrA = NULL;
+    csrsm2Info_t info1 = NULL;	
+    csrsv2Info_t info2 = NULL;	
+	
+	
+	int_t *d_csrRowPtr = NULL;
+	int_t *d_cooRows = NULL;
+    int_t *d_cooCols = NULL;
+    int_t *d_P       = NULL;
+    double *d_cooVals = NULL;
+    double *d_csrVals = NULL;
+    double *d_B = NULL;
+    double *d_X = NULL;
+    double *Btmp;
+    size_t pBufferSizeInBytes = 0;
+    void *pBuffer = NULL;	
+    int_t *perm_r = ScalePermstruct->perm_r;
+    int_t *perm_c = ScalePermstruct->perm_c;
+	int_t l;
+	
+	
+    size_t lworkInBytes = 0;
+    int lworkInBytes2 = 0;
+    char *d_work = NULL;
+
+    const int algo = 1; /* 0: non-block version 1: block version */	
+	const double h_one = 1.0;
+	const cusparseSolvePolicy_t policy = CUSPARSE_SOLVE_POLICY_USE_LEVEL;
+#else
+	printf("only cusparse is implemented\n");
+	exit(0);
+#endif
+#else	
+	
+	const int nwrp_block = 1; /* number of warps in each block */
+	const int warp_size = 32; /* number of threads per warp*/
+	gpuStream_t sid=0;
+	int gid=0;
+	gridinfo_t *d_grid = NULL;
+	double *d_x = NULL;
+	double *d_lsum = NULL;
+    int_t  *d_fmod = NULL;	
+#endif		
+#endif
+
+
+// cudaProfilerStart();
+
+	
 	maxsuper = sp_ienv_dist(3);
 
 
@@ -1028,6 +1297,52 @@ pdgstrs(int_t n, dLUstruct_t *LUstruct,
     if ( !(fmod = intMalloc_dist(nlb*aln_i)) )
 	ABORT("Malloc fails for fmod[].");
     for (i = 0; i < nlb; ++i) fmod[i*aln_i] = Llu->fmod[i];
+	if ( !(fmod_sort = intCalloc_dist(nlb*2)) )
+		ABORT("Calloc fails for fmod_sort[].");
+	
+	for (j=0;j<nlb;++j)fmod_sort[j]=0;
+	for (j=0;j<nlb;++j)fmod_sort[j+nlb]=j;
+	dComputeLevelsets(iam, nsupers, grid, Glu_persist, Llu,fmod_sort);
+
+	quickSortM(fmod_sort,0,nlb-1,nlb,0,2);
+
+	if ( !(order = intCalloc_dist(nlb)) )
+		ABORT("Calloc fails for order[].");
+	for (j=0;j<nlb;++j)order[j]=fmod_sort[j+nlb];
+
+
+	// if ( !(order1 = intCalloc_dist(nlb)) )
+	// 	ABORT("Calloc fails for order1[].");
+	// if ( !(order2 = intCalloc_dist(nlb)) )
+	// 	ABORT("Calloc fails for order2[].");
+	// cnt1=0;
+	// cnt2=0;
+	// for (j=0;j<nlb;++j){
+	// 	if(Llu->fmod[j]==0){
+	// 		order1[cnt1]=j;
+	// 		cnt1++;
+	// 	}else{
+	// 		order2[cnt2]=j;
+	// 		cnt2++;
+	// 	}
+	// }
+
+	// for (j=0;j<cnt1;++j){
+	// 	order[j]=order1[j];
+	// }
+	// for (j=0;j<cnt2;++j){
+	// 	order[j+cnt1]=order2[j];
+	// }
+	// SUPERLU_FREE(order1);
+	// SUPERLU_FREE(order2);
+
+	// for (j=0;j<nlb;++j){
+	// 	printf("%5d%5d\n",order[j],fmod_sort[j]);
+	// 	fflush(stdout);
+	// }
+		 
+	SUPERLU_FREE(fmod_sort);
+
     if ( !(frecv = intCalloc_dist(nlb)) )
 	ABORT("Calloc fails for frecv[].");
     Llu->frecv = frecv;
@@ -1110,7 +1425,7 @@ pdgstrs(int_t n, dLUstruct_t *LUstruct,
     pdReDistribute_B_to_X(B, m_loc, nrhs, ldb, fst_row, ilsum, x,
 			  ScalePermstruct, Glu_persist, grid, SOLVEstruct);
 
-#if ( PRNTlevel>=2 )
+#if ( PRNTlevel>=1 )
     t = SuperLU_timer_() - t;
     if ( !iam) printf(".. B to X redistribute time\t%8.4f\n", t);
     fflush(stdout);
@@ -1134,13 +1449,12 @@ pdgstrs(int_t n, dLUstruct_t *LUstruct,
 
 	nbtree = 0;
 	for (lk=0;lk<nsupers_j;++lk){
-		if(LBtree_ptr[lk]!=NULL){
+		if(LBtree_ptr[lk].empty_==NO){
 			// printf("LBtree_ptr lk %5d\n",lk);
-			if(BcTree_IsRoot(LBtree_ptr[lk],'d')==NO){
+			if(C_BcTree_IsRoot(&LBtree_ptr[lk])==NO){
 				nbtree++;
-				if(BcTree_getDestCount(LBtree_ptr[lk],'d')>0)nfrecvx_buf++;
+				if(LBtree_ptr[lk].destCnt_>0)nfrecvx_buf++;
 			}
-			BcTree_allocateRequest(LBtree_ptr[lk],'d');
 		}
 	}
 
@@ -1166,10 +1480,10 @@ if(procs==1){
 	}
 }else{
 	for (lk=0;lk<nsupers_i;++lk){
-		if(LRtree_ptr[lk]!=NULL){
+		if(LRtree_ptr[lk].empty_==NO){
 			nrtree++;
-			RdTree_allocateRequest(LRtree_ptr[lk],'d');
-			frecv[lk] = RdTree_GetDestCount(LRtree_ptr[lk],'d');
+			// RdTree_allocateRequest(LRtree_ptr[lk],'d');
+			frecv[lk] = LRtree_ptr[lk].destCnt_;
 			nfrecvmod += frecv[lk];
 		}else{
 			gb = myrow+lk*grid->nprow;  /* not sure */
@@ -1203,7 +1517,7 @@ if(procs==1){
 	fflush(stdout);
 #endif
 
-#if ( PRNTlevel>=2 )
+#if ( PRNTlevel>=1 )
 	t = SuperLU_timer_() - t;
 	if ( !iam) printf(".. Setup L-solve time\t%8.4f\n", t);
 	fflush(stdout);
@@ -1228,6 +1542,388 @@ if(procs==1){
 	printf("(%2d) nleaf %4d\n", iam, nleaf);
 	fflush(stdout);
 #endif
+
+
+
+	// ii = X_BLK( 0 );
+	// knsupc = SuperSize( 0 );
+	// for (i=0 ; i<knsupc*nrhs ; i++){
+	// printf("x_l: %f\n",x[ii+i]);
+	// fflush(stdout);
+	// }
+
+#if defined(GPU_ACC) && defined(SLU_HAVE_LAPACK) && defined(GPU_SOLVE)  /* GPU trisolve*/
+// #if 0 /* CPU trisolve*/
+
+#ifdef GPUREF /* use cuSparse*/
+#ifdef HAVE_CUDA		
+	if(procs>1){
+	printf("procs>1 with GPU not implemented for trisolve using CuSparse\n");
+	fflush(stdout);
+	exit(1);
+	}
+
+
+
+	
+
+
+
+t1 = SuperLU_timer_();
+
+
+
+#if 0  // this will readin a matrix with only lower triangular part, note that this code block is only for benchmarking cusparse performance  
+	
+	FILE *fp, *fopen();
+	if ( !(fp = fopen("/gpfs/alpine/scratch/liuyangz/csc289/matrix/HTS/copter2.mtx", "r")) ) {
+	// if ( !(fp = fopen("/gpfs/alpine/scratch/liuyangz/csc289/matrix/HTS/epb3.mtx", "r")) ) {
+	// if ( !(fp = fopen("/gpfs/alpine/scratch/liuyangz/csc289/matrix/HTS/gridgena.mtx", "r")) ) { 
+	// if ( !(fp = fopen("/gpfs/alpine/scratch/liuyangz/csc289/matrix/HTS/vanbody.mtx", "r")) ) { 
+	// if ( !(fp = fopen("/gpfs/alpine/scratch/liuyangz/csc289/matrix/HTS/shipsec1.mtx", "r")) ) { 
+	// if ( !(fp = fopen("/gpfs/alpine/scratch/liuyangz/csc289/matrix/HTS/dawson5.mtx", "r")) ) {
+	// if ( !(fp = fopen("/gpfs/alpine/scratch/liuyangz/csc289/matrix/HTS/gas_sensor.mtx", "r")) ) { 
+	// if ( !(fp = fopen("/gpfs/alpine/scratch/liuyangz/csc289/matrix/HTS/rajat16.mtx", "r")) ) {
+
+			ABORT("File does not exist");
+		}
+	int mtmp;	
+	dreadMM_dist_intoL_CSR(fp, &mtmp, &ntmp, &nnzL,&nzval, &colind, &rowptr);
+	if ( !(Btmp = (double*)SUPERLU_MALLOC((nrhs*ntmp) * sizeof(double))) )
+		ABORT("Calloc fails for Btmp[].");
+	for (i = 0; i < ntmp; ++i) {
+		irow = i;
+		RHS_ITERATE(j) {
+		Btmp[i + j*ldb]=1.0;
+		}
+	}	
+#else
+
+// //////// dGenCSCLblocks(iam, nsupers, grid,Glu_persist,Llu, &nzval, &rowind, &colptr, &ntmp, &nnzL);
+	dGenCSRLblocks(iam, nsupers, grid,Glu_persist,Llu, &nzval, &colind, &rowptr, &ntmp, &nnzL);
+	if ( !(Btmp = (double*)SUPERLU_MALLOC((nrhs*m_loc) * sizeof(double))) )
+		ABORT("Calloc fails for Btmp[].");	
+	for (i = 0; i < ntmp; ++i) {
+		irow = perm_c[perm_r[i+fst_row]]; /* Row number in Pc*Pr*B */
+		RHS_ITERATE(j) {
+		Btmp[irow + j*ldb]=B[i + j*ldb];
+		// printf("%d %e\n",irow + j*ldb,Btmp[irow + j*ldb]);
+		}
+	}
+#endif
+
+    if ( !(rowptr1 = (int_t *) SUPERLU_MALLOC((ntmp+1) * sizeof(int_t))) )
+        ABORT("Malloc fails for row[]");
+	for (i=0;i<ntmp;i++)
+		rowptr1[i]=rowptr[i];
+	rowptr1[ntmp]=	nnzL; // cusparse requires n+1 elements in the row pointers, the last one is the nonzero count
+	
+
+
+	t1 = SuperLU_timer_() - t1;	
+	if ( !iam ) {
+		printf(".. convert to CSR time\t%15.7f\n", t1);
+		fflush(stdout);
+	}		
+	
+	t1 = SuperLU_timer_();
+	checkGPU(gpuStreamCreateWithFlags(&stream, gpuStreamDefault));		
+	status1 = cusparseCreate(&handle);
+    assert(CUSPARSE_STATUS_SUCCESS == status1);			
+    status1 = cusparseSetStream(handle, stream);
+    assert(CUSPARSE_STATUS_SUCCESS == status1);	
+	status1 = cusparseCreateMatDescr(&descrA);
+    assert(CUSPARSE_STATUS_SUCCESS == status1);
+	
+	t1 = SuperLU_timer_() - t1;	
+	if ( !iam ) {
+		printf(".. gpu initialize time\t%15.7f\n", t1);
+		fflush(stdout);
+	}		
+	t1 = SuperLU_timer_();
+	
+	
+	checkGPU(gpuMalloc( (void**)&d_B, sizeof(double)*ntmp*nrhs));
+	checkGPU(gpuMalloc( (void**)&d_X, sizeof(double)*ntmp*nrhs));
+	checkGPU(gpuMalloc( (void**)&d_cooCols, sizeof(int)*nnzL));
+	checkGPU(gpuMalloc( (void**)&d_csrVals, sizeof(double)*nnzL));
+	checkGPU(gpuMalloc( (void**)&d_csrRowPtr,(ntmp+1)*sizeof(double)));
+	
+
+	t1 = SuperLU_timer_() - t1;	
+	if ( !iam ) {
+		printf(".. gpuMalloc time\t%15.7f\n", t1);
+		fflush(stdout);
+	}	
+	t1 = SuperLU_timer_();
+	
+	checkGPU(gpuMemcpy(d_B, Btmp, sizeof(double)*nrhs*ntmp, gpuMemcpyHostToDevice));	
+	checkGPU(gpuMemcpy(d_cooCols, colind, sizeof(int)*nnzL   , gpuMemcpyHostToDevice));
+	checkGPU(gpuMemcpy(d_csrRowPtr, rowptr1, sizeof(int)*(ntmp+1)   , gpuMemcpyHostToDevice));
+	checkGPU(gpuMemcpy(d_csrVals, nzval, sizeof(double)*nnzL, gpuMemcpyHostToDevice));
+
+	
+	// checkGPU(cudaDeviceSynchronize);
+	checkGPU(gpuStreamSynchronize(stream));
+	
+	t1 = SuperLU_timer_() - t1;	
+	if ( !iam ) {
+		printf(".. HostToDevice time\t%15.7f\n", t1);
+		fflush(stdout);
+	}		
+	t1 = SuperLU_timer_();	
+	
+/* A is base-0*/
+    cusparseSetMatIndexBase(descrA,CUSPARSE_INDEX_BASE_ZERO);
+
+    cusparseSetMatType(descrA, CUSPARSE_MATRIX_TYPE_GENERAL);
+/* A is lower triangle */
+    cusparseSetMatFillMode(descrA, CUSPARSE_FILL_MODE_LOWER);
+/* A has unit diagonal */
+    cusparseSetMatDiagType(descrA, CUSPARSE_DIAG_TYPE_UNIT);
+
+
+
+#if 1  // this only works for 1 rhs
+	assert(nrhs == 1);
+    status1 = cusparseCreateCsrsv2Info(&info2);
+    assert(CUSPARSE_STATUS_SUCCESS == status1);	
+    status1 = cusparseDcsrsv2_bufferSize(
+        handle,
+        CUSPARSE_OPERATION_NON_TRANSPOSE, /* transA */
+        ntmp,
+        nnzL,
+        descrA,
+        d_csrVals,
+        d_csrRowPtr,
+        d_cooCols,
+        info2,
+        &lworkInBytes2);
+    assert(CUSPARSE_STATUS_SUCCESS == status1);	
+	printf("lworkInBytes  = %lld \n", (long long)lworkInBytes2);
+    if (NULL != d_work) { gpuFree(d_work); }	
+	checkGPU(gpuMalloc( (void**)&d_work, lworkInBytes2));
+    
+	status1 = cusparseDcsrsv2_analysis(
+        handle,
+        CUSPARSE_OPERATION_NON_TRANSPOSE, /* transA */
+        ntmp,
+        nnzL,
+        descrA,
+        d_csrVals,
+        d_csrRowPtr,
+        d_cooCols,
+        info2,
+        policy,
+        d_work);
+    assert(CUSPARSE_STATUS_SUCCESS == status1);	
+	
+
+	t1 = SuperLU_timer_() - t1;	
+	if ( !iam ) {
+		printf(".. Cusparse analysis time\t%15.7f\n", t1);
+		fflush(stdout);
+	}			
+
+	t1 = SuperLU_timer_();
+    status1 = cusparseDcsrsv2_solve(
+        handle, 
+        CUSPARSE_OPERATION_NON_TRANSPOSE, /* transA */
+        ntmp,
+        nnzL,
+		&h_one,
+        descrA,
+        d_csrVals,
+        d_csrRowPtr,
+        d_cooCols,
+        info2,
+        d_B,		
+		d_X,				
+        policy,
+        d_work);
+    assert(CUSPARSE_STATUS_SUCCESS == status1);
+    // checkGPU(gpuDeviceSynchronize);
+	checkGPU(gpuStreamSynchronize(stream));
+	checkGPU(gpuMemcpy(d_B, d_X, sizeof(double)*nrhs*ntmp, cudaMemcpyDeviceToDevice));	
+	checkGPU(gpuStreamSynchronize(stream));
+
+	t1 = SuperLU_timer_() - t1;	
+	if ( !iam ) {
+		printf(".. Cusparse solve time\t%15.7f\n", t1);
+		fflush(stdout);
+	}	
+
+
+#else
+
+    status1 = cusparseCreateCsrsm2Info(&info1);
+    assert(CUSPARSE_STATUS_SUCCESS == status1);	
+    status1 = cusparseDcsrsm2_bufferSizeExt(
+        handle,
+        algo,
+        CUSPARSE_OPERATION_NON_TRANSPOSE, /* transA */
+        CUSPARSE_OPERATION_NON_TRANSPOSE, /* transB */
+        ntmp,
+        nrhs,
+        nnzL,
+        &h_one,
+        descrA,
+        d_csrVals,
+        d_csrRowPtr,
+        d_cooCols,
+        d_B,
+        ntmp,   /* ldb */
+        info1,
+        policy,
+        &lworkInBytes);
+    assert(CUSPARSE_STATUS_SUCCESS == status1);	
+	
+	printf("lworkInBytes  = %lld \n", (long long)lworkInBytes);
+    if (NULL != d_work) { gpuFree(d_work); }	
+	checkGPU(gpuMalloc( (void**)&d_work, lworkInBytes));
+	
+    status1 = cusparseDcsrsm2_analysis(
+        handle,
+        algo,
+        CUSPARSE_OPERATION_NON_TRANSPOSE, /* transA */
+        CUSPARSE_OPERATION_NON_TRANSPOSE, /* transB */
+        ntmp,
+        nrhs,
+        nnzL,
+        &h_one,
+        descrA,
+        d_csrVals,
+        d_csrRowPtr,
+        d_cooCols,
+        d_B,
+        ntmp,   /* ldb */
+        info1,
+        policy,
+        d_work);
+    assert(CUSPARSE_STATUS_SUCCESS == status1);	
+	
+
+	t1 = SuperLU_timer_() - t1;	
+	if ( !iam ) {
+		printf(".. Cusparse analysis time\t%15.7f\n", t1);
+		fflush(stdout);
+	}			
+	
+	t1 = SuperLU_timer_();
+    status1 = cusparseDcsrsm2_solve(
+        handle,
+        algo,
+        CUSPARSE_OPERATION_NON_TRANSPOSE, /* transA */
+        CUSPARSE_OPERATION_NON_TRANSPOSE, /* transB */
+        ntmp,
+        nrhs,
+        nnzL,
+        &h_one,
+        descrA,
+        d_csrVals,
+        d_csrRowPtr,
+        d_cooCols,
+        d_B,
+        ntmp,   /* ldb */
+        info1,
+        policy,
+        d_work);
+    assert(CUSPARSE_STATUS_SUCCESS == status1);
+    // checkGPU(gpuDeviceSynchronize);
+	checkGPU(gpuStreamSynchronize(stream));
+	
+	t1 = SuperLU_timer_() - t1;	
+	if ( !iam ) {
+		printf(".. Cusparse solve time\t%15.7f\n", t1);
+		fflush(stdout);
+	}	
+	
+
+#endif
+
+
+
+
+	t1 = SuperLU_timer_();
+	checkGPU(gpuMemcpy(Btmp, d_B, sizeof(double)*ntmp*nrhs, gpuMemcpyDeviceToHost));
+	// checkGPU(gpuDeviceSynchronize);
+	checkGPU(gpuStreamSynchronize(stream));
+	t1 = SuperLU_timer_() - t1;	
+	if ( !iam ) {
+		printf(".. DeviceToHost time\t%15.7f\n", t1);
+		fflush(stdout);
+	}		
+
+	
+	for (i = 0; i < m_loc; ++i) {
+		irow = i+fst_row; 
+
+		k = BlockNum( irow );
+		knsupc = SuperSize( k );
+		l = X_BLK( k );
+
+		irow = irow - FstBlockC(k); /* Relative row number in X-block */
+		RHS_ITERATE(j) {
+		x[l + irow + j*knsupc] = Btmp[i + j*ldb];
+		// printf("%d %e\n",l + irow + j*knsupc,x[l + irow + j*knsupc]);
+		// fflush(stdout);
+		}
+	}
+	SUPERLU_FREE(Btmp); 
+
+
+
+
+
+
+#endif	
+	  
+#else
+
+
+
+
+
+
+// #if HAVE_CUDA
+// cudaProfilerStart(); 
+// #elif defined(HAVE_HIP)
+// roctracer_mark("before HIP LaunchKernel");
+// roctxMark("before hipLaunchKernel");
+// roctxRangePush("hipLaunchKernel");
+// #endif
+
+	checkGPU(gpuMalloc( (void**)&d_grid, sizeof(gridinfo_t)));
+	
+	checkGPU(gpuMalloc( (void**)&recvbuf_BC_gpu, maxrecvsz*  CEILING( nsupers, grid->npcol) * sizeof(double))); // used for receiving and forwarding x on each thread
+	checkGPU(gpuMalloc( (void**)&recvbuf_RD_gpu, 2*maxrecvsz*  CEILING( nsupers, grid->nprow) * sizeof(double))); // used for receiving and forwarding lsum on each thread
+	checkGPU(gpuMalloc( (void**)&d_lsum, sizelsum*num_thread * sizeof(double)));
+	checkGPU(gpuMalloc( (void**)&d_x, (ldalsum * nrhs + nlb * XK_H) * sizeof(double)));
+	checkGPU(gpuMalloc( (void**)&d_fmod, (nlb*aln_i) * sizeof(int_t)));
+	
+
+	checkGPU(gpuMemcpy(d_grid, grid, sizeof(gridinfo_t), gpuMemcpyHostToDevice));	
+	checkGPU(gpuMemcpy(d_lsum, lsum, sizelsum*num_thread * sizeof(double), gpuMemcpyHostToDevice));	
+	checkGPU(gpuMemcpy(d_x, x, (ldalsum * nrhs + nlb * XK_H) * sizeof(double), gpuMemcpyHostToDevice));	
+	checkGPU(gpuMemcpy(d_fmod, fmod, (nlb*aln_i) * sizeof(int_t), gpuMemcpyHostToDevice));
+
+	k = CEILING( nsupers, grid->npcol);/* Number of local block columns divided by #warps per block used as number of thread blocks*/
+	knsupc = sp_ienv_dist(3);
+	dlsum_fmod_inv_gpu_wrap(k,nlb,DIM_X,DIM_Y,d_lsum,d_x,nrhs,knsupc,nsupers,d_fmod,Llu->d_LBtree_ptr,Llu->d_LRtree_ptr,Llu->d_ilsum,Llu->d_Lrowind_bc_dat, Llu->d_Lrowind_bc_offset, Llu->d_Lnzval_bc_dat, Llu->d_Lnzval_bc_offset, Llu->d_Linv_bc_dat, Llu->d_Linv_bc_offset, Llu->d_Lindval_loc_bc_dat, Llu->d_Lindval_loc_bc_offset,Llu->d_xsup,d_grid,recvbuf_BC_gpu,recvbuf_RD_gpu,maxrecvsz);
+
+	checkGPU(gpuMemcpy(x, d_x, (ldalsum * nrhs + nlb * XK_H) * sizeof(double), gpuMemcpyDeviceToHost));
+
+	checkGPU (gpuFree (d_grid));
+	checkGPU (gpuFree (recvbuf_BC_gpu));
+	checkGPU (gpuFree (recvbuf_RD_gpu));
+	checkGPU (gpuFree (d_x));
+	checkGPU (gpuFree (d_lsum));
+	checkGPU (gpuFree (d_fmod));
+
+	stat_loc[0]->ops[SOLVE]+=Llu->Lnzval_bc_cnt*nrhs*2; // YL: this is a rough estimate 
+#endif 	
+
+#else  /* CPU trisolve*/
 
 
 #ifdef _OPENMP
@@ -1287,8 +1983,9 @@ thread_id=0;
 					for (i=0 ; i<knsupc*nrhs ; i++){
 						x[ii+i] = rtemp_loc[i];
 					}
-
-					// for (i=0 ; i<knsupc*nrhs ; i++){
+							// printf("\n");
+							// printf("k: %5d\n",k);	
+					// for (i=0 ; i<knsupc*nrhs ; i++){				
 					// printf("x_l: %f\n",x[ii+i]);
 					// fflush(stdout);
 					// }
@@ -1312,7 +2009,7 @@ thread_id=0;
 					 * Send Xk to process column Pc[k].
 					 */
 
-					if(LBtree_ptr[lk]!=NULL){
+					if(LBtree_ptr[lk].empty_==NO){
 						lib = LBi( k, grid ); /* Local block number, row-wise. */
 						ii = X_BLK( lib );
 
@@ -1376,7 +2073,7 @@ thread_id=0;
 		     * Send Xk to process column Pc[k].
 		     */
 
-		    if (LBtree_ptr[lk]!=NULL) {
+		    if (LBtree_ptr[lk].empty_==NO) {
 			lib = LBi( k, grid ); /* Local block number, row-wise. */
 			ii = X_BLK( lib );
 
@@ -1441,11 +2138,14 @@ thread_id=0;
 					gb = mycol+lk*grid->npcol;  /* not sure */
 					lib = LBi( gb, grid ); /* Local block number, row-wise. */
 					ii = X_BLK( lib );
-					BcTree_forwardMessageSimple(LBtree_ptr[lk],&x[ii - XK_H],BcTree_GetMsgSize(LBtree_ptr[lk],'d')*nrhs+XK_H,'d');
+					// BcTree_forwardMessageSimple(LBtree_ptr[lk],&x[ii - XK_H],BcTree_GetMsgSize(LBtree_ptr[lk],'d')*nrhs+XK_H,'d');
+					C_BcTree_forwardMessageSimple(&LBtree_ptr[lk], &x[ii - XK_H], LBtree_ptr[lk].msgSize_*nrhs+XK_H);
+				
 				}else{ // this is a reduce forwarding
 					lk = -lk - 1;
 					il = LSUM_BLK( lk );
-					RdTree_forwardMessageSimple(LRtree_ptr[lk],&lsum[il - LSUM_H ],RdTree_GetMsgSize(LRtree_ptr[lk],'d')*nrhs+LSUM_H,'d');
+					// RdTree_forwardMessageSimple(LRtree_ptr[lk],&lsum[il - LSUM_H ],RdTree_GetMsgSize(LRtree_ptr[lk],'d')*nrhs+LSUM_H,'d');
+					C_RdTree_forwardMessageSimple(&LRtree_ptr[lk],&lsum[il - LSUM_H ],LRtree_ptr[lk].msgSize_*nrhs+LSUM_H);
 				}
 			}
 
@@ -1513,10 +2213,11 @@ thread_id=0;
 								nfrecvx_buf++;
 								{
 									lk = LBj( k, grid );    /* local block number */
+										
+									if(LBtree_ptr[lk].destCnt_>0){
 
-									if(BcTree_getDestCount(LBtree_ptr[lk],'d')>0){
-
-										BcTree_forwardMessageSimple(LBtree_ptr[lk],recvbuf0,BcTree_GetMsgSize(LBtree_ptr[lk],'d')*nrhs+XK_H,'d');
+										// BcTree_forwardMessageSimple(LBtree_ptr[lk],recvbuf0,BcTree_GetMsgSize(LBtree_ptr[lk],'d')*nrhs+XK_H,'d');
+										C_BcTree_forwardMessageSimple(&LBtree_ptr[lk], recvbuf0, LBtree_ptr[lk].msgSize_*nrhs+XK_H);
 										// nfrecvx_buf++;
 									}
 
@@ -1568,7 +2269,7 @@ thread_id=0;
 									thread_id = 0;
 									rtemp_loc = &rtemp[sizertemp* thread_id];
 									if ( fmod_tmp==0 ) {
-										if(RdTree_IsRoot(LRtree_ptr[lk],'d')==YES){
+										if(C_RdTree_IsRoot(&LRtree_ptr[lk])==YES){
 											// ii = X_BLK( lk );
 											knsupc = SuperSize( k );
 											for (ii=1;ii<num_thread;ii++)
@@ -1636,8 +2337,9 @@ thread_id=0;
 											/*
 											 * Send Xk to process column Pc[k].
 											 */
-											if(LBtree_ptr[lk]!=NULL){
-												BcTree_forwardMessageSimple(LBtree_ptr[lk],&x[ii - XK_H],BcTree_GetMsgSize(LBtree_ptr[lk],'d')*nrhs+XK_H,'d');
+											if(LBtree_ptr[lk].empty_==NO){
+												// BcTree_forwardMessageSimple(LBtree_ptr[lk],&x[ii - XK_H],BcTree_GetMsgSize(LBtree_ptr[lk],'d')*nrhs+XK_H,'d');
+												C_BcTree_forwardMessageSimple(&LBtree_ptr[lk], &x[ii - XK_H], LBtree_ptr[lk].msgSize_*nrhs+XK_H);
 											}
 
 
@@ -1667,7 +2369,8 @@ thread_id=0;
 										for (ii=1;ii<num_thread;ii++)
 											for (jj=0;jj<knsupc*nrhs;jj++)
 												lsum[il + jj] += lsum[il + jj + ii*sizelsum];
-										RdTree_forwardMessageSimple(LRtree_ptr[lk],&lsum[il-LSUM_H],RdTree_GetMsgSize(LRtree_ptr[lk],'d')*nrhs+LSUM_H,'d');
+										// RdTree_forwardMessageSimple(LRtree_ptr[lk],&lsum[il-LSUM_H],RdTree_GetMsgSize(LRtree_ptr[lk],'d')*nrhs+LSUM_H,'d');
+										C_RdTree_forwardMessageSimple(&LRtree_ptr[lk],&lsum[il - LSUM_H ],LRtree_ptr[lk].msgSize_*nrhs+LSUM_H);
 									}
 
 								}
@@ -1681,7 +2384,11 @@ thread_id=0;
 			}
 		} // end of parallel 
 
-#if ( PRNTlevel>=2 )
+#endif	
+
+
+
+#if ( PRNTlevel>=1 )
 		t = SuperLU_timer_() - t;
 		stat->utime[SOL_TOT] += t;
 		if ( !iam ) {
@@ -1701,6 +2408,8 @@ thread_id=0;
 		t = SuperLU_timer_();
 #endif
 
+
+// stat->utime[SOLVE] = SuperLU_timer_() - t1_sol;
 
 #if ( DEBUGlevel==2 )
 		{
@@ -1722,6 +2431,7 @@ thread_id=0;
 #endif
 
 		SUPERLU_FREE(fmod);
+		SUPERLU_FREE(order);
 		SUPERLU_FREE(frecv);
 		SUPERLU_FREE(leaf_send);
 		SUPERLU_FREE(leafsups);
@@ -1729,17 +2439,18 @@ thread_id=0;
 		log_memory(-nlb*aln_i*iword-nlb*iword-(CEILING( nsupers, Pr )+CEILING( nsupers, Pc ))*aln_i*iword- nsupers_i*iword -maxrecvsz*(nfrecvx+1)*dword, stat);	//account for fmod, frecv, leaf_send, leafsups, recvbuf_BC_fwd
 
 		for (lk=0;lk<nsupers_j;++lk){
-			if(LBtree_ptr[lk]!=NULL){
+			if(LBtree_ptr[lk].empty_==NO){
 				// if(BcTree_IsRoot(LBtree_ptr[lk],'d')==YES){
-				BcTree_waitSendRequest(LBtree_ptr[lk],'d');
+				// BcTree_waitSendRequest(LBtree_ptr[lk],'d');
+				C_BcTree_waitSendRequest(&LBtree_ptr[lk]);
 				// }
 				// deallocate requests here
 			}
 		}
 
 		for (lk=0;lk<nsupers_i;++lk){
-			if(LRtree_ptr[lk]!=NULL){
-				RdTree_waitSendRequest(LRtree_ptr[lk],'d');
+			if(LRtree_ptr[lk].empty_==NO){	
+				C_RdTree_waitSendRequest(&LRtree_ptr[lk]);
 				// deallocate requests here
 			}
 		}
@@ -1843,8 +2554,6 @@ thread_id=0;
 #endif /* DEBUGlevel */
 
 
-
-
 	/* ---------------------------------------------------------
 	   Initialize the async Bcast trees on all processes.
 	   --------------------------------------------------------- */
@@ -1852,13 +2561,13 @@ thread_id=0;
 
 	nbtree = 0;
 	for (lk=0;lk<nsupers_j;++lk){
-		if(UBtree_ptr[lk]!=NULL){
+		if(UBtree_ptr[lk].empty_==NO){
 			// printf("UBtree_ptr lk %5d\n",lk);
-			if(BcTree_IsRoot(UBtree_ptr[lk],'d')==NO){
+			if(C_BcTree_IsRoot(&UBtree_ptr[lk])==NO){
 				nbtree++;
-				if(BcTree_getDestCount(UBtree_ptr[lk],'d')>0)nbrecvx_buf++;
+				if(UBtree_ptr[lk].destCnt_>0)nbrecvx_buf++;
 			}
-			BcTree_allocateRequest(UBtree_ptr[lk],'d');
+			// BcTree_allocateRequest(UBtree_ptr[lk],'d');
 		}
 	}
 
@@ -1869,12 +2578,12 @@ thread_id=0;
 	nrtree = 0;
 	nroot=0;
 	for (lk=0;lk<nsupers_i;++lk){
-		if(URtree_ptr[lk]!=NULL){
+		if(URtree_ptr[lk].empty_==NO){
 			// printf("here lk %5d myid %5d\n",lk,iam);
 			// fflush(stdout);
 			nrtree++;
-			RdTree_allocateRequest(URtree_ptr[lk],'d');
-			brecv[lk] = RdTree_GetDestCount(URtree_ptr[lk],'d');
+			// RdTree_allocateRequest(URtree_ptr[lk],'d');
+			brecv[lk] = URtree_ptr[lk].destCnt_;
 			nbrecvmod += brecv[lk];
 		}else{
 			gb = myrow+lk*grid->nprow;  /* not sure */
@@ -1907,7 +2616,7 @@ thread_id=0;
 #endif
 
 
-#if ( PRNTlevel>=2 )
+#if ( PRNTlevel>=1 )
 	t = SuperLU_timer_() - t;
 	if ( !iam) printf(".. Setup U-solve time\t%8.4f\n", t);
 	fflush(stdout);
@@ -1922,6 +2631,51 @@ thread_id=0;
 		printf("(%2d) nroot %4d\n", iam, nroot);
 		fflush(stdout);
 #endif
+
+
+
+
+
+
+#if defined(GPU_ACC) && defined(SLU_HAVE_LAPACK) && defined(GPU_SOLVE)  /* GPU trisolve*/
+// #if 0 /* CPU trisolve*/
+
+	d_grid = NULL;
+	d_x = NULL;
+	d_lsum = NULL;
+    int_t  *d_bmod = NULL;
+
+	checkGPU(gpuMalloc( (void**)&d_grid, sizeof(gridinfo_t)));
+	checkGPU(gpuMalloc( (void**)&d_lsum, sizelsum*num_thread * sizeof(double)));
+	checkGPU(gpuMalloc( (void**)&d_x, (ldalsum * nrhs + nlb * XK_H) * sizeof(double)));
+	checkGPU(gpuMalloc( (void**)&d_bmod, (nlb*aln_i) * sizeof(int_t)));
+	
+
+	checkGPU(gpuMemcpy(d_grid, grid, sizeof(gridinfo_t), gpuMemcpyHostToDevice));	
+	checkGPU(gpuMemcpy(d_lsum, lsum, sizelsum*num_thread * sizeof(double), gpuMemcpyHostToDevice));	
+	checkGPU(gpuMemcpy(d_x, x, (ldalsum * nrhs + nlb * XK_H) * sizeof(double), gpuMemcpyHostToDevice));	
+	checkGPU(gpuMemcpy(d_bmod, bmod, (nlb*aln_i) * sizeof(int_t), gpuMemcpyHostToDevice));
+
+	k = CEILING( nsupers, grid->npcol);/* Number of local block columns divided by #warps per block used as number of thread blocks*/
+	knsupc = sp_ienv_dist(3);
+
+    
+
+	dlsum_bmod_inv_gpu_wrap(k,nlb,DIM_X,DIM_Y,d_lsum,d_x,nrhs,knsupc,nsupers,d_bmod,Llu->d_UBtree_ptr,Llu->d_URtree_ptr,Llu->d_ilsum,Llu->d_Urbs,Llu->d_Ufstnz_br_dat,Llu->d_Ufstnz_br_offset,Llu->d_Unzval_br_dat,Llu->d_Unzval_br_offset,Llu->d_Ucb_valdat,Llu->d_Ucb_valoffset,Llu->d_Ucb_inddat,Llu->d_Ucb_indoffset,Llu->d_Uinv_bc_dat,Llu->d_Uinv_bc_offset,Llu->d_xsup,d_grid);
+
+
+	checkGPU(gpuMemcpy(x, d_x, (ldalsum * nrhs + nlb * XK_H) * sizeof(double), gpuMemcpyDeviceToHost));
+
+	checkGPU (gpuFree (d_grid));
+	checkGPU (gpuFree (d_x));
+	checkGPU (gpuFree (d_lsum));
+	checkGPU (gpuFree (d_bmod));
+
+	stat_loc[0]->ops[SOLVE]+=Llu->Unzval_br_cnt*nrhs*2; // YL: this is a rough estimate 
+
+#else  /* CPU trisolve*/
+
+
 
 
 
@@ -2011,7 +2765,7 @@ thread_id=0;
 			 * Send Xk to process column Pc[k].
 			 */
 
-			if(UBtree_ptr[lk]!=NULL){
+			if(UBtree_ptr[lk].empty_==NO){
 #ifdef _OPENMP
 #pragma omp atomic capture
 #endif
@@ -2066,11 +2820,13 @@ for (i=0;i<nroot_send;i++){
 		gb = mycol+lk*grid->npcol;  /* not sure */
 		lib = LBi( gb, grid ); /* Local block number, row-wise. */
 		ii = X_BLK( lib );
-		BcTree_forwardMessageSimple(UBtree_ptr[lk],&x[ii - XK_H],BcTree_GetMsgSize(UBtree_ptr[lk],'d')*nrhs+XK_H,'d');
+		// BcTree_forwardMessageSimple(UBtree_ptr[lk],&x[ii - XK_H],BcTree_GetMsgSize(UBtree_ptr[lk],'d')*nrhs+XK_H,'d');
+		C_BcTree_forwardMessageSimple(&UBtree_ptr[lk], &x[ii - XK_H], UBtree_ptr[lk].msgSize_*nrhs+XK_H);
 	}else{ // this is a reduce forwarding
 		lk = -lk - 1;
 		il = LSUM_BLK( lk );
-		RdTree_forwardMessageSimple(URtree_ptr[lk],&lsum[il - LSUM_H ],RdTree_GetMsgSize(URtree_ptr[lk],'d')*nrhs+LSUM_H,'d');
+		// RdTree_forwardMessageSimple(URtree_ptr[lk],&lsum[il - LSUM_H ],RdTree_GetMsgSize(URtree_ptr[lk],'d')*nrhs+LSUM_H,'d');
+		C_RdTree_forwardMessageSimple(&URtree_ptr[lk],&lsum[il - LSUM_H ],URtree_ptr[lk].msgSize_*nrhs+LSUM_H);
 	}
 }
 
@@ -2128,9 +2884,10 @@ for (i=0;i<nroot_send;i++){
 
 				lk = LBj( k, grid );    /* local block number */
 
-				if(BcTree_getDestCount(UBtree_ptr[lk],'d')>0){
+				if(UBtree_ptr[lk].destCnt_>0){
 
-					BcTree_forwardMessageSimple(UBtree_ptr[lk],recvbuf0,BcTree_GetMsgSize(UBtree_ptr[lk],'d')*nrhs+XK_H,'d');
+					// BcTree_forwardMessageSimple(UBtree_ptr[lk],recvbuf0,BcTree_GetMsgSize(UBtree_ptr[lk],'d')*nrhs+XK_H,'d');
+					C_BcTree_forwardMessageSimple(&UBtree_ptr[lk], recvbuf0, UBtree_ptr[lk].msgSize_*nrhs+XK_H);
 					// nfrecvx_buf++;
 				}
 
@@ -2161,7 +2918,7 @@ for (i=0;i<nroot_send;i++){
 				thread_id = 0;
 				rtemp_loc = &rtemp[sizertemp* thread_id];
 				if ( bmod_tmp==0 ) {
-					if(RdTree_IsRoot(URtree_ptr[lk],'d')==YES){
+					if(C_RdTree_IsRoot(&URtree_ptr[lk])==YES){
 
 						knsupc = SuperSize( k );
 						for (ii=1;ii<num_thread;ii++)
@@ -2225,8 +2982,9 @@ for (i=0;i<nroot_send;i++){
 						/*
 						 * Send Xk to process column Pc[k].
 						 */
-						if(UBtree_ptr[lk]!=NULL){
-							BcTree_forwardMessageSimple(UBtree_ptr[lk],&x[ii - XK_H],BcTree_GetMsgSize(UBtree_ptr[lk],'d')*nrhs+XK_H,'d');
+						if(UBtree_ptr[lk].empty_==NO){
+							// BcTree_forwardMessageSimple(UBtree_ptr[lk],&x[ii - XK_H],BcTree_GetMsgSize(UBtree_ptr[lk],'d')*nrhs+XK_H,'d');
+							C_BcTree_forwardMessageSimple(&UBtree_ptr[lk], &x[ii - XK_H], UBtree_ptr[lk].msgSize_*nrhs+XK_H);
 						}
 
 
@@ -2247,14 +3005,18 @@ for (i=0;i<nroot_send;i++){
 							for (jj=0;jj<knsupc*nrhs;jj++)
 								lsum[il+ jj ] += lsum[il + jj + ii*sizelsum];
 
-						RdTree_forwardMessageSimple(URtree_ptr[lk],&lsum[il-LSUM_H],RdTree_GetMsgSize(URtree_ptr[lk],'d')*nrhs+LSUM_H,'d');
+						// RdTree_forwardMessageSimple(URtree_ptr[lk],&lsum[il-LSUM_H],RdTree_GetMsgSize(URtree_ptr[lk],'d')*nrhs+LSUM_H,'d');
+						C_RdTree_forwardMessageSimple(&URtree_ptr[lk],&lsum[il - LSUM_H ],URtree_ptr[lk].msgSize_*nrhs+LSUM_H);
 					}
 
 				}
 			}
 		} /* while not finished ... */
 	}
-#if ( PRNTlevel>=2 )
+
+#endif
+
+#if ( PRNTlevel>=1 )
 		t = SuperLU_timer_() - t;
 		stat->utime[SOL_TOT] += t;
 		if ( !iam ) printf(".. U-solve time\t%8.4f\n", t);
@@ -2300,7 +3062,7 @@ for (i=0;i<nroot_send;i++){
 				ScalePermstruct, Glu_persist, grid, SOLVEstruct);
 
 
-#if ( PRNTlevel>=2 )
+#if ( PRNTlevel>=1 )
 		t = SuperLU_timer_() - t;
 		if ( !iam) printf(".. X to B redistribute time\t%8.4f\n", t);
 		t = SuperLU_timer_();
@@ -2349,17 +3111,17 @@ for (i=0;i<nroot_send;i++){
 		log_memory(-nlb*aln_i*iword-nlb*iword - nsupers_i*iword - (CEILING( nsupers, Pr )+CEILING( nsupers, Pc ))*aln_i*iword - maxrecvsz*(nbrecvx+1)*dword - sizelsum*num_thread * dword - (ldalsum * nrhs + nlb * XK_H) *dword - (sizertemp*num_thread + 1)*dword, stat);	//account for bmod, brecv, root_send, rootsups, recvbuf_BC_fwd,rtemp,lsum,x
 
 		for (lk=0;lk<nsupers_j;++lk){
-			if(UBtree_ptr[lk]!=NULL){
+			if(UBtree_ptr[lk].empty_==NO){
 				// if(BcTree_IsRoot(LBtree_ptr[lk],'d')==YES){
-				BcTree_waitSendRequest(UBtree_ptr[lk],'d');
+				C_BcTree_waitSendRequest(&UBtree_ptr[lk]);
 				// }
 				// deallocate requests here
 			}
 		}
 
 		for (lk=0;lk<nsupers_i;++lk){
-			if(URtree_ptr[lk]!=NULL){
-				RdTree_waitSendRequest(URtree_ptr[lk],'d');
+			if(URtree_ptr[lk].empty_==NO){
+				C_RdTree_waitSendRequest(&URtree_ptr[lk]);
 				// deallocate requests here
 			}
 		}
@@ -2418,7 +3180,7 @@ for (i=0;i<nroot_send;i++){
             }
 #endif
 
-
+// cudaProfilerStop(); 
     return;
 } /* PDGSTRS */
 

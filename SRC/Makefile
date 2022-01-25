@@ -44,7 +44,6 @@ ALLAUX 	= sp_ienv.o etree.o sp_colorder.o get_perm_c.o \
 # Following are from 3D code
 ALLAUX += superlu_grid3d.o supernodal_etree.o supernodalForest.o \
 	trfAux.o communication_aux.o treeFactorization.o sec_structs.o
-
 #
 # Routines literally taken from SuperLU, but renamed with suffix _dist
 #
@@ -85,7 +84,11 @@ ZPLUSRC += pzgssvx3d.o pzgstrf3d.o ztreeFactorization.o zscatter3d.o \
 	znrformat_loc3d.o ztreeFactorizationGPU.o ##$(FACT3D)
 
 ifeq ($(HAVE_CUDA),TRUE)
+<<<<<<< HEAD
 ALLAUX += gpublas_utils.o superlu_gpu_utils.o
+=======
+ALLAUX += cublas_utils.o superlu_gpu_utils.o pdgstrs_lsum_cuda.o
+>>>>>>> master
 DPLUSRC += dsuperlu_gpu.o
 ZPLUSRC += zsuperlu_gpu.o
 endif
@@ -141,23 +144,28 @@ complex16: config_h $(ZSLUSRC) $(ZPLUSRC) $(ALLAUX)
 		$(ZSLUSRC) $(ZPLUSRC) $(ALLAUX)
 	$(RANLIB) $(DSUPERLULIB)
 
+<<<<<<< HEAD
 pdgstrf.o: dscatter.cpp dlook_ahead_update.c dSchCompUdt-sycl.cpp pdgstrf.cpp
         $(CXX) $(CXXFLAGS) $(CPPFLAGS) $(CDEFS) $(BLASDEF) -I$(INCLUDEDIR) $(VERBOSE)
 
 # pdgstrf.o: dscatter.cpp dlook_ahead_update.c dSchCompUdt-2Ddynamic.c pdgstrf.c
 # 	$(CXX) $(CXXFLAGS) $(CPPFLAGS) $(CDEFS) $(BLASDEF) -I$(INCLUDEDIR) -c pdgstrf.cpp $(VERBOSE)
+=======
+pdgstrf.o: dscatter.c dlook_ahead_update.c dSchCompUdt-2Ddynamic.c pdgstrf.c
+	$(CC) $(CFLAGS) $(CDEFS) $(BLASDEF) $(INCLUDEDIR) -c pdgstrf.c $(VERBOSE)
+>>>>>>> master
 
 pzgstrf.o: zscatter.c zlook_ahead_update.c zSchCompUdt-2Ddynamic.c pzgstrf.c
-	$(CC) $(CFLAGS) $(CDEFS) $(BLASDEF) -I$(INCLUDEDIR) -c pzgstrf.c $(VERBOSE)
+	$(CC) $(CFLAGS) $(CDEFS) $(BLASDEF) $(INCLUDEDIR) -c pzgstrf.c $(VERBOSE)
 
 .c.o:
-	$(CC) $(CFLAGS) $(CDEFS) $(BLASDEF) -I$(INCLUDEDIR) -c $< $(VERBOSE)
+	$(CC) $(CFLAGS) $(CDEFS) $(BLASDEF) $(INCLUDEDIR) -c $< $(VERBOSE)
 
 .cu.o:
 	$(NVCC) $(NVCCFLAGS) $(CDEFS) $(BLASDEF) -I$(INCLUDEDIR) -c $< $(VERBOSE)
 
 .cpp.o:
-	$(CXX) $(CXXFLAGS) $(CPPFLAGS) $(CDEFS) $(BLASDEF) -I$(INCLUDEDIR) -c $< $(VERBOSE)
+	$(CXX) $(CXXFLAGS) $(CPPFLAGS) $(CDEFS) $(BLASDEF) $(INCLUDEDIR) -c $< $(VERBOSE)
 
 .f.o:
 	$(FORTRAN) $(FFLAGS) -c $< $(VERBOSE)

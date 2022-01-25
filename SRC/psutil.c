@@ -454,7 +454,7 @@ sDestroy_LU(int_t n, gridinfo_t *grid, sLUstruct_t *LUstruct)
 	    SUPERLU_FREE (Llu->Lrowind_bc_ptr[i]);
 #if 0 // Sherry: the following is not allocated with cudaHostAlloc    
     //#ifdef GPU_ACC
-	    checkCuda(cudaFreeHost(Llu->Lnzval_bc_ptr[i]));
+	    checkGPU(gpuFreeHost(Llu->Lnzval_bc_ptr[i]));
 #endif
 	    SUPERLU_FREE (Llu->Lnzval_bc_ptr[i]);
 	}
@@ -859,7 +859,7 @@ sDestroy_Tree(int_t n, gridinfo_t *grid, sLUstruct_t *LUstruct)
 #if ( DEBUGlevel>=1 )
     int iam;
     MPI_Comm_rank( MPI_COMM_WORLD, &iam );
-    CHECK_MALLOC(iam, "Enter Destroy_Tree()");
+    CHECK_MALLOC(iam, "Enter sDestroy_Tree()");
 #endif
 
     nsupers = Glu_persist->supno[n-1] + 1;

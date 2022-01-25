@@ -8,10 +8,8 @@ set(headers
     supermatrix.h
     util_dist.h
     colamd.h
-    TreeBcast_slu.hpp
-    TreeReduce_slu.hpp
-    TreeBcast_slu_impl.hpp
-    TreeReduce_slu_impl.hpp
+    gpu_api_utils.h
+    gpu_wrapper.h
     ${CMAKE_CURRENT_BINARY_DIR}/superlu_dist_config.h
     ${PROJECT_SOURCE_DIR}/SRC/superlu_FortranCInterface.h
 )
@@ -30,7 +28,7 @@ set(sources
   comm.c
   memory.c
   util.c
-  gpublas_utils.c
+  gpu_api_utils.c
   superlu_grid.c
   pxerr_dist.c
   superlu_timer.c
@@ -44,36 +42,25 @@ set(sources
   dmach_dist.c
   colamd.c
   superlu_dist_version.c
-  TreeInterface.cpp
+  comm_tree.c
   superlu_grid3d.c    ## 3D code
   supernodal_etree.c
   supernodalForest.c
   trfAux.c
   communication_aux.c
   treeFactorization.c
-  sec_structs.c
+  sec_structs.c  
 )
-
-if (GPU_ACC)
-  set(GPU_HDRS
-    gpublas_utils.h
-  )
-
-  set(GPU_SRCS
-    gpublas_utils.c
-  )
-  convert_filenames_to_full_paths(GPU_SRCS)
-  set(HYPRE_GPU_SOURCES ${HYPRE_GPU_SOURCES} ${GPU_SRCS} PARENT_SCOPE)
-endif ()
-
-if (HAVE_CUDA OR HAVE_SYCL)
-  set(GPU_SRCS
-	
-  list(APPEND sources gpublas_utils.c superlu_gpu_utils.cu)
+if (HAVE_CUDA)
+  list(APPEND sources superlu_gpu_utils.cu)
 endif()
+
+if (HAVE_HIP)
+  list(APPEND sources superlu_gpu_utils.hip.cpp)
+endif()
+
 if (HAVE_SYCL)
-  list(APPEND headers onemkl_utils.hpp syclmemcpy2D.hpp)
-  list(APPEND sources onemkl_utils.cpp)
+  list(APPEND sources superlu_gpu_utils.sycl.cpp)
 endif ()
 
 if (MSVC)
@@ -86,6 +73,13 @@ set_source_files_properties(superlu_timer.c PROPERTIES COMPILE_FLAGS -O0)
 
 if(enable_double)
   list(APPEND headers superlu_ddefs.h dlustruct_gpu.h)
+
+if(TPL_ENABLE_CUDALIB)
+  list(APPEND sources pdgstrs_lsum_cuda.cu)
+endif()
+# if(TPL_ENABLE_HIPLIB)
+#   list(APPEND sources pdgstrs_lsum_cuda.hip.cpp)
+# endif()    	
 
   list(APPEND sources
     dlangs_dist.c
@@ -139,9 +133,11 @@ if(enable_double)
 if (HAVE_CUDA)
   list(APPEND sources dsuperlu_gpu.cu)
 endif()
+
 #if (HAVE_SYCL)
-  list(APPEND sources dsuperlu_gpu.cpp pdgstrf.cpp dlustruct_gpu_sycl.hpp)
+  list(APPEND sources dsuperlu_gpu.cpp)
 #endif()
+
 if (HAVE_COMBBLAS)
   list(APPEND sources d_c2cpp_GetHWPM.cpp dHWPM_CombBLAS.hpp)
 endif()
@@ -276,22 +272,49 @@ endif()
 if (HAVE_COMBBLAS)
     list(APPEND sources z_c2cpp_GetHWPM.cpp zHWPM_CombBLAS.hpp)
 endif()
-
 endif() ######### enable compex16
 
+if (TPL_ENABLE_HIPLIB)
+  file(GLOB MyFiles *.hip.cpp)
+  set_source_files_properties(
+    ${MyFiles}
+    PROPERTIES HIP_SOURCE_PROPERTY_FORMAT 1)
 
-add_library(superlu_dist ${sources} ${HEADERS})
+  set(hipsources
+    pdgstrs_lsum_cuda.hip.cpp
+    superlu_gpu_utils.hip.cpp
+    dsuperlu_gpu.hip.cpp
+  )
+  if(enable_single)
+  list(APPEND hipsources ssuperlu_gpu.hip.cpp)
+  endif()
+  if(enable_complex16)
+  list(APPEND hipsources zsuperlu_gpu.hip.cpp)
+  endif()
+  hip_add_library(superlu_dist ${hipsources})
+  if (BUILD_SHARED_LIBS AND BUILD_STATIC_LIBS)
+    hip_add_library(superlu_dist-static STATIC  ${hipsources})
+  endif()
+
+else()
+  add_library(superlu_dist "")
+  if (BUILD_SHARED_LIBS AND BUILD_STATIC_LIBS)
+    add_library(superlu_dist-static STATIC "")
+  endif()
+endif()
+
+
+target_sources(superlu_dist PRIVATE ${sources} ${HEADERS})
 set(targets superlu_dist)
 
 if (BUILD_SHARED_LIBS AND BUILD_STATIC_LIBS)
   # build both shared and static libs
-  add_library(superlu_dist-static STATIC ${sources} ${HEADERS})
+  target_sources(superlu_dist-static PRIVATE ${sources} ${HEADERS})
   list(APPEND targets superlu_dist-static)
 endif()
 
 set(superlu_dist_libs ${MPI_C_LIBRARIES} ${MPI_CXX_LIBRARIES} ${BLAS_LIB} ${LAPACK_LIB}
-    ${PARMETIS_LIB} ${COMBBLAS_LIB} ${CUDA_LIBRARIES} ${CUDA_CUBLAS_LIBRARIES})
-
+    ${PARMETIS_LIB} ${COMBBLAS_LIB} ${CUDA_LIB} ${HIP_LIB}) 
 if (NOT MSVC)
   list(APPEND superlu_dist_libs m)
 endif ()
@@ -300,15 +323,15 @@ foreach(target ${targets})
     target_link_libraries(${target} ${superlu_dist_libs})
     if (HAVE_COMBBLAS)
         set_target_properties(${target} PROPERTIES
-			      CUDA_SEPARABLE_COMPILATION ON
-                              OUTPUT_NAME superlu_dist
+                              CUDA_SEPARABLE_COMPILATION ON
+							  OUTPUT_NAME superlu_dist
                               VERSION ${PROJECT_VERSION}
                               SOVERSION ${VERSION_MAJOR}
 			      LINKER_LANGUAGE CXX
 			      )
     else()
         set_target_properties(${target} PROPERTIES
-			      CUDA_SEPARABLE_COMPILATION ON
+		                      CUDA_SEPARABLE_COMPILATION ON
                               OUTPUT_NAME superlu_dist
                               VERSION ${PROJECT_VERSION}
                               SOVERSION ${VERSION_MAJOR}
