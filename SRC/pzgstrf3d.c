@@ -345,13 +345,6 @@ int_t pzgstrf3d(superlu_dist_options_t *options, int m, int n, double anorm,
 	    : SCT->NetSchurUpTimer - SCT->tSchCompUdt3d[ilvl - 1];
     } /* end for (int ilvl = 0; ilvl < maxLvl; ++ilvl) */
 
-#ifdef GPU_ACC
-    /* This frees the GPU storage allocateed in initSluGPU3D_t() */
-    if (superlu_acc_offload) {
-         zfree_LUstruct_gpu (sluGPU->A_gpu);
-    }
-#endif
-    
     /* Prepare error message - find the smallesr index i that U(i,i)==0 */
     int iinfo;
     if ( *info == 0 ) *info = n + 1;
@@ -370,6 +363,12 @@ int_t pzgstrf3d(superlu_dist_options_t *options, int m, int n, double anorm,
     allinea_stop_sampling();
 #endif
 
+#ifdef GPU_ACC
+    /* This frees the GPU storage allocateed in initSluGPU3D_t() */
+    if (superlu_acc_offload) {
+         zfree_LUstruct_gpu (sluGPU->A_gpu);
+    }
+#endif
     reduceStat(FACT, stat, grid3d);
 
     // sherry added

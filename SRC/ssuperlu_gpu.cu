@@ -1300,7 +1300,6 @@ void sCopyLUToGPU3D (
 	    checkGPUErrors(gpuEventCreate(&(A_gpu->GemmEnd[i])));
 	    checkGPUErrors(gpuEventCreate(&(A_gpu->ScatterEnd[i])));
 	    checkGPUErrors(gpuEventCreate(&(A_gpu->ePCIeH2D[i])));
-	    checkGPUErrors(gpuEventCreate(&(A_gpu->ePCIeH2D[i])));
 	    checkGPUErrors(gpuEventCreate(&(A_gpu->ePCIeD2H_Start[i])));
 	    checkGPUErrors(gpuEventCreate(&(A_gpu->ePCIeD2H_End[i])));
 	}
