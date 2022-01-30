@@ -202,7 +202,7 @@ if (TPL_ENABLE_CUDALIB)   ## want to use cuda
     if (NOT "${CUDAToolkit_LIBRARY_ROOT}" STREQUAL "")
        set(CUDA_LIBRARIES "${CUDAToolkit_LIBRARY_ROOT}/lib64/libcudart.so")
        # expose the following to make.inc, but location may not be reliable
-      set(CUDA_CUBLAS_LIBRARIES "${CUDAToolkit_LIBRARY_ROOT}/lib64/libcublas.so")
+       # set(CUDA_CUBLAS_LIBRARIES "${CUDAToolkit_LIBRARY_ROOT}/lib64/libcublas.so")
     else()
 	message("-- CUDAToolkit_LIBRARY_ROOT empty, not setting CUDA_LIBRARIES")
     endif()
