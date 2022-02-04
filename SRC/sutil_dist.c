@@ -396,40 +396,6 @@ void sScaleAdd_CompRowLoc_Matrix_dist(SuperMatrix *A, SuperMatrix *B, float c)
 
 /**** end additions for SUNDIALS ****/
 
-/*! \brief Sets all entries of matrix L to zero.
- */
-void sZeroLblocks(int iam, int_t n, gridinfo_t *grid, sLUstruct_t *LUstruct)
-{
-    float zero = 0.0;
-    register int extra, gb, j, lb, nsupc, nsupr, ncb;
-    register int_t k, mycol, r;
-    sLocalLU_t *Llu = LUstruct->Llu;
-    Glu_persist_t *Glu_persist = LUstruct->Glu_persist;
-    int_t *xsup = Glu_persist->xsup;
-    int_t *index;
-    float *nzval;
-    int_t nsupers = Glu_persist->supno[n-1] + 1;
-
-    ncb = nsupers / grid->npcol;
-    extra = nsupers % grid->npcol;
-    mycol = MYCOL( iam, grid );
-    if ( mycol < extra ) ++ncb;
-    for (lb = 0; lb < ncb; ++lb) {
-	index = Llu->Lrowind_bc_ptr[lb];
-	if ( index ) { /* Not an empty column */
-	    nzval = Llu->Lnzval_bc_ptr[lb];
-	    nsupr = index[1];
-	    gb = lb * grid->npcol + mycol;
-	    nsupc = SuperSize( gb );
-	    for (j = 0; j < nsupc; ++j) {
-                for (r = 0; r < nsupr; ++r) {
-                    nzval[r + j*nsupr] = zero;
-		}
-            }
-	}
-    }
-} /* sZeroLblocks */
-
 /*! \brief Find max(abs(L(i,j)))
  */
 float sMaxAbsLij(int iam, int n, Glu_persist_t *Glu_persist,
@@ -518,42 +484,6 @@ float sMaxAbsUij(int iam, int n, Glu_persist_t *Glu_persist,
 
 } /* sMaxAbsUij */
 
-/*! \brief Sets all entries of matrix U to zero.
- */
-void sZeroUblocks(int iam, int n, Glu_persist_t *Glu_persist,
-		  sLUstruct_t *LUstruct, gridinfo_t *grid)
-{
-    sLocalLU_t *Llu = LUstruct->Llu;
-    register int c, extra, jb, k, lb, len, nb, nrb, nsupc;
-    register int myrow, r, j, nsupers;
-    int_t *xsup = Glu_persist->xsup;
-    int_t *index;
-    float *nzval;
-    float zero = 0.0;
-
-    nsupers = Glu_persist->supno[n-1] + 1;
-    nrb = nsupers / grid->nprow;
-    extra = nsupers % grid->nprow;
-    myrow = MYROW( iam, grid );
-    if ( myrow < extra ) ++nrb;
-    for (lb = 0; lb < nrb; ++lb) {
-	index = Llu->Ufstnz_br_ptr[lb];
-	if ( index ) { /* Not an empty block row */
-	    nzval = Llu->Unzval_br_ptr[lb];
-	    nb = index[0]; /* number of blocks */
-	    r  = 0;
-	    for (c = 0, k = BR_HEADER; c < nb; ++c) {
-	        jb = index[k];    /* block number */
-		len = index[k+1]; /* number of nonzeros in the block */
-		nsupc = SuperSize( jb );
-		for (j = r; j < r + len; ++j) nzval[j] = zero;
-		k += UB_DESCRIPTOR + nsupc;
-		r += len;
-	    }
-	}
-    }
-    return;
-} /* sZeroUblocks */
 
 /*! \brief Allocate storage in ScalePermstruct */
 void sScalePermstructInit(const int_t m, const int_t n,

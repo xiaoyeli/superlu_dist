@@ -230,6 +230,9 @@ typedef struct {
                              positions in the gathered x-vector.
                              This is re-used in repeated calls to psgsmv() */
     int_t *xrow_to_proc; /* used by PDSLin */
+    NRformat_loc3d* A3d; /* Point to 3D {A, B} gathered on 2D layer 0.
+                            This needs to be peresistent between
+                            3D factorization and solve.  */    
 } sSOLVEstruct_t;
 
 
@@ -530,7 +533,8 @@ extern void sCopy_CompRowLoc_Matrix_dist(SuperMatrix *, SuperMatrix *);
 extern void sZero_CompRowLoc_Matrix_dist(SuperMatrix *);
 extern void sScaleAddId_CompRowLoc_Matrix_dist(SuperMatrix *, float);
 extern void sScaleAdd_CompRowLoc_Matrix_dist(SuperMatrix *, SuperMatrix *, float);
-extern void sZeroLblocks(int, int_t, gridinfo_t *, sLUstruct_t *);
+extern void sZeroLblocks(int, int, gridinfo_t *, sLUstruct_t *);
+extern void sZeroUblocks(int iam, int n, gridinfo_t *, sLUstruct_t *);
 extern void    sfill_dist (float *, int_t, float);
 extern void    sinf_norm_error_dist (int_t, int_t, float*, int_t,
                                      float*, int_t, gridinfo_t*);
@@ -643,9 +647,9 @@ extern int screate_matrix_postfix3d(SuperMatrix *A, int nrhs, float **rhs,
     
 /* Matrix distributed in NRformat_loc in 3D process grid. It converts 
    it to a NRformat_loc distributed in 2D grid in grid-0 */
-extern NRformat_loc3d *sGatherNRformat_loc3d(NRformat_loc *A, float *B,
-					     int ldb, int nrhs,
-					     gridinfo3d_t *grid3d);
+extern void sGatherNRformat_loc3d(fact_t Fact, NRformat_loc *A, float *B,
+				   int ldb, int nrhs, gridinfo3d_t *grid3d,
+				   NRformat_loc3d **);
 extern int sScatter_B3d(NRformat_loc3d *A3d, gridinfo3d_t *grid3d);
 
 extern void psgssvx3d (superlu_dist_options_t *, SuperMatrix *,

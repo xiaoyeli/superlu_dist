@@ -115,7 +115,7 @@ if(enable_double)
 endif() #### end enable_double
 
 if(enable_single)
-  set(SEXM psdrive.c screate_matrix.c)
+  set(SEXM psdrive.c screate_matrix.c screate_A_x_b.c)
   add_executable(psdrive ${SEXM})
   target_link_libraries(psdrive ${all_link_libs})
   install(TARGETS psdrive RUNTIME DESTINATION "${INSTALL_LIB_DIR}/EXAMPLE")  

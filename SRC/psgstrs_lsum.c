@@ -1651,6 +1651,7 @@ void slsum_bmod_inv
 						for (irow = fnz; irow < iklrow; ++irow)
 						    dest[irow - ikfrow] -= uval[uptr++] * y[jj];
 						stat[thread_id]->ops[SOLVE] += 2 * (iklrow - fnz);
+					}
 				} /* for jj ... */
 			}
 

@@ -403,6 +403,7 @@ int main(int argc, char *argv[])
 	  printf(" Componentwise backword error: %e\n", err_bounds[2*nrhs]);
 	  fflush(stdout);
 	}
+    }
     
     PStatPrint(&options, &stat, &grid);        /* Print the statistics. */
 
