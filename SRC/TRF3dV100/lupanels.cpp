@@ -207,6 +207,29 @@ LUstruct_v100::LUstruct_v100(int_t nsupers_, int_t ldt_,
         bcastStruct bcDiagCol(grid3d->cscp.comm, MPI_DOUBLE, SYNC);
         bcastDiagCol[i] = bcDiagCol;
     }
+
+    int_t mxLeafNode = 0;
+    int_t *myTreeIdxs = trf3Dpartition->myTreeIdxs;
+    int_t *myZeroTrIdxs = trf3Dpartition->myZeroTrIdxs;
+    sForest_t **sForests = trf3Dpartition->sForests;
+    for (int ilvl = 0; ilvl < maxLvl; ++ilvl)
+    {
+        if (sForests[myTreeIdxs[ilvl]] && sForests[myTreeIdxs[ilvl]]->topoInfo.eTreeTopLims[1] > mxLeafNode)
+            mxLeafNode = sForests[myTreeIdxs[ilvl]]->topoInfo.eTreeTopLims[1];
+    }
+    dFBufs = dinitDiagFactBufsArr(mxLeafNode, ldt, grid);
+
+    double tGPU = SuperLU_timer_();
+    if(superlu_acc_offload)
+    {
+        setLUstruct_GPU();
+        // TODO: remove it, checking is very slow 
+        if(0)
+            checkGPU();     
+    }
+        
+    tGPU = SuperLU_timer_() -tGPU;
+    printf("Time to intialize GPU DS= %g\n",tGPU );
     //
 
     // if (superluAccOffload)

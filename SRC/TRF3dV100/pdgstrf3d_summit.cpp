@@ -104,26 +104,13 @@ extern "C"
         tConst = SuperLU_timer_() -tConst;
         printf("Time to intialize New DS= %g\n",tConst );
 
-        double tGPU = SuperLU_timer_();
-        if(superlu_acc_offload)
-        {
-            LU_packed.setLUstruct_GPU();
-            
-            if(0)
-            {
-                // TODO: remove it, checking is very slow 
-                LU_packed.checkGPU();     
-            }
-            
-            
-        }
-            
-        tGPU = SuperLU_timer_() -tGPU;
-        printf("Time to intialize GPU DS= %g\n",tGPU );
+        
         /*====  starting main factorization loop =====*/
         MPI_Barrier(grid3d->comm);
         SCT->tStartup = SuperLU_timer_() - SCT->tStartup;
-
+#if 1
+        LU_packed.pdgstrf3d();
+#else 
         SCT->pdgstrfTimer = SuperLU_timer_();
 
         for (int_t ilvl = 0; ilvl < maxLvl; ++ilvl)
@@ -179,7 +166,7 @@ extern "C"
 
         MPI_Barrier(grid3d->comm);
         SCT->pdgstrfTimer = SuperLU_timer_() - SCT->pdgstrfTimer;
-
+#endif 
         double tXferGpu2Host = SuperLU_timer_();
         if (superlu_acc_offload)
         {
@@ -189,7 +176,7 @@ extern "C"
             
         LU_packed.packedU2skyline(LUstruct);
         tXferGpu2Host = SuperLU_timer_()-tXferGpu2Host;
-        printf("Time to send data back= %g\n",tGPU );
+        printf("Time to send data back= %g\n",tXferGpu2Host );
 
         if (!grid3d->zscp.Iam)
         {
