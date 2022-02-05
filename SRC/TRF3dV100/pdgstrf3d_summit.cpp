@@ -66,7 +66,7 @@ extern "C"
         }
 #endif
 
-        // trf3Dpartition_t*  trf3Dpartition = initTrf3Dpartition(nsupers, options, LUstruct, grid3d);
+        
         gEtreeInfo_t gEtreeInfo = trf3Dpartition->gEtreeInfo;
         int_t *iperm_c_supno = trf3Dpartition->iperm_c_supno;
         int_t *myNodeCount = trf3Dpartition->myNodeCount;
@@ -141,11 +141,11 @@ extern "C"
 
                     if (superlu_acc_offload)
                         LU_packed.dsparseTreeFactorGPU(sforest,  dFBufs,
-                                                       &gEtreeInfo, iperm_c_supno,
+                                                       &gEtreeInfo,
                                                        tag_ub);
                     else
                         LU_packed.dsparseTreeFactor(sforest, dFBufs,
-                                                    &gEtreeInfo, iperm_c_supno,
+                                                    &gEtreeInfo,
                                                     tag_ub);
 
                     /*now reduce the updates*/

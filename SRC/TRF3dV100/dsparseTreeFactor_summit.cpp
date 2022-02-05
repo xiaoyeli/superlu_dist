@@ -6,7 +6,6 @@ int_t LUstruct_v100::dsparseTreeFactor(
     sForest_t *sforest,
     ddiagFactBufs_t **dFBufs,  // size maxEtree level
     gEtreeInfo_t *gEtreeInfo, // global etree info
-    int_t *gIperm_c_supno,
     int tag_ub)
 {
     
@@ -218,7 +217,6 @@ int_t LUstruct_v100::dsparseTreeFactorBaseline(
     sForest_t *sforest,
     ddiagFactBufs_t **dFBufs,  // size maxEtree level
     gEtreeInfo_t *gEtreeInfo, // global etree info
-    int_t *gIperm_c_supno,
     int tag_ub)
 {
     int_t nnodes = sforest->nNodes; // number of nodes in the tree

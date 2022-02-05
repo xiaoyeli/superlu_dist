@@ -377,9 +377,6 @@ struct LUstruct_v100
         sForest_t *sforest,
         ddiagFactBufs_t **dFBufs, // size maxEtree level
         gEtreeInfo_t *gEtreeInfo, // global etree info
-
-        int_t *gIperm_c_supno,
-
         int tag_ub);
 
     //
@@ -389,7 +386,6 @@ struct LUstruct_v100
         sForest_t *sforest,
         ddiagFactBufs_t **dFBufs, // size maxEtree level
         gEtreeInfo_t *gEtreeInfo, // global etree info
-        int_t *gIperm_c_supno,
         int tag_ub);
 
     int_t packedU2skyline(dLUstruct_t *LUstruct);
@@ -408,13 +404,11 @@ struct LUstruct_v100
         sForest_t *sforest,
         ddiagFactBufs_t **dFBufs, // size maxEtree level
         gEtreeInfo_t *gEtreeInfo, // global etree info
-        int_t *gIperm_c_supno,
         int tag_ub);
     int_t dsparseTreeFactorGPUBaseline(
         sForest_t *sforest,
         ddiagFactBufs_t **dFBufs, // size maxEtree level
         gEtreeInfo_t *gEtreeInfo, // global etree info
-        int_t *gIperm_c_supno,
         int tag_ub);
 
     int_t dSchurComplementUpdateGPU(
