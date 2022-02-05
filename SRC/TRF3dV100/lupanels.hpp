@@ -375,11 +375,6 @@ struct LUstruct_v100
 
     int_t dsparseTreeFactor(
         sForest_t *sforest,
-        commRequests_t **comReqss, // lists of communication requests // size maxEtree level
-        dscuBufs_t *scuBufs,       // contains buffers for schur complement update
-        packLUInfo_t *packLUInfo,
-        msgs_t **msgss,           // size=num Look ahead
-        dLUValSubBuf_t **LUvsbs,  // size=num Look ahead
         ddiagFactBufs_t **dFBufs, // size maxEtree level
         gEtreeInfo_t *gEtreeInfo, // global etree info
 
@@ -392,11 +387,6 @@ struct LUstruct_v100
     int_t dPanelBcast(int_t k, int_t offset);
     int_t dsparseTreeFactorBaseline(
         sForest_t *sforest,
-        commRequests_t **comReqss, // lists of communication requests // size maxEtree level
-        dscuBufs_t *scuBufs,       // contains buffers for schur complement update
-        packLUInfo_t *packLUInfo,
-        msgs_t **msgss,           // size=num Look ahead
-        dLUValSubBuf_t **LUvsbs,  // size=num Look ahead
         ddiagFactBufs_t **dFBufs, // size maxEtree level
         gEtreeInfo_t *gEtreeInfo, // global etree info
         int_t *gIperm_c_supno,
@@ -416,22 +406,12 @@ struct LUstruct_v100
     int_t setLUstruct_GPU();
     int_t dsparseTreeFactorGPU(
         sForest_t *sforest,
-        commRequests_t **comReqss, // lists of communication requests // size maxEtree level
-        dscuBufs_t *scuBufs,       // contains buffers for schur complement update
-        packLUInfo_t *packLUInfo,
-        msgs_t **msgss,           // size=num Look ahead
-        dLUValSubBuf_t **LUvsbs,  // size=num Look ahead
         ddiagFactBufs_t **dFBufs, // size maxEtree level
         gEtreeInfo_t *gEtreeInfo, // global etree info
         int_t *gIperm_c_supno,
         int tag_ub);
     int_t dsparseTreeFactorGPUBaseline(
         sForest_t *sforest,
-        commRequests_t **comReqss, // lists of communication requests // size maxEtree level
-        dscuBufs_t *scuBufs,       // contains buffers for schur complement update
-        packLUInfo_t *packLUInfo,
-        msgs_t **msgss,           // size=num Look ahead
-        dLUValSubBuf_t **LUvsbs,  // size=num Look ahead
         ddiagFactBufs_t **dFBufs, // size maxEtree level
         gEtreeInfo_t *gEtreeInfo, // global etree info
         int_t *gIperm_c_supno,

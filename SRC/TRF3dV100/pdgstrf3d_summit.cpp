@@ -49,18 +49,10 @@ extern "C"
         int_t iam = grid->iam; // in 2D grid
         int num_threads = getNumThreads(grid3d->iam);
 
-        factStat_t factStat;
-        initFactStat(nsupers, &factStat);
+    
 
         SCT->tStartup = SuperLU_timer_();
-        packLUInfo_t packLUInfo;
-        initPackLUInfo(nsupers, &packLUInfo);
-
-        dscuBufs_t scuBufs;
-        dinitScuBufs(ldt, num_threads, nsupers, &scuBufs, LUstruct, grid);
-
-        factNodelists_t fNlists;
-        initFactNodelists(ldt, num_threads, nsupers, &fNlists);
+        
 
         // tag_ub initialization
         int tag_ub = set_tag_ub();
@@ -87,8 +79,7 @@ extern "C"
         /* Initializing factorization specific buffers */
 
         int_t numLA = getNumLookAhead(options);
-        dLUValSubBuf_t **LUvsbs = dLluBufInitArr(SUPERLU_MAX(numLA, grid3d->zscp.Np), LUstruct);
-        msgs_t **msgss = initMsgsArr(numLA);
+        
         int_t mxLeafNode = 0;
         for (int ilvl = 0; ilvl < maxLvl; ++ilvl)
         {
@@ -96,19 +87,8 @@ extern "C"
                 mxLeafNode = sForests[myTreeIdxs[ilvl]]->topoInfo.eTreeTopLims[1];
         }
         ddiagFactBufs_t **dFBufs = dinitDiagFactBufsArr(mxLeafNode, ldt, grid);
-        commRequests_t **comReqss = initCommRequestsArr(SUPERLU_MAX(mxLeafNode, numLA), ldt, grid);
+        
 
-        // TODO: remove the following for time being
-        int_t first_l_block_acc = 0;
-        int_t first_u_block_acc = 0;
-        int_t Pc = grid->npcol;
-        int_t Pr = grid->nprow;
-        int_t mrb = (nsupers + Pr - 1) / Pr; // Sherry check ... use ceiling
-        int_t mcb = (nsupers + Pc - 1) / Pc;
-        HyP_t *HyP = (HyP_t *)SUPERLU_MALLOC(sizeof(HyP_t));
-        dInit_HyP(HyP, Llu, mcb, mrb);
-        HyP->first_l_block_acc = first_l_block_acc;
-        HyP->first_u_block_acc = first_u_block_acc;
 
         /*******************************************
     *
@@ -160,13 +140,11 @@ extern "C"
                     double tilvl = SuperLU_timer_();
 
                     if (superlu_acc_offload)
-                        LU_packed.dsparseTreeFactorGPU(sforest, comReqss, &scuBufs, &packLUInfo,
-                                                       msgss, LUvsbs, dFBufs,
+                        LU_packed.dsparseTreeFactorGPU(sforest,  dFBufs,
                                                        &gEtreeInfo, iperm_c_supno,
                                                        tag_ub);
                     else
-                        LU_packed.dsparseTreeFactor(sforest, comReqss, &scuBufs, &packLUInfo,
-                                                    msgss, LUvsbs, dFBufs,
+                        LU_packed.dsparseTreeFactor(sforest, dFBufs,
                                                     &gEtreeInfo, iperm_c_supno,
                                                     tag_ub);
 
@@ -230,19 +208,10 @@ extern "C"
 
         reduceStat(FACT, stat, grid3d);
 
-        // sherry added
-        /* Deallocate factorization specific buffers */
-        freePackLUInfo(&packLUInfo);
-        dfreeScuBufs(&scuBufs);
-        freeFactStat(&factStat);
-        freeFactNodelists(&fNlists);
-        freeMsgsArr(numLA, msgss);
-        freeCommRequestsArr(SUPERLU_MAX(mxLeafNode, numLA), comReqss);
-        dLluBufFreeArr(numLA, LUvsbs);
+        
         dfreeDiagFactBufsArr(mxLeafNode, dFBufs);
-        Free_HyP(HyP);
-        // if (superlu_acc_offload )
-        //     freeSluGPU(sluGPU);
+        
+        
 
 #if (DEBUGlevel >= 1)
         CHECK_MALLOC(grid3d->iam, "Exit pdgstrf3d()");

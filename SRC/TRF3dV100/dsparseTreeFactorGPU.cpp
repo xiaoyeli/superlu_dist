@@ -103,11 +103,6 @@ int_t LUstruct_v100::dPanelBcastGPU(int_t k, int_t offset)
 
 int_t LUstruct_v100::dsparseTreeFactorGPU(
     sForest_t *sforest,
-    commRequests_t **comReqss, // lists of communication requests // size maxEtree level
-    dscuBufs_t *scuBufs,       // contains buffers for schur complement update
-    packLUInfo_t *packLUInfo,
-    msgs_t **msgss,           // size=num Look ahead
-    dLUValSubBuf_t **LUvsbs,  // size=num Look ahead
     ddiagFactBufs_t **dFBufs, // size maxEtree level
     gEtreeInfo_t *gEtreeInfo, // global etree info
     int_t *gIperm_c_supno,
@@ -351,11 +346,6 @@ int_t LUstruct_v100::dsparseTreeFactorGPU(
 //TODO: needs to be merged as a single factorization function
 int_t LUstruct_v100::dsparseTreeFactorGPUBaseline(
     sForest_t *sforest,
-    commRequests_t **comReqss, // lists of communication requests // size maxEtree level
-    dscuBufs_t *scuBufs,       // contains buffers for schur complement update
-    packLUInfo_t *packLUInfo,
-    msgs_t **msgss,           // size=num Look ahead
-    dLUValSubBuf_t **LUvsbs,  // size=num Look ahead
     ddiagFactBufs_t **dFBufs, // size maxEtree level
     gEtreeInfo_t *gEtreeInfo, // global etree info
     int_t *gIperm_c_supno,

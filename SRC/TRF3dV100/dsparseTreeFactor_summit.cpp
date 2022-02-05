@@ -4,11 +4,6 @@
 
 int_t LUstruct_v100::dsparseTreeFactor(
     sForest_t *sforest,
-    commRequests_t **comReqss, // lists of communication requests // size maxEtree level
-    dscuBufs_t *scuBufs,        // contains buffers for schur complement update
-    packLUInfo_t *packLUInfo,
-    msgs_t **msgss,           // size=num Look ahead
-    dLUValSubBuf_t **LUvsbs,  // size=num Look ahead
     ddiagFactBufs_t **dFBufs,  // size maxEtree level
     gEtreeInfo_t *gEtreeInfo, // global etree info
     int_t *gIperm_c_supno,
@@ -221,11 +216,6 @@ int_t LUstruct_v100::dsparseTreeFactor(
 
 int_t LUstruct_v100::dsparseTreeFactorBaseline(
     sForest_t *sforest,
-    commRequests_t **comReqss, // lists of communication requests // size maxEtree level
-    dscuBufs_t *scuBufs,        // contains buffers for schur complement update
-    packLUInfo_t *packLUInfo,
-    msgs_t **msgss,           // size=num Look ahead
-    dLUValSubBuf_t **LUvsbs,  // size=num Look ahead
     ddiagFactBufs_t **dFBufs,  // size maxEtree level
     gEtreeInfo_t *gEtreeInfo, // global etree info
     int_t *gIperm_c_supno,
