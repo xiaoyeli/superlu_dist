@@ -271,6 +271,9 @@ public:
 //lapenGPU_t has exact same structure has lapanel_t but
 // the pointers are on GPU
 
+
+
+
 struct LUstruct_v100
 {
 
@@ -295,6 +298,20 @@ struct LUstruct_v100
     SCT_t *SCT;
     superlu_dist_options_t *options;
     SuperLUStat_t *stat;
+
+
+    // Adding more variables for factorization 
+    trf3Dpartition_t *trf3Dpartition;
+    int_t maxLvl;
+    
+    ddiagFactBufs_t **dFBufs;
+    int superlu_acc_offload;
+    // myNodeCount,
+    // treePerm
+    // myZeroTrIdxs
+    // sForests
+    // myTreeIdxs
+    // gEtreeInfo
 
     // buffers for communication
     int_t maxLvalCount = 0;
@@ -329,7 +346,6 @@ struct LUstruct_v100
     int_t g2lCol(int_t k) { return k / Pc; }
 
     // For GPU acceleration
-    int superluAccOffload;
     LUstructGPU_t *dA_gpu;
     LUstructGPU_t A_gpu;
 
@@ -342,7 +358,7 @@ struct LUstruct_v100
     /**
     *          C O N / D E S - T R U C T O R S
     */
-    LUstruct_v100(int_t nsupers, int_t ldt_, int *isNodeInMyGrid, int superluAccOffload,
+    LUstruct_v100(int_t nsupers, int_t ldt_, trf3Dpartition_t *trf3Dpartition, 
                   dLUstruct_t *LUstruct, gridinfo3d_t *grid3d,
                   SCT_t *SCT_, superlu_dist_options_t *options_, SuperLUStat_t *stat,
                   double thresh_, int *info_);
@@ -356,6 +372,7 @@ struct LUstruct_v100
     /**
     *           Compute Functions 
     */
+   int_t pdgstrf3d();
     int_t dSchurComplementUpdate(int_t k, lpanel_t &lpanel, upanel_t &upanel);
     int_t *computeIndirectMap(indirectMapType direction, int_t srcLen, int_t *srcVec,
                               int_t dstLen, int_t *dstVec);

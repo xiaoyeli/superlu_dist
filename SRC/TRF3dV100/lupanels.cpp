@@ -36,14 +36,17 @@ lpanel_t LUstruct_v100::getKLpanel(int_t k, int_t offset)
 }
 
 LUstruct_v100::LUstruct_v100(int_t nsupers_, int_t ldt_,
-                             int *isNodeInMyGrid_, int superluAccOffload_,
+                             trf3Dpartition_t *trf3Dpartition_, 
                              dLUstruct_t *LUstruct,
                              gridinfo3d_t *grid3d_in,
                              SCT_t *SCT_, superlu_dist_options_t *options_,
-                             SuperLUStat_t *stat_, double thresh_, int *info_) : isNodeInMyGrid(isNodeInMyGrid_), nsupers(nsupers_),
-                                                                                 ldt(ldt_), grid3d(grid3d_in), superluAccOffload(superluAccOffload_),
+                             SuperLUStat_t *stat_, double thresh_, int *info_) : nsupers(nsupers_), trf3Dpartition(trf3Dpartition_),
+                                                                                 ldt(ldt_), grid3d(grid3d_in),
                                                                                  SCT(SCT_), options(options_), stat(stat_), thresh(thresh_), info(info_)
 {
+    maxLvl = log2i(grid3d->zscp.Np) + 1;
+    isNodeInMyGrid = getIsNodeInMyGrid(nsupers, maxLvl, trf3Dpartition->myNodeCount, trf3Dpartition->treePerm);
+    superlu_acc_offload = get_acc_offload();
 
     grid = &(grid3d->grid2d);
     iam = grid->iam;

@@ -98,7 +98,7 @@ extern "C"
         int *isNodeInMyGrid = getIsNodeInMyGrid(nsupers, maxLvl, myNodeCount, treePerm);
         int superlu_acc_offload = get_acc_offload();
         double tConst = SuperLU_timer_();
-        LUstruct_v100 LU_packed(nsupers, ldt, isNodeInMyGrid, superlu_acc_offload, LUstruct, grid3d,
+        LUstruct_v100 LU_packed(nsupers, ldt, trf3Dpartition, LUstruct, grid3d,
                                 SCT, options, stat, thresh, info);
 
         tConst = SuperLU_timer_() -tConst;
@@ -219,6 +219,79 @@ extern "C"
         return 0;
 
     } /* pdgstrf3d */
+
+
+int_t LUstruct_v100::pdgstrf3d()
+{
+    int tag_ub = set_tag_ub();
+    gEtreeInfo_t gEtreeInfo = trf3Dpartition->gEtreeInfo;
+    int_t *iperm_c_supno = trf3Dpartition->iperm_c_supno;
+    int_t *myNodeCount = trf3Dpartition->myNodeCount;
+    int_t *myTreeIdxs = trf3Dpartition->myTreeIdxs;
+    int_t *myZeroTrIdxs = trf3Dpartition->myZeroTrIdxs;
+    sForest_t **sForests = trf3Dpartition->sForests;
+    int_t **treePerm = trf3Dpartition->treePerm;
+    
+
+    SCT->pdgstrfTimer = SuperLU_timer_();
+
+    for (int_t ilvl = 0; ilvl < maxLvl; ++ilvl)
+    {
+        /* if I participate in this level */
+        if (!myZeroTrIdxs[ilvl])
+        {
+
+            sForest_t *sforest = sForests[myTreeIdxs[ilvl]];
+
+            /* main loop over all the supernodes */
+            if (sforest) /* 2D factorization at individual subtree */
+            {
+                double tilvl = SuperLU_timer_();
+
+                if (superlu_acc_offload)
+                    dsparseTreeFactorGPU(sforest,  dFBufs,
+                                                    &gEtreeInfo,
+                                                    tag_ub);
+                else
+                    dsparseTreeFactor(sforest, dFBufs,
+                                                &gEtreeInfo,
+                                                tag_ub);
+
+                /*now reduce the updates*/
+                SCT->tFactor3D[ilvl] = SuperLU_timer_() - tilvl;
+                sForests[myTreeIdxs[ilvl]]->cost = SCT->tFactor3D[ilvl];
+            }
+
+            if (ilvl < maxLvl - 1) /*then reduce before factorization*/
+            {
+                if (superlu_acc_offload)
+                {
+                    #define NDEBUG
+                    #ifndef NDEBUG
+                    checkGPU();
+                    ancestorReduction3d(ilvl, myNodeCount, treePerm);
+                    #endif 
+                    ancestorReduction3dGPU(ilvl, myNodeCount, treePerm);
+                    #ifndef NDEBUG
+                    checkGPU();
+                    #endif 
+                }
+                    
+                else
+                    ancestorReduction3d(ilvl, myNodeCount, treePerm);
+            }
+        } /*if (!myZeroTrIdxs[ilvl])  ... If I participate in this level*/
+
+        SCT->tSchCompUdt3d[ilvl] = ilvl == 0 ? SCT->NetSchurUpTimer
+                                            : SCT->NetSchurUpTimer - SCT->tSchCompUdt3d[ilvl - 1];
+    } /*for (int_t ilvl = 0; ilvl < maxLvl; ++ilvl)*/
+
+    MPI_Barrier(grid3d->comm);
+    SCT->pdgstrfTimer = SuperLU_timer_() - SCT->pdgstrfTimer;
+
+    return 0;
+}
+
 
 #ifdef __cplusplus
 }
