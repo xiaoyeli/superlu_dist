@@ -22,6 +22,7 @@ at the top-level directory.
  * Last update: November 8, 2021  v7.2.0
  */
 #include "superlu_ddefs.h"
+#include "TRF3dV100/superlu_summit.h"
 
 /*! \brief
  *
@@ -1312,6 +1313,20 @@ pdgssvx3d (superlu_dist_options_t * options, SuperMatrix * A,
     } /* end if process layer 0 */
 
     trf3Dpartition_t*  trf3Dpartition;
+    int gpu3dVersion=0;
+    if(getenv("GPU3DVERSION"))
+    {
+        gpu3dVersion = atoi(getenv("GPU3DVERSION"));
+    }
+
+    int trisolveGPUopt=0;
+    if(getenv("TRISOLVEGPUOPT"))
+    {
+        trisolveGPUopt = atoi(getenv("TRISOLVEGPUOPT"));
+        if(trisolveGPUopt== 0)
+            assert(grid3d->npdep==1);
+    }
+    LUgpu_Handle LUgpu;
 
     /* Perform numerical factorization in parallel on all process layers.*/
     if ( !factored ) {
@@ -1341,17 +1356,39 @@ pdgssvx3d (superlu_dist_options_t * options, SuperMatrix * A,
 		/*factorize in grid 1*/
 		// if(grid3d->zscp.Iam)
 		// get environment variable TRF3DVERSION
-		int gpu3dVersion=0;
-		if(getenv("GPU3DVERSION"))
-		{
-			gpu3dVersion = atoi(getenv("GPU3DVERSION"));
-		}
+		
 		if(gpu3dVersion==1)
 		{
 			if(!grid3d->iam) 
 			printf("Using pdgstrf3d+gpu version 1 for Summit");
+            #if 0
 			pdgstrf3d_summit(options, m, n, anorm, trf3Dpartition, SCT, LUstruct,
 				  grid3d, stat, info);
+            #else 
+            int_t ldt = sp_ienv_dist(3); /* Size of maximum supernode */
+            double s_eps = smach_dist("Epsilon");
+            double thresh = s_eps * anorm;
+            // create a "C" handle for c++ object LUgpu
+            LUgpu = createLUgpuHandle(nsupers, ldt, trf3Dpartition, LUstruct, grid3d,
+                            SCT, options, stat, thresh, info);
+            // Perform factorization 
+            pdgstrf3d_LUpackedInterface(LUgpu);
+            
+            if(!trisolveGPUopt)
+            {
+                // if we are not doing triangular solve on GPU, then 
+                // copy back LU factors to host and convert into skyline format
+                copyLUGPU2Host(LUgpu, LUstruct);
+                // destroy LUgpuHandle 
+                destroyLUgpuHandle(LUgpu);
+            }
+
+            // print other stuff 
+            if (!grid3d->zscp.Iam)
+                SCT_printSummary(grid, SCT);
+            reduceStat(FACT, stat, grid3d);
+                
+            #endif 
 		}
 		else
 		{

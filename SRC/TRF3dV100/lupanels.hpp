@@ -367,6 +367,7 @@ struct LUstruct_v100
     {
         delete[] lPanelVec;
         delete[] uPanelVec;
+        // dfreeDiagFactBufsArr(mxLeafNode, dFBufs);
     }
 
     /**

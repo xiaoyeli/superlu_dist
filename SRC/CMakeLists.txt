@@ -130,6 +130,7 @@ endif()
     TRF3dV100/l_panels.cpp
     TRF3dV100/u_panels.cpp
     TRF3dV100/lupanels_GPU.cpp
+    TRF3dV100/LUgpuCHandle_interface.cpp
     dtreeFactorizationGPU.c
     dgather.c
     dscatter3d.c
