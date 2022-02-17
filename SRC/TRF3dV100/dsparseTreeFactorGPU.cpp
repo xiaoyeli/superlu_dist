@@ -126,7 +126,7 @@ int_t LUstruct_v100::dsparseTreeFactorGPU(
     int_t *eTreeTopLims = treeTopoInfo->eTreeTopLims;
 
     /*main loop over all the levels*/
-    int_t numLA = getNumLookAhead(options);
+    int_t numLA = SUPERLU_MIN(A_gpu.numCudaStreams, getNumLookAhead(options));
 
     // start the pipeline
     int_t *donePanelBcast = intMalloc_dist(nnodes);
