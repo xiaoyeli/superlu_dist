@@ -979,13 +979,6 @@ psgstrs(int_t n, sLUstruct_t *LUstruct,
 	num_thread=1;
 #endif
 
-#if ( PRNTlevel>=1 )
-    if( grid->iam==0 ) {
-	printf("num_thread: %5d\n", num_thread);
-	fflush(stdout);
-    }
-#endif
-
     MPI_Barrier( grid->comm );
     t1_sol = SuperLU_timer_();
     t = SuperLU_timer_();

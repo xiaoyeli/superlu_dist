@@ -60,7 +60,7 @@ int main(int argc, char *argv[])
     float   *err_bounds, *berr;
     float   *b, *xtrue;
     int    m, n;
-    int      nprow, npcol, lookahead, colperm, rowperm, ir, use_tensorcore;
+    int      nprow, npcol, lookahead, colperm, rowperm, ir, use_tensorcore, equil;
     int      iam, info, ldb, ldx, nrhs;
     char     **cpp, c, *postfix;;
     FILE *fp, *fopen();
@@ -80,6 +80,12 @@ int main(int argc, char *argv[])
 			float *err_bounds, SuperLUStat_t *stat, int *info,
 			double *dxtrue);
 
+    extern void psgssvx_tracking(superlu_dist_options_t *options, SuperMatrix *A,
+				 sScalePermstruct_t *ScalePermstruct,
+				 float B[], int ldb, int nrhs, gridinfo_t *grid,
+				 sLUstruct_t *LUstruct, sSOLVEstruct_t *SOLVEstruct, float *berr,
+				 SuperLUStat_t *stat, int *info, double *xtrue);
+    
     nprow = 1;  /* Default process rows.      */
     npcol = 1;  /* Default process columns.   */
     nrhs = 1;   /* Number of right-hand side. */
@@ -87,6 +93,7 @@ int main(int argc, char *argv[])
     colperm = -1;
     rowperm = -1;
     ir = -1;
+    equil = -1;
     use_tensorcore = -1;
 
     /* ------------------------------------------------------------
@@ -127,6 +134,8 @@ int main(int argc, char *argv[])
 	      case 'q': colperm = atoi(*cpp);
 		        break;
 	      case 'i': ir = atoi(*cpp);
+		        break;
+	      case 'e': equil = atoi(*cpp);
 		        break;
 	      case 't': use_tensorcore = atoi(*cpp);
 		        break;
@@ -203,16 +212,24 @@ int main(int argc, char *argv[])
        GET THE MATRIX FROM FILE AND SETUP THE RIGHT HAND SIDE
        ------------------------------------------------------------*/
     //screate_matrix_postfix(&A, nrhs, &b, &ldb, &xtrue, &ldx, fp, postfix, &grid);
+    
+    /* Generate a good RHS in double precision, then rounded to single.
+       See bullet 7, page 20, LAWN 165. */
     /* The returned A, b and xtrue are in single precision
-       b <- A * xtrue in double, then rounded to single */
+       b <- A * xtrue in double internally, then rounded to single */
     screate_A_x_b(&A, nrhs, &b, &ldb, &xtrue, &ldx, fp, postfix, &grid);
     fclose(fp);
-    
+
+    if (iam==0) {
+	  printf("\n(%d) generated single xtrue:\n", iam);
+	  for (i = 0; i < 5; ++i) printf("%.16e\t", xtrue[i]);
+	  printf("\n"); fflush(stdout);
+    }
     m = A.nrow;
     n = A.ncol;
 
 #if 1
-    /* Generate a good RHS in double precision, then rounded to single */
+    /* Compute the ground truth dXtrue in double precision */
     {
 	SuperMatrix dA;
 	dScalePermstruct_t dScalePermstruct;
@@ -269,24 +286,23 @@ int main(int argc, char *argv[])
 	db = doubleMalloc_dist(m_loc * nrhs);
 	for (i = 0; i < m_loc * nrhs; ++i) {
 	  db[i] = b[i];
+	  dxtrue[i] = (double) xtrue[i]; // generated truth in single
 	}
 
 	pdgssvx(&options, &dA, &dScalePermstruct, db, ldb, nrhs, &grid,
 		&dLUstruct, &dSOLVEstruct, dberr, &stat, &info);
 
-	for (i = 0; i < m_loc * nrhs; ++i) dxtrue[i] = db[i];
-	
-	//pdinf_norm_error(iam, m_loc, nrhs, db, ldb, dxtrue, ldx, grid.comm);
+	pdinf_norm_error(iam, m_loc, nrhs, db, ldb, dxtrue, ldx, grid.comm);
 
+	for (i = 0; i < m_loc * nrhs; ++i) dxtrue[i] = db[i]; // computed truth in double
+	
 	/* Rounded to single */
 	for (i = 0; i < m_loc; ++i) {
 	  xtrue[i] = (float) db[i];
 	}
 
 	if ( iam==0 ) { //(nprow*npcol-1) ) {
-	  printf("\n(%d) single xtrue:\n", iam);
-	  for (i = 0; i < 5; ++i) printf("%.16e\t", xtrue[i]);
-	  printf("\ndouble computed dxtrue (stored in db):\n");
+	  printf("\ndouble computed xtrue (stored in db):\n");
 	  for (i = 0; i < 5; ++i) printf("%.16e\t", db[i]);
 	  printf("\n"); fflush(stdout);
 	}
@@ -334,11 +350,9 @@ int main(int argc, char *argv[])
 	options.DiagInv           = NO;
      */
     set_default_options_dist(&options);
-
-    options.IterRefine = SLU_DOUBLE;
 #if 0
     options.IterRefine = SLU_SINGLE;
-    options.Equil = NO; 
+    options.IterRefine = SLU_DOUBLE;
     options.ReplaceTinyPivot  = YES;
     options.RowPerm = NOROWPERM;
     options.ColPerm = NATURAL;
@@ -349,6 +363,7 @@ int main(int argc, char *argv[])
     if (colperm != -1) options.ColPerm = colperm;
     if (lookahead != -1) options.num_lookaheads = lookahead;
     if (ir != -1) options.IterRefine = ir;
+    if (equil != -1) options.Equil = equil;
     if (use_tensorcore != -1) options.Use_TensorCore = use_tensorcore;
 
     if (!iam) {
@@ -367,25 +382,20 @@ int main(int argc, char *argv[])
     /* Initialize the statistics variables. */
     PStatInit(&stat);
 
-    if (iam==0) {
-        Printfloat5("before psgssvx_d2 xtrue[]", 5, xtrue);
-        Printfloat5("before psgssvx_d2 b[]", 5, b);
-	printf("\n"); fflush(stdout);
-    }
-
     if ( options.IterRefine == SLU_DOUBLE || options.IterRefine == SLU_EXTRA ) { 
         /* Call the linear equation solver with extra-precise iterative refinement */
         psgssvx_d2(&options, &A, &ScalePermstruct, b, ldb, nrhs, &grid,
 		   &LUstruct, &SOLVEstruct, err_bounds, &stat, &info, dxtrue);
     } else {
         /* Call the linear equation solver */
+#if ( PRNTlevel>=2 )
+        psgssvx_tracking(&options, &A, &ScalePermstruct, b, ldb, nrhs, &grid,
+			 &LUstruct, &SOLVEstruct, berr, &stat, &info, dxtrue);
+#else
         psgssvx(&options, &A, &ScalePermstruct, b, ldb, nrhs, &grid,
 		&LUstruct, &SOLVEstruct, berr, &stat, &info);
+#endif	
     }
-
-    /* Check the accuracy of the solution. */
-    psinf_norm_error(iam, ((NRformat_loc *)A.Store)->m_loc,
-		     nrhs, b, ldb, xtrue, ldx, grid.comm);
 
     if ( info ) {  /* Something is wrong */
         if ( iam==0 ) {
@@ -396,11 +406,11 @@ int main(int argc, char *argv[])
         /* Check the accuracy of the solution. */
         psinf_norm_error(iam, ((NRformat_loc *)A.Store)->m_loc,
 		         nrhs, b, ldb, xtrue, ldx, grid.comm);
-	if ( options.IterRefine == SLU_DOUBLE || options.IterRefine == SLU_EXTRA ||
-	     iam==0 ) {
-	  printf(" Normwise error bound: %e\n", err_bounds[0]);
-	  printf(" Componentwise error bound: %e\n", err_bounds[1*nrhs]);
-	  printf(" Componentwise backword error: %e\n", err_bounds[2*nrhs]);
+	if ( iam==0 && (options.IterRefine == SLU_DOUBLE || options.IterRefine == SLU_EXTRA) ) {
+	  printf("Forward error bounds:\n");
+	  printf("\tNormwise:       %e\n", err_bounds[0]);
+	  printf("\tComponentwise:  %e\n", err_bounds[1*nrhs]);
+	  printf("Componentwise backword error: %e\n", err_bounds[2*nrhs]);
 	  fflush(stdout);
 	}
     }

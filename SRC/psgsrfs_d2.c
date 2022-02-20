@@ -27,7 +27,7 @@ at the top-level directory.
 #include "superlu_sdefs.h"
 //#include "superlu_ddefs.h"
 
-#define PRNTlevel 2
+#define PRNTlevel 1
 
 #define ITMAX 10
 #define RHO_THRESH 0.5
@@ -91,27 +91,16 @@ void check_accuracy(
     err = compute_berr(m_loc, A, gsmv_comm, grid, B_col, X_col,
 		       R, temp, safe1, safe2);
 
-    if (iam == 0) {
-      if ( count==0 ) {
-	printf("%%IR%12s%12s%16s%20s%12s%12s%8s\n",
-	       "rho_x","rho_z","dx_x","normdz","BERR","x_state","z_state");
-      }
-      printf("%e %e %20.16e %20.16e %e  %d  %d\n",
-	     converge[0][count], converge[1][count], converge[2][count],
-	     converge[3][count], err, 
-	     (int)converge[4][count], (int)converge[5][count]);
-      //rho_x, rho_z, dx_x, normdz, err, x_state, z_state);
-      fflush(stdout);
-    }
-    
+    ferr[4][count] = err; // Berr
+
     // Error from ytrue
     err = normy = errcomp = 0.0;
     for (i = 0; i < m_loc; i++) {
       derr = fabs(y_col[i] - ytrue[i]);
-      err = SUPERLU_MAX(err, derr);
+      err = SUPERLU_MAX(err, derr);     // double, normwise error
       normy = SUPERLU_MAX(normy, fabs(y_col[i]));
       // errcomp = SUPERLU_MAX(errcomp, derr / fabs(y_col[i]));
-      c_ratio = derr / fabs(y_col[i]);
+      c_ratio = derr / fabs(y_col[i]);  // componentwise error
       if ( c_ratio > errcomp ) {
 	imax = i;
 	errcomp = c_ratio;
@@ -123,8 +112,8 @@ void check_accuracy(
     local_norms[2] = errcomp;
     MPI_Allreduce( local_norms, global_norms, 3,
 		   MPI_DOUBLE, MPI_MAX, grid->comm ); // MPI_FLOAT
-    ferr[2][count] = global_norms[0] / global_norms[1];
-    ferr[3][count] = global_norms[2];
+    ferr[2][count] = global_norms[0] / global_norms[1]; // normwise Y error
+    ferr[3][count] = global_norms[2];  // componentwise Y error
     normy = global_norms[1];
 
 #if ( PRNTlevel>=3 )
@@ -136,15 +125,6 @@ void check_accuracy(
 	     xnorm, normy, global_norms[2]);
       fflush(stdout);
     } else p_imax = -1;
-#endif
-
-#if ( PRNTlevel>=3 )
-    if (iam==0) {
-      printf("(%d) reduction:\n\tlocal_norms: %e %e %e\n\tglobal_norms:%e %e %e\n",
-	     count, local_norms[0],local_norms[1],local_norms[2],
-	     global_norms[0],global_norms[1],global_norms[2]);
-      fflush(stdout);
-    }
 #endif
 
     /* Check the accuracy of the solution. */
@@ -229,11 +209,9 @@ void check_accuracy(
  *         err_bounds[j + 0*nrhs] : normwise forward error bound
  *         err_bounds[j + 1*nrhs] : componentwise forward error bound
  *         err_bounds[j + 2*nrhs] : componentwise backward error
- *
- * berr   (output) float*, dimension (nrhs)
- *         The componentwise relative backward error of each solution
- *         vector X(j) (i.e., the smallest relative change in
- *         any element of A or B that makes X(j) an exact solution).
+ *             The componentwise relative backward error of each solution
+ *             vector X(j) (i.e., the smallest relative change in
+ *             any element of A or B that makes X(j) an exact solution).
  *
  * stat   (output) SuperLUStat_t*
  *        Record the statistics about the refinement steps.
@@ -254,7 +232,9 @@ psgsrfs_d2(int n, SuperMatrix *A, float anorm, sLUstruct_t *LUstruct,
 	   sScalePermstruct_t *ScalePermstruct, gridinfo_t *grid,
 	   float *B, int_t ldb, float *X, int_t ldx, int nrhs,
 	   sSOLVEstruct_t *SOLVEstruct, float *err_bounds,
-	   SuperLUStat_t *stat, int *info, double *xtrue)
+	   SuperLUStat_t *stat, int *info,
+	   double *xtrue  // xtrue[] is used only for checking purpose
+	   )
 {
     float *resid, *dy, *temp, *Res, *B_col, *X_col, *C;
     int_t *perm_c = ScalePermstruct->perm_c; 
@@ -280,11 +260,12 @@ psgsrfs_d2(int n, SuperMatrix *A, float anorm, sLUstruct_t *LUstruct,
 			      1: componentwise Ferr for X
 			      2: normwise Ferr for Y
 			      3: componentwise Ferr for Y
-			      4: componentwise Ferr for X  */
+			      4: Berr */
 
     /* Data structures used by matrix-vector multiply routine. */
     psgsmv_comm_t *gsmv_comm = SOLVEstruct->gsmv_comm;
     NRformat_loc *Astore;
+    int_t *rowptr;
 
     typedef enum {UNSTABLE, WORKING, CONVERGED, NoPROGRESS} IRstate_t;
     int x_state, z_state;
@@ -306,6 +287,7 @@ psgsrfs_d2(int n, SuperMatrix *A, float anorm, sLUstruct_t *LUstruct,
     Astore = (NRformat_loc *) A->Store;
     m_loc = Astore->m_loc;
     fst_row = Astore->fst_row;
+    rowptr = Astore->rowptr;
     iam = grid->iam;
     stat->RefineSteps = -1;
 
@@ -342,7 +324,12 @@ psgsrfs_d2(int n, SuperMatrix *A, float anorm, sLUstruct_t *LUstruct,
 
     /* NZ = maximum number of nonzero elements in each row of A, plus 1 */
     //nz     = A->ncol + 1;  // dense case
-    nz = Astore->nnz_loc / m_loc + 1; // average. Sherry: need max.
+    int nzloc = 0;
+    for (i = 0; i < m_loc; ++i) {
+      nzloc = SUPERLU_MAX( nzloc, rowptr[i+1] - rowptr[i] );
+    }
+    MPI_Allreduce( &nzloc, &nz, 1, MPI_INT, MPI_MAX, grid->comm );
+    
     colequ = ( ScalePermstruct->DiagScale == COL ||
 	       ScalePermstruct->DiagScale == BOTH );
     C      = ScalePermstruct->C;
@@ -373,20 +360,20 @@ psgsrfs_d2(int n, SuperMatrix *A, float anorm, sLUstruct_t *LUstruct,
     double local_norm[1], global_norm[1];
     /* ytrue = Pc * inv(C) * xtrue */
     if ( colequ ) { 
-      for (i = 0; i < m_loc; ++i)   // ax[] is aliased to ytrue
-	ax[i] = (double) xtrue[i] / (double) C[i + fst_row];
+      for (i = 0; i < m_loc; ++i)   // y_col[] is temporarily aliased to ytrue
+	y_col[i] = (double) xtrue[i] / (double) C[i + fst_row];
     } else {
-      for (i = 0; i < m_loc; ++i) ax[i] = (double) xtrue[i];
+      for (i = 0; i < m_loc; ++i) y_col[i] = (double) xtrue[i];
     }
     for (i = 0; i < m_loc; ++i) {
-      ymax = SUPERLU_MAX(ymax, ax[i]);
-      ymin = SUPERLU_MIN(ymin, ax[i]);
+      ymax = SUPERLU_MAX(ymax, y_col[i]);
+      ymin = SUPERLU_MIN(ymin, y_col[i]);
     }
     assert(ldx == ldb);
 
-    /* Permute the true solution ytrue <= Pc*Ytrue. */
+    /* Permute the true solution ytrue <= Pc * ytrue. */
     pdPermute_Dense_Matrix(fst_row, m_loc, SOLVEstruct->row_to_proc,
-                           ScalePermstruct->perm_c, ax, ldx,
+                           ScalePermstruct->perm_c, y_col, ldx,
                            ytrue, ldb, nrhs, grid);
     local_norms[0] = ymax;
     MPI_Reduce( local_norms, global_norms, 1, 
@@ -404,7 +391,7 @@ psgsrfs_d2(int n, SuperMatrix *A, float anorm, sLUstruct_t *LUstruct,
 
 #if ( PRNTlevel>=2 )
     if (iam==0) {
-      printf(".. colequ %d, nz %d,  nrhs %d, eps = %e, anorm = %e, safe1 = %e, safe2 = %e\tldx = %d\tldb = %d\n",
+      printf("colequ %d, nz %d,  nrhs %d, eps = %e, anorm = %e, safe1 = %e, safe2 = %e\tldx = %d\tldb = %d\n",
 	     colequ, nz, nrhs, eps, anorm, safe1, safe2, (int)ldx, (int)ldb);
       fflush(stdout);
     }
@@ -412,11 +399,10 @@ psgsrfs_d2(int n, SuperMatrix *A, float anorm, sLUstruct_t *LUstruct,
   
     /* Do for each right-hand side ... */
     for (j = 0; j < nrhs; ++j) {
-        count = 0;
 	lstres = 3.;
 	B_col = &B[j*ldb];
 	X_col = &X[j*ldx];
-	for (i = 0; i < m_loc; ++i) y_col[i] = X_col[i]; /* in double */
+	for (i = 0; i < m_loc; ++i) y_col[i] = (double) X_col[i]; /* in double */
 
 	rho_x = rho_x_max = 0.0;
 	rho_z = rho_z_max = 0.0;
@@ -534,7 +520,6 @@ psgsrfs_d2(int n, SuperMatrix *A, float anorm, sLUstruct_t *LUstruct,
 #if ( PRNTlevel>=2 )
 	    //**** DEBUG: Check against Xtrue and Ytrue at each iteration
 	    //  **** DEBUG: print more stuff
-#if 1
 	    check_accuracy(count, fst_row, m_loc, nrhs, colequ,
 			   A, gsmv_comm, Res, //resid
 			   y_col, dy, X_col, ldx, 
@@ -542,7 +527,6 @@ psgsrfs_d2(int n, SuperMatrix *A, float anorm, sLUstruct_t *LUstruct,
 			   temp, inv_perm_c,
 			   converge, ferr,
 			   SOLVEstruct, grid, safe1, safe2 );
-#endif
 #endif //************** END DEBUG
 
 	    /* Exit if both normwise and componentwise stopped working, but
@@ -550,13 +534,13 @@ psgsrfs_d2(int n, SuperMatrix *A, float anorm, sLUstruct_t *LUstruct,
 	    if ( x_state != WORKING ) {
 	      if ( z_state == NoPROGRESS || z_state == CONVERGED ) {
 		if (stat->RefineSteps == -1) stat->RefineSteps = count; // only record the 1st time
-#if ( PRNTlevel<=1 ) //*********** Let it run to ITMAX steps
+#if ( PRNTlevel<=2 ) //*********** Otherwisee, let it run to ITMAX steps
 		break;
 #endif
 	      }
 	      if ( z_state == UNSTABLE && count > 0 ) {
 		if (stat->RefineSteps == -1) stat->RefineSteps = count;
-#if ( PRNTlevel<=1 )  //*********** Let it run to ITMAX steps
+#if ( PRNTlevel<=2 )  //*********** Otherwise, let it run to ITMAX steps
 		break;
 #endif
 	      }
@@ -566,17 +550,10 @@ psgsrfs_d2(int n, SuperMatrix *A, float anorm, sLUstruct_t *LUstruct,
 	    for (i = 0; i < m_loc; ++i)
 	        y_col[i] = y_col[i] + (double) dy[i];
 
-#if ( PRNTlevel>=3 )
-	    if ( iam == p_imax ) {
-	      printf("  (2: P%d updated Y) imax %d: y %.8e, y_true %.8e\n\n",
-		     iam, imax, y_col[imax], ytrue[imax]);
-	      fflush(stdout);
-	    }
-#endif
 	    prev_normdx = normdx;
 	    prev_normdz = normdz;
 
-	} /* end for count ... */
+	} /* end for iteration count ... */
 
 	/* Copy the improved solution to return. X_col aliased to X */
 	//if (iam==0) {printf("  Copy back y_col to X\n"); fflush(stdout);}
@@ -587,27 +564,32 @@ psgsrfs_d2(int n, SuperMatrix *A, float anorm, sLUstruct_t *LUstruct,
 	if ( z_state == WORKING ) final_dz_z = normdz;
 
 	/* Compute forward error bounds */
-	float err_lbnd = SUPERLU_MAX(10.0, sqrt(n)) * eps;
+	float err_lowerbnd = SUPERLU_MAX(1.0, sqrt(nz)) * eps;  // 10.0 seems too loose
+	if (iam==0) {
+	  printf(".. nz %d, fudge err_lowerbnd %e\n", nz, err_lowerbnd);
+	  fflush(stdout);
+	}
+	
 #if ( PRNTlevel>=2 )
 	if (iam==0) {
 	  //printf("final x_state %d \tfinal z_state %d\n", x_state, z_state);
-	  printf("err_lbnd %e\trho_x_max %e\trho_zmax %e\n",
-		 err_lbnd, rho_x_max, rho_z_max);
+	  printf("err_lowerbnd %e\trho_x_max %e\trho_zmax %e\n",
+		 err_lowerbnd, rho_x_max, rho_z_max);
 	  printf("final_dx_x/(1 - rho_x_max)  %e\n", final_dx_x/(1-rho_x_max));
 	  fflush(stdout);
 	}
 #endif
 	err_bounds[j       ] = SUPERLU_MAX( final_dx_x / (1 - rho_x_max), 
-					    err_lbnd);
+					    err_lowerbnd);
 	err_bounds[j + nrhs] = SUPERLU_MAX( final_dz_z / (1 - rho_z_max),
-					    err_lbnd);
+					    err_lowerbnd);
 
 	/* Compute backward error BERR in err_bounds[j + 2*nrhs] */
         err_bounds[j + 2*nrhs] = compute_berr(m_loc, A, gsmv_comm, grid, 
 					      B_col, X_col, Res, temp, 
 					      safe1, safe2);
 
-#if ( PRNTlevel>=2 ) //*************** DEBUG: TO BE REMOVED
+#if ( PRNTlevel>=1 ) //*************** DEBUG: TO BE REMOVED
 	/* check normwise error of Y 
 	 * Normwise relative error in the jth solution vector:
 	 * Need to reduce 2 numbers
@@ -615,16 +597,26 @@ psgsrfs_d2(int n, SuperMatrix *A, float anorm, sLUstruct_t *LUstruct,
 	//pdinf_norm_error(iam, m_loc, nrhs, y_col, ldb, ytrue, ldx, grid);
 
 	if (iam == 0) {
+	  printf("%12s%12s%16s%20s%12s%8s\n",
+		 "rho_x","rho_z","dx_x","normdz","x_state","z_state");
+	  for (i = 0; i < count; ++i)
+	    printf("%e %e %20.16e %20.16e %4d  %4d\n",
+		   converge[0][i], converge[1][i], converge[2][i],
+		   converge[3][i], (int)converge[4][i], (int)converge[5][i]);
+	  fflush(stdout);
+
+#if ( PRNTlevel>=2 )	  
 	  Printdouble5("Y", 3, y_col);
 	  Printfloat5("X", 3, X_col);
-	  printf("%%IR %20s%24s%20s%24s%10s\n", 
-		 "||X-Xtrue||/||X||", "max |X-Xt|_i / |X|_i",
-		 "||Y-Ytrue||/||Y||", "max |Y-Yt|_i / |Y|_i", "Berr");
-	  for (i = 0; i <= count; ++i)
-	    printf("%2d %20.16e %20.16e %20.16e %20.16e %e\n", i,
+	  printf("%%IR %16s %16s %16s %16s %10s\n", 
+		 "||X-Xt||/||X||", "max |X-Xt|_i/|X|_i",
+		 "||Y-Yt||/||Y||", "max |Y-Yt|_i/|Y|_i", "Berr");
+	  for (i = 0; i < count; ++i)
+	    printf("%d  %16.8e %16.8e %16.8e %16.8e %16.8e\n", i,
 		   ferr[0][i], ferr[1][i], ferr[2][i], ferr[3][i], ferr[4][i]);
 	  printf("Terminate at step %d\n", stat->RefineSteps);
 	  fflush(stdout);
+#endif	  
 	}
 #endif //***************
 

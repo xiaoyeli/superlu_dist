@@ -340,7 +340,6 @@ void PStatPrint(superlu_dist_options_t *options, SuperLUStat_t *stat, gridinfo_t
                0, grid->comm);
     factflop = flopcnt;
     if ( !iam && options->Fact != FACTORED ) {
-	printf("\tFACTOR time        %8.4f\n", utime[FACT]);
 	printf("\tFACTOR time        %8.3f\n", utime[FACT]);
 	if ( utime[FACT] != 0.0 )
 	    printf("\tFactor flops\t%e\tMflops \t%8.2f\n",

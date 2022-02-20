@@ -217,10 +217,10 @@ int main(int argc, char *argv[])
      */
     set_default_options_dist(&options);
     options.Equil = YES; 
+    options.IterRefine = NOREFINE;
 #if 0
     options.RowPerm           = LargeDiag_HWPM;
     options.RowPerm = NOROWPERM;
-    options.IterRefine = NOREFINE;
     options.ColPerm = NATURAL;
     options.ReplaceTinyPivot = YES;
 #endif

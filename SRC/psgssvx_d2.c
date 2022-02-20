@@ -871,7 +871,7 @@ psgssvx_d2(superlu_dist_options_t *options, SuperMatrix *A,
 #endif
 	            if ( iinfo == 0 ) {
 	              if ( job == 5 ) {
-		        if ( 0 ) { //if ( Equil ) { /* !!Sherry!! */
+		        if ( Equil ) { /* !!Sherry!! */
 		            for (i = 0; i < n; ++i) {
 			        R1[i] = exp(R1[i]);
 			        C1[i] = exp(C1[i]);

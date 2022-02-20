@@ -182,7 +182,7 @@ int screate_A_x_b(SuperMatrix *A, int nrhs, float **rhs,
 
     /* Compute RHS in double, then round to single */
     for (i = 0; i < n * nrhs; ++i) 
-        xtrue_global_dble[i] = xtrue_global[i];
+      xtrue_global_dble[i] = (double) xtrue_global[i];
     dFillRHS_dist(trans, nrhs, xtrue_global_dble, n, &GA, b_global_dble, m); // all in DOUBLE
     //sFillRHS_dist(trans, nrhs, xtrue_global, n, &GA, b_global, m);
 

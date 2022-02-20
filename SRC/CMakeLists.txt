@@ -184,6 +184,7 @@ if(enable_single)
     psgssvx_d2.c     # with double-precision IR
     psgsrfs_d2.c
     psgsmv_d2.c
+    psgsequb.c
   )
 if (HAVE_CUDA)
   list(APPEND sources ssuperlu_gpu.cu)

@@ -579,10 +579,22 @@ sGenXtrue_dist(int_t n, int_t nrhs, float *x, int_t ldx)
     double exponent, tau; /* See TOMS paper on ItRef (LAWN165); testing code: 
 			     Codes/UCB-itref-xblas-etc/xiaoye/itref/driver.c  */
     double r;
+    float xmax = 0.0, xmin = 1.0e6;
+
+#if 0    
+    // NEED TO REMOVE THE FOLLOWING
+    for (j = 0; j < nrhs; ++j) {
+	for (i = 0; i < n; ++i) {
+	  x[i + j*ldx] = 1.0;
+	}
+    }
+    return;
+    /////////////////////////////
+#endif
     
     exponent = (double)rand() / (double)((unsigned)RAND_MAX + 1); /* uniform in [0,1) */
-#if 0
-    tau = pow(2.0, 12.0 * exponent);
+#if 1
+    tau = pow(2.0, 24.0 * exponent);  // 12.0
 #else
     tau = 5.0;
 #endif
@@ -592,6 +604,7 @@ sGenXtrue_dist(int_t n, int_t nrhs, float *x, int_t ldx)
     r = r + 0.5; /* uniform in (0.5, 1.5) */
 
     for (j = 0; j < nrhs; ++j) {
+        xmax = 0.0, xmin = 1.0e6;
 	for (i = 0; i < n; ++i) {
 #if 1
 	  x[i + j*ldx] = pow(tau, - ((double)i / (n-1))) * r;
@@ -600,7 +613,17 @@ sGenXtrue_dist(int_t n, int_t nrhs, float *x, int_t ldx)
 #else
 	  x[i + j*ldx] = rand() / (double)((unsigned)RAND_MAX + 1); /* uniform in [0,1) */
 #endif
+	  xmax = SUPERLU_MAX( xmax, x[i + j*ldx] );
+	  xmin = SUPERLU_MIN( xmin, x[i + j*ldx] );
 	}
+#if ( PRNTlevel>=1 )
+	int iam;
+	MPI_Comm_rank(MPI_COMM_WORLD, &iam);
+	if (iam==0) {
+	  printf(".. sGenXtrue: xmax %e, xmin %e\n", xmax, xmin);
+	  fflush(stdout);
+	}
+#endif	
     }
 }
 
