@@ -928,7 +928,7 @@ pdgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 	        stat->utime[ROWPERM] = t;
 #if ( PRNTlevel>=1 )
                 if ( !iam ) {
-		    printf(".. LDPERM job %d\t time: %.2f\n", job, t);
+		    printf(".. RowPerm %d\t time: %.2f\n", options->RowPerm, t);
 		    fflush(stdout);
 		}
 #endif

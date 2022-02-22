@@ -109,6 +109,7 @@ typedef struct //LUstruct_gpu_
     int_t *xsup;
     gridinfo_t *grid;
 
+#if 0 // Sherry: moved to 'SuperLUStat_t'
     double ScatterMOPCounter;
     double ScatterMOPTimer;
     double GemmFLOPCounter;
@@ -125,6 +126,7 @@ typedef struct //LUstruct_gpu_
     gpuEvent_t *ePCIeH2D;
     gpuEvent_t *ePCIeD2H_Start;
     gpuEvent_t *ePCIeD2H_End;
+#endif
 
     int_t *xsup_host;
     int_t* perm_c_supno;
@@ -187,7 +189,8 @@ extern int dreduceGPUlu(int last_flag, d2Hreduce_t* d2Hred,
 	 dLUstruct_t *LUstruct);
 
 extern int dwaitGPUscu(int streamId, dsluGPU_t *sluGPU, SCT_t *SCT);
-extern int dsendLUpanelGPU2HOST( int_t k0, d2Hreduce_t* d2Hred, dsluGPU_t *sluGPU);
+extern int dsendLUpanelGPU2HOST( int_t k0, d2Hreduce_t* d2Hred,
+       	   dsluGPU_t *sluGPU, SuperLUStat_t *);
 extern int dsendSCUdataHost2GPU(
     int_t streamId, int_t* lsub, int_t* usub, double* bigU, int_t bigu_send_size,
     int_t Remain_lbuf_send_size,  dsluGPU_t *sluGPU, HyP_t* HyP
@@ -197,7 +200,8 @@ extern int dinitSluGPU3D_t(
     dsluGPU_t *sluGPU,
     dLUstruct_t *LUstruct,
     gridinfo3d_t * grid3d,
-    int_t* perm_c_supno, int_t n, int_t buffer_size, int_t bigu_size, int_t ldt
+    int_t* perm_c_supno, int_t n, int_t buffer_size, int_t bigu_size, int_t ldt,
+    SuperLUStat_t *
 );
 int dSchurCompUpdate_GPU(
     int_t streamId,
@@ -208,29 +212,31 @@ int dSchurCompUpdate_GPU(
     int_t mcb,
     int_t buffer_size, int_t lsub_len, int_t usub_len,
     int_t ldt, int_t k0,
-    dsluGPU_t *sluGPU, gridinfo_t *grid
+    dsluGPU_t *sluGPU, gridinfo_t *grid,
+    SuperLUStat_t *
 );
 
 
 extern void dCopyLUToGPU3D (int* isNodeInMyGrid, dLocalLU_t *A_host,
            dsluGPU_t *sluGPU, Glu_persist_t *Glu_persist, int_t n,
-	   gridinfo3d_t *grid3d, int_t buffer_size, int_t bigu_size, int_t ldt);
+	   gridinfo3d_t *grid3d, int_t buffer_size, int_t bigu_size, int_t ldt,
+    	   SuperLUStat_t *
+	   );
 
 extern int dreduceAllAncestors3d_GPU(int_t ilvl, int_t* myNodeCount,
                               int_t** treePerm,    dLUValSubBuf_t*LUvsb,
                               dLUstruct_t* LUstruct, gridinfo3d_t* grid3d,
                               dsluGPU_t *sluGPU,  d2Hreduce_t* d2Hred,
-                              factStat_t *factStat, HyP_t* HyP, SCT_t* SCT );
+                              factStat_t *factStat, HyP_t* HyP, SCT_t* SCT,
+    			      SuperLUStat_t *
+			      );
 
 extern void dsyncAllfunCallStreams(dsluGPU_t* sluGPU, SCT_t* SCT);
-extern int dfree_LUstruct_gpu (dLUstruct_gpu_t *A_gpu);
+extern int dfree_LUstruct_gpu (dLUstruct_gpu_t *A_gpu, SuperLUStat_t *);
 
 //int freeSluGPU(dsluGPU_t *sluGPU);
 
 extern void dPrint_matrix( char *desc, int_t m, int_t n, double *dA, int_t lda );
-
-/*to print out various statistics*/
-void dprintGPUStats(dLUstruct_gpu_t *A_gpu);
 
 #ifdef __cplusplus
 }
