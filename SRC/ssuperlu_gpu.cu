@@ -537,8 +537,8 @@ int sSchurCompUpdate_GPU(
 	                          usub_len * sizeof(int_t), gpuMemcpyHostToDevice,
 	                          FunCallStream) );
 
-	A_gpu->tHost_PCIeH2D += SuperLU_timer_() - tTmp;
-	A_gpu->cPCIeH2D += Remain_lbuf_send_size * sizeof(float)
+	stat->tHost_PCIeH2D += SuperLU_timer_() - tTmp;
+	stat->cPCIeH2D += Remain_lbuf_send_size * sizeof(float)
 	                   + bigu_send_size * sizeof(float)
 	                   + RemainBlk * sizeof(Remain_info_t)
 	                   + mcb * sizeof(Ublock_info_t)
@@ -657,7 +657,7 @@ int sSchurCompUpdate_GPU(
 #endif
 		    gpuEventRecord(stat->GemmEnd[k0], FunCallStream);
 
-		    A_gpu->GemmFLOPCounter += 2.0 * (double) nrows * ncols * ldu;
+		    stat->GemmFLOPCounter += 2.0 * (double) nrows * ncols * ldu;
 
 		    /*
 		     * Scattering the output
@@ -676,8 +676,8 @@ int sSchurCompUpdate_GPU(
 #endif
 
 		    gpuEventRecord(stat->ScatterEnd[k0], FunCallStream);
-
-		    A_gpu->ScatterMOPCounter +=  3.0 * (double) nrows * ncols;
+		    stat->ScatterMOPCounter +=  3.0 * (double) nrows * ncols;
+		    
 		} /* endif ... none of the matrix dimension is zero. */
 
 	    } /* end while jj_end < nub */
@@ -1090,8 +1090,8 @@ int ssendLUpanelGPU2HOST(
 	checkGPU(gpuMemcpyAsync(A_gpu->acc_U_buff, &A_gpu->UnzvalVec[A_gpu->UnzvalPtr_host[kijb]],
 				  u_copy_len * sizeof(float), gpuMemcpyDeviceToHost, CopyStream ) );
     gpuEventRecord(stat->ePCIeD2H_End[k0], CopyStream);
-    A_gpu->tHost_PCIeD2H += SuperLU_timer_() - tty;
-    A_gpu->cPCIeD2H += u_copy_len * sizeof(float) + l_copy_len * sizeof(float);
+    stat->tHost_PCIeD2H += SuperLU_timer_() - tty;
+    stat->cPCIeD2H += u_copy_len * sizeof(float) + l_copy_len * sizeof(float);
 
     return 0;
 }

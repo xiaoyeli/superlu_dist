@@ -369,7 +369,7 @@ int_t pzgstrf3d(superlu_dist_options_t *options, int m, int n, double anorm,
         if ( options->PrintStat ) {
 	    printGPUStats(nsupers, stat);
 	}
-        zfree_LUstruct_gpu (sluGPU->A_gpu);
+        zfree_LUstruct_gpu (sluGPU->A_gpu, stat);
     }
 #endif
     reduceStat(FACT, stat, grid3d);

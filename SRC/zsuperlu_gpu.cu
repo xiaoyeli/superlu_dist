@@ -537,8 +537,8 @@ int zSchurCompUpdate_GPU(
 	                          usub_len * sizeof(int_t), gpuMemcpyHostToDevice,
 	                          FunCallStream) );
 
-	A_gpu->tHost_PCIeH2D += SuperLU_timer_() - tTmp;
-	A_gpu->cPCIeH2D += Remain_lbuf_send_size * sizeof(doublecomplex)
+	stat->tHost_PCIeH2D += SuperLU_timer_() - tTmp;
+	stat->cPCIeH2D += Remain_lbuf_send_size * sizeof(doublecomplex)
 	                   + bigu_send_size * sizeof(doublecomplex)
 	                   + RemainBlk * sizeof(Remain_info_t)
 	                   + mcb * sizeof(Ublock_info_t)
@@ -664,7 +664,7 @@ int zSchurCompUpdate_GPU(
 #endif
 		    gpuEventRecord(stat->GemmEnd[k0], FunCallStream);
 
-		    A_gpu->GemmFLOPCounter += 8.0 * (double) nrows * ncols * ldu;
+		    stat->GemmFLOPCounter += 8.0 * (double) nrows * ncols * ldu;
 
 		    /*
 		     * Scattering the output
@@ -684,7 +684,7 @@ int zSchurCompUpdate_GPU(
 
 		    gpuEventRecord(stat->ScatterEnd[k0], FunCallStream);
 
-		    A_gpu->ScatterMOPCounter +=  3.0 * (double) nrows * ncols;
+		    stat->ScatterMOPCounter +=  3.0 * (double) nrows * ncols;
 		} /* endif ... none of the matrix dimension is zero. */
 
 	    } /* end while jj_end < nub */
@@ -1076,7 +1076,7 @@ int zsendLUpanelGPU2HOST(
     int_t k0,
     d2Hreduce_t* d2Hred,
     zsluGPU_t *sluGPU,
-    SuperLUStat_t *stat,        
+    SuperLUStat_t *stat
 )
 {
     int_t kljb = d2Hred->kljb;
@@ -1097,8 +1097,8 @@ int zsendLUpanelGPU2HOST(
 	checkGPU(gpuMemcpyAsync(A_gpu->acc_U_buff, &A_gpu->UnzvalVec[A_gpu->UnzvalPtr_host[kijb]],
 				  u_copy_len * sizeof(doublecomplex), gpuMemcpyDeviceToHost, CopyStream ) );
     gpuEventRecord(stat->ePCIeD2H_End[k0], CopyStream);
-    A_gpu->tHost_PCIeD2H += SuperLU_timer_() - tty;
-    A_gpu->cPCIeD2H += u_copy_len * sizeof(doublecomplex) + l_copy_len * sizeof(doublecomplex);
+    stat->tHost_PCIeD2H += SuperLU_timer_() - tty;
+    stat->cPCIeD2H += u_copy_len * sizeof(doublecomplex) + l_copy_len * sizeof(doublecomplex);
 
     return 0;
 }
@@ -1191,12 +1191,12 @@ void zCopyLUToGPU3D (
 
     /*copies of scalars for easy access*/
     A_gpu->nsupers = nsupers;
-    A_gpu->ScatterMOPCounter = 0;
-    A_gpu->GemmFLOPCounter = 0;
-    A_gpu->cPCIeH2D = 0;
-    A_gpu->cPCIeD2H = 0;
-    A_gpu->tHost_PCIeH2D = 0;
-    A_gpu->tHost_PCIeD2H = 0;
+    stat->ScatterMOPCounter = 0;
+    stat->GemmFLOPCounter = 0;
+    stat->cPCIeH2D = 0;
+    stat->cPCIeD2H = 0;
+    stat->tHost_PCIeH2D = 0;
+    stat->tHost_PCIeD2H = 0;
 
     /*initializing memory*/
     size_t max_gpu_memory = get_acc_memory ();

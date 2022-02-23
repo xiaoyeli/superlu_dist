@@ -1404,9 +1404,12 @@ pdgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 
 #ifdef GPU_ACC
         if(options->DiagInv==NO){
+	  if (iam==0) {
 	    printf("!!WARNING: GPU trisolve requires setting options->DiagInv==YES\n");
+	    printf("           otherwise, use CPU trisolve\n");
 	    fflush(stdout);
-	    //exit(0);  // Sherry: need to return an error flag
+	  }
+          //exit(0);  // Sherry: need to return an error flag
 	}
 #endif
 
