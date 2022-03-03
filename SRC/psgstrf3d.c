@@ -107,7 +107,7 @@ at the top-level directory.
  *
  * stat   (output) SuperLUStat_t*
  *        Record the statistics on runtime and floating-point operation count.
- *        See util.h for the definition of 'SuperLUStat_t'.
+ *        See util_dist.h for the definition of 'SuperLUStat_t'.
  *
  * info   (output) int*
  *        = 0: successful exit
@@ -270,7 +270,7 @@ int_t psgstrf3d(superlu_dist_options_t *options, int m, int n, float anorm,
 
 	/* Initialize GPU data structures */
         sinitSluGPU3D_t(sluGPU, LUstruct, grid3d, perm_c_supno,
-                        n, buffer_size, bigu_size, ldt);
+                        n, buffer_size, bigu_size, ldt, stat);
 
         HyP->first_u_block_acc = sluGPU->A_gpu->first_u_block_gpu;
         HyP->first_l_block_acc = sluGPU->A_gpu->first_l_block_gpu;
@@ -332,10 +332,10 @@ int_t psgstrf3d(superlu_dist_options_t *options, int m, int n, float anorm,
                 sreduceAllAncestors3d_GPU(
                     ilvl, myNodeCount, treePerm, LUvsb,
                     LUstruct, grid3d, sluGPU, d2Hred, &factStat, HyP,
-                    SCT );
+                    SCT, stat );
 #else
 
-                sreduceAllAncestors3d(ilvl, myNodeCount, treePerm,
+                sreduceAllAncestors3d( ilvl, myNodeCount, treePerm,
                                       LUvsb, LUstruct, grid3d, SCT );
 #endif
 
@@ -346,13 +346,6 @@ int_t psgstrf3d(superlu_dist_options_t *options, int m, int n, float anorm,
 	    : SCT->NetSchurUpTimer - SCT->tSchCompUdt3d[ilvl - 1];
     } /* end for (int ilvl = 0; ilvl < maxLvl; ++ilvl) */
 
-#ifdef GPU_ACC
-    /* This frees the GPU storage allocateed in initSluGPU3D_t() */
-    if (superlu_acc_offload) {
-         sfree_LUstruct_gpu (sluGPU->A_gpu);
-    }
-#endif
-    
     /* Prepare error message - find the smallesr index i that U(i,i)==0 */
     int iinfo;
     if ( *info == 0 ) *info = n + 1;
@@ -371,6 +364,15 @@ int_t psgstrf3d(superlu_dist_options_t *options, int m, int n, float anorm,
     allinea_stop_sampling();
 #endif
 
+#ifdef GPU_ACC
+    /* This frees the GPU storage allocateed in initSluGPU3D_t() */
+    if (superlu_acc_offload) {
+        if ( options->PrintStat ) {
+	    printGPUStats(nsupers, stat);
+	}
+        sfree_LUstruct_gpu (sluGPU->A_gpu, stat);
+    }
+#endif
     reduceStat(FACT, stat, grid3d);
 
     // sherry added

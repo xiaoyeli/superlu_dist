@@ -17,7 +17,6 @@ zread_binary(FILE *fp, int_t *m, int_t *n, int_t *nnz,
     fread(*rowind, isize, (size_t) *nnz, fp);
     nnz_read = fread(*nzval, dsize, (size_t) (2 * (*nnz)), fp);
     printf("# of doubles fread: %d\n", nnz_read);
-    fclose(fp);
     return 0;
 }
 

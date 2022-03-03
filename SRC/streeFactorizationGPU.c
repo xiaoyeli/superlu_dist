@@ -137,7 +137,7 @@ int ssparseTreeFactor_ASYNC_GPU(
 
             if (copyL_kljb || copyU_kljb)
                 SCT->PhiMemCpyCounter++;
-            ssendLUpanelGPU2HOST(k, d2Hred, sluGPU);
+            ssendLUpanelGPU2HOST(k, d2Hred, sluGPU, stat);
 
             sreduceGPUlu(last_flag, d2Hred, sluGPU, SCT, grid, LUstruct);
 
@@ -199,7 +199,7 @@ int ssparseTreeFactor_ASYNC_GPU(
 
                     if (copyL_kljb || copyU_kljb)
                         SCT->PhiMemCpyCounter++;
-                    ssendLUpanelGPU2HOST(k, d2Hred, sluGPU);
+                    ssendLUpanelGPU2HOST(k, d2Hred, sluGPU, stat);
                     /*
                         Reduce the LU panels from GPU
                     */
@@ -483,7 +483,7 @@ int ssparseTreeFactor_ASYNC_GPU(
 
                             if (copyL_kljb || copyU_kljb)
                                 SCT->PhiMemCpyCounter++;
-                            ssendLUpanelGPU2HOST(k_parent, d2Hred, sluGPU);
+                            ssendLUpanelGPU2HOST(k_parent, d2Hred, sluGPU, stat);
 
                             /* Reduce the LU panels from GPU */
                             sreduceGPUlu(last_flag, d2Hred,
@@ -563,10 +563,10 @@ int ssparseTreeFactor_ASYNC_GPU(
                                 sSchurCompUpdate_GPU(
                                     streamId, 0, jj_cpu, klst, knsupc, HyP->Rnbrow, HyP->RemainBlk,
                                     Remain_lbuf_send_size, bigu_send_size, HyP->ldu_Phi, HyP->num_u_blks_Phi,
-                                    HyP->buffer_size, lsub_len, usub_len, ldt, k0, sluGPU, grid);
+                                    HyP->buffer_size, lsub_len, usub_len, ldt, k0, sluGPU, grid, grid);
                             } /* endif bigu_send_size > 0 */
 
-                            // sendLUpanelGPU2HOST( k0, d2Hred, sluGPU);
+                            // sendLUpanelGPU2HOST( k0, d2Hred, sluGPU, stat);
 
                             SCT->schurPhiCallCount++;
                             HyP->jj_cpu = jj_cpu;

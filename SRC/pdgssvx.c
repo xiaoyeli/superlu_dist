@@ -928,7 +928,7 @@ pdgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 	        stat->utime[ROWPERM] = t;
 #if ( PRNTlevel>=1 )
                 if ( !iam ) {
-		    printf(".. LDPERM job %d\t time: %.2f\n", job, t);
+		    printf(".. RowPerm %d\t time: %.2f\n", options->RowPerm, t);
 		    fflush(stdout);
 		}
 #endif
@@ -1404,9 +1404,12 @@ pdgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 
 #ifdef GPU_ACC
         if(options->DiagInv==NO){
+	  if (iam==0) {
 	    printf("!!WARNING: GPU trisolve requires setting options->DiagInv==YES\n");
+	    printf("           otherwise, use CPU trisolve\n");
 	    fflush(stdout);
-	    //exit(0);  // Sherry: need to return an error flag
+	  }
+          //exit(0);  // Sherry: need to return an error flag
 	}
 #endif
 

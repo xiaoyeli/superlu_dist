@@ -153,10 +153,13 @@ speed. You can use it with the following cmake option:
 ```
 
 ### Use GPU
-You can enable GPU with CUDA with the following cmake option:
+You can enable (NVIDIA) GPU with CUDA with the following cmake option:
 ```
 -DTPL_ENABLE_CUDALIB=TRUE
--DTPL_CUDA_LIBRARIES="<path>/libcublas.so;<path>/libcudart.so"
+```
+You can enable (AMD) GPU with HIP with the following cmake option:
+```
+-DTPL_ENABLE_HIPLIB=TRUE
 ```
 
 Once these needed third-party libraries are in place, the installation
@@ -230,6 +233,7 @@ contains the key CPP definitions used throughout the code.
     -DTPL_ENABLE_LAPACKLIB=OFF | ON
     -TPL_ENABLE_COMBBLASLIB=OFF
     -DTPL_ENABLE_CUDALIB=OFF | ON
+    -DTPL_ENABLE_HIPLIB=OFF | ON
     -Denable_complex16=OFF | ON
     -DXSDK_INDEX_SIZE=32 | 64
 
@@ -240,6 +244,7 @@ contains the key CPP definitions used throughout the code.
     -DCMAKE_CXX_COMPILER=<MPI C++ compiler>
     -DMAKE_CXX_FLAGS="..."
     -DCMAKE_CUDA_FLAGS="..." 
+    -DHIP_HIPCC_FLAGS="..." 
     -DXSDK_ENABLE_Fortran=OFF | ON
     -DCMAKE_Fortran_COMPILER=<MPI F90 compiler>
 ```

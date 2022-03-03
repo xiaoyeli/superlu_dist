@@ -1110,6 +1110,10 @@ extern void gemm_division_cpu_gpu (int *, int *, int *, int,
 				   int, int, int *, int);
 extern int_t get_gpublas_nb ();
 extern int_t get_num_gpu_streams ();
+extern int getnGPUStreams();
+extern int get_mpi_process_per_gpu ();
+/*to print out various statistics from GPU activities*/
+extern void printGPUStats(int nsupers, SuperLUStat_t *stat );
 #endif
 
 extern double estimate_cpu_time(int m, int n , int k);
@@ -1345,9 +1349,6 @@ extern int_t Test_UDiagBlock_Recv(MPI_Request *, SCT_t *);
 extern int_t Wait_LDiagBlock_Recv(MPI_Request *, SCT_t *);
 extern int_t Test_LDiagBlock_Recv(MPI_Request *, SCT_t *);
 extern int_t LDiagBlockRecvWait( int_t k, int_t* factored_U, MPI_Request *, gridinfo_t *);
-
-  extern int getnGPUStreams();
-  extern int get_mpi_process_per_gpu ();
 
 /*=====================*/
 
