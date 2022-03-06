@@ -254,9 +254,6 @@ int_t pzgstrf3d(superlu_dist_options_t *options, int m, int n, double anorm,
         /*Initilize the lookup tables */
         LookUpTableInit(iam);
         acc_async_cost = get_acc_async_cost();
-#ifdef GPU_DEBUG
-        if (!iam) printf("Using MIC async cost of %lf \n", acc_async_cost);
-#endif
 #endif
 
 	//OLD: int_t* perm_c_supno = getPerm_c_supno(nsupers, options, LUstruct, grid);
@@ -369,7 +366,7 @@ int_t pzgstrf3d(superlu_dist_options_t *options, int m, int n, double anorm,
         if ( options->PrintStat ) {
 	    printGPUStats(nsupers, stat);
 	}
-        zfree_LUstruct_gpu (sluGPU->A_gpu, stat);
+        zfree_LUstruct_gpu (sluGPU, stat);
     }
 #endif
     reduceStat(FACT, stat, grid3d);

@@ -24,6 +24,7 @@
 #define gpuMallocManaged cudaMallocManaged
 #define gpuStream_t cudaStream_t
 #define gpuStreamCreate cudaStreamCreate
+#define gpuStreamDestroy cudaStreamDestroy
 #define gpuMemcpyAsync cudaMemcpyAsync
 #define gpuMemcpy2DAsync cudaMemcpy2DAsync
 #define gpuFreeHost cudaFreeHost
@@ -36,6 +37,7 @@
 #define gpuMemcpyHostToDevice cudaMemcpyHostToDevice
 #define gpuMemcpyDeviceToHost cudaMemcpyDeviceToHost
 #define gpuStreamCreateWithFlags cudaStreamCreateWithFlags
+#define gpuStreamDestroyWithFlags cudaStreamDestroyWithFlags
 #define gpuStreamDefault cudaStreamDefault
 #define gpublasStatus_t cublasStatus_t
 #define gpuEventCreate cudaEventCreate
@@ -104,6 +106,7 @@
 #define gpuMallocManaged hipMallocManaged
 #define gpuStream_t hipStream_t
 #define gpuStreamCreate hipStreamCreate
+#define gpuStreamDestroy hipStreamDestroy
 #define gpuMemcpyAsync hipMemcpyAsync
 #define gpuMemcpy2DAsync hipMemcpy2DAsync
 #define gpuFreeHost hipHostFree
@@ -116,6 +119,7 @@
 #define gpuMemcpyHostToDevice hipMemcpyHostToDevice
 #define gpuMemcpyDeviceToHost hipMemcpyDeviceToHost
 #define gpuStreamCreateWithFlags hipStreamCreateWithFlags
+#define gpuStreamDestroyWithFlags hipStreamDestroyWithFlags
 #define gpuStreamDefault hipStreamDefault
 #define gpublasStatus_t hipblasStatus_t
 #define gpuEventCreate hipEventCreate

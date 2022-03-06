@@ -23,7 +23,6 @@ at the top-level directory.
 
 #define SCHEDULE_STRATEGY dynamic
 
-
 int full;
 double gemm_timer = 0.0;
 double scatter_timer = 0.0;
@@ -74,8 +73,16 @@ if ( msg0 && msg2 ) {  /* L(:,k) and U(k,:) are not empty. */
 
         jjj = jj0; /* jj0 is the first block column after look-ahead window */
 
+	int parts = 1;
         // #pragma omp barrier
         while ( jjj < nub ) {
+#if ( PRNTlevel>=1 )	
+           if ( parts>1 ){
+	      printf("warning: number of partitions %d > 1, try increasing MAX_BUFFER_SIZE.\n",
+	              parts);
+            }
+#endif
+            parts++;
             jjj_st=jjj;
 #ifdef _OPENMP
 #pragma omp single
@@ -190,8 +197,9 @@ if ( msg0 && msg2 ) {  /* L(:,k) and U(k,:) are not empty. */
 		doublecomplex *tempv1 = bigV + full_u_cols[st-1]*nbrow;
 
 		/* Following is for testing purpose */
-		if ( num_col_stream > 0 ) {		
-#ifdef GPU_ACC
+		if ( num_col_stream > 0 ) {
+		
+#ifdef GPU_ACC  /* Sherry: this file is not used if GPU_ACC is not defined. */
 		    int stream_id = i;
 		    int b_offset  = ldu * st_col;
 		    int c_offset  = st_col * nbrow;
@@ -200,39 +208,40 @@ if ( msg0 && msg2 ) {  /* L(:,k) and U(k,:) are not empty. */
 
 		    assert(nbrow*(st_col+num_col_stream) < buffer_size);
 
-		gpuMemcpyAsync(dB+b_offset, tempu+b_offset, B_stream_size,
-				gpuMemcpyHostToDevice, streams[stream_id]);
+		    gpuMemcpyAsync(dB+b_offset, tempu+b_offset, B_stream_size,
+		    		    gpuMemcpyHostToDevice, streams[stream_id]);
 
-		gpublasCheckErrors(
+		    gpublasCheckErrors(
 				  gpublasSetStream(handle[stream_id],
 						  streams[stream_id])
 				     );
 
-		gpublasCheckErrors(
+		    gpublasCheckErrors(
 				  gpublasZgemm(handle[stream_id],
 					      GPUBLAS_OP_N, GPUBLAS_OP_N,
 					      nbrow, num_col_stream, ldu,
- 					      (const gpuDoubleComplex*) &alpha,
-					      (const gpuDoubleComplex*) dA,
+ 					      (const cuDoubleComplex*) &alpha,
+					      (const cuDoubleComplex*) dA,
 					      nbrow,
-					      (const gpuDoubleComplex*) &dB[b_offset],
+					      (const cuDoubleComplex*) &dB[b_offset],
 					      ldu,
-					      (const gpuDoubleComplex*) &beta,
-					      (gpuDoubleComplex*)&dC[c_offset],
+					      (const cuDoubleComplex*) &beta,
+					      (cuDoubleComplex*)&dC[c_offset],
                                               nbrow)
 				  );
 
-		checkGPU( gpuMemcpyAsync(tempv1, dC+c_offset,
+		    checkGPU( gpuMemcpyAsync(tempv1, dC+c_offset,
 					   C_stream_size,
 					   gpuMemcpyDeviceToHost,
 					   streams[stream_id]) );
 #else /*-- on CPU --*/
-
+                    // Sherry: looks like a batched GEMM 
 	            my_zgemm_("N", "N", &nbrow, &num_col_stream, &ldu,
 			      &alpha, &lusup[luptr+(knsupc-ldu)*nsupr],
 			      &nsupr, tempu+ldu*st_col, &ldu, &beta,
 			      tempv1, &nbrow, 1, 1);
-#endif
+#endif /*-- end ifdef GPU_ACC --*/
+
    	        } // end if num_col_stream > 0
 
 	    } /* end for i = 1 to num_streams used */
@@ -479,8 +488,8 @@ if ( msg0 && msg2 ) {  /* L(:,k) and U(k,:) are not empty. */
                 doublecomplex* tempv1;
                 for(i = 0; i < num_streams_used; i++) { /* i is private variable */
                     checkGPU(gpuStreamSynchronize (streams[i]));
-                    // jjj_st1 := first block column on GPU stream[i]
-                    int jjj_st1 = (i==0) ? jjj_st + ncpu_blks : jjj_st + stream_end_col[i-1];
+		    // jjj_st1 := first block column on GPU stream[i]
+		    int jjj_st1 = (i==0) ? jjj_st + ncpu_blks : jjj_st + stream_end_col[i-1];
                     int jjj_end = jjj_st + stream_end_col[i];
                     assert(jjj_end-1<nub);
                     assert(jjj_st1>jjj_st) ;

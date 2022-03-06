@@ -928,7 +928,7 @@ psgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 	        stat->utime[ROWPERM] = t;
 #if ( PRNTlevel>=1 )
                 if ( !iam ) {
-		    printf(".. LDPERM job %d\t time: %.2f\n", job, t);
+		    printf(".. RowPerm %d\t time: %.2f\n", options->RowPerm, t);
 		    fflush(stdout);
 		}
 #endif
@@ -1402,10 +1402,13 @@ psgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 	       factorization with Fact == DOFACT or SamePattern is asked for. */
 	}
 
-#ifdef GPU_ACC
+#if ( defined(GPU_ACC) && defined(GPU_SOLVE) )
         if(options->DiagInv==NO){
-	    printf("!!WARNING: GPU trisolve requires setting options->DiagInv==YES\n");
-	    fflush(stdout);
+	    if (iam==0) {
+	        printf("!!WARNING: GPU trisolve requires setting options->DiagInv==YES\n");
+                printf("           otherwise, use CPU trisolve\n");
+		fflush(stdout);
+	    }
 	    //exit(0);  // Sherry: need to return an error flag
 	}
 #endif

@@ -1402,7 +1402,7 @@ pdgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 	       factorization with Fact == DOFACT or SamePattern is asked for. */
 	}
 
-#ifdef GPU_ACC
+#if (defined(GPU_ACC) && defined(GPU_SOLVE))
         if(options->DiagInv==NO){
 	  if (iam==0) {
 	    printf("!!WARNING: GPU trisolve requires setting options->DiagInv==YES\n");

@@ -12,8 +12,8 @@ at the top-level directory.
  * \brief Header for utilities
  */
 
-#ifndef __SUPERLU_UTIL /* allow multiple inclusions */
-#define __SUPERLU_UTIL
+#ifndef __SUPERLU_DIST_UTIL /* allow multiple inclusions */
+#define __SUPERLU_DIST_UTIL
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -311,4 +311,4 @@ typedef struct
 } SCT_t;
 
 
-#endif /* __SUPERLU_UTIL */
+#endif /* __SUPERLU_DIST_UTIL */

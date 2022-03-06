@@ -334,7 +334,6 @@ psgstrf(superlu_dist_options_t * options, int m, int n, float anorm,
     double InitTimer            = 0.0; /* including compute schedule, malloc */
     double tt_start, tt_end;
 
-/* #if !defined( GPU_ACC ) */
     /* Counters for memory operations and timings */
     double scatter_mem_op_counter  = 0.0;
     double scatter_mem_op_timer    = 0.0;
@@ -357,7 +356,6 @@ psgstrf(superlu_dist_options_t * options, int m, int n, float anorm,
     double RemainScatterTimer      = 0.0;
     double NetSchurUpTimer         = 0.0;
     double schur_flop_counter      = 0.0;
-/* #endif */
 
 #if ( PRNTlevel>= 1)
     /* count GEMM max dimensions */
@@ -765,27 +763,6 @@ psgstrf(superlu_dist_options_t * options, int m, int n, float anorm,
          SUPERLU_MAX (max_row_size * num_threads * ldt,
                       get_max_buffer_size ());           */
 
-#ifdef GPU_ACC /*-------- use GPU --------*/
-    int gpublas_nb = get_gpublas_nb(); // default 64
-    int nstreams = get_num_gpu_streams (); // default 8
-
-    int_t buffer_size  = SUPERLU_MAX(max_row_size * nstreams * gpublas_nb, sp_ienv_dist(8));
-                                     //   get_max_buffer_size());
-    /* array holding last column blk for each partition,
-       used in SchCompUdt-GPU.c         */
-  #if 0
-    int *stream_end_col = (int_t *) _mm_malloc (sizeof (int_t) * nstreams,64);
-  #else
-    int *stream_end_col = SUPERLU_MALLOC( nstreams * sizeof(int) );
-  #endif
-
-#else /* not to use GPU */
-
-    int Threads_per_process = get_thread_per_process();
-    int_t buffer_size  = SUPERLU_MAX(max_row_size * Threads_per_process * ldt, sp_ienv_dist(8));
-                                     // get_max_buffer_size());
-#endif /* end ifdef GPU_ACC -----------*/
-
     int_t max_ncols = 0;
 #if 0
     /* symmetric assumption -- using L's supernode to estimate. */
@@ -822,9 +799,21 @@ psgstrf(superlu_dist_options_t * options, int m, int n, float anorm,
 #endif
 
 #ifdef GPU_ACC /*-- use GPU --*/
+    int superlu_acc_offload = get_acc_offload();
+    
+    if (superlu_acc_offload) {
+        int gpublas_nb = get_gpublas_nb(); // default 64
+        int nstreams = get_num_gpu_streams (); // default 8
 
-    if ( checkGPU(gpuHostMalloc((void**)&bigU,  bigu_size * sizeof(float), gpuHostMallocDefault)) )
-        ABORT("Malloc fails for sgemm buffer U ");
+        int_t buffer_size  = SUPERLU_MAX(max_row_size * nstreams * gpublas_nb, sp_ienv_dist(8));
+                                     //   get_max_buffer_size());
+        /* array holding last column blk for each partition,
+           used in SchCompUdt-GPU.c         */
+        //int *stream_end_col = (int_t *) _mm_malloc (sizeof (int_t) * nstreams,64);
+        int *stream_end_col = SUPERLU_MALLOC( nstreams * sizeof(int) );
+
+        if ( checkGPU(gpuHostMalloc((void**)&bigU,  bigu_size * sizeof(float), gpuHostMallocDefault)) )
+            ABORT("Malloc fails for sgemm buffer U ");
 
 #if 0 // !!Sherry fix -- only dC on GPU uses buffer_size
     bigv_size = buffer_size;
@@ -838,8 +827,8 @@ psgstrf(superlu_dist_options_t * options, int m, int n, float anorm,
     }
 #endif
 
-    if ( checkGPU(gpuHostMalloc((void**)&bigV, bigv_size * sizeof(float), gpuHostMallocDefault)) )
-        ABORT("Malloc fails for sgemm buffer V");
+        if ( checkGPU(gpuHostMalloc((void**)&bigV, bigv_size * sizeof(float), gpuHostMallocDefault)) )
+            ABORT("Malloc fails for sgemm buffer V");
 
 #if ( PRNTlevel>=1 )
     if ( iam==0 ) {
@@ -849,51 +838,57 @@ psgstrf(superlu_dist_options_t * options, int m, int n, float anorm,
     }
 #endif
 
-    gpublasHandle_t *handle;
-    handle = (gpublasHandle_t *) SUPERLU_MALLOC(sizeof(gpublasHandle_t)*nstreams);
-    for(int i = 0; i < nstreams; i++) handle[i] = create_handle();
+        gpublasHandle_t *handle;
+        handle = (gpublasHandle_t *) SUPERLU_MALLOC(sizeof(gpublasHandle_t)*nstreams);
+        for(int i = 0; i < nstreams; i++) handle[i] = create_handle();
 
-    // creating streams
-    gpuStream_t *streams;
-    streams = (gpuStream_t *) SUPERLU_MALLOC(sizeof(gpuStream_t)*nstreams);
-    for (int i = 0; i < nstreams; ++i)
-        checkGPU( gpuStreamCreate(&streams[i]) );
+        // creating streams
+        gpuStream_t *streams;
+        streams = (gpuStream_t *) SUPERLU_MALLOC(sizeof(gpuStream_t)*nstreams);
+        for (int i = 0; i < nstreams; ++i)
+            checkGPU( gpuStreamCreate(&streams[i]) );
 
-    // allocating data in device
-    float *dA, *dB, *dC;
-    gpuError_t gpuStat;
-#if 0
-    // gpuStat = gpuMalloc( (void**)&dA, m*k*sizeof(double));
-    // HOw much should be the size of dA?
-    // for time being just making it
-    // gpuStat = gpuMalloc( (void**)&dA, ((max_row_size*sp_ienv_dist(3)))* sizeof(double));
-#endif
+        // allocating data in device
+        float *dA, *dB, *dC;
+        gpuError_t gpuStat;
+    
+        // gpuStat = gpuMalloc( (void**)&dA, m*k*sizeof(double));
+        // HOw much should be the size of dA?
+        // for time being just making it
+        // gpuStat = gpuMalloc( (void**)&dA, ((max_row_size*sp_ienv_dist(3)))* sizeof(double));
 
-    gpuStat = gpuMalloc( (void**)&dA, max_row_size*sp_ienv_dist(3)* sizeof(float));
-    if (gpuStat!= gpuSuccess) {
-        fprintf(stderr, "!!!! Error in allocating A in the device %ld \n",m*k*sizeof(float) );
-        return 1;
-    }
+        gpuStat = gpuMalloc( (void**)&dA, max_row_size*sp_ienv_dist(3)* sizeof(float));
+        if (gpuStat!= gpuSuccess) {
+            fprintf(stderr, "!!!! Error in allocating A in the device %ld \n",m*k*sizeof(float) );
+            return 1;
+        }
 
-    // size of B should be bigu_size
-    gpuStat = gpuMalloc((void**)&dB, bigu_size * sizeof(float));
-    if (gpuStat!= gpuSuccess) {
-        fprintf(stderr, "!!!! Error in allocating B in the device %ld \n",n*k*sizeof(float));
-        return 1;
-    }
+        // size of B should be bigu_size
+        gpuStat = gpuMalloc((void**)&dB, bigu_size * sizeof(float));
+        if (gpuStat!= gpuSuccess) {
+            fprintf(stderr, "!!!! Error in allocating B in the device %ld \n",n*k*sizeof(float));
+            return 1;
+        }
 
-    gpuStat = gpuMalloc((void**)&dC, buffer_size * sizeof(float) );
-    if (gpuStat!= gpuSuccess) {
-        fprintf(stderr, "!!!! Error in allocating C in the device \n" );
-        return 1;
-    }
+        gpuStat = gpuMalloc((void**)&dC, buffer_size * sizeof(float) );
+        if (gpuStat!= gpuSuccess) {
+            fprintf(stderr, "!!!! Error in allocating C in the device \n" );
+            return 1;
+        }
 
-    stat->gpu_buffer += dword * ( max_row_size * sp_ienv_dist(3) // dA
-                                 + bigu_size                    // dB
-                                 + buffer_size );               // dC
-
+        stat->gpu_buffer += dword * ( max_row_size * sp_ienv_dist(3) // dA
+                                     + bigu_size                    // dB
+                                     + buffer_size );               // dC
+    } /* endif superlu_acc_offload==1 */
+    
 #else  /*-------- not to use GPU --------*/
 
+  #if 0  /* Does not use buffer_size on CPU */
+    int Threads_per_process = get_thread_per_process();
+    int_t buffer_size  = SUPERLU_MAX(max_row_size * Threads_per_process * ldt, sp_ienv_dist(8));
+                                     // get_max_buffer_size());
+  #endif
+  
     // for GEMM padding 0
     j = bigu_size / ldt;
     bigu_size += (gemm_k_pad * (j + ldt + gemm_n_pad));
@@ -916,8 +911,7 @@ psgstrf(superlu_dist_options_t * options, int m, int n, float anorm,
         ABORT ("Malloc failed for sgemm V buffer");
 //#endif
 
-#endif 
-/*************** end ifdef GPU_ACC ****************/
+#endif /*************** end ifdef GPU_ACC ****************/
 
     log_memory((bigv_size + bigu_size) * dword, stat);
 
@@ -1737,10 +1731,12 @@ psgstrf(superlu_dist_options_t * options, int m, int n, float anorm,
 
 	/*******************************************************************/
 
-#ifdef GPU_ACC /*-- GPU --*/
-
-#include "sSchCompUdt-gpu.c"
-
+#ifdef GPU_ACC /*-- use GPU --*/
+        if ( superlu_acc_offload ) {
+           #include "sSchCompUdt-gpu.c"
+        } else {
+           #include "sSchCompUdt-2Ddynamic.c"
+        }
 #else
 
 /*#include "SchCompUdt--Phi-2Ddynamic-alt.c"*/
@@ -1869,22 +1865,21 @@ psgstrf(superlu_dist_options_t * options, int m, int n, float anorm,
     SUPERLU_FREE (send_reqs);
 
 #ifdef GPU_ACC
-    checkGPU (gpuFreeHost (bigV));
-    checkGPU (gpuFreeHost (bigU));
-    gpuFree( (void*)dA ); /* Sherry added */
-    gpuFree( (void*)dB );
-    gpuFree( (void*)dC );
-    SUPERLU_FREE( handle );
-    SUPERLU_FREE( streams );
-    SUPERLU_FREE( stream_end_col );
+    if ( superlu_acc_offload ) {
+        checkGPU (gpuFreeHost (bigV));
+        checkGPU (gpuFreeHost (bigU));
+        gpuFree( (void*)dA ); /* Sherry added */
+        gpuFree( (void*)dB );
+        gpuFree( (void*)dC );
+        SUPERLU_FREE( handle );
+        SUPERLU_FREE( streams );
+        SUPERLU_FREE( stream_end_col );
+    }
 #else
-//  #ifdef __INTEL_COMPILER
-//    _mm_free (bigU);
-//    _mm_free (bigV);
-//  #else
+
     SUPERLU_FREE (bigV);
     SUPERLU_FREE (bigU);
-//  #endif
+
     /* Decrement freed memory from memory stat. */
     log_memory(-(bigv_size + bigu_size) * dword, stat);
 #endif

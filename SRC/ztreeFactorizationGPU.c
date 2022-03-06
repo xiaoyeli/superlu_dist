@@ -107,11 +107,11 @@ int zsparseTreeFactor_ASYNC_GPU(
     int_t *xsup = LUstruct->Glu_persist->xsup;
 
     // int_t numLAMax = getNumLookAhead();
-    int_t numLAMax = getNumLookAhead(options);
-    int_t numLA = numLAMax; // number of look-ahead panels
-    int_t superlu_acc_offload = HyP->superlu_acc_offload;
+    int numLAMax = getNumLookAhead(options);
+    int numLA = numLAMax; // number of look-ahead panels
+    int superlu_acc_offload = HyP->superlu_acc_offload;
     int_t last_flag = 1;                       /* for updating nsuper-1 only once */
-    int_t nGPUStreams = sluGPU->nGPUStreams; // number of gpu streams
+    int nGPUStreams = sluGPU->nGPUStreams; // number of GPU streams
 
     if (superlu_acc_offload)
         zsyncAllfunCallStreams(sluGPU, SCT);
@@ -390,7 +390,7 @@ int zsparseTreeFactor_ASYNC_GPU(
 #endif
             scuStatUpdate(SuperSize(k), HyP, SCT, stat);
 
-            int_t offload_condition = HyP->offloadCondition;
+            int offload_condition = HyP->offloadCondition;
             uPanelInfo_t *uPanelInfo = packLUInfo->uPanelInfo;
             lPanelInfo_t *lPanelInfo = packLUInfo->lPanelInfo;
             int_t *lsub = lPanelInfo->lsub;
