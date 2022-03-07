@@ -1290,6 +1290,7 @@ gemm_division_cpu_gpu(
 {
     int Ngem = sp_ienv_dist(7);  /*get_mnk_dgemm ();*/
     int min_gpu_col = get_gpublas_nb (); /* default 64 */
+    int superlu_acc_offload = get_acc_offload();
 
     /*
       Sherry corrected comment:                                                  
@@ -1301,44 +1302,35 @@ gemm_division_cpu_gpu(
      */
     int i, j;
 
-    // {
-    //     *num_streams_used=0;
-    //     *ncpu_blks = num_blks;
-    //     return;
-    // }
+    //printf("-- in _division nstreams %d, superlu_acc_offload %d\n", nstreams, superlu_acc_offload); fflush(stdout);
 
-    for (int i = 0; i < nstreams; ++i)
-    {
-        stream_end_col[i] = num_blks;
-    }
-	*num_streams_used = 0;
-
-    *ncpu_blks = 0;
-    /* Early return -1, when number of columns is smaller than threshold,
-       everything should be done on CPU. 
+    /* Early return, when number of columns is smaller than threshold,
+       or superlu_acc_offload == 0, then everything should be done on CPU. 
        Test condition GPU Flops ~ nbrow*ldu*cols < Ngem */
-    if (full_u_cols[num_blks - 1] < (Ngem / (nbrow * ldu)) || num_blks == 1 )
+    if ( (full_u_cols[num_blks - 1] < (Ngem / (nbrow * ldu)))
+	 || (num_blks==1) || (nstreams==0)
+	 || (superlu_acc_offload==0) )
     {
         *num_streams_used = 0;
         *ncpu_blks = num_blks;
 #ifdef PI_DEBUG
         printf ("gemm_division: num_blks %d, full_u_cols[num_blks-1] %d %d \n",
                 num_blks, full_u_cols[num_blks - 1], (Ngem / (nbrow * ldu)));
-        printf ("Early return -1\n");
+        printf ("Early return\n");
+	fflush(stdout);
 #endif
         return;
 
     }
 
-    /* Early return -2, when number of streams = 0 */
-    if (nstreams == 0)
+    for (i = 0; i < nstreams; ++i)
     {
-        *num_streams_used = 0;
-        *ncpu_blks = num_blks;
-        return;
-        /* code */
+        stream_end_col[i] = num_blks;
     }
 
+    *num_streams_used = 0;
+    *ncpu_blks = 0;
+    
     /* Find first block where count > Ngem */
     for (i = 0; i < num_blks - 1; ++i)  /*I can use binary search here */
     {

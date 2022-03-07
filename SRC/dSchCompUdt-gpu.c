@@ -100,7 +100,7 @@ if ( msg0 && msg2 ) {  /* L(:,k) and U(k,:) are not empty. */
                     /* break condition */
                     /* the number of columns that can be processed on GPU is
 		       limited by buffer size */
-                    if (full_u_cols[j]+((j+1==nub)?0:full_u_cols[j+1]) > ncol_max) {
+                    if (full_u_cols[j]+ ((j+1==nub)?0:full_u_cols[j+1]) > ncol_max) {
                         break; // block column j+1 does not fit in GPU memory */
                     }
                 } /* end for j=jjj_st to nub */
@@ -127,8 +127,11 @@ if ( msg0 && msg2 ) {  /* L(:,k) and U(k,:) are not empty. */
 
             } /* pragma omp single */
 
+	    
             jjj = jjj_global; /* Move to the next [ CPU : GPU ] partition */
 	    
+	    //	    if (!iam) { printf("-- after _division_cpu_gpu, jjj_st %d, jjj_global %d\n", jjj_st,jjj_global); fflush(stdout);}
+	
 #if 0 // !!Sherry: this test is not necessary
 	    // if jjj_global - jjj_st == 1, everything is on CPU.
 	    // bigv_size is calculated sufficiently large.
@@ -159,6 +162,7 @@ if ( msg0 && msg2 ) {  /* L(:,k) and U(k,:) are not empty. */
                 arrive_at_ublock(j,&iukp,&rukp,&jb,&ljb,&nsupc,
 				 iukp0,rukp0,usub,perm_u,xsup,grid);
 
+		//if (!iam) { printf("-- after arrive_at.., j %d, jjj %d\n", j, jjj); fflush(stdout);}
                 // copy block j into tempu
                 for (jj = iukp; jj < iukp+nsupc; ++jj) {
                     segsize = klst - usub[jj];
@@ -168,6 +172,8 @@ if ( msg0 && msg2 ) {  /* L(:,k) and U(k,:) are not empty. */
                         tempu += lead_zero;
                         for (i = 0; i < segsize; ++i)
                             tempu[i] = uval[rukp+i];
+			//	    if (!iam) { printf("-- copying to tempu[1], jj %d \n", jj); fflush(stdout);}
+			// Seg-fault before this print
                         rukp += segsize;
                         tempu += segsize;
                     }
@@ -175,10 +181,12 @@ if ( msg0 && msg2 ) {  /* L(:,k) and U(k,:) are not empty. */
 
                 rukp -= usub[iukp - 1]; /* Return to start of U(k,j). */
 
+		//	    if (!iam) { printf("-- after copy to tempu[], num_streams_used %d \n", num_streams_used); fflush(stdout);}
+	
             } /* end for j=jjj_st to jjj */
 
 	    if ( num_streams_used > 0 ) {
-#ifdef PI_DEBUG
+#ifndef PI_DEBUG
 		printf("nbrow %d *ldu %d  =%d < ldt %d * max_row_size %d =%d \n",nbrow,ldu,nbrow*ldu,ldt,max_row_size,ldt*max_row_size ); fflush(stdout);
 		assert(nbrow*ldu<=ldt*max_row_size);
 #endif
@@ -232,16 +240,19 @@ if ( msg0 && msg2 ) {  /* L(:,k) and U(k,:) are not empty. */
 					   gpuMemcpyDeviceToHost,
 					   streams[stream_id]) );
 #else /*-- on CPU --*/
+		} else { // num_col_stream == 0  Sherry: how can get here?
                     // Sherry: looks like a batched GEMM 
 	            my_dgemm_("N", "N", &nbrow, &num_col_stream, &ldu,
 			      &alpha, &lusup[luptr+(knsupc-ldu)*nsupr],
 			      &nsupr, tempu+ldu*st_col, &ldu, &beta,
 			      tempv1, &nbrow, 1, 1);
+		} 
+
 #endif /*-- end ifdef GPU_ACC --*/
 
-   	        } // end if num_col_stream > 0
+   	      } // end if num_col_stream > 0
 
-	    } /* end for i = 1 to num_streams used */
+	    } /* end for i = 1 to num_streams_used */
 
 	    /* Special case for CPU -- leading block columns are computed 
 	       on CPU in order to mask the GPU data transfer latency */
@@ -250,6 +261,11 @@ if ( msg0 && msg2 ) {  /* L(:,k) and U(k,:) are not empty. */
 	    tempv = bigV + nbrow * st_col;
 	    tempu = bigU;
 
+	    //	    if (!iam) {
+	    //printf("before CPU dgemm: num_col %d\n", num_col);
+	    //fflush(stdout);
+	    //}
+	    
 	    double tstart = SuperLU_timer_();
 #if defined (USE_VENDOR_BLAS)
 	    dgemm_("N", "N", &nbrow, &num_col, &ldu, &alpha,
@@ -569,7 +585,7 @@ if ( msg0 && msg2 ) {  /* L(:,k) and U(k,:) are not empty. */
                         luptr=luptr0;
                     } /* for j = jjj_st ... */
 
-                } /* end for i = 0 to nstreams */
+                } /* end for i = 0 to num_streams_used */
 		
                 // TAU_STATIC_TIMER_STOP("GPU_SCATTER");
                 // TAU_STATIC_TIMER_STOP("INSIDE_OMP");

@@ -801,16 +801,22 @@ pdgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
 #ifdef GPU_ACC /*-- use GPU --*/
     int superlu_acc_offload = get_acc_offload();
     
-    if (superlu_acc_offload) {
         int gpublas_nb = get_gpublas_nb(); // default 64
         int nstreams = get_num_gpu_streams (); // default 8
 
         int_t buffer_size  = SUPERLU_MAX(max_row_size * nstreams * gpublas_nb, sp_ienv_dist(8));
                                      //   get_max_buffer_size());
+	int *stream_end_col;
+        double *dA, *dB, *dC; // GEMM matrices on device
+        gpuError_t gpuStat;
+        gpublasHandle_t *handle;
+        gpuStream_t *streams;
+	
+    if (superlu_acc_offload) {
         /* array holding last column blk for each partition,
            used in SchCompUdt-GPU.c         */
         //int *stream_end_col = (int_t *) _mm_malloc (sizeof (int_t) * nstreams,64);
-        int *stream_end_col = SUPERLU_MALLOC( nstreams * sizeof(int) );
+        stream_end_col = SUPERLU_MALLOC( nstreams * sizeof(int) );
 
         if ( checkGPU(gpuHostMalloc((void**)&bigU,  bigu_size * sizeof(double), gpuHostMallocDefault)) )
             ABORT("Malloc fails for dgemm buffer U ");
@@ -838,20 +844,14 @@ pdgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
     }
 #endif
 
-        gpublasHandle_t *handle;
         handle = (gpublasHandle_t *) SUPERLU_MALLOC(sizeof(gpublasHandle_t)*nstreams);
         for(int i = 0; i < nstreams; i++) handle[i] = create_handle();
 
         // creating streams
-        gpuStream_t *streams;
         streams = (gpuStream_t *) SUPERLU_MALLOC(sizeof(gpuStream_t)*nstreams);
         for (int i = 0; i < nstreams; ++i)
             checkGPU( gpuStreamCreate(&streams[i]) );
 
-        // allocating data in device
-        double *dA, *dB, *dC;
-        gpuError_t gpuStat;
-    
         // gpuStat = gpuMalloc( (void**)&dA, m*k*sizeof(double));
         // HOw much should be the size of dA?
         // for time being just making it
@@ -1732,17 +1732,15 @@ pdgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
 	/*******************************************************************/
 
 #ifdef GPU_ACC /*-- use GPU --*/
-        if ( superlu_acc_offload ) {
-           #include "dSchCompUdt-gpu.c"
-        } else {
-           #include "dSchCompUdt-2Ddynamic.c"
-        }
+	
+    #include "dSchCompUdt-gpu.c"
+	
 #else
 
 /*#include "SchCompUdt--Phi-2Ddynamic-alt.c"*/
 //#include "dSchCompUdt-2Ddynamic_v6.c"
 
-#include "dSchCompUdt-2Ddynamic.c"
+    #include "dSchCompUdt-2Ddynamic.c"
 
 #endif
 	/*uncomment following to compare against SuperLU 3.3 baseline*/
