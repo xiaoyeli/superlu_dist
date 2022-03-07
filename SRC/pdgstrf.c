@@ -884,7 +884,6 @@ pdgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
     {
         // if ( checkGPU(gpuHostMalloc((void**)&bigU,  bigu_size * sizeof(double), gpuHostMallocDefault)) )
         //     ABORT("Malloc fails for dgemm buffer U ");
-        stream_end_col = SUPERLU_MALLOC( nstreams * sizeof(int) );
         if ( !(bigU = doubleMalloc_dist(bigu_size)) )
         ABORT ("Malloc fails for dgemm U buffer");
         if ( !(bigV = doubleMalloc_dist(bigv_size)) )
