@@ -880,7 +880,16 @@ pdgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
                                      + bigu_size                    // dB
                                      + buffer_size );               // dC
     } /* endif superlu_acc_offload==1 */
-    
+    else
+    {
+        // if ( checkGPU(gpuHostMalloc((void**)&bigU,  bigu_size * sizeof(double), gpuHostMallocDefault)) )
+        //     ABORT("Malloc fails for dgemm buffer U ");
+
+        if ( !(bigU = doubleMalloc_dist(bigu_size)) )
+        ABORT ("Malloc fails for dgemm U buffer");
+        if ( !(bigV = doubleMalloc_dist(bigv_size)) )
+            ABORT ("Malloc failed for dgemm V buffer");
+    } 
 #else  /*-------- not to use GPU --------*/
 
   #if 0  /* Does not use buffer_size on CPU */
@@ -1872,6 +1881,11 @@ pdgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
         SUPERLU_FREE( handle );
         SUPERLU_FREE( streams );
         SUPERLU_FREE( stream_end_col );
+    }
+    else
+    {
+        SUPERLU_FREE (bigV);
+        SUPERLU_FREE (bigU);
     }
 #else
 
