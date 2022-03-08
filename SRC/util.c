@@ -1302,8 +1302,6 @@ gemm_division_cpu_gpu(
      */
     int i, j;
 
-    //printf("-- in _division nstreams %d, superlu_acc_offload %d\n", nstreams, superlu_acc_offload); fflush(stdout);
-
     /* Early return, when number of columns is smaller than threshold,
        or superlu_acc_offload == 0, then everything should be done on CPU. 
        Test condition GPU Flops ~ nbrow*ldu*cols < Ngem */

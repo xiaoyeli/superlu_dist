@@ -130,8 +130,6 @@ if ( msg0 && msg2 ) {  /* L(:,k) and U(k,:) are not empty. */
 	    
             jjj = jjj_global; /* Move to the next [ CPU : GPU ] partition */
 	    
-	    //	    if (!iam) { printf("-- after _division_cpu_gpu, jjj_st %d, jjj_global %d\n", jjj_st,jjj_global); fflush(stdout);}
-	
 #if 0 // !!Sherry: this test is not necessary
 	    // if jjj_global - jjj_st == 1, everything is on CPU.
 	    // bigv_size is calculated sufficiently large.
@@ -162,7 +160,6 @@ if ( msg0 && msg2 ) {  /* L(:,k) and U(k,:) are not empty. */
                 arrive_at_ublock(j,&iukp,&rukp,&jb,&ljb,&nsupc,
 				 iukp0,rukp0,usub,perm_u,xsup,grid);
 
-		//if (!iam) { printf("-- after arrive_at.., j %d, jjj %d\n", j, jjj); fflush(stdout);}
                 // copy block j into tempu
                 for (jj = iukp; jj < iukp+nsupc; ++jj) {
                     segsize = klst - usub[jj];
@@ -172,8 +169,6 @@ if ( msg0 && msg2 ) {  /* L(:,k) and U(k,:) are not empty. */
                         tempu += lead_zero;
                         for (i = 0; i < segsize; ++i)
                             tempu[i] = uval[rukp+i];
-			//	    if (!iam) { printf("-- copying to tempu[1], jj %d \n", jj); fflush(stdout);}
-			// Seg-fault before this print
                         rukp += segsize;
                         tempu += segsize;
                     }
@@ -181,12 +176,10 @@ if ( msg0 && msg2 ) {  /* L(:,k) and U(k,:) are not empty. */
 
                 rukp -= usub[iukp - 1]; /* Return to start of U(k,j). */
 
-		//	    if (!iam) { printf("-- after copy to tempu[], num_streams_used %d \n", num_streams_used); fflush(stdout);}
-	
             } /* end for j=jjj_st to jjj */
 
 	    if ( num_streams_used > 0 ) {
-#ifndef PI_DEBUG
+#ifdef PI_DEBUG
 		printf("nbrow %d *ldu %d  =%d < ldt %d * max_row_size %d =%d \n",nbrow,ldu,nbrow*ldu,ldt,max_row_size,ldt*max_row_size ); fflush(stdout);
 		assert(nbrow*ldu<=ldt*max_row_size);
 #endif
