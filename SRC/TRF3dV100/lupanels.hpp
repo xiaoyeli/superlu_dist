@@ -123,7 +123,14 @@ public:
                                      double thresh, int_t *xsup,
                                      superlu_dist_options_t *options,
                                      SuperLUStat_t *stat, int *info);
-
+    int_t diagFactorCuSolver(int_t k,
+                                     cusolverDnHandle_t cusolverH, cudaStream_t cuStream,
+                                    double *dWork, int* dInfo,  // GPU pointers 
+                                    double *dDiagBuf, int_t LDD, // GPU pointers
+                                    double thresh, int_t *xsup,
+                                    superlu_dist_options_t *options,
+                                    SuperLUStat_t *stat, int *info);
+    
     double *blkPtrGPU(int k)
     {
         return &gpuPanel.val[blkPtrOffset(k)];
@@ -473,6 +480,9 @@ struct LUstruct_v100
     size_t gpuLvalSize, gpuUvalSize, gpuLidxSize, gpuUidxSize;
     lpanelGPU_t* copyLpanelsToGPU();
     upanelGPU_t* copyUpanelsToGPU();
+
+    // to perform diagFactOn GPU
+    int_t dDFactPSolveGPU(int_t k, int_t offset, ddiagFactBufs_t **dFBufs);
 };
 
 cudaError_t checkCudaLocal(cudaError_t result);

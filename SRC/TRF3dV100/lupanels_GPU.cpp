@@ -204,6 +204,37 @@ int_t lpanel_t::diagFactorPackDiagBlockGPU(int_t k,
     return 0;
 }
 
+int_t lpanel_t::diagFactorCuSolver(int_t k,
+                                     cusolverDnHandle_t cusolverH, cudaStream_t cuStream,
+                                    double *dWork, int* dInfo,  // GPU pointers 
+                                    double *dDiagBuf, int_t LDD, // GPU pointers
+                                    double thresh, int_t *xsup,
+                                    superlu_dist_options_t *options,
+                                    SuperLUStat_t *stat, int *info)
+{
+    // cusolverDnHandle_t cusolverH = NULL;
+    cudaStream_t stream = NULL;
+    int kSupSize = SuperSize(k);
+    size_t dpitch = LDD * sizeof(double);
+    size_t spitch = LDA() * sizeof(double);
+    size_t width = kSupSize * sizeof(double);
+    size_t height = kSupSize;
+    double *val = blkPtrGPU(0);
+    // cusolverDnDgetrf_bufferSize(cusolverH, m, m, d_A, lda, &lwork)
+    
+    // call the cusolver 
+    // cublasSetStream(handle, cuStream);
+    //  cusolverDnSetStream(cuStream);
+    cusolverDnSetStream(cusolverH, cuStream);
+    cusolverDnDgetrf(cusolverH, kSupSize, kSupSize, val, LDA(), dWork, NULL, dInfo);
+
+    // Device to Device Copy
+    cudaMemcpy2DAsync(dDiagBuf, dpitch, val, spitch,
+                 width, height, cudaMemcpyDeviceToDevice, cuStream);
+    cudaStreamSynchronize(cuStream);
+    return 0;
+}
+
 int_t upanel_t::panelSolveGPU(cublasHandle_t handle, cudaStream_t cuStream,
                               int_t ksupsz, double *DiagBlk, int_t LDD)
 {

@@ -746,6 +746,16 @@ int_t LUstruct_v100::setLUstruct_GPU()
     // assert(A_gpu.numCudaStreams < options->num_lookaheads);
 
     // cudaMalloc(&A_gpu.LvalRecvBufs, sizeof(double*)*A_gpu.numCudaStreams);
+
+    // get the buffer size 
+    /* step 3: query working space of getrf */
+    int dfactBufSize = 0; 
+    //TODO: does it work with NULL pointer?
+    cusolverDnHandle_t cusolverH = NULL;
+    cusolverDnCreate(&cusolverH);
+    cusolverDnDgetrf_bufferSize(cusolverH, ldt, ldt, NULL, ldt, &dfactBufSize);
+    printf("Size of dfactBuf is %d\n", dfactBufSize);
+
     for (int stream = 0; stream < A_gpu.numCudaStreams; stream++)
     {
 
@@ -766,6 +776,12 @@ int_t LUstruct_v100::setLUstruct_GPU()
         cublasCreate(&A_gpu.lookAheadUHandle[stream]);
         cudaStreamCreate(&A_gpu.lookAheadUStream[stream]);
         cudaMalloc(&A_gpu.lookAheadUGemmBuffer[stream], sizeof(double) * maxUvalCount);
+
+        // allocate the space for diagonal factor on GPU 
+        cusolverDnCreate(&A_gpu.cuSolveHandles[stream]);
+        cudaMalloc(&A_gpu.diagFactWork[stream], sizeof(double) *dfactBufSize);
+        cudaMalloc(&A_gpu.diagFactInfo[stream], sizeof(int));
+        
     }
 
     // allocate

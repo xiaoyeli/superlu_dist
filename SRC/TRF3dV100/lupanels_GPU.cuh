@@ -1,6 +1,8 @@
 #pragma once
 #include <vector>
 #include <iostream>
+#include <cuda_runtime.h>
+#include <cusolverDn.h>
 #include "superlu_ddefs.h"
 #include "lu_common.hpp"
 // #include "lupanels.hpp" 
@@ -256,6 +258,9 @@ struct LUstructGPU_t
     int_t* LidxRecvBufs[MAX_CUDA_STREAMS];
     int_t* UidxRecvBufs[MAX_CUDA_STREAMS];
 
+    cusolverDnHandle_t cuSolveHandles[MAX_CUDA_STREAMS];
+    double* diagFactWork[MAX_CUDA_STREAMS];
+    int* diagFactInfo[MAX_CUDA_STREAMS]; // CPU pointers
     /*data structure for lookahead Update */
     cublasHandle_t lookAheadLHandle[MAX_CUDA_STREAMS];
     cudaStream_t lookAheadLStream[MAX_CUDA_STREAMS];
