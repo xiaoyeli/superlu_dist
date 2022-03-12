@@ -15,7 +15,7 @@ if(enable_complex16)
   list(APPEND sources c2f_zcreate_matrix_x_b.c superlu_c2f_zwrap.c)
 endif()  
 
-# see bug https://gitlab.kitware.com/cmake/cmake/-/issues/17525, why we need to separate MOD files from other source files
+# see https://gitlab.kitware.com/cmake/cmake/-/issues/17525, why we need to separate MOD files from other source files
 add_library(superlu_dist_fortran_mod OBJECT ${mod_sources})
 add_library(superlu_dist_fortran $<TARGET_OBJECTS:superlu_dist_fortran_mod> ${sources})
 add_library(superlu_dist_fortran-static STATIC $<TARGET_OBJECTS:superlu_dist_fortran_mod> ${sources})
