@@ -10,7 +10,7 @@ export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/opt/intel/compilers_and_libraries_2019.
 module load cmake/3.18.2
 # module load cudatoolkit
 module load cgpu
-module load cuda/10.2.89
+module load cuda/11.1.1
 module load openmpi/4.0.3
 
 export ACC=GPU
@@ -35,11 +35,12 @@ cmake .. \
     -DCMAKE_Fortran_COMPILER=mpif90 \
 	-DCMAKE_INSTALL_PREFIX=. \
 	-DTPL_ENABLE_CUDALIB=ON \
+	-DTPL_ENABLE_LAPACKLIB=ON \
 	-DCMAKE_BUILD_TYPE=Release \
 	-DCMAKE_VERBOSE_MAKEFILE:BOOL=ON \
 	-DCMAKE_CXX_FLAGS="-Ofast -DRELEASE ${INC_VTUNE} -I${CUDA_ROOT}/include" \
     -DCMAKE_C_FLAGS="-std=c11 -DPRNTlevel=1 -DPROFlevel=0 -DDEBUGlevel=0 ${INC_VTUNE} -I${CUDA_ROOT}/include" \
-	-DCMAKE_CUDA_FLAGS="--disable-warnings -DPRNTlevel=1 -DPROFlevel=0 -DDEBUGlevel=0 -gencode arch=compute_70,code=sm_70 -I/usr/common/software/openmpi/4.0.3/gcc/8.3.0/cuda/10.2.89/include"
+	-DCMAKE_CUDA_FLAGS="-lineinfo --disable-warnings -DPRNTlevel=1 -DPROFlevel=0 -DDEBUGlevel=0 -gencode arch=compute_70,code=sm_70 -I/usr/common/software/openmpi/4.0.3/gcc/8.3.0/cuda/10.2.89/include"
 make pddrive	
 make pddrive3d	
 make install 	

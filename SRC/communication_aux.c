@@ -192,7 +192,7 @@ int_t Test_LDiagBlock_Recv( MPI_Request *request, SCT_t* SCT)
 /*
  * The following are from trfCommWrapper.c.
  */
-int_t Wait_LUDiagSend(int_t k, MPI_Request *U_diag_blk_send_req,
+int Wait_LUDiagSend(int_t k, MPI_Request *U_diag_blk_send_req,
                       MPI_Request *L_diag_blk_send_req,
                       gridinfo_t *grid, SCT_t *SCT)
 {
@@ -200,9 +200,9 @@ int_t Wait_LUDiagSend(int_t k, MPI_Request *U_diag_blk_send_req,
     // LocalLU_t *Llu = LUstruct->Llu;
     // int_t* xsup = Glu_persist->xsup;
 
-    int_t iam = grid->iam;
+    int iam = grid->iam;
 
-    int_t pkk = PNUM (PROW (k, grid), PCOL (k, grid), grid);
+    int pkk = PNUM (PROW (k, grid), PCOL (k, grid), grid);
 
     if (iam == pkk)
     {

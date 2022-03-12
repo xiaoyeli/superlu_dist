@@ -15,8 +15,9 @@ at the top-level directory.
  *
  * <pre>
  * -- Distributed SuperLU routine (version 7.0) --
- * Lawrence Berkeley National Lab, Georgia Institute of Technology.
- * May 10, 2019
+ * Lawrence Berkeley National Lab, Georgia Institute of Technology,
+ * Oak Ridge National Lab
+ * May 12, 2021
  */
 
 #include "superlu_ddefs.h"
@@ -65,7 +66,7 @@ void dInit_HyP(HyP_t* HyP, dLocalLU_t *Llu, int_t mcb, int_t mrb )
     HyP->last_offload = -1;
     HyP->superlu_acc_offload = get_acc_offload ();
 
-    HyP->nCudaStreams =0;
+    HyP->nGPUStreams =0;
 } /* dInit_HyP */
 
 /*init3DLUstruct with forest interface */

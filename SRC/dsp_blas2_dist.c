@@ -8,6 +8,8 @@ All rights reserved.
 The source code is distributed under BSD license, see the file License.txt
 at the top-level directory.
 */
+
+
 /*! @file
  * \brief Sparse BLAS 2, using some dense BLAS 2 operations
  *
@@ -146,10 +148,8 @@ sp_dtrsv_dist(char *uplo, char *trans, char *diag, SuperMatrix *L,
 		nsupc = SuperLU_L_FST_SUPC(k+1) - fsupc;
 		luptr = SuperLU_L_NZ_START(fsupc);
 		nrow = nsupr - nsupc;
-
 	        solve_ops += nsupc * (nsupc - 1);
 	        solve_ops += 2 * nrow * nsupc;
-
 		if ( nsupc == 1 ) {
 		    for (iptr=istart+1; iptr < SuperLU_L_SUB_START(fsupc+1); ++iptr) {
 			irow = SuperLU_L_SUB(iptr);
@@ -175,9 +175,9 @@ sp_dtrsv_dist(char *uplo, char *trans, char *diag, SuperMatrix *L,
 		       	&nsupr, &x[fsupc], &incx, &beta, &work[0], &incy, 1);
 #endif /* _CRAY */		
 #else
-		    dlsolve ( nsupr, nsupc, &Lval[luptr], &x[fsupc]);
+		    dlsolve (nsupr, nsupc, &Lval[luptr], &x[fsupc]);
 		
-		    dmatvec ( nsupr, nsupr-nsupc, nsupc, &Lval[luptr+nsupc],
+		    dmatvec (nsupr, nsupr-nsupc, nsupc, &Lval[luptr+nsupc],
 			&x[fsupc], &work[0] );
 #endif		
 		
@@ -186,7 +186,6 @@ sp_dtrsv_dist(char *uplo, char *trans, char *diag, SuperMatrix *L,
 			irow = SuperLU_L_SUB(iptr);
 			x[irow] -= work[i];	/* Scatter */
 			work[i] = 0.0;
-
 		    }
 	 	}
 	    } /* for k ... */
@@ -201,7 +200,6 @@ sp_dtrsv_dist(char *uplo, char *trans, char *diag, SuperMatrix *L,
 	    	nsupr = SuperLU_L_SUB_START(fsupc+1) - SuperLU_L_SUB_START(fsupc);
 	    	nsupc = SuperLU_L_FST_SUPC(k+1) - fsupc;
 	    	luptr = SuperLU_L_NZ_START(fsupc);
-		
     	        solve_ops += nsupc * (nsupc + 1);
 
 		if ( nsupc == 1 ) {
@@ -210,6 +208,7 @@ sp_dtrsv_dist(char *uplo, char *trans, char *diag, SuperMatrix *L,
 			irow = SuperLU_U_SUB(i);
 			x[irow] -= x[fsupc] * Uval[i];
 		    }
+
 		} else {
 #ifdef USE_VENDOR_BLAS
 #ifdef _CRAY
@@ -251,7 +250,6 @@ sp_dtrsv_dist(char *uplo, char *trans, char *diag, SuperMatrix *L,
 	    	luptr = SuperLU_L_NZ_START(fsupc);
 
 		solve_ops += 2 * (nsupr - nsupc) * nsupc;
-
 		for (jcol = fsupc; jcol < SuperLU_L_FST_SUPC(k+1); jcol++) {
 		    iptr = istart + nsupc;
 		    for (i = SuperLU_L_NZ_START(jcol) + nsupc; 
@@ -264,6 +262,7 @@ sp_dtrsv_dist(char *uplo, char *trans, char *diag, SuperMatrix *L,
 		
 		if ( nsupc > 1 ) {
 		    solve_ops += nsupc * (nsupc - 1);
+
 #ifdef USE_VENDOR_BLAS
 #ifdef _CRAY
                     ftcs1 = _cptofcd("L", strlen("L"));
@@ -300,7 +299,6 @@ sp_dtrsv_dist(char *uplo, char *trans, char *diag, SuperMatrix *L,
 		}
 
 		solve_ops += nsupc * (nsupc + 1);
-
 		if ( nsupc == 1 ) {
 		    x[fsupc] /= Lval[luptr];
 		} else {
@@ -327,11 +325,10 @@ sp_dtrsv_dist(char *uplo, char *trans, char *diag, SuperMatrix *L,
     /*SuperLUStat.ops[SOLVE] += solve_ops;*/
     SUPERLU_FREE(work);
     return 0;
-}
+} /* sp_dtrsv_dist */
 
 
-/*! \brief
-
+/*! \brief SpGEMV
 <pre>
   Purpose   
     =======   
@@ -399,10 +396,12 @@ sp_dgemv_dist(char *trans, double alpha, SuperMatrix *A, double *x,
     NCformat *Astore;
     double   *Aval;
     int info;
-    double temp;
+    double temp, temp1;
     int lenx, leny, i, j, irow;
     int iy, jx, jy, kx, ky;
     int notran;
+    double zero = 0.0;
+    double one = 1.0;
 
     notran = (strncmp(trans, "N", 1)==0);
     Astore = (NCformat *) A->Store;
@@ -444,14 +443,14 @@ sp_dgemv_dist(char *trans, double alpha, SuperMatrix *A, double *x,
     if (beta != 1.) {
 	if (incy == 1) {
 	    if (beta == 0.)
-		for (i = 0; i < leny; ++i) y[i] = 0.;
+		for (i = 0; i < leny; ++i) y[i] = zero;
 	    else
 		for (i = 0; i < leny; ++i) y[i] = beta * y[i];
 	} else {
 	    iy = ky;
 	    if (beta == 0.)
 		for (i = 0; i < leny; ++i) {
-		    y[iy] = 0.;
+		    y[iy] = zero;
 		    iy += incy;
 		}
 	    else
@@ -486,7 +485,7 @@ sp_dgemv_dist(char *trans, double alpha, SuperMatrix *A, double *x,
 	jy = ky;
 	if (incx == 1) {
 	    for (j = 0; j < A->ncol; ++j) {
-		temp = 0.;
+		temp = zero;
 		for (i = Astore->colptr[j]; i < Astore->colptr[j+1]; ++i) {
 		    irow = Astore->rowind[i];
 		    temp += Aval[i] * x[irow];

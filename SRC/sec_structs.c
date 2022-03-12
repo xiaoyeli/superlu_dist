@@ -587,7 +587,7 @@ get_acc_offload ()
     if (ttemp)
         return atoi (ttemp);
     else
-        return 0;
+        return 1;  // default
 }
 
 

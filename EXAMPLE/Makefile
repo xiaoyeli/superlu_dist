@@ -236,7 +236,7 @@ pzdrive4_ABglobal: $(ZEXMG4) $(DSUPERLULIB)
 	$(FORTRAN) $(FFLAGS) -c $< $(VERBOSE)
 
 clean:	
-	rm -f *.o p[dz]drive p[dz]drive[1-9] \
-	p[dz]drive_ABglobal p[dz]drive[1-9]_ABglobal
+	rm -f *.o p[dsz]drive p[dsz]drive[1-9] p[dsz]drive3d p[dsz]drive3d[1-9] \
+	p[dsz]drive_ABglobal p[dsz]drive[1-9]_ABglobal
 
 

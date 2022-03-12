@@ -16,20 +16,26 @@ at the top-level directory.
  * </pre>
  */
 
-#ifndef CUBLAS_UTILS_H
-#define CUBLAS_UTILS_H
+#ifndef gpu_api_utils_H
+#define gpu_api_utils_H
 
-#include <cublas_v2.h>
-#include "cuda.h"
-#include "cuda_runtime_api.h"
-#include "cuda_runtime.h"
+#ifdef GPU_ACC
+
+#include "gpu_wrapper.h"
 typedef struct LUstruct_gpu_  LUstruct_gpu;  // Sherry - not in this distribution
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern void DisplayHeader();
 extern const char* cublasGetErrorString(cublasStatus_t status);
-extern cudaError_t checkCuda(cudaError_t);
+extern gpuError_t checkGPU(gpuError_t);
 extern cublasStatus_t checkCublas(cublasStatus_t);
 extern cublasHandle_t create_handle ();
 extern void destroy_handle (cublasHandle_t handle);
+#ifdef __cplusplus
+  }
+#endif
 
+#endif // end GPU_ACC
 #endif 

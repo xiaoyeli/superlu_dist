@@ -454,7 +454,7 @@ sDestroy_LU(int_t n, gridinfo_t *grid, sLUstruct_t *LUstruct)
 	    SUPERLU_FREE (Llu->Lrowind_bc_ptr[i]);
 #if 0 // Sherry: the following is not allocated with cudaHostAlloc    
     //#ifdef GPU_ACC
-	    checkCuda(cudaFreeHost(Llu->Lnzval_bc_ptr[i]));
+	    checkGPU(gpuFreeHost(Llu->Lnzval_bc_ptr[i]));
 #endif
 	    SUPERLU_FREE (Llu->Lnzval_bc_ptr[i]);
 	}
@@ -479,10 +479,10 @@ sDestroy_LU(int_t n, gridinfo_t *grid, sLUstruct_t *LUstruct)
     /* The following can be freed only after iterative refinement. */
     SUPERLU_FREE(Llu->ilsum);
     SUPERLU_FREE(Llu->fmod);
-    SUPERLU_FREE(Llu->fsendx_plist[0]);
+    SUPERLU_FREE((Llu->fsendx_plist)[0]);
     SUPERLU_FREE(Llu->fsendx_plist);
     SUPERLU_FREE(Llu->bmod);
-    SUPERLU_FREE(Llu->bsendx_plist[0]);
+    SUPERLU_FREE((Llu->bsendx_plist)[0]);
     SUPERLU_FREE(Llu->bsendx_plist);
     SUPERLU_FREE(Llu->mod_bit);
 
@@ -876,24 +876,28 @@ sDestroy_Tree(int_t n, gridinfo_t *grid, sLUstruct_t *LUstruct)
 
     nb = CEILING(nsupers, grid->npcol);
     for (i=0;i<nb;++i){
-	if(Llu->LBtree_ptr[i]!=NULL){
-		BcTree_Destroy(Llu->LBtree_ptr[i],LUstruct->dt);
+        if(Llu->LBtree_ptr[i].empty_==NO){    
+			// BcTree_Destroy(Llu->LBtree_ptr[i],LUstruct->dt);
+            C_BcTree_Nullify(&Llu->LBtree_ptr[i]);
 	}
-	if(Llu->UBtree_ptr[i]!=NULL){
-		BcTree_Destroy(Llu->UBtree_ptr[i],LUstruct->dt);
-	}		
+        if(Llu->UBtree_ptr[i].empty_==NO){  
+			// BcTree_Destroy(Llu->UBtree_ptr[i],LUstruct->dt);
+            C_BcTree_Nullify(&Llu->UBtree_ptr[i]);
+	}
     }
     SUPERLU_FREE(Llu->LBtree_ptr);
     SUPERLU_FREE(Llu->UBtree_ptr);
 	
     nb = CEILING(nsupers, grid->nprow);
     for (i=0;i<nb;++i){
-	if(Llu->LRtree_ptr[i]!=NULL){
-		RdTree_Destroy(Llu->LRtree_ptr[i],LUstruct->dt);
+        if(Llu->LRtree_ptr[i].empty_==NO){             
+			// RdTree_Destroy(Llu->LRtree_ptr[i],LUstruct->dt);
+            C_RdTree_Nullify(&Llu->LRtree_ptr[i]);
 	}
-	if(Llu->URtree_ptr[i]!=NULL){
-		RdTree_Destroy(Llu->URtree_ptr[i],LUstruct->dt);
-	}		
+        if(Llu->URtree_ptr[i].empty_==NO){ 
+			// RdTree_Destroy(Llu->URtree_ptr[i],LUstruct->dt);
+            C_RdTree_Nullify(&Llu->URtree_ptr[i]);
+	}
     }
     SUPERLU_FREE(Llu->LRtree_ptr);
     SUPERLU_FREE(Llu->URtree_ptr);

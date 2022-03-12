@@ -98,7 +98,7 @@ install:
     -DCMAKE_CXX_FLAGS="-Ofast -std=c++11 -DAdd_ -DRELEASE" \
     -DTPL_BLAS_LIBRARIES="$BLAS_LIB" \
     -DTPL_LAPACK_LIBRARIES="$LAPACK_LIB" \
-    -Denable_blaslib=OFF \
+    -DTPL_ENABLE_INTERNAL_BLASLIB=OFF \
     -DBUILD_SHARED_LIBS=OFF \
     -DCMAKE_C_COMPILER=mpicc \
     -DCMAKE_CXX_COMPILER=mpic++ \

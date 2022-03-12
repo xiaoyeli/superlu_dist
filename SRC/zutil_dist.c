@@ -608,11 +608,11 @@ void zPrintLblocks(int iam, int_t nsupers, gridinfo_t *grid,
 	}
 	printf("(%d)", iam);
  	PrintInt32("ToSendR[]", grid->npcol, Llu->ToSendR[lb]);
-	PrintInt10("fsendx_plist[]", grid->nprow, Llu->fsendx_plist[lb]);
+	PrintInt32("fsendx_plist[]", grid->nprow, Llu->fsendx_plist[lb]);
     }
-    printf("nfrecvx " IFMT "\n", Llu->nfrecvx);
+    printf("nfrecvx %d\n", Llu->nfrecvx);
     k = CEILING( nsupers, grid->nprow );
-    PrintInt10("fmod", k, Llu->fmod);
+    PrintInt32("fmod", k, Llu->fmod);
 
 } /* ZPRINTLBLOCKS */
 
@@ -623,13 +623,13 @@ void zZeroLblocks(int iam, int n, gridinfo_t *grid, zLUstruct_t *LUstruct)
 {
     doublecomplex zero = {0.0, 0.0};
     register int extra, gb, j, lb, nsupc, nsupr, ncb;
-    register int_t k, mycol, r;
+    register int k, mycol, r;
     zLocalLU_t *Llu = LUstruct->Llu;
     Glu_persist_t *Glu_persist = LUstruct->Glu_persist;
     int_t *xsup = Glu_persist->xsup;
     int_t *index;
     doublecomplex *nzval;
-    int_t nsupers = Glu_persist->supno[n-1] + 1;
+    int nsupers = Glu_persist->supno[n-1] + 1;
 
     ncb = nsupers / grid->npcol;
     extra = nsupers % grid->npcol;

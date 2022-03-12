@@ -657,7 +657,7 @@ float symbfact_dist
       printf("\tNo of supers   %ld\n", (long) nsuper);
       printf("\tSize of G(L)   %ld\n", (long) szLGr);
       printf("\tSize of G(U)   %ld\n", (long) szUGr);
-      printf("\tSize of G(L+U) %ld\n", (long) szLGr+szUGr);
+      printf("\tSize of G(L+U) %ld\n", (long) (szLGr+szUGr));
 
       printf("\tParSYMBfact (MB)      :\tL\\U MAX %.2f\tAVG %.2f\n",
 	     mem_glob[0]*1e-6, 

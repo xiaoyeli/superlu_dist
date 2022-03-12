@@ -480,7 +480,7 @@ at the top-level directory.
  *
  * stat   (output) SuperLUStat_t*
  *        Record the statistics on runtime and floating-point operation count.
- *        See util.h for the definition of 'SuperLUStat_t'.
+ *        See util_dist.h for the definition of 'SuperLUStat_t'.
  *
  * info    (output) int*
  *         = 0: successful exit

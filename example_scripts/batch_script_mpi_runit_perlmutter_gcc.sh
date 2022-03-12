@@ -1,9 +1,10 @@
 
-module load PrgEnv-gnu
-module load cpe-cuda
-module load cuda
-module load cmake/git-20210830
+module swap PrgEnv-nvidia PrgEnv-gnu
+module load gcc #/10.3.0
+module load cmake/3.22.0
+module load cudatoolkit
 
+export MAX_BUFFER_SIZE=50000000
 export OMP_NUM_THREADS=1
 export NUM_GPU_STREAMS=1
 # srun -n 1 ./EXAMPLE/pddrive -r 1 -c 1 ../EXAMPLE/g20.rua

@@ -45,11 +45,13 @@ at the top-level directory.
    #include <omp.h>
 #endif
 
+
 #include <mpi.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <limits.h>
 #include <string.h>
+#include <ctype.h>
 // #include <stdatomic.h>
 #include <math.h>
 #include <stdint.h>
@@ -82,6 +84,23 @@ at the top-level directory.
 #define SUPERLU_DIST_RELEASE_DATE      "December 12, 2021"
 
 #include "superlu_dist_config.h"
+
+#ifdef HAVE_CUDA
+#define GPU_ACC
+//#include "cublas_utils.h"
+#endif
+
+#ifdef HAVE_HIP
+#ifndef GPU_ACC
+#define GPU_ACC
+#endif
+#endif
+
+#ifdef GPU_ACC
+#include "gpu_api_utils.h"
+#endif
+
+
 /* Define my integer size int_t */
 #ifdef _CRAY
   typedef short int_t;
@@ -97,27 +116,6 @@ at the top-level directory.
   #define IFMT "%8d"
 #endif
 
-//#ifdef __INTEL_COMPILER
-//#include "mkl.h"
-//#endif
-
-#if 0 // Sherry: the following does not work with gcc on Linux.
-#define  _mm_malloc(a,b) malloc(a)
-#define _mm_free(a) free(a)
-
-static __inline__ unsigned long long _rdtsc(void)
-{
-    unsigned long long int x;
-    //    __asm__ volatile (".byte 0x0f, 0x31" : "=A" (x));
-    x = 0;
-    return x;
-}
-#endif
-
-#ifdef HAVE_CUDA  
-#define GPU_ACC   // enable CUDA
-#include "cublas_utils.h"
-#endif
 
 /* MPI C complex datatype */
 #define SuperLU_MPI_COMPLEX         MPI_C_COMPLEX 
@@ -134,10 +132,6 @@ typedef MPI_C_DOUBLE_COMPLEX  SuperLU_MPI_DOUBLE_COMPLEX;
 #include "supermatrix.h"
 #include "util_dist.h"
 #include "psymbfact.h"
-
-#ifdef GPU_ACC
-#include <cuda.h>
-#endif
 
 
 #define MAX_SUPER_SIZE 512   /* Sherry: moved from superlu_gpu.cu */
@@ -302,6 +296,42 @@ static const int RD_U=4;	/* MPI tag for lsum in U-solve*/
 #endif /* MSVC */
 #endif /* SUPERLU_DIST_EXPORT */
 
+
+/*
+ * CONSTANTS in MAGMA
+ */
+#ifndef MAGMA_CONST
+#define MAGMA_CONST
+
+// #define DIM_X  32
+// #define DIM_Y  16
+
+#define DIM_X  16
+#define DIM_Y  16
+
+
+#define BLK_M  DIM_X*4
+#define BLK_N  DIM_Y*4
+#define BLK_K 2048/(BLK_M)
+
+#define DIM_XA  DIM_X
+#define DIM_YA  DIM_Y
+#define DIM_XB  DIM_X
+#define DIM_YB  DIM_Y
+
+#define NWARP  DIM_X*DIM_Y/32
+
+// // // // // // #define TILE_SIZE  32
+
+
+#define THR_M ( BLK_M / DIM_X )
+#define THR_N ( BLK_N / DIM_Y )
+
+#define fetch(A, m, n, bound) offs_d##A[min(n*LD##A+m, bound)]
+#define fma(A, B, C) C += (A*B)
+#endif
+/*---- end MAGMA ----*/
+    
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -726,7 +756,7 @@ typedef struct {
 } Ucb_indptr_t;
 
 /* 
- *-- The new structures added in the hybrid CUDA + OpenMP + MPI code.
+ *-- The new structures added in the hybrid GPU + OpenMP + MPI code.
  */
 typedef struct {
     int_t rukp;
@@ -1005,7 +1035,7 @@ typedef struct xtrsTimer_t
     double ppXmem;		// perprocess X-memory
 } xtrsTimer_t;
 
-/*==== For 3D code ====*/
+/*==== end For 3D code ====*/
 
 /*====================*/
 
@@ -1061,9 +1091,11 @@ extern float   smach_dist(char *);
 extern double  dmach_dist(char *);
 extern void    *superlu_malloc_dist (size_t);
 extern void    superlu_free_dist (void*);
+extern int   *int32Malloc_dist (int);
+extern int   *int32Calloc_dist (int);
 extern int_t   *intMalloc_dist (int_t);
 extern int_t   *intCalloc_dist (int_t);
-extern int_t   mc64id_dist(int_t *);
+extern int   mc64id_dist(int *);
 extern void  arrive_at_ublock (int_t, int_t *, int_t *, int_t *,
 			       int_t *, int_t *, int_t, int_t, 
 			       int_t *, int_t *, int_t *, gridinfo_t *);
@@ -1135,8 +1167,12 @@ int superlu_sort_perm (const void *arg1, const void *arg2)
 #ifdef GPU_ACC   /* GPU related */
 extern void gemm_division_cpu_gpu (int *, int *, int *, int,
 				   int, int, int *, int);
-extern int_t get_cublas_nb ();
-extern int_t get_num_cuda_streams ();
+extern int_t get_gpublas_nb ();
+extern int_t get_num_gpu_streams ();
+extern int getnGPUStreams();
+extern int get_mpi_process_per_gpu ();
+/*to print out various statistics from GPU activities*/
+extern void printGPUStats(int nsupers, SuperLUStat_t *stat );
 #endif
 
 extern double estimate_cpu_time(int m, int n , int k);
@@ -1164,41 +1200,38 @@ extern int   file_PrintLong10(FILE *, char *, int_t, int_t *);
 
 #ifndef __SUPERLU_ASYNC_TREE /* allow multiple inclusions */
 #define __SUPERLU_ASYNC_TREE
-typedef void* BcTree;
-typedef void* RdTree;
-typedef void* StdList;
+typedef struct
+{
+    MPI_Request sendRequests_[2];
+    MPI_Comm comm_;
+    int myRoot_;
+    int destCnt_;
+    int myDests_[2];
+    int myRank_;
+    int msgSize_;
+    int tag_;
+    yes_no_t empty_;
+    MPI_Datatype type_;
+} C_Tree;
+
+#ifndef DEG_TREE
+#define DEG_TREE 2
 #endif
 
-// typedef enum {NO, YES}  yes_no_t;
-extern RdTree   RdTree_Create(MPI_Comm comm, int* ranks, int rank_cnt, int msgSize, double rseed, char precision);  
-extern void   	RdTree_Destroy(RdTree Tree, char precision);
-extern void 	RdTree_SetTag(RdTree Tree, int tag, char precision);
-extern yes_no_t RdTree_IsRoot(RdTree Tree, char precision);
-extern void 	RdTree_forwardMessageSimple(RdTree Tree, void* localBuffer, int msgSize, char precision);
-extern void 	RdTree_allocateRequest(RdTree Tree, char precision);
-extern int  	RdTree_GetDestCount(RdTree Tree, char precision);
-extern int  	RdTree_GetMsgSize(RdTree Tree, char precision);
-extern void 	RdTree_waitSendRequest(RdTree Tree, char precision);
+#endif
 
-extern BcTree   BcTree_Create(MPI_Comm comm, int* ranks, int rank_cnt, int msgSize, double rseed, char precision);  
-extern void   	BcTree_Destroy(BcTree Tree, char precision);
-extern void 	BcTree_SetTag(BcTree Tree, int tag, char precision);
-extern yes_no_t BcTree_IsRoot(BcTree Tree, char precision);
-extern void 	BcTree_forwardMessageSimple(BcTree Tree, void* localBuffer, int msgSize, char precision);
-extern void 	BcTree_allocateRequest(BcTree Tree, char precision);
-extern int 		BcTree_getDestCount(BcTree Tree, char precision); 
-extern int 		BcTree_GetMsgSize(BcTree Tree, char precision); 
-extern void 	BcTree_waitSendRequest(BcTree Tree, char precision);
- 
-extern StdList 	StdList_Init();
-extern void 	StdList_Pushback(StdList lst, int_t dat);
-extern void 	StdList_Pushfront(StdList lst, int_t dat);
-extern int_t 		StdList_Popfront(StdList lst);
-extern yes_no_t StdList_Find(StdList lst, int_t dat);
-extern int_t 	   	StdList_Size(StdList lst);
-yes_no_t 		StdList_Empty(StdList lst);
+extern void C_RdTree_Create(C_Tree* tree, MPI_Comm comm, int* ranks, int rank_cnt, int msgSize, char precision);
+extern void C_RdTree_Nullify(C_Tree* tree);
+extern yes_no_t C_RdTree_IsRoot(C_Tree* tree);
+extern void C_RdTree_forwardMessageSimple(C_Tree* Tree, void* localBuffer, int msgSize);
+extern void C_RdTree_waitSendRequest(C_Tree* Tree);
 
-    
+extern void C_BcTree_Create(C_Tree* tree, MPI_Comm comm, int* ranks, int rank_cnt, int msgSize, char precision);
+extern void C_BcTree_Nullify(C_Tree* tree);
+extern yes_no_t C_BcTree_IsRoot(C_Tree* tree);
+extern void C_BcTree_forwardMessageSimple(C_Tree* tree, void* localBuffer, int msgSize);
+extern void C_BcTree_waitSendRequest(C_Tree* tree);
+
 /*==== For 3D code ====*/
 
 extern void DistPrint(char* function_name,  double value, char* Units, gridinfo_t* grid);
@@ -1306,15 +1339,21 @@ extern int_t getBigUSize(int_t nsupers, gridinfo_t *grid, int_t **Lrowind_bc_ptr
 extern void getSCUweight(int_t nsupers, treeList_t* treeList, int_t* xsup,
 			 int_t** Lrowind_bc_ptr, int_t** Ufstnz_br_ptr,
 			 gridinfo3d_t * grid3d);
+extern int Wait_LUDiagSend(int_t k, MPI_Request *U_diag_blk_send_req,
+			   MPI_Request *L_diag_blk_send_req,
+			   gridinfo_t *grid, SCT_t *SCT);
+
 extern int getNsupers(int n, Glu_persist_t *Glu_persist);
 extern int set_tag_ub();
 extern int getNumThreads(int);
 extern int_t num_full_cols_U(int_t kk, int_t **Ufstnz_br_ptr, int_t *xsup,
 			     gridinfo_t *, int_t *, int_t *);
+
 #if 0 // Sherry: conflicting with existing routine
 extern int_t estimate_bigu_size(int_t nsupers, int_t ldt, int_t**Ufstnz_br_ptr,
 				Glu_persist_t *, gridinfo_t*, int_t* perm_u);
 #endif
+
 extern int_t* getFactPerm(int_t);
 extern int_t* getFactIperm(int_t*, int_t);
 
@@ -1355,8 +1394,18 @@ extern int_t* getMyNodeCounts(int_t maxLvl, int_t* myTreeIdxs, int_t* gNodeCount
 extern int_t checkIntVector3d(int_t* vec, int_t len,  gridinfo3d_t* grid3d);
 extern int_t reduceStat(PhaseType PHASE, SuperLUStat_t *stat, gridinfo3d_t * grid3d);
 
-  extern int getnCudaStreams();
-  extern int get_mpi_process_per_gpu ();
+    /* from communication_aux.h */
+extern int_t Wait_LSend(int_t k, gridinfo_t *grid, int **ToSendR,
+			MPI_Request *s, SCT_t*);
+extern int_t Wait_USend(MPI_Request *, gridinfo_t *, SCT_t *);
+extern int_t Check_LRecv(MPI_Request*, int* msgcnt);
+extern int_t Wait_UDiagBlockSend(MPI_Request *, gridinfo_t *, SCT_t *);
+extern int_t Wait_LDiagBlockSend(MPI_Request *, gridinfo_t *, SCT_t *);
+extern int_t Wait_UDiagBlock_Recv(MPI_Request *, SCT_t *);
+extern int_t Test_UDiagBlock_Recv(MPI_Request *, SCT_t *);
+extern int_t Wait_LDiagBlock_Recv(MPI_Request *, SCT_t *);
+extern int_t Test_LDiagBlock_Recv(MPI_Request *, SCT_t *);
+extern int_t LDiagBlockRecvWait( int_t k, int_t* factored_U, MPI_Request *, gridinfo_t *);
 
 /*=====================*/
 

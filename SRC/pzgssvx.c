@@ -527,19 +527,20 @@ pzgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 	      routine. They will be freed after PDDISTRIBUTE routine.
 	      If options->Fact == SamePattern_SameRowPerm, these
 	      structures are not used.                                  */
-    fact_t   Fact;
-    doublecomplex   *a;
-    int_t    *colptr, *rowind;
-    int_t    *perm_r; /* row permutations from partial pivoting */
-    int_t    *perm_c; /* column permutation vector */
-    int_t    *etree;  /* elimination tree */
-    int_t    *rowptr, *colind;  /* Local A in NR*/
-    int_t    colequ, Equil, factored, job, notran, rowequ, need_value;
-    int_t    i, iinfo, j, irow, m, n, nnz, permc_spec;
-    int_t    nnz_loc, m_loc, fst_row, icol;
-    int      iam,iam_g;
-    int      ldx;  /* LDA for matrix X (local). */
-    char     equed[1], norm[1];
+    fact_t  Fact;
+    doublecomplex *a;
+    int_t   *colptr, *rowind;
+    int_t   *perm_r; /* row permutations from partial pivoting */
+    int_t   *perm_c; /* column permutation vector */
+    int_t   *etree;  /* elimination tree */
+    int_t   *rowptr, *colind;  /* Local A in NR*/
+    int_t   nnz_loc, nnz, iinfo;
+    int     m_loc, fst_row, icol;
+    int     colequ, Equil, factored, job, notran, rowequ, need_value;
+    int     i, j, irow, m, n, permc_spec;
+    int     iam, iam_g;
+    int     ldx;  /* LDA for matrix X (local). */
+    char    equed[1], norm[1];
     double   *C, *R, *C1, *R1, amax, anorm, colcnd, rowcnd;
     doublecomplex   *X, *b_col, *b_work, *x_col;
     double   t;
@@ -719,11 +720,11 @@ pzgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 	    if ( iinfo > 0 ) {
 		if ( iinfo <= m ) {
 #if ( PRNTlevel>=1 )
-		    fprintf(stderr, "The " IFMT "-th row of A is exactly zero\n", iinfo);
+		    fprintf(stderr, "The %d-th row of A is exactly zero\n", (int)iinfo);
 #endif
 		} else {
 #if ( PRNTlevel>=1 )
-                    fprintf(stderr, "The " IFMT "-th column of A is exactly zero\n", iinfo-n);
+                    fprintf(stderr, "The %d-th column of A is exactly zero\n", (int)iinfo-n);
 #endif
                 }
  	    } else if ( iinfo < 0 ) return;
@@ -928,7 +929,7 @@ pzgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 	        stat->utime[ROWPERM] = t;
 #if ( PRNTlevel>=1 )
                 if ( !iam ) {
-		    printf(".. LDPERM job " IFMT "\t time: %.2f\n", job, t);
+		    printf(".. RowPerm %d\t time: %.2f\n", options->RowPerm, t);
 		    fflush(stdout);
 		}
 #endif
@@ -1406,10 +1407,29 @@ pzgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 	       factorization with Fact == DOFACT or SamePattern is asked for. */
 	}
 
-	if ( options->DiagInv==YES &&
-             (options->SolveInitialized == NO || Fact == SamePattern ||
-              Fact == SamePattern_SameRowPerm) ) {
+#if ( defined(GPU_ACC) && defined(GPU_SOLVE) )
+        if(options->DiagInv==NO){
+	    if (iam==0) {
+	        printf("!!WARNING: GPU trisolve requires setting options->DiagInv==YES\n");
+                printf("           otherwise, use CPU trisolve\n");
+		fflush(stdout);
+	    }
+	    //exit(0);  // Sherry: need to return an error flag
+	}
+#endif
+
+	if ( options->DiagInv==YES && (Fact != FACTORED) ) {
 	    pzCompute_Diag_Inv(n, LUstruct, grid, stat, info);
+#ifdef GPU_ACC
+            checkGPU(gpuMemcpy(LUstruct->Llu->d_Linv_bc_dat, LUstruct->Llu->Linv_bc_dat,
+	        (LUstruct->Llu->Linv_bc_cnt) * sizeof(doublecomplex), gpuMemcpyHostToDevice));
+            checkGPU(gpuMemcpy(LUstruct->Llu->d_Uinv_bc_dat, LUstruct->Llu->Uinv_bc_dat,
+	        (LUstruct->Llu->Uinv_bc_cnt) * sizeof(doublecomplex), gpuMemcpyHostToDevice));
+            checkGPU(gpuMemcpy(LUstruct->Llu->d_Lnzval_bc_dat, LUstruct->Llu->Lnzval_bc_dat,
+	        (LUstruct->Llu->Lnzval_bc_cnt) * sizeof(doublecomplex), gpuMemcpyHostToDevice));
+            checkGPU(gpuMemcpy(LUstruct->Llu->d_Unzval_br_dat, LUstruct->Llu->Unzval_br_dat,
+	        (LUstruct->Llu->Unzval_br_cnt) * sizeof(doublecomplex), gpuMemcpyHostToDevice));
+#endif
 	}
 
 

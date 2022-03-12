@@ -72,11 +72,9 @@ int getNumThreads(int iam)
     }
 #endif
 
-    if (!iam)
-    {
-        printf(".. Starting with %d openMP threads \n", num_threads );
-
-    }
+#if ( PRNTlevel>=1 )    
+    if (!iam) printf(".. Starting with %d openMP threads \n", num_threads );
+#endif    
     return num_threads;
 }
 

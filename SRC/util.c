@@ -283,14 +283,14 @@ void pxgstrs_finalize(pxgstrs_comm_t *gstrs_comm)
 void print_panel_seg_dist(int_t n, int_t w, int_t jcol, int_t nseg,
                           int_t *segrep, int_t *repfnz)
 {
-    int_t j, k;
+    int j, k;
 
     for (j = jcol; j < jcol + w; j++)
     {
-        printf("\tcol " IFMT ":\n", j);
+        printf("\tcol %d:\n", j);
         for (k = 0; k < nseg; k++)
-            printf("\t\tseg " IFMT ", segrep " IFMT ", repfnz " IFMT "\n", k,
-                   segrep[k], repfnz[(j - jcol) * n + segrep[k]]);
+            printf("\t\tseg %d, segrep %d, repfnz %d\n", k,
+                   (int)segrep[k], (int)repfnz[(j - jcol) * n + segrep[k]]);
     }
 }
 
@@ -544,11 +544,11 @@ void get_diag_procs(int_t n, Glu_persist_t *Glu_persist, gridinfo_t *grid,
 /*! \brief Get the statistics of the supernodes 
  */
 #define NBUCKS 10
-static int_t max_sup_size;
+static int max_sup_size;
 
 void super_stats_dist(int_t nsuper, int_t *xsup)
 {
-    register int_t nsup1 = 0;
+    register int nsup1 = 0;
     int_t i, isize, whichb, bl, bh;
     int_t bucket[NBUCKS];
 
@@ -563,9 +563,9 @@ void super_stats_dist(int_t nsuper, int_t *xsup)
             max_sup_size = isize;
     }
 
-    printf("    Supernode statistics:\n\tno of super = " IFMT "\n", nsuper + 1);
-    printf("\tmax supernode size = " IFMT "\n", max_sup_size);
-    printf("\tno of size 1 supernodes = " IFMT "\n", nsup1);
+    printf("    Supernode statistics:\n\tno of super = %d\n", (int)nsuper + 1);
+    printf("\tmax supernode size = %d\n", max_sup_size);
+    printf("\tno of size 1 supernodes = %d\n", nsup1);
 
     /* Histogram of the supernode sizes */
     ifill_dist(bucket, NBUCKS, 0);
@@ -584,7 +584,7 @@ void super_stats_dist(int_t nsuper, int_t *xsup)
     {
         bl = (float)i * max_sup_size / NBUCKS;
         bh = (float)(i + 1) * max_sup_size / NBUCKS;
-        printf("\tsnode: " IFMT "-" IFMT "\t\t" IFMT "\n", bl + 1, bh, bucket[i]);
+        printf("\tsnode: %d-%d\t\t%d\n", (int)bl + 1, (int)bh, (int)bucket[i]);
     }
 }
 
@@ -592,14 +592,14 @@ void super_stats_dist(int_t nsuper, int_t *xsup)
  */
 void check_repfnz_dist(int_t n, int_t w, int_t jcol, int_t *repfnz)
 {
-    int_t jj, k;
+    int jj, k;
 
     for (jj = jcol; jj < jcol + w; jj++)
         for (k = 0; k < n; k++)
             if (repfnz[(jj - jcol) * n + k] != EMPTY)
             {
-                fprintf(stderr, "col " IFMT ", repfnz_col[" IFMT "] = " IFMT "\n",
-                        jj, k, repfnz[(jj - jcol) * n + k]);
+                fprintf(stderr, "col %d, repfnz_col[%d] = %d\n",
+                        jj, k, (int)repfnz[(jj - jcol) * n + k]);
                 ABORT("check_repfnz_dist");
             }
 }
@@ -829,20 +829,22 @@ int_t get_max_buffer_size()
         return 200000000; // 5000000
 }
 
-int_t get_cublas_nb()
+int_t
+get_gpublas_nb ()
 {
     char *ttemp;
-    ttemp = getenv("CUBLAS_NB");
+    ttemp = getenv ("GPUBLAS_NB");
     if (ttemp)
         return atoi(ttemp);
     else
         return 64;
 }
 
-int_t get_num_cuda_streams()
+int_t
+get_num_gpu_streams ()
 {
     char *ttemp;
-    ttemp = getenv("NUM_CUDA_STREAMS");
+    ttemp = getenv ("NUM_GPU_STREAMS");
     if (ttemp)
         return atoi(ttemp);
     else
@@ -1037,8 +1039,8 @@ int_t estimate_bigu_size(
 #if (PRNTlevel >= 1)
     if (iam == 0)
     {
-        printf("max_ncols " IFMT ",  max_ldu " IFMT ", bigu_size " IFMT "\n",
-               *max_ncols, max_ldu, max_ldu * (*max_ncols));
+        printf("max_ncols %d,  max_ldu %d, bigu_size " IFMT "\n",
+               (int)*max_ncols, (int)max_ldu, max_ldu * (*max_ncols));
         fflush(stdout);
     }
 #endif
@@ -1289,7 +1291,7 @@ gemm_division_cpu_gpu(
 			      it is <= nstreams   */
     int* stream_end_col,   /* array holding last column blk for each stream partition */
     int * ncpu_blks,       /* Number of CPU dgemm blks (output) */
-/*input */
+    /*input */
     int nbrow,             /* number of row in A matrix */
     int ldu,               /* number of k in dgemm */
     int nstreams,          /* maximum possible GPU streams */
@@ -1298,7 +1300,8 @@ gemm_division_cpu_gpu(
 )
 {
     int Ngem = sp_ienv_dist(7);  /*get_mnk_dgemm ();*/
-    int min_gpu_col = get_cublas_nb (); /* default 64 */
+    int min_gpu_col = get_gpublas_nb (); /* default 64 */
+    int superlu_acc_offload = get_acc_offload();
 
     /*
       Sherry corrected comment:                                                  
@@ -1306,49 +1309,37 @@ gemm_division_cpu_gpu(
       However since there is GPU latency of around 20,000 ns implying about
       200000 floating point operations can be done in that time, so    
       ncols ~= 200,000/(2*nbrow*ldu) should be done on CPU to hide the
-      latency; We set Ngem =200,000/2.
+      latency; We set Ngem =200,000/2.  
      */
     int i, j;
 
-    // {
-    //     *num_streams_used=0;
-    //     *ncpu_blks = num_blks;
-    //     return;
-    // }
-
-    for (int i = 0; i < nstreams; ++i)
-    {
-        stream_end_col[i] = num_blks;
-    }
-
-    *num_streams_used = 0;
-
-    *ncpu_blks = 0;
-    /* Early return -1, when number of columns is smaller than threshold,
-       everything should be done on CPU. 
-       Test condition CPU Flops ~ nbrow*ldu*cols < Ngem */
-    if (full_u_cols[num_blks - 1] < (Ngem / (nbrow * ldu)) || num_blks == 1 )
+    /* Early return, when number of columns is smaller than threshold,
+       or superlu_acc_offload == 0, then everything should be done on CPU. 
+       Test condition GPU Flops ~ nbrow*ldu*cols < Ngem */
+    if ( (full_u_cols[num_blks - 1] < (Ngem / (nbrow * ldu)))
+	 || (num_blks==1) || (nstreams==0)
+	 || (superlu_acc_offload==0) )
     {
         *num_streams_used = 0;
         *ncpu_blks = num_blks;
 #ifdef PI_DEBUG
         printf ("gemm_division: num_blks %d, full_u_cols[num_blks-1] %d %d \n",
                 num_blks, full_u_cols[num_blks - 1], (Ngem / (nbrow * ldu)));
-        printf ("Early return -1\n");
+        printf ("Early return\n");
+	fflush(stdout);
 #endif
         return;
 
     }
 
-    /* Early return -2, when number of streams = 0 */
-    if (nstreams == 0)
+    for (i = 0; i < nstreams; ++i)
     {
-        *num_streams_used = 0;
-        *ncpu_blks = num_blks;
-        return;
-        /* code */
+        stream_end_col[i] = num_blks;
     }
 
+    *num_streams_used = 0;
+    *ncpu_blks = 0;
+    
     /* Find first block where count > Ngem */
     for (i = 0; i < num_blks - 1; ++i)  /*I can use binary search here */
     {
@@ -1430,7 +1421,7 @@ gemm_division_new (int * num_streams_used,   /*number of streams that will be us
     )
 {
     int Ngem = sp_ienv_dist(7); /*get_mnk_dgemm ();*/
-    int min_gpu_col = get_cublas_nb ();
+    int min_gpu_col = get_gpublas_nb ();
 
     // Ngem = 1000000000;
     /*
@@ -1520,14 +1511,14 @@ gemm_division_new (int * num_streams_used,   /*number of streams that will be us
 
 /* The following are moved from superlu_gpu.cu */
 
-int getnCudaStreams()
+int getnGPUStreams()
 {
-    // Disabling multiple cuda streams 
+    // Disabling multiple gpu streams 
     #if 1
 	return 1;
     #else 
 	char *ttemp;
-	ttemp = getenv ("N_CUDA_STREAMS");
+	ttemp = getenv ("NUM_GPU_STREAMS");
 
 	if (ttemp)
 		return atoi (ttemp);

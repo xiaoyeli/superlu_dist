@@ -66,7 +66,7 @@ void zlsum_fmod
  int   nrhs,      /* Number of right-hand sides.                        */
  int   knsupc,    /* Size of supernode k.                               */
  int_t k,         /* The k-th component of X.                           */
- int_t *fmod,     /* Modification count for L-solve.                    */
+ int *fmod,     /* Modification count for L-solve.                    */
  int_t nlb,       /* Number of L blocks.                                */
  int_t lptr,      /* Starting position in lsub[*].                      */
  int_t luptr,     /* Starting position in lusup[*].                     */
@@ -84,8 +84,8 @@ void zlsum_fmod
     int_t  i, ii, ik, il, ikcol, irow, j, lb, lk, lib, rel;
     int_t  *lsub, *lsub1, nlb1, lptr1, luptr1;
     int_t  *ilsum = Llu->ilsum; /* Starting position of each supernode in lsum.   */
-    int_t  *frecv = Llu->frecv;
-    int_t  **fsendx_plist = Llu->fsendx_plist;
+    int  *frecv = Llu->frecv;
+    int  **fsendx_plist = Llu->fsendx_plist;
     MPI_Status status;
     int test_flag;
 
@@ -253,7 +253,7 @@ void zlsum_bmod
  doublecomplex *xk,          /* X[k].                                          */
  int    nrhs,	      /* Number of right-hand sides.                    */
  int_t  k,            /* The k-th component of X.                       */
- int_t  *bmod,        /* Modification count for L-solve.                */
+ int  *bmod,        /* Modification count for L-solve.                */
  int_t  *Urbs,        /* Number of row blocks in each block column of U.*/
  Ucb_indptr_t **Ucb_indptr,/* Vertical linked list pointing to Uindex[].*/
  int_t  **Ucb_valptr, /* Vertical linked list pointing to Unzval[].     */
@@ -279,8 +279,8 @@ void zlsum_bmod
     int_t  *lsub;
     doublecomplex *lusup;
     int_t  *ilsum = Llu->ilsum; /* Starting position of each supernode in lsum.   */
-    int_t  *brecv = Llu->brecv;
-    int_t  **bsendx_plist = Llu->bsendx_plist;
+    int  *brecv = Llu->brecv;
+    int    **bsendx_plist = Llu->bsendx_plist;
     MPI_Status status;
     int test_flag;
 
@@ -431,7 +431,7 @@ void zlsum_fmod_inv
  doublecomplex *rtemp,   /* Result of full matrix-vector multiply.             */
  int   nrhs,      /* Number of right-hand sides.                        */
  int_t k,         /* The k-th component of X.                           */
- int_t *fmod,     /* Modification count for L-solve.                    */
+ int *fmod,     /* Modification count for L-solve.                    */
  int_t *xsup,
  gridinfo_t *grid,
  zLocalLU_t *Llu,
@@ -454,16 +454,16 @@ void zlsum_fmod_inv
 	int_t  i, ii,jj, ik, il, ikcol, irow, j, lb, lk, rel, lib,lready;
 	int_t  *lsub, *lsub1, nlb1, lptr1, luptr1,*lloc;
     int_t  *ilsum = Llu->ilsum; /* Starting position of each supernode in lsum.   */
-    int_t  *frecv = Llu->frecv;
-    int_t  **fsendx_plist = Llu->fsendx_plist;
+    int  *frecv = Llu->frecv;
+    int  **fsendx_plist = Llu->fsendx_plist;
 	int_t  luptr_tmp,luptr_tmp1,lptr1_tmp,maxrecvsz, idx_i, idx_v,idx_n,  idx_l, fmod_tmp, lbstart,lbend,nn,Nchunk,nlb_loc,remainder;
 	int thread_id1;
 	flops_t ops_loc=0.0;
     MPI_Status status;
     int test_flag;
 	yes_no_t done;
-	BcTree  *LBtree_ptr = Llu->LBtree_ptr;
-	RdTree  *LRtree_ptr = Llu->LRtree_ptr;
+	C_Tree  *LBtree_ptr = Llu->LBtree_ptr;
+	C_Tree  *LRtree_ptr = Llu->LRtree_ptr;
 	int_t* idx_lsum,idx_lsum1;
 	doublecomplex *rtemp_loc;
 	int_t ldalsum;
@@ -472,9 +472,9 @@ void zlsum_fmod_inv
 	int_t luptr;     /* Starting position in lusup[*].                     */
 	int_t iword = sizeof(int_t);
 	int_t dword = sizeof (double);
-	int_t aln_d,aln_i;
-	aln_d = ceil(CACHELINE/(double)dword);
-	aln_i = ceil(CACHELINE/(double)iword);
+	int aln_d,aln_i;
+	aln_d = 1; //ceil(CACHELINE/(double)dword);
+	aln_i = 1; //ceil(CACHELINE/(double)iword);
 	int   knsupc;    /* Size of supernode k.                               */
 	int_t nlb;       /* Number of L blocks.                                */
 
@@ -733,7 +733,7 @@ void zlsum_fmod_inv
 							 * Send Xk to process column Pc[k].
 							 */
 
-							if(LBtree_ptr[lk]!=NULL){
+							if(LBtree_ptr[lk].empty_==NO){
 #ifdef _OPENMP
 #pragma omp atomic capture
 #endif
@@ -935,7 +935,7 @@ void zlsum_fmod_inv
 					 * Send Xk to process column Pc[k].
 					 */
 
-					if(LBtree_ptr[lk]!=NULL){
+					if(LBtree_ptr[lk].empty_==NO){
 #ifdef _OPENMP
 #pragma omp atomic capture
 #endif
@@ -990,7 +990,7 @@ void zlsum_fmod_inv_master
  int   nrhs,      /* Number of right-hand sides.                        */
  int   knsupc,    /* Size of supernode k.                               */
  int_t k,         /* The k-th component of X.                           */
- int_t *fmod,     /* Modification count for L-solve.                    */
+ int *fmod,     /* Modification count for L-solve.                    */
  int_t nlb,       /* Number of L blocks.                                */
  int_t *xsup,
  gridinfo_t *grid,
@@ -1012,8 +1012,8 @@ void zlsum_fmod_inv_master
 	int_t  i, ii,jj, ik, il, ikcol, irow, j, lb, lk, rel, lib,lready;
 	int_t  *lsub, *lsub1, nlb1, lptr1, luptr1,*lloc;
     int_t  *ilsum = Llu->ilsum; /* Starting position of each supernode in lsum.   */
-    int_t  *frecv = Llu->frecv;
-    int_t  **fsendx_plist = Llu->fsendx_plist;
+    int  *frecv = Llu->frecv;
+    int  **fsendx_plist = Llu->fsendx_plist;
 	int_t  luptr_tmp,luptr_tmp1,lptr1_tmp,maxrecvsz, idx_i, idx_v,idx_n,  idx_l, fmod_tmp, lbstart,lbend,nn,Nchunk,nlb_loc,remainder;
 	int thread_id1;
 	int m;
@@ -1021,8 +1021,8 @@ void zlsum_fmod_inv_master
     MPI_Status status;
     int test_flag;
 	yes_no_t done;
-	BcTree  *LBtree_ptr = Llu->LBtree_ptr;
-	RdTree  *LRtree_ptr = Llu->LRtree_ptr;
+	C_Tree  *LBtree_ptr = Llu->LBtree_ptr;
+	C_Tree  *LRtree_ptr = Llu->LRtree_ptr;
 	int_t* idx_lsum,idx_lsum1;
 	doublecomplex *rtemp_loc;
 	int_t ldalsum;
@@ -1031,9 +1031,9 @@ void zlsum_fmod_inv_master
 	int_t luptr;     /* Starting position in lusup[*].                     */
 	int_t iword = sizeof(int_t);
 	int_t dword = sizeof (double);
-	int_t aln_d,aln_i;
-	aln_d = ceil(CACHELINE/(double)dword);
-	aln_i = ceil(CACHELINE/(double)iword);
+	int aln_d,aln_i;
+	aln_d = 1; //ceil(CACHELINE/(double)dword);
+	aln_i = 1; //ceil(CACHELINE/(double)iword);
 
 	ldalsum=Llu->ldalsum;
 
@@ -1270,7 +1270,8 @@ void zlsum_fmod_inv_master
 								  &lsum[il + jj ],
 								  &lsum[il + jj + ii*sizelsum]);
 
-					RdTree_forwardMessageSimple(LRtree_ptr[lk],&lsum[il - LSUM_H ],RdTree_GetMsgSize(LRtree_ptr[lk],'z')*nrhs+LSUM_H,'z');
+					// RdTree_forwardMessageSimple(LRtree_ptr[lk],&lsum[il - LSUM_H ],RdTree_GetMsgSize(LRtree_ptr[lk],'z')*nrhs+LSUM_H,'z');
+					C_RdTree_forwardMessageSimple(&LRtree_ptr[lk],&lsum[il - LSUM_H ],LRtree_ptr[lk].msgSize_*nrhs+LSUM_H);
 					// }
 
 
@@ -1357,8 +1358,10 @@ void zlsum_fmod_inv_master
 					 * Send Xk to process column Pc[k].
 					 */
 
-					if(LBtree_ptr[lk]!=NULL)
-						BcTree_forwardMessageSimple(LBtree_ptr[lk],&x[ii - XK_H],BcTree_GetMsgSize(LBtree_ptr[lk],'z')*nrhs+XK_H,'z');
+					if(LBtree_ptr[lk].empty_==NO) {
+						//BcTree_forwardMessageSimple(LBtree_ptr[lk],&x[ii - XK_H],BcTree_GetMsgSize(LBtree_ptr[lk],'z')*nrhs+XK_H,'z');
+						C_BcTree_forwardMessageSimple(&LBtree_ptr[lk], &x[ii - XK_H], LBtree_ptr[lk].msgSize_*nrhs+XK_H);
+					}
 
 					/*
 					 * Perform local block modifications.
@@ -1396,7 +1399,7 @@ void zlsum_bmod_inv
  doublecomplex *rtemp,   /* Result of full matrix-vector multiply.             */
  int    nrhs,	      /* Number of right-hand sides.                    */
  int_t  k,            /* The k-th component of X.                       */
- int_t  *bmod,        /* Modification count for L-solve.                */
+ int *bmod,        /* Modification count for L-solve.                */
  int_t  *Urbs,        /* Number of row blocks in each block column of U.*/
  Ucb_indptr_t **Ucb_indptr,/* Vertical linked list pointing to Uindex[].*/
  int_t  **Ucb_valptr, /* Vertical linked list pointing to Unzval[].     */
@@ -1426,13 +1429,13 @@ void zlsum_bmod_inv
 	int_t  *lsub;
 	doublecomplex *lusup;
 	int_t  *ilsum = Llu->ilsum; /* Starting position of each supernode in lsum.   */
-	int_t  *brecv = Llu->brecv;
-	int_t  **bsendx_plist = Llu->bsendx_plist;
-	BcTree  *UBtree_ptr = Llu->UBtree_ptr;
-	RdTree  *URtree_ptr = Llu->URtree_ptr;
+	int  *brecv = Llu->brecv;
+	int    **bsendx_plist = Llu->bsendx_plist;
+	C_Tree  *UBtree_ptr = Llu->UBtree_ptr;
+	C_Tree  *URtree_ptr = Llu->URtree_ptr;
 	MPI_Status status;
 	int test_flag;
-	int_t bmod_tmp;
+	int bmod_tmp;
 	int thread_id1;
 	doublecomplex *rtemp_loc;
 	int_t nroot_send_tmp;
@@ -1443,9 +1446,9 @@ void zlsum_bmod_inv
 	int_t Nchunk, nub_loc,remainder,nn,lbstart,lbend;
 	int_t iword = sizeof(int_t);
 	int_t dword = sizeof(double);
-	int_t aln_d,aln_i;
-	aln_d = ceil(CACHELINE/(double)dword);
-	aln_i = ceil(CACHELINE/(double)iword);
+	int aln_d,aln_i;
+	aln_d = 1; //ceil(CACHELINE/(double)dword);
+	aln_i = 1; //ceil(CACHELINE/(double)iword);
 
 
 	iam = grid->iam;
@@ -1644,7 +1647,7 @@ void zlsum_bmod_inv
 								// printf("xre: %f\n",x[ii+i]);
 								// fflush(stdout);
 							// }
-							if(UBtree_ptr[lk1]!=NULL){
+							if(UBtree_ptr[lk1].empty_==NO){
 #ifdef _OPENMP
 #pragma omp atomic capture
 #endif
@@ -1836,7 +1839,7 @@ void zlsum_bmod_inv
 							// printf("xre: %f\n",x[ii+i]);
 							// fflush(stdout);
 						// }
-						if(UBtree_ptr[lk1]!=NULL){
+						if(UBtree_ptr[lk1].empty_==NO){
 #ifdef _OPENMP
 #pragma omp atomic capture
 #endif
@@ -1884,7 +1887,7 @@ void zlsum_bmod_inv_master
  doublecomplex *rtemp,   /* Result of full matrix-vector multiply.             */
  int    nrhs,	      /* Number of right-hand sides.                    */
  int_t  k,            /* The k-th component of X.                       */
- int_t  *bmod,        /* Modification count for L-solve.                */
+ int  *bmod,        /* Modification count for L-solve.                */
  int_t  *Urbs,        /* Number of row blocks in each block column of U.*/
  Ucb_indptr_t **Ucb_indptr,/* Vertical linked list pointing to Uindex[].*/
  int_t  **Ucb_valptr, /* Vertical linked list pointing to Unzval[].     */
@@ -1912,10 +1915,10 @@ void zlsum_bmod_inv_master
 	int_t  *lsub;
 	doublecomplex *lusup;
 	int_t  *ilsum = Llu->ilsum; /* Starting position of each supernode in lsum.   */
-	int_t  *brecv = Llu->brecv;
-	int_t  **bsendx_plist = Llu->bsendx_plist;
-	BcTree  *UBtree_ptr = Llu->UBtree_ptr;
-	RdTree  *URtree_ptr = Llu->URtree_ptr;
+	int *brecv = Llu->brecv;
+	int  **bsendx_plist = Llu->bsendx_plist;
+	C_Tree  *UBtree_ptr = Llu->UBtree_ptr;
+	C_Tree  *URtree_ptr = Llu->URtree_ptr;
 	MPI_Status status;
 	int test_flag;
 	int_t bmod_tmp;
@@ -1929,9 +1932,9 @@ void zlsum_bmod_inv_master
 	int_t Nchunk, nub_loc,remainder,nn,lbstart,lbend;
 	int_t iword = sizeof(int_t);
 	int_t dword = sizeof (double);
-	int_t aln_d,aln_i;
-	aln_d = ceil(CACHELINE/(double)dword);
-	aln_i = ceil(CACHELINE/(double)iword);
+	int aln_d,aln_i;
+	aln_d = 1; //ceil(CACHELINE/(double)dword);
+	aln_i = 1; //ceil(CACHELINE/(double)iword);
 
 
 	rtemp_loc = &rtemp[sizertemp* thread_id];
@@ -2090,7 +2093,8 @@ void zlsum_bmod_inv_master
 						z_add(&lsum[il + jj ],
 							  &lsum[il + jj ],
 							  &lsum[il + jj + ii*sizelsum]);
-				RdTree_forwardMessageSimple(URtree_ptr[ik],&lsum[il - LSUM_H ],RdTree_GetMsgSize(URtree_ptr[ik],'z')*nrhs+LSUM_H,'z');
+				//RdTree_forwardMessageSimple(URtree_ptr[ik],&lsum[il - LSUM_H ],RdTree_GetMsgSize(URtree_ptr[ik],'z')*nrhs+LSUM_H,'z');
+				C_RdTree_forwardMessageSimple(&URtree_ptr[ik],&lsum[il - LSUM_H ],URtree_ptr[ik].msgSize_*nrhs+LSUM_H);
 
 #if ( DEBUGlevel>=2 )
 				printf("(%2d) Sent LSUM[%2.0f], size %2d, to P %2d\n",
@@ -2182,8 +2186,9 @@ void zlsum_bmod_inv_master
 						// printf("xre: %f\n",x[ii+i]);
 						// fflush(stdout);
 					// }
-					if(UBtree_ptr[lk1]!=NULL){
-					BcTree_forwardMessageSimple(UBtree_ptr[lk1],&x[ii - XK_H],BcTree_GetMsgSize(UBtree_ptr[lk1],'z')*nrhs+XK_H,'z');
+					if(UBtree_ptr[lk1].empty_==NO){
+					  //BcTree_forwardMessageSimple(UBtree_ptr[lk1],&x[ii - XK_H],BcTree_GetMsgSize(UBtree_ptr[lk1],'z')*nrhs+XK_H,'z');
+					  C_BcTree_forwardMessageSimple(&UBtree_ptr[lk1], &x[ii - XK_H], UBtree_ptr[lk1].msgSize_*nrhs+XK_H);
 					}
 
 					/*

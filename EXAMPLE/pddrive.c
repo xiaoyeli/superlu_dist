@@ -219,6 +219,7 @@ int main(int argc, char *argv[])
     options.Equil = YES; 
     options.IterRefine = NOREFINE;
 #if 0
+    options.ReplaceTinyPivot  = YES;
     options.RowPerm           = LargeDiag_HWPM;
     options.RowPerm = NOROWPERM;
     options.ColPerm = NATURAL;
@@ -282,7 +283,7 @@ int main(int argc, char *argv[])
     SUPERLU_FREE(b);
     SUPERLU_FREE(xtrue);
     SUPERLU_FREE(berr);
-    fclose(fp);
+    // fclose(fp);
 
     /* ------------------------------------------------------------
        RELEASE THE SUPERLU PROCESS GRID.

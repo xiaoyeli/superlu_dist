@@ -204,6 +204,7 @@ main (int argc, char *argv[])
 	    fflush(stdout);
 	    break;
 	}
+        fflush(stdout);
     }
 	
     /* Bail out if I do not belong in the grid. */
@@ -383,7 +384,8 @@ main (int argc, char *argv[])
     sScalePermstructFree (&ScalePermstruct);
     sLUstructFree (&LUstruct);
     PStatFree (&stat);
-
+    fclose(fp);
+    
     /* ------------------------------------------------------------
        RELEASE THE SUPERLU PROCESS GRID.
        ------------------------------------------------------------ */
