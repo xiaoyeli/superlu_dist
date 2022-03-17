@@ -216,8 +216,6 @@ int main(int argc, char *argv[])
 	options.DiagInv           = NO;
      */
     set_default_options_dist(&options);
-    options.Equil = YES; 
-    options.IterRefine = NOREFINE;
 #if 0
     options.ReplaceTinyPivot  = YES;
     options.RowPerm           = LargeDiag_HWPM;

@@ -845,9 +845,9 @@ typedef struct
 
   int_t buffer_size;
   int_t bigu_size;
-  int_t offloadCondition;
-  int_t superlu_acc_offload;
-  int_t nCudaStreams;
+  int offloadCondition;
+  int superlu_acc_offload;
+  int nGPUStreams;
 } HyP_t;
 
 
@@ -1190,6 +1190,7 @@ extern int get_acc_offload();
 extern void  print_panel_seg_dist(int_t, int_t, int_t, int_t, int_t *, int_t *);
 extern void  check_repfnz_dist(int_t, int_t, int_t, int_t *);
 extern int_t CheckZeroDiagonal(int_t, int_t *, int_t *, int_t *);
+extern void  PrintDouble5(char *, int_t, double *);
 extern void  PrintInt10(char *, int_t, int_t *);
 extern void  PrintInt32(char *, int, int *);
 extern int   file_PrintInt10(FILE *, char *, int_t, int_t *);

@@ -902,7 +902,6 @@ psgstrf(superlu_dist_options_t * options, int m, int n, float anorm,
     j = bigu_size / ldt;
     bigu_size += (gemm_k_pad * (j + ldt + gemm_n_pad));
     bigv_size += (gemm_m_pad * (j + max_row_size + gemm_n_pad));
-#endif
 
 #if ( PRNTlevel>=1 )
     if ( iam==0 ) {

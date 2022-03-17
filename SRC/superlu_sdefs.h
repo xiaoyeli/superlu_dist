@@ -96,19 +96,46 @@ typedef struct {
 #define MAX_LOOKAHEADS 50
 typedef struct {
     int_t   **Lrowind_bc_ptr; /* size ceil(NSUPERS/Pc)                 */
+    int_t *Lrowind_bc_dat;  /* size sum of sizes of Lrowind_bc_ptr[lk])    */   
+    long int *Lrowind_bc_offset;  /* size ceil(NSUPERS/Pc)                 */     
+    long int Lrowind_bc_cnt;
+    
     float **Lnzval_bc_ptr;  /* size ceil(NSUPERS/Pc)                 */
+    float *Lnzval_bc_dat;  /* size sum of sizes of Lnzval_bc_ptr[lk])  */   
+    long int *Lnzval_bc_offset;  /* size ceil(NSUPERS/Pc)                */    
+    long int Lnzval_bc_cnt;
+    
     float **Linv_bc_ptr;  /* size ceil(NSUPERS/Pc)                 */
+    float *Linv_bc_dat;  /* size sum of sizes of Linv_bc_ptr[lk])  */   
+    long int *Linv_bc_offset;  /* size ceil(NSUPERS/Pc)              */   
+    long int Linv_bc_cnt;
+    
     int_t   **Lindval_loc_bc_ptr; /* size ceil(NSUPERS/Pc)  pointers to locations in Lrowind_bc_ptr and Lnzval_bc_ptr */
+    int_t *Lindval_loc_bc_dat;  /* size sum of sizes of Lindval_loc_bc_ptr[lk]) */   
+    long int *Lindval_loc_bc_offset;  /* size ceil(NSUPERS/Pc)                  */   
+    long int Lindval_loc_bc_cnt;  
     int_t   *Unnz; /* number of nonzeros per block column in U*/
 	int_t   **Lrowind_bc_2_lsum; /* size ceil(NSUPERS/Pc)  map indices of Lrowind_bc_ptr to indices of lsum  */
     float  **Uinv_bc_ptr;  /* size ceil(NSUPERS/Pc)     	*/
+    float *Uinv_bc_dat;  /* size sum of sizes of Linv_bc_ptr[lk])                 */   
+    long int *Uinv_bc_offset;  /* size ceil(NSUPERS/Pc)                 */   
+    long int Uinv_bc_cnt;
+
     int_t   **Ufstnz_br_ptr;  /* size ceil(NSUPERS/Pr)                 */
+    int_t   *Ufstnz_br_dat;  /* size sum of sizes of Ufstnz_br_ptr[lk])                 */   
+    long int *Ufstnz_br_offset;  /* size ceil(NSUPERS/Pr)    */
+    long int Ufstnz_br_cnt;
+    
     float  **Unzval_br_ptr;  /* size ceil(NSUPERS/Pr)                 */
+    float  *Unzval_br_dat;   /* size sum of sizes of Unzval_br_ptr[lk]) */   
+    long int *Unzval_br_offset;  /* size ceil(NSUPERS/Pr)    */
+    long int Unzval_br_cnt;
+    
         /*-- Data structures used for broadcast and reduction trees. --*/
-    BcTree  *LBtree_ptr;       /* size ceil(NSUPERS/Pc)                */
-    RdTree  *LRtree_ptr;       /* size ceil(NSUPERS/Pr)                */
-    BcTree  *UBtree_ptr;       /* size ceil(NSUPERS/Pc)                */
-    RdTree  *URtree_ptr;       /* size ceil(NSUPERS/Pr)			*/
+    C_Tree  *LBtree_ptr;       /* size ceil(NSUPERS/Pc)                */
+    C_Tree  *LRtree_ptr;       /* size ceil(NSUPERS/Pr)                */
+    C_Tree  *UBtree_ptr;       /* size ceil(NSUPERS/Pc)                */
+    C_Tree  *URtree_ptr;       /* size ceil(NSUPERS/Pr)			*/
 #if 0
     int_t   *Lsub_buf;        /* Buffer for the remote subscripts of L */
     float  *Lval_buf;        /* Buffer for the remote nonzeros of L   */
@@ -134,17 +161,18 @@ typedef struct {
     int   **ToSendR;        /* List of processes to send right block col. */
 
     /*-- Record communication schedule for forward/back solves. --*/
-    int_t   *fmod;            /* Modification count for L-solve            */
-    int_t   **fsendx_plist;   /* Column process list to send down Xk       */
-    int_t   *frecv;           /* Modifications to be recv'd in proc row    */
-    int_t   nfrecvx;          /* Number of Xk I will receive in L-solve    */
-    int_t   nfsendx;          /* Number of Xk I will send in L-solve       */
-    int_t   *bmod;            /* Modification count for U-solve            */
-    int_t   **bsendx_plist;   /* Column process list to send down Xk       */
-    int_t   *brecv;           /* Modifications to be recv'd in proc row    */
-    int_t   nbrecvx;          /* Number of Xk I will receive in U-solve    */
-    int_t   nbsendx;          /* Number of Xk I will send in U-solve       */
-    int_t   *mod_bit;         /* Flag contribution from each row blocks    */
+    /* 1/15/22 Sherry: changed int_t to int type */
+    int   *fmod;            /* Modification count for L-solve            */
+    int   **fsendx_plist;   /* Column process list to send down Xk       */
+    int   *frecv;           /* Modifications to be recv'd in proc row    */
+    int   nfrecvx;          /* Number of Xk I will receive in L-solve    */
+    int   nfsendx;          /* Number of Xk I will send in L-solve       */
+    int   *bmod;            /* Modification count for U-solve            */
+    int   **bsendx_plist;   /* Column process list to send down Xk       */
+    int   *brecv;           /* Modifications to be recv'd in proc row    */
+    int   nbrecvx;          /* Number of Xk I will receive in U-solve    */
+    int   nbsendx;          /* Number of Xk I will send in U-solve       */
+    int   *mod_bit;         /* Flag contribution from each row blocks    */
 
     /*-- Auxiliary arrays used for forward/back solves. --*/
     int_t   *ilsum;           /* Starting position of each supernode in lsum
@@ -173,13 +201,53 @@ typedef struct {
     int_t *ut_modbit;
     int_t *Urbs;
     Ucb_indptr_t **Ucb_indptr;/* Vertical linked list pointing to Uindex[] */
+    Ucb_indptr_t *Ucb_inddat;
+    long int *Ucb_indoffset;
+    long int Ucb_indcnt;  
+    
     int_t  **Ucb_valptr;      /* Vertical linked list pointing to Unzval[] */
+    int_t  *Ucb_valdat;      
+    long int *Ucb_valoffset;
+    long int Ucb_valcnt;
 
     /* some additional counters for L solve */
     int_t n;
     int_t nleaf;
     int_t nfrecvmod;
     int_t inv; /* whether the diagonal block is inverted*/
+    
+    /* The following variables are used in GPU trisolve*/
+#ifdef GPU_ACC
+    int_t *d_Lrowind_bc_dat;     
+    long int *d_Lrowind_bc_offset;      
+    float *d_Lnzval_bc_dat;     
+    long int *d_Lnzval_bc_offset;     
+    float *d_Linv_bc_dat ;     
+    float *d_Uinv_bc_dat ;     
+    long int *d_Linv_bc_offset ;     
+    long int *d_Uinv_bc_offset ;     
+    int_t *d_Lindval_loc_bc_dat ;     
+    long int *d_Lindval_loc_bc_offset ;     
+
+    int_t *d_Urbs;
+    int_t   *d_Ufstnz_br_dat;  
+    long int *d_Ufstnz_br_offset;  
+    float *d_Unzval_br_dat;   
+    long int *d_Unzval_br_offset; 
+
+    int_t  *d_Ucb_valdat;      
+    long int *d_Ucb_valoffset;    
+    Ucb_indptr_t *d_Ucb_inddat;
+    long int *d_Ucb_indoffset;
+
+    int_t  *d_ilsum ;
+    int_t *d_xsup ;
+    C_Tree  *d_LBtree_ptr ;
+    C_Tree  *d_LRtree_ptr ;
+    C_Tree  *d_UBtree_ptr ;
+    C_Tree  *d_URtree_ptr ;    
+#endif
+
 } sLocalLU_t;
 
 
@@ -284,9 +352,9 @@ typedef struct
 
     int_t buffer_size;
     int_t bigu_size;
-    int_t offloadCondition;
-    int_t superlu_acc_offload;
-    int_t nCudaStreams;
+    int offloadCondition;
+    int superlu_acc_offload;
+    int nCudaStreams;
 } HyP_t;
 
 #endif
@@ -426,11 +494,12 @@ extern void  psCompute_Diag_Inv(int_t, sLUstruct_t *,gridinfo_t *, SuperLUStat_t
 extern int  sSolveInit(superlu_dist_options_t *, SuperMatrix *, int_t [], int_t [],
 		       int_t, sLUstruct_t *, gridinfo_t *, sSOLVEstruct_t *);
 extern void sSolveFinalize(superlu_dist_options_t *, sSOLVEstruct_t *);
+extern void sDestroy_A3d_gathered_on_2d(sSOLVEstruct_t *, gridinfo3d_t *);
 extern int_t psgstrs_init(int_t, int_t, int_t, int_t,
                           int_t [], int_t [], gridinfo_t *grid,
 	                  Glu_persist_t *, sSOLVEstruct_t *);
 extern void pxgstrs_finalize(pxgstrs_comm_t *);
-extern int  sldperm_dist(int_t, int_t, int_t, int_t [], int_t [],
+extern int  sldperm_dist(int, int, int_t, int_t [], int_t [],
 		    float [], int_t *, float [], float []);
 extern int  sstatic_schedule(superlu_dist_options_t *, int, int,
 		            sLUstruct_t *, gridinfo_t *, SuperLUStat_t *,
@@ -473,31 +542,39 @@ extern int_t psReDistribute_B_to_X(float *B, int_t m_loc, int nrhs, int_t ldb,
 				   sScalePermstruct_t *, Glu_persist_t *,
 				   gridinfo_t *, sSOLVEstruct_t *);
 extern void slsum_fmod(float *, float *, float *, float *,
-		       int, int, int_t , int_t *, int_t, int_t, int_t,
+		       int, int, int_t , int *fmod, int_t, int_t, int_t,
 		       int_t *, gridinfo_t *, sLocalLU_t *,
 		       MPI_Request [], SuperLUStat_t *);
 extern void slsum_bmod(float *, float *, float *,
-                       int, int_t, int_t *, int_t *, Ucb_indptr_t **,
+                       int, int_t, int *bmod, int_t *, Ucb_indptr_t **,
                        int_t **, int_t *, gridinfo_t *, sLocalLU_t *,
 		       MPI_Request [], SuperLUStat_t *);
 
 extern void slsum_fmod_inv(float *, float *, float *, float *,
-		       int, int_t , int_t *,
+		       int, int_t , int *fmod,
 		       int_t *, gridinfo_t *, sLocalLU_t *,
 		       SuperLUStat_t **, int_t *, int_t *, int_t, int_t, int_t, int_t, int, int);
 extern void slsum_fmod_inv_master(float *, float *, float *, float *,
-		       int, int, int_t , int_t *, int_t,
+		       int, int, int_t , int *fmod, int_t,
 		       int_t *, gridinfo_t *, sLocalLU_t *,
 		       SuperLUStat_t **, int_t, int_t, int_t, int_t, int, int);
 extern void slsum_bmod_inv(float *, float *, float *, float *,
-                       int, int_t, int_t *, int_t *, Ucb_indptr_t **,
+                       int, int_t, int *bmod, int_t *, Ucb_indptr_t **,
                        int_t **, int_t *, gridinfo_t *, sLocalLU_t *,
 		       SuperLUStat_t **, int_t *, int_t *, int_t, int_t, int, int);
 extern void slsum_bmod_inv_master(float *, float *, float *, float *,
-                       int, int_t, int_t *, int_t *, Ucb_indptr_t **,
+                       int, int_t, int *bmod, int_t *, Ucb_indptr_t **,
                        int_t **, int_t *, gridinfo_t *, sLocalLU_t *,
 		       SuperLUStat_t **, int_t, int_t, int, int);
 
+extern void sComputeLevelsets(int , int_t , gridinfo_t *,
+		  Glu_persist_t *, sLocalLU_t *, int_t *);               
+			   
+#ifdef GPU_ACC               
+extern void slsum_fmod_inv_gpu_wrap(int_t, int_t, int_t, int_t, float *, float *, int, int, int_t , int *fmod, C_Tree  *, C_Tree  *, int_t *, int_t *, int64_t *, float *, int64_t *, float *, int64_t *, int_t *, int64_t *, int_t *, gridinfo_t *, float * , float * , int_t );
+extern void dlsum_bmod_inv_gpu_wrap(int_t, int_t, int_t, int_t, float *, float *,int,int, int_t , int *bmod, C_Tree  *, C_Tree  *, int_t *, int_t *,int_t *, int64_t *, float *, int64_t *, int_t  *, int64_t *, Ucb_indptr_t *, int64_t *, float *, int64_t *,int_t *,gridinfo_t *);
+#endif
+    
 extern void psgsrfs(int_t, SuperMatrix *, float, sLUstruct_t *,
 		    sScalePermstruct_t *, gridinfo_t *,
 		    float [], int_t, float [], int_t, int,
@@ -573,6 +650,13 @@ extern int   file_sPrint_CompRowLoc_Matrix_dist(FILE *fp, SuperMatrix *A);
 extern void  Printfloat5(char *, int_t, float *);
 extern int   file_Printfloat5(FILE *, char *, int_t, float *);
 
+extern void sGenCOOLblocks(int, int_t, gridinfo_t*,
+		  Glu_persist_t*, sLocalLU_t *, int_t** , int_t** , float ** , int_t* , int_t* );
+extern void sGenCSCLblocks(int, int_t, gridinfo_t*,
+		  Glu_persist_t*, sLocalLU_t *, float **, int_t **, int_t **, int_t*, int_t*);
+extern void sGenCSRLblocks(int, int_t, gridinfo_t*,
+		  Glu_persist_t*, sLocalLU_t *, float **, int_t **, int_t **, int_t*, int_t*);
+
 
 /* BLAS */
 
@@ -632,10 +716,9 @@ extern int superlu_sgemv(const char *trans, const int m,
 extern int superlu_strsv(char *uplo, char *trans, char *diag,
                   int n, float *a, int lda, float *x, int incx);
 
-
-// LAPACK routine
+#ifdef SLU_HAVE_LAPACK
 extern void strtri_(char*, char*, int*, float*, int*, int*);
-
+#endif
 
 /*==== For 3D code ====*/
 extern int screate_matrix3d(SuperMatrix *A, int nrhs, float **rhs,
@@ -887,19 +970,13 @@ extern int_t sIrecv_LPanel (int_t k, int_t k0,  int_t* Lsub_buf,
 			    MPI_Request *, sLocalLU_t *, int);
 extern int_t sIrecv_UPanel(int_t k, int_t k0, int_t* Usub_buf, float*,
 			   sLocalLU_t *, gridinfo_t*, MPI_Request *, int);
-extern int_t Wait_LSend(int_t k, gridinfo_t *grid, int **ToSendR,
-			MPI_Request *s, SCT_t*);
-extern int_t Wait_USend(MPI_Request *, gridinfo_t *, SCT_t *);
 extern int_t sWait_URecv(MPI_Request *, int* msgcnt, SCT_t *);
-extern int_t Check_LRecv(MPI_Request*, int* msgcnt);
 extern int_t sWait_LRecv(MPI_Request*, int* msgcnt, int* msgcntsU,
 			 gridinfo_t *, SCT_t*);
 extern int_t sISend_UDiagBlock(int_t k0, float *ublk_ptr, int_t size,
 			       MPI_Request *, gridinfo_t *, int);
 extern int_t sRecv_UDiagBlock(int_t k0, float *ublk_ptr, int_t size,
 			      int_t src, gridinfo_t *, SCT_t*, int);
-extern int_t Wait_UDiagBlockSend(MPI_Request *, gridinfo_t *, SCT_t *);
-extern int_t Wait_LDiagBlockSend(MPI_Request *, gridinfo_t *, SCT_t *);
 extern int_t sPackLBlock(int_t k, float* Dest, Glu_persist_t *,
 			 gridinfo_t *, sLocalLU_t *);
 extern int_t sISend_LDiagBlock(int_t k0, float *lblk_ptr, int_t size,
@@ -907,12 +984,8 @@ extern int_t sISend_LDiagBlock(int_t k0, float *lblk_ptr, int_t size,
 extern int_t sIRecv_UDiagBlock(int_t k0, float *ublk_ptr, int_t size,
 			       int_t src, MPI_Request *, gridinfo_t *,
 			       SCT_t*, int);
-extern int_t Wait_UDiagBlock_Recv(MPI_Request *, SCT_t *);
-extern int_t Test_UDiagBlock_Recv(MPI_Request *, SCT_t *);
 extern int_t sIRecv_LDiagBlock(int_t k0, float *L_blk_ptr, int_t size,
 			       int_t src, MPI_Request *, gridinfo_t*, SCT_t*, int);
-extern int_t Wait_LDiagBlock_Recv(MPI_Request *, SCT_t *);
-extern int_t Test_LDiagBlock_Recv(MPI_Request *, SCT_t *);
 
 extern int_t sUDiagBlockRecvWait( int_t k,  int_t* IrecvPlcd_D, int_t* factored_L,
 				  MPI_Request *, gridinfo_t *, sLUstruct_t *, SCT_t *);
@@ -935,8 +1008,6 @@ extern int_t sDiagFactIBCast(int_t k,  int_t k0,
 extern int_t sUPanelTrSolve( int_t k, float* BlockLFactor, float* bigV,
 			     int_t ldt, Ublock_info_t*, gridinfo_t *,
 			     sLUstruct_t *, SuperLUStat_t *, SCT_t *);
-extern int_t Wait_LUDiagSend(int_t k, MPI_Request *, MPI_Request *,
-			     gridinfo_t *, SCT_t *);
 extern int_t sLPanelUpdate(int_t k,  int_t* IrecvPlcd_D, int_t* factored_L,
 			   MPI_Request *, float* BlockUFactor, gridinfo_t *,
 			   sLUstruct_t *, SCT_t *);

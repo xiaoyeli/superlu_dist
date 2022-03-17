@@ -84,9 +84,7 @@ ZEXMG2	= pzdrive2_ABglobal.o
 ZEXMG3	= pzdrive3_ABglobal.o
 ZEXMG4	= pzdrive4_ABglobal.o
 
-
-all: psdrive pddrive #pddrive_rhs
-#all: single double complex16
+all: single double complex16
 
 single:   psdrive \
 	psdrive1 psdrive2 psdrive3 psdrive4 \

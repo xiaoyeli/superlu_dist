@@ -31,9 +31,11 @@ at the top-level directory.
 /* 
  * Function prototypes 
  */
+#ifndef USE_VENDOR_BLAS
 extern void susolve(int, int, float*, float*);
 extern void slsolve(int, int, float*, float*);
 extern void smatvec(int, int, int, float*, float*, float*);
+#endif
 
 /*! \brief Solves one of the systems of equations A*x = b, or A'*x = b
  * 

@@ -208,6 +208,42 @@ int main(int argc, char *argv[])
     }
     //printf("%s\n", postfix);
 	
+    /* Set the default input options:
+        options.Fact              = DOFACT;
+        options.Equil             = YES;
+        options.ParSymbFact       = NO;
+        options.ColPerm           = METIS_AT_PLUS_A;
+        options.RowPerm           = LargeDiag_MC64;
+        options.ReplaceTinyPivot  = NO;
+        options.IterRefine        = SLU_DOUBLE;
+        options.Trans             = NOTRANS;
+        options.SolveInitialized  = NO;
+        options.RefineInitialized = NO;
+        options.PrintStat         = YES;
+	options.DiagInv           = NO;
+     */
+    set_default_options_dist(&options);
+    options.IterRefine = SLU_SINGLE;
+#if 0
+    options.ReplaceTinyPivot  = YES;
+    options.RowPerm = NOROWPERM;
+    options.ColPerm = NATURAL;
+    options.ReplaceTinyPivot = YES;
+#endif
+
+    if (rowperm != -1) options.RowPerm = rowperm;
+    if (colperm != -1) options.ColPerm = colperm;
+    if (lookahead != -1) options.num_lookaheads = lookahead;
+    if (ir != -1) options.IterRefine = ir;
+    if (equil != -1) options.Equil = equil;
+    if (use_tensorcore != -1) options.Use_TensorCore = use_tensorcore;
+
+    if (!iam) {
+	print_sp_ienv_dist(&options);
+	print_options_dist(&options);
+	fflush(stdout);
+    }
+    
     /* ------------------------------------------------------------
        GET THE MATRIX FROM FILE AND SETUP THE RIGHT HAND SIDE
        ------------------------------------------------------------*/
@@ -228,8 +264,8 @@ int main(int argc, char *argv[])
     m = A.nrow;
     n = A.ncol;
 
-#if 1
     /* Compute the ground truth dXtrue in double precision */
+    if ( options.IterRefine >= SLU_DOUBLE ) 
     {
 	SuperMatrix dA;
 	dScalePermstruct_t dScalePermstruct;
@@ -319,8 +355,7 @@ int main(int argc, char *argv[])
 	}
 	SUPERLU_FREE(db);
 	SUPERLU_FREE(dberr);
-    }
-#endif
+    } /* end if IterRefine >= SLU_DOUBLE */
 
     /* ------------------------------------------------------------
        NOW WE SOLVE THE LINEAR SYSTEM in single precision
@@ -329,51 +364,6 @@ int main(int argc, char *argv[])
 	ABORT("Malloc fails for err_bounds[].");
     if ( !(berr = floatMalloc_dist(nrhs)) )
 	ABORT("Malloc fails for berr[].");
-
-    if ( iam==0 ) {
-      printf("\n Now single LU with double ItRef... N = %d\n", (int) A.nrow);
-      fflush(stdout);
-    }
-
-    /* Set the default input options:
-        options.Fact              = DOFACT;
-        options.Equil             = YES;
-        options.ParSymbFact       = NO;
-        options.ColPerm           = METIS_AT_PLUS_A;
-        options.RowPerm           = LargeDiag_MC64;
-        options.ReplaceTinyPivot  = NO;
-        options.IterRefine        = DOUBLE;
-        options.Trans             = NOTRANS;
-        options.SolveInitialized  = NO;
-        options.RefineInitialized = NO;
-        options.PrintStat         = YES;
-	options.DiagInv           = NO;
-     */
-    set_default_options_dist(&options);
-#if 0
-    options.IterRefine = SLU_SINGLE;
-    options.IterRefine = SLU_DOUBLE;
-    options.ReplaceTinyPivot  = YES;
-    options.RowPerm = NOROWPERM;
-    options.ColPerm = NATURAL;
-    options.ReplaceTinyPivot = YES;
-#endif
-
-    if (rowperm != -1) options.RowPerm = rowperm;
-    if (colperm != -1) options.ColPerm = colperm;
-    if (lookahead != -1) options.num_lookaheads = lookahead;
-    if (ir != -1) options.IterRefine = ir;
-    if (equil != -1) options.Equil = equil;
-    if (use_tensorcore != -1) options.Use_TensorCore = use_tensorcore;
-
-    if (!iam) {
-	print_sp_ienv_dist(&options);
-	print_options_dist(&options);
-	fflush(stdout);
-    }
-
-    m = A.nrow;
-    n = A.ncol;
 
     /* Initialize ScalePermstruct and LUstruct. */
     sScalePermstructInit(m, n, &ScalePermstruct);
