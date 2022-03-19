@@ -1172,7 +1172,7 @@ extern int_t get_num_gpu_streams ();
 extern int getnGPUStreams();
 extern int get_mpi_process_per_gpu ();
 /*to print out various statistics from GPU activities*/
-extern void printGPUStats(int nsupers, SuperLUStat_t *stat );
+extern void printGPUStats(int nsupers, SuperLUStat_t *stat, gridinfo3d_t*);
 #endif
 
 extern double estimate_cpu_time(int m, int n , int k);

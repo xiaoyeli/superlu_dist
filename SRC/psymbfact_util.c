@@ -156,9 +156,8 @@ int_t psymbfact_LUXpandMem
   new_mem = expand (prev_len, min_new_len, prev_mem,
 		    &new_len, len_tcopy_fbeg, len_tcopy_fend, PS);
   if ( !new_mem ) {
-    fprintf(stderr, "Pe[" IFMT "] Can't exp MemType " IFMT ": prv_len " IFMT
-	    " min_new " IFMT " new_l " IFMT "\n",
-	   iam, mem_type, prev_len, min_new_len, new_len);
+    fprintf(stderr, "Pe[%d] Can't exp MemType %d: prv_len %ld,  min_new %ld,  new_l %ld\n",
+	    iam, mem_type, (long) prev_len, (long) min_new_len, (long) new_len);
     return ERROR_RET;
   }
   

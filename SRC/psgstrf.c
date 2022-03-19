@@ -844,13 +844,11 @@ psgstrf(superlu_dist_options_t * options, int m, int n, float anorm,
         if ( checkGPU(gpuHostMalloc((void**)&bigV, bigv_size * sizeof(float), gpuHostMallocDefault)) )
             ABORT("Malloc fails for sgemm buffer V");
 
-#if ( PRNTlevel>=1 )
-    if ( iam==0 ) {
+    if ( iam==0 && options->PrintStat==YES ) {
         DisplayHeader();
 	printf(" Starting with %d GPU Streams \n", nstreams);
         fflush(stdout);
     }
-#endif
 
         handle = (gpublasHandle_t *) SUPERLU_MALLOC(sizeof(gpublasHandle_t)*nstreams);
         for(int i = 0; i < nstreams; i++) handle[i] = create_handle();

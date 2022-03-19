@@ -187,8 +187,6 @@ int main(int argc, char *argv[])
        ------------------------------------------------------------*/
     dcreate_matrix_postfix(&A, nrhs, &b, &ldb, &xtrue, &ldx, fp, postfix, &grid);
     
-    if (iam==0) printf("dimension N = %d\n", A.nrow);
-
 #if 0
     printf("after dcreate_matrix xtrue[2] %e, b[0] %e\n", xtrue[2], b[0]);
     for (int i = 0; i < A.ncol; ++i) printf("b[%d] %e\n", i, b[i]);
@@ -245,12 +243,6 @@ int main(int argc, char *argv[])
     /* Initialize the statistics variables. */
     PStatInit(&stat);
 
-    if (iam==0) {
-        Printdouble5("before pdgssvx xtrue[]", 5, xtrue);
-        Printdouble5("before pdgssvx b[]", 5, b);
-	fflush(stdout);
-    }
-
     /* Call the linear equation solver. */
     pdgssvx(&options, &A, &ScalePermstruct, b, ldb, nrhs, &grid,
 	    &LUstruct, &SOLVEstruct, berr, &stat, &info);
@@ -281,7 +273,7 @@ int main(int argc, char *argv[])
     SUPERLU_FREE(b);
     SUPERLU_FREE(xtrue);
     SUPERLU_FREE(berr);
-    // fclose(fp);
+    fclose(fp);
 
     /* ------------------------------------------------------------
        RELEASE THE SUPERLU PROCESS GRID.

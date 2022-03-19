@@ -364,7 +364,7 @@ int_t pzgstrf3d(superlu_dist_options_t *options, int m, int n, double anorm,
     /* This frees the GPU storage allocateed in initSluGPU3D_t() */
     if (superlu_acc_offload) {
         if ( options->PrintStat ) {
-	    printGPUStats(nsupers, stat);
+	    printGPUStats(nsupers, stat, grid3d);
 	}
         zfree_LUstruct_gpu (sluGPU, stat);
     }

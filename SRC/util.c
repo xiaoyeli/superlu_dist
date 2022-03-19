@@ -1513,8 +1513,8 @@ gemm_division_new (int * num_streams_used,   /*number of streams that will be us
 
 int getnGPUStreams()
 {
-    // Disabling multiple gpu streams 
-    #if 1
+    // Disabling multiple gpu streams -- bug with multiple streams in 3D code?
+    #if 0
 	return 1;
     #else 
 	char *ttemp;

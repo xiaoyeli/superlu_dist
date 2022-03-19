@@ -344,8 +344,8 @@ int dcreate_matrix_postfix(SuperMatrix *A, int nrhs, double **rhs,
 	xmax = SUPERLU_MAX(xmax, xtrue_global[i]);
 	xmin = SUPERLU_MIN(xmin, xtrue_global[i]);
       }
-      printf("Kappa(x): xmax %e / xmin %e = %e\n", xmax, xmin, xmax / xmin);
-      fflush(stdout);
+      //printf("Kappa(x): xmax %e / xmin %e = %e\n", xmax, xmin, xmax / xmin);
+      //fflush(stdout);
     }
 
     /*************************************************
