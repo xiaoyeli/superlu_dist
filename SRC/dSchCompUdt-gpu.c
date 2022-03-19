@@ -277,7 +277,7 @@ if ( msg0 && msg2 ) {  /* L(:,k) and U(k,:) are not empty. */
 		  &lusup[luptr+(knsupc-ldu)*nsupr], &nsupr,
 		  tempu+ldu*st_col, &ldu, &beta, tempv, &nbrow);
 #endif
-	    cpuGEMMTimer += SuperLU_timer_() -tstart;
+	    //cpuGEMMTimer += SuperLU_timer_() -tstart;
 	    stat->ops[FACT] += 2 * nbrow * ldu * full_u_cols[jjj-1];
 
             /* Now scattering blocks computed by CPU */

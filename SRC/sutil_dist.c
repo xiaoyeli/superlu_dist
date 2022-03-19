@@ -594,7 +594,7 @@ sGenXtrue_dist(int_t n, int_t nrhs, float *x, int_t ldx)
     
     exponent = (double)rand() / (double)((unsigned)RAND_MAX + 1); /* uniform in [0,1) */
 #if 1
-    tau = pow(2.0, 24.0 * exponent);  // 12.0
+    tau = pow(2.0, 12.0 * exponent);  // 24.0
 #else
     tau = 5.0;
 #endif

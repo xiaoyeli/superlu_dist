@@ -27,8 +27,6 @@ at the top-level directory.
 #include "superlu_sdefs.h"
 //#include "superlu_ddefs.h"
 
-#define PRNTlevel 1
-
 #define ITMAX 10
 #define RHO_THRESH 0.5
 #define DZ_THRESH  0.25
@@ -565,14 +563,11 @@ psgsrfs_d2(int n, SuperMatrix *A, float anorm, sLUstruct_t *LUstruct,
 
 	/* Compute forward error bounds */
 	float err_lowerbnd = SUPERLU_MAX(1.0, sqrt(nz)) * eps;  // 10.0 seems too loose
-	if (iam==0) {
-	  printf(".. nz %d, fudge err_lowerbnd %e\n", nz, err_lowerbnd);
-	  fflush(stdout);
-	}
 	
 #if ( PRNTlevel>=2 )
 	if (iam==0) {
 	  //printf("final x_state %d \tfinal z_state %d\n", x_state, z_state);
+	  printf(".. nz %d, fudge err_lowerbnd %e\n", nz, err_lowerbnd);
 	  printf("err_lowerbnd %e\trho_x_max %e\trho_zmax %e\n",
 		 err_lowerbnd, rho_x_max, rho_z_max);
 	  printf("final_dx_x/(1 - rho_x_max)  %e\n", final_dx_x/(1-rho_x_max));

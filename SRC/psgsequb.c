@@ -166,11 +166,13 @@ psgsequb(SuperMatrix *A, float *r, float *c, float *rowcnd,
 		1, MPI_FLOAT, MPI_MIN, grid->comm);
 
     *amax = rcmax;
+#if ( PRNTlevel>=1 )    
     if ( grid->iam == 0) {
       printf(".. psgsequb: rmax %.16f, rmin %.16f, amax %.16f\n", rcmax, rcmin, *amax);
       fflush(stdout);
     }
-
+#endif
+    
     if (rcmin == 0.) {
 	/* Find the first zero scale factor and return an error code. */
 	for (i = 0; i < A->nrow; ++i)
@@ -221,11 +223,13 @@ psgsequb(SuperMatrix *A, float *r, float *c, float *rowcnd,
 	rcmin = SUPERLU_MIN(rcmin, c[j]);
     }
 
+#if ( PRNTlevel>=1 )    
     if ( grid->iam == 0) {
       printf(".. psgsequb: cmax %f, cmin %f\n", rcmax, rcmin);
       fflush(stdout);
     }
-
+#endif
+    
     if (rcmin == 0.) {
 	/* Find the first zero scale factor and return an error code. */
 	for (j = 0; j < A->ncol; ++j)

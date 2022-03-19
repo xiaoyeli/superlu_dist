@@ -186,11 +186,13 @@ int screate_A_x_b(SuperMatrix *A, int nrhs, float **rhs,
     dFillRHS_dist(trans, nrhs, xtrue_global_dble, n, &GA, b_global_dble, m); // all in DOUBLE
     //sFillRHS_dist(trans, nrhs, xtrue_global, n, &GA, b_global, m);
 
+#if ( PRNTlevel>=1 )    
     if (iam==0) {
       Printdouble5("after dFillRHS: b_global_dble", 5, b_global_dble);
       fflush(stdout);
     }
-
+#endif
+    
     /***************************************************************
      * Change global A to a local A with NR_loc format (SINGLE)    *
      ***************************************************************/

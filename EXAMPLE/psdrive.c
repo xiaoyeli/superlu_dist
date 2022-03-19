@@ -250,23 +250,26 @@ int main(int argc, char *argv[])
     //screate_matrix_postfix(&A, nrhs, &b, &ldb, &xtrue, &ldx, fp, postfix, &grid);
     
     /* Generate a good RHS in double precision, then rounded to single.
-       See bullet 7, page 20, LAWN 165. */
+       See LAWN 165: bullet 7, page 20. */
     /* The returned A, b and xtrue are in single precision
        b <- A * xtrue in double internally, then rounded to single */
     screate_A_x_b(&A, nrhs, &b, &ldb, &xtrue, &ldx, fp, postfix, &grid);
     fclose(fp);
 
+#if ( PRNTlevel>=1 )    
     if (iam==0) {
 	  printf("\n(%d) generated single xtrue:\n", iam);
 	  for (i = 0; i < 5; ++i) printf("%.16e\t", xtrue[i]);
 	  printf("\n"); fflush(stdout);
     }
+#endif    
     m = A.nrow;
     n = A.ncol;
 
     /* Compute the ground truth dXtrue in double precision */
     if ( options.IterRefine >= SLU_DOUBLE ) 
     {
+        superlu_dist_options_t options_d;
 	SuperMatrix dA;
 	dScalePermstruct_t dScalePermstruct;
 	dLUstruct_t dLUstruct;
@@ -313,7 +316,7 @@ int main(int argc, char *argv[])
 	if ( !(dxtrue = doubleMalloc_dist(m * nrhs)) )
 	  ABORT("Malloc fails for dberr[].");
 
-	set_default_options_dist(&options);
+	set_default_options_dist(&options_d);
 	dScalePermstructInit(m, n, &dScalePermstruct);
 	dLUstructInit(n, &dLUstruct);
 	PStatInit(&stat);
@@ -325,7 +328,7 @@ int main(int argc, char *argv[])
 	  dxtrue[i] = (double) xtrue[i]; // generated truth in single
 	}
 
-	pdgssvx(&options, &dA, &dScalePermstruct, db, ldb, nrhs, &grid,
+	pdgssvx(&options_d, &dA, &dScalePermstruct, db, ldb, nrhs, &grid,
 		&dLUstruct, &dSOLVEstruct, dberr, &stat, &info);
 
 	pdinf_norm_error(iam, m_loc, nrhs, db, ldb, dxtrue, ldx, grid.comm);
@@ -337,20 +340,22 @@ int main(int argc, char *argv[])
 	  xtrue[i] = (float) db[i];
 	}
 
+#if ( PRNTlevel>=1 )	
 	if ( iam==0 ) { //(nprow*npcol-1) ) {
 	  printf("\ndouble computed xtrue (stored in db):\n");
 	  for (i = 0; i < 5; ++i) printf("%.16e\t", db[i]);
 	  printf("\n"); fflush(stdout);
 	}
-
-	PStatPrint(&options, &stat, &grid); /* Print the statistics. */
+#endif
+	
+	PStatPrint(&options_d, &stat, &grid); /* Print the statistics. */
 
 	PStatFree(&stat);
 	Destroy_CompRowLoc_Matrix_dist(&dA);
 	dScalePermstructFree(&dScalePermstruct);
 	dDestroy_LU(n, &grid, &dLUstruct);
 	dLUstructFree(&dLUstruct);
-	if ( options.SolveInitialized ) {
+	if ( options_d.SolveInitialized ) {
 	  dSolveFinalize(&options, &dSOLVEstruct);
 	}
 	SUPERLU_FREE(db);
@@ -397,10 +402,10 @@ int main(int argc, char *argv[])
         psinf_norm_error(iam, ((NRformat_loc *)A.Store)->m_loc,
 		         nrhs, b, ldb, xtrue, ldx, grid.comm);
 	if ( iam==0 && (options.IterRefine == SLU_DOUBLE || options.IterRefine == SLU_EXTRA) ) {
-	  printf("Forward error bounds:\n");
+	  printf("** Forward error bounds:\n");
 	  printf("\tNormwise:       %e\n", err_bounds[0]);
 	  printf("\tComponentwise:  %e\n", err_bounds[1*nrhs]);
-	  printf("Componentwise backword error: %e\n", err_bounds[2*nrhs]);
+	  printf("** Componentwise backword error: %e\n", err_bounds[2*nrhs]);
 	  fflush(stdout);
 	}
     }

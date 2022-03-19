@@ -36,7 +36,7 @@ at the top-level directory.
  * Purpose
  * =======
  *
- * PSGSSVX_D2 solves a system of linear equations A*X=B,
+ * PSGSSVX solves a system of linear equations A*X=B,
  * by using Gaussian elimination with "static pivoting" to
  * compute the LU factorization of A.
  *
@@ -484,12 +484,6 @@ at the top-level directory.
  *         vector X(j) (i.e., the smallest relative change in
  *         any element of A or B that makes X(j) an exact solution).
  *
- * err_bounds (output) float*, dimension (nrhs * 3) (global)
- *         For each right-hand side j, contains the following error bounds:
- *         err_bounds[j + 0*nrhs] : normwise forward error bound
- *         err_bounds[j + 1*nrhs] : componentwise forward error bound
- *         err_bounds[j + 2*nrhs] : componentwise backward error
- *
  * stat   (output) SuperLUStat_t*
  *        Record the statistics on runtime and floating-point operation count.
  *        See util.h for the definition of 'SuperLUStat_t'.
@@ -508,17 +502,12 @@ at the top-level directory.
  * </pre>
  */
 
-/* 
- * NOTE: Both residual and solution y-vector are computed in double
- * internally.
- */
 void
-psgssvx_d2(superlu_dist_options_t *options, SuperMatrix *A,
-	     sScalePermstruct_t *ScalePermstruct,
-	     float B[], int ldb, int nrhs, gridinfo_t *grid,
-	     sLUstruct_t *LUstruct, sSOLVEstruct_t *SOLVEstruct,
-	     float *err_bounds, SuperLUStat_t *stat, int *info,
-	     double *xtrue)
+psgssvx_tracking(superlu_dist_options_t *options, SuperMatrix *A,
+	sScalePermstruct_t *ScalePermstruct,
+	float B[], int ldb, int nrhs, gridinfo_t *grid,
+	sLUstruct_t *LUstruct, sSOLVEstruct_t *SOLVEstruct, float *berr,
+	SuperLUStat_t *stat, int *info, double *xtrue)
 {
     NRformat_loc *Astore;
     SuperMatrix GA;      /* Global A in NC format */
@@ -546,14 +535,13 @@ psgssvx_d2(superlu_dist_options_t *options, SuperMatrix *A,
     int_t    *perm_c; /* column permutation vector */
     int_t    *etree;  /* elimination tree */
     int_t    *rowptr, *colind;  /* Local A in NR*/
-    int    colequ, rowequ, Equil, mc64_equil, factored, job, notran, need_value;
+    int_t    colequ, Equil, factored, job, notran, rowequ, need_value;
     int_t    i, iinfo, j, irow, m, n, nnz, permc_spec;
     int_t    nnz_loc, m_loc, fst_row, icol;
     int      iam,iam_g;
     int      ldx;  /* LDA for matrix X (local). */
     char     equed[1], norm[1];
     float   *C, *R, *C1, *R1, amax, anorm, colcnd, rowcnd;
-    float   anorm_m, lnorm_m, unorm_m;
     float   *X, *b_col, *b_work, *x_col;
     double   t;
     float    GA_mem_use = 0.0;    /* memory usage by global A */
@@ -563,32 +551,21 @@ psgssvx_d2(superlu_dist_options_t *options, SuperMatrix *A,
     int_t    nnz_tot;
     float *nzval_a;
     float asum,asum_tot,lsum,lsum_tot;
-    int_t nsupers, nsupers_j;
+    int_t nsupers,nsupers_j;
     int_t lk,k,knsupc,nsupr;
     int_t  *lsub,*xsup;
     float *lusup;
-    float radix;
 #if ( PRNTlevel>= 2 )
     double   dmin, dsum, dprod;
 #endif
 
-    // power-of-radix
-    extern void psgsequb(SuperMatrix *A, float *r, float *c, float *rowcnd,
-			 float *colcnd, float *amax, int_t *info, gridinfo_t *);
-    extern void
-      psgsrfs_d2(int n, SuperMatrix *A, float anorm, sLUstruct_t *LUstruct,
-		 sScalePermstruct_t *ScalePermstruct, gridinfo_t *grid,
-		 float *B, int_t ldb, float *X, int_t ldx, int nrhs,
-		 sSOLVEstruct_t *SOLVEstruct, float *err_bounds,
-		 SuperLUStat_t *stat, int *info, double *xtrue);
-    extern void psgsmv_init_fp64(SuperMatrix *A, int_t *row_to_proc,
-				 gridinfo_t *grid, psgsmv_comm_t *);
-    extern float sMaxAbsLij(int iam, int n, Glu_persist_t *Glu_persist,
-			    sLUstruct_t *LUstruct, gridinfo_t *grid);
-    extern float sMaxAbsUij(int iam, int n, Glu_persist_t *Glu_persist,
-			    sLUstruct_t *LUstruct, gridinfo_t *grid);
-
-    LUstruct->dt = 's';
+    extern void psgsrfs_tracking(int_t n, SuperMatrix *A, float anorm, sLUstruct_t *LUstruct,
+				 sScalePermstruct_t *ScalePermstruct, gridinfo_t *grid,
+				 float *B, int_t ldb, float *X, int_t ldx, int nrhs,
+				 sSOLVEstruct_t *SOLVEstruct,
+				 float *berr, SuperLUStat_t *stat, int *info, double *xtrue);
+    
+	LUstruct->dt = 's';
 
     /* Structures needed for parallel symbolic factorization */
     int_t *sizes, *fstVtxSep, parSymbFact;
@@ -648,12 +625,8 @@ psgssvx_d2(superlu_dist_options_t *options, SuperMatrix *A,
 
     factored = (Fact == FACTORED);
     Equil = (!factored && options->Equil == YES);
-    
     notran = (options->Trans == NOTRANS);
     parSymbFact = options->ParSymbFact;
-    if ( options->IterRefine > SLU_SINGLE )
-        mc64_equil = NO; // want scaling factors to be power-of-radix
-    else mc64_equil = Equil;
 
     iam = grid->iam;
     job = 5;
@@ -673,7 +646,7 @@ psgssvx_d2(superlu_dist_options_t *options, SuperMatrix *A,
     /********/
 
 #if ( DEBUGlevel>=1 )
-    CHECK_MALLOC(iam, "Enter psgssvx()");
+    CHECK_MALLOC(iam, "Enter psgssvx_tracking()");
 #endif
 
     /* Not factored & ask for equilibration */
@@ -747,9 +720,8 @@ psgssvx_d2(superlu_dist_options_t *options, SuperMatrix *A,
 	    }
 	} else { /* Compute R & C from scratch */
             /* Compute the row and column scalings. */
-	    // each scale factor is power-of-radix
-	    psgsequb(A, R, C, &rowcnd, &colcnd, &amax, &iinfo, grid);
-	    
+	    psgsequ(A, R, C, &rowcnd, &colcnd, &amax, &iinfo, grid);
+
 	    if ( iinfo > 0 ) {
 		if ( iinfo <= m ) {
 #if ( PRNTlevel>=1 )
@@ -789,7 +761,6 @@ psgssvx_d2(superlu_dist_options_t *options, SuperMatrix *A,
 	} /* end if Fact ... */
 
 	stat->utime[EQUIL] = SuperLU_timer_() - t;
-
 #if ( DEBUGlevel>=1 )
 	CHECK_MALLOC(iam, "Exit equil");
 #endif
@@ -879,7 +850,7 @@ psgssvx_d2(superlu_dist_options_t *options, SuperMatrix *A,
 #endif
 	            if ( iinfo == 0 ) {
 	              if ( job == 5 ) {
-		        if ( mc64_equil ) { /* !!Sherry!! */
+		        if ( Equil ) {
 		            for (i = 0; i < n; ++i) {
 			        R1[i] = exp(R1[i]);
 			        C1[i] = exp(C1[i]);
@@ -916,15 +887,7 @@ psgssvx_d2(superlu_dist_options_t *options, SuperMatrix *A,
 		            ScalePermstruct->DiagScale = BOTH;
 		            rowequ = colequ = 1;
 
-		        } /* end mc64_equil */
-			else {
-#if ( PRNTlevel>=1 )			  
-			  if (iam==0) {
-			    printf(".. WARNING : MC64 scaling is turned off\n");
-			    fflush(stdout);
-			  }
-#endif			  
-			}
+		        } /* end Equil */
 
                         /* Now permute global GA to prepare for symbfact() */
                         for (j = 0; j < n; ++j) {
@@ -980,7 +943,7 @@ psgssvx_d2(superlu_dist_options_t *options, SuperMatrix *A,
             for (i = 0; i < m; ++i) perm_r[i] = i;
         }
 
-#if ( DEBUGlevel>=1 )
+#if ( DEBUGlevel>=2 )
         if ( !iam ) PrintInt10("perm_r",  m, perm_r);
 #endif
     } /* end if (!factored) */
@@ -990,14 +953,8 @@ psgssvx_d2(superlu_dist_options_t *options, SuperMatrix *A,
 	if ( notran ) *(unsigned char *)norm = '1';
 	else *(unsigned char *)norm = 'I';
 	anorm = pslangs(norm, A, grid);
-	*(unsigned char *)norm = 'M';	
-	anorm_m = pslangs(norm, A, grid); /* max(abs(Aij)) */
-
 #if ( PRNTlevel>=1 )
-	if ( !iam ) { 
-	  printf(".. anorm %e, anorm_m %e\n", anorm, anorm_m);
-	  fflush(stdout); 
-	}
+	if ( !iam ) { printf(".. anorm %e\n", anorm); 	fflush(stdout); }
 #endif
     }
 
@@ -1228,21 +1185,6 @@ psgssvx_d2(superlu_dist_options_t *options, SuperMatrix *A,
 	// }
 	// }
 
-	if ( iam==0 && (*info != 0) ) {
-	    printf("after psgstrf info %d\n\n", *info); fflush(stdout);
-	}
-
-#if ( PRNTlevel>=1 ) 
-	/* Compute reciprocal pivot growth; max(abs(Uij)) norm is used */
-	lnorm_m = sMaxAbsLij(iam, n, Glu_persist, LUstruct, grid);
-	unorm_m = sMaxAbsUij(iam, n, Glu_persist, LUstruct, grid);
-	if (iam==0) {
-	  printf("\t* pivot growth in L: %.2f\n", lnorm_m / anorm_m);
-	  printf("\t* pivot growth in U: %.2f\n", unorm_m / anorm_m);
-	  fflush(stdout);
-        }
-#endif	
-
 #if ( PRNTlevel>=2 )
     /* ------------------------------------------------------------
        SUM OVER ALL ENTRIES OF A AND PRINT NNZ AND SIZE OF A.
@@ -1250,6 +1192,7 @@ psgssvx_d2(superlu_dist_options_t *options, SuperMatrix *A,
     Astore = (NRformat_loc *) A->Store;
 	xsup = Glu_persist->xsup;
 	nzval_a = Astore->nzval;
+
 
 	asum=0;
     for (i = 0; i < Astore->m_loc; ++i) {
@@ -1260,6 +1203,8 @@ psgssvx_d2(superlu_dist_options_t *options, SuperMatrix *A,
 
 	nsupers = Glu_persist->supno[n-1] + 1;
 	nsupers_j = CEILING( nsupers, grid->npcol ); /* Number of local block columns */
+
+
 
 	lsum=0.0;
 	for (lk=0;lk<nsupers_j;++lk){
@@ -1284,11 +1229,6 @@ psgssvx_d2(superlu_dist_options_t *options, SuperMatrix *A,
 	// MPI_Bcast( &nnzLU, 1, mpi_int_t, 0, grid->comm );
 
 	MPI_Comm_rank( MPI_COMM_WORLD, &iam_g );
-
-    if (!iam_g) {
-	print_options_dist(options);
-	fflush(stdout);
-    }
 
     printf(".. Ainfo mygid %5d   mysid %5d   nnz_loc " IFMT "  sum_loc  %e lsum_loc   %e nnz " IFMT " nnzLU %ld sum %e  lsum %e  N " IFMT "\n", iam_g,iam,Astore->rowptr[Astore->m_loc],asum, lsum, nnz_tot,nnzLU,asum_tot,lsum_tot,A->ncol);
 	fflush(stdout);
@@ -1335,7 +1275,7 @@ psgssvx_d2(superlu_dist_options_t *options, SuperMatrix *A,
 
 	if ( options->PrintStat ) {
 	    int_t TinyPivots;
-	    float for_lu, total, avg, peak_max, peak_min, temp;
+	    float for_lu, total, max, avg, temp;
 
 	    sQuerySpace_dist(n, LUstruct, grid, stat, &num_mem_usage);
 
@@ -1357,10 +1297,8 @@ psgssvx_d2(superlu_dist_options_t *options, SuperMatrix *A,
 
 	    temp = SUPERLU_MAX(temp, num_mem_usage.total);
 
-	    MPI_Reduce( &temp, &peak_max,
-			1, MPI_FLOAT, MPI_MAX, 0, grid->comm );
-	    MPI_Reduce( &temp, &peak_min,
-			1, MPI_FLOAT, MPI_MIN, 0, grid->comm );
+	    MPI_Reduce( &temp, &max,
+		       1, MPI_FLOAT, MPI_MAX, 0, grid->comm );
 	    MPI_Reduce( &temp, &avg,
 		       1, MPI_FLOAT, MPI_SUM, 0, grid->comm );
 	    MPI_Allreduce( &stat->TinyPivots, &TinyPivots, 1, mpi_int_t,
@@ -1378,10 +1316,10 @@ psgssvx_d2(superlu_dist_options_t *options, SuperMatrix *A,
 		       "    L\\U :        %8.2f |  Total : %8.2f\n",
 		       for_lu * 1e-6, total * 1e-6);
                 printf("** Total highmark (MB):\n"
-		       "  Sum-of-all : %8.2f | Avg : %8.2f  | Max : %8.2f  | Min: %8.2f\n",
+		       "    Sum-of-all : %8.2f | Avg : %8.2f  | Max : %8.2f\n",
 		       avg * 1e-6,
 		       avg / grid->nprow / grid->npcol * 1e-6,
-		       peak_max * 1e-6, peak_min * 1e-6);
+		       max * 1e-6);
 		printf("**************************************************\n\n");
 		printf("** number of Tiny Pivots: %8d\n\n", stat->TinyPivots);
 		fflush(stdout);
@@ -1500,8 +1438,8 @@ psgssvx_d2(superlu_dist_options_t *options, SuperMatrix *A,
 	        /* All these cases need to re-initialize gsmv structure */
 	        if ( options->RefineInitialized )
 		    psgsmv_finalize(SOLVEstruct->gsmv_comm);
-	        psgsmv_init_fp64(A, SOLVEstruct->row_to_proc, grid,
-				 SOLVEstruct->gsmv_comm);
+	        psgsmv_init(A, SOLVEstruct->row_to_proc, grid,
+			    SOLVEstruct->gsmv_comm);
 
                 /* Save a copy of the transformed local col indices
 		   in colind_gsmv[]. */
@@ -1516,7 +1454,7 @@ psgssvx_d2(superlu_dist_options_t *options, SuperMatrix *A,
 	        float atemp;
 	        int_t k, jcol, p;
 	        /* Swap to beginning the part of A corresponding to the
-		   local part of X, as was done in psgsmv_init_fp64() */
+		   local part of X, as was done in psgsmv_init() */
 	        for (i = 0; i < m_loc; ++i) { /* Loop through each row */
 		    k = rowptr[i];
 		    for (j = rowptr[i]; j < rowptr[i+1]; ++j) {
@@ -1530,7 +1468,7 @@ psgssvx_d2(superlu_dist_options_t *options, SuperMatrix *A,
 	        }
 
 	        /* Re-use the local col indices of A obtained from the
-		   previous call to psgsmv_init_fp64() */
+		   previous call to psgsmv_init() */
 	        for (i = 0; i < nnz_loc; ++i) colind[i] = colind_gsmv[i];
 	    }
 
@@ -1561,18 +1499,8 @@ psgssvx_d2(superlu_dist_options_t *options, SuperMatrix *A,
 			     Glu_persist, SOLVEstruct1);
 	    }
 
-	    if ( options->IterRefine <= SLU_SINGLE ) {
-	        psgsrfs(n, A, anorm, LUstruct, ScalePermstruct, grid,
-			B, ldb, X, ldx, nrhs, SOLVEstruct1,
-			&err_bounds[2*nrhs], stat, info);
-	    } else if ( options->IterRefine >= SLU_DOUBLE ) {
-	      //if (iam==0) {
-	      //  printf("before psgsrfs_fp64x2()\n");fflush(stdout);
-	      //}
-	        psgsrfs_d2(n, A, anorm, LUstruct, ScalePermstruct,
-			   grid, B, ldb, X, ldx, nrhs, SOLVEstruct1,
-			   err_bounds, stat, info, xtrue);
-	    }
+	    psgsrfs_tracking(n, A, anorm, LUstruct, ScalePermstruct, grid,
+			     B, ldb, X, ldx, nrhs, SOLVEstruct1, berr, stat, info, xtrue);
 
             /* Deallocate the storage associated with SOLVEstruct1 */
 	    if ( nrhs > 1 ) {

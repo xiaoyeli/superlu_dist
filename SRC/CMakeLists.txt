@@ -174,7 +174,6 @@ if(enable_single)
     psgsrfs.c
     psgsrfs_d2.c
     psgsmv.c
-    psgsmv_d2.c
     psgsrfs_ABXglobal.c
     psgsmv_AXglobal.c
     psGetDiagU.c

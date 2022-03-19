@@ -852,8 +852,8 @@ void psinf_norm_error(int iam, int_t n, int_t nrhs, float x[], int_t ldx,
 
       err = err / xnorm;
       if ( !iam ) {
-	printf("..Sol %2d: ||X - Xtrue|| / ||X|| = %e\t max_i |x - xtrue|_i / |x|_i = %e\n", j, err, errcomp);
-	printf("\t ||x||_inf = %e\n", xnorm);
+	printf(".. Sol %2d: ||X - Xtrue|| / ||X|| = %e\t max_i |x - xtrue|_i / |x|_i = %e\n", j, err, errcomp);
+	//printf("\t ||x||_inf = %e\n", xnorm);
 	fflush(stdout);
       }
     }
