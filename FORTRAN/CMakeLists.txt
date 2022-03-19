@@ -2,10 +2,10 @@
 include_directories(${SuperLU_DIST_SOURCE_DIR}/SRC)
 include_directories(${SuperLU_DIST_BINARY_DIR}/FORTRAN)
 
+set(mod_sources superlu_mod.f90 superlupara.f90)
+
 set(sources
     superlu_c2f_wrap.c  # initialize precision-independent file
-    superlupara.f90
-    superlu_mod.f90
     )
 
 if(enable_double)
@@ -15,8 +15,10 @@ if(enable_complex16)
   list(APPEND sources c2f_zcreate_matrix_x_b.c superlu_c2f_zwrap.c)
 endif()  
 
-add_library(superlu_dist_fortran ${sources})
-add_library(superlu_dist_fortran-static STATIC ${sources})
+# see https://gitlab.kitware.com/cmake/cmake/-/issues/17525, why we need to separate MOD files from other source files
+add_library(superlu_dist_fortran_mod OBJECT ${mod_sources})
+add_library(superlu_dist_fortran $<TARGET_OBJECTS:superlu_dist_fortran_mod> ${sources})
+add_library(superlu_dist_fortran-static STATIC $<TARGET_OBJECTS:superlu_dist_fortran_mod> ${sources})
 # set(targets superlu_dist_fortran)
 get_target_property(superlu_dist_version superlu_dist VERSION)
 get_target_property(superlu_dist_soversion superlu_dist SOVERSION)
