@@ -256,16 +256,16 @@ int main(int argc, char *argv[])
     screate_A_x_b(&A, nrhs, &b, &ldb, &xtrue, &ldx, fp, postfix, &grid);
     fclose(fp);
 
+    m = A.nrow;
+    n = A.ncol;
+
 #if ( PRNTlevel>=1 )    
     if (iam==0) {
 	  printf("\n(%d) generated single xtrue:\n", iam);
 	  for (i = 0; i < 5; ++i) printf("%.16e\t", xtrue[i]);
 	  printf("\n"); fflush(stdout);
     }
-#endif    
-    m = A.nrow;
-    n = A.ncol;
-
+    
     /* Compute the ground truth dXtrue in double precision */
     if ( options.IterRefine >= SLU_DOUBLE ) 
     {
@@ -356,11 +356,12 @@ int main(int argc, char *argv[])
 	dDestroy_LU(n, &grid, &dLUstruct);
 	dLUstructFree(&dLUstruct);
 	if ( options_d.SolveInitialized ) {
-	  dSolveFinalize(&options, &dSOLVEstruct);
+	  dSolveFinalize(&options_d, &dSOLVEstruct);
 	}
 	SUPERLU_FREE(db);
 	SUPERLU_FREE(dberr);
     } /* end if IterRefine >= SLU_DOUBLE */
+#endif
 
     /* ------------------------------------------------------------
        NOW WE SOLVE THE LINEAR SYSTEM in single precision
