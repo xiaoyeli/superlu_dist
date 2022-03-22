@@ -93,9 +93,6 @@
         } // for (iProc)
 	}
 	
-
-
-
 	void C_RdTree_Create(C_Tree* tree, MPI_Comm comm, int* ranks, int rank_cnt, int msgSize, char precision){
 		assert(msgSize>0);
 
@@ -114,6 +111,9 @@
       tree->empty_= NO;  // non-empty if rank_cnt>1
 	  if(precision=='d'){
 		  tree->type_=MPI_DOUBLE;
+	  }
+	  if(precision=='s'){
+      MPI_Type_contiguous( sizeof(float), MPI_BYTE, &tree->type_ );
 	  }
 	  if(precision=='z'){
 		  tree->type_=MPI_DOUBLE_COMPLEX;

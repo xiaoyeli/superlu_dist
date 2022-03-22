@@ -738,6 +738,7 @@ typedef struct {
     yes_no_t      lookahead_etree; /* use etree computed from the
 				      serial symbolic factorization */
     yes_no_t      SymPattern;      /* symmetric factorization          */
+    yes_no_t      Use_TensorCore;  /* Use Tensor Core or not  */
     yes_no_t      Algo3d;          /* use 3D factorization/solve algorithms */
 } superlu_dist_options_t;
 
@@ -791,6 +792,65 @@ struct superlu_pair
 /**--------**/
 
 /*==== For 3D code ====*/
+
+typedef struct
+{
+  int_t nub;
+  int_t klst;
+  int_t ldu;
+  int_t* usub;
+  //double *uval;
+} uPanelInfo_t;
+
+typedef struct
+{
+  int_t *lsub;
+  //double *lusup;
+  void *lusup;
+  int_t luptr0;
+  int_t nlb;  //number of l blocks                                                      
+  int_t nsupr;
+} lPanelInfo_t;
+
+typedef struct
+{
+    Ublock_info_t* Ublock_info;
+    Remain_info_t*  Remain_info;
+    uPanelInfo_t* uPanelInfo;
+    lPanelInfo_t* lPanelInfo;
+} packLUInfo_t;
+
+
+/* HyP_t is the data structure to assist HALO offload of Schur-complement. */
+typedef struct
+{
+  Remain_info_t *lookAhead_info, *Remain_info;
+  Ublock_info_t *Ublock_info, *Ublock_info_Phi;
+
+  int_t first_l_block_acc , first_u_block_acc;
+  int_t last_offload ;
+  int_t *Lblock_dirty_bit, * Ublock_dirty_bit;
+  void *lookAhead_L_buff, *Remain_L_buff;
+  int_t lookAheadBlk;  /* number of blocks in look-ahead window */
+  int_t RemainBlk ;    /* number of blocks outside look-ahead window */
+  int_t  num_look_aheads, nsupers;
+  int_t ldu, ldu_Phi;
+  int_t num_u_blks, num_u_blks_Phi;
+
+  int_t jj_cpu;
+  void *bigU_Phi;
+  void *bigU_host;
+  int_t Lnbrow;
+  int_t Rnbrow;
+
+  int_t buffer_size;
+  int_t bigu_size;
+  int offloadCondition;
+  int superlu_acc_offload;
+  int nGPUStreams;
+} HyP_t;
+
+
 
 /* return the mpi_tag assuming 5 pairs of communications and MPI_TAG_UB >= 5 *
  * for each supernodal column, the five communications are:                  *
@@ -940,7 +1000,6 @@ typedef struct
     int_t *perm_u;
     int *indirect;
     int *indirect2;
-    
 } factNodelists_t;
 
 typedef struct
@@ -1113,7 +1172,7 @@ extern int_t get_num_gpu_streams ();
 extern int getnGPUStreams();
 extern int get_mpi_process_per_gpu ();
 /*to print out various statistics from GPU activities*/
-extern void printGPUStats(int nsupers, SuperLUStat_t *stat );
+extern void printGPUStats(int nsupers, SuperLUStat_t *stat, gridinfo3d_t*);
 #endif
 
 extern double estimate_cpu_time(int m, int n , int k);
@@ -1175,7 +1234,7 @@ extern void C_BcTree_forwardMessageSimple(C_Tree* tree, void* localBuffer, int m
 extern void C_BcTree_waitSendRequest(C_Tree* tree);
 
 /*==== For 3D code ====*/
-    
+
 extern void DistPrint(char* function_name,  double value, char* Units, gridinfo_t* grid);
 extern void DistPrint3D(char* function_name,  double value, char* Units, gridinfo3d_t* grid3d);
 extern void treeImbalance3D(gridinfo3d_t *grid3d, SCT_t* SCT);

@@ -543,7 +543,7 @@ double* dgetBigU(int_t nsupers, gridinfo_t *grid, dLUstruct_t *LUstruct)
 } /* dgetBigU */
 
 
-trf3Dpartition_t* dinitTrf3Dpartition(int_t nsupers,
+dtrf3Dpartition_t* dinitTrf3Dpartition(int_t nsupers,
 				      superlu_dist_options_t *options,
 				      dLUstruct_t *LUstruct, gridinfo3d_t * grid3d
 				      )
@@ -609,7 +609,7 @@ trf3Dpartition_t* dinitTrf3Dpartition(int_t nsupers,
         }
     }
 
-    trf3Dpartition_t*  trf3Dpartition = SUPERLU_MALLOC(sizeof(trf3Dpartition_t));
+    dtrf3Dpartition_t*  trf3Dpartition = SUPERLU_MALLOC(sizeof(dtrf3Dpartition_t));
 
     trf3Dpartition->gEtreeInfo = gEtreeInfo;
     trf3Dpartition->iperm_c_supno = iperm_c_supno;
@@ -635,7 +635,7 @@ trf3Dpartition_t* dinitTrf3Dpartition(int_t nsupers,
 } /* dinitTrf3Dpartition */
 
 /* Free memory allocated for trf3Dpartition structure. Sherry added this routine */
-void dDestroy_trf3Dpartition(trf3Dpartition_t *trf3Dpartition, gridinfo3d_t *grid3d)
+void dDestroy_trf3Dpartition(dtrf3Dpartition_t *trf3Dpartition, gridinfo3d_t *grid3d)
 {
     int i;
 #if ( DEBUGlevel>=1 )

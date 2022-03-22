@@ -119,7 +119,7 @@ at the top-level directory.
  * </pre>
  */
 int_t psgstrf3d(superlu_dist_options_t *options, int m, int n, float anorm,
-		trf3Dpartition_t*  trf3Dpartition, SCT_t *SCT,
+		strf3Dpartition_t*  trf3Dpartition, SCT_t *SCT,
 		sLUstruct_t *LUstruct, gridinfo3d_t * grid3d,
 		SuperLUStat_t *stat, int *info)
 {
@@ -187,7 +187,7 @@ int_t psgstrf3d(superlu_dist_options_t *options, int m, int n, float anorm,
     }
 #endif
 
-    // trf3Dpartition_t*  trf3Dpartition = initTrf3Dpartition(nsupers, options, LUstruct, grid3d);
+    // strf3Dpartition_t*  trf3Dpartition = initTrf3Dpartition(nsupers, options, LUstruct, grid3d);
     gEtreeInfo_t gEtreeInfo = trf3Dpartition->gEtreeInfo;
     int_t* iperm_c_supno = trf3Dpartition->iperm_c_supno;
     int_t* myNodeCount = trf3Dpartition->myNodeCount;
@@ -237,6 +237,7 @@ int_t psgstrf3d(superlu_dist_options_t *options, int m, int n, float anorm,
 #ifdef GPU_ACC
 
     /*Now initialize the GPU data structure*/
+    
     sLUstruct_gpu_t *A_gpu, *dA_gpu;
 
     d2Hreduce_t d2HredObj;
@@ -365,7 +366,7 @@ int_t psgstrf3d(superlu_dist_options_t *options, int m, int n, float anorm,
     /* This frees the GPU storage allocateed in initSluGPU3D_t() */
     if (superlu_acc_offload) {
         if ( options->PrintStat ) {
-	    printGPUStats(nsupers, stat);
+	    printGPUStats(nsupers, stat, grid3d);
 	}
         sfree_LUstruct_gpu (sluGPU, stat);
     }

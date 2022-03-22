@@ -59,7 +59,7 @@ int main(int argc, char *argv[])
     double   *berr;
     double   *b, *xtrue;
     int    m, n;
-    int      nprow, npcol;
+    int      nprow, npcol, lookahead, colperm, rowperm, ir;
     int      iam, info, ldb, ldx, nrhs;
     char     **cpp, c, *postfix;;
     FILE *fp, *fopen();
@@ -69,6 +69,10 @@ int main(int argc, char *argv[])
     nprow = 1;  /* Default process rows.      */
     npcol = 1;  /* Default process columns.   */
     nrhs = 1;   /* Number of right-hand side. */
+    lookahead = -1;
+    colperm = -1;
+    rowperm = -1;
+    ir = -1;
 
     /* ------------------------------------------------------------
        INITIALIZE MPI ENVIRONMENT. 
@@ -100,6 +104,14 @@ int main(int argc, char *argv[])
 	      case 'r': nprow = atoi(*cpp);
 		        break;
 	      case 'c': npcol = atoi(*cpp);
+		        break;
+	      case 'l': lookahead = atoi(*cpp);
+		        break;
+	      case 'p': rowperm = atoi(*cpp);
+		        break;
+	      case 'q': colperm = atoi(*cpp);
+		        break;
+	      case 'i': ir = atoi(*cpp);
 		        break;
 	    }
 	} else { /* Last arg is considered a filename */
@@ -174,6 +186,11 @@ int main(int argc, char *argv[])
        GET THE MATRIX FROM FILE AND SETUP THE RIGHT HAND SIDE. 
        ------------------------------------------------------------*/
     dcreate_matrix_postfix(&A, nrhs, &b, &ldb, &xtrue, &ldx, fp, postfix, &grid);
+    
+#if 0
+    printf("after dcreate_matrix xtrue[2] %e, b[0] %e\n", xtrue[2], b[0]);
+    for (int i = 0; i < A.ncol; ++i) printf("b[%d] %e\n", i, b[i]);
+#endif
 
     if ( !(berr = doubleMalloc_dist(nrhs)) )
 	ABORT("Malloc fails for berr[].");
@@ -201,11 +218,14 @@ int main(int argc, char *argv[])
     options.ReplaceTinyPivot  = YES;
     options.RowPerm           = LargeDiag_HWPM;
     options.RowPerm = NOROWPERM;
-    options.IterRefine = NOREFINE;
     options.ColPerm = NATURAL;
-    options.Equil = NO; 
     options.ReplaceTinyPivot = YES;
 #endif
+
+    if (rowperm != -1) options.RowPerm = rowperm;
+    if (colperm != -1) options.ColPerm = colperm;
+    if (lookahead != -1) options.num_lookaheads = lookahead;
+    if (ir != -1) options.IterRefine = ir;
 
     if (!iam) {
 	print_sp_ienv_dist(&options);

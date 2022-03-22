@@ -9,14 +9,15 @@ The source code is distributed under BSD license, see the file License.txt
 at the top-level directory.
 */
 
-
-/*! @file
+/*! @file ssp_blas2.c
  * \brief Sparse BLAS 2, using some dense BLAS 2 operations
  *
  * <pre>
  * -- Distributed SuperLU routine (version 1.0) --
  * Lawrence Berkeley National Lab, Univ. of California Berkeley.
  * September 1, 1999
+ *
+ * Last update: January 22, 2020
  * </pre>
  */
 
@@ -27,7 +28,6 @@ at the top-level directory.
 
 #include "superlu_sdefs.h"
 
-
 /* 
  * Function prototypes 
  */
@@ -37,8 +37,8 @@ extern void slsolve(int, int, float*, float*);
 extern void smatvec(int, int, int, float*, float*, float*);
 #endif
 
-/*! \brief
- *
+/*! \brief Solves one of the systems of equations A*x = b, or A'*x = b
+ * 
  * <pre>
  *   Purpose
  *   =======
@@ -89,13 +89,12 @@ extern void smatvec(int, int, int, float*, float*, float*);
  *
  *   info    - (output) int*
  *             If *info = -i, the i-th argument had an illegal value.
- * <pre>
+ * </pre>
  */
 int
 sp_strsv_dist(char *uplo, char *trans, char *diag, SuperMatrix *L, 
 	      SuperMatrix *U, float *x, int *info)
 {
-
 #ifdef _CRAY
     _fcd ftcs1, ftcs2, ftcs3;
 #endif
@@ -109,7 +108,6 @@ sp_strsv_dist(char *uplo, char *trans, char *diag, SuperMatrix *L,
     int i, k, iptr, jcol;
     float *work;
     flops_t solve_ops;
-    /*extern SuperLUStat_t SuperLUStat;*/
 
     /* Test the input parameters */
     *info = 0;
@@ -148,8 +146,10 @@ sp_strsv_dist(char *uplo, char *trans, char *diag, SuperMatrix *L,
 		nsupc = SuperLU_L_FST_SUPC(k+1) - fsupc;
 		luptr = SuperLU_L_NZ_START(fsupc);
 		nrow = nsupr - nsupc;
+		
 	        solve_ops += nsupc * (nsupc - 1);
 	        solve_ops += 2 * nrow * nsupc;
+		
 		if ( nsupc == 1 ) {
 		    for (iptr=istart+1; iptr < SuperLU_L_SUB_START(fsupc+1); ++iptr) {
 			irow = SuperLU_L_SUB(iptr);
@@ -200,6 +200,7 @@ sp_strsv_dist(char *uplo, char *trans, char *diag, SuperMatrix *L,
 	    	nsupr = SuperLU_L_SUB_START(fsupc+1) - SuperLU_L_SUB_START(fsupc);
 	    	nsupc = SuperLU_L_FST_SUPC(k+1) - fsupc;
 	    	luptr = SuperLU_L_NZ_START(fsupc);
+
     	        solve_ops += nsupc * (nsupc + 1);
 
 		if ( nsupc == 1 ) {
@@ -208,7 +209,6 @@ sp_strsv_dist(char *uplo, char *trans, char *diag, SuperMatrix *L,
 			irow = SuperLU_U_SUB(i);
 			x[irow] -= x[fsupc] * Uval[i];
 		    }
-
 		} else {
 #ifdef USE_VENDOR_BLAS
 #ifdef _CRAY
@@ -250,6 +250,7 @@ sp_strsv_dist(char *uplo, char *trans, char *diag, SuperMatrix *L,
 	    	luptr = SuperLU_L_NZ_START(fsupc);
 
 		solve_ops += 2 * (nsupr - nsupc) * nsupc;
+
 		for (jcol = fsupc; jcol < SuperLU_L_FST_SUPC(k+1); jcol++) {
 		    iptr = istart + nsupc;
 		    for (i = SuperLU_L_NZ_START(jcol) + nsupc; 
@@ -262,7 +263,6 @@ sp_strsv_dist(char *uplo, char *trans, char *diag, SuperMatrix *L,
 		
 		if ( nsupc > 1 ) {
 		    solve_ops += nsupc * (nsupc - 1);
-
 #ifdef USE_VENDOR_BLAS
 #ifdef _CRAY
                     ftcs1 = _cptofcd("L", strlen("L"));
@@ -391,7 +391,6 @@ int
 sp_sgemv_dist(char *trans, float alpha, SuperMatrix *A, float *x, 
 	      int incx, float beta, float *y, int incy)
 {
-
     /* Local variables */
     NCformat *Astore;
     float   *Aval;
@@ -404,6 +403,7 @@ sp_sgemv_dist(char *trans, float alpha, SuperMatrix *A, float *x,
     float one = 1.0;
 
     notran = (strncmp(trans, "N", 1)==0);
+
     Astore = (NCformat *) A->Store;
     Aval = (float *) Astore->nzval;
     
@@ -415,7 +415,7 @@ sp_sgemv_dist(char *trans, float alpha, SuperMatrix *A, float *x,
     else if (incx == 0) info = 5;
     else if (incy == 0)	info = 8;
     if (info != 0) {
-	xerr_dist("sp_sgemv_dist ", &info);
+	xerr_dist("sp_sgemv_dist", &info);
 	return 0;
     }
 

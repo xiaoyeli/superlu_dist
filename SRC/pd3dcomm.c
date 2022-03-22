@@ -820,7 +820,7 @@ int dreduceAllAncestors3d(int_t ilvl, int_t* myNodeCount, int_t** treePerm,
     return 0;
 }
 
-int_t dgatherAllFactoredLU( trf3Dpartition_t*  trf3Dpartition,
+int_t dgatherAllFactoredLU( dtrf3Dpartition_t*  trf3Dpartition,
 			   dLUstruct_t* LUstruct, gridinfo3d_t* grid3d, SCT_t* SCT )
 {
     int_t maxLvl = log2i(grid3d->zscp.Np) + 1;

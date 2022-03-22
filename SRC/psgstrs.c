@@ -979,13 +979,6 @@ psgstrs(int_t n, sLUstruct_t *LUstruct,
 	num_thread=1;
 #endif
 
-#if ( PRNTlevel>=1 )
-    if( grid->iam==0 ) {
-	printf("num_thread: %5d\n", num_thread);
-	fflush(stdout);
-    }
-#endif
-
     MPI_Barrier( grid->comm );
     t1_sol = SuperLU_timer_();
     t = SuperLU_timer_();
@@ -1160,8 +1153,6 @@ psgstrs(int_t n, sLUstruct_t *LUstruct,
 	nleaf=0;
 	nfrecvmod=0;
 
-
-
 if(procs==1){
 	for (lk=0;lk<nsupers_i;++lk){
 		gb = myrow+lk*grid->nprow;  /* not sure */
@@ -1195,7 +1186,6 @@ if(procs==1){
 	}
 }
 
-
 #ifdef _OPENMP
 #pragma omp simd
 #endif
@@ -1206,7 +1196,6 @@ if(procs==1){
 	nfrecvx_buf=0;
 
 	log_memory(nlb*aln_i*iword+nlb*iword+(CEILING( nsupers, Pr )+CEILING( nsupers, Pc ))*aln_i*2.0*iword+ nsupers_i*iword + sizelsum*num_thread * dword + (ldalsum * nrhs + nlb * XK_H) *dword + (sizertemp*num_thread + 1)*dword+maxrecvsz*(nfrecvx+1)*dword, stat);	//account for fmod, frecv, leaf_send, root_send, leafsups, recvbuf_BC_fwd	, lsum, x, rtemp
-
 
 
 #if ( DEBUGlevel>=2 )
@@ -1405,7 +1394,6 @@ if(procs==1){
 #pragma omp parallel default (shared)
 #endif
 	{
-
 #ifdef _OPENMP
 #pragma omp master
 #endif
@@ -1453,7 +1441,6 @@ if(procs==1){
 			
 		}
 	}
-
 
 #ifdef USE_VTUNE
 	__itt_pause(); // stop VTune
@@ -1769,7 +1756,6 @@ if(procs==1){
 	/* Re-initialize lsum to zero. Each block header is already in place. */
 
 #ifdef _OPENMP
-
 #pragma omp parallel default(shared) private(ii)
 	{
                 int thread_id = omp_get_thread_num();
@@ -1899,7 +1885,6 @@ if(procs==1){
 	fflush(stdout);
 #endif
 
-
 #if ( PRNTlevel>=2 )
 	t = SuperLU_timer_() - t;
 	if ( !iam) printf(".. Setup U-solve time\t%8.4f\n", t);
@@ -2007,7 +1992,7 @@ if(procs==1){
 	    } /* omp master region */
 	} /* omp parallel region */
 
-
+	
 #ifdef _OPENMP
 #pragma omp parallel default (shared)
 #endif
@@ -2057,7 +2042,7 @@ for (i=0;i<nroot_send;i++){
 		C_RdTree_forwardMessageSimple(&URtree_ptr[lk],&lsum[il - LSUM_H ],URtree_ptr[lk].msgSize_*nrhs+LSUM_H);
 	}
 }
-
+ 
 	/*
 	 * Compute the internal nodes asychronously by all processes.
 	 */
@@ -2078,6 +2063,7 @@ for (i=0;i<nroot_send;i++){
 		// fflush(stdout);
 
 		thread_id = 0;
+		
 #if ( PROFlevel>=1 )
 			TIC(t1);
 #endif

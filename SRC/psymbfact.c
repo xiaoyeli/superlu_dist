@@ -38,6 +38,15 @@ at the top-level directory.
 #include "psymbfact.h"
 
 /*
+ * Internal constant
+ */
+#ifdef _LONGINT
+#define INT_T_MAX LONG_MAX
+#else
+#define INT_T_MAX INT_MAX
+#endif
+
+/*
  * Internal protypes
  */
 
@@ -512,10 +521,10 @@ float symbfact_dist
       nsuper = Pslu_freeable->supno_loc[fstVtx_lid];
       Pslu_freeable->xsup_beg_loc[nsuper] = fstVtx;
       szsn = 1;
-      if (LONG_MAX - nnzL <= Llu_symbfact.xlsub[fstVtx_lid + 1] - 
+      if (INT_T_MAX - nnzL <= Llu_symbfact.xlsub[fstVtx_lid + 1] - 
 	  Llu_symbfact.xlsub[fstVtx_lid])
 	printf ("PE[%d] ERR nnzL %lld\n", iam, nnzL); 
-      if (LONG_MAX - nnzU <= Llu_symbfact.xusub[fstVtx_lid + 1] - 
+      if (INT_T_MAX - nnzU <= Llu_symbfact.xusub[fstVtx_lid + 1] - 
 	  Llu_symbfact.xusub[fstVtx_lid])
 	printf ("PE[%d] ERR nnzU %lld\n", iam, nnzU);
       
@@ -638,7 +647,7 @@ float symbfact_dist
       printf("\t relax_gen %.2f, relax_curSep %.2f, relax_seps %.2f\n",
 	     PS.relax_gen, PS.relax_curSep, PS.relax_seps);
 #endif
-      printf("LONG_MAX %ld\n", LONG_MAX);
+      printf("INT_T_MAX %ld\n", INT_T_MAX);
       printf("\tParameters: fill mem %ld fill pelt %ld\n",
 	     (long) sp_ienv_dist(6), (long) PS.fill_par);
       printf("\tNonzeros in L       %lld\n", nnzL);
@@ -1472,9 +1481,9 @@ symbfact_distributeMatrix
     intBuf4 = intBuf1 + 3 * nprocs_num;
     
     for (p=0; p<nprocs_num; p++) {
-      if (nnzToSend[p] > LONG_MAX || ptr_toSnd[p] > LONG_MAX ||
-	  nnzToRecv[p] > LONG_MAX || ptr_toRcv[p] > LONG_MAX)
-	ABORT("ERROR in symbfact_distributeMatrix size to send > LONG_MAX\n");
+      if (nnzToSend[p] > INT_T_MAX || ptr_toSnd[p] > INT_T_MAX ||
+	  nnzToRecv[p] > INT_T_MAX || ptr_toRcv[p] > INT_T_MAX)
+	ABORT("ERROR in symbfact_distributeMatrix size to send > INT_T_MAX\n");
       intBuf1[p] = (int) nnzToSend[p];
       intBuf2[p] = (int) ptr_toSnd[p];
       intBuf3[p] = (int) nnzToRecv[p];

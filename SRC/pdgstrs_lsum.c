@@ -1474,7 +1474,7 @@ void dlsum_bmod_inv
 //#endif
 							for (irow = fnz; irow < iklrow; ++irow)
 								dest[irow - ikfrow] -= uval[uptr++] * y[jj];
-								stat[thread_id1]->ops[SOLVE] += 2 * (iklrow - fnz);
+							stat[thread_id1]->ops[SOLVE] += 2 * (iklrow - fnz);
 
 						}
 					} /* end for jj ... */
@@ -1654,9 +1654,8 @@ void dlsum_bmod_inv
 //#pragma omp simd // In complex case, this SIMD loop has 2 instructions, the compiler may generate incoreect code, so need to disable this omp simd
 //#endif
 						for (irow = fnz; irow < iklrow; ++irow)
-
-							dest[irow - ikfrow] -= uval[uptr++] * y[jj];
-							stat[thread_id]->ops[SOLVE] += 2 * (iklrow - fnz);
+ 						    dest[irow - ikfrow] -= uval[uptr++] * y[jj];
+						stat[thread_id]->ops[SOLVE] += 2 * (iklrow - fnz);
 					}
 				} /* for jj ... */
 			}

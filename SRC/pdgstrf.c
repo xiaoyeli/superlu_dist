@@ -837,13 +837,11 @@ pdgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
         if ( checkGPU(gpuHostMalloc((void**)&bigV, bigv_size * sizeof(double), gpuHostMallocDefault)) )
             ABORT("Malloc fails for dgemm buffer V");
 
-#if ( PRNTlevel>=1 )
-    if ( iam==0 ) {
+    if ( iam==0 && options->PrintStat==YES ) {
         DisplayHeader();
 	printf(" Starting with %d GPU Streams \n", nstreams);
         fflush(stdout);
     }
-#endif
 
         handle = (gpublasHandle_t *) SUPERLU_MALLOC(sizeof(gpublasHandle_t)*nstreams);
         for(int i = 0; i < nstreams; i++) handle[i] = create_handle();
@@ -1768,7 +1766,7 @@ pdgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
 
     pxgstrfTimer = SuperLU_timer_() - pxgstrfTimer;
 
-#if ( PRNTlevel>=2 )
+#if ( PRNTlevel>=1 )
     /* Print detailed statistics */
     /* Updating total flops */
     double allflops;
@@ -1787,11 +1785,18 @@ pdgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
         printf(".. Time to Gather L buffer\t %8.4lf  (Separate L panel by Lookahead/Remain)\n", GatherLTimer);
         printf(".. Time to Gather U buffer\t %8.4lf \n", GatherUTimer);
 
+	//#ifdef GPU_ACC
+	//        printf(".. Time in GEMM %8.3lf \n",
+	//	       cublasGEMMTimer + cpuGEMMTimer);
+	//        printf("\t* cublasGEMM\t %8.4lf \n", cublasGEMMTimer);
+	//        printf("\t* cpuGEMM\t %8.4lf \n", cpuGEMMTimer);
+	//#else
         printf(".. Time in GEMM %8.4lf \n",
 	       LookAheadGEMMTimer + RemainGEMMTimer);
         printf("\t* Look-ahead\t %8.4lf \n", LookAheadGEMMTimer);
         printf("\t* Remain\t %8.4lf\tFlops %8.4le\tGflops %8.4lf\n",
 	       RemainGEMMTimer, allflops, allflops/RemainGEMMTimer*1e-9);
+	
         printf(".. Time to Scatter %8.4lf \n",
 	       LookAheadScatterTimer + RemainScatterTimer);
         printf("\t* Look-ahead\t %8.4lf \n", LookAheadScatterTimer);

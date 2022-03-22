@@ -148,6 +148,7 @@ if(enable_single)
     ssp_blas2_dist.c
     ssp_blas3_dist.c
     psgssvx.c
+    psgssvx_d2.c
     psgssvx_ABglobal.c
     sreadhb.c
     sreadrb.c
@@ -171,6 +172,7 @@ if(enable_single)
     psgstrs_lsum.c
     psgstrs_Bglobal.c
     psgsrfs.c
+    psgsrfs_d2.c
     psgsmv.c
     psgsrfs_ABXglobal.c
     psgsmv_AXglobal.c
@@ -187,6 +189,10 @@ if(enable_single)
     scommunication_aux.c 
     strfCommWrapper.c
     ssuperlu_blas.c
+    psgssvx_d2.c     # with double-precision IR
+    psgsrfs_d2.c
+    psgsmv_d2.c
+    psgsequb.c
   )
 if (HAVE_CUDA)
   list(APPEND sources ssuperlu_gpu.cu)
@@ -334,7 +340,7 @@ endif()
 if(OpenMP_FOUND) # this is found in top-level CMakeLists.txt
   target_link_libraries(superlu_dist OpenMP::OpenMP_C)
 endif()
-  
+
 target_compile_definitions(superlu_dist PRIVATE SUPERLU_DIST_EXPORTS)
 if(MSVC AND BUILD_SHARED_LIBS)
   set_target_properties(superlu_dist PROPERTIES

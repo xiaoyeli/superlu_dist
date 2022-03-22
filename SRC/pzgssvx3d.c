@@ -1216,7 +1216,7 @@ pzgssvx3d (superlu_dist_options_t * options, SuperMatrix * A,
 	} /* end if not Factored */
     } /* end if process layer 0 */
 
-    trf3Dpartition_t*  trf3Dpartition;
+    ztrf3Dpartition_t*  trf3Dpartition;
 
     /* Perform numerical factorization in parallel on all process layers.*/
     if ( !factored ) {

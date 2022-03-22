@@ -144,6 +144,11 @@ void countnz_dist(const int_t n, int_t *xprune,
             *nnzU += fsupc - fnz;
         }
     }
+#if ( PRNTlevel>=2 )
+    printf("\tNo of nonzeros in symm-reduced L = " IFMT ", nnzL " IFMT ", nnzU " IFMT "\n",
+	   nnzL0, *nnzL, *nnzU);
+#endif
+    
 }
 
 /*! \brief
@@ -221,6 +226,7 @@ void set_default_options_dist(superlu_dist_options_t *options)
 #else
     options->DiagInv = NO;
 #endif
+    options->Use_TensorCore    = NO;
 }
 
 /*! \brief Print the options setting.
@@ -244,6 +250,7 @@ void print_options_dist(superlu_dist_options_t *options)
     printf("**    num_lookaheads   : %4d\n", options->num_lookaheads);
     printf("**    SymPattern       : %4d\n", options->SymPattern);
     printf("**    lookahead_etree  : %4d\n", options->lookahead_etree);
+    printf("**    Use_TensorCore   : %4d\n", options->Use_TensorCore);
     printf("**************************************************\n");
 }
 
@@ -819,7 +826,7 @@ int_t get_max_buffer_size()
     if (ttemp)
         return atoi(ttemp);
     else
-        return 5000000;
+        return 200000000; // 5000000
 }
 
 int_t
@@ -995,7 +1002,7 @@ int_t estimate_bigu_size(
       gridinfo_t* grid, int_t* perm_u, 
       int_t *max_ncols /* Output: Max. number of columns among all U(k,:).
 			  This is used for allocating GEMM V buffer.  */
-)
+			 )
 {
     int_t iam = grid->iam;
     int_t Pc = grid->npcol;
@@ -1274,16 +1281,20 @@ int_t reduceStat(PhaseType PHASE,
 
 #ifdef GPU_ACC
 
+/*
+ * Divide GEMM on GPU into multiple streams, each having sufficent work.
+ */
 void
 gemm_division_cpu_gpu(
-    /* output */
-    int* num_streams_used, /* number of GPU streams that will be used */
+/* output */
+    int* num_streams_used, /* number of CUDA streams to be used,
+			      it is <= nstreams   */
     int* stream_end_col,   /* array holding last column blk for each stream partition */
     int * ncpu_blks,       /* Number of CPU dgemm blks (output) */
     /*input */
     int nbrow,             /* number of row in A matrix */
     int ldu,               /* number of k in dgemm */
-    int nstreams, 
+    int nstreams,          /* maximum possible GPU streams */
     int* full_u_cols,      /* array containing prefix sum of GPU workload */
     int num_blks           /* Number of block cloumns (workload) on GPU */
 )
@@ -1296,7 +1307,7 @@ gemm_division_cpu_gpu(
       Sherry corrected comment:                                                  
       CPU to GPU dgemm should be ideally 0:1 ratio to hide the total cost.
       However since there is GPU latency of around 20,000 ns implying about
-      200000 floating point operations be done in that time, so    
+      200000 floating point operations can be done in that time, so    
       ncols ~= 200,000/(2*nbrow*ldu) should be done on CPU to hide the
       latency; We set Ngem =200,000/2.  
      */
@@ -1352,7 +1363,7 @@ gemm_division_cpu_gpu(
         printf ("%d %d  %d %d \n", full_u_cols[num_blks - 1],
                 full_u_cols[*ncpu_blks], *ncpu_blks, nstreams);
 #endif
-        int_t FP_MIN = 200000 / (nbrow * ldu);
+        int_t FP_MIN = 200000 / (nbrow * ldu); // >= 200000 flops per GPU stream
         int_t cols_per_stream = SUPERLU_MAX (min_gpu_col, cols_remain / nstreams);
         cols_per_stream = SUPERLU_MAX (cols_per_stream, FP_MIN);
 #ifdef PI_DEBUG
@@ -1368,6 +1379,7 @@ gemm_division_cpu_gpu(
         for (i = 0; i < nstreams - 1; ++i)
         {
             int_t st = (i == 0) ? (*ncpu_blks) : stream_end_col[i - 1];
+	        // ^ starting block column of next stream
 
             for (j = st; j < num_blks - 1; ++j)
             {
@@ -1384,13 +1396,13 @@ gemm_division_cpu_gpu(
                     stream_end_col[i] = j + 1;
                     *num_streams_used += 1;
                     j++;
-                    break;
+                    break;  // block column j starts a new stream
                 }
 #ifdef PI_DEBUG
                 printf ("\n");
 #endif
-            }
-        }
+            } // end for j ...
+        } // end for i ... streams
 
     }
 	
@@ -1501,8 +1513,8 @@ gemm_division_new (int * num_streams_used,   /*number of streams that will be us
 
 int getnGPUStreams()
 {
-    // Disabling multiple gpu streams 
-    #if 1
+    // Disabling multiple gpu streams -- bug with multiple streams in 3D code?
+    #if 0
 	return 1;
     #else 
 	char *ttemp;

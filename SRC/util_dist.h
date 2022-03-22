@@ -310,5 +310,5 @@ typedef struct
 
 } SCT_t;
 
-
 #endif /* __SUPERLU_DIST_UTIL */
+

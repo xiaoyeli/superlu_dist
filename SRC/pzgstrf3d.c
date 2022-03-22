@@ -118,7 +118,7 @@ at the top-level directory.
  * </pre>
  */
 int_t pzgstrf3d(superlu_dist_options_t *options, int m, int n, double anorm,
-		trf3Dpartition_t*  trf3Dpartition, SCT_t *SCT,
+		ztrf3Dpartition_t*  trf3Dpartition, SCT_t *SCT,
 		zLUstruct_t *LUstruct, gridinfo3d_t * grid3d,
 		SuperLUStat_t *stat, int *info)
 {
@@ -186,7 +186,7 @@ int_t pzgstrf3d(superlu_dist_options_t *options, int m, int n, double anorm,
     }
 #endif
 
-    // trf3Dpartition_t*  trf3Dpartition = initTrf3Dpartition(nsupers, options, LUstruct, grid3d);
+    // ztrf3Dpartition_t*  trf3Dpartition = initTrf3Dpartition(nsupers, options, LUstruct, grid3d);
     gEtreeInfo_t gEtreeInfo = trf3Dpartition->gEtreeInfo;
     int_t* iperm_c_supno = trf3Dpartition->iperm_c_supno;
     int_t* myNodeCount = trf3Dpartition->myNodeCount;
@@ -364,7 +364,7 @@ int_t pzgstrf3d(superlu_dist_options_t *options, int m, int n, double anorm,
     /* This frees the GPU storage allocateed in initSluGPU3D_t() */
     if (superlu_acc_offload) {
         if ( options->PrintStat ) {
-	    printGPUStats(nsupers, stat);
+	    printGPUStats(nsupers, stat, grid3d);
 	}
         zfree_LUstruct_gpu (sluGPU, stat);
     }

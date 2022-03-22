@@ -9,7 +9,6 @@ The source code is distributed under BSD license, see the file License.txt
 at the top-level directory.
 */
 
-
 /*! @file 
  * \brief Sparse BLAS3, using some dense BLAS3 operations
  *
@@ -127,7 +126,6 @@ sp_sgemm_dist(char *transa, int n, float alpha, SuperMatrix *A,
 	      float *b, int ldb,  float beta,
 	      float *c, int ldc)
 {
-
     int    incx = 1, incy = 1;
     int    j;
 

@@ -108,7 +108,6 @@ int main(int argc, char *argv[])
     iam = grid.iam;
     if ( iam == -1 )	goto out;
 
-
 #if ( DEBUGlevel>=1 )
     CHECK_MALLOC(iam, "Enter main()");
 #endif

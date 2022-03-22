@@ -339,6 +339,8 @@ int screate_matrix_postfix(SuperMatrix *A, int nrhs, float **rhs,
     sGenXtrue_dist(n, nrhs, xtrue_global, n);
     sFillRHS_dist(trans, nrhs, xtrue_global, n, &GA, b_global, m);
 
+    if (iam==0) Printfloat5("after sFillRHS: b_global", 5, b_global);
+
     /*************************************************
      * Change GA to a local A with NR_loc format     *
      *************************************************/

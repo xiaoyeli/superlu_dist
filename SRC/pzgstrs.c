@@ -1526,6 +1526,7 @@ if(procs==1){
 
 					//BcTree_forwardMessageSimple(LBtree_ptr[lk],recvbuf0,BcTree_GetMsgSize(LBtree_ptr[lk],'z')*nrhs+XK_H,'z');
 					C_BcTree_forwardMessageSimple(&LBtree_ptr[lk], recvbuf0, LBtree_ptr[lk].msgSize_*nrhs+XK_H);
+
 					// nfrecvx_buf++;
 				}
 
@@ -1649,6 +1650,7 @@ if(procs==1){
 					/*
 					 * Send Xk to process column Pc[k].
 					 */
+
 					if(LBtree_ptr[lk].empty_==NO){
 					    //BcTree_forwardMessageSimple(LBtree_ptr[lk],&x[ii - XK_H],BcTree_GetMsgSize(LBtree_ptr[lk],'z')*nrhs+XK_H,'z');
 					    C_BcTree_forwardMessageSimple(&LBtree_ptr[lk], &x[ii - XK_H], LBtree_ptr[lk].msgSize_*nrhs+XK_H);
@@ -1736,6 +1738,7 @@ if(procs==1){
 	log_memory(-nlb*aln_i*iword-nlb*iword-(CEILING( nsupers, Pr )+CEILING( nsupers, Pc ))*aln_i*iword- nsupers_i*iword -maxrecvsz*(nfrecvx+1)*dword*2.0, stat);	//account for fmod, frecv, leaf_send, leafsups, recvbuf_BC_fwd
 
 	for (lk=0;lk<nsupers_j;++lk){
+
 		if(LBtree_ptr[lk].empty_==NO){
 			// if(BcTree_IsRoot(LBtree_ptr[lk],'z')==YES){
 			//BcTree_waitSendRequest(LBtree_ptr[lk],'z');
@@ -1896,6 +1899,9 @@ if(procs==1){
 		}
 	}
 
+#ifdef _OPENMP
+#pragma omp simd
+#endif
 	for (i = 0; i < nlb; ++i) bmod[i*aln_i] += brecv[i];
 	// for (i = 0; i < nlb; ++i)printf("bmod[i]: %5d\n",bmod[i]);
 
@@ -1977,6 +1983,7 @@ if(procs==1){
 						&alpha, Uinv, &knsupc, &x[ii],
 						&knsupc, &beta, rtemp_loc, &knsupc );
 #endif
+
 				for (i=0 ; i<knsupc*nrhs ; i++){
 					z_copy(&x[ii+i],&rtemp_loc[i]);
 				}
@@ -2117,6 +2124,7 @@ for (i=0;i<nroot_send;i++){
 		    // --nfrecvx;
 		    nbrecvx_buf++;
 		    lk = LBj( k, grid );    /* local block number */
+
 		    if(UBtree_ptr[lk].destCnt_>0){
 
 			// BcTree_forwardMessageSimple(UBtree_ptr[lk],recvbuf0,BcTree_GetMsgSize(UBtree_ptr[lk],'d')*nrhs+XK_H,'d');
@@ -2241,7 +2249,6 @@ for (i=0;i<nroot_send;i++){
 			    }else{
 				il = LSUM_BLK( lk );
 				knsupc = SuperSize( k );
-
 				for (ii=1;ii<num_thread;ii++)
 				    for (jj=0;jj<knsupc*nrhs;jj++)
 					z_add(&lsum[il+ jj ], &lsum[il+ jj ],

@@ -112,12 +112,10 @@ if(enable_double)
   target_link_libraries(pddrive_spawn ${all_link_libs})
   install(TARGETS pddrive_spawn RUNTIME DESTINATION "${INSTALL_LIB_DIR}/EXAMPLE")  
 
-
-
 endif() #### end enable_double
 
 if(enable_single)
-  set(SEXM psdrive.c screate_matrix.c)
+  set(SEXM psdrive.c screate_matrix.c screate_A_x_b.c)
   add_executable(psdrive ${SEXM})
   target_link_libraries(psdrive ${all_link_libs})
   install(TARGETS psdrive RUNTIME DESTINATION "${INSTALL_LIB_DIR}/EXAMPLE")  
@@ -166,6 +164,7 @@ if(enable_single)
   install(TARGETS psdrive3d3 RUNTIME DESTINATION "${INSTALL_LIB_DIR}/EXAMPLE")  
 
 endif() #### end enable_single
+
 
 if(enable_complex16)
 

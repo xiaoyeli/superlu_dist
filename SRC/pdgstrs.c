@@ -1037,7 +1037,7 @@ pdgstrs(int_t n, dLUstruct_t *LUstruct,
     Glu_persist_t *Glu_persist = LUstruct->Glu_persist;
     dLocalLU_t *Llu = LUstruct->Llu;
     double alpha = 1.0;
-	double beta = 0.0;
+    double beta = 0.0;
     double zero = 0.0;
     double *lsum;  /* Local running sum of the updates to B-components */
     double *x;     /* X component at step k. */
@@ -1142,10 +1142,10 @@ pdgstrs(int_t n, dLUstruct_t *LUstruct,
     int iword = sizeof (int_t);
     int dword = sizeof (double);
     int Nwork;
-	int_t procs = grid->nprow * grid->npcol;
-    	yes_no_t done;
+    int_t procs = grid->nprow * grid->npcol;
+    yes_no_t done;
     yes_no_t startforward;
-    	int nbrow;
+    int nbrow;
     int_t  ik, rel, idx_r, jb, nrbl, irow, pc,iknsupc;
     int_t  lptr1_tmp, idx_i, idx_v,m;
     int_t ready;
@@ -1227,10 +1227,7 @@ pdgstrs(int_t n, dLUstruct_t *LUstruct,
 
 
 // cudaProfilerStart();
-
-	
 	maxsuper = sp_ienv_dist(3);
-
 
 #ifdef _OPENMP
 #pragma omp parallel default(shared)
@@ -1386,6 +1383,7 @@ pdgstrs(int_t n, dLUstruct_t *LUstruct,
     for ( ii=0; ii < sizelsum*num_thread; ii++ )
 	lsum[ii]=zero;
 #endif
+    /* intermediate solution x[] vector has same structure as lsum[], see leading comment */
     if ( !(x = doubleCalloc_dist(ldalsum * nrhs + nlb * XK_H)) )
 	ABORT("Calloc fails for x[].");
 
@@ -1424,6 +1422,7 @@ pdgstrs(int_t n, dLUstruct_t *LUstruct,
     /* Redistribute B into X on the diagonal processes. */
     pdReDistribute_B_to_X(B, m_loc, nrhs, ldb, fst_row, ilsum, x,
 			  ScalePermstruct, Glu_persist, grid, SOLVEstruct);
+
 
 #if ( PRNTlevel>=1 )
     t = SuperLU_timer_() - t;
@@ -1510,7 +1509,6 @@ if(procs==1){
 	log_memory(nlb*aln_i*iword+nlb*iword+(CEILING( nsupers, Pr )+CEILING( nsupers, Pc ))*aln_i*2.0*iword+ nsupers_i*iword + sizelsum*num_thread * dword + (ldalsum * nrhs + nlb * XK_H) *dword + (sizertemp*num_thread + 1)*dword+maxrecvsz*(nfrecvx+1)*dword, stat);	//account for fmod, frecv, leaf_send, root_send, leafsups, recvbuf_BC_fwd	, lsum, x, rtemp
 
 
-
 #if ( DEBUGlevel>=2 )
 	printf("(%2d) nfrecvx %4d,  nfrecvmod %4d,  nleaf %4d\n,  nbtree %4d\n,  nrtree %4d\n",
 			iam, nfrecvx, nfrecvmod, nleaf, nbtree, nrtree);
@@ -1543,8 +1541,6 @@ if(procs==1){
 	fflush(stdout);
 #endif
 
-
-
 	// ii = X_BLK( 0 );
 	// knsupc = SuperSize( 0 );
 	// for (i=0 ; i<knsupc*nrhs ; i++){
@@ -1563,15 +1559,7 @@ if(procs==1){
 	exit(1);
 	}
 
-
-
-	
-
-
-
 t1 = SuperLU_timer_();
-
-
 
 #if 0  // this will readin a matrix with only lower triangular part, note that this code block is only for benchmarking cusparse performance  
 	
@@ -1925,7 +1913,6 @@ t1 = SuperLU_timer_();
 
 #else  /* CPU trisolve*/
 
-
 #ifdef _OPENMP
 #pragma omp parallel default (shared)
 {
@@ -2087,9 +2074,14 @@ thread_id=0;
 		} /* end for jj ... */
 	    } /* end else ... diagonal is not invedted */
 	  }
-	}
+	} /* end omp parallel */
 
 	jj=0;
+
+#if ( DEBUGlevel>=2 )
+	printf("(%2d) end solving nleaf %4d\n", iam, nleaf);
+	fflush(stdout);
+#endif
 
 #ifdef _OPENMP
 #pragma omp parallel default (shared)
@@ -2111,7 +2103,6 @@ thread_id=0;
 			    k=leafsups[jj];
 
 			    {
-
 #ifdef _OPENMP
 				thread_id=omp_get_thread_num();
 #else
@@ -2382,12 +2373,11 @@ thread_id=0;
 				} /* while not finished ... */
 
 			}
-		} // end of parallel 
+		} // end of parallel
+	
+#endif  /* end CPU trisolve */
 
-#endif	
-
-
-
+	
 #if ( PRNTlevel>=1 )
 		t = SuperLU_timer_() - t;
 		stat->utime[SOL_TOT] += t;
@@ -2413,7 +2403,7 @@ thread_id=0;
 
 #if ( DEBUGlevel==2 )
 		{
-			printf("(%d) .. After L-solve: y =\n", iam);
+		  printf("(%d) .. After L-solve: y =\n", iam); fflush(stdout);
 			for (i = 0, k = 0; k < nsupers; ++k) {
 				krow = PROW( k, grid );
 				kcol = PCOL( k, grid );
@@ -2614,7 +2604,6 @@ thread_id=0;
 			iam, nbrecvx, nbrecvmod, nroot, nbtree, nrtree);
 	fflush(stdout);
 #endif
-
 
 #if ( PRNTlevel>=1 )
 	t = SuperLU_timer_() - t;
@@ -3180,7 +3169,8 @@ for (i=0;i<nroot_send;i++){
             }
 #endif
 
-// cudaProfilerStop(); 
+// cudaProfilerStop();
+	    
     return;
 } /* PDGSTRS */
 

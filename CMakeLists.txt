@@ -19,6 +19,7 @@ list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake")
 
 # Set up options
 option(enable_doc       "Build doxygen documentation" OFF)
+option(enable_single    "Enable single precision library" ON)
 option(enable_double    "Enable double precision library" ON)
 option(enable_single    "Enable single precision library" OFF)
 option(enable_complex16 "Enable complex16 precision library" ON)
@@ -143,6 +144,7 @@ set(INSTALL_BIN_DIR "${default_install_bin_dir}" CACHE STRING "The folder where 
 
 # Set up required compiler defines and options.
 ## get_directory_property( DirDefs COMPILE_DEFINITIONS )
+
 if(XSDK_INDEX_SIZE EQUAL 64)
     message("-- Using 64 bit integer for index size.")
 endif()	
@@ -227,6 +229,7 @@ endif ()
 if (enable_openmp)
   find_package(OpenMP)
 ## include(FindOpenMP)  # Strumpack uses this
+
   if(OPENMP_FOUND)
     set(CMAKE_C_FLAGS "${OpenMP_C_FLAGS} ${CMAKE_C_FLAGS}")
     set(CMAKE_CXX_FLAGS "${OpenMP_CXX_FLAGS} ${CMAKE_CXX_FLAGS}")
@@ -235,11 +238,10 @@ if (enable_openmp)
 # set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${OpenMP_C_FLAGS}")
     message("-- OpenMP_EXE_LINKER_FLAGS='${OpenMP_EXE_LINKER_FLAGS}'")
     message("-- CMAKE_EXE_LINKER_FLAGS='${CMAKE_EXE_LINKER_FLAGS}'")
-  endif()
+  endif()  
 endif()
 
 
- 
 include(CheckLanguage)
 
 #--------------------- CUDA libraries ---------------------
@@ -286,9 +288,6 @@ if (TPL_ENABLE_HIPLIB)   ## want to use hip
     set(HIP_HIPCC_FLAGS "${HIP_HIPCC_FLAGS} -fPIC")    
     endif()
 
-
-
-    
     # if ("$ENV{HIP_PLATFORM}" STREQUAL "hcc")
     #   set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DHAVE_HIP -D__HIP_PLATFORM_HCC__")
     #   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DHAVE_HIP -D__HIP_PLATFORM_HCC__")
@@ -297,14 +296,10 @@ if (TPL_ENABLE_HIPLIB)   ## want to use hip
     #   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DHAVE_HIP -D__HIP_PLATFORM_NVCC__")
     # endif()
 
-
   else()
     message("-- HIP libraries not found.")
   endif()
 endif()
-
-
-
 
 #--------------------- BLAS ---------------------
 if(NOT TPL_ENABLE_INTERNAL_BLASLIB)

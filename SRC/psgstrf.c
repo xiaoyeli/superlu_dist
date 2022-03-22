@@ -787,6 +787,13 @@ psgstrf(superlu_dist_options_t * options, int m, int n, float anorm,
     bigU = NULL; /* allocated only on CPU */
     bigV = NULL;
 
+#if 0    
+    // for GEMM padding zeros
+    j = max_ncols;  // Sherry: bigu_size / ldt;
+    bigu_size += (gemm_k_pad * (j + gemm_n_pad) + ldt * gemm_n_pad);
+    bigv_size += (gemm_m_pad * (j + gemm_n_pad) + max_row_size * gemm_n_pad);
+#endif
+    
 #if ( PRNTlevel>=1 )
     if(!iam) {
         printf("\t.. MAX_BUFFER_SIZE %d set for GPU\n", sp_ienv_dist(8));
@@ -837,13 +844,11 @@ psgstrf(superlu_dist_options_t * options, int m, int n, float anorm,
         if ( checkGPU(gpuHostMalloc((void**)&bigV, bigv_size * sizeof(float), gpuHostMallocDefault)) )
             ABORT("Malloc fails for sgemm buffer V");
 
-#if ( PRNTlevel>=1 )
-    if ( iam==0 ) {
+    if ( iam==0 && options->PrintStat==YES ) {
         DisplayHeader();
 	printf(" Starting with %d GPU Streams \n", nstreams);
         fflush(stdout);
     }
-#endif
 
         handle = (gpublasHandle_t *) SUPERLU_MALLOC(sizeof(gpublasHandle_t)*nstreams);
         for(int i = 0; i < nstreams; i++) handle[i] = create_handle();
@@ -1780,11 +1785,10 @@ psgstrf(superlu_dist_options_t * options, int m, int n, float anorm,
         printf("Time in Schur update \t\t %8.4lf seconds\n", NetSchurUpTimer);
         printf(".. Time to Gather L buffer\t %8.4lf  (Separate L panel by Lookahead/Remain)\n", GatherLTimer);
         printf(".. Time to Gather U buffer\t %8.4lf \n", GatherUTimer);
-
-        printf(".. Time in GEMM %8.4lf \n",
+        printf(".. Time in GEMM %8.2lf \n",
 	       LookAheadGEMMTimer + RemainGEMMTimer);
-        printf("\t* Look-ahead\t %8.4lf \n", LookAheadGEMMTimer);
-        printf("\t* Remain\t %8.4lf\tFlops %8.4le\tGflops %8.4lf\n",
+        printf("\t* Look-ahead\t %8.2lf \n", LookAheadGEMMTimer);
+        printf("\t* Remain\t %8.2lf\tFlops %8.2le\tGflops %8.2lf\n",
 	       RemainGEMMTimer, allflops, allflops/RemainGEMMTimer*1e-9);
         printf(".. Time to Scatter %8.4lf \n",
 	       LookAheadScatterTimer + RemainScatterTimer);

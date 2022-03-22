@@ -542,7 +542,7 @@ doublecomplex* zgetBigU(int_t nsupers, gridinfo_t *grid, zLUstruct_t *LUstruct)
 } /* zgetBigU */
 
 
-trf3Dpartition_t* zinitTrf3Dpartition(int_t nsupers,
+ztrf3Dpartition_t* zinitTrf3Dpartition(int_t nsupers,
 				      superlu_dist_options_t *options,
 				      zLUstruct_t *LUstruct, gridinfo3d_t * grid3d
 				      )
@@ -608,7 +608,7 @@ trf3Dpartition_t* zinitTrf3Dpartition(int_t nsupers,
         }
     }
 
-    trf3Dpartition_t*  trf3Dpartition = SUPERLU_MALLOC(sizeof(trf3Dpartition_t));
+    ztrf3Dpartition_t*  trf3Dpartition = SUPERLU_MALLOC(sizeof(ztrf3Dpartition_t));
 
     trf3Dpartition->gEtreeInfo = gEtreeInfo;
     trf3Dpartition->iperm_c_supno = iperm_c_supno;
@@ -634,7 +634,7 @@ trf3Dpartition_t* zinitTrf3Dpartition(int_t nsupers,
 } /* zinitTrf3Dpartition */
 
 /* Free memory allocated for trf3Dpartition structure. Sherry added this routine */
-void zDestroy_trf3Dpartition(trf3Dpartition_t *trf3Dpartition, gridinfo3d_t *grid3d)
+void zDestroy_trf3Dpartition(ztrf3Dpartition_t *trf3Dpartition, gridinfo3d_t *grid3d)
 {
     int i;
 #if ( DEBUGlevel>=1 )

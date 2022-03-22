@@ -47,7 +47,7 @@ at the top-level directory.
  *        A is also permuted into diag(R)*A*diag(C)*Pc'. The type of A can be:
  *        Stype = SLU_NR_loc; Dtype = SLU_S; Mtype = SLU_GE.
  *
- * anorm  (input) double
+ * anorm  (input) float
  *        The norm of the original matrix A, or the scaled A if
  *        equilibration was done.
  *
