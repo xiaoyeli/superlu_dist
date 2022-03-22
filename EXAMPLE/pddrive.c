@@ -253,7 +253,7 @@ int main(int argc, char *argv[])
     SUPERLU_FREE(b);
     SUPERLU_FREE(xtrue);
     SUPERLU_FREE(berr);
-    // fclose(fp);
+    fclose(fp);
 
     /* ------------------------------------------------------------
        RELEASE THE SUPERLU PROCESS GRID.
