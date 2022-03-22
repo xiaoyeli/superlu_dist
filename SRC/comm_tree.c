@@ -19,18 +19,17 @@
 	  tree->sendRequests_[1]=MPI_REQUEST_NULL;
       tree->empty_= NO;  // non-empty if rank_cnt>1
 	  if(precision=='d'){
-      MPI_Type_contiguous( sizeof(double), MPI_BYTE, &tree->type_ );
+	  tree->type_=MPI_DOUBLE;
 	  }
 	  if(precision=='s'){
-      MPI_Type_contiguous( sizeof(float), MPI_BYTE, &tree->type_ );
+	tree->type_=MPI_FLOAT;
 	  }
-	  if(precision=='z'){
-      MPI_Type_contiguous( sizeof(doublecomplex), MPI_BYTE, &tree->type_ );
+	  if(precision=='z')
+	tree->type_=MPI_DOUBLE_COMPLEX;
 	  }
 	  //if(precision=='c'){
 	  //MPI_Type_contiguous( sizeof(complex), MPI_BYTE, &tree->type_ );
 	  //}
-      MPI_Type_commit( &tree->type_ );
 
       int myIdx = 0;
       int ii=0; 
@@ -114,13 +113,14 @@
 	  tree->sendRequests_[1]=MPI_REQUEST_NULL;
       tree->empty_= NO;  // non-empty if rank_cnt>1
 	  if(precision=='d'){
-      MPI_Type_contiguous( sizeof(double), MPI_BYTE, &tree->type_ );
+		  tree->type_=MPI_DOUBLE;
 	  }
 	  if(precision=='z'){
-      MPI_Type_contiguous( sizeof(doublecomplex), MPI_BYTE, &tree->type_ );
+		  tree->type_=MPI_DOUBLE_COMPLEX;
 	  }
-      MPI_Type_commit( &tree->type_ );
-
+	  if(precision=='s'){
+		  tree->type_=MPI_FLOAT;
+	  }	  
       int myIdx = 0;
       int ii=0; 
 	  int child,root;
