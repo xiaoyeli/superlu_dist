@@ -24,7 +24,7 @@
 	  if(precision=='s'){
 	tree->type_=MPI_FLOAT;
 	  }
-	  if(precision=='z')
+	  if(precision=='z'){
 	tree->type_=MPI_DOUBLE_COMPLEX;
 	  }
 	  //if(precision=='c'){
