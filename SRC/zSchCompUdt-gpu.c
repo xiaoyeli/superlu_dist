@@ -146,6 +146,9 @@ if ( msg0 && msg2 ) {  /* L(:,k) and U(k,:) are not empty. */
             assert(jjj_st<nub);
             assert(jjj-1<nub);
             // TAU_STATIC_TIMER_START("GATHER_U");
+	    
+	    tt_start = SuperLU_timer_();
+
 #ifdef _OPENMP
 #pragma omp for schedule( SCHEDULE_STRATEGY )
 #endif
@@ -176,6 +179,9 @@ if ( msg0 && msg2 ) {  /* L(:,k) and U(k,:) are not empty. */
 
             } /* end for j=jjj_st to jjj */
 
+	    tt_end = SuperLU_timer_();
+	    GatherUTimer += tt_end - tt_start;
+	    
 	    if ( num_streams_used > 0 ) {
 #ifdef PI_DEBUG
 		printf("nbrow %d *ldu %d  =%d < ldt %d * max_row_size %d =%d \n",nbrow,ldu,nbrow*ldu,ldt,max_row_size,ldt*max_row_size ); fflush(stdout);
@@ -206,6 +212,7 @@ if ( msg0 && msg2 ) {  /* L(:,k) and U(k,:) are not empty. */
 		    size_t B_stream_size = ldu * num_col_stream * sizeof(doublecomplex);
 		    size_t C_stream_size = nbrow * num_col_stream * sizeof(doublecomplex);
 
+		    // Sherry: Check dC buffer of *buffer_size* is large enough
 		    assert(nbrow*(st_col+num_col_stream) < buffer_size);
 
 		    gpuMemcpyAsync(dB+b_offset, tempu+b_offset, B_stream_size,
@@ -235,15 +242,18 @@ if ( msg0 && msg2 ) {  /* L(:,k) and U(k,:) are not empty. */
 					   gpuMemcpyDeviceToHost,
 					   streams[stream_id]) );
 #else /*-- on CPU --*/
+		} else { // num_col_stream == 0  Sherry: how can get here?
                     // Sherry: looks like a batched GEMM 
 	            my_zgemm_("N", "N", &nbrow, &num_col_stream, &ldu,
 			      &alpha, &lusup[luptr+(knsupc-ldu)*nsupr],
 			      &nsupr, tempu+ldu*st_col, &ldu, &beta,
 			      tempv1, &nbrow, 1, 1);
+	        }
 #endif /*-- end ifdef GPU_ACC --*/
 
-   	        } // end if num_col_stream > 0
+   	      } // end if num_col_stream > 0
 
+	    	stat->ops[FACT] += 8.0 * nbrow * num_col_stream * ldu;
 	    } /* end for i = 1 to num_streams used */
 
 	    /* Special case for CPU -- leading block columns are computed 
@@ -264,7 +274,7 @@ if ( msg0 && msg2 ) {  /* L(:,k) and U(k,:) are not empty. */
 		  tempu+ldu*st_col, &ldu, &beta, tempv, &nbrow);
 #endif
 	    gemm_timer += SuperLU_timer_() -tstart;
-	    stat->ops[FACT] += 2 * nbrow * ldu * full_u_cols[jjj-1];
+	    stat->ops[FACT] += 8.0* nbrow * ldu * full_u_cols[jjj-1];
 
             /* Now scattering blocks computed by CPU */
             int temp_ncol;
@@ -572,7 +582,7 @@ if ( msg0 && msg2 ) {  /* L(:,k) and U(k,:) are not empty. */
                         luptr=luptr0;
                     } /* for j = jjj_st ... */
 
-                } /* end for i = 0 to nstreams */
+                } /* end for i = 0 to num_streams_used  */
 		
                 // TAU_STATIC_TIMER_STOP("GPU_SCATTER");
                 // TAU_STATIC_TIMER_STOP("INSIDE_OMP");
@@ -580,6 +590,8 @@ if ( msg0 && msg2 ) {  /* L(:,k) and U(k,:) are not empty. */
             } /* end pragma omp parallel */
             // TAU_STATIC_TIMER_STOP("OUTSIDE_OMP");
 	    
+	    RemainScatterTimer += SuperLU_timer_() - tstart;
+
         }  /* end while(jjj<nub) */
 
     } /* if nbrow>0 */

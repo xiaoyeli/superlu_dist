@@ -584,6 +584,7 @@ psgssvx3d (superlu_dist_options_t * options, SuperMatrix * A,
     
     /* Initialization. */
 
+
     options->Algo3d = YES;
 	
     /* definition of factored seen by each process layer */
@@ -1006,7 +1007,7 @@ psgssvx3d (superlu_dist_options_t * options, SuperMatrix * A,
 	
 	
 	/* ------------------------------------------------------------
-	   Perform the LU factorization.
+	   Perform ordering and symbolic factorization
 	   ------------------------------------------------------------ */
 	if ( !factored ) {
 	    t = SuperLU_timer_ ();
@@ -1212,7 +1213,8 @@ psgssvx3d (superlu_dist_options_t * options, SuperMatrix * A,
 
 	    /*if (!iam) printf ("\tDISTRIBUTE time  %8.2f\n", stat->utime[DIST]); */
 	} /* end if not Factored */
-    } /* end if process layer 0 */
+	
+    } /* end 2D process layer 0 */
 
     strf3Dpartition_t*  trf3Dpartition;
 
@@ -1228,7 +1230,6 @@ psgssvx3d (superlu_dist_options_t * options, SuperMatrix * A,
 	sp3dScatter(n, LUstruct, grid3d);
 
 	int_t nsupers = getNsupers(n, LUstruct->Glu_persist);
-
 	trf3Dpartition = sinitTrf3Dpartition(nsupers, options, LUstruct, grid3d);
 
 	SCT_t *SCT = (SCT_t *) SUPERLU_MALLOC(sizeof(SCT_t));

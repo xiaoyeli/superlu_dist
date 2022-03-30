@@ -299,7 +299,7 @@ main (int argc, char *argv[])
        options.ColPerm           = METIS_AT_PLUS_A;
        options.RowPerm           = LargeDiag_MC64;
        options.ReplaceTinyPivot  = NO;
-       options.IterRefine        = DOUBLE;
+       options.IterRefine        = SLU_DOUBLE;
        options.Trans             = NOTRANS;
        options.SolveInitialized  = NO;
        options.RefineInitialized = NO;
@@ -310,6 +310,7 @@ main (int argc, char *argv[])
        options.DiagInv           = NO;
      */
     set_default_options_dist (&options);
+    options.IterRefine = SLU_SINGLE;
 #if 0
     options.RowPerm = NOROWPERM;
     options.IterRefine = NOREFINE;

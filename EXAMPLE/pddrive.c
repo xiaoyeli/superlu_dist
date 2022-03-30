@@ -105,14 +105,14 @@ int main(int argc, char *argv[])
 		        break;
 	      case 'c': npcol = atoi(*cpp);
 		        break;
-	      case 'l': lookahead = atoi(*cpp);
-		        break;
-	      case 'p': rowperm = atoi(*cpp);
-		        break;
-	      case 'q': colperm = atoi(*cpp);
-		        break;
-	      case 'i': ir = atoi(*cpp);
-		        break;
+              case 'l': lookahead = atoi(*cpp);
+                        break;
+              case 'p': rowperm = atoi(*cpp);
+                        break;
+              case 'q': colperm = atoi(*cpp);
+                        break;
+              case 'i': ir = atoi(*cpp);
+                        break;
 	    }
 	} else { /* Last arg is considered a filename */
 	    if ( !(fp = fopen(*cpp, "r")) ) {
@@ -186,11 +186,6 @@ int main(int argc, char *argv[])
        GET THE MATRIX FROM FILE AND SETUP THE RIGHT HAND SIDE. 
        ------------------------------------------------------------*/
     dcreate_matrix_postfix(&A, nrhs, &b, &ldb, &xtrue, &ldx, fp, postfix, &grid);
-    
-#if 0
-    printf("after dcreate_matrix xtrue[2] %e, b[0] %e\n", xtrue[2], b[0]);
-    for (int i = 0; i < A.ncol; ++i) printf("b[%d] %e\n", i, b[i]);
-#endif
 
     if ( !(berr = doubleMalloc_dist(nrhs)) )
 	ABORT("Malloc fails for berr[].");
@@ -206,7 +201,7 @@ int main(int argc, char *argv[])
         options.ColPerm           = METIS_AT_PLUS_A;
         options.RowPerm           = LargeDiag_MC64;
         options.ReplaceTinyPivot  = NO;
-        options.IterRefine        = DOUBLE;
+        options.IterRefine        = SLU_DOUBLE;
         options.Trans             = NOTRANS;
         options.SolveInitialized  = NO;
         options.RefineInitialized = NO;
@@ -215,10 +210,10 @@ int main(int argc, char *argv[])
      */
     set_default_options_dist(&options);
 #if 0
-    options.ReplaceTinyPivot  = YES;
-    options.RowPerm           = LargeDiag_HWPM;
-    options.RowPerm = NOROWPERM;
+    options.RowPerm = LargeDiag_HWPM;
+    options.IterRefine = NOREFINE;
     options.ColPerm = NATURAL;
+    options.Equil = NO; 
     options.ReplaceTinyPivot = YES;
 #endif
 

@@ -25,6 +25,7 @@ at the top-level directory.
 #define SCHEDULE_STRATEGY dynamic
 
 int full;
+double gemm_timer = 0.0;
 double scatter_timer = 0.0;
 
 if ( msg0 && msg2 ) {  /* L(:,k) and U(k,:) are not empty. */
@@ -99,7 +100,7 @@ if ( msg0 && msg2 ) {  /* L(:,k) and U(k,:) are not empty. */
                     /* break condition */
                     /* the number of columns that can be processed on GPU is
 		       limited by buffer size */
-                    if (full_u_cols[j]+ ((j+1==nub)?0:full_u_cols[j+1]) > ncol_max) {
+                    if (full_u_cols[j]+((j+1==nub)?0:full_u_cols[j+1]) > ncol_max) {
                         break; // block column j+1 does not fit in GPU memory */
                     }
                 } /* end for j=jjj_st to nub */
@@ -126,7 +127,6 @@ if ( msg0 && msg2 ) {  /* L(:,k) and U(k,:) are not empty. */
 
             } /* pragma omp single */
 
-	    
             jjj = jjj_global; /* Move to the next [ CPU : GPU ] partition */
 	    
 #if 0 // !!Sherry: this test is not necessary
@@ -147,7 +147,7 @@ if ( msg0 && msg2 ) {  /* L(:,k) and U(k,:) are not empty. */
             assert(jjj_st<nub);
             assert(jjj-1<nub);
             // TAU_STATIC_TIMER_START("GATHER_U");
-
+	    
 	    tt_start = SuperLU_timer_();
 
 #ifdef _OPENMP
@@ -182,13 +182,12 @@ if ( msg0 && msg2 ) {  /* L(:,k) and U(k,:) are not empty. */
 
 	    tt_end = SuperLU_timer_();
 	    GatherUTimer += tt_end - tt_start;
-
+	    
 	    if ( num_streams_used > 0 ) {
 #ifdef PI_DEBUG
 		printf("nbrow %d *ldu %d  =%d < ldt %d * max_row_size %d =%d \n",nbrow,ldu,nbrow*ldu,ldt,max_row_size,ldt*max_row_size ); fflush(stdout);
 		assert(nbrow*ldu<=ldt*max_row_size);
 #endif
-		
 		gpuMemcpy2DAsync(dA, nbrow*sizeof(double),
 				  &lusup[luptr+(knsupc-ldu)*nsupr],
 				  nsupr*sizeof(double), nbrow*sizeof(double),
@@ -239,7 +238,6 @@ if ( msg0 && msg2 ) {  /* L(:,k) and U(k,:) are not empty. */
 					   C_stream_size,
 					   gpuMemcpyDeviceToHost,
 					   streams[stream_id]) );
-		    
 #else /*-- on CPU --*/
 		} else { // num_col_stream == 0  Sherry: how can get here?
                     // Sherry: looks like a batched GEMM 
@@ -247,13 +245,13 @@ if ( msg0 && msg2 ) {  /* L(:,k) and U(k,:) are not empty. */
 			      &alpha, &lusup[luptr+(knsupc-ldu)*nsupr],
 			      &nsupr, tempu+ldu*st_col, &ldu, &beta,
 			      tempv1, &nbrow, 1, 1);
-		} 
-
+	        }
 #endif /*-- end ifdef GPU_ACC --*/
 
    	      } // end if num_col_stream > 0
 
-	    } /* end for i = 1 to num_streams_used */
+	    	stat->ops[FACT] += 2.0 * nbrow * num_col_stream * ldu;
+	    } /* end for i = 1 to num_streams used */
 
 	    /* Special case for CPU -- leading block columns are computed 
 	       on CPU in order to mask the GPU data transfer latency */
@@ -262,11 +260,6 @@ if ( msg0 && msg2 ) {  /* L(:,k) and U(k,:) are not empty. */
 	    tempv = bigV + nbrow * st_col;
 	    tempu = bigU;
 
-	    //	    if (!iam) {
-	    //printf("before CPU dgemm: num_col %d\n", num_col);
-	    //fflush(stdout);
-	    //}
-	    
 	    double tstart = SuperLU_timer_();
 #if defined (USE_VENDOR_BLAS)
 	    dgemm_("N", "N", &nbrow, &num_col, &ldu, &alpha,
@@ -277,8 +270,8 @@ if ( msg0 && msg2 ) {  /* L(:,k) and U(k,:) are not empty. */
 		  &lusup[luptr+(knsupc-ldu)*nsupr], &nsupr,
 		  tempu+ldu*st_col, &ldu, &beta, tempv, &nbrow);
 #endif
-	    //cpuGEMMTimer += SuperLU_timer_() -tstart;
-	    stat->ops[FACT] += 2 * nbrow * ldu * full_u_cols[jjj-1];
+	    gemm_timer += SuperLU_timer_() -tstart;
+	    stat->ops[FACT] += 2.0 * nbrow * ldu * full_u_cols[jjj-1];
 
             /* Now scattering blocks computed by CPU */
             int temp_ncol;
@@ -479,7 +472,7 @@ if ( msg0 && msg2 ) {  /* L(:,k) and U(k,:) are not empty. */
 		}     /* else (ncpu_blks >= omp_get_num_threads()) */
 	    }         /* parallel region */
 
-	    // scatter_timer += SuperLU_timer_() - tstart;
+	    scatter_timer += SuperLU_timer_() - tstart;
 	    
 	    // Scatter tempv(:, (jjj_st1 : jjj_global)) computed on GPU.
 #ifdef _OPENMP
@@ -586,7 +579,7 @@ if ( msg0 && msg2 ) {  /* L(:,k) and U(k,:) are not empty. */
                         luptr=luptr0;
                     } /* for j = jjj_st ... */
 
-                } /* end for i = 0 to num_streams_used */
+                } /* end for i = 0 to num_streams_used  */
 		
                 // TAU_STATIC_TIMER_STOP("GPU_SCATTER");
                 // TAU_STATIC_TIMER_STOP("INSIDE_OMP");

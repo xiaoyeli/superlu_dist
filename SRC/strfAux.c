@@ -489,6 +489,7 @@ int_t sSchurComplementSetupGPU(
     return LU_nonempty;
 } /* sSchurComplementSetupGPU */
 
+
 float* sgetBigV(int_t ldt, int_t num_threads)
 {
     float *bigV;
@@ -541,6 +542,7 @@ float* sgetBigU(int_t nsupers, gridinfo_t *grid, sLUstruct_t *LUstruct)
     return bigU;
 } /* sgetBigU */
 
+
 strf3Dpartition_t* sinitTrf3Dpartition(int_t nsupers,
 				      superlu_dist_options_t *options,
 				      sLUstruct_t *LUstruct, gridinfo3d_t * grid3d
@@ -552,13 +554,11 @@ strf3Dpartition_t* sinitTrf3Dpartition(int_t nsupers,
     int iam = grid3d->iam;
     CHECK_MALLOC (iam, "Enter sinitTrf3Dpartition()");
 #endif
-
     int_t* perm_c_supno = getPerm_c_supno(nsupers, options,
                                          LUstruct->etree,
     	   		                 LUstruct->Glu_persist,
 		                         LUstruct->Llu->Lrowind_bc_ptr,
 					 LUstruct->Llu->Ufstnz_br_ptr, grid);
-
     int_t* iperm_c_supno = getFactIperm(perm_c_supno, nsupers);
 
     // calculating tree factorization
@@ -566,7 +566,6 @@ strf3Dpartition_t* sinitTrf3Dpartition(int_t nsupers,
     treeList_t* treeList = setree2list(nsupers, setree );
 
     /*update treelist with weight and depth*/
-
     getSCUweight(nsupers, treeList, LUstruct->Glu_persist->xsup,
 		  LUstruct->Llu->Lrowind_bc_ptr, LUstruct->Llu->Ufstnz_br_ptr,
 		  grid3d);

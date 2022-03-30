@@ -851,12 +851,6 @@ pdgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
         for (int i = 0; i < nstreams; ++i)
             checkGPU( gpuStreamCreate(&streams[i]) );
 
-    
-        // gpuStat = gpuMalloc( (void**)&dA, m*k*sizeof(double));
-        // HOw much should be the size of dA?
-        // for time being just making it
-        // gpuStat = gpuMalloc( (void**)&dA, ((max_row_size*sp_ienv_dist(3)))* sizeof(double));
-
         gpuStat = gpuMalloc( (void**)&dA, max_row_size*sp_ienv_dist(3)* sizeof(double));
         if (gpuStat!= gpuSuccess) {
             fprintf(stderr, "!!!! Error in allocating A in the device %ld \n",m*k*sizeof(double) );
@@ -1766,7 +1760,7 @@ pdgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
 
     pxgstrfTimer = SuperLU_timer_() - pxgstrfTimer;
 
-#if ( PRNTlevel>=1 )
+#if ( PRNTlevel>=2 )
     /* Print detailed statistics */
     /* Updating total flops */
     double allflops;
@@ -1784,7 +1778,6 @@ pdgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
         printf("Time in Schur update \t\t %8.4lf seconds\n", NetSchurUpTimer);
         printf(".. Time to Gather L buffer\t %8.4lf  (Separate L panel by Lookahead/Remain)\n", GatherLTimer);
         printf(".. Time to Gather U buffer\t %8.4lf \n", GatherUTimer);
-
 	//#ifdef GPU_ACC
 	//        printf(".. Time in GEMM %8.3lf \n",
 	//	       cublasGEMMTimer + cpuGEMMTimer);
@@ -1796,7 +1789,6 @@ pdgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
         printf("\t* Look-ahead\t %8.4lf \n", LookAheadGEMMTimer);
         printf("\t* Remain\t %8.4lf\tFlops %8.4le\tGflops %8.4lf\n",
 	       RemainGEMMTimer, allflops, allflops/RemainGEMMTimer*1e-9);
-	
         printf(".. Time to Scatter %8.4lf \n",
 	       LookAheadScatterTimer + RemainScatterTimer);
         printf("\t* Look-ahead\t %8.4lf \n", LookAheadScatterTimer);

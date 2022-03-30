@@ -782,6 +782,7 @@ int_t sinit3DLUstruct( int_t* myTreeIdxs, int_t* myZeroTrIdxs,
     return 0;
 }
 
+
 int sreduceAllAncestors3d(int_t ilvl, int_t* myNodeCount, int_t** treePerm,
                              sLUValSubBuf_t* LUvsb, sLUstruct_t* LUstruct,
                              gridinfo3d_t* grid3d, SCT_t* SCT )

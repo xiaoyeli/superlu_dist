@@ -299,6 +299,7 @@ typedef struct {
 } dSOLVEstruct_t;
 
 
+
 /*==== For 3D code ====*/
 
 // new structures for pdgstrf_4_8 
@@ -310,7 +311,7 @@ typedef struct
     int_t klst;
     int_t ldu;
     int_t* usub;
-  //double* uval;
+    double* uval;
 } uPanelInfo_t;
 
 typedef struct
@@ -321,7 +322,6 @@ typedef struct
     int_t nlb;  //number of l blocks
     int_t nsupr;
 } lPanelInfo_t;
-
 
 /* HyP_t is the data structure to assist HALO offload of Schur-complement. */
 typedef struct
@@ -352,9 +352,9 @@ typedef struct
     int nGPUStreams;
 } HyP_t;
 
-#endif
+#endif  // Above are moved to superlu_defs.h
 
- 
+
 typedef struct 
 {
     int_t * Lsub_buf ;
@@ -1140,7 +1140,7 @@ extern int_t checkRecvUDiag(int_t k, commRequests_t *comReqs,
 extern int_t checkRecvLDiag(int_t k, commRequests_t *comReqs, gridinfo_t *, SCT_t *);
 
 #if 0 // NOT CALLED
-    /* from ancFactorization.h (not called) */
+/* from ancFactorization.h (not called) */
 extern int_t ancestorFactor(
     int_t ilvl,             // level of factorization 
     sForest_t* sforest,

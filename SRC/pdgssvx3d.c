@@ -1007,7 +1007,7 @@ pdgssvx3d (superlu_dist_options_t * options, SuperMatrix * A,
 	
 	
 	/* ------------------------------------------------------------
-	   Perform the LU factorization.
+	   Perform ordering and symbolic factorization
 	   ------------------------------------------------------------ */
 	if ( !factored ) {
 	    t = SuperLU_timer_ ();
@@ -1213,7 +1213,8 @@ pdgssvx3d (superlu_dist_options_t * options, SuperMatrix * A,
 
 	    /*if (!iam) printf ("\tDISTRIBUTE time  %8.2f\n", stat->utime[DIST]); */
 	} /* end if not Factored */
-    } /* end if process layer 0 */
+	
+    } /* end 2D process layer 0 */
 
     dtrf3Dpartition_t*  trf3Dpartition;
 

@@ -117,7 +117,6 @@ int main(int argc, char *argv[])
     /* Bail out if I do not belong in the grid. */
     iam = grid.iam;
     if ( iam == -1 )	goto out;
-    
     if ( !iam ) {
 	int v_major, v_minor, v_bugfix;
 #ifdef __INTEL_COMPILER
@@ -168,12 +167,13 @@ int main(int argc, char *argv[])
         options.RowPerm = LargeDiag_MC64;
         options.ReplaceTinyPivot = NO;
         options.Trans = NOTRANS;
-        options.IterRefine = DOUBLE;
+        options.IterRefine = SLU_DOUBLE;
         options.SolveInitialized = NO;
         options.RefineInitialized = NO;
         options.PrintStat = YES;
      */
     set_default_options_dist(&options);
+    options.IterRefine = SLU_SINGLE;
 
     if (!iam) {
 	print_sp_ienv_dist(&options);

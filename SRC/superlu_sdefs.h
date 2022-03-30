@@ -99,7 +99,7 @@ typedef struct {
     int_t *Lrowind_bc_dat;  /* size sum of sizes of Lrowind_bc_ptr[lk])    */   
     long int *Lrowind_bc_offset;  /* size ceil(NSUPERS/Pc)                 */     
     long int Lrowind_bc_cnt;
-    
+
     float **Lnzval_bc_ptr;  /* size ceil(NSUPERS/Pc)                 */
     float *Lnzval_bc_dat;  /* size sum of sizes of Lnzval_bc_ptr[lk])  */   
     long int *Lnzval_bc_offset;  /* size ceil(NSUPERS/Pc)                */    
@@ -115,8 +115,8 @@ typedef struct {
     long int *Lindval_loc_bc_offset;  /* size ceil(NSUPERS/Pc)                  */   
     long int Lindval_loc_bc_cnt;  
     int_t   *Unnz; /* number of nonzeros per block column in U*/
-	int_t   **Lrowind_bc_2_lsum; /* size ceil(NSUPERS/Pc)  map indices of Lrowind_bc_ptr to indices of lsum  */
-    float  **Uinv_bc_ptr;  /* size ceil(NSUPERS/Pc)     	*/
+    int_t   **Lrowind_bc_2_lsum; /* size ceil(NSUPERS/Pc)  map indices of Lrowind_bc_ptr to indices of lsum  */
+    float **Uinv_bc_ptr;  /* size ceil(NSUPERS/Pc)     	*/
     float *Uinv_bc_dat;  /* size sum of sizes of Linv_bc_ptr[lk])                 */   
     long int *Uinv_bc_offset;  /* size ceil(NSUPERS/Pc)                 */   
     long int Uinv_bc_cnt;
@@ -126,7 +126,7 @@ typedef struct {
     long int *Ufstnz_br_offset;  /* size ceil(NSUPERS/Pr)    */
     long int Ufstnz_br_cnt;
     
-    float  **Unzval_br_ptr;  /* size ceil(NSUPERS/Pr)                 */
+    float  **Unzval_br_ptr;  /* size ceil(NSUPERS/Pr)                  */
     float  *Unzval_br_dat;   /* size sum of sizes of Unzval_br_ptr[lk]) */   
     long int *Unzval_br_offset;  /* size ceil(NSUPERS/Pr)    */
     long int Unzval_br_cnt;
@@ -215,7 +215,7 @@ typedef struct {
     int_t nleaf;
     int_t nfrecvmod;
     int_t inv; /* whether the diagonal block is inverted*/
-    
+
     /* The following variables are used in GPU trisolve*/
 #ifdef GPU_ACC
     int_t *d_Lrowind_bc_dat;     
@@ -300,7 +300,7 @@ typedef struct {
     int_t *xrow_to_proc; /* used by PDSLin */
     NRformat_loc3d* A3d; /* Point to 3D {A, B} gathered on 2D layer 0.
                             This needs to be peresistent between
-                            3D factorization and solve.  */    
+			    3D factorization and solve.  */
 } sSOLVEstruct_t;
 
 
@@ -309,14 +309,14 @@ typedef struct {
 
 // new structures for pdgstrf_4_8 
 
-#if 0 // Moved to superlu_defs.h
+#if 0  // Sherry: moved to superlu_defs.h
 typedef struct
 {
     int_t nub;
     int_t klst;
     int_t ldu;
     int_t* usub;
-  //float* uval;
+    float* uval;
 } uPanelInfo_t;
 
 typedef struct
@@ -354,10 +354,11 @@ typedef struct
     int_t bigu_size;
     int offloadCondition;
     int superlu_acc_offload;
-    int nCudaStreams;
+    int nGPUStreams;
 } HyP_t;
 
-#endif
+#endif  // Above are moved to superlu_defs.h
+
 
 typedef struct 
 {
@@ -399,7 +400,6 @@ typedef struct
     float* BlockUFactor;
 } sdiagFactBufs_t;
 
-//#endif
 /*=====================*/
 
 /***********************************************************************
@@ -574,7 +574,7 @@ extern void sComputeLevelsets(int , int_t , gridinfo_t *,
 extern void slsum_fmod_inv_gpu_wrap(int_t, int_t, int_t, int_t, float *, float *, int, int, int_t , int *fmod, C_Tree  *, C_Tree  *, int_t *, int_t *, int64_t *, float *, int64_t *, float *, int64_t *, int_t *, int64_t *, int_t *, gridinfo_t *, float * , float * , int_t );
 extern void slsum_bmod_inv_gpu_wrap(int_t, int_t, int_t, int_t, float *, float *,int,int, int_t , int *bmod, C_Tree  *, C_Tree  *, int_t *, int_t *,int_t *, int64_t *, float *, int64_t *, int_t  *, int64_t *, Ucb_indptr_t *, int64_t *, float *, int64_t *,int_t *,gridinfo_t *);
 #endif
-    
+
 extern void psgsrfs(int_t, SuperMatrix *, float, sLUstruct_t *,
 		    sScalePermstruct_t *, gridinfo_t *,
 		    float [], int_t, float [], int_t, int,
@@ -986,10 +986,10 @@ extern int_t sIRecv_UDiagBlock(int_t k0, float *ublk_ptr, int_t size,
 			       SCT_t*, int);
 extern int_t sIRecv_LDiagBlock(int_t k0, float *L_blk_ptr, int_t size,
 			       int_t src, MPI_Request *, gridinfo_t*, SCT_t*, int);
-
 extern int_t sUDiagBlockRecvWait( int_t k,  int_t* IrecvPlcd_D, int_t* factored_L,
 				  MPI_Request *, gridinfo_t *, sLUstruct_t *, SCT_t *);
 extern int_t LDiagBlockRecvWait( int_t k, int_t* factored_U, MPI_Request *, gridinfo_t *);
+
 #if (MPI_VERSION>2)
 extern int_t sIBcast_UDiagBlock(int_t k, float *ublk_ptr, int_t size,
 				MPI_Request *, gridinfo_t *);
@@ -1144,8 +1144,8 @@ extern int_t checkRecvUDiag(int_t k, commRequests_t *comReqs,
 			    gridinfo_t *grid, SCT_t *SCT);
 extern int_t checkRecvLDiag(int_t k, commRequests_t *comReqs, gridinfo_t *, SCT_t *);
 
-#if 0 // NOT CALLED 
-    /* from ancFactorization.h (not called) */
+#if 0 // NOT CALLED
+/* from ancFactorization.h (not called) */
 extern int_t ancestorFactor(
     int_t ilvl,             // level of factorization 
     sForest_t* sforest,

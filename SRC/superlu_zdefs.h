@@ -304,14 +304,14 @@ typedef struct {
 
 // new structures for pdgstrf_4_8 
 
-#if 0 // moved to superlu_defs.h
+#if 0  // Sherry: moved to superlu_defs.h
 typedef struct
 {
     int_t nub;
     int_t klst;
     int_t ldu;
     int_t* usub;
-  //doublecomplex* uval;
+    doublecomplex* uval;
 } uPanelInfo_t;
 
 typedef struct
@@ -352,7 +352,8 @@ typedef struct
     int nGPUStreams;
 } HyP_t;
 
-#endif //------------------
+#endif  // Above are moved to superlu_defs.h
+
 
 typedef struct 
 {
@@ -394,17 +395,6 @@ typedef struct
     doublecomplex* BlockUFactor;
 } zdiagFactBufs_t;
 
-#if 0 // moved to superlu_defs.h
-typedef struct
-{
-    Ublock_info_t* Ublock_info;
-    Remain_info_t*  Remain_info;
-    uPanelInfo_t* uPanelInfo;
-    lPanelInfo_t* lPanelInfo;
-} packLUInfo_t;
-#endif
-
-//#endif
 /*=====================*/
 
 /***********************************************************************
@@ -577,7 +567,7 @@ extern void zComputeLevelsets(int , int_t , gridinfo_t *,
 			   
 #ifdef GPU_ACC               
 extern void zlsum_fmod_inv_gpu_wrap(int_t, int_t, int_t, int_t, doublecomplex *, doublecomplex *, int, int, int_t , int *fmod, C_Tree  *, C_Tree  *, int_t *, int_t *, int64_t *, doublecomplex *, int64_t *, doublecomplex *, int64_t *, int_t *, int64_t *, int_t *, gridinfo_t *, doublecomplex * , doublecomplex * , int_t );
-extern void dlsum_bmod_inv_gpu_wrap(int_t, int_t, int_t, int_t, doublecomplex *, doublecomplex *,int,int, int_t , int *bmod, C_Tree  *, C_Tree  *, int_t *, int_t *,int_t *, int64_t *, doublecomplex *, int64_t *, int_t  *, int64_t *, Ucb_indptr_t *, int64_t *, doublecomplex *, int64_t *,int_t *,gridinfo_t *);
+extern void zlsum_bmod_inv_gpu_wrap(int_t, int_t, int_t, int_t, doublecomplex *, doublecomplex *,int,int, int_t , int *bmod, C_Tree  *, C_Tree  *, int_t *, int_t *,int_t *, int64_t *, doublecomplex *, int64_t *, int_t  *, int64_t *, Ucb_indptr_t *, int64_t *, doublecomplex *, int64_t *,int_t *,gridinfo_t *);
 #endif
 
 extern void pzgsrfs(int_t, SuperMatrix *, double, zLUstruct_t *,
@@ -1062,7 +1052,7 @@ extern int_t zinitScuBufs(int_t ldt, int_t num_threads, int_t nsupers,
 			  zscuBufs_t*, zLUstruct_t*, gridinfo_t *);
 extern int zfreeScuBufs(zscuBufs_t* scuBufs);
 
-#if 0
+#if 0 // NOT CALLED
 // the generic tree factoring code 
 extern int_t treeFactor(
     int_t nnnodes,          // number of nodes in the tree
@@ -1152,7 +1142,7 @@ extern int_t checkRecvUDiag(int_t k, commRequests_t *comReqs,
 extern int_t checkRecvLDiag(int_t k, commRequests_t *comReqs, gridinfo_t *, SCT_t *);
 
 #if 0 // NOT CALLED
-    /* from ancFactorization.h (not called) */
+/* from ancFactorization.h (not called) */
 extern int_t ancestorFactor(
     int_t ilvl,             // level of factorization 
     sForest_t* sforest,

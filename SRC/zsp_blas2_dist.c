@@ -88,7 +88,7 @@ extern void zmatvec(int, int, int, doublecomplex*, doublecomplex*, doublecomplex
  *
  *   info    - (output) int*
  *             If *info = -i, the i-th argument had an illegal value.
- * <pre>
+ * </pre>
  */
 int
 sp_ztrsv_dist(char *uplo, char *trans, char *diag, SuperMatrix *L, 
@@ -109,7 +109,6 @@ sp_ztrsv_dist(char *uplo, char *trans, char *diag, SuperMatrix *L,
     int i, k, iptr, jcol;
     doublecomplex *work;
     flops_t solve_ops;
-    /*extern SuperLUStat_t SuperLUStat;*/
 
     /* Test the input parameters */
     *info = 0;
@@ -148,8 +147,10 @@ sp_ztrsv_dist(char *uplo, char *trans, char *diag, SuperMatrix *L,
 		nsupc = SuperLU_L_FST_SUPC(k+1) - fsupc;
 		luptr = SuperLU_L_NZ_START(fsupc);
 		nrow = nsupr - nsupc;
+		
 	        solve_ops += 4 * nsupc * (nsupc - 1);
 	        solve_ops += 8 * nrow * nsupc;
+
 		if ( nsupc == 1 ) {
 		    for (iptr=istart+1; iptr < SuperLU_L_SUB_START(fsupc+1); ++iptr) {
 			irow = SuperLU_L_SUB(iptr);
@@ -201,6 +202,7 @@ sp_ztrsv_dist(char *uplo, char *trans, char *diag, SuperMatrix *L,
 	    	nsupr = SuperLU_L_SUB_START(fsupc+1) - SuperLU_L_SUB_START(fsupc);
 	    	nsupc = SuperLU_L_FST_SUPC(k+1) - fsupc;
 	    	luptr = SuperLU_L_NZ_START(fsupc);
+		
     	        solve_ops += 4 * nsupc * (nsupc + 1);
 
 		if ( nsupc == 1 ) {
@@ -252,6 +254,7 @@ sp_ztrsv_dist(char *uplo, char *trans, char *diag, SuperMatrix *L,
 	    	luptr = SuperLU_L_NZ_START(fsupc);
 
 		solve_ops += 8 * (nsupr - nsupc) * nsupc;
+
 		for (jcol = fsupc; jcol < SuperLU_L_FST_SUPC(k+1); jcol++) {
 		    iptr = istart + nsupc;
 		    for (i = SuperLU_L_NZ_START(jcol) + nsupc; 

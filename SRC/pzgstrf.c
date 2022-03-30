@@ -1778,7 +1778,12 @@ pzgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
         printf("Time in Schur update \t\t %8.4lf seconds\n", NetSchurUpTimer);
         printf(".. Time to Gather L buffer\t %8.4lf  (Separate L panel by Lookahead/Remain)\n", GatherLTimer);
         printf(".. Time to Gather U buffer\t %8.4lf \n", GatherUTimer);
-
+	//#ifdef GPU_ACC
+	//        printf(".. Time in GEMM %8.3lf \n",
+	//	       cublasGEMMTimer + cpuGEMMTimer);
+	//        printf("\t* cublasGEMM\t %8.4lf \n", cublasGEMMTimer);
+	//        printf("\t* cpuGEMM\t %8.4lf \n", cpuGEMMTimer);
+	//#else
         printf(".. Time in GEMM %8.4lf \n",
 	       LookAheadGEMMTimer + RemainGEMMTimer);
         printf("\t* Look-ahead\t %8.4lf \n", LookAheadGEMMTimer);

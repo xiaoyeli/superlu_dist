@@ -205,6 +205,7 @@ main (int argc, char *argv[])
 	    fflush(stdout);
 	    break;
 	}
+	fflush(stdout);
     }
 	
     /* Bail out if I do not belong in the grid. */
@@ -303,7 +304,7 @@ main (int argc, char *argv[])
        options.ColPerm           = METIS_AT_PLUS_A;
        options.RowPerm           = LargeDiag_MC64;
        options.ReplaceTinyPivot  = NO;
-       options.IterRefine        = DOUBLE;
+       options.IterRefine        = SLU_DOUBLE;
        options.Trans             = NOTRANS;
        options.SolveInitialized  = NO;
        options.RefineInitialized = NO;
