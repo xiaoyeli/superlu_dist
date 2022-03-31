@@ -23,7 +23,7 @@ at the top-level directory.
  */
 #include "superlu_ddefs.h"
 #include "TRF3dV100/superlu_summit.h"
-
+#include <stdbool.h>
 /*! \brief
  *
  * <pre>
@@ -640,6 +640,7 @@ pdgssvx3d (superlu_dist_options_t * options, SuperMatrix * A,
     float GA_mem_use;           /* memory usage by global A */
     float dist_mem_use;         /* memory usage during distribution */
     superlu_dist_mem_usage_t num_mem_usage, symb_mem_usage;
+	bool Solve3D = true;
 #if ( PRNTlevel>= 2 )
     double dmin, dsum, dprod;
 #endif
@@ -1401,8 +1402,9 @@ pdgssvx3d (superlu_dist_options_t * options, SuperMatrix * A,
 	/*factorize in grid 1*/
 	// if(grid3d->zscp.Iam)
 		double tgather = SuperLU_timer_();
+		if(Solve3D==false){
 		dgatherAllFactoredLU(trf3Dpartition, LUstruct, grid3d, SCT);
-
+		}
 		SCT->gatherLUtimer += SuperLU_timer_() - tgather;
 		/*print stats for bottom grid*/
 
@@ -1450,12 +1452,17 @@ pdgssvx3d (superlu_dist_options_t * options, SuperMatrix * A,
 		/*reduces stat from all the layers*/
 #endif
 
+		if(Solve3D==false){
         dDestroy_trf3Dpartition(trf3Dpartition, grid3d);
+		}
+		
 		SCT_free(SCT);
 
     } /* end if not Factored ... factor on all process layers */
     
     if ( grid3d->zscp.Iam == 0 ) { // only process layer 0
+	
+	if(Solve3D==false){
 	if (!factored) {
 	    if (options->PrintStat) {
 		int_t TinyPivots;
@@ -1502,14 +1509,16 @@ pdgssvx3d (superlu_dist_options_t * options, SuperMatrix * A,
 	    }
 	    
 	}   /* end if not Factored */
+	}
+	}
 
 	/* ------------------------------------------------------------
 	   Compute the solution matrix X.
 	   ------------------------------------------------------------ */
 	if ( (nrhs > 0) && (*info == 0) ) {
-	    if (!(b_work = doubleMalloc_dist (n)))
-	        ABORT ("Malloc fails for b_work[]");
-
+	    // if (!(b_work = doubleMalloc_dist (n)))
+	    //     ABORT ("Malloc fails for b_work[]");
+	if ( grid3d->zscp.Iam == 0 ) { // only process layer 0
 	    /* ------------------------------------------------------
 	       Scale the right-hand side if equilibration was performed
 	       ------------------------------------------------------*/
@@ -1556,10 +1565,15 @@ pdgssvx3d (superlu_dist_options_t * options, SuperMatrix * A,
 		    x_col += ldx;
 		    b_col += ldb;
 		}
+	}
+
 
 		/* ------------------------------------------------------
 		   Solve the linear system.
 		   ------------------------------------------------------*/
+		
+	if (grid3d->zscp.Iam == 0)  /* on 2D grid-0 */		
+		{	
 		if (options->SolveInitialized == NO) /* First time */
                    /* Inside this routine, SolveInitialized is set to YES.
 	              For repeated call to pdgssvx3d(), no need to re-initialilze
@@ -1569,14 +1583,19 @@ pdgssvx3d (superlu_dist_options_t * options, SuperMatrix * A,
 			dSolveInit (options, A, perm_r, perm_c, nrhs, LUstruct,
 			            grid, SOLVEstruct);
 		    }
+		}
+
+
 		stat->utime[SOLVE] = 0.0;
-#if 0 // Sherry: the following interface is needed by 3D trisolve.
-		pdgstrs_vecpar (n, LUstruct, ScalePermstruct, grid, X, m_loc,
+		if(Solve3D){
+		pdgstrs3d (n, LUstruct,ScalePermstruct, trf3Dpartition, grid3d, X,
+			m_loc, fst_row, ldb, nrhs,SOLVEstruct, stat, info);
+		}else{
+			if (grid3d->zscp.Iam == 0){  /* on 2D grid-0 */		
+			pdgstrs(n, LUstruct, ScalePermstruct, grid, X, m_loc,
 				fst_row, ldb, nrhs, SOLVEstruct, stat, info);
-#else
-		pdgstrs(n, LUstruct, ScalePermstruct, grid, X, m_loc,
-			fst_row, ldb, nrhs, SOLVEstruct, stat, info);
-#endif
+			}
+		}
 
 		/* ------------------------------------------------------------
 		   Use iterative refinement to improve the computed solution and
@@ -1675,6 +1694,10 @@ pdgssvx3d (superlu_dist_options_t * options, SuperMatrix * A,
 			stat->utime[REFINE] = SuperLU_timer_ () - t;
 		    } /* end IterRefine */
 		
+
+
+if (grid3d->zscp.Iam == 0)  /* on 2D grid-0 */
+	{
 		/* Permute the solution matrix B <= Pc'*X. */
 		pdPermute_Dense_Matrix (fst_row, m_loc, SOLVEstruct->row_to_proc,
 					SOLVEstruct->inv_perm_c,
@@ -1719,10 +1742,10 @@ pdgssvx3d (superlu_dist_options_t * options, SuperMatrix * A,
 			    }
 		    }
 		
-		SUPERLU_FREE (b_work);
+		// SUPERLU_FREE (b_work);
 		SUPERLU_FREE (X);
-		
-	    } /* end if nrhs > 0 and factor successful */
+	}
+	} /* end if nrhs > 0 and factor successful */
 	
 #if ( PRNTlevel>=1 )
 	if (!iam) {
@@ -1730,6 +1753,8 @@ pdgssvx3d (superlu_dist_options_t * options, SuperMatrix * A,
         }
 #endif
 	
+
+	if ( grid3d->zscp.Iam == 0 ) { // only process layer 0	
 	/* Deallocate R and/or C if it was not used. */
 	if (Equil && Fact != SamePattern_SameRowPerm)
 	    {
@@ -1752,8 +1777,7 @@ pdgssvx3d (superlu_dist_options_t * options, SuperMatrix * A,
 	if (!factored && Fact != SamePattern_SameRowPerm && !parSymbFact)
 	    Destroy_CompCol_Permuted_dist (&GAC);
 #endif
-
-    } /* process layer 0 done solve */
+	}
 
     /* Scatter the solution from 2D grid-0 to 3D grid */
     if ( nrhs > 0 ) dScatter_B3d(A3d, grid3d);

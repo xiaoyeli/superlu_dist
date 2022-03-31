@@ -108,6 +108,7 @@ endif()
     dstatic_schedule.c
     pdgstrf2.c
     pdgstrs.c
+    pdgstrs3d.c
     pdgstrs1.c
     pdgstrs_lsum.c
     pdgstrs_Bglobal.c

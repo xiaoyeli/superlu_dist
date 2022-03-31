@@ -3,7 +3,9 @@
 #include <iostream>
 #include "superlu_ddefs.h"
 #include "lu_common.hpp"
+#ifdef GPU_ACC
 #include "lupanels_GPU.cuh"
+#endif
 #include "commWrapper.hpp"
 // class lpanelGPU_t;
 // class upanelGPU_t;
@@ -16,16 +18,26 @@ public:
     double *val;
     // ifdef GPU acceraleration
 
+#ifdef GPU_ACC
     lpanelGPU_t gpuPanel;
+#endif
     // bool isDiagIncluded;
 
     lpanel_t(int_t k, int_t *lsub, double *nzval, int_t *xsup, int_t isDiagIncluded);
     // default constuctor
+#ifdef GPU_ACC    
     lpanel_t() : gpuPanel(NULL, NULL)
     {
         index = NULL;
         val = NULL;
     }
+#else
+    lpanel_t()
+    {
+        index = NULL;
+        val = NULL;
+    }  
+#endif
 
     lpanel_t(int_t *index_, double *val_) : index(index_), val(val_) { return; };
 
@@ -106,10 +118,9 @@ public:
 
     // return the maximal iEnd such that stRow(iEnd)-stRow(iSt) < maxRow;
     int getEndBlock(int iSt, int maxRows);
-
+#ifdef GPU_ACC
     lpanelGPU_t copyToGPU();
     lpanelGPU_t copyToGPU(void *basePtr); // when we are doing a single allocation
-
     int checkGPU();
 
     int_t panelSolveGPU(cublasHandle_t handle, cudaStream_t cuStream,
@@ -134,6 +145,7 @@ public:
         return;
     };
     int_t copyFromGPU();
+#endif    
 };
 
 class upanel_t
@@ -141,16 +153,26 @@ class upanel_t
 public:
     int_t *index;
     double *val;
+#ifdef GPU_ACC     
     // upanelGPU_t* upanelGPU;
     upanelGPU_t gpuPanel;
+#endif
 
     // upanel_t(int_t *usub, double *uval);
     upanel_t(int_t k, int_t *usub, double *uval, int_t *xsup);
+#ifdef GPU_ACC    
     upanel_t() : gpuPanel(NULL, NULL)
     {
         index = NULL;
         val = NULL;
     }
+#else
+    upanel_t()
+    {
+        index = NULL;
+        val = NULL;
+    }    
+#endif    
     // constructing from recevied index and val
     upanel_t(int_t *index_, double *val_) : index(index_), val(val_) { return; };
     // index[0] is number of blocks
@@ -247,10 +269,10 @@ public:
     }
     int getEndBlock(int jSt, int maxCols);
 
+#ifdef GPU_ACC 
     upanelGPU_t copyToGPU();
     //TODO: implement with baseptr
     upanelGPU_t copyToGPU(void *basePtr);
-
     int_t panelSolveGPU(cublasHandle_t handle, cudaStream_t cuStream,
                         int_t ksupsz, double *DiagBlk, int_t LDD);
     int checkGPU();
@@ -265,6 +287,7 @@ public:
         return;
     };
     int_t copyFromGPU();
+#endif    
 };
 
 // Defineing GPU data types
@@ -346,8 +369,10 @@ struct LUstruct_v100
     int_t g2lCol(int_t k) { return k / Pc; }
 
     // For GPU acceleration
+#ifdef GPU_ACC    
     LUstructGPU_t *dA_gpu;
     LUstructGPU_t A_gpu;
+#endif
 
     enum indirectMapType
     {
@@ -417,6 +442,7 @@ struct LUstruct_v100
     int_t zRecvUPanel(int_t k0, int_t senderGrid, double alpha, double beta);
 
     // GPU related functions
+#ifdef GPU_ACC
     int_t setLUstruct_GPU();
     int_t dsparseTreeFactorGPU(
         sForest_t *sforest,
@@ -462,7 +488,6 @@ struct LUstruct_v100
     int_t copyLUGPUtoHost();
     int_t checkGPU();
 
-
     // some more helper functions 
     upanel_t getKUpanel(int_t k, int_t offset);
     lpanel_t getKLpanel(int_t k, int_t offset);
@@ -471,8 +496,12 @@ struct LUstruct_v100
     double *gpuLvalBasePtr, *gpuUvalBasePtr;
     int_t *gpuLidxBasePtr, *gpuUidxBasePtr;
     size_t gpuLvalSize, gpuUvalSize, gpuLidxSize, gpuUidxSize;
+   
     lpanelGPU_t* copyLpanelsToGPU();
     upanelGPU_t* copyUpanelsToGPU();
+#endif    
 };
 
+#ifdef GPU_ACC 
 cudaError_t checkCudaLocal(cudaError_t result);
+#endif

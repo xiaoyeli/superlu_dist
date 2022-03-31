@@ -1,6 +1,7 @@
 #include <cstdio>
 #include "superlu_ddefs.h"
 #include "lupanels.hpp"
+#ifdef GPU_ACC
 #include "lupanels_GPU.cuh"
 
 
@@ -519,3 +520,4 @@ int_t LUstruct_v100::dsparseTreeFactorGPUBaseline(
 
     return 0;
 } /* dsparseTreeFactor_ASYNC */
+#endif

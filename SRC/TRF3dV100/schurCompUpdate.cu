@@ -1,4 +1,5 @@
 #include "superlu_ddefs.h"
+#ifdef GPU_ACC
 #include "lupanels_GPU.cuh"
 #include "lupanels.hpp"
 
@@ -628,77 +629,77 @@ int_t LUstruct_v100::setLUstruct_GPU()
 
     
 #if 0
-    upanelGPU_t *uPanelVec_GPU = new upanelGPU_t[CEILING(nsupers, Pr)];
-    lpanelGPU_t *lPanelVec_GPU = new lpanelGPU_t[CEILING(nsupers, Pc)];
-    void *gpuBasePtr, *gpuCurrentPtr;
-    cudaMalloc(&gpuBasePtr, totalMemoryRequired);
-    gpuCurrentPtr = gpuBasePtr;
+    // upanelGPU_t *uPanelVec_GPU = new upanelGPU_t[CEILING(nsupers, Pr)];
+    // lpanelGPU_t *lPanelVec_GPU = new lpanelGPU_t[CEILING(nsupers, Pc)];
+    // void *gpuBasePtr, *gpuCurrentPtr;
+    // cudaMalloc(&gpuBasePtr, totalMemoryRequired);
+    // gpuCurrentPtr = gpuBasePtr;
 
-    A_gpu.xsup = (int_t *)gpuCurrentPtr;
-    gpuCurrentPtr = (int_t *)gpuCurrentPtr + (nsupers + 1);
-    cudaMemcpy(A_gpu.xsup, xsup, (nsupers + 1) * sizeof(int_t), cudaMemcpyHostToDevice);
+    // A_gpu.xsup = (int_t *)gpuCurrentPtr;
+    // gpuCurrentPtr = (int_t *)gpuCurrentPtr + (nsupers + 1);
+    // cudaMemcpy(A_gpu.xsup, xsup, (nsupers + 1) * sizeof(int_t), cudaMemcpyHostToDevice);
 
-    for (int_t i = 0; i < CEILING(nsupers, Pc); ++i)
-    {
-        if (i * Pc + mycol < nsupers && isNodeInMyGrid[i * Pc + mycol] == 1)
-        {
-            lPanelVec_GPU[i] = lPanelVec[i].copyToGPU(gpuCurrentPtr);
-            gpuCurrentPtr = (char *)gpuCurrentPtr + lPanelVec[i].totalSize();
-        }
-    }
-    A_gpu.lPanelVec = (lpanelGPU_t *)gpuCurrentPtr;
-    gpuCurrentPtr = (char *)gpuCurrentPtr + CEILING(nsupers, Pc) * sizeof(lpanelGPU_t);
-    cudaMemcpy(A_gpu.lPanelVec, lPanelVec_GPU,
-               CEILING(nsupers, Pc) * sizeof(lpanelGPU_t), cudaMemcpyHostToDevice);
+    // for (int_t i = 0; i < CEILING(nsupers, Pc); ++i)
+    // {
+    //     if (i * Pc + mycol < nsupers && isNodeInMyGrid[i * Pc + mycol] == 1)
+    //     {
+    //         lPanelVec_GPU[i] = lPanelVec[i].copyToGPU(gpuCurrentPtr);
+    //         gpuCurrentPtr = (char *)gpuCurrentPtr + lPanelVec[i].totalSize();
+    //     }
+    // }
+    // A_gpu.lPanelVec = (lpanelGPU_t *)gpuCurrentPtr;
+    // gpuCurrentPtr = (char *)gpuCurrentPtr + CEILING(nsupers, Pc) * sizeof(lpanelGPU_t);
+    // cudaMemcpy(A_gpu.lPanelVec, lPanelVec_GPU,
+    //            CEILING(nsupers, Pc) * sizeof(lpanelGPU_t), cudaMemcpyHostToDevice);
 
-    for (int_t i = 0; i < CEILING(nsupers, Pr); ++i)
-    {
-        if (i * Pr + myrow < nsupers && isNodeInMyGrid[i * Pr + myrow] == 1)
-        {
-            uPanelVec_GPU[i] = uPanelVec[i].copyToGPU(gpuCurrentPtr);
-            gpuCurrentPtr = (char *)gpuCurrentPtr + uPanelVec[i].totalSize();
-        }
-    }
-    A_gpu.uPanelVec = (upanelGPU_t *)gpuCurrentPtr;
-    gpuCurrentPtr = (char *)gpuCurrentPtr + CEILING(nsupers, Pr) * sizeof(upanelGPU_t);
-    cudaMemcpy(A_gpu.uPanelVec, uPanelVec_GPU,
-               CEILING(nsupers, Pr) * sizeof(upanelGPU_t), cudaMemcpyHostToDevice);
+    // for (int_t i = 0; i < CEILING(nsupers, Pr); ++i)
+    // {
+    //     if (i * Pr + myrow < nsupers && isNodeInMyGrid[i * Pr + myrow] == 1)
+    //     {
+    //         uPanelVec_GPU[i] = uPanelVec[i].copyToGPU(gpuCurrentPtr);
+    //         gpuCurrentPtr = (char *)gpuCurrentPtr + uPanelVec[i].totalSize();
+    //     }
+    // }
+    // A_gpu.uPanelVec = (upanelGPU_t *)gpuCurrentPtr;
+    // gpuCurrentPtr = (char *)gpuCurrentPtr + CEILING(nsupers, Pr) * sizeof(upanelGPU_t);
+    // cudaMemcpy(A_gpu.uPanelVec, uPanelVec_GPU,
+    //            CEILING(nsupers, Pr) * sizeof(upanelGPU_t), cudaMemcpyHostToDevice);
 
-    for (int stream = 0; stream < A_gpu.numCudaStreams; stream++)
-    {
+    // for (int stream = 0; stream < A_gpu.numCudaStreams; stream++)
+    // {
 
-        cudaStreamCreate(&A_gpu.cuStreams[stream]);
-        cublasCreate(&A_gpu.cuHandles[stream]);
-        A_gpu.LvalRecvBufs[stream] = (double *)gpuCurrentPtr;
-        gpuCurrentPtr = (double *)gpuCurrentPtr + maxLvalCount;
-        A_gpu.UvalRecvBufs[stream] = (double *)gpuCurrentPtr;
-        gpuCurrentPtr = (double *)gpuCurrentPtr + maxUvalCount;
-        A_gpu.LidxRecvBufs[stream] = (int_t *)gpuCurrentPtr;
-        gpuCurrentPtr = (int_t *)gpuCurrentPtr + maxLidxCount;
-        A_gpu.UidxRecvBufs[stream] = (int_t *)gpuCurrentPtr;
-        gpuCurrentPtr = (int_t *)gpuCurrentPtr + maxUidxCount;
+    //     cudaStreamCreate(&A_gpu.cuStreams[stream]);
+    //     cublasCreate(&A_gpu.cuHandles[stream]);
+    //     A_gpu.LvalRecvBufs[stream] = (double *)gpuCurrentPtr;
+    //     gpuCurrentPtr = (double *)gpuCurrentPtr + maxLvalCount;
+    //     A_gpu.UvalRecvBufs[stream] = (double *)gpuCurrentPtr;
+    //     gpuCurrentPtr = (double *)gpuCurrentPtr + maxUvalCount;
+    //     A_gpu.LidxRecvBufs[stream] = (int_t *)gpuCurrentPtr;
+    //     gpuCurrentPtr = (int_t *)gpuCurrentPtr + maxLidxCount;
+    //     A_gpu.UidxRecvBufs[stream] = (int_t *)gpuCurrentPtr;
+    //     gpuCurrentPtr = (int_t *)gpuCurrentPtr + maxUidxCount;
 
-        A_gpu.gpuGemmBuffs[stream] = (double *)gpuCurrentPtr;
-        gpuCurrentPtr = (double *)gpuCurrentPtr + A_gpu.gemmBufferSize;
-        A_gpu.dFBufs[stream] = (double *)gpuCurrentPtr;
-        gpuCurrentPtr = (double *)gpuCurrentPtr + ldt * ldt;
+    //     A_gpu.gpuGemmBuffs[stream] = (double *)gpuCurrentPtr;
+    //     gpuCurrentPtr = (double *)gpuCurrentPtr + A_gpu.gemmBufferSize;
+    //     A_gpu.dFBufs[stream] = (double *)gpuCurrentPtr;
+    //     gpuCurrentPtr = (double *)gpuCurrentPtr + ldt * ldt;
 
-        /*lookAhead buffers and stream*/
-        cublasCreate(&A_gpu.lookAheadLHandle[stream]);
-        cudaStreamCreate(&A_gpu.lookAheadLStream[stream]);
-        A_gpu.lookAheadLGemmBuffer[stream] = (double *)gpuCurrentPtr;
-        gpuCurrentPtr = (double *)gpuCurrentPtr + maxLvalCount;
-        cublasCreate(&A_gpu.lookAheadUHandle[stream]);
-        cudaStreamCreate(&A_gpu.lookAheadUStream[stream]);
-        A_gpu.lookAheadUGemmBuffer[stream] = (double *)gpuCurrentPtr;
-        gpuCurrentPtr = (double *)gpuCurrentPtr + maxUvalCount;
-    }
-    // cudaCheckError();
-    // allocate
-    dA_gpu = (LUstructGPU_t *)gpuCurrentPtr;
+    //     /*lookAhead buffers and stream*/
+    //     cublasCreate(&A_gpu.lookAheadLHandle[stream]);
+    //     cudaStreamCreate(&A_gpu.lookAheadLStream[stream]);
+    //     A_gpu.lookAheadLGemmBuffer[stream] = (double *)gpuCurrentPtr;
+    //     gpuCurrentPtr = (double *)gpuCurrentPtr + maxLvalCount;
+    //     cublasCreate(&A_gpu.lookAheadUHandle[stream]);
+    //     cudaStreamCreate(&A_gpu.lookAheadUStream[stream]);
+    //     A_gpu.lookAheadUGemmBuffer[stream] = (double *)gpuCurrentPtr;
+    //     gpuCurrentPtr = (double *)gpuCurrentPtr + maxUvalCount;
+    // }
+    // // cudaCheckError();
+    // // allocate
+    // dA_gpu = (LUstructGPU_t *)gpuCurrentPtr;
 
-    cudaMemcpy(dA_gpu, &A_gpu, sizeof(LUstructGPU_t), cudaMemcpyHostToDevice);
-    gpuCurrentPtr = (LUstructGPU_t *)gpuCurrentPtr + 1;
+    // cudaMemcpy(dA_gpu, &A_gpu, sizeof(LUstructGPU_t), cudaMemcpyHostToDevice);
+    // gpuCurrentPtr = (LUstructGPU_t *)gpuCurrentPtr + 1;
 
 #else
     cudaMalloc(&A_gpu.xsup, (nsupers + 1) * sizeof(int_t));
@@ -930,3 +931,4 @@ upanelGPU_t* LUstruct_v100::copyUpanelsToGPU()
     SUPERLU_FREE(idxBuffer);
     return uPanelVec_GPU;
 }
+#endif

@@ -127,9 +127,11 @@ extern "C"
                     double tilvl = SuperLU_timer_();
 
                     if (superlu_acc_offload)
+                    #ifdef GPU_ACC
                         LU_packed.dsparseTreeFactorGPU(sforest,  dFBufs,
                                                        &gEtreeInfo,
                                                        tag_ub);
+                    #endif
                     else
                         LU_packed.dsparseTreeFactor(sforest, dFBufs,
                                                     &gEtreeInfo,
@@ -144,6 +146,7 @@ extern "C"
                 {
                     if (superlu_acc_offload)
                     {
+                    #ifdef GPU_ACC
                         #define NDEBUG
                         #ifndef NDEBUG
                         LU_packed.checkGPU();
@@ -153,6 +156,7 @@ extern "C"
                         #ifndef NDEBUG
                         LU_packed.checkGPU();
                         #endif 
+                    #endif
                     }
                         
                     else
@@ -170,8 +174,10 @@ extern "C"
         double tXferGpu2Host = SuperLU_timer_();
         if (superlu_acc_offload)
         {
+        #ifdef GPU_ACC
             cudaStreamSynchronize(LU_packed.A_gpu.cuStreams[0]);    // in theory I don't need it 
             LU_packed.copyLUGPUtoHost();
+        #endif
         }
             
         LU_packed.packedU2skyline(LUstruct);
@@ -236,13 +242,18 @@ int_t LUstruct_v100::pdgstrf3d()
                 double tilvl = SuperLU_timer_();
 
                 if (superlu_acc_offload)
+                {
+                #ifdef GPU_ACC
                     dsparseTreeFactorGPU(sforest,  dFBufs,
                                                     &gEtreeInfo,
                                                     tag_ub);
-                else
+                #endif
+                }
+                else{
                     dsparseTreeFactor(sforest, dFBufs,
                                                 &gEtreeInfo,
                                                 tag_ub);
+                }
 
                 /*now reduce the updates*/
                 SCT->tFactor3D[ilvl] = SuperLU_timer_() - tilvl;
@@ -253,6 +264,7 @@ int_t LUstruct_v100::pdgstrf3d()
             {
                 if (superlu_acc_offload)
                 {
+                    #ifdef GPU_ACC
                     #define NDEBUG
                     #ifndef NDEBUG
                     checkGPU();
@@ -262,6 +274,7 @@ int_t LUstruct_v100::pdgstrf3d()
                     #ifndef NDEBUG
                     checkGPU();
                     #endif 
+                    #endif
                 }
                     
                 else

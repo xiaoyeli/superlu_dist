@@ -1,6 +1,10 @@
 #include <cassert>
 #include <algorithm>
 #include <cmath>
+#include "superlu_defs.h"
+
+#ifdef GPU_ACC
+
 #include <cuda_runtime.h>
 
 #include "cublas_v2.h"
@@ -11,15 +15,15 @@
 #define EPSILON 1e-6
 
 #if 0
-int checkArr(double *A, double *B, int n)
-{
-    for (int i = 0; i < n; i++)
-    {
-        assert(fabs(A[i] - B[i]) <= EPSILON * std::min(fabs(A[i]), fabs(B[i])));
-    }
+// int checkArr(double *A, double *B, int n)
+// {
+//     for (int i = 0; i < n; i++)
+//     {
+//         assert(fabs(A[i] - B[i]) <= EPSILON * std::min(fabs(A[i]), fabs(B[i])));
+//     }
 
-    return 0;
-}
+//     return 0;
+// }
 #else 
 int checkArr(double *A, double *B, int n)
 {
@@ -385,4 +389,5 @@ int_t upanelGPU_t::panelSolve(cublasHandle_t handle, cudaStream_t cuStream,
     //               ksupsz, nzcols(), 1.0, DiagBlk, LDD, val, LDA());
     return 0;
 }
+#endif
 #endif

@@ -1,8 +1,11 @@
 #include <algorithm>
 #include <iostream>
 #include <cassert>
+#include "superlu_defs.h"
 
+#ifdef GPU_ACC
 #include "lupanels_GPU.cuh"
+#endif
 #include "lupanels.hpp"
 
 // #define cudaCheckError()                                                                     \
@@ -15,6 +18,7 @@
 //         }                                                                                    \
 //     }
 
+#ifdef GPU_ACC
 upanel_t LUstruct_v100::getKUpanel(int_t k, int_t offset)
 {
     upanel_t k_upanel(UidxRecvBufs[offset], UvalRecvBufs[offset],
@@ -34,6 +38,7 @@ lpanel_t LUstruct_v100::getKLpanel(int_t k, int_t offset)
         k_lpanel = lPanelVec[g2lCol(k)];
     return k_lpanel;
 }
+#endif
 
 LUstruct_v100::LUstruct_v100(int_t nsupers_, int_t ldt_,
                              trf3Dpartition_t *trf3Dpartition_, 
@@ -222,10 +227,12 @@ LUstruct_v100::LUstruct_v100(int_t nsupers_, int_t ldt_,
     double tGPU = SuperLU_timer_();
     if(superlu_acc_offload)
     {
+    #ifdef GPU_ACC
         setLUstruct_GPU();
         // TODO: remove it, checking is very slow 
         if(0)
             checkGPU();     
+    #endif
     }
         
     tGPU = SuperLU_timer_() -tGPU;

@@ -269,6 +269,8 @@ static const int RD_U=4;	/* MPI tag for lsum in U-solve*/
         for (i = 0; i < nrhs; ++i)
 #define X_BLK(i)                          \
         ilsum[i] * nrhs + (i+1) * XK_H
+#define XT_BLK(i)                          \
+        ilsumT[i] * nrhs + (i+1) * XK_H        
 #define LSUM_BLK(i)                       \
         ilsum[i] * nrhs + (i+1) * LSUM_H
 
@@ -955,8 +957,8 @@ typedef struct xtrsTimer_t
     double trsDataSendZ;
     double trsDataRecvXY;
     double trsDataRecvZ;
-    double t_pdReDistribute_X_to_B;
-    double t_pdReDistribute_B_to_X;
+    double t_pxReDistribute_X_to_B;
+    double t_pxReDistribute_B_to_X;
     double t_forwardSolve;
     double tfs_compute;
     double tfs_comm;
@@ -975,6 +977,7 @@ typedef struct xtrsTimer_t
     
     double ppXmem;		// perprocess X-memory
 } xtrsTimer_t;
+
 
 /*==== end For 3D code ====*/
 
@@ -1180,6 +1183,8 @@ extern void DistPrint(char* function_name,  double value, char* Units, gridinfo_
 extern void DistPrint3D(char* function_name,  double value, char* Units, gridinfo3d_t* grid3d);
 extern void treeImbalance3D(gridinfo3d_t *grid3d, SCT_t* SCT);
 extern void SCT_printComm3D(gridinfo3d_t *grid3d, SCT_t* SCT);
+
+
 
 // permutation from superLU default
 extern int_t* getPerm_c_supno(int_t nsupers, superlu_dist_options_t *,
