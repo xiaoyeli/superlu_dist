@@ -506,7 +506,7 @@ double getLoadImbalance(int_t nTrees,
 
 
 // r forest contains a list of tree heads
-// each treehead is an entire subtree (all level beloe)
+// each treehead is an entire subtree (all level below)
 #define MAX_TREE_ALLOWED 1024
 
 typedef struct
