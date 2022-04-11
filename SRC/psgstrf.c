@@ -844,11 +844,11 @@ psgstrf(superlu_dist_options_t * options, int m, int n, float anorm,
     }
 
         handle = (gpublasHandle_t *) SUPERLU_MALLOC(sizeof(gpublasHandle_t)*nstreams);
-        for(int i = 0; i < nstreams; i++) handle[i] = create_handle();
+        for (i = 0; i < nstreams; i++) handle[i] = create_handle();
 
         // creating streams
         streams = (gpuStream_t *) SUPERLU_MALLOC(sizeof(gpuStream_t)*nstreams);
-        for (int i = 0; i < nstreams; ++i)
+        for (i = 0; i < nstreams; ++i)
             checkGPU( gpuStreamCreate(&streams[i]) );
 
         gpuStat = gpuMalloc( (void**)&dA, max_row_size*sp_ienv_dist(3)* sizeof(float));
@@ -1877,6 +1877,7 @@ psgstrf(superlu_dist_options_t * options, int m, int n, float anorm,
         gpuFree( (void*)dA ); /* Sherry added */
         gpuFree( (void*)dB );
         gpuFree( (void*)dC );
+        for (i = 0; i < nstreams; i++) destroy_handle(handle[i]);	
         SUPERLU_FREE( handle );
         SUPERLU_FREE( streams );
         SUPERLU_FREE( stream_end_col );
