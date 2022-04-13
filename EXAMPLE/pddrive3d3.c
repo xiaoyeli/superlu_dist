@@ -120,6 +120,7 @@ main (int argc, char *argv[])
     double *b, *b1, *xtrue, *xtrue1;
     int m, n, i, j, m_loc;
     int nprow, npcol, npdep;
+    int lookahead, colperm, rowperm, ir;
     int iam, info, ldb, ldx, nrhs, ii, omp_mpi_level;
     char **cpp, c, *suffix;
     FILE *fp, *fopen ();
@@ -129,6 +130,10 @@ main (int argc, char *argv[])
     npcol = 1;            /* Default process columns.   */
     npdep = 1;            /* replication factor must be power of two */
     nrhs = 1;             /* Number of right-hand side. */
+    lookahead = -1;
+    colperm = -1;
+    rowperm = -1;
+    ir = -1;
 
     /* ------------------------------------------------------------
        INITIALIZE MPI ENVIRONMENT.
@@ -172,6 +177,14 @@ main (int argc, char *argv[])
             case 'd':
                 npdep = atoi (*cpp);
                 break;
+            case 'l': lookahead = atoi(*cpp);
+                      break;
+            case 'p': rowperm = atoi(*cpp);
+                      break;
+            case 'q': colperm = atoi(*cpp);
+                      break;
+            case 'i': ir = atoi(*cpp);
+                      break;
             }
         }
         else
@@ -284,6 +297,11 @@ main (int argc, char *argv[])
     options.ReplaceTinyPivot = YES;
 #endif
 
+    if (rowperm != -1) options.RowPerm = rowperm;
+    if (colperm != -1) options.ColPerm = colperm;
+    if (lookahead != -1) options.num_lookaheads = lookahead;
+    if (ir != -1) options.IterRefine = ir;
+    
     if (!iam) {
 	print_sp_ienv_dist(&options);
 	print_options_dist(&options);

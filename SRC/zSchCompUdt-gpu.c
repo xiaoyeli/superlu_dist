@@ -253,7 +253,6 @@ if ( msg0 && msg2 ) {  /* L(:,k) and U(k,:) are not empty. */
 
    	      } // end if num_col_stream > 0
 
-	    	stat->ops[FACT] += 8.0 * nbrow * num_col_stream * ldu;
 	    } /* end for i = 1 to num_streams used */
 
 	    /* Special case for CPU -- leading block columns are computed 
@@ -274,6 +273,9 @@ if ( msg0 && msg2 ) {  /* L(:,k) and U(k,:) are not empty. */
 		  tempu+ldu*st_col, &ldu, &beta, tempv, &nbrow);
 #endif
 	    gemm_timer += SuperLU_timer_() -tstart;
+
+	    /* The following counts both CPU and GPU parts.
+	       full_u_cols[jjj-1] contains both CPU and GPU. */
 	    stat->ops[FACT] += 8.0* nbrow * ldu * full_u_cols[jjj-1];
 
             /* Now scattering blocks computed by CPU */
