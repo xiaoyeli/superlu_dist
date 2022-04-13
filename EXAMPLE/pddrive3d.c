@@ -113,7 +113,7 @@ main (int argc, char *argv[])
     double *berr;
     double *b, *xtrue;
     int_t m, n;
-    int nprow, npcol, npdep;
+    int nprow, npcol, npdep, lookahead,colperm;;
     int iam, info, ldb, ldx, nrhs;
     char **cpp, c, *suffix;
     FILE *fp, *fopen ();
@@ -124,7 +124,8 @@ main (int argc, char *argv[])
     npcol = 1;            /* Default process columns.   */
     npdep = 1;            /* replication factor must be power of two */
     nrhs = 1;             /* Number of right-hand side. */
-
+	lookahead = 10; 
+	colperm = 4;
     /* ------------------------------------------------------------
        INITIALIZE MPI ENVIRONMENT.
        ------------------------------------------------------------ */
@@ -167,6 +168,12 @@ main (int argc, char *argv[])
             case 'd':
                 npdep = atoi (*cpp);
                 break;
+            case 'l': 
+                lookahead = atoi(*cpp);
+		        break;
+	        case 'p': 
+                colperm = atoi(*cpp);
+		        break;	
             }
         }
         else
@@ -317,6 +324,9 @@ main (int argc, char *argv[])
     options.Equil = NO;
     options.ReplaceTinyPivot = YES;
 #endif
+
+	options.ColPerm           = colperm;
+	options.num_lookaheads           = lookahead;
 
     if (!iam) {
 	print_sp_ienv_dist(&options);
