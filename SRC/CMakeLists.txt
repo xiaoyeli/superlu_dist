@@ -51,13 +51,7 @@ set(sources
   treeFactorization.c
   sec_structs.c  
 )
-if (HAVE_CUDA)
-  list(APPEND sources superlu_gpu_utils.cu)
-endif()
 
-if (HAVE_HIP)
-  list(APPEND sources superlu_gpu_utils.hip.cpp)
-endif()
 
 if (MSVC)
   list(APPEND sources wingetopt.c)
@@ -67,13 +61,6 @@ set_source_files_properties(superlu_timer.c PROPERTIES COMPILE_FLAGS -O0)
 
 if(enable_double)
   list(APPEND headers superlu_ddefs.h dlustruct_gpu.h)
-
-if(TPL_ENABLE_CUDALIB)
-  list(APPEND sources pdgstrs_lsum_cuda.cu)
-endif()
-# if(TPL_ENABLE_HIPLIB)
-#   list(APPEND sources pdgstrs_lsum_cuda.hip.cpp)
-# endif()    	
 
   list(APPEND sources
     dlangs_dist.c
@@ -125,8 +112,8 @@ endif()
     dtrfCommWrapper.c
     dsuperlu_blas.c
   )
-if (HAVE_CUDA)
-  list(APPEND sources dsuperlu_gpu.cu)
+if (TPL_ENABLE_CUDALIB)
+  list(APPEND sources pdgstrs_lsum_cuda.cu superlu_gpu_utils.cu dsuperlu_gpu.cu)
 endif()
 
 if (HAVE_COMBBLAS)
@@ -194,7 +181,7 @@ if(enable_single)
     psgsmv_d2.c
     psgsequb.c
   )
-if (HAVE_CUDA)
+if (TPL_ENABLE_CUDALIB)
   list(APPEND sources ssuperlu_gpu.cu)
 endif()
 if (HAVE_COMBBLAS)
@@ -257,7 +244,7 @@ if(enable_complex16)
     ztrfCommWrapper.c
     zsuperlu_blas.c
   )
-if (HAVE_CUDA)
+if (TPL_ENABLE_CUDALIB)
     list(APPEND sources zsuperlu_gpu.cu)
 endif()
 if (HAVE_COMBBLAS)

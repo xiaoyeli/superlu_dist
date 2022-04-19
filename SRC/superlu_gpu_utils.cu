@@ -1,17 +1,17 @@
 #include "superlu_defs.h"
 #include "gpu_api_utils.h"
 
-/*error reporting functions */
-cudaError_t checkCuda(cudaError_t result)
-{
-#if defined(DEBUG) || defined(_DEBUG)
-    if (result != cudaSuccess) {
-        fprintf(stderr, "CUDA Runtime Error: %s\n", cudaGetErrorString(result));
-        assert(result == cudaSuccess);
-    }
-#endif
-    return result;
-}
+// /*error reporting functions */
+// gpuError_t checkGPU(gpuError_t result)
+// {
+// #if defined(DEBUG) || defined(_DEBUG)
+//     if (result != gpuSuccess) {
+//         fprintf(stderr, "GPU Runtime Error: %s\n", gpuGetErrorString(result));
+//         assert(result == gpuSuccess);
+//     }
+// #endif
+//     return result;
+// }
 
 __device__ int dnextpow2(int v)
 
@@ -34,7 +34,7 @@ __device__ void incScan(pfx_dtype *inOutArr, pfx_dtype *temp, int n)
     // extern __shared__ pfx_dtype temp[];
     int n_original = n;
     n = (n & (n - 1)) == 0? n: dnextpow2(n);
-    int thread_id = threadIdx.x;
+    int thread_id = threadIdx_x;
     int offset = 1;
     if(2*thread_id  < n_original)
         temp[2*thread_id] = inOutArr[2*thread_id]; 

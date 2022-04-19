@@ -227,13 +227,13 @@ if ( msg0 && msg2 ) {  /* L(:,k) and U(k,:) are not empty. */
 				  gpublasZgemm(handle[stream_id],
 					      GPUBLAS_OP_N, GPUBLAS_OP_N,
 					      nbrow, num_col_stream, ldu,
- 					      (const cuDoubleComplex*) &alpha,
-					      (const cuDoubleComplex*) dA,
+ 					      (const gpuDoubleComplex*) &alpha,
+					      (const gpuDoubleComplex*) dA,
 					      nbrow,
-					      (const cuDoubleComplex*) &dB[b_offset],
+					      (const gpuDoubleComplex*) &dB[b_offset],
 					      ldu,
-					      (const cuDoubleComplex*) &beta,
-					      (cuDoubleComplex*)&dC[c_offset],
+					      (const gpuDoubleComplex*) &beta,
+					      (gpuDoubleComplex*)&dC[c_offset],
                                               nbrow)
 				  );
 
