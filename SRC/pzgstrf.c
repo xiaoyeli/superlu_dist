@@ -1800,18 +1800,6 @@ pzgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
     }
 #endif
 
-#if ( DEBUGlevel>=3 )
-    for (i = 0; i < Pr * Pc; ++i) {
-        if (iam == i) {
-            zPrintLblocks(iam, nsupers, grid, Glu_persist, Llu);
-            zPrintUblocks(iam, nsupers, grid, Glu_persist, Llu);
-            printf ("(%d)\n", iam);
-            PrintInt10 ("Recv", nsupers, Llu->ToRecv);
-        }
-        MPI_Barrier (grid->comm);
-    }
-#endif
-
     /********************************************************
      * Free memory                                          *
      ********************************************************/

@@ -425,9 +425,9 @@ int main(int argc, char *argv[])
     sSolveFinalize(&options, &SOLVEstruct);
     SUPERLU_FREE(b);
     SUPERLU_FREE(xtrue);
-    SUPERLU_FREE(dxtrue);
     SUPERLU_FREE(err_bounds);
     SUPERLU_FREE(berr);
+    if ( options.IterRefine >= SLU_DOUBLE ) SUPERLU_FREE(dxtrue);
 
     /* ------------------------------------------------------------
        RELEASE THE SUPERLU PROCESS GRID.

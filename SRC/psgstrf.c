@@ -1800,18 +1800,6 @@ psgstrf(superlu_dist_options_t * options, int m, int n, float anorm,
     }
 #endif
 
-#if ( DEBUGlevel>=3 )
-    for (i = 0; i < Pr * Pc; ++i) {
-        if (iam == i) {
-            sPrintLblocks(iam, nsupers, grid, Glu_persist, Llu);
-            sPrintUblocks(iam, nsupers, grid, Glu_persist, Llu);
-            printf ("(%d)\n", iam);
-            PrintInt10 ("Recv", nsupers, Llu->ToRecv);
-        }
-        MPI_Barrier (grid->comm);
-    }
-#endif
-
     /********************************************************
      * Free memory                                          *
      ********************************************************/

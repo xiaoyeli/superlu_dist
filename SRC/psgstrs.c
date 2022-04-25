@@ -979,6 +979,13 @@ psgstrs(int_t n, sLUstruct_t *LUstruct,
 	num_thread=1;
 #endif
 
+#if ( PRNTlevel>=1 )
+    if( grid->iam==0 ) {
+	printf("num_thread: %5d\n", num_thread);
+	fflush(stdout);
+    }
+#endif
+
     MPI_Barrier( grid->comm );
     t1_sol = SuperLU_timer_();
     t = SuperLU_timer_();
@@ -1197,7 +1204,6 @@ if(procs==1){
 
 	log_memory(nlb*aln_i*iword+nlb*iword+(CEILING( nsupers, Pr )+CEILING( nsupers, Pc ))*aln_i*2.0*iword+ nsupers_i*iword + sizelsum*num_thread * dword + (ldalsum * nrhs + nlb * XK_H) *dword + (sizertemp*num_thread + 1)*dword+maxrecvsz*(nfrecvx+1)*dword, stat);	//account for fmod, frecv, leaf_send, root_send, leafsups, recvbuf_BC_fwd	, lsum, x, rtemp
 
-
 #if ( DEBUGlevel>=2 )
 	printf("(%2d) nfrecvx %4d,  nfrecvmod %4d,  nleaf %4d\n,  nbtree %4d\n,  nrtree %4d\n",
 			iam, nfrecvx, nfrecvmod, nleaf, nbtree, nrtree);
@@ -1229,7 +1235,6 @@ if(procs==1){
 	printf("(%2d) nleaf %4d\n", iam, nleaf);
 	fflush(stdout);
 #endif
-
 
 #ifdef _OPENMP
 #pragma omp parallel default (shared)
@@ -1394,6 +1399,7 @@ if(procs==1){
 #pragma omp parallel default (shared)
 #endif
 	{
+
 #ifdef _OPENMP
 #pragma omp master
 #endif
@@ -1441,6 +1447,7 @@ if(procs==1){
 			
 		}
 	}
+
 
 #ifdef USE_VTUNE
 	__itt_pause(); // stop VTune
@@ -1756,6 +1763,7 @@ if(procs==1){
 	/* Re-initialize lsum to zero. Each block header is already in place. */
 
 #ifdef _OPENMP
+
 #pragma omp parallel default(shared) private(ii)
 	{
                 int thread_id = omp_get_thread_num();
@@ -1792,12 +1800,13 @@ if(procs==1){
 #endif
 
 #if ( DEBUGlevel>=2 )
-	for (p = 0; p < Pr*Pc; ++p) {
+        nub = CEILING( nsupers, Pc ); /* Number of local block columns. */
+        for (p = 0; p < Pr*Pc; ++p) {
 	    if (iam == p) {
-		printf("(%2d) .. Ublocks %d\n", iam, Ublocks);
+		printf("(%2d) .. Ublocks %d, nub %d\n",iam,Ublocks,nub); fflush(stdout);
 		for (lb = 0; lb < nub; ++lb) {
 		    printf("(%2d) Local col %2d: # row blocks %2d\n",
-				iam, lb, Urbs[lb]);
+				iam, lb, Urbs[lb]); fflush(stdout);
 		    if ( Urbs[lb] ) {
 			for (i = 0; i < Urbs[lb]; ++i)
 			    printf("(%2d) .. row blk %2d:\
@@ -1884,6 +1893,7 @@ if(procs==1){
 			iam, nbrecvx, nbrecvmod, nroot, nbtree, nrtree);
 	fflush(stdout);
 #endif
+
 
 #if ( PRNTlevel>=2 )
 	t = SuperLU_timer_() - t;
@@ -1992,7 +2002,7 @@ if(procs==1){
 	    } /* omp master region */
 	} /* omp parallel region */
 
-	
+
 #ifdef _OPENMP
 #pragma omp parallel default (shared)
 #endif
@@ -2042,7 +2052,7 @@ for (i=0;i<nroot_send;i++){
 		C_RdTree_forwardMessageSimple(&URtree_ptr[lk],&lsum[il - LSUM_H ],URtree_ptr[lk].msgSize_*nrhs+LSUM_H);
 	}
 }
- 
+
 	/*
 	 * Compute the internal nodes asychronously by all processes.
 	 */
@@ -2063,7 +2073,6 @@ for (i=0;i<nroot_send;i++){
 		// fflush(stdout);
 
 		thread_id = 0;
-		
 #if ( PROFlevel>=1 )
 			TIC(t1);
 #endif
