@@ -837,7 +837,7 @@ get_gpublas_nb ()
     if (ttemp)
         return atoi(ttemp);
     else
-        return 64;
+        return 512;     // 64 
 }
 
 int_t
@@ -1278,12 +1278,114 @@ int_t reduceStat(PhaseType PHASE,
 
 /*---- end from 3D code p3dcomm.c ----*/
 
-
+#define GPU_ACC
 #ifdef GPU_ACC
+
+#define GPUMM_MIN_K 64  // minimum size of k formatrix multiplication on GPUs
+#define GPUMM_MIN_MN 256*256     //minimum size of M\times N for matrix multiplication offload on GPUs
 
 /*
  * Divide GEMM on GPU into multiple streams, each having sufficent work.
  */
+#if 1
+void
+gemm_division_cpu_gpu(
+/* output */
+    int* num_streams_used, /* number of CUDA streams to be used,
+			      it is <= nstreams   */
+    int* stream_end_col,   /* array holding last column blk for each stream partition */
+    int * ncpu_blks,       /* Number of CPU dgemm blks (output) */
+    /*input */
+    int nbrow,             /* number of row in A matrix */
+    int ldu,               /* number of k in dgemm */
+    int nstreams,          /* maximum possible GPU streams */
+    int* full_u_cols,      /* array containing prefix sum of GPU workload */
+    int num_blks,           /* Number of block cloumns (workload) on GPU */
+    int_t gemmBufferSize       /*gemm buffer size*/
+)
+{
+    int Ngem = sp_ienv_dist(7);  /*get_mnk_dgemm ();*/
+    int min_gpu_col = get_gpublas_nb (); /* default 64 */
+    int superlu_acc_offload = get_acc_offload();
+    int ncols = full_u_cols[num_blks - 1];
+    // int ncolsExcludingFirst =full_u_cols[num_blks - 1]
+
+
+    /* Early return, when number of columns is smaller than threshold,
+       or superlu_acc_offload == 0, then everything should be done on CPU. 
+       Test condition GPU Flops ~ nbrow*ldu*cols < Ngem */
+    if ( 
+        (ldu < GPUMM_MIN_K)       // inner dimension is sufficient to hide latency
+     || (nbrow*ncols < GPUMM_MIN_MN) // product of MN is sufficient
+     || (ncols*nbrow*ldu < Ngem )
+	 || (num_blks==1) || (nstreams==0)
+     || nbrow*ncols > gemmBufferSize
+	 || (superlu_acc_offload==0) )
+    {
+        *num_streams_used = 0;
+        *ncpu_blks = num_blks;
+        return;
+
+    }
+
+    for (int i = 0; i < nstreams; ++i)
+    {
+        stream_end_col[i] = num_blks;
+    }
+
+    *num_streams_used = 0;
+    *ncpu_blks = 0;
+    
+    /* Find first block where count > Ngem */
+    int i;
+    for (i = 0; i < num_blks - 1; ++i)  /*I can use binary search here */
+    {
+        if (full_u_cols[i + 1] > Ngem / (nbrow * ldu))
+            break;
+    }
+    *ncpu_blks = i + 1;
+
+    int_t cols_remain =
+        full_u_cols[num_blks - 1] - full_u_cols[*ncpu_blks - 1];
+
+    if (cols_remain > 0)
+    {
+        *num_streams_used = 1;  /* now at least one stream would be used */
+
+        int_t FP_MIN = 200000 / (nbrow * ldu); // >= 200000 flops per GPU stream
+        int_t cols_per_stream = SUPERLU_MAX (min_gpu_col, cols_remain / nstreams);
+        cols_per_stream = SUPERLU_MAX (cols_per_stream, FP_MIN);
+
+        int_t cutoff = cols_per_stream + full_u_cols[*ncpu_blks - 1];
+        for (int_t i = 0; i < nstreams; ++i)
+        {
+            stream_end_col[i] = num_blks;
+        }
+        int j = *ncpu_blks;
+        for (int i = 0; i < nstreams - 1; ++i)
+        {
+            int_t st = (i == 0) ? (*ncpu_blks) : stream_end_col[i - 1];
+	        // ^ starting block column of next stream
+
+            for (j = st; j < num_blks - 1; ++j)
+            {
+                if (full_u_cols[j + 1] > cutoff)
+                {
+                    cutoff = cols_per_stream + full_u_cols[j];
+                    stream_end_col[i] = j + 1;
+                    *num_streams_used += 1;
+                    j++;
+                    break;  // block column j starts a new stream
+                }
+            } // end for j ...
+        } // end for i ... streams
+
+    }
+	
+} /* gemm_division_cpu_gpu */
+
+#else 
+
 void
 gemm_division_cpu_gpu(
 /* output */
@@ -1407,7 +1509,7 @@ gemm_division_cpu_gpu(
     }
 	
 } /* gemm_division_cpu_gpu */
-
+#endif 
 void
 gemm_division_new (int * num_streams_used,   /*number of streams that will be used */
                    int * stream_end_col, /*array holding last column blk for each partition */

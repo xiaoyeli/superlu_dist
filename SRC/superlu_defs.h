@@ -1166,7 +1166,7 @@ int superlu_sort_perm (const void *arg1, const void *arg2)
 
 #ifdef GPU_ACC   /* GPU related */
 extern void gemm_division_cpu_gpu (int *, int *, int *, int,
-				   int, int, int *, int);
+				   int, int, int *, int, int_t);
 extern int_t get_gpublas_nb ();
 extern int_t get_num_gpu_streams ();
 extern int getnGPUStreams();
