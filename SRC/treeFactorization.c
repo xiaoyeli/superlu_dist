@@ -186,13 +186,13 @@ int freePackLUInfo(packLUInfo_t* packLUInfo)  // sherry added
 int_t getNumLookAhead(superlu_dist_options_t *options)
 {
     int_t numLA;
-    if (getenv("NLULA"))
+    if (getenv("NUM_LOOKAHEADS"))
     {
-        numLA = atoi(getenv("NLULA"));
+        numLA = atoi(getenv("NUM_LOOKAHEADS"));
     }
     else
     {
-        // printf("NLULA not set using default 2\n");
+        // printf("NUM_LOOKAHEADS not set using default 2\n");
 	// numLA = 2;
 	numLA = options->num_lookaheads;
     }
