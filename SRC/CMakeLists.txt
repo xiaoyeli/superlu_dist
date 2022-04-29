@@ -260,7 +260,6 @@ if (TPL_ENABLE_HIPLIB)
 
   set(hipsources
     pdgstrs_lsum_cuda.hip.cpp
-    superlu_gpu_utils.hip.cpp
     dsuperlu_gpu.hip.cpp
   )
   if(enable_single)
