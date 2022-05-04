@@ -887,7 +887,7 @@ typedef struct
 
 
 //global variable 
-extern double CPU_CLOCK_RATE;
+// extern double CPU_CLOCK_RATE;
 
 typedef struct
 {
