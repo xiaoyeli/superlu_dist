@@ -410,11 +410,11 @@ typedef struct {
 			   *                     0      3      6      9
 			   *                     1      4      7      10      
 			   *                     2      5      8      11
-			   * = 1: XY-major (need set env. var.: RANKORDER=XY)
+			   * = 1: XY-major (need set env. var.: SUPERLU_RANKORDER=XY)
 			   *    e.g. 1x3x4 grid: layer0 layer1 layer2 layer3
-			   *                     0      1      2      4
-			   *                     5      6      7      8
-			   *                     9      10     11     12
+			   *                     0      1      2      3
+			   *                     4      5      6      7
+			   *                     8      9     10     11
 			   */
 } gridinfo3d_t;
 

@@ -789,8 +789,8 @@ pzgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
 
 #if ( PRNTlevel>=1 )
     if(!iam) {
-        printf("\t.. MAX_BUFFER_SIZE %d set for GPU\n", sp_ienv_dist(8));
-	printf("\t.. N_GEMM: %d flops of GEMM done on CPU (1st block always on CPU)\n", sp_ienv_dist(7));
+        printf("\t.. SUPERLU_MAX_BUFFER_SIZE %d set for GPU\n", sp_ienv_dist(8));
+	printf("\t.. SUPERLU_N_GEMM: %d flops of GEMM done on CPU (1st block always on CPU)\n", sp_ienv_dist(7));
         printf("\t.. GEMM buffer size: max_row_size X max_ncols = %d x " IFMT "\n",
                 max_row_size, max_ncols);
         printf("[%d].. BIG U size " IFMT " (on CPU)\n", iam, bigu_size);
@@ -886,7 +886,6 @@ pzgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
   #if 0  /* Does not use buffer_size on CPU */
     int Threads_per_process = get_thread_per_process();
     int_t buffer_size  = SUPERLU_MAX(max_row_size * Threads_per_process * ldt, sp_ienv_dist(8));
-                                     // get_max_buffer_size());
   #endif
   
     // for GEMM padding 0

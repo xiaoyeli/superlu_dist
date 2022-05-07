@@ -52,7 +52,7 @@ at the top-level directory.
 	    = 6: the estimated fills factor for the adjacency structures 
 	         of L and U, compared with A;
 	    = 7: the minimum value of the product M*N*K for a GEMM call
-	         to be off-loaded to accelerator (e.g., GPU, Xeon Phi).
+	         worth being offloaded to accelerator (e.g., GPU, Xeon Phi).
             = 8: the maximum buffer size on GPU that can hold the "dC"
 	         matrix in the GEMM call for the Schur complement update.
 		 If this is too small, the Schur complement update will be
@@ -87,7 +87,7 @@ sp_ienv_dist(int ispec)
 	case 3: return (100);
 #else
 	case 2: 
-            ttemp = getenv("NREL");
+            ttemp = getenv("SUPERLU_RELAX");
             if(ttemp)
             {
                 return(atoi(ttemp));
@@ -96,7 +96,7 @@ sp_ienv_dist(int ispec)
 		return 60; // 20
             
 	case 3: 
-	    ttemp = getenv("NSUP"); // take min of MAX_SUPER_SIZE in superlu_defs.h
+	    ttemp = getenv("SUPERLU_MAXSUP"); // take min of MAX_SUPER_SIZE in superlu_defs.h
             if(ttemp)
             {
 		int k = SUPERLU_MIN( atoi(ttemp), MAX_SUPER_SIZE );
@@ -110,11 +110,11 @@ sp_ienv_dist(int ispec)
             if ( ttemp ) return(atoi(ttemp));
             else return (5);
         case 7:
-	    ttemp = getenv ("N_GEMM"); // flops of GEMM to be done on CPU
+	    ttemp = getenv ("SUPERLU_N_GEMM"); // minimum flops of GEMM worth doing on GPU
 	    if (ttemp) return atoi (ttemp);
-	    else return 100;  // 10000;
+	    else return 1000;  // 10000;
         case 8:
-  	    ttemp = getenv ("MAX_BUFFER_SIZE");
+  	    ttemp = getenv ("SUPERLU_MAX_BUFFER_SIZE");
 	    if (ttemp) return atoi (ttemp);
 	    else return 256000000; // 256000000 = 16000^2
     }

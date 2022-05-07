@@ -21,9 +21,7 @@
 //#include <thrust/system/cuda/detail/cub/cub.cuh>
 
 #include "dlustruct_gpu.h"
-#ifdef HAVE_HIP
-#include "superlu_gpu_utils.hip.cpp"
-#endif
+
 
 //extern "C" {
 //	void cblas_daxpy(const int N, const double alpha, const double *X,
@@ -838,9 +836,9 @@ int dinitSluGPU3D_t(
     gridinfo3d_t * grid3d,
     int_t* perm_c_supno,
     int_t n,
-    int_t buffer_size,    /* read from env variable MAX_BUFFER_SIZE */
+    int_t buffer_size,    /* read from env variable SUPERLU_MAX_BUFFER_SIZE */
     int_t bigu_size,
-    int_t ldt,             /* NSUP read from sp_ienv(3) */
+    int_t ldt,             /* SUPERLU_MAXSUP read from sp_ienv(3) */
     SuperLUStat_t *stat
 )
 {

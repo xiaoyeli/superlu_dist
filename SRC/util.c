@@ -819,15 +819,17 @@ int get_thread_per_process()
         return 1;
 }
 
+#if 0 // not used anymore
 int_t get_max_buffer_size()
 {
     char *ttemp;
-    ttemp = getenv("MAX_BUFFER_SIZE");
+    ttemp = getenv("SUPERLU_MAX_BUFFER_SIZE");
     if (ttemp)
         return atoi(ttemp);
     else
         return 200000000; // 5000000
 }
+#endif
 
 int_t
 get_gpublas_nb ()
@@ -844,7 +846,7 @@ int_t
 get_num_gpu_streams ()
 {
     char *ttemp;
-    ttemp = getenv ("NUM_GPU_STREAMS");
+    ttemp = getenv ("SUPERLU_NUM_GPU_STREAMS");
     if (ttemp)
         return atoi(ttemp);
     else
@@ -1620,7 +1622,7 @@ int getnGPUStreams()
 	return 1;
     #else 
 	char *ttemp;
-	ttemp = getenv ("NUM_GPU_STREAMS");
+	ttemp = getenv ("SUPERLU_NUM_GPU_STREAMS");
 
 	if (ttemp)
 		return atoi (ttemp);

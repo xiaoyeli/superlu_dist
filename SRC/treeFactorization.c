@@ -186,9 +186,9 @@ int freePackLUInfo(packLUInfo_t* packLUInfo)  // sherry added
 int_t getNumLookAhead(superlu_dist_options_t *options)
 {
     int_t numLA;
-    if (getenv("NUM_LOOKAHEADS"))
+    if (getenv("SUPERLU_NUM_LOOKAHEADS"))
     {
-        numLA = atoi(getenv("NUM_LOOKAHEADS"));
+        numLA = atoi(getenv("SUPERLU_NUM_LOOKAHEADS"));
     }
     else
     {
