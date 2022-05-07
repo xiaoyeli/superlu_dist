@@ -2626,8 +2626,8 @@ thread_id=0;
 
 
 
-#if defined(GPU_ACC) && defined(SLU_HAVE_LAPACK) && defined(GPU_SOLVE)  /* GPU trisolve*/
-// #if 0 /* CPU trisolve*/
+// #if defined(GPU_ACC) && defined(SLU_HAVE_LAPACK) && defined(GPU_SOLVE)  /* GPU trisolve*/
+#if 0 /* CPU trisolve*/
 
 	d_grid = NULL;
 	d_x = NULL;
