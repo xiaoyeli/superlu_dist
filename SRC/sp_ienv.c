@@ -91,6 +91,9 @@ sp_ienv_dist(int ispec)
             if(ttemp)
             {
                 return(atoi(ttemp));
+            }else if(getenv("NREL"))
+            {
+                return(atoi(getenv("NREL")));
             }
             else
 		return 60; // 20
@@ -99,8 +102,11 @@ sp_ienv_dist(int ispec)
 	    ttemp = getenv("SUPERLU_MAXSUP"); // take min of MAX_SUPER_SIZE in superlu_defs.h
             if(ttemp)
             {
-		int k = SUPERLU_MIN( atoi(ttemp), MAX_SUPER_SIZE );
+		        int k = SUPERLU_MIN( atoi(ttemp), MAX_SUPER_SIZE );
                 return (k);
+            }else if(getenv("NSUP"))
+            {
+                int k = SUPERLU_MIN( atoi(getenv("NSUP")), MAX_SUPER_SIZE );
             }
             else return 256;  // 128;
 
@@ -111,12 +117,21 @@ sp_ienv_dist(int ispec)
             else return (5);
         case 7:
 	    ttemp = getenv ("SUPERLU_N_GEMM"); // minimum flops of GEMM worth doing on GPU
-	    if (ttemp) return atoi (ttemp);
-	    else return 1000;  // 10000;
+	    if (ttemp)
+            return atoi (ttemp); 
+        else if(getenv("N_GEMM"))
+            return(atoi(getenv("N_GEMM")));
+	    else 
+            return 1000;  // 10000;
+            
         case 8:
   	    ttemp = getenv ("SUPERLU_MAX_BUFFER_SIZE");
-	    if (ttemp) return atoi (ttemp);
-	    else return 256000000; // 256000000 = 16000^2
+	    if (ttemp) 
+            return atoi (ttemp);
+        else if(getenv("MAX_BUFFER_SIZE")) 
+            return(atoi(getenv("MAX_BUFFER_SIZE")));
+	    else 
+            return 256000000; // 256000000 = 16000^2
     }
 
     /* Invalid value for ISPEC */

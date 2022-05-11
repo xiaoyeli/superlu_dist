@@ -189,6 +189,9 @@ int_t getNumLookAhead(superlu_dist_options_t *options)
     if (getenv("SUPERLU_NUM_LOOKAHEADS"))
     {
         numLA = atoi(getenv("SUPERLU_NUM_LOOKAHEADS"));
+    }else if (getenv("NUM_LOOKAHEADS"))
+    {
+        numLA = atoi(getenv("NUM_LOOKAHEADS"));
     }
     else
     {

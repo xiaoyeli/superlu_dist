@@ -849,6 +849,8 @@ get_num_gpu_streams ()
     ttemp = getenv ("SUPERLU_NUM_GPU_STREAMS");
     if (ttemp)
         return atoi(ttemp);
+    else if (getenv ("NUM_GPU_STREAMS")) 
+        return atoi(getenv ("NUM_GPU_STREAMS"));   
     else
         return 8;
 }
