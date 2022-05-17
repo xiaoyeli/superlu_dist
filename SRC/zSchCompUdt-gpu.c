@@ -111,6 +111,7 @@ if ( msg0 && msg2 ) {  /* L(:,k) and U(k,:) are not empty. */
 		 * If there is only one block, we leave it on CPU.
 		 */
                 gemm_division_cpu_gpu(
+		       options,
 		       &num_streams_used,/*number of streams that will be used*/
 		       stream_end_col,   /*array holding last column blk for each partition*/
 		       &ncpu_blks,       /*number of CPU gemm blks*/
@@ -121,7 +122,7 @@ if ( msg0 && msg2 ) {  /* L(:,k) and U(k,:) are not empty. */
 		       full_u_cols + jjj_st, /*array containing prefix sum of GPU workload*/
 		       jjj_global - jjj_st, /*number of block columns on GPU.
 		       		             If only one block, leave it on CPU*/
-                buffer_size
+		       buffer_size
                 );
                 // TAU_STATIC_TIMER_STOP("work_divison");
 
@@ -228,13 +229,13 @@ if ( msg0 && msg2 ) {  /* L(:,k) and U(k,:) are not empty. */
 				  gpublasZgemm(handle[stream_id],
 					      GPUBLAS_OP_N, GPUBLAS_OP_N,
 					      nbrow, num_col_stream, ldu,
- 					      (const gpuDoubleComplex*) &alpha,
-					      (const gpuDoubleComplex*) dA,
+ 					      (const cuDoubleComplex*) &alpha,
+					      (const cuDoubleComplex*) dA,
 					      nbrow,
-					      (const gpuDoubleComplex*) &dB[b_offset],
+					      (const cuDoubleComplex*) &dB[b_offset],
 					      ldu,
-					      (const gpuDoubleComplex*) &beta,
-					      (gpuDoubleComplex*)&dC[c_offset],
+					      (const cuDoubleComplex*) &beta,
+					      (cuDoubleComplex*)&dC[c_offset],
                                               nbrow)
 				  );
 

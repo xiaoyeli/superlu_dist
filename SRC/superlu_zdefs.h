@@ -472,13 +472,14 @@ extern int     sp_zgemv_dist (char *, doublecomplex, SuperMatrix *, doublecomple
 extern int     sp_zgemm_dist (char *, int, doublecomplex, SuperMatrix *,
                         doublecomplex *, int, doublecomplex, doublecomplex *, int);
 
-extern float zdistribute(fact_t, int_t, SuperMatrix *, Glu_freeable_t *,
+extern float zdistribute(superlu_dist_options_t *,
+                         int_t, SuperMatrix *, Glu_freeable_t *,
 			 zLUstruct_t *, gridinfo_t *);
 extern void  pzgssvx_ABglobal(superlu_dist_options_t *, SuperMatrix *,
 			      zScalePermstruct_t *, doublecomplex *,
 			      int, int, gridinfo_t *, zLUstruct_t *, double *,
 			      SuperLUStat_t *, int *);
-extern float pzdistribute(fact_t, int_t, SuperMatrix *,
+extern float pzdistribute(superlu_dist_options_t *, int_t, SuperMatrix *,
 			 zScalePermstruct_t *, Glu_freeable_t *,
 			 zLUstruct_t *, gridinfo_t *);
 extern void  pzgssvx(superlu_dist_options_t *, SuperMatrix *,
@@ -521,9 +522,11 @@ extern int_t pzgstrf(superlu_dist_options_t *, int, int, double anorm,
 #define IPM_PROF */
 
 /* Solve related */
-extern void pzgstrs_Bglobal(int_t, zLUstruct_t *, gridinfo_t *,
+extern void pzgstrs_Bglobal(superlu_dist_options_t *,
+                             int_t, zLUstruct_t *, gridinfo_t *,
 			     doublecomplex *, int_t, int, SuperLUStat_t *, int *);
-extern void pzgstrs(int_t, zLUstruct_t *, zScalePermstruct_t *, gridinfo_t *,
+extern void pzgstrs(superlu_dist_options_t *, int_t,
+                    zLUstruct_t *, zScalePermstruct_t *, gridinfo_t *,
 		    doublecomplex *, int_t, int_t, int_t, int, zSOLVEstruct_t *,
 		    SuperLUStat_t *, int *);
 extern void pzgstrf2_trsm(superlu_dist_options_t * options, int_t k0, int_t k,
@@ -570,11 +573,13 @@ extern void zlsum_fmod_inv_gpu_wrap(int_t, int_t, int_t, int_t, doublecomplex *,
 extern void zlsum_bmod_inv_gpu_wrap(int_t, int_t, int_t, int_t, doublecomplex *, doublecomplex *,int,int, int_t , int *bmod, C_Tree  *, C_Tree  *, int_t *, int_t *,int_t *, int64_t *, doublecomplex *, int64_t *, int_t  *, int64_t *, Ucb_indptr_t *, int64_t *, doublecomplex *, int64_t *,int_t *,gridinfo_t *);
 #endif
 
-extern void pzgsrfs(int_t, SuperMatrix *, double, zLUstruct_t *,
+extern void pzgsrfs(superlu_dist_options_t *, int_t,
+                    SuperMatrix *, double, zLUstruct_t *,
 		    zScalePermstruct_t *, gridinfo_t *,
 		    doublecomplex [], int_t, doublecomplex [], int_t, int,
 		    zSOLVEstruct_t *, double *, SuperLUStat_t *, int *);
-extern void pzgsrfs_ABXglobal(int_t, SuperMatrix *, double, zLUstruct_t *,
+extern void pzgsrfs_ABXglobal(superlu_dist_options_t *, int_t,
+                  SuperMatrix *, double, zLUstruct_t *,
 		  gridinfo_t *, doublecomplex *, int_t, doublecomplex *, int_t,
 		  int, double *, SuperLUStat_t *, int *);
 extern int   pzgsmv_AXglobal_setup(SuperMatrix *, Glu_persist_t *,
@@ -628,7 +633,7 @@ extern int  zread_binary(FILE *, int_t *, int_t *, int_t *,
 	                  doublecomplex **, int_t **, int_t **);
 
 /* Distribute the data for numerical factorization */
-extern float zdist_psymbtonum(fact_t, int_t, SuperMatrix *,
+extern float zdist_psymbtonum(superlu_dist_options_t *, int_t, SuperMatrix *,
                                 zScalePermstruct_t *, Pslu_freeable_t *,
                                 zLUstruct_t *, gridinfo_t *);
 extern void pzGetDiagU(int_t, zLUstruct_t *, gridinfo_t *, doublecomplex *);
@@ -1043,12 +1048,14 @@ extern int_t zSchurComplementSetupGPU(int_t k, msgs_t* msgs, packLUInfo_t*,
 				      zLUValSubBuf_t* LUvsb, gridinfo_t *,
 				      zLUstruct_t *, HyP_t*);
 extern doublecomplex* zgetBigV(int_t, int_t);
-extern doublecomplex* zgetBigU(int_t, gridinfo_t *, zLUstruct_t *);
+extern doublecomplex* zgetBigU(superlu_dist_options_t *,
+                           int_t, gridinfo_t *, zLUstruct_t *);
 // permutation from superLU default
 
     /* from treeFactorization.h */
 extern int_t zLluBufInit(zLUValSubBuf_t*, zLUstruct_t *);
-extern int_t zinitScuBufs(int_t ldt, int_t num_threads, int_t nsupers,
+extern int_t zinitScuBufs(superlu_dist_options_t *,
+                          int_t ldt, int_t num_threads, int_t nsupers,
 			  zscuBufs_t*, zLUstruct_t*, gridinfo_t *);
 extern int zfreeScuBufs(zscuBufs_t* scuBufs);
 

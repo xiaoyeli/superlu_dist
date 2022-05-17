@@ -606,9 +606,9 @@ pzgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 	*info = -5;
     else if ( nrhs < 0 )
 	*info = -6;
-    if ( sp_ienv_dist(2) > sp_ienv_dist(3) ) {
-        *info = 1;
-	printf("ERROR: Relaxation (NREL) cannot be larger than max. supernode size (NSUP).\n"
+    if ( sp_ienv_dist(2, options) > sp_ienv_dist(3, options) ) {
+        *info = -1;
+	printf("ERROR: Relaxation (SUPERLU_RELAX) cannot be larger than max. supernode size (SUPERLU_MAXSUP).\n"
 	"\t-> Check parameter setting in sp_ienv_dist.c to correct error.\n");
     }
     if ( *info ) {
@@ -1063,7 +1063,7 @@ pzgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 #if ( PRNTlevel>=1 )
                 if ( !iam ) {
 		    printf(".. symbfact(): relax %d, maxsuper %d, fill %d\n",
-		          sp_ienv_dist(2), sp_ienv_dist(3), sp_ienv_dist(6));
+		          sp_ienv_dist(2,options), sp_ienv_dist(3,options), sp_ienv_dist(6,options));
 		    fflush(stdout);
 	        }
 #endif
@@ -1105,7 +1105,8 @@ pzgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 	    } /* end serial symbolic factorization */
 	    else {  /* parallel symbolic factorization */
 	    	t = SuperLU_timer_();
-	    	flinfo = symbfact_dist(nprocs_num, noDomains, A, perm_c, perm_r,
+	    	flinfo = symbfact_dist(options, nprocs_num, noDomains,
+		                       A, perm_c, perm_r,
 				       sizes, fstVtxSep, &Pslu_freeable,
 				       &(grid->comm), &symb_comm,
 				       &symb_mem_usage);
@@ -1143,7 +1144,7 @@ pzgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 	       NOTE: the row permutation Pc*Pr is applied internally in the
   	       distribution routine. */
 	    t = SuperLU_timer_();
-	    dist_mem_use = pzdistribute(Fact, n, A, ScalePermstruct,
+	    dist_mem_use = pzdistribute(options, n, A, ScalePermstruct,
                                       Glu_freeable, LUstruct, grid);
 	    stat->utime[DIST] = SuperLU_timer_() - t;
 
@@ -1160,7 +1161,7 @@ pzgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 	    for (j = 0; j < nnz_loc; ++j) colind[j] = perm_c[colind[j]];
 
     	    t = SuperLU_timer_();
-	    dist_mem_use = zdist_psymbtonum(Fact, n, A, ScalePermstruct,
+	    dist_mem_use = zdist_psymbtonum(options, n, A, ScalePermstruct,
 		  			   &Pslu_freeable, LUstruct, grid);
 	    if (dist_mem_use > 0)
 	        ABORT ("Not enough memory available for dist_psymbtonum\n");
@@ -1182,7 +1183,7 @@ pzgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 	// }
 
 
-#if ( PRNTlevel>=3 )
+#if ( PRNTlevel>=2 )
     /* ------------------------------------------------------------
        SUM OVER ALL ENTRIES OF A AND PRINT NNZ AND SIZE OF A.
        ------------------------------------------------------------*/
@@ -1437,7 +1438,7 @@ pzgssvx(superlu_dist_options_t *options, SuperMatrix *A,
     // {
 	// #pragma omp master
 	// {
-	pzgstrs(n, LUstruct, ScalePermstruct, grid, X, m_loc,
+	pzgstrs(options, n, LUstruct, ScalePermstruct, grid, X, m_loc,
 		fst_row, ldb, nrhs, SOLVEstruct, stat, info);
 	// }
 	// }
@@ -1519,7 +1520,7 @@ pzgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 			     Glu_persist, SOLVEstruct1);
 	    }
 
-	    pzgsrfs(n, A, anorm, LUstruct, ScalePermstruct, grid,
+	    pzgsrfs(options, n, A, anorm, LUstruct, ScalePermstruct, grid,
 		    B, ldb, X, ldx, nrhs, SOLVEstruct1, berr, stat, info);
 
             /* Deallocate the storage associated with SOLVEstruct1 */

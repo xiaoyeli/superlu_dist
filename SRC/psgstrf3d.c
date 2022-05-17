@@ -127,7 +127,7 @@ int_t psgstrf3d(superlu_dist_options_t *options, int m, int n, float anorm,
     sLocalLU_t *Llu = LUstruct->Llu;
 
     // problem specific contants
-    int_t ldt = sp_ienv_dist (3);     /* Size of maximum supernode */
+    int_t ldt = sp_ienv_dist(3, options);     /* Size of maximum supernode */
     //    double s_eps = slamch_ ("Epsilon");  -Sherry
     double s_eps = smach_dist("Epsilon");
     double thresh = s_eps * anorm;
@@ -172,7 +172,7 @@ int_t psgstrf3d(superlu_dist_options_t *options, int m, int n, float anorm,
     initPackLUInfo(nsupers, &packLUInfo);
 
     sscuBufs_t scuBufs;
-    sinitScuBufs(ldt, num_threads, nsupers, &scuBufs, LUstruct, grid);
+    sinitScuBufs(options, ldt, num_threads, nsupers, &scuBufs, LUstruct, grid);
 
     factNodelists_t  fNlists;
     initFactNodelists( ldt, num_threads, nsupers, &fNlists);
@@ -227,17 +227,16 @@ int_t psgstrf3d(superlu_dist_options_t *options, int m, int n, float anorm,
     int superlu_acc_offload = HyP->superlu_acc_offload;
 
     //int_t bigu_size = getBigUSize(nsupers, grid, LUstruct);
-    int_t bigu_size = getBigUSize(nsupers, grid,
+    int_t bigu_size = getBigUSize(options, nsupers, grid,
     	  	                  LUstruct->Llu->Lrowind_bc_ptr);
     HyP->bigu_size = bigu_size;
-    int_t buffer_size = sp_ienv_dist(8); // get_max_buffer_size ();
+    int_t buffer_size = sp_ienv_dist(8, options); // get_max_buffer_size ();
     HyP->buffer_size = buffer_size;
     HyP->nsupers = nsupers;
 
 #ifdef GPU_ACC
 
     /*Now initialize the GPU data structure*/
-    
     sLUstruct_gpu_t *A_gpu, *dA_gpu;
 
     d2Hreduce_t d2HredObj;

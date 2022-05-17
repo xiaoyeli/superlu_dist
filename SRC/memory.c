@@ -302,6 +302,7 @@ void SetupSpace(void *work, int_t lwork, LU_space_t *MemModel)
 int_t symbfact_SubInit
 /************************************************************************/
 (
+ superlu_dist_options_t *options,
  fact_t fact, void *work, int_t lwork, int_t m, int_t n, int_t annz,
  Glu_persist_t *Glu_persist, Glu_freeable_t *Glu_freeable
  )
@@ -311,7 +312,7 @@ int_t symbfact_SubInit
     int_t  *lsub, *xlsub;
     int_t  *usub, *xusub;
     int_t  nzlmax, nzumax;
-    int_t  FILL = sp_ienv_dist(6);
+    int_t  FILL = sp_ienv_dist(6, options);
     int iam;
 
 #if ( DEBUGlevel>=1 )

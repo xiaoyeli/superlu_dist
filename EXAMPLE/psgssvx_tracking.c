@@ -559,7 +559,8 @@ psgssvx_tracking(superlu_dist_options_t *options, SuperMatrix *A,
     double   dmin, dsum, dprod;
 #endif
 
-    extern void psgsrfs_tracking(int_t n, SuperMatrix *A, float anorm, sLUstruct_t *LUstruct,
+    extern void psgsrfs_tracking(superlu_dist_options_t *options,
+				 int n, SuperMatrix *A, float anorm, sLUstruct_t *LUstruct,
 				 sScalePermstruct_t *ScalePermstruct, gridinfo_t *grid,
 				 float *B, int_t ldb, float *X, int_t ldx, int nrhs,
 				 sSOLVEstruct_t *SOLVEstruct,
@@ -612,7 +613,7 @@ psgssvx_tracking(superlu_dist_options_t *options, SuperMatrix *A,
 	*info = -5;
     else if ( nrhs < 0 )
 	*info = -6;
-    if ( sp_ienv_dist(2) > sp_ienv_dist(3) ) {
+    if ( sp_ienv_dist(2,options) > sp_ienv_dist(3,options) ) {
         *info = 1;
 	printf("ERROR: Relaxation (NREL) cannot be larger than max. supernode size (NSUP).\n"
 	"\t-> Check parameter setting in sp_ienv_dist.c to correct error.\n");
@@ -1109,10 +1110,9 @@ psgssvx_tracking(superlu_dist_options_t *options, SuperMatrix *A,
 	    } /* end serial symbolic factorization */
 	    else {  /* parallel symbolic factorization */
 	    	t = SuperLU_timer_();
-	    	flinfo = symbfact_dist(nprocs_num, noDomains, A, perm_c, perm_r,
+	    	flinfo = symbfact_dist(options, nprocs_num, noDomains, A, perm_c, perm_r,
 				       sizes, fstVtxSep, &Pslu_freeable,
-				       &(grid->comm), &symb_comm,
-				       &symb_mem_usage);
+				       &(grid->comm), &symb_comm, &symb_mem_usage);
 			nnzLU = Pslu_freeable.nnzLU;
 	    	stat->utime[SYMBFAC] = SuperLU_timer_() - t;
 	    	if (flinfo > 0) {
@@ -1147,7 +1147,7 @@ psgssvx_tracking(superlu_dist_options_t *options, SuperMatrix *A,
 	       NOTE: the row permutation Pc*Pr is applied internally in the
   	       distribution routine. */
 	    t = SuperLU_timer_();
-	    dist_mem_use = psdistribute(Fact, n, A, ScalePermstruct,
+	    dist_mem_use = psdistribute(options, n, A, ScalePermstruct,
                                       Glu_freeable, LUstruct, grid);
 	    stat->utime[DIST] = SuperLU_timer_() - t;
 
@@ -1164,7 +1164,7 @@ psgssvx_tracking(superlu_dist_options_t *options, SuperMatrix *A,
 	    for (j = 0; j < nnz_loc; ++j) colind[j] = perm_c[colind[j]];
 
     	    t = SuperLU_timer_();
-	    dist_mem_use = sdist_psymbtonum(Fact, n, A, ScalePermstruct,
+	    dist_mem_use = sdist_psymbtonum(options, n, A, ScalePermstruct,
 		  			   &Pslu_freeable, LUstruct, grid);
 	    if (dist_mem_use > 0)
 	        ABORT ("Not enough memory available for dist_psymbtonum\n");
@@ -1417,7 +1417,7 @@ psgssvx_tracking(superlu_dist_options_t *options, SuperMatrix *A,
     // {
 	// #pragma omp master
 	// {
-	psgstrs(n, LUstruct, ScalePermstruct, grid, X, m_loc,
+	psgstrs(options, n, LUstruct, ScalePermstruct, grid, X, m_loc,
 		fst_row, ldb, nrhs, SOLVEstruct, stat, info);
 	// }
 	// }
@@ -1499,7 +1499,7 @@ psgssvx_tracking(superlu_dist_options_t *options, SuperMatrix *A,
 			     Glu_persist, SOLVEstruct1);
 	    }
 
-	    psgsrfs_tracking(n, A, anorm, LUstruct, ScalePermstruct, grid,
+	    psgsrfs_tracking(options, n, A, anorm, LUstruct, ScalePermstruct, grid,
 			     B, ldb, X, ldx, nrhs, SOLVEstruct1, berr, stat, info, xtrue);
 
             /* Deallocate the storage associated with SOLVEstruct1 */

@@ -226,7 +226,8 @@ void check_accuracy(
  * </pre>
  */
 void
-psgsrfs_d2(int n, SuperMatrix *A, float anorm, sLUstruct_t *LUstruct,
+psgsrfs_d2(superlu_dist_options_t *options,
+	   int n, SuperMatrix *A, float anorm, sLUstruct_t *LUstruct,
 	   sScalePermstruct_t *ScalePermstruct, gridinfo_t *grid,
 	   float *B, int_t ldb, float *X, int_t ldx, int nrhs,
 	   sSOLVEstruct_t *SOLVEstruct, float *err_bounds,
@@ -320,7 +321,7 @@ psgsrfs_d2(int n, SuperMatrix *A, float anorm, sLUstruct_t *LUstruct,
     }
 #endif
 
-    /* NZ = maximum number of nonzero elements in each row of A, plus 1 */
+    /* NZ = maximum number of nonzero elements in each row of A */
     //nz     = A->ncol + 1;  // dense case
     int nzloc = 0;
     for (i = 0; i < m_loc; ++i) {
@@ -433,7 +434,7 @@ psgsrfs_d2(int n, SuperMatrix *A, float anorm, sLUstruct_t *LUstruct,
 	    //if (iam==1) Printdouble5("\tresid", 5, resid); fflush(stdout);
 
 	    /* Compute new dy: dy is aliased to resid, in single */
-	    psgstrs(n, LUstruct, ScalePermstruct, grid, dy, m_loc,
+	    psgstrs(options, n, LUstruct, ScalePermstruct, grid, dy, m_loc,
 		    fst_row, m_loc, 1, SOLVEstruct, stat, info);
 
 	    /* Compute norms: normx, normdx, normdz (normz ~= 1) */

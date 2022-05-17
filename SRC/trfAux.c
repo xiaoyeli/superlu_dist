@@ -157,7 +157,8 @@ int_t estimate_bigu_size( int_t nsupers, int_t ldt, int_t**Ufstnz_br_ptr,
 } /* old estimate_bigu_size. New one is in util.c */
 #endif /**** end old ones ****/
 
-int_t getBigUSize(int_t nsupers, gridinfo_t *grid, int_t **Lrowind_bc_ptr)
+int_t getBigUSize(superlu_dist_options_t *options,
+		  int_t nsupers, gridinfo_t *grid, int_t **Lrowind_bc_ptr)
 //LUstruct_t *LUstruct)
 {
 
@@ -198,7 +199,7 @@ int_t getBigUSize(int_t nsupers, gridinfo_t *grid, int_t **Lrowind_bc_ptr)
 
 
     int_t bigu_size =
-        8 * sp_ienv_dist (3) * (max_row_size) * SUPERLU_MAX(Pr / Pc, 1);
+        8 * sp_ienv_dist (3, options) * (max_row_size) * SUPERLU_MAX(Pr / Pc, 1);
 
     return bigu_size;
 }

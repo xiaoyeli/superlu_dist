@@ -700,7 +700,7 @@ pzgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
 #endif
     log_memory(nsupers * iword, stat);
 
-    k = sp_ienv_dist (3);       /* max supernode size */
+    k = sp_ienv_dist (3, options);       /* max supernode size */
 #if 0
     if ( !(Llu->ujrow = doublecomplexMalloc_dist(k*(k+1)/2)) )
          ABORT("Malloc fails for ujrow[].");
@@ -732,8 +732,8 @@ pzgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
     ToSendD = Llu->ToSendD;
     ToSendR = Llu->ToSendR;
 
-    ldt = sp_ienv_dist (3);     /* Size of maximum supernode */
-    k = CEILING (nsupers, Pr);  /* Number of local block rows */
+    ldt = sp_ienv_dist (3, options); /* Size of maximum supernode */
+    k = CEILING (nsupers, Pr);       /* Number of local block rows */
 
     /* Following code is for finding maximum row dimension of all L panels */
     int local_max_row_size = 0;
@@ -768,7 +768,7 @@ pzgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
     /* symmetric assumption -- using L's supernode to estimate. */
     /* Note that in following expression 8 can be anything
        as long as its not too big */
-    int bigu_size = 8 * sp_ienv_dist (3) * (max_row_size);
+    int bigu_size = 8 * sp_ienv_dist (3, options) * (max_row_size);
 #else
     int_t bigu_size = estimate_bigu_size( nsupers, Ufstnz_br_ptr, Glu_persist,
     	                                  grid, perm_u, &max_ncols );
@@ -789,8 +789,8 @@ pzgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
 
 #if ( PRNTlevel>=1 )
     if(!iam) {
-        printf("\t.. SUPERLU_MAX_BUFFER_SIZE %d set for GPU\n", sp_ienv_dist(8));
-	printf("\t.. SUPERLU_N_GEMM: %d flops of GEMM done on CPU (1st block always on CPU)\n", sp_ienv_dist(7));
+        printf("\t.. SUPERLU_MAX_BUFFER_SIZE %d set for GPU\n", sp_ienv_dist(8, options));
+	printf("\t.. SUPERLU_N_GEMM: %d flops of GEMM done on CPU (1st block always on CPU)\n", sp_ienv_dist(7, options));
         printf("\t.. GEMM buffer size: max_row_size X max_ncols = %d x " IFMT "\n",
                 max_row_size, max_ncols);
         printf("[%d].. BIG U size " IFMT " (on CPU)\n", iam, bigu_size);
@@ -804,7 +804,7 @@ pzgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
     int gpublas_nb = get_gpublas_nb(); // default 64
     int nstreams = get_num_gpu_streams (); // default 8
 
-    int_t buffer_size  = SUPERLU_MAX(max_row_size * nstreams * gpublas_nb, sp_ienv_dist(8));
+    int_t buffer_size  = SUPERLU_MAX(max_row_size * nstreams * gpublas_nb, sp_ienv_dist(8,options));
                                      //   get_max_buffer_size());
     doublecomplex *dA, *dB, *dC; // GEMM matrices on device
     int *stream_end_col;
@@ -851,7 +851,7 @@ pzgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
         for (i = 0; i < nstreams; ++i)
             checkGPU( gpuStreamCreate(&streams[i]) );
 
-        gpuStat = gpuMalloc( (void**)&dA, max_row_size*sp_ienv_dist(3)* sizeof(doublecomplex));
+        gpuStat = gpuMalloc( (void**)&dA, max_row_size * sp_ienv_dist(3,options) * sizeof(doublecomplex));
         if (gpuStat!= gpuSuccess) {
             fprintf(stderr, "!!!! Error in allocating A in the device %ld \n",m*k*sizeof(doublecomplex) );
             return 1;
@@ -870,7 +870,7 @@ pzgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
             return 1;
         }
 
-        stat->gpu_buffer += dword * ( max_row_size * sp_ienv_dist(3) // dA
+        stat->gpu_buffer += dword * ( max_row_size * sp_ienv_dist(3,options) // dA
                                      + bigu_size                     // dB
                                      + buffer_size );                // dC
 				     
@@ -964,7 +964,7 @@ pzgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
 
     doublecomplex *lookAhead_L_buff, *Remain_L_buff; /* Stores entire L-panel */
     Ublock_info_t *Ublock_info;
-    ldt = sp_ienv_dist (3); /* max supernode size */
+    ldt = sp_ienv_dist(3, options); /* max supernode size */
     /* The following is quite loose */
     lookAhead_L_buff = doublecomplexMalloc_dist(ldt*ldt* (num_look_aheads+1) );
 
@@ -1886,7 +1886,7 @@ pzgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
     SUPERLU_FREE (indirect);
     SUPERLU_FREE (indirect2); /* Sherry added */
 
-    ldt = sp_ienv_dist(3);
+    ldt = sp_ienv_dist(3, options);
     log_memory( -(3 * ldt *ldt * dword + 2 * ldt * num_threads * iword), stat );
 
     /* Sherry added */

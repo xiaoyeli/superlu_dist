@@ -122,7 +122,8 @@ static void redist_all_to_diag(int_t, float [], Glu_persist_t *,
  */
 
 void
-psgsrfs_ABXglobal(int_t n, SuperMatrix *A, float anorm, sLUstruct_t *LUstruct,
+psgsrfs_ABXglobal(superlu_dist_options_t *options, int_t n,
+                 SuperMatrix *A, float anorm, sLUstruct_t *LUstruct,
 		  gridinfo_t *grid, float *B, int_t ldb, float *X, int_t ldx,
 		  int nrhs, float *berr, SuperLUStat_t *stat, int *info)
 {
@@ -209,7 +210,7 @@ psgsrfs_ABXglobal(int_t n, SuperMatrix *A, float anorm, sLUstruct_t *LUstruct,
 
     i = CEILING( nsupers, nprow ); /* Number of local block rows */
     ii = Llu->ldalsum + i * XK_H;
-    k = SUPERLU_MAX(N_update, sp_ienv_dist(3));
+    k = SUPERLU_MAX(N_update, sp_ienv_dist(3, options));
     jj = diag_len[0];
     for (j = 1; j < num_diag_procs; ++j) jj = SUPERLU_MAX( jj, diag_len[j] );
     jj = SUPERLU_MAX( jj, N_update );

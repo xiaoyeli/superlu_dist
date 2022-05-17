@@ -117,7 +117,8 @@ at the top-level directory.
  * </pre>
  */
 void
-pdgsrfs(int_t n, SuperMatrix *A, double anorm, dLUstruct_t *LUstruct,
+pdgsrfs(superlu_dist_options_t *options, int_t n,
+        SuperMatrix *A, double anorm, dLUstruct_t *LUstruct,
 	dScalePermstruct_t *ScalePermstruct, gridinfo_t *grid,
 	double *B, int_t ldb, double *X, int_t ldx, int nrhs,
 	dSOLVEstruct_t *SOLVEstruct,
@@ -184,7 +185,7 @@ pdgsrfs(int_t n, SuperMatrix *A, double anorm, dLUstruct_t *LUstruct,
     safe1  = nz * safmin;
     safe2  = safe1 / eps;
 
-#if ( PRNTlevel>=2 )
+#if ( DEBUGlevel>=1 )
     if ( !iam ) printf(".. eps = %e\tanorm = %e\tsafe1 = %e\tsafe2 = %e\n",
 		       eps, anorm, safe1, safe2);
 #endif
@@ -231,7 +232,7 @@ pdgsrfs(int_t n, SuperMatrix *A, double anorm, dLUstruct_t *LUstruct,
 #endif
 	    if ( berr[j] > eps && berr[j] * 2 <= lstres && count < ITMAX ) {
 		/* Compute new dx. */
-		pdgstrs(n, LUstruct, ScalePermstruct, grid,
+		pdgstrs(options, n, LUstruct, ScalePermstruct, grid,
 			dx, m_loc, fst_row, m_loc, 1,
 			SOLVEstruct, stat, info);
 

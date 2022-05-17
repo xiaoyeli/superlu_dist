@@ -289,6 +289,7 @@ main (int argc, char *argv[])
        options.DiagInv           = NO;
      */
     set_default_options_dist (&options);
+    options.Algo3d = YES;
 #if 0
     options.RowPerm = NOROWPERM;
     options.IterRefine = NOREFINE;
@@ -303,7 +304,6 @@ main (int argc, char *argv[])
     if (ir != -1) options.IterRefine = ir;
     
     if (!iam) {
-	print_sp_ienv_dist(&options);
 	print_options_dist(&options);
 	fflush(stdout);
     }

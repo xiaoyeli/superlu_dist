@@ -837,7 +837,8 @@ psCompute_Diag_Inv(int_t n, sLUstruct_t *LUstruct,gridinfo_t *grid,
  */
 
 void
-psgstrs(int_t n, sLUstruct_t *LUstruct,
+psgstrs(superlu_dist_options_t *options, int_t n,
+        sLUstruct_t *LUstruct,
 	sScalePermstruct_t *ScalePermstruct,
 	gridinfo_t *grid, float *B,
 	int_t m_loc, int_t fst_row, int_t ldb, int nrhs,
@@ -962,7 +963,7 @@ psgstrs(int_t n, sLUstruct_t *LUstruct,
     aln_i = 1; //ceil(CACHELINE/(double)iword);
     int num_thread = 1;
 
-    maxsuper = sp_ienv_dist(3);
+    maxsuper = sp_ienv_dist(3, options);
 
 //#ifdef _OPENMP
 //#pragma omp threadprivate(thread_id)
@@ -1029,7 +1030,7 @@ psgstrs(int_t n, sLUstruct_t *LUstruct,
     Llu->SolveMsgSent = 0;
 
     /* Save the count to be altered so it can be used by
-       subsequent call to PDGSTRS. */
+       subsequent call to PSGSTRS. */
     if ( !(fmod = int32Malloc_dist(nlb*aln_i)) )
 	ABORT("Malloc fails for fmod[].");
     for (i = 0; i < nlb; ++i) fmod[i*aln_i] = Llu->fmod[i];
@@ -1056,7 +1057,7 @@ psgstrs(int_t n, sLUstruct_t *LUstruct,
     ldalsum = Llu->ldalsum;
 
     /* Allocate working storage. */
-    knsupc = sp_ienv_dist(3);
+    knsupc = sp_ienv_dist(3, options);
     maxrecvsz = knsupc * nrhs + SUPERLU_MAX( XK_H, LSUM_H );
     sizelsum = (((size_t)ldalsum)*nrhs + nlb*LSUM_H);
     sizelsum = ((sizelsum + (aln_d - 1)) / aln_d) * aln_d;
@@ -1750,7 +1751,7 @@ if(procs==1){
 	 *---------------------------------------------------*/
 
 	/* Save the count to be altered so it can be used by
-	   subsequent call to PDGSTRS. */
+	   subsequent call to PSGSTRS. */
 	if ( !(bmod = int32Malloc_dist(nlb*aln_i)) )
 		ABORT("Malloc fails for bmod[].");
 	for (i = 0; i < nlb; ++i) bmod[i*aln_i] = Llu->bmod[i];
@@ -2345,7 +2346,7 @@ for (i=0;i<nroot_send;i++){
 		MPI_Reduce (&msg_vol, &msg_vol_max,
 				1, MPI_FLOAT, MPI_MAX, 0, grid->comm);
 		if (!iam) {
-			printf ("\tPDGSTRS comm stat:"
+			printf ("\tPSGSTRS comm stat:"
 				"\tAvg\tMax\t\tAvg\tMax\n"
 				"\t\t\tCount:\t%.0f\t%.0f\tVol(MB)\t%.2f\t%.2f\n",
 				msg_cnt_sum / Pr / Pc, msg_cnt_max,

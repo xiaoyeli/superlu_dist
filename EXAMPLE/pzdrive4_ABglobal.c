@@ -70,7 +70,6 @@ int main(int argc, char *argv[])
        INITIALIZE MPI ENVIRONMENT. 
        ------------------------------------------------------------*/
     MPI_Init( &argc, &argv );
-	
     MPI_Comm_size( MPI_COMM_WORLD, &nprocs );
     if ( nprocs < 10 ) {
 	fprintf(stderr, "Requires at least 10 processes\n");
@@ -202,7 +201,6 @@ int main(int argc, char *argv[])
 	set_default_options_dist(&options);
 
         if (!iam) {
-	    print_sp_ienv_dist(&options);
 	    print_options_dist(&options);
         }
 

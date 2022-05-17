@@ -101,7 +101,8 @@ static void gather_diag_to_all(int_t, int_t, float [], Glu_persist_t *,
  */
 
 void
-psgstrs_Bglobal(int_t n, sLUstruct_t *LUstruct, gridinfo_t *grid,
+psgstrs_Bglobal(superlu_dist_options_t *options, int_t n,
+                sLUstruct_t *LUstruct, gridinfo_t *grid,
                 float *B, int_t ldb, int nrhs,
                 SuperLUStat_t *stat, int *info)
 {
@@ -214,7 +215,7 @@ psgstrs_Bglobal(int_t n, sLUstruct_t *LUstruct, gridinfo_t *grid,
     ldalsum = Llu->ldalsum;
 
     /* Allocate working storage. */
-    knsupc = sp_ienv_dist(3);
+    knsupc = sp_ienv_dist(3, options);
     maxrecvsz = knsupc * nrhs + SUPERLU_MAX( XK_H, LSUM_H );
     if ( !(lsum = floatCalloc_dist(((size_t)ldalsum) * nrhs
         + nlb * LSUM_H)) )

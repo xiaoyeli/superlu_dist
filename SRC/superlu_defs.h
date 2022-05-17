@@ -734,9 +734,17 @@ typedef struct {
     yes_no_t      RefineInitialized;
     yes_no_t      PrintStat;
     //int           nnzL, nnzU;      /* used to store nnzs for now       */
-    int           num_lookaheads;  /* num of levels in look-ahead      */
     yes_no_t      lookahead_etree; /* use etree computed from the
 				      serial symbolic factorization */
+    int num_lookaheads;  /* num of levels in look-ahead      */
+    int superlu_relax;   /* max. allowed relaxed supernode size; see sp_ienv(2) */
+    int superlu_maxsup;  /* max. allowed supernode size; see sp_ienv(3) */
+    char superlu_rankorder[4]; /* Z-major or XY-majir order in 3D grid */
+    char superlu_lbs[4]; /* etree load balancing strategy in 3D algorithm */
+    int superlu_n_gemm; /* one of GEMM offload criteria; see sp_ienv(7) */
+    int superlu_max_buffer_size; /* max. buffer size on GPU; see sp_ienv(8) */
+    int superlu_num_gpu_streams; /* number of GPU streams; see sp_ienv(9) */
+    int superlu_acc_offload; /* whether to offload work to GPU; see sp_ienv(10) */
     yes_no_t      SymPattern;      /* symmetric factorization          */
     yes_no_t      Use_TensorCore;  /* Use Tensor Core or not  */
     yes_no_t      Algo3d;          /* use 3D factorization/solve algorithms */
@@ -1077,7 +1085,8 @@ extern void  bcast_tree(void *, int, MPI_Datatype, int, int,
 			gridinfo_t *, int, int *);
 extern int_t symbfact(superlu_dist_options_t *, int, SuperMatrix *, int_t *,
                       int_t *, Glu_persist_t *, Glu_freeable_t *);
-extern int_t symbfact_SubInit(fact_t, void *, int_t, int_t, int_t, int_t,
+extern int_t symbfact_SubInit(superlu_dist_options_t *options,
+			      fact_t, void *, int_t, int_t, int_t, int_t,
 			      Glu_persist_t *, Glu_freeable_t *);
 extern int_t symbfact_SubXpand(int_t, int_t, int_t, MemType, int_t *,
 			       Glu_freeable_t *);
@@ -1105,7 +1114,7 @@ extern int_t estimate_bigu_size (int_t, int_t **, Glu_persist_t *,
 /* Auxiliary routines */
 extern double SuperLU_timer_ ();
 extern void   superlu_abort_and_exit_dist(char *);
-extern int    sp_ienv_dist (int);
+extern int    sp_ienv_dist (int, superlu_dist_options_t *);
 extern void   ifill_dist (int_t *, int_t, int_t);
 extern void   super_stats_dist (int_t, int_t *);
 extern void  get_diag_procs(int_t, Glu_persist_t *, gridinfo_t *, int_t *,
@@ -1126,7 +1135,8 @@ extern int_t partitionM( int_t*, int_t, int_t, int_t, int_t, int_t);
 
 /* Prototypes for parallel symbolic factorization */
 extern float symbfact_dist
-(int,  int, SuperMatrix *, int_t *, int_t *,  int_t *, int_t *,
+(superlu_dist_options_t *, int,  int,
+ SuperMatrix *, int_t *, int_t *,  int_t *, int_t *,
  Pslu_freeable_t *, MPI_Comm *, MPI_Comm *,  superlu_dist_mem_usage_t *);
 
 /* Get the column permutation using parmetis */
@@ -1138,7 +1148,7 @@ extern float get_perm_c_parmetis
    the parallel symbolic factorization routine */
 
 extern int_t psymbfact_LUXpandMem
-(int_t, int_t, int_t, int_t, int_t, int_t, int_t, int_t, 
+(int, int_t, int_t, int_t, int_t, int, int, int, 
  Pslu_freeable_t *, Llu_symbfact_t *,  vtcsInfo_symbfact_t *, psymbfact_stat_t *);
 
 extern int_t psymbfact_LUXpand
@@ -1165,7 +1175,8 @@ int superlu_sort_perm (const void *arg1, const void *arg2)
 #endif
 
 #ifdef GPU_ACC   /* GPU related */
-extern void gemm_division_cpu_gpu (int *, int *, int *, int,
+extern void gemm_division_cpu_gpu (superlu_dist_options_t *,
+				   int *, int *, int *, int,
 				   int, int, int *, int, int_t);
 extern int_t get_gpublas_nb ();
 extern int_t get_num_gpu_streams ();
@@ -1336,7 +1347,8 @@ extern sForest_t**  getGreedyLoadBalForests( int_t maxLvl, int_t nsupers, int_t*
 extern sForest_t**  getForests( int_t maxLvl, int_t nsupers, int_t*setree, treeList_t* treeList);
 
     /* from trfAux.h */
-extern int_t getBigUSize(int_t nsupers, gridinfo_t *grid, int_t **Lrowind_bc_ptr);
+extern int_t getBigUSize(superlu_dist_options_t *, int_t nsupers,
+			 gridinfo_t *grid, int_t **Lrowind_bc_ptr);
 extern void getSCUweight(int_t nsupers, treeList_t* treeList, int_t* xsup,
 			 int_t** Lrowind_bc_ptr, int_t** Ufstnz_br_ptr,
 			 gridinfo3d_t * grid3d);

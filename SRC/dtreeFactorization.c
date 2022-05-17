@@ -103,13 +103,14 @@ int dLluBufFreeArr(int_t numLA, dLUValSubBuf_t **LUvsbs)
 }
 
 
-int_t dinitScuBufs(int_t ldt, int_t num_threads, int_t nsupers,
+int_t dinitScuBufs(superlu_dist_options_t *options,
+                  int_t ldt, int_t num_threads, int_t nsupers,
                   dscuBufs_t* scuBufs,
                   dLUstruct_t* LUstruct,
                   gridinfo_t * grid)
 {
     scuBufs->bigV = dgetBigV(ldt, num_threads);
-    scuBufs->bigU = dgetBigU(nsupers, grid, LUstruct);
+    scuBufs->bigU = dgetBigU(options, nsupers, grid, LUstruct);
     return 0;
 }
 
@@ -204,7 +205,11 @@ int_t ddenseTreeFactor(
 	dWaitU(k, msgs->msgcnt, comReqs->send_requ, comReqs->recv_requ, grid, LUstruct, SCT);
 #endif
         double tsch = SuperLU_timer_();
-
+#if 0
+        int_t LU_nonempty = sSchurComplementSetup(k,
+                            msgs, packLUInfo, gIperm_c_supno, perm_c_supno,
+                            fNlists, scuBufs,  LUvsb, grid, LUstruct);
+#else
 	int_t LU_nonempty= dSchurComplementSetup(k, msgs->msgcnt,
 				 packLUInfo->Ublock_info, packLUInfo->Remain_info,
 				 packLUInfo->uPanelInfo, packLUInfo->lPanelInfo,
@@ -212,7 +217,7 @@ int_t ddenseTreeFactor(
 				 scuBufs->bigU, LUvsb->Lsub_buf, LUvsb->Lval_buf,
 				 LUvsb->Usub_buf, LUvsb->Uval_buf,
 				 grid, LUstruct);
-
+#endif
         if (LU_nonempty)
         {
             Ublock_info_t* Ublock_info = packLUInfo->Ublock_info;

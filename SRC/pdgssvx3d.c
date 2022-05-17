@@ -1106,7 +1106,7 @@ pdgssvx3d (superlu_dist_options_t * options, SuperMatrix * A,
 		    if (!iam)
 			printf
 			    (".. symbfact(): relax %4d, maxsuper %4d, fill %4d\n",
-			     sp_ienv_dist(2), sp_ienv_dist(3), sp_ienv_dist(6));
+			     sp_ienv_dist(2,options), sp_ienv_dist(3,options), sp_ienv_dist(6,options));
 #endif
 		    t = SuperLU_timer_ ();
 		    if (!(Glu_freeable = (Glu_freeable_t *)
@@ -1150,7 +1150,8 @@ pdgssvx3d (superlu_dist_options_t * options, SuperMatrix * A,
 		else { /* parallel symbolic factorization */
 		    t = SuperLU_timer_ ();
 		    flinfo =
-			symbfact_dist (nprocs_num, noDomains, A, perm_c, perm_r,
+			symbfact_dist (options, nprocs_num, noDomains,
+			               A, perm_c, perm_r,
 				       sizes, fstVtxSep, &Pslu_freeable,
 				       &(grid->comm), &symb_comm,
 				       &symb_mem_usage);
@@ -1184,7 +1185,7 @@ pdgssvx3d (superlu_dist_options_t * options, SuperMatrix * A,
 		   NOTE: the row permutation Pc*Pr is applied internally in the
 		   distribution routine. */
 		t = SuperLU_timer_ ();
-		dist_mem_use = pddistribute (Fact, n, A, ScalePermstruct,
+		dist_mem_use = pddistribute (options, n, A, ScalePermstruct,
 					     Glu_freeable, LUstruct, grid);
 		stat->utime[DIST] = SuperLU_timer_ () - t;
 		
@@ -1203,7 +1204,7 @@ pdgssvx3d (superlu_dist_options_t * options, SuperMatrix * A,
 		    colind[j] = perm_c[colind[j]];
 		
 		t = SuperLU_timer_ ();
-		dist_mem_use = ddist_psymbtonum (Fact, n, A, ScalePermstruct,
+		dist_mem_use = ddist_psymbtonum (options, n, A, ScalePermstruct,
 						 &Pslu_freeable, LUstruct, grid);
 		if (dist_mem_use > 0)
 		    ABORT ("Not enough memory available for dist_psymbtonum\n");
@@ -1397,7 +1398,7 @@ pdgssvx3d (superlu_dist_options_t * options, SuperMatrix * A,
 		pdgstrs_vecpar (n, LUstruct, ScalePermstruct, grid, X, m_loc,
 				fst_row, ldb, nrhs, SOLVEstruct, stat, info);
 #else
-		pdgstrs(n, LUstruct, ScalePermstruct, grid, X, m_loc,
+		pdgstrs(options, n, LUstruct, ScalePermstruct, grid, X, m_loc,
 			fst_row, ldb, nrhs, SOLVEstruct, stat, info);
 #endif
 
@@ -1485,7 +1486,7 @@ pdgssvx3d (superlu_dist_options_t * options, SuperMatrix * A,
 					      Glu_persist, SOLVEstruct1);
 			    }
 			
-			pdgsrfs (n, A, anorm, LUstruct, ScalePermstruct, grid,
+			pdgsrfs(options, n, A, anorm, LUstruct, ScalePermstruct, grid,
 				 B, ldb, X, ldx, nrhs, SOLVEstruct1, berr, stat, info);
 			
 			/* Deallocate the storage associated with SOLVEstruct1 */

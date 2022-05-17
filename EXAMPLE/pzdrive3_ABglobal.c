@@ -110,7 +110,7 @@ int main(int argc, char *argv[])
 
     /* Bail out if I do not belong in the grid. */
     iam = grid.iam;
-    if ( iam == -1 ) goto out;
+    if ( iam == -1 )	goto out;
     
 #if ( DEBUGlevel>=1 )
     CHECK_MALLOC(iam, "Enter main()");
@@ -198,7 +198,6 @@ int main(int argc, char *argv[])
     set_default_options_dist(&options);
 
     if (!iam) {
-	print_sp_ienv_dist(&options);
 	print_options_dist(&options);
     }
 

@@ -119,10 +119,11 @@ at the top-level directory.
 
 // Tracking the convergence history
 void
-psgsrfs_tracking(int_t n, SuperMatrix *A, float anorm, sLUstruct_t *LUstruct,
-	sScalePermstruct_t *ScalePermstruct, gridinfo_t *grid,
-	float *B, int_t ldb, float *X, int_t ldx, int nrhs,
-	sSOLVEstruct_t *SOLVEstruct,
+psgsrfs_tracking(superlu_dist_options_t *options,
+		 int n, SuperMatrix *A, float anorm, sLUstruct_t *LUstruct,
+		 sScalePermstruct_t *ScalePermstruct, gridinfo_t *grid,
+		 float *B, int_t ldb, float *X, int_t ldx, int nrhs,
+		 sSOLVEstruct_t *SOLVEstruct,
 		 float *berr, SuperLUStat_t *stat, int *info, double *xtrue)
 {
 #define ITMAX 10
@@ -313,7 +314,7 @@ psgsrfs_tracking(int_t n, SuperMatrix *A, float anorm, sLUstruct_t *LUstruct,
 	    //if ( berr[j] > eps && berr[j] * 2 <= lstres && count < ITMAX ) {
 	    if ( 1 ) {
 		/* Compute new dx. */
-		psgstrs(n, LUstruct, ScalePermstruct, grid,
+		psgstrs(options, n, LUstruct, ScalePermstruct, grid,
 			dx, m_loc, fst_row, m_loc, 1,
 			SOLVEstruct, stat, info);
 

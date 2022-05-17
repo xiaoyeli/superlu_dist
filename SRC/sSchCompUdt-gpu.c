@@ -112,6 +112,7 @@ if ( msg0 && msg2 ) {  /* L(:,k) and U(k,:) are not empty. */
 		 * If there is only one block, we leave it on CPU.
 		 */
                 gemm_division_cpu_gpu(
+		       options,
 		       &num_streams_used,/*number of streams that will be used*/
 		       stream_end_col,   /*array holding last column blk for each partition*/
 		       &ncpu_blks,       /*number of CPU gemm blks*/
@@ -122,7 +123,7 @@ if ( msg0 && msg2 ) {  /* L(:,k) and U(k,:) are not empty. */
 		       full_u_cols + jjj_st, /*array containing prefix sum of GPU workload*/
 		       jjj_global - jjj_st, /*number of block columns on GPU.
 		       		             If only one block, leave it on CPU*/
-               buffer_size
+		       buffer_size
                 );
                 // TAU_STATIC_TIMER_STOP("work_divison");
 

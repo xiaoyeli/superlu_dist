@@ -99,8 +99,8 @@ at the top-level directory.
  */
 
 static float
-dist_symbLU (int_t n, Pslu_freeable_t *Pslu_freeable,
-	     Glu_persist_t *Glu_persist,
+dist_symbLU (superlu_dist_options_t *options, int_t n,
+             Pslu_freeable_t *Pslu_freeable, Glu_persist_t *Glu_persist,
 	     int_t **p_xlsub, int_t **p_lsub, int_t **p_xusub, int_t **p_usub,
 	     gridinfo_t *grid
 	     )
@@ -172,7 +172,7 @@ dist_symbLU (int_t n, Pslu_freeable_t *Pslu_freeable,
   intBuf4 = nvtcs + 4 * nprocs;
   memAux += 5 * nprocs * sizeof(int);
 
-  maxszsn   = sp_ienv_dist(3);
+  maxszsn   = sp_ienv_dist(3, options);
 
   /* Allocate space for storing Glu_persist_n. */
   if ( !(supno_n = intMalloc_dist(n+1)) ) {
@@ -1185,7 +1185,7 @@ sdist_A(SuperMatrix *A, sScalePermstruct_t *ScalePermstruct,
  */
 
 float
-sdist_psymbtonum(fact_t fact, int_t n, SuperMatrix *A,
+sdist_psymbtonum(superlu_dist_options_t *options, int_t n, SuperMatrix *A,
 		sScalePermstruct_t *ScalePermstruct,
 		Pslu_freeable_t *Pslu_freeable,
 		sLUstruct_t *LUstruct, gridinfo_t *grid)
@@ -1322,12 +1322,12 @@ float *dense, *dense_col; /* SPA */
   iword = sizeof(int_t);
   dword = sizeof(float);
 
-  if (fact == SamePattern_SameRowPerm) {
+  if (options->Fact == SamePattern_SameRowPerm) {
     ABORT ("ERROR: call of dist_psymbtonum with fact equals SamePattern_SameRowPerm.");
   }
 
   if ((memStrLU =
-       dist_symbLU (n, Pslu_freeable,
+       dist_symbLU (options, n, Pslu_freeable,
 		    Glu_persist, &xlsub, &lsub, &xusub, &usub,	grid)) > 0)
     return (memStrLU);
   memDist += (-memStrLU);
@@ -1463,7 +1463,7 @@ float *dense, *dense_col; /* SPA */
      They are freed on return.
      k is the number of local row blocks.   */
   if ( !(dense = floatCalloc_dist(SUPERLU_MAX(ldaspa, ldaspa_j)
-				   * sp_ienv_dist(3))) ) {
+				   * sp_ienv_dist(3, options))) ) {
     fprintf(stderr, "Calloc fails for SPA dense[].");
     return (memDist + memNLU + memTRS);
   }
@@ -1478,7 +1478,7 @@ float *dense, *dense_col; /* SPA */
   }
   /* ------------------------------------------------ */
   memNLU += 2*nsupers_i*iword +
-    SUPERLU_MAX(ldaspa, ldaspa_j)*sp_ienv_dist(3)*dword;
+    SUPERLU_MAX(ldaspa, ldaspa_j)*sp_ienv_dist(3, options)*dword;
 
   /* Pointers to the beginning of each block column of L. */
   if ( !(Lnzval_bc_ptr =

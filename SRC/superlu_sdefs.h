@@ -272,13 +272,8 @@ typedef struct {
 			     (also numbers of X values to be received) */
     int   *RecvCounts;    /* Numbers of X indices to be received
 			     (also numbers of X values to be sent) */
-#if 0
     float *val_tosend;   /* X values to be sent to other processes */
     float *val_torecv;   /* X values to be received from other processes */
-#else // FIX: can be single or double (accommodate double-ItRef)
-    void *val_tosend;   /* X values to be sent to other processes */
-    void *val_torecv;   /* X values to be received from other processes */
-#endif
     int_t TotalIndSend;   /* Total number of indices to be sent
 			     (also total number of values to be received) */
     int_t TotalValSend;   /* Total number of values to be sent.
@@ -477,13 +472,14 @@ extern int     sp_sgemv_dist (char *, float, SuperMatrix *, float *,
 extern int     sp_sgemm_dist (char *, int, float, SuperMatrix *,
                         float *, int, float, float *, int);
 
-extern float sdistribute(fact_t, int_t, SuperMatrix *, Glu_freeable_t *,
+extern float sdistribute(superlu_dist_options_t *,
+                         int_t, SuperMatrix *, Glu_freeable_t *,
 			 sLUstruct_t *, gridinfo_t *);
 extern void  psgssvx_ABglobal(superlu_dist_options_t *, SuperMatrix *,
 			      sScalePermstruct_t *, float *,
 			      int, int, gridinfo_t *, sLUstruct_t *, float *,
 			      SuperLUStat_t *, int *);
-extern float psdistribute(fact_t, int_t, SuperMatrix *,
+extern float psdistribute(superlu_dist_options_t *, int_t, SuperMatrix *,
 			 sScalePermstruct_t *, Glu_freeable_t *,
 			 sLUstruct_t *, gridinfo_t *);
 extern void  psgssvx(superlu_dist_options_t *, SuperMatrix *,
@@ -526,9 +522,11 @@ extern int_t psgstrf(superlu_dist_options_t *, int, int, float anorm,
 #define IPM_PROF */
 
 /* Solve related */
-extern void psgstrs_Bglobal(int_t, sLUstruct_t *, gridinfo_t *,
+extern void psgstrs_Bglobal(superlu_dist_options_t *,
+                             int_t, sLUstruct_t *, gridinfo_t *,
 			     float *, int_t, int, SuperLUStat_t *, int *);
-extern void psgstrs(int_t, sLUstruct_t *, sScalePermstruct_t *, gridinfo_t *,
+extern void psgstrs(superlu_dist_options_t *, int_t,
+                    sLUstruct_t *, sScalePermstruct_t *, gridinfo_t *,
 		    float *, int_t, int_t, int_t, int, sSOLVEstruct_t *,
 		    SuperLUStat_t *, int *);
 extern void psgstrf2_trsm(superlu_dist_options_t * options, int_t k0, int_t k,
@@ -575,11 +573,13 @@ extern void slsum_fmod_inv_gpu_wrap(int_t, int_t, int_t, int_t, float *, float *
 extern void slsum_bmod_inv_gpu_wrap(int_t, int_t, int_t, int_t, float *, float *,int,int, int_t , int *bmod, C_Tree  *, C_Tree  *, int_t *, int_t *,int_t *, int64_t *, float *, int64_t *, int_t  *, int64_t *, Ucb_indptr_t *, int64_t *, float *, int64_t *,int_t *,gridinfo_t *);
 #endif
 
-extern void psgsrfs(int_t, SuperMatrix *, float, sLUstruct_t *,
+extern void psgsrfs(superlu_dist_options_t *, int_t,
+                    SuperMatrix *, float, sLUstruct_t *,
 		    sScalePermstruct_t *, gridinfo_t *,
 		    float [], int_t, float [], int_t, int,
 		    sSOLVEstruct_t *, float *, SuperLUStat_t *, int *);
-extern void psgsrfs_ABXglobal(int_t, SuperMatrix *, float, sLUstruct_t *,
+extern void psgsrfs_ABXglobal(superlu_dist_options_t *, int_t,
+                  SuperMatrix *, float, sLUstruct_t *,
 		  gridinfo_t *, float *, int_t, float *, int_t,
 		  int, float *, SuperLUStat_t *, int *);
 extern int   psgsmv_AXglobal_setup(SuperMatrix *, Glu_persist_t *,
@@ -631,7 +631,7 @@ extern int  sread_binary(FILE *, int_t *, int_t *, int_t *,
 	                  float **, int_t **, int_t **);
 
 /* Distribute the data for numerical factorization */
-extern float sdist_psymbtonum(fact_t, int_t, SuperMatrix *,
+extern float sdist_psymbtonum(superlu_dist_options_t *, int_t, SuperMatrix *,
                                 sScalePermstruct_t *, Pslu_freeable_t *,
                                 sLUstruct_t *, gridinfo_t *);
 extern void psGetDiagU(int_t, sLUstruct_t *, gridinfo_t *, float *);
@@ -1046,12 +1046,14 @@ extern int_t sSchurComplementSetupGPU(int_t k, msgs_t* msgs, packLUInfo_t*,
 				      sLUValSubBuf_t* LUvsb, gridinfo_t *,
 				      sLUstruct_t *, HyP_t*);
 extern float* sgetBigV(int_t, int_t);
-extern float* sgetBigU(int_t, gridinfo_t *, sLUstruct_t *);
+extern float* sgetBigU(superlu_dist_options_t *,
+                           int_t, gridinfo_t *, sLUstruct_t *);
 // permutation from superLU default
 
     /* from treeFactorization.h */
 extern int_t sLluBufInit(sLUValSubBuf_t*, sLUstruct_t *);
-extern int_t sinitScuBufs(int_t ldt, int_t num_threads, int_t nsupers,
+extern int_t sinitScuBufs(superlu_dist_options_t *,
+                          int_t ldt, int_t num_threads, int_t nsupers,
 			  sscuBufs_t*, sLUstruct_t*, gridinfo_t *);
 extern int sfreeScuBufs(sscuBufs_t* scuBufs);
 

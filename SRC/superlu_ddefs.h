@@ -472,13 +472,14 @@ extern int     sp_dgemv_dist (char *, double, SuperMatrix *, double *,
 extern int     sp_dgemm_dist (char *, int, double, SuperMatrix *,
                         double *, int, double, double *, int);
 
-extern float ddistribute(fact_t, int_t, SuperMatrix *, Glu_freeable_t *,
+extern float ddistribute(superlu_dist_options_t *,
+                         int_t, SuperMatrix *, Glu_freeable_t *,
 			 dLUstruct_t *, gridinfo_t *);
 extern void  pdgssvx_ABglobal(superlu_dist_options_t *, SuperMatrix *,
 			      dScalePermstruct_t *, double *,
 			      int, int, gridinfo_t *, dLUstruct_t *, double *,
 			      SuperLUStat_t *, int *);
-extern float pddistribute(fact_t, int_t, SuperMatrix *,
+extern float pddistribute(superlu_dist_options_t *, int_t, SuperMatrix *,
 			 dScalePermstruct_t *, Glu_freeable_t *,
 			 dLUstruct_t *, gridinfo_t *);
 extern void  pdgssvx(superlu_dist_options_t *, SuperMatrix *,
@@ -521,9 +522,11 @@ extern int_t pdgstrf(superlu_dist_options_t *, int, int, double anorm,
 #define IPM_PROF */
 
 /* Solve related */
-extern void pdgstrs_Bglobal(int_t, dLUstruct_t *, gridinfo_t *,
+extern void pdgstrs_Bglobal(superlu_dist_options_t *,
+                             int_t, dLUstruct_t *, gridinfo_t *,
 			     double *, int_t, int, SuperLUStat_t *, int *);
-extern void pdgstrs(int_t, dLUstruct_t *, dScalePermstruct_t *, gridinfo_t *,
+extern void pdgstrs(superlu_dist_options_t *, int_t,
+                    dLUstruct_t *, dScalePermstruct_t *, gridinfo_t *,
 		    double *, int_t, int_t, int_t, int, dSOLVEstruct_t *,
 		    SuperLUStat_t *, int *);
 extern void pdgstrf2_trsm(superlu_dist_options_t * options, int_t k0, int_t k,
@@ -570,11 +573,13 @@ extern void dlsum_fmod_inv_gpu_wrap(int_t, int_t, int_t, int_t, double *, double
 extern void dlsum_bmod_inv_gpu_wrap(int_t, int_t, int_t, int_t, double *, double *,int,int, int_t , int *bmod, C_Tree  *, C_Tree  *, int_t *, int_t *,int_t *, int64_t *, double *, int64_t *, int_t  *, int64_t *, Ucb_indptr_t *, int64_t *, double *, int64_t *,int_t *,gridinfo_t *);
 #endif
 
-extern void pdgsrfs(int_t, SuperMatrix *, double, dLUstruct_t *,
+extern void pdgsrfs(superlu_dist_options_t *, int_t,
+                    SuperMatrix *, double, dLUstruct_t *,
 		    dScalePermstruct_t *, gridinfo_t *,
 		    double [], int_t, double [], int_t, int,
 		    dSOLVEstruct_t *, double *, SuperLUStat_t *, int *);
-extern void pdgsrfs_ABXglobal(int_t, SuperMatrix *, double, dLUstruct_t *,
+extern void pdgsrfs_ABXglobal(superlu_dist_options_t *, int_t,
+                  SuperMatrix *, double, dLUstruct_t *,
 		  gridinfo_t *, double *, int_t, double *, int_t,
 		  int, double *, SuperLUStat_t *, int *);
 extern int   pdgsmv_AXglobal_setup(SuperMatrix *, Glu_persist_t *,
@@ -626,7 +631,7 @@ extern int  dread_binary(FILE *, int_t *, int_t *, int_t *,
 	                  double **, int_t **, int_t **);
 
 /* Distribute the data for numerical factorization */
-extern float ddist_psymbtonum(fact_t, int_t, SuperMatrix *,
+extern float ddist_psymbtonum(superlu_dist_options_t *, int_t, SuperMatrix *,
                                 dScalePermstruct_t *, Pslu_freeable_t *,
                                 dLUstruct_t *, gridinfo_t *);
 extern void pdGetDiagU(int_t, dLUstruct_t *, gridinfo_t *, double *);
@@ -1041,12 +1046,14 @@ extern int_t dSchurComplementSetupGPU(int_t k, msgs_t* msgs, packLUInfo_t*,
 				      dLUValSubBuf_t* LUvsb, gridinfo_t *,
 				      dLUstruct_t *, HyP_t*);
 extern double* dgetBigV(int_t, int_t);
-extern double* dgetBigU(int_t, gridinfo_t *, dLUstruct_t *);
+extern double* dgetBigU(superlu_dist_options_t *,
+                           int_t, gridinfo_t *, dLUstruct_t *);
 // permutation from superLU default
 
     /* from treeFactorization.h */
 extern int_t dLluBufInit(dLUValSubBuf_t*, dLUstruct_t *);
-extern int_t dinitScuBufs(int_t ldt, int_t num_threads, int_t nsupers,
+extern int_t dinitScuBufs(superlu_dist_options_t *,
+                          int_t ldt, int_t num_threads, int_t nsupers,
 			  dscuBufs_t*, dLUstruct_t*, gridinfo_t *);
 extern int dfreeScuBufs(dscuBufs_t* scuBufs);
 

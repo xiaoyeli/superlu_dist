@@ -108,6 +108,7 @@ int main(int argc, char *argv[])
     iam = grid.iam;
     if ( iam == -1 )	goto out;
 
+
 #if ( DEBUGlevel>=1 )
     CHECK_MALLOC(iam, "Enter main()");
 #endif
@@ -183,7 +184,6 @@ int main(int argc, char *argv[])
     set_default_options_dist(&options);
 
     if (!iam) {
-	print_sp_ienv_dist(&options);
 	print_options_dist(&options);
     }
 
