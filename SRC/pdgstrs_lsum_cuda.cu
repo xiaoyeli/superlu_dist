@@ -1830,6 +1830,7 @@ __device__ void C_RdTree_forwardMessageSimple_Device(C_Tree* Tree, void* localBu
 
  void dlsum_bmod_inv_gpu_wrap
  (
+  superlu_dist_options_t *options,
   int_t nbcol_loc,    /*number of local supernode columns*/
   int_t nbrow_loc,    /*number of local supernode rows*/
   int_t nthread_x,     /*kernel launch parameter*/
@@ -1864,7 +1865,7 @@ __device__ void C_RdTree_forwardMessageSimple_Device(C_Tree* Tree, void* localBu
 	 
 	 // printf("pinv %d\n",Llu->inv);
 	 // fflush(stdout);
-		int_t maxsuper = sp_ienv_dist(3);
+ int_t maxsuper = sp_ienv_dist(3, options);
 		if(MAXSUPER<maxsuper){
 			printf("increase MAXSUPER\n");
 			exit(1);
@@ -1872,9 +1873,6 @@ __device__ void C_RdTree_forwardMessageSimple_Device(C_Tree* Tree, void* localBu
 		dim3 dimBlock(nthread_x, nthread_y);
 		dlsum_bmod_inv_gpu_mrhs<<< nbcol_loc, dimBlock >>>(nbcol_loc,lsum,x,nrhs,nsupers,bmod, UBtree_ptr,URtree_ptr,ilsum,Urbs,Ufstnz_br_dat,Ufstnz_br_offset,Unzval_br_dat,Unzval_br_offset,Ucb_valdat,Ucb_valoffset,Ucb_inddat,Ucb_indoffset,Uinv_bc_dat,Uinv_bc_offset,xsup,grid);
 
-
-
- 
 	 gpuDeviceSynchronize();
  }
 

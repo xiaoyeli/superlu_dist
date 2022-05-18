@@ -1428,14 +1428,14 @@ int getnGPUStreams()
 int get_mpi_process_per_gpu ()
 {
     char *ttemp;
-    ttemp = getenv ("MPI_PROCESS_PER_GPU");
+    ttemp = getenv ("SUPERLU_MPI_PROCESS_PER_GPU");
 
-	if (ttemp)
-		return atol (ttemp);
-	else
-	{
-		printf("MPI_PROCESS_PER_GPU is not set; Using default 1 \n");
-		return 1;
-	}
+    if (ttemp)
+      return atol (ttemp);
+    else
+      {
+	//printf("SUPERLU_MPI_PROCESS_PER_GPU is not set; Using default 1 \n");
+	return 1;
+      }
 }
 
