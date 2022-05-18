@@ -570,7 +570,8 @@ extern void zComputeLevelsets(int , int_t , gridinfo_t *,
 			   
 #ifdef GPU_ACC               
 extern void zlsum_fmod_inv_gpu_wrap(int_t, int_t, int_t, int_t, doublecomplex *, doublecomplex *, int, int, int_t , int *fmod, C_Tree  *, C_Tree  *, int_t *, int_t *, int64_t *, doublecomplex *, int64_t *, doublecomplex *, int64_t *, int_t *, int64_t *, int_t *, gridinfo_t *, doublecomplex * , doublecomplex * , int_t );
-extern void zlsum_bmod_inv_gpu_wrap(int_t, int_t, int_t, int_t, doublecomplex *, doublecomplex *,int,int, int_t , int *bmod, C_Tree  *, C_Tree  *, int_t *, int_t *,int_t *, int64_t *, doublecomplex *, int64_t *, int_t  *, int64_t *, Ucb_indptr_t *, int64_t *, doublecomplex *, int64_t *,int_t *,gridinfo_t *);
+extern void zlsum_bmod_inv_gpu_wrap(superlu_dist_options_t *,
+int_t, int_t, int_t, int_t, doublecomplex *, doublecomplex *,int,int, int_t , int *bmod, C_Tree  *, C_Tree  *, int_t *, int_t *,int_t *, int64_t *, doublecomplex *, int64_t *, int_t  *, int64_t *, Ucb_indptr_t *, int64_t *, doublecomplex *, int64_t *,int_t *,gridinfo_t *);
 #endif
 
 extern void pzgsrfs(superlu_dist_options_t *, int_t,

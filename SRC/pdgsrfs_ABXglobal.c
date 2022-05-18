@@ -158,7 +158,8 @@ pdgsrfs_ABXglobal(superlu_dist_options_t *options, int_t n,
     int_t *diag_len; /* Length of the X vector on diagonal processes. */
 
     /*-- Function prototypes --*/
-    extern void pdgstrs1(int_t, dLUstruct_t *, gridinfo_t *,
+    extern void pdgstrs1(superlu_dist_options_t *,
+                         int_t, dLUstruct_t *, gridinfo_t *,
 			 double *, int, SuperLUStat_t *, int *);
 
     /* Test the input parameters. */
@@ -319,7 +320,7 @@ pdgsrfs_ABXglobal(superlu_dist_options_t *options, int_t n,
 		/* Compute new dx. */
 		redist_all_to_diag(n, R, Glu_persist, Llu, grid,
 				   mv_sup_to_proc, dx_trs);
-		pdgstrs1(n, LUstruct, grid, dx_trs, 1, stat, info);
+		pdgstrs1(options, n, LUstruct, grid, dx_trs, 1, stat, info);
 
 		/* Update solution. */
 		for (p = 0; p < num_diag_procs; ++p)
