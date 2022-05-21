@@ -406,7 +406,7 @@ completely automatically by simply typing "make" at the top level.
 A couple of environment variables affect parallel execution.
 ```
     export OMP_NUM_THREADS=<...>
-    export SUPERLU_ACC_OFFLOAD=1  // this enables use of GPU. Default is 0.
+    export SUPERLU_ACC_OFFLOAD=1  // this enables use of GPU. Default is 1.
 ```
 Several integer blocking parameters may affect performance. Most of them can be
 set by the user through environment variables. Oherwise the default values
