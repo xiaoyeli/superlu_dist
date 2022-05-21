@@ -1,6 +1,25 @@
-// #ifndef __SUPERLU_GPUWRAPER /* allow multiple inclusions */
-// #define __SUPERLU_GPUWRAPER
+/*! \file
+Copyright (c) 2003, The Regents of the University of California, through
+Lawrence Berkeley National Laboratory (subject to receipt of any required 
+approvals from U.S. Dept. of Energy) 
 
+All rights reserved. 
+
+The source code is distributed under BSD license, see the file License.txt
+at the top-level directory.
+*/
+/*! @file
+ * \brief Wrappers for multiple types of GPUs
+ *
+ * <pre>
+ * -- Distributed SuperLU routine (version 8.0) --
+ * Lawrence Berkeley National Lab, Univ. of California Berkeley.
+ * May 22, 2022
+ * </pre>
+ */
+
+#ifndef __SUPERLU_GPUWRAPPER /* allow multiple inclusions */
+#define __SUPERLU_GPUWRAPPER
 
 #ifdef HAVE_CUDA
 #include <cublas_v2.h>
@@ -176,3 +195,6 @@
 			 exit(1); \
 		 } \
 	 } while(0);
+
+
+#endif /* __SUPERLU_GPUWRAPPER */

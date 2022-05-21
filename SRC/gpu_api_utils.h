@@ -13,6 +13,8 @@ at the top-level directory.
  * -- Distributed SuperLU routine (version 4.0) --
  * Lawrence Berkeley National Lab, Univ. of California Berkeley.
  * October 1, 2014
+ * Modified:
+ *     May 22, 2022        version 8.0.0
  * </pre>
  */
 

@@ -10,8 +10,8 @@ cmake_minimum_required(VERSION 3.18.1 FATAL_ERROR)
 # Project version numbers
 #project(SuperLU_DIST C CXX CUDA)
 project(SuperLU_DIST C CXX)
-set(VERSION_MAJOR "7")
-set(VERSION_MINOR "2")
+set(VERSION_MAJOR "8")
+set(VERSION_MINOR "0")
 set(VERSION_BugFix "0")
 set(PROJECT_VERSION ${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_BugFix})
 
