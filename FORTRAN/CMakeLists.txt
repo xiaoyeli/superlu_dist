@@ -3,9 +3,10 @@ include_directories(${SuperLU_DIST_SOURCE_DIR}/SRC)
 include_directories(${SuperLU_DIST_BINARY_DIR}/FORTRAN)
 
 set(mod_sources superlu_mod.f90 superlupara.f90)
-
 set(sources
     superlu_c2f_wrap.c  # initialize precision-independent file
+    superlupara.f90
+    superlu_mod.f90
     )
 
 if(enable_double)
@@ -31,7 +32,6 @@ set_target_properties(superlu_dist_fortran-static PROPERTIES VERSION ${superlu_d
 set_target_properties(superlu_dist_fortran-static PROPERTIES SOVERSION ${superlu_dist_soversion})
 target_link_libraries(superlu_dist_fortran-static superlu_dist)
 
-
 # depends on FPP defs
 add_dependencies(superlu_dist_fortran config_f)
 add_dependencies(superlu_dist_fortran-static config_f)
@@ -48,8 +48,6 @@ install(TARGETS superlu_dist_fortran-static
     LIBRARY DESTINATION "${INSTALL_LIB_DIR}"
     ARCHIVE DESTINATION "${INSTALL_LIB_DIR}"
 )
-
-
 
 install(DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
   DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
@@ -76,10 +74,9 @@ if (NOT MSVC)
   list(APPEND all_link_libs m)
 endif ()
 
-
-
-#if(enable_double)
-if(FALSE)
+if(enable_double)
+## if(FALSE)
+if(enable_double)
   set(F_DEXM ${F_MOD} f_pddrive.F90)
   add_executable(f_pddrive ${F_DEXM})
   target_link_libraries(f_pddrive ${all_link_libs})
@@ -98,8 +95,8 @@ if(FALSE)
   
 endif()
 
-# if(enable_complex16)
-if(FALSE)
+##if(FALSE)
+if(enable_complex16)
   set(F_ZEXM f_pzdrive.F90)
   add_executable(f_pzdrive ${F_ZEXM})
   target_link_libraries(f_pzdrive ${all_link_libs})
