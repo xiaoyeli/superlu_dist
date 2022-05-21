@@ -76,7 +76,6 @@ endif ()
 
 if(enable_double)
 ## if(FALSE)
-if(enable_double)
   set(F_DEXM ${F_MOD} f_pddrive.F90)
   add_executable(f_pddrive ${F_DEXM})
   target_link_libraries(f_pddrive ${all_link_libs})
