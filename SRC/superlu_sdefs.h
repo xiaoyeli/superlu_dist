@@ -272,8 +272,8 @@ typedef struct {
 			     (also numbers of X values to be received) */
     int   *RecvCounts;    /* Numbers of X indices to be received
 			     (also numbers of X values to be sent) */
-    float *val_tosend;   /* X values to be sent to other processes */
-    float *val_torecv;   /* X values to be received from other processes */
+    void *val_tosend;   /* X values to be sent to other processes */
+    void *val_torecv;   /* X values to be received from other processes */
     int_t TotalIndSend;   /* Total number of indices to be sent
 			     (also total number of values to be received) */
     int_t TotalValSend;   /* Total number of values to be sent.

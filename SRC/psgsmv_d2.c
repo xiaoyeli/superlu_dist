@@ -389,17 +389,3 @@ psgsmv_d2(
 
 } /* PSGSMV_D2 */
 
-#if 0 /* This is defined elsewhere */
-void psgsmv_finalize(psgsmv_comm_t *gsmv_comm)
-{
-    int_t *it;
-    double *dt;
-    SUPERLU_FREE(gsmv_comm->extern_start);
-    if ( it = gsmv_comm->ind_tosend ) SUPERLU_FREE(it);
-    if ( it = gsmv_comm->ind_torecv ) SUPERLU_FREE(it);
-    SUPERLU_FREE(gsmv_comm->ptr_ind_tosend);
-    SUPERLU_FREE(gsmv_comm->SendCounts);
-    if ( dt = gsmv_comm->val_tosend ) SUPERLU_FREE(dt);
-    if ( dt = gsmv_comm->val_torecv ) SUPERLU_FREE(dt);
-}
-#endif

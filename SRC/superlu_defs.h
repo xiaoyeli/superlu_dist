@@ -1201,6 +1201,7 @@ extern int get_acc_offload();
 extern void  print_panel_seg_dist(int_t, int_t, int_t, int_t, int_t *, int_t *);
 extern void  check_repfnz_dist(int_t, int_t, int_t, int_t *);
 extern int_t CheckZeroDiagonal(int_t, int_t *, int_t *, int_t *);
+extern int   check_perm_dist(char *what, int_t n, int_t *perm);
 extern void  PrintDouble5(char *, int_t, double *);
 extern void  PrintInt10(char *, int_t, int_t *);
 extern void  PrintInt32(char *, int, int *);
