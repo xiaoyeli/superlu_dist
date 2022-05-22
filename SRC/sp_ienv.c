@@ -78,18 +78,22 @@ sp_ienv_dist(int ispec, superlu_dist_options_t *options)
     char* ttemp;
 
     switch (ispec) {
-	case 2: 
+	case 2:
             ttemp = getenv("SUPERLU_RELAX");
+	    int k;
             if(ttemp)
             {
-                return(atoi(ttemp));
-            }else if(getenv("NREL"))
+		k = atoi(ttemp);
+            }else if( (ttemp = getenv("NREL")) )
             {
-                return(atoi(getenv("NREL")));
+		k = atoi(ttemp);
             }
-            else
-		return (options->superlu_relax);
-            
+            else {
+		k = options->superlu_relax;
+	    }
+	    k = SUPERLU_MIN( k, sp_ienv_dist(3,options) ); // not to exceed MAXSUP
+	    return (k);
+	    
 	case 3: 
 	    ttemp = getenv("SUPERLU_MAXSUP"); // take min of MAX_SUPER_SIZE in superlu_defs.h
             if(ttemp)
