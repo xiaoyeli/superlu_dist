@@ -35,6 +35,7 @@ target_link_libraries(superlu_dist_fortran-static superlu_dist)
 # depends on FPP defs
 add_dependencies(superlu_dist_fortran config_f)
 add_dependencies(superlu_dist_fortran-static config_f)
+add_dependencies(superlu_dist_fortran-static superlu_dist_fortran)
 
 install(TARGETS superlu_dist_fortran
 # DESTINATION ${CMAKE_INSTALL_LIBDIR}
@@ -86,12 +87,12 @@ if(enable_double)
   add_executable(f_pddrive3d ${F_DEXM3D})
   target_link_libraries(f_pddrive3d ${all_link_libs})
   set_target_properties(f_pddrive3d PROPERTIES LINKER_LANGUAGE CXX LINK_FLAGS "${MPI_Fortran_LINK_FLAGS}")
-  
+
   set(F_5x5 f_5x5.F90 sp_ienv.c)
   add_executable(f_5x5 ${F_5x5})
   target_link_libraries(f_5x5 ${all_link_libs})
   set_target_properties(f_5x5 PROPERTIES LINKER_LANGUAGE CXX LINK_FLAGS "${MPI_Fortran_LINK_FLAGS}")
-  
+
 endif()
 
 ##if(FALSE)
@@ -106,7 +107,6 @@ if(enable_complex16)
   add_executable(f_pzdrive3d ${F_ZEXM3D})
   target_link_libraries(f_pzdrive3d ${all_link_libs})
   set_target_properties(f_pzdrive3d PROPERTIES LINKER_LANGUAGE CXX LINK_FLAGS "${MPI_Fortran_LINK_FLAGS}")
-  
 endif()
 
 
