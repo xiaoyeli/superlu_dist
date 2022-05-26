@@ -87,11 +87,13 @@ if(enable_double)
   add_executable(f_pddrive3d ${F_DEXM3D})
   target_link_libraries(f_pddrive3d ${all_link_libs})
   set_target_properties(f_pddrive3d PROPERTIES LINKER_LANGUAGE CXX LINK_FLAGS "${MPI_Fortran_LINK_FLAGS}")
+  add_dependencies(f_pddrive3d f_pddrive)
 
   set(F_5x5 f_5x5.F90 sp_ienv.c)
   add_executable(f_5x5 ${F_5x5})
   target_link_libraries(f_5x5 ${all_link_libs})
   set_target_properties(f_5x5 PROPERTIES LINKER_LANGUAGE CXX LINK_FLAGS "${MPI_Fortran_LINK_FLAGS}")
+  add_dependencies(f_5x5 f_pddrive3d)
 
 endif()
 
@@ -102,11 +104,13 @@ if(enable_complex16)
   target_link_libraries(f_pzdrive ${all_link_libs})
 #  set_target_properties(f_pzdrive PROPERTIES LINKER_LANGUAGE Fortran)
   set_target_properties(f_pzdrive PROPERTIES LINKER_LANGUAGE CXX LINK_FLAGS "${MPI_Fortran_LINK_FLAGS}")
+  add_dependencies(f_pzdrive f_5x5)
 
   set(F_ZEXM3D f_pzdrive3d.F90)
   add_executable(f_pzdrive3d ${F_ZEXM3D})
   target_link_libraries(f_pzdrive3d ${all_link_libs})
   set_target_properties(f_pzdrive3d PROPERTIES LINKER_LANGUAGE CXX LINK_FLAGS "${MPI_Fortran_LINK_FLAGS}")
+  add_dependencies(f_pzdrive3d f_pzdrive)
 endif()
 
 
