@@ -72,9 +72,10 @@ if (NOT MSVC)
   list(APPEND all_link_libs m)
 endif ()
 
+if(enable_examples)
 if(enable_double)
 ## if(FALSE)
-  set(F_DEXM ${F_MOD} f_pddrive.F90)
+  set(F_DEXM f_pddrive.F90)
   add_executable(f_pddrive ${F_DEXM})
   target_link_libraries(f_pddrive ${all_link_libs})
   # set_target_properties(f_pddrive PROPERTIES LINKER_LANGUAGE Fortran CUDA_RESOLVE_DEVICE_SYMBOLS ON)
@@ -105,7 +106,7 @@ if(enable_complex16)
   target_link_libraries(f_pzdrive3d ${all_link_libs})
   set_target_properties(f_pzdrive3d PROPERTIES LINKER_LANGUAGE CXX LINK_FLAGS "${MPI_Fortran_LINK_FLAGS}")
 endif()
-
+endif ()
 
 # Format superlu_dist_config.fh from superlu_dist_config.h in C
 add_custom_command(
