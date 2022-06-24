@@ -7,10 +7,12 @@ export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/opt/intel/compilers_and_libraries_2019.
 
 # module use /global/common/software/m3169/cori/modulefiles
 # module unload openmpi
-
-module load cmake/3.18.2
+module unload cmake
+module load cmake
+# module load cudatoolkit
 module load cgpu
 module load cuda/11.1.1
+module swap gcc gcc/8.3.0
 module load openmpi/4.0.3
 
 export CRAYPE_LINK_TYPE=dynamic

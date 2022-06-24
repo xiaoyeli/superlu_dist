@@ -188,10 +188,12 @@ typedef MPI_C_DOUBLE_COMPLEX  SuperLU_MPI_DOUBLE_COMPLEX;
  *     ]
  *
  */
-#define BC_HEADER      3
+#define BC_HEADER      2
 #define LB_DESCRIPTOR  2
 #define BR_HEADER      3
 #define UB_DESCRIPTOR  2
+#define BC_HEADER_NEWU      3
+#define UB_DESCRIPTOR_NEWU  2
 #define NBUFFERS       5
 #define NEW_GPU_U_SOLVE
 

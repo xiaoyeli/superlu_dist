@@ -1,9 +1,9 @@
 #!/bin/bash
 # Bash script to submit many files to Cori/Edison/Queue
-module unload cray-mpich/7.7.6
+module unload cray-mpich
 module swap PrgEnv-intel PrgEnv-gnu
 export MKLROOT=/opt/intel/compilers_and_libraries_2019.3.199/linux/mkl
-export LD_0LIBRARY_PATH=$LD_LIBRARY_PATH:/opt/intel/compilers_and_libraries_2019.3.199/linux/mkl/lib/intel64
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/opt/intel/compilers_and_libraries_2019.3.199/linux/mkl/lib/intel64
 
 # module use /global/common/software/m3169/cori/modulefiles
 # module unload openmpi

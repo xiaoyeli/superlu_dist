@@ -1682,7 +1682,7 @@ for (lk=0;lk<nsupers_j;++lk){
 		// First pass count sizes of Llu->Ucolind_bc_ptr[lk] and Llu->Unzval_bc_ptr[lk]
 		nnz_ind=0;
 		nnz_val=0;
-		nnz_ind+=BC_HEADER;	
+		nnz_ind+=BC_HEADER_NEWU;	
 		nrow=0;
 		for (ub = 0; ub < nub; ++ub) {
 		ik = Ucb_indptr[lk][ub].lbnum; /* Local block number, row-wise. */
@@ -1697,7 +1697,7 @@ for (lk=0;lk<nsupers_j;++lk){
 		iklrow = FstBlockC( gik+1 );
 		uptr = Ucb_valptr[lk][ub]; /* Start of the block in uval[]. */
 		
-		nnz_ind+=LB_DESCRIPTOR;
+		nnz_ind+=UB_DESCRIPTOR_NEWU;
 
 		for (jj = 0; jj < knsupc; ++jj) {
 		fnz = usub[i + jj];
@@ -1738,7 +1738,7 @@ for (lk=0;lk<nsupers_j;++lk){
 		nnz_ind=0;
 		nnz_val=0;
 		ncol=0;
-		nnz_ind+=BC_HEADER;	
+		nnz_ind+=BC_HEADER_NEWU;	
 		nrow=0;
 		for (ub = 0; ub < nub; ++ub) {
 		ik = Ucb_indptr[lk][ub].lbnum; /* Local block number, row-wise. */
@@ -1762,7 +1762,7 @@ for (lk=0;lk<nsupers_j;++lk){
 		for (jj = 0; jj < knsupc; ++jj) {
 		fnz = usub[i + jj];
 		if ( fnz < iklrow ) { /* Nonzero segment. */
-			Llu->Ucolind_bc_ptr[lk][nnz_ind+ncol_loc+LB_DESCRIPTOR]=FstBlockC(k)+jj; /* Global column number */ 
+			Llu->Ucolind_bc_ptr[lk][nnz_ind+ncol_loc+UB_DESCRIPTOR_NEWU]=FstBlockC(k)+jj; /* Global column number */ 
 			ncol_loc++;
 			for (irow = fnz; irow < iklrow; ++irow){
 				Llu->Unzval_bc_ptr[lk][nnz_val+irow - ikfrow]=uval[uptr++];
@@ -1783,7 +1783,7 @@ for (lk=0;lk<nsupers_j;++lk){
 		// if(lk==69)
 		// 	printf("ub ncol_loc %5d %5d \n",ub, ncol_loc);
 		ncol+=ncol_loc*iknsupc;
-		nnz_ind+=ncol_loc+LB_DESCRIPTOR; 
+		nnz_ind+=ncol_loc+UB_DESCRIPTOR_NEWU; 
 		} /* for ub ... */
 
 	}else{
@@ -1862,10 +1862,10 @@ for (lk=0;lk<nsupers_j;++lk){
 	Llu->Unzval_bc_cnt = Unzval_bc_cnt;
 	Llu->Uindval_loc_bc_cnt = Uindval_loc_bc_cnt;
 	// printf("Ucolind_bc_cnt %10d\n",Ucolind_bc_cnt);
-	printf("Unzval_bc_cnt %10d v.s. Unzval_br_cnt %10d\n",Unzval_bc_cnt,Unzval_br_cnt);
+	printf("Unzval_bc_cnt %10ld v.s. Unzval_br_cnt %10ld\n",Unzval_bc_cnt,Unzval_br_cnt);
 	// printf("Llu->Ucolind_bc_offset %10d\n",Llu->Ucolind_bc_offset[0]);
 
-
+#ifdef GPU_ACC
 	checkGPU(gpuFree(Llu->d_Ucolind_bc_dat));
 	checkGPU(gpuFree(Llu->d_Ucolind_bc_offset));
 	checkGPU(gpuFree(Llu->d_Unzval_bc_dat));
@@ -1887,6 +1887,7 @@ for (lk=0;lk<nsupers_j;++lk){
 	checkGPU(gpuMemcpy(Llu->d_Uindval_loc_bc_dat, Llu->Uindval_loc_bc_dat, (Llu->Uindval_loc_bc_cnt) * sizeof(int_t), gpuMemcpyHostToDevice));		
 	checkGPU(gpuMalloc( (void**)&Llu->d_Uindval_loc_bc_offset, CEILING( nsupers, grid->npcol ) * sizeof(int64_t)));
 	checkGPU(gpuMemcpy(Llu->d_Uindval_loc_bc_offset, Llu->Uindval_loc_bc_offset, CEILING( nsupers, grid->npcol ) * sizeof(int64_t), gpuMemcpyHostToDevice));	
+#endif
 
 	SUPERLU_FREE (Llu->Ucolind_bc_dat);
 	SUPERLU_FREE (Llu->Ucolind_bc_offset);
