@@ -114,6 +114,23 @@ typedef struct {
     int_t *Lindval_loc_bc_dat;  /* size sum of sizes of Lindval_loc_bc_ptr[lk]) */   
     long int *Lindval_loc_bc_offset;  /* size ceil(NSUPERS/Pc)                  */   
     long int Lindval_loc_bc_cnt;  
+
+
+    int_t   **Ucolind_bc_ptr; /* size ceil(NSUPERS/Pc)                 */
+    int_t *Ucolind_bc_dat;  /* size sum of sizes of Ucolind_bc_ptr[lk])    */   
+    int64_t *Ucolind_bc_offset;  /* size ceil(NSUPERS/Pc)                 */     
+    int64_t Ucolind_bc_cnt;
+
+    double **Unzval_bc_ptr;  /* size ceil(NSUPERS/Pc)                 */
+    double *Unzval_bc_dat;  /* size sum of sizes of Unzval_bc_ptr[lk])  */   
+    int64_t *Unzval_bc_offset;  /* size ceil(NSUPERS/Pc)                */    
+    int64_t Unzval_bc_cnt;
+
+    int_t   **Uindval_loc_bc_ptr; /* size ceil(NSUPERS/Pc)  pointers to locations in Ucolind_bc_ptr and Unzval_bc_ptr */
+    int_t *Uindval_loc_bc_dat;  /* size sum of sizes of Uindval_loc_bc_ptr[lk]) */   
+    int64_t *Uindval_loc_bc_offset;  /* size ceil(NSUPERS/Pc)                  */   
+    int64_t Uindval_loc_bc_cnt;  
+
     int_t   *Unnz; /* number of nonzeros per block column in U*/
     int_t   **Lrowind_bc_2_lsum; /* size ceil(NSUPERS/Pc)  map indices of Lrowind_bc_ptr to indices of lsum  */
     double **Uinv_bc_ptr;  /* size ceil(NSUPERS/Pc)     	*/
@@ -221,13 +238,19 @@ typedef struct {
     int_t *d_Lrowind_bc_dat;     
     long int *d_Lrowind_bc_offset;      
     double *d_Lnzval_bc_dat;     
-    long int *d_Lnzval_bc_offset;     
+    long int *d_Lnzval_bc_offset;  
+    int_t *d_Ucolind_bc_dat;     
+    int64_t *d_Ucolind_bc_offset;      
+    double *d_Unzval_bc_dat;     
+    long int *d_Unzval_bc_offset;        
     double *d_Linv_bc_dat ;     
     double *d_Uinv_bc_dat ;     
     long int *d_Linv_bc_offset ;     
     long int *d_Uinv_bc_offset ;     
     int_t *d_Lindval_loc_bc_dat ;     
-    long int *d_Lindval_loc_bc_offset ;     
+    int64_t *d_Lindval_loc_bc_offset ;     
+    int_t *d_Uindval_loc_bc_dat ;     
+    int64_t *d_Uindval_loc_bc_offset ;     
 
     int_t *d_Urbs;
     int_t   *d_Ufstnz_br_dat;  
@@ -568,10 +591,15 @@ extern void dlsum_bmod_inv_master(double *, double *, double *, double *,
 extern void dComputeLevelsets(int , int_t , gridinfo_t *,
 		  Glu_persist_t *, dLocalLU_t *, int_t *);               
 			   
-#ifdef GPU_ACC               
+#ifdef GPU_ACC    
+extern void pdconvertU(superlu_dist_options_t *, gridinfo_t *, dLUstruct_t *, SuperLUStat_t *, int_t);
 extern void dlsum_fmod_inv_gpu_wrap(int_t, int_t, int_t, int_t, double *, double *, int, int, int_t , int *fmod, C_Tree  *, C_Tree  *, int_t *, int_t *, int64_t *, double *, int64_t *, double *, int64_t *, int_t *, int64_t *, int_t *, gridinfo_t *, double * , double * , int_t );
-  extern void dlsum_bmod_inv_gpu_wrap(superlu_dist_options_t *,
+#if defined(NEW_GPU_U_SOLVE)
+extern void dlsum_bmod_inv_gpu_wrap(superlu_dist_options_t *, int_t, int_t, int_t, int_t, double *, double *,int,int, int_t , int *bmod, C_Tree  *, C_Tree  *, int_t *, int_t *, int64_t *, double *, int64_t *, double  *, int64_t *, int_t *, int64_t *, int_t *,gridinfo_t *);
+#else 
+extern void dlsum_bmod_inv_gpu_wrap(superlu_dist_options_t *,
 				      int_t, int_t, int_t, int_t, double *, double *,int,int, int_t , int *bmod, C_Tree  *, C_Tree  *, int_t *, int_t *,int_t *, int64_t *, double *, int64_t *, int_t  *, int64_t *, Ucb_indptr_t *, int64_t *, double *, int64_t *,int_t *,gridinfo_t *);
+#endif
 #endif
 
 extern void pdgsrfs(superlu_dist_options_t *, int_t,

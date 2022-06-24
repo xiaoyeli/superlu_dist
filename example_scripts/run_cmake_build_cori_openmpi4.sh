@@ -1,6 +1,6 @@
 #!/bin/bash
 # Bash script to submit many files to Cori/Edison/Queue
-module unload cray-mpich/7.7.6
+module unload cray-mpich
 module swap PrgEnv-intel PrgEnv-gnu
 export MKLROOT=/opt/intel/compilers_and_libraries_2019.3.199/linux/mkl
 export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/opt/intel/compilers_and_libraries_2019.3.199/linux/mkl/lib/intel64
@@ -10,7 +10,7 @@ export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/opt/intel/compilers_and_libraries_2019.
 
 module load cmake/3.18.2
 module load cgpu
-module load cuda/10.2.89
+module load cuda/11.1.1
 module load openmpi/4.0.3
 
 export CRAYPE_LINK_TYPE=dynamic
@@ -37,7 +37,8 @@ cmake .. \
 	-DCMAKE_VERBOSE_MAKEFILE:BOOL=ON \
 	-DCMAKE_CXX_FLAGS="-Ofast -DRELEASE ${INC_VTUNE}" \
     -DCMAKE_C_FLAGS="-std=c11 -DPRNTlevel=1 -DPROFlevel=0 -DDEBUGlevel=0 ${INC_VTUNE}" 
-make pddrive			
+make pddrive
+make pddrive3d			
 #	-DTPL_BLAS_LIBRARIES="/opt/intel/compilers_and_libraries_2017.2.174/linux/mkl/lib/intel64/libmkl_intel_lp64.so;/opt/intel/compilers_and_libraries_2017.2.174/linux/mkl/lib/intel64/libmkl_sequential.so;/opt/intel/compilers_and_libraries_2017.2.174/linux/mkl/lib/intel64/libmkl_core.so"
 
 #	-DTPL_BLAS_LIBRARIES="/opt/intel/compilers_and_libraries_2017.2.174/linux/mkl/lib/intel64/libmkl_intel_lp64.so;/opt/intel/compilers_and_libraries_2017.2.174/linux/mkl/lib/intel64/libmkl_sequential.so;/opt/intel/compilers_and_libraries_2017.2.174/linux/mkl/lib/intel64/libmkl_core.so" \

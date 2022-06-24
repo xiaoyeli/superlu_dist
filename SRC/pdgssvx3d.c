@@ -1416,6 +1416,8 @@ pdgssvx3d (superlu_dist_options_t * options, SuperMatrix * A,
 int_t nsupers = getNsupers(n, LUstruct->Glu_persist);
 #ifdef GPU_ACC
 	
+	pdconvertU(options, grid,LUstruct, stat, n);
+
 	checkGPU(gpuFree(LUstruct->Llu->d_xsup));
 	checkGPU(gpuFree(LUstruct->Llu->d_LRtree_ptr));
 	checkGPU(gpuFree(LUstruct->Llu->d_LBtree_ptr));

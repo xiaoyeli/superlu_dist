@@ -3,7 +3,7 @@
 module unload cray-mpich/7.7.6
 module swap PrgEnv-intel PrgEnv-gnu
 export MKLROOT=/opt/intel/compilers_and_libraries_2019.3.199/linux/mkl
-export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/opt/intel/compilers_and_libraries_2019.3.199/linux/mkl/lib/intel64
+export LD_0LIBRARY_PATH=$LD_LIBRARY_PATH:/opt/intel/compilers_and_libraries_2019.3.199/linux/mkl/lib/intel64
 
 # module use /global/common/software/m3169/cori/modulefiles
 # module unload openmpi
@@ -44,7 +44,7 @@ cmake .. \
     -DCMAKE_C_FLAGS="-DGPU_SOLVE -std=c11 -DPRNTlevel=1 -DPROFlevel=0 -DDEBUGlevel=0 ${INC_VTUNE} -I${CUDA_ROOT}/include" \
 	-DCMAKE_CUDA_FLAGS="-lineinfo --disable-warnings -DPRNTlevel=1 -DPROFlevel=0 -DDEBUGlevel=0 -gencode arch=compute_70,code=sm_70 -I/usr/common/software/openmpi/4.0.3/gcc/8.3.0/cuda/10.2.89/include"
 make pddrive	
-# make pddrive3d	
+make pddrive3d	
 # make install 	
 #	-DTPL_BLAS_LIBRARIES="/opt/intel/compilers_and_libraries_2017.2.174/linux/mkl/lib/intel64/libmkl_intel_lp64.so;/opt/intel/compilers_and_libraries_2017.2.174/linux/mkl/lib/intel64/libmkl_sequential.so;/opt/intel/compilers_and_libraries_2017.2.174/linux/mkl/lib/intel64/libmkl_core.so"
 

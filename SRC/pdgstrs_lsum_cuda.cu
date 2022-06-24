@@ -1480,6 +1480,297 @@ __device__ void C_RdTree_forwardMessageSimple_Device(C_Tree* Tree, void* localBu
   *   Perform local block modifications: lsum[i] -= L_i,k * X[k].
   * </pre>
   */
+
+#if defined(NEW_GPU_U_SOLVE)
+__global__ void dlsum_bmod_inv_gpu_mrhs
+/************************************************************************/
+(
+ int_t nbcol_loc,
+ double *lsum,    /* Sum of local modifications.                        */
+ double *x,       /* X array (local)                                    */
+ int   nrhs,      /* Number of right-hand sides.                        */
+ int_t   nsupers,      /* Number of total supernodes.                        */
+ int *bmod,     /* Modification count for U-solve.                    */
+ C_Tree  *UBtree_ptr,
+ C_Tree  *URtree_ptr,
+ int_t *ilsum,
+ int_t *Ucolind_bc_dat,      
+ long int *Ucolind_bc_offset,      
+ double *Unzval_bc_dat,     
+ long int *Unzval_bc_offset,    
+double *Uinv_bc_dat,     
+long int *Uinv_bc_offset,   
+int_t *Uindval_loc_bc_dat,      
+long int *Uindval_loc_bc_offset,     
+int_t *xsup,
+gridinfo_t *grid
+)
+{
+	double alpha = 1.0, beta = 0.0;
+	double xtemp;
+	double *dest;
+	double *Uinv;/* Inverse of diagonal block */
+	int    iam, iknsupc, myrow, mycol, krow;
+	int_t  k,i,i1, l,ii,jj, ik, il, irow, j, lk, lib, ub;
+	int_t gik,ikfrow,iklrow, rel, lptr, ncol, icol;
+	int_t  uptr;
+	int_t fnz,fnzmin;
+	double temp,temp1;
+	__shared__ double temp2[MAXSUPER];
+	int_t aln_i;
+	aln_i = 1;//ceil(CACHELINE/(double)iword);
+	int   knsupc;    /* Size of supernode k.                               */
+	int_t nub;       /* Number of L blocks.                                */
+
+	int_t bid;
+	int_t tmp;
+	int_t bmod_tmp;
+	int_t tid = threadIdx_x + threadIdx_y * blockDim_x; 
+	const int block_size = blockDim_x*blockDim_y; /* number of threads per warp*/
+	double zero = 0.0;
+	double rC[THR_N][THR_M];
+	// __shared__ double x_share[DIM_X*DIM_Y]; 
+
+	bid= nbcol_loc-blockIdx_x-1;  // This makes sure higher block IDs are checked first in spin wait
+	int_t idx = threadIdx_x;  // thread's m dimension
+	int_t idy = threadIdx_y;  // thread's n dimension
+	int_t ni,mi;
+	int_t  *usub, *lloc;
+	double *uval;
+	double *lusup;
+	int_t nrow, nnz_offset, offset;
+	int_t  luptr_tmp1,lptr1_tmp, idx_i, idx_v;
+
+	
+	
+	// printf("  Entering kernel:   %i %i %i %i %i %i %i %i\n", threadIdx_x, blockIdx_x, grid->npcol, nsupers,myrow,krow,bid,tid);
+	
+	
+	// rtemp_loc = (double*)malloc(maxsup*nrhs*Nbk*sizeof(double));
+	
+	
+	// the first nbcol_loc handles all computations and broadcast communication
+	if(bid<nbcol_loc){
+		if(Uinv_bc_offset[bid]==-1 && Ucolind_bc_offset[bid]==-1){
+		return;
+		}
+		
+		lk=bid;
+		iam = grid->iam;
+		mycol = MYCOL( iam, grid );
+		myrow = MYROW( iam, grid );
+		k = mycol+lk*grid->npcol;
+		knsupc = SuperSize( k );
+		krow = PROW( k, grid );	
+		usub = &Ucolind_bc_dat[Ucolind_bc_offset[lk]];
+		lusup = &Unzval_bc_dat[Unzval_bc_offset[lk]];
+		lloc = &Uindval_loc_bc_dat[Uindval_loc_bc_offset[lk]];
+		rel = xsup[k]; /* Global column index of block ik. */
+
+	    // printf("  Before kernel:   %i %i %i %i %i %i %i %i\n", threadIdx_x, blockIdx_x, grid->npcol, nsupers,myrow,krow,bid,tid);
+		
+		if(myrow==krow){   /* diagonal block performs trsm and forward the message*/
+
+			if(tid==0){  /*only the first thread in a block handles the lock */
+
+			
+			// for (i=0 ; i<maxsup ; i++){
+				// rtemp_loc[i]=0.0;
+			// }	
+			
+				lib = LBi( k, grid ); /* Local block number, row-wise. */
+			    // printf("bk: %5d r: %5d %5d %5d\n",mycol+bid*grid->npcol,bmod[lib*aln_i],myrow,krow);
+				do{
+					tmp=bmod[lib*aln_i];
+					__threadfence();			
+				}while(tmp>0);
+				
+			}
+			__syncthreads();
+		  //   if(tid==0)
+		  //   printf("spin: %d %d \n",threadIdx_x, blockIdx_x);
+
+				
+				lib = LBi( k, grid ); /* Local block number, row-wise. */
+				il = LSUM_BLK( lib );
+				ii = X_BLK( lib );
+				
+				RHS_ITERATE(j)
+					for (i = tid; i < knsupc; i+=block_size){
+						x[i + ii + j*knsupc] += lsum[i + il + j*knsupc ];
+						// if(lib==1){
+						// printf("lib %5d %5d %5d %lf\n",lib,i, il, lsum[i + il + j*knsupc ]);
+						// // printf("lib %5d %5d %lf\n",lib,i, x[i + ii + j*knsupc]);
+						// }
+					}
+				__syncthreads();
+				
+
+
+			   //  if(Llu->inv == 1){
+				
+					Uinv = &Uinv_bc_dat[Uinv_bc_offset[lk]];
+						
+					if(nrhs==1){
+						for (i = tid; i < knsupc; i+=block_size){					
+							temp1=zero;
+							for (l=0 ; l<knsupc ; l++){
+								temp1+=  Uinv[l*knsupc+i]*x[ii+l];
+							}								
+							lsum[il+i]=temp1; //reuse lsum as temporary output as it's no longer accessed
+						}
+						__syncthreads();					
+							
+						for (i = tid; i < knsupc; i+=block_size){
+							x[i + ii] = lsum[il+i];
+							// // if(lk==69)
+							// printf("lk %5d %5d %lf\n",lk,i, x[i + ii]);
+							}					
+						__syncthreads();		
+					}else{
+						__syncthreads(); 	
+						for (int_t blx = 0; blx*BLK_M < knsupc; blx++){
+							for (int_t bly = 0; bly*BLK_N < nrhs; bly++){
+								gemm_device_dlsum_fmod(knsupc, nrhs, knsupc, blx, bly, 
+								Uinv, knsupc, &x[ii], knsupc, rC,
+								alpha, beta);
+									#pragma unroll
+								for (ni = 0; ni < THR_N; ni++) {
+									int_t coord_dCn = bly*BLK_N + ni*DIM_Y + idy;
+									#pragma unroll
+									for (mi = 0; mi < THR_M; mi++) {
+										int_t coord_dCm = blx*BLK_M + mi*DIM_X + idx;
+										if (coord_dCm < knsupc && coord_dCn < nrhs) {
+											double &regC = rC[ni][mi];
+											lsum[coord_dCm + il + coord_dCn*knsupc ]=regC;  //reuse lsum as temporary output as it's no longer accessed
+										}//if (coord_dCm < knsupc && coord_dCn < nrhs)
+									}
+								}						
+							}
+						}
+						__syncthreads(); 	
+
+						RHS_ITERATE(j)
+						for (i = tid; i < knsupc; i+=block_size)
+							x[i + ii + j*knsupc] = lsum[i + il + j*knsupc ];
+						__syncthreads(); 		
+					}//if(nrhs==1)
+			   //  }
+				
+			  //   RHS_ITERATE(j)
+			  //   for (i = tid; i < knsupc; i+=block_size)
+			  // 	  recvbuf_BC_gpu[i + maxrecvsz*lk + j*knsupc ] = x[i + ii + j*knsupc];
+					
+			__syncthreads();	
+		}else{   /* off-diagonal block forward the message*/
+			/* waiting for the x subvector and forward*/ 
+			if(tid==0){  //YL: only the first thread in a block spin-waits for the coming x subvector message using NVSHMEM, put the message into recvbuf_BC_gpu[maxrecvsz*lk]
+			
+			}
+		}
+		 
+		
+	  //   if(tid==0){  //YL: only the first thread in a block forwards the x subvector using NVSHMEM
+	  //   cnt=LBtree_ptr[lk].destCnt_;
+	  //  //  printf("good1 %5d%5d\n",lk,cnt);
+	  //   if(cnt>0){
+	  // 	 cnt=LBtree_ptr[lk].msgSize_;
+	  // 	  C_BcTree_forwardMessageSimple_Device(&LBtree_ptr[lk],&recvbuf_BC_gpu[maxrecvsz*lk],cnt*nrhs+XK_H);
+	  //   }
+	  //   }	
+		
+		if(Ucolind_bc_offset[bid]!=-1){
+			nub = usub[0];      /* Number of U blocks in block column lk */
+		}else{
+			nub = 0;
+		} 
+		if(nub>0){
+				nrow = usub[1];
+				nnz_offset = usub[2];
+
+				lib = LBi( k, grid ); /* Local block number, row-wise. */
+				ii = X_BLK( lib );	
+
+				if(nrhs==1){	
+					for (i=tid;i<knsupc;i+=block_size)
+						temp2[i]=x[ii+i];
+					__syncthreads();	
+				}
+
+				for (i = tid; i < nrow; i+=block_size){
+					// printf("good1 bid nub i nrow %5d %5d %5d %5d\n",bid, nub, i, nrow);
+					ub = usub[nnz_offset+i*2];
+					offset = usub[nnz_offset+i*2+1];
+					ik = lloc[ub];
+					gik = ik * grid->nprow + myrow;/* Global block number, row-wise. */
+					iknsupc = SuperSize( gik );
+					// // if(lk==2 && ik==1)
+					// // printf("ub offset %5d %5d %5d %5d\n",ub, i, offset,SuperSize( gik ));
+
+					idx_v=2*nub+ub;
+					idx_i=nub+ub;
+					luptr_tmp1 = lloc[idx_v];
+					lptr1_tmp = lloc[idx_i];
+					lptr= lptr1_tmp+2;
+					ncol = usub[lptr1_tmp+1];
+					il = LSUM_BLK( ik );	
+					
+					// printf("good1 bid %5d tid %5d ub %5d nub %5d i %5d offset %5d nrow %5d ncol %5d \n",bid, tid, ub, nub, i, offset, nrow, ncol);
+					if(nrhs==1){
+						temp1=zero;
+						for (l=0 ; l<ncol ; l++){
+							icol = usub[lptr+l] - rel; /* Relative col. */
+							temp1+= lusup[luptr_tmp1+l*iknsupc+offset]*temp2[icol];
+							// // if(offset==159 && ik==1)
+							// if(lk==2 && ik==1)
+							// printf("lsum %5d %5d %5d %10f %10f %5d %5d %5d\n",l, icol, offset, x[ii+j*knsupc+icol], lusup[luptr_tmp1+l*iknsupc+offset], luptr_tmp1, ncol, iknsupc);
+
+							
+							// printf("lsum %5d %5d %5d %10f %10f %10f\n",uptr-1, jj, irow - ikfrow, uval[uptr-1], xtemp, temp2[irow - ikfrow]);
+
+						}
+						temp=atomicAdd(&lsum[il+offset],-temp1);
+					}else{
+						RHS_ITERATE(j){
+							temp1=zero;
+							for (l=0 ; l<ncol ; l++){
+								icol = usub[lptr+l] - rel; /* Relative col. */
+								temp1+= lusup[luptr_tmp1+l*iknsupc+offset]*x[ii+j*knsupc+icol];
+								// // if(offset==159 && ik==1)
+								// if(lk==2 && ik==1)
+								// printf("lsum %5d %5d %5d %10f %10f %5d %5d %5d\n",l, icol, offset, x[ii+j*knsupc+icol], lusup[luptr_tmp1+l*iknsupc+offset], luptr_tmp1, ncol, iknsupc);
+	
+								
+								// printf("lsum %5d %5d %5d %10f %10f %10f\n",uptr-1, jj, irow - ikfrow, uval[uptr-1], xtemp, temp2[irow - ikfrow]);
+	
+							}
+							temp=atomicAdd(&lsum[il+offset + j*iknsupc],-temp1);
+						}							
+						
+					}				
+				}
+				__syncthreads();
+
+				for (ub = tid; ub < nub; ub+=block_size){
+					ik = lloc[ub];
+					bmod_tmp=atomicSub(&bmod[ik*aln_i],1);
+					// printf("ik %5d bmod[ik*aln_i] %5d\n",ik,bmod[ik*aln_i]);
+				}
+				__syncthreads();
+			// } /*if tid<Nchunk*/
+		} /* if nlb>0*/		
+
+		// printf("nimbgood \n");
+
+//   }else if(bid<nbcol_loc+nblock_ex){  //the next nblock_ex blocks handle all reduction communication
+	
+}
+
+		
+	
+} /* dlsum_bmod_inv_gpu_mrhs */
+
+#else   
   __global__ void dlsum_bmod_inv_gpu_mrhs
   /************************************************************************/
   (
@@ -1613,8 +1904,13 @@ __device__ void C_RdTree_forwardMessageSimple_Device(C_Tree* Tree, void* localBu
 				  ii = X_BLK( lib );
 				  
 				  RHS_ITERATE(j)
-					  for (i = tid; i < knsupc; i+=block_size)
+					  for (i = tid; i < knsupc; i+=block_size){
 						  x[i + ii + j*knsupc] += lsum[i + il + j*knsupc ];
+						//   if(lib==1){
+						// 	printf("lib %5d %5d %5d %lf\n",lib,i, il, lsum[i + il + j*knsupc ]);
+						// 	// printf("lib %5d %5d %lf\n",lib,i, x[i + ii + j*knsupc]);
+						// 	}
+						}
 				  __syncthreads();
 				  
 				  
@@ -1634,7 +1930,7 @@ __device__ void C_RdTree_forwardMessageSimple_Device(C_Tree* Tree, void* localBu
 							  
 						  for (i = tid; i < knsupc; i+=block_size){
 							  x[i + ii] = lsum[il+i];
-							  // printf("lk %5d %lf\n",lk,x[i + ii + j*knsupc]);
+							//   printf("lk %5d %5d %lf\n",lk,i, x[i + ii]);
 							  }					
 						  __syncthreads();		
 					  }else{
@@ -1731,12 +2027,22 @@ __device__ void C_RdTree_forwardMessageSimple_Device(C_Tree* Tree, void* localBu
 									xtemp=x[ii+j*knsupc+jj];
 									for (irow = fnz; irow < iklrow; ++irow){
 										temp2[irow - ikfrow]+=uval[uptr++] * xtemp; // YL: this is most expensive operation on GPU
+										
+										// if(lk==2 && gik==1){
+										// 	printf("uval %5d %f\n",uptr-1, uval[uptr-1]);
+										// 	// printf("Unzval_bc_ptr %5d %f\n",gik, Llu->Unzval_bc_ptr[lk][nnz_val+irow - ikfrow]);
+										// 	}
+
+										// if(lk==2 && gik==1)
+										// printf("lsum %5d %5d %5d %10f %10f %10f\n",uptr-1, jj, irow - ikfrow, uval[uptr-1], xtemp, temp2[irow - ikfrow]);
 									}
 								}
 							} /* for jj ... */
 
 							for (irow = fnzmin; irow < iklrow; ++irow){
 								temp=atomicAdd(&dest[irow - ikfrow],-temp2[irow - ikfrow]);
+								// if(irow - ikfrow==159)
+								// printf("lsum %5d %5d %10f\n",il, irow - ikfrow, dest[irow - ikfrow]);
 							}								
 						}
 						bmod_tmp=atomicSub(&bmod[ik*aln_i],1);
@@ -1761,7 +2067,7 @@ __device__ void C_RdTree_forwardMessageSimple_Device(C_Tree* Tree, void* localBu
 	  
   } /* dlsum_bmod_inv_gpu_mrhs */
   
-  
+ #endif 
  
 
 
@@ -1827,7 +2133,46 @@ __device__ void C_RdTree_forwardMessageSimple_Device(C_Tree* Tree, void* localBu
 
 
 
+#if defined(NEW_GPU_U_SOLVE)
+void dlsum_bmod_inv_gpu_wrap
+(
+superlu_dist_options_t *options,
+ int_t nbcol_loc,    /*number of local supernode columns*/
+ int_t nbrow_loc,    /*number of local supernode rows*/
+ int_t nthread_x,     /*kernel launch parameter*/
+ int_t nthread_y,     /*kernel launch parameter*/
+ double *lsum,    /* Sum of local modifications.                        */
+ double *x,       /* X array (local)                                    */
+ int   nrhs,      /* Number of right-hand sides.                        */
+ int   maxsup,      /* Max supernode size.                        */
+ int_t   nsupers,      /* Number of total supernodes.                        */
+ int *bmod,     /* Modification count for L-solve.                    */
+ C_Tree  *UBtree_ptr,
+ C_Tree  *URtree_ptr,
+ int_t *ilsum,
+ int_t *Ucolind_bc_dat,   
+ int64_t *Ucolind_bc_offset,      
+ double *Unzval_bc_dat,     
+ int64_t *Unzval_bc_offset,  
+ double *Uinv_bc_dat,     
+ int64_t *Uinv_bc_offset,   
+ int_t *Uindval_loc_bc_dat,     
+ int64_t *Uindval_loc_bc_offset,     
+ int_t *xsup,
+ gridinfo_t *grid
+){
+	int_t maxsuper = sp_ienv_dist(3, options);
+	if(MAXSUPER<maxsuper){
+		printf("increase MAXSUPER\n");
+		exit(1);
+	}
+	dim3 dimBlock(nthread_x, nthread_y);
+	dlsum_bmod_inv_gpu_mrhs<<< nbcol_loc, dimBlock >>>(nbcol_loc,lsum,x,nrhs,nsupers,bmod, UBtree_ptr,URtree_ptr,ilsum,Ucolind_bc_dat,Ucolind_bc_offset,Unzval_bc_dat,Unzval_bc_offset,Uinv_bc_dat,Uinv_bc_offset,Uindval_loc_bc_dat,Uindval_loc_bc_offset,xsup,grid);
 
+	gpuDeviceSynchronize();
+}
+
+#else 
  void dlsum_bmod_inv_gpu_wrap
  (
   superlu_dist_options_t *options,
@@ -1875,7 +2220,7 @@ __device__ void C_RdTree_forwardMessageSimple_Device(C_Tree* Tree, void* localBu
 
 	 gpuDeviceSynchronize();
  }
-
+#endif
 
 
  
