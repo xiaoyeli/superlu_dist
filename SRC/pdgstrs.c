@@ -1294,6 +1294,8 @@ pdgstrs(superlu_dist_options_t *options, int_t n, dLUstruct_t *LUstruct,
     if ( !(fmod = int32Malloc_dist(nlb*aln_i)) )
 	ABORT("Malloc fails for fmod[].");
     for (i = 0; i < nlb; ++i) fmod[i*aln_i] = Llu->fmod[i];
+
+#if 0
 	if ( !(fmod_sort = intCalloc_dist(nlb*2)) )
 		ABORT("Calloc fails for fmod_sort[].");
 	
@@ -1339,6 +1341,8 @@ pdgstrs(superlu_dist_options_t *options, int_t n, dLUstruct_t *LUstruct,
 	// }
 		 
 	SUPERLU_FREE(fmod_sort);
+	SUPERLU_FREE(order);
+#endif
 
     if ( !(frecv = int32Calloc_dist(nlb)) )
 	ABORT("Calloc fails for frecv[].");
@@ -1415,6 +1419,7 @@ pdgstrs(superlu_dist_options_t *options, int_t n, dLUstruct_t *LUstruct,
     /* Dump the L factor using matlab triple-let format. */
     dDumpLblocks(iam, nsupers, grid, Glu_persist, Llu);
 #endif
+
 
     /*---------------------------------------------------
      * Forward solve Ly = b.
@@ -2421,7 +2426,6 @@ thread_id=0;
 #endif
 
 		SUPERLU_FREE(fmod);
-		SUPERLU_FREE(order);
 		SUPERLU_FREE(frecv);
 		SUPERLU_FREE(leaf_send);
 		SUPERLU_FREE(leafsups);
