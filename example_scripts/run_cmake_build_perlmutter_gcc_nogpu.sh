@@ -5,8 +5,8 @@ module load cudatoolkit
 
 cmake .. \
      -DTPL_PARMETIS_LIBRARIES=ON \
-     -DTPL_PARMETIS_INCLUDE_DIRS="/global/cfs/cdirs/m3894/ptlin/tpl/parmetis/parmetis-4.0.3/include;/global/cfs/cdirs/m3894/ptlin/tpl/parmetis/parmetis-4.0.3/metis/include" \
-     -DTPL_PARMETIS_LIBRARIES="/global/cfs/cdirs/m3894/ptlin/tpl/parmetis/parmetis-4.0.3/build/Linux-x86_64/libparmetis/libparmetis.a;/global/cfs/cdirs/m3894/ptlin/tpl/parmetis/parmetis-4.0.3/build/Linux-x86_64/libmetis/libmetis.a" \
+     -DTPL_PARMETIS_INCLUDE_DIRS="/global/cfs/cdirs/m3894/lib/PrgEnv-gnu/parmetis-4.0.3/include;/global/cfs/cdirs/m3894/lib/PrgEnv-gnu/parmetis-4.0.3/metis/include" \
+     -DTPL_PARMETIS_LIBRARIES="/global/cfs/cdirs/m3894/lib/PrgEnv-gnu/parmetis-4.0.3/build/Linux-x86_64/libparmetis/libparmetis.so;/global/cfs/cdirs/m3894/lib/PrgEnv-gnu/parmetis-4.0.3/build/Linux-x86_64/libmetis/libmetis.so" \
      -DTPL_ENABLE_COMBBLASLIB=OFF \
      -DCMAKE_C_FLAGS="-std=c11 -DPRNTlevel=1 -DDEBUGlevel=0 -DAdd_" \
      -DCMAKE_C_COMPILER=cc \
@@ -21,10 +21,7 @@ cmake .. \
      -DTPL_BLAS_LIBRARIES=/opt/cray/pe/libsci/21.08.1.2/GNU/9.1/x86_64/lib/libsci_gnu_82_mpi_mp.a \
      -DBUILD_SHARED_LIBS=OFF \
      -DCMAKE_BUILD_TYPE=Debug \
-     -DCMAKE_INSTALL_PREFIX=. \
-     -DMPIEXEC_NUMPROC_FLAG=-n \
-     -DMPIEXEC_EXECUTABLE=/usr/bin/srun \
-     -DMPIEXEC_MAX_NUMPROCS=16
+     -DCMAKE_INSTALL_PREFIX=.
      
 make pddrive
 
