@@ -103,13 +103,14 @@ int dLluBufFreeArr(int_t numLA, dLUValSubBuf_t **LUvsbs)
 }
 
 
-int_t dinitScuBufs(int_t ldt, int_t num_threads, int_t nsupers,
+int_t dinitScuBufs(superlu_dist_options_t *options,
+                  int_t ldt, int_t num_threads, int_t nsupers,
                   dscuBufs_t* scuBufs,
                   dLUstruct_t* LUstruct,
                   gridinfo_t * grid)
 {
     scuBufs->bigV = dgetBigV(ldt, num_threads);
-    scuBufs->bigU = dgetBigU(nsupers, grid, LUstruct);
+    scuBufs->bigU = dgetBigU(options, nsupers, grid, LUstruct);
     return 0;
 }
 

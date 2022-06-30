@@ -676,8 +676,8 @@ int sSchurCompUpdate_GPU(
 #endif
 
 		    gpuEventRecord(stat->ScatterEnd[k0], FunCallStream);
+
 		    stat->ScatterMOPCounter +=  3.0 * (double) nrows * ncols;
-		    
 		} /* endif ... none of the matrix dimension is zero. */
 
 	    } /* end while jj_end < nub */
@@ -728,10 +728,15 @@ static size_t get_acc_memory ()
 
 }
 
+/* Free all the data structures allocated on GPU.
+   This routine is called from Host                 */
 int sfree_LUstruct_gpu (
-    sLUstruct_gpu_t * A_gpu,
+    ssluGPU_t * sluGPU,
     SuperLUStat_t* stat )
 {
+	sLUstruct_gpu_t * A_gpu = sluGPU->A_gpu;
+	int streamId = 0;
+    
 	/* Free the L data structure on GPU */
 	checkGPU(gpuFree(A_gpu->LrowindVec));
 	checkGPU(gpuFree(A_gpu->LrowindPtr));
@@ -741,7 +746,6 @@ int sfree_LUstruct_gpu (
 	free(A_gpu->LnzvalPtr_host);
 	
 	/*freeing the pinned memory*/
-	int_t streamId = 0;
 	checkGPU (gpuFreeHost (A_gpu->scubufs[streamId].Remain_info_host));
 	checkGPU (gpuFreeHost (A_gpu->scubufs[streamId].Ublock_info_host));
 	checkGPU (gpuFreeHost (A_gpu->scubufs[streamId].Remain_L_buff_host));
@@ -796,8 +800,15 @@ int sfree_LUstruct_gpu (
 	checkGPU(gpuFree(A_gpu->ijb_lookupVec));
 	checkGPU(gpuFree(A_gpu->ijb_lookupPtr));
 
+	/* Destroy all the meta-structures associated with the streams. */
+    	gpuStreamDestroy(sluGPU->CopyStream);
+	for (streamId = 0; streamId < sluGPU->nGPUStreams; streamId++) {
+	    gpuStreamDestroy(sluGPU->funCallStreams[streamId]);
+	    gpublasDestroy(sluGPU->gpublasHandles[streamId]);
+    	}
+    
 	return 0;
-}
+} /* end sfree_LUstruct_gpu */
 
 
 
@@ -825,9 +836,9 @@ int sinitSluGPU3D_t(
     gridinfo3d_t * grid3d,
     int_t* perm_c_supno,
     int_t n,
-    int_t buffer_size,    /* read from env variable MAX_BUFFER_SIZE */
+    int_t buffer_size,    /* read from env variable SUPERLU_MAX_BUFFER_SIZE */
     int_t bigu_size,
-    int_t ldt,             /* NSUP read from sp_ienv(3) */
+    int_t ldt,             /* SUPERLU_MAXSUP read from sp_ienv(3) */
     SuperLUStat_t *stat
 )
 {
@@ -1069,7 +1080,7 @@ int ssendLUpanelGPU2HOST(
     int_t k0,
     d2Hreduce_t* d2Hred,
     ssluGPU_t *sluGPU,
-    SuperLUStat_t *stat,        
+    SuperLUStat_t *stat     
 )
 {
     int_t kljb = d2Hred->kljb;
@@ -1094,7 +1105,7 @@ int ssendLUpanelGPU2HOST(
     stat->cPCIeD2H += u_copy_len * sizeof(float) + l_copy_len * sizeof(float);
 
     return 0;
-}
+} /* end ssendLUpanelGPU2HOST */
 
 /* Copy L and U panel data structures from host to the host part of the
    data structures in A_gpu.
@@ -1129,14 +1140,6 @@ int ssendSCUdataHost2GPU(
 
     return 0;
 }
-
-/* Sherry: not used ?*/
-#if 0
-int freeSluGPU(ssluGPU_t *sluGPU)
-{
-    return 0;
-}
-#endif
 
 /* Allocate GPU memory for the LU data structures, and copy
    the host LU structure to GPU side.
@@ -1184,12 +1187,12 @@ void sCopyLUToGPU3D (
 
     /*copies of scalars for easy access*/
     A_gpu->nsupers = nsupers;
-    A_gpu->ScatterMOPCounter = 0;
-    A_gpu->GemmFLOPCounter = 0;
-    A_gpu->cPCIeH2D = 0;
-    A_gpu->cPCIeD2H = 0;
-    A_gpu->tHost_PCIeH2D = 0;
-    A_gpu->tHost_PCIeD2H = 0;
+    stat->ScatterMOPCounter = 0;
+    stat->GemmFLOPCounter = 0;
+    stat->cPCIeH2D = 0;
+    stat->cPCIeD2H = 0;
+    stat->tHost_PCIeH2D = 0;
+    stat->tHost_PCIeD2H = 0;
 
     /*initializing memory*/
     size_t max_gpu_memory = get_acc_memory ();

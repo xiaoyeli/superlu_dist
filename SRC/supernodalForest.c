@@ -29,13 +29,13 @@ int_t calcTopInfoForest(sForest_t *forest,
 sForest_t**  getForests( int_t maxLvl, int_t nsupers, int_t*setree, treeList_t* treeList)
 {
 	// treePartStrat tps;
-	if (getenv("LBS"))
+	if (getenv("SUPERLU_LBS"))
 	{
-		if (strcmp(getenv("LBS"), "ND" ) == 0)
+		if (strcmp(getenv("SUPERLU_LBS"), "ND" ) == 0)
 		{
 			return getNestDissForests( maxLvl, nsupers, setree, treeList);
 		}
-		if (strcmp(getenv("LBS"), "GD" ) == 0)
+		if (strcmp(getenv("SUPERLU_LBS"), "GD" ) == 0)
 		{
 			return getGreedyLoadBalForests( maxLvl, nsupers, setree, treeList);
 		}
@@ -506,7 +506,7 @@ double getLoadImbalance(int_t nTrees,
 
 
 // r forest contains a list of tree heads
-// each treehead is an entire subtree (all level beloe)
+// each treehead is an entire subtree (all level below)
 #define MAX_TREE_ALLOWED 1024
 
 typedef struct

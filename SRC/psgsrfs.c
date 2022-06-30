@@ -77,7 +77,7 @@ at the top-level directory.
  *        Leading dimension of matrix B.
  *
  * X      (input/output) float* (local)
- *        On entry, the solution matrix Y, as computed by PDGSTRS, of the
+ *        On entry, the solution matrix Y, as computed by PSGSTRS, of the
  *            transformed system A1*Y = Pc*Pr*B. where
  *            A1 = Pc*Pr*diag(R)*A*diag(C)*Pc' and Y = Pc*diag(C)^(-1)*X.
  *        On exit, the improved solution matrix Y.
@@ -117,7 +117,8 @@ at the top-level directory.
  * </pre>
  */
 void
-psgsrfs(int_t n, SuperMatrix *A, float anorm, sLUstruct_t *LUstruct,
+psgsrfs(superlu_dist_options_t *options, int_t n,
+        SuperMatrix *A, float anorm, sLUstruct_t *LUstruct,
 	sScalePermstruct_t *ScalePermstruct, gridinfo_t *grid,
 	float *B, int_t ldb, float *X, int_t ldx, int nrhs,
 	sSOLVEstruct_t *SOLVEstruct,
@@ -231,7 +232,7 @@ psgsrfs(int_t n, SuperMatrix *A, float anorm, sLUstruct_t *LUstruct,
 #endif
 	    if ( berr[j] > eps && berr[j] * 2 <= lstres && count < ITMAX ) {
 		/* Compute new dx. */
-		psgstrs(n, LUstruct, ScalePermstruct, grid,
+		psgstrs(options, n, LUstruct, ScalePermstruct, grid,
 			dx, m_loc, fst_row, m_loc, 1,
 			SOLVEstruct, stat, info);
 

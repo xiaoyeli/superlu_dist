@@ -34,9 +34,8 @@ at the top-level directory.
  * Arguments
  * =========
  *
- * fact (input) fact_t
- *        Specifies whether or not the L and U structures will be re-used.
- *        = SamePattern_SameRowPerm: L and U structures are input, and
+ * options (input) superlu_dist_options_t *
+ *        options->Fact specifies whether or not the L and U structures will be r *        = SamePattern_SameRowPerm: L and U structures are input, and
  *                                   unchanged on exit.
  *        = DOFACT or SamePattern: L and U structures are computed and output.
  *
@@ -62,7 +61,8 @@ at the top-level directory.
  */
 
 float
-ddistribute(fact_t fact, int_t n, SuperMatrix *A,
+ddistribute(superlu_dist_options_t *options,
+	    int_t n, SuperMatrix *A,
             Glu_freeable_t *Glu_freeable,
 	    dLUstruct_t *LUstruct, gridinfo_t *grid)
 {
@@ -220,7 +220,7 @@ ddistribute(fact_t fact, int_t n, SuperMatrix *A,
     CHECK_MALLOC(iam, "Enter ddistribute()");
 #endif
 
-    if ( fact == SamePattern_SameRowPerm ) {
+    if ( options->Fact == SamePattern_SameRowPerm ) {
         /* ---------------------------------------------------------------
          * REUSE THE L AND U DATA STRUCTURES FROM A PREVIOUS FACTORIZATION.
          * --------------------------------------------------------------- */
@@ -232,7 +232,7 @@ ddistribute(fact_t fact, int_t n, SuperMatrix *A,
 	   L and U data structures.            */
 	ilsum = Llu->ilsum;
 	ldaspa = Llu->ldalsum;
-	if ( !(dense = doubleCalloc_dist(((size_t)ldaspa) * sp_ienv_dist(3))) )
+	if ( !(dense = doubleCalloc_dist(((size_t)ldaspa) * sp_ienv_dist(3,options))) )
 	    ABORT("Calloc fails for SPA dense[].");
 	nrbu = CEILING( nsupers, grid->nprow ); /* No. of local block rows */
 	if ( !(Urb_length = intCalloc_dist(nrbu)) )
@@ -246,7 +246,7 @@ ddistribute(fact_t fact, int_t n, SuperMatrix *A,
 	Unzval_br_ptr = Llu->Unzval_br_ptr;
 	Unnz = Llu->Unnz;
 
-	mem_use += 2.0*nrbu*iword + ldaspa*sp_ienv_dist(3)*dword;
+	mem_use += 2.0*nrbu*iword + ldaspa*sp_ienv_dist(3,options)*dword;
 
 #if ( PROFlevel>=1 )
 	t = SuperLU_timer_();
@@ -532,7 +532,7 @@ ddistribute(fact_t fact, int_t n, SuperMatrix *A,
 	if ( !(Lrb_valptr = intMalloc_dist(k)) )
 	    ABORT("Malloc fails for Lrb_valptr[].");
 	if (!(dense=doubleCalloc_dist(SUPERLU_MAX(1,((size_t)ldaspa)
-              *sp_ienv_dist(3)))))
+						  *sp_ienv_dist(3,options)))))
 	    ABORT("Calloc fails for SPA dense[].");
 
 	/* These counts will be used for triangular solves. */
@@ -541,7 +541,7 @@ ddistribute(fact_t fact, int_t n, SuperMatrix *A,
 	if ( !(bmod = int32Calloc_dist(k)) )
 	    ABORT("Calloc fails for bmod[].");
 #if ( PRNTlevel>=1 )
-	mem_use += 6.0*k*iword + ldaspa*sp_ienv_dist(3)*dword;
+	mem_use += 6.0*k*iword + ldaspa*sp_ienv_dist(3,options)*dword;
 #endif
 	k = CEILING( nsupers, grid->npcol );/* Number of local block columns */
 
@@ -1991,6 +1991,13 @@ if ( !iam) printf(".. Construct Reduce tree for U: %.2f\t\n", t);
 	checkGPU(gpuMemcpy(Llu->d_Ucb_indoffset, Llu->Ucb_indoffset, CEILING( nsupers, grid->npcol ) * sizeof(long int), gpuMemcpyHostToDevice));		
 
 
+	// some dummy allocation to avoid checking whether they are null pointers later
+	checkGPU(gpuMalloc( (void**)&Llu->d_Ucolind_bc_dat, sizeof(int_t)));
+	checkGPU(gpuMalloc( (void**)&Llu->d_Ucolind_bc_offset, sizeof(int64_t)));
+	checkGPU(gpuMalloc( (void**)&Llu->d_Unzval_bc_dat, sizeof(double)));
+	checkGPU(gpuMalloc( (void**)&Llu->d_Unzval_bc_offset, sizeof(int64_t)));
+	checkGPU(gpuMalloc( (void**)&Llu->d_Uindval_loc_bc_dat, sizeof(int_t)));
+	checkGPU(gpuMalloc( (void**)&Llu->d_Uindval_loc_bc_offset, sizeof(int_t)));
 
 
 	checkGPU(gpuMalloc( (void**)&Llu->d_Linv_bc_offset, CEILING( nsupers, grid->npcol ) * sizeof(long int)));

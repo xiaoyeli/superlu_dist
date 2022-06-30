@@ -70,12 +70,6 @@ int main(int argc, char *argv[])
        INITIALIZE MPI ENVIRONMENT. 
        ------------------------------------------------------------*/
     MPI_Init( &argc, &argv );
-#ifdef GPU_ACC
-    int rank, devs;
-    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-    cudaGetDeviceCount(&devs);
-    cudaSetDevice(rank % devs);
-#endif	
     MPI_Comm_size( MPI_COMM_WORLD, &nprocs );
     if ( nprocs < 10 ) {
 	fprintf(stderr, "Requires at least 10 processes\n");
@@ -207,7 +201,6 @@ int main(int argc, char *argv[])
 	set_default_options_dist(&options);
 
         if (!iam) {
-	    print_sp_ienv_dist(&options);
 	    print_options_dist(&options);
         }
 

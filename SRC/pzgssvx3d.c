@@ -1008,7 +1008,7 @@ pzgssvx3d (superlu_dist_options_t * options, SuperMatrix * A,
 	
 	
 	/* ------------------------------------------------------------
-	   Perform the LU factorization.
+	   Perform ordering and symbolic factorization
 	   ------------------------------------------------------------ */
 	if ( !factored ) {
 	    t = SuperLU_timer_ ();
@@ -1107,7 +1107,7 @@ pzgssvx3d (superlu_dist_options_t * options, SuperMatrix * A,
 		    if (!iam)
 			printf
 			    (".. symbfact(): relax %4d, maxsuper %4d, fill %4d\n",
-			     sp_ienv_dist(2), sp_ienv_dist(3), sp_ienv_dist(6));
+			     sp_ienv_dist(2,options), sp_ienv_dist(3,options), sp_ienv_dist(6,options));
 #endif
 		    t = SuperLU_timer_ ();
 		    if (!(Glu_freeable = (Glu_freeable_t *)
@@ -1151,7 +1151,8 @@ pzgssvx3d (superlu_dist_options_t * options, SuperMatrix * A,
 		else { /* parallel symbolic factorization */
 		    t = SuperLU_timer_ ();
 		    flinfo =
-			symbfact_dist (nprocs_num, noDomains, A, perm_c, perm_r,
+			symbfact_dist (options, nprocs_num, noDomains,
+			               A, perm_c, perm_r,
 				       sizes, fstVtxSep, &Pslu_freeable,
 				       &(grid->comm), &symb_comm,
 				       &symb_mem_usage);
@@ -1185,7 +1186,7 @@ pzgssvx3d (superlu_dist_options_t * options, SuperMatrix * A,
 		   NOTE: the row permutation Pc*Pr is applied internally in the
 		   distribution routine. */
 		t = SuperLU_timer_ ();
-		dist_mem_use = pzdistribute (Fact, n, A, ScalePermstruct,
+		dist_mem_use = pzdistribute (options, n, A, ScalePermstruct,
 					     Glu_freeable, LUstruct, grid);
 		stat->utime[DIST] = SuperLU_timer_ () - t;
 		
@@ -1204,7 +1205,7 @@ pzgssvx3d (superlu_dist_options_t * options, SuperMatrix * A,
 		    colind[j] = perm_c[colind[j]];
 		
 		t = SuperLU_timer_ ();
-		dist_mem_use = zdist_psymbtonum (Fact, n, A, ScalePermstruct,
+		dist_mem_use = zdist_psymbtonum (options, n, A, ScalePermstruct,
 						 &Pslu_freeable, LUstruct, grid);
 		if (dist_mem_use > 0)
 		    ABORT ("Not enough memory available for dist_psymbtonum\n");
@@ -1214,9 +1215,10 @@ pzgssvx3d (superlu_dist_options_t * options, SuperMatrix * A,
 
 	    /*if (!iam) printf ("\tDISTRIBUTE time  %8.2f\n", stat->utime[DIST]); */
 	} /* end if not Factored */
-    } /* end if process layer 0 */
+	
+    } /* end 2D process layer 0 */
 
-    trf3Dpartition_t*  trf3Dpartition;
+    ztrf3Dpartition_t*  trf3Dpartition;
 
     /* Perform numerical factorization in parallel on all process layers.*/
     if ( !factored ) {
@@ -1397,7 +1399,7 @@ pzgssvx3d (superlu_dist_options_t * options, SuperMatrix * A,
 		pzgstrs_vecpar (n, LUstruct, ScalePermstruct, grid, X, m_loc,
 				fst_row, ldb, nrhs, SOLVEstruct, stat, info);
 #else
-		pzgstrs(n, LUstruct, ScalePermstruct, grid, X, m_loc,
+		pzgstrs(options, n, LUstruct, ScalePermstruct, grid, X, m_loc,
 			fst_row, ldb, nrhs, SOLVEstruct, stat, info);
 #endif
 
@@ -1485,7 +1487,7 @@ pzgssvx3d (superlu_dist_options_t * options, SuperMatrix * A,
 					      Glu_persist, SOLVEstruct1);
 			    }
 			
-			pzgsrfs (n, A, anorm, LUstruct, ScalePermstruct, grid,
+			pzgsrfs(options, n, A, anorm, LUstruct, ScalePermstruct, grid,
 				 B, ldb, X, ldx, nrhs, SOLVEstruct1, berr, stat, info);
 			
 			/* Deallocate the storage associated with SOLVEstruct1 */

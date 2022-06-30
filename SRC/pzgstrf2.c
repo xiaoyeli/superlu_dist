@@ -363,7 +363,6 @@ pzgstrf2_trsm
 }  /* PZGSTRF2_trsm */
 
 
-
 /*****************************************************************************
  * The following functions are for the new pdgstrf2_ztrsm in the 3D code.
  *****************************************************************************/
@@ -751,6 +750,7 @@ int_t zTrs2_GatherTrsmScatter(int_t klst, int_t iukp, int_t rukp,
     return 0;
 }
 
+/* END 3D CODE */
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 
 #if 1

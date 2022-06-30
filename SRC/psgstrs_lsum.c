@@ -1410,7 +1410,6 @@ void slsum_bmod_inv
 	aln_d = 1; //ceil(CACHELINE/(double)dword);
 	aln_i = 1; //ceil(CACHELINE/(double)iword);
 
-
 	iam = grid->iam;
 	myrow = MYROW( iam, grid );
 	knsupc = SuperSize( k );
@@ -1475,7 +1474,6 @@ void slsum_bmod_inv
 							for (irow = fnz; irow < iklrow; ++irow)
 								dest[irow - ikfrow] -= uval[uptr++] * y[jj];
 								stat[thread_id1]->ops[SOLVE] += 2 * (iklrow - fnz);
-
 						}
 					} /* end for jj ... */
 				}
@@ -1654,9 +1652,8 @@ void slsum_bmod_inv
 //#pragma omp simd // In complex case, this SIMD loop has 2 instructions, the compiler may generate incoreect code, so need to disable this omp simd
 //#endif
 						for (irow = fnz; irow < iklrow; ++irow)
-
-							dest[irow - ikfrow] -= uval[uptr++] * y[jj];
-							stat[thread_id]->ops[SOLVE] += 2 * (iklrow - fnz);
+						    dest[irow - ikfrow] -= uval[uptr++] * y[jj];
+						stat[thread_id]->ops[SOLVE] += 2 * (iklrow - fnz);
 					}
 				} /* for jj ... */
 			}

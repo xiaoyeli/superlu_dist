@@ -28,10 +28,17 @@ at the top-level directory.
  * Purpose
  * =======
  * 
- * SCREATE_MATRIX read the matrix from data file in Harwell-Boeing format,
- * and distribute it to processors in a distributed compressed row format.
- * It also generate the distributed true solution X and the right-hand
- * side RHS.
+ * SCREATE_MATRIX_POSTFIX read the matrix from data file in different formats
+ * depending on the surfix of the file name. The supported formats include:
+ *     .rua / cua : Harwell-Boeing format
+ *     .rb        : Rutherford-Boeing format
+ *     .mtx       : Matrix Market format
+ *     .dat       : triplet format with a header line {n  nnz}
+ *     .ddatnh    : triplet format without a header
+ *     .bin       : binary format
+ * The routine distribute the matrix to processors in a distributed
+ * compressed row format. It also generate the distributed true solution X
+ * and the right-hand side RHS.
  *
  *
  * Arguments   
@@ -58,14 +65,17 @@ at the top-level directory.
  * FP    (input) FILE*
  *       The matrix file pointer.
  *
+ * POSTFIX (input) char*
+ *       The surfix string of the filename.
+ *
  * GRID  (input) gridinof_t*
  *       The 2D process mesh.
  * </pre>
  */
 
-int screate_matrix(SuperMatrix *A, int nrhs, float **rhs,
+int screate_matrix_postfix(SuperMatrix *A, int nrhs, float **rhs,
                    int *ldb, float **x, int *ldx,
-                   FILE *fp, gridinfo_t *grid)
+                   FILE *fp, char * postfix, gridinfo_t *grid)
 {
     SuperMatrix GA;              /* global A */
     float   *b_global, *xtrue_global;  /* replicated on all processes */
@@ -89,14 +99,33 @@ int screate_matrix(SuperMatrix *A, int nrhs, float **rhs,
 #endif
 
     if ( !iam ) {
-        double t = SuperLU_timer_();
+    double t = SuperLU_timer_(); 
 
-        /* Read the matrix stored on disk in Harwell-Boeing format. */
-        sreadhb_dist(iam, fp, &m, &n, &nnz, &nzval, &rowind, &colptr);
+    if(!strcmp(postfix,"rua")){
+		/* Read the matrix stored on disk in Harwell-Boeing format. */
+		sreadhb_dist(iam, fp, &m, &n, &nnz, &nzval, &rowind, &colptr);
+	}else if(!strcmp(postfix,"mtx")){
+		/* Read the matrix stored on disk in Matrix Market format. */
+		sreadMM_dist(fp, &m, &n, &nnz, &nzval, &rowind, &colptr);
+	}else if(!strcmp(postfix,"rb")){
+		/* Read the matrix stored on disk in Rutherford-Boeing format. */
+		sreadrb_dist(iam, fp, &m, &n, &nnz, &nzval, &rowind, &colptr);		
+	}else if(!strcmp(postfix,"dat")){
+		/* Read the matrix stored on disk in triplet format. */
+		sreadtriple_dist(fp, &m, &n, &nnz, &nzval, &rowind, &colptr);
+	}else if(!strcmp(postfix,"datnh")){
+		/* Read the matrix stored on disk in triplet format (without header). */
+		sreadtriple_noheader(fp, &m, &n, &nnz, &nzval, &rowind, &colptr);		
+	}else if(!strcmp(postfix,"bin")){
+		/* Read the matrix stored on disk in binary format. */
+		sread_binary(fp, &m, &n, &nnz, &nzval, &rowind, &colptr);		
+	}else {
+		ABORT("File format not known");
+	}
 
 	printf("Time to read and distribute matrix %.2f\n", 
 	        SuperLU_timer_() - t);  fflush(stdout);
-
+			
 	/* Broadcast matrix A to the other PEs. */
 	MPI_Bcast( &m,     1,   mpi_int_t,  0, grid->comm );
 	MPI_Bcast( &n,     1,   mpi_int_t,  0, grid->comm );
@@ -144,9 +173,17 @@ int screate_matrix(SuperMatrix *A, int nrhs, float **rhs,
         ABORT("Malloc fails for xtrue[]");
     *trans = 'N';
 
-    sGenXtrue_dist(n, nrhs, xtrue_global, n);
-    sFillRHS_dist(trans, nrhs, xtrue_global, n, &GA, b_global, m);
-
+    if (iam == 0) {
+        sGenXtrue_dist(n, nrhs, xtrue_global, n);
+        sFillRHS_dist(trans, nrhs, xtrue_global, n, &GA, b_global, m);
+	
+        MPI_Bcast( xtrue_global, n*nrhs, MPI_FLOAT, 0, grid->comm );
+        MPI_Bcast( b_global, m*nrhs, MPI_FLOAT, 0, grid->comm );
+    } else {
+        MPI_Bcast( xtrue_global, n*nrhs, MPI_FLOAT, 0, grid->comm );
+        MPI_Bcast( b_global, m*nrhs, MPI_FLOAT, 0, grid->comm );
+    }
+				     
     /*************************************************
      * Change GA to a local A with NR_loc format     *
      *************************************************/
@@ -234,11 +271,49 @@ int screate_matrix(SuperMatrix *A, int nrhs, float **rhs,
     return 0;
 }
 
-
-
-int screate_matrix_postfix(SuperMatrix *A, int nrhs, float **rhs,
+/* \brief
+ *
+ * <pre>
+ * Purpose
+ * =======
+ * 
+ * SCREATE_MATRIX read the matrix from data file in Harwell-Boeing format,
+ * and distribute it to processors in a distributed compressed row format.
+ * It also generate the distributed true solution X and the right-hand
+ * side RHS.
+ *
+ *
+ * Arguments   
+ * =========      
+ *
+ * A     (output) SuperMatrix*
+ *       Local matrix A in NR_loc format. 
+ *
+ * NRHS  (input) int_t
+ *       Number of right-hand sides.
+ *
+ * RHS   (output) float**
+ *       The right-hand side matrix.
+ *
+ * LDB   (output) int*
+ *       Leading dimension of the right-hand side matrix.
+ *
+ * X     (output) float**
+ *       The true solution matrix.
+ *
+ * LDX   (output) int*
+ *       The leading dimension of the true solution matrix.
+ *
+ * FP    (input) FILE*
+ *       The matrix file pointer.
+ *
+ * GRID  (input) gridinof_t*
+ *       The 2D process mesh.
+ * </pre>
+ */
+int screate_matrix(SuperMatrix *A, int nrhs, float **rhs,
                    int *ldb, float **x, int *ldx,
-                   FILE *fp, char * postfix, gridinfo_t *grid)
+                   FILE *fp, gridinfo_t *grid)
 {
     SuperMatrix GA;              /* global A */
     float   *b_global, *xtrue_global;  /* replicated on all processes */
@@ -262,33 +337,14 @@ int screate_matrix_postfix(SuperMatrix *A, int nrhs, float **rhs,
 #endif
 
     if ( !iam ) {
-    double t = SuperLU_timer_(); 
+        double t = SuperLU_timer_();
 
-    if(!strcmp(postfix,"rua")){
-		/* Read the matrix stored on disk in Harwell-Boeing format. */
-		sreadhb_dist(iam, fp, &m, &n, &nnz, &nzval, &rowind, &colptr);
-	}else if(!strcmp(postfix,"mtx")){
-		/* Read the matrix stored on disk in Matrix Market format. */
-		sreadMM_dist(fp, &m, &n, &nnz, &nzval, &rowind, &colptr);
-	}else if(!strcmp(postfix,"rb")){
-		/* Read the matrix stored on disk in Rutherford-Boeing format. */
-		sreadrb_dist(iam, fp, &m, &n, &nnz, &nzval, &rowind, &colptr);		
-	}else if(!strcmp(postfix,"dat")){
-		/* Read the matrix stored on disk in triplet format. */
-		sreadtriple_dist(fp, &m, &n, &nnz, &nzval, &rowind, &colptr);
-	}else if(!strcmp(postfix,"datnh")){
-		/* Read the matrix stored on disk in triplet format (without header). */
-		sreadtriple_noheader(fp, &m, &n, &nnz, &nzval, &rowind, &colptr);		
-	}else if(!strcmp(postfix,"bin")){
-		/* Read the matrix stored on disk in binary format. */
-		sread_binary(fp, &m, &n, &nnz, &nzval, &rowind, &colptr);		
-	}else {
-		ABORT("File format not known");
-	}
+        /* Read the matrix stored on disk in Harwell-Boeing format. */
+        sreadhb_dist(iam, fp, &m, &n, &nnz, &nzval, &rowind, &colptr);
 
 	printf("Time to read and distribute matrix %.2f\n", 
 	        SuperLU_timer_() - t);  fflush(stdout);
-			
+
 	/* Broadcast matrix A to the other PEs. */
 	MPI_Bcast( &m,     1,   mpi_int_t,  0, grid->comm );
 	MPI_Bcast( &n,     1,   mpi_int_t,  0, grid->comm );

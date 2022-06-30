@@ -115,6 +115,7 @@ main (int argc, char *argv[])
     float *b, *xtrue, *b1, *b2;
     int m, n, i, j, m_loc;
     int nprow, npcol, npdep;
+    int lookahead, colperm, rowperm, ir;
     int iam, info, ldb, ldx, nrhs;
     char **cpp, c, *suffix;
     FILE *fp, *fopen ();
@@ -125,6 +126,10 @@ main (int argc, char *argv[])
     npcol = 1;            /* Default process columns.   */
     npdep = 1;            /* replication factor must be power of two */
     nrhs = 1;             /* Number of right-hand side. */
+    lookahead = -1;
+    colperm = -1;
+    rowperm = -1;
+    ir = -1;
 
     /* ------------------------------------------------------------
        INITIALIZE MPI ENVIRONMENT.
@@ -168,6 +173,14 @@ main (int argc, char *argv[])
             case 'd':
                 npdep = atoi (*cpp);
                 break;
+            case 'l': lookahead = atoi(*cpp);
+                      break;
+            case 'p': rowperm = atoi(*cpp);
+                      break;
+            case 'q': colperm = atoi(*cpp);
+                      break;
+            case 'i': ir = atoi(*cpp);
+                      break;
             }
         }
         else
@@ -205,6 +218,7 @@ main (int argc, char *argv[])
 	    fflush(stdout);
 	    break;
 	}
+	fflush(stdout);
     }
 	
     /* Bail out if I do not belong in the grid. */
@@ -303,7 +317,7 @@ main (int argc, char *argv[])
        options.ColPerm           = METIS_AT_PLUS_A;
        options.RowPerm           = LargeDiag_MC64;
        options.ReplaceTinyPivot  = NO;
-       options.IterRefine        = DOUBLE;
+       options.IterRefine        = SLU_DOUBLE;
        options.Trans             = NOTRANS;
        options.SolveInitialized  = NO;
        options.RefineInitialized = NO;
@@ -314,6 +328,8 @@ main (int argc, char *argv[])
        options.DiagInv           = NO;
      */
     set_default_options_dist (&options);
+    options.Algo3d = YES;
+    options.IterRefine = SLU_SINGLE;
 #if 0
     options.RowPerm = NOROWPERM;
     options.IterRefine = NOREFINE;
@@ -322,8 +338,12 @@ main (int argc, char *argv[])
     options.ReplaceTinyPivot = YES;
 #endif
 
+    if (rowperm != -1) options.RowPerm = rowperm;
+    if (colperm != -1) options.ColPerm = colperm;
+    if (lookahead != -1) options.num_lookaheads = lookahead;
+    if (ir != -1) options.IterRefine = ir;
+    
     if (!iam) {
-	print_sp_ienv_dist(&options);
 	print_options_dist(&options);
 	fflush(stdout);
     }

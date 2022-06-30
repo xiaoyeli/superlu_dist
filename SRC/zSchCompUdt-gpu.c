@@ -23,7 +23,6 @@ at the top-level directory.
 
 #define SCHEDULE_STRATEGY dynamic
 
-
 int full;
 double gemm_timer = 0.0;
 double scatter_timer = 0.0;
@@ -74,8 +73,16 @@ if ( msg0 && msg2 ) {  /* L(:,k) and U(k,:) are not empty. */
 
         jjj = jj0; /* jj0 is the first block column after look-ahead window */
 
+	int parts = 1;
         // #pragma omp barrier
         while ( jjj < nub ) {
+#if ( PRNTlevel>=1 )	
+           if ( parts>1 ){
+	      printf("warning: number of partitions %d > 1, try increasing MAX_BUFFER_SIZE.\n",
+	              parts);
+            }
+#endif
+            parts++;
             jjj_st=jjj;
 #ifdef _OPENMP
 #pragma omp single
@@ -104,6 +111,7 @@ if ( msg0 && msg2 ) {  /* L(:,k) and U(k,:) are not empty. */
 		 * If there is only one block, we leave it on CPU.
 		 */
                 gemm_division_cpu_gpu(
+		       options,
 		       &num_streams_used,/*number of streams that will be used*/
 		       stream_end_col,   /*array holding last column blk for each partition*/
 		       &ncpu_blks,       /*number of CPU gemm blks*/
@@ -112,8 +120,9 @@ if ( msg0 && msg2 ) {  /* L(:,k) and U(k,:) are not empty. */
 		       ldu,              /*value of k in dgemm*/
 		       nstreams,
 		       full_u_cols + jjj_st, /*array containing prefix sum of GPU workload*/
-		       jjj_global - jjj_st /*number of block columns on GPU.
+		       jjj_global - jjj_st, /*number of block columns on GPU.
 		       		             If only one block, leave it on CPU*/
+		       buffer_size
                 );
                 // TAU_STATIC_TIMER_STOP("work_divison");
 
@@ -139,6 +148,9 @@ if ( msg0 && msg2 ) {  /* L(:,k) and U(k,:) are not empty. */
             assert(jjj_st<nub);
             assert(jjj-1<nub);
             // TAU_STATIC_TIMER_START("GATHER_U");
+	    
+	    tt_start = SuperLU_timer_();
+
 #ifdef _OPENMP
 #pragma omp for schedule( SCHEDULE_STRATEGY )
 #endif
@@ -169,6 +181,9 @@ if ( msg0 && msg2 ) {  /* L(:,k) and U(k,:) are not empty. */
 
             } /* end for j=jjj_st to jjj */
 
+	    tt_end = SuperLU_timer_();
+	    GatherUTimer += tt_end - tt_start;
+	    
 	    if ( num_streams_used > 0 ) {
 #ifdef PI_DEBUG
 		printf("nbrow %d *ldu %d  =%d < ldt %d * max_row_size %d =%d \n",nbrow,ldu,nbrow*ldu,ldt,max_row_size,ldt*max_row_size ); fflush(stdout);
@@ -190,50 +205,55 @@ if ( msg0 && msg2 ) {  /* L(:,k) and U(k,:) are not empty. */
 		doublecomplex *tempv1 = bigV + full_u_cols[st-1]*nbrow;
 
 		/* Following is for testing purpose */
-		if ( num_col_stream > 0 ) {		
-#ifdef GPU_ACC
+		if ( num_col_stream > 0 ) {
+		
+#ifdef GPU_ACC  /* Sherry: this file is not used if GPU_ACC is not defined. */
 		    int stream_id = i;
 		    int b_offset  = ldu * st_col;
 		    int c_offset  = st_col * nbrow;
 		    size_t B_stream_size = ldu * num_col_stream * sizeof(doublecomplex);
 		    size_t C_stream_size = nbrow * num_col_stream * sizeof(doublecomplex);
 
+		    // Sherry: Check dC buffer of *buffer_size* is large enough
 		    assert(nbrow*(st_col+num_col_stream) < buffer_size);
 
-		gpuMemcpyAsync(dB+b_offset, tempu+b_offset, B_stream_size,
-				gpuMemcpyHostToDevice, streams[stream_id]);
+		    gpuMemcpyAsync(dB+b_offset, tempu+b_offset, B_stream_size,
+		    		    gpuMemcpyHostToDevice, streams[stream_id]);
 
-		gpublasCheckErrors(
+		    gpublasCheckErrors(
 				  gpublasSetStream(handle[stream_id],
 						  streams[stream_id])
 				     );
 
-		gpublasCheckErrors(
+		    gpublasCheckErrors(
 				  gpublasZgemm(handle[stream_id],
 					      GPUBLAS_OP_N, GPUBLAS_OP_N,
 					      nbrow, num_col_stream, ldu,
- 					      (const gpuDoubleComplex*) &alpha,
-					      (const gpuDoubleComplex*) dA,
+ 					      (const cuDoubleComplex*) &alpha,
+					      (const cuDoubleComplex*) dA,
 					      nbrow,
-					      (const gpuDoubleComplex*) &dB[b_offset],
+					      (const cuDoubleComplex*) &dB[b_offset],
 					      ldu,
-					      (const gpuDoubleComplex*) &beta,
-					      (gpuDoubleComplex*)&dC[c_offset],
+					      (const cuDoubleComplex*) &beta,
+					      (cuDoubleComplex*)&dC[c_offset],
                                               nbrow)
 				  );
 
-		checkGPU( gpuMemcpyAsync(tempv1, dC+c_offset,
+		    checkGPU( gpuMemcpyAsync(tempv1, dC+c_offset,
 					   C_stream_size,
 					   gpuMemcpyDeviceToHost,
 					   streams[stream_id]) );
 #else /*-- on CPU --*/
-
+		} else { // num_col_stream == 0  Sherry: how can get here?
+                    // Sherry: looks like a batched GEMM 
 	            my_zgemm_("N", "N", &nbrow, &num_col_stream, &ldu,
 			      &alpha, &lusup[luptr+(knsupc-ldu)*nsupr],
 			      &nsupr, tempu+ldu*st_col, &ldu, &beta,
 			      tempv1, &nbrow, 1, 1);
-#endif
-   	        } // end if num_col_stream > 0
+	        }
+#endif /*-- end ifdef GPU_ACC --*/
+
+   	      } // end if num_col_stream > 0
 
 	    } /* end for i = 1 to num_streams used */
 
@@ -255,7 +275,10 @@ if ( msg0 && msg2 ) {  /* L(:,k) and U(k,:) are not empty. */
 		  tempu+ldu*st_col, &ldu, &beta, tempv, &nbrow);
 #endif
 	    gemm_timer += SuperLU_timer_() -tstart;
-	    stat->ops[FACT] += 2 * nbrow * ldu * full_u_cols[jjj-1];
+
+	    /* The following counts both CPU and GPU parts.
+	       full_u_cols[jjj-1] contains both CPU and GPU. */
+	    stat->ops[FACT] += 8.0* nbrow * ldu * full_u_cols[jjj-1];
 
             /* Now scattering blocks computed by CPU */
             int temp_ncol;
@@ -479,8 +502,8 @@ if ( msg0 && msg2 ) {  /* L(:,k) and U(k,:) are not empty. */
                 doublecomplex* tempv1;
                 for(i = 0; i < num_streams_used; i++) { /* i is private variable */
                     checkGPU(gpuStreamSynchronize (streams[i]));
-                    // jjj_st1 := first block column on GPU stream[i]
-                    int jjj_st1 = (i==0) ? jjj_st + ncpu_blks : jjj_st + stream_end_col[i-1];
+		    // jjj_st1 := first block column on GPU stream[i]
+		    int jjj_st1 = (i==0) ? jjj_st + ncpu_blks : jjj_st + stream_end_col[i-1];
                     int jjj_end = jjj_st + stream_end_col[i];
                     assert(jjj_end-1<nub);
                     assert(jjj_st1>jjj_st) ;
@@ -563,7 +586,7 @@ if ( msg0 && msg2 ) {  /* L(:,k) and U(k,:) are not empty. */
                         luptr=luptr0;
                     } /* for j = jjj_st ... */
 
-                } /* end for i = 0 to nstreams */
+                } /* end for i = 0 to num_streams_used  */
 		
                 // TAU_STATIC_TIMER_STOP("GPU_SCATTER");
                 // TAU_STATIC_TIMER_STOP("INSIDE_OMP");
@@ -571,6 +594,8 @@ if ( msg0 && msg2 ) {  /* L(:,k) and U(k,:) are not empty. */
             } /* end pragma omp parallel */
             // TAU_STATIC_TIMER_STOP("OUTSIDE_OMP");
 	    
+	    RemainScatterTimer += SuperLU_timer_() - tstart;
+
         }  /* end while(jjj<nub) */
 
     } /* if nbrow>0 */

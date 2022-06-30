@@ -134,7 +134,7 @@ void superlu_gridmap3d(
     int iam;
     MPI_Comm superlu3d_comm;
 
-    if (getenv("RANKORDER") && strcmp(getenv("RANKORDER"), "XY" ))
+    if ( getenv("SUPERLU_RANKORDER") && strcmp(getenv("SUPERLU_RANKORDER"), "XY" ) )
     {
 	grid->rankorder = 1;  // XY-major 
 
@@ -224,7 +224,7 @@ void superlu_gridmap3d(
         int xyc[3] = {0, 1, 1};
         MPI_Cart_sub(superlu3d_comm, xyc, &(grid->grid2d.comm));
 
-    } /* if RANKORDER */
+    } /* end if SUPERLU_RANKORDER */
 
 
     // Initialize grid2d;
@@ -237,7 +237,7 @@ void superlu_gridmap3d(
 
     // grid->grid2d.cscp = grid->cscp;
 
-#if 1
+#if ( PRNTlevel>=1 )
     if ( (grid->zscp).Iam == 0) {
       printf("(3d grid: layer 0) iam %d, grid->grid2d.iam %d\n",
 	     grid->iam, (grid->grid2d).iam);

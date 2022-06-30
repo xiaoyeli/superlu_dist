@@ -3,6 +3,26 @@ set(headers
 )
 set(sources input_error_dist.c)
 
+if (enable_single)
+    list(APPEND sources
+      isamax.c
+      sasum.c
+      saxpy.c
+      scopy.c
+      sdot.c
+      snrm2.c
+      srot.c
+      sscal.c
+      sgemv.c
+      ssymv.c
+      strsv.c
+      sger.c
+      ssyr2.c
+      sgemm.c
+      strsm.c
+    )
+endif()
+
 if (enable_double)
     list(APPEND sources
       idamax.c

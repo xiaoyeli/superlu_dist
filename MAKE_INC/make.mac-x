@@ -23,7 +23,10 @@ BLASLIB		= $(SuperLUroot)/CBLAS/libblas.a
 # LAPACKLIB	=
 # SLU_HAVE_LAPACK = TRUE
 
-LIBS		= $(DSUPERLULIB) ${BLASLIB} /Users/xsli/lib/parmetis-4.0.3/build/Darwin-x86_64/libparmetis/libparmetis.a /Users/xsli/lib/parmetis-4.0.3/build/Darwin-x86_64/libmetis/libmetis.a $(LAPACKLIB)
+HAVE_PARMETIS = TRUE
+PARMETIS_ROOT=/Users/xsli/Dropbox/xsli-lib/static/parmetis-4.0.3
+
+LIBS		= $(DSUPERLULIB) ${BLASLIB} ${PARMETIS_ROOT}/build/Darwin-x86_64/libparmetis/libparmetis.a ${PARMETIS_ROOT}/build/Darwin-x86_64/libmetis/libmetis.a $(LAPACKLIB)
 
 #
 #  The archiver and the flag(s) to use when building archive (library)
@@ -33,8 +36,8 @@ ARCH         = /usr/bin/ar
 ARCHFLAGS    = cr
 RANLIB       = /usr/bin/ranlib
 
-CC           = /Users/xsli/lib/mpich2-install/bin/mpicc
-CFLAGS 	     = -O3 -DNDEBUG -I/Users/xsli/lib/parmetis-4.0.3/metis/include -I/Users/xsli/lib/parmetis-4.0.3/include  -DDEBUGlevel=0 -DPRNTlevel=0 -std=c99 -g
+CC           = mpicc ##/Users/xsli/lib/mpich2-install/bin/mpicc
+CFLAGS 	     = -O3 -DNDEBUG -I${INCLUDEDIR} -I${PARMETIS_ROOT}/metis/include -I${PARMETIS_ROOT}/include  -DDEBUGlevel=0 -DPRNTlevel=0 -std=c99 -g
 #CFLAGS       += -openmp
 #XSDK_INDEX_SIZE = 64 ## 64-bit integer
 # CFLAGS       +=  

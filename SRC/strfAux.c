@@ -498,7 +498,8 @@ float* sgetBigV(int_t ldt, int_t num_threads)
     return bigV;
 }
 
-float* sgetBigU(int_t nsupers, gridinfo_t *grid, sLUstruct_t *LUstruct)
+float* sgetBigU(superlu_dist_options_t *options,
+	 int_t nsupers, gridinfo_t *grid, sLUstruct_t *LUstruct)
 {
     int_t Pr = grid->nprow;
     int_t Pc = grid->npcol;
@@ -533,7 +534,7 @@ float* sgetBigU(int_t nsupers, gridinfo_t *grid, sLUstruct_t *LUstruct)
     /*Buffer size is max of of look ahead window*/
 
     int_t bigu_size =
-	8 * sp_ienv_dist (3) * (max_row_size) * SUPERLU_MAX(Pr / Pc, 1);
+	8 * sp_ienv_dist(3, options) * (max_row_size) * SUPERLU_MAX(Pr / Pc, 1);
 	//Sherry: 8 * sp_ienv_dist (3) * (max_row_size) * MY_MAX(Pr / Pc, 1);
 
     // printf("Size of big U is %d\n",bigu_size );
@@ -543,7 +544,7 @@ float* sgetBigU(int_t nsupers, gridinfo_t *grid, sLUstruct_t *LUstruct)
 } /* sgetBigU */
 
 
-trf3Dpartition_t* sinitTrf3Dpartition(int_t nsupers,
+strf3Dpartition_t* sinitTrf3Dpartition(int_t nsupers,
 				      superlu_dist_options_t *options,
 				      sLUstruct_t *LUstruct, gridinfo3d_t * grid3d
 				      )
@@ -609,7 +610,7 @@ trf3Dpartition_t* sinitTrf3Dpartition(int_t nsupers,
         }
     }
 
-    trf3Dpartition_t*  trf3Dpartition = SUPERLU_MALLOC(sizeof(trf3Dpartition_t));
+    strf3Dpartition_t*  trf3Dpartition = SUPERLU_MALLOC(sizeof(strf3Dpartition_t));
 
     trf3Dpartition->gEtreeInfo = gEtreeInfo;
     trf3Dpartition->iperm_c_supno = iperm_c_supno;
@@ -635,7 +636,7 @@ trf3Dpartition_t* sinitTrf3Dpartition(int_t nsupers,
 } /* sinitTrf3Dpartition */
 
 /* Free memory allocated for trf3Dpartition structure. Sherry added this routine */
-void sDestroy_trf3Dpartition(trf3Dpartition_t *trf3Dpartition, gridinfo3d_t *grid3d)
+void sDestroy_trf3Dpartition(strf3Dpartition_t *trf3Dpartition, gridinfo3d_t *grid3d)
 {
     int i;
 #if ( DEBUGlevel>=1 )

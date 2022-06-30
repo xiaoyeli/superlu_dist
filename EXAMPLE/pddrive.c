@@ -59,7 +59,7 @@ int main(int argc, char *argv[])
     double   *berr;
     double   *b, *xtrue;
     int    m, n;
-    int      nprow, npcol;
+    int      nprow, npcol, lookahead, colperm, rowperm, ir;
     int      iam, info, ldb, ldx, nrhs;
     char     **cpp, c, *postfix;;
     FILE *fp, *fopen();
@@ -69,6 +69,10 @@ int main(int argc, char *argv[])
     nprow = 1;  /* Default process rows.      */
     npcol = 1;  /* Default process columns.   */
     nrhs = 1;   /* Number of right-hand side. */
+    lookahead = -1;
+    colperm = -1;
+    rowperm = -1;
+    ir = -1;
 
     /* ------------------------------------------------------------
        INITIALIZE MPI ENVIRONMENT. 
@@ -101,6 +105,14 @@ int main(int argc, char *argv[])
 		        break;
 	      case 'c': npcol = atoi(*cpp);
 		        break;
+              case 'l': lookahead = atoi(*cpp);
+                        break;
+              case 'p': rowperm = atoi(*cpp);
+                        break;
+              case 'q': colperm = atoi(*cpp);
+                        break;
+              case 'i': ir = atoi(*cpp);
+                        break;
 	    }
 	} else { /* Last arg is considered a filename */
 	    if ( !(fp = fopen(*cpp, "r")) ) {
@@ -189,7 +201,7 @@ int main(int argc, char *argv[])
         options.ColPerm           = METIS_AT_PLUS_A;
         options.RowPerm           = LargeDiag_MC64;
         options.ReplaceTinyPivot  = NO;
-        options.IterRefine        = DOUBLE;
+        options.IterRefine        = SLU_DOUBLE;
         options.Trans             = NOTRANS;
         options.SolveInitialized  = NO;
         options.RefineInitialized = NO;
@@ -199,19 +211,21 @@ int main(int argc, char *argv[])
     set_default_options_dist(&options);
     options.IterRefine = NOREFINE;
 	options.DiagInv = YES;
-    options.ReplaceTinyPivot  = YES;    
-#if 0
     options.ReplaceTinyPivot  = YES;
-    options.RowPerm           = LargeDiag_HWPM;
-    options.RowPerm = NOROWPERM;
+#if 0
+    options.RowPerm = LargeDiag_HWPM;
     options.IterRefine = NOREFINE;
     options.ColPerm = NATURAL;
     options.Equil = NO; 
     options.ReplaceTinyPivot = YES;
 #endif
 
+    if (rowperm != -1) options.RowPerm = rowperm;
+    if (colperm != -1) options.ColPerm = colperm;
+    if (lookahead != -1) options.num_lookaheads = lookahead;
+    if (ir != -1) options.IterRefine = ir;
+
     if (!iam) {
-	print_sp_ienv_dist(&options);
 	print_options_dist(&options);
 	fflush(stdout);
     }
@@ -256,7 +270,7 @@ int main(int argc, char *argv[])
     SUPERLU_FREE(b);
     SUPERLU_FREE(xtrue);
     SUPERLU_FREE(berr);
-    // fclose(fp);
+    fclose(fp);
 
     /* ------------------------------------------------------------
        RELEASE THE SUPERLU PROCESS GRID.

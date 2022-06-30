@@ -9,7 +9,6 @@ The source code is distributed under BSD license, see the file License.txt
 at the top-level directory.
 */
 
-
 /*! @file
  * \brief Scatter the computed blocks into LU destination.
  *
@@ -25,7 +24,6 @@ at the top-level directory.
 //#include "compiler.h"
 
 //#include "cblas.h"
-
 
 #define ISORT
 #define SCATTER_U_CPU  scatter_u
@@ -118,6 +116,7 @@ sblock_gemm_scatter( int_t lb, int_t j,
     int_t ljb = LBj (jb, grid);
     int_t st_col;
     int ncols;
+
     // if (j > jj0)
     if (j > 0)
     {
@@ -149,6 +148,7 @@ sblock_gemm_scatter( int_t lb, int_t j,
 #ifdef SCATTER_PROFILE
     double ttx = SuperLU_timer_();
 #endif
+    
     /*Now scattering the block*/
     if (ib < jb)
     {
@@ -233,7 +233,7 @@ sblock_gemm_scatter_lock( int_t lb, int_t j,
     lptr += LB_DESCRIPTOR;
     int cum_nrow =  Remain_info[lb].StRow;
 
-    double alpha = 1.0;  double beta = 0.0;
+    float alpha = 1.0;  double beta = 0.0;
 
     /* calling SGEMM */
     superlu_sgemm("N", "N", temp_nbrow, ncols, ldu, alpha,

@@ -837,7 +837,8 @@ psCompute_Diag_Inv(int_t n, sLUstruct_t *LUstruct,gridinfo_t *grid,
  */
 
 void
-psgstrs(int_t n, sLUstruct_t *LUstruct,
+psgstrs(superlu_dist_options_t *options, int_t n,
+        sLUstruct_t *LUstruct,
 	sScalePermstruct_t *ScalePermstruct,
 	gridinfo_t *grid, float *B,
 	int_t m_loc, int_t fst_row, int_t ldb, int nrhs,
@@ -962,7 +963,7 @@ psgstrs(int_t n, sLUstruct_t *LUstruct,
     aln_i = 1; //ceil(CACHELINE/(double)iword);
     int num_thread = 1;
 
-    maxsuper = sp_ienv_dist(3);
+    maxsuper = sp_ienv_dist(3, options);
 
 //#ifdef _OPENMP
 //#pragma omp threadprivate(thread_id)
@@ -1029,7 +1030,7 @@ psgstrs(int_t n, sLUstruct_t *LUstruct,
     Llu->SolveMsgSent = 0;
 
     /* Save the count to be altered so it can be used by
-       subsequent call to PDGSTRS. */
+       subsequent call to PSGSTRS. */
     if ( !(fmod = int32Malloc_dist(nlb*aln_i)) )
 	ABORT("Malloc fails for fmod[].");
     for (i = 0; i < nlb; ++i) fmod[i*aln_i] = Llu->fmod[i];
@@ -1056,7 +1057,7 @@ psgstrs(int_t n, sLUstruct_t *LUstruct,
     ldalsum = Llu->ldalsum;
 
     /* Allocate working storage. */
-    knsupc = sp_ienv_dist(3);
+    knsupc = sp_ienv_dist(3, options);
     maxrecvsz = knsupc * nrhs + SUPERLU_MAX( XK_H, LSUM_H );
     sizelsum = (((size_t)ldalsum)*nrhs + nlb*LSUM_H);
     sizelsum = ((sizelsum + (aln_d - 1)) / aln_d) * aln_d;
@@ -1160,8 +1161,6 @@ psgstrs(int_t n, sLUstruct_t *LUstruct,
 	nleaf=0;
 	nfrecvmod=0;
 
-
-
 if(procs==1){
 	for (lk=0;lk<nsupers_i;++lk){
 		gb = myrow+lk*grid->nprow;  /* not sure */
@@ -1195,7 +1194,6 @@ if(procs==1){
 	}
 }
 
-
 #ifdef _OPENMP
 #pragma omp simd
 #endif
@@ -1206,8 +1204,6 @@ if(procs==1){
 	nfrecvx_buf=0;
 
 	log_memory(nlb*aln_i*iword+nlb*iword+(CEILING( nsupers, Pr )+CEILING( nsupers, Pc ))*aln_i*2.0*iword+ nsupers_i*iword + sizelsum*num_thread * dword + (ldalsum * nrhs + nlb * XK_H) *dword + (sizertemp*num_thread + 1)*dword+maxrecvsz*(nfrecvx+1)*dword, stat);	//account for fmod, frecv, leaf_send, root_send, leafsups, recvbuf_BC_fwd	, lsum, x, rtemp
-
-
 
 #if ( DEBUGlevel>=2 )
 	printf("(%2d) nfrecvx %4d,  nfrecvmod %4d,  nleaf %4d\n,  nbtree %4d\n,  nrtree %4d\n",
@@ -1240,7 +1236,6 @@ if(procs==1){
 	printf("(%2d) nleaf %4d\n", iam, nleaf);
 	fflush(stdout);
 #endif
-
 
 #ifdef _OPENMP
 #pragma omp parallel default (shared)
@@ -1756,7 +1751,7 @@ if(procs==1){
 	 *---------------------------------------------------*/
 
 	/* Save the count to be altered so it can be used by
-	   subsequent call to PDGSTRS. */
+	   subsequent call to PSGSTRS. */
 	if ( !(bmod = int32Malloc_dist(nlb*aln_i)) )
 		ABORT("Malloc fails for bmod[].");
 	for (i = 0; i < nlb; ++i) bmod[i*aln_i] = Llu->bmod[i];
@@ -1806,12 +1801,13 @@ if(procs==1){
 #endif
 
 #if ( DEBUGlevel>=2 )
-	for (p = 0; p < Pr*Pc; ++p) {
+        nub = CEILING( nsupers, Pc ); /* Number of local block columns. */
+        for (p = 0; p < Pr*Pc; ++p) {
 	    if (iam == p) {
-		printf("(%2d) .. Ublocks %d\n", iam, Ublocks);
+		printf("(%2d) .. Ublocks %d, nub %d\n",iam,Ublocks,nub); fflush(stdout);
 		for (lb = 0; lb < nub; ++lb) {
 		    printf("(%2d) Local col %2d: # row blocks %2d\n",
-				iam, lb, Urbs[lb]);
+				iam, lb, Urbs[lb]); fflush(stdout);
 		    if ( Urbs[lb] ) {
 			for (i = 0; i < Urbs[lb]; ++i)
 			    printf("(%2d) .. row blk %2d:\
@@ -2350,7 +2346,7 @@ for (i=0;i<nroot_send;i++){
 		MPI_Reduce (&msg_vol, &msg_vol_max,
 				1, MPI_FLOAT, MPI_MAX, 0, grid->comm);
 		if (!iam) {
-			printf ("\tPDGSTRS comm stat:"
+			printf ("\tPSGSTRS comm stat:"
 				"\tAvg\tMax\t\tAvg\tMax\n"
 				"\t\t\tCount:\t%.0f\t%.0f\tVol(MB)\t%.2f\t%.2f\n",
 				msg_cnt_sum / Pr / Pc, msg_cnt_max,
