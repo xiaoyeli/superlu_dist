@@ -327,6 +327,15 @@ if(OpenMP_FOUND) # this is found in top-level CMakeLists.txt
   target_link_libraries(superlu_dist OpenMP::OpenMP_C)
 endif()
 
+if (XSDK_ENABLE_Fortran)
+## target_link_libraries(superlu_dist PUBLIC MPI::MPI_CXX MPI::MPI_C MPI::MPI_Fortran)
+## PUBLIC keyword causes error:
+##   The plain signature for target_link_libraries has already been used ...
+  target_link_libraries(superlu_dist MPI::MPI_CXX MPI::MPI_C MPI::MPI_Fortran)
+else()
+  target_link_libraries(superlu_dist MPI::MPI_CXX MPI::MPI_C)
+endif()
+
 target_compile_definitions(superlu_dist PRIVATE SUPERLU_DIST_EXPORTS)
 if(MSVC AND BUILD_SHARED_LIBS)
   set_target_properties(superlu_dist PROPERTIES

@@ -196,7 +196,7 @@ if (TPL_ENABLE_CUDALIB)   ## want to use cuda
 #     find_package(CUB REQUIRED)
 
     find_package(CUDAToolkit REQUIRED)
-# The following appears in SRC/CMakeLists.txt
+# The following appears SRC/CMakeLists.txt
 #    if(CUDAToolkit_FOUND)
 #      target_link_libraries(superlu_dist PUBLIC CUDA::cudart CUDA::cusolver CUDA::cublas)
 #    endif()
@@ -533,6 +533,7 @@ endif()
 
 # superlu_dist uses c++11. PUBLIC means that the other codes linking to it need c++11
 #target_compile_features(SuperLU_DIST PUBLIC cxx_std_11)
+
 
 # Generate various configure files with proper definitions
 
