@@ -101,13 +101,14 @@ if(enable_complex16)
   set(F_ZEXM f_pzdrive.F90)
   add_executable(f_pzdrive ${F_ZEXM})
   target_link_libraries(f_pzdrive ${all_link_libs})
-#  set_target_properties(f_pzdrive PROPERTIES LINKER_LANGUAGE Fortran)
-  set_target_properties(f_pzdrive PROPERTIES LINKER_LANGUAGE CXX LINK_FLAGS "${MPI_Fortran_LINK_FLAGS}")
+  set_target_properties(f_pzdrive PROPERTIES LINKER_LANGUAGE Fortran)
+#  set_target_properties(f_pzdrive PROPERTIES LINKER_LANGUAGE CXX LINK_FLAGS "${MPI_Fortran_LINK_FLAGS}")
 
   set(F_ZEXM3D f_pzdrive3d.F90)
   add_executable(f_pzdrive3d ${F_ZEXM3D})
   target_link_libraries(f_pzdrive3d ${all_link_libs})
-  set_target_properties(f_pzdrive3d PROPERTIES LINKER_LANGUAGE CXX LINK_FLAGS "${MPI_Fortran_LINK_FLAGS}")
+  set_target_properties(f_pzdrive3d PROPERTIES LINKER_LANGUAGE Fortran)
+#  set_target_properties(f_pzdrive3d PROPERTIES LINKER_LANGUAGE CXX LINK_FLAGS "${MPI_Fortran_LINK_FLAGS}")
 endif() ## enable_complex16
 
 endif ()  ## enable_example
