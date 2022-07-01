@@ -3184,24 +3184,6 @@ double *dense, *dense_col; /* SPA */
 	checkGPU(gpuMalloc( (void**)&Llu->d_Lnzval_bc_offset, CEILING( nsupers, grid->npcol ) * sizeof(long int)));
 	checkGPU(gpuMemcpy(Llu->d_Lnzval_bc_offset, Llu->Lnzval_bc_offset, CEILING( nsupers, grid->npcol ) * sizeof(long int), gpuMemcpyHostToDevice));	
 	
-	checkGPU(gpuMalloc( (void**)&Llu->d_Unzval_br_offset, CEILING( nsupers, grid->nprow ) * sizeof(long int)));
-	checkGPU(gpuMemcpy(Llu->d_Unzval_br_offset, Llu->Unzval_br_offset, CEILING( nsupers, grid->nprow ) * sizeof(long int), gpuMemcpyHostToDevice));	
-	checkGPU(gpuMalloc( (void**)&Llu->d_Ufstnz_br_offset, CEILING( nsupers, grid->nprow ) * sizeof(long int)));
-	checkGPU(gpuMemcpy(Llu->d_Ufstnz_br_offset, Llu->Ufstnz_br_offset, CEILING( nsupers, grid->nprow ) * sizeof(long int), gpuMemcpyHostToDevice));		
-	checkGPU(gpuMalloc( (void**)&Llu->d_Ufstnz_br_dat, (Llu->Ufstnz_br_cnt) * sizeof(int_t)));
-	checkGPU(gpuMemcpy(Llu->d_Ufstnz_br_dat, Llu->Ufstnz_br_dat, (Llu->Ufstnz_br_cnt) * sizeof(int_t), gpuMemcpyHostToDevice));		
-	checkGPU(gpuMalloc( (void**)&Llu->d_Urbs, 2* CEILING( nsupers, grid->npcol ) * sizeof(int_t)));
-	checkGPU(gpuMemcpy(Llu->d_Urbs, Llu->Urbs, 2* CEILING( nsupers, grid->npcol ) * sizeof(int_t), gpuMemcpyHostToDevice));	
-	checkGPU(gpuMalloc( (void**)&Llu->d_Ucb_valdat, Llu->Ucb_valcnt * sizeof(int_t)));
-	checkGPU(gpuMemcpy(Llu->d_Ucb_valdat, Llu->Ucb_valdat, Llu->Ucb_valcnt * sizeof(int_t), gpuMemcpyHostToDevice));		
-	checkGPU(gpuMalloc( (void**)&Llu->d_Ucb_valoffset, CEILING( nsupers, grid->npcol ) * sizeof(long int)));
-	checkGPU(gpuMemcpy(Llu->d_Ucb_valoffset, Llu->Ucb_valoffset, CEILING( nsupers, grid->npcol ) * sizeof(long int), gpuMemcpyHostToDevice));		
-	checkGPU(gpuMalloc( (void**)&Llu->d_Ucb_inddat, Llu->Ucb_indcnt * sizeof(Ucb_indptr_t)));
-	checkGPU(gpuMemcpy(Llu->d_Ucb_inddat, Llu->Ucb_inddat, Llu->Ucb_indcnt * sizeof(Ucb_indptr_t), gpuMemcpyHostToDevice));
-	checkGPU(gpuMalloc( (void**)&Llu->d_Ucb_indoffset, CEILING( nsupers, grid->npcol ) * sizeof(long int)));
-	checkGPU(gpuMemcpy(Llu->d_Ucb_indoffset, Llu->Ucb_indoffset, CEILING( nsupers, grid->npcol ) * sizeof(long int), gpuMemcpyHostToDevice));		
-
-
 	// some dummy allocation to avoid checking whether they are null pointers later
 	checkGPU(gpuMalloc( (void**)&Llu->d_Ucolind_bc_dat, sizeof(int_t)));
 	checkGPU(gpuMalloc( (void**)&Llu->d_Ucolind_bc_offset, sizeof(int64_t)));
@@ -3221,7 +3203,6 @@ double *dense, *dense_col; /* SPA */
 
 	/* gpuMemcpy for the following is performed in pxgssvx */
 	checkGPU(gpuMalloc( (void**)&Llu->d_Lnzval_bc_dat, (Llu->Lnzval_bc_cnt) * sizeof(double)));
-	checkGPU(gpuMalloc( (void**)&Llu->d_Unzval_br_dat, (Llu->Unzval_br_cnt) * sizeof(double)));
 	checkGPU(gpuMalloc( (void**)&Llu->d_Linv_bc_dat, (Llu->Linv_bc_cnt) * sizeof(double)));
 	checkGPU(gpuMalloc( (void**)&Llu->d_Uinv_bc_dat, (Llu->Uinv_bc_cnt) * sizeof(double)));
 	

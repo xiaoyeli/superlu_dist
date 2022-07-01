@@ -603,17 +603,6 @@ dDestroy_LU(int_t n, gridinfo_t *grid, dLUstruct_t *LUstruct)
 	checkGPU (gpuFree (Llu->d_Lindval_loc_bc_dat));
 	checkGPU (gpuFree (Llu->d_Lindval_loc_bc_offset));
 
-	checkGPU (gpuFree (Llu->d_Urbs));
-	checkGPU (gpuFree (Llu->d_Unzval_br_dat));
-	checkGPU (gpuFree (Llu->d_Unzval_br_offset));
-	checkGPU (gpuFree (Llu->d_Ufstnz_br_dat));
-	checkGPU (gpuFree (Llu->d_Ufstnz_br_offset));
-	checkGPU (gpuFree (Llu->d_Ucb_valdat));
-	checkGPU (gpuFree (Llu->d_Ucb_valoffset));
-	checkGPU (gpuFree (Llu->d_Ucb_inddat));
-	checkGPU (gpuFree (Llu->d_Ucb_indoffset));    
-
-
     checkGPU (gpuFree (Llu->d_Ucolind_bc_dat));    
     checkGPU (gpuFree (Llu->d_Ucolind_bc_offset));    
     checkGPU (gpuFree (Llu->d_Unzval_bc_dat));    

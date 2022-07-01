@@ -252,17 +252,6 @@ typedef struct {
     int_t *d_Uindval_loc_bc_dat ;     
     int64_t *d_Uindval_loc_bc_offset ;     
 
-    int_t *d_Urbs;
-    int_t   *d_Ufstnz_br_dat;  
-    long int *d_Ufstnz_br_offset;  
-    double *d_Unzval_br_dat;   
-    long int *d_Unzval_br_offset; 
-
-    int_t  *d_Ucb_valdat;      
-    long int *d_Ucb_valoffset;    
-    Ucb_indptr_t *d_Ucb_inddat;
-    long int *d_Ucb_indoffset;
-
     int_t  *d_ilsum ;
     int_t *d_xsup ;
     C_Tree  *d_LBtree_ptr ;
@@ -594,12 +583,7 @@ extern void dComputeLevelsets(int , int_t , gridinfo_t *,
 #ifdef GPU_ACC    
 extern void pdconvertU(superlu_dist_options_t *, gridinfo_t *, dLUstruct_t *, SuperLUStat_t *, int_t);
 extern void dlsum_fmod_inv_gpu_wrap(int_t, int_t, int_t, int_t, double *, double *, int, int, int_t , int *fmod, C_Tree  *, C_Tree  *, int_t *, int_t *, int64_t *, double *, int64_t *, double *, int64_t *, int_t *, int64_t *, int_t *, gridinfo_t *, double * , double * , int_t );
-#if defined(NEW_GPU_U_SOLVE)
 extern void dlsum_bmod_inv_gpu_wrap(superlu_dist_options_t *, int_t, int_t, int_t, int_t, double *, double *,int,int, int_t , int *bmod, C_Tree  *, C_Tree  *, int_t *, int_t *, int64_t *, double *, int64_t *, double  *, int64_t *, int_t *, int64_t *, int_t *,gridinfo_t *);
-#else 
-extern void dlsum_bmod_inv_gpu_wrap(superlu_dist_options_t *,
-				      int_t, int_t, int_t, int_t, double *, double *,int,int, int_t , int *bmod, C_Tree  *, C_Tree  *, int_t *, int_t *,int_t *, int64_t *, double *, int64_t *, int_t  *, int64_t *, Ucb_indptr_t *, int64_t *, double *, int64_t *,int_t *,gridinfo_t *);
-#endif
 #endif
 
 extern void pdgsrfs(superlu_dist_options_t *, int_t,
