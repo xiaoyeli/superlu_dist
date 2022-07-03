@@ -188,8 +188,9 @@ superlu_sort_perm (const void *arg1, const void *arg2)
  *         how the LU decomposition will be performed.
  *         The following field should be defined:
  *         o ReplaceTinyPivot (yes_no_t)
- *           Specifies whether to replace the tiny diagonals by
- *           sqrt(epsilon)*norm(A) during LU factorization.
+ *           = NO:  do not modify pivots
+ *           = YES: replace tiny pivots by sqrt(epsilon)*norm(A) during
+ *                  LU factorization.
  *
  * m      (input) int
  *        Number of rows in the matrix.

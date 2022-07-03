@@ -59,6 +59,10 @@ at the top-level directory.
 	    = 9: number of GPU streams
 	    = 10: whether to offload work to GPU or not
 
+   options (input) superlu_dist_options_t*
+           The structure defines the input parameters to control
+           how the LU decomposition the solves are performed.
+   
    (SP_IENV_DIST) (output) int
             >= 0: the value of the parameter specified by ISPEC   
             < 0:  if SP_IENV_DIST = -k, the k-th argument had an illegal value.
