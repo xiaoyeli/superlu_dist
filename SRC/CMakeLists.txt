@@ -185,7 +185,7 @@ if (TPL_ENABLE_CUDALIB)
   list(APPEND sources ssuperlu_gpu.cu)
 endif()
 if (HAVE_COMBBLAS)
-  list(APPEND sources s_c2cpp_GetHWPM.cpp sHWPM_CombBLAS.hpp)
+  list(APPEND sources s_c2cpp_GetHWPM.cpp dHWPM_CombBLAS.hpp)
 endif()
 
 endif() ########## enable single

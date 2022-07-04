@@ -20,8 +20,9 @@ at the top-level directory.
  * </pre>
  */
 #include <math.h>
-#include "dHWPM_CombBLAS.hpp"
+#include "superlu_sdefs.h"
 #include "superlu_ddefs.h"
+#include "dHWPM_CombBLAS.hpp"
 
 /*! \brief
  *
@@ -39,20 +40,37 @@ at the top-level directory.
  *
  * A      (input) SuperMatrix*
  *        The distributed input matrix A of dimension (A->nrow, A->ncol).
- *        The type of A can be: Stype = SLU_NR_loc; Dtype = SLU_D; Mtype = SLU_GE.
+ *        The type of A can be: Stype = SLU_NR_loc; Dtype = SLU_S; Mtype = SLU_GE.
  *
  * grid   (input) gridinfo_t*
  *        SuperLU's 2D process mesh.
  *
- * ScalePermstruct (output) dScalePermstruct_t*
+ * ScalePermstruct (output) sScalePermstruct_t*
  *        ScalePermstruct->perm_r stores the permutation obtained from HWPM.
  *
  * </pre>
  */
 int
-d_c2cpp_GetHWPM(SuperMatrix *A, gridinfo_t *grid,
-		dScalePermstruct_t *ScalePermstruct)
+s_c2cpp_GetHWPM(SuperMatrix *A, gridinfo_t *grid, sScalePermstruct_t *ScalePermstruct)
 {
-    dGetHWPM(A, grid, ScalePermstruct);
+    /* copy to double, then use double-prec version */
+    NRformat_loc *Astore = (NRformat_loc *) A->Store;
+    int nnz_loc = Astore->nnz_loc;
+    float *f_nzval = (float *) Astore->nzval;
+    double *d_nzval = (double *) doubleMalloc_dist(nnz_loc);
+    for (int i = 0; i < nnz_loc; ++i) d_nzval[i] = f_nzval[i];
+
+    /* This up-casting is okay, since R[] and C[] are not referenced in dGetHWPM */
+    dScalePermstruct_t *d_ScalePermstruct = (dScalePermstruct_t*) ScalePermstruct;
+
+    SuperMatrix dA;
+    dCreate_CompRowLoc_Matrix_dist(&dA, A->m, A-> n, nnz_loc,
+				   Astore-> m_loc, Astore->fst_row,
+				   d_nzval, Astore->colind, Astore->rowptr,
+				   SLU_NR_loc, SLU_D, SLU_GE);
+ 
+    dGetHWPM(&dA, grid, d_ScalePermstruct);
+
+    SUPERLU_FREE(d_nzval);
     return 0;
 }

@@ -39,7 +39,7 @@ at the top-level directory.
  * =========
  *
  * A      (input) SuperMatrix*
- *      The distributed input matrix A of dimension (A->nrow, A->ncol).
+ *        The distributed input matrix A of dimension (A->nrow, A->ncol).
  *        A may be overwritten by diag(R)*A*diag(C)*Pc^T.
  *        The type of A can be: Stype = SLU_NR_loc; Dtype = SLU_D; Mtype = SLU_GE.
  *
@@ -50,10 +50,8 @@ at the top-level directory.
  * grid   (input) gridinfo_t*
  *        SuperLU's 2D process mesh.
  *
- *
- * Return value
- * ============
- * ScalePermstruct->perm_r stores the permutation obtained from HWPM algorithm.
+ * ScalePermstruct (output) dScalePermstruct_t*
+ *        ScalePermstruct->perm_r stores the permutation obtained from HWPM.
  *
  * </pre>
  */

@@ -1868,19 +1868,9 @@ t1 = SuperLU_timer_();
 	}
 	SUPERLU_FREE(Btmp); 
 
-
-
-
-
-
 #endif	
 	  
 #else
-
-
-
-
-
 
 // #if HAVE_CUDA
 // cudaProfilerStart(); 
