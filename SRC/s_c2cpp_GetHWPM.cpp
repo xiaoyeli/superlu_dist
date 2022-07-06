@@ -13,16 +13,16 @@ at the top-level directory.
  * \brief Get heavy-weight perfect matching (HWPM).
  *
  * <pre>
- * -- Distributed SuperLU routine (version 5.4) --
+ * -- Distributed SuperLU routine (version 8.1.0) --
  * Lawrence Berkeley National Lab, Univ. of California Berkeley.
- * April 1, 2018
- * Modified: April 2, 2020
+ * July 5, 2022
+ * Modified: 
  * </pre>
  */
 #include <math.h>
 #include "superlu_sdefs.h"
 #include "superlu_ddefs.h"
-//#include "dHWPM_CombBLAS.hpp"
+//#include "dHWPM_CombBLAS.hpp"   -- multiple definition
 
 /*! \brief
  *
