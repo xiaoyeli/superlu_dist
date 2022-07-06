@@ -54,7 +54,7 @@ DEXM2	= pddrive2.o dcreate_matrix.o dcreate_matrix_perturbed.o
 DEXM3	= pddrive3.o dcreate_matrix.o
 DEXM4	= pddrive4.o dcreate_matrix.o
 
-DEXM3D	= pddrive3d.o dcreate_matrix.o dcreate_matrix3d.o 
+DEXM3D	= pddrive3d.o dcreate_matrix.o dcreate_matrix3d.o symbfact.o sp_ienv.o
 DEXM3D1	= pddrive3d1.o dcreate_matrix.o dcreate_matrix3d.o 
 DEXM3D2	= pddrive3d2.o dcreate_matrix.o dcreate_matrix3d.o
 DEXM3D3	= pddrive3d3.o dcreate_matrix.o dcreate_matrix3d.o

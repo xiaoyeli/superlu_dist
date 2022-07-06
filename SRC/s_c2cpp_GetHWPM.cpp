@@ -22,7 +22,7 @@ at the top-level directory.
 #include <math.h>
 #include "superlu_sdefs.h"
 #include "superlu_ddefs.h"
-#include "dHWPM_CombBLAS.hpp"
+//#include "dHWPM_CombBLAS.hpp"
 
 /*! \brief
  *
@@ -53,6 +53,8 @@ at the top-level directory.
 int
 s_c2cpp_GetHWPM(SuperMatrix *A, gridinfo_t *grid, sScalePermstruct_t *ScalePermstruct)
 {
+    extern void dGetHWPM(SuperMatrix *, gridinfo_t *, dScalePermstruct_t *);
+
     /* copy to double, then use double-prec version */
     NRformat_loc *Astore = (NRformat_loc *) A->Store;
     int nnz_loc = Astore->nnz_loc;
@@ -64,7 +66,7 @@ s_c2cpp_GetHWPM(SuperMatrix *A, gridinfo_t *grid, sScalePermstruct_t *ScalePerms
     dScalePermstruct_t *d_ScalePermstruct = (dScalePermstruct_t*) ScalePermstruct;
 
     SuperMatrix dA;
-    dCreate_CompRowLoc_Matrix_dist(&dA, A->m, A-> n, nnz_loc,
+    dCreate_CompRowLoc_Matrix_dist(&dA, A->nrow, A->ncol, nnz_loc,
 				   Astore-> m_loc, Astore->fst_row,
 				   d_nzval, Astore->colind, Astore->rowptr,
 				   SLU_NR_loc, SLU_D, SLU_GE);

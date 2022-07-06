@@ -19,8 +19,9 @@ at the top-level directory.
  * </pre>
  */
 
-#ifndef dHWPM_CombBLAS_h
-#define dHWPM_CombBLAS_h
+#pragma once
+#ifndef dHWPM_CombBLAS_hpp
+#define dHWPM_CombBLAS_hpp
 
 #include "CombBLAS/CombBLAS.h"
 #include "ApproxWeightPerfectMatching.h"
@@ -143,4 +144,4 @@ dGetHWPM(SuperMatrix *A, gridinfo_t *grid, dScalePermstruct_t *ScalePermstruct)
 #endif
 }
 
-#endif /* dHWPM_CombBLAS_h */
+#endif /* dHWPM_CombBLAS_hpp */
