@@ -1427,7 +1427,8 @@ void dlsum_bmod_inv
 		remainder = nub % Nchunk;
 		// printf("Unnz: %5d nub: %5d knsupc: %5d\n",Llu->Unnz[lk],nub,knsupc);
 #ifdef _OPENMP
-#pragma	omp	taskloop firstprivate (stat) private (thread_id1,Uinv,nn,lbstart,lbend,ub,temp,rtemp_loc,ik,lk1,gik,gikcol,usub,uval,lsub,lusup,iknsupc,il,i,irow,bmod_tmp,p,ii,jj,t1,t2,j,ikfrow,iklrow,dest,y,uptr,fnz,nsupr) untied nogroup
+// #pragma	omp	taskloop firstprivate (stat) private (thread_id1,Uinv,nn,lbstart,lbend,ub,temp,rtemp_loc,ik,lk1,gik,gikcol,usub,uval,lsub,lusup,iknsupc,il,i,irow,bmod_tmp,p,ii,jj,t1,t2,j,ikfrow,iklrow,dest,y,uptr,fnz,nsupr) untied nogroup
+#pragma	omp	parallel for private (thread_id1,Uinv,nn,lbstart,lbend,ub,temp,rtemp_loc,ik,lk1,gik,gikcol,usub,uval,lsub,lusup,iknsupc,il,i,irow,bmod_tmp,p,ii,jj,t1,t2,j,ikfrow,iklrow,dest,y,uptr,fnz,nsupr)
 #endif
 		for (nn=0;nn<Nchunk;++nn){
 
@@ -1545,6 +1546,7 @@ void dlsum_bmod_inv
 
 							if(Llu->inv == 1){
 								Uinv = Llu->Uinv_bc_ptr[lk1];
+		#if 0
 		#ifdef _CRAY
 								SGEMM( ftcs2, ftcs2, &iknsupc, &nrhs, &iknsupc,
 										&alpha, Uinv, &iknsupc, &x[ii],
@@ -1558,6 +1560,10 @@ void dlsum_bmod_inv
 										&alpha, Uinv, &iknsupc, &x[ii],
 										&iknsupc, &beta, rtemp_loc, &iknsupc );
 		#endif
+		#else
+		superlu_dgemm("N", "N", iknsupc, nrhs, iknsupc, alpha, Uinv, iknsupc, &x[ii],
+		 iknsupc, beta, rtemp_loc, iknsupc);
+		#endif
 								#ifdef _OPENMP
 								#pragma omp simd
 								#endif
@@ -1565,6 +1571,7 @@ void dlsum_bmod_inv
 									x[ii+i] = rtemp_loc[i];
 								}
 							}else{
+		#if 0
 		#ifdef _CRAY
 								STRSM(ftcs1, ftcs3, ftcs2, ftcs2, &iknsupc, &nrhs, &alpha,
 										lusup, &nsupr, &x[ii], &iknsupc);
@@ -1575,6 +1582,9 @@ void dlsum_bmod_inv
 								dtrsm_("L", "U", "N", "N", &iknsupc, &nrhs, &alpha,
 										lusup, &nsupr, &x[ii], &iknsupc);
 		#endif
+		#else 
+		superlu_dtrsm("L", "U", "N", "N", iknsupc, nrhs, alpha, lusup, nsupr, &x[ii], iknsupc);
+		#endif 
 							}
 
 		#if ( PROFlevel>=1 )
