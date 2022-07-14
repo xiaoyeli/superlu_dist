@@ -62,8 +62,13 @@ at the top-level directory.
  * Arguments
  * =========
  *
+ * options (input) superlu_dist_options_t*
+ *         The structure defines the input parameters to control
+ *         how the LU decomposition and triangular solve are performed.
+ *
  * n      (Input) int_t
  *        Order of the input matrix
+ *
  * Pslu_freeable  (Input) Pslu_freeable_t *
  *        Local L and U structure,
  *        global to local indexing information.
@@ -97,7 +102,6 @@ at the top-level directory.
  *        (an approximation).
  * </pre>
  */
-
 static float
 dist_symbLU (superlu_dist_options_t *options, int_t n,
              Pslu_freeable_t *Pslu_freeable, Glu_persist_t *Glu_persist,
@@ -1146,13 +1150,16 @@ sdist_A(SuperMatrix *A, sScalePermstruct_t *ScalePermstruct,
  * Arguments
  * =========
  *
- * fact (input) fact_t
- *        Specifies whether or not the L and U structures will be re-used.
- *        = SamePattern_SameRowPerm: L and U structures are input, and
- *                                   unchanged on exit.
- *          This routine should not be called for this case, an error
- *          is generated.  Instead, pddistribute routine should be called.
- *        = DOFACT or SamePattern: L and U structures are computed and output.
+ * options (input) superlu_dist_options_t*
+ *         The structure defines the input parameters to control
+ *         how the LU decomposition and triangular solve are performed.
+ *         options->Fact specifies whether or not the L and U structures
+ *         will be re-used:
+ *           = SamePattern_SameRowPerm: L and U structures are input, and
+ *                                      unchanged on exit.
+ *             This routine should not be called for this case, an error
+ *             is generated.  Instead, pddistribute routine should be called.
+ *           = DOFACT or SamePattern: L and U structures are computed and output.
  *
  * n      (Input) int
  *        Dimension of the matrix.
@@ -1183,7 +1190,6 @@ sdist_A(SuperMatrix *A, sScalePermstruct_t *ScalePermstruct,
  *        (an approximation).
  * </pre>
  */
-
 float
 sdist_psymbtonum(superlu_dist_options_t *options, int_t n, SuperMatrix *A,
 		sScalePermstruct_t *ScalePermstruct,

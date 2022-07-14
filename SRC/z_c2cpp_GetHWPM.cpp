@@ -45,8 +45,8 @@ at the top-level directory.
  *        Permutation vector describing the transformation performed to
  *        the original matrix A.
  *
- * grid   (input) gridinfo_t*
- *        SuperLU's 2D process mesh.
+ * ScalePermstruct (output) zScalePermstruct_t*
+ *        ScalePermstruct->perm_r stores the permutation obtained from HWPM.
  *
  *
  * Return value

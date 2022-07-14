@@ -18,8 +18,9 @@ at the top-level directory.
  * -- Distributed SuperLU routine (version 6.1) --
  * Lawrence Berkeley National Lab, Univ. of California Berkeley.
  * October 15, 2008
- * September 18, 2018  version 6.0
- * February 8, 2019  version 6.1.1
+ * September 18, 2018 version 6.0
+ * February 8, 2019   version 6.1.1
+ * July 5, 2022       version 8.1.0  improved GPU U-solve
  * </pre>
  */
 #include <math.h>				 
@@ -974,6 +975,10 @@ pdCompute_Diag_Inv(int_t n, dLUstruct_t *LUstruct,gridinfo_t *grid,
  * Arguments
  * =========
  *
+ * options (input) superlu_dist_options_t*
+ *         The structure defines the input parameters to control
+ *         how the LU decomposition and triangular solve are performed.
+ *
  * n      (input) int (global)
  *        The order of the system of linear equations.
  *
@@ -1864,19 +1869,9 @@ t1 = SuperLU_timer_();
 	}
 	SUPERLU_FREE(Btmp); 
 
-
-
-
-
-
 #endif	
 	  
 #else
-
-
-
-
-
 
 // #if HAVE_CUDA
 // cudaProfilerStart(); 
