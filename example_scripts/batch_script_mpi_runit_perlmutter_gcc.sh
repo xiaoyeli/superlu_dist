@@ -1,8 +1,23 @@
+#!/bin/bash
+#
+# Run SuperLU_dist examples built with GNU compiler on NERSC Perlmutter
+#
+# Last update: July 22, 2022
+# Perlmutter is not in production and the software environment changes rapidly.
+# Expect this file to be frequently updated
 
-module swap PrgEnv-nvidia PrgEnv-gnu
-module load gcc #/10.3.0
+module load PrgEnv-gnu
+module load gcc/11.2.0
 module load cmake/3.22.0
-module load cudatoolkit
+module load cudatoolkit/11.7
+# avoid bug in cray-libsci/21.08.1.2
+module load cray-libsci/22.06.1.3
+# avoid bug in cudatoolkit
+export LD_LIBRARY_PATH=${LD_LIBRARY_PATH//\/usr\/local\/cuda-11.5\/compat:/}
+export LD_LIBRARY_PATH=${LD_LIBRARY_PATH//\/usr\/local\/cuda-11.7\/compat:/}
+# please make sure the above module load and export LD_LIBRARY_PATH commands match your build script
+
+
 
 export MAX_BUFFER_SIZE=50000000
 export OMP_NUM_THREADS=1
