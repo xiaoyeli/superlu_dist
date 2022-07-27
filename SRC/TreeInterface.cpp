@@ -229,8 +229,8 @@ uint8_t crc_8( const unsigned char *input_str, size_t num_bytes ) {
 		if(precision=='z'){
             //localBuffer[LSUM_H*2-2] = crc_16((unsigned char*)&localBuffer[LSUM_H*2],sizeof(double)*2*(msgSize-LSUM_H));
 		    TreeReduce_slu<doublecomplex>* ReduceTree = (TreeReduce_slu<doublecomplex>*) Tree;
-            localBuffer[LSUM_H*2-2] = crc_16((unsigned char*)&localBuffer[LSUM_H*2],sizeof(double)*2*(msgSize-LSUM_H));
             //localBuffer[LSUM_H*2-2] = crc_16((unsigned char*)&localBuffer[LSUM_H*2],sizeof(double)*2*(msgSize-LSUM_H));
+            localBuffer[LSUM_H*2-2] = crc_16((unsigned char*)&localBuffer[LSUM_H*2],sizeof(double)*2*(msgSize-LSUM_H));
 		    ReduceTree->forwardMessageOneSideU((doublecomplex*)localBuffer,msgSize, iam_row, RDcount, RDbase, maxrecvsz, Pc);
 		}
 	}
