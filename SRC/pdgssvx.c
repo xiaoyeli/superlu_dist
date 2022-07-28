@@ -1426,8 +1426,6 @@ pdgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 	        (LUstruct->Llu->Uinv_bc_cnt) * sizeof(double), gpuMemcpyHostToDevice));
             checkGPU(gpuMemcpy(LUstruct->Llu->d_Lnzval_bc_dat, LUstruct->Llu->Lnzval_bc_dat,
 	        (LUstruct->Llu->Lnzval_bc_cnt) * sizeof(double), gpuMemcpyHostToDevice));
-            checkGPU(gpuMemcpy(LUstruct->Llu->d_Unzval_br_dat, LUstruct->Llu->Unzval_br_dat,
-	        (LUstruct->Llu->Unzval_br_cnt) * sizeof(double), gpuMemcpyHostToDevice));
 #endif
 	}
 
@@ -1653,7 +1651,7 @@ if ( !(Llu->Uindval_loc_bc_ptr =
 Llu->Uindval_loc_bc_ptr[nsupers_j-1] = NULL;
 
 if ( !(Llu->Uindval_loc_bc_offset =
-				(long int*)SUPERLU_MALLOC(nsupers_j * sizeof(long int))) ) {
+				(int64_t*)SUPERLU_MALLOC(nsupers_j * sizeof(int64_t))) ) {
 		fprintf(stderr, "Malloc fails for Llu->Uindval_loc_bc_offset[].");
 }
 Llu->Uindval_loc_bc_offset[nsupers_j-1] = -1;

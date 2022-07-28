@@ -229,17 +229,6 @@ typedef struct {
     int_t *d_Lindval_loc_bc_dat ;     
     long int *d_Lindval_loc_bc_offset ;     
 
-    int_t *d_Urbs;
-    int_t   *d_Ufstnz_br_dat;  
-    long int *d_Ufstnz_br_offset;  
-    doublecomplex *d_Unzval_br_dat;   
-    long int *d_Unzval_br_offset; 
-
-    int_t  *d_Ucb_valdat;      
-    long int *d_Ucb_valoffset;    
-    Ucb_indptr_t *d_Ucb_inddat;
-    long int *d_Ucb_indoffset;
-
     int_t  *d_ilsum ;
     int_t *d_xsup ;
     C_Tree  *d_LBtree_ptr ;

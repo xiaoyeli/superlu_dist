@@ -185,7 +185,11 @@ if (TPL_ENABLE_CUDALIB)
   list(APPEND sources ssuperlu_gpu.cu)
 endif()
 if (HAVE_COMBBLAS)
-  list(APPEND sources s_c2cpp_GetHWPM.cpp sHWPM_CombBLAS.hpp)
+   if (enable_double)
+       list(APPEND sources s_c2cpp_GetHWPM.cpp)
+   else()
+       list(APPEND sources s_c2cpp_GetHWPM.cpp dHWPM_CombBLAS.hpp)
+   endif()
 endif()
 
 endif() ########## enable single
@@ -325,6 +329,15 @@ endif()
 # https://cliutils.gitlab.io/modern-cmake/chapters/packages/OpenMP.html
 if(OpenMP_FOUND) # this is found in top-level CMakeLists.txt
   target_link_libraries(superlu_dist OpenMP::OpenMP_C)
+endif()
+
+if (XSDK_ENABLE_Fortran)
+## target_link_libraries(superlu_dist PUBLIC MPI::MPI_CXX MPI::MPI_C MPI::MPI_Fortran)
+## PUBLIC keyword causes error:
+##   The plain signature for target_link_libraries has already been used ...
+  target_link_libraries(superlu_dist MPI::MPI_CXX MPI::MPI_C MPI::MPI_Fortran)
+else()
+  target_link_libraries(superlu_dist MPI::MPI_CXX MPI::MPI_C)
 endif()
 
 target_compile_definitions(superlu_dist PRIVATE SUPERLU_DIST_EXPORTS)

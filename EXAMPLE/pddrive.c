@@ -240,10 +240,9 @@ int main(int argc, char *argv[])
 	options.DiagInv           = NO;
      */
     set_default_options_dist(&options);
-    // options.IterRefine = NOREFINE;
+#if 0
 	options.DiagInv = YES;
     options.ReplaceTinyPivot  = YES;
-#if 0
     options.RowPerm = LargeDiag_HWPM;
     options.IterRefine = NOREFINE;
     options.ColPerm = NATURAL;

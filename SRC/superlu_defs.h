@@ -28,6 +28,7 @@ at the top-level directory.
  *     October 18, 2021    version 7.1.1
  *     December 12, 2021   version 7.2.0
  *     May 22, 2022        version 8.0.0
+ *     July 5, 2022        version 8.1.0
  * </pre>
  */
 
@@ -80,7 +81,7 @@ at the top-level directory.
  * Versions 4.x and earlier do not include a #define'd version numbers.
  */
 #define SUPERLU_DIST_MAJOR_VERSION     8
-#define SUPERLU_DIST_MINOR_VERSION     0
+#define SUPERLU_DIST_MINOR_VERSION     1
 #define SUPERLU_DIST_PATCH_VERSION     0
 #define SUPERLU_DIST_RELEASE_DATE      "May 22, 2022"
 
@@ -195,7 +196,6 @@ typedef MPI_C_DOUBLE_COMPLEX  SuperLU_MPI_DOUBLE_COMPLEX;
 #define BC_HEADER_NEWU      3
 #define UB_DESCRIPTOR_NEWU  2
 #define NBUFFERS       5
-#define NEW_GPU_U_SOLVE
 
 /*
  * Communication tags

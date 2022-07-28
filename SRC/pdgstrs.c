@@ -18,8 +18,9 @@ at the top-level directory.
  * -- Distributed SuperLU routine (version 6.1) --
  * Lawrence Berkeley National Lab, Univ. of California Berkeley.
  * October 15, 2008
- * September 18, 2018  version 6.0
- * February 8, 2019  version 6.1.1
+ * September 18, 2018 version 6.0
+ * February 8, 2019   version 6.1.1
+ * July 5, 2022       version 8.1.0  improved GPU U-solve
  * </pre>
  */
 #include <math.h>				 
@@ -974,6 +975,10 @@ pdCompute_Diag_Inv(int_t n, dLUstruct_t *LUstruct,gridinfo_t *grid,
  * Arguments
  * =========
  *
+ * options (input) superlu_dist_options_t*
+ *         The structure defines the input parameters to control
+ *         how the LU decomposition and triangular solve are performed.
+ *
  * n      (input) int (global)
  *        The order of the system of linear equations.
  *
@@ -1864,19 +1869,9 @@ t1 = SuperLU_timer_();
 	}
 	SUPERLU_FREE(Btmp); 
 
-
-
-
-
-
 #endif	
 	  
 #else
-
-
-
-
-
 
 // #if HAVE_CUDA
 // cudaProfilerStart(); 
@@ -2653,12 +2648,8 @@ thread_id=0;
 	knsupc = sp_ienv_dist(3, options);
  
     
-#if defined(NEW_GPU_U_SOLVE)
-	dlsum_bmod_inv_gpu_wrap(options, k,nlb,DIM_X,DIM_Y,d_lsum,d_x,nrhs,knsupc,nsupers,d_bmod,Llu->d_UBtree_ptr,Llu->d_URtree_ptr,Llu->d_ilsum,Llu->d_Ucolind_bc_dat,Llu->d_Ucolind_bc_offset,Llu->d_Unzval_bc_dat,Llu->d_Unzval_bc_offset,Llu->d_Uinv_bc_dat,Llu->d_Uinv_bc_offset,Llu->d_Uindval_loc_bc_dat,Llu->d_Uindval_loc_bc_offset,Llu->d_xsup,d_grid);
-#else 
-	dlsum_bmod_inv_gpu_wrap(options, k,nlb,DIM_X,DIM_Y,d_lsum,d_x,nrhs,knsupc,nsupers,d_bmod,Llu->d_UBtree_ptr,Llu->d_URtree_ptr,Llu->d_ilsum,Llu->d_Urbs,Llu->d_Ufstnz_br_dat,Llu->d_Ufstnz_br_offset,Llu->d_Unzval_br_dat,Llu->d_Unzval_br_offset,Llu->d_Ucb_valdat,Llu->d_Ucb_valoffset,Llu->d_Ucb_inddat,Llu->d_Ucb_indoffset,Llu->d_Uinv_bc_dat,Llu->d_Uinv_bc_offset,Llu->d_xsup,d_grid);
-#endif
 
+	dlsum_bmod_inv_gpu_wrap(options, k,nlb,DIM_X,DIM_Y,d_lsum,d_x,nrhs,knsupc,nsupers,d_bmod,Llu->d_UBtree_ptr,Llu->d_URtree_ptr,Llu->d_ilsum,Llu->d_Ucolind_bc_dat,Llu->d_Ucolind_bc_offset,Llu->d_Unzval_bc_dat,Llu->d_Unzval_bc_offset,Llu->d_Uinv_bc_dat,Llu->d_Uinv_bc_offset,Llu->d_Uindval_loc_bc_dat,Llu->d_Uindval_loc_bc_offset,Llu->d_xsup,d_grid);
 	checkGPU(gpuMemcpy(x, d_x, (ldalsum * nrhs + nlb * XK_H) * sizeof(double), gpuMemcpyDeviceToHost));
 
 	checkGPU (gpuFree (d_grid));
