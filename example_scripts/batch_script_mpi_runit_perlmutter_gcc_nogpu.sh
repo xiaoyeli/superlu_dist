@@ -1,8 +1,15 @@
 
-module swap PrgEnv-nvidia PrgEnv-gnu
-module load gcc #/10.3.0
+module load PrgEnv-gnu
+module load gcc/11.2.0
 module load cmake/3.22.0
-module load cudatoolkit
+module load cudatoolkit/11.7
+# avoid bug in cray-libsci/21.08.1.2
+module load cray-libsci/22.06.1.3
+# avoid bug in cudatoolkit
+export LD_LIBRARY_PATH=${LD_LIBRARY_PATH//\/usr\/local\/cuda-11.5\/compat:/}
+export LD_LIBRARY_PATH=${LD_LIBRARY_PATH//\/usr\/local\/cuda-11.7\/compat:/}
+# please make sure the above module load and export LD_LIBRARY_PATH commands match your build script
+
 
 
 if [[ $NERSC_HOST == edison ]]; then
@@ -22,8 +29,8 @@ fi
 
 # nprows=(1 2 4 8 8)
 # npcols=(1 2 4 8 16)
-nprows=(8)
-npcols=(8)
+nprows=(4)
+npcols=(4)
 NTH=1
 NODE_VAL_TOT=1
 
