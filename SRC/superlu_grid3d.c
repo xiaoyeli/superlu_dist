@@ -148,6 +148,8 @@ void superlu_gridmap3d(
         // get the coordinate of the processor
 
         MPI_Comm_rank (superlu3d_comm, &iam);
+        MPI_Comm_free(&grid->comm);
+        MPI_Comm_dup(superlu3d_comm, &grid->comm);
         grid->iam = iam;
         MPI_Cart_coords(superlu3d_comm, iam, ndim, coords3d);
 
@@ -191,6 +193,10 @@ void superlu_gridmap3d(
 
         MPI_Comm_rank (superlu3d_comm, &iam);
         grid->iam = iam;
+
+        MPI_Comm_free(&grid->comm);
+        MPI_Comm_dup(superlu3d_comm, &grid->comm);
+        // grid->comm = superlu3d_comm;
         MPI_Cart_coords(superlu3d_comm, iam, ndim, coords3d);
 
 	/* printf("(%d) My coordinats are (%d %d %d)\n",
