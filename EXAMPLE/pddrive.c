@@ -23,6 +23,7 @@ at the top-level directory.
 
 #include <math.h>
 #include "superlu_ddefs.h"
+#define MultiGrids
 
 /*! \brief
  *
@@ -65,6 +66,15 @@ int main(int argc, char *argv[])
     FILE *fp, *fopen();
     int cpp_defs();
     int ii, omp_mpi_level;
+    int ldumap, p;
+    int*    usermap;
+	float result_min[2];
+	result_min[0]=1e10;
+	result_min[1]=1e10;
+	float result_max[2];
+	result_max[0]=0.0;
+	result_max[1]=0.0;
+    MPI_Comm SubComm;
 
     nprow = 1;  /* Default process rows.      */
     npcol = 1;  /* Default process columns.   */
@@ -122,10 +132,31 @@ int main(int argc, char *argv[])
 	}
     }
 
+
+#if defined MultiGrids
+    /* ------------------------------------------------------------
+       INITIALIZE THE SUPERLU PROCESS GRID. 
+       ------------------------------------------------------------*/
+    int myrank;
+    MPI_Comm_rank(MPI_COMM_WORLD, &myrank);
+    usermap = intMalloc_dist(nprow*npcol);
+    ldumap = nprow;
+    int color = myrank/(nprow*npcol); /* Assuming each grid uses the same number of nprow and npcol */
+    MPI_Comm_split(MPI_COMM_WORLD, color, myrank, &SubComm);
+    p = 0;    
+    for (int i = 0; i < nprow; ++i)
+	for (int j = 0; j < npcol; ++j) usermap[i+j*ldumap] = p++;
+    superlu_gridmap(SubComm, nprow, npcol, usermap, ldumap, &grid);
+    SUPERLU_FREE(usermap);
+    // printf("grid.iam %5d, myrank %5d\n",grid.iam,myrank);
+    // fflush(stdout);
+#else 
     /* ------------------------------------------------------------
        INITIALIZE THE SUPERLU PROCESS GRID. 
        ------------------------------------------------------------*/
     superlu_gridinit(MPI_COMM_WORLD, nprow, npcol, &grid);
+#endif
+
 	
     if(grid.iam==0){
 	MPI_Query_thread(&omp_mpi_level);
@@ -151,7 +182,7 @@ int main(int argc, char *argv[])
 	
     /* Bail out if I do not belong in the grid. */
     iam = grid.iam;
-    if ( (iam >= nprow * npcol) || (iam == -1) ) goto out;
+    if ( (iam >= nprow * npcol) || (iam == -1) ) goto out; 
     if ( !iam ) {
 	int v_major, v_minor, v_bugfix;
 #ifdef __INTEL_COMPILER
@@ -209,7 +240,7 @@ int main(int argc, char *argv[])
 	options.DiagInv           = NO;
      */
     set_default_options_dist(&options);
-    options.IterRefine = NOREFINE;
+    // options.IterRefine = NOREFINE;
 	options.DiagInv = YES;
     options.ReplaceTinyPivot  = YES;
 #if 0
@@ -256,6 +287,10 @@ int main(int argc, char *argv[])
     }
 
     PStatPrint(&options, &stat, &grid);        /* Print the statistics. */
+    result_min[0] = stat.utime[FACT];   
+    result_min[1] = stat.utime[SOLVE];  
+    result_max[0] = stat.utime[FACT];   
+    result_max[1] = stat.utime[SOLVE];    
 
     /* ------------------------------------------------------------
        DEALLOCATE STORAGE.
@@ -276,6 +311,19 @@ int main(int argc, char *argv[])
        RELEASE THE SUPERLU PROCESS GRID.
        ------------------------------------------------------------*/
 out:
+#if defined MultiGrids
+    fflush(stdout);
+    MPI_Allreduce(MPI_IN_PLACE, result_min, 2, MPI_FLOAT,MPI_MIN, MPI_COMM_WORLD);
+    MPI_Allreduce(MPI_IN_PLACE, result_max, 2, MPI_FLOAT,MPI_MAX, MPI_COMM_WORLD);
+    if (!myrank) {
+        printf("returning data:\n");
+        printf("    Factor time over all grids.  Min: %8.4f Max: %8.4f\n",result_min[0], result_max[0]);
+        printf("    Solve time over all grids.  Min: %8.4f Max: %8.4f\n",result_min[1], result_max[1]);
+        printf("**************************************************\n");
+        fflush(stdout);
+    }	    
+#endif
+   
     superlu_gridexit(&grid);
 
     /* ------------------------------------------------------------
