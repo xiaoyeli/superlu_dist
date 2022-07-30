@@ -23,7 +23,7 @@ at the top-level directory.
 
 #include <math.h>
 #include "superlu_ddefs.h"
-#define MultiGrids
+#undef MultiGrids
 
 /*! \brief
  *
@@ -240,6 +240,8 @@ int main(int argc, char *argv[])
 	options.DiagInv           = NO;
      */
     set_default_options_dist(&options);
+        options.ParSymbFact       = YES;
+        options.ColPerm           = PARMETIS;
 #if 0
 	options.DiagInv = YES;
     options.ReplaceTinyPivot  = YES;
