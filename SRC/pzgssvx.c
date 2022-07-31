@@ -1459,8 +1459,8 @@ pzgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 	        (LUstruct->Llu->Uinv_bc_cnt) * sizeof(doublecomplex), gpuMemcpyHostToDevice));
             checkGPU(gpuMemcpy(LUstruct->Llu->d_Lnzval_bc_dat, LUstruct->Llu->Lnzval_bc_dat,
 	        (LUstruct->Llu->Lnzval_bc_cnt) * sizeof(doublecomplex), gpuMemcpyHostToDevice));
-            checkGPU(gpuMemcpy(LUstruct->Llu->d_Unzval_br_dat, LUstruct->Llu->Unzval_br_dat,
-	        (LUstruct->Llu->Unzval_br_cnt) * sizeof(doublecomplex), gpuMemcpyHostToDevice));
+            //checkGPU(gpuMemcpy(LUstruct->Llu->d_Unzval_br_dat, LUstruct->Llu->Unzval_br_dat,
+	    //  (LUstruct->Llu->Unzval_br_cnt) * sizeof(doublecomplex), gpuMemcpyHostToDevice));
 #endif
 	}
 

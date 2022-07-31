@@ -60,7 +60,7 @@ int main(int argc, char *argv[])
     double   *berr;
     double   *b, *xtrue;
     int    m, n;
-    int      nprow, npcol, lookahead, colperm, rowperm, ir;
+    int      nprow, npcol, lookahead, colperm, rowperm, ir, symbfact;
     int      iam, info, ldb, ldx, nrhs;
     char     **cpp, c, *postfix;;
     FILE *fp, *fopen();
@@ -83,7 +83,8 @@ int main(int argc, char *argv[])
     colperm = -1;
     rowperm = -1;
     ir = -1;
-
+    symbfact = -1;
+    
     /* ------------------------------------------------------------
        INITIALIZE MPI ENVIRONMENT. 
        ------------------------------------------------------------*/
@@ -121,6 +122,8 @@ int main(int argc, char *argv[])
                         break;
               case 'q': colperm = atoi(*cpp);
                         break;
+	      case 's': symbfact = atoi(*cpp);
+		        break;
               case 'i': ir = atoi(*cpp);
                         break;
 	    }
@@ -240,8 +243,6 @@ int main(int argc, char *argv[])
 	options.DiagInv           = NO;
      */
     set_default_options_dist(&options);
-        options.ParSymbFact       = YES;
-        options.ColPerm           = PARMETIS;
 #if 0
 	options.DiagInv = YES;
     options.ReplaceTinyPivot  = YES;
@@ -256,6 +257,7 @@ int main(int argc, char *argv[])
     if (colperm != -1) options.ColPerm = colperm;
     if (lookahead != -1) options.num_lookaheads = lookahead;
     if (ir != -1) options.IterRefine = ir;
+    if (symbfact != -1) options.ParSymbFact = symbfact;
 
     if (!iam) {
 	print_options_dist(&options);

@@ -128,7 +128,7 @@ void superlu_gridmap3d(
     /* Create 3D grid */
     int ndim = 3;
     int dims[3];
-    int reorder = 1;
+    int reorder = 0;  /* Sherry: this can be put as an 'options' field */
     int periodic[] = {0, 0, 0};
     int coords3d[3];
     int iam;
