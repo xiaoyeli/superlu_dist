@@ -53,8 +53,8 @@ cmake .. \
   -DCMAKE_INSTALL_LIBDIR=./lib \
   -DCMAKE_BUILD_TYPE=Release \
   -DTPL_BLAS_LIBRARIES=/opt/cray/pe/libsci/22.06.1.3/GNU/9.1/x86_64/lib/libsci_gnu_81_mp.so \
-  -DTPL_PARMETIS_INCLUDE_DIRS=/global/cfs/cdirs/m3894/ptlin/tpl/install/parmetis/parmetis-4.0.3/n9-gcc11.2.0/include \
-  -DTPL_PARMETIS_LIBRARIES="/global/cfs/cdirs/m3894/ptlin/tpl/install/parmetis/parmetis-4.0.3/n9-gcc11.2.0/lib/libparmetis.a;/global/cfs/cdirs/m3894/ptlin/tpl/install/parmetis/parmetis-4.0.3/n9-gcc11.2.0/lib/libmetis.a" \
+  -DTPL_PARMETIS_INCLUDE_DIRS="/global/cfs/cdirs/m3894/lib/PrgEnv-gnu/parmetis-4.0.3/include;/global/cfs/cdirs/m3894/lib/PrgEnv-gnu/parmetis-4.0.3/metis/include" \
+  -DTPL_PARMETIS_LIBRARIES="/global/cfs/cdirs/m3894/lib/PrgEnv-gnu/parmetis-4.0.3/build/Linux-x86_64/libparmetis/libparmetis.so;/global/cfs/cdirs/m3894/lib/PrgEnv-gnu/parmetis-4.0.3/build/Linux-x86_64/libmetis/libmetis.so" \
   -DTPL_ENABLE_COMBBLASLIB=OFF \
   -DCMAKE_VERBOSE_MAKEFILE:BOOL=ON \
   -DMPIEXEC_NUMPROC_FLAG=-n \

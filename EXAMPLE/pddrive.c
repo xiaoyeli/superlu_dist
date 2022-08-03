@@ -151,6 +151,20 @@ int main(int argc, char *argv[])
 	for (int j = 0; j < npcol; ++j) usermap[i+j*ldumap] = p++;
     superlu_gridmap(SubComm, nprow, npcol, usermap, ldumap, &grid);
     SUPERLU_FREE(usermap);
+
+#ifdef GPU_ACC
+    /* Binding each MPI to a GPU device */
+    char *ttemp;
+    ttemp = getenv ("SUPERLU_BIND_MPI_GPU");
+
+    if (ttemp) {
+	int devs, rank;
+	MPI_Comm_rank(MPI_COMM_WORLD, &rank); // MPI_COMM_WORLD needs to be used here instead of SubComm
+	gpuGetDeviceCount(&devs);  // Returns the number of compute-capable devices
+	gpuSetDevice(rank % devs); // Set device to be used for GPU executions
+    }
+#endif
+
     // printf("grid.iam %5d, myrank %5d\n",grid.iam,myrank);
     // fflush(stdout);
 #else 
