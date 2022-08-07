@@ -1889,7 +1889,7 @@ for (lk=0;lk<nsupers_j;++lk){
 	Llu->Unzval_bc_cnt = Unzval_bc_cnt;
 	Llu->Uindval_loc_bc_cnt = Uindval_loc_bc_cnt;
 	// printf("Ucolind_bc_cnt %10d\n",Ucolind_bc_cnt);
-	printf("Unzval_bc_cnt %10ld v.s. Unzval_br_cnt %10ld\n",Unzval_bc_cnt,Unzval_br_cnt);
+	//printf("Unzval_bc_cnt %10ld v.s. Unzval_br_cnt %10ld\n",Unzval_bc_cnt,Unzval_br_cnt);
 	// printf("Llu->Ucolind_bc_offset %10d\n",Llu->Ucolind_bc_offset[0]);
 
 #ifdef GPU_ACC
