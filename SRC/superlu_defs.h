@@ -63,6 +63,9 @@ at the top-level directory.
 // #include <ittnotify.h>
 // #define USE_VTUNE
 // #endif
+#ifdef one_sided
+#include "onesided.h"
+#endif
 #if ( VTUNE>=1 )
 #include <ittnotify.h>			 
 #endif
@@ -1235,6 +1238,13 @@ typedef struct
 #define DEG_TREE 2
 #endif
 
+#endif
+
+#ifdef one_sided
+extern void C_RdTree_Create_onesided(C_Tree* tree, MPI_Comm comm, int* ranks, int rank_cnt, int msgSize, char precision, int* BufSize_rd, int Pc);
+extern void C_RdTree_forwardMessage_onesided(C_Tree* tree, void* localBuffer, int msgSize,int* RDcount, long* RDbase, int* maxrecvsz, int Pc);
+extern void C_BcTree_Create_onesided(C_Tree* tree, MPI_Comm comm, int* ranks, int rank_cnt, int msgSize, char precision,int* BufSize, int Pc);
+extern void C_BcTree_forwardMessage_onesided(C_Tree* Tree, void* localBuffer, int msgSize, int* BCcount, long* BCbase, int* maxrecvsz, int Pc);
 #endif
 
 extern void C_RdTree_Create(C_Tree* tree, MPI_Comm comm, int* ranks, int rank_cnt, int msgSize, char precision);

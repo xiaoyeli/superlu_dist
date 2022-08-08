@@ -1185,9 +1185,13 @@ pdgssvx3d (superlu_dist_options_t * options, SuperMatrix * A,
 		   NOTE: the row permutation Pc*Pr is applied internally in the
 		   distribution routine. */
 		t = SuperLU_timer_ ();
+#ifdef one_sided
+        dist_mem_use = pddistribute_onesided (options, n, A, ScalePermstruct,
+					     Glu_freeable, LUstruct, grid, nrhs);
+#else
 		dist_mem_use = pddistribute (options, n, A, ScalePermstruct,
 					     Glu_freeable, LUstruct, grid);
-
+#endif
 		stat->utime[DIST] = SuperLU_timer_ () - t;
 		
 		/* Deallocate storage used in symbolic factorization. */
@@ -1485,9 +1489,18 @@ int_t nsupers = getNsupers(n, LUstruct->Glu_persist);
 #if 0 // Sherry: the following interface is needed by 3D trisolve.
 		pdgstrs_vecpar (n, LUstruct, ScalePermstruct, grid, X, m_loc,
 				fst_row, ldb, nrhs, SOLVEstruct, stat, info);
+#endif
+#ifdef one_sided
+        MPI_Win_lock_all(0, bc_winl);
+        MPI_Win_lock_all(0, rd_winl);
+        pdgstrs_onesided(options, n, LUstruct, ScalePermstruct, grid, X, m_loc,
+                fst_row, ldb, nrhs, SOLVEstruct, stat, info);
+        MPI_Win_unlock_all(bc_winl);
+        MPI_Win_unlock_all(rd_winl);
 #else
 		pdgstrs(options, n, LUstruct, ScalePermstruct, grid, X, m_loc,
 			fst_row, ldb, nrhs, SOLVEstruct, stat, info);
+
 #endif
 
 		/* ------------------------------------------------------------

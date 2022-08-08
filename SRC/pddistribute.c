@@ -24,7 +24,9 @@ at the top-level directory.
 #ifdef GPU_ACC
 #include "gpu_api_utils.h"
 #endif
-
+#ifdef one_sided
+#include "onesided.h"
+#endif
 /*! \brief
  *
  * <pre>
@@ -2398,3 +2400,6 @@ if ( !iam) printf(".. Construct Reduce tree for U: %.2f\t\n", t);
     return (mem_use+memTRS);
 
 } /* PDDISTRIBUTE */
+
+
+

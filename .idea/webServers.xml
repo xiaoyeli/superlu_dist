@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="WebServers">
+    <option name="servers">
+      <webServer id="4f21a138-6f6f-42fc-af8e-2c4c28385d37" name="cori">
+        <fileTransfer accessType="SFTP" host="cori.nersc.gov" port="22" sshConfigId="c777b8cc-f03a-4186-88e0-9a7e960095cf" sshConfig="nanding@cori.nersc.gov:22 password">
+          <advancedOptions>
+            <advancedOptions dataProtectionLevel="Private" keepAliveTimeout="0" passiveMode="true" shareSSLContext="true" />
+          </advancedOptions>
+        </fileTransfer>
+      </webServer>
+    </option>
+  </component>
+</project>

@@ -2204,10 +2204,13 @@ thread_id=0;
 								nfrecvx_buf++;
 								{
 									lk = LBj( k, grid );    /* local block number */
-										
+#if ( DEBUGlevel>=1 )
+                                    printf("iam=%d,k=%d,lk=%d,destCnt=%d,here\n",iam,k,lk,LBtree_ptr[lk].destCnt_);
+                                    fflush(stdout);
+#endif
 									if(LBtree_ptr[lk].destCnt_>0){
 
-										// BcTree_forwardMessageSimple(LBtree_ptr[lk],recvbuf0,BcTree_GetMsgSize(LBtree_ptr[lk],'d')*nrhs+XK_H,'d');
+                                        // BcTree_forwardMessageSimple(LBtree_ptr[lk],recvbuf0,BcTree_GetMsgSize(LBtree_ptr[lk],'d')*nrhs+XK_H,'d');
 										C_BcTree_forwardMessageSimple(&LBtree_ptr[lk], recvbuf0, LBtree_ptr[lk].msgSize_*nrhs+XK_H);
 										// nfrecvx_buf++;
 									}
@@ -2231,7 +2234,10 @@ thread_id=0;
 											knsupc = SuperSize( k );
 											xin = &recvbuf0[XK_H] ;
 										}
-
+#if ( DEBUGlevel>=1 )
+                                        printf("iam=%d,lk=%d,lsub=%d\n",iam,lk,lsub);
+                                        fflush(stdout);
+#endif
 										dlsum_fmod_inv_master(lsum, x, xin, rtemp, nrhs, knsupc, k,
 												fmod, nb, xsup, grid, Llu,
 												stat_loc,sizelsum,sizertemp,0,maxsuper,thread_id,num_thread);

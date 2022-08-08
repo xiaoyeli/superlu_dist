@@ -2,6 +2,172 @@
 #include "dcomplex.h"
 #include "superlu_defs.h"
 
+
+
+#ifdef one_sided
+#include "onesided.h"
+#include "mpi.h"
+void C_BcTree_Create_onesided(C_Tree* tree, MPI_Comm comm, int* ranks, int rank_cnt, int msgSize, char precision, int* BufSize, int Pc){
+		assert(msgSize>0);
+
+      int nprocs = 0;
+      MPI_Comm_size(comm, &nprocs);
+	  tree->comm_=comm;
+	  tree->msgSize_=msgSize;
+	  MPI_Comm_rank(comm,&tree->myRank_);
+      tree->myRoot_= -1;
+      tree->tag_=-1;
+      tree->destCnt_=0;
+      tree->myDests_[0]=-1;
+      tree->myDests_[1]=-1;
+	  tree->sendRequests_[0]=MPI_REQUEST_NULL;
+	  tree->sendRequests_[1]=MPI_REQUEST_NULL;
+      tree->empty_= NO;  // non-empty if rank_cnt>1
+	  if(precision=='d'){
+	    tree->type_=MPI_DOUBLE;
+	  }
+	  if(precision=='s'){
+	    tree->type_=MPI_FLOAT;
+	  }
+	  if(precision=='z'){
+	    tree->type_=MPI_DOUBLE_COMPLEX;
+	  }
+	  //if(precision=='c'){
+	  //MPI_Type_contiguous( sizeof(complex), MPI_BYTE, &tree->type_ );
+	  //}
+
+      int myIdx = 0;
+      int ii=0;
+	  int child,root;
+	  for (ii=0;ii<rank_cnt;ii++)
+		  if(tree->myRank_ == ranks[ii]){
+			  myIdx = ii;
+			  break;
+		  }
+	  for (ii=0;ii<DEG_TREE;ii++){
+		  if(myIdx*DEG_TREE+1+ii<rank_cnt){
+			   child = ranks[myIdx*DEG_TREE+1+ii];
+			   tree->myDests_[tree->destCnt_++]=child;
+		  }
+	  }
+	  if(myIdx!=0){
+		  tree->myRoot_ = ranks[(int)floor((double)(myIdx-1.0)/(double)DEG_TREE)];
+          BufSize[tree->myRoot_/Pc] += 1;
+      }else{
+		  tree->myRoot_ = tree->myRank_;
+	  }
+}
+
+
+    void C_RdTree_Create_onesided(C_Tree* tree, MPI_Comm comm, int* ranks, int rank_cnt, int msgSize, char precision, int* BufSize_rd, int Pc){
+		assert(msgSize>0);
+
+      int nprocs = 0;
+      MPI_Comm_size(comm, &nprocs);
+	  tree->comm_=comm;
+	  tree->msgSize_=msgSize;
+	  MPI_Comm_rank(comm,&tree->myRank_);
+      tree->myRoot_= -1;
+      tree->tag_=-1;
+      tree->destCnt_=0;
+      tree->myDests_[0]=-1;
+      tree->myDests_[1]=-1;
+	  tree->sendRequests_[0]=MPI_REQUEST_NULL;
+	  tree->sendRequests_[1]=MPI_REQUEST_NULL;
+      tree->empty_= NO;  // non-empty if rank_cnt>1
+	  if(precision=='d'){
+		  tree->type_=MPI_DOUBLE;
+	  }
+	  if(precision=='s'){
+        MPI_Type_contiguous( sizeof(float), MPI_BYTE, &tree->type_ );
+	  }
+	  if(precision=='z'){
+		  tree->type_=MPI_DOUBLE_COMPLEX;
+	  }
+	  if(precision=='s'){
+		  tree->type_=MPI_FLOAT;
+	  }
+      int myIdx = 0;
+      int ii=0;
+	  int child,root;
+	  for (ii=0;ii<rank_cnt;ii++)
+		  if(tree->myRank_ == ranks[ii]){
+			  myIdx = ii;
+			  break;
+		  }
+
+
+	  for (ii=0;ii<DEG_TREE;ii++){
+		  if(myIdx*DEG_TREE+1+ii<rank_cnt){
+			   child = ranks[myIdx*DEG_TREE+1+ii];
+			   tree->myDests_[tree->destCnt_++]=child;
+		  }
+	  }
+
+	  if(myIdx!=0){
+		  tree->myRoot_ = ranks[(int)floor((double)(myIdx-1.0)/(double)DEG_TREE)];
+
+	  }else{
+		  tree->myRoot_ = tree->myRank_;
+	  }
+
+      for (int i=0; i< tree->destCnt_;i++){
+        BufSize_rd[tree->myDests_[i]%Pc] += 1;
+      }
+    }
+
+    void C_BcTree_forwardMessage_onesided(C_Tree* tree, void* localBuffer, int msgSize, int* BCcount, long* BCbase, int* maxrecvsz, int Pc){
+        MPI_Status status;
+		int flag;
+        long BCsendoffset=0;
+        int size_num=1; // if dc, size_num=2;
+        msgSize=msgSize*size_num;
+		for( int idxRecv = 0; idxRecv < tree->destCnt_; ++idxRecv ){
+          int new_iProc = tree->myDests_[idxRecv]/Pc;
+          BCsendoffset = BCbase[new_iProc] + BCcount[new_iProc]*(*maxrecvsz);
+          MPI_Put(localBuffer, msgSize, MPI_DOUBLE, new_iProc, BCsendoffset+1, msgSize, MPI_DOUBLE,bc_winl);
+          MPI_Win_flush_local(new_iProc, bc_winl);
+          double sig=1.0;
+          MPI_Put(&sig, 1, MPI_DOUBLE, new_iProc, BCsendoffset, 1, MPI_DOUBLE,bc_winl);
+          MPI_Win_flush_local(new_iProc, bc_winl);
+          BCcount[new_iProc] += 1;
+#if ( DEBUGlevel>=1 )
+              printf("iam %d send bc to %d (%d), offset=%d, msgsize=%d,already send %d msg\n",tree->myRank_, new_iProc,tree->myDests_[idxRecv],BCsendoffset, msgSize,BCcount[new_iProc]);
+              fflush(stdout);
+              double* val = (double*) localBuffer;
+              for (int i=0; i<msgSize;i++){
+                  printf("%d to %d, msg %d at %lu, sendbuffer[%d]=%lf\n",
+                         tree->myRank_, tree->myDests_[idxRecv], BCcount[new_iProc], BCsendoffset, i,val[i]);
+                  fflush(stdout);
+              }
+#endif
+
+
+        } // for (iProc)
+	}
+
+    void C_RdTree_forwardMessage_onesided(C_Tree* Tree, void* localBuffer, int msgSize, int* RDcount, long* RDbase, int* maxrecvsz, int Pc){
+        long RDsendoffset=0;
+        int size_num=1;
+        msgSize=msgSize*size_num;
+		if(Tree->myRank_!=Tree->myRoot_){
+			  //forward to my root if I have reseived everything
+			  int new_iProc = (Tree->myRoot_)%Pc;
+              RDsendoffset = RDbase[new_iProc] + RDcount[new_iProc]*(*maxrecvsz);
+              MPI_Put(localBuffer, msgSize, MPI_DOUBLE, new_iProc, RDsendoffset+1, msgSize, MPI_DOUBLE,rd_winl);
+              MPI_Win_flush_local(new_iProc, rd_winl);
+              double sig=1;
+              MPI_Put(&sig, 1, MPI_DOUBLE, new_iProc, RDsendoffset, 1, MPI_DOUBLE,rd_winl);
+              MPI_Win_flush_local(new_iProc, rd_winl);
+              RDcount[new_iProc] += 1;
+#if ( DEBUGlevel>=2 )
+              printf("iam %d rd send to %d (%d), offset=%d, msgsize=%d\n",Tree->myRank_, new_iProc,Tree->myRoot_,RDsendoffset, msgSize);
+              fflush(stdout);
+#endif
+
+		}
+	}
+#endif
 	void C_BcTree_Create(C_Tree* tree, MPI_Comm comm, int* ranks, int rank_cnt, int msgSize, char precision){
 		assert(msgSize>0);
 
@@ -77,11 +243,10 @@
 		for( int idxRecv = 0; idxRecv < tree->destCnt_; ++idxRecv ){
           int iProc = tree->myDests_[idxRecv];
           // Use Isend to send to multiple targets
-          int error_code = MPI_Isend( localBuffer, msgSize, tree->type_, 
+          int error_code = MPI_Isend( localBuffer, msgSize, tree->type_,
               iProc, tree->tag_,tree->comm_, &tree->sendRequests_[idxRecv] );
 			  
-			  MPI_Test(&tree->sendRequests_[idxRecv],&flag,&status) ; 
-			  
+			  MPI_Test(&tree->sendRequests_[idxRecv],&flag,&status) ;
 			  // std::cout<<tree->myRank_<<" FWD to "<<iProc<<" on tag "<<tree->tag_<<std::endl;
         } // for (iProc)
 	}

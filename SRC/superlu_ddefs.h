@@ -530,6 +530,32 @@ extern void dscatter_u (int ib, int jb, int nsupc, int_t iukp, int_t * xsup,
 extern int_t pdgstrf(superlu_dist_options_t *, int, int, double anorm,
 		    dLUstruct_t*, gridinfo_t*, SuperLUStat_t*, int*);
 
+#ifdef one_sided
+extern float pddistribute_onesided(superlu_dist_options_t *, int_t, SuperMatrix *,
+			 dScalePermstruct_t *, Glu_freeable_t *,
+			 dLUstruct_t *, gridinfo_t *, int);
+extern int_t pdReDistribute_X_to_B(int_t, double*, int_t, int_t, int_t,
+		      int_t, double*, int_t*,
+		      dScalePermstruct_t*,
+		      Glu_persist_t*, gridinfo_t*,
+		      dSOLVEstruct_t*);
+extern int_t dReDistribute_A(SuperMatrix *, dScalePermstruct_t *,
+                Glu_freeable_t *, int_t *, int_t *,
+                gridinfo_t *, int_t *, int_t *,
+                double *);
+
+extern void dlsum_fmod_inv_master_onesided(double *, double *, double *, double *,
+                                  int, int, int_t , int_t *, int_t,
+                                  int_t *, gridinfo_t *, dLocalLU_t *,
+                                  SuperLUStat_t **, int_t, int_t, int_t, int_t, int, int,
+                                  int*, long*, int*, long*, int,int);
+extern void dlsum_bmod_inv_master_onesided(double *, double *, double *, double *,
+                                  int, int_t, int_t *, int_t *, Ucb_indptr_t **,
+                                  int_t **, int_t *, gridinfo_t *, dLocalLU_t *,
+                                  SuperLUStat_t **, int_t, int_t, int, int,
+		                          int*, long*, int*, long*, int,int);
+#endif
+
 /* #define GPU_PROF
 #define IPM_PROF */
 
