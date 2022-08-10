@@ -21,16 +21,18 @@ __global__ void indirectCopy(double *dest, double *src, int_t *idx, int n)
     if (i < n)
         dest[idx[i]] = src[i];
 }
+
 /**
  * @file schurCompUpdate.cu
- * @brief This function copies the packed buffers to GPU and performs the sparse initialization on GPU call indirectCopy, this is the kernel
+ * @brief This function copies the packed buffers to GPU and performs the sparse
+   initialization on GPU call indirectCopy, this is the kernel
  * @param gpuValBasePtr is the base pointer of the GPU matrix
- * @param nnzCount is the number of non-zero elements in the matrix
  * @param valBufferPacked is the packed buffer of the matrix
  * @param valIdx is the index of the packed buffer
  */
- void copyToGPU(double *gpuValBasePtr, int_t nnzCount, std::vector<double>& valBufferPacked, 
+ void copyToGPU(double *gpuValBasePtr, std::vector<double>& valBufferPacked, 
     std::vector<int_t>& valIdx) {
+    int nnzCount = valBufferPacked.size();
     // calculate the size of the packed buffers
     int_t gpuLvalSizePacked = nnzCount * sizeof(double);
     int_t gpuLidxSizePacked = nnzCount * sizeof(int_t);
@@ -72,30 +74,8 @@ void copyToGPU_Sparse(double *gpuValBasePtr, double *valBuffer, int_t gpuLvalSiz
     }
     printf("%d non-zero elements in the panel, wrt original=%d\n", valBufferPacked.size(), numDoubles);
     // get the size of the packed buffers and allocate memory on GPU
-    int nnzCount = valBufferPacked.size();
-    #if 0
-    int_t gpuLvalSizePacked = nnzCount * sizeof(double);
-    int_t gpuLidxSizePacked = nnzCount * sizeof(int_t);
-    double *dlvalPacked;
-    int_t *dlidxPacked;
-    cudaMalloc(&dlvalPacked, gpuLvalSizePacked);
-    cudaMalloc(&dlidxPacked, gpuLidxSizePacked);
-    // copy the packed buffers to GPU
-    cudaMemcpy(dlvalPacked, valBufferPacked.data(), gpuLvalSizePacked, cudaMemcpyHostToDevice);
-    cudaMemcpy(dlidxPacked, valIdx.data(), gpuLidxSizePacked, cudaMemcpyHostToDevice);
-    // perform the sparse initialization on GPU call indirectCopy, this is the kernel
-    const int ThreadblockSize = 256;
-    int nThreadBlocks = (nnzCount + ThreadblockSize - 1) / ThreadblockSize;
-    indirectCopy<<<nThreadBlocks, ThreadblockSize>>>(
-        gpuValBasePtr, dlvalPacked, dlidxPacked, nnzCount);
-    // wait for it to finish and free dlvalPacked and dlidxPacked
-    cudaDeviceSynchronize();
-    cudaFree(dlvalPacked);
-    cudaFree(dlidxPacked);
-    #else
-    copyToGPU(gpuValBasePtr, nnzCount, valBufferPacked, 
-        valIdx);
-    #endif 
+    copyToGPU(gpuValBasePtr, valBufferPacked,  valIdx);
+    
 }
 
 
