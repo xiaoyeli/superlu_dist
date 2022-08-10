@@ -30,8 +30,9 @@ __global__ void indirectCopy(double *dest, double *src, int_t *idx, int n)
  * @param valBufferPacked is the packed buffer of the matrix
  * @param valIdx is the index of the packed buffer
  */
- void copyToGPU(double *gpuValBasePtr, std::vector<double>& valBufferPacked, 
-    std::vector<int_t>& valIdx) {
+void copyToGPU(double *gpuValBasePtr, std::vector<double> &valBufferPacked,
+               std::vector<int_t> &valIdx)
+{
     int nnzCount = valBufferPacked.size();
     // calculate the size of the packed buffers
     int_t gpuLvalSizePacked = nnzCount * sizeof(double);
@@ -55,7 +56,6 @@ __global__ void indirectCopy(double *dest, double *src, int_t *idx, int n)
     cudaFree(dlidxPacked);
 }
 
-
 // copy the panel to GPU
 void copyToGPU_Sparse(double *gpuValBasePtr, double *valBuffer, int_t gpuLvalSize)
 {
@@ -74,11 +74,8 @@ void copyToGPU_Sparse(double *gpuValBasePtr, double *valBuffer, int_t gpuLvalSiz
     }
     printf("%d non-zero elements in the panel, wrt original=%d\n", valBufferPacked.size(), numDoubles);
     // get the size of the packed buffers and allocate memory on GPU
-    copyToGPU(gpuValBasePtr, valBufferPacked,  valIdx);
-    
+    copyToGPU(gpuValBasePtr, valBufferPacked, valIdx);
 }
-
-
 
 #define NDEBUG
 __device__
@@ -643,7 +640,7 @@ int_t LUstruct_v100::setLUstruct_GPU()
         exit(-1);
     }
 
-    tRegion[0] = SuperLU_timer_()-tRegion[0];
+    tRegion[0] = SuperLU_timer_() - tRegion[0];
     // print the time taken to estimate memory on GPU
     if (grid3d->iam == 0)
     {
@@ -771,8 +768,8 @@ int_t LUstruct_v100::setLUstruct_GPU()
     }
     tUsend = SuperLU_timer_() - tUsend;
 #endif
-    tRegion[1] = SuperLU_timer_()- tRegion[1];
-    
+    tRegion[1] = SuperLU_timer_() - tRegion[1];
+
     printf("Time to send Lpanel=%g  and U panels =%g \n", tLsend, tUsend);
 
     cudaMalloc(&A_gpu.lPanelVec, CEILING(nsupers, Pc) * sizeof(lpanelGPU_t));
@@ -884,7 +881,7 @@ lpanelGPU_t *LUstruct_v100::copyLpanelsToGPU()
 
     size_t valOffset = 0;
     size_t idxOffset = 0;
-    double tCopyToCPU= SuperLU_timer_();
+    double tCopyToCPU = SuperLU_timer_();
 
     // do a memcpy to CPU buffer
     for (int_t i = 0; i < CEILING(nsupers, Pc); ++i)
@@ -912,8 +909,8 @@ lpanelGPU_t *LUstruct_v100::copyLpanelsToGPU()
     }
     tCopyToCPU = SuperLU_timer_() - tCopyToCPU;
     std::cout << "Time to copy-L to CPU: " << tCopyToCPU << "\n";
-// do a cudaMemcpy to GPU
-double tLsend = SuperLU_timer_();
+    // do a cudaMemcpy to GPU
+    double tLsend = SuperLU_timer_();
 #if 0
     cudaMemcpy(gpuLvalBasePtr, valBuffer, gpuLvalSize, cudaMemcpyHostToDevice);
 #else
@@ -965,7 +962,6 @@ double tLsend = SuperLU_timer_();
     return lPanelVec_GPU;
 }
 
-
 upanelGPU_t *LUstruct_v100::copyUpanelsToGPU()
 {
     upanelGPU_t *uPanelVec_GPU = new upanelGPU_t[CEILING(nsupers, Pr)];
@@ -982,8 +978,6 @@ upanelGPU_t *LUstruct_v100::copyUpanelsToGPU()
     }
 
     // TODO: set gpuUvalSize, gpuUidxSize
-    double *valBuffer = (double *)SUPERLU_MALLOC(gpuUvalSize);
-    int_t *idxBuffer = (int_t *)SUPERLU_MALLOC(gpuUidxSize);
 
     // allocate memory buffer on GPU
     cudaMalloc(&gpuUvalBasePtr, gpuUvalSize);
@@ -992,9 +986,7 @@ upanelGPU_t *LUstruct_v100::copyUpanelsToGPU()
     size_t valOffset = 0;
     size_t idxOffset = 0;
 
-    double tCopyToCPU= SuperLU_timer_();
-
-    // do a memcpy to CPU buffer
+    double tCopyToCPU = SuperLU_timer_();
     for (int_t i = 0; i < CEILING(nsupers, Pr); ++i)
     {
         if (i * Pr + myrow < nsupers && isNodeInMyGrid[i * Pr + myrow] == 1)
@@ -1005,40 +997,99 @@ upanelGPU_t *LUstruct_v100::copyUpanelsToGPU()
                 uPanelVec[i].gpuPanel = ithupanel;
                 uPanelVec_GPU[i] = ithupanel;
             }
-            else
-            {
-                upanelGPU_t ithupanel(&gpuUidxBasePtr[idxOffset], &gpuUvalBasePtr[valOffset]);
-                uPanelVec[i].gpuPanel = ithupanel;
-                uPanelVec_GPU[i] = ithupanel;
-                memcpy(&valBuffer[valOffset], uPanelVec[i].val, sizeof(double) * uPanelVec[i].nzvalSize());
-                memcpy(&idxBuffer[idxOffset], uPanelVec[i].index, sizeof(int_t) * uPanelVec[i].indexSize());
-
-                valOffset += uPanelVec[i].nzvalSize();
-                idxOffset += uPanelVec[i].indexSize();
-            }
         }
     }
-    tCopyToCPU = SuperLU_timer_() - tCopyToCPU;
-    printf("copyU to CPU-buff time = %g\n", tCopyToCPU);
-    
-    // do a cudaMemcpy to GPU
-    double tLsend = SuperLU_timer_();
-    const int USE_GPU_COPY = 1;
-    if (USE_GPU_COPY)
-        cudaMemcpy(gpuUvalBasePtr, valBuffer, gpuUvalSize, cudaMemcpyHostToDevice);
+
+    int_t *idxBuffer = (int_t *)SUPERLU_MALLOC(gpuUidxSize);
+    int AVOID_CPU_NZVAL = 1;
+    if (AVOID_CPU_NZVAL)
+    {
+        printf("AVOID_CPU_NZVAL is set\n");
+        std::vector<double> packedNzvals;
+        std::vector<int_t> packedNzvalsIndices;
+        for (int_t i = 0; i < CEILING(nsupers, Pr); ++i)
+        {
+            if (i * Pr + myrow < nsupers && isNodeInMyGrid[i * Pr + myrow] == 1)
+            {
+                if (!uPanelVec[i].isEmpty())
+                {
+
+                    upanelGPU_t ithupanel(&gpuUidxBasePtr[idxOffset], &gpuUvalBasePtr[valOffset]);
+                    uPanelVec[i].gpuPanel = ithupanel;
+                    uPanelVec_GPU[i] = ithupanel;
+                    // memcpy(&valBuffer[valOffset], uPanelVec[i].val, sizeof(double) * uPanelVec[i].nzvalSize());
+                    for (int k = 0; k < uPanelVec[i].nzvalSize(); k++)
+                    {
+                        if (uPanelVec[i].val[k] != 0)
+                        {
+                            packedNzvals.push_back(uPanelVec[i].val[k]);
+                            packedNzvalsIndices.push_back(valOffset + k);
+                        }
+                    }
+                    memcpy(&idxBuffer[idxOffset], uPanelVec[i].index, sizeof(int_t) * uPanelVec[i].indexSize());
+
+                    valOffset += uPanelVec[i].nzvalSize();
+                    idxOffset += uPanelVec[i].indexSize();
+                }
+            }
+        }
+        tCopyToCPU = SuperLU_timer_() - tCopyToCPU;
+        printf("copyU to CPU-buff time = %g\n", tCopyToCPU);
+
+        // do a cudaMemcpy to GPU
+        double tLsend = SuperLU_timer_();
+        // const int USE_GPU_COPY = 1;
+        // if (USE_GPU_COPY)
+        //     cudaMemcpy(gpuUvalBasePtr, valBuffer, gpuUvalSize, cudaMemcpyHostToDevice);
+        // else
+        //     copyToGPU_Sparse(gpuUvalBasePtr, valBuffer, gpuUvalSize);
+        copyToGPU(gpuUvalBasePtr, packedNzvals, packedNzvalsIndices);
+               
+
+        cudaMemcpy(gpuUidxBasePtr, idxBuffer, gpuUidxSize, cudaMemcpyHostToDevice);
+        tLsend = SuperLU_timer_() - tLsend;
+        printf("cudaMemcpy time U =%g \n", tLsend);
+        // SUPERLU_FREE(valBuffer);
+    }
     else
-        copyToGPU_Sparse(gpuUvalBasePtr, valBuffer, gpuUvalSize);
-        
-    
-// #if 0
-//     cudaMemcpy(gpuUvalBasePtr, valBuffer, gpuUvalSize, cudaMemcpyHostToDevice);
-// #else
-//     copyToGPU_Sparse(gpuUvalBasePtr, valBuffer, gpuUvalSize);
-// #endif
-    cudaMemcpy(gpuUidxBasePtr, idxBuffer, gpuUidxSize, cudaMemcpyHostToDevice);
-    tLsend = SuperLU_timer_() - tLsend;
-    printf("cudaMemcpy time U =%g \n", tLsend);
-    SUPERLU_FREE(valBuffer);
+    {
+        // do a memcpy to CPU buffer
+        double *valBuffer = (double *)SUPERLU_MALLOC(gpuUvalSize);
+
+        for (int_t i = 0; i < CEILING(nsupers, Pr); ++i)
+        {
+            if (i * Pr + myrow < nsupers && isNodeInMyGrid[i * Pr + myrow] == 1)
+            {
+                if (!uPanelVec[i].isEmpty())
+                {
+
+                    upanelGPU_t ithupanel(&gpuUidxBasePtr[idxOffset], &gpuUvalBasePtr[valOffset]);
+                    uPanelVec[i].gpuPanel = ithupanel;
+                    uPanelVec_GPU[i] = ithupanel;
+                    memcpy(&valBuffer[valOffset], uPanelVec[i].val, sizeof(double) * uPanelVec[i].nzvalSize());
+                    memcpy(&idxBuffer[idxOffset], uPanelVec[i].index, sizeof(int_t) * uPanelVec[i].indexSize());
+
+                    valOffset += uPanelVec[i].nzvalSize();
+                    idxOffset += uPanelVec[i].indexSize();
+                }
+            }
+        }
+        tCopyToCPU = SuperLU_timer_() - tCopyToCPU;
+        printf("copyU to CPU-buff time = %g\n", tCopyToCPU);
+
+        // do a cudaMemcpy to GPU
+        double tLsend = SuperLU_timer_();
+        const int USE_GPU_COPY = 1;
+        if (USE_GPU_COPY)
+            cudaMemcpy(gpuUvalBasePtr, valBuffer, gpuUvalSize, cudaMemcpyHostToDevice);
+        else
+            copyToGPU_Sparse(gpuUvalBasePtr, valBuffer, gpuUvalSize);
+
+        cudaMemcpy(gpuUidxBasePtr, idxBuffer, gpuUidxSize, cudaMemcpyHostToDevice);
+        tLsend = SuperLU_timer_() - tLsend;
+        printf("cudaMemcpy time U =%g \n", tLsend);
+        SUPERLU_FREE(valBuffer);
+    }
     SUPERLU_FREE(idxBuffer);
     return uPanelVec_GPU;
 }
