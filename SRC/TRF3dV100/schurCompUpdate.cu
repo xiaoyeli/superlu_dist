@@ -965,6 +965,7 @@ double tLsend = SuperLU_timer_();
     return lPanelVec_GPU;
 }
 
+
 upanelGPU_t *LUstruct_v100::copyUpanelsToGPU()
 {
     upanelGPU_t *uPanelVec_GPU = new upanelGPU_t[CEILING(nsupers, Pr)];
@@ -1022,11 +1023,18 @@ upanelGPU_t *LUstruct_v100::copyUpanelsToGPU()
     
     // do a cudaMemcpy to GPU
     double tLsend = SuperLU_timer_();
-#if 0
-    cudaMemcpy(gpuUvalBasePtr, valBuffer, gpuUvalSize, cudaMemcpyHostToDevice);
-#else
-    copyToGPU_Sparse(gpuUvalBasePtr, valBuffer, gpuUvalSize);
-#endif
+    const int USE_GPU_COPY = 1;
+    if (USE_GPU_COPY)
+        cudaMemcpy(gpuUvalBasePtr, valBuffer, gpuUvalSize, cudaMemcpyHostToDevice);
+    else
+        copyToGPU_Sparse(gpuUvalBasePtr, valBuffer, gpuUvalSize);
+        
+    
+// #if 0
+//     cudaMemcpy(gpuUvalBasePtr, valBuffer, gpuUvalSize, cudaMemcpyHostToDevice);
+// #else
+//     copyToGPU_Sparse(gpuUvalBasePtr, valBuffer, gpuUvalSize);
+// #endif
     cudaMemcpy(gpuUidxBasePtr, idxBuffer, gpuUidxSize, cudaMemcpyHostToDevice);
     tLsend = SuperLU_timer_() - tLsend;
     printf("cudaMemcpy time U =%g \n", tLsend);
