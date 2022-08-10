@@ -856,6 +856,29 @@ int_t LUstruct_v100::checkGPU()
     return 0;
 }
 
+/**
+ * @brief Pack non-zero values into a vector. 
+ *
+ * @param spNzvalArray The array of non-zero values.
+ * @param nzvalSize The size of the array of non-zero values.
+ * @param valOffset The offset of the non-zero values.
+ * @param packedNzvals The vector to store the non-zero values.
+ * @param packedNzvalsIndices The vector to store the indices of the non-zero values.
+ */
+void packNzvals(std::vector<double> &packedNzvals, std::vector<int_t> &packedNzvalsIndices, 
+ double* spNzvalArray, int_t nzvalSize,  int_t valOffset)
+{
+    for (int k = 0; k < nzvalSize; k++)
+    {
+        if (spNzvalArray[k] != 0)
+        {
+            packedNzvals.push_back(spNzvalArray[k]);
+            packedNzvalsIndices.push_back(valOffset + k);
+        }
+    }
+}
+
+const int AVOID_CPU_NZVAL = 1;
 lpanelGPU_t *LUstruct_v100::copyLpanelsToGPU()
 {
     lpanelGPU_t *lPanelVec_GPU = new lpanelGPU_t[CEILING(nsupers, Pc)];
@@ -883,6 +906,9 @@ lpanelGPU_t *LUstruct_v100::copyLpanelsToGPU()
     size_t idxOffset = 0;
     double tCopyToCPU = SuperLU_timer_();
 
+    std::vector<double> packedNzvals;
+    std::vector<int_t> packedNzvalsIndices;
+
     // do a memcpy to CPU buffer
     for (int_t i = 0; i < CEILING(nsupers, Pc); ++i)
     {
@@ -899,7 +925,12 @@ lpanelGPU_t *LUstruct_v100::copyLpanelsToGPU()
                 lpanelGPU_t ithLpanel(&gpuLidxBasePtr[idxOffset], &gpuLvalBasePtr[valOffset]);
                 lPanelVec[i].gpuPanel = ithLpanel;
                 lPanelVec_GPU[i] = ithLpanel;
-                memcpy(&valBuffer[valOffset], lPanelVec[i].val, sizeof(double) * lPanelVec[i].nzvalSize());
+                if(AVOID_CPU_NZVAL)
+                    packNzvals(packedNzvals, packedNzvalsIndices, lPanelVec[i].val, lPanelVec[i].nzvalSize(), valOffset);
+                else
+                    memcpy(&valBuffer[valOffset], lPanelVec[i].val, sizeof(double) * lPanelVec[i].nzvalSize());
+                
+                
                 memcpy(&idxBuffer[idxOffset], lPanelVec[i].index, sizeof(int_t) * lPanelVec[i].indexSize());
 
                 valOffset += lPanelVec[i].nzvalSize();
@@ -911,11 +942,17 @@ lpanelGPU_t *LUstruct_v100::copyLpanelsToGPU()
     std::cout << "Time to copy-L to CPU: " << tCopyToCPU << "\n";
     // do a cudaMemcpy to GPU
     double tLsend = SuperLU_timer_();
-#if 0
-    cudaMemcpy(gpuLvalBasePtr, valBuffer, gpuLvalSize, cudaMemcpyHostToDevice);
-#else
-    copyToGPU_Sparse(gpuLvalBasePtr, valBuffer, gpuLvalSize);
-#endif
+    if(AVOID_CPU_NZVAL)
+        copyToGPU(gpuLvalBasePtr, packedNzvals, packedNzvalsIndices);
+    else
+    {
+        #if 0
+            cudaMemcpy(gpuLvalBasePtr, valBuffer, gpuLvalSize, cudaMemcpyHostToDevice);
+        #else
+            copyToGPU_Sparse(gpuLvalBasePtr, valBuffer, gpuLvalSize);
+        #endif
+
+    }
     // find
     cudaMemcpy(gpuLidxBasePtr, idxBuffer, gpuLidxSize, cudaMemcpyHostToDevice);
     tLsend = SuperLU_timer_() - tLsend;
@@ -926,27 +963,6 @@ lpanelGPU_t *LUstruct_v100::copyLpanelsToGPU()
     return lPanelVec_GPU;
 }
 
-/**
- * @brief Pack non-zero values into a vector. 
- *
- * @param spNzvalArray The array of non-zero values.
- * @param nzvalSize The size of the array of non-zero values.
- * @param valOffset The offset of the non-zero values.
- * @param packedNzvals The vector to store the non-zero values.
- * @param packedNzvalsIndices The vector to store the indices of the non-zero values.
- */
-void packNzvals(std::vector<double> &packedNzvals, std::vector<int_t> &packedNzvalsIndices, 
- double* spNzvalArray, int_t nzvalSize,  int_t valOffset)
-{
-    for (int k = 0; k < nzvalSize; k++)
-    {
-        if (spNzvalArray[k] != 0)
-        {
-            packedNzvals.push_back(spNzvalArray[k]);
-            packedNzvalsIndices.push_back(valOffset + k);
-        }
-    }
-}
 
 
 upanelGPU_t *LUstruct_v100::copyUpanelsToGPU()
@@ -988,7 +1004,7 @@ upanelGPU_t *LUstruct_v100::copyUpanelsToGPU()
     }
 
     int_t *idxBuffer = (int_t *)SUPERLU_MALLOC(gpuUidxSize);
-    int AVOID_CPU_NZVAL = 1;
+    
     if (AVOID_CPU_NZVAL)
     {
         printf("AVOID_CPU_NZVAL is set\n");
