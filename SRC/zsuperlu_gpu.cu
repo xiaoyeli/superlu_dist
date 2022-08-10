@@ -20,6 +20,9 @@
 //#include <thrust/system/cuda/detail/cub/cub.cuh>
 
 #include "zlustruct_gpu.h"
+#ifdef HAVE_HIP
+#include "superlu_gpu_utils.hip.cpp"
+#endif
 
 #include "dcomplex.h"
 
