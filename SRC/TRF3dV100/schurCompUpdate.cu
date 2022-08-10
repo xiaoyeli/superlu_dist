@@ -915,42 +915,6 @@ lpanelGPU_t *LUstruct_v100::copyLpanelsToGPU()
     cudaMemcpy(gpuLvalBasePtr, valBuffer, gpuLvalSize, cudaMemcpyHostToDevice);
 #else
     copyToGPU_Sparse(gpuLvalBasePtr, valBuffer, gpuLvalSize);
-    // sparse Initialization for GPU
-    // find non-zero elements in the panel, their location and values  and copy to GPU
-    // int numDoubles = gpuLvalSize / sizeof(double);
-    // std::vector<double> valBufferPacked;
-    // std::vector<int_t> valIdx;
-    // for (int_t i = 0; i < numDoubles; i++)
-    // {
-    //     if (valBuffer[i] != 0)
-    //     {
-    //         valBufferPacked.push_back(valBuffer[i]);
-    //         valIdx.push_back(i);
-    //     }
-    // }
-    // printf("%d non-zero elements in the panel, wrt original=%d\n", valBufferPacked.size(), numDoubles);
-    // // get the size of the packed buffers and allocate memory on GPU
-    // int nnzCount = valBufferPacked.size();
-    // int_t gpuLvalSizePacked = nnzCount * sizeof(double);
-    // int_t gpuLidxSizePacked = nnzCount * sizeof(int_t);
-    // double *dlvalPacked;
-    // int_t *dlidxPacked;
-    // cudaMalloc(&dlvalPacked, gpuLvalSizePacked);
-    // cudaMalloc(&dlidxPacked, gpuLidxSizePacked);
-    // // copy the packed buffers to GPU
-    // cudaMemcpy(dlvalPacked, valBufferPacked.data(), gpuLvalSizePacked, cudaMemcpyHostToDevice);
-    // cudaMemcpy(dlidxPacked, valIdx.data(), gpuLidxSizePacked, cudaMemcpyHostToDevice);
-    // // perform the sparse initialization on GPU call indirectCopy
-    // const int ThreadblockSize = 1024;
-    // int nThreadBlocks = (nnzCount + ThreadblockSize - 1) / ThreadblockSize;
-    // indirectCopy<<<nThreadBlocks, ThreadblockSize>>>(
-    //     gpuLvalBasePtr, dlvalPacked, dlidxPacked, nnzCount);
-    // // dlvalPacked, dlidxPacked, gpuLvalSizePacked, gpuLidxSizePacked, gpuLvalBasePtr, gpuLidxBasePtr);
-    // // wait for it to finish and free dlvalPacked and dlidxPacked
-    // cudaDeviceSynchronize();
-    // cudaFree(dlvalPacked);
-    // cudaFree(dlidxPacked);
-
 #endif
     // find
     cudaMemcpy(gpuLidxBasePtr, idxBuffer, gpuLidxSize, cudaMemcpyHostToDevice);
@@ -961,6 +925,29 @@ lpanelGPU_t *LUstruct_v100::copyLpanelsToGPU()
     SUPERLU_FREE(idxBuffer);
     return lPanelVec_GPU;
 }
+
+/**
+ * @brief Pack non-zero values into a vector. 
+ *
+ * @param spNzvalArray The array of non-zero values.
+ * @param nzvalSize The size of the array of non-zero values.
+ * @param valOffset The offset of the non-zero values.
+ * @param packedNzvals The vector to store the non-zero values.
+ * @param packedNzvalsIndices The vector to store the indices of the non-zero values.
+ */
+void packNzvals(std::vector<double> &packedNzvals, std::vector<int_t> &packedNzvalsIndices, 
+ double* spNzvalArray, int_t nzvalSize,  int_t valOffset)
+{
+    for (int k = 0; k < nzvalSize; k++)
+    {
+        if (spNzvalArray[k] != 0)
+        {
+            packedNzvals.push_back(spNzvalArray[k]);
+            packedNzvalsIndices.push_back(valOffset + k);
+        }
+    }
+}
+
 
 upanelGPU_t *LUstruct_v100::copyUpanelsToGPU()
 {
@@ -1017,15 +1004,8 @@ upanelGPU_t *LUstruct_v100::copyUpanelsToGPU()
                     upanelGPU_t ithupanel(&gpuUidxBasePtr[idxOffset], &gpuUvalBasePtr[valOffset]);
                     uPanelVec[i].gpuPanel = ithupanel;
                     uPanelVec_GPU[i] = ithupanel;
-                    // memcpy(&valBuffer[valOffset], uPanelVec[i].val, sizeof(double) * uPanelVec[i].nzvalSize());
-                    for (int k = 0; k < uPanelVec[i].nzvalSize(); k++)
-                    {
-                        if (uPanelVec[i].val[k] != 0)
-                        {
-                            packedNzvals.push_back(uPanelVec[i].val[k]);
-                            packedNzvalsIndices.push_back(valOffset + k);
-                        }
-                    }
+                    packNzvals(packedNzvals, packedNzvalsIndices, uPanelVec[i].val, 
+                        uPanelVec[i].nzvalSize(),  valOffset);
                     memcpy(&idxBuffer[idxOffset], uPanelVec[i].index, sizeof(int_t) * uPanelVec[i].indexSize());
 
                     valOffset += uPanelVec[i].nzvalSize();
@@ -1038,14 +1018,7 @@ upanelGPU_t *LUstruct_v100::copyUpanelsToGPU()
 
         // do a cudaMemcpy to GPU
         double tLsend = SuperLU_timer_();
-        // const int USE_GPU_COPY = 1;
-        // if (USE_GPU_COPY)
-        //     cudaMemcpy(gpuUvalBasePtr, valBuffer, gpuUvalSize, cudaMemcpyHostToDevice);
-        // else
-        //     copyToGPU_Sparse(gpuUvalBasePtr, valBuffer, gpuUvalSize);
         copyToGPU(gpuUvalBasePtr, packedNzvals, packedNzvalsIndices);
-               
-
         cudaMemcpy(gpuUidxBasePtr, idxBuffer, gpuUidxSize, cudaMemcpyHostToDevice);
         tLsend = SuperLU_timer_() - tLsend;
         printf("cudaMemcpy time U =%g \n", tLsend);
