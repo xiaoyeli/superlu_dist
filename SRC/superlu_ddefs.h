@@ -541,8 +541,8 @@ extern int_t pdReDistribute_X_to_B(int_t, double*, int_t, int_t, int_t,
 		      dSOLVEstruct_t*);
 extern int_t dReDistribute_A(SuperMatrix *, dScalePermstruct_t *,
                 Glu_freeable_t *, int_t *, int_t *,
-                gridinfo_t *, int_t *, int_t *,
-                double *);
+                gridinfo_t *, int_t **, int_t **,
+                double **);
 
 extern void dlsum_fmod_inv_master_onesided(double *, double *, double *, double *,
                                   int, int, int_t , int_t *, int_t,
@@ -554,6 +554,16 @@ extern void dlsum_bmod_inv_master_onesided(double *, double *, double *, double 
                                   int_t **, int_t *, gridinfo_t *, dLocalLU_t *,
                                   SuperLUStat_t **, int_t, int_t, int, int,
 		                          int*, long*, int*, long*, int,int);
+extern void dlsum_bmod_inv_master_onesided(double *, double *, double *, double *,
+                       int, int_t, int *bmod, int_t *, Ucb_indptr_t **,
+                       int_t **, int_t *, gridinfo_t *, dLocalLU_t *,
+                       SuperLUStat_t **, int_t, int_t, int, int,
+                       int*, long*, int*, long*, int,int);
+
+extern void pdgstrs_onesided(superlu_dist_options_t *, int_t,
+                    dLUstruct_t *, dScalePermstruct_t *, gridinfo_t *,
+		    double *, int_t, int_t, int_t, int, dSOLVEstruct_t *,
+		    SuperLUStat_t *, int *);
 #endif
 
 /* #define GPU_PROF

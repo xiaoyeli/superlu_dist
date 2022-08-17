@@ -652,7 +652,7 @@ void dlsum_bmod_inv_master_onesided
 					for (jj=0;jj<iknsupc*nrhs;jj++)
 						lsum[il + jj ] += lsum[il + jj + ii*sizelsum];
 				//RdTree_forwardMessageSimple(URtree_ptr[ik],&lsum[il - LSUM_H ],RdTree_GetMsgSize(URtree_ptr[ik],'d')*nrhs+LSUM_H,'d');
-                C_RdTree_forwardMessage_onesided(&URtree_ptr[lk],&lsum[il - LSUM_H ],URtree_ptr[lk].msgSize_*nrhs+LSUM_H, RDcount, RDbase, &maxrecvsz, Pc);
+                C_RdTree_forwardMessage_onesided(&URtree_ptr[ik],&lsum[il - LSUM_H ],URtree_ptr[ik].msgSize_*nrhs+LSUM_H, RDcount, RDbase, &maxrecvsz, Pc);
 
 #if ( DEBUGlevel>=2 )
 				printf("(%2d) Sent LSUM[%2.0f], size %2d, to P %2d\n",
@@ -739,10 +739,14 @@ void dlsum_bmod_inv_master_onesided
 						// printf("xre: %f\n",x[ii+i]);
 						// fflush(stdout);
 					// }
-					if(UBtree_ptr[lk1].empty_==NO){
+#if ( DEBUGlevel>=2 )
+                printf("iam=%d,lk=%d,destCnt=%d,here in master\n",iam,lk1,UBtree_ptr[lk1].destCnt_);
+                fflush(stdout);
+#endif
+
+                    if(UBtree_ptr[lk1].empty_==NO){
 					  //BcTree_forwardMessageSimple(UBtree_ptr[lk1],&x[ii - XK_H],BcTree_GetMsgSize(UBtree_ptr[lk1],'d')*nrhs+XK_H,'d');
-					  //C_BcTree_forwardMessageSimple(&UBtree_ptr[lk1], &x[ii - XK_H], UBtree_ptr[lk1].msgSize_*nrhs+XK_H);
-                      C_BcTree_forwardMessage_onesided(&UBtree_ptr[lk], &x[ii - XK_H], UBtree_ptr[lk].msgSize_*nrhs+XK_H, BCcount, BCbase, &maxrecvsz,Pc);
+					  C_BcTree_forwardMessage_onesided(&UBtree_ptr[lk1], &x[ii - XK_H], UBtree_ptr[lk1].msgSize_*nrhs+XK_H, BCcount, BCbase, &maxrecvsz,Pc);
 					}
 
 					/*

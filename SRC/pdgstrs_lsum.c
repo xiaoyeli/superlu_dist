@@ -1317,7 +1317,7 @@ void dlsum_fmod_inv_master
 					/*
 					 * Send Xk to process column Pc[k].
 					 */
-#if ( DEBUGlevel>=1 )
+#if ( DEBUGlevel>=2 )
                     printf("iam=%d,lk=%d,destCnt=%d, in master\n",iam,lk,LBtree_ptr[lk].destCnt_);
                     fflush(stdout);
 #endif
@@ -2109,6 +2109,10 @@ void dlsum_bmod_inv_master
 						// printf("xre: %f\n",x[ii+i]);
 						// fflush(stdout);
 					// }
+#if ( DEBUGlevel>=1 )
+                printf("iam=%d, lk=%d,destCnt=%d,here in master\n",iam,lk1,UBtree_ptr[lk1].destCnt_);
+                fflush(stdout);
+#endif
 					if(UBtree_ptr[lk1].empty_==NO){
 					  //BcTree_forwardMessageSimple(UBtree_ptr[lk1],&x[ii - XK_H],BcTree_GetMsgSize(UBtree_ptr[lk1],'d')*nrhs+XK_H,'d');
 					  C_BcTree_forwardMessageSimple(&UBtree_ptr[lk1], &x[ii - XK_H], UBtree_ptr[lk1].msgSize_*nrhs+XK_H);

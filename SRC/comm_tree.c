@@ -131,9 +131,14 @@ void C_BcTree_Create_onesided(C_Tree* tree, MPI_Comm comm, int* ranks, int rank_
           MPI_Put(&sig, 1, MPI_DOUBLE, new_iProc, BCsendoffset, 1, MPI_DOUBLE,bc_winl);
           MPI_Win_flush_local(new_iProc, bc_winl);
           BCcount[new_iProc] += 1;
-#if ( DEBUGlevel>=1 )
+
+          //printf("BCsend,%d,%d\n",tree->myRank_,msgSize);
+          //fflush(stdout);
+#if ( DEBUGlevel>=2 )
               printf("iam %d send bc to %d (%d), offset=%d, msgsize=%d,already send %d msg\n",tree->myRank_, new_iProc,tree->myDests_[idxRecv],BCsendoffset, msgSize,BCcount[new_iProc]);
               fflush(stdout);
+#endif
+#if ( DEBUGlevel>=2 )
               double* val = (double*) localBuffer;
               for (int i=0; i<msgSize;i++){
                   printf("%d to %d, msg %d at %lu, sendbuffer[%d]=%lf\n",
@@ -141,9 +146,36 @@ void C_BcTree_Create_onesided(C_Tree* tree, MPI_Comm comm, int* ranks, int rank_
                   fflush(stdout);
               }
 #endif
-
-
         } // for (iProc)
+	}
+
+        void C_BcTree_forwardMessage_onesided_u(C_Tree* tree, void* localBuffer, int msgSize, int* BCcount, long* BCbase, int* maxrecvsz, int Pc){
+        MPI_Status status;
+		int flag;
+        long BCsendoffset=0;
+        int size_num=1; // if dc, size_num=2;
+        msgSize=msgSize*size_num;
+		for( int idxRecv = 0; idxRecv < tree->destCnt_; ++idxRecv ){
+          int new_iProc = tree->myDests_[idxRecv]/Pc;
+          BCsendoffset = BCbase[new_iProc] + BCcount[new_iProc]*(*maxrecvsz);
+          MPI_Put(localBuffer, msgSize, MPI_DOUBLE, new_iProc, BCsendoffset+1, msgSize, MPI_DOUBLE,bc_winl);
+          MPI_Win_flush_local(new_iProc, bc_winl);
+          double sig=1.0;
+          MPI_Put(&sig, 1, MPI_DOUBLE, new_iProc, BCsendoffset, 1, MPI_DOUBLE,bc_winl);
+          MPI_Win_flush_local(new_iProc, bc_winl);
+          BCcount[new_iProc] += 1;
+
+          //printf("BCsend,%d,%d\n",tree->myRank_,msgSize);
+          //fflush(stdout);
+#if ( DEBUGlevel>=1 )
+              printf("iam %d send bc to %d (%d), offset=%d, msgsize=%d,already send %d msg\n",tree->myRank_, new_iProc,tree->myDests_[idxRecv],BCsendoffset, msgSize,BCcount[new_iProc]);
+              fflush(stdout);
+#endif
+        } // for (iProc)
+#if ( DEBUGlevel>=1 )
+              printf("iam %d done,cnt=%d\n",tree->myRank_,tree->destCnt_ );
+              fflush(stdout);
+#endif
 	}
 
     void C_RdTree_forwardMessage_onesided(C_Tree* Tree, void* localBuffer, int msgSize, int* RDcount, long* RDbase, int* maxrecvsz, int Pc){
@@ -160,6 +192,8 @@ void C_BcTree_Create_onesided(C_Tree* tree, MPI_Comm comm, int* ranks, int rank_
               MPI_Put(&sig, 1, MPI_DOUBLE, new_iProc, RDsendoffset, 1, MPI_DOUBLE,rd_winl);
               MPI_Win_flush_local(new_iProc, rd_winl);
               RDcount[new_iProc] += 1;
+              //printf("RDsend,%d,%d\n",Tree->myRank_,msgSize);
+              //fflush(stdout);
 #if ( DEBUGlevel>=2 )
               printf("iam %d rd send to %d (%d), offset=%d, msgsize=%d\n",Tree->myRank_, new_iProc,Tree->myRoot_,RDsendoffset, msgSize);
               fflush(stdout);

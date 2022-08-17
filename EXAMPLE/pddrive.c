@@ -1,16 +1,16 @@
 /*! \file
 Copyright (c) 2003, The Regents of the University of California, through
-Lawrence Berkeley National Laboratory (subject to receipt of any required 
-approvals from U.S. Dept. of Energy) 
+Lawrence Berkeley National Laboratory (subject to receipt of any required
+approvals from U.S. Dept. of Energy)
 
-All rights reserved. 
+All rights reserved.
 
 The source code is distributed under BSD license, see the file License.txt
 at the top-level directory.
 */
 
 
-/*! @file 
+/*! @file
  * \brief Driver program for PDGSSVX example
  *
  * <pre>
@@ -23,6 +23,7 @@ at the top-level directory.
 
 #include <math.h>
 #include "superlu_ddefs.h"
+#undef MultiGrids
 
 /*! \brief
  *
@@ -34,7 +35,7 @@ at the top-level directory.
  *
  * This example illustrates how to use PDGSSVX with the full
  * (default) options to solve a linear system.
- * 
+ *
  * Five basic steps are required:
  *   1. Initialize the MPI environment and the SuperLU process grid
  *   2. Set up the input matrix and the right-hand side
@@ -59,12 +60,21 @@ int main(int argc, char *argv[])
     double   *berr;
     double   *b, *xtrue;
     int    m, n;
-    int      nprow, npcol, lookahead, colperm, rowperm, ir;
+    int      nprow, npcol, lookahead, colperm, rowperm, ir, symbfact;
     int      iam, info, ldb, ldx, nrhs;
     char     **cpp, c, *postfix;;
     FILE *fp, *fopen();
     int cpp_defs();
     int ii, omp_mpi_level;
+    int ldumap, p;
+    int*    usermap;
+    float result_min[2];
+    result_min[0]=1e10;
+    result_min[1]=1e10;
+    float result_max[2];
+    result_max[0]=0.0;
+    result_max[1]=0.0;
+    MPI_Comm SubComm;
 
     nprow = 1;  /* Default process rows.      */
     npcol = 1;  /* Default process columns.   */
@@ -73,98 +83,136 @@ int main(int argc, char *argv[])
     colperm = -1;
     rowperm = -1;
     ir = -1;
+    symbfact = -1;
 
     /* ------------------------------------------------------------
-       INITIALIZE MPI ENVIRONMENT. 
+       INITIALIZE MPI ENVIRONMENT.
        ------------------------------------------------------------*/
     //MPI_Init( &argc, &argv );
-    MPI_Init_thread( &argc, &argv, MPI_THREAD_MULTIPLE, &omp_mpi_level); 
-	
+    MPI_Init_thread( &argc, &argv, MPI_THREAD_MULTIPLE, &omp_mpi_level);
+
 
 #if ( VAMPIR>=1 )
-    VT_traceoff(); 
+    VT_traceoff();
 #endif
 
 #if ( VTUNE>=1 )
-	__itt_pause();
+    __itt_pause();
 #endif
-	
+
     /* Parse command line argv[]. */
     for (cpp = argv+1; *cpp; ++cpp) {
-	if ( **cpp == '-' ) {
-	    c = *(*cpp+1);
-	    ++cpp;
-	    switch (c) {
-	      case 'h':
-		  printf("Options:\n");
-		  printf("\t-r <int>: process rows    (default %4d)\n", nprow);
-		  printf("\t-c <int>: process columns (default %4d)\n", npcol);
-		  exit(0);
-		  break;
-	      case 'r': nprow = atoi(*cpp);
-		        break;
-	      case 'c': npcol = atoi(*cpp);
-		        break;
-              case 'l': lookahead = atoi(*cpp);
-                        break;
-              case 'p': rowperm = atoi(*cpp);
-                        break;
-              case 'q': colperm = atoi(*cpp);
-                        break;
-              case 'i': ir = atoi(*cpp);
-                        break;
-	    }
-	} else { /* Last arg is considered a filename */
-	    if ( !(fp = fopen(*cpp, "r")) ) {
+        if ( **cpp == '-' ) {
+            c = *(*cpp+1);
+            ++cpp;
+            switch (c) {
+                case 'h':
+                    printf("Options:\n");
+                    printf("\t-r <int>: process rows    (default %4d)\n", nprow);
+                    printf("\t-c <int>: process columns (default %4d)\n", npcol);
+                    exit(0);
+                    break;
+                case 'r': nprow = atoi(*cpp);
+                    break;
+                case 'c': npcol = atoi(*cpp);
+                    break;
+                case 'l': lookahead = atoi(*cpp);
+                    break;
+                case 'p': rowperm = atoi(*cpp);
+                    break;
+                case 'q': colperm = atoi(*cpp);
+                    break;
+                case 's': symbfact = atoi(*cpp);
+                    break;
+                case 'i': ir = atoi(*cpp);
+                    break;
+            }
+        } else { /* Last arg is considered a filename */
+            if ( !(fp = fopen(*cpp, "r")) ) {
                 ABORT("File does not exist");
             }
-	    break;
-	}
+            break;
+        }
     }
 
+
+#if defined MultiGrids
     /* ------------------------------------------------------------
-       INITIALIZE THE SUPERLU PROCESS GRID. 
+       INITIALIZE THE SUPERLU PROCESS GRID.
+       ------------------------------------------------------------*/
+    int myrank;
+    MPI_Comm_rank(MPI_COMM_WORLD, &myrank);
+    usermap = intMalloc_dist(nprow*npcol);
+    ldumap = nprow;
+    int color = myrank/(nprow*npcol); /* Assuming each grid uses the same number of nprow and npcol */
+    MPI_Comm_split(MPI_COMM_WORLD, color, myrank, &SubComm);
+    p = 0;
+    for (int i = 0; i < nprow; ++i)
+	for (int j = 0; j < npcol; ++j) usermap[i+j*ldumap] = p++;
+    superlu_gridmap(SubComm, nprow, npcol, usermap, ldumap, &grid);
+    SUPERLU_FREE(usermap);
+
+#ifdef GPU_ACC
+    /* Binding each MPI to a GPU device */
+    char *ttemp;
+    ttemp = getenv ("SUPERLU_BIND_MPI_GPU");
+
+    if (ttemp) {
+	int devs, rank;
+	MPI_Comm_rank(MPI_COMM_WORLD, &rank); // MPI_COMM_WORLD needs to be used here instead of SubComm
+	gpuGetDeviceCount(&devs);  // Returns the number of compute-capable devices
+	gpuSetDevice(rank % devs); // Set device to be used for GPU executions
+    }
+#endif
+
+    // printf("grid.iam %5d, myrank %5d\n",grid.iam,myrank);
+    // fflush(stdout);
+#else
+    /* ------------------------------------------------------------
+       INITIALIZE THE SUPERLU PROCESS GRID.
        ------------------------------------------------------------*/
     superlu_gridinit(MPI_COMM_WORLD, nprow, npcol, &grid);
-	
+#endif
+
+
     if(grid.iam==0){
-	MPI_Query_thread(&omp_mpi_level);
-    switch (omp_mpi_level) {
-      case MPI_THREAD_SINGLE:
-		printf("MPI_Query_thread with MPI_THREAD_SINGLE\n");
-		fflush(stdout);
-	break;
-      case MPI_THREAD_FUNNELED:
-		printf("MPI_Query_thread with MPI_THREAD_FUNNELED\n");
-		fflush(stdout);
-	break;
-      case MPI_THREAD_SERIALIZED:
-		printf("MPI_Query_thread with MPI_THREAD_SERIALIZED\n");
-		fflush(stdout);
-	break;
-      case MPI_THREAD_MULTIPLE:
-		printf("MPI_Query_thread with MPI_THREAD_MULTIPLE\n");
-		fflush(stdout);
-	break;
+        MPI_Query_thread(&omp_mpi_level);
+        switch (omp_mpi_level) {
+            case MPI_THREAD_SINGLE:
+                printf("MPI_Query_thread with MPI_THREAD_SINGLE\n");
+                fflush(stdout);
+                break;
+            case MPI_THREAD_FUNNELED:
+                printf("MPI_Query_thread with MPI_THREAD_FUNNELED\n");
+                fflush(stdout);
+                break;
+            case MPI_THREAD_SERIALIZED:
+                printf("MPI_Query_thread with MPI_THREAD_SERIALIZED\n");
+                fflush(stdout);
+                break;
+            case MPI_THREAD_MULTIPLE:
+                printf("MPI_Query_thread with MPI_THREAD_MULTIPLE\n");
+                fflush(stdout);
+                break;
+        }
     }
-	}
-	
+
     /* Bail out if I do not belong in the grid. */
     iam = grid.iam;
     if ( (iam >= nprow * npcol) || (iam == -1) ) goto out;
     if ( !iam ) {
-	int v_major, v_minor, v_bugfix;
+        int v_major, v_minor, v_bugfix;
 #ifdef __INTEL_COMPILER
-	printf("__INTEL_COMPILER is defined\n");
+        printf("__INTEL_COMPILER is defined\n");
 #endif
-	printf("__STDC_VERSION__ %ld\n", __STDC_VERSION__);
+        printf("__STDC_VERSION__ %ld\n", __STDC_VERSION__);
 
-	superlu_dist_GetVersionNumber(&v_major, &v_minor, &v_bugfix);
-	printf("Library version:\t%d.%d.%d\n", v_major, v_minor, v_bugfix);
+        superlu_dist_GetVersionNumber(&v_major, &v_minor, &v_bugfix);
+        printf("Library version:\t%d.%d.%d\n", v_major, v_minor, v_bugfix);
 
-	printf("Input matrix file:\t%s\n", *cpp);
+        printf("Input matrix file:\t%s\n", *cpp);
         printf("Process grid:\t\t%d X %d\n", (int)grid.nprow, (int)grid.npcol);
-	fflush(stdout);
+        fflush(stdout);
     }
 
 #if ( VAMPIR>=1 )
@@ -176,19 +224,19 @@ int main(int argc, char *argv[])
 #endif
 
     for(ii = 0;ii<strlen(*cpp);ii++){
-	if((*cpp)[ii]=='.'){
-		postfix = &((*cpp)[ii+1]);
-	}
+        if((*cpp)[ii]=='.'){
+            postfix = &((*cpp)[ii+1]);
+        }
     }
     // printf("%s\n", postfix);
-	
+
     /* ------------------------------------------------------------
-       GET THE MATRIX FROM FILE AND SETUP THE RIGHT HAND SIDE. 
+       GET THE MATRIX FROM FILE AND SETUP THE RIGHT HAND SIDE.
        ------------------------------------------------------------*/
     dcreate_matrix_postfix(&A, nrhs, &b, &ldb, &xtrue, &ldx, fp, postfix, &grid);
 
     if ( !(berr = doubleMalloc_dist(nrhs)) )
-	ABORT("Malloc fails for berr[].");
+        ABORT("Malloc fails for berr[].");
 
     /* ------------------------------------------------------------
        NOW WE SOLVE THE LINEAR SYSTEM.
@@ -210,12 +258,12 @@ int main(int argc, char *argv[])
      */
     set_default_options_dist(&options);
 #if 0
-	options.DiagInv = YES;
+    options.DiagInv = YES;
     options.ReplaceTinyPivot  = YES;
     options.RowPerm = LargeDiag_HWPM;
     options.IterRefine = NOREFINE;
     options.ColPerm = NATURAL;
-    options.Equil = NO; 
+    options.Equil = NO;
     options.ReplaceTinyPivot = YES;
 #endif
 
@@ -223,10 +271,11 @@ int main(int argc, char *argv[])
     if (colperm != -1) options.ColPerm = colperm;
     if (lookahead != -1) options.num_lookaheads = lookahead;
     if (ir != -1) options.IterRefine = ir;
+    if (symbfact != -1) options.ParSymbFact = symbfact;
 
     if (!iam) {
-	print_options_dist(&options);
-	fflush(stdout);
+        print_options_dist(&options);
+        fflush(stdout);
     }
 
     m = A.nrow;
@@ -241,20 +290,24 @@ int main(int argc, char *argv[])
 
     /* Call the linear equation solver. */
     pdgssvx(&options, &A, &ScalePermstruct, b, ldb, nrhs, &grid,
-	    &LUstruct, &SOLVEstruct, berr, &stat, &info);
+            &LUstruct, &SOLVEstruct, berr, &stat, &info);
 
     if ( info ) {  /* Something is wrong */
         if ( iam==0 ) {
-	    printf("ERROR: INFO = %d returned from pdgssvx()\n", info);
-	    fflush(stdout);
-	}
+            printf("ERROR: INFO = %d returned from pdgssvx()\n", info);
+            fflush(stdout);
+        }
     } else {
         /* Check the accuracy of the solution. */
         pdinf_norm_error(iam, ((NRformat_loc *)A.Store)->m_loc,
-		         nrhs, b, ldb, xtrue, ldx, grid.comm);
+                         nrhs, b, ldb, xtrue, ldx, grid.comm);
     }
 
     PStatPrint(&options, &stat, &grid);        /* Print the statistics. */
+    result_min[0] = stat.utime[FACT];
+    result_min[1] = stat.utime[SOLVE];
+    result_max[0] = stat.utime[FACT];
+    result_max[1] = stat.utime[SOLVE];
 
     /* ------------------------------------------------------------
        DEALLOCATE STORAGE.
@@ -274,7 +327,20 @@ int main(int argc, char *argv[])
     /* ------------------------------------------------------------
        RELEASE THE SUPERLU PROCESS GRID.
        ------------------------------------------------------------*/
-out:
+    out:
+#if defined MultiGrids
+    fflush(stdout);
+    MPI_Allreduce(MPI_IN_PLACE, result_min, 2, MPI_FLOAT,MPI_MIN, MPI_COMM_WORLD);
+    MPI_Allreduce(MPI_IN_PLACE, result_max, 2, MPI_FLOAT,MPI_MAX, MPI_COMM_WORLD);
+    if (!myrank) {
+        printf("returning data:\n");
+        printf("    Factor time over all grids.  Min: %8.4f Max: %8.4f\n",result_min[0], result_max[0]);
+        printf("    Solve time over all grids.  Min: %8.4f Max: %8.4f\n",result_min[1], result_max[1]);
+        printf("**************************************************\n");
+        fflush(stdout);
+    }
+#endif
+
     superlu_gridexit(&grid);
 
     /* ------------------------------------------------------------

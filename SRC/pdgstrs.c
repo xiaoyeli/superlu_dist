@@ -2204,10 +2204,6 @@ thread_id=0;
 								nfrecvx_buf++;
 								{
 									lk = LBj( k, grid );    /* local block number */
-#if ( DEBUGlevel>=1 )
-                                    printf("iam=%d,k=%d,lk=%d,destCnt=%d,here\n",iam,k,lk,LBtree_ptr[lk].destCnt_);
-                                    fflush(stdout);
-#endif
 									if(LBtree_ptr[lk].destCnt_>0){
 
                                         // BcTree_forwardMessageSimple(LBtree_ptr[lk],recvbuf0,BcTree_GetMsgSize(LBtree_ptr[lk],'d')*nrhs+XK_H,'d');
@@ -2234,7 +2230,7 @@ thread_id=0;
 											knsupc = SuperSize( k );
 											xin = &recvbuf0[XK_H] ;
 										}
-#if ( DEBUGlevel>=1 )
+#if ( DEBUGlevel>=2 )
                                         printf("iam=%d,lk=%d,lsub=%d\n",iam,lk,lsub);
                                         fflush(stdout);
 #endif
@@ -2604,7 +2600,7 @@ thread_id=0;
 
 	log_memory(nlb*aln_i*iword+nlb*iword + nsupers_i*iword + maxrecvsz*(nbrecvx+1)*dword, stat);	//account for bmod, brecv, rootsups, recvbuf_BC_fwd
 
-#if ( DEBUGlevel>=2 )
+#if ( DEBUGlevel>=1 )
 	printf("(%2d) nbrecvx %4d,  nbrecvmod %4d,  nroot %4d\n,  nbtree %4d\n,  nrtree %4d\n",
 			iam, nbrecvx, nbrecvmod, nroot, nbtree, nrtree);
 	fflush(stdout);
@@ -2814,6 +2810,9 @@ for (i=0;i<nroot_send;i++){
 		ii = X_BLK( lib );
 		// BcTree_forwardMessageSimple(UBtree_ptr[lk],&x[ii - XK_H],BcTree_GetMsgSize(UBtree_ptr[lk],'d')*nrhs+XK_H,'d');
 		C_BcTree_forwardMessageSimple(&UBtree_ptr[lk], &x[ii - XK_H], UBtree_ptr[lk].msgSize_*nrhs+XK_H);
+#if ( DEBUGlevel>=1 )
+        printf("(%2d) send lk %2d\n", iam, lk);
+#endif
 	}else{ // this is a reduce forwarding
 		lk = -lk - 1;
 		il = LSUM_BLK( lk );
@@ -2875,7 +2874,10 @@ for (i=0;i<nroot_send;i++){
 				nbrecvx_buf++;
 
 				lk = LBj( k, grid );    /* local block number */
-
+#if ( DEBUGlevel>=1 )
+                printf("iam=%d,k=%d, lk=%d,destCnt=%d,here\n",iam,k,lk,UBtree_ptr[lk].destCnt_);
+                fflush(stdout);
+#endif
 				if(UBtree_ptr[lk].destCnt_>0){
 
 					// BcTree_forwardMessageSimple(UBtree_ptr[lk],recvbuf0,BcTree_GetMsgSize(UBtree_ptr[lk],'d')*nrhs+XK_H,'d');
