@@ -9,9 +9,13 @@
 
 #ifdef one_sided
 #include "onesided.h"
-
+#ifdef USE_FOMPI
+foMPI_Win bc_winl;
+foMPI_Win rd_winl;
+#else
 MPI_Win bc_winl;
 MPI_Win rd_winl;
+#endif
 MPI_Comm row_comm;
 MPI_Comm col_comm;
 int* BufSize;
@@ -2217,8 +2221,11 @@ if ( !iam) printf(".. Construct Reduce tree for U: %.2f\t\n", t);
     for(i=0; i<(size_num * BC_buffer_size); i++){
             BC_taskq[i] = -1.00;
     }
+#ifdef USE_FOMPI
+    foMPI_Win_create(BC_taskq, (BC_buffer_size*size_num)*sizeof(double), sizeof(double), MPI_INFO_NULL, col_comm, &bc_winl);
+#else
     MPI_Win_create(BC_taskq, (BC_buffer_size*size_num)*sizeof(double), sizeof(double), MPI_INFO_NULL, col_comm, &bc_winl);
-
+#endif
     int nfrecvmod=0;
     for (lk=0;lk<CEILING( nsupers, grid->nprow );++lk){
         if(LRtree_ptr[lk].empty_==NO){
@@ -2236,7 +2243,12 @@ if ( !iam) printf(".. Construct Reduce tree for U: %.2f\t\n", t);
     for(i=0; i<RD_buffer_size*size_num; i++){
             RD_taskq[i] = -1.0;
     }
+#ifdef USE_FOMPI
+	foMPI_Win_create(RD_taskq, (size_num*RD_buffer_size)*sizeof(double), sizeof(double), MPI_INFO_NULL, row_comm, &rd_winl);
+#else
 	MPI_Win_create(RD_taskq, (size_num*RD_buffer_size)*sizeof(double), sizeof(double), MPI_INFO_NULL, row_comm, &rd_winl);
+#endif
+
 #if ( DEBUGlevel>=1 )
     printf("iam=%d, maxrecvsz=%d, maxBCmsg=%d (%f MB),maxRDmsg=%d (%f MB)\n",
             iam, maxrecvsz,BC_buffer_size/maxrecvsz,((BC_buffer_size*size_num)*sizeof(double))/1e6, RD_buffer_size/maxrecvsz,((RD_buffer_size*size_num)*sizeof(double))/1e6);

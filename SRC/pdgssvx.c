@@ -1441,12 +1441,23 @@ pdgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 	// #pragma omp master
 	// {
 #ifdef one_sided
+#ifdef USE_FOMPI
+    if (!iam) printf("use fompi\n");
+        foMPI_Win_lock_all(0, bc_winl);
+        foMPI_Win_lock_all(0, rd_winl);
+#else
         MPI_Win_lock_all(0, bc_winl);
         MPI_Win_lock_all(0, rd_winl);
+#endif
         pdgstrs_onesided(options, n, LUstruct, ScalePermstruct, grid, X, m_loc,
                 fst_row, ldb, nrhs, SOLVEstruct, stat, info);
+#ifdef USE_FOMPI
+        foMPI_Win_unlock_all(bc_winl);
+        foMPI_Win_unlock_all(rd_winl);
+#else
         MPI_Win_unlock_all(bc_winl);
         MPI_Win_unlock_all(rd_winl);
+#endif
 #else
         pdgstrs(options, n, LUstruct, ScalePermstruct, grid, X, m_loc,
                 fst_row, ldb, nrhs, SOLVEstruct, stat, info);

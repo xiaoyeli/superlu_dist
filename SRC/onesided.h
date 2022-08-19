@@ -1,10 +1,20 @@
 //
 // Created by NanDing on 7/28/22.
 //
+#ifdef USE_FOMPI
+#include "fompi.h"
+#else
 #include "mpi.h"
+#endif
 
+#ifdef USE_FOMPI
+extern foMPI_Win bc_winl;
+extern foMPI_Win rd_winl;
+#else
 extern MPI_Win bc_winl;
 extern MPI_Win rd_winl;
+#endif
+
 extern MPI_Comm row_comm;
 extern MPI_Comm col_comm;
 extern int *BufSize;

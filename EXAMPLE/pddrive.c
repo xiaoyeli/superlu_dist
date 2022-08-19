@@ -89,8 +89,11 @@ int main(int argc, char *argv[])
        INITIALIZE MPI ENVIRONMENT.
        ------------------------------------------------------------*/
     //MPI_Init( &argc, &argv );
+#ifdef USE_FOMPI
+    foMPI_Init( &argc, &argv );
+#else
     MPI_Init_thread( &argc, &argv, MPI_THREAD_MULTIPLE, &omp_mpi_level);
-
+#endif
 
 #if ( VAMPIR>=1 )
     VT_traceoff();
