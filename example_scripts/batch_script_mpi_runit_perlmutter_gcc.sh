@@ -19,10 +19,24 @@ export LD_LIBRARY_PATH=${LD_LIBRARY_PATH//\/usr\/local\/cuda-11.7\/compat:/}
 
 
 
+
+
+export CUDA_MPS_PIPE_DIRECTORY=/tmp/nvidia-mps
+export CUDA_MPS_LOG_DIRECTORY=/tmp/nvidia-log
+# Launch MPS from a single rank per node
+if [ $SLURM_LOCALID -eq 0 ]; then
+    CUDA_VISIBLE_DEVICES=$SLURM_JOB_GPUS nvidia-cuda-mps-control -d
+fi
+# Wait for MPS to start
+sleep 5
+
+
+
 export MAX_BUFFER_SIZE=50000000
 export SUPERLU_NUM_GPU_STREAMS=1
 export SUPERLU_BIND_MPI_GPU=1
 export SUPERLU_ACC_OFFLOAD=1 # this can be 0 to do CPU tests on GPU nodes
+
 
 
 if [[ $NERSC_HOST == edison ]]; then
@@ -71,8 +85,8 @@ export MPICH_MAX_THREAD_SAFETY=multiple
 
 # export NSUP=5
 # export NREL=5
-# for MAT in big.rua 
-for MAT in g4.rua 
+for MAT in big.rua 
+# for MAT in g4.rua 
 # for MAT in s1_mat_0_126936.bin
 # for MAT in s1_mat_0_126936.bin s1_mat_0_253872.bin s1_mat_0_507744.bin 
 # for MAT in matrix_ACTIVSg70k_AC_00.mtx matrix_ACTIVSg10k_AC_00.mtx
@@ -83,3 +97,8 @@ srun -n $NCORE_VAL_TOT -N $NODE_VAL_TOT -c $TH_PER_RANK --cpu_bind=cores ./EXAMP
 # srun -n $NCORE_VAL_TOT -N $NODE_VAL_TOT -c $TH_PER_RANK --cpu_bind=cores ./EXAMPLE/pddrive3d -c $NCOL -r $NROW $CFS/m2957/liuyangz/my_research/matrix/$MAT | tee ./$MAT/SLU.o_mpi_${NROW}x${NCOL}_${NTH}_1rhs_3d
 done 
 done 
+
+# Quit MPS control daemon before exiting
+if [ $SLURM_LOCALID -eq 0 ]; then
+    echo quit | nvidia-cuda-mps-control
+fi
