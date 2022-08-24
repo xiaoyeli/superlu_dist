@@ -741,35 +741,16 @@ int_t LUstruct_v100::setLUstruct_GPU()
     cudaMemcpy(A_gpu.xsup, xsup, (nsupers + 1) * sizeof(int_t), cudaMemcpyHostToDevice);
 
     double tLsend, tUsend;
-#if 1
+
     tLsend = SuperLU_timer_();
     upanelGPU_t *uPanelVec_GPU = copyUpanelsToGPU();
     tLsend = SuperLU_timer_() - tLsend;
     tUsend = SuperLU_timer_();
     lpanelGPU_t *lPanelVec_GPU = copyLpanelsToGPU();
     tUsend = SuperLU_timer_() - tUsend;
-#else
 
-    upanelGPU_t *uPanelVec_GPU = new upanelGPU_t[CEILING(nsupers, Pr)];
-    lpanelGPU_t *lPanelVec_GPU = new lpanelGPU_t[CEILING(nsupers, Pc)];
-    tLsend = SuperLU_timer_();
-    for (int_t i = 0; i < CEILING(nsupers, Pc); ++i)
-    {
-        if (i * Pc + mycol < nsupers && isNodeInMyGrid[i * Pc + mycol] == 1)
-            lPanelVec_GPU[i] = lPanelVec[i].copyToGPU();
-    }
-    tLsend = SuperLU_timer_() - tLsend;
-    tUsend = SuperLU_timer_();
-    // cudaCheckError();
-    for (int_t i = 0; i < CEILING(nsupers, Pr); ++i)
-    {
-        if (i * Pr + myrow < nsupers && isNodeInMyGrid[i * Pr + myrow] == 1)
-            uPanelVec_GPU[i] = uPanelVec[i].copyToGPU();
-    }
-    tUsend = SuperLU_timer_() - tUsend;
-#endif
     tRegion[1] = SuperLU_timer_() - tRegion[1];
-
+    printf("TRegion L,U send: \t %g\n", tRegion[1]);
     printf("Time to send Lpanel=%g  and U panels =%g \n", tLsend, tUsend);
 
     cudaMalloc(&A_gpu.lPanelVec, CEILING(nsupers, Pc) * sizeof(lpanelGPU_t));
@@ -778,48 +759,70 @@ int_t LUstruct_v100::setLUstruct_GPU()
     cudaMalloc(&A_gpu.uPanelVec, CEILING(nsupers, Pr) * sizeof(upanelGPU_t));
     cudaMemcpy(A_gpu.uPanelVec, uPanelVec_GPU,
                CEILING(nsupers, Pr) * sizeof(upanelGPU_t), cudaMemcpyHostToDevice);
-    // cudaCheckError();
 
-    // assert(A_gpu.numCudaStreams < options->num_lookaheads);
-
-    // cudaMalloc(&A_gpu.LvalRecvBufs, sizeof(double*)*A_gpu.numCudaStreams);
-
-    // get the buffer size
-    /* step 3: query working space of getrf */
+    tRegion[2] = SuperLU_timer_();
     int dfactBufSize = 0;
     // TODO: does it work with NULL pointer?
     cusolverDnHandle_t cusolverH = NULL;
     cusolverDnCreate(&cusolverH);
+    
     cusolverDnDgetrf_bufferSize(cusolverH, ldt, ldt, NULL, ldt, &dfactBufSize);
     printf("Size of dfactBuf is %d\n", dfactBufSize);
+    tRegion[2] = SuperLU_timer_() - tRegion[2];
+    printf("TRegion dfactBuf: \t %g\n", tRegion[2]);
+    
 
+    tRegion[3] = SuperLU_timer_();
+
+    double tcuMalloc=SuperLU_timer_();
+    for (int stream = 0; stream < A_gpu.numCudaStreams; stream++)
+    {
+        cudaMalloc(&A_gpu.LvalRecvBufs[stream], sizeof(double) * maxLvalCount);
+        cudaMalloc(&A_gpu.UvalRecvBufs[stream], sizeof(double) * maxUvalCount);
+        cudaMalloc(&A_gpu.LidxRecvBufs[stream], sizeof(int_t) * maxLidxCount);
+        cudaMalloc(&A_gpu.UidxRecvBufs[stream], sizeof(int_t) * maxUidxCount);
+        // allocate the space for diagonal factor on GPU
+        cudaMalloc(&A_gpu.diagFactWork[stream], sizeof(double) * dfactBufSize);
+        cudaMalloc(&A_gpu.diagFactInfo[stream], sizeof(int));
+
+        cudaMalloc(&A_gpu.gpuGemmBuffs[stream], A_gpu.gemmBufferSize * sizeof(double));
+        /*lookAhead buffers and stream*/
+        cudaMalloc(&A_gpu.lookAheadLGemmBuffer[stream], sizeof(double) * maxLvalCount);
+
+        cudaMalloc(&A_gpu.lookAheadUGemmBuffer[stream], sizeof(double) * maxUvalCount);
+
+        cudaMalloc(&A_gpu.dFBufs[stream], ldt * ldt * sizeof(double));
+    }
+    tcuMalloc = SuperLU_timer_() - tcuMalloc;
+    printf("Time to allocate GPU memory: %g\n", tcuMalloc);
+
+    double tcuStream=SuperLU_timer_();
+    
+    for (int stream = 0; stream < A_gpu.numCudaStreams; stream++)
+    {
+        cublasCreate(&A_gpu.cuHandles[stream]);
+        cusolverDnCreate(&A_gpu.cuSolveHandles[stream]);
+    }
+    tcuStream = SuperLU_timer_() - tcuStream;
+    printf("Time to create cublas streams: %g\n", tcuStream);
+
+    double tcuStreamCreate=SuperLU_timer_();
     for (int stream = 0; stream < A_gpu.numCudaStreams; stream++)
     {
 
         cudaStreamCreate(&A_gpu.cuStreams[stream]);
         cublasCreate(&A_gpu.cuHandles[stream]);
-        cudaMalloc(&A_gpu.LvalRecvBufs[stream], sizeof(double) * maxLvalCount);
-        cudaMalloc(&A_gpu.UvalRecvBufs[stream], sizeof(double) * maxUvalCount);
-        cudaMalloc(&A_gpu.LidxRecvBufs[stream], sizeof(int_t) * maxLidxCount);
-        cudaMalloc(&A_gpu.UidxRecvBufs[stream], sizeof(int_t) * maxUidxCount);
-
-        cudaMalloc(&A_gpu.gpuGemmBuffs[stream], A_gpu.gemmBufferSize * sizeof(double));
-        cudaMalloc(&A_gpu.dFBufs[stream], ldt * ldt * sizeof(double));
-
         /*lookAhead buffers and stream*/
         cublasCreate(&A_gpu.lookAheadLHandle[stream]);
         cudaStreamCreate(&A_gpu.lookAheadLStream[stream]);
-        cudaMalloc(&A_gpu.lookAheadLGemmBuffer[stream], sizeof(double) * maxLvalCount);
         cublasCreate(&A_gpu.lookAheadUHandle[stream]);
         cudaStreamCreate(&A_gpu.lookAheadUStream[stream]);
-        cudaMalloc(&A_gpu.lookAheadUGemmBuffer[stream], sizeof(double) * maxUvalCount);
-
-        // allocate the space for diagonal factor on GPU
-        cusolverDnCreate(&A_gpu.cuSolveHandles[stream]);
-        cudaMalloc(&A_gpu.diagFactWork[stream], sizeof(double) * dfactBufSize);
-        cudaMalloc(&A_gpu.diagFactInfo[stream], sizeof(int));
     }
+    tcuStreamCreate = SuperLU_timer_() - tcuStreamCreate;
+    printf("Time to create CUDA streams: %g\n", tcuStreamCreate);
 
+    tRegion[3] = SuperLU_timer_() - tRegion[3];
+    printf("TRegion stream: \t %g\n", tRegion[3]);
     // allocate
     cudaMalloc(&dA_gpu, sizeof(LUstructGPU_t));
     cudaMemcpy(dA_gpu, &A_gpu, sizeof(LUstructGPU_t), cudaMemcpyHostToDevice);
@@ -857,7 +860,7 @@ int_t LUstruct_v100::checkGPU()
 }
 
 /**
- * @brief Pack non-zero values into a vector. 
+ * @brief Pack non-zero values into a vector.
  *
  * @param spNzvalArray The array of non-zero values.
  * @param nzvalSize The size of the array of non-zero values.
@@ -865,8 +868,8 @@ int_t LUstruct_v100::checkGPU()
  * @param packedNzvals The vector to store the non-zero values.
  * @param packedNzvalsIndices The vector to store the indices of the non-zero values.
  */
-void packNzvals(std::vector<double> &packedNzvals, std::vector<int_t> &packedNzvalsIndices, 
- double* spNzvalArray, int_t nzvalSize,  int_t valOffset)
+void packNzvals(std::vector<double> &packedNzvals, std::vector<int_t> &packedNzvalsIndices,
+                double *spNzvalArray, int_t nzvalSize, int_t valOffset)
 {
     for (int k = 0; k < nzvalSize; k++)
     {
@@ -925,12 +928,11 @@ lpanelGPU_t *LUstruct_v100::copyLpanelsToGPU()
                 lpanelGPU_t ithLpanel(&gpuLidxBasePtr[idxOffset], &gpuLvalBasePtr[valOffset]);
                 lPanelVec[i].gpuPanel = ithLpanel;
                 lPanelVec_GPU[i] = ithLpanel;
-                if(AVOID_CPU_NZVAL)
+                if (AVOID_CPU_NZVAL)
                     packNzvals(packedNzvals, packedNzvalsIndices, lPanelVec[i].val, lPanelVec[i].nzvalSize(), valOffset);
                 else
                     memcpy(&valBuffer[valOffset], lPanelVec[i].val, sizeof(double) * lPanelVec[i].nzvalSize());
-                
-                
+
                 memcpy(&idxBuffer[idxOffset], lPanelVec[i].index, sizeof(int_t) * lPanelVec[i].indexSize());
 
                 valOffset += lPanelVec[i].nzvalSize();
@@ -942,16 +944,15 @@ lpanelGPU_t *LUstruct_v100::copyLpanelsToGPU()
     std::cout << "Time to copy-L to CPU: " << tCopyToCPU << "\n";
     // do a cudaMemcpy to GPU
     double tLsend = SuperLU_timer_();
-    if(AVOID_CPU_NZVAL)
+    if (AVOID_CPU_NZVAL)
         copyToGPU(gpuLvalBasePtr, packedNzvals, packedNzvalsIndices);
     else
     {
-        #if 0
+#if 0
             cudaMemcpy(gpuLvalBasePtr, valBuffer, gpuLvalSize, cudaMemcpyHostToDevice);
-        #else
-            copyToGPU_Sparse(gpuLvalBasePtr, valBuffer, gpuLvalSize);
-        #endif
-
+#else
+        copyToGPU_Sparse(gpuLvalBasePtr, valBuffer, gpuLvalSize);
+#endif
     }
     // find
     cudaMemcpy(gpuLidxBasePtr, idxBuffer, gpuLidxSize, cudaMemcpyHostToDevice);
@@ -962,8 +963,6 @@ lpanelGPU_t *LUstruct_v100::copyLpanelsToGPU()
     SUPERLU_FREE(idxBuffer);
     return lPanelVec_GPU;
 }
-
-
 
 upanelGPU_t *LUstruct_v100::copyUpanelsToGPU()
 {
@@ -1004,7 +1003,7 @@ upanelGPU_t *LUstruct_v100::copyUpanelsToGPU()
     }
 
     int_t *idxBuffer = (int_t *)SUPERLU_MALLOC(gpuUidxSize);
-    
+
     if (AVOID_CPU_NZVAL)
     {
         printf("AVOID_CPU_NZVAL is set\n");
@@ -1020,8 +1019,8 @@ upanelGPU_t *LUstruct_v100::copyUpanelsToGPU()
                     upanelGPU_t ithupanel(&gpuUidxBasePtr[idxOffset], &gpuUvalBasePtr[valOffset]);
                     uPanelVec[i].gpuPanel = ithupanel;
                     uPanelVec_GPU[i] = ithupanel;
-                    packNzvals(packedNzvals, packedNzvalsIndices, uPanelVec[i].val, 
-                        uPanelVec[i].nzvalSize(),  valOffset);
+                    packNzvals(packedNzvals, packedNzvalsIndices, uPanelVec[i].val,
+                               uPanelVec[i].nzvalSize(), valOffset);
                     memcpy(&idxBuffer[idxOffset], uPanelVec[i].index, sizeof(int_t) * uPanelVec[i].indexSize());
 
                     valOffset += uPanelVec[i].nzvalSize();
