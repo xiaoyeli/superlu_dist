@@ -14,7 +14,6 @@ set(headers
     TRF3dV100/lupanels.hpp
     TRF3dV100/commWrapper.hpp
     TRF3dV100/superlu_summit.h
-    TRF3dV100/lupanels_GPU.cuh
     ${PROJECT_SOURCE_DIR}/SRC/superlu_FortranCInterface.h
 )
 if (MSVC)
@@ -74,6 +73,7 @@ if(enable_double)
 
 if(TPL_ENABLE_CUDALIB)
   list(APPEND sources pdgstrs_lsum_cuda.cu)
+  list(APPEND sources TRF3dV100/schurCompUpdate.cu )
 endif()
 # if(TPL_ENABLE_HIPLIB)
 #   list(APPEND sources pdgstrs_lsum_cuda.hip.cpp)
@@ -131,6 +131,7 @@ endif()
     TRF3dV100/u_panels.cpp
     TRF3dV100/lupanels_GPU.cpp
     TRF3dV100/LUgpuCHandle_interface.cpp
+    TRF3dV100/anc25d.cpp 
     dtreeFactorizationGPU.c
     dgather.c
     dscatter3d.c
@@ -141,9 +142,8 @@ endif()
     dsuperlu_blas.c
   )
 if (HAVE_CUDA)
-  list(APPEND sources dsuperlu_gpu.cu
-  TRF3dV100/schurCompUpdate.cu 
-  )
+  list(APPEND sources TRF3dV100/schurCompUpdate.cu dsuperlu_gpu.cu )
+  list(APPEND headers TRF3dV100/lupanels_GPU.cuh)
 endif()
 
 if (HAVE_COMBBLAS)
