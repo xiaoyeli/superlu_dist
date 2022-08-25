@@ -42,7 +42,9 @@ LUstruct_v100::LUstruct_v100(int_t nsupers_, int_t ldt_,
                              SCT_t *SCT_, superlu_dist_options_t *options_,
                              SuperLUStat_t *stat_, double thresh_, int *info_) : nsupers(nsupers_), trf3Dpartition(trf3Dpartition_),
                                                                                  ldt(ldt_), grid3d(grid3d_in),
-                                                                                 SCT(SCT_), options(options_), stat(stat_), thresh(thresh_), info(info_)
+                                                                                 SCT(SCT_), options(options_), 
+                                                                                 stat(stat_), thresh(thresh_), info(info_),
+                                                                                 anc25d(grid3d_in)
 {
     maxLvl = log2i(grid3d->zscp.Np) + 1;
     isNodeInMyGrid = getIsNodeInMyGrid(nsupers, maxLvl, trf3Dpartition->myNodeCount, trf3Dpartition->treePerm);

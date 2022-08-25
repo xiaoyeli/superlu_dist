@@ -5,6 +5,7 @@
 #include "lu_common.hpp"
 #include "lupanels_GPU.cuh"
 #include "commWrapper.hpp"
+#include "anc25d.hpp"
 // class lpanelGPU_t;
 // class upanelGPU_t;
 #define GLOBAL_BLOCK_NOT_FOUND -1
@@ -352,6 +353,7 @@ struct LUstruct_v100
     int_t g2lRow(int_t k) { return k / Pr; }
     int_t g2lCol(int_t k) { return k / Pc; }
 
+    anc25d_t anc25d;
     // For GPU acceleration
     LUstructGPU_t *dA_gpu;
     LUstructGPU_t A_gpu;
@@ -483,6 +485,18 @@ struct LUstruct_v100
 
     // to perform diagFactOn GPU
     int_t dDFactPSolveGPU(int_t k, int_t offset, ddiagFactBufs_t **dFBufs);
+
+
+    
+    
+    int_t dAncestorFactorBaseline(
+        int_t alvl,
+        sForest_t *sforest,
+        ddiagFactBufs_t **dFBufs, // size maxEtree level
+        gEtreeInfo_t *gEtreeInfo, // global etree info
+        int tag_ub);
+        
+    
 };
 
 cudaError_t checkCudaLocal(cudaError_t result);
