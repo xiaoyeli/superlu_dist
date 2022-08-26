@@ -805,7 +805,7 @@ psgstrf(superlu_dist_options_t * options, int m, int n, float anorm,
     int gpublas_nb = get_gpublas_nb(); // default 64
     int nstreams = get_num_gpu_streams (); // default 8
 
-    int_t buffer_size  = SUPERLU_MAX(max_row_size * nstreams * gpublas_nb, sp_ienv_dist(8,options));
+    int_t buffer_size  = SUPERLU_MIN(max_row_size * max_ncols, sp_ienv_dist(8,options));
                                      //   get_max_buffer_size());
     float *dA, *dB, *dC; // GEMM matrices on device
     int *stream_end_col;
