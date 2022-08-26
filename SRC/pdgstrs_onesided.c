@@ -7,7 +7,6 @@
 #ifndef CACHELINE
 #define CACHELINE 64  /* bytes, Xeon Phi KNL, Cori haswell, Edision */
 #endif
-#include "superlu_ddefs.h"
 
 
 #ifdef one_sided
@@ -2080,7 +2079,6 @@ for (i=0;i<nroot_send;i++){
 
         if (totalsolveRD < nbrecvmod){
             shift=0;
-            //foMPI_Win_flush_all(rd_winl);
             for (rdidx=0;rdidx<Pc && validRDQindex_u[rdidx]!=-1;rdidx++){
 
                 recvRankNum=validRDQindex_u[rdidx];  //bcidx; //validBCQindex[bcidx];

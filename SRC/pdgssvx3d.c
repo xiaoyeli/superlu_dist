@@ -1491,12 +1491,22 @@ int_t nsupers = getNsupers(n, LUstruct->Glu_persist);
 				fst_row, ldb, nrhs, SOLVEstruct, stat, info);
 #endif
 #ifdef one_sided
+#ifdef USE_FOMPI
+        foMPI_Win_lock_all(0, bc_winl);
+        foMPI_Win_lock_all(0, rd_winl);
+#else
         MPI_Win_lock_all(0, bc_winl);
         MPI_Win_lock_all(0, rd_winl);
+#endif
         pdgstrs_onesided(options, n, LUstruct, ScalePermstruct, grid, X, m_loc,
                 fst_row, ldb, nrhs, SOLVEstruct, stat, info);
+#ifdef USE_FOMPI
+        foMPI_Win_unlock_all(bc_winl);
+        foMPI_Win_unlock_all(rd_winl);
+#else
         MPI_Win_unlock_all(bc_winl);
         MPI_Win_unlock_all(rd_winl);
+#endif
 #else
 		pdgstrs(options, n, LUstruct, ScalePermstruct, grid, X, m_loc,
 			fst_row, ldb, nrhs, SOLVEstruct, stat, info);

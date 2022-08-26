@@ -497,26 +497,34 @@ zDestroy_LU(int_t n, gridinfo_t *grid, zLUstruct_t *LUstruct)
     nsupers = Glu_persist->supno[n-1] + 1;
 
     nb = CEILING(nsupers, grid->npcol);
-    for (i = 0; i < nb; ++i) 
-	if ( Llu->Lrowind_bc_ptr[i] ) {
-	    SUPERLU_FREE (Llu->Lrowind_bc_ptr[i]);
-#if 0 // Sherry: the following is not allocated with gpuHostAlloc    
-    //#ifdef GPU_ACC
-	    checkGPU(gpuFreeHost(Llu->Lnzval_bc_ptr[i]));
-#endif
-	    SUPERLU_FREE (Llu->Lnzval_bc_ptr[i]);
-	}
+//    for (i = 0; i < nb; ++i) 
+//	if ( Llu->Lrowind_bc_ptr[i] ) {
+//	    SUPERLU_FREE (Llu->Lrowind_bc_ptr[i]);
+//#if 0 // Sherry: the following is not allocated with gpuHostAlloc    
+//    //#ifdef GPU_ACC
+//	    checkGPU(gpuFreeHost(Llu->Lnzval_bc_ptr[i]));
+//#endif
+//	    SUPERLU_FREE (Llu->Lnzval_bc_ptr[i]);
+//	}
     SUPERLU_FREE (Llu->Lrowind_bc_ptr);
     SUPERLU_FREE (Llu->Lnzval_bc_ptr);
-
-    nb = CEILING(nsupers, grid->nprow);
-    for (i = 0; i < nb; ++i)
-	if ( Llu->Ufstnz_br_ptr[i] ) {
-	    SUPERLU_FREE (Llu->Ufstnz_br_ptr[i]);
-	    SUPERLU_FREE (Llu->Unzval_br_ptr[i]);
-	}
+    //SUPERLU_FREE (Llu->Lrowind_bc_offset);
+    //SUPERLU_FREE (Llu->Lnzval_bc_ptr);
+    //SUPERLU_FREE (Llu->Lnzval_bc_dat);
+    //SUPERLU_FREE (Llu->Lnzval_bc_offset);
+    
+//    nb = CEILING(nsupers, grid->nprow);
+//    for (i = 0; i < nb; ++i)
+//	if ( Llu->Ufstnz_br_ptr[i] ) {
+//	    SUPERLU_FREE (Llu->Ufstnz_br_ptr[i]);
+//	    SUPERLU_FREE (Llu->Unzval_br_ptr[i]);
+//	}
     SUPERLU_FREE (Llu->Ufstnz_br_ptr);
+    //SUPERLU_FREE (Llu->Ufstnz_br_dat);
+    //SUPERLU_FREE (Llu->Ufstnz_br_offset);
     SUPERLU_FREE (Llu->Unzval_br_ptr);
+    //SUPERLU_FREE (Llu->Unzval_br_dat);
+    //SUPERLU_FREE (Llu->Unzval_br_offset);
 
     /* The following can be freed after factorization. */
     SUPERLU_FREE(Llu->ToRecv);
@@ -534,34 +542,45 @@ zDestroy_LU(int_t n, gridinfo_t *grid, zLUstruct_t *LUstruct)
     SUPERLU_FREE(Llu->bsendx_plist);
     SUPERLU_FREE(Llu->mod_bit);
 
-    nb = CEILING(nsupers, grid->npcol);
-    for (i = 0; i < nb; ++i) 
-	if ( Llu->Lindval_loc_bc_ptr[i]!=NULL) {
-	    SUPERLU_FREE (Llu->Lindval_loc_bc_ptr[i]);
-	}	
+    //nb = CEILING(nsupers, grid->npcol);
+    //for (i = 0; i < nb; ++i)
+	//if ( Llu->Lindval_loc_bc_ptr[i]!=NULL) {
+	//    SUPERLU_FREE (Llu->Lindval_loc_bc_ptr[i]);
+	//}
     SUPERLU_FREE(Llu->Lindval_loc_bc_ptr);
+    //SUPERLU_FREE(Llu->Lindval_loc_bc_dat);
+    //SUPERLU_FREE(Llu->Lindval_loc_bc_offset);
 	
-    nb = CEILING(nsupers, grid->npcol);
-    for (i=0; i<nb; ++i) {
-	if(Llu->Linv_bc_ptr[i]!=NULL) {
-	    SUPERLU_FREE(Llu->Linv_bc_ptr[i]);
-	}
-	if(Llu->Uinv_bc_ptr[i]!=NULL){
-	    SUPERLU_FREE(Llu->Uinv_bc_ptr[i]);
-	}	
-    }
+    //nb = CEILING(nsupers, grid->npcol);
+    //for (i=0; i<nb; ++i) {
+	//if(Llu->Linv_bc_ptr[i]!=NULL) {
+	//    SUPERLU_FREE(Llu->Linv_bc_ptr[i]);
+	//}
+	//if(Llu->Uinv_bc_ptr[i]!=NULL){
+	//    SUPERLU_FREE(Llu->Uinv_bc_ptr[i]);
+	//}
+    //}
     SUPERLU_FREE(Llu->Linv_bc_ptr);
+    //SUPERLU_FREE(Llu->Linv_bc_dat);
+    //SUPERLU_FREE(Llu->Linv_bc_offset);
     SUPERLU_FREE(Llu->Uinv_bc_ptr);
-    SUPERLU_FREE(Llu->Unnz);
+    //SUPERLU_FREE(Llu->Uinv_bc_dat);
+    //SUPERLU_FREE(Llu->Uinv_bc_offset);
+    //SUPERLU_FREE(Llu->Unnz);
 	
-    nb = CEILING(nsupers, grid->npcol);
-    for (i = 0; i < nb; ++i)
-	if ( Llu->Urbs[i] ) {
-	    SUPERLU_FREE(Llu->Ucb_indptr[i]);
-	    SUPERLU_FREE(Llu->Ucb_valptr[i]);
-	}
+    //nb = CEILING(nsupers, grid->npcol);
+    //for (i = 0; i < nb; ++i)
+	//if ( Llu->Urbs[i] ) {
+	//    SUPERLU_FREE(Llu->Ucb_indptr[i]);
+	//    SUPERLU_FREE(Llu->Ucb_valptr[i]);
+	//}
     SUPERLU_FREE(Llu->Ucb_indptr);
-    SUPERLU_FREE(Llu->Ucb_valptr);	
+    //SUPERLU_FREE(Llu->Ucb_inddat);
+    //SUPERLU_FREE(Llu->Ucb_indoffset);
+
+    SUPERLU_FREE(Llu->Ucb_valptr);
+    //SUPERLU_FREE(Llu->Ucb_valdat);
+    //SUPERLU_FREE(Llu->Ucb_valoffset);
     SUPERLU_FREE(Llu->Urbs);
 
     SUPERLU_FREE(Glu_persist->xsup);
