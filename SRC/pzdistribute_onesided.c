@@ -25,7 +25,6 @@ at the top-level directory.
 #endif
 
 #ifdef one_sided
-#include "onesided_zdefs.h"
 #ifdef USE_FOMPI
 foMPI_Win bc_winl;
 foMPI_Win rd_winl;

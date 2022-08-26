@@ -8,7 +8,6 @@
 #endif
 
 #ifdef one_sided
-#include "onesided.h"
 #ifdef USE_FOMPI
 foMPI_Win bc_winl;
 foMPI_Win rd_winl;
