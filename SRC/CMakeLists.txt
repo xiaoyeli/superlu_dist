@@ -60,7 +60,7 @@ endif ()
 set_source_files_properties(superlu_timer.c PROPERTIES COMPILE_FLAGS -O0)
 
 if(enable_double)
-  list(APPEND headers superlu_ddefs.h dlustruct_gpu.h onesided.h)
+  list(APPEND headers superlu_ddefs.h dlustruct_gpu.h)
 
   list(APPEND sources
     dlangs_dist.c
@@ -227,12 +227,15 @@ if(enable_complex16)
     pzsymbfact_distdata.c
     zdistribute.c
     pzdistribute.c
+    pzdistribute_onesided.c
     pzgstrf.c
     zstatic_schedule.c
     pzgstrf2.c
     pzgstrs.c
+    pzgstrs_onesided.c
     pzgstrs1.c
     pzgstrs_lsum.c
+    pzgstrs_lsum_onesided.c
     pzgstrs_Bglobal.c
     pzgsrfs.c
     pzgsmv.c
