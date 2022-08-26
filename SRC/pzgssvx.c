@@ -489,7 +489,7 @@ at the top-level directory.
  *
  * info    (output) int*
  *         = 0: successful exit
- *         < 0: if info = -i, the i-th argument had an illegal value  
+ *         < 0: if info = -i, the i-th argument had an illegal value
  *         > 0: if info = i, and i is
  *             <= A->ncol: U(i,i) is exactly zero. The factorization has
  *                been completed, but the factor U is exactly singular,
@@ -1144,8 +1144,13 @@ pzgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 	       NOTE: the row permutation Pc*Pr is applied internally in the
   	       distribution routine. */
 	    t = SuperLU_timer_();
+#ifdef one_sided
+	    dist_mem_use = pzdistribute_onesided (options, n, A, ScalePermstruct,
+                                      Glu_freeable, LUstruct, grid, nrhs);
+#else
 	    dist_mem_use = pzdistribute(options, n, A, ScalePermstruct,
                                       Glu_freeable, LUstruct, grid);
+#endif
 	    stat->utime[DIST] = SuperLU_timer_() - t;
 
   	    /* Deallocate storage used in symbolic factorization. */
@@ -1428,6 +1433,8 @@ pzgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 	        (LUstruct->Llu->Uinv_bc_cnt) * sizeof(doublecomplex), gpuMemcpyHostToDevice));
             checkGPU(gpuMemcpy(LUstruct->Llu->d_Lnzval_bc_dat, LUstruct->Llu->Lnzval_bc_dat,
 	        (LUstruct->Llu->Lnzval_bc_cnt) * sizeof(doublecomplex), gpuMemcpyHostToDevice));
+            checkGPU(gpuMemcpy(LUstruct->Llu->d_Unzval_br_dat, LUstruct->Llu->Unzval_br_dat,
+	        (LUstruct->Llu->Unzval_br_cnt) * sizeof(doublecomplex), gpuMemcpyHostToDevice));
 #endif
 	}
 
@@ -1436,8 +1443,28 @@ pzgssvx(superlu_dist_options_t *options, SuperMatrix *A,
     // {
 	// #pragma omp master
 	// {
+
+#ifdef one_sided
+#ifdef USE_FOMPI
+        foMPI_Win_lock_all(0, bc_winl);
+        foMPI_Win_lock_all(0, rd_winl);
+#else
+        MPI_Win_lock_all(0, bc_winl);
+        MPI_Win_lock_all(0, rd_winl);
+#endif
+        pzgstrs_onesided(options, n, LUstruct, ScalePermstruct, grid, X, m_loc,
+                fst_row, ldb, nrhs, SOLVEstruct, stat, info);
+#ifdef USE_FOMPI
+        foMPI_Win_unlock_all(bc_winl);
+        foMPI_Win_unlock_all(rd_winl);
+#else
+        MPI_Win_unlock_all(bc_winl);
+        MPI_Win_unlock_all(rd_winl);
+#endif
+#else
 	pzgstrs(options, n, LUstruct, ScalePermstruct, grid, X, m_loc,
 		fst_row, ldb, nrhs, SOLVEstruct, stat, info);
+#endif
 	// }
 	// }
 
