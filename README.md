@@ -368,7 +368,7 @@ You can disable CombBLAS with the following line in SRC/superlu_dist_config.h:
 
 ### 2.4. C preprocessor definition CDEFS. (Replaced by cmake module FortranCInterface.)
 
-In the header file SRC/superlu_Cnames.h, we use macros to determine how
+In the header file SRC/superlu_FCnames.h, we use macros to determine how
 C routines should be named so that they are callable by Fortran.
 (Some vendor-supplied BLAS libraries do not have C interfaces. So the 
 re-naming is needed in order for the SuperLU BLAS calls (in C) to 

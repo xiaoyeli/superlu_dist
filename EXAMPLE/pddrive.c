@@ -14,16 +14,16 @@ at the top-level directory.
  * \brief Driver program for PDGSSVX example
  *
  * <pre>
- * -- Distributed SuperLU routine (version 6.1) --
+ * -- Distributed SuperLU routine (version 8.1.0) --
  * Lawrence Berkeley National Lab, Univ. of California Berkeley.
  * November 1, 2007
  * December 6, 2018
+ * AUgust 27, 2022  Add batch option
  * </pre>
  */
 
 #include <math.h>
 #include "superlu_ddefs.h"
-#undef MultiGrids
 
 /*! \brief
  *
@@ -60,20 +60,20 @@ int main(int argc, char *argv[])
     double   *berr;
     double   *b, *xtrue;
     int    m, n;
-    int      nprow, npcol, lookahead, colperm, rowperm, ir, symbfact;
+    int      nprow, npcol, lookahead, colperm, rowperm, ir, symbfact, batch;
     int      iam, info, ldb, ldx, nrhs;
     char     **cpp, c, *postfix;;
     FILE *fp, *fopen();
     int cpp_defs();
     int ii, omp_mpi_level;
-    int ldumap, p;
+    int ldumap, myrank, p; /* The following variables are used for batch solves */
     int*    usermap;
-	float result_min[2];
-	result_min[0]=1e10;
-	result_min[1]=1e10;
-	float result_max[2];
-	result_max[0]=0.0;
-	result_max[1]=0.0;
+    float result_min[2];
+    result_min[0]=1e10;
+    result_min[1]=1e10;
+    float result_max[2];
+    result_max[0]=0.0;
+    result_max[1]=0.0;
     MPI_Comm SubComm;
 
     nprow = 1;  /* Default process rows.      */
@@ -84,7 +84,8 @@ int main(int argc, char *argv[])
     rowperm = -1;
     ir = -1;
     symbfact = -1;
-    
+    batch = 0;
+
     /* ------------------------------------------------------------
        INITIALIZE MPI ENVIRONMENT. 
        ------------------------------------------------------------*/
@@ -126,6 +127,8 @@ int main(int argc, char *argv[])
 		        break;
               case 'i': ir = atoi(*cpp);
                         break;
+              case 'b': batch = atoi(*cpp);
+                        break;
 	    }
 	} else { /* Last arg is considered a filename */
 	    if ( !(fp = fopen(*cpp, "r")) ) {
@@ -135,95 +138,91 @@ int main(int argc, char *argv[])
 	}
     }
 
-
-#if defined MultiGrids
-    /* ------------------------------------------------------------
-       INITIALIZE THE SUPERLU PROCESS GRID. 
-       ------------------------------------------------------------*/
-    int myrank;
-    MPI_Comm_rank(MPI_COMM_WORLD, &myrank);
-    usermap = intMalloc_dist(nprow*npcol);
-    ldumap = nprow;
-    int color = myrank/(nprow*npcol); /* Assuming each grid uses the same number of nprow and npcol */
-    MPI_Comm_split(MPI_COMM_WORLD, color, myrank, &SubComm);
-    p = 0;    
-    for (int i = 0; i < nprow; ++i)
-	for (int j = 0; j < npcol; ++j) usermap[i+j*ldumap] = p++;
-    superlu_gridmap(SubComm, nprow, npcol, usermap, ldumap, &grid);
-    SUPERLU_FREE(usermap);
-
-#ifdef GPU_ACC
-    /* Binding each MPI to a GPU device */
-    char *ttemp;
-    ttemp = getenv ("SUPERLU_BIND_MPI_GPU");
-
-    if (ttemp) {
-	int devs, rank;
-	MPI_Comm_rank(MPI_COMM_WORLD, &rank); // MPI_COMM_WORLD needs to be used here instead of SubComm
-	gpuGetDeviceCount(&devs);  // Returns the number of compute-capable devices
-	gpuSetDevice(rank % devs); // Set device to be used for GPU executions
-    }
-
-// This is to initialize GPU, which can be costly. 
-                   
-    double t1 = SuperLU_timer_();                       
-    gpuFree(0);
-    double t2 = SuperLU_timer_();    
-    if(!myrank)printf("first gpufree time: %7.4f\n",t2-t1);
-    gpublasHandle_t hb;           
-    gpublasCreate(&hb);
-    if(!myrank)printf("first blas create time: %7.4f\n",SuperLU_timer_()-t2);
-    gpublasDestroy(hb);
-#endif
-
-    // printf("grid.iam %5d, myrank %5d\n",grid.iam,myrank);
-    // fflush(stdout);
-#else 
-    /* ------------------------------------------------------------
-       INITIALIZE THE SUPERLU PROCESS GRID. 
-       ------------------------------------------------------------*/
-    superlu_gridinit(MPI_COMM_WORLD, nprow, npcol, &grid);
+    if ( batch ) { /* in the batch mode: create multiple SuperLU grids,
+		      each grid solving one linear system. */
+	/* ------------------------------------------------------------
+	   INITIALIZE MULTIPLE SUPERLU PROCESS GRIDS. 
+	   ------------------------------------------------------------*/
+        MPI_Comm_rank(MPI_COMM_WORLD, &myrank);
+        usermap = SUPERLU_MALLOC(nprow*npcol * sizeof(int));
+        ldumap = nprow;
+        int color = myrank/(nprow*npcol); /* Assuming each grid uses the same number of nprow and npcol */
+	MPI_Comm_split(MPI_COMM_WORLD, color, myrank, &SubComm);
+        p = 0;    
+        for (int i = 0; i < nprow; ++i)
+    	    for (int j = 0; j < npcol; ++j) usermap[i+j*ldumap] = p++;
+        superlu_gridmap(SubComm, nprow, npcol, usermap, ldumap, &grid);
+        SUPERLU_FREE(usermap);
 
 #ifdef GPU_ACC
-    int myrank;
-    MPI_Comm_rank(MPI_COMM_WORLD, &myrank);
-    double t1 = SuperLU_timer_();                       
-    gpuFree(0);
-    double t2 = SuperLU_timer_();    
-    if(!myrank)printf("first gpufree time: %7.4f\n",t2-t1);
-    gpublasHandle_t hb;           
-    gpublasCreate(&hb);
-    if(!myrank)printf("first blas create time: %7.4f\n",SuperLU_timer_()-t2);
-    gpublasDestroy(hb);
-#endif
-#endif
+        /* Binding each MPI to a GPU device */
+        char *ttemp;
+        ttemp = getenv ("SUPERLU_BIND_MPI_GPU");
 
+        if (ttemp) {
+	    int devs, rank;
+	    MPI_Comm_rank(MPI_COMM_WORLD, &rank); // MPI_COMM_WORLD needs to be used here instead of SubComm
+	    gpuGetDeviceCount(&devs);  // Returns the number of compute-capable devices
+	    gpuSetDevice(rank % devs); // Set device to be used for GPU executions
+        }
+
+        // This is to initialize GPU, which can be costly. 
+        double t1 = SuperLU_timer_();                       
+        gpuFree(0);
+        double t2 = SuperLU_timer_();    
+        if(!myrank)printf("first gpufree time: %7.4f\n",t2-t1);
+        gpublasHandle_t hb;           
+        gpublasCreate(&hb);
+        if(!myrank)printf("first blas create time: %7.4f\n",SuperLU_timer_()-t2);
+        gpublasDestroy(hb);
+#endif
+        // printf("grid.iam %5d, myrank %5d\n",grid.iam,myrank);
+        // fflush(stdout);
+
+    } else {
+        /* ------------------------------------------------------------
+           INITIALIZE THE SUPERLU PROCESS GRID.
+           ------------------------------------------------------------ */
+        superlu_gridinit(MPI_COMM_WORLD, nprow, npcol, &grid);
 	
+#ifdef GPU_ACC
+        MPI_Comm_rank(MPI_COMM_WORLD, &myrank);
+        double t1 = SuperLU_timer_();                       
+        gpuFree(0);
+        double t2 = SuperLU_timer_();    
+        if(!myrank)printf("first gpufree time: %7.4f\n",t2-t1);
+        gpublasHandle_t hb;           
+        gpublasCreate(&hb);
+        if(!myrank)printf("first blas create time: %7.4f\n",SuperLU_timer_()-t2);
+        gpublasDestroy(hb);
+#endif
+    }
+    
     if(grid.iam==0){
 	MPI_Query_thread(&omp_mpi_level);
-    switch (omp_mpi_level) {
-      case MPI_THREAD_SINGLE:
+        switch (omp_mpi_level) {
+          case MPI_THREAD_SINGLE:
 		printf("MPI_Query_thread with MPI_THREAD_SINGLE\n");
 		fflush(stdout);
-	break;
-      case MPI_THREAD_FUNNELED:
+	        break;
+          case MPI_THREAD_FUNNELED:
 		printf("MPI_Query_thread with MPI_THREAD_FUNNELED\n");
 		fflush(stdout);
-	break;
-      case MPI_THREAD_SERIALIZED:
+	        break;
+          case MPI_THREAD_SERIALIZED:
 		printf("MPI_Query_thread with MPI_THREAD_SERIALIZED\n");
 		fflush(stdout);
-	break;
-      case MPI_THREAD_MULTIPLE:
+	        break;
+          case MPI_THREAD_MULTIPLE:
 		printf("MPI_Query_thread with MPI_THREAD_MULTIPLE\n");
 		fflush(stdout);
-	break;
+	        break;
+        }
     }
-	}
 	
     /* Bail out if I do not belong in the grid. */
     iam = grid.iam;
-    if ( (iam >= nprow * npcol) || (iam == -1) ) goto out; 
+    if ( (iam >= nprow * npcol) || (iam == -1) ) goto out;
     if ( !iam ) {
 	int v_major, v_minor, v_bugfix;
 #ifdef __INTEL_COMPILER
@@ -282,8 +281,6 @@ int main(int argc, char *argv[])
      */
     set_default_options_dist(&options);
 #if 0
-	options.DiagInv = YES;
-    options.ReplaceTinyPivot  = YES;
     options.RowPerm = LargeDiag_HWPM;
     options.IterRefine = NOREFINE;
     options.ColPerm = NATURAL;
@@ -328,16 +325,11 @@ int main(int argc, char *argv[])
     }
 
     PStatPrint(&options, &stat, &grid);        /* Print the statistics. */
-    result_min[0] = stat.utime[FACT];   
-    result_min[1] = stat.utime[SOLVE];  
-    result_max[0] = stat.utime[FACT];   
-    result_max[1] = stat.utime[SOLVE];    
 
     /* ------------------------------------------------------------
        DEALLOCATE STORAGE.
        ------------------------------------------------------------*/
 
-    PStatFree(&stat);
     Destroy_CompRowLoc_Matrix_dist(&A);
     dScalePermstructFree(&ScalePermstruct);
     dDestroy_LU(n, &grid, &LUstruct);
@@ -352,21 +344,25 @@ int main(int argc, char *argv[])
        RELEASE THE SUPERLU PROCESS GRID.
        ------------------------------------------------------------*/
 out:
-#if defined MultiGrids
-    fflush(stdout);
-    MPI_Allreduce(MPI_IN_PLACE, result_min, 2, MPI_FLOAT,MPI_MIN, MPI_COMM_WORLD);
-    MPI_Allreduce(MPI_IN_PLACE, result_max, 2, MPI_FLOAT,MPI_MAX, MPI_COMM_WORLD);
-    if (!myrank) {
-        printf("returning data:\n");
-        printf("    Factor time over all grids.  Min: %8.4f Max: %8.4f\n",result_min[0], result_max[0]);
-        printf("    Solve time over all grids.  Min: %8.4f Max: %8.4f\n",result_min[1], result_max[1]);
-        printf("**************************************************\n");
-        fflush(stdout);
-    }	    
-#endif
-   
+    if ( batch ) {
+        result_min[0] = stat.utime[FACT];   
+        result_min[1] = stat.utime[SOLVE];  
+        result_max[0] = stat.utime[FACT];   
+        result_max[1] = stat.utime[SOLVE];    
+        MPI_Allreduce(MPI_IN_PLACE, result_min, 2, MPI_FLOAT,MPI_MIN, MPI_COMM_WORLD);
+        MPI_Allreduce(MPI_IN_PLACE, result_max, 2, MPI_FLOAT,MPI_MAX, MPI_COMM_WORLD);
+        if (!myrank) {
+            printf("returning data:\n");
+            printf("    Factor time over all grids.  Min: %8.4f Max: %8.4f\n",result_min[0], result_max[0]);
+                        printf("    Solve time over all grids.  Min: %8.4f Max: %8.4f\n",result_min[1], result_max[1]);
+            printf("**************************************************\n");
+            fflush(stdout);
+        }
+    }
+    
     superlu_gridexit(&grid);
-
+    if ( iam != -1 ) PStatFree(&stat);
+    
     /* ------------------------------------------------------------
        TERMINATES THE MPI EXECUTION ENVIRONMENT.
        ------------------------------------------------------------*/

@@ -14,17 +14,16 @@ at the top-level directory.
  * \brief Driver program for PSGSSVX example
  *
  * <pre>
- * -- Distributed SuperLU routine (version 6.1) --
+ * -- Distributed SuperLU routine (version 8.1.0) --
  * Lawrence Berkeley National Lab, Univ. of California Berkeley.
  * November 1, 2007
  * December 6, 2018
- * May 22,     2022 version 8.0.0
+ * AUgust 27, 2022  Add batch option
  * </pre>
  */
 
 #include <math.h>
 #include "superlu_sdefs.h"
-#include "superlu_ddefs.h"
 
 /*! \brief
  *
@@ -58,35 +57,25 @@ int main(int argc, char *argv[])
     sLUstruct_t LUstruct;
     sSOLVEstruct_t SOLVEstruct;
     gridinfo_t grid;
-    float   *err_bounds, *berr;
+    float   *berr;
     float   *b, *xtrue;
     int    m, n;
-    int      nprow, npcol, lookahead, colperm, rowperm, ir, use_tensorcore, equil;
+    int      nprow, npcol, lookahead, colperm, rowperm, ir, symbfact, batch;
     int      iam, info, ldb, ldx, nrhs;
     char     **cpp, c, *postfix;;
     FILE *fp, *fopen();
     int cpp_defs();
-    double *dxtrue, *db, *dberr;
+    int ii, omp_mpi_level;
+    int ldumap, myrank, p; /* The following variables are used for batch solves */
+    int*    usermap;
+    float result_min[2];
+    result_min[0]=1e10;
+    result_min[1]=1e10;
+    float result_max[2];
+    result_max[0]=0.0;
+    result_max[1]=0.0;
+    MPI_Comm SubComm;
 
-    int ii, i, omp_mpi_level;
-
-    extern int screate_A_x_b(SuperMatrix *A, int nrhs, float **rhs,
-			     int *ldb, float **x, int *ldx,
-			     FILE *fp, char * postfix, gridinfo_t *grid);
-
-    extern void psgssvx_d2(superlu_dist_options_t *options, SuperMatrix *A,
-			sScalePermstruct_t *ScalePermstruct,
-			float B[], int ldb, int nrhs, gridinfo_t *grid,
-			sLUstruct_t *LUstruct, sSOLVEstruct_t *SOLVEstruct,
-			float *err_bounds, SuperLUStat_t *stat, int *info,
-			double *dxtrue);
-
-    extern void psgssvx_tracking(superlu_dist_options_t *options, SuperMatrix *A,
-				 sScalePermstruct_t *ScalePermstruct,
-				 float B[], int ldb, int nrhs, gridinfo_t *grid,
-				 sLUstruct_t *LUstruct, sSOLVEstruct_t *SOLVEstruct, float *berr,
-				 SuperLUStat_t *stat, int *info, double *xtrue);
-    
     nprow = 1;  /* Default process rows.      */
     npcol = 1;  /* Default process columns.   */
     nrhs = 1;   /* Number of right-hand side. */
@@ -94,8 +83,8 @@ int main(int argc, char *argv[])
     colperm = -1;
     rowperm = -1;
     ir = -1;
-    equil = -1;
-    use_tensorcore = -1;
+    symbfact = -1;
+    batch = 0;
 
     /* ------------------------------------------------------------
        INITIALIZE MPI ENVIRONMENT. 
@@ -128,18 +117,18 @@ int main(int argc, char *argv[])
 		        break;
 	      case 'c': npcol = atoi(*cpp);
 		        break;
-	      case 'l': lookahead = atoi(*cpp);
+              case 'l': lookahead = atoi(*cpp);
+                        break;
+              case 'p': rowperm = atoi(*cpp);
+                        break;
+              case 'q': colperm = atoi(*cpp);
+                        break;
+	      case 's': symbfact = atoi(*cpp);
 		        break;
-	      case 'p': rowperm = atoi(*cpp);
-		        break;
-	      case 'q': colperm = atoi(*cpp);
-		        break;
-	      case 'i': ir = atoi(*cpp);
-		        break;
-	      case 'e': equil = atoi(*cpp);
-		        break;
-	      case 't': use_tensorcore = atoi(*cpp);
-		        break;
+              case 'i': ir = atoi(*cpp);
+                        break;
+              case 'b': batch = atoi(*cpp);
+                        break;
 	    }
 	} else { /* Last arg is considered a filename */
 	    if ( !(fp = fopen(*cpp, "r")) ) {
@@ -149,32 +138,87 @@ int main(int argc, char *argv[])
 	}
     }
 
-    /* ------------------------------------------------------------
-       INITIALIZE THE SUPERLU PROCESS GRID. 
-       ------------------------------------------------------------*/
-    superlu_gridinit(MPI_COMM_WORLD, nprow, npcol, &grid);
+    if ( batch ) { /* in the batch mode: create multiple SuperLU grids,
+		      each grid solving one linear system. */
+	/* ------------------------------------------------------------
+	   INITIALIZE MULTIPLE SUPERLU PROCESS GRIDS. 
+	   ------------------------------------------------------------*/
+        MPI_Comm_rank(MPI_COMM_WORLD, &myrank);
+        usermap = SUPERLU_MALLOC(nprow*npcol * sizeof(int));
+        ldumap = nprow;
+        int color = myrank/(nprow*npcol); /* Assuming each grid uses the same number of nprow and npcol */
+	MPI_Comm_split(MPI_COMM_WORLD, color, myrank, &SubComm);
+        p = 0;    
+        for (int i = 0; i < nprow; ++i)
+    	    for (int j = 0; j < npcol; ++j) usermap[i+j*ldumap] = p++;
+        superlu_gridmap(SubComm, nprow, npcol, usermap, ldumap, &grid);
+        SUPERLU_FREE(usermap);
+
+#ifdef GPU_ACC
+        /* Binding each MPI to a GPU device */
+        char *ttemp;
+        ttemp = getenv ("SUPERLU_BIND_MPI_GPU");
+
+        if (ttemp) {
+	    int devs, rank;
+	    MPI_Comm_rank(MPI_COMM_WORLD, &rank); // MPI_COMM_WORLD needs to be used here instead of SubComm
+	    gpuGetDeviceCount(&devs);  // Returns the number of compute-capable devices
+	    gpuSetDevice(rank % devs); // Set device to be used for GPU executions
+        }
+
+        // This is to initialize GPU, which can be costly. 
+        double t1 = SuperLU_timer_();                       
+        gpuFree(0);
+        double t2 = SuperLU_timer_();    
+        if(!myrank)printf("first gpufree time: %7.4f\n",t2-t1);
+        gpublasHandle_t hb;           
+        gpublasCreate(&hb);
+        if(!myrank)printf("first blas create time: %7.4f\n",SuperLU_timer_()-t2);
+        gpublasDestroy(hb);
+#endif
+        // printf("grid.iam %5d, myrank %5d\n",grid.iam,myrank);
+        // fflush(stdout);
+
+    } else {
+        /* ------------------------------------------------------------
+           INITIALIZE THE SUPERLU PROCESS GRID.
+           ------------------------------------------------------------ */
+        superlu_gridinit(MPI_COMM_WORLD, nprow, npcol, &grid);
 	
+#ifdef GPU_ACC
+        MPI_Comm_rank(MPI_COMM_WORLD, &myrank);
+        double t1 = SuperLU_timer_();                       
+        gpuFree(0);
+        double t2 = SuperLU_timer_();    
+        if(!myrank)printf("first gpufree time: %7.4f\n",t2-t1);
+        gpublasHandle_t hb;           
+        gpublasCreate(&hb);
+        if(!myrank)printf("first blas create time: %7.4f\n",SuperLU_timer_()-t2);
+        gpublasDestroy(hb);
+#endif
+    }
+    
     if(grid.iam==0){
 	MPI_Query_thread(&omp_mpi_level);
-    switch (omp_mpi_level) {
-      case MPI_THREAD_SINGLE:
+        switch (omp_mpi_level) {
+          case MPI_THREAD_SINGLE:
 		printf("MPI_Query_thread with MPI_THREAD_SINGLE\n");
 		fflush(stdout);
-	break;
-      case MPI_THREAD_FUNNELED:
+	        break;
+          case MPI_THREAD_FUNNELED:
 		printf("MPI_Query_thread with MPI_THREAD_FUNNELED\n");
 		fflush(stdout);
-	break;
-      case MPI_THREAD_SERIALIZED:
+	        break;
+          case MPI_THREAD_SERIALIZED:
 		printf("MPI_Query_thread with MPI_THREAD_SERIALIZED\n");
 		fflush(stdout);
-	break;
-      case MPI_THREAD_MULTIPLE:
+	        break;
+          case MPI_THREAD_MULTIPLE:
 		printf("MPI_Query_thread with MPI_THREAD_MULTIPLE\n");
 		fflush(stdout);
-	break;
+	        break;
+        }
     }
-	}
 	
     /* Bail out if I do not belong in the grid. */
     iam = grid.iam;
@@ -207,8 +251,20 @@ int main(int argc, char *argv[])
 		postfix = &((*cpp)[ii+1]);
 	}
     }
-    //printf("%s\n", postfix);
+    // printf("%s\n", postfix);
 	
+    /* ------------------------------------------------------------
+       GET THE MATRIX FROM FILE AND SETUP THE RIGHT HAND SIDE. 
+       ------------------------------------------------------------*/
+    screate_matrix_postfix(&A, nrhs, &b, &ldb, &xtrue, &ldx, fp, postfix, &grid);
+
+    if ( !(berr = floatMalloc_dist(nrhs)) )
+	ABORT("Malloc fails for berr[].");
+
+    /* ------------------------------------------------------------
+       NOW WE SOLVE THE LINEAR SYSTEM.
+       ------------------------------------------------------------*/
+
     /* Set the default input options:
         options.Fact              = DOFACT;
         options.Equil             = YES;
@@ -226,9 +282,10 @@ int main(int argc, char *argv[])
     set_default_options_dist(&options);
     options.IterRefine = SLU_SINGLE;
 #if 0
-    options.ReplaceTinyPivot  = YES;
-    options.RowPerm = NOROWPERM;
+    options.RowPerm = LargeDiag_HWPM;
+    options.IterRefine = NOREFINE;
     options.ColPerm = NATURAL;
+    options.Equil = NO; 
     options.ReplaceTinyPivot = YES;
 #endif
 
@@ -236,141 +293,15 @@ int main(int argc, char *argv[])
     if (colperm != -1) options.ColPerm = colperm;
     if (lookahead != -1) options.num_lookaheads = lookahead;
     if (ir != -1) options.IterRefine = ir;
-    if (equil != -1) options.Equil = equil;
-    if (use_tensorcore != -1) options.Use_TensorCore = use_tensorcore;
+    if (symbfact != -1) options.ParSymbFact = symbfact;
 
     if (!iam) {
-	print_sp_ienv_dist(&options);
 	print_options_dist(&options);
 	fflush(stdout);
     }
-    
-    /* ------------------------------------------------------------
-       GET THE MATRIX FROM FILE AND SETUP THE RIGHT HAND SIDE
-       ------------------------------------------------------------*/
-    //screate_matrix_postfix(&A, nrhs, &b, &ldb, &xtrue, &ldx, fp, postfix, &grid);
-    
-    /* Generate a good RHS in double precision, then rounded to single.
-       See LAWN 165: bullet 7, page 20. */
-    /* The returned A, b and xtrue are in single precision
-       b <- A * xtrue in double internally, then rounded to single */
-    screate_A_x_b(&A, nrhs, &b, &ldb, &xtrue, &ldx, fp, postfix, &grid);
-    fclose(fp);
 
     m = A.nrow;
     n = A.ncol;
-
-#if ( PRNTlevel>=1 )    
-    if (iam==0) {
-	  printf("\n(%d) generated single xtrue:\n", iam);
-	  for (i = 0; i < 5; ++i) printf("%.16e\t", xtrue[i]);
-	  printf("\n"); fflush(stdout);
-    }
-    
-    /* Compute the ground truth dXtrue in double precision */
-    if ( options.IterRefine >= SLU_DOUBLE ) 
-    {
-        superlu_dist_options_t options_d;
-	SuperMatrix dA;
-	dScalePermstruct_t dScalePermstruct;
-	dLUstruct_t dLUstruct;
-	dSOLVEstruct_t dSOLVEstruct;
-	//extern int dcreate_matrix_postfix();
-
-#if 0 // Shouldn't use double precision A	
-	fp = fopen(*cpp, "r");
-	dcreate_matrix_postfix(&dA, nrhs, &db, &ldb, &dxtrue, &ldx, fp, postfix, &grid);
-	fclose(fp);
-#else
-	/* Copy single-prec A into double-prec dA storage */
-	NRformat_loc *Astore = A.Store;  // Single-prec A
-	int m_loc = Astore->m_loc;
-	int nnz_loc = Astore->nnz_loc;
-	float *nzval = (float*) Astore->nzval;
-	int_t *rowptr = Astore->rowptr;
-	int_t *colind = Astore->colind;
-
-	double *nzval_loc_dble = (double *) doubleMalloc_dist(nnz_loc);
-	int_t *colind_dble = (int_t *) intMalloc_dist(nnz_loc);
-	int_t *rowptr_dble = (int_t *) intMalloc_dist(m_loc + 1);
-
-	for (i = 0; i < nnz_loc; ++i) {
-	  nzval_loc_dble[i] = nzval[i];
-	  colind_dble[i] = colind[i];
-	}
-	for (i = 0; i < m_loc + 1; ++i) rowptr_dble[i] = rowptr[i];
-
-	dCreate_CompRowLoc_Matrix_dist(&dA, m, n, nnz_loc, m_loc, Astore->fst_row,
-				       nzval_loc_dble, colind_dble, rowptr_dble,
-				       SLU_NR_loc, SLU_D, SLU_GE);
-#endif
-	/* Now, compute dxtrue via double-precision solver */
-	/* Why? dA is the double precision version of A, etc.
-	   If db = dA*dXtrue to double, then rounding db to b and dA to A introduce
-	   a perturbation of eps_single in A and b, so a perturbation of 
-	   cond(A)*eps_single in x vs dXtrue. 
-	   So need to use a computed Xtrue from a double code: dXtrue <- dA \ db,
-	   this computed Xtrue would be comparable to x, i.e., having the same cond(A)
-	   factor in the perturbation error.   See bullet 7, page 20, LAWN 165.*/
-	if ( !(dberr = doubleMalloc_dist(nrhs)) )
-	  ABORT("Malloc fails for dberr[].");
-	if ( !(dxtrue = doubleMalloc_dist(m * nrhs)) )
-	  ABORT("Malloc fails for dberr[].");
-
-	set_default_options_dist(&options_d);
-	dScalePermstructInit(m, n, &dScalePermstruct);
-	dLUstructInit(n, &dLUstruct);
-	PStatInit(&stat);
-
-	/* Need to use correct single-prec {A,b} to solve  */
-	db = doubleMalloc_dist(m_loc * nrhs);
-	for (i = 0; i < m_loc * nrhs; ++i) {
-	  db[i] = b[i];
-	  dxtrue[i] = (double) xtrue[i]; // generated truth in single
-	}
-
-	pdgssvx(&options_d, &dA, &dScalePermstruct, db, ldb, nrhs, &grid,
-		&dLUstruct, &dSOLVEstruct, dberr, &stat, &info);
-
-	pdinf_norm_error(iam, m_loc, nrhs, db, ldb, dxtrue, ldx, grid.comm);
-
-	for (i = 0; i < m_loc * nrhs; ++i) dxtrue[i] = db[i]; // computed truth in double
-	
-	/* Rounded to single */
-	for (i = 0; i < m_loc; ++i) {
-	  xtrue[i] = (float) db[i];
-	}
-
-#if ( PRNTlevel>=1 )	
-	if ( iam==0 ) { //(nprow*npcol-1) ) {
-	  printf("\ndouble computed xtrue (stored in db):\n");
-	  for (i = 0; i < 5; ++i) printf("%.16e\t", db[i]);
-	  printf("\n"); fflush(stdout);
-	}
-#endif
-	
-	PStatPrint(&options_d, &stat, &grid); /* Print the statistics. */
-
-	PStatFree(&stat);
-	Destroy_CompRowLoc_Matrix_dist(&dA);
-	dScalePermstructFree(&dScalePermstruct);
-	dDestroy_LU(n, &grid, &dLUstruct);
-	dLUstructFree(&dLUstruct);
-	if ( options_d.SolveInitialized ) {
-	  dSolveFinalize(&options_d, &dSOLVEstruct);
-	}
-	SUPERLU_FREE(db);
-	SUPERLU_FREE(dberr);
-    } /* end if IterRefine >= SLU_DOUBLE */
-#endif
-
-    /* ------------------------------------------------------------
-       NOW WE SOLVE THE LINEAR SYSTEM in single precision
-       ------------------------------------------------------------*/
-    if ( !(err_bounds = floatCalloc_dist(nrhs*3)) )
-	ABORT("Malloc fails for err_bounds[].");
-    if ( !(berr = floatMalloc_dist(nrhs)) )
-	ABORT("Malloc fails for berr[].");
 
     /* Initialize ScalePermstruct and LUstruct. */
     sScalePermstructInit(m, n, &ScalePermstruct);
@@ -379,20 +310,9 @@ int main(int argc, char *argv[])
     /* Initialize the statistics variables. */
     PStatInit(&stat);
 
-    if ( options.IterRefine == SLU_DOUBLE || options.IterRefine == SLU_EXTRA ) { 
-        /* Call the linear equation solver with extra-precise iterative refinement */
-        psgssvx_d2(&options, &A, &ScalePermstruct, b, ldb, nrhs, &grid,
-		   &LUstruct, &SOLVEstruct, err_bounds, &stat, &info, dxtrue);
-    } else {
-        /* Call the linear equation solver */
-#if ( PRNTlevel>=2 )
-        psgssvx_tracking(&options, &A, &ScalePermstruct, b, ldb, nrhs, &grid,
-			 &LUstruct, &SOLVEstruct, berr, &stat, &info, dxtrue);
-#else
-        psgssvx(&options, &A, &ScalePermstruct, b, ldb, nrhs, &grid,
-		&LUstruct, &SOLVEstruct, berr, &stat, &info);
-#endif	
-    }
+    /* Call the linear equation solver. */
+    psgssvx(&options, &A, &ScalePermstruct, b, ldb, nrhs, &grid,
+	    &LUstruct, &SOLVEstruct, berr, &stat, &info);
 
     if ( info ) {  /* Something is wrong */
         if ( iam==0 ) {
@@ -403,22 +323,14 @@ int main(int argc, char *argv[])
         /* Check the accuracy of the solution. */
         psinf_norm_error(iam, ((NRformat_loc *)A.Store)->m_loc,
 		         nrhs, b, ldb, xtrue, ldx, grid.comm);
-	if ( iam==0 && (options.IterRefine == SLU_DOUBLE || options.IterRefine == SLU_EXTRA) ) {
-	  printf("** Forward error bounds:\n");
-	  printf("\tNormwise:       %e\n", err_bounds[0]);
-	  printf("\tComponentwise:  %e\n", err_bounds[1*nrhs]);
-	  printf("** Componentwise backword error: %e\n", err_bounds[2*nrhs]);
-	  fflush(stdout);
-	}
     }
-    
+
     PStatPrint(&options, &stat, &grid);        /* Print the statistics. */
 
     /* ------------------------------------------------------------
        DEALLOCATE STORAGE.
        ------------------------------------------------------------*/
 
-    PStatFree(&stat);
     Destroy_CompRowLoc_Matrix_dist(&A);
     sScalePermstructFree(&ScalePermstruct);
     sDestroy_LU(n, &grid, &LUstruct);
@@ -426,16 +338,32 @@ int main(int argc, char *argv[])
     sSolveFinalize(&options, &SOLVEstruct);
     SUPERLU_FREE(b);
     SUPERLU_FREE(xtrue);
-    SUPERLU_FREE(err_bounds);
     SUPERLU_FREE(berr);
-    if ( options.IterRefine >= SLU_DOUBLE ) SUPERLU_FREE(dxtrue);
+    fclose(fp);
 
     /* ------------------------------------------------------------
        RELEASE THE SUPERLU PROCESS GRID.
        ------------------------------------------------------------*/
 out:
+    if ( batch ) {
+        result_min[0] = stat.utime[FACT];   
+        result_min[1] = stat.utime[SOLVE];  
+        result_max[0] = stat.utime[FACT];   
+        result_max[1] = stat.utime[SOLVE];    
+        MPI_Allreduce(MPI_IN_PLACE, result_min, 2, MPI_FLOAT,MPI_MIN, MPI_COMM_WORLD);
+        MPI_Allreduce(MPI_IN_PLACE, result_max, 2, MPI_FLOAT,MPI_MAX, MPI_COMM_WORLD);
+        if (!myrank) {
+            printf("returning data:\n");
+            printf("    Factor time over all grids.  Min: %8.4f Max: %8.4f\n",result_min[0], result_max[0]);
+                        printf("    Solve time over all grids.  Min: %8.4f Max: %8.4f\n",result_min[1], result_max[1]);
+            printf("**************************************************\n");
+            fflush(stdout);
+        }
+    }
+    
     superlu_gridexit(&grid);
-
+    if ( iam != -1 ) PStatFree(&stat);
+    
     /* ------------------------------------------------------------
        TERMINATES THE MPI EXECUTION ENVIRONMENT.
        ------------------------------------------------------------*/

@@ -1064,6 +1064,7 @@ extern void   superlu_gridmap(MPI_Comm, int, int, int [], int, gridinfo_t *);
 extern void   superlu_gridexit(gridinfo_t *);
 extern void   superlu_gridinit3d(MPI_Comm Bcomm,  int nprow, int npcol, int npdep,
 				 gridinfo3d_t *grid) ;
+extern void   superlu_gridmap3d(MPI_Comm, int, int, int, int [], gridinfo3d_t *);
 extern void   superlu_gridexit3d(gridinfo3d_t *grid);
 
 extern void   set_default_options_dist(superlu_dist_options_t *);

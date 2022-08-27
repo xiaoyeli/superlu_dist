@@ -11,15 +11,6 @@
 
 #include "superlu_ddefs.h"
 
-void superlu_gridmap3d(
-    MPI_Comm Bcomm, /* The base communicator upon which
-                    the new grid is formed. */
-    int nprow,
-    int npcol,
-    int npdep,
-    gridinfo3d_t *grid);
-
-
 /*! \brief All processes in the MPI communicator must call this routine.
  */
 void superlu_gridinit3d(MPI_Comm Bcomm, /* The base communicator upon which
@@ -27,12 +18,16 @@ void superlu_gridinit3d(MPI_Comm Bcomm, /* The base communicator upon which
                         int nprow, int npcol, int npdep, gridinfo3d_t *grid)
 {
     int Np = nprow * npcol * npdep;
-    int i, j, info;
-
+    int i, j, k, info;
+    int *usermap; /* usermap(i,j,k) holds the process number from Bcomm 
+		      to be placed in {i,j,k} of the new process (group) (3D grid).  */
+    
     /* Make a list of the processes in the new communicator. */
-    //    usermap = (int_t *) SUPERLU_MALLOC(Np*sizeof(int_t));
-    //    for (j = 0; j < npcol; ++j)
-    //        for (i = 0; i < nprow; ++i) usermap[j*nprow+i] = i*npcol+j;
+    usermap = SUPERLU_MALLOC(Np*sizeof(int));
+    for (k = 0; k < npdep; ++k)
+	for (j = 0; j < npcol; ++j)
+	    for (i = 0; i < nprow; ++i)
+		usermap[k*nprow*npcol + j*nprow + i] = k*nprow*npcol + j*nprow + i;
 
     /* Check MPI environment initialization. */
     MPI_Initialized( &info );
@@ -43,9 +38,9 @@ void superlu_gridinit3d(MPI_Comm Bcomm, /* The base communicator upon which
     if ( info < Np )
         ABORT("Number of processes is smaller than NPROW * NPCOL * NPDEP");
 
-    superlu_gridmap3d(Bcomm, nprow, npcol, npdep, grid);
+    superlu_gridmap3d(Bcomm, nprow, npcol, npdep, usermap, grid);
 
-    // SUPERLU_FREE(usermap);
+    SUPERLU_FREE(usermap);
     
 #ifdef GPU_ACC
     /* Binding each MPI to a GPU device */
@@ -74,11 +69,13 @@ void superlu_gridmap3d(
     int nprow,
     int npcol,
     int npdep,
+    int usermap[], /* usermap(i,j,k) holds the process number from Bcomm 
+		      to be placed in {i,j,k} of the new process (group) (3D grid).  */
     gridinfo3d_t *grid)
 {
     MPI_Group mpi_base_group, superlu_grp;
     int Np = nprow * npcol * npdep, mycol, myrow;
-    int *pranks;
+    //int *pranks;
     int i, j, info;
 
 #if 0 // older MPI doesn't support complex in C    
@@ -94,18 +91,22 @@ void superlu_gridmap3d(
     if ( !info )
         ABORT("C main program must explicitly call MPI_Init()");
 
+#if 0 /* Sherry: can directly use usermap[] passed in */    
     /* Make a list of the processes in the new communicator. */
     pranks = (int *) SUPERLU_MALLOC(Np * sizeof(int));
-    for (j = 0; j < Np; ++j)
-        pranks[j] = j;
-
+    for (k = 0; k < npdep; ++k)
+	for (j = 0; j < npcol; ++j)
+	    for (i = 0; i < nprow; ++i)
+		pranks[k*nprow*npcol + j*nprow + i] = usermap[k*nprow*npcol + j*nprow + i];
+#endif
+    
     /*
      * Form MPI communicator for all.
      */
     /* Get the group underlying Bcomm. */
     MPI_Comm_group( Bcomm, &mpi_base_group );
     /* Create the new group. */
-    MPI_Group_incl( mpi_base_group, Np, pranks, &superlu_grp );
+    MPI_Group_incl( mpi_base_group, Np, usermap, &superlu_grp );
     /* Create the new communicator. */
     /* NOTE: The call is to be executed by all processes in Bcomm,
        even if they do not belong in the new group -- superlu_grp.
@@ -116,8 +117,6 @@ void superlu_gridmap3d(
     if ( grid->comm == MPI_COMM_NULL ) {
         //grid->comm = Bcomm; do not need to reassign to a valid communicator
         grid->iam = -1;
-        //SUPERLU_FREE(pranks);
-        //return;
 	goto gridmap_out;
     }
 
@@ -254,7 +253,7 @@ void superlu_gridmap3d(
     MPI_Comm_free( &superlu3d_comm );  // Sherry added
     
  gridmap_out:    
-    SUPERLU_FREE(pranks);
+    //SUPERLU_FREE(pranks);
     MPI_Group_free( &superlu_grp );
     MPI_Group_free( &mpi_base_group );
 }
