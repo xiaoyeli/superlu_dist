@@ -64,16 +64,17 @@ for ((i = 0; i < ${#npcols[@]}; i++)); do
 NROW=${nprows[i]}
 NCOL=${npcols[i]}
 
-CORE_VAL=`expr $NCOL \* $NROW`
-NODE_VAL=`expr $CORE_VAL / $CORES_PER_NODE`
-MOD_VAL=`expr $CORE_VAL % $CORES_PER_NODE`
-if [[ $MOD_VAL -ne 0 ]]
-then
-  NODE_VAL=`expr $NODE_VAL + 1`
-fi
+# CORE_VAL=`expr $NCOL \* $NROW`
+# NODE_VAL=`expr $CORE_VAL / $CORES_PER_NODE`
+# MOD_VAL=`expr $CORE_VAL % $CORES_PER_NODE`
+# if [[ $MOD_VAL -ne 0 ]]
+# then
+#   NODE_VAL=`expr $NODE_VAL + 1`
+# fi
 
 # NODE_VAL=2
 NCORE_VAL_TOT=`expr $NODE_VAL_TOT \* $CORES_PER_NODE / $NTH`
+batch=1 # whether to do batched test
 
 OMP_NUM_THREADS=$NTH
 TH_PER_RANK=`expr $NTH \* 2`
@@ -87,18 +88,22 @@ export MPICH_MAX_THREAD_SAFETY=multiple
 
 # export NSUP=5
 # export NREL=5
-for MAT in big.rua 
+# for MAT in big.rua 
 # for MAT in g4.rua 
-# for MAT in s1_mat_0_126936.bin
+for MAT in s1_mat_0_126936.bin
 # for MAT in s1_mat_0_126936.bin s1_mat_0_253872.bin s1_mat_0_507744.bin 
 # for MAT in matrix_ACTIVSg70k_AC_00.mtx matrix_ACTIVSg10k_AC_00.mtx
 # for MAT in temp_13k.mtx temp_25k.mtx temp_75k.mtx
 do
 mkdir -p $MAT
-# nsys profile --stats=true -t cuda,cublas,mpi --mpi-impl mpich  srun -n 16 -N $NODE_VAL_TOT -c $TH_PER_RANK --cpu_bind=cores ./EXAMPLE/pddrive -c $NCOL -r $NROW $CFS/m2957/liuyangz/my_research/matrix/$MAT | tee ./$MAT/SLU.o_mpi_${NROW}x${NCOL}_${NTH}_1rhs_2d
-# srun -n 4 -N $NODE_VAL_TOT -c $TH_PER_RANK --cpu_bind=cores ./EXAMPLE/pddrive -c $NCOL -r $NROW $CFS/m2957/liuyangz/my_research/matrix/$MAT | tee ./$MAT/SLU.o_mpi_${NROW}x${NCOL}_${NTH}_1rhs_2d
-srun -n $NCORE_VAL_TOT -N $NODE_VAL_TOT -c $TH_PER_RANK --cpu_bind=cores ./EXAMPLE/pddrive -c $NCOL -r $NROW $CFS/m2957/liuyangz/my_research/matrix/$MAT | tee ./$MAT/SLU.o_mpi_${NROW}x${NCOL}_${NTH}_1rhs_2d
-# srun -n $NCORE_VAL_TOT -N $NODE_VAL_TOT -c $TH_PER_RANK --cpu_bind=cores ./EXAMPLE/pddrive3d -c $NCOL -r $NROW $CFS/m2957/liuyangz/my_research/matrix/$MAT | tee ./$MAT/SLU.o_mpi_${NROW}x${NCOL}_${NTH}_1rhs_3d
+# nsys profile --stats=true -t cuda,cublas,mpi --mpi-impl mpich  srun -n 16 -N $NODE_VAL_TOT -c $TH_PER_RANK --cpu_bind=cores ./EXAMPLE/pddrive -c $NCOL -r $NROW -b $batch $CFS/m2957/liuyangz/my_research/matrix/$MAT | tee ./$MAT/SLU.o_mpi_${NROW}x${NCOL}_${NTH}_1rhs_2d
+# nsys profile --stats=true -t cuda,cublas,mpi --mpi-impl mpich  srun -n 4 -N $NODE_VAL_TOT -c $TH_PER_RANK --cpu_bind=cores ./EXAMPLE/pddrive3d -c $NCOL -r $NROW -b $batch $CFS/m2957/liuyangz/my_research/matrix/$MAT | tee ./$MAT/SLU.o_mpi_${NROW}x${NCOL}_${NTH}_1rhs_3d
+# srun -n 32 -N $NODE_VAL_TOT -c $TH_PER_RANK --cpu_bind=cores ./EXAMPLE/pddrive -c $NCOL -r $NROW -b $batch $CFS/m2957/liuyangz/my_research/matrix/$MAT | tee ./$MAT/SLU.o_mpi_${NROW}x${NCOL}_${NTH}_1rhs_2d
+
+srun -n 1 -N $NODE_VAL_TOT -c $TH_PER_RANK --cpu_bind=cores ./EXAMPLE/pddrive3d -c $NCOL -r $NROW -b $batch $CFS/m2957/liuyangz/my_research/matrix/$MAT | tee ./$MAT/SLU.o_mpi_${NROW}x${NCOL}_${NTH}_1rhs_3d
+
+# srun -n $NCORE_VAL_TOT -N $NODE_VAL_TOT -c $TH_PER_RANK --cpu_bind=cores ./EXAMPLE/pddrive -c $NCOL -r $NROW -b $batch $CFS/m2957/liuyangz/my_research/matrix/$MAT | tee ./$MAT/SLU.o_mpi_${NROW}x${NCOL}_${NTH}_1rhs_2d
+# srun -n $NCORE_VAL_TOT -N $NODE_VAL_TOT -c $TH_PER_RANK --cpu_bind=cores ./EXAMPLE/pddrive3d -c $NCOL -r $NROW -b $batch $CFS/m2957/liuyangz/my_research/matrix/$MAT | tee ./$MAT/SLU.o_mpi_${NROW}x${NCOL}_${NTH}_1rhs_3d
 done 
 done 
 

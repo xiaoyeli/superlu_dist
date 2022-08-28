@@ -232,6 +232,16 @@ main (int argc, char *argv[])
 	    gpuGetDeviceCount(&devs);  // Returns the number of compute-capable devices
 	    gpuSetDevice(rank % devs); // Set device to be used for GPU executions
 	}
+        // This is to initialize GPU, which can be costly. 
+        double t1 = SuperLU_timer_();                       
+        gpuFree(0);
+        double t2 = SuperLU_timer_();    
+        if(!myrank)printf("first gpufree time: %7.4f\n",t2-t1);
+        gpublasHandle_t hb;           
+        gpublasCreate(&hb);
+        if(!myrank)printf("first blas create time: %7.4f\n",SuperLU_timer_()-t2);
+        gpublasDestroy(hb);
+
 #endif
 
 	// printf("grid.iam %5d, myrank %5d\n",grid.iam,myrank);
@@ -242,6 +252,17 @@ main (int argc, char *argv[])
            INITIALIZE THE SUPERLU PROCESS GRID.
            ------------------------------------------------------------ */
         superlu_gridinit3d (MPI_COMM_WORLD, nprow, npcol, npdep, &grid);
+#ifdef GPU_ACC
+        MPI_Comm_rank(MPI_COMM_WORLD, &myrank);
+        double t1 = SuperLU_timer_();                       
+        gpuFree(0);
+        double t2 = SuperLU_timer_();    
+        if(!myrank)printf("first gpufree time: %7.4f\n",t2-t1);
+        gpublasHandle_t hb;           
+        gpublasCreate(&hb);
+        if(!myrank)printf("first blas create time: %7.4f\n",SuperLU_timer_()-t2);
+        gpublasDestroy(hb);
+#endif
     }
 
     if(grid.iam==0) {

@@ -24,12 +24,14 @@ cmake .. \
      -DTPL_CUDA_LIBRARIES="/global/common/software/nersc/cos1.3/cuda/11.3.0/targets/x86_64-linux/lib/libcublas.so;/global/common/software/nersc/cos1.3/cuda/11.3.0/targets/x86_64-linux/lib/libcudart.so" \
      -DTPL_ENABLE_INTERNAL_BLASLIB=OFF \
      -DCMAKE_VERBOSE_MAKEFILE:BOOL=ON \
-     -DTPL_BLAS_LIBRARIES=/opt/cray/pe/libsci/21.08.1.2/GNU/9.1/x86_64/lib/libsci_gnu_82_mpi_mp.a \
+     -DTPL_BLAS_LIBRARIES=/opt/cray/pe/libsci/22.06.1.3/GNU/9.1/x86_64/lib/libsci_gnu_81_mp.so \
      -DBUILD_SHARED_LIBS=OFF \
      -DCMAKE_BUILD_TYPE=Release \
      -DCMAKE_INSTALL_PREFIX=.
      
 make pddrive
+make pddrive3d
+make f_pddrive
 
 
 # -DTPL_BLAS_LIBRARIES=/global/cfs/cdirs/m3894/ptlin/tpl/amd_blis/install/amd_blis-20211021-n9-gcc9.3.0/lib/libblis.a \
