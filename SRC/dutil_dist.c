@@ -765,7 +765,92 @@ void dDumpLblocks(int iam, int_t nsupers, gridinfo_t *grid,
 
 } /* dDumpLblocks */
 
+/*! \brief Dump the factored matrix L using matlab triple-let format
+ */
+void dDumpLblocks_model(int iam, int_t nsupers, gridinfo_t *grid,
+                  Glu_persist_t *Glu_persist, dLocalLU_t *Llu)
+{
+    register int c, extra, gb, j, i, lb, nsupc, nsupr, len, nb, ncb;
+    int k, mycol, r, n, nmax;
+    int_t nnzL;
+    int_t *xsup = Glu_persist->xsup;
+    int_t *index;
+    double *nzval;
+    char filename[256];
+    FILE *fp, *fopen();
 
+    // assert(grid->npcol*grid->nprow==1);
+
+    // count nonzeros in the first pass
+    nnzL = 0;
+    n = 0;
+    ncb = nsupers / grid->npcol;
+    extra = nsupers % grid->npcol;
+    mycol = MYCOL( iam, grid );
+    if ( mycol < extra ) ++ncb;
+    for (lb = 0; lb < ncb; ++lb) {
+        index = Llu->Lrowind_bc_ptr[lb];
+        if ( index ) { /* Not an empty column */
+            nzval = Llu->Lnzval_bc_ptr[lb];
+            nb = index[0];
+            nsupr = index[1];
+            gb = lb * grid->npcol + mycol;
+            nsupc = SuperSize( gb );
+            for (c = 0, k = BC_HEADER, r = 0; c < nb; ++c) {
+                len = index[k+1];
+
+                for (j = 0; j < nsupc; ++j) {
+                    for (i=0; i<len; ++i){
+
+                        if(index[k+LB_DESCRIPTOR+i]+1>=xsup[gb]+j+1){
+                            nnzL ++;
+                            nmax = SUPERLU_MAX(n,index[k+LB_DESCRIPTOR+i]+1);
+                            n = nmax;
+                        }
+
+                    }
+                }
+                k += LB_DESCRIPTOR + len;
+                r += len;
+            }
+        }
+    }
+    MPI_Allreduce(MPI_IN_PLACE,&nnzL,1,mpi_int_t,MPI_SUM,grid->comm);
+    MPI_Allreduce(MPI_IN_PLACE,&n,1,mpi_int_t,MPI_MAX,grid->comm);
+
+    snprintf(filename, sizeof(filename), "%s-%d", "L", iam);
+    printf("Dumping L factor to --> %s\n", filename);
+    if ( !(fp = fopen(filename, "w")) ) {
+        ABORT("File open failed");
+    }
+
+    if(grid->iam==0){
+        fprintf(fp, "%d %d " IFMT "\n", n,n,nnzL);
+    }
+
+    ncb = nsupers / grid->npcol;
+    extra = nsupers % grid->npcol;
+    mycol = MYCOL( iam, grid );
+    if ( mycol < extra ) ++ncb;
+    for (lb = 0; lb < ncb; ++lb) {
+        index = Llu->Lrowind_bc_ptr[lb];
+        if ( index ) { /* Not an empty column */
+            nzval = Llu->Lnzval_bc_ptr[lb];
+            nb = index[0];
+            nsupr = index[1];
+            gb = lb * grid->npcol + mycol;
+            nsupc = SuperSize( gb );
+            for (c = 0, k = BC_HEADER, r = 0; c < nb; ++c) {
+                len = index[k+1];
+                fprintf(fp, "%d,%d,%d,%d,%d\n",index[k], gb, iam, len,nsupc);
+                k += LB_DESCRIPTOR + len;
+                r += len;
+            }
+        }
+    }
+    fclose(fp);
+
+} /* dDumpLblocks for criticalpath model */
 
 
 /*! \Compute the level sets in the L factor
