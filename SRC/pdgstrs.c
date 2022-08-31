@@ -1511,9 +1511,13 @@ if(procs==1){
 
 
 	for (i = 0; i < nlb; ++i) fmod[i*aln_i] += frecv[i];
-
-	if ( !(recvbuf_BC_fwd = (double*)SUPERLU_MALLOC(maxrecvsz*(nfrecvx+1) * sizeof(double))) )  // this needs to be optimized for 1D row mapping
+#ifdef COMM_BENCH
+    if ( !(recvbuf_BC_fwd = (double*)SUPERLU_MALLOC(256 * sizeof(double))) )  // this needs to be optimized for 1D row mapping
 		ABORT("Malloc fails for recvbuf_BC_fwd[].");
+#else
+    if ( !(recvbuf_BC_fwd = (double*)SUPERLU_MALLOC(maxrecvsz*(nfrecvx+1) * sizeof(double))) )  // this needs to be optimized for 1D row mapping
+		ABORT("Malloc fails for recvbuf_BC_fwd[].");
+#endif
 	nfrecvx_buf=0;
 
 	log_memory(nlb*aln_i*iword+nlb*iword+(CEILING( nsupers, Pr )+CEILING( nsupers, Pc ))*aln_i*2.0*iword+ nsupers_i*iword + sizelsum*num_thread * dword + (ldalsum * nrhs + nlb * XK_H) *dword + (sizertemp*num_thread + 1)*dword+maxrecvsz*(nfrecvx+1)*dword, stat);	//account for fmod, frecv, leaf_send, root_send, leafsups, recvbuf_BC_fwd	, lsum, x, rtemp

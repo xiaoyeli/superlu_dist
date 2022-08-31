@@ -323,6 +323,9 @@ dReDistribute_A(SuperMatrix *A, dScalePermstruct_t *ScalePermstruct,
     return 0;
 } /* dReDistribute_A */
 
+#ifdef COMM_BENCH
+double* bench_buffer;
+#endif
 float
 pddistribute(superlu_dist_options_t *options, int_t n, SuperMatrix *A,
 	     dScalePermstruct_t *ScalePermstruct,
@@ -2394,6 +2397,10 @@ if ( !iam) printf(".. Construct Reduce tree for U: %.2f\t\n", t);
     CHECK_MALLOC(iam, "Exit pddistribute()");
 #endif
 
+#ifdef COMM_BENCH
+    int max_msg_size=256; //in double
+    bench_buffer= (double*)SUPERLU_MALLOC( max_msg_size * sizeof(double));
+#endif
     return (mem_use+memTRS);
 
 } /* PDDISTRIBUTE */

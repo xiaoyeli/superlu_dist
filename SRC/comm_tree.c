@@ -307,9 +307,14 @@ void C_BcTree_Create_onesided(C_Tree* tree, MPI_Comm comm, int* ranks, int rank_
 		for( int idxRecv = 0; idxRecv < tree->destCnt_; ++idxRecv ){
           int iProc = tree->myDests_[idxRecv];
           // Use Isend to send to multiple targets
+#ifdef COMM_BENCH
+            msgSize=128;
+            int error_code = MPI_Isend( bench_buffer, msgSize, tree->type_,
+              iProc, tree->tag_,tree->comm_, &tree->sendRequests_[idxRecv] );
+#else
           int error_code = MPI_Isend( localBuffer, msgSize, tree->type_,
               iProc, tree->tag_,tree->comm_, &tree->sendRequests_[idxRecv] );
-			  
+#endif
 			  MPI_Test(&tree->sendRequests_[idxRecv],&flag,&status) ;
 			  // std::cout<<tree->myRank_<<" FWD to "<<iProc<<" on tag "<<tree->tag_<<std::endl;
         } // for (iProc)
@@ -402,10 +407,14 @@ void C_BcTree_Create_onesided(C_Tree* tree, MPI_Comm comm, int* ranks, int rank_
 			  //forward to my root if I have reseived everything
 			  int iProc = Tree->myRoot_;
 			  // Use Isend to send to multiple targets
-
+#ifdef COMM_BENCH
+            msgSize=128;
+			  int error_code = MPI_Isend(bench_buffer, msgSize, Tree->type_,
+				  iProc, Tree->tag_,Tree->comm_, &Tree->sendRequests_[0] );
+#else
 			  int error_code = MPI_Isend(localBuffer, msgSize, Tree->type_, 
 				  iProc, Tree->tag_,Tree->comm_, &Tree->sendRequests_[0] );
-				  
+#endif
 				  MPI_Test(&Tree->sendRequests_[0],&flag,&status) ; 
 				  
 				  // std::cout<<Tree->myRank_<<" FWD to "<<iProc<<" on tag "<<Tree->tag_<<std::endl;
