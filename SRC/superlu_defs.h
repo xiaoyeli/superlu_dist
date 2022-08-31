@@ -91,6 +91,9 @@ extern int *keep_validRDQindex_u;
 extern int *recv_size_all;
 extern int *recv_size_all_u;
 #endif
+#ifdef COMM_BENCH
+extern double* bench_buffer;
+#endif
 #if ( VTUNE>=1 )
 #include <ittnotify.h>			 
 #endif

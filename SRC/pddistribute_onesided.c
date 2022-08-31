@@ -31,6 +31,9 @@ double* BC_taskq;
 double* RD_taskq;
 double* BC_taskq_u;
 double* RD_taskq_u;
+#ifdef COMM_BENCH
+double* bench_buffer;
+#endif
 float
 pddistribute_onesided(superlu_dist_options_t *options, int_t n, SuperMatrix *A,
 	     dScalePermstruct_t *ScalePermstruct,
@@ -2210,9 +2213,16 @@ if ( !iam) printf(".. Construct Reduce tree for U: %.2f\t\n", t);
 
 #endif
 
+
 #ifdef one_sided
+#ifdef COMM_BENCH
+    int max_msg_size=256; //in double
+    BC_buffer_size = (max_msg_size) * ( (nfrecvx>nbrecvx?nfrecvx:nbrecvx) + 1 );
+#else
     int maxrecvsz = sp_ienv_dist(3,options)* nrhs + SUPERLU_MAX( XK_H, LSUM_H ) + 2;
     BC_buffer_size = (maxrecvsz) * ( (nfrecvx>nbrecvx?nfrecvx:nbrecvx) + 1 );
+
+#endif
     int size_num=1; // if dc size_num=2
 
     BC_taskq = (double*)SUPERLU_MALLOC( size_num * BC_buffer_size * sizeof(double));
@@ -2237,7 +2247,11 @@ if ( !iam) printf(".. Construct Reduce tree for U: %.2f\t\n", t);
 			nbrecvmod += URtree_ptr[lk].destCnt_;
 		}
     }
+#ifdef COMM_BENCH
+    RD_buffer_size=((nfrecvmod>nbrecvmod?nfrecvmod:nbrecvmod)+1)*(max_msg_size);
+#else
     RD_buffer_size=((nfrecvmod>nbrecvmod?nfrecvmod:nbrecvmod)+1)*(maxrecvsz);
+#endif
     RD_taskq = (double*)SUPERLU_MALLOC( size_num*RD_buffer_size * sizeof(double));   // this needs to be optimized for 1D row mapping
     for(i=0; i<RD_buffer_size*size_num; i++){
             RD_taskq[i] = -1.0;
