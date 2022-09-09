@@ -1,3 +1,4 @@
+
 /*! \file
 Copyright (c) 2003, The Regents of the University of California, through
 Lawrence Berkeley National Laboratory (subject to receipt of any required
@@ -482,7 +483,7 @@ at the top-level directory.
  *
  * stat   (output) SuperLUStat_t*
  *        Record the statistics on runtime and floating-point operation count.
- *        See util.h for the definition of 'SuperLUStat_t'.
+ *        See util_dist.h for the definition of 'SuperLUStat_t'.
  *
  * info    (output) int*
  *         = 0: successful exit
@@ -640,6 +641,8 @@ pdgssvx3d (superlu_dist_options_t * options, SuperMatrix * A,
     float GA_mem_use;           /* memory usage by global A */
     float dist_mem_use;         /* memory usage during distribution */
     superlu_dist_mem_usage_t num_mem_usage, symb_mem_usage;
+    float flinfo; /* track memory usage of parallel symbolic factorization */
+    
 #if ( PRNTlevel>= 2 )
     double dmin, dsum, dprod;
 #endif
@@ -748,7 +751,6 @@ pdgssvx3d (superlu_dist_options_t * options, SuperMatrix * A,
     	MPI_Comm symb_comm;  /* communicator for symbolic factorization */
     	int col, key; /* parameters for creating a new communicator */
     	Pslu_freeable_t Pslu_freeable;
-    	float flinfo;
     
 	sizes = NULL;
 	fstVtxSep = NULL;
@@ -1104,7 +1106,7 @@ pdgssvx3d (superlu_dist_options_t * options, SuperMatrix * A,
 	
 	
 	/* ------------------------------------------------------------
-	   Perform the LU factorization.
+	   Perform ordering and symbolic factorization
 	   ------------------------------------------------------------ */
 	if ( !factored ) {
 	    t = SuperLU_timer_ ();
@@ -1203,7 +1205,7 @@ pdgssvx3d (superlu_dist_options_t * options, SuperMatrix * A,
 		    if (!iam)
 			printf
 			    (".. symbfact(): relax %4d, maxsuper %4d, fill %4d\n",
-			     sp_ienv_dist(2), sp_ienv_dist(3), sp_ienv_dist(6));
+			     sp_ienv_dist(2,options), sp_ienv_dist(3,options), sp_ienv_dist(6,options));
 #endif
 		    t = SuperLU_timer_ ();
 		    if (!(Glu_freeable = (Glu_freeable_t *)
@@ -1247,7 +1249,8 @@ pdgssvx3d (superlu_dist_options_t * options, SuperMatrix * A,
 		else { /* parallel symbolic factorization */
 		    t = SuperLU_timer_ ();
 		    flinfo =
-			symbfact_dist (nprocs_num, noDomains, A, perm_c, perm_r,
+			symbfact_dist (options, nprocs_num, noDomains,
+			               A, perm_c, perm_r,
 				       sizes, fstVtxSep, &Pslu_freeable,
 				       &(grid->comm), &symb_comm,
 				       &symb_mem_usage);
@@ -1281,8 +1284,9 @@ pdgssvx3d (superlu_dist_options_t * options, SuperMatrix * A,
 		   NOTE: the row permutation Pc*Pr is applied internally in the
 		   distribution routine. */
 		t = SuperLU_timer_ ();
-		dist_mem_use = pddistribute (Fact, n, A, ScalePermstruct,
+		dist_mem_use = pddistribute (options, n, A, ScalePermstruct,
 					     Glu_freeable, LUstruct, grid);
+
 		stat->utime[DIST] = SuperLU_timer_ () - t;
 		
 		/* Deallocate storage used in symbolic factorization. */
@@ -1300,7 +1304,7 @@ pdgssvx3d (superlu_dist_options_t * options, SuperMatrix * A,
 		    colind[j] = perm_c[colind[j]];
 		
 		t = SuperLU_timer_ ();
-		dist_mem_use = ddist_psymbtonum (Fact, n, A, ScalePermstruct,
+		dist_mem_use = ddist_psymbtonum (options, n, A, ScalePermstruct,
 						 &Pslu_freeable, LUstruct, grid);
 		if (dist_mem_use > 0)
 		    ABORT ("Not enough memory available for dist_psymbtonum\n");
@@ -1310,9 +1314,10 @@ pdgssvx3d (superlu_dist_options_t * options, SuperMatrix * A,
 
 	    /*if (!iam) printf ("\tDISTRIBUTE time  %8.2f\n", stat->utime[DIST]); */
 	} /* end if not Factored */
-    } /* end if process layer 0 */
+	
+    } /* end 2D process layer 0 */
 
-    trf3Dpartition_t*  trf3Dpartition;
+    dtrf3Dpartition_t*  trf3Dpartition;
     int gpu3dVersion=0;
     if(getenv("GPU3DVERSION"))
     {
@@ -1351,7 +1356,8 @@ pdgssvx3d (superlu_dist_options_t * options, SuperMatrix * A,
 	}
 #endif
 
-		t = SuperLU_timer_();
+	
+	t = SuperLU_timer_();
 
 		/*factorize in grid 1*/
 		// if(grid3d->zscp.Iam)
@@ -1458,49 +1464,114 @@ pdgssvx3d (superlu_dist_options_t * options, SuperMatrix * A,
     if ( grid3d->zscp.Iam == 0 ) { // only process layer 0
 	if (!factored) {
 	    if (options->PrintStat) {
-		int_t TinyPivots;
-		float for_lu, total, max, avg, temp;
-		
-		dQuerySpace_dist (n, LUstruct, grid, stat, &num_mem_usage);
-		
-		if (parSymbFact == TRUE) {
-		    /* The memory used in the redistribution routine
+	       int_t TinyPivots;
+	       float for_lu, total, avg, loc_max;
+	       float mem_stage[3];
+	       struct { float val; int rank; } local_struct, global_struct;
+
+	       MPI_Reduce( &stat->TinyPivots, &TinyPivots, 1, mpi_int_t,
+	       		   MPI_SUM, 0, grid->comm );
+	       stat->TinyPivots = TinyPivots;
+
+	       /*-- Compute high watermark of all stages --*/
+	       if (parSymbFact == TRUE) {
+	            /* The memory used in the redistribution routine
 		       includes the memory used for storing the symbolic
-		       structure and the memory allocated for numerical factorization */
-		    temp = SUPERLU_MAX (symb_mem_usage.total, -dist_mem_use);
-		    if (options->RowPerm != NO)
-			temp = SUPERLU_MAX (temp, GA_mem_use);
-		}
-		else {
-		    temp = SUPERLU_MAX (symb_mem_usage.total + GA_mem_use,  /* symbfact step */
-					symb_mem_usage.for_lu + dist_mem_use + num_mem_usage.for_lu /* distribution step */
-					);
-		}
+  		       structure and the memory allocated for numerical
+		       factorization */
+		   mem_stage[0] = (-flinfo); /* symbfact step */
+		    mem_stage[1] = (-dist_mem_use);      /* distribution step */
+		    loc_max = SUPERLU_MAX( mem_stage[0], mem_stage[1] );
+                    if ( options->RowPerm != NO )
+                       loc_max = SUPERLU_MAX(loc_max, GA_mem_use);
+            	} else {
+		    mem_stage[0] = symb_mem_usage.total + GA_mem_use; /* symbfact step */
+		    mem_stage[1] = symb_mem_usage.for_lu
+		               + dist_mem_use
+		               + num_mem_usage.for_lu;            /* distribution step */
+		    loc_max = SUPERLU_MAX( mem_stage[0], mem_stage[1] );
+                }
 
-		temp = SUPERLU_MAX (temp, num_mem_usage.total);
+	        dQuerySpace_dist(n, LUstruct, grid, stat, &num_mem_usage);
+	        mem_stage[2] = num_mem_usage.total;  /* numerical factorization step */
+	    
+	        loc_max = SUPERLU_MAX( loc_max, mem_stage[2] ); /* local max of 3 stages */
 
+	    	local_struct.val = loc_max;
+	    	local_struct.rank = grid->iam;
+	    	MPI_Reduce( &local_struct, &global_struct, 1, MPI_FLOAT_INT, MPI_MAXLOC, 0, grid->comm );
+	    	int all_highmark_rank = global_struct.rank;
+	    	float all_highmark_mem = global_struct.val * 1e-6;
+	    
+		MPI_Reduce( &loc_max, &avg,
+		       	    1, MPI_FLOAT, MPI_SUM, 0, grid->comm );
+	        MPI_Reduce( &num_mem_usage.for_lu, &for_lu,
+		   	    1, MPI_FLOAT, MPI_SUM, 0, grid->comm );
+	        MPI_Reduce( &num_mem_usage.total, &total,
+		            1, MPI_FLOAT, MPI_SUM, 0, grid->comm );
+
+	        /*-- Compute memory usage of numerical factorization --*/
+	        local_struct.val = num_mem_usage.for_lu;
+	        MPI_Reduce( &local_struct, &global_struct, 1, MPI_FLOAT_INT, MPI_MAXLOC, 0, grid->comm );
+	        int lu_max_rank = global_struct.rank;
+	        float lu_max_mem = global_struct.val*1e-6;
+	    
 		MPI_Reduce (&temp, &max, 1, MPI_FLOAT, MPI_MAX, 0, grid->comm);
 		MPI_Reduce (&temp, &avg, 1, MPI_FLOAT, MPI_SUM, 0, grid->comm);
 		MPI_Allreduce (&stat->TinyPivots, &TinyPivots, 1, mpi_int_t,
 			       MPI_SUM, grid->comm);
 		stat->TinyPivots = TinyPivots;
 
-		MPI_Reduce (&num_mem_usage.for_lu, &for_lu,
-			    1, MPI_FLOAT, MPI_SUM, 0, grid->comm);
-		MPI_Reduce (&num_mem_usage.total, &total,
-				            1, MPI_FLOAT, MPI_SUM, 0, grid->comm);
-
-		if (!iam) {
-		    printf("\tNUMfact space (MB) sum(procs):  L\\U\t%.2f\tall\t%.2f\n",
-			   for_lu * 1e-6, total * 1e-6);
-		    printf ("\tTotal highmark (MB):  "
-			    "All\t%.2f\tAvg\t%.2f\tMax\t%.2f\n", avg * 1e-6,
-			    avg / grid->nprow / grid->npcol * 1e-6, max * 1e-6);
-		    printf("**************************************************\n");
-		    fflush(stdout);
-		}
-	    }
+	    	local_struct.val = loc_max;
+	    	local_struct.rank = grid->iam;
+	    	MPI_Reduce( &local_struct, &global_struct, 1, MPI_FLOAT_INT, MPI_MAXLOC, 0, grid->comm );
+	    	int all_highmark_rank = global_struct.rank;
+	    	float all_highmark_mem = global_struct.val * 1e-6;
 	    
+		MPI_Reduce( &loc_max, &avg,
+		       	    1, MPI_FLOAT, MPI_SUM, 0, grid->comm );
+	        MPI_Reduce( &num_mem_usage.for_lu, &for_lu,
+		   	    1, MPI_FLOAT, MPI_SUM, 0, grid->comm );
+	        MPI_Reduce( &num_mem_usage.total, &total,
+		            1, MPI_FLOAT, MPI_SUM, 0, grid->comm );
+
+	        /*-- Compute memory usage of numerical factorization --*/
+	        local_struct.val = num_mem_usage.for_lu;
+	        MPI_Reduce( &local_struct, &global_struct, 1, MPI_FLOAT_INT, MPI_MAXLOC, 0, grid->comm );
+	        int lu_max_rank = global_struct.rank;
+	        float lu_max_mem = global_struct.val*1e-6;
+	    
+	        local_struct.val = stat->peak_buffer;
+	        MPI_Reduce( &local_struct, &global_struct, 1, MPI_FLOAT_INT, MPI_MAXLOC, 0, grid->comm );
+	        int buffer_peak_rank = global_struct.rank;
+	        float buffer_peak = global_struct.val*1e-6;
+    
+                if ( iam==0 ) {
+		    printf("\n** Memory Usage **********************************\n");
+                    printf("** Total highmark (MB):\n"
+		       	   "    Sum-of-all : %8.2f | Avg : %8.2f  | Max : %8.2f\n",
+		           avg * 1e-6,
+		           avg / grid->nprow / grid->npcol * 1e-6,
+		           all_highmark_mem);
+		    printf("    Max at rank %d, different stages (MB):\n"
+		           "\t. symbfact        %8.2f\n"
+		           "\t. distribution    %8.2f\n"
+		           "\t. numfact         %8.2f\n",
+		           all_highmark_rank, mem_stage[0]*1e-6, mem_stage[1]*1e-6, mem_stage[2]*1e-6);
+		
+                    printf("** NUMfact space (MB): (sum-of-all-processes)\n"
+		           "    L\\U :        %8.2f |  Total : %8.2f\n",
+		           for_lu * 1e-6, total * 1e-6);
+		    printf("\t. max at rank %d, max L+U memory (MB): %8.2f\n"
+		           "\t. max at rank %d, peak buffer (MB):    %8.2f\n",
+		           lu_max_rank, lu_max_mem,
+		           buffer_peak_rank, buffer_peak);
+		    printf("**************************************************\n\n");
+		    printf("** number of Tiny Pivots: %8d\n\n", stat->TinyPivots);
+		    fflush(stdout);
+                }
+	    } /* end printing stats */
+
 	}   /* end if not Factored */
 
 	/* ------------------------------------------------------------
@@ -1560,7 +1631,7 @@ pdgssvx3d (superlu_dist_options_t * options, SuperMatrix * A,
 		/* ------------------------------------------------------
 		   Solve the linear system.
 		   ------------------------------------------------------*/
-		if (options->SolveInitialized == NO) /* First time */
+		if (options->SolveInitialized == NO) { /* First time */
                    /* Inside this routine, SolveInitialized is set to YES.
 	              For repeated call to pdgssvx3d(), no need to re-initialilze
 	              the Solve data & communication structures, unless a new
@@ -1569,12 +1640,98 @@ pdgssvx3d (superlu_dist_options_t * options, SuperMatrix * A,
 			dSolveInit (options, A, perm_r, perm_c, nrhs, LUstruct,
 			            grid, SOLVEstruct);
 		    }
+		}
+#if ( defined(GPU_ACC) && defined(GPU_SOLVE) )
+        if(options->DiagInv==NO){
+	    if (iam==0) {
+	        printf("!!WARNING: GPU trisolve requires setting options->DiagInv==YES\n");
+                printf("           otherwise, use CPU trisolve\n");
+		fflush(stdout);
+	    }
+	    //exit(0);  // Sherry: need to return an error flag
+	}
+#endif
+
+	if ( options->DiagInv==YES && (Fact != FACTORED) ) {
+	    pdCompute_Diag_Inv(n, LUstruct, grid, stat, info);
+
+
+
+// The following #ifdef GPU_ACC block frees and reallocates GPU data for trisolve. The data seems to be overwritten by pdgstrf3d. 
+int_t nsupers = getNsupers(n, LUstruct->Glu_persist);
+#ifdef GPU_ACC
+	
+	pdconvertU(options, grid,LUstruct, stat, n);
+
+	checkGPU(gpuFree(LUstruct->Llu->d_xsup));
+	checkGPU(gpuFree(LUstruct->Llu->d_LRtree_ptr));
+	checkGPU(gpuFree(LUstruct->Llu->d_LBtree_ptr));
+	checkGPU(gpuFree(LUstruct->Llu->d_URtree_ptr));
+	checkGPU(gpuFree(LUstruct->Llu->d_UBtree_ptr));	
+	checkGPU(gpuFree(LUstruct->Llu->d_Lrowind_bc_dat));
+	checkGPU(gpuFree(LUstruct->Llu->d_Lindval_loc_bc_dat));
+	checkGPU(gpuFree(LUstruct->Llu->d_Lrowind_bc_offset));
+	checkGPU(gpuFree(LUstruct->Llu->d_Lindval_loc_bc_offset));
+	checkGPU(gpuFree(LUstruct->Llu->d_Lnzval_bc_offset));
+	checkGPU(gpuFree(LUstruct->Llu->d_Linv_bc_offset));
+	checkGPU(gpuFree(LUstruct->Llu->d_Uinv_bc_offset));
+	checkGPU(gpuFree(LUstruct->Llu->d_ilsum));
+	checkGPU(gpuFree(LUstruct->Llu->d_Lnzval_bc_dat));
+	checkGPU(gpuFree(LUstruct->Llu->d_Linv_bc_dat));
+	checkGPU(gpuFree(LUstruct->Llu->d_Uinv_bc_dat));
+
+
+
+	checkGPU(gpuMalloc( (void**)&LUstruct->Llu->d_xsup, (n+1) * sizeof(int_t)));
+	checkGPU(gpuMemcpy(LUstruct->Llu->d_xsup, LUstruct->Glu_persist->xsup, (n+1) * sizeof(int_t), gpuMemcpyHostToDevice));
+	checkGPU(gpuMalloc( (void**)&LUstruct->Llu->d_LRtree_ptr, CEILING( nsupers, grid->nprow ) * sizeof(C_Tree)));
+	checkGPU(gpuMalloc( (void**)&LUstruct->Llu->d_LBtree_ptr, CEILING( nsupers, grid->npcol ) * sizeof(C_Tree)));
+	checkGPU(gpuMalloc( (void**)&LUstruct->Llu->d_URtree_ptr, CEILING( nsupers, grid->nprow ) * sizeof(C_Tree)));
+	checkGPU(gpuMalloc( (void**)&LUstruct->Llu->d_UBtree_ptr, CEILING( nsupers, grid->npcol ) * sizeof(C_Tree)));	
+	checkGPU(gpuMemcpy(LUstruct->Llu->d_LRtree_ptr, LUstruct->Llu->LRtree_ptr, CEILING( nsupers, grid->nprow ) * sizeof(C_Tree), gpuMemcpyHostToDevice));	
+	checkGPU(gpuMemcpy(LUstruct->Llu->d_LBtree_ptr, LUstruct->Llu->LBtree_ptr, CEILING( nsupers, grid->npcol ) * sizeof(C_Tree), gpuMemcpyHostToDevice));			
+	checkGPU(gpuMemcpy(LUstruct->Llu->d_URtree_ptr, LUstruct->Llu->URtree_ptr, CEILING( nsupers, grid->nprow ) * sizeof(C_Tree), gpuMemcpyHostToDevice));	
+	checkGPU(gpuMemcpy(LUstruct->Llu->d_UBtree_ptr, LUstruct->Llu->UBtree_ptr, CEILING( nsupers, grid->npcol ) * sizeof(C_Tree), gpuMemcpyHostToDevice));		
+	checkGPU(gpuMalloc( (void**)&LUstruct->Llu->d_Lrowind_bc_dat, (LUstruct->Llu->Lrowind_bc_cnt) * sizeof(int_t)));
+	checkGPU(gpuMemcpy(LUstruct->Llu->d_Lrowind_bc_dat, LUstruct->Llu->Lrowind_bc_dat, (LUstruct->Llu->Lrowind_bc_cnt) * sizeof(int_t), gpuMemcpyHostToDevice));	
+	checkGPU(gpuMalloc( (void**)&LUstruct->Llu->d_Lindval_loc_bc_dat, (LUstruct->Llu->Lindval_loc_bc_cnt) * sizeof(int_t)));
+	checkGPU(gpuMemcpy(LUstruct->Llu->d_Lindval_loc_bc_dat, LUstruct->Llu->Lindval_loc_bc_dat, (LUstruct->Llu->Lindval_loc_bc_cnt) * sizeof(int_t), gpuMemcpyHostToDevice));	
+	checkGPU(gpuMalloc( (void**)&LUstruct->Llu->d_Lrowind_bc_offset, CEILING( nsupers, grid->npcol ) * sizeof(long int)));
+	checkGPU(gpuMemcpy(LUstruct->Llu->d_Lrowind_bc_offset, LUstruct->Llu->Lrowind_bc_offset, CEILING( nsupers, grid->npcol ) * sizeof(long int), gpuMemcpyHostToDevice));	
+	checkGPU(gpuMalloc( (void**)&LUstruct->Llu->d_Lindval_loc_bc_offset, CEILING( nsupers, grid->npcol ) * sizeof(long int)));
+	checkGPU(gpuMemcpy(LUstruct->Llu->d_Lindval_loc_bc_offset, LUstruct->Llu->Lindval_loc_bc_offset, CEILING( nsupers, grid->npcol ) * sizeof(long int), gpuMemcpyHostToDevice));	
+	checkGPU(gpuMalloc( (void**)&LUstruct->Llu->d_Lnzval_bc_offset, CEILING( nsupers, grid->npcol ) * sizeof(long int)));
+	checkGPU(gpuMemcpy(LUstruct->Llu->d_Lnzval_bc_offset, LUstruct->Llu->Lnzval_bc_offset, CEILING( nsupers, grid->npcol ) * sizeof(long int), gpuMemcpyHostToDevice));	
+	checkGPU(gpuMalloc( (void**)&LUstruct->Llu->d_Linv_bc_offset, CEILING( nsupers, grid->npcol ) * sizeof(long int)));
+	checkGPU(gpuMemcpy(LUstruct->Llu->d_Linv_bc_offset, LUstruct->Llu->Linv_bc_offset, CEILING( nsupers, grid->npcol ) * sizeof(long int), gpuMemcpyHostToDevice));	
+	checkGPU(gpuMalloc( (void**)&LUstruct->Llu->d_Uinv_bc_offset, CEILING( nsupers, grid->npcol ) * sizeof(long int)));
+	checkGPU(gpuMemcpy(LUstruct->Llu->d_Uinv_bc_offset, LUstruct->Llu->Uinv_bc_offset, CEILING( nsupers, grid->npcol ) * sizeof(long int), gpuMemcpyHostToDevice));		
+	checkGPU(gpuMalloc( (void**)&LUstruct->Llu->d_ilsum, (CEILING( nsupers, grid->nprow )+1) * sizeof(int_t)));
+	checkGPU(gpuMemcpy(LUstruct->Llu->d_ilsum, LUstruct->Llu->ilsum, (CEILING( nsupers, grid->nprow )+1) * sizeof(int_t), gpuMemcpyHostToDevice));
+	checkGPU(gpuMalloc( (void**)&LUstruct->Llu->d_Lnzval_bc_dat, (LUstruct->Llu->Lnzval_bc_cnt) * sizeof(double)));
+	checkGPU(gpuMalloc( (void**)&LUstruct->Llu->d_Linv_bc_dat, (LUstruct->Llu->Linv_bc_cnt) * sizeof(double)));
+	checkGPU(gpuMalloc( (void**)&LUstruct->Llu->d_Uinv_bc_dat, (LUstruct->Llu->Uinv_bc_cnt) * sizeof(double)));
+#endif	
+
+
+#ifdef GPU_ACC
+
+	checkGPU(gpuMemcpy(LUstruct->Llu->d_Linv_bc_dat, LUstruct->Llu->Linv_bc_dat,
+	(LUstruct->Llu->Linv_bc_cnt) * sizeof(double), gpuMemcpyHostToDevice));
+	checkGPU(gpuMemcpy(LUstruct->Llu->d_Uinv_bc_dat, LUstruct->Llu->Uinv_bc_dat,
+	(LUstruct->Llu->Uinv_bc_cnt) * sizeof(double), gpuMemcpyHostToDevice));
+	checkGPU(gpuMemcpy(LUstruct->Llu->d_Lnzval_bc_dat, LUstruct->Llu->Lnzval_bc_dat,
+	(LUstruct->Llu->Lnzval_bc_cnt) * sizeof(double), gpuMemcpyHostToDevice));
+#endif
+	}
+
+
 		stat->utime[SOLVE] = 0.0;
 #if 0 // Sherry: the following interface is needed by 3D trisolve.
 		pdgstrs_vecpar (n, LUstruct, ScalePermstruct, grid, X, m_loc,
 				fst_row, ldb, nrhs, SOLVEstruct, stat, info);
 #else
-		pdgstrs(n, LUstruct, ScalePermstruct, grid, X, m_loc,
+		pdgstrs(options, n, LUstruct, ScalePermstruct, grid, X, m_loc,
 			fst_row, ldb, nrhs, SOLVEstruct, stat, info);
 #endif
 
@@ -1662,7 +1819,7 @@ pdgssvx3d (superlu_dist_options_t * options, SuperMatrix * A,
 					      Glu_persist, SOLVEstruct1);
 			    }
 			
-			pdgsrfs (n, A, anorm, LUstruct, ScalePermstruct, grid,
+			pdgsrfs(options, n, A, anorm, LUstruct, ScalePermstruct, grid,
 				 B, ldb, X, ldx, nrhs, SOLVEstruct1, berr, stat, info);
 			
 			/* Deallocate the storage associated with SOLVEstruct1 */

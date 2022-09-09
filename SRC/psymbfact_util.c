@@ -89,14 +89,14 @@ static int_t *expand
 int_t psymbfact_LUXpandMem
 /************************************************************************/
 (
- int_t iam,
+ int iam,
  int_t n,           /* total number of columns */
  int_t vtxXp,       /* current vertex */
  int_t next,        /* number of elements currently in the factors */
  int_t min_new_len, /* minimum new length to allocate */
- int_t mem_type,    /* which type of memory to expand  */
- int_t rout_type,   /* during which type of factorization */
- int_t free_prev_mem, /* =1 if prev_mem has to be freed */
+ int mem_type,    /* which type of memory to expand  */
+ int rout_type,   /* during which type of factorization */
+ int free_prev_mem, /* =1 if prev_mem has to be freed */
  Pslu_freeable_t *Pslu_freeable,
  Llu_symbfact_t *Llu_symbfact,  /* modified - global LU data structures */
  vtcsInfo_symbfact_t *VInfo,
@@ -150,15 +150,14 @@ int_t psymbfact_LUXpandMem
     len_tcopy_fend = 0;
   }
 #ifdef TEST_SYMB
-  printf ("Pe[" IFMT "] LUXpand mem_t " IFMT " vtxXp " IFMT "\n",
+  printf ("Pe[%d] LUXpand mem_t %d vtxXp " IFMT "\n",
 	  iam, mem_type, vtxXp); 
 #endif
   new_mem = expand (prev_len, min_new_len, prev_mem,
 		    &new_len, len_tcopy_fbeg, len_tcopy_fend, PS);
   if ( !new_mem ) {
-    fprintf(stderr, "Pe[" IFMT "] Can't exp MemType " IFMT ": prv_len " IFMT
-	    " min_new " IFMT " new_l " IFMT "\n",
-	   iam, mem_type, prev_len, min_new_len, new_len);
+    fprintf(stderr, "Pe[%d] Can't exp MemType %d: prv_len %ld,  min_new %ld,  new_l %ld\n",
+	    iam, mem_type, (long) prev_len, (long) min_new_len, (long) new_len);
     return ERROR_RET;
   }
   

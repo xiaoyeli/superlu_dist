@@ -20,6 +20,9 @@
 //#include <thrust/system/cuda/detail/cub/cub.cuh>
 
 #include "zlustruct_gpu.h"
+#ifdef HAVE_HIP
+#include "superlu_gpu_utils.hip.cpp"
+#endif
 
 #include "dcomplex.h"
 
@@ -422,7 +425,8 @@ int zSchurCompUpdate_GPU(
     int_t mcb,    /* num_u_blks_hi */
     int_t buffer_size, int_t lsub_len, int_t usub_len,
     int_t ldt, int_t k0,
-    zsluGPU_t *sluGPU, gridinfo_t *grid
+    zsluGPU_t *sluGPU, gridinfo_t *grid,
+    SuperLUStat_t *stat    
 )
 {
     int SCATTER_THREAD_BLOCK_SIZE=512;
@@ -441,7 +445,7 @@ int zSchurCompUpdate_GPU(
 	Ublock_info_t *Ublock_info = A_gpu->scubufs[streamId].Ublock_info_host;
 	doublecomplex * bigU = A_gpu->scubufs[streamId].bigU_host;
 
-	A_gpu->isOffloaded[k0] = 1;
+	stat->isOffloaded[k0] = 1;
 	/* start by sending data to  */
 	int_t *xsup = A_gpu->xsup_host;
 	int_t col_back = (jj_cpu == 0) ? 0 : Ublock_info[jj_cpu - 1].full_u_cols;
@@ -505,7 +509,7 @@ int zSchurCompUpdate_GPU(
 
 	/*sizeof RemainLbuf = Rnbuf*knsupc */
 	double tTmp = SuperLU_timer_();
-	gpuEventRecord(A_gpu->ePCIeH2D[k0], FunCallStream);
+	gpuEventRecord(stat->ePCIeH2D[k0], FunCallStream);
 
 	checkGPU(gpuMemcpyAsync(A_gpu->scubufs[streamId].usub_IndirectJ3,
 	                          A_gpu->scubufs[streamId].usub_IndirectJ3_host,
@@ -536,8 +540,8 @@ int zSchurCompUpdate_GPU(
 	                          usub_len * sizeof(int_t), gpuMemcpyHostToDevice,
 	                          FunCallStream) );
 
-	A_gpu->tHost_PCIeH2D += SuperLU_timer_() - tTmp;
-	A_gpu->cPCIeH2D += Remain_lbuf_send_size * sizeof(doublecomplex)
+	stat->tHost_PCIeH2D += SuperLU_timer_() - tTmp;
+	stat->cPCIeH2D += Remain_lbuf_send_size * sizeof(doublecomplex)
 	                   + bigu_send_size * sizeof(doublecomplex)
 	                   + RemainBlk * sizeof(Remain_info_t)
 	                   + mcb * sizeof(Ublock_info_t)
@@ -647,7 +651,7 @@ int zSchurCompUpdate_GPU(
 		    }
 		    assert(nrows * ncols <= buffer_size);
 		    gpublasSetStream(gpublas_handle0, FunCallStream);
-		    gpuEventRecord(A_gpu->GemmStart[k0], FunCallStream);
+		    gpuEventRecord(stat->GemmStart[k0], FunCallStream);
 		    cu_A = (gpuDoubleComplex*) &A_gpu->scubufs[streamId].Remain_L_buff[(knsupc - ldu) * Rnbrow + st_row];
 		    cu_B = (gpuDoubleComplex*) &A_gpu->scubufs[streamId].bigU[st_col * ldu];
 		    cu_C = (gpuDoubleComplex*) A_gpu->scubufs[streamId].bigV;
@@ -661,9 +665,9 @@ int zSchurCompUpdate_GPU(
 		    gpuStreamSynchronize(FunCallStream);
 #warning this function is synchronous
 #endif
-		    gpuEventRecord(A_gpu->GemmEnd[k0], FunCallStream);
+		    gpuEventRecord(stat->GemmEnd[k0], FunCallStream);
 
-		    A_gpu->GemmFLOPCounter += 8.0 * (double) nrows * ncols * ldu;
+		    stat->GemmFLOPCounter += 8.0 * (double) nrows * ncols * ldu;
 
 		    /*
 		     * Scattering the output
@@ -681,9 +685,9 @@ int zSchurCompUpdate_GPU(
 #warning this function is synchrnous
 #endif
 
-		    gpuEventRecord(A_gpu->ScatterEnd[k0], FunCallStream);
+		    gpuEventRecord(stat->ScatterEnd[k0], FunCallStream);
 
-		    A_gpu->ScatterMOPCounter +=  3.0 * (double) nrows * ncols;
+		    stat->ScatterMOPCounter +=  3.0 * (double) nrows * ncols;
 		} /* endif ... none of the matrix dimension is zero. */
 
 	    } /* end while jj_end < nub */
@@ -734,8 +738,15 @@ static size_t get_acc_memory ()
 
 }
 
-int zfree_LUstruct_gpu (zLUstruct_gpu_t * A_gpu)
+/* Free all the data structures allocated on GPU.
+   This routine is called from Host                 */
+int zfree_LUstruct_gpu (
+    zsluGPU_t * sluGPU,
+    SuperLUStat_t* stat )
 {
+	zLUstruct_gpu_t * A_gpu = sluGPU->A_gpu;
+	int streamId = 0;
+    
 	/* Free the L data structure on GPU */
 	checkGPU(gpuFree(A_gpu->LrowindVec));
 	checkGPU(gpuFree(A_gpu->LrowindPtr));
@@ -745,7 +756,6 @@ int zfree_LUstruct_gpu (zLUstruct_gpu_t * A_gpu)
 	free(A_gpu->LnzvalPtr_host);
 	
 	/*freeing the pinned memory*/
-	int_t streamId = 0;
 	checkGPU (gpuFreeHost (A_gpu->scubufs[streamId].Remain_info_host));
 	checkGPU (gpuFreeHost (A_gpu->scubufs[streamId].Ublock_info_host));
 	checkGPU (gpuFreeHost (A_gpu->scubufs[streamId].Remain_L_buff_host));
@@ -757,13 +767,13 @@ int zfree_LUstruct_gpu (zLUstruct_gpu_t * A_gpu)
 	checkGPU(gpuFreeHost(A_gpu->scubufs[streamId].usub_buf));
 
 
-	SUPERLU_FREE(A_gpu->isOffloaded); // changed to SUPERLU_MALLOC/SUPERLU_FREE
-	SUPERLU_FREE(A_gpu->GemmStart);
-	SUPERLU_FREE(A_gpu->GemmEnd);
-	SUPERLU_FREE(A_gpu->ScatterEnd);
-	SUPERLU_FREE(A_gpu->ePCIeH2D);
-	SUPERLU_FREE(A_gpu->ePCIeD2H_Start);
-	SUPERLU_FREE(A_gpu->ePCIeD2H_End);
+	SUPERLU_FREE(stat->isOffloaded); // changed to SUPERLU_MALLOC/SUPERLU_FREE
+	SUPERLU_FREE(stat->GemmStart);
+	SUPERLU_FREE(stat->GemmEnd);
+	SUPERLU_FREE(stat->ScatterEnd);
+	SUPERLU_FREE(stat->ePCIeH2D);
+	SUPERLU_FREE(stat->ePCIeD2H_Start);
+	SUPERLU_FREE(stat->ePCIeD2H_End);
 
 	/* Free the U data structure on GPU */
 	checkGPU(gpuFree(A_gpu->UrowindVec));
@@ -800,8 +810,15 @@ int zfree_LUstruct_gpu (zLUstruct_gpu_t * A_gpu)
 	checkGPU(gpuFree(A_gpu->ijb_lookupVec));
 	checkGPU(gpuFree(A_gpu->ijb_lookupPtr));
 
+	/* Destroy all the meta-structures associated with the streams. */
+    	gpuStreamDestroy(sluGPU->CopyStream);
+	for (streamId = 0; streamId < sluGPU->nGPUStreams; streamId++) {
+	    gpuStreamDestroy(sluGPU->funCallStreams[streamId]);
+	    gpublasDestroy(sluGPU->gpublasHandles[streamId]);
+    	}
+    
 	return 0;
-}
+} /* end zfree_LUstruct_gpu */
 
 
 
@@ -821,45 +838,6 @@ void zPrint_matrix( char *desc, int_t m, int_t n, doublecomplex * dA, int_t lda 
 	free(cPtr);
 }
 
-void zprintGPUStats(zLUstruct_gpu_t * A_gpu)
-{
-	double tGemm = 0;
-	double tScatter = 0;
-	double tPCIeH2D = 0;
-	double tPCIeD2H = 0;
-
-	for (int_t i = 0; i < A_gpu->nsupers; ++i)
-	{
-	    float milliseconds = 0;
-
-	    if (A_gpu->isOffloaded[i])
-		{
-			gpuEventElapsedTime(&milliseconds, A_gpu->ePCIeH2D[i], A_gpu->GemmStart[i]);
-			tPCIeH2D += 1e-3 * (double) milliseconds;
-			milliseconds = 0;
-			gpuEventElapsedTime(&milliseconds, A_gpu->GemmStart[i], A_gpu->GemmEnd[i]);
-			tGemm += 1e-3 * (double) milliseconds;
-			milliseconds = 0;
-			gpuEventElapsedTime(&milliseconds, A_gpu->GemmEnd[i], A_gpu->ScatterEnd[i]);
-			tScatter += 1e-3 * (double) milliseconds;
-		}
-
-		milliseconds = 0;
-		gpuEventElapsedTime(&milliseconds, A_gpu->ePCIeD2H_Start[i], A_gpu->ePCIeD2H_End[i]);
-		tPCIeD2H += 1e-3 * (double) milliseconds;
-	}
-
-	printf("GPU: Flops offloaded %.3e Time spent %lf Flop rate %lf GF/sec \n",
-	       A_gpu->GemmFLOPCounter, tGemm, 1e-9 * A_gpu->GemmFLOPCounter / tGemm  );
-	printf("GPU: Mop offloaded %.3e Time spent %lf Bandwidth %lf GByte/sec \n",
-	       A_gpu->ScatterMOPCounter, tScatter, 8e-9 * A_gpu->ScatterMOPCounter / tScatter  );
-	printf("PCIe Data Transfer H2D:\n\tData Sent %.3e(GB)\n\tTime observed from CPU %lf\n\tActual time spent %lf\n\tBandwidth %lf GByte/sec \n",
-	       1e-9 * A_gpu->cPCIeH2D, A_gpu->tHost_PCIeH2D, tPCIeH2D, 1e-9 * A_gpu->cPCIeH2D / tPCIeH2D  );
-	printf("PCIe Data Transfer D2H:\n\tData Sent %.3e(GB)\n\tTime observed from CPU %lf\n\tActual time spent %lf\n\tBandwidth %lf GByte/sec \n",
-	       1e-9 * A_gpu->cPCIeD2H, A_gpu->tHost_PCIeD2H, tPCIeD2H, 1e-9 * A_gpu->cPCIeD2H / tPCIeD2H  );
-	fflush(stdout);
-
-} /* end printGPUStats */
 
 /* Initialize the GPU side of the data structure. */
 int zinitSluGPU3D_t(
@@ -868,9 +846,10 @@ int zinitSluGPU3D_t(
     gridinfo3d_t * grid3d,
     int_t* perm_c_supno,
     int_t n,
-    int_t buffer_size,    /* read from env variable MAX_BUFFER_SIZE */
+    int_t buffer_size,    /* read from env variable SUPERLU_MAX_BUFFER_SIZE */
     int_t bigu_size,
-    int_t ldt             /* NSUP read from sp_ienv(3) */
+    int_t ldt,             /* SUPERLU_MAXSUP read from sp_ienv(3) */
+    SuperLUStat_t *stat
 )
 {
     checkGPUErrors(gpuDeviceReset ());
@@ -919,7 +898,7 @@ int zinitSluGPU3D_t(
        the host LU structure to GPU side.  */
     zCopyLUToGPU3D ( isNodeInMyGrid,
 	        Llu,             /* referred to as A_host */
-	        sluGPU, Glu_persist, n, grid3d, buffer_size, bigu_size, ldt
+	        sluGPU, Glu_persist, n, grid3d, buffer_size, bigu_size, ldt, stat
 	);
 
     return 0;
@@ -1110,7 +1089,8 @@ int zwaitGPUscu(int streamId, zsluGPU_t *sluGPU, SCT_t *SCT)
 int zsendLUpanelGPU2HOST(
     int_t k0,
     d2Hreduce_t* d2Hred,
-    zsluGPU_t *sluGPU
+    zsluGPU_t *sluGPU,
+    SuperLUStat_t *stat     
 )
 {
     int_t kljb = d2Hred->kljb;
@@ -1122,7 +1102,7 @@ int zsendLUpanelGPU2HOST(
     gpuStream_t CopyStream = sluGPU->CopyStream;;
     zLUstruct_gpu_t *A_gpu = sluGPU->A_gpu;
     double tty = SuperLU_timer_();
-    gpuEventRecord(A_gpu->ePCIeD2H_Start[k0], CopyStream);
+    gpuEventRecord(stat->ePCIeD2H_Start[k0], CopyStream);
     if (copyL_kljb)
 	checkGPU(gpuMemcpyAsync(A_gpu->acc_L_buff, &A_gpu->LnzvalVec[A_gpu->LnzvalPtr_host[kljb]],
 				  l_copy_len * sizeof(doublecomplex), gpuMemcpyDeviceToHost, CopyStream ) );
@@ -1130,12 +1110,12 @@ int zsendLUpanelGPU2HOST(
     if (copyU_kljb)
 	checkGPU(gpuMemcpyAsync(A_gpu->acc_U_buff, &A_gpu->UnzvalVec[A_gpu->UnzvalPtr_host[kijb]],
 				  u_copy_len * sizeof(doublecomplex), gpuMemcpyDeviceToHost, CopyStream ) );
-    gpuEventRecord(A_gpu->ePCIeD2H_End[k0], CopyStream);
-    A_gpu->tHost_PCIeD2H += SuperLU_timer_() - tty;
-    A_gpu->cPCIeD2H += u_copy_len * sizeof(doublecomplex) + l_copy_len * sizeof(doublecomplex);
+    gpuEventRecord(stat->ePCIeD2H_End[k0], CopyStream);
+    stat->tHost_PCIeD2H += SuperLU_timer_() - tty;
+    stat->cPCIeD2H += u_copy_len * sizeof(doublecomplex) + l_copy_len * sizeof(doublecomplex);
 
     return 0;
-}
+} /* end zsendLUpanelGPU2HOST */
 
 /* Copy L and U panel data structures from host to the host part of the
    data structures in A_gpu.
@@ -1171,18 +1151,10 @@ int zsendSCUdataHost2GPU(
     return 0;
 }
 
-/* Sherry: not used ?*/
-#if 0
-int freeSluGPU(zsluGPU_t *sluGPU)
-{
-    return 0;
-}
-#endif
-
 /* Allocate GPU memory for the LU data structures, and copy
    the host LU structure to GPU side.
    After factorization, the GPU LU structure should be freed by
-   calling zfree_LUsstruct_gpu().    */
+   calling zfree_LUstruct_gpu().    */
 void zCopyLUToGPU3D (
     int* isNodeInMyGrid,
     zLocalLU_t *A_host, /* distributed LU structure on host */
@@ -1191,7 +1163,8 @@ void zCopyLUToGPU3D (
     gridinfo3d_t *grid3d,
     int_t buffer_size, /* bigV size on GPU for Schur complement update */
     int_t bigu_size,
-    int_t ldt
+    int_t ldt,
+    SuperLUStat_t *stat
 )
 {
     gridinfo_t* grid = &(grid3d->grid2d);
@@ -1224,12 +1197,12 @@ void zCopyLUToGPU3D (
 
     /*copies of scalars for easy access*/
     A_gpu->nsupers = nsupers;
-    A_gpu->ScatterMOPCounter = 0;
-    A_gpu->GemmFLOPCounter = 0;
-    A_gpu->cPCIeH2D = 0;
-    A_gpu->cPCIeD2H = 0;
-    A_gpu->tHost_PCIeH2D = 0;
-    A_gpu->tHost_PCIeD2H = 0;
+    stat->ScatterMOPCounter = 0;
+    stat->GemmFLOPCounter = 0;
+    stat->cPCIeH2D = 0;
+    stat->cPCIeD2H = 0;
+    stat->tHost_PCIeH2D = 0;
+    stat->tHost_PCIeD2H = 0;
 
     /*initializing memory*/
     size_t max_gpu_memory = get_acc_memory ();
@@ -1292,24 +1265,23 @@ void zCopyLUToGPU3D (
 	
     } /* endfor streamID ... allocate paged-locked memory */
 
-    A_gpu->isOffloaded = (int *) SUPERLU_MALLOC (sizeof(int) * nsupers);
-    A_gpu->GemmStart  = (gpuEvent_t *) SUPERLU_MALLOC(sizeof(gpuEvent_t) * nsupers);
-    A_gpu->GemmEnd  = (gpuEvent_t *) SUPERLU_MALLOC(sizeof(gpuEvent_t) * nsupers);
-    A_gpu->ScatterEnd  = (gpuEvent_t *) SUPERLU_MALLOC(sizeof(gpuEvent_t) * nsupers);
-    A_gpu->ePCIeH2D = (gpuEvent_t *) SUPERLU_MALLOC(sizeof(gpuEvent_t) * nsupers);
-    A_gpu->ePCIeD2H_Start = (gpuEvent_t *) SUPERLU_MALLOC(sizeof(gpuEvent_t) * nsupers);
-    A_gpu->ePCIeD2H_End = (gpuEvent_t *) SUPERLU_MALLOC(sizeof(gpuEvent_t) * nsupers);
+    stat->isOffloaded = (int *) SUPERLU_MALLOC (sizeof(int) * nsupers);
+    stat->GemmStart  = (gpuEvent_t *) SUPERLU_MALLOC(sizeof(gpuEvent_t) * nsupers);
+    stat->GemmEnd  = (gpuEvent_t *) SUPERLU_MALLOC(sizeof(gpuEvent_t) * nsupers);
+    stat->ScatterEnd  = (gpuEvent_t *) SUPERLU_MALLOC(sizeof(gpuEvent_t) * nsupers);
+    stat->ePCIeH2D = (gpuEvent_t *) SUPERLU_MALLOC(sizeof(gpuEvent_t) * nsupers);
+    stat->ePCIeD2H_Start = (gpuEvent_t *) SUPERLU_MALLOC(sizeof(gpuEvent_t) * nsupers);
+    stat->ePCIeD2H_End = (gpuEvent_t *) SUPERLU_MALLOC(sizeof(gpuEvent_t) * nsupers);
     
     for (int i = 0; i < nsupers; ++i)
 	{
-	    A_gpu->isOffloaded[i] = 0;
-	    checkGPUErrors(gpuEventCreate(&(A_gpu->GemmStart[i])));
-	    checkGPUErrors(gpuEventCreate(&(A_gpu->GemmEnd[i])));
-	    checkGPUErrors(gpuEventCreate(&(A_gpu->ScatterEnd[i])));
-	    checkGPUErrors(gpuEventCreate(&(A_gpu->ePCIeH2D[i])));
-	    checkGPUErrors(gpuEventCreate(&(A_gpu->ePCIeH2D[i])));
-	    checkGPUErrors(gpuEventCreate(&(A_gpu->ePCIeD2H_Start[i])));
-	    checkGPUErrors(gpuEventCreate(&(A_gpu->ePCIeD2H_End[i])));
+	    stat->isOffloaded[i] = 0;
+	    checkGPUErrors(gpuEventCreate(&(stat->GemmStart[i])));
+	    checkGPUErrors(gpuEventCreate(&(stat->GemmEnd[i])));
+	    checkGPUErrors(gpuEventCreate(&(stat->ScatterEnd[i])));
+	    checkGPUErrors(gpuEventCreate(&(stat->ePCIeH2D[i])));
+	    checkGPUErrors(gpuEventCreate(&(stat->ePCIeD2H_Start[i])));
+	    checkGPUErrors(gpuEventCreate(&(stat->ePCIeD2H_End[i])));
 	}
 
     /*---- Copy L data structure to GPU ----*/
@@ -1697,15 +1669,17 @@ void zCopyLUToGPU3D (
 
 
 
-int zreduceAllAncestors3d_GPU(int_t ilvl, int_t* myNodeCount,
-				int_t** treePerm,
-				zLUValSubBuf_t*LUvsb,
-				   zLUstruct_t* LUstruct,
-			           gridinfo3d_t* grid3d,
-				   zsluGPU_t *sluGPU,
-				   d2Hreduce_t* d2Hred,
-				   factStat_t *factStat,
-				   HyP_t* HyP, SCT_t* SCT )
+int zreduceAllAncestors3d_GPU (
+	int_t ilvl, int_t* myNodeCount,
+    	int_t** treePerm,
+	zLUValSubBuf_t*LUvsb,
+	zLUstruct_t* LUstruct,
+	gridinfo3d_t* grid3d,
+	zsluGPU_t *sluGPU,
+	d2Hreduce_t* d2Hred,
+	factStat_t *factStat,
+	HyP_t* HyP, SCT_t* SCT, SuperLUStat_t *stat
+    )
 {
     // first synchronize all gpu streams
     int superlu_acc_offload =   HyP->superlu_acc_offload;
@@ -1757,7 +1731,7 @@ int zreduceAllAncestors3d_GPU(int_t ilvl, int_t* myNodeCount,
 		    double tt_start1 = SuperLU_timer_();
 		    SCT->PhiMemCpyTimer += SuperLU_timer_() - tt_start1;
 		    if (copyL_kljb || copyU_kljb) SCT->PhiMemCpyCounter++;
-		    zsendLUpanelGPU2HOST(k, d2Hred, sluGPU);
+		    zsendLUpanelGPU2HOST(k, d2Hred, sluGPU, stat);
 		    /*
 		      Reduce the LU panels from GPU
 		    */

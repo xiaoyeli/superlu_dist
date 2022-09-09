@@ -144,6 +144,11 @@ void countnz_dist(const int_t n, int_t *xprune,
             *nnzU += fsupc - fnz;
         }
     }
+#if ( PRNTlevel>=2 )
+    printf("\tNo of nonzeros in symm-reduced L = " IFMT ", nnzL " IFMT ", nnzU " IFMT "\n",
+	   nnzL0, *nnzL, *nnzU);
+#endif
+    
 }
 
 /*! \brief
@@ -212,8 +217,16 @@ void set_default_options_dist(superlu_dist_options_t *options)
     options->SolveInitialized = NO;
     options->RefineInitialized = NO;
     options->PrintStat = YES;
-    options->num_lookaheads = 10;
     options->lookahead_etree = NO;
+    options->num_lookaheads = 10;
+    options->superlu_maxsup = 256;
+    options->superlu_relax = 60;
+    strcpy(options->superlu_rankorder, "Z"); 
+    strcpy(options->superlu_lbs, "GD");
+    options->superlu_acc_offload = 1;
+    options->superlu_n_gemm = 5000;
+    options->superlu_max_buffer_size = 256000000;
+    options->superlu_num_gpu_streams = 8;
     options->SymPattern = NO;
     options->Algo3d = NO;
 #ifdef SLU_HAVE_LAPACK
@@ -221,6 +234,7 @@ void set_default_options_dist(superlu_dist_options_t *options)
 #else
     options->DiagInv = NO;
 #endif
+    options->Use_TensorCore    = NO;
 }
 
 /*! \brief Print the options setting.
@@ -232,18 +246,27 @@ void print_options_dist(superlu_dist_options_t *options)
 
     printf("**************************************************\n");
     printf(".. options:\n");
-    printf("**    Fact             : %4d\n", options->Fact);
-    printf("**    Equil            : %4d\n", options->Equil);
-    printf("**    DiagInv          : %4d\n", options->DiagInv);
-    printf("**    ParSymbFact      : %4d\n", options->ParSymbFact);
-    printf("**    ColPerm          : %4d\n", options->ColPerm);
-    printf("**    RowPerm          : %4d\n", options->RowPerm);
-    printf("**    ReplaceTinyPivot : %4d\n", options->ReplaceTinyPivot);
-    printf("**    IterRefine       : %4d\n", options->IterRefine);
-    printf("**    Trans            : %4d\n", options->Trans);
-    printf("**    num_lookaheads   : %4d\n", options->num_lookaheads);
-    printf("**    SymPattern       : %4d\n", options->SymPattern);
-    printf("**    lookahead_etree  : %4d\n", options->lookahead_etree);
+    printf("**    Fact                      : %4d\n", options->Fact);
+    printf("**    Equil                     : %4d\n", options->Equil);
+    printf("**    DiagInv                   : %4d\n", options->DiagInv);
+    printf("**    ParSymbFact               : %4d\n", options->ParSymbFact);
+    printf("**    ColPerm                   : %4d\n", options->ColPerm);
+    printf("**    RowPerm                   : %4d\n", options->RowPerm);
+    printf("**    ReplaceTinyPivot          : %4d\n", options->ReplaceTinyPivot);
+    printf("**    IterRefine                : %4d\n", options->IterRefine);
+    printf("**    Trans                     : %4d\n", options->Trans);
+    printf("**    SymPattern                : %4d\n", options->SymPattern);
+    printf("**    lookahead_etree           : %4d\n", options->lookahead_etree);
+    printf("**    Use_TensorCore            : %4d\n", options->Use_TensorCore);
+    printf("**    Use 3D algorithm          : %4d\n", options->Algo3d);
+    printf("**    num_lookaheads            : %4d\n", options->num_lookaheads);
+    printf("** parameters that can be altered by environment variables:\n");
+    printf("**    superlu_relax             : %4d\n", sp_ienv_dist(2, options));
+    printf("**    superlu_maxsup            : %4d\n", sp_ienv_dist(3, options));
+    printf("**    min GEMM m*k*n to use GPU : %d\n", sp_ienv_dist(7, options));
+    printf("**    GPU buffer size           : %10d\n", sp_ienv_dist(8, options));
+    printf("**    GPU streams               : %4d\n", sp_ienv_dist(9, options));
+    printf("**    estimated fill ratio      : %4d\n", sp_ienv_dist(6, options));
     printf("**************************************************\n");
 }
 
@@ -256,10 +279,10 @@ void print_sp_ienv_dist(superlu_dist_options_t *options)
 
     printf("**************************************************\n");
     printf(".. blocking parameters from sp_ienv():\n");
-    printf("**    relaxation                 : %d\n", sp_ienv_dist(2));
-    printf("**    max supernode              : %d\n", sp_ienv_dist(3));
-    printf("**    estimated fill ratio       : %d\n", sp_ienv_dist(6));
-    printf("**    min GEMM m*k*n to use GPU  : %d\n", sp_ienv_dist(7));
+    printf("**    relaxation                 : %d\n", sp_ienv_dist(2, options));
+    printf("**    max supernode              : %d\n", sp_ienv_dist(3, options));
+    printf("**    estimated fill ratio       : %d\n", sp_ienv_dist(6, options));
+    printf("**    min GEMM m*k*n to use GPU  : %d\n", sp_ienv_dist(7, options));
     printf("**************************************************\n");
 }
 
@@ -812,15 +835,17 @@ int get_thread_per_process()
         return 1;
 }
 
+#if 0 // not used anymore
 int_t get_max_buffer_size()
 {
     char *ttemp;
-    ttemp = getenv("MAX_BUFFER_SIZE");
+    ttemp = getenv("SUPERLU_MAX_BUFFER_SIZE");
     if (ttemp)
         return atoi(ttemp);
     else
-        return 5000000;
+        return 200000000; // 5000000
 }
+#endif
 
 int_t
 get_gpublas_nb ()
@@ -830,16 +855,18 @@ get_gpublas_nb ()
     if (ttemp)
         return atoi(ttemp);
     else
-        return 64;
+        return 512;     // 64 
 }
 
 int_t
 get_num_gpu_streams ()
 {
     char *ttemp;
-    ttemp = getenv ("NUM_GPU_STREAMS");
+    ttemp = getenv ("SUPERLU_NUM_GPU_STREAMS");
     if (ttemp)
         return atoi(ttemp);
+    else if (getenv ("NUM_GPU_STREAMS")) 
+        return atoi(getenv ("NUM_GPU_STREAMS"));   
     else
         return 8;
 }
@@ -995,7 +1022,7 @@ int_t estimate_bigu_size(
       gridinfo_t* grid, int_t* perm_u, 
       int_t *max_ncols /* Output: Max. number of columns among all U(k,:).
 			  This is used for allocating GEMM V buffer.  */
-)
+			 )
 {
     int_t iam = grid->iam;
     int_t Pc = grid->npcol;
@@ -1271,75 +1298,66 @@ int_t reduceStat(PhaseType PHASE,
 
 /*---- end from 3D code p3dcomm.c ----*/
 
-
+#define GPU_ACC
 #ifdef GPU_ACC
 
+#define GPUMM_MIN_K 64  // minimum size of k formatrix multiplication on GPUs
+#define GPUMM_MIN_MN 256*256     //minimum size of M\times N for matrix multiplication offload on GPUs
+
+/*
+ * Divide GEMM on GPU into multiple streams, each having sufficent work.
+ */
 void
 gemm_division_cpu_gpu(
-    /* output */
-    int* num_streams_used, /* number of GPU streams that will be used */
+    superlu_dist_options_t *options,
+/* output */
+    int* num_streams_used, /* number of CUDA streams to be used,
+			      it is <= nstreams   */
     int* stream_end_col,   /* array holding last column blk for each stream partition */
     int * ncpu_blks,       /* Number of CPU dgemm blks (output) */
     /*input */
     int nbrow,             /* number of row in A matrix */
     int ldu,               /* number of k in dgemm */
-    int nstreams, 
+    int nstreams,          /* maximum possible GPU streams */
     int* full_u_cols,      /* array containing prefix sum of GPU workload */
-    int num_blks           /* Number of block cloumns (workload) on GPU */
+    int num_blks,           /* Number of block cloumns (workload) on GPU */
+    int_t gemmBufferSize       /*gemm buffer size*/
 )
 {
-    int Ngem = sp_ienv_dist(7);  /*get_mnk_dgemm ();*/
+    int Ngem = sp_ienv_dist(7, options);  /*get_mnk_dgemm ();*/
     int min_gpu_col = get_gpublas_nb (); /* default 64 */
+    int superlu_acc_offload = get_acc_offload();
+    int ncols = full_u_cols[num_blks - 1];
+    // int ncolsExcludingFirst =full_u_cols[num_blks - 1]
 
-    /*
-      Sherry corrected comment:                                                  
-      CPU to GPU dgemm should be ideally 0:1 ratio to hide the total cost.
-      However since there is GPU latency of around 20,000 ns implying about
-      200000 floating point operations be done in that time, so    
-      ncols ~= 200,000/(2*nbrow*ldu) should be done on CPU to hide the
-      latency; We set Ngem =200,000/2.  
-     */
-    int i, j;
 
-    // {
-    //     *num_streams_used=0;
-    //     *ncpu_blks = num_blks;
-    //     return;
-    // }
+    /* Early return, when number of columns is smaller than threshold,
+       or superlu_acc_offload == 0, then everything should be done on CPU. 
+       Test condition GPU Flops ~ nbrow*ldu*cols < Ngem */
+    if ( 
+        (ldu < GPUMM_MIN_K)       // inner dimension is sufficient to hide latency
+     || (nbrow*ncols < GPUMM_MIN_MN) // product of MN is sufficient
+     || (ncols*nbrow*ldu < Ngem )
+	 || (num_blks==1) || (nstreams==0)
+     || nbrow*ncols > gemmBufferSize
+	 || (superlu_acc_offload==0) )
+    {
+        *num_streams_used = 0;
+        *ncpu_blks = num_blks;
+        return;
+
+    }
 
     for (int i = 0; i < nstreams; ++i)
     {
         stream_end_col[i] = num_blks;
     }
-	*num_streams_used = 0;
 
+    *num_streams_used = 0;
     *ncpu_blks = 0;
-    /* Early return -1, when number of columns is smaller than threshold,
-       everything should be done on CPU. 
-       Test condition GPU Flops ~ nbrow*ldu*cols < Ngem */
-    if (full_u_cols[num_blks - 1] < (Ngem / (nbrow * ldu)) || num_blks == 1 )
-    {
-        *num_streams_used = 0;
-        *ncpu_blks = num_blks;
-#ifdef PI_DEBUG
-        printf ("gemm_division: num_blks %d, full_u_cols[num_blks-1] %d %d \n",
-                num_blks, full_u_cols[num_blks - 1], (Ngem / (nbrow * ldu)));
-        printf ("Early return -1\n");
-#endif
-        return;
-
-    }
-
-    /* Early return -2, when number of streams = 0 */
-    if (nstreams == 0)
-    {
-        *num_streams_used = 0;
-        *ncpu_blks = num_blks;
-        return;
-        /* code */
-    }
-
+    
     /* Find first block where count > Ngem */
+    int i;
     for (i = 0; i < num_blks - 1; ++i)  /*I can use binary search here */
     {
         if (full_u_cols[i + 1] > Ngem / (nbrow * ldu))
@@ -1350,160 +1368,42 @@ gemm_division_cpu_gpu(
     int_t cols_remain =
         full_u_cols[num_blks - 1] - full_u_cols[*ncpu_blks - 1];
 
-#ifdef PI_DEBUG
-    printf ("Remaining cols %d num_blks %d cpu_blks %d \n", cols_remain,
-            num_blks, *ncpu_blks);
-#endif
     if (cols_remain > 0)
     {
         *num_streams_used = 1;  /* now at least one stream would be used */
 
-#ifdef PI_DEBUG
-        printf ("%d %d  %d %d \n", full_u_cols[num_blks - 1],
-                full_u_cols[*ncpu_blks], *ncpu_blks, nstreams);
-#endif
-        int_t FP_MIN = 200000 / (nbrow * ldu);
+        int_t FP_MIN = 200000 / (nbrow * ldu); // >= 200000 flops per GPU stream
         int_t cols_per_stream = SUPERLU_MAX (min_gpu_col, cols_remain / nstreams);
         cols_per_stream = SUPERLU_MAX (cols_per_stream, FP_MIN);
-#ifdef PI_DEBUG
-        printf ("cols_per_stream :\t%d\n", cols_per_stream);
-#endif
 
         int_t cutoff = cols_per_stream + full_u_cols[*ncpu_blks - 1];
         for (int_t i = 0; i < nstreams; ++i)
         {
             stream_end_col[i] = num_blks;
         }
-        j = *ncpu_blks;
-        for (i = 0; i < nstreams - 1; ++i)
+        int j = *ncpu_blks;
+        for (int i = 0; i < nstreams - 1; ++i)
         {
             int_t st = (i == 0) ? (*ncpu_blks) : stream_end_col[i - 1];
+	        // ^ starting block column of next stream
 
             for (j = st; j < num_blks - 1; ++j)
             {
-#ifdef PI_DEBUG
-                printf ("i %d, j %d, %d  %d ", i, j, full_u_cols[j + 1],
-                        cutoff);
-#endif
                 if (full_u_cols[j + 1] > cutoff)
                 {
-#ifdef PI_DEBUG
-                    printf ("cutoff met \n");
-#endif
                     cutoff = cols_per_stream + full_u_cols[j];
                     stream_end_col[i] = j + 1;
                     *num_streams_used += 1;
                     j++;
-                    break;
+                    break;  // block column j starts a new stream
                 }
-#ifdef PI_DEBUG
-                printf ("\n");
-#endif
-            }
-        }
+            } // end for j ...
+        } // end for i ... streams
 
     }
 	
 } /* gemm_division_cpu_gpu */
 
-void
-gemm_division_new (int * num_streams_used,   /*number of streams that will be used */
-                   int * stream_end_col, /*array holding last column blk for each partition */
-                   int * ncpu_blks,  /*Number of CPU dgemm blks */
-                        /*input */
-                   int nbrow,    /*number of row in A matrix */
-                   int ldu,  /*number of k in dgemm */
-                   int nstreams,
-                   Ublock_info_t *Ublock_info,    /*array containing prefix sum of work load */
-                   int num_blks  /*Number of work load */
-    )
-{
-    int Ngem = sp_ienv_dist(7); /*get_mnk_dgemm ();*/
-    int min_gpu_col = get_gpublas_nb ();
-
-    // Ngem = 1000000000;
-    /*
-       cpu is to gpu dgemm should be ideally 0:1 ratios to hide the total cost
-       However since there is gpu latency of around 20,000 ns implying about
-       200000 floating point calculation be done in that time so ~200,000/(2*nbrow*ldu)
-       should be done in cpu to hide the latency; we Ngem =200,000/2
-     */
-    int_t i, j;
-
-
-    for (int i = 0; i < nstreams; ++i)
-    {
-        stream_end_col[i] = num_blks;
-    }
-
-    *ncpu_blks = 0;
-    /*easy returns -1 when number of column are less than threshold */
-    if (Ublock_info[num_blks - 1].full_u_cols < (Ngem / (nbrow * ldu)) || num_blks == 1)
-    {
-        *num_streams_used = 0;
-        *ncpu_blks = num_blks;
-
-        return;
-
-    }
-
-    /* Easy return -2 when number of streams =0 */
-    if (nstreams == 0)
-    {
-        *num_streams_used = 0;
-        *ncpu_blks = num_blks;
-        return;
-        /* code */
-    }
-    /*find first block where count > Ngem */
-
-
-    for (i = 0; i < num_blks - 1; ++i)  /*I can use binary search here */
-    {
-        if (Ublock_info[i + 1].full_u_cols > Ngem / (nbrow * ldu))
-            break;
-    }
-    *ncpu_blks = i + 1;
-
-    int_t cols_remain =
-       Ublock_info [num_blks - 1].full_u_cols - Ublock_info[*ncpu_blks - 1].full_u_cols;
-
-    if (cols_remain > 0)
-    {
-        *num_streams_used = 1;  /* now atleast one stream would be used */
-
-        int_t FP_MIN = 200000 / (nbrow * ldu);
-        int_t cols_per_stream = SUPERLU_MAX (min_gpu_col, cols_remain / nstreams);
-        cols_per_stream = SUPERLU_MAX (cols_per_stream, FP_MIN);
-
-        int_t cutoff = cols_per_stream + Ublock_info[*ncpu_blks - 1].full_u_cols;
-        for (int_t i = 0; i < nstreams; ++i)
-        {
-            stream_end_col[i] = num_blks;
-        }
-        j = *ncpu_blks;
-        for (i = 0; i < nstreams - 1; ++i)
-        {
-            int_t st = (i == 0) ? (*ncpu_blks) : stream_end_col[i - 1];
-
-            for (j = st; j < num_blks - 1; ++j)
-            {
-                if (Ublock_info[j + 1].full_u_cols > cutoff)
-                {
-
-                    cutoff = cols_per_stream + Ublock_info[j].full_u_cols;
-                    stream_end_col[i] = j + 1;
-                    *num_streams_used += 1;
-                    j++;
-                    break;
-                }
-
-            }
-
-        }
-
-    }
-}
 
 #endif  /* defined GPU_ACC */
 
@@ -1511,12 +1411,12 @@ gemm_division_new (int * num_streams_used,   /*number of streams that will be us
 
 int getnGPUStreams()
 {
-    // Disabling multiple gpu streams 
-    #if 1
+    // Disabling multiple gpu streams -- bug with multiple streams in 3D code?
+    #if 0
 	return 1;
     #else 
 	char *ttemp;
-	ttemp = getenv ("NUM_GPU_STREAMS");
+	ttemp = getenv ("SUPERLU_NUM_GPU_STREAMS");
 
 	if (ttemp)
 		return atoi (ttemp);
@@ -1528,14 +1428,14 @@ int getnGPUStreams()
 int get_mpi_process_per_gpu ()
 {
     char *ttemp;
-    ttemp = getenv ("MPI_PROCESS_PER_GPU");
+    ttemp = getenv ("SUPERLU_MPI_PROCESS_PER_GPU");
 
-	if (ttemp)
-		return atol (ttemp);
-	else
-	{
-		printf("MPI_PROCESS_PER_GPU is not set; Using default 1 \n");
-		return 1;
-	}
+    if (ttemp)
+      return atol (ttemp);
+    else
+      {
+	//printf("SUPERLU_MPI_PROCESS_PER_GPU is not set; Using default 1 \n");
+	return 1;
+      }
 }
 

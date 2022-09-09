@@ -31,8 +31,8 @@ at the top-level directory.
  * Arguments
  * =========
  *
- * fact (input) fact_t
- *        Specifies whether or not the L and U structures will be re-used.
+ * options (input) superlu_dist_options_t *
+ *        options->Fact specifies whether or not the L and U structures will be re-used.
  *        = SamePattern_SameRowPerm: L and U structures are input, and
  *                                   unchanged on exit.
  *        = DOFACT or SamePattern: L and U structures are computed and output.
@@ -59,7 +59,7 @@ at the top-level directory.
  */
 
 float
-zdistribute(fact_t fact, int_t n, SuperMatrix *A,
+zdistribute(superlu_dist_options_t *options, int_t n, SuperMatrix *A,
             Glu_freeable_t *Glu_freeable,
 	    zLUstruct_t *LUstruct, gridinfo_t *grid)
 {
@@ -191,7 +191,7 @@ zdistribute(fact_t fact, int_t n, SuperMatrix *A,
     CHECK_MALLOC(iam, "Enter zdistribute()");
 #endif
 
-    if ( fact == SamePattern_SameRowPerm ) {
+    if ( options->Fact == SamePattern_SameRowPerm ) {
         /* ---------------------------------------------------------------
          * REUSE THE L AND U DATA STRUCTURES FROM A PREVIOUS FACTORIZATION.
          * --------------------------------------------------------------- */
@@ -203,7 +203,7 @@ zdistribute(fact_t fact, int_t n, SuperMatrix *A,
 	   L and U data structures.            */
 	ilsum = Llu->ilsum;
 	ldaspa = Llu->ldalsum;
-	if ( !(dense = doublecomplexCalloc_dist(((size_t)ldaspa) * sp_ienv_dist(3))) )
+	if ( !(dense = doublecomplexCalloc_dist(((size_t)ldaspa) * sp_ienv_dist(3, options))) )
 	    ABORT("Calloc fails for SPA dense[].");
 	nrbu = CEILING( nsupers, grid->nprow ); /* No. of local block rows */
 	if ( !(Urb_length = intCalloc_dist(nrbu)) )
@@ -217,7 +217,7 @@ zdistribute(fact_t fact, int_t n, SuperMatrix *A,
 	Unzval_br_ptr = Llu->Unzval_br_ptr;
 	Unnz = Llu->Unnz;
 
-	mem_use += 2.0*nrbu*iword + ldaspa*sp_ienv_dist(3)*zword;
+	mem_use += 2.0*nrbu*iword + ldaspa * sp_ienv_dist(3, options) * zword;
 
 #if ( PROFlevel>=1 )
 	t = SuperLU_timer_();
@@ -487,7 +487,7 @@ zdistribute(fact_t fact, int_t n, SuperMatrix *A,
 	if ( !(Lrb_valptr = intMalloc_dist(k)) )
 	    ABORT("Malloc fails for Lrb_valptr[].");
 	if (!(dense=doublecomplexCalloc_dist(SUPERLU_MAX(1,((size_t)ldaspa)
-              *sp_ienv_dist(3)))))
+              *sp_ienv_dist(3, options)))))
 	    ABORT("Calloc fails for SPA dense[].");
 
 	/* These counts will be used for triangular solves. */
@@ -496,7 +496,7 @@ zdistribute(fact_t fact, int_t n, SuperMatrix *A,
 	if ( !(bmod = int32Calloc_dist(k)) )
 	    ABORT("Calloc fails for bmod[].");
 #if ( PRNTlevel>=1 )
-	mem_use += 6.0*k*iword + ldaspa*sp_ienv_dist(3)*zword;
+	mem_use += 6.0*k*iword + ldaspa * sp_ienv_dist(3, options) * zword;
 #endif
 	k = CEILING( nsupers, grid->npcol );/* Number of local block columns */
 

@@ -27,6 +27,8 @@ at the top-level directory.
  *     October 5, 2021     version 7.1.0
  *     October 18, 2021    version 7.1.1
  *     December 12, 2021   version 7.2.0
+ *     May 22, 2022        version 8.0.0
+ *     July 5, 2022        version 8.1.0
  * </pre>
  */
 
@@ -78,10 +80,10 @@ at the top-level directory.
  *   #endif
  * Versions 4.x and earlier do not include a #define'd version numbers.
  */
-#define SUPERLU_DIST_MAJOR_VERSION     7
-#define SUPERLU_DIST_MINOR_VERSION     2
+#define SUPERLU_DIST_MAJOR_VERSION     8
+#define SUPERLU_DIST_MINOR_VERSION     1
 #define SUPERLU_DIST_PATCH_VERSION     0
-#define SUPERLU_DIST_RELEASE_DATE      "December 12, 2021"
+#define SUPERLU_DIST_RELEASE_DATE      "May 22, 2022"
 
 #include "superlu_dist_config.h"
 
@@ -191,6 +193,8 @@ typedef MPI_C_DOUBLE_COMPLEX  SuperLU_MPI_DOUBLE_COMPLEX;
 #define LB_DESCRIPTOR  2
 #define BR_HEADER      3
 #define UB_DESCRIPTOR  2
+#define BC_HEADER_NEWU      3
+#define UB_DESCRIPTOR_NEWU  2
 #define NBUFFERS       5
 
 /*
@@ -410,11 +414,11 @@ typedef struct {
 			   *                     0      3      6      9
 			   *                     1      4      7      10      
 			   *                     2      5      8      11
-			   * = 1: XY-major (need set env. var.: RANKORDER=XY)
+			   * = 1: XY-major (need set env. var.: SUPERLU_RANKORDER=XY)
 			   *    e.g. 1x3x4 grid: layer0 layer1 layer2 layer3
-			   *                     0      1      2      4
-			   *                     5      6      7      8
-			   *                     9      10     11     12
+			   *                     0      1      2      3
+			   *                     4      5      6      7
+			   *                     8      9     10     11
 			   */
 } gridinfo3d_t;
 
@@ -734,10 +738,19 @@ typedef struct {
     yes_no_t      RefineInitialized;
     yes_no_t      PrintStat;
     //int           nnzL, nnzU;      /* used to store nnzs for now       */
-    int           num_lookaheads;  /* num of levels in look-ahead      */
     yes_no_t      lookahead_etree; /* use etree computed from the
 				      serial symbolic factorization */
+    int num_lookaheads;  /* num of levels in look-ahead      */
+    int superlu_relax;   /* max. allowed relaxed supernode size; see sp_ienv(2) */
+    int superlu_maxsup;  /* max. allowed supernode size; see sp_ienv(3) */
+    char superlu_rankorder[4]; /* Z-major or XY-majir order in 3D grid */
+    char superlu_lbs[4]; /* etree load balancing strategy in 3D algorithm */
+    int superlu_n_gemm; /* one of GEMM offload criteria; see sp_ienv(7) */
+    int superlu_max_buffer_size; /* max. buffer size on GPU; see sp_ienv(8) */
+    int superlu_num_gpu_streams; /* number of GPU streams; see sp_ienv(9) */
+    int superlu_acc_offload; /* whether to offload work to GPU; see sp_ienv(10) */
     yes_no_t      SymPattern;      /* symmetric factorization          */
+    yes_no_t      Use_TensorCore;  /* Use Tensor Core or not  */
     yes_no_t      Algo3d;          /* use 3D factorization/solve algorithms */
 } superlu_dist_options_t;
 
@@ -792,6 +805,65 @@ struct superlu_pair
 
 /*==== For 3D code ====*/
 
+typedef struct
+{
+  int_t nub;
+  int_t klst;
+  int_t ldu;
+  int_t* usub;
+  //double *uval;
+} uPanelInfo_t;
+
+typedef struct
+{
+  int_t *lsub;
+  //double *lusup;
+  void *lusup;
+  int_t luptr0;
+  int_t nlb;  //number of l blocks                                                      
+  int_t nsupr;
+} lPanelInfo_t;
+
+typedef struct
+{
+    Ublock_info_t* Ublock_info;
+    Remain_info_t*  Remain_info;
+    uPanelInfo_t* uPanelInfo;
+    lPanelInfo_t* lPanelInfo;
+} packLUInfo_t;
+
+
+/* HyP_t is the data structure to assist HALO offload of Schur-complement. */
+typedef struct
+{
+  Remain_info_t *lookAhead_info, *Remain_info;
+  Ublock_info_t *Ublock_info, *Ublock_info_Phi;
+
+  int_t first_l_block_acc , first_u_block_acc;
+  int_t last_offload ;
+  int_t *Lblock_dirty_bit, * Ublock_dirty_bit;
+  void *lookAhead_L_buff, *Remain_L_buff;
+  int_t lookAheadBlk;  /* number of blocks in look-ahead window */
+  int_t RemainBlk ;    /* number of blocks outside look-ahead window */
+  int_t  num_look_aheads, nsupers;
+  int_t ldu, ldu_Phi;
+  int_t num_u_blks, num_u_blks_Phi;
+
+  int_t jj_cpu;
+  void *bigU_Phi;
+  void *bigU_host;
+  int_t Lnbrow;
+  int_t Rnbrow;
+
+  int_t buffer_size;
+  int_t bigu_size;
+  int offloadCondition;
+  int superlu_acc_offload;
+  int nGPUStreams;
+} HyP_t;
+
+
+
 /* return the mpi_tag assuming 5 pairs of communications and MPI_TAG_UB >= 5 *
  * for each supernodal column, the five communications are:                  *
  * 0,1: for sending L to "right"                                             *
@@ -827,7 +899,7 @@ typedef struct
 
 
 //global variable 
-extern double CPU_CLOCK_RATE;
+// extern double CPU_CLOCK_RATE;
 
 typedef struct
 {
@@ -940,7 +1012,6 @@ typedef struct
     int_t *perm_u;
     int *indirect;
     int *indirect2;
-    
 } factNodelists_t;
 
 typedef struct
@@ -993,6 +1064,7 @@ extern void   superlu_gridmap(MPI_Comm, int, int, int [], int, gridinfo_t *);
 extern void   superlu_gridexit(gridinfo_t *);
 extern void   superlu_gridinit3d(MPI_Comm Bcomm,  int nprow, int npcol, int npdep,
 				 gridinfo3d_t *grid) ;
+extern void   superlu_gridmap3d(MPI_Comm, int, int, int, int [], gridinfo3d_t *);
 extern void   superlu_gridexit3d(gridinfo3d_t *grid);
 
 extern void   set_default_options_dist(superlu_dist_options_t *);
@@ -1018,7 +1090,8 @@ extern void  bcast_tree(void *, int, MPI_Datatype, int, int,
 			gridinfo_t *, int, int *);
 extern int_t symbfact(superlu_dist_options_t *, int, SuperMatrix *, int_t *,
                       int_t *, Glu_persist_t *, Glu_freeable_t *);
-extern int_t symbfact_SubInit(fact_t, void *, int_t, int_t, int_t, int_t,
+extern int_t symbfact_SubInit(superlu_dist_options_t *options,
+			      fact_t, void *, int_t, int_t, int_t, int_t,
 			      Glu_persist_t *, Glu_freeable_t *);
 extern int_t symbfact_SubXpand(int_t, int_t, int_t, MemType, int_t *,
 			       Glu_freeable_t *);
@@ -1046,7 +1119,7 @@ extern int_t estimate_bigu_size (int_t, int_t **, Glu_persist_t *,
 /* Auxiliary routines */
 extern double SuperLU_timer_ ();
 extern void   superlu_abort_and_exit_dist(char *);
-extern int    sp_ienv_dist (int);
+extern int    sp_ienv_dist (int, superlu_dist_options_t *);
 extern void   ifill_dist (int_t *, int_t, int_t);
 extern void   super_stats_dist (int_t, int_t *);
 extern void  get_diag_procs(int_t, Glu_persist_t *, gridinfo_t *, int_t *,
@@ -1067,7 +1140,8 @@ extern int_t partitionM( int_t*, int_t, int_t, int_t, int_t, int_t);
 
 /* Prototypes for parallel symbolic factorization */
 extern float symbfact_dist
-(int,  int, SuperMatrix *, int_t *, int_t *,  int_t *, int_t *,
+(superlu_dist_options_t *, int,  int,
+ SuperMatrix *, int_t *, int_t *,  int_t *, int_t *,
  Pslu_freeable_t *, MPI_Comm *, MPI_Comm *,  superlu_dist_mem_usage_t *);
 
 /* Get the column permutation using parmetis */
@@ -1079,7 +1153,7 @@ extern float get_perm_c_parmetis
    the parallel symbolic factorization routine */
 
 extern int_t psymbfact_LUXpandMem
-(int_t, int_t, int_t, int_t, int_t, int_t, int_t, int_t, 
+(int, int_t, int_t, int_t, int_t, int, int, int, 
  Pslu_freeable_t *, Llu_symbfact_t *,  vtcsInfo_symbfact_t *, psymbfact_stat_t *);
 
 extern int_t psymbfact_LUXpand
@@ -1106,10 +1180,15 @@ int superlu_sort_perm (const void *arg1, const void *arg2)
 #endif
 
 #ifdef GPU_ACC   /* GPU related */
-extern void gemm_division_cpu_gpu (int *, int *, int *, int,
-				   int, int, int *, int);
+extern void gemm_division_cpu_gpu (superlu_dist_options_t *,
+				   int *, int *, int *, int,
+				   int, int, int *, int, int_t);
 extern int_t get_gpublas_nb ();
 extern int_t get_num_gpu_streams ();
+extern int getnGPUStreams();
+extern int get_mpi_process_per_gpu ();
+/*to print out various statistics from GPU activities*/
+extern void printGPUStats(int nsupers, SuperLUStat_t *stat, gridinfo3d_t*);
 #endif
 
 extern double estimate_cpu_time(int m, int n , int k);
@@ -1127,6 +1206,7 @@ extern int get_acc_offload();
 extern void  print_panel_seg_dist(int_t, int_t, int_t, int_t, int_t *, int_t *);
 extern void  check_repfnz_dist(int_t, int_t, int_t, int_t *);
 extern int_t CheckZeroDiagonal(int_t, int_t *, int_t *, int_t *);
+extern int   check_perm_dist(char *what, int_t n, int_t *perm);
 extern void  PrintDouble5(char *, int_t, double *);
 extern void  PrintInt10(char *, int_t, int_t *);
 extern void  PrintInt32(char *, int, int *);
@@ -1171,7 +1251,7 @@ extern void C_BcTree_forwardMessageSimple(C_Tree* tree, void* localBuffer, int m
 extern void C_BcTree_waitSendRequest(C_Tree* tree);
 
 /*==== For 3D code ====*/
-    
+
 extern void DistPrint(char* function_name,  double value, char* Units, gridinfo_t* grid);
 extern void DistPrint3D(char* function_name,  double value, char* Units, gridinfo3d_t* grid3d);
 extern void treeImbalance3D(gridinfo3d_t *grid3d, SCT_t* SCT);
@@ -1274,7 +1354,8 @@ extern sForest_t**  getGreedyLoadBalForests( int_t maxLvl, int_t nsupers, int_t*
 extern sForest_t**  getForests( int_t maxLvl, int_t nsupers, int_t*setree, treeList_t* treeList);
 
     /* from trfAux.h */
-extern int_t getBigUSize(int_t nsupers, gridinfo_t *grid, int_t **Lrowind_bc_ptr);
+extern int_t getBigUSize(superlu_dist_options_t *, int_t nsupers,
+			 gridinfo_t *grid, int_t **Lrowind_bc_ptr);
 extern void getSCUweight(int_t nsupers, treeList_t* treeList, int_t* xsup,
 			 int_t** Lrowind_bc_ptr, int_t** Ufstnz_br_ptr,
 			 gridinfo3d_t * grid3d);
@@ -1345,9 +1426,6 @@ extern int_t Test_UDiagBlock_Recv(MPI_Request *, SCT_t *);
 extern int_t Wait_LDiagBlock_Recv(MPI_Request *, SCT_t *);
 extern int_t Test_LDiagBlock_Recv(MPI_Request *, SCT_t *);
 extern int_t LDiagBlockRecvWait( int_t k, int_t* factored_U, MPI_Request *, gridinfo_t *);
-
-  extern int getnGPUStreams();
-  extern int get_mpi_process_per_gpu ();
 
 /*=====================*/
 

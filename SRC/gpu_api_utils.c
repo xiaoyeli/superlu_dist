@@ -117,4 +117,52 @@ gpublasHandle_t create_handle ()
       checkGPUblas(gpublasDestroy(handle));
  }
 
+void printGPUStats(int nsupers, SuperLUStat_t *stat, gridinfo3d_t *grid3d )
+{
+    int iam = grid3d->iam;
+    double tGemm = 0;
+    double tScatter = 0;
+    double tPCIeH2D = 0;
+    double tPCIeD2H = 0;
+    double flopcnt;
+
+    // Agregate the local sum from all supernodes
+    for (int_t i = 0; i < nsupers; ++i)
+    {
+        float milliseconds = 0;
+
+	if (stat->isOffloaded[i])
+	{
+	    gpuEventElapsedTime(&milliseconds, stat->ePCIeH2D[i], stat->GemmStart[i]);
+	    tPCIeH2D += 1e-3 * (double) milliseconds;
+	    milliseconds = 0;
+	    gpuEventElapsedTime(&milliseconds, stat->GemmStart[i], stat->GemmEnd[i]);
+	    tGemm += 1e-3 * (double) milliseconds;
+    	    milliseconds = 0;
+	    gpuEventElapsedTime(&milliseconds, stat->GemmEnd[i], stat->ScatterEnd[i]);
+	    tScatter += 1e-3 * (double) milliseconds;
+	}
+
+	milliseconds = 0;
+	gpuEventElapsedTime(&milliseconds, stat->ePCIeD2H_Start[i], stat->ePCIeD2H_End[i]);
+	tPCIeD2H += 1e-3 * (double) milliseconds;
+    }
+
+    MPI_Reduce(&(stat->GemmFLOPCounter), &flopcnt, 1, MPI_DOUBLE, MPI_SUM, 0, grid3d->comm);
+
+    if (iam == 0) {
+      printf("*-- GPU flops: \n\tFlops offloaded %.3e, Time %lf, Flop rate %lf GF/sec \n",
+	     flopcnt, tGemm, 1e-9 * flopcnt / tGemm  );
+      printf("*-- GPU memory: \n\tMop offloaded %.3e, Time %lf, Bandwidth %lf GByte/sec \n",
+	     stat->ScatterMOPCounter, tScatter, 8e-9 * stat->ScatterMOPCounter / tScatter  );
+      printf("*-- PCIe Data Transfer H2D:\n\tData Sent %.3e(GB)\n\tTime observed from CPU %lf\n\tActual time spent %lf\n\tBandwidth %lf GByte/sec \n",
+	     1e-9 * stat->cPCIeH2D, stat->tHost_PCIeH2D, tPCIeH2D, 1e-9 * stat->cPCIeH2D / tPCIeH2D  );
+      printf("*-- PCIe Data Transfer D2H:\n\tData Sent %.3e(GB)\n\tTime observed from CPU %lf\n\tActual time spent %lf\n\tBandwidth %lf GByte/sec \n",
+	     1e-9 * stat->cPCIeD2H, stat->tHost_PCIeD2H, tPCIeD2H, 1e-9 * stat->cPCIeD2H / tPCIeD2H  );
+      fflush(stdout);
+    }
+    
+} /* end printGPUStats */
+
+
 #endif  // enable GPU

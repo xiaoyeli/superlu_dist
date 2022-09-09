@@ -38,6 +38,10 @@ at the top-level directory.
  * Arguments
  * =========
  *
+ * options (input) superlu_dist_options_t* (global)
+ *         The structure defines the input parameters to control
+ *         how the LU decomposition and triangular solve are performed.
+ * 	   
  * n      (input) int (global)
  *        The order of the system of linear equations.
  *
@@ -76,7 +80,7 @@ at the top-level directory.
  *        Leading dimension of matrix B.
  *
  * X      (input/output) doublecomplex* (local)
- *        On entry, the solution matrix Y, as computed by PDGSTRS, of the
+ *        On entry, the solution matrix Y, as computed by PZGSTRS, of the
  *            transformed system A1*Y = Pc*Pr*B. where
  *            A1 = Pc*Pr*diag(R)*A*diag(C)*Pc' and Y = Pc*diag(C)^(-1)*X.
  *        On exit, the improved solution matrix Y.
@@ -116,7 +120,8 @@ at the top-level directory.
  * </pre>
  */
 void
-pzgsrfs(int_t n, SuperMatrix *A, double anorm, zLUstruct_t *LUstruct,
+pzgsrfs(superlu_dist_options_t *options, int_t n,
+        SuperMatrix *A, double anorm, zLUstruct_t *LUstruct,
 	zScalePermstruct_t *ScalePermstruct, gridinfo_t *grid,
 	doublecomplex *B, int_t ldb, doublecomplex *X, int_t ldx, int nrhs,
 	zSOLVEstruct_t *SOLVEstruct,
@@ -231,7 +236,7 @@ pzgsrfs(int_t n, SuperMatrix *A, double anorm, zLUstruct_t *LUstruct,
 #endif
 	    if ( berr[j] > eps && berr[j] * 2 <= lstres && count < ITMAX ) {
 		/* Compute new dx. */
-		pzgstrs(n, LUstruct, ScalePermstruct, grid,
+		pzgstrs(options, n, LUstruct, ScalePermstruct, grid,
 			dx, m_loc, fst_row, m_loc, 1,
 			SOLVEstruct, stat, info);
 

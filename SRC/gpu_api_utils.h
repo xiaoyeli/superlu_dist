@@ -13,6 +13,8 @@ at the top-level directory.
  * -- Distributed SuperLU routine (version 4.0) --
  * Lawrence Berkeley National Lab, Univ. of California Berkeley.
  * October 1, 2014
+ * Modified:
+ *     May 22, 2022        version 8.0.0
  * </pre>
  */
 
@@ -28,11 +30,11 @@ typedef struct LUstruct_gpu_  LUstruct_gpu;  // Sherry - not in this distributio
 extern "C" {
 #endif
 extern void DisplayHeader();
-extern const char* cublasGetErrorString(cublasStatus_t status);
+extern const char* gpublasGetErrorString(gpublasStatus_t status);
 extern gpuError_t checkGPU(gpuError_t);
-extern cublasStatus_t checkCublas(cublasStatus_t);
-extern cublasHandle_t create_handle ();
-extern void destroy_handle (cublasHandle_t handle);
+extern gpublasStatus_t checkGPUblas(gpublasStatus_t);
+extern gpublasHandle_t create_handle ();
+extern void destroy_handle (gpublasHandle_t handle);
 #ifdef __cplusplus
   }
 #endif

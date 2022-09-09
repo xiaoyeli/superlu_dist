@@ -31,20 +31,6 @@ load_imb (double *A, int nthreads)
     return _mx - _avg;
 }
 
-
-
-// int_t
-// get_max_buffer_size ()
-// {
-//     char *ttemp;
-//     ttemp = getenv ("MAX_BUFFER_SIZE");
-//     if (ttemp)
-//         return atoi (ttemp);
-//     else
-//         return 5000000;
-// }
-
-
 // #define ACC_ASYNC_COST 3.79e-3
 
 #define  MAX_DIM 12800

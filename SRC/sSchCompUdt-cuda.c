@@ -24,11 +24,11 @@ at the top-level directory.
 
 #define SCHEDULE_STRATEGY dynamic
 
-#define gpublasCheckErrors(fn) \
+#define cublasCheckErrors(fn) \
     do { \
-        gpublasStatus_t __err = fn; \
-        if (__err != GPUBLAS_STATUS_SUCCESS) { \
-            fprintf(stderr, "Fatal gpublas error: %d (at %s:%d)\n", \
+        cublasStatus_t __err = fn; \
+        if (__err != CUBLAS_STATUS_SUCCESS) { \
+            fprintf(stderr, "Fatal cublas error: %d (at %s:%d)\n", \
                 (int)(__err), \
                 __FILE__, __LINE__); \
             fprintf(stderr, "*** FAILED - ABORTING\n"); \
@@ -62,9 +62,13 @@ if ( msg0 && msg2 ) {  /* L(:,k) and U(k,:) are not empty. */
 #endif
 	
         int num_streams_used, /* number of streams that will be used*/
+
         ncpu_blks;            /* the leading number of CPU dgemm blks
 			         in each partition */
         int jjj, jjj_st,jjj_global;
+	
+	/* For each U block: count non-empty columns and
+	   leading-dimension of the block.    */
         for (j = jj0; j < nub; ++j) {
             arrive_at_ublock( j,&iukp,&rukp,&jb,&ljb,&nsupc,
 	    		      iukp0,rukp0,usub,perm_u,xsup,grid );
@@ -86,9 +90,18 @@ if ( msg0 && msg2 ) {  /* L(:,k) and U(k,:) are not empty. */
 
         jjj = jj0; /* jj0 is the first block column after look-ahead window */
 
+#if ( PRNTlevel >= 1 )
+	int num_partitions = 0;
+#endif
+	
         // #pragma omp barrier
-        while ( jjj < nub ) {
-            jjj_st=jjj;
+        while ( jjj < nub ) { // Loop through all partitions of Schur complement
+
+#if ( PRNTlevel >= 1 )
+	    ++num_partitions;
+#endif
+            jjj_st = jjj;
+
 #ifdef _OPENMP
 #pragma omp single
 #endif
@@ -103,15 +116,17 @@ if ( msg0 && msg2 ) {  /* L(:,k) and U(k,:) are not empty. */
 
                     /* break condition */
                     /* the number of columns that can be processed on GPU is
-		       limited by buffer size */
+		       limited by buffer size.
+		       ncol_max := max. number of columns on GPU   */
                     if (full_u_cols[j]+((j+1==nub)?0:full_u_cols[j+1]) > ncol_max) {
                         break; // block column j+1 does not fit in GPU memory */
                     }
                 } /* end for j=jjj_st to nub */
 
-                jjj_global = SUPERLU_MIN(nub, j+1); /* Maximum value of jjj < nub */
+                jjj_global = SUPERLU_MIN(nub, j+1); /* Start of next partition */
 
                 // TAU_STATIC_TIMER_START("work_divison");
+
                 /* Divide CPU-GPU gemm here.
 		 * If there is only one block, we leave it on CPU.
 		 */
@@ -124,8 +139,9 @@ if ( msg0 && msg2 ) {  /* L(:,k) and U(k,:) are not empty. */
 		       ldu,              /*value of k in dgemm*/
 		       nstreams,
 		       full_u_cols + jjj_st, /*array containing prefix sum of GPU workload*/
-		       jjj_global - jjj_st /*number of block columns on GPU.
-		       		             If only one block, leave it on CPU*/
+		       jjj_global - jjj_st, /* number of block columns in partition
+		       		              If only one block, leave it on CPU*/
+					buffer_size
                 );
                 // TAU_STATIC_TIMER_STOP("work_divison");
 
@@ -151,6 +167,9 @@ if ( msg0 && msg2 ) {  /* L(:,k) and U(k,:) are not empty. */
             assert(jjj_st<nub);
             assert(jjj-1<nub);
             // TAU_STATIC_TIMER_START("GATHER_U");
+
+	    tt_start = SuperLU_timer_();
+
 #ifdef _OPENMP
 #pragma omp for schedule( SCHEDULE_STRATEGY )
 #endif
@@ -181,65 +200,155 @@ if ( msg0 && msg2 ) {  /* L(:,k) and U(k,:) are not empty. */
 
             } /* end for j=jjj_st to jjj */
 
+	    tt_end = SuperLU_timer_();
+	    GatherUTimer += tt_end - tt_start;
+
 	    if ( num_streams_used > 0 ) {
 #ifdef PI_DEBUG
 		printf("nbrow %d *ldu %d  =%d < ldt %d * max_row_size %d =%d \n",nbrow,ldu,nbrow*ldu,ldt,max_row_size,ldt*max_row_size ); fflush(stdout);
 		assert(nbrow*ldu<=ldt*max_row_size);
 #endif
-		gpuMemcpy2DAsync(dA, nbrow*sizeof(float),
-				  &lusup[luptr+(knsupc-ldu)*nsupr],
-				  nsupr*sizeof(float), nbrow*sizeof(float),
-				  ldu, gpuMemcpyHostToDevice, streams[0]);
+
+		tt_start = SuperLU_timer_();
+
+		// Padding zeros to make {m,k} multiple of PADLEN
+		if ( gemm_padding > 0 ) {
+		    int padlen = GEMM_PADLEN;
+
+		    // ldu+gemm_k_pad columns
+		    for (j = knsupc-ldu; j < knsupc; ++j)
+			memcpy(bigV, &lusup[luptr+ j*nsupr], nbrow*sizeof(float));
+		    // total m-dimension after padding 
+		    gemm_m_pad = (nbrow < padlen) ? nbrow : 
+			CEILING(nbrow, padlen) * padlen; 
+		    // total k-dimension after padding 
+		    gemm_k_pad = ldu; // FIXME later
+		    // add zeros 
+		    for (i = nbrow; i < gemm_m_pad; ++i) // padding A matrix 
+			for (j = 0; j < gemm_k_pad; ++j) {
+			    bigV[i + j*gemm_m_pad] = zero;
+			}
+		    dA_size = gemm_m_pad * gemm_k_pad;
+		    assert (dA_size < bigv_size);
+		    cudaMemcpyAsync(dA, bigV, dA_size,
+				    cudaMemcpyHostToDevice, streams[0]);
+		} else { // no zero-padding
+		    cudaMemcpy2DAsync(dA, nbrow*sizeof(float),
+				      &lusup[luptr+(knsupc-ldu)*nsupr],
+				      nsupr*sizeof(float), nbrow*sizeof(float),
+				      ldu, cudaMemcpyHostToDevice, streams[0]);
+		    gemm_m_pad = nbrow;
+		    gemm_k_pad = ldu;
+		}
+		
+		tt_end = SuperLU_timer_();
+		GatherLTimer += tt_end - tt_start;
 	    }
 
 	    for (int i = 0; i < num_streams_used; ++i) { // streams on GPU
 		int st = (i==0) ? ncpu_blks+jjj_st : jjj_st+stream_end_col[i-1];
-		// st starts after the leading ncpu_blks
-		int st_col = full_u_cols[st-1];
-		int num_col_stream = full_u_cols[jjj_st+stream_end_col[i]-1]-full_u_cols[st-1];
+		                  //^ st starts after the leading ncpu_blks
+		int st_cols = full_u_cols[st-1]; // skip the preceding columns
+		int num_col_stream = full_u_cols[jjj_st+stream_end_col[i]-1]
+		                      - st_cols;
 		tempu = bigU;
 
-		float *tempv1 = bigV + full_u_cols[st-1]*nbrow;
+		float *tempv1 = bigV + full_u_cols[st-1] * nbrow;
 
 		/* Following is for testing purpose */
-		if ( num_col_stream > 0 ) {		
+		if ( num_col_stream > 0 ) {
 #ifdef GPU_ACC
 		    int stream_id = i;
-		    int b_offset  = ldu * st_col;
-		    int c_offset  = st_col * nbrow;
+		    int b_offset  = ldu * st_cols;
+		    int c_offset  = st_cols * nbrow;
 		    size_t B_stream_size = ldu * num_col_stream * sizeof(float);
 		    size_t C_stream_size = nbrow * num_col_stream * sizeof(float);
 
-		    assert(nbrow*(st_col+num_col_stream) < buffer_size);
+		    
+		    if ( gemm_padding > 0 ) {
+			gemm_n_pad = num_col_stream; // FIXME
+		    } else {
+			gemm_n_pad = num_col_stream;
+		    }
 
-		    gpuMemcpyAsync(dB+b_offset, tempu+b_offset, B_stream_size,
-		    		    gpuMemcpyHostToDevice, streams[stream_id]);
+		    assert(nbrow*(st_cols + num_col_stream) < buffer_size);
 
-		    gpublasCheckErrors(
-				  gpublasSetStream(handle[stream_id],
+		    tt_start = SuperLU_timer_();
+
+		    cudaMemcpyAsync(dB + b_offset, tempu + b_offset, B_stream_size,
+		    		    cudaMemcpyHostToDevice, streams[stream_id]);
+
+		    tt_end = SuperLU_timer_();
+		    GatherUTimer += tt_end - tt_start;
+		    tt_start = SuperLU_timer_();
+
+		    cublasCheckErrors(
+				  cublasSetStream(handle[stream_id],
 						  streams[stream_id])
 				     );
 
-		    gpublasCheckErrors(
-				  gpublasSgemm(handle[stream_id],
-					      GPUBLAS_OP_N, GPUBLAS_OP_N,
-					      nbrow, num_col_stream, ldu,
-                                              &alpha, dA, nbrow,
-					      &dB[b_offset], ldu,
+		    // set mode to tensor
+		    if ( options->Use_TensorCore ) {
+		      printf(" !!!! Use TensorCorer\n");
+		    // TEST_CHECK_CUBLAS_ERR( cublasSetMathMode(handle, CUBLAS_TENSOR_OP_MATH) );
+			cublasCheckErrors( cublasSetMathMode(handle[stream_id],
+							     CUBLAS_TENSOR_OP_MATH) );
+		    }
+
+#if 0
+		    int nbrow_fake = (nbrow<32) ? nbrow : (nbrow/32) *32 ;
+		    int ldu_fake = (ldu<32) ? ldu : (ldu/32) *32 ;
+		    cublasCheckErrors(
+				  cublasSgemm(handle[stream_id],
+					      CUBLAS_OP_N, CUBLAS_OP_N,
+					      nbrow_fake, num_col_stream, ldu_fake,
+                                              &alpha, dA, nbrow_fake,
+					      &dB[b_offset], ldu_fake,
 					      &beta, &dC[c_offset],
-                                              nbrow)
-				  );
-
-		    checkGPU( gpuMemcpyAsync(tempv1, dC+c_offset,
+                                              nbrow_fake)
+				      );
+#else
+    #if 0
+		    cublasCheckErrors(
+				      cublasSgemm(handle[stream_id],
+						  CUBLAS_OP_N, CUBLAS_OP_N,
+						  nbrow, num_col_stream, ldu,
+						  &alpha, dA, nbrow,
+						  &dB[b_offset], ldu,
+						  &beta, &dC[c_offset],
+						  nbrow)
+				      );
+    #else
+		    cublasCheckErrors(
+				      cublasSgemm(handle[stream_id],
+						  CUBLAS_OP_N, CUBLAS_OP_N,
+						  gemm_m_pad, gemm_n_pad, gemm_k_pad,
+						  &alpha, dA, gemm_m_pad,
+						  &dB[b_offset], gemm_k_pad,
+						  &beta, &dC[c_offset], gemm_m_pad)
+				      );
+    #endif
+#endif
+		    // set mode back to normal mode
+		    if ( options->Use_TensorCore ) {
+			// TEST_CHECK_CUBLAS_ERR( cublasSetMathMode(handle[stream_id], CUBLAS_DEFAULT_MATH) );
+			cublasCheckErrors( cublasSetMathMode(handle[stream_id], CUBLAS_DEFAULT_MATH) );
+		    }
+		    
+		    checkCuda( cudaMemcpyAsync(tempv1, dC+c_offset,
 					   C_stream_size,
-					   gpuMemcpyDeviceToHost,
+					   cudaMemcpyDeviceToHost,
 					   streams[stream_id]) );
-#else /*-- on CPU --*/
+		    
+		    cublasGEMMTimer += SuperLU_timer_() - tt_start;
 
+#else /*-- on CPU --*/ 
+		    // Sherry: this routine xxx-cuda.c is not called if
+		    // GPU_ACC is not defined.
+		    printf("... WHY GET HERE ???\n");
 	            my_sgemm_("N", "N", &nbrow, &num_col_stream, &ldu,
 			      &alpha, &lusup[luptr+(knsupc-ldu)*nsupr],
-			      &nsupr, tempu+ldu*st_col, &ldu, &beta,
-			      tempv1, &nbrow, 1, 1);
+			      &nsupr, tempu + ldu*st_cols, &ldu, &beta,
 #endif
    	        } // end if num_col_stream > 0
 
@@ -248,28 +357,31 @@ if ( msg0 && msg2 ) {  /* L(:,k) and U(k,:) are not empty. */
 	    /* Special case for CPU -- leading block columns are computed 
 	       on CPU in order to mask the GPU data transfer latency */
 	    int num_col = full_u_cols[jjj_st+ncpu_blks-1];
-	    int st_col = 0; /* leading part on CPU */
-	    tempv = bigV + nbrow * st_col;
+
+	    int st_cols = 0; /* leading part on CPU */
+	    tempv = bigV + nbrow * st_cols;
 	    tempu = bigU;
 
 	    double tstart = SuperLU_timer_();
 #if defined (USE_VENDOR_BLAS)
 	    sgemm_("N", "N", &nbrow, &num_col, &ldu, &alpha,
 		  &lusup[luptr+(knsupc-ldu)*nsupr], &nsupr,
-		  tempu+ldu*st_col, &ldu, &beta, tempv, &nbrow, 1, 1);
+		  tempu+ldu*st_cols, &ldu, &beta, tempv, &nbrow, 1, 1);
 #else
 	    sgemm_("N", "N", &nbrow, &num_col, &ldu, &alpha,
 		  &lusup[luptr+(knsupc-ldu)*nsupr], &nsupr,
-		  tempu+ldu*st_col, &ldu, &beta, tempv, &nbrow);
+		  tempu+ldu*st_cols, &ldu, &beta, tempv, &nbrow);
 #endif
-	    gemm_timer += SuperLU_timer_() -tstart;
+	    cpuGEMMTimer += SuperLU_timer_() - tstart;
+
 	    stat->ops[FACT] += 2 * nbrow * ldu * full_u_cols[jjj-1];
 
             /* Now scattering blocks computed by CPU */
             int temp_ncol;
 
+            tstart = SuperLU_timer_();  // collecting scatter time
+
             /* scatter leading blocks which CPU has computated */
-            tstart = SuperLU_timer_();
 
 #ifdef _OPENMP
 #pragma omp parallel  \
@@ -486,7 +598,7 @@ if ( msg0 && msg2 ) {  /* L(:,k) and U(k,:) are not empty. */
                 int* indirect2_thread = indirect2 + ldt*thread_id;
                 float* tempv1;
                 for(i = 0; i < num_streams_used; i++) { /* i is private variable */
-                    checkGPU(gpuStreamSynchronize (streams[i]));
+                    checkCuda(cudaStreamSynchronize (streams[i]));
 		    // jjj_st1 := first block column on GPU stream[i]
 		    int jjj_st1 = (i==0) ? jjj_st + ncpu_blks : jjj_st + stream_end_col[i-1];
                     int jjj_end = jjj_st + stream_end_col[i];
@@ -575,11 +687,19 @@ if ( msg0 && msg2 ) {  /* L(:,k) and U(k,:) are not empty. */
 		
                 // TAU_STATIC_TIMER_STOP("GPU_SCATTER");
                 // TAU_STATIC_TIMER_STOP("INSIDE_OMP");
-		
+	
             } /* end pragma omp parallel */
             // TAU_STATIC_TIMER_STOP("OUTSIDE_OMP");
 	    
-        }  /* end while(jjj<nub) */
+	    RemainScatterTimer += SuperLU_timer_() - tstart;
+
+	}  /* end while(jjj<nub) */
+    
+#if ( PRNTlevel >= 1 )
+    if ( num_partitions>1 )
+	printf(" ...... [Step %d] Schur complement partitions %d\n",
+	       k0, num_partitions);
+#endif
 
     } /* if nbrow>0 */
 

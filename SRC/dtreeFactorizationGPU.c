@@ -13,6 +13,7 @@
 // #include "treeFactorization.h"
 // #include "trfCommWrapper.h"
 #include "dlustruct_gpu.h"
+
 //#include "cblas.h"
 
 #ifdef GPU_ACC ///////////////// enable GPU
@@ -107,11 +108,11 @@ int dsparseTreeFactor_ASYNC_GPU(
     int_t *xsup = LUstruct->Glu_persist->xsup;
 
     // int_t numLAMax = getNumLookAhead();
-    int_t numLAMax = getNumLookAhead(options);
-    int_t numLA = numLAMax; // number of look-ahead panels
-    int_t superlu_acc_offload = HyP->superlu_acc_offload;
+    int numLAMax = getNumLookAhead(options);
+    int numLA = numLAMax; // number of look-ahead panels
+    int superlu_acc_offload = HyP->superlu_acc_offload;
     int_t last_flag = 1;                       /* for updating nsuper-1 only once */
-    int_t nGPUStreams = sluGPU->nGPUStreams; // number of gpu streams
+    int nGPUStreams = sluGPU->nGPUStreams; // number of GPU streams
 
     if (superlu_acc_offload)
         dsyncAllfunCallStreams(sluGPU, SCT);
@@ -136,7 +137,7 @@ int dsparseTreeFactor_ASYNC_GPU(
 
             if (copyL_kljb || copyU_kljb)
                 SCT->PhiMemCpyCounter++;
-            dsendLUpanelGPU2HOST(k, d2Hred, sluGPU);
+            dsendLUpanelGPU2HOST(k, d2Hred, sluGPU, stat);
 
             dreduceGPUlu(last_flag, d2Hred, sluGPU, SCT, grid, LUstruct);
 
@@ -198,7 +199,7 @@ int dsparseTreeFactor_ASYNC_GPU(
 
                     if (copyL_kljb || copyU_kljb)
                         SCT->PhiMemCpyCounter++;
-                    dsendLUpanelGPU2HOST(k, d2Hred, sluGPU);
+                    dsendLUpanelGPU2HOST(k, d2Hred, sluGPU, stat);
                     /*
                         Reduce the LU panels from GPU
                     */
@@ -390,7 +391,7 @@ int dsparseTreeFactor_ASYNC_GPU(
 #endif
             scuStatUpdate(SuperSize(k), HyP, SCT, stat);
 
-            int_t offload_condition = HyP->offloadCondition;
+            int offload_condition = HyP->offloadCondition;
             uPanelInfo_t *uPanelInfo = packLUInfo->uPanelInfo;
             lPanelInfo_t *lPanelInfo = packLUInfo->lPanelInfo;
             int_t *lsub = lPanelInfo->lsub;
@@ -483,7 +484,7 @@ int dsparseTreeFactor_ASYNC_GPU(
 
                             if (copyL_kljb || copyU_kljb)
                                 SCT->PhiMemCpyCounter++;
-                            dsendLUpanelGPU2HOST(k_parent, d2Hred, sluGPU);
+                            dsendLUpanelGPU2HOST(k_parent, d2Hred, sluGPU, stat);
 
                             /* Reduce the LU panels from GPU */
                             dreduceGPUlu(last_flag, d2Hred,
@@ -563,10 +564,10 @@ int dsparseTreeFactor_ASYNC_GPU(
                                 dSchurCompUpdate_GPU(
                                     streamId, 0, jj_cpu, klst, knsupc, HyP->Rnbrow, HyP->RemainBlk,
                                     Remain_lbuf_send_size, bigu_send_size, HyP->ldu_Phi, HyP->num_u_blks_Phi,
-                                    HyP->buffer_size, lsub_len, usub_len, ldt, k0, sluGPU, grid);
+                                    HyP->buffer_size, lsub_len, usub_len, ldt, k0, sluGPU, grid, stat);
                             } /* endif bigu_send_size > 0 */
 
-                            // sendLUpanelGPU2HOST( k0, d2Hred, sluGPU);
+                            // sendLUpanelGPU2HOST( k0, d2Hred, sluGPU, stat);
 
                             SCT->schurPhiCallCount++;
                             HyP->jj_cpu = jj_cpu;

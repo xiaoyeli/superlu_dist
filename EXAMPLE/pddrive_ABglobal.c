@@ -73,12 +73,7 @@ int main(int argc, char *argv[])
        INITIALIZE MPI ENVIRONMENT. 
        ------------------------------------------------------------*/
     MPI_Init( &argc, &argv );
-#ifdef GPU_ACC
-    int rank, devs;
-    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-    cudaGetDeviceCount(&devs);
-    cudaSetDevice(rank % devs);
-#endif
+
     /* Parse command line argv[]. */
     for (cpp = argv+1; *cpp; ++cpp) {
 	if ( **cpp == '-' ) {
@@ -192,7 +187,6 @@ int main(int argc, char *argv[])
     set_default_options_dist(&options);
 
     if (!iam) {
-	print_sp_ienv_dist(&options);
 	print_options_dist(&options);
     }
 

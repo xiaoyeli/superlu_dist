@@ -106,7 +106,7 @@ at the top-level directory.
  *
  * stat   (output) SuperLUStat_t*
  *        Record the statistics on runtime and floating-point operation count.
- *        See util.h for the definition of 'SuperLUStat_t'.
+ *        See util_dist.h for the definition of 'SuperLUStat_t'.
  *
  * info   (output) int*
  *        = 0: successful exit
@@ -118,7 +118,7 @@ at the top-level directory.
  * </pre>
  */
 int_t pzgstrf3d(superlu_dist_options_t *options, int m, int n, double anorm,
-		trf3Dpartition_t*  trf3Dpartition, SCT_t *SCT,
+		ztrf3Dpartition_t*  trf3Dpartition, SCT_t *SCT,
 		zLUstruct_t *LUstruct, gridinfo3d_t * grid3d,
 		SuperLUStat_t *stat, int *info)
 {
@@ -126,7 +126,7 @@ int_t pzgstrf3d(superlu_dist_options_t *options, int m, int n, double anorm,
     zLocalLU_t *Llu = LUstruct->Llu;
 
     // problem specific contants
-    int_t ldt = sp_ienv_dist (3);     /* Size of maximum supernode */
+    int_t ldt = sp_ienv_dist(3, options);     /* Size of maximum supernode */
     //    double s_eps = slamch_ ("Epsilon");  -Sherry
     double s_eps = smach_dist("Epsilon");
     double thresh = s_eps * anorm;
@@ -171,7 +171,7 @@ int_t pzgstrf3d(superlu_dist_options_t *options, int m, int n, double anorm,
     initPackLUInfo(nsupers, &packLUInfo);
 
     zscuBufs_t scuBufs;
-    zinitScuBufs(ldt, num_threads, nsupers, &scuBufs, LUstruct, grid);
+    zinitScuBufs(options, ldt, num_threads, nsupers, &scuBufs, LUstruct, grid);
 
     factNodelists_t  fNlists;
     initFactNodelists( ldt, num_threads, nsupers, &fNlists);
@@ -186,7 +186,7 @@ int_t pzgstrf3d(superlu_dist_options_t *options, int m, int n, double anorm,
     }
 #endif
 
-    // trf3Dpartition_t*  trf3Dpartition = initTrf3Dpartition(nsupers, options, LUstruct, grid3d);
+    // ztrf3Dpartition_t*  trf3Dpartition = initTrf3Dpartition(nsupers, options, LUstruct, grid3d);
     gEtreeInfo_t gEtreeInfo = trf3Dpartition->gEtreeInfo;
     int_t* iperm_c_supno = trf3Dpartition->iperm_c_supno;
     int_t* myNodeCount = trf3Dpartition->myNodeCount;
@@ -226,10 +226,10 @@ int_t pzgstrf3d(superlu_dist_options_t *options, int m, int n, double anorm,
     int superlu_acc_offload = HyP->superlu_acc_offload;
 
     //int_t bigu_size = getBigUSize(nsupers, grid, LUstruct);
-    int_t bigu_size = getBigUSize(nsupers, grid,
+    int_t bigu_size = getBigUSize(options, nsupers, grid,
     	  	                  LUstruct->Llu->Lrowind_bc_ptr);
     HyP->bigu_size = bigu_size;
-    int_t buffer_size = sp_ienv_dist(8); // get_max_buffer_size ();
+    int_t buffer_size = sp_ienv_dist(8, options); // get_max_buffer_size ();
     HyP->buffer_size = buffer_size;
     HyP->nsupers = nsupers;
 
@@ -254,9 +254,6 @@ int_t pzgstrf3d(superlu_dist_options_t *options, int m, int n, double anorm,
         /*Initilize the lookup tables */
         LookUpTableInit(iam);
         acc_async_cost = get_acc_async_cost();
-#ifdef GPU_DEBUG
-        if (!iam) printf("Using MIC async cost of %lf \n", acc_async_cost);
-#endif
 #endif
 
 	//OLD: int_t* perm_c_supno = getPerm_c_supno(nsupers, options, LUstruct, grid);
@@ -269,7 +266,7 @@ int_t pzgstrf3d(superlu_dist_options_t *options, int m, int n, double anorm,
 
 	/* Initialize GPU data structures */
         zinitSluGPU3D_t(sluGPU, LUstruct, grid3d, perm_c_supno,
-                        n, buffer_size, bigu_size, ldt);
+                        n, buffer_size, bigu_size, ldt, stat);
 
         HyP->first_u_block_acc = sluGPU->A_gpu->first_u_block_gpu;
         HyP->first_l_block_acc = sluGPU->A_gpu->first_l_block_gpu;
@@ -331,10 +328,10 @@ int_t pzgstrf3d(superlu_dist_options_t *options, int m, int n, double anorm,
                 zreduceAllAncestors3d_GPU(
                     ilvl, myNodeCount, treePerm, LUvsb,
                     LUstruct, grid3d, sluGPU, d2Hred, &factStat, HyP,
-                    SCT );
+                    SCT, stat );
 #else
 
-                zreduceAllAncestors3d(ilvl, myNodeCount, treePerm,
+                zreduceAllAncestors3d( ilvl, myNodeCount, treePerm,
                                       LUvsb, LUstruct, grid3d, SCT );
 #endif
 
@@ -345,13 +342,6 @@ int_t pzgstrf3d(superlu_dist_options_t *options, int m, int n, double anorm,
 	    : SCT->NetSchurUpTimer - SCT->tSchCompUdt3d[ilvl - 1];
     } /* end for (int ilvl = 0; ilvl < maxLvl; ++ilvl) */
 
-#ifdef GPU_ACC
-    /* This frees the GPU storage allocateed in initSluGPU3D_t() */
-    if (superlu_acc_offload) {
-         zfree_LUstruct_gpu (sluGPU->A_gpu);
-    }
-#endif
-    
     /* Prepare error message - find the smallesr index i that U(i,i)==0 */
     int iinfo;
     if ( *info == 0 ) *info = n + 1;
@@ -370,6 +360,15 @@ int_t pzgstrf3d(superlu_dist_options_t *options, int m, int n, double anorm,
     allinea_stop_sampling();
 #endif
 
+#ifdef GPU_ACC
+    /* This frees the GPU storage allocateed in initSluGPU3D_t() */
+    if (superlu_acc_offload) {
+        if ( options->PrintStat ) {
+	    printGPUStats(nsupers, stat, grid3d);
+	}
+        zfree_LUstruct_gpu (sluGPU, stat);
+    }
+#endif
     reduceStat(FACT, stat, grid3d);
 
     // sherry added

@@ -23,6 +23,7 @@ namespace SuperLU_ASYNCOMM{
 			TreeBcast_slu<doublecomplex>* BcastTree = TreeBcast_slu<doublecomplex>::Create(comm,ranks,rank_cnt,msgSize,rseed);		
 			return (BcTree) BcastTree;
 		}
+		return 0;
 	}
 
 	void BcTree_Destroy(BcTree Tree, char precision){
@@ -70,6 +71,7 @@ namespace SuperLU_ASYNCOMM{
 		TreeBcast_slu<doublecomplex>* BcastTree = (TreeBcast_slu<doublecomplex>*) Tree;
 		return BcastTree->IsRoot()?YES:NO;
 		}
+		return NO;
 	}
 
 	
@@ -131,6 +133,7 @@ namespace SuperLU_ASYNCOMM{
 	    TreeBcast_slu<doublecomplex>* BcastTree = (TreeBcast_slu<doublecomplex>*) Tree;
 	    return BcastTree->GetDestCount();					
 	  }
+	  return 0;
 	}	
 
 	int BcTree_GetMsgSize(BcTree Tree, char precision){
@@ -146,6 +149,7 @@ namespace SuperLU_ASYNCOMM{
 	    TreeBcast_slu<doublecomplex>* BcastTree = (TreeBcast_slu<doublecomplex>*) Tree;
 	    return BcastTree->GetMsgSize();					
 	  }
+	  return 0;
 	}		
 	
 	StdList StdList_Init(){
@@ -207,6 +211,7 @@ namespace SuperLU_ASYNCOMM{
 	    TreeReduce_slu<doublecomplex>* ReduceTree = TreeReduce_slu<doublecomplex>::Create(comm,ranks,rank_cnt,msgSize,rseed);
 	    return (RdTree) ReduceTree;
 	  }
+	  return 0;
 	}
 	
 	void RdTree_Destroy(RdTree Tree, char precision){
@@ -253,6 +258,7 @@ namespace SuperLU_ASYNCOMM{
 	    TreeReduce_slu<doublecomplex>* ReduceTree = (TreeReduce_slu<doublecomplex>*) Tree;
 	    return ReduceTree->GetDestCount();		
 	  }
+	  return 0;
 	}	
 	
 	int  RdTree_GetMsgSize(RdTree Tree, char precision){
@@ -268,6 +274,7 @@ namespace SuperLU_ASYNCOMM{
 	    TreeReduce_slu<doublecomplex>* ReduceTree = (TreeReduce_slu<doublecomplex>*) Tree;
 	    return ReduceTree->GetMsgSize();		
 	  }
+	  return 0;
 	}		
 	
 	yes_no_t RdTree_IsRoot(RdTree Tree, char precision){
@@ -283,6 +290,7 @@ namespace SuperLU_ASYNCOMM{
 	    TreeReduce_slu<doublecomplex>* ReduceTree = (TreeReduce_slu<doublecomplex>*) Tree;
 	    return ReduceTree->IsRoot()?YES:NO;
 	  }
+	  return NO;
 	}
 
 	void RdTree_forwardMessageSimple(RdTree Tree, void* localBuffer, Int msgSize, char precision){

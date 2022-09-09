@@ -10,10 +10,16 @@ at the top-level directory.
 */
 /*! @file
  * \brief Header for utilities
+ *
+ * <pre>
+ * -- Distributed SuperLU routine (version 8.0) --
+ * Lawrence Berkeley National Lab, Univ. of California Berkeley.
+ * May 22, 2022
+ * </pre>
  */
 
-#ifndef __SUPERLU_UTIL /* allow multiple inclusions */
-#define __SUPERLU_UTIL
+#ifndef __SUPERLU_DIST_UTIL /* allow multiple inclusions */
+#define __SUPERLU_DIST_UTIL
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -104,8 +110,29 @@ typedef struct {
     float   peak_buffer;    /* monitor the peak buffer size (bytes) */
     float   gpu_buffer;     /* monitor the buffer allocated on GPU (bytes) */
     int_t MaxActiveBTrees;
-    int_t MaxActiveRTrees;	
+    int_t MaxActiveRTrees;
+
+#ifdef GPU_ACC  /*-- For GPU --*/
+    double ScatterMOPCounter;
+    double ScatterMOPTimer;
+    double GemmFLOPCounter;
+    double GemmFLOPTimer;
+
+    double cPCIeH2D;
+    double cPCIeD2H;
+    double tHost_PCIeH2D;
+    double tHost_PCIeD2H;
+
+    /*GPU events to measure DGEMM and SCATTER timing */
+    int *isOffloaded;  /* record whether any elimination step is offloaded or not */
+    gpuEvent_t *GemmStart, *GemmEnd, *ScatterEnd;  /*GPU events to store gemm and scatter's begin and end*/
+    gpuEvent_t *ePCIeH2D;
+    gpuEvent_t *ePCIeD2H_Start;
+    gpuEvent_t *ePCIeD2H_End;
+#endif   /*-- end for GPU --*/
+    
 } SuperLUStat_t;
+
 
 /* Headers for 2 types of dynamatically managed memory */
 typedef struct e_node {
@@ -296,5 +323,5 @@ typedef struct
 
 } SCT_t;
 
+#endif /* __SUPERLU_DIST_UTIL */
 
-#endif /* __SUPERLU_UTIL */

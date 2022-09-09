@@ -1,4 +1,4 @@
-# SuperLU_DIST (version 7.2.0)   <img align=center width="55" alt="superlu" src="https://user-images.githubusercontent.com/11741943/103982988-5a9a9d00-5139-11eb-9ac4-a55e80a79f8d.png">
+# SuperLU_DIST (version 8.1.0)   <img align=center width="55" alt="superlu" src="https://user-images.githubusercontent.com/11741943/103982988-5a9a9d00-5139-11eb-9ac4-a55e80a79f8d.png">
 
 [![Build Status](https://travis-ci.org/xiaoyeli/superlu_dist.svg?branch=master)](https://travis-ci.org/xiaoyeli/superlu_dist) 
 [Nightly tests](http://my.cdash.org/index.php?project=superlu_dist)
@@ -24,7 +24,7 @@ acceleration capabilities.
 Table of Contents
 =================
 
-* [SuperLU_DIST (version 7.2.0)   <a href="https://user-images.githubusercontent.com/11741943/103982988-5a9a9d00-5139-11eb-9ac4-a55e80a79f8d.png" target="_blank" rel="nofollow"><img align="center" width="55" alt="superlu" src="https://user-images.githubusercontent.com/11741943/103982988-5a9a9d00-5139-11eb-9ac4-a55e80a79f8d.png" style="max-width:100%;"></a>](#superlu_dist-version-70---)
+* [SuperLU_DIST (version 8.1.0)   <a href="https://user-images.githubusercontent.com/11741943/103982988-5a9a9d00-5139-11eb-9ac4-a55e80a79f8d.png" target="_blank" rel="nofollow"><img align="center" width="55" alt="superlu" src="https://user-images.githubusercontent.com/11741943/103982988-5a9a9d00-5139-11eb-9ac4-a55e80a79f8d.png" style="max-width:100%;"></a>](#superlu_dist-version-81---)
 * [Directory structure of the source code](#directory-structure-of-the-source-code)
 * [Installation](#installation)
    * [Installation option 1: Using CMake build system.](#installation-option-1-using-cmake-build-system)
@@ -49,7 +49,7 @@ Table of Contents
 
 Created by [gh-md-toc](https://github.com/ekalinin/github-markdown-toc)
 
-# SuperLU_DIST (version 7.2)   <img align=center width="55" alt="superlu" src="https://user-images.githubusercontent.com/11741943/103982988-5a9a9d00-5139-11eb-9ac4-a55e80a79f8d.png">
+# SuperLU_DIST (version 8.1)   <img align=center width="55" alt="superlu" src="https://user-images.githubusercontent.com/11741943/103982988-5a9a9d00-5139-11eb-9ac4-a55e80a79f8d.png">
 
 [![Build Status](https://travis-ci.org/xiaoyeli/superlu_dist.svg?branch=master)](https://travis-ci.org/xiaoyeli/superlu_dist) 
 [Nightly tests](http://my.cdash.org/index.php?project=superlu_dist)
@@ -153,10 +153,13 @@ speed. You can use it with the following cmake option:
 ```
 
 ### Use GPU
-You can enable GPU with CUDA with the following cmake option:
+You can enable (NVIDIA) GPU with CUDA with the following cmake option:
 ```
 -DTPL_ENABLE_CUDALIB=TRUE
--DTPL_CUDA_LIBRARIES="<path>/libcublas.so;<path>/libcudart.so"
+```
+You can enable (AMD) GPU with HIP with the following cmake option:
+```
+-DTPL_ENABLE_HIPLIB=TRUE
 ```
 
 Once these needed third-party libraries are in place, the installation
@@ -228,8 +231,9 @@ contains the key CPP definitions used throughout the code.
     -TPL_ENABLE_PARMETISLIB=ON | OFF
     -DTPL_ENABLE_INTERNAL_BLASLIB=OFF | ON
     -DTPL_ENABLE_LAPACKLIB=OFF | ON
-    -TPL_ENABLE_COMBBLASLIB=OFF
+    -TPL_ENABLE_COMBBLASLIB=OFF | ON
     -DTPL_ENABLE_CUDALIB=OFF | ON
+    -DTPL_ENABLE_HIPLIB=OFF | ON
     -Denable_complex16=OFF | ON
     -DXSDK_INDEX_SIZE=32 | 64
 
@@ -240,6 +244,7 @@ contains the key CPP definitions used throughout the code.
     -DCMAKE_CXX_COMPILER=<MPI C++ compiler>
     -DMAKE_CXX_FLAGS="..."
     -DCMAKE_CUDA_FLAGS="..." 
+    -DHIP_HIPCC_FLAGS="..." 
     -DXSDK_ENABLE_Fortran=OFF | ON
     -DCMAKE_Fortran_COMPILER=<MPI F90 compiler>
 ```
@@ -363,7 +368,7 @@ You can disable CombBLAS with the following line in SRC/superlu_dist_config.h:
 
 ### 2.4. C preprocessor definition CDEFS. (Replaced by cmake module FortranCInterface.)
 
-In the header file SRC/superlu_Cnames.h, we use macros to determine how
+In the header file SRC/superlu_FCnames.h, we use macros to determine how
 C routines should be named so that they are callable by Fortran.
 (Some vendor-supplied BLAS libraries do not have C interfaces. So the 
 re-naming is needed in order for the SuperLU BLAS calls (in C) to 
@@ -401,7 +406,7 @@ completely automatically by simply typing "make" at the top level.
 A couple of environment variables affect parallel execution.
 ```
     export OMP_NUM_THREADS=<...>
-    export SUPERLU_ACC_OFFLOAD=1  // this enables use of GPU. Default is 0.
+    export SUPERLU_ACC_OFFLOAD=1  // this enables use of GPU. Default is 1.
 ```
 Several integer blocking parameters may affect performance. Most of them can be
 set by the user through environment variables. Oherwise the default values
@@ -532,4 +537,6 @@ May 10, 2021        Version 7.0.0
 October 5, 2021     Version 7.1.0
 October 18, 2021    Version 7.1.1
 December 12, 2021   Version 7.2.0
+May 22, 2022        Version 8.0.0
+July 5, 2022        Version 8.1.0
 ```

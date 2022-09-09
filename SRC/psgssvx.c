@@ -607,9 +607,9 @@ psgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 	*info = -5;
     else if ( nrhs < 0 )
 	*info = -6;
-    if ( sp_ienv_dist(2) > sp_ienv_dist(3) ) {
-        *info = 1;
-	printf("ERROR: Relaxation (NREL) cannot be larger than max. supernode size (NSUP).\n"
+    if ( sp_ienv_dist(2, options) > sp_ienv_dist(3, options) ) {
+        *info = -1;
+	printf("ERROR: Relaxation (SUPERLU_RELAX) cannot be larger than max. supernode size (SUPERLU_MAXSUP).\n"
 	"\t-> Check parameter setting in sp_ienv_dist.c to correct error.\n");
     }
     if ( *info ) {
@@ -928,7 +928,7 @@ psgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 	        stat->utime[ROWPERM] = t;
 #if ( PRNTlevel>=1 )
                 if ( !iam ) {
-		    printf(".. LDPERM job %d\t time: %.2f\n", job, t);
+		    printf(".. RowPerm %d\t time: %.2f\n", options->RowPerm, t);
 		    fflush(stdout);
 		}
 #endif
@@ -1062,7 +1062,7 @@ psgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 #if ( PRNTlevel>=1 )
                 if ( !iam ) {
 		    printf(".. symbfact(): relax %d, maxsuper %d, fill %d\n",
-		          sp_ienv_dist(2), sp_ienv_dist(3), sp_ienv_dist(6));
+		          sp_ienv_dist(2,options), sp_ienv_dist(3,options), sp_ienv_dist(6,options));
 		    fflush(stdout);
 	        }
 #endif
@@ -1104,7 +1104,8 @@ psgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 	    } /* end serial symbolic factorization */
 	    else {  /* parallel symbolic factorization */
 	    	t = SuperLU_timer_();
-	    	flinfo = symbfact_dist(nprocs_num, noDomains, A, perm_c, perm_r,
+	    	flinfo = symbfact_dist(options, nprocs_num, noDomains,
+		                       A, perm_c, perm_r,
 				       sizes, fstVtxSep, &Pslu_freeable,
 				       &(grid->comm), &symb_comm,
 				       &symb_mem_usage);
@@ -1142,7 +1143,7 @@ psgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 	       NOTE: the row permutation Pc*Pr is applied internally in the
   	       distribution routine. */
 	    t = SuperLU_timer_();
-	    dist_mem_use = psdistribute(Fact, n, A, ScalePermstruct,
+	    dist_mem_use = psdistribute(options, n, A, ScalePermstruct,
                                       Glu_freeable, LUstruct, grid);
 	    stat->utime[DIST] = SuperLU_timer_() - t;
 
@@ -1159,7 +1160,7 @@ psgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 	    for (j = 0; j < nnz_loc; ++j) colind[j] = perm_c[colind[j]];
 
     	    t = SuperLU_timer_();
-	    dist_mem_use = sdist_psymbtonum(Fact, n, A, ScalePermstruct,
+	    dist_mem_use = sdist_psymbtonum(options, n, A, ScalePermstruct,
 		  			   &Pslu_freeable, LUstruct, grid);
 	    if (dist_mem_use > 0)
 	        ABORT ("Not enough memory available for dist_psymbtonum\n");
@@ -1271,51 +1272,82 @@ psgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 
 	if ( options->PrintStat ) {
 	    int_t TinyPivots;
-	    float for_lu, total, max, avg, temp;
+	    float for_lu, total, avg, loc_max;
+	    float mem_stage[3];
+	    struct { float val; int rank; } local_struct, global_struct;
 
-	    sQuerySpace_dist(n, LUstruct, grid, stat, &num_mem_usage);
+	    MPI_Reduce( &stat->TinyPivots, &TinyPivots, 1, mpi_int_t,
+	    		MPI_SUM, 0, grid->comm );
+	    stat->TinyPivots = TinyPivots;
 
+	    /*-- Compute high watermark of all stages --*/
 	    if (parSymbFact == TRUE) {
 	        /* The memory used in the redistribution routine
 		   includes the memory used for storing the symbolic
   		   structure and the memory allocated for numerical
 		   factorization */
-	        temp = SUPERLU_MAX(symb_mem_usage.total, -dist_mem_use);
+		mem_stage[0] = (-flinfo);       /* symbfact step */
+		mem_stage[1] = (-dist_mem_use); /* distribution step */
+		loc_max = SUPERLU_MAX( mem_stage[0], mem_stage[1] );
                 if ( options->RowPerm != NO )
-                    temp = SUPERLU_MAX(temp, GA_mem_use);
+                    loc_max = SUPERLU_MAX(loc_max, GA_mem_use);
             } else {
-	        temp = SUPERLU_MAX (
-                         symb_mem_usage.total + GA_mem_use, /* symbfact step */
-		         symb_mem_usage.for_lu + dist_mem_use +
-                             num_mem_usage.for_lu  /* distribution step */
-                       );
+		mem_stage[0] = symb_mem_usage.total + GA_mem_use; /* symbfact step */
+		mem_stage[1] = symb_mem_usage.for_lu
+		               + dist_mem_use
+		               + num_mem_usage.for_lu; /* distribution step */
+		loc_max = SUPERLU_MAX( mem_stage[0], mem_stage[1] );
             }
 
-	    temp = SUPERLU_MAX(temp, num_mem_usage.total);
+	    sQuerySpace_dist(n, LUstruct, grid, stat, &num_mem_usage);
+	    mem_stage[2] = num_mem_usage.total;  /* numerical factorization step */
+	    
+	    loc_max = SUPERLU_MAX( loc_max, mem_stage[2] ); /* local max of 3 stages */
 
-	    MPI_Reduce( &temp, &max,
-		       1, MPI_FLOAT, MPI_MAX, 0, grid->comm );
-	    MPI_Reduce( &temp, &avg,
+	    local_struct.val = loc_max;
+	    local_struct.rank = grid->iam;
+	    MPI_Reduce( &local_struct, &global_struct, 1, MPI_FLOAT_INT, MPI_MAXLOC, 0, grid->comm );
+	    int all_highmark_rank = global_struct.rank;
+	    float all_highmark_mem = global_struct.val * 1e-6;
+	    
+	    MPI_Reduce( &loc_max, &avg,
 		       1, MPI_FLOAT, MPI_SUM, 0, grid->comm );
-	    MPI_Allreduce( &stat->TinyPivots, &TinyPivots, 1, mpi_int_t,
-			  MPI_SUM, grid->comm );
-	    stat->TinyPivots = TinyPivots;
-
 	    MPI_Reduce( &num_mem_usage.for_lu, &for_lu,
 		       1, MPI_FLOAT, MPI_SUM, 0, grid->comm );
 	    MPI_Reduce( &num_mem_usage.total, &total,
 		       1, MPI_FLOAT, MPI_SUM, 0, grid->comm );
 
-            if (!iam) {
+	    /*-- Compute memory usage of numerical factorization --*/
+	    local_struct.val = num_mem_usage.for_lu;
+	    MPI_Reduce( &local_struct, &global_struct, 1, MPI_FLOAT_INT, MPI_MAXLOC, 0, grid->comm );
+	    int lu_max_rank = global_struct.rank;
+	    float lu_max_mem = global_struct.val*1e-6;
+	    
+	    local_struct.val = stat->peak_buffer;
+	    MPI_Reduce( &local_struct, &global_struct, 1, MPI_FLOAT_INT, MPI_MAXLOC, 0, grid->comm );
+	    int buffer_peak_rank = global_struct.rank;
+	    float buffer_peak = global_struct.val*1e-6;
+    
+            if ( iam==0 ) {
 		printf("\n** Memory Usage **********************************\n");
-                printf("** NUMfact space (MB): (sum-of-all-processes)\n"
-		       "    L\\U :        %8.2f |  Total : %8.2f\n",
-		       for_lu * 1e-6, total * 1e-6);
                 printf("** Total highmark (MB):\n"
 		       "    Sum-of-all : %8.2f | Avg : %8.2f  | Max : %8.2f\n",
 		       avg * 1e-6,
 		       avg / grid->nprow / grid->npcol * 1e-6,
-		       max * 1e-6);
+		       all_highmark_mem);
+		printf("    Max at rank %d, different stages (MB):\n"
+		       "\t. symbfact        %8.2f\n"
+		       "\t. distribution    %8.2f\n"
+		       "\t. numfact         %8.2f\n",
+		       all_highmark_rank, mem_stage[0]*1e-6, mem_stage[1]*1e-6, mem_stage[2]*1e-6);
+		
+                printf("** NUMfact space (MB): (sum-of-all-processes)\n"
+		       "    L\\U :        %8.2f |  Total : %8.2f\n",
+		       for_lu * 1e-6, total * 1e-6);
+		printf("\t. max at rank %d, max L+U memory (MB): %8.2f\n"
+		       "\t. max at rank %d, peak buffer (MB):    %8.2f\n",
+		       lu_max_rank, lu_max_mem,
+		       buffer_peak_rank, buffer_peak);
 		printf("**************************************************\n\n");
 		printf("** number of Tiny Pivots: %8d\n\n", stat->TinyPivots);
 		fflush(stdout);
@@ -1402,10 +1434,13 @@ psgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 	       factorization with Fact == DOFACT or SamePattern is asked for. */
 	}
 
-#ifdef GPU_ACC
+#if ( defined(GPU_ACC) && defined(GPU_SOLVE) )
         if(options->DiagInv==NO){
-	    printf("!!WARNING: GPU trisolve requires setting options->DiagInv==YES\n");
-	    fflush(stdout);
+	    if (iam==0) {
+	        printf("!!WARNING: GPU trisolve requires setting options->DiagInv==YES\n");
+                printf("           otherwise, use CPU trisolve\n");
+		fflush(stdout);
+	    }
 	    //exit(0);  // Sherry: need to return an error flag
 	}
 #endif
@@ -1419,8 +1454,8 @@ psgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 	        (LUstruct->Llu->Uinv_bc_cnt) * sizeof(float), gpuMemcpyHostToDevice));
             checkGPU(gpuMemcpy(LUstruct->Llu->d_Lnzval_bc_dat, LUstruct->Llu->Lnzval_bc_dat,
 	        (LUstruct->Llu->Lnzval_bc_cnt) * sizeof(float), gpuMemcpyHostToDevice));
-            checkGPU(gpuMemcpy(LUstruct->Llu->d_Unzval_br_dat, LUstruct->Llu->Unzval_br_dat,
-	        (LUstruct->Llu->Unzval_br_cnt) * sizeof(float), gpuMemcpyHostToDevice));
+            //checkGPU(gpuMemcpy(LUstruct->Llu->d_Unzval_br_dat, LUstruct->Llu->Unzval_br_dat,
+	    //  (LUstruct->Llu->Unzval_br_cnt) * sizeof(float), gpuMemcpyHostToDevice));
 #endif
 	}
 
@@ -1429,7 +1464,7 @@ psgssvx(superlu_dist_options_t *options, SuperMatrix *A,
     // {
 	// #pragma omp master
 	// {
-	psgstrs(n, LUstruct, ScalePermstruct, grid, X, m_loc,
+	psgstrs(options, n, LUstruct, ScalePermstruct, grid, X, m_loc,
 		fst_row, ldb, nrhs, SOLVEstruct, stat, info);
 	// }
 	// }
@@ -1511,7 +1546,7 @@ psgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 			     Glu_persist, SOLVEstruct1);
 	    }
 
-	    psgsrfs(n, A, anorm, LUstruct, ScalePermstruct, grid,
+	    psgsrfs(options, n, A, anorm, LUstruct, ScalePermstruct, grid,
 		    B, ldb, X, ldx, nrhs, SOLVEstruct1, berr, stat, info);
 
             /* Deallocate the storage associated with SOLVEstruct1 */

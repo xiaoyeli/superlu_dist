@@ -325,7 +325,7 @@ dReDistribute_A(SuperMatrix *A, dScalePermstruct_t *ScalePermstruct,
 } /* dReDistribute_A */
 
 float
-pddistribute(fact_t fact, int_t n, SuperMatrix *A,
+pddistribute(superlu_dist_options_t *options, int_t n, SuperMatrix *A,
 	     dScalePermstruct_t *ScalePermstruct,
 	     Glu_freeable_t *Glu_freeable, dLUstruct_t *LUstruct,
 	     gridinfo_t *grid)
@@ -342,8 +342,8 @@ pddistribute(fact_t fact, int_t n, SuperMatrix *A,
  * Arguments
  * =========
  *
- * fact (input) fact_t
- *        Specifies whether or not the L and U structures will be re-used.
+ * options (input) superlu_dist_options_t*
+ *        options->Fact Specifies whether or not the L and U structures will be re-used.
  *        = SamePattern_SameRowPerm: L and U structures are input, and
  *                                   unchanged on exit.
  *        = DOFACT or SamePattern: L and U structures are computed and output.
@@ -542,7 +542,7 @@ pddistribute(fact_t fact, int_t n, SuperMatrix *A,
 		       ".. Phase 1 - ReDistribute_A time: %.2f\t\n", t);
 #endif
 
-    if ( fact == SamePattern_SameRowPerm ) {
+    if ( options->Fact == SamePattern_SameRowPerm ) {
 
 #if ( PROFlevel>=1 )
 	t_l = t_u = 0; u_blks = 0;
@@ -551,7 +551,7 @@ pddistribute(fact_t fact, int_t n, SuperMatrix *A,
 	   L and U data structures.            */
 	ilsum = Llu->ilsum;
 	ldaspa = Llu->ldalsum;
-	if ( !(dense = doubleCalloc_dist(ldaspa * sp_ienv_dist(3))) )
+	if ( !(dense = doubleCalloc_dist(ldaspa * sp_ienv_dist(3,options))) )
 	    ABORT("Calloc fails for SPA dense[].");
 	nrbu = CEILING( nsupers, grid->nprow ); /* No. of local block rows */
 	if ( !(Urb_length = intCalloc_dist(nrbu)) )
@@ -565,7 +565,7 @@ pddistribute(fact_t fact, int_t n, SuperMatrix *A,
 	Unzval_br_ptr = Llu->Unzval_br_ptr;
 	Unnz = Llu->Unnz;
 
-	mem_use += 2.0*nrbu*iword + ldaspa*sp_ienv_dist(3)*dword;
+	mem_use += 2.0*nrbu*iword + ldaspa*sp_ienv_dist(3,options)*dword;
 
 #if ( PROFlevel>=1 )
 	t = SuperLU_timer_();
@@ -855,7 +855,7 @@ pddistribute(fact_t fact, int_t n, SuperMatrix *A,
 	    ABORT("Malloc fails for Lrb_indptr[].");
 	if ( !(Lrb_valptr = intMalloc_dist(k)) )
 	    ABORT("Malloc fails for Lrb_valptr[].");
-	if ( !(dense = doubleCalloc_dist(ldaspa * sp_ienv_dist(3))) )
+	if ( !(dense = doubleCalloc_dist(ldaspa * sp_ienv_dist(3,options))) )
 	    ABORT("Calloc fails for SPA dense[].");
 
 	/* These counts will be used for triangular solves. */
@@ -865,7 +865,7 @@ pddistribute(fact_t fact, int_t n, SuperMatrix *A,
 	    ABORT("Calloc fails for bmod[].");
 
 	/* ------------------------------------------------ */
-	mem_use += 6.0*k*iword + ldaspa*sp_ienv_dist(3)*dword;
+	mem_use += 6.0*k*iword + ldaspa*sp_ienv_dist(3,options)*dword;
 
 	k = CEILING( nsupers, grid->npcol );/* Number of local block columns */
 
@@ -2324,24 +2324,13 @@ if ( !iam) printf(".. Construct Reduce tree for U: %.2f\t\n", t);
 	checkGPU(gpuMalloc( (void**)&Llu->d_Lnzval_bc_offset, CEILING( nsupers, grid->npcol ) * sizeof(long int)));
 	checkGPU(gpuMemcpy(Llu->d_Lnzval_bc_offset, Llu->Lnzval_bc_offset, CEILING( nsupers, grid->npcol ) * sizeof(long int), gpuMemcpyHostToDevice));	
 	
-	checkGPU(gpuMalloc( (void**)&Llu->d_Unzval_br_offset, CEILING( nsupers, grid->nprow ) * sizeof(long int)));
-	checkGPU(gpuMemcpy(Llu->d_Unzval_br_offset, Llu->Unzval_br_offset, CEILING( nsupers, grid->nprow ) * sizeof(long int), gpuMemcpyHostToDevice));	
-	checkGPU(gpuMalloc( (void**)&Llu->d_Ufstnz_br_offset, CEILING( nsupers, grid->nprow ) * sizeof(long int)));
-	checkGPU(gpuMemcpy(Llu->d_Ufstnz_br_offset, Llu->Ufstnz_br_offset, CEILING( nsupers, grid->nprow ) * sizeof(long int), gpuMemcpyHostToDevice));		
-	checkGPU(gpuMalloc( (void**)&Llu->d_Ufstnz_br_dat, (Llu->Ufstnz_br_cnt) * sizeof(int_t)));
-	checkGPU(gpuMemcpy(Llu->d_Ufstnz_br_dat, Llu->Ufstnz_br_dat, (Llu->Ufstnz_br_cnt) * sizeof(int_t), gpuMemcpyHostToDevice));		
-	checkGPU(gpuMalloc( (void**)&Llu->d_Urbs, 2* CEILING( nsupers, grid->npcol ) * sizeof(int_t)));
-	checkGPU(gpuMemcpy(Llu->d_Urbs, Llu->Urbs, 2* CEILING( nsupers, grid->npcol ) * sizeof(int_t), gpuMemcpyHostToDevice));	
-	checkGPU(gpuMalloc( (void**)&Llu->d_Ucb_valdat, Llu->Ucb_valcnt * sizeof(int_t)));
-	checkGPU(gpuMemcpy(Llu->d_Ucb_valdat, Llu->Ucb_valdat, Llu->Ucb_valcnt * sizeof(int_t), gpuMemcpyHostToDevice));		
-	checkGPU(gpuMalloc( (void**)&Llu->d_Ucb_valoffset, CEILING( nsupers, grid->npcol ) * sizeof(long int)));
-	checkGPU(gpuMemcpy(Llu->d_Ucb_valoffset, Llu->Ucb_valoffset, CEILING( nsupers, grid->npcol ) * sizeof(long int), gpuMemcpyHostToDevice));		
-	checkGPU(gpuMalloc( (void**)&Llu->d_Ucb_inddat, Llu->Ucb_indcnt * sizeof(Ucb_indptr_t)));
-	checkGPU(gpuMemcpy(Llu->d_Ucb_inddat, Llu->Ucb_inddat, Llu->Ucb_indcnt * sizeof(Ucb_indptr_t), gpuMemcpyHostToDevice));
-	checkGPU(gpuMalloc( (void**)&Llu->d_Ucb_indoffset, CEILING( nsupers, grid->npcol ) * sizeof(long int)));
-	checkGPU(gpuMemcpy(Llu->d_Ucb_indoffset, Llu->Ucb_indoffset, CEILING( nsupers, grid->npcol ) * sizeof(long int), gpuMemcpyHostToDevice));		
-
-
+	// some dummy allocation to avoid checking whether they are null pointers later
+	checkGPU(gpuMalloc( (void**)&Llu->d_Ucolind_bc_dat, sizeof(int_t)));
+	checkGPU(gpuMalloc( (void**)&Llu->d_Ucolind_bc_offset, sizeof(int64_t)));
+	checkGPU(gpuMalloc( (void**)&Llu->d_Unzval_bc_dat, sizeof(double)));
+	checkGPU(gpuMalloc( (void**)&Llu->d_Unzval_bc_offset, sizeof(int64_t)));
+	checkGPU(gpuMalloc( (void**)&Llu->d_Uindval_loc_bc_dat, sizeof(int_t)));
+	checkGPU(gpuMalloc( (void**)&Llu->d_Uindval_loc_bc_offset, sizeof(int_t)));
 
 
 	checkGPU(gpuMalloc( (void**)&Llu->d_Linv_bc_offset, CEILING( nsupers, grid->npcol ) * sizeof(long int)));
@@ -2354,7 +2343,6 @@ if ( !iam) printf(".. Construct Reduce tree for U: %.2f\t\n", t);
 
 	/* gpuMemcpy for the following is performed in pxgssvx */
 	checkGPU(gpuMalloc( (void**)&Llu->d_Lnzval_bc_dat, (Llu->Lnzval_bc_cnt) * sizeof(double)));
-	checkGPU(gpuMalloc( (void**)&Llu->d_Unzval_br_dat, (Llu->Unzval_br_cnt) * sizeof(double)));
 	checkGPU(gpuMalloc( (void**)&Llu->d_Linv_bc_dat, (Llu->Linv_bc_cnt) * sizeof(double)));
 	checkGPU(gpuMalloc( (void**)&Llu->d_Uinv_bc_dat, (Llu->Uinv_bc_cnt) * sizeof(double)));
 	

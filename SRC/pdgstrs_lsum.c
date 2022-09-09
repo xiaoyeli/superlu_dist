@@ -1427,7 +1427,9 @@ void dlsum_bmod_inv
 		remainder = nub % Nchunk;
 		// printf("Unnz: %5d nub: %5d knsupc: %5d\n",Llu->Unnz[lk],nub,knsupc);
 #ifdef _OPENMP
-#pragma	omp	taskloop firstprivate (stat) private (thread_id1,Uinv,nn,lbstart,lbend,ub,temp,rtemp_loc,ik,lk1,gik,gikcol,usub,uval,lsub,lusup,iknsupc,il,i,irow,bmod_tmp,p,ii,jj,t1,t2,j,ikfrow,iklrow,dest,y,uptr,fnz,nsupr) untied nogroup
+// This taskloop causes code to crash or generate wrong solution for some intel compilers
+// #pragma	omp	taskloop firstprivate (stat) private (thread_id1,Uinv,nn,lbstart,lbend,ub,temp,rtemp_loc,ik,lk1,gik,gikcol,usub,uval,lsub,lusup,iknsupc,il,i,irow,bmod_tmp,p,ii,jj,t1,t2,j,ikfrow,iklrow,dest,y,uptr,fnz,nsupr,nroot_send_tmp) untied nogroup
+#pragma	omp	parallel for private (thread_id1,Uinv,nn,lbstart,lbend,ub,temp,rtemp_loc,ik,lk1,gik,gikcol,usub,uval,lsub,lusup,iknsupc,il,i,irow,bmod_tmp,p,ii,jj,t1,t2,j,ikfrow,iklrow,dest,y,uptr,fnz,nsupr)
 #endif
 		for (nn=0;nn<Nchunk;++nn){
 
@@ -1474,7 +1476,7 @@ void dlsum_bmod_inv
 //#endif
 							for (irow = fnz; irow < iklrow; ++irow)
 								dest[irow - ikfrow] -= uval[uptr++] * y[jj];
-								stat[thread_id1]->ops[SOLVE] += 2 * (iklrow - fnz);
+							stat[thread_id1]->ops[SOLVE] += 2 * (iklrow - fnz);
 
 						}
 					} /* end for jj ... */
@@ -1654,9 +1656,8 @@ void dlsum_bmod_inv
 //#pragma omp simd // In complex case, this SIMD loop has 2 instructions, the compiler may generate incoreect code, so need to disable this omp simd
 //#endif
 						for (irow = fnz; irow < iklrow; ++irow)
-
-							dest[irow - ikfrow] -= uval[uptr++] * y[jj];
-							stat[thread_id]->ops[SOLVE] += 2 * (iklrow - fnz);
+ 						    dest[irow - ikfrow] -= uval[uptr++] * y[jj];
+						stat[thread_id]->ops[SOLVE] += 2 * (iklrow - fnz);
 					}
 				} /* for jj ... */
 			}

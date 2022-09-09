@@ -6,10 +6,10 @@
 #include <string.h>
 #include "f2c.h"
 
-/* Subroutine */ int dgemm_(char *transa, char *transb, integer *m, integer *
-	n, integer *k, doublereal *alpha, doublereal *a, integer *lda, 
-	doublereal *b, integer *ldb, doublereal *beta, doublereal *c, integer 
-	*ldc)
+/* Subroutine */ int dgemm_(char *transa, char *transb, integer *m, integer *n,
+			    integer *k, doublereal *alpha, doublereal *a, integer *lda, 
+			    doublereal *b, integer *ldb, doublereal *beta, doublereal *c,
+			    integer *ldc)
 {
 
 
@@ -234,7 +234,7 @@
 
 /*     Quick return if possible. */
 
-    if (*m == 0 || *n == 0 || (*alpha == 0. || *k == 0) && *beta == 1.) {
+    if (*m == 0 || *n == 0 || ((*alpha == 0. || *k == 0) && *beta == 1.)) {
 	return 0;
     }
 
