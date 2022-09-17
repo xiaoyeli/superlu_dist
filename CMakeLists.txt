@@ -33,6 +33,10 @@ option(TPL_BLAS_LIBRARIES "List of absolute paths to blas libraries [].")
 option(TPL_ENABLE_PARMETISLIB   "Build the ParMETIS library" ON)
 option(TPL_PARMETIS_LIBRARIES "List of absolute paths to ParMETIS link libraries [].")
 option(TPL_PARMETIS_INCLUDE_DIRS "List of absolute paths to ParMETIS include directories [].")
+#-- COLAMD
+option(TPL_ENABLE_COLAMDLIB   "Build the COLAMD library" OFF)
+option(TPL_COLAMD_LIBRARIES "List of absolute paths to COLAMD link libraries [].")
+option(TPL_COLAMD_INCLUDE_DIRS "List of absolute paths to COLAMD include directories [].")
 #-- LAPACK
 option(TPL_ENABLE_LAPACKLIB "Enable LAPACK library" OFF)
 option(TPL_LAPACK_LIBRARIES "List of absolute paths to LAPACK libraries [].")
@@ -376,8 +380,6 @@ if (TPL_ENABLE_PARMETISLIB)   ## want to use parmetis
     endif()
     set(CMAKE_C_FLAGS "-I${dir} ${CMAKE_C_FLAGS}")
   endforeach()
-  
-
 
   message("-- Enabled support for PARMETIS.")
   set(PARMETIS_FOUND TRUE)
@@ -402,34 +404,35 @@ if(PARMETIS_FOUND)
   set(HAVE_PARMETIS TRUE)
 endif()
 
-#---------------------- Additional C linker library ---------
-SET(_c_libs ${CMAKE_C_IMPLICIT_LINK_LIBRARIES})
-FOREACH(_lib ${_c_libs})
-  set(EXTRA_LIB "-l${_lib} ${EXTRA_LIB}")
-ENDFOREACH()
-string (REPLACE ";" " " EXTRA_LIB_STR "${EXTRA_LIB}")
-set(EXTRA_LIB_EXPORT ${EXTRA_LIB_STR}) 
-message("-- EXTRA_LIB_EXPORT='${EXTRA_LIB_EXPORT}'")
+#--------------------- COLAMD ---------------------
+if (TPL_ENABLE_COLAMD)   ## want to use colamd
+  if (NOT TPL_COLAMD_LIBRARIES)
+    message(FATAL_ERROR "TPL_COLAMD_LIBRARIES option should be set for COLAMD support to be enabled.")
+  endif()
 
-#---------------------- Additional Fortran linker library ---------
-if (XSDK_ENABLE_Fortran)
-   SET(_f_libs ${CMAKE_Fortran_IMPLICIT_LINK_LIBRARIES})
-   FOREACH(_lib ${_f_libs})
-       set(EXTRA_FLIB "${EXTRA_FLIB} -l${_lib}")
-   ENDFOREACH()
-   string (REPLACE ";" " " EXTRA_FLIB_STR "${EXTRA_FLIB}")
-   set(EXTRA_FLIB_EXPORT ${EXTRA_FLIB_STR})
-   message("-- EXTRA_FLIB_EXPORT='${EXTRA_FLIB_EXPORT}'")
-   
-   if (BUILD_SHARED_LIBS)
-      message("-- superlu_dist_fortran will be built as a dynamic library.")
-      set(PROJECT_NAME_LIB_FORTRAN libsuperlu_dist_fortran.so)
-      SET(CMAKE_EXE_LINKER_FLAGS
-          "${CMAKE_EXE_LINKER_FLAGS} -Wl,-rpath,${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}")
-   else()
-      message("-- superlu_dist_fortran will be built as a static library.")
-      set(PROJECT_NAME_LIB_FORTRAN libsuperlu_dist_fortran.a)
-   endif()
+  if (NOT TPL_COLAMD_INCLUDE_DIRS)
+    message(FATAL_ERROR "TPL_COLAMD_INCLUDE_DIRS option be set for COLAMD support to be enabled.")
+  endif()
+  foreach(dir ${TPL_COLAMD_INCLUDE_DIRS})
+    if (NOT MINGW AND NOT EXISTS ${dir})
+      message(FATAL_ERROR "COLAMD include directory not found: ${dir}")
+    endif()
+    set(CMAKE_C_FLAGS "-I${dir} ${CMAKE_C_FLAGS}")
+  endforeach()
+
+  message("-- Enabled support for COLAMD.")
+  set(COLAMD_FOUND TRUE)
+
+  set(COLAMD_LIB ${TPL_COLAMD_LIBRARIES})
+  # fix up COLAMD library names
+  string (REPLACE ";" " " COLAMD_LIB_STR "${COLAMD_LIB}")
+  set(COLAMD_LIB_EXPORT ${COLAMD_LIB_STR})
+else()
+  message("-- Will not link with COLAMD.")
+endif()
+
+if(COLAMD_FOUND)
+  set(HAVE_COLAMD TRUE)
 endif()
 
 #--------------------- CombBLAS ---------------------
@@ -466,6 +469,36 @@ if(COMBBLAS_FOUND)
   set(LOADER $(CXX))
 else()
   set(LOADER $(CC))
+endif()
+
+#---------------------- Additional C linker library ---------
+SET(_c_libs ${CMAKE_C_IMPLICIT_LINK_LIBRARIES})
+FOREACH(_lib ${_c_libs})
+  set(EXTRA_LIB "-l${_lib} ${EXTRA_LIB}")
+ENDFOREACH()
+string (REPLACE ";" " " EXTRA_LIB_STR "${EXTRA_LIB}")
+set(EXTRA_LIB_EXPORT ${EXTRA_LIB_STR}) 
+message("-- EXTRA_LIB_EXPORT='${EXTRA_LIB_EXPORT}'")
+
+#---------------------- Additional Fortran linker library ---------
+if (XSDK_ENABLE_Fortran)
+   SET(_f_libs ${CMAKE_Fortran_IMPLICIT_LINK_LIBRARIES})
+   FOREACH(_lib ${_f_libs})
+       set(EXTRA_FLIB "${EXTRA_FLIB} -l${_lib}")
+   ENDFOREACH()
+   string (REPLACE ";" " " EXTRA_FLIB_STR "${EXTRA_FLIB}")
+   set(EXTRA_FLIB_EXPORT ${EXTRA_FLIB_STR})
+   message("-- EXTRA_FLIB_EXPORT='${EXTRA_FLIB_EXPORT}'")
+   
+   if (BUILD_SHARED_LIBS)
+      message("-- superlu_dist_fortran will be built as a dynamic library.")
+      set(PROJECT_NAME_LIB_FORTRAN libsuperlu_dist_fortran.so)
+      SET(CMAKE_EXE_LINKER_FLAGS
+          "${CMAKE_EXE_LINKER_FLAGS} -Wl,-rpath,${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}")
+   else()
+      message("-- superlu_dist_fortran will be built as a static library.")
+      set(PROJECT_NAME_LIB_FORTRAN libsuperlu_dist_fortran.a)
+   endif()
 endif()
 
 ######################################################################

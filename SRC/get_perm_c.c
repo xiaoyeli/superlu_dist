@@ -24,8 +24,10 @@ at the top-level directory.
 
 #include "superlu_dist_config.h"
 #include "superlu_ddefs.h"
-#include "colamd.h"
 
+#ifdef HAVE_COLAMD
+#include "colamd.h"
+#endif
 
 void
 get_metis(
@@ -115,6 +117,7 @@ get_colamd_dist(
 	   int_t *perm_c   /* out - the column permutation vector. */
 	   )
 {
+#ifdef HAVE_COLAMD    
     int Alen, *A, i, info, *p;
     double knobs[COLAMD_KNOBS];
     int stats[COLAMD_STATS];
@@ -136,6 +139,9 @@ get_colamd_dist(
 
     SUPERLU_FREE(A);
     SUPERLU_FREE(p);
+#else
+    for (int i = 0; i < n; ++i) perm_c[i] = i;
+#endif // HAVE_COLAMD    
 }
 
 /*! \brief
