@@ -10,7 +10,7 @@ cmake_minimum_required(VERSION 3.18.1 FATAL_ERROR)
 # Project version numbers
 project(SuperLU_DIST LANGUAGES C CXX)
 set(VERSION_MAJOR "8")
-set(VERSION_MINOR "0")
+set(VERSION_MINOR "1")
 set(VERSION_BugFix "0")
 set(PROJECT_VERSION ${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_BugFix})
 
@@ -20,8 +20,7 @@ list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake")
 option(enable_doc       "Build doxygen documentation" OFF)
 option(enable_single    "Enable single precision library" ON)
 option(enable_double    "Enable double precision library" ON)
-option(enable_single    "Enable single precision library" OFF)
-option(enable_complex16 "Enable complex16 precision library" OFF)
+option(enable_complex16 "Enable complex16 precision library" ON)
 option(enable_tests  "Build tests" ON)
 option(enable_examples  "Build examples" OFF)
 option(XSDK_ENABLE_Fortran "Enable Fortran" ON)
@@ -448,6 +447,7 @@ endif()
 
 # superlu_dist uses c++11. PUBLIC means that the other codes linking to it need c++11
 #target_compile_features(SuperLU_DIST PUBLIC cxx_std_11)
+
 
 # Generate various configure files with proper definitions
 

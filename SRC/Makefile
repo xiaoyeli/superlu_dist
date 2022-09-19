@@ -104,7 +104,7 @@ ZPLUSRC += zsuperlu_gpu.o
 endif
 
 ifeq ($(HAVE_COMBBLAS),TRUE)
-SPLUSRC += s_c2cpp_GetHWPM.o sHWPM_CombBLAS.hpp
+SPLUSRC += s_c2cpp_GetHWPM.o dHWPM_CombBLAS.hpp
 DPLUSRC += d_c2cpp_GetHWPM.o dHWPM_CombBLAS.hpp
 ZPLUSRC += z_c2cpp_GetHWPM.o zHWPM_CombBLAS.hpp
 endif

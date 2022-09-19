@@ -18,8 +18,9 @@ at the top-level directory.
  * -- Distributed SuperLU routine (version 6.1) --
  * Lawrence Berkeley National Lab, Univ. of California Berkeley.
  * October 15, 2008
- * September 18, 2018  version 6.0
- * February 8, 2019  version 6.1.1
+ * September 18, 2018 version 6.0
+ * February 8, 2019   version 6.1.1
+ * July 5, 2022       version 8.1.0  improved GPU U-solve
  * </pre>
  */
 #include <math.h>				 
@@ -974,6 +975,10 @@ pdCompute_Diag_Inv(int_t n, dLUstruct_t *LUstruct,gridinfo_t *grid,
  * Arguments
  * =========
  *
+ * options (input) superlu_dist_options_t*
+ *         The structure defines the input parameters to control
+ *         how the LU decomposition and triangular solve are performed.
+ *
  * n      (input) int (global)
  *        The order of the system of linear equations.
  *
@@ -1294,6 +1299,8 @@ pdgstrs(superlu_dist_options_t *options, int_t n, dLUstruct_t *LUstruct,
     if ( !(fmod = int32Malloc_dist(nlb*aln_i)) )
 	ABORT("Malloc fails for fmod[].");
     for (i = 0; i < nlb; ++i) fmod[i*aln_i] = Llu->fmod[i];
+
+#if 0
 	if ( !(fmod_sort = intCalloc_dist(nlb*2)) )
 		ABORT("Calloc fails for fmod_sort[].");
 	
@@ -1339,6 +1346,8 @@ pdgstrs(superlu_dist_options_t *options, int_t n, dLUstruct_t *LUstruct,
 	// }
 		 
 	SUPERLU_FREE(fmod_sort);
+	SUPERLU_FREE(order);
+#endif
 
     if ( !(frecv = int32Calloc_dist(nlb)) )
 	ABORT("Calloc fails for frecv[].");
@@ -1415,6 +1424,7 @@ pdgstrs(superlu_dist_options_t *options, int_t n, dLUstruct_t *LUstruct,
     /* Dump the L factor using matlab triple-let format. */
     dDumpLblocks(iam, nsupers, grid, Glu_persist, Llu);
 #endif
+
 
     /*---------------------------------------------------
      * Forward solve Ly = b.
@@ -1859,19 +1869,9 @@ t1 = SuperLU_timer_();
 	}
 	SUPERLU_FREE(Btmp); 
 
-
-
-
-
-
 #endif	
 	  
 #else
-
-
-
-
-
 
 // #if HAVE_CUDA
 // cudaProfilerStart(); 
@@ -2421,7 +2421,6 @@ thread_id=0;
 #endif
 
 		SUPERLU_FREE(fmod);
-		SUPERLU_FREE(order);
 		SUPERLU_FREE(frecv);
 		SUPERLU_FREE(leaf_send);
 		SUPERLU_FREE(leafsups);
@@ -2626,8 +2625,8 @@ thread_id=0;
 
 
 
-// #if defined(GPU_ACC) && defined(SLU_HAVE_LAPACK) && defined(GPU_SOLVE)  /* GPU trisolve*/
-#if 0 /* CPU trisolve*/
+#if defined(GPU_ACC) && defined(SLU_HAVE_LAPACK) && defined(GPU_SOLVE)  /* GPU trisolve*/
+// #if 0 /* CPU trisolve*/
 
 	d_grid = NULL;
 	d_x = NULL;
@@ -2647,12 +2646,10 @@ thread_id=0;
 
 	k = CEILING( nsupers, grid->npcol);/* Number of local block columns divided by #warps per block used as number of thread blocks*/
 	knsupc = sp_ienv_dist(3, options);
-
+ 
     
 
-	dlsum_bmod_inv_gpu_wrap(options, k,nlb,DIM_X,DIM_Y,d_lsum,d_x,nrhs,knsupc,nsupers,d_bmod,Llu->d_UBtree_ptr,Llu->d_URtree_ptr,Llu->d_ilsum,Llu->d_Urbs,Llu->d_Ufstnz_br_dat,Llu->d_Ufstnz_br_offset,Llu->d_Unzval_br_dat,Llu->d_Unzval_br_offset,Llu->d_Ucb_valdat,Llu->d_Ucb_valoffset,Llu->d_Ucb_inddat,Llu->d_Ucb_indoffset,Llu->d_Uinv_bc_dat,Llu->d_Uinv_bc_offset,Llu->d_xsup,d_grid);
-
-
+	dlsum_bmod_inv_gpu_wrap(options, k,nlb,DIM_X,DIM_Y,d_lsum,d_x,nrhs,knsupc,nsupers,d_bmod,Llu->d_UBtree_ptr,Llu->d_URtree_ptr,Llu->d_ilsum,Llu->d_Ucolind_bc_dat,Llu->d_Ucolind_bc_offset,Llu->d_Unzval_bc_dat,Llu->d_Unzval_bc_offset,Llu->d_Uinv_bc_dat,Llu->d_Uinv_bc_offset,Llu->d_Uindval_loc_bc_dat,Llu->d_Uindval_loc_bc_offset,Llu->d_xsup,d_grid);
 	checkGPU(gpuMemcpy(x, d_x, (ldalsum * nrhs + nlb * XK_H) * sizeof(double), gpuMemcpyDeviceToHost));
 
 	checkGPU (gpuFree (d_grid));

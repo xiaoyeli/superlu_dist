@@ -41,17 +41,11 @@ at the top-level directory.
  *        The distributed input matrix A of dimension (A->nrow, A->ncol).
  *        The type of A can be: Stype = SLU_NR_loc; Dtype = SLU_D; Mtype = SLU_GE.
  *
- * perm   (input) int_t*
- *        Permutation vector describing the transformation performed to
- *        the original matrix A.
- *
  * grid   (input) gridinfo_t*
  *        SuperLU's 2D process mesh.
  *
- *
- * Return value
- * ============
- * ScalePermstruct       = ScalePermstruct->perm_r stores the permutation
+ * ScalePermstruct (output) dScalePermstruct_t*
+ *        ScalePermstruct->perm_r stores the permutation obtained from HWPM.
  *
  * </pre>
  */

@@ -21,6 +21,7 @@ cmake -DCMAKE_BUILD_TYPE=Debug \
       -DTPL_ENABLE_LAPACKLIB=OFF \
       -DTPL_ENABLE_SYCLLIB=TRUE \
       -Denable_openmp:BOOL=FALSE \
+      -Denable_complex16:BOOL=FALSE \
       -DTPL_ENABLE_COMBBLASLIB=OFF \
       -DTPL_BLAS_LIBRARIES="-L${MKLROOT}/lib/intel64 -lmkl_sycl -lmkl_intel_ilp64 -lmkl_sequential -lmkl_core -lpthread -ldl" \
       -DTPL_ENABLE_INTERNAL_BLASLIB=ON \

@@ -341,7 +341,7 @@ psdistribute(superlu_dist_options_t *options, int_t n, SuperMatrix *A,
  * =========
  *
  * options (input) superlu_dist_options_t*
- *        Specifies whether or not the L and U structures will be re-used.
+ *        options->Fact specifies whether or not the L and U structures will be re-used.
  *        = SamePattern_SameRowPerm: L and U structures are input, and
  *                                   unchanged on exit.
  *        = DOFACT or SamePattern: L and U structures are computed and output.

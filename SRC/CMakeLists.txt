@@ -185,14 +185,16 @@ if(enable_single)
     psgsmv_d2.c
     psgsequb.c
   )
-
 if (TPL_ENABLE_CUDALIB)
-  list(APPEND GPU_SOURCES ssuperlu_gpu.cu)
-endif ()
-
+  list(APPEND sources ssuperlu_gpu.cu)
+endif()
 if (HAVE_COMBBLAS)
-  list(APPEND SOURCES s_c2cpp_GetHWPM.cpp sHWPM_CombBLAS.hpp)
-endif ()
+   if (enable_double)
+       list(APPEND sources s_c2cpp_GetHWPM.cpp)
+   else()
+       list(APPEND sources s_c2cpp_GetHWPM.cpp dHWPM_CombBLAS.hpp)
+   endif()
+endif()
 
 endif (enable_single) ########## enable single
 
@@ -274,17 +276,16 @@ if (TPL_ENABLE_HIPLIB)
   if(enable_complex16)
     list(APPEND hipsources zsuperlu_gpu.hip.cpp)
   endif()
-
   hip_add_library(superlu_dist ${hipsources})
-  # if (BUILD_SHARED_LIBS AND BUILD_STATIC_LIBS)
-  #   hip_add_library(superlu_dist-static STATIC  ${hipsources})
-  # endif()
+  if (BUILD_SHARED_LIBS AND BUILD_STATIC_LIBS)
+    hip_add_library(superlu_dist-static STATIC  ${hipsources})
+  endif()
 
 else()
   add_library(superlu_dist "")
-  # if (BUILD_SHARED_LIBS AND BUILD_STATIC_LIBS)
-  #   add_library(superlu_dist-static STATIC "")
-  # endif()
+  if (BUILD_SHARED_LIBS AND BUILD_STATIC_LIBS)
+    add_library(superlu_dist-static STATIC "")
+  endif()
 endif()
 
 target_sources(superlu_dist PRIVATE ${SOURCES} ${HEADERS})
@@ -308,11 +309,11 @@ if (TPL_ENABLE_SYCLLIB)
   set_source_files_properties(${SOURCES} ${GPU_SOURCES} PROPERTIES LANGUAGE CXX)
 endif (TPL_ENABLE_SYCLLIB)
 
-# if (BUILD_SHARED_LIBS AND BUILD_STATIC_LIBS)
-#   # build both shared and static libs
-#   target_sources(superlu_dist-static PRIVATE ${SOURCES} ${HEADERS})
-#   list(APPEND targets superlu_dist-static)
-# endif()
+if (BUILD_SHARED_LIBS AND BUILD_STATIC_LIBS)
+  # build both shared and static libs
+  target_sources(superlu_dist-static PRIVATE ${SOURCES} ${HEADERS})
+  list(APPEND targets superlu_dist-static)
+endif()
 
 set( superlu_dist_libs ${BLAS_LIB} ${LAPACK_LIB} ${PARMETIS_LIB} ${COMBBLAS_LIB} )
 if (NOT MSVC)
@@ -348,36 +349,20 @@ if(HIP_FOUND)
   target_link_libraries( superlu_dist PUBLIC hip::device roc::hipblas roc::rocblas )
 endif()
 
-if(OpenMP_FOUND)
+# This is recommended by modern cmake:
+# https://cliutils.gitlab.io/modern-cmake/chapters/packages/OpenMP.html
+if(OpenMP_FOUND) # this is found in top-level CMakeLists.txt
   target_link_libraries(superlu_dist PUBLIC OpenMP::OpenMP_C)
 endif()
 
 if (XSDK_ENABLE_Fortran)
-  target_link_libraries(superlu_dist PUBLIC MPI::MPI_CXX MPI::MPI_C MPI::MPI_Fortran)
+## target_link_libraries(superlu_dist PUBLIC MPI::MPI_CXX MPI::MPI_C MPI::MPI_Fortran)
+## PUBLIC keyword causes error:
+##   The plain signature for target_link_libraries has already been used ...
+  target_link_libraries(superlu_dist MPI::MPI_CXX MPI::MPI_C MPI::MPI_Fortran)
 else()
   target_link_libraries(superlu_dist PUBLIC MPI::MPI_CXX MPI::MPI_C)
 endif()
-
-foreach(target ${targets})
-    target_link_libraries(${target} PUBLIC ${superlu_dist_libs})
-    if (HAVE_COMBBLAS)
-        set_target_properties(${target} PROPERTIES
-                              CUDA_SEPARABLE_COMPILATION ON
-                              OUTPUT_NAME superlu_dist
-                              VERSION ${PROJECT_VERSION}
-                              SOVERSION ${VERSION_MAJOR}
-                              LINKER_LANGUAGE CXX
-                              )
-    else()
-        set_target_properties(${target} PROPERTIES
-                              CUDA_SEPARABLE_COMPILATION ON
-                              OUTPUT_NAME superlu_dist
-                              VERSION ${PROJECT_VERSION}
-                              SOVERSION ${VERSION_MAJOR}
-                              )
-    endif()
-endforeach(target)
-
 
 target_compile_definitions(superlu_dist PRIVATE SUPERLU_DIST_EXPORTS)
 if(MSVC AND BUILD_SHARED_LIBS)

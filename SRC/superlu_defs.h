@@ -28,6 +28,7 @@ at the top-level directory.
  *     October 18, 2021    version 7.1.1
  *     December 12, 2021   version 7.2.0
  *     May 22, 2022        version 8.0.0
+ *     July 5, 2022        version 8.1.0
  * </pre>
  */
 
@@ -80,7 +81,7 @@ at the top-level directory.
  * Versions 4.x and earlier do not include a #define'd version numbers.
  */
 #define SUPERLU_DIST_MAJOR_VERSION     8
-#define SUPERLU_DIST_MINOR_VERSION     0
+#define SUPERLU_DIST_MINOR_VERSION     1
 #define SUPERLU_DIST_PATCH_VERSION     0
 #define SUPERLU_DIST_RELEASE_DATE      "May 22, 2022"
 
@@ -183,6 +184,8 @@ typedef MPI_C_DOUBLE_COMPLEX  SuperLU_MPI_DOUBLE_COMPLEX;
 #define LB_DESCRIPTOR  2
 #define BR_HEADER      3
 #define UB_DESCRIPTOR  2
+#define BC_HEADER_NEWU      3
+#define UB_DESCRIPTOR_NEWU  2
 #define NBUFFERS       5
 
 /*
@@ -1052,6 +1055,7 @@ extern void   superlu_gridmap(MPI_Comm, int, int, int [], int, gridinfo_t *);
 extern void   superlu_gridexit(gridinfo_t *);
 extern void   superlu_gridinit3d(MPI_Comm Bcomm,  int nprow, int npcol, int npdep,
 				 gridinfo3d_t *grid) ;
+extern void   superlu_gridmap3d(MPI_Comm, int, int, int, int [], gridinfo3d_t *);
 extern void   superlu_gridexit3d(gridinfo3d_t *grid);
 
 extern void   set_default_options_dist(superlu_dist_options_t *);

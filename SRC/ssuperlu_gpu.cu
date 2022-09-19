@@ -21,7 +21,9 @@
 //#include <thrust/system/cuda/detail/cub/cub.cuh>
 
 #include "slustruct_gpu.h"
-
+#ifdef HAVE_HIP
+#include "superlu_gpu_utils.hip.cpp"
+#endif
 
 //extern "C" {
 //	void cblas_daxpy(const int N, const double alpha, const double *X,

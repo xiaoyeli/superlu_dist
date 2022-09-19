@@ -43,17 +43,11 @@ at the top-level directory.
  *        A may be overwritten by diag(R)*A*diag(C)*Pc^T.
  *        The type of A can be: Stype = SLU_NR_loc; Dtype = SLU_D; Mtype = SLU_GE.
  *
- * perm   (input) int_t*
- *        Permutation vector describing the transformation performed to
- *        the original matrix A.
- *
  * grid   (input) gridinfo_t*
  *        SuperLU's 2D process mesh.
  *
- *
- * Return value
- * ============
- * ScalePermstruct->perm_r stores the permutation obtained from HWPM algorithm.
+ * ScalePermstruct (output) zScalePermstruct_t*
+ *        ScalePermstruct->perm_r stores the permutation obtained from HWPM.
  *
  * </pre>
  */
