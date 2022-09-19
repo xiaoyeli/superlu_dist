@@ -245,7 +245,7 @@ int_t zdenseTreeFactor(
                 int_t ub = ij / nlb;
                 int_t lb
                     = ij % nlb;
-                doublecomplex *L_mat = lPanelInfo->lusup;
+                doublecomplex *L_mat = (doublecomplex *) lPanelInfo->lusup;
                 int_t ldl = lPanelInfo->nsupr;
                 int_t luptr0 = lPanelInfo->luptr0;
                 doublecomplex *U_mat = bigU;

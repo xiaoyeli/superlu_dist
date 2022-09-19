@@ -1,9 +1,9 @@
 /*! \file
 Copyright (c) 2003, The Regents of the University of California, through
-Lawrence Berkeley National Laboratory (subject to receipt of any required 
-approvals from U.S. Dept. of Energy) 
+Lawrence Berkeley National Laboratory (subject to receipt of any required
+approvals from U.S. Dept. of Energy)
 
-All rights reserved. 
+All rights reserved.
 
 The source code is distributed under BSD license, see the file License.txt
 at the top-level directory.
@@ -14,24 +14,27 @@ at the top-level directory.
 
 #include <stdio.h>
 #include "gpu_api_utils.h"
- void DisplayHeader()
+
+void DisplayHeader()
 {
     const int kb = 1024;
     const int mb = kb * kb;
     int version;
     // cout << "NBody.GPU" << endl << "=========" << endl << endl;
-    
-    gpuRuntimeGetVersion( &version ); 
-    printf("GPU Driver version:   v %d\n",version);
-    //cout << "Thrust version: v" << THRUST_MAJOR_VERSION << "." << THRUST_MINOR_VERSION << endl << endl; 
 
+    //gpuRuntimeGetVersion( &version );
+    //printf("GPU Driver version:   v %d\n",version);
+    //cout << "Thrust version: v" << THRUST_MAJOR_VERSION << "." << THRUST_MINOR_VERSION << endl << endl;
+
+    printf( "GPU Devices: \n \n");
+
+    #if defined(HAVE_CUDA) || defined(HAVE_HIP)
     int devCount;
     gpuGetDeviceCount(&devCount);
-    printf( "GPU Devices: \n \n"); 
 
     for(int i = 0; i < devCount; ++i)
     {
-        struct gpuDeviceProp props;       
+        struct gpuDeviceProp props;
         gpuGetDeviceProperties(&props, i);
         printf("%d : %s %d %d\n",i, props.name,props.major,props.minor );
         // cout << i << ": " << props.name << ": " << props.major << "." << props.minor << endl;
@@ -57,8 +60,44 @@ at the top-level directory.
         // cout << "  Max grid dimensions:  [ " << props.maxGridSize[0] << ", " << props.maxGridSize[1]  << ", " << props.maxGridSize[2] << " ]" << endl;
         // cout << endl;
     }
+
+    #elif defined(HAVE_SYCL)
+
+    std::vector<sycl::device> sycl_all_devs =
+      sycl::device::get_devices(sycl::info::device_type::gpu);
+
+    int devCount=0;
+    for(auto& dev: sycl_all_devs) {
+      if(dev.get_info<sycl::info::device::partition_max_sub_devices>() > 0) {
+	auto subDevicesDomainNuma =
+	  dev.create_sub_devices<sycl::info::partition_property::partition_by_affinity_domain>(
+	    sycl::info::partition_affinity_domain::numa);
+	for(auto& tile: subDevicesDomainNuma) {
+	  std::cout << "[" << devCount << "]: " << tile.get_info<sycl::info::device::name>() << ", "
+		    << tile.get_info<sycl::info::device::version>() << std::endl;
+	  printf("  Global memory:   %ld mb \n", tile.get_info<sycl::info::device::global_mem_size>() / mb);
+	  printf("  Shared memory:   %ld kb \n", tile.get_info<sycl::info::device::local_mem_size>() / kb ); //<<  << "kb" << endl;
+	  printf("  Constant memory: %ld kb \n", tile.get_info<sycl::info::device::max_constant_buffer_size>() / kb );
+
+	  devCount++;
+	}
+      }
+      else {
+	std::cout << "[" << devCount << "]: " << dev.get_info<sycl::info::device::name>() << ", "
+		  << dev.get_info<sycl::info::device::version>() << std::endl;
+	printf("  Global memory:   %ld mb \n", dev.get_info<sycl::info::device::global_mem_size>() / mb);
+	printf("  Shared memory:   %ld kb \n", dev.get_info<sycl::info::device::local_mem_size>() / kb ); //<<  << "kb" << endl;
+	printf("  Constant memory: %ld kb \n", dev.get_info<sycl::info::device::max_constant_buffer_size>() / kb );
+
+	devCount++;
+      }
+    }
+
+    #endif
 }
 
+// NOTE: the following functions are only defined for CUDA, HIP backend only
+#if defined(HAVE_CUDA) || defined(HAVE_HIP)
 
 const char* gpublasGetErrorString(gpublasStatus_t status)
 {
@@ -67,15 +106,15 @@ const char* gpublasGetErrorString(gpublasStatus_t status)
         case GPUBLAS_STATUS_SUCCESS: return "GPUBLAS_STATUS_SUCCESS";
         case GPUBLAS_STATUS_NOT_INITIALIZED: return "GPUBLAS_STATUS_NOT_INITIALIZED";
         case GPUBLAS_STATUS_ALLOC_FAILED: return "GPUBLAS_STATUS_ALLOC_FAILED";
-        case GPUBLAS_STATUS_INVALID_VALUE: return "GPUBLAS_STATUS_INVALID_VALUE"; 
-        case GPUBLAS_STATUS_ARCH_MISMATCH: return "GPUBLAS_STATUS_ARCH_MISMATCH"; 
+        case GPUBLAS_STATUS_INVALID_VALUE: return "GPUBLAS_STATUS_INVALID_VALUE";
+        case GPUBLAS_STATUS_ARCH_MISMATCH: return "GPUBLAS_STATUS_ARCH_MISMATCH";
         case GPUBLAS_STATUS_MAPPING_ERROR: return "GPUBLAS_STATUS_MAPPING_ERROR";
-        case GPUBLAS_STATUS_EXECUTION_FAILED: return "GPUBLAS_STATUS_EXECUTION_FAILED"; 
-        case GPUBLAS_STATUS_INTERNAL_ERROR: return "GPUBLAS_STATUS_INTERNAL_ERROR"; 
-#ifdef HAVE_CUDA        
+        case GPUBLAS_STATUS_EXECUTION_FAILED: return "GPUBLAS_STATUS_EXECUTION_FAILED";
+        case GPUBLAS_STATUS_INTERNAL_ERROR: return "GPUBLAS_STATUS_INTERNAL_ERROR";
+#ifdef HAVE_CUDA
         case GPUBLAS_STATUS_LICENSE_ERROR: return "GPUBLAS_STATUS_LICENSE_ERROR"; //HIPBLAS_STATUS_LICENSE_ERROR is not a valid enum type in rocm yet
-#endif        
-        case GPUBLAS_STATUS_NOT_SUPPORTED: return "GPUBLAS_STATUS_NOT_SUPPORTED"; 
+#endif
+        case GPUBLAS_STATUS_NOT_SUPPORTED: return "GPUBLAS_STATUS_NOT_SUPPORTED";
     }
     return "unknown error";
 }
@@ -161,8 +200,9 @@ void printGPUStats(int nsupers, SuperLUStat_t *stat, gridinfo3d_t *grid3d )
 	     1e-9 * stat->cPCIeD2H, stat->tHost_PCIeD2H, tPCIeD2H, 1e-9 * stat->cPCIeD2H / tPCIeD2H  );
       fflush(stdout);
     }
-    
+
 } /* end printGPUStats */
 
+#endif // HAVE_CUDA, HAVE_HIP
 
 #endif  // enable GPU

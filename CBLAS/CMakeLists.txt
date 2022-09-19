@@ -1,4 +1,4 @@
-set(headers 
+set(headers
     f2c.h
 )
 set(sources input_error_dist.c)
@@ -61,8 +61,10 @@ if (enable_complex16)
       zher2.c
       zgemm.c
       ztrsm.c
-    )
+o    )
 endif()
+
+set_source_files_properties(${sources} ${HEADERS} PROPERTIES LANGUAGE CXX)
 
 add_library(blas ${sources} ${HEADERS})
 

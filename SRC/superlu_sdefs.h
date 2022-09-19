@@ -401,9 +401,9 @@ typedef struct
  * Function prototypes
  ***********************************************************************/
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+/* #ifdef __cplusplus */
+/* extern "C" { */
+/* #endif */
 
 
 /* Supernodal LU factor related */
@@ -1173,9 +1173,9 @@ extern int_t ancestorFactor(
 /*== end 3D prototypes ===================*/
 
 
-#ifdef __cplusplus
-  }
-#endif
+/* #ifdef __cplusplus */
+/*   } */
+/* #endif */
 
 #endif /* __SUPERLU_dDEFS */
 

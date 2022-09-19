@@ -819,7 +819,7 @@ void pzgstrs2_omp
     /* Loop through all the row blocks. to get the iukp and rukp*/
     Trs2_InitUblock_info(klst, nb, Ublock_info, usub, Glu_persist, stat );
 #else
-    int* blocks_index_pointers = SUPERLU_MALLOC (3 * nb * sizeof(int));
+    int* blocks_index_pointers = (int *) SUPERLU_MALLOC (3 * nb * sizeof(int));
     int* blocks_value_pointers = blocks_index_pointers + nb;
     int* nsupc_temp = blocks_value_pointers + nb;
     for (b = 0; b < nb; b++) { /* set up pointers to each block */

@@ -48,9 +48,9 @@ zreadtriple_noheader(FILE *fp, int_t *m, int_t *n, int_t *nonz,
     nz = *n = 0;
 
 #ifdef _LONGINT
-    ret_val = fscanf(fp, "%lld%lld%lf%lf\n", &i, &j, &vali.r, &vali.i);
+    ret_val = fscanf(fp, "%lld%lld%lf%lf\n", &i, &j, real(vali), imag(vali));
 #else  // int
-    ret_val = fscanf(fp, "%d%d%lf%lf\n", &i, &j, &vali.r, &vali.i);
+    ret_val = fscanf(fp, "%d%d%lf%lf\n", &i, &j, real(vali), imag(vali));
 #endif
 
     while (ret_val != EOF) {
@@ -61,9 +61,9 @@ zreadtriple_noheader(FILE *fp, int_t *m, int_t *n, int_t *nonz,
 	++nz;
 
 #ifdef _LONGINT
-        ret_val = fscanf(fp, "%lld%lld%lf%lf\n", &i, &j, &vali.r, &vali.i);
+        ret_val = fscanf(fp, "%lld%lld%lf%lf\n", &i, &j, real(vali), imag(vali));
 #else  // int
-        ret_val = fscanf(fp, "%d%d%lf%lf\n", &i, &j, &vali.r, &vali.i);
+        ret_val = fscanf(fp, "%d%d%lf%lf\n", &i, &j, real(vali), imag(vali));
 #endif
     }
     
@@ -104,9 +104,9 @@ zreadtriple_noheader(FILE *fp, int_t *m, int_t *n, int_t *nonz,
     /* Read into the triplet array from a file */
     for (nnz = 0, nz = 0; nnz < *nonz; ++nnz) {
 #ifdef _LONGINT
-	fscanf(fp, "%lld%lld%lf%lf\n", &row[nz], &col[nz], &val[nz].r, &val[nz].i);
+        fscanf(fp, "%lld%lld%lf%lf\n", &row[nz], &col[nz], real(val[nz]), imag(val[nz]));
 #else // int32
-	fscanf(fp, "%d%d%lf%lf\n", &row[nz], &col[nz], &val[nz].r, &val[nz].i);
+        fscanf(fp, "%d%d%lf%lf\n", &row[nz], &col[nz], real(val[nz]), imag(val[nz]));
 #endif
 
 	if ( !zero_base ) {
@@ -118,7 +118,7 @@ zreadtriple_noheader(FILE *fp, int_t *m, int_t *n, int_t *nonz,
 	if (row[nz] < 0 || row[nz] >= *m || col[nz] < 0 || col[nz] >= *n
 	    /*|| val[nz] == 0.*/) {
 	    fprintf(stderr, "nz" IFMT ", (" IFMT ", " IFMT ") = (%e, %e) out of bound, removed\n",
-		    nz, row[nz], col[nz], val[nz].r, val[nz].i);
+		    nz, row[nz], col[nz], real(val[nz]), imag(val[nz]));
 	    exit(-1);
 	} else {
 	    ++xa[col[nz]];
@@ -182,7 +182,7 @@ zreadtriple_noheader(FILE *fp, int_t *m, int_t *n, int_t *nonz,
 #if 0
 void zreadrhs(int m, doublecomplex *b)
 {
-    FILE *fp, *fopen();
+    FILE *fp;
     int i, j;
 
     if ( !(fp = fopen("b.dat", "r")) ) {
@@ -190,7 +190,7 @@ void zreadrhs(int m, doublecomplex *b)
 	exit(-1);
     }
     for (i = 0; i < m; ++i)
-      fscanf(fp, "%lf%lf\n", &(b[i].r), &(b[i].i));
+      fscanf(fp, "%lf%lf\n", &(real(b[i])), &(imag(b[i])));
 
     fclose(fp);
 }

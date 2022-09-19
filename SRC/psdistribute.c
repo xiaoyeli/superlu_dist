@@ -187,7 +187,7 @@ sReDistribute_A(SuperMatrix *A, sScalePermstruct_t *ScalePermstruct,
        THIS ACCOUNTS FOR THE SECOND PASS OF A.
        ------------------------------------------------------------*/
     nnz_loc = 0; /* Reset the local nonzero count. */
-    nzval_a = Astore->nzval;
+    nzval_a = (float *) Astore->nzval;
     for (i = 0; i < m_loc; ++i) {
         for (j = Astore->rowptr[i]; j < Astore->rowptr[i+1]; ++j) {
   	    irow = perm_c[perm_r[i+fst_row]];  /* Row number in Pc*Pr*A */
@@ -662,7 +662,7 @@ psdistribute(superlu_dist_options_t *options, int_t n, SuperMatrix *A,
 	if ( !(ToSendR = (int **) SUPERLU_MALLOC(k*sizeof(int*))) )
 	    ABORT("Malloc fails for ToSendR[].");
 	j = k * grid->npcol;
-	if ( !(index1 = SUPERLU_MALLOC(j * sizeof(int))) )
+	if ( !(index1 = (int *) SUPERLU_MALLOC(j * sizeof(int))) )
 	    ABORT("Malloc fails for index[].");
 
 	mem_use += (float) k*sizeof(int_t*) + (j + nsupers)*iword;
@@ -678,7 +678,7 @@ psdistribute(superlu_dist_options_t *options, int_t n, SuperMatrix *A,
 	if ( !(Ufstnz_br_ptr = (int_t**)SUPERLU_MALLOC(k * sizeof(int_t*))) )
 	    ABORT("Malloc fails for Ufstnz_br_ptr[].");
 
-	if ( !(ToSendD = SUPERLU_MALLOC(k * sizeof(int))) )
+	if ( !(ToSendD = (int *) SUPERLU_MALLOC(k * sizeof(int))) )
 	    ABORT("Malloc fails for ToSendD[].");
 	for (i = 0; i < k; ++i) ToSendD[i] = NO;
 	if ( !(ilsum = intMalloc_dist(k+1)) )
@@ -1154,9 +1154,9 @@ psdistribute(superlu_dist_options_t *options, int_t n, SuperMatrix *A,
 		ABORT("Malloc fails for Urbs[]"); /* Record number of nonzero
 							 blocks in a block column. */
 	Urbs1 = Urbs + nub;
-	if ( !(Ucb_indptr = SUPERLU_MALLOC(nub * sizeof(Ucb_indptr_t *))) )
+	if ( !(Ucb_indptr = (Ucb_indptr_t **) SUPERLU_MALLOC(nub * sizeof(Ucb_indptr_t *))) )
 		ABORT("Malloc fails for Ucb_indptr[]");
-	if ( !(Ucb_valptr = SUPERLU_MALLOC(nub * sizeof(int_t *))) )
+	if ( !(Ucb_valptr = (int_t **) SUPERLU_MALLOC(nub * sizeof(int_t *))) )
 		ABORT("Malloc fails for Ucb_valptr[]");
 	nlb = CEILING( nsupers, grid->nprow ); /* Number of local block rows. */
 
@@ -1179,8 +1179,7 @@ psdistribute(superlu_dist_options_t *options, int_t n, SuperMatrix *A,
 	   One pass of the skeleton graph of U. */
 	for (lb = 0; lb < nub; ++lb) {
 		if ( Urbs[lb] ) { /* Not an empty block column. */
-			if ( !(Ucb_indptr[lb]
-						= SUPERLU_MALLOC(Urbs[lb] * sizeof(Ucb_indptr_t))) )
+		        if ( !(Ucb_indptr[lb] = (Ucb_indptr_t *) SUPERLU_MALLOC(Urbs[lb] * sizeof(Ucb_indptr_t))) )
 				ABORT("Malloc fails for Ucb_indptr[lb][]");
 			if ( !(Ucb_valptr[lb] = (int_t *) intMalloc_dist(Urbs[lb])) )
 				ABORT("Malloc fails for Ucb_valptr[lb][]");

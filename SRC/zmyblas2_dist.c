@@ -42,7 +42,7 @@ void zlsolve ( int ldm, int ncol, doublecomplex *M, doublecomplex *rhs )
     doublecomplex x0, x1, x2, x3, temp;
     doublecomplex *M0;
     doublecomplex *Mki0, *Mki1, *Mki2, *Mki3;
-    register int firstcol = 0;
+    int firstcol = 0;
 
     M0 = &M[0];
 
@@ -165,7 +165,7 @@ void zmatvec (
     doublecomplex vi0, vi1, vi2, vi3;
     doublecomplex *M0, temp;
     doublecomplex *Mki0, *Mki1, *Mki2, *Mki3;
-    register int firstcol = 0;
+    int firstcol = 0;
     int k;
 
     M0 = &M[0];

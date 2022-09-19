@@ -6,8 +6,14 @@
 /* Enable HIP */
 /* #undef HAVE_HIP */
 
+/* Enable SYCL */
+#define HAVE_SYCL TRUE
+
+/* Enable DPCPP */
+#define HAVE_DPCPP TRUE
+
 /* Enable parmetis */
-#define HAVE_PARMETIS TRUE
+/* #undef HAVE_PARMETIS */
 
 /* Enable LAPACK */
 /* #undef SLU_HAVE_LAPACK */

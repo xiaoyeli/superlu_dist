@@ -34,7 +34,7 @@ int_t zprintMatrix(char*s, int n, int m, doublecomplex* A, int LDA)
     {
         for(int j =0; j<m; j++)
         {
-            printf("%g %g\n", A[j*LDA +i].r, A[j*LDA +i].r);
+	  printf("(%g, %g)\n", real(*A[j*LDA +i]), imag(A[j*LDA +i]));
         }
         printf("\n");
     }
@@ -232,10 +232,10 @@ void zRgather_L( int_t k, int_t *lsub, doublecomplex *lusup,
     luptr = luptr0;
 
     zgather_l( HyP->lookAheadBlk, knsupc, HyP->lookAhead_info,
-               &lusup[luptr], nsupr, HyP->lookAhead_L_buff);
+               &lusup[luptr], nsupr, (doublecomplex *) HyP->lookAhead_L_buff);
 
     zgather_l( HyP->RemainBlk, knsupc, HyP->Remain_info,
-               &lusup[luptr], nsupr, HyP->Remain_L_buff);
+               &lusup[luptr], nsupr, (doublecomplex *) HyP->Remain_L_buff);
 
     assert(HyP->lookAheadBlk + HyP->RemainBlk ==nlb );
     HyP->Lnbrow = HyP->lookAheadBlk == 0 ? 0 : HyP->lookAhead_info[HyP->lookAheadBlk - 1].FullRow;
@@ -388,10 +388,10 @@ void zRgather_U( int_t k, int_t jj0, int_t *usub,	doublecomplex *uval,
     else
 	HyP->bigU_host = bigU + HyP->ldu_Phi * HyP->Ublock_info_Phi[HyP->num_u_blks_Phi - 1].full_u_cols;
 
-    zgather_u(HyP->num_u_blks, HyP->Ublock_info, usub, uval, HyP->bigU_host,
+    zgather_u(HyP->num_u_blks, HyP->Ublock_info, usub, (doublecomplex *) uval, (doublecomplex *) HyP->bigU_host,
                HyP->ldu, xsup, klst );
 
-    zgather_u(HyP->num_u_blks_Phi, HyP->Ublock_info_Phi, usub, uval,
-               HyP->bigU_Phi,  HyP->ldu_Phi, xsup, klst );
+    zgather_u(HyP->num_u_blks_Phi, HyP->Ublock_info_Phi, usub, (doublecomplex *) uval,
+	      (doublecomplex *) HyP->bigU_Phi,  HyP->ldu_Phi, xsup, klst );
 
 } /* zRgather_U */

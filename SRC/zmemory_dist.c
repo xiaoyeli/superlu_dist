@@ -72,7 +72,7 @@ void zuser_free_dist(int_t bytes, int_t which_end)
 int_t zQuerySpace_dist(int_t n, zLUstruct_t *LUstruct, gridinfo_t *grid,
 		       SuperLUStat_t *stat, superlu_dist_mem_usage_t *mem_usage)
 {
-    register int_t dword, gb, iword, k, nb, nsupers;
+    int_t dword, gb, iword, k, nb, nsupers;
     int_t *index, *xsup;
     int iam, mycol, myrow;
     Glu_persist_t *Glu_persist = LUstruct->Glu_persist;
@@ -161,7 +161,7 @@ doublecomplex *doublecomplexMalloc_dist(int_t n)
 doublecomplex *doublecomplexCalloc_dist(int_t n)
 {
     doublecomplex *buf;
-    register int_t i;
+    int_t i;
     doublecomplex zero = {0.0, 0.0};
     buf = (doublecomplex *) SUPERLU_MALLOC( SUPERLU_MAX(1, n) * sizeof(doublecomplex));
     if ( !buf ) return (buf);

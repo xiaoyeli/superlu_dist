@@ -229,7 +229,7 @@ pzgsrfs_ABXglobal(superlu_dist_options_t *options, int_t n,
     x_trs  = dx_trs + ii;
     b      = x_trs + ii;
     temp   = b + k;
-    if ( !(rwork = SUPERLU_MALLOC(N_update * sizeof(double))) )
+    if ( !(rwork = (double *) SUPERLU_MALLOC(N_update * sizeof(double))) )
 	ABORT("Malloc fails for rwork[]");
 
 #if ( DEBUGlevel>=2 )

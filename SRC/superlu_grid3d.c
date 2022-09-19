@@ -51,12 +51,17 @@ void superlu_gridinit3d(MPI_Comm Bcomm, /* The base communicator upon which
     /* Binding each MPI to a GPU device */
     char *ttemp;
     ttemp = getenv ("SUPERLU_BIND_MPI_GPU");
+    int devs=0;
 
     if (ttemp) {
-	int devs, rank;
+	int rank;
 	MPI_Comm_rank(Bcomm, &rank); // MPI_COMM_WORLD??
 	gpuGetDeviceCount(&devs);  // Returns the number of compute-capable devices
 	gpuSetDevice(rank % devs); // Set device to be used for GPU executions
+    }
+    else {
+	gpuGetDeviceCount(&devs);  // Returns the number of compute-capable devices
+	if (devs != 0) gpuSetDevice(0); // Set device to be used for GPU executions
     }
 #endif
 }
@@ -118,7 +123,12 @@ void superlu_gridmap3d(
         grid->iam = -1;
         //SUPERLU_FREE(pranks);
         //return;
-	goto gridmap_out;
+
+	SUPERLU_FREE(pranks);
+	MPI_Group_free( &superlu_grp );
+	MPI_Group_free( &mpi_base_group );
+	return;
+	/* goto gridmap_out; */
     }
 
     grid->nprow = nprow;
@@ -247,7 +257,7 @@ void superlu_gridmap3d(
 
     MPI_Comm_free( &superlu3d_comm );  // Sherry added
     
- gridmap_out:    
+ /* gridmap_out:     */
     SUPERLU_FREE(pranks);
     MPI_Group_free( &superlu_grp );
     MPI_Group_free( &mpi_base_group );

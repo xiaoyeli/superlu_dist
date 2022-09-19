@@ -64,7 +64,7 @@ int pzCompRow_loc_to_CompCol_global
     nnz_loc = Astore->nnz_loc;
     m_loc = Astore->m_loc;
     fst_row = Astore->fst_row;
-    a = Astore->nzval;
+    a = (doublecomplex *) Astore->nzval;
     rowptr = Astore->rowptr;
     colind = Astore->colind;
     n_loc = m_loc; /* NOTE: CURRENTLY ONLY WORK FOR SQUARE MATRIX */
@@ -91,7 +91,7 @@ int pzCompRow_loc_to_CompCol_global
 		  grid->comm);
     for (i = 0; i < procs-1; ++i) n_locs[i] = fst_rows[i+1] - fst_rows[i];
     n_locs[procs-1] = n - fst_rows[procs-1];
-    if ( !(recvcnts = SUPERLU_MALLOC(5*procs * sizeof(int))) )
+    if ( !(recvcnts = (int *) SUPERLU_MALLOC(5*procs * sizeof(int))) )
 	  ABORT("Malloc fails for recvcnts[]");
     sendcnts = recvcnts + procs;
     rdispls = sendcnts + procs;
@@ -211,7 +211,9 @@ int pzCompRow_loc_to_CompCol_global
     GA->Stype = SLU_NC;
     GA->Dtype = A->Dtype;
     GA->Mtype = A->Mtype;
-    GAstore = GA->Store = (NCformat *) SUPERLU_MALLOC ( sizeof(NCformat) );
+
+    GA->Store = (NCformat *) SUPERLU_MALLOC ( sizeof(NCformat) );
+    GAstore = (NCformat *) GA->Store;
     if ( !GAstore ) ABORT ("SUPERLU_MALLOC fails for GAstore");
 
     /* First gather the size of each piece. */
@@ -311,7 +313,7 @@ int pzPermute_Dense_Matrix
 #endif
 
     procs = grid->nprow * grid->npcol;
-    if ( !(sendcnts = SUPERLU_MALLOC(10*procs * sizeof(int))) )
+    if ( !(sendcnts = (int *) SUPERLU_MALLOC(10*procs * sizeof(int))) )
         ABORT("Malloc fails for sendcnts[].");
     sendcnts_nrhs = sendcnts + procs;
     recvcnts = sendcnts_nrhs + procs;
@@ -746,7 +748,7 @@ pzgstrs_init(int_t n, int_t m_loc, int_t nrhs, int_t fst_row,
     /* ------------------------------------------------------------
        SET UP COMMUNICATION PATTERN FOR ReDistribute_B_to_X.
        ------------------------------------------------------------*/
-    if ( !(itemp = SUPERLU_MALLOC(8*procs * sizeof(int))) )
+    if ( !(itemp = (int *) SUPERLU_MALLOC(8*procs * sizeof(int))) )
         ABORT("Malloc fails for B_to_X_itemp[].");
     SendCnt      = itemp;
     SendCnt_nrhs = itemp +   procs;
@@ -787,7 +789,7 @@ pzgstrs_init(int_t n, int_t m_loc, int_t nrhs, int_t fst_row,
        SET UP COMMUNICATION PATTERN FOR ReDistribute_X_to_B.
        ------------------------------------------------------------*/
     /* This is freed in pxgstrs_finalize(). */
-    if ( !(itemp = SUPERLU_MALLOC(8*procs * sizeof(int))) )
+    if ( !(itemp = (int *) SUPERLU_MALLOC(8*procs * sizeof(int))) )
         ABORT("Malloc fails for X_to_B_itemp[].");
     SendCnt      = itemp;
     SendCnt_nrhs = itemp +   procs;
@@ -839,7 +841,7 @@ pzgstrs_init(int_t n, int_t m_loc, int_t nrhs, int_t fst_row,
     /* This is saved for repeated solves, and is freed in pxgstrs_finalize().*/
     gstrs_comm->X_to_B_SendCnt = SendCnt;
 
-    if ( !(ptr_to_ibuf = SUPERLU_MALLOC(2*procs * sizeof(int))) )
+    if ( !(ptr_to_ibuf = (int *) SUPERLU_MALLOC(2*procs * sizeof(int))) )
         ABORT("Malloc fails for ptr_to_ibuf[].");
     gstrs_comm->ptr_to_ibuf = ptr_to_ibuf;
     gstrs_comm->ptr_to_dbuf = ptr_to_ibuf + procs;

@@ -178,12 +178,12 @@ void superlu_free_dist(void *addr) { free (addr); }
 
 
 static void
-copy_mem_int(int_t howmany, void *old, void *new)
+copy_mem_int(int_t howmany, void *old_ptr, void *new_ptr)
 {
-    register int_t i;
-    int_t *iold = old;
-    int_t *inew = new;
-    for (i = 0; i < howmany; i++) inew[i] = iold[i];
+    int_t i;
+    int_t *iold_ptr = (int_t *) old_ptr;
+    int_t *inew_ptr = (int_t *) new_ptr;
+    for (i = 0; i < howmany; i++) inew_ptr[i] = iold_ptr[i];
 }
 
 
@@ -209,7 +209,7 @@ int *int32Malloc_dist(int n)
 int *int32Calloc_dist(int n)
 {
     int *buf;
-    register int i;
+    int i;
     buf = (int *) SUPERLU_MALLOC((size_t) SUPERLU_MAX(1,n) * sizeof(int));
     if ( buf )
 	for (i = 0; i < n; ++i) buf[i] = 0;
@@ -226,7 +226,7 @@ int_t *intMalloc_dist(int_t n)
 int_t *intCalloc_dist(int_t n)
 {
     int_t *buf;
-    register int_t i;
+    int_t i;
     buf = (int_t *) SUPERLU_MALLOC((size_t) SUPERLU_MAX(1,n) * sizeof(int_t));
     if ( buf )
 	for (i = 0; i < n; ++i) buf[i] = 0;
@@ -575,15 +575,21 @@ static void *expand
 		new_mem = (void*)((char*)expanders[type + 1].mem + extra);
 		bytes_to_copy = (char*)stack.array + stack.top1
 		    - (char*)expanders[type + 1].mem;
-		user_bcopy(expanders[type+1].mem, new_mem, bytes_to_copy);
+		user_bcopy((char *)expanders[type+1].mem, (char *)new_mem, bytes_to_copy);
 
 		if ( type < USUB ) {
-		    Glu_freeable->usub = expanders[USUB].mem =
-			(void*)((char*)expanders[USUB].mem + extra);
+		    expanders[USUB].mem = (int_t*)((char*)expanders[USUB].mem + extra);
+		    Glu_freeable->usub = (int_t*) expanders[USUB].mem;
+
+		    /* Glu_freeable->usub = expanders[USUB].mem = */
+		    /* 	(void*)((char*)expanders[USUB].mem + extra); */
 		}
 		if ( type < LSUB ) {
-		    Glu_freeable->lsub = expanders[LSUB].mem =
-			(void*)((char*)expanders[LSUB].mem + extra);
+		  expanders[LSUB].mem =	(int_t*)((char*)expanders[LSUB].mem + extra);
+		  Glu_freeable->lsub = (int_t*) expanders[LSUB].mem;
+		  
+		  /* Glu_freeable->lsub = expanders[LSUB].mem = */
+		  /* 	(void*)((char*)expanders[LSUB].mem + extra); */
 		}
 		stack.top1 += extra;
 		stack.used += extra;
@@ -619,7 +625,7 @@ int_t QuerySpace_dist(int_t n, int_t lsub_size, Glu_freeable_t *Glu_freeable,
 		      superlu_dist_mem_usage_t *mem_usage)
 /************************************************************************/
 {
-    register int_t iword = sizeof(int_t);
+    int_t iword = sizeof(int_t);
     extern int_t no_expand;
 
     /* For the adjacency graphs of L and U. */
@@ -640,7 +646,7 @@ int_t QuerySpace_dist(int_t n, int_t lsub_size, Glu_freeable_t *Glu_freeable,
 static int_t
 memory_usage(const int_t nzlmax, const int_t nzumax, const int_t n)
 {
-    register int_t iword = sizeof(int_t);
+    int_t iword = sizeof(int_t);
     return (10*n*iword + (nzlmax+nzumax)*iword);
 }
 

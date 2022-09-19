@@ -236,7 +236,7 @@ int main(int argc, char *argv[])
 
 		    	//if (!iam) printf("equil loop ... %d\n", equil);
 
-		    	options.Equil = equil;
+		        options.Equil = static_cast<yes_no_t>(equil);
 
 		    	/* Need a first factor */
 		    	prefact   = ( options.Fact == FACTORED ||

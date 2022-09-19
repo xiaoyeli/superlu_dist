@@ -88,7 +88,7 @@ at the top-level directory.
 /*! \brief Eat up the rest of the current line */
 static int DumpLine(FILE *fp)
 {
-    register int c;
+    int c;
     while ((c = fgetc(fp)) != '\n') ;
     return 0;
 }
@@ -135,7 +135,7 @@ static int ParseFloatFormat(char *buf, int_t *num, int_t *size)
 
 static int ReadVector(FILE *fp, int_t n, int_t *where, int_t perline, int_t persize)
 {
-    register int_t i, j, item;
+    int_t i, j, item;
     char tmp, buf[100];
 
     i = 0;
@@ -156,7 +156,7 @@ static int ReadVector(FILE *fp, int_t n, int_t *where, int_t perline, int_t pers
 static int dReadValues(FILE *fp, int_t n, double *destination,
         int_t perline, int_t persize)
 {
-    register int_t i, j, k, s;
+    int_t i, j, k, s;
     char tmp, buf[100];
 
     i = 0;
@@ -188,7 +188,7 @@ static int dReadValues(FILE *fp, int_t n, double *destination,
 static void
 FormFullA(int_t n, int_t *nonz, double **nzval, int_t **rowind, int_t **colptr)
 {
-    register int_t i, j, k, col, new_nnz;
+    int_t i, j, k, col, new_nnz;
     int_t *t_rowind, *t_colptr, *al_rowind, *al_colptr, *a_rowind, *a_colptr;
     int_t *marker;
     double *t_val, *al_val, *a_val;
@@ -275,7 +275,7 @@ void
 dreadrb_dist(int iam, FILE *fp, int_t *nrow, int_t *ncol, int_t *nonz,
         double **nzval, int_t **rowind, int_t **colptr)
 {
-    register int_t i, numer_lines = 0;
+    int_t i, numer_lines = 0;
     int_t tmp, colnum, colsize, rownum, rowsize, valnum, valsize;
     char buf[100], type[4];
     int sym;

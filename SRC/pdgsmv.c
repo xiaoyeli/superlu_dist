@@ -62,8 +62,8 @@ void pdgsmv_init
     fst_row = Astore->fst_row;
     colind = Astore->colind;
     rowptr = Astore->rowptr;
-    nzval = Astore->nzval;
-    if ( !(SendCounts = SUPERLU_MALLOC(2*procs * sizeof(int))) )
+    nzval = (double *) Astore->nzval;
+    if ( !(SendCounts = (int *) SUPERLU_MALLOC(2*procs * sizeof(int))) )
         ABORT("Malloc fails for SendCounts[]");
     /*for (i = 0; i < 2*procs; ++i) SendCounts[i] = 0;*/
     RecvCounts = SendCounts + procs;

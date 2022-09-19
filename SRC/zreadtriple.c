@@ -76,9 +76,9 @@ zreadtriple_dist(FILE *fp, int_t *m, int_t *n, int_t *nonz,
     for (nnz = 0, nz = 0; nnz < *nonz; ++nnz) {
 
 #ifdef _LONGINT
-        fscanf(fp, "%lld%lld%lf%lf\n", &row[nz], &col[nz], &val[nz].r, &val[nz].i);
+        fscanf(fp, "%lld%lld%lf%lf\n", &row[nz], &col[nz], real(val[nz]), imag(val[nz]));
 #else // int 
-        fscanf(fp, "%d%d%lf%lf\n", &row[nz], &col[nz], &val[nz].r, &val[nz].i);
+        fscanf(fp, "%d%d%lf%lf\n", &row[nz], &col[nz], real(val[nz]), imag(val[nz]));
 #endif
 
 	if ( nnz == 0 ) { /* first nonzero */
@@ -99,7 +99,7 @@ zreadtriple_dist(FILE *fp, int_t *m, int_t *n, int_t *nonz,
 	if (row[nz] < 0 || row[nz] >= *m || col[nz] < 0 || col[nz] >= *n
 	    /*|| val[nz] == 0.*/) {
 	    fprintf(stderr, "nz " IFMT ", (" IFMT ", " IFMT ") = {%e\t%e} out of bound, removed\n",
-		    nz, row[nz], col[nz], val[nz].r, val[nz].i);
+		    nz, row[nz], col[nz], real(val[nz]), imag(val[nz]));
 	    exit(-1);
 	} else {
 	    ++xa[col[nz]];
@@ -164,7 +164,7 @@ zreadtriple_dist(FILE *fp, int_t *m, int_t *n, int_t *nonz,
 
 void zreadrhs(int m, doublecomplex *b)
 {
-    FILE *fp, *fopen();
+    FILE *fp;
     int i;
 
     if ( !(fp = fopen("b.dat", "r")) ) {
@@ -172,7 +172,7 @@ void zreadrhs(int m, doublecomplex *b)
 	exit(-1);
     }
     for (i = 0; i < m; ++i)
-      fscanf(fp, "%lf%lf\n", &(b[i].r), &(b[i].i));
+      fscanf(fp, "%lf%lf\n", &(real(*b[i])), &(imag(*b[i])));
     /*        readpair_(j, &b[i]);*/
 
     fclose(fp);

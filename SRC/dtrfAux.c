@@ -595,10 +595,10 @@ dtrf3Dpartition_t* dinitTrf3Dpartition(int_t nsupers,
     int_t* myNodeCount = getMyNodeCountsFr(maxLvl, myTreeIdxs, sForests);
     int_t** treePerm = getTreePermFr( myTreeIdxs, sForests, grid3d);
 
-    dLUValSubBuf_t *LUvsb = SUPERLU_MALLOC(sizeof(dLUValSubBuf_t));
+    dLUValSubBuf_t *LUvsb = (dLUValSubBuf_t *) SUPERLU_MALLOC(sizeof(dLUValSubBuf_t));
     dLluBufInit(LUvsb, LUstruct);
 
-    int_t* supernode2treeMap = SUPERLU_MALLOC(nsupers*sizeof(int_t));
+    int_t* supernode2treeMap = (int_t *) SUPERLU_MALLOC(nsupers*sizeof(int_t));
     int_t numForests = (1 << maxLvl) - 1;
     for (int_t Fr = 0; Fr < numForests; ++Fr)
     {
@@ -610,7 +610,7 @@ dtrf3Dpartition_t* dinitTrf3Dpartition(int_t nsupers,
         }
     }
 
-    dtrf3Dpartition_t*  trf3Dpartition = SUPERLU_MALLOC(sizeof(dtrf3Dpartition_t));
+    dtrf3Dpartition_t*  trf3Dpartition = (dtrf3Dpartition_t *) SUPERLU_MALLOC(sizeof(dtrf3Dpartition_t));
 
     trf3Dpartition->gEtreeInfo = gEtreeInfo;
     trf3Dpartition->iperm_c_supno = iperm_c_supno;

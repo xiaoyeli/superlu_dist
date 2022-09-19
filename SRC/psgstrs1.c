@@ -630,9 +630,9 @@ void psgstrs1(superlu_dist_options_t *options, int_t n,
 	ABORT("Malloc fails for Urbs[]"); /* Record number of nonzero
 					     blocks in a block column. */
     Urbs1 = Urbs + nub;
-    if ( !(Ucb_indptr = SUPERLU_MALLOC(nub * sizeof(Ucb_indptr_t *))) )
+    if ( !(Ucb_indptr = (Ucb_indptr_t **) SUPERLU_MALLOC(nub * sizeof(Ucb_indptr_t *))) )
         ABORT("Malloc fails for Ucb_indptr[]");
-    if ( !(Ucb_valptr = SUPERLU_MALLOC(nub * sizeof(int_t *))) )
+    if ( !(Ucb_valptr = (int_t **) SUPERLU_MALLOC(nub * sizeof(int_t *))) )
         ABORT("Malloc fails for Ucb_valptr[]");
 
     /* Count number of row blocks in a block column.
@@ -658,7 +658,7 @@ void psgstrs1(superlu_dist_options_t *options, int_t n,
     for (lb = 0; lb < nub; ++lb)
 	if ( Urbs[lb] ) { /* Not an empty block column. */
 	    if ( !(Ucb_indptr[lb]
-		   = SUPERLU_MALLOC(Urbs[lb] * sizeof(Ucb_indptr_t))) )
+		   = (Ucb_indptr_t*) SUPERLU_MALLOC(Urbs[lb] * sizeof(Ucb_indptr_t))) )
 		ABORT("Malloc fails for Ucb_indptr[lb][]");
 	    if ( !(Ucb_valptr[lb] = (int_t *) intMalloc_dist(Urbs[lb])) )
 		ABORT("Malloc fails for Ucb_valptr[lb][]");

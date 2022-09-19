@@ -65,7 +65,7 @@ sForest_t**  getNestDissForests( int_t maxLvl, int_t nsupers, int_t*setree, tree
 	int_t numForests = (1 << maxLvl) - 1;
 
 	// allocate space for forests
-	sForest_t**  sForests = SUPERLU_MALLOC (numForests * sizeof (sForest_t*));
+	sForest_t**  sForests = (sForest_t **) SUPERLU_MALLOC (numForests * sizeof (sForest_t*));
 
 
 	int_t* gTreeHeads = getTreeHeads(maxLvl, nsupers, treeList);
@@ -81,7 +81,7 @@ sForest_t**  getNestDissForests( int_t maxLvl, int_t nsupers, int_t*setree, tree
 		sForests[i] = NULL;
 		if (gNodeCount[i] > 0)
 		{
-			sForests[i] = SUPERLU_MALLOC (sizeof (sForest_t));
+		        sForests[i] = (sForest_t*) SUPERLU_MALLOC (sizeof (sForest_t));
 			sForests[i]->nNodes = gNodeCount[i];
 			sForests[i]->numTrees = 1;
 			sForests[i]->nodeList = gNodeLists[i];
@@ -304,7 +304,7 @@ int_t** getTreePermFr( int_t* myTreeIdxs,
 
 int* getIsNodeInMyGrid(int_t nsupers, int_t maxLvl, int_t* myNodeCount, int_t** treePerm)
 {
-    int* isNodeInMyGrid = SUPERLU_MALLOC(nsupers * sizeof(int));
+    int* isNodeInMyGrid = (int *) SUPERLU_MALLOC(nsupers * sizeof(int));
 
     for(int i=0; i<nsupers; i++) isNodeInMyGrid[i] =0;
 	
@@ -531,7 +531,7 @@ sForest_t*  createForestNew(int_t numTrees, int_t nsupers, int_t * nodeCounts,  
 {
 	if (numTrees == 0) return NULL;
 
-	sForest_t* forest = SUPERLU_MALLOC(sizeof(sForest_t));
+	sForest_t* forest = (sForest_t *) SUPERLU_MALLOC(sizeof(sForest_t));
 	forest->numTrees = numTrees;
 
 	double frWeight = 0;
@@ -624,14 +624,14 @@ forestPartition_t iterativeFrPartitioning(rForest_t* rforest, int_t nsupers, int
     int_t nAnc = 0;
 #if 0
     int_t* ancTreeCount = INT_T_ALLOC(MAX_TREE_ALLOWED);
-    int_t** ancNodeLists = SUPERLU_MALLOC(MAX_TREE_ALLOWED * sizeof(int_t*));
+    int_t** ancNodeLists = (int_t **) SUPERLU_MALLOC(MAX_TREE_ALLOWED * sizeof(int_t*));
 
     double * weightArr = DOUBLE_ALLOC (MAX_TREE_ALLOWED);
     // int_t* treeSet = INT_T_ALLOC(nTreeSet);
     int_t* treeSet = INT_T_ALLOC(MAX_TREE_ALLOWED);
 #else  // Sherry fix
     int_t* ancTreeCount = intMalloc_dist(MAX_TREE_ALLOWED);
-    int_t** ancNodeLists = SUPERLU_MALLOC(MAX_TREE_ALLOWED * sizeof(int_t*));
+    int_t** ancNodeLists = (int_t **) SUPERLU_MALLOC(MAX_TREE_ALLOWED * sizeof(int_t*));
 
     double * weightArr = doubleMalloc_dist(MAX_TREE_ALLOWED);
     int_t* treeSet = intMalloc_dist(MAX_TREE_ALLOWED);
@@ -716,8 +716,8 @@ forestPartition_t iterativeFrPartitioning(rForest_t* rforest, int_t nsupers, int
 
 	rForest_t *rforestS1, *rforestS2;
 #if 0
-	rforestS1 = SUPERLU_MALLOC(sizeof(rforest));
-	rforestS2 = SUPERLU_MALLOC(sizeof(rforest));
+	rforestS1 = (rforest*) SUPERLU_MALLOC(sizeof(rforest));
+	rforestS2 = (rforest*) SUPERLU_MALLOC(sizeof(rforest));
 #else
 	rforestS1 = (rForest_t *) SUPERLU_MALLOC(sizeof(rForest_t));  // Sherry fix
 	rforestS2 = (rForest_t *) SUPERLU_MALLOC(sizeof(rForest_t));
@@ -740,7 +740,7 @@ forestPartition_t iterativeFrPartitioning(rForest_t* rforest, int_t nsupers, int
 
 	// free stuff
 	// 	int_t* ancTreeCount = INT_T_ALLOC(MAX_TREE_ALLOWED);
-	// int_t** ancNodeLists = SUPERLU_MALLOC(MAX_TREE_ALLOWED * sizeof(int_t*));
+	// int_t** ancNodeLists = (int_t **) SUPERLU_MALLOC(MAX_TREE_ALLOWED * sizeof(int_t*));
 
 	for (int i = 0; i < nAnc ; ++i)
 	{
@@ -765,7 +765,7 @@ sForest_t* r2sForest(rForest_t* rforest, int_t nsupers, int_t * setree, treeList
 
 	int_t* treeHeads =  rforest->treeHeads;
 	int_t* nodeCounts = INT_T_ALLOC(nTree);
-	int_t** NodeLists = SUPERLU_MALLOC(nTree * sizeof(int_t*));
+	int_t** NodeLists = (int_t **) SUPERLU_MALLOC(nTree * sizeof(int_t*));
 
 	for (int i = 0; i < nTree; ++i)
 	{
@@ -799,7 +799,7 @@ sForest_t**  getGreedyLoadBalForests( int_t maxLvl, int_t nsupers, int_t * setre
 	sForest_t**  sForests = (sForest_t** ) SUPERLU_MALLOC (numForests * sizeof (sForest_t*));
 
 	int_t numRForests = SUPERLU_MAX( (1 << (maxLvl - 1)) - 1, 1) ;
-	rForest_t*  rForests = SUPERLU_MALLOC (numRForests * sizeof (rForest_t));
+	rForest_t*  rForests = (rForest_t *) SUPERLU_MALLOC (numRForests * sizeof (rForest_t));
 
 	// intialize rfortes[0]
 	int_t nRootTrees = 0;
@@ -891,7 +891,7 @@ sForest_t**  getOneLevelBalForests( int_t maxLvl, int_t nsupers, int_t * setree,
 	sForest_t**  sForests = (sForest_t** ) SUPERLU_MALLOC (numForests * sizeof (sForest_t*));
 
 	int_t numRForests = SUPERLU_MAX( (1 << (maxLvl - 1)) - 1, 1) ;
-	rForest_t*  rForests = SUPERLU_MALLOC (numRForests * sizeof (rForest_t));
+	rForest_t*  rForests = (rForest_t*) SUPERLU_MALLOC (numRForests * sizeof (rForest_t));
 
 	// intialize rfortes[0]
 	int_t nRootTrees = 0;

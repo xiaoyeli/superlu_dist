@@ -33,7 +33,7 @@ void Destroy_SuperMatrix_Store_dist(SuperMatrix *A)
 
 void Destroy_CompCol_Matrix_dist(SuperMatrix *A)
 {
-    NCformat *Astore = A->Store;
+    NCformat *Astore = (NCformat *)A->Store;
     SUPERLU_FREE(Astore->rowind);
     SUPERLU_FREE(Astore->colptr);
     if (Astore->nzval)
@@ -43,7 +43,7 @@ void Destroy_CompCol_Matrix_dist(SuperMatrix *A)
 
 void Destroy_CompRowLoc_Matrix_dist(SuperMatrix *A)
 {
-    NRformat_loc *Astore = A->Store;
+    NRformat_loc *Astore = (NRformat_loc *)A->Store;
     SUPERLU_FREE(Astore->rowptr);
     SUPERLU_FREE(Astore->colind);
     SUPERLU_FREE(Astore->nzval);
@@ -80,7 +80,7 @@ void Destroy_CompCol_Permuted_dist(SuperMatrix *A)
 /*! \brief A is of type Stype==DN */
 void Destroy_Dense_Matrix_dist(SuperMatrix *A)
 {
-    DNformat *Astore = A->Store;
+    DNformat *Astore = (DNformat *)A->Store;
     SUPERLU_FREE(Astore->nzval);
     SUPERLU_FREE(A->Store);
 }
@@ -163,8 +163,8 @@ int64_t
 fixupL_dist(const int_t n, const int_t *perm_r,
             Glu_persist_t *Glu_persist, Glu_freeable_t *Glu_freeable)
 {
-    register int_t nsuper, fsupc, nextl, i, j, k, jstrt;
-    register long long int lsub_size;
+    int_t nsuper, fsupc, nextl, i, j, k, jstrt;
+    long long int lsub_size;
     int_t *xsup, *lsub, *xlsub;
 
     if (n <= 1)
@@ -226,7 +226,14 @@ void set_default_options_dist(superlu_dist_options_t *options)
     options->superlu_acc_offload = 1;
     options->superlu_n_gemm = 5000;
     options->superlu_max_buffer_size = 256000000;
+    
+    #if defined(HAVE_CUDA) || defined(HAVE_HIP)
     options->superlu_num_gpu_streams = 8;
+    #elif defined(HAVE_SYCL)
+    options->superlu_num_gpu_streams = 1;    
+    #endif
+
+    
     options->SymPattern = NO;
     options->Algo3d = NO;
 #ifdef SLU_HAVE_LAPACK
@@ -312,9 +319,9 @@ void print_panel_seg_dist(int_t n, int_t w, int_t jcol, int_t nseg,
 
 void PStatInit(SuperLUStat_t *stat)
 {
-    register int_t i;
+    int_t i;
 
-    if (!(stat->utime = SUPERLU_MALLOC(NPHASES * sizeof(double))))
+    if (!(stat->utime = (double *) SUPERLU_MALLOC(NPHASES * sizeof(double))))
         ABORT("Malloc fails for stat->utime[]");
     if (!(stat->ops = (flops_t *)SUPERLU_MALLOC(NPHASES * sizeof(flops_t))))
         ABORT("SUPERLU_MALLOC fails for stat->ops[]");
@@ -510,7 +517,7 @@ void PStatFree(SuperLUStat_t *stat)
  */
 void ifill_dist(int_t *a, int_t alen, int_t ival)
 {
-    register int_t i;
+    int_t i;
     for (i = 0; i < alen; i++)
         a[i] = ival;
 }
@@ -564,7 +571,7 @@ static int max_sup_size;
 
 void super_stats_dist(int_t nsuper, int_t *xsup)
 {
-    register int nsup1 = 0;
+    int nsup1 = 0;
     int_t i, isize, whichb, bl, bh;
     int_t bucket[NBUCKS];
 
@@ -622,7 +629,7 @@ void check_repfnz_dist(int_t n, int_t w, int_t jcol, int_t *repfnz)
 
 void PrintInt10(char *name, int_t len, int_t *x)
 {
-    register int_t i;
+    int_t i;
 
     printf("%10s:", name);
     for (i = 0; i < len; ++i)
@@ -636,7 +643,7 @@ void PrintInt10(char *name, int_t len, int_t *x)
 
 void PrintInt32(char *name, int len, int *x)
 {
-    register int i;
+    int i;
 
     printf("%10s:", name);
     for (i = 0; i < len; ++i)
@@ -650,7 +657,7 @@ void PrintInt32(char *name, int len, int *x)
 
 int file_PrintInt10(FILE *fp, char *name, int_t len, int_t *x)
 {
-    register int_t i;
+    int_t i;
 
     fprintf(fp, "%10s:", name);
     for (i = 0; i < len; ++i)
@@ -665,7 +672,7 @@ int file_PrintInt10(FILE *fp, char *name, int_t len, int_t *x)
 
 int file_PrintInt32(FILE *fp, char *name, int len, int *x)
 {
-    register int i;
+    int i;
 
     fprintf(fp, "%10s:", name);
     for (i = 0; i < len; ++i)
@@ -680,7 +687,7 @@ int file_PrintInt32(FILE *fp, char *name, int len, int *x)
 
 int_t CheckZeroDiagonal(int_t n, int_t *rowind, int_t *colbeg, int_t *colcnt)
 {
-    register int_t i, j, zd, numzd = 0;
+    int_t i, j, zd, numzd = 0;
 
     for (j = 0; j < n; ++j)
     {
@@ -869,6 +876,22 @@ get_num_gpu_streams ()
         return atoi(getenv ("NUM_GPU_STREAMS"));   
     else
         return 8;
+}
+
+int getnGPUStreams()
+{
+    // Disabling multiple gpu streams -- bug with multiple streams in 3D code?
+    #if 0
+	return 1;
+    #else
+	char *ttemp;
+	ttemp = getenv ("SUPERLU_NUM_GPU_STREAMS");
+
+	if (ttemp)
+	  return atoi (ttemp);
+	else
+	  return 1;	  
+    #endif 
 }
 
 int_t get_min(int_t *sums, int_t nprocs)
@@ -1221,7 +1244,7 @@ int_t **getTreePerm(int_t *myTreeIdxs, int_t *myZeroTrIdxs,
 {
     int_t maxLvl = log2i(grid3d->zscp.Np) + 1;
 
-    int_t **treePerm = SUPERLU_MALLOC(sizeof(int_t *) * maxLvl);
+    int_t **treePerm = (int_t **) SUPERLU_MALLOC(sizeof(int_t *) * maxLvl);
     for (int_t lvl = 0; lvl < maxLvl; lvl++)
     {
         // treePerm[lvl] = NULL;
@@ -1408,22 +1431,6 @@ gemm_division_cpu_gpu(
 #endif  /* defined GPU_ACC */
 
 /* The following are moved from superlu_gpu.cu */
-
-int getnGPUStreams()
-{
-    // Disabling multiple gpu streams -- bug with multiple streams in 3D code?
-    #if 0
-	return 1;
-    #else 
-	char *ttemp;
-	ttemp = getenv ("SUPERLU_NUM_GPU_STREAMS");
-
-	if (ttemp)
-		return atoi (ttemp);
-	else
-		return 1;
-    #endif 
-}
 
 int get_mpi_process_per_gpu ()
 {

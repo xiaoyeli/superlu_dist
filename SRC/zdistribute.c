@@ -177,8 +177,8 @@ zdistribute(superlu_dist_options_t *options, int_t n, SuperMatrix *A,
     mycol = MYCOL( iam, grid );
     for (i = 0; i < NBUFFERS; ++i) mybufmax[i] = 0;
     nsupers  = supno[n-1] + 1;
-    Astore   = A->Store;
-    a        = Astore->nzval;
+    Astore   = (NCPformat *) A->Store;
+    a        = (doublecomplex *) Astore->nzval;
     asub     = Astore->rowind;
     xa_begin = Astore->colbeg;
     xa_end   = Astore->colend;
@@ -338,7 +338,7 @@ zdistribute(superlu_dist_options_t *options, int_t n, SuperMatrix *A,
 	usub = Glu_freeable->usub;    /* compressed U subscripts */
 	xusub = Glu_freeable->xusub;
 
-	if ( !(ToRecv = SUPERLU_MALLOC(nsupers * sizeof(int))) )
+	if ( !(ToRecv = (int *) SUPERLU_MALLOC(nsupers * sizeof(int))) )
 	    ABORT("Malloc fails for ToRecv[].");
 	for (i = 0; i < nsupers; ++i) ToRecv[i] = 0;
 
@@ -346,7 +346,7 @@ zdistribute(superlu_dist_options_t *options, int_t n, SuperMatrix *A,
 	if ( !(ToSendR = (int **) SUPERLU_MALLOC(k*sizeof(int*))) )
 	    ABORT("Malloc fails for ToSendR[].");
 	j = k * grid->npcol;
-	if ( !(index1 = SUPERLU_MALLOC(j * sizeof(int))) )
+	if ( !(index1 = (int *) SUPERLU_MALLOC(j * sizeof(int))) )
 	    ABORT("Malloc fails for index1[].");
 
 	mem_use += (float) k*sizeof(int_t*) + (j + nsupers)*iword;
@@ -362,7 +362,7 @@ zdistribute(superlu_dist_options_t *options, int_t n, SuperMatrix *A,
 	if ( !(Ufstnz_br_ptr = (int_t**)SUPERLU_MALLOC(k * sizeof(int_t*))) )
 	    ABORT("Malloc fails for Ufstnz_br_ptr[].");
 
-	if ( !(ToSendD = SUPERLU_MALLOC(k * sizeof(int))) )
+	if ( !(ToSendD = (int *) SUPERLU_MALLOC(k * sizeof(int))) )
 	    ABORT("Malloc fails for ToSendD[].");
 	for (i = 0; i < k; ++i) ToSendD[i] = NO;
 	if ( !(ilsum = intMalloc_dist(k+1)) )
@@ -507,8 +507,7 @@ zdistribute(superlu_dist_options_t *options, int_t n, SuperMatrix *A,
 	    ABORT("Malloc fails for Lrowind_bc_ptr[].");
 	Lrowind_bc_ptr[k-1] = NULL;
 
-	if ( !(Lindval_loc_bc_ptr =
-				(int_t**)SUPERLU_MALLOC(k * sizeof(int_t*))) )
+	if ( !(Lindval_loc_bc_ptr = (int_t**)SUPERLU_MALLOC(k * sizeof(int_t*))) )
 		ABORT("Malloc fails for Lindval_loc_bc_ptr[].");
 	Lindval_loc_bc_ptr[k-1] = NULL;
 
@@ -831,9 +830,9 @@ zdistribute(superlu_dist_options_t *options, int_t n, SuperMatrix *A,
 		ABORT("Malloc fails for Urbs[]"); /* Record number of nonzero
 							 blocks in a block column. */
 	Urbs1 = Urbs + nub;
-	if ( !(Ucb_indptr = SUPERLU_MALLOC(nub * sizeof(Ucb_indptr_t *))) )
+	if ( !(Ucb_indptr = (Ucb_indptr_t **) SUPERLU_MALLOC(nub * sizeof(Ucb_indptr_t *))) )
 		ABORT("Malloc fails for Ucb_indptr[]");
-	if ( !(Ucb_valptr = SUPERLU_MALLOC(nub * sizeof(int_t *))) )
+	if ( !(Ucb_valptr = (int_t **) SUPERLU_MALLOC(nub * sizeof(int_t *))) )
 		ABORT("Malloc fails for Ucb_valptr[]");
 	nlb = CEILING( nsupers, grid->nprow ); /* Number of local block rows. */
 
@@ -856,8 +855,7 @@ zdistribute(superlu_dist_options_t *options, int_t n, SuperMatrix *A,
 	   One pass of the skeleton graph of U. */
 	for (lb = 0; lb < nub; ++lb) {
 		if ( Urbs[lb] ) { /* Not an empty block column. */
-			if ( !(Ucb_indptr[lb]
-						= SUPERLU_MALLOC(Urbs[lb] * sizeof(Ucb_indptr_t))) )
+			if ( !(Ucb_indptr[lb] = (Ucb_indptr_t *) SUPERLU_MALLOC(Urbs[lb] * sizeof(Ucb_indptr_t))) )
 				ABORT("Malloc fails for Ucb_indptr[lb][]");
 			if ( !(Ucb_valptr[lb] = (int_t *) intMalloc_dist(Urbs[lb])) )
 				ABORT("Malloc fails for Ucb_valptr[lb][]");

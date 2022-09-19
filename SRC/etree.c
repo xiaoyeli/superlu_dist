@@ -39,7 +39,7 @@ at the top-level directory.
 static 
 int_t *mxCallocInt(int_t n)
 {
-    register int_t i;
+    int_t i;
     int_t *buf;
 
     buf = (int_t *) SUPERLU_MALLOC( n * sizeof(int_t) );
@@ -89,7 +89,7 @@ int_t find (
 	    int_t *pp
 	    )
 {
-    register int_t p, gp;
+    int_t p, gp;
     
     p = pp[i];
     gp = pp[p];

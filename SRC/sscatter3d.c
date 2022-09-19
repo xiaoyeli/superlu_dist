@@ -78,25 +78,25 @@ arrive_at_ublock (int_t j,      //block number
 
 void
 sblock_gemm_scatter( int_t lb, int_t j,
-                    Ublock_info_t *Ublock_info,
-                    Remain_info_t *Remain_info,
-                    float *L_mat, int ldl,
-                    float *U_mat, int ldu,
-                    float *bigV,
-                    // int_t jj0,
-                    int_t knsupc,  int_t klst,
-                    int_t *lsub, int_t *usub, int_t ldt,
-                    int_t thread_id,
-                    int *indirect,
-                    int *indirect2,
-                    int_t **Lrowind_bc_ptr, float **Lnzval_bc_ptr,
-                    int_t **Ufstnz_br_ptr, float **Unzval_br_ptr,
-                    int_t *xsup, gridinfo_t *grid,
-                    SuperLUStat_t *stat
+		     Ublock_info_t *Ublock_info,
+		     Remain_info_t *Remain_info,
+		     float *L_mat, int ldl,
+		     float *U_mat, int ldu,
+		     float *bigV,
+		     // int_t jj0,
+		     int_t knsupc,  int_t klst,
+		     int_t *lsub, int_t *usub, int_t ldt,
+		     int_t thread_id,
+		     int *indirect,
+		     int *indirect2,
+		     int_t **Lrowind_bc_ptr, float **Lnzval_bc_ptr,
+		     int_t **Ufstnz_br_ptr, float **Unzval_br_ptr,
+		     int_t *xsup, gridinfo_t *grid,
+		     SuperLUStat_t *stat
 #ifdef SCATTER_PROFILE
-                    , double *Host_TheadScatterMOP, double *Host_TheadScatterTimer
+		     , double *Host_TheadScatterMOP, double *Host_TheadScatterTimer
 #endif
-                  )
+  )
 {
     // return ;
 #ifdef _OPENMP    
@@ -340,16 +340,16 @@ int_t sblock_gemm_scatterTopLeft( int_t lb, /* block number in L */
     //unsigned long long t1 = _rdtsc();
     double t1 = SuperLU_timer_();
     sblock_gemm_scatter( lb, j, HyP->Ublock_info, HyP->lookAhead_info,
-			HyP->lookAhead_L_buff, HyP->Lnbrow,
-                        HyP->bigU_host, HyP->ldu,
-                        bigV, knsupc,  klst, lsub,  usub, ldt, thread_id,
-			indirect, indirect2,
-                        Lrowind_bc_ptr, Lnzval_bc_ptr, Ufstnz_br_ptr, Unzval_br_ptr,
-			xsup, grid, stat
+			 (float *) HyP->lookAhead_L_buff, HyP->Lnbrow,
+			 (float *) HyP->bigU_host, HyP->ldu,
+			 bigV, knsupc,  klst, lsub,  usub, ldt, thread_id,
+			 indirect, indirect2,
+			 Lrowind_bc_ptr, Lnzval_bc_ptr, Ufstnz_br_ptr, Unzval_br_ptr,
+			 xsup, grid, stat
 #ifdef SCATTER_PROFILE
-                        , SCT->Host_TheadScatterMOP, SCT->Host_TheadScatterTimer
+			 , SCT->Host_TheadScatterMOP, SCT->Host_TheadScatterTimer
 #endif
-                      );
+      );
     //unsigned long long t2 = _rdtsc();
     double t2 = SuperLU_timer_();
     SCT->SchurCompUdtThreadTime[thread_id * CACHE_LINE_SIZE] += (double) (t2 - t1);
@@ -379,8 +379,8 @@ int_t sblock_gemm_scatterTopRight( int_t lb,  int_t j,
 #endif    
     //unsigned long long t1 = _rdtsc();
     double t1 = SuperLU_timer_();
-    sblock_gemm_scatter( lb, j, HyP->Ublock_info_Phi, HyP->lookAhead_info, HyP->lookAhead_L_buff, HyP->Lnbrow,
-                        HyP->bigU_Phi, HyP->ldu_Phi,
+    sblock_gemm_scatter( lb, j, HyP->Ublock_info_Phi, HyP->lookAhead_info, (float *) HyP->lookAhead_L_buff, HyP->Lnbrow,
+			 (float *) HyP->bigU_Phi, HyP->ldu_Phi,
                         bigV, knsupc,  klst, lsub,  usub, ldt, thread_id, indirect, indirect2,
                         Lrowind_bc_ptr, Lnzval_bc_ptr, Ufstnz_br_ptr, Unzval_br_ptr, xsup, grid, stat
 #ifdef SCATTER_PROFILE
@@ -417,14 +417,14 @@ int_t sblock_gemm_scatterBottomLeft( int_t lb,  int_t j,
     //printf("Thread's ID %lld \n", thread_id);
     //unsigned long long t1 = _rdtsc();
     double t1 = SuperLU_timer_();
-    sblock_gemm_scatter( lb, j, HyP->Ublock_info, HyP->Remain_info, HyP->Remain_L_buff, HyP->Rnbrow,
-                        HyP->bigU_host, HyP->ldu,
-                        bigV, knsupc,  klst, lsub,  usub, ldt, thread_id, indirect, indirect2,
-                        Lrowind_bc_ptr, Lnzval_bc_ptr, Ufstnz_br_ptr, Unzval_br_ptr, xsup, grid, stat
+    sblock_gemm_scatter( lb, j, HyP->Ublock_info, HyP->Remain_info, (float *) HyP->Remain_L_buff, HyP->Rnbrow,
+			 (float *) HyP->bigU_host, HyP->ldu,
+			 bigV, knsupc,  klst, lsub,  usub, ldt, thread_id, indirect, indirect2,
+			 Lrowind_bc_ptr, Lnzval_bc_ptr, Ufstnz_br_ptr, Unzval_br_ptr, xsup, grid, stat
 #ifdef SCATTER_PROFILE
-                        , SCT->Host_TheadScatterMOP, SCT->Host_TheadScatterTimer
+			 , SCT->Host_TheadScatterMOP, SCT->Host_TheadScatterTimer
 #endif
-                      );
+      );
     //unsigned long long t2 = _rdtsc();
     double t2 = SuperLU_timer_();
     SCT->SchurCompUdtThreadTime[thread_id * CACHE_LINE_SIZE] += (double) (t2 - t1);
@@ -456,8 +456,8 @@ int_t sblock_gemm_scatterBottomRight( int_t lb,  int_t j,
    // printf("Thread's ID %lld \n", thread_id);
     //unsigned long long t1 = _rdtsc();
     double t1 = SuperLU_timer_();
-    sblock_gemm_scatter( lb, j, HyP->Ublock_info_Phi, HyP->Remain_info, HyP->Remain_L_buff, HyP->Rnbrow,
-                        HyP->bigU_Phi, HyP->ldu_Phi,
+    sblock_gemm_scatter( lb, j, HyP->Ublock_info_Phi, HyP->Remain_info, (float *) HyP->Remain_L_buff, HyP->Rnbrow,
+			 (float *) HyP->bigU_Phi, HyP->ldu_Phi,
                         bigV, knsupc,  klst, lsub,  usub, ldt, thread_id, indirect, indirect2,
                         Lrowind_bc_ptr, Lnzval_bc_ptr, Ufstnz_br_ptr, Unzval_br_ptr, xsup, grid, stat
 #ifdef SCATTER_PROFILE

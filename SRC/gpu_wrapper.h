@@ -1,9 +1,9 @@
 /*! \file
 Copyright (c) 2003, The Regents of the University of California, through
-Lawrence Berkeley National Laboratory (subject to receipt of any required 
-approvals from U.S. Dept. of Energy) 
+Lawrence Berkeley National Laboratory (subject to receipt of any required
+approvals from U.S. Dept. of Energy)
 
-All rights reserved. 
+All rights reserved.
 
 The source code is distributed under BSD license, see the file License.txt
 at the top-level directory.
@@ -26,7 +26,7 @@ at the top-level directory.
 #include "cuda.h"
 #include "cuda_runtime_api.h"
 #include "cuda_runtime.h"
-#include <cusparse.h>				 
+#include <cusparse.h>
 #include <cuda_profiler_api.h>
 
 #define gpuDeviceProp cudaDeviceProp
@@ -38,8 +38,6 @@ at the top-level directory.
 #define gpuSuccess cudaSuccess
 #define gpuGetErrorString cudaGetErrorString
 #define gpuMalloc cudaMalloc
-#define gpuHostMalloc cudaHostAlloc
-#define gpuHostMallocDefault cudaHostAllocDefault
 #define gpuMallocManaged cudaMallocManaged
 #define gpuStream_t cudaStream_t
 #define gpuStreamCreate cudaStreamCreate
@@ -68,17 +66,17 @@ at the top-level directory.
 #define gpuMallocHost cudaMallocHost
 #define gpuEvent_t cudaEvent_t
 #define gpuMemset cudaMemset
-#define  GPUBLAS_STATUS_SUCCESS CUBLAS_STATUS_SUCCESS 
-#define  GPUBLAS_STATUS_NOT_INITIALIZED CUBLAS_STATUS_NOT_INITIALIZED 
-#define  GPUBLAS_STATUS_ALLOC_FAILED CUBLAS_STATUS_ALLOC_FAILED 
-#define  GPUBLAS_STATUS_INVALID_VALUE CUBLAS_STATUS_INVALID_VALUE 
-#define  GPUBLAS_STATUS_ARCH_MISMATCH CUBLAS_STATUS_ARCH_MISMATCH 
-#define  GPUBLAS_STATUS_MAPPING_ERROR CUBLAS_STATUS_MAPPING_ERROR 
-#define  GPUBLAS_STATUS_EXECUTION_FAILED CUBLAS_STATUS_EXECUTION_FAILED 
-#define  GPUBLAS_STATUS_INTERNAL_ERROR CUBLAS_STATUS_INTERNAL_ERROR 
-#define  GPUBLAS_STATUS_LICENSE_ERROR CUBLAS_STATUS_LICENSE_ERROR 
-#define  GPUBLAS_STATUS_NOT_SUPPORTED CUBLAS_STATUS_NOT_SUPPORTED 
-#define  gpublasCreate cublasCreate 
+#define  GPUBLAS_STATUS_SUCCESS CUBLAS_STATUS_SUCCESS
+#define  GPUBLAS_STATUS_NOT_INITIALIZED CUBLAS_STATUS_NOT_INITIALIZED
+#define  GPUBLAS_STATUS_ALLOC_FAILED CUBLAS_STATUS_ALLOC_FAILED
+#define  GPUBLAS_STATUS_INVALID_VALUE CUBLAS_STATUS_INVALID_VALUE
+#define  GPUBLAS_STATUS_ARCH_MISMATCH CUBLAS_STATUS_ARCH_MISMATCH
+#define  GPUBLAS_STATUS_MAPPING_ERROR CUBLAS_STATUS_MAPPING_ERROR
+#define  GPUBLAS_STATUS_EXECUTION_FAILED CUBLAS_STATUS_EXECUTION_FAILED
+#define  GPUBLAS_STATUS_INTERNAL_ERROR CUBLAS_STATUS_INTERNAL_ERROR
+#define  GPUBLAS_STATUS_LICENSE_ERROR CUBLAS_STATUS_LICENSE_ERROR
+#define  GPUBLAS_STATUS_NOT_SUPPORTED CUBLAS_STATUS_NOT_SUPPORTED
+#define  gpublasCreate cublasCreate
 #define  gpublasDestroy cublasDestroy
 #define  gpublasHandle_t cublasHandle_t
 #define  gpublasSetStream cublasSetStream
@@ -99,6 +97,17 @@ at the top-level directory.
 #define  gridDim_y gridDim.y
 
 
+ #define gpublasCheckErrors(fn) \
+	 do { \
+		 gpublasStatus_t __err = fn; \
+		 if (__err != GPUBLAS_STATUS_SUCCESS) { \
+			 fprintf(stderr, "Fatal gpublas error: %d (at %s:%d)\n", \
+				 (int)(__err), \
+				 __FILE__, __LINE__); \
+			 fprintf(stderr, "*** FAILED - ABORTING\n"); \
+			 exit(1); \
+		 } \
+	 } while(0);
 
 
 #elif defined(HAVE_HIP)
@@ -120,8 +129,6 @@ at the top-level directory.
 #define gpuSuccess hipSuccess
 #define gpuGetErrorString hipGetErrorString
 #define gpuMalloc hipMalloc
-#define gpuHostMalloc hipHostMalloc
-#define gpuHostMallocDefault hipHostMallocDefault  
 #define gpuMallocManaged hipMallocManaged
 #define gpuStream_t hipStream_t
 #define gpuStreamCreate hipStreamCreate
@@ -150,17 +157,17 @@ at the top-level directory.
 #define gpuMallocHost hipHostMalloc
 #define gpuEvent_t hipEvent_t
 #define gpuMemset hipMemset
-#define  GPUBLAS_STATUS_SUCCESS HIPBLAS_STATUS_SUCCESS 
-#define  GPUBLAS_STATUS_NOT_INITIALIZED HIPBLAS_STATUS_NOT_INITIALIZED 
-#define  GPUBLAS_STATUS_ALLOC_FAILED HIPBLAS_STATUS_ALLOC_FAILED 
-#define  GPUBLAS_STATUS_INVALID_VALUE HIPBLAS_STATUS_INVALID_VALUE 
-#define  GPUBLAS_STATUS_ARCH_MISMATCH HIPBLAS_STATUS_ARCH_MISMATCH 
-#define  GPUBLAS_STATUS_MAPPING_ERROR HIPBLAS_STATUS_MAPPING_ERROR 
-#define  GPUBLAS_STATUS_EXECUTION_FAILED HIPBLAS_STATUS_EXECUTION_FAILED 
-#define  GPUBLAS_STATUS_INTERNAL_ERROR HIPBLAS_STATUS_INTERNAL_ERROR 
-#define  GPUBLAS_STATUS_LICENSE_ERROR HIPBLAS_STATUS_LICENSE_ERROR 
-#define  GPUBLAS_STATUS_NOT_SUPPORTED HIPBLAS_STATUS_NOT_SUPPORTED 
-#define  gpublasCreate hipblasCreate 
+#define  GPUBLAS_STATUS_SUCCESS HIPBLAS_STATUS_SUCCESS
+#define  GPUBLAS_STATUS_NOT_INITIALIZED HIPBLAS_STATUS_NOT_INITIALIZED
+#define  GPUBLAS_STATUS_ALLOC_FAILED HIPBLAS_STATUS_ALLOC_FAILED
+#define  GPUBLAS_STATUS_INVALID_VALUE HIPBLAS_STATUS_INVALID_VALUE
+#define  GPUBLAS_STATUS_ARCH_MISMATCH HIPBLAS_STATUS_ARCH_MISMATCH
+#define  GPUBLAS_STATUS_MAPPING_ERROR HIPBLAS_STATUS_MAPPING_ERROR
+#define  GPUBLAS_STATUS_EXECUTION_FAILED HIPBLAS_STATUS_EXECUTION_FAILED
+#define  GPUBLAS_STATUS_INTERNAL_ERROR HIPBLAS_STATUS_INTERNAL_ERROR
+#define  GPUBLAS_STATUS_LICENSE_ERROR HIPBLAS_STATUS_LICENSE_ERROR
+#define  GPUBLAS_STATUS_NOT_SUPPORTED HIPBLAS_STATUS_NOT_SUPPORTED
+#define  gpublasCreate hipblasCreate
 #define  gpublasDestroy hipblasDestroy
 #define  gpublasHandle_t hipblasHandle_t
 #define  gpublasSetStream hipblasSetStream
@@ -181,9 +188,6 @@ at the top-level directory.
 #define  gridDim_y hipGridDim_y
 
 
-#endif
-
-
  #define gpublasCheckErrors(fn) \
 	 do { \
 		 gpublasStatus_t __err = fn; \
@@ -195,6 +199,49 @@ at the top-level directory.
 			 exit(1); \
 		 } \
 	 } while(0);
+
+
+#elif defined(HAVE_SYCL)
+
+#include "sycl_device.hpp"
+#include "syclmemcpy2D.hpp"
+#include <oneapi/mkl/blas.hpp>
+
+#define __globla__
+#define __device__
+#define gpuMemcpyHostToDevice
+#define gpuMemcpyDeviceToHost
+
+#define gpuGetDeviceCount syclGetDeviceCount
+#define gpuSetDevice syclSetDevice
+#define gpuGetDevice syclGetDevice
+#define gpuMemcpy(dst, src, size, kind) sycl_get_queue()->memcpy(dst, src, size).wait();
+#define gpuDeviceSynchronize sycl_get_queue()->wait();
+#define gpuMemcpyAsync(dst, src, count, kind, stream) stream.memcpy(dst, src, size)
+#define gpuMemcpy2DAsync(dst, dpitch, src, spitch, width, height, kind, stream) syclMemcpy2DAsync(stream, dst, dpitch, src, spitch, width, height)
+#define gpuMallocHost() std::malloc()
+#define gpuFree(ptr) sycl::free(ptr, *sycl_get_queue())
+
+
+#define gpuStream_t sycl::queue
+#define gpuEvent_t sycl::event
+
+#define checkGPU(fn)
+
+#define gpublasCheckErrors(fn)						\
+  do {									\
+    try {								\
+      FN;								\
+    } catch (oneapi::mkl::exception const &ex) {			\
+      std::stringstream msg;						\
+      msg << "Fatal oneMKL error: " << __FILE__ << " : " << __LINE__	\
+	  << std::endl;							\
+      throw(std::runtime_error(ex.what()));				\
+      exit(1);								\
+    }									\
+  } while(0);
+
+#endif // HAVE_CUDA
 
 
 #endif /* __SUPERLU_GPUWRAPPER */

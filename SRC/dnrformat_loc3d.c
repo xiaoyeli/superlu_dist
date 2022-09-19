@@ -67,9 +67,9 @@ void dGatherNRformat_loc3d
     /********* Gather A2d *********/
     if ( Fact == DOFACT ) { /* Factorize from scratch */
 	/* A3d is output. Compute counts from scratch */
-	A3d = SUPERLU_MALLOC(sizeof(NRformat_loc3d));
+        A3d = (NRformat_loc3d *) SUPERLU_MALLOC(sizeof(NRformat_loc3d));
 	A3d->num_procs_to_send = EMPTY; // No X(2d) -> X(3d) comm. schedule yet
-	A2d = SUPERLU_MALLOC(sizeof(NRformat_loc));
+	A2d = (NRformat_loc *) SUPERLU_MALLOC(sizeof(NRformat_loc));
     
 	// find number of nnzs
 	int_t *nnz_counts; // number of local nonzeros relative to all processes
@@ -77,18 +77,18 @@ void dGatherNRformat_loc3d
 	int *nnz_counts_int; // 32-bit
 	int *nnz_disp; // displacement
 
-	nnz_counts = SUPERLU_MALLOC(grid3d->npdep * sizeof(int_t));
-	row_counts = SUPERLU_MALLOC(grid3d->npdep * sizeof(int_t));
-	nnz_counts_int = SUPERLU_MALLOC(grid3d->npdep * sizeof(int));
-	row_counts_int = SUPERLU_MALLOC(grid3d->npdep * sizeof(int));
-	b_counts_int = SUPERLU_MALLOC(grid3d->npdep * sizeof(int));
+	nnz_counts = (int_t *) SUPERLU_MALLOC(grid3d->npdep * sizeof(int_t));
+	row_counts = (int_t *) SUPERLU_MALLOC(grid3d->npdep * sizeof(int_t));
+	nnz_counts_int = (int *) SUPERLU_MALLOC(grid3d->npdep * sizeof(int));
+	row_counts_int = (int *) SUPERLU_MALLOC(grid3d->npdep * sizeof(int));
+	b_counts_int = (int *) SUPERLU_MALLOC(grid3d->npdep * sizeof(int));
 	MPI_Gather(&A->nnz_loc, 1, mpi_int_t, nnz_counts,
 		   1, mpi_int_t, 0, grid3d->zscp.comm);
 	MPI_Gather(&A->m_loc, 1, mpi_int_t, row_counts,
 		   1, mpi_int_t, 0, grid3d->zscp.comm);
-	nnz_disp = SUPERLU_MALLOC((grid3d->npdep + 1) * sizeof(int));
-	row_disp = SUPERLU_MALLOC((grid3d->npdep + 1) * sizeof(int));
-	b_disp = SUPERLU_MALLOC((grid3d->npdep + 1) * sizeof(int));
+	nnz_disp = (int *) SUPERLU_MALLOC((grid3d->npdep + 1) * sizeof(int));
+	row_disp = (int *) SUPERLU_MALLOC((grid3d->npdep + 1) * sizeof(int));
+	b_disp = (int *) SUPERLU_MALLOC((grid3d->npdep + 1) * sizeof(int));
 
 	nnz_disp[0] = 0;
 	row_disp[0] = 0;
@@ -143,7 +143,7 @@ void dGatherNRformat_loc3d
 		    gridinfo_t *grid2d = &(grid3d->grid2d);
 		    int procs2d = grid2d->nprow * grid2d->npcol;
 		    int m_loc_2d = A2d->m_loc;
-		    int *m_loc_2d_counts = SUPERLU_MALLOC(procs2d * sizeof(int));
+		    int *m_loc_2d_counts = (int *) SUPERLU_MALLOC(procs2d * sizeof(int));
 
 		    MPI_Allgather(&m_loc_2d, 1, MPI_INT, m_loc_2d_counts, 1, 
 				  MPI_INT, grid2d->comm);
@@ -213,7 +213,7 @@ void dGatherNRformat_loc3d
 		    gridinfo_t *grid2d = &(grid3d->grid2d);
 		    int procs2d = grid2d->nprow * grid2d->npcol;
 		    int m_loc_2d = A2d->m_loc;
-		    int *m_loc_2d_counts = SUPERLU_MALLOC(procs2d * sizeof(int));
+		    int *m_loc_2d_counts = (int *) SUPERLU_MALLOC(procs2d * sizeof(int));
 
 		    MPI_Allgather(&m_loc_2d, 1, MPI_INT, m_loc_2d_counts, 1, 
 				  MPI_INT, grid2d->comm);
@@ -248,7 +248,7 @@ void dGatherNRformat_loc3d
 	
 	/* Btmp <- compact(B), compacting B */
 	double *Btmp;
-	Btmp = SUPERLU_MALLOC(A->m_loc * nrhs * sizeof(double));
+	Btmp = (double *) SUPERLU_MALLOC(A->m_loc * nrhs * sizeof(double));
 	matCopy(A->m_loc, nrhs, Btmp, A->m_loc, B, ldb);
 
 	double *B1;
@@ -396,18 +396,18 @@ int dScatter_B3d(NRformat_loc3d *A3d,  // modified
 	       	 A->fst_row has this info, but is available only locally.
 	    */
 	
-	    int *m_loc_3d_counts = SUPERLU_MALLOC(nprocs * sizeof(int));
+	    int *m_loc_3d_counts = (int *) SUPERLU_MALLOC(nprocs * sizeof(int));
 	
 	    /* related to m_loc in 3D partition */
-	    int *x_send_counts = SUPERLU_MALLOC(nprocs * sizeof(int));
-	    int *x_recv_counts = SUPERLU_MALLOC(nprocs * sizeof(int));
+	    int *x_send_counts = (int *) SUPERLU_MALLOC(nprocs * sizeof(int));
+	    int *x_recv_counts = (int *) SUPERLU_MALLOC(nprocs * sizeof(int));
 	
 	    /* The following should be persistent across multiple solves.
 	       These lists avoid All-to-All communication. */
-	    procs_to_send_list = SUPERLU_MALLOC(nprocs * sizeof(int));
-	    send_count_list = SUPERLU_MALLOC(nprocs * sizeof(int));
-	    procs_recv_from_list = SUPERLU_MALLOC(nprocs * sizeof(int));
-	    recv_count_list = SUPERLU_MALLOC(nprocs * sizeof(int));
+	    procs_to_send_list = (int *) SUPERLU_MALLOC(nprocs * sizeof(int));
+	    send_count_list = (int *) SUPERLU_MALLOC(nprocs * sizeof(int));
+	    procs_recv_from_list = (int *) SUPERLU_MALLOC(nprocs * sizeof(int));
+	    recv_count_list = (int *) SUPERLU_MALLOC(nprocs * sizeof(int));
 
 	    for (p = 0; p < nprocs; ++p) {
 		x_send_counts[p] = 0;

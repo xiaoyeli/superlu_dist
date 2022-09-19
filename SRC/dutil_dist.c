@@ -75,7 +75,7 @@ dCompRow_to_CompCol_dist(int_t m, int_t n, int_t nnz,
                          double *a, int_t *colind, int_t *rowptr,
                          double **at, int_t **rowind, int_t **colptr)
 {
-    register int i, j, col, relpos;
+    int i, j, col, relpos;
     int_t *marker;
 
     /* Allocate storage for another copy of the matrix. */
@@ -132,7 +132,7 @@ dCopy_CompCol_Matrix_dist(SuperMatrix *A, SuperMatrix *B)
 void dPrint_CompCol_Matrix_dist(SuperMatrix *A)
 {
     NCformat     *Astore;
-    register int i;
+    int i;
     double       *dp;
 
     printf("\nCompCol matrix: ");
@@ -156,7 +156,7 @@ void dPrint_CompCol_Matrix_dist(SuperMatrix *A)
 void dPrint_Dense_Matrix_dist(SuperMatrix *A)
 {
     DNformat     *Astore;
-    register int i;
+    int i;
     double       *dp;
 
     printf("\nDense matrix: ");
@@ -268,7 +268,7 @@ dCreate_SuperNode_Matrix_dist(SuperMatrix *L, int_t m, int_t n, int_t nnz,
     L->ncol = n;
     L->Store = (void *) SUPERLU_MALLOC( sizeof(SCformat) );
     if ( !(L->Store) ) ABORT("SUPERLU_MALLOC fails for L->Store");
-    Lstore = L->Store;
+    Lstore = (SCformat *)L->Store;
     Lstore->nnz = nnz;
     Lstore->nsuper = col_to_sup[n];
     Lstore->nzval = nzval;
@@ -339,7 +339,7 @@ void dCopy_CompRowLoc_Matrix_dist(SuperMatrix *A, SuperMatrix *B)
 void dZero_CompRowLoc_Matrix_dist(SuperMatrix *A)
 {
     double zero = 0.0;
-    NRformat_loc  *Astore = A->Store;
+    NRformat_loc *Astore = (NRformat_loc *) A->Store;
     double *aval;
     int_t i;
 
@@ -356,7 +356,7 @@ void dZero_CompRowLoc_Matrix_dist(SuperMatrix *A)
 void dScaleAddId_CompRowLoc_Matrix_dist(SuperMatrix *A, double c)
 {
     double one = 1.0;
-    NRformat_loc  *Astore = A->Store;
+    NRformat_loc  *Astore = (NRformat_loc *) A->Store;
     double *aval = (double *) Astore->nzval;
     int i, j;
     double temp;
@@ -380,8 +380,8 @@ void dScaleAddId_CompRowLoc_Matrix_dist(SuperMatrix *A, double c)
  */
 void dScaleAdd_CompRowLoc_Matrix_dist(SuperMatrix *A, SuperMatrix *B, double c)
 {
-    NRformat_loc  *Astore = A->Store;
-    NRformat_loc  *Bstore = B->Store;
+    NRformat_loc  *Astore = (NRformat_loc *) A->Store;
+    NRformat_loc  *Bstore = (NRformat_loc *) B->Store;
     double *aval = (double *) Astore->nzval, *bval = (double *) Bstore->nzval;
     int_t i;
     double temp;
@@ -532,7 +532,7 @@ dFillRHS_dist(char *trans, int_t nrhs, double *x, int_t ldx,
 void
 dfill_dist(double *a, int_t alen, double dval)
 {
-    register int_t i;
+    int_t i;
     for (i = 0; i < alen; i++) a[i] = dval;
 }
 
@@ -563,7 +563,7 @@ void dinf_norm_error_dist(int_t n, int_t nrhs, double *x, int_t ldx,
 
 void Printdouble5(char *name, int_t len, double *x)
 {
-    register int_t i;
+    int_t i;
 
     printf("%10s:", name);
     for (i = 0; i < len; ++i) {
@@ -575,7 +575,7 @@ void Printdouble5(char *name, int_t len, double *x)
 
 int file_Printdouble5(FILE *fp, char *name, int_t len, double *x)
 {
-    register int_t i;
+    int_t i;
 
     fprintf(fp, "%10s:", name);
     for (i = 0; i < len; ++i) {
@@ -591,8 +591,8 @@ int file_Printdouble5(FILE *fp, char *name, int_t len, double *x)
 void dPrintLblocks(int iam, int_t nsupers, gridinfo_t *grid,
 		  Glu_persist_t *Glu_persist, dLocalLU_t *Llu)
 {
-    register int c, extra, gb, j, lb, nsupc, nsupr, len, nb, ncb;
-    register int_t k, mycol, r;
+    int c, extra, gb, j, lb, nsupc, nsupr, len, nb, ncb;
+    int_t k, mycol, r;
     int_t *xsup = Glu_persist->xsup;
     int_t *index;
     double *nzval;
@@ -640,8 +640,8 @@ void dPrintLblocks(int iam, int_t nsupers, gridinfo_t *grid,
 void dZeroLblocks(int iam, int n, gridinfo_t *grid, dLUstruct_t *LUstruct)
 {
     double zero = 0.0;
-    register int extra, gb, j, lb, nsupc, nsupr, ncb;
-    register int_t k, mycol, r;
+    int extra, gb, j, lb, nsupc, nsupr, ncb;
+    int_t k, mycol, r;
     dLocalLU_t *Llu = LUstruct->Llu;
     Glu_persist_t *Glu_persist = LUstruct->Glu_persist;
     int_t *xsup = Glu_persist->xsup;
@@ -675,14 +675,14 @@ void dZeroLblocks(int iam, int n, gridinfo_t *grid, dLUstruct_t *LUstruct)
 void dDumpLblocks(int iam, int_t nsupers, gridinfo_t *grid,
 		  Glu_persist_t *Glu_persist, dLocalLU_t *Llu)
 {
-    register int c, extra, gb, j, i, lb, nsupc, nsupr, len, nb, ncb;
+    int c, extra, gb, j, i, lb, nsupc, nsupr, len, nb, ncb;
     int k, mycol, r, n, nmax;
     int_t nnzL;
     int_t *xsup = Glu_persist->xsup;
     int_t *index;
     double *nzval;
-	char filename[256];
-	FILE *fp, *fopen();
+    char filename[256];
+    FILE *fp;
 
 	// assert(grid->npcol*grid->nprow==1);
 
@@ -724,10 +724,10 @@ void dDumpLblocks(int iam, int_t nsupers, gridinfo_t *grid,
 	MPI_Allreduce(MPI_IN_PLACE,&n,1,mpi_int_t,MPI_MAX,grid->comm);
 
 	snprintf(filename, sizeof(filename), "%s-%d", "L", iam);
-    printf("Dumping L factor to --> %s\n", filename);
- 	if ( !(fp = fopen(filename, "w")) ) {
-			ABORT("File open failed");
-		}
+	printf("Dumping L factor to --> %s\n", filename);
+ 	if ( !(fp = ::fopen(filename, "w")) ) {
+	  ABORT("File open failed");
+	}
 
 	if(grid->iam==0){
 		fprintf(fp, "%d %d " IFMT "\n", n,n,nnzL);
@@ -773,14 +773,14 @@ void dDumpLblocks(int iam, int_t nsupers, gridinfo_t *grid,
 void dComputeLevelsets(int iam, int_t nsupers, gridinfo_t *grid,
 		  Glu_persist_t *Glu_persist, dLocalLU_t *Llu, int_t *levels)
 {
-    register int c, extra, gb, j, i, lb, nsupc, nsupr, len, nb, ncb;
-    register int_t k, mycol, r;
+    int c, extra, gb, j, i, lb, nsupc, nsupr, len, nb, ncb;
+    int_t k, mycol, r;
 	int_t nnzL, n,nmax,lk;
     int_t *xsup = Glu_persist->xsup;
     int_t *index,*lloc;
     double *nzval;
 	char filename[256];
-	FILE *fp, *fopen();
+	FILE *fp;
 
 	// assert(grid->npcol*grid->nprow==1);
 
@@ -815,13 +815,13 @@ void dComputeLevelsets(int iam, int_t nsupers, gridinfo_t *grid,
 void dGenCOOLblocks(int iam, int_t nsupers, gridinfo_t *grid,
 		  Glu_persist_t *Glu_persist, dLocalLU_t *Llu, int_t** cooRows, int_t** cooCols, double ** cooVals, int_t* n, int_t* nnzL)
 {
-    register int c, extra, gb, j, i, lb, nsupc, nsupr, len, nb, ncb;
-    register int_t k, mycol, r;
+    int c, extra, gb, j, i, lb, nsupc, nsupr, len, nb, ncb;
+    int_t k, mycol, r;
 	int_t nmax,cnt;
     int_t *xsup = Glu_persist->xsup;
     int_t *index;
     double *nzval;
-	FILE *fp, *fopen();
+	FILE *fp;
 
 	assert(grid->npcol*grid->nprow==1);
 
@@ -922,13 +922,13 @@ void dGenCOOLblocks(int iam, int_t nsupers, gridinfo_t *grid,
 void dGenCSCLblocks(int iam, int_t nsupers, gridinfo_t *grid,
 		  Glu_persist_t *Glu_persist, dLocalLU_t *Llu, double **nzval, int_t **rowind, int_t **colptr, int_t* n, int_t* nnzL)
 {
-    register int c, extra, gb, j, i, lb, nsupc, nsupr, len, nb, ncb;
-    register int_t k, mycol, r;
+    int c, extra, gb, j, i, lb, nsupc, nsupr, len, nb, ncb;
+    int_t k, mycol, r;
 	int_t nmax,cnt, jsize;
     int_t *xsup = Glu_persist->xsup;
     int_t *index;
     double *nzval0;
-	FILE *fp, *fopen();
+	FILE *fp;
     
     double *val;
     int_t  *row, *col;
@@ -1075,13 +1075,13 @@ void dGenCSCLblocks(int iam, int_t nsupers, gridinfo_t *grid,
 void dGenCSRLblocks(int iam, int_t nsupers, gridinfo_t *grid,
 		  Glu_persist_t *Glu_persist, dLocalLU_t *Llu, double **nzval, int_t **colind, int_t **rowptr, int_t* n, int_t* nnzL)
 {
-    register int c, extra, gb, j, i, lb, nsupc, nsupr, len, nb, ncb;
-    register int_t k, mycol, r;
+    int c, extra, gb, j, i, lb, nsupc, nsupr, len, nb, ncb;
+    int_t k, mycol, r;
 	int_t nmax,cnt, isize;
     int_t *xsup = Glu_persist->xsup;
     int_t *index;
     double *nzval0;
-	FILE *fp, *fopen();
+    FILE *fp;
     
     double *val;
     int_t  *row, *col;
@@ -1229,8 +1229,8 @@ void dGenCSRLblocks(int iam, int_t nsupers, gridinfo_t *grid,
 void dPrintUblocks(int iam, int_t nsupers, gridinfo_t *grid,
 		  Glu_persist_t *Glu_persist, dLocalLU_t *Llu)
 {
-    register int c, extra, jb, k, lb, len, nb, nrb, nsupc;
-    register int_t myrow, r;
+    int c, extra, jb, k, lb, len, nb, nrb, nsupc;
+    int_t myrow, r;
     int_t *xsup = Glu_persist->xsup;
     int_t *index;
     double *nzval;
@@ -1270,8 +1270,8 @@ void dPrintUblocks(int iam, int_t nsupers, gridinfo_t *grid,
 void dZeroUblocks(int iam, int n, gridinfo_t *grid, dLUstruct_t *LUstruct)
 {
     double zero = 0.0;
-    register int i, extra, lb, len, nrb;
-    register int myrow, r;
+    int i, extra, lb, len, nrb;
+    int myrow, r;
     dLocalLU_t *Llu = LUstruct->Llu;
     Glu_persist_t *Glu_persist = LUstruct->Glu_persist;
     int_t *xsup = Glu_persist->xsup;
@@ -1332,7 +1332,7 @@ dGenXtrueRHS(int nrhs, SuperMatrix *A, Glu_persist_t *Glu_persist,
     iam = grid->iam;
     myrow = MYROW( iam, grid );
     Astore = (NCformat *) A->Store;
-    aval = Astore->nzval;
+    aval = (double *) Astore->nzval;
     lb = CEILING( nsupers, grid->nprow ) + 1;
     if ( !(lxsup = intMalloc_dist(lb)) )
 	ABORT("Malloc fails for lxsup[].");

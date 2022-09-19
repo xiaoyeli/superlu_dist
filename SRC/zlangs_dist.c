@@ -67,8 +67,8 @@ double zlangs_dist(char *norm, SuperMatrix *A)
     double   value=0., sum;
     double   *rwork;
 
-    Astore = A->Store;
-    Aval   = Astore->nzval;
+    Astore = (NCformat *) A->Store;
+    Aval   = (doublecomplex *) Astore->nzval;
     
     if ( SUPERLU_MIN(A->nrow, A->ncol) == 0) {
 	value = 0.;

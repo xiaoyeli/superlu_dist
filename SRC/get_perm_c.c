@@ -173,7 +173,7 @@ getata_dist(
 	    )
 {
 
-    register int_t i, j, k, col, num_nz, ti, trow;
+    int_t i, j, k, col, num_nz, ti, trow;
     int_t *marker, *b_colptr, *b_rowind;
     int_t *t_colptr, *t_rowind; /* a column oriented form of T = A' */
 
@@ -309,7 +309,7 @@ at_plus_a_dist(
 	       )
 {
 
-    register int_t i, j, k, col, num_nz;
+    int_t i, j, k, col, num_nz;
     int_t *t_colptr, *t_rowind; /* a column oriented form of T = A' */
     int_t *marker;
 
@@ -463,7 +463,7 @@ void
 get_perm_c_dist(int_t pnum, int_t ispec, SuperMatrix *A, int_t *perm_c)
 
 {
-    NCformat *Astore = A->Store;
+    NCformat *Astore = (NCformat *) A->Store;
     int_t m, n, bnz = 0, *b_colptr, *b_rowind, i;
     int_t delta, maxint, nofsub, *invp;
     int_t *dhead, *qsize, *llist, *marker;

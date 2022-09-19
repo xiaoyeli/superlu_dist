@@ -1,10 +1,11 @@
 include_directories(${SuperLU_DIST_SOURCE_DIR}/SRC)
 
 # Libs linked to all of the tests
+message(STATUS "blas lib in tests ${BLAS_LIB}")
 set(all_link_libs superlu_dist ${BLAS_LIB})
-if (NOT MSVC)
-  list(APPEND all_link_libs m)
-endif ()
+# if (NOT MSVC)
+#   list(APPEND all_link_libs m)
+# endif ()
 
 set(MATRICES ../EXAMPLE/g20.rua)  # sample sparse matrix from a file
 set(NPROWS 1 2 5)	  # process rows
@@ -72,8 +73,13 @@ endfunction(add_superlu_dist_tests)
 
 if(enable_double)
   set(DTEST pdtest.c dcreate_matrix.c pdcompute_resid.c)
+
+  if (TPL_ENABLE_SYCLLIB)
+    set_source_files_properties(${DTEST} PROPERTIES LANGUAGE CXX)
+  endif (TPL_ENABLE_SYCLLIB)
+  
   add_executable(pdtest ${DTEST})
-  target_link_libraries(pdtest ${all_link_libs})
+  target_link_libraries(pdtest PUBLIC ${all_link_libs})
   add_superlu_dist_tests(pdtest g20.rua)
 endif()
 

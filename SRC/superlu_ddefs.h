@@ -401,9 +401,9 @@ typedef struct
  * Function prototypes
  ***********************************************************************/
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+/* #ifdef __cplusplus */
+/* extern "C" { */
+/* #endif */
 
 
 /* Supernodal LU factor related */
@@ -662,38 +662,38 @@ extern void dGenCSRLblocks(int, int_t, gridinfo_t*,
 /* BLAS */
 
 #ifdef USE_VENDOR_BLAS
-extern void dgemm_(const char*, const char*, const int*, const int*, const int*,
+extern "C" void dgemm_(const char*, const char*, const int*, const int*, const int*,
                   const double*, const double*, const int*, const double*,
                   const int*, const double*, double*, const int*, int, int);
-extern void dtrsv_(char*, char*, char*, int*, double*, int*,
+extern "C" void dtrsv_(char*, char*, char*, int*, double*, int*,
                   double*, int*, int, int, int);
-extern void dtrsm_(const char*, const char*, const char*, const char*,
+extern "C" void dtrsm_(const char*, const char*, const char*, const char*,
                   const int*, const int*, const double*, const double*, const int*,
 		  double*, const int*, int, int, int, int);
-extern void dgemv_(const char *, const int *, const int *, const double *,
+extern "C" void dgemv_(const char *, const int *, const int *, const double *,
                   const double *a, const int *, const double *, const int *,
 		  const double *, double *, const int *, int);
 
 #else
-extern int dgemm_(const char*, const char*, const int*, const int*, const int*,
+extern "C" int dgemm_(const char*, const char*, const int*, const int*, const int*,
                    const double*,  const double*,  const int*,  const double*,
                    const int*,  const double*, double*, const int*);
-extern int dtrsv_(char*, char*, char*, int*, double*, int*,
+extern "C" int dtrsv_(char*, char*, char*, int*, double*, int*,
                   double*, int*);
-extern int dtrsm_(const char*, const char*, const char*, const char*,
+extern "C" int dtrsm_(const char*, const char*, const char*, const char*,
                   const int*, const int*, const double*, const double*, const int*,
 		  double*, const int*);
-extern void dgemv_(const char *, const int *, const int *, const double *,
+extern "C" void dgemv_(const char *, const int *, const int *, const double *,
                   const double *a, const int *, const double *, const int *,
 		  const double *, double *, const int *);
 #endif
 
-extern void dger_(const int*, const int*, const double*,
+extern "C" void dger_(const int*, const int*, const double*,
                  const double*, const int*, const double*, const int*,
 		 double*, const int*);
 
-extern int dscal_(const int *n, const double *alpha, double *dx, const int *incx);
-extern int daxpy_(const int *n, const double *alpha, const double *x, 
+extern "C" int dscal_(const int *n, const double *alpha, double *dx, const int *incx);
+extern "C" int daxpy_(const int *n, const double *alpha, const double *x, 
 	               const int *incx, double *y, const int *incy);
 
 /* SuperLU BLAS interface: dsuperlu_blas.c  */
@@ -1173,9 +1173,9 @@ extern int_t ancestorFactor(
 /*== end 3D prototypes ===================*/
 
 
-#ifdef __cplusplus
-  }
-#endif
+/* #ifdef __cplusplus */
+/*   } */
+/* #endif */
 
 #endif /* __SUPERLU_dDEFS */
 

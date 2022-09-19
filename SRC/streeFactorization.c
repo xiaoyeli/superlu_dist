@@ -244,9 +244,8 @@ int_t sdenseTreeFactor(
                 float** Unzval_br_ptr = LUstruct->Llu->Unzval_br_ptr;
                 int_t* xsup = LUstruct->Glu_persist->xsup;
                 int_t ub = ij / nlb;
-                int_t lb
-                    = ij % nlb;
-                float *L_mat = lPanelInfo->lusup;
+                int_t lb = ij % nlb;
+                float *L_mat = (float *) lPanelInfo->lusup;
                 int_t ldl = lPanelInfo->nsupr;
                 int_t luptr0 = lPanelInfo->luptr0;
                 float *U_mat = bigU;

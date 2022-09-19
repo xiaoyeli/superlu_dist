@@ -124,8 +124,8 @@ psgsequb(SuperMatrix *A, float *r, float *c, float *rowcnd,
 	return;
     }
 
-    Astore = A->Store;
-    Aval = Astore->nzval;
+    Astore = (NRformat_loc *) A->Store;
+    Aval = (float *) Astore->nzval;
     m_loc = Astore->m_loc;
 
     /* Get machine constants. */
@@ -248,7 +248,7 @@ psgsequb(SuperMatrix *A, float *r, float *c, float *rowcnd,
     /* gather R from each process to get the global R.  */
 
     procs = grid->nprow * grid->npcol;
-    if ( !(r_sizes = SUPERLU_MALLOC(2 * procs * sizeof(int))))
+    if ( !(r_sizes = (int *) SUPERLU_MALLOC(2 * procs * sizeof(int))))
       ABORT("Malloc fails for r_sizes[].");
     displs = r_sizes + procs;
     if ( !(loc_r = floatMalloc_dist(m_loc)))

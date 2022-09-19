@@ -108,7 +108,7 @@ sreadhb_dist(int iam, FILE *fp, int_t *nrow, int_t *ncol, int_t *nonz,
 	     float **nzval, int_t **rowind, int_t **colptr)
 {
 
-    register int_t i, numer_lines, rhscrd = 0;
+    int_t i, numer_lines, rhscrd = 0;
     int_t tmp, colnum, colsize, rownum, rowsize, valnum, valsize;
     char buf[100], type[4];
     int_t sym;
@@ -201,7 +201,7 @@ sreadhb_dist(int iam, FILE *fp, int_t *nrow, int_t *ncol, int_t *nonz,
 /* Eat up the rest of the current line */
 static int DumpLine(FILE *fp)
 {
-    register int c;
+    int c;
     while ((c = fgetc(fp)) != '\n') ;
     return 0;
 }
@@ -249,7 +249,7 @@ static int ParseFloatFormat(char *buf, int_t *num, int_t *size)
 static void
 ReadVector(FILE *fp, int_t n, int_t *where, int_t perline, int_t persize)
 {
-    register int_t i, j, item;
+    int_t i, j, item;
     char tmp, buf[100];
 
     i = 0;
@@ -269,7 +269,7 @@ void
 sReadValues(FILE *fp, int_t n, float *destination,
              int_t perline, int_t persize)
 {
-    register int_t i, j, k, s;
+    int_t i, j, k, s;
     char tmp, buf[100];
 
     i = 0;
@@ -297,7 +297,7 @@ sReadValues(FILE *fp, int_t n, float *destination,
 static void
 FormFullA(int_t n, int_t *nonz, float **nzval, int_t **rowind, int_t **colptr)
 {
-    register int_t i, j, k, col, new_nnz;
+    int_t i, j, k, col, new_nnz;
     int_t *t_rowind, *t_colptr, *al_rowind, *al_colptr, *a_rowind, *a_colptr;
     int_t *marker;
     float *t_val, *al_val, *a_val;
