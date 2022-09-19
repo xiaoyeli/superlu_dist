@@ -61,7 +61,7 @@ if (enable_complex16)
       zher2.c
       zgemm.c
       ztrsm.c
-o    )
+    )
 endif()
 
 set_source_files_properties(${sources} ${HEADERS} PROPERTIES LANGUAGE CXX)
