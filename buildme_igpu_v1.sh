@@ -23,14 +23,14 @@ cmake -DCMAKE_BUILD_TYPE=Debug \
       -Denable_openmp:BOOL=FALSE \
       -Denable_complex16:BOOL=FALSE \
       -DTPL_ENABLE_COMBBLASLIB=OFF \
-      -DTPL_BLAS_LIBRARIES="-L${MKLROOT}/lib/intel64 -lmkl_sycl -lmkl_intel_ilp64 -lmkl_sequential -lmkl_core -lpthread -ldl" \
-      -DTPL_ENABLE_INTERNAL_BLASLIB=ON \
+      -DTPL_BLAS_LIBRARIES="-L${MKLROOT}/lib/intel64 -lmkl_sycl -lmkl_intel_lp64 -lmkl_sequential -lmkl_core -lpthread -ldl" \
+      -DTPL_ENABLE_INTERNAL_BLASLIB=OFF \
       -DBUILD_SHARED_LIBS=OFF \
       -DBUILD_STATIC_LIBS=ON \
       -DCMAKE_C_COMPILER=mpicc \
       -DCMAKE_CXX_COMPILER=mpicxx \
       -DCMAKE_Fortran_COMPILER=mpifort \
-      -DCMAKE_CXX_FLAGS=" -DMKL_ILP64 -qmkl=sequential -D__STRICT_ANSI__ -DSUPERLU_USE_MKL -DPRNTlevel=1 -DDEBUGlevel=0 -Wno-format -Wno-deprecated-declarations -Wno-return-type -Wno-deprecated-declarations -Wno-writable-strings" \
+      -DCMAKE_CXX_FLAGS=" -DMKL_LP64 -qmkl=sequential -D__STRICT_ANSI__ -DSUPERLU_USE_MKL -DPRNTlevel=1 -DDEBUGlevel=0 -Wno-format -Wno-deprecated-declarations -Wno-return-type -Wno-deprecated-declarations -Wno-writable-strings" \
       -DCMAKE_INSTALL_PREFIX=${installdir} \
       -DXSDK_INDEX_SIZE=64 \
       -DXSDK_ENABLE_Fortran=OFF \

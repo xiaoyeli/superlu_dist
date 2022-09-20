@@ -96,7 +96,7 @@ int pdcompute_resid(int m, int n, int nrhs, SuperMatrix *A,
 /*     extern "C" */
 /*     { */
 /* #endif */
-    double dasum_(int *, double *, int *);
+    extern double dasum_(int *, double *, int *);
 /* #ifdef __cplusplus */
 /*     } */
 /* #endif */
