@@ -339,14 +339,14 @@ int_t pdgstrf3d(superlu_dist_options_t *options, int m, int n, double anorm,
     //printf("After factorization: INFO = %d\n", *info); fflush(stdout);
 
     SCT->pdgstrfTimer = SuperLU_timer_() - SCT->pdgstrfTimer;
-
+    #ifdef GPU_ACC
     if(!grid3d->zscp.Iam)
     {
         SCT_printSummary(grid, SCT);
         if (superlu_acc_offload )
             dprintGPUStats(sluGPU->A_gpu);
     }
-        
+    #endif
 
     
 
