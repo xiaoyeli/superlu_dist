@@ -1431,7 +1431,8 @@ void slsum_bmod_inv
 #else
 // This taskloop causes code to crash or generate wrong solution for some intel compilers
 #pragma	omp	taskloop firstprivate (stat) private (thread_id1,Uinv,nn,lbstart,lbend,ub,temp,rtemp_loc,ik,lk1,gik,gikcol,usub,uval,lsub,lusup,iknsupc,il,i,irow,bmod_tmp,p,ii,jj,t1,t2,j,ikfrow,iklrow,dest,y,uptr,fnz,nsupr,nroot_send_tmp) untied nogroup
-#endif#endif
+#endif
+#endif
 		for (nn=0;nn<Nchunk;++nn){
 
 #ifdef _OPENMP
