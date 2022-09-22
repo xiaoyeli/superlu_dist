@@ -27,17 +27,7 @@ struct anc25d_t
         {
             commSizes[i] = 1 << (i + 1);
             myranks[i] = myGrid % (commSizes[i]);
-            std::cout << myGrid << ":\t myranks[" << i << "] = " << myranks[i] << std::endl;
-            if (1)
-            {
-                // check by getting the rank of the process in the communicator
-                int rank;
-                MPI_Comm_rank(comms25d[i], &rank);
-                if (rank != myranks[i])
-                {
-                    std::cout << "ERROR: myranks[" << i << "] = " << myranks[i] << " but rank = " << rank << std::endl;
-                }
-            }
+           
         }
     }
 

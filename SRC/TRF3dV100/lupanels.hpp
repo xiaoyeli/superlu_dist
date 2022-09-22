@@ -469,6 +469,7 @@ struct LUstruct_v100
     int_t zSendUPanelGPU(int_t k0, int_t receiverGrid);
     int_t zRecvUPanelGPU(int_t k0, int_t senderGrid, double alpha, double beta);
     int_t copyLUGPUtoHost();
+    int_t copyLUHosttoGPU();
     int_t checkGPU();
 
 
