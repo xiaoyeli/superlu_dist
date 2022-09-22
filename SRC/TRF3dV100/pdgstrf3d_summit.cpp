@@ -26,7 +26,7 @@ extern "C"
         dLocalLU_t *Llu = LUstruct->Llu;
 
         // problem specific contants
-        int_t ldt = sp_ienv_dist(3); /* Size of maximum supernode */
+        int_t ldt = sp_ienv_dist(3,options); /* Size of maximum supernode */
         //    double s_eps = slamch_ ("Epsilon");  -Sherry
         double s_eps = smach_dist("Epsilon");
         double thresh = s_eps * anorm;
@@ -173,7 +173,7 @@ extern "C"
 
         if (!grid3d->zscp.Iam)
         {
-            SCT_printSummary(grid, SCT);
+            // SCT_printSummary(grid, SCT);
             // if (superlu_acc_offload )
             //     printGPUStats(sluGPU->A_gpu, grid);
         }
@@ -210,11 +210,11 @@ extern "C"
 
         SCT->pdgstrfTimer = SuperLU_timer_();
         // get environment variables ANC25D
-        int useAnc25D = 0;
-        if (getenv("ANC25D"))
-            useAnc25D = atoi(getenv("ANC25D"));
-        if (useAnc25D)
-            printf("-- Using ANC25D; ONLY CPU supported \n");
+        // int useAnc25D = 0;
+        // if (getenv("ANC25D"))
+        //     useAnc25D = atoi(getenv("ANC25D"));
+        // if (useAnc25D)
+        //     printf("-- Using ANC25D; ONLY CPU supported \n");
         
         for (int_t ilvl = 0; ilvl < maxLvl; ++ilvl)
         {

@@ -769,7 +769,7 @@ pzgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
     /* symmetric assumption -- using L's supernode to estimate. */
     /* Note that in following expression 8 can be anything
        as long as its not too big */
-    int bigu_size = 8 * sp_ienv_dist (3, options) * (max_row_size);
+    int bigu_size = 8 * i * (max_row_size);
 #else
     int_t bigu_size = estimate_bigu_size( nsupers, Ufstnz_br_ptr, Glu_persist,
     	                                  grid, perm_u, &max_ncols );

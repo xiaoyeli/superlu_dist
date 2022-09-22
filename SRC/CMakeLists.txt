@@ -11,6 +11,10 @@ set(headers
     gpu_api_utils.h
     gpu_wrapper.h
     ${CMAKE_CURRENT_BINARY_DIR}/superlu_dist_config.h
+    TRF3dV100/lupanels.hpp
+    TRF3dV100/commWrapper.hpp
+    TRF3dV100/superlu_summit.h
+    TRF3dV100/lupanels_GPU.cuh
     ${PROJECT_SOURCE_DIR}/SRC/superlu_FortranCInterface.h
 )
 if (MSVC)
@@ -51,7 +55,13 @@ set(sources
   treeFactorization.c
   sec_structs.c  
 )
+if (HAVE_CUDA)
+  list(APPEND sources superlu_gpu_utils.cu)
+endif()
 
+if (HAVE_HIP)
+  list(APPEND sources superlu_gpu_utils.hip.cpp)
+endif()
 
 if (MSVC)
   list(APPEND sources wingetopt.c)
@@ -61,6 +71,14 @@ set_source_files_properties(superlu_timer.c PROPERTIES COMPILE_FLAGS -O0)
 
 if(enable_double)
   list(APPEND headers superlu_ddefs.h dlustruct_gpu.h)
+
+if(TPL_ENABLE_CUDALIB)
+  list(APPEND sources pdgstrs_lsum_cuda.cu)
+  list(APPEND sources TRF3dV100/schurCompUpdate.cu )
+endif()
+# if(TPL_ENABLE_HIPLIB)
+#   list(APPEND sources pdgstrs_lsum_cuda.hip.cpp)
+# endif()    	
 
   list(APPEND sources
     dlangs_dist.c
@@ -103,6 +121,18 @@ if(enable_double)
     dnrformat_loc3d.c 
     pdgstrf3d.c 
     dtreeFactorization.c
+    TRF3dV100/pdgstrf3d_summit.cpp
+    TRF3dV100/dsparseTreeFactor_summit.cpp
+    TRF3dV100/dsparseTreeFactorGPU.cpp
+    TRF3dV100/lupanels.cpp
+    TRF3dV100/lupanels_comm3d.cpp
+    TRF3dV100/lupanelsComm3dGPU.cpp
+    TRF3dV100/commWrapper.cpp 
+    TRF3dV100/l_panels.cpp
+    TRF3dV100/u_panels.cpp
+    TRF3dV100/lupanels_GPU.cpp
+    TRF3dV100/anc25d.cpp 
+    TRF3dV100/LUgpuCHandle_interface.cpp
     dtreeFactorizationGPU.c
     dgather.c
     dscatter3d.c
@@ -113,7 +143,9 @@ if(enable_double)
     dsuperlu_blas.c
   )
 if (TPL_ENABLE_CUDALIB)
-  list(APPEND sources pdgstrs_lsum_cuda.cu superlu_gpu_utils.cu dsuperlu_gpu.cu)
+  list(APPEND sources pdgstrs_lsum_cuda.cu superlu_gpu_utils.cu dsuperlu_gpu.cu
+  TRF3dV100/schurCompUpdate.cu 
+  )
 endif()
 
 if (HAVE_COMBBLAS)
@@ -295,7 +327,7 @@ if (BUILD_SHARED_LIBS AND BUILD_STATIC_LIBS)
 endif()
 
 set(superlu_dist_libs ${MPI_C_LIBRARIES} ${MPI_CXX_LIBRARIES} ${BLAS_LIB} ${LAPACK_LIB}
-    ${PARMETIS_LIB} ${COMBBLAS_LIB} ${CUDA_LIB} ${HIP_LIB}) 
+    ${PARMETIS_LIB} ${COLAMD_LLIB} ${COMBBLAS_LIB} ${CUDA_LIB} ${HIP_LIB}) 
 if (NOT MSVC)
   list(APPEND superlu_dist_libs m)
 endif ()

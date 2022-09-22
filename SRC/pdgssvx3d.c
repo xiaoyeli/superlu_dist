@@ -1474,24 +1474,21 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 			int_t ldt = sp_ienv_dist(3, options); /* Size of maximum supernode */
 			double s_eps = smach_dist("Epsilon");
 			double thresh = s_eps * anorm;
-			// create a "C" handle for c++ object LUgpu
+			
 			LUgpu = createLUgpuHandle(nsupers, ldt, trf3Dpartition, LUstruct, grid3d,
 									  SCT, options, stat, thresh, info);
-			// Perform factorization
+			
 			pdgstrf3d_LUpackedInterface(LUgpu);
-
 			if (!trisolveGPUopt)
 			{
-				// if we are not doing triangular solve on GPU, then
-				// copy back LU factors to host and convert into skyline format
 				copyLUGPU2Host(LUgpu, LUstruct);
-				// destroy LUgpuHandle
+			
 				destroyLUgpuHandle(LUgpu);
 			}
 
 			// print other stuff
-			if (!grid3d->zscp.Iam)
-				SCT_printSummary(grid, SCT);
+			// if (!grid3d->zscp.Iam)
+			// 	SCT_printSummary(grid, SCT);
 			reduceStat(FACT, stat, grid3d);
 
 #endif

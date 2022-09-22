@@ -27,7 +27,7 @@ struct anc25d_t
         {
             commSizes[i] = 1 << (i + 1);
             myranks[i] = myGrid % (commSizes[i]);
-            std::cout <<myGrid<< ":\t myranks[" << i << "] = " << myranks[i] << std::endl;
+            std::cout << myGrid << ":\t myranks[" << i << "] = " << myranks[i] << std::endl;
             if (1)
             {
                 // check by getting the rank of the process in the communicator
@@ -43,7 +43,7 @@ struct anc25d_t
 
     ~anc25d_t()
     {
-        
+
         SUPERLU_FREE(myranks);
         SUPERLU_FREE(commSizes);
         for (int i = 0; i < maxLvl - 1; i++)
@@ -51,7 +51,6 @@ struct anc25d_t
             MPI_Comm_free(&comms25d[i]);
         }
         SUPERLU_FREE(comms25d);
-        
     }
 
     // void freeComm(MPI_Comm* comm);
