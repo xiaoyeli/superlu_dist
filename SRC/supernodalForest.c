@@ -659,13 +659,13 @@ forestPartition_t iterativeFrPartitioning(rForest_t* rforest, int_t nsupers, int
 
 
 		int_t MaxTree = treeSet[idx];
-		int_t*  sroots = getSubTreeRoots(MaxTree, treeList);
-		if (sroots[0] == -1)
+		int_t numSubtrees;
+		int_t*  sroots = getSubTreeRoots(MaxTree, &numSubtrees, treeList);
+		if (numSubtrees==0)
 		{
-			/* code */
-			SUPERLU_FREE(sroots);
 			break;
 		}
+
 
 		ancTreeCount[nAnc] = getCommonAncsCount(MaxTree, treeList);
 		//int_t * alist = INT_T_ALLOC (ancTreeCount[nAnc]);
