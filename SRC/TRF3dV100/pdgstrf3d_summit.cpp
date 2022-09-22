@@ -18,7 +18,7 @@ extern "C"
 #endif
 
     int_t pdgstrf3d_summit(superlu_dist_options_t *options, int m, int n, double anorm,
-                           trf3Dpartition_t *trf3Dpartition, SCT_t *SCT,
+                           dtrf3Dpartition_t *trf3Dpartition, SCT_t *SCT,
                            dLUstruct_t *LUstruct, gridinfo3d_t *grid3d,
                            SuperLUStat_t *stat, int *info)
     {

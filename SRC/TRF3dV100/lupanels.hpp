@@ -309,7 +309,7 @@ struct LUstruct_v100
 
 
     // Adding more variables for factorization 
-    trf3Dpartition_t *trf3Dpartition;
+    dtrf3Dpartition_t *trf3Dpartition;
     int_t maxLvl;
     
     ddiagFactBufs_t **dFBufs;
@@ -367,7 +367,7 @@ struct LUstruct_v100
     /**
     *          C O N / D E S - T R U C T O R S
     */
-    LUstruct_v100(int_t nsupers, int_t ldt_, trf3Dpartition_t *trf3Dpartition, 
+    LUstruct_v100(int_t nsupers, int_t ldt_, dtrf3Dpartition_t *trf3Dpartition, 
                   dLUstruct_t *LUstruct, gridinfo3d_t *grid3d,
                   SCT_t *SCT_, superlu_dist_options_t *options_, SuperLUStat_t *stat,
                   double thresh_, int *info_);

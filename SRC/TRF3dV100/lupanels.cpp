@@ -36,7 +36,7 @@ lpanel_t LUstruct_v100::getKLpanel(int_t k, int_t offset)
 }
 
 LUstruct_v100::LUstruct_v100(int_t nsupers_, int_t ldt_,
-                             trf3Dpartition_t *trf3Dpartition_, 
+                             dtrf3Dpartition_t *trf3Dpartition_, 
                              dLUstruct_t *LUstruct,
                              gridinfo3d_t *grid3d_in,
                              SCT_t *SCT_, superlu_dist_options_t *options_,
