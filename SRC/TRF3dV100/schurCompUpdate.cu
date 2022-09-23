@@ -850,11 +850,11 @@ int_t LUstruct_v100::copyLUHosttoGPU()
 {
     for (int_t i = 0; i < CEILING(nsupers, Pc); ++i)
         if (i * Pc + mycol < nsupers && isNodeInMyGrid[i * Pc + mycol] == 1)
-            lPanelVec[i].copyToGPU();
+            lPanelVec[i].copyBackToGPU();
 
     for (int_t i = 0; i < CEILING(nsupers, Pr); ++i)
         if (i * Pr + myrow < nsupers && isNodeInMyGrid[i * Pr + myrow] == 1)
-            uPanelVec[i].copyToGPU();
+            uPanelVec[i].copyBackToGPU();
     return 0;
 }
 

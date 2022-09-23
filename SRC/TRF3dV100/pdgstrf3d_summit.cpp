@@ -239,11 +239,8 @@ extern "C"
 
         SCT->pdgstrfTimer = SuperLU_timer_() - SCT->pdgstrfTimer;
         if (superlu_acc_offload)
-        {
             copyLUHosttoGPU();
             
-            // LU check passed
-        }
         return 0;
     }
 

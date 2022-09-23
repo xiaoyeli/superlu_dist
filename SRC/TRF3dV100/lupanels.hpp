@@ -112,6 +112,7 @@ public:
     lpanelGPU_t copyToGPU(void *basePtr); // when we are doing a single allocation
 
     int checkGPU();
+    int copyBackToGPU();
 
     int_t panelSolveGPU(cublasHandle_t handle, cudaStream_t cuStream,
                         int_t ksupsz,
@@ -258,6 +259,7 @@ public:
     upanelGPU_t copyToGPU();
     //TODO: implement with baseptr
     upanelGPU_t copyToGPU(void *basePtr);
+    int copyBackToGPU();
 
     int_t panelSolveGPU(cublasHandle_t handle, cudaStream_t cuStream,
                         int_t ksupsz, double *DiagBlk, int_t LDD);
