@@ -1,4 +1,4 @@
-# SuperLU_DIST (version 8.1.0)   <img align=center width="55" alt="superlu" src="https://user-images.githubusercontent.com/11741943/103982988-5a9a9d00-5139-11eb-9ac4-a55e80a79f8d.png">
+# SuperLU_DIST (version 8.1.1)   <img align=center width="55" alt="superlu" src="https://user-images.githubusercontent.com/11741943/103982988-5a9a9d00-5139-11eb-9ac4-a55e80a79f8d.png">
 
 [![Build Status](https://travis-ci.org/xiaoyeli/superlu_dist.svg?branch=master)](https://travis-ci.org/xiaoyeli/superlu_dist) 
 [Nightly tests](http://my.cdash.org/index.php?project=superlu_dist)
@@ -24,7 +24,7 @@ acceleration capabilities.
 Table of Contents
 =================
 
-* [SuperLU_DIST (version 8.1.0)   <a href="https://user-images.githubusercontent.com/11741943/103982988-5a9a9d00-5139-11eb-9ac4-a55e80a79f8d.png" target="_blank" rel="nofollow"><img align="center" width="55" alt="superlu" src="https://user-images.githubusercontent.com/11741943/103982988-5a9a9d00-5139-11eb-9ac4-a55e80a79f8d.png" style="max-width:100%;"></a>](#superlu_dist-version-81---)
+* [SuperLU_DIST (version 8.1.1)   <a href="https://user-images.githubusercontent.com/11741943/103982988-5a9a9d00-5139-11eb-9ac4-a55e80a79f8d.png" target="_blank" rel="nofollow"><img align="center" width="55" alt="superlu" src="https://user-images.githubusercontent.com/11741943/103982988-5a9a9d00-5139-11eb-9ac4-a55e80a79f8d.png" style="max-width:100%;"></a>](#superlu_dist-version-81---)
 * [Directory structure of the source code](#directory-structure-of-the-source-code)
 * [Installation](#installation)
    * [Installation option 1: Using CMake build system.](#installation-option-1-using-cmake-build-system)
@@ -497,14 +497,15 @@ on bipartite graphs", SIAM J. Sci. Comput., Vol. 42, No. 4, pp. C143-C168, 2020.
 
 **Xiaoye S. Li**, Lawrence Berkeley National Lab, [xsli@lbl.gov](xsli@lbl.gov)   
 **Gustavo Chavez**, Lawrence Berkeley National Lab, [gichavez@lbl.gov](gichavez@lbl.gov)   
+**Jim Demmel**, UC Berkeley, [demmel@cs.berkeley.edu](demmel@cs.berkeley.edu)   
 **Nan Ding**, Lawrence Berkeley National Lab, [nanding@lbl.gov](nanding@lbl.gov)  
+**John Gilbert**, UC Santa Barbara, [gilbert@cs.ucsb.edu](gilbert@cs.ucsb.edu)
 **Laura Grigori**, INRIA, France, [laura.grigori@inria.fr](laura.grigori@inria.fr)  
+**Paul Lin**, Lawrence Berkeley National Lab, [paullin@lbl.gov](paullin@lbl.gov)   
 **Yang Liu**, Lawrence Berkeley National Lab, [liuyangzhuan@lbl.gov](liuyangzhuan@lbl.gov)   
 **Piyush Sao**, Georgia Institute of Technology, [piyush.feynman@gmail.com](piyush.feynman@gmail.com)  
 **Meiyue Shao**, Lawrence Berkeley National Lab, [myshao@lbl.gov](myshao@lbl.gov)   
 **Ichitaro Yamazaki**, Univ. of Tennessee, [ic.yamazaki@gmail.com](ic.yamazaki@gmail.com)  
-**Jim Demmel**, UC Berkeley, [demmel@cs.berkeley.edu](demmel@cs.berkeley.edu)   
-**John Gilbert**, UC Santa Barbara, [gilbert@cs.ucsb.edu](gilbert@cs.ucsb.edu)
 
 
 # RELEASE VERSIONS
@@ -539,4 +540,5 @@ October 18, 2021    Version 7.1.1
 December 12, 2021   Version 7.2.0
 May 22, 2022        Version 8.0.0
 July 5, 2022        Version 8.1.0
+October 1, 2022     Version 8.1.1
 ```

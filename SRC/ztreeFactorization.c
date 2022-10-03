@@ -22,10 +22,6 @@ at the top-level directory.
  */
  
 #include "superlu_zdefs.h"
-#if 0
-#include "treeFactorization.h"
-#include "trfCommWrapper.h"
-#endif
 
 int_t zLluBufInit(zLUValSubBuf_t* LUvsb, zLUstruct_t *LUstruct)
 {

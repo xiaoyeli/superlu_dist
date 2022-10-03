@@ -7,12 +7,12 @@ set(HEADERS
     superlu_enum_consts.h
     supermatrix.h
     util_dist.h
-    colamd.h
     gpu_api_utils.h
     gpu_wrapper.h
     ${CMAKE_CURRENT_BINARY_DIR}/superlu_dist_config.h
     ${PROJECT_SOURCE_DIR}/SRC/superlu_FortranCInterface.h
 )
+#    colamd.h
 if (MSVC)
   list(APPEND HEADERS wingetopt.h)
 endif ()
@@ -40,7 +40,6 @@ set(SOURCES
   xerr_dist.c
   smach_dist.c
   dmach_dist.c
-  colamd.c
   superlu_dist_version.c
   comm_tree.c
   superlu_grid3d.c    ## 3D code
@@ -51,7 +50,7 @@ set(SOURCES
   treeFactorization.c
   sec_structs.c
 )
-
+#  colamd.c
 
 if (MSVC)
   list(APPEND SOURCES wingetopt.c)
@@ -315,7 +314,7 @@ if (BUILD_SHARED_LIBS AND BUILD_STATIC_LIBS)
   list(APPEND targets superlu_dist-static)
 endif()
 
-set( superlu_dist_libs ${BLAS_LIB} ${LAPACK_LIB} ${PARMETIS_LIB} ${COMBBLAS_LIB} )
+set( superlu_dist_libs ${BLAS_LIB} ${LAPACK_LIB} ${PARMETIS_LIB} ${COLAMD_LIB} ${COMBBLAS_LIB} )
 if (NOT MSVC)
   list(APPEND superlu_dist_libs m)
 endif ()

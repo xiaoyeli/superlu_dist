@@ -80,7 +80,8 @@
           int error_code = MPI_Isend( localBuffer, msgSize, tree->type_, 
               iProc, tree->tag_,tree->comm_, &tree->sendRequests_[idxRecv] );
 			  
-			  MPI_Test(&tree->sendRequests_[idxRecv],&flag,&status) ; 
+			  //MPI_Test(&tree->sendRequests_[idxRecv],&flag,&status) ; 
+			  MPI_Wait(&tree->sendRequests_[idxRecv],&status) ; 
 			  
 			  // std::cout<<tree->myRank_<<" FWD to "<<iProc<<" on tag "<<tree->tag_<<std::endl;
         } // for (iProc)
@@ -177,7 +178,8 @@
 			  int error_code = MPI_Isend(localBuffer, msgSize, Tree->type_, 
 				  iProc, Tree->tag_,Tree->comm_, &Tree->sendRequests_[0] );
 				  
-				  MPI_Test(&Tree->sendRequests_[0],&flag,&status) ; 
+				  //MPI_Test(&Tree->sendRequests_[0],&flag,&status) ; 
+			          MPI_Wait(&Tree->sendRequests_[0],&status) ; 
 				  
 				  // std::cout<<Tree->myRank_<<" FWD to "<<iProc<<" on tag "<<Tree->tag_<<std::endl;
 		}

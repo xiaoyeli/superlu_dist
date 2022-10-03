@@ -15,6 +15,9 @@
 /* Enable parmetis */
 /* #undef HAVE_PARMETIS */
 
+/* Enable colamd */
+/* #undef HAVE_COLAMD */
+
 /* Enable LAPACK */
 /* #undef SLU_HAVE_LAPACK */
 
