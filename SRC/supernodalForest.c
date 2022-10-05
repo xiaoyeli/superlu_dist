@@ -29,13 +29,13 @@ int_t calcTopInfoForest(sForest_t *forest,
 sForest_t**  getForests( int_t maxLvl, int_t nsupers, int_t*setree, treeList_t* treeList)
 {
 	// treePartStrat tps;
-	if (getenv("LBS"))
+	if (getenv("SUPERLU_LBS"))
 	{
-		if (strcmp(getenv("LBS"), "ND" ) == 0)
+		if (strcmp(getenv("SUPERLU_LBS"), "ND" ) == 0)
 		{
 			return getNestDissForests( maxLvl, nsupers, setree, treeList);
 		}
-		if (strcmp(getenv("LBS"), "GD" ) == 0)
+		if (strcmp(getenv("SUPERLU_LBS"), "GD" ) == 0)
 		{
 			return getGreedyLoadBalForests( maxLvl, nsupers, setree, treeList);
 		}
@@ -506,10 +506,8 @@ double getLoadImbalance(int_t nTrees,
 
 
 // r forest contains a list of tree heads
-// each treehead is an entire subtree (all level beloe)
-// #define MAX_TREE_ALLOWED 1024
-// #define MAX_TREE_ALLOWED 2048
-#define NUM_TREE_LOWERB 32
+// each treehead is an entire subtree (all level below)
+#define MAX_TREE_ALLOWED 1024
 
 typedef struct
 {
@@ -617,24 +615,6 @@ void oneLeveltreeFrPartition( int_t nTrees, int_t * trCount, int_t** trList,
 
 } /* oneLeveltreeFrPartition */
 
-void resizeArr(void** A, int oldSize, int newSize, size_t typeSize)
-{
-	assert(newSize>oldSize);
-	if(newSize==oldSize) return; 
-
-	void* newPtr = SUPERLU_MALLOC(newSize * typeSize);
-
-	// copy *A to new ptr upto oldSize
-	memcpy(newPtr, *A, oldSize * typeSize);
-	// free the memory
-
-	SUPERLU_FREE(*A);
-
-	*A = newPtr;
-
-	return; 
-
-}
 forestPartition_t iterativeFrPartitioning(rForest_t* rforest, int_t nsupers, int_t * setree, treeList_t* treeList)
 {
 
@@ -642,14 +622,20 @@ forestPartition_t iterativeFrPartitioning(rForest_t* rforest, int_t nsupers, int
     int_t* treeHeads =  rforest->treeHeads;
 
     int_t nAnc = 0;
+#if 0
+    int_t* ancTreeCount = INT_T_ALLOC(MAX_TREE_ALLOWED);
+    int_t** ancNodeLists = SUPERLU_MALLOC(MAX_TREE_ALLOWED * sizeof(int_t*));
 
-	int treeArrSize = SUPERLU_MAX( 2*nTreeSet, NUM_TREE_LOWERB) ;
-    int_t* ancTreeCount = intMalloc_dist(treeArrSize);
-    int_t** ancNodeLists = SUPERLU_MALLOC(treeArrSize * sizeof(int_t*));
+    double * weightArr = DOUBLE_ALLOC (MAX_TREE_ALLOWED);
+    // int_t* treeSet = INT_T_ALLOC(nTreeSet);
+    int_t* treeSet = INT_T_ALLOC(MAX_TREE_ALLOWED);
+#else  // Sherry fix
+    int_t* ancTreeCount = intMalloc_dist(MAX_TREE_ALLOWED);
+    int_t** ancNodeLists = SUPERLU_MALLOC(MAX_TREE_ALLOWED * sizeof(int_t*));
 
-    double * weightArr = doubleMalloc_dist(treeArrSize);
-    int_t* treeSet = intMalloc_dist(treeArrSize);
-	
+    double * weightArr = doubleMalloc_dist(MAX_TREE_ALLOWED);
+    int_t* treeSet = intMalloc_dist(MAX_TREE_ALLOWED);
+#endif
 
 	for (int i = 0; i < nTreeSet; ++i)
 	{
@@ -680,6 +666,7 @@ forestPartition_t iterativeFrPartitioning(rForest_t* rforest, int_t nsupers, int
 			break;
 		}
 
+
 		ancTreeCount[nAnc] = getCommonAncsCount(MaxTree, treeList);
 		//int_t * alist = INT_T_ALLOC (ancTreeCount[nAnc]);
 		int_t * alist = intMalloc_dist(ancTreeCount[nAnc]);
@@ -687,45 +674,21 @@ forestPartition_t iterativeFrPartitioning(rForest_t* rforest, int_t nsupers, int
 		ancNodeLists[nAnc] = alist;
 		nAnc++;
 
-		// treeSet[idx] is removed and numsubtrees are added
-		int newNumTrees= nTreeSet - 1 + numSubtrees;
 
-		if(newNumTrees>treeArrSize)
-		{
-			// double the array size 
-			// resizeArr(void** A, int oldSize, int newSize, size_t typeSize);
-			resizeArr( (void**) &ancTreeCount, treeArrSize, 2*newNumTrees, sizeof(int_t));
-			resizeArr( (void**) &ancNodeLists, treeArrSize, 2*newNumTrees, sizeof(int_t*));
-			resizeArr( (void**) &weightArr, treeArrSize, 2*newNumTrees, sizeof(double));
-			resizeArr( (void**) &treeSet, treeArrSize, 2*newNumTrees, sizeof(int_t));
-			treeArrSize = 2*newNumTrees; 
-		}
-
-		//TODO: fix it for multiple children 
 		treeSet[idx] = treeSet[nTreeSet - 1];
 		weightArr[idx] = treeList[treeSet[idx]].iWeight;
-
-		#if(1)
-		for(int j=0; j<numSubtrees; j++)
-		{
-			treeSet[nTreeSet - 1+j] = sroots[j];
-			weightArr[nTreeSet - 1+j] = treeList[sroots[j]].iWeight;		
-		}
-		nTreeSet = newNumTrees;
-		#else 
 		treeSet[nTreeSet - 1] = sroots[0];
 		weightArr[nTreeSet - 1] = treeList[treeSet[nTreeSet - 1]].iWeight;
 		treeSet[nTreeSet] = sroots[1];
 		weightArr[nTreeSet] = treeList[treeSet[nTreeSet]].iWeight;
 		nTreeSet += 1;
-		#endif 
+
 		SUPERLU_FREE(sroots);
 
-		//TODO: incorrect fix it; 
-		// if (nTreeSet == MAX_TREE_ALLOWED)
-		// {
-		// 	break;
-		// }
+		if (nTreeSet == MAX_TREE_ALLOWED)
+		{
+			break;
+		}
 	}
 
 	// Create the Ancestor forest

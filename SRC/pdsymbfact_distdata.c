@@ -62,6 +62,10 @@ at the top-level directory.
  * Arguments
  * =========
  *
+ * options (input) superlu_dist_options_t*
+ *         The structure defines the input parameters to control
+ *         how the LU decomposition and triangular solve are performed.
+ *
  * n      (Input) int_t
  *        Order of the input matrix
  * Pslu_freeable  (Input) Pslu_freeable_t *
@@ -99,7 +103,8 @@ at the top-level directory.
  */
 
 static float
-dist_symbLU (int_t n, Pslu_freeable_t *Pslu_freeable,
+dist_symbLU (superlu_dist_options_t *options,
+	     int_t n, Pslu_freeable_t *Pslu_freeable,
 	     Glu_persist_t *Glu_persist,
 	     int_t **p_xlsub, int_t **p_lsub, int_t **p_xusub, int_t **p_usub,
 	     gridinfo_t *grid
@@ -172,7 +177,7 @@ dist_symbLU (int_t n, Pslu_freeable_t *Pslu_freeable,
   intBuf4 = nvtcs + 4 * nprocs;
   memAux += 5 * nprocs * sizeof(int);
 
-  maxszsn   = sp_ienv_dist(3);
+  maxszsn   = sp_ienv_dist(3, options);
 
   /* Allocate space for storing Glu_persist_n. */
   if ( !(supno_n = intMalloc_dist(n+1)) ) {
@@ -1146,13 +1151,16 @@ ddist_A(SuperMatrix *A, dScalePermstruct_t *ScalePermstruct,
  * Arguments
  * =========
  *
- * fact (input) fact_t
- *        Specifies whether or not the L and U structures will be re-used.
- *        = SamePattern_SameRowPerm: L and U structures are input, and
- *                                   unchanged on exit.
- *          This routine should not be called for this case, an error
- *          is generated.  Instead, pddistribute routine should be called.
- *        = DOFACT or SamePattern: L and U structures are computed and output.
+ * options (input) superlu_dist_options_t*
+ *         The structure defines the input parameters to control
+ *         how the LU decomposition and triangular solve are performed.
+ *         options->Fact specifies whether or not the L and U structures
+ *         will be re-used:
+ *           = SamePattern_SameRowPerm: L and U structures are input, and
+ *                                      unchanged on exit.
+ *             This routine should not be called for this case, an error
+ *             is generated.  Instead, pddistribute routine should be called.
+ *           = DOFACT or SamePattern: L and U structures are computed and output.
  *
  * n      (Input) int
  *        Dimension of the matrix.
@@ -1185,7 +1193,7 @@ ddist_A(SuperMatrix *A, dScalePermstruct_t *ScalePermstruct,
  */
 
 float
-ddist_psymbtonum(fact_t fact, int_t n, SuperMatrix *A,
+ddist_psymbtonum(superlu_dist_options_t *options, int_t n, SuperMatrix *A,
 		dScalePermstruct_t *ScalePermstruct,
 		Pslu_freeable_t *Pslu_freeable,
 		dLUstruct_t *LUstruct, gridinfo_t *grid)
@@ -1351,12 +1359,12 @@ double *dense, *dense_col; /* SPA */
   iword = sizeof(int_t);
   dword = sizeof(double);
 
-  if (fact == SamePattern_SameRowPerm) {
+  if (options->Fact == SamePattern_SameRowPerm) {
     ABORT ("ERROR: call of dist_psymbtonum with fact equals SamePattern_SameRowPerm.");
   }
 
   if ((memStrLU =
-       dist_symbLU (n, Pslu_freeable,
+       dist_symbLU (options, n, Pslu_freeable,
 		    Glu_persist, &xlsub, &lsub, &xusub, &usub,	grid)) > 0)
     return (memStrLU);
   memDist += (-memStrLU);
@@ -1509,7 +1517,7 @@ double *dense, *dense_col; /* SPA */
      They are freed on return.
      k is the number of local row blocks.   */
   if ( !(dense = doubleCalloc_dist(SUPERLU_MAX(ldaspa, ldaspa_j)
-				   * sp_ienv_dist(3))) ) {
+				   * sp_ienv_dist(3, options))) ) {
     fprintf(stderr, "Calloc fails for SPA dense[].");
     return (memDist + memNLU + memTRS);
   }
@@ -1524,7 +1532,7 @@ double *dense, *dense_col; /* SPA */
   }
   /* ------------------------------------------------ */
   memNLU += 2*nsupers_i*iword +
-    SUPERLU_MAX(ldaspa, ldaspa_j)*sp_ienv_dist(3)*dword;
+      SUPERLU_MAX(ldaspa, ldaspa_j)*sp_ienv_dist(3, options)*dword;
 
   /* Pointers to the beginning of each block column of L. */
   if ( !(Lnzval_bc_ptr =
@@ -3183,25 +3191,14 @@ double *dense, *dense_col; /* SPA */
 	checkGPU(gpuMalloc( (void**)&Llu->d_Lnzval_bc_offset, CEILING( nsupers, grid->npcol ) * sizeof(long int)));
 	checkGPU(gpuMemcpy(Llu->d_Lnzval_bc_offset, Llu->Lnzval_bc_offset, CEILING( nsupers, grid->npcol ) * sizeof(long int), gpuMemcpyHostToDevice));	
 	
-	checkGPU(gpuMalloc( (void**)&Llu->d_Unzval_br_offset, CEILING( nsupers, grid->nprow ) * sizeof(long int)));
-	checkGPU(gpuMemcpy(Llu->d_Unzval_br_offset, Llu->Unzval_br_offset, CEILING( nsupers, grid->nprow ) * sizeof(long int), gpuMemcpyHostToDevice));	
-	checkGPU(gpuMalloc( (void**)&Llu->d_Ufstnz_br_offset, CEILING( nsupers, grid->nprow ) * sizeof(long int)));
-	checkGPU(gpuMemcpy(Llu->d_Ufstnz_br_offset, Llu->Ufstnz_br_offset, CEILING( nsupers, grid->nprow ) * sizeof(long int), gpuMemcpyHostToDevice));		
-	checkGPU(gpuMalloc( (void**)&Llu->d_Ufstnz_br_dat, (Llu->Ufstnz_br_cnt) * sizeof(int_t)));
-	checkGPU(gpuMemcpy(Llu->d_Ufstnz_br_dat, Llu->Ufstnz_br_dat, (Llu->Ufstnz_br_cnt) * sizeof(int_t), gpuMemcpyHostToDevice));		
-	checkGPU(gpuMalloc( (void**)&Llu->d_Urbs, 2* CEILING( nsupers, grid->npcol ) * sizeof(int_t)));
-	checkGPU(gpuMemcpy(Llu->d_Urbs, Llu->Urbs, 2* CEILING( nsupers, grid->npcol ) * sizeof(int_t), gpuMemcpyHostToDevice));	
-	checkGPU(gpuMalloc( (void**)&Llu->d_Ucb_valdat, Llu->Ucb_valcnt * sizeof(int_t)));
-	checkGPU(gpuMemcpy(Llu->d_Ucb_valdat, Llu->Ucb_valdat, Llu->Ucb_valcnt * sizeof(int_t), gpuMemcpyHostToDevice));		
-	checkGPU(gpuMalloc( (void**)&Llu->d_Ucb_valoffset, CEILING( nsupers, grid->npcol ) * sizeof(long int)));
-	checkGPU(gpuMemcpy(Llu->d_Ucb_valoffset, Llu->Ucb_valoffset, CEILING( nsupers, grid->npcol ) * sizeof(long int), gpuMemcpyHostToDevice));		
-	checkGPU(gpuMalloc( (void**)&Llu->d_Ucb_inddat, Llu->Ucb_indcnt * sizeof(Ucb_indptr_t)));
-	checkGPU(gpuMemcpy(Llu->d_Ucb_inddat, Llu->Ucb_inddat, Llu->Ucb_indcnt * sizeof(Ucb_indptr_t), gpuMemcpyHostToDevice));
-	checkGPU(gpuMalloc( (void**)&Llu->d_Ucb_indoffset, CEILING( nsupers, grid->npcol ) * sizeof(long int)));
-	checkGPU(gpuMemcpy(Llu->d_Ucb_indoffset, Llu->Ucb_indoffset, CEILING( nsupers, grid->npcol ) * sizeof(long int), gpuMemcpyHostToDevice));		
-
-
-
+	// some dummy allocation to avoid checking whether they are null pointers later
+	checkGPU(gpuMalloc( (void**)&Llu->d_Ucolind_bc_dat, sizeof(int_t)));
+	checkGPU(gpuMalloc( (void**)&Llu->d_Ucolind_bc_offset, sizeof(int64_t)));
+	checkGPU(gpuMalloc( (void**)&Llu->d_Unzval_bc_dat, sizeof(double)));
+	checkGPU(gpuMalloc( (void**)&Llu->d_Unzval_bc_offset, sizeof(int64_t)));
+	checkGPU(gpuMalloc( (void**)&Llu->d_Uindval_loc_bc_dat, sizeof(int_t)));
+	checkGPU(gpuMalloc( (void**)&Llu->d_Uindval_loc_bc_offset, sizeof(int_t)));
+	
 
 	checkGPU(gpuMalloc( (void**)&Llu->d_Linv_bc_offset, CEILING( nsupers, grid->npcol ) * sizeof(long int)));
 	checkGPU(gpuMemcpy(Llu->d_Linv_bc_offset, Llu->Linv_bc_offset, CEILING( nsupers, grid->npcol ) * sizeof(long int), gpuMemcpyHostToDevice));	
@@ -3213,7 +3210,6 @@ double *dense, *dense_col; /* SPA */
 
 	/* gpuMemcpy for the following is performed in pxgssvx */
 	checkGPU(gpuMalloc( (void**)&Llu->d_Lnzval_bc_dat, (Llu->Lnzval_bc_cnt) * sizeof(double)));
-	checkGPU(gpuMalloc( (void**)&Llu->d_Unzval_br_dat, (Llu->Unzval_br_cnt) * sizeof(double)));
 	checkGPU(gpuMalloc( (void**)&Llu->d_Linv_bc_dat, (Llu->Linv_bc_cnt) * sizeof(double)));
 	checkGPU(gpuMalloc( (void**)&Llu->d_Uinv_bc_dat, (Llu->Uinv_bc_cnt) * sizeof(double)));
 	

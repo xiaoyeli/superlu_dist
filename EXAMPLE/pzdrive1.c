@@ -169,7 +169,7 @@ int main(int argc, char *argv[])
         options.RowPerm = LargeDiag_MC64;
         options.ReplaceTinyPivot = NO;
         options.Trans = NOTRANS;
-        options.IterRefine = DOUBLE;
+        options.IterRefine = SLU_DOUBLE;
         options.SolveInitialized = NO;
         options.RefineInitialized = NO;
         options.PrintStat = YES;
@@ -177,7 +177,6 @@ int main(int argc, char *argv[])
     set_default_options_dist(&options);
 
     if (!iam) {
-	print_sp_ienv_dist(&options);
 	print_options_dist(&options);
 	fflush(stdout);
     }

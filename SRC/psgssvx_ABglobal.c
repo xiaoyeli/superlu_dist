@@ -878,7 +878,7 @@ psgssvx_ABglobal(superlu_dist_options_t *options, SuperMatrix *A,
 #if ( PRNTlevel>=1 )
 	    if ( !iam )
 		printf(".. symbfact(): relax %d, maxsuper %d, fill %d\n",
-		       sp_ienv_dist(2), sp_ienv_dist(3), sp_ienv_dist(6));
+		       sp_ienv_dist(2,options), sp_ienv_dist(3,options), sp_ienv_dist(6,options));
 #endif
 	    t = SuperLU_timer_();
 	    if ( !(Glu_freeable = (Glu_freeable_t *)
@@ -918,7 +918,7 @@ psgssvx_ABglobal(superlu_dist_options_t *options, SuperMatrix *A,
 
 	/* Distribute the L and U factors onto the process grid. */
 	t = SuperLU_timer_();
-	dist_mem_use = sdistribute(Fact, n, &AC, Glu_freeable, LUstruct, grid);
+	dist_mem_use = sdistribute(options, n, &AC, Glu_freeable, LUstruct, grid);
 	stat->utime[DIST] = SuperLU_timer_() - t;
 
 	/* Deallocate storage used in symbolic factor. */
@@ -1038,7 +1038,7 @@ psgssvx_ABglobal(superlu_dist_options_t *options, SuperMatrix *A,
 	/* ------------------------------------------------------------
 	   Solve the linear system.
 	   ------------------------------------------------------------*/
-	psgstrs_Bglobal(n, LUstruct, grid, X, ldb, nrhs, stat, info);
+	psgstrs_Bglobal(options, n, LUstruct, grid, X, ldb, nrhs, stat, info);
 
 	/* ------------------------------------------------------------
 	   Use iterative refinement to improve the computed solution and
@@ -1047,7 +1047,7 @@ psgssvx_ABglobal(superlu_dist_options_t *options, SuperMatrix *A,
 	if ( options->IterRefine ) {
 	    /* Improve the solution by iterative refinement. */
 	    t = SuperLU_timer_();
-	    psgsrfs_ABXglobal(n, &AC, anorm, LUstruct, grid, B, ldb,
+	    psgsrfs_ABXglobal(options, n, &AC, anorm, LUstruct, grid, B, ldb,
 			      X, ldx, nrhs, berr, stat, info);
 	    stat->utime[REFINE] = SuperLU_timer_() - t;
 	}

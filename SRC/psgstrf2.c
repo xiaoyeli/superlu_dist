@@ -363,7 +363,6 @@ psgstrf2_trsm
 }  /* PSGSTRF2_trsm */
 
 
-
 /*****************************************************************************
  * The following functions are for the new pdgstrf2_strsm in the 3D code.
  *****************************************************************************/
@@ -499,6 +498,7 @@ void Local_Sgstrf2(superlu_dist_options_t *options, int_t k, double thresh,
 	    /* Rank-1 update */
             superlu_sger(l, cols_left, alpha, &lusup[luptr + 1], incx,
                          &ujrow[ld_ujrow], incy, &lusup[luptr + nsupr + 1], nsupr);
+	    
             stat->ops[FACT] += 2 * l * cols_left;
         }
 
@@ -751,6 +751,7 @@ int_t sTrs2_GatherTrsmScatter(int_t klst, int_t iukp, int_t rukp,
     return 0;
 }
 
+/* END 3D CODE */
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 
 #if 1

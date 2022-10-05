@@ -43,7 +43,6 @@ get_metis(
     int_t i, nm, numflag = 0; /* C-Style ordering */
     int_t *perm, *iperm;
     int_t *b_colptr_int, *b_rowind_int;
-    extern int check_perm_dist(char *what, int_t n, int_t *perm);
 
     extern int METIS_NodeND(int_t*, int_t*, int_t*, int_t*, int_t*,
 			    int_t*, int_t*);

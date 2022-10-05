@@ -172,7 +172,6 @@ int main(int argc, char *argv[])
 	set_default_options_dist(&options);
 
         if (!iam) {
-	    print_sp_ienv_dist(&options);
     	    print_options_dist(&options);
         }
 

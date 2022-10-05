@@ -10,8 +10,8 @@ cmake_minimum_required(VERSION 3.18.1 FATAL_ERROR)
 # Project version numbers
 #project(SuperLU_DIST C CXX CUDA)
 project(SuperLU_DIST C CXX)
-set(VERSION_MAJOR "7")
-set(VERSION_MINOR "2")
+set(VERSION_MAJOR "8")
+set(VERSION_MINOR "1")
 set(VERSION_BugFix "0")
 set(PROJECT_VERSION ${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_BugFix})
 
@@ -19,8 +19,8 @@ list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake")
 
 # Set up options
 option(enable_doc       "Build doxygen documentation" OFF)
+option(enable_single    "Enable single precision library" ON)
 option(enable_double    "Enable double precision library" ON)
-option(enable_single    "Enable single precision library" OFF)
 option(enable_complex16 "Enable complex16 precision library" ON)
 option(enable_tests  "Build tests" ON)
 option(enable_examples  "Build examples" ON)
@@ -143,6 +143,7 @@ set(INSTALL_BIN_DIR "${default_install_bin_dir}" CACHE STRING "The folder where 
 
 # Set up required compiler defines and options.
 ## get_directory_property( DirDefs COMPILE_DEFINITIONS )
+
 if(XSDK_INDEX_SIZE EQUAL 64)
     message("-- Using 64 bit integer for index size.")
 endif()	
@@ -198,7 +199,7 @@ if (TPL_ENABLE_CUDALIB)   ## want to use cuda
 #     find_package(CUB REQUIRED)
 
     find_package(CUDAToolkit REQUIRED)
-# The following appears in SRC/CMakeLists.txt
+# The following appears SRC/CMakeLists.txt
 #    if(CUDAToolkit_FOUND)
 #      target_link_libraries(superlu_dist PUBLIC CUDA::cudart CUDA::cusolver CUDA::cublas)
 #    endif()
@@ -232,6 +233,7 @@ endif ()
 if (enable_openmp)
   find_package(OpenMP)
 ## include(FindOpenMP)  # Strumpack uses this
+
   if(OPENMP_FOUND)
     set(CMAKE_C_FLAGS "${OpenMP_C_FLAGS} ${CMAKE_C_FLAGS}")
     set(CMAKE_CXX_FLAGS "${OpenMP_CXX_FLAGS} ${CMAKE_CXX_FLAGS}")
@@ -240,11 +242,10 @@ if (enable_openmp)
 # set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${OpenMP_C_FLAGS}")
     message("-- OpenMP_EXE_LINKER_FLAGS='${OpenMP_EXE_LINKER_FLAGS}'")
     message("-- CMAKE_EXE_LINKER_FLAGS='${CMAKE_EXE_LINKER_FLAGS}'")
-  endif()
+  endif()  
 endif()
 
 
- 
 include(CheckLanguage)
 
 #--------------------- CUDA libraries ---------------------
@@ -291,9 +292,6 @@ if (TPL_ENABLE_HIPLIB)   ## want to use hip
     set(HIP_HIPCC_FLAGS "${HIP_HIPCC_FLAGS} -fPIC")    
     endif()
 
-
-
-    
     # if ("$ENV{HIP_PLATFORM}" STREQUAL "hcc")
     #   set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DHAVE_HIP -D__HIP_PLATFORM_HCC__")
     #   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DHAVE_HIP -D__HIP_PLATFORM_HCC__")
@@ -302,14 +300,10 @@ if (TPL_ENABLE_HIPLIB)   ## want to use hip
     #   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DHAVE_HIP -D__HIP_PLATFORM_NVCC__")
     # endif()
 
-
   else()
     message("-- HIP libraries not found.")
   endif()
 endif()
-
-
-
 
 #--------------------- BLAS ---------------------
 if(NOT TPL_ENABLE_INTERNAL_BLASLIB)
@@ -382,7 +376,7 @@ if (TPL_ENABLE_PARMETISLIB)   ## want to use parmetis
     message(FATAL_ERROR "TPL_PARMETIS_INCLUDE_DIRS option be set for PARMETIS support to be enabled.")
   endif()
   foreach(dir ${TPL_PARMETIS_INCLUDE_DIRS})
-    if (NOT EXISTS ${dir})
+    if (NOT MINGW AND NOT EXISTS ${dir})
       message(FATAL_ERROR "PARMETIS include directory not found: ${dir}")
     endif()
     set(CMAKE_C_FLAGS "-I${dir} ${CMAKE_C_FLAGS}")
@@ -453,7 +447,7 @@ if (TPL_ENABLE_COMBBLASLIB)   ## want to use CombBLAS
     message(FATAL_ERROR "TPL_COMBBLAS_INCLUDE_DIRS option be set for COMBBLAS support to be enabled.")
   endif()
   foreach(dir ${TPL_COMBBLAS_INCLUDE_DIRS})
-    if (NOT EXISTS ${dir})
+    if (NOT MINGW AND NOT EXISTS ${dir})
       message(FATAL_ERROR "COMBBLAS include directory not found: ${dir}")
     endif()
     set(CMAKE_CXX_FLAGS "-I${dir} ${CMAKE_CXX_FLAGS}")
@@ -544,6 +538,7 @@ endif()
 
 # superlu_dist uses c++11. PUBLIC means that the other codes linking to it need c++11
 #target_compile_features(SuperLU_DIST PUBLIC cxx_std_11)
+
 
 # Generate various configure files with proper definitions
 

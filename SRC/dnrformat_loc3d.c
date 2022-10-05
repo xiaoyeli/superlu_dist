@@ -419,7 +419,7 @@ int dScatter_B3d(NRformat_loc3d *A3d,  // modified
 	    /* All procs participate */
 	    MPI_Allgather(&(A3d->m_loc), 1, MPI_INT, m_loc_3d_counts, 1,
 			  MPI_INT, grid3d->comm);
-	    
+
 	    /* Layer 0 set up sends info. The other layers have 0 send counts. */
 	    if (grid3d->zscp.Iam == 0) {
 		int x_fst_row = A2d->fst_row; // start from a layer 0 boundary
@@ -461,7 +461,7 @@ int dScatter_B3d(NRformat_loc3d *A3d,  // modified
 	       x_recv_counts matrix */
 	    MPI_Alltoall(x_send_counts, 1, MPI_INT, x_recv_counts, 1, MPI_INT,
 			 grid3d->comm);
-	    
+
 	    j = 0; // tracking number procs to receive from
 	    for (p = 0; p < nprocs; ++p) {
 		if (x_recv_counts[p]) {
@@ -469,7 +469,7 @@ int dScatter_B3d(NRformat_loc3d *A3d,  // modified
 		    recv_count_list[j] = x_recv_counts[p];
 		    src = p;  tag = iam;
 		    ++j;
-#if 0		    
+#if 0
 		    printf("RECV: src %d -> iam %d, x_recv_counts[p] %d, tag %d\n",
 			   src, iam, x_recv_counts[p], tag);
 		    fflush(stdout);

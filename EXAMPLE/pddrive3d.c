@@ -204,7 +204,6 @@ main (int argc, char *argv[])
 	    fflush(stdout);
 	    break;
 	}
-        fflush(stdout);
     }
 	
     /* Bail out if I do not belong in the grid. */
@@ -315,6 +314,7 @@ main (int argc, char *argv[])
     options.ReplaceTinyPivot = YES;
     options.IterRefine = NOREFINE;
 #if 0
+    options.ReplaceTinyPivot = YES;
     options.RowPerm = NOROWPERM;
     options.IterRefine = NOREFINE;
     options.ColPerm = NATURAL;
@@ -388,8 +388,7 @@ main (int argc, char *argv[])
     dScalePermstructFree (&ScalePermstruct);
     dLUstructFree (&LUstruct);
     PStatFree (&stat);
-    fclose(fp);
-    
+
     /* ------------------------------------------------------------
        RELEASE THE SUPERLU PROCESS GRID.
        ------------------------------------------------------------ */

@@ -63,6 +63,10 @@ _fcd ftcs3;
  * Arguments
  * =========
  *
+ * options (input) superlu_dist_options_t*
+ *         The structure defines the input parameters to control
+ *         how the LU decomposition and triangular solve are performed.
+ *
  * n      (input) int (global)
  *        The order of the system of linear equations.
  *
@@ -94,7 +98,8 @@ _fcd ftcs3;
  * </pre>
  */
 
-void pdgstrs1(int_t n, dLUstruct_t *LUstruct, gridinfo_t *grid,
+void pdgstrs1(superlu_dist_options_t *options, int_t n,
+              dLUstruct_t *LUstruct, gridinfo_t *grid,
 	      double *x, int nrhs, SuperLUStat_t *stat, int *info)
 {
     Glu_persist_t *Glu_persist = LUstruct->Glu_persist;
@@ -205,7 +210,7 @@ void pdgstrs1(int_t n, dLUstruct_t *LUstruct, gridinfo_t *grid,
     ldalsum = Llu->ldalsum;
 
     /* Allocate working storage. */
-    knsupc = sp_ienv_dist(3);
+    knsupc = sp_ienv_dist(3, options);
     if ( !(lsum = doubleCalloc_dist(((size_t)ldalsum) * nrhs
         + nlb * LSUM_H)) )
 	ABORT("Calloc fails for lsum[].");

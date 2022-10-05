@@ -38,6 +38,15 @@ at the top-level directory.
 #include "psymbfact.h"
 
 /*
+ * Internal constant
+ */
+#ifdef _LONGINT
+#define INT_T_MAX LONG_MAX
+#else
+#define INT_T_MAX INT_MAX
+#endif
+
+/*
  * Internal protypes
  */
 
@@ -49,7 +58,7 @@ intCalloc_symbfact(int_t );
 
 static int_t
 initParmsAndStats
-(psymbfact_stat_t *PS);
+(superlu_dist_options_t *options, psymbfact_stat_t *PS);
 
 static void
 estimate_memUsage
@@ -103,15 +112,16 @@ domain_symbfact
 
 static float
 allocPrune_domain
-(int_t, int_t, Llu_symbfact_t *, vtcsInfo_symbfact_t *, psymbfact_stat_t *);
+(superlu_dist_options_t *,
+ int_t, int_t, Llu_symbfact_t *, vtcsInfo_symbfact_t *, psymbfact_stat_t *);
 
 static float
 allocPrune_lvl
-(Llu_symbfact_t *, vtcsInfo_symbfact_t *, psymbfact_stat_t *);
+(superlu_dist_options_t *, Llu_symbfact_t *, vtcsInfo_symbfact_t *, psymbfact_stat_t *);
 
 static int
 symbfact_alloc
-(int_t, int, Pslu_freeable_t *, Llu_symbfact_t *, 
+(superlu_dist_options_t *, int_t, int, Pslu_freeable_t *, Llu_symbfact_t *, 
  vtcsInfo_symbfact_t *, comm_symbfact_t *, psymbfact_stat_t *);
 
 static float 
@@ -140,6 +150,7 @@ cntsVtcs
 float symbfact_dist
 /************************************************************************/
 (
+ superlu_dist_options_t *options,
  int         nprocs_num,  /* Input - no of processors */
  int         nprocs_symb, /* Input - no of processors for the symbolic
 			     factorization */
@@ -283,7 +294,7 @@ float symbfact_dist
 #if ( DEBUGlevel>=1 )
   CHECK_MALLOC(iam, "Enter psymbfact()");
 #endif
-  initParmsAndStats (&PS);
+  initParmsAndStats (options, &PS);
   if (nprocs_symb != 1) {
     if (!(commLvls = (MPI_Comm *) SUPERLU_MALLOC(2*nprocs_symb*sizeof(MPI_Comm)))) {
       fprintf (stderr, "Malloc fails for commLvls[].");  
@@ -306,7 +317,7 @@ float symbfact_dist
   
   VInfo.xlsub_nextLvl  = 0;
   VInfo.xusub_nextLvl  = 0;
-  VInfo.maxSzBlk = sp_ienv_dist(3);
+  VInfo.maxSzBlk = sp_ienv_dist(3, options);
   maxSzBlk = VInfo.maxSzBlk;
   
   mark = EMPTY;
@@ -353,7 +364,7 @@ float symbfact_dist
 #endif
 
     /* Allocate storage common to the symbolic factor routines */
-    if ((iinfo = symbfact_alloc (n, nprocs_symb, Pslu_freeable, 
+    if ((iinfo = symbfact_alloc (options, n, nprocs_symb, Pslu_freeable, 
 				 &Llu_symbfact, &VInfo, &CS, &PS))) 
       return (PS.allocMem);
     /* Copy the redistributed input matrix AS at the end of the memory buffer
@@ -416,7 +427,7 @@ float symbfact_dist
 #if ( PROFlevel>=1 )
 	    t1 = SuperLU_timer_();
 #endif
-	    if ((flinfo = allocPrune_domain (fstVtx, lstVtx, 
+	    if ((flinfo = allocPrune_domain (options, fstVtx, lstVtx, 
 					     &Llu_symbfact, &VInfo, &PS)) > 0)
 	      return (flinfo);
 	    if (fstVtx < lstVtx)
@@ -430,8 +441,8 @@ float symbfact_dist
 	    PS.estimLSz = nextl;
 	    PS.estimUSz = nextu;
 	    if (nprocs_symb != 1) 
-	      if((flinfo = allocPrune_lvl (&Llu_symbfact, &VInfo, &PS)) > 0)
-		return (flinfo);
+		if((flinfo = allocPrune_lvl (options, &Llu_symbfact, &VInfo, &PS)) > 0)
+		    return (flinfo);
 #if ( PROFlevel>=1 )
 	    t2 = SuperLU_timer_();
 	    time_lvls[lvl] = 0.; time_lvls[lvl+1] = 0.;
@@ -512,10 +523,10 @@ float symbfact_dist
       nsuper = Pslu_freeable->supno_loc[fstVtx_lid];
       Pslu_freeable->xsup_beg_loc[nsuper] = fstVtx;
       szsn = 1;
-      if (LONG_MAX - nnzL <= Llu_symbfact.xlsub[fstVtx_lid + 1] - 
+      if (INT_T_MAX - nnzL <= Llu_symbfact.xlsub[fstVtx_lid + 1] - 
 	  Llu_symbfact.xlsub[fstVtx_lid])
 	printf ("PE[%d] ERR nnzL %lld\n", iam, nnzL); 
-      if (LONG_MAX - nnzU <= Llu_symbfact.xusub[fstVtx_lid + 1] - 
+      if (INT_T_MAX - nnzU <= Llu_symbfact.xusub[fstVtx_lid + 1] - 
 	  Llu_symbfact.xusub[fstVtx_lid])
 	printf ("PE[%d] ERR nnzU %lld\n", iam, nnzU);
       
@@ -638,9 +649,9 @@ float symbfact_dist
       printf("\t relax_gen %.2f, relax_curSep %.2f, relax_seps %.2f\n",
 	     PS.relax_gen, PS.relax_curSep, PS.relax_seps);
 #endif
-      printf("LONG_MAX %ld\n", LONG_MAX);
+      printf("INT_T_MAX %ld\n", INT_T_MAX);
       printf("\tParameters: fill mem %ld fill pelt %ld\n",
-	     (long) sp_ienv_dist(6), (long) PS.fill_par);
+	     (long) sp_ienv_dist(6,options), (long) PS.fill_par);
       printf("\tNonzeros in L       %lld\n", nnzL);
       printf("\tNonzeros in U       %lld\n", nnzU);
       nnzLU = nnzL + nnzU;
@@ -768,6 +779,7 @@ float symbfact_dist
 static int_t
 initParmsAndStats
 (
+ superlu_dist_options_t *options,
  psymbfact_stat_t *PS /* Output -statistics*/
 )
 /*! \brief
@@ -786,7 +798,7 @@ initParmsAndStats
   PS->relax_gen = 1.0;
   PS->relax_curSep = 1.0;
   PS->relax_seps = 1.0;
-  PS->fill_par = sp_ienv_dist(6);
+  PS->fill_par = sp_ienv_dist(6, options);
   PS->nops = 0.;
   PS->no_shmSnd = 0.;
   PS->no_msgsSnd = 0.;
@@ -1472,9 +1484,9 @@ symbfact_distributeMatrix
     intBuf4 = intBuf1 + 3 * nprocs_num;
     
     for (p=0; p<nprocs_num; p++) {
-      if (nnzToSend[p] > LONG_MAX || ptr_toSnd[p] > LONG_MAX ||
-	  nnzToRecv[p] > LONG_MAX || ptr_toRcv[p] > LONG_MAX)
-	ABORT("ERROR in symbfact_distributeMatrix size to send > LONG_MAX\n");
+      if (nnzToSend[p] > INT_T_MAX || ptr_toSnd[p] > INT_T_MAX ||
+	  nnzToRecv[p] > INT_T_MAX || ptr_toRcv[p] > INT_T_MAX)
+	ABORT("ERROR in symbfact_distributeMatrix size to send > INT_T_MAX\n");
       intBuf1[p] = (int) nnzToSend[p];
       intBuf2[p] = (int) ptr_toSnd[p];
       intBuf3[p] = (int) nnzToRecv[p];
@@ -1622,6 +1634,7 @@ symbfact_distributeMatrix
 static
 float allocPrune_lvl
 (
+ superlu_dist_options_t *options,
  Llu_symbfact_t *Llu_symbfact, /* Input/Output - local L, U data
 				  structures */
  vtcsInfo_symbfact_t *VInfo,   /* Input -local info on vertices
@@ -1644,7 +1657,7 @@ float allocPrune_lvl
   int_t  nzlmaxPr, nzumaxPr, *xlsubPr, *xusubPr, *lsubPr, *usubPr;
   int_t  nvtcs_loc, no_expand_pr, x_sz;
   float  alpha = 1.5;
-  int_t  FILL = sp_ienv_dist(6);
+  int_t  FILL = sp_ienv_dist(6, options);
   
   nvtcs_loc = VInfo->nvtcs_loc;
   
@@ -1724,6 +1737,7 @@ float allocPrune_lvl
 static float 
 allocPrune_domain
 (
+ superlu_dist_options_t *options,
  int_t fstVtx,  /* Input - first vertex of current node */ 
  int_t lstVtx,  /* Input - last vertex of current node */
  Llu_symbfact_t *Llu_symbfact, /* Output - local L, U data
@@ -1748,7 +1762,7 @@ allocPrune_domain
   int_t  nzlmaxPr, nzumaxPr, *xlsubPr, *xusubPr, *lsubPr, *usubPr;
   int_t  nvtcs_loc, no_expand_pr, x_sz;
   float  alpha = 1.5;
-  int_t  FILL = 2 * sp_ienv_dist(6);
+  int_t  FILL = 2 * sp_ienv_dist(6, options);
   
   nvtcs_loc = VInfo->nvtcs_loc;
   
@@ -1814,6 +1828,7 @@ static
 int symbfact_alloc
 /************************************************************************/
 (
+ superlu_dist_options_t *options,
  int_t n,       /* Input - order of the matrix */
  int   nprocs,  /* Input - number of processors for the symbolic
 		   factorization */  
@@ -1844,7 +1859,7 @@ int symbfact_alloc
   int_t  nzlmax, nzumax, nnz_a_loc;
   int_t  nvtcs_loc, *cntelt_vtcs;
   float  alpha = 1.5;
-  int_t  FILL = sp_ienv_dist(6);
+  int_t  FILL = sp_ienv_dist(6, options);
   
   nvtcs_loc = VInfo->nvtcs_loc;
   nnz_a_loc = VInfo->nnz_ainf_loc + VInfo->nnz_asup_loc;

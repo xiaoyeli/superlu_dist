@@ -323,7 +323,7 @@ sReDistribute_A(SuperMatrix *A, sScalePermstruct_t *ScalePermstruct,
 } /* sReDistribute_A */
 
 float
-psdistribute(fact_t fact, int_t n, SuperMatrix *A,
+psdistribute(superlu_dist_options_t *options, int_t n, SuperMatrix *A,
 	     sScalePermstruct_t *ScalePermstruct,
 	     Glu_freeable_t *Glu_freeable, sLUstruct_t *LUstruct,
 	     gridinfo_t *grid)
@@ -340,8 +340,8 @@ psdistribute(fact_t fact, int_t n, SuperMatrix *A,
  * Arguments
  * =========
  *
- * fact (input) fact_t
- *        Specifies whether or not the L and U structures will be re-used.
+ * options (input) superlu_dist_options_t*
+ *        options->Fact specifies whether or not the L and U structures will be re-used.
  *        = SamePattern_SameRowPerm: L and U structures are input, and
  *                                   unchanged on exit.
  *        = DOFACT or SamePattern: L and U structures are computed and output.
@@ -510,7 +510,7 @@ psdistribute(fact_t fact, int_t n, SuperMatrix *A,
 		       ".. Phase 1 - ReDistribute_A time: %.2f\t\n", t);
 #endif
 
-    if ( fact == SamePattern_SameRowPerm ) {
+    if ( options->Fact == SamePattern_SameRowPerm ) {
 
 #if ( PROFlevel>=1 )
 	t_l = t_u = 0; u_blks = 0;
@@ -519,7 +519,7 @@ psdistribute(fact_t fact, int_t n, SuperMatrix *A,
 	   L and U data structures.            */
 	ilsum = Llu->ilsum;
 	ldaspa = Llu->ldalsum;
-	if ( !(dense = floatCalloc_dist(ldaspa * sp_ienv_dist(3))) )
+	if ( !(dense = floatCalloc_dist(ldaspa * sp_ienv_dist(3, options))) )
 	    ABORT("Calloc fails for SPA dense[].");
 	nrbu = CEILING( nsupers, grid->nprow ); /* No. of local block rows */
 	if ( !(Urb_length = intCalloc_dist(nrbu)) )
@@ -533,7 +533,7 @@ psdistribute(fact_t fact, int_t n, SuperMatrix *A,
 	Unzval_br_ptr = Llu->Unzval_br_ptr;
 	Unnz = Llu->Unnz;
 
-	mem_use += 2.0*nrbu*iword + ldaspa*sp_ienv_dist(3)*dword;
+	mem_use += 2.0*nrbu*iword + ldaspa*sp_ienv_dist(3, options)*dword;
 
 #if ( PROFlevel>=1 )
 	t = SuperLU_timer_();
@@ -638,7 +638,7 @@ psdistribute(fact_t fact, int_t n, SuperMatrix *A,
 			   t_l, t_u, u_blks, nrbu);
 #endif
 
-    } else { /* fact is not SamePattern_SameRowPerm */
+    } else { /* options->Fact is not SamePattern_SameRowPerm */
         /* ------------------------------------------------------------
 	   FIRST TIME CREATING THE L AND U DATA STRUCTURES.
 	   ------------------------------------------------------------*/
@@ -804,7 +804,7 @@ psdistribute(fact_t fact, int_t n, SuperMatrix *A,
 	    ABORT("Malloc fails for Lrb_indptr[].");
 	if ( !(Lrb_valptr = intMalloc_dist(k)) )
 	    ABORT("Malloc fails for Lrb_valptr[].");
-	if ( !(dense = floatCalloc_dist(ldaspa * sp_ienv_dist(3))) )
+	if ( !(dense = floatCalloc_dist(ldaspa * sp_ienv_dist(3, options))) )
 	    ABORT("Calloc fails for SPA dense[].");
 
 	/* These counts will be used for triangular solves. */
@@ -814,7 +814,7 @@ psdistribute(fact_t fact, int_t n, SuperMatrix *A,
 	    ABORT("Calloc fails for bmod[].");
 
 	/* ------------------------------------------------ */
-	mem_use += 6.0*k*iword + ldaspa*sp_ienv_dist(3)*dword;
+	mem_use += 6.0*k*iword + ldaspa*sp_ienv_dist(3, options)*dword;
 
 	k = CEILING( nsupers, grid->npcol );/* Number of local block columns */
 

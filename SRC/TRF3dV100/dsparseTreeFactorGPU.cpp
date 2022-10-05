@@ -13,6 +13,54 @@ int getBufferOffset(int k0, int k1, int winSize, int winParity, int halfWin)
 
     return offset;
 }
+int_t LUstruct_v100::dDFactPSolveGPU(int_t k, int_t offset, ddiagFactBufs_t **dFBufs)
+{
+    // this is new version with diagonal factor being performed on GPU 
+    // different from dDiagFactorPanelSolveGPU (it performs diag factor in CPU)
+
+    double t0 = SuperLU_timer_();
+    int_t ksupc = SuperSize(k);
+    cublasHandle_t cubHandle = A_gpu.cuHandles[offset];
+    cusolverDnHandle_t cusolverH = A_gpu.cuSolveHandles[offset];
+    cudaStream_t cuStream = A_gpu.cuStreams[offset];
+    if (iam == procIJ(k, k))
+    {
+        lPanelVec[g2lCol(k)].diagFactorCuSolver(k,
+                        cusolverH, cuStream, 
+                        A_gpu.diagFactWork[offset], A_gpu.diagFactInfo[offset], // CPU pointers
+                        A_gpu.dFBufs[offset], ksupc, // CPU pointers
+                        thresh, xsup, options, stat, info);
+                                    
+    }
+    //TODO: need to synchronize the cuda stream 
+    /*=======   Diagonal Broadcast          ======*/
+    if (myrow == krow(k))
+        MPI_Bcast((void *)A_gpu.dFBufs[offset], ksupc * ksupc,
+                  MPI_DOUBLE, kcol(k), (grid->rscp).comm);
+    if (mycol == kcol(k))
+        MPI_Bcast((void *)A_gpu.dFBufs[offset], ksupc * ksupc,
+                  MPI_DOUBLE, krow(k), (grid->cscp).comm);
+
+    // do the panels olver 
+    if (myrow == krow(k))
+    {
+        uPanelVec[g2lRow(k)].panelSolveGPU(
+            cubHandle, cuStream,
+            ksupc, A_gpu.dFBufs[offset], ksupc);
+        cudaStreamSynchronize(cuStream); // synchronize befpre broadcast
+    }
+
+    if (mycol == kcol(k))
+    {
+        lPanelVec[g2lCol(k)].panelSolveGPU(
+            cubHandle, cuStream,
+            ksupc, A_gpu.dFBufs[offset], ksupc);
+        cudaStreamSynchronize(cuStream);
+    }
+    SCT->tDiagFactorPanelSolve += (SuperLU_timer_() - t0);
+
+    return 0;
+}
 
 int_t LUstruct_v100::dDiagFactorPanelSolveGPU(int_t k, int_t offset, ddiagFactBufs_t **dFBufs)
 {
@@ -162,7 +210,8 @@ int_t LUstruct_v100::dsparseTreeFactorGPU(
     {
         int_t k = perm_c_supno[k0];
         int_t offset = 0;
-        dDiagFactorPanelSolveGPU(k, offset, dFBufs);
+        // dDiagFactorPanelSolveGPU(k, offset, dFBufs);
+        dDFactPSolveGPU(k, offset, dFBufs);
         donePanelSolve[k0]=1;
     }
 
@@ -220,7 +269,8 @@ int_t LUstruct_v100::dsparseTreeFactorGPU(
                     if (topoLvl < maxTopoLevel - 1 && !localNumChildrenLeft[k0_parent])
                     {
                         int_t dOffset = 0;  // this is wrong 
-                        dDiagFactorPanelSolveGPU(k_parent, dOffset,dFBufs);
+                        // dDiagFactorPanelSolveGPU(k_parent, dOffset,dFBufs);
+                        dDFactPSolveGPU(k_parent, dOffset,dFBufs);
                         donePanelSolve[k0_parent]=1;
                     }
                 }

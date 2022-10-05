@@ -9,7 +9,6 @@ The source code is distributed under BSD license, see the file License.txt
 at the top-level directory.
 */
 
-
 /*! @file slangs_dist.c
  * \brief Returns the value of the one norm, the infinity norm, or the element of largest value
  * Modified from SuperLU routine SLANGS
@@ -84,7 +83,6 @@ float slangs_dist(char *norm, SuperMatrix *A)
     
     if ( SUPERLU_MIN(A->nrow, A->ncol) == 0) {
 	value = 0.;
-	
     } else if ( (strncmp(norm, "M", 1)==0 ) ) {
 	/* Find max(abs(A(i,j))). */
 	value = 0.;

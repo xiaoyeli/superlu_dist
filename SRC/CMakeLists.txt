@@ -74,6 +74,7 @@ if(enable_double)
 
 if(TPL_ENABLE_CUDALIB)
   list(APPEND sources pdgstrs_lsum_cuda.cu)
+  list(APPEND sources TRF3dV100/schurCompUpdate.cu )
 endif()
 # if(TPL_ENABLE_HIPLIB)
 #   list(APPEND sources pdgstrs_lsum_cuda.hip.cpp)
@@ -131,6 +132,7 @@ endif()
     TRF3dV100/l_panels.cpp
     TRF3dV100/u_panels.cpp
     TRF3dV100/lupanels_GPU.cpp
+    TRF3dV100/anc25d.cpp 
     TRF3dV100/LUgpuCHandle_interface.cpp
     dtreeFactorizationGPU.c
     dgather.c
@@ -141,8 +143,8 @@ endif()
     dtrfCommWrapper.c
     dsuperlu_blas.c
   )
-if (HAVE_CUDA)
-  list(APPEND sources dsuperlu_gpu.cu
+if (TPL_ENABLE_CUDALIB)
+  list(APPEND sources pdgstrs_lsum_cuda.cu superlu_gpu_utils.cu dsuperlu_gpu.cu
   TRF3dV100/schurCompUpdate.cu 
   )
 endif()
@@ -166,6 +168,7 @@ if(enable_single)
     ssp_blas2_dist.c
     ssp_blas3_dist.c
     psgssvx.c
+    psgssvx_d2.c
     psgssvx_ABglobal.c
     sreadhb.c
     sreadrb.c
@@ -189,6 +192,7 @@ if(enable_single)
     psgstrs_lsum.c
     psgstrs_Bglobal.c
     psgsrfs.c
+    psgsrfs_d2.c
     psgsmv.c
     psgsrfs_ABXglobal.c
     psgsmv_AXglobal.c
@@ -205,12 +209,20 @@ if(enable_single)
     scommunication_aux.c 
     strfCommWrapper.c
     ssuperlu_blas.c
+    psgssvx_d2.c     # with double-precision IR
+    psgsrfs_d2.c
+    psgsmv_d2.c
+    psgsequb.c
   )
-if (HAVE_CUDA)
+if (TPL_ENABLE_CUDALIB)
   list(APPEND sources ssuperlu_gpu.cu)
 endif()
 if (HAVE_COMBBLAS)
-  list(APPEND sources s_c2cpp_GetHWPM.cpp sHWPM_CombBLAS.hpp)
+   if (enable_double)
+       list(APPEND sources s_c2cpp_GetHWPM.cpp)
+   else()
+       list(APPEND sources s_c2cpp_GetHWPM.cpp dHWPM_CombBLAS.hpp)
+   endif()
 endif()
 
 endif() ########## enable single
@@ -269,7 +281,7 @@ if(enable_complex16)
     ztrfCommWrapper.c
     zsuperlu_blas.c
   )
-if (HAVE_CUDA)
+if (TPL_ENABLE_CUDALIB)
     list(APPEND sources zsuperlu_gpu.cu)
 endif()
 if (HAVE_COMBBLAS)
@@ -285,7 +297,6 @@ if (TPL_ENABLE_HIPLIB)
 
   set(hipsources
     pdgstrs_lsum_cuda.hip.cpp
-    superlu_gpu_utils.hip.cpp
     dsuperlu_gpu.hip.cpp
   )
   if(enable_single)
@@ -317,7 +328,7 @@ if (BUILD_SHARED_LIBS AND BUILD_STATIC_LIBS)
 endif()
 
 set(superlu_dist_libs ${MPI_C_LIBRARIES} ${MPI_CXX_LIBRARIES} ${BLAS_LIB} ${LAPACK_LIB}
-    ${PARMETIS_LIB} ${COMBBLAS_LIB} ${CUDA_LIB} ${HIP_LIB}) 
+    ${PARMETIS_LIB} ${COLAMD_LLIB} ${COMBBLAS_LIB} ${CUDA_LIB} ${HIP_LIB}) 
 if (NOT MSVC)
   list(APPEND superlu_dist_libs m)
 endif ()
@@ -352,7 +363,16 @@ endif()
 if(OpenMP_FOUND) # this is found in top-level CMakeLists.txt
   target_link_libraries(superlu_dist OpenMP::OpenMP_C)
 endif()
-  
+
+if (XSDK_ENABLE_Fortran)
+## target_link_libraries(superlu_dist PUBLIC MPI::MPI_CXX MPI::MPI_C MPI::MPI_Fortran)
+## PUBLIC keyword causes error:
+##   The plain signature for target_link_libraries has already been used ...
+  target_link_libraries(superlu_dist MPI::MPI_CXX MPI::MPI_C MPI::MPI_Fortran)
+else()
+  target_link_libraries(superlu_dist MPI::MPI_CXX MPI::MPI_C)
+endif()
+
 target_compile_definitions(superlu_dist PRIVATE SUPERLU_DIST_EXPORTS)
 if(MSVC AND BUILD_SHARED_LIBS)
   set_target_properties(superlu_dist PROPERTIES

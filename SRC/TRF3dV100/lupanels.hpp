@@ -7,6 +7,7 @@
 #include "lupanels_GPU.cuh"
 #endif
 #include "commWrapper.hpp"
+#include "anc25d.hpp"
 // class lpanelGPU_t;
 // class upanelGPU_t;
 #define GLOBAL_BLOCK_NOT_FOUND -1
@@ -134,7 +135,14 @@ public:
                                      double thresh, int_t *xsup,
                                      superlu_dist_options_t *options,
                                      SuperLUStat_t *stat, int *info);
-
+    int_t diagFactorCuSolver(int_t k,
+                                     cusolverDnHandle_t cusolverH, cudaStream_t cuStream,
+                                    double *dWork, int* dInfo,  // GPU pointers 
+                                    double *dDiagBuf, int_t LDD, // GPU pointers
+                                    double thresh, int_t *xsup,
+                                    superlu_dist_options_t *options,
+                                    SuperLUStat_t *stat, int *info);
+    
     double *blkPtrGPU(int k)
     {
         return &gpuPanel.val[blkPtrOffset(k)];
@@ -324,7 +332,7 @@ struct LUstruct_v100
 
 
     // Adding more variables for factorization 
-    trf3Dpartition_t *trf3Dpartition;
+    dtrf3Dpartition_t *trf3Dpartition;
     int_t maxLvl;
     
     ddiagFactBufs_t **dFBufs;
@@ -368,6 +376,7 @@ struct LUstruct_v100
     int_t g2lRow(int_t k) { return k / Pr; }
     int_t g2lCol(int_t k) { return k / Pc; }
 
+    anc25d_t anc25d;
     // For GPU acceleration
 #ifdef GPU_ACC    
     LUstructGPU_t *dA_gpu;
@@ -383,7 +392,7 @@ struct LUstruct_v100
     /**
     *          C O N / D E S - T R U C T O R S
     */
-    LUstruct_v100(int_t nsupers, int_t ldt_, trf3Dpartition_t *trf3Dpartition, 
+    LUstruct_v100(int_t nsupers, int_t ldt_, dtrf3Dpartition_t *trf3Dpartition, 
                   dLUstruct_t *LUstruct, gridinfo3d_t *grid3d,
                   SCT_t *SCT_, superlu_dist_options_t *options_, SuperLUStat_t *stat,
                   double thresh_, int *info_);
@@ -486,6 +495,7 @@ struct LUstruct_v100
     int_t zSendUPanelGPU(int_t k0, int_t receiverGrid);
     int_t zRecvUPanelGPU(int_t k0, int_t senderGrid, double alpha, double beta);
     int_t copyLUGPUtoHost();
+    int_t copyLUHosttoGPU();
     int_t checkGPU();
 
     // some more helper functions 
@@ -499,7 +509,21 @@ struct LUstruct_v100
    
     lpanelGPU_t* copyLpanelsToGPU();
     upanelGPU_t* copyUpanelsToGPU();
-#endif    
+
+    // to perform diagFactOn GPU
+    int_t dDFactPSolveGPU(int_t k, int_t offset, ddiagFactBufs_t **dFBufs);
+
+
+    
+    
+    int_t dAncestorFactorBaseline(
+        int_t alvl,
+        sForest_t *sforest,
+        ddiagFactBufs_t **dFBufs, // size maxEtree level
+        gEtreeInfo_t *gEtreeInfo, // global etree info
+        int tag_ub);
+#endif        
+    
 };
 
 #ifdef GPU_ACC 

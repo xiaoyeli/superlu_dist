@@ -134,12 +134,12 @@ typedef struct //LUstruct_gpu_
 
 typedef struct //sluGPU_t_
 {
-    int_t gpuId;        // if there are multiple GPUs
+    //int gpuId;      // if there are multiple GPUs ( NOT USED )
     zLUstruct_gpu_t *A_gpu, *dA_gpu; // holds the LU structure on GPU
     gpuStream_t funCallStreams[MAX_NGPU_STREAMS], CopyStream;
     gpublasHandle_t gpublasHandles[MAX_NGPU_STREAMS];
-    int_t lastOffloadStream[MAX_NGPU_STREAMS];
-    int_t nGPUStreams;
+    int lastOffloadStream[MAX_NGPU_STREAMS];
+    int nGPUStreams;
     int* isNodeInMyGrid;
     double acc_async_cost;
 } zsluGPU_t;
@@ -231,7 +231,7 @@ extern int zreduceAllAncestors3d_GPU(int_t ilvl, int_t* myNodeCount,
 			      );
 
 extern void zsyncAllfunCallStreams(zsluGPU_t* sluGPU, SCT_t* SCT);
-extern int zfree_LUstruct_gpu (zLUstruct_gpu_t *A_gpu, SuperLUStat_t *);
+extern int zfree_LUstruct_gpu (zsluGPU_t *sluGPU, SuperLUStat_t *);
 
 //int freeSluGPU(zsluGPU_t *sluGPU);
 
