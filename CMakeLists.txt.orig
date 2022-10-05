@@ -178,25 +178,6 @@ if (TPL_ENABLE_CUDALIB)   ## want to use cuda
     message("-- Enabled support for CUDA.")
     enable_language(CUDA)
     find_package(CUDA REQUIRED)
-<<<<<<< HEAD
-    # if (NOT CMAKE_CUDA_FLAGS)
-    #     cuda_select_nvcc_arch_flags(CUDA_ARCH_FLAGS Auto)
-    #     message("-- Cuda Flags : '${CUDA_ARCH_FLAGS}'")
-    #   endif()
-#     if (CUDA_FOUND)
-#       if (NOT CMAKE_CUDA_FLAGS)
-#         cuda_select_nvcc_arch_flags(CUDA_ARCH_FLAGS Auto)
-#         message("-- Cuda Flags : '${CUDA_ARCH_FLAGS}'")
-#       endif()
-#     set(CUDA_NVCC_FLAGS_RELEASE "-O3 --expt-relaxed-constexpr -DNDEBUG -g ${CMAKE_CUDA_FLAGS} ${CUDA_ARCH_FLAGS}")
-#     set(CUDA_NVCC_FLAGS_DEBUG "-O0 --expt-relaxed-constexpr -DDEBUG -g -G ${CMAKE_CUDA_FLAGS} ${CUDA_ARCH_FLAGS}")
-#     list(APPEND CMAKE_CUDA_FLAGS ${CUDA_ARCH_FLAGS})
-#     message("-- Cuda Flags : '${CMAKE_CUDA_FLAGS}'")
-#     endif()
-# #     find_package(CUDAToolkit REQUIRED)
-
-    message("-- Cuda libraries at : '${CUDA_LIBRARIES}'")
-=======
     if (CUDA_FOUND)
       if (NOT CMAKE_CUDA_FLAGS)
         cuda_select_nvcc_arch_flags(CUDA_ARCH_FLAGS Auto)
@@ -206,7 +187,6 @@ if (TPL_ENABLE_CUDALIB)   ## want to use cuda
       set(CMAKE_CUDA_FLAGS_DDEBUG "-O0 --expt-relaxed-constexpr -DDEBUG -g" CACHE STRING "")
     endif()
 
->>>>>>> 1a6d5bad87736c9e6f53530a63dce79856ecd76c
 #     find_package(CUB REQUIRED)
 
     find_package(CUDAToolkit REQUIRED)
