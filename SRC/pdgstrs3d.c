@@ -59,7 +59,7 @@ int_t trs_B_init3d(int_t nsupers, double* x, int nrhs, dLUstruct_t * LUstruct,
 	return 0;
 }
 
-int_t trs_X_gather3d(double* x, int nrhs, trf3Dpartition_t*  trf3Dpartition,
+int_t trs_X_gather3d(double* x, int nrhs, dtrf3Dpartition_t*  trf3Dpartition,
                      dLUstruct_t* LUstruct,
                      gridinfo3d_t* grid3d )
 
@@ -105,7 +105,7 @@ int_t trs_X_gather3d(double* x, int nrhs, trf3Dpartition_t*  trf3Dpartition,
 
 
 int_t gatherSolvedX3d(int_t treeId, int_t sender, int_t receiver, double* x, int nrhs,
-                      trf3Dpartition_t*  trf3Dpartition, dLUstruct_t* LUstruct, gridinfo3d_t* grid3d )
+                      dtrf3Dpartition_t*  trf3Dpartition, dLUstruct_t* LUstruct, gridinfo3d_t* grid3d )
 {
 	sForest_t** sForests = trf3Dpartition->sForests;
 	sForest_t* sforest = sForests[treeId];
@@ -153,7 +153,7 @@ int_t gatherSolvedX3d(int_t treeId, int_t sender, int_t receiver, double* x, int
 
 
 int_t fsolveReduceLsum3d(int_t treeId, int_t sender, int_t receiver, double* lsum, double* recvbuf, int nrhs,
-                         trf3Dpartition_t*  trf3Dpartition, dLUstruct_t* LUstruct, gridinfo3d_t* grid3d ,
+                         dtrf3Dpartition_t*  trf3Dpartition, dLUstruct_t* LUstruct, gridinfo3d_t* grid3d ,
                          xtrsTimer_t *xtrsTimer)
 {
 	sForest_t** sForests = trf3Dpartition->sForests;
@@ -240,7 +240,7 @@ int_t zAllocBcast(int_t size, void** ptr, gridinfo3d_t* grid3d)
 
 
 
-int_t bsolve_Xt_bcast(int_t ilvl, xT_struct *xT_s, int_t nrhs, trf3Dpartition_t*  trf3Dpartition,
+int_t bsolve_Xt_bcast(int_t ilvl, xT_struct *xT_s, int_t nrhs, dtrf3Dpartition_t*  trf3Dpartition,
                      dLUstruct_t * LUstruct,gridinfo3d_t* grid3d , xtrsTimer_t *xtrsTimer)
 {
 	sForest_t** sForests = trf3Dpartition->sForests;
@@ -343,7 +343,7 @@ int_t bsolve_Xt_bcast(int_t ilvl, xT_struct *xT_s, int_t nrhs, trf3Dpartition_t*
 int_t lsumForestFsolve(int_t k,
                        double *lsum, double *x, double* rtemp,  xT_struct *xT_s, int    nrhs,
                        dLUstruct_t * LUstruct,
-                       trf3Dpartition_t*  trf3Dpartition,
+                       dtrf3Dpartition_t*  trf3Dpartition,
                        gridinfo3d_t* grid3d, SuperLUStat_t * stat)
 {
 	gridinfo_t * grid = &(grid3d->grid2d);
@@ -421,7 +421,7 @@ int_t lsumForestFsolve(int_t k,
 
 int_t nonLeafForestForwardSolve3d( int_t treeId,  dLUstruct_t * LUstruct,
                                    dScalePermstruct_t * ScalePermstruct,
-                                   trf3Dpartition_t*  trf3Dpartition, gridinfo3d_t *grid3d,
+                                   dtrf3Dpartition_t*  trf3Dpartition, gridinfo3d_t *grid3d,
                                    double * x, double * lsum,
                                    xT_struct *xT_s,
                                    double * recvbuf, double* rtemp,
@@ -509,9 +509,9 @@ int_t nonLeafForestForwardSolve3d( int_t treeId,  dLUstruct_t * LUstruct,
 }
 
 
-int_t leafForestForwardSolve3d(int_t treeId, int_t n,  dLUstruct_t * LUstruct,
+int_t leafForestForwardSolve3d(superlu_dist_options_t *options, int_t treeId, int_t n,  dLUstruct_t * LUstruct,
                                dScalePermstruct_t * ScalePermstruct,
-                               trf3Dpartition_t*  trf3Dpartition, gridinfo3d_t *grid3d,
+                               dtrf3Dpartition_t*  trf3Dpartition, gridinfo3d_t *grid3d,
                                double * x, double * lsum, double * recvbuf, double* rtemp,
                                MPI_Request * send_req,
                                int nrhs,
@@ -543,7 +543,7 @@ int_t leafForestForwardSolve3d(int_t treeId, int_t n,  dLUstruct_t * LUstruct,
 	int_t *nodeList = sforest->nodeList ;
 
 
-	int_t knsupc = sp_ienv_dist (3);
+	int_t knsupc = sp_ienv_dist (3,options);
 	int_t maxrecvsz = knsupc * nrhs + SUPERLU_MAX (XK_H, LSUM_H);
 
 	int_t **fsendx_plist = Llu->fsendx_plist;
@@ -817,7 +817,7 @@ int_t getNfrecvxLeaf(sForest_t* sforest, dLUstruct_t * LUstruct, gridinfo_t * gr
 
 void dlsum_fmod_leaf (
     int_t treeId,
-    trf3Dpartition_t*  trf3Dpartition,
+    dtrf3Dpartition_t*  trf3Dpartition,
     double *lsum,    /* Sum of local modifications.                        */
     double *x,       /* X array (local)                                    */
     double *xk,      /* X[k].                                              */
@@ -1006,7 +1006,7 @@ int_t dlasum_bmod_Tree(int_t  pTree, int_t cTree, double *lsum, double *x,
                        xT_struct *xT_s,
                        int    nrhs, lsumBmod_buff_t* lbmod_buf,
                        dLUstruct_t * LUstruct,
-                       trf3Dpartition_t*  trf3Dpartition,
+                       dtrf3Dpartition_t*  trf3Dpartition,
                        gridinfo3d_t* grid3d, SuperLUStat_t * stat)
 {
     gridinfo_t * grid = &(grid3d->grid2d);
@@ -1174,7 +1174,7 @@ int_t lsumBmod(int_t gik, int_t gjk, int_t nrhs, lsumBmod_buff_t* lbmod_buf,
 int_t lsumForestBsolve(int_t k, int_t treeId,
                        double *lsum, double *x,  xT_struct *xT_s, int    nrhs, lsumBmod_buff_t* lbmod_buf,
                        dLUstruct_t * LUstruct,
-                       trf3Dpartition_t*  trf3Dpartition,
+                       dtrf3Dpartition_t*  trf3Dpartition,
                        gridinfo3d_t* grid3d, SuperLUStat_t * stat)
 {
     gridinfo_t * grid = &(grid3d->grid2d);
@@ -1318,7 +1318,7 @@ int_t  lsumReducePrK (int_t k, double*x, double* lsum, double* recvbuf, int_t nr
 
 int_t nonLeafForestBackSolve3d( int_t treeId,  dLUstruct_t * LUstruct,
                                 dScalePermstruct_t * ScalePermstruct,
-                                trf3Dpartition_t*  trf3Dpartition, gridinfo3d_t *grid3d,
+                                dtrf3Dpartition_t*  trf3Dpartition, gridinfo3d_t *grid3d,
                                 double * x, double * lsum,
                                 xT_struct *xT_s,
                                 double * recvbuf,
@@ -1410,9 +1410,9 @@ int_t nonLeafForestBackSolve3d( int_t treeId,  dLUstruct_t * LUstruct,
 
 
 
-int_t leafForestBackSolve3d(int_t treeId, int_t n,  dLUstruct_t * LUstruct,
+int_t leafForestBackSolve3d(superlu_dist_options_t *options, int_t treeId, int_t n,  dLUstruct_t * LUstruct,
                             dScalePermstruct_t * ScalePermstruct,
-                            trf3Dpartition_t*  trf3Dpartition, gridinfo3d_t *grid3d,
+                            dtrf3Dpartition_t*  trf3Dpartition, gridinfo3d_t *grid3d,
                             double * x, double * lsum, double * recvbuf,
                             MPI_Request * send_req,
                             int nrhs, lsumBmod_buff_t* lbmod_buf,
@@ -1435,7 +1435,7 @@ int_t leafForestBackSolve3d(int_t treeId, int_t n,  dLUstruct_t * LUstruct,
     int_t  *Urbs = Llu->Urbs; /* Number of row blocks in each block column of U. */
     Ucb_indptr_t **Ucb_indptr = Llu->Ucb_indptr;/* Vertical linked list pointing to Uindex[] */
     int_t  **Ucb_valptr = Llu->Ucb_valptr;      /* Vertical linked list pointing to Unzval[] */
-    int_t knsupc = sp_ienv_dist (3);
+    int_t knsupc = sp_ienv_dist (3,options);
     int_t maxrecvsz = knsupc * nrhs + SUPERLU_MAX (XK_H, LSUM_H);
 
     int_t nnodes =   sforest->nNodes ;      // number of nodes in the tree
@@ -1706,7 +1706,7 @@ int_t* getBrecvTree(int_t nlb, sForest_t* sforest,  int_t* bmod, gridinfo_t * gr
 
 
 int_t* getBmod3d(int_t treeId, int_t nlb, sForest_t* sforest, dLUstruct_t * LUstruct,
-                 trf3Dpartition_t*  trf3Dpartition, gridinfo_t * grid)
+                 dtrf3Dpartition_t*  trf3Dpartition, gridinfo_t * grid)
 {
     Glu_persist_t *Glu_persist = LUstruct->Glu_persist;
     dLocalLU_t *Llu = LUstruct->Llu;
@@ -2524,9 +2524,9 @@ int_t* getfmod(int_t nlb, dLocalLU_t *Llu)
  */
 
 void
-pdgstrs3d (int_t n, dLUstruct_t * LUstruct,
+pdgstrs3d (superlu_dist_options_t *options, int_t n, dLUstruct_t * LUstruct,
            dScalePermstruct_t * ScalePermstruct,
-           trf3Dpartition_t*  trf3Dpartition, gridinfo3d_t *grid3d, double *B,
+           dtrf3Dpartition_t*  trf3Dpartition, gridinfo3d_t *grid3d, double *B,
            int_t m_loc, int_t fst_row, int_t ldb, int nrhs,
            dSOLVEstruct_t * SOLVEstruct, SuperLUStat_t * stat, int *info)
 {
@@ -2659,7 +2659,7 @@ pdgstrs3d (int_t n, dLUstruct_t * LUstruct,
     ldalsum = Llu->ldalsum;
 
     /* Allocate working storage. */
-    knsupc = sp_ienv_dist (3);
+    knsupc = sp_ienv_dist (3,options);
     maxrecvsz = knsupc * nrhs + SUPERLU_MAX (XK_H, LSUM_H);
     if (!
             (lsum = doubleCalloc_dist (((size_t) ldalsum) * nrhs + nlb * LSUM_H)))
@@ -2730,7 +2730,7 @@ pdgstrs3d (int_t n, dLUstruct_t * LUstruct,
     double tx_st= SuperLU_timer_();
     
     
-    pdgsTrForwardSolve3d( n,  LUstruct, ScalePermstruct, trf3Dpartition, grid3d, x,  lsum, &xT_s,
+    pdgsTrForwardSolve3d(options, n,  LUstruct, ScalePermstruct, trf3Dpartition, grid3d, x,  lsum, &xT_s,
                           recvbuf, send_req,  nrhs, SOLVEstruct,  stat, &xtrsTimer);
     // pdgsTrForwardSolve3d_2d( n,  LUstruct, ScalePermstruct, trf3Dpartition, grid3d, x,  lsum, &xT_s,
     //                          recvbuf, send_req,  nrhs, SOLVEstruct,  stat, info);
@@ -2746,7 +2746,7 @@ pdgstrs3d (int_t n, dLUstruct_t * LUstruct,
      * on the diagonal processes.
      *---------------------------------------------------*/
     tx = SuperLU_timer_();
-    pdgsTrBackSolve3d( n,  LUstruct, ScalePermstruct, trf3Dpartition, grid3d, x,  lsum, &xT_s,
+    pdgsTrBackSolve3d(options, n,  LUstruct, ScalePermstruct, trf3Dpartition, grid3d, x,  lsum, &xT_s,
                        recvbuf, send_req,  nrhs, SOLVEstruct,  stat, &xtrsTimer);
     // pdgsTrBackSolve3d_2d( n,  LUstruct, ScalePermstruct, trf3Dpartition, grid3d, x,  lsum, &xT_s,
     //                       recvbuf, send_req,  nrhs, SOLVEstruct,  stat, info);
@@ -2791,9 +2791,9 @@ pdgstrs3d (int_t n, dLUstruct_t * LUstruct,
 
 
 
-int_t pdgsTrForwardSolve3d(int_t n, dLUstruct_t * LUstruct,
+int_t pdgsTrForwardSolve3d(superlu_dist_options_t *options, int_t n, dLUstruct_t * LUstruct,
                            dScalePermstruct_t * ScalePermstruct,
-                           trf3Dpartition_t*  trf3Dpartition, gridinfo3d_t *grid3d,
+                           dtrf3Dpartition_t*  trf3Dpartition, gridinfo3d_t *grid3d,
                            double *x3d, double *lsum3d,
                            xT_struct *xT_s,
                            double * recvbuf,
@@ -2820,7 +2820,7 @@ int_t pdgsTrForwardSolve3d(int_t n, dLUstruct_t * LUstruct,
 
     int_t *ilsum = Llu->ilsum;
 
-    int_t knsupc = sp_ienv_dist (3);
+    int_t knsupc = sp_ienv_dist (3,options);
     int_t maxrecvsz = knsupc * nrhs + SUPERLU_MAX (XK_H, LSUM_H);
     double* rtemp;
     if (!(rtemp = doubleCalloc_dist (maxrecvsz)))
@@ -2876,7 +2876,7 @@ int_t pdgsTrForwardSolve3d(int_t n, dLUstruct_t * LUstruct,
             if (sforest)
             {
                 if (ilvl == 0)
-                    leafForestForwardSolve3d( tree, n, LUstruct,
+                    leafForestForwardSolve3d(options, tree, n, LUstruct,
                                               ScalePermstruct, trf3Dpartition, grid3d,
                                               x3d,  lsum3d, recvbuf, rtemp,
                                               send_req,  nrhs, SOLVEstruct,  stat, xtrsTimer);
@@ -2932,9 +2932,9 @@ int_t pdgsTrForwardSolve3d(int_t n, dLUstruct_t * LUstruct,
 
 
 
-int_t pdgsTrBackSolve3d(int_t n, dLUstruct_t * LUstruct,
+int_t pdgsTrBackSolve3d(superlu_dist_options_t *options, int_t n, dLUstruct_t * LUstruct,
                         dScalePermstruct_t * ScalePermstruct,
-                        trf3Dpartition_t*  trf3Dpartition, gridinfo3d_t *grid3d,
+                        dtrf3Dpartition_t*  trf3Dpartition, gridinfo3d_t *grid3d,
                         double *x3d, double *lsum3d,
                         xT_struct *xT_s,
                         double * recvbuf,
@@ -2990,7 +2990,7 @@ int_t pdgsTrBackSolve3d(int_t n, dLUstruct_t * LUstruct,
      */
 
     lsumBmod_buff_t lbmod_buf;
-    int_t nsupc = sp_ienv_dist (3);
+    int_t nsupc = sp_ienv_dist (3,options);
     initLsumBmod_buff(nsupc, nrhs, &lbmod_buf);
 
     int_t numTrees = 2 * grid3d->zscp.Np - 1;
@@ -3028,7 +3028,7 @@ int_t pdgsTrBackSolve3d(int_t n, dLUstruct_t * LUstruct,
             if (sforest)
             {
                 if (ilvl == 0)
-                    leafForestBackSolve3d( tree, n, LUstruct,
+                    leafForestBackSolve3d(options, tree, n, LUstruct,
                                            ScalePermstruct, trf3Dpartition, grid3d, x3d,  lsum3d, recvbuf,
                                            send_req,  nrhs, &lbmod_buf,
                                             SOLVEstruct,  stat, xtrsTimer);

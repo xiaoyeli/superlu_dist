@@ -226,17 +226,17 @@ extern "C"
 
                 if (superlu_acc_offload)
                 {
-                if (ilvl == 0)
+                if (ilvl == 0){
                     dsparseTreeFactor(sforest, dFBufs,
                                       &gEtreeInfo,
                                       tag_ub);
-                else
+                }else{
                 #ifdef GPU_ACC      
                     dAncestorFactorBaseline(ilvl, sforest, dFBufs,
                                             &gEtreeInfo,
                                             tag_ub);
                 #endif
-                }
+                }}
                 else{
                     dsparseTreeFactor(sforest, dFBufs,
                                                 &gEtreeInfo,
@@ -257,8 +257,9 @@ extern "C"
         SCT->pdgstrfTimer = SuperLU_timer_() - SCT->pdgstrfTimer;
         if (superlu_acc_offload)
         {
+            #ifdef GPU_ACC
             copyLUHosttoGPU();
-            
+            #endif            
             // LU check passed
         }
         return 0;

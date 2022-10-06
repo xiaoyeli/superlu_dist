@@ -1,8 +1,10 @@
 #pragma once
 #include <vector>
 #include <iostream>
+#ifdef GPU_ACC
 #include <cuda_runtime.h>
 #include <cusolverDn.h>
+#endif
 #include "superlu_ddefs.h"
 #include "lu_common.hpp"
 // #include "lupanels.hpp" 

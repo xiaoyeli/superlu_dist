@@ -3,7 +3,9 @@
 #include <iostream>
 #include "superlu_ddefs.h"
 #include "lu_common.hpp"
+#ifdef GPU_ACC
 #include "lupanels_GPU.cuh"
+#endif
 #include "commWrapper.hpp"
 
 struct anc25d_t

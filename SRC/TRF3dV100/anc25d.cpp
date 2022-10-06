@@ -22,7 +22,7 @@ MPI_Comm *anc25d_t::initComm(gridinfo3d_t *grid3d)
 }
 
 // A function that prints
-
+#ifdef GPU_ACC
 int_t LUstruct_v100::dAncestorFactorBaseline(
     int_t alvl,
     sForest_t *sforest,
@@ -159,3 +159,4 @@ int_t LUstruct_v100::dAncestorFactorBaseline(
 
     return 0;
 } /* dAncestorFactor_ASYNC */
+#endif

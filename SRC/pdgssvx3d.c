@@ -1758,7 +1758,7 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 		}
 		stat->utime[SOLVE] = 0.0;
 		if(Solve3D){
-			pdgstrs3d (n, LUstruct,ScalePermstruct, trf3Dpartition, grid3d, X,
+			pdgstrs3d (options, n, LUstruct,ScalePermstruct, trf3Dpartition, grid3d, X,
 			m_loc, fst_row, ldb, nrhs,SOLVEstruct, stat, info);
 			if (options->IterRefine){
 				printf("iterative refinement has not been implemented for 3D solve\n..bye bye");
@@ -1850,7 +1850,7 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 #endif
 			}
 
-			pdgstrs(n, LUstruct, ScalePermstruct, grid, X, m_loc,
+			pdgstrs(options, n, LUstruct, ScalePermstruct, grid, X, m_loc,
 				fst_row, ldb, nrhs, SOLVEstruct, stat, info);
 			
 			/* ------------------------------------------------------------
@@ -1937,7 +1937,7 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 							Glu_persist, SOLVEstruct1);
 					}
 				
-				pdgsrfs (n, A, anorm, LUstruct, ScalePermstruct, grid,
+				pdgsrfs (options, n, A, anorm, LUstruct, ScalePermstruct, grid,
 					B, ldb, X, ldx, nrhs, SOLVEstruct1, berr, stat, info);
 				
 				/* Deallocate the storage associated with SOLVEstruct1 */
@@ -2026,6 +2026,7 @@ if (grid3d->zscp.Iam == 0)  /* on 2D grid-0 */
 			break;
 	            default: break;
 		}
+	}
 
 #if 0
 	if (!factored && Fact != SamePattern_SameRowPerm && !parSymbFact)
