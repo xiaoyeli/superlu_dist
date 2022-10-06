@@ -9,6 +9,9 @@
 /* Enable parmetis */
 #define HAVE_PARMETIS TRUE
 
+/* Enable colamd */
+/* #undef HAVE_COLAMD */
+
 /* Enable LAPACK */
 /* #undef SLU_HAVE_LAPACK */
 
