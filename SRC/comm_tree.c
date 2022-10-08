@@ -180,12 +180,12 @@
 
 			  int error_code = MPI_Isend(localBuffer, msgSize, Tree->type_, 
 				  iProc, Tree->tag_,Tree->comm_, &Tree->sendRequests_[0] );
-				  
-				if(getenv("COMM_TREE_MPI_WAIT"))
-					MPI_Wait(&tree->sendRequests_[0],&status) ; 
-				else
-					MPI_Test(&tree->sendRequests_[0],&flag,&status) ; 					  
 					
+					if(getenv("COMM_TREE_MPI_WAIT"))
+						MPI_Wait(&Tree->sendRequests_[0],&status) ; 
+					else
+						MPI_Test(&Tree->sendRequests_[0],&flag,&status) ; 					  
+						
 				  // std::cout<<Tree->myRank_<<" FWD to "<<iProc<<" on tag "<<Tree->tag_<<std::endl;
 		}
 	}
