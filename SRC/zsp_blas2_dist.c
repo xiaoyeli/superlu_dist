@@ -404,7 +404,8 @@ sp_zgemv_dist(char *trans, doublecomplex alpha, SuperMatrix *A, doublecomplex *x
     doublecomplex   *Aval;
     int info;
     doublecomplex temp, temp1;
-    int lenx, leny, i, j, irow;
+    int lenx, leny, j, irow;
+	int_t i;
     int iy, jx, jy, kx, ky;
     int notran;
     doublecomplex zero = {0.0, 0.0};

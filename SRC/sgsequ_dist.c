@@ -94,7 +94,8 @@ sgsequ_dist(SuperMatrix *A, float *r, float *c, float *rowcnd,
     /* Local variables */
     NCformat *Astore;
     float   *Aval;
-    int i, j, irow;
+    int_t i, j, irow;
+    int i0;
     float rcmin, rcmax;
     float bignum, smlnum;
     
@@ -104,8 +105,8 @@ sgsequ_dist(SuperMatrix *A, float *r, float *c, float *rowcnd,
 	 A->Stype != SLU_NC || A->Dtype != SLU_S || A->Mtype != SLU_GE )
 	*info = -1;
     if (*info != 0) {
-	i = -(*info);
-	xerr_dist("sgsequ_dist", &i);
+	i0 = -(*info);
+	xerr_dist("sgsequ_dist", &i0);
 	return;
     }
 

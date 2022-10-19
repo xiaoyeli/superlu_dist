@@ -88,7 +88,8 @@ zgsequ_dist(SuperMatrix *A, double *r, double *c, double *rowcnd,
     /* Local variables */
     NCformat *Astore;
     doublecomplex *Aval;
-    int i, j, irow;
+    int_t i, j, irow;
+    int i0;
     double rcmin, rcmax;
     double bignum, smlnum;
     
@@ -98,8 +99,8 @@ zgsequ_dist(SuperMatrix *A, double *r, double *c, double *rowcnd,
 	 A->Stype != SLU_NC || A->Dtype != SLU_Z || A->Mtype != SLU_GE )
 	*info = -1;
     if (*info != 0) {
-	i = -(*info);
-	xerr_dist("zgsequ_dist", &i);
+	i0 = -(*info);
+	xerr_dist("zgsequ_dist", &i0);
 	return;
     }
 

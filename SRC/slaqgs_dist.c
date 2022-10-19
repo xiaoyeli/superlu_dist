@@ -98,7 +98,7 @@ slaqgs_dist(SuperMatrix *A, float *r, float *c,
     /* Local variables */
     NCformat *Astore;
     float   *Aval;
-    int i, j, irow;
+    int_t i, j, irow;
     float large, small, cj;
 
     /* Quick return if possible */

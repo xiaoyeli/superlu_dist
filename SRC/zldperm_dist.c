@@ -95,7 +95,8 @@ int
 zldperm_dist(int job, int n, int_t nnz, int_t colptr[], int_t adjncy[],
 	doublecomplex nzval[], int_t *perm, double u[], double v[])
 {
-    int i, num, icntl[10], info[10]; 
+    int_t i;
+    int num, icntl[10], info[10]; 
     int_t liw, ldw;
     int_t *iw;
     double *dw;

@@ -433,7 +433,7 @@ pdgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
 #if (PROFlevel >= 1 )
     gemm_stats = (gemm_profile *) SUPERLU_MALLOC(nsupers * sizeof(gemm_profile));
     if (iam == 0) fgemm = fopen("dgemm_mnk.dat", "w");
-    int *prof_sendR = intCalloc_dist(nsupers);
+    int_t *prof_sendR = intCalloc_dist(nsupers);
 #endif
 
     stat->ops[FACT]      = 0.0;
@@ -1761,7 +1761,7 @@ pdgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
 
     pxgstrfTimer = SuperLU_timer_() - pxgstrfTimer;
 
-#if ( PRNTlevel>=2 )
+#if ( PRNTlevel>=1 )
     /* Print detailed statistics */
     /* Updating total flops */
     double allflops;

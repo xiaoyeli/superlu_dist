@@ -537,7 +537,7 @@ pzgssvx(superlu_dist_options_t *options, SuperMatrix *A,
     int_t   nnz_loc, nnz, iinfo;
     int     m_loc, fst_row, icol;
     int     colequ, Equil, factored, job, notran, rowequ, need_value;
-    int     i, j, irow, m, n, permc_spec;
+    int_t     i, j, irow, m, n, permc_spec;
     int     iam, iam_g;
     int     ldx;  /* LDA for matrix X (local). */
     char    equed[1], norm[1];

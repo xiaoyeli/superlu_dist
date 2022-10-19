@@ -74,7 +74,7 @@ float slangs_dist(char *norm, SuperMatrix *A)
     /* Local variables */
     NCformat *Astore;
     float   *Aval;
-    int      i, j, irow;
+    int_t      i, j, irow;
     float   value = 0.0, sum;
     float   *rwork;
 

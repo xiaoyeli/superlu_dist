@@ -74,7 +74,7 @@ zCompRow_to_CompCol_dist(int_t m, int_t n, int_t nnz,
                          doublecomplex *a, int_t *colind, int_t *rowptr,
                          doublecomplex **at, int_t **rowind, int_t **colptr)
 {
-    register int i, j, col, relpos;
+    register int_t i, j, col, relpos;
     int_t *marker;
 
     /* Allocate storage for another copy of the matrix. */
@@ -111,7 +111,7 @@ void
 zCopy_CompCol_Matrix_dist(SuperMatrix *A, SuperMatrix *B)
 {
     NCformat *Astore, *Bstore;
-    int      ncol, nnz, i;
+    int_t      ncol, nnz, i;
 
     B->Stype = A->Stype;
     B->Dtype = A->Dtype;
@@ -155,7 +155,7 @@ void zPrint_CompCol_Matrix_dist(SuperMatrix *A)
 void zPrint_Dense_Matrix_dist(SuperMatrix *A)
 {
     DNformat     *Astore;
-    register int i;
+    register int_t i;
     doublecomplex       *dp;
 
     printf("\nDense matrix: ");
@@ -357,7 +357,7 @@ void zScaleAddId_CompRowLoc_Matrix_dist(SuperMatrix *A, doublecomplex c)
     doublecomplex one = {1.0, 0.0};
     NRformat_loc  *Astore = A->Store;
     doublecomplex *aval = (doublecomplex *) Astore->nzval;
-    int i, j;
+    int_t i, j;
     doublecomplex temp;
 
     for (i = 0; i < Astore->m_loc; ++i) { /* Loop through each row */
@@ -794,7 +794,7 @@ void zPrintUblocks(int iam, int_t nsupers, gridinfo_t *grid,
 void zZeroUblocks(int iam, int n, gridinfo_t *grid, zLUstruct_t *LUstruct)
 {
     doublecomplex zero = {0.0, 0.0};
-    register int i, extra, lb, len, nrb;
+    register int_t i, extra, lb, len, nrb;
     register int myrow, r;
     zLocalLU_t *Llu = LUstruct->Llu;
     Glu_persist_t *Glu_persist = LUstruct->Glu_persist;

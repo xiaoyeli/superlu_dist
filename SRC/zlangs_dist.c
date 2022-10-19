@@ -63,7 +63,7 @@ double zlangs_dist(char *norm, SuperMatrix *A)
     /* Local variables */
     NCformat *Astore;
     doublecomplex   *Aval;
-    int      i, j, irow;
+    int_t      i, j, irow;
     double   value=0., sum;
     double   *rwork;
 
