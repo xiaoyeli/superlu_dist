@@ -154,26 +154,29 @@ int main(int argc, char *argv[])
         SUPERLU_FREE(usermap);
 
 #ifdef GPU_ACC
-        /* Binding each MPI to a GPU device */
-        char *ttemp;
-        ttemp = getenv ("SUPERLU_BIND_MPI_GPU");
+        int superlu_acc_offload = get_acc_offload();
+        if (superlu_acc_offload) {
+	    /* Binding each MPI to a GPU device */
+	    char *ttemp;
+	    ttemp = getenv ("SUPERLU_BIND_MPI_GPU");
 
-        if (ttemp) {
-	    int devs, rank;
-	    MPI_Comm_rank(MPI_COMM_WORLD, &rank); // MPI_COMM_WORLD needs to be used here instead of SubComm
-	    gpuGetDeviceCount(&devs);  // Returns the number of compute-capable devices
-	    gpuSetDevice(rank % devs); // Set device to be used for GPU executions
-        }
+	    if (ttemp) {
+		int devs, rank;
+		MPI_Comm_rank(MPI_COMM_WORLD, &rank); // MPI_COMM_WORLD needs to be used here instead of SubComm
+		gpuGetDeviceCount(&devs);  // Returns the number of compute-capable devices
+		gpuSetDevice(rank % devs); // Set device to be used for GPU executions
+	    }
 
-        // This is to initialize GPU, which can be costly. 
-        double t1 = SuperLU_timer_();                       
-        gpuFree(0);
-        double t2 = SuperLU_timer_();    
-        if(!myrank)printf("first gpufree time: %7.4f\n",t2-t1);
-        gpublasHandle_t hb;           
-        gpublasCreate(&hb);
-        if(!myrank)printf("first blas create time: %7.4f\n",SuperLU_timer_()-t2);
-        gpublasDestroy(hb);
+	    // This is to initialize GPU, which can be costly.
+	    double t1 = SuperLU_timer_();
+	    gpuFree(0);
+	    double t2 = SuperLU_timer_();
+	    if(!myrank)printf("first gpufree time: %7.4f\n",t2-t1);
+	    gpublasHandle_t hb;
+	    gpublasCreate(&hb);
+	    if(!myrank)printf("first blas create time: %7.4f\n",SuperLU_timer_()-t2);
+	    gpublasDestroy(hb);
+	}
 #endif
         // printf("grid.iam %5d, myrank %5d\n",grid.iam,myrank);
         // fflush(stdout);
@@ -185,15 +188,18 @@ int main(int argc, char *argv[])
         superlu_gridinit(MPI_COMM_WORLD, nprow, npcol, &grid);
 	
 #ifdef GPU_ACC
-        MPI_Comm_rank(MPI_COMM_WORLD, &myrank);
-        double t1 = SuperLU_timer_();                       
-        gpuFree(0);
-        double t2 = SuperLU_timer_();    
-        if(!myrank)printf("first gpufree time: %7.4f\n",t2-t1);
-        gpublasHandle_t hb;           
-        gpublasCreate(&hb);
-        if(!myrank)printf("first blas create time: %7.4f\n",SuperLU_timer_()-t2);
-        gpublasDestroy(hb);
+        int superlu_acc_offload = get_acc_offload();
+        if (superlu_acc_offload) {
+	    MPI_Comm_rank(MPI_COMM_WORLD, &myrank);
+	    double t1 = SuperLU_timer_();
+	    gpuFree(0);
+	    double t2 = SuperLU_timer_();
+	    if(!myrank)printf("first gpufree time: %7.4f\n",t2-t1);
+	    gpublasHandle_t hb;
+	    gpublasCreate(&hb);
+	    if(!myrank)printf("first blas create time: %7.4f\n",SuperLU_timer_()-t2);
+	    gpublasDestroy(hb);
+	}
 #endif
     }
     
