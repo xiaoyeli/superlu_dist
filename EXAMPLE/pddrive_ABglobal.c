@@ -162,7 +162,11 @@ int main(int argc, char *argv[])
     *trans = 'N';
     ldx = n;
     ldb = m;
-    dGenXtrue_dist(n, nrhs, xtrue, ldx);
+    if ( !iam ){
+        dGenXtrue_dist(n, nrhs, xtrue, ldx);
+    } else {
+        MPI_Bcast(xtrue, m*nrhs, MPI_DOUBLE, 0, grid.comm);
+    }
     dFillRHS_dist(trans, nrhs, xtrue, ldx, &A, b, ldb);
 
     if ( !(berr = doubleMalloc_dist(nrhs)) )
