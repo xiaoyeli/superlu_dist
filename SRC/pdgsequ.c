@@ -13,7 +13,7 @@ at the top-level directory.
 /*! @file
  * \brief Computes row and column scalings
  *
- * File name:   pdgsequ.c
+ * File name:	pdgsequ.c
  * History:     Modified from LAPACK routine DGEEQU
  */
 #include <math.h>
@@ -84,7 +84,7 @@ at the top-level directory.
 
 void
 pdgsequ(SuperMatrix *A, double *r, double *c, double *rowcnd,
-        double *colcnd, double *amax, int_t *info, gridinfo_t *grid)
+	double *colcnd, double *amax, int_t *info, gridinfo_t *grid)
 {
 
     /* Local variables */
@@ -102,22 +102,20 @@ pdgsequ(SuperMatrix *A, double *r, double *c, double *rowcnd,
     /* Test the input parameters. */
     *info = 0;
     if ( A->nrow < 0 || A->ncol < 0 ||
-            A->Stype != SLU_NR_loc || A->Dtype != SLU_D || A->Mtype != SLU_GE )
-        *info = -1;
-    if (*info != 0)
-    {
-        i = -(*info);
-        pxerr_dist("pdgsequ", grid, i);
-        return;
+	 A->Stype != SLU_NR_loc || A->Dtype != SLU_D || A->Mtype != SLU_GE )
+	*info = -1;
+    if (*info != 0) {
+	i = -(*info);
+	pxerr_dist("pdgsequ", grid, i);
+	return;
     }
 
     /* Quick return if possible */
-    if ( A->nrow == 0 || A->ncol == 0 )
-    {
-        *rowcnd = 1.;
-        *colcnd = 1.;
-        *amax = 0.;
-        return;
+    if ( A->nrow == 0 || A->ncol == 0 ) {
+	*rowcnd = 1.;
+	*colcnd = 1.;
+	*amax = 0.;
+	return;
     }
 
     Astore = A->Store;
@@ -133,49 +131,43 @@ pdgsequ(SuperMatrix *A, double *r, double *c, double *rowcnd,
 
     /* Find the maximum element in each row. */
     irow = Astore->fst_row;
-    for (i = 0; i < m_loc; ++i)
-    {
-        for (j = Astore->rowptr[i]; j < Astore->rowptr[i + 1]; ++j)
-            r[irow] = SUPERLU_MAX( r[irow], fabs(Aval[j]) );
-        ++irow;
+    for (i = 0; i < m_loc; ++i) {
+	for (j = Astore->rowptr[i]; j < Astore->rowptr[i+1]; ++j)
+	    r[irow] = SUPERLU_MAX( r[irow], fabs(Aval[j]) );
+	++irow;
     }
 
     /* Find the maximum and minimum scale factors. */
     rcmin = bignum;
     rcmax = 0.;
-    for (i = Astore->fst_row; i < Astore->fst_row + m_loc; ++i)
-    {
-        rcmax = SUPERLU_MAX(rcmax, r[i]);
-        rcmin = SUPERLU_MIN(rcmin, r[i]);
+    for (i = Astore->fst_row; i < Astore->fst_row + m_loc; ++i) {
+	rcmax = SUPERLU_MAX(rcmax, r[i]);
+	rcmin = SUPERLU_MIN(rcmin, r[i]);
     }
 
     /* Get the global MAX and MIN for R */
     tempmax = rcmax;
     tempmin = rcmin;
     MPI_Allreduce( &tempmax, &rcmax,
-                   1, MPI_DOUBLE, MPI_MAX, grid->comm);
+		1, MPI_DOUBLE, MPI_MAX, grid->comm);
     MPI_Allreduce( &tempmin, &rcmin,
-                   1, MPI_DOUBLE, MPI_MIN, grid->comm);
+		1, MPI_DOUBLE, MPI_MIN, grid->comm);
 
     *amax = rcmax;
 
-    if (rcmin == 0.)
-    {
-        /* Find the first zero scale factor and return an error code. */
-        for (i = 0; i < A->nrow; ++i)
-            if (r[i] == 0.)
-            {
-                *info = i + 1;
-                return;
-            }
-    }
-    else
-    {
-        /* Invert the scale factors. */
-        for (i = 0; i < A->nrow; ++i)
-            r[i] = 1. / SUPERLU_MIN( SUPERLU_MAX( r[i], smlnum ), bignum );
-        /* Compute ROWCND = min(R(I)) / max(R(I)) */
-        *rowcnd = SUPERLU_MAX( rcmin, smlnum ) / SUPERLU_MIN( rcmax, bignum );
+    if (rcmin == 0.) {
+	/* Find the first zero scale factor and return an error code. */
+	for (i = 0; i < A->nrow; ++i)
+	    if (r[i] == 0.) {
+		*info = i + 1;
+		return;
+	    }
+    } else {
+	/* Invert the scale factors. */
+	for (i = 0; i < A->nrow; ++i)
+	    r[i] = 1. / SUPERLU_MIN( SUPERLU_MAX( r[i], smlnum ), bignum );
+	/* Compute ROWCND = min(R(I)) / max(R(I)) */
+	*rowcnd = SUPERLU_MAX( rcmin, smlnum ) / SUPERLU_MIN( rcmax, bignum );
     }
 
     /* Compute column scale factors */
@@ -184,19 +176,17 @@ pdgsequ(SuperMatrix *A, double *r, double *c, double *rowcnd,
     /* Find the maximum element in each column, assuming the row
        scalings computed above. */
     irow = Astore->fst_row;
-    for (i = 0; i < m_loc; ++i)
-    {
-        for (j = Astore->rowptr[i]; j < Astore->rowptr[i + 1]; ++j)
-        {
-            jcol = Astore->colind[j];
-            c[jcol] = SUPERLU_MAX( c[jcol], fabs(Aval[j]) * r[irow] );
-        }
-        ++irow;
+    for (i = 0; i < m_loc; ++i) {
+        for (j = Astore->rowptr[i]; j < Astore->rowptr[i+1]; ++j) {
+	    jcol = Astore->colind[j];
+	    c[jcol] = SUPERLU_MAX( c[jcol], fabs(Aval[j]) * r[irow] );
+	}
+	++irow;
     }
 
     /* Find the global maximum for c[j] */
     if ( !(loc_max = doubleMalloc_dist(A->ncol)))
-        ABORT("Malloc fails for loc_max[].");
+      ABORT("Malloc fails for loc_max[].");
     for (j = 0; j < A->ncol; ++j) loc_max[j] = c[j];
     MPI_Allreduce(loc_max, c, A->ncol, MPI_DOUBLE, MPI_MAX, grid->comm);
     SUPERLU_FREE(loc_max);
@@ -204,39 +194,34 @@ pdgsequ(SuperMatrix *A, double *r, double *c, double *rowcnd,
     /* Find the maximum and minimum scale factors. */
     rcmin = bignum;
     rcmax = 0.;
-    for (j = 0; j < A->ncol; ++j)
-    {
-        rcmax = SUPERLU_MAX(rcmax, c[j]);
-        rcmin = SUPERLU_MIN(rcmin, c[j]);
+    for (j = 0; j < A->ncol; ++j) {
+	rcmax = SUPERLU_MAX(rcmax, c[j]);
+	rcmin = SUPERLU_MIN(rcmin, c[j]);
     }
 
-    if (rcmin == 0.)
-    {
-        /* Find the first zero scale factor and return an error code. */
-        for (j = 0; j < A->ncol; ++j)
-            if ( c[j] == 0. )
-            {
-                *info = A->nrow + j + 1;
-                return;
-            }
-    }
-    else
-    {
-        /* Invert the scale factors. */
-        for (j = 0; j < A->ncol; ++j)
-            c[j] = 1. / SUPERLU_MIN( SUPERLU_MAX( c[j], smlnum ), bignum);
-        /* Compute COLCND = min(C(J)) / max(C(J)) */
-        *colcnd = SUPERLU_MAX( rcmin, smlnum ) / SUPERLU_MIN( rcmax, bignum );
+    if (rcmin == 0.) {
+	/* Find the first zero scale factor and return an error code. */
+	for (j = 0; j < A->ncol; ++j)
+	    if ( c[j] == 0. ) {
+		*info = A->nrow + j + 1;
+		return;
+	    }
+    } else {
+	/* Invert the scale factors. */
+	for (j = 0; j < A->ncol; ++j)
+	    c[j] = 1. / SUPERLU_MIN( SUPERLU_MAX( c[j], smlnum ), bignum);
+	/* Compute COLCND = min(C(J)) / max(C(J)) */
+	*colcnd = SUPERLU_MAX( rcmin, smlnum ) / SUPERLU_MIN( rcmax, bignum );
     }
 
     /* gather R from each process to get the global R.  */
 
     procs = grid->nprow * grid->npcol;
     if ( !(r_sizes = SUPERLU_MALLOC(2 * procs * sizeof(int))))
-        ABORT("Malloc fails for r_sizes[].");
+      ABORT("Malloc fails for r_sizes[].");
     displs = r_sizes + procs;
     if ( !(loc_r = doubleMalloc_dist(m_loc)))
-        ABORT("Malloc fails for loc_r[].");
+      ABORT("Malloc fails for loc_r[].");
     j = Astore->fst_row;
     for (i = 0; i < m_loc; ++i) loc_r[i] = r[j++];
 
@@ -245,14 +230,15 @@ pdgsequ(SuperMatrix *A, double *r, double *c, double *rowcnd,
 
     /* Set up the displacements for allgatherv */
     displs[0] = 0;
-    for (i = 1; i < procs; ++i) displs[i] = displs[i - 1] + r_sizes[i - 1];
+    for (i = 1; i < procs; ++i) displs[i] = displs[i-1] + r_sizes[i-1];
 
     /* Now gather the actual data */
     MPI_Allgatherv(loc_r, m_loc, MPI_DOUBLE, r, r_sizes, displs,
-                   MPI_DOUBLE, grid->comm);
+                MPI_DOUBLE, grid->comm);
 
     SUPERLU_FREE(r_sizes);
     SUPERLU_FREE(loc_r);
+
     return;
 
 } /* pdgsequ */

@@ -9,6 +9,7 @@ The source code is distributed under BSD license, see the file License.txt
 at the top-level directory.
 */
 
+
 /*! @file sgsequ_dist.c
  * \brief Computes row and column scalings
  *
@@ -91,6 +92,8 @@ void
 sgsequ_dist(SuperMatrix *A, float *r, float *c, float *rowcnd,
 	float *colcnd, float *amax, int_t *info)
 {
+
+
     /* Local variables */
     NCformat *Astore;
     float   *Aval;

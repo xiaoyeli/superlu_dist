@@ -537,7 +537,8 @@ pzgssvx(superlu_dist_options_t *options, SuperMatrix *A,
     int_t   nnz_loc, nnz, iinfo;
     int     m_loc, fst_row, icol;
     int     colequ, Equil, factored, job, notran, rowequ, need_value;
-    int_t     i, j, irow, m, n, permc_spec;
+    int_t   i, j, irow, m, n;
+    int     permc_spec;
     int     iam, iam_g;
     int     ldx;  /* LDA for matrix X (local). */
     char    equed[1], norm[1];
@@ -1460,7 +1461,7 @@ pzgssvx(superlu_dist_options_t *options, SuperMatrix *A,
             checkGPU(gpuMemcpy(LUstruct->Llu->d_Lnzval_bc_dat, LUstruct->Llu->Lnzval_bc_dat,
 	        (LUstruct->Llu->Lnzval_bc_cnt) * sizeof(doublecomplex), gpuMemcpyHostToDevice));
             //checkGPU(gpuMemcpy(LUstruct->Llu->d_Unzval_br_dat, LUstruct->Llu->Unzval_br_dat,
-	    //  (LUstruct->Llu->Unzval_br_cnt) * sizeof(doublecomplex), gpuMemcpyHostToDevice));
+	      //  (LUstruct->Llu->Unzval_br_cnt) * sizeof(doublecomplex), gpuMemcpyHostToDevice));
 #endif
 	}
 
