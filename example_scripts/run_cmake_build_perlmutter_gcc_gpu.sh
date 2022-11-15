@@ -60,7 +60,7 @@ cmake .. \
   -DMPIEXEC_NUMPROC_FLAG=-n \
   -DMPIEXEC_EXECUTABLE=/usr/bin/srun \
   -DMPIEXEC_MAX_NUMPROCS=16
-     
+
 make pddrive
 make pddrive3d
 make f_pddrive
