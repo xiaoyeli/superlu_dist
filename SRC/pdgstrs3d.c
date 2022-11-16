@@ -144,56 +144,6 @@ int_t trs_B_init3d_newsolve(int_t nsupers, double* x, int nrhs, dLUstruct_t * LU
 }
 
 
-// int_t trs_x_reduction_newsolve(int_t nsupers, double* x, int nrhs, dLUstruct_t * LUstruct,
-// 	gridinfo3d_t *grid3d, dtrf3Dpartition_t*  trf3Dpartition, double* recvbuf)
-// {
-
-// 	gridinfo_t * grid = &(grid3d->grid2d);
-// 	Glu_persist_t *Glu_persist = LUstruct->Glu_persist;
-// 	dLocalLU_t *Llu = LUstruct->Llu;
-// 	int_t* ilsum = Llu->ilsum;
-// 	int_t* xsup = Glu_persist->xsup;
-// 	int_t iam = grid->iam;
-// 	int_t myrow = MYROW( iam, grid );
-// 	int_t mycol = MYCOL( iam, grid );
-//     int_t* myZeroTrIdxs = trf3Dpartition->myZeroTrIdxs;
-//     int_t* myTreeIdxs = trf3Dpartition->myTreeIdxs;
-//     int_t maxLvl = log2i(grid3d->zscp.Np) + 1;
-//     double zero = 0.0;
-//     sForest_t** sForests = trf3Dpartition->sForests;
-
-//     for (int_t ilvl = 0; ilvl < maxLvl; ++ilvl)
-//     {
-//         /* if I participate in this level */
-//         int_t tree = myTreeIdxs[ilvl];
-//         sForest_t* sforest = sForests[myTreeIdxs[ilvl]];
-//         /*main loop over all the super nodes*/
-//         if (sforest)
-//         {
-//             int_t nnodes = sforest->nNodes ;
-//             int_t *nodeList = sforest->nodeList ;
-//             for (int_t k0 = 0; k0 < nnodes; ++k0)
-//             {
-//                 int_t k = nodeList[k0];
-//                 int_t krow = PROW (k, grid);
-//                 int_t kcol = PCOL (k, grid);
-
-//                 if (myrow == krow && mycol == kcol)
-//                 {
-//                     int_t lk = LBi(k, grid);
-//                     int_t ii = X_BLK (lk);
-//                     int_t knsupc = SuperSize(k);
-//                     MPI_Allreduce (MPI_IN_PLACE, &x[ii], knsupc * nrhs, MPI_DOUBLE, MPI_SUM, grid3d->zscp.comm);
-//                 }
-//             }
-//         }
-//     }
-
-// 	return 0;
-// }
-
-
-
 
 int_t trs_x_reduction_newsolve(int_t nsupers, double* x, int nrhs, dLUstruct_t * LUstruct, gridinfo3d_t *grid3d, dtrf3Dpartition_t*  trf3Dpartition, double* recvbuf)
 
@@ -229,6 +179,54 @@ int_t trs_x_reduction_newsolve(int_t nsupers, double* x, int nrhs, dLUstruct_t *
                     // printf("myGrid %5d tr %5d sender %5d receiver %5d\n",myGrid,tr, sender, receiver);
                     // fflush(stdout);
                     reduceSolvedX_newsolve(tr, sender, receiver, x, nrhs,  trf3Dpartition, LUstruct, grid3d, recvbuf);
+                    tr=(tr+1)/2-1;
+
+                }
+
+            }
+        }
+	}
+
+	return 0;
+}
+
+
+
+int_t trs_x_broadcast_newsolve(int_t nsupers, double* x, int nrhs, dLUstruct_t * LUstruct, gridinfo3d_t *grid3d, dtrf3Dpartition_t*  trf3Dpartition, double* recvbuf)
+
+{
+	int_t maxLvl = log2i(grid3d->zscp.Np) + 1;
+	int_t myGrid = grid3d->zscp.Iam;
+	int_t* myTreeIdxs = trf3Dpartition->myTreeIdxs;
+	int_t* myZeroTrIdxs = trf3Dpartition->myZeroTrIdxs;
+
+	for (int_t ilvl = maxLvl-1; ilvl >0 ; --ilvl)
+	{
+        if(!myZeroTrIdxs[ilvl-1]){ // this ensures the number of grids in communication is doubled every level down
+            int_t sender, receiver;
+            int_t tree = myTreeIdxs[ilvl];
+            sForest_t** sForests = trf3Dpartition->sForests;
+            sForest_t* sforest = sForests[tree];
+            if (sforest)
+            {
+                if ((myGrid % (1 << ilvl)) == 0)
+                {
+                    sender = myGrid;
+                    receiver = myGrid + (1 << (ilvl-1));
+                }
+                else
+                {
+                    sender = myGrid - (1 << (ilvl-1));
+                    receiver = myGrid ;
+                }
+                int_t tr =  tree;
+                for (int_t alvl = ilvl; alvl < maxLvl; alvl++)
+                {
+                    /* code */
+                    // printf("myGrid %5d tr %5d sender %5d receiver %5d\n",myGrid,tr, sender, receiver);
+                    // fflush(stdout);
+
+                    p2pSolvedX3d(tr, sender, receiver, x, nrhs,  trf3Dpartition, LUstruct, grid3d);
                     tr=(tr+1)/2-1;
 
                 }
@@ -334,7 +332,7 @@ int_t trs_X_gather3d(double* x, int nrhs, dtrf3Dpartition_t*  trf3Dpartition,
 				for (int_t tr = st; tr < st + numTrees; ++tr)
 				{
 					/* code */
-					gatherSolvedX3d(tr, sender, receiver, x, nrhs,  trf3Dpartition, LUstruct, grid3d);
+					p2pSolvedX3d(tr, sender, receiver, x, nrhs,  trf3Dpartition, LUstruct, grid3d);
 				}
 			}
 
@@ -345,7 +343,7 @@ int_t trs_X_gather3d(double* x, int nrhs, dtrf3Dpartition_t*  trf3Dpartition,
 }
 
 
-int_t gatherSolvedX3d(int_t treeId, int_t sender, int_t receiver, double* x, int nrhs,
+int_t p2pSolvedX3d(int_t treeId, int_t sender, int_t receiver, double* x, int nrhs,
                       dtrf3Dpartition_t*  trf3Dpartition, dLUstruct_t* LUstruct, gridinfo3d_t* grid3d )
 {
 	sForest_t** sForests = trf3Dpartition->sForests;
@@ -2239,7 +2237,7 @@ int_t leafForestBackSolve3d(superlu_dist_options_t *options, int_t treeId, int_t
     int_t iam = grid->iam;
     int_t myrow = MYROW (iam, grid);
     int_t mycol = MYCOL (iam, grid);
-
+    int_t myGrid = grid3d->zscp.Iam;
     int_t  *Urbs = Llu->Urbs; /* Number of row blocks in each block column of U. */
     Ucb_indptr_t **Ucb_indptr = Llu->Ucb_indptr;/* Vertical linked list pointing to Uindex[] */
     int_t  **Ucb_valptr = Llu->Ucb_valptr;      /* Vertical linked list pointing to Unzval[] */
@@ -2255,13 +2253,15 @@ int_t leafForestBackSolve3d(superlu_dist_options_t *options, int_t treeId, int_t
     int_t nsupers = Glu_persist->supno[n - 1] + 1;
     int_t nlb = CEILING (nsupers, Pr);
     int_t* bmod =  getBmod3d(treeId, nlb, sforest, LUstruct, trf3Dpartition, grid);
+    // for (int_t l=0;l<nsupers;l++)
+        // printf("iam %5d lk %5d bmod %5d \n",grid->iam,l,bmod[l]);
     int_t* brecv = getBrecvTree(nlb, sforest, bmod, grid);
     Llu->brecv = brecv;
 
     int_t nbrecvmod = 0;
     int_t nroot = getNrootUsolveTree(&nbrecvmod, sforest, brecv, bmod, grid);
     int_t nbrecvx = getNbrecvX(sforest, Urbs, grid);
-
+    // printf("igrid %5d, iam %5d, nbrecvx %5d, nbrecvmod %5d, nroot %5d\n",myGrid,iam,nbrecvx,nbrecvmod,nroot);
 
     /*before starting the solve; intialize the 3d lsum*/
 
@@ -2400,6 +2400,186 @@ int_t leafForestBackSolve3d(superlu_dist_options_t *options, int_t treeId, int_t
 
 
 
+int_t leafForestBackSolve3d_newsolve(superlu_dist_options_t *options, int_t n,  dLUstruct_t * LUstruct,
+                            dtrf3Dpartition_t*  trf3Dpartition, gridinfo3d_t *grid3d,
+                            double * x, double * lsum, double * recvbuf,
+                            MPI_Request * send_req,
+                            int nrhs, lsumBmod_buff_t* lbmod_buf,
+                            dSOLVEstruct_t * SOLVEstruct, SuperLUStat_t * stat, xtrsTimer_t *xtrsTimer)
+{
+
+    gridinfo_t * grid = &(grid3d->grid2d);
+    Glu_persist_t *Glu_persist = LUstruct->Glu_persist;
+    dLocalLU_t *Llu = LUstruct->Llu;
+    int_t* xsup = Glu_persist->xsup;
+    // sForest_t* sforest = trf3Dpartition->sForests[treeId];
+    // if (!sforest) return 0;
+    int_t** Lrowind_bc_ptr = Llu->Lrowind_bc_ptr;
+    // double** Lnzval_bc_ptr = Llu->Lnzval_bc_ptr;
+    int_t *ilsum = Llu->ilsum;
+    int_t iam = grid->iam;
+    int_t myGrid = grid3d->zscp.Iam;
+    int_t myrow = MYROW (iam, grid);
+    int_t mycol = MYCOL (iam, grid);
+
+    int_t  *Urbs = Llu->Urbs; /* Number of row blocks in each block column of U. */
+    Ucb_indptr_t **Ucb_indptr = Llu->Ucb_indptr;/* Vertical linked list pointing to Uindex[] */
+    int_t  **Ucb_valptr = Llu->Ucb_valptr;      /* Vertical linked list pointing to Unzval[] */
+    int_t knsupc = sp_ienv_dist (3,options);
+    int_t maxrecvsz = knsupc * nrhs + SUPERLU_MAX (XK_H, LSUM_H);
+
+    // int_t nnodes =   sforest->nNodes ;      // number of nodes in the tree
+    // if (nnodes < 1) return 1;
+    // int_t *perm_c_supno = sforest->nodeList ;
+
+    int_t **bsendx_plist = Llu->bsendx_plist;
+    int_t Pr = grid->nprow;
+    int_t nsupers = Glu_persist->supno[n - 1] + 1;
+    int_t nlb = CEILING (nsupers, Pr);
+    int_t* supernodeMask = trf3Dpartition->supernodeMask;
+
+
+    int_t* bmod=  getBmod3d_newsolve(nlb, nsupers, supernodeMask, LUstruct, trf3Dpartition, grid);
+    // for (int_t l=0;l<nsupers;l++)
+    //     printf("iam %5d lk %5d bmod %5d \n",grid->iam,l,bmod[l]);
+    int_t* brecv = getBrecvTree_newsolve(nlb, nsupers, supernodeMask, bmod, grid);
+    Llu->brecv = brecv;
+
+    int_t nbrecvmod = 0;
+    int_t nroot= getNrootUsolveTree_newsolve(&nbrecvmod, nsupers, supernodeMask, brecv, bmod, grid);
+    int_t nbrecvx= getNbrecvX_newsolve(nsupers, supernodeMask, Urbs, Ucb_indptr, grid);
+
+    // printf("igrid %5d, iam %5d, nbrecvx %5d, nbrecvmod %5d, nroot %5d\n",myGrid,iam,nbrecvx,nbrecvmod,nroot);
+
+    /*before starting the solve; intialize the 3d lsum*/
+
+    for (int_t k = nsupers - 1; k >= 0 && nroot; --k)
+    {
+        if(supernodeMask[k]){
+        int_t krow = PROW (k, grid);
+        int_t kcol = PCOL (k, grid);
+        if (myrow == krow && mycol == kcol)
+        {
+            /* Diagonal process. */
+
+            int_t lk = LBi (k, grid); /* Local block number, row-wise. */
+            if (bmod[lk] == 0)
+            {
+                /* code */
+                int_t il = LSUM_BLK( lk );
+                int_t knsupc = SuperSize(k);
+                {
+                int_t ii = X_BLK( lk );
+                if (brecv[lk] == 0 )
+                {
+                    double tx = SuperLU_timer_();
+                    bmod[lk] = -1;  /* Do not solve X[k] in the future. */
+
+                    int_t ii = X_BLK (lk);
+                    int_t lkj = LBj (k, grid); /* Local block number, column-wise */
+
+                    localSolveXkYk(  UPPER_TRI,  k,  &x[ii],  nrhs, LUstruct,   grid, stat);
+                    --nroot;
+
+                    int_t knsupc = SuperSize(k);
+
+                    // // for(int_t i=0;i<knsupc;i++)
+                    // printf("check xk root: lk %5d, k %5d, x[ii] %15.6f iam %5d \n",lk,k,x[ii+knsupc-1],grid3d->iam);
+
+
+                    /*
+                        * Send Xk to process column Pc[k].
+                        */
+                    iBcastXk2Pck( k,  &x[ii - XK_H],  nrhs, bsendx_plist, send_req, LUstruct, grid,xtrsTimer);
+                    /*
+                        * Perform local block modifications: lsum[i] -= U_i,k * X[k]
+                        */
+                    if (Urbs[lkj])
+                        dlsum_bmod_GG_newsolve (trf3Dpartition, lsum, x, &x[ii], nrhs, lbmod_buf,  k, bmod, Urbs,
+                                        Ucb_indptr, Ucb_valptr, xsup, grid, Llu,
+                                        send_req, stat,xtrsTimer);
+                    xtrsTimer->tbs_compute += SuperLU_timer_() - tx;
+                }                   /* if root ... */
+                }
+            }
+        }                       /* if diagonal process ... */
+        }                       /* if(supernodeMask[k]) */
+    }                           /* for k ... */
+    while (nbrecvx || nbrecvmod)
+    {
+        /* While not finished. */
+
+        /* Receive a message. */
+        MPI_Status status;
+        double tx = SuperLU_timer_();
+        MPI_Recv (recvbuf, maxrecvsz, MPI_DOUBLE,
+                  MPI_ANY_SOURCE, MPI_ANY_TAG, grid->comm, &status);
+        xtrsTimer->tbs_comm += SuperLU_timer_() - tx;
+        int_t k = *recvbuf;
+
+        tx = SuperLU_timer_();
+        switch (status.MPI_TAG)
+        {
+        case Xk:
+        {
+            --nbrecvx;
+            xtrsTimer->trsDataRecvXY += SuperSize(k)*nrhs + XK_H;
+            /*
+             * Perform local block modifications:
+             *         lsum[i] -= U_i,k * X[k]
+             */
+            dlsum_bmod_GG_newsolve (trf3Dpartition, lsum, x, &recvbuf[XK_H], nrhs, lbmod_buf, k, bmod, Urbs,
+                           Ucb_indptr, Ucb_valptr, xsup, grid, Llu,
+                           send_req, stat,xtrsTimer);
+            break;
+        }
+        case LSUM:             /* Receiver must be a diagonal process */
+        {
+            --nbrecvmod;
+            xtrsTimer->trsDataRecvXY += SuperSize(k)*nrhs + LSUM_H;
+            int_t lk = LBi (k, grid); /* Local block number, row-wise. */
+            int_t ii = X_BLK (lk);
+            int_t knsupc = SuperSize (k);
+            double* tempv = &recvbuf[LSUM_H];
+            for (int_t j = 0; j < nrhs; ++j)
+            {
+                for (int_t i = 0; i < knsupc; ++i)
+                    x[i + ii + j * knsupc] += tempv[i + j * knsupc];
+            }
+
+            if ((--brecv[lk]) == 0 && bmod[lk] == 0)
+            {
+                bmod[lk] = -1;  /* Do not solve X[k] in the future. */
+                int_t lk = LBj (k, grid); /* Local block number, column-wise. */
+                // int_t* lsub = Lrowind_bc_ptr[lk];
+                localSolveXkYk(  UPPER_TRI,  k,  &x[ii],  nrhs, LUstruct,   grid, stat);
+                iBcastXk2Pck( k,  &x[ii - XK_H],  nrhs, bsendx_plist, send_req, LUstruct, grid,xtrsTimer);
+                if (Urbs[lk])
+                    dlsum_bmod_GG_newsolve (trf3Dpartition, lsum, x, &x[ii], nrhs, lbmod_buf, k, bmod, Urbs,
+                                   Ucb_indptr, Ucb_valptr, xsup, grid, Llu,
+                                   send_req, stat,xtrsTimer);
+            }                   /* if becomes solvable */
+
+            break;
+        }
+        }                       /* switch */
+        xtrsTimer->tbs_compute += SuperLU_timer_() - tx;
+    }                           /* while not finished ... */
+
+    double tx = SuperLU_timer_();
+    for (int_t i = 0; i < Llu->SolveMsgSent; ++i)
+    {
+        MPI_Status status;
+        MPI_Wait (&send_req[i], &status);
+    }
+    Llu->SolveMsgSent = 0;
+    xtrsTimer->tbs_comm += SuperLU_timer_() - tx;
+    return 0;
+
+}
+
+
+
 int_t getNbrecvX(sForest_t* sforest, int_t* Urbs, gridinfo_t * grid)
 {
     int_t nnodes =   sforest->nNodes ;      // number of nodes in the tree
@@ -2425,6 +2605,42 @@ int_t getNbrecvX(sForest_t* sforest, int_t* Urbs, gridinfo_t * grid)
             int_t nub = Urbs[lk];      /* Number of U blocks in block column lk */
             if (nub > 0)
                 nbrecvx++;
+        }
+    }
+
+    return nbrecvx;
+}
+
+
+int_t getNbrecvX_newsolve(int_t nsupers, int_t* supernodeMask, int_t* Urbs, Ucb_indptr_t **Ucb_indptr, gridinfo_t * grid)
+{
+
+    int_t iam = grid->iam;
+    int_t myrow = MYROW (iam, grid);
+    int_t mycol = MYCOL (iam, grid);
+    int_t nbrecvx = 0;
+    int_t ik;
+
+	for (int_t k = 0; k < nsupers; ++k)
+	{
+        if(supernodeMask[k])
+        {
+        int_t krow = PROW (k, grid);
+        int_t kcol = PCOL (k, grid);
+        if (mycol == kcol && myrow != krow)
+        {
+            /* code */
+            int_t lk = LBj( k, grid ); /* Local block number, column-wise. */
+            int_t nub = Urbs[lk];      /* Number of U blocks in block column lk */
+            int_t flag=0;
+            for (int_t ub = 0; ub < nub; ++ub) {
+                ik = Ucb_indptr[lk][ub].lbnum; /* Local block number, row-wise. */
+                if(supernodeMask[ik])
+                    flag=1;
+            }
+            if(flag==1)
+                nbrecvx++;
+        }
         }
     }
 
@@ -2467,6 +2683,38 @@ int_t getNrootUsolveTree(int_t* nbrecvmod, sForest_t* sforest, int_t* brecv, int
     return nroot;
 }
 
+int_t getNrootUsolveTree_newsolve(int_t* nbrecvmod, int_t nsupers, int_t* supernodeMask, int_t* brecv, int_t* bmod, gridinfo_t * grid)
+{
+
+    int_t iam = grid->iam;
+    int_t myrow = MYROW (iam, grid);
+    int_t mycol = MYCOL (iam, grid);
+    int_t nroot = 0;
+	for (int_t k = 0; k < nsupers; ++k)
+	{
+        if(supernodeMask[k])
+        {
+        int_t krow = PROW (k, grid);
+        if (myrow == krow)
+        {
+            int_t lk = LBi (k, grid); /* local block number */
+            int_t kcol = PCOL (k, grid);  /* root process in this row scope. */
+            if (mycol == kcol)
+            {
+                /* diagonal process */
+                *nbrecvmod += brecv[lk];
+                if (!brecv[lk] && !bmod[lk])
+                    ++nroot;
+
+            }
+        }
+        }
+    }
+
+    return nroot;
+}
+
+
 
 int_t* getBrecvTree(int_t nlb, sForest_t* sforest,  int_t* bmod, gridinfo_t * grid)
 {
@@ -2501,6 +2749,45 @@ int_t* getBrecvTree(int_t nlb, sForest_t* sforest,  int_t* bmod, gridinfo_t * gr
             int_t kcol = PCOL (k, grid);  /* root process in this row scope */
             if (mycol != kcol )
                 mod_bit[lk] = 1;    /* Contribution from off-diagonal */
+        }
+    }
+
+    /* Every process receives the count, but it is only useful on the
+       diagonal processes.  */
+    MPI_Allreduce (mod_bit, brecv, nlb, mpi_int_t, MPI_SUM, scp->comm);
+
+    SUPERLU_FREE(mod_bit);
+    return brecv;
+}
+
+int_t* getBrecvTree_newsolve(int_t nlb, int_t nsupers, int_t* supernodeMask, int_t* bmod, gridinfo_t * grid)
+{
+    int_t iam = grid->iam;
+    int_t myrow = MYROW (iam, grid);
+    int_t mycol = MYCOL (iam, grid);
+    superlu_scope_t *scp = &grid->rscp;
+
+
+
+    int_t* mod_bit = SUPERLU_MALLOC(sizeof(int_t) * nlb);
+    for (int_t k = 0; k < nlb; ++k)
+        mod_bit[k] = 0;
+
+    int_t* brecv = SUPERLU_MALLOC(sizeof(int_t) * nlb);
+
+
+	for (int_t k = 0; k < nsupers; ++k)
+	{
+		if(supernodeMask[k])
+        {
+        int_t krow = PROW (k, grid);
+        if (myrow == krow)
+        {
+            int_t lk = LBi (k, grid); /* local block number */
+            int_t kcol = PCOL (k, grid);  /* root process in this row scope */
+            if (mycol != kcol && bmod[lk])
+                mod_bit[lk] = 1;    /* Contribution from off-diagonal */
+        }
         }
     }
 
@@ -2571,6 +2858,68 @@ int_t* getBmod3d(int_t treeId, int_t nlb, sForest_t* sforest, dLUstruct_t * LUst
                 bmod[lk] = 0;
             }
 
+        }
+    }
+    return bmod;
+}
+
+
+int_t* getBmod3d_newsolve(int_t nlb, int_t nsupers, int_t* supernodeMask, dLUstruct_t * LUstruct,
+                 dtrf3Dpartition_t*  trf3Dpartition, gridinfo_t * grid)
+{
+    Glu_persist_t *Glu_persist = LUstruct->Glu_persist;
+    dLocalLU_t *Llu = LUstruct->Llu;
+    int_t* xsup = Glu_persist->xsup;
+    // int_t nnodes =   sforest->nNodes ;      // number of nodes in the tree
+    // if (nnodes < 1) return NULL;
+    // int_t *nodeList = sforest->nodeList ;
+
+    // int_t Pr = grid->nprow;
+    // int_t Pc = grid->npcol;
+    int_t iam = grid->iam;
+    int_t myrow = MYROW (iam, grid);
+    // int_t mycol = MYCOL (iam, grid);
+    int_t **Ufstnz_br_ptr = Llu->Ufstnz_br_ptr;
+    int_t* bmod = SUPERLU_MALLOC(sizeof(int_t) * nlb);
+
+    for (int_t k = 0; k < nlb; ++k)
+        bmod[k] = 0;
+
+	for (int_t k = 0; k < nsupers; ++k)
+	{
+		if(supernodeMask[k])
+        {
+        int_t krow = PROW (k, grid);
+        if (myrow == krow)
+        {
+            int_t lk = LBi (k, grid);
+            bmod[lk] = 0;
+            int_t* usub = Ufstnz_br_ptr[lk];
+            if (usub)
+            {
+                /* code */
+                int_t nub = usub[0];       /* Number of blocks in the block row U(k,:) */
+                int_t iukp = BR_HEADER;   /* Skip header; Pointer to index[] of U(k,:) */
+                // int_t rukp = 0;           /* Pointer to nzval[] of U(k,:) */
+                for (int_t ii = 0; ii < nub; ii++)
+                {
+                    int_t jb = usub[iukp];
+                    if(supernodeMask[jb])
+                    {
+                        /* code */
+                        bmod[lk]++;
+                    }
+                    iukp += UB_DESCRIPTOR;
+                    iukp += SuperSize (jb);
+
+                }
+            }
+            else
+            {
+                bmod[lk] = 0;
+            }
+
+        }
         }
     }
     return bmod;
@@ -2763,6 +3112,189 @@ void dlsum_bmod_GG (
 
 
 
+/************************************************************************/
+void dlsum_bmod_GG_newsolve (
+    dtrf3Dpartition_t*  trf3Dpartition,
+    double *lsum,        /* Sum of local modifications.                    */
+    double *x,           /* X array (local).                               */
+    double *xk,          /* X[k].                                          */
+    int    nrhs,          /* Number of right-hand sides.                    */
+    lsumBmod_buff_t* lbmod_buf,
+    int_t  k,            /* The k-th component of X.                       */
+    int_t  *bmod,        /* Modification count for L-solve.                */
+    int_t  *Urbs,        /* Number of row blocks in each block column of U.*/
+    Ucb_indptr_t **Ucb_indptr,/* Vertical linked list pointing to Uindex[].*/
+    int_t  **Ucb_valptr, /* Vertical linked list pointing to Unzval[].     */
+    int_t  *xsup,
+    gridinfo_t *grid,
+    dLocalLU_t *Llu,
+    MPI_Request send_req[], /* input/output */
+    SuperLUStat_t *stat
+    , xtrsTimer_t *xtrsTimer)
+{
+    // printf("bmodding %d\n", k);
+    /*
+     * Purpose
+     * =======
+     *   Perform local block modifications: lsum[i] -= U_i,k * X[k].
+     */
+    double alpha = 1.0, beta = 0.0;
+    int    iam, iknsupc, knsupc, myrow, nsupr, p, pi;
+    int_t  fnz, gik, gikcol, i, ii, ik, ikfrow, iklrow, il, irow,
+           j, jj, lk, lk1, nub, ub, uptr;
+    int_t  *usub;
+    double *uval, *dest, *y;
+    int_t  *lsub;
+    double *lusup;
+    int_t  *ilsum = Llu->ilsum; /* Starting position of each supernode in lsum.   */
+    int_t  *brecv = Llu->brecv;
+    int_t  **bsendx_plist = Llu->bsendx_plist;
+    MPI_Status status;
+    int test_flag;
+
+    iam = grid->iam;
+    myrow = MYROW( iam, grid );
+    knsupc = SuperSize( k );
+    lk = LBj( k, grid ); /* Local block number, column-wise. */
+    nub = Urbs[lk];      /* Number of U blocks in block column lk */
+
+    for (ub = 0; ub < nub; ++ub)
+    {
+        ik = Ucb_indptr[lk][ub].lbnum; /* Local block number, row-wise. */
+        if (trf3Dpartition->supernodeMask[ik])
+        {
+        usub = Llu->Ufstnz_br_ptr[ik];
+        uval = Llu->Unzval_br_ptr[ik];
+        i = Ucb_indptr[lk][ub].indpos; /* Start of the block in usub[]. */
+        i += UB_DESCRIPTOR;
+        il = LSUM_BLK( ik );
+        gik = ik * grid->nprow + myrow;/* Global block number, row-wise. */
+        iknsupc = SuperSize( gik );
+#if 1
+        lsumBmod(gik, k, nrhs, lbmod_buf,
+                 &usub[i], &uval[Ucb_valptr[lk][ub]], xk,
+                 &lsum[il], xsup, stat);
+#else
+
+        ikfrow = FstBlockC( gik );
+        iklrow = FstBlockC( gik + 1 );
+
+        for (int_t j = 0; j < nrhs; ++j)
+        {
+            dest = &lsum[il + j * iknsupc];
+            y = &xk[j * knsupc];
+            uptr = Ucb_valptr[lk][ub]; /* Start of the block in uval[]. */
+            for (jj = 0; jj < knsupc; ++jj)
+            {
+                fnz = usub[i + jj];
+                if ( fnz < iklrow )   /* Nonzero segment. */
+                {
+                    /* AXPY */
+                    for (irow = fnz; irow < iklrow; ++irow)
+                        dest[irow - ikfrow] -= uval[uptr++] * y[jj];
+                    stat->ops[SOLVE] += 2 * (iklrow - fnz);
+                }
+            } /* for jj ... */
+        } /*for (int_t j = 0;*/
+#endif
+        // printf(" updating %d  %d  \n",ik, bmod[ik] );
+        if ( (--bmod[ik]) == 0 )   /* Local accumulation done. */
+        {
+            // printf("Local accumulation done %d  %d, brecv[ik]=%d  ",ik, bmod[ik],brecv[ik] );
+            gikcol = PCOL( gik, grid );
+            p = PNUM( myrow, gikcol, grid );
+            if ( iam != p )
+            {
+#ifdef ISEND_IRECV
+                MPI_Isend( &lsum[il - LSUM_H], iknsupc * nrhs + LSUM_H,
+                           MPI_DOUBLE, p, LSUM, grid->comm,
+                           &send_req[Llu->SolveMsgSent++] );
+#else
+#ifdef BSEND
+                MPI_Bsend( &lsum[il - LSUM_H], iknsupc * nrhs + LSUM_H,
+                           MPI_DOUBLE, p, LSUM, grid->comm );
+#else
+                MPI_Send( &lsum[il - LSUM_H], iknsupc * nrhs + LSUM_H,
+                          MPI_DOUBLE, p, LSUM, grid->comm );
+#endif
+#endif
+#if ( DEBUGlevel>=2 )
+                printf("(%2d) Sent LSUM[%2.0f], size %2d, to P %2d\n",
+                       iam, lsum[il - LSUM_H], iknsupc * nrhs + LSUM_H, p);
+#endif
+                xtrsTimer->trsDataSendXY += iknsupc * nrhs + LSUM_H;
+            }
+            else     /* Diagonal process: X[i] += lsum[i]. */
+            {
+                ii = X_BLK( ik );
+                dest = &x[ii];
+                for (int_t j = 0; j < nrhs; ++j)
+                    for (i = 0; i < iknsupc; ++i)
+                        dest[i + j * iknsupc] += lsum[i + il + j * iknsupc];
+                if ( !brecv[ik] )   /* Becomes a leaf node. */
+                {
+                    bmod[ik] = -1; /* Do not solve X[k] in the future. */
+                    lk1 = LBj( gik, grid ); /* Local block number. */
+                    lsub = Llu->Lrowind_bc_ptr[lk1];
+                    lusup = Llu->Lnzval_bc_ptr[lk1];
+                    nsupr = lsub[1];
+#ifdef _CRAY
+                    STRSM(ftcs1, ftcs3, ftcs2, ftcs2, &iknsupc, &nrhs, &alpha,
+                          lusup, &nsupr, &x[ii], &iknsupc);
+#elif defined (USE_VENDOR_BLAS)
+                    dtrsm_("L", "U", "N", "N", &iknsupc, &nrhs, &alpha,
+                           lusup, &nsupr, &x[ii], &iknsupc, 1, 1, 1, 1);
+#else
+                    dtrsm_("L", "U", "N", "N", &iknsupc, &nrhs, &alpha,
+                           lusup, &nsupr, &x[ii], &iknsupc);
+#endif
+                    stat->ops[SOLVE] += iknsupc * (iknsupc + 1) * nrhs;
+#if ( DEBUGlevel>=2 )
+                    printf("(%2d) Solve X[%2d]\n", iam, gik);
+#endif
+
+                    /*
+                     * Send Xk to process column Pc[k].
+                     */
+                    for (p = 0; p < grid->nprow; ++p)
+                    {
+                        if ( bsendx_plist[lk1][p] != EMPTY )
+                        {
+                            pi = PNUM( p, gikcol, grid );
+#ifdef ISEND_IRECV
+                            MPI_Isend( &x[ii - XK_H], iknsupc * nrhs + XK_H,
+                                       MPI_DOUBLE, pi, Xk, grid->comm,
+                                       &send_req[Llu->SolveMsgSent++] );
+#else
+#ifdef BSEND
+                            MPI_Bsend( &x[ii - XK_H], iknsupc * nrhs + XK_H,
+                                       MPI_DOUBLE, pi, Xk, grid->comm );
+#else
+                            MPI_Send( &x[ii - XK_H], iknsupc * nrhs + XK_H,
+                                      MPI_DOUBLE, pi, Xk, grid->comm );
+#endif
+#endif
+#if ( DEBUGlevel>=2 )
+                            printf("(%2d) Sent X[%2.0f] to P %2d\n",
+                                   iam, x[ii - XK_H], pi);
+#endif
+                        }
+                    }
+                    xtrsTimer->trsDataSendXY += iknsupc * nrhs + XK_H;
+                    /*
+                     * Perform local block modifications.
+                     */
+                    if ( Urbs[lk1] )
+                        dlsum_bmod_GG_newsolve(trf3Dpartition, lsum, x, &x[ii], nrhs, lbmod_buf, gik, bmod, Urbs,
+                                      Ucb_indptr, Ucb_valptr, xsup, grid, Llu,
+                                      send_req, stat,xtrsTimer);
+                } /* if brecv[ik] == 0 */
+            }
+        } /* if bmod[ik] == 0 */
+        } /* if (trf3Dpartition->supernodeMask[ik]) */
+    } /* for ub ... */
+
+} /* dlsum_bmod_GG_newsolve */
 
 
 
@@ -3620,8 +4152,40 @@ pdgstrs3d (superlu_dist_options_t *options, int_t n, dLUstruct_t * LUstruct,
     tx = SuperLU_timer_();
     pdgsTrBackSolve3d(options, n,  LUstruct, ScalePermstruct, trf3Dpartition, grid3d, x,  lsum, &xT_s,
                        recvbuf, send_req,  nrhs, SOLVEstruct,  stat, &xtrsTimer);
-    // pdgsTrBackSolve3d_2d( n,  LUstruct, ScalePermstruct, trf3Dpartition, grid3d, x,  lsum, &xT_s,
-    //                       recvbuf, send_req,  nrhs, SOLVEstruct,  stat, info);
+
+    // {
+    // int_t maxLvl = log2i(grid3d->zscp.Np) + 1;
+	// for (int_t ilvl = 0; ilvl < maxLvl ; ++ilvl)
+	// {
+    //     int_t tree = trf3Dpartition->myTreeIdxs[ilvl];
+    //     sForest_t** sForests = trf3Dpartition->sForests;
+    //     sForest_t* sforest = sForests[tree];
+	// 	if (sforest)
+	// 	{
+    //         int_t nnodes = sforest->nNodes ;
+	//         int_t *nodeList = sforest->nodeList ;
+
+
+    //         for (int_t k0 = 0; k0 < nnodes; ++k0)
+    //         {
+    //             int_t k = nodeList[k0];
+    //             int_t krow = PROW (k, grid);
+    //             int_t kcol = PCOL (k, grid);
+
+    //             if (myrow == krow && mycol == kcol)
+    //             {
+    //                 int_t lk = LBi(k, grid);
+    //                 int_t ii = X_BLK (lk);
+    //                 int_t knsupc = SuperSize(k);
+
+    //                 // for(int_t i=0;i<knsupc;i++)
+    //                 printf("check x after U solve: lk %5d, k %5d, x[ii] %15.6f iam %5d \n",lk,k,x[ii+knsupc-1],grid3d->iam);
+
+    //             }
+    //         }
+    //     }
+    // }
+    // }
 
     xtrsTimer.t_backwardSolve = SuperLU_timer_() - tx;
     MPI_Barrier (grid3d->comm);
@@ -3844,10 +4408,7 @@ pdgstrs3d_newsolve (superlu_dist_options_t *options, int_t n, dLUstruct_t * LUst
         }
     }
 
-    xT_struct xT_s;
-    xT_s.xT = xT;
-    xT_s.ilsumT = ilsumT;
-    xT_s.ldaspaT = ldaspaT;
+
 
     xtrsTimer_t xtrsTimer;
 
@@ -3908,8 +4469,6 @@ pdgstrs3d_newsolve (superlu_dist_options_t *options, int_t n, dLUstruct_t * LUst
 
     pdgsTrForwardSolve3d_newsolve(options, n,  LUstruct, ScalePermstruct, trf3Dpartition, grid3d, x,  lsum,
                           recvbuf, send_req,  nrhs, SOLVEstruct,  stat, &xtrsTimer);
-    // pdgsTrForwardSolve3d_2d( n,  LUstruct, ScalePermstruct, trf3Dpartition, grid3d, x,  lsum, &xT_s,
-    //                          recvbuf, send_req,  nrhs, SOLVEstruct,  stat, info);
     xtrsTimer.t_forwardSolve = SuperLU_timer_() - tx;
 
 
@@ -3948,7 +4507,7 @@ pdgstrs3d_newsolve (superlu_dist_options_t *options, int_t n, dLUstruct_t * LUst
 
 
     trs_x_reduction_newsolve(nsupers, x, nrhs, LUstruct, grid3d, trf3Dpartition, recvbuf);
-
+    trs_x_broadcast_newsolve(nsupers, x, nrhs, LUstruct, grid3d, trf3Dpartition, recvbuf);
     // {
     // int_t maxLvl = log2i(grid3d->zscp.Np) + 1;
 	// for (int_t ilvl = 0; ilvl < maxLvl ; ++ilvl)
@@ -3990,10 +4549,43 @@ pdgstrs3d_newsolve (superlu_dist_options_t *options, int_t n, dLUstruct_t * LUst
      * on the diagonal processes.
      *---------------------------------------------------*/
     tx = SuperLU_timer_();
-    pdgsTrBackSolve3d(options, n,  LUstruct, ScalePermstruct, trf3Dpartition, grid3d, x,  lsum, &xT_s,
+    pdgsTrBackSolve3d_newsolve(options, n,  LUstruct, trf3Dpartition, grid3d, x,  lsum,
                        recvbuf, send_req,  nrhs, SOLVEstruct,  stat, &xtrsTimer);
-    // pdgsTrBackSolve3d_2d( n,  LUstruct, ScalePermstruct, trf3Dpartition, grid3d, x,  lsum, &xT_s,
-    //                       recvbuf, send_req,  nrhs, SOLVEstruct,  stat, info);
+
+    // {
+    // int_t maxLvl = log2i(grid3d->zscp.Np) + 1;
+	// for (int_t ilvl = 0; ilvl < maxLvl ; ++ilvl)
+	// {
+    //     int_t tree = trf3Dpartition->myTreeIdxs[ilvl];
+    //     sForest_t** sForests = trf3Dpartition->sForests;
+    //     sForest_t* sforest = sForests[tree];
+	// 	if (sforest)
+	// 	{
+    //         int_t nnodes = sforest->nNodes ;
+	//         int_t *nodeList = sforest->nodeList ;
+
+
+    //         for (int_t k0 = 0; k0 < nnodes; ++k0)
+    //         {
+    //             int_t k = nodeList[k0];
+    //             int_t krow = PROW (k, grid);
+    //             int_t kcol = PCOL (k, grid);
+
+    //             if (myrow == krow && mycol == kcol)
+    //             {
+    //                 int_t lk = LBi(k, grid);
+    //                 int_t ii = X_BLK (lk);
+    //                 int_t knsupc = SuperSize(k);
+
+    //                 // for(int_t i=0;i<knsupc;i++)
+    //                 printf("check x after U solve: lk %5d, k %5d, x[ii] %15.6f iam %5d \n",lk,k,x[ii+knsupc-1],grid3d->iam);
+
+    //             }
+    //         }
+    //     }
+    // }
+    // }
+
 
     xtrsTimer.t_backwardSolve = SuperLU_timer_() - tx;
     MPI_Barrier (grid3d->comm);
@@ -4383,6 +4975,87 @@ int_t pdgsTrBackSolve3d(superlu_dist_options_t *options, int_t n, dLUstruct_t * 
         xtrsTimer->tbs_tree[ilvl] = SuperLU_timer_() - tx;
     }
     double tx = SuperLU_timer_();
+    for (int_t i = 0; i < Llu->SolveMsgSent; ++i)
+    {
+        MPI_Status status;
+        MPI_Wait (&send_req[i], &status);
+    }
+    xtrsTimer->tbs_comm += SuperLU_timer_() - tx;
+    Llu->SolveMsgSent = 0;
+
+
+    return 0;
+}
+
+
+
+
+int_t pdgsTrBackSolve3d_newsolve(superlu_dist_options_t *options, int_t n, dLUstruct_t * LUstruct,
+                        dtrf3Dpartition_t*  trf3Dpartition, gridinfo3d_t *grid3d,
+                        double *x3d, double *lsum3d,
+                        double * recvbuf,
+                        MPI_Request * send_req, int nrhs,
+                        dSOLVEstruct_t * SOLVEstruct, SuperLUStat_t * stat, xtrsTimer_t *xtrsTimer)
+{
+    // printf("Using pdgsTrBackSolve3d_2d \n");
+
+    gridinfo_t * grid = &(grid3d->grid2d);
+    Glu_persist_t *Glu_persist = LUstruct->Glu_persist;
+    dLocalLU_t *Llu = LUstruct->Llu;  double zero = 0.0;
+    int_t* xsup = Glu_persist->xsup;
+
+    int_t nsupers = Glu_persist->supno[n - 1] + 1;
+    int_t Pr = grid->nprow;
+    int_t Pc = grid->npcol;
+    int_t iam = grid->iam;
+    int_t myrow = MYROW (iam, grid);
+    int_t mycol = MYCOL (iam, grid);
+    int_t **Ufstnz_br_ptr = Llu->Ufstnz_br_ptr;
+
+    int_t* myZeroTrIdxs = trf3Dpartition->myZeroTrIdxs;
+    sForest_t** sForests = trf3Dpartition->sForests;
+    int_t* myTreeIdxs = trf3Dpartition->myTreeIdxs;
+    int_t maxLvl = log2i(grid3d->zscp.Np) + 1;
+
+    int_t *ilsum = Llu->ilsum;
+
+    /**
+     *  Loop over all the levels from root to leaf
+     */
+
+    /*initilize lsum to zero*/
+    for (int_t k = 0; k < nsupers; ++k)
+    {
+        int_t krow = PROW (k, grid);
+        if (myrow == krow)
+        {
+            int_t knsupc = SuperSize (k);
+            int_t lk = LBi (k, grid);
+            int_t il = LSUM_BLK (lk);
+            double* dest = &lsum3d[il];
+            for (int_t j = 0; j < nrhs; ++j)
+            {
+                for (int_t i = 0; i < knsupc; ++i)
+                    dest[i + j * knsupc] = zero;
+            }
+        }
+    }
+
+    /**
+     * Adding lsumBmod_buff_t* lbmod_buf
+     */
+
+    lsumBmod_buff_t lbmod_buf;
+    int_t nsupc = sp_ienv_dist (3,options);
+    initLsumBmod_buff(nsupc, nrhs, &lbmod_buf);
+
+    Llu->SolveMsgSent = 0;
+    double tx = SuperLU_timer_();
+    leafForestBackSolve3d_newsolve(options, n, LUstruct, trf3Dpartition, grid3d, x3d,  lsum3d, recvbuf,
+                            send_req,  nrhs, &lbmod_buf, SOLVEstruct,  stat, xtrsTimer);
+    xtrsTimer->tbs_tree[0] = SuperLU_timer_() - tx;
+
+    tx = SuperLU_timer_();
     for (int_t i = 0; i < Llu->SolveMsgSent; ++i)
     {
         MPI_Status status;
