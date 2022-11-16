@@ -392,6 +392,7 @@ typedef struct
     int_t** treePerm;
     sForest_t** sForests;
     int_t* supernode2treeMap;
+    int_t* supernodeMask;
     dLUValSubBuf_t  *LUvsb;
 } dtrf3Dpartition_t;
 
@@ -688,11 +689,14 @@ extern int_t leafForestForwardSolve3d(superlu_dist_options_t *options, int_t tre
                                int nrhs,
                                dSOLVEstruct_t * SOLVEstruct, SuperLUStat_t * stat, xtrsTimer_t *xtrsTimer);
 extern int_t* getfmodLeaf(int_t nlb, dLUstruct_t * LUstruct);
+extern int_t* getfmod_newsolve(int_t nlb, int_t nsupers, int_t* supernodeMask, dLUstruct_t * LUstruct, gridinfo_t * grid);
 extern int_t getNfrecvxLeaf(sForest_t* sforest, dLUstruct_t * LUstruct, gridinfo_t * grid);
 extern int_t getNfrecvmodLeaf(int_t* nleaf, sForest_t* sforest, int_t* frecv, int_t* fmod, gridinfo_t * grid);
 
 extern int_t* getfrecvLeaf( sForest_t* sforest, int_t nlb, int_t* fmod, 
   dLUstruct_t * LUstruct, gridinfo_t * grid);
+extern int_t* getfrecv_newsolve(int_t nsupers, int_t* supernodeMask, int_t nlb, int_t* fmod,
+                     dLUstruct_t * LUstruct, gridinfo_t * grid);
 
 extern void dlsum_fmod_leaf (
   int_t treeId,

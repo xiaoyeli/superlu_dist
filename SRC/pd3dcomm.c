@@ -48,6 +48,8 @@ int_t dAllocLlu(int_t nsupers, dLUstruct_t * LUstruct, gridinfo3d_t* grid3d)
     dLocalLU_t *Llu = LUstruct->Llu;
     int_t   **Lrowind_bc_ptr =
 	(int_t**) SUPERLU_MALLOC(sizeof(int_t*)*nbc); 	/* size ceil(NSUPERS/Pc) */
+    int_t   **Lindval_loc_bc_ptr =
+	(int_t**) SUPERLU_MALLOC(sizeof(int_t*)*nbc); 	/* size ceil(NSUPERS/Pc) */
     double  **Lnzval_bc_ptr =
 	(double **) SUPERLU_MALLOC(sizeof(double*)*nbc);  /* size ceil(NSUPERS/Pc) */
 
@@ -55,6 +57,7 @@ int_t dAllocLlu(int_t nsupers, dLUstruct_t * LUstruct, gridinfo3d_t* grid3d)
 	{
 	    /* code */
 	    Lrowind_bc_ptr[i] = NULL;
+	    Lindval_loc_bc_ptr[i] = NULL;
 	    Lnzval_bc_ptr[i] = NULL;
 	}
     
@@ -89,6 +92,7 @@ int_t dAllocLlu(int_t nsupers, dLUstruct_t * LUstruct, gridinfo3d_t* grid3d)
     
     /*now setup the pointers*/
     Llu->Lrowind_bc_ptr = Lrowind_bc_ptr ;
+    Llu->Lindval_loc_bc_ptr = Lindval_loc_bc_ptr ;
     Llu->Lnzval_bc_ptr = Lnzval_bc_ptr ;
     Llu->Ufstnz_br_ptr = Ufstnz_br_ptr ;
     Llu->Unzval_br_ptr = Unzval_br_ptr ;
@@ -470,6 +474,7 @@ int_t dscatter3dLPanels(int_t nsupers,
     int_t* xsup = LUstruct->Glu_persist->xsup;
     gridinfo_t* grid = &(grid3d->grid2d);
     int_t** Lrowind_bc_ptr = Llu->Lrowind_bc_ptr;
+    int_t** Lindval_loc_bc_ptr = Llu->Lindval_loc_bc_ptr;
     double** Lnzval_bc_ptr = Llu->Lnzval_bc_ptr;
     int_t iam = grid->iam;
     
@@ -483,8 +488,10 @@ int_t dscatter3dLPanels(int_t nsupers,
         {
 	    int_t ljb = LBj( jb, grid ); /* Local block number */
 	    int_t  *lsub;
+	    int_t  *lloc;
 	    double* lnzval;
 	    lsub = Lrowind_bc_ptr[ljb];
+	    lloc = Lindval_loc_bc_ptr[ljb];
 	    lnzval = Lnzval_bc_ptr[ljb];
 		
 	    int_t flag = 0;
@@ -495,13 +502,14 @@ int_t dscatter3dLPanels(int_t nsupers,
 	    MPI_Bcast( &flag, 1, mpi_int_t, 0,  grid3d->zscp.comm);
 		
             if (flag) {
-		int_t nrbl, len, len1, len2;
+		int_t nrbl, len, len1, len2, len3;
 		if (!grid3d->zscp.Iam)
 		    {
 			nrbl  =   lsub[0]; /*number of L blocks */
 			len   = lsub[1];   /* LDA of the nzval[] */
 			len1  = len + BC_HEADER + nrbl * LB_DESCRIPTOR;
 			len2  = SuperSize(jb) * len;
+			len3 = nrbl*3;
 		    }
 
 		/*bcast lsub len*/
@@ -521,6 +529,28 @@ int_t dscatter3dLPanels(int_t nsupers,
 		    /*set up pointer*/
 		    Lrowind_bc_ptr[ljb] = lsub;
 		    
+
+
+
+		/*bcast lloc len*/
+		MPI_Bcast( &len3, 1, mpi_int_t, 0,  grid3d->zscp.comm);
+		    
+   	        /*allocate lsub*/
+		if (grid3d->zscp.Iam)
+#ifdef MPI_MALLOC
+		    MPI_INT_ALLOC(lloc, len3);
+#else
+		    
+		    lloc = INT_T_ALLOC(len3);
+#endif
+		    /*now broadcast lsub*/
+		    MPI_Bcast( lloc, len3, mpi_int_t, 0,  grid3d->zscp.comm);
+
+		    /*set up pointer*/
+		    Lindval_loc_bc_ptr[ljb] = lloc;
+
+
+
 		    /*bcast lnzval len*/
 		    MPI_Bcast( &len2, 1, mpi_int_t, 0,  grid3d->zscp.comm);
 		    

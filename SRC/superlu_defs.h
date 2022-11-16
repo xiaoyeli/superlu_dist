@@ -1,9 +1,9 @@
 /*! \file
 Copyright (c) 2003, The Regents of the University of California, through
-Lawrence Berkeley National Laboratory (subject to receipt of any required 
-approvals from U.S. Dept. of Energy) 
+Lawrence Berkeley National Laboratory (subject to receipt of any required
+approvals from U.S. Dept. of Energy)
 
-All rights reserved. 
+All rights reserved.
 
 The source code is distributed under BSD license, see the file License.txt
 at the top-level directory.
@@ -64,7 +64,7 @@ at the top-level directory.
 // #define USE_VTUNE
 // #endif
 #if ( VTUNE>=1 )
-#include <ittnotify.h>			 
+#include <ittnotify.h>
 #endif
 
 /*************************************************************************
@@ -120,7 +120,7 @@ at the top-level directory.
 
 
 /* MPI C complex datatype */
-#define SuperLU_MPI_COMPLEX         MPI_C_COMPLEX 
+#define SuperLU_MPI_COMPLEX         MPI_C_COMPLEX
 #define SuperLU_MPI_DOUBLE_COMPLEX  MPI_C_DOUBLE_COMPLEX
 
 /* MPI_Datatype cannot be used in C typedef
@@ -141,16 +141,16 @@ typedef MPI_C_DOUBLE_COMPLEX  SuperLU_MPI_DOUBLE_COMPLEX;
 
 #define ISORT     /* NOTE: qsort() has bug on Mac */
 
-/*********************************************************************** 
+/***********************************************************************
  * Constants
  ***********************************************************************/
-/* 
- * For each block column of L, the index[] array contains both the row 
+/*
+ * For each block column of L, the index[] array contains both the row
  * subscripts and the integers describing the size of the blocks.
  * The organization of index[] looks like:
  *
  *     [ BLOCK COLUMN HEADER (size BC_HEADER)
- *           number of blocks 
+ *           number of blocks
  *           number of row subscripts, i.e., LDA of nzval[]
  *       BLOCK 0                                        <----
  *           BLOCK DESCRIPTOR (of size LB_DESCRIPTOR)  |
@@ -159,7 +159,7 @@ typedef MPI_C_DOUBLE_COMPLEX  SuperLU_MPI_DOUBLE_COMPLEX;
  *           actual row subscripts                          |
  *       BLOCK 1                                            | Repeat ...
  *           BLOCK DESCRIPTOR                               | number of blocks
- *               block number (global)                      | 
+ *               block number (global)                      |
  *               number of full rows in the block           |
  *           actual row subscripts                          |
  *       .                                                  |
@@ -170,7 +170,7 @@ typedef MPI_C_DOUBLE_COMPLEX  SuperLU_MPI_DOUBLE_COMPLEX;
  * For each block row of U, the organization of index[] looks like:
  *
  *     [ BLOCK ROW HEADER (of size BR_HEADER)
- *           number of blocks 
+ *           number of blocks
  *           number of entries in nzval[]
  *           number of entries in index[]
  *       BLOCK 0                                        <----
@@ -222,18 +222,18 @@ typedef MPI_C_DOUBLE_COMPLEX  SuperLU_MPI_DOUBLE_COMPLEX;
     /* For triangular solves. */
 #define XK_H     2  /* The header preceding each X block. */
 #define LSUM_H   2  /* The header preceding each MOD block. */
-#define GSUM     20 
+#define GSUM     20
 #define Xk       21
 #define Yk       22
-#define LSUM     23    
+#define LSUM     23
 
- 
-static const int BC_L=1;	/* MPI tag for x in L-solve*/	
-static const int RD_L=2;	/* MPI tag for lsum in L-solve*/	
+
+static const int BC_L=1;	/* MPI tag for x in L-solve*/
+static const int RD_L=2;	/* MPI tag for lsum in L-solve*/
 static const int BC_U=3;	/* MPI tag for x in U-solve*/
-static const int RD_U=4;	/* MPI tag for lsum in U-solve*/	
+static const int RD_U=4;	/* MPI tag for lsum in U-solve*/
 
-/* 
+/*
  * Communication scopes
  */
 #define COMM_ALL      100
@@ -274,18 +274,18 @@ static const int RD_U=4;	/* MPI tag for lsum in U-solve*/
 #define X_BLK(i)                          \
         ilsum[i] * nrhs + (i+1) * XK_H
 #define XT_BLK(i)                          \
-        ilsumT[i] * nrhs + (i+1) * XK_H        
+        ilsumT[i] * nrhs + (i+1) * XK_H
 #define LSUM_BLK(i)                       \
         ilsum[i] * nrhs + (i+1) * LSUM_H
 
 #define SuperLU_timer_  SuperLU_timer_dist_
 #define LOG2(x)   (log10((double) x) / log10(2.0))
 
-#if ( VAMPIR>=1 ) 
+#if ( VAMPIR>=1 )
 #define VT_TRACEON    VT_traceon()
 #define VT_TRACEOFF   VT_traceoff()
 #else
-#define VT_TRACEON 
+#define VT_TRACEON
 #define VT_TRACEOFF
 #endif
 
@@ -337,7 +337,7 @@ static const int RD_U=4;	/* MPI tag for lsum in U-solve*/
 #define fma(A, B, C) C += (A*B)
 #endif
 /*---- end MAGMA ----*/
-    
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -356,7 +356,7 @@ extern "C" {
  * New data types
  ***********************************************************************/
 
-/* 
+/*
  *   Define the 2D mapping of matrix blocks to process grid.
  *
  *   Process grid:
@@ -366,7 +366,7 @@ extern "C" {
  *
  *   Matrix blocks:
  *     Matrix is partitioned according to supernode partitions, both
- *     column and row-wise. 
+ *     column and row-wise.
  *     The k-th block columns (rows) contains columns (rows) (s:t), where
  *             s=xsup[k], t=xsup[k+1]-1.
  *     Block A(I,J) contains
@@ -378,7 +378,7 @@ extern "C" {
  *
  *  Mapping of matrix block (I,J) to process grid (pr,pc):
  *     (pr,pc) = ( MOD(I,NPROW), MOD(J,NPCOL) )
- *  
+ *
  *  (xsup[nsupers],supno[n]) are replicated on all processors.
  *
  */
@@ -414,7 +414,7 @@ typedef struct {
     int rankorder;        /* = 0: Z-major ( default )
 			   *    e.g. 1x3x4 grid: layer0 layer1 layer2 layer3
 			   *                     0      3      6      9
-			   *                     1      4      7      10      
+			   *                     1      4      7      10
 			   *                     2      5      8      11
 			   * = 1: XY-major (need set env. var.: SUPERLU_RANKORDER=XY)
 			   *    e.g. 1x3x4 grid: layer0 layer1 layer2 layer3
@@ -433,7 +433,7 @@ typedef struct {
  *      supno[i] is the supernode no to which column i belongs;
  *	e.g.   supno 0 1 2 2 3 3 3 4 4 4 4 4   (n=12)
  *	        xsup 0 1 2 4 7 12
- *	Note: dfs will be performed on supernode rep. relative to the new 
+ *	Note: dfs will be performed on supernode rep. relative to the new
  *	      row pivoting ordering
  *
  * This is allocated during symbolic factorization SYMBFACT.
@@ -445,10 +445,10 @@ typedef struct {
 
 /*
  *-- The structures are determined by SYMBFACT and used by DDISTRIBUTE.
- * 
+ *
  * (xlsub,lsub): lsub[*] contains the compressed subscript of
  *	rectangular supernodes; xlsub[j] points to the starting
- *	location of the j-th column in lsub[*]. Note that xlsub 
+ *	location of the j-th column in lsub[*]. Note that xlsub
  *	is indexed by column.
  *	Storage: original row subscripts
  *
@@ -484,12 +484,12 @@ typedef struct {
  *      imposed on the rows.) Because the segment is full, we don't store all
  *      the row indices. Instead, only the leading nonzero index is stored.
  *      The rest can be found together with xsup/supno pair.
- *      For example, 
+ *      For example,
  *          usub[xsub[j+1]] - usub[xsub[j]] = number of segments in column j.
- *          for any i in usub[], 
+ *          for any i in usub[],
  *              supno[i]         = block number in which i belongs to
  *  	        xsup[supno[i]+1] = first row of the next block
- *              The nonzeros of this segment are: 
+ *              The nonzeros of this segment are:
  *                  i, i+1 ... xsup[supno[i]+1]-1 (only i is stored in usub[])
  *
  */
@@ -507,7 +507,7 @@ typedef struct {
 } Glu_freeable_t;
 
 #if 0 // Sherry: move to precision-dependent file
-/* 
+/*
  *-- The structure used to store matrix A of the linear system and
  *   several vectors describing the transformations done to matrix A.
  *
@@ -515,13 +515,13 @@ typedef struct {
  *        Matrix A in A*X=B, of dimension (A->nrow, A->ncol).
  *        The number of linear equations is A->nrow. The type of A can be:
  *        Stype = SLU_NC; Dtype = SLU_D; Mtype = SLU_GE.
- *         
+ *
  * DiagScale  (DiagScale_t)
  *        Specifies the form of equilibration that was done.
  *        = NOEQUIL: No equilibration.
  *        = ROW:  Row equilibration, i.e., A was premultiplied by diag(R).
  *        = COL:  Column equilibration, i.e., A was postmultiplied by diag(C).
- *        = BOTH: Both row and column equilibration, i.e., A was replaced 
+ *        = BOTH: Both row and column equilibration, i.e., A was replaced
  *                 by diag(R)*A*diag(C).
  *
  * R      double*, dimension (A->nrow)
@@ -533,21 +533,21 @@ typedef struct {
  *        The column scale factors for A.
  *        If DiagScale = COL or BOTH, A is multiplied on the right by diag(C).
  *        If DiagScale = NOEQUIL or ROW, C is not defined.
- *         
+ *
  * perm_r (int*) dimension (A->nrow)
  *        Row permutation vector which defines the permutation matrix Pr,
  *        perm_r[i] = j means row i of A is in position j in Pr*A.
  *
  * perm_c (int*) dimension (A->ncol)
- *	  Column permutation vector, which defines the 
- *        permutation matrix Pc; perm_c[i] = j means column i of A is 
+ *	  Column permutation vector, which defines the
+ *        permutation matrix Pc; perm_c[i] = j means column i of A is
  *        in position j in A*Pc.
  *
  */
 typedef struct {
     DiagScale_t DiagScale;
     double *R;
-    double *C; 
+    double *C;
     int_t  *perm_r;
     int_t  *perm_c;
 } ScalePermstruct_t;
@@ -559,7 +559,7 @@ typedef struct {
     int  *X_to_B_SendCnt;
     int  *ptr_to_ibuf, *ptr_to_dbuf;
 
-    /* the following are needed in the hybrid solver PDSLin */	
+    /* the following are needed in the hybrid solver PDSLin */
     int *X_to_B_iSendCnt;
     int *X_to_B_vSendCnt;
     int    *disp_ibuf;
@@ -573,7 +573,7 @@ typedef struct {
     void   *recv_dbuf2;
 } pxgstrs_comm_t;
 
-/* 
+/*
  *-- This contains the options used to control the solution process.
  *
  * Fact   (fact_t)
@@ -585,7 +585,7 @@ typedef struct {
  *        = SamePattern: The matrix A will be factorized assuming
  *             that a factorization of a matrix with the same sparsity
  *             pattern was performed prior to this one. Therefore, this
- *             factorization will reuse column permutation vector 
+ *             factorization will reuse column permutation vector
  *             ScalePermstruct->perm_c and the column elimination tree
  *             LUstruct->etree.
  *        = SamePattern_SameRowPerm: The matrix A will be factorized
@@ -595,7 +595,7 @@ typedef struct {
  *             both row and column scaling factors R and C, both row and
  *             column permutation vectors perm_r and perm_c, and the
  *             data structure set up from the previous symbolic factorization.
- *        = FACTORED: On entry, L, U, perm_r and perm_c contain the 
+ *        = FACTORED: On entry, L, U, perm_r and perm_c contain the
  *              factored form of A. If DiagScale is not NOEQUIL, the matrix
  *              A has been equilibrated with scaling factors R and C.
  *
@@ -609,12 +609,12 @@ typedef struct {
  *
  * ColPerm (colperm_t)
  *        Specifies what type of column permutation to use to reduce fill.
- *        = NATURAL: use the natural ordering 
+ *        = NATURAL: use the natural ordering
  *        = MMD_ATA: use minimum degree ordering on structure of A'*A
  *        = MMD_AT_PLUS_A: use minimum degree ordering on structure of A'+A
  *        = COLAMD: use approximate minimum degree column ordering
  *        = MY_PERMC: use the ordering specified by the user
- *         
+ *
  * Trans  (trans_t)
  *        Specifies the form of the system of equations:
  *        = NOTRANS: A * X = B        (No transpose)
@@ -633,7 +633,7 @@ typedef struct {
  *        acceptable pivot.
  *
  * SymmetricMode (yest_no_t) (only for serial SuperLU)
- *        Specifies whether to use symmetric mode. Symmetric mode gives 
+ *        Specifies whether to use symmetric mode. Symmetric mode gives
  *        preference to diagonal pivots, and uses an (A'+A)-based column
  *        permutation algorithm.
  *
@@ -687,7 +687,7 @@ typedef struct {
  * ILU_MILU (milu_t)  (only for serial SuperLU)
  *        Specifies which version of MILU to use.
  *
- * ILU_MILU_Dim (double) 
+ * ILU_MILU_Dim (double)
  *        Dimension of the PDE if available.
  *
  * ReplaceTinyPivot (yes_no_t) (only for SuperLU_DIST)
@@ -707,7 +707,7 @@ typedef struct {
  *        Specifies the number of levels in the look-ahead factorization
  *
  * lookahead_etree (yes_no_t) (only for SuperLU_DIST)
- *        Specifies whether to use the elimination tree computed from the 
+ *        Specifies whether to use the elimination tree computed from the
  *        serial symbolic factorization to perform scheduling.
  *
  * SymPattern (yes_no_t) (only for SuperLU_DIST)
@@ -769,7 +769,7 @@ typedef struct {
     int_t indpos; /* Starting position in Uindex[]. */
 } Ucb_indptr_t;
 
-/* 
+/*
  *-- The new structures added in the hybrid GPU + OpenMP + MPI code.
  */
 typedef struct {
@@ -822,7 +822,7 @@ typedef struct
   //double *lusup;
   void *lusup;
   int_t luptr0;
-  int_t nlb;  //number of l blocks                                                      
+  int_t nlb;  //number of l blocks
   int_t nsupr;
 } lPanelInfo_t;
 
@@ -891,7 +891,7 @@ typedef struct
     int_t lptrj;
     int_t lib;
 } local_l_blk_info_t;
- 
+
 typedef struct
 {
     int_t iuip;
@@ -900,7 +900,7 @@ typedef struct
 } local_u_blk_info_t;
 
 
-//global variable 
+//global variable
 // extern double CPU_CLOCK_RATE;
 
 typedef struct
@@ -910,7 +910,7 @@ typedef struct
 }  perm_array_t;
 
 typedef struct
-{   
+{
     int_t* factored;
     int_t* factored_D;
     int_t* factored_L;
@@ -952,19 +952,19 @@ typedef struct{
 	double scuWeight; 	// weight of schur complement update = max|n_k||L_k||U_k|
 } treeList_t;
 
-typedef struct 
+typedef struct
 {
 	int_t numLvl;  // number of level in tree;
-	int_t* eTreeTopLims; // boundaries of each level  of size 
+	int_t* eTreeTopLims; // boundaries of each level  of size
 	int_t* myIperm;		// Iperm for my tree size nsupers;
-	
+
 } treeTopoInfo_t;
 
-typedef struct 
+typedef struct
 {
 	int_t* setree; 		// global supernodal elimination tree
 	int_t* numChildLeft;
-} gEtreeInfo_t; 
+} gEtreeInfo_t;
 
 typedef enum treePartStrat{
 	ND,				// nested dissection ordering or natural ordering
@@ -984,12 +984,12 @@ typedef struct
 	int_t numTrees; 		// number of tree in the forest
 	treeTopoInfo_t  topoInfo; //
 #if 0  // Sherry fix: the following two structures are in treeTopoInfo_t. ???
-	int_t* eTreeTopLims; 	// boundaries of each level  of size 
+	int_t* eTreeTopLims; 	// boundaries of each level  of size
 	int_t* myIperm;			// Iperm for my tree size nsupers;
 #endif
 
 	/*information about load balance*/
-	double weight;		// estimated cost 
+	double weight;		// estimated cost
 	double cost; 		// measured cost
 
 } sForest_t;
@@ -1038,14 +1038,14 @@ typedef struct xtrsTimer_t
     double tbs_comm;
     double tbs_tree[2*MAX_3D_LEVEL];
     double tfs_tree[2*MAX_3D_LEVEL];
-    
-    // counters for communication and computation volume 
-    
+
+    // counters for communication and computation volume
+
     int_t trsMsgSentXY;
     int_t trsMsgSentZ;
     int_t trsMsgRecvXY;
     int_t trsMsgRecvZ;
-    
+
     double ppXmem;		// perprocess X-memory
 } xtrsTimer_t;
 
@@ -1086,8 +1086,8 @@ extern int    sp_coletree_dist (int_t *, int_t *, int_t *, int_t, int_t, int_t *
 extern void   get_perm_c_dist(int_t, int_t, SuperMatrix *, int_t *);
 extern void   at_plus_a_dist(const int_t, const int_t, int_t *, int_t *,
 			     int_t *, int_t **, int_t **);
-extern int    genmmd_dist_(int_t *, int_t *, int_t *a, 
-			   int_t *, int_t *, int_t *, int_t *, 
+extern int    genmmd_dist_(int_t *, int_t *, int_t *a,
+			   int_t *, int_t *, int_t *, int_t *,
 			   int_t *, int_t *, int_t *, int_t *, int_t *);
 extern void  bcast_tree(void *, int, MPI_Datatype, int, int,
 			gridinfo_t *, int, int *);
@@ -1114,7 +1114,7 @@ extern int_t   *intMalloc_dist (int_t);
 extern int_t   *intCalloc_dist (int_t);
 extern int   mc64id_dist(int *);
 extern void  arrive_at_ublock (int_t, int_t *, int_t *, int_t *,
-			       int_t *, int_t *, int_t, int_t, 
+			       int_t *, int_t *, int_t, int_t,
 			       int_t *, int_t *, int_t *, gridinfo_t *);
 extern int_t estimate_bigu_size (int_t, int_t **, Glu_persist_t *,
 				 gridinfo_t *, int_t *, int_t*);
@@ -1148,19 +1148,19 @@ extern float symbfact_dist
  Pslu_freeable_t *, MPI_Comm *, MPI_Comm *,  superlu_dist_mem_usage_t *);
 
 /* Get the column permutation using parmetis */
-extern float get_perm_c_parmetis 
-(SuperMatrix *, int_t *, int_t *, int, int, 
+extern float get_perm_c_parmetis
+(SuperMatrix *, int_t *, int_t *, int, int,
  int_t **, int_t **, gridinfo_t *, MPI_Comm *);
 
 /* Auxiliary routines for memory expansions used during
    the parallel symbolic factorization routine */
 
 extern int_t psymbfact_LUXpandMem
-(int, int_t, int_t, int_t, int_t, int, int, int, 
+(int, int_t, int_t, int_t, int_t, int, int, int,
  Pslu_freeable_t *, Llu_symbfact_t *,  vtcsInfo_symbfact_t *, psymbfact_stat_t *);
 
 extern int_t psymbfact_LUXpand
-(int_t, int_t, int_t, int_t, int_t *, int_t, int_t, int_t, int_t, 
+(int_t, int_t, int_t, int_t, int_t *, int_t, int_t, int_t, int_t,
  Pslu_freeable_t *, Llu_symbfact_t *,  vtcsInfo_symbfact_t *, psymbfact_stat_t *);
 
 extern int_t psymbfact_LUXpand_RL
@@ -1203,7 +1203,7 @@ extern int compare_pair (const void *, const void *);
 extern int_t static_partition (struct superlu_pair *, int_t, int_t *, int_t,
 			       int_t *, int_t *, int);
 extern int get_acc_offload();
-    
+
 
 /* Routines for debugging */
 extern void  print_panel_seg_dist(int_t, int_t, int_t, int_t, int_t *, int_t *);
@@ -1264,7 +1264,7 @@ extern void SCT_printComm3D(gridinfo3d_t *grid3d, SCT_t* SCT);
 
 // permutation from superLU default
 extern int_t* getPerm_c_supno(int_t nsupers, superlu_dist_options_t *,
-			      int_t *etree, Glu_persist_t *Glu_persist, 
+			      int_t *etree, Glu_persist_t *Glu_persist,
 			      int_t** Lrowind_bc_ptr, int_t** Ufstnz_br_ptr,
 			      gridinfo_t *);
 
@@ -1286,7 +1286,7 @@ extern int_t getCommonAncsCount(int_t k, treeList_t* treeList);
 extern int_t* getPermNodeList(int_t nnode, 	// number of nodes
 			      int_t* nlist, int_t* perm_c_sup,int_t* iperm_c_sup);
 extern int_t* getEtreeLB(int_t nnodes, int_t* perm_l, int_t* gTopOrder);
-extern int_t* getSubTreeRoots(int_t k, int_t *numSubtrees, treeList_t* treeList);
+extern int_t* getSubTreeRoots(int_t k, treeList_t* treeList);
 // int_t* treeList2perm(treeList_t* , ..);
 extern int_t* merg_perms(int_t nperms, int_t* nnodes, int_t** perms);
 // returns a concatenated permutation for three permutation arrays
@@ -1298,7 +1298,7 @@ extern int_t *supernodal_etree(int_t nsuper, int_t * etree, int_t* supno, int_t 
 extern int_t testSubtreeNodelist(int_t nsupers, int_t numList, int_t** nodeList, int_t* nodeCount);
 extern int_t testListPerm(int_t nodeCount, int_t* nodeList, int_t* permList, int_t* gTopLevel);
 
-/*takes supernodal elimination tree and for each 
+/*takes supernodal elimination tree and for each
   supernode calculates "level" in elimination tree*/
 extern int_t* topological_ordering(int_t nsuper, int_t* setree);
 extern int_t* Etree_LevelBoundry(int_t* perm,int_t* tsort_etree, int_t nsuper);
@@ -1312,7 +1312,7 @@ extern int_t printFileList(char* sname, int_t nnodes, int_t*dlist, int_t*setree)
 int* getLastDepBtree( int_t nsupers, treeList_t* treeList);
 
 /*returns array R with of size maxLevel with either 0 or 1
-	R[i] = 1; then Tree[level-i] is set to zero= to only 
+	R[i] = 1; then Tree[level-i] is set to zero= to only
 	accumulate the results   */
 extern int_t* getReplicatedTrees( gridinfo3d_t* grid3d);
 

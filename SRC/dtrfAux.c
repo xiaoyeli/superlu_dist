@@ -85,12 +85,12 @@ void dinit3DLUstructForest( int_t* myTreeIdxs, int_t* myZeroTrIdxs,
 	    gNodeLists[i] = NULL;
 	    /* code */
 	    if (sForests[i])
-		{	
+		{
                     gNodeCount[i] = sForests[i]->nNodes;
 		    gNodeLists[i] = sForests[i]->nodeList;
 		}
 	}
-    
+
     /*call the old forest*/
     dinit3DLUstruct( myTreeIdxs, myZeroTrIdxs,
 		     gNodeCount, gNodeLists, LUstruct, grid3d);
@@ -328,14 +328,14 @@ int_t dSchurComplementSetup(
     return LU_nonempty;
 } /* dSchurComplementSetup */
 
-/* 
+/*
  * Gather L and U panels into respective buffers, to prepare for GEMM call.
  * Divide Schur complement update into two parts: CPU vs. GPU.
  */
 int_t dSchurComplementSetupGPU(
     int_t k, msgs_t* msgs,
     packLUInfo_t* packLUInfo,
-    int_t* myIperm, 
+    int_t* myIperm,
     int_t* iperm_c_supno, int_t*perm_c_supno,
     gEtreeInfo_t*   gEtreeInfo, factNodelists_t* fNlists,
     dscuBufs_t* scuBufs, dLUValSubBuf_t* LUvsb,
@@ -592,6 +592,11 @@ dtrf3Dpartition_t* dinitTrf3Dpartition(int_t nsupers,
 
     dinit3DLUstructForest(myTreeIdxs, myZeroTrIdxs,
                          sForests, LUstruct, grid3d);
+
+    // printf("iam3d %5d, gNodeCount[0] %5d, gNodeCount[1] %5d, gNodeCount[2] %5d\n",grid3d->iam, gNodeCount[0],gNodeCount[1],gNodeCount[2]);
+    // printf("iam3d %5d, myTreeIdxs[0] %5d, myZeroTrIdxs[0] %5d\n",grid3d->iam, myTreeIdxs[0],myZeroTrIdxs[0]);
+
+
     int_t* myNodeCount = getMyNodeCountsFr(maxLvl, myTreeIdxs, sForests);
     int_t** treePerm = getTreePermFr( myTreeIdxs, sForests, grid3d);
 
@@ -610,6 +615,19 @@ dtrf3Dpartition_t* dinitTrf3Dpartition(int_t nsupers,
         }
     }
 
+    int_t* supernodeMask = SUPERLU_MALLOC(nsupers*sizeof(int_t));
+    for (int_t ii = 0; ii < nsupers; ++ii)
+        supernodeMask[ii]=0;
+    for (int_t lvl = 0; lvl < maxLvl; ++lvl)
+    {
+        // printf("lvl %5d myNodeCount[lvl] %5d\n",lvl,myNodeCount[lvl]);
+        for (int_t nd = 0; nd < myNodeCount[lvl]; ++nd)
+        {
+            supernodeMask[treePerm[lvl][nd]]=1;
+        }
+    }
+
+
     dtrf3Dpartition_t*  trf3Dpartition = SUPERLU_MALLOC(sizeof(dtrf3Dpartition_t));
 
     trf3Dpartition->gEtreeInfo = gEtreeInfo;
@@ -621,11 +639,12 @@ dtrf3Dpartition_t* dinitTrf3Dpartition(int_t nsupers,
     trf3Dpartition->treePerm = treePerm;
     trf3Dpartition->LUvsb = LUvsb;
     trf3Dpartition->supernode2treeMap = supernode2treeMap;
+    trf3Dpartition->supernodeMask = supernodeMask;
 
     // Sherry added
     // Deallocate storage
-    SUPERLU_FREE(gNodeCount); 
-    SUPERLU_FREE(gNodeLists); 
+    SUPERLU_FREE(gNodeCount);
+    SUPERLU_FREE(gNodeLists);
     SUPERLU_FREE(perm_c_supno);
     free_treelist(nsupers, treeList);
 
@@ -661,8 +680,9 @@ void dDestroy_trf3Dpartition(dtrf3Dpartition_t *trf3Dpartition, gridinfo3d_t *gr
 	    SUPERLU_FREE(sForests[i]); // Sherry added
 	}
     }
-    SUPERLU_FREE(trf3Dpartition->sForests); // double pointer 
+    SUPERLU_FREE(trf3Dpartition->sForests); // double pointer
     SUPERLU_FREE(trf3Dpartition->supernode2treeMap);
+    SUPERLU_FREE(trf3Dpartition->supernodeMask);
 
     SUPERLU_FREE((trf3Dpartition->LUvsb)->Lsub_buf);
     SUPERLU_FREE((trf3Dpartition->LUvsb)->Lval_buf);
@@ -720,7 +740,7 @@ int_t num_full_cols_U(int_t kk,  int_t **Ufstnz_br_ptr, int_t *xsup,
     return temp_ncols;
 }
 
-// Sherry: this is old; new version is in util.c 
+// Sherry: this is old; new version is in util.c
 int_t estimate_bigu_size( int_t nsupers, int_t ldt, int_t**Ufstnz_br_ptr,
                           Glu_persist_t *Glu_persist,  gridinfo_t* grid, int_t* perm_u)
 {

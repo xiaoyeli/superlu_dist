@@ -1474,15 +1474,15 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 			int_t ldt = sp_ienv_dist(3, options); /* Size of maximum supernode */
 			double s_eps = smach_dist("Epsilon");
 			double thresh = s_eps * anorm;
-			
+
 			LUgpu = createLUgpuHandle(nsupers, ldt, trf3Dpartition, LUstruct, grid3d,
 									  SCT, options, stat, thresh, info);
-			
+
 			pdgstrf3d_LUpackedInterface(LUgpu);
 			if (!trisolveGPUopt)
 			{
 				copyLUGPU2Host(LUgpu, LUstruct);
-			
+
 				destroyLUgpuHandle(LUgpu);
 			}
 
@@ -1556,7 +1556,7 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 		if(Solve3D==false){
         dDestroy_trf3Dpartition(trf3Dpartition, grid3d);
 		}
-		
+
 		SCT_free(SCT);
 
 	} /* end if not Factored ... factor on all process layers */
@@ -1758,14 +1758,19 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 		}
 		stat->utime[SOLVE] = 0.0;
 		if(Solve3D){
-			pdgstrs3d (options, n, LUstruct,ScalePermstruct, trf3Dpartition, grid3d, X,
-			m_loc, fst_row, ldb, nrhs,SOLVEstruct, stat, info);
+			if (getenv("NEW3DSOLVE")){
+				pdgstrs3d_newsolve (options, n, LUstruct,ScalePermstruct, trf3Dpartition, grid3d, X,
+				m_loc, fst_row, ldb, nrhs,SOLVEstruct, stat, info);
+			}else{
+				pdgstrs3d (options, n, LUstruct,ScalePermstruct, trf3Dpartition, grid3d, X,
+				m_loc, fst_row, ldb, nrhs,SOLVEstruct, stat, info);
+			}
 			if (options->IterRefine){
 				printf("iterative refinement has not been implemented for 3D solve\n..bye bye");
-				exit(0);				
+				exit(0);
 			}
 		}else{
-			if (grid3d->zscp.Iam == 0){  /* on 2D grid-0 */		
+			if (grid3d->zscp.Iam == 0){  /* on 2D grid-0 */
 
 
 #if (defined(GPU_ACC) && defined(GPU_SOLVE))
@@ -1852,7 +1857,7 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 
 			pdgstrs(options, n, LUstruct, ScalePermstruct, grid, X, m_loc,
 				fst_row, ldb, nrhs, SOLVEstruct, stat, info);
-			
+
 			/* ------------------------------------------------------------
 			Use iterative refinement to improve the computed solution and
 			compute error bounds and backward error estimates for it.
@@ -1900,13 +1905,13 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 							}
 						}
 					}
-					
+
 					/* Re-use the local col indices of A obtained from the
 					previous call to pdgsmv_init() */
 					for (i = 0; i < nnz_loc; ++i)
 					colind[i] = colind_gsmv[i];
 				}
-				
+
 				if (nrhs == 1)
 					{	/* Use the existing solve structure */
 					SOLVEstruct1 = SOLVEstruct;
@@ -1928,7 +1933,7 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 					SOLVEstruct1->diag_len = SOLVEstruct->diag_len;
 					SOLVEstruct1->gsmv_comm = SOLVEstruct->gsmv_comm;
 					SOLVEstruct1->A_colind_gsmv = SOLVEstruct->A_colind_gsmv;
-					
+
 					/* Initialize the *gstrs_comm for 1 RHS. */
 					if (!(SOLVEstruct1->gstrs_comm = (pxgstrs_comm_t *)
 						SUPERLU_MALLOC (sizeof (pxgstrs_comm_t))))
@@ -1936,19 +1941,19 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 					pdgstrs_init (n, m_loc, 1, fst_row, perm_r, perm_c, grid,
 							Glu_persist, SOLVEstruct1);
 					}
-				
+
 				pdgsrfs (options, n, A, anorm, LUstruct, ScalePermstruct, grid,
 					B, ldb, X, ldx, nrhs, SOLVEstruct1, berr, stat, info);
-				
+
 				/* Deallocate the storage associated with SOLVEstruct1 */
 				if (nrhs > 1)
 					{
 					pxgstrs_finalize (SOLVEstruct1->gstrs_comm);
 					SUPERLU_FREE (SOLVEstruct1);
 					}
-				
+
 				stat->utime[REFINE] = SuperLU_timer_ () - t;
-				} /* end IterRefine */				
+				} /* end IterRefine */
 			}
 		}
 
@@ -1996,20 +2001,20 @@ if (grid3d->zscp.Iam == 0)  /* on 2D grid-0 */
 				b_col += ldb;
 			    }
 		    }
-		
+
 		// SUPERLU_FREE (b_work);
 		SUPERLU_FREE (X);
 	}
 	} /* end if nrhs > 0 and factor successful */
-	
+
 #if ( PRNTlevel>=1 )
 	if (!iam) {
 	    printf (".. DiagScale = %d\n", ScalePermstruct->DiagScale);
         }
 #endif
-	
 
-	if ( grid3d->zscp.Iam == 0 ) { // only process layer 0	
+
+	if ( grid3d->zscp.Iam == 0 ) { // only process layer 0
 	/* Deallocate R and/or C if it was not used. */
 	if (Equil && Fact != SamePattern_SameRowPerm)
 	    {

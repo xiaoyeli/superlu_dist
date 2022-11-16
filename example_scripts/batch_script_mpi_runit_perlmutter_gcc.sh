@@ -10,7 +10,7 @@ module load PrgEnv-gnu
 module load gcc/11.2.0
 module load cmake/3.22.0
 module load cudatoolkit/11.7
-# avoid bug in cray-libsci/21.08.1.2
+# # avoid bug in cray-libsci/21.08.1.2
 module load cray-libsci/22.06.1.3
 module load Nsight-Systems
 module load Nsight-Compute
@@ -33,12 +33,13 @@ fi
 sleep 5
 
 
-
+# export SUPERLU_LBS=ND  # this is causing crash
 export MAX_BUFFER_SIZE=50000000
 export SUPERLU_NUM_GPU_STREAMS=1
 export SUPERLU_BIND_MPI_GPU=1
 export SUPERLU_ACC_OFFLOAD=1 # this can be 0 to do CPU tests on GPU nodes
-
+export GPU3DVERSION=1
+export NEW3DSOLVE=1    # currently this requires SUPERLU_ACC_OFFLOAD=1 and GPU3DVERSION=1, as this combination has 2.5 ancester factorization
 
 
 if [[ $NERSC_HOST == edison ]]; then
@@ -50,19 +51,21 @@ elif [[ $NERSC_HOST == cori ]]; then
   # This does not take hyperthreading into account
 elif [[ $NERSC_HOST == perlmutter ]]; then
   CORES_PER_NODE=64
-  THREADS_PER_NODE=128  
+  THREADS_PER_NODE=128
 else
   # Host unknown; exiting
   exit $EXIT_HOST
 fi
 nprows=(1)
 npcols=(1)
+npz=(4)
 NTH=1
 NODE_VAL_TOT=1
 
 for ((i = 0; i < ${#npcols[@]}; i++)); do
 NROW=${nprows[i]}
 NCOL=${npcols[i]}
+NPZ=${npz[i]}
 
 # CORE_VAL=`expr $NCOL \* $NROW`
 # NODE_VAL=`expr $CORE_VAL / $CORES_PER_NODE`
@@ -73,8 +76,9 @@ NCOL=${npcols[i]}
 # fi
 
 # NODE_VAL=2
-NCORE_VAL_TOT=`expr $NODE_VAL_TOT \* $CORES_PER_NODE / $NTH`
+# NCORE_VAL_TOT=`expr $NODE_VAL_TOT \* $CORES_PER_NODE / $NTH`
 batch=1 # whether to do batched test
+NCORE_VAL_TOT=`expr $NROW \* $NCOL \* $NPZ \* $batch`
 
 OMP_NUM_THREADS=$NTH
 TH_PER_RANK=`expr $NTH \* 2`
@@ -86,12 +90,12 @@ export MPICH_MAX_THREAD_SAFETY=multiple
 
 # srun -n 1 ./EXAMPLE/pddrive -r 1 -c 1 ../EXAMPLE/g20.rua
 
-# export NSUP=5
-# export NREL=5
-# for MAT in big.rua 
-# for MAT in g4.rua 
+# export NSUP=256
+# export NREL=256
+# for MAT in big.rua
+# for MAT in g20.rua
 for MAT in s1_mat_0_126936.bin
-# for MAT in s1_mat_0_126936.bin s1_mat_0_253872.bin s1_mat_0_507744.bin 
+# for MAT in s1_mat_0_126936.bin s1_mat_0_253872.bin s1_mat_0_507744.bin
 # for MAT in matrix_ACTIVSg70k_AC_00.mtx matrix_ACTIVSg10k_AC_00.mtx
 # for MAT in temp_13k.mtx temp_25k.mtx temp_75k.mtx
 do
@@ -100,12 +104,15 @@ mkdir -p $MAT
 # nsys profile --stats=true -t cuda,cublas,mpi --mpi-impl mpich  srun -n 4 -N $NODE_VAL_TOT -c $TH_PER_RANK --cpu_bind=cores ./EXAMPLE/pddrive3d -c $NCOL -r $NROW -b $batch $CFS/m2957/liuyangz/my_research/matrix/$MAT | tee ./$MAT/SLU.o_mpi_${NROW}x${NCOL}_${NTH}_1rhs_3d
 # srun -n 32 -N $NODE_VAL_TOT -c $TH_PER_RANK --cpu_bind=cores ./EXAMPLE/pddrive -c $NCOL -r $NROW -b $batch $CFS/m2957/liuyangz/my_research/matrix/$MAT | tee ./$MAT/SLU.o_mpi_${NROW}x${NCOL}_${NTH}_1rhs_2d
 
-srun -n 1 -N $NODE_VAL_TOT -c $TH_PER_RANK --cpu_bind=cores ./EXAMPLE/pddrive3d -c $NCOL -r $NROW -b $batch $CFS/m2957/liuyangz/my_research/matrix/$MAT | tee ./$MAT/SLU.o_mpi_${NROW}x${NCOL}_${NTH}_1rhs_3d
+echo "srun -n $NCORE_VAL_TOT -N $NODE_VAL_TOT -c $TH_PER_RANK --cpu_bind=cores ./EXAMPLE/pddrive3d -c $NCOL -r $NROW -d $NPZ -b $batch $CFS/m2957/liuyangz/my_research/matrix/$MAT | tee ./$MAT/SLU.o_mpi_${NROW}x${NCOL}x${NPZ}_${NTH}_1rhs_3d"
+# srun -n $NCORE_VAL_TOT -N $NODE_VAL_TOT -c $TH_PER_RANK --cpu_bind=cores ./EXAMPLE/pddrive3d -c $NCOL -r $NROW -d $NPZ -b $batch $CFS/m2957/liuyangz/my_research/matrix/$MAT | tee ./$MAT/SLU.o_mpi_${NROW}x${NCOL}x${NPZ}_${NTH}_1rhs_3d
+# export NEW3DSOLVE=1    # currently this requires SUPERLU_ACC_OFFLOAD=1 and GPU3DVERSION=1, as this combination has 2.5 ancester factorization
+srun -n $NCORE_VAL_TOT -N $NODE_VAL_TOT -c $TH_PER_RANK --cpu_bind=cores ./EXAMPLE/pddrive3d -c $NCOL -r $NROW -d $NPZ -b $batch $CFS/m2957/liuyangz/my_research/matrix/$MAT | tee ./$MAT/SLU.o_mpi_${NROW}x${NCOL}x${NPZ}_${NTH}_1rhs_3d
 
 # srun -n $NCORE_VAL_TOT -N $NODE_VAL_TOT -c $TH_PER_RANK --cpu_bind=cores ./EXAMPLE/pddrive -c $NCOL -r $NROW -b $batch $CFS/m2957/liuyangz/my_research/matrix/$MAT | tee ./$MAT/SLU.o_mpi_${NROW}x${NCOL}_${NTH}_1rhs_2d
 # srun -n $NCORE_VAL_TOT -N $NODE_VAL_TOT -c $TH_PER_RANK --cpu_bind=cores ./EXAMPLE/pddrive3d -c $NCOL -r $NROW -b $batch $CFS/m2957/liuyangz/my_research/matrix/$MAT | tee ./$MAT/SLU.o_mpi_${NROW}x${NCOL}_${NTH}_1rhs_3d
-done 
-done 
+done
+done
 
 # Quit MPS control daemon before exiting
 if [ $SLURM_LOCALID -eq 0 ]; then

@@ -504,9 +504,9 @@ dGenXtrue_dist(int_t n, int_t nrhs, double *x, int_t ldx)
     for (j = 0; j < nrhs; ++j) {
 	for (i = 0; i < n; ++i) {
 #if 1
-	  x[i + j*ldx] = (double) pow(tau, - ((double)i / (n-1))) * r;
+	//   x[i + j*ldx] = (double) pow(tau, - ((double)i / (n-1))) * r;
 
-	  //if (i % 2) x[i + j*ldx] = 1.0; else x[i + j*ldx] = -1.0;
+	  if (i % 2) x[i + j*ldx] = 1.0; else x[i + j*ldx] = -1.0;
 #else
 	  x[i + j*ldx] = (double)rand() / (double)((unsigned)RAND_MAX + 1); /* uniform in [0,1) */
 #endif
