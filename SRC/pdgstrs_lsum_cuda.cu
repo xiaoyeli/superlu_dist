@@ -30,8 +30,11 @@ at the top-level directory.
 #endif
 
 #ifndef MAXSUPER
-////#define MAXSUPER 5
 #define MAXSUPER 256
+#endif
+
+#ifndef RDMA_FLAG_SIZE
+#define RDMA_FLAG_SIZE 4
 #endif
 
 #include <stdio.h>
@@ -569,60 +572,6 @@ __device__ void C_RdTree_forwardMessageSimple_Device(C_Tree* Tree, int* flag_rd_
 }
 
 
-__global__ void ping_pong(volatile double *data_d, volatile int *flag_d, volatile int *flag_d_local,
-                          int len, int pe, int iter, int skip, int peer) {
-    long long int start, stop;
-    double usec, time,bw;
-    int i, tid,bid;
-
-    tid = threadIdx.x;
-    bid = blockIdx.x;
-
-    //nvshmem_barrier_all();
-    //if (tid == 0) printf("(%d) iter=%d, skip=%d,peer=%d\n", pe, iter, skip, peer);
-    for (i = 0; i < (iter + skip); i++) {
-        if (i == skip) start = clock64();
-        if (pe == peer) {
-            if (tid==0) printf("(%d,%d) mypeer=%d\n",pe,bid,peer);
-            if (tid == 0) nvshmem_int_wait_until((int *) flag_d + bid, NVSHMEM_CMP_EQ, bid + (i + 1));
-            if (tid==0) printf("(%d,%d) mypeer=%d,msg arrived\n",pe,bid,peer);
-
-            if (tid==0) nvshmem_double_put_nbi((double *)data_d+bid, (double *)data_d+bid, len, peer);
-            //nvshmemx_double_put_nbi_block((double *) data_d + bid, (double *) data_d + bid, len, 0);
-            //__syncthreads();
-            if (tid==0) printf("(%d,%d) mypeer=%d,send data done\n",pe,bid,peer);
-
-            if (tid==0) nvshmem_fence();
-            if (tid == 0) nvshmemx_int_signal((int *) flag_d + bid, bid + (i + 1), 0);
-            if (tid==0) printf("(%d,%d) mypeer=%d, signal done\n",pe,bid,peer);
-        } else if (pe == 0) {
-            //nvshmem_double_put_nbi((double *) data_d + bid, (double *) data_d + bid, len, peer);
-            if (tid==0) nvshmemx_double_put_nbi_block((double *) data_d + bid, (double *) data_d + bid, len, peer);
-            if (tid==0) printf("(%d,%d) mypeer=%d,send data done\n",pe,bid,peer);
-
-            if (tid==0) nvshmem_fence();
-            if (tid == 0) {
-                nvshmemx_int_signal((int *) flag_d + bid, bid + (i + 1), peer);
-                printf("(%d,%d) mypeer=%d, signal done\n",pe,bid,peer);
-                do{
-                    printf("(%d,%d) checking flag=%d\n",pe,bid,flag_d[bid]);
-                }while(flag_d[bid]!=1);
-                nvshmem_int_wait_until((int *) flag_d + bid, NVSHMEM_CMP_EQ, bid + (i + 1));
-                if (tid==0) printf("(%d,%d) mypeer=%d,msg arrived\n",pe,bid,peer);
-            }
-        }
-    }
-    //nvshmem_barrier_all();
-    stop = clock64();
-    nvshmem_quiet();
-
-    if ((pe == 0) && !tid) {
-        time = (stop - start) / iter;
-        usec = time * 1000 / clockrate;
-        bw = ((float) iter * (float) len * sizeof(double) * 2 * clockrate) / ((time / 1000) * 1024 * 1024 * 1024);
-        printf("Block (%d) %7lu, %8.2f, %4.6f \n", bid, len * sizeof(int), usec, bw);
-    }
-}
 
 __global__ void schedule
 (
@@ -1808,7 +1757,7 @@ void dlsum_fmod_inv_gpu_wrap
     int mype, npes, ndevices;
     mype = nvshmem_my_pe();
     npes = nvshmem_n_pes();
-    //printf("(%d) nbcol_loc %d\n", mype, nbcol_loc);
+    printf("(%d/%d) nbcol_loc %d\n", mype,npes, nbcol_loc);
     int mype_node = nvshmem_team_my_pe(NVSHMEMX_TEAM_NODE);
     CUDA_CHECK(cudaSetDevice(mype_node));
 
@@ -1822,35 +1771,35 @@ void dlsum_fmod_inv_gpu_wrap
         //cudaStreamCreate(&stream[i]);
         cudaStreamCreateWithFlags(&stream[i], cudaStreamNonBlocking);
     }
-    int minGridSize;
-    int myblockSize;
-    cudaOccupancyMaxPotentialBlockSize(&minGridSize,&myblockSize,(const void *) schedule ,0,0 );
-    h_nfrecv[1]=myblockSize;
-    gpuMemcpy(d_nfrecv, h_nfrecv, 3 * sizeof(int), gpuMemcpyHostToDevice);
-    cudaOccupancyMaxPotentialBlockSize(&minGridSize,&myblockSize,(const void *) schedule ,0,0 );
-    //printf("(%d) solve=%d,%d, wait=1,1024 (%d,%d)\n",mype,nbcol_loc,nthread_x*nthread_y,minGridSize,h_nfrecv[1] );
-    //fflush(stdout);
-
+    
     dim3 dimGrid_nv(h_nfrecv[2]); //2
     dim3 dimBlock_nv(h_nfrecv[1]); //1024
     dim3 dimGrid(nbcol_loc);
     dim3 dimBlock(nthread_x, nthread_y);
-
     int launch_success = 0;
-
-    void *args[] = {&nrhs, &LRtree_ptr, &maxrecvsz, &mype, &flag_bc_q, &flag_rd_q,
-                    &ready_x, &ready_lsum, &my_flag_bc, &my_flag_rd, &d_nfrecv, &d_status, &d_launch_flag,
-                    &d_colnum, &d_mynum, &d_mymaskstart, &d_mymasklength,
-                    &d_nfrecvmod, &d_statusmod, &d_colnummod, &d_mynummod, &d_mymaskstartmod, &d_mymasklengthmod,
-                    &d_recv_cnt, &d_msgnum,&lsum,&fmod,&grid,&xsup,&ilsum,&nbrow_loc,&nsupers};
-
-    NVSHMEM_CHECK(
-            nvshmemx_collective_launch((const void *) schedule, dimGrid_nv, dimBlock_nv, args, 0, stream[0]));
-    do {
-        cudaMemcpyAsync(&launch_success, d_launch_flag, 1 * sizeof(int), cudaMemcpyDeviceToHost, stream[1]);
-    } while (launch_success == 0);
+    int minGridSize;
+    int myblockSize;
+    if (npes>1) {
+        cudaOccupancyMaxPotentialBlockSize(&minGridSize,&myblockSize,(const void *) schedule ,0,0 );
+        h_nfrecv[1]=myblockSize;
+        gpuMemcpy(d_nfrecv, h_nfrecv, 3 * sizeof(int), gpuMemcpyHostToDevice);
+        cudaOccupancyMaxPotentialBlockSize(&minGridSize,&myblockSize,(const void *) schedule ,0,0 );
 
 
+        void *args[] = {&nrhs, &LRtree_ptr, &maxrecvsz, &mype, &flag_bc_q, &flag_rd_q,
+                        &ready_x, &ready_lsum, &my_flag_bc, &my_flag_rd, &d_nfrecv, &d_status, &d_launch_flag,
+                        &d_colnum, &d_mynum, &d_mymaskstart, &d_mymasklength,
+                        &d_nfrecvmod, &d_statusmod, &d_colnummod, &d_mynummod, &d_mymaskstartmod, &d_mymasklengthmod,
+                        &d_recv_cnt, &d_msgnum,&lsum,&fmod,&grid,&xsup,&ilsum,&nbrow_loc,&nsupers};
+
+        NVSHMEM_CHECK(
+                nvshmemx_collective_launch((const void *) schedule, dimGrid_nv, dimBlock_nv, args, 0, stream[0]));
+        do {
+            cudaMemcpyAsync(&launch_success, d_launch_flag, 1 * sizeof(int), cudaMemcpyDeviceToHost, stream[1]);
+        } while (launch_success == 0);
+    }else{
+        launch_success=1;
+    }
     if (launch_success == 1)
     dlsum_fmod_inv_gpu_mrhs_nvshmem<<< dimGrid, dimBlock, 0, stream[1] >>>(nbcol_loc,
                                                                            lsum, x,
@@ -1875,7 +1824,7 @@ void dlsum_fmod_inv_gpu_wrap
                                                                            d_launch_flag,
                                                                            d_nfrecv, d_status,
                                                                            d_statusmod,nblock_ex);
-    //CUDA_CHECK(cudaGetLastError());
+    CUDA_CHECK(cudaGetLastError());
     CUDA_CHECK(cudaDeviceSynchronize());
 
 }
@@ -3351,8 +3300,8 @@ __global__ void debug_kernel
         int minGridSize;
         int myblockSize;
         cudaOccupancyMaxPotentialBlockSize(&minGridSize,&myblockSize,(const void *) schedule ,0,0 );
-        h_nfrecv[1]=myblockSize;
-        gpuMemcpy(d_nfrecv, h_nfrecv, 3 * sizeof(int), gpuMemcpyHostToDevice);
+        h_nfrecv_u[1]=myblockSize;
+        gpuMemcpy(d_nfrecv_u, h_nfrecv_u, 3 * sizeof(int), gpuMemcpyHostToDevice);
         //printf("(%d) solve=%d,%d, wait=%d,%d\n",mype,nbcol_loc,nthread_x*nthread_y,h_nfrecv[2],h_nfrecv[1]);
         //fflush(stdout);
 

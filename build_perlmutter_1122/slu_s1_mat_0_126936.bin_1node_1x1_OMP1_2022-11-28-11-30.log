@@ -1,0 +1,56 @@
+** MPI 0/1, NVSHMEM 0/1, mype_node=0, device name: NVIDIA A100-SXM4-40GB bus id: 3, ndevices=1,cur=0, node=nid001285 **
+MPI_Query_thread with MPI_THREAD_MULTIPLE
+__STDC_VERSION__ 201112
+Library version:	6.4.0
+Input matrix file:	/global/cfs/cdirs/m2956/nanding/myprojects/matrix/s1_mat_0_126936.bin
+Process grid:		1 X 1
+fread n   126936	nnz 20540992
+# of doubles fread: 20540992
+Time to read and distribute matrix 0.03
+**************************************************
+.. blocking parameters from sp_ienv():
+**    relaxation                 :       20
+**    max supernode              :      256
+**    estimated fill ratio       :        5
+**    min GEMM dimension for GPU :    10000
+**************************************************
+**************************************************
+.. options:
+**    Fact             :    0
+**    Equil            :    1
+**    DiagInv          :    1
+**    ParSymbFact      :    0
+**    ColPerm          :    4
+**    RowPerm          :    1
+**    ReplaceTinyPivot :    1
+**    IterRefine       :    0
+**    Trans            :    0
+**    num_lookaheads   :   10
+**    SymPattern       :    0
+**    lookahead_etree  :    0
+**************************************************
+	Nonzeros in L       53063748
+	Nonzeros in U       53079474
+	nonzeros in L+U     106016286
+	nonzeros in LSUB    15627530
+GPU Driver version:   v 11070
+GPU Devices: 
+ 
+0 : NVIDIA A100-SXM4-40GB 8 0
+  Global memory:   40388 mb 
+  Shared memory:   48 kb 
+  Constant memory: 64 kb 
+  Block registers: 65536 
+
+
+** Memory Usage **********************************
+** NUMfact space (MB): (sum-of-all-processes)
+    L\U :          866.24 |  Total :  1039.46
+** Total highmark (MB):
+    Sum-of-all :  1329.59 | Avg :  1329.59  | Max :  1329.59
+**************************************************
+[/global/cfs/cdirs/m2956/nanding/myprojects/multi-GPU/superlu_dist/SRC/pdgstrs_lsum_cuda.cu:1827] cuda failed with invalid argument 
+(0/1) nbcol_loc 8929
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+srun: error: nid001285: task 0: Exited with exit code 255
+srun: launch/slurm: _step_signal: Terminating StepId=3780571.5

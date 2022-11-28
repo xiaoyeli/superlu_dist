@@ -1,0 +1,41 @@
+/var/spool/slurmd/job3743839/slurm_script: line 11: module: command not found
+/var/spool/slurmd/job3743839/slurm_script: line 12: module: command not found
+/var/spool/slurmd/job3743839/slurm_script: line 13: module: command not found
+/var/spool/slurmd/job3743839/slurm_script: line 14: module: command not found
+/var/spool/slurmd/job3743839/slurm_script: line 16: module: command not found
+MPICH_GPU_SUPPORT_ENABLED=0
+/var/spool/slurmd/job3743839/slurm_script: line 28: export: `/opt/cray/pe/libsci/22.06.1.3/GNU/9.1/x86_64/lib:/opt/nvidia/hpc_sdk/Linux_x86_64/22.5/math_libs/11.7/lib64:/opt/nvidia/hpc_sdk/Linux_x86_64/22.5/cuda/11.7/lib64:/opt/cray/pe/libsci/21.08.1.2/GNU/9.1/x86_64/lib:/opt/cray/pe/mpich/8.1.17/ofi/gnu/9.1/lib:/opt/cray/pe/mpich/8.1.17/gtl/lib:/opt/cray/pe/dsmml/0.2.2/dsmml/lib:/opt/cray/pe/perftools/22.06.0/lib64:/opt/nvidia/hpc_sdk/Linux_x86_64/22.5/comm_libs/mpi/lib:/opt/nvidia/hpc_sdk/Linux_x86_64/22.5/comm_libs/nvshmem/lib/:/global/cfs/cdirs/m2956/nanding/software/MPI_Bootstrap_For_Nan/:/global/cfs/cdirs/m2956/nanding/software/nvshmem_src_2.7.0-6/build//lib:/opt/cray/pe/libsci/22.06.1.3/GNU/9.1/x86_64/lib:/opt/nvidia/hpc_sdk/Linux_x86_64/22.5/math_libs/11.7/lib64:/opt/nvidia/hpc_sdk/Linux_x86_64/22.5/cuda/11.7/lib64:/opt/cray/pe/libsci/21.08.1.2/GNU/9.1/x86_64/lib:/opt/cray/pe/mpich/8.1.17/ofi/gnu/9.1/lib:/opt/cray/pe/mpich/8.1.17/gtl/lib:/opt/cray/pe/dsmml/0.2.2/dsmml/lib:/opt/cray/pe/perftools/22.06.0/lib64:/opt/nvidia/hpc_sdk/Linux_x86_64/22.5/math_libs/11.7/lib64:/opt/nvidia/hpc_sdk/Linux_x86_64/22.5/cuda/11.7/extras/CUPTI/lib64:/opt/nvidia/hpc_sdk/Linux_x86_64/22.5/cuda/11.7/extras/Debugger/lib64:/opt/nvidia/hpc_sdk/Linux_x86_64/22.5/cuda/11.7/nvvm/lib64:/opt/nvidia/hpc_sdk/Linux_x86_64/22.5/cuda/11.7/lib64:/global/cfs/cdirs/m2956/nanding/software/MPI_Bootstrap_For_Nan:/opt/nvidia/hpc_sdk/Linux_x86_64/22.7/comm_libs/nvshmem/lib:/opt/cray/pe/libsci/21.08.1.2/GNU/9.1/x86_64/lib:/opt/cray/pe/mpich/8.1.17/ofi/gnu/9.1/lib:/opt/cray/pe/mpich/8.1.17/gtl/lib:/opt/cray/pe/dsmml/0.2.2/dsmml/lib:/opt/cray/pe/libsci/22.06.1.3/GNU/9.1/x86_64/lib:/opt/cray/pe/perftools/22.06.0/lib64:/opt/cray/pe/gcc/11.2.0/snos/lib64:/global/cfs/cdirs/m2956/nanding/software/nvshmem_src_2.7.0-6/build/lib:/global/common/software/nersc/pm-2022q3/sw/darshan/3.4.0/lib:/opt/cray/pe/papi/6.0.0.15/lib64:/opt/cray/libfabric/1.15.0.0/lib64:/opt/cray/libfabric/1.15.0.0/lib64': not a valid identifier
+** MPI 0/1, NVSHMEM 0/1, mype_node=0, device name: NVIDIA A100-SXM4-40GB bus id: 3, ndevices=1,cur=0, node=nid002965 **
+MPI_Query_thread with MPI_THREAD_MULTIPLE
+__STDC_VERSION__ 201112
+Library version:	6.4.0
+Input matrix file:	/global/cfs/cdirs/m2956/nanding/myprojects/matrix/s1_mat_0_126936.bin
+Process grid:		1 X 1
+fread n   126936	nnz 20540992
+# of doubles fread: 20540992
+Time to read and distribute matrix 0.32
+**************************************************
+.. blocking parameters from sp_ienv():
+**    relaxation                 :       20
+**    max supernode              :      128
+**    estimated fill ratio       :        5
+**    min GEMM dimension for GPU :    10000
+**************************************************
+**************************************************
+.. options:
+**    Fact             :    0
+**    Equil            :    1
+**    DiagInv          :    1
+**    ParSymbFact      :    0
+**    ColPerm          :    4
+**    RowPerm          :    1
+**    ReplaceTinyPivot :    1
+**    IterRefine       :    0
+**    Trans            :    0
+**    num_lookaheads   :   10
+**    SymPattern       :    0
+**    lookahead_etree  :    0
+**************************************************
+srun: Job step aborted: Waiting up to 32 seconds for job step to finish.
+slurmstepd: error: *** STEP 3743839.0 ON nid002965 CANCELLED AT 2022-11-23T23:25:40 DUE TO TIME LIMIT ***
+slurmstepd: error: *** JOB 3743839 ON nid002965 CANCELLED AT 2022-11-23T23:25:40 DUE TO TIME LIMIT ***

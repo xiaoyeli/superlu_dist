@@ -1,0 +1,2 @@
+-lcuda -L/opt/nvidia/hpc_sdk/Linux_x86_64/22.5/cuda/11.7/lib64 -lcudart -L/opt/nvidia/hpc_sdk/Linux_x86_64/22.5/cuda/11.7/lib64/stubs -lnvidia-ml -L/global/cfs/cdirs/m2956/nanding/software/nvshmem_src_2.7.0-6/build/lib -lnvshmem -L/usr/lib64 -lgdrapi
+-lcuda -L/opt/nvidia/hpc_sdk/Linux_x86_64/22.5/cuda/11.7/lib64 -lcudart -L/opt/nvidia/hpc_sdk/Linux_x86_64/22.5/cuda/11.7/lib64/stubs/ -lnvidia-ml -L/global/cfs/cdirs/m2956/nanding/software/nvshmem_src_2.7.0-6/build/lib -lnvshmem -L/usr/lib64 -lgdrapi -lrt -L/usr/lib64 -lstdc++ -L/opt/cray/libfabric/1.15.0.0/lib64/ -lfabric 

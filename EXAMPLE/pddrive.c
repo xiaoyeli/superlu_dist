@@ -24,7 +24,6 @@ at the top-level directory.
 #include <math.h>
 #include "superlu_ddefs.h"
 //#include "superlu_zdefs.h"
-
 /*! \brief
  *
  * <pre>
@@ -272,7 +271,7 @@ out:
     //nvshmem_free(ready_lsum);
     //nvshmem_free(flag_bc_q);
     //nvshmem_free(flag_rd_q);
-    nvshmem_finalize();
+    //nvshmem_finalize();
     MPI_Finalize();
 
 #if ( DEBUGlevel>=1 )

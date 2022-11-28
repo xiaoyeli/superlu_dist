@@ -1,0 +1,18 @@
+Performing C SOURCE FILE Test C_SUPPORTS_DOLLAR succeeded with the following output:
+Change Dir: /global/cfs/cdirs/m2956/nanding/myprojects/multi-GPU/superlu_dist/build_perlmutter_1122/CMakeFiles/FortranCInterface/VerifyCXX/CMakeFiles/FortranCInterface/CMakeFiles/CMakeTmp
+
+Run Build Command(s):/usr/bin/gmake -f Makefile cmTC_de3ef/fast && /usr/bin/gmake  -f CMakeFiles/cmTC_de3ef.dir/build.make CMakeFiles/cmTC_de3ef.dir/build
+gmake[1]: Entering directory '/global/cfs/cdirs/m2956/nanding/myprojects/multi-GPU/superlu_dist/build_perlmutter_1122/CMakeFiles/FortranCInterface/VerifyCXX/CMakeFiles/FortranCInterface/CMakeFiles/CMakeTmp'
+Building C object CMakeFiles/cmTC_de3ef.dir/src.c.o
+/opt/cray/pe/craype/2.7.16/bin/cc -DC_SUPPORTS_DOLLAR  -I/global/cfs/cdirs/m2956/nanding/software/parmetis-4.0.3-perlmutter-32bit/metis/include -I/global/cfs/cdirs/m2956/nanding/software/parmetis-4.0.3-perlmutter-32bit/include -DUSE_VENDOR_BLAS -fopenmp  -std=c11 -DPRNTlevel=0 -DPROFlevel=0 -DDEBUGlevel=0 -DAdd_ -DGPU_ACC -I/global/cfs/cdirs/m2956/nanding/software/nvshmem_src_2.7.0-6/build/include/  -o CMakeFiles/cmTC_de3ef.dir/src.c.o -c /global/cfs/cdirs/m2956/nanding/myprojects/multi-GPU/superlu_dist/build_perlmutter_1122/CMakeFiles/FortranCInterface/VerifyCXX/CMakeFiles/FortranCInterface/CMakeFiles/CMakeTmp/src.c
+Linking C executable cmTC_de3ef
+/global/common/software/nersc/pm-2021q4/sw/cmake-3.22.0/bin/cmake -E cmake_link_script CMakeFiles/cmTC_de3ef.dir/link.txt --verbose=1
+/opt/cray/pe/craype/2.7.16/bin/cc -I/global/cfs/cdirs/m2956/nanding/software/parmetis-4.0.3-perlmutter-32bit/metis/include -I/global/cfs/cdirs/m2956/nanding/software/parmetis-4.0.3-perlmutter-32bit/include -DUSE_VENDOR_BLAS -fopenmp  -std=c11 -DPRNTlevel=0 -DPROFlevel=0 -DDEBUGlevel=0 -DAdd_ -DGPU_ACC -I/global/cfs/cdirs/m2956/nanding/software/nvshmem_src_2.7.0-6/build/include/  -lcuda -L/opt/nvidia/hpc_sdk/Linux_x86_64/22.5/cuda/11.7/lib64 -lcudart -L/opt/nvidia/hpc_sdk/Linux_x86_64/22.5/cuda/11.7/lib64/stubs/ -lnvidia-ml -L/global/cfs/cdirs/m2956/nanding/software/nvshmem_src_2.7.0-6/build/lib -lnvshmem -L/usr/lib64 -lgdrapi -Wl,-rpath,/global/cfs/cdirs/m2956/nanding/myprojects/multi-GPU/superlu_dist/build_perlmutter_1122/SRC   -fopenmp  CMakeFiles/cmTC_de3ef.dir/src.c.o -o cmTC_de3ef 
+gmake[1]: Leaving directory '/global/cfs/cdirs/m2956/nanding/myprojects/multi-GPU/superlu_dist/build_perlmutter_1122/CMakeFiles/FortranCInterface/VerifyCXX/CMakeFiles/FortranCInterface/CMakeFiles/CMakeTmp'
+
+
+Source file was:
+
+extern int dollar$(void);
+int main() { return 0; }
+

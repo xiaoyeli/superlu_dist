@@ -2,7 +2,6 @@
 #include "cuda.h"
 #include "cuda_runtime.h"
 
-
 /* ************************************************* */
 /*  reuse L and U                                    */
 /*  *_nfrecv: totol number of received msg           */
@@ -114,4 +113,3 @@ do {                                                    \
 
 
 
-__device__ int clockrate;

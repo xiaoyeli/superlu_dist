@@ -1,0 +1,297 @@
+/var/spool/slurmd/job3743773/slurm_script: line 11: module: command not found
+/var/spool/slurmd/job3743773/slurm_script: line 12: module: command not found
+/var/spool/slurmd/job3743773/slurm_script: line 13: module: command not found
+/var/spool/slurmd/job3743773/slurm_script: line 14: module: command not found
+/var/spool/slurmd/job3743773/slurm_script: line 16: module: command not found
+MPICH_GPU_SUPPORT_ENABLED=0
+/var/spool/slurmd/job3743773/slurm_script: line 28: export: `/opt/cray/pe/libsci/22.06.1.3/GNU/9.1/x86_64/lib:/opt/nvidia/hpc_sdk/Linux_x86_64/22.5/math_libs/11.7/lib64:/opt/nvidia/hpc_sdk/Linux_x86_64/22.5/cuda/11.7/lib64:/opt/cray/pe/libsci/21.08.1.2/GNU/9.1/x86_64/lib:/opt/cray/pe/mpich/8.1.17/ofi/gnu/9.1/lib:/opt/cray/pe/mpich/8.1.17/gtl/lib:/opt/cray/pe/dsmml/0.2.2/dsmml/lib:/opt/cray/pe/perftools/22.06.0/lib64:/opt/nvidia/hpc_sdk/Linux_x86_64/22.5/comm_libs/mpi/lib:/opt/nvidia/hpc_sdk/Linux_x86_64/22.5/comm_libs/nvshmem/lib/:/global/cfs/cdirs/m2956/nanding/software/MPI_Bootstrap_For_Nan/:/global/cfs/cdirs/m2956/nanding/software/nvshmem_src_2.7.0-6/build//lib:/opt/cray/pe/libsci/22.06.1.3/GNU/9.1/x86_64/lib:/opt/nvidia/hpc_sdk/Linux_x86_64/22.5/math_libs/11.7/lib64:/opt/nvidia/hpc_sdk/Linux_x86_64/22.5/cuda/11.7/lib64:/opt/cray/pe/libsci/21.08.1.2/GNU/9.1/x86_64/lib:/opt/cray/pe/mpich/8.1.17/ofi/gnu/9.1/lib:/opt/cray/pe/mpich/8.1.17/gtl/lib:/opt/cray/pe/dsmml/0.2.2/dsmml/lib:/opt/cray/pe/perftools/22.06.0/lib64:/opt/nvidia/hpc_sdk/Linux_x86_64/22.5/math_libs/11.7/lib64:/opt/nvidia/hpc_sdk/Linux_x86_64/22.5/cuda/11.7/extras/CUPTI/lib64:/opt/nvidia/hpc_sdk/Linux_x86_64/22.5/cuda/11.7/extras/Debugger/lib64:/opt/nvidia/hpc_sdk/Linux_x86_64/22.5/cuda/11.7/nvvm/lib64:/opt/nvidia/hpc_sdk/Linux_x86_64/22.5/cuda/11.7/lib64:/global/cfs/cdirs/m2956/nanding/software/MPI_Bootstrap_For_Nan:/opt/nvidia/hpc_sdk/Linux_x86_64/22.7/comm_libs/nvshmem/lib:/opt/cray/pe/libsci/21.08.1.2/GNU/9.1/x86_64/lib:/opt/cray/pe/mpich/8.1.17/ofi/gnu/9.1/lib:/opt/cray/pe/mpich/8.1.17/gtl/lib:/opt/cray/pe/dsmml/0.2.2/dsmml/lib:/opt/cray/pe/libsci/22.06.1.3/GNU/9.1/x86_64/lib:/opt/cray/pe/perftools/22.06.0/lib64:/opt/cray/pe/gcc/11.2.0/snos/lib64:/global/cfs/cdirs/m2956/nanding/software/nvshmem_src_2.7.0-6/build/lib:/global/common/software/nersc/pm-2022q3/sw/darshan/3.4.0/lib:/opt/cray/pe/papi/6.0.0.15/lib64:/opt/cray/libfabric/1.15.0.0/lib64:/opt/cray/libfabric/1.15.0.0/lib64': not a valid identifier
+** MPI 0/1, NVSHMEM 0/1, mype_node=0, device name: NVIDIA A100-SXM4-40GB bus id: 3, ndevices=1,cur=0, node=nid002388 **
+MPI_Query_thread with MPI_THREAD_MULTIPLE
+__STDC_VERSION__ 201112
+Library version:	6.4.0
+Input matrix file:	/global/cfs/cdirs/m2956/nanding/myprojects/matrix/s1_mat_0_126936_longint.bin
+Process grid:		1 X 1
+fread n   126936	nnz        0
+# of doubles fread: 0
+Time to read and distribute matrix 0.12
+srun: error: nid002388: task 0: Segmentation fault
+srun: launch/slurm: _step_signal: Terminating StepId=3743773.0
+** MPI 0/2, NVSHMEM 0/2, mype_node=0, device name: NVIDIA A100-SXM4-40GB bus id: 3, ndevices=2,cur=0, node=nid002388 **
+** MPI 1/2, NVSHMEM 1/2, mype_node=1, device name: NVIDIA A100-SXM4-40GB bus id: 65, ndevices=2,cur=1, node=nid002388 **
+MPI_Query_thread with MPI_THREAD_MULTIPLE
+__STDC_VERSION__ 201112
+Library version:	6.4.0
+Input matrix file:	/global/cfs/cdirs/m2956/nanding/myprojects/matrix/s1_mat_0_126936_longint.bin
+Process grid:		2 X 1
+fread n   126936	nnz        0
+# of doubles fread: 0
+Time to read and distribute matrix 0.00
+srun: error: nid002388: task 1: Segmentation fault
+srun: launch/slurm: _step_signal: Terminating StepId=3743773.1
+slurmstepd: error: *** STEP 3743773.1 ON nid002388 CANCELLED AT 2022-11-23T22:56:28 ***
+srun: error: nid002388: task 0: Segmentation fault
+** MPI 0/4, NVSHMEM 0/4, mype_node=0, device name: NVIDIA A100-SXM4-40GB bus id: 3, ndevices=4,cur=0, node=nid002388 **
+** MPI 1/4, NVSHMEM 1/4, mype_node=1, device name: NVIDIA A100-SXM4-40GB bus id: 65, ndevices=4,cur=1, node=nid002388 **
+** MPI 3/4, NVSHMEM 3/4, mype_node=3, device name: NVIDIA A100-SXM4-40GB bus id: 193, ndevices=4,cur=3, node=nid002388 **
+** MPI 2/4, NVSHMEM 2/4, mype_node=2, device name: NVIDIA A100-SXM4-40GB bus id: 130, ndevices=4,cur=2, node=nid002388 **
+MPI_Query_thread with MPI_THREAD_MULTIPLE
+__STDC_VERSION__ 201112
+Library version:	6.4.0
+Input matrix file:	/global/cfs/cdirs/m2956/nanding/myprojects/matrix/s1_mat_0_126936_longint.bin
+Process grid:		4 X 1
+fread n   126936	nnz        0
+# of doubles fread: 0
+Time to read and distribute matrix 0.00
+srun: error: nid002388: tasks 0-2: Segmentation fault
+srun: launch/slurm: _step_signal: Terminating StepId=3743773.2
+slurmstepd: error: *** STEP 3743773.2 ON nid002388 CANCELLED AT 2022-11-23T22:56:30 ***
+srun: error: nid002388: task 3: Segmentation fault
+** MPI 0/1, NVSHMEM 0/1, mype_node=0, device name: NVIDIA A100-SXM4-40GB bus id: 3, ndevices=1,cur=0, node=nid002388 **
+MPI_Query_thread with MPI_THREAD_MULTIPLE
+__STDC_VERSION__ 201112
+Library version:	6.4.0
+Input matrix file:	/global/cfs/cdirs/m2956/nanding/myprojects/matrix/s1_mat_0_507744.bin
+Process grid:		1 X 1
+fread n   507744	nnz 205385344
+# of doubles fread: 205385344
+Time to read and distribute matrix 1.64
+**************************************************
+.. blocking parameters from sp_ienv():
+**    relaxation                 :       20
+**    max supernode              :      128
+**    estimated fill ratio       :        5
+**    min GEMM dimension for GPU :    10000
+**************************************************
+**************************************************
+.. options:
+**    Fact             :    0
+**    Equil            :    1
+**    DiagInv          :    1
+**    ParSymbFact      :    0
+**    ColPerm          :    4
+**    RowPerm          :    1
+**    ReplaceTinyPivot :    1
+**    IterRefine       :    0
+**    Trans            :    0
+**    num_lookaheads   :   10
+**    SymPattern       :    0
+**    lookahead_etree  :    0
+**************************************************
+srun: error: nid002388: task 0: Segmentation fault
+srun: launch/slurm: _step_signal: Terminating StepId=3743773.3
+** MPI 0/2, NVSHMEM 0/2, mype_node=0, device name: NVIDIA A100-SXM4-40GB bus id: 3, ndevices=2,cur=0, node=nid002388 **
+** MPI 1/2, NVSHMEM 1/2, mype_node=1, device name: NVIDIA A100-SXM4-40GB bus id: 65, ndevices=2,cur=1, node=nid002388 **
+MPI_Query_thread with MPI_THREAD_MULTIPLE
+__STDC_VERSION__ 201112
+Library version:	6.4.0
+Input matrix file:	/global/cfs/cdirs/m2956/nanding/myprojects/matrix/s1_mat_0_507744.bin
+Process grid:		2 X 1
+fread n   507744	nnz 205385344
+# of doubles fread: 205385344
+Time to read and distribute matrix 3.32
+**************************************************
+.. blocking parameters from sp_ienv():
+**    relaxation                 :       20
+**    max supernode              :      128
+**    estimated fill ratio       :        5
+**    min GEMM dimension for GPU :    10000
+**************************************************
+**************************************************
+.. options:
+**    Fact             :    0
+**    Equil            :    1
+**    DiagInv          :    1
+**    ParSymbFact      :    0
+**    ColPerm          :    4
+**    RowPerm          :    1
+**    ReplaceTinyPivot :    1
+**    IterRefine       :    0
+**    Trans            :    0
+**    num_lookaheads   :   10
+**    SymPattern       :    0
+**    lookahead_etree  :    0
+**************************************************
+slurmstepd: error: Detected 1 oom-kill event(s) in StepId=3743773.4. Some of your processes may have been killed by the cgroup out-of-memory handler.
+srun: error: nid002388: task 1: Out Of Memory
+srun: launch/slurm: _step_signal: Terminating StepId=3743773.4
+slurmstepd: error: *** STEP 3743773.4 ON nid002388 CANCELLED AT 2022-11-23T23:34:53 ***
+** MPI 3/4, NVSHMEM 3/4, mype_node=3, device name: NVIDIA A100-SXM4-40GB bus id: 193, ndevices=4,cur=3, node=nid002388 **
+** MPI 2/4, NVSHMEM 2/4, mype_node=2, device name: NVIDIA A100-SXM4-40GB bus id: 130, ndevices=4,cur=2, node=nid002388 **
+** MPI 0/4, NVSHMEM 0/4, mype_node=0, device name: NVIDIA A100-SXM4-40GB bus id: 3, ndevices=4,cur=0, node=nid002388 **
+** MPI 1/4, NVSHMEM 1/4, mype_node=1, device name: NVIDIA A100-SXM4-40GB bus id: 65, ndevices=4,cur=1, node=nid002388 **
+MPI_Query_thread with MPI_THREAD_MULTIPLE
+__STDC_VERSION__ 201112
+Library version:	6.4.0
+Input matrix file:	/global/cfs/cdirs/m2956/nanding/myprojects/matrix/s1_mat_0_507744.bin
+Process grid:		4 X 1
+fread n   507744	nnz 205385344
+# of doubles fread: 205385344
+Time to read and distribute matrix 0.89
+**************************************************
+.. blocking parameters from sp_ienv():
+**    relaxation                 :       20
+**    max supernode              :      128
+**    estimated fill ratio       :        5
+**    min GEMM dimension for GPU :    10000
+**************************************************
+**************************************************
+.. options:
+**    Fact             :    0
+**    Equil            :    1
+**    DiagInv          :    1
+**    ParSymbFact      :    0
+**    ColPerm          :    4
+**    RowPerm          :    1
+**    ReplaceTinyPivot :    1
+**    IterRefine       :    0
+**    Trans            :    0
+**    num_lookaheads   :   10
+**    SymPattern       :    0
+**    lookahead_etree  :    0
+**************************************************
+slurmstepd: error: Detected 1 oom-kill event(s) in StepId=3743773.5. Some of your processes may have been killed by the cgroup out-of-memory handler.
+srun: error: nid002388: task 0: Out Of Memory
+srun: launch/slurm: _step_signal: Terminating StepId=3743773.5
+slurmstepd: error: *** STEP 3743773.5 ON nid002388 CANCELLED AT 2022-11-23T23:41:44 ***
+** MPI 0/1, NVSHMEM 0/1, mype_node=0, device name: NVIDIA A100-SXM4-40GB bus id: 3, ndevices=1,cur=0, node=nid002388 **
+MPI_Query_thread with MPI_THREAD_MULTIPLE
+__STDC_VERSION__ 201112
+Library version:	6.4.0
+Input matrix file:	/global/cfs/cdirs/m2956/nanding/myprojects/matrix/Li4244.bin
+Process grid:		1 X 1
+fread n    72000	nnz 258880000
+# of doubles fread: 258880000
+Time to read and distribute matrix 5.71
+**************************************************
+.. blocking parameters from sp_ienv():
+**    relaxation                 :       20
+**    max supernode              :      128
+**    estimated fill ratio       :        5
+**    min GEMM dimension for GPU :    10000
+**************************************************
+**************************************************
+.. options:
+**    Fact             :    0
+**    Equil            :    1
+**    DiagInv          :    1
+**    ParSymbFact      :    0
+**    ColPerm          :    4
+**    RowPerm          :    1
+**    ReplaceTinyPivot :    1
+**    IterRefine       :    0
+**    Trans            :    0
+**    num_lookaheads   :   10
+**    SymPattern       :    0
+**    lookahead_etree  :    0
+**************************************************
+srun: error: nid002388: task 0: Segmentation fault
+srun: launch/slurm: _step_signal: Terminating StepId=3743773.6
+** MPI 0/2, NVSHMEM 0/2, mype_node=0, device name: NVIDIA A100-SXM4-40GB bus id: 3, ndevices=2,cur=0, node=nid002388 **
+** MPI 1/2, NVSHMEM 1/2, mype_node=1, device name: NVIDIA A100-SXM4-40GB bus id: 65, ndevices=2,cur=1, node=nid002388 **
+MPI_Query_thread with MPI_THREAD_MULTIPLE
+__STDC_VERSION__ 201112
+Library version:	6.4.0
+Input matrix file:	/global/cfs/cdirs/m2956/nanding/myprojects/matrix/Li4244.bin
+Process grid:		2 X 1
+fread n    72000	nnz 258880000
+# of doubles fread: 258880000
+Time to read and distribute matrix 5.58
+**************************************************
+.. blocking parameters from sp_ienv():
+**    relaxation                 :       20
+**    max supernode              :      128
+**    estimated fill ratio       :        5
+**    min GEMM dimension for GPU :    10000
+**************************************************
+**************************************************
+.. options:
+**    Fact             :    0
+**    Equil            :    1
+**    DiagInv          :    1
+**    ParSymbFact      :    0
+**    ColPerm          :    4
+**    RowPerm          :    1
+**    ReplaceTinyPivot :    1
+**    IterRefine       :    0
+**    Trans            :    0
+**    num_lookaheads   :   10
+**    SymPattern       :    0
+**    lookahead_etree  :    0
+**************************************************
+srun: error: nid002388: task 1: Segmentation fault
+srun: launch/slurm: _step_signal: Terminating StepId=3743773.7
+slurmstepd: error: *** STEP 3743773.7 ON nid002388 CANCELLED AT 2022-11-23T23:42:27 ***
+srun: error: nid002388: task 0: Segmentation fault
+** MPI 2/4, NVSHMEM 2/4, mype_node=2, device name: NVIDIA A100-SXM4-40GB bus id: 130, ndevices=4,cur=2, node=nid002388 **
+** MPI 3/4, NVSHMEM 3/4, mype_node=3, device name: NVIDIA A100-SXM4-40GB bus id: 193, ndevices=4,cur=3, node=nid002388 **
+** MPI 0/4, NVSHMEM 0/4, mype_node=0, device name: NVIDIA A100-SXM4-40GB bus id: 3, ndevices=4,cur=0, node=nid002388 **
+** MPI 1/4, NVSHMEM 1/4, mype_node=1, device name: NVIDIA A100-SXM4-40GB bus id: 65, ndevices=4,cur=1, node=nid002388 **
+MPI_Query_thread with MPI_THREAD_MULTIPLE
+__STDC_VERSION__ 201112
+Library version:	6.4.0
+Input matrix file:	/global/cfs/cdirs/m2956/nanding/myprojects/matrix/Li4244.bin
+Process grid:		4 X 1
+fread n    72000	nnz 258880000
+# of doubles fread: 258880000
+Time to read and distribute matrix 2.42
+**************************************************
+.. blocking parameters from sp_ienv():
+**    relaxation                 :       20
+**    max supernode              :      128
+**    estimated fill ratio       :        5
+**    min GEMM dimension for GPU :    10000
+**************************************************
+**************************************************
+.. options:
+**    Fact             :    0
+**    Equil            :    1
+**    DiagInv          :    1
+**    ParSymbFact      :    0
+**    ColPerm          :    4
+**    RowPerm          :    1
+**    ReplaceTinyPivot :    1
+**    IterRefine       :    0
+**    Trans            :    0
+**    num_lookaheads   :   10
+**    SymPattern       :    0
+**    lookahead_etree  :    0
+**************************************************
+srun: error: nid002388: task 2: Segmentation fault
+srun: launch/slurm: _step_signal: Terminating StepId=3743773.8
+slurmstepd: error: *** STEP 3743773.8 ON nid002388 CANCELLED AT 2022-11-23T23:42:43 ***
+srun: error: nid002388: tasks 0-1: Segmentation fault
+srun: error: nid002388: task 3: Segmentation fault
+** MPI 0/1, NVSHMEM 0/1, mype_node=0, device name: NVIDIA A100-SXM4-40GB bus id: 3, ndevices=1,cur=0, node=nid002388 **
+MPI_Query_thread with MPI_THREAD_MULTIPLE
+__STDC_VERSION__ 201112
+Library version:	6.4.0
+Input matrix file:	/global/cfs/cdirs/m2956/nanding/myprojects/matrix/LU_C_BN_C_2by2.bin
+Process grid:		1 X 1
+fread n   131664	nnz 95429672
+# of doubles fread: 95429672
+Time to read and distribute matrix 3.00
+**************************************************
+.. blocking parameters from sp_ienv():
+**    relaxation                 :       20
+**    max supernode              :      128
+**    estimated fill ratio       :        5
+**    min GEMM dimension for GPU :    10000
+**************************************************
+**************************************************
+.. options:
+**    Fact             :    0
+**    Equil            :    1
+**    DiagInv          :    1
+**    ParSymbFact      :    0
+**    ColPerm          :    4
+**    RowPerm          :    1
+**    ReplaceTinyPivot :    1
+**    IterRefine       :    0
+**    Trans            :    0
+**    num_lookaheads   :   10
+**    SymPattern       :    0
+**    lookahead_etree  :    0
+**************************************************
+slurmstepd: error: *** STEP 3743773.9 ON nid002388 CANCELLED AT 2022-11-23T23:56:50 DUE TO TIME LIMIT ***
+slurmstepd: error: *** JOB 3743773 ON nid002388 CANCELLED AT 2022-11-23T23:56:50 DUE TO TIME LIMIT ***
+srun: Job step aborted: Waiting up to 32 seconds for job step to finish.

@@ -1,0 +1,35 @@
+#!/bin/bash
+module load PrgEnv-gnu
+module load cudatoolkit
+module load craype-accel-nvidia80
+module load cray-libsci/22.06.1.3
+
+setenv LD_LIBRARY_PATH ${CRAY_LD_LIBRARY_PATH}:$LD_LIBRARY_PATH
+##setenv FI_LOG_LEVEL Warn
+ 
+setenv NVSHMEM_HOME /global/cfs/cdirs/m2956/nanding/software/nvshmem_src_2.7.0-6/build/
+setenv NVSHMEM_PREFIX /global/cfs/cdirs/m2956/nanding/software/nvshmem_src_2.7.0-6/build/
+setenv NVSHMEM_USE_GDRCOPY 1
+setenv GDRCOPY_HOME /usr
+setenv NVSHMEM_MPI_SUPPORT 1
+setenv MPI_HOME ${MPICH_DIR}
+setenv NVCC_GENCODE "-gencode=arch=compute_80,code=sm_80"
+setenv NVSHMEM_DEFAULT_PMI2 1
+setenv NVCUFLAGS --allow-unsupported-compiler
+setenv MPICC CC
+setenv CC cc
+setenv CXX CC
+ 
+setenv NVSHMEM_LIBFABRIC_SUPPORT 1
+setenv LIBFABRIC_HOME /opt/cray/libfabric/1.15.0.0
+setenv LD_LIBRARY_PATH /global/cfs/cdirs/m2956/nanding/software/MPI_Bootstrap_For_Nan/:$NVSHMEM_HOME/lib:$LD_LIBRARY_PATH
+
+setenv NVSHMEM_BOOTSTRAP_TWO_STAGE 1
+setenv NVSHMEM_BOOTSTRAP plugin
+setenv NVSHMEM_BOOTSTRAP_PLUGIN /global/cfs/cdirs/m2956/nanding/software/MPI_Bootstrap_For_Nan/nvshmem_bootstrap_mpich.so
+
+
+alias ls "ls --color"
+setenv NVSHMEM_DISABLE_CUDA_VMM 1
+setenv FI_CXI_OPTIMIZED_MRS false
+setenv NVSHMEM_REMOTE_TRANSPORT libfabric
