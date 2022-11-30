@@ -17,18 +17,22 @@ export SUPERLU_NUM_GPU_STREAMS=1
 export SUPERLU_BIND_MPI_GPU=1
 export SUPERLU_ACC_OFFLOAD=1 # this can be 0 to do CPU tests on GPU nodes
 export GPU3DVERSION=1   
- 
+
+# export NSUP=256
+# export NREL=256
+
 # srun -n 1 ./EXAMPLE/pddrive -r 1 -c 1 ../EXAMPLE/g20.rua
 DIR=$CFS/ntrain9/YangLiu/matrix
+# INPUT_DIR=$CFS/m2957/liuyangz/my_research/matrix
 
 # export NSUP=128
 # export NREL=20
 # export NSUP=256
 # export NREL=256
 # for MAT in big.rua 
-# for MAT in g4.rua 
 # for MAT in g20.rua 
-for MAT in s1_mat_0_126936.bin
+for MAT in g4.rua 
+# for MAT in s1_mat_0_126936.bin
 # for MAT in torso3.mtx
 # for MAT in Graphene2880/H.mtx
 # for MAT in s1_mat_0_126936.bin s1_mat_0_253872.bin s1_mat_0_507744.bin 

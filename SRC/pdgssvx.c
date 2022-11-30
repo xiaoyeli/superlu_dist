@@ -490,7 +490,7 @@ at the top-level directory.
  *
  * info    (output) int*
  *         = 0: successful exit
- *         < 0: if info = -i, the i-th argument had an illegal value  
+ *         < 0: if info = -i, the i-th argument had an illegal value
  *         > 0: if info = i, and i is
  *             <= A->ncol: U(i,i) is exactly zero. The factorization has
  *                been completed, but the factor U is exactly singular,
@@ -1299,7 +1299,7 @@ pdgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 
 	    dQuerySpace_dist(n, LUstruct, grid, stat, &num_mem_usage);
 	    mem_stage[2] = num_mem_usage.total;  /* numerical factorization step */
-	    
+
 	    loc_max = SUPERLU_MAX( loc_max, mem_stage[2] ); /* local max of 3 stages */
 
 	    local_struct.val = loc_max;
@@ -1307,7 +1307,7 @@ pdgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 	    MPI_Reduce( &local_struct, &global_struct, 1, MPI_FLOAT_INT, MPI_MAXLOC, 0, grid->comm );
 	    int all_highmark_rank = global_struct.rank;
 	    float all_highmark_mem = global_struct.val * 1e-6;
-	    
+
 	    MPI_Reduce( &loc_max, &avg,
 		       1, MPI_FLOAT, MPI_SUM, 0, grid->comm );
 	    MPI_Reduce( &num_mem_usage.for_lu, &for_lu,
@@ -1320,12 +1320,12 @@ pdgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 	    MPI_Reduce( &local_struct, &global_struct, 1, MPI_FLOAT_INT, MPI_MAXLOC, 0, grid->comm );
 	    int lu_max_rank = global_struct.rank;
 	    float lu_max_mem = global_struct.val*1e-6;
-	    
+
 	    local_struct.val = stat->peak_buffer;
 	    MPI_Reduce( &local_struct, &global_struct, 1, MPI_FLOAT_INT, MPI_MAXLOC, 0, grid->comm );
 	    int buffer_peak_rank = global_struct.rank;
 	    float buffer_peak = global_struct.val*1e-6;
-    
+
             if ( iam==0 ) {
 		printf("\n** Memory Usage **********************************\n");
                 printf("** Total highmark (MB):\n"
@@ -1338,7 +1338,7 @@ pdgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 		       "\t. distribution    %8.2f\n"
 		       "\t. numfact         %8.2f\n",
 		       all_highmark_rank, mem_stage[0]*1e-6, mem_stage[1]*1e-6, mem_stage[2]*1e-6);
-		
+
                 printf("** NUMfact space (MB): (sum-of-all-processes)\n"
 		       "    L\\U :        %8.2f |  Total : %8.2f\n",
 		       for_lu * 1e-6, total * 1e-6);
@@ -1351,6 +1351,15 @@ pdgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 		fflush(stdout);
             }
 	} /* end printing stats */
+
+	nsupers = Glu_persist->supno[n-1] + 1;
+	int_t* supernodeMask = intMalloc_dist(nsupers);
+	for(int_t ii=0; ii<nsupers; ii++)
+		supernodeMask[ii]=1;
+	trs_compute_communication_structure(options, n, LUstruct,
+					ScalePermstruct, supernodeMask, grid, stat);
+	SUPERLU_FREE(supernodeMask);
+
 
     } /* end if (!factored) */
 
@@ -1646,7 +1655,7 @@ int_t  *Urbs = Llu->Urbs;
 int_t  **Ucb_valptr = Llu->Ucb_valptr;      /* Vertical linked list pointing to Unzval[] */
 Ucb_indptr_t **Ucb_indptr = Llu->Ucb_indptr;/* Vertical linked list pointing to Uindex[] */
 int_t knsupc,iknsupc,ikfrow,iklrow;
-int_t  *xsup = Glu_persist->xsup;; 
+int_t  *xsup = Glu_persist->xsup;;
 
 int iam = grid->iam;
 int_t mycol = MYCOL (iam, grid);
@@ -1672,7 +1681,7 @@ Llu->Ucolind_bc_ptr[nsupers_j-1] = NULL;
 if ( !(Llu->Unzval_bc_ptr =
 			(double**)SUPERLU_MALLOC(nsupers_j * sizeof(double*))) )
 	ABORT("Malloc fails for Llu->Unzval_bc_ptr[].");
-Llu->Unzval_bc_ptr[nsupers_j-1] = NULL;	
+Llu->Unzval_bc_ptr[nsupers_j-1] = NULL;
 
 if ( !(Llu->Uindval_loc_bc_ptr =
 			(int_t**)SUPERLU_MALLOC(nsupers_j * sizeof(int_t*))) )
@@ -1690,18 +1699,18 @@ if ( !(Llu->Ucolind_bc_offset =
 			(int64_t*)SUPERLU_MALLOC(nsupers_j * sizeof(int64_t))) ) {
 	fprintf(stderr, "Malloc fails for Llu->Ucolind_bc_offset[].");
 }
-Llu->Ucolind_bc_offset[nsupers_j-1] = -1;	
+Llu->Ucolind_bc_offset[nsupers_j-1] = -1;
 
 if ( !(Llu->Unzval_bc_offset =
 			(int64_t*)SUPERLU_MALLOC(nsupers_j * sizeof(int64_t))) ) {
 	fprintf(stderr, "Malloc fails for Llu->Lnzval_bc_offset[].");
 }
-Llu->Unzval_bc_offset[nsupers_j-1] = -1;		
+Llu->Unzval_bc_offset[nsupers_j-1] = -1;
 
 
 
 for (lk=0;lk<nsupers_j;++lk){
-	k = lk * grid->npcol + mycol;/* Global block number, col-wise. */	
+	k = lk * grid->npcol + mycol;/* Global block number, col-wise. */
 	knsupc = SuperSize( k );
 	nub = Urbs[lk];      /* Number of U blocks in block column lk */
 
@@ -1709,7 +1718,7 @@ for (lk=0;lk<nsupers_j;++lk){
 		// First pass count sizes of Llu->Ucolind_bc_ptr[lk] and Llu->Unzval_bc_ptr[lk]
 		nnz_ind=0;
 		nnz_val=0;
-		nnz_ind+=BC_HEADER_NEWU;	
+		nnz_ind+=BC_HEADER_NEWU;
 		nrow=0;
 		for (ub = 0; ub < nub; ++ub) {
 		ik = Ucb_indptr[lk][ub].lbnum; /* Local block number, row-wise. */
@@ -1723,7 +1732,7 @@ for (lk=0;lk<nsupers_j;++lk){
 		ikfrow = FstBlockC( gik );
 		iklrow = FstBlockC( gik+1 );
 		uptr = Ucb_valptr[lk][ub]; /* Start of the block in uval[]. */
-		
+
 		nnz_ind+=UB_DESCRIPTOR_NEWU;
 
 		for (jj = 0; jj < knsupc; ++jj) {
@@ -1765,7 +1774,7 @@ for (lk=0;lk<nsupers_j;++lk){
 		nnz_ind=0;
 		nnz_val=0;
 		ncol=0;
-		nnz_ind+=BC_HEADER_NEWU;	
+		nnz_ind+=BC_HEADER_NEWU;
 		nrow=0;
 		for (ub = 0; ub < nub; ++ub) {
 		ik = Ucb_indptr[lk][ub].lbnum; /* Local block number, row-wise. */
@@ -1778,7 +1787,7 @@ for (lk=0;lk<nsupers_j;++lk){
 		ikfrow = FstBlockC( gik );
 		iklrow = FstBlockC( gik+1 );
 		uptr = Ucb_valptr[lk][ub]; /* Start of the block in uval[]. */
-		
+
 		for(ii=0; ii<iknsupc; ++ii){
 			Llu->Ucolind_bc_ptr[lk][nnz_offset+nrow*2] = ub;
 			Llu->Ucolind_bc_ptr[lk][nnz_offset+nrow*2+1] = ii;
@@ -1789,7 +1798,7 @@ for (lk=0;lk<nsupers_j;++lk){
 		for (jj = 0; jj < knsupc; ++jj) {
 		fnz = usub[i + jj];
 		if ( fnz < iklrow ) { /* Nonzero segment. */
-			Llu->Ucolind_bc_ptr[lk][nnz_ind+ncol_loc+UB_DESCRIPTOR_NEWU]=FstBlockC(k)+jj; /* Global column number */ 
+			Llu->Ucolind_bc_ptr[lk][nnz_ind+ncol_loc+UB_DESCRIPTOR_NEWU]=FstBlockC(k)+jj; /* Global column number */
 			ncol_loc++;
 			for (irow = fnz; irow < iklrow; ++irow){
 				Llu->Unzval_bc_ptr[lk][nnz_val+irow - ikfrow]=uval[uptr++];
@@ -1810,7 +1819,7 @@ for (lk=0;lk<nsupers_j;++lk){
 		// if(lk==69)
 		// 	printf("ub ncol_loc %5d %5d \n",ub, ncol_loc);
 		ncol+=ncol_loc*iknsupc;
-		nnz_ind+=ncol_loc+UB_DESCRIPTOR_NEWU; 
+		nnz_ind+=ncol_loc+UB_DESCRIPTOR_NEWU;
 		} /* for ub ... */
 
 	}else{
@@ -1826,21 +1835,21 @@ for (lk=0;lk<nsupers_j;++lk){
 
 
 	// safe guard
-	Ucolind_bc_cnt +=1; 
-	Unzval_bc_cnt +=1; 
-	Uindval_loc_bc_cnt +=1; 
+	Ucolind_bc_cnt +=1;
+	Unzval_bc_cnt +=1;
+	Uindval_loc_bc_cnt +=1;
 	if ( !(Llu->Ucolind_bc_dat =
 				(int_t*)SUPERLU_MALLOC(Ucolind_bc_cnt * sizeof(int_t))) ) {
 		fprintf(stderr, "Malloc fails for Llu->Ucolind_bc_dat[].");
-	}		
+	}
 	if ( !(Llu->Unzval_bc_dat =
 				(double*)SUPERLU_MALLOC(Unzval_bc_cnt * sizeof(double))) ) {
 		fprintf(stderr, "Malloc fails for Llu->Unzval_bc_dat[].");
-	}	
+	}
 	if ( !(Llu->Uindval_loc_bc_dat =
 				(int_t*)SUPERLU_MALLOC(Uindval_loc_bc_cnt * sizeof(int_t))) ) {
 		fprintf(stderr, "Malloc fails for Llu->Uindval_loc_bc_dat[].");
-	}		
+	}
 
 	/* use contingous memory for Ucolind_bc_ptr, Unzval_bc_ptr, Uindval_loc_bc_ptr*/
 	k = CEILING( nsupers, grid->npcol );/* Number of local block columns */
@@ -1848,7 +1857,7 @@ for (lk=0;lk<nsupers_j;++lk){
 	Unzval_bc_cnt=0;
 	Uindval_loc_bc_cnt=0;
 	int64_t tmp_cnt;
-	
+
 	for (jb = 0; jb < k; ++jb) { /* for each block column ... */
 		if(Llu->Ucolind_bc_ptr[jb]!=NULL){
 			for (jj = 0; jj < Llu->Ucolind_bc_offset[jb]; ++jj) {
@@ -1881,10 +1890,10 @@ for (lk=0;lk<nsupers_j;++lk){
 			tmp_cnt = Llu->Uindval_loc_bc_offset[jb];
 			Llu->Uindval_loc_bc_offset[jb]=Uindval_loc_bc_cnt;
 			Uindval_loc_bc_cnt+=tmp_cnt;
-		}	
+		}
 
 
-	}	
+	}
 	Llu->Ucolind_bc_cnt = Ucolind_bc_cnt;
 	Llu->Unzval_bc_cnt = Unzval_bc_cnt;
 	Llu->Uindval_loc_bc_cnt = Uindval_loc_bc_cnt;
@@ -1902,18 +1911,18 @@ for (lk=0;lk<nsupers_j;++lk){
 
 
 	checkGPU(gpuMalloc( (void**)&Llu->d_Ucolind_bc_dat, (Llu->Ucolind_bc_cnt) * sizeof(int_t)));
-	checkGPU(gpuMemcpy(Llu->d_Ucolind_bc_dat, Llu->Ucolind_bc_dat, (Llu->Ucolind_bc_cnt) * sizeof(int_t), gpuMemcpyHostToDevice));	
+	checkGPU(gpuMemcpy(Llu->d_Ucolind_bc_dat, Llu->Ucolind_bc_dat, (Llu->Ucolind_bc_cnt) * sizeof(int_t), gpuMemcpyHostToDevice));
 	checkGPU(gpuMalloc( (void**)&Llu->d_Ucolind_bc_offset, CEILING( nsupers, grid->npcol ) * sizeof(int64_t)));
-	checkGPU(gpuMemcpy(Llu->d_Ucolind_bc_offset, Llu->Ucolind_bc_offset, CEILING( nsupers, grid->npcol ) * sizeof(int64_t), gpuMemcpyHostToDevice));	
+	checkGPU(gpuMemcpy(Llu->d_Ucolind_bc_offset, Llu->Ucolind_bc_offset, CEILING( nsupers, grid->npcol ) * sizeof(int64_t), gpuMemcpyHostToDevice));
 	checkGPU(gpuMalloc( (void**)&Llu->d_Unzval_bc_offset, CEILING( nsupers, grid->npcol ) * sizeof(int64_t)));
-	checkGPU(gpuMemcpy(Llu->d_Unzval_bc_offset, Llu->Unzval_bc_offset, CEILING( nsupers, grid->npcol ) * sizeof(int64_t), gpuMemcpyHostToDevice));	
+	checkGPU(gpuMemcpy(Llu->d_Unzval_bc_offset, Llu->Unzval_bc_offset, CEILING( nsupers, grid->npcol ) * sizeof(int64_t), gpuMemcpyHostToDevice));
 	checkGPU(gpuMalloc( (void**)&Llu->d_Unzval_bc_dat, (Llu->Unzval_bc_cnt) * sizeof(double)));
 	checkGPU(gpuMemcpy(LUstruct->Llu->d_Unzval_bc_dat, LUstruct->Llu->Unzval_bc_dat,(LUstruct->Llu->Unzval_bc_cnt) * sizeof(double), gpuMemcpyHostToDevice));
-	
+
 	checkGPU(gpuMalloc( (void**)&Llu->d_Uindval_loc_bc_dat, (Llu->Uindval_loc_bc_cnt) * sizeof(int_t)));
-	checkGPU(gpuMemcpy(Llu->d_Uindval_loc_bc_dat, Llu->Uindval_loc_bc_dat, (Llu->Uindval_loc_bc_cnt) * sizeof(int_t), gpuMemcpyHostToDevice));		
+	checkGPU(gpuMemcpy(Llu->d_Uindval_loc_bc_dat, Llu->Uindval_loc_bc_dat, (Llu->Uindval_loc_bc_cnt) * sizeof(int_t), gpuMemcpyHostToDevice));
 	checkGPU(gpuMalloc( (void**)&Llu->d_Uindval_loc_bc_offset, CEILING( nsupers, grid->npcol ) * sizeof(int64_t)));
-	checkGPU(gpuMemcpy(Llu->d_Uindval_loc_bc_offset, Llu->Uindval_loc_bc_offset, CEILING( nsupers, grid->npcol ) * sizeof(int64_t), gpuMemcpyHostToDevice));	
+	checkGPU(gpuMemcpy(Llu->d_Uindval_loc_bc_offset, Llu->Uindval_loc_bc_offset, CEILING( nsupers, grid->npcol ) * sizeof(int64_t), gpuMemcpyHostToDevice));
 #endif
 
 	SUPERLU_FREE (Llu->Ucolind_bc_dat);

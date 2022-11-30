@@ -26,7 +26,7 @@ public:
 
     lpanel_t(int_t k, int_t *lsub, double *nzval, int_t *xsup, int_t isDiagIncluded);
     // default constuctor
-#ifdef GPU_ACC    
+#ifdef GPU_ACC
     lpanel_t() : gpuPanel(NULL, NULL)
     {
         index = NULL;
@@ -37,7 +37,7 @@ public:
     {
         index = NULL;
         val = NULL;
-    }  
+    }
 #endif
 
     lpanel_t(int_t *index_, double *val_) : index(index_), val(val_) { return; };
@@ -114,7 +114,7 @@ public:
 
     size_t totalSize()
     {
-        return sizeof(int_t)*indexSize() + sizeof(double)*nzvalSize(); 
+        return sizeof(int_t)*indexSize() + sizeof(double)*nzvalSize();
     }
 
     // return the maximal iEnd such that stRow(iEnd)-stRow(iSt) < maxRow;
@@ -137,12 +137,12 @@ public:
                                      SuperLUStat_t *stat, int *info);
     int_t diagFactorCuSolver(int_t k,
                                      cusolverDnHandle_t cusolverH, cudaStream_t cuStream,
-                                    double *dWork, int* dInfo,  // GPU pointers 
+                                    double *dWork, int* dInfo,  // GPU pointers
                                     double *dDiagBuf, int_t LDD, // GPU pointers
                                     double thresh, int_t *xsup,
                                     superlu_dist_options_t *options,
                                     SuperLUStat_t *stat, int *info);
-    
+
     double *blkPtrGPU(int k)
     {
         return &gpuPanel.val[blkPtrOffset(k)];
@@ -153,7 +153,7 @@ public:
         return;
     };
     int_t copyFromGPU();
-#endif    
+#endif
 };
 
 class upanel_t
@@ -161,14 +161,14 @@ class upanel_t
 public:
     int_t *index;
     double *val;
-#ifdef GPU_ACC     
+#ifdef GPU_ACC
     // upanelGPU_t* upanelGPU;
     upanelGPU_t gpuPanel;
 #endif
 
     // upanel_t(int_t *usub, double *uval);
     upanel_t(int_t k, int_t *usub, double *uval, int_t *xsup);
-#ifdef GPU_ACC    
+#ifdef GPU_ACC
     upanel_t() : gpuPanel(NULL, NULL)
     {
         index = NULL;
@@ -179,8 +179,8 @@ public:
     {
         index = NULL;
         val = NULL;
-    }    
-#endif    
+    }
+#endif
     // constructing from recevied index and val
     upanel_t(int_t *index_, double *val_) : index(index_), val(val_) { return; };
     // index[0] is number of blocks
@@ -250,7 +250,7 @@ public:
     }
     size_t totalSize()
     {
-        return sizeof(int_t)*indexSize() + sizeof(double)*nzvalSize(); 
+        return sizeof(int_t)*indexSize() + sizeof(double)*nzvalSize();
     }
     int_t checkCorrectness()
     {
@@ -277,7 +277,7 @@ public:
     }
     int getEndBlock(int jSt, int maxCols);
 
-#ifdef GPU_ACC 
+#ifdef GPU_ACC
     upanelGPU_t copyToGPU();
     //TODO: implement with baseptr
     upanelGPU_t copyToGPU(void *basePtr);
@@ -295,7 +295,7 @@ public:
         return;
     };
     int_t copyFromGPU();
-#endif    
+#endif
 };
 
 // Defineing GPU data types
@@ -331,10 +331,10 @@ struct LUstruct_v100
     SuperLUStat_t *stat;
 
 
-    // Adding more variables for factorization 
+    // Adding more variables for factorization
     dtrf3Dpartition_t *trf3Dpartition;
     int_t maxLvl;
-    
+
     ddiagFactBufs_t **dFBufs;
     int superlu_acc_offload;
     // myNodeCount,
@@ -378,7 +378,7 @@ struct LUstruct_v100
 
     anc25d_t anc25d;
     // For GPU acceleration
-#ifdef GPU_ACC    
+#ifdef GPU_ACC
     LUstructGPU_t *dA_gpu;
     LUstructGPU_t A_gpu;
 #endif
@@ -392,7 +392,7 @@ struct LUstruct_v100
     /**
     *          C O N / D E S - T R U C T O R S
     */
-    LUstruct_v100(int_t nsupers, int_t ldt_, dtrf3Dpartition_t *trf3Dpartition, 
+    LUstruct_v100(int_t nsupers, int_t ldt_, dtrf3Dpartition_t *trf3Dpartition,
                   dLUstruct_t *LUstruct, gridinfo3d_t *grid3d,
                   SCT_t *SCT_, superlu_dist_options_t *options_, SuperLUStat_t *stat,
                   double thresh_, int *info_);
@@ -405,7 +405,7 @@ struct LUstruct_v100
     }
 
     /**
-    *           Compute Functions 
+    *           Compute Functions
     */
    int_t pdgstrf3d();
     int_t dSchurComplementUpdate(int_t k, lpanel_t &lpanel, upanel_t &upanel);
@@ -449,6 +449,15 @@ struct LUstruct_v100
     int_t zRecvLPanel(int_t k0, int_t senderGrid, double alpha, double beta);
     int_t zSendUPanel(int_t k0, int_t receiverGrid);
     int_t zRecvUPanel(int_t k0, int_t senderGrid, double alpha, double beta);
+
+    int_t dAncestorFactorBaseline(
+        int_t alvl,
+        sForest_t *sforest,
+        ddiagFactBufs_t **dFBufs, // size maxEtree level
+        gEtreeInfo_t *gEtreeInfo, // global etree info
+        int tag_ub);
+
+
 
     // GPU related functions
 #ifdef GPU_ACC
@@ -498,7 +507,7 @@ struct LUstruct_v100
     int_t copyLUHosttoGPU();
     int_t checkGPU();
 
-    // some more helper functions 
+    // some more helper functions
     upanel_t getKUpanel(int_t k, int_t offset);
     lpanel_t getKLpanel(int_t k, int_t offset);
     int_t SyncLookAheadUpdate(int streamId);
@@ -506,26 +515,17 @@ struct LUstruct_v100
     double *gpuLvalBasePtr, *gpuUvalBasePtr;
     int_t *gpuLidxBasePtr, *gpuUidxBasePtr;
     size_t gpuLvalSize, gpuUvalSize, gpuLidxSize, gpuUidxSize;
-   
+
     lpanelGPU_t* copyLpanelsToGPU();
     upanelGPU_t* copyUpanelsToGPU();
 
     // to perform diagFactOn GPU
     int_t dDFactPSolveGPU(int_t k, int_t offset, ddiagFactBufs_t **dFBufs);
 
+#endif
 
-    
-    
-    int_t dAncestorFactorBaseline(
-        int_t alvl,
-        sForest_t *sforest,
-        ddiagFactBufs_t **dFBufs, // size maxEtree level
-        gEtreeInfo_t *gEtreeInfo, // global etree info
-        int tag_ub);
-#endif        
-    
 };
 
-#ifdef GPU_ACC 
+#ifdef GPU_ACC
 cudaError_t checkCudaLocal(cudaError_t result);
 #endif

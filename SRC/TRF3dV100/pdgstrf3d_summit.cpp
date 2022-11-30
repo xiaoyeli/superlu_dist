@@ -168,7 +168,7 @@ extern "C"
         if (superlu_acc_offload)
         {
         #ifdef GPU_ACC
-            cudaStreamSynchronize(LU_packed.A_gpu.cuStreams[0]);    // in theory I don't need it 
+            cudaStreamSynchronize(LU_packed.A_gpu.cuStreams[0]);    // in theory I don't need it
             LU_packed.copyLUGPUtoHost();
         #endif
         }
@@ -201,7 +201,7 @@ extern "C"
 #endif
         return 0;
 
-    } /* pdgstrf3d */
+    } /* pdgstrf3d_summit */
 
     int_t LUstruct_v100::pdgstrf3d()
     {
@@ -226,21 +226,26 @@ extern "C"
 
                 if (superlu_acc_offload)
                 {
+                //YL: dsparseTreeFactor and dAncestorFactorBaseline are both CPU functions, the old GPU function dsparseTreeFactorGPU seems to break now
                 if (ilvl == 0){
                     dsparseTreeFactor(sforest, dFBufs,
                                       &gEtreeInfo,
                                       tag_ub);
                 }else{
-                #ifdef GPU_ACC      
                     dAncestorFactorBaseline(ilvl, sforest, dFBufs,
                                             &gEtreeInfo,
                                             tag_ub);
-                #endif
                 }}
                 else{
+                if (ilvl == 0){
                     dsparseTreeFactor(sforest, dFBufs,
-                                                &gEtreeInfo,
-                                                tag_ub);
+                                      &gEtreeInfo,
+                                      tag_ub);
+                }else{
+                    dAncestorFactorBaseline(ilvl, sforest, dFBufs,
+                                            &gEtreeInfo,
+                                            tag_ub);
+                }
                 }
 
                 /*now reduce the updates*/
@@ -259,7 +264,7 @@ extern "C"
         {
             #ifdef GPU_ACC
             copyLUHosttoGPU();
-            #endif            
+            #endif
             // LU check passed
         }
         return 0;

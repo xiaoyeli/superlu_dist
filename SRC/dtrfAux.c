@@ -595,6 +595,8 @@ dtrf3Dpartition_t* dinitTrf3Dpartition(int_t nsupers,
 
     // printf("iam3d %5d, gNodeCount[0] %5d, gNodeCount[1] %5d, gNodeCount[2] %5d\n",grid3d->iam, gNodeCount[0],gNodeCount[1],gNodeCount[2]);
     // printf("iam3d %5d, myTreeIdxs[0] %5d, myZeroTrIdxs[0] %5d\n",grid3d->iam, myTreeIdxs[0],myZeroTrIdxs[0]);
+    // printf("iam3d %5d, myTreeIdxs[0] %5d, myZeroTrIdxs[0] %5d, myTreeIdxs[1] %5d, myZeroTrIdxs[1] %5d, myTreeIdxs[2] %5d, myZeroTrIdxs[2] %5d, myTreeIdxs[3] %5d, myZeroTrIdxs[3] %5d\n",grid3d->iam, myTreeIdxs[0],myZeroTrIdxs[0],myTreeIdxs[1],myZeroTrIdxs[1],myTreeIdxs[2],myZeroTrIdxs[2],myTreeIdxs[3],myZeroTrIdxs[3]);
+
 
 
     int_t* myNodeCount = getMyNodeCountsFr(maxLvl, myTreeIdxs, sForests);

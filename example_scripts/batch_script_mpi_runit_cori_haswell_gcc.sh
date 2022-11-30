@@ -11,6 +11,11 @@ export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/opt/intel/compilers_and_libraries_2018.
 module unload cmake
 module load cmake
 
+# export SUPERLU_LBS=ND  # this is causing crash
+# export GPU3DVERSION=1
+# export NEW3DSOLVE=1    # Note: SUPERLU_ACC_OFFLOAD=1 and GPU3DVERSION=1 still do CPU factorization after https://github.com/xiaoyeli/superlu_dist/commit/035106d8949bc3abf86866aea1331b2948faa1db#diff-44fa50297abaedcfaed64f93712850a8fce55e8e57065d96d0ba28d8680da11eR223
+
+
 
 CUR_DIR=`pwd`
 FILE_DIR=$CUR_DIR/EXAMPLE
@@ -37,9 +42,9 @@ else
 fi
 
 nprows=(8 )
-npcols=(8 )
-npz=(8 )
- 
+npcols=(16 )
+npz=(4)
+
 for ((i = 0; i < ${#npcols[@]}; i++)); do
 NROW=${nprows[i]}
 NCOL=${npcols[i]}
@@ -68,34 +73,44 @@ then
 fi
 
 
-#for NTH in 8 
-for NTH in 1 
+#for NTH in 8
+for NTH in 1
 do
 OMP_NUM_THREADS=$NTH
 TH_PER_RANK=`expr $NTH \* 2`
-
+# export NSUP=256
+# export NREL=256
 
 #for NSUP in 128 64 32 16 8
 #do
-  # for MAT in atmosmodl.rb nlpkkt80.mtx torso3.mtx Ga19As19H42.mtx A22.mtx cage13.rb 
+  # for MAT in atmosmodl.rb nlpkkt80.mtx torso3.mtx Ga19As19H42.mtx A22.mtx cage13.rb
   # for MAT in torso3.bin
-  # for MAT in big.rua
-  for MAT in s1_mat_0_126936.bin
-  # for MAT in matrix121.dat matrix211.dat tdr190k.dat tdr455k.dat nlpkkt80.mtx torso3.mtx helm2d03.mtx  
+  # for MAT in g20.rua
+  # for MAT in s1_mat_0_126936.bin
+  for MAT in s1_mat_0_253872.bin
+  # for MAT in matrix121.dat matrix211.dat tdr190k.dat tdr455k.dat nlpkkt80.mtx torso3.mtx helm2d03.mtx
   # for MAT in tdr190k.dat Ga19As19H42.mtx
  # for MAT in torso3.mtx hvdc2.mtx matrix121.dat nlpkkt80.mtx helm2d03.mtx
-# for MAT in A22.bin DG_GrapheneDisorder_8192.bin DNA_715_64cell.bin LU_C_BN_C_4by2.bin Li4244.bin atmosmodj.bin Ga19As19H42.bin Geo_1438.bin StocF-1465.bin    
+# for MAT in A22.bin DG_GrapheneDisorder_8192.bin DNA_715_64cell.bin LU_C_BN_C_4by2.bin Li4244.bin atmosmodj.bin Ga19As19H42.bin Geo_1438.bin StocF-1465.bin
   # for MAT in  A22.bin DNA_715_64cell.bin LU_C_BN_C_4by2.bin
- # for MAT in Ga19As19H42.mtx   
+ # for MAT in Ga19As19H42.mtx
   do
     export OMP_NUM_THREADS=$OMP_NUM_THREADS
     export OMP_PLACES=threads
     export OMP_PROC_BIND=spread
     export MPICH_MAX_THREAD_SAFETY=multiple
-    # srun -n $CORE_VAL -c $TH_PER_RANK --cpu_bind=cores $FILE_DIR/pddrive -c $NCOL -r $NROW $INPUT_DIR/$MAT | tee SLU.o_mpi_${NROW}x${NCOL}_${OMP_NUM_THREADS}
+
+
+    # pddrive
+    srun -n $CORE_VAL -c $TH_PER_RANK --cpu_bind=cores $FILE_DIR/pddrive -c $NCOL -r $NROW $INPUT_DIR/$MAT | tee SLU.o_mpi_${NROW}x${NCOL}_${OMP_NUM_THREADS}_2d
+
+    # # pddrive3d
     echo "srun -n $CORE_VAL -c $TH_PER_RANK --cpu_bind=cores $FILE_DIR/pddrive3d -c $NCOL -r $NROW -d $NPZ $INPUT_DIR/$MAT | tee SLU.o_mpi_${NROW}x${NCOL}x${NPZ}_${OMP_NUM_THREADS}_3d"
+    srun -n $CORE_VAL -c $TH_PER_RANK --cpu_bind=cores $FILE_DIR/pddrive3d -c $NCOL -r $NROW -d $NPZ $INPUT_DIR/$MAT | tee SLU.o_mpi_${NROW}x${NCOL}x${NPZ}_${OMP_NUM_THREADS}_3d_old
+    export NEW3DSOLVE=1
     srun -n $CORE_VAL -c $TH_PER_RANK --cpu_bind=cores $FILE_DIR/pddrive3d -c $NCOL -r $NROW -d $NPZ $INPUT_DIR/$MAT | tee SLU.o_mpi_${NROW}x${NCOL}x${NPZ}_${OMP_NUM_THREADS}_3d
-    
+
+
 
   done
 #one

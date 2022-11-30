@@ -1497,7 +1497,24 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 		{
 			pdgstrf3d(options, m, n, anorm, trf3Dpartition, SCT, LUstruct,
 					  grid3d, stat, info);
+			if (getenv("NEW3DSOLVE")){
+				dbroadcastAncestor3d(trf3Dpartition, LUstruct, grid3d, SCT);
+			}
 		}
+
+
+		if (getenv("NEW3DSOLVE")){
+			trs_compute_communication_structure(options, n, LUstruct,
+                           ScalePermstruct, trf3Dpartition->supernodeMask, grid, stat);
+		}else{
+			int_t* supernodeMask = intMalloc_dist(nsupers);
+			for(int_t ii=0; ii<nsupers; ii++)
+				supernodeMask[ii]=1;
+			trs_compute_communication_structure(options, n, LUstruct,
+                           ScalePermstruct, supernodeMask, grid, stat);
+			SUPERLU_FREE(supernodeMask);
+		}
+
 
 		stat->utime[FACT] = SuperLU_timer_() - t;
 
