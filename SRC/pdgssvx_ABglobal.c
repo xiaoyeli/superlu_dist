@@ -932,6 +932,14 @@ pdgssvx_ABglobal(superlu_dist_options_t *options, SuperMatrix *A,
 	pdgstrf(options, m, n, anorm, LUstruct, grid, stat, info);
 	stat->utime[FACT] = SuperLU_timer_() - t;
 
+	int_t nsupers = Glu_persist->supno[n-1] + 1;
+	int_t* supernodeMask = intMalloc_dist(nsupers);
+	for(int_t ii=0; ii<nsupers; ii++)
+		supernodeMask[ii]=1;
+	trs_compute_communication_structure(options, n, LUstruct,
+					ScalePermstruct, supernodeMask, grid, stat);
+	SUPERLU_FREE(supernodeMask);
+
 #if ( PRNTlevel>=1 )
 	{
 	    int_t TinyPivots;
