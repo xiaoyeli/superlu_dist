@@ -449,10 +449,10 @@ sDestroy_LU(int_t n, gridinfo_t *grid, sLUstruct_t *LUstruct)
     nsupers = Glu_persist->supno[n-1] + 1;
 
     nb = CEILING(nsupers, grid->npcol);
-    for (i = 0; i < nb; ++i) 
+    for (i = 0; i < nb; ++i)
 	if ( Llu->Lrowind_bc_ptr[i] ) {
 	    SUPERLU_FREE (Llu->Lrowind_bc_ptr[i]);
-#if 0 // Sherry: the following is not allocated with cudaHostAlloc    
+#if 0 // Sherry: the following is not allocated with cudaHostAlloc
     //#ifdef GPU_ACC
 	    checkGPU(gpuFreeHost(Llu->Lnzval_bc_ptr[i]));
 #endif
@@ -487,12 +487,12 @@ sDestroy_LU(int_t n, gridinfo_t *grid, sLUstruct_t *LUstruct)
     SUPERLU_FREE(Llu->mod_bit);
 
     nb = CEILING(nsupers, grid->npcol);
-    for (i = 0; i < nb; ++i) 
+    for (i = 0; i < nb; ++i)
 	if ( Llu->Lindval_loc_bc_ptr[i]!=NULL) {
 	    SUPERLU_FREE (Llu->Lindval_loc_bc_ptr[i]);
-	}	
+	}
     SUPERLU_FREE(Llu->Lindval_loc_bc_ptr);
-	
+
     nb = CEILING(nsupers, grid->npcol);
     for (i=0; i<nb; ++i) {
 	if(Llu->Linv_bc_ptr[i]!=NULL) {
@@ -500,12 +500,12 @@ sDestroy_LU(int_t n, gridinfo_t *grid, sLUstruct_t *LUstruct)
 	}
 	if(Llu->Uinv_bc_ptr[i]!=NULL){
 	    SUPERLU_FREE(Llu->Uinv_bc_ptr[i]);
-	}	
+	}
     }
     SUPERLU_FREE(Llu->Linv_bc_ptr);
     SUPERLU_FREE(Llu->Uinv_bc_ptr);
     SUPERLU_FREE(Llu->Unnz);
-	
+
     nb = CEILING(nsupers, grid->npcol);
     for (i = 0; i < nb; ++i)
 	if ( Llu->Urbs[i] ) {
@@ -513,7 +513,7 @@ sDestroy_LU(int_t n, gridinfo_t *grid, sLUstruct_t *LUstruct)
 	    SUPERLU_FREE(Llu->Ucb_valptr[i]);
 	}
     SUPERLU_FREE(Llu->Ucb_indptr);
-    SUPERLU_FREE(Llu->Ucb_valptr);	
+    SUPERLU_FREE(Llu->Ucb_valptr);
     SUPERLU_FREE(Llu->Urbs);
 
     SUPERLU_FREE(Glu_persist->xsup);
@@ -531,7 +531,7 @@ sDestroy_LU(int_t n, gridinfo_t *grid, sLUstruct_t *LUstruct)
  * =======
  *   Set up the communication pattern for redistribution between B and X
  *   in the triangular solution.
- * 
+ *
  * Arguments
  * =========
  *
@@ -602,7 +602,7 @@ psgstrs_init(int_t n, int_t m_loc, int_t nrhs, int_t fst_row,
 	p = PNUM( PROW(gbi,grid), PCOL(gbi,grid), grid ); /* Diagonal process */
 	++SendCnt[p];
     }
-  
+
     /* Set up the displacements for alltoall. */
     MPI_Alltoall(SendCnt, 1, MPI_INT, RecvCnt, 1, MPI_INT, grid->comm);
     sdispls[0] = rdispls[0] = 0;
@@ -805,16 +805,19 @@ void sDestroy_A3d_gathered_on_2d(sSOLVEstruct_t *SOLVEstruct, gridinfo3d_t *grid
 	SUPERLU_FREE( A2d->colind );
 	SUPERLU_FREE( A2d->nzval );
     }
-    SUPERLU_FREE(A3d->row_counts_int);  // free displacements and counts 
+    SUPERLU_FREE(A3d->row_counts_int);  // free displacements and counts
     SUPERLU_FREE(A3d->row_disp);
     SUPERLU_FREE(A3d->nnz_counts_int);
     SUPERLU_FREE(A3d->nnz_disp);
     SUPERLU_FREE(A3d->b_counts_int);
     SUPERLU_FREE(A3d->b_disp);
-    SUPERLU_FREE(A3d->procs_to_send_list);
-    SUPERLU_FREE(A3d->send_count_list);
-    SUPERLU_FREE(A3d->procs_recv_from_list);
-    SUPERLU_FREE(A3d->recv_count_list);
+    int rankorder = grid3d->rankorder;
+    if ( rankorder == 0 ) { /* Z-major in 3D grid */
+        SUPERLU_FREE(A3d->procs_to_send_list);
+        SUPERLU_FREE(A3d->send_count_list);
+        SUPERLU_FREE(A3d->procs_recv_from_list);
+        SUPERLU_FREE(A3d->recv_count_list);
+    }
     SUPERLU_FREE( A2d );         // free 2D structure
     SUPERLU_FREE( A3d );         // free 3D structure
 } /* sDestroy_A3d_gathered_on_2d */
@@ -876,25 +879,25 @@ sDestroy_Tree(int_t n, gridinfo_t *grid, sLUstruct_t *LUstruct)
 
     nb = CEILING(nsupers, grid->npcol);
     for (i=0;i<nb;++i){
-        if(Llu->LBtree_ptr[i].empty_==NO){    
+        if(Llu->LBtree_ptr[i].empty_==NO){
 			// BcTree_Destroy(Llu->LBtree_ptr[i],LUstruct->dt);
             C_BcTree_Nullify(&Llu->LBtree_ptr[i]);
 	}
-        if(Llu->UBtree_ptr[i].empty_==NO){  
+        if(Llu->UBtree_ptr[i].empty_==NO){
 			// BcTree_Destroy(Llu->UBtree_ptr[i],LUstruct->dt);
             C_BcTree_Nullify(&Llu->UBtree_ptr[i]);
 	}
     }
     SUPERLU_FREE(Llu->LBtree_ptr);
     SUPERLU_FREE(Llu->UBtree_ptr);
-	
+
     nb = CEILING(nsupers, grid->nprow);
     for (i=0;i<nb;++i){
-        if(Llu->LRtree_ptr[i].empty_==NO){             
+        if(Llu->LRtree_ptr[i].empty_==NO){
 			// RdTree_Destroy(Llu->LRtree_ptr[i],LUstruct->dt);
             C_RdTree_Nullify(&Llu->LRtree_ptr[i]);
 	}
-        if(Llu->URtree_ptr[i].empty_==NO){ 
+        if(Llu->URtree_ptr[i].empty_==NO){
 			// RdTree_Destroy(Llu->URtree_ptr[i],LUstruct->dt);
             C_RdTree_Nullify(&Llu->URtree_ptr[i]);
 	}
