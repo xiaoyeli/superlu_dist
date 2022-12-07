@@ -27,6 +27,7 @@ int dgatherFactoredLU3Dto2D(LUgpu_Handle LuH);
 
 int copyLUGPU2Host(LUgpu_Handle LuH, dLUstruct_t *LUstruct);
 
+int_t pdgstrf3d_LUpackedInterface( LUgpu_Handle LUHand);
 
 #ifdef __cplusplus
 }

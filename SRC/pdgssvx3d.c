@@ -1447,7 +1447,7 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 
 
 		/* send the LU structure to all the grids */
-		int_t* supernodeMask = trf3Dpartition->supernodeMask;
+		int* supernodeMask = trf3Dpartition->supernodeMask;
 		dp3dScatter(n, LUstruct, grid3d, supernodeMask);
 		nsupers = getNsupers(n, LUstruct->Glu_persist);
 
@@ -1522,8 +1522,8 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 			trs_compute_communication_structure(options, n, LUstruct,
                            ScalePermstruct, trf3Dpartition->supernodeMask, grid, stat);
 		}else{
-			int_t* supernodeMask = intMalloc_dist(nsupers);
-			for(int_t ii=0; ii<nsupers; ii++)
+			int* supernodeMask = int32Malloc_dist(nsupers);
+			for(int ii=0; ii<nsupers; ii++)
 				supernodeMask[ii]=1;
 			trs_compute_communication_structure(options, n, LUstruct,
                            ScalePermstruct, supernodeMask, grid, stat);

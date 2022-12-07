@@ -13,6 +13,7 @@ module load cmake
 
 export CRAYPE_LINK_TYPE=dynamic
 export PARMETIS_ROOT=~/Cori/my_software/parmetis-4.0.3_gnu8.3/
+# export PARMETIS_ROOT=~/Cori/my_software/parmetis-4.0.3_gnu8.3_longint/
 export PARMETIS_BUILD_DIR=${PARMETIS_ROOT}/build/Linux-x86_64
 rm -rf CMakeCache.txt
 rm -rf CMakeFiles
@@ -30,12 +31,15 @@ cmake .. \
 	-DCMAKE_C_COMPILER=cc \
     -DCMAKE_CXX_COMPILER=CC \
 	-DCMAKE_INSTALL_PREFIX=. \
-	-DCMAKE_BUILD_TYPE=Release \
+	-DCMAKE_BUILD_TYPE=Debug \
 	-DCMAKE_VERBOSE_MAKEFILE:BOOL=ON \
 	-DCMAKE_CXX_FLAGS="-Ofast -DRELEASE ${INC_VTUNE}" \
     -DCMAKE_C_FLAGS="-std=c11 -DPRNTlevel=1 -DPROFlevel=0 -DDEBUGlevel=0 ${INC_VTUNE}"
 make pddrive
 make pddrive3d
+
+	# -DXSDK_INDEX_SIZE=64 \
+
 #	-DTPL_BLAS_LIBRARIES="/opt/intel/compilers_and_libraries_2017.2.174/linux/mkl/lib/intel64/libmkl_intel_lp64.so;/opt/intel/compilers_and_libraries_2017.2.174/linux/mkl/lib/intel64/libmkl_sequential.so;/opt/intel/compilers_and_libraries_2017.2.174/linux/mkl/lib/intel64/libmkl_core.so"
 
 #	-DTPL_BLAS_LIBRARIES="/opt/intel/compilers_and_libraries_2017.2.174/linux/mkl/lib/intel64/libmkl_intel_lp64.so;/opt/intel/compilers_and_libraries_2017.2.174/linux/mkl/lib/intel64/libmkl_sequential.so;/opt/intel/compilers_and_libraries_2017.2.174/linux/mkl/lib/intel64/libmkl_core.so" \

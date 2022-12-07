@@ -559,7 +559,7 @@ dtrf3Dpartition_t* dinitTrf3DpartitionLUstructgrid0(int_t n, superlu_dist_option
 		}
 
 		MPI_Bcast( &nsupers, 1, mpi_int_t, 0,  grid3d->zscp.comm);
-		zAllocBcast(nsupers * sizeof (int_t), &(setree), grid3d);
+		zAllocBcast(nsupers * sizeof (int_t), (void**)&(setree), grid3d);
 
         int_t* iperm_c_supno;
         if (!grid3d->zscp.Iam){
@@ -571,7 +571,7 @@ dtrf3Dpartition_t* dinitTrf3DpartitionLUstructgrid0(int_t n, superlu_dist_option
             iperm_c_supno = getFactIperm(perm_c_supno, nsupers);
             SUPERLU_FREE(perm_c_supno);
         }
-        zAllocBcast(nsupers * sizeof (int_t), &(iperm_c_supno), grid3d);
+        zAllocBcast(nsupers * sizeof (int_t), (void**)&(iperm_c_supno), grid3d);
 
 
    		treeList_t* treeList = setree2list(nsupers, setree );
@@ -632,13 +632,13 @@ dtrf3Dpartition_t* dinitTrf3DpartitionLUstructgrid0(int_t n, superlu_dist_option
         }
     }		
 		
-		int_t *supernodeMask = (int_t*) SUPERLU_MALLOC(nsupers*sizeof(int_t));
-		for (int_t ii = 0; ii < nsupers; ++ii)
+		int *supernodeMask = (int*) SUPERLU_MALLOC(nsupers*sizeof(int));
+		for (int ii = 0; ii < nsupers; ++ii)
 			supernodeMask[ii]=0;
-		for (int_t lvl = 0; lvl < maxLvl; ++lvl)
+		for (int lvl = 0; lvl < maxLvl; ++lvl)
 		{
 			// printf("lvl %5d myNodeCount[lvl] %5d\n",lvl,myNodeCount[lvl]);
-			for (int_t nd = 0; nd < myNodeCount[lvl]; ++nd)
+			for (int nd = 0; nd < myNodeCount[lvl]; ++nd)
 			{
 				supernodeMask[treePerm[lvl][nd]]=1;
 			}
@@ -744,13 +744,13 @@ dtrf3Dpartition_t* dinitTrf3Dpartition(int_t nsupers,
         }
     }
 
-    int_t* supernodeMask = SUPERLU_MALLOC(nsupers*sizeof(int_t));
-    for (int_t ii = 0; ii < nsupers; ++ii)
+    int* supernodeMask = SUPERLU_MALLOC(nsupers*sizeof(int));
+    for (int ii = 0; ii < nsupers; ++ii)
         supernodeMask[ii]=0;
-    for (int_t lvl = 0; lvl < maxLvl; ++lvl)
+    for (int lvl = 0; lvl < maxLvl; ++lvl)
     {
         // printf("lvl %5d myNodeCount[lvl] %5d\n",lvl,myNodeCount[lvl]);
-        for (int_t nd = 0; nd < myNodeCount[lvl]; ++nd)
+        for (int nd = 0; nd < myNodeCount[lvl]; ++nd)
         {
             supernodeMask[treePerm[lvl][nd]]=1;
         }

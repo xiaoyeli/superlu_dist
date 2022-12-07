@@ -275,6 +275,8 @@ int_t pdgstrf3d(superlu_dist_options_t *options, int m, int n, double anorm,
 #endif
     SCT->pdgstrfTimer = SuperLU_timer_();
 
+
+
     for (int ilvl = 0; ilvl < maxLvl; ++ilvl)
     {
         /* if I participate in this level */

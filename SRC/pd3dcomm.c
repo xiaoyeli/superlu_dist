@@ -331,7 +331,7 @@ int_t dzRecvUPanel(int_t k, int_t sender, double alpha, double beta,
 }
 
 
-int_t dp3dScatter(int_t n, dLUstruct_t * LUstruct, gridinfo3d_t* grid3d, int_t *supernodeMask)
+int_t dp3dScatter(int_t n, dLUstruct_t * LUstruct, gridinfo3d_t* grid3d, int *supernodeMask)
 /* Copies LU structure from layer 0 to all the layers */
 {
     gridinfo_t* grid = &(grid3d->grid2d);
@@ -418,19 +418,19 @@ int_t dp3dScatter(int_t n, dLUstruct_t * LUstruct, gridinfo3d_t* grid3d, int_t *
 
     int_t nlb = CEILING (nsupers, Pr);    /* Number of local block rows. */
     int_t nub = CEILING (nsupers, Pc);
-    MPI_Bcast( &(Llu->nfsendx), 1, mpi_int_t, 0,  grid3d->zscp.comm);
-    MPI_Bcast( &(Llu->nbsendx), 1, mpi_int_t, 0,  grid3d->zscp.comm);
+    MPI_Bcast( &(Llu->nfsendx), 1, MPI_INT, 0,  grid3d->zscp.comm);
+    MPI_Bcast( &(Llu->nbsendx), 1, MPI_INT, 0,  grid3d->zscp.comm);
     MPI_Bcast( &(Llu->ldalsum), 1, mpi_int_t, 0,  grid3d->zscp.comm);
-    zAllocBcast(nlb * sizeof(int_t), &(Llu->ilsum), grid3d);
-    zAllocBcast(nlb * sizeof(int_t), &(Llu->fmod), grid3d);
-    zAllocBcast(nlb * sizeof(int_t), &(Llu->bmod), grid3d);
-    zAllocBcast(nlb * sizeof(int_t), &(Llu->mod_bit), grid3d);
+    zAllocBcast(nlb * sizeof(int_t), (void**)&(Llu->ilsum), grid3d);
+    zAllocBcast(nlb * sizeof(int), (void**)&(Llu->fmod), grid3d);
+    zAllocBcast(nlb * sizeof(int), (void**)&(Llu->bmod), grid3d);
+    zAllocBcast(nlb * sizeof(int), (void**)&(Llu->mod_bit), grid3d);
     if (grid3d->zscp.Iam)
     {
         // Llu->Ucb_indptr = SUPERLU_MALLOC (nub * sizeof(Ucb_indptr_t*));
         // Llu->Ucb_valptr = SUPERLU_MALLOC (nub * sizeof(int_t*));
-        Llu->bsendx_plist = SUPERLU_MALLOC (nub * sizeof(int_t*));
-        Llu->fsendx_plist = SUPERLU_MALLOC (nub * sizeof(int_t*));
+        Llu->bsendx_plist = SUPERLU_MALLOC (nub * sizeof(int*));
+        Llu->fsendx_plist = SUPERLU_MALLOC (nub * sizeof(int*));
     }
 
 
@@ -544,8 +544,8 @@ int_t dp3dScatter(int_t n, dLUstruct_t * LUstruct, gridinfo3d_t* grid3d, int_t *
         if (myrow == krow && mycol == kcol)
         {
             int_t lk = LBj(k, grid);
-            zAllocBcast(Pr * sizeof (int_t), &(Llu->bsendx_plist[lk]), grid3d);
-            zAllocBcast(Pr * sizeof (int_t), &(Llu->fsendx_plist[lk]), grid3d);
+            zAllocBcast(Pr * sizeof (int), (void**)&(Llu->bsendx_plist[lk]), grid3d);
+            zAllocBcast(Pr * sizeof (int), (void**)&(Llu->fsendx_plist[lk]), grid3d);
 
         }
     }
@@ -556,7 +556,7 @@ int_t dp3dScatter(int_t n, dLUstruct_t * LUstruct, gridinfo3d_t* grid3d, int_t *
 
 
 int_t dscatter3dUPanels(int_t nsupers,
-		       dLUstruct_t * LUstruct, gridinfo3d_t* grid3d, int_t *supernodeMask)
+		       dLUstruct_t * LUstruct, gridinfo3d_t* grid3d, int *supernodeMask)
 {
 
     dLocalLU_t *Llu = LUstruct->Llu;
@@ -640,7 +640,7 @@ int_t dscatter3dUPanels(int_t nsupers,
 
 
 int_t dscatter3dLPanels(int_t nsupers,
-                       dLUstruct_t * LUstruct, gridinfo3d_t* grid3d, int_t *supernodeMask)
+                       dLUstruct_t * LUstruct, gridinfo3d_t* grid3d, int *supernodeMask)
 {
     dLocalLU_t *Llu = LUstruct->Llu;
     int_t* xsup = LUstruct->Glu_persist->xsup;

@@ -312,6 +312,7 @@ int_t dsparseTreeFactor_ASYNC(
     int_t* IbcastPanel_U = factStat->IbcastPanel_U;
     int_t* xsup = LUstruct->Glu_persist->xsup;
 
+
     int_t numLAMax = getNumLookAhead(options);
     int_t numLA = numLAMax;
 
@@ -321,7 +322,7 @@ int_t dsparseTreeFactor_ASYNC(
         int_t offset = k0;
         /* k-th diagonal factorization */
         /*Now factor and broadcast diagonal block*/
-
+        
 	    dDiagFactIBCast(k, k, dFBufs[offset]->BlockUFactor, dFBufs[offset]->BlockLFactor,
 			factStat->IrecvPlcd_D,
 			comReqss[offset]->U_diag_blk_recv_req, 

@@ -1353,8 +1353,8 @@ pdgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 	} /* end printing stats */
 
 	nsupers = Glu_persist->supno[n-1] + 1;
-	int_t* supernodeMask = intMalloc_dist(nsupers);
-	for(int_t ii=0; ii<nsupers; ii++)
+	int* supernodeMask = int32Malloc_dist(nsupers);
+	for(int ii=0; ii<nsupers; ii++)
 		supernodeMask[ii]=1;
 	trs_compute_communication_structure(options, n, LUstruct,
 					ScalePermstruct, supernodeMask, grid, stat);

@@ -173,6 +173,8 @@ typedef struct {
     int   nbrecvx;          /* Number of Xk I will receive in U-solve    */
     int   nbsendx;          /* Number of Xk I will send in U-solve       */
     int   *mod_bit;         /* Flag contribution from each row blocks    */
+    int   nleaf;
+    int   nroot;
 
     /*-- Auxiliary arrays used for forward/back solves. --*/
     int_t   *ilsum;           /* Starting position of each supernode in lsum
@@ -197,7 +199,6 @@ typedef struct {
     int_t n_utsendx;         /* Number of Xk I will receive                 */
     int_t n_utrecvx;         /* Number of Xk I will send                    */
     int_t n_utrecvmod;
-    int_t nroot;
     int_t *ut_modbit;
     int_t *Urbs;
     Ucb_indptr_t **Ucb_indptr;/* Vertical linked list pointing to Uindex[] */
@@ -212,7 +213,6 @@ typedef struct {
 
     /* some additional counters for L solve */
     int_t n;
-    int_t nleaf;
     int_t nfrecvmod;
     int_t inv; /* whether the diagonal block is inverted*/
 
