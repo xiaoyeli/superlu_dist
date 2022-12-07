@@ -551,6 +551,10 @@ dtrf3Dpartition_t* dinitTrf3DpartitionLUstructgrid0(int_t n, superlu_dist_option
 				      )
 {
         gridinfo_t* grid = &(grid3d->grid2d);
+#if ( DEBUGlevel>=1 )
+        int iam = grid3d->iam;
+        CHECK_MALLOC (iam, "Enter dinitTrf3Dpartition()");
+#endif
 		int_t nsupers;
 		int_t *setree;
 		if (!grid3d->zscp.Iam){
@@ -664,7 +668,7 @@ dtrf3Dpartition_t* dinitTrf3DpartitionLUstructgrid0(int_t n, superlu_dist_option
     free_treelist(nsupers, treeList);
 
 #if ( DEBUGlevel>=1 )
-    CHECK_MALLOC (iam, "Exit dinitTrf3Dpartition()");
+    CHECK_MALLOC (iam, "Exit dinitTrf3DpartitionLUstructgrid0()");
 #endif
     return trf3Dpartition;
 } /* dinitTrf3DpartitionLUstructgrid0 */
