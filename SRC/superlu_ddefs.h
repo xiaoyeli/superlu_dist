@@ -963,6 +963,8 @@ extern void dInit_HyP(HyP_t* HyP, dLocalLU_t *Llu, int_t mcb, int_t mrb );
 extern void Free_HyP(HyP_t* HyP);
 extern int updateDirtyBit(int_t k0, HyP_t* HyP, gridinfo_t* grid);
 
+
+
     /* from scatter.h */
 extern void
 dblock_gemm_scatter( int_t lb, int_t j, Ublock_info_t *Ublock_info,
@@ -1056,6 +1058,9 @@ extern void dRgather_U(int_t k, int_t jj0, int_t *usub, double *uval,
 extern dtrf3Dpartition_t* dinitTrf3Dpartition(int_t nsupers,
 					     superlu_dist_options_t *options,
 					     dLUstruct_t *LUstruct, gridinfo3d_t * grid3d);
+extern dtrf3Dpartition_t* dinitTrf3DpartitionLUstructgrid0(int_t n,
+					     superlu_dist_options_t *options,
+					     dLUstruct_t *LUstruct, gridinfo3d_t * grid3d);                         
 extern void dDestroy_trf3Dpartition(dtrf3Dpartition_t *trf3Dpartition, gridinfo3d_t *grid3d);
 
 extern void d3D_printMemUse(dtrf3Dpartition_t*  trf3Dpartition,
@@ -1113,11 +1118,11 @@ extern void pdgstrf2(superlu_dist_options_t *, int_t nsupers, int_t k0,
 
     /* from p3dcomm.h */
 extern int_t dAllocLlu_3d(int_t nsupers, dLUstruct_t * LUstruct, gridinfo3d_t* grid3d);
-extern int_t dp3dScatter(int_t n, dLUstruct_t * LUstruct, gridinfo3d_t* grid3d);
+extern int_t dp3dScatter(int_t n, dLUstruct_t * LUstruct, gridinfo3d_t* grid3d, int_t *supernodeMask);
 extern int_t dscatter3dLPanels(int_t nsupers,
-                       dLUstruct_t * LUstruct, gridinfo3d_t* grid3d);
+                       dLUstruct_t * LUstruct, gridinfo3d_t* grid3d, int_t *supernodeMask);
 extern int_t dscatter3dUPanels(int_t nsupers,
-                       dLUstruct_t * LUstruct, gridinfo3d_t* grid3d);
+                       dLUstruct_t * LUstruct, gridinfo3d_t* grid3d, int_t *supernodeMask);
 extern int_t dcollect3dLpanels(int_t layer, int_t nsupers, dLUstruct_t * LUstruct, gridinfo3d_t* grid3d);
 extern int_t dcollect3dUpanels(int_t layer, int_t nsupers, dLUstruct_t * LUstruct, gridinfo3d_t* grid3d);
 extern int_t dp3dCollect(int_t layer, int_t n, dLUstruct_t * LUstruct, gridinfo3d_t* grid3d);

@@ -641,6 +641,7 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 	superlu_dist_mem_usage_t num_mem_usage, symb_mem_usage;
 	float flinfo; /* track memory usage of parallel symbolic factorization */
 	bool Solve3D = true;
+	int_t nsupers;
 #if (PRNTlevel >= 2)
 	double dmin, dsum, dprod;
 #endif
@@ -1440,11 +1441,24 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 		MPI_Bcast(&n, 1, mpi_int_t, 0, grid3d->zscp.comm);
 		MPI_Bcast(&anorm, 1, MPI_DOUBLE, 0, grid3d->zscp.comm);
 
-		/* send the LU structure to all the grids */
-		dp3dScatter(n, LUstruct, grid3d);
 
-		int_t nsupers = getNsupers(n, LUstruct->Glu_persist);
-		trf3Dpartition = dinitTrf3Dpartition(nsupers, options, LUstruct, grid3d);
+		/* modified  dinitTrf3Dpartition to be able to scatter the LU in a memory efficient fashion */
+		trf3Dpartition = dinitTrf3DpartitionLUstructgrid0(n, options, LUstruct, grid3d);
+
+
+		/* send the LU structure to all the grids */
+		int_t* supernodeMask = trf3Dpartition->supernodeMask;
+		dp3dScatter(n, LUstruct, grid3d, supernodeMask);
+		nsupers = getNsupers(n, LUstruct->Glu_persist);
+
+
+		/* now that LU structure has been scattered, initialize the LU and buffers */
+		dinit3DLUstructForest(trf3Dpartition->myTreeIdxs, trf3Dpartition->myZeroTrIdxs,
+							trf3Dpartition->sForests, LUstruct, grid3d);	
+		dLUValSubBuf_t *LUvsb = SUPERLU_MALLOC(sizeof(dLUValSubBuf_t));
+		dLluBufInit(LUvsb, LUstruct);
+		trf3Dpartition->LUvsb = LUvsb;
+
 
 		SCT_t *SCT = (SCT_t *)SUPERLU_MALLOC(sizeof(SCT_t));
 		SCT_init(SCT);
@@ -1495,6 +1509,7 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 		}
 		else
 		{
+
 			pdgstrf3d(options, m, n, anorm, trf3Dpartition, SCT, LUstruct,
 					  grid3d, stat, info);
 			if (getenv("NEW3DSOLVE")){

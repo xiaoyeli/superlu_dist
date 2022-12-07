@@ -368,15 +368,10 @@ main (int argc, char *argv[])
        DEALLOCATE STORAGE.
        ------------------------------------------------------------ */
 
+    dDestroy_LU (n, &(grid.grid2d), &LUstruct);
     if ( grid.zscp.Iam == 0 ) { // process layer 0
-
-	PStatPrint (&options, &stat, &(grid.grid2d)); /* Print 2D statistics.*/
-
-        dDestroy_LU (n, &(grid.grid2d), &LUstruct);
+	    PStatPrint (&options, &stat, &(grid.grid2d)); /* Print 2D statistics.*/
         dSolveFinalize (&options, &SOLVEstruct);
-    } else { // Process layers not equal 0
-        dDeAllocLlu_3d(n, &LUstruct, &grid);
-        dDeAllocGlu_3d(&LUstruct);
     }
     
     dDestroy_A3d_gathered_on_2d(&SOLVEstruct, &grid);

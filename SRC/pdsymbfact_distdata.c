@@ -1471,11 +1471,11 @@ double *dense, *dense_col; /* SPA */
     fprintf(stderr, "Malloc fails for Unzval_br_ptr[].");
     return (memDist + memNLU + memTRS);
   }
-	if ( !(Unzval_br_offset =
-				(long int*)SUPERLU_MALLOC(nsupers_i * sizeof(long int))) ) {
-		fprintf(stderr, "Malloc fails for Unzval_br_offset[].");
-	}
-	Unzval_br_offset[nsupers_i-1] = -1;
+	// if ( !(Unzval_br_offset =
+	// 			(long int*)SUPERLU_MALLOC(nsupers_i * sizeof(long int))) ) {
+	// 	fprintf(stderr, "Malloc fails for Unzval_br_offset[].");
+	// }
+	// Unzval_br_offset[nsupers_i-1] = -1;
 
 
 
@@ -1484,12 +1484,12 @@ double *dense, *dense_col; /* SPA */
     fprintf(stderr, "Malloc fails for Ufstnz_br_ptr[].");
     return (memDist + memNLU + memTRS);
   }
-	if ( !(Ufstnz_br_offset =
-				(long int*)SUPERLU_MALLOC(nsupers_i * sizeof(long int))) ) {
-		fprintf(stderr, "Malloc fails for Ufstnz_br_offset[].");
-		return (memDist + memNLU + memTRS);
-	}
-	Ufstnz_br_offset[nsupers_i-1] = -1;
+	// if ( !(Ufstnz_br_offset =
+	// 			(long int*)SUPERLU_MALLOC(nsupers_i * sizeof(long int))) ) {
+	// 	fprintf(stderr, "Malloc fails for Ufstnz_br_offset[].");
+	// 	return (memDist + memNLU + memTRS);
+	// }
+	// Ufstnz_br_offset[nsupers_i-1] = -1;
 
 
   memNLU += nsupers_i*sizeof(double*) + nsupers_i*sizeof(int_t*);
@@ -1544,15 +1544,15 @@ double *dense, *dense_col; /* SPA */
     fprintf(stderr, "Malloc fails for Lrowind_bc_ptr[].");
     return (memDist + memNLU + memTRS);
   }
-	if ( !(Lrowind_bc_offset =
-				(long int*)SUPERLU_MALLOC(nsupers_j * sizeof(long int))) ) {
-		fprintf(stderr, "Malloc fails for Lrowind_bc_offset[].");
-	}
-	Lrowind_bc_offset[nsupers_j-1] = -1;
-	if ( !(Lnzval_bc_offset =
-				(long int*)SUPERLU_MALLOC(nsupers_j * sizeof(long int))) ) {
-		fprintf(stderr, "Malloc fails for Lnzval_bc_offset[].");
-	}
+	// if ( !(Lrowind_bc_offset =
+	// 			(long int*)SUPERLU_MALLOC(nsupers_j * sizeof(long int))) ) {
+	// 	fprintf(stderr, "Malloc fails for Lrowind_bc_offset[].");
+	// }
+	// Lrowind_bc_offset[nsupers_j-1] = -1;
+	// if ( !(Lnzval_bc_offset =
+	// 			(long int*)SUPERLU_MALLOC(nsupers_j * sizeof(long int))) ) {
+	// 	fprintf(stderr, "Malloc fails for Lnzval_bc_offset[].");
+	// }
 
 
 
@@ -1561,34 +1561,34 @@ double *dense, *dense_col; /* SPA */
 	fprintf(stderr, "Malloc fails for Linv_bc_ptr[].");
 	return (memDist + memNLU + memTRS);
   }
-	if ( !(Linv_bc_offset =
-				(long int*)SUPERLU_MALLOC(nsupers_j * sizeof(long int))) ) {
-		fprintf(stderr, "Malloc fails for Linv_bc_offset[].");
-	}
+	// if ( !(Linv_bc_offset =
+	// 			(long int*)SUPERLU_MALLOC(nsupers_j * sizeof(long int))) ) {
+	// 	fprintf(stderr, "Malloc fails for Linv_bc_offset[].");
+	// }
   if ( !(Uinv_bc_ptr =
 			(double**)SUPERLU_MALLOC(nsupers_j * sizeof(double*))) ) {
 	fprintf(stderr, "Malloc fails for Uinv_bc_ptr[].");
 	return (memDist + memNLU + memTRS);
   }
 
-	if ( !(Uinv_bc_offset =
-				(long int*)SUPERLU_MALLOC(nsupers_j * sizeof(long int))) ) {
-		fprintf(stderr, "Malloc fails for Uinv_bc_offset[].");
-		return (memDist + memNLU + memTRS);
-	}
+	// if ( !(Uinv_bc_offset =
+	// 			(long int*)SUPERLU_MALLOC(nsupers_j * sizeof(long int))) ) {
+	// 	fprintf(stderr, "Malloc fails for Uinv_bc_offset[].");
+	// 	return (memDist + memNLU + memTRS);
+	// }
 	Linv_bc_ptr[nsupers_j-1] = NULL;
 	Uinv_bc_ptr[nsupers_j-1] = NULL;
-	Linv_bc_offset[nsupers_j-1] = -1;
-	Uinv_bc_offset[nsupers_j-1] = -1;
+	// Linv_bc_offset[nsupers_j-1] = -1;
+	// Uinv_bc_offset[nsupers_j-1] = -1;
 
   if ( !(Lindval_loc_bc_ptr = (int_t**)SUPERLU_MALLOC(nsupers_j * sizeof(int_t*))) ){
     fprintf(stderr, "Malloc fails for Lindval_loc_bc_ptr[].");
     return (memDist + memNLU + memTRS);
   }
-	if ( !(Lindval_loc_bc_offset =
-				(long int*)SUPERLU_MALLOC(nsupers_j * sizeof(long int))) ) {
-		fprintf(stderr, "Malloc fails for Lindval_loc_bc_offset[].");
-	}
+	// if ( !(Lindval_loc_bc_offset =
+	// 			(long int*)SUPERLU_MALLOC(nsupers_j * sizeof(long int))) ) {
+	// 	fprintf(stderr, "Malloc fails for Lindval_loc_bc_offset[].");
+	// }
 
 
   if ( !(Unnz = (int_t*)SUPERLU_MALLOC(nsupers_j * sizeof(int_t))) ){
@@ -1652,8 +1652,8 @@ double *dense, *dense_col; /* SPA */
     if ( myrow == jbrow ) { /* Block row jb in my process row */
 		Ufstnz_br_ptr[ljb_i] = NULL;
 		Unzval_br_ptr[ljb_i] = NULL;
-		Unzval_br_offset[ljb_i]=-1;
-		Ufstnz_br_offset[ljb_i]=-1;
+		// Unzval_br_offset[ljb_i]=-1;
+		// Ufstnz_br_offset[ljb_i]=-1;
       /* Scatter A into SPA. */
       for (j = ilsum[ljb_i], dense_col = dense; j < ilsum[ljb_i]+nsupc; j++) {
 	for (i = asup_rowptr[j]; i < asup_rowptr[j+1]; i++) {
@@ -1743,16 +1743,16 @@ double *dense, *dense_col; /* SPA */
 	}
 	Ufstnz_br_ptr[ljb_i] = index;
 
-	Ufstnz_br_offset[ljb_i]=len1+1;
-	Ufstnz_br_cnt += Ufstnz_br_offset[ljb_i];
+	// Ufstnz_br_offset[ljb_i]=len1+1;
+	// Ufstnz_br_cnt += Ufstnz_br_offset[ljb_i];
 
 	if (!(Unzval_br_ptr[ljb_i] =
 	      doubleMalloc_dist(len))) {
 	  fprintf (stderr, "Malloc fails for Unzval_br_ptr[*][]");
 	  return (memDist + memNLU + memTRS);
 	}
-	Unzval_br_offset[ljb_i]=len;
-	Unzval_br_cnt += Unzval_br_offset[ljb_i];
+	// Unzval_br_offset[ljb_i]=len;
+	// Unzval_br_cnt += Unzval_br_offset[ljb_i];
 
 	memNLU += (len1+1)*iword + len*dword;
 	uval = Unzval_br_ptr[ljb_i];
@@ -1898,16 +1898,16 @@ double *dense, *dense_col; /* SPA */
 	  fprintf (stderr, "Malloc fails for index[]");
 	  return (memDist + memNLU + memTRS);
 	}
-  Lrowind_bc_offset[ljb_j]=len1;
-  Lrowind_bc_cnt += Lrowind_bc_offset[ljb_j];
+//   Lrowind_bc_offset[ljb_j]=len1;
+//   Lrowind_bc_cnt += Lrowind_bc_offset[ljb_j];
 	Lrowind_bc_ptr[ljb_j] = index;
 	if (!(Lnzval_bc_ptr[ljb_j] =
 	      doubleMalloc_dist(len*nsupc))) {
 	  fprintf(stderr, "Malloc fails for Lnzval_bc_ptr[*][] col block " IFMT, jb);
 	  return (memDist + memNLU + memTRS);
 	}
-  Lnzval_bc_offset[ljb_j]=len*nsupc;
-  Lnzval_bc_cnt += Lnzval_bc_offset[ljb_j];
+//   Lnzval_bc_offset[ljb_j]=len*nsupc;
+//   Lnzval_bc_cnt += Lnzval_bc_offset[ljb_j];
 
 	myrow = MYROW( iam, grid );
 	krow = PROW( jb, grid );
@@ -1915,17 +1915,17 @@ double *dense, *dense_col; /* SPA */
 
 		if (!(Linv_bc_ptr[ljb_j] = (double*)SUPERLU_MALLOC(nsupc*nsupc * sizeof(double))))
 			ABORT("Malloc fails for Linv_bc_ptr[ljb_j][]");
-		Linv_bc_offset[ljb_j]=nsupc*nsupc;
-		Linv_bc_cnt += Linv_bc_offset[ljb_j];
+		// Linv_bc_offset[ljb_j]=nsupc*nsupc;
+		// Linv_bc_cnt += Linv_bc_offset[ljb_j];
 		if (!(Uinv_bc_ptr[ljb_j] = (double*)SUPERLU_MALLOC(nsupc*nsupc * sizeof(double))))
 				ABORT("Malloc fails for Uinv_bc_ptr[ljb_j][]");
-		Uinv_bc_offset[ljb_j]=nsupc*nsupc;
-		Uinv_bc_cnt += Uinv_bc_offset[ljb_j];
+		// Uinv_bc_offset[ljb_j]=nsupc*nsupc;
+		// Uinv_bc_cnt += Uinv_bc_offset[ljb_j];
 	}else{
 		Linv_bc_ptr[ljb_j] = NULL;
-		Linv_bc_offset[ljb_j] = -1;
+		// Linv_bc_offset[ljb_j] = -1;
 		Uinv_bc_ptr[ljb_j] = NULL;
-		Uinv_bc_offset[ljb_j] = -1;
+		// Uinv_bc_offset[ljb_j] = -1;
 	}
 
 	memNLU += len1*iword + len*nsupc*dword;
@@ -1933,8 +1933,8 @@ double *dense, *dense_col; /* SPA */
 	if ( !(Lindval_loc_bc_ptr[ljb_j] = intCalloc_dist(nrbl*3)))
 		ABORT("Malloc fails for Lindval_loc_bc_ptr[ljb_j][]");
 	memTRS += nrbl*3.0*iword + 2.0*nsupc*nsupc*dword;  //acount for Lindval_loc_bc_ptr[ljb],Linv_bc_ptr[ljb],Uinv_bc_ptr[ljb]
-  Lindval_loc_bc_offset[ljb_j]=nrbl*3;
-  Lindval_loc_bc_cnt += Lindval_loc_bc_offset[ljb_j];
+//   Lindval_loc_bc_offset[ljb_j]=nrbl*3;
+//   Lindval_loc_bc_cnt += Lindval_loc_bc_offset[ljb_j];
 
 	lusup = Lnzval_bc_ptr[ljb_j];
 	mybufmax[0] = SUPERLU_MAX( mybufmax[0], len1 );
@@ -2038,12 +2038,12 @@ double *dense, *dense_col; /* SPA */
 	  Lrowind_bc_ptr[ljb_j] = NULL;
 	  Lnzval_bc_ptr[ljb_j] = NULL;
 	  Linv_bc_ptr[ljb_j] = NULL;
-    Linv_bc_offset[ljb_j] = -1;
-    Lrowind_bc_offset[ljb_j]=-1;
-    Lindval_loc_bc_offset[ljb_j]=-1;
-    Lnzval_bc_offset[ljb_j]=-1;
+    // Linv_bc_offset[ljb_j] = -1;
+    // Lrowind_bc_offset[ljb_j]=-1;
+    // Lindval_loc_bc_offset[ljb_j]=-1;
+    // Lnzval_bc_offset[ljb_j]=-1;
 	  Uinv_bc_ptr[ljb_j] = NULL;
-	  Uinv_bc_offset[ljb_j] = -1;
+	//   Uinv_bc_offset[ljb_j] = -1;
 	  Lindval_loc_bc_ptr[ljb_j] = NULL;
 	} /* if nrbl ... */
       } /* if mycol == pc */
@@ -2185,6 +2185,7 @@ double *dense, *dense_col; /* SPA */
   }
 
 
+#if 0
 	Linv_bc_cnt +=1; // safe guard
 	Uinv_bc_cnt +=1;
 	Lrowind_bc_cnt +=1 ;
@@ -2277,6 +2278,8 @@ double *dense, *dense_col; /* SPA */
 
 
 	}
+#endif
+
 		/////////////////////////////////////////////////////////////////
 
 		/* Set up additional pointers for the index and value arrays of U.
@@ -2290,16 +2293,17 @@ double *dense, *dense_col; /* SPA */
 			ABORT("Malloc fails for Ucb_indptr[]");
 		if ( !(Ucb_valptr = SUPERLU_MALLOC(nub * sizeof(int_t *))) )
 			ABORT("Malloc fails for Ucb_valptr[]");
-	if ( !(Ucb_valoffset =
-				(long int*)SUPERLU_MALLOC(nub * sizeof(long int))) ) {
-		fprintf(stderr, "Malloc fails for Ucb_valoffset[].");
-	}
-	Ucb_valoffset[nub-1] = -1;
-	if ( !(Ucb_indoffset =
-				(long int*)SUPERLU_MALLOC(nub * sizeof(long int))) ) {
-		fprintf(stderr, "Malloc fails for Ucb_indoffset[].");
-	}
-	Ucb_indoffset[nub-1] = -1;
+	// if ( !(Ucb_valoffset =
+	// 			(long int*)SUPERLU_MALLOC(nub * sizeof(long int))) ) {
+	// 	fprintf(stderr, "Malloc fails for Ucb_valoffset[].");
+	// }
+	// Ucb_valoffset[nub-1] = -1;
+	// if ( !(Ucb_indoffset =
+	// 			(long int*)SUPERLU_MALLOC(nub * sizeof(long int))) ) {
+	// 	fprintf(stderr, "Malloc fails for Ucb_indoffset[].");
+	// }
+	// Ucb_indoffset[nub-1] = -1;
+
 		nlb = CEILING( nsupers, grid->nprow ); /* Number of local block rows. */
 
 		/* Count number of row blocks in a block column.
@@ -2324,17 +2328,17 @@ double *dense, *dense_col; /* SPA */
 				if ( !(Ucb_indptr[lb]
 							= SUPERLU_MALLOC(Urbs[lb] * sizeof(Ucb_indptr_t))) )
 					ABORT("Malloc fails for Ucb_indptr[lb][]");
-			Ucb_indoffset[lb]=Urbs[lb];
-			Ucb_indcnt += Ucb_indoffset[lb];
+			// Ucb_indoffset[lb]=Urbs[lb];
+			// Ucb_indcnt += Ucb_indoffset[lb];
 				if ( !(Ucb_valptr[lb] = (int_t *) intMalloc_dist(Urbs[lb])) )
 					ABORT("Malloc fails for Ucb_valptr[lb][]");
-			Ucb_valoffset[lb]=Urbs[lb];
-			Ucb_valcnt += Ucb_valoffset[lb];
+			// Ucb_valoffset[lb]=Urbs[lb];
+			// Ucb_valcnt += Ucb_valoffset[lb];
 			}else{
 				Ucb_valptr[lb]=NULL;
-				Ucb_valoffset[lb]=-1;
+				// Ucb_valoffset[lb]=-1;
 				Ucb_indptr[lb]=NULL;
-				Ucb_indoffset[lb]=-1;
+				// Ucb_indoffset[lb]=-1;
 		}
 		}
 		for (lk = 0; lk < nlb; ++lk) { /* For each block row. */
@@ -2380,6 +2384,8 @@ double *dense, *dense_col; /* SPA */
 		}
 	}
 
+
+#if 0
 	Unzval_br_cnt +=1; // safe guard
 	Ufstnz_br_cnt +=1;
 	Ucb_valcnt +=1;
@@ -2456,6 +2462,8 @@ double *dense, *dense_col; /* SPA */
 			Ucb_indcnt+=tmp_cnt;
 		}
 	}
+
+#endif
 
 		/////////////////////////////////////////////////////////////////
 #if 0
@@ -3104,30 +3112,30 @@ double *dense, *dense_col; /* SPA */
   SUPERLU_FREE(recvBuf);
 
 	Llu->Lrowind_bc_ptr = Lrowind_bc_ptr;
-	Llu->Lrowind_bc_dat = Lrowind_bc_dat;
-	Llu->Lrowind_bc_offset = Lrowind_bc_offset;
-	Llu->Lrowind_bc_cnt = Lrowind_bc_cnt;
+	// Llu->Lrowind_bc_dat = Lrowind_bc_dat;
+	// Llu->Lrowind_bc_offset = Lrowind_bc_offset;
+	// Llu->Lrowind_bc_cnt = Lrowind_bc_cnt;
 
 	Llu->Lindval_loc_bc_ptr = Lindval_loc_bc_ptr;
-	Llu->Lindval_loc_bc_dat = Lindval_loc_bc_dat;
-	Llu->Lindval_loc_bc_offset = Lindval_loc_bc_offset;
-	Llu->Lindval_loc_bc_cnt = Lindval_loc_bc_cnt;
+	// Llu->Lindval_loc_bc_dat = Lindval_loc_bc_dat;
+	// Llu->Lindval_loc_bc_offset = Lindval_loc_bc_offset;
+	// Llu->Lindval_loc_bc_cnt = Lindval_loc_bc_cnt;
 
 	Llu->Lnzval_bc_ptr = Lnzval_bc_ptr;
-	Llu->Lnzval_bc_dat = Lnzval_bc_dat;
-	Llu->Lnzval_bc_offset = Lnzval_bc_offset;
-	Llu->Lnzval_bc_cnt = Lnzval_bc_cnt;
+	// Llu->Lnzval_bc_dat = Lnzval_bc_dat;
+	// Llu->Lnzval_bc_offset = Lnzval_bc_offset;
+	// Llu->Lnzval_bc_cnt = Lnzval_bc_cnt;
 
 
 	Llu->Ufstnz_br_ptr = Ufstnz_br_ptr;
-    Llu->Ufstnz_br_dat = Ufstnz_br_dat;
-    Llu->Ufstnz_br_offset = Ufstnz_br_offset;
-    Llu->Ufstnz_br_cnt = Ufstnz_br_cnt;
+    // Llu->Ufstnz_br_dat = Ufstnz_br_dat;
+    // Llu->Ufstnz_br_offset = Ufstnz_br_offset;
+    // Llu->Ufstnz_br_cnt = Ufstnz_br_cnt;
 
 	Llu->Unzval_br_ptr = Unzval_br_ptr;
-	Llu->Unzval_br_dat = Unzval_br_dat;
-	Llu->Unzval_br_offset = Unzval_br_offset;
-	Llu->Unzval_br_cnt = Unzval_br_cnt;
+	// Llu->Unzval_br_dat = Unzval_br_dat;
+	// Llu->Unzval_br_offset = Unzval_br_offset;
+	// Llu->Unzval_br_cnt = Unzval_br_cnt;
   Llu->Unnz = Unnz;
   Llu->ToRecv = ToRecv;
   Llu->ToSendD = ToSendD;
@@ -3148,24 +3156,24 @@ double *dense, *dense_col; /* SPA */
   Llu->URtree_ptr = URtree_ptr;
   Llu->UBtree_ptr = UBtree_ptr;
   Llu->Linv_bc_ptr = Linv_bc_ptr;
-	Llu->Linv_bc_dat = Linv_bc_dat;
-	Llu->Linv_bc_offset = Linv_bc_offset;
-	Llu->Linv_bc_cnt = Linv_bc_cnt;
+	// Llu->Linv_bc_dat = Linv_bc_dat;
+	// Llu->Linv_bc_offset = Linv_bc_offset;
+	// Llu->Linv_bc_cnt = Linv_bc_cnt;
 
 	Llu->Uinv_bc_ptr = Uinv_bc_ptr;
-	Llu->Uinv_bc_dat = Uinv_bc_dat;
-	Llu->Uinv_bc_offset = Uinv_bc_offset;
-	Llu->Uinv_bc_cnt = Uinv_bc_cnt;
+	// Llu->Uinv_bc_dat = Uinv_bc_dat;
+	// Llu->Uinv_bc_offset = Uinv_bc_offset;
+	// Llu->Uinv_bc_cnt = Uinv_bc_cnt;
 
 	Llu->Urbs = Urbs;
 	Llu->Ucb_indptr = Ucb_indptr;
-	Llu->Ucb_inddat = Ucb_inddat;
-	Llu->Ucb_indoffset = Ucb_indoffset;
-	Llu->Ucb_indcnt = Ucb_indcnt;
+	// Llu->Ucb_inddat = Ucb_inddat;
+	// Llu->Ucb_indoffset = Ucb_indoffset;
+	// Llu->Ucb_indcnt = Ucb_indcnt;
 	Llu->Ucb_valptr = Ucb_valptr;
-	Llu->Ucb_valdat = Ucb_valdat;
-	Llu->Ucb_valoffset = Ucb_valoffset;
-	Llu->Ucb_valcnt = Ucb_valcnt;
+	// Llu->Ucb_valdat = Ucb_valdat;
+	// Llu->Ucb_valoffset = Ucb_valoffset;
+	// Llu->Ucb_valcnt = Ucb_valcnt;
 
 
 #ifdef GPU_ACC
