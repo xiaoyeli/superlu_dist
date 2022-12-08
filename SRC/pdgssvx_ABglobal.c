@@ -932,13 +932,15 @@ pdgssvx_ABglobal(superlu_dist_options_t *options, SuperMatrix *A,
 	pdgstrf(options, m, n, anorm, LUstruct, grid, stat, info);
 	stat->utime[FACT] = SuperLU_timer_() - t;
 
-	int nsupers = Glu_persist->supno[n-1] + 1;
-	int* supernodeMask = int32Malloc_dist(nsupers);
-	for(int ii=0; ii<nsupers; ii++)
-		supernodeMask[ii]=1;
-	trs_compute_communication_structure(options, n, LUstruct,
-					ScalePermstruct, supernodeMask, grid, stat);
-	SUPERLU_FREE(supernodeMask);
+	if ( Fact != SamePattern_SameRowPerm ) {
+		int nsupers = Glu_persist->supno[n-1] + 1;
+		int* supernodeMask = int32Malloc_dist(nsupers);
+		for(int ii=0; ii<nsupers; ii++)
+			supernodeMask[ii]=1;
+		trs_compute_communication_structure(options, n, LUstruct,
+						ScalePermstruct, supernodeMask, grid, stat);
+		SUPERLU_FREE(supernodeMask);
+	}
 
 #if ( PRNTlevel>=1 )
 	{

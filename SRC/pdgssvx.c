@@ -1351,15 +1351,15 @@ pdgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 		fflush(stdout);
             }
 	} /* end printing stats */
-
-	nsupers = Glu_persist->supno[n-1] + 1;
-	int* supernodeMask = int32Malloc_dist(nsupers);
-	for(int ii=0; ii<nsupers; ii++)
-		supernodeMask[ii]=1;
-	trs_compute_communication_structure(options, n, LUstruct,
-					ScalePermstruct, supernodeMask, grid, stat);
-	SUPERLU_FREE(supernodeMask);
-
+	if ( options->Fact != SamePattern_SameRowPerm) {
+		nsupers = Glu_persist->supno[n-1] + 1;
+		int* supernodeMask = int32Malloc_dist(nsupers);
+		for(int ii=0; ii<nsupers; ii++)
+			supernodeMask[ii]=1;
+		trs_compute_communication_structure(options, n, LUstruct,
+						ScalePermstruct, supernodeMask, grid, stat);
+		SUPERLU_FREE(supernodeMask);
+	}
 
     } /* end if (!factored) */
 
