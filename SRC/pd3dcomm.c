@@ -431,6 +431,11 @@ int_t dp3dScatter(int_t n, dLUstruct_t * LUstruct, gridinfo3d_t* grid3d, int *su
         // Llu->Ucb_valptr = SUPERLU_MALLOC (nub * sizeof(int_t*));
         Llu->bsendx_plist = SUPERLU_MALLOC (nub * sizeof(int*));
         Llu->fsendx_plist = SUPERLU_MALLOC (nub * sizeof(int*));
+
+		for(int lk=0; lk<nub; lk++){
+			Llu->bsendx_plist[lk]=NULL;
+			Llu->fsendx_plist[lk]=NULL;	
+		}	
     }
 
 
