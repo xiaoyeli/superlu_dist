@@ -1,5 +1,0 @@
-typedef char __nv_bool;
-# 209 "/opt/cray/pe/gcc/11.2.0/snos/lib/gcc/x86_64-suse-linux/11.2.0/include/stddef.h" 3
-typedef unsigned long size_t;
-#include "crt/device_runtime.h"
-#include "common_functions.h"
