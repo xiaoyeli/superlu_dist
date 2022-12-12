@@ -2668,7 +2668,7 @@ __global__ void dlsum_bmod_inv_gpu_mrhs_nvshmem
     double *lusup;
     int_t nrow, nnz_offset, offset;
     int_t  luptr_tmp1,lptr1_tmp, idx_i, idx_v;
-
+    int cnt;
 
 
     // printf("  Entering kernel:   %i %i %i %i %i %i %i %i\n", threadIdx_x, blockIdx_x, grid->npcol, nsupers,myrow,krow,bid,tid);
@@ -2913,7 +2913,8 @@ __global__ void dlsum_bmod_inv_gpu_mrhs_nvshmem
 
 } /* dlsum_bmod_inv_gpu_mrhs_nvshmem */
 
- void dlsum_bmod_inv_gpu_wrap
+
+void dlsum_bmod_inv_gpu_wrap
  (
   superlu_dist_options_t *options,
   int_t nbcol_loc,    /*number of local supernode columns*/
@@ -2960,8 +2961,7 @@ __global__ void dlsum_bmod_inv_gpu_mrhs_nvshmem
   int* d_mymaskstartmod_u,
   int* d_mymasklengthmod_u,
   int* d_recv_cnt_u,
-  int* d_msgnum,
-  int* d_flag_mod
+  int* d_msgnum
  ) {
 
      gpuStream_t sid = 0;
@@ -3073,6 +3073,9 @@ __global__ void dlsum_bmod_inv_gpu_mrhs_nvshmem
          //printf("(%d) back to CPU !!!!! \n",mype);
      }
  }
+
+
+
 #ifdef __cplusplus
 }
 #endif

@@ -2426,30 +2426,18 @@ if ( !iam) printf(".. Construct Reduce tree for U: %.2f\t\n", t);
 	checkGPU(gpuMalloc( (void**)&Llu->d_Uinv_bc_dat, (Llu->Uinv_bc_cnt) * sizeof(double)));
 
 
-        printf("(%d) done single gpu\n",iam);
-        fflush(stdout);
 
 
 	/////* reuse: L and U *////
-	int maxrecvsz = sp_ienv_dist(3)* nrhs + SUPERLU_MAX( XK_H, LSUM_H );
-        printf("(%d) done single gpu5, RDMA_FLAG_SIZE=%d \n",iam,RDMA_FLAG_SIZE);
-        fflush(stdout);
+	int maxrecvsz = sp_ienv_dist(3, options)* nrhs + SUPERLU_MAX( XK_H, LSUM_H );
     flag_bc_q = (int *)nvshmem_malloc(RDMA_FLAG_SIZE * (k+1) * sizeof(int)); // for sender
-        printf("(%d) done single gpu4\n",iam);
-        fflush(stdout);
     flag_rd_q = (int *)nvshmem_malloc( RDMA_FLAG_SIZE * nlb * 2 * sizeof(int)); // for sender
-        printf("(%d) done single gpu1\n",iam);
-        fflush(stdout);
     ready_x = (double *)nvshmem_malloc(maxrecvsz*CEILING( nsupers, grid->npcol) * sizeof(double)); // for receiver
-        printf("(%d) done single gpu2\n",iam);
-        fflush(stdout);
     ready_lsum = (double *)nvshmem_malloc(2*maxrecvsz*CEILING( nsupers, grid->nprow) * sizeof(double)); // for receiver
-        printf("(%d) done single gpu3\n",iam);
-        fflush(stdout);
-    printf("(%d) k=%d, flag_size=%d int, data_size=%d double, nlb=%d, flag_size=%d int, data_size=%d double, int=%d B, double=%d B\n",
-           iam,k,RDMA_FLAG_SIZE * (k+1), maxrecvsz*CEILING( nsupers, grid->npcol),
-           nlb,RDMA_FLAG_SIZE * nlb * 2 , 2*maxrecvsz*CEILING( nsupers, grid->nprow), sizeof(int), sizeof(double) );
-    fflush(stdout);
+    //printf("(%d) k=%d, flag_size=%d int, data_size=%d double, nlb=%d, flag_size=%d int, data_size=%d double, int=%d B, double=%d B\n",
+    //       iam,k,RDMA_FLAG_SIZE * (k+1), maxrecvsz*CEILING( nsupers, grid->npcol),
+    //       nlb,RDMA_FLAG_SIZE * nlb * 2 , 2*maxrecvsz*CEILING( nsupers, grid->nprow), sizeof(int), sizeof(double) );
+    //fflush(stdout);
 
 
     my_flag_bc = (int *) nvshmem_malloc ( RDMA_FLAG_SIZE * (CEILING( nsupers, grid->npcol)+1)  * sizeof(int)); // for sender
@@ -2482,8 +2470,8 @@ if ( !iam) printf(".. Construct Reduce tree for U: %.2f\t\n", t);
         }
     }
 	checkGPU(gpuMemcpy(d_colnum, my_colnum,  (nfrecvx+1) * sizeof(int), gpuMemcpyHostToDevice));
-	printf("(%d) nfrecvx=%d,nfrecvmod=%d,maxrecvsz=%d\n",iam,nfrecvx,nfrecvmod,maxrecvsz);
-    fflush(stdout);
+	//printf("(%d) nfrecvx=%d,nfrecvmod=%d,maxrecvsz=%d\n",iam,nfrecvx,nfrecvmod,maxrecvsz);
+    //fflush(stdout);
 
     h_nfrecv[0]=nfrecvx;
     h_nfrecv[1]=256;
