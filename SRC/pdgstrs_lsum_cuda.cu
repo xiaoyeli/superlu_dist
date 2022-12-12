@@ -33,8 +33,8 @@ at the top-level directory.
 #define MAXSUPER 256
 #endif
 
-#ifndef RDMA_FLAG_SIZE
-#define RDMA_FLAG_SIZE 4
+#ifndef RDMA_FLAG_SIZE 
+#define RDMA_FLAG_SIZE 2
 #endif
 
 #include <stdio.h>
@@ -412,103 +412,68 @@ void gemm_device_dlsum_fmod(
     }                       \
 }
 
-void checkP2Paccess(int numGPUs)
-{
-    for (int i = 0; i < numGPUs; i++) {
-        cudaSetDevice(i);
-        cudaCheckError();
-
-        for (int j = 0; j < numGPUs; j++) {
-            int access;
-            if (i != j) {
-                cudaDeviceCanAccessPeer(&access, i, j);
-                cudaCheckError();
-                printf("Device=%d %s Access Peer Device=%d\n", i, access ? "CAN" : "CANNOT", j);
-            }
-        }
+__global__ void simple_shift(int *target, int mype, int npes) {
+    int tid = threadIdx.x;
+    for (int i=tid; i<256;i=i+256){
+        target[i]=i;
+        printf("(%d,%d), val=%d\n",mype,tid,i);
     }
-    printf("\n***NOTE: In case a device doesn't have P2P access to other one, it falls back to normal memcopy procedure.\nSo you can see lesser Bandwidth (GB/s) and unstable Latency (us) in those cases.\n\n");
-}
 
+}
 
 void nv_init_wrapper(int* c, char *v[], int* omp_mpi_level)
 {
-    int *target;
     int rank, nranks, ndevices;
     MPI_Comm mpi_comm;
     nvshmemx_init_attr_t attr;
     int mype, npes, mype_node;
-    //MPI_CHECK(MPI_Init(&c, &v));
-    MPI_CHECK(MPI_Init_thread( c, &v, MPI_THREAD_MULTIPLE, omp_mpi_level));
+
+    MPI_CHECK(MPI_Init(c, &v));
+    //MPI_CHECK(MPI_Init_thread( c, &v, MPI_THREAD_MULTIPLE, omp_mpi_level));
     MPI_CHECK(MPI_Comm_rank(MPI_COMM_WORLD, &rank));
     MPI_CHECK(MPI_Comm_size(MPI_COMM_WORLD, &nranks));
 
 
-    //CUDA_CHECK(cudaSetDevice(rank%ndevices));
     mpi_comm = MPI_COMM_WORLD;
     attr.mpi_comm = &mpi_comm;
     NVSHMEM_CHECK(nvshmemx_init_attr (NVSHMEMX_INIT_WITH_MPI_COMM, &attr));
     mype = nvshmem_my_pe();
     npes = nvshmem_n_pes();
-
     mype_node = nvshmem_team_my_pe(NVSHMEMX_TEAM_NODE);
+    CUDA_CHECK(cudaSetDevice(mype_node));
+
     char name[MPI_MAX_PROCESSOR_NAME];
     int resultlength;
     MPI_CHECK(MPI_Get_processor_name(name, &resultlength));
     int get_cur_dev;
     CUDA_CHECK(cudaGetDeviceCount(&ndevices));
-    //CUDA_CHECK(cudaSetDevice(rank%ndevices));
-    CUDA_CHECK(cudaSetDevice(mype_node));
     CUDA_CHECK(cudaGetDevice(&get_cur_dev));
 
     cudaDeviceProp prop;
     //CUDA_CHECK(cudaGetDeviceProperties(&prop, rank%ndevices));
     CUDA_CHECK(cudaGetDeviceProperties(&prop, mype_node));
+    int status=nvshmemx_init_status();
     printf("** MPI %d/%d, NVSHMEM %d/%d, mype_node=%d, device name: %s bus id: %d, "
-           "ndevices=%d,cur=%d, node=%s **\n",
+           "ndevices=%d,cur=%d, node=%s, status=%d **\n",
            rank,nranks,mype,npes,mype_node, prop.name, prop.pciBusID,
-           ndevices,get_cur_dev,name);
+           ndevices,get_cur_dev,name,status);
     fflush(stdout);
 
+
+    //int *target;
+    //target = (int *)nvshmem_malloc(sizeof(int)*256);
+    //printf("(%d) nvshmem malloc target success\n",mype);
+    //fflush(stdout);
+    //simple_shift<<<1, 256>>>(target, mype, npes);
+    //CUDA_CHECK(cudaDeviceSynchronize());
+
 }
 
-__device__ void C_BcTree_forwardMessageSimple_Device_debug(C_Tree* tree,  int* flag_bc_q,  int* my_flag_bc, int mype, int tid,double* ready_x){
+
+__device__ void C_BcTree_forwardMessageSimple_Device(C_Tree* tree,  int* flag_bc_q,  int* my_flag_bc, int mype, int tid,double* ready_x, int maxrecvsz){
     //int BCsendoffset;
     int sig = 1;
-    for( int idxRecv = 0; idxRecv < tree->destCnt_; ++idxRecv ) {
-        int iProc = tree->myDests_[idxRecv];
-        //BCsendoffset = my_flag_bc[2];
-        double sum=0;
-        if (tid==0) {
-            for(int i=0;i<my_flag_bc[3];i++){
-                //printf("(%d), data, %d,%lf\n",mype,i,ready_x[i]);
-                sum+=ready_x[my_flag_bc[2]+i];
-            }
-            printf("Start (%d), forwardDevice, send to %d, signal offset=%d, msgsz=%d,sum=%lf\n",mype,iProc,my_flag_bc[0],my_flag_bc[3],sum);
-        }
-        __syncthreads();
-        if(tid==0) printf("Start (%d), forwardDevice, send to %d, signal offset=%d, data offset=%d, msgsz=%d\n",mype,iProc,my_flag_bc[1],my_flag_bc[2],my_flag_bc[3]);
-        __syncthreads();
-        //nvshmemx_double_put_block(&ready_x[BCsendoffset],ready_x,my_flag_bc[3],iProc);
-        nvshmemx_double_put_nbi_block(&ready_x[my_flag_bc[2]], &ready_x[my_flag_bc[2]], my_flag_bc[3], iProc);
-        //nvshmem_double_put_nbi(ready_x, &ready_x[0], my_flag_bc[3], iProc);
-        //nvshmem_double_put(&ready_x[BCsendoffset],ready_x,my_flag_bc[3],iProc);
-        //nvshmem_quiet();
-        nvshmem_fence();
-        //__syncthreads();
-        if (tid == 0) {
-            nvshmemx_int_signal((int*)(flag_bc_q + my_flag_bc[0]), sig, iProc);
-            //nvshmem_quiet();
-            printf("Done (%d), forwardDevice, send to %d, signal offset=%d, data offset=%d, msgsz=%d\n", mype, iProc,
-                   my_flag_bc[0], my_flag_bc[2], my_flag_bc[3]);
-
-        }
-    }
-}
-
-__device__ void C_BcTree_forwardMessageSimple_Device(C_Tree* tree,  int* flag_bc_q,  int* my_flag_bc, int mype, int tid,double* ready_x){
-    //int BCsendoffset;
-    int sig = 1;
+    int data_ofset=my_flag_bc[0]*maxrecvsz;
     for( int idxRecv = 0; idxRecv < tree->destCnt_; ++idxRecv ) {
         int iProc = tree->myDests_[idxRecv];
         //BCsendoffset = my_flag_bc[2];
@@ -521,10 +486,18 @@ __device__ void C_BcTree_forwardMessageSimple_Device(C_Tree* tree,  int* flag_bc
         //    printf("Start (%d), forwardDevice, send to %d, signal offset=%d, msgsz=%d,sum=%lf\n",mype,iProc,my_flag_bc[0],my_flag_bc[3],sum);
         //}
         //__syncthreads();
-        //if(tid==0) printf("Start (%d), forwardDevice, send to %d, signal offset=%d, data offset=%d, msgsz=%d\n",mype,iProc,my_flag_bc[1],BCsendoffset,my_flag_bc[3]);
+        //if (tid==0)
+        //    printf("---- Start BC (%d), forwardDevice, send to %d, "
+        //                  "signal offset=%d, "
+        //                  "data offset=%d "
+        //                  "msgsz=%d, maxrecvsz=%d\n",
+        //                  mype,iProc,
+        //                  my_flag_bc[0],
+        //                  data_ofset,
+        //                  my_flag_bc[1], maxrecvsz);
         //__syncthreads();
         //nvshmemx_double_put_block(&ready_x[BCsendoffset],ready_x,my_flag_bc[3],iProc);
-        nvshmemx_double_put_nbi_block(&ready_x[my_flag_bc[2]], &ready_x[my_flag_bc[2]], my_flag_bc[3], iProc);
+        nvshmemx_double_put_nbi_block(&ready_x[data_ofset], &ready_x[data_ofset], my_flag_bc[1], iProc);
         //nvshmem_double_put_nbi(ready_x, &ready_x[0], my_flag_bc[3], iProc);
         //nvshmem_double_put(&ready_x[BCsendoffset],ready_x,my_flag_bc[3],iProc);
         //nvshmem_quiet();
@@ -540,40 +513,118 @@ __device__ void C_BcTree_forwardMessageSimple_Device(C_Tree* tree,  int* flag_bc
     }
 }
 
-__device__ void C_RdTree_forwardMessageSimple_Device(C_Tree* Tree, int* flag_rd_q, int* my_flag_rd, int mype, int bid, int tid, double* ready_lsum, int maxrecvsz){
+__device__ void C_RdTree_forwardMessageBlock_Device(C_Tree* Tree, int* flag_rd_q, int* my_flag_rd, int mype, int bid, int tid, double* ready_lsum, int maxrecvsz, int myroot){
     int data_ofset,sig_ofset;
-    if(Tree->myIdx %2 ==0){
-        sig_ofset = my_flag_rd[0]*2;
-        data_ofset = my_flag_rd[0]*maxrecvsz*2;
-    }else{
-        sig_ofset = my_flag_rd[0]*2+1;
-        data_ofset = my_flag_rd[0]*maxrecvsz*2+maxrecvsz;
+    if (Tree->myIdx % 2 == 0) {
+        sig_ofset = my_flag_rd[0] * 2;
+        data_ofset = my_flag_rd[0] * maxrecvsz * 2;
+    } else {
+        sig_ofset = my_flag_rd[0] * 2 + 1;
+        data_ofset = my_flag_rd[0] * maxrecvsz * 2 + maxrecvsz;
     }
-    if(Tree->myRank_!=Tree->myRoot_){
-        ////forward to my root if I have received everything
-        int iProc = Tree->myRoot_;
-        //// YL: Use NVSHMEM to send to my parent
-        //printf("forwardMessage-(%d,%d,%d), rd--1, send to %d,data_ofset=%d,maxrecvsz=%d,k=%d,sigoffset=%d\n",mype,bid, tid,iProc,data_ofset,maxrecvsz,my_flag_rd[0],sig_ofset);
-        //__device__ void nvshmem_TYPENAME_put(TYPE *dest, const TYPE *source, size_t nelems, int pe)
-        //double sum=0;
-        //for(int i=my_flag_rd[0]*maxrecvsz*2;i<my_flag_rd[0]*maxrecvsz*2+my_flag_rd[1];i++){
-        //    //printf("(%d), data, %d\n",mype,i);
-        //    //printf("(%d), data, %d,%lf\n",mype,i,ready_lsum[i]);
-        //    sum+=ready_lsum[i];
-        //}
-        //printf("forwardMessage- (%d), forwardDevice, send to %d, lib=%d,sum=%lf\n",mype,iProc,my_flag_rd[0],sum);
+    ////forward to my root if I have received everything
+    //double sum = 0;
+    //if (tid==0){
+    //    for (int i = my_flag_rd[0]*maxrecvsz*2; i < my_flag_rd[0]*maxrecvsz*2 + my_flag_rd[1]; i++) {
+    //        //printf("(%d), data, %d\n",mype,i);
+    //        //printf("(%d), data, %d,%lf\n", mype, i, ready_lsum[i]);
+    //        sum += ready_lsum[i];
+    //    }
+    //    printf("---- Start RD (%d,%d,%d), forwardMessage, forwardDevice, send to %d, "
+    //       "lib=%d,size=%d,  dataoffset=%d,maxrecvsz=%d\n",
+    //       mype, bid,tid, myroot,
+    //       my_flag_rd[0], my_flag_rd[1], data_ofset,maxrecvsz);
+    //}
+    nvshmemx_double_put_nbi_block(&ready_lsum[data_ofset],&ready_lsum[my_flag_rd[0]*maxrecvsz*2],my_flag_rd[1],myroot);
+    //if (tid==0)
+    //    printf("---- END RD (%d), forwardMessage, forwardDevice, send to %d, "
+    //       "lib=%d,size=%d, sum=%lf, dataoffset=%d,maxrecvsz=%d\n",
+    //       mype, myroot,
+    //       my_flag_rd[0], my_flag_rd[1], sum, data_ofset,maxrecvsz);
+    nvshmem_fence();
+    int sig=1;
+    if (tid==0)  nvshmemx_int_signal((int*)flag_rd_q+sig_ofset, sig, myroot);
+    //if (tid==0)
+    //    printf("Bsend:%d,%d,%d,%d,%d\n", mype, my_flag_rd[0],data_ofset, sig_ofset,my_flag_rd[1]);
+}
 
-        nvshmem_double_put_nbi(&ready_lsum[data_ofset],&ready_lsum[my_flag_rd[0]*maxrecvsz*2],my_flag_rd[1],iProc);
-        nvshmem_fence();
-        int sig=1;
-        nvshmemx_int_signal((int*)flag_rd_q+sig_ofset, sig, iProc);
-        //printf("forwardMessage-(%d,%d,%d), rd--2, send to %d,data_ofset=%d,sig_ofset=%d\n",mype,bid, tid,iProc,data_ofset,sig_ofset);
+
+__device__ void C_RdTree_forwardMessageWarp_Device(C_Tree* Tree, int* flag_rd_q, int* my_flag_rd, int mype, int bid, int tid, double* ready_lsum, int maxrecvsz, int myroot){
+    int data_ofset,sig_ofset;
+    if (Tree->myIdx % 2 == 0) {
+        sig_ofset = my_flag_rd[0] * 2;
+        data_ofset = my_flag_rd[0] * maxrecvsz * 2;
+    } else {
+        sig_ofset = my_flag_rd[0] * 2 + 1;
+        data_ofset = my_flag_rd[0] * maxrecvsz * 2 + maxrecvsz;
     }
+
+    ////forward to my root if I have received everything
+    //double sum = 0;
+    //if (tid%32==0) {
+    //    for (int i = my_flag_rd[0]*maxrecvsz*2; i < my_flag_rd[0]*maxrecvsz*2 + my_flag_rd[1]; i++) {
+    //        //printf("(%d), data, %d\n",mype,i);
+    //        //printf("(%d), data, %d,%lf\n", mype, i, ready_lsum[i]);
+    //        sum += ready_lsum[i];
+    //    }
+    //    printf("---- Start RD Warp (%d,%d,%d), forwardMessage, forwardDevice, send to %d, "
+    //           "lib=%d,size=%d,  dataoffset=%d,maxrecvsz=%d\n",
+    //           mype, bid, tid, myroot,
+    //           my_flag_rd[0], my_flag_rd[1], data_ofset, maxrecvsz);
+    //}
+
+    nvshmemx_double_put_nbi_warp(&ready_lsum[data_ofset],&ready_lsum[my_flag_rd[0]*maxrecvsz*2],my_flag_rd[1],myroot);
+    //if (tid%32==0)
+    //    printf("---- END RD Warp (%d), forwardMessage, forwardDevice, send to %d, "
+    //       "lib=%d,size=%d, sum=%lf, dataoffset=%d,maxrecvsz=%d\n",
+    //       mype, myroot,
+    //       my_flag_rd[0], my_flag_rd[1], sum, data_ofset,maxrecvsz);
+    nvshmem_fence();
+    int sig=1;
+    if (tid%32==0)  nvshmemx_int_signal((int*)flag_rd_q+sig_ofset, sig, myroot);
+    //if (tid%32==0)
+    //    printf("Wsend:%d,%d,%d,%d,%d\n", mype, my_flag_rd[0],data_ofset, sig_ofset,my_flag_rd[1]);
+
+}
+
+__device__ void C_RdTree_forwardMessageThread_Device(C_Tree* Tree, int* flag_rd_q, int* my_flag_rd, int mype, int bid, int tid, double* ready_lsum, int maxrecvsz, int myroot){
+    int data_ofset,sig_ofset;
+    if (Tree->myIdx % 2 == 0) {
+        sig_ofset = my_flag_rd[0] * 2;
+        data_ofset = my_flag_rd[0] * maxrecvsz * 2;
+    } else {
+        sig_ofset = my_flag_rd[0] * 2 + 1;
+        data_ofset = my_flag_rd[0] * maxrecvsz * 2 + maxrecvsz;
+    }
+
+    ////forward to my root if I have received everything
+    //double sum = 0;
+
+    //for (int i = my_flag_rd[0]*maxrecvsz*2; i < my_flag_rd[0]*maxrecvsz*2 + my_flag_rd[1]; i++) {
+    //    //printf("(%d), data, %d\n",mype,i);
+    //    printf("(%d), data, %d,%lf\n", mype, i, ready_lsum[i]);
+    //    sum += ready_lsum[i];
+    //}
+
+    //printf("---- Start RD Thread (%d,%d,%d), forwardMessage, forwardDevice, send to %d, "
+    //       "lib=%d,size=%d,  dataoffset=%d,maxrecvsz=%d\n",
+    //       mype, bid,tid, myroot,
+    //       my_flag_rd[0], my_flag_rd[1], data_ofset,maxrecvsz);
+    nvshmem_double_put_nbi(&ready_lsum[data_ofset],&ready_lsum[my_flag_rd[0]*maxrecvsz*2],my_flag_rd[1],myroot);
+    //printf("---- END RD Thread (%d,%d,%d), forwardMessage, forwardDevice, send to %d, "
+    //       "lib=%d,size=%d,  dataoffset=%d,maxrecvsz=%d\n",
+    //       mype, bid,tid, myroot,
+    //       my_flag_rd[0], my_flag_rd[1], data_ofset,maxrecvsz);
+    nvshmem_fence();
+    int sig=1;
+    nvshmemx_int_signal((int*)flag_rd_q+sig_ofset, sig, myroot);
+    //printf("Tsend:%d,%d,%d,%d,%d\n",
+    //       mype, my_flag_rd[0],data_ofset, sig_ofset,my_flag_rd[1]);
 }
 
 
 
-__global__ void schedule
+__global__ void wait_bcrd
 (
 int nrhs,
 C_Tree  *LRtree_ptr,
@@ -587,7 +638,6 @@ int* my_flag_bc,
 int* my_flag_rd,
 int* d_nfrecv,
 int* d_status,
-int* d_launch_flag,
 int* d_colnum,
 int* d_mynum,
 int* d_mymaskstart,
@@ -600,6 +650,7 @@ int* d_mymaskstartmod,
 int* d_mymasklengthmod,
 int* d_recv_cnt,
 int* d_msgnum,
+int* d_flag_mod,
 double *lsum,    /* Sum of local modifications.                        */
 int_t *fmod,     /* Modification count for L-solve.                    */
 gridinfo_t *grid,
@@ -612,16 +663,12 @@ int_t  nsupers
     int bid = blockIdx.x;
     //int global_id= blockIdx.x * blockDim.x * blockDim.y + threadIdx.x + threadIdx.y * blockDim.x;
     int tid = threadIdx.x + threadIdx.y * blockDim.x;
-    d_launch_flag[0] = 1;
-    int WAIT_NUM_THREADS = d_nfrecv[1]*d_nfrecv[2];
+    int WAIT_NUM_THREADS = d_nfrecv[1]; //*d_nfrecv[2];
     if (tid==0) printf("(%d) WAIT_NUM_THREADS=%d,tot_wait_col=%d\n",mype,WAIT_NUM_THREADS,d_nfrecv[0]);
 
-
-#if 1
-    if (bid == 0) { // for BC
+    if (bid == 0) { // for BC recv
         if (WAIT_NUM_THREADS >= d_nfrecv[0]) {
             if (tid < d_nfrecv[0]) {
-                //printf("WAIT1 (%d,%d) wait for col %d,flag=%d\n", mype, tid, d_colnum[tid],flag_bc_q[d_colnum[tid]]);
                 nvshmem_int_wait_until((int *) flag_bc_q + d_colnum[tid], NVSHMEM_CMP_EQ, 1);
                 d_status[d_colnum[tid]] = 1;
                 //printf("WAIT1 (%d,%d) msg arrived in col %d\n", mype, tid, d_colnum[tid]);
@@ -650,13 +697,12 @@ int_t  nsupers
             }
         }
    }
-#endif
    //if (tid==0) printf("(%d,%d,%d) WAIT EXIT\n",mype,bid,tid);
-#if 0
-    if (bid == 1) { // for RD
+    if (bid == 1) { // for RD recv
         //if (tid==0) printf("RD---(%d) WAIT_NUM_THREADS=%d,tot_wait_col=%d\n",mype,WAIT_NUM_THREADS,d_nfrecvmod[1]);
         int j, iam, lib, mycol, myrow, k, knsupc, il, cnt;
         int_t fmod_tmp, aln_i;
+
         aln_i = 1;
         double temp;
         if (WAIT_NUM_THREADS >= d_nfrecvmod[1]) { // one thread wait for one col
@@ -667,61 +713,63 @@ int_t  nsupers
                     int wm_val = nvshmem_int_wait_until_any(flag_rd_q + d_colnummod[tid] * 2, 2,
                                                             d_statusmod + d_colnummod[tid] * 2, NVSHMEM_CMP_EQ, 1);
                     d_statusmod[d_colnummod[tid] * 2 + wm_val] = 1;
-
                     lib = (d_colnummod[tid] * 2 + wm_val) / 2;
-
                     iam = grid->iam;
                     mycol = MYCOL(iam, grid);
                     myrow = MYROW(iam, grid);
-
                     k = myrow + lib * grid->nprow; // global block row
                     knsupc = SuperSize(k);
                     il = LSUM_BLK(lib);
                     cnt = LRtree_ptr[lib].destCnt_;
+                    //printf("recv1,%d,%d,%d,%d\n",
+                    //       mype,d_colnummod[d_mymaskstartmod[tid]]*2,wm_val,lib);
                     //printf("(%d,%d,%d),idx=%d,lib=%d,cnt=%d\n", mype, bid, tid,
                     //       d_colnummod[tid] * 2 + wm_val, lib, cnt);
                     if (d_statusmod[lib * 2] + d_statusmod[lib * 2 + 1] == cnt) {
-                        double tmp_sum = 0;
+                        //double tmp_sum = 0;
                         int ii = 0;
                         if (cnt == 2) {
                             for (ii = 0; ii < cnt; ++ii) {
-                                tmp_sum = 0;
+                                //tmp_sum = 0;
                                 RHS_ITERATE(j) {
                                     for (int aab = 0; aab < knsupc; ++aab) {
                                         //temp=atomicAdd(&lsum[il+i + j*knsupc], ready_lsum[maxrecvsz*lib*2+ii*maxrecvsz + i + j*knsupc]  );
                                         temp = atomicAdd(&lsum[il + aab + j * knsupc],
                                                          ready_lsum[maxrecvsz * lib * 2 + ii * maxrecvsz + aab +
                                                                     j * knsupc]);
-                                        tmp_sum += ready_lsum[maxrecvsz * lib * 2 + ii * maxrecvsz + aab + j * knsupc];
-                                        //printf("data2-(%d,%d,%d),lib=%d,k=%d,ii=%d,ready_lsum[%d]=%f\n", mype, bid, tid,
-                                        //       lib, k, ii,
+                                        //tmp_sum += ready_lsum[maxrecvsz * lib * 2 + ii * maxrecvsz + aab + j * knsupc];
+                                        //printf("data2-(%d,%d,%d),lib=%d,k=%d,ii=%d,sum=%lf,ready_lsum[%d]=%f\n", mype, bid, tid,
+                                        //       lib, k, ii, tmp_sum,
                                         //       maxrecvsz * lib * 2 + ii * maxrecvsz + i + j * knsupc,
                                         //       ready_lsum[maxrecvsz * lib * 2 + ii * maxrecvsz + i + j * knsupc]);
                                     }
 
                                     // atomic return old val
                                     fmod_tmp = atomicSub(&fmod[lib * aln_i], 1);
-                                    //printf("sum2-(%d,%d,%d),lib=%d,k=%d,sum=%f,fmod_tmp=%d\n", mype, bid, tid, lib, k,
-                                    //       tmp_sum,fmod_tmp);
+                                    //printf("sum2-(%d,%d,%d),lib=%d,k=%d,sum=%f,fmod_tmp=%d, tmp_sum=%lf\n", mype, bid, tid, lib, k,
+                                    //       tmp_sum,fmod_tmp, tmp_sum);
+                                    //printf("sum2-(%d,%d,%d),lib=%d,k=%d,fmod_tmp=%d\n", mype, bid, tid, lib, k,fmod_tmp);
                                 }
                             }
                         }
                         if (cnt == 1) {
                             if (flag_rd_q[lib * 2 + 1] == 1) ii = 1;
+                            //tmp_sum = 0;
                             RHS_ITERATE(j) {
                                 for (int aab = 0; aab < knsupc; ++aab) {
                                     //temp=atomicAdd(&lsum[il+i + j*knsupc], ready_lsum[maxrecvsz*lib*2+ii*maxrecvsz + i + j*knsupc]  );
                                     temp = atomicAdd(&lsum[il + aab + j * knsupc],
                                                      ready_lsum[maxrecvsz * lib * 2 + ii * maxrecvsz + aab + j * knsupc]);
-                                    tmp_sum += ready_lsum[maxrecvsz * lib * 2 + ii * maxrecvsz + aab + j * knsupc];
-                                    //printf("data1-(%d,%d,%d),lib=%d,k=%d,ii=%d,ready_lsum[%d]=%f\n", mype, bid, tid, lib, k, ii,
-                                    //       maxrecvsz * lib * 2 + ii * maxrecvsz + i + j * knsupc,
-                                    //       ready_lsum[maxrecvsz * lib * 2 + ii * maxrecvsz + i + j * knsupc]);
+                                    //tmp_sum += ready_lsum[maxrecvsz * lib * 2 + ii * maxrecvsz + aab + j * knsupc];
+                                    //printf("data1-(%d,%d,%d),lib=%d,k=%d,ii=%d,sum=%lf,ready_lsum[%d]=%lf\n", mype, bid, tid, lib, k, ii,
+                                    //       tmp_sum,maxrecvsz * lib * 2 + ii * maxrecvsz + aab + j * knsupc,
+                                    //       ready_lsum[maxrecvsz * lib * 2 + ii * maxrecvsz + aab + j * knsupc]);
                                 }
 
                             }
                             // atomic return old val
                             fmod_tmp = atomicSub(&fmod[lib * aln_i], 1);
+                            //printf("sum1-(%d,%d,%d),lib=%d,k=%d,fmod_tmp=%d\n", mype, bid, tid, lib, k,fmod_tmp);
                             //printf("sum1-(%d,%d,%d),lib=%d,k=%d,sum=%f,fmod_tmp=%d\n", mype, bid, tid, lib, k, tmp_sum,fmod_tmp);
                         }
 
@@ -731,9 +779,11 @@ int_t  nsupers
                                 //cnt=LRtree_ptr[lib].msgSize_;
                                 my_flag_rd[k * RDMA_FLAG_SIZE] = lib;
                                 my_flag_rd[k * RDMA_FLAG_SIZE + 1] = LRtree_ptr[lib].msgSize_;
+                                double tmp_sum=0;
                                 RHS_ITERATE(j) {
                                     for (int aab = 0; aab < knsupc; aab++) {
                                         ready_lsum[lib * maxrecvsz * 2 + aab + j * knsupc] = lsum[il + aab + j * knsupc];
+                                        //tmp_sum += ready_lsum[lib * maxrecvsz * 2 + aab + j * knsupc];
                                         //printf("data3-(%d,%d,%d),lib=%d,k=%d,i=%d,ready_lsum[%d]=%f\n", mype, bid, tid, lib, k, i,
                                         //       k * maxrecvsz * 2 + i +j * knsupc,
                                         //       ready_lsum[k * maxrecvsz * 2 + i +j * knsupc]);
@@ -742,9 +792,13 @@ int_t  nsupers
                                 }
                                 //printf("(%d,%d,%d),in wait lib=%d,k=%d,myflagrd=%d,%d\n", mype, bid, tid, lib, k,
                                 //       my_flag_rd[k * RDMA_FLAG_SIZE], my_flag_rd[k * RDMA_FLAG_SIZE + 1]);
-                                C_RdTree_forwardMessageSimple_Device(&LRtree_ptr[lib], (int *) flag_rd_q,
-                                                                     &my_flag_rd[RDMA_FLAG_SIZE * k], mype, bid, tid,
-                                                                     &ready_lsum[0], maxrecvsz);
+                                int temp_mysendcout=atomicAdd(&d_flag_mod[0], 1);
+                                int temp_flag_mod=atomicExch(&d_flag_mod[temp_mysendcout+1],lib);
+                                //printf("iam=%d in wait,lib=%d,%d,%d, pos=%d, temp %d,%d\n",mype,lib,k, d_flag_mod[temp_mysendcout+1], temp_mysendcout+1, temp_mysendcout,temp_flag_mod);
+                                //printf("iam=%d in wait,lib=%d,%d,%d, pos=%d, temp %d,%d, sum=%lf\n",mype,lib,k, d_flag_mod[temp_mysendcout+1], temp_mysendcout+1, temp_mysendcout,temp_flag_mod, tmp_sum);
+                                //C_RdTree_forwardMessageSimple_Device(&LRtree_ptr[lib], (int *) flag_rd_q,
+                                //                                     &my_flag_rd[RDMA_FLAG_SIZE * k], mype, bid, tid,
+                                //                                     &ready_lsum[0], maxrecvsz);
                             }
                         }
                     }
@@ -752,10 +806,19 @@ int_t  nsupers
             }
         } else {
             int delta = d_nfrecvmod[1] % WAIT_NUM_THREADS;
+            //int mynum = d_nfrecvmod[1] / WAIT_NUM_THREADS;
+            //int mystart = tid*(mynum+1);
+            //if (tid < delta) {
+            //    mynum = mynum + 1;
+            //    //d_mynummod[tid] = d_nfrecvmod[1] / WAIT_NUM_THREADS+1;
+            //}else{
+            //    mystart = (delta*(mynum+1))+(tid-delta)*mynum;
+            //}
+            //int mymasklength=(d_colnummod[mystart + mynum - 1] - d_colnummod[mystart]+1)*2;
 
-            if (tid < delta) {
-                d_mynummod[tid] = d_nfrecvmod[1] / WAIT_NUM_THREADS+1;
-            } else {
+            if (tid < delta){
+                d_mynummod[tid] = d_nfrecvmod[1] / WAIT_NUM_THREADS + 1;
+            }else {
                 d_mynummod[tid] = d_nfrecvmod[1] / WAIT_NUM_THREADS;
             }
             __syncthreads();
@@ -764,7 +827,7 @@ int_t  nsupers
             d_mymasklengthmod[tid] = 0;
             d_msgnum[tid] = 0;
 
-            //d_mymaskstartmod: start offset of d_colnummod
+            ////d_mymaskstartmod: start offset of d_colnummod
             for (int i = 0; i < tid; i++) {
                 d_mymaskstartmod[tid] += d_mynummod[i];
                 //printf("(%d,%d,%d),i=%d,d_mynummod=%d,d_mymaskstartmod=%d\n",
@@ -779,10 +842,12 @@ int_t  nsupers
             }
             d_mymasklengthmod[tid] = (d_colnummod[d_mymaskstartmod[tid] + d_mynummod[tid] - 1]
                                       - d_colnummod[d_mymaskstartmod[tid]]+1)*2;
+
             //printf("(%d,%d,%d) waitcol=%d,msgnum=%d,masklength=%d,start=%d\n",mype,bid,tid,
             //                   d_mynummod[tid],d_msgnum[tid],
             //                   d_mymasklengthmod[tid],d_mymaskstartmod[tid]);
 
+            //printf("(%d,%d), mynum=%d,%d,mystart=%d,%d, mylength=%d,%d\n",mype,tid,d_mynummod[tid], mynum,d_mymaskstartmod[tid], mystart, d_mymasklengthmod[tid],mymasklength);
             for (int i = 0; i < d_msgnum[tid]; i++) {
                 //printf("(%d,%d,%d)--before wait any,i=%d/%d\n",mype,bid,tid,i,d_msgnum[tid]);
                 int wm_val = nvshmem_int_wait_until_any(&flag_rd_q[d_colnummod[d_mymaskstartmod[tid]] * 2],
@@ -791,8 +856,8 @@ int_t  nsupers
                                                         NVSHMEM_CMP_EQ, 1);
                 d_statusmod[d_colnummod[d_mymaskstartmod[tid]]*2 + wm_val] = 1;
                 lib = (d_colnummod[d_mymaskstartmod[tid]]*2 + wm_val) / 2;
-                //printf("(%d,%d,%d)--recv a msg, offset=%d,base=%d, lib=%d, flag=%d,status=%d\n",mype,bid,tid,wm_val,d_colnummod[d_mymaskstartmod[tid]]*2,
-                //                  lib,flag_rd_q[d_colnummod[d_mymaskstartmod[tid]] * 2+wm_val],d_statusmod[d_colnummod[d_mymaskstartmod[tid]]*2 + wm_val]);
+                //printf("recv,%d,%d,%d,%d,%d\n",
+                //       mype,tid,d_colnummod[d_mymaskstartmod[tid]]*2,wm_val,lib);
                 iam = grid->iam;
                 mycol = MYCOL(iam, grid);
                 myrow = MYROW(iam, grid);
@@ -805,18 +870,18 @@ int_t  nsupers
                 //       wm_val,cnt,d_recv_cnt[lib],d_statusmod[lib * 2] + d_statusmod[lib * 2 + 1]);
 
                 if (d_statusmod[lib * 2] + d_statusmod[lib * 2 + 1] == cnt) {
-                    double tmp_sum = 0;
+                    //double tmp_sum = 0;
                     int ii = 0;
                     if (cnt == 2) {
                         for (ii = 0; ii < cnt; ++ii) {
-                            tmp_sum = 0;
+                            //tmp_sum = 0;
                             RHS_ITERATE(j) {
                                 for (int aab = 0; aab < knsupc; aab++) {
                                     //temp=atomicAdd(&lsum[il+i + j*knsupc], ready_lsum[maxrecvsz*lib*2+ii*maxrecvsz + i + j*knsupc]  );
                                     temp = atomicAdd(&lsum[il + aab + j * knsupc],
                                                      ready_lsum[maxrecvsz * lib * 2 + ii * maxrecvsz + aab +
                                                                 j * knsupc]);
-                                    tmp_sum += ready_lsum[maxrecvsz * lib * 2 + ii * maxrecvsz + aab + j * knsupc];
+                                    //tmp_sum += ready_lsum[maxrecvsz * lib * 2 + ii * maxrecvsz + aab + j * knsupc];
                                     //printf("data2-(%d,%d,%d),lib=%d,k=%d,ii=%d,ready_lsum[%d]=%f\n", mype, bid, tid,
                                     //       lib, k, ii,
                                     //       maxrecvsz * lib * 2 + ii * maxrecvsz + i + j * knsupc,
@@ -835,7 +900,7 @@ int_t  nsupers
                             for (int aab = 0; aab < knsupc; ++aab) {
                                 temp = atomicAdd(&lsum[il + aab + j * knsupc],
                                                  ready_lsum[maxrecvsz * lib * 2 + ii * maxrecvsz + aab + j * knsupc]);
-                                tmp_sum += ready_lsum[maxrecvsz * lib * 2 + ii * maxrecvsz + aab + j * knsupc];
+                                //tmp_sum += ready_lsum[maxrecvsz * lib * 2 + ii * maxrecvsz + aab + j * knsupc];
                                 //printf("data1-(%d,%d,%d),lib=%d,k=%d,ii=%d,ready_lsum[%d]=%f\n", mype, bid, tid, lib, k, ii,
                                 //       maxrecvsz * lib * 2 + ii * maxrecvsz + i + j * knsupc,
                                 //       ready_lsum[maxrecvsz * lib * 2 + ii * maxrecvsz + i + j * knsupc]);
@@ -850,7 +915,6 @@ int_t  nsupers
                     if (fmod_tmp == 1) {// forward RD
                         //printf("sum1-(%d,%d,%d),lib=%d, myRoot=%d\n", mype, bid, tid, lib,LRtree_ptr[lib].myRoot_);
                         if (LRtree_ptr[lib].myRoot_ != LRtree_ptr[lib].myRank_) {
-                            //cnt=LRtree_ptr[lib].msgSize_;
                             my_flag_rd[k * RDMA_FLAG_SIZE] = lib;
                             my_flag_rd[k * RDMA_FLAG_SIZE + 1] = LRtree_ptr[lib].msgSize_;
                             RHS_ITERATE(j) {
@@ -864,16 +928,122 @@ int_t  nsupers
                             }
                             //printf("(%d,%d,%d),in wait lib=%d,k=%d,myflagrd=%d,%d\n", mype, bid, tid, lib, k,
                             //       my_flag_rd[k * RDMA_FLAG_SIZE], my_flag_rd[k * RDMA_FLAG_SIZE + 1]);
-                            C_RdTree_forwardMessageSimple_Device(&LRtree_ptr[lib], (int *) flag_rd_q,
-                                                                 &my_flag_rd[RDMA_FLAG_SIZE * k], mype, bid, tid,
-                                                                 &ready_lsum[0], maxrecvsz);
+                            int temp_mysendcout=atomicAdd(&d_flag_mod[0], 1);
+                            int temp_flag_mod=atomicExch(&d_flag_mod[temp_mysendcout+1],lib);
+                            //printf("iam=%d in wait2,lib=%d,%d,%d, pos=%d, temp %d,%d\n",mype,lib,k, d_flag_mod[temp_mysendcout+1], temp_mysendcout+1, temp_mysendcout,temp_flag_mod);
+                            //C_RdTree_forwardMessageSimple_Device(&LRtree_ptr[lib], (int *) flag_rd_q,
+                            //                                     &my_flag_rd[RDMA_FLAG_SIZE * k], mype, bid, tid,
+                            //                                     &ready_lsum[0], maxrecvsz);
                         }
                     }
                 }
             }//for
         } // else WAIT_NUM_THREAD<recv
     }
-#endif
+
+    if (bid==2){
+        int tot_threads=blockDim.x * blockDim.y;
+        //if (tid==0){
+        //    printf("iam=%d, len=%d, tot_threads=%d\n",mype,d_nfrecvmod[3],tot_threads);
+        //}
+
+        //if (d_nfrecvmod[3]==0) return;
+        int lk=-1,k=-1,iam=-1,myroot=-1,myrank=-1;
+        int mycol,myrow,lib;
+        __shared__ int recv_num, finish_num;
+        __shared__ int cur_send_num;
+        recv_num = finish_num = 0;
+
+        for (int i=1; i<d_nfrecvmod[3]+1;i=i+cur_send_num){
+
+            if (tid==0){
+                int tmp, tmp1;
+                //printf("iam=%d,i=%d, count=%d\n",mype,i,d_flag_mod[0]);
+                do {
+                    tmp = d_flag_mod[0];
+                    //tmp1 == d_flag_mod[tmp];
+                    __threadfence();
+                    //msg_recv=d_status[gc];
+                    //msg_recv=flag_bc_q[gc];
+                } while (tmp == finish_num);
+
+                recv_num=tmp;
+            }
+            __syncthreads();
+            cur_send_num=recv_num-finish_num;
+            finish_num=recv_num;
+            //if (cur_send_num==1) {
+            //    lk=d_flag_mod[i];
+            //    iam = grid->iam;
+            //    mycol = MYCOL(iam, grid);
+            //    myrow = MYROW(iam, grid);
+            //    k = myrow + lk * grid->nprow; // global block row
+            //    myroot=LRtree_ptr[lk].myRoot_;
+            //    myrank=LRtree_ptr[lk].myRank_;
+            //    //if (tid==0) printf("B,(%d,%d) loop=%d, recv_num=%d,cur_send_num=%d, k=%d, to %d\n",mype,tid,i, recv_num,cur_send_num,lk, myroot);
+            //    //__syncthreads();
+            //    C_RdTree_forwardMessageBlock_Device(&LRtree_ptr[lk], (int*)flag_rd_q, &my_flag_rd[RDMA_FLAG_SIZE*k], mype, bid, tid, &ready_lsum[0],maxrecvsz,myroot);
+            //    //__syncthreads();
+            //    //if (tid==0) printf("B Done,(%d,%d) loop=%d, recv_num=%d,cur_send_num=%d\n",mype,tid,i, recv_num,cur_send_num);
+            //}else if ((cur_send_num <= tot_threads/32) && (cur_send_num >1)){
+            if ((cur_send_num <= tot_threads/32)){
+                if (tid/32 < cur_send_num){
+                    lk=d_flag_mod[i+tid/32];
+                    //if (tid%32==0) printf("-- Warp, (%d,%d) i=%d, recv_num=%d,cur_send_num=%d, lk=%d, size=%d\n",mype,tid,i, recv_num,cur_send_num,lk,my_flag_rd[RDMA_FLAG_SIZE*k+1]);
+                    iam = grid->iam;
+                    mycol = MYCOL(iam, grid);
+                    myrow = MYROW(iam, grid);
+                    k = myrow + lk * grid->nprow; // global block row
+                    myroot=LRtree_ptr[lk].myRoot_;
+                    myrank=LRtree_ptr[lk].myRank_;
+                    //if (tid%32==0) printf("W, (%d,%d) loop=%d, recv_num=%d,cur_send_num=%d, k=%d, to %d\n",mype,tid,i, recv_num,cur_send_num, lk, myroot);
+                    C_RdTree_forwardMessageWarp_Device(&LRtree_ptr[lk], (int*)flag_rd_q, &my_flag_rd[RDMA_FLAG_SIZE*k], mype, bid, tid, &ready_lsum[0],maxrecvsz,myroot);
+                    //if (tid%32==0) printf("W Done, (%d,%d) loop=%d, recv_num=%d,cur_send_num=%d, lk=%d\n",mype,tid,i, recv_num,cur_send_num,lk);
+                }
+            }else if ((cur_send_num > tot_threads/32) && (cur_send_num <= tot_threads)){
+                __syncthreads();
+                if (tid < cur_send_num){
+                    lk=d_flag_mod[i+tid];
+                    iam = grid->iam;
+                    mycol = MYCOL(iam, grid);
+                    myrow = MYROW(iam, grid);
+                    k = myrow + lk * grid->nprow; // global block row
+                    myroot=LRtree_ptr[lk].myRoot_;
+                    myrank=LRtree_ptr[lk].myRank_;
+                    //printf("-- Thread, (%d,%d) i=%d, recv_num=%d,cur_send_num=%d, lk=%d, size=%d\n",mype,tid,i, recv_num,cur_send_num,lk,my_flag_rd[RDMA_FLAG_SIZE*k+1]);
+                    C_RdTree_forwardMessageThread_Device(&LRtree_ptr[lk], (int*)flag_rd_q, &my_flag_rd[RDMA_FLAG_SIZE*k], mype, bid, tid, &ready_lsum[0],maxrecvsz,myroot);
+                    //printf("T Done,(%d,%d) recv_num=%d,cur_send_num=%d\n",mype,tid, recv_num,cur_send_num);
+                }
+            }else if (cur_send_num > tot_threads){
+                int delta=cur_send_num%tot_threads;
+                int mynum=cur_send_num/tot_threads;
+                int myoffset=0;
+                if (tid < delta){
+                    myoffset=tid*(mynum+1);
+                }else{
+                    myoffset=(delta*(mynum+1))+(tid-delta)*mynum;
+                }
+
+                for(int j=0;j<mynum;j++){
+                    lk=d_flag_mod[i+myoffset+j];
+                    iam = grid->iam;
+                    mycol = MYCOL(iam, grid);
+                    myrow = MYROW(iam, grid);
+                    k = myrow + lk * grid->nprow; // global block row
+                    myroot=LRtree_ptr[lk].myRoot_;
+                    myrank=LRtree_ptr[lk].myRank_;
+                    //printf("-- Threadloop, (%d,%d) i=%d, recv_num=%d,cur_send_num=%d, lk=%d, size=%d\n",mype,tid,i, recv_num,cur_send_num,lk,my_flag_rd[RDMA_FLAG_SIZE*k+1]);
+                    C_RdTree_forwardMessageThread_Device(&LRtree_ptr[lk], (int*)flag_rd_q, &my_flag_rd[RDMA_FLAG_SIZE*k], mype, bid, tid, &ready_lsum[0],maxrecvsz,myroot);
+                    //printf("Ts Done,(%d,%d) loop=%d (%d,%d) recv_num=%d,cur_send_num=%d, k=%d, to %d\n",mype, tid,i, j, mynum,recv_num,cur_send_num,lk,myroot);
+                }
+            }
+
+            __syncthreads();
+
+            //if (tid==0) printf("iam=%d,tid=%d,i=%d, recv_num=%d,cur_send_num=%d\n",mype,tid,i,recv_num,cur_send_num);
+        }
+    }
+
 }
 
 
@@ -1201,12 +1371,13 @@ __global__ void dlsum_fmod_inv_gpu_mrhs_nvshmem
 /************************************************************************/
         (
                 int_t nbcol_loc,
+                int_t nblock_ex,
                 double *lsum,    /* Sum of local modifications.                        */
                 double *x,       /* X array (local)                                    */
                 int   nrhs,      /* Number of right-hand sides.                        */
                 int   maxsup,      /* Max supernode size.                        */
                 int_t   nsupers,      /* Number of total supernodes.                        */
-                int_t *fmod,     /* Modification count for L-solve.                    */
+                int *fmod,     /* Modification count for L-solve.                    */
                 C_Tree  *LBtree_ptr,
                 C_Tree  *LRtree_ptr,
                 int_t *ilsum,
@@ -1228,11 +1399,10 @@ __global__ void dlsum_fmod_inv_gpu_mrhs_nvshmem
                 double* ready_lsum,
                 int* my_flag_bc,
                 int* my_flag_rd,
-                int* d_launch_flag,
                 int* d_nfrecv,
                 volatile int* d_status,
                 volatile int* d_statusmod,
-                int_t nblock_ex
+                int* d_flag_mod
         )
 {
     double alpha = 1.0, beta = 0.0,malpha=-1.0;
@@ -1278,25 +1448,11 @@ __global__ void dlsum_fmod_inv_gpu_mrhs_nvshmem
     int_t ni,mi;
     int cnt;
     yes_no_t test;
-    // rtemp_loc = (double*)malloc(maxsup*nrhs*Nbk*sizeof(double));
-    //int delta=(nblock_ex < nbcol_loc ? nblock_ex : nbcol_loc);
-    //int_t bid1;
-    //bool flag=false;
-    //if (bid<(delta*2)){
-    //    bid1=bid/2;
-    //    flag= bid%2==0 ? 1:0;
-    //}else{
-    //    bid1=bid-delta;
-    //    flag= delta==nblock_ex ? 1:0;
-    //}
-    //if(tid==0) printf("(%d) iam bid=%d,bid1=%d,flag=%d\n",mype,bid,bid1,flag);
-    //if(tid==0) printf("(%d) iam bid=%d,enter solve 0\n",mype,bid);
 
-    //if(bid<nbcol_loc){
     if (Lrowind_bc_offset[bid] == -1) {
-       return;
+        return;
     }
-    //if(tid==0) printf("(%d) iam bid=%d,enter solve--1\n",mype,bid);
+
     int get_offset, get_msgsize, get_rank, gc, gr, tmp_id, recv_offset = 0;
 
     lk = bid;
@@ -1331,8 +1487,6 @@ __global__ void dlsum_fmod_inv_gpu_mrhs_nvshmem
         m = nsupr;
     }
 
-
-    // printf("  Before kernel:   %i %i %i %i %i %i %i %i\n", threadIdx_x, blockIdx_x, grid->npcol, nsupers,myrow,krow,bid,tid);
     if (myrow == krow) {   /* diagonal block performs trsm and forward the message*/
 
         if (tid == 0) {  /*only the first thread in a block handles the lock */
@@ -1351,22 +1505,27 @@ __global__ void dlsum_fmod_inv_gpu_mrhs_nvshmem
         __syncthreads();
         //if(tid==0) printf("(%d) iam bid=%d,enter solve--2, unlock,gc=%d\n",mype,bid,gc);
 
+
         lib = LBi(k, grid); /* Local block number, row-wise. */
         il = LSUM_BLK(lib);
         ii = X_BLK(lib);
 
-        RHS_ITERATE(j)for (i = tid; i < knsupc; i += block_size) {
+        RHS_ITERATE(j)
+            for (i = tid; i < knsupc; i += block_size) {
                 //atomicAdd(&ready_x[0],lsum[i + il + j * knsupc]);
                 x[i + ii + j * knsupc] += lsum[i + il + j * knsupc];
             }
         __syncthreads();
         //if(tid==0) printf("(%d,%d,%d),CHECKING k=%d,gc=%d,checksum=%lf\n",mype,bid,tid,k,gc,ready_x[0]);
+        //if(tid==0) printf("(%d) iam bid=%d,enter solve--3,gc=%d\n",mype,bid,gc);
 
         //  if(Llu->inv == 1){
 
         Linv = &Linv_bc_dat[Linv_bc_offset[lk]];
+        if(tid==0) printf("(%d) iam bid=%d,enter solve--4,gc=%d\n",mype,bid,gc);
 
         if (nrhs == 1) {
+            if(tid==0) printf("(%d) iam bid=%d,enter solve--5,gc=%d\n",mype,bid,gc);
 
             for (i = tid; i < knsupc; i += block_size) {
                 temp1 = zero;
@@ -1376,74 +1535,55 @@ __global__ void dlsum_fmod_inv_gpu_mrhs_nvshmem
                 lsum[il + i] = temp1; //reuse lsum as temporary output as it's no longer accessed
             }
             __syncthreads();
+            if(tid==0) printf("(%d) iam bid=%d,enter solve--6,gc=%d\n",mype,bid,gc);
 
             for (i = tid; i < knsupc; i += block_size) {
                 x[i + ii] = lsum[il + i];
-                // printf("lk %5d %lf\n",lk,x[i + ii + j*knsupc]);
+                //printf("lk %5d %lf\n",lk,x[i + ii + j*knsupc]);
+            }
+            __syncthreads();
+            if(tid==0) printf("(%d) iam bid=%d,enter solve--7,gc=%d\n",mype,bid,gc);
+        } else {
+            __syncthreads();
+            for (int_t blx = 0; blx * BLK_M < knsupc; blx++) {
+                for (int_t bly = 0; bly * BLK_N < nrhs; bly++) {
+                    gemm_device_dlsum_fmod(knsupc, nrhs, knsupc, blx, bly,
+                                           Linv, knsupc, &x[ii], knsupc, rC,
+                                           alpha, beta);
+#pragma unroll
+                    for (ni = 0; ni < THR_N; ni++) {
+                        int_t coord_dCn = bly * BLK_N + ni * DIM_Y + idy;
+#pragma unroll
+                        for (mi = 0; mi < THR_M; mi++) {
+                            int_t coord_dCm = blx * BLK_M + mi * DIM_X + idx;
+                            if (coord_dCm < knsupc && coord_dCn < nrhs) {
+                                double &regC = rC[ni][mi];
+                                lsum[coord_dCm + il + coord_dCn *
+                                                      knsupc] = regC;  //reuse lsum as temporary output as it's no longer accessed
+                            }//if (coord_dCm < knsupc && coord_dCn < nrhs)
+                        }
+                    }
+                }
             }
             __syncthreads();
 
-           // RHS_ITERATE(j){
-
-           // for (i = tid; i < knsupc; i+=block_size)
-           // rtemp_loc[i]=zero;
-           // __syncthreads();
-
-
-           // gemv_device_dlsum_fmod(
-           // knsupc, knsupc, alpha,
-           // Linv, knsupc,
-           // &x[ii+j*knsupc], 1, beta,
-           // rtemp_loc, 1);
-
-           // __syncthreads();
-           // // printf("tid %5d knsupc %5d block_size %5d\n",tid,knsupc,block_size);
-           // for (i = tid; i < knsupc; i+=block_size){
-           // x[i + ii + j*knsupc] = rtemp_loc[i];
-           // // printf("lk %5d %lf\n",lk,x[i + ii + j*knsupc]);
-           // }
-           // }
-           // __syncthreads();
-
-        } else {
-           __syncthreads();
-           for (int_t blx = 0; blx * BLK_M < knsupc; blx++) {
-               for (int_t bly = 0; bly * BLK_N < nrhs; bly++) {
-                   gemm_device_dlsum_fmod(knsupc, nrhs, knsupc, blx, bly,
-                                          Linv, knsupc, &x[ii], knsupc, rC,
-                                          alpha, beta);
-#pragma unroll
-                   for (ni = 0; ni < THR_N; ni++) {
-                       int_t coord_dCn = bly * BLK_N + ni * DIM_Y + idy;
-#pragma unroll
-                       for (mi = 0; mi < THR_M; mi++) {
-                           int_t coord_dCm = blx * BLK_M + mi * DIM_X + idx;
-                           if (coord_dCm < knsupc && coord_dCn < nrhs) {
-                               double &regC = rC[ni][mi];
-                               lsum[coord_dCm + il + coord_dCn *
-                                                     knsupc] = regC;  //reuse lsum as temporary output as it's no longer accessed
-                           }//if (coord_dCm < knsupc && coord_dCn < nrhs)
-                       }
-                   }
-               }
-           }
-           __syncthreads();
-
-           RHS_ITERATE(j)for (i = tid; i < knsupc; i += block_size)
-                   x[i + ii + j * knsupc] = lsum[i + il + j * knsupc];
-           __syncthreads();
+            RHS_ITERATE(j)for (i = tid; i < knsupc; i += block_size)
+                    x[i + ii + j * knsupc] = lsum[i + il + j * knsupc];
+            __syncthreads();
         }//if(nrhs==1)
 
+        if(tid==0) printf("(%d) iam bid=%d,enter solve--8,gc=%d\n",mype,bid,gc);
         RHS_ITERATE(j)for (i = tid; i < knsupc; i += block_size)
                 ready_x[i + maxrecvsz * lk + j * knsupc] = x[i + ii + j * knsupc];
 
         __syncthreads();
+        if(tid==0) printf("(%d) iam bid=%d,enter solve--9,gc=%d\n",mype,bid,gc);
     } else {   /* off-diagonal block forward the message*/
-            /* waiting for the x subvector and forward*/
-            //YL: only the first thread in a block spin-waits for the coming x subvector message using NVSHMEM, put the message into ready_x[maxrecvsz*lk]
+        /* waiting for the x subvector and forward*/
+        //YL: only the first thread in a block spin-waits for the coming x subvector message using NVSHMEM, put the message into ready_x[maxrecvsz*lk]
         volatile int msg_recv = 0;
         if (tid == 0) {
-            //printf("in solve WAIT1 (%d,%d) wait for col %d,flag=%d\n", mype, bid, gc,flag_bc_q[gc]);
+            printf("in solve WAIT1 (%d,%d) wait for col %d,flag=%d\n", mype, bid, gc,flag_bc_q[gc]);
             //nvshmem_int_wait_until((int *) flag_bc_q + gc, NVSHMEM_CMP_EQ, 1);
             do {
                 msg_recv = flag_bc_q[lk];
@@ -1451,7 +1591,7 @@ __global__ void dlsum_fmod_inv_gpu_mrhs_nvshmem
                 //msg_recv=flag_bc_q[gc];
                 __threadfence();
             } while (msg_recv != 1);
-            //printf("(%d,%d,%d,%d) in compute kernel, I have msg=%d,sz=%d.ofset=%d\n",mype,bid,tid,gc,msg_recv,LBtree_ptr[lk].msgSize_*nrhs+XK_H,maxrecvsz*lk);
+            //printf("(%d,%d,%d,%d) in compute kernel, I have msg=%d,sz=%d,ofset=%d\n",mype,bid,tid,gc,msg_recv,LBtree_ptr[lk].msgSize_*nrhs+XK_H,maxrecvsz*lk);
             //double sum=0;
             //for (int myi=0;myi<LBtree_ptr[lk].msgSize_*nrhs+XK_H;myi++){
             //    sum+=ready_x[maxrecvsz*lk+myi];
@@ -1459,10 +1599,6 @@ __global__ void dlsum_fmod_inv_gpu_mrhs_nvshmem
             //printf("(%d,%d,%d), gc=%d,lk=%d, sum=%lf\n",mype,bid,tid,gc,lk,sum);
         }
         __syncthreads();
-        //for(int i=0;i<LBtree_ptr[lk].msgSize_*nrhs+XK_H;i++){
-        //    ready_x[maxrecvsz*lk+i]=ready_x[maxrecvsz*gc+i];
-        //}
-        //__syncthreads();
     }
     __syncthreads();
 
@@ -1471,17 +1607,15 @@ __global__ void dlsum_fmod_inv_gpu_mrhs_nvshmem
     if (cnt > 0) {
         //cnt=LBtree_ptr[lk].msgSize_;
         my_flag_bc[gc * RDMA_FLAG_SIZE] = lk;
-        my_flag_bc[gc * RDMA_FLAG_SIZE + 1] = gc;
-        my_flag_bc[gc * RDMA_FLAG_SIZE + 2] = maxrecvsz * lk;
-        //my_flag_bc[gc*RDMA_FLAG_SIZE+2]=maxrecvsz*lk;
-        my_flag_bc[gc * RDMA_FLAG_SIZE + 3] = LBtree_ptr[lk].msgSize_ * nrhs + XK_H;
+        my_flag_bc[gc * RDMA_FLAG_SIZE + 1] = LBtree_ptr[lk].msgSize_ * nrhs + XK_H;
         C_BcTree_forwardMessageSimple_Device(&LBtree_ptr[lk], (int *) flag_bc_q, &my_flag_bc[gc * RDMA_FLAG_SIZE],
-                                             mype, tid, &ready_x[0]);
+                                             mype, tid, &ready_x[0], maxrecvsz);
         //printf("(%d,%d,%d), lk=%d, gc=%d\n",mype,bid,tid,lk,gc);
         //C_BcTree_forwardMessageSimple_Device(&LBtree_ptr[lk],&ready_x[maxrecvsz*lk],cnt*nrhs+XK_H);
     }
     int keep_lk = lk;
     __syncthreads();
+    if(tid==0) printf("(%d) iam bid=%d,enter solve--keep,gc=%d\n",mype,bid,gc);
 
     if (nlb > 0) {
 
@@ -1521,15 +1655,14 @@ __global__ void dlsum_fmod_inv_gpu_mrhs_nvshmem
                         temp1 += lusup[luptr_tmp1 + l * nsupr + i] * ready_x[l + maxrecvsz * keep_lk + j * knsupc];
                         //temp1+= lusup[luptr_tmp1+l*nsupr+i]*x[ii+j*knsupc+l];
                     }
-
                     temp = atomicAdd(&lsum[il + irow + j * iknsupc], -temp1);
                     //printf("(%d,%d,%d),lsum[%d]=%f\n",mype,bid,tid,il+irow + j*iknsupc,lsum[il+irow + j*iknsupc]);
                 }
 
                 //  irow = lsub[lptr+i-nbrow] - rel; /* Relative row. */
                 //  if(i==nbrow+lsub[lptr1_tmp+1]-1){
-                // 	 fmod_tmp=atomicSub(&fmod[lk*aln_i],1);
-                // 	 // __threadfence();
+                //   fmod_tmp=atomicSub(&fmod[lk*aln_i],1);
+                //   // __threadfence();
                 //  }
 
 
@@ -1574,19 +1707,30 @@ __global__ void dlsum_fmod_inv_gpu_mrhs_nvshmem
                         //senddone[lk]=1;
                         if(LRtree_ptr[lk].myRoot_ != LRtree_ptr[lk].myRank_){
                             //cnt=LRtree_ptr[lib].msgSize_;
+
                             my_flag_rd[ik*RDMA_FLAG_SIZE]=lk;
                             my_flag_rd[ik*RDMA_FLAG_SIZE+1]=LRtree_ptr[lk].msgSize_;
+                            //double tmp_sum=0;
                             RHS_ITERATE(j) {
                                 for (int aab = 0; aab < iknsupc; aab++) {
                                     ready_lsum[lk * maxrecvsz * 2 + aab +j * iknsupc] = lsum[il + aab +j * iknsupc];
-                                    //printf("data3-(%d,%d,%d),lib=%d,k=%d,i=%d,ready_lsum[%d]=%f\n", mype, bid, tid, lib, k, i,
-                                    //       k * maxrecvsz * 2 + i +j * knsupc,
-                                    //       ready_lsum[k * maxrecvsz * 2 + i +j * knsupc]);
+                                    //tmp_sum += ready_lsum[lk * maxrecvsz * 2 + aab +j * iknsupc];
+                                    //printf("data3-(%d,%d,%d),lib=%d,k=%d,%d,i=%d,sum=%lf,ready_lsum[%d]=%lf, size=%d\n", mype, bid, tid, lk, gr,ik, i, tmp_sum,
+                                    //       lk * maxrecvsz * 2 + aab +j * iknsupc,
+                                    //       ready_lsum[lk * maxrecvsz * 2 + aab +j * iknsupc],my_flag_rd[ik*RDMA_FLAG_SIZE+1]);
 
                                 }
                             }
+                            int temp_mysendcout=atomicAdd(&d_flag_mod[0], 1);
+                            int temp_flag_mod=atomicExch(&d_flag_mod[temp_mysendcout+1],lk);
+                            //printf("iam=%d in solve,lib=%d,%d,%d, "
+                            //       "pos=%d, temp %d,%d, "
+                            //       "maxrecvsz=%d\n",mype,lk,k, d_flag_mod[temp_mysendcout+1],
+                            //       temp_mysendcout+1,
+                            //       temp_mysendcout,temp_flag_mod,
+                            //       maxrecvsz);
                             //printf("(%d,%d,%d) in solve,lib=%d,gr=%d,ik=%d,myflagrd=%d,%d\n",mype,bid,tid,lk,gr,ik,my_flag_rd[ik*RDMA_FLAG_SIZE],my_flag_rd[ik*RDMA_FLAG_SIZE+1]);
-                            C_RdTree_forwardMessageSimple_Device(&LRtree_ptr[lk], (int*)flag_rd_q, &my_flag_rd[RDMA_FLAG_SIZE*ik], mype, bid, tid, &ready_lsum[0],maxrecvsz);
+                            //C_RdTree_forwardMessageSimple_Device(&LRtree_ptr[lk], (int*)flag_rd_q, &my_flag_rd[RDMA_FLAG_SIZE*ik], mype, bid, tid, &ready_lsum[0],maxrecvsz);
                         }
                     }
                 }
@@ -1615,82 +1759,408 @@ __global__ void dlsum_fmod_inv_gpu_mrhs_nvshmem
 
                 iknsupc = SuperSize(ik);
                 il = LSUM_BLK(lk);
-
-
-                // if(nrhs==1){
-
-                // for (i = tid; i < nbrow1; i+=block_size)
-                // rtemp_loc[i]=zero;
-                // __syncthreads();
-
-
-                // gemv_device_dlsum_fmod(
-                // nbrow1, knsupc, alpha,
-                // &lusup[luptr_tmp1], nsupr,
-                // &x[ii], 1, beta,
-                // rtemp_loc, 1);
-
-                // __syncthreads();
-                // for (i = tid; i < nbrow1; i+=block_size){
-                // irow = lsub[lptr+i] - rel; /* Relative row. */
-                // temp=atomicAdd(&lsum[il+irow],-rtemp_loc[i]);
-                // }
-                // }else{
-
                 for (int_t blx = 0; blx * BLK_M < nbrow1; blx++) {
                     for (int_t bly = 0; bly * BLK_N < nrhs; bly++) {
                         gemm_device_dlsum_fmod(nbrow1, nrhs, knsupc, blx, bly,
                                                &lusup[luptr_tmp1], nsupr, &ready_x[maxrecvsz * keep_lk], knsupc, rC,
                                                alpha, beta);
 #pragma unroll
-                            for (ni = 0; ni < THR_N; ni++) {
-                                int_t coord_dCn = bly * BLK_N + ni * DIM_Y + idy;
+                        for (ni = 0; ni < THR_N; ni++) {
+                            int_t coord_dCn = bly * BLK_N + ni * DIM_Y + idy;
 #pragma unroll
-                                for (mi = 0; mi < THR_M; mi++) {
-                                    int_t coord_dCm = blx * BLK_M + mi * DIM_X + idx;
-                                    if (coord_dCm < nbrow1 && coord_dCn < nrhs) {
-                                        irow = lsub[lptr + coord_dCm] - rel; /* Relative row. */
-                                        double &regC = rC[ni][mi];
-                                        temp = atomicAdd(&lsum[il + irow + coord_dCn * iknsupc], -regC);
-                                    }
+                            for (mi = 0; mi < THR_M; mi++) {
+                                int_t coord_dCm = blx * BLK_M + mi * DIM_X + idx;
+                                if (coord_dCm < nbrow1 && coord_dCn < nrhs) {
+                                    irow = lsub[lptr + coord_dCm] - rel; /* Relative row. */
+                                    double &regC = rC[ni][mi];
+                                    temp = atomicAdd(&lsum[il + irow + coord_dCn * iknsupc], -regC);
                                 }
                             }
                         }
                     }
-                    // }//if(nrhs==1)
-
-                    if (tid == 0)fmod_tmp = atomicSub(&fmod[lk * aln_i], 1);
-
-
                 }
+                if (tid == 0) fmod_tmp = atomicSub(&fmod[lk * aln_i], 1);
 
-            }//if(nrhs==1)
+
+            }
+
+        }//if(nrhs==1)
+    } /* if nlb>0*/
+    if(tid==0) printf("(%d) iam bid=%d,end solve\n",mype,bid);
+
+} /* dlsum_fmod_inv_gpu_mrhs_nvshmem */
+
+ __global__ void dlsum_fmod_inv_gpu_mrhs
+ /************************************************************************/
+ (
+  int_t nbcol_loc,
+  int_t nblock_ex,
+  double *lsum,    /* Sum of local modifications.                        */
+  double *x,       /* X array (local)                                    */
+  int   nrhs,      /* Number of right-hand sides.                        */
+  int   maxsup,      /* Max supernode size.                        */
+  int_t   nsupers,      /* Number of total supernodes.                        */
+  int *fmod,     /* Modification count for L-solve.                    */
+  C_Tree  *LBtree_ptr,
+  C_Tree  *LRtree_ptr,
+  int_t *ilsum,
+  int_t *Lrowind_bc_dat,
+  long int *Lrowind_bc_offset,
+  double *Lnzval_bc_dat,
+  long int *Lnzval_bc_offset,
+  double *Linv_bc_dat,
+  long int *Linv_bc_offset,
+  int_t *Lindval_loc_bc_dat,
+  long int *Lindval_loc_bc_offset,
+  int_t *xsup,
+  gridinfo_t *grid,
+  int_t maxrecvsz
+ )
+ {
+	 double alpha = 1.0, beta = 0.0;
+	 double *lusup;
+	 double *Linv;/* Inverse of diagonal block */
+	 int    iam, iknsupc, myrow, mycol, krow, nbrow, nbrow1, nsupr,m;
+	 int_t  k,i, l,ii,ik, il, irow, j, lb, lk, rel, lib;
+	 int_t  *lsub, *lloc;
+	 int_t  luptr_tmp1,lptr1_tmp, idx_i, idx_v;
+	 int fmod_tmp;
+	//  MPI_Status status;
+	//  const int Nbk=1;
+	//  __shared__ double rtemp_loc[128];
+	 double temp,temp1;
+	 int_t lptr;      /* Starting position in lsub[*].                      */
+	//  int_t iword = sizeof(int_t);
+	//  int_t dword = sizeof (double);
+	 int_t aln_i;
+	//  aln_d = 1;//ceil(CACHELINE/(double)dword);
+	 aln_i = 1;//ceil(CACHELINE/(double)iword);
+	 int   knsupc;    /* Size of supernode k.                               */
+	 int_t nlb;       /* Number of L blocks.                                */
+
+	 int_t bid;
+	 int_t tmp;
+	 int_t tid = threadIdx_x + threadIdx_y * blockDim_x;
+	//  int_t ready = 0;
+	 // int_t lock = 0;
+	 const int block_size = blockDim_x*blockDim_y; /* number of threads per warp*/
+	 double zero = 0.0;
 
 
-            // if(tid==0){
-            // for (lb = tid; lb < nlb; lb+=block_size){
-            // lptr1_tmp = lloc[lb+idx_i];
-            // ik = lsub[lptr1_tmp]; /* Global block number, row-wise. */
-            // lk = LBi( ik, grid ); /* Local block number, row-wise. */
-            // fmod_tmp=atomicSub(&fmod[lk*aln_i],1);
-            // // printf("k: %5d r: %5d\n",mycol+bid*grid->npcol,fmod[2*aln_i]);
-            // }
-            // }
-            //__syncthreads();
-            // } /*if tid<Nchunk*/
-        } /* if nlb>0*/
-} /* dlsum_fmod_inv_gpu_mrhs */
+	 double rC[THR_N][THR_M];
 
-__global__ void test(int nbcol_loc, int nblock_ex,int mype){
-    int_t tid = threadIdx_x + threadIdx_y * blockDim_x;
-    int_t bid= blockIdx_x;
-    if(bid<nbcol_loc){
-        if(tid==0) printf("(%d) iam in test if bid %d\n",mype,bid);
+	 bid= blockIdx_x;
+	 int_t idx = threadIdx_x;  // thread's m dimension
+	 int_t idy = threadIdx_y;  // thread's n dimension
+	 int_t ni,mi;
+	 int cnt;
+	    int gc;
 
-    }else if (bid<nbcol_loc + nblock_ex){
-        if(tid==0) printf("(%d) iam bid %d\n",mype,bid);
-    }
-}
+	 // printf("  Entering kernel:   %i %i %i %i %i %i %i %i\n", threadIdx_x, blockIdx_x, grid->npcol, nsupers,myrow,krow,bid,tid);
+
+
+	 // rtemp_loc = (double*)malloc(maxsup*nrhs*Nbk*sizeof(double));
+
+
+	 // the first nbcol_loc handles all computations and broadcast communication
+
+		 if(Lrowind_bc_offset[bid]==-1){
+		 return;
+		 }
+
+
+		 lk=bid;
+		 iam = grid->iam;
+		 mycol = MYCOL( iam, grid );
+		 myrow = MYROW( iam, grid );
+		 k = mycol+lk*grid->npcol;
+		gc = mycol+lk*grid->npcol;
+		 knsupc = SuperSize( k );
+		 lsub = &Lrowind_bc_dat[Lrowind_bc_offset[lk]];
+		 iam = grid->iam;
+		 krow = PROW( k, grid );
+		 lusup = &Lnzval_bc_dat[Lnzval_bc_offset[lk]];
+		 lloc = &Lindval_loc_bc_dat[Lindval_loc_bc_offset[lk]];
+		 nsupr = lsub[1];
+
+		 if(myrow==krow){
+			 nlb = lsub[0] - 1;
+			//  idx_n = 1;
+			 idx_i = nlb+2;
+			 idx_v = 2*nlb+3;
+			//  luptr_tmp = lloc[idx_v];
+			 m = nsupr-knsupc;
+		 }else{
+			 nlb = lsub[0];
+			//  idx_n = 0;
+			 idx_i = nlb;
+			 idx_v = 2*nlb;
+			//  luptr_tmp = lloc[idx_v];
+			 m = nsupr;
+		 }
+
+		 // printf("  Before kernel:   %i %i %i %i %i %i %i %i\n", threadIdx_x, blockIdx_x, grid->npcol, nsupers,myrow,krow,bid,tid);
+
+		 if(myrow==krow){   /* diagonal block performs trsm and forward the message*/
+
+			 if(tid==0){  /*only the first thread in a block handles the lock */
+
+			 // printf("bk: %5d r: %5d %5d %5d\n",mycol+bid*grid->npcol,fmod[2*aln_i],myrow,krow);
+			 // for (i=0 ; i<maxsup ; i++){
+				 // rtemp_loc[i]=0.0;
+			 // }
+
+				 lib = LBi( k, grid ); /* Local block number, row-wise. */
+				 do{
+					 tmp=fmod[lib*aln_i];
+					 __threadfence();
+				 }while(tmp>0);
+
+			 }
+			 __syncthreads();
+
+
+			lib = LBi( k, grid ); /* Local block number, row-wise. */
+			il = LSUM_BLK( lib );
+			ii = X_BLK( lib );
+
+			RHS_ITERATE(j)
+			    for (i = tid; i < knsupc; i+=block_size)
+			   	 x[i + ii + j*knsupc] += lsum[i + il + j*knsupc ];
+			__syncthreads();
+
+
+			Linv = &Linv_bc_dat[Linv_bc_offset[lk]];
+
+			if(nrhs==1){
+
+			    for (i = tid; i < knsupc; i+=block_size){
+			   	 temp1=zero;
+			   	 for (l=0 ; l<knsupc ; l++){
+			   		 temp1+=  Linv[l*knsupc+i]*x[ii+l];
+			   	 }
+			   	 lsum[il+i]=temp1; //reuse lsum as temporary output as it's no longer accessed
+			    }
+			    __syncthreads();
+
+			    for (i = tid; i < knsupc; i+=block_size){
+			   	 x[i + ii] = lsum[il+i];
+			   	 // printf("lk %5d %lf\n",lk,x[i + ii + j*knsupc]);
+			   	 }
+			    __syncthreads();
+			}else{
+			    __syncthreads();
+			    for (int_t blx = 0; blx*BLK_M < knsupc; blx++){
+			   	 for (int_t bly = 0; bly*BLK_N < nrhs; bly++){
+			   		 gemm_device_dlsum_fmod(knsupc, nrhs, knsupc, blx, bly,
+			   		 Linv, knsupc, &x[ii], knsupc, rC,
+			   		 alpha, beta);
+			   			 #pragma unroll
+			   		 for (ni = 0; ni < THR_N; ni++) {
+			   			 int_t coord_dCn = bly*BLK_N + ni*DIM_Y + idy;
+			   			 #pragma unroll
+			   			 for (mi = 0; mi < THR_M; mi++) {
+			   				 int_t coord_dCm = blx*BLK_M + mi*DIM_X + idx;
+			   				 if (coord_dCm < knsupc && coord_dCn < nrhs) {
+			   					 double &regC = rC[ni][mi];
+			   					 lsum[coord_dCm + il + coord_dCn*knsupc ]=regC;  //reuse lsum as temporary output as it's no longer accessed
+			   				 }//if (coord_dCm < knsupc && coord_dCn < nrhs)
+			   			 }
+			   		 }
+			   	 }
+			    }
+				__syncthreads();
+
+				RHS_ITERATE(j)
+				for (i = tid; i < knsupc; i+=block_size)
+				    x[i + ii + j*knsupc] = lsum[i + il + j*knsupc ];
+				__syncthreads();
+			 }//if(nrhs==1)
+
+				 //RHS_ITERATE(j)
+				 //for (i = tid; i < knsupc; i+=block_size){
+				 //    ready_x[i + maxrecvsz*lk + j*knsupc ] = x[i + ii + j*knsupc];
+                 //}
+
+			 __syncthreads();
+		 }
+
+		 if(nlb>0){
+
+				 lib = LBi( k, grid ); /* Local block number, row-wise. */
+				 ii = X_BLK( lib );
+
+				 if(nrhs==1){
+					 luptr_tmp1 = lloc[idx_v];
+					 lb = 0;
+					 nbrow=0;
+					 lptr1_tmp = lloc[lb+idx_i];
+					 lptr= lptr1_tmp+2;
+					 nbrow1 = lsub[lptr1_tmp+1];
+					 ik = lsub[lptr1_tmp]; /* Global block number, row-wise. */
+					 rel = xsup[ik]; /* Global row index of block ik. */
+					 lk = LBi( ik, grid ); /* Local block number, row-wise. */
+					 iknsupc = SuperSize( ik );
+					 il = LSUM_BLK( lk );
+
+					 for (i = tid; i < m; i+=block_size){
+						 while(nbrow+lsub[lptr1_tmp+1]<=i){
+							 lb++;
+							 nbrow +=lsub[lptr1_tmp+1];
+							 lptr1_tmp = lloc[lb+idx_i];
+							 lptr= lptr1_tmp+2;
+							 ik = lsub[lptr1_tmp]; /* Global block number, row-wise. */
+							 rel = xsup[ik]; /* Global row index of block ik. */
+							 lk = LBi( ik, grid ); /* Local block number, row-wise. */
+							 iknsupc = SuperSize( ik );
+							 il = LSUM_BLK( lk );
+						 }
+
+						 irow = lsub[lptr+i-nbrow] - rel; /* Relative row. */
+						 RHS_ITERATE(j){
+						 temp1=zero;
+						 for (l=0 ; l<knsupc ; l++){
+							 temp1+= lusup[luptr_tmp1+l*nsupr+i]*x[ii+j*knsupc+l];
+						 }
+
+						 temp=atomicAdd(&lsum[il+irow + j*iknsupc],-temp1);
+						 }
+
+						//  irow = lsub[lptr+i-nbrow] - rel; /* Relative row. */
+						//  if(i==nbrow+lsub[lptr1_tmp+1]-1){
+						// 	 fmod_tmp=atomicSub(&fmod[lk*aln_i],1);
+						// 	 // __threadfence();
+						//  }
+
+
+					 }
+					 __syncthreads();
+
+					 luptr_tmp1 = lloc[idx_v];
+					 lb = 0;
+					 nbrow=0;
+					 lptr1_tmp = lloc[lb+idx_i];
+					 lptr= lptr1_tmp+2;
+					 nbrow1 = lsub[lptr1_tmp+1];
+					 ik = lsub[lptr1_tmp]; /* Global block number, row-wise. */
+					 rel = xsup[ik]; /* Global row index of block ik. */
+					 lk = LBi( ik, grid ); /* Local block number, row-wise. */
+					 iknsupc = SuperSize( ik );
+					 il = LSUM_BLK( lk );
+
+					 for (i = tid; i < m; i+=block_size){
+						while(nbrow+lsub[lptr1_tmp+1]<=i){
+							lb++;
+							nbrow +=lsub[lptr1_tmp+1];
+							lptr1_tmp = lloc[lb+idx_i];
+							lptr= lptr1_tmp+2;
+							ik = lsub[lptr1_tmp]; /* Global block number, row-wise. */
+							rel = xsup[ik]; /* Global row index of block ik. */
+							lk = LBi( ik, grid ); /* Local block number, row-wise. */
+							iknsupc = SuperSize( ik );
+							il = LSUM_BLK( lk );
+						}
+
+						irow = lsub[lptr+i-nbrow] - rel; /* Relative row. */
+						if(i==nbrow+lsub[lptr1_tmp+1]-1){
+							fmod_tmp=atomicSub(&fmod[lk*aln_i],1);
+							// __threadfence();
+						}
+					}
+					__syncthreads();
+
+
+				 }else {
+					 for (lb = 0; lb < nlb; lb++){
+						 luptr_tmp1 = lloc[lb+idx_v];
+
+						 // nbrow=0;
+						 // lptr1_tmp = lloc[lb+idx_i];
+						 // nbrow += lsub[lptr1_tmp+1];
+
+
+						 lib = LBi( k, grid ); /* Local block number, row-wise. */
+						 ii = X_BLK( lib );
+
+						 lptr1_tmp = lloc[lb+idx_i];
+						 lptr= lptr1_tmp+2;
+						 nbrow1 = lsub[lptr1_tmp+1];
+						 ik = lsub[lptr1_tmp]; /* Global block number, row-wise. */
+						 rel = xsup[ik]; /* Global row index of block ik. */
+
+						 lk = LBi( ik, grid ); /* Local block number, row-wise. */
+
+						 iknsupc = SuperSize( ik );
+						 il = LSUM_BLK( lk );
+
+
+						 // if(nrhs==1){
+
+							 // for (i = tid; i < nbrow1; i+=block_size)
+								 // rtemp_loc[i]=zero;
+							 // __syncthreads();
+
+
+							 // gemv_device_dlsum_fmod(
+								 // nbrow1, knsupc, alpha,
+								 // &lusup[luptr_tmp1], nsupr,
+								 // &x[ii], 1, beta,
+								 // rtemp_loc, 1);
+
+							 // __syncthreads();
+							 // for (i = tid; i < nbrow1; i+=block_size){
+								 // irow = lsub[lptr+i] - rel; /* Relative row. */
+								 // temp=atomicAdd(&lsum[il+irow],-rtemp_loc[i]);
+								 // }
+						 // }else{
+
+							 for (int_t blx = 0; blx*BLK_M < nbrow1; blx++){
+								 for (int_t bly = 0; bly*BLK_N < nrhs; bly++){
+									 gemm_device_dlsum_fmod(nbrow1, nrhs, knsupc, blx, bly,
+									 &lusup[luptr_tmp1], nsupr, &x[ii], knsupc, rC,
+									 alpha, beta);
+										 #pragma unroll
+									 for (ni = 0; ni < THR_N; ni++) {
+										 int_t coord_dCn = bly*BLK_N + ni*DIM_Y + idy;
+										 #pragma unroll
+										 for (mi = 0; mi < THR_M; mi++) {
+											 int_t coord_dCm = blx*BLK_M + mi*DIM_X + idx;
+											 if (coord_dCm < nbrow1 && coord_dCn < nrhs) {
+												 irow = lsub[lptr+coord_dCm] - rel; /* Relative row. */
+												 double &regC = rC[ni][mi];
+												 temp=atomicAdd(&lsum[il+irow + coord_dCn*iknsupc],-regC);
+											 }
+										 }
+									 }
+								 }
+							 }
+						 // }//if(nrhs==1)
+
+						 if(tid==0)fmod_tmp=atomicSub(&fmod[lk*aln_i],1);
+
+
+
+					 }
+
+				 }//if(nrhs==1)
+
+
+				 // if(tid==0){
+				 // for (lb = tid; lb < nlb; lb+=block_size){
+						 // lptr1_tmp = lloc[lb+idx_i];
+						 // ik = lsub[lptr1_tmp]; /* Global block number, row-wise. */
+						 // lk = LBi( ik, grid ); /* Local block number, row-wise. */
+						 // fmod_tmp=atomicSub(&fmod[lk*aln_i],1);
+						 // // printf("k: %5d r: %5d\n",mycol+bid*grid->npcol,fmod[2*aln_i]);
+				 // }
+				 // }
+				 __syncthreads();
+			 // } /*if tid<Nchunk*/
+		 } /* if nlb>0*/
+
+		 // printf("nimbgood \n");
+ 
+ } /* dlsum_fmod_inv_gpu_mrhs */
 
 void dlsum_fmod_inv_gpu_wrap
         (
@@ -1724,7 +2194,6 @@ void dlsum_fmod_inv_gpu_wrap
                 double* ready_lsum,
                 int* my_flag_bc,
                 int* my_flag_rd,
-                int* d_launch_flag,
                 int* d_nfrecv,
                 int* h_nfrecv,
                 int* d_status,
@@ -1739,31 +2208,21 @@ void dlsum_fmod_inv_gpu_wrap
                 int* d_mymaskstartmod,
                 int* d_mymasklengthmod,
                 int* d_recv_cnt,
-                int* d_msgnum
-                //int* d_rownum,
-                //int* d_rowstart,
-                //int* d_validrows
+                int* d_msgnum,
+                int* d_flag_mod
         ) {
 
     gpuStream_t sid = 0;
     int gid = 0;
     int mycol;
     int_t lk, k, knsupc;
-    //int_t nblock_ex=CEILING( nbrow_loc, nthread_x*nthread_y);
     int_t nblock_ex = CEILING(nbrow_loc, ((nthread_x * nthread_y) / 32)); //32 (warp) * 8 =256
-    //int_t nblock_ex = nbrow_loc; //CEILING(nbrow_loc, ((nthread_x * nthread_y) / 32)); //32 (warp) * 8 =256
-    //int_t nblock_ex = CEILING(nbrow_loc, ((nthread_x * nthread_y) / 64)); //32 (warp) * 8 =256
 
     int mype, npes, ndevices;
     mype = nvshmem_my_pe();
     npes = nvshmem_n_pes();
-    printf("(%d/%d) nbcol_loc %d\n", mype,npes, nbcol_loc);
     int mype_node = nvshmem_team_my_pe(NVSHMEMX_TEAM_NODE);
     CUDA_CHECK(cudaSetDevice(mype_node));
-
-
-    //printf("(%d), L Enter,mynode=%d\n",mype,mype_node);
-    //fflush(stdout);
 
 
     cudaStream_t stream[2];
@@ -1771,62 +2230,64 @@ void dlsum_fmod_inv_gpu_wrap
         //cudaStreamCreate(&stream[i]);
         cudaStreamCreateWithFlags(&stream[i], cudaStreamNonBlocking);
     }
-    
-    dim3 dimGrid_nv(h_nfrecv[2]); //2
-    dim3 dimBlock_nv(h_nfrecv[1]); //1024
+
+    int minGridSize, myblockSize;
+    cudaOccupancyMaxPotentialBlockSize(&minGridSize,&myblockSize,(const void *) wait_bcrd ,0,0 );
+    if (myblockSize < h_nfrecv[1]) {
+        h_nfrecv[1] = myblockSize;
+        gpuMemcpy(d_nfrecv, h_nfrecv, 3 * sizeof(int), gpuMemcpyHostToDevice);
+    }
+    printf("(%d) solve=%d,%d, wait_bcrd=2,%d (%d, %d), send_rd=1,%d\n",
+           mype,nbcol_loc,nthread_x*nthread_y,
+           h_nfrecv[1],minGridSize, myblockSize, h_nfrecv[1]);
+    fflush(stdout);
+
+
+    dim3 dimGrid_bc(1); //3
+    dim3 dimGrid_rd(2); //3
+    dim3 dimBlock_bc(h_nfrecv[1]); //256 by default
     dim3 dimGrid(nbcol_loc);
     dim3 dimBlock(nthread_x, nthread_y);
-    int launch_success = 0;
-    int minGridSize;
-    int myblockSize;
-    if (npes>1) {
-        cudaOccupancyMaxPotentialBlockSize(&minGridSize,&myblockSize,(const void *) schedule ,0,0 );
-        h_nfrecv[1]=myblockSize;
-        gpuMemcpy(d_nfrecv, h_nfrecv, 3 * sizeof(int), gpuMemcpyHostToDevice);
-        cudaOccupancyMaxPotentialBlockSize(&minGridSize,&myblockSize,(const void *) schedule ,0,0 );
 
+    if (npes==1){
+        dlsum_fmod_inv_gpu_mrhs<<< nbcol_loc, dimBlock >>>(nbcol_loc,nblock_ex,lsum,x,nrhs,maxsup,nsupers,fmod,LBtree_ptr,LRtree_ptr,ilsum,Lrowind_bc_dat,Lrowind_bc_offset,Lnzval_bc_dat,Lnzval_bc_offset,Linv_bc_dat,Linv_bc_offset,Lindval_loc_bc_dat,Lindval_loc_bc_offset, xsup,grid,maxrecvsz);
+    }else{
+        int launch_success = 0;
 
         void *args[] = {&nrhs, &LRtree_ptr, &maxrecvsz, &mype, &flag_bc_q, &flag_rd_q,
-                        &ready_x, &ready_lsum, &my_flag_bc, &my_flag_rd, &d_nfrecv, &d_status, &d_launch_flag,
+                        &ready_x, &ready_lsum, &my_flag_bc, &my_flag_rd, &d_nfrecv, &d_status,
                         &d_colnum, &d_mynum, &d_mymaskstart, &d_mymasklength,
                         &d_nfrecvmod, &d_statusmod, &d_colnummod, &d_mynummod, &d_mymaskstartmod, &d_mymasklengthmod,
-                        &d_recv_cnt, &d_msgnum,&lsum,&fmod,&grid,&xsup,&ilsum,&nbrow_loc,&nsupers};
+                        &d_recv_cnt, &d_msgnum, &d_flag_mod, &lsum,&fmod,&grid,&xsup,&ilsum,&nbrow_loc,&nsupers};
 
-        NVSHMEM_CHECK(
-                nvshmemx_collective_launch((const void *) schedule, dimGrid_nv, dimBlock_nv, args, 0, stream[0]));
-        do {
-            cudaMemcpyAsync(&launch_success, d_launch_flag, 1 * sizeof(int), cudaMemcpyDeviceToHost, stream[1]);
-        } while (launch_success == 0);
-    }else{
-        launch_success=1;
-    }
-    if (launch_success == 1)
-    dlsum_fmod_inv_gpu_mrhs_nvshmem<<< dimGrid, dimBlock, 0, stream[1] >>>(nbcol_loc,
-                                                                           lsum, x,
-                                                                           nrhs, maxsup, nsupers,
-                                                                           fmod,
-                                                                           LBtree_ptr, LRtree_ptr,
-                                                                           ilsum,
-                                                                           Lrowind_bc_dat,
-                                                                           Lrowind_bc_offset,
-                                                                           Lnzval_bc_dat,
-                                                                           Lnzval_bc_offset,
-                                                                           Linv_bc_dat,
-                                                                           Linv_bc_offset,
-                                                                           Lindval_loc_bc_dat,
-                                                                           Lindval_loc_bc_offset,
-                                                                           xsup,
-                                                                           grid, maxrecvsz,
-                                                                           mype, flag_bc_q,
-                                                                           flag_rd_q,
-                                                                           ready_x, ready_lsum,
-                                                                           my_flag_bc, my_flag_rd,
-                                                                           d_launch_flag,
-                                                                           d_nfrecv, d_status,
-                                                                           d_statusmod,nblock_ex);
-    CUDA_CHECK(cudaGetLastError());
+        int status=1;
+        status = nvshmemx_collective_launch((const void *) wait_bcrd, dimGrid_bc, dimBlock_bc, args, 0, stream[0]);
+        //status1 = nvshmemx_collective_launch((const void *) send_rd, dimGrid_rd, dimBlock_bc, args, 0, stream[1]);
+        printf("(%d), status=%d\n",mype, status);
+        fflush(stdout);
+
+        if ((status != NVSHMEMX_SUCCESS)) {
+            fprintf(stderr, "shmemx_collective_launch failed %d,%d\n", status);
+            exit(-1);
+        }else{
+            dlsum_fmod_inv_gpu_mrhs_nvshmem<<< dimGrid, dimBlock, 0, stream[1] >>>(nbcol_loc,nblock_ex,
+                                                                                lsum,x,nrhs,maxsup,nsupers,fmod,
+                                                                                LBtree_ptr,LRtree_ptr,ilsum,
+                                                                                Lrowind_bc_dat,Lrowind_bc_offset,
+                                                                                Lnzval_bc_dat,Lnzval_bc_offset,
+                                                                                Linv_bc_dat,Linv_bc_offset,
+                                                                                Lindval_loc_bc_dat,Lindval_loc_bc_offset,
+                                                                                xsup,grid,maxrecvsz,
+                                                                                   mype, flag_bc_q,
+                                                                                   flag_rd_q,
+                                                                                   ready_x, ready_lsum,
+                                                                                   my_flag_bc, my_flag_rd,
+                                                                                   d_nfrecv, d_status,
+                                                                                   d_statusmod,d_flag_mod);
+            CUDA_CHECK(cudaGetLastError());
+        } // if status
+    } // if npes==1
     CUDA_CHECK(cudaDeviceSynchronize());
-
 }
 
 
@@ -2130,8 +2591,6 @@ __global__ void dlsum_bmod_inv_gpu_mrhs
             } /* for ub ... */
             // }
             __syncthreads();
-
-
             //   __syncthreads();
             // } /*if tid<Nchunk*/
         } /* if nlb>0*/
@@ -2141,9 +2600,6 @@ __global__ void dlsum_bmod_inv_gpu_mrhs
 //   }else if(bid<nbcol_loc+nblock_ex){  //the next nblock_ex blocks handle all reduction communication
 
     }
-
-
-
 } /* dlsum_bmod_inv_gpu_mrhs */
 
  /************************************************************************/
@@ -2507,7 +2963,6 @@ __global__ void dlsum_bmod_inv_gpu_mrhs_nvshmem
         double* ready_lsum,
         int* my_flag_bc,
         int* my_flag_rd,
-        int* d_launch_flag,
         int* d_nfrecv,
         volatile int* d_status,
         volatile int* d_statusmod,
@@ -2717,12 +3172,9 @@ __global__ void dlsum_bmod_inv_gpu_mrhs_nvshmem
         if (cnt > 0) {
             //cnt=LBtree_ptr[lk].msgSize_;
             my_flag_bc[k * RDMA_FLAG_SIZE] = lk;
-            my_flag_bc[k * RDMA_FLAG_SIZE + 1] = k;
-            my_flag_bc[k * RDMA_FLAG_SIZE + 2] = maxrecvsz * lk;
-            //my_flag_bc[gc*RDMA_FLAG_SIZE+2]=maxrecvsz*lk;
-            my_flag_bc[k * RDMA_FLAG_SIZE + 3] = UBtree_ptr[lk].msgSize_ * nrhs + XK_H;
+            my_flag_bc[k * RDMA_FLAG_SIZE + 1] = UBtree_ptr[lk].msgSize_ * nrhs + XK_H;
             C_BcTree_forwardMessageSimple_Device(&UBtree_ptr[lk], (int *) flag_bc_q, &my_flag_bc[k * RDMA_FLAG_SIZE],
-                                                 mype, tid, &ready_x[0]);
+                                                 mype, tid, &ready_x[0], maxrecvsz);
             //if (tid==0) printf("(%d,%d,%d), lk=%d, gc=%d\n",mype,bid,tid,lk,gc);
         }
         int keep_lk = lk;
@@ -2838,368 +3290,6 @@ __global__ void dlsum_bmod_inv_gpu_mrhs_nvshmem
 } /* dlsum_bmod_inv_gpu_mrhs_nvshmem */
 
 
-__global__ void debug_kernel
-/************************************************************************/
-        (
-                int_t nbcol_loc,
-                double *lsum,    /* Sum of local modifications.                        */
-                double *x,       /* X array (local)                                    */
-                int   nrhs,      /* Number of right-hand sides.                        */
-                int_t   nsupers,      /* Number of total supernodes.                        */
-                int_t *bmod,     /* Modification count for U-solve.                    */
-                C_Tree  *UBtree_ptr,
-                C_Tree  *URtree_ptr,
-                int_t *ilsum,
-                int_t *Urbs,
-                int_t   *Ufstnz_br_dat,
-                long int *Ufstnz_br_offset,
-                double *Unzval_br_dat,
-                long int *Unzval_br_offset,
-                int_t  *Ucb_valdat,
-                long int *Ucb_valoffset,
-                Ucb_indptr_t *Ucb_inddat,
-                long int *Ucb_indoffset,
-                double *Uinv_bc_dat,
-                long int *Uinv_bc_offset,
-                int_t *xsup,
-                gridinfo_t *grid,
-                int_t maxrecvsz,
-                int mype,
-                volatile int* flag_bc_q,
-                volatile int* flag_rd_q,
-                double* ready_x,
-                double* ready_lsum,
-                int* my_flag_bc,
-                int* my_flag_rd,
-                int* d_launch_flag,
-                int* d_nfrecv,
-                volatile int* d_status,
-                volatile int* d_statusmod,
-                int_t nblock_ex,
-                int maxsuper
-        )
-{
-    double alpha = 1.0, beta = 0.0,malpha=-1.0;
-    double xtemp;
-    double *lusup, *lusup1;
-    double *dest;
-    double *Uinv;/* Inverse of diagonal block */
-    int    iam, iknsupc, myrow, mycol, krow, nbrow, nbrow1, nbrow_ref, nsupr, nsupr1, p, pi, idx_r,m;
-    int_t  k,i, l,ii,jj, ik, il, ikcol, irow, j, lb, lk, rel, lib,lready, ub;
-    int_t  *lsub, *lsub1, nlb1, lptr1, luptr1,*lloc;
-    int_t  luptr_tmp,luptr_tmp1,lptr1_tmp, idx_i, idx_v,idx_n,  idx_l, fmod_tmp, lbstart,lbend,nn,Nchunk,nlb_loc,remainder;
-    int thread_id1;
-    int_t gik,ikfrow,iklrow;
-    int_t  uptr;
-    int_t fnz,fnzmin;
-    flops_t ops_loc=0.0;
-    MPI_Status status;
-    int test_flag;
-    yes_no_t done;
-    int_t* idx_lsum,idx_lsum1;
-    const int Nbk=1;
-    //   __shared__ double rtemp_loc[128];
-    double temp,temp1;
-    double temp2[MAXSUPER];
-    //   int_t temp3[128];
-    //   int_t temp4[128];
-    int_t ldalsum;
-    int_t nleaf_send_tmp;
-    int_t lptr;      /* Starting position in lsub[*].                      */
-    int_t luptr;     /* Starting position in lusup[*].                     */
-    int_t iword = sizeof(int_t);
-    int_t dword = sizeof (double);
-    int_t aln_d,aln_i;
-    aln_d = 1;//ceil(CACHELINE/(double)dword);
-    aln_i = 1;//ceil(CACHELINE/(double)iword);
-    int   knsupc;    /* Size of supernode k.                               */
-    int_t nub;       /* Number of L blocks.                                */
-
-    int_t bid;
-    int_t tmp;
-    int_t tid = threadIdx_x + threadIdx_y * blockDim_x;
-    int_t ready = 0;
-    // int_t lock = 0;
-    const int block_size = blockDim_x*blockDim_y; /* number of threads per warp*/
-    double zero = 0.0;
-
-
-    double rC[THR_N][THR_M];
-
-    gpuError_t error;
-
-    bid= nbcol_loc-blockIdx_x-1;  // This makes sure higher block IDs are checked first in spin wait
-    int_t idx = threadIdx_x;  // thread's m dimension
-    int_t idy = threadIdx_y;  // thread's n dimension
-    int_t ni,mi;
-    int cnt;
-    yes_no_t test;
-
-    int_t  *usub;
-    double *uval, *y;
-    int gc;
-    // rtemp_loc = (double*)malloc(maxsup*nrhs*Nbk*sizeof(double));
-    // the first nbcol_loc handles all computations and broadcast communication
-    //if (tid==0) {
-    //    printf("Enter U solve  (%d,%d)\n", mype, bid);
-    //    printf("(%d)  Entering kernel:   %i %i %i %i %i %i %i %i\n", mype, threadIdx_x, blockIdx_x, grid->npcol, nsupers,myrow,krow,bid,tid);
-    //}
-
-
-    //if(bid<nbcol_loc) {
-    if ((Ucb_indoffset[bid] == -1) && (Uinv_bc_offset[bid]== -1) ) {
-        return;
-    }
-    //if ((Ucb_indoffset[bid] == -1)) {
-    //    return;
-    //}
-
-    // lk=5 bid=5, blockIdx=0
-    lk = bid;
-    iam = grid->iam;
-    mycol = MYCOL(iam, grid);
-    myrow = MYROW(iam, grid);
-    k = mycol + lk * grid->npcol;
-    gc = k; //mycol + lk * grid->npcol;
-    knsupc = SuperSize(k);
-    krow = PROW(k, grid);
-    nub = Urbs[lk];      /* Number of U blocks in block column lk */
-
-    //   printf("  Before kernel:   %i %i %i %i %i %i %i %i\n", threadIdx_x, blockIdx_x, grid->npcol, nsupers,myrow,krow,bid,tid);
-    //if (tid==0) {
-    //    printf("Valid U (%d,%d), k=%d, Ucb_indoffset[%d]=%ld,Uinv_bc_offset[%d]=%ld, myrow=%d, krow=%d\n",
-    //           mype, bid, k, bid,Ucb_indoffset[bid],bid,Uinv_bc_offset[bid], myrow, krow);
-    //}
-    if (myrow == krow) {   /* diagonal block performs trsm and forward the message*/
-        //if (tid==0) printf(" Diagonal U (%d,%d), k=%d, myrow=%d, krow=%d\n", mype, bid, k, myrow, krow);
-
-        if (tid == 0) {  /*only the first thread in a block handles the lock */
-
-
-            // for (i=0 ; i<maxsup ; i++){
-            // rtemp_loc[i]=0.0;
-            // }
-
-            lib = LBi(k, grid); /* Local block number, row-wise. */
-            //   printf("bk: %5d r: %5d %5d %5d\n",mycol+bid*grid->npcol,bmod[lib*aln_i],myrow,krow);
-            do {
-                tmp = bmod[lib * aln_i];
-                __threadfence();
-            } while (tmp > 0);
-
-        }
-        __syncthreads();
-
-
-        lib = LBi(k, grid); /* Local block number, row-wise. */
-        il = LSUM_BLK(lib);
-        ii = X_BLK(lib);
-
-        RHS_ITERATE(j)for (i = tid; i < knsupc; i += block_size)
-                x[i + ii + j * knsupc] += lsum[i + il + j * knsupc];
-        __syncthreads();
-
-
-        //  if(Llu->inv == 1){
-
-        Uinv = &Uinv_bc_dat[Uinv_bc_offset[lk]];
-
-        if (nrhs == 1) {
-            for (i = tid; i < knsupc; i += block_size) {
-                temp1 = zero;
-                for (l = 0; l < knsupc; l++) {
-                    temp1 += Uinv[l * knsupc + i] * x[ii + l];
-                }
-                lsum[il + i] = temp1; //reuse lsum as temporary output as it's no longer accessed
-            }
-            __syncthreads();
-
-            for (i = tid; i < knsupc; i += block_size) {
-                x[i + ii] = lsum[il + i];
-                // printf("lk %5d %lf\n",lk,x[i + ii + j*knsupc]);
-            }
-            __syncthreads();
-        } else {
-            __syncthreads();
-            for (int_t blx = 0; blx * BLK_M < knsupc; blx++) {
-                for (int_t bly = 0; bly * BLK_N < nrhs; bly++) {
-                    gemm_device_dlsum_fmod(knsupc, nrhs, knsupc, blx, bly,
-                                           Uinv, knsupc, &x[ii], knsupc, rC,
-                                           alpha, beta);
-#pragma unroll
-                    for (ni = 0; ni < THR_N; ni++) {
-                        int_t coord_dCn = bly * BLK_N + ni * DIM_Y + idy;
-#pragma unroll
-                        for (mi = 0; mi < THR_M; mi++) {
-                            int_t coord_dCm = blx * BLK_M + mi * DIM_X + idx;
-                            if (coord_dCm < knsupc && coord_dCn < nrhs) {
-                                double &regC = rC[ni][mi];
-                                lsum[coord_dCm + il + coord_dCn *
-                                                      knsupc] = regC;  //reuse lsum as temporary output as it's no longer accessed
-                            }//if (coord_dCm < knsupc && coord_dCn < nrhs)
-                        }
-                    }
-                }
-            }
-            __syncthreads();
-
-            RHS_ITERATE(j)for (i = tid; i < knsupc; i += block_size)
-                    x[i + ii + j * knsupc] = lsum[i + il + j * knsupc];
-            __syncthreads();
-        }//if(nrhs==1)
-
-        RHS_ITERATE(j)
-            for (i = tid; i < knsupc; i+=block_size)
-                ready_x[i + maxrecvsz*lk + j*knsupc ] = x[i + ii + j*knsupc];
-
-        __syncthreads();
-        //if (tid==0) printf("in solve diagonal (%d,%d) done my col %d\n", mype, bid, gc);
-    } else {   /* off-diagonal block forward the message*/
-        /* waiting for the x subvector and forward*/
-        volatile int msg_recv = 1;
-        //if ((tid == 0)) {
-        //    //printf("in solve WAIT1 (%d,%d) wait for col %d,flag=%d\n", mype, bid, gc,flag_bc_q[lk]);
-        //    do {
-        //        msg_recv = flag_bc_q[lk];
-        //        //msg_recv=d_status[gc];
-        //        //msg_recv=flag_bc_q[gc];
-        //        __threadfence();
-        //    } while (msg_recv != 1);
-        //    //double sum=0;
-        //    //for (int myi=0;myi<UBtree_ptr[lk].msgSize_*nrhs+XK_H;myi++){
-        //    //    sum+=ready_x[maxrecvsz*lk+myi];
-        //    //    printf("--- (%d,%d,%d), gc=%d,lk=%d, maxrecvsz=%d, myi=%d, idx=%d, val=%lf\n",
-        //    //                 mype,bid,tid,gc,lk,maxrecvsz, myi,maxrecvsz*lk+myi,ready_x[maxrecvsz*lk+myi]);
-        //    //}
-        //    //printf("(%d,%d,%d), gc=%d,lk=%d, sum=%lf, msgsz=%d\n",mype,bid,tid,gc,lk,sum,UBtree_ptr[lk].msgSize_*nrhs+XK_H);
-        //}
-        __syncthreads();
-    }
-
-    cnt = UBtree_ptr[lk].destCnt_;
-    //if (tid==0) printf("in solve forward (%d,%d) done my col %d, cnt=%d, nub=%d\n", mype, bid, gc, cnt,nub);
-    if (cnt > 0) {
-        //cnt=LBtree_ptr[lk].msgSize_;
-        my_flag_bc[k * RDMA_FLAG_SIZE] = lk;
-        my_flag_bc[k * RDMA_FLAG_SIZE + 1] = k;
-        my_flag_bc[k * RDMA_FLAG_SIZE + 2] = maxrecvsz * lk;
-        //my_flag_bc[gc*RDMA_FLAG_SIZE+2]=maxrecvsz*lk;
-        my_flag_bc[k * RDMA_FLAG_SIZE + 3] = UBtree_ptr[lk].msgSize_ * nrhs + XK_H;
-        C_BcTree_forwardMessageSimple_Device_debug(&UBtree_ptr[lk], (int *) flag_bc_q, &my_flag_bc[k * RDMA_FLAG_SIZE],
-                                             mype, tid, &ready_x[0]);
-        //if (tid==0) printf("(%d,%d,%d), lk=%d, gc=%d\n",mype,bid,tid,lk,gc);
-    }
-    int keep_lk = lk;
-    __syncthreads();
-    if (nub > 0) {
-
-        lib = LBi(k, grid); /* Local block number, row-wise. */
-        ii = X_BLK(lib);
-
-        int ngroup = SUPERLU_MIN(nub, block_size);
-        int block_size_loc = floor((double) block_size / ngroup);
-        int remainder = nub % ngroup;
-        int gid = tid / block_size_loc;
-
-        for (ub = gid; ub < nub; ub += ngroup) {
-            ik = Ucb_inddat[Ucb_indoffset[lk] + ub].lbnum; /* Local block number, row-wise. */
-            usub = &Ufstnz_br_dat[Ufstnz_br_offset[ik]];
-            uval = &Unzval_br_dat[Unzval_br_offset[ik]];
-            i = Ucb_inddat[Ucb_indoffset[lk] + ub].indpos; /* Start of the block in usub[]. */
-            i += UB_DESCRIPTOR;
-            il = LSUM_BLK(ik);
-            gik = ik * grid->nprow + myrow;/* Global block number, row-wise. */
-            iknsupc = SuperSize(gik);
-            ikfrow = FstBlockC(gik);
-            iklrow = FstBlockC(gik + 1);
-            // printf("ub %d bmod: %d \n",ub, bmod[ik*aln_i]);
-            if (tid % block_size_loc == 0) { // parallelizing this supernode across knsupc or irow doesn't seem to have any benefit
-                int myoffset=0;
-                double orz=0;
-
-                fnzmin = 100000000;
-                for (jj = 0; jj < knsupc; ++jj)
-                    fnzmin = min(fnzmin, usub[i + jj]);
-                RHS_ITERATE(j) {
-                    dest = &lsum[il + j * iknsupc];
-                    uptr = Ucb_valdat[Ucb_valoffset[lk] + ub]; /* Start of the block in uval[]. */
-
-                    for (jj = 0; jj < iknsupc; ++jj)
-                        temp2[myoffset+jj] = 0;
-                    for (jj = 0; jj < knsupc; ++jj) {
-                        fnz = usub[i + jj];
-                        if (fnz < iklrow) { /* Nonzero segment. */
-                            //        /* AXPY */
-                            xtemp = ready_x[j * knsupc + jj+ keep_lk*maxrecvsz];
-                            //xtemp = x[ii + j * knsupc + jj];
-                            //printf("(%d,%d,%d) ii=%d, knsupc=%d, j * knsupc=%d, keep_lk=%d, keep_lk*maxrecvsz=%d, idx=%d, xidx=%d,val=%lf, myoffset=%d,%d,%d\n",
-                            //       mype,bid,tid,
-                            //       ii, knsupc, j * knsupc, keep_lk, keep_lk*maxrecvsz,
-                            //       j * knsupc + jj+ keep_lk*maxrecvsz,ii + j * knsupc + jj,
-                            //       //x[ii + j * knsupc + jj]);
-                            //       ready_x[j * knsupc + jj+ keep_lk*maxrecvsz],
-                            //       myoffset,block_size_loc, tid/block_size_loc);
-                            for (irow = fnz; irow < iklrow; ++irow) {
-                                //printf("--(%d,%d,%d) irow=%d, ikfrow=%d, myoffset=%d, temp2idx=%d, uptr=%d\n",
-                                //       mype,bid,tid, irow,ikfrow,myoffset, myoffset+irow - ikfrow, uptr);
-                                //double &regC = temp2[irow - ikfrow];
-                                //double old=uval[uptr++] * xtemp;
-                                //temp = atomicAdd(&old, regC);
-                                //double old=uval[uptr++] * xtemp;
-                                //temp2[myoffset+irow - ikfrow]=old;
-                                // // YL: this is most expensive operation on GPU
-
-                                temp2[myoffset+irow - ikfrow]+= uval[uptr++] * xtemp; //1.5
-                                //temp2[myoffset+irow - ikfrow]+=uval[uptr++]; // 1.2
-                                //temp2[myoffset+irow - ikfrow]+=uval[uptr]* xtemp; // 1.2
-                                //temp2[myoffset+irow - ikfrow]+= 1*xtemp; // 0.4
-                                //orz+= uval[uptr++] * xtemp; //0.3
-                                //temp2[0]+= uval[uptr++] * xtemp; // 1.0
-                            }
-                        }
-                    } /* for jj ... */
-
-                    for (irow = fnzmin; irow < iklrow; ++irow) {
-                        //temp = atomicAdd(&dest[irow - ikfrow], -temp2[0]);
-                        temp = atomicAdd(&dest[irow - ikfrow], -temp2[myoffset+irow - ikfrow]);
-                    }
-                }
-                fmod_tmp = atomicSub(&bmod[ik * aln_i], 1);
-                //printf("(%d,%d,%d) dong bmod\n",mype,bid,tid);
-                //if (fmod_tmp == 1) {// forward RD
-                //    //senddone[lk]=1;
-                //    if (URtree_ptr[lk].myRoot_ != URtree_ptr[lk].myRank_) {
-                //        //cnt=LRtree_ptr[lib].msgSize_;
-                //        my_flag_rd[ik * RDMA_FLAG_SIZE] = lk;
-                //        my_flag_rd[ik * RDMA_FLAG_SIZE + 1] = URtree_ptr[lk].msgSize_;
-                //        RHS_ITERATE(j) {
-                //            for (int aab = 0; aab < iknsupc; aab++) {
-                //                ready_lsum[lk * maxrecvsz * 2 + aab + j * iknsupc] = lsum[il + aab + j * iknsupc];
-                //                //printf("data3-(%d,%d,%d),lib=%d,k=%d,i=%d,ready_lsum[%d]=%f\n", mype, bid, tid, lib, k, i,
-                //                //       k * maxrecvsz * 2 + i +j * knsupc,
-                //                //       ready_lsum[k * maxrecvsz * 2 + i +j * knsupc]);
-
-                //            }
-                //        }
-                //        //printf("(%d,%d,%d) in solve,lib=%d,gr=%d,ik=%d,myflagrd=%d,%d\n",mype,bid,tid,lk,gr,ik,my_flag_rd[ik*RDMA_FLAG_SIZE],my_flag_rd[ik*RDMA_FLAG_SIZE+1]);
-                //        C_RdTree_forwardMessageSimple_Device(&URtree_ptr[lk], (int *) flag_rd_q,
-                //                                             &my_flag_rd[RDMA_FLAG_SIZE * ik], mype, bid, tid,
-                //                                             &ready_lsum[0], maxrecvsz);
-                //    }
-                //}
-            }
-        } /* for ub ... */
-        // }
-        __syncthreads();
-
-
-        //   __syncthreads();
-        // } /*if tid<Nchunk*/
-    } /* if nlb>0*/
-    // printf("nimbgood \n");
-    //}
-    //if (tid==0) printf("(%d,%d,%d) Exit\n",mype,bid,tid);
-} /* dlsum_bmod_inv_gpu_mrhs_nvshmem */
 
 
  void dlsum_bmod_inv_gpu_wrap
@@ -3237,7 +3327,6 @@ __global__ void debug_kernel
   double* ready_lsum,
   int* my_flag_bc,
   int* my_flag_rd,
-  int* d_launch_flag,
   int* d_nfrecv_u,
   int* h_nfrecv_u,
   int* d_status,
@@ -3252,25 +3341,23 @@ __global__ void debug_kernel
   int* d_mymaskstartmod_u,
   int* d_mymasklengthmod_u,
   int* d_recv_cnt_u,
-  int* d_msgnum
-  //int* temp2_offset,
-  //double* temp2
+  int* d_msgnum,
+  int* d_flag_mod
+ ) {
 
- ){
- 
-    gpuStream_t sid=0;
-    int gid=0;
-    int mycol;
-    int_t lk,k,knsupc;
+     gpuStream_t sid = 0;
+     int gid = 0;
+     int mycol;
+     int_t lk, k, knsupc;
 
-	 
-	//printf("pinv %d\n",Llu->inv);
-	//fflush(stdout);
-	int_t maxsuper = sp_ienv_dist(3);
 
-	int_t nblock_ex = CEILING(nbrow_loc, ((nthread_x * nthread_y) / 32)); //32 (warp) * 8 =256
-    //int_t nblock_ex = nbrow_loc; //CEILING(nbrow_loc, ((nthread_x * nthread_y) / 32)); //32 (warp) * 8 =256
-    //int_t nblock_ex = CEILING(nbrow_loc, ((nthread_x * nthread_y) / 64)); //32 (warp) * 8 =256
+     //printf("pinv %d\n",Llu->inv);
+     //fflush(stdout);
+     int_t maxsuper = sp_ienv_dist(3);
+
+     int_t nblock_ex = CEILING(nbrow_loc, ((nthread_x * nthread_y) / 32)); //32 (warp) * 8 =256
+     //int_t nblock_ex = nbrow_loc; //CEILING(nbrow_loc, ((nthread_x * nthread_y) / 32)); //32 (warp) * 8 =256
+     //int_t nblock_ex = CEILING(nbrow_loc, ((nthread_x * nthread_y) / 64)); //32 (warp) * 8 =256
      cudaStream_t stream[2];
      for (int i = 0; i < 2; ++i) {
          //cudaStreamCreate(&stream[i]);
@@ -3291,110 +3378,75 @@ __global__ void debug_kernel
 
 
      cudaFuncAttributes cuattr;
-     cudaFuncGetAttributes(&cuattr, debug_kernel);
+     cudaFuncGetAttributes(&cuattr, dlsum_bmod_inv_gpu_mrhs_nvshmem);
      cudaDeviceSetLimit(cudaLimitStackSize, cuattr.localSizeBytes);
      //printf("(%d) CUDA kernel localSizeByte=%d\n",mype,cuattr.localSizeBytes);
      //fflush(stdout);
 
-     if (npes>1) {
-        int minGridSize;
-        int myblockSize;
-        cudaOccupancyMaxPotentialBlockSize(&minGridSize,&myblockSize,(const void *) schedule ,0,0 );
-        h_nfrecv_u[1]=myblockSize;
-        gpuMemcpy(d_nfrecv_u, h_nfrecv_u, 3 * sizeof(int), gpuMemcpyHostToDevice);
-        //printf("(%d) solve=%d,%d, wait=%d,%d\n",mype,nbcol_loc,nthread_x*nthread_y,h_nfrecv[2],h_nfrecv[1]);
-        //fflush(stdout);
+         int minGridSize;
+         int myblockSize;
+         cudaOccupancyMaxPotentialBlockSize(&minGridSize, &myblockSize, (const void *) wait_bcrd, 0, 0);
+         h_nfrecv_u[1] = myblockSize;
+         gpuMemcpy(d_nfrecv_u, h_nfrecv_u, 3 * sizeof(int), gpuMemcpyHostToDevice);
+         //printf("(%d) solve=%d,%d, wait=%d,%d\n",mype,nbcol_loc,nthread_x*nthread_y,h_nfrecv[2],h_nfrecv[1]);
+         //fflush(stdout);
 
-        dim3 dimGrid_nv(h_nfrecv_u[2]); //2
-        dim3 dimBlock_nv(h_nfrecv_u[1]); //1024
-
+         dim3 dimGrid_nv(h_nfrecv_u[2]); //2
+         dim3 dimBlock_nv(h_nfrecv_u[1]); //1024
 
 
-        void *args[] = {&nrhs, &URtree_ptr, &maxrecvsz, &mype, &flag_bc_q, &flag_rd_q, &ready_x, &ready_lsum,
-                        &my_flag_bc, &my_flag_rd,
-                        &d_nfrecv_u, &d_status, &d_launch_flag,
-                        &d_colnum_u, &d_mynum_u, &d_mymaskstart_u, &d_mymasklength_u,
-                        &d_nfrecvmod_u, &d_statusmod, &d_colnummod_u, &d_mynummod_u, &d_mymaskstartmod_u,
-                        &d_mymasklengthmod_u,
-                        &d_recv_cnt_u, &d_msgnum, &lsum, &bmod, &grid, &xsup, &ilsum, &nbrow_loc, &nsupers};
 
-        NVSHMEM_CHECK(
-                nvshmemx_collective_launch((const void *) schedule, dimGrid_nv, dimBlock_nv, args, 0, stream[0]));
+         void *args[] = {&nrhs, &URtree_ptr, &maxrecvsz, &mype, &flag_bc_q, &flag_rd_q, &ready_x, &ready_lsum,
+                         &my_flag_bc, &my_flag_rd,
+                         &d_nfrecv_u, &d_status,
+                         &d_colnum_u, &d_mynum_u, &d_mymaskstart_u, &d_mymasklength_u,
+                         &d_nfrecvmod_u, &d_statusmod, &d_colnummod_u, &d_mynummod_u, &d_mymaskstartmod_u,
+                         &d_mymasklengthmod_u,
+                         &d_recv_cnt_u, &d_msgnum, &d_flag_mod, &lsum, &bmod, &grid, &xsup, &ilsum, &nbrow_loc,
+                         &nsupers};
 
-        //printf("(%d) U launch_success=%d,WAIT TB=%d, TH=%d\n", mype, launch_success, h_nfrecv_u[2], h_nfrecv_u[1]);
-        //fflush(stdout);
+        int status=1;
+        status = nvshmemx_collective_launch((const void *) wait_bcrd, dimGrid_nv, dimBlock_nv, args, 0, stream[0]);
+     //status1 = nvshmemx_collective_launch((const void *) send_rd, dimGrid_rd, dimBlock_bc, args, 0, stream[1]);
+     //printf("(%d), status=%d,%d\n",mype, status,status1);
+     //fflush(stdout);
 
-        do {
-            cudaMemcpyAsync(&launch_success, d_launch_flag, 1 * sizeof(int), cudaMemcpyDeviceToHost, stream[1]);
-        } while (launch_success == 0);
-    }else{
-        launch_success=1;
-    }
+     if ((status != NVSHMEMX_SUCCESS)) {
+         fprintf(stderr, "shmemx_collective_launch U failed %d,%d\n", status);
+         exit(-1);
+     } else{
+             dlsum_bmod_inv_gpu_mrhs_nvshmem<<< dimGrid, dimBlock, 0, stream[1] >>>(nbcol_loc,
+                                                                                    lsum, x,
+                                                                                    nrhs, nsupers, bmod,
+                                                                                    UBtree_ptr, URtree_ptr,
+                                                                                    ilsum,
+                                                                                    Urbs, Ufstnz_br_dat,
+                                                                                    Ufstnz_br_offset,
+                                                                                    Unzval_br_dat,
+                                                                                    Unzval_br_offset,
+                                                                                    Ucb_valdat,
+                                                                                    Ucb_valoffset,
+                                                                                    Ucb_inddat,
+                                                                                    Ucb_indoffset,
+                                                                                    Uinv_bc_dat,
+                                                                                    Uinv_bc_offset,
+                                                                                    xsup,
+                                                                                    grid,
+                                                                                    maxrecvsz,
+                                                                                    mype, flag_bc_q,
+                                                                                    flag_rd_q,
+                                                                                    ready_x, ready_lsum,
+                                                                                    my_flag_bc, my_flag_rd,
+                                                                                    d_nfrecv_u, d_status,
+                                                                                    d_statusmod, nblock_ex,
+                                                                                    maxsuper); //temp2_offset, temp2,maxsuper);
+         }
 
-    if (launch_success == 1) {
-        //printf("(%d) U launch_success=%d, TB=%d,TH=%d, MAXSUPER=%d\n",mype, launch_success,nbcol_loc,nthread_x*nthread_y, MAXSUPER);
-        //fflush(stdout);
-        //dlsum_bmod_inv_gpu_mrhs_pretemp2<<< nbcol_loc, dimBlock >>>(nbcol_loc,lsum,x,nrhs,nsupers,bmod, UBtree_ptr,URtree_ptr,ilsum,Urbs,Ufstnz_br_dat,Ufstnz_br_offset,Unzval_br_dat,Unzval_br_offset,Ucb_valdat,Ucb_valoffset,Ucb_inddat,Ucb_indoffset,Uinv_bc_dat,Uinv_bc_offset,xsup,grid,temp2_offset, temp2,maxsuper);
-        //dlsum_bmod_inv_gpu_mrhs<<< nbcol_loc, dimBlock >>>(nbcol_loc,lsum,x,nrhs,nsupers,bmod, UBtree_ptr,URtree_ptr,ilsum,Urbs,Ufstnz_br_dat,Ufstnz_br_offset,Unzval_br_dat,Unzval_br_offset,Ucb_valdat,Ucb_valoffset,Ucb_inddat,Ucb_indoffset,Uinv_bc_dat,Uinv_bc_offset,xsup,grid);
-
-        //debug_kernel<<< dimGrid, dimBlock, 0, stream[1] >>>(nbcol_loc,
-        //                                                    lsum, x,
-        //                                                    nrhs, nsupers, bmod,
-        //                                                    UBtree_ptr, URtree_ptr,
-        //                                                    ilsum,
-        //                                                    Urbs, Ufstnz_br_dat,
-        //                                                    Ufstnz_br_offset,
-        //                                                    Unzval_br_dat,
-        //                                                    Unzval_br_offset,
-        //                                                    Ucb_valdat,
-        //                                                    Ucb_valoffset,
-        //                                                    Ucb_inddat,
-        //                                                    Ucb_indoffset,
-        //                                                    Uinv_bc_dat,
-        //                                                    Uinv_bc_offset,
-        //                                                    xsup,
-        //                                                    grid,
-        //                                                    maxrecvsz,
-        //                                                    mype, flag_bc_q,
-        //                                                    flag_rd_q,
-        //                                                    ready_x, ready_lsum,
-        //                                                    my_flag_bc, my_flag_rd,
-        //                                                    d_launch_flag,
-        //                                                    d_nfrecv_u, d_status,
-        //                                                    d_statusmod, nblock_ex,maxsuper);
-
-        dlsum_bmod_inv_gpu_mrhs_nvshmem<<< dimGrid, dimBlock, 0, stream[1] >>>(nbcol_loc,
-                                                                               lsum, x,
-                                                                               nrhs, nsupers, bmod,
-                                                                               UBtree_ptr, URtree_ptr,
-                                                                               ilsum,
-                                                                               Urbs, Ufstnz_br_dat,
-                                                                               Ufstnz_br_offset,
-                                                                               Unzval_br_dat,
-                                                                               Unzval_br_offset,
-                                                                               Ucb_valdat,
-                                                                               Ucb_valoffset,
-                                                                               Ucb_inddat,
-                                                                               Ucb_indoffset,
-                                                                               Uinv_bc_dat,
-                                                                               Uinv_bc_offset,
-                                                                               xsup,
-                                                                               grid,
-                                                                               maxrecvsz,
-                                                                               mype, flag_bc_q,
-                                                                               flag_rd_q,
-                                                                               ready_x, ready_lsum,
-                                                                               my_flag_bc, my_flag_rd,
-                                                                               d_launch_flag,
-                                                                               d_nfrecv_u, d_status,
-                                                                             d_statusmod, nblock_ex,maxsuper); //temp2_offset, temp2,maxsuper);
-    }
-
-        //CUDA_CHECK(cudaGetLastError());
-        //CUDA_CHECK(cudaDeviceSynchronize());
-        //dlsum_bmod_inv_gpu_mrhs<<< nbcol_loc, dimBlock >>>(nbcol_loc,lsum,x,nrhs,nsupers,bmod, UBtree_ptr,URtree_ptr,ilsum,Urbs,Ufstnz_br_dat,Ufstnz_br_offset,Unzval_br_dat,Unzval_br_offset,Ucb_valdat,Ucb_valoffset,Ucb_inddat,Ucb_indoffset,Uinv_bc_dat,Uinv_bc_offset,xsup,grid);
-     gpuDeviceSynchronize();
-    //printf("(%d) back to CPU !!!!! \n",mype);
+         //CUDA_CHECK(cudaGetLastError());
+         //CUDA_CHECK(cudaDeviceSynchronize());
+         //dlsum_bmod_inv_gpu_mrhs<<< nbcol_loc, dimBlock >>>(nbcol_loc,lsum,x,nrhs,nsupers,bmod, UBtree_ptr,URtree_ptr,ilsum,Urbs,Ufstnz_br_dat,Ufstnz_br_offset,Unzval_br_dat,Unzval_br_offset,Ucb_valdat,Ucb_valoffset,Ucb_inddat,Ucb_indoffset,Uinv_bc_dat,Uinv_bc_offset,xsup,grid);
+         gpuDeviceSynchronize();
+         //printf("(%d) back to CPU !!!!! \n",mype);
  }
 
  

@@ -1022,7 +1022,6 @@ pdCompute_Diag_Inv(int_t n, dLUstruct_t *LUstruct,gridinfo_t *grid,
  * </pre>
  */
 
-__device__ int clockrate;
 void
 pdgstrs(int_t n, dLUstruct_t *LUstruct,
 	dScalePermstruct_t *ScalePermstruct,
@@ -1894,9 +1893,9 @@ t1 = SuperLU_timer_();
 	checkGPU(gpuMemset(ready_x, 0, maxrecvsz*CEILING( nsupers, grid->npcol) * sizeof(double)));
     checkGPU(gpuMemset(ready_lsum, 0, 2*maxrecvsz*CEILING( nsupers, grid->nprow) * sizeof(double)));
     checkGPU(gpuMemset(d_msgnum, 0, h_nfrecv[1] * sizeof(int)));
-    checkGPU(gpuMemset( d_launch_flag, 0,  1 * sizeof(int)));
-	//printf("2-(%d) maxrecvsz=%d,ready_x=%d, ready_lsum=%d,RDMA_FLAG_SIZE=%d,k=%d,nlb=%d\n",iam,maxrecvsz,maxrecvsz*CEILING( nsupers, grid->npcol),2*maxrecvsz*CEILING( nsupers, grid->nprow),RDMA_FLAG_SIZE,k,nlb);
-	//fflush(stdout);
+	printf("2-(%d) maxrecvsz=%d,ready_x=%d, ready_lsum=%d,RDMA_FLAG_SIZE=%d,k=%d,nlb=%d\n",iam,maxrecvsz,maxrecvsz*CEILING( nsupers, grid->npcol),2*maxrecvsz*CEILING( nsupers, grid->nprow),RDMA_FLAG_SIZE,k,nlb);
+	fflush(stdout);
+    
 #if ( PRNTlevel>=1 )
 	t = SuperLU_timer_() - t;
 	if ( !iam) printf(".. Setup L-solve time\t%8.4f\n", t);
@@ -1907,9 +1906,9 @@ t1 = SuperLU_timer_();
 #endif
 	dlsum_fmod_inv_gpu_wrap(k,nlb,DIM_X,DIM_Y,d_lsum,d_x,nrhs,knsupc,nsupers,d_fmod,Llu->d_LBtree_ptr,Llu->d_LRtree_ptr,Llu->d_ilsum,Llu->d_Lrowind_bc_dat, Llu->d_Lrowind_bc_offset, Llu->d_Lnzval_bc_dat, Llu->d_Lnzval_bc_offset, Llu->d_Linv_bc_dat, Llu->d_Linv_bc_offset, Llu->d_Lindval_loc_bc_dat, Llu->d_Lindval_loc_bc_offset,Llu->d_xsup,d_grid,
                          maxrecvsz,
-	                        flag_bc_q, flag_rd_q, ready_x, ready_lsum, my_flag_bc, my_flag_rd, d_launch_flag, d_nfrecv, h_nfrecv,
+	                        flag_bc_q, flag_rd_q, ready_x, ready_lsum, my_flag_bc, my_flag_rd, d_nfrecv, h_nfrecv,
 	                        d_status,d_colnum,d_mynum, d_mymaskstart,d_mymasklength,
-	                        d_nfrecvmod,d_statusmod,d_colnummod,d_mynummod,d_mymaskstartmod,d_mymasklengthmod,d_recv_cnt,d_msgnum);
+	                        d_nfrecvmod,d_statusmod,d_colnummod,d_mynummod,d_mymaskstartmod,d_mymasklengthmod,d_recv_cnt,d_msgnum,d_flag_mod);
 	  		                      //d_rownum,d_rowstart,d_validrows);
 //#if ( PRNTlevel>=1 )
 //	nvshmem_barrier_all();
@@ -2646,109 +2645,109 @@ thread_id=0;
 
 
 
-#ifdef GPU_ACC /*GPU trisolve*/
+//#ifdef GPU_ACC /*GPU trisolve*/
 // #if 0 /* CPU trisolve*/
+//
+//	d_grid = NULL;
+//	d_x = NULL;
+//	d_lsum = NULL;
+//    int_t  *d_bmod = NULL;
+//
+//	checkGPU(gpuMalloc( (void**)&d_grid, sizeof(gridinfo_t)));
+//	checkGPU(gpuMalloc( (void**)&d_lsum, sizelsum*num_thread * sizeof(double)));
+//	checkGPU(gpuMalloc( (void**)&d_x, (ldalsum * nrhs + nlb * XK_H) * sizeof(double)));
+//	checkGPU(gpuMalloc( (void**)&d_bmod, (nlb*aln_i) * sizeof(int_t)));
+//
+//
+//	checkGPU(gpuMemcpy(d_grid, grid, sizeof(gridinfo_t), gpuMemcpyHostToDevice));
+//	checkGPU(gpuMemcpy(d_lsum, lsum, sizelsum*num_thread * sizeof(double), gpuMemcpyHostToDevice));
+//	checkGPU(gpuMemcpy(d_x, x, (ldalsum * nrhs + nlb * XK_H) * sizeof(double), gpuMemcpyHostToDevice));
+//	checkGPU(gpuMemcpy(d_bmod, bmod, (nlb*aln_i) * sizeof(int_t), gpuMemcpyHostToDevice));
+//
+//	k = CEILING( nsupers, grid->npcol);/* Number of local block columns divided by #warps per block used as number of thread blocks*/
+//	knsupc = sp_ienv_dist(3);
+//
+//
+//    checkGPU(gpuMemcpy(d_status, mystatus_u, k * sizeof(int), gpuMemcpyHostToDevice));
+//    checkGPU(gpuMemcpy(d_statusmod, mystatusmod_u, 2* nlb * sizeof(int), gpuMemcpyHostToDevice));
+//    //for(int i=0;i<2*nlb;i++) printf("(%d),mystatusmod[%d]=%d\n",iam,i,mystatusmod[i]);
+//    checkGPU(gpuMemset(flag_rd_q, 0, RDMA_FLAG_SIZE * nlb * 2 * sizeof(int)));
+//    checkGPU(gpuMemset(flag_bc_q, 0, RDMA_FLAG_SIZE * (k+1)  * sizeof(int)));
+//    checkGPU(gpuMemset(ready_x, 0, maxrecvsz*CEILING( nsupers, grid->npcol) * sizeof(double)));
+//    checkGPU(gpuMemset(ready_lsum, 0, 2*maxrecvsz*CEILING( nsupers, grid->nprow) * sizeof(double)));
+//    checkGPU(gpuMemset(d_msgnum, 0, h_nfrecv_u[1] * sizeof(int)));
+//
+//    int temp2_size=0;
+//    int *temp2_offset_by_block;
+//    if ( !(temp2_offset_by_block = (int*)SUPERLU_MALLOC(k*sizeof(int))) )  // this needs to be optimized for 1D row mapping
+//        ABORT("Malloc fails for temp2_offset_by_block[].");
+//    memset(temp2_offset_by_block, 0, ( k * sizeof(int)));
+//    for (int i=0; i<k; i++) {
+//        //temp2_offset_by_block[i] = 0;
+//        //printf("(%d) i=%d, nub=%d, temp2_offset_by_block=%d\n", iam, i, Urbs[i], temp2_offset_by_block[i]);
+//        //fflush(stdout);
+//        if (Urbs[i] > 0) {
+//            int ngroup = SUPERLU_MIN(Urbs[i], 256);
+//            int block_size_loc = floor((double) 256 / ngroup);
+//            temp2_size+=256/block_size_loc;
+//            for (int ii=i+1; ii<k; ii++) {
+//                //printf("---- before (%d) ii=%d, enterTidNum=%d,tmp=%d\n", iam, ii, temp2_offset_by_block[ii],tmp);
+//                //fflush(stdout);
+//                temp2_offset_by_block[ii]+=256/block_size_loc;
+//                //printf("---- after (%d) ii=%d, enterTidNum=%d,tmp=%d\n", iam, ii, temp2_offset_by_block[ii],tmp);
+//                //fflush(stdout);
+//            }
+//        }
+//    }
+//    //printf(" (%d) tot_size=%d double, maxsuper=%d\n", iam,temp2_size,maxsuper);
+//    //fflush(stdout);
+//    //int *temp2_offset;
+//    //checkGPU(gpuMalloc( (void**)&temp2_offset, k*sizeof(double)));
+//    //checkGPU(gpuMemcpy(temp2_offset, temp2_offset_by_block, k * sizeof(double), gpuMemcpyHostToDevice));
+//    //double *temp2;
+//    //checkGPU(gpuMalloc( (void**)&temp2, temp2_size*maxsuper*sizeof(double)));
+//    //checkGPU(gpuMemset(temp2, 0,  temp2_size*maxsuper * sizeof(double)));
+//#if ( PRNTlevel>=1 )
+//    t = SuperLU_timer_() - t;
+//	if ( !iam) printf(".. Setup U-solve time\t%8.4f\n", t);
+//	fflush(stdout);
+//	MPI_Barrier( grid->comm );
+//	t = SuperLU_timer_();
+//#endif
+//    //printf("(%d) temp2 size=%d of doubles\n", iam, temp2_size*1024);
+//    //fflush(stdout);
+//	//dlsum_bmod_inv_gpu_wrap_pre(k,nlb,DIM_X,DIM_Y,d_lsum,d_x,nrhs,knsupc,nsupers,d_bmod,
+//    //                     Llu->d_UBtree_ptr,Llu->d_URtree_ptr,Llu->d_ilsum,Llu->d_Urbs,
+//    //                     Llu->d_Ufstnz_br_dat,Llu->d_Ufstnz_br_offset,Llu->d_Unzval_br_dat,
+//    //                     Llu->d_Unzval_br_offset,Llu->d_Ucb_valdat,Llu->d_Ucb_valoffset,Llu->d_Ucb_inddat,
+//    //                     Llu->d_Ucb_indoffset,Llu->d_Uinv_bc_dat,Llu->d_Uinv_bc_offset,Llu->d_xsup,d_grid,
+//    //                     maxrecvsz, flag_bc_q, flag_rd_q, ready_x, ready_lsum, my_flag_bc, my_flag_rd,
+//    //                     d_nfrecv_u, h_nfrecv_u, d_status, d_colnum_u, d_mynum_u, d_mymaskstart_u,d_mymasklength_u,
+//    //                     d_nfrecvmod_u, d_statusmod, d_colnummod_u, d_mynummod_u, d_mymaskstartmod_u, d_mymasklengthmod_u,
+//    //                     d_recv_cnt_u, d_msgnum, temp2_offset, temp2);
+//    dlsum_bmod_inv_gpu_wrap(k,nlb,DIM_X,DIM_Y,d_lsum,d_x,nrhs,knsupc,nsupers,d_bmod,
+//                         Llu->d_UBtree_ptr,Llu->d_URtree_ptr,Llu->d_ilsum,Llu->d_Urbs,
+//                         Llu->d_Ufstnz_br_dat,Llu->d_Ufstnz_br_offset,Llu->d_Unzval_br_dat,
+//                         Llu->d_Unzval_br_offset,Llu->d_Ucb_valdat,Llu->d_Ucb_valoffset,Llu->d_Ucb_inddat,
+//                         Llu->d_Ucb_indoffset,Llu->d_Uinv_bc_dat,Llu->d_Uinv_bc_offset,Llu->d_xsup,d_grid,
+//                         maxrecvsz, flag_bc_q, flag_rd_q, ready_x, ready_lsum, my_flag_bc, my_flag_rd,
+//                         d_nfrecv_u, h_nfrecv_u, d_status, d_colnum_u, d_mynum_u, d_mymaskstart_u,d_mymasklength_u,
+//                         d_nfrecvmod_u, d_statusmod, d_colnummod_u, d_mynummod_u, d_mymaskstartmod_u, d_mymasklengthmod_u,
+//                         d_recv_cnt_u, d_msgnum);
+//    //printf("(%d) done dlsum_bmod_inv_gpu_wrap\n",iam);
+//    //fflush(stdout);
+//
+//	checkGPU(gpuMemcpy(x, d_x, (ldalsum * nrhs + nlb * XK_H) * sizeof(double), gpuMemcpyDeviceToHost));
+//
+//	checkGPU (gpuFree (d_grid));
+//	checkGPU (gpuFree (d_x));
+//	checkGPU (gpuFree (d_lsum));
+//	checkGPU (gpuFree (d_bmod));
+//
+//	stat_loc[0]->ops[SOLVE]+=Llu->Unzval_br_cnt*nrhs*2; // YL: this is a rough estimate
+//
+//#else  /* CPU trisolve*/
 
-	d_grid = NULL;
-	d_x = NULL;
-	d_lsum = NULL;
-    int_t  *d_bmod = NULL;
-
-	checkGPU(gpuMalloc( (void**)&d_grid, sizeof(gridinfo_t)));
-	checkGPU(gpuMalloc( (void**)&d_lsum, sizelsum*num_thread * sizeof(double)));
-	checkGPU(gpuMalloc( (void**)&d_x, (ldalsum * nrhs + nlb * XK_H) * sizeof(double)));
-	checkGPU(gpuMalloc( (void**)&d_bmod, (nlb*aln_i) * sizeof(int_t)));
-	
-
-	checkGPU(gpuMemcpy(d_grid, grid, sizeof(gridinfo_t), gpuMemcpyHostToDevice));	
-	checkGPU(gpuMemcpy(d_lsum, lsum, sizelsum*num_thread * sizeof(double), gpuMemcpyHostToDevice));	
-	checkGPU(gpuMemcpy(d_x, x, (ldalsum * nrhs + nlb * XK_H) * sizeof(double), gpuMemcpyHostToDevice));	
-	checkGPU(gpuMemcpy(d_bmod, bmod, (nlb*aln_i) * sizeof(int_t), gpuMemcpyHostToDevice));
-
-	k = CEILING( nsupers, grid->npcol);/* Number of local block columns divided by #warps per block used as number of thread blocks*/
-	knsupc = sp_ienv_dist(3);
-
-
-    checkGPU(gpuMemcpy(d_status, mystatus_u, k * sizeof(int), gpuMemcpyHostToDevice));
-    checkGPU(gpuMemcpy(d_statusmod, mystatusmod_u, 2* nlb * sizeof(int), gpuMemcpyHostToDevice));
-    //for(int i=0;i<2*nlb;i++) printf("(%d),mystatusmod[%d]=%d\n",iam,i,mystatusmod[i]);
-    checkGPU(gpuMemset(flag_rd_q, 0, RDMA_FLAG_SIZE * nlb * 2 * sizeof(int)));
-    checkGPU(gpuMemset(flag_bc_q, 0, RDMA_FLAG_SIZE * (k+1)  * sizeof(int)));
-    checkGPU(gpuMemset(ready_x, 0, maxrecvsz*CEILING( nsupers, grid->npcol) * sizeof(double)));
-    checkGPU(gpuMemset(ready_lsum, 0, 2*maxrecvsz*CEILING( nsupers, grid->nprow) * sizeof(double)));
-    checkGPU(gpuMemset(d_msgnum, 0, h_nfrecv_u[1] * sizeof(int)));
-    checkGPU(gpuMemset(d_launch_flag, 0,  1 * sizeof(int)));
-
-    int temp2_size=0;
-    int *temp2_offset_by_block;
-    if ( !(temp2_offset_by_block = (int*)SUPERLU_MALLOC(k*sizeof(int))) )  // this needs to be optimized for 1D row mapping
-        ABORT("Malloc fails for temp2_offset_by_block[].");
-    memset(temp2_offset_by_block, 0, ( k * sizeof(int)));
-    for (int i=0; i<k; i++) {
-        //temp2_offset_by_block[i] = 0;
-        //printf("(%d) i=%d, nub=%d, temp2_offset_by_block=%d\n", iam, i, Urbs[i], temp2_offset_by_block[i]);
-        //fflush(stdout);
-        if (Urbs[i] > 0) {
-            int ngroup = SUPERLU_MIN(Urbs[i], 256);
-            int block_size_loc = floor((double) 256 / ngroup);
-            temp2_size+=256/block_size_loc;
-            for (int ii=i+1; ii<k; ii++) {
-                //printf("---- before (%d) ii=%d, enterTidNum=%d,tmp=%d\n", iam, ii, temp2_offset_by_block[ii],tmp);
-                //fflush(stdout);
-                temp2_offset_by_block[ii]+=256/block_size_loc;
-                //printf("---- after (%d) ii=%d, enterTidNum=%d,tmp=%d\n", iam, ii, temp2_offset_by_block[ii],tmp);
-                //fflush(stdout);
-            }
-        }
-    }
-    //printf(" (%d) tot_size=%d double, maxsuper=%d\n", iam,temp2_size,maxsuper);
-    //fflush(stdout);
-    //int *temp2_offset;
-    //checkGPU(gpuMalloc( (void**)&temp2_offset, k*sizeof(double)));
-    //checkGPU(gpuMemcpy(temp2_offset, temp2_offset_by_block, k * sizeof(double), gpuMemcpyHostToDevice));
-    //double *temp2;
-    //checkGPU(gpuMalloc( (void**)&temp2, temp2_size*maxsuper*sizeof(double)));
-    //checkGPU(gpuMemset(temp2, 0,  temp2_size*maxsuper * sizeof(double)));
-#if ( PRNTlevel>=1 )
-    t = SuperLU_timer_() - t;
-	if ( !iam) printf(".. Setup U-solve time\t%8.4f\n", t);
-	fflush(stdout);
-	MPI_Barrier( grid->comm );
-	t = SuperLU_timer_();
-#endif
-    //printf("(%d) temp2 size=%d of doubles\n", iam, temp2_size*1024);
-    //fflush(stdout);
-	//dlsum_bmod_inv_gpu_wrap_pre(k,nlb,DIM_X,DIM_Y,d_lsum,d_x,nrhs,knsupc,nsupers,d_bmod,
-    //                     Llu->d_UBtree_ptr,Llu->d_URtree_ptr,Llu->d_ilsum,Llu->d_Urbs,
-    //                     Llu->d_Ufstnz_br_dat,Llu->d_Ufstnz_br_offset,Llu->d_Unzval_br_dat,
-    //                     Llu->d_Unzval_br_offset,Llu->d_Ucb_valdat,Llu->d_Ucb_valoffset,Llu->d_Ucb_inddat,
-    //                     Llu->d_Ucb_indoffset,Llu->d_Uinv_bc_dat,Llu->d_Uinv_bc_offset,Llu->d_xsup,d_grid,
-    //                     maxrecvsz, flag_bc_q, flag_rd_q, ready_x, ready_lsum, my_flag_bc, my_flag_rd, d_launch_flag,
-    //                     d_nfrecv_u, h_nfrecv_u, d_status, d_colnum_u, d_mynum_u, d_mymaskstart_u,d_mymasklength_u,
-    //                     d_nfrecvmod_u, d_statusmod, d_colnummod_u, d_mynummod_u, d_mymaskstartmod_u, d_mymasklengthmod_u,
-    //                     d_recv_cnt_u, d_msgnum, temp2_offset, temp2);
-    dlsum_bmod_inv_gpu_wrap(k,nlb,DIM_X,DIM_Y,d_lsum,d_x,nrhs,knsupc,nsupers,d_bmod,
-                         Llu->d_UBtree_ptr,Llu->d_URtree_ptr,Llu->d_ilsum,Llu->d_Urbs,
-                         Llu->d_Ufstnz_br_dat,Llu->d_Ufstnz_br_offset,Llu->d_Unzval_br_dat,
-                         Llu->d_Unzval_br_offset,Llu->d_Ucb_valdat,Llu->d_Ucb_valoffset,Llu->d_Ucb_inddat,
-                         Llu->d_Ucb_indoffset,Llu->d_Uinv_bc_dat,Llu->d_Uinv_bc_offset,Llu->d_xsup,d_grid,
-                         maxrecvsz, flag_bc_q, flag_rd_q, ready_x, ready_lsum, my_flag_bc, my_flag_rd, d_launch_flag,
-                         d_nfrecv_u, h_nfrecv_u, d_status, d_colnum_u, d_mynum_u, d_mymaskstart_u,d_mymasklength_u,
-                         d_nfrecvmod_u, d_statusmod, d_colnummod_u, d_mynummod_u, d_mymaskstartmod_u, d_mymasklengthmod_u,
-                         d_recv_cnt_u, d_msgnum);
-    //printf("(%d) done dlsum_bmod_inv_gpu_wrap\n",iam);
-    //fflush(stdout);
-
-	checkGPU(gpuMemcpy(x, d_x, (ldalsum * nrhs + nlb * XK_H) * sizeof(double), gpuMemcpyDeviceToHost));
-
-	checkGPU (gpuFree (d_grid));
-	checkGPU (gpuFree (d_x));
-	checkGPU (gpuFree (d_lsum));
-	checkGPU (gpuFree (d_bmod));
-
-	stat_loc[0]->ops[SOLVE]+=Llu->Unzval_br_cnt*nrhs*2; // YL: this is a rough estimate 
-
-#else  /* CPU trisolve*/
 
 
 
@@ -3089,7 +3088,7 @@ for (i=0;i<nroot_send;i++){
 		} /* while not finished ... */
 	}
 
-#endif
+//#endif
 
 #if ( PRNTlevel>=1 )
 		t = SuperLU_timer_() - t;

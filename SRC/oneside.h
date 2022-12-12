@@ -2,6 +2,7 @@
 #include "cuda.h"
 #include "cuda_runtime.h"
 
+
 /* ************************************************* */
 /*  reuse L and U                                    */
 /*  *_nfrecv: totol number of received msg           */
@@ -17,7 +18,6 @@ extern int *my_flag_bc;
 extern int *my_flag_rd;
 extern double *ready_x;
 extern double *ready_lsum;
-extern int *d_launch_flag;
 extern int *mystatus;
 extern int *mystatusmod;
 extern int *mystatus_u;
@@ -61,6 +61,7 @@ extern int *d_mynummod;
 extern int *d_mymaskstartmod;
 extern int *d_mymasklengthmod;
 extern int *d_recv_cnt;
+extern int *d_flag_mod;
 
 
 /* ************************************************* */
@@ -84,8 +85,7 @@ extern int *d_recv_cnt_u;
 extern int *d_msgnum_u;
 
 
-extern __device__ int clockrate;
-#define RDMA_FLAG_SIZE 4
+#define RDMA_FLAG_SIZE 2
 
 
 

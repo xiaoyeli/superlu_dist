@@ -213,7 +213,7 @@ void C_BcTree_Create(C_Tree* tree, MPI_Comm comm, int* ranks, int rank_cnt, int 
 	  }
     }
 
-void C_RdTree_Create_nv(C_Tree* tree, MPI_Comm comm, int* ranks, int rank_cnt, int msgSize, char precision, int* needrecvrd){
+void C_RdTree_Create_nv(C_Tree* tree, MPI_Comm comm, int* ranks, int rank_cnt, int msgSize, char precision, int* needrecvrd,int* needsendrd){
     assert(msgSize>0);
 
     int nprocs = 0;
@@ -257,6 +257,7 @@ void C_RdTree_Create_nv(C_Tree* tree, MPI_Comm comm, int* ranks, int rank_cnt, i
 
     if(tree->myIdx!=0){
         tree->myRoot_ = ranks[(int)floor((double)(tree->myIdx-1.0)/(double)DEG_TREE)];
+        *needsendrd+=1;
     }else{
         tree->myRoot_ = tree->myRank_;
     }
