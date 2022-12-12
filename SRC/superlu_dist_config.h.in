@@ -9,6 +9,9 @@
 /* Enable parmetis */
 #cmakedefine HAVE_PARMETIS @HAVE_PARMETIS@
 
+/* Enable colamd */
+#cmakedefine HAVE_COLAMD @HAVE_COLAMD@
+
 /* Enable LAPACK */
 #cmakedefine SLU_HAVE_LAPACK @SLU_HAVE_LAPACK@
 
@@ -20,5 +23,4 @@
 
 #if (XSDK_INDEX_SIZE == 64)
 #define _LONGINT 1
-
 #endif

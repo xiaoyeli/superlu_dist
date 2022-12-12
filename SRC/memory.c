@@ -66,8 +66,8 @@ void *superlu_malloc_dist(size_t size)
     int iam;
 
     MPI_Comm_rank(MPI_COMM_WORLD, &iam);
-    if ( size <= 0 ) {
-	printf("(%d) superlu_malloc size %lld\n", iam, size);
+    if ( size < 0 ) {
+	printf("(%d) superlu_malloc size %lu\n", iam, size);
 	ABORT("superlu_malloc: nonpositive size");
     }
 // #ifdef GPU_ACC    
@@ -77,7 +77,7 @@ void *superlu_malloc_dist(size_t size)
 // #endif
 	
     if ( !buf ) {
-	printf("(%d) superlu_malloc fails: malloc_total %.0f MB, size %lld\n",
+	printf("(%d) superlu_malloc fails: malloc_total %.0f MB, size %lu\n",
 	       iam, superlu_malloc_total*1e-6, size);
 	ABORT("superlu_malloc: out of memory");
     }
@@ -143,7 +143,7 @@ void superlu_free_dist(void *addr) { gpuError_t error = gpuFree(addr);}
 #else 
 
 #if  0 
-// #if (__STDC_VERSION__ >= 201112L)    // this is very slow on tulip
+// #if (__STDC_VERSION__ >= 201112L)   // cannot compile on Summit, also this is very slow on tulip
 
 void * superlu_malloc_dist(size_t size) {void* ptr;int alignment=1<<12;if(size>1<<19){alignment=1<<21;}posix_memalign( (void**)&(ptr), alignment, size );return(ptr);}
 void   superlu_free_dist(void * ptr)    {free(ptr);}
@@ -198,6 +198,23 @@ user_bcopy(char *src, char *dest, int_t bytes)
 }
 
 
+
+int *int32Malloc_dist(int n)
+{
+    int *buf;
+    buf = (int *) SUPERLU_MALLOC((size_t) SUPERLU_MAX(1,n) * sizeof(int));
+    return (buf);
+}
+
+int *int32Calloc_dist(int n)
+{
+    int *buf;
+    register int i;
+    buf = (int *) SUPERLU_MALLOC((size_t) SUPERLU_MAX(1,n) * sizeof(int));
+    if ( buf )
+	for (i = 0; i < n; ++i) buf[i] = 0;
+    return (buf);
+}
 
 int_t *intMalloc_dist(int_t n)
 {
@@ -285,6 +302,7 @@ void SetupSpace(void *work, int_t lwork, LU_space_t *MemModel)
 int_t symbfact_SubInit
 /************************************************************************/
 (
+ superlu_dist_options_t *options,
  fact_t fact, void *work, int_t lwork, int_t m, int_t n, int_t annz,
  Glu_persist_t *Glu_persist, Glu_freeable_t *Glu_freeable
  )
@@ -294,7 +312,7 @@ int_t symbfact_SubInit
     int_t  *lsub, *xlsub;
     int_t  *usub, *xusub;
     int_t  nzlmax, nzumax;
-    int_t  FILL = sp_ienv_dist(6);
+    int_t  FILL = sp_ienv_dist(6, options);
     int iam;
 
 #if ( DEBUGlevel>=1 )
@@ -426,8 +444,7 @@ int_t symbfact_SubXpand
     
 #if ( DEBUGlevel>=1 )
     printf("symbfact_SubXpand(): jcol " IFMT ", next " IFMT ", maxlen " IFMT
-	   ", MemType " IFMT "\n",
-	   jcol, next, *maxlen, mem_type);
+	   ", MemType %d\n", jcol, next, *maxlen, mem_type);
 #endif    
 
     new_mem = expand(maxlen, mem_type, next, 0, Glu_freeable);

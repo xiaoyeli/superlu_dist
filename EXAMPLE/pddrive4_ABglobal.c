@@ -60,7 +60,7 @@ int main(int argc, char *argv[])
     int_t    *asub, *xa;
     int_t    i, j, m, n, nnz;
     int_t    nprow, npcol, ldumap, p;
-    int_t    usermap[6];
+    int    usermap[6];
     int      iam, info, ldb, ldx, nprocs;
     int      nrhs = 1;   /* Number of right-hand side. */
     char     trans[1];
@@ -126,7 +126,7 @@ int main(int argc, char *argv[])
 
     /* Bail out if I do not belong in any of the 2 grids. */
     MPI_Comm_rank( MPI_COMM_WORLD, &iam );
-    if ( iam >= 10 ) goto out;
+    if ( iam == -1 ) goto out;
     
 #if ( DEBUGlevel>=1 )
     CHECK_MALLOC(iam, "Enter main()");
@@ -177,8 +177,17 @@ int main(int argc, char *argv[])
 	*trans = 'N';
 	ldx = n;
 	ldb = m;
-	dGenXtrue_dist(n, nrhs, xtrue, ldx);
-	dFillRHS_dist(trans, nrhs, xtrue, ldx, &A, b, ldb);
+
+  	if ( iam==0 ) {
+	    dGenXtrue_dist(n, nrhs, xtrue, ldx);
+	    dFillRHS_dist(trans, nrhs, xtrue, ldx, &A, b, ldb);
+	    
+            MPI_Bcast( xtrue, n*nrhs, MPI_DOUBLE, 0, grid1.comm );
+            MPI_Bcast( b, m*nrhs, MPI_DOUBLE, 0, grid1.comm );
+	} else {
+            MPI_Bcast( xtrue, n*nrhs, MPI_DOUBLE, 0, grid1.comm );
+            MPI_Bcast( b, m*nrhs, MPI_DOUBLE, 0, grid1.comm );
+	}
 
 	if ( !(berr = doubleMalloc_dist(nrhs)) )
 	    ABORT("Malloc fails for berr[].");
@@ -202,7 +211,6 @@ int main(int argc, char *argv[])
 	set_default_options_dist(&options);
 
         if (!iam) {
-	    print_sp_ienv_dist(&options);
 	    print_options_dist(&options);
         }
 
@@ -283,8 +291,16 @@ int main(int argc, char *argv[])
 	*trans = 'N';
 	ldx = n;
 	ldb = m;
-	dGenXtrue_dist(n, nrhs, xtrue, ldx);
-	dFillRHS_dist(trans, nrhs, xtrue, ldx, &A, b, ldb);
+
+        if ( iam==0 ) {
+	    dGenXtrue_dist(n, nrhs, xtrue, ldx);
+	    dFillRHS_dist(trans, nrhs, xtrue, ldx, &A, b, ldb);
+            MPI_Bcast( xtrue, n*nrhs, MPI_DOUBLE, 0, grid2.comm );
+            MPI_Bcast( b, m*nrhs, MPI_DOUBLE, 0, grid2.comm );
+	} else {
+            MPI_Bcast( xtrue, n*nrhs, MPI_DOUBLE, 0, grid2.comm );
+            MPI_Bcast( b, m*nrhs, MPI_DOUBLE, 0, grid2.comm );
+	}
 
 	if ( !(berr = doubleMalloc_dist(nrhs)) )
 	    ABORT("Malloc fails for berr[].");

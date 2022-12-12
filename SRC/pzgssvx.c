@@ -323,7 +323,7 @@ at the top-level directory.
  *           = LargeDiag_MC64: use the Duff/Koster algorithm to permute rows
  *                        of the original matrix to make the diagonal large
  *                        relative to the off-diagonal.
- *           = LargeDiag_APWM: use the parallel approximate-weight perfect
+ *           = LargeDiag_HPWM: use the parallel approximate-weight perfect
  *                        matching to permute rows of the original matrix
  *                        to make the diagonal large relative to the
  *                        off-diagonal.
@@ -405,7 +405,7 @@ at the top-level directory.
  *           of Pc*A'*A*Pc'; perm_c is not changed if the elimination tree
  *           is already in postorder.
  *
- *         o R (double*) dimension (A->nrow)
+ *         o R (double *) dimension (A->nrow)
  *           The row scale factors for A.
  *           If DiagScale = ROW or BOTH, A is multiplied on the left by
  *                          diag(R).
@@ -413,7 +413,7 @@ at the top-level directory.
  *           If options->Fact = FACTORED or SamePattern_SameRowPerm, R is
  *           an input argument; otherwise, R is an output argument.
  *
- *         o C (double*) dimension (A->ncol)
+ *         o C (double *) dimension (A->ncol)
  *           The column scale factors for A.
  *           If DiagScale = COL or BOTH, A is multiplied on the right by
  *                          diag(C).
@@ -489,7 +489,7 @@ at the top-level directory.
  *
  * info    (output) int*
  *         = 0: successful exit
- *         < 0: if info = -i, the i-th argument had an illegal value   
+ *         < 0: if info = -i, the i-th argument had an illegal value  
  *         > 0: if info = i, and i is
  *             <= A->ncol: U(i,i) is exactly zero. The factorization has
  *                been completed, but the factor U is exactly singular,
@@ -527,19 +527,21 @@ pzgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 	      routine. They will be freed after PDDISTRIBUTE routine.
 	      If options->Fact == SamePattern_SameRowPerm, these
 	      structures are not used.                                  */
-    fact_t   Fact;
-    doublecomplex   *a;
-    int_t    *colptr, *rowind;
-    int_t    *perm_r; /* row permutations from partial pivoting */
-    int_t    *perm_c; /* column permutation vector */
-    int_t    *etree;  /* elimination tree */
-    int_t    *rowptr, *colind;  /* Local A in NR*/
-    int_t    colequ, Equil, factored, job, notran, rowequ, need_value;
-    int_t    i, iinfo, j, irow, m, n, nnz, permc_spec;
-    int_t    nnz_loc, m_loc, fst_row, icol;
-    int      iam,iam_g;
-    int      ldx;  /* LDA for matrix X (local). */
-    char     equed[1], norm[1];
+    fact_t  Fact;
+    doublecomplex *a;
+    int_t   *colptr, *rowind;
+    int_t   *perm_r; /* row permutations from partial pivoting */
+    int_t   *perm_c; /* column permutation vector */
+    int_t   *etree;  /* elimination tree */
+    int_t   *rowptr, *colind;  /* Local A in NR*/
+    int_t   nnz_loc, nnz, iinfo;
+    int     m_loc, fst_row, icol;
+    int     colequ, Equil, factored, job, notran, rowequ, need_value;
+    int_t   i, j, irow, m, n;
+    int     permc_spec;
+    int     iam, iam_g;
+    int     ldx;  /* LDA for matrix X (local). */
+    char    equed[1], norm[1];
     double   *C, *R, *C1, *R1, amax, anorm, colcnd, rowcnd;
     doublecomplex   *X, *b_col, *b_work, *x_col;
     double   t;
@@ -587,13 +589,13 @@ pzgssvx(superlu_dist_options_t *options, SuperMatrix *A,
     /* Test the input parameters. */
     *info = 0;
     Fact = options->Fact;
-    if ( Fact < 0 || Fact > FACTORED )
+    if ( Fact < DOFACT || Fact > FACTORED )
 	*info = -1;
-    else if ( options->RowPerm < 0 || options->RowPerm > MY_PERMR )
+    else if ( options->RowPerm < NOROWPERM || options->RowPerm > MY_PERMR )
 	*info = -1;
-    else if ( options->ColPerm < 0 || options->ColPerm > MY_PERMC )
+    else if ( options->ColPerm < NATURAL || options->ColPerm > MY_PERMC )
 	*info = -1;
-    else if ( options->IterRefine < 0 || options->IterRefine > SLU_EXTRA )
+    else if ( options->IterRefine < NOREFINE || options->IterRefine > SLU_EXTRA )
 	*info = -1;
     else if ( options->IterRefine == SLU_EXTRA ) {
 	*info = -1;
@@ -605,9 +607,9 @@ pzgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 	*info = -5;
     else if ( nrhs < 0 )
 	*info = -6;
-    if ( sp_ienv_dist(2) > sp_ienv_dist(3) ) {
-        *info = 1;
-	printf("ERROR: Relaxation (NREL) cannot be larger than max. supernode size (NSUP).\n"
+    if ( sp_ienv_dist(2, options) > sp_ienv_dist(3, options) ) {
+        *info = -1;
+	printf("ERROR: Relaxation (SUPERLU_RELAX) cannot be larger than max. supernode size (SUPERLU_MAXSUP).\n"
 	"\t-> Check parameter setting in sp_ienv_dist.c to correct error.\n");
     }
     if ( *info ) {
@@ -664,6 +666,7 @@ pzgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 		    ABORT("Malloc fails for R[].");
 		ScalePermstruct->R = R;
 		break;
+	    default: break;
 	}
     }
 
@@ -718,11 +721,11 @@ pzgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 	    if ( iinfo > 0 ) {
 		if ( iinfo <= m ) {
 #if ( PRNTlevel>=1 )
-		    fprintf(stderr, "The " IFMT "-th row of A is exactly zero\n", iinfo);
+		    fprintf(stderr, "The %d-th row of A is exactly zero\n", (int)iinfo);
 #endif
 		} else {
 #if ( PRNTlevel>=1 )
-                    fprintf(stderr, "The " IFMT "-th column of A is exactly zero\n", iinfo-n);
+                    fprintf(stderr, "The %d-th column of A is exactly zero\n", (int)iinfo-n);
 #endif
                 }
  	    } else if ( iinfo < 0 ) return;
@@ -913,7 +916,7 @@ pzgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 		        if ( !iam ) printf("\t product of diagonal %e\n", dprod);
 	            }
 #endif
-                } else { /* use largeDiag_AWPM */
+                } else { /* use LargeDiag_HWPM */
 #ifdef HAVE_COMBBLAS
 		    z_c2cpp_GetHWPM(A, grid, ScalePermstruct);
 #else
@@ -927,7 +930,7 @@ pzgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 	        stat->utime[ROWPERM] = t;
 #if ( PRNTlevel>=1 )
                 if ( !iam ) {
-		    printf(".. LDPERM job " IFMT "\t time: %.2f\n", job, t);
+		    printf(".. RowPerm %d\t time: %.2f\n", options->RowPerm, t);
 		    fflush(stdout);
 		}
 #endif
@@ -1060,8 +1063,8 @@ pzgssvx(superlu_dist_options_t *options, SuperMatrix *A,
                    the nonzero data structures for L & U. */
 #if ( PRNTlevel>=1 )
                 if ( !iam ) {
-		    printf(".. symbfact(): relax " IFMT ", maxsuper " IFMT ", fill " IFMT "\n",
-		          sp_ienv_dist(2), sp_ienv_dist(3), sp_ienv_dist(6));
+		    printf(".. symbfact(): relax %d, maxsuper %d, fill %d\n",
+		          sp_ienv_dist(2,options), sp_ienv_dist(3,options), sp_ienv_dist(6,options));
 		    fflush(stdout);
 	        }
 #endif
@@ -1082,10 +1085,10 @@ pzgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 		    	printf("\tNo of supers " IFMT "\n", Glu_persist->supno[n-1]+1);
 		    	printf("\tSize of G(L) " IFMT "\n", Glu_freeable->xlsub[n]);
 		    	printf("\tSize of G(U) " IFMT "\n", Glu_freeable->xusub[n]);
-		    	printf("\tint %d, short %d, float %d, double %d\n",
-			       (int) sizeof(int_t), (int) sizeof(short),
-        		       (int) sizeof(float), (int) sizeof(double));
-		    	printf("\tSYMBfact (MB):\tL\\U %.2f\ttotal %.2f\texpansions " IFMT "\n",
+		    	printf("\tint %lu, short %lu, float %lu, double %lu\n",
+			        sizeof(int_t), sizeof(short),
+        		        sizeof(float), sizeof(double));
+		    	printf("\tSYMBfact (MB):\tL\\U %.2f\ttotal %.2f\texpansions %d\n",
 			   	symb_mem_usage.for_lu*1e-6,
 			   	symb_mem_usage.total*1e-6,
 			   	symb_mem_usage.expansions);
@@ -1103,7 +1106,8 @@ pzgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 	    } /* end serial symbolic factorization */
 	    else {  /* parallel symbolic factorization */
 	    	t = SuperLU_timer_();
-	    	flinfo = symbfact_dist(nprocs_num, noDomains, A, perm_c, perm_r,
+	    	flinfo = symbfact_dist(options, nprocs_num, noDomains,
+		                       A, perm_c, perm_r,
 				       sizes, fstVtxSep, &Pslu_freeable,
 				       &(grid->comm), &symb_comm,
 				       &symb_mem_usage);
@@ -1141,7 +1145,7 @@ pzgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 	       NOTE: the row permutation Pc*Pr is applied internally in the
   	       distribution routine. */
 	    t = SuperLU_timer_();
-	    dist_mem_use = pzdistribute(Fact, n, A, ScalePermstruct,
+	    dist_mem_use = pzdistribute(options, n, A, ScalePermstruct,
                                       Glu_freeable, LUstruct, grid);
 	    stat->utime[DIST] = SuperLU_timer_() - t;
 
@@ -1158,7 +1162,7 @@ pzgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 	    for (j = 0; j < nnz_loc; ++j) colind[j] = perm_c[colind[j]];
 
     	    t = SuperLU_timer_();
-	    dist_mem_use = zdist_psymbtonum(Fact, n, A, ScalePermstruct,
+	    dist_mem_use = zdist_psymbtonum(options, n, A, ScalePermstruct,
 		  			   &Pslu_freeable, LUstruct, grid);
 	    if (dist_mem_use > 0)
 	        ABORT ("Not enough memory available for dist_psymbtonum\n");
@@ -1229,11 +1233,6 @@ pzgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 
 	MPI_Comm_rank( MPI_COMM_WORLD, &iam_g );
 
-    if (!iam_g) {
-	print_options_dist(options);
-	fflush(stdout);
-    }
-
     printf(".. Ainfo mygid %5d   mysid %5d   nnz_loc " IFMT "  sum_loc  %e lsum_loc   %e nnz "IFMT " nnzLU %ld sum %e  lsum %e  N "IFMT "\n", iam_g,iam,Astore->rowptr[Astore->m_loc],asum.r+asum.i, lsum.r+lsum.i, nnz_tot,nnzLU,asum_tot.r+asum_tot.i,lsum_tot.r+lsum_tot.i,A->ncol);
 	fflush(stdout);
 #endif
@@ -1279,52 +1278,84 @@ pzgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 
 	if ( options->PrintStat ) {
 	    int_t TinyPivots;
-	    float for_lu, total, max, avg, temp;
+	    float for_lu, total, avg, loc_max;
+	    float mem_stage[3];
+	    struct { float val; int rank; } local_struct, global_struct;
 
-	    zQuerySpace_dist(n, LUstruct, grid, stat, &num_mem_usage);
+	    MPI_Reduce( &stat->TinyPivots, &TinyPivots, 1, mpi_int_t,
+	    		MPI_SUM, 0, grid->comm );
+	    stat->TinyPivots = TinyPivots;
 
+	    /*-- Compute high watermark of all stages --*/
 	    if (parSymbFact == TRUE) {
 	        /* The memory used in the redistribution routine
 		   includes the memory used for storing the symbolic
   		   structure and the memory allocated for numerical
 		   factorization */
-	        temp = SUPERLU_MAX(symb_mem_usage.total, -dist_mem_use);
+		mem_stage[0] = (-flinfo);       /* symbfact step */
+		mem_stage[1] = (-dist_mem_use); /* distribution step */
+		loc_max = SUPERLU_MAX( mem_stage[0], mem_stage[1] );
                 if ( options->RowPerm != NO )
-                    temp = SUPERLU_MAX(temp, GA_mem_use);
+                    loc_max = SUPERLU_MAX(loc_max, GA_mem_use);
             } else {
-	        temp = SUPERLU_MAX (
-                         symb_mem_usage.total + GA_mem_use, /* symbfact step */
-		         symb_mem_usage.for_lu + dist_mem_use +
-                             num_mem_usage.for_lu  /* distribution step */
-                       );
+		mem_stage[0] = symb_mem_usage.total + GA_mem_use; /* symbfact step */
+		mem_stage[1] = symb_mem_usage.for_lu
+		               + dist_mem_use
+		               + num_mem_usage.for_lu; /* distribution step */
+		loc_max = SUPERLU_MAX( mem_stage[0], mem_stage[1] );
             }
 
-	    temp = SUPERLU_MAX(temp, num_mem_usage.total);
+	    zQuerySpace_dist(n, LUstruct, grid, stat, &num_mem_usage);
+	    mem_stage[2] = num_mem_usage.total;  /* numerical factorization step */
+	    
+	    loc_max = SUPERLU_MAX( loc_max, mem_stage[2] ); /* local max of 3 stages */
 
-	    MPI_Reduce( &temp, &max,
-		       1, MPI_FLOAT, MPI_MAX, 0, grid->comm );
-	    MPI_Reduce( &temp, &avg,
+	    local_struct.val = loc_max;
+	    local_struct.rank = grid->iam;
+	    MPI_Reduce( &local_struct, &global_struct, 1, MPI_FLOAT_INT, MPI_MAXLOC, 0, grid->comm );
+	    int all_highmark_rank = global_struct.rank;
+	    float all_highmark_mem = global_struct.val * 1e-6;
+	    
+	    MPI_Reduce( &loc_max, &avg,
 		       1, MPI_FLOAT, MPI_SUM, 0, grid->comm );
-	    MPI_Allreduce( &stat->TinyPivots, &TinyPivots, 1, mpi_int_t,
-			  MPI_SUM, grid->comm );
-	    stat->TinyPivots = TinyPivots;
-
 	    MPI_Reduce( &num_mem_usage.for_lu, &for_lu,
 		       1, MPI_FLOAT, MPI_SUM, 0, grid->comm );
 	    MPI_Reduce( &num_mem_usage.total, &total,
 		       1, MPI_FLOAT, MPI_SUM, 0, grid->comm );
 
-            if (!iam) {
+	    /*-- Compute memory usage of numerical factorization --*/
+	    local_struct.val = num_mem_usage.for_lu;
+	    MPI_Reduce( &local_struct, &global_struct, 1, MPI_FLOAT_INT, MPI_MAXLOC, 0, grid->comm );
+	    int lu_max_rank = global_struct.rank;
+	    float lu_max_mem = global_struct.val*1e-6;
+	    
+	    local_struct.val = stat->peak_buffer;
+	    MPI_Reduce( &local_struct, &global_struct, 1, MPI_FLOAT_INT, MPI_MAXLOC, 0, grid->comm );
+	    int buffer_peak_rank = global_struct.rank;
+	    float buffer_peak = global_struct.val*1e-6;
+    
+            if ( iam==0 ) {
 		printf("\n** Memory Usage **********************************\n");
-                printf("** NUMfact space (MB): (sum-of-all-processes)\n"
-		       "    L\\U :        %8.2f |  Total : %8.2f\n",
-		       for_lu * 1e-6, total * 1e-6);
                 printf("** Total highmark (MB):\n"
 		       "    Sum-of-all : %8.2f | Avg : %8.2f  | Max : %8.2f\n",
 		       avg * 1e-6,
 		       avg / grid->nprow / grid->npcol * 1e-6,
-		       max * 1e-6);
-		printf("**************************************************\n");
+		       all_highmark_mem);
+		printf("    Max at rank %d, different stages (MB):\n"
+		       "\t. symbfact        %8.2f\n"
+		       "\t. distribution    %8.2f\n"
+		       "\t. numfact         %8.2f\n",
+		       all_highmark_rank, mem_stage[0]*1e-6, mem_stage[1]*1e-6, mem_stage[2]*1e-6);
+		
+                printf("** NUMfact space (MB): (sum-of-all-processes)\n"
+		       "    L\\U :        %8.2f |  Total : %8.2f\n",
+		       for_lu * 1e-6, total * 1e-6);
+		printf("\t. max at rank %d, max L+U memory (MB): %8.2f\n"
+		       "\t. max at rank %d, peak buffer (MB):    %8.2f\n",
+		       lu_max_rank, lu_max_mem,
+		       buffer_peak_rank, buffer_peak);
+		printf("**************************************************\n\n");
+		printf("** number of Tiny Pivots: %8d\n\n", stat->TinyPivots);
 		fflush(stdout);
             }
 	} /* end printing stats */
@@ -1409,10 +1440,29 @@ pzgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 	       factorization with Fact == DOFACT or SamePattern is asked for. */
 	}
 
-	if ( options->DiagInv==YES &&
-             (options->SolveInitialized == NO || Fact == SamePattern ||
-              Fact == SamePattern_SameRowPerm) ) {
+#if ( defined(GPU_ACC) && defined(GPU_SOLVE) )
+        if(options->DiagInv==NO){
+	    if (iam==0) {
+	        printf("!!WARNING: GPU trisolve requires setting options->DiagInv==YES\n");
+                printf("           otherwise, use CPU trisolve\n");
+		fflush(stdout);
+	    }
+	    //exit(0);  // Sherry: need to return an error flag
+	}
+#endif
+
+	if ( options->DiagInv==YES && (Fact != FACTORED) ) {
 	    pzCompute_Diag_Inv(n, LUstruct, grid, stat, info);
+#ifdef GPU_ACC
+            checkGPU(gpuMemcpy(LUstruct->Llu->d_Linv_bc_dat, LUstruct->Llu->Linv_bc_dat,
+	        (LUstruct->Llu->Linv_bc_cnt) * sizeof(doublecomplex), gpuMemcpyHostToDevice));
+            checkGPU(gpuMemcpy(LUstruct->Llu->d_Uinv_bc_dat, LUstruct->Llu->Uinv_bc_dat,
+	        (LUstruct->Llu->Uinv_bc_cnt) * sizeof(doublecomplex), gpuMemcpyHostToDevice));
+            checkGPU(gpuMemcpy(LUstruct->Llu->d_Lnzval_bc_dat, LUstruct->Llu->Lnzval_bc_dat,
+	        (LUstruct->Llu->Lnzval_bc_cnt) * sizeof(doublecomplex), gpuMemcpyHostToDevice));
+            //checkGPU(gpuMemcpy(LUstruct->Llu->d_Unzval_br_dat, LUstruct->Llu->Unzval_br_dat,
+	      //  (LUstruct->Llu->Unzval_br_cnt) * sizeof(doublecomplex), gpuMemcpyHostToDevice));
+#endif
 	}
 
 
@@ -1420,7 +1470,7 @@ pzgssvx(superlu_dist_options_t *options, SuperMatrix *A,
     // {
 	// #pragma omp master
 	// {
-	pzgstrs(n, LUstruct, ScalePermstruct, grid, X, m_loc,
+	pzgstrs(options, n, LUstruct, ScalePermstruct, grid, X, m_loc,
 		fst_row, ldb, nrhs, SOLVEstruct, stat, info);
 	// }
 	// }
@@ -1502,7 +1552,7 @@ pzgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 			     Glu_persist, SOLVEstruct1);
 	    }
 
-	    pzgsrfs(n, A, anorm, LUstruct, ScalePermstruct, grid,
+	    pzgsrfs(options, n, A, anorm, LUstruct, ScalePermstruct, grid,
 		    B, ldb, X, ldx, nrhs, SOLVEstruct1, berr, stat, info);
 
             /* Deallocate the storage associated with SOLVEstruct1 */
@@ -1572,6 +1622,7 @@ pzgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 	    case COL:
 		SUPERLU_FREE(R);
 		break;
+	    default: break;
 	}
     }
 

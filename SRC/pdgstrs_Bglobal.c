@@ -58,6 +58,10 @@ static void gather_diag_to_all(int_t, int_t, double [], Glu_persist_t *,
  * Arguments
  * =========
  *
+ * options (input) superlu_dist_options_t*
+ *         The structure defines the input parameters to control
+ *         how the LU decomposition and triangular solve are performed.
+ *
  * n      (input) int (global)
  *        The order of the system of linear equations.
  *
@@ -101,7 +105,8 @@ static void gather_diag_to_all(int_t, int_t, double [], Glu_persist_t *,
  */
 
 void
-pdgstrs_Bglobal(int_t n, dLUstruct_t *LUstruct, gridinfo_t *grid,
+pdgstrs_Bglobal(superlu_dist_options_t *options, int_t n,
+                dLUstruct_t *LUstruct, gridinfo_t *grid,
                 double *B, int_t ldb, int nrhs,
                 SuperLUStat_t *stat, int *info)
 {
@@ -134,19 +139,19 @@ pdgstrs_Bglobal(int_t n, dLUstruct_t *LUstruct, gridinfo_t *grid,
 #endif
 
     /*-- Counts used for L-solve --*/
-    int_t  *fmod;         /* Modification count for L-solve. */
-    int_t  **fsendx_plist = Llu->fsendx_plist;
-    int_t  nfrecvx = Llu->nfrecvx; /* Number of X components to be recv'd. */
-    int_t  *frecv;        /* Count of modifications to be recv'd from
+    int  *fmod;         /* Modification count for L-solve. */
+    int  **fsendx_plist = Llu->fsendx_plist;
+    int  nfrecvx = Llu->nfrecvx; /* Number of X components to be recv'd. */
+    int  *frecv;        /* Count of modifications to be recv'd from
 			     processes in this row. */
-    int_t  nfrecvmod = 0; /* Count of total modifications to be recv'd. */
-    int_t  nleaf = 0, nroot = 0;
+    int  nfrecvmod = 0; /* Count of total modifications to be recv'd. */
+    int  nleaf = 0, nroot = 0;
 
     /*-- Counts used for U-solve --*/
-    int_t  *bmod;         /* Modification count for L-solve. */
-    int_t  **bsendx_plist = Llu->bsendx_plist;
-    int_t  nbrecvx = Llu->nbrecvx; /* Number of X components to be recv'd. */
-    int_t  *brecv;        /* Count of modifications to be recv'd from
+    int  *bmod;         /* Modification count for L-solve. */
+    int  **bsendx_plist = Llu->bsendx_plist;
+    int  nbrecvx = Llu->nbrecvx; /* Number of X components to be recv'd. */
+    int  *brecv;        /* Count of modifications to be recv'd from
 			     processes in this row. */
     int_t  nbrecvmod = 0; /* Count of total modifications to be recv'd. */
     double t;
@@ -154,7 +159,7 @@ pdgstrs_Bglobal(int_t n, dLUstruct_t *LUstruct, gridinfo_t *grid,
     int_t Ublocks = 0;
 #endif
 
-    int_t *mod_bit = Llu->mod_bit; /* flag contribution from each row block */
+    int *mod_bit = Llu->mod_bit; /* flag contribution from each row block */
 
     t = SuperLU_timer_();
 
@@ -189,10 +194,10 @@ pdgstrs_Bglobal(int_t n, dLUstruct_t *LUstruct, gridinfo_t *grid,
 
     /* Save the count to be altered so it can be used by
        subsequent call to PDGSTRS_BGLOBAL. */
-    if ( !(fmod = intMalloc_dist(nlb)) )
+    if ( !(fmod = int32Malloc_dist(nlb)) )
 	ABORT("Calloc fails for fmod[].");
     for (i = 0; i < nlb; ++i) fmod[i] = Llu->fmod[i];
-    if ( !(frecv = intMalloc_dist(nlb)) )
+    if ( !(frecv = int32Malloc_dist(nlb)) )
 	ABORT("Malloc fails for frecv[].");
     Llu->frecv = frecv;
 
@@ -214,7 +219,7 @@ pdgstrs_Bglobal(int_t n, dLUstruct_t *LUstruct, gridinfo_t *grid,
     ldalsum = Llu->ldalsum;
 
     /* Allocate working storage. */
-    knsupc = sp_ienv_dist(3);
+    knsupc = sp_ienv_dist(3, options);
     maxrecvsz = knsupc * nrhs + SUPERLU_MAX( XK_H, LSUM_H );
     if ( !(lsum = doubleCalloc_dist(((size_t)ldalsum) * nrhs
         + nlb * LSUM_H)) )
@@ -275,7 +280,11 @@ pdgstrs_Bglobal(int_t n, dLUstruct_t *LUstruct, gridinfo_t *grid,
 
 	/* Every process receives the count, but it is only useful on the
 	   diagonal processes.  */
+#if 0	   
 	MPI_Allreduce( mod_bit, frecv, nlb, mpi_int_t, MPI_SUM, scp->comm );
+#else	
+	MPI_Allreduce( mod_bit, frecv, nlb, MPI_INT, MPI_SUM, scp->comm );
+#endif	
 
 	for (k = 0; k < nsupers; ++k) {
 	    krow = PROW( k, grid );
@@ -564,10 +573,10 @@ pdgstrs_Bglobal(int_t n, dLUstruct_t *LUstruct, gridinfo_t *grid,
 
     /* Save the count to be altered so it can be used by
        subsequent call to PDGSTRS_BGLOBAL. */
-    if ( !(bmod = intMalloc_dist(nlb)) )
+    if ( !(bmod = int32Malloc_dist(nlb)) )
 	ABORT("Calloc fails for bmod[].");
     for (i = 0; i < nlb; ++i) bmod[i] = Llu->bmod[i];
-    if ( !(brecv = intMalloc_dist(nlb)) )
+    if ( !(brecv = int32Malloc_dist(nlb)) )
 	ABORT("Malloc fails for brecv[].");
     Llu->brecv = brecv;
 
@@ -591,7 +600,11 @@ pdgstrs_Bglobal(int_t n, dLUstruct_t *LUstruct, gridinfo_t *grid,
 
 	/* Every process receives the count, but it is only useful on the
 	   diagonal processes.  */
+#if 0	   
 	MPI_Allreduce( mod_bit, brecv, nlb, mpi_int_t, MPI_SUM, scp->comm );
+#else	
+	MPI_Allreduce( mod_bit, brecv, nlb, MPI_INT, MPI_SUM, scp->comm );
+#endif
 
 	for (k = 0; k < nsupers; ++k) {
 	    krow = PROW( k, grid );

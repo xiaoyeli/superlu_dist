@@ -8,8 +8,9 @@ All rights reserved.
 The source code is distributed under BSD license, see the file License.txt
 at the top-level directory.
 */
+
 /*! @file
- * \brief Solves one of the systems of equations A*x = b,   or   A'*x = b
+ * \brief Sparse BLAS 2, using some dense BLAS 2 operations
  *
  * <pre>
  * -- Distributed SuperLU routine (version 1.0) --
@@ -19,7 +20,7 @@ at the top-level directory.
  */
 
 /*
- * File name:		sp_blas2.c
+ * File name:		zsp_blas2_dist.c
  * Purpose:		Sparse BLAS 2, using some dense BLAS 2 operations.
  */
 
@@ -30,11 +31,10 @@ at the top-level directory.
  * Function prototypes 
  */
 #ifndef USE_VENDOR_BLAS
-void zusolve(int, int, doublecomplex*, doublecomplex*);
-void zlsolve(int, int, doublecomplex*, doublecomplex*);
-void zmatvec(int, int, int, doublecomplex*, doublecomplex*, doublecomplex*);
+extern void zusolve(int, int, doublecomplex*, doublecomplex*);
+extern void zlsolve(int, int, doublecomplex*, doublecomplex*);
+extern void zmatvec(int, int, int, doublecomplex*, doublecomplex*, doublecomplex*);
 #endif
-
 
 /*! \brief
  *
@@ -42,7 +42,7 @@ void zmatvec(int, int, int, doublecomplex*, doublecomplex*, doublecomplex*);
  *   Purpose
  *   =======
  *
- *   sp_ztrsv() solves one of the systems of equations   
+ *   sp_ztrsv_dist() solves one of the systems of equations   
  *       A*x = b,   or   A'*x = b,
  *   where b and x are n element vectors and A is a sparse unit , or   
  *   non-unit, upper or lower triangular matrix.   
@@ -74,12 +74,12 @@ void zmatvec(int, int, int, doublecomplex*, doublecomplex*, doublecomplex*);
  *	     
  *   L       - (input) SuperMatrix*
  *	       The factor L from the factorization Pr*A*Pc=L*U. Use
- *             compressed row subscripts storage for supernodes,
- *             i.e., L has types: Stype = SC, Dtype = Z, Mtype = TRLU.
+ *             compressed row subscripts storage for supernodes, i.e.,
+ *             L has types: Stype = SLU_SC, Dtype = SLU_Z, Mtype = SLU_TRLU.
  *
  *   U       - (input) SuperMatrix*
  *	        The factor U from the factorization Pr*A*Pc=L*U.
- *	        U has types: Stype = NC, Dtype = Z, Mtype = TRU.
+ *	        U has types: Stype = SLU_NC, Dtype = SLU_Z, Mtype = SLU_TRU.
  *    
  *   x       - (input/output) doublecomplex*
  *             Before entry, the incremented array X must contain the n   
@@ -96,46 +96,43 @@ sp_ztrsv_dist(char *uplo, char *trans, char *diag, SuperMatrix *L,
 {
 
 #ifdef _CRAY
-    _fcd ftcs1 = _cptofcd("L", strlen("L")),
-	 ftcs2 = _cptofcd("N", strlen("N")),
-	 ftcs3 = _cptofcd("U", strlen("U"));
+    _fcd ftcs1, ftcs2, ftcs3;
 #endif
     SCformat *Lstore;
     NCformat *Ustore;
     doublecomplex   *Lval, *Uval;
     int incx = 1, incy = 1;
     doublecomplex alpha = {1.0, 0.0}, beta = {1.0, 0.0};
-    doublecomplex comp_zero = {0.0, 0.0};
+    doublecomplex comp_zero = {0.0, 0.0}, comp_temp;
     int nrow;
     int fsupc, nsupr, nsupc, luptr, istart, irow;
     int i, k, iptr, jcol;
     doublecomplex *work;
     flops_t solve_ops;
-    /*extern SuperLUStat_t SuperLUStat;*/
 
     /* Test the input parameters */
     *info = 0;
-    if ( strncmp(uplo,"L",1) != 0 && strncmp(uplo, "U", 1) != 0 ) *info = -1;
-    else if ( strncmp(trans, "N", 1) != 0 && strncmp(trans, "T", 1) != 0 )
+    if ( strncmp(uplo,"L",1) != 0 && strncmp(uplo, "U",1) !=0 ) *info = -1;
+    else if ( strncmp(trans, "N",1) !=0 && strncmp(trans, "T", 1) !=0 )
 	*info = -2;
-    else if ( strncmp(diag, "U", 1) != 0 && strncmp(diag, "N", 1) !=0 )
+    else if ( strncmp(diag, "U", 1) !=0 && strncmp(diag, "N", 1) != 0 )
 	*info = -3;
     else if ( L->nrow != L->ncol || L->nrow < 0 ) *info = -4;
     else if ( U->nrow != U->ncol || U->nrow < 0 ) *info = -5;
     if ( *info ) {
 	i = -(*info);
-	xerr_dist("sp_ztrsv", &i);
+	xerr_dist("sp_ztrsv_dist", &i);
 	return 0;
     }
 
-    Lstore = L->Store;
-    Lval = Lstore->nzval;
-    Ustore = U->Store;
-    Uval = Ustore->nzval;
+    Lstore = (SCformat *) L->Store;
+    Lval = (doublecomplex *) Lstore->nzval;
+    Ustore = (NCformat *) U->Store;
+    Uval = (doublecomplex *) Ustore->nzval;
     solve_ops = 0;
 
     if ( !(work = doublecomplexCalloc_dist(L->nrow)) )
-	ABORT("Malloc fails for work in sp_ztrsv().");
+	ABORT("Malloc fails for work in sp_dtrsv_dist().");
     
     if ( strncmp(trans, "N", 1)==0 ) {	/* Form x := inv(A)*x. */
 	
@@ -150,7 +147,7 @@ sp_ztrsv_dist(char *uplo, char *trans, char *diag, SuperMatrix *L,
 		nsupc = SuperLU_L_FST_SUPC(k+1) - fsupc;
 		luptr = SuperLU_L_NZ_START(fsupc);
 		nrow = nsupr - nsupc;
-
+		
 	        solve_ops += 4 * nsupc * (nsupc - 1);
 	        solve_ops += 8 * nrow * nsupc;
 
@@ -158,12 +155,15 @@ sp_ztrsv_dist(char *uplo, char *trans, char *diag, SuperMatrix *L,
 		    for (iptr=istart+1; iptr < SuperLU_L_SUB_START(fsupc+1); ++iptr) {
 			irow = SuperLU_L_SUB(iptr);
 			++luptr;
-			zz_mult(&comp_zero, &x[fsupc], &Lval[luptr]);
-			z_sub(&x[irow], &x[irow], &comp_zero);
+			zz_mult(&comp_temp, &x[fsupc], &Lval[luptr]);
+			z_sub(&x[irow], &x[irow], &comp_temp);
 		    }
 		} else {
 #ifdef USE_VENDOR_BLAS
 #ifdef _CRAY
+		    ftcs1 = _cptofcd("L", strlen("L"));
+		    ftcs2 = _cptofcd("N", strlen("N"));
+		    ftcs3 = _cptofcd("U", strlen("U"));
 		    CTRSV(ftcs1, ftcs2, ftcs3, &nsupc, &Lval[luptr], &nsupr,
 		       	&x[fsupc], &incx);
 		
@@ -175,11 +175,11 @@ sp_ztrsv_dist(char *uplo, char *trans, char *diag, SuperMatrix *L,
 		
 		    zgemv_("N", &nrow, &nsupc, &alpha, &Lval[luptr+nsupc], 
 		       	&nsupr, &x[fsupc], &incx, &beta, &work[0], &incy, 1);
-#endif		
+#endif /* _CRAY */		
 #else
-		    zlsolve ( nsupr, nsupc, &Lval[luptr], &x[fsupc]);
+		    zlsolve (nsupr, nsupc, &Lval[luptr], &x[fsupc]);
 		
-		    zmatvec ( nsupr, nsupr-nsupc, nsupc, &Lval[luptr+nsupc],
+		    zmatvec (nsupr, nsupr-nsupc, nsupc, &Lval[luptr+nsupc],
 			&x[fsupc], &work[0] );
 #endif		
 		
@@ -188,7 +188,6 @@ sp_ztrsv_dist(char *uplo, char *trans, char *diag, SuperMatrix *L,
 			irow = SuperLU_L_SUB(iptr);
 			z_sub(&x[irow], &x[irow], &work[i]); /* Scatter */
 			work[i] = comp_zero;
-
 		    }
 	 	}
 	    } /* for k ... */
@@ -210,13 +209,15 @@ sp_ztrsv_dist(char *uplo, char *trans, char *diag, SuperMatrix *L,
 		    slud_z_div(&x[fsupc], &x[fsupc], &Lval[luptr]);
 		    for (i = SuperLU_U_NZ_START(fsupc); i < SuperLU_U_NZ_START(fsupc+1); ++i) {
 			irow = SuperLU_U_SUB(i);
-			zz_mult(&comp_zero, &x[fsupc], &Uval[i]);
-			z_sub(&x[irow], &x[irow], &comp_zero);
+			zz_mult(&comp_temp, &x[fsupc], &Uval[i]);
+			z_sub(&x[irow], &x[irow], &comp_temp);
 		    }
 		} else {
 #ifdef USE_VENDOR_BLAS
 #ifdef _CRAY
-		    CTRSV(ftcs3, ftcs2, ftcs2, &nsupc, &Lval[luptr], &nsupr,
+		    ftcs1 = _cptofcd("U", strlen("U"));
+		    ftcs2 = _cptofcd("N", strlen("N"));
+		    CTRSV(ftcs1, ftcs2, ftcs2, &nsupc, &Lval[luptr], &nsupr,
 		       &x[fsupc], &incx);
 #else
 		    ztrsv_("U", "N", "N", &nsupc, &Lval[luptr], &nsupr,
@@ -231,8 +232,8 @@ sp_ztrsv_dist(char *uplo, char *trans, char *diag, SuperMatrix *L,
 		    	for (i = SuperLU_U_NZ_START(jcol); i < SuperLU_U_NZ_START(jcol+1); 
 				i++) {
 			    irow = SuperLU_U_SUB(i);
-			zz_mult(&comp_zero, &x[jcol], &Uval[i]);
-			z_sub(&x[irow], &x[irow], &comp_zero);
+			    zz_mult(&comp_temp, &x[jcol], &Uval[i]);
+			    z_sub(&x[irow], &x[irow], &comp_temp);
 		    	}
                     }
 		}
@@ -259,14 +260,15 @@ sp_ztrsv_dist(char *uplo, char *trans, char *diag, SuperMatrix *L,
 		    for (i = SuperLU_L_NZ_START(jcol) + nsupc; 
 				i < SuperLU_L_NZ_START(jcol+1); i++) {
 			irow = SuperLU_L_SUB(iptr);
-			zz_mult(&comp_zero, &x[irow], &Lval[i]);
-		    	z_sub(&x[jcol], &x[jcol], &comp_zero);
+			zz_mult(&comp_temp, &x[irow], &Lval[i]);
+		    	z_sub(&x[jcol], &x[jcol], &comp_temp);
 			iptr++;
 		    }
 		}
 		
 		if ( nsupc > 1 ) {
 		    solve_ops += 4 * nsupc * (nsupc - 1);
+
 #ifdef USE_VENDOR_BLAS
 #ifdef _CRAY
                     ftcs1 = _cptofcd("L", strlen("L"));
@@ -298,13 +300,12 @@ sp_ztrsv_dist(char *uplo, char *trans, char *diag, SuperMatrix *L,
 		    solve_ops += 8*(SuperLU_U_NZ_START(jcol+1) - SuperLU_U_NZ_START(jcol));
 		    for (i = SuperLU_U_NZ_START(jcol); i < SuperLU_U_NZ_START(jcol+1); i++) {
 			irow = SuperLU_U_SUB(i);
-			zz_mult(&comp_zero, &x[irow], &Uval[i]);
-		    	z_sub(&x[jcol], &x[jcol], &comp_zero);
+			zz_mult(&comp_temp, &x[irow], &Uval[i]);
+		    	z_sub(&x[jcol], &x[jcol], &comp_temp);
 		    }
 		}
 
 		solve_ops += 4 * nsupc * (nsupc + 1);
-
 		if ( nsupc == 1 ) {
 		    slud_z_div(&x[fsupc], &x[fsupc], &Lval[luptr]);
 		} else {
@@ -331,17 +332,15 @@ sp_ztrsv_dist(char *uplo, char *trans, char *diag, SuperMatrix *L,
     /*SuperLUStat.ops[SOLVE] += solve_ops;*/
     SUPERLU_FREE(work);
     return 0;
-}
+} /* sp_ztrsv_dist */
 
 
-
-/*! \brief
-
+/*! \brief SpGEMV
 <pre>
   Purpose   
     =======   
 
-    sp_zgemv()  performs one of the matrix-vector operations   
+    sp_zgemv_dist()  performs one of the matrix-vector operations   
        y := alpha*A*x + beta*y,   or   y := alpha*A'*x + beta*y,   
     where alpha and beta are scalars, x and y are vectors and A is a
     sparse A->nrow by A->ncol matrix.   
@@ -356,12 +355,14 @@ sp_ztrsv_dist(char *uplo, char *trans, char *diag, SuperMatrix *L,
                 TRANS = 'T' or 't'   y := alpha*A'*x + beta*y.   
                 TRANS = 'C' or 'c'   y := alpha*A'*x + beta*y.   
 
-    ALPHA  - (input) doublecomplex
+    ALPHA  - (input) double
              On entry, ALPHA specifies the scalar alpha.   
 
     A      - (input) SuperMatrix*
-             Before entry, the leading m by n part of the array A must   
-             contain the matrix of coefficients.   
+             Matrix A with a sparse format, of dimension (A->nrow, A->ncol).
+             Currently, the type of A can be:
+                 Stype = SLU_NC or SLU_NCP; Dtype = SLU_Z; Mtype = SLU_GE. 
+             In the future, more general A can be handled.
 
     X      - (input) doublecomplex*, array of DIMENSION at least   
              ( 1 + ( n - 1 )*abs( INCX ) ) when TRANS = 'N' or 'n'   
@@ -394,43 +395,42 @@ sp_ztrsv_dist(char *uplo, char *trans, char *diag, SuperMatrix *L,
 </pre>
 */
 int
-sp_zgemv_dist(char *trans, doublecomplex alpha, SuperMatrix *A,
-	      doublecomplex *x, int incx, doublecomplex beta,
-	      doublecomplex *y, int incy)
+sp_zgemv_dist(char *trans, doublecomplex alpha, SuperMatrix *A, doublecomplex *x, 
+	      int incx, doublecomplex beta, doublecomplex *y, int incy)
 {
+
     /* Local variables */
     NCformat *Astore;
     doublecomplex   *Aval;
     int info;
     doublecomplex temp, temp1;
-    int lenx, leny, i, j, irow;
+    int lenx, leny, j, irow;
+	int_t i;
     int iy, jx, jy, kx, ky;
     int notran;
-    doublecomplex comp_zero = {0.0, 0.0};
-    doublecomplex comp_one = {1.0, 0.0};
+    doublecomplex zero = {0.0, 0.0};
+    doublecomplex one = {1.0, 0.0};
 
     notran = (strncmp(trans, "N", 1)==0);
-    Astore = A->Store;
-    Aval = Astore->nzval;
+    Astore = (NCformat *) A->Store;
+    Aval = (doublecomplex *) Astore->nzval;
     
     /* Test the input parameters */
     info = 0;
-    if ( !notran && strncmp(trans, "T", 1) != 0 && strncmp(trans, "C", 1) != 0)
+    if ( !notran && strncmp(trans, "T", 1) !=0 && strncmp(trans, "C", 1) != 0)
 	info = 1;
     else if ( A->nrow < 0 || A->ncol < 0 ) info = 3;
     else if (incx == 0) info = 5;
     else if (incy == 0)	info = 8;
     if (info != 0) {
-	xerr_dist("sp_zgemv ", &info);
+	xerr_dist("sp_zgemv_dist ", &info);
 	return 0;
     }
 
     /* Quick return if possible. */
     if (A->nrow == 0 || A->ncol == 0 || 
-	z_eq(&alpha, &comp_zero) && 
-	z_eq(&beta, &comp_one))
+	(z_eq(&alpha, &zero) && z_eq(&beta, &one)) )
 	return 0;
-
 
     /* Set  LENX  and  LENY, the lengths of the vectors x and y, and set 
        up the start points in  X  and  Y. */
@@ -449,18 +449,17 @@ sp_zgemv_dist(char *trans, doublecomplex alpha, SuperMatrix *A,
     /* Start the operations. In this version the elements of A are   
        accessed sequentially with one pass through A. */
     /* First form  y := beta*y. */
-    if ( !z_eq(&beta, &comp_one) ) {
+    if ( !z_eq(&beta, &one) ) {
 	if (incy == 1) {
-	    if ( z_eq(&beta, &comp_zero) )
-		for (i = 0; i < leny; ++i) y[i] = comp_zero;
+	    if ( z_eq(&beta, &zero) )
+		for (i = 0; i < leny; ++i) y[i] = zero;
 	    else
-		for (i = 0; i < leny; ++i) 
-		  zz_mult(&y[i], &beta, &y[i]);
+		for (i = 0; i < leny; ++i) zz_mult(&y[i], &beta, &y[i]);
 	} else {
 	    iy = ky;
-	    if ( z_eq(&beta, &comp_zero) )
+	    if ( z_eq(&beta, &zero) )
 		for (i = 0; i < leny; ++i) {
-		    y[iy] = comp_zero;
+		    y[iy] = zero;
 		    iy += incy;
 		}
 	    else
@@ -471,14 +470,14 @@ sp_zgemv_dist(char *trans, doublecomplex alpha, SuperMatrix *A,
 	}
     }
     
-    if ( z_eq(&alpha, &comp_zero) ) return 0;
+    if ( z_eq(&alpha, &zero) ) return 0;
 
     if ( notran ) {
 	/* Form  y := alpha*A*x + y. */
 	jx = kx;
 	if (incy == 1) {
 	    for (j = 0; j < A->ncol; ++j) {
-		if ( !z_eq(&x[jx], &comp_zero) ) {
+		if ( !z_eq(&x[jx], &zero) ) {
 		    zz_mult(&temp, &alpha, &x[jx]);
 		    for (i = Astore->colptr[j]; i < Astore->colptr[j+1]; ++i) {
 			irow = Astore->rowind[i];
@@ -496,7 +495,7 @@ sp_zgemv_dist(char *trans, doublecomplex alpha, SuperMatrix *A,
 	jy = ky;
 	if (incx == 1) {
 	    for (j = 0; j < A->ncol; ++j) {
-		temp = comp_zero;
+		temp = zero;
 		for (i = Astore->colptr[j]; i < Astore->colptr[j+1]; ++i) {
 		    irow = Astore->rowind[i];
 		    zz_mult(&temp1, &Aval[i], &x[irow]);
@@ -511,5 +510,4 @@ sp_zgemv_dist(char *trans, doublecomplex alpha, SuperMatrix *A,
 	}
     }
     return 0;
-} /* sp_zgemv */
-
+} /* sp_zgemv_dist */

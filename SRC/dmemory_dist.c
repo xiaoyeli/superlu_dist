@@ -170,8 +170,6 @@ double *doubleCalloc_dist(int_t n)
     return (buf);
 }
 
-#if 0  //////////////// Sherry
-
 /***************************************
  * The following are from 3D code.
  ***************************************/
@@ -242,7 +240,7 @@ double  dmemForest(sForest_t*sforest, dLUstruct_t *LUstruct, gridinfo3d_t *grid3
     return memlu;
 }
 
-void d3D_printMemUse( trf3Dpartition_t*  trf3Dpartition,  dLUstruct_t *LUstruct,
+void d3D_printMemUse( dtrf3Dpartition_t*  trf3Dpartition,  dLUstruct_t *LUstruct,
 		      gridinfo3d_t * grid3d )
 {
     int_t* myTreeIdxs = trf3Dpartition->myTreeIdxs;
@@ -286,4 +284,3 @@ void d3D_printMemUse( trf3Dpartition_t*  trf3Dpartition,  dLUstruct_t *LUstruct,
     }
 }
 
-#endif

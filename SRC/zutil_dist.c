@@ -13,10 +13,10 @@ at the top-level directory.
  * \brief Several matrix utilities
  *
  * <pre>
- * -- Distributed SuperLU routine (version 6.1.1) --
+ * -- Distributed SuperLU routine (version 7.1.0) --
  * Lawrence Berkeley National Lab, Univ. of California Berkeley.
  * March 15, 2003
- *
+ * October 5, 2021
  */
 
 #include <math.h>
@@ -74,7 +74,7 @@ zCompRow_to_CompCol_dist(int_t m, int_t n, int_t nnz,
                          doublecomplex *a, int_t *colind, int_t *rowptr,
                          doublecomplex **at, int_t **rowind, int_t **colptr)
 {
-    register int i, j, col, relpos;
+    register int_t i, j, col, relpos;
     int_t *marker;
 
     /* Allocate storage for another copy of the matrix. */
@@ -111,7 +111,7 @@ void
 zCopy_CompCol_Matrix_dist(SuperMatrix *A, SuperMatrix *B)
 {
     NCformat *Astore, *Bstore;
-    int      ncol, nnz, i;
+    int_t      ncol, nnz, i;
 
     B->Stype = A->Stype;
     B->Dtype = A->Dtype;
@@ -155,7 +155,7 @@ void zPrint_CompCol_Matrix_dist(SuperMatrix *A)
 void zPrint_Dense_Matrix_dist(SuperMatrix *A)
 {
     DNformat     *Astore;
-    register int i;
+    register int_t i;
     doublecomplex       *dp;
 
     printf("\nDense matrix: ");
@@ -357,7 +357,7 @@ void zScaleAddId_CompRowLoc_Matrix_dist(SuperMatrix *A, doublecomplex c)
     doublecomplex one = {1.0, 0.0};
     NRformat_loc  *Astore = A->Store;
     doublecomplex *aval = (doublecomplex *) Astore->nzval;
-    int i, j;
+    int_t i, j;
     doublecomplex temp;
 
     for (i = 0; i < Astore->m_loc; ++i) { /* Loop through each row */
@@ -393,6 +393,7 @@ void zScaleAdd_CompRowLoc_Matrix_dist(SuperMatrix *A, SuperMatrix *B, doublecomp
 
     return;
 }
+/**** end utilities added for SUNDIALS ****/
 
 /*! \brief Allocate storage in ScalePermstruct */
 void zScalePermstructInit(const int_t m, const int_t n,
@@ -421,8 +422,64 @@ void zScalePermstructFree(zScalePermstruct_t *ScalePermstruct)
         SUPERLU_FREE(ScalePermstruct->R);
         SUPERLU_FREE(ScalePermstruct->C);
         break;
+      default: break;
     }
 }
+
+/*
+ * The following are from 3D code p3dcomm.c
+ */
+
+int zAllocGlu_3d(int_t n, int_t nsupers, zLUstruct_t * LUstruct)
+{
+    /*broadcasting Glu_persist*/
+    LUstruct->Glu_persist->xsup  = intMalloc_dist(nsupers+1); //INT_T_ALLOC(nsupers+1);
+    LUstruct->Glu_persist->supno = intMalloc_dist(n); //INT_T_ALLOC(n);
+    return 0;
+}
+
+// Sherry added
+/* Free the replicated data on 3D process layer that is not grid-0 */
+int zDeAllocGlu_3d(zLUstruct_t * LUstruct)
+{
+    SUPERLU_FREE(LUstruct->Glu_persist->xsup);
+    SUPERLU_FREE(LUstruct->Glu_persist->supno);
+    return 0;
+}
+
+/* Free the replicated data on 3D process layer that is not grid-0 */
+int zDeAllocLlu_3d(int_t n, zLUstruct_t * LUstruct, gridinfo3d_t* grid3d)
+{
+    int i, nbc, nbr, nsupers;
+    zLocalLU_t *Llu = LUstruct->Llu;
+
+    nsupers = (LUstruct->Glu_persist)->supno[n-1] + 1;
+
+    nbc = CEILING(nsupers, grid3d->npcol);
+    for (i = 0; i < nbc; ++i) 
+	if ( Llu->Lrowind_bc_ptr[i] ) {
+	    SUPERLU_FREE (Llu->Lrowind_bc_ptr[i]);
+	    SUPERLU_FREE (Llu->Lnzval_bc_ptr[i]);
+	}
+    SUPERLU_FREE (Llu->Lrowind_bc_ptr);
+    SUPERLU_FREE (Llu->Lnzval_bc_ptr);
+
+    nbr = CEILING(nsupers, grid3d->nprow);
+    for (i = 0; i < nbr; ++i)
+	if ( Llu->Ufstnz_br_ptr[i] ) {
+	    SUPERLU_FREE (Llu->Ufstnz_br_ptr[i]);
+	    SUPERLU_FREE (Llu->Unzval_br_ptr[i]);
+	}
+    SUPERLU_FREE (Llu->Ufstnz_br_ptr);
+    SUPERLU_FREE (Llu->Unzval_br_ptr);
+
+    /* The following can be freed after factorization. */
+    SUPERLU_FREE(Llu->ToRecv);
+    SUPERLU_FREE(Llu->ToSendD);
+    for (i = 0; i < nbc; ++i) SUPERLU_FREE(Llu->ToSendR[i]);
+    SUPERLU_FREE(Llu->ToSendR);
+    return 0;
+} /* zDeAllocLlu_3d */
 
 
 /**** Other utilities ****/
@@ -432,9 +489,14 @@ zGenXtrue_dist(int_t n, int_t nrhs, doublecomplex *x, int_t ldx)
     int  i, j;
     for (j = 0; j < nrhs; ++j)
 	for (i = 0; i < n; ++i) {
-	    if ( i % 2 ) x[i + j*ldx].r = 1.0;
-	    else x[i + j*ldx].r = 2.0;
-	    x[i + j*ldx].i = 0.0;
+	    if ( i % 2 ) {
+	        x[i + j*ldx].r = 1.0 + (double)(i+1.)/n;
+		x[i + j*ldx].i = 1.0;
+	    }
+	    else {
+	        x[i + j*ldx].r = 2.0 + (double)(i+1.)/n;
+	        x[i + j*ldx].i = 2.0;
+            }
 	}
 }
 
@@ -546,28 +608,28 @@ void zPrintLblocks(int iam, int_t nsupers, gridinfo_t *grid,
 	}
 	printf("(%d)", iam);
  	PrintInt32("ToSendR[]", grid->npcol, Llu->ToSendR[lb]);
-	PrintInt10("fsendx_plist[]", grid->nprow, Llu->fsendx_plist[lb]);
+	PrintInt32("fsendx_plist[]", grid->nprow, Llu->fsendx_plist[lb]);
     }
-    printf("nfrecvx " IFMT "\n", Llu->nfrecvx);
+    printf("nfrecvx %d\n", Llu->nfrecvx);
     k = CEILING( nsupers, grid->nprow );
-    PrintInt10("fmod", k, Llu->fmod);
+    PrintInt32("fmod", k, Llu->fmod);
 
 } /* ZPRINTLBLOCKS */
 
 
 /*! \brief Sets all entries of matrix L to zero.
  */
-void zZeroLblocks(int iam, int_t n, gridinfo_t *grid, zLUstruct_t *LUstruct)
+void zZeroLblocks(int iam, int n, gridinfo_t *grid, zLUstruct_t *LUstruct)
 {
     doublecomplex zero = {0.0, 0.0};
     register int extra, gb, j, lb, nsupc, nsupr, ncb;
-    register int_t k, mycol, r;
+    register int k, mycol, r;
     zLocalLU_t *Llu = LUstruct->Llu;
     Glu_persist_t *Glu_persist = LUstruct->Glu_persist;
     int_t *xsup = Glu_persist->xsup;
     int_t *index;
     doublecomplex *nzval;
-    int_t nsupers = Glu_persist->supno[n-1] + 1;
+    int nsupers = Glu_persist->supno[n-1] + 1;
 
     ncb = nsupers / grid->npcol;
     extra = nsupers % grid->npcol;
@@ -587,7 +649,7 @@ void zZeroLblocks(int iam, int_t n, gridinfo_t *grid, zLUstruct_t *LUstruct)
             }
 	}
     }
-} /* zZeroLblocks */
+} /* end zZeroLblocks */
 
 
 /*! \brief Dump the factored matrix L using matlab triple-let format
@@ -596,8 +658,8 @@ void zDumpLblocks(int iam, int_t nsupers, gridinfo_t *grid,
 		  Glu_persist_t *Glu_persist, zLocalLU_t *Llu)
 {
     register int c, extra, gb, j, i, lb, nsupc, nsupr, len, nb, ncb;
-    register int_t k, mycol, r;
-	int_t nnzL, n,nmax;
+    int k, mycol, r, n, nmax;
+    int_t nnzL;
     int_t *xsup = Glu_persist->xsup;
     int_t *index;
     doublecomplex *nzval;
@@ -650,7 +712,7 @@ void zDumpLblocks(int iam, int_t nsupers, gridinfo_t *grid,
 		}
 
 	if(grid->iam==0){
-		fprintf(fp, "%d %d %d\n", n,n,nnzL);
+		fprintf(fp, "%d %d " IFMT "\n", n,n,nnzL);
 	}
 
      ncb = nsupers / grid->npcol;
@@ -684,7 +746,6 @@ void zDumpLblocks(int iam, int_t nsupers, gridinfo_t *grid,
  	fclose(fp);
 
 } /* zDumpLblocks */
-
 
 
 /*! \brief Print the blocks in the factored matrix U.
@@ -726,7 +787,37 @@ void zPrintUblocks(int iam, int_t nsupers, gridinfo_t *grid,
 	    printf("[%d] ToSendD[] %d\n", iam, Llu->ToSendD[lb]);
 	}
     }
-} /* ZPRINTUBLOCKS */
+} /* end zPrintUlocks */
+
+/*! \brief Sets all entries of matrix U to zero.
+ */
+void zZeroUblocks(int iam, int n, gridinfo_t *grid, zLUstruct_t *LUstruct)
+{
+    doublecomplex zero = {0.0, 0.0};
+    register int_t i, extra, lb, len, nrb;
+    register int myrow, r;
+    zLocalLU_t *Llu = LUstruct->Llu;
+    Glu_persist_t *Glu_persist = LUstruct->Glu_persist;
+    int_t *xsup = Glu_persist->xsup;
+    int_t *index;
+    doublecomplex *nzval;
+    int nsupers = Glu_persist->supno[n-1] + 1;
+
+    nrb = nsupers / grid->nprow;
+    extra = nsupers % grid->nprow;
+    myrow = MYROW( iam, grid );
+    if ( myrow < extra ) ++nrb;
+    for (lb = 0; lb < nrb; ++lb) {
+	index = Llu->Ufstnz_br_ptr[lb];
+	if ( index ) { /* Not an empty row */
+	    nzval = Llu->Unzval_br_ptr[lb];
+	    len = index[1];  // number of entries in nzval[];
+	    for (i = 0; i < len; ++i) {
+	        nzval[i] = zero;
+	    }
+	}
+    }
+} /* end zZeroUlocks */
 
 int
 zprint_gsmv_comm(FILE *fp, int_t m_loc, pzgsmv_comm_t *gsmv_comm,

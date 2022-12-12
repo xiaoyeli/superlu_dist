@@ -588,6 +588,7 @@ pdgssvx_ABglobal(superlu_dist_options_t *options, SuperMatrix *A,
 		    ABORT("Malloc fails for R[].");
 		ScalePermstruct->R = R;
 		break;
+	    default: break;
 	}
     }
 
@@ -876,8 +877,8 @@ pdgssvx_ABglobal(superlu_dist_options_t *options, SuperMatrix *A,
 	if ( Fact != SamePattern_SameRowPerm ) {
 #if ( PRNTlevel>=1 )
 	    if ( !iam )
-		printf(".. symbfact(): relax " IFMT ", maxsuper " IFMT ", fill " IFMT "\n",
-		       sp_ienv_dist(2), sp_ienv_dist(3), sp_ienv_dist(6));
+		printf(".. symbfact(): relax %d, maxsuper %d, fill %d\n",
+		       sp_ienv_dist(2,options), sp_ienv_dist(3,options), sp_ienv_dist(6,options));
 #endif
 	    t = SuperLU_timer_();
 	    if ( !(Glu_freeable = (Glu_freeable_t *)
@@ -899,7 +900,7 @@ pdgssvx_ABglobal(superlu_dist_options_t *options, SuperMatrix *A,
 		    printf("\tint %d, short %d, float %d, double %d\n",
 			   (int) sizeof(int_t), (int) sizeof(short),
  			   (int) sizeof(float), (int) sizeof(double));
-		    printf("\tSYMBfact (MB):\tL\\U %.2f\ttotal %.2f\texpansions " IFMT "\n",
+		    printf("\tSYMBfact (MB):\tL\\U %.2f\ttotal %.2f\texpansions %d\n",
 			   symb_mem_usage.for_lu*1e-6,
 			   symb_mem_usage.total*1e-6,
 			   symb_mem_usage.expansions);
@@ -917,7 +918,7 @@ pdgssvx_ABglobal(superlu_dist_options_t *options, SuperMatrix *A,
 
 	/* Distribute the L and U factors onto the process grid. */
 	t = SuperLU_timer_();
-	dist_mem_use = ddistribute(Fact, n, &AC, Glu_freeable, LUstruct, grid);
+	dist_mem_use = ddistribute(options, n, &AC, Glu_freeable, LUstruct, grid);
 	stat->utime[DIST] = SuperLU_timer_() - t;
 
 	/* Deallocate storage used in symbolic factor. */
@@ -1037,7 +1038,7 @@ pdgssvx_ABglobal(superlu_dist_options_t *options, SuperMatrix *A,
 	/* ------------------------------------------------------------
 	   Solve the linear system.
 	   ------------------------------------------------------------*/
-	pdgstrs_Bglobal(n, LUstruct, grid, X, ldb, nrhs, stat, info);
+	pdgstrs_Bglobal(options, n, LUstruct, grid, X, ldb, nrhs, stat, info);
 
 	/* ------------------------------------------------------------
 	   Use iterative refinement to improve the computed solution and
@@ -1046,7 +1047,7 @@ pdgssvx_ABglobal(superlu_dist_options_t *options, SuperMatrix *A,
 	if ( options->IterRefine ) {
 	    /* Improve the solution by iterative refinement. */
 	    t = SuperLU_timer_();
-	    pdgsrfs_ABXglobal(n, &AC, anorm, LUstruct, grid, B, ldb,
+	    pdgsrfs_ABXglobal(options, n, &AC, anorm, LUstruct, grid, B, ldb,
 			      X, ldx, nrhs, berr, stat, info);
 	    stat->utime[REFINE] = SuperLU_timer_() - t;
 	}
@@ -1098,6 +1099,7 @@ pdgssvx_ABglobal(superlu_dist_options_t *options, SuperMatrix *A,
 	    case COL:
 		SUPERLU_FREE(R);
 		break;
+	    default:  break;
 	}
     }
     if ( !factored || (factored && options->IterRefine) )

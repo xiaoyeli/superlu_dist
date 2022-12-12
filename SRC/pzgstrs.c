@@ -786,6 +786,10 @@ pzCompute_Diag_Inv(int_t n, zLUstruct_t *LUstruct,gridinfo_t *grid,
  * Arguments
  * =========
  *
+ * options (input) superlu_dist_options_t*
+ *         The structure defines the input parameters to control
+ *         how the LU decomposition and triangular solve are performed.
+ *
  * n      (input) int (global)
  *        The order of the system of linear equations.
  *
@@ -839,7 +843,8 @@ pzCompute_Diag_Inv(int_t n, zLUstruct_t *LUstruct,gridinfo_t *grid,
  */
 
 void
-pzgstrs(int_t n, zLUstruct_t *LUstruct,
+pzgstrs(superlu_dist_options_t *options, int_t n,
+        zLUstruct_t *LUstruct,
 	zScalePermstruct_t *ScalePermstruct,
 	gridinfo_t *grid, doublecomplex *B,
 	int_t m_loc, int_t fst_row, int_t ldb, int nrhs,
@@ -849,7 +854,7 @@ pzgstrs(int_t n, zLUstruct_t *LUstruct,
     Glu_persist_t *Glu_persist = LUstruct->Glu_persist;
     zLocalLU_t *Llu = LUstruct->Llu;
     doublecomplex alpha = {1.0, 0.0};
-	doublecomplex beta = {0.0, 0.0};
+    doublecomplex beta = {0.0, 0.0};
     doublecomplex zero = {0.0, 0.0};
     doublecomplex *lsum;  /* Local running sum of the updates to B-components */
     doublecomplex *x;     /* X component at step k. */
@@ -896,31 +901,31 @@ pzgstrs(int_t n, zLUstruct_t *LUstruct,
 
     double tmax;
     	/*-- Counts used for L-solve --*/
-    int_t  *fmod;         /* Modification count for L-solve --
+    int  *fmod;         /* Modification count for L-solve --
     			 Count the number of local block products to
     			 be summed into lsum[lk]. */
-    int_t fmod_tmp;
-    int_t  **fsendx_plist = Llu->fsendx_plist;
-    int_t  nfrecvx = Llu->nfrecvx; /* Number of X components to be recv'd. */
-    int_t  nfrecvx_buf=0;
-    int_t  *frecv;        /* Count of lsum[lk] contributions to be received
-    			 from processes in this row.
-    			 It is only valid on the diagonal processes. */
-    int_t  frecv_tmp;
-    int_t  nfrecvmod = 0; /* Count of total modifications to be recv'd. */
-    int_t  nfrecv = 0; /* Count of total messages to be recv'd. */
-    int_t  nbrecv = 0; /* Count of total messages to be recv'd. */
-    int_t  nleaf = 0, nroot = 0;
-    int_t  nleaftmp = 0, nroottmp = 0;
+    int  fmod_tmp;
+    int  **fsendx_plist = Llu->fsendx_plist;
+    int  nfrecvx = Llu->nfrecvx; /* Number of X components to be recv'd. */
+    int  nfrecvx_buf=0;
+    int  *frecv;        /* Count of lsum[lk] contributions to be received
+    			     from processes in this row.
+    			     It is only valid on the diagonal processes. */
+    int  frecv_tmp;
+    int  nfrecvmod = 0; /* Count of total modifications to be recv'd. */
+    int  nfrecv = 0; /* Count of total messages to be recv'd. */
+    int  nbrecv = 0; /* Count of total messages to be recv'd. */
+    int  nleaf = 0, nroot = 0;
+    int  nleaftmp = 0, nroottmp = 0;
     int_t  msgsize;
         /*-- Counts used for U-solve --*/
-    int_t  *bmod;         /* Modification count for U-solve. */
-    int_t  bmod_tmp;
-    int_t  **bsendx_plist = Llu->bsendx_plist;
-    int_t  nbrecvx = Llu->nbrecvx; /* Number of X components to be recv'd. */
-    int_t  nbrecvx_buf=0;
-    int_t  *brecv;        /* Count of modifications to be recv'd from
-    			 processes in this row. */
+    int  *bmod;         /* Modification count for U-solve. */
+    int  bmod_tmp;
+    int  **bsendx_plist = Llu->bsendx_plist;
+    int  nbrecvx = Llu->nbrecvx; /* Number of X components to be recv'd. */
+    int  nbrecvx_buf=0;
+    int  *brecv;        /* Count of modifications to be recv'd from
+    			     processes in this row. */
     int_t  nbrecvmod = 0; /* Count of total modifications to be recv'd. */
     int_t flagx,flaglsum,flag;
     int_t *LBTree_active, *LRTree_active, *LBTree_finish, *LRTree_finish, *leafsups, *rootsups;
@@ -932,7 +937,7 @@ pzgstrs(int_t n, zLUstruct_t *LUstruct,
 
     int_t gik,iklrow,fnz;
 
-    int_t *mod_bit = Llu->mod_bit; /* flag contribution from each row block */
+    int *mod_bit = Llu->mod_bit; /* flag contribution from each row block */
     int INFO, pad;
     int_t tmpresult;
 
@@ -950,22 +955,25 @@ pzgstrs(int_t n, zLUstruct_t *LUstruct,
     int iword = sizeof (int_t);
     int dword = sizeof (doublecomplex);
     int Nwork;
-	int_t procs = grid->nprow * grid->npcol;
-    	yes_no_t done;
+    int_t procs = grid->nprow * grid->npcol;
+    yes_no_t done;
     yes_no_t startforward;
-    	int nbrow;
+    int nbrow;
     int_t  ik, rel, idx_r, jb, nrbl, irow, pc,iknsupc;
     int_t  lptr1_tmp, idx_i, idx_v,m;
-    	int_t ready;
-    	int thread_id = 0;
+    int_t ready;
+    int thread_id = 0;
     yes_no_t empty;
     int_t sizelsum,sizertemp,aln_d,aln_i;
-    aln_d = ceil(CACHELINE/(double)dword);
-    aln_i = ceil(CACHELINE/(double)iword);
+    aln_d = 1; //ceil(CACHELINE/(double)dword);
+    aln_i = 1; //ceil(CACHELINE/(double)iword);
     int num_thread = 1;
 
-	maxsuper = sp_ienv_dist(3);
+    maxsuper = sp_ienv_dist(3, options);
 
+//#ifdef _OPENMP
+//#pragma omp threadprivate(thread_id)
+//#endif
 
 #ifdef _OPENMP
 #pragma omp parallel default(shared)
@@ -1028,11 +1036,11 @@ pzgstrs(int_t n, zLUstruct_t *LUstruct,
     Llu->SolveMsgSent = 0;
 
     /* Save the count to be altered so it can be used by
-       subsequent call to PDGSTRS. */
-    if ( !(fmod = intMalloc_dist(nlb*aln_i)) )
+       subsequent call to PZGSTRS. */
+    if ( !(fmod = int32Malloc_dist(nlb*aln_i)) )
 	ABORT("Malloc fails for fmod[].");
     for (i = 0; i < nlb; ++i) fmod[i*aln_i] = Llu->fmod[i];
-    if ( !(frecv = intCalloc_dist(nlb)) )
+    if ( !(frecv = int32Calloc_dist(nlb)) )
 	ABORT("Calloc fails for frecv[].");
     Llu->frecv = frecv;
 
@@ -1055,7 +1063,7 @@ pzgstrs(int_t n, zLUstruct_t *LUstruct,
     ldalsum = Llu->ldalsum;
 
     /* Allocate working storage. */
-    knsupc = sp_ienv_dist(3);
+    knsupc = sp_ienv_dist(3, options);
     maxrecvsz = knsupc * nrhs + SUPERLU_MAX( XK_H, LSUM_H );
     sizelsum = (((size_t)ldalsum)*nrhs + nlb*LSUM_H);
     sizelsum = ((sizelsum + (aln_d - 1)) / aln_d) * aln_d;
@@ -1063,9 +1071,9 @@ pzgstrs(int_t n, zLUstruct_t *LUstruct,
 #ifdef _OPENMP
     if ( !(lsum = (doublecomplex*)SUPERLU_MALLOC(sizelsum*num_thread * sizeof(doublecomplex))))
 	ABORT("Malloc fails for lsum[].");
-#pragma omp parallel default(shared) private(ii)
+#pragma omp parallel default(shared) private(ii,thread_id)
     {
-	int thread_id = omp_get_thread_num(); //mjc
+	thread_id = omp_get_thread_num(); //mjc
 	for (ii=0; ii<sizelsum; ii++)
     	    lsum[thread_id*sizelsum+ii]=zero;
     }
@@ -1075,6 +1083,7 @@ pzgstrs(int_t n, zLUstruct_t *LUstruct,
     for ( ii=0; ii < sizelsum*num_thread; ii++ )
 	lsum[ii]=zero;
 #endif
+    /* intermediate solution x[] vector has same structure as lsum[], see leading comment */
     if ( !(x = doublecomplexCalloc_dist(ldalsum * nrhs + nlb * XK_H)) )
 	ABORT("Calloc fails for x[].");
 
@@ -1083,9 +1092,9 @@ pzgstrs(int_t n, zLUstruct_t *LUstruct,
     if ( !(rtemp = (doublecomplex*)SUPERLU_MALLOC((sizertemp*num_thread + 1) * sizeof(doublecomplex))) )
 	ABORT("Malloc fails for rtemp[].");
 #ifdef _OPENMP
-#pragma omp parallel default(shared) private(ii)
+#pragma omp parallel default(shared) private(ii,thread_id)
     {
-	int thread_id=omp_get_thread_num();
+	thread_id=omp_get_thread_num();
 	for ( ii=0; ii<sizertemp; ii++ )
 		rtemp[thread_id*sizertemp+ii]=zero;
     }
@@ -1141,10 +1150,13 @@ pzgstrs(int_t n, zLUstruct_t *LUstruct,
 	for (lk=0;lk<nsupers_j;++lk){
 		if(LBtree_ptr[lk].empty_==NO){
 			// printf("LBtree_ptr lk %5d\n",lk);
+			//if(BcTree_IsRoot(LBtree_ptr[lk],'z')==NO){
 			if(C_BcTree_IsRoot(&LBtree_ptr[lk])==NO){
 				nbtree++;
+				//if(BcTree_getDestCount(LBtree_ptr[lk],'z')>0)nfrecvx_buf++;
 				if(LBtree_ptr[lk].destCnt_>0)nfrecvx_buf++;
 			}
+			//BcTree_allocateRequest(LBtree_ptr[lk],'z');
 		}
 	}
 
@@ -1155,8 +1167,6 @@ pzgstrs(int_t n, zLUstruct_t *LUstruct,
 	nrtree = 0;
 	nleaf=0;
 	nfrecvmod=0;
-
-
 
 if(procs==1){
 	for (lk=0;lk<nsupers_i;++lk){
@@ -1172,7 +1182,8 @@ if(procs==1){
 	for (lk=0;lk<nsupers_i;++lk){
 		if(LRtree_ptr[lk].empty_==NO){
 			nrtree++;
-			// RdTree_allocateRequest(LRtree_ptr[lk],'z');
+			//RdTree_allocateRequest(LRtree_ptr[lk],'z');
+			//frecv[lk] = RdTree_GetDestCount(LRtree_ptr[lk],'z');
 			frecv[lk] = LRtree_ptr[lk].destCnt_;
 			nfrecvmod += frecv[lk];
 		}else{
@@ -1190,8 +1201,9 @@ if(procs==1){
 	}
 }
 
-
-
+#ifdef _OPENMP
+#pragma omp simd
+#endif
 	for (i = 0; i < nlb; ++i) fmod[i*aln_i] += frecv[i];
 
 	if ( !(recvbuf_BC_fwd = (doublecomplex*)SUPERLU_MALLOC(maxrecvsz*(nfrecvx+1) * sizeof(doublecomplex))) )  // this needs to be optimized for 1D row mapping
@@ -1199,8 +1211,6 @@ if(procs==1){
 	nfrecvx_buf=0;
 
 	log_memory(nlb*aln_i*iword+nlb*iword+(CEILING( nsupers, Pr )+CEILING( nsupers, Pc ))*aln_i*2.0*iword+ nsupers_i*iword + sizelsum*num_thread * dword*2.0 + (ldalsum * nrhs + nlb * XK_H) *dword*2.0 + (sizertemp*num_thread + 1)*dword*2.0+maxrecvsz*(nfrecvx+1)*dword*2.0, stat);	//account for fmod, frecv, leaf_send, root_send, leafsups, recvbuf_BC_fwd	, lsum, x, rtemp
-
-
 
 #if ( DEBUGlevel>=2 )
 	printf("(%2d) nfrecvx %4d,  nfrecvmod %4d,  nleaf %4d\n,  nbtree %4d\n,  nrtree %4d\n",
@@ -1234,104 +1244,97 @@ if(procs==1){
 	fflush(stdout);
 #endif
 
-
 #ifdef _OPENMP
 #pragma omp parallel default (shared)
-{
-int thread_id = omp_get_thread_num();
+	{
+	    int thread_id = omp_get_thread_num();
 #else
-{
-thread_id=0;
+	{
+ 	    thread_id=0;
 #endif
 		{
 
             if (Llu->inv == 1) { /* Diagonal is inverted. */
 
 #ifdef _OPENMP
-#pragma	omp	for firstprivate(nrhs,beta,alpha,x,rtemp,ldalsum) private (ii,k,knsupc,lk,luptr,lsub,nsupr,lusup,t1,t2,Linv,i,lib,rtemp_loc,nleaf_send_tmp) nowait
+#pragma	omp for firstprivate(nrhs,beta,alpha,x,rtemp,ldalsum) private (ii,k,knsupc,lk,luptr,lsub,nsupr,lusup,t1,t2,Linv,i,lib,rtemp_loc,nleaf_send_tmp) nowait
 #endif
-			for (jj=0;jj<nleaf;jj++){
-				k=leafsups[jj];
+		for (jj=0;jj<nleaf;jj++){
+		    k=leafsups[jj];
 
-				// #ifdef _OPENMP
-				// #pragma	omp	task firstprivate (k,nrhs,beta,alpha,x,rtemp,ldalsum) private (ii,knsupc,lk,luptr,lsub,nsupr,lusup,thread_id,t1,t2,Linv,i,lib,rtemp_loc)
-				// #endif
-				{
+// #ifdef _OPENMP
+// #pragma omp task firstprivate (k,nrhs,beta,alpha,x,rtemp,ldalsum) private (ii,knsupc,lk,luptr,lsub,nsupr,lusup,thread_id,t1,t2,Linv,i,lib,rtemp_loc)
+// #endif
+   		    {
 
 #if ( PROFlevel>=1 )
-					TIC(t1);
+			TIC(t1);
 #endif
-					rtemp_loc = &rtemp[sizertemp* thread_id];
+			rtemp_loc = &rtemp[sizertemp* thread_id];
 
+			knsupc = SuperSize( k );
+			lk = LBi( k, grid );
 
-					knsupc = SuperSize( k );
-					lk = LBi( k, grid );
+			ii = X_BLK( lk );
+			lk = LBj( k, grid ); /* Local block number, column-wise. */
+			lsub = Lrowind_bc_ptr[lk];
+			lusup = Lnzval_bc_ptr[lk];
 
-					ii = X_BLK( lk );
-					lk = LBj( k, grid ); /* Local block number, column-wise. */
-					lsub = Lrowind_bc_ptr[lk];
-					lusup = Lnzval_bc_ptr[lk];
-
-					nsupr = lsub[1];
-
-					Linv = Linv_bc_ptr[lk];
+			nsupr = lsub[1];
+			Linv = Linv_bc_ptr[lk];
 #ifdef _CRAY
-					CGEMM( ftcs2, ftcs2, &knsupc, &nrhs, &knsupc,
-							&alpha, Linv, &knsupc, &x[ii],
-							&knsupc, &beta, rtemp_loc, &knsupc );
+			CGEMM( ftcs2, ftcs2, &knsupc, &nrhs, &knsupc,
+					&alpha, Linv, &knsupc, &x[ii],
+					&knsupc, &beta, rtemp_loc, &knsupc );
 #elif defined (USE_VENDOR_BLAS)
-					zgemm_( "N", "N", &knsupc, &nrhs, &knsupc,
-							&alpha, Linv, &knsupc, &x[ii],
-							&knsupc, &beta, rtemp_loc, &knsupc, 1, 1 );
+			zgemm_( "N", "N", &knsupc, &nrhs, &knsupc,
+					&alpha, Linv, &knsupc, &x[ii],
+					&knsupc, &beta, rtemp_loc, &knsupc, 1, 1 );
 #else
-					zgemm_( "N", "N", &knsupc, &nrhs, &knsupc,
-							&alpha, Linv, &knsupc, &x[ii],
-							&knsupc, &beta, rtemp_loc, &knsupc );
+			zgemm_( "N", "N", &knsupc, &nrhs, &knsupc,
+					&alpha, Linv, &knsupc, &x[ii],
+					&knsupc, &beta, rtemp_loc, &knsupc );
 #endif
 
+			for (i=0 ; i<knsupc*nrhs ; i++){
+				z_copy(&x[ii+i],&rtemp_loc[i]);
+			}
 
-					for (i=0 ; i<knsupc*nrhs ; i++){
-						z_copy(&x[ii+i],&rtemp_loc[i]);
-					}
-
-					// for (i=0 ; i<knsupc*nrhs ; i++){
-					// printf("x_l: %f %f\n",x[ii+i].r,x[ii+i].i);
-					// fflush(stdout);
-					// }
+			// for (i=0 ; i<knsupc*nrhs ; i++){
+			// printf("x_l: %f %f\n",x[ii+i].r,x[ii+i].i);
+			// fflush(stdout);
+			// }
 
 
 #if ( PROFlevel>=1 )
-					TOC(t2, t1);
-					stat_loc[thread_id]->utime[SOL_TRSM] += t2;
+			TOC(t2, t1);
+			stat_loc[thread_id]->utime[SOL_TRSM] += t2;
 
 #endif
 
-					stat_loc[thread_id]->ops[SOLVE] += 4 * knsupc * (knsupc - 1) * nrhs
-					+ 10 * knsupc * nrhs; /* complex division */
-
-
-					// --nleaf;
+			stat_loc[thread_id]->ops[SOLVE] += 4 * knsupc * (knsupc - 1) * nrhs
+				+ 10 * knsupc * nrhs; /* complex division */
+			// --nleaf;
 #if ( DEBUGlevel>=2 )
-					printf("(%2d) Solve X[%2d]\n", iam, k);
+			printf("(%2d) Solve X[%2d]\n", iam, k);
 #endif
+			/*
+			 * Send Xk to process column Pc[k].
+			 */
 
-					/*
-					 * Send Xk to process column Pc[k].
-					 */
-
-					if(LBtree_ptr[lk].empty_==NO){
-						lib = LBi( k, grid ); /* Local block number, row-wise. */
-						ii = X_BLK( lib );
+			if(LBtree_ptr[lk].empty_==NO){
+				lib = LBi( k, grid ); /* Local block number, row-wise. */
+				ii = X_BLK( lib );
 
 #ifdef _OPENMP
 #pragma omp atomic capture
 #endif
-						nleaf_send_tmp = ++nleaf_send;
-						leaf_send[(nleaf_send_tmp-1)*aln_i] = lk;
-						// BcTree_forwardMessageSimple(LBtree_ptr[lk],&x[ii - XK_H],'z');
-					}
-				}
+				nleaf_send_tmp = ++nleaf_send;
+				leaf_send[(nleaf_send_tmp-1)*aln_i] = lk;
+				// BcTree_forwardMessageSimple(LBtree_ptr[lk],&x[ii - XK_H],'z');
 			}
+		    }
+	     }
 	} else { /* Diagonal is not inverted. */
 #ifdef _OPENMP
 #pragma	omp	for firstprivate (nrhs,beta,alpha,x,rtemp,ldalsum) private (ii,k,knsupc,lk,luptr,lsub,nsupr,lusup,t1,t2,Linv,i,lib,rtemp_loc,nleaf_send_tmp) nowait
@@ -1343,7 +1346,7 @@ thread_id=0;
 #if ( PROFlevel>=1 )
 		    TIC(t1);
 #endif
-			rtemp_loc = &rtemp[sizertemp* thread_id];
+		    rtemp_loc = &rtemp[sizertemp* thread_id];
 
 		    knsupc = SuperSize( k );
 		    lk = LBi( k, grid );
@@ -1396,71 +1399,64 @@ thread_id=0;
 		    }
 		    } /* end a block */
 		} /* end for jj ... */
-	    } /* end else ... diagonal is not invedted */
+	    } /* end else ... diagonal is not inverted */
 	  }
-	}
+	} /* end parallel region */
 
 	jj=0;
 
 #ifdef _OPENMP
 #pragma omp parallel default (shared)
-	{
-#else
-	{
 #endif
-
+	{
 
 #ifdef _OPENMP
 #pragma omp master
 #endif
-				{
+	    {
 
 #ifdef _OPENMP
-#pragma	omp	taskloop private (k,ii,lk,thread_id) num_tasks(num_thread*8) nogroup
+#pragma	omp taskloop private (k,ii,lk,thread_id) num_tasks(num_thread*8) nogroup
 #endif
+		for (jj=0;jj<nleaf;jj++){
+		    k=leafsups[jj];
 
-					for (jj=0;jj<nleaf;jj++){
-						k=leafsups[jj];
-
-						{
+		    {
 #ifdef _OPENMP
-							thread_id=omp_get_thread_num();
+                        thread_id=omp_get_thread_num();
 #else
-							thread_id=0;
-#endif							
-							/* Diagonal process */
-							lk = LBi( k, grid );
-							ii = X_BLK( lk );
-							/*
-							 * Perform local block modifications: lsum[i] -= L_i,k * X[k]
-							 */
-							zlsum_fmod_inv(lsum, x, &x[ii], rtemp, nrhs, k,
-									fmod, xsup, grid, Llu,
-									stat_loc, leaf_send, &nleaf_send,sizelsum,sizertemp,0,maxsuper,thread_id,num_thread);
-						}
+                        thread_id=0;
+#endif
+			/* Diagonal process */
+			lk = LBi( k, grid );
+			ii = X_BLK( lk );
+			/*
+			 * Perform local block modifications: lsum[i] -= L_i,k * X[k]
+			 */
+			zlsum_fmod_inv(lsum, x, &x[ii], rtemp, nrhs, k, fmod, xsup, grid, Llu, stat_loc, leaf_send, &nleaf_send,sizelsum,sizertemp,0,maxsuper,thread_id,num_thread);
+		    }
+		} /* for jj ... */
+	    }
 
-						// } /* if diagonal process ... */
-					} /* for k ... */
-				}
+	}
 
-			}
-
-			for (i=0;i<nleaf_send;i++){
-				lk = leaf_send[i*aln_i];
-				if(lk>=0){ // this is a bcast forwarding
-					gb = mycol+lk*grid->npcol;  /* not sure */
-					lib = LBi( gb, grid ); /* Local block number, row-wise. */
-					ii = X_BLK( lib );
-					// BcTree_forwardMessageSimple(LBtree_ptr[lk],&x[ii - XK_H],BcTree_GetMsgSize(LBtree_ptr[lk],'d')*nrhs+XK_H,'d');
-					C_BcTree_forwardMessageSimple(&LBtree_ptr[lk], &x[ii - XK_H], LBtree_ptr[lk].msgSize_*nrhs+XK_H);
-								}else{ // this is a reduce forwarding
-					lk = -lk - 1;
-					il = LSUM_BLK( lk );
-					// RdTree_forwardMessageSimple(LRtree_ptr[lk],&lsum[il - LSUM_H ],RdTree_GetMsgSize(LRtree_ptr[lk],'z')*nrhs+LSUM_H,'z');
-					C_RdTree_forwardMessageSimple(&LRtree_ptr[lk],&lsum[il - LSUM_H ],LRtree_ptr[lk].msgSize_*nrhs+LSUM_H);
-				}
-			}
-
+	for (i=0;i<nleaf_send;i++){
+		lk = leaf_send[i*aln_i];
+		if(lk>=0){ // this is a bcast forwarding
+			gb = mycol+lk*grid->npcol;  /* not sure */
+			lib = LBi( gb, grid ); /* Local block number, row-wise. */
+			ii = X_BLK( lib );
+			//BcTree_forwardMessageSimple(LBtree_ptr[lk],&x[ii - XK_H],BcTree_GetMsgSize(LBtree_ptr[lk],'z')*nrhs+XK_H,'z');
+			C_BcTree_forwardMessageSimple(&LBtree_ptr[lk], &x[ii - XK_H], LBtree_ptr[lk].msgSize_*nrhs+XK_H);
+			
+		}else{ // this is a reduce forwarding
+			lk = -lk - 1;
+			il = LSUM_BLK( lk );
+			//RdTree_forwardMessageSimple(LRtree_ptr[lk],&lsum[il - LSUM_H ],RdTree_GetMsgSize(LRtree_ptr[lk],'z')*nrhs+LSUM_H,'z');
+			C_RdTree_forwardMessageSimple(&LRtree_ptr[lk],&lsum[il - LSUM_H],LRtree_ptr[lk].msgSize_*nrhs+LSUM_H);
+			
+		}
+	}
 
 
 #ifdef USE_VTUNE
@@ -1468,412 +1464,392 @@ thread_id=0;
 	__SSC_MARK(0x222); // stop SDE tracing
 #endif
 
-			/* -----------------------------------------------------------
-			   Compute the internal nodes asynchronously by all processes.
-			   ----------------------------------------------------------- */
+	/* -----------------------------------------------------------
+	   Compute the internal nodes asynchronously by all processes.
+	   ----------------------------------------------------------- */
 
 #ifdef _OPENMP
 #pragma omp parallel default (shared)
-			{
-	int thread_id = omp_get_thread_num();
+	{
+        int thread_id = omp_get_thread_num();
 #else
 	{
-	thread_id=0;
+	thread_id = 0;
 #endif
 #ifdef _OPENMP
 #pragma omp master
 #endif
+		{
+		for ( nfrecv =0; nfrecv<nfrecvx+nfrecvmod;nfrecv++) { /* While not finished. */
+			thread_id = 0;
+#if ( PROFlevel>=1 )
+		   	TIC(t1);
+			// msgcnt[1] = maxrecvsz;
+#endif
+
+			recvbuf0 = &recvbuf_BC_fwd[nfrecvx_buf*maxrecvsz];
+
+			/* Receive a message. */
+			MPI_Recv( recvbuf0, maxrecvsz, SuperLU_MPI_DOUBLE_COMPLEX,
+				MPI_ANY_SOURCE, MPI_ANY_TAG, grid->comm, &status );
+			// MPI_Irecv(recvbuf0,maxrecvsz,SuperLU_MPI_DOUBLE_COMPLEX,MPI_ANY_SOURCE,MPI_ANY_TAG,grid->comm,&req);
+			// ready=0;
+			// while(ready==0){
+			// MPI_Test(&req,&ready,&status);
+			// #pragma omp taskyield
+			// }
+
+#if ( PROFlevel>=1 )
+			TOC(t2, t1);
+			stat_loc[thread_id]->utime[SOL_COMM] += t2;
+
+			msg_cnt += 1;
+			msg_vol += maxrecvsz * dword;
+#endif
+
+			{
+
+			k = (*recvbuf0).r;
+
+#if ( DEBUGlevel>=2 )
+			printf("(%2d) Recv'd block %d, tag %2d\n", iam, k, status.MPI_TAG);
+#endif
+
+			if(status.MPI_TAG==BC_L){
+				// --nfrecvx;
+				nfrecvx_buf++;
 				{
-					for ( nfrecv =0; nfrecv<nfrecvx+nfrecvmod;nfrecv++) { /* While not finished. */
-						thread_id = 0;
-#if ( PROFlevel>=1 )
-						TIC(t1);
-						// msgcnt[1] = maxrecvsz;
-#endif
+				lk = LBj( k, grid );    /* local block number */
 
-						recvbuf0 = &recvbuf_BC_fwd[nfrecvx_buf*maxrecvsz];
+				if(LBtree_ptr[lk].destCnt_>0){
 
-						/* Receive a message. */
-						MPI_Recv( recvbuf0, maxrecvsz, SuperLU_MPI_DOUBLE_COMPLEX,
-								MPI_ANY_SOURCE, MPI_ANY_TAG, grid->comm, &status );
-						// MPI_Irecv(recvbuf0,maxrecvsz,SuperLU_MPI_DOUBLE_COMPLEX,MPI_ANY_SOURCE,MPI_ANY_TAG,grid->comm,&req);
-						// ready=0;
-						// while(ready==0){
-						// MPI_Test(&req,&ready,&status);
-						// #pragma omp taskyield
-						// }
+					//BcTree_forwardMessageSimple(LBtree_ptr[lk],recvbuf0,BcTree_GetMsgSize(LBtree_ptr[lk],'z')*nrhs+XK_H,'z');
+					C_BcTree_forwardMessageSimple(&LBtree_ptr[lk], recvbuf0, LBtree_ptr[lk].msgSize_*nrhs+XK_H);
+					// nfrecvx_buf++;
+				}
 
-#if ( PROFlevel>=1 )
-						TOC(t2, t1);
-						stat_loc[thread_id]->utime[SOL_COMM] += t2;
+				/*
+				 * Perform local block modifications: lsum[i] -= L_i,k * X[k]
+				 */
 
-						msg_cnt += 1;
-						msg_vol += maxrecvsz * dword;
-#endif
-
-						{
-
-							k = (*recvbuf0).r;
-
-#if ( DEBUGlevel>=2 )
-							printf("(%2d) Recv'd block %d, tag %2d\n", iam, k, status.MPI_TAG);
-#endif
-
-							if(status.MPI_TAG==BC_L){
-								// --nfrecvx;
-								nfrecvx_buf++;
-								{
-									lk = LBj( k, grid );    /* local block number */
-
-									if(LBtree_ptr[lk].destCnt_>0){
-
-										// BcTree_forwardMessageSimple(LBtree_ptr[lk],recvbuf0,BcTree_GetMsgSize(LBtree_ptr[lk],'d')*nrhs+XK_H,'d');
-										C_BcTree_forwardMessageSimple(&LBtree_ptr[lk], recvbuf0, LBtree_ptr[lk].msgSize_*nrhs+XK_H);
-										// nfrecvx_buf++;
-									}
-
-									/*
-									 * Perform local block modifications: lsum[i] -= L_i,k * X[k]
-									 */
-
-									lk = LBj( k, grid ); /* Local block number, column-wise. */
-									lsub = Lrowind_bc_ptr[lk];
-									lusup = Lnzval_bc_ptr[lk];
-									if ( lsub ) {
-										krow = PROW( k, grid );
-										if(myrow==krow){
-											nb = lsub[0] - 1;
-											knsupc = SuperSize( k );
-											ii = X_BLK( LBi( k, grid ) );
-											xin = &x[ii];
-										}else{
-											nb   = lsub[0];
-											knsupc = SuperSize( k );
-											xin = &recvbuf0[XK_H] ;
-										}
-
-										zlsum_fmod_inv_master(lsum, x, xin, rtemp, nrhs, knsupc, k,
-												fmod, nb, xsup, grid, Llu,
-												stat_loc,sizelsum,sizertemp,0,maxsuper,thread_id,num_thread);
-
-									} /* if lsub */
-								}
-
-							}else if(status.MPI_TAG==RD_L){
-								// --nfrecvmod;
-								lk = LBi( k, grid ); /* Local block number, row-wise. */
-
-								knsupc = SuperSize( k );
-								tempv = &recvbuf0[LSUM_H];
-								il = LSUM_BLK( lk );
-								RHS_ITERATE(j) {
-									for (i = 0; i < knsupc; ++i)
-										z_add(&lsum[i + il + j*knsupc + thread_id*sizelsum],
-											  &lsum[i + il + j*knsupc + thread_id*sizelsum],
-											  &tempv[i + j*knsupc]);
-
-								}
-
-								// #ifdef _OPENMP
-								// #pragma omp atomic capture
-								// #endif
-								fmod_tmp=--fmod[lk*aln_i];
-								{
-									thread_id = 0;
-									rtemp_loc = &rtemp[sizertemp* thread_id];
-									if ( fmod_tmp==0 ) {
-										if(C_RdTree_IsRoot(&LRtree_ptr[lk])==YES){
-											// ii = X_BLK( lk );
-											knsupc = SuperSize( k );
-											for (ii=1;ii<num_thread;ii++)
-
-												for (jj=0;jj<knsupc*nrhs;jj++)
-													z_add(&lsum[il + jj ],
-														  &lsum[il + jj ],
-														  &lsum[il + jj + ii*sizelsum]);
-
-											ii = X_BLK( lk );
-											RHS_ITERATE(j)
-
-												for (i = 0; i < knsupc; ++i)
-													z_add(&x[i + ii + j*knsupc],
-														  &x[i + ii + j*knsupc],
-														  &lsum[i + il + j*knsupc] );
-
-											// fmod[lk] = -1; /* Do not solve X[k] in the future. */
-											lk = LBj( k, grid ); /* Local block number, column-wise. */
-											lsub = Lrowind_bc_ptr[lk];
-											lusup = Lnzval_bc_ptr[lk];
-											nsupr = lsub[1];
-
-#if ( PROFlevel>=1 )
-											TIC(t1);
-#endif
-
-											if(Llu->inv == 1){
-												Linv = Linv_bc_ptr[lk];
-#ifdef _CRAY
-												CGEMM( ftcs2, ftcs2, &knsupc, &nrhs, &knsupc,
-														&alpha, Linv, &knsupc, &x[ii],
-														&knsupc, &beta, rtemp_loc, &knsupc );
-#elif defined (USE_VENDOR_BLAS)
-												zgemm_( "N", "N", &knsupc, &nrhs, &knsupc,
-														&alpha, Linv, &knsupc, &x[ii],
-														&knsupc, &beta, rtemp_loc, &knsupc, 1, 1 );
-#else
-												zgemm_( "N", "N", &knsupc, &nrhs, &knsupc,
-														&alpha, Linv, &knsupc, &x[ii],
-														&knsupc, &beta, rtemp_loc, &knsupc );
-#endif
-
-												for (i=0 ; i<knsupc*nrhs ; i++){
-													z_copy(&x[ii+i],&rtemp_loc[i]);
-												}
-											}
-											else{
-#ifdef _CRAY
-												CTRSM(ftcs1, ftcs1, ftcs2, ftcs3, &knsupc, &nrhs, &alpha,
-														lusup, &nsupr, &x[ii], &knsupc);
-#elif defined (USE_VENDOR_BLAS)
-												ztrsm_("L", "L", "N", "U", &knsupc, &nrhs, &alpha,
-														lusup, &nsupr, &x[ii], &knsupc, 1, 1, 1, 1);
-#else
-												ztrsm_("L", "L", "N", "U", &knsupc, &nrhs, &alpha,
-														lusup, &nsupr, &x[ii], &knsupc);
-#endif
-											}
-
-#if ( PROFlevel>=1 )
-											TOC(t2, t1);
-											stat_loc[thread_id]->utime[SOL_TRSM] += t2;
-#endif
-
-											stat_loc[thread_id]->ops[SOLVE] += 4 * knsupc * (knsupc - 1) * nrhs
-											+ 10 * knsupc * nrhs; /* complex division */
-
-#if ( DEBUGlevel>=2 )
-											printf("(%2d) Solve X[%2d]\n", iam, k);
-#endif
-
-											/*
-											 * Send Xk to process column Pc[k].
-											 */
-											if(LBtree_ptr[lk].empty_==NO){
-												// BcTree_forwardMessageSimple(LBtree_ptr[lk],&x[ii - XK_H],BcTree_GetMsgSize(LBtree_ptr[lk],'d')*nrhs+XK_H,'d');
-												C_BcTree_forwardMessageSimple(&LBtree_ptr[lk], &x[ii - XK_H], LBtree_ptr[lk].msgSize_*nrhs+XK_H);
-											}
-
-
-											/*
-											 * Perform local block modifications.
-											 */
-											lk = LBj( k, grid ); /* Local block number, column-wise. */
-											lsub = Lrowind_bc_ptr[lk];
-											lusup = Lnzval_bc_ptr[lk];
-											if ( lsub ) {
-												krow = PROW( k, grid );
-												nb = lsub[0] - 1;
-												knsupc = SuperSize( k );
-												ii = X_BLK( LBi( k, grid ) );
-												xin = &x[ii];
-												zlsum_fmod_inv_master(lsum, x, xin, rtemp, nrhs, knsupc, k,
-														fmod, nb, xsup, grid, Llu,
-														stat_loc,sizelsum,sizertemp,0,maxsuper,thread_id,num_thread);
-											} /* if lsub */
-											// }
-
-									}else{
-
-										il = LSUM_BLK( lk );
-										knsupc = SuperSize( k );
-
-										for (ii=1;ii<num_thread;ii++)
-
-											for (jj=0;jj<knsupc*nrhs;jj++)
-												z_add(&lsum[il + jj ],
-													  &lsum[il + jj ],
-													  &lsum[il + jj + ii*sizelsum]);
-										// RdTree_forwardMessageSimple(LRtree_ptr[lk],&lsum[il-LSUM_H],RdTree_GetMsgSize(LRtree_ptr[lk],'z')*nrhs+LSUM_H,'z');
-										C_RdTree_forwardMessageSimple(&LRtree_ptr[lk],&lsum[il - LSUM_H ],LRtree_ptr[lk].msgSize_*nrhs+LSUM_H);
-									}
-
-								}
-
-							}
-						} /* check Tag */
+				lk = LBj( k, grid ); /* Local block number, column-wise. */
+				lsub = Lrowind_bc_ptr[lk];
+				lusup = Lnzval_bc_ptr[lk];
+				if ( lsub ) {
+					krow = PROW( k, grid );
+					if(myrow==krow){
+					    nb = lsub[0] - 1;
+					    knsupc = SuperSize( k );
+					    ii = X_BLK( LBi( k, grid ) );
+					    xin = &x[ii];
+				        }else{
+					    nb   = lsub[0];
+					    knsupc = SuperSize( k );
+					    xin = &recvbuf0[XK_H] ;
 					}
+					zlsum_fmod_inv_master(lsum, x, xin, rtemp, nrhs, knsupc, k, 
+					    fmod, nb, xsup, grid, Llu, 
+					    stat_loc,sizelsum,sizertemp,0,maxsuper,thread_id,num_thread);
 
-				} /* while not finished ... */
+				} /* if lsub */
+			    }
+			}else if(status.MPI_TAG==RD_L){
+				// --nfrecvmod;
+				lk = LBi( k, grid ); /* Local block number, row-wise. */
 
-			}
-		}
+				knsupc = SuperSize( k );
+				tempv = &recvbuf0[LSUM_H];
+				il = LSUM_BLK( lk );
+				RHS_ITERATE(j) {
+				for (i = 0; i < knsupc; ++i)
+					z_add(&lsum[i + il + j*knsupc + thread_id*sizelsum], &lsum[i + il + j*knsupc + thread_id*sizelsum], &tempv[i + j*knsupc]);
+				} 
+
+			// #ifdef _OPENMP
+			// #pragma omp atomic capture
+			// #endif
+				fmod_tmp=--fmod[lk*aln_i];
+				{
+				thread_id = 0;
+				rtemp_loc = &rtemp[sizertemp* thread_id];
+				if ( fmod_tmp==0 ) {
+				    if(C_RdTree_IsRoot(&LRtree_ptr[lk])==YES){
+				    // ii = X_BLK( lk );
+					knsupc = SuperSize( k );
+					for (ii=1;ii<num_thread;ii++)
+					    for (jj=0;jj<knsupc*nrhs;jj++)
+						z_add(&lsum[il + jj ], &lsum[il + jj ],
+							 &lsum[il + jj + ii*sizelsum]);
+					ii = X_BLK( lk );
+					RHS_ITERATE(j)
+				#ifdef _OPENMP
+				#pragma omp simd
+				#endif
+					    for (i = 0; i < knsupc; ++i)
+					        z_add(&x[i + ii + j*knsupc],
+						       &x[i + ii + j*knsupc],
+						       &lsum[i + il + j*knsupc] );
+
+					// fmod[lk] = -1; /* Do not solve X[k] in the future. */
+					lk = LBj( k, grid ); /* Local block number, column-wise. */
+					lsub = Lrowind_bc_ptr[lk];
+					lusup = Lnzval_bc_ptr[lk];
+					nsupr = lsub[1];
+
+#if ( PROFlevel>=1 )
+					TIC(t1);
+#endif
+					if(Llu->inv == 1){
+						Linv = Linv_bc_ptr[lk];
+#ifdef _CRAY
+						CGEMM( ftcs2, ftcs2, &knsupc, &nrhs, &knsupc,
+						&alpha, Linv, &knsupc, &x[ii],
+						&knsupc, &beta, rtemp_loc, &knsupc );
+#elif defined (USE_VENDOR_BLAS)
+						zgemm_( "N", "N", &knsupc, &nrhs, &knsupc,
+							&alpha, Linv, &knsupc, &x[ii],
+							&knsupc, &beta, rtemp_loc, &knsupc, 1, 1 );
+#else
+						zgemm_( "N", "N", &knsupc, &nrhs, &knsupc,
+							&alpha, Linv, &knsupc, &x[ii],
+							&knsupc, &beta, rtemp_loc, &knsupc );
+#endif
+					#ifdef _OPENMP
+					#pragma omp simd
+					#endif
+						for (i=0 ; i<knsupc*nrhs ; i++){
+							z_copy(&x[ii+i],&rtemp_loc[i]);
+						}
+					} else{ /* Llu->innv == 0 */
+#ifdef _CRAY
+					    CTRSM(ftcs1, ftcs1, ftcs2, ftcs3, &knsupc, &nrhs, &alpha,
+					    lusup, &nsupr, &x[ii], &knsupc);
+#elif defined (USE_VENDOR_BLAS)
+					    ztrsm_("L", "L", "N", "U", &knsupc, &nrhs, &alpha,
+					      lusup, &nsupr, &x[ii], &knsupc, 1, 1, 1, 1);
+#else
+					    ztrsm_("L", "L", "N", "U", &knsupc, &nrhs, &alpha,
+					        lusup, &nsupr, &x[ii], &knsupc);
+#endif
+					} /* end if-else */
+
+#if ( PROFlevel>=1 )
+					TOC(t2, t1);
+					stat_loc[thread_id]->utime[SOL_TRSM] += t2;
+#endif
+
+					stat_loc[thread_id]->ops[SOLVE] += 4 * knsupc * (knsupc - 1) * nrhs
+					+ 10 * knsupc * nrhs; /* complex division */
+
+#if ( DEBUGlevel>=2 )
+					printf("(%2d) Solve X[%2d]\n", iam, k);
+#endif
+
+					/*
+					 * Send Xk to process column Pc[k].
+					 */
+					if(LBtree_ptr[lk].empty_==NO){
+					    //BcTree_forwardMessageSimple(LBtree_ptr[lk],&x[ii - XK_H],BcTree_GetMsgSize(LBtree_ptr[lk],'z')*nrhs+XK_H,'z');
+					    C_BcTree_forwardMessageSimple(&LBtree_ptr[lk], &x[ii - XK_H], LBtree_ptr[lk].msgSize_*nrhs+XK_H);
+					    
+					}
+					/*
+					 * Perform local block modifications.
+					 */
+					lk = LBj( k, grid ); /* Local block number, column-wise. */
+					lsub = Lrowind_bc_ptr[lk];
+					lusup = Lnzval_bc_ptr[lk];
+					if ( lsub ) {
+						krow = PROW( k, grid );
+						nb = lsub[0] - 1;
+						knsupc = SuperSize( k );
+						ii = X_BLK( LBi( k, grid ) );
+						xin = &x[ii];
+						zlsum_fmod_inv_master(lsum, x, xin, rtemp, nrhs, knsupc, k,
+							fmod, nb, xsup, grid, Llu,
+							stat_loc,sizelsum,sizertemp,0,maxsuper,thread_id,num_thread);
+					} /* if lsub */
+					// }
+
+				    }else{ /* fmod_tmp != 0 */
+					il = LSUM_BLK( lk );
+					knsupc = SuperSize( k );
+					for (ii=1;ii<num_thread;ii++)
+					    for (jj=0;jj<knsupc*nrhs;jj++)
+						z_add(&lsum[il + jj ],
+							  &lsum[il + jj ],
+							  &lsum[il + jj + ii*sizelsum]);
+					//RdTree_forwardMessageSimple(LRtree_ptr[lk],&lsum[il-LSUM_H],RdTree_GetMsgSize(LRtree_ptr[lk],'z')*nrhs+LSUM_H,'z');
+					C_RdTree_forwardMessageSimple(&LRtree_ptr[lk],&lsum[il - LSUM_H ],LRtree_ptr[lk].msgSize_*nrhs+LSUM_H);
+				    } /* end if-else */
+
+				    }
+
+				} /* end else MPI_TAG==RD_L */
+			    } /* check Tag */
+			} /* end for nfrecv ... */
+                    } /* while not finished ... */
+       	    }
+        } // end of parallel
 
 #if ( PRNTlevel>=2 )
-		t = SuperLU_timer_() - t;
-		stat->utime[SOL_TOT] += t;
-		if ( !iam ) {
-			printf(".. L-solve time\t%8.4f\n", t);
-			fflush(stdout);
-		}
+	t = SuperLU_timer_() - t;
+	stat->utime[SOL_TOT] += t;
+	if ( !iam ) {
+		printf(".. L-solve time\t%8.4f\n", t);
+		fflush(stdout);
+	}
 
-
-		MPI_Reduce (&t, &tmax, 1, MPI_DOUBLE,
-				MPI_MAX, 0, grid->comm);
-		if ( !iam ) {
-			printf(".. L-solve time (MAX) \t%8.4f\n", tmax);
-			fflush(stdout);
-		}
-
-
-		t = SuperLU_timer_();
+	MPI_Reduce (&t, &tmax, 1, MPI_DOUBLE, MPI_MAX, 0, grid->comm);
+	if ( !iam ) {
+		printf(".. L-solve time (MAX) \t%8.4f\n", tmax);
+		fflush(stdout);
+	}
+	t = SuperLU_timer_();
 #endif
-
 
 #if ( DEBUGlevel==2 )
-		{
-			printf("(%d) .. After L-solve: y =\n", iam);
-			for (i = 0, k = 0; k < nsupers; ++k) {
-				krow = PROW( k, grid );
-				kcol = PCOL( k, grid );
-				if ( myrow == krow && mycol == kcol ) { /* Diagonal process */
-					knsupc = SuperSize( k );
-					lk = LBi( k, grid );
-					ii = X_BLK( lk );
-					for (j = 0; j < knsupc; ++j)
-						printf("\t(%d)\t%4d\t%.10f\n", iam, xsup[k]+j, x[ii+j]);
+	{
+		printf("(%d) .. After L-solve: y =\n", iam);
+		for (i = 0, k = 0; k < nsupers; ++k) {
+			krow = PROW( k, grid );
+			kcol = PCOL( k, grid );
+			if ( myrow == krow && mycol == kcol ) { /* Diagonal process */
+				knsupc = SuperSize( k );
+				lk = LBi( k, grid );
+				ii = X_BLK( lk );
+				for (j = 0; j < knsupc; ++j)
+					printf("\t(%d)\t%4d\t%.10f\n", iam, xsup[k]+j, x[ii+j]);
 					fflush(stdout);
 				}
-				MPI_Barrier( grid->comm );
-			}
+			MPI_Barrier( grid->comm );
 		}
+	}
 #endif
 
-		SUPERLU_FREE(fmod);
-		SUPERLU_FREE(frecv);
-		SUPERLU_FREE(leaf_send);
-		SUPERLU_FREE(leafsups);
-		SUPERLU_FREE(recvbuf_BC_fwd);
-		log_memory(-nlb*aln_i*iword-nlb*iword-(CEILING( nsupers, Pr )+CEILING( nsupers, Pc ))*aln_i*iword- nsupers_i*iword -maxrecvsz*(nfrecvx+1)*dword*2.0, stat);	//account for fmod, frecv, leaf_send, leafsups, recvbuf_BC_fwd
+	SUPERLU_FREE(fmod);
+	SUPERLU_FREE(frecv);
+	SUPERLU_FREE(leaf_send);
+	SUPERLU_FREE(leafsups);
+	SUPERLU_FREE(recvbuf_BC_fwd);
+	log_memory(-nlb*aln_i*iword-nlb*iword-(CEILING( nsupers, Pr )+CEILING( nsupers, Pc ))*aln_i*iword- nsupers_i*iword -maxrecvsz*(nfrecvx+1)*dword*2.0, stat);	//account for fmod, frecv, leaf_send, leafsups, recvbuf_BC_fwd
 
-		for (lk=0;lk<nsupers_j;++lk){
-			if(LBtree_ptr[lk].empty_==NO){
-				// if(BcTree_IsRoot(LBtree_ptr[lk],'d')==YES){
-				// BcTree_waitSendRequest(LBtree_ptr[lk],'d');
-				C_BcTree_waitSendRequest(&LBtree_ptr[lk]);
-				// }
-				// deallocate requests here
-			}
+	for (lk=0;lk<nsupers_j;++lk){
+		if(LBtree_ptr[lk].empty_==NO){
+			// if(BcTree_IsRoot(LBtree_ptr[lk],'z')==YES){
+			//BcTree_waitSendRequest(LBtree_ptr[lk],'z');
+			C_BcTree_waitSendRequest(&LBtree_ptr[lk]);
+			// }
+			// deallocate requests here
 		}
+	}
 
-		for (lk=0;lk<nsupers_i;++lk){
-			if(LRtree_ptr[lk].empty_==NO){	
-				C_RdTree_waitSendRequest(&LRtree_ptr[lk]);
-				// deallocate requests here
-			}
+	for (lk=0;lk<nsupers_i;++lk){
+		if(LRtree_ptr[lk].empty_==NO){
+			C_RdTree_waitSendRequest(&LRtree_ptr[lk]);
+			// deallocate requests here
 		}
-		MPI_Barrier( grid->comm );
+	}
+	MPI_Barrier( grid->comm );
 
 #if ( VAMPIR>=1 )
-		VT_traceoff();
-		VT_finalize();
+	VT_traceoff();
+	VT_finalize();
 #endif
 
 
-		/*---------------------------------------------------
-		 * Back solve Ux = y.
-		 *
-		 * The Y components from the forward solve is already
-		 * on the diagonal processes.
+	/*---------------------------------------------------
+	 * Back solve Ux = y.
+	 *
+	 * The Y components from the forward solve is already
+	 * on the diagonal processes.
 	 *---------------------------------------------------*/
 
+	/* Save the count to be altered so it can be used by
+	   subsequent call to PZGSTRS. */
+	if ( !(bmod = int32Malloc_dist(nlb*aln_i)) )
+		ABORT("Malloc fails for bmod[].");
+	for (i = 0; i < nlb; ++i) bmod[i*aln_i] = Llu->bmod[i];
+	if ( !(brecv = int32Calloc_dist(nlb)) )
+		ABORT("Calloc fails for brecv[].");
+	Llu->brecv = brecv;
 
-		/* Save the count to be altered so it can be used by
-		   subsequent call to PDGSTRS. */
-		if ( !(bmod = intMalloc_dist(nlb*aln_i)) )
-			ABORT("Malloc fails for bmod[].");
-		for (i = 0; i < nlb; ++i) bmod[i*aln_i] = Llu->bmod[i];
-		if ( !(brecv = intCalloc_dist(nlb)) )
-			ABORT("Calloc fails for brecv[].");
-		Llu->brecv = brecv;
+	k = SUPERLU_MAX( Llu->nfsendx, Llu->nbsendx ) + nlb;
 
-		k = SUPERLU_MAX( Llu->nfsendx, Llu->nbsendx ) + nlb;
-
-		/* Re-initialize lsum to zero. Each block header is already in place. */
+	/* Re-initialize lsum to zero. Each block header is already in place. */
 
 #ifdef _OPENMP
 
-#pragma omp parallel default(shared) private(ii,thread_id)
+#pragma omp parallel default(shared) private(ii)
 	{
-		int thread_id = omp_get_thread_num();
+                int thread_id = omp_get_thread_num();
 		for(ii=0;ii<sizelsum;ii++)
 			lsum[thread_id*sizelsum+ii]=zero;
 	}
-    /* Set up the headers in lsum[]. */
-
-    for (k = 0; k < nsupers; ++k) {
-	krow = PROW( k, grid );
-	if ( myrow == krow ) {
-	    lk = LBi( k, grid );   /* Local block number. */
-	    il = LSUM_BLK( lk );
-	    lsum[il - LSUM_H].r = k;/* Block number prepended in the header.*/
-	    lsum[il - LSUM_H].i = 0;
-	}
-    }
+  	/* Set up the headers in lsum[]. */
+//#pragma omp simd lastprivate(krow,lk,il)
+    	for (k = 0; k < nsupers; ++k) {
+	    krow = PROW( k, grid );
+	    if ( myrow == krow ) {
+	       lk = LBi( k, grid );   /* Local block number. */
+	       il = LSUM_BLK( lk );
+	       lsum[il - LSUM_H].r = k;/* Block number prepended in the header.*/
+	       lsum[il - LSUM_H].i = 0;
+	    }
+    	}
 
 #else
 	for (k = 0; k < nsupers; ++k) {
-		krow = PROW( k, grid );
-		if ( myrow == krow ) {
-			knsupc = SuperSize( k );
-			lk = LBi( k, grid );
-			il = LSUM_BLK( lk );
-			dest = &lsum[il];
+	    krow = PROW( k, grid );
+	    if ( myrow == krow ) {
+		knsupc = SuperSize( k );
+		lk = LBi( k, grid );
+		il = LSUM_BLK( lk );
+		dest = &lsum[il];
 
-			for (jj = 0; jj < num_thread; ++jj) {
-				RHS_ITERATE(j) {
-					for (i = 0; i < knsupc; ++i) dest[i + j*knsupc + jj*sizelsum] = zero;
-				}
-			}
+		for (jj = 0; jj < num_thread; ++jj) {
+		    RHS_ITERATE(j) {
+			for (i = 0; i < knsupc; ++i) dest[i + j*knsupc + jj*sizelsum] = zero;
+		    }
 		}
+	    }
 	}
 #endif
 
 #if ( DEBUGlevel>=2 )
-		for (p = 0; p < Pr*Pc; ++p) {
-			if (iam == p) {
-				printf("(%2d) .. Ublocks %d\n", iam, Ublocks);
-				for (lb = 0; lb < nub; ++lb) {
-					printf("(%2d) Local col %2d: # row blocks %2d\n",
-							iam, lb, Urbs[lb]);
-					if ( Urbs[lb] ) {
-						for (i = 0; i < Urbs[lb]; ++i)
-							printf("(%2d) .. row blk %2d:\
-									lbnum %d, indpos %d, valpos %d\n",
-									iam, i,
-									Ucb_indptr[lb][i].lbnum,
-									Ucb_indptr[lb][i].indpos,
-									Ucb_valptr[lb][i]);
-					}
-				}
-			}
-			MPI_Barrier( grid->comm );
+        nub = CEILING( nsupers, Pc ); /* Number of local block columns. */
+        for (p = 0; p < Pr*Pc; ++p) {
+	    if (iam == p) {
+		printf("(%2d) .. Ublocks %d, nub %d\n",iam,Ublocks,nub); fflush(stdout);
+		for (lb = 0; lb < nub; ++lb) {
+		    printf("(%2d) Local col %2d: # row blocks %2d\n",
+				iam, lb, Urbs[lb]); fflush(stdout);
+		    if ( Urbs[lb] ) {
+			for (i = 0; i < Urbs[lb]; ++i)
+			    printf("(%2d) .. row blk %2d:\
+				    lbnum %d, indpos %d, valpos %d\n",
+				    iam, i,
+				    Ucb_indptr[lb][i].lbnum,
+				    Ucb_indptr[lb][i].indpos,
+				    Ucb_valptr[lb][i]);
+		     }
 		}
-		for (p = 0; p < Pr*Pc; ++p) {
-			if ( iam == p ) {
-				printf("\n(%d) bsendx_plist[][]", iam);
-				for (lb = 0; lb < nub; ++lb) {
-					printf("\n(%d) .. local col %2d: ", iam, lb);
-					for (i = 0; i < Pr; ++i)
-						printf("%4d", bsendx_plist[lb][i]);
-				}
-				printf("\n");
+	    }
+	    MPI_Barrier( grid->comm );
+	}
+	for (p = 0; p < Pr*Pc; ++p) {
+		if ( iam == p ) {
+			printf("\n(%d) bsendx_plist[][]", iam);
+			for (lb = 0; lb < nub; ++lb) {
+				printf("\n(%d) .. local col %2d: ", iam, lb);
+				for (i = 0; i < Pr; ++i)
+					printf("%4d", bsendx_plist[lb][i]);
 			}
-			MPI_Barrier( grid->comm );
+			printf("\n");
 		}
+		MPI_Barrier( grid->comm );
+	}
 #endif /* DEBUGlevel */
-
-
-
 
 	/* ---------------------------------------------------------
 	   Initialize the async Bcast trees on all processes.
@@ -1882,14 +1858,14 @@ thread_id=0;
 
 	nbtree = 0;
 	for (lk=0;lk<nsupers_j;++lk){
-		if(UBtree_ptr[lk].empty_==NO){
-			// printf("UBtree_ptr lk %5d\n",lk);
-			if(C_BcTree_IsRoot(&UBtree_ptr[lk])==NO){
-				nbtree++;
-				if(UBtree_ptr[lk].destCnt_>0)nbrecvx_buf++;
-			}
-			// BcTree_allocateRequest(UBtree_ptr[lk],'d');
+	    if(UBtree_ptr[lk].empty_==NO){
+		// printf("UBtree_ptr lk %5d\n",lk);
+		if(C_BcTree_IsRoot(&UBtree_ptr[lk])==NO){
+			nbtree++;
+			if(UBtree_ptr[lk].destCnt_>0)nbrecvx_buf++;
 		}
+		//BcTree_allocateRequest(UBtree_ptr[lk],'z');
+	    }
 	}
 
 	nsupers_i = CEILING( nsupers, grid->nprow ); /* Number of local block rows */
@@ -1903,7 +1879,7 @@ thread_id=0;
 			// printf("here lk %5d myid %5d\n",lk,iam);
 			// fflush(stdout);
 			nrtree++;
-			// RdTree_allocateRequest(URtree_ptr[lk],'z');
+			//RdTree_allocateRequest(URtree_ptr[lk],'z');
 			brecv[lk] = URtree_ptr[lk].destCnt_;
 			nbrecvmod += brecv[lk];
 		}else{
@@ -1922,7 +1898,6 @@ thread_id=0;
 
 	for (i = 0; i < nlb; ++i) bmod[i*aln_i] += brecv[i];
 	// for (i = 0; i < nlb; ++i)printf("bmod[i]: %5d\n",bmod[i]);
-
 
 	if ( !(recvbuf_BC_fwd = (doublecomplex*)SUPERLU_MALLOC(maxrecvsz*(nbrecvx+1) * sizeof(doublecomplex))) )  // this needs to be optimized for 1D row mapping
 		ABORT("Malloc fails for recvbuf_BC_fwd[].");
@@ -1945,44 +1920,36 @@ thread_id=0;
 	t = SuperLU_timer_();
 #endif
 
-		/*
-		 * Solve the roots first by all the diagonal processes.
-		 */
+	/*
+	 * Solve the roots first by all the diagonal processes.
+	 */
 #if ( DEBUGlevel>=2 )
-		printf("(%2d) nroot %4d\n", iam, nroot);
-		fflush(stdout);
+	printf("(%2d) nroot %4d\n", iam, nroot);
+	fflush(stdout);
 #endif
-
-
 
 #ifdef _OPENMP
 #pragma omp parallel default (shared)
-	{
-#else
-	{
 #endif
+	{
 #ifdef _OPENMP
 #pragma omp master
 #endif
-		{
+	    {
 #ifdef _OPENMP
-#pragma	omp	taskloop firstprivate (nrhs,beta,alpha,x,rtemp,ldalsum) private (ii,jj,k,knsupc,lk,luptr,lsub,nsupr,lusup,t1,t2,Uinv,i,lib,rtemp_loc,nroot_send_tmp,thread_id) nogroup
+#pragma	omp taskloop firstprivate (nrhs,beta,alpha,x,rtemp,ldalsum) private (ii,jj,k,knsupc,lk,luptr,lsub,nsupr,lusup,t1,t2,Uinv,i,lib,rtemp_loc,nroot_send_tmp,thread_id) nogroup
 #endif
 		for (jj=0;jj<nroot;jj++){
 			k=rootsups[jj];
-
 #if ( PROFlevel>=1 )
 			TIC(t1);
 #endif
 #ifdef _OPENMP
-			thread_id=omp_get_thread_num();
+			thread_id = omp_get_thread_num ();
 #else
-			thread_id=0;
+			thread_id = 0;
 #endif
-
 			rtemp_loc = &rtemp[sizertemp* thread_id];
-
-
 
 			knsupc = SuperSize( k );
 			lk = LBi( k, grid ); /* Local block number, row-wise. */
@@ -1993,7 +1960,6 @@ thread_id=0;
 			lsub = Lrowind_bc_ptr[lk];
 			lusup = Lnzval_bc_ptr[lk];
 			nsupr = lsub[1];
-
 
 			if(Llu->inv == 1){
 
@@ -2011,7 +1977,6 @@ thread_id=0;
 						&alpha, Uinv, &knsupc, &x[ii],
 						&knsupc, &beta, rtemp_loc, &knsupc );
 #endif
-
 				for (i=0 ; i<knsupc*nrhs ; i++){
 					z_copy(&x[ii+i],&rtemp_loc[i]);
 				}
@@ -2051,23 +2016,21 @@ thread_id=0;
 				root_send[(nroot_send_tmp-1)*aln_i] = lk;
 
 			}
-		} /* for k ... */
-	}
-}
+		} /* for jj ... */
+	    } /* omp master region */
+	} /* omp parallel region */
 
 
 #ifdef _OPENMP
 #pragma omp parallel default (shared)
-	{
-#else
-	{
 #endif
+	{
 #ifdef _OPENMP
 #pragma omp master
 #endif
-		{
+	    {
 #ifdef _OPENMP
-#pragma	omp	taskloop private (ii,jj,k,lk,thread_id) nogroup
+#pragma	omp taskloop private (ii,jj,k,lk,thread_id) nogroup
 #endif
 		for (jj=0;jj<nroot;jj++){
 			k=rootsups[jj];
@@ -2075,22 +2038,22 @@ thread_id=0;
 			ii = X_BLK( lk );
 			lk = LBj( k, grid ); /* Local block number, column-wise */
 #ifdef _OPENMP
-			thread_id=omp_get_thread_num();
+                        thread_id=omp_get_thread_num();
 #else
-			thread_id=0;
+                        thread_id=0;
 #endif
 			/*
 			 * Perform local block modifications: lsum[i] -= U_i,k * X[k]
 			 */
 			if ( Urbs[lk] )
-				zlsum_bmod_inv(lsum, x, &x[ii], rtemp, nrhs, k, bmod, Urbs,
-						Ucb_indptr, Ucb_valptr, xsup, grid, Llu,
-						stat_loc, root_send, &nroot_send, sizelsum,sizertemp,thread_id,num_thread);
+			    zlsum_bmod_inv(lsum, x, &x[ii], rtemp, nrhs, k, bmod, Urbs,
+					Ucb_indptr, Ucb_valptr, xsup, grid, Llu,
+					stat_loc, root_send, &nroot_send, sizelsum,sizertemp,thread_id,num_thread);
 
-		} /* for k ... */
+		} /* for jj ... */
 
-	}
-}
+	    } /* omp master region */
+	} /* omp parallel */
 
 for (i=0;i<nroot_send;i++){
 	lk = root_send[(i)*aln_i];
@@ -2098,343 +2061,323 @@ for (i=0;i<nroot_send;i++){
 		gb = mycol+lk*grid->npcol;  /* not sure */
 		lib = LBi( gb, grid ); /* Local block number, row-wise. */
 		ii = X_BLK( lib );
-		// BcTree_forwardMessageSimple(UBtree_ptr[lk],&x[ii - XK_H],BcTree_GetMsgSize(UBtree_ptr[lk],'d')*nrhs+XK_H,'d');
+		//BcTree_forwardMessageSimple(UBtree_ptr[lk],&x[ii - XK_H],BcTree_GetMsgSize(UBtree_ptr[lk],'z')*nrhs+XK_H,'z');
 		C_BcTree_forwardMessageSimple(&UBtree_ptr[lk], &x[ii - XK_H], UBtree_ptr[lk].msgSize_*nrhs+XK_H);
 	}else{ // this is a reduce forwarding
 		lk = -lk - 1;
 		il = LSUM_BLK( lk );
-		// RdTree_forwardMessageSimple(URtree_ptr[lk],&lsum[il - LSUM_H ],RdTree_GetMsgSize(URtree_ptr[lk],'z')*nrhs+LSUM_H,'z');
+		//RdTree_forwardMessageSimple(URtree_ptr[lk],&lsum[il - LSUM_H ],RdTree_GetMsgSize(URtree_ptr[lk],'z')*nrhs+LSUM_H,'z');
 		C_RdTree_forwardMessageSimple(&URtree_ptr[lk],&lsum[il - LSUM_H ],URtree_ptr[lk].msgSize_*nrhs+LSUM_H);
 	}
 }
 
-
-		/*
-		 * Compute the internal nodes asychronously by all processes.
-		 */
+	/*
+	 * Compute the internal nodes asychronously by all processes.
+	 */
 
 #ifdef _OPENMP
 #pragma omp parallel default (shared)
 	{
-	int thread_id=omp_get_thread_num();
-#else
-	{
-	thread_id=0;
+	    int thread_id=omp_get_thread_num();
+#else 
+        {
+	    thread_id = 0;
 #endif
 #ifdef _OPENMP
 #pragma omp master
 #endif
-		for ( nbrecv =0; nbrecv<nbrecvx+nbrecvmod;nbrecv++) { /* While not finished. */
+	    for ( nbrecv =0; nbrecv<nbrecvx+nbrecvmod;nbrecv++) { /* While not finished. */
+		// printf("iam %4d nbrecv %4d nbrecvx %4d nbrecvmod %4d\n", iam, nbrecv, nbrecvxnbrecvmod);
+		// fflush(stdout);
 
-			// printf("iam %4d nbrecv %4d nbrecvx %4d nbrecvmod %4d\n", iam, nbrecv, nbrecvxnbrecvmod);
-			// fflush(stdout);
-
-
-
-			thread_id = 0;
+		thread_id = 0;
 #if ( PROFlevel>=1 )
 			TIC(t1);
 #endif
 
-			recvbuf0 = &recvbuf_BC_fwd[nbrecvx_buf*maxrecvsz];
+		recvbuf0 = &recvbuf_BC_fwd[nbrecvx_buf*maxrecvsz];
 
-			/* Receive a message. */
-			MPI_Recv( recvbuf0, maxrecvsz, SuperLU_MPI_DOUBLE_COMPLEX,
-					MPI_ANY_SOURCE, MPI_ANY_TAG, grid->comm, &status );
+		/* Receive a message. */
+		MPI_Recv( recvbuf0, maxrecvsz, SuperLU_MPI_DOUBLE_COMPLEX,
+			MPI_ANY_SOURCE, MPI_ANY_TAG, grid->comm, &status );
 
 #if ( PROFlevel>=1 )
 			TOC(t2, t1);
 			stat_loc[thread_id]->utime[SOL_COMM] += t2;
-
 			msg_cnt += 1;
 			msg_vol += maxrecvsz * dword;
 #endif
 
-			k = (*recvbuf0).r;
+		k = (*recvbuf0).r;
 #if ( DEBUGlevel>=2 )
-			printf("(%2d) Recv'd block %d, tag %2d\n", iam, k, status.MPI_TAG);
-			fflush(stdout);
+		printf("(%2d) Recv'd block %d, tag %2d\n", iam, k, status.MPI_TAG);
+		fflush(stdout);
 #endif
+		if(status.MPI_TAG==BC_U){
+		    // --nfrecvx;
+		    nbrecvx_buf++;
+		    lk = LBj( k, grid );    /* local block number */
+		    if(UBtree_ptr[lk].destCnt_>0){
 
-			if(status.MPI_TAG==BC_U){
-				// --nfrecvx;
-				nbrecvx_buf++;
+			// BcTree_forwardMessageSimple(UBtree_ptr[lk],recvbuf0,BcTree_GetMsgSize(UBtree_ptr[lk],'d')*nrhs+XK_H,'d');
+			C_BcTree_forwardMessageSimple(&UBtree_ptr[lk], recvbuf0, UBtree_ptr[lk].msgSize_*nrhs+XK_H);
+			// nfrecvx_buf++;
+		    }
 
-				lk = LBj( k, grid );    /* local block number */
+		    /*
+		     * Perform local block modifications: lsum[i] -= U_i,k * X[k]
+		     */
 
-				if(UBtree_ptr[lk].destCnt_>0){
+		    lk = LBj( k, grid ); /* Local block number, column-wise. */
+		    zlsum_bmod_inv_master(lsum, x, &recvbuf0[XK_H], rtemp, nrhs, k, bmod, Urbs,
+				Ucb_indptr, Ucb_valptr, xsup, grid, Llu,
+				stat_loc, sizelsum,sizertemp,thread_id,num_thread);
+		}else if(status.MPI_TAG==RD_U){
 
-					// BcTree_forwardMessageSimple(UBtree_ptr[lk],recvbuf0,BcTree_GetMsgSize(UBtree_ptr[lk],'d')*nrhs+XK_H,'d');
-					C_BcTree_forwardMessageSimple(&UBtree_ptr[lk], recvbuf0, UBtree_ptr[lk].msgSize_*nrhs+XK_H);
-					// nfrecvx_buf++;
-				}
+		    lk = LBi( k, grid ); /* Local block number, row-wise. */
 
-				/*
-				 * Perform local block modifications: lsum[i] -= L_i,k * X[k]
-				 */
+		    knsupc = SuperSize( k );
+		    tempv = &recvbuf0[LSUM_H];
+		    il = LSUM_BLK( lk );
+		    RHS_ITERATE(j) {
+			for (i = 0; i < knsupc; ++i)
+			    z_add(&lsum[i + il + j*knsupc + thread_id*sizelsum],
+				  &lsum[i + il + j*knsupc + thread_id*sizelsum],
+				  &tempv[i + j*knsupc]);
+		    }
+		// #ifdef _OPENMP
+		// #pragma omp atomic capture
+		// #endif
+		    bmod_tmp=--bmod[lk*aln_i];
+		    thread_id = 0;
+		    rtemp_loc = &rtemp[sizertemp* thread_id];
+		    if ( bmod_tmp==0 ) {
+			//if(RdTree_IsRoot(URtree_ptr[lk],'z')==YES){
+			if(C_RdTree_IsRoot(&URtree_ptr[lk])==YES){
 
-				lk = LBj( k, grid ); /* Local block number, column-wise. */
-				zlsum_bmod_inv_master(lsum, x, &recvbuf0[XK_H], rtemp, nrhs, k, bmod, Urbs,
-						Ucb_indptr, Ucb_valptr, xsup, grid, Llu,
-						stat_loc, sizelsum,sizertemp,thread_id,num_thread);
-			}else if(status.MPI_TAG==RD_U){
+			    knsupc = SuperSize( k );
+			    for (ii=1;ii<num_thread;ii++)
+				for (jj=0;jj<knsupc*nrhs;jj++)
+					z_add(&lsum[il+ jj ],
+					  	  &lsum[il+ jj ],
+						  &lsum[il + jj + ii*sizelsum]);
 
-				lk = LBi( k, grid ); /* Local block number, row-wise. */
+			    ii = X_BLK( lk );
+			    RHS_ITERATE(j)
+				for (i = 0; i < knsupc; ++i)
+				    z_add(&x[i + ii + j*knsupc],
+						  &x[i + ii + j*knsupc],
+						  &lsum[i + il + j*knsupc] );
 
-				knsupc = SuperSize( k );
-				tempv = &recvbuf0[LSUM_H];
-				il = LSUM_BLK( lk );
-				RHS_ITERATE(j) {
+			    lk = LBj( k, grid ); /* Local block number, column-wise. */
+			    lsub = Lrowind_bc_ptr[lk];
+			    lusup = Lnzval_bc_ptr[lk];
+			    nsupr = lsub[1];
 
-					for (i = 0; i < knsupc; ++i)
-						z_add(&lsum[i + il + j*knsupc + thread_id*sizelsum],
-							  &lsum[i + il + j*knsupc + thread_id*sizelsum],
-							  &tempv[i + j*knsupc]);
+			    if(Llu->inv == 1){
 
-				}
-			// #ifdef _OPENMP
-			// #pragma omp atomic capture
-			// #endif
-				bmod_tmp=--bmod[lk*aln_i];
-				thread_id = 0;
-				rtemp_loc = &rtemp[sizertemp* thread_id];
-				if ( bmod_tmp==0 ) {
-					if(C_RdTree_IsRoot(&URtree_ptr[lk])==YES){
-
-						knsupc = SuperSize( k );
-						for (ii=1;ii<num_thread;ii++)
-
-							for (jj=0;jj<knsupc*nrhs;jj++)
-								z_add(&lsum[il+ jj ],
-									  &lsum[il+ jj ],
-									  &lsum[il + jj + ii*sizelsum]);
-
-						ii = X_BLK( lk );
-						RHS_ITERATE(j)
-							for (i = 0; i < knsupc; ++i)
-							    z_add(&x[i + ii + j*knsupc],
-									  &x[i + ii + j*knsupc],
-									  &lsum[i + il + j*knsupc] );
-
-						lk = LBj( k, grid ); /* Local block number, column-wise. */
-						lsub = Lrowind_bc_ptr[lk];
-						lusup = Lnzval_bc_ptr[lk];
-						nsupr = lsub[1];
-
-						if(Llu->inv == 1){
-
-							Uinv = Uinv_bc_ptr[lk];
+				Uinv = Uinv_bc_ptr[lk];
 
 #ifdef _CRAY
-							CGEMM( ftcs2, ftcs2, &knsupc, &nrhs, &knsupc,
-									&alpha, Uinv, &knsupc, &x[ii],
-									&knsupc, &beta, rtemp_loc, &knsupc );
+				CGEMM( ftcs2, ftcs2, &knsupc, &nrhs, &knsupc,
+						&alpha, Uinv, &knsupc, &x[ii],
+						&knsupc, &beta, rtemp_loc, &knsupc );
 #elif defined (USE_VENDOR_BLAS)
-							zgemm_( "N", "N", &knsupc, &nrhs, &knsupc,
-									&alpha, Uinv, &knsupc, &x[ii],
-									&knsupc, &beta, rtemp_loc, &knsupc, 1, 1 );
+				zgemm_( "N", "N", &knsupc, &nrhs, &knsupc,
+						&alpha, Uinv, &knsupc, &x[ii],
+						&knsupc, &beta, rtemp_loc, &knsupc, 1, 1 );
 #else
-							zgemm_( "N", "N", &knsupc, &nrhs, &knsupc,
-									&alpha, Uinv, &knsupc, &x[ii],
-									&knsupc, &beta, rtemp_loc, &knsupc );
+				zgemm_( "N", "N", &knsupc, &nrhs, &knsupc,
+						&alpha, Uinv, &knsupc, &x[ii],
+						&knsupc, &beta, rtemp_loc, &knsupc );
 #endif
 
-
-							for (i=0 ; i<knsupc*nrhs ; i++){
-								z_copy(&x[ii+i],&rtemp_loc[i]);
-							}
-						}else{
+			#ifdef _OPENMP
+			#pragma omp simd
+			#endif
+				for (i=0 ; i<knsupc*nrhs ; i++){
+					z_copy(&x[ii+i],&rtemp_loc[i]);
+				}
+			    }else{ /* Llu->inv == 0 */
 #ifdef _CRAY
-							CTRSM(ftcs1, ftcs3, ftcs2, ftcs2, &knsupc, &nrhs, &alpha,
-									lusup, &nsupr, &x[ii], &knsupc);
+				CTRSM(ftcs1, ftcs3, ftcs2, ftcs2, &knsupc, &nrhs, &alpha,
+						lusup, &nsupr, &x[ii], &knsupc);
 #elif defined (USE_VENDOR_BLAS)
-							ztrsm_("L", "U", "N", "N", &knsupc, &nrhs, &alpha,
-									lusup, &nsupr, &x[ii], &knsupc, 1, 1, 1, 1);
+				ztrsm_("L", "U", "N", "N", &knsupc, &nrhs, &alpha,
+					lusup, &nsupr, &x[ii], &knsupc, 1, 1, 1, 1);
 #else
-							ztrsm_("L", "U", "N", "N", &knsupc, &nrhs, &alpha,
-									lusup, &nsupr, &x[ii], &knsupc);
+				ztrsm_("L", "U", "N", "N", &knsupc, &nrhs, &alpha,
+					lusup, &nsupr, &x[ii], &knsupc);
 #endif
-						}
+			    }
 
 #if ( PROFlevel>=1 )
-							TOC(t2, t1);
-							stat_loc[thread_id]->utime[SOL_TRSM] += t2;
+			    TOC(t2, t1);
+			    stat_loc[thread_id]->utime[SOL_TRSM] += t2;
 #endif
-							stat_loc[thread_id]->ops[SOLVE] += 4 * knsupc * (knsupc + 1) * nrhs
-							+ 10 * knsupc * nrhs; /* complex division */
+			    stat_loc[thread_id]->ops[SOLVE] += 4 * knsupc * (knsupc + 1) * nrhs
+					+ 10 * knsupc * nrhs; /* complex division */
 
 #if ( DEBUGlevel>=2 )
-						printf("(%2d) Solve X[%2d]\n", iam, k);
+			    printf("(%2d) Solve X[%2d]\n", iam, k);
 #endif
+			    /*
+			     * Send Xk to process column Pc[k].
+			     */
+			    if(UBtree_ptr[lk].empty_==NO){
+				//BcTree_forwardMessageSimple(UBtree_ptr[lk],&x[ii - XK_H],BcTree_GetMsgSize(UBtree_ptr[lk],'z')*nrhs+XK_H,'z');
+				C_BcTree_forwardMessageSimple(&UBtree_ptr[lk], &x[ii - XK_H], UBtree_ptr[lk].msgSize_*nrhs+XK_H);
+			    }
 
-						/*
-						 * Send Xk to process column Pc[k].
-						 */
-						if(UBtree_ptr[lk].empty_==NO){
-							// BcTree_forwardMessageSimple(UBtree_ptr[lk],&x[ii - XK_H],BcTree_GetMsgSize(UBtree_ptr[lk],'d')*nrhs+XK_H,'d');
-							C_BcTree_forwardMessageSimple(&UBtree_ptr[lk], &x[ii - XK_H], UBtree_ptr[lk].msgSize_*nrhs+XK_H);
-						}
+			    /*
+			     * Perform local block modifications:
+			     *         lsum[i] -= U_i,k * X[k]
+			     */
+			    if ( Urbs[lk] )
+				zlsum_bmod_inv_master(lsum, x, &x[ii], rtemp, nrhs, k, bmod, Urbs,
+					Ucb_indptr, Ucb_valptr, xsup, grid, Llu,
+					stat_loc, sizelsum,sizertemp,thread_id,num_thread);
 
-
-						/*
-						 * Perform local block modifications:
-						 *         lsum[i] -= U_i,k * X[k]
-						 */
-						if ( Urbs[lk] )
-							zlsum_bmod_inv_master(lsum, x, &x[ii], rtemp, nrhs, k, bmod, Urbs,
-									Ucb_indptr, Ucb_valptr, xsup, grid, Llu,
-									stat_loc, sizelsum,sizertemp,thread_id,num_thread);
-
-					}else{
-						il = LSUM_BLK( lk );
-						knsupc = SuperSize( k );
-
-						for (ii=1;ii<num_thread;ii++)
-							for (jj=0;jj<knsupc*nrhs;jj++)
-								z_add(&lsum[il+ jj ],
-									  &lsum[il+ jj ],
-									  &lsum[il + jj + ii*sizelsum]);
-
-						// RdTree_forwardMessageSimple(URtree_ptr[lk],&lsum[il-LSUM_H],RdTree_GetMsgSize(URtree_ptr[lk],'z')*nrhs+LSUM_H,'z');
-						C_RdTree_forwardMessageSimple(&URtree_ptr[lk],&lsum[il - LSUM_H ],URtree_ptr[lk].msgSize_*nrhs+LSUM_H);
-					}
-
-				}
-			}
-		} /* while not finished ... */
-	}
-#if ( PRNTlevel>=2 )
-		t = SuperLU_timer_() - t;
-		stat->utime[SOL_TOT] += t;
-		if ( !iam ) printf(".. U-solve time\t%8.4f\n", t);
-		MPI_Reduce (&t, &tmax, 1, MPI_DOUBLE,
-				MPI_MAX, 0, grid->comm);
-		if ( !iam ) {
-			printf(".. U-solve time (MAX) \t%8.4f\n", tmax);
-			fflush(stdout);
-		}
-		t = SuperLU_timer_();
-#endif
-
-
-#if ( DEBUGlevel>=2 )
-		{
-			double *x_col;
-			int diag;
-			printf("\n(%d) .. After U-solve: x (ON DIAG PROCS) = \n", iam);
-			ii = 0;
-			for (k = 0; k < nsupers; ++k) {
+			    }else{
+				il = LSUM_BLK( lk );
 				knsupc = SuperSize( k );
-				krow = PROW( k, grid );
-				kcol = PCOL( k, grid );
-				diag = PNUM( krow, kcol, grid);
-				if ( iam == diag ) { /* Diagonal process. */
-					lk = LBi( k, grid );
-					jj = X_BLK( lk );
-					x_col = &x[jj];
-					RHS_ITERATE(j) {
-						for (i = 0; i < knsupc; ++i) { /* X stored in blocks */
-							printf("\t(%d)\t%4d\t%.10f\n",
-									iam, xsup[k]+i, x_col[i]);
-						}
-						x_col += knsupc;
-					}
-				}
-				ii += knsupc;
-			} /* for k ... */
-		}
+
+				for (ii=1;ii<num_thread;ii++)
+				    for (jj=0;jj<knsupc*nrhs;jj++)
+					z_add(&lsum[il+ jj ], &lsum[il+ jj ],
+						  &lsum[il + jj + ii*sizelsum]);
+
+				//RdTree_forwardMessageSimple(URtree_ptr[lk],&lsum[il-LSUM_H],RdTree_GetMsgSize(URtree_ptr[lk],'z')*nrhs+LSUM_H,'z');
+				C_RdTree_forwardMessageSimple(&URtree_ptr[lk],&lsum[il - LSUM_H ],URtree_ptr[lk].msgSize_*nrhs+LSUM_H);
+			    } /* end if-else */
+			} /* end if bmod_tmp==0 */
+		    } /* end if MPI_TAG==RD_U */
+		} /* while not finished ... */
+	} /* end parallel region */
+
+#if ( PRNTlevel>=2 )
+	t = SuperLU_timer_() - t;
+	stat->utime[SOL_TOT] += t;
+	if ( !iam ) printf(".. U-solve time\t%8.4f\n", t);
+	MPI_Reduce (&t, &tmax, 1, MPI_DOUBLE, MPI_MAX, 0, grid->comm);
+	if ( !iam ) {
+		printf(".. U-solve time (MAX) \t%8.4f\n", tmax);
+		fflush(stdout);
+	}
+	t = SuperLU_timer_();
 #endif
 
-		pzReDistribute_X_to_B(n, B, m_loc, ldb, fst_row, nrhs, x, ilsum,
+#if ( DEBUGlevel>=2 )
+        {
+	    doublecomplex *x_col;
+	    int diag;
+	    printf("\n(%d) .. After U-solve: x (ON DIAG PROCS) = \n", iam);
+	    ii = 0;
+	    for (k = 0; k < nsupers; ++k) {
+	    	knsupc = SuperSize( k );
+		krow = PROW( k, grid );
+		kcol = PCOL( k, grid );
+		diag = PNUM( krow, kcol, grid);
+		if ( iam == diag ) { /* Diagonal process. */
+		   lk = LBi( k, grid );
+		   jj = X_BLK( lk );
+		   x_col = &x[jj];
+		   RHS_ITERATE(j) {
+		       for (i = 0; i < knsupc; ++i) { /* X stored in blocks */
+			   printf("\t(%d)\t%4d\t%.10f\n", iam, xsup[k]+i, x_col[i]);
+		       }      
+		       x_col += knsupc;
+		   }
+		}
+		ii += knsupc;
+	    } /* for k ... */
+	}
+#endif
+
+	pzReDistribute_X_to_B(n, B, m_loc, ldb, fst_row, nrhs, x, ilsum,
 				ScalePermstruct, Glu_persist, grid, SOLVEstruct);
 
-
 #if ( PRNTlevel>=2 )
-		t = SuperLU_timer_() - t;
-		if ( !iam) printf(".. X to B redistribute time\t%8.4f\n", t);
-		t = SuperLU_timer_();
+	t = SuperLU_timer_() - t;
+	if ( !iam) printf(".. X to B redistribute time\t%8.4f\n", t);
+	t = SuperLU_timer_();
 #endif
 
-
-		double tmp1=0;
-		double tmp2=0;
-		double tmp3=0;
-		double tmp4=0;
-		for(i=0;i<num_thread;i++){
-			tmp1 = SUPERLU_MAX(tmp1,stat_loc[i]->utime[SOL_TRSM]);
-			tmp2 = SUPERLU_MAX(tmp2,stat_loc[i]->utime[SOL_GEMM]);
-			tmp3 = SUPERLU_MAX(tmp3,stat_loc[i]->utime[SOL_COMM]);
-			tmp4 += stat_loc[i]->ops[SOLVE];
+	double tmp1=0;
+	double tmp2=0;
+	double tmp3=0;
+	double tmp4=0;
+	for(i=0;i<num_thread;i++){
+		tmp1 = SUPERLU_MAX(tmp1,stat_loc[i]->utime[SOL_TRSM]);
+		tmp2 = SUPERLU_MAX(tmp2,stat_loc[i]->utime[SOL_GEMM]);
+		tmp3 = SUPERLU_MAX(tmp3,stat_loc[i]->utime[SOL_COMM]);
+		tmp4 += stat_loc[i]->ops[SOLVE];
 #if ( PRNTlevel>=2 )
-			if(iam==0)printf("thread %5d gemm %9.5f\n",i,stat_loc[i]->utime[SOL_GEMM]);
+		if(iam==0)printf("thread %5d gemm %9.5f\n",i,stat_loc[i]->utime[SOL_GEMM]);
 #endif
+	}
+
+	stat->utime[SOL_TRSM] += tmp1;
+	stat->utime[SOL_GEMM] += tmp2;
+	stat->utime[SOL_COMM] += tmp3;
+	stat->ops[SOLVE]+= tmp4;
+
+	/* Deallocate storage. */
+	for(i=0;i<num_thread;i++){
+		PStatFree(stat_loc[i]);
+		SUPERLU_FREE(stat_loc[i]);
+	}
+	SUPERLU_FREE(stat_loc);
+	SUPERLU_FREE(rtemp);
+	SUPERLU_FREE(lsum);
+	SUPERLU_FREE(x);
+
+	SUPERLU_FREE(bmod);
+	SUPERLU_FREE(brecv);
+	SUPERLU_FREE(root_send);
+
+	SUPERLU_FREE(rootsups);
+	SUPERLU_FREE(recvbuf_BC_fwd);
+
+	log_memory(-nlb*aln_i*iword-nlb*iword - nsupers_i*iword - (CEILING( nsupers, Pr )+CEILING( nsupers, Pc ))*aln_i*iword - maxrecvsz*(nbrecvx+1)*dword*2.0 - sizelsum*num_thread * dword*2.0 - (ldalsum * nrhs + nlb * XK_H) *dword*2.0 - (sizertemp*num_thread + 1)*dword*2.0, stat);	//account for bmod, brecv, root_send, rootsups, recvbuf_BC_fwd,rtemp,lsum,x
+
+	for (lk=0;lk<nsupers_j;++lk){
+		if(UBtree_ptr[lk].empty_==NO){
+			// if(BcTree_IsRoot(LBtree_ptr[lk],'z')==YES){
+			C_BcTree_waitSendRequest(&UBtree_ptr[lk]);
+			// }
+			// deallocate requests here
 		}
+	}
 
-
-		stat->utime[SOL_TRSM] += tmp1;
-		stat->utime[SOL_GEMM] += tmp2;
-		stat->utime[SOL_COMM] += tmp3;
-		stat->ops[SOLVE]+= tmp4;
-
-
-		/* Deallocate storage. */
-		for(i=0;i<num_thread;i++){
-			PStatFree(stat_loc[i]);
-			SUPERLU_FREE(stat_loc[i]);
+	for (lk=0;lk<nsupers_i;++lk){
+		if(URtree_ptr[lk].empty_==NO){
+			C_RdTree_waitSendRequest(&URtree_ptr[lk]);
+			// deallocate requests here
 		}
-		SUPERLU_FREE(stat_loc);
-		SUPERLU_FREE(rtemp);
-		SUPERLU_FREE(lsum);
-		SUPERLU_FREE(x);
-
-
-		SUPERLU_FREE(bmod);
-		SUPERLU_FREE(brecv);
-		SUPERLU_FREE(root_send);
-
-		SUPERLU_FREE(rootsups);
-		SUPERLU_FREE(recvbuf_BC_fwd);
-
-		log_memory(-nlb*aln_i*iword-nlb*iword - nsupers_i*iword - (CEILING( nsupers, Pr )+CEILING( nsupers, Pc ))*aln_i*iword - maxrecvsz*(nbrecvx+1)*dword*2.0 - sizelsum*num_thread * dword*2.0 - (ldalsum * nrhs + nlb * XK_H) *dword*2.0 - (sizertemp*num_thread + 1)*dword*2.0, stat);	//account for bmod, brecv, root_send, rootsups, recvbuf_BC_fwd,rtemp,lsum,x
-
-		for (lk=0;lk<nsupers_j;++lk){
-			if(UBtree_ptr[lk].empty_==NO){
-				// if(BcTree_IsRoot(LBtree_ptr[lk],'d')==YES){
-				C_BcTree_waitSendRequest(&UBtree_ptr[lk]);
-				// }
-				// deallocate requests here
-			}
-		}
-
-		for (lk=0;lk<nsupers_i;++lk){
-			if(URtree_ptr[lk].empty_==NO){
-				C_RdTree_waitSendRequest(&URtree_ptr[lk]);
-				// deallocate requests here
-			}
-		}
-		MPI_Barrier( grid->comm );
+	}
+	MPI_Barrier( grid->comm );
 
 
 #if ( PROFlevel>=2 )
-		{
-			float msg_vol_max, msg_vol_sum, msg_cnt_max, msg_cnt_sum;
-
-			MPI_Reduce (&msg_cnt, &msg_cnt_sum,
-					1, MPI_FLOAT, MPI_SUM, 0, grid->comm);
-			MPI_Reduce (&msg_cnt, &msg_cnt_max,
-					1, MPI_FLOAT, MPI_MAX, 0, grid->comm);
-			MPI_Reduce (&msg_vol, &msg_vol_sum,
-					1, MPI_FLOAT, MPI_SUM, 0, grid->comm);
-			MPI_Reduce (&msg_vol, &msg_vol_max,
-					1, MPI_FLOAT, MPI_MAX, 0, grid->comm);
-			if (!iam) {
-				printf ("\tPDGSTRS comm stat:"
-						"\tAvg\tMax\t\tAvg\tMax\n"
-						"\t\t\tCount:\t%.0f\t%.0f\tVol(MB)\t%.2f\t%.2f\n",
-						msg_cnt_sum / Pr / Pc, msg_cnt_max,
-						msg_vol_sum / Pr / Pc * 1e-6, msg_vol_max * 1e-6);
-			}
+	{
+		float msg_vol_max, msg_vol_sum, msg_cnt_max, msg_cnt_sum;
+		MPI_Reduce (&msg_cnt, &msg_cnt_sum,
+				1, MPI_FLOAT, MPI_SUM, 0, grid->comm);
+		MPI_Reduce (&msg_cnt, &msg_cnt_max,
+				1, MPI_FLOAT, MPI_MAX, 0, grid->comm);
+		MPI_Reduce (&msg_vol, &msg_vol_sum,
+				1, MPI_FLOAT, MPI_SUM, 0, grid->comm);
+		MPI_Reduce (&msg_vol, &msg_vol_max,
+				1, MPI_FLOAT, MPI_MAX, 0, grid->comm);
+		if (!iam) {
+			printf ("\tPZGSTRS comm stat:"
+				"\tAvg\tMax\t\tAvg\tMax\n"
+				"\t\t\tCount:\t%.0f\t%.0f\tVol(MB)\t%.2f\t%.2f\n",
+				msg_cnt_sum / Pr / Pc, msg_cnt_max,
+				msg_vol_sum / Pr / Pc * 1e-6, msg_vol_max * 1e-6);
 		}
+	}
 #endif
 
     stat->utime[SOLVE] = SuperLU_timer_() - t1_sol;
@@ -2443,30 +2386,26 @@ for (i=0;i<nroot_send;i++){
     CHECK_MALLOC(iam, "Exit pzgstrs()");
 #endif
 
-
 #if ( PRNTlevel>=2 )
-	    float for_lu, total, max, avg, temp;
-		superlu_dist_mem_usage_t num_mem_usage;
+    float for_lu, total, max, avg, temp;
+    superlu_dist_mem_usage_t num_mem_usage;
 
-	    zQuerySpace_dist(n, LUstruct, grid, stat, &num_mem_usage);
-	    temp = num_mem_usage.total;
+    zQuerySpace_dist(n, LUstruct, grid, stat, &num_mem_usage);
+    temp = num_mem_usage.total;
 
-	    MPI_Reduce( &temp, &max,
-		       1, MPI_FLOAT, MPI_MAX, 0, grid->comm );
-	    MPI_Reduce( &temp, &avg,
-		       1, MPI_FLOAT, MPI_SUM, 0, grid->comm );
-            if (!iam) {
-		printf("\n** Memory Usage **********************************\n");
-                printf("** Total highmark (MB):\n"
-		       "    Sum-of-all : %8.2f | Avg : %8.2f  | Max : %8.2f\n",
-		       avg * 1e-6,
-		       avg / grid->nprow / grid->npcol * 1e-6,
-		       max * 1e-6);
-		printf("**************************************************\n");
-		fflush(stdout);
-            }
+    MPI_Reduce( &temp, &max, 1, MPI_FLOAT, MPI_MAX, 0, grid->comm );
+    MPI_Reduce( &temp, &avg, 1, MPI_FLOAT, MPI_SUM, 0, grid->comm );
+    if (!iam) {
+	printf("\n** Memory Usage **********************************\n");
+        printf("** Total highmark (MB):\n"
+	       "    Sum-of-all : %8.2f | Avg : %8.2f  | Max : %8.2f\n",
+	       avg * 1e-6,
+	       avg / grid->nprow / grid->npcol * 1e-6,
+	       max * 1e-6);
+	printf("**************************************************\n");
+	fflush(stdout);
+    }
 #endif
-
 
     return;
 } /* PZGSTRS */

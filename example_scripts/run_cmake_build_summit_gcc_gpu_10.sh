@@ -25,7 +25,7 @@ cmake .. \
 	-DTPL_PARMETIS_INCLUDE_DIRS="${PARMETIS_ROOT}/include;${PARMETIS_ROOT}/metis/include;${OLCF_CUDA_ROOT}/include" \
 	-DTPL_PARMETIS_LIBRARIES="${PARMETIS_BUILD_DIR}/libparmetis/libparmetis.so;${PARMETIS_BUILD_DIR}/libmetis/libmetis.so" \
 	-DTPL_CUDA_LIBRARIES="${OLCF_CUDA_ROOT}/lib64/libcublas.so;${OLCF_CUDA_ROOT}/lib64/libcusparse.so;${OLCF_CUDA_ROOT}/lib64/libcudart.so" \
-	-Denable_blaslib=OFF \
+	-DTPL_ENABLE_INTERNAL_BLAS=OFF \
 	-DBUILD_SHARED_LIBS=ON \
 	-DCMAKE_C_COMPILER=mpicc \
 	-DCMAKE_CXX_COMPILER=mpiCC \

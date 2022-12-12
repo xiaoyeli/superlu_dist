@@ -108,13 +108,12 @@ at the top-level directory.
  */
 
 #include <math.h>
-/*#include "mkl.h"*/
 #include "superlu_zdefs.h"
+#include "gpu_api_utils.h"
 
 #ifdef GPU_ACC
 // #define NUM_GPU_STREAMS 16
 // #define NUM_GPU_STREAMS 16
-#include "gpublas_utils.h"
 #endif
 
 /* Various defininations     */
@@ -127,7 +126,7 @@ at the top-level directory.
 // #define SUPERNODE_PROFILE
 
 /*
-    Name    :   BAELINE
+    Name    :   BASELINE
     Purpose : baseline to compare performance against
     Overhead : NA : this won't be used for running experiments
 */
@@ -189,8 +188,9 @@ superlu_sort_perm (const void *arg1, const void *arg2)
  *         how the LU decomposition will be performed.
  *         The following field should be defined:
  *         o ReplaceTinyPivot (yes_no_t)
- *           Specifies whether to replace the tiny diagonals by
- *           sqrt(epsilon)*norm(A) during LU factorization.
+ *           = NO:  do not modify pivots
+ *           = YES: replace tiny pivots by sqrt(epsilon)*norm(A) during
+ *                  LU factorization.
  *
  * m      (input) int
  *        Number of rows in the matrix.
@@ -335,7 +335,6 @@ pzgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
     double InitTimer            = 0.0; /* including compute schedule, malloc */
     double tt_start, tt_end;
 
-/* #if !defined( GPU_ACC ) */
     /* Counters for memory operations and timings */
     double scatter_mem_op_counter  = 0.0;
     double scatter_mem_op_timer    = 0.0;
@@ -358,7 +357,6 @@ pzgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
     double RemainScatterTimer      = 0.0;
     double NetSchurUpTimer         = 0.0;
     double schur_flop_counter      = 0.0;
-/* #endif */
 
 #if ( PRNTlevel>= 1)
     /* count GEMM max dimensions */
@@ -435,7 +433,7 @@ pzgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
 #if (PROFlevel >= 1 )
     gemm_stats = (gemm_profile *) SUPERLU_MALLOC(nsupers * sizeof(gemm_profile));
     if (iam == 0) fgemm = fopen("dgemm_mnk.dat", "w");
-    int *prof_sendR = intCalloc_dist(nsupers);
+    int_t *prof_sendR = intCalloc_dist(nsupers);
 #endif
 
     stat->ops[FACT]      = 0.0;
@@ -703,7 +701,7 @@ pzgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
 #endif
     log_memory(nsupers * iword, stat);
 
-    k = sp_ienv_dist (3);       /* max supernode size */
+    k = sp_ienv_dist (3, options);       /* max supernode size */
 #if 0
     if ( !(Llu->ujrow = doublecomplexMalloc_dist(k*(k+1)/2)) )
          ABORT("Malloc fails for ujrow[].");
@@ -735,8 +733,8 @@ pzgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
     ToSendD = Llu->ToSendD;
     ToSendR = Llu->ToSendR;
 
-    ldt = sp_ienv_dist (3);     /* Size of maximum supernode */
-    k = CEILING (nsupers, Pr);  /* Number of local block rows */
+    ldt = sp_ienv_dist (3, options); /* Size of maximum supernode */
+    k = CEILING (nsupers, Pr);       /* Number of local block rows */
 
     /* Following code is for finding maximum row dimension of all L panels */
     int local_max_row_size = 0;
@@ -766,31 +764,12 @@ pzgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
          SUPERLU_MAX (max_row_size * num_threads * ldt,
                       get_max_buffer_size ());           */
 
-#ifdef GPU_ACC
-    int gpublas_nb = get_gpublas_nb(); // default 64
-    int nstreams = get_num_gpu_streams ();
-
-    int buffer_size  = SUPERLU_MAX(max_row_size*nstreams*gpublas_nb,get_max_buffer_size());
-    /* array holding last column blk for each partition,
-       used in SchCompUdt--GPU.c         */
-  #if 0
-    int *stream_end_col = (int_t *) _mm_malloc (sizeof (int_t) * nstreams,64);
-  #else
-    int *stream_end_col = SUPERLU_MALLOC( nstreams * sizeof(int) );
-  #endif
-
-#else /* not to use GPU */
-
-    int Threads_per_process = get_thread_per_process();
-    int_t buffer_size  = SUPERLU_MAX(max_row_size*Threads_per_process*ldt,get_max_buffer_size());
-#endif /* end ifdef GPU_ACC */
-
     int_t max_ncols = 0;
 #if 0
     /* symmetric assumption -- using L's supernode to estimate. */
     /* Note that in following expression 8 can be anything
        as long as its not too big */
-    int bigu_size = 8 * sp_ienv_dist (3) * (max_row_size);
+    int bigu_size = 8 * sp_ienv_dist (3, options) * (max_row_size);
 #else
     int_t bigu_size = estimate_bigu_size( nsupers, Ufstnz_br_ptr, Glu_persist,
     	                                  grid, perm_u, &max_ncols );
@@ -810,87 +789,116 @@ pzgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
     bigV = NULL;
 
 #if ( PRNTlevel>=1 )
-    if(!iam) printf("\t.. GEMM buffer size: max_row_size X max_ncols = %d x " IFMT "\n",
-	     		  max_row_size, max_ncols);
-    printf("[%d].. BIG U size " IFMT " (on CPU)\n", iam, bigu_size);
-    fflush(stdout);
+    if(!iam) {
+        printf("\t.. SUPERLU_MAX_BUFFER_SIZE %d set for GPU\n", sp_ienv_dist(8, options));
+	printf("\t.. SUPERLU_N_GEMM: %d flops of GEMM done on CPU (1st block always on CPU)\n", sp_ienv_dist(7, options));
+        printf("\t.. GEMM buffer size: max_row_size X max_ncols = %d x " IFMT "\n",
+                max_row_size, max_ncols);
+        printf("[%d].. BIG U size " IFMT " (on CPU)\n", iam, bigu_size);
+        fflush(stdout);
+    }
 #endif
 
 #ifdef GPU_ACC /*-- use GPU --*/
+    int superlu_acc_offload = get_acc_offload();
+    
+    int gpublas_nb = get_gpublas_nb(); // default 64
+    int nstreams = get_num_gpu_streams (); // default 8
 
-    if ( checkGPU(gpuHostMalloc((void**)&bigU,  bigu_size * sizeof(doublecomplex), gpuHostMallocDefault)) )
-        ABORT("Malloc fails for zgemm buffer U ");
+    int_t buffer_size  = SUPERLU_MIN(max_row_size * max_ncols, sp_ienv_dist(8,options));
+                                     //   get_max_buffer_size());
+    doublecomplex *dA, *dB, *dC; // GEMM matrices on device
+    int *stream_end_col;
+    gpuError_t gpuStat;
+    gpublasHandle_t *handle;
+    gpuStream_t *streams;
+		       
+    if (superlu_acc_offload) {
+    
+        /* array holding last column blk for each partition,
+           used in SchCompUdt-GPU.c         */
+        //int *stream_end_col = (int_t *) _mm_malloc (sizeof (int_t) * nstreams,64);
+        stream_end_col = SUPERLU_MALLOC( nstreams * sizeof(int) );
+
+        if ( checkGPU(gpuHostMalloc((void**)&bigU,  bigu_size * sizeof(doublecomplex), gpuHostMallocDefault)) )
+            ABORT("Malloc fails for zgemm buffer U ");
 
 #if 0 // !!Sherry fix -- only dC on GPU uses buffer_size
     bigv_size = buffer_size;
 #endif
 
 #if ( PRNTlevel>=1 )
-    printf("[%d].. BIG V size %d (on CPU), dC buffer_size %d (on GPU)\n", iam, bigv_size, buffer_size);
-    fflush(stdout);
-#endif
-    if ( checkGPU(gpuHostMalloc((void**)&bigV, bigv_size * sizeof(doublecomplex) ,gpuHostMallocDefault)) )
-        ABORT("Malloc fails for zgemm buffer V");
-
-    if ( iam==0 )DisplayHeader();
-
-#if ( PRNTlevel>=1 )
-    printf(" Starting with %d GPU Streams \n",nstreams );
+    if ( iam==0 ) {
+        printf("[%d].. BIG V size " IFMT " (on CPU), dC buffer_size " IFMT " (on GPU)\n",
+                iam, bigv_size, buffer_size);
+        fflush(stdout);
+    }
 #endif
 
-    gpublasHandle_t *handle;
-    handle = (gpublasHandle_t *) SUPERLU_MALLOC(sizeof(gpublasHandle_t)*nstreams);
-    for(int i = 0; i < nstreams; i++) handle[i] = create_handle();
+        if ( checkGPU(gpuHostMalloc((void**)&bigV, bigv_size * sizeof(doublecomplex), gpuHostMallocDefault)) )
+            ABORT("Malloc fails for zgemm buffer V");
 
-    // creating streams
-    gpuStream_t *streams;
-    streams = (gpuStream_t *) SUPERLU_MALLOC(sizeof(gpuStream_t)*nstreams);
-    for (int i = 0; i < nstreams; ++i)
-        checkGPU( gpuStreamCreate(&streams[i]) );
-
-    // allocating data in device
-    doublecomplex *dA, *dB, *dC;
-    gpuError_t gpuStat;
-#if 0
-    // gpuStat = gpuMalloc( (void**)&dA, m*k*sizeof(double));
-    // HOw much should be the size of dA?
-    // for time being just making it
-    // gpuStat = gpuMalloc( (void**)&dA, ((max_row_size*sp_ienv_dist(3)))* sizeof(double));
-#endif
-
-    gpuStat = gpuMalloc( (void**)&dA, max_row_size*sp_ienv_dist(3)* sizeof(doublecomplex));
-    if (gpuStat!= gpuSuccess) {
-        fprintf(stderr, "!!!! Error in allocating A in the device %ld \n",m*k*sizeof(doublecomplex) );
-        return 1;
+    if ( iam==0 && options->PrintStat==YES ) {
+        DisplayHeader();
+	printf(" Starting with %d GPU Streams \n", nstreams);
+        fflush(stdout);
     }
 
-    // size of B should be bigu_size
+        handle = (gpublasHandle_t *) SUPERLU_MALLOC(sizeof(gpublasHandle_t)*nstreams);
+        for (i = 0; i < nstreams; i++) handle[i] = create_handle();
 
-    gpuStat = gpuMalloc((void**)&dB, bigu_size * sizeof(doublecomplex));
-    if (gpuStat!= gpuSuccess) {
-        fprintf(stderr, "!!!! Error in allocating B in the device %ld \n",n*k*sizeof(doublecomplex));
-        return 1;
+        // creating streams
+        streams = (gpuStream_t *) SUPERLU_MALLOC(sizeof(gpuStream_t)*nstreams);
+        for (i = 0; i < nstreams; ++i)
+            checkGPU( gpuStreamCreate(&streams[i]) );
+
+        gpuStat = gpuMalloc( (void**)&dA, max_row_size * sp_ienv_dist(3,options) * sizeof(doublecomplex));
+        if (gpuStat!= gpuSuccess) {
+            fprintf(stderr, "!!!! Error in allocating A in the device %ld \n",m*k*sizeof(doublecomplex) );
+            return 1;
+        }
+
+        // size of B should be bigu_size
+        gpuStat = gpuMalloc((void**)&dB, bigu_size * sizeof(doublecomplex));
+        if (gpuStat!= gpuSuccess) {
+            fprintf(stderr, "!!!! Error in allocating B in the device %ld \n",n*k*sizeof(doublecomplex));
+            return 1;
+        }
+
+        gpuStat = gpuMalloc((void**)&dC, buffer_size * sizeof(doublecomplex) );
+        if (gpuStat!= gpuSuccess) {
+            fprintf(stderr, "!!!! Error in allocating C in the device \n" );
+            return 1;
+        }
+
+        stat->gpu_buffer += dword * ( max_row_size * sp_ienv_dist(3,options) // dA
+                                     + bigu_size                     // dB
+                                     + buffer_size );                // dC
+				     
+    } else { /* now superlu_acc_offload==0, GEMM will use CPU buffer */
+        if ( !(bigU = doublecomplexMalloc_dist(bigu_size)) )
+	     ABORT ("Malloc fails for dgemm U buffer");
+	if ( !(bigV = doublecomplexMalloc_dist(bigv_size)) )
+	     ABORT ("Malloc failed for dgemm V buffer");
     }
+							    
+#else  /*-------- not to use GPU --------*/
 
-    gpuStat = gpuMalloc((void**)&dC, buffer_size* sizeof(doublecomplex) );
-    if (gpuStat!= gpuSuccess) {
-        fprintf(stderr, "!!!! Error in allocating C in the device \n" );
-        return 1;
-    }
-
-    stat->gpu_buffer += ( max_row_size * sp_ienv_dist(3)
-			  + bigu_size + buffer_size ) * dword;
-
-#else   /*-- not to use GPU --*/
-
+  #if 0  /* Does not use buffer_size on CPU */
+    int Threads_per_process = get_thread_per_process();
+    int_t buffer_size  = SUPERLU_MAX(max_row_size * Threads_per_process * ldt, sp_ienv_dist(8));
+  #endif
+  
     // for GEMM padding 0
     j = bigu_size / ldt;
     bigu_size += (gemm_k_pad * (j + ldt + gemm_n_pad));
     bigv_size += (gemm_m_pad * (j + max_row_size + gemm_n_pad));
 
 #if ( PRNTlevel>=1 )
-    printf("[%d].. BIG V size %d (on CPU)\n", iam, bigv_size);
-    fflush(stdout);
+    if ( iam==0 ) {
+        printf("[%d].. BIG V size " IFMT " (on CPU)\n", iam, bigv_size);
+        fflush(stdout);
+    }
 #endif
 
 //#ifdef __INTEL_COMPILER
@@ -903,7 +911,7 @@ pzgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
         ABORT ("Malloc failed for zgemm V buffer");
 //#endif
 
-#endif /* end ifdef GPU_ACC */
+#endif /*************** end ifdef GPU_ACC ****************/
 
     log_memory((bigv_size + bigu_size) * dword, stat);
 
@@ -957,7 +965,7 @@ pzgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
 
     doublecomplex *lookAhead_L_buff, *Remain_L_buff; /* Stores entire L-panel */
     Ublock_info_t *Ublock_info;
-    ldt = sp_ienv_dist (3); /* max supernode size */
+    ldt = sp_ienv_dist(3, options); /* max supernode size */
     /* The following is quite loose */
     lookAhead_L_buff = doublecomplexMalloc_dist(ldt*ldt* (num_look_aheads+1) );
 
@@ -1723,16 +1731,19 @@ pzgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
 
 	/*******************************************************************/
 
-#ifdef GPU_ACC /*-- GPU --*/
-
-#include "zSchCompUdt-gpu.c"
-
+#ifdef GPU_ACC /*-- use GPU --*/
+       if (superlu_acc_offload)
+       {
+         #include "zSchCompUdt-gpu.c"
+       } else {
+         #include "zSchCompUdt-2Ddynamic.c"  // This code has better OpenMP support
+       }
 #else
 
 /*#include "SchCompUdt--Phi-2Ddynamic-alt.c"*/
 //#include "zSchCompUdt-2Ddynamic_v6.c"
 
-#include "zSchCompUdt-2Ddynamic.c"
+  #include "zSchCompUdt-2Ddynamic.c"
 
 #endif
 	/*uncomment following to compare against SuperLU 3.3 baseline*/
@@ -1749,50 +1760,43 @@ pzgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
 
     pxgstrfTimer = SuperLU_timer_() - pxgstrfTimer;
 
-#if ( PRNTlevel>=2 )
+#if ( PRNTlevel>=1 )
     /* Print detailed statistics */
     /* Updating total flops */
     double allflops;
     MPI_Reduce(&RemainGEMM_flops, &allflops, 1, MPI_DOUBLE, MPI_SUM,
 	       0, grid->comm);
     if ( iam==0 ) {
-	printf("\nInitialization time\t%8.2lf seconds\n"
+	printf("\nInitialization time\t%8.4lf seconds\n"
 	       "\t Serial: compute static schedule, allocate storage\n", InitTimer);
         printf("\n==== Time breakdown in factorization (rank 0) ====\n");
-	printf("Panel factorization \t %8.2lf seconds\n",
+	printf("Panel factorization \t %8.4lf seconds\n",
 	       pdgstrf2_timer + pdgstrs2_timer);
-	printf(".. L-panel pxgstrf2 \t %8.2lf seconds\n", pdgstrf2_timer);
-	printf(".. U-panel pxgstrs2 \t %8.2lf seconds\n", pdgstrs2_timer);
-	printf("Time in Look-ahead update \t %8.2lf seconds\n", lookaheadupdatetimer);
-        printf("Time in Schur update \t\t %8.2lf seconds\n", NetSchurUpTimer);
-        printf(".. Time to Gather L buffer\t %8.2lf  (Separate L panel by Lookahead/Remain)\n", GatherLTimer);
-        printf(".. Time to Gather U buffer\t %8.2lf \n", GatherUTimer);
-
-        printf(".. Time in GEMM %8.2lf \n",
+	printf(".. L-panel pxgstrf2 \t %8.4lf seconds\n", pdgstrf2_timer);
+	printf(".. U-panel pxgstrs2 \t %8.4lf seconds\n", pdgstrs2_timer);
+	printf("Time in Look-ahead update \t %8.4lf seconds\n", lookaheadupdatetimer);
+        printf("Time in Schur update \t\t %8.4lf seconds\n", NetSchurUpTimer);
+        printf(".. Time to Gather L buffer\t %8.4lf  (Separate L panel by Lookahead/Remain)\n", GatherLTimer);
+        printf(".. Time to Gather U buffer\t %8.4lf \n", GatherUTimer);
+	//#ifdef GPU_ACC
+	//        printf(".. Time in GEMM %8.3lf \n",
+	//	       cublasGEMMTimer + cpuGEMMTimer);
+	//        printf("\t* cublasGEMM\t %8.4lf \n", cublasGEMMTimer);
+	//        printf("\t* cpuGEMM\t %8.4lf \n", cpuGEMMTimer);
+	//#else
+        printf(".. Time in GEMM %8.4lf \n",
 	       LookAheadGEMMTimer + RemainGEMMTimer);
-        printf("\t* Look-ahead\t %8.2lf \n", LookAheadGEMMTimer);
-        printf("\t* Remain\t %8.2lf\tFlops %8.2le\tGflops %8.2lf\n",
+        printf("\t* Look-ahead\t %8.4lf \n", LookAheadGEMMTimer);
+        printf("\t* Remain\t %8.4lf\tFlops %8.4le\tGflops %8.4lf\n",
 	       RemainGEMMTimer, allflops, allflops/RemainGEMMTimer*1e-9);
-        printf(".. Time to Scatter %8.2lf \n",
+        printf(".. Time to Scatter %8.4lf \n",
 	       LookAheadScatterTimer + RemainScatterTimer);
-        printf("\t* Look-ahead\t %8.2lf \n", LookAheadScatterTimer);
-        printf("\t* Remain\t %8.2lf \n", RemainScatterTimer);
+        printf("\t* Look-ahead\t %8.4lf \n", LookAheadScatterTimer);
+        printf("\t* Remain\t %8.4lf \n", RemainScatterTimer);
 
-        printf("Total factorization time            \t: %8.2lf seconds, \n", pxgstrfTimer);
+        printf("Total factorization time            \t: %8.4lf seconds, \n", pxgstrfTimer);
         printf("--------\n");
 	printf("GEMM maximum block: %d-%d-%d\n", gemm_max_m, gemm_max_k, gemm_max_n);
-    }
-#endif
-
-#if ( DEBUGlevel>=3 )
-    for (i = 0; i < Pr * Pc; ++i) {
-        if (iam == i) {
-            zPrintLblocks(iam, nsupers, grid, Glu_persist, Llu);
-            zPrintUblocks(iam, nsupers, grid, Glu_persist, Llu);
-            printf ("(%d)\n", iam);
-            PrintInt10 ("Recv", nsupers, Llu->ToRecv);
-        }
-        MPI_Barrier (grid->comm);
     }
 #endif
 
@@ -1855,22 +1859,25 @@ pzgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
     SUPERLU_FREE (send_reqs);
 
 #ifdef GPU_ACC
-    checkGPU (gpuFreeHost (bigV));
-    checkGPU (gpuFreeHost (bigU));
-    gpuFree( (void*)dA ); /* Sherry added */
-    gpuFree( (void*)dB );
-    gpuFree( (void*)dC );
-    SUPERLU_FREE( handle );
-    SUPERLU_FREE( streams );
-    SUPERLU_FREE( stream_end_col );
+    if ( superlu_acc_offload ) {
+        checkGPU (gpuFreeHost (bigV));
+        checkGPU (gpuFreeHost (bigU));
+        gpuFree( (void*)dA ); /* Sherry added */
+        gpuFree( (void*)dB );
+        gpuFree( (void*)dC );
+        for (i = 0; i < nstreams; i++) destroy_handle(handle[i]);	
+        SUPERLU_FREE( handle );
+        SUPERLU_FREE( streams );
+        SUPERLU_FREE( stream_end_col );
+    } else {
+        SUPERLU_FREE (bigV);    // allocated on CPU
+        SUPERLU_FREE (bigU);
+    }
 #else
-//  #ifdef __INTEL_COMPILER
-//    _mm_free (bigU);
-//    _mm_free (bigV);
-//  #else
+
     SUPERLU_FREE (bigV);
     SUPERLU_FREE (bigU);
-//  #endif
+
     /* Decrement freed memory from memory stat. */
     log_memory(-(bigv_size + bigu_size) * dword, stat);
 #endif
@@ -1880,7 +1887,7 @@ pzgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
     SUPERLU_FREE (indirect);
     SUPERLU_FREE (indirect2); /* Sherry added */
 
-    ldt = sp_ienv_dist(3);
+    ldt = sp_ienv_dist(3, options);
     log_memory( -(3 * ldt *ldt * dword + 2 * ldt * num_threads * iword), stat );
 
     /* Sherry added */
@@ -1919,7 +1926,7 @@ pzgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
     /* Prepare error message - find the smallesr index i that U(i,i)==0 */
     if ( *info == 0 ) *info = n + 1;
     MPI_Allreduce (info, &iinfo, 1, MPI_INT, MPI_MIN, grid->comm);
-    if ( iinfo == n + 1 ) *info = 0;
+    if ( iinfo == (n + 1) ) *info = 0;
     else *info = iinfo;
 
 #if ( PROFlevel>=1 )

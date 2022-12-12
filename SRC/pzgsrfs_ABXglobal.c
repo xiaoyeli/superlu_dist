@@ -121,7 +121,8 @@ static void redist_all_to_diag(int_t, doublecomplex [], Glu_persist_t *,
  */
 
 void
-pzgsrfs_ABXglobal(int_t n, SuperMatrix *A, double anorm, zLUstruct_t *LUstruct,
+pzgsrfs_ABXglobal(superlu_dist_options_t *options, int_t n,
+                 SuperMatrix *A, double anorm, zLUstruct_t *LUstruct,
 		  gridinfo_t *grid, doublecomplex *B, int_t ldb, doublecomplex *X, int_t ldx,
 		  int nrhs, double *berr, SuperLUStat_t *stat, int *info)
 {
@@ -158,7 +159,8 @@ pzgsrfs_ABXglobal(int_t n, SuperMatrix *A, double anorm, zLUstruct_t *LUstruct,
     int_t *diag_len; /* Length of the X vector on diagonal processes. */
 
     /*-- Function prototypes --*/
-    extern void pzgstrs1(int_t, zLUstruct_t *, gridinfo_t *,
+    extern void pzgstrs1(superlu_dist_options_t *,
+                         int_t, zLUstruct_t *, gridinfo_t *,
 			 doublecomplex *, int, SuperLUStat_t *, int *);
 
     /* Test the input parameters. */
@@ -211,7 +213,7 @@ pzgsrfs_ABXglobal(int_t n, SuperMatrix *A, double anorm, zLUstruct_t *LUstruct,
 
     i = CEILING( nsupers, nprow ); /* Number of local block rows */
     ii = Llu->ldalsum + i * XK_H;
-    k = SUPERLU_MAX(N_update, sp_ienv_dist(3));
+    k = SUPERLU_MAX(N_update, sp_ienv_dist(3, options));
     jj = diag_len[0];
     for (j = 1; j < num_diag_procs; ++j) jj = SUPERLU_MAX( jj, diag_len[j] );
     jj = SUPERLU_MAX( jj, N_update );
@@ -321,7 +323,7 @@ pzgsrfs_ABXglobal(int_t n, SuperMatrix *A, double anorm, zLUstruct_t *LUstruct,
 		/* Compute new dx. */
 		redist_all_to_diag(n, R, Glu_persist, Llu, grid,
 				   mv_sup_to_proc, dx_trs);
-		pzgstrs1(n, LUstruct, grid, dx_trs, 1, stat, info);
+		pzgstrs1(options, n, LUstruct, grid, dx_trs, 1, stat, info);
 
 		/* Update solution. */
 		for (p = 0; p < num_diag_procs; ++p)

@@ -124,8 +124,7 @@ int main(int argc, char *argv[])
     char     **cpp, c;
     FILE *fp, *fopen();
     char matrix_type[8], equed[1];
-    int  relax, maxsuper=sp_ienv_dist(3), fill_ratio=sp_ienv_dist(6),
-         min_gemm_gpu_offload=0;
+    int  relax, maxsuper, fill_ratio, min_gemm_gpu_offload=0;
     int    equil, ifact, nfact, iequil, iequed, prefact, notfactored, diaginv;
     int    nt, nrun=0, nfail=0, nerrs=0, imat, fimat=0;
     int    nimat=1;  /* Currently only test a sparse matrix read from a file. */
@@ -182,6 +181,9 @@ int main(int argc, char *argv[])
 	fflush(stdout);
     }
 
+    maxsuper = sp_ienv_dist(3, &options);
+    fill_ratio = sp_ienv_dist(6, &options);
+    
     if ( !(berr = doubleMalloc_dist(nrhs)) )
 	ABORT("Malloc fails for berr[].");
 	
@@ -357,7 +359,7 @@ int main(int argc, char *argv[])
 		        PStatFree(&stat);
 #if 0
 		        pdinf_norm_error(iam, ((NRformat_loc *)A.Store)->m_loc,
-				     nrhs, b, ldb, xtrue, ldx, &grid);
+				     nrhs, b, ldb, xtrue, ldx, grid.comm);
 #endif
 		        if ( info ) {
 			    printf(FMT3, "pzgssvx",info,izero,n,nrhs,imat,nfail);
@@ -375,7 +377,7 @@ int main(int argc, char *argv[])
 			    dgst04(n, nrhs, solx, ldx, xact, ldx, rcond,
 					  &result[2]);
 			    pdinf_norm_error(iam, ((NRformat_loc *)A.Store)->m_loc,
-					 nrhs, b, ldb, xtrue, ldx, &grid);
+					 nrhs, b, ldb, xtrue, ldx, grid.comm);
 #endif
 
 			    /* Print information about the tests that did
@@ -493,8 +495,8 @@ parse_command_line(int argc, char *argv[], int *nprow, int *npcol,
 	  case 'x': // c = atoi(optarg); 
 	            // sprintf(str, "%d", c);
 	            // setenv("NREL", str, 1);
-		    xenvstr = (char*) malloc((6+strlen(optarg))*sizeof(char));
-		    strcpy(xenvstr, "NREL=");
+		    xenvstr = (char*) malloc((20+strlen(optarg))*sizeof(char));
+		    strcpy(xenvstr, "SUPERLU_RELAX=");
 		    strcat(xenvstr, optarg);
 		    putenv(xenvstr);
 	            //printf("Reset relax env. variable to %d\n", c);
@@ -502,8 +504,8 @@ parse_command_line(int argc, char *argv[], int *nprow, int *npcol,
 	  case 'm': // c = atoi(optarg); 
 	            // sprintf(str, "%d", c);
 		    // setenv("NSUP", str, 1);
-		    menvstr = (char*) malloc((6+strlen(optarg))*sizeof(char));
-		    strcpy(menvstr, "NSUP=");
+		    menvstr = (char*) malloc((20+strlen(optarg))*sizeof(char));
+		    strcpy(menvstr, "SUPERLU_MAXSUP=");
 		    strcat(menvstr, optarg);
 		    putenv(menvstr);
 		    //printf("Reset maxsuper env. variable to %d\n", c);
@@ -511,8 +513,8 @@ parse_command_line(int argc, char *argv[], int *nprow, int *npcol,
 	  case 'b': // c = atoi(optarg); 
 	            // sprintf(str, "%d", c);
 		    // setenv("FILL", str, 1);
-		    benvstr = (char*) malloc((6+strlen(optarg))*sizeof(char));
-		    strcpy(benvstr, "FILL=");
+		    benvstr = (char*) malloc((20+strlen(optarg))*sizeof(char));
+		    strcpy(benvstr, "SUPERLU_FILL=");
 		    strcat(benvstr, optarg);
 		    putenv(benvstr);
 		    //printf("Reset fill_ratio env. variable to %d\n", c);
@@ -520,8 +522,8 @@ parse_command_line(int argc, char *argv[], int *nprow, int *npcol,
 	  case 'g': // c = atoi(optarg); 
 	            // sprintf(str, "%d", c);
 		    // setenv("N_GEMM", str, 1);
-		    genvstr = (char*) malloc((8+strlen(optarg))*sizeof(char));
-		    strcpy(genvstr, "N_GEMM=");
+		    genvstr = (char*) malloc((20+strlen(optarg))*sizeof(char));
+		    strcpy(genvstr, "SUPERLU_N_GEMM=");
 		    strcat(genvstr, optarg);
 		    putenv(genvstr);
 		    //printf("Reset min_gemm_gpu_offload env. variable to %d\n", c);

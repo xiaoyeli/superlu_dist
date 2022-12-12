@@ -104,7 +104,7 @@ int main(int argc, char *argv[])
 
     /* Bail out if I do not belong in the grid. */
     iam = grid.iam;
-    if ( iam >= nprow * npcol )
+    if ( iam == -1 )
 	goto out;
     
 #if ( DEBUGlevel>=1 )
@@ -158,8 +158,18 @@ int main(int argc, char *argv[])
     *trans = 'N';
     ldx = n;
     ldb = m;
-    zGenXtrue_dist(n, nrhs, xtrue, ldx);
-    zFillRHS_dist(trans, nrhs, xtrue, ldx, &A, b, ldb);
+
+    if ( iam==0 ) {
+        zGenXtrue_dist(n, nrhs, xtrue, ldx);
+        zFillRHS_dist(trans, nrhs, xtrue, ldx, &A, b, ldb);
+	
+        MPI_Bcast( xtrue, n*nrhs, SuperLU_MPI_DOUBLE_COMPLEX, 0, grid.comm );
+        MPI_Bcast( b, m*nrhs, SuperLU_MPI_DOUBLE_COMPLEX, 0, grid.comm );
+    } else {
+        MPI_Bcast( xtrue, n*nrhs, SuperLU_MPI_DOUBLE_COMPLEX, 0, grid.comm );
+        MPI_Bcast( b, m*nrhs, SuperLU_MPI_DOUBLE_COMPLEX, 0, grid.comm );
+    }
+    
     for (j = 0; j < nrhs; ++j)
 	for (i = 0; i < m; ++i) b1[i+j*ldb] = b[i+j*ldb];
 
@@ -185,7 +195,6 @@ int main(int argc, char *argv[])
     set_default_options_dist(&options);
 
     if (!iam) {
-	print_sp_ienv_dist(&options);
 	print_options_dist(&options);
     }
 

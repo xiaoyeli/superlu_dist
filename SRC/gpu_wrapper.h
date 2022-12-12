@@ -1,6 +1,25 @@
-// #ifndef __SUPERLU_GPUWRAPER /* allow multiple inclusions */
-// #define __SUPERLU_GPUWRAPER
+/*! \file
+Copyright (c) 2003, The Regents of the University of California, through
+Lawrence Berkeley National Laboratory (subject to receipt of any required 
+approvals from U.S. Dept. of Energy) 
 
+All rights reserved. 
+
+The source code is distributed under BSD license, see the file License.txt
+at the top-level directory.
+*/
+/*! @file
+ * \brief Wrappers for multiple types of GPUs
+ *
+ * <pre>
+ * -- Distributed SuperLU routine (version 8.0) --
+ * Lawrence Berkeley National Lab, Univ. of California Berkeley.
+ * May 22, 2022
+ * </pre>
+ */
+
+#ifndef __SUPERLU_GPUWRAPPER /* allow multiple inclusions */
+#define __SUPERLU_GPUWRAPPER
 
 #ifdef HAVE_CUDA
 #include <cublas_v2.h>
@@ -26,6 +45,7 @@
 #define gpuMallocManaged cudaMallocManaged
 #define gpuStream_t cudaStream_t
 #define gpuStreamCreate cudaStreamCreate
+#define gpuStreamDestroy cudaStreamDestroy
 #define gpuMemcpyAsync cudaMemcpyAsync
 #define gpuMemcpy2DAsync cudaMemcpy2DAsync
 #define gpuFreeHost cudaFreeHost
@@ -38,8 +58,18 @@
 #define gpuMemcpyHostToDevice cudaMemcpyHostToDevice
 #define gpuMemcpyDeviceToHost cudaMemcpyDeviceToHost
 #define gpuStreamCreateWithFlags cudaStreamCreateWithFlags
+#define gpuStreamDestroyWithFlags cudaStreamDestroyWithFlags
 #define gpuStreamDefault cudaStreamDefault
 #define gpublasStatus_t cublasStatus_t
+#define gpuEventCreate cudaEventCreate
+#define gpuEventRecord cudaEventRecord
+#define gpuMemGetInfo cudaMemGetInfo
+#define gpuOccupancyMaxPotentialBlockSize cudaOccupancyMaxPotentialBlockSize
+#define gpuEventElapsedTime cudaEventElapsedTime
+#define gpuDeviceReset cudaDeviceReset
+#define gpuMallocHost cudaMallocHost
+#define gpuEvent_t cudaEvent_t
+#define gpuMemset cudaMemset
 #define  GPUBLAS_STATUS_SUCCESS CUBLAS_STATUS_SUCCESS 
 #define  GPUBLAS_STATUS_NOT_INITIALIZED CUBLAS_STATUS_NOT_INITIALIZED 
 #define  GPUBLAS_STATUS_ALLOC_FAILED CUBLAS_STATUS_ALLOC_FAILED 
@@ -48,12 +78,16 @@
 #define  GPUBLAS_STATUS_MAPPING_ERROR CUBLAS_STATUS_MAPPING_ERROR 
 #define  GPUBLAS_STATUS_EXECUTION_FAILED CUBLAS_STATUS_EXECUTION_FAILED 
 #define  GPUBLAS_STATUS_INTERNAL_ERROR CUBLAS_STATUS_INTERNAL_ERROR 
+#define  GPUBLAS_STATUS_LICENSE_ERROR CUBLAS_STATUS_LICENSE_ERROR 
+#define  GPUBLAS_STATUS_NOT_SUPPORTED CUBLAS_STATUS_NOT_SUPPORTED 
 #define  gpublasCreate cublasCreate 
 #define  gpublasDestroy cublasDestroy
 #define  gpublasHandle_t cublasHandle_t
 #define  gpublasSetStream cublasSetStream
 #define  gpublasDgemm cublasDgemm
+#define  gpublasSgemm cublasSgemm
 #define  gpublasZgemm cublasZgemm
+#define  gpublasCgemm cublasCgemm
 #define  GPUBLAS_OP_N CUBLAS_OP_N
 #define  gpuDoubleComplex cuDoubleComplex
 #define  gpuRuntimeGetVersion cudaRuntimeGetVersion
@@ -93,6 +127,7 @@
 #define gpuMallocManaged hipMallocManaged
 #define gpuStream_t hipStream_t
 #define gpuStreamCreate hipStreamCreate
+#define gpuStreamDestroy hipStreamDestroy
 #define gpuMemcpyAsync hipMemcpyAsync
 #define gpuMemcpy2DAsync hipMemcpy2DAsync
 #define gpuFreeHost hipHostFree
@@ -105,8 +140,18 @@
 #define gpuMemcpyHostToDevice hipMemcpyHostToDevice
 #define gpuMemcpyDeviceToHost hipMemcpyDeviceToHost
 #define gpuStreamCreateWithFlags hipStreamCreateWithFlags
+#define gpuStreamDestroyWithFlags hipStreamDestroyWithFlags
 #define gpuStreamDefault hipStreamDefault
 #define gpublasStatus_t hipblasStatus_t
+#define gpuEventCreate hipEventCreate
+#define gpuEventRecord hipEventRecord
+#define gpuMemGetInfo hipMemGetInfo
+#define gpuOccupancyMaxPotentialBlockSize hipOccupancyMaxPotentialBlockSize
+#define gpuEventElapsedTime hipEventElapsedTime
+#define gpuDeviceReset hipDeviceReset
+#define gpuMallocHost hipHostMalloc
+#define gpuEvent_t hipEvent_t
+#define gpuMemset hipMemset
 #define  GPUBLAS_STATUS_SUCCESS HIPBLAS_STATUS_SUCCESS 
 #define  GPUBLAS_STATUS_NOT_INITIALIZED HIPBLAS_STATUS_NOT_INITIALIZED 
 #define  GPUBLAS_STATUS_ALLOC_FAILED HIPBLAS_STATUS_ALLOC_FAILED 
@@ -115,12 +160,16 @@
 #define  GPUBLAS_STATUS_MAPPING_ERROR HIPBLAS_STATUS_MAPPING_ERROR 
 #define  GPUBLAS_STATUS_EXECUTION_FAILED HIPBLAS_STATUS_EXECUTION_FAILED 
 #define  GPUBLAS_STATUS_INTERNAL_ERROR HIPBLAS_STATUS_INTERNAL_ERROR 
+#define  GPUBLAS_STATUS_LICENSE_ERROR HIPBLAS_STATUS_LICENSE_ERROR 
+#define  GPUBLAS_STATUS_NOT_SUPPORTED HIPBLAS_STATUS_NOT_SUPPORTED 
 #define  gpublasCreate hipblasCreate 
 #define  gpublasDestroy hipblasDestroy
 #define  gpublasHandle_t hipblasHandle_t
 #define  gpublasSetStream hipblasSetStream
 #define  gpublasDgemm hipblasDgemm
+#define  gpublasSgemm hipblasSgemm
 #define  gpublasZgemm hipblasZgemm
+#define  gpublasCgemm hipblasCgemm
 #define  GPUBLAS_OP_N HIPBLAS_OP_N
 #define  gpuDoubleComplex hipblasDoubleComplex
 #define  gpuRuntimeGetVersion hipRuntimeGetVersion
@@ -148,3 +197,6 @@
 			 exit(1); \
 		 } \
 	 } while(0);
+
+
+#endif /* __SUPERLU_GPUWRAPPER */

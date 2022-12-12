@@ -13,14 +13,16 @@ at the top-level directory.
 /*! @file
  * \brief Re-distribute A on the 2D process mesh.
  * <pre>
- * -- Distributed SuperLU routine (version 2.3) --
+ * -- Distributed SuperLU routine (version 7.1.1) --
  * Lawrence Berkeley National Lab, Univ. of California Berkeley.
  * October 15, 2008
+ * October 18, 2021, minor fix, v7.1.1
  * </pre>
  */
 
 #include "superlu_ddefs.h"
 #ifdef GPU_ACC
+#include "gpu_api_utils.h"
 #endif
 
 /*! \brief
@@ -74,9 +76,9 @@ dReDistribute_A(SuperMatrix *A, dScalePermstruct_t *ScalePermstruct,
     int_t  SendCnt; /* number of remote nonzeros to be sent */
     int_t  RecvCnt; /* number of remote nonzeros to be sent */
     int_t  *nnzToSend, *nnzToRecv, maxnnzToRecv;
-    int_t  *ia, *ja, **ia_send, *index, *itemp;
+    int_t  *ia, *ja, **ia_send, *index, *itemp = NULL;
     int_t  *ptr_to_send;
-    double *aij, **aij_send, *nzval, *dtemp;
+    double *aij, **aij_send, *nzval, *dtemp = NULL;
     double *nzval_a;
 	double asum,asum_tot;
     int    iam, it, p, procs, iam_g;
@@ -142,8 +144,8 @@ dReDistribute_A(SuperMatrix *A, dScalePermstruct_t *ScalePermstruct,
             ABORT("Malloc fails for ia[].");
         if ( !(aij = doubleMalloc_dist(k)) )
             ABORT("Malloc fails for aij[].");
+        ja = ia + k;
     }
-    ja = ia + k;
 
     /* Allocate temporary storage for sending/receiving the A triplets. */
     if ( procs > 1 ) {
@@ -171,9 +173,9 @@ dReDistribute_A(SuperMatrix *A, dScalePermstruct_t *ScalePermstruct,
 
       for (i = 0, j = 0, p = 0; p < procs; ++p) {
           if ( p != iam ) {
-	      ia_send[p] = &index[i];
+	      if (nnzToSend[p] > 0) ia_send[p] = &index[i];
 	      i += 2 * nnzToSend[p]; /* ia/ja indices alternate */
-	      aij_send[p] = &nzval[j];
+	      if (nnzToSend[p] > 0) aij_send[p] = &nzval[j];
 	      j += nnzToSend[p];
 	  }
       }
@@ -217,7 +219,8 @@ dReDistribute_A(SuperMatrix *A, dScalePermstruct_t *ScalePermstruct,
        NOTE: Can possibly use MPI_Alltoallv.
        ------------------------------------------------------------*/
     for (p = 0; p < procs; ++p) {
-        if ( p != iam ) {
+        if ( p != iam && nnzToSend[p] > 0 ) {
+    	//if ( p != iam ) {
 	    it = 2*nnzToSend[p];
 	    MPI_Isend( ia_send[p], it, mpi_int_t,
 		       p, iam, grid->comm, &send_req[p] );
@@ -228,7 +231,8 @@ dReDistribute_A(SuperMatrix *A, dScalePermstruct_t *ScalePermstruct,
     }
 
     for (p = 0; p < procs; ++p) {
-        if ( p != iam ) {
+        if ( p != iam && nnzToRecv[p] > 0 ) {
+	//if ( p != iam ) {
 	    it = 2*nnzToRecv[p];
 	    MPI_Recv( itemp, it, mpi_int_t, p, p, grid->comm, &status );
 	    it = nnzToRecv[p];
@@ -247,7 +251,8 @@ dReDistribute_A(SuperMatrix *A, dScalePermstruct_t *ScalePermstruct,
     }
 
     for (p = 0; p < procs; ++p) {
-        if ( p != iam ) {
+        if ( p != iam && nnzToSend[p] > 0 ) { // cause two of the tests to hang
+        //if ( p != iam ) {
 	    MPI_Wait( &send_req[p], &status);
 	    MPI_Wait( &send_req[procs+p], &status);
 	}
@@ -337,7 +342,7 @@ int *h_recv_cnt, *d_recv_cnt, *d_msgnum;
 int *h_recv_cnt_u, *d_recv_cnt_u, *d_msgnum_u;
 int *d_flag_mod;
 float
-pddistribute(fact_t fact, int_t n, SuperMatrix *A,
+pddistribute(superlu_dist_options_t *options, int_t n, SuperMatrix *A,
 	     dScalePermstruct_t *ScalePermstruct,
 	     Glu_freeable_t *Glu_freeable, dLUstruct_t *LUstruct,
 	     gridinfo_t *grid, int_t nrhs)
@@ -354,8 +359,8 @@ pddistribute(fact_t fact, int_t n, SuperMatrix *A,
  * Arguments
  * =========
  *
- * fact (input) fact_t
- *        Specifies whether or not the L and U structures will be re-used.
+ * options (input) superlu_dist_options_t*
+ *        options->Fact Specifies whether or not the L and U structures will be re-used.
  *        = SamePattern_SameRowPerm: L and U structures are input, and
  *                                   unchanged on exit.
  *        = DOFACT or SamePattern: L and U structures are computed and output.
@@ -459,19 +464,20 @@ pddistribute(fact_t fact, int_t n, SuperMatrix *A,
     int  *ToRecv, *ToSendD, **ToSendR;
 
     /*-- Counts to be used in lower triangular solve. --*/
-    int_t  *fmod;          /* Modification count for L-solve.        */
-    int_t  **fsendx_plist; /* Column process list to send down Xk.   */
-    int_t  nfrecvx = 0;    /* Number of Xk I will receive.           */
-    int_t  nfsendx = 0;    /* Number of Xk I will send               */
-    int_t  kseen;
+    int  *fmod;          /* Modification count for L-solve.        */
+    int  **fsendx_plist; /* Column process list to send down Xk.   */
+    int  nfrecvx = 0;    /* Number of Xk I will receive.           */
+    int  nfsendx = 0;    /* Number of Xk I will send               */
+    int  kseen;
 
     /*-- Counts to be used in upper triangular solve. --*/
-    int_t  *bmod;          /* Modification count for U-solve.        */
-    int_t  **bsendx_plist; /* Column process list to send down Xk.   */
-    int_t  nbrecvx = 0;    /* Number of Xk I will receive.           */
-    int_t  nbsendx = 0;    /* Number of Xk I will send               */
-    int_t  *ilsum;         /* starting position of each supernode in
-			      the full array (local)                 */
+    int  *bmod;          /* Modification count for U-solve.        */
+    int  **bsendx_plist; /* Column process list to send down Xk.   */
+    int  nbrecvx = 0;    /* Number of Xk I will receive.           */
+    int  nbsendx = 0;    /* Number of Xk I will send               */
+    
+    int_t  *ilsum;       /* starting position of each supernode in
+		            the full array (local)                 */
 
     /*-- Auxiliary arrays; freed on return --*/
     int_t *rb_marker;  /* block hit marker; size ceil(NSUPERS/Pr)           */
@@ -498,8 +504,9 @@ pddistribute(fact_t fact, int_t n, SuperMatrix *A,
     float mem_use = 0.0;
     float memTRS = 0.; /* memory allocated for storing the meta-data for triangular solve (positive number)*/
 
-    int_t *mod_bit;
-    int_t *frecv, *brecv, *lloc;
+    int *mod_bit;
+    int *frecv, *brecv;
+    int_t *lloc;
     double **Linv_bc_ptr;  /* size ceil(NSUPERS/Pc) */
 	double *Linv_bc_dat;  /* size sum of sizes of Linv_bc_ptr[lk])                 */   
     long int *Linv_bc_offset;  /* size ceil(NSUPERS/Pc)                 */   
@@ -551,8 +558,8 @@ pddistribute(fact_t fact, int_t n, SuperMatrix *A,
 		       ".. Phase 1 - ReDistribute_A time: %.2f\t\n", t);
 #endif
 
+    if ( options->Fact == SamePattern_SameRowPerm ) {
 
-    if ( fact == SamePattern_SameRowPerm ) {
 #if ( PROFlevel>=1 )
 	t_l = t_u = 0; u_blks = 0;
 #endif
@@ -560,7 +567,7 @@ pddistribute(fact_t fact, int_t n, SuperMatrix *A,
 	   L and U data structures.            */
 	ilsum = Llu->ilsum;
 	ldaspa = Llu->ldalsum;
-	if ( !(dense = doubleCalloc_dist(ldaspa * sp_ienv_dist(3))) )
+	if ( !(dense = doubleCalloc_dist(ldaspa * sp_ienv_dist(3,options))) )
 	    ABORT("Calloc fails for SPA dense[].");
 	nrbu = CEILING( nsupers, grid->nprow ); /* No. of local block rows */
 	if ( !(Urb_length = intCalloc_dist(nrbu)) )
@@ -574,7 +581,7 @@ pddistribute(fact_t fact, int_t n, SuperMatrix *A,
 	Unzval_br_ptr = Llu->Unzval_br_ptr;
 	Unnz = Llu->Unnz;
 
-	mem_use += 2.0*nrbu*iword + ldaspa*sp_ienv_dist(3)*dword;
+	mem_use += 2.0*nrbu*iword + ldaspa*sp_ienv_dist(3,options)*dword;
 
 #if ( PROFlevel>=1 )
 	t = SuperLU_timer_();
@@ -862,17 +869,17 @@ pddistribute(fact_t fact, int_t n, SuperMatrix *A,
 	    ABORT("Malloc fails for Lrb_indptr[].");
 	if ( !(Lrb_valptr = intMalloc_dist(k)) )
 	    ABORT("Malloc fails for Lrb_valptr[].");
-	if ( !(dense = doubleCalloc_dist(ldaspa * sp_ienv_dist(3))) )
+	if ( !(dense = doubleCalloc_dist(ldaspa * sp_ienv_dist(3,options))) )
 	    ABORT("Calloc fails for SPA dense[].");
 
 	/* These counts will be used for triangular solves. */
-	if ( !(fmod = intCalloc_dist(k)) )
+	if ( !(fmod = int32Calloc_dist(k)) )
 	    ABORT("Calloc fails for fmod[].");
-	if ( !(bmod = intCalloc_dist(k)) )
+	if ( !(bmod = int32Calloc_dist(k)) )
 	    ABORT("Calloc fails for bmod[].");
 
 	/* ------------------------------------------------ */
-	mem_use += 6.0*k*iword + ldaspa*sp_ienv_dist(3)*dword;
+	mem_use += 6.0*k*iword + ldaspa*sp_ienv_dist(3,options)*dword;
 
 	k = CEILING( nsupers, grid->npcol );/* Number of local block columns */
 
@@ -939,21 +946,21 @@ pddistribute(fact_t fact, int_t n, SuperMatrix *A,
 
 
 	/* These lists of processes will be used for triangular solves. */
-	if ( !(fsendx_plist = (int_t **) SUPERLU_MALLOC(k*sizeof(int_t*))) )
+	if ( !(fsendx_plist = (int **) SUPERLU_MALLOC(k*sizeof(int*))) )
 	    ABORT("Malloc fails for fsendx_plist[].");
 	len = k * grid->nprow;
-	if ( !(index = intMalloc_dist(len)) )
+	if ( !(index1 = int32Malloc_dist(len)) )
 	    ABORT("Malloc fails for fsendx_plist[0]");
-	for (i = 0; i < len; ++i) index[i] = EMPTY;
+	for (i = 0; i < len; ++i) index1[i] = EMPTY;
 	for (i = 0, j = 0; i < k; ++i, j += grid->nprow)
-	    fsendx_plist[i] = &index[j];
-	if ( !(bsendx_plist = (int_t **) SUPERLU_MALLOC(k*sizeof(int_t*))) )
+	    fsendx_plist[i] = &index1[j];
+	if ( !(bsendx_plist = (int **) SUPERLU_MALLOC(k*sizeof(int*))) )
 	    ABORT("Malloc fails for bsendx_plist[].");
-	if ( !(index = intMalloc_dist(len)) )
+	if ( !(index1 = int32Malloc_dist(len)) )
 	    ABORT("Malloc fails for bsendx_plist[0]");
-	for (i = 0; i < len; ++i) index[i] = EMPTY;
+	for (i = 0; i < len; ++i) index1[i] = EMPTY;
 	for (i = 0, j = 0; i < k; ++i, j += grid->nprow)
-	    bsendx_plist[i] = &index[j];
+	    bsendx_plist[i] = &index1[j];
 	/* -------------------------------------------------------------- */
 	mem_use += 4.0*k*sizeof(int_t*) + 2.0*len*iword;
 	memTRS += k*sizeof(int_t*) + 2.0*k*sizeof(double*) + k*iword;  //acount for Lindval_loc_bc_ptr, Unnz, Linv_bc_ptr,Uinv_bc_ptr
@@ -1269,6 +1276,11 @@ pddistribute(fact_t fact, int_t n, SuperMatrix *A,
 	} /* for jb ... */
 
 
+	Linv_bc_cnt +=1; // safe guard
+	Uinv_bc_cnt +=1; 
+	Lrowind_bc_cnt +=1; 
+	Lindval_loc_bc_cnt +=1; 
+	Lnzval_bc_cnt +=1; 
 	if ( !(Linv_bc_dat =
 				(double*)SUPERLU_MALLOC(Linv_bc_cnt * sizeof(double))) ) {
 		fprintf(stderr, "Malloc fails for Linv_bc_dat[].");
@@ -1464,7 +1476,10 @@ pddistribute(fact_t fact, int_t n, SuperMatrix *A,
 	}
 
 
-
+	Unzval_br_cnt +=1; // safe guard
+	Ufstnz_br_cnt +=1; 
+	Ucb_valcnt +=1; 
+	Ucb_indcnt +=1; 
 	if ( !(Unzval_br_dat =
 				(double*)SUPERLU_MALLOC(Unzval_br_cnt * sizeof(double))) ) {
 		fprintf(stderr, "Malloc fails for Lnzval_bc_dat[].");
@@ -1705,9 +1720,9 @@ if ( !iam) printf(".. Construct Bcast tree for L: %.2f\t\n", t);
 	/* construct the Reduce tree for L ... */
 	/* the following is used as reference */
 	nlb = CEILING( nsupers, grid->nprow );/* Number of local block rows */
-	if ( !(mod_bit = intMalloc_dist(nlb)) )
+	if ( !(mod_bit = int32Malloc_dist(nlb)) )
 		ABORT("Malloc fails for mod_bit[].");
-	if ( !(frecv = intMalloc_dist(nlb)) )
+	if ( !(frecv = int32Malloc_dist(nlb)) )
 		ABORT("Malloc fails for frecv[].");
 
 	for (k = 0; k < nlb; ++k) mod_bit[k] = 0;
@@ -1722,8 +1737,7 @@ if ( !iam) printf(".. Construct Bcast tree for L: %.2f\t\n", t);
 	}
 	/* Every process receives the count, but it is only useful on the
 	   diagonal processes.  */
-	MPI_Allreduce( mod_bit, frecv, nlb, mpi_int_t, MPI_SUM, grid->rscp.comm);
-
+	MPI_Allreduce( mod_bit, frecv, nlb, MPI_INT, MPI_SUM, grid->rscp.comm);
 
 
 	k = CEILING( nsupers, grid->nprow );/* Number of local block rows */
@@ -2076,9 +2090,9 @@ if ( !iam) printf(".. Construct Bcast tree for U: %.2f\t\n", t);
 	/* construct the Reduce tree for U ... */
 	/* the following is used as reference */
 	nlb = CEILING( nsupers, grid->nprow );/* Number of local block rows */
-	if ( !(mod_bit = intMalloc_dist(nlb)) )
+	if ( !(mod_bit = int32Malloc_dist(nlb)) )
 		ABORT("Malloc fails for mod_bit[].");
-	if ( !(brecv = intMalloc_dist(nlb)) )
+	if ( !(brecv = int32Malloc_dist(nlb)) )
 		ABORT("Malloc fails for brecv[].");
 
 	for (k = 0; k < nlb; ++k) mod_bit[k] = 0;
@@ -2093,7 +2107,7 @@ if ( !iam) printf(".. Construct Bcast tree for U: %.2f\t\n", t);
 	}
 	/* Every process receives the count, but it is only useful on the
 	   diagonal processes.  */
-	MPI_Allreduce( mod_bit, brecv, nlb, mpi_int_t, MPI_SUM, grid->rscp.comm);
+	MPI_Allreduce( mod_bit, brecv, nlb, MPI_INT, MPI_SUM, grid->rscp.comm);
 
 
 
@@ -2389,24 +2403,13 @@ if ( !iam) printf(".. Construct Reduce tree for U: %.2f\t\n", t);
 	checkGPU(gpuMalloc( (void**)&Llu->d_Lnzval_bc_offset, CEILING( nsupers, grid->npcol ) * sizeof(long int)));
 	checkGPU(gpuMemcpy(Llu->d_Lnzval_bc_offset, Llu->Lnzval_bc_offset, CEILING( nsupers, grid->npcol ) * sizeof(long int), gpuMemcpyHostToDevice));	
 	
-	checkGPU(gpuMalloc( (void**)&Llu->d_Unzval_br_offset, CEILING( nsupers, grid->nprow ) * sizeof(long int)));
-	checkGPU(gpuMemcpy(Llu->d_Unzval_br_offset, Llu->Unzval_br_offset, CEILING( nsupers, grid->nprow ) * sizeof(long int), gpuMemcpyHostToDevice));	
-	checkGPU(gpuMalloc( (void**)&Llu->d_Ufstnz_br_offset, CEILING( nsupers, grid->nprow ) * sizeof(long int)));
-	checkGPU(gpuMemcpy(Llu->d_Ufstnz_br_offset, Llu->Ufstnz_br_offset, CEILING( nsupers, grid->nprow ) * sizeof(long int), gpuMemcpyHostToDevice));		
-	checkGPU(gpuMalloc( (void**)&Llu->d_Ufstnz_br_dat, (Llu->Ufstnz_br_cnt) * sizeof(int_t)));
-	checkGPU(gpuMemcpy(Llu->d_Ufstnz_br_dat, Llu->Ufstnz_br_dat, (Llu->Ufstnz_br_cnt) * sizeof(int_t), gpuMemcpyHostToDevice));		
-	checkGPU(gpuMalloc( (void**)&Llu->d_Urbs, 2* CEILING( nsupers, grid->npcol ) * sizeof(int_t)));
-	checkGPU(gpuMemcpy(Llu->d_Urbs, Llu->Urbs, 2* CEILING( nsupers, grid->npcol ) * sizeof(int_t), gpuMemcpyHostToDevice));	
-	checkGPU(gpuMalloc( (void**)&Llu->d_Ucb_valdat, Llu->Ucb_valcnt * sizeof(int_t)));
-	checkGPU(gpuMemcpy(Llu->d_Ucb_valdat, Llu->Ucb_valdat, Llu->Ucb_valcnt * sizeof(int_t), gpuMemcpyHostToDevice));		
-	checkGPU(gpuMalloc( (void**)&Llu->d_Ucb_valoffset, CEILING( nsupers, grid->npcol ) * sizeof(long int)));
-	checkGPU(gpuMemcpy(Llu->d_Ucb_valoffset, Llu->Ucb_valoffset, CEILING( nsupers, grid->npcol ) * sizeof(long int), gpuMemcpyHostToDevice));		
-	checkGPU(gpuMalloc( (void**)&Llu->d_Ucb_inddat, Llu->Ucb_indcnt * sizeof(Ucb_indptr_t)));
-	checkGPU(gpuMemcpy(Llu->d_Ucb_inddat, Llu->Ucb_inddat, Llu->Ucb_indcnt * sizeof(Ucb_indptr_t), gpuMemcpyHostToDevice));
-	checkGPU(gpuMalloc( (void**)&Llu->d_Ucb_indoffset, CEILING( nsupers, grid->npcol ) * sizeof(long int)));
-	checkGPU(gpuMemcpy(Llu->d_Ucb_indoffset, Llu->Ucb_indoffset, CEILING( nsupers, grid->npcol ) * sizeof(long int), gpuMemcpyHostToDevice));		
-
-
+	// some dummy allocation to avoid checking whether they are null pointers later
+	checkGPU(gpuMalloc( (void**)&Llu->d_Ucolind_bc_dat, sizeof(int_t)));
+	checkGPU(gpuMalloc( (void**)&Llu->d_Ucolind_bc_offset, sizeof(int64_t)));
+	checkGPU(gpuMalloc( (void**)&Llu->d_Unzval_bc_dat, sizeof(double)));
+	checkGPU(gpuMalloc( (void**)&Llu->d_Unzval_bc_offset, sizeof(int64_t)));
+	checkGPU(gpuMalloc( (void**)&Llu->d_Uindval_loc_bc_dat, sizeof(int_t)));
+	checkGPU(gpuMalloc( (void**)&Llu->d_Uindval_loc_bc_offset, sizeof(int_t)));
 
 
 	checkGPU(gpuMalloc( (void**)&Llu->d_Linv_bc_offset, CEILING( nsupers, grid->npcol ) * sizeof(long int)));
@@ -2419,7 +2422,6 @@ if ( !iam) printf(".. Construct Reduce tree for U: %.2f\t\n", t);
 
 	/* gpuMemcpy for the following is performed in pxgssvx */
 	checkGPU(gpuMalloc( (void**)&Llu->d_Lnzval_bc_dat, (Llu->Lnzval_bc_cnt) * sizeof(double)));
-	checkGPU(gpuMalloc( (void**)&Llu->d_Unzval_br_dat, (Llu->Unzval_br_cnt) * sizeof(double)));
 	checkGPU(gpuMalloc( (void**)&Llu->d_Linv_bc_dat, (Llu->Linv_bc_cnt) * sizeof(double)));
 	checkGPU(gpuMalloc( (void**)&Llu->d_Uinv_bc_dat, (Llu->Uinv_bc_cnt) * sizeof(double)));
 
@@ -2666,7 +2668,7 @@ if ( !iam) printf(".. Construct Reduce tree for U: %.2f\t\n", t);
 		      MPI_MAX, grid->comm);
 
 	k = CEILING( nsupers, grid->nprow );/* Number of local block rows */
-	if ( !(Llu->mod_bit = intMalloc_dist(k)) )
+	if ( !(Llu->mod_bit = int32Malloc_dist(k)) )
 	    ABORT("Malloc fails for mod_bit[].");
 
 #if ( PROFlevel>=1 )

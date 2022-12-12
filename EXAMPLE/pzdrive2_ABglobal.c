@@ -104,8 +104,7 @@ int main(int argc, char *argv[])
 
     /* Bail out if I do not belong in the grid. */
     iam = grid.iam;
-    if ( iam >= nprow * npcol )
-	goto out;
+    if ( iam == -1 )	goto out;
     
 #if ( DEBUGlevel>=1 )
     CHECK_MALLOC(iam, "Enter main()");
@@ -157,8 +156,17 @@ int main(int argc, char *argv[])
     *trans = 'N';
     ldx = n;
     ldb = m;
-    zGenXtrue_dist(n, nrhs, xtrue, ldx);
-    zFillRHS_dist(trans, nrhs, xtrue, ldx, &A, b, ldb);
+
+    if ( iam==0 ) {
+        zGenXtrue_dist(n, nrhs, xtrue, ldx);
+        zFillRHS_dist(trans, nrhs, xtrue, ldx, &A, b, ldb);
+	
+        MPI_Bcast( xtrue, n*nrhs, SuperLU_MPI_DOUBLE_COMPLEX, 0, grid.comm );
+        MPI_Bcast( b, m*nrhs, SuperLU_MPI_DOUBLE_COMPLEX, 0, grid.comm );
+    } else {
+        MPI_Bcast( xtrue, n*nrhs, SuperLU_MPI_DOUBLE_COMPLEX, 0, grid.comm );
+        MPI_Bcast( b, m*nrhs, SuperLU_MPI_DOUBLE_COMPLEX, 0, grid.comm );
+    }
 
     /* Save a copy of the right-hand side. */  
     if ( !(b1 = doublecomplexMalloc_dist(m * nrhs)) ) ABORT("Malloc fails for b1[]");
@@ -193,7 +201,6 @@ int main(int argc, char *argv[])
     set_default_options_dist(&options);
 
     if (!iam) {
-	print_sp_ienv_dist(&options);
 	print_options_dist(&options);
     }
 

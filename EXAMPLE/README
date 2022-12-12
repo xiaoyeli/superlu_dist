@@ -1,11 +1,25 @@
-		SuperLU_DIST  EXAMPLES
-		======================
+		SuperLU_DIST EXAMPLES
+		=====================
 
 This directory contains sample programs to illustrate how to use
 various functions provided in SuperLU_DIST. You can modify these
 examples to suit your applications.
+(double real: pddrive*
+ double complex: pzdrive* )
 
 The examples illustrate the following functionalities:
+  0. pddrive3d.c: (invoke new communication-avoiding 3D algorithms)
+         Use PxGSSVX3D with the default options to solve a linear system
+     pddrive3d1.c:
+	 Use PxGSSVX3D to solve the systems with same A but different
+	 right-hand side. (Reuse the factored form of A)
+     pddrive3d2.c:
+	 Use PxGSSVX3D to solve the systems with same sparsity pattern
+	 of A. (Reuse the sparsity ordering)
+     pddrive3d2.c:
+	 Use PxGSSVX3D to solve the systems with same sparsity pattern
+	 and similar values. (Reuse sparsity ordering and row pivoting)
+     
   1. pddrive.c, pddrive_ABglobal.c
      Use PDGSSVX with the full (default) options to solve a linear system.
   2. pddrive1.c, pddrive1_ABglobal.c
@@ -16,16 +30,21 @@ The examples illustrate the following functionalities:
      (Reuse the sparsity ordering)
   4. pddrive3.c, pddrive3_ABglobal.c
      Solve the systems with the same sparsity pattern and similar values.
+     (Reuse sparsity ordering and row pivoting)     
   5. pddrive4.c, pddrive4_ABglobal.c
      Divide the processors into two subgroups (two grids) such that each
      subgroup solves a linear system independently from the other.
 
 
 The command line options "-r <process rows>" and "-c <process columns>"
-defines the 2-D process grid. The total number of processes <procs> is:
+defines the 2D process grid. The total number of processes <procs> is:
 	<procs> = <process rows> * <process columns>
 If the options is not provided at the command line, the programs
 will use 1 processor as default in each case.
+
+In the 3D code pddrive3d, the command line
+   "-r <process rows>", "-c <process columns>" and "-d <process Z-dimension>"
+defines the 3D process grid. The Z-dimension must be power of two.
 
 Three input matrices (Harwell-Boeing format) are provided in this directory:
 	g20.rua  -- a real matrix of dimension 400x400
@@ -35,6 +54,10 @@ Three input matrices (Harwell-Boeing format) are provided in this directory:
 The command lines given below show how to run the parallel programs
 using "mpiexec". You may need to replace mpiexec by platform specific
 command.
+
+0. To run the 3D example (pddrive3d), type
+   % mpiexec -n <np> pddrive3d -r <process row> -c <process columns> -d <process Z-replication> g20.rua 
+     (e.g., mpiexec -n 8 pddrive3d -r 2 -c 2 -d 2 g20.rua)
 
 1. To run the real examples (pddrive, pddrive1, etc.)
    you may type:

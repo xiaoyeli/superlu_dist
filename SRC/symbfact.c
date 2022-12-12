@@ -45,7 +45,8 @@ at the top-level directory.
 static void  relax_snode(int_t, int_t *, int_t, int_t *, int_t *);
 static int_t snode_dfs(SuperMatrix *, const int_t, const int_t, int_t *,
 		       int_t *,	Glu_persist_t *, Glu_freeable_t *);
-static int_t column_dfs(SuperMatrix *, const int_t, int_t *, int_t *, int_t *,
+static int_t column_dfs(superlu_dist_options_t *, SuperMatrix *,
+			const int_t, int_t *, int_t *, int_t *,
 			int_t *, int_t *, int_t *, int_t *, int_t *,
 			Glu_persist_t *, Glu_freeable_t *);
 static int_t pivotL(const int_t, int_t *, int_t *,
@@ -107,7 +108,8 @@ int_t symbfact
     min_mn = SUPERLU_MIN(m, n);
 
     /* Allocate storage common to the symbolic factor routines */
-    info = symbfact_SubInit(DOFACT, NULL, 0, m, n, ((NCPformat*)A->Store)->nnz,
+    info = symbfact_SubInit(options, DOFACT, NULL, 0, m, n,
+			    ((NCPformat*)A->Store)->nnz,
 			    Glu_persist, Glu_freeable);
 
     iwork = (int_t *) intMalloc_dist(6*m+2*n);
@@ -119,7 +121,7 @@ int_t symbfact
     xplore = parent + m;
     xprune = xplore + m;
     relax_end = xprune + n;
-    relax = sp_ienv_dist(2);
+    relax = sp_ienv_dist(2, options);
     ifill_dist(perm_r, m, EMPTY);
     ifill_dist(repfnz, m, EMPTY);
     ifill_dist(marker, m, EMPTY);
@@ -152,7 +154,7 @@ int_t symbfact
 	} else {
 	    /* Perform a symbolic factorization on column j, and detects
 	       whether column j starts a new supernode. */
-	    if ((info = column_dfs(A, j, perm_r, &nseg, segrep, repfnz,
+	    if ((info = column_dfs(options, A, j, perm_r, &nseg, segrep, repfnz,
 				   xprune, marker, parent, xplore,
 				   Glu_persist, Glu_freeable)) != 0)
 		return info;
@@ -185,6 +187,7 @@ int_t symbfact
 
     if ( !pnum && (options->PrintStat == YES)) {
 	nnzLU = nnzL + nnzU - min_mn;				   
+	printf("\tMatrix size min_mn  " IFMT "\n", min_mn);
 	printf("\tNonzeros in L       " IFMT "\n", nnzL);
 	printf("\tNonzeros in U       " IFMT "\n", nnzU);
 	printf("\tnonzeros in L+U     " IFMT "\n", nnzLU);
@@ -455,6 +458,7 @@ static int_t snode_dfs
 static int_t column_dfs
 /************************************************************************/
 (
+ superlu_dist_options_t *options,
  SuperMatrix *A,        /* original matrix A permuted by columns (input) */
  const int_t jcol,      /* current column number (input) */
  int_t       *perm_r,   /* row permutation vector (input) */
@@ -500,7 +504,7 @@ static int_t column_dfs
     jsuper   = nsuper = supno[jcol];
     nextl    = xlsub[jcol];
     if ( first ) {
-	maxsuper = sp_ienv_dist(3);
+	maxsuper = sp_ienv_dist(3, options);
 	first = 0;
     }
     
@@ -528,8 +532,8 @@ static int_t column_dfs
 	     */
 	    lsub[nextl++] = krow; 	/* krow is indexed into A */
 	    if ( nextl >= nzlmax ) {
-		if ( mem_error = symbfact_SubXpand(A->ncol, jcol, nextl, (MemType) LSUB,
-						   &nzlmax, Glu_freeable) )
+		if ( (mem_error = symbfact_SubXpand(A->ncol, jcol, nextl, (MemType) LSUB,
+						    &nzlmax, Glu_freeable)) )
 		    return (mem_error);
 		lsub = Glu_freeable->lsub;
 	    }
@@ -570,10 +574,10 @@ static int_t column_dfs
 			    if ( chperm == EMPTY ) {
 				lsub[nextl++] = kchild;
 				if ( nextl >= nzlmax ) {
-				    if ( mem_error =
+				    if ( (mem_error =
 					symbfact_SubXpand(A->ncol, jcol, nextl,
 							  (MemType) LSUB, &nzlmax,
-							  Glu_freeable) )
+							  Glu_freeable)) )
 					return (mem_error);
 				    lsub = Glu_freeable->lsub;
 				}
@@ -786,8 +790,8 @@ static int_t set_usub
 
     new_next = nextu + nseg;
     while ( new_next > nzumax ) {
-	if (mem_error = symbfact_SubXpand(n, jcol, nextu, (MemType) USUB, &nzumax,
-					  Glu_freeable))
+	if ( (mem_error = symbfact_SubXpand(n, jcol, nextu, (MemType) USUB, &nzumax,
+					    Glu_freeable)) )
 	    return (mem_error);
 	usub = Glu_freeable->usub;
     }
