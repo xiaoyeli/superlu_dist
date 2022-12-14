@@ -1045,7 +1045,7 @@ pdgstrs(superlu_dist_options_t *options, int_t n, dLUstruct_t *LUstruct,
 		    /* NOTE: x and lsum are of same size. */
     double *lusup, *dest;
     double *recvbuf, *recvbuf_on, *tempv,
-            *recvbufall, *recvbuf_BC_fwd, *recvbuf0, *xin, *recvbuf_BC_gpu,*recvbuf_RD_gpu;
+            *recvbufall, *recvbuf_BC_fwd, *recvbuf0, *xin;
     double *rtemp, *rtemp_loc; /* Result of full matrix-vector multiply. */
     double *Linv; /* Inverse of diagonal block */
     double *Uinv; /* Inverse of diagonal block */
@@ -1871,9 +1871,9 @@ t1 = SuperLU_timer_();
 	}
 	SUPERLU_FREE(Btmp); 
 
-#endif
-	  
-#else /* use cuSparse*/
+#endif //HAVE CUDA
+
+#else /* below is my GPU implementation*/
 
 // #if HAVE_CUDA
  //cudaProfilerStart();
@@ -1909,7 +1909,7 @@ t1 = SuperLU_timer_();
     
 #if ( PRNTlevel>=1 )
 	t = SuperLU_timer_() - t;
-	if ( !iam) printf(".. Setup L-solve time\t%8.4f\n", t);
+	if ( !iam) printf(".. Setup GPU L-solve time\t%8.4f\n", t);
 	fflush(stdout);
 	MPI_Barrier( grid->comm );
 //	nvshmem_barrier_all();
@@ -2676,7 +2676,7 @@ thread_id=0;
 	checkGPU(gpuMemcpy(d_bmod, bmod, (nlb*aln_i) * sizeof(int_t), gpuMemcpyHostToDevice));
 
 	k = CEILING( nsupers, grid->npcol);/* Number of local block columns divided by #warps per block used as number of thread blocks*/
-	knsupc = sp_ienv_dist(3);
+	knsupc = sp_ienv_dist(3, options);
 
 
     checkGPU(gpuMemcpy(d_status, mystatus_u, k * sizeof(int), gpuMemcpyHostToDevice));
@@ -2690,7 +2690,7 @@ thread_id=0;
 
 #if ( PRNTlevel>=1 )
     t = SuperLU_timer_() - t;
-	if ( !iam) printf(".. Setup U-solve time\t%8.4f\n", t);
+	if ( !iam) printf(".. Setup GPU U-solve time\t%8.4f\n", t);
 	fflush(stdout);
 	MPI_Barrier( grid->comm );
 	t = SuperLU_timer_();

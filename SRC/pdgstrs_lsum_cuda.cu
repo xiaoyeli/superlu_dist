@@ -1522,10 +1522,8 @@ if (myrow == krow) {   /* diagonal block performs trsm and forward the message*/
     //  if(Llu->inv == 1){
 
     Linv = &Linv_bc_dat[Linv_bc_offset[lk]];
-    if(tid==0) printf("(%d) iam bid=%d,enter solve--4,gc=%d\n",mype,bid,gc);
 
     if (nrhs == 1) {
-        if(tid==0) printf("(%d) iam bid=%d,enter solve--5,gc=%d\n",mype,bid,gc);
 
         for (i = tid; i < knsupc; i += block_size) {
             temp1 = zero;
@@ -1535,14 +1533,12 @@ if (myrow == krow) {   /* diagonal block performs trsm and forward the message*/
             lsum[il + i] = temp1; //reuse lsum as temporary output as it's no longer accessed
         }
         __syncthreads();
-        if(tid==0) printf("(%d) iam bid=%d,enter solve--6,gc=%d\n",mype,bid,gc);
 
         for (i = tid; i < knsupc; i += block_size) {
             x[i + ii] = lsum[il + i];
             //printf("lk %5d %lf\n",lk,x[i + ii + j*knsupc]);
         }
         __syncthreads();
-        if(tid==0) printf("(%d) iam bid=%d,enter solve--7,gc=%d\n",mype,bid,gc);
     } else {
         __syncthreads();
         for (int_t blx = 0; blx * BLK_M < knsupc; blx++) {
@@ -1572,18 +1568,16 @@ if (myrow == krow) {   /* diagonal block performs trsm and forward the message*/
         __syncthreads();
     }//if(nrhs==1)
 
-    if(tid==0) printf("(%d) iam bid=%d,enter solve--8,gc=%d\n",mype,bid,gc);
     RHS_ITERATE(j)for (i = tid; i < knsupc; i += block_size)
             ready_x[i + maxrecvsz * lk + j * knsupc] = x[i + ii + j * knsupc];
 
     __syncthreads();
-    if(tid==0) printf("(%d) iam bid=%d,enter solve--9,gc=%d\n",mype,bid,gc);
 } else {   /* off-diagonal block forward the message*/
     /* waiting for the x subvector and forward*/
     //YL: only the first thread in a block spin-waits for the coming x subvector message using NVSHMEM, put the message into ready_x[maxrecvsz*lk]
     volatile int msg_recv = 0;
     if (tid == 0) {
-        printf("in solve WAIT1 (%d,%d) wait for col %d,flag=%d\n", mype, bid, gc,flag_bc_q[gc]);
+        //printf("in solve WAIT1 (%d,%d) wait for col %d,flag=%d\n", mype, bid, gc,flag_bc_q[gc]);
         //nvshmem_int_wait_until((int *) flag_bc_q + gc, NVSHMEM_CMP_EQ, 1);
         do {
             msg_recv = flag_bc_q[lk];
@@ -1615,7 +1609,6 @@ if (cnt > 0) {
 }
 int keep_lk = lk;
 __syncthreads();
-if(tid==0) printf("(%d) iam bid=%d,enter solve--keep,gc=%d\n",mype,bid,gc);
 
 if (nlb > 0) {
 
@@ -1701,7 +1694,6 @@ if (nlb > 0) {
             if (i == nbrow + lsub[lptr1_tmp + 1] - 1) {
                 // atomic return old val, omp return new val
                 fmod_tmp = atomicSub(&fmod[lk * aln_i], 1);
-                //printf("(%d) iam bid=%d,tid=%d,enter solve--6,i=%d,r=%d,lk=%d,ik=%d,fmod_tmp=%d,fmod=%d\n",mype,bid,tid,i,nbrow + lsub[lptr1_tmp + 1] - 1, lk,ik,fmod_tmp,fmod[lk * aln_i]);
                 // __threadfence();
                 if(fmod_tmp==1) {// forward RD
                     //senddone[lk]=1;
@@ -2236,21 +2228,20 @@ if (myblockSize < h_nfrecv[1]) {
     h_nfrecv[1] = myblockSize;
     gpuMemcpy(d_nfrecv, h_nfrecv, 3 * sizeof(int), gpuMemcpyHostToDevice);
 }
-printf("(%d) solve=%d,%d, wait_bcrd=2,%d (%d, %d), send_rd=1,%d\n",
+printf("(%d) solve=%d,%d, minGridSize=%d,myblockSize%d, nvshmem_kernel=%d,%d\n",
        mype,nbcol_loc,nthread_x*nthread_y,
-       h_nfrecv[1],minGridSize, myblockSize, h_nfrecv[1]);
+       minGridSize,myblockSize,h_nfrecv[2],h_nfrecv[1]);
 fflush(stdout);
 
 
-dim3 dimGrid_bc(1); //3
-dim3 dimGrid_rd(2); //3
+dim3 dimGrid_bc(h_nfrecv[2]); //3
 dim3 dimBlock_bc(h_nfrecv[1]); //256 by default
 dim3 dimGrid(nbcol_loc);
 dim3 dimBlock(nthread_x, nthread_y);
 
-if (npes==1){
-    dlsum_fmod_inv_gpu_mrhs<<< nbcol_loc, dimBlock >>>(nbcol_loc,nblock_ex,lsum,x,nrhs,maxsup,nsupers,fmod,LBtree_ptr,LRtree_ptr,ilsum,Lrowind_bc_dat,Lrowind_bc_offset,Lnzval_bc_dat,Lnzval_bc_offset,Linv_bc_dat,Linv_bc_offset,Lindval_loc_bc_dat,Lindval_loc_bc_offset, xsup,grid,maxrecvsz);
-}else{
+//if (npes==1){
+//    dlsum_fmod_inv_gpu_mrhs<<< nbcol_loc, dimBlock >>>(nbcol_loc,nblock_ex,lsum,x,nrhs,maxsup,nsupers,fmod,LBtree_ptr,LRtree_ptr,ilsum,Lrowind_bc_dat,Lrowind_bc_offset,Lnzval_bc_dat,Lnzval_bc_offset,Linv_bc_dat,Linv_bc_offset,Lindval_loc_bc_dat,Lindval_loc_bc_offset, xsup,grid,maxrecvsz);
+//}else{
     int launch_success = 0;
 
     void *args[] = {&nrhs, &LRtree_ptr, &maxrecvsz, &mype, &flag_bc_q, &flag_rd_q,
@@ -2285,7 +2276,7 @@ if (npes==1){
                                                                                d_statusmod,d_flag_mod);
         CUDA_CHECK(cudaGetLastError());
     } // if status
-} // if npes==1
+//} // if npes==1
 CUDA_CHECK(cudaDeviceSynchronize());
 }
 
@@ -2999,13 +2990,13 @@ void dlsum_bmod_inv_gpu_wrap
      dim3 dimGrid(nbcol_loc);
      dim3 dimBlock(nthread_x, nthread_y);
 
-     if (npes == 1) {
-         dlsum_bmod_inv_gpu_mrhs<<< nbcol_loc, dimBlock >>>(nbcol_loc, lsum, x, nrhs, nsupers, bmod, UBtree_ptr,
-                                                            URtree_ptr, ilsum,
-                                                            Ucolind_bc_dat, Ucolind_bc_offset, Unzval_bc_dat,
-                                                            Unzval_bc_offset, Uinv_bc_dat, Uinv_bc_offset,
-                                                            Uindval_loc_bc_dat, Uindval_loc_bc_offset, xsup, grid);
-     } else {
+     //if (npes == 1) {
+     //    dlsum_bmod_inv_gpu_mrhs<<< nbcol_loc, dimBlock >>>(nbcol_loc, lsum, x, nrhs, nsupers, bmod, UBtree_ptr,
+     //                                                       URtree_ptr, ilsum,
+     //                                                       Ucolind_bc_dat, Ucolind_bc_offset, Unzval_bc_dat,
+     //                                                       Unzval_bc_offset, Uinv_bc_dat, Uinv_bc_offset,
+     //                                                       Uindval_loc_bc_dat, Uindval_loc_bc_offset, xsup, grid);
+     //} else {
 
          cudaFuncAttributes cuattr;
          cudaFuncGetAttributes(&cuattr, dlsum_bmod_inv_gpu_mrhs_nvshmem);
@@ -3016,10 +3007,14 @@ void dlsum_bmod_inv_gpu_wrap
          int minGridSize;
          int myblockSize;
          cudaOccupancyMaxPotentialBlockSize(&minGridSize, &myblockSize, (const void *) wait_bcrd, 0, 0);
-         h_nfrecv_u[1] = myblockSize;
-         gpuMemcpy(d_nfrecv_u, h_nfrecv_u, 3 * sizeof(int), gpuMemcpyHostToDevice);
-         //printf("(%d) solve=%d,%d, wait=%d,%d\n",mype,nbcol_loc,nthread_x*nthread_y,h_nfrecv[2],h_nfrecv[1]);
-         //fflush(stdout);
+         if (myblockSize < h_nfrecv_u[1]) {
+             h_nfrecv_u[1] = myblockSize;
+             gpuMemcpy(d_nfrecv_u, h_nfrecv_u, 3 * sizeof(int), gpuMemcpyHostToDevice);
+         }
+         printf("(%d) U solve=%d,%d, minGridSize=%d,myblockSize%d, nvshmem_kernel=%d,%d\n",
+                mype,nbcol_loc,nthread_x*nthread_y,
+                minGridSize,myblockSize,h_nfrecv_u[2],h_nfrecv_u[1]);
+         fflush(stdout);
 
          dim3 dimGrid_nv(h_nfrecv_u[2]); //2
          dim3 dimBlock_nv(h_nfrecv_u[1]); //1024
@@ -3071,7 +3066,7 @@ void dlsum_bmod_inv_gpu_wrap
          //dlsum_bmod_inv_gpu_mrhs<<< nbcol_loc, dimBlock >>>(nbcol_loc,lsum,x,nrhs,nsupers,bmod, UBtree_ptr,URtree_ptr,ilsum,Urbs,Ufstnz_br_dat,Ufstnz_br_offset,Unzval_br_dat,Unzval_br_offset,Ucb_valdat,Ucb_valoffset,Ucb_inddat,Ucb_indoffset,Uinv_bc_dat,Uinv_bc_offset,xsup,grid);
          gpuDeviceSynchronize();
          //printf("(%d) back to CPU !!!!! \n",mype);
-     }
+     //}
  }
 
 
