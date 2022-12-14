@@ -9,7 +9,7 @@ The source code is distributed under BSD license, see the file License.txt
 at the top-level directory.
 */
 
-
+ 
 /*! @file
  * \brief Re-distribute A on the 2D process mesh.
  * <pre>
