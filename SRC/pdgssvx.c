@@ -507,7 +507,7 @@ pdgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 	dScalePermstruct_t *ScalePermstruct,
 	double B[], int ldb, int nrhs, gridinfo_t *grid,
 	dLUstruct_t *LUstruct, dSOLVEstruct_t *SOLVEstruct, double *berr,
-	SuperLUStat_t *stat, int *info)
+	SuperLUStat_t *stat, int *info, struct gSoFa_para_t* gSoFa_para)
 {
     NRformat_loc *Astore;
     SuperMatrix GA;      /* Global A in NC format */
@@ -563,7 +563,7 @@ pdgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 	LUstruct->dt = 'd';
 
     /* Structures needed for parallel symbolic factorization */
-    int_t *sizes, *fstVtxSep, parSymbFact;
+    int_t *sizes, *fstVtxSep, parSymbFact, gsofa;
     int   noDomains, nprocs_num;
     MPI_Comm symb_comm; /* communicator for symbolic factorization */
     int   col, key; /* parameters for creating a new communicator */
@@ -622,6 +622,7 @@ pdgssvx(superlu_dist_options_t *options, SuperMatrix *A,
     Equil = (!factored && options->Equil == YES);
     notran = (options->Trans == NOTRANS);
     parSymbFact = options->ParSymbFact;
+	gsofa = options->gsofa;
 
     iam = grid->iam;
     job = 5;
@@ -1103,11 +1104,28 @@ pdgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 	    } /* end serial symbolic factorization */
 	    else {  /* parallel symbolic factorization */
 	    	t = SuperLU_timer_();
+			if (gsofa)
+			{
+				    Initialize_gSoFa( grid,  gSoFa_para->nprs,Glu_persist, LUstruct, &Glu_freeable,
+            gSoFa_para, n, iam,gSoFa_para->is_gsofa,
+            global_collected, A, GA, options, perm_c, GAC, GACstore,&NNZ_L, &NNZ_U);
+			       if (gSoFa_para->is_gsofa)
+                {
+                    symbfact_min_id(gSoFa_para->num_process_gSoFa, gSoFa_para->max_supernode_size,  gSoFa_para->N_GPU_gSoFa_process,  n, gSoFa_para->edge_count,                            
+                            gSoFa_para->iam_gSoFa, &(gSoFa_para->fill_count),
+                            &(gSoFa_para->Nsupernode_process), &(Glu_freeable->lsub),  &(Glu_freeable->usub),  gSoFa_para->colcnt, gSoFa_para->rowcnt, Glu_freeable, Glu_persist, 
+                            gSoFa_para->Supernode_per_process, &NNZ_L, &NNZ_U, &lsub1,&processed_vertex, &(gSoFa_para->is_OriginalNZ_L), &(gSoFa_para->is_OriginalNZ_U),
+                            gSoFa_para->gSoFa_stream,gSoFa_para->dev_mem,gSoFa_para->N_src_group,gSoFa_para,gSoFa_para->mygSoFaOffset);                     
+                }
+			}
+			else
+			{
 	    	flinfo = symbfact_dist(options, nprocs_num, noDomains,
 		                       A, perm_c, perm_r,
 				       sizes, fstVtxSep, &Pslu_freeable,
 				       &(grid->comm), &symb_comm,
 				       &symb_mem_usage);
+			}
 			nnzLU = Pslu_freeable.nnzLU;
 	    	stat->utime[SYMBFAC] = SuperLU_timer_() - t;
 	    	if (flinfo > 0) {
@@ -1155,15 +1173,32 @@ pdgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 	    /* Distribute Pc*Pr*diag(R)*A*diag(C)*Pc' into L and U storage.
 	       NOTE: the row permutation Pc*Pr is applied internally in the
 	       distribution routine. */
-	    /* Apply column permutation to the original distributed A */
-	    for (j = 0; j < nnz_loc; ++j) colind[j] = perm_c[colind[j]];
+
 
     	    t = SuperLU_timer_();
+			if (gsofa)
+			{
+    double t_predist = SuperLU_timer_();
+    pre_distribute(NNZ_L, NNZ_U, &Glu_freeable, &ScalePermstruct, gSoFa_para->is_gsofa, &gSoFa_para, grid, &Glu_persist, iam, n);
+    predistribution_time = SuperLU_timer_() - t_predist;
+    nnzLU = Glu_freeable->nnzLU;
+    /* Apply column permutation to the original distributed A */
+    for (j = 0; j < nnz_loc; ++j) colind[j] = perm_c[colind[j]];
+    Glu_freeable->MemModel =SYSTEM;   
+    // printf("Before pddistribute()  distributed matrix A:\n");   
+    
+    			pddistribute_gsofa(options, n, A, ScalePermstruct, Glu_freeable, LUstruct, grid);
+			}
+			else
+			{
+					    /* Apply column permutation to the original distributed A */
+	    for (j = 0; j < nnz_loc; ++j) colind[j] = perm_c[colind[j]];
+
 	    dist_mem_use = ddist_psymbtonum(options, n, A, ScalePermstruct,
 		  			   &Pslu_freeable, LUstruct, grid);
 	    if (dist_mem_use > 0)
 	        ABORT ("Not enough memory available for dist_psymbtonum\n");
-
+			}
 	    stat->utime[DIST] = SuperLU_timer_() - t;
 	}
 
@@ -1175,6 +1210,12 @@ pdgssvx(superlu_dist_options_t *options, SuperMatrix *A,
     // {
 	// #pragma omp master
 	// {
+		#ifdef GPU_ACC
+int rank, devs;
+MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+cudaGetDeviceCount(&devs);
+cudaSetDevice(rank % devs);
+#endif
 	pdgstrf(options, m, n, anorm, LUstruct, grid, stat, info);
 	stat->utime[FACT] = SuperLU_timer_() - t;
 	// }

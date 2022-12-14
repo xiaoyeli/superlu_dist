@@ -85,7 +85,7 @@ at the top-level directory.
 #define SUPERLU_DIST_MAJOR_VERSION     8
 #define SUPERLU_DIST_MINOR_VERSION     1
 #define SUPERLU_DIST_PATCH_VERSION     2
-#define SUPERLU_DIST_RELEASE_DATE      "November 12, 2022"
+#define SUPERLU_DIST_RELEASE_DATE      "December 11, 2022"
 
 #include "superlu_dist_config.h"
 
@@ -116,8 +116,14 @@ at the top-level directory.
   #define IFMT "%lld"
 #else /* Default */
   typedef int int_t;
+  typedef unsigned int uint_t;
+typedef unsigned long long ull_t;
   #define mpi_int_t   MPI_INT
   #define IFMT "%8d"
+#endif
+
+#ifdef HAVE_CUDA
+#define GPU_ACC
 #endif
 
 
@@ -136,6 +142,8 @@ typedef MPI_C_DOUBLE_COMPLEX  SuperLU_MPI_DOUBLE_COMPLEX;
 #include "supermatrix.h"
 #include "util_dist.h"
 #include "psymbfact.h"
+#include "symbfact_separate_N_sup.cuh"
+#include "cholnzcnt.h"
 
 
 #define MAX_SUPER_SIZE 512   /* Sherry: moved from superlu_gpu.cu */
@@ -350,7 +358,8 @@ extern "C" {
 #ifdef __cplusplus
   }
 #endif
-
+#define _M_LN2  0.693147180559945309417 // Natural log of 2 //gSoFa
+#define log_2(x) (log(x)/_M_LN2) //gSoFa
 
 /***********************************************************************
  * New data types
@@ -383,6 +392,183 @@ extern "C" {
  *
  */
 
+//gSoFa Structures
+
+// #ifndef SuperStruct_H
+// #define SuperStruct_H
+struct Super
+{
+    int_t start;
+    int_t end;
+};
+// #endif
+/*==== For gSoFa ====*/
+
+#define MAX_VAL UINT_MAX
+static void HandleError( cudaError_t err, const char *file, int line   ) {
+	if (err != cudaSuccess) {
+		printf( "\n%s in %s at line %d\n", \
+				cudaGetErrorString( err   ), file, line );
+		exit( EXIT_FAILURE   );
+	}
+}
+
+#define H_ERR( err   ) \
+	(HandleError( err, __FILE__, __LINE__   ))
+
+struct aux_device
+{
+    int gpu_id; //gpu id
+
+    int_t* fill_in_d;
+
+    // int_t** fill_in_d_P;
+    int_t* fill_in_d_P0;
+    int_t* sup_begin;
+    int_t* sup_end;
+    int_t* fill_in_d_P1;
+    int_t* fill_in_d_P2;
+    int_t* fill_in_d_P3;
+    int_t* fill_in_d_P4;
+    int_t* fill_in_d_P5;
+    // #ifdef profile_TEPS
+    ull_t TEPS_value;
+    ull_t* time_TotalClockCycles; 
+    ull_t* TEPS_value_perthread;        
+    // #endif
+    // #ifdef supernode_merging
+    int_t sup_info_offset;
+    int_t* left_process_nzCountU;
+    int_t* left_process_mysupernode;
+    // #endif
+    // fill_in_d_P
+    int_t* fill_sup_merge;
+    int_t* nz_row_U_d;
+    int_t* pass_through_d;
+
+    int_t* col_ed_d;
+    int_t* csr_d;
+    int_t* col_st_d;
+    int_t* count;
+
+    uint_t max_id_offset;
+    uint_t group_MAX_VAL;
+    uint_t count_group_loop;
+
+    int_t* next_source_d;
+    int_t* frontier_size_d;
+    int_t* temp_next_frontier_size_d;
+    uint_t* cost_array_d;
+    int_t* fill_in_last_row_h;
+    int_t last_row_U_count;
+    int_t* frontier_d;
+    int_t* next_frontier_d;
+    ull_t* fill_count_d;
+    ull_t* time_LsubUsub;
+    ull_t group80_count;
+    ull_t fill_count;
+    int_t* src_frontier_d;
+    int_t* next_src_frontier_d;
+    int_t* source_d;
+    int_t* my_current_frontier_d;
+    int* lock_d;
+    int_t* next_front_d;
+    int_t* CPU_buffer_next_level;//= (int*) malloc (N_src_group*vert_count*sizeof(int_t));
+    int_t* CPU_buffer_next_level_source;//= (int*) malloc (N_src_group*vert_count*sizeof(int_t));
+    int_t size_CPU_buffer_next_level;
+    int_t* CPU_buffer_current_level;
+    int_t* CPU_buffer_current_level_source;//= (int*) malloc (N_src_group*vert_count*sizeof(int_t));
+    int_t size_CPU_buffer_current_level;
+    int_t* next_N_buffer_CPU;
+    int_t* current_N_buffer_CPU;
+    int_t* N_non_zero_rows;
+    int_t* my_supernode;
+    // int_t*my_representative ;
+    int_t* my_supernode_d;
+    int_t* swap_CPU_buffers_m;
+    int_t* swap_GPU_buffers_m;
+    int_t* dump_m;
+    int_t* load_m;
+    int_t* current_buffer_m;
+    int_t* next_buffer_m;
+    int_t buffer_flag_host;
+    int_t buffer_flag_getfronter_host;
+    int_t* offset_next_kernel;
+    int_t* offset_kernel;
+    int_t N_dumping_cpu_memory;
+    int_t N_reading_cpu_memory;
+    int_t* next_frontier_size_d;
+
+    // int_t* pass_through_d;
+    int_t* source_flag;
+    int_t* source_flag_d;
+    // struct Super* super_obj;
+    int_t* nz_row_U_h;
+    int_t* Nsup_d;
+    struct Super* superObj ;
+    struct Super* superObj_d;
+    int_t* validity_supernode_d;
+    int_t* validity_supernode_h; 
+    int_t* Nsup_per_chunk_d; //not used
+    int_t* fill_count_per_row_d;//not used
+    // int_t* new_col_ed_d;
+    int_t* fill_count_per_row;
+    ull_t* N_edge_checks_per_thread_d;
+    ull_t* N_edge_checks_per_thread;
+
+    int_t* relaxed_col_d;//gSoFa Supernodal relaxation
+    int_t* relax_end_d;//gSoFa Supernodal relaxation
+};
+
+struct gSoFa_para_t
+{
+    int_t BLKS_NUM;
+    int_t blockSize;
+    int_t next_front;
+    int_t real_allocation;
+    int_t N_chunks;
+    int_t total_num_chunks;
+    int_t num_curr_chunks_per_node;
+    int_t total_num_chunks_per_node;
+    int_t max_supernode_size;
+    int_t* mysrc;
+    int_t* counter;
+    int_t* my_chunks;
+    int_t chunk_size;
+    int_t N_src_group;
+    int_t num_nodes;    
+    int_t sup_per_gpu;
+    int_t* relax_end;
+    int_t* representative_col;
+    int_t* relaxed_col;
+    int_t* etree;
+    // MPI_Comm gSoFa_symb_comm; /* communicator for symbolic factorization */
+
+    int_t N_GPU_gSoFa_process;
+    int_t edge_count;
+    int_t vert_count;
+    int_t iam_gSoFa;
+    ull_t fill_count;
+    int_t Nsupernode_process;
+    int_t* colcnt;
+    int_t* rowcnt;
+    int_t* is_OriginalNZ_L;
+    int_t* is_OriginalNZ_U;
+    struct aux_device *dev_mem;
+    int_t mygSoFaOffset;
+    struct Super* Supernode_per_process;
+    int_t num_process_gSoFa;
+    int_t num_process;
+    ull_t global_fill_in;
+    cudaStream_t* gSoFa_stream;
+    int_t nprs;
+    int_t is_gsofa;
+    int_t N_gsofa_process_node;
+};
+extern void Allocate_Initialize_gSoFa_para(struct gSoFa_para_t *gSoFa_para, int_t BLKS_NUM, int_t blockSize, int_t next_front, int_t real_allocation, int_t max_supernode_size, int_t N_GPU_Node,int_t vert_count, int_t N_src_group/*, gridinfo_t grid*/);
+extern void Allocate_Initialize (struct gSoFa_para_t *gSoFa_para, struct aux_device* device_obj,int_t vert_count,int_t edge_count,
+         int_t BLKS_NUM,int_t blockSize,int index, int_t next_front,int_t N_src_group,int_t real_allocation,int_t N_chunks, int total_num_chunks_per_node,int max_supernode_size,cudaStream_t stream,int sup_per_gpu, int iam, int localgpu);
+
 /*-- Communication subgroup */
 typedef struct {
     MPI_Comm comm;        /* MPI communicator */
@@ -398,6 +584,7 @@ typedef struct {
     int iam;              /* my process number in this grid */
     int_t nprow;          /* number of process rows */
     int_t npcol;          /* number of process columns */
+    superlu_scope_t gSoFa; /* process scope gSoFa */
 } gridinfo_t;
 
 /*-- 3D process grid definition */
@@ -504,6 +691,21 @@ typedef struct {
     //int_t     *llvl;     /* keep track of level in L for level-based ILU */
     //int_t     *ulvl;     /* keep track of level in U for level-based ILU */
     int64_t nnzLU;   /* number of nonzeros in L+U*/
+        //Added for gSoFa
+    int_t     *xlsub_begin;
+    int_t     *xlsub_end;    
+    int_t     *xusub_begin;
+    int_t     *xusub_end;
+    int_t     *xlsub_end1;
+    int_t     *RecvCntU;
+    int_t     *RecvCntL;
+    int_t     *itemp_U;
+    int_t     *itemp_L;
+    int_t     *itemp_L_rowIdx;
+    int_t     *itemp_U_rowIdx;
+    int_t* xlsub_original_nz_offset;
+    int_t* xusub_original_nz_offset;
+    //~Added for gSoFa
 } Glu_freeable_t;
 
 #if 0 // Sherry: move to precision-dependent file
@@ -714,7 +916,7 @@ typedef struct {
  *        Gives the scheduling algorithm a hint whether the matrix
  *        would have symmetric pattern.
  *
- */
+ */ 
 typedef struct {
     fact_t        Fact;
     yes_no_t      Equil;
@@ -754,6 +956,7 @@ typedef struct {
     yes_no_t      SymPattern;      /* symmetric factorization          */
     yes_no_t      Use_TensorCore;  /* Use Tensor Core or not  */
     yes_no_t      Algo3d;          /* use 3D factorization/solve algorithms */
+    yes_no_t      gsofa;  /* symbolic factorization in GPU */
 } superlu_dist_options_t;
 
 typedef struct {
@@ -1232,7 +1435,7 @@ typedef struct
     int tag_;
     yes_no_t empty_;
     MPI_Datatype type_;
-} C_Tree;
+} C_Tree; 
 
 #ifndef DEG_TREE
 #define DEG_TREE 2

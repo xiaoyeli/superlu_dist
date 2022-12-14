@@ -235,6 +235,7 @@ void set_default_options_dist(superlu_dist_options_t *options)
     options->DiagInv = NO;
 #endif
     options->Use_TensorCore    = NO;
+    options->gsofa = NO;
 }
 
 /*! \brief Print the options setting.

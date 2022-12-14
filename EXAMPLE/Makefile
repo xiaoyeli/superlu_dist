@@ -132,7 +132,7 @@ psdrive4_ABglobal: $(SEXMG4) $(DSUPERLULIB)
 
 pddrive: $(DEXM) $(DSUPERLULIB)
 
-	$(LOADER) $(LOADOPTS) $(DEXM) $(LIBS) -lm -o $@
+	$(LOADER) $(LOADOPTS) $(DEXM) $(LIBS) -qsmp=omp -qoffload -lnuma -fopenmp -fopenmp-targets=nvptx64-nvidia-cuda -lm -o $@
 
 pddrive_rhs: $(DEXMRHS) $(DSUPERLULIB)
 	$(LOADER) $(LOADOPTS) $(DEXMRHS) $(LIBS) -lm -o $@

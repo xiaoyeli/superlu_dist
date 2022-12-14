@@ -494,10 +494,19 @@ extern void  pdgssvx_ABglobal(superlu_dist_options_t *, SuperMatrix *,
 extern float pddistribute(superlu_dist_options_t *, int_t, SuperMatrix *,
 			 dScalePermstruct_t *, Glu_freeable_t *,
 			 dLUstruct_t *, gridinfo_t *);
+extern float pddistribute_gsofa(fact_t fact, int_t n, SuperMatrix *A,
+                        dScalePermstruct_t *ScalePermstruct,
+                        Glu_freeable_t *Glu_freeable, dLUstruct_t *LUstruct,
+                        gridinfo_t *grid);
+// extern void  pdgssvx(superlu_dist_options_t *, SuperMatrix *,
+// 		     dScalePermstruct_t *, double *,
+// 		     int, int, gridinfo_t *, dLUstruct_t *,
+// 		     dSOLVEstruct_t *, double *, SuperLUStat_t *, int *);
+
 extern void  pdgssvx(superlu_dist_options_t *, SuperMatrix *,
 		     dScalePermstruct_t *, double *,
 		     int, int, gridinfo_t *, dLUstruct_t *,
-		     dSOLVEstruct_t *, double *, SuperLUStat_t *, int *);
+		     dSOLVEstruct_t *, double *, SuperLUStat_t *, int *, struct gSoFa_para_t*);
 extern void  pdCompute_Diag_Inv(int_t, dLUstruct_t *,gridinfo_t *, SuperLUStat_t *, int *);
 extern int  dSolveInit(superlu_dist_options_t *, SuperMatrix *, int_t [], int_t [],
 		       int_t, dLUstruct_t *, gridinfo_t *, dSOLVEstruct_t *);
@@ -669,6 +678,24 @@ extern void dGenCSCLblocks(int, int_t, gridinfo_t*,
 		  Glu_persist_t*, dLocalLU_t *, double **, int_t **, int_t **, int_t*, int_t*);
 extern void dGenCSRLblocks(int, int_t, gridinfo_t*,
 		  Glu_persist_t*, dLocalLU_t *, double **, int_t **, int_t **, int_t*, int_t*);
+
+/* gSoFa Related */
+extern int_t cholnzcnt(int_t neqns, int_t *xadj, int_t *adjncy,
+        int_t *perm, int_t *invp, int_t *etpar, 
+        int_t *colcnt, int_t* rowcnt, int_t *nlnz, int_t *part_super_L);
+extern void compute_csr_offsets(int_t* NNZ_L, int_t* NNZ_U, Glu_freeable_t*  Glu_freeable,
+         int_t* col_cnt_chol, int_t* row_cnt_chol, int_t n);
+// extern void  dgSoFaInit(struct gSoFa_para_t**);
+extern void dgSoFaInit(struct gSoFa_para_t** gSoFa_para, int_t nprs);    
+extern void Initialize_gSoFa(gridinfo_t* grid, int_t nprs,Glu_persist_t* Glu_persist, dLUstruct_t* LUstruct, Glu_freeable_t** Glu_freeable1, 
+        struct gSoFa_para_t* gSoFa_para, int_t n, int_t iam, int_t is_gsofa, 
+        int_t global_collected, SuperMatrix *A,SuperMatrix GA,superlu_dist_options_t * options,
+         int_t *perm_c, SuperMatrix GAC,  NCPformat *GACstore, int_t* NNZ_L, int_t* NNZ_U);
+extern void symbfact_min_id(int num_process,int_t max_supernode_size, int N_GPU_gSoFa_process, int vert_count, int edge_count, int myrank,ull_t* fill_count,
+        int* Nsupernode_process, int_t** lsub1, int_t** usub1, int_t* col_cnt_chol,int_t* row_cnt_chol, Glu_freeable_t *Glu_freeable, Glu_persist_t* Glu_persist,
+        struct Super* Supernode_per_process, int_t* NNZ_L1, int_t* NNZ_U1, int_t** usubFinal, int_t** processed_vertex1,
+        int_t** is_OriginalNZ_L1,int_t** is_OriginalNZ_U1,cudaStream_t* stream,struct aux_device * dev_mem,int N_src_group,struct gSoFa_para_t* gSoFa_para, int_t mygSoFaOffset); 
+extern void compute_blocksizes(int* BLKS_NUM, int* blockSize);
 
 
 /* BLAS */

@@ -11,6 +11,8 @@ set(headers
     gpu_wrapper.h
     ${CMAKE_CURRENT_BINARY_DIR}/superlu_dist_config.h
     ${PROJECT_SOURCE_DIR}/SRC/superlu_FortranCInterface.h
+    cholnzcnt.h
+    symbfact_separate_N_sup.cuh
 )
 #    colamd.h
 if (MSVC)
@@ -21,7 +23,7 @@ endif ()
 #  global.cpp
 set(sources
   sp_ienv.c
-  etree.c 
+  etree.c
   sp_colorder.c
   get_perm_c.c
   mmd.c
@@ -45,10 +47,14 @@ set(sources
   superlu_grid3d.c    ## 3D code
   supernodal_etree.c
   supernodalForest.c
-  trfAux.c 
+  trfAux.c
   communication_aux.c
   treeFactorization.c
-  sec_structs.c  
+  sec_structs.c
+  
+  cholnzcnt.c
+  dgsofa_initialize.c
+  pddistribute_gsofa.c
 )
 #  colamd.c
 
@@ -76,7 +82,7 @@ if(enable_double)
     dreadrb.c
     dreadtriple.c
     dreadtriple_noheader.c
-    dbinary_io.c	
+    dbinary_io.c
     dreadMM.c
     pdgsequ.c
     pdlaqgs.c
@@ -99,20 +105,20 @@ if(enable_double)
     pdgsmv_AXglobal.c
     pdGetDiagU.c
     pdgssvx3d.c     ## 3D code
-    dnrformat_loc3d.c 
-    pdgstrf3d.c 
+    dnrformat_loc3d.c
+    pdgstrf3d.c
     dtreeFactorization.c
     dtreeFactorizationGPU.c
     dgather.c
     dscatter3d.c
     pd3dcomm.c
-    dtrfAux.c	
-    dcommunication_aux.c 
+    dtrfAux.c
+    dcommunication_aux.c
     dtrfCommWrapper.c
     dsuperlu_blas.c
   )
 if (TPL_ENABLE_CUDALIB)
-  list(APPEND sources pdgstrs_lsum_cuda.cu superlu_gpu_utils.cu dsuperlu_gpu.cu)
+  list(APPEND sources superlu_gpu_utils.cu dsuperlu_gpu.cu symbfact_separate_N_sup.cu)
 endif()
 
 if (HAVE_COMBBLAS)
@@ -140,7 +146,7 @@ if(enable_single)
     sreadrb.c
     sreadtriple.c
     sreadtriple_noheader.c
-    sbinary_io.c	
+    sbinary_io.c
     sreadMM.c
     psgsequ.c
     pslaqgs.c
@@ -164,15 +170,15 @@ if(enable_single)
     psgsmv_AXglobal.c
     psGetDiagU.c
     psgssvx3d.c     ## 3D code
-    snrformat_loc3d.c 
-    psgstrf3d.c 
+    snrformat_loc3d.c
+    psgstrf3d.c
     streeFactorization.c
     streeFactorizationGPU.c
     sgather.c
     sscatter3d.c
     ps3dcomm.c
-    strfAux.c	
-    scommunication_aux.c 
+    strfAux.c
+    scommunication_aux.c
     strfCommWrapper.c
     ssuperlu_blas.c
     psgssvx_d2.c     # with double-precision IR
@@ -213,7 +219,7 @@ if(enable_complex16)
     zreadrb.c
     zreadtriple.c
     zreadtriple_noheader.c
-    zbinary_io.c	
+    zbinary_io.c
     zreadMM.c
     pzgsequ.c
     pzlaqgs.c
@@ -236,12 +242,12 @@ if(enable_complex16)
     pzgsmv_AXglobal.c
     pzGetDiagU.c
     pzgssvx3d.c   ## 3D code
-    znrformat_loc3d.c 
+    znrformat_loc3d.c
     pzgstrf3d.c
-    ztreeFactorization.c 
-    ztreeFactorizationGPU.c 
+    ztreeFactorization.c
+    ztreeFactorizationGPU.c
     zscatter3d.c
-    zgather.c 
+    zgather.c
     pz3dcomm.c ztrfAux.c
     zcommunication_aux.c
     ztrfCommWrapper.c
@@ -294,7 +300,7 @@ if (BUILD_SHARED_LIBS AND BUILD_STATIC_LIBS)
 endif()
 
 set(superlu_dist_libs ${MPI_C_LIBRARIES} ${MPI_CXX_LIBRARIES} ${BLAS_LIB} ${LAPACK_LIB}
-    ${PARMETIS_LIB} ${COLAMD_LIB} ${COMBBLAS_LIB} ${CUDA_LIB} ${HIP_LIB}) 
+    ${PARMETIS_LIB} ${COLAMD_LIB} ${COMBBLAS_LIB} ${CUDA_LIB} ${HIP_LIB})
 if (NOT MSVC)
   list(APPEND superlu_dist_libs m)
 endif ()
