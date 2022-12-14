@@ -664,7 +664,7 @@ int bid = blockIdx.x;
 //int global_id= blockIdx.x * blockDim.x * blockDim.y + threadIdx.x + threadIdx.y * blockDim.x;
 int tid = threadIdx.x + threadIdx.y * blockDim.x;
 int WAIT_NUM_THREADS = d_nfrecv[1]; //*d_nfrecv[2];
-if (tid==0) printf("(%d) WAIT_NUM_THREADS=%d,tot_wait_col=%d\n",mype,WAIT_NUM_THREADS,d_nfrecv[0]);
+//if (tid==0) printf("(%d) WAIT_NUM_THREADS=%d,tot_wait_col=%d\n",mype,WAIT_NUM_THREADS,d_nfrecv[0]);
 
 if (bid == 0) { // for BC recv
     if (WAIT_NUM_THREADS >= d_nfrecv[0]) {
@@ -1778,7 +1778,6 @@ if (nlb > 0) {
 
     }//if(nrhs==1)
 } /* if nlb>0*/
-if(tid==0) printf("(%d) iam bid=%d,end solve\n",mype,bid);
 
 } /* dlsum_fmod_inv_gpu_mrhs_nvshmem */
 
@@ -2228,10 +2227,10 @@ if (myblockSize < h_nfrecv[1]) {
     h_nfrecv[1] = myblockSize;
     gpuMemcpy(d_nfrecv, h_nfrecv, 3 * sizeof(int), gpuMemcpyHostToDevice);
 }
-printf("(%d) solve=%d,%d, minGridSize=%d,myblockSize%d, nvshmem_kernel=%d,%d\n",
-       mype,nbcol_loc,nthread_x*nthread_y,
-       minGridSize,myblockSize,h_nfrecv[2],h_nfrecv[1]);
-fflush(stdout);
+//printf("(%d) solve=%d,%d, minGridSize=%d,myblockSize%d, nvshmem_kernel=%d,%d\n",
+//       mype,nbcol_loc,nthread_x*nthread_y,
+//       minGridSize,myblockSize,h_nfrecv[2],h_nfrecv[1]);
+//fflush(stdout);
 
 
 dim3 dimGrid_bc(h_nfrecv[2]); //3
@@ -3011,10 +3010,10 @@ void dlsum_bmod_inv_gpu_wrap
              h_nfrecv_u[1] = myblockSize;
              gpuMemcpy(d_nfrecv_u, h_nfrecv_u, 3 * sizeof(int), gpuMemcpyHostToDevice);
          }
-         printf("(%d) U solve=%d,%d, minGridSize=%d,myblockSize%d, nvshmem_kernel=%d,%d\n",
-                mype,nbcol_loc,nthread_x*nthread_y,
-                minGridSize,myblockSize,h_nfrecv_u[2],h_nfrecv_u[1]);
-         fflush(stdout);
+         //printf("(%d) U solve=%d,%d, minGridSize=%d,myblockSize%d, nvshmem_kernel=%d,%d\n",
+         //       mype,nbcol_loc,nthread_x*nthread_y,
+         //       minGridSize,myblockSize,h_nfrecv_u[2],h_nfrecv_u[1]);
+         //fflush(stdout);
 
          dim3 dimGrid_nv(h_nfrecv_u[2]); //2
          dim3 dimBlock_nv(h_nfrecv_u[1]); //1024
