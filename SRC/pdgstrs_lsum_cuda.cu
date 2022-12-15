@@ -452,11 +452,11 @@ void nv_init_wrapper(int* c, char *v[], int* omp_mpi_level)
     cudaDeviceProp prop;
     //CUDA_CHECK(cudaGetDeviceProperties(&prop, rank%ndevices));
     CUDA_CHECK(cudaGetDeviceProperties(&prop, mype_node));
-    int status=nvshmemx_init_status();
+    //int status=nvshmemx_init_status();
     printf("** MPI %d/%d, NVSHMEM %d/%d, mype_node=%d, device name: %s bus id: %d, "
-           "ndevices=%d,cur=%d, node=%s, status=%d **\n",
+           "ndevices=%d,cur=%d, node=%s **\n",
            rank,nranks,mype,npes,mype_node, prop.name, prop.pciBusID,
-           ndevices,get_cur_dev,name,status);
+           ndevices,get_cur_dev,name);
     fflush(stdout);
 
 
@@ -2252,8 +2252,8 @@ dim3 dimBlock(nthread_x, nthread_y);
     int status=1;
     status = nvshmemx_collective_launch((const void *) wait_bcrd, dimGrid_bc, dimBlock_bc, args, 0, stream[0]);
     //status1 = nvshmemx_collective_launch((const void *) send_rd, dimGrid_rd, dimBlock_bc, args, 0, stream[1]);
-    printf("(%d), status=%d\n",mype, status);
-    fflush(stdout);
+    //printf("(%d), status=%d\n",mype, status);
+    //fflush(stdout);
 
     if ((status != NVSHMEMX_SUCCESS)) {
         fprintf(stderr, "shmemx_collective_launch failed %d,%d\n", status);
