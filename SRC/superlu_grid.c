@@ -27,6 +27,19 @@ at the top-level directory.
 MPI_Datatype SuperLU_MPI_DOUBLE_COMPLEX = MPI_DATATYPE_NULL;
 #endif
 
+/*Function to create gSoFa processes communicator*/
+void create_gSoFa_comm ( gridinfo_t* grid, int_t ngpn, int_t nprs, int* is_gsofa)
+{
+    // int gsofa_process = 0;
+    int local_rank = grid->iam%nprs;
+    if (local_rank < ngpn)
+    {
+        is_gsofa[0] = 1;
+    }
+    MPI_Comm_split(grid->comm, *is_gsofa, grid->iam, &(grid->gSoFa.comm));   
+    MPI_Comm_rank(grid->gSoFa.comm, &(grid->gSoFa.Iam)); 
+    MPI_Comm_size(grid->gSoFa.comm, &(grid->gSoFa.Np));
+}
 /*! \brief All processes in the MPI communicator must call this routine.
  * 
  *  On output, if a process is not in the SuperLU group, the following 
@@ -34,9 +47,14 @@ MPI_Datatype SuperLU_MPI_DOUBLE_COMPLEX = MPI_DATATYPE_NULL;
  *      grid->comm = MPI_COMM_NULL
  *      grid->iam = -1
  */
+// void superlu_gridinit(MPI_Comm Bcomm, /* The base communicator upon which
+// 					 the new grid is formed. */
+// 		      int nprow, int npcol, gridinfo_t *grid)
 void superlu_gridinit(MPI_Comm Bcomm, /* The base communicator upon which
 					 the new grid is formed. */
-		      int nprow, int npcol, gridinfo_t *grid)
+		      int nprow, int npcol, gridinfo_t *grid,
+             int nprs,
+             int* is_gsofa)
 {
     int Np = nprow * npcol;
     int *usermap;
@@ -63,6 +81,15 @@ void superlu_gridinit(MPI_Comm Bcomm, /* The base communicator upon which
     SUPERLU_FREE(usermap);
     
 #ifdef GPU_ACC
+ /* Create the gSoFa communicator */
+    int ngpn=0;
+    cudaGetDeviceCount(&ngpn);
+    if (nprs < ngpn)
+    {
+        ngpn = nprs;
+    }    
+    create_gSoFa_comm ( grid, ngpn, nprs, is_gsofa);
+    
     /* Binding each MPI to a GPU device */
     char *ttemp;
     ttemp = getenv ("SUPERLU_BIND_MPI_GPU");

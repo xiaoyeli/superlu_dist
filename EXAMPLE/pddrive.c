@@ -75,6 +75,10 @@ int main(int argc, char *argv[])
     result_max[0]=0.0;
     result_max[1]=0.0;
     MPI_Comm SubComm;
+        int_t nprs = 1;//gSoFa
+    int_t is_gsofa=0;
+    int_t N_GPU_resource =0;
+    struct gSoFa_para_t* gSoFa_para;
 
     nprow = 1;  /* Default process rows.      */
     npcol = 1;  /* Default process columns.   */
@@ -129,6 +133,8 @@ int main(int argc, char *argv[])
                         break;
               case 'b': batch = atoi(*cpp);
                         break;
+            case 'g': nprs = atoi(*cpp);// if no job scheduler is used, this is the number of processes per node (i.e. -ppn)
+            break;
 	    }
 	} else { /* Last arg is considered a filename */
 	    if ( !(fp = fopen(*cpp, "r")) ) {
@@ -186,7 +192,9 @@ int main(int argc, char *argv[])
         /* ------------------------------------------------------------
            INITIALIZE THE SUPERLU PROCESS GRID.
            ------------------------------------------------------------ */
-        superlu_gridinit(MPI_COMM_WORLD, nprow, npcol, &grid);
+           dgSoFaInit(&gSoFa_para, nprs);   
+        // superlu_gridinit(MPI_COMM_WORLD, nprow, npcol, &grid);
+        superlu_gridinit(MPI_COMM_WORLD, nprow, npcol, &grid,gSoFa_para->nprs, &(gSoFa_para->is_gsofa));
 	
 #ifdef GPU_ACC
         int superlu_acc_offload = get_acc_offload();
@@ -316,8 +324,10 @@ int main(int argc, char *argv[])
     PStatInit(&stat);
 
     /* Call the linear equation solver. */
-    pdgssvx(&options, &A, &ScalePermstruct, b, ldb, nrhs, &grid,
-	    &LUstruct, &SOLVEstruct, berr, &stat, &info);
+    // pdgssvx(&options, &A, &ScalePermstruct, b, ldb, nrhs, &grid,
+	//     &LUstruct, &SOLVEstruct, berr, &stat, &info);
+         pdgssvx(&options, &A, &ScalePermstruct, b, ldb, nrhs, &grid,
+            &LUstruct, &SOLVEstruct, berr, &stat, &info, gSoFa_para);
 
     if ( info ) {  /* Something is wrong */
         if ( iam==0 ) {

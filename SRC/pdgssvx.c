@@ -8,7 +8,7 @@ All rights reserved.
 The source code is distributed under BSD license, see the file License.txt
 at the top-level directory.
 */
-
+ 
 
 /*! @file
  * \brief Solves a system of linear equations A*X=B
@@ -556,6 +556,10 @@ pdgssvx(superlu_dist_options_t *options, SuperMatrix *A,
     int_t lk,k,knsupc,nsupr;
     int_t  *lsub,*xsup;
     double *lusup;
+	int_t global_collected=0; /* flag to indicate whether the global A has been collected */
+	int_t NNZ_L, NNZ_U;//Size predictions for L and U
+	int_t* lsub1;//Used during U segmentation
+	double predistribution_time =0;
 #if ( PRNTlevel>= 2 )
     double   dmin, dsum, dprod;
 #endif
@@ -1109,6 +1113,7 @@ pdgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 				    Initialize_gSoFa( grid,  gSoFa_para->nprs,Glu_persist, LUstruct, &Glu_freeable,
             gSoFa_para, n, iam,gSoFa_para->is_gsofa,
             global_collected, A, GA, options, perm_c, GAC, GACstore,&NNZ_L, &NNZ_U);
+			int_t* processed_vertex;
 			       if (gSoFa_para->is_gsofa)
                 {
                     symbfact_min_id(gSoFa_para->num_process_gSoFa, gSoFa_para->max_supernode_size,  gSoFa_para->N_GPU_gSoFa_process,  n, gSoFa_para->edge_count,                            

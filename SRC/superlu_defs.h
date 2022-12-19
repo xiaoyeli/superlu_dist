@@ -1264,7 +1264,8 @@ typedef struct xtrsTimer_t
 extern "C" {
 #endif
 
-extern void   superlu_gridinit(MPI_Comm, int, int, gridinfo_t *);
+// extern void   superlu_gridinit(MPI_Comm, int, int, gridinfo_t *);
+extern void   superlu_gridinit(MPI_Comm, int, int, gridinfo_t *, int, int*);
 extern void   superlu_gridmap(MPI_Comm, int, int, int [], int, gridinfo_t *);
 extern void   superlu_gridexit(gridinfo_t *);
 extern void   superlu_gridinit3d(MPI_Comm Bcomm,  int nprow, int npcol, int npdep,

@@ -24,7 +24,7 @@ at the top-level directory.
  * May 10, 2019 version 7.0.0
  * </pre>
  */
-
+ 
 #ifndef __SUPERLU_DDEFS /* allow multiple inclusions */
 #define __SUPERLU_DDEFS
 
@@ -494,10 +494,10 @@ extern void  pdgssvx_ABglobal(superlu_dist_options_t *, SuperMatrix *,
 extern float pddistribute(superlu_dist_options_t *, int_t, SuperMatrix *,
 			 dScalePermstruct_t *, Glu_freeable_t *,
 			 dLUstruct_t *, gridinfo_t *);
-extern float pddistribute_gsofa(fact_t fact, int_t n, SuperMatrix *A,
-                        dScalePermstruct_t *ScalePermstruct,
-                        Glu_freeable_t *Glu_freeable, dLUstruct_t *LUstruct,
-                        gridinfo_t *grid);
+extern float pddistribute_gsofa(superlu_dist_options_t * , int_t, SuperMatrix *,
+                        dScalePermstruct_t *,
+                        Glu_freeable_t *, dLUstruct_t *,
+                        gridinfo_t *);
 // extern void  pdgssvx(superlu_dist_options_t *, SuperMatrix *,
 // 		     dScalePermstruct_t *, double *,
 // 		     int, int, gridinfo_t *, dLUstruct_t *,
@@ -507,6 +507,7 @@ extern void  pdgssvx(superlu_dist_options_t *, SuperMatrix *,
 		     dScalePermstruct_t *, double *,
 		     int, int, gridinfo_t *, dLUstruct_t *,
 		     dSOLVEstruct_t *, double *, SuperLUStat_t *, int *, struct gSoFa_para_t*);
+             
 extern void  pdCompute_Diag_Inv(int_t, dLUstruct_t *,gridinfo_t *, SuperLUStat_t *, int *);
 extern int  dSolveInit(superlu_dist_options_t *, SuperMatrix *, int_t [], int_t [],
 		       int_t, dLUstruct_t *, gridinfo_t *, dSOLVEstruct_t *);

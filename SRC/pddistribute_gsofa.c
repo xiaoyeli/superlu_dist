@@ -76,7 +76,7 @@ int compare_dist (const void * a, const void * b)
  * </pre>
  */
     int_t
-dReDistribute_A(SuperMatrix *A, dScalePermstruct_t *ScalePermstruct,
+dReDistribute_A_gsofa(SuperMatrix *A, dScalePermstruct_t *ScalePermstruct,
         Glu_freeable_t *Glu_freeable, int_t *xsup, int_t *supno,
         gridinfo_t *grid, int_t *colptr[], int_t *rowind[],
         double *a[])
@@ -362,7 +362,7 @@ NOTE: Can possibly use MPI_Alltoallv.
                 }
 
 #if ( DEBUGlevel>=1 )
-                CHECK_MALLOC(iam, "Exit dReDistribute_A()");
+                CHECK_MALLOC(iam, "Exit dReDistribute_A_gsofa()");
 #endif
 
                 return 0;
@@ -578,7 +578,7 @@ NOTE: Can possibly use MPI_Alltoallv.
                     t = SuperLU_timer_();
 #endif
 
-                    dReDistribute_A(A, ScalePermstruct, Glu_freeable, xsup, supno,
+                    dReDistribute_A_gsofa(A, ScalePermstruct, Glu_freeable, xsup, supno,
                             grid, &xa, &asub, &a);
 
                     // printf("IAM: %d After calling dReDistribute_A()  module!\n", iam);
@@ -2289,7 +2289,7 @@ NOTE: Can possibly use MPI_Alltoallv.
                         /* construct the Bcast tree for L ... */
 
                         k = CEILING( nsupers, grid->npcol );/* Number of local block columns */
-                        if ( !(LBtree_ptr = (BcTree*)SUPERLU_MALLOC(k * sizeof(BcTree))) )
+                        if ( !(LBtree_ptr = (C_Tree*)SUPERLU_MALLOC(k * sizeof(C_Tree))) )
                             ABORT("Malloc fails for LBtree_ptr[].");
                         if ( !(ActiveFlag = intCalloc_dist(grid->nprow*2)) )
                             ABORT("Calloc fails for ActiveFlag[].");
@@ -2306,13 +2306,14 @@ NOTE: Can possibly use MPI_Alltoallv.
                         MPI_Allreduce(MPI_IN_PLACE,&SeedSTD_BC[0],k,MPI_DOUBLE,MPI_MAX,grid->cscp.comm);
 
                         for (ljb = 0; ljb <k ; ++ljb) {
-                            LBtree_ptr[ljb]=NULL;
+                            C_BcTree_Nullify(&LBtree_ptr[ljb]);
+                            // LBtree_ptr[ljb]=NULL;
                         }
 
 
                         if ( !(ActiveFlagAll = intMalloc_dist(grid->nprow*k)) )
                             ABORT("Calloc fails for ActiveFlag[].");
-                        memTRS += k*sizeof(BcTree) + k*dword + grid->nprow*k*iword;  //acount for LBtree_ptr, SeedSTD_BC, ActiveFlagAll
+                        memTRS += k*sizeof(C_Tree) + k*dword + grid->nprow*k*iword;  //acount for LBtree_ptr, SeedSTD_BC, ActiveFlagAll
                         for (j=0;j<grid->nprow*k;++j)ActiveFlagAll[j]=3*nsupers;
                         for (ljb = 0; ljb < k; ++ljb) { /* for each local block column ... */
                             jb = mycol+ljb*grid->npcol;  /* not sure */
@@ -2409,8 +2410,10 @@ NOTE: Can possibly use MPI_Alltoallv.
                                         // 	printf("BCTree_CREATION!\n");
                                         // 	fflush(stdout);
                                         // }
-                                        LBtree_ptr[ljb] = BcTree_Create(grid->comm, ranks, rank_cnt, msgsize,SeedSTD_BC[ljb],'d');
-                                        BcTree_SetTag(LBtree_ptr[ljb],BC_L,'d');
+                                        // LBtree_ptr[ljb] = BcTree_Create(grid->comm, ranks, rank_cnt, msgsize,SeedSTD_BC[ljb],'d');
+                                        // BcTree_SetTag(LBtree_ptr[ljb],BC_L,'d');
+                                        C_BcTree_Create(&LBtree_ptr[ljb], grid->comm, ranks, rank_cnt, msgsize, 'd');
+				                        LBtree_ptr[ljb].tag_=BC_L;
 
                                         // printf("iam %5d btree rank_cnt %5d \n",iam,rank_cnt);
                                         // fflush(stdout);
@@ -2531,9 +2534,9 @@ NOTE: Can possibly use MPI_Alltoallv.
                         /* construct the Reduce tree for L ... */
                         /* the following is used as reference */
                         nlb = CEILING( nsupers, grid->nprow );/* Number of local block rows */
-                        if ( !(mod_bit = intMalloc_dist(nlb)) )
+                        if ( !(mod_bit = int32Malloc_dist(nlb)) )
                             ABORT("Malloc fails for mod_bit[].");
-                        if ( !(frecv = intMalloc_dist(nlb)) )
+                        if ( !(frecv = int32Malloc_dist(nlb)) )
                             ABORT("Malloc fails for frecv[].");
 
                         for (k = 0; k < nlb; ++k) mod_bit[k] = 0;
@@ -2548,12 +2551,13 @@ NOTE: Can possibly use MPI_Alltoallv.
                         }
                         /* Every process receives the count, but it is only useful on the
                            diagonal processes.  */
-                        MPI_Allreduce( mod_bit, frecv, nlb, mpi_int_t, MPI_SUM, grid->rscp.comm);
+                        // MPI_Allreduce( mod_bit, frecv, nlb, mpi_int_t, MPI_SUM, grid->rscp.comm);
+                        MPI_Allreduce( mod_bit, frecv, nlb, MPI_INT, MPI_SUM, grid->rscp.comm);
 
 
 
                         k = CEILING( nsupers, grid->nprow );/* Number of local block rows */
-                        if ( !(LRtree_ptr = (RdTree*)SUPERLU_MALLOC(k * sizeof(RdTree))) )
+                        if ( !(LRtree_ptr = (C_Tree*)SUPERLU_MALLOC(k * sizeof(C_Tree))) )
                             ABORT("Malloc fails for LRtree_ptr[].");
                         if ( !(ActiveFlag = intCalloc_dist(grid->npcol*2)) )
                             ABORT("Calloc fails for ActiveFlag[].");
@@ -2596,14 +2600,15 @@ NOTE: Can possibly use MPI_Alltoallv.
 
 
                         for (lib = 0; lib <k ; ++lib) {
-                            LRtree_ptr[lib]=NULL;
+                            // LRtree_ptr[lib]=NULL;
+                            C_RdTree_Nullify(&LRtree_ptr[lib]);
                         }
 
 
                         if ( !(ActiveFlagAll = intMalloc_dist(grid->npcol*k)) )
                             ABORT("Calloc fails for ActiveFlagAll[].");
                         for (j=0;j<grid->npcol*k;++j)ActiveFlagAll[j]=-3*nsupers;
-                        memTRS += k*sizeof(RdTree) + k*dword + grid->npcol*k*iword;  //acount for LRtree_ptr, SeedSTD_RD, ActiveFlagAll
+                        memTRS += k*sizeof(C_Tree) + k*dword + grid->npcol*k*iword;  //acount for LRtree_ptr, SeedSTD_RD, ActiveFlagAll
                         for (jb = 0; jb < nsupers; ++jb) { /* for each block column ... */
                             fsupc = FstBlockC( jb );
                             pc = PCOL( jb, grid );
@@ -2676,8 +2681,10 @@ NOTE: Can possibly use MPI_Alltoallv.
 
                                         // if(ib==0){
 
-                                        LRtree_ptr[lib] = RdTree_Create(grid->comm, ranks, rank_cnt, msgsize,SeedSTD_RD[lib],'d');
-                                        RdTree_SetTag(LRtree_ptr[lib], RD_L,'d');
+                                        // LRtree_ptr[lib] = RdTree_Create(grid->comm, ranks, rank_cnt, msgsize,SeedSTD_RD[lib],'d');
+                                        // RdTree_SetTag(LRtree_ptr[lib], RD_L,'d');
+                                        C_RdTree_Create(&LRtree_ptr[lib], grid->comm, ranks, rank_cnt, msgsize, 'd');
+					                    LRtree_ptr[lib].tag_=RD_L;
                                         // }
 
                                         // printf("iam %5d rtree rank_cnt %5d \n",iam,rank_cnt);
@@ -2733,7 +2740,7 @@ NOTE: Can possibly use MPI_Alltoallv.
                             /* construct the Bcast tree for U ... */
 
                             k = CEILING( nsupers, grid->npcol );/* Number of local block columns */
-                            if ( !(UBtree_ptr = (BcTree*)SUPERLU_MALLOC(k * sizeof(BcTree))) )
+                            if ( !(UBtree_ptr = (C_Tree*)SUPERLU_MALLOC(k * sizeof(C_Tree))) )
                                 ABORT("Malloc fails for UBtree_ptr[].");
                             if ( !(ActiveFlag = intCalloc_dist(grid->nprow*2)) )
                                 ABORT("Calloc fails for ActiveFlag[].");
@@ -2750,13 +2757,14 @@ NOTE: Can possibly use MPI_Alltoallv.
 
 
                             for (ljb = 0; ljb <k ; ++ljb) {
-                                UBtree_ptr[ljb]=NULL;
+                                // UBtree_ptr[ljb]=NULL;
+                                C_BcTree_Nullify(&UBtree_ptr[ljb]);
                             }
 
                             if ( !(ActiveFlagAll = intMalloc_dist(grid->nprow*k)) )
                                 ABORT("Calloc fails for ActiveFlagAll[].");
                             for (j=0;j<grid->nprow*k;++j)ActiveFlagAll[j]=-3*nsupers;
-                            memTRS += k*sizeof(BcTree) + k*dword + grid->nprow*k*iword;  //acount for UBtree_ptr, SeedSTD_BC, ActiveFlagAll
+                            memTRS += k*sizeof(C_Tree) + k*dword + grid->nprow*k*iword;  //acount for UBtree_ptr, SeedSTD_BC, ActiveFlagAll
 
                             for (ljb = 0; ljb < k; ++ljb) { /* for each local block column ... */
                                 jb = mycol+ljb*grid->npcol;  /* not sure */
@@ -2854,8 +2862,10 @@ NOTE: Can possibly use MPI_Alltoallv.
                                             // rseed=rand();
                                             // rseed=1.0;
                                             msgsize = SuperSize( jb );
-                                            UBtree_ptr[ljb] = BcTree_Create(grid->comm, ranks, rank_cnt, msgsize,SeedSTD_BC[ljb],'d');
-                                            BcTree_SetTag(UBtree_ptr[ljb],BC_U,'d');
+                                            // UBtree_ptr[ljb] = BcTree_Create(grid->comm, ranks, rank_cnt, msgsize,SeedSTD_BC[ljb],'d');
+                                            // BcTree_SetTag(UBtree_ptr[ljb],BC_U,'d');
+                                            C_BcTree_Create(&UBtree_ptr[ljb], grid->comm, ranks, rank_cnt, msgsize, 'd');
+				                            UBtree_ptr[ljb].tag_=BC_U;
 
                                             // printf("iam %5d btree rank_cnt %5d \n",iam,rank_cnt);
                                             // fflush(stdout);
@@ -2894,9 +2904,9 @@ NOTE: Can possibly use MPI_Alltoallv.
                                 /* construct the Reduce tree for U ... */
                                 /* the following is used as reference */
                                 nlb = CEILING( nsupers, grid->nprow );/* Number of local block rows */
-                                if ( !(mod_bit = intMalloc_dist(nlb)) )
+                                if ( !(mod_bit = int32Malloc_dist(nlb)) )
                                     ABORT("Malloc fails for mod_bit[].");
-                                if ( !(brecv = intMalloc_dist(nlb)) )
+                                if ( !(brecv = int32Malloc_dist(nlb)) )
                                     ABORT("Malloc fails for brecv[].");
 
                                 for (k = 0; k < nlb; ++k) mod_bit[k] = 0;
@@ -2917,7 +2927,7 @@ NOTE: Can possibly use MPI_Alltoallv.
 
 
                                 k = CEILING( nsupers, grid->nprow );/* Number of local block rows */
-                                if ( !(URtree_ptr = (RdTree*)SUPERLU_MALLOC(k * sizeof(RdTree))) )
+                                if ( !(URtree_ptr = (C_Tree*)SUPERLU_MALLOC(k * sizeof(C_Tree))) )
                                     ABORT("Malloc fails for URtree_ptr[].");
                                 if ( !(ActiveFlag = intCalloc_dist(grid->npcol*2)) )
                                     ABORT("Calloc fails for ActiveFlag[].");
@@ -2979,14 +2989,15 @@ NOTE: Can possibly use MPI_Alltoallv.
 
 
                                 for (lib = 0; lib <k ; ++lib) {
-                                    URtree_ptr[lib]=NULL;
+                                    // URtree_ptr[lib]=NULL;
+                                    C_RdTree_Nullify(&URtree_ptr[lib]);
                                 }
 
 
                                 if ( !(ActiveFlagAll = intMalloc_dist(grid->npcol*k)) )
                                     ABORT("Calloc fails for ActiveFlagAll[].");
                                 for (j=0;j<grid->npcol*k;++j)ActiveFlagAll[j]=3*nsupers;
-                                memTRS += k*sizeof(RdTree) + k*dword + grid->npcol*k*iword;  //acount for URtree_ptr, SeedSTD_RD, ActiveFlagAll
+                                memTRS += k*sizeof(C_Tree) + k*dword + grid->npcol*k*iword;  //acount for URtree_ptr, SeedSTD_RD, ActiveFlagAll
 
                                 for (jb = 0; jb < nsupers; ++jb) { /* for each block column ... */
                                     fsupc = FstBlockC( jb );
@@ -3080,8 +3091,10 @@ NOTE: Can possibly use MPI_Alltoallv.
 
                                                 // if(ib==0){
 
-                                                URtree_ptr[lib] = RdTree_Create(grid->comm, ranks, rank_cnt, msgsize,SeedSTD_RD[lib],'d');
-                                                RdTree_SetTag(URtree_ptr[lib], RD_U,'d');
+                                                // URtree_ptr[lib] = RdTree_Create(grid->comm, ranks, rank_cnt, msgsize,SeedSTD_RD[lib],'d');
+                                                // RdTree_SetTag(URtree_ptr[lib], RD_U,'d');
+                                                C_RdTree_Create(&URtree_ptr[lib], grid->comm, ranks, rank_cnt, msgsize, 'd');
+					                            URtree_ptr[lib].tag_=RD_U;
                                                 // }
 
                                                 // #if ( PRNTlevel>=1 )
@@ -3124,10 +3137,29 @@ NOTE: Can possibly use MPI_Alltoallv.
 
 
                                 Llu->Lrowind_bc_ptr = Lrowind_bc_ptr;
+    //                             	Llu->Lrowind_bc_dat = Lrowind_bc_dat;
+	// Llu->Lrowind_bc_offset = Lrowind_bc_offset;
+	// Llu->Lrowind_bc_cnt = Lrowind_bc_cnt;
+
                                 Llu->Lindval_loc_bc_ptr = Lindval_loc_bc_ptr;
+    //                             	Llu->Lindval_loc_bc_dat = Lindval_loc_bc_dat;
+	// Llu->Lindval_loc_bc_offset = Lindval_loc_bc_offset;
+	// Llu->Lindval_loc_bc_cnt = Lindval_loc_bc_cnt;
                                 Llu->Lnzval_bc_ptr = Lnzval_bc_ptr;
+    //                             	Llu->Lnzval_bc_dat = Lnzval_bc_dat;
+	// Llu->Lnzval_bc_offset = Lnzval_bc_offset;
+	// Llu->Lnzval_bc_cnt = Lnzval_bc_cnt;
+
                                 Llu->Ufstnz_br_ptr = Ufstnz_br_ptr;
+    //                                 Llu->Ufstnz_br_dat = Ufstnz_br_dat;  
+    // Llu->Ufstnz_br_offset = Ufstnz_br_offset;  
+    // Llu->Ufstnz_br_cnt = Ufstnz_br_cnt;  
+
                                 Llu->Unzval_br_ptr = Unzval_br_ptr;
+    //                             	Llu->Unzval_br_dat = Unzval_br_dat;
+	// Llu->Unzval_br_offset = Unzval_br_offset;
+	// Llu->Unzval_br_cnt = Unzval_br_cnt;
+
                                 Llu->Unnz = Unnz;
                                 Llu->ToRecv = ToRecv;
                                 Llu->ToSendD = ToSendD;
@@ -3148,10 +3180,71 @@ NOTE: Can possibly use MPI_Alltoallv.
                                 Llu->URtree_ptr = URtree_ptr;
                                 Llu->UBtree_ptr = UBtree_ptr;
                                 Llu->Linv_bc_ptr = Linv_bc_ptr;
+    //                             	Llu->Linv_bc_dat = Linv_bc_dat;
+	// Llu->Linv_bc_offset = Linv_bc_offset;
+	// Llu->Linv_bc_cnt = Linv_bc_cnt;
                                 Llu->Uinv_bc_ptr = Uinv_bc_ptr;
+    //                             	Llu->Uinv_bc_dat = Uinv_bc_dat;
+	// Llu->Uinv_bc_offset = Uinv_bc_offset;
+	// Llu->Uinv_bc_cnt = Uinv_bc_cnt;	
                                 Llu->Urbs = Urbs;
                                 Llu->Ucb_indptr = Ucb_indptr;
+    //                             	Llu->Ucb_inddat = Ucb_inddat;
+	// Llu->Ucb_indoffset = Ucb_indoffset;
+	// Llu->Ucb_indcnt = Ucb_indcnt;
                                 Llu->Ucb_valptr = Ucb_valptr;
+    //                             	Llu->Ucb_valdat = Ucb_valdat;
+	// Llu->Ucb_valoffset = Ucb_valoffset;
+	// Llu->Ucb_valcnt = Ucb_valcnt;
+
+
+#ifdef GPU_ACC
+
+	checkGPU(gpuMalloc( (void**)&Llu->d_xsup, (n+1) * sizeof(int_t)));
+	checkGPU(gpuMemcpy(Llu->d_xsup, xsup, (n+1) * sizeof(int_t), gpuMemcpyHostToDevice));
+	checkGPU(gpuMalloc( (void**)&Llu->d_LRtree_ptr, CEILING( nsupers, grid->nprow ) * sizeof(C_Tree)));
+	checkGPU(gpuMalloc( (void**)&Llu->d_LBtree_ptr, CEILING( nsupers, grid->npcol ) * sizeof(C_Tree)));
+	checkGPU(gpuMalloc( (void**)&Llu->d_URtree_ptr, CEILING( nsupers, grid->nprow ) * sizeof(C_Tree)));
+	checkGPU(gpuMalloc( (void**)&Llu->d_UBtree_ptr, CEILING( nsupers, grid->npcol ) * sizeof(C_Tree)));	
+	checkGPU(gpuMemcpy(Llu->d_LRtree_ptr, Llu->LRtree_ptr, CEILING( nsupers, grid->nprow ) * sizeof(C_Tree), gpuMemcpyHostToDevice));	
+	checkGPU(gpuMemcpy(Llu->d_LBtree_ptr, Llu->LBtree_ptr, CEILING( nsupers, grid->npcol ) * sizeof(C_Tree), gpuMemcpyHostToDevice));			
+	checkGPU(gpuMemcpy(Llu->d_URtree_ptr, Llu->URtree_ptr, CEILING( nsupers, grid->nprow ) * sizeof(C_Tree), gpuMemcpyHostToDevice));	
+	checkGPU(gpuMemcpy(Llu->d_UBtree_ptr, Llu->UBtree_ptr, CEILING( nsupers, grid->npcol ) * sizeof(C_Tree), gpuMemcpyHostToDevice));		
+	checkGPU(gpuMalloc( (void**)&Llu->d_Lrowind_bc_dat, (Llu->Lrowind_bc_cnt) * sizeof(int_t)));
+	checkGPU(gpuMemcpy(Llu->d_Lrowind_bc_dat, Llu->Lrowind_bc_dat, (Llu->Lrowind_bc_cnt) * sizeof(int_t), gpuMemcpyHostToDevice));	
+	checkGPU(gpuMalloc( (void**)&Llu->d_Lindval_loc_bc_dat, (Llu->Lindval_loc_bc_cnt) * sizeof(int_t)));
+	checkGPU(gpuMemcpy(Llu->d_Lindval_loc_bc_dat, Llu->Lindval_loc_bc_dat, (Llu->Lindval_loc_bc_cnt) * sizeof(int_t), gpuMemcpyHostToDevice));	
+	checkGPU(gpuMalloc( (void**)&Llu->d_Lrowind_bc_offset, CEILING( nsupers, grid->npcol ) * sizeof(long int)));
+	checkGPU(gpuMemcpy(Llu->d_Lrowind_bc_offset, Llu->Lrowind_bc_offset, CEILING( nsupers, grid->npcol ) * sizeof(long int), gpuMemcpyHostToDevice));	
+	checkGPU(gpuMalloc( (void**)&Llu->d_Lindval_loc_bc_offset, CEILING( nsupers, grid->npcol ) * sizeof(long int)));
+	checkGPU(gpuMemcpy(Llu->d_Lindval_loc_bc_offset, Llu->Lindval_loc_bc_offset, CEILING( nsupers, grid->npcol ) * sizeof(long int), gpuMemcpyHostToDevice));	
+	checkGPU(gpuMalloc( (void**)&Llu->d_Lnzval_bc_offset, CEILING( nsupers, grid->npcol ) * sizeof(long int)));
+	checkGPU(gpuMemcpy(Llu->d_Lnzval_bc_offset, Llu->Lnzval_bc_offset, CEILING( nsupers, grid->npcol ) * sizeof(long int), gpuMemcpyHostToDevice));	
+	
+	// some dummy allocation to avoid checking whether they are null pointers later
+	checkGPU(gpuMalloc( (void**)&Llu->d_Ucolind_bc_dat, sizeof(int_t)));
+	checkGPU(gpuMalloc( (void**)&Llu->d_Ucolind_bc_offset, sizeof(int64_t)));
+	checkGPU(gpuMalloc( (void**)&Llu->d_Unzval_bc_dat, sizeof(double)));
+	checkGPU(gpuMalloc( (void**)&Llu->d_Unzval_bc_offset, sizeof(int64_t)));
+	checkGPU(gpuMalloc( (void**)&Llu->d_Uindval_loc_bc_dat, sizeof(int_t)));
+	checkGPU(gpuMalloc( (void**)&Llu->d_Uindval_loc_bc_offset, sizeof(int_t)));
+
+
+	checkGPU(gpuMalloc( (void**)&Llu->d_Linv_bc_offset, CEILING( nsupers, grid->npcol ) * sizeof(long int)));
+	checkGPU(gpuMemcpy(Llu->d_Linv_bc_offset, Llu->Linv_bc_offset, CEILING( nsupers, grid->npcol ) * sizeof(long int), gpuMemcpyHostToDevice));	
+	checkGPU(gpuMalloc( (void**)&Llu->d_Uinv_bc_offset, CEILING( nsupers, grid->npcol ) * sizeof(long int)));
+	checkGPU(gpuMemcpy(Llu->d_Uinv_bc_offset, Llu->Uinv_bc_offset, CEILING( nsupers, grid->npcol ) * sizeof(long int), gpuMemcpyHostToDevice));		
+	checkGPU(gpuMalloc( (void**)&Llu->d_ilsum, (CEILING( nsupers, grid->nprow )+1) * sizeof(int_t)));
+	checkGPU(gpuMemcpy(Llu->d_ilsum, Llu->ilsum, (CEILING( nsupers, grid->nprow )+1) * sizeof(int_t), gpuMemcpyHostToDevice));
+
+
+	/* gpuMemcpy for the following is performed in pxgssvx */
+	checkGPU(gpuMalloc( (void**)&Llu->d_Lnzval_bc_dat, (Llu->Lnzval_bc_cnt) * sizeof(double)));
+	checkGPU(gpuMalloc( (void**)&Llu->d_Linv_bc_dat, (Llu->Linv_bc_cnt) * sizeof(double)));
+	checkGPU(gpuMalloc( (void**)&Llu->d_Uinv_bc_dat, (Llu->Uinv_bc_cnt) * sizeof(double)));
+	
+#endif
+
 
                                 int k3 = CEILING( nsupers, grid->nprow );/* Number of local block rows */
                                 // for (i=0;i<k3;i++)
@@ -3189,7 +3282,7 @@ NOTE: Can possibly use MPI_Alltoallv.
                                         MPI_MAX, grid->comm);
 
                                 k = CEILING( nsupers, grid->nprow );/* Number of local block rows */
-                                if ( !(Llu->mod_bit = intMalloc_dist(k)) )
+                                if ( !(Llu->mod_bit = int32Malloc_dist(k)) )
                                     ABORT("Malloc fails for mod_bit[].");
 
 #if ( PROFlevel>=1 )
