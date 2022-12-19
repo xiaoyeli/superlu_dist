@@ -1433,6 +1433,7 @@ extern int_t dsparseTreeFactor_ASYNC(
 extern dLUValSubBuf_t** dLluBufInitArr(int_t numLA, dLUstruct_t *LUstruct);
 extern int dLluBufFreeArr(int_t numLA, dLUValSubBuf_t **LUvsbs);
 extern ddiagFactBufs_t** dinitDiagFactBufsArr(int_t mxLeafNode, int_t ldt, gridinfo_t* grid);
+extern ddiagFactBufs_t** dinitDiagFactBufsArrMod(int_t mxLeafNode, int_t* ldts, gridinfo_t* grid);
 extern int dfreeDiagFactBufsArr(int_t mxLeafNode, ddiagFactBufs_t** dFBufs);
 extern int_t dinitDiagFactBufs(int_t ldt, ddiagFactBufs_t* dFBuf);
 extern int_t checkRecvUDiag(int_t k, commRequests_t *comReqs,

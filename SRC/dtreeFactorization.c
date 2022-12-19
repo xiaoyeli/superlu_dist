@@ -37,7 +37,6 @@ int_t dLluBufInit(dLUValSubBuf_t* LUvsb, dLUstruct_t *LUstruct)
 ddiagFactBufs_t** dinitDiagFactBufsArr(int_t mxLeafNode, int_t ldt, gridinfo_t* grid)
 {
     ddiagFactBufs_t** dFBufs;
-
     /* Sherry fix:
      * mxLeafNode can be 0 for the replicated layers of the processes ?? */
     if ( mxLeafNode ) dFBufs = (ddiagFactBufs_t** )
@@ -54,6 +53,27 @@ ddiagFactBufs_t** dinitDiagFactBufsArr(int_t mxLeafNode, int_t ldt, gridinfo_t* 
 
     return dFBufs;
 }
+
+ddiagFactBufs_t** dinitDiagFactBufsArrMod(int_t mxLeafNode, int_t* ldts, gridinfo_t* grid)
+{
+    ddiagFactBufs_t** dFBufs;
+    /* Sherry fix:
+     * mxLeafNode can be 0 for the replicated layers of the processes ?? */
+    if ( mxLeafNode ) dFBufs = (ddiagFactBufs_t** )
+                          SUPERLU_MALLOC(mxLeafNode * sizeof(ddiagFactBufs_t*));
+
+    for (int i = 0; i < mxLeafNode; ++i)
+    {
+        /* code */
+        dFBufs[i] = (ddiagFactBufs_t* ) SUPERLU_MALLOC(sizeof(ddiagFactBufs_t));
+        assert(dFBufs[i]);
+        dinitDiagFactBufs(ldts[i], dFBufs[i]);
+
+    }/*Minor for loop -2 for (int i = 0; i < mxLeafNode; ++i)*/
+
+    return dFBufs;
+}
+
 
 // sherry added
 int dfreeDiagFactBufsArr(int_t mxLeafNode, ddiagFactBufs_t** dFBufs)

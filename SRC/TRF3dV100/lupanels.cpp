@@ -224,6 +224,7 @@ LUstruct_v100::LUstruct_v100(int_t nsupers_, int_t ldt_,
         if (sForests[myTreeIdxs[ilvl]] && sForests[myTreeIdxs[ilvl]]->topoInfo.eTreeTopLims[1] > mxLeafNode)
             mxLeafNode = sForests[myTreeIdxs[ilvl]]->topoInfo.eTreeTopLims[1];
     }
+    //Yang: how is dFBufs being used in the c++ factorization code? Shall we call dinitDiagFactBufsArrMod instead to save memory? 
     dFBufs = dinitDiagFactBufsArr(mxLeafNode, ldt, grid);
 
     double tGPU = SuperLU_timer_();
