@@ -358,8 +358,10 @@ extern "C" {
 #ifdef __cplusplus
   }
 #endif
+#ifdef GPU_ACC
 #define _M_LN2  0.693147180559945309417 // Natural log of 2 //gSoFa
 #define log_2(x) (log(x)/_M_LN2) //gSoFa
+#endif
 
 /***********************************************************************
  * New data types
@@ -392,17 +394,14 @@ extern "C" {
  *
  */
 
-//gSoFa Structures
-
-// #ifndef SuperStruct_H
-// #define SuperStruct_H
+#ifdef GPU_ACC
 struct Super
 {
     int_t start;
     int_t end;
 };
-// #endif
-/*==== For gSoFa ====*/
+#endif
+
 
 #define MAX_VAL UINT_MAX
 static void HandleError( cudaError_t err, const char *file, int line   ) {
@@ -416,6 +415,8 @@ static void HandleError( cudaError_t err, const char *file, int line   ) {
 #define H_ERR( err   ) \
 	(HandleError( err, __FILE__, __LINE__   ))
 
+#ifdef GPU_ACC
+//gSoFa related structures
 struct aux_device
 {
     int gpu_id; //gpu id
@@ -568,6 +569,7 @@ struct gSoFa_para_t
 extern void Allocate_Initialize_gSoFa_para(struct gSoFa_para_t *gSoFa_para, int_t BLKS_NUM, int_t blockSize, int_t next_front, int_t real_allocation, int_t max_supernode_size, int_t N_GPU_Node,int_t vert_count, int_t N_src_group/*, gridinfo_t grid*/);
 extern void Allocate_Initialize (struct gSoFa_para_t *gSoFa_para, struct aux_device* device_obj,int_t vert_count,int_t edge_count,
          int_t BLKS_NUM,int_t blockSize,int index, int_t next_front,int_t N_src_group,int_t real_allocation,int_t N_chunks, int total_num_chunks_per_node,int max_supernode_size,cudaStream_t stream,int sup_per_gpu, int iam, int localgpu);
+#endif
 
 /*-- Communication subgroup */
 typedef struct {
@@ -691,6 +693,7 @@ typedef struct {
     //int_t     *llvl;     /* keep track of level in L for level-based ILU */
     //int_t     *ulvl;     /* keep track of level in U for level-based ILU */
     int64_t nnzLU;   /* number of nonzeros in L+U*/
+       #ifdef GPU_ACC
         //Added for gSoFa
     int_t     *xlsub_begin;
     int_t     *xlsub_end;    
@@ -706,6 +709,7 @@ typedef struct {
     int_t* xlsub_original_nz_offset;
     int_t* xusub_original_nz_offset;
     //~Added for gSoFa
+    #endif
 } Glu_freeable_t;
 
 #if 0 // Sherry: move to precision-dependent file
@@ -957,6 +961,7 @@ typedef struct {
     yes_no_t      Use_TensorCore;  /* Use Tensor Core or not  */
     yes_no_t      Algo3d;          /* use 3D factorization/solve algorithms */
     yes_no_t      gsofa;  /* symbolic factorization in GPU */
+    struct gSoFa_para_t* gSoFa_para;
 } superlu_dist_options_t;
 
 typedef struct {

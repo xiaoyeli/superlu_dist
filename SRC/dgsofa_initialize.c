@@ -1086,7 +1086,8 @@ void FreeMemory (struct gSoFa_para_t *gSoFa_para, struct aux_device* device_obj,
 
 }
 
-void dgSoFaInit( struct gSoFa_para_t** gSoFa_para1, int_t nprs)
+void dgSoFaInit( superlu_dist_options_t* options, int_t nprs)
+// void dgSoFaInit( struct gSoFa_para_t** gSoFa_para1, int_t nprs)
 {
     // int i;
     //Build the gSoFa grid here
@@ -1116,7 +1117,8 @@ void dgSoFaInit( struct gSoFa_para_t** gSoFa_para1, int_t nprs)
     // int_t* test;
     // H_ERR(cudaMalloc((void**) &test,sizeof(int_t)*100));
     // H_ERR(cudaMemsetAsync(test, 0, sizeof(int_t)*100, gSoFa_para->gSoFa_stream[0])); //Can be moved
-    *gSoFa_para1 = gSoFa_para;
+    // *gSoFa_para1 = gSoFa_para;
+    options->gSoFa_para = gSoFa_para;
 }
 // void dgSoFaInit(struct gSoFa_para_t** gSoFa_para1, gridinfo_t* grid, int_t nprs,Glu_persist_t* Glu_persist, dLUstruct_t* LUstruct, Glu_freeable_t** Glu_freeable1)
 // //  dgSoFaInit(&gSoFa_para, grid, nprs, Glu_persist, LUstruct,  &Glu_freeable,&gSoFa_stream,n, iam, is_gsofa,global_collected, A, GA, options, perm_c, GAC, GACstore)
