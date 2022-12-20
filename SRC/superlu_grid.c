@@ -50,6 +50,7 @@ void create_gSoFa_comm ( gridinfo_t* grid, int_t ngpn, int_t nprs, int* is_gsofa
 // void superlu_gridinit(MPI_Comm Bcomm, /* The base communicator upon which
 // 					 the new grid is formed. */
 // 		      int nprow, int npcol, gridinfo_t *grid)
+//Can add options
 void superlu_gridinit(MPI_Comm Bcomm, /* The base communicator upon which
 					 the new grid is formed. */
 		      int nprow, int npcol, gridinfo_t *grid,
@@ -89,7 +90,7 @@ void superlu_gridinit(MPI_Comm Bcomm, /* The base communicator upon which
         ngpn = nprs;
     }    
     create_gSoFa_comm ( grid, ngpn, nprs, is_gsofa);
-    
+
     /* Binding each MPI to a GPU device */
     char *ttemp;
     ttemp = getenv ("SUPERLU_BIND_MPI_GPU");

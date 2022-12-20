@@ -1089,6 +1089,7 @@ void FreeMemory (struct gSoFa_para_t *gSoFa_para, struct aux_device* device_obj,
 void dgSoFaInit( struct gSoFa_para_t** gSoFa_para1, int_t nprs)
 {
     // int i;
+    //Build the gSoFa grid here
     struct gSoFa_para_t* gSoFa_para;                        
     if ( !(gSoFa_para = (struct gSoFa_para_t*)SUPERLU_MALLOC( sizeof(struct gSoFa_para_t)) ) )
         ABORT("SUPERLU_MALLOC fails for gSoFa_para");
