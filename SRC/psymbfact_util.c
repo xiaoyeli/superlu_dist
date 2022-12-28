@@ -84,6 +84,8 @@ static int_t *expand
  * Return value:   0 - successful return
  *               > 0 - number of bytes allocated when run out of space
  * </pre>
+ * 
+ * Sherry: this function is used inside the domains.
  */
 /************************************************************************/
 int_t psymbfact_LUXpandMem
@@ -160,6 +162,13 @@ int_t psymbfact_LUXpandMem
 	    iam, mem_type, (long) prev_len, (long) min_new_len, (long) new_len);
     return ERROR_RET;
   }
+
+#if ( PRNTlevel>=1 )  
+  if (iam==0) { // Sherry
+      printf("\t.. psymbfact_LUXpandMem::after expand() PS->allocMem (MB) %.2f\n", PS->allocMem*1e-6);
+      fflush(stdout);
+  }
+#endif
   
   xsub_nextLvl = new_len - len_tcopy_fend;
   
@@ -196,7 +205,7 @@ int_t psymbfact_LUXpandMem
   
   Llu_symbfact->no_expand ++;
   return SUCCES_RET;
-}
+} /* end psymbfact_LUXpandMem */
 
 /*! \brief
  *
@@ -205,6 +214,9 @@ int_t psymbfact_LUXpandMem
  * Return value: SUCCES_RET - successful return
  *               ERROR_RET - error due to a memory alocation failure
  * </pre>
+ *
+ * Sherry: this function is used in the upper separator tree above the domains.
+ *         It does not call 'expand()' 
  */
 /************************************************************************/
 int_t psymbfact_LUXpand
@@ -367,7 +379,7 @@ int_t psymbfact_LUXpand
   Llu_symbfact->no_expcp ++;
   
   return SUCCES_RET;
-}
+} /* end psymbfact_LUXpand */
 
 /*! \brief
  *
@@ -376,6 +388,9 @@ int_t psymbfact_LUXpand
  * Return value:   0 - successful return
  *               > 0 - number of bytes allocated when run out of space
  * </pre>
+ *
+ * Sherry: this function calls psymbfact_LUXpandMem().
+ *
  */
 /************************************************************************/
 int_t psymbfact_LUXpand_RL
@@ -485,7 +500,7 @@ int_t psymbfact_LUXpand_RL
   Llu_symbfact->no_expcp ++;
   
   return SUCCES_RET;
-}
+} /* end psymbfact_LUXpand_RL */
 
 /*! \brief
  *
@@ -494,6 +509,9 @@ int_t psymbfact_LUXpand_RL
  * Return value: SUCCES_RET - successful return
  *               ERROR_RET - error when run out of space
  * </pre>
+ *
+ * Sherry: this function calls 'expand()' directly.
+ *
  */
 /************************************************************************/
 int_t psymbfact_prLUXpand
@@ -535,6 +553,13 @@ int_t psymbfact_prLUXpand
     fprintf(stderr, "Can't expand MemType %d: \n", mem_type);
     return (ERROR_RET);
   }
+
+#if ( PRNTlevel>=1 )  
+  if (iam==0) { // Sherry
+      printf("\t.. psymbfact_prLUXpand::after expand() PS->allocMem (MB) %.2f\n", PS->allocMem*1e-6);
+      fflush(stdout);
+  }
+#endif
   
   Llu_symbfact->no_expand_pr ++;
   if ( mem_type == LSUB_PR ) {
@@ -548,4 +573,4 @@ int_t psymbfact_prLUXpand
   SUPERLU_FREE (prev_mem);
 
   return SUCCES_RET;
-}
+} /* end psymbfact_prLUXpand */
