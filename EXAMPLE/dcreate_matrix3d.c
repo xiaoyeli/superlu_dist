@@ -92,6 +92,7 @@ int dcreate_matrix_postfix3d(SuperMatrix *A, int nrhs, double **rhs,
 
 #if ( DEBUGlevel>=1 )
     CHECK_MALLOC(iam, "Enter dcreate_matrix_postfix3d()");
+    fflush(stdout);
 #endif
 
     if ( !iam )
@@ -163,6 +164,11 @@ int dcreate_matrix_postfix3d(SuperMatrix *A, int nrhs, double **rhs,
     nzval[0] = 0.1;
 #endif
 
+#if ( DEBUGlevel>=1 )
+    CHECK_MALLOC(iam, "dcreate_matrix_postfix3d() :: after read matrix");
+    fflush(stdout);
+#endif
+    
     /* Compute the number of rows to be distributed to local process */
     m_loc = m / (grid3d->nprow * grid3d->npcol* grid3d->npdep);
     m_loc_fst = m_loc;

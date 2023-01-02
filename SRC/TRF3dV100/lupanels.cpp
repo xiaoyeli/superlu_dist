@@ -35,6 +35,7 @@ lpanel_t LUstruct_v100::getKLpanel(int_t k, int_t offset)
     return k_lpanel;
 }
 
+/* constructor */
 LUstruct_v100::LUstruct_v100(int_t nsupers_, int_t ldt_,
                              dtrf3Dpartition_t *trf3Dpartition_, 
                              dLUstruct_t *LUstruct,
@@ -50,6 +51,9 @@ LUstruct_v100::LUstruct_v100(int_t nsupers_, int_t ldt_,
     isNodeInMyGrid = getIsNodeInMyGrid(nsupers, maxLvl, trf3Dpartition->myNodeCount, trf3Dpartition->treePerm);
     superlu_acc_offload = get_acc_offload();
 
+#if (DEBUGlevel >= 1)
+    CHECK_MALLOC(grid3d_in->iam, "Enter LUstruct_v100 constructor");
+#endif
     grid = &(grid3d->grid2d);
     iam = grid->iam;
     Pc = grid->npcol;
@@ -179,7 +183,7 @@ LUstruct_v100::LUstruct_v100(int_t nsupers_, int_t ldt_,
     bcastLidx.resize(options->num_lookaheads);
     bcastUidx.resize(options->num_lookaheads);
 
-    for (int_t i = 0; i < options->num_lookaheads; i++)
+    for (int i = 0; i < options->num_lookaheads; i++)
     {
         LvalRecvBufs[i] = (double *)SUPERLU_MALLOC(sizeof(double) * maxLvalCount);
         UvalRecvBufs[i] = (double *)SUPERLU_MALLOC(sizeof(double) * maxUvalCount);
@@ -197,11 +201,11 @@ LUstruct_v100::LUstruct_v100(int_t nsupers_, int_t ldt_,
         bcastUidx[i] = bcUidx;
     }
 
-    diagFactBufs.resize(numDiagBufs);
+    diagFactBufs.resize(numDiagBufs);  /* Sherry: numDiagBufs == 32 hard-coded */
     bcastDiagRow.resize(numDiagBufs);
     bcastDiagCol.resize(numDiagBufs);
 
-    for (int_t i = 0; i < numDiagBufs; i++)
+    for (int i = 0; i < numDiagBufs; i++)
     {
         diagFactBufs[i] = (double *)SUPERLU_MALLOC(sizeof(double) * ldt * ldt);
         bcastStruct bcDiagRow(grid3d->rscp.comm, MPI_DOUBLE, SYNC);
@@ -220,6 +224,7 @@ LUstruct_v100::LUstruct_v100(int_t nsupers_, int_t ldt_,
             mxLeafNode = sForests[myTreeIdxs[ilvl]]->topoInfo.eTreeTopLims[1];
     }
     dFBufs = dinitDiagFactBufsArr(mxLeafNode, ldt, grid);
+    maxLeafNodes = mxLeafNode;
 
     double tGPU = SuperLU_timer_();
     if(superlu_acc_offload)
@@ -241,7 +246,12 @@ LUstruct_v100::LUstruct_v100(int_t nsupers_, int_t ldt_,
     //     MPI_Bcast(void *buffer, int count, MPI_Datatype datatype, int root, MPI_Comm comm)
     //     ...
     // }
-}
+
+#if (DEBUGlevel >= 1)
+    CHECK_MALLOC(grid3d_in->iam, "Exit LUstruct_v100 constructor");
+#endif
+    
+} /* constructor LUstruct_v100 */
 
 int_t LUstruct_v100::dSchurComplementUpdate(
     int_t k, lpanel_t &lpanel, upanel_t &upanel)

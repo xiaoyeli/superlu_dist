@@ -31,15 +31,23 @@ int_t LUstruct_v100::dDFactPSolveGPU(int_t k, int_t offset, ddiagFactBufs_t **dF
                         thresh, xsup, options, stat, info);
                                     
     }
+
+    CHECK_MALLOC(iam, "after diagFactorCuSolver()");
+		 
     //TODO: need to synchronize the cuda stream 
     /*=======   Diagonal Broadcast          ======*/
     if (myrow == krow(k))
         MPI_Bcast((void *)A_gpu.dFBufs[offset], ksupc * ksupc,
                   MPI_DOUBLE, kcol(k), (grid->rscp).comm);
+    
+    CHECK_MALLOC(iam, "after row Bcast");
+    
     if (mycol == kcol(k))
         MPI_Bcast((void *)A_gpu.dFBufs[offset], ksupc * ksupc,
                   MPI_DOUBLE, krow(k), (grid->cscp).comm);
 
+    CHECK_MALLOC(iam, "after col Bcast");
+    
     // do the panels olver 
     if (myrow == krow(k))
     {
@@ -162,11 +170,6 @@ int_t LUstruct_v100::dsparseTreeFactorGPU(
         return 1;
     }
 
-    printf("Using New code V100 with GPU acceleration\n");
-#if (DEBUGlevel >= 1)
-    CHECK_MALLOC(grid3d->iam, "Enter dsparseTreeFactor_ASYNC()");
-#endif
-
     int_t *perm_c_supno = sforest->nodeList; // list of nodes in the order of factorization
     treeTopoInfo_t *treeTopoInfo = &sforest->topoInfo;
     int_t *myIperm = treeTopoInfo->myIperm;
@@ -176,6 +179,12 @@ int_t LUstruct_v100::dsparseTreeFactorGPU(
     /*main loop over all the levels*/
     int_t numLA = SUPERLU_MIN(A_gpu.numCudaStreams, getNumLookAhead(options));
 
+#if (DEBUGlevel >= 1)
+    CHECK_MALLOC(grid3d->iam, "Enter dsparseTreeFactorGPU()");
+#endif
+    printf("Using New code V100 with GPU acceleration\n"); fflush(stdout);
+    printf(". lookahead numLA %d\n", numLA); fflush(stdout);
+    
     // start the pipeline
     int_t *donePanelBcast = intMalloc_dist(nnodes);
     int_t *donePanelSolve = intMalloc_dist(nnodes);
@@ -217,6 +226,9 @@ int_t LUstruct_v100::dsparseTreeFactorGPU(
     //TODO: its really the panels that needs to be doubled 
     // everything else can remain as it is 
     int_t winSize =  SUPERLU_MIN(numLA/2, eTreeTopLims[1]);
+    
+    printf(". lookahead winSize %d\n", winSize); fflush(stdout);
+    
     for (int k0 = k_st; k0 < winSize; ++k0)
     {
         int_t k = perm_c_supno[k0];
@@ -322,10 +334,8 @@ int_t LUstruct_v100::dsparseTreeFactorGPU(
         winParity++;
     }
 
-
-    #if 0
+#if 0
     
-
     for (int_t topoLvl = 0; topoLvl < maxTopoLevel; ++topoLvl)
     {
         /* code */
@@ -356,10 +366,6 @@ int_t LUstruct_v100::dsparseTreeFactorGPU(
             if (mycol == kcol(k))
                 k_lpanel = lPanelVec[g2lCol(k)];
 
-            
-
-            
-
             if (UidxSendCounts[k] > 0 && LidxSendCounts[k] > 0)
             {
                 int streamId = 0;
@@ -385,13 +391,14 @@ int_t LUstruct_v100::dsparseTreeFactorGPU(
         } /*for k0= k_st:k_end */
     } /*for topoLvl = 0:maxTopoLevel*/
 
-    #endif 
+#endif /* match  #if 0 at line 325 */
+    
 #if (DEBUGlevel >= 1)
-    CHECK_MALLOC(grid3d->iam, "Exit dsparseTreeFactor_ASYNC()");
+    CHECK_MALLOC(grid3d->iam, "Exit dsparseTreeFactorGPU()");
 #endif
 
     return 0;
-} /* dsparseTreeFactor_ASYNC */
+} /* dsparseTreeFactorGPU */
 
 //TODO: needs to be merged as a single factorization function
 int_t LUstruct_v100::dsparseTreeFactorGPUBaseline(
@@ -409,7 +416,7 @@ int_t LUstruct_v100::dsparseTreeFactorGPUBaseline(
 
     printf("Using New code V100 with GPU acceleration\n");
 #if (DEBUGlevel >= 1)
-    CHECK_MALLOC(grid3d->iam, "Enter dsparseTreeFactor_ASYNC()");
+    CHECK_MALLOC(grid3d->iam, "Enter dsparseTreeFactorGPUBaseline()");
 #endif
 
     int_t *perm_c_supno = sforest->nodeList; // list of nodes in the order of factorization
@@ -564,8 +571,8 @@ int_t LUstruct_v100::dsparseTreeFactorGPUBaseline(
     } /*for topoLvl = 0:maxTopoLevel*/
 
 #if (DEBUGlevel >= 1)
-    CHECK_MALLOC(grid3d->iam, "Exit dsparseTreeFactor_ASYNC()");
+    CHECK_MALLOC(grid3d->iam, "Exit dsparseTreeFactorGPUBaseline()");
 #endif
 
     return 0;
-} /* dsparseTreeFactor_ASYNC */
+} /* dsparseTreeFactorGPUBaseline */

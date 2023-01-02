@@ -220,7 +220,7 @@ main (int argc, char *argv[])
 	printf("Library version:\t%d.%d.%d\n", v_major, v_minor, v_bugfix);
 
 	printf("Input matrix file:\t%s\n", *cpp);
-	printf("3D process grid: %d X %d X %d\n", nprow, npcol, npdep);
+	printf("3D process grid: %d X %d X %d\n", (int) nprow, (int)npcol, (int)npdep);
 	//printf("2D Process grid: %d X %d\n", (int)grid.nprow, (int)grid.npcol);
 	fflush(stdout);
     }
@@ -235,7 +235,8 @@ main (int argc, char *argv[])
     for (ii = 0; ii<strlen(*cpp); ii++) {
 	if((*cpp)[ii]=='.'){
 	    suffix = &((*cpp)[ii+1]);
-	    // printf("%s\n", suffix);
+	    printf("%s\n", suffix);
+	    fflush(stdout);
 	}
     }
 
@@ -245,10 +246,15 @@ main (int argc, char *argv[])
 	dcreate_matrix_postfix(&A, nrhs, &b, &ldb, &xtrue, &ldx, fp, suffix, &(grid.grid2d));
 	
 #else
+#if ( DEBUGlevel>=1 )
+    CHECK_MALLOC (iam, "before create_matrix()");
+    fflush(stdout);
+#endif
     // *fp0 = *fp;
     dcreate_matrix_postfix3d(&A, nrhs, &b, &ldb,
                              &xtrue, &ldx, fp, suffix, &(grid));
-    //printf("ldx %d, ldb %d\n", ldx, ldb);
+    printf("ldx %d, ldb %d\n", ldx, ldb);
+    fflush(stdout);
     
 #if 0  // following code is only for checking *Gather* routine
     NRformat_loc *Astore, *Astore0;

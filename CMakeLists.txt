@@ -182,20 +182,29 @@ if (TPL_ENABLE_CUDALIB)   ## want to use cuda
   if(CMAKE_CUDA_COMPILER)
     message("-- Enabled support for CUDA.")
     enable_language(CUDA)
-    # find_package(CUDA REQUIRED)
-    # if (HAVE_CUDA)
-    # if (CUDA_FOUND)
-    #   if (NOT CMAKE_CUDA_FLAGS)
-    #     cuda_select_nvcc_arch_flags(CUDA_ARCH_FLAGS Auto)
-    #   endif()
-    #   set(HAVE_CUDA TRUE)
-    #   set(CMAKE_CUDA_FLAGS_RELEASE "-O3 --expt-relaxed-constexpr -DNDEBUG" CACHE STRING "")
-    #   set(CMAKE_CUDA_FLAGS_DDEBUG "-O0 --expt-relaxed-constexpr -DDEBUG -g" CACHE STRING "")
-    # endif()
+    find_package(CUDA REQUIRED)
+    if (CUDA_FOUND)
+      if(NOT CMAKE_CUDA_ARCHITECTURES)
+        # if(${CMAKE_VERSION} VERSION_LESS_EQUAL "3.13.4")
+        #   cuda_select_nvcc_arch_flags(ARCH_FLAGS "Auto") # optional argument for arch to add
+        #   message("ARCH_FLAGS = ${ARCH_FLAGS}")
+        #   string(REPLACE "-gencode;" "--generate-code=" ARCH_FLAGS "${ARCH_FLAGS}")
+        #   string(APPEND CMAKE_CUDA_FLAGS "${ARCH_FLAGS}")
+        # else()
+        include(FindCUDA/select_compute_arch)
+        CUDA_DETECT_INSTALLED_GPUS(INSTALLED_GPU_CCS_1)
+        string(STRIP "${INSTALLED_GPU_CCS_1}" INSTALLED_GPU_CCS_2)
+        string(REPLACE " " ";" INSTALLED_GPU_CCS_3 "${INSTALLED_GPU_CCS_2}")
+        string(REPLACE "." "" CUDA_ARCH_LIST "${INSTALLED_GPU_CCS_3}")
+        SET(CMAKE_CUDA_ARCHITECTURES ${CUDA_ARCH_LIST})
+        set_property(GLOBAL PROPERTY CUDA_ARCHITECTURES "${CUDA_ARCH_LIST}")
+      # endif()
+      endif()
+      set(HAVE_CUDA TRUE)
+      set(CMAKE_CUDA_FLAGS_RELEASE "-O3 --expt-relaxed-constexpr -DNDEBUG" CACHE STRING "")
+      set(CMAKE_CUDA_FLAGS_DDEBUG "-O0 --expt-relaxed-constexpr -DDEBUG -g" CACHE STRING "")
+    endif()
 
-    set(HAVE_CUDA TRUE)
-    # cuda_select_nvcc_arch_flags(CUDA_ARCH_FLAGS Auto)
-    
 #     find_package(CUB REQUIRED)
 
     find_package(CUDAToolkit REQUIRED)
@@ -213,8 +222,7 @@ if (TPL_ENABLE_CUDALIB)   ## want to use cuda
     endif()
 
 #     # The following make.inc exporting does not work
-    set(CUDA_LIBRARIES CUDA::cudart CUDA::cublas CUDA::cusolver)
-    # message("Hello" ${CUDA_LIBRARIES})
+#     set(CUDA_LIB CUDA::cudart CUDA::cublas CUDA::cusolver)
 # # fix up CUDA library names    
 #     string (REPLACE ";" " " CUDA_LIB_STR "${CUDA_LIB}")
 #     set(CUDA_LIB_EXPORT ${CUDA_LIB_STR}) 
@@ -225,6 +233,7 @@ if (TPL_ENABLE_CUDALIB)   ## want to use cuda
     message("-- CUDA libraries not found.")
   endif()
 endif()
+
 
 #--------------------- OpenMP ---------------------
 if (NOT DEFINED enable_openmp)

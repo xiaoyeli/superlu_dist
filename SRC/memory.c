@@ -106,15 +106,13 @@ void superlu_free_dist(void *addr)
 	//printf("superlu_free-dist: n %d\n", n);
 	
 	if ( n==0 ) {
-	    ABORT("superlu_free: tried to free a freed pointer");
+	    //ABORT("superlu_free: tried to free a pointer to 0 size");
+	  printf("***\n!! WARNING: superlu_free: tried to free a pointer pointing to 0 size\n\n");
 	}
 	*((size_t *) p) = 0; /* Set to zero to detect duplicate free's. */
-#if 0	
-	superlu_malloc_total -= (n + DWORD);
-#else
+	
 	superlu_malloc_total -= n;
-#endif
-
+	
 	if ( superlu_malloc_total < 0 )
 	    ABORT("superlu_malloc_total went negative");
 	

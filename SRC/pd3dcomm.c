@@ -831,6 +831,10 @@ int_t dgatherAllFactoredLU( dtrf3Dpartition_t*  trf3Dpartition,
     int_t*  gNodeCount = getNodeCountsFr(maxLvl, sForests);
     int_t** gNodeLists = getNodeListFr(maxLvl, sForests);
     
+#if (DEBUGlevel >= 1)
+    CHECK_MALLOC(grid3d->iam, "dEnter gatherAllFactoredLU");
+#endif
+			
     for (int_t ilvl = 0; ilvl < maxLvl - 1; ++ilvl)
 	{
 	    /* code */
@@ -871,6 +875,10 @@ int_t dgatherAllFactoredLU( dtrf3Dpartition_t*  trf3Dpartition,
     SUPERLU_FREE(gNodeCount); // sherry added
     SUPERLU_FREE(gNodeLists);
 
+#if (DEBUGlevel >= 1)
+    CHECK_MALLOC(grid3d->iam, "Exit dgatherAllFactoredLU");
+#endif
+    
     return 0;
 } /* dgatherAllFactoredLU */
 

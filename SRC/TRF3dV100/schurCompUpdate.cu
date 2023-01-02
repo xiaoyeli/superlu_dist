@@ -584,7 +584,11 @@ size_t getGPUMemPerProcs(MPI_Comm baseCommunicator)
 
 int_t LUstruct_v100::setLUstruct_GPU()
 {
-
+#if (DEBUGlevel >= 1)
+    int iam = 0;
+    CHECK_MALLOC(iam, "Enter setLUstruct_GPU()");
+#endif
+	
     A_gpu.Pr = Pr;
     A_gpu.Pc = Pc;
     A_gpu.maxSuperSize = ldt;
@@ -737,7 +741,7 @@ int_t LUstruct_v100::setLUstruct_GPU()
     cudaMemcpy(dA_gpu, &A_gpu, sizeof(LUstructGPU_t), cudaMemcpyHostToDevice);
     gpuCurrentPtr = (LUstructGPU_t *)gpuCurrentPtr + 1;
 
-#else
+#else /* else of #if 0 */
     cudaMalloc(&A_gpu.xsup, (nsupers + 1) * sizeof(int_t));
     cudaMemcpy(A_gpu.xsup, xsup, (nsupers + 1) * sizeof(int_t), cudaMemcpyHostToDevice);
 
@@ -829,9 +833,14 @@ int_t LUstruct_v100::setLUstruct_GPU()
     cudaMemcpy(dA_gpu, &A_gpu, sizeof(LUstructGPU_t), cudaMemcpyHostToDevice);
 
 #endif
+    
     // cudaCheckError();
+    
+#if (DEBUGlevel >= 1)
+	CHECK_MALLOC(iam, "Exit setLUstruct_GPU()");
+#endif
     return 0;
-}
+} /* setLUstruct_GPU */
 
 int_t LUstruct_v100::copyLUGPUtoHost()
 {
@@ -975,10 +984,16 @@ lpanelGPU_t *LUstruct_v100::copyLpanelsToGPU()
     SUPERLU_FREE(valBuffer);
     SUPERLU_FREE(idxBuffer);
     return lPanelVec_GPU;
-}
+} /* copyLpanelsToGPU */
+
 
 upanelGPU_t *LUstruct_v100::copyUpanelsToGPU()
 {
+#if (DEBUGlevel >= 1)
+    int iam = 0;
+    CHECK_MALLOC(iam, "Enter copyUpanelsToGPU()");
+#endif
+    
     upanelGPU_t *uPanelVec_GPU = new upanelGPU_t[CEILING(nsupers, Pr)];
 
     gpuUvalSize = 0;
@@ -1015,7 +1030,9 @@ upanelGPU_t *LUstruct_v100::copyUpanelsToGPU()
         }
     }
 
-    int_t *idxBuffer = (int_t *)SUPERLU_MALLOC(gpuUidxSize);
+    int_t *idxBuffer = NULL;
+    if ( gpuUidxSize>0 ) /* Sherry fix: gpuUidxSize can be 0 */
+	idxBuffer = (int_t *)SUPERLU_MALLOC(gpuUidxSize);
 
     if (AVOID_CPU_NZVAL)
     {
@@ -1052,7 +1069,7 @@ upanelGPU_t *LUstruct_v100::copyUpanelsToGPU()
         printf("cudaMemcpy time U =%g \n", tLsend);
         // SUPERLU_FREE(valBuffer);
     }
-    else
+    else /* AVOID_CPU_NZVAL not set */
     {
         // do a memcpy to CPU buffer
         double *valBuffer = (double *)SUPERLU_MALLOC(gpuUvalSize);
@@ -1089,8 +1106,17 @@ upanelGPU_t *LUstruct_v100::copyUpanelsToGPU()
         cudaMemcpy(gpuUidxBasePtr, idxBuffer, gpuUidxSize, cudaMemcpyHostToDevice);
         tLsend = SuperLU_timer_() - tLsend;
         printf("cudaMemcpy time U =%g \n", tLsend);
+
         SUPERLU_FREE(valBuffer);
-    }
-    SUPERLU_FREE(idxBuffer);
+    } /* end else AVOID_CPU_NZVAL not set */
+    
+    if ( gpuUidxSize>0 ) /* Sherry fix: gpuUidxSize can be 0 */
+	SUPERLU_FREE(idxBuffer);
+
+#if (DEBUGlevel >= 1)
+    CHECK_MALLOC(iam, "Exit copyUpanelsToGPU()");
+#endif
+    
     return uPanelVec_GPU;
-}
+    
+} /* copyUpanelsToGPU */

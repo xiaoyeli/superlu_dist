@@ -1464,9 +1464,10 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 		// get environment variable TRF3DVERSION
 
 		if (gpu3dVersion == 1)
-		{
+		{ /* this is the new C++ code in TRF3dV100/ directory */
+		  
 			if (!grid3d->iam)
-				printf("Using pdgstrf3d+gpu version 1 for Summit");
+				printf("Using pdgstrf3d+gpu version 1 for Summit\n");
 #if 0
 			pdgstrf3d_summit(options, m, n, anorm, trf3Dpartition, SCT, LUstruct,
 				  grid3d, stat, info);
@@ -1478,7 +1479,8 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 			LUgpu = createLUgpuHandle(nsupers, ldt, trf3Dpartition, LUstruct, grid3d,
 									  SCT, options, stat, thresh, info);
 			
-			pdgstrf3d_LUpackedInterface(LUgpu);
+			pdgstrf3d_LUpackedInterface(LUgpu); /* call pdgstrf3d() */
+			
 			if (!trisolveGPUopt)
 			{
 				copyLUGPU2Host(LUgpu, LUstruct);
@@ -1493,7 +1495,7 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 
 #endif
 		}
-		else
+		else /* this is the old C code */
 		{
 			pdgstrf3d(options, m, n, anorm, trf3Dpartition, SCT, LUstruct,
 					  grid3d, stat, info);

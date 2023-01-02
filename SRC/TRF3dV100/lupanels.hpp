@@ -21,6 +21,7 @@ public:
     // bool isDiagIncluded;
 
     lpanel_t(int_t k, int_t *lsub, double *nzval, int_t *xsup, int_t isDiagIncluded);
+  
     // default constuctor
     lpanel_t() : gpuPanel(NULL, NULL)
     {
@@ -281,12 +282,8 @@ public:
 //lapenGPU_t has exact same structure has lapanel_t but
 // the pointers are on GPU
 
-
-
-
 struct LUstruct_v100
 {
-
     lpanel_t *lPanelVec;
     upanel_t *uPanelVec;
     gridinfo3d_t *grid3d;
@@ -302,7 +299,7 @@ struct LUstruct_v100
     double thresh;
     int *info;
     //TODO: get it from environment
-    int numDiagBufs = 32;
+  int numDiagBufs = 32;  /* Sherry: not fixed yet */
 
     // Add SCT_t here
     SCT_t *SCT;
@@ -313,8 +310,9 @@ struct LUstruct_v100
     // Adding more variables for factorization 
     dtrf3Dpartition_t *trf3Dpartition;
     int_t maxLvl;
+    int maxLeafNodes; /* Sherry added 12/31/22. Computed in LUstruct_v100 constructor */
     
-    ddiagFactBufs_t **dFBufs;
+    ddiagFactBufs_t **dFBufs; /* stores L panels and U panels, not including diag. block */
     int superlu_acc_offload;
     // myNodeCount,
     // treePerm
@@ -328,7 +326,9 @@ struct LUstruct_v100
     int_t maxLidxCount = 0;
     int_t maxUvalCount = 0;
     int_t maxUidxCount = 0;
-    std::vector<double *> diagFactBufs;
+    std::vector<double *> diagFactBufs; /* stores diagonal blocks, 
+					   each one is a normal dense matrix.
+					Sherry: where are they free'd ?? */
     std::vector<double *> LvalRecvBufs;
     std::vector<double *> UvalRecvBufs;
     std::vector<int_t *> LidxRecvBufs;
@@ -378,9 +378,31 @@ struct LUstruct_v100
     {
         delete[] lPanelVec;
         delete[] uPanelVec;
-        // dfreeDiagFactBufsArr(mxLeafNode, dFBufs);
-    }
+	
+	/* Sherry: SUPERLU_MALLOC in constructor are not free'd,
+	   need to call the following functions. 12/31/22    */
 
+	/* free L panels and U panels */
+	dfreeDiagFactBufsArr(maxLeafNodes, dFBufs);
+
+	SUPERLU_FREE(bigV);
+	SUPERLU_FREE(indirect);
+	SUPERLU_FREE(indirectRow);
+	SUPERLU_FREE(indirectCol);
+
+	int i;
+	for (i = 0; i < options->num_lookaheads; i++) {
+	    SUPERLU_FREE(LvalRecvBufs[i]);
+	    SUPERLU_FREE(UvalRecvBufs[i]);
+	    SUPERLU_FREE(LidxRecvBufs[i]);
+	    SUPERLU_FREE(UidxRecvBufs[i]);
+	}
+	
+	for (i = 0; i < numDiagBufs; i++) SUPERLU_FREE(diagFactBufs[i]);
+
+    } /* end destructor LUstruct_v100 */
+
+  
     /**
     *           Compute Functions 
     */
