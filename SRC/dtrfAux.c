@@ -566,6 +566,7 @@ dtrf3Dpartition_t* dinitTrf3DpartitionLUstructgrid0(int_t n, superlu_dist_option
 		zAllocBcast(nsupers * sizeof (int_t), (void**)&(setree), grid3d);
 
         int_t* iperm_c_supno;
+        int_t *xsup;
         if (!grid3d->zscp.Iam){
             int_t* perm_c_supno = getPerm_c_supno(nsupers, options,
                                                 LUstruct->etree,
@@ -574,14 +575,16 @@ dtrf3Dpartition_t* dinitTrf3DpartitionLUstructgrid0(int_t n, superlu_dist_option
                             LUstruct->Llu->Ufstnz_br_ptr, grid);
             iperm_c_supno = getFactIperm(perm_c_supno, nsupers);
             SUPERLU_FREE(perm_c_supno);
+            xsup  = LUstruct->Glu_persist->xsup;
         }
         zAllocBcast(nsupers * sizeof (int_t), (void**)&(iperm_c_supno), grid3d);
+        zAllocBcast((nsupers+1) * sizeof (int_t), (void**)&(xsup), grid3d);
 
 
    		treeList_t* treeList = setree2list(nsupers, setree );
 		if (!grid3d->zscp.Iam){
 			/*update treelist with weight and depth*/
-			getSCUweight(nsupers, treeList, LUstruct->Glu_persist->xsup,
+			getSCUweight(nsupers, treeList, xsup,
 				LUstruct->Llu->Lrowind_bc_ptr, LUstruct->Llu->Ufstnz_br_ptr,
 				grid3d);
             int_t * scuWeight = intCalloc_dist(nsupers);
@@ -600,7 +603,11 @@ dtrf3Dpartition_t* dinitTrf3DpartitionLUstructgrid0(int_t n, superlu_dist_option
 			}
 			SUPERLU_FREE(scuWeight);
 		}
-		calcTreeWeight(nsupers, setree, treeList, LUstruct->Glu_persist->xsup); /*YL: it's safe to call calcTreeWeight on all grids, as xsup is not referenced inside the function */
+		calcTreeWeight(nsupers, setree, treeList, xsup); 
+
+        if (grid3d->zscp.Iam){
+            SUPERLU_FREE(xsup);
+        }
 
 		gEtreeInfo_t gEtreeInfo;
 		gEtreeInfo.setree = setree;

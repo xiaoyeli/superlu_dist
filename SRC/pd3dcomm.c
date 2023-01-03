@@ -335,6 +335,7 @@ int_t dp3dScatter(int_t n, dLUstruct_t * LUstruct, gridinfo3d_t* grid3d, int *su
 /* Copies LU structure from layer 0 to all the layers */
 {
     gridinfo_t* grid = &(grid3d->grid2d);
+	int_t i,j;
     int_t Pc = grid->npcol;
     int_t Pr = grid->nprow;
 	int_t *lsub, *xlsub, *usub, *usub1, *xusub;
@@ -432,12 +433,26 @@ int_t dp3dScatter(int_t n, dLUstruct_t * LUstruct, gridinfo3d_t* grid3d, int *su
         Llu->bsendx_plist = SUPERLU_MALLOC (nub * sizeof(int*));
         Llu->fsendx_plist = SUPERLU_MALLOC (nub * sizeof(int*));
 
+	#if 0
 		for(int lk=0; lk<nub; lk++){
 			Llu->bsendx_plist[lk]=NULL;
 			Llu->fsendx_plist[lk]=NULL;	
 		}	
-    }
-
+	#else // need to use a contiguous chunk to allocate fsendx_plist and bsendx_plist on other girds, to be consistent with grid 0. Otherwise dDestroy_LU will crash.  
+		int_t len = nub * Pr;
+		int   *index1;        /* temporary pointer to array of int */
+		if ( !(index1 = int32Malloc_dist(len)) )
+			ABORT("Malloc fails for fsendx_plist[0]");
+		for (i = 0; i < len; ++i) index1[i] = EMPTY;
+		for (i = 0, j = 0; i < nub; ++i, j += Pr)
+			Llu->fsendx_plist[i] = &index1[j];
+		if ( !(index1 = int32Malloc_dist(len)) )
+			ABORT("Malloc fails for bsendx_plist[0]");
+		for (i = 0; i < len; ++i) index1[i] = EMPTY;
+		for (i = 0, j = 0; i < nub; ++i, j += Pr)
+			Llu->bsendx_plist[i] = &index1[j];
+		}
+	#endif
 
 
 	/* recompute the additional pointers for the index and value arrays of U using supernodeMask */
@@ -549,9 +564,13 @@ int_t dp3dScatter(int_t n, dLUstruct_t * LUstruct, gridinfo3d_t* grid3d, int *su
         if (myrow == krow && mycol == kcol)
         {
             int_t lk = LBj(k, grid);
-            zAllocBcast(Pr * sizeof (int), (void**)&(Llu->bsendx_plist[lk]), grid3d);
+        #if 0    // Yang: zAllocBcast cannot be used as fsendx_plist is allocated as a contiguous chunk using index1 above   
+			zAllocBcast(Pr * sizeof (int), (void**)&(Llu->bsendx_plist[lk]), grid3d);
             zAllocBcast(Pr * sizeof (int), (void**)&(Llu->fsendx_plist[lk]), grid3d);
-
+		#else
+			MPI_Bcast(*((void**)&(Llu->bsendx_plist[lk])), Pr * sizeof (int), MPI_BYTE, 0, grid3d->zscp.comm);
+			MPI_Bcast(*((void**)&(Llu->fsendx_plist[lk])), Pr * sizeof (int), MPI_BYTE, 0, grid3d->zscp.comm);
+		#endif
         }
     }
 
