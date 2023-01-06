@@ -1146,7 +1146,7 @@ int_t trs_compute_communication_structure(superlu_dist_options_t *options, int_t
 #ifdef GPU_ACC
 
 	checkGPU(gpuMalloc( (void**)&Llu->d_xsup, (n+1) * sizeof(int_t)));
-	checkGPU(gpuMemcpy(Llu->d_xsup, Llu->xsup, (n+1) * sizeof(int_t), gpuMemcpyHostToDevice));
+	checkGPU(gpuMemcpy(Llu->d_xsup, xsup, (n+1) * sizeof(int_t), gpuMemcpyHostToDevice));
 	checkGPU(gpuMalloc( (void**)&Llu->d_LRtree_ptr, CEILING( nsupers, grid->nprow ) * sizeof(C_Tree)));
 	checkGPU(gpuMalloc( (void**)&Llu->d_LBtree_ptr, CEILING( nsupers, grid->npcol ) * sizeof(C_Tree)));
 	checkGPU(gpuMalloc( (void**)&Llu->d_URtree_ptr, CEILING( nsupers, grid->nprow ) * sizeof(C_Tree)));
@@ -3367,7 +3367,7 @@ thread_id=0;
 				// deallocate requests here
 			}
 		}
-		MPI_Barrier( grid->comm );
+		// MPI_Barrier( grid->comm );
 
 #if ( VAMPIR>=1 )
 		VT_traceoff();
@@ -4899,7 +4899,7 @@ void BackSolve3d_newsolve_reusepdgstrs(superlu_dist_options_t *options, int_t n,
 	num_thread=1;
 #endif
 
-    MPI_Barrier( grid->comm );
+    // MPI_Barrier( grid->comm );
     t1_sol = SuperLU_timer_();
     t = SuperLU_timer_();
 
@@ -5648,7 +5648,7 @@ xtrsTimer->tbs_compute += SuperLU_timer_() - tx;
 				// deallocate requests here
 			}
 		}
-		MPI_Barrier( grid->comm );
+		// MPI_Barrier( grid->comm );
 
 
 #if ( PROFlevel>=2 )
@@ -7555,9 +7555,11 @@ pdgstrs3d_newsolve (superlu_dist_options_t *options, int_t n, dLUstruct_t * LUst
     // }
     // }
 
-
+    tx = SuperLU_timer_();
     trs_x_reduction_newsolve(nsupers, x, nrhs, LUstruct, grid3d, trf3Dpartition, recvbuf, &xtrsTimer);
     trs_x_broadcast_newsolve(nsupers, x, nrhs, LUstruct, grid3d, trf3Dpartition, recvbuf, &xtrsTimer);
+    xtrsTimer.trs_comm_z += SuperLU_timer_() - tx;
+
     // {
     // int_t maxLvl = log2i(grid3d->zscp.Np) + 1;
 	// for (int_t ilvl = 0; ilvl < maxLvl ; ++ilvl)
@@ -7665,7 +7667,7 @@ pdgstrs3d_newsolve (superlu_dist_options_t *options, int_t n, dLUstruct_t * LUst
         MPI_Wait (&send_req[i], &status);
     SUPERLU_FREE (send_req);
 
-    MPI_Barrier (grid->comm);
+    // MPI_Barrier (grid->comm);
 
 
     printTRStimer(&xtrsTimer, grid3d);
@@ -7800,7 +7802,7 @@ int_t pdgsTrForwardSolve3d(superlu_dist_options_t *options, int_t n, dLUstruct_t
                     fsolveReduceLsum3d(treeId, sender, receiver, lsum3d, recvbuf, nrhs,
                                        trf3Dpartition, LUstruct, grid3d,xtrsTimer );
                 }
-                xtrsTimer->tfs_comm += SuperLU_timer_() - tx;
+                xtrsTimer->trs_comm_z += SuperLU_timer_() - tx;
             }
         }
         xtrsTimer->tfs_tree[ilvl] = SuperLU_timer_() - tx;
@@ -7996,7 +7998,7 @@ int_t pdgsTrBackSolve3d(superlu_dist_options_t *options, int_t n, dLUstruct_t * 
             double tx = SuperLU_timer_();
             bsolve_Xt_bcast(ilvl, xT_s, nrhs, trf3Dpartition,
                             LUstruct, grid3d,xtrsTimer );
-            xtrsTimer->tbs_comm += SuperLU_timer_() - tx;
+            xtrsTimer->trs_comm_z += SuperLU_timer_() - tx;
 
 
             int_t tree = myTreeIdxs[ilvl];

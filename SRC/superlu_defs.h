@@ -1033,6 +1033,7 @@ typedef struct xtrsTimer_t
     double t_forwardSolve;
     double tfs_compute;
     double tfs_comm;
+    double trs_comm_z;
     double t_backwardSolve;
     double tbs_compute;
     double tbs_comm;

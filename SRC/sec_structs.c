@@ -700,6 +700,7 @@ void printTRStimer(xtrsTimer_t *xtrsTimer, gridinfo3d_t *grid3d)
                     "BackSolve:Level-%d   ", maxLvl-1-i);
         DistPrint3D( funName               ,  xtrsTimer->tbs_tree[i], "seconds", grid3d);
     }
+    DistPrint3D("trs_comm_z           ",  xtrsTimer->trs_comm_z, "seconds", grid3d);
 
         double trsXYComm = 0.5*(xtrsTimer->trsDataSendXY + xtrsTimer->trsDataRecvXY);
     // printf("Data sent so far =%g and received so far= %g \n",xtrsTimer->trsDataSendXY, xtrsTimer->trsDataRecvXY);
@@ -720,6 +721,7 @@ void initTRStimer(xtrsTimer_t *xtrsTimer, gridinfo_t *grid)
     xtrsTimer->t_forwardSolve =0.0;
     xtrsTimer->tfs_compute =0.0;
     xtrsTimer->tfs_comm =0.0;
+    xtrsTimer->trs_comm_z =0.0;
     xtrsTimer->t_backwardSolve =0.0;
     xtrsTimer->tbs_compute =0.0;
     xtrsTimer->tbs_comm =0.0;
