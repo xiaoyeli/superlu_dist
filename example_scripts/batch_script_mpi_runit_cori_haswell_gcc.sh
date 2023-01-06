@@ -41,9 +41,13 @@ else
   exit $EXIT_HOST
 fi
 
-nprows=(8 )
-npcols=(8 )
-npz=(8)
+# nprows=(16 8 8 )
+# npcols=(16 16 8)
+# npz=(2 4 8)
+
+nprows=(16 )
+npcols=(16 )
+npz=(2 )
 
 for ((i = 0; i < ${#npcols[@]}; i++)); do
 NROW=${nprows[i]}
@@ -87,9 +91,9 @@ TH_PER_RANK=`expr $NTH \* 2`
   # for MAT in torso3.bin
   # for MAT in g20.rua
   # for MAT in nlpkkt80.bin
-  for MAT in s1_mat_0_126936.bin s1_mat_0_253872.bin
+  # for MAT in s1_mat_0_126936.bin s1_mat_0_253872.bin
   # for MAT in matrix_piyush/s2D9pt1536.rua
-  # for MAT in matrix_piyush/s2D9pt2048.rua 
+  for MAT in matrix_piyush/s2D9pt2048.rua 
   # for MAT in matrix_piyush/s2D9pt3072.rua
   # for MAT in s1_mat_0_253872.bin
   # for MAT in s1_mat_7127136_7127136_0_csc_1th_block_size_1781784.bin
@@ -104,21 +108,21 @@ TH_PER_RANK=`expr $NTH \* 2`
     export OMP_PLACES=threads
     export OMP_PROC_BIND=spread
     export MPICH_MAX_THREAD_SAFETY=multiple
-
+    mkdir -p $MAT
 
     # # pddrive
-    # srun -N 64 -n $CORE_VAL -c $TH_PER_RANK --cpu_bind=cores $FILE_DIR/pddrive -c $NCOL -r $NROW $INPUT_DIR/$MAT | tee SLU.o_mpi_${NROW}x${NCOL}_${OMP_NUM_THREADS}_${MAT}_2d
+    # srun -N 64 -n $CORE_VAL -c $TH_PER_RANK --cpu_bind=cores $FILE_DIR/pddrive -c $NCOL -r $NROW $INPUT_DIR/$MAT | tee ./$MAT/SLU.o_mpi_${NROW}x${NCOL}_${OMP_NUM_THREADS}_2d
 
     # pddrive3d
-    echo "srun -n $CORE_VAL -c $TH_PER_RANK --cpu_bind=cores $FILE_DIR/pddrive3d -c $NCOL -r $NROW -d $NPZ $INPUT_DIR/$MAT | tee SLU.o_mpi_${NROW}x${NCOL}x${NPZ}_${OMP_NUM_THREADS}_${MAT}_3d"
-    srun -N 64 -n $CORE_VAL -c $TH_PER_RANK --cpu_bind=cores $FILE_DIR/pddrive3d -c $NCOL -r $NROW -d $NPZ $INPUT_DIR/$MAT | tee SLU.o_mpi_${NROW}x${NCOL}x${NPZ}_${OMP_NUM_THREADS}_${MAT}_3d_old
+    echo "srun -n $CORE_VAL -c $TH_PER_RANK --cpu_bind=cores $FILE_DIR/pddrive3d -c $NCOL -r $NROW -d $NPZ $INPUT_DIR/$MAT | tee ./$MAT/SLU.o_mpi_${NROW}x${NCOL}x${NPZ}_${OMP_NUM_THREADS}_3d"
+    srun -N 64 -n $CORE_VAL -c $TH_PER_RANK --cpu_bind=cores $FILE_DIR/pddrive3d -c $NCOL -r $NROW -d $NPZ $INPUT_DIR/$MAT | tee ./$MAT/SLU.o_mpi_${NROW}x${NCOL}x${NPZ}_${OMP_NUM_THREADS}_3d_old
     
     export NEW3DSOLVE=1
-    srun -N 64 -n $CORE_VAL -c $TH_PER_RANK --cpu_bind=cores $FILE_DIR/pddrive3d -c $NCOL -r $NROW -d $NPZ $INPUT_DIR/$MAT | tee SLU.o_mpi_${NROW}x${NCOL}x${NPZ}_${OMP_NUM_THREADS}_${MAT}_3d_newer
+    srun -N 64 -n $CORE_VAL -c $TH_PER_RANK --cpu_bind=cores $FILE_DIR/pddrive3d -c $NCOL -r $NROW -d $NPZ $INPUT_DIR/$MAT | tee ./$MAT/SLU.o_mpi_${NROW}x${NCOL}x${NPZ}_${OMP_NUM_THREADS}_3d_newer
 
     export NEW3DSOLVE=1
     export NEW3DSOLVETREECOMM=1
-    srun -N 64 -n $CORE_VAL -c $TH_PER_RANK --cpu_bind=cores $FILE_DIR/pddrive3d -c $NCOL -r $NROW -d $NPZ $INPUT_DIR/$MAT | tee SLU.o_mpi_${NROW}x${NCOL}x${NPZ}_${OMP_NUM_THREADS}_${MAT}_3d_newest
+    srun -N 64 -n $CORE_VAL -c $TH_PER_RANK --cpu_bind=cores $FILE_DIR/pddrive3d -c $NCOL -r $NROW -d $NPZ $INPUT_DIR/$MAT | tee ./$MAT/SLU.o_mpi_${NROW}x${NCOL}x${NPZ}_${OMP_NUM_THREADS}_3d_newest
 
 
 
