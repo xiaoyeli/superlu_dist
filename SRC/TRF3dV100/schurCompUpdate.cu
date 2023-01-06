@@ -746,14 +746,32 @@ int_t LUstruct_v100::setLUstruct_GPU()
     cudaMemcpy(A_gpu.xsup, xsup, (nsupers + 1) * sizeof(int_t), cudaMemcpyHostToDevice);
 
     double tLsend, tUsend;
-
+#if 0
     tLsend = SuperLU_timer_();
     upanelGPU_t *uPanelVec_GPU = copyUpanelsToGPU();
     tLsend = SuperLU_timer_() - tLsend;
     tUsend = SuperLU_timer_();
     lpanelGPU_t *lPanelVec_GPU = copyLpanelsToGPU();
     tUsend = SuperLU_timer_() - tUsend;
-
+#else 
+    upanelGPU_t *uPanelVec_GPU = new upanelGPU_t[CEILING(nsupers, Pr)];
+    lpanelGPU_t *lPanelVec_GPU = new lpanelGPU_t[CEILING(nsupers, Pc)];
+    tLsend = SuperLU_timer_();
+    for (int_t i = 0; i < CEILING(nsupers, Pc); ++i)
+    {
+        if (i * Pc + mycol < nsupers && isNodeInMyGrid[i * Pc + mycol] == 1)
+            lPanelVec_GPU[i] = lPanelVec[i].copyToGPU();
+    }
+    tLsend = SuperLU_timer_() - tLsend;
+    tUsend = SuperLU_timer_();
+    // cudaCheckError();
+    for (int_t i = 0; i < CEILING(nsupers, Pr); ++i)
+    {
+        if (i * Pr + myrow < nsupers && isNodeInMyGrid[i * Pr + myrow] == 1)
+            uPanelVec_GPU[i] = uPanelVec[i].copyToGPU();
+    }
+    tUsend = SuperLU_timer_() - tUsend;
+#endif
     tRegion[1] = SuperLU_timer_() - tRegion[1];
     printf("TRegion L,U send: \t %g\n", tRegion[1]);
     printf("Time to send Lpanel=%g  and U panels =%g \n", tLsend, tUsend);
