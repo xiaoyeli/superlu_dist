@@ -313,6 +313,7 @@ main (int argc, char *argv[])
     set_default_options_dist (&options);
     options.ReplaceTinyPivot = YES;
     options.IterRefine = NOREFINE;
+    options.DiagInv           = YES;
     // options.ParSymbFact       = YES;
     // options.ColPerm           = PARMETIS;
 #if 0

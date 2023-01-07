@@ -911,33 +911,35 @@ pdCompute_Diag_Inv(int_t n, dLUstruct_t *LUstruct,gridinfo_t *grid,
 
 	     	  lk = LBj( k, grid ); /* Local block number, column-wise. */
 		  lsub = Lrowind_bc_ptr[lk];
-		  lusup = Lnzval_bc_ptr[lk];
-		  Linv = Linv_bc_ptr[lk];
-		  Uinv = Uinv_bc_ptr[lk];
-		  nsupr = lsub[1];
-		  knsupc = SuperSize( k );
+		  if(lsub){
+			lusup = Lnzval_bc_ptr[lk];
+			Linv = Linv_bc_ptr[lk];
+			Uinv = Uinv_bc_ptr[lk];
+			nsupr = lsub[1];
+			knsupc = SuperSize( k );
 
-		  for (j=0 ; j<knsupc; j++){
-		      for (i=0 ; i<knsupc; i++){
-		  	  Linv[j*knsupc+i] = zero;
-			  Uinv[j*knsupc+i] = zero;
-		      }
-	          }
+			for (j=0 ; j<knsupc; j++){
+				for (i=0 ; i<knsupc; i++){
+				Linv[j*knsupc+i] = zero;
+				Uinv[j*knsupc+i] = zero;
+				}
+				}
 
-	   	  for (j=0 ; j<knsupc; j++){
-		      Linv[j*knsupc+j] = one;
-		      for (i=j+1 ; i<knsupc; i++){
-		          Linv[j*knsupc+i] = lusup[j*nsupr+i];
-		      }
-		      for (i=0 ; i<j+1; i++){
-			  Uinv[j*knsupc+i] = lusup[j*nsupr+i];
-	              }
- 		  }
+			for (j=0 ; j<knsupc; j++){
+				Linv[j*knsupc+j] = one;
+				for (i=j+1 ; i<knsupc; i++){
+					Linv[j*knsupc+i] = lusup[j*nsupr+i];
+				}
+				for (i=0 ; i<j+1; i++){
+				Uinv[j*knsupc+i] = lusup[j*nsupr+i];
+					}
+			}
 
-		  /* Triangular inversion */
-   		  dtrtri_("L","U",&knsupc,Linv,&knsupc,&INFO);
+			/* Triangular inversion */
+			dtrtri_("L","U",&knsupc,Linv,&knsupc,&INFO);
 
-		  dtrtri_("U","N",&knsupc,Uinv,&knsupc,&INFO);
+			dtrtri_("U","N",&knsupc,Uinv,&knsupc,&INFO);
+		  } /* end if(lsub) */
 
 	    } /* end if (mycol === kcol) */
 	} /* end if (myrow === krow) */
