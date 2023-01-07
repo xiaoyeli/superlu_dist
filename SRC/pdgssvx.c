@@ -720,13 +720,9 @@ pdgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 
 	    if ( iinfo > 0 ) {
 		if ( iinfo <= m ) {
-#if ( PRNTlevel>=1 )
 		    fprintf(stderr, "The %d-th row of A is exactly zero\n", (int)iinfo);
-#endif
 		} else {
-#if ( PRNTlevel>=1 )
                     fprintf(stderr, "The %d-th column of A is exactly zero\n", (int)(iinfo-n));
-#endif
                 }
  	    } else if ( iinfo < 0 ) return;
 
@@ -1020,9 +1016,7 @@ pdgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 	// }
 	// }
 	      if (flinfo > 0) {
-#if ( PRNTlevel>=1 )
 	          fprintf(stderr, "Insufficient memory for get_perm_c parmetis\n");
-#endif
 		  *info = flinfo;
 		  return;
      	      }
@@ -1096,10 +1090,8 @@ pdgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 		    }
 #endif
 	    	} else { /* symbfact out of memory */
-#if ( PRNTlevel>=1 )
 		    if ( !iam )
 		        fprintf(stderr,"symbfact() error returns " IFMT "\n",iinfo);
-#endif
 		    *info = iinfo;
 		    return;
 	        }
@@ -1114,9 +1106,7 @@ pdgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 			nnzLU = Pslu_freeable.nnzLU;
 	    	stat->utime[SYMBFAC] = SuperLU_timer_() - t;
 	    	if (flinfo > 0) {
-#if ( PRNTlevel>=1 )
 	      	    fprintf(stderr, "Insufficient memory for parallel symbolic factorization.");
-#endif
 		    *info = flinfo;
 		    return;
                 }
