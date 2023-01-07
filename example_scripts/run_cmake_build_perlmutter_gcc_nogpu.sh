@@ -3,7 +3,7 @@ module load gcc/11.2.0
 module load cmake/3.22.0
 module load cudatoolkit/11.7
 # avoid bug in cray-libsci/21.08.1.2
-module load cray-libsci/22.06.1.3
+module load cray-libsci/22.11.1.2
 
 # avoid bug in cudatoolkit
 export LD_LIBRARY_PATH=${LD_LIBRARY_PATH//\/usr\/local\/cuda-11.5\/compat:/}
@@ -21,10 +21,9 @@ cmake .. \
      -DCMAKE_CUDA_ARCHITECTURES=80 \
      -DCMAKE_CUDA_FLAGS="-I${MPICH_DIR}/include" \
      -DTPL_ENABLE_CUDALIB=FALSE \
-     -DTPL_CUDA_LIBRARIES="/global/common/software/nersc/cos1.3/cuda/11.3.0/targets/x86_64-linux/lib/libcublas.so;/global/common/software/nersc/cos1.3/cuda/11.3.0/targets/x86_64-linux/lib/libcudart.so" \
      -DTPL_ENABLE_INTERNAL_BLASLIB=OFF \
      -DCMAKE_VERBOSE_MAKEFILE:BOOL=ON \
-     -DTPL_BLAS_LIBRARIES=/opt/cray/pe/libsci/22.06.1.3/GNU/9.1/x86_64/lib/libsci_gnu_81_mp.so \
+     -DTPL_BLAS_LIBRARIES=/opt/cray/pe/libsci/22.11.1.2/GNU/9.1/x86_64/lib/libsci_gnu_82_mp.so \
      -DBUILD_SHARED_LIBS=OFF \
      -DCMAKE_BUILD_TYPE=Release \
      -DCMAKE_INSTALL_PREFIX=.
