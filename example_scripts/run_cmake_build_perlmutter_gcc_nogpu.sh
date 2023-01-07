@@ -22,8 +22,10 @@ cmake .. \
      -DCMAKE_CUDA_FLAGS="-I${MPICH_DIR}/include" \
      -DTPL_ENABLE_CUDALIB=FALSE \
      -DTPL_ENABLE_INTERNAL_BLASLIB=OFF \
+     -DTPL_ENABLE_LAPACKLIB=ON \
      -DCMAKE_VERBOSE_MAKEFILE:BOOL=ON \
      -DTPL_BLAS_LIBRARIES=/opt/cray/pe/libsci/22.11.1.2/GNU/9.1/x86_64/lib/libsci_gnu_82_mp.so \
+     -DTPL_LAPACK_LIBRARIES=/opt/cray/pe/libsci/22.11.1.2/GNU/9.1/x86_64/lib/libsci_gnu_82_mp.so \
      -DBUILD_SHARED_LIBS=OFF \
      -DCMAKE_BUILD_TYPE=Release \
      -DCMAKE_INSTALL_PREFIX=.
