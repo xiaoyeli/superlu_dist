@@ -31,8 +31,16 @@ FILE=$FILE_DIR/$FILE_NAME
 FILE_NAME3D=pddrive3d
 FILE3D=$FILE_DIR/$FILE_NAME3D
 
-nprows=(  1 )
-npcols=( 1)  
+nprows=(1  1 1)
+npcols=(1 1 1)  
+npz=(1 2 4)
+
+
+# nprows=(1)
+# npcols=(1)  
+# npz=(2)
+
+
 #export NUM_GPU_STREAMS=1
 
 
@@ -40,9 +48,10 @@ npcols=( 1)
 for ((i = 0; i < ${#npcols[@]}; i++)); do
 NROW=${nprows[i]}
 NCOL=${npcols[i]}
+NPZ=${npz[i]}
 
 # NROW=36
-CORE_VAL=`expr $NCOL \* $NROW`
+CORE_VAL=`expr $NCOL \* $NROW \* $NPZ`
 RANK_PER_RS=1
 
 
@@ -80,6 +89,13 @@ GPU_PER_RS=`expr $RANK_PER_RS \* $GPU_PER_RANK`
 #export NREL=50
 
 export MAX_BUFFER_SIZE=500000000
+export SUPERLU_NUM_GPU_STREAMS=1
+export SUPERLU_BIND_MPI_GPU=1
+export SUPERLU_ACC_OFFLOAD=1 # this can be 0 to do CPU tests on GPU nodes
+# export GPU3DVERSION=1
+# export NEW3DSOLVE=1    # Note: SUPERLU_ACC_OFFLOAD=1 and GPU3DVERSION=1 still do CPU factorization after https://github.com/xiaoyeli/superlu_dist/commit/035106d8949bc3abf86866aea1331b2948faa1db#diff-44fa50297abaedcfaed64f93712850a8fce55e8e57065d96d0ba28d8680da11eR223
+
+
 
 #for MAT in copter2.mtx epb3.mtx gridgena.mtx vanbody.mtx shipsec1.mtx dawson5.mtx gas_sensor.mtx rajat16.mtx 
 # for MAT in copter2.mtx
@@ -99,10 +115,12 @@ export MAX_BUFFER_SIZE=500000000
 #for MAT in   ../atmosmodd.mtx
 # for MAT in epb3.mtx
 # for MAT in matrix_ACTIVSg70k_AC_00.mtx matrix_ACTIVSg10k_AC_00.mtx s1_mat_0_126936.bin s1_mat_0_253872.bin s1_mat_0_507744.bin
-# for MAT in s1_mat_0_126936.bin s1_mat_0_253872.bin s1_mat_0_507744.bin
-for MAT in s1_mat_0_126936.bin 
+# for MAT in s1_mat_0_126936.bin s1_mat_0_253872.bin
+# for MAT in s1_mat_0_126936.bin 
 # for MAT in s1_mat_0_507744.bin
 # for MAT in A30_015_0_25356.bin
+# for MAT in torso3.rb
+for MAT in s2D9pt2048.rua
 # for MAT in temp_13k.mtx temp_25k.mtx temp_75k.mtx
 # for MAT in matrix_ACTIVSg10k_AC_00.mtx
 #for MAT in ../s1_mat_0_126936.bin
@@ -119,12 +137,20 @@ for MAT in s1_mat_0_126936.bin
   do
     export OMP_NUM_THREADS=$OMP_NUM_THREADS
     mkdir -p ${MAT}_summit
-	echo "jsrun -n $RS_VAL -a $RANK_PER_RS -c $TH_PER_RS -g $GPU_PER_RS -b packed:$NTH $FILE -c $NCOL -r $NROW $INPUT_DIR/$MAT | tee ./${MAT}_summit_new_LU/SLU.o_mpi_${NROW}x${NCOL}_OMP_${OMP_NUM_THREADS}_GPU_${GPU_PER_RANK}"
-    jsrun -n $RS_VAL -a $RANK_PER_RS -c $TH_PER_RS -g $GPU_PER_RS -b packed:$NTH '--smpiargs=-x PAMI_DISABLE_CUDA_HOOK=1 -disable_gpu_hooks' nvprof --profile-from-start off $FILE -c $NCOL -r $NROW $INPUT_DIR/$MAT | tee ./${MAT}_summit/SLU.o_mpi_${NROW}x${NCOL}_OMP_${OMP_NUM_THREADS}_GPU_${GPU_PER_RANK}
+	# echo "jsrun -n $RS_VAL -a $RANK_PER_RS -c $TH_PER_RS -g $GPU_PER_RS -b packed:$NTH $FILE -c $NCOL -r $NROW -i 0 $INPUT_DIR/$MAT | tee ./${MAT}_summit_new_LU/SLU.o_mpi_${NROW}x${NCOL}_OMP_${OMP_NUM_THREADS}_GPU_${GPU_PER_RANK}"
+  #   jsrun -n $RS_VAL -a $RANK_PER_RS -c $TH_PER_RS -g $GPU_PER_RS -b packed:$NTH '--smpiargs=-x PAMI_DISABLE_CUDA_HOOK=1 -disable_gpu_hooks' nvprof --profile-from-start off $FILE -c $NCOL -r $NROW -i 0 $INPUT_DIR/$MAT | tee ./${MAT}_summit/SLU.o_mpi_${NROW}x${NCOL}_OMP_${OMP_NUM_THREADS}_GPU_${GPU_PER_RANK}
 
 
-	# echo "jsrun -n $RS_VAL -a $RANK_PER_RS -c $TH_PER_RS -g $GPU_PER_RS -b packed:$NTH $FILE3D -c $NCOL -r $NROW -d 1 $INPUT_DIR/$MAT | tee ./${MAT}_summit_new_LU/SLU.o_mpi_${NROW}x${NCOL}_OMP_${OMP_NUM_THREADS}_GPU_${GPU_PER_RANK}_3d"
-  #   jsrun -n $RS_VAL -a $RANK_PER_RS -c $TH_PER_RS -g $GPU_PER_RS -b packed:$NTH '--smpiargs=-x PAMI_DISABLE_CUDA_HOOK=1 -disable_gpu_hooks' nvprof --profile-from-start off $FILE3D -c $NCOL -r $NROW -d 1 $INPUT_DIR/$MAT | tee ./${MAT}_summit/SLU.o_mpi_${NROW}x${NCOL}_OMP_${OMP_NUM_THREADS}_GPU_${GPU_PER_RANK}_3d
+    export NEW3DSOLVE=1
+    export NEW3DSOLVETREECOMM=1
+    unset SUPERLU_ACC_SOLVE
+    jsrun -n $RS_VAL -a $RANK_PER_RS -c $TH_PER_RS -g $GPU_PER_RS -b packed:$NTH '--smpiargs=-x PAMI_DISABLE_CUDA_HOOK=1 -disable_gpu_hooks' nvprof --profile-from-start off $FILE3D -c $NCOL -r $NROW -d $NPZ -i 0 $INPUT_DIR/$MAT | tee ./${MAT}_summit/SLU.o_mpi_${NROW}x${NCOL}x${NPZ}_OMP_${OMP_NUM_THREADS}_GPU_${GPU_PER_RANK}_3d_newest_cpu   
+
+
+    export NEW3DSOLVE=1
+    export NEW3DSOLVETREECOMM=1
+    export SUPERLU_ACC_SOLVE=1
+    jsrun -n $RS_VAL -a $RANK_PER_RS -c $TH_PER_RS -g $GPU_PER_RS -b packed:$NTH '--smpiargs=-x PAMI_DISABLE_CUDA_HOOK=1 -disable_gpu_hooks' nvprof --profile-from-start off $FILE3D -c $NCOL -r $NROW -d $NPZ -i 0 $INPUT_DIR/$MAT | tee ./${MAT}_summit/SLU.o_mpi_${NROW}x${NCOL}x${NPZ}_OMP_${OMP_NUM_THREADS}_GPU_${GPU_PER_RANK}_3d_newest_gpu   
 
   done
 #one
