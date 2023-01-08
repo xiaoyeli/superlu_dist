@@ -1144,7 +1144,7 @@ int_t trs_compute_communication_structure(superlu_dist_options_t *options, int_t
 
 
 #ifdef GPU_ACC
-
+    if (getenv("SUPERLU_ACC_SOLVE")){
 	checkGPU(gpuMalloc( (void**)&Llu->d_xsup, (n+1) * sizeof(int_t)));
 	checkGPU(gpuMemcpy(Llu->d_xsup, xsup, (n+1) * sizeof(int_t), gpuMemcpyHostToDevice));
 	checkGPU(gpuMalloc( (void**)&Llu->d_LRtree_ptr, CEILING( nsupers, grid->nprow ) * sizeof(C_Tree)));
@@ -1187,7 +1187,7 @@ int_t trs_compute_communication_structure(superlu_dist_options_t *options, int_t
 	checkGPU(gpuMalloc( (void**)&Llu->d_Lnzval_bc_dat, (Llu->Lnzval_bc_cnt) * sizeof(double)));
 	checkGPU(gpuMalloc( (void**)&Llu->d_Linv_bc_dat, (Llu->Linv_bc_cnt) * sizeof(double)));
 	checkGPU(gpuMalloc( (void**)&Llu->d_Uinv_bc_dat, (Llu->Uinv_bc_cnt) * sizeof(double)));
-
+    }
 #endif
 
 
@@ -2531,8 +2531,10 @@ void ForwardSolve3d_newsolve_reusepdgstrs(superlu_dist_options_t *options, int_t
     int num_thread = 1;
 	int_t cnt1,cnt2;
     double tx;
-	
-#if defined(GPU_ACC) && defined(SLU_HAVE_LAPACK) && defined(GPU_SOLVE)  /* GPU trisolve*/
+
+    if (getenv("SUPERLU_ACC_SOLVE")) /* GPU trisolve*/
+    {
+#if defined(GPU_ACC) && defined(SLU_HAVE_LAPACK) && defined(GPU_SOLVE)  
 
 #if ( PRNTlevel>=1 )
 	if ( !iam) printf(".. GPU trisolve\n");
@@ -2548,6 +2550,7 @@ void ForwardSolve3d_newsolve_reusepdgstrs(superlu_dist_options_t *options, int_t
 	double *d_lsum = NULL;
     int_t  *d_fmod = NULL;		
 #endif
+    }
 
 
 // cudaProfilerStart();
@@ -2786,7 +2789,9 @@ if(procs==1){
 	// fflush(stdout);
 	// }
 
-#if defined(GPU_ACC) && defined(SLU_HAVE_LAPACK) && defined(GPU_SOLVE)  /* GPU trisolve*/
+    if (getenv("SUPERLU_ACC_SOLVE")) /* GPU trisolve*/
+    {
+#if defined(GPU_ACC) && defined(SLU_HAVE_LAPACK) && defined(GPU_SOLVE) 
 // #if 0 /* CPU trisolve*/
 
 // #if HAVE_CUDA
@@ -2825,9 +2830,9 @@ if(procs==1){
 	checkGPU (gpuFree (d_fmod));
 
 	stat_loc[0]->ops[SOLVE]+=Llu->Lnzval_bc_cnt*nrhs*2; // YL: this is a rough estimate 
-	
-
-#else  /* CPU trisolve*/
+#endif	
+    }else{ /* CPU trisolve*/
+ 
 
 tx = SuperLU_timer_();
 
@@ -3298,7 +3303,7 @@ thread_id=0;
 			}
 		} // end of parallel
 	
-#endif  /* end CPU trisolve */
+    }  /* end CPU trisolve */
 
 	
 // #if ( PRNTlevel>=1 )
@@ -4871,8 +4876,8 @@ void BackSolve3d_newsolve_reusepdgstrs(superlu_dist_options_t *options, int_t n,
 	int_t cnt1,cnt2;
     double tx;
 
-	
-#if defined(GPU_ACC) && defined(SLU_HAVE_LAPACK) && defined(GPU_SOLVE)  /* GPU trisolve*/
+    if (getenv("SUPERLU_ACC_SOLVE")){  /* GPU trisolve*/
+#if defined(GPU_ACC) && defined(SLU_HAVE_LAPACK) && defined(GPU_SOLVE)  
 
 	const int nwrp_block = 1; /* number of warps in each block */
 	const int warp_size = 32; /* number of threads per warp*/
@@ -4883,6 +4888,7 @@ void BackSolve3d_newsolve_reusepdgstrs(superlu_dist_options_t *options, int_t n,
 	double *d_lsum = NULL;
     int_t  *d_fmod = NULL;		
 #endif
+    }
 
 
 // cudaProfilerStart();
@@ -5168,8 +5174,8 @@ void BackSolve3d_newsolve_reusepdgstrs(superlu_dist_options_t *options, int_t n,
 
 
 
-
-#if defined(GPU_ACC) && defined(SLU_HAVE_LAPACK) && defined(GPU_SOLVE)  /* GPU trisolve*/
+if (getenv("SUPERLU_ACC_SOLVE")){  /* GPU trisolve*/
+#if defined(GPU_ACC) && defined(SLU_HAVE_LAPACK) && defined(GPU_SOLVE)  
 // #if 0 /* CPU trisolve*/
 
 	d_grid = NULL;
@@ -5202,8 +5208,8 @@ void BackSolve3d_newsolve_reusepdgstrs(superlu_dist_options_t *options, int_t n,
 	checkGPU (gpuFree (d_bmod));
 
 	stat_loc[0]->ops[SOLVE]+=Llu->Unzval_br_cnt*nrhs*2; // YL: this is a rough estimate 
-
-#else  /* CPU trisolve*/
+#endif
+}else{  /* CPU trisolve*/
 
 
 tx = SuperLU_timer_();
@@ -5546,7 +5552,7 @@ xtrsTimer->tbs_compute += SuperLU_timer_() - tx;
 		} /* while not finished ... */
 	}
 
-#endif
+    }
 
 // #if ( PRNTlevel>=1 )
 #if 0

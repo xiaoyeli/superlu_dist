@@ -1164,8 +1164,9 @@ pdgstrs(superlu_dist_options_t *options, int_t n, dLUstruct_t *LUstruct,
     int num_thread = 1;
 	int_t cnt1,cnt2;
 
+	if (getenv("SUPERLU_ACC_SOLVE")){  /* GPU trisolve*/
 	
-#if defined(GPU_ACC) && defined(SLU_HAVE_LAPACK) && defined(GPU_SOLVE)  /* GPU trisolve*/
+#if defined(GPU_ACC) && defined(SLU_HAVE_LAPACK) && defined(GPU_SOLVE)  
 
 #if ( PRNTlevel>=1 )
 	if ( !iam) printf(".. GPU trisolve\n");
@@ -1231,7 +1232,7 @@ pdgstrs(superlu_dist_options_t *options, int_t n, dLUstruct_t *LUstruct,
     int_t  *d_fmod = NULL;	
 #endif		
 #endif
-
+	}
 
 // cudaProfilerStart();
     maxsuper = sp_ienv_dist(3, options);
@@ -1560,7 +1561,8 @@ if(procs==1){
 	// fflush(stdout);
 	// }
 
-#if defined(GPU_ACC) && defined(SLU_HAVE_LAPACK) && defined(GPU_SOLVE)  /* GPU trisolve*/
+if (getenv("SUPERLU_ACC_SOLVE")){  /* GPU trisolve*/
+#if defined(GPU_ACC) && defined(SLU_HAVE_LAPACK) && defined(GPU_SOLVE) 
 // #if 0 /* CPU trisolve*/
 
 #ifdef GPUREF /* use cuSparse*/
@@ -1912,8 +1914,8 @@ t1 = SuperLU_timer_();
 
 	stat_loc[0]->ops[SOLVE]+=Llu->Lnzval_bc_cnt*nrhs*2; // YL: this is a rough estimate 
 #endif 	
-
-#else  /* CPU trisolve*/
+#endif
+}else{  /* CPU trisolve*/
 
 #ifdef _OPENMP
 #pragma omp parallel default (shared)
@@ -2377,7 +2379,7 @@ thread_id=0;
 			}
 		} // end of parallel
 	
-#endif  /* end CPU trisolve */
+	}  /* end CPU trisolve */
 
 	
 #if ( PRNTlevel>=1 )
@@ -2626,8 +2628,8 @@ thread_id=0;
 
 
 
-
-#if defined(GPU_ACC) && defined(SLU_HAVE_LAPACK) && defined(GPU_SOLVE)  /* GPU trisolve*/
+if (getenv("SUPERLU_ACC_SOLVE")){  /* GPU trisolve*/
+#if defined(GPU_ACC) && defined(SLU_HAVE_LAPACK) && defined(GPU_SOLVE)  
 // #if 0 /* CPU trisolve*/
 
 	d_grid = NULL;
@@ -2660,8 +2662,8 @@ thread_id=0;
 	checkGPU (gpuFree (d_bmod));
 
 	stat_loc[0]->ops[SOLVE]+=Llu->Unzval_br_cnt*nrhs*2; // YL: this is a rough estimate 
-
-#else  /* CPU trisolve*/
+#endif
+}else{  /* CPU trisolve*/
 
 
 
@@ -3002,7 +3004,7 @@ for (i=0;i<nroot_send;i++){
 		} /* while not finished ... */
 	}
 
-#endif
+}
 
 #if ( PRNTlevel>=1 )
 		t = SuperLU_timer_() - t;
