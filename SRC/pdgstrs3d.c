@@ -2532,13 +2532,15 @@ void ForwardSolve3d_newsolve_reusepdgstrs(superlu_dist_options_t *options, int_t
 	int_t cnt1,cnt2;
     double tx;
 
-    if (getenv("SUPERLU_ACC_SOLVE")) /* GPU trisolve*/
-    {
 #if defined(GPU_ACC) && defined(SLU_HAVE_LAPACK) && defined(GPU_SOLVE)  
 
 #if ( PRNTlevel>=1 )
+
+    if (getenv("SUPERLU_ACC_SOLVE")) /* GPU trisolve*/
+    {
 	if ( !iam) printf(".. GPU trisolve\n");
 	fflush(stdout);
+    }
 #endif
 
 	const int nwrp_block = 1; /* number of warps in each block */
@@ -2550,7 +2552,6 @@ void ForwardSolve3d_newsolve_reusepdgstrs(superlu_dist_options_t *options, int_t
 	double *d_lsum = NULL;
     int_t  *d_fmod = NULL;		
 #endif
-    }
 
 
 // cudaProfilerStart();
@@ -4876,7 +4877,6 @@ void BackSolve3d_newsolve_reusepdgstrs(superlu_dist_options_t *options, int_t n,
 	int_t cnt1,cnt2;
     double tx;
 
-    if (getenv("SUPERLU_ACC_SOLVE")){  /* GPU trisolve*/
 #if defined(GPU_ACC) && defined(SLU_HAVE_LAPACK) && defined(GPU_SOLVE)  
 
 	const int nwrp_block = 1; /* number of warps in each block */
@@ -4888,7 +4888,6 @@ void BackSolve3d_newsolve_reusepdgstrs(superlu_dist_options_t *options, int_t n,
 	double *d_lsum = NULL;
     int_t  *d_fmod = NULL;		
 #endif
-    }
 
 
 // cudaProfilerStart();

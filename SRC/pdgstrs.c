@@ -1164,13 +1164,14 @@ pdgstrs(superlu_dist_options_t *options, int_t n, dLUstruct_t *LUstruct,
     int num_thread = 1;
 	int_t cnt1,cnt2;
 
-	if (getenv("SUPERLU_ACC_SOLVE")){  /* GPU trisolve*/
 	
 #if defined(GPU_ACC) && defined(SLU_HAVE_LAPACK) && defined(GPU_SOLVE)  
 
 #if ( PRNTlevel>=1 )
+    if (getenv("SUPERLU_ACC_SOLVE")){
 	if ( !iam) printf(".. GPU trisolve\n");
 	fflush(stdout);
+    }
 #endif
 
 
@@ -1232,7 +1233,6 @@ pdgstrs(superlu_dist_options_t *options, int_t n, dLUstruct_t *LUstruct,
     int_t  *d_fmod = NULL;	
 #endif		
 #endif
-	}
 
 // cudaProfilerStart();
     maxsuper = sp_ienv_dist(3, options);
