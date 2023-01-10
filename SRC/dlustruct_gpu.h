@@ -96,8 +96,6 @@ typedef struct //LUstruct_gpu_
     local_u_blk_info_t *local_u_blk_infoVec;
 
     int_t *local_u_blk_infoPtr;
-    int_t *ijb_lookupVec;
-    int_t *ijb_lookupPtr;
 
     // GPU buffers for performing Schur Complement Update on GPU
     dSCUbuf_gpu_t scubufs[MAX_NGPU_STREAMS];
