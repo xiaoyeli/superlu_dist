@@ -1,9 +1,15 @@
+
 #pragma once
 #include <vector>
 #include <iostream>
-#include <cuda_runtime.h>
-#include <cusolverDn.h>
+
 #include "superlu_ddefs.h"
+
+#ifdef HAVE_CUDA
+  #include <cuda_runtime.h>
+  #include <cusolverDn.h>
+#endif
+
 #include "lu_common.hpp"
 // #include "lupanels.hpp" 
 

@@ -43,13 +43,14 @@ LIBS	 += ${LAPACK_LIB_EXPORT}
 LIBS	 += ${PARMETIS_LIB_EXPORT}
 LIBS 	 += ${COMBBLAS_LIB_EXPORT}
 LIBS 	 += ${EXTRA_LIB_EXPORT}
-# LIBS     += ${CUDA_LIB_EXPORT}
+#LIBS     += ${CUDA_LIB_EXPORT}
 
-CUDALIBS = ${CUDA_LIBRARIES} ${CUDA_CUBLAS_LIBRARIES}
+CUDALIBS = ${CUDA_LIBRARIES} ${CUDA_CUBLAS_LIBRARIES} ${CUDA_CUSOLVER_LIBRARIES}
 LIBS     += $(CUDALIBS)
 
 #
 #  The archiver and the flag(s) to use when building archive (library)
+
 #  If your system has no ranlib, set RANLIB = echo.
 #
 ARCH         = @CMAKE_AR@
