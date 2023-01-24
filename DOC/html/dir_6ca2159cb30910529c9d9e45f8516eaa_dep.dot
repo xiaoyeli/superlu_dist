@@ -1,9 +1,0 @@
-digraph "SRC/TRF3dV100" {
-  compound=true
-  node [ fontsize="10", fontname="Helvetica"];
-  edge [ labelfontsize="10", labelfontname="Helvetica"];
-  subgraph clusterdir_1e771ff450ae847412a8c28572c155bb {
-    graph [ bgcolor="#ddddee", pencolor="black", label="SRC" fontname="Helvetica", fontsize="10", URL="dir_1e771ff450ae847412a8c28572c155bb.html"]
-  dir_6ca2159cb30910529c9d9e45f8516eaa [shape=box, label="TRF3dV100", style="filled", fillcolor="#eeeeff", pencolor="black", URL="dir_6ca2159cb30910529c9d9e45f8516eaa.html"];
-  }
-}
