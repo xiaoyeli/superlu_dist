@@ -357,8 +357,8 @@ struct LUstruct_v100
 
     anc25d_t anc25d;
     // For GPU acceleration
-    LUstructGPU_t *dA_gpu;
-    LUstructGPU_t A_gpu;
+    LUstructGPU_t *dA_gpu; // pointing to memory on GPU
+    LUstructGPU_t A_gpu;   // pointing to memory accessible on CPU
 
     enum indirectMapType
     {

@@ -1,0 +1,51 @@
+digraph "dcreate_matrix_perturbed"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="LR";
+  Node1 [label="dcreate_matrix_perturbed",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip=" "];
+  Node1 -> Node2 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="dallocateA_dist",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$dmemory__dist_8c.html#ad8d190b0542ad8d5fb569cfebed382b8",tooltip=" "];
+  Node2 -> Node3 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="doubleMalloc_dist",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$dmemory__dist_8c.html#a52dc9c97e580c07ec4af763f1755a2ba",tooltip=" "];
+  Node2 -> Node4 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="intMalloc_dist",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$memory_8c.html#a2c2df35072e313373438cccdb98b885c",tooltip=" "];
+  Node1 -> Node5 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="dCreate_CompCol_Matrix_dist",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$superlu__ddefs_8h.html#a700b855541636a3eb453ad0b9b1e7d1f",tooltip=" "];
+  Node1 -> Node6 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node6 [label="dCreate_CompRowLoc\l_Matrix_dist",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$superlu__ddefs_8h.html#a4022f104fab1520785a366efa6e87cf8",tooltip=" "];
+  Node1 -> Node7 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node7 [label="Destroy_CompCol_Matrix_dist",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$superlu__defs_8h.html#a19148d48069c04e21a7ea94d53043f6f",tooltip=" "];
+  Node1 -> Node8 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node8 [label="dFillRHS_dist",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$dutil__dist_8c.html#afde0c1de717f5c8c29225841a13f4832",tooltip="Let rhs[i] = sum of i-th row of A, so the solution vector is all 1's."];
+  Node8 -> Node9 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node9 [label="sp_dgemm_dist",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$dsp__blas3__dist_8c.html#a2cb4dfea7ec2bc9501e3309222564c9a",tooltip=" "];
+  Node9 -> Node10 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node10 [label="sp_dgemv_dist",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$dsp__blas2__dist_8c.html#a7b20756e45145eacafa8f96f6ea342ce",tooltip="SpGEMV."];
+  Node10 -> Node11 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node11 [label="xerr_dist",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$superlu__defs_8h.html#a0d728f1da812b1373a0e58ff81f6a711",tooltip=" "];
+  Node1 -> Node12 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node12 [label="dGenXtrue_dist",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$dutil__dist_8c.html#a4ca083e45bf9921bcc1fb4318d148e78",tooltip=" "];
+  Node1 -> Node3 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node1 -> Node13 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node13 [label="dPrint_CompCol_Matrix_dist",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$superlu__ddefs_8h.html#a8b75f5befc04c09a4840bc4a8deb4b2e",tooltip=" "];
+  Node1 -> Node14 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node14 [label="dreadhb_dist",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$SRC_2dreadhb_8c.html#a3593dd1b61e008f12e6d1a72111f6f8f",tooltip=" "];
+  Node14 -> Node2 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node14 -> Node15 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node15 [label="dReadValues",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$SRC_2dreadhb_8c.html#a64e94df2014a91b8d2768c5d9abe94e4",tooltip=" "];
+  Node14 -> Node16 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node16 [label="DumpLine",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$SRC_2dreadhb_8c.html#a73c3b93fec4fb69f67664d899b2a6b42",tooltip=" "];
+  Node14 -> Node17 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node17 [label="FormFullA",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$SRC_2dreadhb_8c.html#acd6f0977fd9bae771356448df1597ae2",tooltip=" "];
+  Node14 -> Node18 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node18 [label="ParseFloatFormat",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$SRC_2dreadhb_8c.html#ab280470e3c7d3235ee212104d44d09a2",tooltip=" "];
+  Node14 -> Node19 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node19 [label="ParseIntFormat",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$SRC_2dreadhb_8c.html#a05ff7013a68c641295685a0e85c18c83",tooltip=" "];
+  Node14 -> Node20 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node20 [label="ReadVector",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$SRC_2dreadhb_8c.html#aec3e2f32a90b64c2328709a21d985b55",tooltip=" "];
+  Node1 -> Node21 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node21 [label="intCalloc_dist",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$memory_8c.html#a6fd91c6883ea8ea94e0ece298e0e46b6",tooltip=" "];
+  Node1 -> Node4 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+}

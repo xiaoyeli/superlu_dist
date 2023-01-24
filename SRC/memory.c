@@ -116,14 +116,8 @@ void superlu_free_dist(void *addr)
 	if ( superlu_malloc_total < 0 )
 	    ABORT("superlu_malloc_total went negative");
 	
-	/*free (addr);*/
-#ifdef GPU_ACC    
-    gpuError_t error = gpuFree(p);
-#else 
 	free (p);
-#endif
     }
-
 }
  
 #else  /* The production mode. */

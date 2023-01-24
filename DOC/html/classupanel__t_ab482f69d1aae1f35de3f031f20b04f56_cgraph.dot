@@ -1,0 +1,21 @@
+digraph "upanel_t::copyToGPU"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="LR";
+  Node1 [label="upanel_t::copyToGPU",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip=" "];
+  Node1 -> Node2 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="upanel_t::indexSize",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classupanel__t.html#a4bf0c289884b6bc6c5e860d01de1bb88",tooltip=" "];
+  Node2 -> Node3 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="upanel_t::nblocks",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classupanel__t.html#a4af07a416919f0fb377d99db018cd649",tooltip=" "];
+  Node2 -> Node4 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="upanel_t::nzcols",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classupanel__t.html#a76de7f7433a85878fcc7890a470f7aaf",tooltip=" "];
+  Node1 -> Node5 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="upanel_t::isEmpty",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classupanel__t.html#a80066874decec3ee7585ac9b58c18da1",tooltip=" "];
+  Node1 -> Node6 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node6 [label="upanel_t::nzvalSize",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classupanel__t.html#a69b963eef2972bf417bbaceee35ce59f",tooltip=" "];
+  Node6 -> Node7 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node7 [label="upanel_t::LDA",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classupanel__t.html#a059f730a6636e4042daf3f2e5a6b70d8",tooltip=" "];
+  Node6 -> Node4 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+}

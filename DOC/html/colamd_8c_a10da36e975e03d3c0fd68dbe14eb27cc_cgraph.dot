@@ -1,0 +1,14 @@
+digraph "find_ordering"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="LR";
+  Node1 [label="find_ordering",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip=" "];
+  Node1 -> Node2 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="clear_mark",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$colamd_8c.html#a7eb036c63565d8fc7c05e1074510601a",tooltip=" "];
+  Node1 -> Node3 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="detect_super_cols",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$colamd_8c.html#a27211c7dc11832c4675d8d3fcd7167a0",tooltip=" "];
+  Node1 -> Node4 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="garbage_collection",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$colamd_8c.html#a9a0dc18af9f72ad8e436a98980e55c41",tooltip=" "];
+}

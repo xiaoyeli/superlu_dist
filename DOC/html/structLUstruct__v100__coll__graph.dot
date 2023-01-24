@@ -1,0 +1,40 @@
+digraph "LUstruct_v100"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="LR";
+  Node1 [label="LUstruct_v100",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip=" "];
+  Node2 -> Node1 [dir="back",color="darkorchid3",fontsize="10",style="dashed",label=" trf3Dpartition" ,fontname="Helvetica"];
+  Node2 [label="dtrf3Dpartition_t",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$structdtrf3Dpartition__t.html",tooltip=" "];
+  Node3 -> Node2 [dir="back",color="darkorchid3",fontsize="10",style="dashed",label=" sForests" ,fontname="Helvetica"];
+  Node3 [label="sForest_t",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$structsForest__t.html",tooltip=" "];
+  Node4 -> Node3 [dir="back",color="darkorchid3",fontsize="10",style="dashed",label=" topoInfo" ,fontname="Helvetica"];
+  Node4 [label="treeTopoInfo_t",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$structtreeTopoInfo__t.html",tooltip=" "];
+  Node5 -> Node2 [dir="back",color="darkorchid3",fontsize="10",style="dashed",label=" LUvsb" ,fontname="Helvetica"];
+  Node5 [label="dLUValSubBuf_t",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$structdLUValSubBuf__t.html",tooltip=" "];
+  Node6 -> Node2 [dir="back",color="darkorchid3",fontsize="10",style="dashed",label=" gEtreeInfo" ,fontname="Helvetica"];
+  Node6 [label="gEtreeInfo_t",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$structgEtreeInfo__t.html",tooltip=" "];
+  Node7 -> Node1 [dir="back",color="darkorchid3",fontsize="10",style="dashed",label=" grid" ,fontname="Helvetica"];
+  Node7 [label="gridinfo_t",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$structgridinfo__t.html",tooltip=" "];
+  Node8 -> Node7 [dir="back",color="darkorchid3",fontsize="10",style="dashed",label=" cscp\nrscp" ,fontname="Helvetica"];
+  Node8 [label="superlu_scope_t",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$structsuperlu__scope__t.html",tooltip=" "];
+  Node9 -> Node1 [dir="back",color="darkorchid3",fontsize="10",style="dashed",label=" stat" ,fontname="Helvetica"];
+  Node9 [label="SuperLUStat_t",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$structSuperLUStat__t.html",tooltip=" "];
+  Node10 -> Node1 [dir="back",color="darkorchid3",fontsize="10",style="dashed",label=" SCT" ,fontname="Helvetica"];
+  Node10 [label="SCT_t",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$structSCT__t.html",tooltip=" "];
+  Node11 -> Node1 [dir="back",color="darkorchid3",fontsize="10",style="dashed",label=" grid3d" ,fontname="Helvetica"];
+  Node11 [label="gridinfo3d_t",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$structgridinfo3d__t.html",tooltip=" "];
+  Node7 -> Node11 [dir="back",color="darkorchid3",fontsize="10",style="dashed",label=" grid2d" ,fontname="Helvetica"];
+  Node8 -> Node11 [dir="back",color="darkorchid3",fontsize="10",style="dashed",label=" cscp\nrscp\nzscp" ,fontname="Helvetica"];
+  Node12 -> Node1 [dir="back",color="darkorchid3",fontsize="10",style="dashed",label=" options" ,fontname="Helvetica"];
+  Node12 [label="superlu_dist_options_t",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$structsuperlu__dist__options__t.html",tooltip=" "];
+  Node13 -> Node1 [dir="back",color="darkorchid3",fontsize="10",style="dashed",label=" dFBufs" ,fontname="Helvetica"];
+  Node13 [label="ddiagFactBufs_t",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$structddiagFactBufs__t.html",tooltip=" "];
+  Node14 -> Node1 [dir="back",color="darkorchid3",fontsize="10",style="dashed",label=" uPanelVec" ,fontname="Helvetica"];
+  Node14 [label="upanel_t",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classupanel__t.html",tooltip=" "];
+  Node15 -> Node1 [dir="back",color="darkorchid3",fontsize="10",style="dashed",label=" lPanelVec" ,fontname="Helvetica"];
+  Node15 [label="lpanel_t",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classlpanel__t.html",tooltip=" "];
+  Node16 -> Node1 [dir="back",color="darkorchid3",fontsize="10",style="dashed",label=" anc25d" ,fontname="Helvetica"];
+  Node16 [label="anc25d_t",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$structanc25d__t.html",tooltip=" "];
+}

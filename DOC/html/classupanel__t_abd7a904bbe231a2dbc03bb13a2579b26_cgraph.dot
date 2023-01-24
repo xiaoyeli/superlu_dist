@@ -1,0 +1,13 @@
+digraph "upanel_t::getEndBlock"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="LR";
+  Node1 [label="upanel_t::getEndBlock",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip=" "];
+  Node1 -> Node2 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="upanel_t::nblocks",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classupanel__t.html#a4af07a416919f0fb377d99db018cd649",tooltip=" "];
+  Node1 -> Node3 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="upanel_t::stCol",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classupanel__t.html#a503682a7dbd3a4d7c463bb10b0a779d7",tooltip=" "];
+  Node3 -> Node2 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+}

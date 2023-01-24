@@ -1,0 +1,23 @@
+digraph "pdgstrf2_xtrsm"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="LR";
+  Node1 [label="pdgstrf2_xtrsm",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip=" "];
+  Node1 -> Node2 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="dISend_UDiagBlock",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$superlu__ddefs_8h.html#a1ba6331ba1d9a77682353cca728abbc0",tooltip=" "];
+  Node1 -> Node3 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="dRecv_UDiagBlock",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$superlu__ddefs_8h.html#aa37170dd426aa37a48a04af64dffff5c",tooltip=" "];
+  Node1 -> Node4 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="Local_Dgstrf2",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$superlu__ddefs_8h.html#a861c414b25b877da8db26d27d74b95cc",tooltip=" "];
+  Node1 -> Node5 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="LpanelUpdate",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$pdgstrf2_8c.html#af1fc5fff8b4614049c5db3be9e06de56",tooltip=" "];
+  Node5 -> Node6 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node6 [label="superlu_dtrsm",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$superlu__ddefs_8h.html#aaaf4223beeafb672bfa3cfdc571bf86b",tooltip=" "];
+  Node5 -> Node7 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node7 [label="SuperLU_timer_",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$superlu__timer_8c.html#a0c6777573bbfe81917cd381e0090d355",tooltip=" "];
+  Node1 -> Node8 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node8 [label="Wait_UDiagBlockSend",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$communication__aux_8c.html#a6446fd907f1c2546bff67f5a0f9da377",tooltip=" "];
+  Node8 -> Node7 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+}

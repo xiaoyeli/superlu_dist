@@ -1,0 +1,18 @@
+digraph "symbfact_SubXpand"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="LR";
+  Node1 [label="symbfact_SubXpand",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip=" "];
+  Node1 -> Node2 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="expand",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$memory_8c.html#a213fafd19733ebd74bcf5c9ef89068b6",tooltip=" "];
+  Node2 -> Node3 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="copy_mem_int",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$memory_8c.html#a565ad7ca8a38ee26b057ad6880192ba2",tooltip=" "];
+  Node2 -> Node4 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="user_bcopy",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$memory_8c.html#a54f4f38998738c1ecdfd235c385f5058",tooltip=" "];
+  Node2 -> Node5 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="user_malloc_dist",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$memory_8c.html#a7f88accf6d8ceb239718435e4e7cfb34",tooltip=" "];
+  Node1 -> Node6 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node6 [label="memory_usage",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$memory_8c.html#a1bae410116f1b14bb58b9486731b87c9",tooltip=" "];
+}

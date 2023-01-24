@@ -1,0 +1,15 @@
+digraph "estimate_acc_gemm_time"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="LR";
+  Node1 [label="estimate_acc_gemm_time",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip=" "];
+  Node1 -> Node2 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="nearst_2_100",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$acc__aux_8c.html#a9c8594bfab1d7ae3d0e48ba313fa7408",tooltip=" "];
+  Node2 -> Node3 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="my_log2",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$acc__aux_8c.html#a110763c341da4524bdaf1c197b11287c",tooltip=" "];
+  Node1 -> Node4 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="nearst_k",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$acc__aux_8c.html#acade49941875d93179660bfc1c55c003",tooltip=" "];
+  Node4 -> Node3 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+}

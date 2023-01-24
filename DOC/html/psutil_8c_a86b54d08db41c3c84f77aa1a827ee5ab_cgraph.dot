@@ -1,0 +1,12 @@
+digraph "sDestroy_Tree"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="LR";
+  Node1 [label="sDestroy_Tree",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Destroy broadcast and reduction trees used in triangular solve."];
+  Node1 -> Node2 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="C_BcTree_Nullify",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$comm__tree_8c.html#a22c516b7b71fe45e5ec4693dda62438e",tooltip=" "];
+  Node1 -> Node3 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="C_RdTree_Nullify",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$comm__tree_8c.html#ac36ef85829786cb5402b8b220573173c",tooltip=" "];
+}

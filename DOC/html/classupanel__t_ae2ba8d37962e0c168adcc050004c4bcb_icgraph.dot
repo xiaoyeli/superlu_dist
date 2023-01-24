@@ -1,0 +1,39 @@
+digraph "upanel_t::blkPtrOffset"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="RL";
+  Node1 [label="upanel_t::blkPtrOffset",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip=" "];
+  Node1 -> Node2 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="upanel_t::blkPtrGPU",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classupanel__t.html#a2201d69499280bd3bd6e9461c0450e43",tooltip=" "];
+  Node2 -> Node3 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="upanel_t::panelSolveGPU",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classupanel__t.html#ae8cb42d34e29cd6c039eb45127d72360",tooltip=" "];
+  Node3 -> Node4 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="LUstruct_v100::dDFactPSolveGPU",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$structLUstruct__v100.html#afee34ca5a8e6010d14732445c3697353",tooltip=" "];
+  Node4 -> Node5 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="LUstruct_v100::dsparseTree\lFactorGPU",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$structLUstruct__v100.html#ac4592f8805ed1ad0beb724f98ecfa17a",tooltip=" "];
+  Node5 -> Node6 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node6 [label="LUstruct_v100::pdgstrf3d",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$structLUstruct__v100.html#a80324555bc4f128a8f64af2846f46a3d",tooltip=" "];
+  Node6 -> Node7 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node7 [label="pdgstrf3d_LUpackedInterface",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$LUgpuCHandle__interface_8cpp.html#acf3a56b3348f3f776bd692423e1d2604",tooltip=" "];
+  Node7 -> Node8 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node8 [label="pdgssvx3d",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$pdgssvx3d_8c.html#a4cd295688eb2d11cd956c465f54af439",tooltip=" "];
+  Node8 -> Node9 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node9 [label="main",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$pddrive3d_8c.html#a0ddf1224851353fc92bfbff6f499fa97",tooltip=" "];
+  Node6 -> Node10 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node10 [label="pdgstrf3d_summit",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$pdgstrf3d__summit_8cpp.html#a1946f63e24f32f2f9675e9e3463af0a6",tooltip=" "];
+  Node10 -> Node8 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 -> Node10 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 -> Node11 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node11 [label="LUstruct_v100::dDiagFactor\lPanelSolveGPU",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$structLUstruct__v100.html#a6106b2c9ecde0cf2e2c7c4b103e352b6",tooltip=" "];
+  Node11 -> Node5 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 -> Node12 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node12 [label="LUstruct_v100::dsparseTree\lFactorGPUBaseline",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$structLUstruct__v100.html#a0dae29dc04bb128d9e63e973a1959935",tooltip=" "];
+  Node2 -> Node13 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node13 [label="LUstruct_v100::zRecvUPanelGPU",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$structLUstruct__v100.html#acc52366bf8898a069cb53a6ff159c908",tooltip=" "];
+  Node13 -> Node14 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node14 [label="LUstruct_v100::ancestorReduction3dGPU",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$structLUstruct__v100.html#ad4475ce14bf2210e9e4230f31b592238",tooltip=" "];
+  Node14 -> Node6 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node14 -> Node10 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+}

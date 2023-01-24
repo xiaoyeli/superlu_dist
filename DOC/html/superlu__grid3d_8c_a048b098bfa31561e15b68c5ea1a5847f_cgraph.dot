@@ -1,0 +1,10 @@
+digraph "superlu_gridinit3d"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="LR";
+  Node1 [label="superlu_gridinit3d",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="All processes in the MPI communicator must call this routine."];
+  Node1 -> Node2 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="superlu_gridmap3d",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$superlu__grid3d_8c.html#ae9812a411da613be2e9f5e04b50fc6cb",tooltip="All processes in the MPI communicator must call this routine. On output, if a process is not in the S..."];
+}

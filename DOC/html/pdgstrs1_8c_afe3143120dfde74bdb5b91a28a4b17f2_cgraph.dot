@@ -1,0 +1,38 @@
+digraph "pdgstrs1"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="LR";
+  Node1 [label="pdgstrs1",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip=" "];
+  Node1 -> Node2 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="dlsum_bmod",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$pdgstrs__lsum_8c.html#aabbfd9102f77ad4dccc196fc79a26ab8",tooltip=" "];
+  Node2 -> Node3 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="dtrsm_",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$superlu__ddefs_8h.html#a2f3ea1463db1f4fc33d149fb53d59303",tooltip=" "];
+  Node1 -> Node4 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="dlsum_fmod",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$pdgstrs__lsum_8c.html#aea51e4a702d6f7a12297b9921339c6d3",tooltip=" "];
+  Node4 -> Node5 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="dgemm_",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$superlu__ddefs_8h.html#acc7c47067de037060e4c4227ee6aaa48",tooltip=" "];
+  Node4 -> Node3 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node1 -> Node6 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node6 [label="doubleCalloc_dist",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$dmemory__dist_8c.html#ad0990926eb133871817599be1522bb45",tooltip=" "];
+  Node1 -> Node7 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node7 [label="doubleMalloc_dist",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$dmemory__dist_8c.html#a52dc9c97e580c07ec4af763f1755a2ba",tooltip=" "];
+  Node1 -> Node3 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node1 -> Node8 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node8 [label="if",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$dutil__dist_8c.html#a4a651a924783b51112ae041ee77bb902",tooltip=" "];
+  Node1 -> Node9 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node9 [label="int32Malloc_dist",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$memory_8c.html#ad6490fb0726f82e7c2db3b2d885e5ede",tooltip=" "];
+  Node1 -> Node10 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node10 [label="intCalloc_dist",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$memory_8c.html#a6fd91c6883ea8ea94e0ece298e0e46b6",tooltip=" "];
+  Node1 -> Node11 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node11 [label="intMalloc_dist",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$memory_8c.html#a2c2df35072e313373438cccdb98b885c",tooltip=" "];
+  Node1 -> Node12 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node12 [label="pxerr_dist",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$pxerr__dist_8c.html#a83457ff10ec305ba2d5c47fcb3db3300",tooltip=" "];
+  Node1 -> Node13 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node13 [label="sp_ienv_dist",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$SRC_2sp__ienv_8c.html#a004725eb174f73ba121db829451a8e8c",tooltip=" "];
+  Node13 -> Node14 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node14 [label="xerr_dist",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$superlu__defs_8h.html#a0d728f1da812b1373a0e58ff81f6a711",tooltip=" "];
+  Node1 -> Node15 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node15 [label="SuperLU_timer_",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$superlu__timer_8c.html#a0c6777573bbfe81917cd381e0090d355",tooltip=" "];
+}

@@ -1,0 +1,10 @@
+digraph "Cmpfunc_R_info_elm"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="RL";
+  Node1 [label="Cmpfunc_R_info_elm",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip=" "];
+  Node1 -> Node2 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="sort_R_info_elm",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$sec__structs_8c.html#a54f65edbbb97c0a92697977319ed4fd4",tooltip=" "];
+}

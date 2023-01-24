@@ -1,0 +1,41 @@
+digraph "getNestDissForests"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="LR";
+  Node1 [label="getNestDissForests",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip=" "];
+  Node1 -> Node2 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="calcNodeListWeight",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$supernodalForest_8c.html#a1ea31ad90bab2a1e70c4fda1f57494e7",tooltip=" "];
+  Node1 -> Node3 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="calcNumNodes",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$superlu__defs_8h.html#aa4ba2216ab4a97087a8e5911df7db84d",tooltip=" "];
+  Node1 -> Node4 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="calcTopInfoForest",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$supernodalForest_8c.html#a6b1f8b3aff57a2252803334c72159846",tooltip=" "];
+  Node4 -> Node5 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="cmpfunc",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$supernodalForest_8c.html#ac4b64efac6b92ff63774c58b92d0fdb5",tooltip=" "];
+  Node4 -> Node6 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node6 [label="getMyEtLims",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$superlu__defs_8h.html#adf47c7cf29437f3fbaa0a2cb0b45acf9",tooltip=" "];
+  Node6 -> Node7 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node7 [label="checkConsistancyPermTopOrder",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$supernodal__etree_8c.html#ade69581976f1eea5de07dbab3bcd2053",tooltip=" "];
+  Node4 -> Node8 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node8 [label="getMyIperm",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$superlu__defs_8h.html#a9d521c41ca56c5eb424db001c32bef6d",tooltip=" "];
+  Node4 -> Node9 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node9 [label="getMyTopOrder",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$superlu__defs_8h.html#a4fc96feae0de46df0526b06f3a23e4ff",tooltip=" "];
+  Node4 -> Node10 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node10 [label="getSortIndex",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$supernodalForest_8c.html#afcadf01d74998cfcf4581a808dd26438",tooltip=" "];
+  Node10 -> Node11 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node11 [label="cmpfuncInd",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$supernodalForest_8c.html#aa72995b238cb90540ce9f47b2af1cbe5",tooltip=" "];
+  Node4 -> Node12 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node12 [label="permuteArr",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$supernodalForest_8c.html#a7f92a196f056df03d3e7b7dfafa825a6",tooltip=" "];
+  Node1 -> Node13 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node13 [label="getNodeList",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$superlu__defs_8h.html#af9e217f1d60eaf84d2e1cc95e2e9b97e",tooltip=" "];
+  Node13 -> Node14 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node14 [label="getCommonAncestorList",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$supernodal__etree_8c.html#a4b12f7cc190783254bea86e208bd96d9",tooltip=" "];
+  Node13 -> Node15 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node15 [label="getDescendList",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$supernodal__etree_8c.html#a1ab6ada3b7819ef6bf66c64fc107c1dc",tooltip=" "];
+  Node15 -> Node15 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node1 -> Node16 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node16 [label="getTreeHeads",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$superlu__defs_8h.html#af09443942a84914734ee140886766db6",tooltip=" "];
+  Node16 -> Node17 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node17 [label="getSubTreeRoots",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$supernodal__etree_8c.html#a0cdcec6d1fb13a6150d955e8df97b515",tooltip=" "];
+}

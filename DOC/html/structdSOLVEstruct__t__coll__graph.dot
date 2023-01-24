@@ -1,0 +1,15 @@
+digraph "dSOLVEstruct_t"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  Node1 [label="dSOLVEstruct_t",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip=" "];
+  Node2 -> Node1 [dir="back",color="darkorchid3",fontsize="10",style="dashed",label=" gsmv_comm" ,fontname="Helvetica"];
+  Node2 [label="pdgsmv_comm_t",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$structpdgsmv__comm__t.html",tooltip=" "];
+  Node3 -> Node1 [dir="back",color="darkorchid3",fontsize="10",style="dashed",label=" A3d" ,fontname="Helvetica"];
+  Node3 [label="NRformat_loc3d",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$structNRformat__loc3d.html",tooltip=" "];
+  Node4 -> Node3 [dir="back",color="darkorchid3",fontsize="10",style="dashed",label=" A_nfmt" ,fontname="Helvetica"];
+  Node4 [label="NRformat_loc",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$structNRformat__loc.html",tooltip=" "];
+  Node5 -> Node1 [dir="back",color="darkorchid3",fontsize="10",style="dashed",label=" gstrs_comm" ,fontname="Helvetica"];
+  Node5 [label="pxgstrs_comm_t",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$structpxgstrs__comm__t.html",tooltip=" "];
+}

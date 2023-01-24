@@ -1,0 +1,50 @@
+digraph "LUstruct_v100::ancestorReduction3d"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="LR";
+  Node1 [label="LUstruct_v100::ancestorReduction3d",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip=" "];
+  Node1 -> Node2 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="log2i",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$superlu__defs_8h.html#a136c4bd713589ca86dffdc11ae5477ea",tooltip=" "];
+  Node1 -> Node3 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="SuperLU_timer_",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$superlu__timer_8c.html#a0c6777573bbfe81917cd381e0090d355",tooltip=" "];
+  Node1 -> Node4 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="LUstruct_v100::zRecvLPanel",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$structLUstruct__v100.html#af762f94e413267382f1d783344f65d94",tooltip=" "];
+  Node4 -> Node5 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="LUstruct_v100::g2lCol",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$structLUstruct__v100.html#a993d7187df11e447c03c37c98e0d5c96",tooltip=" "];
+  Node4 -> Node6 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node6 [label="LUstruct_v100::kcol",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$structLUstruct__v100.html#a27d7dd330db644cbbf62b0cf6cddc3e6",tooltip=" "];
+  Node4 -> Node7 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node7 [label="superlu_daxpy",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$superlu__ddefs_8h.html#a0f31204db20c3b0253d25bb3be80bcb3",tooltip=" "];
+  Node4 -> Node8 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node8 [label="superlu_dscal",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$superlu__ddefs_8h.html#abb56ddb90999468f84e5a317b3dcce7a",tooltip=" "];
+  Node1 -> Node9 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node9 [label="LUstruct_v100::zRecvUPanel",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$structLUstruct__v100.html#a243870878e7f376b80ac308cc950dfe3",tooltip=" "];
+  Node9 -> Node10 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node10 [label="LUstruct_v100::g2lRow",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$structLUstruct__v100.html#ae36c16c5462cfc1b5e1f321c329180d7",tooltip=" "];
+  Node9 -> Node11 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node11 [label="LUstruct_v100::krow",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$structLUstruct__v100.html#a763e27474c3d9044b15e8768d99bcb34",tooltip=" "];
+  Node9 -> Node7 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node9 -> Node8 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node1 -> Node12 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node12 [label="LUstruct_v100::zSendLPanel",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$structLUstruct__v100.html#a778bc8f05784aee139d46d7bc6e694a1",tooltip=" "];
+  Node12 -> Node5 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node12 -> Node6 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node12 -> Node13 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node13 [label="lpanel_t::nzvalSize",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classlpanel__t.html#a74419b30a61c8fc82eaa4f53698cb33e",tooltip=" "];
+  Node13 -> Node14 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node14 [label="lpanel_t::ncols",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classlpanel__t.html#afc7ae5d0b962ddf7c71eb115684eb9f8",tooltip=" "];
+  Node13 -> Node15 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node15 [label="lpanel_t::nzrows",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classlpanel__t.html#a585e8edcd485464252ee90e93c83eb07",tooltip=" "];
+  Node1 -> Node16 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node16 [label="LUstruct_v100::zSendUPanel",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$structLUstruct__v100.html#a55d4dfb071be3bb74d4156db58f07d3c",tooltip=" "];
+  Node16 -> Node10 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node16 -> Node11 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node16 -> Node17 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node17 [label="upanel_t::nzvalSize",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classupanel__t.html#a69b963eef2972bf417bbaceee35ce59f",tooltip=" "];
+  Node17 -> Node18 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node18 [label="upanel_t::LDA",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classupanel__t.html#a059f730a6636e4042daf3f2e5a6b70d8",tooltip=" "];
+  Node17 -> Node19 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node19 [label="upanel_t::nzcols",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classupanel__t.html#a76de7f7433a85878fcc7890a470f7aaf",tooltip=" "];
+}

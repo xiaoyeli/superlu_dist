@@ -1,0 +1,14 @@
+digraph "d3D_printMemUse"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="LR";
+  Node1 [label="d3D_printMemUse",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip=" "];
+  Node1 -> Node2 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="dmemForest",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$dmemory__dist_8c.html#ab1a6f24b38bbce4c6cad8f8f0a80f8ea",tooltip=" "];
+  Node2 -> Node3 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="dgetLUMem",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$dmemory__dist_8c.html#a5b00ba8761e2a16785182354b0db18f1",tooltip=" "];
+  Node1 -> Node4 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="log2i",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$superlu__defs_8h.html#a136c4bd713589ca86dffdc11ae5477ea",tooltip=" "];
+}

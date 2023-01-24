@@ -1,0 +1,14 @@
+digraph "c_fortran_slugrid_"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="LR";
+  Node1 [label="c_fortran_slugrid_",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip=" "];
+  Node1 -> Node2 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="superlu_gridexit",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$superlu__defs_8h.html#ab151232cdf0e52a85e0f27319f358fd4",tooltip=" "];
+  Node1 -> Node3 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="superlu_gridinit",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$superlu__defs_8h.html#af673f68417d0c11596db905bdb4670ff",tooltip="All processes in the MPI communicator must call this routine."];
+  Node3 -> Node4 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="superlu_gridmap",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$superlu__grid_8c.html#aa6fe52b44752925396b0f3b464865802",tooltip="All processes in the MPI communicator must call this routine."];
+}

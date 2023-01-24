@@ -1,0 +1,14 @@
+digraph "upanel_t::indexSize"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="RL";
+  Node1 [label="upanel_t::indexSize",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip=" "];
+  Node1 -> Node2 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="upanel_t::copyToGPU",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classupanel__t.html#acfc5816a16ed919ae445cdabf1824ab8",tooltip=" "];
+  Node1 -> Node3 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="LUstruct_v100::LUstruct_v100",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$structLUstruct__v100.html#a69055df17e7aad705117d61101d85831",tooltip=" "];
+  Node1 -> Node4 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="upanel_t::totalSize",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classupanel__t.html#a700601791485b5de061fac7ff04cf1e4",tooltip=" "];
+}

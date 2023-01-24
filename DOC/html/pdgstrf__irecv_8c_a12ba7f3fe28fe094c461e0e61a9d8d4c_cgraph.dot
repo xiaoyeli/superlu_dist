@@ -1,0 +1,41 @@
+digraph "pdgstrf"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="LR";
+  Node1 [label="pdgstrf",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip=" "];
+  Node1 -> Node2 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="dgemm_",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$superlu__ddefs_8h.html#acc7c47067de037060e4c4227ee6aaa48",tooltip=" "];
+  Node1 -> Node3 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="doubleCalloc_dist",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$dmemory__dist_8c.html#ad0990926eb133871817599be1522bb45",tooltip=" "];
+  Node1 -> Node4 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="doubleMalloc_dist",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$dmemory__dist_8c.html#a52dc9c97e580c07ec4af763f1755a2ba",tooltip=" "];
+  Node1 -> Node5 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="dPrintLblocks",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$dutil__dist_8c.html#a7555401d9bc50deccf68046272f69fa4",tooltip="Print the blocks in the factored matrix L."];
+  Node5 -> Node6 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node6 [label="Printdouble5",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$dutil__dist_8c.html#a9469156f66121040999f8eb7e0c2bbc8",tooltip=" "];
+  Node5 -> Node7 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node7 [label="PrintInt10",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$superlu__defs_8h.html#ab03f0fccabf0c7a84b0e2c99c2988809",tooltip=" "];
+  Node5 -> Node8 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node8 [label="PrintInt32",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$superlu__defs_8h.html#a84585d254b15455fcc1a025233abc710",tooltip=" "];
+  Node1 -> Node9 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node9 [label="dPrintUblocks",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$dutil__dist_8c.html#ae298232e79a4556c71cc761195a4d3e7",tooltip="Print the blocks in the factored matrix U."];
+  Node9 -> Node6 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node9 -> Node7 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node1 -> Node10 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node10 [label="intMalloc_dist",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$memory_8c.html#a2c2df35072e313373438cccdb98b885c",tooltip=" "];
+  Node1 -> Node11 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node11 [label="pdgstrf2",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$pdgstrf__irecv_8c.html#a742ebdb6bdcd30adede7cd246d6546d3",tooltip=" "];
+  Node11 -> Node12 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node12 [label="dger_",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$superlu__ddefs_8h.html#accdf5ce14130edff238fcad7e164925a",tooltip=" "];
+  Node1 -> Node13 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node13 [label="pdgstrs2",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$pdgstrf__irecv_8c.html#a5fc108ed829c8ae7ce76252a9a07df0e",tooltip=" "];
+  Node13 -> Node14 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node14 [label="dtrsv_",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$superlu__ddefs_8h.html#a8bf1e89ca04a7d8384577eb9842e9ffa",tooltip=" "];
+  Node1 -> Node7 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node1 -> Node15 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node15 [label="sp_ienv_dist",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$SRC_2sp__ienv_8c.html#a004725eb174f73ba121db829451a8e8c",tooltip=" "];
+  Node15 -> Node16 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node16 [label="xerr_dist",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$superlu__defs_8h.html#a0d728f1da812b1373a0e58ff81f6a711",tooltip=" "];
+}

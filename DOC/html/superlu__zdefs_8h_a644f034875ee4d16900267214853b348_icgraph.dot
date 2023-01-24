@@ -1,0 +1,31 @@
+digraph "PrintDoublecomplex"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="RL";
+  Node1 [label="PrintDoublecomplex",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip=" "];
+  Node1 -> Node2 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="pzgsrfs_ABXglobal",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$pzgsrfs__ABXglobal_8c.html#abc381d9c3cff4c01c431c94bc99f086b",tooltip=" "];
+  Node2 -> Node3 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="pzgssvx_ABglobal",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$pzgssvx__ABglobal_8c.html#ac94b1c20d0f7f589844b7fbd7fb587d2",tooltip=" "];
+  Node3 -> Node4 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="main",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$pzdrive1__ABglobal_8c.html#a0ddf1224851353fc92bfbff6f499fa97",tooltip=" "];
+  Node1 -> Node5 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="zPrintLblocks",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$superlu__zdefs_8h.html#aae401879ad300b31f6fa910e38c56195",tooltip="Print the blocks in the factored matrix L."];
+  Node5 -> Node6 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node6 [label="pzgstrf",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$pzgstrf_8c.html#ab55f41f34cfb8ffeac9a523f4c75d8e3",tooltip=" "];
+  Node6 -> Node7 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node7 [label="pzgssvx",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$pzgssvx_8c.html#ab6d597b6774ca4be292fe5d4282a131f",tooltip=" "];
+  Node7 -> Node8 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node8 [label="main",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$pzdrive_8c.html#a0ddf1224851353fc92bfbff6f499fa97",tooltip=" "];
+  Node6 -> Node3 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node1 -> Node9 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node9 [label="zPrintMSRmatrix",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$pzgsmv__AXglobal_8c.html#ad0076730a9dc665c6535a55537323bb8",tooltip=" "];
+  Node9 -> Node10 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node10 [label="pzgsmv_AXglobal_setup",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$pzgsmv__AXglobal_8c.html#a3dc83244807a7f1eca419f35aa2891a7",tooltip=" "];
+  Node10 -> Node2 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node1 -> Node11 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node11 [label="zPrintUblocks",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$superlu__zdefs_8h.html#ac11e5b196a4854b1867682316966897b",tooltip="Print the blocks in the factored matrix U."];
+  Node11 -> Node6 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+}

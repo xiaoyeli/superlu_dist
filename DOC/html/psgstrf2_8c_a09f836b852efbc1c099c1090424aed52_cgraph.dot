@@ -1,0 +1,14 @@
+digraph "sTrs2_GatherTrsmScatter"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="LR";
+  Node1 [label="sTrs2_GatherTrsmScatter",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip=" "];
+  Node1 -> Node2 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="sTrs2_GatherU",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$psgstrf2_8c.html#aa2233aabf3a5e65e413b7056e1f1831d",tooltip=" "];
+  Node1 -> Node3 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="sTrs2_ScatterU",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$psgstrf2_8c.html#abf068c76b2c778489cada2c6268eb54e",tooltip=" "];
+  Node1 -> Node4 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="superlu_strsm",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$superlu__sdefs_8h.html#a886b05a10e91f1fd1e9ad965197382b7",tooltip=" "];
+}

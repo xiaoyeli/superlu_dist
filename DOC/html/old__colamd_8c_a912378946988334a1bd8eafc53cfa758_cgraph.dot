@@ -1,0 +1,24 @@
+digraph "colamd"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="LR";
+  Node1 [label="colamd",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip=" "];
+  Node1 -> Node2 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="colamd_set_defaults",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$old__colamd_8c.html#acd15277a8a063dd0586e280004a92c89",tooltip=" "];
+  Node1 -> Node3 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="find_ordering",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$old__colamd_8c.html#a5588b8a17c8a438d3bbd838d10aff249",tooltip=" "];
+  Node3 -> Node4 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="clear_mark",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$old__colamd_8c.html#a7b5f3f6e9e7ee6f670984055c155068a",tooltip=" "];
+  Node3 -> Node5 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="detect_super_cols",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$old__colamd_8c.html#a55d4b9a340d39a37eb3413e9c8473e8d",tooltip=" "];
+  Node3 -> Node6 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node6 [label="garbage_collection",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$old__colamd_8c.html#a3c76df09abb17778af25b670113f8317",tooltip=" "];
+  Node1 -> Node7 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node7 [label="init_rows_cols",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$old__colamd_8c.html#ad6773e1132d893e4c9a723c9c0d987bd",tooltip=" "];
+  Node1 -> Node8 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node8 [label="init_scoring",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$old__colamd_8c.html#a27a204ed85810ba9c6c08ba85bb7e3c4",tooltip=" "];
+  Node1 -> Node9 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node9 [label="order_children",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$old__colamd_8c.html#a0a352b74699b0b2c085d6e38335ace90",tooltip=" "];
+}

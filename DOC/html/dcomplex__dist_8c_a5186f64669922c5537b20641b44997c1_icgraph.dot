@@ -1,0 +1,15 @@
+digraph "slud_z_div"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="RL";
+  Node1 [label="slud_z_div",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip=" "];
+  Node1 -> Node2 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="pzgstrf2_trsm",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$pzgstrf2_8c.html#a4d1a47f6f46e6ebb6d96055400bc3717",tooltip=" "];
+  Node1 -> Node3 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="sp_ztrsv_dist",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$superlu__zdefs_8h.html#a160fdcb5b0976d81d1bd7068ec15aeb4",tooltip=" "];
+  Node1 -> Node4 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="zusolve",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$zmyblas2__dist_8c.html#a0b0f90cd6fb38a0827eb67b22c8523cb",tooltip=" "];
+  Node4 -> Node3 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+}

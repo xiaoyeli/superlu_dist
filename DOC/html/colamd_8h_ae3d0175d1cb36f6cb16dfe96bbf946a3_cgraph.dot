@@ -1,0 +1,29 @@
+digraph "symamd"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="LR";
+  Node1 [label="symamd",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip=" "];
+  Node1 -> Node2 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="colamd",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$colamd_8c.html#a4ace2482b681af56de48dd3ba8971baf",tooltip=" "];
+  Node2 -> Node3 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="colamd_set_defaults",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$colamd_8c.html#acd15277a8a063dd0586e280004a92c89",tooltip=" "];
+  Node2 -> Node4 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="find_ordering",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$colamd_8c.html#a10da36e975e03d3c0fd68dbe14eb27cc",tooltip=" "];
+  Node4 -> Node5 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="clear_mark",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$colamd_8c.html#a7eb036c63565d8fc7c05e1074510601a",tooltip=" "];
+  Node4 -> Node6 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node6 [label="detect_super_cols",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$colamd_8c.html#a27211c7dc11832c4675d8d3fcd7167a0",tooltip=" "];
+  Node4 -> Node7 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node7 [label="garbage_collection",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$colamd_8c.html#a9a0dc18af9f72ad8e436a98980e55c41",tooltip=" "];
+  Node2 -> Node8 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node8 [label="init_rows_cols",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$colamd_8c.html#ad632adbb6b5d2516805a965b42b601c8",tooltip=" "];
+  Node2 -> Node9 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node9 [label="init_scoring",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$colamd_8c.html#ac804543e35e2ab481d9e2c19ed0ebcf6",tooltip=" "];
+  Node2 -> Node10 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node10 [label="order_children",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$colamd_8c.html#ad9896b63f5b2823065686f63a1096130",tooltip=" "];
+  Node1 -> Node11 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node11 [label="colamd_recommended",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$colamd_8c.html#aac7214b99bcf4db1b13547521367817f",tooltip=" "];
+  Node1 -> Node3 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+}
