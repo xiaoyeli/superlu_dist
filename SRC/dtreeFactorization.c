@@ -315,6 +315,20 @@ int_t dsparseTreeFactor_ASYNC(
     int_t numLAMax = getNumLookAhead(options);
     int_t numLA = numLAMax;
 
+
+    // Sherry print
+    printf("sforest: nNodes %d, numlvl %d\n", nnodes, maxTopoLevel);
+    //PrintInt10("perm_c_supno", nnodes, perm_c_supno);
+    PrintInt10("eTreeTopLims", maxTopoLevel + 1, eTreeTopLims);
+    for (int topoLvl = 0; topoLvl < maxTopoLevel; ++topoLvl)
+    {
+        int k_st = eTreeTopLims[topoLvl];
+        int k_end = eTreeTopLims[topoLvl + 1];
+	printf("level %d\n", topoLvl);
+	PrintInt10("perm_c_supno", k_end - k_st, &perm_c_supno[k_st]);
+    }
+    ////////
+
     for (int_t k0 = 0; k0 < eTreeTopLims[1]; ++k0)
     {
         int_t k = perm_c_supno[k0];   // direct computation no perm_c_supno

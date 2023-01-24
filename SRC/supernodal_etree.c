@@ -47,6 +47,11 @@ int_t *supernodal_etree(int_t nsuper, int_t * etree, int_t* supno, int_t *xsup)
 		    setree[i] = supno[etree[xsup[i + 1] - 1]];
 		}
 	}
+
+	// Sherry print
+	PrintInt10("supernodal etree", nsuper+1, setree);
+	////////
+	
 	return setree;
 }
 /*takes supernodal elimination tree and for each

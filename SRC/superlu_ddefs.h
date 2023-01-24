@@ -740,6 +740,9 @@ extern int dcreate_matrix3d(SuperMatrix *A, int nrhs, double **rhs,
 extern int dcreate_matrix_postfix3d(SuperMatrix *A, int nrhs, double **rhs,
                            int *ldb, double **x, int *ldx,
                            FILE *fp, char * postfix, gridinfo3d_t *grid3d);
+extern int dcreate_block_diag_3d(SuperMatrix *A, int batchCount, int nrhs, double **rhs,
+				 int *ldb, double **x, int *ldx,
+				 FILE *fp, char * postfix, gridinfo3d_t *grid3d);
     
 /* Matrix distributed in NRformat_loc in 3D process grid. It converts 
    it to a NRformat_loc distributed in 2D grid in grid-0 */

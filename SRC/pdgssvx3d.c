@@ -1363,6 +1363,10 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 
 			} /* end if Fact not SamePattern_SameRowPerm */
 
+#if (DEBUGlevel >= 2) // Sherry
+			if (!iam)
+				PrintInt10("perm_c", m, perm_c);
+#endif
 			if (sizes)
 				SUPERLU_FREE(sizes);
 			if (fstVtxSep)

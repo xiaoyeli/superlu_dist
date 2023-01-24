@@ -118,7 +118,7 @@ main (int argc, char *argv[])
     char **cpp, c, *suffix;
     FILE *fp, *fopen ();
     extern int cpp_defs ();
-    int ii, omp_mpi_level;
+    int ii, omp_mpi_level, batchCount = 0;
 
     nprow = 1;            /* Default process rows.      */
     npcol = 1;            /* Default process columns.   */
@@ -167,6 +167,8 @@ main (int argc, char *argv[])
             case 'd':
                 npdep = atoi (*cpp);
                 break;
+              case 'b': batchCount = atoi(*cpp);
+                        break;
             }
         }
         else
@@ -220,7 +222,7 @@ main (int argc, char *argv[])
 	printf("Library version:\t%d.%d.%d\n", v_major, v_minor, v_bugfix);
 
 	printf("Input matrix file:\t%s\n", *cpp);
-	printf("3D process grid: %d X %d X %d\n", (int) nprow, (int)npcol, (int)npdep);
+	printf("3D process grid: %d X %d X %d\n", nprow, npcol, npdep);
 	//printf("2D Process grid: %d X %d\n", (int)grid.nprow, (int)grid.npcol);
 	fflush(stdout);
     }
@@ -235,8 +237,7 @@ main (int argc, char *argv[])
     for (ii = 0; ii<strlen(*cpp); ii++) {
 	if((*cpp)[ii]=='.'){
 	    suffix = &((*cpp)[ii+1]);
-	    printf("%s\n", suffix);
-	    fflush(stdout);
+	    // printf("%s\n", suffix);
 	}
     }
 
@@ -246,15 +247,17 @@ main (int argc, char *argv[])
 	dcreate_matrix_postfix(&A, nrhs, &b, &ldb, &xtrue, &ldx, fp, suffix, &(grid.grid2d));
 	
 #else
-#if ( DEBUGlevel>=1 )
-    CHECK_MALLOC (iam, "before create_matrix()");
-    fflush(stdout);
-#endif
     // *fp0 = *fp;
-    dcreate_matrix_postfix3d(&A, nrhs, &b, &ldb,
-                             &xtrue, &ldx, fp, suffix, &(grid));
-    printf("ldx %d, ldb %d\n", ldx, ldb);
-    fflush(stdout);
+
+    if ( batchCount > 0 ) {
+	printf("batchCount %d\n", batchCount);
+	dcreate_block_diag_3d(&A, batchCount, nrhs, &b, &ldb, &xtrue, &ldx, fp, suffix, &grid);
+    } else {
+	dcreate_matrix_postfix3d(&A, nrhs, &b, &ldb,
+				 &xtrue, &ldx, fp, suffix, &(grid));
+    }
+    
+    //printf("ldx %d, ldb %d\n", ldx, ldb);
     
 #if 0  // following code is only for checking *Gather* routine
     NRformat_loc *Astore, *Astore0;
@@ -317,11 +320,10 @@ main (int argc, char *argv[])
      */
     //TODO: set options->num_lookaheads using an environment variable
     set_default_options_dist (&options);
-    options.ReplaceTinyPivot = YES;
+    options.IterRefine = NOREFINE;
 #if 0
     options.ReplaceTinyPivot = YES;
     options.RowPerm = NOROWPERM;
-    options.IterRefine = NOREFINE;
     options.ColPerm = NATURAL;
     options.Equil = NO;
     options.ReplaceTinyPivot = YES;

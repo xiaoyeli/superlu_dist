@@ -32,7 +32,7 @@ int_t LUstruct_v100::dDFactPSolveGPU(int_t k, int_t offset, ddiagFactBufs_t **dF
                                     
     }
 
-    CHECK_MALLOC(iam, "after diagFactorCuSolver()");
+    //CHECK_MALLOC(iam, "after diagFactorCuSolver()");
 		 
     //TODO: need to synchronize the cuda stream 
     /*=======   Diagonal Broadcast          ======*/
@@ -40,14 +40,12 @@ int_t LUstruct_v100::dDFactPSolveGPU(int_t k, int_t offset, ddiagFactBufs_t **dF
         MPI_Bcast((void *)A_gpu.dFBufs[offset], ksupc * ksupc,
                   MPI_DOUBLE, kcol(k), (grid->rscp).comm);
     
-    CHECK_MALLOC(iam, "after row Bcast");
+    //CHECK_MALLOC(iam, "after row Bcast");
     
     if (mycol == kcol(k))
         MPI_Bcast((void *)A_gpu.dFBufs[offset], ksupc * ksupc,
                   MPI_DOUBLE, krow(k), (grid->cscp).comm);
 
-    CHECK_MALLOC(iam, "after col Bcast");
-    
     // do the panels olver 
     if (myrow == krow(k))
     {
