@@ -1,2 +1,0 @@
-/usr/bin/ar qc libsuperlu_dist_fortran.a "CMakeFiles/superlu_dist_fortran-static.dir/superlu_c2f_wrap.c.o" "CMakeFiles/superlu_dist_fortran-static.dir/superlupara.f90.o" "CMakeFiles/superlu_dist_fortran-static.dir/superlu_mod.f90.o" "CMakeFiles/superlu_dist_fortran-static.dir/c2f_dcreate_matrix_x_b.c.o" "CMakeFiles/superlu_dist_fortran-static.dir/superlu_c2f_dwrap.c.o" "CMakeFiles/superlu_dist_fortran-static.dir/c2f_zcreate_matrix_x_b.c.o" "CMakeFiles/superlu_dist_fortran-static.dir/superlu_c2f_zwrap.c.o"
-/usr/bin/ranlib libsuperlu_dist_fortran.a
