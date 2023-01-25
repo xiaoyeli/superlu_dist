@@ -27,12 +27,9 @@
 # Note: you may have to specify your own parmetis/metis libraries
 
 
-#module load PrgEnv-gnu
-#module load gcc/11.2.0
-#module load cmake/3.22.0
-#module load cudatoolkit/11.7
-# avoid bug in cray-libsci/21.08.1.2
-#module load cray-libsci/22.11.1.2
+module load PrgEnv-nvidia
+module load cudatoolkit
+module load cray-libsci
 
 # avoid bug in cudatoolkit
 export LD_LIBRARY_PATH=${LD_LIBRARY_PATH//\/usr\/local\/cuda-11.5\/compat:/}
