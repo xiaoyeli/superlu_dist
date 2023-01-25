@@ -1,3 +1,4 @@
+
 /*! \file
 Copyright (c) 2003, The Regents of the University of California, through
 Lawrence Berkeley National Laboratory (subject to receipt of any required 
@@ -268,12 +269,15 @@ float symbfact_dist
   comm_symbfact_t CS;  /* information on communication */
   /* relaxation parameters (for future release) and 
      statistics collected during the symbolic factorization */
-  psymbfact_stat_t PS; 
+  psymbfact_stat_t PS; /* Sherry: PS.allocMem is the total memory allocated (in Bytes)
+			  This is locally collected, need to be summed up.
+			  What's the relation with symb_mem_usage? */
   /* temp array of size n, used as a marker by the subroutines */
   int_t *tempArray; 
   int_t i, j, k;
   int_t fstVtx, lstVtx, mark, fstVtx_lid, vtx_lid, maxNvtcsPProc;
-  int_t nnz_asup_loc, nnz_ainf_loc, fill_rcmd;
+  int_t nnz_asup_loc, nnz_ainf_loc;
+  int_t fill_rcmd; /* fill ratio */
   float totalMemLU, overestimMem;
   MPI_Comm *commLvls;  
 
@@ -343,12 +347,13 @@ float symbfact_dist
   if ((flinfo = 
        symbfact_mapVtcs (iam, nprocs_num, nprocs_symb, A, fstVtxSep, sizes, 
 			 Pslu_freeable, &VInfo, tempArray, maxSzBlk, &PS)) > 0) 
-    return (flinfo);
+      return (flinfo); /* Number of bytes alllocated so far when run out of memory */
 
   maxNvtcsPProc = Pslu_freeable->maxNvtcsPProc;
   
   /* Redistribute matrix A on processors following the distribution found
      in symbfact_mapVtcs.  Store the redistributed A temporarily into AS */
+  /* Sherry: should add argument PS.allocMem ?? */
   symbfact_distributeMatrix (iam, nprocs_num, nprocs_symb,  A, 
 			     perm_c, perm_r, &AS, 
 			     Pslu_freeable, &VInfo, tempArray, num_comm);
@@ -568,17 +573,17 @@ float symbfact_dist
     t_symbFact_loc[1] = SuperLU_timer_() - t_symbFact_loc[1];
 #endif  
 
-#if ( PRNTlevel>=1 )
     estimate_memUsage (n, iam,  symb_mem_usage, 
 		       &totalMemLU, &overestimMem, 
 		       Pslu_freeable, &Llu_symbfact, &VInfo, &CS, &PS);
+#if ( PRNTlevel>=1 )
     stat_loc[0] = (float) nnzL;
     stat_loc[1] = (float) nnzU;  
     stat_loc[2] = (float) nsuper_loc;
     stat_loc[3] = (float) Pslu_freeable->xlsub[VInfo.nvtcs_loc];
     stat_loc[4] = (float) Pslu_freeable->xusub[VInfo.nvtcs_loc];
-    stat_loc[5] = totalMemLU;
-    stat_loc[6] = overestimMem;
+    stat_loc[5] = totalMemLU;   // include the unused holes
+    stat_loc[6] = overestimMem; // the unused leftover holes
     stat_loc[7] = totalMemLU - overestimMem;
     stat_loc[8] = (float) PS.maxSzBuf;
     stat_loc[9] = (float) PS.nDnsUpSeps;
@@ -664,6 +669,9 @@ float symbfact_dist
       printf("\tParSYMBfact (MB)      :\tL\\U MAX %.2f\tAVG %.2f\n",
 	     mem_glob[0]*1e-6, 
 	     stat_glob[5]/nprocs_symb*1e-6);
+      /* the allocated memory recorded by PS.allocMem is still needed in distribution */
+      printf("\t\tworking memory PS.allocMem (MB):\t%.2f\n", PS.allocMem*1e-6);
+      
 #if ( PRNTlevel>=2 )
       printf("\tRL overestim (MB):\tL\\U MAX %.2f\tAVG %.2f\n",
 	     mem_glob[1]*1e-6, 
@@ -748,6 +756,9 @@ float symbfact_dist
     SUPERLU_FREE (time_lvls);
     SUPERLU_FREE (time_lvlsT);
 #endif
+    /* free communication buffers,
+       but seems does not free PS.allocMem part
+    */
     symbfact_free (iam, nprocs_symb, &Llu_symbfact, &VInfo, &CS);
   } /* if (iam < nprocs_symb) */  
   else {
@@ -772,8 +783,15 @@ float symbfact_dist
   CHECK_MALLOC(iam, "Exit psymbfact()");
 #endif
 
+#if ( PRNTlevel>=1 )
+  if (iam==0) {
+      printf("\t\tbefore exit symbfact_dist(): PS.allocMem (MB):\t%.2f\n", PS.allocMem*1e-6);
+      fflush(stdout);
+  }
+#endif  
   return (- PS.allocMem);
-} /* SYMBFACT_DIST */
+  
+} /* end SYMBFACT_DIST */
 
 
 static int_t
@@ -979,7 +997,7 @@ cntsVtcs
     PS->allocMem -= n * sizeof(int_t);
   }
   return (SUCCES_RET);
-}
+} /* cntsVtcs */
 
 static float
 symbfact_mapVtcs
@@ -1024,6 +1042,10 @@ symbfact_mapVtcs
  *  computed.  The array globToLoc and maxNvtcsPProc of Pslu_freeable
  *  are also computed.
  * </pre>
+ *
+ * Return:  0 : ssuccess
+ *         >0 : number of bytes allocated during parallel symbolic factorization
+ *              when run out of memory
  */
   int szSep, npNode, firstP, p, iSep, jSep, ind_ap_s, ind_ap_d;
   int_t k, n, kk;
@@ -1038,6 +1060,10 @@ symbfact_mapVtcs
   int_t *vtcs_pe;  /* contains the number of vertices on each processor */
   int   *avail_pes; /* contains the processors to be used at each level */
   
+#if ( DEBUGlevel>=1 )
+    CHECK_MALLOC(iam, "Enter symbfact_mapVtcs()");
+#endif
+    
   n = A->ncol;
   /* allocate memory */
   if (!(globToLoc = intMalloc_dist(n + 1))) {
@@ -1217,8 +1243,13 @@ symbfact_mapVtcs
     VInfo->begEndBlks_loc  = begEndBlks_loc;
     VInfo->fstVtx_nextLvl  = begEndBlks_loc[0];
   }
-  return SUCCES_RET;
-}
+#if ( DEBUGlevel>=1 )
+    CHECK_MALLOC(iam, "Exit symbfact_mapVtcs()");
+#endif
+    
+  return SUCCES_RET;  /* 0 */
+  
+} /* symbfact_mapVtcs */
 
 static void 
 symbfact_distributeMatrix
@@ -1277,6 +1308,10 @@ symbfact_distributeMatrix
   int_t *x_ainf, *x_asup, *ind_ainf, *ind_asup;
   int  *intBuf1, *intBuf2, *intBuf3, *intBuf4;
 
+#if ( DEBUGlevel>=1 )
+  CHECK_MALLOC(iam, "Enter symbfact_distributeMatrix()");
+#endif
+  
   /* ------------------------------------------------------------
      INITIALIZATION.
      ------------------------------------------------------------*/
@@ -1347,6 +1382,7 @@ symbfact_distributeMatrix
   nnz_iam = nnz_loc + RecvCnt; /* Total nonzeros ended up in my process. */
   
   /* Allocate temporary storage for sending/receiving the A triplets. */
+  /* Sherry: need to add to memory peak */
   if (!(snd_aind = intMalloc_symbfact(SendCnt)) && SendCnt != 0)
     ABORT("Malloc fails for snd_aind[].");
   if ( !(rcv_aind = intMalloc_symbfact(nnz_iam + 1)))
@@ -1530,6 +1566,7 @@ symbfact_distributeMatrix
     /* ------------------------------------------------------------
        Allocate space for storing indices of A after redistribution.
        ------------------------------------------------------------*/
+    /* Sherry: need to add to memory peak */
     if (!(x_ainf = intCalloc_symbfact (nvtcs_loc + 1)))
       ABORT("Malloc fails for x_ainf[].");
     if (!(x_asup = intCalloc_symbfact (nvtcs_loc + 1)))
@@ -1576,6 +1613,7 @@ symbfact_distributeMatrix
     x_asup[nvtcs_loc] = j;
     
     /* Allocate space for storing indices of A after conversion */
+    /* Sherry: need to add to memory peak */
     if ( !(ind_ainf = intMalloc_symbfact(x_ainf[nvtcs_loc])) && x_ainf[nvtcs_loc] != 0 )
       ABORT("Malloc fails for ind_ainf[].");
     if ( !(ind_asup = intMalloc_symbfact(x_asup[nvtcs_loc])) && x_asup[nvtcs_loc] != 0)
@@ -1629,7 +1667,13 @@ symbfact_distributeMatrix
     VInfo->nnz_asup_loc = x_asup[nvtcs_loc];
     VInfo->nnz_ainf_loc = x_ainf[nvtcs_loc];
   }
-}
+
+#if ( DEBUGlevel>=1 )
+  CHECK_MALLOC(iam, "Exit symbfact_distributeMatrix()");
+#endif
+  
+} /* end symbfact_distributeMatrix */
+
 
 static
 float allocPrune_lvl
@@ -1658,6 +1702,11 @@ float allocPrune_lvl
   int_t  nvtcs_loc, no_expand_pr, x_sz;
   float  alpha = 1.5;
   int_t  FILL = sp_ienv_dist(6, options);
+  
+#if ( DEBUGlevel>=1 )
+  int iam = -1;
+  CHECK_MALLOC(iam, "Enter allocPrune_lvl()");
+#endif
   
   nvtcs_loc = VInfo->nvtcs_loc;
   
@@ -1731,7 +1780,13 @@ float allocPrune_lvl
   Llu_symbfact->indUsubPr = 0;
 
   Llu_symbfact->no_expand_pr += no_expand_pr;
+
+#if ( DEBUGlevel>=1 )
+  CHECK_MALLOC(iam, "Exit allocPrune_lvl()");
+#endif
+  
   return 0;
+  
 }
 
 static float 
@@ -1763,6 +1818,11 @@ allocPrune_domain
   int_t  nvtcs_loc, no_expand_pr, x_sz;
   float  alpha = 1.5;
   int_t  FILL = 2 * sp_ienv_dist(6, options);
+  
+#if ( DEBUGlevel>=1 )
+  int iam = -1;
+  CHECK_MALLOC(iam, "Enter allocPrune_domain()");
+#endif
   
   nvtcs_loc = VInfo->nvtcs_loc;
   
@@ -1820,6 +1880,11 @@ allocPrune_domain
 
   Llu_symbfact->no_expand_pr = no_expand_pr;
   Llu_symbfact->no_expcp = 0;
+
+#if ( DEBUGlevel>=1 )
+  CHECK_MALLOC(iam, "Exit allocPrune_domain()");
+#endif
+  
   return 0;
 }
 
@@ -1860,6 +1925,11 @@ int symbfact_alloc
   int_t  nvtcs_loc, *cntelt_vtcs;
   float  alpha = 1.5;
   int_t  FILL = sp_ienv_dist(6, options);
+  
+#if ( DEBUGlevel>=1 )
+  int iam = -1;
+  CHECK_MALLOC(iam, "Enter symbfact_alloc()");
+#endif
   
   nvtcs_loc = VInfo->nvtcs_loc;
   nnz_a_loc = VInfo->nnz_ainf_loc + VInfo->nnz_asup_loc;
@@ -1938,7 +2008,11 @@ int symbfact_alloc
   
   Llu_symbfact->no_expand = no_expand;  
   
-  return SUCCES_RET;
+#if ( DEBUGlevel>=1 )
+  CHECK_MALLOC(iam, "Exit symbfact_alloc()");
+#endif
+  
+  return SUCCES_RET; /* 0 */
 } /* SYMBFACT_ALLOC */
 
 static int_t 
@@ -2306,7 +2380,7 @@ updateRcvd_prGraph
 }
 
 static int_t
-update_prGraph 
+update_prGraph
 (
  int   iam, 
  int_t n,           /* order of the matrix */
@@ -2406,7 +2480,7 @@ update_prGraph
     k ++; 
   }
   return SUCCES_RET;
-}
+} /* end update_prGraph */
 
 static int_t
 blk_symbfact
@@ -2820,7 +2894,7 @@ blk_symbfact
   *p_nsuper_loc = nsuper_loc;
 
   return 0;
-}
+} /* blk_symbfact */
 
 static void
 domain_symbfact
@@ -2851,6 +2925,10 @@ domain_symbfact
 {
   int_t lstVtx_lid, maxNvtcsPProc; 
 
+#if ( DEBUGlevel>=1 )
+  CHECK_MALLOC(iam, "Enter domain_symbfact()");
+#endif
+
   /* call blk_symbfact */
   blk_symbfact (A, iam, lvl, 
 		szSep, ind_sizes1, ind_sizes2, sizes, fstVtxSep,
@@ -2873,6 +2951,11 @@ domain_symbfact
     Llu_symbfact->xusub[lstVtx_lid] = *p_nextu;
   }
   VInfo->maxNeltsVtx -= lstVtx - fstVtx;
+  
+#if ( DEBUGlevel>=1 )
+  CHECK_MALLOC(iam, "Exit domain_symbfact()");
+#endif
+  
 }
 
 
@@ -2913,6 +2996,10 @@ initLvl_symbfact
   int_t nelts, nelts_fill_l, nelts_fill_u, nelts_cnts, maxNvtcsPProc, *globToLoc;
   int_t use_fillcnts, cntelt_vtx_l, cntelt_vtx_u;
   MPI_Status status;
+  
+#if ( DEBUGlevel>=1 )
+  CHECK_MALLOC(iam, "Enter initLvl_symbfact()");
+#endif
   
   fill = PS->fill_par;
   VInfo->filledSep = FALSE;
@@ -3078,6 +3165,11 @@ initLvl_symbfact
     VInfo->nnz_asup_loc -= nelts_asup;
   }
   VInfo->fstVtx_nextLvl = fstVtx_nextLvl;
+  
+#if ( DEBUGlevel>=1 )
+  CHECK_MALLOC(iam, "Exit initLvl_symbfact()");
+#endif
+  
 }
 
 
@@ -3519,7 +3611,7 @@ rl_update
   *pmarkl = markl;
 
   return 0;
-}
+} /* end rl_update */
 
 static int_t
 dnsUpSeps_symbfact
@@ -4215,6 +4307,10 @@ interLvl_symbfact
   int_t req_ind, sent_msgs, req_ind_snd;
   int_t initInfo_loc[2], initInfo_gl[2];
 
+#if ( DEBUGlevel>=1 )
+  CHECK_MALLOC(iam, "Enter interLvl_symbfact()");
+#endif
+
   /* Initialization */
   n = A->ncol;
   fstVtx          = fstVtxSep[ind_sizes2];
@@ -4575,6 +4671,10 @@ interLvl_symbfact
   if (request_rcv != NULL) SUPERLU_FREE (request_rcv);
   if (status != NULL) SUPERLU_FREE (status);
 
+#if ( DEBUGlevel>=1 )
+  CHECK_MALLOC(iam, "Exit interLvl_symbfact()");
+#endif
+  
   return 0;
 }
 
@@ -4712,6 +4812,10 @@ intraLvl_symbfact
 
   MPI_Status status[4];
   MPI_Request request[4];
+  
+#if ( DEBUGlevel>=1 )
+  CHECK_MALLOC(iam, "Enter intraLvl_symbfact()");
+#endif
   
   /* Initializations */
   lsub    = Llu_symbfact->lsub;   xlsub    = Llu_symbfact->xlsub;
@@ -5123,6 +5227,11 @@ intraLvl_symbfact
   /* if current separator dense, then reset value of filledSep */
   if (VInfo->filledSep == FILLED_SEP)
     VInfo->filledSep = FALSE;
+
+#if ( DEBUGlevel>=1 )
+  CHECK_MALLOC(iam, "Exit intraLvl_symbfact()");
+#endif
+  
 }
 
 static void
@@ -5177,9 +5286,13 @@ estimate_memUsage
  int_t n,  /* Input - order of the matrix */
  int iam,  /* Input - my processor number */
  superlu_dist_mem_usage_t *symb_mem_usage,
- float *p_totalMemLU,   /* Output -memory used for symbolic factorization */
- float *p_overestimMem, /* Output -memory allocated during to right looking 
-			   overestimation memory usage */
+ float *p_totalMemLU,   /* Output -memory used for symbolic factorization.
+			   This also includes the overestimMem below.
+			*/
+ float *p_overestimMem, /* Output -memory allocated during the right looking 
+			   overestimation memory usage.
+			   This is the "hole" leftover in the LU arrays.
+			*/
  Pslu_freeable_t *Pslu_freeable,   /* global LU data structures (modified) */
  Llu_symbfact_t *Llu_symbfact,  /* Input - local L, U data structures */
  vtcsInfo_symbfact_t *VInfo, /* Input - local info on vertices distribution */
@@ -5218,11 +5331,15 @@ estimate_memUsage
   
   *p_totalMemLU = lu_mem;  
   *p_overestimMem = overestimMem;
-  
+
+
+  /* see Llu_symbfact_t{} structure */
   symb_mem_usage->for_lu = (float) ((3 * nvtcs_loc + 2 * nsuper_loc) * lword);
   symb_mem_usage->for_lu += (float) (Llu_symbfact->xlsub[nvtcs_loc] * lword); 
-  symb_mem_usage->for_lu += (float) (Llu_symbfact->xusub[nvtcs_loc] * lword);   
+  symb_mem_usage->for_lu += (float) (Llu_symbfact->xusub[nvtcs_loc] * lword);
+  
   symb_mem_usage->total = lu_mem;
+  
 }
 
 
@@ -5251,4 +5368,3 @@ intCalloc_symbfact(int_t n)
     for (i = 0; i < n; i++) buf[i] = 0;
   return (buf);
 }
-

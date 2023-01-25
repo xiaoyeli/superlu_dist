@@ -49,13 +49,6 @@ at the top-level directory.
    #include <omp.h>
 #endif
 
-#ifdef GPU_ACC
-
-#include "oneside.h"
-#include "gpu_wrapper.h"
-#endif
-
-
 
 #include <mpi.h>
 #include <stdlib.h>
@@ -108,6 +101,7 @@ at the top-level directory.
 #endif
 
 #ifdef GPU_ACC
+#include "oneside.h"
 #include "gpu_api_utils.h"
 #endif
 
@@ -1249,19 +1243,16 @@ typedef struct
 #endif
 
 extern void C_RdTree_Create(C_Tree* tree, MPI_Comm comm, int* ranks, int rank_cnt, int msgSize, char precision);
-extern void C_RdTree_Create_nv(C_Tree* tree, MPI_Comm comm, int* ranks, int rank_cnt, int msgSize, char precision,int* needrecvrd,int* needsendrd);
 extern void C_RdTree_Nullify(C_Tree* tree);
 extern yes_no_t C_RdTree_IsRoot(C_Tree* tree);
 extern void C_RdTree_forwardMessageSimple(C_Tree* Tree, void* localBuffer, int msgSize);
 extern void C_RdTree_waitSendRequest(C_Tree* Tree);
 
 extern void C_BcTree_Create(C_Tree* tree, MPI_Comm comm, int* ranks, int rank_cnt, int msgSize, char precision);
-extern void C_BcTree_Create_nv(C_Tree* tree, MPI_Comm comm, int* ranks, int rank_cnt, int msgSize, char precision,int* needrecv);
 extern void C_BcTree_Nullify(C_Tree* tree);
 extern yes_no_t C_BcTree_IsRoot(C_Tree* tree);
 extern void C_BcTree_forwardMessageSimple(C_Tree* tree, void* localBuffer, int msgSize);
 extern void C_BcTree_waitSendRequest(C_Tree* tree);
-extern __global__ void schedule(int nrhs, C_Tree  *LRtree_ptr,int_t maxrecvsz,int mype,int* flag_bc_q,int* flag_rd_q,double* ready_x,double* ready_lsum,int* my_flag_bc,int* my_flag_rd,int* d_nfrecv,int* d_status,int* d_launch_flag,int* d_colnum,int* d_mynum,int* d_mymaskstart,int* d_mymasklength,int* d_nfrecvmod,int* d_statusmod,int* d_colnummod,int* d_mynummod,int* d_mymaskstartmod,int* d_mymasklengthmod,int* d_recv_cnt,int* d_msgnum, int* d_flag_mod, double *lsum, int_t *fmod, gridinfo_t *grid,int_t *xsup,int_t *ilsum,int nbrow_loc,int_t  nsupers);
 
 /*==== For 3D code ====*/
 

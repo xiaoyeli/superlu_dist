@@ -460,15 +460,36 @@ void nv_init_wrapper(int* c, char *v[], int* omp_mpi_level)
     fflush(stdout);
 
 
-//int *target;
-//target = (int *)nvshmem_malloc(sizeof(int)*256);
-//printf("(%d) nvshmem malloc target success\n",mype);
-//fflush(stdout);
-//simple_shift<<<1, 256>>>(target, mype, npes);
-//CUDA_CHECK(cudaDeviceSynchronize());
+    //int *target;
+    //target = (int *)nvshmem_malloc(sizeof(int)*256);
+    //printf("(%d) nvshmem malloc target success\n",mype);
+    //fflush(stdout);
+    //simple_shift<<<1, 256>>>(target, mype, npes);
+    //CUDA_CHECK(cudaDeviceSynchronize());
 
 }
 
+void prepare_multiGPU_buffers(int flag_bc_size,int flag_rd_size,int ready_x_size,int ready_lsum_size,int my_flag_bc_size,int my_flag_rd_size){
+    int iam;
+    MPI_CHECK(MPI_Comm_rank(MPI_COMM_WORLD, &iam));
+    flag_bc_q = (int *)nvshmem_malloc( flag_bc_size * sizeof(int)); // for sender
+    flag_rd_q = (int *)nvshmem_malloc( flag_rd_size * sizeof(int)); // for sender
+    ready_x = (double *)nvshmem_malloc( ready_x_size * sizeof(double)); // for receiver
+    ready_lsum = (double *)nvshmem_malloc( ready_lsum_size * sizeof(double)); // for receiver
+    my_flag_bc = (int *) nvshmem_malloc ( my_flag_bc_size * sizeof(int)); // for sender
+    my_flag_rd = (int *) nvshmem_malloc ( my_flag_rd_size * sizeof(int)); // for sender
+
+    //printf("(%d) in prepare_multiGPU_buffers:\n "
+    //       "flag_bc_size=%d int, ready_x=%d double, "
+    //       "flag_rd_size=%d int, ready_lsum=%d double, "
+    //       "int=%d B, double=%d B\n",
+    //       iam,
+    //       flag_bc_size, ready_x_size,
+    //       flag_rd_size , ready_lsum_size,
+    //       sizeof(int), sizeof(double) );
+    //fflush(stdout);
+
+}
 
 __device__ void C_BcTree_forwardMessageSimple_Device(C_Tree* tree,  int* flag_bc_q,  int* my_flag_bc, int mype, int tid,double* ready_x, int maxrecvsz){
 //int BCsendoffset;

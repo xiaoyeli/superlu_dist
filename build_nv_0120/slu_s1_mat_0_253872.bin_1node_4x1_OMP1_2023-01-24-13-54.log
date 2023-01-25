@@ -1,0 +1,163 @@
+** MPI 3/4, NVSHMEM 3/4, mype_node=3, device name: NVIDIA A100-SXM4-40GB bus id: 193, ndevices=4,cur=3, node=nid001217 **
+** MPI 1/4, NVSHMEM 1/4, mype_node=1, device name: NVIDIA A100-SXM4-40GB bus id: 65, ndevices=4,cur=1, node=nid001217 **
+** MPI 2/4, NVSHMEM 2/4, mype_node=2, device name: NVIDIA A100-SXM4-40GB bus id: 130, ndevices=4,cur=2, node=nid001217 **
+** MPI 0/4, NVSHMEM 0/4, mype_node=0, device name: NVIDIA A100-SXM4-40GB bus id: 3, ndevices=4,cur=0, node=nid001217 **
+first gpufree time:  0.6026
+first blas create time:  0.5348
+MPI_Query_thread with MPI_THREAD_SINGLE
+__STDC_VERSION__ 201112
+Library version:	8.1.2
+Input matrix file:	/global/cfs/cdirs/m2956/nanding/myprojects/matrix/s1_mat_0_253872.bin
+Process grid:		4 X 1
+**************************************************
+.. options:
+**    Fact                      :    0
+**    Equil                     :    1
+**    DiagInv                   :    1
+**    ParSymbFact               :    0
+**    ColPerm                   :    4
+**    RowPerm                   :    1
+**    ReplaceTinyPivot          :    1
+**    IterRefine                :    0
+**    Trans                     :    0
+**    SymPattern                :    0
+**    lookahead_etree           :    0
+**    Use_TensorCore            :    0
+**    Use 3D algorithm          :    0
+**    num_lookaheads            :   10
+** parameters that can be altered by environment variables:
+**    superlu_relax             :  256
+**    superlu_maxsup            :  256
+**    min GEMM m*k*n to use GPU : 5000
+**    GPU buffer size           :   50000000
+**    GPU streams               :    8
+**    estimated fill ratio      :    5
+**************************************************
+fread n   253872	nnz 82155776
+# of doubles fread: 82155776
+Time to read and distribute matrix 0.13
+.. equilibrated? *equed = B
+.. RowPerm 1	 time: 0.85
+.. anorm 1.407514e+02
+.. Use METIS ordering on A'+A
+.. symbfact(): relax 256, maxsuper 256, fill 5
+	Matrix size min_mn    253872
+	Nonzeros in L       233021969
+	Nonzeros in U       233566644
+	nonzeros in L+U     466334741
+	nonzeros in LSUB    32166393
+	No of supers     4163
+	Size of G(L)  3959975
+	Size of G(U)  1558078
+	int 4, short 2, float 4, double 8
+	SYMBfact (MB):	L\U 139.98	total 149.11	expansions 0
+.. # L blocks    10917	# U blocks    10259
+MPI tag upper bound = 536870911
+.. Starting with 1 OpenMP threads 
+ === using DAG ===
+.. thresh = s_eps 5.960464e-08 * anorm 1.407514e+02 = 8.389437e-06
+.. Buffer size: Lsub 1367	Lval 340480	Usub 7287	Uval 1236992	LDA 1345
+max_ncols 5088,  max_ldu 256, bigu_size  1302528
+	.. SUPERLU_MAX_BUFFER_SIZE 50000000 set for GPU
+	.. SUPERLU_N_GEMM: 5000 flops of GEMM done on CPU (1st block always on CPU)
+	.. GEMM buffer size: max_row_size X max_ncols = 1293 x     5088
+[0].. BIG U size  1302528 (on CPU)
+[0].. BIG V size  6578784 (on CPU), dC buffer_size  6578784 (on GPU)
+GPU Driver version:   v 11070
+GPU Devices: 
+ 
+0 : NVIDIA A100-SXM4-40GB 8 0
+  Global memory:   40396 mb 
+  Shared memory:   48 kb 
+  Constant memory: 64 kb 
+  Block registers: 65536 
+
+1 : NVIDIA A100-SXM4-40GB 8 0
+  Global memory:   40396 mb 
+  Shared memory:   48 kb 
+  Constant memory: 64 kb 
+  Block registers: 65536 
+
+2 : NVIDIA A100-SXM4-40GB 8 0
+  Global memory:   40396 mb 
+  Shared memory:   48 kb 
+  Constant memory: 64 kb 
+  Block registers: 65536 
+
+3 : NVIDIA A100-SXM4-40GB 8 0
+  Global memory:   40396 mb 
+  Shared memory:   48 kb 
+  Constant memory: 64 kb 
+  Block registers: 65536 
+
+ Starting with 8 GPU Streams 
+  Max row size is 1293 
+  Threads per process 1 
+
+Initialization time	  0.0562 seconds
+	 Serial: compute static schedule, allocate storage
+
+==== Time breakdown in factorization (rank 0) ====
+Panel factorization 	   4.2385 seconds
+.. L-panel pxgstrf2 	   3.1062 seconds
+.. U-panel pxgstrs2 	   1.1324 seconds
+Time in Look-ahead update 	   0.6867 seconds
+Time in Schur update 		   1.8763 seconds
+.. Time to Gather L buffer	   0.0000  (Separate L panel by Lookahead/Remain)
+.. Time to Gather U buffer	   0.1200 
+.. Time in GEMM   0.0000 
+	* Look-ahead	   0.0000 
+	* Remain	   0.0000	Flops 0.0000e+00	Gflops     -nan
+.. Time to Scatter   1.0850 
+	* Look-ahead	   0.0000 
+	* Remain	   1.0850 
+Total factorization time            	:   6.6848 seconds, 
+--------
+GEMM maximum block: 0-0-0
+
+** Memory Usage **********************************
+.. dQuerySpace: peak_buffer 212.22 (MB)
+	(P0) serial symbolic::stage[0]: symb_memory 149.11, GA_mem_use 986.88
+	(P0) serial distribution::stage[1]:symb_LU 139.98, dist_mem_use 782.50, num_mem_usage.for_lu 990.83
+** Total highmark (MB):
+    Sum-of-all :  7429.99 | Avg :  1857.50  | Max :  1913.31
+    Max at rank 0, different stages (MB):
+	. symbfact         1136.00
+	. distribution     1913.31
+	. numfact          1203.05
+** NUMfact space (MB): (sum-of-all-processes)
+    L\U :         3760.13 |  Total :  4607.51
+	. max at rank 0, max L+U memory (MB):   990.83
+	. max at rank 3, peak buffer (MB):      214.34
+**************************************************
+
+** number of Tiny Pivots:        0
+
+computing inverse of diagonal blocks...
+.. GPU trisolve
+.. GPU trisolve
+.. GPU trisolve
+.. GPU trisolve
+num_thread:     1
+.. B to X redistribute time	  0.0033
+.. Setup GPU L-solve time	  0.0003
+.. L-solve time	  0.0054
+.. L-solve time (MAX) 	  0.0054
+.. Setup GPU U-solve time	  0.0004
+.. U-solve time	  0.0159
+.. U-solve time (MAX) 	  0.0160
+.. X to B redistribute time	  0.0011
+.. DiagScale = 3
+.. Sol  0: ||X - Xtrue|| / ||X|| = 5.125770e-05	 max_i |x - xtrue|_i / |x|_i = 1.751166e-04
+**************************************************
+**** Time (seconds) ****
+	EQUIL time            0.057
+	ROWPERM time          0.850
+	COLPERM time          0.681
+	SYMBFACT time         0.553
+	DISTRIBUTE time       1.858
+	FACTOR time           6.819
+	Factor flops	7.709512e+11	Mflops 	113056.36
+	SOLVE time            0.027
+	Solve flops	9.326695e+08	Mflops 	35096.37
+**************************************************

@@ -2427,27 +2427,29 @@ if ( !iam) printf(".. Construct Reduce tree for U: %.2f\t\n", t);
 
 
 
-
-	/////* reuse: L and U *////
 	int maxrecvsz = sp_ienv_dist(3, options)* nrhs + SUPERLU_MAX( XK_H, LSUM_H );
-    flag_bc_q = (int *)nvshmem_malloc(RDMA_FLAG_SIZE * (k+1) * sizeof(int)); // for sender
-    flag_rd_q = (int *)nvshmem_malloc( RDMA_FLAG_SIZE * nlb * 2 * sizeof(int)); // for sender
-    ready_x = (double *)nvshmem_malloc(maxrecvsz*CEILING( nsupers, grid->npcol) * sizeof(double)); // for receiver
-    ready_lsum = (double *)nvshmem_malloc(2*maxrecvsz*CEILING( nsupers, grid->nprow) * sizeof(double)); // for receiver
-    //printf("(%d) k=%d, flag_size=%d int, data_size=%d double, nlb=%d, flag_size=%d int, data_size=%d double, int=%d B, double=%d B\n",
-    //       iam,k,RDMA_FLAG_SIZE * (k+1), maxrecvsz*CEILING( nsupers, grid->npcol),
-    //       nlb,RDMA_FLAG_SIZE * nlb * 2 , 2*maxrecvsz*CEILING( nsupers, grid->nprow), sizeof(int), sizeof(double) );
+    int flag_bc_size = RDMA_FLAG_SIZE * (k+1);
+    int flag_rd_size = RDMA_FLAG_SIZE * nlb * 2;
+    int ready_x_size = maxrecvsz*CEILING( nsupers, grid->npcol);
+    int ready_lsum_size = 2*maxrecvsz*CEILING( nsupers, grid->nprow);
+    int my_flag_bc_size = RDMA_FLAG_SIZE * (CEILING( nsupers, grid->npcol)+1);
+    int my_flag_rd_size = RDMA_FLAG_SIZE * nlb * 2;
+    //printf("(%d) in pddistribute:\n "
+    //   "flag_bc_size=%d int, ready_x=%d double, "
+    //   "flag_rd_size=%d int, ready_lsum=%d double, "
+    //   "int=%d B, double=%d B\n",
+    //   iam,
+    //   flag_bc_size, ready_x_size,
+    //   flag_rd_size , ready_lsum_size,
+    //   sizeof(int), sizeof(double) );
     //fflush(stdout);
-
-
-    my_flag_bc = (int *) nvshmem_malloc ( RDMA_FLAG_SIZE * (CEILING( nsupers, grid->npcol)+1)  * sizeof(int)); // for sender
-    my_flag_rd = (int *) nvshmem_malloc (RDMA_FLAG_SIZE * nlb * 2 * sizeof(int)); // for sender
-    checkGPU(gpuMemset(my_flag_bc, 0, RDMA_FLAG_SIZE * (CEILING( nsupers, grid->npcol)+1)  * sizeof(int)));
-    checkGPU(gpuMemset(my_flag_rd, 0, RDMA_FLAG_SIZE * nlb * 2 * sizeof(int)));
-    //checkGPU(gpuMemset(ready_x, 0, maxrecvsz*CEILING( nsupers, grid->npcol) * sizeof(double)));
-    //checkGPU(gpuMemset(ready_lsum, 0, 2*maxrecvsz*CEILING( nsupers, grid->nprow) * sizeof(double)));
+    prepare_multiGPU_buffers(flag_bc_size,flag_rd_size,ready_x_size,ready_lsum_size,my_flag_bc_size,my_flag_rd_size);
 
     /////* for L solve *////
+    checkGPU(gpuMemset(my_flag_bc, 0, RDMA_FLAG_SIZE * (CEILING( nsupers, grid->npcol)+1)  * sizeof(int)));
+    checkGPU(gpuMemset(my_flag_rd, 0, RDMA_FLAG_SIZE * nlb * 2 * sizeof(int)));
+    checkGPU(gpuMemset(ready_x, 0, maxrecvsz*CEILING( nsupers, grid->npcol) * sizeof(double)));
+    checkGPU(gpuMemset(ready_lsum, 0, 2*maxrecvsz*CEILING( nsupers, grid->nprow) * sizeof(double)));
 	checkGPU(gpuMalloc( (void**)&d_status,  CEILING( nsupers, grid->npcol) * sizeof(int)));
 	checkGPU(gpuMalloc( (void**)&d_nfrecv,  3 * sizeof(int)));
 	checkGPU(gpuMemcpy(d_status, mystatus, CEILING( nsupers, grid->npcol) * sizeof(int), gpuMemcpyHostToDevice));

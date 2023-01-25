@@ -1,0 +1,3 @@
+/global/cfs/cdirs/m2956/nanding/myprojects/multi-GPU/superlu_dist/build_nv_0120/./EXAMPLE/pddrive: error while loading shared libraries: libnvcpumath-avx2.so: cannot open shared object file: No such file or directory
+srun: error: nid008421: task 0: Exited with exit code 127
+srun: launch/slurm: _step_signal: Terminating StepId=4959558.0

@@ -1,0 +1,280 @@
+** MPI 0/2, NVSHMEM 0/2, mype_node=0, device name: NVIDIA A100-SXM4-40GB bus id: 3, ndevices=2,cur=0, node=nid001217 **
+** MPI 1/2, NVSHMEM 1/2, mype_node=1, device name: NVIDIA A100-SXM4-40GB bus id: 65, ndevices=2,cur=1, node=nid001217 **
+first gpufree time:  0.3783
+first blas create time:  0.5259
+MPI_Query_thread with MPI_THREAD_SINGLE
+__STDC_VERSION__ 201112
+Library version:	8.1.2
+Input matrix file:	/global/cfs/cdirs/m2956/nanding/myprojects/matrix/DG_GrapheneDisorder_8192.bin
+Process grid:		2 X 1
+**************************************************
+.. options:
+**    Fact                      :    0
+**    Equil                     :    1
+**    DiagInv                   :    1
+**    ParSymbFact               :    0
+**    ColPerm                   :    4
+**    RowPerm                   :    1
+**    ReplaceTinyPivot          :    1
+**    IterRefine                :    0
+**    Trans                     :    0
+**    SymPattern                :    0
+**    lookahead_etree           :    0
+**    Use_TensorCore            :    0
+**    Use 3D algorithm          :    0
+**    num_lookaheads            :   10
+** parameters that can be altered by environment variables:
+**    superlu_relax             :  256
+**    superlu_maxsup            :  256
+**    min GEMM m*k*n to use GPU : 5000
+**    GPU buffer size           :   50000000
+**    GPU streams               :    8
+**    estimated fill ratio      :    5
+**************************************************
+fread n   327680	nnz 238668800
+# of doubles fread: 238668800
+Time to read and distribute matrix 0.42
+.. equilibrated? *equed = R
+.. RowPerm 1	 time: 1.71
+.. anorm 3.533251e+01
+.. Use METIS ordering on A'+A
+.. symbfact(): relax 256, maxsuper 256, fill 5
+	Matrix size min_mn    327680
+	Nonzeros in L       988368640
+	Nonzeros in U       988368640
+	nonzeros in L+U     1976409600
+	nonzeros in LSUB    86558359
+	No of supers     2000
+	Size of G(L)  5048000
+	Size of G(U)  4720320
+	int 4, short 2, float 4, double 8
+	SYMBfact (MB):	L\U 371.67	total 383.46	expansions 0
+.. # L blocks    19099	# U blocks    17959
+MPI tag upper bound = 536870911
+.. Starting with 1 OpenMP threads 
+ === using DAG ===
+.. thresh = s_eps 5.960464e-08 * anorm 3.533251e+01 = 2.105982e-06
+.. Buffer size: Lsub 7742	Lval 1966080	Usub 17307	Uval 3825664	LDA 7680
+max_ncols 14944,  max_ldu 256, bigu_size  3825664
+	.. SUPERLU_MAX_BUFFER_SIZE 50000000 set for GPU
+	.. SUPERLU_N_GEMM: 5000 flops of GEMM done on CPU (1st block always on CPU)
+	.. GEMM buffer size: max_row_size X max_ncols = 7680 x    14944
+[0].. BIG U size  3825664 (on CPU)
+[0].. BIG V size 114769920 (on CPU), dC buffer_size 50000000 (on GPU)
+GPU Driver version:   v 11070
+GPU Devices: 
+ 
+0 : NVIDIA A100-SXM4-40GB 8 0
+  Global memory:   40396 mb 
+  Shared memory:   48 kb 
+  Constant memory: 64 kb 
+  Block registers: 65536 
+
+1 : NVIDIA A100-SXM4-40GB 8 0
+  Global memory:   40396 mb 
+  Shared memory:   48 kb 
+  Constant memory: 64 kb 
+  Block registers: 65536 
+
+ Starting with 8 GPU Streams 
+  Max row size is 7680 
+  Threads per process 1 
+warning: number of partitions 2 > 1, try increasing MAX_BUFFER_SIZE.
+warning: number of partitions 2 > 1, try increasing MAX_BUFFER_SIZE.
+warning: number of partitions 2 > 1, try increasing MAX_BUFFER_SIZE.
+warning: number of partitions 2 > 1, try increasing MAX_BUFFER_SIZE.
+warning: number of partitions 2 > 1, try increasing MAX_BUFFER_SIZE.
+warning: number of partitions 2 > 1, try increasing MAX_BUFFER_SIZE.
+warning: number of partitions 2 > 1, try increasing MAX_BUFFER_SIZE.
+warning: number of partitions 2 > 1, try increasing MAX_BUFFER_SIZE.
+warning: number of partitions 2 > 1, try increasing MAX_BUFFER_SIZE.
+warning: number of partitions 2 > 1, try increasing MAX_BUFFER_SIZE.
+warning: number of partitions 2 > 1, try increasing MAX_BUFFER_SIZE.
+warning: number of partitions 2 > 1, try increasing MAX_BUFFER_SIZE.
+warning: number of partitions 2 > 1, try increasing MAX_BUFFER_SIZE.
+warning: number of partitions 2 > 1, try increasing MAX_BUFFER_SIZE.
+warning: number of partitions 2 > 1, try increasing MAX_BUFFER_SIZE.
+warning: number of partitions 2 > 1, try increasing MAX_BUFFER_SIZE.
+warning: number of partitions 2 > 1, try increasing MAX_BUFFER_SIZE.
+warning: number of partitions 2 > 1, try increasing MAX_BUFFER_SIZE.
+warning: number of partitions 2 > 1, try increasing MAX_BUFFER_SIZE.
+warning: number of partitions 2 > 1, try increasing MAX_BUFFER_SIZE.
+warning: number of partitions 2 > 1, try increasing MAX_BUFFER_SIZE.
+warning: number of partitions 2 > 1, try increasing MAX_BUFFER_SIZE.
+warning: number of partitions 2 > 1, try increasing MAX_BUFFER_SIZE.
+warning: number of partitions 2 > 1, try increasing MAX_BUFFER_SIZE.
+warning: number of partitions 2 > 1, try increasing MAX_BUFFER_SIZE.
+warning: number of partitions 2 > 1, try increasing MAX_BUFFER_SIZE.
+warning: number of partitions 2 > 1, try increasing MAX_BUFFER_SIZE.
+warning: number of partitions 2 > 1, try increasing MAX_BUFFER_SIZE.
+warning: number of partitions 2 > 1, try increasing MAX_BUFFER_SIZE.
+warning: number of partitions 2 > 1, try increasing MAX_BUFFER_SIZE.
+warning: number of partitions 2 > 1, try increasing MAX_BUFFER_SIZE.
+warning: number of partitions 2 > 1, try increasing MAX_BUFFER_SIZE.
+warning: number of partitions 2 > 1, try increasing MAX_BUFFER_SIZE.
+warning: number of partitions 2 > 1, try increasing MAX_BUFFER_SIZE.
+warning: number of partitions 2 > 1, try increasing MAX_BUFFER_SIZE.
+warning: number of partitions 2 > 1, try increasing MAX_BUFFER_SIZE.
+warning: number of partitions 2 > 1, try increasing MAX_BUFFER_SIZE.
+warning: number of partitions 2 > 1, try increasing MAX_BUFFER_SIZE.
+warning: number of partitions 2 > 1, try increasing MAX_BUFFER_SIZE.
+warning: number of partitions 2 > 1, try increasing MAX_BUFFER_SIZE.
+warning: number of partitions 2 > 1, try increasing MAX_BUFFER_SIZE.
+warning: number of partitions 2 > 1, try increasing MAX_BUFFER_SIZE.
+warning: number of partitions 2 > 1, try increasing MAX_BUFFER_SIZE.
+warning: number of partitions 2 > 1, try increasing MAX_BUFFER_SIZE.
+warning: number of partitions 2 > 1, try increasing MAX_BUFFER_SIZE.
+warning: number of partitions 2 > 1, try increasing MAX_BUFFER_SIZE.
+warning: number of partitions 2 > 1, try increasing MAX_BUFFER_SIZE.
+warning: number of partitions 2 > 1, try increasing MAX_BUFFER_SIZE.
+warning: number of partitions 2 > 1, try increasing MAX_BUFFER_SIZE.
+warning: number of partitions 2 > 1, try increasing MAX_BUFFER_SIZE.
+warning: number of partitions 2 > 1, try increasing MAX_BUFFER_SIZE.
+warning: number of partitions 2 > 1, try increasing MAX_BUFFER_SIZE.
+warning: number of partitions 2 > 1, try increasing MAX_BUFFER_SIZE.
+warning: number of partitions 2 > 1, try increasing MAX_BUFFER_SIZE.
+warning: number of partitions 2 > 1, try increasing MAX_BUFFER_SIZE.
+warning: number of partitions 2 > 1, try increasing MAX_BUFFER_SIZE.
+warning: number of partitions 2 > 1, try increasing MAX_BUFFER_SIZE.
+warning: number of partitions 2 > 1, try increasing MAX_BUFFER_SIZE.
+warning: number of partitions 2 > 1, try increasing MAX_BUFFER_SIZE.
+warning: number of partitions 2 > 1, try increasing MAX_BUFFER_SIZE.
+warning: number of partitions 2 > 1, try increasing MAX_BUFFER_SIZE.
+warning: number of partitions 3 > 1, try increasing MAX_BUFFER_SIZE.
+warning: number of partitions 3 > 1, try increasing MAX_BUFFER_SIZE.
+warning: number of partitions 2 > 1, try increasing MAX_BUFFER_SIZE.
+warning: number of partitions 2 > 1, try increasing MAX_BUFFER_SIZE.
+warning: number of partitions 2 > 1, try increasing MAX_BUFFER_SIZE.
+warning: number of partitions 3 > 1, try increasing MAX_BUFFER_SIZE.
+warning: number of partitions 2 > 1, try increasing MAX_BUFFER_SIZE.
+warning: number of partitions 2 > 1, try increasing MAX_BUFFER_SIZE.
+warning: number of partitions 2 > 1, try increasing MAX_BUFFER_SIZE.
+warning: number of partitions 2 > 1, try increasing MAX_BUFFER_SIZE.
+warning: number of partitions 2 > 1, try increasing MAX_BUFFER_SIZE.
+warning: number of partitions 3 > 1, try increasing MAX_BUFFER_SIZE.
+warning: number of partitions 3 > 1, try increasing MAX_BUFFER_SIZE.
+warning: number of partitions 2 > 1, try increasing MAX_BUFFER_SIZE.
+warning: number of partitions 2 > 1, try increasing MAX_BUFFER_SIZE.
+warning: number of partitions 2 > 1, try increasing MAX_BUFFER_SIZE.
+warning: number of partitions 2 > 1, try increasing MAX_BUFFER_SIZE.
+warning: number of partitions 3 > 1, try increasing MAX_BUFFER_SIZE.
+warning: number of partitions 2 > 1, try increasing MAX_BUFFER_SIZE.
+warning: number of partitions 2 > 1, try increasing MAX_BUFFER_SIZE.
+warning: number of partitions 2 > 1, try increasing MAX_BUFFER_SIZE.
+warning: number of partitions 2 > 1, try increasing MAX_BUFFER_SIZE.
+warning: number of partitions 2 > 1, try increasing MAX_BUFFER_SIZE.
+warning: number of partitions 2 > 1, try increasing MAX_BUFFER_SIZE.
+warning: number of partitions 2 > 1, try increasing MAX_BUFFER_SIZE.
+warning: number of partitions 2 > 1, try increasing MAX_BUFFER_SIZE.
+warning: number of partitions 2 > 1, try increasing MAX_BUFFER_SIZE.
+warning: number of partitions 2 > 1, try increasing MAX_BUFFER_SIZE.
+warning: number of partitions 2 > 1, try increasing MAX_BUFFER_SIZE.
+warning: number of partitions 2 > 1, try increasing MAX_BUFFER_SIZE.
+warning: number of partitions 2 > 1, try increasing MAX_BUFFER_SIZE.
+warning: number of partitions 2 > 1, try increasing MAX_BUFFER_SIZE.
+warning: number of partitions 2 > 1, try increasing MAX_BUFFER_SIZE.
+warning: number of partitions 2 > 1, try increasing MAX_BUFFER_SIZE.
+warning: number of partitions 2 > 1, try increasing MAX_BUFFER_SIZE.
+warning: number of partitions 2 > 1, try increasing MAX_BUFFER_SIZE.
+warning: number of partitions 2 > 1, try increasing MAX_BUFFER_SIZE.
+warning: number of partitions 2 > 1, try increasing MAX_BUFFER_SIZE.
+warning: number of partitions 2 > 1, try increasing MAX_BUFFER_SIZE.
+warning: number of partitions 2 > 1, try increasing MAX_BUFFER_SIZE.
+warning: number of partitions 2 > 1, try increasing MAX_BUFFER_SIZE.
+warning: number of partitions 2 > 1, try increasing MAX_BUFFER_SIZE.
+warning: number of partitions 2 > 1, try increasing MAX_BUFFER_SIZE.
+warning: number of partitions 2 > 1, try increasing MAX_BUFFER_SIZE.
+warning: number of partitions 2 > 1, try increasing MAX_BUFFER_SIZE.
+warning: number of partitions 2 > 1, try increasing MAX_BUFFER_SIZE.
+warning: number of partitions 2 > 1, try increasing MAX_BUFFER_SIZE.
+warning: number of partitions 2 > 1, try increasing MAX_BUFFER_SIZE.
+warning: number of partitions 2 > 1, try increasing MAX_BUFFER_SIZE.
+warning: number of partitions 2 > 1, try increasing MAX_BUFFER_SIZE.
+warning: number of partitions 2 > 1, try increasing MAX_BUFFER_SIZE.
+warning: number of partitions 2 > 1, try increasing MAX_BUFFER_SIZE.
+warning: number of partitions 2 > 1, try increasing MAX_BUFFER_SIZE.
+warning: number of partitions 2 > 1, try increasing MAX_BUFFER_SIZE.
+warning: number of partitions 2 > 1, try increasing MAX_BUFFER_SIZE.
+warning: number of partitions 2 > 1, try increasing MAX_BUFFER_SIZE.
+warning: number of partitions 2 > 1, try increasing MAX_BUFFER_SIZE.
+warning: number of partitions 2 > 1, try increasing MAX_BUFFER_SIZE.
+warning: number of partitions 2 > 1, try increasing MAX_BUFFER_SIZE.
+warning: number of partitions 2 > 1, try increasing MAX_BUFFER_SIZE.
+warning: number of partitions 2 > 1, try increasing MAX_BUFFER_SIZE.
+warning: number of partitions 2 > 1, try increasing MAX_BUFFER_SIZE.
+warning: number of partitions 2 > 1, try increasing MAX_BUFFER_SIZE.
+warning: number of partitions 2 > 1, try increasing MAX_BUFFER_SIZE.
+warning: number of partitions 2 > 1, try increasing MAX_BUFFER_SIZE.
+warning: number of partitions 2 > 1, try increasing MAX_BUFFER_SIZE.
+warning: number of partitions 2 > 1, try increasing MAX_BUFFER_SIZE.
+warning: number of partitions 2 > 1, try increasing MAX_BUFFER_SIZE.
+warning: number of partitions 2 > 1, try increasing MAX_BUFFER_SIZE.
+warning: number of partitions 2 > 1, try increasing MAX_BUFFER_SIZE.
+warning: number of partitions 2 > 1, try increasing MAX_BUFFER_SIZE.
+warning: number of partitions 2 > 1, try increasing MAX_BUFFER_SIZE.
+
+Initialization time	  0.2444 seconds
+	 Serial: compute static schedule, allocate storage
+
+==== Time breakdown in factorization (rank 0) ====
+Panel factorization 	  25.8544 seconds
+.. L-panel pxgstrf2 	  14.1306 seconds
+.. U-panel pxgstrs2 	  11.7238 seconds
+Time in Look-ahead update 	  13.5807 seconds
+Time in Schur update 		  91.5788 seconds
+.. Time to Gather L buffer	   0.0000  (Separate L panel by Lookahead/Remain)
+.. Time to Gather U buffer	   0.6301 
+.. Time in GEMM   0.0000 
+	* Look-ahead	   0.0000 
+	* Remain	   0.0000	Flops 0.0000e+00	Gflops     -nan
+.. Time to Scatter  19.8809 
+	* Look-ahead	   0.0000 
+	* Remain	  19.8809 
+Total factorization time            	: 128.5699 seconds, 
+--------
+GEMM maximum block: 0-0-0
+
+** Memory Usage **********************************
+.. dQuerySpace: peak_buffer 1482.45 (MB)
+	(P0) serial symbolic::stage[0]: symb_memory 383.46, GA_mem_use 2865.34
+	(P0) serial distribution::stage[1]:symb_LU 371.67, dist_mem_use 1392.24, num_mem_usage.for_lu 8024.66
+** Total highmark (MB):
+    Sum-of-all : 19382.85 | Avg :  9691.42  | Max :  9788.57
+    Max at rank 0, different stages (MB):
+	. symbfact         3248.80
+	. distribution     9788.57
+	. numfact          9507.11
+** NUMfact space (MB): (sum-of-all-processes)
+    L\U :        15865.77 |  Total : 18811.54
+	. max at rank 0, max L+U memory (MB):  8024.66
+	. max at rank 0, peak buffer (MB):     1482.45
+**************************************************
+
+** number of Tiny Pivots:        0
+
+computing inverse of diagonal blocks...
+.. GPU trisolve
+.. GPU trisolve
+num_thread:     1
+.. B to X redistribute time	  0.0079
+.. Setup GPU L-solve time	  0.0023
+.. L-solve time	  0.0302
+.. L-solve time (MAX) 	  0.0305
+.. Setup GPU U-solve time	  0.0037
+.. U-solve time	  0.1030
+.. U-solve time (MAX) 	  0.1032
+.. X to B redistribute time	  0.0027
+.. DiagScale = 3
+.. Sol  0: ||X - Xtrue|| / ||X|| = 9.879657e-08	 max_i |x - xtrue|_i / |x|_i = 1.383132e-06
+**************************************************
+**** Time (seconds) ****
+	EQUIL time            0.271
+	ROWPERM time          1.713
+	COLPERM time          1.698
+	SYMBFACT time         2.231
+	DISTRIBUTE time      10.900
+	FACTOR time         128.939
+	Factor flops	1.164550e+13	Mflops 	90318.01
+	SOLVE time            0.150
+	Solve flops	3.952819e+09	Mflops 	26298.38
+**************************************************

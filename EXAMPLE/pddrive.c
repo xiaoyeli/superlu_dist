@@ -24,6 +24,7 @@ at the top-level directory.
 
 #include <math.h>
 #include "superlu_ddefs.h"
+
 /*! \brief
  *
  * <pre>
@@ -89,9 +90,12 @@ int main(int argc, char *argv[])
        INITIALIZE MPI ENVIRONMENT. 
        ------------------------------------------------------------*/
     //MPI_Init( &argc, &argv );
-    //MPI_Init_thread( &argc, &argv, MPI_THREAD_MULTIPLE, &omp_mpi_level);
+//    MPI_Init_thread( &argc, &argv, MPI_THREAD_MULTIPLE, &omp_mpi_level);
+#ifdef GPU_SOLVE
     nv_init_wrapper(&argc,argv,&omp_mpi_level);
-
+#else
+    MPI_Init_thread( &argc, &argv, MPI_THREAD_MULTIPLE, &omp_mpi_level);
+#endif	
 
 #if ( VAMPIR>=1 )
     VT_traceoff(); 
@@ -101,7 +105,33 @@ int main(int argc, char *argv[])
 	__itt_pause();
 #endif
 	
-    /* Parse command line argv[]. */
+    /* Set the default input options:
+        options.Fact              = DOFACT;
+        options.Equil             = YES;
+        options.ParSymbFact       = NO;
+        options.ColPerm           = METIS_AT_PLUS_A;
+        options.RowPerm           = LargeDiag_MC64;
+        options.ReplaceTinyPivot  = NO;
+        options.IterRefine        = SLU_DOUBLE;
+        options.Trans             = NOTRANS;
+        options.SolveInitialized  = NO;
+        options.RefineInitialized = NO;
+        options.PrintStat         = YES;
+	options.DiagInv           = NO;
+     */
+    set_default_options_dist(&options);
+    options.IterRefine = NOREFINE;
+    options.DiagInv = YES;
+    options.ReplaceTinyPivot  = YES;
+#if 0
+    options.RowPerm = LargeDiag_HWPM;
+    options.IterRefine = NOREFINE;
+    options.ColPerm = NATURAL;
+    options.Equil = NO; 
+    options.ReplaceTinyPivot = YES;
+#endif
+
+    /* Parse command line argv[], may modify default options */
     for (cpp = argv+1; *cpp; ++cpp) {
 	if ( **cpp == '-' ) {
 	    c = *(*cpp+1);
@@ -109,8 +139,14 @@ int main(int argc, char *argv[])
 	    switch (c) {
 	      case 'h':
 		  printf("Options:\n");
-		  printf("\t-r <int>: process rows    (default %4d)\n", nprow);
-		  printf("\t-c <int>: process columns (default %4d)\n", npcol);
+		  printf("\t-r <int>: process rows       (default %4d)\n", nprow);
+		  printf("\t-c <int>: process columns    (default %4d)\n", npcol);
+		  printf("\t-p <int>: row permutation    (default %4d)\n", options.RowPerm);
+		  printf("\t-q <int>: col permutation    (default %4d)\n", options.ColPerm);
+		  printf("\t-s <int>: parallel symbolic? (default %4d)\n", options.ParSymbFact);
+		  printf("\t-l <int>: lookahead level    (default %4d)\n", options.num_lookaheads);
+		  printf("\t-i <int>: iter. refinement   (default %4d)\n", options.IterRefine);
+		  printf("\t-b <int>: use batch mode?    (default %4d)\n", batch);
 		  exit(0);
 		  break;
 	      case 'r': nprow = atoi(*cpp);
@@ -138,15 +174,25 @@ int main(int argc, char *argv[])
 	}
     }
 
-    if ( batch ) { /* in the batch mode: create multiple SuperLU grids,
-		      each grid solving one linear system. */
+    /* Command line input to modify default options */
+    if (rowperm != -1) options.RowPerm = rowperm;
+    if (colperm != -1) options.ColPerm = colperm;
+    if (lookahead != -1) options.num_lookaheads = lookahead;
+    if (ir != -1) options.IterRefine = ir;
+    if (symbfact != -1) options.ParSymbFact = symbfact;
+
+    /* In the batch mode: create multiple SuperLU grids,
+        each grid solving one linear system. */
+    if ( batch ) {
 	/* ------------------------------------------------------------
 	   INITIALIZE MULTIPLE SUPERLU PROCESS GRIDS. 
 	   ------------------------------------------------------------*/
         MPI_Comm_rank(MPI_COMM_WORLD, &myrank);
         usermap = SUPERLU_MALLOC(nprow*npcol * sizeof(int));
         ldumap = nprow;
-        int color = myrank/(nprow*npcol); /* Assuming each grid uses the same number of nprow and npcol */
+	
+        /* Assuming each grid uses the same number of nprow and npcol */
+	int color = myrank/(nprow*npcol);
 	MPI_Comm_split(MPI_COMM_WORLD, color, myrank, &SubComm);
         p = 0;    
         for (int i = 0; i < nprow; ++i)
@@ -162,27 +208,27 @@ int main(int argc, char *argv[])
             ttemp = getenv ("SUPERLU_BIND_MPI_GPU");
 
             if (ttemp) {
-	        int devs, rank;
-	        MPI_Comm_rank(MPI_COMM_WORLD, &rank); // MPI_COMM_WORLD needs to be used here instead of SubComm
+    	        int devs, rank;
+    	        MPI_Comm_rank(MPI_COMM_WORLD, &rank); // MPI_COMM_WORLD needs to be used here instead of SubComm
 	        gpuGetDeviceCount(&devs);  // Returns the number of compute-capable devices
 	        gpuSetDevice(rank % devs); // Set device to be used for GPU executions
             }
 
-            // This is to initialize GPU, which can be costly.
-            double t1 = SuperLU_timer_();
+            // This is to initialize GPU, which can be costly. 
+            double t1 = SuperLU_timer_();                       
             gpuFree(0);
-            double t2 = SuperLU_timer_();
+            double t2 = SuperLU_timer_();    
             if(!myrank)printf("first gpufree time: %7.4f\n",t2-t1);
-            gpublasHandle_t hb;
+            gpublasHandle_t hb;           
             gpublasCreate(&hb);
             if(!myrank)printf("first blas create time: %7.4f\n",SuperLU_timer_()-t2);
             gpublasDestroy(hb);
-	}
+        }
 #endif
         // printf("grid.iam %5d, myrank %5d\n",grid.iam,myrank);
         // fflush(stdout);
 
-    } else {
+    } else { /* not batch mode */
         /* ------------------------------------------------------------
            INITIALIZE THE SUPERLU PROCESS GRID.
            ------------------------------------------------------------ */
@@ -192,11 +238,11 @@ int main(int argc, char *argv[])
         int superlu_acc_offload = get_acc_offload();
         if (superlu_acc_offload) {
             MPI_Comm_rank(MPI_COMM_WORLD, &myrank);
-            double t1 = SuperLU_timer_();
+            double t1 = SuperLU_timer_();                       
             gpuFree(0);
-            double t2 = SuperLU_timer_();
+            double t2 = SuperLU_timer_();    
             if(!myrank)printf("first gpufree time: %7.4f\n",t2-t1);
-            gpublasHandle_t hb;
+            gpublasHandle_t hb;           
             gpublasCreate(&hb);
             if(!myrank)printf("first blas create time: %7.4f\n",SuperLU_timer_()-t2);
             gpublasDestroy(hb);
@@ -244,6 +290,12 @@ int main(int argc, char *argv[])
 	fflush(stdout);
     }
 
+    /* print solver options */
+    if (!iam) {
+	print_options_dist(&options);
+	fflush(stdout);
+    }
+    
 #if ( VAMPIR>=1 )
     VT_traceoff();
 #endif
@@ -271,39 +323,6 @@ int main(int argc, char *argv[])
        NOW WE SOLVE THE LINEAR SYSTEM.
        ------------------------------------------------------------*/
 
-    /* Set the default input options:
-        options.Fact              = DOFACT;
-        options.Equil             = YES;
-        options.ParSymbFact       = NO;
-        options.ColPerm           = METIS_AT_PLUS_A;
-        options.RowPerm           = LargeDiag_MC64;
-        options.ReplaceTinyPivot  = NO;
-        options.IterRefine        = SLU_DOUBLE;
-        options.Trans             = NOTRANS;
-        options.SolveInitialized  = NO;
-        options.RefineInitialized = NO;
-        options.PrintStat         = YES;
-	options.DiagInv           = NO;
-     */
-    set_default_options_dist(&options);
-#if 0
-    options.RowPerm = LargeDiag_HWPM;
-    options.IterRefine = NOREFINE;
-    options.ColPerm = NATURAL;
-    options.Equil = NO; 
-    options.ReplaceTinyPivot = YES;
-#endif
-
-    if (rowperm != -1) options.RowPerm = rowperm;
-    if (colperm != -1) options.ColPerm = colperm;
-    if (lookahead != -1) options.num_lookaheads = lookahead;
-    if (ir != -1) options.IterRefine = ir;
-    if (symbfact != -1) options.ParSymbFact = symbfact;
-
-    if (!iam) {
-	print_options_dist(&options);
-	fflush(stdout);
-    }
 
     m = A.nrow;
     n = A.ncol;
@@ -331,8 +350,7 @@ int main(int argc, char *argv[])
     }
 
     PStatPrint(&options, &stat, &grid);        /* Print the statistics. */
-    fflush(stdout);
-    return 0;
+
     /* ------------------------------------------------------------
        DEALLOCATE STORAGE.
        ------------------------------------------------------------*/
@@ -346,7 +364,6 @@ int main(int argc, char *argv[])
     SUPERLU_FREE(xtrue);
     SUPERLU_FREE(berr);
     fclose(fp);
-
 
     /* ------------------------------------------------------------
        RELEASE THE SUPERLU PROCESS GRID.
@@ -374,16 +391,10 @@ out:
     /* ------------------------------------------------------------
        TERMINATES THE MPI EXECUTION ENVIRONMENT.
        ------------------------------------------------------------*/
-    //nvshmem_free(ready_x);
-    //nvshmem_free(ready_lsum);
-    //nvshmem_free(flag_bc_q);
-    //nvshmem_free(flag_rd_q);
-    //nvshmem_finalize();
     MPI_Finalize();
 
 #if ( DEBUGlevel>=1 )
     CHECK_MALLOC(iam, "Exit main()");
-    fflush(stdout);
 #endif
 
 }

@@ -1,0 +1,204 @@
+** MPI 0/1, NVSHMEM 0/1, mype_node=0, device name: NVIDIA A100-SXM4-40GB bus id: 3, ndevices=1,cur=0, node=nid001217 **
+first gpufree time:  0.1810
+first blas create time:  0.5266
+MPI_Query_thread with MPI_THREAD_SINGLE
+__STDC_VERSION__ 201112
+Library version:	8.1.2
+Input matrix file:	/global/cfs/cdirs/m2956/nanding/myprojects/matrix/s1_mat_0_507744.bin
+Process grid:		1 X 1
+**************************************************
+.. options:
+**    Fact                      :    0
+**    Equil                     :    1
+**    DiagInv                   :    1
+**    ParSymbFact               :    0
+**    ColPerm                   :    4
+**    RowPerm                   :    1
+**    ReplaceTinyPivot          :    1
+**    IterRefine                :    0
+**    Trans                     :    0
+**    SymPattern                :    0
+**    lookahead_etree           :    0
+**    Use_TensorCore            :    0
+**    Use 3D algorithm          :    0
+**    num_lookaheads            :   10
+** parameters that can be altered by environment variables:
+**    superlu_relax             :  256
+**    superlu_maxsup            :  256
+**    min GEMM m*k*n to use GPU : 5000
+**    GPU buffer size           :   50000000
+**    GPU streams               :    8
+**    estimated fill ratio      :    5
+**************************************************
+fread n   507744	nnz 205385344
+# of doubles fread: 205385344
+Time to read and distribute matrix 0.89
+.. equilibrated? *equed = B
+.. RowPerm 1	 time: 2.27
+.. anorm 1.888919e+02
+.. Use METIS ordering on A'+A
+.. symbfact(): relax 256, maxsuper 256, fill 5
+	Matrix size min_mn    507744
+	Nonzeros in L       879766426
+	Nonzeros in U       882320803
+	nonzeros in L+U     1761579485
+	nonzeros in LSUB    103226086
+	No of supers     9827
+	Size of G(L) 15483594
+	Size of G(U)  6514038
+	int 4, short 2, float 4, double 8
+	SYMBfact (MB):	L\U 449.12	total 467.39	expansions 0
+.. # L blocks   246462	# U blocks   225146
+MPI tag upper bound = 536870911
+.. Starting with 1 OpenMP threads 
+ === using DAG ===
+.. thresh = s_eps 5.960464e-08 * anorm 1.888919e+02 = 1.125884e-05
+.. Buffer size: Lsub 9342	Lval 2351104	Usub 13486	Uval 2318336	LDA 9184
+max_ncols 9056,  max_ldu 256, bigu_size  2318336
+	.. SUPERLU_MAX_BUFFER_SIZE 50000000 set for GPU
+	.. SUPERLU_N_GEMM: 5000 flops of GEMM done on CPU (1st block always on CPU)
+	.. GEMM buffer size: max_row_size X max_ncols = 9184 x     9056
+[0].. BIG U size  2318336 (on CPU)
+[0].. BIG V size 83170304 (on CPU), dC buffer_size 50000000 (on GPU)
+GPU Driver version:   v 11070
+GPU Devices: 
+ 
+0 : NVIDIA A100-SXM4-40GB 8 0
+  Global memory:   40396 mb 
+  Shared memory:   48 kb 
+  Constant memory: 64 kb 
+  Block registers: 65536 
+
+ Starting with 8 GPU Streams 
+  Max row size is 9184 
+  Threads per process 1 
+warning: number of partitions 2 > 1, try increasing MAX_BUFFER_SIZE.
+warning: number of partitions 2 > 1, try increasing MAX_BUFFER_SIZE.
+warning: number of partitions 2 > 1, try increasing MAX_BUFFER_SIZE.
+warning: number of partitions 2 > 1, try increasing MAX_BUFFER_SIZE.
+warning: number of partitions 2 > 1, try increasing MAX_BUFFER_SIZE.
+warning: number of partitions 2 > 1, try increasing MAX_BUFFER_SIZE.
+warning: number of partitions 2 > 1, try increasing MAX_BUFFER_SIZE.
+warning: number of partitions 2 > 1, try increasing MAX_BUFFER_SIZE.
+warning: number of partitions 2 > 1, try increasing MAX_BUFFER_SIZE.
+warning: number of partitions 2 > 1, try increasing MAX_BUFFER_SIZE.
+warning: number of partitions 2 > 1, try increasing MAX_BUFFER_SIZE.
+warning: number of partitions 2 > 1, try increasing MAX_BUFFER_SIZE.
+warning: number of partitions 2 > 1, try increasing MAX_BUFFER_SIZE.
+warning: number of partitions 2 > 1, try increasing MAX_BUFFER_SIZE.
+warning: number of partitions 2 > 1, try increasing MAX_BUFFER_SIZE.
+warning: number of partitions 2 > 1, try increasing MAX_BUFFER_SIZE.
+warning: number of partitions 2 > 1, try increasing MAX_BUFFER_SIZE.
+warning: number of partitions 2 > 1, try increasing MAX_BUFFER_SIZE.
+warning: number of partitions 2 > 1, try increasing MAX_BUFFER_SIZE.
+warning: number of partitions 2 > 1, try increasing MAX_BUFFER_SIZE.
+warning: number of partitions 2 > 1, try increasing MAX_BUFFER_SIZE.
+warning: number of partitions 2 > 1, try increasing MAX_BUFFER_SIZE.
+warning: number of partitions 2 > 1, try increasing MAX_BUFFER_SIZE.
+warning: number of partitions 2 > 1, try increasing MAX_BUFFER_SIZE.
+warning: number of partitions 2 > 1, try increasing MAX_BUFFER_SIZE.
+warning: number of partitions 2 > 1, try increasing MAX_BUFFER_SIZE.
+warning: number of partitions 2 > 1, try increasing MAX_BUFFER_SIZE.
+warning: number of partitions 2 > 1, try increasing MAX_BUFFER_SIZE.
+warning: number of partitions 2 > 1, try increasing MAX_BUFFER_SIZE.
+warning: number of partitions 2 > 1, try increasing MAX_BUFFER_SIZE.
+warning: number of partitions 2 > 1, try increasing MAX_BUFFER_SIZE.
+warning: number of partitions 2 > 1, try increasing MAX_BUFFER_SIZE.
+warning: number of partitions 2 > 1, try increasing MAX_BUFFER_SIZE.
+warning: number of partitions 2 > 1, try increasing MAX_BUFFER_SIZE.
+warning: number of partitions 2 > 1, try increasing MAX_BUFFER_SIZE.
+warning: number of partitions 2 > 1, try increasing MAX_BUFFER_SIZE.
+warning: number of partitions 2 > 1, try increasing MAX_BUFFER_SIZE.
+warning: number of partitions 2 > 1, try increasing MAX_BUFFER_SIZE.
+warning: number of partitions 2 > 1, try increasing MAX_BUFFER_SIZE.
+warning: number of partitions 2 > 1, try increasing MAX_BUFFER_SIZE.
+warning: number of partitions 2 > 1, try increasing MAX_BUFFER_SIZE.
+warning: number of partitions 2 > 1, try increasing MAX_BUFFER_SIZE.
+warning: number of partitions 2 > 1, try increasing MAX_BUFFER_SIZE.
+warning: number of partitions 2 > 1, try increasing MAX_BUFFER_SIZE.
+warning: number of partitions 2 > 1, try increasing MAX_BUFFER_SIZE.
+warning: number of partitions 2 > 1, try increasing MAX_BUFFER_SIZE.
+warning: number of partitions 2 > 1, try increasing MAX_BUFFER_SIZE.
+warning: number of partitions 2 > 1, try increasing MAX_BUFFER_SIZE.
+warning: number of partitions 2 > 1, try increasing MAX_BUFFER_SIZE.
+warning: number of partitions 2 > 1, try increasing MAX_BUFFER_SIZE.
+warning: number of partitions 2 > 1, try increasing MAX_BUFFER_SIZE.
+warning: number of partitions 2 > 1, try increasing MAX_BUFFER_SIZE.
+warning: number of partitions 2 > 1, try increasing MAX_BUFFER_SIZE.
+warning: number of partitions 2 > 1, try increasing MAX_BUFFER_SIZE.
+warning: number of partitions 2 > 1, try increasing MAX_BUFFER_SIZE.
+warning: number of partitions 2 > 1, try increasing MAX_BUFFER_SIZE.
+warning: number of partitions 2 > 1, try increasing MAX_BUFFER_SIZE.
+warning: number of partitions 2 > 1, try increasing MAX_BUFFER_SIZE.
+warning: number of partitions 2 > 1, try increasing MAX_BUFFER_SIZE.
+warning: number of partitions 2 > 1, try increasing MAX_BUFFER_SIZE.
+warning: number of partitions 2 > 1, try increasing MAX_BUFFER_SIZE.
+warning: number of partitions 2 > 1, try increasing MAX_BUFFER_SIZE.
+warning: number of partitions 2 > 1, try increasing MAX_BUFFER_SIZE.
+warning: number of partitions 2 > 1, try increasing MAX_BUFFER_SIZE.
+warning: number of partitions 2 > 1, try increasing MAX_BUFFER_SIZE.
+
+Initialization time	  0.2854 seconds
+	 Serial: compute static schedule, allocate storage
+
+==== Time breakdown in factorization (rank 0) ====
+Panel factorization 	  25.0762 seconds
+.. L-panel pxgstrf2 	   8.4776 seconds
+.. U-panel pxgstrs2 	  16.5987 seconds
+Time in Look-ahead update 	   5.3355 seconds
+Time in Schur update 		 101.2428 seconds
+.. Time to Gather L buffer	   0.0000  (Separate L panel by Lookahead/Remain)
+.. Time to Gather U buffer	   0.5485 
+.. Time in GEMM   0.0000 
+	* Look-ahead	   0.0000 
+	* Remain	   0.0000	Flops 0.0000e+00	Gflops     -nan
+.. Time to Scatter  37.8602 
+	* Look-ahead	   0.0000 
+	* Remain	  37.8602 
+Total factorization time            	: 130.6257 seconds, 
+--------
+GEMM maximum block: 0-0-0
+
+** Memory Usage **********************************
+.. dQuerySpace: peak_buffer 1122.38 (MB)
+	(P0) serial symbolic::stage[0]: symb_memory 467.39, GA_mem_use 2466.66
+	(P0) serial distribution::stage[1]:symb_LU 449.12, dist_mem_use 2506.27, num_mem_usage.for_lu 14214.46
+** Total highmark (MB):
+    Sum-of-all : 17169.84 | Avg : 17169.84  | Max : 17169.84
+    Max at rank 0, different stages (MB):
+	. symbfact         2934.05
+	. distribution    17169.84
+	. numfact         15336.84
+** NUMfact space (MB): (sum-of-all-processes)
+    L\U :        14214.46 |  Total : 15336.84
+	. max at rank 0, max L+U memory (MB): 14214.46
+	. max at rank 0, peak buffer (MB):     1122.38
+**************************************************
+
+** number of Tiny Pivots:        0
+
+computing inverse of diagonal blocks...
+.. GPU trisolve
+num_thread:     1
+.. B to X redistribute time	  0.0123
+.. Setup GPU L-solve time	  0.0012
+.. L-solve time	  0.0434
+.. L-solve time (MAX) 	  0.0434
+.. Setup GPU U-solve time	  0.0022
+.. U-solve time	  0.2001
+.. U-solve time (MAX) 	  0.2001
+.. X to B redistribute time	  0.0022
+.. DiagScale = 3
+.. Sol  0: ||X - Xtrue|| / ||X|| = 8.873418e-05	 max_i |x - xtrue|_i / |x|_i = 6.172621e-03
+**************************************************
+**** Time (seconds) ****
+	EQUIL time            0.507
+	ROWPERM time          2.271
+	COLPERM time          2.007
+	SYMBFACT time         1.956
+	DISTRIBUTE time      16.223
+	FACTOR time         131.046
+	Factor flops	5.890305e+12	Mflops 	44948.44
+	SOLVE time            0.262
+	Solve flops	3.523159e+09	Mflops 	13470.40
+**************************************************

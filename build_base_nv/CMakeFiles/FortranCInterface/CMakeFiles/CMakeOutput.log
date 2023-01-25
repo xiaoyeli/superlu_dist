@@ -1,0 +1,18 @@
+Performing C SOURCE FILE Test C_SUPPORTS_DOLLAR succeeded with the following output:
+Change Dir: /global/cfs/cdirs/m2956/nanding/myprojects/multi-GPU/superlu_dist/build_base_nv/CMakeFiles/FortranCInterface/CMakeFiles/CMakeTmp
+
+Run Build Command(s):/usr/bin/gmake -f Makefile cmTC_a85a5/fast && /usr/bin/gmake  -f CMakeFiles/cmTC_a85a5.dir/build.make CMakeFiles/cmTC_a85a5.dir/build
+gmake[1]: Entering directory '/global/cfs/cdirs/m2956/nanding/myprojects/multi-GPU/superlu_dist/build_base_nv/CMakeFiles/FortranCInterface/CMakeFiles/CMakeTmp'
+Building C object CMakeFiles/cmTC_a85a5.dir/src.c.o
+/opt/cray/pe/craype/2.7.19/bin/cc -DC_SUPPORTS_DOLLAR  -I/global/cfs/cdirs/m2956/nanding/software/parmetis-4.0.3-perlmutter-32bit//metis/include -I/global/cfs/cdirs/m2956/nanding/software/parmetis-4.0.3-perlmutter-32bit//include -DUSE_VENDOR_BLAS -mp  -DGPU_SOLVE -std=c11 -DPRNTlevel=1 -DPROFlevel=0 -DDEBUGlevel=0 -DAdd_ -I/global/cfs/cdirs/m2956/nanding/software/nvshmem_src_2.8.0-3/build//include  -MD -MT CMakeFiles/cmTC_a85a5.dir/src.c.o -MF CMakeFiles/cmTC_a85a5.dir/src.c.o.d -o CMakeFiles/cmTC_a85a5.dir/src.c.o -c /global/cfs/cdirs/m2956/nanding/myprojects/multi-GPU/superlu_dist/build_base_nv/CMakeFiles/FortranCInterface/CMakeFiles/CMakeTmp/src.c
+Linking C executable cmTC_a85a5
+/global/common/software/nersc/pm-2022q4/spack/linux-sles15-zen/cmake-3.24.3-k5msymx/bin/cmake -E cmake_link_script CMakeFiles/cmTC_a85a5.dir/link.txt --verbose=1
+/opt/cray/pe/craype/2.7.19/bin/cc -I/global/cfs/cdirs/m2956/nanding/software/parmetis-4.0.3-perlmutter-32bit//metis/include -I/global/cfs/cdirs/m2956/nanding/software/parmetis-4.0.3-perlmutter-32bit//include -DUSE_VENDOR_BLAS -mp  -DGPU_SOLVE -std=c11 -DPRNTlevel=1 -DPROFlevel=0 -DDEBUGlevel=0 -DAdd_ -I/global/cfs/cdirs/m2956/nanding/software/nvshmem_src_2.8.0-3/build//include   -Wl,-rpath,/global/cfs/cdirs/m2956/nanding/myprojects/multi-GPU/superlu_dist/build_base_nv/SRC    -Wl,-rpath,/global/cfs/cdirs/m2956/nanding/myprojects/multi-GPU/superlu_dist/build_base_nv/./lib  CMakeFiles/cmTC_a85a5.dir/src.c.o -o cmTC_a85a5 
+gmake[1]: Leaving directory '/global/cfs/cdirs/m2956/nanding/myprojects/multi-GPU/superlu_dist/build_base_nv/CMakeFiles/FortranCInterface/CMakeFiles/CMakeTmp'
+
+
+Source file was:
+
+extern int dollar$(void);
+int main() { return 0; }
+

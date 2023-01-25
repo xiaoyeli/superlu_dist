@@ -47,7 +47,9 @@ option(TPL_COMBBLAS_INCLUDE_DIRS "List of absolute paths to CombBLAS include dir
 #-- CUDA
 option(TPL_ENABLE_CUDALIB   "Enable the CUDA libraries" OFF)
 option(TPL_ENABLE_HIPLIB   "Enable the HIP libraries" OFF)
-
+#-- NVSHMEM
+option(TPL_ENABLE_NVSHMEM   "Enable the NVSHMEM libraries" OFF)
+option(TPL_ENABLE_ROCSHMEM   "Enable the ROCSHMEM libraries" OFF)
 ######################################################################
 #
 # IDEAS: xSDK standards module
@@ -188,6 +190,7 @@ if (TPL_ENABLE_CUDALIB)   ## want to use cuda
     enable_language(CUDA)
     find_package(CUDA REQUIRED)
     if (CUDA_FOUND)
+      set(CUDA_SEPARABLE_COMPILATION ON)  
       if(NOT CMAKE_CUDA_ARCHITECTURES)
         # if(${CMAKE_VERSION} VERSION_LESS_EQUAL "3.13.4")
         #   cuda_select_nvcc_arch_flags(ARCH_FLAGS "Auto") # optional argument for arch to add
@@ -205,7 +208,7 @@ if (TPL_ENABLE_CUDALIB)   ## want to use cuda
       # endif()
       endif()
       set(HAVE_CUDA TRUE)
-      set(CMAKE_CUDA_FLAGS_RELEASE "-O3 --expt-relaxed-constexpr -DNDEBUG" CACHE STRING "")
+      set(CMAKE_CUDA_FLAGS_RELEASE "-O3 --expt-relaxed-constexpr -DNDEBUG -rdc=true" CACHE STRING "")
       set(CMAKE_CUDA_FLAGS_DDEBUG "-O0 --expt-relaxed-constexpr -DDEBUG -g" CACHE STRING "")
     endif()
 
@@ -281,6 +284,11 @@ if (TPL_ENABLE_CUDALIB)   ## want to use cuda
 endif()
 
 
+#--------------------- NVSHMEM libraries ---------------------
+if (TPL_ENABLE_NVSHMEM)   ## want to use nvshmem
+    set(NVSHMEM_LIB ${TPL_NVSHMEM_LIBRARIES}) 
+    message("-- Enabled support for NVSHMEM='${NVSHMEM_LIB}'")
+endif()
 
 #--------------------- HIP libraries ---------------------
 if (TPL_ENABLE_HIPLIB)   ## want to use hip

@@ -111,6 +111,8 @@ int_t symbfact
     info = symbfact_SubInit(options, DOFACT, NULL, 0, m, n,
 			    ((NCPformat*)A->Store)->nnz,
 			    Glu_persist, Glu_freeable);
+    if ( info != 0 )
+	return info;
 
     iwork = (int_t *) intMalloc_dist(6*m+2*n);
     perm_r = iwork;

@@ -38,8 +38,6 @@ at the top-level directory.
 #define gpuSuccess cudaSuccess
 #define gpuGetErrorString cudaGetErrorString
 #define gpuMalloc cudaMalloc
-#define gpuMallocHost cudaMallocHost
-#define gpuMemset cudaMemset
 #define gpuHostMalloc cudaHostAlloc
 #define gpuHostMallocDefault cudaHostAllocDefault
 #define gpuMallocManaged cudaMallocManaged
