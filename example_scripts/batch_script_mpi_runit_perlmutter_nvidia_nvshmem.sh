@@ -12,6 +12,7 @@
 module load PrgEnv-nvidia 
 module load cudatoolkit
 module load cray-libsci
+module load cmake
 
 #OpenMP settings:
 export OMP_NUM_THREADS=1
