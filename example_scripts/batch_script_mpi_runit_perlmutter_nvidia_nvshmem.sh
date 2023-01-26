@@ -4,9 +4,7 @@
 #SBATCH -C gpu
 #SBATCH --nodes=1
 #SBATCH --time=02:00:00
-#SBATCH -A m2956_g
-#SBATCH --mail-user=nanding@lbl.gov
-#SBATCH --mail-type=ALL
+
 
 #modules:
 module load PrgEnv-nvidia 
