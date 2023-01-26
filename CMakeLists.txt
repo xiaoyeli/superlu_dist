@@ -208,7 +208,11 @@ if (TPL_ENABLE_CUDALIB)   ## want to use cuda
       # endif()
       endif()
       set(HAVE_CUDA TRUE)
-      set(CMAKE_CUDA_FLAGS_RELEASE "-O3 --expt-relaxed-constexpr -DNDEBUG -rdc=true" CACHE STRING "")
+      if (TPL_ENABLE_NVSHMEM)
+        set(CMAKE_CUDA_FLAGS_RELEASE "-O3 --expt-relaxed-constexpr -DNDEBUG -rdc=true" CACHE STRING "")
+      else()
+        set(CMAKE_CUDA_FLAGS_RELEASE "-O3 --expt-relaxed-constexpr -DNDEBUG" CACHE STRING "")
+      endif()
       set(CMAKE_CUDA_FLAGS_DDEBUG "-O0 --expt-relaxed-constexpr -DDEBUG -g" CACHE STRING "")
     endif()
 
