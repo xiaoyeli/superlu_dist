@@ -1070,7 +1070,7 @@ ddistribute(superlu_dist_options_t *options,
 	for (lb = 0; lb < nub; ++lb) {
 		if ( Urbs[lb] ) { /* Not an empty block column. */
 			if ( !(Ucb_indptr[lb]
-				= SUPERLU_MALLOC(Urbs[lb] * sizeof(Ucb_indptr_t))) )
+                               = (Ucb_indptr_t *) SUPERLU_MALLOC(Urbs[lb] * sizeof(Ucb_indptr_t))) )
 				ABORT("Malloc fails for Ucb_indptr[lb][]");
 			Ucb_indoffset[lb]=Urbs[lb];
 			Ucb_indcnt += Ucb_indoffset[lb];

@@ -194,7 +194,7 @@ if (TPL_ENABLE_SYCLLIB)   ## want to use SYCL
   set(CMAKE_CXX_STANDARD 17)
 
   # set SYCL flags for AoT compilation for ATS, PVC devices
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-expected-file-type -fsycl -sycl-std=2020 -fsycl-unnamed-lambda -fsycl-device-code-split=per_kernel -fsycl-targets=spir64_gen -Xsycl-target-backend \"-device 12.1.0,12.4.0\"")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-expected-file-type -fsycl -sycl-std=2020 -fsycl-unnamed-lambda -fsycl-device-code-split=per_kernel -fsycl-targets=spir64_gen -Xsycl-target-backend \"-device 12.6.70\"")
 
   message("-- Enabled support for SYCL.")
 

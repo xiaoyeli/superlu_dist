@@ -20,6 +20,8 @@ at the top-level directory.
  */
 #include "superlu_ddefs.h"
 
+extern "C" {
+  
 int pdcompute_resid(int m, int n, int nrhs, SuperMatrix *A,
 		    double *x, int ldx, double *b, int ldb,
 		    gridinfo_t *grid, dSOLVEstruct_t *SOLVEstruct, double *resid)
@@ -160,3 +162,5 @@ int pdcompute_resid(int m, int n, int nrhs, SuperMatrix *A,
     return 0;
 
 } /* pdcompute_redid */
+
+}
