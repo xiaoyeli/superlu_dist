@@ -1,19 +1,23 @@
-
 #!/bin/bash
-# Bash script to submit many files to Cori/Edison/Queue
-# module unload cray-mpich
-module swap PrgEnv-intel PrgEnv-gnu
-export MKLROOT=/opt/intel/compilers_and_libraries_2019.3.199/linux/mkl
-export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/opt/intel/compilers_and_libraries_2018.1.163/linux/mkl/lib/intel64
-
-# module use /global/common/software/m3169/cori/modulefiles
-# module unload openmpi
-# module load openmpi/4.0.1
+# module load parmetis/4.0.3
+module load PrgEnv-gnu
+module load gcc/11.2.0
+module load cray-mpich/8.1.23                                   # version recommended in Jan 30 email
+module load craype-accel-amd-gfx90a                                                # for GPU aware MPI
+module load rocm/5.2.0                                             # version recommended in Jan 30 email
+export MPICH_GPU_SUPPORT_ENABLED=1
 module load cmake
 
+# module load parmetis/4.0.3   # doesn't seem to work
+# module load metis/4.0.3
+
+export PARMETIS_ROOT=/ccs/home/liuyangz/my_software/parmetis-4.0.3_frontier_gcc
+export PARMETIS_BUILD_DIR=${PARMETIS_ROOT}/build/Linux-x86_64
+
+export LD_LIBRARY_PATH="$CRAY_LD_LIBRARY_PATH:$LD_LIBRARY_PATH"
+
 export CRAYPE_LINK_TYPE=dynamic
-export PARMETIS_ROOT=~/Cori/my_software/parmetis-4.0.3_gnu8.3/ 
-export PARMETIS_BUILD_DIR=${PARMETIS_ROOT}/build/Linux-x86_64 
+export ACC=GPU
 rm -rf CMakeCache.txt
 rm -rf CMakeFiles
 rm -rf CTestTestfile.cmake
@@ -21,20 +25,26 @@ rm -rf cmake_install.cmake
 rm -rf DartConfiguration.tcl 
 
 
+
+
 cmake .. \
 	-DTPL_PARMETIS_INCLUDE_DIRS="${PARMETIS_ROOT}/include;${PARMETIS_ROOT}/metis/include" \
-	-DTPL_PARMETIS_LIBRARIES="${PARMETIS_BUILD_DIR}/libparmetis/libparmetis.so;${PARMETIS_BUILD_DIR}/libmetis/libmetis.so;${LIB_VTUNE}" \
+	-DTPL_PARMETIS_LIBRARIES="${PARMETIS_BUILD_DIR}/libparmetis/libparmetis.so;${PARMETIS_BUILD_DIR}/libmetis/libmetis.so;${OLCF_ROCM_ROOT}/lib/libroctx64.so;${OLCF_ROCM_ROOT}/lib/libroctracer64.so" \
 	-DBUILD_SHARED_LIBS=OFF \
-	-DTPL_BLAS_LIBRARIES="${MKLROOT}/lib/intel64/libmkl_gf_lp64.so;${MKLROOT}/lib/intel64/libmkl_gnu_thread.so;${MKLROOT}/lib/intel64/libmkl_core.so;${MKLROOT}/lib/intel64/libmkl_def.so;${MKLROOT}/lib/intel64/libmkl_avx.so" \
-	-DTPL_LAPACK_LIBRARIES="${MKLROOT}/lib/intel64/libmkl_gf_lp64.so;${MKLROOT}/lib/intel64/libmkl_gnu_thread.so;${MKLROOT}/lib/intel64/libmkl_core.so;${MKLROOT}/lib/intel64/libmkl_def.so;${MKLROOT}/lib/intel64/libmkl_avx.so" \
+	-DCMAKE_Fortran_COMPILER=ftn \
 	-DCMAKE_C_COMPILER=cc \
-    -DCMAKE_CXX_COMPILER=CC \
+	-DCMAKE_CXX_COMPILER=CC \
 	-DCMAKE_INSTALL_PREFIX=. \
+	-DTPL_BLAS_LIBRARIES="${CRAY_LIBSCI_PREFIX_DIR}/lib/libsci_gnu_81_mp.so" \
+	-DTPL_LAPACK_LIBRARIES="${CRAY_LIBSCI_PREFIX_DIR}/lib/libsci_gnu_81_mp.so" \
 	-DCMAKE_BUILD_TYPE=Release \
+	-DTPL_ENABLE_HIPLIB=TRUE \
+	-DHIP_HIPCC_FLAGS="--amdgpu-target=gfx90a -I${CRAY_MPICH_DIR}/include" \
 	-DCMAKE_VERBOSE_MAKEFILE:BOOL=ON \
-	-DCMAKE_CXX_FLAGS="-Ofast -DRELEASE ${INC_VTUNE}" \
-    -DCMAKE_C_FLAGS="-std=c11 -DPRNTlevel=1 -DPROFlevel=0 -DDEBUGlevel=0 ${INC_VTUNE}" 
-make pddrive			
+	-DCMAKE_CXX_FLAGS="-Wno-format -Wno-unused-value -Wno-return-type -Wno-unsequenced -Wno-switch -Wno-parentheses -DPRNTlevel=1 -DPROFlevel=0 -DDEBUGlevel=0 " \
+	-DCMAKE_C_FLAGS="-Wno-format -Wno-unused-value -Wno-return-type -Wno-unsequenced -Wno-switch -Wno-parentheses -DPRNTlevel=1 -DPROFlevel=0 -DDEBUGlevel=0 "
+make pddrive	
+make pddrive3d		
 #	-DTPL_BLAS_LIBRARIES="/opt/intel/compilers_and_libraries_2017.2.174/linux/mkl/lib/intel64/libmkl_intel_lp64.so;/opt/intel/compilers_and_libraries_2017.2.174/linux/mkl/lib/intel64/libmkl_sequential.so;/opt/intel/compilers_and_libraries_2017.2.174/linux/mkl/lib/intel64/libmkl_core.so"
 
 #	-DTPL_BLAS_LIBRARIES="/opt/intel/compilers_and_libraries_2017.2.174/linux/mkl/lib/intel64/libmkl_intel_lp64.so;/opt/intel/compilers_and_libraries_2017.2.174/linux/mkl/lib/intel64/libmkl_sequential.so;/opt/intel/compilers_and_libraries_2017.2.174/linux/mkl/lib/intel64/libmkl_core.so" \

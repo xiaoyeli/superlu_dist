@@ -159,8 +159,17 @@ int main(int argc, char *argv[])
     *trans = 'N';
     ldx = n;
     ldb = m;
-    sGenXtrue_dist(n, nrhs, xtrue, ldx);
-    sFillRHS_dist(trans, nrhs, xtrue, ldx, &A, b, ldb);
+
+    if ( iam==0 ) {
+        sGenXtrue_dist(n, nrhs, xtrue, ldx);
+        sFillRHS_dist(trans, nrhs, xtrue, ldx, &A, b, ldb);
+	
+        MPI_Bcast( xtrue, n*nrhs, MPI_FLOAT, 0, grid.comm );
+        MPI_Bcast( b, m*nrhs, MPI_FLOAT, 0, grid.comm );
+    } else {
+        MPI_Bcast( xtrue, n*nrhs, MPI_FLOAT, 0, grid.comm );
+        MPI_Bcast( b, m*nrhs, MPI_FLOAT, 0, grid.comm );
+    }
 
     if ( !(berr = floatMalloc_dist(nrhs)) )
 	ABORT("Malloc fails for berr[].");

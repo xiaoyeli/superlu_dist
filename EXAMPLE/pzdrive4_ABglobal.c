@@ -176,8 +176,17 @@ int main(int argc, char *argv[])
 	*trans = 'N';
 	ldx = n;
 	ldb = m;
-	zGenXtrue_dist(n, nrhs, xtrue, ldx);
-	zFillRHS_dist(trans, nrhs, xtrue, ldx, &A, b, ldb);
+
+  	if ( iam==0 ) {
+	    zGenXtrue_dist(n, nrhs, xtrue, ldx);
+	    zFillRHS_dist(trans, nrhs, xtrue, ldx, &A, b, ldb);
+	    
+            MPI_Bcast( xtrue, n*nrhs, SuperLU_MPI_DOUBLE_COMPLEX, 0, grid1.comm );
+            MPI_Bcast( b, m*nrhs, SuperLU_MPI_DOUBLE_COMPLEX, 0, grid1.comm );
+	} else {
+            MPI_Bcast( xtrue, n*nrhs, SuperLU_MPI_DOUBLE_COMPLEX, 0, grid1.comm );
+            MPI_Bcast( b, m*nrhs, SuperLU_MPI_DOUBLE_COMPLEX, 0, grid1.comm );
+	}
 
 	if ( !(berr = doubleMalloc_dist(nrhs)) )
 	    ABORT("Malloc fails for berr[].");
@@ -281,8 +290,16 @@ int main(int argc, char *argv[])
 	*trans = 'N';
 	ldx = n;
 	ldb = m;
-	zGenXtrue_dist(n, nrhs, xtrue, ldx);
-	zFillRHS_dist(trans, nrhs, xtrue, ldx, &A, b, ldb);
+
+        if ( iam==0 ) {
+	    zGenXtrue_dist(n, nrhs, xtrue, ldx);
+	    zFillRHS_dist(trans, nrhs, xtrue, ldx, &A, b, ldb);
+            MPI_Bcast( xtrue, n*nrhs, SuperLU_MPI_DOUBLE_COMPLEX, 0, grid2.comm );
+            MPI_Bcast( b, m*nrhs, SuperLU_MPI_DOUBLE_COMPLEX, 0, grid2.comm );
+	} else {
+            MPI_Bcast( xtrue, n*nrhs, SuperLU_MPI_DOUBLE_COMPLEX, 0, grid2.comm );
+            MPI_Bcast( b, m*nrhs, SuperLU_MPI_DOUBLE_COMPLEX, 0, grid2.comm );
+	}
 
 	if ( !(berr = doubleMalloc_dist(nrhs)) )
 	    ABORT("Malloc fails for berr[].");

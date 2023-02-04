@@ -127,15 +127,15 @@ psgsrfs_tracking(superlu_dist_options_t *options,
 #define ITMAX 10
 
     float *ax, *R, *dx, *temp, *work, *B_col, *X_col;
-    int_t count, i, j, lwork, nz;
-    int   iam;
+    int_t lwork, nz;
+    int   iam, i, j, count;
     float eps, lstres;
     float s, safmin, safe1, safe2;
 
     /* Data structures used by matrix-vector multiply routine. */
     psgsmv_comm_t *gsmv_comm = SOLVEstruct->gsmv_comm;
     NRformat_loc *Astore;
-    int_t        m_loc, fst_row;
+    int        m_loc, fst_row;
 
 
     /* Initialization. */
@@ -351,5 +351,5 @@ psgsrfs_tracking(superlu_dist_options_t *options,
     CHECK_MALLOC(iam, "Exit psgsrfs()");
 #endif
 
-} /* PSGSRFS */
+} /* psgsrfs_tracking */
 

@@ -19,9 +19,9 @@ void superlu_gridinit3d(MPI_Comm Bcomm, /* The base communicator upon which
 {
     int Np = nprow * npcol * npdep;
     int i, j, k, info;
-    int *usermap; /* usermap(i,j,k) holds the process number from Bcomm 
+    int *usermap; /* usermap(i,j,k) holds the process number from Bcomm
 		      to be placed in {i,j,k} of the new process (group) (3D grid).  */
-    
+
     /* Make a list of the processes in the new communicator. */
     usermap = (int*)SUPERLU_MALLOC(Np*sizeof(int));
     for (k = 0; k < npdep; ++k)
@@ -41,7 +41,7 @@ void superlu_gridinit3d(MPI_Comm Bcomm, /* The base communicator upon which
     superlu_gridmap3d(Bcomm, nprow, npcol, npdep, usermap, grid);
 
     SUPERLU_FREE(usermap);
-    
+
 #ifdef GPU_ACC
     /* Binding each MPI to a GPU device */
     char *ttemp;
@@ -74,7 +74,7 @@ void superlu_gridmap3d(
     int nprow,
     int npcol,
     int npdep,
-    int usermap[], /* usermap(i,j,k) holds the process number from Bcomm 
+    int usermap[], /* usermap(i,j,k) holds the process number from Bcomm
 		      to be placed in {i,j,k} of the new process (group) (3D grid).  */
     gridinfo3d_t *grid)
 {
@@ -83,20 +83,20 @@ void superlu_gridmap3d(
     //int *pranks;
     int i, j, info;
 
-#if 0 // older MPI doesn't support complex in C    
+#if 0 // older MPI doesn't support complex in C
     /* Create datatype in C for MPI complex. */
     if ( SuperLU_MPI_DOUBLE_COMPLEX == MPI_DATATYPE_NULL ) {
         MPI_Type_contiguous( 2, MPI_DOUBLE, &SuperLU_MPI_DOUBLE_COMPLEX );
         MPI_Type_commit( &SuperLU_MPI_DOUBLE_COMPLEX );
     }
 #endif
-    
+
     /* Check MPI environment initialization. */
     MPI_Initialized( &info );
     if ( !info )
         ABORT("C main program must explicitly call MPI_Init()");
 
-#if 0 /* Sherry: can directly use usermap[] passed in */    
+#if 0 /* Sherry: can directly use usermap[] passed in */
     /* Make a list of the processes in the new communicator. */
     pranks = (int *) SUPERLU_MALLOC(Np * sizeof(int));
     for (k = 0; k < npdep; ++k)
@@ -104,7 +104,7 @@ void superlu_gridmap3d(
 	    for (i = 0; i < nprow; ++i)
 		pranks[k*nprow*npcol + j*nprow + i] = usermap[k*nprow*npcol + j*nprow + i];
 #endif
-    
+
     /*
      * Form MPI communicator for all.
      */
@@ -139,14 +139,14 @@ void superlu_gridmap3d(
     int iam;
     MPI_Comm superlu3d_comm;
 
-    if ( getenv("SUPERLU_RANKORDER") && strcmp(getenv("SUPERLU_RANKORDER"), "XY" ) )
+    if ( getenv("SUPERLU_RANKORDER") && strcmp(getenv("SUPERLU_RANKORDER"), "XY" )==0 )
     {
-	grid->rankorder = 1;  // XY-major 
+	grid->rankorder = 1;  // XY-major
 
         dims[0] = nprow;
         dims[1] = npcol;
         dims[2] = npdep;
-	
+
         // create the new communicator
         int error = MPI_Cart_create(grid->comm, ndim, dims, periodic, reorder, &superlu3d_comm);
 
@@ -252,7 +252,7 @@ void superlu_gridmap3d(
     if ( (grid->zscp).Iam == 0) {
       printf("(3d grid: layer 0) iam %d, grid->grid2d.iam %d\n",
 	     grid->iam, (grid->grid2d).iam);
-    } 
+    }
     fflush(stdout);
 #endif
 
@@ -275,11 +275,11 @@ void superlu_gridexit3d(gridinfo3d_t *grid)
         MPI_Comm_free( &grid->grid2d.comm );
         MPI_Comm_free( &grid->comm );
     }
-#if 0    
+#if 0
     if ( SuperLU_MPI_DOUBLE_COMPLEX != MPI_DATATYPE_NULL ) {
         MPI_Type_free( &SuperLU_MPI_DOUBLE_COMPLEX );
 	SuperLU_MPI_DOUBLE_COMPLEX = MPI_DATATYPE_NULL; /* some MPI system does not set this
 							   to be NULL after Type_free */
     }
-#endif    
+#endif
 }

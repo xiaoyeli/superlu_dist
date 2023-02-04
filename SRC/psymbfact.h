@@ -238,7 +238,9 @@ typedef struct {
   int_t  maxSzUPr; /* maximum size of pruned U */
   int_t  maxSzBuf; /* maximum size of the send and receive buffers */
   int_t  szDnsSep; /* size of memory used when there are dense separators */
-  float  allocMem; /* size of the total memory allocated (in bytes) */
+  float  allocMem; /* size of the total memory allocated (in bytes)
+		      This is the working storage, does not include LU data arrays
+		    */
 } psymbfact_stat_t;
 
 /* MACROS */

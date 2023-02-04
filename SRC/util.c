@@ -154,9 +154,14 @@ void countnz_dist(const int_t n, int_t *xprune,
 /*! \brief
  *
  * <pre>
- * Fix up the data storage lsub for L-subscripts. It removes the subscript
+ * Fix up the data storage lsub[] for L-subscripts. It removes the subscript
  * sets for structural pruning,	and applies permuation to the remaining
  * subscripts.
+ *
+ * Return value:
+ *   number of entries in lsub[], which includes the size of the pruned graph,
+ *   which is interspersed in the supernodal graph in the lsub[] array.
+ *
  * </pre>
  */
 int64_t
@@ -196,7 +201,7 @@ fixupL_dist(const int_t n, const int_t *perm_r,
 
     xlsub[n] = nextl;
     return lsub_size;
-}
+} /* fixupL_dist */
 
 /*! \brief Set the default values for the options argument.
  */

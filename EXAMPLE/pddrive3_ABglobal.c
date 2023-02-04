@@ -163,8 +163,17 @@ int main(int argc, char *argv[])
     *trans = 'N';
     ldx = n;
     ldb = m;
-    dGenXtrue_dist(n, nrhs, xtrue, ldx);
-    dFillRHS_dist(trans, nrhs, xtrue, ldx, &A, b, ldb);
+
+    if ( iam==0 ) {
+        dGenXtrue_dist(n, nrhs, xtrue, ldx);
+        dFillRHS_dist(trans, nrhs, xtrue, ldx, &A, b, ldb);
+	
+        MPI_Bcast( xtrue, n*nrhs, MPI_DOUBLE, 0, grid.comm );
+        MPI_Bcast( b, m*nrhs, MPI_DOUBLE, 0, grid.comm );
+    } else {
+        MPI_Bcast( xtrue, n*nrhs, MPI_DOUBLE, 0, grid.comm );
+        MPI_Bcast( b, m*nrhs, MPI_DOUBLE, 0, grid.comm );
+    }
 
     /* Save a copy of the right-hand side. */  
     if ( !(b1 = doubleMalloc_dist(m * nrhs)) ) ABORT("Malloc fails for b1[]");

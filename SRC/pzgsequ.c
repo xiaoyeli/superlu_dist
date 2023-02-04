@@ -89,7 +89,7 @@ pzgsequ(SuperMatrix *A, double *r, double *c, double *rowcnd,
     /* Local variables */
     NRformat_loc *Astore;
     doublecomplex *Aval;
-    int i, j, irow, jcol, m_loc;
+    int_t i, j, irow, jcol, m_loc;
     double rcmin, rcmax;
     double bignum, smlnum;
     double tempmax, tempmin;

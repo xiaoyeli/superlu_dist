@@ -314,7 +314,9 @@ if (BUILD_SHARED_LIBS AND BUILD_STATIC_LIBS)
   list(APPEND targets superlu_dist-static)
 endif()
 
+
 set( superlu_dist_libs ${BLAS_LIB} ${LAPACK_LIB} ${PARMETIS_LIB} ${COLAMD_LIB} ${COMBBLAS_LIB} )
+
 if (NOT MSVC)
   list(APPEND superlu_dist_libs m)
 endif ()

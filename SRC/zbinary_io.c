@@ -4,8 +4,9 @@ int
 zread_binary(FILE *fp, int_t *m, int_t *n, int_t *nnz, 
 	     doublecomplex **nzval, int_t **rowind, int_t **colptr)
 {
-    size_t isize = sizeof(int_t), dsize = sizeof(double);
-    int nnz_read;
+    int_t isize = sizeof(int_t), dsize = sizeof(double);
+    int_t nnz_read;
+    int_t i,j;
     fread(n, isize, 1, fp);
     fread(nnz, isize, 1, fp);
     printf("fread n " IFMT "\tnnz " IFMT "\n", *n, *nnz);
@@ -13,10 +14,10 @@ zread_binary(FILE *fp, int_t *m, int_t *n, int_t *nnz,
     *colptr = intMalloc_dist(*n+1);
     *rowind = intMalloc_dist(*nnz);
     *nzval  = doublecomplexMalloc_dist(*nnz);
-    fread(*colptr, isize, (size_t) (*n + 1), fp);
-    fread(*rowind, isize, (size_t) *nnz, fp);
-    nnz_read = fread(*nzval, dsize, (size_t) (2 * (*nnz)), fp);
-    printf("# of doubles fread: %d\n", nnz_read);
+    fread(*colptr, isize, (int_t) (*n + 1), fp);
+    fread(*rowind, isize, (int_t) *nnz, fp);
+    nnz_read = fread(*nzval, dsize, (int_t) (2 * (*nnz)), fp);
+    printf("# of doubles fread: " IFMT "\n", nnz_read);
     return 0;
 }
 

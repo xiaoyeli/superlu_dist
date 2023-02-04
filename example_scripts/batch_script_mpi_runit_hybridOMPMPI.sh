@@ -1,6 +1,6 @@
 #!/bin/bash
 # Bash script to submit many files to Cori/Edison/Queue
-
+module swap PrgEnv-intel PrgEnv-gnu
 EXIT_SUCCESS=0
 EXIT_HOST=1
 EXIT_PARAM=2
@@ -21,7 +21,7 @@ EXIT_PARAM=2
 
 CUR_DIR=`pwd`
 FILE_DIR=$CUR_DIR/EXAMPLE
-INPUT_DIR=/project/projectdirs/sparse/liuyangz/my_research/matrix
+INPUT_DIR=/project/projectdirs/m2957/liuyangz/my_research/matrix
 FILE_NAME=pddrive
 FILE=$FILE_DIR/$FILE_NAME
 
@@ -82,8 +82,8 @@ fi
 #npcols=(12 144 1)
 
 
-nprows=(1 2 2 4)
-npcols=(1 1 2 4)
+nprows=(4)
+npcols=(4)
  
 for ((i = 0; i < ${#npcols[@]}; i++)); do
 NROW=${nprows[i]}
@@ -113,7 +113,7 @@ fi
 
 
 #for NTH in 8 
-for NTH in 1 2 4 8 
+for NTH in 32
 do
 OMP_NUM_THREADS=$NTH
 TH_PER_RANK=`expr $NTH \* 2`
@@ -122,7 +122,8 @@ TH_PER_RANK=`expr $NTH \* 2`
 #for NSUP in 128 64 32 16 8
 #do
   # for MAT in atmosmodl.rb nlpkkt80.mtx torso3.mtx Ga19As19H42.mtx A22.mtx cage13.rb 
-  for MAT in torso3.bin
+  # for MAT in s1_mat_0_126936_longint.bin
+  for MAT in s1_mat_7127136_7127136_0_csc_longint.bin
   # for MAT in matrix121.dat matrix211.dat tdr190k.dat tdr455k.dat nlpkkt80.mtx torso3.mtx helm2d03.mtx  
   # for MAT in tdr190k.dat Ga19As19H42.mtx
  # for MAT in torso3.mtx hvdc2.mtx matrix121.dat nlpkkt80.mtx helm2d03.mtx
@@ -171,7 +172,7 @@ TH_PER_RANK=`expr $NTH \* 2`
     export OMP_PLACES=threads
     export OMP_PROC_BIND=spread
     export MPICH_MAX_THREAD_SAFETY=multiple
-    srun -n $CORE_VAL -N 4 -c $TH_PER_RANK --cpu_bind=cores $FILE -c $NCOL -r $NROW $INPUT_DIR/$MAT | tee ./$MAT/SLU.o_mpi_${NROW}x${NCOL}_${OMP_NUM_THREADS}_mrhs
+    srun -n $CORE_VAL -c $TH_PER_RANK --cpu_bind=cores $FILE -c $NCOL -r $NROW $INPUT_DIR/$MAT | tee ./$MAT/SLU.o_mpi_${NROW}x${NCOL}_${OMP_NUM_THREADS}_mrhs
     # Add final line (srun line) to temporary slurm script
 
     #cat $TMP_BATCH_FILE

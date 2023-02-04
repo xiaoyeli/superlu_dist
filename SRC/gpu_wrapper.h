@@ -207,7 +207,7 @@ at the top-level directory.
 #include "syclmemcpy2D.hpp"
 #include <oneapi/mkl/blas.hpp>
 
-#define __globla__
+#define __global__
 #define __device__
 #define gpuMemcpyHostToDevice
 #define gpuMemcpyDeviceToHost

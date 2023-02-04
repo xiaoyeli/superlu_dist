@@ -90,7 +90,7 @@ psgsequ(SuperMatrix *A, float *r, float *c, float *rowcnd,
     /* Local variables */
     NRformat_loc *Astore;
     float *Aval;
-    int i, j, irow, jcol, m_loc;
+    int_t i, j, irow, jcol, m_loc;
     float rcmin, rcmax;
     float bignum, smlnum;
     float tempmax, tempmin;

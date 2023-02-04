@@ -413,73 +413,69 @@ int_t pdgstrf(superlu_dist_options_t *options, int m, int n, double anorm,
   }
 #endif
 
-#if (DEBUGlevel >= 1)
-  if (s_eps == 0.0)
-    printf(" ***** warning s_eps = %e *****\n", s_eps);
-  CHECK_MALLOC(iam, "Enter pdgstrf()");
+#if ( DEBUGlevel>=1 )
+    if (s_eps == 0.0)
+        printf (" ***** warning s_eps = %e *****\n", s_eps);
+    CHECK_MALLOC (iam, "Enter pdgstrf()");
 #endif
-#if (PROFlevel >= 1)
-  gemm_stats = (gemm_profile *)SUPERLU_MALLOC(nsupers * sizeof(gemm_profile));
-  if (iam == 0)
-    fgemm = fopen("dgemm_mnk.dat", "w");
-  int *prof_sendR = intCalloc_dist(nsupers);
+#if (PROFlevel >= 1 )
+    gemm_stats = (gemm_profile *) SUPERLU_MALLOC(nsupers * sizeof(gemm_profile));
+    if (iam == 0) fgemm = fopen("dgemm_mnk.dat", "w");
+    int_t *prof_sendR = intCalloc_dist(nsupers);
 #endif
 
-  stat->ops[FACT] = 0.0;
-  stat->current_buffer = 0.0;
-  stat->peak_buffer = 0.0;
-  stat->gpu_buffer = 0.0;
+    stat->ops[FACT]      = 0.0;
+    stat->current_buffer = 0.0;
+    stat->peak_buffer    = 0.0;
+    stat->gpu_buffer     = 0.0;
 
-  /* make sure the range of look-ahead window [0, MAX_LOOKAHEADS-1] */
-  num_look_aheads =
-      SUPERLU_MAX(0, SUPERLU_MIN(options->num_lookaheads, MAX_LOOKAHEADS - 1));
+    /* make sure the range of look-ahead window [0, MAX_LOOKAHEADS-1] */
+    num_look_aheads = SUPERLU_MAX(0, SUPERLU_MIN(options->num_lookaheads, MAX_LOOKAHEADS - 1));
 
-  if (Pr * Pc > 1) {
-    if (!(U_diag_blk_send_req =
-              (MPI_Request *)SUPERLU_MALLOC(Pr * sizeof(MPI_Request))))
-      ABORT("Malloc fails for U_diag_blk_send_req[].");
-    /* flag no outstanding Isend */
-    U_diag_blk_send_req[myrow] = MPI_REQUEST_NULL; /* used 0 before */
+    if (Pr * Pc > 1) {
+        if (!(U_diag_blk_send_req =
+              (MPI_Request *) SUPERLU_MALLOC (Pr * sizeof (MPI_Request))))
+            ABORT ("Malloc fails for U_diag_blk_send_req[].");
+	/* flag no outstanding Isend */
+        U_diag_blk_send_req[myrow] = MPI_REQUEST_NULL; /* used 0 before */
 
-    /* allocating buffers for look-ahead */
-    i = Llu->bufmax[0];
-    if (i != 0) {
-      if (!(Llu->Lsub_buf_2[0] =
-                intMalloc_dist((num_look_aheads + 1) * ((size_t)i))))
-        ABORT("Malloc fails for Lsub_buf.");
-      tempi = Llu->Lsub_buf_2[0];
-      for (jj = 0; jj < num_look_aheads; jj++)
-        Llu->Lsub_buf_2[jj + 1] = tempi + i * (jj + 1); /* vectorize */
-      // Llu->Lsub_buf_2[jj + 1] = Llu->Lsub_buf_2[jj] + i;
-    }
-    i = Llu->bufmax[1];
-    if (i != 0) {
-      if (!(Llu->Lval_buf_2[0] =
-                doubleMalloc_dist((num_look_aheads + 1) * ((size_t)i))))
-        ABORT("Malloc fails for Lval_buf[].");
-      tempr = Llu->Lval_buf_2[0];
-      for (jj = 0; jj < num_look_aheads; jj++)
-        Llu->Lval_buf_2[jj + 1] = tempr + i * (jj + 1); /* vectorize */
-      // Llu->Lval_buf_2[jj + 1] = Llu->Lval_buf_2[jj] + i;
-    }
-    i = Llu->bufmax[2];
-    if (i != 0) {
-      if (!(Llu->Usub_buf_2[0] = intMalloc_dist((num_look_aheads + 1) * i)))
-        ABORT("Malloc fails for Usub_buf_2[].");
-      tempi = Llu->Usub_buf_2[0];
-      for (jj = 0; jj < num_look_aheads; jj++)
-        Llu->Usub_buf_2[jj + 1] = tempi + i * (jj + 1); /* vectorize */
-      // Llu->Usub_buf_2[jj + 1] = Llu->Usub_buf_2[jj] + i;
-    }
-    i = Llu->bufmax[3];
-    if (i != 0) {
-      if (!(Llu->Uval_buf_2[0] = doubleMalloc_dist((num_look_aheads + 1) * i)))
-        ABORT("Malloc fails for Uval_buf_2[].");
-      tempr = Llu->Uval_buf_2[0];
-      for (jj = 0; jj < num_look_aheads; jj++)
-        Llu->Uval_buf_2[jj + 1] = tempr + i * (jj + 1); /* vectorize */
-      // Llu->Uval_buf_2[jj + 1] = Llu->Uval_buf_2[jj] + i;
-    }
+        /* allocating buffers for look-ahead */
+        i = Llu->bufmax[0];
+        if (i != 0) {
+            if ( !(Llu->Lsub_buf_2[0] = intMalloc_dist ((num_look_aheads + 1) * ((size_t) i))) )
+                ABORT ("Malloc fails for Lsub_buf.");
+	    tempi = Llu->Lsub_buf_2[0];
+            for (jj = 0; jj < num_look_aheads; jj++)
+		Llu->Lsub_buf_2[jj+1] = tempi + i*(jj+1); /* vectorize */
+	    //Llu->Lsub_buf_2[jj + 1] = Llu->Lsub_buf_2[jj] + i;
+        }
+        i = Llu->bufmax[1];
+        if (i != 0) {
+            if (!(Llu->Lval_buf_2[0] = doubleMalloc_dist ((num_look_aheads + 1) * ((size_t) i))))
+                ABORT ("Malloc fails for Lval_buf[].");
+	    tempr = Llu->Lval_buf_2[0];
+            for (jj = 0; jj < num_look_aheads; jj++)
+		Llu->Lval_buf_2[jj+1] = tempr + i*(jj+1); /* vectorize */
+	    //Llu->Lval_buf_2[jj + 1] = Llu->Lval_buf_2[jj] + i;
+        }
+        i = Llu->bufmax[2];
+        if (i != 0) {
+            if (!(Llu->Usub_buf_2[0] = intMalloc_dist ((num_look_aheads + 1) * i)))
+                ABORT ("Malloc fails for Usub_buf_2[].");
+	    tempi = Llu->Usub_buf_2[0];
+            for (jj = 0; jj < num_look_aheads; jj++)
+                Llu->Usub_buf_2[jj+1] = tempi + i*(jj+1); /* vectorize */
+                //Llu->Usub_buf_2[jj + 1] = Llu->Usub_buf_2[jj] + i;
+        }
+        i = Llu->bufmax[3];
+        if (i != 0) {
+            if (!(Llu->Uval_buf_2[0] = doubleMalloc_dist ((num_look_aheads + 1) * i)))
+                ABORT ("Malloc fails for Uval_buf_2[].");
+	    tempr = Llu->Uval_buf_2[0];
+            for (jj = 0; jj < num_look_aheads; jj++)
+                Llu->Uval_buf_2[jj+1] = tempr + i*(jj+1); /* vectorize */
+	    //Llu->Uval_buf_2[jj + 1] = Llu->Uval_buf_2[jj] + i;
+        }
   }
 
   log_memory((Llu->bufmax[0] + Llu->bufmax[2]) * (num_look_aheads + 1) * iword +
@@ -1806,42 +1802,39 @@ int_t pdgstrf(superlu_dist_options_t *options, int m, int n, double anorm,
 
   pxgstrfTimer = SuperLU_timer_() - pxgstrfTimer;
 
-#if (PRNTlevel >= 2)
-  /* Print detailed statistics */
-  /* Updating total flops */
-  double allflops;
-  MPI_Reduce(&RemainGEMM_flops, &allflops, 1, MPI_DOUBLE, MPI_SUM, 0,
-             grid->comm);
-  if (iam == 0) {
-    printf("\nInitialization time\t%8.4lf seconds\n"
-           "\t Serial: compute static schedule, allocate storage\n",
-           InitTimer);
-    printf("\n==== Time breakdown in factorization (rank 0) ====\n");
-    printf("Panel factorization \t %8.4lf seconds\n",
-           pdgstrf2_timer + pdgstrs2_timer);
-    printf(".. L-panel pxgstrf2 \t %8.4lf seconds\n", pdgstrf2_timer);
-    printf(".. U-panel pxgstrs2 \t %8.4lf seconds\n", pdgstrs2_timer);
-    printf("Time in Look-ahead update \t %8.4lf seconds\n",
-           lookaheadupdatetimer);
-    printf("Time in Schur update \t\t %8.4lf seconds\n", NetSchurUpTimer);
-    printf(".. Time to Gather L buffer\t %8.4lf  (Separate L panel by "
-           "Lookahead/Remain)\n",
-           GatherLTimer);
-    printf(".. Time to Gather U buffer\t %8.4lf \n", GatherUTimer);
-    // #ifdef GPU_ACC
-    //         printf(".. Time in GEMM %8.3lf \n",
-    //	       cublasGEMMTimer + cpuGEMMTimer);
-    //         printf("\t* cublasGEMM\t %8.4lf \n", cublasGEMMTimer);
-    //         printf("\t* cpuGEMM\t %8.4lf \n", cpuGEMMTimer);
-    // #else
-    printf(".. Time in GEMM %8.4lf \n", LookAheadGEMMTimer + RemainGEMMTimer);
-    printf("\t* Look-ahead\t %8.4lf \n", LookAheadGEMMTimer);
-    printf("\t* Remain\t %8.4lf\tFlops %8.4le\tGflops %8.4lf\n",
-           RemainGEMMTimer, allflops, allflops / RemainGEMMTimer * 1e-9);
-    printf(".. Time to Scatter %8.4lf \n",
-           LookAheadScatterTimer + RemainScatterTimer);
-    printf("\t* Look-ahead\t %8.4lf \n", LookAheadScatterTimer);
-    printf("\t* Remain\t %8.4lf \n", RemainScatterTimer);
+#if ( PRNTlevel>=1 )
+    /* Print detailed statistics */
+    /* Updating total flops */
+    double allflops;
+    MPI_Reduce(&RemainGEMM_flops, &allflops, 1, MPI_DOUBLE, MPI_SUM,
+	       0, grid->comm);
+    if ( iam==0 ) {
+	printf("\nInitialization time\t%8.4lf seconds\n"
+	       "\t Serial: compute static schedule, allocate storage\n", InitTimer);
+        printf("\n==== Time breakdown in factorization (rank 0) ====\n");
+	printf("Panel factorization \t %8.4lf seconds\n",
+	       pdgstrf2_timer + pdgstrs2_timer);
+	printf(".. L-panel pxgstrf2 \t %8.4lf seconds\n", pdgstrf2_timer);
+	printf(".. U-panel pxgstrs2 \t %8.4lf seconds\n", pdgstrs2_timer);
+	printf("Time in Look-ahead update \t %8.4lf seconds\n", lookaheadupdatetimer);
+        printf("Time in Schur update \t\t %8.4lf seconds\n", NetSchurUpTimer);
+        printf(".. Time to Gather L buffer\t %8.4lf  (Separate L panel by Lookahead/Remain)\n", GatherLTimer);
+        printf(".. Time to Gather U buffer\t %8.4lf \n", GatherUTimer);
+	//#ifdef GPU_ACC
+	//        printf(".. Time in GEMM %8.3lf \n",
+	//	       cublasGEMMTimer + cpuGEMMTimer);
+	//        printf("\t* cublasGEMM\t %8.4lf \n", cublasGEMMTimer);
+	//        printf("\t* cpuGEMM\t %8.4lf \n", cpuGEMMTimer);
+	//#else
+        printf(".. Time in GEMM %8.4lf \n",
+	       LookAheadGEMMTimer + RemainGEMMTimer);
+        printf("\t* Look-ahead\t %8.4lf \n", LookAheadGEMMTimer);
+        printf("\t* Remain\t %8.4lf\tFlops %8.4le\tGflops %8.4lf\n",
+	       RemainGEMMTimer, allflops, allflops/RemainGEMMTimer*1e-9);
+        printf(".. Time to Scatter %8.4lf \n",
+	       LookAheadScatterTimer + RemainScatterTimer);
+        printf("\t* Look-ahead\t %8.4lf \n", LookAheadScatterTimer);
+        printf("\t* Remain\t %8.4lf \n", RemainScatterTimer);
 
     printf("Total factorization time            \t: %8.4lf seconds, \n",
            pxgstrfTimer);

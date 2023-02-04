@@ -176,7 +176,7 @@ static void screate_msr_matrix
  int_t **bindx         /* output */
 )
 {
-    int hi, i, irow, j, k, lo, n, nnz_local, nnz_diag;
+    int_t hi, i, irow, j, k, lo, n, nnz_local, nnz_diag;
     NCPformat *Astore;
     float *nzval;
     int_t *rowcnt;

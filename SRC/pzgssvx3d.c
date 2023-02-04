@@ -758,13 +758,9 @@ pzgssvx3d (superlu_dist_options_t * options, SuperMatrix * A,
 		
 		if ( iinfo > 0 ) {
 		    if ( iinfo <= m ) {
-#if ( PRNTlevel>=1 )
 			fprintf(stderr, "The " IFMT "-th row of A is exactly zero\n", iinfo);
-#endif
 		    } else {
-#if ( PRNTlevel>=1 )
 			fprintf(stderr, "The " IFMT "-th column of A is exactly zero\n", iinfo-n);
-#endif
 		    }
 		} else if ( iinfo < 0 ) return;
 
@@ -1144,7 +1140,7 @@ pzgssvx3d (superlu_dist_options_t * options, SuperMatrix * A,
 			if (!iam) {
 			    fprintf (stderr, "symbfact() error returns %d\n",
 				     (int) iinfo);
-			    exit (-1);
+			    return;
 			}
 		    } 
 
