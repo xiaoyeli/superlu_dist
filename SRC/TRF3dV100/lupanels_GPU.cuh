@@ -277,8 +277,6 @@ struct LUstructGPU_t
     cudaStream_t lookAheadUStream[MAX_CUDA_STREAMS];
 
     double *lookAheadUGemmBuffer[MAX_CUDA_STREAMS];
-
-    
     
     __device__
     int_t supersize(int_t k) { return xsup[k + 1] - xsup[k]; }
@@ -287,7 +285,6 @@ struct LUstructGPU_t
     __device__
     int_t g2lCol(int_t k) { return k / Pc; }
     
-};
-
+};/* LUstructGPU_t{} */
 
 

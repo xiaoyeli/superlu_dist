@@ -312,7 +312,7 @@ struct LUstruct_v100
     int_t maxLvl;
     int maxLeafNodes; /* Sherry added 12/31/22. Computed in LUstruct_v100 constructor */
     
-    ddiagFactBufs_t **dFBufs; /* stores L panels and U panels, not including diag. block */
+    ddiagFactBufs_t **dFBufs; /* stores L and U diagonal blocks */
     int superlu_acc_offload;
     // myNodeCount,
     // treePerm
@@ -382,7 +382,7 @@ struct LUstruct_v100
 	/* Sherry: SUPERLU_MALLOC in constructor are not free'd,
 	   need to call the following functions. 12/31/22    */
 
-	/* free L panels and U panels */
+	/* free diagonal L and U blocks */
 	dfreeDiagFactBufsArr(maxLeafNodes, dFBufs);
 
 	SUPERLU_FREE(bigV);
@@ -429,6 +429,12 @@ struct LUstruct_v100
         ddiagFactBufs_t **dFBufs, // size maxEtree level
         gEtreeInfo_t *gEtreeInfo, // global etree info
         int tag_ub);
+  
+    int dsparseTreeFactorBatchGPU(
+				  sForest_t *sforest,
+				  ddiagFactBufs_t **dFBufs, // size maxEtree level
+				  gEtreeInfo_t *gEtreeInfo, // global etree info
+				  int tag_ub);
 
     //
     int_t dDiagFactorPanelSolve(int_t k, int_t offset, ddiagFactBufs_t **dFBufs);

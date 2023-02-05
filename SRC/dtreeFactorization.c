@@ -34,6 +34,8 @@ int_t dLluBufInit(dLUValSubBuf_t* LUvsb, dLUstruct_t *LUstruct)
     return 0;
 }
 
+/* Allocate an array of buffers for the diagonal blocks on a level of the tree.
+   The sizes are uniform: ldt is the maximum among all the nodes.    */
 ddiagFactBufs_t** dinitDiagFactBufsArr(int_t mxLeafNode, int_t ldt, gridinfo_t* grid)
 {
     ddiagFactBufs_t** dFBufs;

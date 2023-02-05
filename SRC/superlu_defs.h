@@ -749,6 +749,8 @@ typedef struct {
     int superlu_max_buffer_size; /* max. buffer size on GPU; see sp_ienv(8) */
     int superlu_num_gpu_streams; /* number of GPU streams; see sp_ienv(9) */
     int superlu_acc_offload; /* whether to offload work to GPU; see sp_ienv(10) */
+    int batchCount;     /* number of systems in the batched interface 
+			   0 : not to use batch interface (default)    */
     yes_no_t      SymPattern;      /* symmetric factorization          */
     yes_no_t      Use_TensorCore;  /* Use Tensor Core or not  */
     yes_no_t      Algo3d;          /* use 3D factorization/solve algorithms */

@@ -220,7 +220,8 @@ int_t LUstruct_v100::pdgstrf3d()
 	
         SCT->pdgstrfTimer = SuperLU_timer_();
 	
-        for (int ilvl = 0; ilvl < maxLvl; ++ilvl)
+        for (int ilvl = 0; ilvl < maxLvl; ++ilvl) /* maxLvel is the tree level
+						     along Z-dim process grid */
         {
             /* if I participate in this level */
             if (!myZeroTrIdxs[ilvl])
@@ -233,14 +234,16 @@ int_t LUstruct_v100::pdgstrf3d()
                 {
                     double tilvl = SuperLU_timer_();
 
-                    if (superlu_acc_offload)
-                        dsparseTreeFactorGPU(sforest, dFBufs,
-                                             &gEtreeInfo,
-                                             tag_ub);
-                    else
+                    if ( superlu_acc_offload ) {
+		        if ( options->batchCount==0 )
+			    dsparseTreeFactorGPU(sforest, dFBufs, &gEtreeInfo, tag_ub);
+			else
+			    dsparseTreeFactorBatchGPU(sforest, dFBufs, &gEtreeInfo, tag_ub);
+		    } else {
                         dsparseTreeFactor(sforest, dFBufs,
                                           &gEtreeInfo,
                                           tag_ub);
+		    }
 
                     /*now reduce the updates*/
                     SCT->tFactor3D[ilvl] = SuperLU_timer_() - tilvl;
