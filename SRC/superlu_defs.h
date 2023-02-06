@@ -911,7 +911,7 @@ typedef struct
 
 typedef struct
 {   
-    int_t* factored;
+    int* factored;
     int_t* factored_D;
     int_t* factored_L;
     int_t* factored_U;

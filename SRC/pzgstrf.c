@@ -543,9 +543,9 @@ pzgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
         recv_reqs[i][0] = recv_reqs[i][1] = MPI_REQUEST_NULL;
     }
 
-    if (!(factored = SUPERLU_MALLOC (nsupers * sizeof (int_t))))
+    if (!(factored = SUPERLU_MALLOC (nsupers * sizeof (int))))
         ABORT ("Malloc fails for factored[].");
-    if (!(factoredU = SUPERLU_MALLOC (nsupers * sizeof (int_t))))
+    if (!(factoredU = SUPERLU_MALLOC (nsupers * sizeof (int))))
         ABORT ("Malloc fails for factoredU[].");
     for (i = 0; i < nsupers; i++) factored[i] = factoredU[i] = -1;
 
