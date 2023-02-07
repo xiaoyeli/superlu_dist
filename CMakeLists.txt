@@ -43,6 +43,8 @@ option(TPL_COMBBLAS_INCLUDE_DIRS "List of absolute paths to CombBLAS include dir
 #-- CUDA
 option(TPL_ENABLE_CUDALIB   "Enable the CUDA libraries" OFF)
 option(TPL_ENABLE_HIPLIB   "Enable the HIP libraries" OFF)
+#-- MAGMA 
+option(TPL_ENABLE_MAGMALIB "Enable the MAGMA library" OFF)
 
 ######################################################################
 #
@@ -376,6 +378,22 @@ else()
     message("-- Will not link with LAPACK.")
 endif()
 
+#--------------------- MAGMA ---------------------
+if(TPL_ENABLE_MAGMALIB)  ## want to use MAGMA
+    set(MAGMA_FOUND TRUE)
+endif()
+
+if(MAGMA_FOUND)
+    message("-- Using TPL_MAGMA_LIBRARIES='${TPL_MAGMA_LIBRARIES}'")
+    set(MAGMA_LIB ${TPL_MAGMA_LIBRARIES})
+    # fix up MAGMA library name
+    string (REPLACE ";" " " MAGMA_LIB_STR "${MAGMA_LIB}")
+    set(MAGMA_LIB_EXPORT ${MAGMA_LIB_STR})
+    set(SLU_HAVE_MAGMA TRUE)
+else()
+    message("-- Will not link with MAGMA.")
+endif()
+
 #--------------------- ParMETIS ---------------------
 if (TPL_ENABLE_PARMETISLIB)   ## want to use parmetis
   if (NOT TPL_PARMETIS_LIBRARIES)
@@ -516,6 +534,9 @@ if (TPL_PARMETIS_INCLUDE_DIRS)
 endif ()
 if (TPL_COMBBLAS_INCLUDE_DIRS)
   include_directories(${TPL_COMBBLAS_INCLUDE_DIRS})  ## CombBLAS
+endif ()
+if (TPL_MAGMA_INCLUDE_DIRS)
+  include_directories(${TPL_MAGMA_INCLUDE_DIRS})  ## MAGMA
 endif ()
 include_directories(${MPI_C_INCLUDE_PATH})
 

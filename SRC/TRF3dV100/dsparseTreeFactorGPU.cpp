@@ -3,6 +3,9 @@
 #include "lupanels.hpp"
 #include "lupanels_GPU.cuh"
 
+#include "magma.h"
+#include <thrust/host_vector.h>
+#include <thrust/device_vector.h>
 
 int getBufferOffset(int k0, int k1, int winSize, int winParity, int halfWin)
 {
@@ -12,6 +15,7 @@ int getBufferOffset(int k0, int k1, int winSize, int winParity, int halfWin)
 
     return offset;
 }
+
 int_t LUstruct_v100::dDFactPSolveGPU(int_t k, int_t offset, ddiagFactBufs_t **dFBufs)
 {
     // this is new version with diagonal factor being performed on GPU 
@@ -210,16 +214,96 @@ int_t LUstruct_v100::dsparseTreeFactorGPU(
     int_t k_st = eTreeTopLims[topoLvl];
     int_t k_end = eTreeTopLims[topoLvl + 1];
 
-    
     //TODO: make this asynchronous 
+#if 0
     for (int_t k0 = k_st; k0 < k_end; k0++)
     {
         int_t k = perm_c_supno[k0];
-        int_t offset = 0;
+		int_t offset = 0;
         // dDiagFactorPanelSolveGPU(k, offset, dFBufs);
         dDFactPSolveGPU(k, offset, dFBufs);
-        donePanelSolve[k0]=1;
+		donePanelSolve[k0]=1;
     }
+#else 
+	int leaf_batch_size = k_end - k_st;
+    thrust::host_vector<double*> diag_ptrs(leaf_batch_size);
+	thrust::host_vector<int> diag_ld(leaf_batch_size), diag_dims(leaf_batch_size);
+	int my_batch_size = 0;
+	
+    for (int_t k0 = k_st; k0 < k_end; k0++)
+    {
+        int_t k = perm_c_supno[k0];
+        
+		if (iam == procIJ(k, k))
+		{			
+			diag_ptrs[my_batch_size] = lPanelVec[g2lCol(k)].blkPtrGPU(0);
+			diag_ld[my_batch_size] = lPanelVec[g2lCol(k)].LDA();
+			diag_dims[my_batch_size] = SuperSize(k);		 
+			my_batch_size++;
+            assert(my_batch_size <= leaf_batch_size);
+		}     
+    }
+
+    // for(int i = 0; i < my_batch_size; i++)
+    // {
+    //     cusolverDnHandle_t cusolverH = A_gpu.cuSolveHandles[0];
+    //     double* dWork = A_gpu.diagFactWork[0];
+    //     int* d_info = A_gpu.diagFactInfo[0];
+    //     cusolverDnDgetrf(cusolverH, diag_dims[i], diag_dims[i], diag_ptrs[i], diag_ld[i], dWork, NULL, d_info);
+    // }
+
+    thrust::device_vector<double*> dev_diag_ptrs = diag_ptrs;
+	thrust::device_vector<int> dev_diag_ld = diag_ld, dev_diag_dims = diag_dims;
+	
+    // MAGMA batch applies pivoting, current code does not
+    /// magma_dgetrf_vbatched()
+
+    for (int_t k0 = k_st; k0 < k_end; k0++)
+    {
+		int_t k = perm_c_supno[k0];
+		int_t offset = 0;
+		
+		cublasHandle_t cubHandle = A_gpu.cuHandles[offset];
+		cusolverDnHandle_t cusolverH = A_gpu.cuSolveHandles[offset];
+		cudaStream_t cuStream = A_gpu.cuStreams[offset];
+		int ksupc = SuperSize(k);
+
+        if (iam == procIJ(k, k))
+        {
+			size_t dpitch = ksupc * sizeof(double);
+			size_t spitch = lPanelVec[g2lCol(k)].LDA() * sizeof(double);
+			size_t width = ksupc * sizeof(double);
+			size_t height = ksupc;
+
+            double* val = lPanelVec[g2lCol(k)].blkPtrGPU(0);
+            double* dDiagBuf = A_gpu.dFBufs[offset];
+
+			// Device to Device Copy
+			cudaMemcpy2DAsync(dDiagBuf, dpitch, val, spitch,
+					 width, height, cudaMemcpyDeviceToDevice, cuStream);
+
+            cudaStreamSynchronize(cuStream);
+        }
+
+		if (myrow == krow(k))
+		{
+			uPanelVec[g2lRow(k)].panelSolveGPU(
+				cubHandle, cuStream,
+				ksupc, A_gpu.dFBufs[offset], ksupc);
+			cudaStreamSynchronize(cuStream); // synchronize befpre broadcast
+		}
+		
+		if (mycol == kcol(k))
+		{
+			lPanelVec[g2lCol(k)].panelSolveGPU(
+				cubHandle, cuStream,
+				ksupc, A_gpu.dFBufs[offset], ksupc);
+			cudaStreamSynchronize(cuStream);
+		}
+		
+		donePanelSolve[k0]=1;
+	}
+#endif 
 
     //TODO: its really the panels that needs to be doubled 
     // everything else can remain as it is 
@@ -245,7 +329,7 @@ int_t LUstruct_v100::dsparseTreeFactorGPU(
     {
         for (int_t k0 = k1; k0 < SUPERLU_MIN(nnodes, k1+winSize); ++k0)
         { 
-            int_t k = perm_c_supno[k0];
+			int_t k = perm_c_supno[k0];
             int_t offset = getBufferOffset(k0, k1, winSize, winParity, halfWin);
             upanel_t k_upanel = getKUpanel(k,offset);
             lpanel_t k_lpanel = getKLpanel(k,offset);
@@ -261,6 +345,7 @@ int_t LUstruct_v100::dsparseTreeFactorGPU(
             int_t offset = getBufferOffset(k0, k1, winSize, winParity, halfWin);
             SyncLookAheadUpdate(offset);
         }
+		
         for (int_t k0 = k1; k0 < SUPERLU_MIN(nnodes, k1+winSize); ++k0)
         { 
             int_t k = perm_c_supno[k0];
@@ -277,6 +362,7 @@ int_t LUstruct_v100::dsparseTreeFactorGPU(
                     localNumChildrenLeft[k0_parent]--;
                     if (topoLvl < maxTopoLevel - 1 && !localNumChildrenLeft[k0_parent])
                     {
+						printf("parent %d of node %d during second phase\n", k0_parent, k0);
                         int_t dOffset = 0;  // this is wrong 
                         // dDiagFactorPanelSolveGPU(k_parent, dOffset,dFBufs);
                         dDFactPSolveGPU(k_parent, dOffset,dFBufs);
