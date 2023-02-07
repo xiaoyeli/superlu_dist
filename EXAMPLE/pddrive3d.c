@@ -329,6 +329,9 @@ main (int argc, char *argv[])
     options.ReplaceTinyPivot = YES;
 #endif
 
+    if ( batchCount > 0 )
+        options.batchCount = batchCount;
+      
     if (!iam) {
 	print_sp_ienv_dist(&options);
 	print_options_dist(&options);

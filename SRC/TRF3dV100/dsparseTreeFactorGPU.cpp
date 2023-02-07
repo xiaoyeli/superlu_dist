@@ -22,10 +22,12 @@ int_t LUstruct_v100::dDFactPSolveGPU(int_t k, int_t offset, ddiagFactBufs_t **dF
     // different from dDiagFactorPanelSolveGPU (it performs diag factor in CPU)
 
     double t0 = SuperLU_timer_();
-    int_t ksupc = SuperSize(k);
+    int ksupc = SuperSize(k);
     cublasHandle_t cubHandle = A_gpu.cuHandles[offset];
     cusolverDnHandle_t cusolverH = A_gpu.cuSolveHandles[offset];
     cudaStream_t cuStream = A_gpu.cuStreams[offset];
+
+    /*======= Diagonal Factorization ======*/
     if (iam == procIJ(k, k))
     {
         lPanelVec[g2lCol(k)].diagFactorCuSolver(k,
@@ -39,7 +41,7 @@ int_t LUstruct_v100::dDFactPSolveGPU(int_t k, int_t offset, ddiagFactBufs_t **dF
     //CHECK_MALLOC(iam, "after diagFactorCuSolver()");
 		 
     //TODO: need to synchronize the cuda stream 
-    /*=======   Diagonal Broadcast          ======*/
+    /*======= Diagonal Broadcast ======*/
     if (myrow == krow(k))
         MPI_Bcast((void *)A_gpu.dFBufs[offset], ksupc * ksupc,
                   MPI_DOUBLE, kcol(k), (grid->rscp).comm);
@@ -50,7 +52,7 @@ int_t LUstruct_v100::dDFactPSolveGPU(int_t k, int_t offset, ddiagFactBufs_t **dF
         MPI_Bcast((void *)A_gpu.dFBufs[offset], ksupc * ksupc,
                   MPI_DOUBLE, krow(k), (grid->cscp).comm);
 
-    // do the panels olver 
+    // do the panels solver 
     if (myrow == krow(k))
     {
         uPanelVec[g2lRow(k)].panelSolveGPU(
@@ -69,8 +71,9 @@ int_t LUstruct_v100::dDFactPSolveGPU(int_t k, int_t offset, ddiagFactBufs_t **dF
     SCT->tDiagFactorPanelSolve += (SuperLU_timer_() - t0);
 
     return 0;
-}
+} /* dDFactPSolveGPU */
 
+/* This performs diag factor on CPU */
 int_t LUstruct_v100::dDiagFactorPanelSolveGPU(int_t k, int_t offset, ddiagFactBufs_t **dFBufs)
 {
     double t0 = SuperLU_timer_();
@@ -187,10 +190,10 @@ int_t LUstruct_v100::dsparseTreeFactorGPU(
     printf("Using New code V100 with GPU acceleration\n"); fflush(stdout);
     printf(". lookahead numLA %d\n", numLA); fflush(stdout);
     
-    // start the pipeline
-    int_t *donePanelBcast = intMalloc_dist(nnodes);
-    int_t *donePanelSolve = intMalloc_dist(nnodes);
-    int_t *localNumChildrenLeft = intMalloc_dist(nnodes);
+    // start the pipeline.  Sherry: need to free these 3 arrays
+    int *donePanelBcast = int32Malloc_dist(nnodes);
+    int *donePanelSolve = int32Malloc_dist(nnodes);
+    int *localNumChildrenLeft = int32Malloc_dist(nnodes);
 
     //TODO: not needed, remove after testing
     for (int_t i = 0; i < nnodes; i++)
@@ -400,8 +403,6 @@ int_t LUstruct_v100::dsparseTreeFactorGPU(
             }
         }
 
-
-
         for (int_t k0 = k1; k0 < SUPERLU_MIN(nnodes, k1+oldWinSize); ++k0)
         { 
             int_t k = perm_c_supno[k0];
@@ -476,6 +477,12 @@ int_t LUstruct_v100::dsparseTreeFactorGPU(
     } /*for topoLvl = 0:maxTopoLevel*/
 
 #endif /* match  #if 0 at line 325 */
+
+
+    /* Sherry added 2/1/23 */
+    SUPERLU_FREE(donePanelBcast);
+    SUPERLU_FREE(donePanelSolve);
+    SUPERLU_FREE(localNumChildrenLeft);
     
 #if (DEBUGlevel >= 1)
     CHECK_MALLOC(grid3d->iam, "Exit dsparseTreeFactorGPU()");
@@ -483,6 +490,139 @@ int_t LUstruct_v100::dsparseTreeFactorGPU(
 
     return 0;
 } /* dsparseTreeFactorGPU */
+
+int LUstruct_v100::dsparseTreeFactorBatchGPU(
+    sForest_t *sforest,
+    ddiagFactBufs_t **dFBufs, // size maxEtree level
+    gEtreeInfo_t *gEtreeInfo, // global etree info
+    int tag_ub)
+{
+    int nnodes = sforest->nNodes; // number of nodes in the tree
+    int topoLvl, k_st, k_end, k0, k, offset, ksupc;
+    if (nnodes < 1)
+    {
+        return 1;
+    }
+
+    int_t *perm_c_supno = sforest->nodeList; // list of nodes in the order of factorization
+    treeTopoInfo_t *treeTopoInfo = &sforest->topoInfo;
+    int_t *myIperm = treeTopoInfo->myIperm;
+    int_t maxTopoLevel = treeTopoInfo->numLvl;
+    int_t *eTreeTopLims = treeTopoInfo->eTreeTopLims;
+
+
+#if (DEBUGlevel >= 1)
+    CHECK_MALLOC(grid3d->iam, "Enter dsparseTreeFactorBatchGPU()");
+#endif
+    printf("Using level-based scheduling on GPU\n"); fflush(stdout);
+
+#if 0  // not needed anymore
+    // start the pipeline
+    int_t *donePanelBcast = intMalloc_dist(nnodes);
+    int_t *donePanelSolve = intMalloc_dist(nnodes);
+    int_t *localNumChildrenLeft = intMalloc_dist(nnodes);
+
+    //TODO: not needed, remove after testing
+    for (int_t i = 0; i < nnodes; i++)
+    {
+        donePanelBcast[i] = 0;
+        donePanelSolve[i] = 0;
+        localNumChildrenLeft[i] = 0;
+    }
+
+    /* count # of children based on parent[] info */
+    for (k0 = 0; k0 < nnodes; k0++)
+    {
+        k = perm_c_supno[k0];
+        int k_parent = gEtreeInfo->setree[k];
+        int ik = myIperm[k_parent];
+        if (ik > -1 && ik < nnodes)
+            localNumChildrenLeft[ik]++;
+    }
+#endif
+
+    /* For all the leaves at level 0 */
+    topoLvl = 0;
+    k_st = eTreeTopLims[topoLvl];
+    k_end = eTreeTopLims[topoLvl + 1];
+
+    //ToDo: make this batched 
+    for (k0 = k_st; k0 < k_end; k0++)
+    {
+        k = perm_c_supno[k0];
+        offset = 0;
+        // dDiagFactorPanelSolveGPU(k, offset, dFBufs);
+        dDFactPSolveGPU(k, offset, dFBufs);
+
+	/*======= Panel Broadcast  ======*/
+	dPanelBcastGPU(k, offset); // does this only if (UidxSendCounts[k] > 0)
+        //donePanelSolve[k0]=1;
+
+        /*======= Schurcomplement Update ======*/
+	/* UidxSendCounts are computed in LUstruct_v100 constructor in LUpanels.cpp */
+	if (UidxSendCounts[k] > 0 && LidxSendCounts[k] > 0) {
+                // k_upanel.checkCorrectness();
+	    int streamId = 0;
+            upanel_t k_upanel = getKUpanel(k,offset);
+            lpanel_t k_lpanel = getKLpanel(k,offset);
+	    dSchurComplementUpdateGPU( streamId,
+				       k, k_lpanel, k_upanel);
+// cudaStreamSynchronize(cuStream); // there is sync inside the kernel
+	}
+	
+    }
+
+    /* Main loop over all the internal levels */
+    for (topoLvl = 1; topoLvl < maxTopoLevel; ++topoLvl) {
+      
+        k_st = eTreeTopLims[topoLvl];
+        k_end = eTreeTopLims[topoLvl + 1];
+
+	/* loop over all the nodes at level topoLvl */
+        for (k0 = k_st; k0 < k_end; ++k0) { /* ToDo: batch this */
+            k = perm_c_supno[k0];
+            offset = k0 - k_st;
+            // offset = getBufferOffset(k0, k1, winSize, winParity, halfWin);
+            //ksupc = SuperSize(k);
+
+	    int dOffset = 0;  // Sherry ??? 
+	    dDFactPSolveGPU(k, dOffset,dFBufs);
+
+            /*======= Panel Broadcast  ======*/
+	    dPanelBcastGPU(k, offset); // does this only if (UidxSendCounts[k] > 0)
+	    
+            /*======= Schurcomplement Update ======*/
+            if (UidxSendCounts[k] > 0 && LidxSendCounts[k] > 0)
+            {
+                // k_upanel.checkCorrectness();
+                int streamId = 0;
+#define NDEBUG
+#ifndef NDEBUG
+                checkGPU();
+#endif
+		upanel_t k_upanel = getKUpanel(k,offset);
+		lpanel_t k_lpanel = getKLpanel(k,offset);
+                dSchurComplementUpdateGPU(streamId,
+					  k, k_lpanel, k_upanel);
+// cudaStreamSynchronize(cuStream); // there is sync inside the kernel
+#ifndef NDEBUG
+                dSchurComplementUpdate(k, k_lpanel, k_upanel);
+                cudaStreamSynchronize(cuStream);
+                checkGPU();
+#endif
+            }
+            // MPI_Barrier(grid3d->comm);
+
+        } /* end for k0= k_st:k_end */
+
+    } /* end for topoLvl = 0:maxTopoLevel */
+    
+#if (DEBUGlevel >= 1)
+    CHECK_MALLOC(grid3d->iam, "Exit dsparseTreeFactorBatchGPU()");
+#endif
+
+    return 0;
+} /* dsparseTreeFactorBatchGPU */
 
 //TODO: needs to be merged as a single factorization function
 int_t LUstruct_v100::dsparseTreeFactorGPUBaseline(

@@ -49,7 +49,7 @@ int copyLUGPU2Host(LUgpu_Handle LuH, dLUstruct_t *LUstruct)
    return 0; 
 }
 
-int pdgstrf3d_LUpackedInterface( LUgpu_Handle LUHand)
+  int pdgstrf3d_LUpackedInterface( LUgpu_Handle LUHand )
 {
    // perform the factorization
    return LUHand->pdgstrf3d();

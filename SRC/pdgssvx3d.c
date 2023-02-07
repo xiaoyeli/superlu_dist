@@ -1479,11 +1479,13 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 			int_t ldt = sp_ienv_dist(3, options); /* Size of maximum supernode */
 			double s_eps = smach_dist("Epsilon");
 			double thresh = s_eps * anorm;
-			
+
+			/* call constructor in C++ code */
 			LUgpu = createLUgpuHandle(nsupers, ldt, trf3Dpartition, LUstruct, grid3d,
-									  SCT, options, stat, thresh, info);
+						  SCT, options, stat, thresh, info);
 			
-			pdgstrf3d_LUpackedInterface(LUgpu); /* call pdgstrf3d() */
+			/* call pdgstrf3d() in C++ code */
+			pdgstrf3d_LUpackedInterface(LUgpu);
 			
 			if (!trisolveGPUopt)
 			{

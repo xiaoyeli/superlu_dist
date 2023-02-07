@@ -227,6 +227,7 @@ void set_default_options_dist(superlu_dist_options_t *options)
     options->superlu_n_gemm = 5000;
     options->superlu_max_buffer_size = 256000000;
     options->superlu_num_gpu_streams = 8;
+    options->batchCount = 0;
     options->SymPattern = NO;
     options->Algo3d = NO;
 #ifdef SLU_HAVE_LAPACK
@@ -255,11 +256,12 @@ void print_options_dist(superlu_dist_options_t *options)
     printf("**    ReplaceTinyPivot          : %4d\n", options->ReplaceTinyPivot);
     printf("**    IterRefine                : %4d\n", options->IterRefine);
     printf("**    Trans                     : %4d\n", options->Trans);
+    printf("**    num_lookaheads            : %4d\n", options->num_lookaheads);
+    printf("**    batchCount                : %4d\n", options->batchCount);
     printf("**    SymPattern                : %4d\n", options->SymPattern);
     printf("**    lookahead_etree           : %4d\n", options->lookahead_etree);
     printf("**    Use_TensorCore            : %4d\n", options->Use_TensorCore);
     printf("**    Use 3D algorithm          : %4d\n", options->Algo3d);
-    printf("**    num_lookaheads            : %4d\n", options->num_lookaheads);
     printf("** parameters that can be altered by environment variables:\n");
     printf("**    superlu_relax             : %4d\n", sp_ienv_dist(2, options));
     printf("**    superlu_maxsup            : %4d\n", sp_ienv_dist(3, options));

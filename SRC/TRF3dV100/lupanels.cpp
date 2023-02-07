@@ -5,14 +5,14 @@
 #include "lupanels_GPU.cuh"
 #include "lupanels.hpp"
 
-// #define cudaCheckError()                                                                     \
-//     {                                                                                        \
-//         cudaError_t e = cudaGetLastError();                                                  \
-//         if (e != cudaSuccess)                                                                \
-//         {                                                                                    \
+// #define cudaCheckError()                                                              
+//     {                                                                        \
+//         cudaError_t e = cudaGetLastError();                                   \
+//         if (e != cudaSuccess)                                                \
+//         {                                                                    \
 //             printf("Cuda failure %s:%d: '%s'\n", __FILE__, __LINE__, cudaGetErrorString(e)); \
-//             exit(0);                                                                         \
-//         }                                                                                    \
+//             exit(0);                                                         \
+//         }                                                                    \
 //     }
 
 upanel_t LUstruct_v100::getKUpanel(int_t k, int_t offset)
@@ -35,17 +35,18 @@ lpanel_t LUstruct_v100::getKLpanel(int_t k, int_t offset)
     return k_lpanel;
 }
 
-/* constructor */
+/* Constructor */
 LUstruct_v100::LUstruct_v100(int_t nsupers_, int_t ldt_,
                              dtrf3Dpartition_t *trf3Dpartition_, 
                              dLUstruct_t *LUstruct,
                              gridinfo3d_t *grid3d_in,
                              SCT_t *SCT_, superlu_dist_options_t *options_,
-                             SuperLUStat_t *stat_, double thresh_, int *info_) : nsupers(nsupers_), trf3Dpartition(trf3Dpartition_),
-                                                                                 ldt(ldt_), grid3d(grid3d_in),
-                                                                                 SCT(SCT_), options(options_), 
-                                                                                 stat(stat_), thresh(thresh_), info(info_),
-                                                                                 anc25d(grid3d_in)
+                             SuperLUStat_t *stat_, double thresh_, int *info_) :
+                             nsupers(nsupers_), trf3Dpartition(trf3Dpartition_),
+                             ldt(ldt_), /* maximum supernode size */
+			     grid3d(grid3d_in), SCT(SCT_),
+			     options(options_), stat(stat_),
+			     thresh(thresh_), info(info_), anc25d(grid3d_in)
 {
     maxLvl = log2i(grid3d->zscp.Np) + 1;
     isNodeInMyGrid = getIsNodeInMyGrid(nsupers, maxLvl, trf3Dpartition->myNodeCount, trf3Dpartition->treePerm);
@@ -201,11 +202,11 @@ LUstruct_v100::LUstruct_v100(int_t nsupers_, int_t ldt_,
         bcastUidx[i] = bcUidx;
     }
 
-    diagFactBufs.resize(numDiagBufs);  /* Sherry: numDiagBufs == 32 hard-coded */
+    diagFactBufs.resize(numDiagBufs);  /* Sherry?? numDiagBufs == 32 hard-coded */
     bcastDiagRow.resize(numDiagBufs);
     bcastDiagCol.resize(numDiagBufs);
 
-    for (int i = 0; i < numDiagBufs; i++)
+    for (int i = 0; i < numDiagBufs; i++) /* Sherry?? these strcutures not used */
     {
         diagFactBufs[i] = (double *)SUPERLU_MALLOC(sizeof(double) * ldt * ldt);
         bcastStruct bcDiagRow(grid3d->rscp.comm, MPI_DOUBLE, SYNC);
@@ -229,7 +230,8 @@ LUstruct_v100::LUstruct_v100(int_t nsupers_, int_t ldt_,
     double tGPU = SuperLU_timer_();
     if(superlu_acc_offload)
     {
-        setLUstruct_GPU();
+      setLUstruct_GPU();  /* Set up LU structure and buffers on GPU */
+	
         // TODO: remove it, checking is very slow 
         if(0)
             checkGPU();     
