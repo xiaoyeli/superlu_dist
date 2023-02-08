@@ -215,7 +215,7 @@ LUstruct_v100::LUstruct_v100(int_t nsupers_, int_t ldt_,
         bcastDiagCol[i] = bcDiagCol;
     }
 
-    int_t mxLeafNode = 0;
+    int mxLeafNode = 0;
     int_t *myTreeIdxs = trf3Dpartition->myTreeIdxs;
     int_t *myZeroTrIdxs = trf3Dpartition->myZeroTrIdxs;
     sForest_t **sForests = trf3Dpartition->sForests;
@@ -227,6 +227,7 @@ LUstruct_v100::LUstruct_v100(int_t nsupers_, int_t ldt_,
     dFBufs = dinitDiagFactBufsArr(mxLeafNode, ldt, grid);
     maxLeafNodes = mxLeafNode;
 
+    
     double tGPU = SuperLU_timer_();
     if(superlu_acc_offload)
     {
