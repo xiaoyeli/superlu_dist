@@ -8,6 +8,7 @@ EXIT_SUCCESS=0
 EXIT_HOST=1
 EXIT_PARAM=2
 
+module load cuda
 module load essl
 module load cmake/
 
