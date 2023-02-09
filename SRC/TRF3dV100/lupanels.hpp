@@ -436,6 +436,12 @@ struct LUstruct_v100
 				  gEtreeInfo_t *gEtreeInfo, // global etree info
 				  int tag_ub);
 
+    void marshallBatchedLUData(
+        int k_st, int k_end, int_t *perm_c_supno, 
+        double **diag_ptrs, int *ld_batch, int *dim_batch,
+        int &my_batch_size
+    );
+
     //
     int_t dDiagFactorPanelSolve(int_t k, int_t offset, ddiagFactBufs_t **dFBufs);
     int_t dPanelBcast(int_t k, int_t offset);

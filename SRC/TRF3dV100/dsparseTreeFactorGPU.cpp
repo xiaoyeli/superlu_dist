@@ -4,8 +4,6 @@
 #include "lupanels_GPU.cuh"
 
 #include "magma.h"
-#include <thrust/host_vector.h>
-#include <thrust/device_vector.h>
 
 int getBufferOffset(int k0, int k1, int winSize, int winParity, int halfWin)
 {
@@ -218,7 +216,6 @@ int_t LUstruct_v100::dsparseTreeFactorGPU(
     int_t k_end = eTreeTopLims[topoLvl + 1];
 
     //TODO: make this asynchronous 
-#if 0
     for (int_t k0 = k_st; k0 < k_end; k0++)
     {
         int_t k = perm_c_supno[k0];
@@ -227,86 +224,6 @@ int_t LUstruct_v100::dsparseTreeFactorGPU(
         dDFactPSolveGPU(k, offset, dFBufs);
 		donePanelSolve[k0]=1;
     }
-#else 
-	int leaf_batch_size = k_end - k_st;
-    thrust::host_vector<double*> diag_ptrs(leaf_batch_size);
-	thrust::host_vector<int> diag_ld(leaf_batch_size), diag_dims(leaf_batch_size);
-	int my_batch_size = 0;
-	
-    for (int_t k0 = k_st; k0 < k_end; k0++)
-    {
-        int_t k = perm_c_supno[k0];
-        
-		if (iam == procIJ(k, k))
-		{			
-			diag_ptrs[my_batch_size] = lPanelVec[g2lCol(k)].blkPtrGPU(0);
-			diag_ld[my_batch_size] = lPanelVec[g2lCol(k)].LDA();
-			diag_dims[my_batch_size] = SuperSize(k);		 
-			my_batch_size++;
-            assert(my_batch_size <= leaf_batch_size);
-		}     
-    }
-
-    // for(int i = 0; i < my_batch_size; i++)
-    // {
-    //     cusolverDnHandle_t cusolverH = A_gpu.cuSolveHandles[0];
-    //     double* dWork = A_gpu.diagFactWork[0];
-    //     int* d_info = A_gpu.diagFactInfo[0];
-    //     cusolverDnDgetrf(cusolverH, diag_dims[i], diag_dims[i], diag_ptrs[i], diag_ld[i], dWork, NULL, d_info);
-    // }
-
-    thrust::device_vector<double*> dev_diag_ptrs = diag_ptrs;
-	thrust::device_vector<int> dev_diag_ld = diag_ld, dev_diag_dims = diag_dims;
-	
-    // MAGMA batch applies pivoting, current code does not
-    /// magma_dgetrf_vbatched()
-
-    for (int_t k0 = k_st; k0 < k_end; k0++)
-    {
-		int_t k = perm_c_supno[k0];
-		int_t offset = 0;
-		
-		cublasHandle_t cubHandle = A_gpu.cuHandles[offset];
-		cusolverDnHandle_t cusolverH = A_gpu.cuSolveHandles[offset];
-		cudaStream_t cuStream = A_gpu.cuStreams[offset];
-		int ksupc = SuperSize(k);
-
-        if (iam == procIJ(k, k))
-        {
-			size_t dpitch = ksupc * sizeof(double);
-			size_t spitch = lPanelVec[g2lCol(k)].LDA() * sizeof(double);
-			size_t width = ksupc * sizeof(double);
-			size_t height = ksupc;
-
-            double* val = lPanelVec[g2lCol(k)].blkPtrGPU(0);
-            double* dDiagBuf = A_gpu.dFBufs[offset];
-
-			// Device to Device Copy
-			cudaMemcpy2DAsync(dDiagBuf, dpitch, val, spitch,
-					 width, height, cudaMemcpyDeviceToDevice, cuStream);
-
-            cudaStreamSynchronize(cuStream);
-        }
-
-		if (myrow == krow(k))
-		{
-			uPanelVec[g2lRow(k)].panelSolveGPU(
-				cubHandle, cuStream,
-				ksupc, A_gpu.dFBufs[offset], ksupc);
-			cudaStreamSynchronize(cuStream); // synchronize befpre broadcast
-		}
-		
-		if (mycol == kcol(k))
-		{
-			lPanelVec[g2lCol(k)].panelSolveGPU(
-				cubHandle, cuStream,
-				ksupc, A_gpu.dFBufs[offset], ksupc);
-			cudaStreamSynchronize(cuStream);
-		}
-		
-		donePanelSolve[k0]=1;
-	}
-#endif 
 
     //TODO: its really the panels that needs to be doubled 
     // everything else can remain as it is 
@@ -491,6 +408,28 @@ int_t LUstruct_v100::dsparseTreeFactorGPU(
     return 0;
 } /* dsparseTreeFactorGPU */
 
+void LUstruct_v100::marshallBatchedLUData(
+    int k_st, int k_end, int_t *perm_c_supno, 
+    double **diag_ptrs, int *ld_batch, int *dim_batch,
+    int &my_batch_size
+)
+{
+	my_batch_size = 0;
+	
+    for (int_t k0 = k_st; k0 < k_end; k0++)
+    {
+        int_t k = perm_c_supno[k0];
+        
+		if (iam == procIJ(k, k))
+		{			
+			diag_ptrs[my_batch_size] = lPanelVec[g2lCol(k)].blkPtrGPU(0);
+			ld_batch[my_batch_size] = lPanelVec[g2lCol(k)].LDA();
+			dim_batch[my_batch_size] = SuperSize(k);		 
+			my_batch_size++;
+		}     
+    }
+}
+
 int LUstruct_v100::dsparseTreeFactorBatchGPU(
     sForest_t *sforest,
     ddiagFactBufs_t **dFBufs, // size maxEtree level
@@ -546,6 +485,7 @@ int LUstruct_v100::dsparseTreeFactorBatchGPU(
     k_st = eTreeTopLims[topoLvl];
     k_end = eTreeTopLims[topoLvl + 1];
 
+#if 0
     //ToDo: make this batched 
     for (k0 = k_st; k0 < k_end; k0++)
     {
@@ -553,23 +493,110 @@ int LUstruct_v100::dsparseTreeFactorBatchGPU(
         offset = 0;
         // dDiagFactorPanelSolveGPU(k, offset, dFBufs);
         dDFactPSolveGPU(k, offset, dFBufs);
+    }
+#endif 
+    int leaf_level_size = k_end - k_st;
+    std::vector<double*> diag_ptrs(leaf_level_size);
+    std::vector<int> ld_batch(leaf_level_size), dim_batch(leaf_level_size);
 
-	/*======= Panel Broadcast  ======*/
-	dPanelBcastGPU(k, offset); // does this only if (UidxSendCounts[k] > 0)
-        //donePanelSolve[k0]=1;
+    int my_batch_size;
+    marshallBatchedLUData(k_st, k_end, perm_c_supno, &diag_ptrs[0], &ld_batch[0], &dim_batch[0], my_batch_size);
+    
+    double **dev_diag_ptrs;
+    int *dev_ld_batch, *dev_dim_batch, *dev_info;
+    cudaMalloc(&dev_diag_ptrs, my_batch_size * sizeof(double*));
+    cudaMalloc(&dev_ld_batch, my_batch_size * sizeof(double*));
+    cudaMalloc(&dev_dim_batch, (my_batch_size + 1) * sizeof(double*));
+    cudaMalloc(&dev_info, my_batch_size * sizeof(double*));
 
-        /*======= Schurcomplement Update ======*/
-	/* UidxSendCounts are computed in LUstruct_v100 constructor in LUpanels.cpp */
-	if (UidxSendCounts[k] > 0 && LidxSendCounts[k] > 0) {
-                // k_upanel.checkCorrectness();
-	    int streamId = 0;
-            upanel_t k_upanel = getKUpanel(k,offset);
-            lpanel_t k_lpanel = getKLpanel(k,offset);
-	    dSchurComplementUpdateGPU( streamId,
-				       k, k_lpanel, k_upanel);
-// cudaStreamSynchronize(cuStream); // there is sync inside the kernel
+    cudaMemcpy(dev_diag_ptrs, &diag_ptrs[0], my_batch_size * sizeof(double*), cudaMemcpyHostToDevice);
+    cudaMemcpy(dev_ld_batch, &ld_batch[0], my_batch_size * sizeof(int), cudaMemcpyHostToDevice);
+    cudaMemcpy(dev_dim_batch, &dim_batch[0], my_batch_size * sizeof(int), cudaMemcpyHostToDevice);
+    
+    cublasHandle_t cubHandle = A_gpu.cuHandles[0];
+    cudaStream_t cuStream = A_gpu.cuStreams[0];
+    
+    magma_queue_t magma_queue;
+    magma_queue_create_from_cuda(0, cuStream, cubHandle, NULL, &magma_queue);
+    
+    int info = magma_dgetrf_vbatched(
+        dev_dim_batch, dev_dim_batch, dev_diag_ptrs, dev_ld_batch, 
+        NULL, dev_info, my_batch_size, magma_queue
+    );
+
+    printf("Magma batch result: %d\n", info);
+
+    // for(int i = 0; i < my_batch_size; i++)
+    // {
+    //     cusolverDnHandle_t cusolverH = A_gpu.cuSolveHandles[0];
+    //     double* dWork = A_gpu.diagFactWork[0];
+    //     int* d_info = A_gpu.diagFactInfo[0];
+    //     cusolverDnDgetrf(cusolverH, dim_batch[i], dim_batch[i], diag_ptrs[i], ld_batch[i], dWork, NULL, d_info);
+    // }
+
+    for (int_t k0 = k_st; k0 < k_end; k0++)
+    {
+		int_t k = perm_c_supno[k0];
+		int_t offset = 0;
+		
+		cublasHandle_t cubHandle = A_gpu.cuHandles[offset];
+		cusolverDnHandle_t cusolverH = A_gpu.cuSolveHandles[offset];
+		cudaStream_t cuStream = A_gpu.cuStreams[offset];
+		int ksupc = SuperSize(k);
+
+        if (iam == procIJ(k, k))
+        {
+			size_t dpitch = ksupc * sizeof(double);
+			size_t spitch = lPanelVec[g2lCol(k)].LDA() * sizeof(double);
+			size_t width = ksupc * sizeof(double);
+			size_t height = ksupc;
+
+            double* val = lPanelVec[g2lCol(k)].blkPtrGPU(0);
+            double* dDiagBuf = A_gpu.dFBufs[offset];
+
+			// Device to Device Copy
+			cudaMemcpy2DAsync(dDiagBuf, dpitch, val, spitch,
+					 width, height, cudaMemcpyDeviceToDevice, cuStream);
+
+            cudaStreamSynchronize(cuStream);
+        }
+
+		if (myrow == krow(k))
+		{
+			uPanelVec[g2lRow(k)].panelSolveGPU(
+				cubHandle, cuStream,
+				ksupc, A_gpu.dFBufs[offset], ksupc);
+			cudaStreamSynchronize(cuStream); // synchronize befpre broadcast
+		}
+		
+		if (mycol == kcol(k))
+		{
+			lPanelVec[g2lCol(k)].panelSolveGPU(
+				cubHandle, cuStream,
+				ksupc, A_gpu.dFBufs[offset], ksupc);
+			cudaStreamSynchronize(cuStream);
+		}
 	}
-	
+
+    for (k0 = k_st; k0 < k_end; k0++)
+    {
+        k = perm_c_supno[k0];
+        offset = 0;
+        /*======= Panel Broadcast  ======*/
+        dPanelBcastGPU(k, offset); // does this only if (UidxSendCounts[k] > 0)
+            //donePanelSolve[k0]=1;
+
+            /*======= Schurcomplement Update ======*/
+        /* UidxSendCounts are computed in LUstruct_v100 constructor in LUpanels.cpp */
+        if (UidxSendCounts[k] > 0 && LidxSendCounts[k] > 0) {
+                    // k_upanel.checkCorrectness();
+            int streamId = 0;
+                upanel_t k_upanel = getKUpanel(k,offset);
+                lpanel_t k_lpanel = getKLpanel(k,offset);
+            dSchurComplementUpdateGPU( streamId,
+                        k, k_lpanel, k_upanel);
+        // cudaStreamSynchronize(cuStream); // there is sync inside the kernel
+        }
     }
 
     /* Main loop over all the internal levels */
