@@ -8,6 +8,7 @@
 #ifdef HAVE_CUDA
   #include <cuda_runtime.h>
   #include <cusolverDn.h>
+  #include "magma.h"
 #endif
 
 #include "lu_common.hpp"
@@ -257,6 +258,9 @@ struct LUstructGPU_t
     cudaStream_t cuStreams[MAX_CUDA_STREAMS];
     cublasHandle_t cuHandles[MAX_CUDA_STREAMS];
     
+    // Magma is needed for non-uniform batched execution 
+    magma_queue_t magma_queue;
+    
     /* Sherry: Allocate an array of buffers for the diagonal blocks
        on the leaf level.
        The sizes are uniform: ldt is the maximum among all the nodes.    */
@@ -265,6 +269,12 @@ struct LUstructGPU_t
     double **dFBufs;       
     double ** gpuGemmBuffs;
     
+    // Wajih: Device and host memory used to store marshalled batch data
+    double **dev_marshall_ptr_array;
+    int *dev_marshall_ld_array, *dev_marshall_dim_array, *dev_info_array;
+    std::vector<double *> host_marshall_ptr_array;
+    std::vector<int> host_marshall_ld_array, host_marshall_dim_array;
+
     double* LvalRecvBufs[MAX_CUDA_STREAMS];
     double* UvalRecvBufs[MAX_CUDA_STREAMS];
     int_t* LidxRecvBufs[MAX_CUDA_STREAMS];

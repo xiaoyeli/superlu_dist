@@ -3,8 +3,6 @@
 #include "lupanels.hpp"
 #include "lupanels_GPU.cuh"
 
-#include "magma.h"
-
 int getBufferOffset(int k0, int k1, int winSize, int winParity, int halfWin)
 {
     int_t offset = (k0-k1)%winSize;
@@ -408,12 +406,13 @@ int_t LUstruct_v100::dsparseTreeFactorGPU(
     return 0;
 } /* dsparseTreeFactorGPU */
 
-void LUstruct_v100::marshallBatchedLUData(
-    int k_st, int k_end, int_t *perm_c_supno, 
-    double **diag_ptrs, int *ld_batch, int *dim_batch,
-    int &my_batch_size
-)
+void LUstruct_v100::marshallBatchedLUData(int k_st, int k_end, int_t *perm_c_supno, int &my_batch_size)
 {
+    // First gather up all the pointer and meta data on the host 
+    double **diag_ptrs = A_gpu.host_marshall_ptr_array.data();
+    int *ld_batch = A_gpu.host_marshall_ld_array.data();
+    int *dim_batch = A_gpu.host_marshall_dim_array.data();
+
 	my_batch_size = 0;
 	
     for (int_t k0 = k_st; k0 < k_end; k0++)
@@ -428,6 +427,11 @@ void LUstruct_v100::marshallBatchedLUData(
 			my_batch_size++;
 		}     
     }
+
+    // Then copy the marshalled data over to the GPU 
+    cudaMemcpy(A_gpu.dev_marshall_ptr_array, A_gpu.host_marshall_ptr_array.data(), my_batch_size * sizeof(double*), cudaMemcpyHostToDevice);
+    cudaMemcpy(A_gpu.dev_marshall_ld_array, A_gpu.host_marshall_ld_array.data(), my_batch_size * sizeof(int), cudaMemcpyHostToDevice);
+    cudaMemcpy(A_gpu.dev_marshall_dim_array, A_gpu.host_marshall_dim_array.data(), my_batch_size * sizeof(int), cudaMemcpyHostToDevice);
 }
 
 int LUstruct_v100::dsparseTreeFactorBatchGPU(
@@ -495,55 +499,27 @@ int LUstruct_v100::dsparseTreeFactorBatchGPU(
         dDFactPSolveGPU(k, offset, dFBufs);
     }
 #endif 
-    int leaf_level_size = k_end - k_st;
-    std::vector<double*> diag_ptrs(leaf_level_size);
-    std::vector<int> ld_batch(leaf_level_size), dim_batch(leaf_level_size);
 
+    // Marshall the data for the leaf level batched LU decomposition   
     int my_batch_size;
-    marshallBatchedLUData(k_st, k_end, perm_c_supno, &diag_ptrs[0], &ld_batch[0], &dim_batch[0], my_batch_size);
-    
-    double **dev_diag_ptrs;
-    int *dev_ld_batch, *dev_dim_batch, *dev_info;
-    cudaMalloc(&dev_diag_ptrs, my_batch_size * sizeof(double*));
-    cudaMalloc(&dev_ld_batch, my_batch_size * sizeof(double*));
-    cudaMalloc(&dev_dim_batch, (my_batch_size + 1) * sizeof(double*));
-    cudaMalloc(&dev_info, my_batch_size * sizeof(double*));
-
-    cudaMemcpy(dev_diag_ptrs, &diag_ptrs[0], my_batch_size * sizeof(double*), cudaMemcpyHostToDevice);
-    cudaMemcpy(dev_ld_batch, &ld_batch[0], my_batch_size * sizeof(int), cudaMemcpyHostToDevice);
-    cudaMemcpy(dev_dim_batch, &dim_batch[0], my_batch_size * sizeof(int), cudaMemcpyHostToDevice);
-    
-    cublasHandle_t cubHandle = A_gpu.cuHandles[0];
-    cudaStream_t cuStream = A_gpu.cuStreams[0];
-    
-    magma_queue_t magma_queue;
-    magma_queue_create_from_cuda(0, cuStream, cubHandle, NULL, &magma_queue);
+    marshallBatchedLUData(k_st, k_end, perm_c_supno, my_batch_size);
     
     int info = magma_dgetrf_vbatched(
-        dev_dim_batch, dev_dim_batch, dev_diag_ptrs, dev_ld_batch, 
-        NULL, dev_info, my_batch_size, magma_queue
+        A_gpu.dev_marshall_dim_array, A_gpu.dev_marshall_dim_array, A_gpu.dev_marshall_ptr_array, 
+        A_gpu.dev_marshall_ld_array, NULL, A_gpu.dev_info_array, my_batch_size, A_gpu.magma_queue
     );
 
     printf("Magma batch result: %d\n", info);
 
-    // for(int i = 0; i < my_batch_size; i++)
-    // {
-    //     cusolverDnHandle_t cusolverH = A_gpu.cuSolveHandles[0];
-    //     double* dWork = A_gpu.diagFactWork[0];
-    //     int* d_info = A_gpu.diagFactInfo[0];
-    //     cusolverDnDgetrf(cusolverH, dim_batch[i], dim_batch[i], diag_ptrs[i], ld_batch[i], dWork, NULL, d_info);
-    // }
-
+    // Wajih: This has to be replaced with a batched block copy (kblas dependency or copy the routine with reference to it?)
     for (int_t k0 = k_st; k0 < k_end; k0++)
     {
 		int_t k = perm_c_supno[k0];
-		int_t offset = 0;
-		
-		cublasHandle_t cubHandle = A_gpu.cuHandles[offset];
-		cusolverDnHandle_t cusolverH = A_gpu.cuSolveHandles[offset];
-		cudaStream_t cuStream = A_gpu.cuStreams[offset];
+		int_t buffer_offset = k0 - k_st;
+	
+		cudaStream_t cuStream = A_gpu.cuStreams[0];
 		int ksupc = SuperSize(k);
-
+ 
         if (iam == procIJ(k, k))
         {
 			size_t dpitch = ksupc * sizeof(double);
@@ -552,7 +528,7 @@ int LUstruct_v100::dsparseTreeFactorBatchGPU(
 			size_t height = ksupc;
 
             double* val = lPanelVec[g2lCol(k)].blkPtrGPU(0);
-            double* dDiagBuf = A_gpu.dFBufs[offset];
+            double* dDiagBuf = A_gpu.dFBufs[buffer_offset];
 
 			// Device to Device Copy
 			cudaMemcpy2DAsync(dDiagBuf, dpitch, val, spitch,
@@ -560,12 +536,23 @@ int LUstruct_v100::dsparseTreeFactorBatchGPU(
 
             cudaStreamSynchronize(cuStream);
         }
+    }
+    
+    // Wajih: This has to be replaced with batched trsm from magma
+    for (int_t k0 = k_st; k0 < k_end; k0++)
+    {
+		int_t k = perm_c_supno[k0];
+		int_t buffer_offset = k0 - k_st;
+	
+		cublasHandle_t cubHandle = A_gpu.cuHandles[0];
+		cudaStream_t cuStream = A_gpu.cuStreams[0];
+		int ksupc = SuperSize(k);
 
 		if (myrow == krow(k))
 		{
 			uPanelVec[g2lRow(k)].panelSolveGPU(
 				cubHandle, cuStream,
-				ksupc, A_gpu.dFBufs[offset], ksupc);
+				ksupc, A_gpu.dFBufs[buffer_offset], ksupc);
 			cudaStreamSynchronize(cuStream); // synchronize befpre broadcast
 		}
 		
@@ -573,11 +560,12 @@ int LUstruct_v100::dsparseTreeFactorBatchGPU(
 		{
 			lPanelVec[g2lCol(k)].panelSolveGPU(
 				cubHandle, cuStream,
-				ksupc, A_gpu.dFBufs[offset], ksupc);
+				ksupc, A_gpu.dFBufs[buffer_offset], ksupc);
 			cudaStreamSynchronize(cuStream);
 		}
 	}
 
+    // Wajih: The schur complement update will require modifying the current scatter routine to be batched
     for (k0 = k_st; k0 < k_end; k0++)
     {
         k = perm_c_supno[k0];

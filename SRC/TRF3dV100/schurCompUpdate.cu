@@ -832,7 +832,17 @@ int_t LUstruct_v100::setLUstruct_GPU()
         cudaMalloc(&(A_gpu.dFBufs[i]), ldt * ldt * sizeof(double));
         cudaMalloc(&(A_gpu.gpuGemmBuffs[i]), A_gpu.gemmBufferSize * sizeof(double));
     }
-    
+
+    // Wajih: Adding allocation for batched LU marshalled data 
+    checkCudaLocal(cudaMalloc(&(A_gpu.dev_marshall_ptr_array), num_dfbufs * sizeof(double*)));
+    checkCudaLocal(cudaMalloc(&(A_gpu.dev_marshall_ld_array), num_dfbufs * sizeof(int)));
+    checkCudaLocal(cudaMalloc(&(A_gpu.dev_marshall_dim_array), num_dfbufs * sizeof(int)));
+    checkCudaLocal(cudaMalloc(&(A_gpu.dev_info_array), num_dfbufs * sizeof(int)));
+
+    A_gpu.host_marshall_ptr_array.resize(num_dfbufs);
+    A_gpu.host_marshall_ld_array.resize(num_dfbufs);
+    A_gpu.host_marshall_dim_array.resize(num_dfbufs);
+
     tcuMalloc = SuperLU_timer_() - tcuMalloc;
     printf("Time to allocate GPU memory: %g\n", tcuMalloc);
 
@@ -849,7 +859,6 @@ int_t LUstruct_v100::setLUstruct_GPU()
     double tcuStreamCreate=SuperLU_timer_();
     for (stream = 0; stream < A_gpu.numCudaStreams; stream++)
     {
-
         cudaStreamCreate(&A_gpu.cuStreams[stream]);
         cublasCreate(&A_gpu.cuHandles[stream]);
         /*lookAhead buffers and stream*/
@@ -857,6 +866,15 @@ int_t LUstruct_v100::setLUstruct_GPU()
         cudaStreamCreate(&A_gpu.lookAheadLStream[stream]);
         cublasCreate(&A_gpu.lookAheadUHandle[stream]);
         cudaStreamCreate(&A_gpu.lookAheadUStream[stream]);
+
+        // Wajih: Need to create at least one magma queue
+        if(stream == 0)
+        {
+            magma_queue_create_from_cuda(
+                device_id, A_gpu.cuStreams[stream], A_gpu.cuHandles[stream], 
+                NULL, &A_gpu.magma_queue
+            );
+        }
     }
     tcuStreamCreate = SuperLU_timer_() - tcuStreamCreate;
     printf("Time to create CUDA streams: %g\n", tcuStreamCreate);
