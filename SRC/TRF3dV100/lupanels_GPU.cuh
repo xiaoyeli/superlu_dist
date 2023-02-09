@@ -240,7 +240,6 @@ public:
     } 
 };
 
-
 #define MAX_CUDA_STREAMS 64 
 struct LUstructGPU_t
 {
@@ -257,8 +256,15 @@ struct LUstructGPU_t
     // double arrays are problematic 
     cudaStream_t cuStreams[MAX_CUDA_STREAMS];
     cublasHandle_t cuHandles[MAX_CUDA_STREAMS];
-    double* gpuGemmBuffs[MAX_CUDA_STREAMS];
-    double* dFBufs[MAX_CUDA_STREAMS];  
+    
+    /* Sherry: Allocate an array of buffers for the diagonal blocks
+       on the leaf level.
+       The sizes are uniform: ldt is the maximum among all the nodes.    */
+    //    double* dFBufs[MAX_CUDA_STREAMS];
+    // double* gpuGemmBuffs[MAX_CUDA_STREAMS];
+    double **dFBufs;       
+    double ** gpuGemmBuffs;
+    
     double* LvalRecvBufs[MAX_CUDA_STREAMS];
     double* UvalRecvBufs[MAX_CUDA_STREAMS];
     int_t* LidxRecvBufs[MAX_CUDA_STREAMS];

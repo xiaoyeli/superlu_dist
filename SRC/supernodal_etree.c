@@ -49,7 +49,7 @@ int_t *supernodal_etree(int_t nsuper, int_t * etree, int_t* supno, int_t *xsup)
 	}
 
 	// Sherry print
-	PrintInt10("supernodal etree", nsuper+1, setree);
+	//PrintInt10("supernodal etree", nsuper+1, setree);
 	////////
 	
 	return setree;

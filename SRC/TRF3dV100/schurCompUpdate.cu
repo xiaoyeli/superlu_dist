@@ -584,9 +584,10 @@ size_t getGPUMemPerProcs(MPI_Comm baseCommunicator)
 
 int_t LUstruct_v100::setLUstruct_GPU()
 {
+    int i, stream;
 #if (DEBUGlevel >= 1)
     int iam = 0;
-    CHECK_MALLOC(iam, "Enter setLUstruct_GPU()");
+    CHECK_MALLOC(iam, "Enter setLUstruct_GPU()"); fflush(stdout);
 #endif
 	
     A_gpu.Pr = Pr;
@@ -614,7 +615,7 @@ int_t LUstruct_v100::setLUstruct_GPU()
     tRegion[0] = SuperLU_timer_();
     size_t totalNzvalSize = 0;
     /*Memory for lapenlPanel Data*/
-    for (int_t i = 0; i < CEILING(nsupers, Pc); ++i)
+    for (i = 0; i < CEILING(nsupers, Pc); ++i)
     {
         if (i * Pc + mycol < nsupers && isNodeInMyGrid[i * Pc + mycol] == 1)
         {
@@ -622,7 +623,7 @@ int_t LUstruct_v100::setLUstruct_GPU()
             totalNzvalSize += lPanelVec[i].nzvalSize();
         }
     }
-    for (int_t i = 0; i < CEILING(nsupers, Pr); ++i)
+    for (i = 0; i < CEILING(nsupers, Pr); ++i)
     {
         if (i * Pr + myrow < nsupers && isNodeInMyGrid[i * Pr + myrow] == 1)
         {
@@ -668,7 +669,7 @@ int_t LUstruct_v100::setLUstruct_GPU()
         printf("Using %d CUDA LookAhead streams\n", rNumberOfStreams);
     size_t totalMemoryRequired = memReqData + numberOfStreams * dataPerStream;
 
-#if 0
+#if 0 /**** Old code ****/
     upanelGPU_t *uPanelVec_GPU = new upanelGPU_t[CEILING(nsupers, Pr)];
     lpanelGPU_t *lPanelVec_GPU = new lpanelGPU_t[CEILING(nsupers, Pc)];
     void *gpuBasePtr, *gpuCurrentPtr;
@@ -741,7 +742,7 @@ int_t LUstruct_v100::setLUstruct_GPU()
     cudaMemcpy(dA_gpu, &A_gpu, sizeof(LUstructGPU_t), cudaMemcpyHostToDevice);
     gpuCurrentPtr = (LUstructGPU_t *)gpuCurrentPtr + 1;
 
-#else /* else of #if 0 */
+#else /* else of #if 0 ----> this is the current active code - Sherry */
     cudaMalloc(&A_gpu.xsup, (nsupers + 1) * sizeof(int_t));
     cudaMemcpy(A_gpu.xsup, xsup, (nsupers + 1) * sizeof(int_t), cudaMemcpyHostToDevice);
 
@@ -757,7 +758,7 @@ int_t LUstruct_v100::setLUstruct_GPU()
     upanelGPU_t *uPanelVec_GPU = new upanelGPU_t[CEILING(nsupers, Pr)];
     lpanelGPU_t *lPanelVec_GPU = new lpanelGPU_t[CEILING(nsupers, Pc)];
     tLsend = SuperLU_timer_();
-    for (int_t i = 0; i < CEILING(nsupers, Pc); ++i)
+    for (i = 0; i < CEILING(nsupers, Pc); ++i)
     {
         if (i * Pc + mycol < nsupers && isNodeInMyGrid[i * Pc + mycol] == 1)
             lPanelVec_GPU[i] = lPanelVec[i].copyToGPU();
@@ -765,7 +766,7 @@ int_t LUstruct_v100::setLUstruct_GPU()
     tLsend = SuperLU_timer_() - tLsend;
     tUsend = SuperLU_timer_();
     // cudaCheckError();
-    for (int_t i = 0; i < CEILING(nsupers, Pr); ++i)
+    for (i = 0; i < CEILING(nsupers, Pr); ++i)
     {
         if (i * Pr + myrow < nsupers && isNodeInMyGrid[i * Pr + myrow] == 1)
             uPanelVec_GPU[i] = uPanelVec[i].copyToGPU();
@@ -775,6 +776,7 @@ int_t LUstruct_v100::setLUstruct_GPU()
     tRegion[1] = SuperLU_timer_() - tRegion[1];
     printf("TRegion L,U send: \t %g\n", tRegion[1]);
     printf("Time to send Lpanel=%g  and U panels =%g \n", tLsend, tUsend);
+    fflush(stdout);
 
     cudaMalloc(&A_gpu.lPanelVec, CEILING(nsupers, Pc) * sizeof(lpanelGPU_t));
     cudaMemcpy(A_gpu.lPanelVec, lPanelVec_GPU,
@@ -793,12 +795,14 @@ int_t LUstruct_v100::setLUstruct_GPU()
     printf("Size of dfactBuf is %d\n", dfactBufSize);
     tRegion[2] = SuperLU_timer_() - tRegion[2];
     printf("TRegion dfactBuf: \t %g\n", tRegion[2]);
+    fflush(stdout);
     
-
     tRegion[3] = SuperLU_timer_();
 
     double tcuMalloc=SuperLU_timer_();
-    for (int stream = 0; stream < A_gpu.numCudaStreams; stream++)
+
+    /* Sherry: where are these freed ?? */
+    for (stream = 0; stream < A_gpu.numCudaStreams; stream++)
     {
         cudaMalloc(&A_gpu.LvalRecvBufs[stream], sizeof(double) * maxLvalCount);
         cudaMalloc(&A_gpu.UvalRecvBufs[stream], sizeof(double) * maxUvalCount);
@@ -808,20 +812,33 @@ int_t LUstruct_v100::setLUstruct_GPU()
         cudaMalloc(&A_gpu.diagFactWork[stream], sizeof(double) * dfactBufSize);
         cudaMalloc(&A_gpu.diagFactInfo[stream], sizeof(int));
 
-        cudaMalloc(&A_gpu.gpuGemmBuffs[stream], A_gpu.gemmBufferSize * sizeof(double));
         /*lookAhead buffers and stream*/
         cudaMalloc(&A_gpu.lookAheadLGemmBuffer[stream], sizeof(double) * maxLvalCount);
 
         cudaMalloc(&A_gpu.lookAheadUGemmBuffer[stream], sizeof(double) * maxUvalCount);
-
-        cudaMalloc(&A_gpu.dFBufs[stream], ldt * ldt * sizeof(double));
+	// Sherry: replace this by new code 
+        //cudaMalloc(&A_gpu.dFBufs[stream], ldt * ldt * sizeof(double));
+        //cudaMalloc(&A_gpu.gpuGemmBuffs[stream], A_gpu.gemmBufferSize * sizeof(double));
     }
+    
+    /* Sherry: dfBufs[] changed to double pointer **, max(batch, numCudaStreams) */
+    int num_dfbufs = ( options->batchCount > 0 ) ? 
+	SUPERLU_MAX(maxLeafNodes, MAX_CUDA_STREAMS) : MAX_CUDA_STREAMS;
+    printf("..setLUstrut_GPU: num_dfbufs %d\n", num_dfbufs); fflush(stdout);
+
+    A_gpu.dFBufs = (double **) SUPERLU_MALLOC(num_dfbufs * sizeof(double *));
+    A_gpu.gpuGemmBuffs = (double **) SUPERLU_MALLOC(num_dfbufs * sizeof(double *));
+    for (i = 0; i < num_dfbufs; ++i) {
+        cudaMalloc(&(A_gpu.dFBufs[i]), ldt * ldt * sizeof(double));
+        cudaMalloc(&(A_gpu.gpuGemmBuffs[i]), A_gpu.gemmBufferSize * sizeof(double));
+    }
+    
     tcuMalloc = SuperLU_timer_() - tcuMalloc;
     printf("Time to allocate GPU memory: %g\n", tcuMalloc);
 
     double tcuStream=SuperLU_timer_();
     
-    for (int stream = 0; stream < A_gpu.numCudaStreams; stream++)
+    for (stream = 0; stream < A_gpu.numCudaStreams; stream++)
     {
         cublasCreate(&A_gpu.cuHandles[stream]);
         cusolverDnCreate(&A_gpu.cuSolveHandles[stream]);
@@ -830,7 +847,7 @@ int_t LUstruct_v100::setLUstruct_GPU()
     printf("Time to create cublas streams: %g\n", tcuStream);
 
     double tcuStreamCreate=SuperLU_timer_();
-    for (int stream = 0; stream < A_gpu.numCudaStreams; stream++)
+    for (stream = 0; stream < A_gpu.numCudaStreams; stream++)
     {
 
         cudaStreamCreate(&A_gpu.cuStreams[stream]);
