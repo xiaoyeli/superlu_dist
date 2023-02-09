@@ -1022,6 +1022,7 @@ __device__ void C_RdTree_forwardMessageSimple_Device(C_Tree* Tree, void* localBu
   int_t *Lindval_loc_bc_dat,     
   long int *Lindval_loc_bc_offset,   
   int_t *xsup,
+  int *bcols_masked,
   gridinfo_t *grid,
   double *recvbuf_BC_gpu,
   double *recvbuf_RD_gpu,
@@ -1076,13 +1077,12 @@ __device__ void C_RdTree_forwardMessageSimple_Device(C_Tree* Tree, void* localBu
 	 // the first nbcol_loc handles all computations and broadcast communication
 	 if(bid<nbcol_loc){
 	 
-	 
-		 if(Lrowind_bc_offset[bid]==-1){
+		 lk=bcols_masked[bid];
+
+		 if(Lrowind_bc_offset[lk]==-1){
 		 return;
 		 }
 		 
-	 
-		 lk=bid;
 		 iam = grid->iam;
 		 mycol = MYCOL( iam, grid );
 		 myrow = MYROW( iam, grid );
@@ -1217,9 +1217,12 @@ __device__ void C_RdTree_forwardMessageSimple_Device(C_Tree* Tree, void* localBu
 					 }//if(nrhs==1)
 				//  }
 				 
+			/* comment out the following as Nan doesn't use recvbuf_BC_gpu	*/
+			#if 0
 				 RHS_ITERATE(j)
 				 for (i = tid; i < knsupc; i+=block_size)
 					 recvbuf_BC_gpu[i + maxrecvsz*lk + j*knsupc ] = x[i + ii + j*knsupc];
+			#endif	
 					 
 			 __syncthreads();	
 		 }else{   /* off-diagonal block forward the message*/
@@ -1229,7 +1232,8 @@ __device__ void C_RdTree_forwardMessageSimple_Device(C_Tree* Tree, void* localBu
 			 }
 		 }
 		  
-		 
+		 /* comment out the following as Nan doesn't use recvbuf_BC_gpu	*/
+		 #if 0
 		 if(tid==0){  //YL: only the first thread in a block forwards the x subvector using NVSHMEM
 		 cnt=LBtree_ptr[lk].destCnt_;
 		//  printf("good1 %5d%5d\n",lk,cnt);
@@ -1238,6 +1242,7 @@ __device__ void C_RdTree_forwardMessageSimple_Device(C_Tree* Tree, void* localBu
 		 	C_BcTree_forwardMessageSimple_Device(&LBtree_ptr[lk],&recvbuf_BC_gpu[maxrecvsz*lk],cnt*nrhs+XK_H);
 		 }
 		 }	
+		 #endif
 		 
 		 
 		 if(nlb>0){
@@ -1442,10 +1447,13 @@ __device__ void C_RdTree_forwardMessageSimple_Device(C_Tree* Tree, void* localBu
 	//YL: wait for the one or two coming messages to complete using NVSHMEM, the received data is in recvbuf_RD_gpu[maxrecvsz*lib*2]
 	 
 	 for (ii = 0; ii < cnt; ++ii){
-		 RHS_ITERATE(j) {
+		/* the following is commented as recvbuf_RD_gpu is not what Nan uses */
+		#if 0
+		RHS_ITERATE(j) {
 			 for (i = 0; i < knsupc; ++i)
 				 temp=atomicAdd(&lsum[il+i + j*knsupc], recvbuf_RD_gpu[maxrecvsz*lib*2+ii*maxrecvsz + i + j*knsupc]  );
 		 }
+		 #endif
 		 fmod_tmp=atomicSub(&fmod[lib*aln_i],1);
 	 }
 
@@ -1804,6 +1812,7 @@ gridinfo_t *grid
   int_t *Lindval_loc_bc_dat,     
   long int *Lindval_loc_bc_offset,     
   int_t *xsup,
+  int * bcols_masked,
   gridinfo_t *grid,
   double * recvbuf_BC_gpu,
   double * recvbuf_RD_gpu,
@@ -1821,7 +1830,7 @@ gridinfo_t *grid
  
 	 // if(nrhs>1){
 		 dim3 dimBlock(nthread_x, nthread_y);
-		 dlsum_fmod_inv_gpu_mrhs<<< nbcol_loc+nblock_ex, dimBlock >>>(nbcol_loc,nblock_ex,lsum,x,nrhs,maxsup,nsupers,fmod,LBtree_ptr,LRtree_ptr,ilsum,Lrowind_bc_dat,Lrowind_bc_offset,Lnzval_bc_dat,Lnzval_bc_offset,Linv_bc_dat,Linv_bc_offset,Lindval_loc_bc_dat,Lindval_loc_bc_offset, xsup,grid,recvbuf_BC_gpu,recvbuf_RD_gpu,maxrecvsz);
+		 dlsum_fmod_inv_gpu_mrhs<<< nbcol_loc+nblock_ex, dimBlock >>>(nbcol_loc,nblock_ex,lsum,x,nrhs,maxsup,nsupers,fmod,LBtree_ptr,LRtree_ptr,ilsum,Lrowind_bc_dat,Lrowind_bc_offset,Lnzval_bc_dat,Lnzval_bc_offset,Linv_bc_dat,Linv_bc_offset,Lindval_loc_bc_dat,Lindval_loc_bc_offset, xsup,bcols_masked, grid,recvbuf_BC_gpu,recvbuf_RD_gpu,maxrecvsz);
 	 // }else{
 		 // dim3 dimBlock(nthread_x*nthread_y, 1);
 		 // dlsum_fmod_inv_gpu_1rhs<<< CEILING(nbcol_loc,NWARP), dimBlock >>>(lsum,x,rtemp,nrhs,maxsup,nsupers,fmod,xsup,grid,Llu);	

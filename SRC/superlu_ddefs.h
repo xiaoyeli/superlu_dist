@@ -198,7 +198,7 @@ typedef struct {
     int_t   ldalsum;          /* LDA of lsum (local) */
     int_t   SolveMsgSent;     /* Number of actual messages sent in LU-solve */
     int_t   SolveMsgVol;      /* Volume of messages sent in the solve phase */
-
+    int   *bcols_masked;      /* Local block column IDs in my 2D grid */ 
 
     /*********************/
     /* The following variables are used in the hybrid solver */
@@ -231,6 +231,7 @@ typedef struct {
     int_t n;
     int_t nfrecvmod;
     int_t inv; /* whether the diagonal block is inverted*/
+    int nbcol_masked; /*number of local block columns in my 2D grid*/
 
     /* The following variables are used in GPU trisolve*/
 #ifdef GPU_ACC
@@ -250,6 +251,7 @@ typedef struct {
     int64_t *d_Lindval_loc_bc_offset ;
     int_t *d_Uindval_loc_bc_dat ;
     int64_t *d_Uindval_loc_bc_offset ;
+    int   *d_bcols_masked;      /* Local block column IDs in my 2D grid */ 
 
     int_t  *d_ilsum ;
     int_t *d_xsup ;
@@ -257,6 +259,7 @@ typedef struct {
     C_Tree  *d_LRtree_ptr ;
     C_Tree  *d_UBtree_ptr ;
     C_Tree  *d_URtree_ptr ;
+    gridinfo_t *d_grid;
 #endif
 
 } dLocalLU_t;
@@ -307,6 +310,12 @@ typedef struct {
     NRformat_loc3d* A3d; /* Point to 3D {A, B} gathered on 2D layer 0.
                             This needs to be peresistent between
 			    3D factorization and solve.  */
+    #ifdef GPU_ACC
+    double *d_lsum, *d_lsum_save;      /* used for device lsum*/
+    double *d_x;         /* used for device solution vector*/
+    int  *d_fmod_save, *d_fmod;         /* used for device fmod vector*/
+    int  *d_bmod_save, *d_bmod;         /* used for device bmod vector*/
+    #endif         
 } dSOLVEstruct_t;
 
 
@@ -523,6 +532,9 @@ extern void dDestroy_A3d_gathered_on_2d(dSOLVEstruct_t *, gridinfo3d_t *);
 extern int_t pdgstrs_init(int_t, int_t, int_t, int_t,
                           int_t [], int_t [], gridinfo_t *grid,
 	                  Glu_persist_t *, dSOLVEstruct_t *);
+extern int_t pdgstrs_init_device_lsum_x(int_t , int_t , int_t , gridinfo_t *,
+	     dLUstruct_t *, dSOLVEstruct_t *, int*);    
+extern int_t pdgstrs_delete_device_lsum_x(dSOLVEstruct_t *);                           
 extern void pxgstrs_finalize(pxgstrs_comm_t *);
 extern int  dldperm_dist(int, int, int_t, int_t [], int_t [],
 		    double [], int_t *, double [], double []);
@@ -599,7 +611,7 @@ extern void dComputeLevelsets(int , int_t , gridinfo_t *,
 
 #ifdef GPU_ACC
 extern void pdconvertU(superlu_dist_options_t *, gridinfo_t *, dLUstruct_t *, SuperLUStat_t *, int_t);
-extern void dlsum_fmod_inv_gpu_wrap(int_t, int_t, int_t, int_t, double *, double *, int, int, int_t , int *fmod, C_Tree  *, C_Tree  *, int_t *, int_t *, int64_t *, double *, int64_t *, double *, int64_t *, int_t *, int64_t *, int_t *, gridinfo_t *, double * , double * , int_t );
+extern void dlsum_fmod_inv_gpu_wrap(int_t, int_t, int_t, int_t, double *, double *, int, int, int_t , int *fmod, C_Tree  *, C_Tree  *, int_t *, int_t *, int64_t *, double *, int64_t *, double *, int64_t *, int_t *, int64_t *, int_t *, int *, gridinfo_t *, double * , double * , int_t );
 extern void dlsum_bmod_inv_gpu_wrap(superlu_dist_options_t *, int_t, int_t, int_t, int_t, double *, double *,int,int, int_t , int *bmod, C_Tree  *, C_Tree  *, int_t *, int_t *, int64_t *, double *, int64_t *, double  *, int64_t *, int_t *, int64_t *, int_t *,gridinfo_t *);
 #endif
 

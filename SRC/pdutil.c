@@ -584,14 +584,17 @@ dDestroy_LU(int_t n, gridinfo_t *grid, dLUstruct_t *LUstruct)
 
     SUPERLU_FREE(Glu_persist->xsup);
     SUPERLU_FREE(Glu_persist->supno);
+    SUPERLU_FREE(Llu->bcols_masked);
 
 #ifdef GPU_ACC
 	checkGPU (gpuFree (Llu->d_xsup));
+	checkGPU (gpuFree (Llu->d_bcols_masked));
 	checkGPU (gpuFree (Llu->d_LRtree_ptr));
 	checkGPU (gpuFree (Llu->d_LBtree_ptr));
 	checkGPU (gpuFree (Llu->d_URtree_ptr));
 	checkGPU (gpuFree (Llu->d_UBtree_ptr));    
 	checkGPU (gpuFree (Llu->d_ilsum));
+	checkGPU (gpuFree (Llu->d_grid));
 	checkGPU (gpuFree (Llu->d_Lrowind_bc_dat));
 	checkGPU (gpuFree (Llu->d_Lrowind_bc_offset));
 	checkGPU (gpuFree (Llu->d_Lnzval_bc_dat));
@@ -665,6 +668,7 @@ pdgstrs_init(int_t n, int_t m_loc, int_t nrhs, int_t fst_row,
     int_t irow, q, knsupc, nsupers, *xsup, *supno;
     int   iam, p, pkk, procs;
     pxgstrs_comm_t *gstrs_comm;
+    int_t Pr = grid->nprow;
 
     procs = grid->nprow * grid->npcol;
     iam = grid->iam;
@@ -673,7 +677,7 @@ pdgstrs_init(int_t n, int_t m_loc, int_t nrhs, int_t fst_row,
     supno = Glu_persist->supno;
     nsupers = Glu_persist->supno[n-1] + 1;
     row_to_proc = SOLVEstruct->row_to_proc;
-
+    
     /* ------------------------------------------------------------
        SET UP COMMUNICATION PATTERN FOR ReDistribute_B_to_X.
        ------------------------------------------------------------*/
@@ -779,6 +783,134 @@ pdgstrs_init(int_t n, int_t m_loc, int_t nrhs, int_t fst_row,
 } /* PDGSTRS_INIT */
 
 
+
+
+int_t
+pdgstrs_init_device_lsum_x(int_t n, int_t m_loc, int_t nrhs, gridinfo_t *grid,
+	     dLUstruct_t *LUstruct, dSOLVEstruct_t *SOLVEstruct, int* supernodeMask)
+{
+#if ( defined(GPU_ACC) && defined(GPU_SOLVE) )
+    double zero = 0.0;
+    int_t i, gbi, k, l, gb;
+    int_t irow, q, knsupc, nsupers, *xsup, *supno;
+    int   iam, p, pkk, procs;
+    int_t Pr = grid->nprow;
+    Glu_persist_t *Glu_persist = LUstruct->Glu_persist;
+    int_t ldalsum = LUstruct->Llu->ldalsum;
+    int_t* ilsum = LUstruct->Llu->ilsum;
+    int *frecv, *brecv;
+    
+    procs = grid->nprow * grid->npcol;
+    iam = grid->iam;
+    int_t myrow = MYROW (iam, grid);
+
+    xsup = Glu_persist->xsup;
+    supno = Glu_persist->supno;
+    nsupers = Glu_persist->supno[n-1] + 1;
+
+    /* Allocate working storage. */
+    int_t nlb = CEILING (nsupers, Pr);    /* Number of local block rows. */
+    int_t sizelsum = (((size_t)ldalsum)*nrhs + nlb*LSUM_H);
+    checkGPU(gpuMalloc( (void**)&(SOLVEstruct->d_lsum), sizelsum * sizeof(double)));
+    checkGPU(gpuMalloc( (void**)&(SOLVEstruct->d_x), (ldalsum * nrhs + nlb * XK_H) * sizeof(double)));
+    checkGPU(gpuMemset( SOLVEstruct->d_lsum, 0, sizelsum * sizeof(double)));    
+    checkGPU(gpuMemset( SOLVEstruct->d_x, 0, (ldalsum * nrhs + nlb * XK_H) * sizeof(double)));
+
+    double* lsum = (double*)SUPERLU_MALLOC(sizelsum * sizeof(double));
+    for (int_t ii=0; ii < sizelsum; ii++ )
+	lsum[ii]=zero;
+    int_t ii = 0;
+    for (int_t k = 0; k < nsupers; ++k)
+    {
+        int_t knsupc = SuperSize (k);
+        int_t krow = PROW (k, grid);
+        if (myrow == krow)
+        {
+            int_t lk = LBi (k, grid); /* Local block number. */
+            int_t il = LSUM_BLK (lk);
+            lsum[il - LSUM_H] = k;  /* Block number prepended in the header. */
+        }
+        ii += knsupc;
+    }
+    checkGPU(gpuMalloc( (void**)&(SOLVEstruct->d_lsum_save), sizelsum * sizeof(double)));
+    checkGPU(gpuMemcpy(SOLVEstruct->d_lsum_save, lsum, sizelsum * sizeof(double), gpuMemcpyHostToDevice));
+    SUPERLU_FREE(lsum);
+
+    int* fmod = getfmod_newsolve(nlb, nsupers, supernodeMask, LUstruct, grid);
+    if ( !(frecv = int32Calloc_dist(nlb)) )
+	ABORT("Calloc fails for frecv[].");
+    C_Tree  *LRtree_ptr = LUstruct->Llu->LRtree_ptr;
+	for (int_t lk=0;lk<nlb;++lk){
+		if(LRtree_ptr[lk].empty_==NO){
+            gb = myrow+lk*grid->nprow;  /* not sure */
+            if (supernodeMask[gb]==1){
+                frecv[lk] = LRtree_ptr[lk].destCnt_;
+            }
+		}
+	}
+	for (i = 0; i < nlb; ++i) fmod[i] += frecv[i];
+
+    checkGPU(gpuMalloc( (void**)&SOLVEstruct->d_fmod, nlb * sizeof(int)));	
+    checkGPU(gpuMemset( SOLVEstruct->d_fmod, 0, nlb * sizeof(int)));    
+    checkGPU(gpuMalloc( (void**)&SOLVEstruct->d_fmod_save, nlb * sizeof(int)));	
+	checkGPU(gpuMemcpy(SOLVEstruct->d_fmod_save, fmod, nlb * sizeof(int), gpuMemcpyHostToDevice));
+    SUPERLU_FREE(fmod);
+    SUPERLU_FREE(frecv);
+
+
+    int* bmod=  getBmod3d_newsolve(nlb, nsupers, supernodeMask, LUstruct, grid);
+    if ( !(brecv = int32Calloc_dist(nlb)) )
+        ABORT("Calloc fails for brecv[].");	
+    C_Tree  *URtree_ptr = LUstruct->Llu->URtree_ptr;
+    for (int_t lk=0;lk<nlb;++lk){
+		if(URtree_ptr[lk].empty_==NO){
+			brecv[lk] = URtree_ptr[lk].destCnt_;
+		}
+	}
+	for (i = 0; i < nlb; ++i) bmod[i] += brecv[i];
+
+    checkGPU(gpuMalloc( (void**)&SOLVEstruct->d_bmod, nlb * sizeof(int)));	
+    checkGPU(gpuMemset( SOLVEstruct->d_bmod, 0, nlb * sizeof(int)));    
+    checkGPU(gpuMalloc( (void**)&SOLVEstruct->d_bmod_save, nlb * sizeof(int)));	
+	checkGPU(gpuMemcpy(SOLVEstruct->d_bmod_save, bmod, nlb * sizeof(int), gpuMemcpyHostToDevice));
+    SUPERLU_FREE(bmod);
+    SUPERLU_FREE(brecv);
+
+	// /* Compute ldaspa and ilsum[]. */
+	// ldaspa = 0;
+	// ilsum[0] = 0;
+	// for (gb = 0; gb < nsupers; ++gb) {
+	//     if ( myrow == PROW( gb, grid ) ) {
+	// 	i = SuperSize( gb );
+	// 	ldaspa += i;
+	// 	lb = LBi( gb, grid );
+	// 	ilsum[lb + 1] = ilsum[lb] + i;
+	//     }
+	// }
+
+#endif  
+
+    return 0;
+} /* pdgstrs_init_device_lsum_x */
+
+
+int_t
+pdgstrs_delete_device_lsum_x(dSOLVEstruct_t *SOLVEstruct)
+{
+#if ( defined(GPU_ACC) && defined(GPU_SOLVE) )
+    checkGPU (gpuFree (SOLVEstruct->d_x));
+    checkGPU (gpuFree (SOLVEstruct->d_lsum));   
+    checkGPU (gpuFree (SOLVEstruct->d_lsum_save));   
+    checkGPU (gpuFree (SOLVEstruct->d_fmod));   
+    checkGPU (gpuFree (SOLVEstruct->d_fmod_save));       
+    checkGPU (gpuFree (SOLVEstruct->d_bmod));   
+    checkGPU (gpuFree (SOLVEstruct->d_bmod_save));   
+#endif  
+    return 0;
+} /* pdgstrs_delete_device_lsum_x */
+
+
+
 /*! \brief Initialize the data structure for the solution phase.
  */
 int dSolveInit(superlu_dist_options_t *options, SuperMatrix *A,
@@ -862,7 +994,6 @@ int dSolveInit(superlu_dist_options_t *options, SuperMatrix *A,
            SUPERLU_MALLOC(sizeof(pdgsmv_comm_t))) )
         ABORT("Malloc fails for gsmv_comm[]");
     SOLVEstruct->A_colind_gsmv = NULL;
-
     options->SolveInitialized = YES;
     return 0;
 } /* dSolveInit */
@@ -871,7 +1002,7 @@ int dSolveInit(superlu_dist_options_t *options, SuperMatrix *A,
  */
 void dSolveFinalize(superlu_dist_options_t *options, dSOLVEstruct_t *SOLVEstruct)
 {
-    if ( options->SolveInitialized ) {
+    if ( options->SolveInitialized ) {      
         pxgstrs_finalize(SOLVEstruct->gstrs_comm);
 
         if ( options->RefineInitialized ) {

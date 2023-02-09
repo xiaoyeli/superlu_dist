@@ -54,6 +54,7 @@ at the top-level directory.
 #define gpuMemcpy cudaMemcpy
 #define gpuMemAttachGlobal cudaMemAttachGlobal
 #define gpuMemcpyHostToDevice cudaMemcpyHostToDevice
+#define gpuMemcpyDeviceToDevice cudaMemcpyDeviceToDevice
 #define gpuMemcpyDeviceToHost cudaMemcpyDeviceToHost
 #define gpuStreamCreateWithFlags cudaStreamCreateWithFlags
 #define gpuStreamDestroyWithFlags cudaStreamDestroyWithFlags
@@ -136,6 +137,7 @@ at the top-level directory.
 #define gpuMemcpy hipMemcpy
 #define gpuMemAttachGlobal hipMemAttachGlobal
 #define gpuMemcpyHostToDevice hipMemcpyHostToDevice
+#define gpuMemcpyDeviceToDevice hipMemcpyDeviceToDevice
 #define gpuMemcpyDeviceToHost hipMemcpyDeviceToHost
 #define gpuStreamCreateWithFlags hipStreamCreateWithFlags
 #define gpuStreamDestroyWithFlags hipStreamDestroyWithFlags

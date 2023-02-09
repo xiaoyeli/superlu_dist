@@ -549,11 +549,11 @@ double* dgetBigU(superlu_dist_options_t *options,
 dtrf3Dpartition_t* dinitTrf3DpartitionLUstructgrid0(int_t n, superlu_dist_options_t *options,
 				      dLUstruct_t *LUstruct, gridinfo3d_t * grid3d
 				      )
-{
+{   
         gridinfo_t* grid = &(grid3d->grid2d);
 #if ( DEBUGlevel>=1 )
         int iam = grid3d->iam;
-        CHECK_MALLOC (iam, "Enter dinitTrf3Dpartition()");
+        CHECK_MALLOC (iam, "Enter dinitTrf3DpartitionLUstructgrid0()");
 #endif
 		int_t nsupers;
 		int_t *setree;
@@ -618,7 +618,7 @@ dtrf3Dpartition_t* dinitTrf3DpartitionLUstructgrid0(int_t n, superlu_dist_option
 			gEtreeInfo.numChildLeft[i] = treeList[i].numChild;
 		}		
 		
-		int_t maxLvl = log2i(grid3d->zscp.Np) + 1;
+		int_t maxLvl = log2i(grid3d->zscp.Np) + 1;       
 		sForest_t**  sForests = getForests( maxLvl, nsupers, setree, treeList);
 		/*indexes of trees for my process grid in gNodeList size(maxLvl)*/
 		int_t* myTreeIdxs = getGridTrees(grid3d);
@@ -648,10 +648,10 @@ dtrf3Dpartition_t* dinitTrf3DpartitionLUstructgrid0(int_t n, superlu_dist_option
 			supernodeMask[ii]=0;
 		for (int lvl = 0; lvl < maxLvl; ++lvl)
 		{
-			// printf("lvl %5d myNodeCount[lvl] %5d\n",lvl,myNodeCount[lvl]);
+			// printf("iam %5d lvl %5d myNodeCount[lvl] %5d\n",grid3d->iam, lvl,myNodeCount[lvl]);
 			for (int nd = 0; nd < myNodeCount[lvl]; ++nd)
 			{
-				supernodeMask[treePerm[lvl][nd]]=1;
+                supernodeMask[treePerm[lvl][nd]]=1;
 			}
 		}
 

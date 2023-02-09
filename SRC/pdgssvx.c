@@ -1369,6 +1369,7 @@ pdgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 	   because perm_r[] and/or perm_c[] is changed.    */
 	if ( options->SolveInitialized == YES ) { /* Initialized before */
 	    dSolveFinalize(options, SOLVEstruct); /* Clean up structure */
+		pdgstrs_delete_device_lsum_x(SOLVEstruct);
 	    options->SolveInitialized = NO;   /* Reset the solve state */
 	}
      }
@@ -1416,6 +1417,7 @@ pdgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 				checkGPU(gpuFree(LUstruct->Llu->d_Linv_bc_offset));
 				checkGPU(gpuFree(LUstruct->Llu->d_Uinv_bc_offset));
 				checkGPU(gpuFree(LUstruct->Llu->d_ilsum));
+				checkGPU(gpuFree(LUstruct->Llu->d_grid));
 				checkGPU(gpuFree(LUstruct->Llu->d_Lnzval_bc_dat));
 				checkGPU(gpuFree(LUstruct->Llu->d_Linv_bc_dat));
 				checkGPU(gpuFree(LUstruct->Llu->d_Uinv_bc_dat));
@@ -1451,6 +1453,8 @@ pdgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 				checkGPU(gpuMalloc((void **)&LUstruct->Llu->d_Lnzval_bc_dat, (LUstruct->Llu->Lnzval_bc_cnt) * sizeof(double)));
 				checkGPU(gpuMalloc((void **)&LUstruct->Llu->d_Linv_bc_dat, (LUstruct->Llu->Linv_bc_cnt) * sizeof(double)));
 				checkGPU(gpuMalloc((void **)&LUstruct->Llu->d_Uinv_bc_dat, (LUstruct->Llu->Uinv_bc_cnt) * sizeof(double)));
+				checkGPU(gpuMalloc( (void**)&LUstruct->Llu->d_grid, sizeof(gridinfo_t)));
+    			checkGPU(gpuMemcpy(LUstruct->Llu->d_grid, grid, sizeof(gridinfo_t), gpuMemcpyHostToDevice));
 #endif
 
 #ifdef GPU_ACC
@@ -1522,7 +1526,13 @@ pdgssvx(superlu_dist_options_t *options, SuperMatrix *A,
             /* Inside this routine, SolveInitialized is set to YES.
 	       For repeated call to pdgssvx(), no need to re-initialilze
 	       the Solve data & communication structures, unless a new
-	       factorization with Fact == DOFACT or SamePattern is asked for. */
+	       factorization with Fact == DOFACT or SamePattern is asked for. */			   
+		int_t nsupers = getNsupers(n, LUstruct->Glu_persist);
+		int* supernodeMask = int32Malloc_dist(nsupers);
+		for(int ii=0; ii<nsupers; ii++)
+			supernodeMask[ii]=1;
+		pdgstrs_init_device_lsum_x(n, m_loc, nrhs, grid,LUstruct, SOLVEstruct,supernodeMask);
+		SUPERLU_FREE(supernodeMask);		 	   
 	}
 
     // #pragma omp parallel
@@ -1603,12 +1613,19 @@ pdgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 	        SOLVEstruct1->gsmv_comm = SOLVEstruct->gsmv_comm;
 	        SOLVEstruct1->A_colind_gsmv = SOLVEstruct->A_colind_gsmv;
 
-		/* Initialize the *gstrs_comm for 1 RHS. */
-		if ( !(SOLVEstruct1->gstrs_comm = (pxgstrs_comm_t *)
-		       SUPERLU_MALLOC(sizeof(pxgstrs_comm_t))) )
-		    ABORT("Malloc fails for gstrs_comm[]");
-		pdgstrs_init(n, m_loc, 1, fst_row, perm_r, perm_c, grid,
-			     Glu_persist, SOLVEstruct1);
+			/* Initialize the *gstrs_comm for 1 RHS. */
+			if ( !(SOLVEstruct1->gstrs_comm = (pxgstrs_comm_t *)
+				SUPERLU_MALLOC(sizeof(pxgstrs_comm_t))) )
+				ABORT("Malloc fails for gstrs_comm[]");
+			pdgstrs_init(n, m_loc, 1, fst_row, perm_r, perm_c, grid,
+					Glu_persist, SOLVEstruct1);
+
+			int_t nsupers = getNsupers(n, LUstruct->Glu_persist);
+			int* supernodeMask = int32Malloc_dist(nsupers);
+			for(int ii=0; ii<nsupers; ii++)
+				supernodeMask[ii]=1;
+			pdgstrs_init_device_lsum_x(n, m_loc, 1, grid,LUstruct, SOLVEstruct1,supernodeMask);		 
+			SUPERLU_FREE(supernodeMask);
 	    }
 
 	    pdgsrfs(options, n, A, anorm, LUstruct, ScalePermstruct, grid,
@@ -1616,6 +1633,7 @@ pdgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 
             /* Deallocate the storage associated with SOLVEstruct1 */
 	    if ( nrhs > 1 ) {
+			pdgstrs_delete_device_lsum_x(SOLVEstruct1);
 	        pxgstrs_finalize(SOLVEstruct1->gstrs_comm);
 	        SUPERLU_FREE(SOLVEstruct1);
 	    }

@@ -245,7 +245,7 @@ int_t trs_compute_communication_structure(superlu_dist_options_t *options, int_t
 	for (int_t lk = 0; lk < kc; ++lk) { /* for each local block column ... */
 		jb = mycol+lk*grid->npcol;  /* not sure */
 		if(jb<nsupers){
-            if(supernodeMask[jb]){
+            if(supernodeMask[jb]>0){
                 lsub = Llu->Lrowind_bc_ptr[lk];
                 lloc = Llu->Lindval_loc_bc_ptr[lk];
                 if(lsub){
@@ -254,7 +254,7 @@ int_t trs_compute_communication_structure(superlu_dist_options_t *options, int_t
                     for (int_t lb = 0; lb < nlb; ++lb){
                         lptr1_tmp = lloc[lb+idx_i];
                         ib = lsub[lptr1_tmp]; /* Global block number, row-wise. */
-                        if(supernodeMask[ib]){
+                        if(supernodeMask[ib]>0){
                             rowcounts[lk]++;
                             int_t lib = LBi( ib, grid ); /* Local block number, row-wise. */
                             colcounts[lib]++;
@@ -287,7 +287,7 @@ int_t trs_compute_communication_structure(superlu_dist_options_t *options, int_t
 	for (int_t lk = 0; lk < kc; ++lk) { /* for each local block column ... */
 		jb = mycol+lk*grid->npcol;  /* not sure */
 		if(jb<nsupers){
-            if(supernodeMask[jb]){
+            if(supernodeMask[jb]>0){
                 lsub = Llu->Lrowind_bc_ptr[lk];
                 lloc = Llu->Lindval_loc_bc_ptr[lk];
                 if(lsub){
@@ -296,7 +296,7 @@ int_t trs_compute_communication_structure(superlu_dist_options_t *options, int_t
                     for (int_t lb = 0; lb < nlb; ++lb){
                         lptr1_tmp = lloc[lb+idx_i];
                         ib = lsub[lptr1_tmp]; /* Global block number, row-wise. */
-                        if(supernodeMask[ib]){
+                        if(supernodeMask[ib]>0){
                             rowlists[lk][rowcounts[lk]++]=ib;
                             int_t lib = LBi( ib, grid ); /* Local block number, row-wise. */
                             collists[lib][colcounts[lib]++]=jb;
@@ -327,7 +327,7 @@ int_t trs_compute_communication_structure(superlu_dist_options_t *options, int_t
 	for (int_t lk = 0; lk < kc; ++lk) { /* for each local block column ... */
 		jb = mycol+lk*grid->npcol;  /* not sure */
 		if(jb<nsupers){
-            if(supernodeMask[jb]){
+            if(supernodeMask[jb]>0){
                 // printf("iam %5d jb %5d \n",iam, jb);
                 // fflush(stdout);
                 pc = PCOL( jb, grid );
@@ -420,7 +420,7 @@ int_t trs_compute_communication_structure(superlu_dist_options_t *options, int_t
 	for (int_t lk=0;lk<kr;++lk){
 		ib = myrow+lk*grid->nprow;  /* not sure */
 		if(ib<nsupers){
-            if(supernodeMask[ib]){
+            if(supernodeMask[ib]>0){
                 pr = PROW( ib, grid );
 
                 count = colcounts[lk];
@@ -521,12 +521,12 @@ int_t trs_compute_communication_structure(superlu_dist_options_t *options, int_t
 	for (int_t lk = 0; lk < kc; ++lk) { /* for each local block column ... */
 		jb = mycol+lk*grid->npcol;  /* not sure */
 		if(jb<nsupers){
-            if(supernodeMask[jb]){
+            if(supernodeMask[jb]>0){
                 nub = Urbs[lk];      /* Number of U blocks in block column lk */
                 for (int_t ub = 0; ub < nub; ++ub){
                     int_t lib = Ucb_indptr[lk][ub].lbnum; /* Local block number, row-wise. */
                     ib = lib * grid->nprow + myrow;/* Global block number, row-wise. */
-                    if(supernodeMask[ib]){
+                    if(supernodeMask[ib]>0){
                         rowcounts[lk]++;
                         colcounts[lib]++;
                     }
@@ -557,12 +557,12 @@ int_t trs_compute_communication_structure(superlu_dist_options_t *options, int_t
 	for (int_t lk = 0; lk < kc; ++lk) { /* for each local block column ... */
 		jb = mycol+lk*grid->npcol;  /* not sure */
 		if(jb<nsupers){
-            if(supernodeMask[jb]){
+            if(supernodeMask[jb]>0){
                 nub = Urbs[lk];      /* Number of U blocks in block column lk */
                 for (int_t ub = 0; ub < nub; ++ub){
                     int_t lib = Ucb_indptr[lk][ub].lbnum; /* Local block number, row-wise. */
                     ib = lib * grid->nprow + myrow;/* Global block number, row-wise. */
-                    if(supernodeMask[ib]){
+                    if(supernodeMask[ib]>0){
                         rowlists[lk][rowcounts[lk]++]=ib;
                         collists[lib][colcounts[lib]++]=jb;
                     }
@@ -604,7 +604,7 @@ int_t trs_compute_communication_structure(superlu_dist_options_t *options, int_t
 	for (int_t lk = 0; lk < kc; ++lk) { /* for each local block column ... */
 		jb = mycol+lk*grid->npcol;  /* not sure */
 		if(jb<nsupers){
-            if(supernodeMask[jb]){
+            if(supernodeMask[jb]>0){
                 pc = PCOL( jb, grid );
                 count = rowcounts[lk];
                 MPI_Allgather(&count, 1, MPI_INT, recvcounts, 1, MPI_INT, cscp->comm);
@@ -689,7 +689,7 @@ int_t trs_compute_communication_structure(superlu_dist_options_t *options, int_t
 	for (int_t lk=0;lk<kr;++lk){
 		ib = myrow+lk*grid->nprow;  /* not sure */
 		if(ib<nsupers){
-            if(supernodeMask[ib]){
+            if(supernodeMask[ib]>0){
                 pr = PROW( ib, grid );
 
                 count = colcounts[lk];
@@ -1139,12 +1139,36 @@ int_t trs_compute_communication_structure(superlu_dist_options_t *options, int_t
 	Llu->UBtree_ptr = UBtree_ptr;
 
 
-
-
+    Llu->nbcol_masked=0; 
+	for (int_t lk = 0; lk < kc; ++lk) { /* for each local block column ... */
+		jb = mycol+lk*grid->npcol;  /* not sure */
+        if(jb<nsupers){
+            if(supernodeMask[jb]==1){ // only record the columns performed on GPU
+               Llu->nbcol_masked++; 
+            }
+        }
+    }
+ 	if ( !(Llu->bcols_masked =
+				(int*)SUPERLU_MALLOC(Llu->nbcol_masked * sizeof(int))) ) {
+		fprintf(stderr, "Malloc fails for nbcol_masked[].");
+	}   
+    Llu->nbcol_masked=0; 
+	for (int_t lk = 0; lk < kc; ++lk) { /* for each local block column ... */
+		jb = mycol+lk*grid->npcol;  /* not sure */
+        if(jb<nsupers){
+            if(supernodeMask[jb]==1){ // only record the columns performed on GPU
+               Llu->bcols_masked[Llu->nbcol_masked++]=lk;
+            }
+        }
+    }
+    // printf("Llu->nbcol_masked: %10d\n",Llu->nbcol_masked);
+    // fflush(stdout);
 
 
 #ifdef GPU_ACC
     if (getenv("SUPERLU_ACC_SOLVE")){
+	checkGPU(gpuMalloc( (void**)&Llu->d_bcols_masked, Llu->nbcol_masked * sizeof(int)));
+	checkGPU(gpuMemcpy(Llu->d_bcols_masked, Llu->bcols_masked, Llu->nbcol_masked * sizeof(int), gpuMemcpyHostToDevice));        
 	checkGPU(gpuMalloc( (void**)&Llu->d_xsup, (n+1) * sizeof(int_t)));
 	checkGPU(gpuMemcpy(Llu->d_xsup, xsup, (n+1) * sizeof(int_t), gpuMemcpyHostToDevice));
 	checkGPU(gpuMalloc( (void**)&Llu->d_LRtree_ptr, CEILING( nsupers, grid->nprow ) * sizeof(C_Tree)));
@@ -1165,6 +1189,8 @@ int_t trs_compute_communication_structure(superlu_dist_options_t *options, int_t
 	checkGPU(gpuMemcpy(Llu->d_Lindval_loc_bc_offset, Llu->Lindval_loc_bc_offset, CEILING( nsupers, grid->npcol ) * sizeof(long int), gpuMemcpyHostToDevice));
 	checkGPU(gpuMalloc( (void**)&Llu->d_Lnzval_bc_offset, CEILING( nsupers, grid->npcol ) * sizeof(long int)));
 	checkGPU(gpuMemcpy(Llu->d_Lnzval_bc_offset, Llu->Lnzval_bc_offset, CEILING( nsupers, grid->npcol ) * sizeof(long int), gpuMemcpyHostToDevice));
+    checkGPU(gpuMalloc( (void**)&Llu->d_grid, sizeof(gridinfo_t)));
+    checkGPU(gpuMemcpy(Llu->d_grid, grid, sizeof(gridinfo_t), gpuMemcpyHostToDevice));	
 
 	// some dummy allocation to avoid checking whether they are null pointers later
 	checkGPU(gpuMalloc( (void**)&Llu->d_Ucolind_bc_dat, sizeof(int_t)));
@@ -1203,7 +1229,7 @@ int_t trs_compute_communication_structure(superlu_dist_options_t *options, int_t
 	// for (int_t lk = 0; lk < kc; ++lk) { /* for each local block column ... */
 	// 	jb = mycol+lk*grid->npcol;  /* not sure */
 	// 	if(jb<nsupers){
-    //         if(supernodeMask[jb])
+    //         if(supernodeMask[jb]>0)
     //         {
     //             int_t krow = PROW (jb, grid);
     //             int_t kcol = PCOL (jb, grid);
@@ -2264,7 +2290,7 @@ int_t leafForestForwardSolve3d_newsolve(superlu_dist_options_t *options, int_t n
 	/* factor the leaf to being the factorization*/
 	for (int_t k = 0; k < nsupers && nleaf; ++k)
 	{
-        if(supernodeMask[k]){
+        if(supernodeMask[k]>0){
 		int_t krow = PROW (k, grid);
 		int_t kcol = PCOL (k, grid);
 		if (myrow == krow && mycol == kcol)
@@ -2532,6 +2558,8 @@ void ForwardSolve3d_newsolve_reusepdgstrs(superlu_dist_options_t *options, int_t
 	int_t cnt1,cnt2;
     double tx;
 
+
+
 #if defined(GPU_ACC) && defined(SLU_HAVE_LAPACK) && defined(GPU_SOLVE)  
 
 #if ( PRNTlevel>=1 )
@@ -2550,7 +2578,7 @@ void ForwardSolve3d_newsolve_reusepdgstrs(superlu_dist_options_t *options, int_t
 	gridinfo_t *d_grid = NULL;
 	double *d_x = NULL;
 	double *d_lsum = NULL;
-    int_t  *d_fmod = NULL;		
+    int  *d_fmod = NULL;		
 #endif
 
 
@@ -2605,7 +2633,10 @@ void ForwardSolve3d_newsolve_reusepdgstrs(superlu_dist_options_t *options, int_t
     /* Save the count to be altered so it can be used by
        subsequent call to PDGSTRS. */
 
+/* skip fmod on CPU if using GPU solve*/
+if ( !(getenv("NEW3DSOLVETREECOMM") && getenv("SUPERLU_ACC_SOLVE"))){     
 	fmod = getfmod_newsolve(nlb, nsupers, supernodeMask, LUstruct, grid);
+}
 	int  nfrecvx = getNfrecvx_newsolve(nsupers, supernodeMask, LUstruct, grid);
 
     if ( !(frecv = int32Calloc_dist(nlb)) )
@@ -2635,6 +2666,9 @@ void ForwardSolve3d_newsolve_reusepdgstrs(superlu_dist_options_t *options, int_t
     sizelsum = ((sizelsum + (aln_d - 1)) / aln_d) * aln_d;
 
 
+
+/* skip rtemp on CPU if using GPU solve*/
+if ( !(getenv("NEW3DSOLVETREECOMM") && getenv("SUPERLU_ACC_SOLVE"))){
     sizertemp=ldalsum * nrhs;
     sizertemp = ((sizertemp + (aln_d - 1)) / aln_d) * aln_d;
     if ( !(rtemp = (double*)SUPERLU_MALLOC((sizertemp*num_thread + 1) * sizeof(double))) )
@@ -2650,6 +2684,8 @@ void ForwardSolve3d_newsolve_reusepdgstrs(superlu_dist_options_t *options, int_t
     for ( ii=0; ii<sizertemp*num_thread; ii++ )
 	rtemp[ii]=zero;
 #endif
+}
+
 
     if ( !(stat_loc = (SuperLUStat_t**) SUPERLU_MALLOC(num_thread*sizeof(SuperLUStat_t*))) )
 	ABORT("Malloc fails for stat_loc[].");
@@ -2708,41 +2744,62 @@ void ForwardSolve3d_newsolve_reusepdgstrs(superlu_dist_options_t *options, int_t
     }
     
 
-if(procs==1){
-	for (lk=0;lk<nsupers_i;++lk){
-		gb = myrow+lk*grid->nprow;  /* not sure */
-		if(gb<nsupers){
-			if (fmod[lk*aln_i]==0 && supernodeMask[gb]){
-				leafsups[nleaf]=gb;
-				++nleaf;
-			}
-		}
-	}
-}else{
-	for (lk=0;lk<nsupers_i;++lk){
-		if(LRtree_ptr[lk].empty_==NO){
-			nrtree++;
-			// RdTree_allocateRequest(LRtree_ptr[lk],'d');
-			frecv[lk] = LRtree_ptr[lk].destCnt_;
-			nfrecvmod += frecv[lk];
-		}else{
-			gb = myrow+lk*grid->nprow;  /* not sure */
-			if(gb<nsupers){
-				kcol = PCOL( gb, grid );
-				if(mycol==kcol) { /* Diagonal process */
-					if (fmod[lk*aln_i]==0 && supernodeMask[gb]){
-						leafsups[nleaf]=gb;
-						++nleaf;
-					}
-				}
-			}
-		}
-	}
-}
+    /* skip fmod,leafsups,nleaf on CPU if using GPU solve*/
+    if ( !(getenv("NEW3DSOLVETREECOMM") && getenv("SUPERLU_ACC_SOLVE"))){
+        if(procs==1){
+            for (lk=0;lk<nsupers_i;++lk){
+                gb = myrow+lk*grid->nprow;  /* not sure */
+                if(gb<nsupers){                   
+                        if (fmod[lk*aln_i]==0 && supernodeMask[gb]){
+                                leafsups[nleaf]=gb;
+                                ++nleaf;
+                        }
+                }
+            }
+        }else{
+            for (lk=0;lk<nsupers_i;++lk){
+                if(LRtree_ptr[lk].empty_==NO){
+                        nrtree++;
+                        // RdTree_allocateRequest(LRtree_ptr[lk],'d');
+                        frecv[lk] = LRtree_ptr[lk].destCnt_;
+                        nfrecvmod += frecv[lk];
+                }else{
+                        gb = myrow+lk*grid->nprow;  /* not sure */
+                        if(gb<nsupers){
+                                kcol = PCOL( gb, grid );
+                                if(mycol==kcol) { /* Diagonal process */
+                                    /* skip fmod,leafsups,nleaf on CPU if using GPU solve*/
+                                    if ( !(getenv("NEW3DSOLVETREECOMM") && getenv("SUPERLU_ACC_SOLVE"))){    
+                                        if (fmod[lk*aln_i]==0 && supernodeMask[gb]){
+                                                leafsups[nleaf]=gb;
+                                                ++nleaf;
+                                        }
+                                    }
+                                }
+                        }
+                }
+            }
+        }        
+    }else{
+        if(procs>1){
+            for (lk=0;lk<nsupers_i;++lk){
+                if(LRtree_ptr[lk].empty_==NO){
+                    nrtree++;
+                    // RdTree_allocateRequest(LRtree_ptr[lk],'d');
+                    gb = myrow+lk*grid->nprow;  /* not sure */
+                    if (supernodeMask[gb]==1){
+                        frecv[lk] = LRtree_ptr[lk].destCnt_;
+                        nfrecvmod += frecv[lk];
+                    }
+                }
+            }
+        }   
+    }   
 
-
+/* skip fmod on CPU if using GPU solve*/
+if ( !(getenv("NEW3DSOLVETREECOMM") && getenv("SUPERLU_ACC_SOLVE"))){    
 	for (i = 0; i < nlb; ++i) fmod[i*aln_i] += frecv[i];
-
+}
 	if ( !(recvbuf_BC_fwd = (double*)SUPERLU_MALLOC(maxrecvsz*(nfrecvx+1) * sizeof(double))) )  // this needs to be optimized for 1D row mapping
 		ABORT("Malloc fails for recvbuf_BC_fwd[].");
 	nfrecvx_buf=0;
@@ -2803,37 +2860,35 @@ if(procs==1){
 // roctxRangePush("hipLaunchKernel");
 // #endif
 
-	checkGPU(gpuMalloc( (void**)&d_grid, sizeof(gridinfo_t)));
-	
-	checkGPU(gpuMalloc( (void**)&recvbuf_BC_gpu, maxrecvsz*  CEILING( nsupers, grid->npcol) * sizeof(double))); // used for receiving and forwarding x on each thread
-	checkGPU(gpuMalloc( (void**)&recvbuf_RD_gpu, 2*maxrecvsz*  CEILING( nsupers, grid->nprow) * sizeof(double))); // used for receiving and forwarding lsum on each thread
-	checkGPU(gpuMalloc( (void**)&d_lsum, sizelsum*num_thread * sizeof(double)));
-	checkGPU(gpuMalloc( (void**)&d_x, (ldalsum * nrhs + nlb * XK_H) * sizeof(double)));
-	checkGPU(gpuMalloc( (void**)&d_fmod, (nlb*aln_i) * sizeof(int_t)));
-	
+#if ( PROFlevel>=1 )
+    t = SuperLU_timer_();
+#endif
 
-	checkGPU(gpuMemcpy(d_grid, grid, sizeof(gridinfo_t), gpuMemcpyHostToDevice));	
-	checkGPU(gpuMemcpy(d_lsum, lsum, sizelsum*num_thread * sizeof(double), gpuMemcpyHostToDevice));	
+    d_fmod=SOLVEstruct->d_fmod;
+    d_lsum=SOLVEstruct->d_lsum;
+	d_x=SOLVEstruct->d_x;
+	d_grid=Llu->d_grid;
+
+	checkGPU(gpuMemcpy(d_fmod, SOLVEstruct->d_fmod_save, nlb * sizeof(int), gpuMemcpyDeviceToDevice));
+    checkGPU(gpuMemcpy(d_lsum, SOLVEstruct->d_lsum_save, sizelsum * sizeof(double), gpuMemcpyDeviceToDevice));	
 	checkGPU(gpuMemcpy(d_x, x, (ldalsum * nrhs + nlb * XK_H) * sizeof(double), gpuMemcpyHostToDevice));	
-	checkGPU(gpuMemcpy(d_fmod, fmod, (nlb*aln_i) * sizeof(int_t), gpuMemcpyHostToDevice));
+	
 
 	k = CEILING( nsupers, grid->npcol);/* Number of local block columns divided by #warps per block used as number of thread blocks*/
 	knsupc = sp_ienv_dist(3, options);
-	dlsum_fmod_inv_gpu_wrap(k,nlb,DIM_X,DIM_Y,d_lsum,d_x,nrhs,knsupc,nsupers,d_fmod,Llu->d_LBtree_ptr,Llu->d_LRtree_ptr,Llu->d_ilsum,Llu->d_Lrowind_bc_dat, Llu->d_Lrowind_bc_offset, Llu->d_Lnzval_bc_dat, Llu->d_Lnzval_bc_offset, Llu->d_Linv_bc_dat, Llu->d_Linv_bc_offset, Llu->d_Lindval_loc_bc_dat, Llu->d_Lindval_loc_bc_offset,Llu->d_xsup,d_grid,recvbuf_BC_gpu,recvbuf_RD_gpu,maxrecvsz);
+	dlsum_fmod_inv_gpu_wrap(Llu->nbcol_masked,nlb,DIM_X,DIM_Y,d_lsum,d_x,nrhs,knsupc,nsupers,d_fmod,Llu->d_LBtree_ptr,Llu->d_LRtree_ptr,Llu->d_ilsum,Llu->d_Lrowind_bc_dat, Llu->d_Lrowind_bc_offset, Llu->d_Lnzval_bc_dat, Llu->d_Lnzval_bc_offset, Llu->d_Linv_bc_dat, Llu->d_Linv_bc_offset, Llu->d_Lindval_loc_bc_dat, Llu->d_Lindval_loc_bc_offset,Llu->d_xsup,Llu->d_bcols_masked,d_grid,recvbuf_BC_gpu,recvbuf_RD_gpu,maxrecvsz);
 
 	checkGPU(gpuMemcpy(x, d_x, (ldalsum * nrhs + nlb * XK_H) * sizeof(double), gpuMemcpyDeviceToHost));
 
-	checkGPU (gpuFree (d_grid));
-	checkGPU (gpuFree (recvbuf_BC_gpu));
-	checkGPU (gpuFree (recvbuf_RD_gpu));
-	checkGPU (gpuFree (d_x));
-	checkGPU (gpuFree (d_lsum));
-	checkGPU (gpuFree (d_fmod));
+
+#if ( PROFlevel>=1 )
+	t = SuperLU_timer_() - t;
+	if ( !iam) printf(".. Grid %3d: around L kernel time\t%8.4f\n", myGrid, t);
+#endif
 
 	stat_loc[0]->ops[SOLVE]+=Llu->Lnzval_bc_cnt*nrhs*2; // YL: this is a rough estimate 
 #endif	
-    }else{ /* CPU trisolve*/
- 
+    }else{/* CPU trisolve */
 
 tx = SuperLU_timer_();
 
@@ -3303,8 +3358,7 @@ thread_id=0;
 
 			}
 		} // end of parallel
-	
-    }  /* end CPU trisolve */
+	}  /* end CPU trisolve */
 
 	
 // #if ( PRNTlevel>=1 )
@@ -3349,8 +3403,10 @@ thread_id=0;
 			}
 		}
 #endif
-
+/* skip fmod on CPU if using GPU solve*/
+if ( !(getenv("NEW3DSOLVETREECOMM") && getenv("SUPERLU_ACC_SOLVE"))){    
 		SUPERLU_FREE(fmod);
+}
 		SUPERLU_FREE(frecv);
 		SUPERLU_FREE(leaf_send);
 		SUPERLU_FREE(leafsups);
@@ -3407,7 +3463,11 @@ thread_id=0;
 			SUPERLU_FREE(stat_loc[i]);
 		}
 		SUPERLU_FREE(stat_loc);
+
+/* skip rtemp on CPU if using GPU solve*/
+if ( !(getenv("NEW3DSOLVETREECOMM") && getenv("SUPERLU_ACC_SOLVE"))){        
 		SUPERLU_FREE(rtemp);
+}        
 		// SUPERLU_FREE(lsum);
 		// SUPERLU_FREE(x);
 
@@ -3469,7 +3529,7 @@ thread_id=0;
 // cudaProfilerStop();
 	    
     return;
-} /* PDGSTRS */
+} /* ForwardSolve3d_newsolve_reusepdgstrs */
 
 
 
@@ -3509,7 +3569,7 @@ int* getfmod_newsolve(int_t nlb, int_t nsupers, int* supernodeMask, dLUstruct_t 
 
 	for (int_t k = 0; k < nsupers; ++k)
 	{
-		if(supernodeMask[k])
+		if(supernodeMask[k]>0)
         {
             int_t krow = PROW (k, grid);
             int_t kcol = PCOL (k, grid);
@@ -3534,7 +3594,7 @@ int* getfmod_newsolve(int_t nlb, int_t nsupers, int* supernodeMask, dLUstruct_t 
                         lk = lloc[lb+idx_n]; /* Local block number, row-wise. */
                         lptr1_tmp = lloc[lb+idx_i];
                         ik = lsub[lptr1_tmp]; /* Global block number, row-wise. */
-                        if(supernodeMask[ik])
+                        if(supernodeMask[ik]>0)
                             fmod[lk] +=1;
                     }
                 }
@@ -3611,7 +3671,7 @@ int* getfrecv_newsolve(int_t nsupers, int* supernodeMask, int_t nlb, int* fmod,
 
 	for (int_t k = 0; k < nsupers; ++k)
 	{
-		if(supernodeMask[k])
+		if(supernodeMask[k]>0)
         {
             int_t krow = PROW (k, grid);
             int_t kcol = PCOL (k, grid);
@@ -3679,7 +3739,7 @@ int_t getNfrecvmod_newsolve(int* nleaf, int_t nsupers, int* supernodeMask, int* 
 	for (int_t k = 0; k < nsupers; ++k)
 	{
         // printf("anni k %5d supernodeMask[k] %5d\n",k,supernodeMask[k]);
-        if(supernodeMask[k])
+        if(supernodeMask[k]>0)
         {
             int_t krow = PROW (k, grid);
             int_t kcol = PCOL (k, grid);
@@ -3750,7 +3810,7 @@ int getNfrecvx_newsolve(int_t nsupers, int* supernodeMask, dLUstruct_t * LUstruc
     int_t nb, idx_n, idx_i, lb, lptr1_tmp, ik;
 	for (int_t k = 0; k < nsupers; ++k)
 	{
-        if(supernodeMask[k])
+        if(supernodeMask[k]==1)
         {
             int_t krow = PROW (k, grid);
             int_t kcol = PCOL (k, grid);
@@ -3769,7 +3829,7 @@ int getNfrecvx_newsolve(int_t nsupers, int* supernodeMask, dLUstruct_t * LUstruc
                         for (lb=0;lb<nb;lb++){
                             lptr1_tmp = lloc[lb+idx_i];
                             ik = lsub[lptr1_tmp]; /* Global block number, row-wise. */
-                            if(supernodeMask[ik])
+                            if(supernodeMask[ik]>0)
                                 flag=1;
                         }
                     }
@@ -4614,7 +4674,7 @@ int_t leafForestBackSolve3d_newsolve(superlu_dist_options_t *options, int_t n,  
 
     for (int_t k = nsupers - 1; k >= 0 && nroot; --k)
     {
-        if(supernodeMask[k]){
+        if(supernodeMask[k]>0){
         int_t krow = PROW (k, grid);
         int_t kcol = PCOL (k, grid);
         if (myrow == krow && mycol == kcol)
@@ -4886,7 +4946,7 @@ void BackSolve3d_newsolve_reusepdgstrs(superlu_dist_options_t *options, int_t n,
 	gridinfo_t *d_grid = NULL;
 	double *d_x = NULL;
 	double *d_lsum = NULL;
-    int_t  *d_fmod = NULL;		
+    int_t  *d_bmod = NULL;		
 #endif
 
 
@@ -4962,7 +5022,8 @@ void BackSolve3d_newsolve_reusepdgstrs(superlu_dist_options_t *options, int_t n,
     sizelsum = (((size_t)ldalsum)*nrhs + nlb*LSUM_H);
     sizelsum = ((sizelsum + (aln_d - 1)) / aln_d) * aln_d;
 
-
+/* skip rtemp on CPU if using GPU solve*/
+if ( !(getenv("NEW3DSOLVETREECOMM") && getenv("SUPERLU_ACC_SOLVE"))){
     sizertemp=ldalsum * nrhs;
     sizertemp = ((sizertemp + (aln_d - 1)) / aln_d) * aln_d;
     if ( !(rtemp = (double*)SUPERLU_MALLOC((sizertemp*num_thread + 1) * sizeof(double))) )
@@ -4978,6 +5039,7 @@ void BackSolve3d_newsolve_reusepdgstrs(superlu_dist_options_t *options, int_t n,
     for ( ii=0; ii<sizertemp*num_thread; ii++ )
 	rtemp[ii]=zero;
 #endif
+}
 
     if ( !(stat_loc = (SuperLUStat_t**) SUPERLU_MALLOC(num_thread*sizeof(SuperLUStat_t*))) )
 	ABORT("Malloc fails for stat_loc[].");
@@ -4994,8 +5056,10 @@ void BackSolve3d_newsolve_reusepdgstrs(superlu_dist_options_t *options, int_t n,
 	nsupers_j = CEILING( nsupers, grid->npcol ); /* Number of local block columns */
 
 
-
+/* skip bmod on CPU if using GPU solve*/
+if ( !(getenv("NEW3DSOLVETREECOMM") && getenv("SUPERLU_ACC_SOLVE"))){ 
     bmod=  getBmod3d_newsolve(nlb, nsupers, supernodeMask, LUstruct, grid);
+}
     nbrecvx= getNbrecvX_newsolve(nsupers, supernodeMask, Urbs, Ucb_indptr, grid);
 
 
@@ -5007,8 +5071,10 @@ void BackSolve3d_newsolve_reusepdgstrs(superlu_dist_options_t *options, int_t n,
 
 		/* Re-initialize lsum to zero. Each block header is already in place. */
 
-#ifdef _OPENMP
 
+/* skip lsum on CPU if using GPU solve*/
+if ( !(getenv("NEW3DSOLVETREECOMM") && getenv("SUPERLU_ACC_SOLVE"))){
+#ifdef _OPENMP
 #pragma omp parallel default(shared) private(ii)
 	{
 		int thread_id = omp_get_thread_num();
@@ -5042,6 +5108,8 @@ void BackSolve3d_newsolve_reusepdgstrs(superlu_dist_options_t *options, int_t n,
 		}
 	}
 #endif
+}
+
 
 #if ( DEBUGlevel>=2 )
 		for (p = 0; p < Pr*Pc; ++p) {
@@ -5111,7 +5179,8 @@ void BackSolve3d_newsolve_reusepdgstrs(superlu_dist_options_t *options, int_t n,
 		}
     }
 
-
+/* skip bmod/rootsups/nroot on CPU if using GPU solve*/
+if ( !(getenv("NEW3DSOLVETREECOMM") && getenv("SUPERLU_ACC_SOLVE"))){ 
 	nrtree = 0;
 	nroot=0;
 	for (lk=0;lk<nsupers_i;++lk){
@@ -5127,18 +5196,33 @@ void BackSolve3d_newsolve_reusepdgstrs(superlu_dist_options_t *options, int_t n,
 			if(gb<nsupers){
 				kcol = PCOL( gb, grid );
 				if(mycol==kcol) { /* Diagonal process */
-					if (bmod[lk*aln_i]==0 && supernodeMask[gb]){
+					if (bmod[lk*aln_i]==0 && supernodeMask[gb]>0){
 						rootsups[nroot]=gb;
 						++nroot;
 					}
-				}
-			}
+                }
+            }
+        }
+    }
+}else{
+	nrtree = 0;
+	for (lk=0;lk<nsupers_i;++lk){
+		if(URtree_ptr[lk].empty_==NO){
+			// printf("here lk %5d myid %5d\n",lk,iam);
+			// fflush(stdout);
+			nrtree++;
+			// RdTree_allocateRequest(URtree_ptr[lk],'d');
+			brecv[lk] = URtree_ptr[lk].destCnt_;
+			nbrecvmod += brecv[lk];
 		}
-	}
-
+    }    
+}
+    
+/* skip bmod on CPU if using GPU solve*/
+if ( !(getenv("NEW3DSOLVETREECOMM") && getenv("SUPERLU_ACC_SOLVE"))){ 
 	for (i = 0; i < nlb; ++i) bmod[i*aln_i] += brecv[i];
 	// for (i = 0; i < nlb; ++i)printf("bmod[i]: %5d\n",bmod[i]);
-
+}
 
 	if ( !(recvbuf_BC_fwd = (double*)SUPERLU_MALLOC(maxrecvsz*(nbrecvx+1) * sizeof(double))) )  // this needs to be optimized for 1D row mapping
 		ABORT("Malloc fails for recvbuf_BC_fwd[].");
@@ -5177,34 +5261,31 @@ if (getenv("SUPERLU_ACC_SOLVE")){  /* GPU trisolve*/
 #if defined(GPU_ACC) && defined(SLU_HAVE_LAPACK) && defined(GPU_SOLVE)  
 // #if 0 /* CPU trisolve*/
 
-	d_grid = NULL;
-	d_x = NULL;
-	d_lsum = NULL;
-    int_t  *d_bmod = NULL;
 
-	checkGPU(gpuMalloc( (void**)&d_grid, sizeof(gridinfo_t)));
-	checkGPU(gpuMalloc( (void**)&d_lsum, sizelsum*num_thread * sizeof(double)));
-	checkGPU(gpuMalloc( (void**)&d_x, (ldalsum * nrhs + nlb * XK_H) * sizeof(double)));
-	checkGPU(gpuMalloc( (void**)&d_bmod, (nlb*aln_i) * sizeof(int_t)));
-	
+#if ( PROFlevel>=1 )
+    t = SuperLU_timer_();
+#endif
 
-	checkGPU(gpuMemcpy(d_grid, grid, sizeof(gridinfo_t), gpuMemcpyHostToDevice));	
-	checkGPU(gpuMemcpy(d_lsum, lsum, sizelsum*num_thread * sizeof(double), gpuMemcpyHostToDevice));	
-	checkGPU(gpuMemcpy(d_x, x, (ldalsum * nrhs + nlb * XK_H) * sizeof(double), gpuMemcpyHostToDevice));	
-	checkGPU(gpuMemcpy(d_bmod, bmod, (nlb*aln_i) * sizeof(int_t), gpuMemcpyHostToDevice));
+    d_bmod=SOLVEstruct->d_bmod;
+    d_lsum=SOLVEstruct->d_lsum;
+	d_x=SOLVEstruct->d_x;
+	d_grid=Llu->d_grid;
+
+	checkGPU(gpuMemcpy(d_bmod, SOLVEstruct->d_bmod_save, nlb * sizeof(int), gpuMemcpyDeviceToDevice));
+    checkGPU(gpuMemcpy(d_lsum, SOLVEstruct->d_lsum_save, sizelsum * sizeof(double), gpuMemcpyDeviceToDevice));	
+    checkGPU(gpuMemcpy(d_x, x, (ldalsum * nrhs + nlb * XK_H) * sizeof(double), gpuMemcpyHostToDevice));	
 
 	k = CEILING( nsupers, grid->npcol);/* Number of local block columns divided by #warps per block used as number of thread blocks*/
 	knsupc = sp_ienv_dist(3, options);
  
-    
-
 	dlsum_bmod_inv_gpu_wrap(options, k,nlb,DIM_X,DIM_Y,d_lsum,d_x,nrhs,knsupc,nsupers,d_bmod,Llu->d_UBtree_ptr,Llu->d_URtree_ptr,Llu->d_ilsum,Llu->d_Ucolind_bc_dat,Llu->d_Ucolind_bc_offset,Llu->d_Unzval_bc_dat,Llu->d_Unzval_bc_offset,Llu->d_Uinv_bc_dat,Llu->d_Uinv_bc_offset,Llu->d_Uindval_loc_bc_dat,Llu->d_Uindval_loc_bc_offset,Llu->d_xsup,d_grid);
 	checkGPU(gpuMemcpy(x, d_x, (ldalsum * nrhs + nlb * XK_H) * sizeof(double), gpuMemcpyDeviceToHost));
 
-	checkGPU (gpuFree (d_grid));
-	checkGPU (gpuFree (d_x));
-	checkGPU (gpuFree (d_lsum));
-	checkGPU (gpuFree (d_bmod));
+
+#if ( PROFlevel>=1 )
+	t = SuperLU_timer_() - t;
+	if ( !iam) printf(".. Grid %3d: around U kernel time\t%8.4f\n", myGrid, t);
+#endif
 
 	stat_loc[0]->ops[SOLVE]+=Llu->Unzval_br_cnt*nrhs*2; // YL: this is a rough estimate 
 #endif
@@ -5627,9 +5708,15 @@ xtrsTimer->tbs_compute += SuperLU_timer_() - tx;
 			SUPERLU_FREE(stat_loc[i]);
 		}
 		SUPERLU_FREE(stat_loc);
+/* skip rtemp on CPU if using GPU solve*/
+if ( !(getenv("NEW3DSOLVETREECOMM") && getenv("SUPERLU_ACC_SOLVE"))){        
 		SUPERLU_FREE(rtemp);
+}
 
+/* skip bmod on CPU if using GPU solve*/
+if ( !(getenv("NEW3DSOLVETREECOMM") && getenv("SUPERLU_ACC_SOLVE"))){  
 		SUPERLU_FREE(bmod);
+}
 		SUPERLU_FREE(brecv);
 		SUPERLU_FREE(root_send);
 
@@ -5711,7 +5798,7 @@ xtrsTimer->tbs_compute += SuperLU_timer_() - tx;
 // cudaProfilerStop();
 	    
     return;
-} /* PDGSTRS */
+} /* BackSolve3d_newsolve_reusepdgstrs */
 
 
 
@@ -5760,7 +5847,7 @@ int getNbrecvX_newsolve(int_t nsupers, int* supernodeMask, int_t* Urbs, Ucb_indp
 
 	for (int_t k = 0; k < nsupers; ++k)
 	{
-        if(supernodeMask[k])
+        if(supernodeMask[k]>0)
         {
         int_t krow = PROW (k, grid);
         int_t kcol = PCOL (k, grid);
@@ -5773,7 +5860,7 @@ int getNbrecvX_newsolve(int_t nsupers, int* supernodeMask, int_t* Urbs, Ucb_indp
             for (int_t ub = 0; ub < nub; ++ub) {
                 ik = Ucb_indptr[lk][ub].lbnum; /* Local block number, row-wise. */
                 int_t gik = ik * grid->nprow + myrow;/* Global block number, row-wise. */
-                if(supernodeMask[gik])
+                if(supernodeMask[gik]>0)
                     flag=1;
             }
             if(flag==1)
@@ -5830,7 +5917,7 @@ int getNrootUsolveTree_newsolve(int_t* nbrecvmod, int_t nsupers, int* supernodeM
     int nroot = 0;
 	for (int_t k = 0; k < nsupers; ++k)
 	{
-        if(supernodeMask[k])
+        if(supernodeMask[k]>0)
         {
         int_t krow = PROW (k, grid);
         if (myrow == krow)
@@ -5916,7 +6003,7 @@ int* getBrecvTree_newsolve(int_t nlb, int_t nsupers, int* supernodeMask, int* bm
 
 	for (int_t k = 0; k < nsupers; ++k)
 	{
-		if(supernodeMask[k])
+		if(supernodeMask[k]>0)
         {
         int_t krow = PROW (k, grid);
         if (myrow == krow)
@@ -6025,7 +6112,7 @@ int* getBmod3d_newsolve(int_t nlb, int_t nsupers, int* supernodeMask, dLUstruct_
 
 	for (int_t k = 0; k < nsupers; ++k)
 	{
-		if(supernodeMask[k])
+		if(supernodeMask[k]>0)
         {
         int_t krow = PROW (k, grid);
         if (myrow == krow)
@@ -6042,7 +6129,7 @@ int* getBmod3d_newsolve(int_t nlb, int_t nsupers, int* supernodeMask, dLUstruct_
                 for (int_t ii = 0; ii < nub; ii++)
                 {
                     int_t jb = usub[iukp];
-                    if(supernodeMask[jb])
+                    if(supernodeMask[jb]>0)
                     {
                         /* code */
                         bmod[lk]++;
@@ -6300,7 +6387,7 @@ void dlsum_bmod_GG_newsolve (
     {
         ik = Ucb_indptr[lk][ub].lbnum; /* Local block number, row-wise. */
         gik = ik * grid->nprow + myrow;/* Global block number, row-wise. */
-        if (trf3Dpartition->supernodeMask[gik])
+        if (trf3Dpartition->supernodeMask[gik]>0)
         {
         usub = Llu->Ufstnz_br_ptr[ik];
         uval = Llu->Unzval_br_ptr[ik];
@@ -6429,7 +6516,7 @@ void dlsum_bmod_GG_newsolve (
                 } /* if brecv[ik] == 0 */
             }
         } /* if bmod[ik] == 0 */
-        } /* if (trf3Dpartition->supernodeMask[gik]) */
+        } /* if (trf3Dpartition->supernodeMask[gik]>0) */
     } /* for ub ... */
 
 } /* dlsum_bmod_GG_newsolve */
@@ -7400,11 +7487,12 @@ pdgstrs3d_newsolve (superlu_dist_options_t *options, int_t n, dLUstruct_t * LUst
     Llu->SolveMsgSent = 0;
 
     k = SUPERLU_MAX (Llu->nfsendx, Llu->nbsendx) + nlb;
-    if (!
-            (send_req =
+ /* skip send_req on CPU if using GPU solve*/
+if ( !(getenv("NEW3DSOLVETREECOMM") && getenv("SUPERLU_ACC_SOLVE"))){   
+    if (!(send_req =
                  (MPI_Request *) SUPERLU_MALLOC (k * sizeof (MPI_Request))))
         ABORT ("Malloc fails for send_req[].");
-
+}
 
     /* Obtain ilsum[] and ldalsum for process column 0. */
 
@@ -7444,6 +7532,8 @@ pdgstrs3d_newsolve (superlu_dist_options_t *options, int_t n, dLUstruct_t * LUst
 
 
 
+/* skip lsum on CPU if using GPU solve*/
+if ( !(getenv("NEW3DSOLVETREECOMM") && getenv("SUPERLU_ACC_SOLVE"))){
 #ifdef _OPENMP
     if ( !(lsum = (double*)SUPERLU_MALLOC(sizelsum*num_thread * sizeof(double))))
 	ABORT("Malloc fails for lsum[].");
@@ -7459,6 +7549,8 @@ pdgstrs3d_newsolve (superlu_dist_options_t *options, int_t n, dLUstruct_t * LUst
     for ( ii=0; ii < sizelsum*num_thread; ii++ )
 	lsum[ii]=zero;
 #endif
+}
+
     /* intermediate solution x[] vector has same structure as lsum[], see leading comment */
     if ( !(x = doubleCalloc_dist(ldalsum * nrhs + nlb * XK_H)) )
 	ABORT("Calloc fails for x[].");
@@ -7661,17 +7753,22 @@ pdgstrs3d_newsolve (superlu_dist_options_t *options, int_t n, dLUstruct_t * LUst
      */
     reduceStat(SOLVE, stat, grid3d);
     /* Deallocate storage. */
+
+/* skip lsum on CPU if using GPU solve*/
+if ( !(getenv("NEW3DSOLVETREECOMM") && getenv("SUPERLU_ACC_SOLVE"))){    
     SUPERLU_FREE (lsum);
+}    
     SUPERLU_FREE (x);
     SUPERLU_FREE (recvbuf);
 
 
+/* skip send_req on CPU if using GPU solve*/
+if ( !(getenv("NEW3DSOLVETREECOMM") && getenv("SUPERLU_ACC_SOLVE"))){
     /*for (i = 0; i < Llu->SolveMsgSent; ++i) MPI_Request_free(&send_req[i]); */
-
     for (i = 0; i < Llu->SolveMsgSent; ++i)
         MPI_Wait (&send_req[i], &status);
     SUPERLU_FREE (send_req);
-
+}
     // MPI_Barrier (grid->comm);
 
 
@@ -7755,6 +7852,7 @@ int_t pdgsTrForwardSolve3d(superlu_dist_options_t *options, int_t n, dLUstruct_t
             }
         }
     }
+    
 
     Llu->SolveMsgSent = 0;
     for (int_t ilvl = 0; ilvl < maxLvl; ++ilvl)
@@ -7861,9 +7959,8 @@ int_t pdgsTrForwardSolve3d_newsolve(superlu_dist_options_t *options, int_t n, dL
     if (!(rtemp = doubleCalloc_dist (maxrecvsz)))
         ABORT ("Malloc fails for rtemp[].");
 
-    /**
-     *  Loop over all the levels from root to leaf
-     */
+/* skip lsum on CPU if using GPU solve*/
+if ( !(getenv("NEW3DSOLVETREECOMM") && getenv("SUPERLU_ACC_SOLVE"))){
     int_t ii = 0;
     for (int_t k = 0; k < nsupers; ++k)
     {
@@ -7895,6 +7992,7 @@ int_t pdgsTrForwardSolve3d_newsolve(superlu_dist_options_t *options, int_t n, dL
             }
         }
     }
+}
 
     Llu->SolveMsgSent = 0;
 
@@ -7913,13 +8011,15 @@ if (getenv("NEW3DSOLVETREECOMM")){
 
 
     xtrsTimer->tfs_tree[0] = SuperLU_timer_() - tx;
-
     tx = SuperLU_timer_();
+/* skip send_req on CPU if using GPU solve*/
+if ( !(getenv("NEW3DSOLVETREECOMM") && getenv("SUPERLU_ACC_SOLVE"))){
     for (int_t i = 0; i < Llu->SolveMsgSent; ++i)
     {
         MPI_Status status;
         MPI_Wait (&send_req[i], &status);
     }
+}
     Llu->SolveMsgSent = 0;
     xtrsTimer->tfs_comm += SuperLU_timer_() - tx;
 
@@ -8085,10 +8185,9 @@ int_t pdgsTrBackSolve3d_newsolve(superlu_dist_options_t *options, int_t n, dLUst
 
     int_t *ilsum = Llu->ilsum;
 
-    /**
-     *  Loop over all the levels from root to leaf
-     */
 
+/* skip lsum on CPU if using GPU solve*/
+if ( !(getenv("NEW3DSOLVETREECOMM") && getenv("SUPERLU_ACC_SOLVE"))){
     /*initilize lsum to zero*/
     for (int_t k = 0; k < nsupers; ++k)
     {
@@ -8106,6 +8205,7 @@ int_t pdgsTrBackSolve3d_newsolve(superlu_dist_options_t *options, int_t n, dLUst
             }
         }
     }
+}
 
     /**
      * Adding lsumBmod_buff_t* lbmod_buf
