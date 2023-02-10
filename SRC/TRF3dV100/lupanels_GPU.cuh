@@ -241,6 +241,30 @@ public:
     } 
 };
 
+// Wajih: Device and host memory used to store marshalled batch data
+struct LUMarshallData 
+{
+    LUMarshallData();
+    ~LUMarshallData();
+
+    // Diagonal device pointer data 
+    double **dev_diag_ptrs;
+    int *dev_diag_ld_array, *dev_diag_dim_array, *dev_info_array;
+    
+    // TRSM panel device pointer data 
+    double **dev_panel_ptrs;
+    int *dev_panel_ld_array, *dev_panel_dim_array;
+
+    // Data accumulated on the host
+    std::vector<double*> host_diag_ptrs;
+    std::vector<int> host_diag_ld_array, host_diag_dim_array;
+    
+    std::vector<double*> host_panel_ptrs;
+    std::vector<int> host_panel_ld_array, host_panel_dim_array;
+    
+    void setBatchSize(int batch_size);
+};
+
 #define MAX_CUDA_STREAMS 64 
 struct LUstructGPU_t
 {
@@ -261,6 +285,8 @@ struct LUstructGPU_t
     // Magma is needed for non-uniform batched execution 
     magma_queue_t magma_queue;
     
+    LUMarshallData marshall_data;
+
     /* Sherry: Allocate an array of buffers for the diagonal blocks
        on the leaf level.
        The sizes are uniform: ldt is the maximum among all the nodes.    */
@@ -268,12 +294,6 @@ struct LUstructGPU_t
     // double* gpuGemmBuffs[MAX_CUDA_STREAMS];
     double **dFBufs;       
     double ** gpuGemmBuffs;
-    
-    // Wajih: Device and host memory used to store marshalled batch data
-    double **dev_marshall_ptr_array;
-    int *dev_marshall_ld_array, *dev_marshall_dim_array, *dev_info_array;
-    std::vector<double *> host_marshall_ptr_array;
-    std::vector<int> host_marshall_ld_array, host_marshall_dim_array;
 
     double* LvalRecvBufs[MAX_CUDA_STREAMS];
     double* UvalRecvBufs[MAX_CUDA_STREAMS];

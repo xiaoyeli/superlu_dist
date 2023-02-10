@@ -834,14 +834,7 @@ int_t LUstruct_v100::setLUstruct_GPU()
     }
 
     // Wajih: Adding allocation for batched LU marshalled data 
-    checkCudaLocal(cudaMalloc(&(A_gpu.dev_marshall_ptr_array), num_dfbufs * sizeof(double*)));
-    checkCudaLocal(cudaMalloc(&(A_gpu.dev_marshall_ld_array), num_dfbufs * sizeof(int)));
-    checkCudaLocal(cudaMalloc(&(A_gpu.dev_marshall_dim_array), num_dfbufs * sizeof(int)));
-    checkCudaLocal(cudaMalloc(&(A_gpu.dev_info_array), num_dfbufs * sizeof(int)));
-
-    A_gpu.host_marshall_ptr_array.resize(num_dfbufs);
-    A_gpu.host_marshall_ld_array.resize(num_dfbufs);
-    A_gpu.host_marshall_dim_array.resize(num_dfbufs);
+    A_gpu.marshall_data.setBatchSize(num_dfbufs);
 
     tcuMalloc = SuperLU_timer_() - tcuMalloc;
     printf("Time to allocate GPU memory: %g\n", tcuMalloc);

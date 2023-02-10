@@ -443,7 +443,8 @@ struct LUstruct_v100
 
     // Helper routine to marshall batch LU data into the device data in A_gpu 
     void marshallBatchedLUData(int k_st, int k_end, int_t *perm_c_supno, int &my_batch_size);
-
+    void marshallBatchedTRSMUData(int k_st, int k_end, int_t *perm_c_supno, int &my_batch_size);
+    
     //
     int_t dDiagFactorPanelSolve(int_t k, int_t offset, ddiagFactBufs_t **dFBufs);
     int_t dPanelBcast(int_t k, int_t offset);
