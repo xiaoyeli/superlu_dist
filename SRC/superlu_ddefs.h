@@ -631,8 +631,19 @@ extern void dComputeLevelsets(int , int_t , gridinfo_t *,
 			   
 #ifdef GPU_ACC               
 extern void pdconvertU(superlu_dist_options_t *, gridinfo_t *, dLUstruct_t *, SuperLUStat_t *, int);
-extern void dlsum_fmod_inv_gpu_wrap(int_t, int_t, int_t, int_t, double *, double *, int, int, int_t , int *fmod, C_Tree  *, C_Tree  *, int_t *, int_t *, int64_t *, double *, int64_t *, double *, int64_t *, int_t *, int64_t *, int_t *, int *, gridinfo_t *, double * , double * , int_t );
-extern void dlsum_bmod_inv_gpu_wrap(superlu_dist_options_t *, int_t, int_t, int_t, int_t, double *, double *, int, int, int_t , int *bmod, C_Tree  *, C_Tree  *, int_t *, int_t *, int64_t *, double *, int64_t *, double *, int64_t *, int_t *, int64_t *, int_t *, gridinfo_t *);
+extern void dlsum_fmod_inv_gpu_wrap(int_t, int_t, int_t, int_t, double *,double *,int,int, int_t , int_t *, C_Tree  *, C_Tree  *, int_t *, int_t *,long int *, double *, long int *, double *, long int *, int_t *, long int *, int_t *, int *, gridinfo_t *,
+                                    int, int*, int*, double*, double*, int*, int*, int*,
+                                    int*, int*, int*, int*, int*, int*,int*,
+                                    int*, int*, int*, int*, int*, int*,
+                                    int*, int*, int);
+extern void dlsum_bmod_inv_gpu_wrap(superlu_dist_options_t *, int_t, int_t, int_t, int_t, double *, double *,int,int, int_t , int *, C_Tree  *, C_Tree  *, int_t *, int_t *, int64_t *, double *, int64_t *, double  *, int64_t *, int_t *, int64_t *, int_t *,gridinfo_t *,
+                                    int_t, int*, int*, double*, double*,
+                                    int*, int*, int*, int*,
+                                    int*, int*, int*, int*, int*,
+                                    int*, int*, int*, int*, int*, int*,
+                                    int*, int*, int); //int*); //int*, double*);
+
+
 #endif
 
 extern void pdgsrfs(superlu_dist_options_t *, int_t,
@@ -974,7 +985,12 @@ extern void dGenCSCLblocks(int, int_t, gridinfo_t*,
 extern void dGenCSRLblocks(int, int_t, gridinfo_t*,
 		  Glu_persist_t*, dLocalLU_t *, double **, int_t **, int_t **, int_t*, int_t*);
 
-
+/* multi-GPU */
+#ifdef GPU_SOLVE
+extern void create_nv_buffer(int* , int*, int* , int* );
+extern void nv_init_wrapper(MPI_Comm);
+extern void prepare_multiGPU_buffers(int,int,int,int,int,int);
+#endif
 /* BLAS */
 
 #ifdef USE_VENDOR_BLAS

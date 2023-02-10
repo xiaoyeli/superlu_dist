@@ -1,6 +1,7 @@
 include_directories(${SuperLU_DIST_SOURCE_DIR}/SRC)
 
 # Libs linked to all of the examples
+#set(all_link_libs superlu_dist ${BLAS_LIB} ${NVSHMEM_LIB})
 set(all_link_libs superlu_dist ${BLAS_LIB})
 if (NOT MSVC)
   list(APPEND all_link_libs m)

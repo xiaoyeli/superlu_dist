@@ -320,8 +320,14 @@ if (BUILD_SHARED_LIBS AND BUILD_STATIC_LIBS)
   list(APPEND targets superlu_dist-static)
 endif()
 
+if (TPL_ENABLE_NVSHMEM)
+set(superlu_dist_libs ${MPI_C_LIBRARIES} ${MPI_CXX_LIBRARIES} ${BLAS_LIB} ${LAPACK_LIB}
+    ${PARMETIS_LIB} ${COLAMD_LIB} ${COMBBLAS_LIB} ${CUDA_LIB} ${HIP_LIB} ${NVSHMEM_LIB}) 
+else()
 set(superlu_dist_libs ${MPI_C_LIBRARIES} ${MPI_CXX_LIBRARIES} ${BLAS_LIB} ${LAPACK_LIB}
     ${PARMETIS_LIB} ${COLAMD_LIB} ${COMBBLAS_LIB} ${CUDA_LIB} ${HIP_LIB}) 
+endif()
+
 if (NOT MSVC)
   list(APPEND superlu_dist_libs m)
 endif ()

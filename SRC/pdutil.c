@@ -576,7 +576,6 @@ dDestroy_LU(int_t n, gridinfo_t *grid, dLUstruct_t *LUstruct)
     checkGPU (gpuFree (Llu->d_Unzval_bc_offset));  
     checkGPU (gpuFree (Llu->d_Uindval_loc_bc_dat)); 
     checkGPU (gpuFree (Llu->d_Uindval_loc_bc_offset));
-
 #endif
 
 #if ( DEBUGlevel>=1 )
@@ -850,6 +849,223 @@ pdgstrs_init_device_lsum_x(int_t n, int_t m_loc, int_t nrhs, gridinfo_t *grid,
 	// 	ilsum[lb + 1] = ilsum[lb] + i;
 	//     }
 	// }
+
+
+
+	int maxrecvsz = sp_ienv_dist(3, options)* nrhs + SUPERLU_MAX( XK_H, LSUM_H );
+    int flag_bc_size = RDMA_FLAG_SIZE * (k+1);
+    int flag_rd_size = RDMA_FLAG_SIZE * nlb * 2;
+    int ready_x_size = maxrecvsz*CEILING( nsupers, grid->npcol);
+    int ready_lsum_size = 2*maxrecvsz*CEILING( nsupers, grid->nprow);
+    int my_flag_bc_size = RDMA_FLAG_SIZE * (CEILING( nsupers, grid->npcol)+1);
+    int my_flag_rd_size = RDMA_FLAG_SIZE * nlb * 2;
+    //printf("(%d) in pddistribute:\n "
+    //   "flag_bc_size=%d int, ready_x=%d double, "
+    //   "flag_rd_size=%d int, ready_lsum=%d double, "
+    //   "int=%d B, double=%d B\n",
+    //   iam,
+    //   flag_bc_size, ready_x_size,
+    //   flag_rd_size , ready_lsum_size,
+    //   sizeof(int), sizeof(double) );
+    //fflush(stdout);
+    prepare_multiGPU_buffers(flag_bc_size,flag_rd_size,ready_x_size,ready_lsum_size,my_flag_bc_size,my_flag_rd_size);
+
+    /////* for L solve *////
+    checkGPU(gpuMemset(my_flag_bc, 0, RDMA_FLAG_SIZE * (CEILING( nsupers, grid->npcol)+1)  * sizeof(int)));
+    checkGPU(gpuMemset(my_flag_rd, 0, RDMA_FLAG_SIZE * nlb * 2 * sizeof(int)));
+    checkGPU(gpuMemset(ready_x, 0, maxrecvsz*CEILING( nsupers, grid->npcol) * sizeof(double)));
+    checkGPU(gpuMemset(ready_lsum, 0, 2*maxrecvsz*CEILING( nsupers, grid->nprow) * sizeof(double)));
+	checkGPU(gpuMalloc( (void**)&d_status,  CEILING( nsupers, grid->npcol) * sizeof(int)));
+	checkGPU(gpuMalloc( (void**)&d_nfrecv,  3 * sizeof(int)));
+	checkGPU(gpuMemcpy(d_status, mystatus, CEILING( nsupers, grid->npcol) * sizeof(int), gpuMemcpyHostToDevice));
+
+
+    int *my_colnum;
+    if ( !(my_colnum = (int*)SUPERLU_MALLOC((nfrecvx+1) * sizeof(int))) )
+        ABORT("Malloc fails for my_colnum[].");
+	checkGPU(gpuMalloc( (void**)&d_colnum,  (nfrecvx+1) * sizeof(int)));
+
+	//printf("(%d),CEILING( nsupers, grid->npcol)=%d\n",iam,CEILING( nsupers, grid->npcol));
+	//fflush(stdout);
+	int tmp_idx=0;
+    for(int i=0; i<CEILING( nsupers, grid->npcol);i++){
+        if(mystatus[i]==0) {
+            my_colnum[tmp_idx]=i;
+	        //printf("(%d),nfrecvx=%d,i=%d,my_column[%d]=%d\n",iam,nfrecvx,i,tmp_idx,my_colnum[tmp_idx]);
+	        //fflush(stdout);
+            tmp_idx += 1;
+        }
+    }
+	checkGPU(gpuMemcpy(d_colnum, my_colnum,  (nfrecvx+1) * sizeof(int), gpuMemcpyHostToDevice));
+	//printf("(%d) nfrecvx=%d,nfrecvmod=%d,maxrecvsz=%d\n",iam,nfrecvx,nfrecvmod,maxrecvsz);
+    //fflush(stdout);
+
+    h_nfrecv[0]=nfrecvx;
+    h_nfrecv[1]=1024;
+    h_nfrecv[2]=1;
+
+	checkGPU(gpuMalloc( (void**)&d_mynum, h_nfrecv[1]  * sizeof(int)));
+	checkGPU(gpuMalloc( (void**)&d_mymaskstart, h_nfrecv[1] * sizeof(int)));
+	checkGPU(gpuMalloc( (void**)&d_mymasklength, h_nfrecv[1]  * sizeof(int)));
+
+    //printf("(%d), wait=%d,%d\n",iam,h_nfrecv[2],h_nfrecv[1]);
+    //fflush(stdout);
+
+    checkGPU(gpuMemcpy(d_nfrecv, h_nfrecv, 3 * sizeof(int), gpuMemcpyHostToDevice));
+
+	int *my_colnummod;
+    if ( !(my_colnummod = (int*)SUPERLU_MALLOC((nfrecvmod+1) * sizeof(int))) )
+        ABORT("Malloc fails for my_colnum[].");
+	checkGPU(gpuMalloc( (void**)&d_colnummod,  (nfrecvmod+1) * sizeof(int)));
+
+	tmp_idx=0;
+	for(int i=0; i<CEILING( nsupers, grid->nprow);i++){
+	    //printf("(%d),nfrecvmod=%d,i=%d,recv_cnt=%d\n",iam,nfrecvmod,i,h_recv_cnt[i]);
+        if(mystatusmod[i*2]==0) {
+            my_colnummod[tmp_idx]=i;
+	        //printf("(%d),nfrecvmod=%d,i=%d,my_colnummod[%d]=%d\n",iam,nfrecvmod,i,tmp_idx,my_colnummod[tmp_idx]);
+	        //fflush(stdout);
+            tmp_idx += 1;
+        }
+    }
+    h_nfrecvmod[0]=nfrecvmod;
+    h_nfrecvmod[1]=tmp_idx;
+    h_nfrecvmod[2]=h_nfrecv[2];
+    checkGPU(gpuMalloc( (void**)&d_nfrecvmod, 4 * sizeof(int)));
+	checkGPU(gpuMemcpy(d_nfrecvmod, h_nfrecvmod, 4 * sizeof(int), gpuMemcpyHostToDevice));
+	checkGPU(gpuMalloc( (void**)&d_statusmod, 2*CEILING(nsupers, grid->nprow) * sizeof(int)));
+	checkGPU(gpuMalloc( (void**)&d_recv_cnt, CEILING(nsupers, grid->nprow) * sizeof(int)));
+	checkGPU(gpuMemcpy(d_recv_cnt, h_recv_cnt,  CEILING(nsupers, grid->nprow) * sizeof(int), gpuMemcpyHostToDevice));
+
+	checkGPU(gpuMemcpy(d_colnummod, my_colnummod,  (nfrecvmod+1) * sizeof(int), gpuMemcpyHostToDevice));
+	checkGPU(gpuMalloc( (void**)&d_mynummod, h_nfrecv[1]  * sizeof(int)));
+	checkGPU(gpuMalloc( (void**)&d_mymaskstartmod, h_nfrecv[1]  * sizeof(int)));
+	checkGPU(gpuMalloc( (void**)&d_mymasklengthmod,   h_nfrecv[1] * sizeof(int)));
+
+    checkGPU(gpuMalloc( (void**)&d_msgnum,  h_nfrecv[1] * sizeof(int)));
+    checkGPU(gpuMalloc( (void**)&d_flag_mod,  (h_nfrecvmod[3]+1) * sizeof(int)));
+    int* tmp_val;
+    if ( !(tmp_val = (int*)SUPERLU_MALLOC((h_nfrecvmod[3]+1) * sizeof(int))) )
+        ABORT("Malloc fails for tmp_val[].");
+    tmp_val[0]=0;
+    for(int i=1; i<h_nfrecvmod[3]+1;i++) tmp_val[i]=-1;
+    checkGPU(gpuMemcpy(d_flag_mod, tmp_val,  (h_nfrecvmod[3]+1) * sizeof(int), gpuMemcpyHostToDevice));
+    //printf("(%d) nfrecvx=%d, nfrecvmod=%d,nfsendmod=%d\n",iam,nfrecvx, nfrecvmod,h_nfrecvmod[3]);
+    //fflush(stdout);
+
+
+
+        /////* for U solve *////
+    checkGPU(gpuMalloc( (void**)&d_nfrecv_u,  3 * sizeof(int)));
+
+    int *my_colnum_u;
+    if ( !(my_colnum_u = (int*)SUPERLU_MALLOC((nbrecvx+1) * sizeof(int))) )
+        ABORT("Malloc fails for my_colnum_u[].");
+    checkGPU(gpuMalloc( (void**)&d_colnum_u,  (nbrecvx+1) * sizeof(int)));
+
+    //printf("(%d),CEILING( nsupers, grid->npcol)=%d\n",iam,CEILING( nsupers, grid->npcol));
+    //fflush(stdout);
+    tmp_idx=0;
+    for(int i=0; i<CEILING( nsupers, grid->npcol);i++){
+        if(mystatus_u[i]==0) {
+            my_colnum_u[tmp_idx]=i;
+            //printf("(%d),nbrecvx=%d,i=%d,my_column_u[%d]=%d\n",iam,nbrecvx,i,tmp_idx,my_colnum_u[tmp_idx]);
+            //fflush(stdout);
+            tmp_idx += 1;
+        }
+    }
+    h_nfrecv_u[0]=nbrecvx;
+    h_nfrecv_u[1]=1024;
+    h_nfrecv_u[2]=1;
+    //printf("(%d), wait=%d,%d\n",iam,h_nfrecv[2],h_nfrecv[1]);
+    //fflush(stdout);
+
+    checkGPU(gpuMemcpy(d_colnum_u, my_colnum_u,  (nbrecvx+1) * sizeof(int), gpuMemcpyHostToDevice));
+    //printf("(%d) nbrecvx=%d,nbrecvmod=%d\n",iam,nbrecvx,nbrecvmod);
+    //fflush(stdout);
+    checkGPU(gpuMalloc( (void**)&d_mynum_u, h_nfrecv_u[1]  * sizeof(int)));
+    checkGPU(gpuMalloc( (void**)&d_mymaskstart_u, h_nfrecv_u[1] * sizeof(int)));
+    checkGPU(gpuMalloc( (void**)&d_mymasklength_u, h_nfrecv_u[1]  * sizeof(int)));
+    checkGPU(gpuMemcpy(d_nfrecv_u, h_nfrecv_u, 3 * sizeof(int), gpuMemcpyHostToDevice));
+
+    int *my_colnummod_u;
+    if ( !(my_colnummod_u = (int*)SUPERLU_MALLOC((nbrecvmod+1) * sizeof(int))) )
+        ABORT("Malloc fails for my_colnummod_u[].");
+    checkGPU(gpuMalloc( (void**)&d_colnummod_u,  (nbrecvmod+1) * sizeof(int)));
+
+    tmp_idx=0;
+    for(int i=0; i<CEILING( nsupers, grid->nprow);i++){
+        //printf("(%d),nfrecvmod=%d,i=%d,recv_cnt=%d\n",iam,nfrecvmod,i,h_recv_cnt[i]);
+        if(mystatusmod_u[i*2]==0) {
+            my_colnummod_u[tmp_idx]=i;
+            //printf("(%d),nfrecvmod=%d,i=%d,my_colnummod[%d]=%d\n",iam,nfrecvmod,i,tmp_idx,my_colnummod[tmp_idx]);
+            //fflush(stdout);
+            tmp_idx += 1;
+        }
+    }
+    h_nfrecvmod_u[0]=nbrecvmod;
+    h_nfrecvmod_u[1]=tmp_idx;
+    h_nfrecvmod_u[2]=h_nfrecv[2];
+    //printf("(%d) nfrecvmod=%d,%d,nfrecvx=%d\n",iam,nfrecvmod, tmp_idx,nfrecvx);
+    //fflush(stdout);
+    checkGPU(gpuMalloc( (void**)&d_nfrecvmod_u,  3 * sizeof(int)));
+    checkGPU(gpuMemcpy(d_nfrecvmod_u, h_nfrecvmod_u, 3 * sizeof(int), gpuMemcpyHostToDevice));
+    checkGPU(gpuMalloc( (void**)&d_recv_cnt_u, CEILING(nsupers, grid->nprow) * sizeof(int)));
+    checkGPU(gpuMemcpy(d_recv_cnt_u, h_recv_cnt_u,  CEILING(nsupers, grid->nprow) * sizeof(int), gpuMemcpyHostToDevice));
+
+    checkGPU(gpuMemcpy(d_colnummod_u, my_colnummod_u,  (nbrecvmod+1) * sizeof(int), gpuMemcpyHostToDevice));
+    checkGPU(gpuMalloc( (void**)&d_mynummod_u, h_nfrecv_u[1]  * sizeof(int)));
+    checkGPU(gpuMalloc( (void**)&d_mymaskstartmod_u, h_nfrecv_u[1]  * sizeof(int)));
+    checkGPU(gpuMalloc( (void**)&d_mymasklengthmod_u,   h_nfrecv_u[1] * sizeof(int)));
+
+    //double mygpumem_L=0,mygpumem_U=0;
+    //double mygpumem_L_nv=0,mygpumem_U_nv=0;
+    //mygpumem_L=((Llu->Lnzval_bc_cnt) * sizeof(double)
+    //            +(Llu->Linv_bc_cnt) * sizeof(double)
+    //            +CEILING( nsupers, grid->npcol ) * sizeof(long int)
+    //            +(CEILING( nsupers, grid->nprow )+1) * sizeof(int_t)
+    //            +(n+1) * sizeof(int_t)
+    //            +CEILING( nsupers, grid->nprow ) * sizeof(C_Tree)*4
+    //            +(Llu->Lrowind_bc_cnt) * sizeof(int_t)
+    //            +(Llu->Lindval_loc_bc_cnt) * sizeof(int_t)
+    //            +CEILING( nsupers, grid->npcol ) * sizeof(long int)
+    //            +CEILING( nsupers, grid->npcol ) * sizeof(long int)
+    //            +CEILING( nsupers, grid->npcol ) * sizeof(long int)
+    //            )/1e6;
+
+    //mygpumem_U=((Llu->Unzval_br_cnt) * sizeof(double)
+    //            +(Llu->Uinv_bc_cnt) * sizeof(double)
+    //            +CEILING( nsupers, grid->npcol ) * sizeof(long int)
+    //            +CEILING( nsupers, grid->npcol ) * sizeof(long int)
+    //            +Llu->Ucb_indcnt * sizeof(Ucb_indptr_t)
+    //            +CEILING( nsupers, grid->npcol ) * sizeof(long int)
+    //            +Llu->Ucb_valcnt * sizeof(int_t)
+    //            +2* CEILING( nsupers, grid->npcol ) * sizeof(int_t)
+    //            +(Llu->Ufstnz_br_cnt) * sizeof(int_t)
+    //            +CEILING( nsupers, grid->nprow ) * sizeof(long int)
+    //            +CEILING( nsupers, grid->nprow ) * sizeof(long int)
+    //            )/1e6;
+
+    //printf("(%d) CUDA buffer size, L= %lf MB, U= %lf MB\n",iam,mygpumem_L, mygpumem_U);
+
+    //mygpumem_L_nv=(h_nfrecv[1] * sizeof(int)*7
+    //              +3*CEILING(nsupers, grid->nprow) * sizeof(int)
+    //              + (nfrecvmod+1) * sizeof(int)
+    //              + (nfrecvx+1) * sizeof(int)
+    //              +CEILING( nsupers, grid->npcol) * sizeof(int) )/1e6;
+    //mygpumem_U_nv=(h_nfrecv_u[1]*3*sizeof(int)
+    //              + h_nfrecv_u[1]*3*sizeof(int)
+    //              +(nbrecvmod+1) * sizeof(int)
+    //               +(nbrecvx+1) * sizeof(int)
+    //              +CEILING(nsupers, grid->nprow) * sizeof(int)
+    //              + 3 * sizeof(int))/1e6;
+    //printf("(%d) NVSHMEM buffer size, L= %lf MB, U= %lf MB\n",iam,mygpumem_L_nv, mygpumem_U_nv);
+    //fflush(stdout);
+
+
+
+
+
 
 #endif  
 

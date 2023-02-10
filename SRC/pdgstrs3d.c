@@ -144,6 +144,24 @@ int_t trs_B_init3d_newsolve(int_t nsupers, double* x, int nrhs, dLUstruct_t * LU
 }
 
 
+int* mystatus, *mystatusmod;
+int* mystatus_u, *mystatusmod_u;
+int *d_status, *d_statusmod;
+int *flag_bc_q, *flag_rd_q;
+int* my_flag_bc, *my_flag_rd;
+int* d_mynum,*d_mymaskstart,*d_mymasklength;
+int* d_mynum_u,*d_mymaskstart_u,*d_mymasklength_u;
+double *ready_x, *ready_lsum;
+int*d_nfrecv, *h_nfrecv, *d_colnum;
+int*d_nfrecv_u, *h_nfrecv_u, *d_colnum_u;
+int* d_nfrecvmod, *h_nfrecvmod, *d_colnummod;
+int* d_nfrecvmod_u, *h_nfrecvmod_u, *d_colnummod_u;
+int* d_mynummod,*d_mymaskstartmod,*d_mymasklengthmod;
+int* d_mynummod_u,*d_mymaskstartmod_u,*d_mymasklengthmod_u;
+int *h_recv_cnt, *d_recv_cnt, *d_msgnum;
+int *h_recv_cnt_u, *d_recv_cnt_u, *d_msgnum_u;
+int *d_flag_mod;
+
 
 int_t trs_compute_communication_structure(superlu_dist_options_t *options, int_t n, dLUstruct_t * LUstruct,
                            dScalePermstruct_t * ScalePermstruct,
@@ -324,6 +342,19 @@ int_t trs_compute_communication_structure(superlu_dist_options_t *options, int_t
 		C_BcTree_Nullify(&LBtree_ptr[lk]);
 	}
 
+    if ( !(mystatus = (int*)SUPERLU_MALLOC(kc * sizeof(int))) )
+        ABORT("Malloc fails for mystatus[].");
+    if ( !(h_nfrecv = (int*)SUPERLU_MALLOC( 3* sizeof(int))) )
+        ABORT("Malloc fails for h_nfrecv[].");
+    if ( !(h_nfrecvmod = (int*)SUPERLU_MALLOC( 4 * sizeof(int))) )
+        ABORT("Malloc fails for h_nfrecvmod[].");
+    h_nfrecvmod[3]=0;
+    //printf("(%d)k=%d\n",iam,k);
+	for (int i=0;i<kc;i++){
+        mystatus[i]=1;
+	}
+
+
 	for (int_t lk = 0; lk < kc; ++lk) { /* for each local block column ... */
 		jb = mycol+lk*grid->npcol;  /* not sure */
 		if(jb<nsupers){
@@ -387,11 +418,16 @@ int_t trs_compute_communication_structure(superlu_dist_options_t *options, int_t
                         for (int_t ii=0;ii<rank_cnt;ii++)   // use global ranks rather than local ranks
                             ranks[ii] = PNUM( ranks[ii], pc, grid );
 
-                        msgsize = SuperSize( jb );
-
-                        C_BcTree_Create(&LBtree_ptr[lk], grid->comm, ranks, rank_cnt, msgsize, 'd');
+                        int needrecv=0;
+                        C_BcTree_Create_nv(&LBtree_ptr[lk], grid->comm, ranks, rank_cnt, msgsize, 'd',&needrecv);
+                        //C_BcTree_Create(&LBtree_ptr[ljb], grid->comm, ranks, rank_cnt, msgsize, 'd');
+                        //printf("(%d) HOST create:ljb=%d,msg=%d,needrecv=%d\n",iam,ljb,mysendmsg_num,needrecv);
+                        if (needrecv==1) {
+                            mystatus[lk]=0;
+                            //printf("(%d) Col %d need one msg %d\n",iam, ljb,mystatus[ljb]);
+                            //fflush(stdout);
+                        }
                         LBtree_ptr[lk].tag_=BC_L;
-
 
                         // printf("iam %5d btree rank_cnt %5d \n",iam,rank_cnt);
                         // fflush(stdout);
@@ -415,7 +451,16 @@ int_t trs_compute_communication_structure(superlu_dist_options_t *options, int_t
 	for (int_t lk = 0; lk <kr ; ++lk) {
 		C_RdTree_Nullify(&LRtree_ptr[lk]);
 	}
+    if ( !(mystatusmod = (int*)SUPERLU_MALLOC(2*kr * sizeof(int))) )
+        ABORT("Malloc fails for mystatusmod[].");
+	if ( !(h_recv_cnt = (int*)SUPERLU_MALLOC(kr * sizeof(int))) )
+        ABORT("Malloc fails for mystatusmod[].");
 
+	int nfrecvmod=0;
+	for (int i=0;i<kr;i++){
+        h_recv_cnt[i]=0;
+	}
+	for (int i=0;i<2*kr;i++) mystatusmod[i]=1;
 
 	for (int_t lk=0;lk<kr;++lk){
 		ib = myrow+lk*grid->nprow;  /* not sure */
@@ -476,7 +521,18 @@ int_t trs_compute_communication_structure(superlu_dist_options_t *options, int_t
                         for (int_t ii=0;ii<rank_cnt;ii++)   // use global ranks rather than local ranks
                             ranks[ii] = PNUM( pr, ranks[ii], grid );
                         msgsize = SuperSize( ib );
-                        C_RdTree_Create(&LRtree_ptr[lk], grid->comm, ranks, rank_cnt, msgsize, 'd');
+                        // C_RdTree_Create(&LRtree_ptr[lk], grid->comm, ranks, rank_cnt, msgsize, 'd');
+
+                        int needrecv=0;
+                        C_BcTree_Create_nv(&LBtree_ptr[lk], grid->comm, ranks, rank_cnt, msgsize, 'd',&needrecv);
+                        //C_BcTree_Create(&LBtree_ptr[ljb], grid->comm, ranks, rank_cnt, msgsize, 'd');
+                        //printf("(%d) HOST create:ljb=%d,msg=%d,needrecv=%d\n",iam,ljb,mysendmsg_num,needrecv);
+                        if (needrecv==1) {
+                            mystatus[lk]=0;
+                            //printf("(%d) Col %d need one msg %d\n",iam, ljb,mystatus[ljb]);
+                            //fflush(stdout);
+                        }
+
                         LRtree_ptr[lk].tag_=RD_L;
                     }
                 }
@@ -583,7 +639,16 @@ int_t trs_compute_communication_structure(superlu_dist_options_t *options, int_t
 	for (int_t lk = 0; lk <kc ; ++lk) {
 		C_BcTree_Nullify(&UBtree_ptr[lk]);
 	}
+	if ( !(mystatus_u = (int*)SUPERLU_MALLOC(kc * sizeof(int))) )
+        ABORT("Malloc fails for mystatus_u[].");
+    if ( !(h_nfrecv_u = (int*)SUPERLU_MALLOC( 3* sizeof(int))) )
+        ABORT("Malloc fails for h_nfrecv_u[].");
+    if ( !(h_nfrecvmod_u = (int*)SUPERLU_MALLOC( 3* sizeof(int))) )
+        ABORT("Malloc fails for h_nfrecvmod_u[].");
 
+	for (int i=0;i<kc;i++){
+		mystatus_u[i]=1;
+	}
 
 
 
@@ -664,7 +729,15 @@ int_t trs_compute_communication_structure(superlu_dist_options_t *options, int_t
                         for (int_t ii=0;ii<rank_cnt;ii++)   // use global ranks rather than local ranks
                             ranks[ii] = PNUM( ranks[ii], pc, grid );
                         msgsize = SuperSize( jb );
-                        C_BcTree_Create(&UBtree_ptr[lk], grid->comm, ranks, rank_cnt, msgsize, 'd');
+                        // C_BcTree_Create(&UBtree_ptr[lk], grid->comm, ranks, rank_cnt, msgsize, 'd');
+                        
+                        int needrecv=0;
+                        C_BcTree_Create_nv(&UBtree_ptr[lk], grid->comm, ranks, rank_cnt, msgsize, 'd',&needrecv);
+                        //C_BcTree_Create(&UBtree_ptr[ljb], grid->comm, ranks, rank_cnt, msgsize, 'd');
+                        if (needrecv==1) {
+                            mystatus_u[lk]=0;
+                            //printf("(%d) Col %d need one msg %d\n",iam, ljb,mystatus[ljb]);
+                        }                        
                         UBtree_ptr[lk].tag_=BC_U;
                     }
                 }
@@ -685,6 +758,17 @@ int_t trs_compute_communication_structure(superlu_dist_options_t *options, int_t
 	for (int_t lk = 0; lk <kr ; ++lk) {
 		C_RdTree_Nullify(&URtree_ptr[lk]);
 	}
+	if ( !(mystatusmod_u = (int*)SUPERLU_MALLOC(2*kr * sizeof(int))) )
+        ABORT("Malloc fails for mystatusmod_u[].");
+    if ( !(h_recv_cnt_u = (int*)SUPERLU_MALLOC(kr * sizeof(int))) )
+        ABORT("Malloc fails for h_recv_cnt_u[].");
+
+    int nbrecvmod=0;
+	for (int i=0;i<kr;i++){
+        h_recv_cnt_u[i]=0;
+	}
+	for (int i=0;i<2*kr;i++) mystatusmod_u[i]=1;
+
 
 	for (int_t lk=0;lk<kr;++lk){
 		ib = myrow+lk*grid->nprow;  /* not sure */
@@ -747,7 +831,21 @@ int_t trs_compute_communication_structure(superlu_dist_options_t *options, int_t
                         for (int_t ii=0;ii<rank_cnt;ii++)   // use global ranks rather than local ranks
                             ranks[ii] = PNUM( pr, ranks[ii], grid );
                         msgsize = SuperSize( ib );
-                        C_RdTree_Create(&URtree_ptr[lk], grid->comm, ranks, rank_cnt, msgsize, 'd');
+                        // C_RdTree_Create(&URtree_ptr[lk], grid->comm, ranks, rank_cnt, msgsize, 'd');
+
+                        int needrecvrd=0;
+                        int needsendrd=0;
+                        C_RdTree_Create_nv(&URtree_ptr[lk], grid->comm, ranks, rank_cnt, msgsize, 'd', &needrecvrd,&needsendrd);
+                        //C_RdTree_Create(&URtree_ptr[lib], grid->comm, ranks, rank_cnt, msgsize, 'd');
+                        if (needrecvrd!=0) {
+                            mystatusmod_u[lk*2]=0;
+                            mystatusmod_u[lk*2+1]=0;
+                            h_recv_cnt_u[lk]=needrecvrd;
+                            //printf("(%d) on CPU, lib=%d, cnt=%d\n",iam,lib,LRtree_ptr[lib].destCnt_);
+                            nbrecvmod+=needrecvrd;
+                        }
+
+
                         URtree_ptr[lk].tag_=RD_U;
                     }
                 }

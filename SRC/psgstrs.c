@@ -210,9 +210,9 @@ psReDistribute_B_to_X(float *B, int_t m_loc, int nrhs, int_t ldb,
 #endif
 	{
 		// t = SuperLU_timer_();
-#ifdef _OPENMP
-#pragma	omp	taskloop private (i,l,irow,k,j,knsupc) untied
-#endif
+//#ifdef _OPENMP
+//#pragma	omp	taskloop private (i,l,irow,k,j,knsupc) untied
+//#endif
 		for (i = 0; i < m_loc; ++i) {
 			irow = perm_c[perm_r[i+fst_row]]; /* Row number in Pc*Pr*B */
 
@@ -465,9 +465,9 @@ psReDistribute_X_to_B(int_t n, float *B, int_t m_loc, int_t ldb, int_t fst_row,
 #endif
 	{
 		// t = SuperLU_timer_();
-#ifdef _OPENMP
-#pragma	omp	taskloop private (k,knsupc,lk,irow,l,i,j) untied
-#endif
+//#ifdef _OPENMP
+//#pragma	omp	taskloop private (k,knsupc,lk,irow,l,i,j) untied
+//#endif
 		for (k = 0; k < nsupers; k++) {
 		knsupc = SuperSize( k );
 		lk = LBi( k, grid ); /* Local block number */
@@ -1410,9 +1410,9 @@ if(procs==1){
 #endif
 	    {
 
-#ifdef _OPENMP
-#pragma	omp taskloop private (k,ii,lk,thread_id) num_tasks(num_thread*8) nogroup
-#endif
+//#ifdef _OPENMP
+//#pragma	omp taskloop private (k,ii,lk,thread_id) num_tasks(num_thread*8) nogroup
+//#endif
 		for (jj=0;jj<nleaf;jj++){
 		    k=leafsups[jj];
 
@@ -1924,9 +1924,9 @@ if(procs==1){
 #pragma omp master
 #endif
 	    {
-#ifdef _OPENMP
-#pragma	omp taskloop firstprivate (nrhs,beta,alpha,x,rtemp,ldalsum) private (ii,jj,k,knsupc,lk,luptr,lsub,nsupr,lusup,t1,t2,Uinv,i,lib,rtemp_loc,nroot_send_tmp,thread_id) nogroup
-#endif
+//#ifdef _OPENMP
+//#pragma	omp taskloop firstprivate (nrhs,beta,alpha,x,rtemp,ldalsum) private (ii,jj,k,knsupc,lk,luptr,lsub,nsupr,lusup,t1,t2,Uinv,i,lib,rtemp_loc,nroot_send_tmp,thread_id) nogroup
+//#endif
 		for (jj=0;jj<nroot;jj++){
 			k=rootsups[jj];
 #if ( PROFlevel>=1 )
@@ -2016,9 +2016,9 @@ if(procs==1){
 #pragma omp master
 #endif
 	    {
-#ifdef _OPENMP
-#pragma	omp taskloop private (ii,jj,k,lk,thread_id) nogroup
-#endif
+//#ifdef _OPENMP
+//#pragma	omp taskloop private (ii,jj,k,lk,thread_id) nogroup
+//#endif
 		for (jj=0;jj<nroot;jj++){
 			k=rootsups[jj];
 			lk = LBi( k, grid ); /* Local block number, row-wise. */
