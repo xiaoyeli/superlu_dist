@@ -95,25 +95,49 @@ typedef struct {
  */
 #define MAX_LOOKAHEADS 50
 typedef struct {
-    int_t   **Lrowind_bc_ptr; /* size ceil(NSUPERS/Pc)                 */
-    int_t *Lrowind_bc_dat;  /* size sum of sizes of Lrowind_bc_ptr[lk])    */   
-    long int *Lrowind_bc_offset;  /* size ceil(NSUPERS/Pc)                 */     
+    int_t   **Lrowind_bc_ptr; /* size ceil(NSUPERS/Pc);
+    	                         free'd in distribution routinies */
+    int_t *Lrowind_bc_dat;  /* size sum of sizes of Lrowind_bc_ptr[lk]) */
+    long int *Lrowind_bc_offset;  /* size ceil(NSUPERS/Pc)              */
     long int Lrowind_bc_cnt;
 
-    doublecomplex **Lnzval_bc_ptr;  /* size ceil(NSUPERS/Pc)                 */
+    doublecomplex **Lnzval_bc_ptr;  /* size ceil(NSUPERS/Pc);
+    	                         free'd in distribution routinies */
     doublecomplex *Lnzval_bc_dat;  /* size sum of sizes of Lnzval_bc_ptr[lk])  */   
     long int *Lnzval_bc_offset;  /* size ceil(NSUPERS/Pc)                */    
     long int Lnzval_bc_cnt;
     
-    doublecomplex **Linv_bc_ptr;  /* size ceil(NSUPERS/Pc)                 */
+    doublecomplex **Linv_bc_ptr;    /* size ceil(NSUPERS/Pc);
+    	                         free'd in distribution routinies */
     doublecomplex *Linv_bc_dat;  /* size sum of sizes of Linv_bc_ptr[lk])  */   
     long int *Linv_bc_offset;  /* size ceil(NSUPERS/Pc)              */   
     long int Linv_bc_cnt;
     
-    int_t   **Lindval_loc_bc_ptr; /* size ceil(NSUPERS/Pc)  pointers to locations in Lrowind_bc_ptr and Lnzval_bc_ptr */
-    int_t *Lindval_loc_bc_dat;  /* size sum of sizes of Lindval_loc_bc_ptr[lk]) */   
-    long int *Lindval_loc_bc_offset;  /* size ceil(NSUPERS/Pc)                  */   
-    long int Lindval_loc_bc_cnt;  
+    int_t   **Lindval_loc_bc_ptr; /* size ceil(NSUPERS/Pc);
+                                     pointers to locations in Lrowind_bc_ptr and Lnzval_bc_ptr;
+    	                             free'd in distribution routinies */
+				     
+    int_t *Lindval_loc_bc_dat;  /* size: sum of sizes of Lindval_loc_bc_ptr[lk]) */   
+    long int *Lindval_loc_bc_offset;  /* size ceil(NSUPERS/Pc)  */   
+    long int Lindval_loc_bc_cnt;
+    
+    /* for new U format -> */
+    int_t   **Ucolind_bc_ptr; /* size ceil(NSUPERS/Pc)                 */
+    int_t *Ucolind_bc_dat;  /* size: sum of sizes of Ucolind_bc_ptr[lk])    */   
+    int64_t *Ucolind_bc_offset;  /* size ceil(NSUPERS/Pc)                 */     
+    int64_t Ucolind_bc_cnt;
+
+    doublecomplex **Unzval_bc_ptr;  /* size ceil(NSUPERS/Pc)                 */
+    doublecomplex *Unzval_bc_dat;  /* size: sum of sizes of Unzval_bc_ptr[lk])  */   
+    int64_t *Unzval_bc_offset;  /* size ceil(NSUPERS/Pc)                */    
+    int64_t Unzval_bc_cnt;
+
+    int_t   **Uindval_loc_bc_ptr; /* size ceil(NSUPERS/Pc)  pointers to locations in Ucolind_bc_ptr and Unzval_bc_ptr */
+    int_t *Uindval_loc_bc_dat; /* size: sum of sizes of Uindval_loc_bc_ptr[lk]) */   
+    int64_t *Uindval_loc_bc_offset;  /* size ceil(NSUPERS/Pc)   */
+    int64_t Uindval_loc_bc_cnt;  
+    /* end for new U format <- */
+    
     int_t   *Unnz; /* number of nonzeros per block column in U*/
     int_t   **Lrowind_bc_2_lsum; /* size ceil(NSUPERS/Pc)  map indices of Lrowind_bc_ptr to indices of lsum  */
     doublecomplex **Uinv_bc_ptr;  /* size ceil(NSUPERS/Pc)     	*/
@@ -216,18 +240,37 @@ typedef struct {
     int_t nfrecvmod;
     int_t inv; /* whether the diagonal block is inverted*/
 
-    /* The following variables are used in GPU trisolve*/
 #ifdef GPU_ACC
+    /* The following variables are used in GPU trisolve */
+    
     int_t *d_Lrowind_bc_dat;     
     long int *d_Lrowind_bc_offset;      
     doublecomplex *d_Lnzval_bc_dat;     
-    long int *d_Lnzval_bc_offset;     
+    long int *d_Lnzval_bc_offset;
+    int_t *d_Ucolind_bc_dat;     
+    int64_t *d_Ucolind_bc_offset;      
+    doublecomplex *d_Unzval_bc_dat;     
+    long int *d_Unzval_bc_offset;        
+    
     doublecomplex *d_Linv_bc_dat ;     
     doublecomplex *d_Uinv_bc_dat ;     
     long int *d_Linv_bc_offset ;     
     long int *d_Uinv_bc_offset ;     
-    int_t *d_Lindval_loc_bc_dat ;     
-    long int *d_Lindval_loc_bc_offset ;     
+    int_t *d_Lindval_loc_bc_dat ;
+    int64_t *d_Lindval_loc_bc_offset ;     
+    int_t *d_Uindval_loc_bc_dat ;     
+    int64_t *d_Uindval_loc_bc_offset ;     
+    
+    //    long int *d_Lindval_loc_bc_offset ;     
+    //    int_t *d_Urbs;
+    //    int_t   *d_Ufstnz_br_dat;  
+    //    long int *d_Ufstnz_br_offset;  
+    //    doublecomplex *d_Unzval_br_dat;   
+    //    long int *d_Unzval_br_offset; 
+    //    int_t  *d_Ucb_valdat;      
+    //    long int *d_Ucb_valoffset;    
+    //    Ucb_indptr_t *d_Ucb_inddat;
+    //    long int *d_Ucb_indoffset;
 
     int_t  *d_ilsum ;
     int_t *d_xsup ;
@@ -261,8 +304,8 @@ typedef struct {
 			     (also numbers of X values to be received) */
     int   *RecvCounts;    /* Numbers of X indices to be received
 			     (also numbers of X values to be sent) */
-    doublecomplex *val_tosend;   /* X values to be sent to other processes */
-    doublecomplex *val_torecv;   /* X values to be received from other processes */
+    void  *val_tosend;   /* X values to be sent to other processes */
+    void  *val_torecv;   /* X values to be received from other processes */
     int_t TotalIndSend;   /* Total number of indices to be sent
 			     (also total number of values to be received) */
     int_t TotalValSend;   /* Total number of values to be sent.
@@ -558,9 +601,9 @@ extern void zComputeLevelsets(int , int_t , gridinfo_t *,
 		  Glu_persist_t *, zLocalLU_t *, int_t *);               
 			   
 #ifdef GPU_ACC               
+extern void pzconvertU(superlu_dist_options_t *, gridinfo_t *, zLUstruct_t *, SuperLUStat_t *, int);
 extern void zlsum_fmod_inv_gpu_wrap(int_t, int_t, int_t, int_t, doublecomplex *, doublecomplex *, int, int, int_t , int *fmod, C_Tree  *, C_Tree  *, int_t *, int_t *, int64_t *, doublecomplex *, int64_t *, doublecomplex *, int64_t *, int_t *, int64_t *, int_t *, gridinfo_t *, doublecomplex * , doublecomplex * , int_t );
-extern void zlsum_bmod_inv_gpu_wrap(superlu_dist_options_t *,
-int_t, int_t, int_t, int_t, doublecomplex *, doublecomplex *,int,int, int_t , int *bmod, C_Tree  *, C_Tree  *, int_t *, int_t *,int_t *, int64_t *, doublecomplex *, int64_t *, int_t  *, int64_t *, Ucb_indptr_t *, int64_t *, doublecomplex *, int64_t *,int_t *,gridinfo_t *);
+extern void zlsum_bmod_inv_gpu_wrap(superlu_dist_options_t *, int_t, int_t, int_t, int_t, doublecomplex *, doublecomplex *, int, int, int_t , int *bmod, C_Tree  *, C_Tree  *, int_t *, int_t *, int64_t *, doublecomplex *, int64_t *, doublecomplex *, int64_t *, int_t *, int64_t *,int_t *,gridinfo_t *);
 #endif
 
 extern void pzgsrfs(superlu_dist_options_t *, int_t,
@@ -1010,7 +1053,7 @@ extern int_t zUPanelUpdate(int_t k, int_t* factored_U, MPI_Request *,
 extern int_t zIBcastRecvLPanel(int_t k, int_t k0, int* msgcnt,
 			       MPI_Request *, MPI_Request *,
 			       int_t* Lsub_buf, doublecomplex* Lval_buf,
-			      int_t * factored, gridinfo_t *, zLUstruct_t *,
+			      int * factored, gridinfo_t *, zLUstruct_t *,
 			      SCT_t *, int tag_ub);
 extern int_t zIBcastRecvUPanel(int_t k, int_t k0, int* msgcnt, MPI_Request *,
 			       MPI_Request *, int_t* Usub_buf, doublecomplex* Uval_buf,

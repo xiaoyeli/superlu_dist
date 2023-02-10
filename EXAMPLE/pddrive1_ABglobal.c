@@ -159,8 +159,18 @@ int main(int argc, char *argv[])
     *trans = 'N';
     ldx = n;
     ldb = m;
-    dGenXtrue_dist(n, nrhs, xtrue, ldx);
-    dFillRHS_dist(trans, nrhs, xtrue, ldx, &A, b, ldb);
+
+    if ( iam==0 ) {
+        dGenXtrue_dist(n, nrhs, xtrue, ldx);
+        dFillRHS_dist(trans, nrhs, xtrue, ldx, &A, b, ldb);
+	
+        MPI_Bcast( xtrue, n*nrhs, MPI_DOUBLE, 0, grid.comm );
+        MPI_Bcast( b, m*nrhs, MPI_DOUBLE, 0, grid.comm );
+    } else {
+        MPI_Bcast( xtrue, n*nrhs, MPI_DOUBLE, 0, grid.comm );
+        MPI_Bcast( b, m*nrhs, MPI_DOUBLE, 0, grid.comm );
+    }
+    
     for (j = 0; j < nrhs; ++j)
 	for (i = 0; i < m; ++i) b1[i+j*ldb] = b[i+j*ldb];
 

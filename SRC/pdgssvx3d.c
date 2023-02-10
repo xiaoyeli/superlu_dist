@@ -1594,7 +1594,7 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 
 	} /* end if not Factored ... factor on all process layers */
 
-	if (grid3d->zscp.Iam == 0)
+	if (grid3d->zscp.Iam == 0 )
 	{ // only process layer 0
     	if(Solve3D==false){
 		if (!factored)
@@ -1604,14 +1604,10 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 				int_t TinyPivots;
 				float for_lu, total, avg, loc_max;
 				float mem_stage[3];
-				struct
-				{
-					float val;
-					int rank;
-				} local_struct, global_struct;
+				struct { float val; int rank; } local_struct, global_struct;
 
-				MPI_Reduce(&stat->TinyPivots, &TinyPivots, 1, mpi_int_t,
-						   MPI_SUM, 0, grid->comm);
+				MPI_Reduce( &stat->TinyPivots, &TinyPivots, 1, mpi_int_t,
+						   MPI_SUM, 0, grid->comm );
 				stat->TinyPivots = TinyPivots;
 
 				/*-- Compute high watermark of all stages --*/
@@ -1621,73 +1617,47 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 				   includes the memory used for storing the symbolic
 				   structure and the memory allocated for numerical
 				   factorization */
-					mem_stage[0] = (-flinfo);		/* symbfact step */
-					mem_stage[1] = (-dist_mem_use); /* distribution step */
-					loc_max = SUPERLU_MAX(mem_stage[0], mem_stage[1]);
-					if (options->RowPerm != NO)
+					mem_stage[0] = (-flinfo); /* symbfact step */
+					mem_stage[1] = (-dist_mem_use);      /* distribution step */
+					loc_max = SUPERLU_MAX( mem_stage[0], mem_stage[1]);
+					if (options->RowPerm != NO )
 						loc_max = SUPERLU_MAX(loc_max, GA_mem_use);
 				}
 				else
 				{
-					mem_stage[0] = symb_mem_usage.total + GA_mem_use;							/* symbfact step */
-					mem_stage[1] = symb_mem_usage.for_lu + dist_mem_use + num_mem_usage.for_lu; /* distribution step */
-					loc_max = SUPERLU_MAX(mem_stage[0], mem_stage[1]);
+					mem_stage[0] = symb_mem_usage.total + GA_mem_use; /* symbfact step */
+					mem_stage[1] = symb_mem_usage.for_lu + dist_mem_use + num_mem_usage.for_lu;            /* distribution step */
+					loc_max = SUPERLU_MAX(mem_stage[0], mem_stage[1] );
 				}
 
 				dQuerySpace_dist(n, LUstruct, grid, stat, &num_mem_usage);
-				mem_stage[2] = num_mem_usage.total; /* numerical factorization step */
+				mem_stage[2] = num_mem_usage.total;  /* numerical factorization step */
 
-				loc_max = SUPERLU_MAX(loc_max, mem_stage[2]); /* local max of 3 stages */
+				loc_max = SUPERLU_MAX(loc_max, mem_stage[2] ); /* local max of 3 stages */
 
 				local_struct.val = loc_max;
 				local_struct.rank = grid->iam;
-				MPI_Reduce(&local_struct, &global_struct, 1, MPI_FLOAT_INT, MPI_MAXLOC, 0, grid->comm);
+				MPI_Reduce( &local_struct, &global_struct, 1, MPI_FLOAT_INT, MPI_MAXLOC, 0, grid->comm );
 				int all_highmark_rank = global_struct.rank;
 				float all_highmark_mem = global_struct.val * 1e-6;
 
-				MPI_Reduce(&loc_max, &avg,
-						   1, MPI_FLOAT, MPI_SUM, 0, grid->comm);
-				MPI_Reduce(&num_mem_usage.for_lu, &for_lu,
-						   1, MPI_FLOAT, MPI_SUM, 0, grid->comm);
-				MPI_Reduce(&num_mem_usage.total, &total,
-						   1, MPI_FLOAT, MPI_SUM, 0, grid->comm);
+				MPI_Reduce( &loc_max, &avg,
+						   1, MPI_FLOAT, MPI_SUM, 0, grid->comm );
+				MPI_Reduce( &num_mem_usage.for_lu, &for_lu,
+						   1, MPI_FLOAT, MPI_SUM, 0, grid->comm );
+				MPI_Reduce( &num_mem_usage.total, &total,
+						   1, MPI_FLOAT, MPI_SUM, 0, grid->comm );
 
 				/*-- Compute memory usage of numerical factorization --*/
 				local_struct.val = num_mem_usage.for_lu;
 				MPI_Reduce(&local_struct, &global_struct, 1, MPI_FLOAT_INT, MPI_MAXLOC, 0, grid->comm);
 				int lu_max_rank = global_struct.rank;
 				float lu_max_mem = global_struct.val * 1e-6;
-				float max, temp;
-				MPI_Reduce(&temp, &max, 1, MPI_FLOAT, MPI_MAX, 0, grid->comm);
-				MPI_Reduce(&temp, &avg, 1, MPI_FLOAT, MPI_SUM, 0, grid->comm);
-				MPI_Allreduce(&stat->TinyPivots, &TinyPivots, 1, mpi_int_t,
-							  MPI_SUM, grid->comm);
-				stat->TinyPivots = TinyPivots;
-
-				local_struct.val = loc_max;
-				local_struct.rank = grid->iam;
-				MPI_Reduce(&local_struct, &global_struct, 1, MPI_FLOAT_INT, MPI_MAXLOC, 0, grid->comm);
-				all_highmark_rank = global_struct.rank;
-				all_highmark_mem = global_struct.val * 1e-6;
-
-				MPI_Reduce(&loc_max, &avg,
-						   1, MPI_FLOAT, MPI_SUM, 0, grid->comm);
-				MPI_Reduce(&num_mem_usage.for_lu, &for_lu,
-						   1, MPI_FLOAT, MPI_SUM, 0, grid->comm);
-				MPI_Reduce(&num_mem_usage.total, &total,
-						   1, MPI_FLOAT, MPI_SUM, 0, grid->comm);
-
-				/*-- Compute memory usage of numerical factorization --*/
-				local_struct.val = num_mem_usage.for_lu;
-				MPI_Reduce(&local_struct, &global_struct, 1, MPI_FLOAT_INT, MPI_MAXLOC, 0, grid->comm);
-				lu_max_rank = global_struct.rank;
-				lu_max_mem = global_struct.val * 1e-6;
-
+				
 				local_struct.val = stat->peak_buffer;
-				MPI_Reduce(&local_struct, &global_struct, 1, MPI_FLOAT_INT, MPI_MAXLOC, 0, grid->comm);
-				int buffer_peak_rank = global_struct.rank;
-				float buffer_peak = global_struct.val * 1e-6;
-
+				MPI_Reduce( &local_struct, &global_struct, 1, MPI_FLOAT_INT, MPI_MAXLOC, 0, grid->comm );
+	        	int buffer_peak_rank = global_struct.rank;
+	        	float buffer_peak = global_struct.val*1e-6;
 				if (iam == 0)
 				{
 					printf("\n** Memory Usage **********************************\n");

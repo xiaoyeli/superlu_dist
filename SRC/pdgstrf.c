@@ -433,7 +433,7 @@ pdgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
 #if (PROFlevel >= 1 )
     gemm_stats = (gemm_profile *) SUPERLU_MALLOC(nsupers * sizeof(gemm_profile));
     if (iam == 0) fgemm = fopen("dgemm_mnk.dat", "w");
-    int *prof_sendR = intCalloc_dist(nsupers);
+    int_t *prof_sendR = intCalloc_dist(nsupers);
 #endif
 
     stat->ops[FACT]      = 0.0;
@@ -543,9 +543,9 @@ pdgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
         recv_reqs[i][0] = recv_reqs[i][1] = MPI_REQUEST_NULL;
     }
 
-    if (!(factored = SUPERLU_MALLOC (nsupers * sizeof (int_t))))
+    if (!(factored = SUPERLU_MALLOC (nsupers * sizeof (int))))
         ABORT ("Malloc fails for factored[].");
-    if (!(factoredU = SUPERLU_MALLOC (nsupers * sizeof (int_t))))
+    if (!(factoredU = SUPERLU_MALLOC (nsupers * sizeof (int))))
         ABORT ("Malloc fails for factoredU[].");
     for (i = 0; i < nsupers; i++) factored[i] = factoredU[i] = -1;
 
@@ -805,7 +805,6 @@ pdgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
     int gpublas_nb = get_gpublas_nb(); // default 64
     int nstreams = get_num_gpu_streams (); // default 8
 
-    
     int_t buffer_size  = SUPERLU_MIN(max_row_size * max_ncols, sp_ienv_dist(8,options));
                                      //   get_max_buffer_size());
     double *dA, *dB, *dC; // GEMM matrices on device
@@ -1761,7 +1760,7 @@ pdgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
 
     pxgstrfTimer = SuperLU_timer_() - pxgstrfTimer;
 
-#if ( PRNTlevel>=2 )
+#if ( PRNTlevel>=1 )
     /* Print detailed statistics */
     /* Updating total flops */
     double allflops;

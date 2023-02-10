@@ -1438,7 +1438,7 @@ pdgstrs(superlu_dist_options_t *options, int_t n, dLUstruct_t *LUstruct,
 			  ScalePermstruct, Glu_persist, grid, SOLVEstruct);
 
 
-#if ( PRNTlevel>=1 )
+#if ( PRNTlevel>=2 )
     t = SuperLU_timer_() - t;
     if ( !iam) printf(".. B to X redistribute time\t%8.4f\n", t);
     fflush(stdout);
@@ -1529,7 +1529,7 @@ if(procs==1){
 	fflush(stdout);
 #endif
 
-#if ( PRNTlevel>=1 )
+#if ( PRNTlevel>=2 )
 	t = SuperLU_timer_() - t;
 	if ( !iam) printf(".. Setup L-solve time\t%8.4f\n", t);
 	fflush(stdout);
@@ -2373,7 +2373,7 @@ thread_id=0;
 	}  /* end CPU trisolve */
 
 	
-#if ( PRNTlevel>=1 )
+#if ( PRNTlevel>=2 )
 		t = SuperLU_timer_() - t;
 		stat->utime[SOL_TOT] += t;
 		if ( !iam ) {
@@ -2599,7 +2599,7 @@ thread_id=0;
 	fflush(stdout);
 #endif
 
-#if ( PRNTlevel>=1 )
+#if ( PRNTlevel>=2 )
 	t = SuperLU_timer_() - t;
 	if ( !iam) printf(".. Setup U-solve time\t%8.4f\n", t);
 	fflush(stdout);
@@ -2986,7 +2986,7 @@ for (i=0;i<nroot_send;i++){
 
 }
 
-#if ( PRNTlevel>=1 )
+#if ( PRNTlevel>=2 )
 		t = SuperLU_timer_() - t;
 		stat->utime[SOL_TOT] += t;
 		if ( !iam ) printf(".. U-solve time\t%8.4f\n", t);
@@ -3032,7 +3032,7 @@ for (i=0;i<nroot_send;i++){
 				ScalePermstruct, Glu_persist, grid, SOLVEstruct);
 
 
-#if ( PRNTlevel>=1 )
+#if ( PRNTlevel>=2 )
 		t = SuperLU_timer_() - t;
 		if ( !iam) printf(".. X to B redistribute time\t%8.4f\n", t);
 		t = SuperLU_timer_();

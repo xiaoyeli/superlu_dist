@@ -133,7 +133,7 @@ void superlu_gridmap3d(
     int iam;
     MPI_Comm superlu3d_comm;
 
-    if ( getenv("SUPERLU_RANKORDER") && strcmp(getenv("SUPERLU_RANKORDER"), "XY" ) )
+    if ( getenv("SUPERLU_RANKORDER") && strcmp(getenv("SUPERLU_RANKORDER"), "XY" )==0 )
     {
 	grid->rankorder = 1;  // XY-major
 

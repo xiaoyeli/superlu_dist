@@ -75,7 +75,7 @@ sCompRow_to_CompCol_dist(int_t m, int_t n, int_t nnz,
                          float *a, int_t *colind, int_t *rowptr,
                          float **at, int_t **rowind, int_t **colptr)
 {
-    register int i, j, col, relpos;
+    register int_t i, j, col, relpos;
     int_t *marker;
 
     /* Allocate storage for another copy of the matrix. */
@@ -112,7 +112,7 @@ void
 sCopy_CompCol_Matrix_dist(SuperMatrix *A, SuperMatrix *B)
 {
     NCformat *Astore, *Bstore;
-    int      ncol, nnz, i;
+    int_t     ncol, nnz, i;
 
     B->Stype = A->Stype;
     B->Dtype = A->Dtype;
@@ -132,7 +132,7 @@ sCopy_CompCol_Matrix_dist(SuperMatrix *A, SuperMatrix *B)
 void sPrint_CompCol_Matrix_dist(SuperMatrix *A)
 {
     NCformat     *Astore;
-    register int i;
+    register int_t i;
     float       *dp;
 
     printf("\nCompCol matrix: ");
@@ -156,7 +156,7 @@ void sPrint_CompCol_Matrix_dist(SuperMatrix *A)
 void sPrint_Dense_Matrix_dist(SuperMatrix *A)
 {
     DNformat     *Astore;
-    register int i;
+    register int_t i;
     float       *dp;
 
     printf("\nDense matrix: ");
@@ -358,7 +358,7 @@ void sScaleAddId_CompRowLoc_Matrix_dist(SuperMatrix *A, float c)
     float one = 1.0;
     NRformat_loc  *Astore = A->Store;
     float *aval = (float *) Astore->nzval;
-    int i, j;
+    int_t i, j;
     float temp;
 
     for (i = 0; i < Astore->m_loc; ++i) { /* Loop through each row */
