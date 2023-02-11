@@ -421,6 +421,54 @@ __global__ void simple_shift(int *target, int mype, int npes) {
 
 }
 
+// void nv_init_wrapper(int* c, char *v[], int* omp_mpi_level)
+// {
+//     int rank, nranks, ndevices;
+//     MPI_Comm mpi_comm;
+//     nvshmemx_init_attr_t attr;
+//     int mype, npes, mype_node;
+
+//     MPI_CHECK(MPI_Init(c, &v));
+//     //MPI_CHECK(MPI_Init_thread( c, &v, MPI_THREAD_MULTIPLE, omp_mpi_level));
+//     MPI_CHECK(MPI_Comm_rank(MPI_COMM_WORLD, &rank));
+//     MPI_CHECK(MPI_Comm_size(MPI_COMM_WORLD, &nranks));
+
+
+//     mpi_comm = MPI_COMM_WORLD;
+//     attr.mpi_comm = &mpi_comm;
+//     NVSHMEM_CHECK(nvshmemx_init_attr (NVSHMEMX_INIT_WITH_MPI_COMM, &attr));
+//     mype = nvshmem_my_pe();
+//     npes = nvshmem_n_pes();
+//     mype_node = nvshmem_team_my_pe(NVSHMEMX_TEAM_NODE);
+//     CUDA_CHECK(cudaSetDevice(mype_node));
+
+//     char name[MPI_MAX_PROCESSOR_NAME];
+//     int resultlength;
+//     MPI_CHECK(MPI_Get_processor_name(name, &resultlength));
+//     int get_cur_dev;
+//     CUDA_CHECK(cudaGetDeviceCount(&ndevices));
+//     CUDA_CHECK(cudaGetDevice(&get_cur_dev));
+
+//     cudaDeviceProp prop;
+//     //CUDA_CHECK(cudaGetDeviceProperties(&prop, rank%ndevices));
+//     CUDA_CHECK(cudaGetDeviceProperties(&prop, mype_node));
+//     //int status=nvshmemx_init_status();
+//     printf("** MPI %d/%d, NVSHMEM %d/%d, mype_node=%d, device name: %s bus id: %d, "
+//            "ndevices=%d,cur=%d, node=%s **\n",
+//            rank,nranks,mype,npes,mype_node, prop.name, prop.pciBusID,
+//            ndevices,get_cur_dev,name);
+//     fflush(stdout);
+
+
+//     //int *target;
+//     //target = (int *)nvshmem_malloc(sizeof(int)*256);
+//     //printf("(%d) nvshmem malloc target success\n",mype);
+//     //fflush(stdout);
+//     //simple_shift<<<1, 256>>>(target, mype, npes);
+//     //CUDA_CHECK(cudaDeviceSynchronize());
+
+// }
+
 void nv_init_wrapper( MPI_Comm mpi_comm)
 {
     int rank, nranks, ndevices;
@@ -470,8 +518,7 @@ void nv_init_wrapper( MPI_Comm mpi_comm)
 }
 
 void prepare_multiGPU_buffers(int flag_bc_size,int flag_rd_size,int ready_x_size,int ready_lsum_size,int my_flag_bc_size,int my_flag_rd_size){
-    int iam;
-    MPI_CHECK(MPI_Comm_rank(MPI_COMM_WORLD, &iam)); // TODO: change the communicator!
+
     flag_bc_q = (int *)nvshmem_malloc( flag_bc_size * sizeof(int)); // for sender
     flag_rd_q = (int *)nvshmem_malloc( flag_rd_size * sizeof(int)); // for sender
     ready_x = (double *)nvshmem_malloc( ready_x_size * sizeof(double)); // for receiver
@@ -479,6 +526,9 @@ void prepare_multiGPU_buffers(int flag_bc_size,int flag_rd_size,int ready_x_size
     my_flag_bc = (int *) nvshmem_malloc ( my_flag_bc_size * sizeof(int)); // for sender
     my_flag_rd = (int *) nvshmem_malloc ( my_flag_rd_size * sizeof(int)); // for sender
 
+
+	// int iam;
+    // MPI_CHECK(MPI_Comm_rank(MPI_COMM_WORLD, &iam)); 
     //printf("(%d) in prepare_multiGPU_buffers:\n "
     //       "flag_bc_size=%d int, ready_x=%d double, "
     //       "flag_rd_size=%d int, ready_lsum=%d double, "
@@ -1980,58 +2030,8 @@ if (nlb > 0) {
  
 		 // printf("nimbgood \n");
  
- }else if(bid<nbcol_loc+nblock_ex){  //the next nblock_ex blocks handle all reduction communication
-	 
-	 int_t bid1 = bid-nbcol_loc;
-	 
-	 iam = grid->iam;
-	 mycol = MYCOL( iam, grid );
-	 myrow = MYROW( iam, grid );	
-	 
-	 lib = bid1*block_size+tid; // the local numbering of my block row
-	 k = myrow+lib*grid->nprow;  
-	 knsupc = SuperSize( k );
-	 il = LSUM_BLK( lk );
-	 
-	
-	 if(lib>=CEILING(nsupers, grid->nprow)){
-		return;
-	 }
-	 if(LRtree_ptr[lib].empty_==YES){
-		 return;
-	 }
-
-	 cnt = LRtree_ptr[lib].destCnt_;
-	 
-	 
-	//YL: wait for the one or two coming messages to complete using NVSHMEM, the received data is in recvbuf_RD_gpu[maxrecvsz*lib*2]
-	 
-	 for (ii = 0; ii < cnt; ++ii){
-		/* the following is commented as recvbuf_RD_gpu is not what Nan uses */
-		#if 0
-		RHS_ITERATE(j) {
-			 for (i = 0; i < knsupc; ++i)
-				 temp=atomicAdd(&lsum[il+i + j*knsupc], recvbuf_RD_gpu[maxrecvsz*lib*2+ii*maxrecvsz + i + j*knsupc]  );
-		 }
-		 #endif
-		 fmod_tmp=atomicSub(&fmod[lib*aln_i],1);
-	 }
-
-	 do{
-		 tmp=fmod[lib*aln_i];
-		 __threadfence();			
-	 }while(tmp>0);	
-	 
-	 
-	 //YL: this thread forwards the lsum subvector using NVSHMEM
-	 if(LRtree_ptr[lib].myRoot_ != LRtree_ptr[lib].myRank_){
-		 cnt=LRtree_ptr[lib].msgSize_;
-		 C_RdTree_forwardMessageSimple_Device(&LRtree_ptr[lib],&lsum[il - LSUM_H ],cnt*nrhs+LSUM_H);		
-	 }
  }
  
-		 
-	 
  } /* dlsum_fmod_inv_gpu_mrhs */
  
  
@@ -2094,10 +2094,10 @@ int mycol;
 int_t lk, k, knsupc;
 
 int mype, npes, ndevices;
+int nblock_ex=0;
 
 if(procs==1){
     double *recvbuf_BC_gpu, *recvbuf_RD_gpu;
-	int nblock_ex=0;
 	dim3 dimBlock(nthread_x, nthread_y);
 	dlsum_fmod_inv_gpu_mrhs<<< nbcol_loc+nblock_ex, dimBlock >>>(nbcol_loc,nblock_ex,lsum,x,nrhs,maxsup,nsupers,fmod,LBtree_ptr,LRtree_ptr,ilsum,Lrowind_bc_dat,Lrowind_bc_offset,Lnzval_bc_dat,Lnzval_bc_offset,Linv_bc_dat,Linv_bc_offset,Lindval_loc_bc_dat,Lindval_loc_bc_offset, xsup,bcols_masked, grid,recvbuf_BC_gpu,recvbuf_RD_gpu,maxrecvsz);
 }else{

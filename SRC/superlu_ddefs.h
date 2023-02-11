@@ -552,7 +552,7 @@ extern void dDestroy_A3d_gathered_on_2d(dSOLVEstruct_t *, gridinfo3d_t *);
 extern int_t pdgstrs_init(int_t, int_t, int_t, int_t,
                           int_t [], int_t [], gridinfo_t *grid,
 	                  Glu_persist_t *, dSOLVEstruct_t *);
-extern int_t pdgstrs_init_device_lsum_x(int_t , int_t , int_t , gridinfo_t *,
+extern int_t pdgstrs_init_device_lsum_x(superlu_dist_options_t *, int_t , int_t , int_t , gridinfo_t *,
 	     dLUstruct_t *, dSOLVEstruct_t *, int*);    
 extern int_t pdgstrs_delete_device_lsum_x(dSOLVEstruct_t *);                           
 extern void pxgstrs_finalize(pxgstrs_comm_t *);
@@ -989,6 +989,7 @@ extern void dGenCSRLblocks(int, int_t, gridinfo_t*,
 #ifdef GPU_SOLVE
 extern void create_nv_buffer(int* , int*, int* , int* );
 extern void nv_init_wrapper(MPI_Comm);
+// extern void nv_init_wrapper(int* c, char *v[], int* omp_mpi_level);
 extern void prepare_multiGPU_buffers(int,int,int,int,int,int);
 #endif
 /* BLAS */

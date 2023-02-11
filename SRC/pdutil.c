@@ -748,20 +748,25 @@ pdgstrs_init(int_t n, int_t m_loc, int_t nrhs, int_t fst_row,
 
 
 int_t
-pdgstrs_init_device_lsum_x(int_t n, int_t m_loc, int_t nrhs, gridinfo_t *grid,
+pdgstrs_init_device_lsum_x(superlu_dist_options_t *options, int_t n, int_t m_loc, int_t nrhs, gridinfo_t *grid,
 	     dLUstruct_t *LUstruct, dSOLVEstruct_t *SOLVEstruct, int* supernodeMask)
 {
 #if ( defined(GPU_ACC) && defined(GPU_SOLVE) )
     double zero = 0.0;
+    int  nfrecvmod = 0; /* Count of total modifications to be recv'd. */
+    int  nbrecvmod = 0; /* Count of total modifications to be recv'd. */
     int_t i, gbi, k, l, gb;
     int_t irow, q, knsupc, nsupers, *xsup, *supno;
     int   iam, p, pkk, procs;
     int_t Pr = grid->nprow;
+    int_t Pc = grid->npcol;
     Glu_persist_t *Glu_persist = LUstruct->Glu_persist;
     int_t ldalsum = LUstruct->Llu->ldalsum;
     int_t* ilsum = LUstruct->Llu->ilsum;
     int *frecv, *brecv;
-    
+    int_t  *Urbs = LUstruct->Llu->Urbs; /* Number of row blocks in each block column of U. */
+    Ucb_indptr_t **Ucb_indptr = LUstruct->Llu->Ucb_indptr;/* Vertical linked list pointing to Uindex[] */    
+
     procs = grid->nprow * grid->npcol;
     iam = grid->iam;
     int_t myrow = MYROW (iam, grid);
@@ -772,6 +777,7 @@ pdgstrs_init_device_lsum_x(int_t n, int_t m_loc, int_t nrhs, gridinfo_t *grid,
 
     /* Allocate working storage. */
     int_t nlb = CEILING (nsupers, Pr);    /* Number of local block rows. */
+    int_t nc = CEILING (nsupers, Pc);    /* Number of local block cols. */
     int_t sizelsum = (((size_t)ldalsum)*nrhs + nlb*LSUM_H);
     checkGPU(gpuMalloc( (void**)&(SOLVEstruct->d_lsum), sizelsum * sizeof(double)));
     checkGPU(gpuMalloc( (void**)&(SOLVEstruct->d_x), (ldalsum * nrhs + nlb * XK_H) * sizeof(double)));
@@ -799,14 +805,17 @@ pdgstrs_init_device_lsum_x(int_t n, int_t m_loc, int_t nrhs, gridinfo_t *grid,
     SUPERLU_FREE(lsum);
 
     int* fmod = getfmod_newsolve(nlb, nsupers, supernodeMask, LUstruct, grid);
+    int  nfrecvx = getNfrecvx_newsolve(nsupers, supernodeMask, LUstruct, grid);
     if ( !(frecv = int32Calloc_dist(nlb)) )
 	ABORT("Calloc fails for frecv[].");
     C_Tree  *LRtree_ptr = LUstruct->Llu->LRtree_ptr;
-	for (int_t lk=0;lk<nlb;++lk){
+	nfrecvmod=0;
+    for (int_t lk=0;lk<nlb;++lk){
 		if(LRtree_ptr[lk].empty_==NO){
             gb = myrow+lk*grid->nprow;  /* not sure */
             if (supernodeMask[gb]==1){
                 frecv[lk] = LRtree_ptr[lk].destCnt_;
+                nfrecvmod += frecv[lk];
             }
 		}
 	}
@@ -818,15 +827,19 @@ pdgstrs_init_device_lsum_x(int_t n, int_t m_loc, int_t nrhs, gridinfo_t *grid,
 	checkGPU(gpuMemcpy(SOLVEstruct->d_fmod_save, fmod, nlb * sizeof(int), gpuMemcpyHostToDevice));
     SUPERLU_FREE(fmod);
     SUPERLU_FREE(frecv);
+    
 
 
     int* bmod=  getBmod3d_newsolve(nlb, nsupers, supernodeMask, LUstruct, grid);
+    int nbrecvx= getNbrecvX_newsolve(nsupers, supernodeMask, Urbs, Ucb_indptr, grid);
     if ( !(brecv = int32Calloc_dist(nlb)) )
         ABORT("Calloc fails for brecv[].");	
     C_Tree  *URtree_ptr = LUstruct->Llu->URtree_ptr;
+    nbrecvmod=0;
     for (int_t lk=0;lk<nlb;++lk){
 		if(URtree_ptr[lk].empty_==NO){
 			brecv[lk] = URtree_ptr[lk].destCnt_;
+            nbrecvmod+=brecv[lk];
 		}
 	}
 	for (i = 0; i < nlb; ++i) bmod[i] += brecv[i];
@@ -851,35 +864,55 @@ pdgstrs_init_device_lsum_x(int_t n, int_t m_loc, int_t nrhs, gridinfo_t *grid,
 	// }
 
 
-
-	int maxrecvsz = sp_ienv_dist(3, options)* nrhs + SUPERLU_MAX( XK_H, LSUM_H );
-    int flag_bc_size = RDMA_FLAG_SIZE * (k+1);
-    int flag_rd_size = RDMA_FLAG_SIZE * nlb * 2;
-    int ready_x_size = maxrecvsz*CEILING( nsupers, grid->npcol);
-    int ready_lsum_size = 2*maxrecvsz*CEILING( nsupers, grid->nprow);
+	printf("dfdfdfd22d \n");
+	fflush(stdout);
+    /* nvshmem related. */
+    int flag_bc_size = RDMA_FLAG_SIZE * (nc+1);
+    int flag_rd_size = RDMA_FLAG_SIZE * nlb * 2;    
     int my_flag_bc_size = RDMA_FLAG_SIZE * (CEILING( nsupers, grid->npcol)+1);
     int my_flag_rd_size = RDMA_FLAG_SIZE * nlb * 2;
-    //printf("(%d) in pddistribute:\n "
-    //   "flag_bc_size=%d int, ready_x=%d double, "
-    //   "flag_rd_size=%d int, ready_lsum=%d double, "
-    //   "int=%d B, double=%d B\n",
-    //   iam,
-    //   flag_bc_size, ready_x_size,
-    //   flag_rd_size , ready_lsum_size,
-    //   sizeof(int), sizeof(double) );
-    //fflush(stdout);
-    prepare_multiGPU_buffers(flag_bc_size,flag_rd_size,ready_x_size,ready_lsum_size,my_flag_bc_size,my_flag_rd_size);
+    int maxrecvsz = sp_ienv_dist(3, options)* nrhs + SUPERLU_MAX( XK_H, LSUM_H );
+    int ready_x_size = maxrecvsz*CEILING( nsupers, grid->npcol);
+    int ready_lsum_size = 2*maxrecvsz*CEILING( nsupers, grid->nprow);
+    // prepare_multiGPU_buffers(flag_bc_size,flag_rd_size,ready_x_size,ready_lsum_size,my_flag_bc_size,my_flag_rd_size);
+    
+    flag_bc_q = (int *)nvshmem_malloc( flag_bc_size * sizeof(int)); // for sender
+
+    	printf("1111 \n");
+	fflush(stdout);
+
+    flag_rd_q = (int *)nvshmem_malloc( flag_rd_size * sizeof(int)); // for sender
+    	printf("2222 \n");
+	fflush(stdout);    
+    ready_x = (double *)nvshmem_malloc( ready_x_size * sizeof(double)); // for receiver
+    	printf("3333 \n");
+	fflush(stdout);      
+    ready_lsum = (double *)nvshmem_malloc( ready_lsum_size * sizeof(double)); // for receiver
+    	printf("4444 \n");
+	fflush(stdout);      
+    my_flag_bc = (int *) nvshmem_malloc ( my_flag_bc_size * sizeof(int)); // for sender
+    	printf("4444 \n");
+	fflush(stdout);      
+    my_flag_rd = (int *) nvshmem_malloc ( my_flag_rd_size * sizeof(int)); // for sender
+    
+    	printf("dfdfdeeeeeefd22d \n");
+	fflush(stdout);
+    
+    checkGPU(gpuMemset(my_flag_bc, 0, RDMA_FLAG_SIZE * (CEILING( nsupers, grid->npcol)+1)  * sizeof(int)));
+    	printf("1111 \n");
+	fflush(stdout);
+    checkGPU(gpuMemset(my_flag_rd, 0, RDMA_FLAG_SIZE * nlb * 2 * sizeof(int)));
+    	printf("2222 \n");
+	fflush(stdout);
+    checkGPU(gpuMemset(ready_x, 0, maxrecvsz*CEILING( nsupers, grid->npcol) * sizeof(double)));
+    	printf("3333 \n");
+	fflush(stdout);    
+    checkGPU(gpuMemset(ready_lsum, 0, 2*maxrecvsz*CEILING( nsupers, grid->nprow) * sizeof(double)));
+
+	printf("dfdfdfd \n");
+	fflush(stdout);
 
     /////* for L solve *////
-    checkGPU(gpuMemset(my_flag_bc, 0, RDMA_FLAG_SIZE * (CEILING( nsupers, grid->npcol)+1)  * sizeof(int)));
-    checkGPU(gpuMemset(my_flag_rd, 0, RDMA_FLAG_SIZE * nlb * 2 * sizeof(int)));
-    checkGPU(gpuMemset(ready_x, 0, maxrecvsz*CEILING( nsupers, grid->npcol) * sizeof(double)));
-    checkGPU(gpuMemset(ready_lsum, 0, 2*maxrecvsz*CEILING( nsupers, grid->nprow) * sizeof(double)));
-	checkGPU(gpuMalloc( (void**)&d_status,  CEILING( nsupers, grid->npcol) * sizeof(int)));
-	checkGPU(gpuMalloc( (void**)&d_nfrecv,  3 * sizeof(int)));
-	checkGPU(gpuMemcpy(d_status, mystatus, CEILING( nsupers, grid->npcol) * sizeof(int), gpuMemcpyHostToDevice));
-
-
     int *my_colnum;
     if ( !(my_colnum = (int*)SUPERLU_MALLOC((nfrecvx+1) * sizeof(int))) )
         ABORT("Malloc fails for my_colnum[].");
@@ -911,6 +944,11 @@ pdgstrs_init_device_lsum_x(int_t n, int_t m_loc, int_t nrhs, gridinfo_t *grid,
     //printf("(%d), wait=%d,%d\n",iam,h_nfrecv[2],h_nfrecv[1]);
     //fflush(stdout);
 
+
+	checkGPU(gpuMalloc( (void**)&d_status,  CEILING( nsupers, grid->npcol) * sizeof(int)));
+	checkGPU(gpuMemcpy(d_status, mystatus, CEILING( nsupers, grid->npcol) * sizeof(int), gpuMemcpyHostToDevice));
+
+	checkGPU(gpuMalloc( (void**)&d_nfrecv,  3 * sizeof(int)));
     checkGPU(gpuMemcpy(d_nfrecv, h_nfrecv, 3 * sizeof(int), gpuMemcpyHostToDevice));
 
 	int *my_colnummod;
@@ -934,8 +972,6 @@ pdgstrs_init_device_lsum_x(int_t n, int_t m_loc, int_t nrhs, gridinfo_t *grid,
     checkGPU(gpuMalloc( (void**)&d_nfrecvmod, 4 * sizeof(int)));
 	checkGPU(gpuMemcpy(d_nfrecvmod, h_nfrecvmod, 4 * sizeof(int), gpuMemcpyHostToDevice));
 	checkGPU(gpuMalloc( (void**)&d_statusmod, 2*CEILING(nsupers, grid->nprow) * sizeof(int)));
-	checkGPU(gpuMalloc( (void**)&d_recv_cnt, CEILING(nsupers, grid->nprow) * sizeof(int)));
-	checkGPU(gpuMemcpy(d_recv_cnt, h_recv_cnt,  CEILING(nsupers, grid->nprow) * sizeof(int), gpuMemcpyHostToDevice));
 
 	checkGPU(gpuMemcpy(d_colnummod, my_colnummod,  (nfrecvmod+1) * sizeof(int), gpuMemcpyHostToDevice));
 	checkGPU(gpuMalloc( (void**)&d_mynummod, h_nfrecv[1]  * sizeof(int)));
@@ -953,7 +989,8 @@ pdgstrs_init_device_lsum_x(int_t n, int_t m_loc, int_t nrhs, gridinfo_t *grid,
     //printf("(%d) nfrecvx=%d, nfrecvmod=%d,nfsendmod=%d\n",iam,nfrecvx, nfrecvmod,h_nfrecvmod[3]);
     //fflush(stdout);
 
-
+	printf("ddww \n");
+	fflush(stdout);
 
         /////* for U solve *////
     checkGPU(gpuMalloc( (void**)&d_nfrecv_u,  3 * sizeof(int)));
@@ -1010,8 +1047,6 @@ pdgstrs_init_device_lsum_x(int_t n, int_t m_loc, int_t nrhs, gridinfo_t *grid,
     //fflush(stdout);
     checkGPU(gpuMalloc( (void**)&d_nfrecvmod_u,  3 * sizeof(int)));
     checkGPU(gpuMemcpy(d_nfrecvmod_u, h_nfrecvmod_u, 3 * sizeof(int), gpuMemcpyHostToDevice));
-    checkGPU(gpuMalloc( (void**)&d_recv_cnt_u, CEILING(nsupers, grid->nprow) * sizeof(int)));
-    checkGPU(gpuMemcpy(d_recv_cnt_u, h_recv_cnt_u,  CEILING(nsupers, grid->nprow) * sizeof(int), gpuMemcpyHostToDevice));
 
     checkGPU(gpuMemcpy(d_colnummod_u, my_colnummod_u,  (nbrecvmod+1) * sizeof(int), gpuMemcpyHostToDevice));
     checkGPU(gpuMalloc( (void**)&d_mynummod_u, h_nfrecv_u[1]  * sizeof(int)));
@@ -1064,7 +1099,7 @@ pdgstrs_init_device_lsum_x(int_t n, int_t m_loc, int_t nrhs, gridinfo_t *grid,
 
 
 
-
+    
 
 
 #endif  

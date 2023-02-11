@@ -418,6 +418,7 @@ int_t trs_compute_communication_structure(superlu_dist_options_t *options, int_t
                         for (int_t ii=0;ii<rank_cnt;ii++)   // use global ranks rather than local ranks
                             ranks[ii] = PNUM( ranks[ii], pc, grid );
 
+                        msgsize = SuperSize( jb );
                         int needrecv=0;
                         C_BcTree_Create_nv(&LBtree_ptr[lk], grid->comm, ranks, rank_cnt, msgsize, 'd',&needrecv);
                         //C_BcTree_Create(&LBtree_ptr[ljb], grid->comm, ranks, rank_cnt, msgsize, 'd');
@@ -523,16 +524,18 @@ int_t trs_compute_communication_structure(superlu_dist_options_t *options, int_t
                         msgsize = SuperSize( ib );
                         // C_RdTree_Create(&LRtree_ptr[lk], grid->comm, ranks, rank_cnt, msgsize, 'd');
 
-                        int needrecv=0;
-                        C_BcTree_Create_nv(&LBtree_ptr[lk], grid->comm, ranks, rank_cnt, msgsize, 'd',&needrecv);
-                        //C_BcTree_Create(&LBtree_ptr[ljb], grid->comm, ranks, rank_cnt, msgsize, 'd');
-                        //printf("(%d) HOST create:ljb=%d,msg=%d,needrecv=%d\n",iam,ljb,mysendmsg_num,needrecv);
-                        if (needrecv==1) {
-                            mystatus[lk]=0;
-                            //printf("(%d) Col %d need one msg %d\n",iam, ljb,mystatus[ljb]);
-                            //fflush(stdout);
+                        int needrecvrd=0;
+                        int needsendrd=0;
+                        C_RdTree_Create_nv(&LRtree_ptr[lk], grid->comm, ranks, rank_cnt, msgsize, 'd', &needrecvrd, &needsendrd);
+                        //C_RdTree_Create(&LRtree_ptr[lib], grid->comm, ranks, rank_cnt, msgsize, 'd');
+                        h_nfrecvmod[3]+=needsendrd;
+                        if (needrecvrd!=0) {
+                            mystatusmod[lk*2]=0;
+                            mystatusmod[lk*2+1]=0;
+                            h_recv_cnt[lk]=needrecvrd;
+                            //printf("(%d) on CPU, lib=%d, cnt=%d\n",iam,lib,LRtree_ptr[lib].destCnt_);
+                            nfrecvmod+=needrecvrd;
                         }
-
                         LRtree_ptr[lk].tag_=RD_L;
                     }
                 }
@@ -1311,6 +1314,14 @@ int_t trs_compute_communication_structure(superlu_dist_options_t *options, int_t
 	checkGPU(gpuMalloc( (void**)&Llu->d_Lnzval_bc_dat, (Llu->Lnzval_bc_cnt) * sizeof(double)));
 	checkGPU(gpuMalloc( (void**)&Llu->d_Linv_bc_dat, (Llu->Linv_bc_cnt) * sizeof(double)));
 	checkGPU(gpuMalloc( (void**)&Llu->d_Uinv_bc_dat, (Llu->Uinv_bc_cnt) * sizeof(double)));
+    
+    
+    /* nvshmem related*/
+	checkGPU(gpuMalloc( (void**)&d_recv_cnt, CEILING(nsupers, grid->nprow) * sizeof(int)));
+	checkGPU(gpuMemcpy(d_recv_cnt, h_recv_cnt,  CEILING(nsupers, grid->nprow) * sizeof(int), gpuMemcpyHostToDevice));
+    checkGPU(gpuMalloc( (void**)&d_recv_cnt_u, CEILING(nsupers, grid->nprow) * sizeof(int)));
+    checkGPU(gpuMemcpy(d_recv_cnt_u, h_recv_cnt_u,  CEILING(nsupers, grid->nprow) * sizeof(int), gpuMemcpyHostToDevice));
+    
     }
 #endif
 
@@ -2974,7 +2985,7 @@ if ( !(getenv("NEW3DSOLVETREECOMM") && getenv("SUPERLU_ACC_SOLVE"))){
 
 	k = CEILING( nsupers, grid->npcol);/* Number of local block columns divided by #warps per block used as number of thread blocks*/
 	knsupc = sp_ienv_dist(3, options);
-	dlsum_fmod_inv_gpu_wrap(Llu->nbcol_masked,nlb,DIM_X,DIM_Y,d_lsum,d_x,nrhs,knsupc,nsupers,d_fmod,Llu->d_LBtree_ptr,Llu->d_LRtree_ptr,Llu->d_ilsum,Llu->d_Lrowind_bc_dat, Llu->d_Lrowind_bc_offset, Llu->d_Lnzval_bc_dat, Llu->d_Lnzval_bc_offset, Llu->d_Linv_bc_dat, Llu->d_Linv_bc_offset, Llu->d_Lindval_loc_bc_dat, Llu->d_Lindval_loc_bc_offset,Llu->d_xsup,Llu->d_bcols_masked,d_grid,recvbuf_BC_gpu,recvbuf_RD_gpu,maxrecvsz);
+	// dlsum_fmod_inv_gpu_wrap(Llu->nbcol_masked,nlb,DIM_X,DIM_Y,d_lsum,d_x,nrhs,knsupc,nsupers,d_fmod,Llu->d_LBtree_ptr,Llu->d_LRtree_ptr,Llu->d_ilsum,Llu->d_Lrowind_bc_dat, Llu->d_Lrowind_bc_offset, Llu->d_Lnzval_bc_dat, Llu->d_Lnzval_bc_offset, Llu->d_Linv_bc_dat, Llu->d_Linv_bc_offset, Llu->d_Lindval_loc_bc_dat, Llu->d_Lindval_loc_bc_offset,Llu->d_xsup,Llu->d_bcols_masked,d_grid,recvbuf_BC_gpu,recvbuf_RD_gpu,maxrecvsz);
 
 	checkGPU(gpuMemcpy(x, d_x, (ldalsum * nrhs + nlb * XK_H) * sizeof(double), gpuMemcpyDeviceToHost));
 
@@ -5376,7 +5387,7 @@ if (getenv("SUPERLU_ACC_SOLVE")){  /* GPU trisolve*/
 	k = CEILING( nsupers, grid->npcol);/* Number of local block columns divided by #warps per block used as number of thread blocks*/
 	knsupc = sp_ienv_dist(3, options);
  
-	dlsum_bmod_inv_gpu_wrap(options, k,nlb,DIM_X,DIM_Y,d_lsum,d_x,nrhs,knsupc,nsupers,d_bmod,Llu->d_UBtree_ptr,Llu->d_URtree_ptr,Llu->d_ilsum,Llu->d_Ucolind_bc_dat,Llu->d_Ucolind_bc_offset,Llu->d_Unzval_bc_dat,Llu->d_Unzval_bc_offset,Llu->d_Uinv_bc_dat,Llu->d_Uinv_bc_offset,Llu->d_Uindval_loc_bc_dat,Llu->d_Uindval_loc_bc_offset,Llu->d_xsup,d_grid);
+	// dlsum_bmod_inv_gpu_wrap(options, k,nlb,DIM_X,DIM_Y,d_lsum,d_x,nrhs,knsupc,nsupers,d_bmod,Llu->d_UBtree_ptr,Llu->d_URtree_ptr,Llu->d_ilsum,Llu->d_Ucolind_bc_dat,Llu->d_Ucolind_bc_offset,Llu->d_Unzval_bc_dat,Llu->d_Unzval_bc_offset,Llu->d_Uinv_bc_dat,Llu->d_Uinv_bc_offset,Llu->d_Uindval_loc_bc_dat,Llu->d_Uindval_loc_bc_offset,Llu->d_xsup,d_grid);
 	checkGPU(gpuMemcpy(x, d_x, (ldalsum * nrhs + nlb * XK_H) * sizeof(double), gpuMemcpyDeviceToHost));
 
 

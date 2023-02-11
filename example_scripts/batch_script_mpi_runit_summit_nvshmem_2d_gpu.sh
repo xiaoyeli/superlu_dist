@@ -14,20 +14,20 @@ module load cmake/
 
 CUR_DIR=`pwd`
 FILE_DIR=$CUR_DIR/EXAMPLE
-INPUT_DIR=/ccs/home/nanding/myproject/superLU/matrix
+INPUT_DIR=$MEMBERWORK/csc289/matrix
 FILE_NAME=pddrive
 FILE=$FILE_DIR/$FILE_NAME
-CPDIR=/ccs/home/nanding/myproject/superLU/nvshmem_new_U/run_nvshmem270_cuda1103_20221212/EXAMPLE
-cp $CPDIR/pddrive $CUR_DIR/EXAMPLE/ -rfv
+# CPDIR=/ccs/home/nanding/myproject/superLU/nvshmem_new_U/run_nvshmem270_cuda1103_20221212/EXAMPLE
+# cp $CPDIR/pddrive $CUR_DIR/EXAMPLE/ -rfv
 
 export NVSHMEM_MPI_LIB_NAME=libmpi_ibm.so
 export NVSHMEM_LMPI=-lmpi_ibm
 
-nprows=(1 1 1 1 1)
-npcols=(1 2 3 6 12)  
+nprows=(2 )
+npcols=(1 )  
 #matrix=(LU_C_BN_C_2by2.bin) #s1_mat_0_253872.bin) #s1_mat_0_507744.bin Li4244.bin DG_GrapheneDisorder_8192.bin LU_C_BN_C_2by2.bin) #Li4244.bin s1_mat_0_253872.bin) 
-matrix=(s1_mat_0_253872.bin Li4244.bin) #DG_GrapheneDisorder_8192.bin LU_C_BN_C_2by2.bin) #Li4244.bin s1_mat_0_253872.bin) 
-export NVSHMEM_HOME=/ccs/home/nanding/mysoftware/nvshmem270_gdr23_cuda1102_11232022
+matrix=(s1_mat_0_126936.bin) #DG_GrapheneDisorder_8192.bin LU_C_BN_C_2by2.bin) #Li4244.bin s1_mat_0_253872.bin) 
+export NVSHMEM_HOME=/ccs/home/liuyangz/my_software/nvshmem_src_2.8.0-3/
 export LD_LIBRARY_PATH=$NVSHMEM_HOME/lib:$LD_LIBRARY_PATH
 #export NVSHMEM_BOOTSTRAP_TWO_STAGE=1
 #export NVSHMEM_BOOTSTRAP=MPI
@@ -39,7 +39,7 @@ for ((i = 0; i < ${#npcols[@]}; i++)); do
 	CORE_VAL=`expr $NCOL \* $NROW`
 	RANK_PER_RS=1
 	GPU_PER_RANK=1
-
+	export SUPERLU_NUM_GPU_STREAMS=1
 
 	PARTITION=regular
 	LICENSE=SCRATCH
@@ -57,7 +57,7 @@ for ((i = 0; i < ${#npcols[@]}; i++)); do
 
 	for GPU_PER_RANK in  1
 	do
-		for NTH in 7
+		for NTH in 1
 		do
 
 			RS_VAL=`expr $CORE_VAL / $RANK_PER_RS`
@@ -78,9 +78,9 @@ for ((i = 0; i < ${#npcols[@]}; i++)); do
     				export OMP_NUM_THREADS=$OMP_NUM_THREADS
     				mkdir -p ${MAT}_summit
 				echo "matrix: ${MAT},   ${NROW} GPUs"
-				if [[ $RS_VAL -eq 1 ]];then
-					jsrun -n $RS_VAL -a $RANK_PER_RS -c ALL_CPUS -g ALL_GPUS -brs ./put_block
-				else
+				# if [[ $RS_VAL -eq 1 ]];then
+				# 	jsrun -n $RS_VAL -a $RANK_PER_RS -c ALL_CPUS -g ALL_GPUS -brs ./put_block
+				# else
 					mya=`expr $NCOL \* $NROW`
 					if [[ $mya -le 6 ]];then
 						myc=`expr 2 \* $mya` #each nvshmem rank needs 2CPU threads
@@ -93,7 +93,7 @@ for ((i = 0; i < ${#npcols[@]}; i++)); do
 						myn=`expr $mya / 6`
 						jsrun -n${myn} -a6 -c12  -g6 $FILE  -c $NCOL -r $NROW $INPUT_DIR/$MAT |& tee ./${MAT}_summit/SLU.o_mpi_${NROW}x${NCOL}_OMP_${OMP_NUM_THREADS}_GPU_${mya}_${MYDATE}
 					fi
-				fi
+				# fi
 			done ## matrix
 		done #NTH		
 	done #GPU per RANK

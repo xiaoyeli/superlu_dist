@@ -1135,10 +1135,10 @@ pdgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 	       NOTE: the row permutation Pc*Pr is applied internally in the
   	       distribution routine. */
 	    t = SuperLU_timer_();
+		
 	    dist_mem_use = pddistribute(options, n, A, ScalePermstruct,
                                       Glu_freeable, LUstruct, grid);
 	    stat->utime[DIST] = SuperLU_timer_() - t;
-
   	    /* Deallocate storage used in symbolic factorization. */
 	    if ( Fact != SamePattern_SameRowPerm ) {
 	        iinfo = symbfact_SubFree(Glu_freeable);
@@ -1161,7 +1161,6 @@ pdgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 
 	    stat->utime[DIST] = SuperLU_timer_() - t;
 	}
-
 	/*if (!iam) printf ("\tDISTRIBUTE time  %8.2f\n", stat->utime[DIST]);*/
 
 	/* Perform numerical factorization in parallel. */
@@ -1174,7 +1173,6 @@ pdgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 	stat->utime[FACT] = SuperLU_timer_() - t;
 	// }
 	// }
-
 
 #if ( PRNTlevel>=2 )
     /* ------------------------------------------------------------
@@ -1263,7 +1261,12 @@ pdgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 // #endif
 
 #endif
-
+{
+	int* flag_bc_3q = (int *)nvshmem_malloc( 100 * sizeof(int));
+    checkGPU(gpuMemset(flag_bc_3q, 0, 100 * sizeof(int)));
+    printf("I'm good 1\n");
+    fflush(stdout);
+}
 	if ( options->PrintStat ) {
 	    int_t TinyPivots;
 	    float for_lu, total, avg, loc_max;
@@ -1380,6 +1383,14 @@ pdgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 		fflush(stdout);
             }
 	} /* end printing stats */
+
+{
+	int* flag_bc_3q = (int *)nvshmem_malloc( 100 * sizeof(int));
+    checkGPU(gpuMemset(flag_bc_3q, 0, 100 * sizeof(int)));
+    printf("I'm good 2\n");
+    fflush(stdout);
+}
+
 	if ( options->Fact != SamePattern_SameRowPerm) {
 		nsupers = Glu_persist->supno[n-1] + 1;
 		int* supernodeMask = int32Malloc_dist(nsupers);
@@ -1421,6 +1432,7 @@ pdgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 	}
 #endif
 
+
 	if ( options->DiagInv==YES && (Fact != FACTORED) ) {
 	    pdCompute_Diag_Inv(n, LUstruct, grid, stat, info);
 
@@ -1429,7 +1441,12 @@ pdgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 #ifdef GPU_ACC
 
 				pdconvertU(options, grid, LUstruct, stat, n);
-
+{
+	int* flag_bc_3q = (int *)nvshmem_malloc( 100 * sizeof(int));
+    checkGPU(gpuMemset(flag_bc_3q, 0, 100 * sizeof(int)));
+    printf("I'm good 2.5\n");
+    fflush(stdout);
+}
 				checkGPU(gpuFree(LUstruct->Llu->d_xsup));
 				checkGPU(gpuFree(LUstruct->Llu->d_bcols_masked));
 				checkGPU(gpuFree(LUstruct->Llu->d_LRtree_ptr));
@@ -1496,6 +1513,9 @@ pdgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 
 
 	}
+
+
+	
     /* ------------------------------------------------------------
        Compute the solution matrix X.
        ------------------------------------------------------------*/
@@ -1544,6 +1564,7 @@ pdgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 	    x_col += ldx;  b_col += ldb;
 	}
 
+
 	/* ------------------------------------------------------------
 	   Solve the linear system.
 	   ------------------------------------------------------------*/
@@ -1558,9 +1579,18 @@ pdgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 		int* supernodeMask = int32Malloc_dist(nsupers);
 		for(int ii=0; ii<nsupers; ii++)
 			supernodeMask[ii]=1;
-		pdgstrs_init_device_lsum_x(n, m_loc, nrhs, grid,LUstruct, SOLVEstruct,supernodeMask);
+
+
+{
+	int* flag_bc_3q = (int *)nvshmem_malloc( 100 * sizeof(int));
+    checkGPU(gpuMemset(flag_bc_3q, 0, 100 * sizeof(int)));
+    printf("I'm good 3\n");
+    fflush(stdout);
+}
+		pdgstrs_init_device_lsum_x(options, n, m_loc, nrhs, grid,LUstruct, SOLVEstruct,supernodeMask);
 		SUPERLU_FREE(supernodeMask);		 	   
 	}
+
 
     // #pragma omp parallel
     // {
@@ -1651,7 +1681,7 @@ pdgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 			int* supernodeMask = int32Malloc_dist(nsupers);
 			for(int ii=0; ii<nsupers; ii++)
 				supernodeMask[ii]=1;
-			pdgstrs_init_device_lsum_x(n, m_loc, 1, grid,LUstruct, SOLVEstruct1,supernodeMask);		 
+			pdgstrs_init_device_lsum_x(options, n, m_loc, 1, grid,LUstruct, SOLVEstruct1,supernodeMask);		 
 			SUPERLU_FREE(supernodeMask);
 	    }
 

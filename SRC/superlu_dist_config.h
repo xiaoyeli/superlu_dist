@@ -1,7 +1,7 @@
 /* superlu_dist_config.h.in */
 
 /* Enable CUDA */
-/* #undef HAVE_CUDA */
+#define HAVE_CUDA TRUE
 
 /* Enable HIP */
 /* #undef HAVE_HIP */
@@ -13,7 +13,7 @@
 /* #undef HAVE_COLAMD */
 
 /* Enable LAPACK */
-/* #undef SLU_HAVE_LAPACK */
+#define SLU_HAVE_LAPACK TRUE
 
 /* Enable CombBLAS */
 /* #undef HAVE_COMBBLAS */

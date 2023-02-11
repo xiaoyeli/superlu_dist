@@ -1880,12 +1880,12 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 		{
 		if (options->SolveInitialized == NO){
 			if (getenv("NEW3DSOLVE") && Solve3D==true){
-				pdgstrs_init_device_lsum_x(n, m_loc, nrhs, grid,LUstruct, SOLVEstruct,trf3Dpartition->supernodeMask);	
+				pdgstrs_init_device_lsum_x(options, n, m_loc, nrhs, grid,LUstruct, SOLVEstruct,trf3Dpartition->supernodeMask);	
 			}else{
 				int* supernodeMask = int32Malloc_dist(nsupers);
 				for(int ii=0; ii<nsupers; ii++)
 					supernodeMask[ii]=1;
-				pdgstrs_init_device_lsum_x(n, m_loc, nrhs, grid,LUstruct, SOLVEstruct,supernodeMask);	
+				pdgstrs_init_device_lsum_x(options, n, m_loc, nrhs, grid,LUstruct, SOLVEstruct,supernodeMask);	
 				SUPERLU_FREE(supernodeMask);
 			}
 		}
@@ -2061,7 +2061,7 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 					int* supernodeMask = int32Malloc_dist(nsupers);
 					for(int ii=0; ii<nsupers; ii++)
 						supernodeMask[ii]=1;
-					pdgstrs_init_device_lsum_x(n, m_loc, 1, grid,LUstruct, SOLVEstruct1,supernodeMask);		 
+					pdgstrs_init_device_lsum_x(options, n, m_loc, 1, grid,LUstruct, SOLVEstruct1,supernodeMask);		 
 					SUPERLU_FREE(supernodeMask);
 					}
 
