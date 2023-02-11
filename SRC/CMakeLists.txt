@@ -15,6 +15,7 @@ set(headers
     TRF3dV100/commWrapper.hpp
     TRF3dV100/superlu_summit.h
     TRF3dV100/lupanels_GPU.cuh
+    TRF3dV100/batch_block_copy.h
     ${PROJECT_SOURCE_DIR}/SRC/superlu_FortranCInterface.h
 )
 if (MSVC)
@@ -75,6 +76,7 @@ if(enable_double)
 if(TPL_ENABLE_CUDALIB)
   list(APPEND sources pdgstrs_lsum_cuda.cu)
   list(APPEND sources TRF3dV100/schurCompUpdate.cu )
+  list(APPEND sources TRF3dV100/batch_block_copy.cu)
 endif()
 # if(TPL_ENABLE_HIPLIB)
 #   list(APPEND sources pdgstrs_lsum_cuda.hip.cpp)

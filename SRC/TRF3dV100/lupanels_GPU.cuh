@@ -255,6 +255,12 @@ struct LUMarshallData
     double **dev_panel_ptrs;
     int *dev_panel_ld_array, *dev_panel_dim_array;
 
+    // Max of marshalled device data 
+    int max_panel, max_diag;
+
+    // Number of marshalled operations
+    int batchsize;
+
     // Data accumulated on the host
     std::vector<double*> host_diag_ptrs;
     std::vector<int> host_diag_ld_array, host_diag_dim_array;
@@ -263,6 +269,8 @@ struct LUMarshallData
     std::vector<int> host_panel_ld_array, host_panel_dim_array;
     
     void setBatchSize(int batch_size);
+    void setMaxDiag();
+    void setMaxPanel();
 };
 
 #define MAX_CUDA_STREAMS 64 
@@ -284,7 +292,6 @@ struct LUstructGPU_t
     
     // Magma is needed for non-uniform batched execution 
     magma_queue_t magma_queue;
-    
     LUMarshallData marshall_data;
 
     /* Sherry: Allocate an array of buffers for the diagonal blocks

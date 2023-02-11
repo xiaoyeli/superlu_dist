@@ -442,8 +442,10 @@ struct LUstruct_v100
 				  int tag_ub);
 
     // Helper routine to marshall batch LU data into the device data in A_gpu 
-    void marshallBatchedLUData(int k_st, int k_end, int_t *perm_c_supno, int &my_batch_size);
-    void marshallBatchedTRSMUData(int k_st, int k_end, int_t *perm_c_supno, int &my_batch_size);
+    void marshallBatchedLUData(int k_st, int k_end, int_t *perm_c_supno);
+    void marshallBatchedBufferCopyData(int k_st, int k_end, int_t *perm_c_supno);
+    void marshallBatchedTRSMUData(int k_st, int k_end, int_t *perm_c_supno);
+    void marshallBatchedTRSMLData(int k_st, int k_end, int_t *perm_c_supno);
     
     //
     int_t dDiagFactorPanelSolve(int_t k, int_t offset, ddiagFactBufs_t **dFBufs);
