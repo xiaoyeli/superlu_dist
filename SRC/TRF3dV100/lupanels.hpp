@@ -542,3 +542,17 @@ struct LUstruct_v100
 };
 
 cudaError_t checkCudaLocal(cudaError_t result);
+
+#define gpuErrchk(ans)                                                                                                 \
+{                                                                                                                  \
+    gpuAssert((ans), __FILE__, __LINE__);                                                                          \
+}
+
+inline void gpuAssert(cudaError_t code, const char *file, int line)
+{
+    if (code != cudaSuccess)
+    {
+        printf("GPUassert: %s(%d) %s %d\n", cudaGetErrorString(code), (int)code, file, line);
+        exit(-1);
+    }
+}

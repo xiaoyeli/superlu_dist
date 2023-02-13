@@ -22,25 +22,25 @@ LUMarshallData::LUMarshallData()
 
 LUMarshallData::~LUMarshallData()
 {
-    cudaFree(dev_diag_ptrs);
-    cudaFree(dev_panel_ptrs);
-    cudaFree(dev_diag_ld_array);
-    cudaFree(dev_diag_dim_array);
-    cudaFree(dev_info_array);
-    cudaFree(dev_panel_ld_array);
-    cudaFree(dev_panel_dim_array);
+    gpuErrchk(cudaFree(dev_diag_ptrs));
+    gpuErrchk(cudaFree(dev_panel_ptrs));
+    gpuErrchk(cudaFree(dev_diag_ld_array));
+    gpuErrchk(cudaFree(dev_diag_dim_array));
+    gpuErrchk(cudaFree(dev_info_array));
+    gpuErrchk(cudaFree(dev_panel_ld_array));
+    gpuErrchk(cudaFree(dev_panel_dim_array));
 }
 
 void LUMarshallData::setBatchSize(int batch_size)
 {
-    checkCudaLocal(cudaMalloc(&dev_diag_ptrs, batch_size * sizeof(double*)));
-    checkCudaLocal(cudaMalloc(&dev_panel_ptrs, batch_size * sizeof(double*)));
+    gpuErrchk(cudaMalloc(&dev_diag_ptrs, batch_size * sizeof(double*)));
+    gpuErrchk(cudaMalloc(&dev_panel_ptrs, batch_size * sizeof(double*)));
 
-    checkCudaLocal(cudaMalloc(&dev_diag_ld_array, batch_size * sizeof(int)));
-    checkCudaLocal(cudaMalloc(&dev_diag_dim_array, (batch_size + 1) * sizeof(int)));
-    checkCudaLocal(cudaMalloc(&dev_info_array, batch_size * sizeof(int)));
-    checkCudaLocal(cudaMalloc(&dev_panel_ld_array, batch_size * sizeof(int)));
-    checkCudaLocal(cudaMalloc(&dev_panel_dim_array, (batch_size + 1) * sizeof(int)));
+    gpuErrchk(cudaMalloc(&dev_diag_ld_array, batch_size * sizeof(int)));
+    gpuErrchk(cudaMalloc(&dev_diag_dim_array, (batch_size + 1) * sizeof(int)));
+    gpuErrchk(cudaMalloc(&dev_info_array, batch_size * sizeof(int)));
+    gpuErrchk(cudaMalloc(&dev_panel_ld_array, batch_size * sizeof(int)));
+    gpuErrchk(cudaMalloc(&dev_panel_dim_array, (batch_size + 1) * sizeof(int)));
     
     host_diag_ptrs.resize(batch_size);
     host_diag_ld_array.resize(batch_size);
@@ -768,7 +768,12 @@ int LUstruct_v100::dsparseTreeFactorBatchGPU(
         /*======= Panel Broadcast  ======*/
         dPanelBcastGPU(k, offset); // does this only if (UidxSendCounts[k] > 0)
             //donePanelSolve[k0]=1;
+    }
 
+    for (k0 = k_st; k0 < k_end; k0++)
+    {
+        k = perm_c_supno[k0];
+        offset = 0;
             /*======= Schurcomplement Update ======*/
         /* UidxSendCounts are computed in LUstruct_v100 constructor in LUpanels.cpp */
         if (UidxSendCounts[k] > 0 && LidxSendCounts[k] > 0) {

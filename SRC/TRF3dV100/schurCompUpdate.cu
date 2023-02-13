@@ -40,20 +40,20 @@ void copyToGPU(double *gpuValBasePtr, std::vector<double> &valBufferPacked,
     // allocate the memory for the packed buffers on GPU
     double *dlvalPacked;
     int_t *dlidxPacked;
-    cudaMalloc(&dlvalPacked, gpuLvalSizePacked);
-    cudaMalloc(&dlidxPacked, gpuLidxSizePacked);
+    gpuErrchk(cudaMalloc(&dlvalPacked, gpuLvalSizePacked));
+    gpuErrchk(cudaMalloc(&dlidxPacked, gpuLidxSizePacked));
     // copy the packed buffers from CPU to GPU
-    cudaMemcpy(dlvalPacked, valBufferPacked.data(), gpuLvalSizePacked, cudaMemcpyHostToDevice);
-    cudaMemcpy(dlidxPacked, valIdx.data(), gpuLidxSizePacked, cudaMemcpyHostToDevice);
+    gpuErrchk(cudaMemcpy(dlvalPacked, valBufferPacked.data(), gpuLvalSizePacked, cudaMemcpyHostToDevice));
+    gpuErrchk(cudaMemcpy(dlidxPacked, valIdx.data(), gpuLidxSizePacked, cudaMemcpyHostToDevice));
     // perform the sparse initialization on GPU call indirectCopy
     const int ThreadblockSize = 256;
     int nThreadBlocks = (nnzCount + ThreadblockSize - 1) / ThreadblockSize;
     indirectCopy<<<nThreadBlocks, ThreadblockSize>>>(
         gpuValBasePtr, dlvalPacked, dlidxPacked, nnzCount);
     // wait for it to finish and free dlvalPacked and dlidxPacked
-    cudaDeviceSynchronize();
-    cudaFree(dlvalPacked);
-    cudaFree(dlidxPacked);
+    gpuErrchk(cudaDeviceSynchronize());
+    gpuErrchk(cudaFree(dlvalPacked));
+    gpuErrchk(cudaFree(dlidxPacked));
 }
 
 // copy the panel to GPU
@@ -346,7 +346,7 @@ int_t LUstruct_v100::dSchurComplementUpdateGPU(
                 lpanel.gpuPanel, upanel.gpuPanel, dA_gpu);
         }
     }
-    checkCudaLocal(cudaStreamSynchronize(A_gpu.cuStreams[streamId]));
+    gpuErrchk(cudaStreamSynchronize(A_gpu.cuStreams[streamId]));
     return 0;
 }
 
@@ -401,8 +401,8 @@ int_t LUstruct_v100::lookAheadUpdateGPU(
 
 int_t LUstruct_v100::SyncLookAheadUpdate(int streamId)
 {
-    checkCudaLocal(cudaStreamSynchronize(A_gpu.lookAheadLStream[streamId]));
-    checkCudaLocal(cudaStreamSynchronize(A_gpu.lookAheadUStream[streamId]));
+    gpuErrchk(cudaStreamSynchronize(A_gpu.lookAheadLStream[streamId]));
+    gpuErrchk(cudaStreamSynchronize(A_gpu.lookAheadUStream[streamId]));
 
     return 0;
 }
@@ -743,8 +743,8 @@ int_t LUstruct_v100::setLUstruct_GPU()
     gpuCurrentPtr = (LUstructGPU_t *)gpuCurrentPtr + 1;
 
 #else /* else of #if 0 ----> this is the current active code - Sherry */
-    cudaMalloc(&A_gpu.xsup, (nsupers + 1) * sizeof(int_t));
-    cudaMemcpy(A_gpu.xsup, xsup, (nsupers + 1) * sizeof(int_t), cudaMemcpyHostToDevice);
+    gpuErrchk(cudaMalloc(&A_gpu.xsup, (nsupers + 1) * sizeof(int_t)));
+    gpuErrchk(cudaMemcpy(A_gpu.xsup, xsup, (nsupers + 1) * sizeof(int_t), cudaMemcpyHostToDevice));
 
     double tLsend, tUsend;
 #if 0
@@ -778,12 +778,12 @@ int_t LUstruct_v100::setLUstruct_GPU()
     printf("Time to send Lpanel=%g  and U panels =%g \n", tLsend, tUsend);
     fflush(stdout);
 
-    cudaMalloc(&A_gpu.lPanelVec, CEILING(nsupers, Pc) * sizeof(lpanelGPU_t));
-    cudaMemcpy(A_gpu.lPanelVec, lPanelVec_GPU,
-               CEILING(nsupers, Pc) * sizeof(lpanelGPU_t), cudaMemcpyHostToDevice);
-    cudaMalloc(&A_gpu.uPanelVec, CEILING(nsupers, Pr) * sizeof(upanelGPU_t));
-    cudaMemcpy(A_gpu.uPanelVec, uPanelVec_GPU,
-               CEILING(nsupers, Pr) * sizeof(upanelGPU_t), cudaMemcpyHostToDevice);
+    gpuErrchk(cudaMalloc(&A_gpu.lPanelVec, CEILING(nsupers, Pc) * sizeof(lpanelGPU_t)));
+    gpuErrchk(cudaMemcpy(A_gpu.lPanelVec, lPanelVec_GPU,
+               CEILING(nsupers, Pc) * sizeof(lpanelGPU_t), cudaMemcpyHostToDevice));
+    gpuErrchk(cudaMalloc(&A_gpu.uPanelVec, CEILING(nsupers, Pr) * sizeof(upanelGPU_t)));
+    gpuErrchk(cudaMemcpy(A_gpu.uPanelVec, uPanelVec_GPU,
+               CEILING(nsupers, Pr) * sizeof(upanelGPU_t), cudaMemcpyHostToDevice));
 
     tRegion[2] = SuperLU_timer_();
     int dfactBufSize = 0;
@@ -804,18 +804,18 @@ int_t LUstruct_v100::setLUstruct_GPU()
     /* Sherry: where are these freed ?? */
     for (stream = 0; stream < A_gpu.numCudaStreams; stream++)
     {
-        cudaMalloc(&A_gpu.LvalRecvBufs[stream], sizeof(double) * maxLvalCount);
-        cudaMalloc(&A_gpu.UvalRecvBufs[stream], sizeof(double) * maxUvalCount);
-        cudaMalloc(&A_gpu.LidxRecvBufs[stream], sizeof(int_t) * maxLidxCount);
-        cudaMalloc(&A_gpu.UidxRecvBufs[stream], sizeof(int_t) * maxUidxCount);
+        gpuErrchk(cudaMalloc(&A_gpu.LvalRecvBufs[stream], sizeof(double) * maxLvalCount));
+        gpuErrchk(cudaMalloc(&A_gpu.UvalRecvBufs[stream], sizeof(double) * maxUvalCount));
+        gpuErrchk(cudaMalloc(&A_gpu.LidxRecvBufs[stream], sizeof(int_t) * maxLidxCount));
+        gpuErrchk(cudaMalloc(&A_gpu.UidxRecvBufs[stream], sizeof(int_t) * maxUidxCount));
         // allocate the space for diagonal factor on GPU
-        cudaMalloc(&A_gpu.diagFactWork[stream], sizeof(double) * dfactBufSize);
-        cudaMalloc(&A_gpu.diagFactInfo[stream], sizeof(int));
+        gpuErrchk(cudaMalloc(&A_gpu.diagFactWork[stream], sizeof(double) * dfactBufSize));
+        gpuErrchk(cudaMalloc(&A_gpu.diagFactInfo[stream], sizeof(int)));
 
         /*lookAhead buffers and stream*/
-        cudaMalloc(&A_gpu.lookAheadLGemmBuffer[stream], sizeof(double) * maxLvalCount);
+        gpuErrchk(cudaMalloc(&A_gpu.lookAheadLGemmBuffer[stream], sizeof(double) * maxLvalCount));
 
-        cudaMalloc(&A_gpu.lookAheadUGemmBuffer[stream], sizeof(double) * maxUvalCount);
+        gpuErrchk(cudaMalloc(&A_gpu.lookAheadUGemmBuffer[stream], sizeof(double) * maxUvalCount));
 	// Sherry: replace this by new code 
         //cudaMalloc(&A_gpu.dFBufs[stream], ldt * ldt * sizeof(double));
         //cudaMalloc(&A_gpu.gpuGemmBuffs[stream], A_gpu.gemmBufferSize * sizeof(double));
@@ -829,8 +829,8 @@ int_t LUstruct_v100::setLUstruct_GPU()
     A_gpu.dFBufs = (double **) SUPERLU_MALLOC(num_dfbufs * sizeof(double *));
     A_gpu.gpuGemmBuffs = (double **) SUPERLU_MALLOC(num_dfbufs * sizeof(double *));
     for (i = 0; i < num_dfbufs; ++i) {
-        cudaMalloc(&(A_gpu.dFBufs[i]), ldt * ldt * sizeof(double));
-        cudaMalloc(&(A_gpu.gpuGemmBuffs[i]), A_gpu.gemmBufferSize * sizeof(double));
+        gpuErrchk(cudaMalloc(&(A_gpu.dFBufs[i]), ldt * ldt * sizeof(double)));
+        gpuErrchk(cudaMalloc(&(A_gpu.gpuGemmBuffs[i]), A_gpu.gemmBufferSize * sizeof(double)));
     }
 
     // Wajih: Adding allocation for batched LU marshalled data 
@@ -875,8 +875,8 @@ int_t LUstruct_v100::setLUstruct_GPU()
     tRegion[3] = SuperLU_timer_() - tRegion[3];
     printf("TRegion stream: \t %g\n", tRegion[3]);
     // allocate
-    cudaMalloc(&dA_gpu, sizeof(LUstructGPU_t));
-    cudaMemcpy(dA_gpu, &A_gpu, sizeof(LUstructGPU_t), cudaMemcpyHostToDevice);
+    gpuErrchk(cudaMalloc(&dA_gpu, sizeof(LUstructGPU_t)));
+    gpuErrchk(cudaMemcpy(dA_gpu, &A_gpu, sizeof(LUstructGPU_t), cudaMemcpyHostToDevice));
 
 #endif
     
@@ -970,8 +970,8 @@ lpanelGPU_t *LUstruct_v100::copyLpanelsToGPU()
     int_t *idxBuffer = (int_t *)SUPERLU_MALLOC(gpuLidxSize);
 
     // allocate memory buffer on GPU
-    cudaMalloc(&gpuLvalBasePtr, gpuLvalSize);
-    cudaMalloc(&gpuLidxBasePtr, gpuLidxSize);
+    gpuErrchk(cudaMalloc(&gpuLvalBasePtr, gpuLvalSize));
+    gpuErrchk(cudaMalloc(&gpuLidxBasePtr, gpuLidxSize));
 
     size_t valOffset = 0;
     size_t idxOffset = 0;
@@ -1023,7 +1023,7 @@ lpanelGPU_t *LUstruct_v100::copyLpanelsToGPU()
 #endif
     }
     // find
-    cudaMemcpy(gpuLidxBasePtr, idxBuffer, gpuLidxSize, cudaMemcpyHostToDevice);
+    gpuErrchk(cudaMemcpy(gpuLidxBasePtr, idxBuffer, gpuLidxSize, cudaMemcpyHostToDevice));
     tLsend = SuperLU_timer_() - tLsend;
     printf("cudaMemcpy time L =%g \n", tLsend);
 
@@ -1056,8 +1056,8 @@ upanelGPU_t *LUstruct_v100::copyUpanelsToGPU()
     // TODO: set gpuUvalSize, gpuUidxSize
 
     // allocate memory buffer on GPU
-    cudaMalloc(&gpuUvalBasePtr, gpuUvalSize);
-    cudaMalloc(&gpuUidxBasePtr, gpuUidxSize);
+    gpuErrchk(cudaMalloc(&gpuUvalBasePtr, gpuUvalSize));
+    gpuErrchk(cudaMalloc(&gpuUidxBasePtr, gpuUidxSize));
 
     size_t valOffset = 0;
     size_t idxOffset = 0;
@@ -1110,7 +1110,7 @@ upanelGPU_t *LUstruct_v100::copyUpanelsToGPU()
         // do a cudaMemcpy to GPU
         double tLsend = SuperLU_timer_();
         copyToGPU(gpuUvalBasePtr, packedNzvals, packedNzvalsIndices);
-        cudaMemcpy(gpuUidxBasePtr, idxBuffer, gpuUidxSize, cudaMemcpyHostToDevice);
+        gpuErrchk(cudaMemcpy(gpuUidxBasePtr, idxBuffer, gpuUidxSize, cudaMemcpyHostToDevice));
         tLsend = SuperLU_timer_() - tLsend;
         printf("cudaMemcpy time U =%g \n", tLsend);
         // SUPERLU_FREE(valBuffer);
@@ -1145,11 +1145,13 @@ upanelGPU_t *LUstruct_v100::copyUpanelsToGPU()
         double tLsend = SuperLU_timer_();
         const int USE_GPU_COPY = 1;
         if (USE_GPU_COPY)
-            cudaMemcpy(gpuUvalBasePtr, valBuffer, gpuUvalSize, cudaMemcpyHostToDevice);
+        {
+            gpuErrchk(cudaMemcpy(gpuUvalBasePtr, valBuffer, gpuUvalSize, cudaMemcpyHostToDevice));
+        }
         else
             copyToGPU_Sparse(gpuUvalBasePtr, valBuffer, gpuUvalSize);
 
-        cudaMemcpy(gpuUidxBasePtr, idxBuffer, gpuUidxSize, cudaMemcpyHostToDevice);
+        gpuErrchk(cudaMemcpy(gpuUidxBasePtr, idxBuffer, gpuUidxSize, cudaMemcpyHostToDevice));
         tLsend = SuperLU_timer_() - tLsend;
         printf("cudaMemcpy time U =%g \n", tLsend);
 
