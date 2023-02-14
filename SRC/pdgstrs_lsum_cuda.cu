@@ -1647,10 +1647,7 @@ if (nlb > 0) {
   long int *Lindval_loc_bc_offset,   
   int_t *xsup,
   int *bcols_masked,
-  gridinfo_t *grid,
-  double *recvbuf_BC_gpu,
-  double *recvbuf_RD_gpu,
-  int_t maxrecvsz
+  gridinfo_t *grid
  )
  {
 	 double alpha = 1.0, beta = 0.0;
@@ -1840,14 +1837,6 @@ if (nlb > 0) {
 						 __syncthreads(); 		
 					 }//if(nrhs==1)
 				//  }
-				 
-			/* comment out the following as Nan doesn't use recvbuf_BC_gpu	*/
-			#if 0
-				 RHS_ITERATE(j)
-				 for (i = tid; i < knsupc; i+=block_size)
-					 recvbuf_BC_gpu[i + maxrecvsz*lk + j*knsupc ] = x[i + ii + j*knsupc];
-			#endif	
-					 
 			 __syncthreads();	
 		 }else{   /* off-diagonal block forward the message*/
 			 /* waiting for the x subvector and forward*/ 
@@ -1856,19 +1845,6 @@ if (nlb > 0) {
 			 }
 		 }
 		  
-		 /* comment out the following as Nan doesn't use recvbuf_BC_gpu	*/
-		 #if 0
-		 if(tid==0){  //YL: only the first thread in a block forwards the x subvector using NVSHMEM
-		 cnt=LBtree_ptr[lk].destCnt_;
-		//  printf("good1 %5d%5d\n",lk,cnt);
-		 if(cnt>0){
-			cnt=LBtree_ptr[lk].msgSize_;
-		 	C_BcTree_forwardMessageSimple_Device(&LBtree_ptr[lk],&recvbuf_BC_gpu[maxrecvsz*lk],cnt*nrhs+XK_H);
-		 }
-		 }	
-		 #endif
-		 
-		 
 		 if(nlb>0){
 		 
 				 lib = LBi( k, grid ); /* Local block number, row-wise. */
@@ -2111,9 +2087,8 @@ int mype, npes, ndevices;
 int nblock_ex=0;
 
 if(procs==1){
-    double *recvbuf_BC_gpu, *recvbuf_RD_gpu;
 	dim3 dimBlock(nthread_x, nthread_y);
-	dlsum_fmod_inv_gpu_mrhs<<< nbcol_loc+nblock_ex, dimBlock >>>(nbcol_loc,nblock_ex,lsum,x,nrhs,maxsup,nsupers,fmod,LBtree_ptr,LRtree_ptr,ilsum,Lrowind_bc_dat,Lrowind_bc_offset,Lnzval_bc_dat,Lnzval_bc_offset,Linv_bc_dat,Linv_bc_offset,Lindval_loc_bc_dat,Lindval_loc_bc_offset, xsup,bcols_masked, grid,recvbuf_BC_gpu,recvbuf_RD_gpu,maxrecvsz);
+	dlsum_fmod_inv_gpu_mrhs<<< nbcol_loc+nblock_ex, dimBlock >>>(nbcol_loc,nblock_ex,lsum,x,nrhs,maxsup,nsupers,fmod,LBtree_ptr,LRtree_ptr,ilsum,Lrowind_bc_dat,Lrowind_bc_offset,Lnzval_bc_dat,Lnzval_bc_offset,Linv_bc_dat,Linv_bc_offset,Lindval_loc_bc_dat,Lindval_loc_bc_offset, xsup,bcols_masked, grid);
 }else{
 	mype = nvshmem_my_pe();
 	npes = nvshmem_n_pes();
