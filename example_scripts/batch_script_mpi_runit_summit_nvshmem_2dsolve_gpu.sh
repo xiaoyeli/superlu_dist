@@ -10,7 +10,12 @@ EXIT_PARAM=2
 
 module load cuda
 module load essl
-module load cmake/
+module load cmake
+
+
+# export NVSHMEM_DEBUG=TRACE
+# export NVSHMEM_DEBUG_SUBSYS=ALL
+# export NVSHMEM_DEBUG_FILE=nvdebug_success
 
 CUR_DIR=`pwd`
 FILE_DIR=$CUR_DIR/EXAMPLE
@@ -22,8 +27,9 @@ FILE=$FILE_DIR/$FILE_NAME
 
 export NVSHMEM_MPI_LIB_NAME=libmpi_ibm.so
 export NVSHMEM_LMPI=-lmpi_ibm
+export SUPERLU_ACC_SOLVE=1
 
-nprows=(2 )
+nprows=(4 )
 npcols=(1 )  
 #matrix=(LU_C_BN_C_2by2.bin) #s1_mat_0_253872.bin) #s1_mat_0_507744.bin Li4244.bin DG_GrapheneDisorder_8192.bin LU_C_BN_C_2by2.bin) #Li4244.bin s1_mat_0_253872.bin) 
 matrix=(s1_mat_0_126936.bin) #DG_GrapheneDisorder_8192.bin LU_C_BN_C_2by2.bin) #Li4244.bin s1_mat_0_253872.bin) 

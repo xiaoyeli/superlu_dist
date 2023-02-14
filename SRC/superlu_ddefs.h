@@ -987,10 +987,11 @@ extern void dGenCSRLblocks(int, int_t, gridinfo_t*,
 
 /* multi-GPU */
 #ifdef GPU_SOLVE
-extern void create_nv_buffer(int* , int*, int* , int* );
+// extern void create_nv_buffer(int* , int*, int* , int* );
 extern void nv_init_wrapper(MPI_Comm);
 // extern void nv_init_wrapper(int* c, char *v[], int* omp_mpi_level);
 extern void prepare_multiGPU_buffers(int,int,int,int,int,int);
+extern void delete_multiGPU_buffers();
 #endif
 /* BLAS */
 

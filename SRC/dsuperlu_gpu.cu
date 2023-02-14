@@ -776,7 +776,7 @@ int dfree_LUstruct_gpu (
 	checkGPU(gpuFree(A_gpu->UnzvalVec));
 	checkGPU(gpuFree(A_gpu->UnzvalPtr));
 
-	checkGPU(gpuFree(A_gpu->grid));
+	checkGPU(gpuFree(A_gpu->grid)); // YL: this line is problematic??? 
 
 	/* Free the Schur complement structure on GPU */
 	checkGPU(gpuFree(A_gpu->scubufs[streamId].bigV));

@@ -487,8 +487,8 @@ void nv_init_wrapper( MPI_Comm mpi_comm)
     npes = nvshmem_n_pes();
     mype_node = nvshmem_team_my_pe(NVSHMEMX_TEAM_NODE);
     
-    /* device should not be set here */
-    //CUDA_CHECK(cudaSetDevice(mype_node));
+    /* Yang: is it safe to call it here?; commenting this out will cause "cudaOccupancyMaxActiveBlocksPerMultiprocessor failed" */
+    // CUDA_CHECK(cudaSetDevice(mype_node));
 
     char name[MPI_MAX_PROCESSOR_NAME];
     int resultlength;
@@ -499,7 +499,7 @@ void nv_init_wrapper( MPI_Comm mpi_comm)
 
     cudaDeviceProp prop;
     //CUDA_CHECK(cudaGetDeviceProperties(&prop, rank%ndevices));
-    CUDA_CHECK(cudaGetDeviceProperties(&prop, mype_node));
+    // CUDA_CHECK(cudaGetDeviceProperties(&prop, mype_node)); // Yang Liu: this line is causing runtime error
     //int status=nvshmemx_init_status();
     printf("** MPI %d/%d, NVSHMEM %d/%d, mype_node=%d, device name: %s bus id: %d, "
            "ndevices=%d,cur=%d, node=%s **\n",
@@ -527,6 +527,12 @@ void prepare_multiGPU_buffers(int flag_bc_size,int flag_rd_size,int ready_x_size
     my_flag_rd = (int *) nvshmem_malloc ( my_flag_rd_size * sizeof(int)); // for sender
 
 
+    checkGPU(gpuMemset(my_flag_bc, 0, my_flag_bc_size * sizeof(int)));
+    checkGPU(gpuMemset(my_flag_rd, 0, my_flag_rd_size * sizeof(int)));
+    checkGPU(gpuMemset(ready_x, 0, ready_x_size * sizeof(double)));  
+    checkGPU(gpuMemset(ready_lsum, 0, ready_lsum_size * sizeof(double)));
+
+
 	// int iam;
     // MPI_CHECK(MPI_Comm_rank(MPI_COMM_WORLD, &iam)); 
     //printf("(%d) in prepare_multiGPU_buffers:\n "
@@ -540,6 +546,14 @@ void prepare_multiGPU_buffers(int flag_bc_size,int flag_rd_size,int ready_x_size
     //fflush(stdout);
 
 }
+
+void delete_multiGPU_buffers(){
+    nvshmem_free(my_flag_bc);
+    nvshmem_free(my_flag_rd);
+    nvshmem_free(ready_x);  
+    nvshmem_free(ready_lsum);
+}
+
 
 __device__ void C_BcTree_forwardMessageSimple_Device(C_Tree* tree,  int* flag_bc_q,  int* my_flag_bc, int mype, int tid,double* ready_x, int maxrecvsz){
 //int BCsendoffset;
@@ -2103,8 +2117,8 @@ if(procs==1){
 }else{
 	mype = nvshmem_my_pe();
 	npes = nvshmem_n_pes();
-	int mype_node = nvshmem_team_my_pe(NVSHMEMX_TEAM_NODE);
-	CUDA_CHECK(cudaSetDevice(mype_node));
+	// int mype_node = nvshmem_team_my_pe(NVSHMEMX_TEAM_NODE);
+	// CUDA_CHECK(cudaSetDevice(mype_node));
 	
 	
 	cudaStream_t stream[2];
@@ -2162,7 +2176,7 @@ if(procs==1){
 																				   my_flag_bc, my_flag_rd,
 																				   d_nfrecv, d_status,
 																				   d_statusmod,d_flag_mod);
-			CUDA_CHECK(cudaGetLastError());
+			// CUDA_CHECK(cudaGetLastError()); // Yang: this line causes runtime error... 
 		} // if status
 	//} // if npes==1
 }
@@ -2897,8 +2911,8 @@ void dlsum_bmod_inv_gpu_wrap
      mype = nvshmem_my_pe();
      npes = nvshmem_n_pes();
      //printf("(%d) nbcol_loc %d\n", mype, nbcol_loc);
-     int mype_node = nvshmem_team_my_pe(NVSHMEMX_TEAM_NODE);
-     CUDA_CHECK(cudaSetDevice(mype_node));
+    //  int mype_node = nvshmem_team_my_pe(NVSHMEMX_TEAM_NODE);
+    //  CUDA_CHECK(cudaSetDevice(mype_node));
      //printf("(%d), U Enter,mynode=%d\n",mype,mype_node);
      //fflush(stdout);
      int launch_success = 0;

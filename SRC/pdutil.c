@@ -576,6 +576,22 @@ dDestroy_LU(int_t n, gridinfo_t *grid, dLUstruct_t *LUstruct)
     checkGPU (gpuFree (Llu->d_Unzval_bc_offset));  
     checkGPU (gpuFree (Llu->d_Uindval_loc_bc_dat)); 
     checkGPU (gpuFree (Llu->d_Uindval_loc_bc_offset));
+
+
+    /* nvshmem related*/
+    SUPERLU_FREE(mystatus);
+    SUPERLU_FREE(h_nfrecv);
+    SUPERLU_FREE(h_nfrecvmod);
+    SUPERLU_FREE(mystatusmod);
+    SUPERLU_FREE(mystatus_u);
+    SUPERLU_FREE(h_nfrecv_u);
+    SUPERLU_FREE(mystatusmod_u);
+
+    checkGPU (gpuFree (d_recv_cnt));
+    checkGPU (gpuFree (d_recv_cnt_u));
+
+
+
 #endif
 
 #if ( DEBUGlevel>=1 )
@@ -864,8 +880,6 @@ pdgstrs_init_device_lsum_x(superlu_dist_options_t *options, int_t n, int_t m_loc
 	// }
 
 
-	printf("dfdfdfd22d \n");
-	fflush(stdout);
     /* nvshmem related. */
     int flag_bc_size = RDMA_FLAG_SIZE * (nc+1);
     int flag_rd_size = RDMA_FLAG_SIZE * nlb * 2;    
@@ -874,43 +888,7 @@ pdgstrs_init_device_lsum_x(superlu_dist_options_t *options, int_t n, int_t m_loc
     int maxrecvsz = sp_ienv_dist(3, options)* nrhs + SUPERLU_MAX( XK_H, LSUM_H );
     int ready_x_size = maxrecvsz*CEILING( nsupers, grid->npcol);
     int ready_lsum_size = 2*maxrecvsz*CEILING( nsupers, grid->nprow);
-    // prepare_multiGPU_buffers(flag_bc_size,flag_rd_size,ready_x_size,ready_lsum_size,my_flag_bc_size,my_flag_rd_size);
-    
-    flag_bc_q = (int *)nvshmem_malloc( flag_bc_size * sizeof(int)); // for sender
-
-    	printf("1111 \n");
-	fflush(stdout);
-
-    flag_rd_q = (int *)nvshmem_malloc( flag_rd_size * sizeof(int)); // for sender
-    	printf("2222 \n");
-	fflush(stdout);    
-    ready_x = (double *)nvshmem_malloc( ready_x_size * sizeof(double)); // for receiver
-    	printf("3333 \n");
-	fflush(stdout);      
-    ready_lsum = (double *)nvshmem_malloc( ready_lsum_size * sizeof(double)); // for receiver
-    	printf("4444 \n");
-	fflush(stdout);      
-    my_flag_bc = (int *) nvshmem_malloc ( my_flag_bc_size * sizeof(int)); // for sender
-    	printf("4444 \n");
-	fflush(stdout);      
-    my_flag_rd = (int *) nvshmem_malloc ( my_flag_rd_size * sizeof(int)); // for sender
-    
-    	printf("dfdfdeeeeeefd22d \n");
-	fflush(stdout);
-    
-    checkGPU(gpuMemset(my_flag_bc, 0, RDMA_FLAG_SIZE * (CEILING( nsupers, grid->npcol)+1)  * sizeof(int)));
-    	printf("1111 \n");
-	fflush(stdout);
-    checkGPU(gpuMemset(my_flag_rd, 0, RDMA_FLAG_SIZE * nlb * 2 * sizeof(int)));
-    	printf("2222 \n");
-	fflush(stdout);
-    checkGPU(gpuMemset(ready_x, 0, maxrecvsz*CEILING( nsupers, grid->npcol) * sizeof(double)));
-    	printf("3333 \n");
-	fflush(stdout);    
-    checkGPU(gpuMemset(ready_lsum, 0, 2*maxrecvsz*CEILING( nsupers, grid->nprow) * sizeof(double)));
-
-	printf("dfdfdfd \n");
-	fflush(stdout);
+    prepare_multiGPU_buffers(flag_bc_size,flag_rd_size,ready_x_size,ready_lsum_size,my_flag_bc_size,my_flag_rd_size);
 
     /////* for L solve *////
     int *my_colnum;
@@ -930,6 +908,7 @@ pdgstrs_init_device_lsum_x(superlu_dist_options_t *options, int_t n, int_t m_loc
         }
     }
 	checkGPU(gpuMemcpy(d_colnum, my_colnum,  (nfrecvx+1) * sizeof(int), gpuMemcpyHostToDevice));
+    SUPERLU_FREE(my_colnum);
 	//printf("(%d) nfrecvx=%d,nfrecvmod=%d,maxrecvsz=%d\n",iam,nfrecvx,nfrecvmod,maxrecvsz);
     //fflush(stdout);
 
@@ -974,7 +953,8 @@ pdgstrs_init_device_lsum_x(superlu_dist_options_t *options, int_t n, int_t m_loc
 	checkGPU(gpuMalloc( (void**)&d_statusmod, 2*CEILING(nsupers, grid->nprow) * sizeof(int)));
 
 	checkGPU(gpuMemcpy(d_colnummod, my_colnummod,  (nfrecvmod+1) * sizeof(int), gpuMemcpyHostToDevice));
-	checkGPU(gpuMalloc( (void**)&d_mynummod, h_nfrecv[1]  * sizeof(int)));
+	SUPERLU_FREE(my_colnummod);
+    checkGPU(gpuMalloc( (void**)&d_mynummod, h_nfrecv[1]  * sizeof(int)));
 	checkGPU(gpuMalloc( (void**)&d_mymaskstartmod, h_nfrecv[1]  * sizeof(int)));
 	checkGPU(gpuMalloc( (void**)&d_mymasklengthmod,   h_nfrecv[1] * sizeof(int)));
 
@@ -986,11 +966,9 @@ pdgstrs_init_device_lsum_x(superlu_dist_options_t *options, int_t n, int_t m_loc
     tmp_val[0]=0;
     for(int i=1; i<h_nfrecvmod[3]+1;i++) tmp_val[i]=-1;
     checkGPU(gpuMemcpy(d_flag_mod, tmp_val,  (h_nfrecvmod[3]+1) * sizeof(int), gpuMemcpyHostToDevice));
+    SUPERLU_FREE(tmp_val);
     //printf("(%d) nfrecvx=%d, nfrecvmod=%d,nfsendmod=%d\n",iam,nfrecvx, nfrecvmod,h_nfrecvmod[3]);
     //fflush(stdout);
-
-	printf("ddww \n");
-	fflush(stdout);
 
         /////* for U solve *////
     checkGPU(gpuMalloc( (void**)&d_nfrecv_u,  3 * sizeof(int)));
@@ -1119,6 +1097,28 @@ pdgstrs_delete_device_lsum_x(dSOLVEstruct_t *SOLVEstruct)
     checkGPU (gpuFree (SOLVEstruct->d_fmod_save));       
     checkGPU (gpuFree (SOLVEstruct->d_bmod));   
     checkGPU (gpuFree (SOLVEstruct->d_bmod_save));   
+
+
+/* nvshmem related*/
+
+    delete_multiGPU_buffers();
+
+    checkGPU(gpuFree(d_colnum));       
+    checkGPU(gpuFree(d_mynum));       
+    checkGPU(gpuFree(d_mymaskstart));       
+    checkGPU(gpuFree(d_mymasklength));       
+    checkGPU(gpuFree(d_status));       
+    checkGPU(gpuFree(d_nfrecv));       
+
+    checkGPU(gpuFree(d_nfrecvmod));       
+    checkGPU(gpuFree(d_statusmod));       
+    checkGPU(gpuFree(d_mynummod));       
+    checkGPU(gpuFree(d_mymaskstartmod));       
+    checkGPU(gpuFree(d_mymasklengthmod));       
+    checkGPU(gpuFree(d_msgnum));       
+    checkGPU(gpuFree(d_flag_mod));    
+
+
 #endif  
     return 0;
 } /* pdgstrs_delete_device_lsum_x */

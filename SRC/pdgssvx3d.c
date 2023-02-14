@@ -1518,7 +1518,7 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 		}
 
 		if ( options->Fact != SamePattern_SameRowPerm) {
-			if (getenv("NEW3DSOLVE")){
+			if (getenv("NEW3DSOLVE") && Solve3D==true){
 				trs_compute_communication_structure(options, n, LUstruct,
 							ScalePermstruct, trf3Dpartition->supernodeMask, grid, stat);
 			}else{
@@ -1779,7 +1779,7 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 #endif
 			}
 			}
-		}else{
+		}else{ /* if(Solve3D) */
 			if (grid3d->zscp.Iam == 0){  /* on 2D grid-0 */
 
 #if (defined(GPU_ACC) && defined(GPU_SOLVE))
