@@ -403,7 +403,7 @@ pdReDistribute_B_to_X(double *B, int_t m_loc, int nrhs, int_t ldb,
 	{
 		// t = SuperLU_timer_();
 #ifdef _OPENMP
-#ifdef __GNUC__
+#if defined __GNUC__  && !defined __NVCOMPILER
 #pragma	omp	taskloop private (i,l,irow,k,j,knsupc) untied
 #endif
 #endif
@@ -659,7 +659,7 @@ pdReDistribute_X_to_B(int_t n, double *B, int_t m_loc, int_t ldb, int_t fst_row,
 	{
 		// t = SuperLU_timer_();
 #ifdef _OPENMP
-#ifdef __GNUC__
+#if defined __GNUC__  && !defined __NVCOMPILER
 #pragma	omp	taskloop private (k,knsupc,lk,irow,l,i,j) untied
 #endif
 #endif
@@ -876,7 +876,7 @@ pdCompute_Diag_Inv(int_t n, dLUstruct_t *LUstruct,gridinfo_t *grid,
     t = SuperLU_timer_();
 #endif
 
-#if ( PRNTlevel>=1 )
+#if ( PROFlevel>=1 )
     if ( grid->iam==0 ) {
 	printf("computing inverse of diagonal blocks...\n");
 	fflush(stdout);
@@ -1442,7 +1442,7 @@ pdgstrs(superlu_dist_options_t *options, int_t n, dLUstruct_t *LUstruct,
 			  ScalePermstruct, Glu_persist, grid, SOLVEstruct);
 
 
-#if ( PRNTlevel>=1 )
+#if ( PROFlevel>=1 )
     t = SuperLU_timer_() - t;
     if ( !iam) printf(".. B to X redistribute time\t%8.4f\n", t);
     fflush(stdout);
@@ -1533,7 +1533,7 @@ if(procs==1){
 	fflush(stdout);
 #endif
 
-#if ( PRNTlevel>=1 )
+#if ( PROFlevel>=1 )
 	t = SuperLU_timer_() - t;
 	if ( !iam) printf(".. Setup L-solve time\t%8.4f\n", t);
 	fflush(stdout);
@@ -2112,7 +2112,7 @@ thread_id=0;
 		    {
 
 #ifdef _OPENMP
-#ifdef __GNUC__
+#if defined __GNUC__  && !defined __NVCOMPILER
 #pragma	omp taskloop private (k,ii,lk,thread_id) num_tasks(num_thread*8) nogroup
 #endif
 #endif
@@ -2393,10 +2393,28 @@ thread_id=0;
 			}
 		} // end of parallel
 	
+		for (lk=0;lk<nsupers_j;++lk){
+			if(LBtree_ptr[lk].empty_==NO){
+				// if(BcTree_IsRoot(LBtree_ptr[lk],'d')==YES){
+				// BcTree_waitSendRequest(LBtree_ptr[lk],'d');
+				C_BcTree_waitSendRequest(&LBtree_ptr[lk]);
+				// }
+				// deallocate requests here
+			}
+		}
+
+		for (lk=0;lk<nsupers_i;++lk){
+			if(LRtree_ptr[lk].empty_==NO){	
+				C_RdTree_waitSendRequest(&LRtree_ptr[lk]);
+				// deallocate requests here
+			}
+		}
+		MPI_Barrier( grid->comm );
+
 	}  /* end CPU trisolve */
 
 	
-#if ( PRNTlevel>=1 )
+#if ( PROFlevel>=1 )
 		t = SuperLU_timer_() - t;
 		stat->utime[SOL_TOT] += t;
 		if ( !iam ) {
@@ -2445,23 +2463,7 @@ thread_id=0;
 		SUPERLU_FREE(recvbuf_BC_fwd);
 		log_memory(-nlb*aln_i*iword-nlb*iword-(CEILING( nsupers, Pr )+CEILING( nsupers, Pc ))*aln_i*iword- nsupers_i*iword -maxrecvsz*(nfrecvx+1)*dword, stat);	//account for fmod, frecv, leaf_send, leafsups, recvbuf_BC_fwd
 
-		for (lk=0;lk<nsupers_j;++lk){
-			if(LBtree_ptr[lk].empty_==NO){
-				// if(BcTree_IsRoot(LBtree_ptr[lk],'d')==YES){
-				// BcTree_waitSendRequest(LBtree_ptr[lk],'d');
-				C_BcTree_waitSendRequest(&LBtree_ptr[lk]);
-				// }
-				// deallocate requests here
-			}
-		}
 
-		for (lk=0;lk<nsupers_i;++lk){
-			if(LRtree_ptr[lk].empty_==NO){	
-				C_RdTree_waitSendRequest(&LRtree_ptr[lk]);
-				// deallocate requests here
-			}
-		}
-		MPI_Barrier( grid->comm );
 
 #if ( VAMPIR>=1 )
 		VT_traceoff();
@@ -2622,7 +2624,7 @@ thread_id=0;
 	fflush(stdout);
 #endif
 
-#if ( PRNTlevel>=1 )
+#if ( PROFlevel>=1 )
 	t = SuperLU_timer_() - t;
 	if ( !iam) printf(".. Setup U-solve time\t%8.4f\n", t);
 	fflush(stdout);
@@ -2705,7 +2707,7 @@ if (getenv("SUPERLU_ACC_SOLVE")){  /* GPU trisolve*/
 #endif
 		{
 #ifdef _OPENMP
-#ifdef __GNUC__
+#if defined __GNUC__  && !defined __NVCOMPILER
 #pragma	omp	taskloop firstprivate (nrhs,beta,alpha,x,rtemp,ldalsum) private (ii,jj,k,knsupc,lk,luptr,lsub,nsupr,lusup,t1,t2,Uinv,i,lib,rtemp_loc,nroot_send_tmp,thread_id) nogroup
 #endif
 #endif
@@ -2806,7 +2808,7 @@ if (getenv("SUPERLU_ACC_SOLVE")){  /* GPU trisolve*/
 #endif
 		{
 #ifdef _OPENMP
-#ifdef __GNUC__
+#if defined __GNUC__  && !defined __NVCOMPILER
 #pragma	omp	taskloop private (ii,jj,k,lk,thread_id) nogroup
 #endif
 #endif
@@ -3032,10 +3034,25 @@ for (i=0;i<nroot_send;i++){
 			}
 		} /* while not finished ... */
 	}
+	for (lk=0;lk<nsupers_j;++lk){
+		if(UBtree_ptr[lk].empty_==NO){
+			// if(BcTree_IsRoot(LBtree_ptr[lk],'d')==YES){
+			C_BcTree_waitSendRequest(&UBtree_ptr[lk]);
+			// }
+			// deallocate requests here
+		}
+	}
 
+	for (lk=0;lk<nsupers_i;++lk){
+		if(URtree_ptr[lk].empty_==NO){
+			C_RdTree_waitSendRequest(&URtree_ptr[lk]);
+			// deallocate requests here
+		}
+	}
+	MPI_Barrier( grid->comm );
 }
 
-#if ( PRNTlevel>=1 )
+#if ( PROFlevel>=1 )
 		t = SuperLU_timer_() - t;
 		stat->utime[SOL_TOT] += t;
 		if ( !iam ) printf(".. U-solve time\t%8.4f\n", t);
@@ -3081,7 +3098,7 @@ for (i=0;i<nroot_send;i++){
 				ScalePermstruct, Glu_persist, grid, SOLVEstruct);
 
 
-#if ( PRNTlevel>=1 )
+#if ( PROFlevel>=1 )
 		t = SuperLU_timer_() - t;
 		if ( !iam) printf(".. X to B redistribute time\t%8.4f\n", t);
 		t = SuperLU_timer_();
@@ -3129,22 +3146,7 @@ for (i=0;i<nroot_send;i++){
 
 		log_memory(-nlb*aln_i*iword-nlb*iword - nsupers_i*iword - (CEILING( nsupers, Pr )+CEILING( nsupers, Pc ))*aln_i*iword - maxrecvsz*(nbrecvx+1)*dword - sizelsum*num_thread * dword - (ldalsum * nrhs + nlb * XK_H) *dword - (sizertemp*num_thread + 1)*dword, stat);	//account for bmod, brecv, root_send, rootsups, recvbuf_BC_fwd,rtemp,lsum,x
 
-		for (lk=0;lk<nsupers_j;++lk){
-			if(UBtree_ptr[lk].empty_==NO){
-				// if(BcTree_IsRoot(LBtree_ptr[lk],'d')==YES){
-				C_BcTree_waitSendRequest(&UBtree_ptr[lk]);
-				// }
-				// deallocate requests here
-			}
-		}
 
-		for (lk=0;lk<nsupers_i;++lk){
-			if(URtree_ptr[lk].empty_==NO){
-				C_RdTree_waitSendRequest(&URtree_ptr[lk]);
-				// deallocate requests here
-			}
-		}
-		MPI_Barrier( grid->comm );
 
 
 #if ( PROFlevel>=2 )

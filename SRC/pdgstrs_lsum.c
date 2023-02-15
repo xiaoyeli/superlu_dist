@@ -527,7 +527,7 @@ void dlsum_fmod_inv
 #ifdef __INTEL_COMPILER
 #pragma	omp	parallel for private (lptr1,luptr1,nlb1,thread_id1,lsub1,lusup1,nsupr1,Linv,nn,lbstart,lbend,luptr_tmp1,nbrow,lb,lptr1_tmp,rtemp_loc,nbrow_ref,lptr,nbrow1,ik,rel,lk,iknsupc,il,i,irow,fmod_tmp,ikcol,p,ii,jj,t1,t2,j,nleaf_send_tmp)
 #else
-#ifdef __GNUC__
+#if defined __GNUC__  && !defined __NVCOMPILER
 // This taskloop causes code to crash or generate wrong solution for some intel compilers
 #pragma	omp	taskloop private (lptr1,luptr1,nlb1,thread_id1,lsub1,lusup1,nsupr1,Linv,nn,lbstart,lbend,luptr_tmp1,nbrow,lb,lptr1_tmp,rtemp_loc,nbrow_ref,lptr,nbrow1,ik,rel,lk,iknsupc,il,i,irow,fmod_tmp,ikcol,p,ii,jj,t1,t2,j,nleaf_send_tmp) untied nogroup
 #endif
@@ -1437,7 +1437,7 @@ void dlsum_bmod_inv
 #ifdef __INTEL_COMPILER
 #pragma	omp	parallel for private (thread_id1,Uinv,nn,lbstart,lbend,ub,temp,rtemp_loc,ik,lk1,gik,gikcol,usub,uval,lsub,lusup,iknsupc,il,i,irow,bmod_tmp,p,ii,jj,t1,t2,j,ikfrow,iklrow,dest,y,uptr,fnz,nsupr)
 #else
-#ifdef __GNUC__
+#if defined __GNUC__  && !defined __NVCOMPILER
 // This taskloop causes code to crash or generate wrong solution for some intel compilers
 #pragma	omp	taskloop firstprivate (stat) private (thread_id1,Uinv,nn,lbstart,lbend,ub,temp,rtemp_loc,ik,lk1,gik,gikcol,usub,uval,lsub,lusup,iknsupc,il,i,irow,bmod_tmp,p,ii,jj,t1,t2,j,ikfrow,iklrow,dest,y,uptr,fnz,nsupr,nroot_send_tmp) untied nogroup
 #endif

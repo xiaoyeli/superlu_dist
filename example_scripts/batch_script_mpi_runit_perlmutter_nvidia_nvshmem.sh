@@ -28,9 +28,11 @@ export LD_LIBRARY_PATH=${CRAY_LD_LIBRARY_PATH}:$LD_LIBRARY_PATH
 export MAX_BUFFER_SIZE=50000000
 #export SUPERLU_NUM_GPU_STREAMS=1
 export SUPERLU_BIND_MPI_GPU=1
-export SUPERLU_ACC_OFFLOAD=1 # this can be 0 to do CPU tests on GPU nodes
+export SUPERLU_ACC_OFFLOAD=0 # this can be 0 to do CPU tests on GPU nodes
+export SUPERLU_ACC_SOLVE=1
 
 ##NVSHMEM settings:
+NVSHMEM_HOME=/global/cfs/cdirs/m2957/liuyangz/my_software/nvshmem_perlmutter/nvshmem_src_2.8.0-3/build/
 export NVSHMEM_USE_GDRCOPY=1
 export NVSHMEM_MPI_SUPPORT=1
 export MPI_HOME=${MPICH_DIR}
@@ -41,16 +43,15 @@ export NVSHMEM_DISABLE_CUDA_VMM=1
 export FI_CXI_OPTIMIZED_MRS=false
 export NVSHMEM_BOOTSTRAP_TWO_STAGE=1
 export NVSHMEM_BOOTSTRAP=MPI
-NVSHMEM_HOME=/global/cfs/cdirs/m2956/nanding/software/nvshmem_src_2.8.0-3/build/
-
 
 #export NVSHMEM_DEBUG=TRACE
 #export NVSHMEM_DEBUG_SUBSYS=ALL
 #export NVSHMEM_DEBUG_FILE=nvdebug_success
 #run the application
 #matrix=(nimrodMatrix-B.mtx nimrodMatrix-N.mtx)
-INPUT_DIR=/global/cfs/cdirs/m2956/nanding/myprojects/matrix
-matrix=(s1_mat_0_126936.bin s1_mat_0_253872.bin s1_mat_0_507744.bin Li4244.bin LU_C_BN_C_2by2.bin DG_GrapheneDisorder_8192.bin) 
+INPUT_DIR=$CFS/m2957/liuyangz/my_research/matrix/
+# matrix=(s1_mat_0_126936.bin s1_mat_0_253872.bin s1_mat_0_507744.bin Li4244.bin LU_C_BN_C_2by2.bin DG_GrapheneDisorder_8192.bin) 
+matrix=(s1_mat_0_126936.bin) 
 #matrix=(s1_mat_7127136_7127136_0_csc_1th_block_size_1781784.bin s1_mat_0_126936.bin s1_mat_0_253872.bin s1_mat_0_507744.bin Li4244.bin LU_C_BN_C_2by2.bin DG_GrapheneDisorder_8192.bin) 
 MYDATE=$(date '+%Y-%m-%d-%H-%M')
 
