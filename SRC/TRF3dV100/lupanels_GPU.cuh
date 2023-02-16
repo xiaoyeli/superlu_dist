@@ -21,8 +21,9 @@
 #define CUDA_CALLABLE
 #define DEVICE_CALLABLE
 #endif
-// class lpanel_t;
-// class upanel_t;
+
+class lpanel_t;
+class upanel_t;
 
 class lpanelGPU_t 
 {
@@ -241,7 +242,7 @@ public:
     } 
 };
 
-// Wajih: Device and host memory used to store marshalled batch data
+// Wajih: Device and host memory used to store marshalled batch data for LU and TRSM
 struct LUMarshallData 
 {
     LUMarshallData();
@@ -273,6 +274,39 @@ struct LUMarshallData
     void setMaxPanel();
 };
 
+// Wajih: Device and host memory used to store marshalled batch data for Schur complement update 
+struct SCUMarshallData 
+{
+    SCUMarshallData();
+    ~SCUMarshallData();
+
+    // GEMM device pointer data 
+    double **dev_A_ptrs, **dev_B_ptrs, **dev_C_ptrs;
+    int *dev_lda_array, *dev_ldb_array, *dev_ldc_array;
+    int *dev_m_array, *dev_n_array, *dev_k_array;
+
+    // Max of marshalled gemm device data 
+    int max_m, max_n, max_k;
+
+    // Number of marshalled operations
+    int batchsize;
+
+    // Data accumulated on the host
+    std::vector<double*> host_A_ptrs, host_B_ptrs, host_C_ptrs;
+    std::vector<int> host_lda_array, host_ldb_array, host_ldc_array;
+    std::vector<int> host_m_array, host_n_array, host_k_array;
+
+    // Host data initialized once per level 
+    std::vector<upanel_t> upanels;
+    std::vector<lpanel_t> lpanels;
+    std::vector<int> ist, iend, jst, jend, maxGemmRows, maxGemmCols;
+    int max_nlb, max_nub;
+
+    void setBatchSize(int batch_size);
+    void setMaxDims();
+    void copyToGPU();
+};
+
 #define MAX_CUDA_STREAMS 64 
 struct LUstructGPU_t
 {
@@ -293,6 +327,7 @@ struct LUstructGPU_t
     // Magma is needed for non-uniform batched execution 
     magma_queue_t magma_queue;
     LUMarshallData marshall_data;
+    SCUMarshallData sc_marshall_data;
 
     /* Sherry: Allocate an array of buffers for the diagonal blocks
        on the leaf level.
@@ -330,4 +365,8 @@ struct LUstructGPU_t
     
 };/* LUstructGPU_t{} */
 
-
+void scatterGPU_driver(
+    int iSt, int iEnd, int jSt, int jEnd, double *gemmBuff, int LDgemmBuff,
+    int maxSuperSize, int ldt, lpanelGPU_t lpanel, upanelGPU_t upanel, 
+    LUstructGPU_t *dA, cudaStream_t cuStream
+);

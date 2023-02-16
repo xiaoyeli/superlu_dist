@@ -273,6 +273,21 @@ __global__ void scatterGPU(
     __syncthreads();
 }
 
+void scatterGPU_driver(
+    int iSt, int iEnd, int jSt, int jEnd, double *gemmBuff, int LDgemmBuff,
+    int maxSuperSize, int ldt, lpanelGPU_t lpanel, upanelGPU_t upanel, 
+    LUstructGPU_t *dA, cudaStream_t cuStream
+)
+{
+    dim3 dimBlock(ldt); // 1d thread
+    dim3 dimGrid(iEnd - iSt, jEnd - jSt);
+    size_t sharedMemorySize = 3 * maxSuperSize * sizeof(int_t);
+
+    scatterGPU<<<dimGrid, dimBlock, sharedMemorySize, cuStream>>>(
+        iSt, jSt, gemmBuff, LDgemmBuff, lpanel, upanel, dA
+    );
+}
+
 int_t LUstruct_v100::dSchurComplementUpdateGPU(
     int streamId,
     int_t k, lpanel_t &lpanel, upanel_t &upanel)
@@ -327,23 +342,19 @@ int_t LUstruct_v100::dSchurComplementUpdateGPU(
             double alpha = 1.0;
             double beta = 0.0;
 #ifndef NDEBUG
-            printf("m=%d, n=%d, k=%d\n", gemm_m, gemm_n, gemm_k);
+            // printf("m=%d, n=%d, k=%d\n", gemm_m, gemm_n, gemm_k);
 #endif
             cublasDgemm(handle, CUBLAS_OP_N, CUBLAS_OP_N,
                         gemm_m, gemm_n, gemm_k, &alpha,
                         lpanel.blkPtrGPU(iSt), lpanel.LDA(),
                         upanel.blkPtrGPU(jSt), upanel.LDA(), &beta,
                         A_gpu.gpuGemmBuffs[streamId], gemm_m);
-
-            // setting up scatter
-            dim3 dimBlock(ldt); // 1d thread
-            dim3 dimGrid(iEnd - iSt, jEnd - jSt);
-            size_t sharedMemorySize = 3 * A_gpu.maxSuperSize * sizeof(int_t);
-
-            scatterGPU<<<dimGrid, dimBlock, sharedMemorySize, cuStream>>>(
-                iSt, jSt,
-                A_gpu.gpuGemmBuffs[streamId], gemm_m,
-                lpanel.gpuPanel, upanel.gpuPanel, dA_gpu);
+            
+            scatterGPU_driver(
+                iSt, iEnd, jSt, jEnd, A_gpu.gpuGemmBuffs[streamId], gemm_m,
+                A_gpu.maxSuperSize, ldt, lpanel.gpuPanel, upanel.gpuPanel, 
+                dA_gpu, cuStream
+            );
         }
     }
     gpuErrchk(cudaStreamSynchronize(A_gpu.cuStreams[streamId]));
@@ -825,6 +836,7 @@ int_t LUstruct_v100::setLUstruct_GPU()
     int num_dfbufs = ( options->batchCount > 0 ) ? 
 	SUPERLU_MAX(maxLeafNodes, MAX_CUDA_STREAMS) : MAX_CUDA_STREAMS;
     printf("..setLUstrut_GPU: num_dfbufs %d\n", num_dfbufs); fflush(stdout);
+    printf("..setLUstrut_GPU: gembufsize = %d\n", A_gpu.gemmBufferSize);
 
     A_gpu.dFBufs = (double **) SUPERLU_MALLOC(num_dfbufs * sizeof(double *));
     A_gpu.gpuGemmBuffs = (double **) SUPERLU_MALLOC(num_dfbufs * sizeof(double *));
@@ -833,8 +845,10 @@ int_t LUstruct_v100::setLUstruct_GPU()
         gpuErrchk(cudaMalloc(&(A_gpu.gpuGemmBuffs[i]), A_gpu.gemmBufferSize * sizeof(double)));
     }
 
-    // Wajih: Adding allocation for batched LU marshalled data 
+    // Wajih: Adding allocation for batched LU and SCU marshalled data
+    // TODO: these are serialized workspaces, so the allocations can be shared 
     A_gpu.marshall_data.setBatchSize(num_dfbufs);
+    A_gpu.sc_marshall_data.setBatchSize(num_dfbufs);
 
     tcuMalloc = SuperLU_timer_() - tcuMalloc;
     printf("Time to allocate GPU memory: %g\n", tcuMalloc);
