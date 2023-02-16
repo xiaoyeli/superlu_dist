@@ -173,13 +173,13 @@ __device__ int computeIndirectMapGPU(int *rcS2D, int_t srcLen, int_t *srcVec,
     return 0;
 }
 
-__global__ void scatterGPU(
+__device__ void scatterGPU_dev(
     int iSt, int jSt,
     double *gemmBuff, int LDgemmBuff,
-    lpanelGPU_t lpanel, upanelGPU_t upanel,
-    LUstructGPU_t *dA)
+    lpanelGPU_t& lpanel, upanelGPU_t& upanel,
+    LUstructGPU_t *dA
+)
 {
-
     // calculate gi,gj
     int ii = iSt + blockIdx.x;
     int jj = jSt + blockIdx.y;
@@ -273,6 +273,40 @@ __global__ void scatterGPU(
     __syncthreads();
 }
 
+__global__ void scatterGPU(
+    int iSt, int jSt,
+    double *gemmBuff, int LDgemmBuff,
+    lpanelGPU_t lpanel, upanelGPU_t upanel,
+    LUstructGPU_t *dA)
+{
+    scatterGPU_dev(iSt, jSt, gemmBuff, LDgemmBuff, lpanel, upanel, dA);
+}
+
+__global__ void scatterGPU_batch(
+    int* iSt_batch, int *iEnd_batch, int *jSt_batch, int *jEnd_batch, 
+    double **gemmBuff_ptrs, int *LDgemmBuff_batch, lpanelGPU_t *lpanels, 
+    upanelGPU_t *upanels, LUstructGPU_t *dA
+)
+{
+    int batch_index = blockIdx.z;
+    int iSt = iSt_batch[batch_index], iEnd = iEnd_batch[batch_index];
+    int jSt = jSt_batch[batch_index], jEnd = jEnd_batch[batch_index];
+    
+    int ii = iSt + blockIdx.x;
+    int jj = jSt + blockIdx.y;
+    if(ii >= iEnd || jj >= jEnd)
+        return;
+    
+    double* gemmBuff = gemmBuff_ptrs[batch_index];
+    if(gemmBuff == NULL)
+        return;
+
+    int LDgemmBuff = LDgemmBuff_batch[batch_index];
+    lpanelGPU_t& lpanel = lpanels[batch_index];
+    upanelGPU_t& upanel = upanels[batch_index];
+    scatterGPU_dev(iSt, jSt, gemmBuff, LDgemmBuff, lpanel, upanel, dA);
+}
+
 void scatterGPU_driver(
     int iSt, int iEnd, int jSt, int jEnd, double *gemmBuff, int LDgemmBuff,
     int maxSuperSize, int ldt, lpanelGPU_t lpanel, upanelGPU_t upanel, 
@@ -286,6 +320,27 @@ void scatterGPU_driver(
     scatterGPU<<<dimGrid, dimBlock, sharedMemorySize, cuStream>>>(
         iSt, jSt, gemmBuff, LDgemmBuff, lpanel, upanel, dA
     );
+
+    gpuErrchk(cudaGetLastError());
+}
+
+void scatterGPU_batchDriver(
+    int* iSt_batch, int *iEnd_batch, int *jSt_batch, int *jEnd_batch, 
+    int max_ilen, int max_jlen, double **gemmBuff_ptrs, int *LDgemmBuff_batch, 
+    int maxSuperSize, int ldt, lpanelGPU_t *lpanels, upanelGPU_t *upanels, 
+    LUstructGPU_t *dA, int batchCount, cudaStream_t cuStream
+)
+{
+    dim3 dimBlock(ldt); // 1d thread
+    dim3 dimGrid(max_ilen, max_jlen, batchCount);
+    size_t sharedMemorySize = 3 * maxSuperSize * sizeof(int_t);
+
+    scatterGPU_batch<<<dimGrid, dimBlock, sharedMemorySize, cuStream>>>(
+        iSt_batch, iEnd_batch, jSt_batch, jEnd_batch, gemmBuff_ptrs, 
+        LDgemmBuff_batch, lpanels, upanels, dA 
+    );
+
+    gpuErrchk(cudaGetLastError());
 }
 
 int_t LUstruct_v100::dSchurComplementUpdateGPU(

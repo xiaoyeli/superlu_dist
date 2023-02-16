@@ -285,8 +285,16 @@ struct SCUMarshallData
     int *dev_lda_array, *dev_ldb_array, *dev_ldc_array;
     int *dev_m_array, *dev_n_array, *dev_k_array;
 
+    // Panel device pointer data and scu loop limits 
+    lpanelGPU_t* dev_gpu_lpanels;
+    upanelGPU_t* dev_gpu_upanels;
+    int* dev_ist, *dev_iend, *dev_jst, *dev_jend;
+    
     // Max of marshalled gemm device data 
-    int max_m, max_n, max_k;
+    int max_m, max_n, max_k;    
+    
+    // Max of marshalled loop limits  
+    int max_ilen, max_jlen;
 
     // Number of marshalled operations
     int batchsize;
@@ -299,11 +307,14 @@ struct SCUMarshallData
     // Host data initialized once per level 
     std::vector<upanel_t> upanels;
     std::vector<lpanel_t> lpanels;
+    std::vector<upanelGPU_t> host_gpu_upanels;
+    std::vector<lpanelGPU_t> host_gpu_lpanels;
     std::vector<int> ist, iend, jst, jend, maxGemmRows, maxGemmCols;
     int max_nlb, max_nub;
 
     void setBatchSize(int batch_size);
     void setMaxDims();
+    void copyPanelDataToGPU();
     void copyToGPU();
 };
 
@@ -369,4 +380,11 @@ void scatterGPU_driver(
     int iSt, int iEnd, int jSt, int jEnd, double *gemmBuff, int LDgemmBuff,
     int maxSuperSize, int ldt, lpanelGPU_t lpanel, upanelGPU_t upanel, 
     LUstructGPU_t *dA, cudaStream_t cuStream
+);
+
+void scatterGPU_batchDriver(
+    int* iSt_batch, int *iEnd_batch, int *jSt_batch, int *jEnd_batch, 
+    int max_ilen, int max_jlen, double **gemmBuff_ptrs, int *LDgemmBuff_batch, 
+    int maxSuperSize, int ldt, lpanelGPU_t *lpanels, upanelGPU_t *upanels, 
+    LUstructGPU_t *dA, int batchCount, cudaStream_t cuStream
 );

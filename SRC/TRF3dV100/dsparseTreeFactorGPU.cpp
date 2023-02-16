@@ -69,6 +69,9 @@ SCUMarshallData::SCUMarshallData()
     dev_A_ptrs = dev_B_ptrs = dev_C_ptrs = NULL;
     dev_lda_array = dev_ldb_array = dev_ldc_array = NULL;
     dev_m_array = dev_n_array = dev_k_array = NULL;
+    dev_gpu_lpanels = NULL;
+    dev_gpu_upanels = NULL;
+    dev_ist = dev_iend = dev_jst = dev_jend = NULL;
 }
 
 SCUMarshallData::~SCUMarshallData()
@@ -82,6 +85,12 @@ SCUMarshallData::~SCUMarshallData()
     gpuErrchk(cudaFree(dev_m_array));
     gpuErrchk(cudaFree(dev_n_array));
     gpuErrchk(cudaFree(dev_k_array));
+    gpuErrchk(cudaFree(dev_gpu_lpanels));
+    gpuErrchk(cudaFree(dev_gpu_upanels));
+    gpuErrchk(cudaFree(dev_ist));
+    gpuErrchk(cudaFree(dev_iend));
+    gpuErrchk(cudaFree(dev_jst));
+    gpuErrchk(cudaFree(dev_jend));
 }
 
 void SCUMarshallData::setBatchSize(int batch_size)
@@ -97,6 +106,14 @@ void SCUMarshallData::setBatchSize(int batch_size)
     gpuErrchk(cudaMalloc(&dev_m_array, (batch_size + 1) * sizeof(int)));
     gpuErrchk(cudaMalloc(&dev_n_array, (batch_size + 1) * sizeof(int)));
     gpuErrchk(cudaMalloc(&dev_k_array, (batch_size + 1) * sizeof(int)));
+
+    gpuErrchk(cudaMalloc(&dev_ist, batch_size * sizeof(int)));
+    gpuErrchk(cudaMalloc(&dev_iend, batch_size * sizeof(int)));
+    gpuErrchk(cudaMalloc(&dev_jst, batch_size * sizeof(int)));
+    gpuErrchk(cudaMalloc(&dev_jend, batch_size * sizeof(int)));
+
+    gpuErrchk(cudaMalloc(&dev_gpu_lpanels, batch_size * sizeof(lpanelGPU_t)));
+    gpuErrchk(cudaMalloc(&dev_gpu_upanels, batch_size * sizeof(upanelGPU_t)));
     
     host_A_ptrs.resize(batch_size);
     host_B_ptrs.resize(batch_size);
@@ -109,6 +126,8 @@ void SCUMarshallData::setBatchSize(int batch_size)
     host_k_array.resize(batch_size);
     upanels.resize(batch_size);
     lpanels.resize(batch_size);
+    host_gpu_upanels.resize(batch_size);
+    host_gpu_lpanels.resize(batch_size);
     ist.resize(batch_size);
     iend.resize(batch_size);
     jst.resize(batch_size);
@@ -119,12 +138,14 @@ void SCUMarshallData::setBatchSize(int batch_size)
 
 void SCUMarshallData::setMaxDims()
 {
-    max_n = max_k = max_m = 0;
+    max_n = max_k = max_m = max_ilen = max_jlen = 0;
     for(int i = 0; i < batchsize; i++)
     {
         max_m = SUPERLU_MAX(max_m, host_m_array[i]); 
         max_n = SUPERLU_MAX(max_n, host_n_array[i]); 
         max_k = SUPERLU_MAX(max_k, host_k_array[i]); 
+        max_ilen = SUPERLU_MAX(max_ilen, iend[i] - ist[i]);
+        max_jlen = SUPERLU_MAX(max_jlen, jend[i] - jst[i]);
     }
 }
 
@@ -141,6 +162,17 @@ void SCUMarshallData::copyToGPU()
     gpuErrchk(cudaMemcpy(dev_m_array, host_m_array.data(), batchsize * sizeof(int), cudaMemcpyHostToDevice));
     gpuErrchk(cudaMemcpy(dev_n_array, host_n_array.data(), batchsize * sizeof(int), cudaMemcpyHostToDevice));
     gpuErrchk(cudaMemcpy(dev_k_array, host_k_array.data(), batchsize * sizeof(int), cudaMemcpyHostToDevice));
+
+    gpuErrchk(cudaMemcpy(dev_ist, ist.data(), batchsize * sizeof(int), cudaMemcpyHostToDevice));
+    gpuErrchk(cudaMemcpy(dev_iend, iend.data(), batchsize * sizeof(int), cudaMemcpyHostToDevice));
+    gpuErrchk(cudaMemcpy(dev_jst, jst.data(), batchsize * sizeof(int), cudaMemcpyHostToDevice));
+    gpuErrchk(cudaMemcpy(dev_jend, jend.data(), batchsize * sizeof(int), cudaMemcpyHostToDevice));
+}
+
+void SCUMarshallData::copyPanelDataToGPU()
+{
+    gpuErrchk(cudaMemcpy(dev_gpu_lpanels, host_gpu_lpanels.data(), batchsize * sizeof(lpanelGPU_t), cudaMemcpyHostToDevice));
+    gpuErrchk(cudaMemcpy(dev_gpu_upanels, host_gpu_upanels.data(), batchsize * sizeof(upanelGPU_t), cudaMemcpyHostToDevice));
 }
 
 int_t LUstruct_v100::dDFactPSolveGPU(int_t k, int_t offset, ddiagFactBufs_t **dFBufs)
@@ -541,6 +573,7 @@ void LUstruct_v100::initSCUMarshallData(int k_st, int k_end, int_t *perm_c_supno
 {
     SCUMarshallData& sc_mdata = A_gpu.sc_marshall_data;
     sc_mdata.max_nlb = sc_mdata.max_nub = 0;
+    sc_mdata.batchsize = k_end - k_st;
 
     for (int_t k0 = k_st; k0 < k_end; k0++)
     {
@@ -559,6 +592,9 @@ void LUstruct_v100::initSCUMarshallData(int k_st, int k_end, int_t *perm_c_supno
             // Set gemm loop parameters for the panels 
             upanel_t& upanel = sc_mdata.upanels[buffer_offset];
             lpanel_t& lpanel = sc_mdata.lpanels[buffer_offset];
+            
+            sc_mdata.host_gpu_upanels[buffer_offset] = upanel.gpuPanel;
+            sc_mdata.host_gpu_lpanels[buffer_offset] = lpanel.gpuPanel;
 
             if(!upanel.isEmpty() && !lpanel.isEmpty())
             {
@@ -594,6 +630,8 @@ void LUstruct_v100::initSCUMarshallData(int k_st, int k_end, int_t *perm_c_supno
             }
         }
     }
+    
+    sc_mdata.copyPanelDataToGPU();
 }
 
 int LUstruct_v100::marshallSCUBatchedDataOuter(int k_st, int k_end, int_t *perm_c_supno)
@@ -629,8 +667,7 @@ int LUstruct_v100::marshallSCUBatchedDataInner(int k_st, int k_end, int_t *perm_
 {
     int done_j = 1;
     SCUMarshallData& sc_mdata = A_gpu.sc_marshall_data;
-    sc_mdata.batchsize = k_end - k_st;
-
+    
     for(int k0 = k_st; k0 < k_end; k0++)
     {   
         int k = perm_c_supno[k0];
@@ -968,7 +1005,7 @@ int LUstruct_v100::dsparseTreeFactorBatchGPU(
     // Copy the diagonal block data over to the bcast buffers
     marshallBatchedBufferCopyData(k_st, k_end, perm_c_supno);
 
-    kblas_copyBlock_vbatch(
+    copyBlock_vbatch(
         stream, mdata.dev_diag_dim_array, mdata.dev_panel_dim_array, mdata.max_diag, mdata.max_panel,
         mdata.dev_diag_ptrs, mdata.dev_diag_ld_array, mdata.dev_panel_ptrs, mdata.dev_panel_ld_array,
         mdata.batchsize
@@ -1026,7 +1063,13 @@ int LUstruct_v100::dsparseTreeFactorBatchGPU(
                     0.0, sc_mdata.dev_C_ptrs, sc_mdata.dev_ldc_array, sc_mdata.batchsize,
                     sc_mdata.max_m, sc_mdata.max_n, sc_mdata.max_k, A_gpu.magma_queue 
                 );
-
+                
+                scatterGPU_batchDriver(
+                    sc_mdata.dev_ist, sc_mdata.dev_iend, sc_mdata.dev_jst, sc_mdata.dev_jend, 
+                    sc_mdata.max_ilen, sc_mdata.max_jlen, sc_mdata.dev_C_ptrs, sc_mdata.dev_ldc_array, 
+                    A_gpu.maxSuperSize, ldt, sc_mdata.dev_gpu_lpanels, sc_mdata.dev_gpu_upanels, 
+                    dA_gpu, sc_mdata.batchsize, A_gpu.cuStreams[0]
+                );
                 // for(int k0 = k_st; k0 < k_end; k0++)
                 // {
                 //     int batch_index = k0 - k_st;
@@ -1051,21 +1094,21 @@ int LUstruct_v100::dsparseTreeFactorBatchGPU(
                 //     }
                 // }
 
-                for(int k0 = k_st; k0 < k_end; k0++)
-                {
-                    int batch_index = k0 - k_st;
-                    cudaStream_t cuStream = A_gpu.cuStreams[0];
-                    if(sc_mdata.host_A_ptrs[batch_index])
-                    {
-                        scatterGPU_driver(
-                            sc_mdata.ist[batch_index], sc_mdata.iend[batch_index], 
-                            sc_mdata.jst[batch_index], sc_mdata.jend[batch_index], 
-                            sc_mdata.host_C_ptrs[batch_index], sc_mdata.host_ldc_array[batch_index],
-                            A_gpu.maxSuperSize, ldt, sc_mdata.lpanels[batch_index].gpuPanel,
-                            sc_mdata.upanels[batch_index].gpuPanel, dA_gpu, cuStream
-                        );
-                    }
-                }
+                // for(int k0 = k_st; k0 < k_end; k0++)
+                // {
+                //     int batch_index = k0 - k_st;
+                //     cudaStream_t cuStream = A_gpu.cuStreams[0];
+                //     if(sc_mdata.host_A_ptrs[batch_index])
+                //     {
+                //         scatterGPU_driver(
+                //             sc_mdata.ist[batch_index], sc_mdata.iend[batch_index], 
+                //             sc_mdata.jst[batch_index], sc_mdata.jend[batch_index], 
+                //             sc_mdata.host_C_ptrs[batch_index], sc_mdata.host_ldc_array[batch_index],
+                //             A_gpu.maxSuperSize, ldt, sc_mdata.lpanels[batch_index].gpuPanel,
+                //             sc_mdata.upanels[batch_index].gpuPanel, dA_gpu, cuStream
+                //         );
+                //     }
+                // }
             }
         }
     }
