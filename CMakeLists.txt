@@ -296,6 +296,7 @@ endif()
 if (TPL_ENABLE_NVSHMEM)   ## want to use nvshmem
     set(NVSHMEM_LIB ${TPL_NVSHMEM_LIBRARIES}) 
     message("-- Enabled support for NVSHMEM='${NVSHMEM_LIB}'")
+    set(HAVE_NVSHMEM TRUE)
 endif()
 
 #--------------------- HIP libraries ---------------------

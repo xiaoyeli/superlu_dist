@@ -1,7 +1,8 @@
+#ifdef HAVE_NVSHMEM  
 #include "mpi.h"
 #include "cuda.h"
 #include "cuda_runtime.h"
-
+#endif
 
 /* ************************************************* */
 /*  reuse L and U                                    */
@@ -88,7 +89,7 @@ extern int *d_msgnum_u;
 #define RDMA_FLAG_SIZE 2
 
 
-
+#ifdef HAVE_NVSHMEM 
 #undef CUDA_CHECK
 #define CUDA_CHECK(stmt)                                                          \
     do {                                                                          \
@@ -110,6 +111,7 @@ do {                                                    \
         exit(-1);                                       \
     }                                                   \
 } while (0)
+#endif
 
 
 

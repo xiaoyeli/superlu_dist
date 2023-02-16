@@ -1556,13 +1556,15 @@ pdgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 	       For repeated call to pdgssvx(), no need to re-initialilze
 	       the Solve data & communication structures, unless a new
 	       factorization with Fact == DOFACT or SamePattern is asked for. */			   
+		
+		if (getenv("SUPERLU_ACC_SOLVE")){
 		int_t nsupers = getNsupers(n, LUstruct->Glu_persist);
 		int* supernodeMask = int32Malloc_dist(nsupers);
 		for(int ii=0; ii<nsupers; ii++)
 			supernodeMask[ii]=1;
-
 		pdgstrs_init_device_lsum_x(options, n, m_loc, nrhs, grid,LUstruct, SOLVEstruct,supernodeMask);
-		SUPERLU_FREE(supernodeMask);		 	   
+		SUPERLU_FREE(supernodeMask);
+		}		 	   
 	}
 
 
@@ -1650,13 +1652,14 @@ pdgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 				ABORT("Malloc fails for gstrs_comm[]");
 			pdgstrs_init(n, m_loc, 1, fst_row, perm_r, perm_c, grid,
 					Glu_persist, SOLVEstruct1);
-
+			if (getenv("SUPERLU_ACC_SOLVE")){
 			int_t nsupers = getNsupers(n, LUstruct->Glu_persist);
 			int* supernodeMask = int32Malloc_dist(nsupers);
 			for(int ii=0; ii<nsupers; ii++)
 				supernodeMask[ii]=1;
 			pdgstrs_init_device_lsum_x(options, n, m_loc, 1, grid,LUstruct, SOLVEstruct1,supernodeMask);		 
 			SUPERLU_FREE(supernodeMask);
+			}
 	    }
 
 	    pdgsrfs(options, n, A, anorm, LUstruct, ScalePermstruct, grid,

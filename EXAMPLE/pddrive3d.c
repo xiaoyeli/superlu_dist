@@ -218,10 +218,7 @@ main (int argc, char *argv[])
 	for (int k = 0; k < npdep; ++k) 
 	    for (int i = 0; i < nprow; ++i)
 		for (int j = 0; j < npcol; ++j) usermap[i + j*nprow + k*nprow*npcol] = p++;
-	superlu_gridmap3d(SubComm, nprow, npcol, npdep, usermap, &grid);
-    #ifdef GPU_SOLVE
-    nv_init_wrapper(grid.grid2d.comm);
-    #endif     
+	superlu_gridmap3d(SubComm, nprow, npcol, npdep, usermap, &grid);    
 	SUPERLU_FREE(usermap);
 
 #ifdef GPU_ACC
@@ -256,10 +253,7 @@ main (int argc, char *argv[])
         /* ------------------------------------------------------------
            INITIALIZE THE SUPERLU PROCESS GRID.
            ------------------------------------------------------------ */
-        superlu_gridinit3d (MPI_COMM_WORLD, nprow, npcol, npdep, &grid);
-        #ifdef GPU_SOLVE
-        nv_init_wrapper(grid.grid2d.comm);
-        #endif        
+        superlu_gridinit3d (MPI_COMM_WORLD, nprow, npcol, npdep, &grid);      
 #ifdef GPU_ACC
         int superlu_acc_offload = get_acc_offload();
         if (superlu_acc_offload) {

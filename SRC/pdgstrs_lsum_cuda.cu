@@ -39,13 +39,15 @@ at the top-level directory.
 
 #include <stdio.h>
 #include "mpi.h"
+#ifdef HAVE_NVSHMEM
 #include <nvshmem.h>
 #include <nvshmemx.h>
 #include <stdlib.h>
 #include <sched.h>
-#include <nvml.h>
 #include <omp.h>
 #include <cooperative_groups.h>
+#include <nvml.h>
+#endif
 
 #undef CUDA_CHECK
 #define CUDA_CHECK(stmt)                                                          \
@@ -471,6 +473,7 @@ __global__ void simple_shift(int *target, int mype, int npes) {
 
 void nv_init_wrapper( MPI_Comm mpi_comm)
 {
+#ifdef HAVE_NVSHMEM    
     int rank, nranks, ndevices;
     nvshmemx_init_attr_t attr;
     int mype, npes, mype_node;
@@ -514,11 +517,11 @@ void nv_init_wrapper( MPI_Comm mpi_comm)
     //fflush(stdout);
     //simple_shift<<<1, 256>>>(target, mype, npes);
     //CUDA_CHECK(cudaDeviceSynchronize());
-
+#endif
 }
 
 void prepare_multiGPU_buffers(int flag_bc_size,int flag_rd_size,int ready_x_size,int ready_lsum_size,int my_flag_bc_size,int my_flag_rd_size){
-
+#ifdef HAVE_NVSHMEM 
     flag_bc_q = (int *)nvshmem_malloc( flag_bc_size * sizeof(int)); // for sender
     flag_rd_q = (int *)nvshmem_malloc( flag_rd_size * sizeof(int)); // for sender
     ready_x = (double *)nvshmem_malloc( ready_x_size * sizeof(double)); // for receiver
@@ -544,19 +547,22 @@ void prepare_multiGPU_buffers(int flag_bc_size,int flag_rd_size,int ready_x_size
     //       flag_rd_size , ready_lsum_size,
     //       sizeof(int), sizeof(double) );
     //fflush(stdout);
-
+#endif
 }
 
 void delete_multiGPU_buffers(){
+#ifdef HAVE_NVSHMEM     
     nvshmem_free(my_flag_bc);
     nvshmem_free(my_flag_rd);
     nvshmem_free(ready_x);  
     nvshmem_free(ready_lsum);
+#endif
 }
 
 
 __device__ void C_BcTree_forwardMessageSimple_Device(C_Tree* tree,  int* flag_bc_q,  int* my_flag_bc, int mype, int tid,double* ready_x, int maxrecvsz){
-//int BCsendoffset;
+#ifdef HAVE_NVSHMEM
+    //int BCsendoffset;
 int sig = 1;
 int data_ofset=my_flag_bc[0]*maxrecvsz;
 for( int idxRecv = 0; idxRecv < tree->destCnt_; ++idxRecv ) {
@@ -596,10 +602,12 @@ for( int idxRecv = 0; idxRecv < tree->destCnt_; ++idxRecv ) {
 
     }
 }
+#endif
 }
 
 __device__ void C_RdTree_forwardMessageBlock_Device(C_Tree* Tree, int* flag_rd_q, int* my_flag_rd, int mype, int bid, int tid, double* ready_lsum, int maxrecvsz, int myroot){
-int data_ofset,sig_ofset;
+#ifdef HAVE_NVSHMEM
+    int data_ofset,sig_ofset;
 if (Tree->myIdx % 2 == 0) {
     sig_ofset = my_flag_rd[0] * 2;
     data_ofset = my_flag_rd[0] * maxrecvsz * 2;
@@ -631,11 +639,13 @@ int sig=1;
 if (tid==0)  nvshmemx_int_signal((int*)flag_rd_q+sig_ofset, sig, myroot);
 //if (tid==0)
 //    printf("Bsend:%d,%d,%d,%d,%d\n", mype, my_flag_rd[0],data_ofset, sig_ofset,my_flag_rd[1]);
+#endif
 }
 
 
 __device__ void C_RdTree_forwardMessageWarp_Device(C_Tree* Tree, int* flag_rd_q, int* my_flag_rd, int mype, int bid, int tid, double* ready_lsum, int maxrecvsz, int myroot){
-int data_ofset,sig_ofset;
+#ifdef HAVE_NVSHMEM
+    int data_ofset,sig_ofset;
 if (Tree->myIdx % 2 == 0) {
     sig_ofset = my_flag_rd[0] * 2;
     data_ofset = my_flag_rd[0] * maxrecvsz * 2;
@@ -669,10 +679,11 @@ int sig=1;
 if (tid%32==0)  nvshmemx_int_signal((int*)flag_rd_q+sig_ofset, sig, myroot);
 //if (tid%32==0)
 //    printf("Wsend:%d,%d,%d,%d,%d\n", mype, my_flag_rd[0],data_ofset, sig_ofset,my_flag_rd[1]);
-
+#endif
 }
 
 __device__ void C_RdTree_forwardMessageThread_Device(C_Tree* Tree, int* flag_rd_q, int* my_flag_rd, int mype, int bid, int tid, double* ready_lsum, int maxrecvsz, int myroot){
+#ifdef HAVE_NVSHMEM
 int data_ofset,sig_ofset;
 if (Tree->myIdx % 2 == 0) {
     sig_ofset = my_flag_rd[0] * 2;
@@ -705,6 +716,7 @@ int sig=1;
 nvshmemx_int_signal((int*)flag_rd_q+sig_ofset, sig, myroot);
 //printf("Tsend:%d,%d,%d,%d,%d\n",
 //       mype, my_flag_rd[0],data_ofset, sig_ofset,my_flag_rd[1]);
+#endif
 }
 
 
@@ -744,7 +756,7 @@ int_t *ilsum,
 int nbrow_loc,
 int_t  nsupers
 ) {
-
+#ifdef HAVE_NVSHMEM
 int bid = blockIdx.x;
 //int global_id= blockIdx.x * blockDim.x * blockDim.y + threadIdx.x + threadIdx.y * blockDim.x;
 int tid = threadIdx.x + threadIdx.y * blockDim.x;
@@ -1128,7 +1140,7 @@ if (bid==2){
         //if (tid==0) printf("iam=%d,tid=%d,i=%d, recv_num=%d,cur_send_num=%d\n",mype,tid,i,recv_num,cur_send_num);
     }
 }
-
+#endif
 }
 
 
@@ -2090,6 +2102,8 @@ if(procs==1){
 	dim3 dimBlock(nthread_x, nthread_y);
 	dlsum_fmod_inv_gpu_mrhs<<< nbcol_loc+nblock_ex, dimBlock >>>(nbcol_loc,nblock_ex,lsum,x,nrhs,maxsup,nsupers,fmod,LBtree_ptr,LRtree_ptr,ilsum,Lrowind_bc_dat,Lrowind_bc_offset,Lnzval_bc_dat,Lnzval_bc_offset,Linv_bc_dat,Linv_bc_offset,Lindval_loc_bc_dat,Lindval_loc_bc_offset, xsup,bcols_masked, grid);
 }else{
+
+#ifdef HAVE_NVSHMEM    
 	mype = nvshmem_my_pe();
 	npes = nvshmem_n_pes();
 	// int mype_node = nvshmem_team_my_pe(NVSHMEMX_TEAM_NODE);
@@ -2154,10 +2168,11 @@ if(procs==1){
 			// CUDA_CHECK(cudaGetLastError()); // Yang: this line causes runtime error... 
 		} // if status
 	//} // if npes==1
+#else
+    printf("NVSHMEM is needed for multi-GPU solve\n");
+    exit(1);
+#endif
 }
-
-
-
 
 CUDA_CHECK(cudaDeviceSynchronize());
 }
@@ -2868,7 +2883,7 @@ void dlsum_bmod_inv_gpu_wrap
 	
 		gpuDeviceSynchronize();
 	}else{
-
+#ifdef HAVE_NVSHMEM
      //printf("pinv %d\n",Llu->inv);
      //fflush(stdout);
 
@@ -2971,6 +2986,11 @@ void dlsum_bmod_inv_gpu_wrap
          gpuDeviceSynchronize();
          //printf("(%d) back to CPU !!!!! \n",mype);
      //}
+     #else
+        printf("NVSHMEM is needed for multi-GPU solve\n");
+        exit(1);
+    #endif
+
 	}
  }
 

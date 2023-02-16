@@ -31,14 +31,15 @@ FILE=$FILE_DIR/$FILE_NAME
 FILE_NAME3D=pddrive3d
 FILE3D=$FILE_DIR/$FILE_NAME3D
 
+
 # nprows=(1  1 1)
 # npcols=(1 1 1)  
 # npz=(1 2 4)
 
 
-nprows=(1 1  1)
-npcols=(1 1 1)  
-npz=(1 2 4)
+nprows=(1 )
+npcols=(1 )  
+npz=(1 )
 
 
 #export NUM_GPU_STREAMS=1
@@ -92,7 +93,7 @@ export MAX_BUFFER_SIZE=500000000
 export SUPERLU_NUM_GPU_STREAMS=1
 export SUPERLU_BIND_MPI_GPU=1
 export SUPERLU_ACC_OFFLOAD=1 # this can be 0 to do CPU tests on GPU nodes
-# export GPU3DVERSION=1
+export GPU3DVERSION=1
 # export NEW3DSOLVE=1    # Note: SUPERLU_ACC_OFFLOAD=1 and GPU3DVERSION=1 still do CPU factorization after https://github.com/xiaoyeli/superlu_dist/commit/035106d8949bc3abf86866aea1331b2948faa1db#diff-44fa50297abaedcfaed64f93712850a8fce55e8e57065d96d0ba28d8680da11eR223
 
 

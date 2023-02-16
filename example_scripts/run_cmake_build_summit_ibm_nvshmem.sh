@@ -42,4 +42,4 @@ cmake .. \
   -DCMAKE_VERBOSE_MAKEFILE:BOOL=ON
 
 make pddrive
-# make pddrive3d
+make pddrive3d

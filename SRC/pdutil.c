@@ -577,7 +577,7 @@ dDestroy_LU(int_t n, gridinfo_t *grid, dLUstruct_t *LUstruct)
     checkGPU (gpuFree (Llu->d_Uindval_loc_bc_dat)); 
     checkGPU (gpuFree (Llu->d_Uindval_loc_bc_offset));
 
-
+    #ifdef HAVE_NVSHMEM  
     /* nvshmem related*/
     SUPERLU_FREE(mystatus);
     SUPERLU_FREE(h_nfrecv);
@@ -589,7 +589,7 @@ dDestroy_LU(int_t n, gridinfo_t *grid, dLUstruct_t *LUstruct)
 
     checkGPU (gpuFree (d_recv_cnt));
     checkGPU (gpuFree (d_recv_cnt_u));
-
+    #endif
 
 
 #endif
@@ -881,6 +881,7 @@ pdgstrs_init_device_lsum_x(superlu_dist_options_t *options, int_t n, int_t m_loc
 
 
     /* nvshmem related. */
+    #ifdef HAVE_NVSHMEM  
     int flag_bc_size = RDMA_FLAG_SIZE * (nc+1);
     int flag_rd_size = RDMA_FLAG_SIZE * nlb * 2;    
     int my_flag_bc_size = RDMA_FLAG_SIZE * (CEILING( nsupers, grid->npcol)+1);
@@ -888,6 +889,7 @@ pdgstrs_init_device_lsum_x(superlu_dist_options_t *options, int_t n, int_t m_loc
     int maxrecvsz = sp_ienv_dist(3, options)* nrhs + SUPERLU_MAX( XK_H, LSUM_H );
     int ready_x_size = maxrecvsz*CEILING( nsupers, grid->npcol);
     int ready_lsum_size = 2*maxrecvsz*CEILING( nsupers, grid->nprow);
+    nv_init_wrapper(grid->comm);
     prepare_multiGPU_buffers(flag_bc_size,flag_rd_size,ready_x_size,ready_lsum_size,my_flag_bc_size,my_flag_rd_size);
 
     /////* for L solve *////
@@ -1075,7 +1077,7 @@ pdgstrs_init_device_lsum_x(superlu_dist_options_t *options, int_t n, int_t m_loc
     //printf("(%d) NVSHMEM buffer size, L= %lf MB, U= %lf MB\n",iam,mygpumem_L_nv, mygpumem_U_nv);
     //fflush(stdout);
 
-
+    #endif
 
     
 
@@ -1101,6 +1103,7 @@ pdgstrs_delete_device_lsum_x(dSOLVEstruct_t *SOLVEstruct)
 
 /* nvshmem related*/
 
+    #ifdef HAVE_NVSHMEM  
     delete_multiGPU_buffers();
 
     checkGPU(gpuFree(d_colnum));       
@@ -1117,7 +1120,7 @@ pdgstrs_delete_device_lsum_x(dSOLVEstruct_t *SOLVEstruct)
     checkGPU(gpuFree(d_mymasklengthmod));       
     checkGPU(gpuFree(d_msgnum));       
     checkGPU(gpuFree(d_flag_mod));    
-
+    #endif
 
 #endif  
     return 0;

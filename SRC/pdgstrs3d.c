@@ -143,7 +143,8 @@ int_t trs_B_init3d_newsolve(int_t nsupers, double* x, int nrhs, dLUstruct_t * LU
 	return 0;
 }
 
-
+// #ifdef HAVE_NVSHMEM   
+/*global variables for nvshmem, is it safe to be put them here? */
 int* mystatus, *mystatusmod;
 int* mystatus_u, *mystatusmod_u;
 int *d_status, *d_statusmod;
@@ -161,7 +162,7 @@ int* d_mynummod_u,*d_mymaskstartmod_u,*d_mymasklengthmod_u;
 int *h_recv_cnt, *d_recv_cnt, *d_msgnum;
 int *h_recv_cnt_u, *d_recv_cnt_u, *d_msgnum_u;
 int *d_flag_mod;
-
+// #endif
 
 int_t trs_compute_communication_structure(superlu_dist_options_t *options, int_t n, dLUstruct_t * LUstruct,
                            dScalePermstruct_t * ScalePermstruct,
@@ -1326,6 +1327,7 @@ int_t trs_compute_communication_structure(superlu_dist_options_t *options, int_t
     
     
     /* nvshmem related*/
+ #ifdef HAVE_NVSHMEM   
 	checkGPU(gpuMalloc( (void**)&d_recv_cnt, CEILING(nsupers, grid->nprow) * sizeof(int)));
 	checkGPU(gpuMemcpy(d_recv_cnt, h_recv_cnt,  CEILING(nsupers, grid->nprow) * sizeof(int), gpuMemcpyHostToDevice));
     checkGPU(gpuMalloc( (void**)&d_recv_cnt_u, CEILING(nsupers, grid->nprow) * sizeof(int)));
@@ -1333,7 +1335,7 @@ int_t trs_compute_communication_structure(superlu_dist_options_t *options, int_t
     
     SUPERLU_FREE(h_recv_cnt);
     SUPERLU_FREE(h_recv_cnt_u);
-
+#endif
     }
 #endif
 
@@ -2994,7 +2996,8 @@ if ( !(getenv("NEW3DSOLVETREECOMM") && getenv("SUPERLU_ACC_SOLVE"))){
     checkGPU(gpuMemcpy(d_lsum, SOLVEstruct->d_lsum_save, sizelsum * sizeof(double), gpuMemcpyDeviceToDevice));	
 	checkGPU(gpuMemcpy(d_x, x, (ldalsum * nrhs + nlb * XK_H) * sizeof(double), gpuMemcpyHostToDevice));	
 	
-    if(procs>1){ /* only nvshmem needs the following*/    
+    if(procs>1){ /* only nvshmem needs the following*/  
+    #ifdef HAVE_NVSHMEM  
     checkGPU(gpuMemcpy(d_status, mystatus, k * sizeof(int), gpuMemcpyHostToDevice));
 	checkGPU(gpuMemcpy(d_statusmod, mystatusmod, 2* nlb * sizeof(int), gpuMemcpyHostToDevice));
 	//for(int i=0;i<2*nlb;i++) printf("(%d),mystatusmod[%d]=%d\n",iam,i,mystatusmod[i]);
@@ -3005,6 +3008,7 @@ if ( !(getenv("NEW3DSOLVETREECOMM") && getenv("SUPERLU_ACC_SOLVE"))){
     checkGPU(gpuMemset(d_msgnum, 0, h_nfrecv[1] * sizeof(int)));
 	//printf("2-(%d) maxrecvsz=%d,ready_x=%d, ready_lsum=%d,RDMA_FLAG_SIZE=%d,k=%d,nlb=%d\n",iam,maxrecvsz,maxrecvsz*CEILING( nsupers, grid->npcol),2*maxrecvsz*CEILING( nsupers, grid->nprow),RDMA_FLAG_SIZE,k,nlb);
 	//fflush(stdout);
+    #endif
     }
 
 	k = CEILING( nsupers, grid->npcol);/* Number of local block columns divided by #warps per block used as number of thread blocks*/
@@ -5424,6 +5428,7 @@ if (getenv("SUPERLU_ACC_SOLVE")){  /* GPU trisolve*/
 	knsupc = sp_ienv_dist(3, options);
  
     if(procs>1){ /* only nvshmem needs the following*/
+    #ifdef HAVE_NVSHMEM  
     checkGPU(gpuMemcpy(d_status, mystatus_u, k * sizeof(int), gpuMemcpyHostToDevice));
     checkGPU(gpuMemcpy(d_statusmod, mystatusmod_u, 2* nlb * sizeof(int), gpuMemcpyHostToDevice));
     //for(int i=0;i<2*nlb;i++) printf("(%d),mystatusmod[%d]=%d\n",iam,i,mystatusmod[i]);
@@ -5432,6 +5437,7 @@ if (getenv("SUPERLU_ACC_SOLVE")){  /* GPU trisolve*/
     checkGPU(gpuMemset(ready_x, 0, maxrecvsz*CEILING( nsupers, grid->npcol) * sizeof(double)));
     checkGPU(gpuMemset(ready_lsum, 0, 2*maxrecvsz*CEILING( nsupers, grid->nprow) * sizeof(double)));
     checkGPU(gpuMemset(d_msgnum, 0, h_nfrecv_u[1] * sizeof(int)));
+    #endif
     }
 
 
