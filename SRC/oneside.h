@@ -12,8 +12,8 @@
 /*  d_mymaskstart: start index point at d_column     */
 /* ************************************************  */
 
-extern int *flag_bc_q;
-extern int *flag_rd_q;
+extern uint64_t *flag_bc_q;
+extern uint64_t *flag_rd_q;
 extern int *my_flag_bc;
 extern int *my_flag_rd;
 extern double *ready_x;
@@ -83,6 +83,7 @@ extern int *d_mymaskstartmod_u;
 extern int *d_mymasklengthmod_u;
 extern int *d_recv_cnt_u;
 extern int *d_msgnum_u;
+extern int *d_flag_mod_u;
 
 
 #define RDMA_FLAG_SIZE 2
