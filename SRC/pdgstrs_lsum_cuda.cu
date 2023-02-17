@@ -2101,6 +2101,7 @@ int nblock_ex=0;
 if(procs==1){
 	dim3 dimBlock(nthread_x, nthread_y);
 	dlsum_fmod_inv_gpu_mrhs<<< nbcol_loc+nblock_ex, dimBlock >>>(nbcol_loc,nblock_ex,lsum,x,nrhs,maxsup,nsupers,fmod,LBtree_ptr,LRtree_ptr,ilsum,Lrowind_bc_dat,Lrowind_bc_offset,Lnzval_bc_dat,Lnzval_bc_offset,Linv_bc_dat,Linv_bc_offset,Lindval_loc_bc_dat,Lindval_loc_bc_offset, xsup,bcols_masked, grid);
+    CUDA_CHECK(cudaGetLastError()); 
 }else{
 
 #ifdef HAVE_NVSHMEM    
@@ -2165,7 +2166,7 @@ if(procs==1){
 																				   my_flag_bc, my_flag_rd,
 																				   d_nfrecv, d_status,
 																				   d_statusmod,d_flag_mod);
-			// CUDA_CHECK(cudaGetLastError()); // Yang: this line causes runtime error... 
+			CUDA_CHECK(cudaGetLastError()); 
 		} // if status
 	//} // if npes==1
 #else
@@ -2978,6 +2979,7 @@ void dlsum_bmod_inv_gpu_wrap
                                                                                     d_nfrecv_u, d_status,
                                                                                     d_statusmod, nblock_ex,
                                                                                     maxsuper); //temp2_offset, temp2,maxsuper);
+            CUDA_CHECK(cudaGetLastError());             
          }
 
          //CUDA_CHECK(cudaGetLastError());

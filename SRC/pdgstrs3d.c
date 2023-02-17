@@ -2689,6 +2689,7 @@ void ForwardSolve3d_newsolve_reusepdgstrs(superlu_dist_options_t *options, int_t
 
     if (getenv("SUPERLU_ACC_SOLVE")) /* GPU trisolve*/
     {
+    iam = grid->iam;
 	if ( !iam) printf(".. GPU trisolve\n");
 	fflush(stdout);
     }
@@ -2996,6 +2997,9 @@ if ( !(getenv("NEW3DSOLVETREECOMM") && getenv("SUPERLU_ACC_SOLVE"))){
     checkGPU(gpuMemcpy(d_lsum, SOLVEstruct->d_lsum_save, sizelsum * sizeof(double), gpuMemcpyDeviceToDevice));	
 	checkGPU(gpuMemcpy(d_x, x, (ldalsum * nrhs + nlb * XK_H) * sizeof(double), gpuMemcpyHostToDevice));	
 	
+	k = CEILING( nsupers, grid->npcol);/* Number of local block columns divided by #warps per block used as number of thread blocks*/
+	knsupc = sp_ienv_dist(3, options);
+
     if(procs>1){ /* only nvshmem needs the following*/  
     #ifdef HAVE_NVSHMEM  
     checkGPU(gpuMemcpy(d_status, mystatus, k * sizeof(int), gpuMemcpyHostToDevice));
@@ -3011,8 +3015,6 @@ if ( !(getenv("NEW3DSOLVETREECOMM") && getenv("SUPERLU_ACC_SOLVE"))){
     #endif
     }
 
-	k = CEILING( nsupers, grid->npcol);/* Number of local block columns divided by #warps per block used as number of thread blocks*/
-	knsupc = sp_ienv_dist(3, options);
 	// k -> Llu->nbcol_masked ???
     int nblock_loc;
     if(procs==1){

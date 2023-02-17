@@ -681,7 +681,7 @@ dtrf3Dpartition_t* dinitTrf3DpartitionLUstructgrid0(int_t n, superlu_dist_option
 } /* dinitTrf3DpartitionLUstructgrid0 */
 
 
-
+#if 0
 dtrf3Dpartition_t* dinitTrf3Dpartition(int_t nsupers,
 				      superlu_dist_options_t *options,
 				      dLUstruct_t *LUstruct, gridinfo3d_t * grid3d
@@ -793,6 +793,7 @@ dtrf3Dpartition_t* dinitTrf3Dpartition(int_t nsupers,
 #endif
     return trf3Dpartition;
 } /* dinitTrf3Dpartition */
+#endif 
 
 /* Free memory allocated for trf3Dpartition structure. Sherry added this routine */
 void dDestroy_trf3Dpartition(dtrf3Dpartition_t *trf3Dpartition, gridinfo3d_t *grid3d)

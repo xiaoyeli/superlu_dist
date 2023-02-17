@@ -1769,13 +1769,14 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 #endif
 
 #ifdef GPU_ACC
-
+if (getenv("SUPERLU_ACC_SOLVE")){
 				checkGPU(gpuMemcpy(LUstruct->Llu->d_Linv_bc_dat, LUstruct->Llu->Linv_bc_dat,
 								   (LUstruct->Llu->Linv_bc_cnt) * sizeof(double), gpuMemcpyHostToDevice));
 				checkGPU(gpuMemcpy(LUstruct->Llu->d_Uinv_bc_dat, LUstruct->Llu->Uinv_bc_dat,
 								   (LUstruct->Llu->Uinv_bc_cnt) * sizeof(double), gpuMemcpyHostToDevice));
 				checkGPU(gpuMemcpy(LUstruct->Llu->d_Lnzval_bc_dat, LUstruct->Llu->Lnzval_bc_dat,
 								   (LUstruct->Llu->Lnzval_bc_cnt) * sizeof(double), gpuMemcpyHostToDevice));
+}
 #endif
 			}
 			}
@@ -1859,6 +1860,7 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
     			// checkGPU(gpuMemcpy(LUstruct->Llu->d_grid, grid, sizeof(gridinfo_t), gpuMemcpyHostToDevice));
 #endif
 
+if (getenv("SUPERLU_ACC_SOLVE")){
 #ifdef GPU_ACC
 
 				checkGPU(gpuMemcpy(LUstruct->Llu->d_Linv_bc_dat, LUstruct->Llu->Linv_bc_dat,
@@ -1867,6 +1869,7 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 								   (LUstruct->Llu->Uinv_bc_cnt) * sizeof(double), gpuMemcpyHostToDevice));
 				checkGPU(gpuMemcpy(LUstruct->Llu->d_Lnzval_bc_dat, LUstruct->Llu->Lnzval_bc_dat,
 								   (LUstruct->Llu->Lnzval_bc_cnt) * sizeof(double), gpuMemcpyHostToDevice));
+}
 #endif
 			}
 			}
