@@ -556,7 +556,8 @@ int getMPIProcsPerGPU()
         int devCount;
         cudaGetDeviceCount(&devCount);
         int envCount = atoi(getenv("MPI_PROCESS_PER_GPU"));
-        envCount = SUPERLU_MAX(envCount, 0);
+        envCount = SUPERLU_MAX(envCount, 1);
+        printf("MPI_PROCESS_PER_GPU=%d, devCount=%d\n", envCount, devCount);
         return SUPERLU_MIN(envCount, devCount);
     }
 }
@@ -592,6 +593,7 @@ int_t LUstruct_v100::setLUstruct_GPU()
     /*Mapping to device*/
     int deviceCount;
     cudaGetDeviceCount(&deviceCount); // How many GPUs?
+    printf("deviceCount=%d\n", deviceCount);
     int device_id = grid3d->iam % deviceCount;
     cudaSetDevice(device_id);
 
