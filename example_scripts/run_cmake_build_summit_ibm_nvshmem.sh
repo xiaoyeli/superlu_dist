@@ -31,7 +31,7 @@ cmake .. \
   -DCMAKE_CUDA_ARCHITECTURES=70 \
   -DCMAKE_INSTALL_PREFIX=. \
   -DCMAKE_INSTALL_LIBDIR=./lib \
-  -DCMAKE_BUILD_TYPE=Release \
+  -DCMAKE_BUILD_TYPE=Debug \
   -DTPL_BLAS_LIBRARIES="${OLCF_ESSL_ROOT}/lib64/libessl.so;${OLCF_ESSL_ROOT}/lib64/libesslsmp.so" \
   -DTPL_LAPACK_LIBRARIES="${OLCF_ESSL_ROOT}/lib64/libessl.so" \
   -DTPL_PARMETIS_INCLUDE_DIRS="${PARMETIS_ROOT}/include;${PARMETIS_ROOT}/metis/include;${OLCF_CUDA_ROOT}/include" \
@@ -41,5 +41,5 @@ cmake .. \
   -DTPL_NVSHMEM_LIBRARIES="-lcuda -lcudadevrt -L${OLCF_CUDA_ROOT}/lib64 -lcudart_static -L${OLCF_CUDA_ROOT}/lib64/stubs/ -lnvidia-ml -libverbs -L${NVSHMEM_HOME}/lib/ -lnvshmem -L${OLCF_SPECTRUM_MPI_ROOT}/lib -lmpi_ibm" \
   -DCMAKE_VERBOSE_MAKEFILE:BOOL=ON
 
-make pddrive
-make pddrive3d
+make pddrive -j16
+make pddrive3d -j16

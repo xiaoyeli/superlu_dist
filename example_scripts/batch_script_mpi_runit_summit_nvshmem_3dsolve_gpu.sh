@@ -34,13 +34,15 @@ export SUPERLU_ACC_OFFLOAD=0 # this can be 0 to do CPU tests on GPU nodes
 export SUPERLU_ACC_SOLVE=1
 export NEW3DSOLVE=1
 export NEW3DSOLVETREECOMM=1
+export SUPERLU_BIND_MPI_GPU=1
 
-nprows=(2)
+nprows=(4)
 npcols=(1)  
 npz=(2)
 
 #matrix=(LU_C_BN_C_2by2.bin) #s1_mat_0_253872.bin) #s1_mat_0_507744.bin Li4244.bin DG_GrapheneDisorder_8192.bin LU_C_BN_C_2by2.bin) #Li4244.bin s1_mat_0_253872.bin) 
-matrix=(s1_mat_0_126936.bin) #DG_GrapheneDisorder_8192.bin LU_C_BN_C_2by2.bin) #Li4244.bin s1_mat_0_253872.bin) 
+matrix=(g20.rua) #DG_GrapheneDisorder_8192.bin LU_C_BN_C_2by2.bin) #Li4244.bin s1_mat_0_253872.bin) 
+# matrix=(s1_mat_0_126936.bin) #DG_GrapheneDisorder_8192.bin LU_C_BN_C_2by2.bin) #Li4244.bin s1_mat_0_253872.bin) 
 # matrix=(s2D9pt2048.rua) #DG_GrapheneDisorder_8192.bin LU_C_BN_C_2by2.bin) #Li4244.bin s1_mat_0_253872.bin) 
 export NVSHMEM_HOME=/ccs/home/liuyangz/my_software/nvshmem_src_2.8.0-3/
 export LD_LIBRARY_PATH=$NVSHMEM_HOME/lib:$LD_LIBRARY_PATH
@@ -88,8 +90,8 @@ for ((i = 0; i < ${#npcols[@]}; i++)); do
 
 			for MAT in ${matrix[@]}  ##big.rua   #A30_015_0_25356.bin
   			do
-				# export NSUP=256 
-				# export NREL=256
+				# export NSUP=40 
+				# export NREL=20
 				export MAX_BUFFER_SIZE=5000000000
     				export OMP_NUM_THREADS=$OMP_NUM_THREADS
     				mkdir -p ${MAT}_summit
@@ -112,6 +114,7 @@ for ((i = 0; i < ${#npcols[@]}; i++)); do
 				#  jsrun -n $RS_VAL -a $RANK_PER_RS -c $TH_PER_RS -g $GPU_PER_RS -b packed:$NTH
 				# jsrun -n $RS_VAL -a $RANK_PER_RS -c $TH_PER_RS -g $GPU_PER_RS $FILE -c $NCOL -r $NROW -i 0 $INPUT_DIR/$MAT | tee ./${MAT}_summit/SLU.o_mpi_${NROW}x${NCOL}x${NPZ}_OMP_${OMP_NUM_THREADS}_GPU_${GPU_PER_RANK}_2d_newest_gpu_nvshmem_${MYDATE}   
 				jsrun -n $RS_VAL -a $RANK_PER_RS -c $TH_PER_RS -g $GPU_PER_RS $FILE3D -c $NCOL -r $NROW -d $NPZ -i 0 $INPUT_DIR/$MAT | tee ./${MAT}_summit/SLU.o_mpi_${NROW}x${NCOL}x${NPZ}_OMP_${OMP_NUM_THREADS}_GPU_${GPU_PER_RANK}_3d_newest_gpu_nvshmem_${MYDATE}   
+				# jsrun -n $RS_VAL -a $RANK_PER_RS -c $TH_PER_RS -g $GPU_PER_RS $FILE -c $NCOL -r $NROW -i 0 $INPUT_DIR/$MAT | tee ./${MAT}_summit/SLU.o_mpi_${NROW}x${NCOL}x${NPZ}_OMP_${OMP_NUM_THREADS}_GPU_${GPU_PER_RANK}_3d_newest_gpu_nvshmem_${MYDATE}   
 			done ## matrix
 		done #NTH		
 	done #GPU per RANK
