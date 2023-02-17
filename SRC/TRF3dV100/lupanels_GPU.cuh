@@ -8,7 +8,9 @@
 #ifdef HAVE_CUDA
   #include <cuda_runtime.h>
   #include <cusolverDn.h>
+#ifdef HAVE_MAGMA
   #include "magma.h"
+#endif 
 #endif
 
 #include "lu_common.hpp"
@@ -336,7 +338,9 @@ struct LUstructGPU_t
     cublasHandle_t cuHandles[MAX_CUDA_STREAMS];
     
     // Magma is needed for non-uniform batched execution 
+#ifdef HAVE_MAGMA
     magma_queue_t magma_queue;
+#endif 
     LUMarshallData marshall_data;
     SCUMarshallData sc_marshall_data;
 

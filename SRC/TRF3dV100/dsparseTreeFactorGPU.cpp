@@ -930,6 +930,7 @@ int LUstruct_v100::dsparseTreeFactorBatchGPU(
     gEtreeInfo_t *gEtreeInfo, // global etree info
     int tag_ub)
 {
+#ifdef HAVE_MAGMA
     int nnodes = sforest->nNodes; // number of nodes in the tree
     int topoLvl, k_st, k_end, k0, k, offset, ksupc;
     if (nnodes < 1)
@@ -1178,7 +1179,10 @@ int LUstruct_v100::dsparseTreeFactorBatchGPU(
 #if (DEBUGlevel >= 1)
     CHECK_MALLOC(grid3d->iam, "Exit dsparseTreeFactorBatchGPU()");
 #endif
-
+#else
+    printf("MAGMA is required for batched execution!\n");
+    exit(0);
+#endif 
     return 0;
 } /* dsparseTreeFactorBatchGPU */
 

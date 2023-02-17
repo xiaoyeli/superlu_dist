@@ -930,6 +930,7 @@ int_t LUstruct_v100::setLUstruct_GPU()
         cudaStreamCreate(&A_gpu.lookAheadUStream[stream]);
 
         // Wajih: Need to create at least one magma queue
+#ifdef HAVE_MAGMA
         if(stream == 0)
         {
             magma_queue_create_from_cuda(
@@ -937,6 +938,7 @@ int_t LUstruct_v100::setLUstruct_GPU()
                 NULL, &A_gpu.magma_queue
             );
         }
+#endif
     }
     tcuStreamCreate = SuperLU_timer_() - tcuStreamCreate;
     printf("Time to create CUDA streams: %g\n", tcuStreamCreate);

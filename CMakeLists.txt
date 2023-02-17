@@ -390,7 +390,7 @@ if(MAGMA_FOUND)
     # fix up MAGMA library name
     string (REPLACE ";" " " MAGMA_LIB_STR "${MAGMA_LIB}")
     set(MAGMA_LIB_EXPORT ${MAGMA_LIB_STR})
-    set(SLU_HAVE_MAGMA TRUE)
+    set(HAVE_MAGMA TRUE)
 else()
     message("-- Will not link with MAGMA.")
 endif()
