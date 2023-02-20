@@ -179,6 +179,8 @@ int_t LUstruct_v100::dDFactPSolveGPU(int_t k, int_t offset, ddiagFactBufs_t **dF
 {
     // this is new version with diagonal factor being performed on GPU 
     // different from dDiagFactorPanelSolveGPU (it performs diag factor in CPU)
+  
+    /* Sherry: argument dFBufs[] is on CPU, not used in this routine */
 
     double t0 = SuperLU_timer_();
     int ksupc = SuperSize(k);
@@ -950,35 +952,11 @@ int LUstruct_v100::dsparseTreeFactorBatchGPU(
 #endif
     printf("Using level-based scheduling on GPU\n"); fflush(stdout);
 
-#if 0  // not needed anymore
-    // start the pipeline
-    int_t *donePanelBcast = intMalloc_dist(nnodes);
-    int_t *donePanelSolve = intMalloc_dist(nnodes);
-    int_t *localNumChildrenLeft = intMalloc_dist(nnodes);
-
-    //TODO: not needed, remove after testing
-    for (int_t i = 0; i < nnodes; i++)
-    {
-        donePanelBcast[i] = 0;
-        donePanelSolve[i] = 0;
-        localNumChildrenLeft[i] = 0;
-    }
-
-    /* count # of children based on parent[] info */
-    for (k0 = 0; k0 < nnodes; k0++)
-    {
-        k = perm_c_supno[k0];
-        int k_parent = gEtreeInfo->setree[k];
-        int ik = myIperm[k_parent];
-        if (ik > -1 && ik < nnodes)
-            localNumChildrenLeft[ik]++;
-    }
-#endif
-
     /* For all the leaves at level 0 */
     topoLvl = 0;
     k_st = eTreeTopLims[topoLvl];
     k_end = eTreeTopLims[topoLvl + 1];
+    //printf("level 0: k_st %d, k_end %d\n", k_st, k_end); fflush(stdout);
 
 #if 0
     //ToDo: make this batched 
@@ -1179,12 +1157,16 @@ int LUstruct_v100::dsparseTreeFactorBatchGPU(
 #if (DEBUGlevel >= 1)
     CHECK_MALLOC(grid3d->iam, "Exit dsparseTreeFactorBatchGPU()");
 #endif
+    
 #else
     printf("MAGMA is required for batched execution!\n");
     exit(0);
-#endif 
+    
+#endif /* match ifdef have_magma */
+    
     return 0;
 } /* dsparseTreeFactorBatchGPU */
+
 
 //TODO: needs to be merged as a single factorization function
 int_t LUstruct_v100::dsparseTreeFactorGPUBaseline(

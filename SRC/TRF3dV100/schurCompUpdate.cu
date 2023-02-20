@@ -660,9 +660,10 @@ int_t LUstruct_v100::setLUstruct_GPU()
     A_gpu.Pc = Pc;
     A_gpu.maxSuperSize = ldt;
 
+    /* Sherry: this mapping may be inefficient on Frontier */
     /*Mapping to device*/
     int deviceCount;
-    cudaGetDeviceCount(&deviceCount); // How many GPUs?
+    cudaGetDeviceCount(&deviceCount); // How many GPUs
     int device_id = grid3d->iam % deviceCount;
     cudaSetDevice(device_id);
 
@@ -713,11 +714,15 @@ int_t LUstruct_v100::setLUstruct_GPU()
     }
 
     tRegion[0] = SuperLU_timer_() - tRegion[0];
+#if ( PRNTlevel>=1 )    
     // print the time taken to estimate memory on GPU
     if (grid3d->iam == 0)
     {
         printf("Time taken to estimate memory on GPU: %f\n", tRegion[0]);
+	printf("\t.. totalNzvalSize %ld, gemmBufferSize %ld\n",
+	       (long) totalNzvalSize, (long) A_gpu.gemmBufferSize);
     }
+#endif
 
     /*Memory for lapenlPanel Data*/
     tRegion[1] = SuperLU_timer_();
@@ -746,7 +751,7 @@ int_t LUstruct_v100::setLUstruct_GPU()
     gpuCurrentPtr = (int_t *)gpuCurrentPtr + (nsupers + 1);
     cudaMemcpy(A_gpu.xsup, xsup, (nsupers + 1) * sizeof(int_t), cudaMemcpyHostToDevice);
 
-    for (int_t i = 0; i < CEILING(nsupers, Pc); ++i)
+    for (int i = 0; i < CEILING(nsupers, Pc); ++i)
     {
         if (i * Pc + mycol < nsupers && isNodeInMyGrid[i * Pc + mycol] == 1)
         {
@@ -759,7 +764,7 @@ int_t LUstruct_v100::setLUstruct_GPU()
     cudaMemcpy(A_gpu.lPanelVec, lPanelVec_GPU,
                CEILING(nsupers, Pc) * sizeof(lpanelGPU_t), cudaMemcpyHostToDevice);
 
-    for (int_t i = 0; i < CEILING(nsupers, Pr); ++i)
+    for (int i = 0; i < CEILING(nsupers, Pr); ++i)
     {
         if (i * Pr + myrow < nsupers && isNodeInMyGrid[i * Pr + myrow] == 1)
         {
@@ -888,16 +893,34 @@ int_t LUstruct_v100::setLUstruct_GPU()
     }
     
     /* Sherry: dfBufs[] changed to double pointer **, max(batch, numCudaStreams) */
-    int num_dfbufs = ( options->batchCount > 0 ) ? 
-	SUPERLU_MAX(maxLeafNodes, MAX_CUDA_STREAMS) : MAX_CUDA_STREAMS;
-    printf("..setLUstrut_GPU: num_dfbufs %d\n", num_dfbufs); fflush(stdout);
-    printf("..setLUstrut_GPU: gembufsize = %d\n", A_gpu.gemmBufferSize);
+    int mxLeafNode = trf3Dpartition->mxLeafNode;
+    int num_dfbufs;  /* number of diagonal buffers */
+    if ( options->batchCount > 0 ) { /* use batch code */
+	num_dfbufs = mxLeafNode;
+    } else { /* use pipelined code */
+	num_dfbufs = MAX_CUDA_STREAMS;
+    }
+    int num_gemmbufs = num_dfbufs;
+    printf(".. setLUstrut_GPU: num_dfbufs %d, num_gemmbufs %d\n", num_dfbufs, num_gemmbufs); fflush(stdout);
 
     A_gpu.dFBufs = (double **) SUPERLU_MALLOC(num_dfbufs * sizeof(double *));
-    A_gpu.gpuGemmBuffs = (double **) SUPERLU_MALLOC(num_dfbufs * sizeof(double *));
-    for (i = 0; i < num_dfbufs; ++i) {
-        gpuErrchk(cudaMalloc(&(A_gpu.dFBufs[i]), ldt * ldt * sizeof(double)));
-        gpuErrchk(cudaMalloc(&(A_gpu.gpuGemmBuffs[i]), A_gpu.gemmBufferSize * sizeof(double)));
+    A_gpu.gpuGemmBuffs = (double **) SUPERLU_MALLOC(num_gemmbufs * sizeof(double *));
+    
+    int l;
+    
+    if ( options->batchCount > 0 ) { /* set up variable-size buffers for batch code */
+	for (i = 0; i < num_dfbufs; ++i) {
+	    l = trf3Dpartition->diagDims[i];
+	    gpuErrchk(cudaMalloc(&(A_gpu.dFBufs[i]), l * l * sizeof(double)));
+	    printf("\t diagDims[%d] %d\n", i, l);
+	    gpuErrchk(cudaMalloc(&(A_gpu.gpuGemmBuffs[i]), A_gpu.gemmBufferSize * sizeof(double)));
+	}
+    } else { /* uniform-size buffers */
+	l = ldt * ldt;
+	for (i = 0; i < num_dfbufs; ++i) {
+	    gpuErrchk(cudaMalloc(&(A_gpu.dFBufs[i]), l * sizeof(double)));
+	    gpuErrchk(cudaMalloc(&(A_gpu.gpuGemmBuffs[i]), A_gpu.gemmBufferSize * sizeof(double)));
+	}
     }
 
     // Wajih: Adding allocation for batched LU and SCU marshalled data
