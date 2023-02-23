@@ -169,7 +169,10 @@ public:
         return index[0];
     }
     // number of rows
-    int_t nzcols() { return index[1]; }
+    int_t nzcols() {
+      if (index == NULL) return 0; /* Sherry added this check. 2/22/2023 */
+      return index[1];
+    }
     int_t LDA() { return index[2]; } // is also supersize of that coloumn
 
     // global block id of k-th block in the panel

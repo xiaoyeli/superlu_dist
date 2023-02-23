@@ -396,7 +396,7 @@ typedef struct
     /* Sherry added the following 3 for variable size batch. 2/17/23 */
     int mxLeafNode; /* number of leaf nodes. */
     int *diagDims;  /* dimensions of the diagonal blocks at any level of the tree */
-    int *geemmCsizes; /* sizes of the C matrices at any level of the tree. */
+    int *gemmCsizes; /* sizes of the C matrices at any level of the tree. */
 } dtrf3Dpartition_t;
 
 typedef struct
