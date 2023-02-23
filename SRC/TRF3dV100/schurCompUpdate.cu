@@ -651,6 +651,7 @@ size_t getGPUMemPerProcs(MPI_Comm baseCommunicator)
 int_t LUstruct_v100::setLUstruct_GPU()
 {
     int i, stream;
+    
 #if (DEBUGlevel >= 1)
     int iam = 0;
     CHECK_MALLOC(iam, "Enter setLUstruct_GPU()"); fflush(stdout);
@@ -680,14 +681,18 @@ int_t LUstruct_v100::setLUstruct_GPU()
     memReqData += (nsupers + 1) * sizeof(int_t);
 
     tRegion[0] = SuperLU_timer_();
-    size_t totalNzvalSize = 0;
-    /*Memory for lapenlPanel Data*/
+    
+    size_t totalNzvalSize = 0; /* too big for gemmBufferSize */
+    size_t max_gemmCsize = 0;  /* Sherry added 2/20/2023 */
+    
+    /*Memory for lpapenl and upanel Data*/
     for (i = 0; i < CEILING(nsupers, Pc); ++i)
     {
         if (i * Pc + mycol < nsupers && isNodeInMyGrid[i * Pc + mycol] == 1)
         {
             memReqData += lPanelVec[i].totalSize();
             totalNzvalSize += lPanelVec[i].nzvalSize();
+	    //max_gemmCsize = SUPERoLU_MAX(max_gemmCsize, ???);
         }
     }
     for (i = 0; i < CEILING(nsupers, Pr); ++i)
@@ -698,14 +703,17 @@ int_t LUstruct_v100::setLUstruct_GPU()
             totalNzvalSize += uPanelVec[i].nzvalSize();
         }
     }
+    
     memReqData += CEILING(nsupers, Pc) * sizeof(lpanelGPU_t);
     memReqData += CEILING(nsupers, Pr) * sizeof(upanelGPU_t);
 
     memReqData += sizeof(LUstructGPU_t);
+    
     // Per stream data
     // TODO: estimate based on ancestor size
-    int_t maxBuffSize = sp_ienv_dist (8, options); //sp_env(8,options);
+    int_t maxBuffSize = sp_ienv_dist (8, options);
     A_gpu.gemmBufferSize = SUPERLU_MIN(maxBuffSize, totalNzvalSize);
+    
     size_t dataPerStream = 3 * sizeof(double) * maxLvalCount + 3 * sizeof(double) * maxUvalCount + 2 * sizeof(int_t) * maxLidxCount + 2 * sizeof(int_t) * maxUidxCount + A_gpu.gemmBufferSize * sizeof(double) + ldt * ldt * sizeof(double);
     if (memReqData + 2 * dataPerStream > useableGPUMem)
     {
@@ -894,6 +902,35 @@ int_t LUstruct_v100::setLUstruct_GPU()
     
     /* Sherry: dfBufs[] changed to double pointer **, max(batch, numCudaStreams) */
     int mxLeafNode = trf3Dpartition->mxLeafNode;
+
+    /* Compute gemmCsize[] for batch operations 
+       !!!!!!! WARNING: this only works for 1 MPI  !!!!!! */
+    if ( options->batchCount > 0 ) {
+	trf3Dpartition->gemmCsizes = int32Calloc_dist(mxLeafNode);
+	int k, k0, k_st, k_end, offset, Csize;
+	
+	for (int ilvl = 0; ilvl < maxLvl; ++ilvl) {  /* Loop through the Pz tree levels */
+	    int treeId = trf3Dpartition->myTreeIdxs[ilvl];
+	    sForest_t* sforest = trf3Dpartition->sForests[treeId];
+	    if (sforest){
+		int_t *perm_c_supno = sforest->nodeList ;
+		int maxTopoLevel = sforest->topoInfo.numLvl;/* number of levels at each outer-tree node */
+		for (int topoLvl = 0; topoLvl < maxTopoLevel; ++topoLvl) {
+		    k_st = sforest->topoInfo.eTreeTopLims[topoLvl];
+		    k_end = sforest->topoInfo.eTreeTopLims[topoLvl + 1];
+		
+		    for (k0 = k_st; k0 < k_end; ++k0) {
+			offset = k0 - k_st;
+			k = perm_c_supno[k0];
+			Csize = lPanelVec[k].nzrows() * uPanelVec[k].nzcols();
+			trf3Dpartition->gemmCsizes[offset] =
+			    SUPERLU_MAX(trf3Dpartition->gemmCsizes[offset], Csize);
+		    }
+		}
+	    }
+	}
+    }
+    
     int num_dfbufs;  /* number of diagonal buffers */
     if ( options->batchCount > 0 ) { /* use batch code */
 	num_dfbufs = mxLeafNode;
@@ -906,14 +943,16 @@ int_t LUstruct_v100::setLUstruct_GPU()
     A_gpu.dFBufs = (double **) SUPERLU_MALLOC(num_dfbufs * sizeof(double *));
     A_gpu.gpuGemmBuffs = (double **) SUPERLU_MALLOC(num_gemmbufs * sizeof(double *));
     
-    int l;
+    int l, sum_diag_size = 0, sum_gemmC_size = 0;
     
     if ( options->batchCount > 0 ) { /* set up variable-size buffers for batch code */
 	for (i = 0; i < num_dfbufs; ++i) {
 	    l = trf3Dpartition->diagDims[i];
 	    gpuErrchk(cudaMalloc(&(A_gpu.dFBufs[i]), l * l * sizeof(double)));
-	    printf("\t diagDims[%d] %d\n", i, l);
-	    gpuErrchk(cudaMalloc(&(A_gpu.gpuGemmBuffs[i]), A_gpu.gemmBufferSize * sizeof(double)));
+	    //printf("\t diagDims[%d] %d\n", i, l);
+	    gpuErrchk(cudaMalloc(&(A_gpu.gpuGemmBuffs[i]), trf3Dpartition->gemmCsizes[i] * sizeof(double)));
+	    sum_diag_size += l * l;
+	    sum_gemmC_size += trf3Dpartition->gemmCsizes[i];
 	}
     } else { /* uniform-size buffers */
 	l = ldt * ldt;
@@ -922,14 +961,18 @@ int_t LUstruct_v100::setLUstruct_GPU()
 	    gpuErrchk(cudaMalloc(&(A_gpu.gpuGemmBuffs[i]), A_gpu.gemmBufferSize * sizeof(double)));
 	}
     }
-
+    
     // Wajih: Adding allocation for batched LU and SCU marshalled data
     // TODO: these are serialized workspaces, so the allocations can be shared 
     A_gpu.marshall_data.setBatchSize(num_dfbufs);
     A_gpu.sc_marshall_data.setBatchSize(num_dfbufs);
 
     tcuMalloc = SuperLU_timer_() - tcuMalloc;
+#if ( PRNTlevel>=1 )
     printf("Time to allocate GPU memory: %g\n", tcuMalloc);
+    printf("\t.. sum_diag_size %d\t sum_gemmC_size %d\n", sum_diag_size, sum_gemmC_size);
+    fflush(stdout);
+#endif
 
     double tcuStream=SuperLU_timer_();
     

@@ -974,8 +974,8 @@ typedef enum treePartStrat{
 typedef struct
 {
 	/* data */
-	int_t nNodes; 			// total number of nodes
-	int_t* nodeList;		// list of nodes, should be in order of factorization
+	int_t nNodes; 	 // total number of nodes
+	int_t* nodeList; // list of nodes, should be in order of factorization
 #if 0 // Sherry: the following array is used on rForest_t. ???
 	int_t* treeHeads;
 #endif

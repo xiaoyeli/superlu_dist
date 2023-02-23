@@ -638,7 +638,7 @@ dtrf3Dpartition_t* dinitTrf3Dpartition(int_t nsupers,
     }
 
     // Yang: use ldts to track the maximum needed buffer sizes per node of topoInfo 
-    //int *ldts = (int*) SUPERLU_CALLOC(mxLeafNode*sizeof(int));
+    //int *ldts = (int*) SUPERLU_MALLOC(mxLeafNode*sizeof(int));
     //for (int i = 0; i < mxLeafNode; ++i) {  //????????
     //ldts[i]=1;
     //}
@@ -648,7 +648,7 @@ dtrf3Dpartition_t* dinitTrf3Dpartition(int_t nsupers,
         int treeId = myTreeIdxs[ilvl];
         sForest_t* sforest = sForests[treeId];
         if (sforest){
-            int *perm_c_supno = sforest->nodeList ;
+            int_t *perm_c_supno = sforest->nodeList ;
 	    int maxTopoLevel = sforest->topoInfo.numLvl;/* number of levels at each outer-tree node */
             for (int topoLvl = 0; topoLvl < maxTopoLevel; ++topoLvl)
             {
