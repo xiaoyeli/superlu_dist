@@ -449,6 +449,7 @@ struct LUstruct_v100
     void initSCUMarshallData(int k_st, int k_end, int_t *perm_c_supno);
     int marshallSCUBatchedDataInner(int k_st, int k_end, int_t *perm_c_supno);
     int marshallSCUBatchedDataOuter(int k_st, int k_end, int_t *perm_c_supno);
+    void dFactBatchSolve(int k_st, int k_end, int_t *perm_c_supno);
 
     //
     int_t dDiagFactorPanelSolve(int_t k, int_t offset, ddiagFactBufs_t **dFBufs);
@@ -558,4 +559,14 @@ inline void gpuAssert(cudaError_t code, const char *file, int line)
         printf("GPUassert: %s(%d) %s %d\n", cudaGetErrorString(code), (int)code, file, line);
         exit(-1);
     }
+}
+
+#define gpuCusolverErrchk(ans)                                                                                         \
+{                                                                                                                  \
+    gpuCusolverAssert((ans), __FILE__, __LINE__);                                                                  \
+}
+inline void gpuCusolverAssert(cusolverStatus_t code, const char *file, int line)
+{
+    if (code != CUSOLVER_STATUS_SUCCESS)
+        printf("cuSolverAssert: %d %s %d\n", code, file, line);
 }

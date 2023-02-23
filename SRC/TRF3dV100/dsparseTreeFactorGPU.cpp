@@ -926,49 +926,9 @@ void LUstruct_v100::marshallBatchedTRSMLData(int k_st, int k_end, int_t *perm_c_
     cudaMemcpy(mdata.dev_panel_dim_array, panel_dim_batch, mdata.batchsize * sizeof(int), cudaMemcpyHostToDevice);
 }
 
-int LUstruct_v100::dsparseTreeFactorBatchGPU(
-    sForest_t *sforest,
-    ddiagFactBufs_t **dFBufs, // size maxEtree level
-    gEtreeInfo_t *gEtreeInfo, // global etree info
-    int tag_ub)
+void LUstruct_v100::dFactBatchSolve(int k_st, int k_end, int_t *perm_c_supno)
 {
 #ifdef HAVE_MAGMA
-    int nnodes = sforest->nNodes; // number of nodes in the tree
-    int topoLvl, k_st, k_end, k0, k, offset, ksupc;
-    if (nnodes < 1)
-    {
-        return 1;
-    }
-
-    int_t *perm_c_supno = sforest->nodeList; // list of nodes in the order of factorization
-    treeTopoInfo_t *treeTopoInfo = &sforest->topoInfo;
-    int_t *myIperm = treeTopoInfo->myIperm;
-    int_t maxTopoLevel = treeTopoInfo->numLvl;
-    int_t *eTreeTopLims = treeTopoInfo->eTreeTopLims;
-
-
-#if (DEBUGlevel >= 1)
-    CHECK_MALLOC(grid3d->iam, "Enter dsparseTreeFactorBatchGPU()");
-#endif
-    printf("Using level-based scheduling on GPU\n"); fflush(stdout);
-
-    /* For all the leaves at level 0 */
-    topoLvl = 0;
-    k_st = eTreeTopLims[topoLvl];
-    k_end = eTreeTopLims[topoLvl + 1];
-    //printf("level 0: k_st %d, k_end %d\n", k_st, k_end); fflush(stdout);
-
-#if 0
-    //ToDo: make this batched 
-    for (k0 = k_st; k0 < k_end; k0++)
-    {
-        k = perm_c_supno[k0];
-        offset = 0;
-        // dDiagFactorPanelSolveGPU(k, offset, dFBufs);
-        dDFactPSolveGPU(k, offset, dFBufs);
-    }
-#endif 
-
     // Marshall the data for the leaf level batched LU decomposition   
     LUMarshallData& mdata = A_gpu.marshall_data;
     cudaStream_t stream = A_gpu.cuStreams[0];
@@ -1012,11 +972,11 @@ int LUstruct_v100::dsparseTreeFactorBatchGPU(
         mdata.batchsize, A_gpu.magma_queue
     );
 
-    // Wajih: The schur complement update will require modifying the current scatter routine to be batched
-    for (k0 = k_st; k0 < k_end; k0++)
+    // Wajih: This should be converted to a single bcast if possible 
+    for (int k0 = k_st; k0 < k_end; k0++)
     {
-        k = perm_c_supno[k0];
-        offset = 0;
+        int k = perm_c_supno[k0];
+        int offset = 0;
         /*======= Panel Broadcast  ======*/
         dPanelBcastGPU(k, offset);
     }
@@ -1027,6 +987,7 @@ int LUstruct_v100::dsparseTreeFactorBatchGPU(
 
     // Keep marshalling while there are batches to be processed 
     int done_i = 0;
+    int total_batches = 0;
     while(done_i == 0)
     {
         done_i = marshallSCUBatchedDataOuter(k_st, k_end, perm_c_supno);
@@ -1036,6 +997,7 @@ int LUstruct_v100::dsparseTreeFactorBatchGPU(
             done_j = marshallSCUBatchedDataInner(k_st, k_end, perm_c_supno);
             if(done_j != 1)
             {
+                total_batches++;
                 magmablas_dgemm_vbatched_max_nocheck (
                     MagmaNoTrans, MagmaNoTrans, sc_mdata.dev_m_array, sc_mdata.dev_n_array, sc_mdata.dev_k_array,
                     1.0, sc_mdata.dev_A_ptrs, sc_mdata.dev_lda_array, sc_mdata.dev_B_ptrs, sc_mdata.dev_ldb_array,
@@ -1049,66 +1011,71 @@ int LUstruct_v100::dsparseTreeFactorBatchGPU(
                     A_gpu.maxSuperSize, ldt, sc_mdata.dev_gpu_lpanels, sc_mdata.dev_gpu_upanels, 
                     dA_gpu, sc_mdata.batchsize, A_gpu.cuStreams[0]
                 );
-                // for(int k0 = k_st; k0 < k_end; k0++)
-                // {
-                //     int batch_index = k0 - k_st;
-                //     cublasHandle_t handle = A_gpu.cuHandles[0];
-                //     cudaStream_t cuStream = A_gpu.cuStreams[0];
-                //     cublasSetStream(handle, cuStream);
-                //     int gemm_m = sc_mdata.host_m_array[batch_index];
-                //     int gemm_n = sc_mdata.host_n_array[batch_index];
-                //     int gemm_k = sc_mdata.host_k_array[batch_index];
-
-                //     double alpha = 1.0;
-                //     double beta = 0.0;
-                //     if(sc_mdata.host_A_ptrs[batch_index])
-                //     {
-                //         cublasDgemm(
-                //             handle, CUBLAS_OP_N, CUBLAS_OP_N,
-                //             gemm_m, gemm_n, gemm_k, &alpha,
-                //             sc_mdata.host_A_ptrs[batch_index], sc_mdata.host_lda_array[batch_index],
-                //             sc_mdata.host_B_ptrs[batch_index], sc_mdata.host_ldb_array[batch_index], &beta,
-                //             sc_mdata.host_C_ptrs[batch_index], sc_mdata.host_ldc_array[batch_index]
-                //         );
-                //     }
-                // }
-
-                // for(int k0 = k_st; k0 < k_end; k0++)
-                // {
-                //     int batch_index = k0 - k_st;
-                //     cudaStream_t cuStream = A_gpu.cuStreams[0];
-                //     if(sc_mdata.host_A_ptrs[batch_index])
-                //     {
-                //         scatterGPU_driver(
-                //             sc_mdata.ist[batch_index], sc_mdata.iend[batch_index], 
-                //             sc_mdata.jst[batch_index], sc_mdata.jend[batch_index], 
-                //             sc_mdata.host_C_ptrs[batch_index], sc_mdata.host_ldc_array[batch_index],
-                //             A_gpu.maxSuperSize, ldt, sc_mdata.lpanels[batch_index].gpuPanel,
-                //             sc_mdata.upanels[batch_index].gpuPanel, dA_gpu, cuStream
-                //         );
-                //     }
-                // }
             }
         }
     }
+    printf("SCU batches = %d\n", total_batches);
+#endif
+}
 
-    // for (k0 = k_st; k0 < k_end; k0++)
-    // {
-    //     k = perm_c_supno[k0];
-    //     offset = 0;
-    //         /*======= Schurcomplement Update ======*/
-    //     /* UidxSendCounts are computed in LUstruct_v100 constructor in LUpanels.cpp */
-    //     if (UidxSendCounts[k] > 0 && LidxSendCounts[k] > 0) {
-    //                 // k_upanel.checkCorrectness();
-    //         int streamId = 0;
-    //             upanel_t k_upanel = getKUpanel(k,offset);
-    //             lpanel_t k_lpanel = getKLpanel(k,offset);
-    //         dSchurComplementUpdateGPU( streamId,
-    //                     k, k_lpanel, k_upanel);
-    //         // cudaStreamSynchronize(cuStream); // there is sync inside the kernel
-    //     }
-    // }
+int LUstruct_v100::dsparseTreeFactorBatchGPU(
+    sForest_t *sforest,
+    ddiagFactBufs_t **dFBufs, // size maxEtree level
+    gEtreeInfo_t *gEtreeInfo, // global etree info
+    int tag_ub)
+{
+#ifdef HAVE_MAGMA
+    int nnodes = sforest->nNodes; // number of nodes in the tree
+    int topoLvl, k_st, k_end, k0, k, offset, ksupc;
+    if (nnodes < 1)
+    {
+        return 1;
+    }
 
+    int_t *perm_c_supno = sforest->nodeList; // list of nodes in the order of factorization
+    treeTopoInfo_t *treeTopoInfo = &sforest->topoInfo;
+    int_t *myIperm = treeTopoInfo->myIperm;
+    int_t maxTopoLevel = treeTopoInfo->numLvl;
+    int_t *eTreeTopLims = treeTopoInfo->eTreeTopLims;
+
+
+#if (DEBUGlevel >= 1)
+    CHECK_MALLOC(grid3d->iam, "Enter dsparseTreeFactorBatchGPU()");
+#endif
+    printf("Using level-based scheduling on GPU\n"); fflush(stdout);
+
+    /* For all the leaves at level 0 */
+    topoLvl = 0;
+    k_st = eTreeTopLims[topoLvl];
+    k_end = eTreeTopLims[topoLvl + 1];
+    //printf("level 0: k_st %d, k_end %d\n", k_st, k_end); fflush(stdout);
+
+#if 0
+    //ToDo: make this batched 
+    for (k0 = k_st; k0 < k_end; k0++)
+    {
+        k = perm_c_supno[k0];
+        offset = k0 - k_st;
+        // dDiagFactorPanelSolveGPU(k, offset, dFBufs);
+        dDFactPSolveGPU(k, 0, dFBufs);
+
+        /*======= Panel Broadcast  ======*/
+        dPanelBcastGPU(k, offset); // does this only if (UidxSendCounts[k] > 0)
+        //donePanelSolve[k0]=1;
+
+        /*======= Schurcomplement Update ======*/
+        /* UidxSendCounts are computed in LUstruct_v100 constructor in LUpanels.cpp */
+        if (UidxSendCounts[k] > 0 && LidxSendCounts[k] > 0) {
+            // k_upanel.checkCorrectness();
+            int streamId = 0;
+                upanel_t k_upanel = getKUpanel(k,offset);
+                lpanel_t k_lpanel = getKLpanel(k,offset);
+            dSchurComplementUpdateGPU( streamId,
+                        k, k_lpanel, k_upanel);
+            // cudaStreamSynchronize(cuStream); // there is sync inside the kernel
+        }
+    }
+    
     /* Main loop over all the internal levels */
     for (topoLvl = 1; topoLvl < maxTopoLevel; ++topoLvl) {
       
@@ -1122,11 +1089,11 @@ int LUstruct_v100::dsparseTreeFactorBatchGPU(
             // offset = getBufferOffset(k0, k1, winSize, winParity, halfWin);
             //ksupc = SuperSize(k);
 
-	    int dOffset = 0;  // Sherry ??? 
-	    dDFactPSolveGPU(k, dOffset,dFBufs);
+            int dOffset = 0;  // Sherry ??? 
+            dDFactPSolveGPU(k, dOffset,dFBufs);
 
-            /*======= Panel Broadcast  ======*/
-	    dPanelBcastGPU(k, offset); // does this only if (UidxSendCounts[k] > 0)
+                /*======= Panel Broadcast  ======*/
+            dPanelBcastGPU(k, offset); // does this only if (UidxSendCounts[k] > 0)
 	    
             /*======= Schurcomplement Update ======*/
             if (UidxSendCounts[k] > 0 && LidxSendCounts[k] > 0)
@@ -1137,8 +1104,8 @@ int LUstruct_v100::dsparseTreeFactorBatchGPU(
 #ifndef NDEBUG
                 checkGPU();
 #endif
-		upanel_t k_upanel = getKUpanel(k,offset);
-		lpanel_t k_lpanel = getKLpanel(k,offset);
+                upanel_t k_upanel = getKUpanel(k,offset);
+                lpanel_t k_lpanel = getKLpanel(k,offset);
                 dSchurComplementUpdateGPU(streamId,
 					  k, k_lpanel, k_upanel);
 // cudaStreamSynchronize(cuStream); // there is sync inside the kernel
@@ -1149,11 +1116,19 @@ int LUstruct_v100::dsparseTreeFactorBatchGPU(
 #endif
             }
             // MPI_Barrier(grid3d->comm);
-
         } /* end for k0= k_st:k_end */
-
     } /* end for topoLvl = 0:maxTopoLevel */
-    
+#else
+    dFactBatchSolve(k_st, k_end, perm_c_supno);
+
+    for (topoLvl = 1; topoLvl < maxTopoLevel; ++topoLvl) {
+      
+        k_st = eTreeTopLims[topoLvl];
+        k_end = eTreeTopLims[topoLvl + 1];
+        dFactBatchSolve(k_st, k_end, perm_c_supno);
+    }
+#endif
+
 #if (DEBUGlevel >= 1)
     CHECK_MALLOC(grid3d->iam, "Exit dsparseTreeFactorBatchGPU()");
 #endif

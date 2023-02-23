@@ -247,8 +247,8 @@ int_t lpanel_t::diagFactorCuSolver(int_t k,
     // call the cusolver 
     // cublasSetStream(handle, cuStream);
     //  cusolverDnSetStream(cuStream);
-    cusolverDnSetStream(cusolverH, cuStream);
-    cusolverDnDgetrf(cusolverH, kSupSize, kSupSize, val, LDA(), dWork, NULL, dInfo);
+    gpuCusolverErrchk(cusolverDnSetStream(cusolverH, cuStream));
+    gpuCusolverErrchk(cusolverDnDgetrf(cusolverH, kSupSize, kSupSize, val, LDA(), dWork, NULL, dInfo));
 
     // Device to Device Copy
     gpuErrchk(cudaMemcpy2DAsync(dDiagBuf, dpitch, val, spitch,
