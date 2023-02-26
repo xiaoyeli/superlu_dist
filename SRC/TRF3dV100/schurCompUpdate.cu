@@ -379,6 +379,8 @@ int_t LUstruct_v100::dSchurComplementUpdateGPU(
     {
         iSt = iEnd;
         iEnd = lpanel.getEndBlock(iSt, maxGemmRows);
+        
+        // printf("k = %d, ist = %d, iend = %d\n", k, iSt, iEnd);
 
         assert(iEnd > iSt);
         int jSt = 0;
@@ -394,6 +396,9 @@ int_t LUstruct_v100::dSchurComplementUpdateGPU(
             int gemm_m = lpanel.stRow(iEnd) - lpanel.stRow(iSt);
             int gemm_n = upanel.stCol(jEnd) - upanel.stCol(jSt);
             int gemm_k = supersize(k);
+            
+            // printf("k = %d, ist = %d, iend = %d, jst = %d, jend = %d\n", k, iSt, iEnd, jSt, jEnd);
+
             double alpha = 1.0;
             double beta = 0.0;
 #ifndef NDEBUG

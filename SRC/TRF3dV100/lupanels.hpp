@@ -534,7 +534,7 @@ struct LUstruct_v100
 
     // to perform diagFactOn GPU
     int_t dDFactPSolveGPU(int_t k, int_t offset, ddiagFactBufs_t **dFBufs);
-
+    int_t dDFactPSolveGPU(int_t k, int_t handle_offset, int buffer_offset, ddiagFactBufs_t **dFBufs);
 
     
     

@@ -234,6 +234,66 @@ int_t LUstruct_v100::dDFactPSolveGPU(int_t k, int_t offset, ddiagFactBufs_t **dF
     return 0;
 } /* dDFactPSolveGPU */
 
+
+int_t LUstruct_v100::dDFactPSolveGPU(int_t k, int_t handle_offset, int buffer_offset, ddiagFactBufs_t **dFBufs)
+{
+    // this is new version with diagonal factor being performed on GPU 
+    // different from dDiagFactorPanelSolveGPU (it performs diag factor in CPU)
+  
+    /* Sherry: argument dFBufs[] is on CPU, not used in this routine */
+
+    double t0 = SuperLU_timer_();
+    int ksupc = SuperSize(k);
+    cublasHandle_t cubHandle = A_gpu.cuHandles[handle_offset];
+    cusolverDnHandle_t cusolverH = A_gpu.cuSolveHandles[handle_offset];
+    cudaStream_t cuStream = A_gpu.cuStreams[handle_offset];
+
+    /*======= Diagonal Factorization ======*/
+    if (iam == procIJ(k, k))
+    {
+        lPanelVec[g2lCol(k)].diagFactorCuSolver(k,
+                        cusolverH, cuStream, 
+                        A_gpu.diagFactWork[handle_offset], A_gpu.diagFactInfo[handle_offset], // CPU pointers
+                        A_gpu.dFBufs[buffer_offset], ksupc, // CPU pointers
+                        thresh, xsup, options, stat, info);
+                                    
+    }
+
+    //CHECK_MALLOC(iam, "after diagFactorCuSolver()");
+		 
+    //TODO: need to synchronize the cuda stream 
+    /*======= Diagonal Broadcast ======*/
+    if (myrow == krow(k))
+        MPI_Bcast((void *)A_gpu.dFBufs[buffer_offset], ksupc * ksupc,
+                  MPI_DOUBLE, kcol(k), (grid->rscp).comm);
+    
+    //CHECK_MALLOC(iam, "after row Bcast");
+    
+    if (mycol == kcol(k))
+        MPI_Bcast((void *)A_gpu.dFBufs[buffer_offset], ksupc * ksupc,
+                  MPI_DOUBLE, krow(k), (grid->cscp).comm);
+
+    // do the panels solver 
+    if (myrow == krow(k))
+    {
+        uPanelVec[g2lRow(k)].panelSolveGPU(
+            cubHandle, cuStream,
+            ksupc, A_gpu.dFBufs[buffer_offset], ksupc);
+        cudaStreamSynchronize(cuStream); // synchronize befpre broadcast
+    }
+
+    if (mycol == kcol(k))
+    {
+        lPanelVec[g2lCol(k)].panelSolveGPU(
+            cubHandle, cuStream,
+            ksupc, A_gpu.dFBufs[buffer_offset], ksupc);
+        cudaStreamSynchronize(cuStream);
+    }
+    SCT->tDiagFactorPanelSolve += (SuperLU_timer_() - t0);
+
+    return 0;
+} /* dDFactPSolveGPU */
+
 /* This performs diag factor on CPU */
 int_t LUstruct_v100::dDiagFactorPanelSolveGPU(int_t k, int_t offset, ddiagFactBufs_t **dFBufs)
 {
@@ -694,7 +754,8 @@ int LUstruct_v100::marshallSCUBatchedDataInner(int k_st, int k_end, int_t *perm_
 
             assert(jEnd > jSt);
             done_j = 0;
-
+            // printf("k = %d, ist = %d, iend = %d, jst = %d, jend = %d\n", k, iSt, iEnd, jSt, jEnd);
+            
             sc_mdata.host_m_array[buffer_index] = lpanel.stRow(iEnd) - lpanel.stRow(iSt);
             sc_mdata.host_n_array[buffer_index] = upanel.stCol(jEnd) - upanel.stCol(jSt);
             sc_mdata.host_k_array[buffer_index] = supersize(k);
@@ -1050,14 +1111,14 @@ int LUstruct_v100::dsparseTreeFactorBatchGPU(
     k_end = eTreeTopLims[topoLvl + 1];
     //printf("level 0: k_st %d, k_end %d\n", k_st, k_end); fflush(stdout);
 
-#if 0
+#if 1
     //ToDo: make this batched 
     for (k0 = k_st; k0 < k_end; k0++)
     {
         k = perm_c_supno[k0];
         offset = k0 - k_st;
         // dDiagFactorPanelSolveGPU(k, offset, dFBufs);
-        dDFactPSolveGPU(k, 0, dFBufs);
+        dDFactPSolveGPU(k, 0, offset, dFBufs);
 
         /*======= Panel Broadcast  ======*/
         dPanelBcastGPU(k, offset); // does this only if (UidxSendCounts[k] > 0)
@@ -1089,8 +1150,7 @@ int LUstruct_v100::dsparseTreeFactorBatchGPU(
             // offset = getBufferOffset(k0, k1, winSize, winParity, halfWin);
             //ksupc = SuperSize(k);
 
-            int dOffset = 0;  // Sherry ??? 
-            dDFactPSolveGPU(k, dOffset,dFBufs);
+            dDFactPSolveGPU(k, 0, offset, dFBufs);
 
                 /*======= Panel Broadcast  ======*/
             dPanelBcastGPU(k, offset); // does this only if (UidxSendCounts[k] > 0)
