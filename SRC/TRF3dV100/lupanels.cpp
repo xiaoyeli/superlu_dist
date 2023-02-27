@@ -17,22 +17,22 @@
 
 upanel_t LUstruct_v100::getKUpanel(int_t k, int_t offset)
 {
-    upanel_t k_upanel(UidxRecvBufs[offset], UvalRecvBufs[offset],
-                      A_gpu.UidxRecvBufs[offset], A_gpu.UvalRecvBufs[offset]);
-    
-    if (myrow == krow(k))
-        k_upanel = uPanelVec[g2lRow(k)];
-    
-    return k_upanel;
+    return (
+        myrow == krow(k) ? 
+        uPanelVec[g2lRow(k)] : 
+        upanel_t(UidxRecvBufs[offset], UvalRecvBufs[offset],
+            A_gpu.UidxRecvBufs[offset], A_gpu.UvalRecvBufs[offset])
+    );
 }
 
 lpanel_t LUstruct_v100::getKLpanel(int_t k, int_t offset)
-{
-    lpanel_t k_lpanel(LidxRecvBufs[offset], LvalRecvBufs[offset],
-                      A_gpu.LidxRecvBufs[offset], A_gpu.LvalRecvBufs[offset]);
-    if (mycol == kcol(k))
-        k_lpanel = lPanelVec[g2lCol(k)];
-    return k_lpanel;
+{ 
+    return (
+        mycol == kcol(k) ? 
+        lPanelVec[g2lCol(k)] : 
+        lpanel_t(LidxRecvBufs[offset], LvalRecvBufs[offset],
+            A_gpu.LidxRecvBufs[offset], A_gpu.LvalRecvBufs[offset])
+    );
 }
 
 /* Constructor */
