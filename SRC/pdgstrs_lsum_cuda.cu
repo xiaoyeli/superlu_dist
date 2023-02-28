@@ -459,9 +459,9 @@ void nv_init_wrapper(int* c, char *v[], int* omp_mpi_level)
     cudaDeviceProp prop;
     CUDA_CHECK(cudaGetDeviceProperties(&prop, rank%ndevices));
     //int status=nvshmemx_init_status();
-    printf("** MPI %d/%d, NVSHMEM %d/%d, mype_node=%d, device name: %s bus id: %d, "
+    printf("** MPI %d/%d, NVSHMEM %d/%d,device name: %s bus id: %d, "
            "ndevices=%d,cur=%d, node=%s **\n",
-           rank,nranks,mype,npes,mype_node, prop.name, prop.pciBusID,
+           rank,nranks,mype,npes,prop.name, prop.pciBusID,
            ndevices,get_cur_dev,name);
     fflush(stdout);
 
@@ -476,8 +476,6 @@ void nv_init_wrapper(int* c, char *v[], int* omp_mpi_level)
 }
 
 void prepare_multiGPU_buffers(int flag_bc_size,int flag_rd_size,int ready_x_size,int ready_lsum_size,int my_flag_bc_size,int my_flag_rd_size){
-    int iam;
-    MPI_CHECK(MPI_Comm_rank(MPI_COMM_WORLD, &iam));
     flag_bc_q = (uint64_t *)nvshmem_malloc( flag_bc_size * sizeof(uint64_t)); // for sender
     flag_rd_q = (uint64_t *)nvshmem_malloc( flag_rd_size * sizeof(uint64_t)); // for sender
     ready_x = (double *)nvshmem_malloc( ready_x_size * sizeof(double)); // for receiver
@@ -485,6 +483,8 @@ void prepare_multiGPU_buffers(int flag_bc_size,int flag_rd_size,int ready_x_size
     my_flag_bc = (int *) nvshmem_malloc ( my_flag_bc_size * sizeof(int)); // for sender
     my_flag_rd = (int *) nvshmem_malloc ( my_flag_rd_size * sizeof(int)); // for sender
 
+    //int iam;
+    //MPI_CHECK(MPI_Comm_rank(MPI_COMM_WORLD, &iam));
     //printf("(%d) in prepare_multiGPU_buffers:\n "
     //       "flag_bc_size=%d int, ready_x=%d double, "
     //       "flag_rd_size=%d int, ready_lsum=%d double, "
