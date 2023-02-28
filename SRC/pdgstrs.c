@@ -1921,24 +1921,22 @@ t1 = SuperLU_timer_();
 	                        d_status,d_colnum,d_mynum, d_mymaskstart,d_mymasklength,
 	                        d_nfrecvmod,d_statusmod,d_colnummod,d_mynummod,d_mymaskstartmod,d_mymasklengthmod,d_recv_cnt,d_msgnum,d_flag_mod);
 	  		                      //d_rownum,d_rowstart,d_validrows);
-//#if ( PRNTlevel>=1 )
-//	nvshmem_barrier_all();
-//		t = SuperLU_timer_() - t;
-//		stat->utime[SOL_TOT] += t;
-//		if ( !iam ) {
-//			printf(".. L-solve (close) time\t%8.4f\n", t);
-//			fflush(stdout);
-//		}
-//		MPI_Reduce (&t, &tmax, 1, MPI_DOUBLE,
-//				MPI_MAX, 0, grid->comm);
-//		if ( !iam ) {
-//			printf(".. L-solve time  (close) (MAX) \t%8.4f\n", tmax);
-//			fflush(stdout);
-//		}
-//
-//
-//		t = SuperLU_timer_();
-//#endif
+#if ( PRNTlevel>=1 )
+		t = SuperLU_timer_() - t;
+		stat->utime[SOL_TOT] += t;
+		if ( !iam ) {
+			printf(".. L-solve (kernel) time\t%8.4f\n", t);
+			fflush(stdout);
+		}
+		MPI_Reduce (&t, &tmax, 1, MPI_DOUBLE,
+				MPI_MAX, 0, grid->comm);
+		if ( !iam ) {
+			printf(".. L-solve time  (kernel) (MAX) \t%8.4f\n", tmax);
+			fflush(stdout);
+		}
+
+		t = SuperLU_timer_();
+#endif
 
 	checkGPU(gpuMemcpy(x, d_x, (ldalsum * nrhs + nlb * XK_H) * sizeof(double), gpuMemcpyDeviceToHost));
 
@@ -2713,6 +2711,22 @@ thread_id=0;
     //printf("(%d) done dlsum_bmod_inv_gpu_wrap\n",iam);
     //fflush(stdout);
 
+#if ( PRNTlevel>=1 )
+		t = SuperLU_timer_() - t;
+		stat->utime[SOL_TOT] += t;
+		if ( !iam ) {
+			printf(".. U-solve (kernel) time\t%8.4f\n", t);
+			fflush(stdout);
+		}
+		MPI_Reduce (&t, &tmax, 1, MPI_DOUBLE,
+				MPI_MAX, 0, grid->comm);
+		if ( !iam ) {
+			printf(".. U-solve time  (kernel) (MAX) \t%8.4f\n", tmax);
+			fflush(stdout);
+		}
+
+		t = SuperLU_timer_();
+#endif
 	checkGPU(gpuMemcpy(x, d_x, (ldalsum * nrhs + nlb * XK_H) * sizeof(double), gpuMemcpyDeviceToHost));
 
 	checkGPU (gpuFree (d_grid));

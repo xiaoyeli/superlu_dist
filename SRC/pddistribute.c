@@ -2478,7 +2478,7 @@ if ( !iam) printf(".. Construct Reduce tree for U: %.2f\t\n", t);
 
     h_nfrecv[0]=nfrecvx;
     h_nfrecv[1]=1024;
-    h_nfrecv[2]=3;
+    h_nfrecv[2]=2;
 
 	checkGPU(gpuMalloc( (void**)&d_mynum, h_nfrecv[1]  * sizeof(int)));
 	checkGPU(gpuMalloc( (void**)&d_mymaskstart, h_nfrecv[1] * sizeof(int)));
@@ -2552,7 +2552,7 @@ if ( !iam) printf(".. Construct Reduce tree for U: %.2f\t\n", t);
     }
     h_nfrecv_u[0]=nbrecvx;
     h_nfrecv_u[1]=1024;
-    h_nfrecv_u[2]=3;
+    h_nfrecv_u[2]=2;
     //printf("(%d), wait=%d,%d\n",iam,h_nfrecv[2],h_nfrecv[1]);
     //fflush(stdout);
 

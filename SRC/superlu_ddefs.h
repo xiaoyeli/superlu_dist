@@ -683,6 +683,7 @@ extern void dGenCSRLblocks(int, int_t, gridinfo_t*,
 #ifdef GPU_SOLVE
 extern void create_nv_buffer(int* , int*, int* , int* );
 extern void nv_init_wrapper(int*, char**, int*);
+extern void nv_finalize_wrapper();
 extern void prepare_multiGPU_buffers(int,int,int,int,int,int);
 #endif
 /* BLAS */

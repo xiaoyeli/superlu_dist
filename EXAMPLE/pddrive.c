@@ -391,6 +391,7 @@ out:
     /* ------------------------------------------------------------
        TERMINATES THE MPI EXECUTION ENVIRONMENT.
        ------------------------------------------------------------*/
+    nv_finalize_wrapper();
     MPI_Finalize();
 
 #if ( DEBUGlevel>=1 )
