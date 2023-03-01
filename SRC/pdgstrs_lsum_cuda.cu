@@ -497,7 +497,7 @@ void prepare_multiGPU_buffers(int flag_bc_size,int flag_rd_size,int ready_x_size
 
 }
 
-__device__ void C_BcTree_forwardMessageSimple_Device(C_Tree* tree,  uint64_t* flag_bc_q,  int* my_flag_bc, int mype, int tid,double* ready_x, int maxrecvsz){
+__device__ void C_BcTree_forwardMessageSimple_Device(C_Tree* tree,  volatile uint64_t* flag_bc_q,  int* my_flag_bc, int mype, int tid,double* ready_x, int maxrecvsz){
 //int BCsendoffset;
     uint64_t sig = 1;
     int data_ofset=my_flag_bc[0]*maxrecvsz;
@@ -541,7 +541,7 @@ __device__ void C_BcTree_forwardMessageSimple_Device(C_Tree* tree,  uint64_t* fl
     }
 }
 
-__device__ void C_RdTree_forwardMessageSimple_Device(C_Tree* Tree, uint64_t* flag_rd_q, int* my_flag_rd, int mype, int bid, int tid, double* ready_lsum, int maxrecvsz, int myroot){
+__device__ void C_RdTree_forwardMessageSimple_Device(C_Tree* Tree, volatile uint64_t* flag_rd_q, int* my_flag_rd, int mype, int bid, int tid, double* ready_lsum, int maxrecvsz, int myroot){
     int data_ofset,sig_ofset;
     uint64_t sig = 1;
     if (Tree->myIdx % 2 == 0) {
@@ -1870,15 +1870,15 @@ __global__ void dlsum_fmod_inv_gpu_mrhs_nvshmem
                 gridinfo_t *grid,
                 int_t maxrecvsz,
                 int mype,
-                uint64_t* flag_bc_q,
-                uint64_t* flag_rd_q,
+                volatile uint64_t* flag_bc_q,
+                volatile uint64_t* flag_rd_q,
                 double* ready_x,
                 double* ready_lsum,
                 int* my_flag_bc,
                 int* my_flag_rd,
                 int* d_nfrecv,
-                int* d_status,
-                int* d_statusmod,
+                volatile int* d_status,
+                volatile int* d_statusmod,
                 int* d_flag_mod
         )
 {
@@ -2752,6 +2752,11 @@ void dlsum_fmod_inv_gpu_wrap
     } // if status
 //} // if npes==1
     CUDA_CHECK(cudaDeviceSynchronize());
+    for (int i = 0; i < 2; ++i) {
+        CUDA_CHECK(cudaStreamDestroy(stream[i]));
+    }
+    //printf("(%d) Done L solve\n",mype);
+    //fflush(stdout);
 }
 
 /************************************************************************/
@@ -3086,8 +3091,8 @@ __global__ void dlsum_bmod_inv_gpu_mrhs_nvshmem
                 gridinfo_t *grid,
                 int_t maxrecvsz,
                 int mype,
-                uint64_t* flag_bc_q,
-                uint64_t* flag_rd_q,
+                volatile uint64_t* flag_bc_q,
+                volatile uint64_t* flag_rd_q,
                 double* ready_x,
                 double* ready_lsum,
                 int* my_flag_bc,
@@ -3463,7 +3468,7 @@ void dlsum_bmod_inv_gpu_wrap
                 int* d_mymasklengthmod_u,
                 int* d_recv_cnt_u,
                 int* d_msgnum,
-		int* d_flag_mod_u
+		        int* d_flag_mod_u
         ) {
 
     gpuStream_t sid = 0;
