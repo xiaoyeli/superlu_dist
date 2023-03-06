@@ -145,10 +145,10 @@ int_t trs_B_init3d_newsolve(int_t nsupers, double* x, int nrhs, dLUstruct_t * LU
 
 // #ifdef HAVE_NVSHMEM   
 /*global variables for nvshmem, is it safe to be put them here? */
-int* mystatus, *mystatusmod;
+int* mystatus, *mystatusmod,*d_rownum,*d_rowstart;
 int* mystatus_u, *mystatusmod_u;
 int *d_status, *d_statusmod;
-int *flag_bc_q, *flag_rd_q;
+uint64_t *flag_bc_q, *flag_rd_q ;
 int* my_flag_bc, *my_flag_rd;
 int* d_mynum,*d_mymaskstart,*d_mymasklength;
 int* d_mynum_u,*d_mymaskstart_u,*d_mymasklength_u;
@@ -161,7 +161,7 @@ int* d_mynummod,*d_mymaskstartmod,*d_mymasklengthmod;
 int* d_mynummod_u,*d_mymaskstartmod_u,*d_mymasklengthmod_u;
 int *h_recv_cnt, *d_recv_cnt, *d_msgnum;
 int *h_recv_cnt_u, *d_recv_cnt_u, *d_msgnum_u;
-int *d_flag_mod;
+int *d_flag_mod, *d_flag_mod_u;
 // #endif
 
 int_t trs_compute_communication_structure(superlu_dist_options_t *options, int_t n, dLUstruct_t * LUstruct,
@@ -647,8 +647,9 @@ int_t trs_compute_communication_structure(superlu_dist_options_t *options, int_t
         ABORT("Malloc fails for mystatus_u[].");
     if ( !(h_nfrecv_u = (int*)SUPERLU_MALLOC( 3* sizeof(int))) )
         ABORT("Malloc fails for h_nfrecv_u[].");
-    if ( !(h_nfrecvmod_u = (int*)SUPERLU_MALLOC( 3* sizeof(int))) )
+    if ( !(h_nfrecvmod_u = (int*)SUPERLU_MALLOC( 4* sizeof(int))) )
         ABORT("Malloc fails for h_nfrecvmod_u[].");
+    h_nfrecvmod_u[3]=0;
 
 	for (int i=0;i<kc;i++){
 		mystatus_u[i]=1;
@@ -841,6 +842,7 @@ int_t trs_compute_communication_structure(superlu_dist_options_t *options, int_t
                         int needsendrd=0;
                         C_RdTree_Create_nv(&URtree_ptr[lk], grid->comm, ranks, rank_cnt, msgsize, 'd', &needrecvrd,&needsendrd);
                         //C_RdTree_Create(&URtree_ptr[lib], grid->comm, ranks, rank_cnt, msgsize, 'd');
+                        h_nfrecvmod_u[3] +=needsendrd;
                         if (needrecvrd!=0) {
                             mystatusmod_u[lk*2]=0;
                             mystatusmod_u[lk*2+1]=0;
@@ -848,8 +850,6 @@ int_t trs_compute_communication_structure(superlu_dist_options_t *options, int_t
                             //printf("(%d) on CPU, lib=%d, cnt=%d\n",iam,lib,LRtree_ptr[lib].destCnt_);
                             nbrecvmod+=needrecvrd;
                         }
-
-
                         URtree_ptr[lk].tag_=RD_U;
                     }
                 }
@@ -3012,6 +3012,8 @@ if ( !(getenv("NEW3DSOLVETREECOMM") && getenv("SUPERLU_ACC_SOLVE"))){
     checkGPU(gpuMemset(d_msgnum, 0, h_nfrecv[1] * sizeof(int)));
 	//printf("2-(%d) maxrecvsz=%d,ready_x=%d, ready_lsum=%d,RDMA_FLAG_SIZE=%d,k=%d,nlb=%d\n",iam,maxrecvsz,maxrecvsz*CEILING( nsupers, grid->npcol),2*maxrecvsz*CEILING( nsupers, grid->nprow),RDMA_FLAG_SIZE,k,nlb);
 	//fflush(stdout);
+    // MUST have this barrier, otherwise the code hang.
+	MPI_Barrier( grid->comm );
     #endif
     }
 
@@ -5439,6 +5441,8 @@ if (getenv("SUPERLU_ACC_SOLVE")){  /* GPU trisolve*/
     checkGPU(gpuMemset(ready_x, 0, maxrecvsz*CEILING( nsupers, grid->npcol) * sizeof(double)));
     checkGPU(gpuMemset(ready_lsum, 0, 2*maxrecvsz*CEILING( nsupers, grid->nprow) * sizeof(double)));
     checkGPU(gpuMemset(d_msgnum, 0, h_nfrecv_u[1] * sizeof(int)));
+    // MUST have this barrier, otherwise the code hang.
+	MPI_Barrier( grid->comm );
     #endif
     }
 
@@ -5456,7 +5460,7 @@ if (getenv("SUPERLU_ACC_SOLVE")){  /* GPU trisolve*/
                             d_mymaskstart_u,d_mymasklength_u,
                             d_nfrecvmod_u, d_statusmod, d_colnummod_u, d_mynummod_u,
                             d_mymaskstartmod_u, d_mymasklengthmod_u,
-                            d_recv_cnt_u, d_msgnum, procs);
+                            d_recv_cnt_u, d_msgnum, d_flag_mod_u, procs);
 
 
     

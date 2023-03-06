@@ -840,7 +840,7 @@ int dinitSluGPU3D_t(
     SuperLUStat_t *stat
 )
 {
-    checkGPUErrors(gpuDeviceReset ());
+    checkGPUErrors(gpuDeviceReset ()); // Yang: should move this to the begining of the driver routine
     Glu_persist_t *Glu_persist = LUstruct->Glu_persist;
     dLocalLU_t *Llu = LUstruct->Llu;
     int* isNodeInMyGrid = sluGPU->isNodeInMyGrid;

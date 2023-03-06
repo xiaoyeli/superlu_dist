@@ -36,13 +36,13 @@ export NEW3DSOLVE=1
 export NEW3DSOLVETREECOMM=1
 export SUPERLU_BIND_MPI_GPU=1
 
-nprows=(4)
-npcols=(1)  
-npz=(2)
+nprows=(1 1 1)
+npcols=(1 1 1)  
+npz=(1 2 4)
 
 #matrix=(LU_C_BN_C_2by2.bin) #s1_mat_0_253872.bin) #s1_mat_0_507744.bin Li4244.bin DG_GrapheneDisorder_8192.bin LU_C_BN_C_2by2.bin) #Li4244.bin s1_mat_0_253872.bin) 
-matrix=(g20.rua) #DG_GrapheneDisorder_8192.bin LU_C_BN_C_2by2.bin) #Li4244.bin s1_mat_0_253872.bin) 
-# matrix=(s1_mat_0_126936.bin) #DG_GrapheneDisorder_8192.bin LU_C_BN_C_2by2.bin) #Li4244.bin s1_mat_0_253872.bin) 
+# matrix=(g20.rua) #DG_GrapheneDisorder_8192.bin LU_C_BN_C_2by2.bin) #Li4244.bin s1_mat_0_253872.bin) 
+matrix=(s1_mat_0_253872.bin) #DG_GrapheneDisorder_8192.bin LU_C_BN_C_2by2.bin) #Li4244.bin s1_mat_0_253872.bin) 
 # matrix=(s2D9pt2048.rua) #DG_GrapheneDisorder_8192.bin LU_C_BN_C_2by2.bin) #Li4244.bin s1_mat_0_253872.bin) 
 export NVSHMEM_HOME=/ccs/home/liuyangz/my_software/nvshmem_src_2.8.0-3/
 export LD_LIBRARY_PATH=$NVSHMEM_HOME/lib:$LD_LIBRARY_PATH

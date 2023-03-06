@@ -559,7 +559,7 @@ void delete_multiGPU_buffers(){
 #endif
 }
 
-__device__ void C_BcTree_forwardMessageSimple_Device(C_Tree* tree,  uint64_t* flag_bc_q,  int* my_flag_bc, int mype, int tid,double* ready_x, int maxrecvsz){
+__device__ void C_BcTree_forwardMessageSimple_Device(C_Tree* tree,  volatile uint64_t* flag_bc_q,  int* my_flag_bc, int mype, int tid,double* ready_x, int maxrecvsz){
 #ifdef HAVE_NVSHMEM
 //int BCsendoffset;
     uint64_t sig = 1;
@@ -602,11 +602,10 @@ __device__ void C_BcTree_forwardMessageSimple_Device(C_Tree* tree,  uint64_t* fl
 
         }
     }
-}
 #endif
 }
 
-__device__ void C_RdTree_forwardMessageBlock_Device(C_Tree* Tree, int* flag_rd_q, int* my_flag_rd, int mype, int bid, int tid, double* ready_lsum, int maxrecvsz, int myroot){
+__device__ void C_RdTree_forwardMessageBlock_Device(C_Tree* Tree, volatile int* flag_rd_q, int* my_flag_rd, int mype, int bid, int tid, double* ready_lsum, int maxrecvsz, int myroot){
 #ifdef HAVE_NVSHMEM
     int data_ofset,sig_ofset;
 if (Tree->myIdx % 2 == 0) {
@@ -645,7 +644,7 @@ if (Tree->myIdx % 2 == 0) {
 }
 
 
-__device__ void C_RdTree_forwardMessageWarp_Device(C_Tree* Tree, uint64_t* flag_rd_q, int* my_flag_rd, int mype, int bid, int tid, double* ready_lsum, int maxrecvsz, int myroot){
+__device__ void C_RdTree_forwardMessageWarp_Device(C_Tree* Tree, volatile uint64_t* flag_rd_q, int* my_flag_rd, int mype, int bid, int tid, double* ready_lsum, int maxrecvsz, int myroot){
 #ifdef HAVE_NVSHMEM
     int data_ofset,sig_ofset;
     if (Tree->myIdx % 2 == 0) {
@@ -687,7 +686,7 @@ __device__ void C_RdTree_forwardMessageWarp_Device(C_Tree* Tree, uint64_t* flag_
 
 
 
-__device__ void C_RdTree_forwardMessageThread_Device(C_Tree* Tree, uint64_t* flag_rd_q, int* my_flag_rd, int mype, int bid, int tid, double* ready_lsum, int maxrecvsz, int myroot){
+__device__ void C_RdTree_forwardMessageThread_Device(C_Tree* Tree, volatile uint64_t* flag_rd_q, int* my_flag_rd, int mype, int bid, int tid, double* ready_lsum, int maxrecvsz, int myroot){
 #ifdef HAVE_NVSHMEM    
     int data_ofset,sig_ofset;
     if (Tree->myIdx % 2 == 0) {
@@ -724,7 +723,8 @@ __device__ void C_RdTree_forwardMessageThread_Device(C_Tree* Tree, uint64_t* fla
 #endif
 }
 
-__device__ void C_RdTree_forwardMessageSimple_Device(C_Tree* Tree, uint64_t* flag_rd_q, int* my_flag_rd, int mype, int bid, int tid, double* ready_lsum, int maxrecvsz, int myroot){
+__device__ void C_RdTree_forwardMessageSimple_Device(C_Tree* Tree, volatile uint64_t* flag_rd_q, int* my_flag_rd, int mype, int bid, int tid, double* ready_lsum, int maxrecvsz, int myroot){
+#ifdef HAVE_NVSHMEM  
     int data_ofset,sig_ofset;
     if (Tree->myIdx % 2 == 0) {
         sig_ofset = my_flag_rd[0] * 2;
@@ -757,6 +757,7 @@ __device__ void C_RdTree_forwardMessageSimple_Device(C_Tree* Tree, uint64_t* fla
     nvshmemx_signal_op((uint64_t*)flag_rd_q+sig_ofset, sig, NVSHMEM_SIGNAL_SET, myroot);
 //printf("Tsend:%d,%d,%d,%d,%d\n",
 //       mype, my_flag_rd[0],data_ofset, sig_ofset,my_flag_rd[1]);
+#endif
 }
 
 __global__ void wait_bcrd
@@ -1178,7 +1179,7 @@ __global__ void wait_bcrd
             //if (tid==0) printf("iam=%d,tid=%d,i=%d, recv_num=%d,cur_send_num=%d\n",mype,tid,i,recv_num,cur_send_num);
         }
     }
-
+#endif
 }
 
 
@@ -1217,7 +1218,7 @@ __global__ void wait_bcrd_u
                 int nbrow_loc,
                 int_t  nsupers
         ) {
-
+#ifdef HAVE_NVSHMEM
     int bid = blockIdx.x;
 //int global_id= blockIdx.x * blockDim.x * blockDim.y + threadIdx.x + threadIdx.y * blockDim.x;
     int tid = threadIdx.x + threadIdx.y * blockDim.x;
@@ -1604,7 +1605,6 @@ __global__ void wait_bcrd_u
             //if (tid==0) printf("iam=%d,tid=%d,i=%d, recv_num=%d,cur_send_num=%d\n",mype,tid,i,recv_num,cur_send_num);
         }
     }
-}
 #endif
 }
 
@@ -1712,15 +1712,15 @@ __global__ void dlsum_fmod_inv_gpu_mrhs_nvshmem
                 gridinfo_t *grid,
                 int_t maxrecvsz,
                 int mype,
-                uint64_t* flag_bc_q,
-                uint64_t* flag_rd_q,
+                volatile uint64_t* flag_bc_q,
+                volatile uint64_t* flag_rd_q,
                 double* ready_x,
                 double* ready_lsum,
                 int* my_flag_bc,
                 int* my_flag_rd,
                 int* d_nfrecv,
-                int* d_status,
-                int* d_statusmod,
+                volatile int* d_status,
+                volatile int* d_statusmod,
                 int* d_flag_mod
         )
 {
@@ -2633,12 +2633,18 @@ void dlsum_fmod_inv_gpu_wrap
             CUDA_CHECK(cudaGetLastError());
         } // if status
     //} // if npes==1
+    CUDA_CHECK(cudaDeviceSynchronize());
+    for (int i = 0; i < 2; ++i) {
+        CUDA_CHECK(cudaStreamDestroy(stream[i]));
+    }    
 #else
     printf("NVSHMEM is needed for multi-GPU solve\n");
     exit(1);
 #endif
 }
-CUDA_CHECK(cudaDeviceSynchronize());
+
+//printf("(%d) Done L solve\n",mype);
+//fflush(stdout);
 }
 
  /************************************************************************/
@@ -2985,8 +2991,8 @@ __global__ void dlsum_bmod_inv_gpu_mrhs_nvshmem
                 gridinfo_t *grid,
                 int_t maxrecvsz,
                 int mype,
-                uint64_t* flag_bc_q,
-                uint64_t* flag_rd_q,
+                volatile uint64_t* flag_bc_q,
+                volatile uint64_t* flag_rd_q,
                 double* ready_x,
                 double* ready_lsum,
                 int* my_flag_bc,
@@ -3485,6 +3491,9 @@ if(procs==1){
     gpuDeviceSynchronize();
     //printf("(%d) back to CPU !!!!! \n",mype);
     //}
+    for (int i = 0; i < 2; ++i) {
+        CUDA_CHECK(cudaStreamDestroy(stream[i]));
+    }    
     #else
     printf("NVSHMEM is needed for multi-GPU solve\n");
     exit(1);
