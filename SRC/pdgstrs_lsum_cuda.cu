@@ -843,7 +843,7 @@ __global__ void wait_bcrd
                                 //cnt=LRtree_ptr[lib].msgSize_;
                                 my_flag_rd[lib * RDMA_FLAG_SIZE] = lib;
                                 my_flag_rd[lib * RDMA_FLAG_SIZE + 1] = LRtree_ptr[lib].msgSize_;
-                                double tmp_sum=0;
+                                //double tmp_sum=0;
                                 RHS_ITERATE(j) {
                                     for (int aab = 0; aab < knsupc; aab++) {
                                         ready_lsum[lib * maxrecvsz * 2 + aab + j * knsupc] = lsum[il + aab + j * knsupc];
