@@ -1421,6 +1421,8 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 
 	dtrf3Dpartition_t *trf3Dpartition;
 	int gpu3dVersion = 0;
+	#ifdef GPU_ACC
+		// gpu3dVersion = 1;
 	if (getenv("GPU3DVERSION"))
 	{
 		gpu3dVersion = atoi(getenv("GPU3DVERSION"));
@@ -1434,7 +1436,7 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 			assert(grid3d->npdep == 1);
 	}
 	LUgpu_Handle LUgpu;
-
+	#endif 
 	/* Perform numerical factorization in parallel on all process layers.*/
 	if (!factored)
 	{
@@ -1466,7 +1468,7 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 		/*factorize in grid 1*/
 		// if(grid3d->zscp.Iam)
 		// get environment variable TRF3DVERSION
-
+		#ifdef GPU_ACC
 		if (gpu3dVersion == 1)
 		{ /* this is the new C++ code in TRF3dV100/ directory */
 		  
@@ -1502,6 +1504,7 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 #endif
 		}
 		else /* this is the old C code */
+		#endif
 		{
 			pdgstrf3d(options, m, n, anorm, trf3Dpartition, SCT, LUstruct,
 					  grid3d, stat, info);

@@ -123,18 +123,7 @@ endif()
     dnrformat_loc3d.c 
     pdgstrf3d.c 
     dtreeFactorization.c
-    TRF3dV100/pdgstrf3d_summit.cpp
-    TRF3dV100/dsparseTreeFactor_summit.cpp
-    TRF3dV100/dsparseTreeFactorGPU.cpp
-    TRF3dV100/lupanels.cpp
-    TRF3dV100/lupanels_comm3d.cpp
-    TRF3dV100/lupanelsComm3dGPU.cpp
-    TRF3dV100/commWrapper.cpp 
-    TRF3dV100/l_panels.cpp
-    TRF3dV100/u_panels.cpp
-    TRF3dV100/lupanels_GPU.cpp
-    TRF3dV100/anc25d.cpp 
-    TRF3dV100/LUgpuCHandle_interface.cpp
+    
     dtreeFactorizationGPU.c
     dgather.c
     dscatter3d.c
@@ -147,6 +136,18 @@ endif()
 if (TPL_ENABLE_CUDALIB)
   list(APPEND sources pdgstrs_lsum_cuda.cu superlu_gpu_utils.cu dsuperlu_gpu.cu
   TRF3dV100/schurCompUpdate.cu 
+  TRF3dV100/pdgstrf3d_summit.cpp
+    TRF3dV100/dsparseTreeFactor_summit.cpp
+    TRF3dV100/dsparseTreeFactorGPU.cpp
+    TRF3dV100/lupanels.cpp
+    TRF3dV100/lupanels_comm3d.cpp
+    TRF3dV100/lupanelsComm3dGPU.cpp
+    TRF3dV100/commWrapper.cpp 
+    TRF3dV100/l_panels.cpp
+    TRF3dV100/u_panels.cpp
+    TRF3dV100/lupanels_GPU.cpp
+    TRF3dV100/anc25d.cpp 
+    TRF3dV100/LUgpuCHandle_interface.cpp
   )
 endif()
 
