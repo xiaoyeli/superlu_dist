@@ -1051,7 +1051,7 @@ extern int_t sUPanelUpdate(int_t k, int_t* factored_U, MPI_Request *,
 extern int_t sIBcastRecvLPanel(int_t k, int_t k0, int* msgcnt,
 			       MPI_Request *, MPI_Request *,
 			       int_t* Lsub_buf, float* Lval_buf,
-			      int_t * factored, gridinfo_t *, sLUstruct_t *,
+			      int * factored, gridinfo_t *, sLUstruct_t *,
 			      SCT_t *, int tag_ub);
 extern int_t sIBcastRecvUPanel(int_t k, int_t k0, int* msgcnt, MPI_Request *,
 			       MPI_Request *, int_t* Usub_buf, float* Uval_buf,

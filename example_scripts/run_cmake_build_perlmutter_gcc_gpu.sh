@@ -31,7 +31,6 @@
 #module load gcc/11.2.0
 #module load cmake/3.22.0
 #module load cudatoolkit/11.7
-# avoid bug in cray-libsci/21.08.1.2
 #module load cray-libsci/22.11.1.2
 
 # avoid bug in cudatoolkit

@@ -1371,75 +1371,9 @@ pdgssvx3d (superlu_dist_options_t * options, SuperMatrix * A,
 
 	}   /* end if not Factored */
 
-	/* ------------------------------------------------------------
-	   Compute the solution matrix X.
-	   ------------------------------------------------------------ */
-	if ( (nrhs > 0) && (*info == 0) ) {
-	    if (!(b_work = doubleMalloc_dist (n)))
-	        ABORT ("Malloc fails for b_work[]");
 
-	    /* ------------------------------------------------------
-	       Scale the right-hand side if equilibration was performed
-	       ------------------------------------------------------*/
-	    if (notran)
-	        {
-	    	    if (rowequ)
-		        {
-			    b_col = B;
-			    for (j = 0; j < nrhs; ++j)
-			        {
-			    	    irow = fst_row;
-				    for (i = 0; i < m_loc; ++i)
-				    {
-		                         b_col[i] *= R[irow];
- 					 ++irow;
-				    }
-				    b_col += ldb;
-				}
-			}
-		    }
-		else if (colequ)
-		    {
-			b_col = B;
-			for (j = 0; j < nrhs; ++j)
-			    {
-				irow = fst_row;
-				for (i = 0; i < m_loc; ++i)
-				{
-		                    b_col[i] *= C[irow];
-				    ++irow;
-				}
-				b_col += ldb;
-			    }
-		    }
-
-		/* Save a copy of the right-hand side. */
-		ldx = ldb;
-		if (!(X = doubleMalloc_dist (((size_t) ldx) * nrhs)))
-		    ABORT ("Malloc fails for X[]");
-		x_col = X;
-		b_col = B;
-		for (j = 0; j < nrhs; ++j) {
-		    for (i = 0; i < m_loc; ++i) x_col[i] = b_col[i];
-		    x_col += ldx;
-		    b_col += ldb;
-		}
-
-		/* ------------------------------------------------------
-		   Solve the linear system.
-		   ------------------------------------------------------*/
-		if (options->SolveInitialized == NO) { /* First time */
-                   /* Inside this routine, SolveInitialized is set to YES.
-	              For repeated call to pdgssvx3d(), no need to re-initialilze
-	              the Solve data & communication structures, unless a new
-	              factorization with Fact == DOFACT or SamePattern is asked for. */
-		    {
-			dSolveInit (options, A, perm_r, perm_c, nrhs, LUstruct,
-			            grid, SOLVEstruct);
-		    }
-		}
 #if ( defined(GPU_ACC) && defined(GPU_SOLVE) )
-        if(options->DiagInv==NO){
+	if(options->DiagInv==NO){
 	    if (iam==0) {
 	        printf("!!WARNING: GPU trisolve requires setting options->DiagInv==YES\n");
                 printf("           otherwise, use CPU trisolve\n");
@@ -1451,8 +1385,6 @@ pdgssvx3d (superlu_dist_options_t * options, SuperMatrix * A,
 
 	if ( options->DiagInv==YES && (Fact != FACTORED) ) {
 	    pdCompute_Diag_Inv(n, LUstruct, grid, stat, info);
-
-
 
 // The following #ifdef GPU_ACC block frees and reallocates GPU data for trisolve. The data seems to be overwritten by pdgstrf3d. 
 int_t nsupers = getNsupers(n, LUstruct->Glu_persist);
@@ -1522,6 +1454,75 @@ int_t nsupers = getNsupers(n, LUstruct->Glu_persist);
 #endif
 	}
 
+
+
+	/* ------------------------------------------------------------
+	   Compute the solution matrix X.
+	   ------------------------------------------------------------ */
+	if ( (nrhs > 0) && (*info == 0) ) {
+	    if (!(b_work = doubleMalloc_dist (n)))
+	        ABORT ("Malloc fails for b_work[]");
+
+	    /* ------------------------------------------------------
+	       Scale the right-hand side if equilibration was performed
+	       ------------------------------------------------------*/
+	    if (notran)
+	        {
+	    	    if (rowequ)
+		        {
+			    b_col = B;
+			    for (j = 0; j < nrhs; ++j)
+			        {
+			    	    irow = fst_row;
+				    for (i = 0; i < m_loc; ++i)
+				    {
+		                         b_col[i] *= R[irow];
+ 					 ++irow;
+				    }
+				    b_col += ldb;
+				}
+			}
+		    }
+		else if (colequ)
+		    {
+			b_col = B;
+			for (j = 0; j < nrhs; ++j)
+			    {
+				irow = fst_row;
+				for (i = 0; i < m_loc; ++i)
+				{
+		                    b_col[i] *= C[irow];
+				    ++irow;
+				}
+				b_col += ldb;
+			    }
+		    }
+
+		/* Save a copy of the right-hand side. */
+		ldx = ldb;
+		if (!(X = doubleMalloc_dist (((size_t) ldx) * nrhs)))
+		    ABORT ("Malloc fails for X[]");
+		x_col = X;
+		b_col = B;
+		for (j = 0; j < nrhs; ++j) {
+		    for (i = 0; i < m_loc; ++i) x_col[i] = b_col[i];
+		    x_col += ldx;
+		    b_col += ldb;
+		}
+
+		/* ------------------------------------------------------
+		   Solve the linear system.
+		   ------------------------------------------------------*/
+		if (options->SolveInitialized == NO) { /* First time */
+                   /* Inside this routine, SolveInitialized is set to YES.
+	              For repeated call to pdgssvx3d(), no need to re-initialilze
+	              the Solve data & communication structures, unless a new
+	              factorization with Fact == DOFACT or SamePattern is asked for. */
+		    {
+			dSolveInit (options, A, perm_r, perm_c, nrhs, LUstruct,
+			            grid, SOLVEstruct);
+		    }
+		}
 
 		stat->utime[SOLVE] = 0.0;
 #if 0 // Sherry: the following interface is needed by 3D trisolve.
