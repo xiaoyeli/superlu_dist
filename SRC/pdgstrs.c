@@ -1539,6 +1539,7 @@ if(procs==1){
 	fflush(stdout);
 	MPI_Barrier( grid->comm );
 	t = SuperLU_timer_();
+	t3 = SuperLU_timer_();
 #endif
 
 #if ( VAMPIR>=1 )
@@ -1912,6 +1913,14 @@ t1 = SuperLU_timer_();
 	// MUST have this barrier, otherwise the code hang.
 	MPI_Barrier( grid->comm );	
 #endif
+#if ( PROFlevel>=1 )
+	t = SuperLU_timer_() - t;
+	if ( !iam) printf(".. Setup GPU L-solve time\t%8.4f\n", t);
+	fflush(stdout);
+	MPI_Barrier( grid->comm );
+//	nvshmem_barrier_all();
+	t = SuperLU_timer_();
+#endif
 
 	k = CEILING( nsupers, grid->npcol);/* Number of local block columns divided by #warps per block used as number of thread blocks*/
 	knsupc = sp_ienv_dist(3, options);
@@ -1921,7 +1930,22 @@ t1 = SuperLU_timer_();
 	                        flag_bc_q, flag_rd_q, ready_x, ready_lsum, my_flag_bc, my_flag_rd, d_nfrecv, h_nfrecv,
 	                        d_status,d_colnum,d_mynum, d_mymaskstart,d_mymasklength,
 	                        d_nfrecvmod,d_statusmod,d_colnummod,d_mynummod,d_mymaskstartmod,d_mymasklengthmod,d_recv_cnt,d_msgnum,d_flag_mod,procs);
+#if ( PROFlevel>=1 )
+		t = SuperLU_timer_() - t;
+		stat->utime[SOL_TOT] += t;
+		if ( !iam ) {
+			printf(".. L-solve (kernel) time\t%8.4f\n", t);
+			fflush(stdout);
+		}
+		MPI_Reduce (&t, &tmax, 1, MPI_DOUBLE,
+				MPI_MAX, 0, grid->comm);
+		if ( !iam ) {
+			printf(".. L-solve time  (kernel) (MAX) \t%8.4f\n", tmax);
+			fflush(stdout);
+		}
 
+		t = SuperLU_timer_();
+#endif
 
 	/* the following transfer is not needed at the U solve works on the d_x directly */
 	// checkGPU(gpuMemcpy(x, d_x, (ldalsum * nrhs + nlb * XK_H) * sizeof(double), gpuMemcpyDeviceToHost));
@@ -2418,8 +2442,8 @@ thread_id=0;
 
 	
 #if ( PROFlevel>=1 )
-		t = SuperLU_timer_() - t;
-		stat->utime[SOL_TOT] += t;
+		t3 = SuperLU_timer_() - t3;
+		stat->utime[SOL_TOT] += t3;
 		if ( !iam ) {
 			printf(".. L-solve time\t%8.4f\n", t);
 			fflush(stdout);
@@ -2633,6 +2657,7 @@ thread_id=0;
 	fflush(stdout);
 	MPI_Barrier( grid->comm );
 	t = SuperLU_timer_();
+	t3 = SuperLU_timer_();
 #endif
 
 		/*
@@ -2675,7 +2700,14 @@ if (getenv("SUPERLU_ACC_SOLVE")){  /* GPU trisolve*/
     checkGPU(gpuMemset(d_msgnum, 0, h_nfrecv_u[1] * sizeof(int)));
 	// MUST have this barrier, otherwise the code hang.
 	MPI_Barrier( grid->comm );
-#endif
+#endif	
+#if ( PROFlevel>=1 )
+    t = SuperLU_timer_() - t;
+	if ( !iam) printf(".. Setup GPU U-solve time\t%8.4f\n", t);
+	fflush(stdout);
+	MPI_Barrier( grid->comm );
+	t = SuperLU_timer_();
+#endif	
 
     dlsum_bmod_inv_gpu_wrap(options, k,nlb,DIM_X,DIM_Y,d_lsum,d_x,nrhs,knsupc,nsupers,d_bmod,
                             Llu->d_UBtree_ptr,Llu->d_URtree_ptr,
@@ -2693,6 +2725,24 @@ if (getenv("SUPERLU_ACC_SOLVE")){  /* GPU trisolve*/
                             d_recv_cnt_u, d_msgnum,d_flag_mod_u,procs);
     //printf("(%d) done dlsum_bmod_inv_gpu_wrap\n",iam);
     //fflush(stdout);
+
+#if ( PROFlevel>=1 )
+		t = SuperLU_timer_() - t;
+		stat->utime[SOL_TOT] += t;
+		if ( !iam ) {
+			printf(".. U-solve (kernel) time\t%8.4f\n", t);
+			fflush(stdout);
+		}
+		MPI_Reduce (&t, &tmax, 1, MPI_DOUBLE,
+				MPI_MAX, 0, grid->comm);
+		if ( !iam ) {
+			printf(".. U-solve time  (kernel) (MAX) \t%8.4f\n", tmax);
+			fflush(stdout);
+		}
+
+		t = SuperLU_timer_();
+#endif
+
 
 	checkGPU(gpuMemcpy(x, d_x, (ldalsum * nrhs + nlb * XK_H) * sizeof(double), gpuMemcpyDeviceToHost));
 
@@ -3062,8 +3112,8 @@ for (i=0;i<nroot_send;i++){
 }
 
 #if ( PROFlevel>=1 )
-		t = SuperLU_timer_() - t;
-		stat->utime[SOL_TOT] += t;
+		t3 = SuperLU_timer_() - t3;
+		stat->utime[SOL_TOT] += t3;
 		if ( !iam ) printf(".. U-solve time\t%8.4f\n", t);
 		MPI_Reduce (&t, &tmax, 1, MPI_DOUBLE,
 				MPI_MAX, 0, grid->comm);

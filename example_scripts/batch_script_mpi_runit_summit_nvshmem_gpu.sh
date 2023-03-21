@@ -12,11 +12,6 @@ module load cuda
 module load essl
 module load cmake
 
-
-# export NVSHMEM_DEBUG=TRACE
-# export NVSHMEM_DEBUG_SUBSYS=ALL
-# export NVSHMEM_DEBUG_FILE=nvdebug_success
-
 CUR_DIR=`pwd`
 FILE_DIR=$CUR_DIR/EXAMPLE
 INPUT_DIR=$MEMBERWORK/csc289/matrix
@@ -29,8 +24,8 @@ export NVSHMEM_MPI_LIB_NAME=libmpi_ibm.so
 export NVSHMEM_LMPI=-lmpi_ibm
 export SUPERLU_ACC_SOLVE=1
 
-nprows=(3 )
-npcols=(1 )  
+nprows=(3   )
+npcols=(1   )  
 #matrix=(LU_C_BN_C_2by2.bin) #s1_mat_0_253872.bin) #s1_mat_0_507744.bin Li4244.bin DG_GrapheneDisorder_8192.bin LU_C_BN_C_2by2.bin) #Li4244.bin s1_mat_0_253872.bin) 
 matrix=(s1_mat_0_253872.bin) #DG_GrapheneDisorder_8192.bin LU_C_BN_C_2by2.bin) #Li4244.bin s1_mat_0_253872.bin) 
 export NVSHMEM_HOME=/ccs/home/liuyangz/my_software/nvshmem_src_2.8.0-3/
@@ -45,7 +40,7 @@ for ((i = 0; i < ${#npcols[@]}; i++)); do
 	CORE_VAL=`expr $NCOL \* $NROW`
 	RANK_PER_RS=1
 	GPU_PER_RANK=1
-	export SUPERLU_NUM_GPU_STREAMS=1
+
 
 	PARTITION=regular
 	LICENSE=SCRATCH
@@ -84,17 +79,14 @@ for ((i = 0; i < ${#npcols[@]}; i++)); do
     				export OMP_NUM_THREADS=$OMP_NUM_THREADS
     				mkdir -p ${MAT}_summit
 				echo "matrix: ${MAT},   ${NROW} GPUs"
-				# if [[ $RS_VAL -eq 1 ]];then
-				# 	jsrun -n $RS_VAL -a $RANK_PER_RS -c ALL_CPUS -g ALL_GPUS -brs ./put_block
-				# else
+				#if [[ $RS_VAL -eq 1 ]];then
+				#	jsrun -n $RS_VAL -a $RANK_PER_RS -c ALL_CPUS -g ALL_GPUS -brs ./put_block
+				#else
 					mya=`expr $NCOL \* $NROW`
 					if [[ $mya -le 6 ]];then
 						myc=`expr 2 \* $mya` #each nvshmem rank needs 2CPU threads
-						
+						jsrun -n1 -a${mya} -c${myc}  -g${mya} -r1 $FILE  -c $NCOL -r $NROW $INPUT_DIR/$MAT |& tee ./${MAT}_summit/SLU.o_mpi_${NROW}x${NCOL}_OMP_${OMP_NUM_THREADS}_GPU_${mya}_${MYDATE}
 						jsrun -n 3 -a 1 -c 2  -g 1 $FILE  -c $NCOL -r $NROW $INPUT_DIR/$MAT |& tee ./${MAT}_summit/SLU.o_mpi_${NROW}x${NCOL}_OMP_${OMP_NUM_THREADS}_GPU_${mya}_${MYDATE}
-						# jsrun -n1 -a${mya} -c${myc}  -g${mya} -r1 $FILE  -c $NCOL -r $NROW $INPUT_DIR/$MAT |& tee ./${MAT}_summit/SLU.o_mpi_${NROW}x${NCOL}_OMP_${OMP_NUM_THREADS}_GPU_${mya}_${MYDATE}
-						
-						
 						#jsrun -n1 -a2 -c4  -g2 -r1 $FILE  -c 1 -r 2 $INPUT_DIR/$MAT |& tee ./${MAT}_summit/SLU.o_mpi_2x1_OMP_${OMP_NUM_THREADS}_GPU_2_${MYDATE}
 						#jsrun -n1 -a3 -c6  -g3 -r1 $FILE  -c 1 -r 3 $INPUT_DIR/$MAT |& tee ./${MAT}_summit/SLU.o_mpi_3x1_OMP_${OMP_NUM_THREADS}_GPU_3_${MYDATE}
 						#jsrun -n1 -a6 -c12 -g6 -r1 $FILE -c 1 -r 6 $INPUT_DIR/$MAT |& tee ./${MAT}_summit/SLU.o_mpi_6x1_OMP_${OMP_NUM_THREADS}_GPU_6_${MYDATE}
@@ -103,7 +95,7 @@ for ((i = 0; i < ${#npcols[@]}; i++)); do
 						myn=`expr $mya / 6`
 						jsrun -n${myn} -a6 -c12  -g6 $FILE  -c $NCOL -r $NROW $INPUT_DIR/$MAT |& tee ./${MAT}_summit/SLU.o_mpi_${NROW}x${NCOL}_OMP_${OMP_NUM_THREADS}_GPU_${mya}_${MYDATE}
 					fi
-				# fi
+			#	fi
 			done ## matrix
 		done #NTH		
 	done #GPU per RANK

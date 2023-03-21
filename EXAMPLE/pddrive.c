@@ -227,6 +227,8 @@ int main(int argc, char *argv[])
         /* ------------------------------------------------------------
            INITIALIZE THE SUPERLU PROCESS GRID.
            ------------------------------------------------------------ */
+            // nv_init_wrapper(grid.comm);
+
         superlu_gridinit(MPI_COMM_WORLD, nprow, npcol, &grid);
 
 #ifdef GPU_ACC

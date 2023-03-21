@@ -30,7 +30,7 @@ at the top-level directory.
  #endif
  
  #ifndef MAXSUPER
- #define MAXSUPER 1024  
+ #define MAXSUPER 256  
  #endif
 
 #ifndef RDMA_FLAG_SIZE
@@ -423,6 +423,7 @@ __global__ void simple_shift(int *target, int mype, int npes) {
 
 }
 
+
 // void nv_init_wrapper(int* c, char *v[], int* omp_mpi_level)
 // {
 //     int rank, nranks, ndevices;
@@ -470,6 +471,53 @@ __global__ void simple_shift(int *target, int mype, int npes) {
 //     //CUDA_CHECK(cudaDeviceSynchronize());
 
 // }
+
+// void nv_init_wrapper(MPI_Comm mpi_comm1)
+// {
+//     int rank, nranks, ndevices;
+//     MPI_Comm mpi_comm;
+//     nvshmemx_init_attr_t attr;
+//     int mype, npes, mype_node;
+
+//     // MPI_CHECK(MPI_Init(c, &v));
+//     //MPI_CHECK(MPI_Init_thread( c, &v, MPI_THREAD_MULTIPLE, omp_mpi_level));
+//     MPI_CHECK(MPI_Comm_rank(MPI_COMM_WORLD, &rank));
+//     MPI_CHECK(MPI_Comm_size(MPI_COMM_WORLD, &nranks));
+
+
+//     mpi_comm = MPI_COMM_WORLD;
+//     attr.mpi_comm = &mpi_comm;
+//     NVSHMEM_CHECK(nvshmemx_init_attr (NVSHMEMX_INIT_WITH_MPI_COMM, &attr));
+//     mype = nvshmem_my_pe();
+//     npes = nvshmem_n_pes();
+//     CUDA_CHECK(cudaGetDeviceCount(&ndevices));
+//     CUDA_CHECK(cudaSetDevice(rank%ndevices));
+
+//     char name[MPI_MAX_PROCESSOR_NAME];
+//     int resultlength;
+//     MPI_CHECK(MPI_Get_processor_name(name, &resultlength));
+//     int get_cur_dev;
+//     CUDA_CHECK(cudaGetDevice(&get_cur_dev));
+
+//     cudaDeviceProp prop;
+//     CUDA_CHECK(cudaGetDeviceProperties(&prop, rank%ndevices));
+//     //int status=nvshmemx_init_status();
+//     printf("** MPI %d/%d, NVSHMEM %d/%d,device name: %s bus id: %d, "
+//            "ndevices=%d,cur=%d, node=%s **\n",
+//            rank,nranks,mype,npes,prop.name, prop.pciBusID,
+//            ndevices,get_cur_dev,name);
+//     fflush(stdout);
+
+
+//     //int *target;
+//     //target = (int *)nvshmem_malloc(sizeof(int)*256);
+//     //printf("(%d) nvshmem malloc target success\n",mype);
+//     //fflush(stdout);
+//     //simple_shift<<<1, 256>>>(target, mype, npes);
+//     //CUDA_CHECK(cudaDeviceSynchronize());
+
+// }
+
 
 void nv_init_wrapper( MPI_Comm mpi_comm)
 {
@@ -556,6 +604,7 @@ void delete_multiGPU_buffers(){
     nvshmem_free(my_flag_rd);
     nvshmem_free(ready_x);  
     nvshmem_free(ready_lsum);
+    nvshmem_finalize();
 #endif
 }
 
@@ -604,6 +653,45 @@ __device__ void C_BcTree_forwardMessageSimple_Device(C_Tree* tree,  volatile uin
     }
 #endif
 }
+__device__ void C_RdTree_forwardMessageSimple_Device(C_Tree* Tree, volatile uint64_t* flag_rd_q, int* my_flag_rd, int mype, int bid, int tid, double* ready_lsum, int maxrecvsz, int myroot){
+    #ifdef HAVE_NVSHMEM  
+        int data_ofset,sig_ofset;
+        if (Tree->myIdx % 2 == 0) {
+            sig_ofset = my_flag_rd[0] * 2;
+            data_ofset = my_flag_rd[0] * maxrecvsz * 2;
+        } else {
+            sig_ofset = my_flag_rd[0] * 2 + 1;
+            data_ofset = my_flag_rd[0] * maxrecvsz * 2 + maxrecvsz;
+        }
+    
+    ////forward to my root if I have received everything
+    //double sum = 0;
+    
+    //for (int i = my_flag_rd[0]*maxrecvsz*2; i < my_flag_rd[0]*maxrecvsz*2 + my_flag_rd[1]; i++) {
+    //    //printf("(%d), data, %d\n",mype,i);
+    //    printf("(%d), data, %d,%lf\n", mype, i, ready_lsum[i]);
+    //    sum += ready_lsum[i];
+    //}
+    
+    //printf("---- Start RD Thread (%d,%d,%d), forwardMessage, forwardDevice, send to %d, "
+    //       "lib=%d,size=%d,  dataoffset=%d,maxrecvsz=%d\n",
+    //       mype, bid,tid, myroot,
+    //       my_flag_rd[0], my_flag_rd[1], data_ofset,maxrecvsz);
+        nvshmem_double_put_nbi(&ready_lsum[data_ofset],&ready_lsum[my_flag_rd[0]*maxrecvsz*2],my_flag_rd[1],myroot);
+    //printf("---- END RD Thread (%d,%d,%d), forwardMessage, forwardDevice, send to %d, "
+    //       "lib=%d,size=%d,  dataoffset=%d,maxrecvsz=%d\n",
+    //       mype, bid,tid, myroot,
+    //       my_flag_rd[0], my_flag_rd[1], data_ofset,maxrecvsz);
+        nvshmem_fence();
+        int sig=1;
+        nvshmemx_signal_op((uint64_t*)flag_rd_q+sig_ofset, sig, NVSHMEM_SIGNAL_SET, myroot);
+    //printf("Tsend:%d,%d,%d,%d,%d\n",
+    //       mype, my_flag_rd[0],data_ofset, sig_ofset,my_flag_rd[1]);
+    #endif
+    }
+    
+
+
 
 __device__ void C_RdTree_forwardMessageBlock_Device(C_Tree* Tree, volatile int* flag_rd_q, int* my_flag_rd, int mype, int bid, int tid, double* ready_lsum, int maxrecvsz, int myroot){
 #ifdef HAVE_NVSHMEM
@@ -635,7 +723,7 @@ if (Tree->myIdx % 2 == 0) {
 //       mype, myroot,
 //       my_flag_rd[0], my_flag_rd[1], sum, data_ofset,maxrecvsz);
     nvshmem_fence();
-    uint64_t sig=1;
+    int sig=1;
     if (tid==0)  nvshmemx_signal_op((uint64_t*)(flag_rd_q+sig_ofset), sig, NVSHMEM_SIGNAL_SET,myroot);
     //if (tid==0)  nvshmemx_int_signal((int*)flag_rd_q+sig_ofset, sig, myroot);
 //if (tid==0)
@@ -723,42 +811,6 @@ __device__ void C_RdTree_forwardMessageThread_Device(C_Tree* Tree, volatile uint
 #endif
 }
 
-__device__ void C_RdTree_forwardMessageSimple_Device(C_Tree* Tree, volatile uint64_t* flag_rd_q, int* my_flag_rd, int mype, int bid, int tid, double* ready_lsum, int maxrecvsz, int myroot){
-#ifdef HAVE_NVSHMEM  
-    int data_ofset,sig_ofset;
-    if (Tree->myIdx % 2 == 0) {
-        sig_ofset = my_flag_rd[0] * 2;
-        data_ofset = my_flag_rd[0] * maxrecvsz * 2;
-    } else {
-        sig_ofset = my_flag_rd[0] * 2 + 1;
-        data_ofset = my_flag_rd[0] * maxrecvsz * 2 + maxrecvsz;
-    }
-
-////forward to my root if I have received everything
-//double sum = 0;
-
-//for (int i = my_flag_rd[0]*maxrecvsz*2; i < my_flag_rd[0]*maxrecvsz*2 + my_flag_rd[1]; i++) {
-//    //printf("(%d), data, %d\n",mype,i);
-//    printf("(%d), data, %d,%lf\n", mype, i, ready_lsum[i]);
-//    sum += ready_lsum[i];
-//}
-
-//printf("---- Start RD Thread (%d,%d,%d), forwardMessage, forwardDevice, send to %d, "
-//       "lib=%d,size=%d,  dataoffset=%d,maxrecvsz=%d\n",
-//       mype, bid,tid, myroot,
-//       my_flag_rd[0], my_flag_rd[1], data_ofset,maxrecvsz);
-    nvshmem_double_put_nbi(&ready_lsum[data_ofset],&ready_lsum[my_flag_rd[0]*maxrecvsz*2],my_flag_rd[1],myroot);
-//printf("---- END RD Thread (%d,%d,%d), forwardMessage, forwardDevice, send to %d, "
-//       "lib=%d,size=%d,  dataoffset=%d,maxrecvsz=%d\n",
-//       mype, bid,tid, myroot,
-//       my_flag_rd[0], my_flag_rd[1], data_ofset,maxrecvsz);
-    nvshmem_fence();
-    int sig=1;
-    nvshmemx_signal_op((uint64_t*)flag_rd_q+sig_ofset, sig, NVSHMEM_SIGNAL_SET, myroot);
-//printf("Tsend:%d,%d,%d,%d,%d\n",
-//       mype, my_flag_rd[0],data_ofset, sig_ofset,my_flag_rd[1]);
-#endif
-}
 
 __global__ void wait_bcrd
         (
@@ -913,8 +965,8 @@ __global__ void wait_bcrd
                             //senddone[lk]=1;
                             if (LRtree_ptr[lib].myRoot_ != LRtree_ptr[lib].myRank_) {
                                 //cnt=LRtree_ptr[lib].msgSize_;
-                                my_flag_rd[k * RDMA_FLAG_SIZE] = lib;
-                                my_flag_rd[k * RDMA_FLAG_SIZE + 1] = LRtree_ptr[lib].msgSize_;
+                                my_flag_rd[lib * RDMA_FLAG_SIZE] = lib;
+                                my_flag_rd[lib * RDMA_FLAG_SIZE + 1] = LRtree_ptr[lib].msgSize_;
                                 double tmp_sum=0;
                                 RHS_ITERATE(j) {
                                     for (int aab = 0; aab < knsupc; aab++) {
@@ -928,12 +980,12 @@ __global__ void wait_bcrd
                                 }
                                 //printf("(%d,%d,%d),in wait lib=%d,k=%d,myflagrd=%d,%d\n", mype, bid, tid, lib, k,
                                 //       my_flag_rd[k * RDMA_FLAG_SIZE], my_flag_rd[k * RDMA_FLAG_SIZE + 1]);
-                                int temp_mysendcout=atomicAdd(&d_flag_mod[0], 1);
-                                int temp_flag_mod=atomicExch(&d_flag_mod[temp_mysendcout+1],lib);
+                                // int temp_mysendcout=atomicAdd(&d_flag_mod[0], 1);
+                                // int temp_flag_mod=atomicExch(&d_flag_mod[temp_mysendcout+1],lib);
                                 //printf("iam=%d in wait,lib=%d,%d,%d, pos=%d, temp %d,%d\n",mype,lib,k, d_flag_mod[temp_mysendcout+1], temp_mysendcout+1, temp_mysendcout,temp_flag_mod);
                                 //printf("iam=%d in wait,lib=%d,%d,%d, pos=%d, temp %d,%d, sum=%lf\n",mype,lib,k, d_flag_mod[temp_mysendcout+1], temp_mysendcout+1, temp_mysendcout,temp_flag_mod, tmp_sum);
                                 C_RdTree_forwardMessageSimple_Device(&LRtree_ptr[lib], flag_rd_q,
-                                                                     &my_flag_rd[RDMA_FLAG_SIZE * k], mype, bid, tid,
+                                                                     &my_flag_rd[RDMA_FLAG_SIZE * lib], mype, bid, tid,
                                                                      &ready_lsum[0], maxrecvsz,LRtree_ptr[lib].myRoot_);
                             }
                         }
@@ -1031,7 +1083,7 @@ __global__ void wait_bcrd
                         }
                     }
                     if (cnt == 1) {
-                        if (flag_rd_q[k * 2 + 1] == 1) ii = 1;
+                        if (flag_rd_q[lib * 2 + 1] == 1) ii = 1;
                         RHS_ITERATE(j) {
                             for (int aab = 0; aab < knsupc; ++aab) {
                                 temp = atomicAdd(&lsum[il + aab + j * knsupc],
@@ -1051,8 +1103,8 @@ __global__ void wait_bcrd
                     if (fmod_tmp == 1) {// forward RD
                         //printf("sum1-(%d,%d,%d),lib=%d, myRoot=%d\n", mype, bid, tid, lib,LRtree_ptr[lib].myRoot_);
                         if (LRtree_ptr[lib].myRoot_ != LRtree_ptr[lib].myRank_) {
-                            my_flag_rd[k * RDMA_FLAG_SIZE] = lib;
-                            my_flag_rd[k * RDMA_FLAG_SIZE + 1] = LRtree_ptr[lib].msgSize_;
+                            my_flag_rd[lib * RDMA_FLAG_SIZE] = lib;
+                            my_flag_rd[lib * RDMA_FLAG_SIZE + 1] = LRtree_ptr[lib].msgSize_;
                             RHS_ITERATE(j) {
                                 for (int aab = 0; aab < knsupc; aab++) {
                                     ready_lsum[lib * maxrecvsz * 2 + aab + j * knsupc] = lsum[il + aab + j * knsupc];
@@ -1064,11 +1116,11 @@ __global__ void wait_bcrd
                             }
                             //printf("(%d,%d,%d),in wait lib=%d,k=%d,myflagrd=%d,%d\n", mype, bid, tid, lib, k,
                             //       my_flag_rd[k * RDMA_FLAG_SIZE], my_flag_rd[k * RDMA_FLAG_SIZE + 1]);
-                            int temp_mysendcout=atomicAdd(&d_flag_mod[0], 1);
-                            int temp_flag_mod=atomicExch(&d_flag_mod[temp_mysendcout+1],lib);
+                            // int temp_mysendcout=atomicAdd(&d_flag_mod[0], 1);
+                            // int temp_flag_mod=atomicExch(&d_flag_mod[temp_mysendcout+1],lib);
                             //printf("iam=%d in wait2,lib=%d,%d,%d, pos=%d, temp %d,%d\n",mype,lib,k, d_flag_mod[temp_mysendcout+1], temp_mysendcout+1, temp_mysendcout,temp_flag_mod);
                             C_RdTree_forwardMessageSimple_Device(&LRtree_ptr[lib], flag_rd_q,
-                                                                 &my_flag_rd[RDMA_FLAG_SIZE * k], mype, bid, tid,
+                                                                 &my_flag_rd[RDMA_FLAG_SIZE * lib], mype, bid, tid,
                                                                  &ready_lsum[0], maxrecvsz, LRtree_ptr[lib].myRoot_);
                         }
                     }
@@ -1093,7 +1145,7 @@ __global__ void wait_bcrd
         for (int i=1; i<d_nfrecvmod[3]+1;i=i+cur_send_num){
 
             if (tid==0){
-                volatile int tmp, tmp1;
+                int tmp, tmp1;
                 //printf("iam=%d,i=%d, count=%d\n",mype,i,d_flag_mod[0]);
                 do {
                     tmp = d_flag_mod[0];
@@ -1289,14 +1341,14 @@ __global__ void wait_bcrd_u
                         int ii = 0;
                         if (cnt == 2) {
                             for (ii = 0; ii < cnt; ++ii) {
-                                double tmp_sum = 0;
+                                // double tmp_sum = 0;
                                 RHS_ITERATE(j) {
                                     for (int aab = 0; aab < knsupc; ++aab) {
                                         //temp=atomicAdd(&lsum[il+i + j*knsupc], ready_lsum[maxrecvsz*lib*2+ii*maxrecvsz + i + j*knsupc]  );
                                         temp = atomicAdd(&lsum[il + aab + j * knsupc],
                                                          ready_lsum[maxrecvsz * lib * 2 + ii * maxrecvsz + aab +
                                                                     j * knsupc]);
-                                        tmp_sum += ready_lsum[maxrecvsz * lib * 2 + ii * maxrecvsz + aab + j * knsupc];
+                                        // tmp_sum += ready_lsum[maxrecvsz * lib * 2 + ii * maxrecvsz + aab + j * knsupc];
                                         //printf("data2-(%d,%d,%d),lib=%d,k=%d,ii=%d,sum=%lf,ready_lsum[%d]=%f\n", mype, bid, tid,
                                         //       lib, k, ii, tmp_sum,
                                         //       maxrecvsz * lib * 2 + ii * maxrecvsz + i + j * knsupc,
@@ -1313,13 +1365,13 @@ __global__ void wait_bcrd_u
                         }
                         if (cnt == 1) {
                             if (flag_rd_q[lib * 2 + 1] == 1) ii = 1;
-                            double tmp_sum = 0;
+                            // double tmp_sum = 0;
                             RHS_ITERATE(j) {
                                 for (int aab = 0; aab < knsupc; ++aab) {
                                     //temp=atomicAdd(&lsum[il+i + j*knsupc], ready_lsum[maxrecvsz*lib*2+ii*maxrecvsz + i + j*knsupc]  );
                                     temp = atomicAdd(&lsum[il + aab + j * knsupc],
                                                      ready_lsum[maxrecvsz * lib * 2 + ii * maxrecvsz + aab + j * knsupc]);
-                                    tmp_sum += ready_lsum[maxrecvsz * lib * 2 + ii * maxrecvsz + aab + j * knsupc];
+                                    // tmp_sum += ready_lsum[maxrecvsz * lib * 2 + ii * maxrecvsz + aab + j * knsupc];
                                     //printf("data1-(%d,%d,%d),lib=%d,k=%d,ii=%d,sum=%lf,ready_lsum[%d]=%lf\n", mype, bid, tid, lib, k, ii,
                                     //       tmp_sum,maxrecvsz * lib * 2 + ii * maxrecvsz + aab + j * knsupc,
                                     //       ready_lsum[maxrecvsz * lib * 2 + ii * maxrecvsz + aab + j * knsupc]);
@@ -1336,13 +1388,13 @@ __global__ void wait_bcrd_u
                             //senddone[lk]=1;
                             if (URtree_ptr[lib].myRoot_ != URtree_ptr[lib].myRank_) {
                                 //cnt=URtree_ptr[lib].msgSize_;
-                                my_flag_rd[k * RDMA_FLAG_SIZE] = lib;
-                                my_flag_rd[k * RDMA_FLAG_SIZE + 1] = URtree_ptr[lib].msgSize_;
-                                double tmp_sum=0;
+                                my_flag_rd[lib * RDMA_FLAG_SIZE] = lib;
+                                my_flag_rd[lib * RDMA_FLAG_SIZE + 1] = URtree_ptr[lib].msgSize_;
+                                // double tmp_sum=0;
                                 RHS_ITERATE(j) {
                                     for (int aab = 0; aab < knsupc; aab++) {
                                         ready_lsum[lib * maxrecvsz * 2 + aab + j * knsupc] = lsum[il + aab + j * knsupc];
-                                        tmp_sum += ready_lsum[lib * maxrecvsz * 2 + aab + j * knsupc];
+                                        // tmp_sum += ready_lsum[lib * maxrecvsz * 2 + aab + j * knsupc];
                                         //printf("data3-(%d,%d,%d),lib=%d,k=%d,i=%d,ready_lsum[%d]=%f\n", mype, bid, tid, lib, k, aab,
                                         //       lib * maxrecvsz * 2 + aab + j * knsupc,
                                         //       ready_lsum[lib * maxrecvsz * 2 + aab + j * knsupc]);
@@ -1351,12 +1403,12 @@ __global__ void wait_bcrd_u
                                 }
                                 //printf("(%d,%d,%d),in u wait lib=%d,k=%d,myflagrd=%d,%d\n", mype, bid, tid, lib, k,
                                 //       my_flag_rd[lib * RDMA_FLAG_SIZE], my_flag_rd[lib * RDMA_FLAG_SIZE + 1]);
-                                int temp_mysendcout=atomicAdd(&d_flag_mod_u[0], 1);
-                                int temp_flag_mod=atomicExch(&d_flag_mod_u[temp_mysendcout+1],lib);
+                                // int temp_mysendcout=atomicAdd(&d_flag_mod_u[0], 1);
+                                // int temp_flag_mod=atomicExch(&d_flag_mod_u[temp_mysendcout+1],lib);
                                 //printf("iam=%d in wait,lib=%d,%d,%d, pos=%d, temp %d,%d\n",mype,lib,k, d_flag_mod_u[temp_mysendcout+1], temp_mysendcout+1, temp_mysendcout,temp_flag_mod);
                                 //printf("iam=%d in wait,lib=%d,%d,%d, pos=%d, temp %d,%d, sum=%lf\n",mype,lib,k, d_flag_mod_u[temp_mysendcout+1], temp_mysendcout+1, temp_mysendcout,temp_flag_mod, tmp_sum);
                                 C_RdTree_forwardMessageSimple_Device(&URtree_ptr[lib], flag_rd_q,
-                                                                     &my_flag_rd[RDMA_FLAG_SIZE * k], mype, bid, tid,
+                                                                     &my_flag_rd[RDMA_FLAG_SIZE * lib], mype, bid, tid,
                                                                      &ready_lsum[0], maxrecvsz, URtree_ptr[lib].myRoot_);
                             }
                         }
@@ -1428,18 +1480,18 @@ __global__ void wait_bcrd_u
                 //       wm_val,cnt,d_recv_cnt[lib],d_statusmod[lib * 2] + d_statusmod[lib * 2 + 1]);
 
                 if (d_statusmod[lib * 2] + d_statusmod[lib * 2 + 1] == cnt) {
-                    double tmp_sum = 0;
+                    // double tmp_sum = 0;
                     int ii = 0;
                     if (cnt == 2) {
                         for (ii = 0; ii < cnt; ++ii) {
-                            tmp_sum = 0;
+                            // tmp_sum = 0;
                             RHS_ITERATE(j) {
                                 for (int aab = 0; aab < knsupc; aab++) {
                                     //temp=atomicAdd(&lsum[il+i + j*knsupc], ready_lsum[maxrecvsz*lib*2+ii*maxrecvsz + i + j*knsupc]  );
                                     temp = atomicAdd(&lsum[il + aab + j * knsupc],
                                                      ready_lsum[maxrecvsz * lib * 2 + ii * maxrecvsz + aab +
                                                                 j * knsupc]);
-                                    tmp_sum += ready_lsum[maxrecvsz * lib * 2 + ii * maxrecvsz + aab + j * knsupc];
+                                    // tmp_sum += ready_lsum[maxrecvsz * lib * 2 + ii * maxrecvsz + aab + j * knsupc];
                                     //printf("data2-(%d,%d,%d),lib=%d,k=%d,ii=%d,ready_lsum[%d]=%f\n", mype, bid, tid,
                                     //       lib, k, ii,
                                     //       maxrecvsz * lib * 2 + ii * maxrecvsz + i + j * knsupc,
@@ -1453,13 +1505,13 @@ __global__ void wait_bcrd_u
                         }
                     }
                     if (cnt == 1) {
-                        if (flag_rd_q[k * 2 + 1] == 1) ii = 1;
-                        tmp_sum = 0;
+                        if (flag_rd_q[lib * 2 + 1] == 1) ii = 1;
+                        // tmp_sum = 0;
                         RHS_ITERATE(j) {
                             for (int aab = 0; aab < knsupc; ++aab) {
                                 temp = atomicAdd(&lsum[il + aab + j * knsupc],
                                                  ready_lsum[maxrecvsz * lib * 2 + ii * maxrecvsz + aab + j * knsupc]);
-                                tmp_sum += ready_lsum[maxrecvsz * lib * 2 + ii * maxrecvsz + aab + j * knsupc];
+                                // tmp_sum += ready_lsum[maxrecvsz * lib * 2 + ii * maxrecvsz + aab + j * knsupc];
                                 //printf("data1-(%d,%d,%d),lib=%d,k=%d,ii=%d,ready_lsum[%d]=%f\n", mype, bid, tid, lib, k, ii,
                                 //       maxrecvsz * lib * 2 + ii * maxrecvsz + i + j * knsupc,
                                 //       ready_lsum[maxrecvsz * lib * 2 + ii * maxrecvsz + i + j * knsupc]);
@@ -1474,13 +1526,13 @@ __global__ void wait_bcrd_u
                     if (bmod_tmp == 1) {// forward RD
                         //printf("sum1-(%d,%d,%d),lib=%d, myRoot=%d\n", mype, bid, tid, lib,URtree_ptr[lib].myRoot_);
                         if (URtree_ptr[lib].myRoot_ != URtree_ptr[lib].myRank_) {
-                            my_flag_rd[k * RDMA_FLAG_SIZE] = lib;
-                            my_flag_rd[k * RDMA_FLAG_SIZE + 1] = URtree_ptr[lib].msgSize_;
-                            tmp_sum=0;
+                            my_flag_rd[lib * RDMA_FLAG_SIZE] = lib;
+                            my_flag_rd[lib * RDMA_FLAG_SIZE + 1] = URtree_ptr[lib].msgSize_;
+                            // tmp_sum=0;
                             RHS_ITERATE(j) {
                                 for (int aab = 0; aab < knsupc; aab++) {
                                     ready_lsum[lib * maxrecvsz * 2 + aab + j * knsupc] = lsum[il + aab + j * knsupc];
-                                    tmp_sum += ready_lsum[maxrecvsz * lib * 2 + ii * maxrecvsz + aab + j * knsupc];
+                                    // tmp_sum += ready_lsum[maxrecvsz * lib * 2 + ii * maxrecvsz + aab + j * knsupc];
                                     //printf("data3-(%d,%d,%d),lib=%d,k=%d,i=%d,ready_lsum[%d]=%f\n", mype, bid, tid, lib, k, i,
                                     //       k * maxrecvsz * 2 + i +j * knsupc,
                                     //       ready_lsum[k * maxrecvsz * 2 + i +j * knsupc]);
@@ -1490,11 +1542,11 @@ __global__ void wait_bcrd_u
                             //printf("sumforward-(%d,%d,%d),lib=%d,k=%d,sum=%f,bmod_tmp=%d\n", mype, bid, tid, lib, k, tmp_sum,bmod_tmp);
                             //printf("(%d,%d,%d),in wait lib=%d,k=%d,myflagrd=%d,%d\n", mype, bid, tid, lib, k,
                             //       my_flag_rd[k * RDMA_FLAG_SIZE], my_flag_rd[k * RDMA_FLAG_SIZE + 1]);
-                            int temp_mysendcout=atomicAdd(&d_flag_mod_u[0], 1);
-                            int temp_flag_mod=atomicExch(&d_flag_mod_u[temp_mysendcout+1],lib);
+                            // int temp_mysendcout=atomicAdd(&d_flag_mod_u[0], 1);
+                            // int temp_flag_mod=atomicExch(&d_flag_mod_u[temp_mysendcout+1],lib);
                             //printf("iam=%d in wait2,lib=%d,%d,%d, pos=%d, temp %d,%d\n",mype,lib,k, d_flag_mod_u[temp_mysendcout+1], temp_mysendcout+1, temp_mysendcout,temp_flag_mod);
                             C_RdTree_forwardMessageSimple_Device(&URtree_ptr[lib], flag_rd_q,
-                                                                 &my_flag_rd[RDMA_FLAG_SIZE * k], mype, bid, tid,
+                                                                 &my_flag_rd[RDMA_FLAG_SIZE * lib], mype, bid, tid,
                                                                  &ready_lsum[0], maxrecvsz,URtree_ptr[lib].myRoot_);
                         }
                     }
@@ -2032,8 +2084,8 @@ __global__ void dlsum_fmod_inv_gpu_mrhs_nvshmem
 
                                 }
                             }
-                            int temp_mysendcout=atomicAdd(&d_flag_mod[0], 1);
-                            int temp_flag_mod=atomicExch(&d_flag_mod[temp_mysendcout+1],lk);
+                            // int temp_mysendcout=atomicAdd(&d_flag_mod[0], 1);
+                            // int temp_flag_mod=atomicExch(&d_flag_mod[temp_mysendcout+1],lk);
                             //printf("iam=%d in solve,lib=%d,%d,%d, "
                             //       "pos=%d, temp %d,%d, "
                             //       "maxrecvsz=%d\n",mype,lk,k, d_flag_mod[temp_mysendcout+1],
@@ -2557,7 +2609,7 @@ void dlsum_fmod_inv_gpu_wrap
     int gid = 0;
     int mycol;
     int_t lk, k, knsupc;
-    int nblock_ex=0;
+    int_t nblock_ex = CEILING(nbrow_loc, ((nthread_x * nthread_y) / 32)); //32 (warp) * 8 =256
 
     int mype, npes, ndevices;
     
@@ -2577,6 +2629,10 @@ void dlsum_fmod_inv_gpu_wrap
             //cudaStreamCreate(&stream[i]);
             cudaStreamCreateWithFlags(&stream[i], cudaStreamNonBlocking);
         }
+
+        cudaFuncAttributes cuattr;
+        cudaFuncGetAttributes(&cuattr, dlsum_fmod_inv_gpu_mrhs_nvshmem);
+        cudaDeviceSetLimit(cudaLimitStackSize, cuattr.localSizeBytes);
 
         int minGridSize, myblockSize;
         cudaOccupancyMaxPotentialBlockSize(&minGridSize,&myblockSize,(const void *) wait_bcrd ,0,0 );
@@ -3280,22 +3336,22 @@ __global__ void dlsum_bmod_inv_gpu_mrhs_nvshmem
                 if(URtree_ptr[ik].myRoot_ != URtree_ptr[ik].myRank_){
                     //cnt=LRtree_ptr[lib].msgSize_;
 
-                    my_flag_rd[gik*RDMA_FLAG_SIZE]=ik;
-                    my_flag_rd[gik*RDMA_FLAG_SIZE+1]=URtree_ptr[ik].msgSize_;
-                    double tmp_sum=0;
+                    my_flag_rd[ik*RDMA_FLAG_SIZE]=ik;
+                    my_flag_rd[ik*RDMA_FLAG_SIZE+1]=URtree_ptr[ik].msgSize_;
+                    // double tmp_sum=0;
                     RHS_ITERATE(j) {
                         for (int aab = 0; aab < iknsupc; aab++) {
                             ready_lsum[ik * maxrecvsz * 2 + aab +j * iknsupc] = lsum[l + aab +j * iknsupc];
                             //ready_lsum[lk * maxrecvsz * 2 + aab +j * iknsupc] = lsum[il + aab +j * iknsupc];
-                            tmp_sum += ready_lsum[ik * maxrecvsz * 2 + aab +j * iknsupc];
+                            // tmp_sum += ready_lsum[ik * maxrecvsz * 2 + aab +j * iknsupc];
                             //printf("u data3-(%d,%d,%d),lib=%d,k=%d,sum=%lf,ready_lsum[%d]=%lf, size=%d\n", mype, bid, tid, ik, gik, tmp_sum,
                             //       ik * maxrecvsz * 2 + aab +j * iknsupc,
                             //       ready_lsum[ik * maxrecvsz * 2 + aab +j * iknsupc],my_flag_rd[gik*RDMA_FLAG_SIZE+1]);
 
                         }
                     }
-                    int temp_mysendcout=atomicAdd(&d_flag_mod_u[0], 1);
-                    int temp_flag_mod=atomicExch(&d_flag_mod_u[temp_mysendcout+1],ik);
+                    // int temp_mysendcout=atomicAdd(&d_flag_mod_u[0], 1);
+                    // int temp_flag_mod=atomicExch(&d_flag_mod_u[temp_mysendcout+1],ik);
                     //printf("iam=%d in solve,lib=%d,%d,%d, "
                     //       "pos=%d, temp %d,%d, "
                     //       "maxrecvsz=%d\n",mype,ik,gik, d_flag_mod_u[temp_mysendcout+1],
@@ -3303,7 +3359,7 @@ __global__ void dlsum_bmod_inv_gpu_mrhs_nvshmem
                     //       temp_mysendcout,temp_flag_mod,
                     //       maxrecvsz);
                     //printf("(%d,%d,%d) in u solve,lib=%d,gr=%d,myflagrd=%d,%d, sum=%lf\n",mype,bid,tid,ik,gik,my_flag_rd[gik*RDMA_FLAG_SIZE],my_flag_rd[gik*RDMA_FLAG_SIZE+1], tmp_sum);
-                    C_RdTree_forwardMessageSimple_Device(&URtree_ptr[ik], flag_rd_q, &my_flag_rd[RDMA_FLAG_SIZE*gik], mype, bid, tid, &ready_lsum[0],maxrecvsz,URtree_ptr[ik].myRoot_);
+                    C_RdTree_forwardMessageSimple_Device(&URtree_ptr[ik], flag_rd_q, &my_flag_rd[RDMA_FLAG_SIZE*ik], mype, bid, tid, &ready_lsum[0],maxrecvsz,URtree_ptr[ik].myRoot_);
                 }
             }
         }

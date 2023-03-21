@@ -36,13 +36,16 @@ export NEW3DSOLVE=1
 export NEW3DSOLVETREECOMM=1
 export SUPERLU_BIND_MPI_GPU=1
 
-nprows=(1 1 1)
-npcols=(1 1 1)  
-npz=(1 2 4)
+
+NREP=1
+nprows=( 3 )
+npcols=( 1 )  
+npz=( 1 )
 
 #matrix=(LU_C_BN_C_2by2.bin) #s1_mat_0_253872.bin) #s1_mat_0_507744.bin Li4244.bin DG_GrapheneDisorder_8192.bin LU_C_BN_C_2by2.bin) #Li4244.bin s1_mat_0_253872.bin) 
 # matrix=(g20.rua) #DG_GrapheneDisorder_8192.bin LU_C_BN_C_2by2.bin) #Li4244.bin s1_mat_0_253872.bin) 
 matrix=(s1_mat_0_253872.bin) #DG_GrapheneDisorder_8192.bin LU_C_BN_C_2by2.bin) #Li4244.bin s1_mat_0_253872.bin) 
+# matrix=(s1_mat_0_126936.bin) #DG_GrapheneDisorder_8192.bin LU_C_BN_C_2by2.bin) #Li4244.bin s1_mat_0_253872.bin) 
 # matrix=(s2D9pt2048.rua) #DG_GrapheneDisorder_8192.bin LU_C_BN_C_2by2.bin) #Li4244.bin s1_mat_0_253872.bin) 
 export NVSHMEM_HOME=/ccs/home/liuyangz/my_software/nvshmem_src_2.8.0-3/
 export LD_LIBRARY_PATH=$NVSHMEM_HOME/lib:$LD_LIBRARY_PATH
@@ -85,13 +88,13 @@ for ((i = 0; i < ${#npcols[@]}; i++)); do
 			  RS_VAL=`expr $RS_VAL + 1`
 			fi
 			OMP_NUM_THREADS=$NTH
-			TH_PER_RS=`expr $NTH \* $RANK_PER_RS`
+			TH_PER_RS=`expr $NTH \* $RANK_PER_RS \* 2`
 			GPU_PER_RS=`expr $RANK_PER_RS \* $GPU_PER_RANK`
 
 			for MAT in ${matrix[@]}  ##big.rua   #A30_015_0_25356.bin
   			do
-				# export NSUP=40 
-				# export NREL=20
+				export NSUP=256 
+				export NREL=60
 				export MAX_BUFFER_SIZE=5000000000
     				export OMP_NUM_THREADS=$OMP_NUM_THREADS
     				mkdir -p ${MAT}_summit
@@ -111,10 +114,13 @@ for ((i = 0; i < ${#npcols[@]}; i++)); do
 					g=6
 					myn=`expr $mya / 6`
 				fi 
+				for ii in `seq 1 $NREP`
+    			do				
 				#  jsrun -n $RS_VAL -a $RANK_PER_RS -c $TH_PER_RS -g $GPU_PER_RS -b packed:$NTH
-				# jsrun -n $RS_VAL -a $RANK_PER_RS -c $TH_PER_RS -g $GPU_PER_RS $FILE -c $NCOL -r $NROW -i 0 $INPUT_DIR/$MAT | tee ./${MAT}_summit/SLU.o_mpi_${NROW}x${NCOL}x${NPZ}_OMP_${OMP_NUM_THREADS}_GPU_${GPU_PER_RANK}_2d_newest_gpu_nvshmem_${MYDATE}   
-				jsrun -n $RS_VAL -a $RANK_PER_RS -c $TH_PER_RS -g $GPU_PER_RS $FILE3D -c $NCOL -r $NROW -d $NPZ -i 0 $INPUT_DIR/$MAT | tee ./${MAT}_summit/SLU.o_mpi_${NROW}x${NCOL}x${NPZ}_OMP_${OMP_NUM_THREADS}_GPU_${GPU_PER_RANK}_3d_newest_gpu_nvshmem_${MYDATE}   
-				# jsrun -n $RS_VAL -a $RANK_PER_RS -c $TH_PER_RS -g $GPU_PER_RS $FILE -c $NCOL -r $NROW -i 0 $INPUT_DIR/$MAT | tee ./${MAT}_summit/SLU.o_mpi_${NROW}x${NCOL}x${NPZ}_OMP_${OMP_NUM_THREADS}_GPU_${GPU_PER_RANK}_3d_newest_gpu_nvshmem_${MYDATE}   
+				# jsrun -n $RS_VAL -a $RANK_PER_RS -c $TH_PER_RS -g $GPU_PER_RS $FILE -c $NCOL -r $NROW -i 0 $INPUT_DIR/$MAT | tee -a ./${MAT}_summit/SLU.o_mpi_${NROW}x${NCOL}x${NPZ}_OMP_${OMP_NUM_THREADS}_GPU_${GPU_PER_RANK}_2d_newest_gpu_nvshmem_${MYDATE}   
+				jsrun -n $RS_VAL -a $RANK_PER_RS -c $TH_PER_RS -g $GPU_PER_RS $FILE3D -c $NCOL -r $NROW -d $NPZ -i 0 $INPUT_DIR/$MAT | tee -a ./${MAT}_summit/SLU.o_mpi_${NROW}x${NCOL}x${NPZ}_OMP_${OMP_NUM_THREADS}_GPU_${GPU_PER_RANK}_3d_newest_gpu_nvshmem_${MYDATE}   
+				# jsrun -n $RS_VAL -a $RANK_PER_RS -c $TH_PER_RS -g $GPU_PER_RS $FILE -c $NCOL -r $NROW -i 0 $INPUT_DIR/$MAT | tee -a ./${MAT}_summit/SLU.o_mpi_${NROW}x${NCOL}x${NPZ}_OMP_${OMP_NUM_THREADS}_GPU_${GPU_PER_RANK}_3d_newest_gpu_nvshmem_${MYDATE}   
+				done
 			done ## matrix
 		done #NTH		
 	done #GPU per RANK
