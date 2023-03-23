@@ -2304,8 +2304,6 @@ if ( !iam) printf(".. Construct Reduce tree for U: %.2f\t\n", t);
 	// Llu->Ucb_valoffset = Ucb_valoffset;
 	// Llu->Ucb_valcnt = Ucb_valcnt;
 
-
-
 #if ( PRNTlevel>=1 )
 	if ( !iam ) printf(".. # L blocks " IFMT "\t# U blocks " IFMT "\n",
 			   nLblocks, nUblocks);

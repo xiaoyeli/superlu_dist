@@ -552,9 +552,9 @@ void nv_init_wrapper( MPI_Comm mpi_comm)
     //CUDA_CHECK(cudaGetDeviceProperties(&prop, rank%ndevices));
     // CUDA_CHECK(cudaGetDeviceProperties(&prop, mype_node)); // Yang Liu: this line is causing runtime error
     //int status=nvshmemx_init_status();
-    printf("** MPI %d/%d, NVSHMEM %d/%d, mype_node=%d, device name: %s bus id: %d, "
+    printf("** MPI %d/%d, NVSHMEM %d/%d,device name: %s bus id: %d, "
            "ndevices=%d,cur=%d, node=%s **\n",
-           rank,nranks,mype,npes,mype_node, prop.name, prop.pciBusID,
+           rank,nranks,mype,npes,prop.name, prop.pciBusID,
            ndevices,get_cur_dev,name);
     fflush(stdout);
 
@@ -967,7 +967,7 @@ __global__ void wait_bcrd
                                 //cnt=LRtree_ptr[lib].msgSize_;
                                 my_flag_rd[lib * RDMA_FLAG_SIZE] = lib;
                                 my_flag_rd[lib * RDMA_FLAG_SIZE + 1] = LRtree_ptr[lib].msgSize_;
-                                double tmp_sum=0;
+                                // double tmp_sum=0;
                                 RHS_ITERATE(j) {
                                     for (int aab = 0; aab < knsupc; aab++) {
                                         ready_lsum[lib * maxrecvsz * 2 + aab + j * knsupc] = lsum[il + aab + j * knsupc];

@@ -579,6 +579,8 @@ dDestroy_LU(int_t n, gridinfo_t *grid, dLUstruct_t *LUstruct)
 
     #ifdef HAVE_NVSHMEM  
     /* nvshmem related*/
+    delete_multiGPU_buffers();
+    
     SUPERLU_FREE(mystatus);
     SUPERLU_FREE(h_nfrecv);
     SUPERLU_FREE(h_nfrecvmod);
@@ -881,16 +883,6 @@ pdgstrs_init_device_lsum_x(superlu_dist_options_t *options, int_t n, int_t m_loc
 
     /* nvshmem related. */
     #ifdef HAVE_NVSHMEM  
-    int flag_bc_size = RDMA_FLAG_SIZE * (nc+1);
-    int flag_rd_size = RDMA_FLAG_SIZE * nlb * 2;    
-    int my_flag_bc_size = RDMA_FLAG_SIZE * (CEILING( nsupers, grid->npcol)+1);
-    int my_flag_rd_size = RDMA_FLAG_SIZE * nlb * 2;
-    int maxrecvsz = sp_ienv_dist(3, options)* nrhs + SUPERLU_MAX( XK_H, LSUM_H );
-    int ready_x_size = maxrecvsz*CEILING( nsupers, grid->npcol);
-    int ready_lsum_size = 2*maxrecvsz*CEILING( nsupers, grid->nprow);
-    nv_init_wrapper(grid->comm);
-    prepare_multiGPU_buffers(flag_bc_size,flag_rd_size,ready_x_size,ready_lsum_size,my_flag_bc_size,my_flag_rd_size);
-
     /////* for L solve *////
     int *my_colnum;
     if ( !(my_colnum = (int*)SUPERLU_MALLOC((nfrecvx+1) * sizeof(int))) )
@@ -1111,7 +1103,7 @@ pdgstrs_delete_device_lsum_x(dSOLVEstruct_t *SOLVEstruct)
 /* nvshmem related*/
 
     #ifdef HAVE_NVSHMEM  
-    delete_multiGPU_buffers();
+    // delete_multiGPU_buffers();
 
     checkGPU(gpuFree(d_colnum));       
     checkGPU(gpuFree(d_mynum));       

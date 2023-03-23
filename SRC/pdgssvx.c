@@ -1138,6 +1138,7 @@ pdgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 		
 	    dist_mem_use = pddistribute(options, n, A, ScalePermstruct,
                                       Glu_freeable, LUstruct, grid);
+									  
 	    stat->utime[DIST] = SuperLU_timer_() - t;
   	    /* Deallocate storage used in symbolic factorization. */
 	    if ( Fact != SamePattern_SameRowPerm ) {
@@ -1173,6 +1174,7 @@ pdgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 	stat->utime[FACT] = SuperLU_timer_() - t;
 	// }
 	// }
+
 
 #if ( PRNTlevel>=2 )
     /* ------------------------------------------------------------
@@ -1261,6 +1263,8 @@ pdgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 // #endif
 
 #endif
+
+
 	if ( options->PrintStat ) {
 	    int_t TinyPivots;
 	    float for_lu, total, avg, loc_max;
@@ -1278,6 +1282,7 @@ pdgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 	    /* Compute numerical factorization memeory */
 	    dQuerySpace_dist(n, LUstruct, grid, stat, &num_mem_usage);
 	    
+
 	    /*-- Compute high watermark of all stages --*/
 	    if (parSymbFact == TRUE) {
 	        /* The memory used in the redistribution routine
@@ -1307,6 +1312,7 @@ pdgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 		}
 #endif
             } else { /* Serial symbolic. GA_mem_use is for global A */
+
 		mem_stage[0] = symb_mem_usage.total + GA_mem_use; /* symbfact step */
 		mem_stage[1] = symb_mem_usage.for_lu
 		               + dist_mem_use
@@ -1378,6 +1384,23 @@ pdgssvx(superlu_dist_options_t *options, SuperMatrix *A,
             }
 	} /* end printing stats */
 
+
+    /* nvshmem related. The nvshmem_malloc has to be called before trs_compute_communication_structure, otherwise solve is much slower*/
+    #ifdef HAVE_NVSHMEM  
+		nsupers = Glu_persist->supno[n-1] + 1;
+		int nc = CEILING( nsupers, grid->npcol);
+		int nr = CEILING( nsupers, grid->nprow);
+		int flag_bc_size = RDMA_FLAG_SIZE * (nc+1);
+		int flag_rd_size = RDMA_FLAG_SIZE * nr * 2;    
+		int my_flag_bc_size = RDMA_FLAG_SIZE * (nc+1);
+		int my_flag_rd_size = RDMA_FLAG_SIZE * nr * 2;
+		int maxrecvsz = sp_ienv_dist(3, options)* nrhs + SUPERLU_MAX( XK_H, LSUM_H );
+		int ready_x_size = maxrecvsz*nc;
+		int ready_lsum_size = 2*maxrecvsz*nr;
+		nv_init_wrapper(grid->comm);
+		prepare_multiGPU_buffers(flag_bc_size,flag_rd_size,ready_x_size,ready_lsum_size,my_flag_bc_size,my_flag_rd_size);
+	#endif
+
 	if ( options->Fact != SamePattern_SameRowPerm) {
 		nsupers = Glu_persist->supno[n-1] + 1;
 		int* supernodeMask = int32Malloc_dist(nsupers);
@@ -1418,6 +1441,8 @@ pdgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 	    //exit(0);  // Sherry: need to return an error flag
 	}
 #endif
+
+
 
 
 	if ( options->DiagInv==YES && (Fact != FACTORED) ) {
