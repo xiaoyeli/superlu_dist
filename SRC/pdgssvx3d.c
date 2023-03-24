@@ -1452,6 +1452,22 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 		nsupers = getNsupers(n, LUstruct->Glu_persist);
 
 
+		/* nvshmem related. The nvshmem_malloc has to be called before trs_compute_communication_structure, otherwise solve is much slower*/
+		#ifdef HAVE_NVSHMEM  
+			int nc = CEILING( nsupers, grid->npcol);
+			int nr = CEILING( nsupers, grid->nprow);
+			int flag_bc_size = RDMA_FLAG_SIZE * (nc+1);
+			int flag_rd_size = RDMA_FLAG_SIZE * nr * 2;    
+			int my_flag_bc_size = RDMA_FLAG_SIZE * (nc+1);
+			int my_flag_rd_size = RDMA_FLAG_SIZE * nr * 2;
+			int maxrecvsz = sp_ienv_dist(3, options)* nrhs + SUPERLU_MAX( XK_H, LSUM_H );
+			int ready_x_size = maxrecvsz*nc;
+			int ready_lsum_size = 2*maxrecvsz*nr;
+			nv_init_wrapper(grid->comm);
+			prepare_multiGPU_buffers(flag_bc_size,flag_rd_size,ready_x_size,ready_lsum_size,my_flag_bc_size,my_flag_rd_size);
+		#endif
+
+
 		/* now that LU structure has been scattered, initialize the LU and buffers */
 		dinit3DLUstructForest(trf3Dpartition->myTreeIdxs, trf3Dpartition->myZeroTrIdxs,
 							trf3Dpartition->sForests, LUstruct, grid3d);	
@@ -1470,6 +1486,10 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 			fflush(stdout);
 		}
 #endif
+
+
+
+
 
 		t = SuperLU_timer_();
 
@@ -1518,20 +1538,7 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 		}
 
 
-		/* nvshmem related. The nvshmem_malloc has to be called before trs_compute_communication_structure, otherwise solve is much slower*/
-		#ifdef HAVE_NVSHMEM  
-			int nc = CEILING( nsupers, grid->npcol);
-			int nr = CEILING( nsupers, grid->nprow);
-			int flag_bc_size = RDMA_FLAG_SIZE * (nc+1);
-			int flag_rd_size = RDMA_FLAG_SIZE * nr * 2;    
-			int my_flag_bc_size = RDMA_FLAG_SIZE * (nc+1);
-			int my_flag_rd_size = RDMA_FLAG_SIZE * nr * 2;
-			int maxrecvsz = sp_ienv_dist(3, options)* nrhs + SUPERLU_MAX( XK_H, LSUM_H );
-			int ready_x_size = maxrecvsz*nc;
-			int ready_lsum_size = 2*maxrecvsz*nr;
-			nv_init_wrapper(grid->comm);
-			prepare_multiGPU_buffers(flag_bc_size,flag_rd_size,ready_x_size,ready_lsum_size,my_flag_bc_size,my_flag_rd_size);
-		#endif
+
 
 		if ( options->Fact != SamePattern_SameRowPerm) {
 			if (getenv("NEW3DSOLVE") && Solve3D==true){
