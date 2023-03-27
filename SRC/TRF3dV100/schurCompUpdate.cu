@@ -1,5 +1,5 @@
 #include "superlu_ddefs.h"
-#ifdef GPU_ACC
+#ifdef HAVE_CUDA
 #include "lupanels_GPU.cuh"
 #include "lupanels.hpp"
 

@@ -1661,7 +1661,7 @@ __global__ void wait_bcrd_u
 }
 
 
-
+#ifdef HAVE_CUDA
 __inline__ __device__
 int warpReduceSum(int val) {
     for (int offset = warpSize/2; offset > 0; offset /= 2)
@@ -1728,6 +1728,7 @@ __inline__ __device__  int blockReduceMin(int val,int bid, int tid, int mype)
     if (wid == 0)  warpReduceMin(val); //Final reduce within first warp
     return val;
 }
+#endif
 
 /************************************************************************/
 /*! \brief
@@ -2616,7 +2617,7 @@ void dlsum_fmod_inv_gpu_wrap
     if(procs==1){
         dim3 dimBlock(nthread_x, nthread_y);
         dlsum_fmod_inv_gpu_mrhs<<< nbcol_loc+nblock_ex, dimBlock >>>(nbcol_loc,nblock_ex,lsum,x,nrhs,maxsup,nsupers,fmod,LBtree_ptr,LRtree_ptr,ilsum,Lrowind_bc_dat,Lrowind_bc_offset,Lnzval_bc_dat,Lnzval_bc_offset,Linv_bc_dat,Linv_bc_offset,Lindval_loc_bc_dat,Lindval_loc_bc_offset, xsup,bcols_masked, grid);
-        CUDA_CHECK(cudaGetLastError()); 
+        checkGPU(gpuGetLastError()); 
      }else{
      
 #ifdef HAVE_NVSHMEM   

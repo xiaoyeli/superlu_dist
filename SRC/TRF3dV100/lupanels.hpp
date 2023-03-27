@@ -3,7 +3,7 @@
 #include <iostream>
 #include "superlu_ddefs.h"
 #include "lu_common.hpp"
-#ifdef GPU_ACC
+#ifdef HAVE_CUDA
 #include "lupanels_GPU.cuh"
 #endif
 #include "commWrapper.hpp"
@@ -19,14 +19,14 @@ public:
     double *val;
     // ifdef GPU acceraleration
 
-#ifdef GPU_ACC
+#ifdef HAVE_CUDA
     lpanelGPU_t gpuPanel;
 #endif
     // bool isDiagIncluded;
 
     lpanel_t(int_t k, int_t *lsub, double *nzval, int_t *xsup, int_t isDiagIncluded);
     // default constuctor
-#ifdef GPU_ACC
+#ifdef HAVE_CUDA
     lpanel_t() : gpuPanel(NULL, NULL)
     {
         index = NULL;
@@ -119,7 +119,7 @@ public:
 
     // return the maximal iEnd such that stRow(iEnd)-stRow(iSt) < maxRow;
     int getEndBlock(int iSt, int maxRows);
-#ifdef GPU_ACC
+#ifdef HAVE_CUDA
     lpanelGPU_t copyToGPU();
     lpanelGPU_t copyToGPU(void *basePtr); // when we are doing a single allocation
     int checkGPU();
@@ -161,14 +161,14 @@ class upanel_t
 public:
     int_t *index;
     double *val;
-#ifdef GPU_ACC
+#ifdef HAVE_CUDA
     // upanelGPU_t* upanelGPU;
     upanelGPU_t gpuPanel;
 #endif
 
     // upanel_t(int_t *usub, double *uval);
     upanel_t(int_t k, int_t *usub, double *uval, int_t *xsup);
-#ifdef GPU_ACC
+#ifdef HAVE_CUDA
     upanel_t() : gpuPanel(NULL, NULL)
     {
         index = NULL;
@@ -277,7 +277,7 @@ public:
     }
     int getEndBlock(int jSt, int maxCols);
 
-#ifdef GPU_ACC
+#ifdef HAVE_CUDA
     upanelGPU_t copyToGPU();
     //TODO: implement with baseptr
     upanelGPU_t copyToGPU(void *basePtr);
@@ -378,7 +378,7 @@ struct LUstruct_v100
 
     anc25d_t anc25d;
     // For GPU acceleration
-#ifdef GPU_ACC
+#ifdef HAVE_CUDA
     LUstructGPU_t *dA_gpu;
     LUstructGPU_t A_gpu;
 #endif
@@ -460,7 +460,7 @@ struct LUstruct_v100
 
 
     // GPU related functions
-#ifdef GPU_ACC
+#ifdef HAVE_CUDA
     int_t setLUstruct_GPU();
     int_t dsparseTreeFactorGPU(
         sForest_t *sforest,
@@ -526,6 +526,6 @@ struct LUstruct_v100
 
 };
 
-#ifdef GPU_ACC
+#ifdef HAVE_CUDA
 cudaError_t checkCudaLocal(cudaError_t result);
 #endif

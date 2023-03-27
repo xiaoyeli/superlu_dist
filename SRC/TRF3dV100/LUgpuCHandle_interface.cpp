@@ -27,7 +27,7 @@ int copyLUGPU2Host(LUgpu_Handle LuH, dLUstruct_t *LUstruct)
    double tXferGpu2Host = SuperLU_timer_();
    if (LuH->superlu_acc_offload)
    {
-      #ifdef GPU_ACC
+      #ifdef HAVE_CUDA
       cudaStreamSynchronize(LuH->A_gpu.cuStreams[0]);    // in theory I don't need it 
       LuH->copyLUGPUtoHost();
       #endif

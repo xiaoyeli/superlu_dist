@@ -2,7 +2,7 @@
 // #include "cublasDefs.hhandle, "
 #include "lupanels.hpp"
 
-#ifdef GPU_ACC
+#ifdef HAVE_CUDA
 
 int_t LUstruct_v100::ancestorReduction3dGPU(int_t ilvl, int_t *myNodeCount,
                                          int_t **treePerm)

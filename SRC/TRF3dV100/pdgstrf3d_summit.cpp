@@ -4,7 +4,7 @@
 #include "mapsampler_api.h"
 #endif
 
-#ifdef GPU_ACC
+#ifdef HAVE_CUDA
 #include "dlustruct_gpu.h"
 #include "acc_aux.c"
 #endif
@@ -120,7 +120,7 @@ extern "C"
                 double tilvl = SuperLU_timer_();
 
                 if (superlu_acc_offload)
-                #ifdef GPU_ACC
+                #ifdef HAVE_CUDA
                     LU_packed.dsparseTreeFactorGPU(sforest, dFBufs,
                                                    &gEtreeInfo,
                                                    tag_ub);
@@ -139,7 +139,7 @@ extern "C"
             {
                 if (superlu_acc_offload)
                 {
-#ifdef GPU_ACC
+#ifdef HAVE_CUDA
 #define NDEBUG
 #ifndef NDEBUG
                     LU_packed.checkGPU();
@@ -167,7 +167,7 @@ extern "C"
         double tXferGpu2Host = SuperLU_timer_();
         if (superlu_acc_offload)
         {
-        #ifdef GPU_ACC
+        #ifdef HAVE_CUDA
             cudaStreamSynchronize(LU_packed.A_gpu.cuStreams[0]);    // in theory I don't need it
             LU_packed.copyLUGPUtoHost();
         #endif
@@ -262,7 +262,7 @@ extern "C"
         SCT->pdgstrfTimer = SuperLU_timer_() - SCT->pdgstrfTimer;
         if (superlu_acc_offload)
         {
-            #ifdef GPU_ACC
+            #ifdef HAVE_CUDA
             copyLUHosttoGPU();
             #endif
             // LU check passed

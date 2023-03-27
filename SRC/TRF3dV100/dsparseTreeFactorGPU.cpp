@@ -1,7 +1,7 @@
 #include <cstdio>
 #include "superlu_ddefs.h"
 #include "lupanels.hpp"
-#ifdef GPU_ACC
+#ifdef HAVE_CUDA
 #include "lupanels_GPU.cuh"
 
 

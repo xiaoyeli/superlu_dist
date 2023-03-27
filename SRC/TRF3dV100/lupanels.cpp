@@ -3,7 +3,7 @@
 #include <cassert>
 #include "superlu_defs.h"
 
-#ifdef GPU_ACC
+#ifdef HAVE_CUDA
 #include "lupanels_GPU.cuh"
 #endif
 #include "lupanels.hpp"
@@ -18,7 +18,7 @@
 //         }                                                                                    \
 //     }
 
-#ifdef GPU_ACC
+#ifdef HAVE_CUDA
 upanel_t LUstruct_v100::getKUpanel(int_t k, int_t offset)
 {
     upanel_t k_upanel(UidxRecvBufs[offset], UvalRecvBufs[offset],
@@ -230,7 +230,7 @@ LUstruct_v100::LUstruct_v100(int_t nsupers_, int_t ldt_,
     double tGPU = SuperLU_timer_();
     if(superlu_acc_offload)
     {
-    #ifdef GPU_ACC
+    #ifdef HAVE_CUDA
         setLUstruct_GPU();
         // TODO: remove it, checking is very slow 
         if(0)

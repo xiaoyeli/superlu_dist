@@ -3,7 +3,7 @@
 #include <iostream>
 #include "superlu_ddefs.h"
 #include "lu_common.hpp"
-#ifdef GPU_ACC
+#ifdef HAVE_CUDA
 #include "lupanels_GPU.cuh"
 #endif
 #include "commWrapper.hpp"

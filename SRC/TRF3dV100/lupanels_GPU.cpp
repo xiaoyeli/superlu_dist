@@ -3,7 +3,7 @@
 #include <cmath>
 #include "superlu_defs.h"
 
-#ifdef GPU_ACC
+#ifdef HAVE_CUDA
 
 #include <cuda_runtime.h>
 

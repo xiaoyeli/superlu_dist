@@ -1,7 +1,7 @@
 #pragma once
 #include <vector>
 #include <iostream>
-#ifdef GPU_ACC
+#ifdef HAVE_CUDA
 #include <cuda_runtime.h>
 #include <cusolverDn.h>
 #endif
