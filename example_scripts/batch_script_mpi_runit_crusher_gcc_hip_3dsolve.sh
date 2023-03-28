@@ -24,11 +24,17 @@ INPUT_DIR=$MEMBERWORK/csc289/matrix
 # INPUT_DIR=$CUR_DIR/../EXAMPLE	
 FILE_NAME=pddrive
 FILE=$FILE_DIR/$FILE_NAME
+FILE_NAME3D=pddrive3d
+FILE3D=$FILE_DIR/$FILE_NAME3D
+MYDATE=$(date '+%Y-%m-%d-%H-%M-%S')
 export SUPERLU_ACC_OFFLOAD=1 # this can be 0 to do CPU tests on GPU nodes
 # export GPU3DVERSION=1
 export SUPERLU_ACC_SOLVE=1
+export NEW3DSOLVE=1
+export NEW3DSOLVETREECOMM=1
+export SUPERLU_BIND_MPI_GPU=1
 
-
+export SUPERLU_LBS=ND  # GD is causing crash for 4x4x32 for StocF-1465
 
 CORES_PER_NODE=64
 
@@ -74,13 +80,15 @@ CORES_PER_NODE=64
 
 nprows=(1)
 npcols=(1)
+npz=(4)
  
 for ((i = 0; i < ${#npcols[@]}; i++)); do
 NROW=${nprows[i]}
 NCOL=${npcols[i]}
+NPZ=${npz[i]}
 
 # NROW=36
-CORE_VAL=`expr $NCOL \* $NROW`
+CORE_VAL=`expr $NCOL \* $NROW \* $NPZ`
 NODE_VAL=`expr $CORE_VAL / $CORES_PER_NODE`
 MOD_VAL=`expr $CORE_VAL % $CORES_PER_NODE`
 if [[ $MOD_VAL -ne 0 ]]
@@ -90,6 +98,8 @@ fi
 
 export MAX_BUFFER_SIZE=500000000 
 export SUPERLU_NUM_GPU_STREAMS=1
+# export SUPERLU_RELAX=20
+# export SUPERLU_MAXSUP=128
 for NTH in 1 
 do
 OMP_NUM_THREADS=$NTH
@@ -98,14 +108,14 @@ OMP_NUM_THREADS=$NTH
 #for NSUP in 128 64 32 16 8
 #do
   # for MAT in atmosmodl.rb nlpkkt80.mtx torso3.mtx Ga19As19H42.mtx A22.mtx cage13.rb 
-  # for MAT in s1_mat_0_126936.bin 
+  for MAT in s1_mat_0_126936.bin 
   # for MAT in s1_mat_0_253872.bin s1_mat_0_126936.bin s1_mat_0_507744.bin
   # for MAT in Ga19As19H42.mtx Geo_1438.mtx
   # for MAT in DNA_715_64cell.bin Li4244.bin
   # for MAT in Geo_1438.mtx
   # for MAT in matrix121.dat
   #  for MAT in HTS/gas_sensor.mtx HTS/vanbody.mtx HTS/ct20stif.mtx HTS/torsion1.mtx HTS/dawson5.mtx
- for MAT in HTS/gas_sensor/gas_sensor.mtx 
+#  for MAT in HTS/gas_sensor/gas_sensor.mtx 
 
 
   # for MAT in HTS/g7jac160.mtx
@@ -134,7 +144,8 @@ OMP_NUM_THREADS=$NTH
     mkdir -p $MAT
     #srun -n $CORE_VAL -c $NTH --cpu_bind=cores /opt/rocm/bin/rocprof --hsa-trace --hip-trace $FILE -c $NCOL -r $NROW $INPUT_DIR/$MAT | tee ./$MAT/SLU.o_mpi_${NROW}x${NCOL}_${OMP_NUM_THREADS}_mrhs
     #srun -n $CORE_VAL -c $NTH --cpu_bind=cores /opt/rocm/bin/rocprof --hsa-trace --roctx-trace $FILE -c $NCOL -r $NROW $INPUT_DIR/$MAT | tee ./$MAT/SLU.o_mpi_${NROW}x${NCOL}_${OMP_NUM_THREADS}_mrhs
-    srun -n $CORE_VAL -c $NTH --cpu_bind=cores $FILE -c $NCOL -r $NROW $INPUT_DIR/$MAT | tee ./$MAT/SLU.o_mpi_${NROW}x${NCOL}_${OMP_NUM_THREADS}_mrhs
+    srun -n $CORE_VAL -c $NTH --cpu_bind=cores $FILE3D -c $NCOL -r $NROW -d $NPZ -i 0 $INPUT_DIR/$MAT | tee ./$MAT/SLU.o_mpi_${NROW}x${NCOL}x${NPZ}_${OMP_NUM_THREADS}_3d_newest_gpusolve_${SUPERLU_ACC_SOLVE}_${MYDATE} 
+    # srun -n $CORE_VAL -c $NTH --cpu_bind=cores $FILE -c $NCOL -r $NROW -i 0 $INPUT_DIR/$MAT | tee ./$MAT/SLU.o_mpi_${NROW}x${NCOL}_${OMP_NUM_THREADS}_2d_newest_gpusolve_${SUPERLU_ACC_SOLVE}_${MYDATE} 
     # Add final line (srun line) to temporary slurm script
 
   done
