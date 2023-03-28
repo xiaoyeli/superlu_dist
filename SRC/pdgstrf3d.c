@@ -205,8 +205,8 @@ int_t pdgstrf3d(superlu_dist_options_t *options, int m, int n, double anorm,
     for (int ilvl = 0; ilvl < maxLvl; ++ilvl) {
         int_t treeId = trf3Dpartition->myTreeIdxs[ilvl];
         sForest_t* sforest = sForests[treeId];
-        int_t maxTopoLevel = sforest->topoInfo.numLvl;
         if (sforest){
+            int_t maxTopoLevel = sforest->topoInfo.numLvl;
             int_t *perm_c_supno = sforest->nodeList ;
             for (int_t topoLvl = 0; topoLvl < maxTopoLevel; ++topoLvl)
             {

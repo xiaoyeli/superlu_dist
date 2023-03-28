@@ -11,7 +11,7 @@ export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/opt/intel/compilers_and_libraries_2018.
 module unload cmake
 module load cmake
 
-# export SUPERLU_LBS=ND  # this is causing crash
+export SUPERLU_LBS=ND  # GD is causing crash for 4x4x32 for StocF-1465
 # export GPU3DVERSION=1
 # export NEW3DSOLVE=1    # Note: SUPERLU_ACC_OFFLOAD=1 and GPU3DVERSION=1 still do CPU factorization after https://github.com/xiaoyeli/superlu_dist/commit/035106d8949bc3abf86866aea1331b2948faa1db#diff-44fa50297abaedcfaed64f93712850a8fce55e8e57065d96d0ba28d8680da11eR223
 
@@ -45,9 +45,14 @@ fi
 # npcols=(16 16 8)
 # npz=(2 4 8)
 
-nprows=(16 )
-npcols=(16 )
-npz=(2 )
+# nprows=(16 16 8 8 4 4 2)
+# npcols=(32 16 16 8 8 4 4)
+# npz=(1 2 4 8 16 32 64)
+
+nprows=(32 16 16)
+npcols=(32 32 16)
+npz=(2 4 8)
+
 
 for ((i = 0; i < ${#npcols[@]}; i++)); do
 NROW=${nprows[i]}
@@ -91,9 +96,17 @@ TH_PER_RANK=`expr $NTH \* 2`
   # for MAT in torso3.bin
   # for MAT in g20.rua
   # for MAT in nlpkkt80.bin
+  # for MAT in s1_mat_0_126936.bin s1_mat_0_253872.bin matrix_piyush/s2D9pt2048.rua  matrix_piyush/s2D9pt3072.rua
   # for MAT in s1_mat_0_126936.bin s1_mat_0_253872.bin
   # for MAT in matrix_piyush/s2D9pt1536.rua
-  for MAT in matrix_piyush/s2D9pt2048.rua 
+  # for MAT in cage13.mtx StocF-1465.mtx Geo_1438.mtx Ga19As19H42.mtx torso3.mtx
+# for MAT in nlpkkt80.bin StocF-1465.bin Geo_1438.bin Ga19As19H42.bin torso3.mtx Serena.mtx ldoor.mtx  
+# for MAT in s1_mat_0_253872.bin matrix_piyush/s2D9pt2048.rua  matrix_piyush/s2D9pt3072.rua nlpkkt80.bin StocF-1465.bin Geo_1438.bin Ga19As19H42.bin torso3.mtx Serena.mtx ldoor.mtx  
+for MAT in s1_mat_0_253872.bin matrix_piyush/s2D9pt2048.rua  matrix_piyush/s2D9pt3072.rua nlpkkt80.bin StocF-1465.bin Geo_1438.bin Ga19As19H42.bin torso3.mtx 
+# for MAT in Serena.mtx ldoor.mtx  
+# for MAT in Serena.mtx ldoor.mtx
+# for MAT in Geo_1438.bin
+  # for MAT in matrix_piyush/s2D9pt2048.rua  matrix_piyush/s2D9pt3072.rua
   # for MAT in matrix_piyush/s2D9pt3072.rua
   # for MAT in s1_mat_0_253872.bin
   # for MAT in s1_mat_7127136_7127136_0_csc_1th_block_size_1781784.bin
