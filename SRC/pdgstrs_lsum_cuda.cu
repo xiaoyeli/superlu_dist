@@ -3220,7 +3220,7 @@ __global__ void dlsum_bmod_inv_gpu_mrhs_nvshmem
     }else{   /* off-diagonal block forward the message*/
         /* waiting for the x subvector and forward*/
         volatile uint64_t msg_recv = 0;
-        if ((tid == 0)) {
+        if (tid == 0) {
             //printf("in solve WAIT1 (%d,%d) wait for col %d,flag=%d\n", mype, bid, gc,flag_bc_q[lk]);
             do {
                 msg_recv = flag_bc_q[lk];

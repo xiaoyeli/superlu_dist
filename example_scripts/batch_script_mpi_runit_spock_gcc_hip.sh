@@ -23,6 +23,9 @@ INPUT_DIR=$MEMBERWORK/csc289/matrix
 # INPUT_DIR=$CUR_DIR/../EXAMPLE	
 FILE_NAME=pddrive
 FILE=$FILE_DIR/$FILE_NAME
+export SUPERLU_ACC_OFFLOAD=1 # this can be 0 to do CPU tests on GPU nodes
+# export GPU3DVERSION=1
+export SUPERLU_ACC_SOLVE=1
 
 
 
@@ -68,8 +71,8 @@ CORES_PER_NODE=64
 #npcols=(12 144 1)
 
 
-nprows=(4)
-npcols=(4)
+nprows=(1)
+npcols=(1)
  
 for ((i = 0; i < ${#npcols[@]}; i++)); do
 NROW=${nprows[i]}
@@ -97,12 +100,12 @@ OMP_NUM_THREADS=$NTH
   # for MAT in s1_mat_0_126936.bin 
   # for MAT in s1_mat_0_253872.bin s1_mat_0_126936.bin s1_mat_0_507744.bin
   # for MAT in Ga19As19H42.mtx Geo_1438.mtx
-  for MAT in DNA_715_64cell.bin Li4244.bin s1_mat_0_126936.bin Ga19As19H42.mtx Geo_1438.mtx
+  # for MAT in DNA_715_64cell.bin Li4244.bin s1_mat_0_126936.bin Ga19As19H42.mtx Geo_1438.mtx
   # for MAT in DNA_715_64cell.bin Li4244.bin
   # for MAT in Geo_1438.mtx
   # for MAT in matrix121.dat
   #  for MAT in HTS/gas_sensor.mtx HTS/vanbody.mtx HTS/ct20stif.mtx HTS/torsion1.mtx HTS/dawson5.mtx
- # for MAT in HTS/gas_sensor.mtx 
+ for MAT in HTS/gas_sensor/gas_sensor.mtx 
 
 
   # for MAT in HTS/g7jac160.mtx

@@ -2445,12 +2445,12 @@ thread_id=0;
 		t3 = SuperLU_timer_() - t3;
 		stat->utime[SOL_TOT] += t3;
 		if ( !iam ) {
-			printf(".. L-solve time\t%8.4f\n", t);
+			printf(".. L-solve time\t%8.4f\n", t3);
 			fflush(stdout);
 		}
 
 
-		MPI_Reduce (&t, &tmax, 1, MPI_DOUBLE,
+		MPI_Reduce (&t3, &tmax, 1, MPI_DOUBLE,
 				MPI_MAX, 0, grid->comm);
 		if ( !iam ) {
 			printf(".. L-solve time (MAX) \t%8.4f\n", tmax);
@@ -3114,8 +3114,8 @@ for (i=0;i<nroot_send;i++){
 #if ( PROFlevel>=1 )
 		t3 = SuperLU_timer_() - t3;
 		stat->utime[SOL_TOT] += t3;
-		if ( !iam ) printf(".. U-solve time\t%8.4f\n", t);
-		MPI_Reduce (&t, &tmax, 1, MPI_DOUBLE,
+		if ( !iam ) printf(".. U-solve time\t%8.4f\n", t3);
+		MPI_Reduce (&t3, &tmax, 1, MPI_DOUBLE,
 				MPI_MAX, 0, grid->comm);
 		if ( !iam ) {
 			printf(".. U-solve time (MAX) \t%8.4f\n", tmax);
