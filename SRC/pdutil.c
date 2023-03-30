@@ -579,7 +579,9 @@ dDestroy_LU(int_t n, gridinfo_t *grid, dLUstruct_t *LUstruct)
 
     #ifdef HAVE_NVSHMEM  
     /* nvshmem related*/
+    if (getenv("SUPERLU_ACC_SOLVE")){
     delete_multiGPU_buffers();
+    }
     
     SUPERLU_FREE(mystatus);
     SUPERLU_FREE(h_nfrecv);

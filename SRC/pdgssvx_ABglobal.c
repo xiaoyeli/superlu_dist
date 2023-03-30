@@ -945,8 +945,10 @@ pdgssvx_ABglobal(superlu_dist_options_t *options, SuperMatrix *A,
 		int maxrecvsz = sp_ienv_dist(3, options)* nrhs + SUPERLU_MAX( XK_H, LSUM_H );
 		int ready_x_size = maxrecvsz*nc;
 		int ready_lsum_size = 2*maxrecvsz*nr;
+		if (getenv("SUPERLU_ACC_SOLVE")){
 		nv_init_wrapper(grid->comm);
 		prepare_multiGPU_buffers(flag_bc_size,flag_rd_size,ready_x_size,ready_lsum_size,my_flag_bc_size,my_flag_rd_size);
+		}
 	#endif
 
 	if ( Fact != SamePattern_SameRowPerm ) {
