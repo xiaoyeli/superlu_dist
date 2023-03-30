@@ -321,7 +321,7 @@ static const int RD_U=4;	/* MPI tag for lsum in U-solve*/
 
 #define BLK_M  DIM_X*4
 #define BLK_N  DIM_Y*4
-#define BLK_K 2048/(BLK_M)
+#define BLK_K 1024/(BLK_M)
 
 #define DIM_XA  DIM_X
 #define DIM_YA  DIM_Y
