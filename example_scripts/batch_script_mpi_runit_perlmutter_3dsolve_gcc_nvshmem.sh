@@ -1,10 +1,12 @@
 #!/bin/bash
 #
 #modules:
-module load PrgEnv-nvidia 
-module load cudatoolkit
-module load cray-libsci
-module load cmake
+module load PrgEnv-gnu
+module load gcc/11.2.0
+module load cmake/3.22.0
+module load cudatoolkit/11.7
+# avoid bug in cray-libsci/21.08.1.2
+module load cray-libsci/22.11.1.2
 
 #MPI settings:
 export MPICH_GPU_SUPPORT_ENABLED=0
@@ -20,14 +22,14 @@ export LD_LIBRARY_PATH=${CRAY_LD_LIBRARY_PATH}:$LD_LIBRARY_PATH
 
 
 
-# export SUPERLU_LBS=ND  # this is causing crash
+export SUPERLU_LBS=ND  
 export MAX_BUFFER_SIZE=50000000
 export SUPERLU_NUM_GPU_STREAMS=1
 export SUPERLU_BIND_MPI_GPU=1
 export SUPERLU_ACC_OFFLOAD=0 # this can be 0 to do CPU tests on GPU nodes
 # export GPU3DVERSION=1
 export NEW3DSOLVE=1    # Note: SUPERLU_ACC_OFFLOAD=1 and GPU3DVERSION=1 still do CPU factorization after https://github.com/xiaoyeli/superlu_dist/commit/035106d8949bc3abf86866aea1331b2948faa1db#diff-44fa50297abaedcfaed64f93712850a8fce55e8e57065d96d0ba28d8680da11eR223
-export SUPERLU_ACC_SOLVE=1
+# export SUPERLU_ACC_SOLVE=1
 export NEW3DSOLVETREECOMM=1
 
 ##NVSHMEM settings:
@@ -62,10 +64,10 @@ else
   # Host unknown; exiting
   exit $EXIT_HOST
 fi
-nprows=(1 1 1)
-npcols=(1 1 1)
-npz=(1 2 4)
-NTH=2
+nprows=(2 4 )
+npcols=(1 1 )
+npz=(4 2 )
+NTH=1
 # NODE_VAL_TOT=1
 
 for ((i = 0; i < ${#npcols[@]}; i++)); do
@@ -110,7 +112,9 @@ export MPICH_MAX_THREAD_SAFETY=multiple
 # export NREL=256
 # for MAT in big.rua
 # for MAT in g20.rua
-for MAT in s1_mat_0_126936.bin s2D9pt2048.rua
+for MAT in s1_mat_0_253872.bin  s2D9pt2048.rua
+# for MAT in cage13.mtx StocF-1465.mtx Geo_1438.mtx Ga19As19H42.mtx torso3.mtx
+# for MAT in nlpkkt80.bin cage13.bin StocF-1465.bin Geo_1438.bin Ga19As19H42.bin torso3.mtx
 # for MAT in s1_mat_0_126936.bin
 # for MAT in s2D9pt2048.rua
 # for MAT in s2D9pt1536.rua
@@ -120,10 +124,10 @@ for MAT in s1_mat_0_126936.bin s2D9pt2048.rua
 # for MAT in temp_13k.mtx
 do
 mkdir -p $MAT
-# srun -n $NCORE_VAL_TOT2D -N $NODE_VAL2D -c $TH_PER_RANK --cpu_bind=cores ./EXAMPLE/pddrive -c $NCOL -r $NROW -b $batch $CFS/m2957/liuyangz/my_research/matrix/$MAT | tee ./$MAT/SLU.o_mpi_${NROW}x${NCOL}_${NTH}_1rhs_2d
+# srun -n $NCORE_VAL_TOT2D -c $TH_PER_RANK --cpu_bind=cores ./EXAMPLE/pddrive -c $NCOL -r $NROW -b $batch $CFS/m2957/liuyangz/my_research/matrix/$MAT | tee ./$MAT/SLU.o_mpi_${NROW}x${NCOL}_${NTH}_1rhs_2d
 
 echo "srun -n $NCORE_VAL_TOT  -c $TH_PER_RANK --cpu_bind=cores ./EXAMPLE/pddrive3d -c $NCOL -r $NROW -d $NPZ -b $batch $CFS/m2957/liuyangz/my_research/matrix/$MAT | tee ./$MAT/SLU.o_mpi_${NROW}x${NCOL}x${NPZ}_${NTH}_1rhs_3d"
-srun -n $NCORE_VAL_TOT  -c $TH_PER_RANK --cpu_bind=cores ./EXAMPLE/pddrive3d -c $NCOL -r $NROW -d $NPZ -b $batch $CFS/m2957/liuyangz/my_research/matrix/$MAT | tee ./$MAT/SLU.o_mpi_${NROW}x${NCOL}x${NPZ}_${NTH}_1rhs_3d
+srun -n $NCORE_VAL_TOT  -c $TH_PER_RANK --cpu_bind=cores ./EXAMPLE/pddrive3d -c $NCOL -r $NROW -d $NPZ -b $batch $CFS/m2957/liuyangz/my_research/matrix/$MAT | tee ./$MAT/SLU.o_mpi_${NROW}x${NCOL}x${NPZ}_${NTH}_1rhs_3d_gpusolve_${SUPERLU_ACC_SOLVE}
 
 
 done
