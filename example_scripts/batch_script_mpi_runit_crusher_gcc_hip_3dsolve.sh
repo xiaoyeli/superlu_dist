@@ -6,7 +6,9 @@ EXIT_PARAM=2
 
 module swap PrgEnv-cray PrgEnv-gnu
 module load cmake
-module load rocm			 
+module load rocm/5.1.0
+module load cray-libsci/22.12.1.1	
+module load cray-mpich/8.1.17		
 export LD_LIBRARY_PATH="$CRAY_LD_LIBRARY_PATH:$LD_LIBRARY_PATH"
 
 
@@ -29,7 +31,7 @@ FILE3D=$FILE_DIR/$FILE_NAME3D
 MYDATE=$(date '+%Y-%m-%d-%H-%M-%S')
 export SUPERLU_ACC_OFFLOAD=1 # this can be 0 to do CPU tests on GPU nodes
 # export GPU3DVERSION=1
-export SUPERLU_ACC_SOLVE=1
+# export SUPERLU_ACC_SOLVE=1
 export NEW3DSOLVE=1
 export NEW3DSOLVETREECOMM=1
 export SUPERLU_BIND_MPI_GPU=1
@@ -79,8 +81,8 @@ CORES_PER_NODE=64
 
 
 nprows=(1)
-npcols=(1)
-npz=(1)
+npcols=(1) 
+npz=(16)
  
 for ((i = 0; i < ${#npcols[@]}; i++)); do
 NROW=${nprows[i]}
@@ -108,7 +110,8 @@ OMP_NUM_THREADS=$NTH
 #for NSUP in 128 64 32 16 8
 #do
   # for MAT in atmosmodl.rb nlpkkt80.mtx torso3.mtx Ga19As19H42.mtx A22.mtx cage13.rb 
-  for MAT in s1_mat_0_126936.bin 
+  # for MAT in s1_mat_0_253872.bin s2D9pt2048.rua 
+  for MAT in Li4244.bin 
   # for MAT in g20.rua
   # for MAT in s1_mat_0_253872.bin s1_mat_0_126936.bin s1_mat_0_507744.bin
   # for MAT in Ga19As19H42.mtx Geo_1438.mtx
