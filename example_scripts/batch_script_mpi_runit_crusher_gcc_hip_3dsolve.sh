@@ -83,11 +83,16 @@ CORES_PER_NODE=64
 nprows=(1)
 npcols=(1) 
 npz=(16)
- 
+nrhs=(1 50) 
+
+
 for ((i = 0; i < ${#npcols[@]}; i++)); do
 NROW=${nprows[i]}
 NCOL=${npcols[i]}
 NPZ=${npz[i]}
+
+for ((s = 0; s < ${#nrhs[@]}; s++)); do
+NRHS=${nrhs[s]}
 
 # NROW=36
 CORE_VAL=`expr $NCOL \* $NROW \* $NPZ`
@@ -110,8 +115,8 @@ OMP_NUM_THREADS=$NTH
 #for NSUP in 128 64 32 16 8
 #do
   # for MAT in atmosmodl.rb nlpkkt80.mtx torso3.mtx Ga19As19H42.mtx A22.mtx cage13.rb 
-  # for MAT in s1_mat_0_253872.bin s2D9pt2048.rua 
-  for MAT in Li4244.bin 
+  for MAT in s1_mat_0_253872.bin s2D9pt2048.rua nlpkkt80.bin Li4244.bin Ga19As19H42.bin ldoor.mtx
+  # for MAT in Li4244.bin 
   # for MAT in g20.rua
   # for MAT in s1_mat_0_253872.bin s1_mat_0_126936.bin s1_mat_0_507744.bin
   # for MAT in Ga19As19H42.mtx Geo_1438.mtx
@@ -148,13 +153,14 @@ OMP_NUM_THREADS=$NTH
     mkdir -p $MAT
     #srun -n $CORE_VAL -c $NTH --cpu_bind=cores /opt/rocm/bin/rocprof --hsa-trace --hip-trace $FILE -c $NCOL -r $NROW $INPUT_DIR/$MAT | tee ./$MAT/SLU.o_mpi_${NROW}x${NCOL}_${OMP_NUM_THREADS}_mrhs
     #srun -n $CORE_VAL -c $NTH --cpu_bind=cores /opt/rocm/bin/rocprof --hsa-trace --roctx-trace $FILE -c $NCOL -r $NROW $INPUT_DIR/$MAT | tee ./$MAT/SLU.o_mpi_${NROW}x${NCOL}_${OMP_NUM_THREADS}_mrhs
-    srun -n $CORE_VAL -c $NTH --cpu_bind=cores $FILE3D -c $NCOL -r $NROW -d $NPZ -i 0 $INPUT_DIR/$MAT | tee ./$MAT/SLU.o_mpi_${NROW}x${NCOL}x${NPZ}_${OMP_NUM_THREADS}_3d_newest_gpusolve_${SUPERLU_ACC_SOLVE}_${MYDATE} 
-    # srun -n $CORE_VAL -c $NTH --cpu_bind=cores $FILE -c $NCOL -r $NROW -i 0 $INPUT_DIR/$MAT | tee ./$MAT/SLU.o_mpi_${NROW}x${NCOL}_${OMP_NUM_THREADS}_2d_newest_gpusolve_${SUPERLU_ACC_SOLVE}_${MYDATE} 
+    srun -n $CORE_VAL -c $NTH --cpu_bind=cores $FILE3D -c $NCOL -r $NROW -d $NPZ -i 0 -s $NRHS $INPUT_DIR/$MAT | tee ./$MAT/SLU.o_mpi_${NROW}x${NCOL}x${NPZ}_${OMP_NUM_THREADS}_3d_newest_gpusolve_${SUPERLU_ACC_SOLVE}_nrhs_${NRHS}
+    # srun -n $CORE_VAL -c $NTH --cpu_bind=cores $FILE -c $NCOL -r $NROW -i 0 $INPUT_DIR/$MAT | tee ./$MAT/SLU.o_mpi_${NROW}x${NCOL}_${OMP_NUM_THREADS}_2d_newest_gpusolve_${SUPERLU_ACC_SOLVE}
     # Add final line (srun line) to temporary slurm script
 
   done
 #one
 
+done
 done
 done
 

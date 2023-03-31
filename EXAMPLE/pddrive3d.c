@@ -193,6 +193,8 @@ main (int argc, char *argv[])
                       break;
             case 'b': batch = atoi(*cpp);
                       break;
+            case 's': nrhs = atoi(*cpp);
+                      break;                      
             }
         }
         else
