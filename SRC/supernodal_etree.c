@@ -790,8 +790,14 @@ int_t** getNodeList(int_t maxLvl, int_t* setree, int_t* nnodes,
 		for (int_t i = st; i < end; ++i)
 		{
 			/* code */
-			if (nodeList[i])
-				getCommonAncestorList(treeHeads[i], nodeList[i],  setree, treeList);
+			if (nodeList[i]){
+				int_t tmpcnt=getCommonAncestorList(treeHeads[i], nodeList[i],  setree, treeList);
+				if(tmpcnt!=nnodes[i]){
+					printf("nnodes[i] = %10d but getCommonAncestorList returns %10d. Something must be wrong!!! \n",nnodes[i], tmpcnt);
+					fflush(stdout);
+					nnodes[i]=tmpcnt; // this makes sure the code doesn't crash, but the result is wrong! 
+				}
+			}
 		}
 	}
 
