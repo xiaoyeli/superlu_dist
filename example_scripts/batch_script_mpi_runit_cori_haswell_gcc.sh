@@ -14,7 +14,7 @@ module load cmake
 export SUPERLU_LBS=ND  # GD is causing crash for 4x4x32 for StocF-1465
 # export GPU3DVERSION=1
 # export NEW3DSOLVE=1    # Note: SUPERLU_ACC_OFFLOAD=1 and GPU3DVERSION=1 still do CPU factorization after https://github.com/xiaoyeli/superlu_dist/commit/035106d8949bc3abf86866aea1331b2948faa1db#diff-44fa50297abaedcfaed64f93712850a8fce55e8e57065d96d0ba28d8680da11eR223
-
+# export COMM_TREE_MPI_WAIT=1 
 
 
 CUR_DIR=`pwd`
@@ -45,19 +45,35 @@ fi
 # npcols=(16 16 8)
 # npz=(2 4 8)
 
-# nprows=(16 16 8 8 4 4 2)
-# npcols=(32 16 16 8 8 4 4)
-# npz=(1 2 4 8 16 32 64)
+nprows=(8 8 4 4 2 2 1 16 8 8 4 4 2 2 16 16 8 8 4 4 2 32 16 16 8 8 4 4 64 32 16 16 8 8 4)
+npcols=(16 8 8 4 4 2 2 16 16 8 8 4 2 2 32 16 16 8 8 4 4 32 32 16 16 8 8 4 32 32 32 16 16 8 8)
+npz=(1 2 4 8 16 32 64 1 2 4 8 16 32 64 1 2 4 8 16 32 64 1 2 4 8 16 32 64 1 2 4 8 16 32 64)
 
-nprows=(32 16 16)
-npcols=(32 32 16)
-npz=(2 4 8)
 
+# nprows=(32 32 16 16 8 8)
+# npcols=(64 32 32 16 16 8)
+# npz=(1 2 4 8 16 32)
+
+
+
+
+nrhs=(1) 
+
+# nprows=(32 32 16 16 8 8)
+# npcols=(64 32 32 16 16 8)
+# npz=(1 2 4 8 16 32)
+
+# nprows=( 8)
+# npcols=( 8)
+# npz=(32)
 
 for ((i = 0; i < ${#npcols[@]}; i++)); do
 NROW=${nprows[i]}
 NCOL=${npcols[i]}
 NPZ=${npz[i]}
+
+for ((s = 0; s < ${#nrhs[@]}; s++)); do
+NRHS=${nrhs[s]}
 
 # NROW=36
 CORE_VAL=`expr $NCOL \* $NROW \* $NPZ`
@@ -95,15 +111,17 @@ TH_PER_RANK=`expr $NTH \* 2`
   # for MAT in atmosmodl.rb nlpkkt80.mtx torso3.mtx Ga19As19H42.mtx A22.mtx cage13.rb
   # for MAT in torso3.bin
   # for MAT in g20.rua
-  # for MAT in nlpkkt80.bin
+  # for MAT in s1_mat_0_253872.bin s2D9pt2048.rua nlpkkt80.bin Ga19As19H42.bin ldoor.mtx
+  for MAT in nlpkkt80.bin
   # for MAT in s1_mat_0_126936.bin s1_mat_0_253872.bin matrix_piyush/s2D9pt2048.rua  matrix_piyush/s2D9pt3072.rua
   # for MAT in s1_mat_0_126936.bin s1_mat_0_253872.bin
   # for MAT in matrix_piyush/s2D9pt1536.rua
   # for MAT in cage13.mtx StocF-1465.mtx Geo_1438.mtx Ga19As19H42.mtx torso3.mtx
 # for MAT in nlpkkt80.bin StocF-1465.bin Geo_1438.bin Ga19As19H42.bin torso3.mtx Serena.mtx ldoor.mtx  
 # for MAT in s1_mat_0_253872.bin matrix_piyush/s2D9pt2048.rua  matrix_piyush/s2D9pt3072.rua nlpkkt80.bin StocF-1465.bin Geo_1438.bin Ga19As19H42.bin torso3.mtx Serena.mtx ldoor.mtx  
-for MAT in s1_mat_0_253872.bin matrix_piyush/s2D9pt2048.rua  matrix_piyush/s2D9pt3072.rua nlpkkt80.bin StocF-1465.bin Geo_1438.bin Ga19As19H42.bin torso3.mtx 
-# for MAT in Serena.mtx ldoor.mtx  
+# for MAT in s1_mat_0_253872.bin matrix_piyush/s2D9pt2048.rua  matrix_piyush/s2D9pt3072.rua nlpkkt80.bin StocF-1465.bin Geo_1438.bin Ga19As19H42.bin torso3.mtx 
+# for MAT in matrix_piyush/s2D9pt2048.rua nlpkkt80.bin StocF-1465.bin Geo_1438.bin Ga19As19H42.bin torso3.mtx Serena.mtx ldoor.mtx  
+# for MAT in matrix_piyush/s2D9pt2048.rua
 # for MAT in Serena.mtx ldoor.mtx
 # for MAT in Geo_1438.bin
   # for MAT in matrix_piyush/s2D9pt2048.rua  matrix_piyush/s2D9pt3072.rua
@@ -127,21 +145,24 @@ for MAT in s1_mat_0_253872.bin matrix_piyush/s2D9pt2048.rua  matrix_piyush/s2D9p
     # srun -N 64 -n $CORE_VAL -c $TH_PER_RANK --cpu_bind=cores $FILE_DIR/pddrive -c $NCOL -r $NROW $INPUT_DIR/$MAT | tee ./$MAT/SLU.o_mpi_${NROW}x${NCOL}_${OMP_NUM_THREADS}_2d
 
     # pddrive3d
+    unset NEW3DSOLVE
+    unset NEW3DSOLVETREECOMM
     echo "srun -n $CORE_VAL -c $TH_PER_RANK --cpu_bind=cores $FILE_DIR/pddrive3d -c $NCOL -r $NROW -d $NPZ $INPUT_DIR/$MAT | tee ./$MAT/SLU.o_mpi_${NROW}x${NCOL}x${NPZ}_${OMP_NUM_THREADS}_3d"
-    srun -N 64 -n $CORE_VAL -c $TH_PER_RANK --cpu_bind=cores $FILE_DIR/pddrive3d -c $NCOL -r $NROW -d $NPZ $INPUT_DIR/$MAT | tee ./$MAT/SLU.o_mpi_${NROW}x${NCOL}x${NPZ}_${OMP_NUM_THREADS}_3d_old
+    srun -n $CORE_VAL -c $TH_PER_RANK --cpu_bind=cores $FILE_DIR/pddrive3d -c $NCOL -r $NROW -d $NPZ $INPUT_DIR/$MAT | tee ./$MAT/SLU.o_mpi_${NROW}x${NCOL}x${NPZ}_${OMP_NUM_THREADS}_3d_old_nrhs_${NRHS}
     
-    export NEW3DSOLVE=1
-    srun -N 64 -n $CORE_VAL -c $TH_PER_RANK --cpu_bind=cores $FILE_DIR/pddrive3d -c $NCOL -r $NROW -d $NPZ $INPUT_DIR/$MAT | tee ./$MAT/SLU.o_mpi_${NROW}x${NCOL}x${NPZ}_${OMP_NUM_THREADS}_3d_newer
+    # export NEW3DSOLVE=1
+    # unset NEW3DSOLVETREECOMM
+    # srun -n $CORE_VAL -c $TH_PER_RANK --cpu_bind=cores $FILE_DIR/pddrive3d -c $NCOL -r $NROW -d $NPZ $INPUT_DIR/$MAT | tee ./$MAT/SLU.o_mpi_${NROW}x${NCOL}x${NPZ}_${OMP_NUM_THREADS}_3d_newer_nrhs_${NRHS}
 
     export NEW3DSOLVE=1
     export NEW3DSOLVETREECOMM=1
-    srun -N 64 -n $CORE_VAL -c $TH_PER_RANK --cpu_bind=cores $FILE_DIR/pddrive3d -c $NCOL -r $NROW -d $NPZ $INPUT_DIR/$MAT | tee ./$MAT/SLU.o_mpi_${NROW}x${NCOL}x${NPZ}_${OMP_NUM_THREADS}_3d_newest
+    srun -n $CORE_VAL -c $TH_PER_RANK --cpu_bind=cores $FILE_DIR/pddrive3d -c $NCOL -r $NROW -d $NPZ $INPUT_DIR/$MAT | tee ./$MAT/SLU.o_mpi_${NROW}x${NCOL}x${NPZ}_${OMP_NUM_THREADS}_3d_newest_nrhs_${NRHS}
 
 
 
 
   done
-#one
+done
 
 done
 done
