@@ -45,6 +45,7 @@ export NVSHMEM_DISABLE_CUDA_VMM=1
 export FI_CXI_OPTIMIZED_MRS=false
 export NVSHMEM_BOOTSTRAP_TWO_STAGE=1
 export NVSHMEM_BOOTSTRAP=MPI
+export NVSHMEM_REMOTE_TRANSPORT=libfabric
 
 #export NVSHMEM_DEBUG=TRACE
 #export NVSHMEM_DEBUG_SUBSYS=ALL
@@ -65,7 +66,7 @@ else
   # Host unknown; exiting
   exit $EXIT_HOST
 fi
-nprows=(4)
+nprows=(1)
 npcols=(1 )
 npz=(1 )
 NTH=1
@@ -130,7 +131,7 @@ for ii in `seq 1 $NREP`
   do	
   # srun -n $NCORE_VAL_TOT2D -c $TH_PER_RANK --cpu_bind=cores ./EXAMPLE/pddrive -c $NCOL -r $NROW -b $batch $CFS/m2957/liuyangz/my_research/matrix/$MAT | tee ./$MAT/SLU.o_mpi_${NROW}x${NCOL}_${NTH}_1rhs_2d
 # echo "srun -n $NCORE_VAL_TOT  -c $TH_PER_RANK --cpu_bind=cores ./EXAMPLE/pddrive3d -c $NCOL -r $NROW -d $NPZ -b $batch $CFS/m2957/liuyangz/my_research/matrix/$MAT | tee ./$MAT/SLU.o_mpi_${NROW}x${NCOL}x${NPZ}_${NTH}_1rhs_3d"
-# srun -n $NCORE_VAL_TOT  -c $TH_PER_RANK --cpu_bind=cores ./EXAMPLE/pddrive3d -c $NCOL -r $NROW -d $NPZ -b $batch $CFS/m2957/liuyangz/my_research/matrix/$MAT | tee ./$MAT/SLU.o_mpi_${NROW}x${NCOL}x${NPZ}_${NTH}_1rhs_3d_gpusolve_${SUPERLU_ACC_SOLVE}
+srun -n $NCORE_VAL_TOT  -c $TH_PER_RANK --cpu_bind=cores ./EXAMPLE/pddrive3d -c $NCOL -r $NROW -d $NPZ -b $batch $CFS/m2957/liuyangz/my_research/matrix/$MAT | tee ./$MAT/SLU.o_mpi_${NROW}x${NCOL}x${NPZ}_${NTH}_1rhs_3d_gpusolve_${SUPERLU_ACC_SOLVE}
 done
 
 done
