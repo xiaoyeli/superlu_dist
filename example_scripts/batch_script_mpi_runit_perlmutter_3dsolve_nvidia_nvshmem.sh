@@ -52,6 +52,7 @@ export FI_CXI_OPTIMIZED_MRS=false
 export NVSHMEM_BOOTSTRAP_TWO_STAGE=1
 export NVSHMEM_BOOTSTRAP=MPI
 export NVSHMEM_REMOTE_TRANSPORT=libfabric
+# export MPICH_OFI_NIC_POLICY=GPU
 
 #export NVSHMEM_DEBUG=TRACE
 #export NVSHMEM_DEBUG_SUBSYS=ALL
@@ -77,9 +78,9 @@ fi
 # npz=(64 32 16)
 # nrhs=(1 50) 
 
-nprows=(4 8 )
-npcols=(1 1 )
-npz=(2 1)
+nprows=(8 )
+npcols=(1 )
+npz=(1)
 nrhs=(1)
 
 NTH=1
