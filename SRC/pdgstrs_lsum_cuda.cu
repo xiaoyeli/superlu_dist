@@ -503,41 +503,42 @@ __device__ void C_BcTree_forwardMessageSimple_Device(C_Tree* tree,  volatile uin
     int data_ofset=my_flag_bc[0]*maxrecvsz;
     for( int idxRecv = 0; idxRecv < tree->destCnt_; ++idxRecv ) {
         int iProc = tree->myDests_[idxRecv];
-        //BCsendoffset = my_flag_bc[2];
-        //double sum=0;
-        //if (tid==0) {
-        //    for(int i=0;i<my_flag_bc[3];i++){
-        //        //printf("(%d), data, %d,%lf\n",mype,i,ready_x[i]);
-        //        sum+=ready_x[my_flag_bc[2]+i];
-        //    }
-        //    printf("Start (%d), forwardDevice, send to %d, signal offset=%d, msgsz=%d,sum=%lf\n",mype,iProc,my_flag_bc[0],my_flag_bc[3],sum);
-        //}
-        //__syncthreads();
-        //if (tid==0)
-        //    printf("---- Start BC (%d), forwardDevice, send to %d, "
-        //                  "signal offset=%d, "
-        //                  "data offset=%d "
-        //                  "msgsz=%d, maxrecvsz=%d\n",
-        //                  mype,iProc,
-        //                  my_flag_bc[0],
-        //                  data_ofset,
-        //                  my_flag_bc[1], maxrecvsz);
-        //__syncthreads();
-        //nvshmemx_double_put_block(&ready_x[BCsendoffset],ready_x,my_flag_bc[3],iProc);
-        nvshmemx_double_put_nbi_block(&ready_x[data_ofset], &ready_x[data_ofset], my_flag_bc[1], iProc);
-        //nvshmem_double_put_nbi(ready_x, &ready_x[0], my_flag_bc[3], iProc);
-        //nvshmem_double_put(&ready_x[BCsendoffset],ready_x,my_flag_bc[3],iProc);
-        //nvshmem_quiet();
-        nvshmem_fence();
-        //__syncthreads();
-        if (tid == 0) {
-            nvshmemx_signal_op((uint64_t*)(flag_bc_q + my_flag_bc[0]), sig, NVSHMEM_SIGNAL_SET,iProc);
-            //nvshmemx_int_signal((int*)(flag_bc_q + my_flag_bc[0]), sig, iProc);
-            //nvshmem_quiet();
-            //printf("Done (%d), forwardDevice, send to %d, signal offset=%d, data offset=%d, msgsz=%d\n", mype, iProc,
-            //       my_flag_bc[0], my_flag_bc[2], my_flag_bc[3]);
+        nvshmemx_double_put_signal_nbi_block(&ready_x[data_ofset], &ready_x[data_ofset], my_flag_bc[1],(uint64_t*)(flag_bc_q + my_flag_bc[0]), sig, NVSHMEM_SIGNAL_SET,iProc);
+        ////BCsendoffset = my_flag_bc[2];
+        ////double sum=0;
+        ////if (tid==0) {
+        ////    for(int i=0;i<my_flag_bc[3];i++){
+        ////        //printf("(%d), data, %d,%lf\n",mype,i,ready_x[i]);
+        ////        sum+=ready_x[my_flag_bc[2]+i];
+        ////    }
+        ////    printf("Start (%d), forwardDevice, send to %d, signal offset=%d, msgsz=%d,sum=%lf\n",mype,iProc,my_flag_bc[0],my_flag_bc[3],sum);
+        ////}
+        ////__syncthreads();
+        ////if (tid==0)
+        ////    printf("---- Start BC (%d), forwardDevice, send to %d, "
+        ////                  "signal offset=%d, "
+        ////                  "data offset=%d "
+        ////                  "msgsz=%d, maxrecvsz=%d\n",
+        ////                  mype,iProc,
+        ////                  my_flag_bc[0],
+        ////                  data_ofset,
+        ////                  my_flag_bc[1], maxrecvsz);
+        ////__syncthreads();
+        ////nvshmemx_double_put_block(&ready_x[BCsendoffset],ready_x,my_flag_bc[3],iProc);
+        //nvshmemx_double_put_nbi_block(&ready_x[data_ofset], &ready_x[data_ofset], my_flag_bc[1], iProc);
+        ////nvshmem_double_put_nbi(ready_x, &ready_x[0], my_flag_bc[3], iProc);
+        ////nvshmem_double_put(&ready_x[BCsendoffset],ready_x,my_flag_bc[3],iProc);
+        ////nvshmem_quiet();
+        //nvshmem_fence();
+        ////__syncthreads();
+        //if (tid == 0) {
+        //    nvshmemx_signal_op((uint64_t*)(flag_bc_q + my_flag_bc[0]), sig, NVSHMEM_SIGNAL_SET,iProc);
+        //    //nvshmemx_int_signal((int*)(flag_bc_q + my_flag_bc[0]), sig, iProc);
+        //    //nvshmem_quiet();
+        //    //printf("Done (%d), forwardDevice, send to %d, signal offset=%d, data offset=%d, msgsz=%d\n", mype, iProc,
+        //    //       my_flag_bc[0], my_flag_bc[2], my_flag_bc[3]);
 
-        }
+        //}
     }
 }
 
@@ -552,28 +553,29 @@ __device__ void C_RdTree_forwardMessageSimple_Device(C_Tree* Tree, volatile uint
         data_ofset = my_flag_rd[0] * maxrecvsz * 2 + maxrecvsz;
     }
 
-////forward to my root if I have received everything
-//double sum = 0;
-
-//for (int i = my_flag_rd[0]*maxrecvsz*2; i < my_flag_rd[0]*maxrecvsz*2 + my_flag_rd[1]; i++) {
-//    //printf("(%d), data, %d\n",mype,i);
-//    printf("(%d), data, %d,%lf\n", mype, i, ready_lsum[i]);
-//    sum += ready_lsum[i];
-//}
-
-//printf("---- Start RD Thread (%d,%d,%d), forwardMessage, forwardDevice, send to %d, "
-//       "lib=%d,size=%d,  dataoffset=%d,maxrecvsz=%d\n",
-//       mype, bid,tid, myroot,
-//       my_flag_rd[0], my_flag_rd[1], data_ofset,maxrecvsz);
-    nvshmem_double_put_nbi(&ready_lsum[data_ofset],&ready_lsum[my_flag_rd[0]*maxrecvsz*2],my_flag_rd[1],myroot);
-//printf("---- END RD Thread (%d,%d,%d), forwardMessage, forwardDevice, send to %d, "
-//       "lib=%d,size=%d,  dataoffset=%d,maxrecvsz=%d\n",
-//       mype, bid,tid, myroot,
-//       my_flag_rd[0], my_flag_rd[1], data_ofset,maxrecvsz);
-    nvshmem_fence();
-    nvshmemx_signal_op((uint64_t*)flag_rd_q+sig_ofset, sig, NVSHMEM_SIGNAL_SET, myroot);
-//printf("Tsend:%d,%d,%d,%d,%d\n",
-//       mype, my_flag_rd[0],data_ofset, sig_ofset,my_flag_rd[1]);
+    nvshmem_double_put_signal_nbi(&ready_lsum[data_ofset],&ready_lsum[my_flag_rd[0]*maxrecvsz*2],my_flag_rd[1],(uint64_t*)flag_rd_q+sig_ofset, sig, NVSHMEM_SIGNAL_SET, myroot);
+//////forward to my root if I have received everything
+////double sum = 0;
+//
+////for (int i = my_flag_rd[0]*maxrecvsz*2; i < my_flag_rd[0]*maxrecvsz*2 + my_flag_rd[1]; i++) {
+////    //printf("(%d), data, %d\n",mype,i);
+////    printf("(%d), data, %d,%lf\n", mype, i, ready_lsum[i]);
+////    sum += ready_lsum[i];
+////}
+//
+////printf("---- Start RD Thread (%d,%d,%d), forwardMessage, forwardDevice, send to %d, "
+////       "lib=%d,size=%d,  dataoffset=%d,maxrecvsz=%d\n",
+////       mype, bid,tid, myroot,
+////       my_flag_rd[0], my_flag_rd[1], data_ofset,maxrecvsz);
+//    nvshmem_double_put_nbi(&ready_lsum[data_ofset],&ready_lsum[my_flag_rd[0]*maxrecvsz*2],my_flag_rd[1],myroot);
+////printf("---- END RD Thread (%d,%d,%d), forwardMessage, forwardDevice, send to %d, "
+////       "lib=%d,size=%d,  dataoffset=%d,maxrecvsz=%d\n",
+////       mype, bid,tid, myroot,
+////       my_flag_rd[0], my_flag_rd[1], data_ofset,maxrecvsz);
+//    nvshmem_fence();
+//    nvshmemx_signal_op((uint64_t*)flag_rd_q+sig_ofset, sig, NVSHMEM_SIGNAL_SET, myroot);
+////printf("Tsend:%d,%d,%d,%d,%d\n",
+////       mype, my_flag_rd[0],data_ofset, sig_ofset,my_flag_rd[1]);
 }
 
 __device__ void C_RdTree_forwardMessageBlock_Device(C_Tree* Tree, uint64_t* flag_rd_q, int* my_flag_rd, int mype, int bid, int tid, double* ready_lsum, int maxrecvsz, int myroot){
@@ -843,7 +845,7 @@ __global__ void wait_bcrd
                                 //cnt=LRtree_ptr[lib].msgSize_;
                                 my_flag_rd[lib * RDMA_FLAG_SIZE] = lib;
                                 my_flag_rd[lib * RDMA_FLAG_SIZE + 1] = LRtree_ptr[lib].msgSize_;
-                                double tmp_sum=0;
+                                //double tmp_sum=0;
                                 RHS_ITERATE(j) {
                                     for (int aab = 0; aab < knsupc; aab++) {
                                         ready_lsum[lib * maxrecvsz * 2 + aab + j * knsupc] = lsum[il + aab + j * knsupc];
