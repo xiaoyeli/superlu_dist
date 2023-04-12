@@ -1,0 +1,585 @@
+first gpufree time:  0.6286
+first blas create time:  2.1721
+MPI_Query_thread with MPI_THREAD_MULTIPLE
+__STDC_VERSION__ 201112
+Library version:	8.1.2
+Input matrix file:	/global/cfs/cdirs/m2957/liuyangz/my_research/matrix/dielFilterV3real.bin
+3D process grid: 1 X 1 X 64
+fread n  1102824	nnz 89306020
+# of doubles fread: 89306020
+Time to read and distribute matrix 1.92
+**************************************************
+.. blocking parameters from sp_ienv():
+**    relaxation                 : 60
+**    max supernode              : 256
+**    estimated fill ratio       : 5
+**    min GEMM m*k*n to use GPU  : 5000
+**************************************************
+**************************************************
+.. options:
+**    Fact                      :    0
+**    Equil                     :    1
+**    DiagInv                   :    1
+**    ParSymbFact               :    0
+**    ColPerm                   :    4
+**    RowPerm                   :    1
+**    ReplaceTinyPivot          :    1
+**    IterRefine                :    0
+**    Trans                     :    0
+**    SymPattern                :    0
+**    lookahead_etree           :    0
+**    Use_TensorCore            :    0
+**    Use 3D algorithm          :    1
+**    num_lookaheads            :   10
+** parameters that can be altered by environment variables:
+**    superlu_relax             :   60
+**    superlu_maxsup            :  256
+**    min GEMM m*k*n to use GPU : 5000
+**    GPU buffer size           :   50000000
+**    GPU streams               :    1
+**    estimated fill ratio      :    5
+**************************************************
+	Matrix size min_mn   1102824
+	Nonzeros in L       577679661
+	Nonzeros in U       577679661
+	nonzeros in L+U     1154256498
+	nonzeros in LSUB    137953476
+dinitSluGPU3D_t: Using hardware acceleration, with 1 gpu streams 
+dinitSluGPU3D_t: Using 256 threads per block for scatter 
+*-- GPU flops: 
+	Flops offloaded 1.775e+12, Time 0.007615, Flop rate 233107.745540 GF/sec 
+*-- GPU memory: 
+	Mop offloaded 1.387e+09, Time 0.011886, Bandwidth 933.788660 GByte/sec 
+*-- PCIe Data Transfer H2D:
+	Data Sent 5.253e-01(GB)
+	Time observed from CPU 0.008283
+	Actual time spent 0.013216
+	Bandwidth 39.749738 GByte/sec 
+*-- PCIe Data Transfer D2H:
+	Data Sent 5.852e-01(GB)
+	Time observed from CPU 0.003356
+	Actual time spent 0.027181
+	Bandwidth 21.530760 GByte/sec 
+Total time in factorization 	:  2.63
+MPI-communication phase 	:  1.47
+|Wait_LSend             	|     0.0000 	|     0.0000 	|     0.0000 	|     0.0000%| Seconds|
+|Wait_USend             	|     0.0000 	|     0.0000 	|     0.0000 	|     0.0000%| Seconds|
+|Wait_URecv             	|     0.0000 	|     0.0000 	|     0.0000 	|       -nan%| Seconds|
+|Wait_LRecv             	|     0.0000 	|     0.0000 	|     0.0000 	|       -nan%| Seconds|
+|L_PanelUpdate          	|     0.0000 	|     0.0000 	|     0.0000 	|       -nan%| Seconds|
+|PDGSTRS2               	|     0.0000 	|     0.0000 	|     0.0000 	|       -nan%| Seconds|
+|wait-FunCallStream     	|     0.0031 	|     0.0031 	|     0.0031 	|     0.0000%| Seconds|
+|wait-copyStream        	|     0.0263 	|     0.0263 	|     0.0263 	|     0.0000%| Seconds|
+|waitGPU2CPU            	|     0.0031 	|     0.0031 	|     0.0031 	|     0.0000%| Seconds|
+|SchurCompUpdate        	|     1.1562 	|     1.1562 	|     1.1562 	|     0.0000%| Seconds|
+|PanelFactorization     	|     1.4689 	|     1.4689 	|     1.4689 	|     0.0000%| Seconds|
+#### High Level Time Breakdown :     4.1410 
+
+|Function name 	| avg 	| min 	| max 	| std-dev| units|
+|---|---|---|---|---|---|
+|Startup                	|     1.5159 	|     1.5159 	|     1.5159 	|     0.0000%| Seconds|
+|Main-Factor loop       	|     2.6251 	|     2.6251 	|     2.6251 	|     0.0000%| Seconds|
+|3D-GatherLU            	|     0.0000 	|     0.0000 	|     0.0000 	|     0.0000%| Seconds|
+|tTotal                 	|     4.1410 	|     4.1410 	|     4.1410 	|     0.0000%| Seconds|
+#### Components of Factor Loop :     2.6251 
+
+|Function name 	| avg 	| min 	| max 	| std-dev| units|
+|---|---|---|---|---|---|
+|3D-AncestorReduce      	|     0.7148 	|     0.7148 	|     0.7148 	|     0.0000%| Seconds|
+|Pipeline Tail          	|     0.6376 	|     0.6376 	|     0.6376 	|     0.0000%| Seconds|
+|Grid-0 Factor:Level-0     	|     0.0641 	|     0.0641 	|     0.0641 	|     0.0000%| Seconds|
+|Grid-0 Factor:Level-1     	|     0.2159 	|     0.2159 	|     0.2159 	|     0.0000%| Seconds|
+|Grid-0 Factor:Level-2     	|     0.3143 	|     0.3143 	|     0.3143 	|     0.0000%| Seconds|
+|Grid-0 Factor:Level-3     	|     0.2702 	|     0.2702 	|     0.2702 	|     0.0000%| Seconds|
+|Grid-0 Factor:Level-4     	|     0.3148 	|     0.3148 	|     0.3148 	|     0.0000%| Seconds|
+|Grid-0 Factor:Level-5     	|     0.1744 	|     0.1744 	|     0.1744 	|     0.0000%| Seconds|
+|Grid-0 Factor:Level-6     	|     0.5566 	|     0.5566 	|     0.5566 	|     0.0000%| Seconds|
+| commVolRed | 4.31397e+10   | 6.74057e+08 |
+| commVolFactor | 1.59768e+08   | 2.49638e+06 |
+| Total Memory 	| 3.7e+08  	| 5e+08  	|2.8e+08  	|
+| LU-LU(repli) 	| 1.2e+08  	| 2.6e+08  	|
+|Forest | weight | cost | weight/Cost | 
+|0   | 1.55e+09   | 6.41e-02   | 2.43e+01  |
+|1   | 1.26e+10   | 2.16e-01   | 5.83e+01  |
+|2   | 9.50e+09   | 1.68e-01   | 5.64e+01  |
+|3   | 2.12e+10   | 3.14e-01   | 6.75e+01  |
+|4   | 5.03e+10   | 4.93e-01   | 1.02e+02  |
+|5   | 4.34e+10   | 4.56e-01   | 9.50e+01  |
+|6   | 1.17e+10   | 2.06e-01   | 5.68e+01  |
+|7   | 2.77e+10   | 2.71e-01   | 1.02e+02  |
+|8   | 1.64e+10   | 2.24e-01   | 7.32e+01  |
+|9   | 2.96e+10   | 2.83e-01   | 1.05e+02  |
+|10   | 3.91e+10   | 3.68e-01   | 1.06e+02  |
+|11   | 3.16e+10   | 3.06e-01   | 1.03e+02  |
+|12   | 1.74e+10   | 1.67e-01   | 1.04e+02  |
+|13   | 6.94e+09   | 1.31e-01   | 5.28e+01  |
+|14   | 2.70e+10   | 2.90e-01   | 9.33e+01  |
+|15   | 3.30e+10   | 3.15e-01   | 1.05e+02  |
+|16   | 6.66e+09   | 9.37e-02   | 7.11e+01  |
+|17   | 1.25e+10   | -nan   | -nan  |
+|18   | 6.26e+09   | 9.28e-02   | 6.75e+01  |
+|19   | 3.97e+09   | 3.62e-02   | 1.10e+02  |
+|20   | 1.31e+10   | 1.37e-01   | 9.50e+01  |
+|21   | 1.38e+10   | 1.32e-01   | 1.05e+02  |
+|22   | 1.85e+10   | 2.01e-01   | 9.19e+01  |
+|23   | 1.47e+10   | 1.66e-01   | 8.86e+01  |
+|24   | 1.01e+10   | 1.04e-01   | 9.72e+01  |
+|25   | 3.61e+09   | 3.62e-02   | 9.97e+01  |
+|26   | 5.39e+09   | 6.66e-02   | 8.10e+01  |
+|27   | 7.18e+09   | 1.19e-01   | 6.04e+01  |
+|28   | 7.84e+09   | 1.26e-01   | 6.22e+01  |
+|29   | 1.33e+10   | 1.53e-01   | 8.70e+01  |
+|30   | 1.19e+10   | 1.29e-01   | 9.19e+01  |
+|31   | 2.00e+10   | 1.74e-01   | 1.15e+02  |
+|32   | 4.33e+09   | 5.92e-02   | 7.32e+01  |
+|33   | 5.66e+09   | 1.07e-01   | 5.29e+01  |
+|34   | 7.41e+09   | 1.10e-01   | 6.74e+01  |
+|35   | 5.26e+09   | 7.34e-02   | 7.17e+01  |
+|36   | 3.24e+09   | 4.16e-02   | 7.81e+01  |
+|37   | 2.32e+09   | 4.91e-02   | 4.71e+01  |
+|38   | 3.49e+09   | 4.67e-02   | 7.47e+01  |
+|39   | 1.33e+09   | 2.22e-02   | 5.96e+01  |
+|40   | 2.12e+09   | 2.84e-02   | 7.48e+01  |
+|41   | 7.71e+09   | 8.01e-02   | 9.62e+01  |
+|42   | 1.41e+09   | 2.38e-02   | 5.93e+01  |
+|43   | 6.57e+09   | 7.74e-02   | 8.49e+01  |
+|44   | 3.40e+09   | 4.78e-02   | 7.12e+01  |
+|45   | 4.33e+09   | 5.44e-02   | 7.95e+01  |
+|46   | 6.61e+09   | 7.72e-02   | 8.57e+01  |
+|47   | 8.88e+08   | 6.85e-03   | 1.30e+02  |
+|48   | 1.01e+10   | 1.24e-01   | 8.14e+01  |
+|49   | 5.17e+09   | 6.92e-02   | 7.48e+01  |
+|50   | 3.92e+09   | 5.97e-02   | 6.57e+01  |
+|51   | 3.92e+09   | 6.29e-02   | 6.23e+01  |
+|52   | 2.82e+09   | 6.09e-02   | 4.63e+01  |
+|53   | 3.60e+09   | 7.15e-02   | 5.04e+01  |
+|54   | 5.12e+09   | 8.40e-02   | 6.09e+01  |
+|55   | 6.23e+09   | 1.03e-01   | 6.05e+01  |
+|56   | 4.14e+09   | 6.68e-02   | 6.20e+01  |
+|57   | 3.79e+09   | 6.82e-02   | 5.56e+01  |
+|58   | 6.42e+09   | 9.55e-02   | 6.72e+01  |
+|59   | 2.69e+09   | 4.81e-02   | 5.59e+01  |
+|60   | 9.62e+09   | 1.09e-01   | 8.81e+01  |
+|61   | 7.31e+09   | 8.38e-02   | 8.73e+01  |
+|62   | 8.45e+08   | 9.22e-03   | 9.17e+01  |
+|63   | 9.34e+09   | 5.57e-01   | 1.68e+01  |
+|64   | 1.01e+10   | 5.49e-01   | 1.84e+01  |
+|65   | 5.63e+09   | 4.90e-01   | 1.15e+01  |
+|66   | 6.23e+09   | 5.02e-01   | 1.24e+01  |
+|67   | 9.25e+09   | 5.77e-01   | 1.60e+01  |
+|68   | 6.34e+09   | 5.09e-01   | 1.25e+01  |
+|69   | 1.38e+10   | 6.55e-01   | 2.11e+01  |
+|70   | 6.37e+09   | 5.06e-01   | 1.26e+01  |
+|71   | 4.17e+09   | 4.84e-01   | 8.62e+00  |
+|72   | 1.05e+10   | 5.87e-01   | 1.79e+01  |
+|73   | 2.31e+09   | -nan   | -nan  |
+|74   | 3.05e+09   | 4.44e-01   | 6.87e+00  |
+|75   | 5.51e+09   | 4.88e-01   | 1.13e+01  |
+|76   | 2.59e+09   | 4.43e-01   | 5.86e+00  |
+|77   | 2.96e+09   | 4.22e-01   | 7.01e+00  |
+|78   | 2.63e+09   | 4.41e-01   | 5.96e+00  |
+|79   | 3.90e+09   | 4.71e-01   | 8.28e+00  |
+|80   | 2.71e+09   | 4.38e-01   | 6.17e+00  |
+|81   | 6.03e+09   | 5.12e-01   | 1.18e+01  |
+|82   | 2.79e+09   | 4.28e-01   | 6.52e+00  |
+|83   | 1.33e+10   | 6.11e-01   | 2.17e+01  |
+|84   | 8.87e+09   | 5.64e-01   | 1.57e+01  |
+|85   | 2.13e+09   | 4.33e-01   | 4.92e+00  |
+|86   | 6.50e+09   | 5.23e-01   | 1.24e+01  |
+|87   | 3.24e+09   | 4.53e-01   | 7.14e+00  |
+|88   | 7.45e+09   | 4.83e-01   | 1.54e+01  |
+|89   | 4.53e+09   | 4.53e-01   | 1.00e+01  |
+|90   | 3.07e+09   | 4.45e-01   | 6.90e+00  |
+|91   | 3.30e+09   | 4.62e-01   | 7.14e+00  |
+|92   | 1.17e+10   | 5.83e-01   | 2.00e+01  |
+|93   | 1.04e+10   | 5.68e-01   | 1.83e+01  |
+|94   | 6.80e+09   | 5.24e-01   | 1.30e+01  |
+|95   | 4.48e+09   | 4.76e-01   | 9.43e+00  |
+|96   | 2.43e+09   | 4.41e-01   | 5.52e+00  |
+|97   | 1.03e+10   | 5.83e-01   | 1.77e+01  |
+|98   | 9.14e+09   | 5.55e-01   | 1.65e+01  |
+|99   | 7.68e+09   | 4.87e-01   | 1.58e+01  |
+|100   | 3.13e+09   | 4.62e-01   | 6.77e+00  |
+|101   | 4.07e+09   | 4.70e-01   | 8.67e+00  |
+|102   | 3.57e+09   | 4.29e-01   | 8.32e+00  |
+|103   | 1.36e+09   | 4.12e-01   | 3.31e+00  |
+|104   | 6.53e+09   | 4.79e-01   | 1.36e+01  |
+|105   | 2.55e+09   | 4.31e-01   | 5.91e+00  |
+|106   | 2.95e+09   | 4.31e-01   | 6.83e+00  |
+|107   | 1.95e+09   | 4.18e-01   | 4.67e+00  |
+|108   | 4.24e+09   | 4.31e-01   | 9.85e+00  |
+|109   | 4.89e+09   | 4.31e-01   | 1.13e+01  |
+|110   | 2.96e+09   | 4.51e-01   | 6.57e+00  |
+|111   | 8.16e+09   | 5.74e-01   | 1.42e+01  |
+|112   | 1.57e+10   | 7.42e-01   | 2.12e+01  |
+|113   | 8.03e+09   | 5.67e-01   | 1.42e+01  |
+|114   | 4.59e+09   | 4.85e-01   | 9.48e+00  |
+|115   | 8.20e+09   | 5.84e-01   | 1.41e+01  |
+|116   | 4.07e+09   | 4.76e-01   | 8.56e+00  |
+|117   | 7.56e+09   | 5.39e-01   | 1.40e+01  |
+|118   | 9.21e+09   | 6.25e-01   | 1.47e+01  |
+|119   | 1.67e+09   | 4.32e-01   | 3.87e+00  |
+|120   | 4.68e+09   | 4.93e-01   | 9.49e+00  |
+|121   | 6.34e+09   | 5.32e-01   | 1.19e+01  |
+|122   | 1.13e+10   | 5.92e-01   | 1.91e+01  |
+|123   | 2.49e+09   | 4.54e-01   | 5.48e+00  |
+|124   | 1.28e+10   | 5.86e-01   | 2.18e+01  |
+|125   | 1.84e+09   | 4.34e-01   | 4.23e+00  |
+|126   | 4.17e+09   | 5.40e-01   | 7.71e+00  |
+|CritcalPath   | 1.39e+11   | 1.99e+00   | 6.99e+01  |
+|Pearsoncoefficient |  0.267 |
+
+~~~mermaid 
+
+gantt 
+        		 dateFormat  mm-ss 
+       		 title TreeCost and Time Gantt Chart
+
+
+	 Section Time
+	 tree-63 	:Time-63, 0d, 56d 
+	 tree-31  73 	:Time-31, after Time-63, 17d 
+	 tree-64 	:Time-64, 0d, 55d 
+	 tree-15  1e+02 	:Time-15, after Time-31, 31d 
+	 tree-65 	:Time-65, 0d, 49d 
+	 tree-32  56 	:Time-32, after Time-66, 6d 
+	 tree-66 	:Time-66, 0d, 50d 
+	 tree-7  1.3e+02 	:Time-7, after Time-15, 27d 
+	 tree-67 	:Time-67, 0d, 58d 
+	 tree-33  68 	:Time-33, after Time-67, 11d 
+	 tree-68 	:Time-68, 0d, 51d 
+	 tree-16  86 	:Time-16, after Time-34, 9d 
+	 tree-69 	:Time-69, 0d, 65d 
+	 tree-34  76 	:Time-34, after Time-69, 11d 
+	 tree-70 	:Time-70, 0d, 51d 
+	 tree-3  1.6e+02 	:Time-3, after Time-7, 31d 
+	 tree-71 	:Time-71, 0d, 48d 
+	 tree-35  66 	:Time-35, after Time-72, 7d 
+	 tree-72 	:Time-72, 0d, 59d 
+	 tree-17  -nan 	:Time-17, after Time-35, -nand 
+	 tree-73 	:Time-73, 0d, -nand 
+	 tree-36  49 	:Time-36, after Time-74, 4d 
+	 tree-74 	:Time-74, 0d, 44d 
+	 tree-8  85 	:Time-8, after Time-18, 22d 
+	 tree-75 	:Time-75, 0d, 49d 
+	 tree-37  54 	:Time-37, after Time-75, 5d 
+	 tree-76 	:Time-76, 0d, 44d 
+	 tree-18  63 	:Time-18, after Time-37, 9d 
+	 tree-77 	:Time-77, 0d, 42d 
+	 tree-38  49 	:Time-38, after Time-78, 5d 
+	 tree-78 	:Time-78, 0d, 44d 
+	 tree-1  1.9e+02 	:Time-1, after Time-4, 22d 
+	 tree-79 	:Time-79, 0d, 47d 
+	 tree-39  49 	:Time-39, after Time-79, 2d 
+	 tree-80 	:Time-80, 0d, 44d 
+	 tree-19  58 	:Time-19, after Time-40, 4d 
+	 tree-81 	:Time-81, 0d, 51d 
+	 tree-40  54 	:Time-40, after Time-81, 3d 
+	 tree-82 	:Time-82, 0d, 43d 
+	 tree-9  1.1e+02 	:Time-9, after Time-20, 28d 
+	 tree-83 	:Time-83, 0d, 61d 
+	 tree-41  69 	:Time-41, after Time-83, 8d 
+	 tree-84 	:Time-84, 0d, 56d 
+	 tree-20  83 	:Time-20, after Time-41, 14d 
+	 tree-85 	:Time-85, 0d, 43d 
+	 tree-42  55 	:Time-42, after Time-86, 2d 
+	 tree-86 	:Time-86, 0d, 52d 
+	 tree-4  1.7e+02 	:Time-4, after Time-10, 49d 
+	 tree-87 	:Time-87, 0d, 45d 
+	 tree-43  56 	:Time-43, after Time-88, 8d 
+	 tree-88 	:Time-88, 0d, 48d 
+	 tree-21  69 	:Time-21, after Time-43, 13d 
+	 tree-89 	:Time-89, 0d, 45d 
+	 tree-44  50 	:Time-44, after Time-89, 5d 
+	 tree-90 	:Time-90, 0d, 45d 
+	 tree-10  1.2e+02 	:Time-10, after Time-22, 37d 
+	 tree-91 	:Time-91, 0d, 46d 
+	 tree-45  64 	:Time-45, after Time-92, 5d 
+	 tree-92 	:Time-92, 0d, 58d 
+	 tree-22  85 	:Time-22, after Time-46, 20d 
+	 tree-93 	:Time-93, 0d, 57d 
+	 tree-46  65 	:Time-46, after Time-93, 8d 
+	 tree-94 	:Time-94, 0d, 52d 
+	 tree-0  2e+02 	:Time-0, after Time-1, 6d 
+	 tree-95 	:Time-95, 0d, 48d 
+	 tree-47  48 	:Time-47, after Time-95, 1d 
+	 tree-96 	:Time-96, 0d, 44d 
+	 tree-23  87 	:Time-23, after Time-48, 17d 
+	 tree-97 	:Time-97, 0d, 58d 
+	 tree-48  71 	:Time-48, after Time-97, 12d 
+	 tree-98 	:Time-98, 0d, 55d 
+	 tree-11  1.2e+02 	:Time-11, after Time-23, 31d 
+	 tree-99 	:Time-99, 0d, 49d 
+	 tree-49  56 	:Time-49, after Time-99, 7d 
+	 tree-100 	:Time-100, 0d, 46d 
+	 tree-24  66 	:Time-24, after Time-49, 10d 
+	 tree-101 	:Time-101, 0d, 47d 
+	 tree-50  53 	:Time-50, after Time-101, 6d 
+	 tree-102 	:Time-102, 0d, 43d 
+	 tree-5  1.6e+02 	:Time-5, after Time-11, 46d 
+	 tree-103 	:Time-103, 0d, 41d 
+	 tree-51  54 	:Time-51, after Time-104, 6d 
+	 tree-104 	:Time-104, 0d, 48d 
+	 tree-25  58 	:Time-25, after Time-51, 4d 
+	 tree-105 	:Time-105, 0d, 43d 
+	 tree-52  49 	:Time-52, after Time-106, 6d 
+	 tree-106 	:Time-106, 0d, 43d 
+	 tree-12  77 	:Time-12, after Time-26, 17d 
+	 tree-107 	:Time-107, 0d, 42d 
+	 tree-53  50 	:Time-53, after Time-108, 7d 
+	 tree-108 	:Time-108, 0d, 43d 
+	 tree-26  60 	:Time-26, after Time-54, 7d 
+	 tree-109 	:Time-109, 0d, 43d 
+	 tree-54  53 	:Time-54, after Time-110, 8d 
+	 tree-110 	:Time-110, 0d, 45d 
+	 tree-2  1.8e+02 	:Time-2, after Time-5, 17d 
+	 tree-111 	:Time-111, 0d, 57d 
+	 tree-55  84 	:Time-55, after Time-112, 10d 
+	 tree-112 	:Time-112, 0d, 74d 
+	 tree-27  96 	:Time-27, after Time-55, 12d 
+	 tree-113 	:Time-113, 0d, 57d 
+	 tree-56  63 	:Time-56, after Time-113, 7d 
+	 tree-114 	:Time-114, 0d, 48d 
+	 tree-13  1.1e+02 	:Time-13, after Time-27, 13d 
+	 tree-115 	:Time-115, 0d, 58d 
+	 tree-57  65 	:Time-57, after Time-115, 7d 
+	 tree-116 	:Time-116, 0d, 48d 
+	 tree-28  85 	:Time-28, after Time-58, 13d 
+	 tree-117 	:Time-117, 0d, 54d 
+	 tree-58  72 	:Time-58, after Time-118, 10d 
+	 tree-118 	:Time-118, 0d, 62d 
+	 tree-6  1.4e+02 	:Time-6, after Time-14, 21d 
+	 tree-119 	:Time-119, 0d, 43d 
+	 tree-59  54 	:Time-59, after Time-120, 5d 
+	 tree-120 	:Time-120, 0d, 49d 
+	 tree-29  85 	:Time-29, after Time-60, 15d 
+	 tree-121 	:Time-121, 0d, 53d 
+	 tree-60  70 	:Time-60, after Time-122, 11d 
+	 tree-122 	:Time-122, 0d, 59d 
+	 tree-14  1.1e+02 	:Time-14, after Time-29, 29d 
+	 tree-123 	:Time-123, 0d, 45d 
+	 tree-61  67 	:Time-61, after Time-124, 8d 
+	 tree-124 	:Time-124, 0d, 59d 
+	 tree-30  80 	:Time-30, after Time-61, 13d 
+	 tree-125 	:Time-125, 0d, 43d 
+	 tree-62  55 	:Time-62, after Time-126, 1d 
+	 tree-126 	:Time-126, 0d, 54d 
+	 Section Weight
+	 tree-63 	:weight-63, 0d, 13d 
+	 tree-31  42 	:weight-31, after weight-64, 29d 
+	 tree-64 	:weight-64, 0d, 14d 
+	 tree-15  89 	:weight-15, after weight-31, 47d 
+	 tree-65 	:weight-65, 0d, 8d 
+	 tree-32  15 	:weight-32, after weight-66, 6d 
+	 tree-66 	:weight-66, 0d, 9d 
+	 tree-7  1.3e+02 	:weight-7, after weight-15, 40d 
+	 tree-67 	:weight-67, 0d, 13d 
+	 tree-33  21 	:weight-33, after weight-67, 8d 
+	 tree-68 	:weight-68, 0d, 9d 
+	 tree-16  40 	:weight-16, after weight-34, 10d 
+	 tree-69 	:weight-69, 0d, 20d 
+	 tree-34  30 	:weight-34, after weight-69, 11d 
+	 tree-70 	:weight-70, 0d, 9d 
+	 tree-3  1.6e+02 	:weight-3, after weight-7, 30d 
+	 tree-71 	:weight-71, 0d, 6d 
+	 tree-35  23 	:weight-35, after weight-72, 8d 
+	 tree-72 	:weight-72, 0d, 15d 
+	 tree-17  40 	:weight-17, after weight-35, 18d 
+	 tree-73 	:weight-73, 0d, 3d 
+	 tree-36  9 	:weight-36, after weight-74, 5d 
+	 tree-74 	:weight-74, 0d, 4d 
+	 tree-8  44 	:weight-8, after weight-17, 23d 
+	 tree-75 	:weight-75, 0d, 8d 
+	 tree-37  11 	:weight-37, after weight-75, 3d 
+	 tree-76 	:weight-76, 0d, 4d 
+	 tree-18  20 	:weight-18, after weight-37, 9d 
+	 tree-77 	:weight-77, 0d, 4d 
+	 tree-38  8.7 	:weight-38, after weight-77, 5d 
+	 tree-78 	:weight-78, 0d, 4d 
+	 tree-1  2e+02 	:weight-1, after weight-4, 18d 
+	 tree-79 	:weight-79, 0d, 6d 
+	 tree-39  7.5 	:weight-39, after weight-79, 2d 
+	 tree-80 	:weight-80, 0d, 4d 
+	 tree-19  17 	:weight-19, after weight-40, 6d 
+	 tree-81 	:weight-81, 0d, 9d 
+	 tree-40  12 	:weight-40, after weight-81, 3d 
+	 tree-82 	:weight-82, 0d, 4d 
+	 tree-9  91 	:weight-9, after weight-20, 42d 
+	 tree-83 	:weight-83, 0d, 19d 
+	 tree-41  30 	:weight-41, after weight-83, 11d 
+	 tree-84 	:weight-84, 0d, 13d 
+	 tree-20  49 	:weight-20, after weight-41, 19d 
+	 tree-85 	:weight-85, 0d, 3d 
+	 tree-42  11 	:weight-42, after weight-86, 2d 
+	 tree-86 	:weight-86, 0d, 9d 
+	 tree-4  1.8e+02 	:weight-4, after weight-10, 72d 
+	 tree-87 	:weight-87, 0d, 5d 
+	 tree-43  20 	:weight-43, after weight-88, 9d 
+	 tree-88 	:weight-88, 0d, 11d 
+	 tree-21  40 	:weight-21, after weight-43, 20d 
+	 tree-89 	:weight-89, 0d, 6d 
+	 tree-44  11 	:weight-44, after weight-89, 5d 
+	 tree-90 	:weight-90, 0d, 4d 
+	 tree-10  1.1e+02 	:weight-10, after weight-22, 56d 
+	 tree-91 	:weight-91, 0d, 5d 
+	 tree-45  23 	:weight-45, after weight-92, 6d 
+	 tree-92 	:weight-92, 0d, 17d 
+	 tree-22  51 	:weight-22, after weight-46, 26d 
+	 tree-93 	:weight-93, 0d, 15d 
+	 tree-46  24 	:weight-46, after weight-93, 9d 
+	 tree-94 	:weight-94, 0d, 10d 
+	 tree-0  2e+02 	:weight-0, after weight-1, 2d 
+	 tree-95 	:weight-95, 0d, 6d 
+	 tree-47  7.7 	:weight-47, after weight-95, 1d 
+	 tree-96 	:weight-96, 0d, 3d 
+	 tree-23  50 	:weight-23, after weight-48, 21d 
+	 tree-97 	:weight-97, 0d, 15d 
+	 tree-48  29 	:weight-48, after weight-97, 14d 
+	 tree-98 	:weight-98, 0d, 13d 
+	 tree-11  95 	:weight-11, after weight-23, 45d 
+	 tree-99 	:weight-99, 0d, 11d 
+	 tree-49  18 	:weight-49, after weight-99, 7d 
+	 tree-100 	:weight-100, 0d, 4d 
+	 tree-24  33 	:weight-24, after weight-49, 14d 
+	 tree-101 	:weight-101, 0d, 6d 
+	 tree-50  11 	:weight-50, after weight-101, 6d 
+	 tree-102 	:weight-102, 0d, 5d 
+	 tree-5  1.6e+02 	:weight-5, after weight-11, 62d 
+	 tree-103 	:weight-103, 0d, 2d 
+	 tree-51  15 	:weight-51, after weight-104, 6d 
+	 tree-104 	:weight-104, 0d, 9d 
+	 tree-25  20 	:weight-25, after weight-51, 5d 
+	 tree-105 	:weight-105, 0d, 4d 
+	 tree-52  8.2 	:weight-52, after weight-106, 4d 
+	 tree-106 	:weight-106, 0d, 4d 
+	 tree-12  44 	:weight-12, after weight-25, 25d 
+	 tree-107 	:weight-107, 0d, 3d 
+	 tree-53  11 	:weight-53, after weight-108, 5d 
+	 tree-108 	:weight-108, 0d, 6d 
+	 tree-26  19 	:weight-26, after weight-54, 8d 
+	 tree-109 	:weight-109, 0d, 7d 
+	 tree-54  12 	:weight-54, after weight-109, 7d 
+	 tree-110 	:weight-110, 0d, 4d 
+	 tree-2  1.7e+02 	:weight-2, after weight-5, 14d 
+	 tree-111 	:weight-111, 0d, 12d 
+	 tree-55  31 	:weight-55, after weight-112, 9d 
+	 tree-112 	:weight-112, 0d, 23d 
+	 tree-27  42 	:weight-27, after weight-55, 10d 
+	 tree-113 	:weight-113, 0d, 11d 
+	 tree-56  17 	:weight-56, after weight-113, 6d 
+	 tree-114 	:weight-114, 0d, 7d 
+	 tree-13  52 	:weight-13, after weight-27, 10d 
+	 tree-115 	:weight-115, 0d, 12d 
+	 tree-57  17 	:weight-57, after weight-115, 5d 
+	 tree-116 	:weight-116, 0d, 6d 
+	 tree-28  34 	:weight-28, after weight-58, 11d 
+	 tree-117 	:weight-117, 0d, 11d 
+	 tree-58  22 	:weight-58, after weight-118, 9d 
+	 tree-118 	:weight-118, 0d, 13d 
+	 tree-6  1e+02 	:weight-6, after weight-14, 17d 
+	 tree-119 	:weight-119, 0d, 2d 
+	 tree-59  11 	:weight-59, after weight-120, 4d 
+	 tree-120 	:weight-120, 0d, 7d 
+	 tree-29  49 	:weight-29, after weight-60, 19d 
+	 tree-121 	:weight-121, 0d, 9d 
+	 tree-60  30 	:weight-60, after weight-122, 14d 
+	 tree-122 	:weight-122, 0d, 16d 
+	 tree-14  88 	:weight-14, after weight-29, 39d 
+	 tree-123 	:weight-123, 0d, 4d 
+	 tree-61  29 	:weight-61, after weight-124, 10d 
+	 tree-124 	:weight-124, 0d, 18d 
+	 tree-30  46 	:weight-30, after weight-61, 17d 
+	 tree-125 	:weight-125, 0d, 3d 
+	 tree-62  7.2 	:weight-62, after weight-126, 1d 
+	 tree-126 	:weight-126, 0d, 6d 
+~~~
+
+
+|pxReDistribute_X_to_B 	|     0.0033 	|     0.0000 	|     0.2088 	|   793.3659%| seconds|
+|pxReDistribute_B_to_X 	|     0.0046 	|     0.0000 	|     0.2923 	|   791.7314%| seconds|
+|forwardSolve          	|     0.1550 	|     0.1324 	|     0.1869 	|     9.0054%| seconds|
+|forwardSolve-compute  	|     0.0914 	|     0.0687 	|     0.1227 	|    15.4263%| seconds|
+|forwardSolve-comm     	|     0.0000 	|     0.0000 	|     0.0000 	|    14.3585%| seconds|
+|ForwardSolve:Level-0 	|     0.0000 	|     0.0000 	|     0.0000 	|       -nan%| seconds|
+|ForwardSolve:Level-1 	|     0.0000 	|     0.0000 	|     0.0000 	|       -nan%| seconds|
+|ForwardSolve:Level-2 	|     0.0000 	|     0.0000 	|     0.0000 	|       -nan%| seconds|
+|ForwardSolve:Level-3 	|     0.0000 	|     0.0000 	|     0.0000 	|       -nan%| seconds|
+|ForwardSolve:Level-4 	|     0.0000 	|     0.0000 	|     0.0000 	|       -nan%| seconds|
+|ForwardSolve:Level-5 	|     0.0000 	|     0.0000 	|     0.0000 	|       -nan%| seconds|
+|ForwardSolve:Level-6 	|     0.1303 	|     0.1078 	|     0.1621 	|    10.7011%| seconds|
+|backSolve             	|     0.3346 	|     0.2699 	|     0.4275 	|    11.8249%| seconds|
+|backSolve-compute     	|     0.2476 	|     0.1832 	|     0.3399 	|    16.0373%| seconds|
+|backSolve-comm        	|     0.0000 	|     0.0000 	|     0.0000 	|    21.4517%| seconds|
+|BackSolve:Level-0    	|     0.0000 	|     0.0000 	|     0.0000 	|       -nan%| seconds|
+|BackSolve:Level-1    	|     0.0000 	|     0.0000 	|     0.0000 	|       -nan%| seconds|
+|BackSolve:Level-2    	|     0.0000 	|     0.0000 	|     0.0000 	|       -nan%| seconds|
+|BackSolve:Level-3    	|     0.0000 	|     0.0000 	|     0.0000 	|       -nan%| seconds|
+|BackSolve:Level-4    	|     0.0000 	|     0.0000 	|     0.0000 	|       -nan%| seconds|
+|BackSolve:Level-5    	|     0.0000 	|     0.0000 	|     0.0000 	|       -nan%| seconds|
+|BackSolve:Level-6    	|     0.3104 	|     0.2458 	|     0.4033 	|    12.7332%| seconds|
+|trs_comm_z            	|     0.0393 	|     0.0070 	|     0.0622 	|    35.2812%| seconds|
+|TRS-XY_CommVolume     	|     0.0000 	|     0.0000 	|     0.0000 	|       -nan%| Mwords|
+|TRS-Z_CommVolume      	|     3.2645 	|     0.6472 	|    28.7876 	|   166.1859%| Mwords|
+|TRS-XYZ_CommVolume    	|     3.2645 	|     0.6472 	|    28.7876 	|   166.1859%| Mwords|
+.. Sol  0: ||X - Xtrue|| / ||X|| = 8.603292e-08	 max_i |x - xtrue|_i / |x|_i = 2.915365e-08
+.. Sol  1: ||X - Xtrue|| / ||X|| = 8.603292e-08	 max_i |x - xtrue|_i / |x|_i = 2.915365e-08
+.. Sol  2: ||X - Xtrue|| / ||X|| = 8.603292e-08	 max_i |x - xtrue|_i / |x|_i = 2.915365e-08
+.. Sol  3: ||X - Xtrue|| / ||X|| = 8.603292e-08	 max_i |x - xtrue|_i / |x|_i = 2.915365e-08
+.. Sol  4: ||X - Xtrue|| / ||X|| = 8.603292e-08	 max_i |x - xtrue|_i / |x|_i = 2.915365e-08
+.. Sol  5: ||X - Xtrue|| / ||X|| = 8.603292e-08	 max_i |x - xtrue|_i / |x|_i = 2.915365e-08
+.. Sol  6: ||X - Xtrue|| / ||X|| = 8.603292e-08	 max_i |x - xtrue|_i / |x|_i = 2.915365e-08
+.. Sol  7: ||X - Xtrue|| / ||X|| = 8.603292e-08	 max_i |x - xtrue|_i / |x|_i = 2.915365e-08
+.. Sol  8: ||X - Xtrue|| / ||X|| = 8.603292e-08	 max_i |x - xtrue|_i / |x|_i = 2.915365e-08
+.. Sol  9: ||X - Xtrue|| / ||X|| = 8.603292e-08	 max_i |x - xtrue|_i / |x|_i = 2.915365e-08
+.. Sol 10: ||X - Xtrue|| / ||X|| = 8.603292e-08	 max_i |x - xtrue|_i / |x|_i = 2.915365e-08
+.. Sol 11: ||X - Xtrue|| / ||X|| = 8.603292e-08	 max_i |x - xtrue|_i / |x|_i = 2.915365e-08
+.. Sol 12: ||X - Xtrue|| / ||X|| = 8.603292e-08	 max_i |x - xtrue|_i / |x|_i = 2.915365e-08
+.. Sol 13: ||X - Xtrue|| / ||X|| = 8.603292e-08	 max_i |x - xtrue|_i / |x|_i = 2.915365e-08
+.. Sol 14: ||X - Xtrue|| / ||X|| = 8.603292e-08	 max_i |x - xtrue|_i / |x|_i = 2.915365e-08
+.. Sol 15: ||X - Xtrue|| / ||X|| = 8.603292e-08	 max_i |x - xtrue|_i / |x|_i = 2.915365e-08
+.. Sol 16: ||X - Xtrue|| / ||X|| = 8.603292e-08	 max_i |x - xtrue|_i / |x|_i = 2.915365e-08
+.. Sol 17: ||X - Xtrue|| / ||X|| = 8.603292e-08	 max_i |x - xtrue|_i / |x|_i = 2.915365e-08
+.. Sol 18: ||X - Xtrue|| / ||X|| = 8.603292e-08	 max_i |x - xtrue|_i / |x|_i = 2.915365e-08
+.. Sol 19: ||X - Xtrue|| / ||X|| = 8.603292e-08	 max_i |x - xtrue|_i / |x|_i = 2.915365e-08
+.. Sol 20: ||X - Xtrue|| / ||X|| = 8.603292e-08	 max_i |x - xtrue|_i / |x|_i = 2.915365e-08
+.. Sol 21: ||X - Xtrue|| / ||X|| = 8.603292e-08	 max_i |x - xtrue|_i / |x|_i = 2.915365e-08
+.. Sol 22: ||X - Xtrue|| / ||X|| = 8.603292e-08	 max_i |x - xtrue|_i / |x|_i = 2.915365e-08
+.. Sol 23: ||X - Xtrue|| / ||X|| = 8.603292e-08	 max_i |x - xtrue|_i / |x|_i = 2.915365e-08
+.. Sol 24: ||X - Xtrue|| / ||X|| = 8.603292e-08	 max_i |x - xtrue|_i / |x|_i = 2.915365e-08
+.. Sol 25: ||X - Xtrue|| / ||X|| = 8.603292e-08	 max_i |x - xtrue|_i / |x|_i = 2.915365e-08
+.. Sol 26: ||X - Xtrue|| / ||X|| = 8.603292e-08	 max_i |x - xtrue|_i / |x|_i = 2.915365e-08
+.. Sol 27: ||X - Xtrue|| / ||X|| = 8.603292e-08	 max_i |x - xtrue|_i / |x|_i = 2.915365e-08
+.. Sol 28: ||X - Xtrue|| / ||X|| = 8.603292e-08	 max_i |x - xtrue|_i / |x|_i = 2.915365e-08
+.. Sol 29: ||X - Xtrue|| / ||X|| = 8.603292e-08	 max_i |x - xtrue|_i / |x|_i = 2.915365e-08
+.. Sol 30: ||X - Xtrue|| / ||X|| = 8.603292e-08	 max_i |x - xtrue|_i / |x|_i = 2.915365e-08
+.. Sol 31: ||X - Xtrue|| / ||X|| = 8.603292e-08	 max_i |x - xtrue|_i / |x|_i = 2.915365e-08
+.. Sol 32: ||X - Xtrue|| / ||X|| = 8.603292e-08	 max_i |x - xtrue|_i / |x|_i = 2.915365e-08
+.. Sol 33: ||X - Xtrue|| / ||X|| = 8.603292e-08	 max_i |x - xtrue|_i / |x|_i = 2.915365e-08
+.. Sol 34: ||X - Xtrue|| / ||X|| = 8.603292e-08	 max_i |x - xtrue|_i / |x|_i = 2.915365e-08
+.. Sol 35: ||X - Xtrue|| / ||X|| = 8.603292e-08	 max_i |x - xtrue|_i / |x|_i = 2.915365e-08
+.. Sol 36: ||X - Xtrue|| / ||X|| = 8.603292e-08	 max_i |x - xtrue|_i / |x|_i = 2.915365e-08
+.. Sol 37: ||X - Xtrue|| / ||X|| = 8.603292e-08	 max_i |x - xtrue|_i / |x|_i = 2.915365e-08
+.. Sol 38: ||X - Xtrue|| / ||X|| = 8.603292e-08	 max_i |x - xtrue|_i / |x|_i = 2.915365e-08
+.. Sol 39: ||X - Xtrue|| / ||X|| = 8.603292e-08	 max_i |x - xtrue|_i / |x|_i = 2.915365e-08
+.. Sol 40: ||X - Xtrue|| / ||X|| = 8.603292e-08	 max_i |x - xtrue|_i / |x|_i = 2.915365e-08
+.. Sol 41: ||X - Xtrue|| / ||X|| = 8.603292e-08	 max_i |x - xtrue|_i / |x|_i = 2.915365e-08
+.. Sol 42: ||X - Xtrue|| / ||X|| = 8.603292e-08	 max_i |x - xtrue|_i / |x|_i = 2.915365e-08
+.. Sol 43: ||X - Xtrue|| / ||X|| = 8.603292e-08	 max_i |x - xtrue|_i / |x|_i = 2.915365e-08
+.. Sol 44: ||X - Xtrue|| / ||X|| = 8.603292e-08	 max_i |x - xtrue|_i / |x|_i = 2.915365e-08
+.. Sol 45: ||X - Xtrue|| / ||X|| = 8.603292e-08	 max_i |x - xtrue|_i / |x|_i = 2.915365e-08
+.. Sol 46: ||X - Xtrue|| / ||X|| = 8.603292e-08	 max_i |x - xtrue|_i / |x|_i = 2.915365e-08
+.. Sol 47: ||X - Xtrue|| / ||X|| = 8.603292e-08	 max_i |x - xtrue|_i / |x|_i = 2.915365e-08
+.. Sol 48: ||X - Xtrue|| / ||X|| = 8.603292e-08	 max_i |x - xtrue|_i / |x|_i = 2.915365e-08
+.. Sol 49: ||X - Xtrue|| / ||X|| = 8.603292e-08	 max_i |x - xtrue|_i / |x|_i = 2.915365e-08
+**************************************************
+**** Time (seconds) ****
+	EQUIL time            0.154
+	ROWPERM time          1.017
+	COLPERM time          5.510
+	SYMBFACT time         1.503
+	DISTRIBUTE time       6.250
+	FACTOR time           4.760
+	Factor flops	2.056980e+12	Mflops 	432108.65
+	SOLVE time            0.622
+	Solve flops	3.752891e+11	Mflops 	603799.37
+**************************************************

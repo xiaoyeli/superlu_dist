@@ -1,0 +1,664 @@
+first gpufree time:  0.5899
+first blas create time:  0.5052
+MPI_Query_thread with MPI_THREAD_MULTIPLE
+__STDC_VERSION__ 201112
+Library version:	8.1.2
+Input matrix file:	/global/cfs/cdirs/m2957/liuyangz/my_research/matrix/Ga19As19H42.bin
+3D process grid: 2 X 1 X 64
+fread n   133123	nnz  8884839
+# of doubles fread:  8884839
+Time to read and distribute matrix 0.19
+**************************************************
+.. blocking parameters from sp_ienv():
+**    relaxation                 : 60
+**    max supernode              : 256
+**    estimated fill ratio       : 5
+**    min GEMM m*k*n to use GPU  : 5000
+**************************************************
+**************************************************
+.. options:
+**    Fact                      :    0
+**    Equil                     :    1
+**    DiagInv                   :    1
+**    ParSymbFact               :    0
+**    ColPerm                   :    4
+**    RowPerm                   :    1
+**    ReplaceTinyPivot          :    1
+**    IterRefine                :    0
+**    Trans                     :    0
+**    SymPattern                :    0
+**    lookahead_etree           :    0
+**    Use_TensorCore            :    0
+**    Use 3D algorithm          :    1
+**    num_lookaheads            :   10
+** parameters that can be altered by environment variables:
+**    superlu_relax             :   60
+**    superlu_maxsup            :  256
+**    min GEMM m*k*n to use GPU : 5000
+**    GPU buffer size           :   50000000
+**    GPU streams               :    1
+**    estimated fill ratio      :    5
+**************************************************
+nnodes[i] =       2154 but getCommonAncestorList returns         25. Something must be wrong!!! 
+nnodes[i] =       2154 but getCommonAncestorList returns         25. Something must be wrong!!! 
+nnodes[i] =       2154 but getCommonAncestorList returns         25. Something must be wrong!!! 
+nnodes[i] =       2154 but getCommonAncestorList returns         25. Something must be wrong!!! 
+nnodes[i] =       2154 but getCommonAncestorList returns         25. Something must be wrong!!! 
+nnodes[i] =       2154 but getCommonAncestorList returns         25. Something must be wrong!!! 
+nnodes[i] =       2154 but getCommonAncestorList returns         25. Something must be wrong!!! 
+nnodes[i] =       2154 but getCommonAncestorList returns         25. Something must be wrong!!! 
+nnodes[i] =       2154 but getCommonAncestorList returns         25. Something must be wrong!!! 
+nnodes[i] =       2154 but getCommonAncestorList returns         25. Something must be wrong!!! 
+nnodes[i] =       2154 but getCommonAncestorList returns         25. Something must be wrong!!! 
+nnodes[i] =       2154 but getCommonAncestorList returns         25. Something must be wrong!!! 
+nnodes[i] =       2154 but getCommonAncestorList returns         25. Something must be wrong!!! 
+nnodes[i] =       2154 but getCommonAncestorList returns         25. Something must be wrong!!! 
+nnodes[i] =       2154 but getCommonAncestorList returns         25. Something must be wrong!!! 
+nnodes[i] =       2154 but getCommonAncestorList returns         25. Something must be wrong!!! 
+nnodes[i] =       2154 but getCommonAncestorList returns         25. Something must be wrong!!! 
+nnodes[i] =       2154 but getCommonAncestorList returns         25. Something must be wrong!!! 
+nnodes[i] =       2154 but getCommonAncestorList returns         25. Something must be wrong!!! 
+nnodes[i] =       2154 but getCommonAncestorList returns         25. Something must be wrong!!! 
+nnodes[i] =       2154 but getCommonAncestorList returns         25. Something must be wrong!!! 
+nnodes[i] =       2154 but getCommonAncestorList returns         25. Something must be wrong!!! 
+nnodes[i] =       2154 but getCommonAncestorList returns         25. Something must be wrong!!! 
+nnodes[i] =       2154 but getCommonAncestorList returns         25. Something must be wrong!!! 
+nnodes[i] =       2154 but getCommonAncestorList returns         25. Something must be wrong!!! 
+nnodes[i] =       2154 but getCommonAncestorList returns         25. Something must be wrong!!! 
+nnodes[i] =       2154 but getCommonAncestorList returns         25. Something must be wrong!!! 
+	Matrix size min_mn    133123
+	Nonzeros in L       812976155
+	Nonzeros in U       812976155
+	nonzeros in L+U     1625819187
+	nonzeros in LSUB    95925402
+nnodes[i] =       2154 but getCommonAncestorList returns         25. Something must be wrong!!! 
+nnodes[i] =       2154 but getCommonAncestorList returns         25. Something must be wrong!!! 
+nnodes[i] =       2154 but getCommonAncestorList returns         25. Something must be wrong!!! 
+nnodes[i] =       2154 but getCommonAncestorList returns         25. Something must be wrong!!! 
+nnodes[i] =       2154 but getCommonAncestorList returns         25. Something must be wrong!!! 
+nnodes[i] =       2154 but getCommonAncestorList returns         25. Something must be wrong!!! 
+nnodes[i] =       2154 but getCommonAncestorList returns         25. Something must be wrong!!! 
+nnodes[i] =       2154 but getCommonAncestorList returns         25. Something must be wrong!!! 
+nnodes[i] =       2154 but getCommonAncestorList returns         25. Something must be wrong!!! 
+nnodes[i] =       2154 but getCommonAncestorList returns         25. Something must be wrong!!! 
+nnodes[i] =       2154 but getCommonAncestorList returns         25. Something must be wrong!!! 
+nnodes[i] =       2154 but getCommonAncestorList returns         25. Something must be wrong!!! 
+nnodes[i] =       2154 but getCommonAncestorList returns         25. Something must be wrong!!! 
+nnodes[i] =       2154 but getCommonAncestorList returns         25. Something must be wrong!!! 
+nnodes[i] =       2154 but getCommonAncestorList returns         25. Something must be wrong!!! 
+nnodes[i] =       2154 but getCommonAncestorList returns         25. Something must be wrong!!! 
+nnodes[i] =       2154 but getCommonAncestorList returns         25. Something must be wrong!!! 
+nnodes[i] =       2154 but getCommonAncestorList returns         25. Something must be wrong!!! 
+nnodes[i] =       2154 but getCommonAncestorList returns         25. Something must be wrong!!! 
+nnodes[i] =       2154 but getCommonAncestorList returns         25. Something must be wrong!!! 
+nnodes[i] =       2154 but getCommonAncestorList returns         25. Something must be wrong!!! 
+nnodes[i] =       2154 but getCommonAncestorList returns         25. Something must be wrong!!! 
+nnodes[i] =       2154 but getCommonAncestorList returns         25. Something must be wrong!!! 
+nnodes[i] =       2154 but getCommonAncestorList returns         25. Something must be wrong!!! 
+nnodes[i] =       2154 but getCommonAncestorList returns         25. Something must be wrong!!! 
+nnodes[i] =       2154 but getCommonAncestorList returns         25. Something must be wrong!!! 
+nnodes[i] =       2154 but getCommonAncestorList returns         25. Something must be wrong!!! 
+nnodes[i] =       2154 but getCommonAncestorList returns         25. Something must be wrong!!! 
+nnodes[i] =       2154 but getCommonAncestorList returns         25. Something must be wrong!!! 
+nnodes[i] =       2154 but getCommonAncestorList returns         25. Something must be wrong!!! 
+nnodes[i] =       2154 but getCommonAncestorList returns         25. Something must be wrong!!! 
+nnodes[i] =       2154 but getCommonAncestorList returns         25. Something must be wrong!!! 
+nnodes[i] =       2154 but getCommonAncestorList returns         25. Something must be wrong!!! 
+nnodes[i] =       2154 but getCommonAncestorList returns         25. Something must be wrong!!! 
+nnodes[i] =       2154 but getCommonAncestorList returns         25. Something must be wrong!!! 
+nnodes[i] =       2154 but getCommonAncestorList returns         25. Something must be wrong!!! 
+nnodes[i] =       2154 but getCommonAncestorList returns         25. Something must be wrong!!! 
+nnodes[i] =       2154 but getCommonAncestorList returns         25. Something must be wrong!!! 
+nnodes[i] =       2154 but getCommonAncestorList returns         25. Something must be wrong!!! 
+nnodes[i] =       2154 but getCommonAncestorList returns         25. Something must be wrong!!! 
+nnodes[i] =       2154 but getCommonAncestorList returns         25. Something must be wrong!!! 
+nnodes[i] =       2154 but getCommonAncestorList returns         25. Something must be wrong!!! 
+nnodes[i] =       2154 but getCommonAncestorList returns         25. Something must be wrong!!! 
+nnodes[i] =       2154 but getCommonAncestorList returns         25. Something must be wrong!!! 
+nnodes[i] =       2154 but getCommonAncestorList returns         25. Something must be wrong!!! 
+nnodes[i] =       2154 but getCommonAncestorList returns         25. Something must be wrong!!! 
+nnodes[i] =       2154 but getCommonAncestorList returns         25. Something must be wrong!!! 
+nnodes[i] =       2154 but getCommonAncestorList returns         25. Something must be wrong!!! 
+nnodes[i] =       2154 but getCommonAncestorList returns         25. Something must be wrong!!! 
+nnodes[i] =       2154 but getCommonAncestorList returns         25. Something must be wrong!!! 
+nnodes[i] =       2154 but getCommonAncestorList returns         25. Something must be wrong!!! 
+nnodes[i] =       2154 but getCommonAncestorList returns         25. Something must be wrong!!! 
+nnodes[i] =       2154 but getCommonAncestorList returns         25. Something must be wrong!!! 
+nnodes[i] =       2154 but getCommonAncestorList returns         25. Something must be wrong!!! 
+nnodes[i] =       2154 but getCommonAncestorList returns         25. Something must be wrong!!! 
+nnodes[i] =       2154 but getCommonAncestorList returns         25. Something must be wrong!!! 
+nnodes[i] =       2154 but getCommonAncestorList returns         25. Something must be wrong!!! 
+nnodes[i] =       2154 but getCommonAncestorList returns         25. Something must be wrong!!! 
+nnodes[i] =       2154 but getCommonAncestorList returns         25. Something must be wrong!!! 
+nnodes[i] =       2154 but getCommonAncestorList returns         25. Something must be wrong!!! 
+nnodes[i] =       2154 but getCommonAncestorList returns         25. Something must be wrong!!! 
+nnodes[i] =       2154 but getCommonAncestorList returns         25. Something must be wrong!!! 
+nnodes[i] =       2154 but getCommonAncestorList returns         25. Something must be wrong!!! 
+nnodes[i] =       2154 but getCommonAncestorList returns         25. Something must be wrong!!! 
+nnodes[i] =       2154 but getCommonAncestorList returns         25. Something must be wrong!!! 
+nnodes[i] =       2154 but getCommonAncestorList returns         25. Something must be wrong!!! 
+nnodes[i] =       2154 but getCommonAncestorList returns         25. Something must be wrong!!! 
+nnodes[i] =       2154 but getCommonAncestorList returns         25. Something must be wrong!!! 
+nnodes[i] =       2154 but getCommonAncestorList returns         25. Something must be wrong!!! 
+nnodes[i] =       2154 but getCommonAncestorList returns         25. Something must be wrong!!! 
+nnodes[i] =       2154 but getCommonAncestorList returns         25. Something must be wrong!!! 
+nnodes[i] =       2154 but getCommonAncestorList returns         25. Something must be wrong!!! 
+nnodes[i] =       2154 but getCommonAncestorList returns         25. Something must be wrong!!! 
+nnodes[i] =       2154 but getCommonAncestorList returns         25. Something must be wrong!!! 
+nnodes[i] =       2154 but getCommonAncestorList returns         25. Something must be wrong!!! 
+nnodes[i] =       2154 but getCommonAncestorList returns         25. Something must be wrong!!! 
+nnodes[i] =       2154 but getCommonAncestorList returns         25. Something must be wrong!!! 
+nnodes[i] =       2154 but getCommonAncestorList returns         25. Something must be wrong!!! 
+nnodes[i] =       2154 but getCommonAncestorList returns         25. Something must be wrong!!! 
+nnodes[i] =       2154 but getCommonAncestorList returns         25. Something must be wrong!!! 
+nnodes[i] =       2154 but getCommonAncestorList returns         25. Something must be wrong!!! 
+nnodes[i] =       2154 but getCommonAncestorList returns         25. Something must be wrong!!! 
+nnodes[i] =       2154 but getCommonAncestorList returns         25. Something must be wrong!!! 
+nnodes[i] =       2154 but getCommonAncestorList returns         25. Something must be wrong!!! 
+nnodes[i] =       2154 but getCommonAncestorList returns         25. Something must be wrong!!! 
+nnodes[i] =       2154 but getCommonAncestorList returns         25. Something must be wrong!!! 
+nnodes[i] =       2154 but getCommonAncestorList returns         25. Something must be wrong!!! 
+nnodes[i] =       2154 but getCommonAncestorList returns         25. Something must be wrong!!! 
+nnodes[i] =       2154 but getCommonAncestorList returns         25. Something must be wrong!!! 
+nnodes[i] =       2154 but getCommonAncestorList returns         25. Something must be wrong!!! 
+nnodes[i] =       2154 but getCommonAncestorList returns         25. Something must be wrong!!! 
+nnodes[i] =       2154 but getCommonAncestorList returns         25. Something must be wrong!!! 
+nnodes[i] =       2154 but getCommonAncestorList returns         25. Something must be wrong!!! 
+nnodes[i] =       2154 but getCommonAncestorList returns         25. Something must be wrong!!! 
+nnodes[i] =       2154 but getCommonAncestorList returns         25. Something must be wrong!!! 
+nnodes[i] =       2154 but getCommonAncestorList returns         25. Something must be wrong!!! 
+nnodes[i] =       2154 but getCommonAncestorList returns         25. Something must be wrong!!! 
+nnodes[i] =       2154 but getCommonAncestorList returns         25. Something must be wrong!!! 
+nnodes[i] =       2154 but getCommonAncestorList returns         25. Something must be wrong!!! 
+nnodes[i] =       2154 but getCommonAncestorList returns         25. Something must be wrong!!! 
+nnodes[i] =       2154 but getCommonAncestorList returns         25. Something must be wrong!!! 
+dinitSluGPU3D_t: Using hardware acceleration, with 1 gpu streams 
+dinitSluGPU3D_t: Using 256 threads per block for scatter 
+*-- GPU flops: 
+	Flops offloaded 1.809e+13, Time 0.034090, Flop rate 530798.227753 GF/sec 
+*-- GPU memory: 
+	Mop offloaded 9.433e+10, Time 0.054859, Bandwidth 13755.449457 GByte/sec 
+*-- PCIe Data Transfer H2D:
+	Data Sent 2.963e+00(GB)
+	Time observed from CPU 0.006068
+	Actual time spent -20.007017
+	Bandwidth -0.148109 GByte/sec 
+*-- PCIe Data Transfer D2H:
+	Data Sent 1.972e+00(GB)
+	Time observed from CPU 0.002662
+	Actual time spent 0.088635
+	Bandwidth 22.250178 GByte/sec 
+Total time in factorization 	: 31.87
+MPI-communication phase 	: 24.85
+|Wait_LSend             	|     0.0000 	|     0.0000 	|     0.0000 	|    10.4642%| Seconds|
+|Wait_USend             	|     1.2619 	|     0.4515 	|     2.0722 	|    64.2160%| Seconds|
+|Wait_URecv             	|     1.3652 	|     1.2595 	|     1.4710 	|     7.7459%| Seconds|
+|Wait_LRecv             	|     0.0000 	|     0.0000 	|     0.0000 	|       -nan%| Seconds|
+|L_PanelUpdate          	|     0.0000 	|     0.0000 	|     0.0000 	|       -nan%| Seconds|
+|PDGSTRS2               	|     0.0000 	|     0.0000 	|     0.0000 	|       -nan%| Seconds|
+|wait-FunCallStream     	|     0.2364 	|     0.2279 	|     0.2450 	|     3.6224%| Seconds|
+|wait-copyStream        	|     0.0866 	|     0.0838 	|     0.0894 	|     3.2274%| Seconds|
+|waitGPU2CPU            	|     0.2364 	|     0.2279 	|     0.2450 	|     3.6224%| Seconds|
+|SchurCompUpdate        	|     7.0192 	|     6.2357 	|     7.8026 	|    11.1614%| Seconds|
+|PanelFactorization     	|    24.8508 	|    24.0674 	|    25.6343 	|     3.1526%| Seconds|
+#### High Level Time Breakdown :    33.5667 
+
+|Function name 	| avg 	| min 	| max 	| std-dev| units|
+|---|---|---|---|---|---|
+|Startup                	|     1.6967 	|     1.6083 	|     1.7851 	|     5.2105%| Seconds|
+|Main-Factor loop       	|    31.8700 	|    31.8700 	|    31.8700 	|     0.0000%| Seconds|
+|3D-GatherLU            	|     0.0000 	|     0.0000 	|     0.0000 	|     1.2346%| Seconds|
+|tTotal                 	|    33.5667 	|    33.4783 	|    33.6551 	|     0.2634%| Seconds|
+#### Components of Factor Loop :    31.8700 
+
+|Function name 	| avg 	| min 	| max 	| std-dev| units|
+|---|---|---|---|---|---|
+|3D-AncestorReduce      	|    20.7338 	|    20.7333 	|    20.7343 	|     0.0022%| Seconds|
+|Pipeline Tail          	|     3.8386 	|     3.0626 	|     4.6147 	|    20.2173%| Seconds|
+|Grid-0 Factor:Level-0     	|     4.2487 	|     4.2461 	|     4.2513 	|     0.0610%| Seconds|
+|Grid-0 Factor:Level-1     	|     2.9519 	|     2.9332 	|     2.9705 	|     0.6326%| Seconds|
+|Grid-0 Factor:Level-2     	|     2.4476 	|     2.4357 	|     2.4595 	|     0.4863%| Seconds|
+|Grid-0 Factor:Level-3     	|     1.1525 	|     1.1222 	|     1.1828 	|     2.6294%| Seconds|
+|Grid-0 Factor:Level-4     	|     0.3355 	|     0.3098 	|     0.3611 	|     7.6488%| Seconds|
+|Grid-0 Factor:Level-5     	|     0.0000 	|     0.0000 	|     0.0000 	|       -nan%| Seconds|
+|Grid-0 Factor:Level-6     	|     0.0000 	|     0.0000 	|     0.0000 	|       -nan%| Seconds|
+| commVolRed | 5.02056e+11   | 3.92231e+09 |
+| commVolFactor | 7.44594e+09   | 5.81714e+07 |
+| Total Memory 	| 1.6e+09  	| 2.3e+09  	|1.2e+09  	|
+| LU-LU(repli) 	| 9.4e+07  	| 1.5e+09  	|
+|Forest | weight | cost | weight/Cost | 
+|0   | 5.29e+11   | 4.25e+00   | 1.25e+02  |
+|1   | 1.03e+12   | 2.97e+00   | 3.47e+02  |
+|2   | 6.76e+11   | 1.76e+00   | 3.83e+02  |
+|3   | 1.71e+11   | 2.44e+00   | 7.03e+01  |
+|4   | 5.84e+11   | 1.65e+00   | 3.55e+02  |
+|5   | 5.24e+10   | 7.01e-01   | 7.48e+01  |
+|6   | 3.25e+11   | 4.61e+00   | 7.04e+01  |
+|7   | 4.66e+10   | 1.12e+00   | 4.15e+01  |
+|8   | 4.90e+10   | 1.14e+00   | 4.31e+01  |
+|9   | 2.51e+11   | 8.76e-01   | 2.87e+02  |
+|10   | 1.00e+11   | 3.43e-01   | 2.92e+02  |
+|11   | 2.61e+10   | 1.40e+00   | 1.86e+01  |
+|12   | 4.10e+09   | 4.35e-02   | 9.44e+01  |
+|13   | 1.01e+03   | 2.99e-01   | 3.37e-06  |
+|14   | 5.37e+09   | 1.07e-02   | 5.03e+02  |
+|15   | 1.01e+03   | 3.61e-01   | 2.79e-06  |
+|16   | 4.81e+10   | 2.01e-01   | 2.40e+02  |
+|17   | 5.51e+09   | 6.33e-01   | 8.70e+00  |
+|18   | 2.07e+10   | 1.99e+00   | 1.04e+01  |
+|19   | 1.18e+11   | 5.73e-01   | 2.07e+02  |
+|20   | 2.88e+10   | 2.85e+00   | 1.01e+01  |
+|21   | 1.69e+10   | 1.11e-01   | 1.53e+02  |
+|22   | 3.93e+10   | 1.70e-01   | 2.31e+02  |
+|23   | 2.11e+09   | 1.50e+00   | 1.40e+00  |
+|24   | 1.37e+10   | 8.39e-02   | 1.63e+02  |
+|25   | 8.13e+08   | 1.44e-02   | 5.64e+01  |
+|26   | 1.44e+09   | 4.16e-01   | 3.45e+00  |
+|27   | 0.00e+00   | 0.00e+00   | -nan  |
+|28   | 0.00e+00   | 0.00e+00   | -nan  |
+|29   | 7.19e+10   | 2.27e-01   | 3.16e+02  |
+|30   | 9.61e+10   | 4.92e-01   | 1.95e+02  |
+|31   | 0.00e+00   | 0.00e+00   | -nan  |
+|32   | 0.00e+00   | 0.00e+00   | -nan  |
+|33   | 5.25e+10   | 3.02e-01   | 1.74e+02  |
+|34   | 1.05e+10   | 1.30e-01   | 8.09e+01  |
+|35   | 2.72e+09   | 1.09e+00   | 2.49e+00  |
+|36   | 2.27e+08   | 7.32e-02   | 3.10e+00  |
+|37   | 1.14e+04   | 3.03e-01   | 3.76e-05  |
+|38   | 8.92e+08   | 4.79e-01   | 1.86e+00  |
+|39   | 1.50e+10   | 1.30e-01   | 1.15e+02  |
+|40   | 5.07e+10   | 2.98e-01   | 1.70e+02  |
+|41   | 0.00e+00   | 0.00e+00   | -nan  |
+|42   | 0.00e+00   | 0.00e+00   | -nan  |
+|43   | 7.95e+09   | 6.98e-02   | 1.14e+02  |
+|44   | 9.45e+08   | 3.76e-02   | 2.51e+01  |
+|45   | 1.41e+10   | 9.65e-02   | 1.46e+02  |
+|46   | 6.84e+09   | 6.40e-02   | 1.07e+02  |
+|47   | 6.40e+05   | 2.02e-03   | 3.17e-01  |
+|48   | 7.87e+07   | 1.15e-03   | 6.84e+01  |
+|49   | 7.78e+09   | 1.20e-01   | 6.46e+01  |
+|50   | 6.08e+08   | 2.02e-02   | 3.00e+01  |
+|51   | 1.02e+08   | 9.04e-02   | 1.12e+00  |
+|52   | 9.34e+07   | 1.58e-02   | 5.90e+00  |
+|53   | 5.12e+07   | 1.29e-01   | 3.97e-01  |
+|54   | 3.11e+08   | 6.71e-02   | 4.63e+00  |
+|55   | 0.00e+00   | 0.00e+00   | -nan  |
+|56   | 0.00e+00   | 0.00e+00   | -nan  |
+|57   | 0.00e+00   | 0.00e+00   | -nan  |
+|58   | 0.00e+00   | 0.00e+00   | -nan  |
+|59   | 2.53e+10   | 1.37e-01   | 1.85e+02  |
+|60   | 3.76e+09   | 4.87e-01   | 7.73e+00  |
+|61   | 4.52e+10   | 2.03e-01   | 2.22e+02  |
+|62   | 4.14e+09   | 8.39e-02   | 4.93e+01  |
+|63   | 0.00e+00   | 0.00e+00   | -nan  |
+|64   | 0.00e+00   | 0.00e+00   | -nan  |
+|65   | 0.00e+00   | 0.00e+00   | -nan  |
+|66   | 0.00e+00   | 0.00e+00   | -nan  |
+|67   | 1.25e+10   | 1.03e+00   | 1.22e+01  |
+|68   | 2.68e+10   | 1.14e+00   | 2.36e+01  |
+|69   | 2.08e+09   | 4.53e-01   | 4.59e+00  |
+|70   | 6.38e+09   | 6.52e-01   | 9.78e+00  |
+|71   | 2.83e+07   | 3.77e-01   | 7.51e-02  |
+|72   | 1.83e+09   | 5.24e-01   | 3.49e+00  |
+|73   | 1.12e+08   | 3.63e-01   | 3.07e-01  |
+|74   | 7.12e+07   | 3.34e-01   | 2.13e-01  |
+|75   | 0.00e+00   | 0.00e+00   | -nan  |
+|76   | 0.00e+00   | 0.00e+00   | -nan  |
+|77   | 2.34e+02   | 5.37e-04   | 4.36e-04  |
+|78   | 2.42e+10   | 1.31e+00   | 1.85e+01  |
+|79   | 7.17e+09   | 7.92e-01   | 9.05e+00  |
+|80   | 3.67e+09   | 8.20e-01   | 4.48e+00  |
+|81   | 1.73e+10   | 1.81e+00   | 9.57e+00  |
+|82   | 2.41e+10   | 1.76e+00   | 1.37e+01  |
+|83   | 0.00e+00   | 0.00e+00   | -nan  |
+|84   | 0.00e+00   | 0.00e+00   | -nan  |
+|85   | 0.00e+00   | 0.00e+00   | -nan  |
+|86   | 0.00e+00   | 0.00e+00   | -nan  |
+|87   | 8.31e+08   | 8.13e-01   | 1.02e+00  |
+|88   | 6.24e+09   | 1.84e+00   | 3.40e+00  |
+|89   | 6.54e+08   | 6.91e-01   | 9.46e-01  |
+|90   | 8.40e+07   | 4.88e-01   | 1.72e-01  |
+|91   | 9.72e+09   | 1.97e+00   | 4.93e+00  |
+|92   | 2.42e+09   | 1.67e+00   | 1.45e+00  |
+|93   | 2.36e+09   | 1.18e+00   | 1.99e+00  |
+|94   | 1.21e+09   | 1.43e+00   | 8.45e-01  |
+|95   | 0.00e+00   | 0.00e+00   | -nan  |
+|96   | 0.00e+00   | 0.00e+00   | -nan  |
+|97   | 1.28e+09   | 1.55e+00   | 8.24e-01  |
+|98   | 1.07e+08   | 6.61e-01   | 1.62e-01  |
+|99   | 5.83e+08   | 1.12e+00   | 5.20e-01  |
+|100   | 4.54e+09   | 3.47e+00   | 1.31e+00  |
+|101   | 1.12e+08   | 1.06e+00   | 1.06e-01  |
+|102   | 3.86e+08   | 1.00e+00   | 3.85e-01  |
+|103   | 6.57e+07   | 6.67e-01   | 9.85e-02  |
+|104   | 2.98e+07   | 6.13e-01   | 4.86e-02  |
+|105   | 1.18e+08   | 4.87e-01   | 2.42e-01  |
+|106   | 4.91e+07   | 4.84e-01   | 1.01e-01  |
+|107   | 4.49e+07   | 4.71e-01   | 9.52e-02  |
+|108   | 5.69e+07   | 5.26e-01   | 1.08e-01  |
+|109   | 2.71e+07   | 4.91e-01   | 5.51e-02  |
+|110   | 1.99e+08   | 1.11e+00   | 1.80e-01  |
+|111   | 0.00e+00   | 0.00e+00   | -nan  |
+|112   | 0.00e+00   | 0.00e+00   | -nan  |
+|113   | 0.00e+00   | 0.00e+00   | -nan  |
+|114   | 0.00e+00   | 0.00e+00   | -nan  |
+|115   | 0.00e+00   | 0.00e+00   | -nan  |
+|116   | 0.00e+00   | 0.00e+00   | -nan  |
+|117   | 0.00e+00   | 0.00e+00   | -nan  |
+|118   | 0.00e+00   | 0.00e+00   | -nan  |
+|119   | 1.85e+09   | 3.81e+00   | 4.85e-01  |
+|120   | 1.68e+10   | 8.02e+00   | 2.09e+00  |
+|121   | 4.56e+03   | 3.13e-01   | 1.46e-05  |
+|122   | 1.58e+10   | 9.27e+00   | 1.71e+00  |
+|123   | 4.28e+09   | 7.66e+00   | 5.59e-01  |
+|124   | 3.68e+10   | 1.77e+01   | 2.08e+00  |
+|125   | 7.71e+08   | 2.36e+00   | 3.26e-01  |
+|126   | 3.30e+09   | 3.58e+00   | 9.20e-01  |
+|CritcalPath   | 1.71e+12   | 2.90e+01   | 5.91e+01  |
+|Pearsoncoefficient |  0.624 |
+
+~~~mermaid 
+
+gantt 
+        		 dateFormat  mm-ss 
+       		 title TreeCost and Time Gantt Chart
+
+
+	 Section Time
+	 tree-63 	:Time-63, 0d, 0d 
+	 tree-31  0 	:Time-31, after Time-64, 0d 
+	 tree-64 	:Time-64, 0d, 0d 
+	 tree-15  36 	:Time-15, after Time-32, 36d 
+	 tree-65 	:Time-65, 0d, 0d 
+	 tree-32  0 	:Time-32, after Time-66, 0d 
+	 tree-66 	:Time-66, 0d, 0d 
+	 tree-7  2.8e+02 	:Time-7, after Time-16, 112d 
+	 tree-67 	:Time-67, 0d, 103d 
+	 tree-33  1.4e+02 	:Time-33, after Time-68, 30d 
+	 tree-68 	:Time-68, 0d, 114d 
+	 tree-16  1.6e+02 	:Time-16, after Time-33, 20d 
+	 tree-69 	:Time-69, 0d, 45d 
+	 tree-34  78 	:Time-34, after Time-70, 13d 
+	 tree-70 	:Time-70, 0d, 65d 
+	 tree-3  7.4e+02 	:Time-3, after Time-8, 244d 
+	 tree-71 	:Time-71, 0d, 38d 
+	 tree-35  1.6e+02 	:Time-35, after Time-72, 109d 
+	 tree-72 	:Time-72, 0d, 52d 
+	 tree-17  2.2e+02 	:Time-17, after Time-35, 63d 
+	 tree-73 	:Time-73, 0d, 36d 
+	 tree-36  44 	:Time-36, after Time-73, 7d 
+	 tree-74 	:Time-74, 0d, 33d 
+	 tree-8  4.9e+02 	:Time-8, after Time-18, 114d 
+	 tree-75 	:Time-75, 0d, 0d 
+	 tree-37  30 	:Time-37, after Time-76, 30d 
+	 tree-76 	:Time-76, 0d, 0d 
+	 tree-18  3.8e+02 	:Time-18, after Time-38, 199d 
+	 tree-77 	:Time-77, 0d, 0d 
+	 tree-38  1.8e+02 	:Time-38, after Time-78, 48d 
+	 tree-78 	:Time-78, 0d, 131d 
+	 tree-1  1e+03 	:Time-1, after Time-3, 297d 
+	 tree-79 	:Time-79, 0d, 79d 
+	 tree-39  95 	:Time-39, after Time-80, 13d 
+	 tree-80 	:Time-80, 0d, 82d 
+	 tree-19  2.7e+02 	:Time-19, after Time-40, 57d 
+	 tree-81 	:Time-81, 0d, 181d 
+	 tree-40  2.1e+02 	:Time-40, after Time-81, 30d 
+	 tree-82 	:Time-82, 0d, 176d 
+	 tree-9  3.7e+02 	:Time-9, after Time-20, 88d 
+	 tree-83 	:Time-83, 0d, 0d 
+	 tree-41  0 	:Time-41, after Time-84, 0d 
+	 tree-84 	:Time-84, 0d, 0d 
+	 tree-20  2.8e+02 	:Time-20, after Time-42, 285d 
+	 tree-85 	:Time-85, 0d, 0d 
+	 tree-42  0 	:Time-42, after Time-86, 0d 
+	 tree-86 	:Time-86, 0d, 0d 
+	 tree-4  5.4e+02 	:Time-4, after Time-9, 165d 
+	 tree-87 	:Time-87, 0d, 81d 
+	 tree-43  1.9e+02 	:Time-43, after Time-88, 7d 
+	 tree-88 	:Time-88, 0d, 184d 
+	 tree-21  2e+02 	:Time-21, after Time-43, 11d 
+	 tree-89 	:Time-89, 0d, 69d 
+	 tree-44  73 	:Time-44, after Time-89, 4d 
+	 tree-90 	:Time-90, 0d, 49d 
+	 tree-10  2.6e+02 	:Time-10, after Time-22, 34d 
+	 tree-91 	:Time-91, 0d, 197d 
+	 tree-45  2.1e+02 	:Time-45, after Time-91, 10d 
+	 tree-92 	:Time-92, 0d, 167d 
+	 tree-22  2.2e+02 	:Time-22, after Time-45, 17d 
+	 tree-93 	:Time-93, 0d, 118d 
+	 tree-46  1.5e+02 	:Time-46, after Time-94, 6d 
+	 tree-94 	:Time-94, 0d, 143d 
+	 tree-0  2.9e+03 	:Time-0, after Time-2, 425d 
+	 tree-95 	:Time-95, 0d, 0d 
+	 tree-47  0.2 	:Time-47, after Time-96, 0d 
+	 tree-96 	:Time-96, 0d, 0d 
+	 tree-23  3.1e+02 	:Time-23, after Time-48, 150d 
+	 tree-97 	:Time-97, 0d, 155d 
+	 tree-48  1.6e+02 	:Time-48, after Time-97, 0d 
+	 tree-98 	:Time-98, 0d, 66d 
+	 tree-11  5.1e+02 	:Time-11, after Time-24, 140d 
+	 tree-99 	:Time-99, 0d, 112d 
+	 tree-49  3.6e+02 	:Time-49, after Time-100, 12d 
+	 tree-100 	:Time-100, 0d, 347d 
+	 tree-24  3.7e+02 	:Time-24, after Time-49, 8d 
+	 tree-101 	:Time-101, 0d, 106d 
+	 tree-50  1.1e+02 	:Time-50, after Time-101, 2d 
+	 tree-102 	:Time-102, 0d, 100d 
+	 tree-5  5.8e+02 	:Time-5, after Time-11, 70d 
+	 tree-103 	:Time-103, 0d, 67d 
+	 tree-51  76 	:Time-51, after Time-103, 9d 
+	 tree-104 	:Time-104, 0d, 61d 
+	 tree-25  77 	:Time-25, after Time-51, 1d 
+	 tree-105 	:Time-105, 0d, 49d 
+	 tree-52  50 	:Time-52, after Time-105, 2d 
+	 tree-106 	:Time-106, 0d, 48d 
+	 tree-12  1.6e+02 	:Time-12, after Time-26, 4d 
+	 tree-107 	:Time-107, 0d, 47d 
+	 tree-53  65 	:Time-53, after Time-108, 13d 
+	 tree-108 	:Time-108, 0d, 53d 
+	 tree-26  1.6e+02 	:Time-26, after Time-54, 42d 
+	 tree-109 	:Time-109, 0d, 49d 
+	 tree-54  1.2e+02 	:Time-54, after Time-110, 7d 
+	 tree-110 	:Time-110, 0d, 111d 
+	 tree-2  2.5e+03 	:Time-2, after Time-6, 176d 
+	 tree-111 	:Time-111, 0d, 0d 
+	 tree-55  0 	:Time-55, after Time-112, 0d 
+	 tree-112 	:Time-112, 0d, 0d 
+	 tree-27  0 	:Time-27, after Time-56, 0d 
+	 tree-113 	:Time-113, 0d, 0d 
+	 tree-56  0 	:Time-56, after Time-114, 0d 
+	 tree-114 	:Time-114, 0d, 0d 
+	 tree-13  30 	:Time-13, after Time-28, 30d 
+	 tree-115 	:Time-115, 0d, 0d 
+	 tree-57  0 	:Time-57, after Time-116, 0d 
+	 tree-116 	:Time-116, 0d, 0d 
+	 tree-28  0 	:Time-28, after Time-58, 0d 
+	 tree-117 	:Time-117, 0d, 0d 
+	 tree-58  0 	:Time-58, after Time-118, 0d 
+	 tree-118 	:Time-118, 0d, 0d 
+	 tree-6  2.3e+03 	:Time-6, after Time-14, 461d 
+	 tree-119 	:Time-119, 0d, 381d 
+	 tree-59  8.2e+02 	:Time-59, after Time-120, 14d 
+	 tree-120 	:Time-120, 0d, 802d 
+	 tree-29  1e+03 	:Time-29, after Time-60, 23d 
+	 tree-121 	:Time-121, 0d, 31d 
+	 tree-60  9.8e+02 	:Time-60, after Time-122, 49d 
+	 tree-122 	:Time-122, 0d, 927d 
+	 tree-14  1.8e+03 	:Time-14, after Time-30, 1d 
+	 tree-123 	:Time-123, 0d, 766d 
+	 tree-61  1.8e+03 	:Time-61, after Time-124, 20d 
+	 tree-124 	:Time-124, 0d, 1768d 
+	 tree-30  1.8e+03 	:Time-30, after Time-61, 49d 
+	 tree-125 	:Time-125, 0d, 236d 
+	 tree-62  3.7e+02 	:Time-62, after Time-126, 8d 
+	 tree-126 	:Time-126, 0d, 358d 
+	 Section Weight
+	 tree-63 	:weight-63, 0d, 0d 
+	 tree-31  0 	:weight-31, after weight-64, 0d 
+	 tree-64 	:weight-64, 0d, 0d 
+	 tree-15  1.7e-06 	:weight-15, after weight-32, 0d 
+	 tree-65 	:weight-65, 0d, 0d 
+	 tree-32  0 	:weight-32, after weight-66, 0d 
+	 tree-66 	:weight-66, 0d, 0d 
+	 tree-7  2.9e+02 	:weight-7, after weight-16, 79d 
+	 tree-67 	:weight-67, 0d, 21d 
+	 tree-33  1.3e+02 	:weight-33, after weight-68, 89d 
+	 tree-68 	:weight-68, 0d, 45d 
+	 tree-16  2.2e+02 	:weight-16, after weight-33, 81d 
+	 tree-69 	:weight-69, 0d, 4d 
+	 tree-34  29 	:weight-34, after weight-70, 18d 
+	 tree-70 	:weight-70, 0d, 11d 
+	 tree-3  4.5e+02 	:weight-3, after weight-7, 290d 
+	 tree-71 	:weight-71, 0d, 0d 
+	 tree-35  7.7 	:weight-35, after weight-72, 5d 
+	 tree-72 	:weight-72, 0d, 3d 
+	 tree-17  17 	:weight-17, after weight-35, 9d 
+	 tree-73 	:weight-73, 0d, 0d 
+	 tree-36  0.57 	:weight-36, after weight-73, 0d 
+	 tree-74 	:weight-74, 0d, 0d 
+	 tree-8  1.6e+02 	:weight-8, after weight-18, 83d 
+	 tree-75 	:weight-75, 0d, 0d 
+	 tree-37  1.9e-05 	:weight-37, after weight-76, 0d 
+	 tree-76 	:weight-76, 0d, 0d 
+	 tree-18  78 	:weight-18, after weight-38, 35d 
+	 tree-77 	:weight-77, 0d, 0d 
+	 tree-38  43 	:weight-38, after weight-78, 2d 
+	 tree-78 	:weight-78, 0d, 41d 
+	 tree-1  2.2e+03 	:weight-1, after weight-4, 1743d 
+	 tree-79 	:weight-79, 0d, 12d 
+	 tree-39  32 	:weight-39, after weight-79, 25d 
+	 tree-80 	:weight-80, 0d, 6d 
+	 tree-19  3.2e+02 	:weight-19, after weight-40, 201d 
+	 tree-81 	:weight-81, 0d, 29d 
+	 tree-40  1.2e+02 	:weight-40, after weight-82, 86d 
+	 tree-82 	:weight-82, 0d, 41d 
+	 tree-9  4.7e+02 	:weight-9, after weight-19, 426d 
+	 tree-83 	:weight-83, 0d, 0d 
+	 tree-41  0 	:weight-41, after weight-84, 0d 
+	 tree-84 	:weight-84, 0d, 0d 
+	 tree-20  49 	:weight-20, after weight-42, 49d 
+	 tree-85 	:weight-85, 0d, 0d 
+	 tree-42  0 	:weight-42, after weight-86, 0d 
+	 tree-86 	:weight-86, 0d, 0d 
+	 tree-4  1.5e+03 	:weight-4, after weight-9, 989d 
+	 tree-87 	:weight-87, 0d, 1d 
+	 tree-43  24 	:weight-43, after weight-88, 13d 
+	 tree-88 	:weight-88, 0d, 11d 
+	 tree-21  53 	:weight-21, after weight-43, 29d 
+	 tree-89 	:weight-89, 0d, 1d 
+	 tree-44  2.7 	:weight-44, after weight-89, 2d 
+	 tree-90 	:weight-90, 0d, 0d 
+	 tree-10  2.8e+02 	:weight-10, after weight-22, 170d 
+	 tree-91 	:weight-91, 0d, 16d 
+	 tree-45  40 	:weight-45, after weight-91, 24d 
+	 tree-92 	:weight-92, 0d, 4d 
+	 tree-22  1.1e+02 	:weight-22, after weight-45, 67d 
+	 tree-93 	:weight-93, 0d, 4d 
+	 tree-46  14 	:weight-46, after weight-93, 12d 
+	 tree-94 	:weight-94, 0d, 2d 
+	 tree-0  2.9e+03 	:weight-0, after weight-1, 896d 
+	 tree-95 	:weight-95, 0d, 0d 
+	 tree-47  0.0011 	:weight-47, after weight-96, 0d 
+	 tree-96 	:weight-96, 0d, 0d 
+	 tree-23  5.9 	:weight-23, after weight-48, 4d 
+	 tree-97 	:weight-97, 0d, 2d 
+	 tree-48  2.3 	:weight-48, after weight-97, 0d 
+	 tree-98 	:weight-98, 0d, 0d 
+	 tree-11  88 	:weight-11, after weight-24, 44d 
+	 tree-99 	:weight-99, 0d, 1d 
+	 tree-49  21 	:weight-49, after weight-100, 13d 
+	 tree-100 	:weight-100, 0d, 8d 
+	 tree-24  44 	:weight-24, after weight-49, 23d 
+	 tree-101 	:weight-101, 0d, 0d 
+	 tree-50  1.2 	:weight-50, after weight-102, 1d 
+	 tree-102 	:weight-102, 0d, 1d 
+	 tree-5  1.8e+02 	:weight-5, after weight-11, 89d 
+	 tree-103 	:weight-103, 0d, 0d 
+	 tree-51  0.28 	:weight-51, after weight-103, 0d 
+	 tree-104 	:weight-104, 0d, 0d 
+	 tree-25  1.7 	:weight-25, after weight-52, 1d 
+	 tree-105 	:weight-105, 0d, 0d 
+	 tree-52  0.36 	:weight-52, after weight-105, 0d 
+	 tree-106 	:weight-106, 0d, 0d 
+	 tree-12  10 	:weight-12, after weight-26, 7d 
+	 tree-107 	:weight-107, 0d, 0d 
+	 tree-53  0.18 	:weight-53, after weight-108, 0d 
+	 tree-108 	:weight-108, 0d, 0d 
+	 tree-26  3.3 	:weight-26, after weight-54, 2d 
+	 tree-109 	:weight-109, 0d, 0d 
+	 tree-54  0.86 	:weight-54, after weight-110, 1d 
+	 tree-110 	:weight-110, 0d, 0d 
+	 tree-2  2e+03 	:weight-2, after weight-6, 1144d 
+	 tree-111 	:weight-111, 0d, 0d 
+	 tree-55  0 	:weight-55, after weight-112, 0d 
+	 tree-112 	:weight-112, 0d, 0d 
+	 tree-27  0 	:weight-27, after weight-56, 0d 
+	 tree-113 	:weight-113, 0d, 0d 
+	 tree-56  0 	:weight-56, after weight-114, 0d 
+	 tree-114 	:weight-114, 0d, 0d 
+	 tree-13  1.7e-06 	:weight-13, after weight-28, 0d 
+	 tree-115 	:weight-115, 0d, 0d 
+	 tree-57  0 	:weight-57, after weight-116, 0d 
+	 tree-116 	:weight-116, 0d, 0d 
+	 tree-28  0 	:weight-28, after weight-58, 0d 
+	 tree-117 	:weight-117, 0d, 0d 
+	 tree-58  0 	:weight-58, after weight-118, 0d 
+	 tree-118 	:weight-118, 0d, 0d 
+	 tree-6  8.6e+02 	:weight-6, after weight-14, 550d 
+	 tree-119 	:weight-119, 0d, 3d 
+	 tree-59  71 	:weight-59, after weight-120, 43d 
+	 tree-120 	:weight-120, 0d, 28d 
+	 tree-29  1.5e+02 	:weight-29, after weight-59, 122d 
+	 tree-121 	:weight-121, 0d, 0d 
+	 tree-60  33 	:weight-60, after weight-122, 6d 
+	 tree-122 	:weight-122, 0d, 27d 
+	 tree-14  3.1e+02 	:weight-14, after weight-30, 9d 
+	 tree-123 	:weight-123, 0d, 7d 
+	 tree-61  1.4e+02 	:weight-61, after weight-124, 77d 
+	 tree-124 	:weight-124, 0d, 62d 
+	 tree-30  3e+02 	:weight-30, after weight-61, 163d 
+	 tree-125 	:weight-125, 0d, 1d 
+	 tree-62  13 	:weight-62, after weight-126, 7d 
+	 tree-126 	:weight-126, 0d, 6d 
+~~~
+
+
+|pxReDistribute_X_to_B 	|     0.0001 	|     0.0000 	|     0.0134 	|  1056.7270%| seconds|
+|pxReDistribute_B_to_X 	|     0.0000 	|     0.0000 	|     0.0019 	|   720.8289%| seconds|
+|forwardSolve          	|     0.1039 	|     0.0800 	|     0.1452 	|    17.0779%| seconds|
+|forwardSolve-compute  	|     0.0923 	|     0.0660 	|     0.1343 	|    18.9545%| seconds|
+|forwardSolve-comm     	|     0.0089 	|     0.0015 	|     0.0174 	|    62.1371%| seconds|
+|ForwardSolve:Level-0 	|     0.0000 	|     0.0000 	|     0.0000 	|       -nan%| seconds|
+|ForwardSolve:Level-1 	|     0.0000 	|     0.0000 	|     0.0000 	|       -nan%| seconds|
+|ForwardSolve:Level-2 	|     0.0000 	|     0.0000 	|     0.0000 	|       -nan%| seconds|
+|ForwardSolve:Level-3 	|     0.0000 	|     0.0000 	|     0.0000 	|       -nan%| seconds|
+|ForwardSolve:Level-4 	|     0.0000 	|     0.0000 	|     0.0000 	|       -nan%| seconds|
+|ForwardSolve:Level-5 	|     0.0000 	|     0.0000 	|     0.0000 	|       -nan%| seconds|
+|ForwardSolve:Level-6 	|     0.1038 	|     0.0798 	|     0.1450 	|    17.1048%| seconds|
+|backSolve             	|     0.0584 	|     0.0379 	|     0.1085 	|    30.0537%| seconds|
+|backSolve-compute     	|     0.0531 	|     0.0337 	|     0.0988 	|    29.9417%| seconds|
+|backSolve-comm        	|     0.0034 	|     0.0010 	|     0.0081 	|    42.5325%| seconds|
+|BackSolve:Level-0    	|     0.0000 	|     0.0000 	|     0.0000 	|       -nan%| seconds|
+|BackSolve:Level-1    	|     0.0000 	|     0.0000 	|     0.0000 	|       -nan%| seconds|
+|BackSolve:Level-2    	|     0.0000 	|     0.0000 	|     0.0000 	|       -nan%| seconds|
+|BackSolve:Level-3    	|     0.0000 	|     0.0000 	|     0.0000 	|       -nan%| seconds|
+|BackSolve:Level-4    	|     0.0000 	|     0.0000 	|     0.0000 	|       -nan%| seconds|
+|BackSolve:Level-5    	|     0.0000 	|     0.0000 	|     0.0000 	|       -nan%| seconds|
+|BackSolve:Level-6    	|     0.0583 	|     0.0378 	|     0.1084 	|    30.1061%| seconds|
+|trs_comm_z            	|     0.0443 	|     0.0032 	|     0.0681 	|    39.8391%| seconds|
+|TRS-XY_CommVolume     	|     0.0394 	|     0.0324 	|     0.0576 	|    15.6002%| Mwords|
+|TRS-Z_CommVolume      	|     0.0254 	|     0.0104 	|     0.0909 	|    72.6766%| Mwords|
+|TRS-XYZ_CommVolume    	|     0.0648 	|     0.0434 	|     0.1369 	|    30.8804%| Mwords|
+.. Sol  0: ||X - Xtrue|| / ||X|| = 7.581361e-01	 max_i |x - xtrue|_i / |x|_i = 7.110974e-02
+**************************************************
+**** Time (seconds) ****
+	EQUIL time            0.007
+	ROWPERM time          0.095
+	COLPERM time          2.599
+	SYMBFACT time         3.535
+	DISTRIBUTE time       5.538
+	FACTOR time          36.526
+	Factor flops	1.860988e+13	Mflops 	509497.12
+	SOLVE time            0.257
+	Solve flops	6.572381e+10	Mflops 	255885.87
+**************************************************
