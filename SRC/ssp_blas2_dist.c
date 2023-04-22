@@ -400,7 +400,8 @@ sp_sgemv_dist(char *trans, float alpha, SuperMatrix *A, float *x,
     float   *Aval;
     int info;
     float temp, temp1;
-    int lenx, leny, i, j, irow;
+    int lenx, leny, j, irow;
+	int_t i;
     int iy, jx, jy, kx, ky;
     int notran;
     float zero = 0.0;

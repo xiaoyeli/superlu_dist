@@ -31,11 +31,13 @@
 include ../make.inc
 
 SEXM	= psdrive.o screate_matrix.o dcreate_matrix.o screate_A_x_b.o \
-	  psgssvx_tracking.o psgsrfs_tracking.o 
+	  psgssvx_tracking.o psgsrfs_tracking.o \
+	psutil.o sdistribute.o
 # psgssvx_d2.o psgsrfs_d2.o sutil_dist.o psgsequb.o
 
-DEXM	= pddrive.o dcreate_matrix.o
-	# pdgstrs.o pdgsrfs.o pdgstrs_lsum.o
+DEXM	= pddrive.o dcreate_matrix.o 
+	# psymbfact.o pdgssvx.o pdsymbfact_distdata.o memory.o
+
 DEXMRHS	= pddrive_rhs.o dcreate_matrix_rhs.o #sp_ienv.o 
        # pdgstrs.o pdgsrfs.o pdgstrs_lsum.o
 

@@ -457,8 +457,8 @@ void Local_Sgstrf2(superlu_dist_options_t *options, int_t k, double thresh,
             if (fabs (lusup[i]) < thresh) {  /* Diagonal */
 
 #if ( PRNTlevel>=2 )
-                    printf ("(%d) .. col %d, tiny pivot %e  ",
-                            iam, jfst + j, lusup[i]);
+                    // printf ("(%d) .. col %d, tiny pivot %e  ",
+                    //         iam, jfst + j, lusup[i]);
 #endif
                 /* Keep the new diagonal entry with the same sign. */
                 if (lusup[i] < 0) lusup[i] = -thresh;

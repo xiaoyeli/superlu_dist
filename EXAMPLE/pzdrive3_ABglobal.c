@@ -162,8 +162,17 @@ int main(int argc, char *argv[])
     *trans = 'N';
     ldx = n;
     ldb = m;
-    zGenXtrue_dist(n, nrhs, xtrue, ldx);
-    zFillRHS_dist(trans, nrhs, xtrue, ldx, &A, b, ldb);
+
+    if ( iam==0 ) {
+        zGenXtrue_dist(n, nrhs, xtrue, ldx);
+        zFillRHS_dist(trans, nrhs, xtrue, ldx, &A, b, ldb);
+	
+        MPI_Bcast( xtrue, n*nrhs, SuperLU_MPI_DOUBLE_COMPLEX, 0, grid.comm );
+        MPI_Bcast( b, m*nrhs, SuperLU_MPI_DOUBLE_COMPLEX, 0, grid.comm );
+    } else {
+        MPI_Bcast( xtrue, n*nrhs, SuperLU_MPI_DOUBLE_COMPLEX, 0, grid.comm );
+        MPI_Bcast( b, m*nrhs, SuperLU_MPI_DOUBLE_COMPLEX, 0, grid.comm );
+    }
 
     /* Save a copy of the right-hand side. */  
     if ( !(b1 = doublecomplexMalloc_dist(m * nrhs)) ) ABORT("Malloc fails for b1[]");

@@ -433,7 +433,7 @@ psgstrf(superlu_dist_options_t * options, int m, int n, float anorm,
 #if (PROFlevel >= 1 )
     gemm_stats = (gemm_profile *) SUPERLU_MALLOC(nsupers * sizeof(gemm_profile));
     if (iam == 0) fgemm = fopen("dgemm_mnk.dat", "w");
-    int *prof_sendR = intCalloc_dist(nsupers);
+    int_t *prof_sendR = intCalloc_dist(nsupers);
 #endif
 
     stat->ops[FACT]      = 0.0;
@@ -543,9 +543,9 @@ psgstrf(superlu_dist_options_t * options, int m, int n, float anorm,
         recv_reqs[i][0] = recv_reqs[i][1] = MPI_REQUEST_NULL;
     }
 
-    if (!(factored = SUPERLU_MALLOC (nsupers * sizeof (int_t))))
+    if (!(factored = SUPERLU_MALLOC (nsupers * sizeof (int))))
         ABORT ("Malloc fails for factored[].");
-    if (!(factoredU = SUPERLU_MALLOC (nsupers * sizeof (int_t))))
+    if (!(factoredU = SUPERLU_MALLOC (nsupers * sizeof (int))))
         ABORT ("Malloc fails for factoredU[].");
     for (i = 0; i < nsupers; i++) factored[i] = factoredU[i] = -1;
 
@@ -1760,7 +1760,7 @@ psgstrf(superlu_dist_options_t * options, int m, int n, float anorm,
 
     pxgstrfTimer = SuperLU_timer_() - pxgstrfTimer;
 
-#if ( PRNTlevel>=2 )
+#if ( PRNTlevel>=1 )
     /* Print detailed statistics */
     /* Updating total flops */
     double allflops;

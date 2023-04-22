@@ -12,7 +12,7 @@ at the top-level directory.
  * \brief Definitions which are precision-neutral
  *
  * <pre>
- * -- Distributed SuperLU routine (version 7.2) --
+ * -- Distributed SuperLU routine (version 8.1.2) --
  * Lawrence Berkeley National Lab, Univ. of California Berkeley.
  * November 1, 2007
  *
@@ -29,6 +29,8 @@ at the top-level directory.
  *     December 12, 2021   version 7.2.0
  *     May 22, 2022        version 8.0.0
  *     July 5, 2022        version 8.1.0
+ *     October 1, 2022     version 8.1.1
+ *     November 12, 2022   version 8.1.2
  * </pre>
  */
 
@@ -82,8 +84,8 @@ at the top-level directory.
  */
 #define SUPERLU_DIST_MAJOR_VERSION     8
 #define SUPERLU_DIST_MINOR_VERSION     1
-#define SUPERLU_DIST_PATCH_VERSION     0
-#define SUPERLU_DIST_RELEASE_DATE      "May 22, 2022"
+#define SUPERLU_DIST_PATCH_VERSION     2
+#define SUPERLU_DIST_RELEASE_DATE      "November 12, 2022"
 
 #include "superlu_dist_config.h"
 
@@ -911,7 +913,7 @@ typedef struct
 
 typedef struct
 {
-    int_t* factored;
+    int* factored;
     int_t* factored_D;
     int_t* factored_L;
     int_t* factored_U;
@@ -1119,7 +1121,7 @@ extern int_t estimate_bigu_size (int_t, int_t **, Glu_persist_t *,
 				 gridinfo_t *, int_t *, int_t*);
 
 /* Auxiliary routines */
-extern double SuperLU_timer_ ();
+extern double SuperLU_timer_ (void);
 extern void   superlu_abort_and_exit_dist(char *);
 extern int    sp_ienv_dist (int, superlu_dist_options_t *);
 extern void   ifill_dist (int_t *, int_t, int_t);
@@ -1185,24 +1187,23 @@ int superlu_sort_perm (const void *arg1, const void *arg2)
 extern void gemm_division_cpu_gpu (superlu_dist_options_t *,
 				   int *, int *, int *, int,
 				   int, int, int *, int, int_t);
-extern int_t get_gpublas_nb ();
-extern int_t get_num_gpu_streams ();
-extern int getnGPUStreams();
-extern int get_mpi_process_per_gpu ();
+extern int_t get_gpublas_nb (void);
+extern int_t get_num_gpu_streams (void);
+extern int getnGPUStreams(void);
+extern int get_mpi_process_per_gpu (void);
 /*to print out various statistics from GPU activities*/
 extern void printGPUStats(int nsupers, SuperLUStat_t *stat, gridinfo3d_t*);
 #endif
 
 extern double estimate_cpu_time(int m, int n , int k);
 
-extern int get_thread_per_process();
-extern int_t get_max_buffer_size ();
+extern int get_thread_per_process(void);
+extern int_t get_max_buffer_size (void);
 extern int_t get_min (int_t *, int_t);
 extern int compare_pair (const void *, const void *);
 extern int_t static_partition (struct superlu_pair *, int_t, int_t *, int_t,
 			       int_t *, int_t *, int);
-extern int get_acc_offload();
-
+extern int get_acc_offload(void);
 
 /* Routines for debugging */
 extern void  print_panel_seg_dist(int_t, int_t, int_t, int_t, int_t *, int_t *);
@@ -1367,7 +1368,7 @@ extern int Wait_LUDiagSend(int_t k, MPI_Request *U_diag_blk_send_req,
 			   gridinfo_t *grid, SCT_t *SCT);
 
 extern int getNsupers(int n, Glu_persist_t *Glu_persist);
-extern int set_tag_ub();
+extern int set_tag_ub(void);
 extern int getNumThreads(int);
 extern int_t num_full_cols_U(int_t kk, int_t **Ufstnz_br_ptr, int_t *xsup,
 			     gridinfo_t *, int_t *, int_t *);

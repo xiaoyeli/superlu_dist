@@ -1241,6 +1241,7 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 				}
 			} /* end ... use parmetis */
 
+			
 			if (permc_spec != MY_PERMC && Fact == DOFACT)
 			{
 				if (permc_spec == PARMETIS)
@@ -1468,7 +1469,7 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 		/*factorize in grid 1*/
 		// if(grid3d->zscp.Iam)
 		// get environment variable TRF3DVERSION
-		#ifdef GPU_ACC
+#ifdef GPU_ACC
 		if (gpu3dVersion == 1)
 		{ /* this is the new C++ code in TRF3dV100/ directory */
 		  
@@ -1503,8 +1504,8 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 
 #endif
 		}
-		else /* this is the old C code */
-		#endif
+		else /* this is the old C code, with less GPU offload */
+#endif /* matching ifdef GPU_ACC */
 		{
 			pdgstrf3d(options, m, n, anorm, trf3Dpartition, SCT, LUstruct,
 					  grid3d, stat, info);
@@ -1779,6 +1780,7 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 
 				// The following #ifdef GPU_ACC block frees and reallocates GPU data for trisolve. The data seems to be overwritten by pdgstrf3d.
 				int_t nsupers = getNsupers(n, LUstruct->Glu_persist);
+				
 #ifdef GPU_ACC
 
 				pdconvertU(options, grid, LUstruct, stat, n);
@@ -1843,6 +1845,7 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 			}
 
 			stat->utime[SOLVE] = 0.0;
+
 #if 0 // Sherry: the following interface is needed by 3D trisolve.
 		pdgstrs_vecpar (n, LUstruct, ScalePermstruct, grid, X, m_loc,
 				fst_row, ldb, nrhs, SOLVEstruct, stat, info);

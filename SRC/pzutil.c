@@ -16,11 +16,17 @@ at the top-level directory.
  * -- Distributed SuperLU routine (version 2.0) --
  * Lawrence Berkeley National Lab, Univ. of California Berkeley.
  * March 15, 2003
+ *
+ * Last modified:
+ * 	December 28, 2022
  * </pre>
  */
 
 #include <math.h>
 #include "superlu_zdefs.h"
+#ifdef GPU_ACC
+#include "gpu_api_utils.h"
+#endif
 
 /*! \brief Gather A from the distributed compressed row format to global A in compressed column format.
  */
@@ -429,55 +435,6 @@ void zLUstructFree(zLUstruct_t *LUstruct)
 #endif
 }
 
-void
-zDestroy_Tree(int_t n, gridinfo_t *grid, zLUstruct_t *LUstruct)
-{
-    int_t i, nb, nsupers;
-    Glu_persist_t *Glu_persist = LUstruct->Glu_persist;
-    zLocalLU_t *Llu = LUstruct->Llu;
-#if ( DEBUGlevel>=1 )
-    int iam;
-    MPI_Comm_rank( MPI_COMM_WORLD, &iam );
-    CHECK_MALLOC(iam, "Enter zDestroy_Tree()");
-#endif
-
-    nsupers = Glu_persist->supno[n-1] + 1;
-
-	nb = CEILING(nsupers, grid->npcol);
-	for (i=0;i<nb;++i){
-        if(Llu->LBtree_ptr[i].empty_==NO){    
-			// BcTree_Destroy(Llu->LBtree_ptr[i],LUstruct->dt);
-            C_BcTree_Nullify(&Llu->LBtree_ptr[i]);
-		}
-        if(Llu->UBtree_ptr[i].empty_==NO){  
-			// BcTree_Destroy(Llu->UBtree_ptr[i],LUstruct->dt);
-            C_BcTree_Nullify(&Llu->UBtree_ptr[i]);
-		}		
-	}
-	SUPERLU_FREE(Llu->LBtree_ptr);
-	SUPERLU_FREE(Llu->UBtree_ptr);
-	
- 	nb = CEILING(nsupers, grid->nprow);
-	for (i=0;i<nb;++i){
-        if(Llu->LRtree_ptr[i].empty_==NO){             
-			// RdTree_Destroy(Llu->LRtree_ptr[i],LUstruct->dt);
-            C_RdTree_Nullify(&Llu->LRtree_ptr[i]);
-		}
-        if(Llu->URtree_ptr[i].empty_==NO){ 
-			// RdTree_Destroy(Llu->URtree_ptr[i],LUstruct->dt);
-            C_RdTree_Nullify(&Llu->URtree_ptr[i]);
-		}		
-	}
-	SUPERLU_FREE(Llu->LRtree_ptr);
-	SUPERLU_FREE(Llu->URtree_ptr);
-
-#if ( DEBUGlevel>=1 )
-    CHECK_MALLOC(iam, "Exit zDestroy_Tree()");
-#endif
-}
-
-
-
 /*! \brief Destroy distributed L & U matrices. */
 void
 zDestroy_LU(int_t n, gridinfo_t *grid, zLUstruct_t *LUstruct)
@@ -496,27 +453,38 @@ zDestroy_LU(int_t n, gridinfo_t *grid, zLUstruct_t *LUstruct)
 
     nsupers = Glu_persist->supno[n-1] + 1;
 
-    nb = CEILING(nsupers, grid->npcol);
-    for (i = 0; i < nb; ++i) 
-	if ( Llu->Lrowind_bc_ptr[i] ) {
-	    SUPERLU_FREE (Llu->Lrowind_bc_ptr[i]);
-#if 0 // Sherry: the following is not allocated with gpuHostAlloc    
+    /* Following are free'd in distribution routines */
+    // nb = CEILING(nsupers, grid->npcol);
+    // for (i = 0; i < nb; ++i) 
+    //	if ( Llu->Lrowind_bc_ptr[i] ) {
+    //	    SUPERLU_FREE (Llu->Lrowind_bc_ptr[i]);
+#if 0 // Sherry: the following is not allocated with cudaHostAlloc    
     //#ifdef GPU_ACC
 	    checkGPU(gpuFreeHost(Llu->Lnzval_bc_ptr[i]));
 #endif
-	    SUPERLU_FREE (Llu->Lnzval_bc_ptr[i]);
-	}
+    //	    SUPERLU_FREE (Llu->Lnzval_bc_ptr[i]);
+    //	}
+    
     SUPERLU_FREE (Llu->Lrowind_bc_ptr);
+    SUPERLU_FREE (Llu->Lrowind_bc_dat);
+    SUPERLU_FREE (Llu->Lrowind_bc_offset);
     SUPERLU_FREE (Llu->Lnzval_bc_ptr);
-
-    nb = CEILING(nsupers, grid->nprow);
-    for (i = 0; i < nb; ++i)
-	if ( Llu->Ufstnz_br_ptr[i] ) {
-	    SUPERLU_FREE (Llu->Ufstnz_br_ptr[i]);
-	    SUPERLU_FREE (Llu->Unzval_br_ptr[i]);
-	}
+    SUPERLU_FREE (Llu->Lnzval_bc_dat);
+    SUPERLU_FREE (Llu->Lnzval_bc_offset);
+    
+    /* Following are free'd in distribution routines */
+    // nb = CEILING(nsupers, grid->nprow);
+    // for (i = 0; i < nb; ++i)
+    //	if ( Llu->Ufstnz_br_ptr[i] ) {
+    //	    SUPERLU_FREE (Llu->Ufstnz_br_ptr[i]);
+    //	    SUPERLU_FREE (Llu->Unzval_br_ptr[i]);
+    //	}
     SUPERLU_FREE (Llu->Ufstnz_br_ptr);
+    SUPERLU_FREE (Llu->Ufstnz_br_dat);
+    SUPERLU_FREE (Llu->Ufstnz_br_offset);
     SUPERLU_FREE (Llu->Unzval_br_ptr);
+    SUPERLU_FREE (Llu->Unzval_br_dat);
+    SUPERLU_FREE (Llu->Unzval_br_offset);
 
     /* The following can be freed after factorization. */
     SUPERLU_FREE(Llu->ToRecv);
@@ -527,165 +495,89 @@ zDestroy_LU(int_t n, gridinfo_t *grid, zLUstruct_t *LUstruct)
     /* The following can be freed only after iterative refinement. */
     SUPERLU_FREE(Llu->ilsum);
     SUPERLU_FREE(Llu->fmod);
-    SUPERLU_FREE(Llu->fsendx_plist[0]);
+    SUPERLU_FREE((Llu->fsendx_plist)[0]);
     SUPERLU_FREE(Llu->fsendx_plist);
     SUPERLU_FREE(Llu->bmod);
-    SUPERLU_FREE(Llu->bsendx_plist[0]);
+    SUPERLU_FREE((Llu->bsendx_plist)[0]);
     SUPERLU_FREE(Llu->bsendx_plist);
     SUPERLU_FREE(Llu->mod_bit);
 
-    nb = CEILING(nsupers, grid->npcol);
-    for (i = 0; i < nb; ++i) 
-	if ( Llu->Lindval_loc_bc_ptr[i]!=NULL) {
-	    SUPERLU_FREE (Llu->Lindval_loc_bc_ptr[i]);
-	}	
+    /* Following are free'd in distribution routines */
+    // nb = CEILING(nsupers, grid->npcol);
+    // for (i = 0; i < nb; ++i) 
+    //	if ( Llu->Lindval_loc_bc_ptr[i]!=NULL) {
+    //	    SUPERLU_FREE (Llu->Lindval_loc_bc_ptr[i]);
+    //	}	
     SUPERLU_FREE(Llu->Lindval_loc_bc_ptr);
+    SUPERLU_FREE(Llu->Lindval_loc_bc_dat);
+    SUPERLU_FREE(Llu->Lindval_loc_bc_offset);
 	
-    nb = CEILING(nsupers, grid->npcol);
-    for (i=0; i<nb; ++i) {
-	if(Llu->Linv_bc_ptr[i]!=NULL) {
-	    SUPERLU_FREE(Llu->Linv_bc_ptr[i]);
-	}
-	if(Llu->Uinv_bc_ptr[i]!=NULL){
-	    SUPERLU_FREE(Llu->Uinv_bc_ptr[i]);
-	}	
-    }
+    /* Following are free'd in distribution routines */
+    // nb = CEILING(nsupers, grid->npcol);
+    // for (i=0; i<nb; ++i) {
+    //	if(Llu->Linv_bc_ptr[i]!=NULL) {
+    //	    SUPERLU_FREE(Llu->Linv_bc_ptr[i]);
+    //	}
+    //	if(Llu->Uinv_bc_ptr[i]!=NULL){
+    //	    SUPERLU_FREE(Llu->Uinv_bc_ptr[i]);
+    //	}	
+    // }
     SUPERLU_FREE(Llu->Linv_bc_ptr);
+    SUPERLU_FREE(Llu->Linv_bc_dat);
+    SUPERLU_FREE(Llu->Linv_bc_offset);
     SUPERLU_FREE(Llu->Uinv_bc_ptr);
+    SUPERLU_FREE(Llu->Uinv_bc_dat);
+    SUPERLU_FREE(Llu->Uinv_bc_offset);
     SUPERLU_FREE(Llu->Unnz);
 	
-    nb = CEILING(nsupers, grid->npcol);
-    for (i = 0; i < nb; ++i)
-	if ( Llu->Urbs[i] ) {
-	    SUPERLU_FREE(Llu->Ucb_indptr[i]);
-	    SUPERLU_FREE(Llu->Ucb_valptr[i]);
-	}
+    /* Following are free'd in distribution routines */
+    // nb = CEILING(nsupers, grid->npcol);
+    // for (i = 0; i < nb; ++i)
+    //	if ( Llu->Urbs[i] ) {
+    //	    SUPERLU_FREE(Llu->Ucb_indptr[i]);
+    //	    SUPERLU_FREE(Llu->Ucb_valptr[i]);
+    // }
     SUPERLU_FREE(Llu->Ucb_indptr);
-    SUPERLU_FREE(Llu->Ucb_valptr);	
+    SUPERLU_FREE(Llu->Ucb_inddat);
+    SUPERLU_FREE(Llu->Ucb_indoffset);
+    SUPERLU_FREE(Llu->Ucb_valptr);
+    SUPERLU_FREE(Llu->Ucb_valdat);
+    SUPERLU_FREE(Llu->Ucb_valoffset);
     SUPERLU_FREE(Llu->Urbs);
-
+    
     SUPERLU_FREE(Glu_persist->xsup);
     SUPERLU_FREE(Glu_persist->supno);
+
+#ifdef GPU_ACC
+    checkGPU (gpuFree (Llu->d_xsup));
+    checkGPU (gpuFree (Llu->d_LRtree_ptr));
+    checkGPU (gpuFree (Llu->d_LBtree_ptr));
+    checkGPU (gpuFree (Llu->d_URtree_ptr));
+    checkGPU (gpuFree (Llu->d_UBtree_ptr));
+    checkGPU (gpuFree (Llu->d_ilsum));
+    checkGPU (gpuFree (Llu->d_Lrowind_bc_dat));
+    checkGPU (gpuFree (Llu->d_Lrowind_bc_offset));
+    checkGPU (gpuFree (Llu->d_Lnzval_bc_dat));
+    checkGPU (gpuFree (Llu->d_Lnzval_bc_offset));
+    checkGPU (gpuFree (Llu->d_Linv_bc_dat));
+    checkGPU (gpuFree (Llu->d_Uinv_bc_dat));
+    checkGPU (gpuFree (Llu->d_Linv_bc_offset));
+    checkGPU (gpuFree (Llu->d_Uinv_bc_offset));
+    checkGPU (gpuFree (Llu->d_Lindval_loc_bc_dat));
+    checkGPU (gpuFree (Llu->d_Lindval_loc_bc_offset));
+
+    checkGPU (gpuFree (Llu->d_Ucolind_bc_dat));
+    checkGPU (gpuFree (Llu->d_Ucolind_bc_offset));
+    checkGPU (gpuFree (Llu->d_Unzval_bc_dat));
+    checkGPU (gpuFree (Llu->d_Unzval_bc_offset));
+    checkGPU (gpuFree (Llu->d_Uindval_loc_bc_dat));
+    checkGPU (gpuFree (Llu->d_Uindval_loc_bc_offset));
+#endif
 
 #if ( DEBUGlevel>=1 )
     CHECK_MALLOC(iam, "Exit zDestroy_LU()");
 #endif
 }
-
-// /*! \brief Destroy distributed L & U matrices. */
-// void
-// zDestroy_LU(int_t n, gridinfo_t *grid, zLUstruct_t *LUstruct)
-// {
-//     int_t i, nb, nsupers;
-//     Glu_persist_t *Glu_persist = LUstruct->Glu_persist;
-//     zLocalLU_t *Llu = LUstruct->Llu;
-
-// #if ( DEBUGlevel>=1 )
-//     int iam;
-//     MPI_Comm_rank( MPI_COMM_WORLD, &iam );
-//     CHECK_MALLOC(iam, "Enter zDestroy_LU()");
-// #endif
-
-//     zDestroy_Tree(n, grid, LUstruct);
-
-//     nsupers = Glu_persist->supno[n-1] + 1;
-
-//     nb = CEILING(nsupers, grid->npcol);
-//     // for (i = 0; i < nb; ++i) 
-// 	// if ( Llu->Lrowind_bc_ptr[i] ) {
-// 	    // SUPERLU_FREE (Llu->Lrowind_bc_ptr[i]);
-// 	    // SUPERLU_FREE (Llu->Lnzval_bc_ptr[i]);
-// 	// }
-//     SUPERLU_FREE (Llu->Lrowind_bc_ptr);
-//     SUPERLU_FREE (Llu->Lrowind_bc_dat);
-//     SUPERLU_FREE (Llu->Lrowind_bc_offset);    
-//     SUPERLU_FREE (Llu->Lnzval_bc_ptr);
-//     SUPERLU_FREE (Llu->Lnzval_bc_dat);
-//     SUPERLU_FREE (Llu->Lnzval_bc_offset);
-
-//     nb = CEILING(nsupers, grid->nprow);
-//     for (i = 0; i < nb; ++i)
-// 	if ( Llu->Ufstnz_br_ptr[i] ) {
-// 	    SUPERLU_FREE (Llu->Ufstnz_br_ptr[i]);
-// 	    SUPERLU_FREE (Llu->Unzval_br_ptr[i]);
-// 	}
-//     SUPERLU_FREE (Llu->Ufstnz_br_ptr);
-//     SUPERLU_FREE (Llu->Unzval_br_ptr);
-
-//     /* The following can be freed after factorization. */
-//     SUPERLU_FREE(Llu->ToRecv);
-//     SUPERLU_FREE(Llu->ToSendD);
-//     SUPERLU_FREE(Llu->ToSendR[0]);
-//     SUPERLU_FREE(Llu->ToSendR);
-
-//     /* The following can be freed only after iterative refinement. */
-//     SUPERLU_FREE(Llu->ilsum);
-//     SUPERLU_FREE(Llu->fmod);
-//     SUPERLU_FREE(Llu->fsendx_plist[0]);
-//     SUPERLU_FREE(Llu->fsendx_plist);
-//     SUPERLU_FREE(Llu->bmod);
-//     SUPERLU_FREE(Llu->bsendx_plist[0]);
-//     SUPERLU_FREE(Llu->bsendx_plist);
-//     SUPERLU_FREE(Llu->mod_bit);
-
-//     // nb = CEILING(nsupers, grid->npcol);
-//     // for (i = 0; i < nb; ++i) 
-// 	// if ( Llu->Lindval_loc_bc_ptr[i]!=NULL) {
-// 	//     SUPERLU_FREE (Llu->Lindval_loc_bc_ptr[i]);
-// 	// }	
-//     SUPERLU_FREE(Llu->Lindval_loc_bc_ptr);
-//     SUPERLU_FREE(Llu->Lindval_loc_bc_dat);
-//     SUPERLU_FREE(Llu->Lindval_loc_bc_offset);
-	
-//     nb = CEILING(nsupers, grid->npcol);
-//     for (i=0; i<nb; ++i) {
-// 	// if(Llu->Linv_bc_ptr[i]!=NULL) {
-// 	//     SUPERLU_FREE(Llu->Linv_bc_ptr[i]);
-// 	// }
-
-// 	if(Llu->Uinv_bc_ptr[i]!=NULL){
-// 	    SUPERLU_FREE(Llu->Uinv_bc_ptr[i]);
-// 	}	
-//     }
-//     SUPERLU_FREE(Llu->Linv_bc_ptr);
-//     SUPERLU_FREE(Llu->Linv_bc_dat);
-//     SUPERLU_FREE(Llu->Linv_bc_offset);
-//     SUPERLU_FREE(Llu->Uinv_bc_ptr);
-//     SUPERLU_FREE(Llu->Unnz);
-	
-//     nb = CEILING(nsupers, grid->npcol);
-//     for (i = 0; i < nb; ++i)
-// 	if ( Llu->Urbs[i] ) {
-// 	    SUPERLU_FREE(Llu->Ucb_indptr[i]);
-// 	    SUPERLU_FREE(Llu->Ucb_valptr[i]);
-// 	}
-//     SUPERLU_FREE(Llu->Ucb_indptr);
-//     SUPERLU_FREE(Llu->Ucb_valptr);	
-//     SUPERLU_FREE(Llu->Urbs);
-
-//     SUPERLU_FREE(Glu_persist->xsup);
-//     SUPERLU_FREE(Glu_persist->supno);
-
-// #ifdef GPU_ACC
-// 	checkGPU (gpuFree (Llu->d_xsup));
-// 	checkGPU (gpuFree (Llu->d_LRtree_ptr));
-// 	checkGPU (gpuFree (Llu->d_LBtree_ptr));
-// 	checkGPU (gpuFree (Llu->d_ilsum));
-// 	checkGPU (gpuFree (Llu->d_Lrowind_bc_dat));
-// 	checkGPU (gpuFree (Llu->d_Lrowind_bc_offset));
-// 	checkGPU (gpuFree (Llu->d_Lnzval_bc_dat));
-// 	checkGPU (gpuFree (Llu->d_Lnzval_bc_offset));
-// 	checkGPU (gpuFree (Llu->d_Linv_bc_dat));
-// 	checkGPU (gpuFree (Llu->d_Linv_bc_offset));
-// 	checkGPU (gpuFree (Llu->d_Lindval_loc_bc_dat));
-// 	checkGPU (gpuFree (Llu->d_Lindval_loc_bc_offset));
-// #endif
-
-
-// #if ( DEBUGlevel>=1 )
-//     CHECK_MALLOC(iam, "Exit zDestroy_LU()");
-// #endif
-// }
 
 /*! \brief
  *
@@ -974,10 +866,13 @@ void zDestroy_A3d_gathered_on_2d(zSOLVEstruct_t *SOLVEstruct, gridinfo3d_t *grid
     SUPERLU_FREE(A3d->nnz_disp);
     SUPERLU_FREE(A3d->b_counts_int);
     SUPERLU_FREE(A3d->b_disp);
-    SUPERLU_FREE(A3d->procs_to_send_list);
-    SUPERLU_FREE(A3d->send_count_list);
-    SUPERLU_FREE(A3d->procs_recv_from_list);
-    SUPERLU_FREE(A3d->recv_count_list);
+    int rankorder = grid3d->rankorder;
+    if ( rankorder == 0 ) { /* Z-major in 3D grid */
+        SUPERLU_FREE(A3d->procs_to_send_list);
+        SUPERLU_FREE(A3d->send_count_list);
+        SUPERLU_FREE(A3d->procs_recv_from_list);
+        SUPERLU_FREE(A3d->recv_count_list);
+    }
     SUPERLU_FREE( A2d );         // free 2D structure
     SUPERLU_FREE( A3d );         // free 3D structure
 } /* zDestroy_A3d_gathered_on_2d */
@@ -992,27 +887,82 @@ void pzinf_norm_error(int iam, int_t n, int_t nrhs, doublecomplex x[], int_t ldx
     doublecomplex *x_work, *xtrue_work;
     doublecomplex temp;
     int i, j;
+    double errcomp;  // componentwise error
+    double derr;
 
     for (j = 0; j < nrhs; j++) {
       x_work = &x[j*ldx];
       xtrue_work = &xtrue[j*ldxtrue];
-      err = xnorm = 0.0;
+      err = xnorm = errcomp = 0.0;
       for (i = 0; i < n; i++) {
         z_sub(&temp, &x_work[i], &xtrue_work[i]);
 	err = SUPERLU_MAX(err, slud_z_abs(&temp));
 	xnorm = SUPERLU_MAX(xnorm, slud_z_abs(&x_work[i]));
+        errcomp = SUPERLU_MAX(errcomp, slud_z_abs(&temp) / slud_z_abs(&x_work[i]) );
       }
 
       /* get the golbal max err & xnrom */
       temperr = err;
-      tempxnorm = xnorm;
       MPI_Allreduce( &temperr, &err, 1, MPI_DOUBLE, MPI_MAX, slucomm);
+      tempxnorm = xnorm;
       MPI_Allreduce( &tempxnorm, &xnorm, 1, MPI_DOUBLE, MPI_MAX, slucomm);
+      temperr = errcomp;
+      MPI_Allreduce( &temperr, &errcomp, 1, MPI_FLOAT, MPI_MAX, slucomm);
 
       err = err / xnorm;
-      if ( !iam ) printf("\tSol %2d: ||X-Xtrue||/||X|| = %e\n", j, err);
+      if ( !iam ) {
+	printf(".. Sol %2d: ||X - Xtrue|| / ||X|| = %e\t max_i |x - xtrue|_i / |x|_i = %e\n", j, err, errcomp);
+	fflush(stdout);
+      }
     }
 }
 
+/*! \brief Destroy broadcast and reduction trees used in triangular solve */
+void
+zDestroy_Tree(int_t n, gridinfo_t *grid, zLUstruct_t *LUstruct)
+{
+    int i, nb, nsupers;
+    Glu_persist_t *Glu_persist = LUstruct->Glu_persist;
+    zLocalLU_t *Llu = LUstruct->Llu;
+#if ( DEBUGlevel>=1 )
+    int iam;
+    MPI_Comm_rank( MPI_COMM_WORLD, &iam );
+    CHECK_MALLOC(iam, "Enter zDestroy_Tree()");
+#endif
+
+    nsupers = Glu_persist->supno[n-1] + 1;
+
+    nb = CEILING(nsupers, grid->npcol);
+    for (i=0;i<nb;++i){
+        if(Llu->LBtree_ptr[i].empty_==NO){    
+			// BcTree_Destroy(Llu->LBtree_ptr[i],LUstruct->dt);
+            C_BcTree_Nullify(&Llu->LBtree_ptr[i]);
+	}
+        if(Llu->UBtree_ptr[i].empty_==NO){  
+			// BcTree_Destroy(Llu->UBtree_ptr[i],LUstruct->dt);
+            C_BcTree_Nullify(&Llu->UBtree_ptr[i]);
+	}
+    }
+    SUPERLU_FREE(Llu->LBtree_ptr);
+    SUPERLU_FREE(Llu->UBtree_ptr);
+	
+    nb = CEILING(nsupers, grid->nprow);
+    for (i=0;i<nb;++i){
+        if(Llu->LRtree_ptr[i].empty_==NO){             
+			// RdTree_Destroy(Llu->LRtree_ptr[i],LUstruct->dt);
+            C_RdTree_Nullify(&Llu->LRtree_ptr[i]);
+	}
+        if(Llu->URtree_ptr[i].empty_==NO){ 
+			// RdTree_Destroy(Llu->URtree_ptr[i],LUstruct->dt);
+            C_RdTree_Nullify(&Llu->URtree_ptr[i]);
+	}
+    }
+    SUPERLU_FREE(Llu->LRtree_ptr);
+    SUPERLU_FREE(Llu->URtree_ptr);
+
+#if ( DEBUGlevel>=1 )
+    CHECK_MALLOC(iam, "Exit zDestroy_Tree()");
+#endif
+}
 
 

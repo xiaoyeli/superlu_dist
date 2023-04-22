@@ -7,7 +7,6 @@ set(headers
     superlu_enum_consts.h
     supermatrix.h
     util_dist.h
-    colamd.h
     gpu_api_utils.h
     gpu_wrapper.h
     ${CMAKE_CURRENT_BINARY_DIR}/superlu_dist_config.h
@@ -18,6 +17,7 @@ set(headers
     TRF3dV100/batch_block_copy.h
     ${PROJECT_SOURCE_DIR}/SRC/superlu_FortranCInterface.h
 )
+#    colamd.h
 if (MSVC)
   list(APPEND headers wingetopt.h)
 endif ()
@@ -45,7 +45,6 @@ set(sources
   xerr_dist.c
   smach_dist.c
   dmach_dist.c
-  colamd.c
   superlu_dist_version.c
   comm_tree.c
   superlu_grid3d.c    ## 3D code
@@ -56,6 +55,7 @@ set(sources
   treeFactorization.c
   sec_structs.c  
 )
+
 if (HAVE_CUDA)
   list(APPEND sources superlu_gpu_utils.cu)
 endif()
@@ -330,7 +330,8 @@ if (BUILD_SHARED_LIBS AND BUILD_STATIC_LIBS)
 endif()
 
 set(superlu_dist_libs ${MPI_C_LIBRARIES} ${MPI_CXX_LIBRARIES} ${BLAS_LIB} ${LAPACK_LIB}
-    ${PARMETIS_LIB} ${COLAMD_LLIB} ${COMBBLAS_LIB} ${MAGMA_LIB} ${CUDA_LIB} ${HIP_LIB}) 
+    ${PARMETIS_LIB} ${COLAMD_LIB} ${COMBBLAS_LIB} ${MAGMA_LIB} ${CUDA_LIB} ${HIP_LIB})
+
 if (NOT MSVC)
   list(APPEND superlu_dist_libs m)
 endif ()
@@ -392,6 +393,6 @@ install(TARGETS ${targets}
     ARCHIVE DESTINATION "${INSTALL_LIB_DIR}"
 )
 install(FILES ${headers}
-# DESTINATION ${CMAKE_INSTALL_PREFIX}/1)
+# DESTINATION ${CMAKE_INSTALL_PREFIX}/include)
   DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
 )

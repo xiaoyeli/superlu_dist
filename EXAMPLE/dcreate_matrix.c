@@ -91,6 +91,10 @@ int dcreate_matrix_postfix(SuperMatrix *A, int nrhs, double **rhs,
     int      iam;
     char     trans[1];
     int_t      *marker;
+    int_t chunk= 2000000000;
+    int count;
+    int_t Nchunk;
+    int_t remainder;
 
     iam = grid->iam;
 
@@ -130,20 +134,50 @@ int dcreate_matrix_postfix(SuperMatrix *A, int nrhs, double **rhs,
 	MPI_Bcast( &m,     1,   mpi_int_t,  0, grid->comm );
 	MPI_Bcast( &n,     1,   mpi_int_t,  0, grid->comm );
 	MPI_Bcast( &nnz,   1,   mpi_int_t,  0, grid->comm );
-	MPI_Bcast( nzval,  nnz, MPI_DOUBLE, 0, grid->comm );
-	MPI_Bcast( rowind, nnz, mpi_int_t,  0, grid->comm );
+
+    
+    Nchunk = CEILING(nnz,chunk);
+    remainder =  nnz%chunk;
+	MPI_Bcast( &Nchunk,   1,   mpi_int_t,  0, grid->comm );
+	MPI_Bcast( &remainder,   1,   mpi_int_t,  0, grid->comm );
+
+    for (i = 0; i < Nchunk; ++i) {
+       int_t idx=i*chunk;
+       if(i==Nchunk-1){
+            count=remainder;
+       }else{
+            count=chunk;
+       }  
+        MPI_Bcast( &nzval[idx],  count, MPI_DOUBLE, 0, grid->comm );
+        MPI_Bcast( &rowind[idx], count, mpi_int_t,  0, grid->comm );       
+    }
+
+
+
+
 	MPI_Bcast( colptr, n+1, mpi_int_t,  0, grid->comm );
     } else {
 	/* Receive matrix A from PE 0. */
 	MPI_Bcast( &m,   1,   mpi_int_t,  0, grid->comm );
 	MPI_Bcast( &n,   1,   mpi_int_t,  0, grid->comm );
 	MPI_Bcast( &nnz, 1,   mpi_int_t,  0, grid->comm );
+	MPI_Bcast( &Nchunk,   1,   mpi_int_t,  0, grid->comm );
+	MPI_Bcast( &remainder,   1,   mpi_int_t,  0, grid->comm );
+
 
 	/* Allocate storage for compressed column representation. */
 	dallocateA_dist(n, nnz, &nzval, &rowind, &colptr);
 
-	MPI_Bcast( nzval,   nnz, MPI_DOUBLE, 0, grid->comm );
-	MPI_Bcast( rowind,  nnz, mpi_int_t,  0, grid->comm );
+    for (i = 0; i < Nchunk; ++i) {
+       int_t idx=i*chunk;
+       if(i==Nchunk-1){
+            count=remainder;
+       }else{
+            count=chunk;
+       }  
+        MPI_Bcast( &nzval[idx],  count, MPI_DOUBLE, 0, grid->comm );
+        MPI_Bcast( &rowind[idx], count, mpi_int_t,  0, grid->comm );       
+    }
 	MPI_Bcast( colptr,  n+1, mpi_int_t,  0, grid->comm );
     }
 
@@ -212,6 +246,7 @@ int dcreate_matrix_postfix(SuperMatrix *A, int nrhs, double **rhs,
     for (i = 0; i < n; ++i) {
       for (j = colptr[i]; j < colptr[i+1]; ++j) {
 	row = rowind[j];
+
 	if ( (row>=fst_row) && (row<fst_row+m_loc) ) {
 	  row = row - fst_row;
 	  relpos = marker[row];

@@ -9,6 +9,7 @@ The source code is distributed under BSD license, see the file License.txt
 at the top-level directory.
 */
 
+
 /*! @file slaqgs_dist.c
  * \brief Equlibrates a general sprase matrix
  *
@@ -92,13 +93,13 @@ void
 slaqgs_dist(SuperMatrix *A, float *r, float *c, 
 	float rowcnd, float colcnd, float amax, char *equed)
 {
-    
+
 #define THRESH    (0.1)
     
     /* Local variables */
     NCformat *Astore;
     float   *Aval;
-    int i, j, irow;
+    int_t i, j, irow;
     float large, small, cj;
 
     /* Quick return if possible */
