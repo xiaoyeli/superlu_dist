@@ -43,8 +43,8 @@ at the top-level directory.
  * Static pivoting is a technique that combines the numerical stability
  * of partial pivoting with the scalability of Cholesky (no pivoting),
  * to run accurately and efficiently on large numbers of processors.
- * See our paper at http://www.nersc.gov/~xiaoye/SuperLU/ for a detailed
- * description of the parallel algorithms.
+ * See our SC98 paper at https://portal.nersc.gov/project/sparse/superlu/GESP/
+ * for a detailed description of the parallel algorithms. 
  *
  * The input matrices A and B are distributed by block rows.
  * Here is a graphical illustration (0-based indexing):
@@ -355,7 +355,7 @@ at the top-level directory.
  * A (input/output) SuperMatrix* (local)
  *         On entry, matrix A in A*X=B, of dimension (A->nrow, A->ncol).
  *           The number of linear equations is A->nrow. The type of A must be:
- *           Stype = SLU_NR_loc; Dtype = SLU_D; Mtype = SLU_GE.
+ *           Stype = SLU_NR_loc; Dtype = SLU_S; Mtype = SLU_GE.
  *           That is, A is stored in distributed compressed row format.
  *           See supermatrix.h for the definition of 'SuperMatrix'.
  *           This routine only handles square A, however, the LU factorization

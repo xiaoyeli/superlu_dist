@@ -536,6 +536,8 @@ int writeLUtoDisk(int nsupers, int_t *xsup, dLUstruct_t *LUstruct)
 		printf("Please set environment variable LUFILE to write\n..bye bye");
 		exit(0);
 	}
+	
+	return 0;
 }
 
 #define EPSILON 1e-3
@@ -592,6 +594,8 @@ int checkLUFromDisk(int nsupers, int_t *xsup, dLUstruct_t *LUstruct)
 		printf("Please set environment variable LUFILE to read\n..bye bye");
 		exit(0);
 	}
+
+	return 0;
 }
 
 void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,

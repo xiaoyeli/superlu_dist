@@ -1,3 +1,4 @@
+
 /*! \file
 Copyright (c) 2003, The Regents of the University of California, through
 Lawrence Berkeley National Laboratory (subject to receipt of any required
@@ -914,14 +915,14 @@ typedef struct
 typedef struct
 {
     int* factored;
-    int_t* factored_D;
-    int_t* factored_L;
-    int_t* factored_U;
-    int_t* IrecvPlcd_D;
-    int_t* IbcastPanel_L;         /*I bcast and recv placed for the k-th L panel*/
-    int_t* IbcastPanel_U;         /*I bcast and recv placed for the k-th U panel*/
-    int_t* numChildLeft;            /*number of children left to be factored*/
-    int_t* gpuLUreduced;          /*New for GPU acceleration*/
+    int* factored_D;
+    int* factored_L;
+    int* factored_U;
+    int* IrecvPlcd_D;
+    int* IbcastPanel_L;  /*I bcast and recv placed for the k-th L panel*/
+    int* IbcastPanel_U;  /*I bcast and recv placed for the k-th U panel*/
+    //int* numChildLeft; /* (NOT USED in this structure) number of children left to be factored*/
+    int* gpuLUreduced;   /*New for GPU acceleration*/
 }factStat_t;
 
 typedef struct
@@ -1382,7 +1383,7 @@ extern int_t* getFactPerm(int_t);
 extern int_t* getFactIperm(int_t*, int_t);
 
 extern int_t initCommRequests(commRequests_t* comReqs, gridinfo_t * grid);
-extern int_t initFactStat(int_t nsupers, factStat_t* factStat);
+extern int_t initFactStat(int nsupers, factStat_t* factStat);
 extern int   freeFactStat(factStat_t* factStat);
 extern int_t initFactNodelists(int_t, int_t, int_t, factNodelists_t*);
 extern int   freeFactNodelists(factNodelists_t* fNlists);
@@ -1429,7 +1430,7 @@ extern int_t Wait_UDiagBlock_Recv(MPI_Request *, SCT_t *);
 extern int_t Test_UDiagBlock_Recv(MPI_Request *, SCT_t *);
 extern int_t Wait_LDiagBlock_Recv(MPI_Request *, SCT_t *);
 extern int_t Test_LDiagBlock_Recv(MPI_Request *, SCT_t *);
-extern int_t LDiagBlockRecvWait( int_t k, int_t* factored_U, MPI_Request *, gridinfo_t *);
+extern int_t LDiagBlockRecvWait( int_t k, int* factored_U, MPI_Request *, gridinfo_t *);
 
 /*=====================*/
 

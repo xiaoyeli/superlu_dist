@@ -14,8 +14,9 @@ at the top-level directory.
  *
  * <pre>
  * -- Distributed SuperLU routine (version 7.0) --
- * Lawrence Berkeley National Lab, Georgia Institute of Technology.
- * May 10, 2019
+ * Lawrence Berkeley National Lab, Georgia Institute of Technology,
+ * Oak Ridge National Lab
+ * May 12, 2021
  */
 #include "superlu_zdefs.h"
 #if 0
@@ -102,7 +103,7 @@ int_t zBcast_LPanel
         }
     }
     //SCT->Bcast_UPanel_tl += (double) ( _rdtsc() - t1);
-    SCT->Bcast_UPanel_tl +=  SuperLU_timer_() - t1;
+    SCT->Bcast_UPanel_tl += SuperLU_timer_() - t1;
     return 0;
 }
 
@@ -191,7 +192,7 @@ int_t zBcast_UPanel(int_t k, int_t k0, int_t* usub,
         }           /* for pi ... */
     }
     //SCT->Bcast_UPanel_tl += (double) ( _rdtsc() - t1);
-    SCT->Bcast_UPanel_tl += SuperLU_timer_() - t1;
+    SCT->Bcast_UPanel_tl +=  SuperLU_timer_() - t1;
     return 0;
 }
 
@@ -241,7 +242,7 @@ int_t zWait_URecv
     MPI_Wait (&recv_req[1], &status);
     MPI_Get_count (&status, SuperLU_MPI_DOUBLE_COMPLEX, &msgcnt[3]);
     //SCT->Wait_URecv_tl += (double) ( _rdtsc() - t1);
-    SCT->Wait_URecv_tl +=  SuperLU_timer_() - t1;
+    SCT->Wait_URecv_tl += SuperLU_timer_() - t1;
     return 0;
 }
 
@@ -321,7 +322,7 @@ int_t zRecv_UDiagBlock(int_t k0, doublecomplex *ublk_ptr, /*pointer for the diag
     MPI_Recv (ublk_ptr, size, SuperLU_MPI_DOUBLE_COMPLEX, src,
               SLU_MPI_TAG (4, k0), comm, &status);
     //SCT->Recv_UDiagBlock_tl += (double) ( _rdtsc() - t1);
-    SCT->Recv_UDiagBlock_tl +=  SuperLU_timer_() - t1;
+    SCT->Recv_UDiagBlock_tl += SuperLU_timer_() - t1;
     return 0;
 }
 
@@ -459,7 +460,7 @@ int_t zIBcast_LDiagBlock(int_t k, doublecomplex *lblk_ptr, /*pointer for the dia
 
 #endif 
 
-int_t zUDiagBlockRecvWait( int_t k,  int_t* IrecvPlcd_D, int_t* factored_L,
+int_t zUDiagBlockRecvWait( int_t k,  int* IrecvPlcd_D, int* factored_L,
                            MPI_Request * U_diag_blk_recv_req,
                            gridinfo_t *grid,
                            zLUstruct_t *LUstruct, SCT_t *SCT)

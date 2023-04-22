@@ -470,7 +470,7 @@ int dcreate_block_diag_3d(SuperMatrix *A, int batchCount, int nrhs, double **rhs
 	col_offset += nnz_d;
     }
     colptr[col] = nnz;  /* +1 as an end marker */
-    printf("final col %d, nnz %d\n", col, nnz);
+    //printf("final col %d, nnz %d\n", col, nnz);
 
     
     // free the single block 

@@ -43,8 +43,8 @@ at the top-level directory.
  * Static pivoting is a technique that combines the numerical stability
  * of partial pivoting with the scalability of Cholesky (no pivoting),
  * to run accurately and efficiently on large numbers of processors.
- * See our paper at http://www.nersc.gov/~xiaoye/SuperLU/ for a detailed
- * description of the parallel algorithms.
+ * See our SC98 paper at https://portal.nersc.gov/project/sparse/superlu/GESP/
+ * for a detailed description of the parallel algorithms. 
  *
  * The input matrices A and B are distributed by block rows.
  * Here is a graphical illustration (0-based indexing):
@@ -1400,34 +1400,6 @@ pdgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 #endif
 
 
-#if ( defined(GPU_ACC) && defined(GPU_SOLVE) )
-        if(options->DiagInv==NO){
-	    if (iam==0) {
-	        printf("!!WARNING: GPU trisolve requires setting options->DiagInv==YES\n");
-                printf("           otherwise, use CPU trisolve\n");
-		fflush(stdout);
-	    }
-	    //exit(0);  // Sherry: need to return an error flag
-	}
-#endif
-
-	if ( options->DiagInv==YES && (Fact != FACTORED) ) {
-		pdCompute_Diag_Inv(n, LUstruct, grid, stat, info);
-#ifdef GPU_ACC
-		pdconvertU(options, grid, LUstruct, stat, n);
-		checkGPU(gpuMemcpy(LUstruct->Llu->d_Linv_bc_dat, LUstruct->Llu->Linv_bc_dat,
-		(LUstruct->Llu->Linv_bc_cnt) * sizeof(double), gpuMemcpyHostToDevice));
-		checkGPU(gpuMemcpy(LUstruct->Llu->d_Uinv_bc_dat, LUstruct->Llu->Uinv_bc_dat,
-		(LUstruct->Llu->Uinv_bc_cnt) * sizeof(double), gpuMemcpyHostToDevice));
-		checkGPU(gpuMemcpy(LUstruct->Llu->d_Lnzval_bc_dat, LUstruct->Llu->Lnzval_bc_dat,
-		(LUstruct->Llu->Lnzval_bc_cnt) * sizeof(double), gpuMemcpyHostToDevice));
-#endif
-	}
-
-
-
-
-
     /* ------------------------------------------------------------
        Compute the solution matrix X.
        ------------------------------------------------------------*/
@@ -1486,6 +1458,33 @@ pdgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 	       For repeated call to pdgssvx(), no need to re-initialilze
 	       the Solve data & communication structures, unless a new
 	       factorization with Fact == DOFACT or SamePattern is asked for. */
+	}
+
+#if ( defined(GPU_ACC) && defined(GPU_SOLVE) )
+        if(options->DiagInv==NO){
+	    if (iam==0) {
+	        printf("!!WARNING: GPU trisolve requires setting options->DiagInv==YES\n");
+                printf("           otherwise, use CPU trisolve\n");
+		fflush(stdout);
+	    }
+	    //exit(0);  // Sherry: need to return an error flag
+	}
+#endif
+
+	if ( options->DiagInv==YES && (Fact != FACTORED) ) {
+	    pdCompute_Diag_Inv(n, LUstruct, grid, stat, info);
+	    
+#ifdef GPU_ACC
+
+       	    pdconvertU(options, grid, LUstruct, stat, n);
+       
+            checkGPU(gpuMemcpy(LUstruct->Llu->d_Linv_bc_dat, LUstruct->Llu->Linv_bc_dat,
+	        (LUstruct->Llu->Linv_bc_cnt) * sizeof(double), gpuMemcpyHostToDevice));
+            checkGPU(gpuMemcpy(LUstruct->Llu->d_Uinv_bc_dat, LUstruct->Llu->Uinv_bc_dat,
+	        (LUstruct->Llu->Uinv_bc_cnt) * sizeof(double), gpuMemcpyHostToDevice));
+            checkGPU(gpuMemcpy(LUstruct->Llu->d_Lnzval_bc_dat, LUstruct->Llu->Lnzval_bc_dat,
+	        (LUstruct->Llu->Lnzval_bc_cnt) * sizeof(double), gpuMemcpyHostToDevice));
+#endif
 	}
 
     // #pragma omp parallel

@@ -413,6 +413,11 @@ typedef struct
     sForest_t** sForests;
     int_t* supernode2treeMap;
     sLUValSubBuf_t  *LUvsb;
+    
+    /* Sherry added the following 3 for variable size batch. 2/17/23 */
+    int mxLeafNode; /* number of leaf nodes. */
+    int *diagDims;  /* dimensions of the diagonal blocks at any level of the tree */
+    int *gemmCsizes; /* sizes of the C matrices at any level of the tree. */
 } strf3Dpartition_t;
 
 typedef struct
@@ -760,6 +765,9 @@ extern int screate_matrix3d(SuperMatrix *A, int nrhs, float **rhs,
 extern int screate_matrix_postfix3d(SuperMatrix *A, int nrhs, float **rhs,
                            int *ldb, float **x, int *ldx,
                            FILE *fp, char * postfix, gridinfo3d_t *grid3d);
+extern int screate_block_diag_3d(SuperMatrix *A, int batchCount, int nrhs, float **rhs,
+				 int *ldb, float **x, int *ldx,
+				 FILE *fp, char * postfix, gridinfo3d_t *grid3d);
     
 /* Matrix distributed in NRformat_loc in 3D process grid. It converts 
    it to a NRformat_loc distributed in 2D grid in grid-0 */
@@ -893,6 +901,9 @@ extern int_t sgatherAllFactoredLUFr(int_t* myZeroTrIdxs, sForest_t* sForests,
     /* The following are from pdgstrf2.h */
 extern int_t sLpanelUpdate(int_t off0, int_t nsupc, float* ublk_ptr,
 			  int_t ld_ujrow, float* lusup, int_t nsupr, SCT_t*);
+extern void sgstrf2(int_t k, float* diagBlk, int_t LDA, float* BlockUfactor, int_t LDU, 
+            double thresh, int_t* xsup, superlu_dist_options_t *options,
+            SuperLUStat_t *stat, int *info);
 extern void Local_Sgstrf2(superlu_dist_options_t *options, int_t k,
 			  double thresh, float *BlockUFactor, Glu_persist_t *,
 			  gridinfo_t *, sLocalLU_t *,
@@ -1019,9 +1030,8 @@ extern int_t sIRecv_UDiagBlock(int_t k0, float *ublk_ptr, int_t size,
 			       SCT_t*, int);
 extern int_t sIRecv_LDiagBlock(int_t k0, float *L_blk_ptr, int_t size,
 			       int_t src, MPI_Request *, gridinfo_t*, SCT_t*, int);
-extern int_t sUDiagBlockRecvWait( int_t k,  int_t* IrecvPlcd_D, int_t* factored_L,
+extern int_t sUDiagBlockRecvWait( int_t k,  int* IrecvPlcd_D, int* factored_L,
 				  MPI_Request *, gridinfo_t *, sLUstruct_t *, SCT_t *);
-extern int_t LDiagBlockRecvWait( int_t k, int_t* factored_U, MPI_Request *, gridinfo_t *);
 
 #if (MPI_VERSION>2)
 extern int_t sIBcast_UDiagBlock(int_t k, float *ublk_ptr, int_t size,
@@ -1033,7 +1043,7 @@ extern int_t sIBcast_LDiagBlock(int_t k, float *lblk_ptr, int_t size,
     /* from trfCommWrapper.h */
 extern int_t sDiagFactIBCast(int_t k,  int_t k0,
 			     float *BlockUFactor, float *BlockLFactor,
-			     int_t* IrecvPlcd_D, MPI_Request *, MPI_Request *,
+			     int* IrecvPlcd_D, MPI_Request *, MPI_Request *,
 			     MPI_Request *, MPI_Request *, gridinfo_t *,
 			     superlu_dist_options_t *, double thresh,
 			     sLUstruct_t *LUstruct, SuperLUStat_t *, int *info,
@@ -1041,10 +1051,10 @@ extern int_t sDiagFactIBCast(int_t k,  int_t k0,
 extern int_t sUPanelTrSolve( int_t k, float* BlockLFactor, float* bigV,
 			     int_t ldt, Ublock_info_t*, gridinfo_t *,
 			     sLUstruct_t *, SuperLUStat_t *, SCT_t *);
-extern int_t sLPanelUpdate(int_t k,  int_t* IrecvPlcd_D, int_t* factored_L,
+extern int_t sLPanelUpdate(int_t k,  int* IrecvPlcd_D, int* factored_L,
 			   MPI_Request *, float* BlockUFactor, gridinfo_t *,
 			   sLUstruct_t *, SCT_t *);
-extern int_t sUPanelUpdate(int_t k, int_t* factored_U, MPI_Request *,
+extern int_t sUPanelUpdate(int_t k, int* factored_U, MPI_Request *,
 			   float* BlockLFactor, float* bigV,
 			   int_t ldt, Ublock_info_t*, gridinfo_t *,
 			   sLUstruct_t *, SuperLUStat_t *, SCT_t *);
@@ -1060,7 +1070,7 @@ extern int_t sWaitL(int_t k, int* msgcnt, int* msgcntU, MPI_Request *,
 		    MPI_Request *, gridinfo_t *, sLUstruct_t *, SCT_t *);
 extern int_t sWaitU(int_t k, int* msgcnt, MPI_Request *, MPI_Request *,
 		   gridinfo_t *, sLUstruct_t *, SCT_t *);
-extern int_t sLPanelTrSolve(int_t k, int_t* factored_L, float* BlockUFactor,
+extern int_t sLPanelTrSolve(int_t k, int* factored_L, float* BlockUFactor,
 			    gridinfo_t *, sLUstruct_t *);
 
     /* from trfAux.h */
