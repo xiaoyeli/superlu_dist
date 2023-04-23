@@ -616,7 +616,7 @@ int_t LUstruct_v100::dsparseTreeFactorGPU(
         } /*for k0= k_st:k_end */
     } /*for topoLvl = 0:maxTopoLevel*/
 
-#endif /* match  #if 0 at line 325 */
+#endif /* match  #if 0 at line 562 before "for (int_t topoLvl = 0; topoLvl < maxTopoLevel; ++topoLvl)" */
 
 
     /* Sherry added 2/1/23 */
