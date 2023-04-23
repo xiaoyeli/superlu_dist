@@ -614,7 +614,6 @@ dtrf3Dpartition_t* dinitTrf3Dpartition(int_t nsupers,
 
     /* Sherry 2/17/23
        Compute buffer sizes needed for diagonal LU blocks and C matrices in GEMM. */
-
     
     iam = grid->iam;  /* 'grid' is 2D grid */
     int k, k0, k_st, k_end, offset, nsupc, krow, kcol;
@@ -648,7 +647,7 @@ dtrf3Dpartition_t* dinitTrf3Dpartition(int_t nsupers,
         int treeId = myTreeIdxs[ilvl];
         sForest_t* sforest = sForests[treeId];
         if (sforest){
-            int_t *perm_c_supno = sforest->nodeList ;
+            int_t *perm_node = sforest->nodeList ; /* permuted list, in order of factorization */
 	    int maxTopoLevel = sforest->topoInfo.numLvl;/* number of levels at each outer-tree node */
             for (int topoLvl = 0; topoLvl < maxTopoLevel; ++topoLvl)
             {
@@ -660,7 +659,7 @@ dtrf3Dpartition_t* dinitTrf3Dpartition(int_t nsupers,
                 for (int k0 = k_st; k0 < k_end; ++k0)
                 {
                     offset = k0 - k_st;
-                    k = perm_c_supno[k0];
+                    k = perm_node[k0];
                     nsupc = SuperSize (k);
                     krow = PROW (k, grid);
                     kcol = PCOL (k, grid);

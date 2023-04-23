@@ -631,7 +631,7 @@ void PrintInt10(char *name, int_t len, int_t *x)
 {
     register int_t i;
 
-    printf("%10s:", name);
+    printf("%10s: len " IFMT, name, len);
     for (i = 0; i < len; ++i)
     {
         if (i % 10 == 0)
