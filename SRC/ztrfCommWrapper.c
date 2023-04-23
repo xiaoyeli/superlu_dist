@@ -31,7 +31,7 @@ at the top-level directory.
 int_t zDiagFactIBCast(int_t k,  int_t k0,      // supernode to be factored
                      doublecomplex *BlockUFactor,
                      doublecomplex *BlockLFactor,
-                     int_t* IrecvPlcd_D,
+                     int* IrecvPlcd_D,
                      MPI_Request *U_diag_blk_recv_req,
                      MPI_Request *L_diag_blk_recv_req,
                      MPI_Request *U_diag_blk_send_req,
@@ -116,7 +116,7 @@ int_t zDiagFactIBCast(int_t k,  int_t k0,      // supernode to be factored
     return 0;
 }
 
-int_t zLPanelTrSolve( int_t k,   int_t* factored_L,
+int_t zLPanelTrSolve( int_t k,   int* factored_L,
 		      doublecomplex* BlockUFactor,
 		      gridinfo_t *grid,
 		      zLUstruct_t *LUstruct)
@@ -221,7 +221,7 @@ int_t zLPanelTrSolve( int_t k,   int_t* factored_L,
     return 0;
 }  /* zLPanelTrSolve */
 
-int_t zLPanelUpdate( int_t k,  int_t* IrecvPlcd_D, int_t* factored_L,
+int_t zLPanelUpdate( int_t k,  int* IrecvPlcd_D, int* factored_L,
                     MPI_Request * U_diag_blk_recv_req,
                     doublecomplex* BlockUFactor,
                     gridinfo_t *grid,
@@ -355,7 +355,7 @@ int_t zUPanelTrSolve( int_t k,
     return 0;
 } /* zUPanelTrSolve */
 
-int_t zUPanelUpdate( int_t k,  int_t* factored_U,
+int_t zUPanelUpdate( int_t k,  int* factored_U,
                     MPI_Request * L_diag_blk_recv_req,
                     doublecomplex* BlockLFactor,
                     doublecomplex* bigV,

@@ -10,6 +10,11 @@ int_t LUstruct_v100::ancestorReduction3dGPU(int_t ilvl, int_t *myNodeCount,
     int_t maxLvl = log2i(grid3d->zscp.Np) + 1;
     int_t myGrid = grid3d->zscp.Iam;
 
+#if (DEBUGlevel >= 1)
+    printf(".maxLvl %d\n", maxLvl); fflush(stdout);
+    CHECK_MALLOC(grid3d->iam, "Enter ancestorReduction3dGPU()");
+#endif
+	
     int_t sender, receiver;
     if ((myGrid % (1 << (ilvl + 1))) == 0)
     {
@@ -54,6 +59,11 @@ int_t LUstruct_v100::ancestorReduction3dGPU(int_t ilvl, int_t *myNodeCount,
         // return 0;
         SCT->ancsReduce += SuperLU_timer_() - treduce;
     }
+    
+#if (DEBUGlevel >= 1)
+        CHECK_MALLOC(grid3d->iam, "Exit ancestorReduction3dGPU()");
+#endif
+    
     return 0;
 }
 

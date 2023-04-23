@@ -97,13 +97,13 @@ int zsparseTreeFactor_ASYNC_GPU(
 
     int_t maxTopoLevel = treeTopoInfo->numLvl;
     int_t *eTreeTopLims = treeTopoInfo->eTreeTopLims;
-    int_t *IrecvPlcd_D = factStat->IrecvPlcd_D;
-    int_t *factored_D = factStat->factored_D;
-    int_t *factored_L = factStat->factored_L;
-    int_t *factored_U = factStat->factored_U;
-    int_t *IbcastPanel_L = factStat->IbcastPanel_L;
-    int_t *IbcastPanel_U = factStat->IbcastPanel_U;
-    int_t *gpuLUreduced = factStat->gpuLUreduced;
+    int *IrecvPlcd_D = factStat->IrecvPlcd_D;
+    int *factored_D = factStat->factored_D;
+    int *factored_L = factStat->factored_L;
+    int *factored_U = factStat->factored_U;
+    int *IbcastPanel_L = factStat->IbcastPanel_L;
+    int *IbcastPanel_U = factStat->IbcastPanel_U;
+    int *gpuLUreduced = factStat->gpuLUreduced;
     int_t *xsup = LUstruct->Glu_persist->xsup;
 
     // int_t numLAMax = getNumLookAhead();
@@ -460,8 +460,9 @@ int zsparseTreeFactor_ASYNC_GPU(
             if (topoLvl < maxTopoLevel - 1)
             { /* Not the root */
                 int_t k_parent = gEtreeInfo->setree[k];
-                gEtreeInfo->numChildLeft[k_parent]--;
-                if (gEtreeInfo->numChildLeft[k_parent] == 0 && k_parent < nnodes)
+		if (k_parent < nnodes)
+                    gEtreeInfo->numChildLeft[k_parent]--;
+                if (k_parent < nnodes && gEtreeInfo->numChildLeft[k_parent] == 0)
                 { /* if k is the last child in this level */
                     int_t k0_parent = myIperm[k_parent];
                     if (k0_parent > 0)

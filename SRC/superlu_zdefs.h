@@ -413,6 +413,11 @@ typedef struct
     sForest_t** sForests;
     int_t* supernode2treeMap;
     zLUValSubBuf_t  *LUvsb;
+    
+    /* Sherry added the following 3 for variable size batch. 2/17/23 */
+    int mxLeafNode; /* number of leaf nodes. */
+    int *diagDims;  /* dimensions of the diagonal blocks at any level of the tree */
+    int *gemmCsizes; /* sizes of the C matrices at any level of the tree. */
 } ztrf3Dpartition_t;
 
 typedef struct
@@ -762,6 +767,9 @@ extern int zcreate_matrix3d(SuperMatrix *A, int nrhs, doublecomplex **rhs,
 extern int zcreate_matrix_postfix3d(SuperMatrix *A, int nrhs, doublecomplex **rhs,
                            int *ldb, doublecomplex **x, int *ldx,
                            FILE *fp, char * postfix, gridinfo3d_t *grid3d);
+extern int zcreate_block_diag_3d(SuperMatrix *A, int batchCount, int nrhs, doublecomplex **rhs,
+				 int *ldb, doublecomplex **x, int *ldx,
+				 FILE *fp, char * postfix, gridinfo3d_t *grid3d);
     
 /* Matrix distributed in NRformat_loc in 3D process grid. It converts 
    it to a NRformat_loc distributed in 2D grid in grid-0 */
@@ -895,6 +903,9 @@ extern int_t zgatherAllFactoredLUFr(int_t* myZeroTrIdxs, sForest_t* sForests,
     /* The following are from pdgstrf2.h */
 extern int_t zLpanelUpdate(int_t off0, int_t nsupc, doublecomplex* ublk_ptr,
 			  int_t ld_ujrow, doublecomplex* lusup, int_t nsupr, SCT_t*);
+extern void zgstrf2(int_t k, doublecomplex* diagBlk, int_t LDA, doublecomplex* BlockUfactor, int_t LDU, 
+            double thresh, int_t* xsup, superlu_dist_options_t *options,
+            SuperLUStat_t *stat, int *info);
 extern void Local_Zgstrf2(superlu_dist_options_t *options, int_t k,
 			  double thresh, doublecomplex *BlockUFactor, Glu_persist_t *,
 			  gridinfo_t *, zLocalLU_t *,
@@ -1021,9 +1032,8 @@ extern int_t zIRecv_UDiagBlock(int_t k0, doublecomplex *ublk_ptr, int_t size,
 			       SCT_t*, int);
 extern int_t zIRecv_LDiagBlock(int_t k0, doublecomplex *L_blk_ptr, int_t size,
 			       int_t src, MPI_Request *, gridinfo_t*, SCT_t*, int);
-extern int_t zUDiagBlockRecvWait( int_t k,  int_t* IrecvPlcd_D, int_t* factored_L,
+extern int_t zUDiagBlockRecvWait( int_t k,  int* IrecvPlcd_D, int* factored_L,
 				  MPI_Request *, gridinfo_t *, zLUstruct_t *, SCT_t *);
-extern int_t LDiagBlockRecvWait( int_t k, int_t* factored_U, MPI_Request *, gridinfo_t *);
 
 #if (MPI_VERSION>2)
 extern int_t zIBcast_UDiagBlock(int_t k, doublecomplex *ublk_ptr, int_t size,
@@ -1035,7 +1045,7 @@ extern int_t zIBcast_LDiagBlock(int_t k, doublecomplex *lblk_ptr, int_t size,
     /* from trfCommWrapper.h */
 extern int_t zDiagFactIBCast(int_t k,  int_t k0,
 			     doublecomplex *BlockUFactor, doublecomplex *BlockLFactor,
-			     int_t* IrecvPlcd_D, MPI_Request *, MPI_Request *,
+			     int* IrecvPlcd_D, MPI_Request *, MPI_Request *,
 			     MPI_Request *, MPI_Request *, gridinfo_t *,
 			     superlu_dist_options_t *, double thresh,
 			     zLUstruct_t *LUstruct, SuperLUStat_t *, int *info,
@@ -1043,10 +1053,10 @@ extern int_t zDiagFactIBCast(int_t k,  int_t k0,
 extern int_t zUPanelTrSolve( int_t k, doublecomplex* BlockLFactor, doublecomplex* bigV,
 			     int_t ldt, Ublock_info_t*, gridinfo_t *,
 			     zLUstruct_t *, SuperLUStat_t *, SCT_t *);
-extern int_t zLPanelUpdate(int_t k,  int_t* IrecvPlcd_D, int_t* factored_L,
+extern int_t zLPanelUpdate(int_t k,  int* IrecvPlcd_D, int* factored_L,
 			   MPI_Request *, doublecomplex* BlockUFactor, gridinfo_t *,
 			   zLUstruct_t *, SCT_t *);
-extern int_t zUPanelUpdate(int_t k, int_t* factored_U, MPI_Request *,
+extern int_t zUPanelUpdate(int_t k, int* factored_U, MPI_Request *,
 			   doublecomplex* BlockLFactor, doublecomplex* bigV,
 			   int_t ldt, Ublock_info_t*, gridinfo_t *,
 			   zLUstruct_t *, SuperLUStat_t *, SCT_t *);
@@ -1062,7 +1072,7 @@ extern int_t zWaitL(int_t k, int* msgcnt, int* msgcntU, MPI_Request *,
 		    MPI_Request *, gridinfo_t *, zLUstruct_t *, SCT_t *);
 extern int_t zWaitU(int_t k, int* msgcnt, MPI_Request *, MPI_Request *,
 		   gridinfo_t *, zLUstruct_t *, SCT_t *);
-extern int_t zLPanelTrSolve(int_t k, int_t* factored_L, doublecomplex* BlockUFactor,
+extern int_t zLPanelTrSolve(int_t k, int* factored_L, doublecomplex* BlockUFactor,
 			    gridinfo_t *, zLUstruct_t *);
 
     /* from trfAux.h */

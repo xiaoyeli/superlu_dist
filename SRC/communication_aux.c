@@ -213,9 +213,7 @@ int Wait_LUDiagSend(int_t k, MPI_Request *U_diag_blk_send_req,
     return 0;
 }
 
-
-
-int_t LDiagBlockRecvWait( int_t k,   int_t* factored_U,
+int_t LDiagBlockRecvWait( int_t k,   int* factored_U,
                           MPI_Request * L_diag_blk_recv_req,
                           gridinfo_t *grid)
 {

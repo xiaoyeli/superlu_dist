@@ -37,9 +37,8 @@ at the top-level directory.
  * Static pivoting is a technique that combines the numerical stability
  * of partial pivoting with the scalability of Cholesky (no pivoting),
  * to run accurately and efficiently on large numbers of processors.
- *
- * See our paper at http://www.nersc.gov/~xiaoye/SuperLU/ for a detailed
- * description of the parallel algorithms.
+ * See our SC98 paper at https://portal.nersc.gov/project/sparse/superlu/GESP/
+ * for a detailed description of the parallel algorithms.
  *
  * Here are the options for using this code:
  *

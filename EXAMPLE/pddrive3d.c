@@ -120,7 +120,7 @@ main (int argc, char *argv[])
     char **cpp, c, *suffix;
     FILE *fp, *fopen ();
     extern int cpp_defs ();
-    int ii, omp_mpi_level;
+    int ii, omp_mpi_level, batchCount = 0;
     int*    usermap;     /* The following variables are used for batch solves */
     float result_min[2];
     result_min[0]=1e10;
@@ -207,71 +207,24 @@ main (int argc, char *argv[])
         }
     }
 
-    if ( batch ) { /* in the batch mode: create multiple SuperLU grids,
-		      each grid solving one linear system. */
-	/* ------------------------------------------------------------
-	   INITIALIZE MULTIPLE SUPERLU PROCESS GRIDS. 
-	   ------------------------------------------------------------*/
-	MPI_Comm_rank(MPI_COMM_WORLD, &myrank);
-	usermap = SUPERLU_MALLOC(nprow*npcol*npdep * sizeof(int));
-	int color = myrank/(nprow*npcol*npdep); /* Assuming each grid uses the same number of nprow, npcol and npdep */
-	MPI_Comm_split(MPI_COMM_WORLD, color, myrank, &SubComm);
-	p = 0;
-	for (int k = 0; k < npdep; ++k) 
-	    for (int i = 0; i < nprow; ++i)
-		for (int j = 0; j < npcol; ++j) usermap[i + j*nprow + k*nprow*npcol] = p++;
-	superlu_gridmap3d(SubComm, nprow, npcol, npdep, usermap, &grid);    
-	SUPERLU_FREE(usermap);
-
+    /* ------------------------------------------------------------
+       INITIALIZE THE SUPERLU PROCESS GRID.
+       ------------------------------------------------------------ */
+    superlu_gridinit3d (MPI_COMM_WORLD, nprow, npcol, npdep, &grid);
 #ifdef GPU_ACC
-        int superlu_acc_offload = get_acc_offload();
-        if (superlu_acc_offload) {
-	    /* Binding each MPI to a GPU device */
-	    char *ttemp;
-	    ttemp = getenv ("SUPERLU_BIND_MPI_GPU");
-
-	    if (ttemp) {
-	        int devs, rank;
-	        MPI_Comm_rank(MPI_COMM_WORLD, &rank); // MPI_COMM_WORLD needs to be used here instead of SubComm
-	        gpuGetDeviceCount(&devs);  // Returns the number of compute-capable devices
-	        gpuSetDevice(rank % devs); // Set device to be used for GPU executions
-	    }
-            // This is to initialize GPU, which can be costly.
-            double t1 = SuperLU_timer_();
-            gpuFree(0);
-            double t2 = SuperLU_timer_();
-            if(!myrank)printf("first gpufree time: %7.4f\n",t2-t1);
-            gpublasHandle_t hb;
-            gpublasCreate(&hb);
-            if(!myrank)printf("first blas create time: %7.4f\n",SuperLU_timer_()-t2);
-            gpublasDestroy(hb);
+    int superlu_acc_offload = get_acc_offload();
+    if (superlu_acc_offload) {
+        MPI_Comm_rank(MPI_COMM_WORLD, &myrank);
+        double t1 = SuperLU_timer_();
+        gpuFree(0);
+        double t2 = SuperLU_timer_();
+        if(!myrank)printf("first gpufree time: %7.4f\n",t2-t1);
+        gpublasHandle_t hb;
+        gpublasCreate(&hb);
+        if(!myrank)printf("first blas create time: %7.4f\n",SuperLU_timer_()-t2);
+        gpublasDestroy(hb);
 	}
 #endif
-
-	// printf("grid.iam %5d, myrank %5d\n",grid.iam,myrank);
-	// fflush(stdout);
-	
-    } else {
-        /* ------------------------------------------------------------
-           INITIALIZE THE SUPERLU PROCESS GRID.
-           ------------------------------------------------------------ */
-        superlu_gridinit3d (MPI_COMM_WORLD, nprow, npcol, npdep, &grid);      
-#ifdef GPU_ACC
-        int superlu_acc_offload = get_acc_offload();
-        if (superlu_acc_offload) {
-            MPI_Comm_rank(MPI_COMM_WORLD, &myrank);
-            double t1 = SuperLU_timer_();
-            gpuFree(0);
-            double t2 = SuperLU_timer_();
-            if(!myrank)printf("first gpufree time: %7.4f\n",t2-t1);
-            gpublasHandle_t hb;
-            gpublasCreate(&hb);
-            if(!myrank)printf("first blas create time: %7.4f\n",SuperLU_timer_()-t2);
-            gpublasDestroy(hb);
-	}
-#endif
-    }
-
     if(grid.iam==0) {
 	MPI_Query_thread(&omp_mpi_level);
 	switch (omp_mpi_level) {
@@ -335,8 +288,15 @@ main (int argc, char *argv[])
 	
 #else
     // *fp0 = *fp;
-    dcreate_matrix_postfix3d(&A, nrhs, &b, &ldb,
-                             &xtrue, &ldx, fp, suffix, &(grid));
+
+    if ( batchCount > 0 ) {
+	printf("batchCount %d\n", batchCount);
+	dcreate_block_diag_3d(&A, batchCount, nrhs, &b, &ldb, &xtrue, &ldx, fp, suffix, &grid);
+    } else {
+	dcreate_matrix_postfix3d(&A, nrhs, &b, &ldb,
+				 &xtrue, &ldx, fp, suffix, &(grid));
+    }
+    
     //printf("ldx %d, ldb %d\n", ldx, ldb);
     
 #if 0  // following code is only for checking *Gather* routine
@@ -407,7 +367,6 @@ main (int argc, char *argv[])
 #if 0
     options.ReplaceTinyPivot = YES;
     options.RowPerm = NOROWPERM;
-    options.IterRefine = NOREFINE;
     options.ColPerm = NATURAL;
     options.Equil = NO;
     options.ReplaceTinyPivot = YES;
@@ -418,6 +377,9 @@ main (int argc, char *argv[])
     if (lookahead != -1) options.num_lookaheads = lookahead;
     if (ir != -1) options.IterRefine = ir;
     
+    if ( batchCount > 0 )
+        options.batchCount = batchCount;
+      
     if (!iam) {
 	print_sp_ienv_dist(&options);
 	print_options_dist(&options);

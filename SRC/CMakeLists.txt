@@ -14,6 +14,7 @@ set(headers
     TRF3dV100/commWrapper.hpp
     TRF3dV100/superlu_summit.h
     TRF3dV100/lupanels_GPU.cuh
+    TRF3dV100/batch_block_copy.h
     ${PROJECT_SOURCE_DIR}/SRC/superlu_FortranCInterface.h
 )
 #    colamd.h
@@ -54,7 +55,14 @@ set(sources
   treeFactorization.c
   sec_structs.c  
 )
-#  colamd.c
+
+# if (HAVE_CUDA)
+#   list(APPEND sources superlu_gpu_utils.cu)
+# endif()
+
+# if (HAVE_HIP)
+#   list(APPEND sources superlu_gpu_utils.hip.cpp)
+# endif()
 
 if (MSVC)
   list(APPEND sources wingetopt.c)
@@ -68,6 +76,7 @@ if(enable_double)
 if(TPL_ENABLE_CUDALIB)
   list(APPEND sources pdgstrs_lsum_cuda.cu)
   list(APPEND sources TRF3dV100/schurCompUpdate.cu )
+  list(APPEND sources TRF3dV100/batch_block_copy.cu)
 endif()
 # if(TPL_ENABLE_HIPLIB)
 #   list(APPEND sources pdgstrs_lsum_cuda.hip.cpp)
@@ -115,18 +124,7 @@ endif()
     dnrformat_loc3d.c 
     pdgstrf3d.c 
     dtreeFactorization.c
-    TRF3dV100/pdgstrf3d_summit.cpp
-    TRF3dV100/dsparseTreeFactor_summit.cpp
-    TRF3dV100/dsparseTreeFactorGPU.cpp
-    TRF3dV100/lupanels.cpp
-    TRF3dV100/lupanels_comm3d.cpp
-    TRF3dV100/lupanelsComm3dGPU.cpp
-    TRF3dV100/commWrapper.cpp 
-    TRF3dV100/l_panels.cpp
-    TRF3dV100/u_panels.cpp
-    TRF3dV100/lupanels_GPU.cpp
-    TRF3dV100/anc25d.cpp 
-    TRF3dV100/LUgpuCHandle_interface.cpp
+    
     dtreeFactorizationGPU.c
     dgather.c
     dscatter3d.c
@@ -139,6 +137,18 @@ endif()
 if (TPL_ENABLE_CUDALIB)
   list(APPEND sources pdgstrs_lsum_cuda.cu superlu_gpu_utils.cu dsuperlu_gpu.cu
   TRF3dV100/schurCompUpdate.cu 
+  TRF3dV100/pdgstrf3d_summit.cpp
+    TRF3dV100/dsparseTreeFactor_summit.cpp
+    TRF3dV100/dsparseTreeFactorGPU.cpp
+    TRF3dV100/lupanels.cpp
+    TRF3dV100/lupanels_comm3d.cpp
+    TRF3dV100/lupanelsComm3dGPU.cpp
+    TRF3dV100/commWrapper.cpp 
+    TRF3dV100/l_panels.cpp
+    TRF3dV100/u_panels.cpp
+    TRF3dV100/lupanels_GPU.cpp
+    TRF3dV100/anc25d.cpp 
+    TRF3dV100/LUgpuCHandle_interface.cpp
   )
 endif()
 
@@ -291,6 +301,7 @@ if (TPL_ENABLE_HIPLIB)
   set(hipsources
     pdgstrs_lsum_cuda.hip.cpp
     dsuperlu_gpu.hip.cpp
+    superlu_gpu_utils.hip.cpp
   )
   if(enable_single)
   list(APPEND hipsources ssuperlu_gpu.hip.cpp)
@@ -322,11 +333,10 @@ endif()
 
 if (TPL_ENABLE_NVSHMEM)
 set(superlu_dist_libs ${MPI_C_LIBRARIES} ${MPI_CXX_LIBRARIES} ${BLAS_LIB} ${LAPACK_LIB}
-    ${PARMETIS_LIB} ${COLAMD_LIB} ${COMBBLAS_LIB} ${CUDA_LIB} ${HIP_LIB} ${NVSHMEM_LIB}) 
+    ${PARMETIS_LIB} ${COLAMD_LIB} ${COMBBLAS_LIB} ${MAGMA_LIB} ${CUDA_LIB} ${HIP_LIB} ${NVSHMEM_LIB}) 
 else()
 set(superlu_dist_libs ${MPI_C_LIBRARIES} ${MPI_CXX_LIBRARIES} ${BLAS_LIB} ${LAPACK_LIB}
-    ${PARMETIS_LIB} ${COLAMD_LIB} ${COMBBLAS_LIB} ${CUDA_LIB} ${HIP_LIB}) 
-endif()
+    ${PARMETIS_LIB} ${COLAMD_LIB} ${COMBBLAS_LIB} ${MAGMA_LIB} ${CUDA_LIB} ${HIP_LIB})
 
 if (NOT MSVC)
   list(APPEND superlu_dist_libs m)

@@ -21,6 +21,9 @@
 /* Enable CombBLAS */
 #cmakedefine HAVE_COMBBLAS @HAVE_COMBBLAS@
 
+/* Enable MAGMA */
+#cmakedefine HAVE_MAGMA @HAVE_MAGMA@
+
 /* enable 64bit index mode */
 #cmakedefine XSDK_INDEX_SIZE @XSDK_INDEX_SIZE@
 

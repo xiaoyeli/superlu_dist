@@ -425,6 +425,11 @@ typedef struct
     int_t* supernode2treeMap;
     int* supernodeMask;
     dLUValSubBuf_t  *LUvsb;
+    
+    /* Sherry added the following 3 for variable size batch. 2/17/23 */
+    int mxLeafNode; /* number of leaf nodes. */
+    int *diagDims;  /* dimensions of the diagonal blocks at any level of the tree */
+    int *gemmCsizes; /* sizes of the C matrices at any level of the tree. */
 } dtrf3Dpartition_t;
 
 typedef struct
@@ -1065,8 +1070,11 @@ extern int dcreate_matrix3d(SuperMatrix *A, int nrhs, double **rhs,
 extern int dcreate_matrix_postfix3d(SuperMatrix *A, int nrhs, double **rhs,
                            int *ldb, double **x, int *ldx,
                            FILE *fp, char * postfix, gridinfo3d_t *grid3d);
-
-/* Matrix distributed in NRformat_loc in 3D process grid. It converts
+extern int dcreate_block_diag_3d(SuperMatrix *A, int batchCount, int nrhs, double **rhs,
+				 int *ldb, double **x, int *ldx,
+				 FILE *fp, char * postfix, gridinfo3d_t *grid3d);
+    
+/* Matrix distributed in NRformat_loc in 3D process grid. It converts 
    it to a NRformat_loc distributed in 2D grid in grid-0 */
 extern void dGatherNRformat_loc3d(fact_t Fact, NRformat_loc *A, double *B,
 				   int ldb, int nrhs, gridinfo3d_t *grid3d,
@@ -1332,9 +1340,8 @@ extern int_t dIRecv_UDiagBlock(int_t k0, double *ublk_ptr, int_t size,
 			       SCT_t*, int);
 extern int_t dIRecv_LDiagBlock(int_t k0, double *L_blk_ptr, int_t size,
 			       int_t src, MPI_Request *, gridinfo_t*, SCT_t*, int);
-extern int_t dUDiagBlockRecvWait( int_t k,  int_t* IrecvPlcd_D, int_t* factored_L,
+extern int_t dUDiagBlockRecvWait( int_t k,  int* IrecvPlcd_D, int* factored_L,
 				  MPI_Request *, gridinfo_t *, dLUstruct_t *, SCT_t *);
-extern int_t LDiagBlockRecvWait( int_t k, int_t* factored_U, MPI_Request *, gridinfo_t *);
 
 #if (MPI_VERSION>2)
 extern int_t dIBcast_UDiagBlock(int_t k, double *ublk_ptr, int_t size,
@@ -1346,7 +1353,7 @@ extern int_t dIBcast_LDiagBlock(int_t k, double *lblk_ptr, int_t size,
     /* from trfCommWrapper.h */
 extern int_t dDiagFactIBCast(int_t k,  int_t k0,
 			     double *BlockUFactor, double *BlockLFactor,
-			     int_t* IrecvPlcd_D, MPI_Request *, MPI_Request *,
+			     int* IrecvPlcd_D, MPI_Request *, MPI_Request *,
 			     MPI_Request *, MPI_Request *, gridinfo_t *,
 			     superlu_dist_options_t *, double thresh,
 			     dLUstruct_t *LUstruct, SuperLUStat_t *, int *info,
@@ -1354,10 +1361,10 @@ extern int_t dDiagFactIBCast(int_t k,  int_t k0,
 extern int_t dUPanelTrSolve( int_t k, double* BlockLFactor, double* bigV,
 			     int_t ldt, Ublock_info_t*, gridinfo_t *,
 			     dLUstruct_t *, SuperLUStat_t *, SCT_t *);
-extern int_t dLPanelUpdate(int_t k,  int_t* IrecvPlcd_D, int_t* factored_L,
+extern int_t dLPanelUpdate(int_t k,  int* IrecvPlcd_D, int* factored_L,
 			   MPI_Request *, double* BlockUFactor, gridinfo_t *,
 			   dLUstruct_t *, SCT_t *);
-extern int_t dUPanelUpdate(int_t k, int_t* factored_U, MPI_Request *,
+extern int_t dUPanelUpdate(int_t k, int* factored_U, MPI_Request *,
 			   double* BlockLFactor, double* bigV,
 			   int_t ldt, Ublock_info_t*, gridinfo_t *,
 			   dLUstruct_t *, SuperLUStat_t *, SCT_t *);
@@ -1373,7 +1380,7 @@ extern int_t dWaitL(int_t k, int* msgcnt, int* msgcntU, MPI_Request *,
 		    MPI_Request *, gridinfo_t *, dLUstruct_t *, SCT_t *);
 extern int_t dWaitU(int_t k, int* msgcnt, MPI_Request *, MPI_Request *,
 		   gridinfo_t *, dLUstruct_t *, SCT_t *);
-extern int_t dLPanelTrSolve(int_t k, int_t* factored_L, double* BlockUFactor,
+extern int_t dLPanelTrSolve(int_t k, int* factored_L, double* BlockUFactor,
 			    gridinfo_t *, dLUstruct_t *);
 
     /* from trfAux.h */

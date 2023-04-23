@@ -1,3 +1,4 @@
+
 /*! \file
 Copyright (c) 2003, The Regents of the University of California, through
 Lawrence Berkeley National Laboratory (subject to receipt of any required
@@ -754,6 +755,8 @@ typedef struct {
     int superlu_max_buffer_size; /* max. buffer size on GPU; see sp_ienv(8) */
     int superlu_num_gpu_streams; /* number of GPU streams; see sp_ienv(9) */
     int superlu_acc_offload; /* whether to offload work to GPU; see sp_ienv(10) */
+    int batchCount;     /* number of systems in the batched interface 
+			   0 : not to use batch interface (default)    */
     yes_no_t      SymPattern;      /* symmetric factorization          */
     yes_no_t      Use_TensorCore;  /* Use Tensor Core or not  */
     yes_no_t      Algo3d;          /* use 3D factorization/solve algorithms */
@@ -913,16 +916,16 @@ typedef struct
 }  perm_array_t;
 
 typedef struct
-{   
+{
     int* factored;
-    int_t* factored_D;
-    int_t* factored_L;
-    int_t* factored_U;
-    int_t* IrecvPlcd_D;
-    int_t* IbcastPanel_L;         /*I bcast and recv placed for the k-th L panel*/
-    int_t* IbcastPanel_U;         /*I bcast and recv placed for the k-th U panel*/
-    int_t* numChildLeft;            /*number of children left to be factored*/
-    int_t* gpuLUreduced;          /*New for GPU acceleration*/
+    int* factored_D;
+    int* factored_L;
+    int* factored_U;
+    int* IrecvPlcd_D;
+    int* IbcastPanel_L;  /*I bcast and recv placed for the k-th L panel*/
+    int* IbcastPanel_U;  /*I bcast and recv placed for the k-th U panel*/
+    //int* numChildLeft; /* (NOT USED in this structure) number of children left to be factored*/
+    int* gpuLUreduced;   /*New for GPU acceleration*/
 }factStat_t;
 
 typedef struct
@@ -977,8 +980,8 @@ typedef enum treePartStrat{
 typedef struct
 {
 	/* data */
-	int_t nNodes; 			// total number of nodes
-	int_t* nodeList;		// list of nodes, should be in order of factorization
+	int_t nNodes; 	 // total number of nodes
+	int_t* nodeList; // list of nodes, should be in order of factorization
 #if 0 // Sherry: the following array is used on rForest_t. ???
 	int_t* treeHeads;
 #endif
@@ -1124,7 +1127,7 @@ extern int_t estimate_bigu_size (int_t, int_t **, Glu_persist_t *,
 				 gridinfo_t *, int_t *, int_t*);
 
 /* Auxiliary routines */
-extern double SuperLU_timer_ ();
+extern double SuperLU_timer_ (void);
 extern void   superlu_abort_and_exit_dist(char *);
 extern int    sp_ienv_dist (int, superlu_dist_options_t *);
 extern void   ifill_dist (int_t *, int_t, int_t);
@@ -1190,24 +1193,23 @@ int superlu_sort_perm (const void *arg1, const void *arg2)
 extern void gemm_division_cpu_gpu (superlu_dist_options_t *,
 				   int *, int *, int *, int,
 				   int, int, int *, int, int_t);
-extern int_t get_gpublas_nb ();
-extern int_t get_num_gpu_streams ();
-extern int getnGPUStreams();
-extern int get_mpi_process_per_gpu ();
+extern int_t get_gpublas_nb (void);
+extern int_t get_num_gpu_streams (void);
+extern int getnGPUStreams(void);
+extern int get_mpi_process_per_gpu (void);
 /*to print out various statistics from GPU activities*/
 extern void printGPUStats(int nsupers, SuperLUStat_t *stat, gridinfo3d_t*);
 #endif
 
 extern double estimate_cpu_time(int m, int n , int k);
 
-extern int get_thread_per_process();
-extern int_t get_max_buffer_size ();
+extern int get_thread_per_process(void);
+extern int_t get_max_buffer_size (void);
 extern int_t get_min (int_t *, int_t);
 extern int compare_pair (const void *, const void *);
 extern int_t static_partition (struct superlu_pair *, int_t, int_t *, int_t,
 			       int_t *, int_t *, int);
-extern int get_acc_offload();
-
+extern int get_acc_offload(void);
 
 /* Routines for debugging */
 extern void  print_panel_seg_dist(int_t, int_t, int_t, int_t, int_t *, int_t *);
@@ -1293,7 +1295,8 @@ extern int_t getCommonAncsCount(int_t k, treeList_t* treeList);
 extern int_t* getPermNodeList(int_t nnode, 	// number of nodes
 			      int_t* nlist, int_t* perm_c_sup,int_t* iperm_c_sup);
 extern int_t* getEtreeLB(int_t nnodes, int_t* perm_l, int_t* gTopOrder);
-extern int_t* getSubTreeRoots(int_t k, treeList_t* treeList);
+// extern int_t* getSubTreeRoots(int_t k, treeList_t* treeList);
+extern int_t* getSubTreeRoots(int_t k, int_t *numSubtrees, treeList_t* treeList);
 // int_t* treeList2perm(treeList_t* , ..);
 extern int_t* merg_perms(int_t nperms, int_t* nnodes, int_t** perms);
 // returns a concatenated permutation for three permutation arrays
@@ -1376,7 +1379,7 @@ extern int Wait_LUDiagSend(int_t k, MPI_Request *U_diag_blk_send_req,
 			   gridinfo_t *grid, SCT_t *SCT);
 
 extern int getNsupers(int n, Glu_persist_t *Glu_persist);
-extern int set_tag_ub();
+extern int set_tag_ub(void);
 extern int getNumThreads(int);
 extern int_t num_full_cols_U(int_t kk, int_t **Ufstnz_br_ptr, int_t *xsup,
 			     gridinfo_t *, int_t *, int_t *);
@@ -1390,7 +1393,7 @@ extern int_t* getFactPerm(int_t);
 extern int_t* getFactIperm(int_t*, int_t);
 
 extern int_t initCommRequests(commRequests_t* comReqs, gridinfo_t * grid);
-extern int_t initFactStat(int_t nsupers, factStat_t* factStat);
+extern int_t initFactStat(int nsupers, factStat_t* factStat);
 extern int   freeFactStat(factStat_t* factStat);
 extern int_t initFactNodelists(int_t, int_t, int_t, factNodelists_t*);
 extern int   freeFactNodelists(factNodelists_t* fNlists);
@@ -1437,7 +1440,7 @@ extern int_t Wait_UDiagBlock_Recv(MPI_Request *, SCT_t *);
 extern int_t Test_UDiagBlock_Recv(MPI_Request *, SCT_t *);
 extern int_t Wait_LDiagBlock_Recv(MPI_Request *, SCT_t *);
 extern int_t Test_LDiagBlock_Recv(MPI_Request *, SCT_t *);
-extern int_t LDiagBlockRecvWait( int_t k, int_t* factored_U, MPI_Request *, gridinfo_t *);
+extern int_t LDiagBlockRecvWait( int_t k, int* factored_U, MPI_Request *, gridinfo_t *);
 
 /*=====================*/
 

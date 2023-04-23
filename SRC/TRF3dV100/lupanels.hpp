@@ -25,6 +25,7 @@ public:
     // bool isDiagIncluded;
 
     lpanel_t(int_t k, int_t *lsub, double *nzval, int_t *xsup, int_t isDiagIncluded);
+  
     // default constuctor
 #ifdef HAVE_CUDA
     lpanel_t() : gpuPanel(NULL, NULL)
@@ -123,6 +124,7 @@ public:
     lpanelGPU_t copyToGPU();
     lpanelGPU_t copyToGPU(void *basePtr); // when we are doing a single allocation
     int checkGPU();
+    int copyBackToGPU();
 
     int_t panelSolveGPU(cublasHandle_t handle, cudaStream_t cuStream,
                         int_t ksupsz,
@@ -189,7 +191,10 @@ public:
         return index[0];
     }
     // number of rows
-    int_t nzcols() { return index[1]; }
+    int_t nzcols() {
+      if (index == NULL) return 0; /* Sherry added this check. 2/22/2023 */
+      return index[1];
+    }
     int_t LDA() { return index[2]; } // is also supersize of that coloumn
 
     // global block id of k-th block in the panel
@@ -281,6 +286,8 @@ public:
     upanelGPU_t copyToGPU();
     //TODO: implement with baseptr
     upanelGPU_t copyToGPU(void *basePtr);
+    int copyBackToGPU();
+
     int_t panelSolveGPU(cublasHandle_t handle, cudaStream_t cuStream,
                         int_t ksupsz, double *DiagBlk, int_t LDD);
     int checkGPU();
@@ -302,12 +309,8 @@ public:
 //lapenGPU_t has exact same structure has lapanel_t but
 // the pointers are on GPU
 
-
-
-
 struct LUstruct_v100
 {
-
     lpanel_t *lPanelVec;
     upanel_t *uPanelVec;
     gridinfo3d_t *grid3d;
@@ -323,7 +326,7 @@ struct LUstruct_v100
     double thresh;
     int *info;
     //TODO: get it from environment
-    int numDiagBufs = 32;
+    int numDiagBufs = 32;  /* Sherry: not fixed yet */
 
     // Add SCT_t here
     SCT_t *SCT;
@@ -334,8 +337,9 @@ struct LUstruct_v100
     // Adding more variables for factorization
     dtrf3Dpartition_t *trf3Dpartition;
     int_t maxLvl;
-
-    ddiagFactBufs_t **dFBufs;
+    int maxLeafNodes; /* Sherry added 12/31/22. Computed in LUstruct_v100 constructor */
+    
+    ddiagFactBufs_t **dFBufs; /* stores L and U diagonal blocks */
     int superlu_acc_offload;
     // myNodeCount,
     // treePerm
@@ -349,7 +353,9 @@ struct LUstruct_v100
     int_t maxLidxCount = 0;
     int_t maxUvalCount = 0;
     int_t maxUidxCount = 0;
-    std::vector<double *> diagFactBufs;
+    std::vector<double *> diagFactBufs; /* stores diagonal blocks, 
+					   each one is a normal dense matrix.
+					Sherry: where are they free'd ?? */
     std::vector<double *> LvalRecvBufs;
     std::vector<double *> UvalRecvBufs;
     std::vector<int_t *> LidxRecvBufs;
@@ -378,10 +384,8 @@ struct LUstruct_v100
 
     anc25d_t anc25d;
     // For GPU acceleration
-#ifdef HAVE_CUDA
-    LUstructGPU_t *dA_gpu;
-    LUstructGPU_t A_gpu;
-#endif
+    LUstructGPU_t *dA_gpu; // pointing to memory on GPU
+    LUstructGPU_t A_gpu;   // pointing to memory accessible on CPU
 
     enum indirectMapType
     {
@@ -401,9 +405,36 @@ struct LUstruct_v100
     {
         delete[] lPanelVec;
         delete[] uPanelVec;
-        // dfreeDiagFactBufsArr(mxLeafNode, dFBufs);
-    }
+	
+	/* Sherry: SUPERLU_MALLOC in constructor are not free'd,
+	   need to call the following functions. 12/31/22    */
 
+	/* free diagonal L and U blocks */
+	dfreeDiagFactBufsArr(maxLeafNodes, dFBufs);
+
+	SUPERLU_FREE(bigV);
+	SUPERLU_FREE(indirect);
+	SUPERLU_FREE(indirectRow);
+	SUPERLU_FREE(indirectCol);
+
+	int i;
+	for (i = 0; i < options->num_lookaheads; i++) {
+	    SUPERLU_FREE(LvalRecvBufs[i]);
+	    SUPERLU_FREE(UvalRecvBufs[i]);
+	    SUPERLU_FREE(LidxRecvBufs[i]);
+	    SUPERLU_FREE(UidxRecvBufs[i]);
+	}
+	
+	for (i = 0; i < numDiagBufs; i++) SUPERLU_FREE(diagFactBufs[i]);
+
+	/* Sherry added the following, which comes from batch setup */
+	printf(".. free batch buffers\n"); fflush(stdout);
+	SUPERLU_FREE(A_gpu.dFBufs);
+	SUPERLU_FREE(A_gpu.gpuGemmBuffs);
+
+    } /* end destructor LUstruct_v100 */
+
+  
     /**
     *           Compute Functions
     */
@@ -430,6 +461,22 @@ struct LUstruct_v100
         ddiagFactBufs_t **dFBufs, // size maxEtree level
         gEtreeInfo_t *gEtreeInfo, // global etree info
         int tag_ub);
+  
+    int dsparseTreeFactorBatchGPU(
+				  sForest_t *sforest,
+				  ddiagFactBufs_t **dFBufs, // size maxEtree level
+				  gEtreeInfo_t *gEtreeInfo, // global etree info
+				  int tag_ub);
+
+    // Helper routine to marshall batch LU data into the device data in A_gpu 
+    void marshallBatchedLUData(int k_st, int k_end, int_t *perm_c_supno);
+    void marshallBatchedBufferCopyData(int k_st, int k_end, int_t *perm_c_supno);
+    void marshallBatchedTRSMUData(int k_st, int k_end, int_t *perm_c_supno);
+    void marshallBatchedTRSMLData(int k_st, int k_end, int_t *perm_c_supno);
+    void initSCUMarshallData(int k_st, int k_end, int_t *perm_c_supno);
+    int marshallSCUBatchedDataInner(int k_st, int k_end, int_t *perm_c_supno);
+    int marshallSCUBatchedDataOuter(int k_st, int k_end, int_t *perm_c_supno);
+    void dFactBatchSolve(int k_st, int k_end, int_t *perm_c_supno);
 
     //
     int_t dDiagFactorPanelSolve(int_t k, int_t offset, ddiagFactBufs_t **dFBufs);
@@ -521,11 +568,35 @@ struct LUstruct_v100
 
     // to perform diagFactOn GPU
     int_t dDFactPSolveGPU(int_t k, int_t offset, ddiagFactBufs_t **dFBufs);
-
+    int_t dDFactPSolveGPU(int_t k, int_t handle_offset, int buffer_offset, ddiagFactBufs_t **dFBufs);
 #endif
-
 };
 
+// GPU related functions
 #ifdef HAVE_CUDA
 cudaError_t checkCudaLocal(cudaError_t result);
+
+#define gpuErrchk(ans)                                                                                                 \
+{                                                                                                                  \
+    gpuAssert((ans), __FILE__, __LINE__);                                                                          \
+}
+
+inline void gpuAssert(cudaError_t code, const char *file, int line)
+{
+    if (code != cudaSuccess)
+    {
+        printf("GPUassert: %s(%d) %s %d\n", cudaGetErrorString(code), (int)code, file, line);
+        exit(-1);
+    }
+}
+
+#define gpuCusolverErrchk(ans)                                                                                         \
+{                                                                                                                  \
+    gpuCusolverAssert((ans), __FILE__, __LINE__);                                                                  \
+}
+inline void gpuCusolverAssert(cusolverStatus_t code, const char *file, int line)
+{
+    if (code != CUSOLVER_STATUS_SUCCESS)
+        printf("cuSolverAssert: %d %s %d\n", code, file, line);
+}
 #endif

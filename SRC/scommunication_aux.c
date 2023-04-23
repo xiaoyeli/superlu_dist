@@ -461,7 +461,7 @@ int_t sIBcast_LDiagBlock(int_t k, float *lblk_ptr, /*pointer for the diagonal bl
 
 #endif 
 
-int_t sUDiagBlockRecvWait( int_t k,  int_t* IrecvPlcd_D, int_t* factored_L,
+int_t sUDiagBlockRecvWait( int_t k,  int* IrecvPlcd_D, int* factored_L,
                            MPI_Request * U_diag_blk_recv_req,
                            gridinfo_t *grid,
                            sLUstruct_t *LUstruct, SCT_t *SCT)

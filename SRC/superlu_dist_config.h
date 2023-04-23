@@ -21,6 +21,9 @@
 /* Enable CombBLAS */
 /* #undef HAVE_COMBBLAS */
 
+/* Enable MAGMA */
+/* #undef HAVE_MAGMA */
+
 /* enable 64bit index mode */
 /* #undef XSDK_INDEX_SIZE */
 

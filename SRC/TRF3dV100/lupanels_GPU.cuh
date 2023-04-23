@@ -1,11 +1,17 @@
+
 #pragma once
 #include <vector>
 #include <iostream>
-#ifdef HAVE_CUDA
-#include <cuda_runtime.h>
-#include <cusolverDn.h>
-#endif
 #include "superlu_ddefs.h"
+
+#ifdef HAVE_CUDA
+  #include <cuda_runtime.h>
+  #include <cusolverDn.h>
+#ifdef HAVE_MAGMA
+  #include "magma.h"
+#endif 
+#endif
+
 #include "lu_common.hpp"
 // #include "lupanels.hpp" 
 
@@ -16,8 +22,9 @@
 #define CUDA_CALLABLE
 #define DEVICE_CALLABLE
 #endif
-// class lpanel_t;
-// class upanel_t;
+
+class lpanel_t;
+class upanel_t;
 
 class lpanelGPU_t 
 {
@@ -236,6 +243,81 @@ public:
     } 
 };
 
+// Wajih: Device and host memory used to store marshalled batch data for LU and TRSM
+struct LUMarshallData 
+{
+    LUMarshallData();
+    ~LUMarshallData();
+
+    // Diagonal device pointer data 
+    double **dev_diag_ptrs;
+    int *dev_diag_ld_array, *dev_diag_dim_array, *dev_info_array;
+    
+    // TRSM panel device pointer data 
+    double **dev_panel_ptrs;
+    int *dev_panel_ld_array, *dev_panel_dim_array;
+
+    // Max of marshalled device data 
+    int max_panel, max_diag;
+
+    // Number of marshalled operations
+    int batchsize;
+
+    // Data accumulated on the host
+    std::vector<double*> host_diag_ptrs;
+    std::vector<int> host_diag_ld_array, host_diag_dim_array;
+    
+    std::vector<double*> host_panel_ptrs;
+    std::vector<int> host_panel_ld_array, host_panel_dim_array;
+    
+    void setBatchSize(int batch_size);
+    void setMaxDiag();
+    void setMaxPanel();
+};
+
+// Wajih: Device and host memory used to store marshalled batch data for Schur complement update 
+struct SCUMarshallData 
+{
+    SCUMarshallData();
+    ~SCUMarshallData();
+
+    // GEMM device pointer data 
+    double **dev_A_ptrs, **dev_B_ptrs, **dev_C_ptrs;
+    int *dev_lda_array, *dev_ldb_array, *dev_ldc_array;
+    int *dev_m_array, *dev_n_array, *dev_k_array;
+
+    // Panel device pointer data and scu loop limits 
+    lpanelGPU_t* dev_gpu_lpanels;
+    upanelGPU_t* dev_gpu_upanels;
+    int* dev_ist, *dev_iend, *dev_jst, *dev_jend;
+    
+    // Max of marshalled gemm device data 
+    int max_m, max_n, max_k;    
+    
+    // Max of marshalled loop limits  
+    int max_ilen, max_jlen;
+
+    // Number of marshalled operations
+    int batchsize;
+
+    // Data accumulated on the host
+    std::vector<double*> host_A_ptrs, host_B_ptrs, host_C_ptrs;
+    std::vector<int> host_lda_array, host_ldb_array, host_ldc_array;
+    std::vector<int> host_m_array, host_n_array, host_k_array;
+
+    // Host data initialized once per level 
+    std::vector<upanel_t> upanels;
+    std::vector<lpanel_t> lpanels;
+    std::vector<upanelGPU_t> host_gpu_upanels;
+    std::vector<lpanelGPU_t> host_gpu_lpanels;
+    std::vector<int> ist, iend, jst, jend, maxGemmRows, maxGemmCols;
+    int max_nlb, max_nub;
+
+    void setBatchSize(int batch_size);
+    void setMaxDims();
+    void copyPanelDataToGPU();
+    void copyToGPU();
+};
 
 #define MAX_CUDA_STREAMS 64 
 struct LUstructGPU_t
@@ -253,8 +335,22 @@ struct LUstructGPU_t
     // double arrays are problematic 
     cudaStream_t cuStreams[MAX_CUDA_STREAMS];
     cublasHandle_t cuHandles[MAX_CUDA_STREAMS];
-    double* gpuGemmBuffs[MAX_CUDA_STREAMS];
-    double* dFBufs[MAX_CUDA_STREAMS];  
+    
+    // Magma is needed for non-uniform batched execution 
+#ifdef HAVE_MAGMA
+    magma_queue_t magma_queue;
+#endif 
+    LUMarshallData marshall_data;
+    SCUMarshallData sc_marshall_data;
+
+    /* Sherry: Allocate an array of buffers for the diagonal blocks
+       on the leaf level.
+       The sizes are uniform: ldt is the maximum among all the nodes.    */
+    //    double* dFBufs[MAX_CUDA_STREAMS];
+    // double* gpuGemmBuffs[MAX_CUDA_STREAMS];
+    double **dFBufs;       
+    double ** gpuGemmBuffs;
+
     double* LvalRecvBufs[MAX_CUDA_STREAMS];
     double* UvalRecvBufs[MAX_CUDA_STREAMS];
     int_t* LidxRecvBufs[MAX_CUDA_STREAMS];
@@ -273,8 +369,6 @@ struct LUstructGPU_t
     cudaStream_t lookAheadUStream[MAX_CUDA_STREAMS];
 
     double *lookAheadUGemmBuffer[MAX_CUDA_STREAMS];
-
-    
     
     __device__
     int_t supersize(int_t k) { return xsup[k + 1] - xsup[k]; }
@@ -283,7 +377,17 @@ struct LUstructGPU_t
     __device__
     int_t g2lCol(int_t k) { return k / Pc; }
     
-};
+};/* LUstructGPU_t{} */
 
+void scatterGPU_driver(
+    int iSt, int iEnd, int jSt, int jEnd, double *gemmBuff, int LDgemmBuff,
+    int maxSuperSize, int ldt, lpanelGPU_t lpanel, upanelGPU_t upanel, 
+    LUstructGPU_t *dA, cudaStream_t cuStream
+);
 
-
+void scatterGPU_batchDriver(
+    int* iSt_batch, int *iEnd_batch, int *jSt_batch, int *jEnd_batch, 
+    int max_ilen, int max_jlen, double **gemmBuff_ptrs, int *LDgemmBuff_batch, 
+    int maxSuperSize, int ldt, lpanelGPU_t *lpanels, upanelGPU_t *upanels, 
+    LUstructGPU_t *dA, int batchCount, cudaStream_t cuStream
+);

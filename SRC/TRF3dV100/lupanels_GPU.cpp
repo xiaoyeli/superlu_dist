@@ -2,12 +2,13 @@
 #include <algorithm>
 #include <cmath>
 #include "superlu_defs.h"
+#include "superlu_dist_config.h"
 
 #ifdef HAVE_CUDA
+  #include <cuda_runtime.h>
+  #include "cublas_v2.h"
+#endif
 
-#include <cuda_runtime.h>
-
-#include "cublas_v2.h"
 #include "lupanels.hpp"
 
 //TODO: make expsilon a enviroment variable 
@@ -47,11 +48,13 @@ lpanelGPU_t lpanel_t::copyToGPU()
     size_t idxSize = sizeof(int_t) * indexSize();
     size_t valSize = sizeof(double) * nzvalSize();
 
-    cudaMalloc(&gpuPanel.index, idxSize);
-    cudaMemcpy(gpuPanel.index, index, idxSize, cudaMemcpyHostToDevice);
 
-    cudaMalloc(&gpuPanel.val, valSize);
-    cudaMemcpy(gpuPanel.val, val, valSize, cudaMemcpyHostToDevice);
+    gpuErrchk(cudaMalloc(&gpuPanel.index, idxSize));
+    gpuErrchk(cudaMalloc(&gpuPanel.val, valSize));
+
+    
+    gpuErrchk(cudaMemcpy(gpuPanel.index, index, idxSize, cudaMemcpyHostToDevice));
+    gpuErrchk(cudaMemcpy(gpuPanel.val, val, valSize, cudaMemcpyHostToDevice));
 
     return gpuPanel;
 }
@@ -66,13 +69,13 @@ lpanelGPU_t lpanel_t::copyToGPU(void* basePtr)
 
     gpuPanel.index = (int_t*) basePtr;
     // cudaMalloc(&gpuPanel.index, idxSize);
-    cudaMemcpy(gpuPanel.index, index, idxSize, cudaMemcpyHostToDevice);
+    gpuErrchk(cudaMemcpy(gpuPanel.index, index, idxSize, cudaMemcpyHostToDevice));
 
     basePtr = (char *)basePtr+ idxSize; 
     gpuPanel.val = (double *) basePtr; 
     // cudaMalloc(&gpuPanel.val, valSize);
     
-    cudaMemcpy(gpuPanel.val, val, valSize, cudaMemcpyHostToDevice);
+    gpuErrchk(cudaMemcpy(gpuPanel.val, val, valSize, cudaMemcpyHostToDevice));
 
     return gpuPanel;
 }
@@ -82,8 +85,7 @@ int_t lpanel_t::copyFromGPU()
     if(isEmpty())
         return 0;
     size_t valSize = sizeof(double) * nzvalSize();
-    checkCudaLocal(cudaMemcpy(val, gpuPanel.val,  valSize, cudaMemcpyDeviceToHost));
-   
+    gpuErrchk(cudaMemcpy(val, gpuPanel.val,  valSize, cudaMemcpyDeviceToHost));
 }
 
 int_t upanel_t::copyFromGPU()
@@ -91,8 +93,23 @@ int_t upanel_t::copyFromGPU()
     if(isEmpty())
         return 0;
     size_t valSize = sizeof(double) * nzvalSize();
-    checkCudaLocal(cudaMemcpy(val, gpuPanel.val,  valSize, cudaMemcpyDeviceToHost));
-   
+    gpuErrchk(cudaMemcpy(val, gpuPanel.val,  valSize, cudaMemcpyDeviceToHost));
+}
+
+int upanel_t::copyBackToGPU()
+{
+    if(isEmpty())
+        return 0;
+    size_t valSize = sizeof(double) * nzvalSize();
+    gpuErrchk(cudaMemcpy(gpuPanel.val, val,  valSize, cudaMemcpyHostToDevice));
+}
+
+int lpanel_t::copyBackToGPU()
+{
+    if(isEmpty())
+        return 0;
+    size_t valSize = sizeof(double) * nzvalSize();
+    gpuErrchk(cudaMemcpy(gpuPanel.val, val,  valSize, cudaMemcpyHostToDevice));
 }
 
 upanelGPU_t upanel_t::copyToGPU()
@@ -103,11 +120,12 @@ upanelGPU_t upanel_t::copyToGPU()
     size_t idxSize = sizeof(int_t) * indexSize();
     size_t valSize = sizeof(double) * nzvalSize();
 
-    cudaMalloc(&gpuPanel.index, idxSize);
-    cudaMemcpy(gpuPanel.index, index, idxSize, cudaMemcpyHostToDevice);
+    gpuErrchk(cudaMalloc(&gpuPanel.index, idxSize));
+    gpuErrchk(cudaMalloc(&gpuPanel.val, valSize));
 
-    cudaMalloc(&gpuPanel.val, valSize);
-    cudaMemcpy(gpuPanel.val, val, valSize, cudaMemcpyHostToDevice);
+    
+    gpuErrchk(cudaMemcpy(gpuPanel.index, index, idxSize, cudaMemcpyHostToDevice));
+    gpuErrchk(cudaMemcpy(gpuPanel.val, val, valSize, cudaMemcpyHostToDevice));
     return gpuPanel;
 }
 
@@ -121,13 +139,13 @@ upanelGPU_t upanel_t::copyToGPU(void* basePtr)
 
     gpuPanel.index = (int_t*) basePtr;
     // cudaMalloc(&gpuPanel.index, idxSize);
-    cudaMemcpy(gpuPanel.index, index, idxSize, cudaMemcpyHostToDevice);
+    gpuErrchk(cudaMemcpy(gpuPanel.index, index, idxSize, cudaMemcpyHostToDevice));
 
     basePtr = (char *)basePtr+ idxSize; 
     gpuPanel.val = (double *) basePtr; 
     // cudaMalloc(&gpuPanel.val, valSize);
     
-    cudaMemcpy(gpuPanel.val, val, valSize, cudaMemcpyHostToDevice);
+    gpuErrchk(cudaMemcpy(gpuPanel.val, val, valSize, cudaMemcpyHostToDevice));
 
     return gpuPanel;
 }
@@ -144,7 +162,7 @@ int lpanel_t::checkGPU()
     size_t valSize = sizeof(double) * nzvalSize();
 
    std::vector<double> tmpArr(nzvalSize());
-    cudaMemcpy(tmpArr.data(), gpuPanel.val, valSize, cudaMemcpyDeviceToHost);
+    gpuErrchk(cudaMemcpy(tmpArr.data(), gpuPanel.val, valSize, cudaMemcpyDeviceToHost));
 
     int out = checkArr(tmpArr.data(), val, nzvalSize());
 
@@ -194,16 +212,16 @@ int_t lpanel_t::diagFactorPackDiagBlockGPU(int_t k,
     size_t height = kSupSize;
     double *val = blkPtrGPU(0);
 
-    cudaMemcpy2D(DiagLBlk, dpitch, val, spitch,
-                 width, height, cudaMemcpyDeviceToHost);
+    gpuErrchk(cudaMemcpy2D(DiagLBlk, dpitch, val, spitch,
+                 width, height, cudaMemcpyDeviceToHost));
 
     // call dgetrf2
     dgstrf2(k, DiagLBlk, LDD, UBlk, LDU,
             thresh, xsup, options, stat, info);
 
     //copy back to device
-    cudaMemcpy2D(val, spitch, DiagLBlk, dpitch,
-                 width, height, cudaMemcpyHostToDevice);
+    gpuErrchk(cudaMemcpy2D(val, spitch, DiagLBlk, dpitch,
+                 width, height, cudaMemcpyHostToDevice));
 
     return 0;
 }
@@ -229,13 +247,13 @@ int_t lpanel_t::diagFactorCuSolver(int_t k,
     // call the cusolver 
     // cublasSetStream(handle, cuStream);
     //  cusolverDnSetStream(cuStream);
-    cusolverDnSetStream(cusolverH, cuStream);
-    cusolverDnDgetrf(cusolverH, kSupSize, kSupSize, val, LDA(), dWork, NULL, dInfo);
+    gpuCusolverErrchk(cusolverDnSetStream(cusolverH, cuStream));
+    gpuCusolverErrchk(cusolverDnDgetrf(cusolverH, kSupSize, kSupSize, val, LDA(), dWork, NULL, dInfo));
 
     // Device to Device Copy
-    cudaMemcpy2DAsync(dDiagBuf, dpitch, val, spitch,
-                 width, height, cudaMemcpyDeviceToDevice, cuStream);
-    cudaStreamSynchronize(cuStream);
+    gpuErrchk(cudaMemcpy2DAsync(dDiagBuf, dpitch, val, spitch,
+                 width, height, cudaMemcpyDeviceToDevice, cuStream));
+    gpuErrchk(cudaStreamSynchronize(cuStream));
     return 0;
 }
 
@@ -267,7 +285,7 @@ int upanel_t::checkGPU()
 
     // double *tmpArr = new double[nzvalSize()];
     std::vector<double> tmpArr(nzvalSize());
-    cudaMemcpy(tmpArr.data(), gpuPanel.val, valSize, cudaMemcpyDeviceToHost);
+    gpuErrchk(cudaMemcpy(tmpArr.data(), gpuPanel.val, valSize, cudaMemcpyDeviceToHost));
 
     int out = checkArr(tmpArr.data(), val, nzvalSize());
     // delete tmpArr;

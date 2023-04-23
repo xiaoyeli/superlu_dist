@@ -50,6 +50,9 @@ option(TPL_ENABLE_HIPLIB   "Enable the HIP libraries" OFF)
 #-- NVSHMEM
 option(TPL_ENABLE_NVSHMEM   "Enable the NVSHMEM libraries" OFF)
 option(TPL_ENABLE_ROCSHMEM   "Enable the ROCSHMEM libraries" OFF)
+#-- MAGMA 
+option(TPL_ENABLE_MAGMALIB "Enable the MAGMA library" OFF)
+
 ######################################################################
 #
 # IDEAS: xSDK standards module
@@ -216,9 +219,6 @@ if (TPL_ENABLE_CUDALIB)   ## want to use cuda
       set(CMAKE_CUDA_FLAGS_DDEBUG "-O0 --expt-relaxed-constexpr -DDEBUG -g" CACHE STRING "")
     endif()
 
-    set(HAVE_CUDA TRUE)
-    # cuda_select_nvcc_arch_flags(CUDA_ARCH_FLAGS Auto)
-    
 #     find_package(CUB REQUIRED)
 
     find_package(CUDAToolkit REQUIRED)
@@ -231,13 +231,14 @@ if (TPL_ENABLE_CUDALIB)   ## want to use cuda
        set(CUDA_LIBRARIES "${CUDAToolkit_LIBRARY_ROOT}/lib64/libcudart.so")
        # expose the following to make.inc, but location may not be reliable
        # set(CUDA_CUBLAS_LIBRARIES "${CUDAToolkit_LIBRARY_ROOT}/lib64/libcublas.so")
+       set(CUDA_CUSPARSE_LIBRARIES "${CUDAToolkit_LIBRARY_ROOT}/lib64/libcusparse.so")
+       set(CUDA_CUSOLVER_LIBRARIES "${CUDAToolkit_LIBRARY_ROOT}/lib64/libcusolver.so")
     else()
 	message("-- CUDAToolkit_LIBRARY_ROOT empty, not setting CUDA_LIBRARIES")
     endif()
 
 #     # The following make.inc exporting does not work
-    set(CUDA_LIBRARIES CUDA::cudart CUDA::cublas CUDA::cusolver)
-    # message("Hello" ${CUDA_LIBRARIES})
+#     set(CUDA_LIB CUDA::cudart CUDA::cublas CUDA::cusolver)
 # # fix up CUDA library names    
 #     string (REPLACE ";" " " CUDA_LIB_STR "${CUDA_LIB}")
 #     set(CUDA_LIB_EXPORT ${CUDA_LIB_STR}) 
@@ -248,6 +249,7 @@ if (TPL_ENABLE_CUDALIB)   ## want to use cuda
     message("-- CUDA libraries not found.")
   endif()
 endif()
+
 
 #--------------------- OpenMP ---------------------
 if (NOT DEFINED enable_openmp)
@@ -393,6 +395,22 @@ if(LAPACK_FOUND)
     set(SLU_HAVE_LAPACK TRUE)
 else()
     message("-- Will not link with LAPACK.")
+endif()
+
+#--------------------- MAGMA ---------------------
+if(TPL_ENABLE_MAGMALIB)  ## want to use MAGMA
+    set(MAGMA_FOUND TRUE)
+endif()
+
+if(MAGMA_FOUND)
+    message("-- Using TPL_MAGMA_LIBRARIES='${TPL_MAGMA_LIBRARIES}'")
+    set(MAGMA_LIB ${TPL_MAGMA_LIBRARIES})
+    # fix up MAGMA library name
+    string (REPLACE ";" " " MAGMA_LIB_STR "${MAGMA_LIB}")
+    set(MAGMA_LIB_EXPORT ${MAGMA_LIB_STR})
+    set(HAVE_MAGMA TRUE)
+else()
+    message("-- Will not link with MAGMA.")
 endif()
 
 #--------------------- ParMETIS ---------------------
@@ -564,6 +582,9 @@ if (TPL_PARMETIS_INCLUDE_DIRS)
 endif ()
 if (TPL_COMBBLAS_INCLUDE_DIRS)
   include_directories(${TPL_COMBBLAS_INCLUDE_DIRS})  ## CombBLAS
+endif ()
+if (TPL_MAGMA_INCLUDE_DIRS)
+  include_directories(${TPL_MAGMA_INCLUDE_DIRS})  ## MAGMA
 endif ()
 include_directories(${MPI_C_INCLUDE_PATH})
 

@@ -41,20 +41,20 @@ void copyToGPU(double *gpuValBasePtr, std::vector<double> &valBufferPacked,
     // allocate the memory for the packed buffers on GPU
     double *dlvalPacked;
     int_t *dlidxPacked;
-    cudaMalloc(&dlvalPacked, gpuLvalSizePacked);
-    cudaMalloc(&dlidxPacked, gpuLidxSizePacked);
+    gpuErrchk(cudaMalloc(&dlvalPacked, gpuLvalSizePacked));
+    gpuErrchk(cudaMalloc(&dlidxPacked, gpuLidxSizePacked));
     // copy the packed buffers from CPU to GPU
-    cudaMemcpy(dlvalPacked, valBufferPacked.data(), gpuLvalSizePacked, cudaMemcpyHostToDevice);
-    cudaMemcpy(dlidxPacked, valIdx.data(), gpuLidxSizePacked, cudaMemcpyHostToDevice);
+    gpuErrchk(cudaMemcpy(dlvalPacked, valBufferPacked.data(), gpuLvalSizePacked, cudaMemcpyHostToDevice));
+    gpuErrchk(cudaMemcpy(dlidxPacked, valIdx.data(), gpuLidxSizePacked, cudaMemcpyHostToDevice));
     // perform the sparse initialization on GPU call indirectCopy
     const int ThreadblockSize = 256;
     int nThreadBlocks = (nnzCount + ThreadblockSize - 1) / ThreadblockSize;
     indirectCopy<<<nThreadBlocks, ThreadblockSize>>>(
         gpuValBasePtr, dlvalPacked, dlidxPacked, nnzCount);
     // wait for it to finish and free dlvalPacked and dlidxPacked
-    cudaDeviceSynchronize();
-    cudaFree(dlvalPacked);
-    cudaFree(dlidxPacked);
+    gpuErrchk(cudaDeviceSynchronize());
+    gpuErrchk(cudaFree(dlvalPacked));
+    gpuErrchk(cudaFree(dlidxPacked));
 }
 
 // copy the panel to GPU
@@ -174,13 +174,13 @@ __device__ int computeIndirectMapGPU(int *rcS2D, int_t srcLen, int_t *srcVec,
     return 0;
 }
 
-__global__ void scatterGPU(
+__device__ void scatterGPU_dev(
     int iSt, int jSt,
     double *gemmBuff, int LDgemmBuff,
-    lpanelGPU_t lpanel, upanelGPU_t upanel,
-    LUstructGPU_t *dA)
+    lpanelGPU_t& lpanel, upanelGPU_t& upanel,
+    LUstructGPU_t *dA
+)
 {
-
     // calculate gi,gj
     int ii = iSt + blockIdx.x;
     int jj = jSt + blockIdx.y;
@@ -274,6 +274,76 @@ __global__ void scatterGPU(
     __syncthreads();
 }
 
+__global__ void scatterGPU(
+    int iSt, int jSt,
+    double *gemmBuff, int LDgemmBuff,
+    lpanelGPU_t lpanel, upanelGPU_t upanel,
+    LUstructGPU_t *dA)
+{
+    scatterGPU_dev(iSt, jSt, gemmBuff, LDgemmBuff, lpanel, upanel, dA);
+}
+
+__global__ void scatterGPU_batch(
+    int* iSt_batch, int *iEnd_batch, int *jSt_batch, int *jEnd_batch, 
+    double **gemmBuff_ptrs, int *LDgemmBuff_batch, lpanelGPU_t *lpanels, 
+    upanelGPU_t *upanels, LUstructGPU_t *dA
+)
+{
+    int batch_index = blockIdx.z;
+    int iSt = iSt_batch[batch_index], iEnd = iEnd_batch[batch_index];
+    int jSt = jSt_batch[batch_index], jEnd = jEnd_batch[batch_index];
+    
+    int ii = iSt + blockIdx.x;
+    int jj = jSt + blockIdx.y;
+    if(ii >= iEnd || jj >= jEnd)
+        return;
+    
+    double* gemmBuff = gemmBuff_ptrs[batch_index];
+    if(gemmBuff == NULL)
+        return;
+
+    int LDgemmBuff = LDgemmBuff_batch[batch_index];
+    lpanelGPU_t& lpanel = lpanels[batch_index];
+    upanelGPU_t& upanel = upanels[batch_index];
+    scatterGPU_dev(iSt, jSt, gemmBuff, LDgemmBuff, lpanel, upanel, dA);
+}
+
+void scatterGPU_driver(
+    int iSt, int iEnd, int jSt, int jEnd, double *gemmBuff, int LDgemmBuff,
+    int maxSuperSize, int ldt, lpanelGPU_t lpanel, upanelGPU_t upanel, 
+    LUstructGPU_t *dA, cudaStream_t cuStream
+)
+{
+    dim3 dimBlock(ldt); // 1d thread
+    dim3 dimGrid(iEnd - iSt, jEnd - jSt);
+    size_t sharedMemorySize = 3 * maxSuperSize * sizeof(int_t);
+
+    scatterGPU<<<dimGrid, dimBlock, sharedMemorySize, cuStream>>>(
+        iSt, jSt, gemmBuff, LDgemmBuff, lpanel, upanel, dA
+    );
+
+    gpuErrchk(cudaGetLastError());
+}
+
+void scatterGPU_batchDriver(
+    int* iSt_batch, int *iEnd_batch, int *jSt_batch, int *jEnd_batch, 
+    int max_ilen, int max_jlen, double **gemmBuff_ptrs, int *LDgemmBuff_batch, 
+    int maxSuperSize, int ldt, lpanelGPU_t *lpanels, upanelGPU_t *upanels, 
+    LUstructGPU_t *dA, int batchCount, cudaStream_t cuStream
+)
+{
+    dim3 dimBlock(ldt); // 1d thread
+    dim3 dimGrid(max_ilen, max_jlen, batchCount);
+    size_t sharedMemorySize = 3 * maxSuperSize * sizeof(int_t);
+
+    scatterGPU_batch<<<dimGrid, dimBlock, sharedMemorySize, cuStream>>>(
+        iSt_batch, iEnd_batch, jSt_batch, jEnd_batch, gemmBuff_ptrs, 
+        LDgemmBuff_batch, lpanels, upanels, dA 
+    );
+
+    gpuErrchk(cudaGetLastError());
+}
+
 int_t LUstruct_v100::dSchurComplementUpdateGPU(
     int streamId,
     int_t k, lpanel_t &lpanel, upanel_t &upanel)
@@ -310,6 +380,8 @@ int_t LUstruct_v100::dSchurComplementUpdateGPU(
     {
         iSt = iEnd;
         iEnd = lpanel.getEndBlock(iSt, maxGemmRows);
+        
+        // printf("k = %d, ist = %d, iend = %d\n", k, iSt, iEnd);
 
         assert(iEnd > iSt);
         int jSt = 0;
@@ -325,29 +397,28 @@ int_t LUstruct_v100::dSchurComplementUpdateGPU(
             int gemm_m = lpanel.stRow(iEnd) - lpanel.stRow(iSt);
             int gemm_n = upanel.stCol(jEnd) - upanel.stCol(jSt);
             int gemm_k = supersize(k);
+            
+            // printf("k = %d, ist = %d, iend = %d, jst = %d, jend = %d\n", k, iSt, iEnd, jSt, jEnd);
+
             double alpha = 1.0;
             double beta = 0.0;
 #ifndef NDEBUG
-            printf("m=%d, n=%d, k=%d\n", gemm_m, gemm_n, gemm_k);
+            // printf("m=%d, n=%d, k=%d\n", gemm_m, gemm_n, gemm_k);
 #endif
             cublasDgemm(handle, CUBLAS_OP_N, CUBLAS_OP_N,
                         gemm_m, gemm_n, gemm_k, &alpha,
                         lpanel.blkPtrGPU(iSt), lpanel.LDA(),
                         upanel.blkPtrGPU(jSt), upanel.LDA(), &beta,
                         A_gpu.gpuGemmBuffs[streamId], gemm_m);
-
-            // setting up scatter
-            dim3 dimBlock(ldt); // 1d thread
-            dim3 dimGrid(iEnd - iSt, jEnd - jSt);
-            size_t sharedMemorySize = 3 * A_gpu.maxSuperSize * sizeof(int_t);
-
-            scatterGPU<<<dimGrid, dimBlock, sharedMemorySize, cuStream>>>(
-                iSt, jSt,
-                A_gpu.gpuGemmBuffs[streamId], gemm_m,
-                lpanel.gpuPanel, upanel.gpuPanel, dA_gpu);
+            
+            scatterGPU_driver(
+                iSt, iEnd, jSt, jEnd, A_gpu.gpuGemmBuffs[streamId], gemm_m,
+                A_gpu.maxSuperSize, ldt, lpanel.gpuPanel, upanel.gpuPanel, 
+                dA_gpu, cuStream
+            );
         }
     }
-    checkCudaLocal(cudaStreamSynchronize(A_gpu.cuStreams[streamId]));
+    gpuErrchk(cudaStreamSynchronize(A_gpu.cuStreams[streamId]));
     return 0;
 }
 
@@ -402,8 +473,8 @@ int_t LUstruct_v100::lookAheadUpdateGPU(
 
 int_t LUstruct_v100::SyncLookAheadUpdate(int streamId)
 {
-    checkCudaLocal(cudaStreamSynchronize(A_gpu.lookAheadLStream[streamId]));
-    checkCudaLocal(cudaStreamSynchronize(A_gpu.lookAheadUStream[streamId]));
+    gpuErrchk(cudaStreamSynchronize(A_gpu.lookAheadLStream[streamId]));
+    gpuErrchk(cudaStreamSynchronize(A_gpu.lookAheadUStream[streamId]));
 
     return 0;
 }
@@ -585,14 +656,21 @@ size_t getGPUMemPerProcs(MPI_Comm baseCommunicator)
 
 int_t LUstruct_v100::setLUstruct_GPU()
 {
-
+    int i, stream;
+    
+#if (DEBUGlevel >= 1)
+    int iam = 0;
+    CHECK_MALLOC(iam, "Enter setLUstruct_GPU()"); fflush(stdout);
+#endif
+	
     A_gpu.Pr = Pr;
     A_gpu.Pc = Pc;
     A_gpu.maxSuperSize = ldt;
 
+    /* Sherry: this mapping may be inefficient on Frontier */
     /*Mapping to device*/
     int deviceCount;
-    cudaGetDeviceCount(&deviceCount); // How many GPUs?
+    cudaGetDeviceCount(&deviceCount); // How many GPUs
     int device_id = grid3d->iam % deviceCount;
     cudaSetDevice(device_id);
 
@@ -609,17 +687,21 @@ int_t LUstruct_v100::setLUstruct_GPU()
     memReqData += (nsupers + 1) * sizeof(int_t);
 
     tRegion[0] = SuperLU_timer_();
-    size_t totalNzvalSize = 0;
-    /*Memory for lapenlPanel Data*/
-    for (int_t i = 0; i < CEILING(nsupers, Pc); ++i)
+    
+    size_t totalNzvalSize = 0; /* too big for gemmBufferSize */
+    size_t max_gemmCsize = 0;  /* Sherry added 2/20/2023 */
+    
+    /*Memory for lpapenl and upanel Data*/
+    for (i = 0; i < CEILING(nsupers, Pc); ++i)
     {
         if (i * Pc + mycol < nsupers && isNodeInMyGrid[i * Pc + mycol] == 1)
         {
             memReqData += lPanelVec[i].totalSize();
             totalNzvalSize += lPanelVec[i].nzvalSize();
+	    //max_gemmCsize = SUPERoLU_MAX(max_gemmCsize, ???);
         }
     }
-    for (int_t i = 0; i < CEILING(nsupers, Pr); ++i)
+    for (i = 0; i < CEILING(nsupers, Pr); ++i)
     {
         if (i * Pr + myrow < nsupers && isNodeInMyGrid[i * Pr + myrow] == 1)
         {
@@ -627,14 +709,17 @@ int_t LUstruct_v100::setLUstruct_GPU()
             totalNzvalSize += uPanelVec[i].nzvalSize();
         }
     }
+    
     memReqData += CEILING(nsupers, Pc) * sizeof(lpanelGPU_t);
     memReqData += CEILING(nsupers, Pr) * sizeof(upanelGPU_t);
 
     memReqData += sizeof(LUstructGPU_t);
+    
     // Per stream data
     // TODO: estimate based on ancestor size
-    int_t maxBuffSize = sp_ienv_dist (8, options); //sp_env(8,options);
+    int_t maxBuffSize = sp_ienv_dist (8, options);
     A_gpu.gemmBufferSize = SUPERLU_MIN(maxBuffSize, totalNzvalSize);
+    
     size_t dataPerStream = 3 * sizeof(double) * maxLvalCount + 3 * sizeof(double) * maxUvalCount + 2 * sizeof(int_t) * maxLidxCount + 2 * sizeof(int_t) * maxUidxCount + A_gpu.gemmBufferSize * sizeof(double) + ldt * ldt * sizeof(double);
     if (memReqData + 2 * dataPerStream > useableGPUMem)
     {
@@ -643,11 +728,15 @@ int_t LUstruct_v100::setLUstruct_GPU()
     }
 
     tRegion[0] = SuperLU_timer_() - tRegion[0];
+#if ( PRNTlevel>=1 )    
     // print the time taken to estimate memory on GPU
     if (grid3d->iam == 0)
     {
         printf("Time taken to estimate memory on GPU: %f\n", tRegion[0]);
+	printf("\t.. totalNzvalSize %ld, gemmBufferSize %ld\n",
+	       (long) totalNzvalSize, (long) A_gpu.gemmBufferSize);
     }
+#endif
 
     /*Memory for lapenlPanel Data*/
     tRegion[1] = SuperLU_timer_();
@@ -665,102 +754,121 @@ int_t LUstruct_v100::setLUstruct_GPU()
         printf("Using %d CUDA LookAhead streams\n", rNumberOfStreams);
     size_t totalMemoryRequired = memReqData + numberOfStreams * dataPerStream;
 
-#if 0
-    // upanelGPU_t *uPanelVec_GPU = new upanelGPU_t[CEILING(nsupers, Pr)];
-    // lpanelGPU_t *lPanelVec_GPU = new lpanelGPU_t[CEILING(nsupers, Pc)];
-    // void *gpuBasePtr, *gpuCurrentPtr;
-    // cudaMalloc(&gpuBasePtr, totalMemoryRequired);
-    // gpuCurrentPtr = gpuBasePtr;
+#if 0 /**** Old code ****/
+    upanelGPU_t *uPanelVec_GPU = new upanelGPU_t[CEILING(nsupers, Pr)];
+    lpanelGPU_t *lPanelVec_GPU = new lpanelGPU_t[CEILING(nsupers, Pc)];
+    void *gpuBasePtr, *gpuCurrentPtr;
+    cudaMalloc(&gpuBasePtr, totalMemoryRequired);
+    gpuCurrentPtr = gpuBasePtr;
 
-    // A_gpu.xsup = (int_t *)gpuCurrentPtr;
-    // gpuCurrentPtr = (int_t *)gpuCurrentPtr + (nsupers + 1);
-    // cudaMemcpy(A_gpu.xsup, xsup, (nsupers + 1) * sizeof(int_t), cudaMemcpyHostToDevice);
-
-    // for (int_t i = 0; i < CEILING(nsupers, Pc); ++i)
-    // {
-    //     if (i * Pc + mycol < nsupers && isNodeInMyGrid[i * Pc + mycol] == 1)
-    //     {
-    //         lPanelVec_GPU[i] = lPanelVec[i].copyToGPU(gpuCurrentPtr);
-    //         gpuCurrentPtr = (char *)gpuCurrentPtr + lPanelVec[i].totalSize();
-    //     }
-    // }
-    // A_gpu.lPanelVec = (lpanelGPU_t *)gpuCurrentPtr;
-    // gpuCurrentPtr = (char *)gpuCurrentPtr + CEILING(nsupers, Pc) * sizeof(lpanelGPU_t);
-    // cudaMemcpy(A_gpu.lPanelVec, lPanelVec_GPU,
-    //            CEILING(nsupers, Pc) * sizeof(lpanelGPU_t), cudaMemcpyHostToDevice);
-
-    // for (int_t i = 0; i < CEILING(nsupers, Pr); ++i)
-    // {
-    //     if (i * Pr + myrow < nsupers && isNodeInMyGrid[i * Pr + myrow] == 1)
-    //     {
-    //         uPanelVec_GPU[i] = uPanelVec[i].copyToGPU(gpuCurrentPtr);
-    //         gpuCurrentPtr = (char *)gpuCurrentPtr + uPanelVec[i].totalSize();
-    //     }
-    // }
-    // A_gpu.uPanelVec = (upanelGPU_t *)gpuCurrentPtr;
-    // gpuCurrentPtr = (char *)gpuCurrentPtr + CEILING(nsupers, Pr) * sizeof(upanelGPU_t);
-    // cudaMemcpy(A_gpu.uPanelVec, uPanelVec_GPU,
-    //            CEILING(nsupers, Pr) * sizeof(upanelGPU_t), cudaMemcpyHostToDevice);
-
-    // for (int stream = 0; stream < A_gpu.numCudaStreams; stream++)
-    // {
-
-    //     cudaStreamCreate(&A_gpu.cuStreams[stream]);
-    //     cublasCreate(&A_gpu.cuHandles[stream]);
-    //     A_gpu.LvalRecvBufs[stream] = (double *)gpuCurrentPtr;
-    //     gpuCurrentPtr = (double *)gpuCurrentPtr + maxLvalCount;
-    //     A_gpu.UvalRecvBufs[stream] = (double *)gpuCurrentPtr;
-    //     gpuCurrentPtr = (double *)gpuCurrentPtr + maxUvalCount;
-    //     A_gpu.LidxRecvBufs[stream] = (int_t *)gpuCurrentPtr;
-    //     gpuCurrentPtr = (int_t *)gpuCurrentPtr + maxLidxCount;
-    //     A_gpu.UidxRecvBufs[stream] = (int_t *)gpuCurrentPtr;
-    //     gpuCurrentPtr = (int_t *)gpuCurrentPtr + maxUidxCount;
-
-    //     A_gpu.gpuGemmBuffs[stream] = (double *)gpuCurrentPtr;
-    //     gpuCurrentPtr = (double *)gpuCurrentPtr + A_gpu.gemmBufferSize;
-    //     A_gpu.dFBufs[stream] = (double *)gpuCurrentPtr;
-    //     gpuCurrentPtr = (double *)gpuCurrentPtr + ldt * ldt;
-
-    //     /*lookAhead buffers and stream*/
-    //     cublasCreate(&A_gpu.lookAheadLHandle[stream]);
-    //     cudaStreamCreate(&A_gpu.lookAheadLStream[stream]);
-    //     A_gpu.lookAheadLGemmBuffer[stream] = (double *)gpuCurrentPtr;
-    //     gpuCurrentPtr = (double *)gpuCurrentPtr + maxLvalCount;
-    //     cublasCreate(&A_gpu.lookAheadUHandle[stream]);
-    //     cudaStreamCreate(&A_gpu.lookAheadUStream[stream]);
-    //     A_gpu.lookAheadUGemmBuffer[stream] = (double *)gpuCurrentPtr;
-    //     gpuCurrentPtr = (double *)gpuCurrentPtr + maxUvalCount;
-    // }
-    // // cudaCheckError();
-    // // allocate
-    // dA_gpu = (LUstructGPU_t *)gpuCurrentPtr;
-
-    // cudaMemcpy(dA_gpu, &A_gpu, sizeof(LUstructGPU_t), cudaMemcpyHostToDevice);
-    // gpuCurrentPtr = (LUstructGPU_t *)gpuCurrentPtr + 1;
-
-#else
-    cudaMalloc(&A_gpu.xsup, (nsupers + 1) * sizeof(int_t));
+    A_gpu.xsup = (int_t *)gpuCurrentPtr;
+    gpuCurrentPtr = (int_t *)gpuCurrentPtr + (nsupers + 1);
     cudaMemcpy(A_gpu.xsup, xsup, (nsupers + 1) * sizeof(int_t), cudaMemcpyHostToDevice);
 
-    double tLsend, tUsend;
+    for (int i = 0; i < CEILING(nsupers, Pc); ++i)
+    {
+        if (i * Pc + mycol < nsupers && isNodeInMyGrid[i * Pc + mycol] == 1)
+        {
+            lPanelVec_GPU[i] = lPanelVec[i].copyToGPU(gpuCurrentPtr);
+            gpuCurrentPtr = (char *)gpuCurrentPtr + lPanelVec[i].totalSize();
+        }
+    }
+    A_gpu.lPanelVec = (lpanelGPU_t *)gpuCurrentPtr;
+    gpuCurrentPtr = (char *)gpuCurrentPtr + CEILING(nsupers, Pc) * sizeof(lpanelGPU_t);
+    cudaMemcpy(A_gpu.lPanelVec, lPanelVec_GPU,
+               CEILING(nsupers, Pc) * sizeof(lpanelGPU_t), cudaMemcpyHostToDevice);
 
+    for (int i = 0; i < CEILING(nsupers, Pr); ++i)
+    {
+        if (i * Pr + myrow < nsupers && isNodeInMyGrid[i * Pr + myrow] == 1)
+        {
+            uPanelVec_GPU[i] = uPanelVec[i].copyToGPU(gpuCurrentPtr);
+            gpuCurrentPtr = (char *)gpuCurrentPtr + uPanelVec[i].totalSize();
+        }
+    }
+    A_gpu.uPanelVec = (upanelGPU_t *)gpuCurrentPtr;
+    gpuCurrentPtr = (char *)gpuCurrentPtr + CEILING(nsupers, Pr) * sizeof(upanelGPU_t);
+    cudaMemcpy(A_gpu.uPanelVec, uPanelVec_GPU,
+               CEILING(nsupers, Pr) * sizeof(upanelGPU_t), cudaMemcpyHostToDevice);
+
+    for (int stream = 0; stream < A_gpu.numCudaStreams; stream++)
+    {
+
+        cudaStreamCreate(&A_gpu.cuStreams[stream]);
+        cublasCreate(&A_gpu.cuHandles[stream]);
+        A_gpu.LvalRecvBufs[stream] = (double *)gpuCurrentPtr;
+        gpuCurrentPtr = (double *)gpuCurrentPtr + maxLvalCount;
+        A_gpu.UvalRecvBufs[stream] = (double *)gpuCurrentPtr;
+        gpuCurrentPtr = (double *)gpuCurrentPtr + maxUvalCount;
+        A_gpu.LidxRecvBufs[stream] = (int_t *)gpuCurrentPtr;
+        gpuCurrentPtr = (int_t *)gpuCurrentPtr + maxLidxCount;
+        A_gpu.UidxRecvBufs[stream] = (int_t *)gpuCurrentPtr;
+        gpuCurrentPtr = (int_t *)gpuCurrentPtr + maxUidxCount;
+
+        A_gpu.gpuGemmBuffs[stream] = (double *)gpuCurrentPtr;
+        gpuCurrentPtr = (double *)gpuCurrentPtr + A_gpu.gemmBufferSize;
+        A_gpu.dFBufs[stream] = (double *)gpuCurrentPtr;
+        gpuCurrentPtr = (double *)gpuCurrentPtr + ldt * ldt;
+
+        /*lookAhead buffers and stream*/
+        cublasCreate(&A_gpu.lookAheadLHandle[stream]);
+        cudaStreamCreate(&A_gpu.lookAheadLStream[stream]);
+        A_gpu.lookAheadLGemmBuffer[stream] = (double *)gpuCurrentPtr;
+        gpuCurrentPtr = (double *)gpuCurrentPtr + maxLvalCount;
+        cublasCreate(&A_gpu.lookAheadUHandle[stream]);
+        cudaStreamCreate(&A_gpu.lookAheadUStream[stream]);
+        A_gpu.lookAheadUGemmBuffer[stream] = (double *)gpuCurrentPtr;
+        gpuCurrentPtr = (double *)gpuCurrentPtr + maxUvalCount;
+    }
+    // cudaCheckError();
+    // allocate
+    dA_gpu = (LUstructGPU_t *)gpuCurrentPtr;
+
+    cudaMemcpy(dA_gpu, &A_gpu, sizeof(LUstructGPU_t), cudaMemcpyHostToDevice);
+    gpuCurrentPtr = (LUstructGPU_t *)gpuCurrentPtr + 1;
+
+#else /* else of #if 0 ----> this is the current active code - Sherry */
+    gpuErrchk(cudaMalloc(&A_gpu.xsup, (nsupers + 1) * sizeof(int_t)));
+    gpuErrchk(cudaMemcpy(A_gpu.xsup, xsup, (nsupers + 1) * sizeof(int_t), cudaMemcpyHostToDevice));
+
+    double tLsend, tUsend;
+#if 0
     tLsend = SuperLU_timer_();
     upanelGPU_t *uPanelVec_GPU = copyUpanelsToGPU();
     tLsend = SuperLU_timer_() - tLsend;
     tUsend = SuperLU_timer_();
     lpanelGPU_t *lPanelVec_GPU = copyLpanelsToGPU();
     tUsend = SuperLU_timer_() - tUsend;
-
+#else 
+    upanelGPU_t *uPanelVec_GPU = new upanelGPU_t[CEILING(nsupers, Pr)];
+    lpanelGPU_t *lPanelVec_GPU = new lpanelGPU_t[CEILING(nsupers, Pc)];
+    tLsend = SuperLU_timer_();
+    for (i = 0; i < CEILING(nsupers, Pc); ++i)
+    {
+        if (i * Pc + mycol < nsupers && isNodeInMyGrid[i * Pc + mycol] == 1)
+            lPanelVec_GPU[i] = lPanelVec[i].copyToGPU();
+    }
+    tLsend = SuperLU_timer_() - tLsend;
+    tUsend = SuperLU_timer_();
+    // cudaCheckError();
+    for (i = 0; i < CEILING(nsupers, Pr); ++i)
+    {
+        if (i * Pr + myrow < nsupers && isNodeInMyGrid[i * Pr + myrow] == 1)
+            uPanelVec_GPU[i] = uPanelVec[i].copyToGPU();
+    }
+    tUsend = SuperLU_timer_() - tUsend;
+#endif
     tRegion[1] = SuperLU_timer_() - tRegion[1];
     printf("TRegion L,U send: \t %g\n", tRegion[1]);
     printf("Time to send Lpanel=%g  and U panels =%g \n", tLsend, tUsend);
+    fflush(stdout);
 
-    cudaMalloc(&A_gpu.lPanelVec, CEILING(nsupers, Pc) * sizeof(lpanelGPU_t));
-    cudaMemcpy(A_gpu.lPanelVec, lPanelVec_GPU,
-               CEILING(nsupers, Pc) * sizeof(lpanelGPU_t), cudaMemcpyHostToDevice);
-    cudaMalloc(&A_gpu.uPanelVec, CEILING(nsupers, Pr) * sizeof(upanelGPU_t));
-    cudaMemcpy(A_gpu.uPanelVec, uPanelVec_GPU,
-               CEILING(nsupers, Pr) * sizeof(upanelGPU_t), cudaMemcpyHostToDevice);
+    gpuErrchk(cudaMalloc(&A_gpu.lPanelVec, CEILING(nsupers, Pc) * sizeof(lpanelGPU_t)));
+    gpuErrchk(cudaMemcpy(A_gpu.lPanelVec, lPanelVec_GPU,
+               CEILING(nsupers, Pc) * sizeof(lpanelGPU_t), cudaMemcpyHostToDevice));
+    gpuErrchk(cudaMalloc(&A_gpu.uPanelVec, CEILING(nsupers, Pr) * sizeof(upanelGPU_t)));
+    gpuErrchk(cudaMemcpy(A_gpu.uPanelVec, uPanelVec_GPU,
+               CEILING(nsupers, Pr) * sizeof(upanelGPU_t), cudaMemcpyHostToDevice));
 
     tRegion[2] = SuperLU_timer_();
     int dfactBufSize = 0;
@@ -772,35 +880,109 @@ int_t LUstruct_v100::setLUstruct_GPU()
     printf("Size of dfactBuf is %d\n", dfactBufSize);
     tRegion[2] = SuperLU_timer_() - tRegion[2];
     printf("TRegion dfactBuf: \t %g\n", tRegion[2]);
+    fflush(stdout);
     
-
     tRegion[3] = SuperLU_timer_();
 
     double tcuMalloc=SuperLU_timer_();
-    for (int stream = 0; stream < A_gpu.numCudaStreams; stream++)
+
+    /* Sherry: where are these freed ?? */
+    for (stream = 0; stream < A_gpu.numCudaStreams; stream++)
     {
-        cudaMalloc(&A_gpu.LvalRecvBufs[stream], sizeof(double) * maxLvalCount);
-        cudaMalloc(&A_gpu.UvalRecvBufs[stream], sizeof(double) * maxUvalCount);
-        cudaMalloc(&A_gpu.LidxRecvBufs[stream], sizeof(int_t) * maxLidxCount);
-        cudaMalloc(&A_gpu.UidxRecvBufs[stream], sizeof(int_t) * maxUidxCount);
+        gpuErrchk(cudaMalloc(&A_gpu.LvalRecvBufs[stream], sizeof(double) * maxLvalCount));
+        gpuErrchk(cudaMalloc(&A_gpu.UvalRecvBufs[stream], sizeof(double) * maxUvalCount));
+        gpuErrchk(cudaMalloc(&A_gpu.LidxRecvBufs[stream], sizeof(int_t) * maxLidxCount));
+        gpuErrchk(cudaMalloc(&A_gpu.UidxRecvBufs[stream], sizeof(int_t) * maxUidxCount));
         // allocate the space for diagonal factor on GPU
-        cudaMalloc(&A_gpu.diagFactWork[stream], sizeof(double) * dfactBufSize);
-        cudaMalloc(&A_gpu.diagFactInfo[stream], sizeof(int));
+        gpuErrchk(cudaMalloc(&A_gpu.diagFactWork[stream], sizeof(double) * dfactBufSize));
+        gpuErrchk(cudaMalloc(&A_gpu.diagFactInfo[stream], sizeof(int)));
 
-        cudaMalloc(&A_gpu.gpuGemmBuffs[stream], A_gpu.gemmBufferSize * sizeof(double));
         /*lookAhead buffers and stream*/
-        cudaMalloc(&A_gpu.lookAheadLGemmBuffer[stream], sizeof(double) * maxLvalCount);
+        gpuErrchk(cudaMalloc(&A_gpu.lookAheadLGemmBuffer[stream], sizeof(double) * maxLvalCount));
 
-        cudaMalloc(&A_gpu.lookAheadUGemmBuffer[stream], sizeof(double) * maxUvalCount);
-
-        cudaMalloc(&A_gpu.dFBufs[stream], ldt * ldt * sizeof(double));
+        gpuErrchk(cudaMalloc(&A_gpu.lookAheadUGemmBuffer[stream], sizeof(double) * maxUvalCount));
+	// Sherry: replace this by new code 
+        //cudaMalloc(&A_gpu.dFBufs[stream], ldt * ldt * sizeof(double));
+        //cudaMalloc(&A_gpu.gpuGemmBuffs[stream], A_gpu.gemmBufferSize * sizeof(double));
     }
+    
+    /* Sherry: dfBufs[] changed to double pointer **, max(batch, numCudaStreams) */
+    int mxLeafNode = trf3Dpartition->mxLeafNode;
+
+    /* Compute gemmCsize[] for batch operations 
+       !!!!!!! WARNING: this only works for 1 MPI  !!!!!! */
+    if ( options->batchCount > 0 ) {
+	trf3Dpartition->gemmCsizes = int32Calloc_dist(mxLeafNode);
+	int k, k0, k_st, k_end, offset, Csize;
+	
+	for (int ilvl = 0; ilvl < maxLvl; ++ilvl) {  /* Loop through the Pz tree levels */
+	    int treeId = trf3Dpartition->myTreeIdxs[ilvl];
+	    sForest_t* sforest = trf3Dpartition->sForests[treeId];
+	    if (sforest){
+		int_t *perm_c_supno = sforest->nodeList ;
+		int maxTopoLevel = sforest->topoInfo.numLvl;/* number of levels at each outer-tree node */
+		for (int topoLvl = 0; topoLvl < maxTopoLevel; ++topoLvl) {
+		    k_st = sforest->topoInfo.eTreeTopLims[topoLvl];
+		    k_end = sforest->topoInfo.eTreeTopLims[topoLvl + 1];
+		
+		    for (k0 = k_st; k0 < k_end; ++k0) {
+			offset = k0 - k_st;
+			k = perm_c_supno[k0];
+			Csize = lPanelVec[k].nzrows() * uPanelVec[k].nzcols();
+			trf3Dpartition->gemmCsizes[offset] =
+			    SUPERLU_MAX(trf3Dpartition->gemmCsizes[offset], Csize);
+		    }
+		}
+	    }
+	}
+    }
+    
+    int num_dfbufs;  /* number of diagonal buffers */
+    if ( options->batchCount > 0 ) { /* use batch code */
+	num_dfbufs = mxLeafNode;
+    } else { /* use pipelined code */
+	num_dfbufs = MAX_CUDA_STREAMS;
+    }
+    int num_gemmbufs = num_dfbufs;
+    printf(".. setLUstrut_GPU: num_dfbufs %d, num_gemmbufs %d\n", num_dfbufs, num_gemmbufs); fflush(stdout);
+
+    A_gpu.dFBufs = (double **) SUPERLU_MALLOC(num_dfbufs * sizeof(double *));
+    A_gpu.gpuGemmBuffs = (double **) SUPERLU_MALLOC(num_gemmbufs * sizeof(double *));
+    
+    int l, sum_diag_size = 0, sum_gemmC_size = 0;
+    
+    if ( options->batchCount > 0 ) { /* set up variable-size buffers for batch code */
+	for (i = 0; i < num_dfbufs; ++i) {
+	    l = trf3Dpartition->diagDims[i];
+	    gpuErrchk(cudaMalloc(&(A_gpu.dFBufs[i]), l * l * sizeof(double)));
+	    //printf("\t diagDims[%d] %d\n", i, l);
+	    gpuErrchk(cudaMalloc(&(A_gpu.gpuGemmBuffs[i]), trf3Dpartition->gemmCsizes[i] * sizeof(double)));
+	    sum_diag_size += l * l;
+	    sum_gemmC_size += trf3Dpartition->gemmCsizes[i];
+	}
+    } else { /* uniform-size buffers */
+	l = ldt * ldt;
+	for (i = 0; i < num_dfbufs; ++i) {
+	    gpuErrchk(cudaMalloc(&(A_gpu.dFBufs[i]), l * sizeof(double)));
+	    gpuErrchk(cudaMalloc(&(A_gpu.gpuGemmBuffs[i]), A_gpu.gemmBufferSize * sizeof(double)));
+	}
+    }
+    
+    // Wajih: Adding allocation for batched LU and SCU marshalled data
+    // TODO: these are serialized workspaces, so the allocations can be shared 
+    A_gpu.marshall_data.setBatchSize(num_dfbufs);
+    A_gpu.sc_marshall_data.setBatchSize(num_dfbufs);
+
     tcuMalloc = SuperLU_timer_() - tcuMalloc;
+#if ( PRNTlevel>=1 )
     printf("Time to allocate GPU memory: %g\n", tcuMalloc);
+    printf("\t.. sum_diag_size %d\t sum_gemmC_size %d\n", sum_diag_size, sum_gemmC_size);
+    fflush(stdout);
+#endif
 
     double tcuStream=SuperLU_timer_();
     
-    for (int stream = 0; stream < A_gpu.numCudaStreams; stream++)
+    for (stream = 0; stream < A_gpu.numCudaStreams; stream++)
     {
         cublasCreate(&A_gpu.cuHandles[stream]);
         cusolverDnCreate(&A_gpu.cuSolveHandles[stream]);
@@ -809,9 +991,8 @@ int_t LUstruct_v100::setLUstruct_GPU()
     printf("Time to create cublas streams: %g\n", tcuStream);
 
     double tcuStreamCreate=SuperLU_timer_();
-    for (int stream = 0; stream < A_gpu.numCudaStreams; stream++)
+    for (stream = 0; stream < A_gpu.numCudaStreams; stream++)
     {
-
         cudaStreamCreate(&A_gpu.cuStreams[stream]);
         cublasCreate(&A_gpu.cuHandles[stream]);
         /*lookAhead buffers and stream*/
@@ -819,6 +1000,17 @@ int_t LUstruct_v100::setLUstruct_GPU()
         cudaStreamCreate(&A_gpu.lookAheadLStream[stream]);
         cublasCreate(&A_gpu.lookAheadUHandle[stream]);
         cudaStreamCreate(&A_gpu.lookAheadUStream[stream]);
+
+        // Wajih: Need to create at least one magma queue
+#ifdef HAVE_MAGMA
+        if(stream == 0)
+        {
+            magma_queue_create_from_cuda(
+                device_id, A_gpu.cuStreams[stream], A_gpu.cuHandles[stream], 
+                NULL, &A_gpu.magma_queue
+            );
+        }
+#endif
     }
     tcuStreamCreate = SuperLU_timer_() - tcuStreamCreate;
     printf("Time to create CUDA streams: %g\n", tcuStreamCreate);
@@ -826,13 +1018,18 @@ int_t LUstruct_v100::setLUstruct_GPU()
     tRegion[3] = SuperLU_timer_() - tRegion[3];
     printf("TRegion stream: \t %g\n", tRegion[3]);
     // allocate
-    cudaMalloc(&dA_gpu, sizeof(LUstructGPU_t));
-    cudaMemcpy(dA_gpu, &A_gpu, sizeof(LUstructGPU_t), cudaMemcpyHostToDevice);
+    gpuErrchk(cudaMalloc(&dA_gpu, sizeof(LUstructGPU_t)));
+    gpuErrchk(cudaMemcpy(dA_gpu, &A_gpu, sizeof(LUstructGPU_t), cudaMemcpyHostToDevice));
 
 #endif
+    
     // cudaCheckError();
+    
+#if (DEBUGlevel >= 1)
+	CHECK_MALLOC(iam, "Exit setLUstruct_GPU()");
+#endif
     return 0;
-}
+} /* setLUstruct_GPU */
 
 int_t LUstruct_v100::copyLUGPUtoHost()
 {
@@ -851,11 +1048,11 @@ int_t LUstruct_v100::copyLUHosttoGPU()
 {
     for (int_t i = 0; i < CEILING(nsupers, Pc); ++i)
         if (i * Pc + mycol < nsupers && isNodeInMyGrid[i * Pc + mycol] == 1)
-            lPanelVec[i].copyToGPU();
+            lPanelVec[i].copyBackToGPU();
 
     for (int_t i = 0; i < CEILING(nsupers, Pr); ++i)
         if (i * Pr + myrow < nsupers && isNodeInMyGrid[i * Pr + myrow] == 1)
-            uPanelVec[i].copyToGPU();
+            uPanelVec[i].copyBackToGPU();
     return 0;
 }
 
@@ -916,8 +1113,8 @@ lpanelGPU_t *LUstruct_v100::copyLpanelsToGPU()
     int_t *idxBuffer = (int_t *)SUPERLU_MALLOC(gpuLidxSize);
 
     // allocate memory buffer on GPU
-    cudaMalloc(&gpuLvalBasePtr, gpuLvalSize);
-    cudaMalloc(&gpuLidxBasePtr, gpuLidxSize);
+    gpuErrchk(cudaMalloc(&gpuLvalBasePtr, gpuLvalSize));
+    gpuErrchk(cudaMalloc(&gpuLidxBasePtr, gpuLidxSize));
 
     size_t valOffset = 0;
     size_t idxOffset = 0;
@@ -969,17 +1166,23 @@ lpanelGPU_t *LUstruct_v100::copyLpanelsToGPU()
 #endif
     }
     // find
-    cudaMemcpy(gpuLidxBasePtr, idxBuffer, gpuLidxSize, cudaMemcpyHostToDevice);
+    gpuErrchk(cudaMemcpy(gpuLidxBasePtr, idxBuffer, gpuLidxSize, cudaMemcpyHostToDevice));
     tLsend = SuperLU_timer_() - tLsend;
     printf("cudaMemcpy time L =%g \n", tLsend);
 
     SUPERLU_FREE(valBuffer);
     SUPERLU_FREE(idxBuffer);
     return lPanelVec_GPU;
-}
+} /* copyLpanelsToGPU */
+
 
 upanelGPU_t *LUstruct_v100::copyUpanelsToGPU()
 {
+#if (DEBUGlevel >= 1)
+    int iam = 0;
+    CHECK_MALLOC(iam, "Enter copyUpanelsToGPU()");
+#endif
+    
     upanelGPU_t *uPanelVec_GPU = new upanelGPU_t[CEILING(nsupers, Pr)];
 
     gpuUvalSize = 0;
@@ -996,8 +1199,8 @@ upanelGPU_t *LUstruct_v100::copyUpanelsToGPU()
     // TODO: set gpuUvalSize, gpuUidxSize
 
     // allocate memory buffer on GPU
-    cudaMalloc(&gpuUvalBasePtr, gpuUvalSize);
-    cudaMalloc(&gpuUidxBasePtr, gpuUidxSize);
+    gpuErrchk(cudaMalloc(&gpuUvalBasePtr, gpuUvalSize));
+    gpuErrchk(cudaMalloc(&gpuUidxBasePtr, gpuUidxSize));
 
     size_t valOffset = 0;
     size_t idxOffset = 0;
@@ -1016,7 +1219,9 @@ upanelGPU_t *LUstruct_v100::copyUpanelsToGPU()
         }
     }
 
-    int_t *idxBuffer = (int_t *)SUPERLU_MALLOC(gpuUidxSize);
+    int_t *idxBuffer = NULL;
+    if ( gpuUidxSize>0 ) /* Sherry fix: gpuUidxSize can be 0 */
+	idxBuffer = (int_t *)SUPERLU_MALLOC(gpuUidxSize);
 
     if (AVOID_CPU_NZVAL)
     {
@@ -1048,12 +1253,12 @@ upanelGPU_t *LUstruct_v100::copyUpanelsToGPU()
         // do a cudaMemcpy to GPU
         double tLsend = SuperLU_timer_();
         copyToGPU(gpuUvalBasePtr, packedNzvals, packedNzvalsIndices);
-        cudaMemcpy(gpuUidxBasePtr, idxBuffer, gpuUidxSize, cudaMemcpyHostToDevice);
+        gpuErrchk(cudaMemcpy(gpuUidxBasePtr, idxBuffer, gpuUidxSize, cudaMemcpyHostToDevice));
         tLsend = SuperLU_timer_() - tLsend;
         printf("cudaMemcpy time U =%g \n", tLsend);
         // SUPERLU_FREE(valBuffer);
     }
-    else
+    else /* AVOID_CPU_NZVAL not set */
     {
         // do a memcpy to CPU buffer
         double *valBuffer = (double *)SUPERLU_MALLOC(gpuUvalSize);
@@ -1083,16 +1288,26 @@ upanelGPU_t *LUstruct_v100::copyUpanelsToGPU()
         double tLsend = SuperLU_timer_();
         const int USE_GPU_COPY = 1;
         if (USE_GPU_COPY)
-            cudaMemcpy(gpuUvalBasePtr, valBuffer, gpuUvalSize, cudaMemcpyHostToDevice);
+        {
+            gpuErrchk(cudaMemcpy(gpuUvalBasePtr, valBuffer, gpuUvalSize, cudaMemcpyHostToDevice));
+        }
         else
             copyToGPU_Sparse(gpuUvalBasePtr, valBuffer, gpuUvalSize);
 
-        cudaMemcpy(gpuUidxBasePtr, idxBuffer, gpuUidxSize, cudaMemcpyHostToDevice);
+        gpuErrchk(cudaMemcpy(gpuUidxBasePtr, idxBuffer, gpuUidxSize, cudaMemcpyHostToDevice));
         tLsend = SuperLU_timer_() - tLsend;
         printf("cudaMemcpy time U =%g \n", tLsend);
+
         SUPERLU_FREE(valBuffer);
-    }
-    SUPERLU_FREE(idxBuffer);
-    return uPanelVec_GPU;
-}
+    } /* end else AVOID_CPU_NZVAL not set */
+    
+    if ( gpuUidxSize>0 ) /* Sherry fix: gpuUidxSize can be 0 */
+	SUPERLU_FREE(idxBuffer);
+
+#if (DEBUGlevel >= 1)
+    CHECK_MALLOC(iam, "Exit copyUpanelsToGPU()");
 #endif
+    
+    return uPanelVec_GPU;
+    
+} /* copyUpanelsToGPU */

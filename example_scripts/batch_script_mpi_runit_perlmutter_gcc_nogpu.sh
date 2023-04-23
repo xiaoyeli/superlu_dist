@@ -1,14 +1,15 @@
+# superlu_dist batch script for Perlmutter CPU-only compute nodes
+# gnu compiler
+# updated 2023/04/01
 
-module load PrgEnv-gnu
-module load gcc/11.2.0
-module load cmake/3.22.0
-module load cudatoolkit/11.7
-# avoid bug in cray-libsci/21.08.1.2
-module load cray-libsci/22.06.1.3
-# avoid bug in cudatoolkit
-export LD_LIBRARY_PATH=${LD_LIBRARY_PATH//\/usr\/local\/cuda-11.5\/compat:/}
-export LD_LIBRARY_PATH=${LD_LIBRARY_PATH//\/usr\/local\/cuda-11.7\/compat:/}
-# please make sure the above module load and export LD_LIBRARY_PATH commands match your build script
+# please make sure the following module loads/unloads match your build script
+module unload gpu
+#module load PrgEnv-gnu
+#module load gcc/11.2.0
+#module load cmake/3.24.3
+#module load cudatoolkit/11.7
+
+
 
 
 # export SUPERLU_LBS=ND  # this is causing crash

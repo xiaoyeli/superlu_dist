@@ -36,6 +36,8 @@ int_t sLluBufInit(sLUValSubBuf_t* LUvsb, sLUstruct_t *LUstruct)
     return 0;
 }
 
+/* Allocate an array of buffers for the diagonal blocks on a level of the tree.
+   The sizes are uniform: ldt is the maximum among all the nodes.    */
 sdiagFactBufs_t** sinitDiagFactBufsArr(int_t mxLeafNode, int_t ldt, gridinfo_t* grid)
 {
     sdiagFactBufs_t** dFBufs;
@@ -306,16 +308,31 @@ int_t ssparseTreeFactor_ASYNC(
 
     int_t maxTopoLevel = treeTopoInfo->numLvl;
     int_t* eTreeTopLims = treeTopoInfo->eTreeTopLims;
-    int_t * IrecvPlcd_D = factStat->IrecvPlcd_D;
-    int_t* factored_D = factStat->factored_D;
-    int_t * factored_L = factStat->factored_L;
-    int_t * factored_U = factStat->factored_U;
-    int_t* IbcastPanel_L = factStat->IbcastPanel_L;
-    int_t* IbcastPanel_U = factStat->IbcastPanel_U;
+    int * IrecvPlcd_D = factStat->IrecvPlcd_D;
+    int * factored_D = factStat->factored_D;
+    int * factored_L = factStat->factored_L;
+    int * factored_U = factStat->factored_U;
+    int * IbcastPanel_L = factStat->IbcastPanel_L;
+    int * IbcastPanel_U = factStat->IbcastPanel_U;
     int_t* xsup = LUstruct->Glu_persist->xsup;
 
     int_t numLAMax = getNumLookAhead(options);
     int_t numLA = numLAMax;
+
+#if ( PRNTlevel>=1 )
+    // Sherry print
+    printf("sforest: nNodes %d, numlvl %d\n", (int) nnodes, (int) maxTopoLevel);
+    //PrintInt10("perm_c_supno", nnodes, perm_c_supno);
+    PrintInt10("eTreeTopLims", maxTopoLevel + 1, eTreeTopLims);
+    for (int topoLvl = 0; topoLvl < maxTopoLevel; ++topoLvl)
+    {
+        int k_st = eTreeTopLims[topoLvl];
+        int k_end = eTreeTopLims[topoLvl + 1];
+	printf("level %d\n", topoLvl);
+	PrintInt10("perm_c_supno", k_end - k_st, &perm_c_supno[k_st]);
+    }
+    ////////
+#endif
 
     for (int_t k0 = 0; k0 < eTreeTopLims[1]; ++k0)
     {
@@ -501,17 +518,17 @@ int_t ssparseTreeFactor_ASYNC(
             if (topoLvl < maxTopoLevel - 1)
             {
                 int_t k_parent = gEtreeInfo->setree[k];
-                gEtreeInfo->numChildLeft[k_parent]--;
-                if (gEtreeInfo->numChildLeft[k_parent] == 0)
-                {
-                    int_t k0_parent =  myIperm[k_parent];
-                    if (k0_parent > 0)
-                    {
-                        /* code */
-                        assert(k0_parent < nnodes);
-                        int_t offset = k0_parent - k_end;
+                if(k_parent < nnodes) {
+		    gEtreeInfo->numChildLeft[k_parent]--;
+                    if (gEtreeInfo->numChildLeft[k_parent] == 0) {
+                        int_t k0_parent =  myIperm[k_parent];
+                        if (k0_parent > 0)
+			{
+                            /* code */
+                            assert(k0_parent < nnodes);
+                            int_t offset = k0_parent - k_end;
 
-			sDiagFactIBCast(k_parent, k_parent, dFBufs[offset]->BlockUFactor,
+			    sDiagFactIBCast(k_parent, k_parent, dFBufs[offset]->BlockUFactor,
 					dFBufs[offset]->BlockLFactor, factStat->IrecvPlcd_D,
 					comReqss[offset]->U_diag_blk_recv_req, 
 					comReqss[offset]->L_diag_blk_recv_req,
@@ -519,9 +536,9 @@ int_t ssparseTreeFactor_ASYNC(
 					comReqss[offset]->L_diag_blk_send_req,
 					grid, options, thresh, LUstruct, stat, info, SCT, tag_ub);
 
-                        factored_D[k_parent] = 1;
-                    }
-
+                            factored_D[k_parent] = 1;
+                        }
+		    }
                 }
             }
 

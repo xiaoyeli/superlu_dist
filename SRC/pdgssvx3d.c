@@ -536,6 +536,8 @@ int writeLUtoDisk(int nsupers, int_t *xsup, dLUstruct_t *LUstruct)
 		printf("Please set environment variable LUFILE to write\n..bye bye");
 		exit(0);
 	}
+	
+	return 0;
 }
 
 #define EPSILON 1e-3
@@ -592,6 +594,8 @@ int checkLUFromDisk(int nsupers, int_t *xsup, dLUstruct_t *LUstruct)
 		printf("Please set environment variable LUFILE to read\n..bye bye");
 		exit(0);
 	}
+
+	return 0;
 }
 
 void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
@@ -1242,6 +1246,7 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 				}
 			} /* end ... use parmetis */
 
+			
 			if (permc_spec != MY_PERMC && Fact == DOFACT)
 			{
 				if (permc_spec == PARMETIS)
@@ -1364,6 +1369,10 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 
 			} /* end if Fact not SamePattern_SameRowPerm */
 
+#if (DEBUGlevel >= 2) // Sherry
+			if (!iam)
+				PrintInt10("perm_c", m, perm_c);
+#endif
 			if (sizes)
 				SUPERLU_FREE(sizes);
 			if (fstVtxSep)
@@ -1418,6 +1427,8 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 
 	dtrf3Dpartition_t *trf3Dpartition;
 	int gpu3dVersion = 0;
+	#ifdef GPU_ACC
+		// gpu3dVersion = 1;
 	if (getenv("GPU3DVERSION"))
 	{
 		gpu3dVersion = atoi(getenv("GPU3DVERSION"));
@@ -1431,7 +1442,7 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 			assert(grid3d->npdep == 1);
 	}
 	LUgpu_Handle LUgpu;
-
+	#endif 
 	/* Perform numerical factorization in parallel on all process layers.*/
 	if (!factored)
 	{
@@ -1498,11 +1509,12 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 		/*factorize in grid 1*/
 		// if(grid3d->zscp.Iam)
 		// get environment variable TRF3DVERSION
-
+#ifdef GPU_ACC
 		if (gpu3dVersion == 1)
-		{
+		{ /* this is the new C++ code in TRF3dV100/ directory */
+		  
 			if (!grid3d->iam)
-				printf("Using pdgstrf3d+gpu version 1 for Summit");
+				printf("Using pdgstrf3d+gpu version 1 for Summit\n");
 #if 0
 			pdgstrf3d_summit(options, m, n, anorm, trf3Dpartition, SCT, LUstruct,
 				  grid3d, stat, info);
@@ -1511,10 +1523,13 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 			double s_eps = smach_dist("Epsilon");
 			double thresh = s_eps * anorm;
 
+			/* call constructor in C++ code */
 			LUgpu = createLUgpuHandle(nsupers, ldt, trf3Dpartition, LUstruct, grid3d,
-									  SCT, options, stat, thresh, info);
-
+						  SCT, options, stat, thresh, info);
+			
+			/* call pdgstrf3d() in C++ code */
 			pdgstrf3d_LUpackedInterface(LUgpu);
+			
 			if (!trisolveGPUopt)
 			{
 				copyLUGPU2Host(LUgpu, LUstruct);
@@ -1529,7 +1544,8 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 
 #endif
 		}
-		else
+		else /* this is the old C code, with less GPU offload */
+#endif /* matching ifdef GPU_ACC */
 		{
 
 			pdgstrf3d(options, m, n, anorm, trf3Dpartition, SCT, LUstruct,

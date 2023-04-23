@@ -8,53 +8,58 @@
 #endif
 #include "lupanels.hpp"
 
-// #define cudaCheckError()                                                                     \
-//     {                                                                                        \
-//         cudaError_t e = cudaGetLastError();                                                  \
-//         if (e != cudaSuccess)                                                                \
-//         {                                                                                    \
+// #define cudaCheckError()                                                              
+//     {                                                                        \
+//         cudaError_t e = cudaGetLastError();                                   \
+//         if (e != cudaSuccess)                                                \
+//         {                                                                    \
 //             printf("Cuda failure %s:%d: '%s'\n", __FILE__, __LINE__, cudaGetErrorString(e)); \
-//             exit(0);                                                                         \
-//         }                                                                                    \
+//             exit(0);                                                         \
+//         }                                                                    \
 //     }
 
 #ifdef HAVE_CUDA
 upanel_t LUstruct_v100::getKUpanel(int_t k, int_t offset)
 {
-    upanel_t k_upanel(UidxRecvBufs[offset], UvalRecvBufs[offset],
-                      A_gpu.UidxRecvBufs[offset], A_gpu.UvalRecvBufs[offset]);
-    
-    if (myrow == krow(k))
-        k_upanel = uPanelVec[g2lRow(k)];
-    
-    return k_upanel;
+    return (
+        myrow == krow(k) ? 
+        uPanelVec[g2lRow(k)] : 
+        upanel_t(UidxRecvBufs[offset], UvalRecvBufs[offset],
+            A_gpu.UidxRecvBufs[offset], A_gpu.UvalRecvBufs[offset])
+    );
 }
 
 lpanel_t LUstruct_v100::getKLpanel(int_t k, int_t offset)
-{
-    lpanel_t k_lpanel(LidxRecvBufs[offset], LvalRecvBufs[offset],
-                      A_gpu.LidxRecvBufs[offset], A_gpu.LvalRecvBufs[offset]);
-    if (mycol == kcol(k))
-        k_lpanel = lPanelVec[g2lCol(k)];
-    return k_lpanel;
+{ 
+    return (
+        mycol == kcol(k) ? 
+        lPanelVec[g2lCol(k)] : 
+        lpanel_t(LidxRecvBufs[offset], LvalRecvBufs[offset],
+            A_gpu.LidxRecvBufs[offset], A_gpu.LvalRecvBufs[offset])
+    );
 }
 #endif
 
+/* Constructor */
 LUstruct_v100::LUstruct_v100(int_t nsupers_, int_t ldt_,
                              dtrf3Dpartition_t *trf3Dpartition_, 
                              dLUstruct_t *LUstruct,
                              gridinfo3d_t *grid3d_in,
                              SCT_t *SCT_, superlu_dist_options_t *options_,
-                             SuperLUStat_t *stat_, double thresh_, int *info_) : nsupers(nsupers_), trf3Dpartition(trf3Dpartition_),
-                                                                                 ldt(ldt_), grid3d(grid3d_in),
-                                                                                 SCT(SCT_), options(options_), 
-                                                                                 stat(stat_), thresh(thresh_), info(info_),
-                                                                                 anc25d(grid3d_in)
+                             SuperLUStat_t *stat_, double thresh_, int *info_) :
+                             nsupers(nsupers_), trf3Dpartition(trf3Dpartition_),
+                             ldt(ldt_), /* maximum supernode size */
+			     grid3d(grid3d_in), SCT(SCT_),
+			     options(options_), stat(stat_),
+			     thresh(thresh_), info(info_), anc25d(grid3d_in)
 {
     maxLvl = log2i(grid3d->zscp.Np) + 1;
     isNodeInMyGrid = getIsNodeInMyGrid(nsupers, maxLvl, trf3Dpartition->myNodeCount, trf3Dpartition->treePerm);
     superlu_acc_offload = get_acc_offload();
 
+#if (DEBUGlevel >= 1)
+    CHECK_MALLOC(grid3d_in->iam, "Enter LUstruct_v100 constructor");
+#endif
     grid = &(grid3d->grid2d);
     iam = grid->iam;
     Pc = grid->npcol;
@@ -184,7 +189,7 @@ LUstruct_v100::LUstruct_v100(int_t nsupers_, int_t ldt_,
     bcastLidx.resize(options->num_lookaheads);
     bcastUidx.resize(options->num_lookaheads);
 
-    for (int_t i = 0; i < options->num_lookaheads; i++)
+    for (int i = 0; i < options->num_lookaheads; i++)
     {
         LvalRecvBufs[i] = (double *)SUPERLU_MALLOC(sizeof(double) * maxLvalCount);
         UvalRecvBufs[i] = (double *)SUPERLU_MALLOC(sizeof(double) * maxUvalCount);
@@ -202,11 +207,11 @@ LUstruct_v100::LUstruct_v100(int_t nsupers_, int_t ldt_,
         bcastUidx[i] = bcUidx;
     }
 
-    diagFactBufs.resize(numDiagBufs);
+    diagFactBufs.resize(numDiagBufs);  /* Sherry?? numDiagBufs == 32 hard-coded */
     bcastDiagRow.resize(numDiagBufs);
     bcastDiagCol.resize(numDiagBufs);
 
-    for (int_t i = 0; i < numDiagBufs; i++)
+    for (int i = 0; i < numDiagBufs; i++) /* Sherry?? these strcutures not used */
     {
         diagFactBufs[i] = (double *)SUPERLU_MALLOC(sizeof(double) * ldt * ldt);
         bcastStruct bcDiagRow(grid3d->rscp.comm, MPI_DOUBLE, SYNC);
@@ -215,7 +220,7 @@ LUstruct_v100::LUstruct_v100(int_t nsupers_, int_t ldt_,
         bcastDiagCol[i] = bcDiagCol;
     }
 
-    int_t mxLeafNode = 0;
+    int mxLeafNode = 0;
     int_t *myTreeIdxs = trf3Dpartition->myTreeIdxs;
     int_t *myZeroTrIdxs = trf3Dpartition->myZeroTrIdxs;
     sForest_t **sForests = trf3Dpartition->sForests;
@@ -226,12 +231,15 @@ LUstruct_v100::LUstruct_v100(int_t nsupers_, int_t ldt_,
     }
     //Yang: how is dFBufs being used in the c++ factorization code? Shall we call dinitDiagFactBufsArrMod instead to save memory? 
     dFBufs = dinitDiagFactBufsArr(mxLeafNode, ldt, grid);
+    maxLeafNodes = mxLeafNode;
 
+    
     double tGPU = SuperLU_timer_();
     if(superlu_acc_offload)
     {
     #ifdef HAVE_CUDA
-        setLUstruct_GPU();
+        setLUstruct_GPU();  /* Set up LU structure and buffers on GPU */
+	
         // TODO: remove it, checking is very slow 
         if(0)
             checkGPU();     
@@ -249,7 +257,12 @@ LUstruct_v100::LUstruct_v100(int_t nsupers_, int_t ldt_,
     //     MPI_Bcast(void *buffer, int count, MPI_Datatype datatype, int root, MPI_Comm comm)
     //     ...
     // }
-}
+
+#if (DEBUGlevel >= 1)
+    CHECK_MALLOC(grid3d_in->iam, "Exit LUstruct_v100 constructor");
+#endif
+    
+} /* constructor LUstruct_v100 */
 
 int_t LUstruct_v100::dSchurComplementUpdate(
     int_t k, lpanel_t &lpanel, upanel_t &upanel)
