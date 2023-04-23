@@ -552,8 +552,8 @@ dtrf3Dpartition_t* dinitTrf3DpartitionLUstructgrid0(int_t n, superlu_dist_option
 				      )
 {   
     gridinfo_t* grid = &(grid3d->grid2d);
-#if ( DEBUGlevel>=1 )
     int iam = grid3d->iam;
+#if ( DEBUGlevel>=1 )
     CHECK_MALLOC (iam, "Enter dinitTrf3DpartitionLUstructgrid0()");
 #endif
     int_t nsupers;
@@ -693,7 +693,7 @@ dtrf3Dpartition_t* dinitTrf3DpartitionLUstructgrid0(int_t n, superlu_dist_option
         int treeId = myTreeIdxs[ilvl];
         sForest_t* sforest = sForests[treeId];
         if (sforest){
-            int_t *perm_c_supno = sforest->nodeList ;
+            int_t *perm_node = sforest->nodeList ; /* permuted list, in order of factorization */
 	    int maxTopoLevel = sforest->topoInfo.numLvl;/* number of levels at each outer-tree node */
             for (int topoLvl = 0; topoLvl < maxTopoLevel; ++topoLvl)
             {
@@ -705,7 +705,7 @@ dtrf3Dpartition_t* dinitTrf3DpartitionLUstructgrid0(int_t n, superlu_dist_option
                 for (int k0 = k_st; k0 < k_end; ++k0)
                 {
                     offset = k0 - k_st;
-                    k = perm_c_supno[k0];
+                    k = perm_node[k0];
                     nsupc = SuperSize (k);
                     krow = PROW (k, grid);
                     kcol = PCOL (k, grid);
@@ -883,7 +883,7 @@ dtrf3Dpartition_t* dinitTrf3Dpartition(int_t nsupers,
         int treeId = myTreeIdxs[ilvl];
         sForest_t* sforest = sForests[treeId];
         if (sforest){
-            int_t *perm_c_supno = sforest->nodeList ;
+            int_t *perm_node = sforest->nodeList ; /* permuted list, in order of factorization */
 	    int maxTopoLevel = sforest->topoInfo.numLvl;/* number of levels at each outer-tree node */
             for (int topoLvl = 0; topoLvl < maxTopoLevel; ++topoLvl)
             {
@@ -895,7 +895,7 @@ dtrf3Dpartition_t* dinitTrf3Dpartition(int_t nsupers,
                 for (int k0 = k_st; k0 < k_end; ++k0)
                 {
                     offset = k0 - k_st;
-                    k = perm_c_supno[k0];
+                    k = perm_node[k0];
                     nsupc = SuperSize (k);
                     krow = PROW (k, grid);
                     kcol = PCOL (k, grid);

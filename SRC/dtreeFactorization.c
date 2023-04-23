@@ -340,7 +340,7 @@ int_t dsparseTreeFactor_ASYNC(
     int_t numLAMax = getNumLookAhead(options);
     int_t numLA = numLAMax;
 
-#if ( PRNTlevel>=1 )
+#if ( PRNTlevel>=2 )
     // Sherry print
     printf("sforest: nNodes %d, numlvl %d\n", (int) nnodes, (int) maxTopoLevel);
     //PrintInt10("perm_c_supno", nnodes, perm_c_supno);

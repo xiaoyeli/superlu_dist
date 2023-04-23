@@ -11,7 +11,7 @@ export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/opt/intel/compilers_and_libraries_2018.
 module unload cmake
 module load cmake
 
-export SUPERLU_LBS=ND  # GD is causing crash for 4x4x32 for StocF-1465
+export SUPERLU_LBS=ND  # GD is causing hang for 4x4x16 for Ga19As19H42
 # export GPU3DVERSION=1
 # export NEW3DSOLVE=1    # Note: SUPERLU_ACC_OFFLOAD=1 and GPU3DVERSION=1 still do CPU factorization after https://github.com/xiaoyeli/superlu_dist/commit/035106d8949bc3abf86866aea1331b2948faa1db#diff-44fa50297abaedcfaed64f93712850a8fce55e8e57065d96d0ba28d8680da11eR223
 # export COMM_TREE_MPI_WAIT=1 

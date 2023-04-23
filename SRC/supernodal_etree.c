@@ -24,7 +24,7 @@ int_t log2i(int_t index)
 /**
  * Returns Supernodal Elimination Tree
  * @param  nsuper Number of Supernodes
- * @param  etree  Scalar elimination tree
+ * @param  etree  Scalar elimination tree 
  * @param  supno  Vertex to supernode mapping
  * @param  xsup   Supernodal boundaries
  * @return       Supernodal elimination tree
@@ -32,9 +32,9 @@ int_t log2i(int_t index)
 int_t *supernodal_etree(int_t nsuper, int_t * etree, int_t* supno, int_t *xsup)
 {
     //	int_t *setree = malloc(sizeof(int_t) * nsuper);
-    int_t *setree = intMalloc_dist(nsuper);  // Sherry fix
+    int_t *setree = intMalloc_dist(nsuper+1);  // Sherry fix
 	/*initialzing the loop*/
-	for (int i = 0; i < nsuper; ++i)
+	for (int i = 0; i < nsuper+1; ++i)
 	{
 	    setree[i] = nsuper;
 	}
@@ -115,7 +115,7 @@ treeList_t* setree2list(int_t nsuper, int_t* setree )
 
 } /* setree2list */
 
-// Sherry added
+// Sherry added 
 int  free_treelist(int_t nsuper, treeList_t* treeList)
 {
     for (int i = 0; i < nsuper + 1; ++i) {
@@ -280,7 +280,7 @@ int_t getDescendList(int_t k, int_t*dlist,  treeList_t* treeList)
 }
 
 
-int_t getCommonAncsCount(int_t k, treeList_t* treeList)
+int_t getCommonAncsCount(int_t k,  treeList_t* treeList)
 {
 	// given a supernode k, give me the list of ancestors nodes
 	int_t cur = k;
@@ -380,33 +380,35 @@ int_t* getEtreeLB(int_t nnodes, int_t* perm_l, int_t* gTopOrder)
 	return lEtreeLB;
 }
 
-int_t* getSubTreeRoots(int_t k, treeList_t* treeList)
+//TODO: add num children added to the list 
+int_t* getSubTreeRoots(int_t k, int_t *numSubtrees, treeList_t* treeList)
 {
-	int_t* srootList = (int_t* ) SUPERLU_MALLOC(sizeof(int_t) * 2);
+	
 	int_t cur = k;
 	while (treeList[cur].numChild == 1 && cur > 0)
 	{
 		cur = treeList[cur].childrenList[0];
 	}
 
-	if (treeList[cur].numChild == 2)
+	// TODO: fix it for treeList[cur].numChild>1
+	if (treeList[cur].numChild > 1)
 	{
-		/* code */
-		srootList[0] = treeList[cur].childrenList[0];
-		srootList[1] = treeList[cur].childrenList[1];
-		// printf("Last node =%d, numchilds=%d,  desc[%d] = %d, desc[%d] = %d \n ",
-		// 	cur, treeList[cur].numChild,
-		// 	srootList[0], treeList[srootList[0]].numDescendents,
-		// 	srootList[1], treeList[srootList[1]].numDescendents );
+		*numSubtrees = treeList[cur].numChild;
+		int_t* srootList = (int_t* ) SUPERLU_MALLOC(sizeof(int_t) * treeList[cur].numChild);
+		for(int i=0; i< treeList[cur].numChild; i++)
+		{
+			srootList[i] = treeList[cur].childrenList[i];	
+		}
+		
+		return srootList;
 	}
 	else
 	{
-		/* code */
-		srootList[0] = -1;
-		srootList[1] = -1;
+		*numSubtrees =0;
+		return NULL;
 	}
 
-	return srootList;
+	
 }
 
 int_t testSubtreeNodelist(int_t nsupers, int_t numList, int_t** nodeList, int_t* nodeCount)
@@ -727,7 +729,8 @@ int_t* getTreeHeads(int_t maxLvl, int_t nsupers, treeList_t* treeList)
 			/* code */
 			if(treeHeads[i]>-1){
 			int_t * sroots;
-			sroots = getSubTreeRoots(treeHeads[i], treeList);
+			int_t numSroots; 
+			sroots = getSubTreeRoots(treeHeads[i], &numSroots, treeList);
 			treeHeads[2 * i + 1] = sroots[0];
 			treeHeads[2 * i + 2] = sroots[1];
 			SUPERLU_FREE(sroots);
@@ -794,7 +797,7 @@ int_t** getNodeList(int_t maxLvl, int_t* setree, int_t* nnodes,
 			if (nodeList[i]){
 				int_t tmpcnt=getCommonAncestorList(treeHeads[i], nodeList[i],  setree, treeList);
 				if(tmpcnt!=nnodes[i]){
-					printf("nnodes[i] = %10d but getCommonAncestorList returns %10d. Something must be wrong!!! \n",nnodes[i], tmpcnt);
+					printf("nnodes[i] = %10d but getCommonAncestorList returns %10d. The code will continue but the solution can be wrong. Likely SUPERLU_LBS=ND is used for a non-binary tree!!! Try to use SUPERLU_LBS=GD instead. \n",nnodes[i], tmpcnt);
 					fflush(stdout);
 					nnodes[i]=tmpcnt; // this makes sure the code doesn't crash, but the result is wrong! 
 				}
@@ -848,7 +851,7 @@ int_t* getReplicatedTrees( gridinfo3d_t* grid3d)
 int_t* getMyIperm(int_t nnodes, int_t nsupers, int_t* myPerm)
 {
 	if (nnodes < 0) return NULL;
-	int_t* myIperm =  INT_T_ALLOC(nsupers);
+	int_t* myIperm =  INT_T_ALLOC(nsupers+1);
 	for (int_t i = 0; i < nsupers; ++i)
 	{
 		/* code */
@@ -860,6 +863,7 @@ int_t* getMyIperm(int_t nnodes, int_t nsupers, int_t* myPerm)
 		assert(myPerm[i] < nsupers);
 		myIperm[myPerm[i]] = i;
 	}
+	myIperm[nsupers] = nsupers; 
 	return myIperm;
 }
 int_t* getMyTopOrder(int_t nnodes, int_t* myPerm, int_t* myIperm, int_t* setree )

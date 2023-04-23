@@ -255,7 +255,7 @@ int_t* getNodeToForstMap(int_t nsupers, sForest_t**  sForests, gridinfo3d_t* gri
 	int_t maxLvl = log2i(grid3d->zscp.Np) + 1;
 	int_t numForests = (1 << maxLvl) - 1;
 	int_t* gNodeToForstMap = INT_T_ALLOC (nsupers);
-
+	
 	for (int i = 0; i < numForests; ++i)
 	{
 		/* code */
@@ -455,7 +455,7 @@ void printGantt(int root, int numForests, char* nodename, double scale, double* 
 	  printGantt(2*root+1,  numForests, nodename,  scale,  gFrstCostAcc, crPathCost);
 	  int depTree =crPathCost[2*root+1]> crPathCost[2*root+2]? 2*root+1:2*root+2;
 	  printf("\t tree-%d  %.2g \t:%s-%d, after %s-%d, %.0fd \n", root,100*scale*crPathCost[root], nodename, root, nodename, depTree, 100*scale*gFrstCostAcc[root]  );
-	  printGantt(2*root+2,  numForests,  nodename, scale,  gFrstCostAcc, crPathCost);
+	  printGantt(2*root+2,  numForests,  nodename, scale,  gFrstCostAcc, crPathCost);	
 	}
 }
 
@@ -673,11 +673,10 @@ forestPartition_t iterativeFrPartitioning(rForest_t* rforest, int_t nsupers, int
 
 
 		int_t MaxTree = treeSet[idx];
-		int_t*  sroots = getSubTreeRoots(MaxTree, treeList);
-		if (sroots[0] == -1)
+		int_t numSubtrees;
+		int_t*  sroots = getSubTreeRoots(MaxTree, &numSubtrees, treeList);
+		if (numSubtrees==0)
 		{
-			/* code */
-			SUPERLU_FREE(sroots);
 			break;
 		}
 
@@ -900,7 +899,7 @@ sForest_t**  getGreedyLoadBalForests( int_t maxLvl, int_t nsupers, int_t * setre
 		    } else {
 			rForests[2 * tr + 1] = *(frPr_t.S[0]);
 			rForests[2 * tr + 2] = *(frPr_t.S[1]);
-
+			
 		    }
 		    SUPERLU_FREE(frPr_t.S[0]); // Sherry added
 		    SUPERLU_FREE(frPr_t.S[1]);
