@@ -505,7 +505,9 @@ int_t LUstruct_v100::dsparseTreeFactorGPU(
                     localNumChildrenLeft[k0_parent]--;
                     if (topoLvl < maxTopoLevel - 1 && !localNumChildrenLeft[k0_parent])
                     {
+#if (PRNTlevel >= 2)
 						printf("parent %d of node %d during second phase\n", k0_parent, k0);
+#endif
                         int_t dOffset = 0;  // this is wrong 
                         // dDiagFactorPanelSolveGPU(k_parent, dOffset,dFBufs);
                         dDFactPSolveGPU(k_parent, dOffset,dFBufs);
