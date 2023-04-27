@@ -804,12 +804,12 @@ int zfree_LUstruct_gpu (
 
 	checkGPU(gpuFree(A_gpu->local_l_blk_infoVec));
 	checkGPU(gpuFree(A_gpu->local_l_blk_infoPtr));
-	checkGPU(gpuFree(A_gpu->jib_lookupVec));
-	checkGPU(gpuFree(A_gpu->jib_lookupPtr));
+#if 0	
+	checkGPU(gpuFree(A_gpu->jib_lookupVec)); // not used
+	checkGPU(gpuFree(A_gpu->jib_lookupPtr)); // not used
+#endif	
 	checkGPU(gpuFree(A_gpu->local_u_blk_infoVec));
 	checkGPU(gpuFree(A_gpu->local_u_blk_infoPtr));
-	checkGPU(gpuFree(A_gpu->ijb_lookupVec));
-	checkGPU(gpuFree(A_gpu->ijb_lookupPtr));
 
 	/* Destroy all the meta-structures associated with the streams. */
     	gpuStreamDestroy(sluGPU->CopyStream);
