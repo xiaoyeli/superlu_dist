@@ -5,9 +5,11 @@
 #include "superlu_dist_config.h"
 
 #ifdef HAVE_CUDA
-  #include <cuda_runtime.h>
-  #include "cublas_v2.h"
-#endif
+
+#include <cuda_runtime.h>
+
+#include "cublas_v2.h"
+
 
 #include "lupanels.hpp"
 

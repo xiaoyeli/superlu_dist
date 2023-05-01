@@ -34,7 +34,7 @@ export SUPERLU_ACC_SOLVE=1
 export NEW3DSOLVETREECOMM=1
 
 ##NVSHMEM settings:
-NVSHMEM_HOME=/global/cfs/cdirs/m2957/liuyangz/my_software/nvshmem_perlmutter/nvshmem_src_2.8.0-3/build/
+NVSHMEM_HOME=/global/cfs/cdirs/m3894/lib/PrgEnv-gnu/nvshmem_src_2.8.0-3/build/
 export NVSHMEM_USE_GDRCOPY=1
 export NVSHMEM_MPI_SUPPORT=1
 export MPI_HOME=${MPICH_DIR}

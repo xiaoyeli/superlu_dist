@@ -1311,3 +1311,4 @@ upanelGPU_t *LUstruct_v100::copyUpanelsToGPU()
     return uPanelVec_GPU;
     
 } /* copyUpanelsToGPU */
+#endif

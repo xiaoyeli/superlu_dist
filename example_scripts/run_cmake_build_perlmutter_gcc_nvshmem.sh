@@ -39,7 +39,7 @@ module load cray-libsci/23.02.1.1
 export LD_LIBRARY_PATH=${LD_LIBRARY_PATH//\/usr\/local\/cuda-11.5\/compat:/}
 export LD_LIBRARY_PATH=${LD_LIBRARY_PATH//\/usr\/local\/cuda-11.7\/compat:/}
 
-NVSHMEM_HOME=/global/cfs/cdirs/m2957/liuyangz/my_software/nvshmem_perlmutter/nvshmem_src_2.8.0-3/build/
+NVSHMEM_HOME=/global/cfs/cdirs/m3894/lib/PrgEnv-gnu/nvshmem_src_2.8.0-3/build/
 #NVSHMEM_HOME=${CRAY_NVIDIA_PREFIX}/comm_libs/nvshmem/
 cmake .. \
   -DCMAKE_C_FLAGS="-DGPU_SOLVE -std=c11 -DPRNTlevel=0 -DPROFlevel=0 -DDEBUGlevel=0 -DAdd_" \
