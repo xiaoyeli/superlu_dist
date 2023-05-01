@@ -2,7 +2,7 @@
 
 # cmake build for SuperLU_dist for NERSC Perlmutter GPU compute nodes
 #
-# Last updated: 2023/04/01
+# Last updated: 2023/05/01
 #
 # Perlmutter is not yet in production and the software environment changes rapidly.
 # Expect this file to be frequently updated.

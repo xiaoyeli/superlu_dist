@@ -2,7 +2,7 @@
 #
 # Run SuperLU_dist examples built with GNU compiler on NERSC Perlmutter
 #
-# Last updated: 2023/04/01
+# Last updated: 2023/05/01
 # 
 # Perlmutter is not in production and the software environment changes rapidly.
 # Expect this file to be frequently updated.
