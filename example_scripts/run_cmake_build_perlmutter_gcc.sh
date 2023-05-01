@@ -8,12 +8,9 @@
 # Expect this file to be frequently updated.
 
 
-# avoid GPU-Aware MPI for now until problems get resolved
-module unload gpu
 #module load PrgEnv-gnu
 #module load gcc/11.2.0
 module load cmake/3.24.3
-module load cudatoolkit/11.7
 
 cmake .. \
   -DCMAKE_C_FLAGS="-DGPU_SOLVE -std=c11 -DPRNTlevel=1 -DPROFlevel=0 -DDEBUGlevel=0 -DAdd_" \
