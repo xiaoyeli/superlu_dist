@@ -204,7 +204,7 @@ void zlsum_fmod
 		     * Send Xk to process column Pc[k].
 		     */
 		    for (p = 0; p < grid->nprow; ++p) {
-			if ( fsendx_plist[lk][p] != EMPTY ) {
+			if ( fsendx_plist[lk][p] != SLU_EMPTY ) {
 			    pi = PNUM( p, ikcol, grid );
 #ifdef ISEND_IRECV
 			    MPI_Isend( &x[ii - XK_H], iknsupc * nrhs + XK_H,
@@ -375,7 +375,7 @@ void zlsum_bmod
 		     * Send Xk to process column Pc[k].
 		     */
 		    for (p = 0; p < grid->nprow; ++p) {
-			if ( bsendx_plist[lk1][p] != EMPTY ) {
+			if ( bsendx_plist[lk1][p] != SLU_EMPTY ) {
 			    pi = PNUM( p, gikcol, grid );
 #ifdef ISEND_IRECV
 			    MPI_Isend( &x[ii - XK_H], iknsupc * nrhs + XK_H,

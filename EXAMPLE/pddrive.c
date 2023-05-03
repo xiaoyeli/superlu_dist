@@ -117,6 +117,8 @@ int main(int argc, char *argv[])
      */
     set_default_options_dist(&options);
 #if 0
+    options.ParSymbFact       = YES;
+    options.ColPerm           = PARMETIS;
     options.RowPerm = LargeDiag_HWPM;
     options.IterRefine = NOREFINE;
     options.ColPerm = NATURAL;

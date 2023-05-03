@@ -605,8 +605,8 @@ a_plus_at_CompRow_loc
      THIS COUNTS FOR TWO PASSES OF THE LOCAL ROWS OF A AND T.   
      ------------------------------------------------------------------ */
   
-  /* Reset marker to EMPTY */
-  for (i = 0; i < n; ++i) marker[i] = EMPTY;
+  /* Reset marker to SLU_EMPTY */
+  for (i = 0; i < n; ++i) marker[i] = SLU_EMPTY;
   /* save rdispls information */
   for (p = 0; p < nprocs_i; p++)
     sdispls[p] = rdispls[p];
@@ -654,8 +654,8 @@ a_plus_at_CompRow_loc
   if (apat_mem > apat_mem_max)
     apat_mem_max = apat_mem;
   
-  /* Reset marker to EMPTY */
-  for (i = 0; i < n; i++) marker[i] = EMPTY;
+  /* Reset marker to SLU_EMPTY */
+  for (i = 0; i < n; i++) marker[i] = SLU_EMPTY;
   /* restore rdispls information */
   for (p = 0; p < nprocs_i; p++)
     rdispls[p] = sdispls[p];
