@@ -25,11 +25,12 @@
 	tree->type_=MPI_FLOAT;
 	  }
 	  if(precision=='z'){
-	tree->type_=MPI_DOUBLE_COMPLEX;
+	tree->type_=MPI_C_DOUBLE_COMPLEX;
 	  }
-	  //if(precision=='c'){
-	  //MPI_Type_contiguous( sizeof(complex), MPI_BYTE, &tree->type_ );
-	  //}
+	 if(precision=='c'){
+	     //MPI_Type_contiguous( sizeof(complex), MPI_BYTE, &tree->type_ );
+	     tree->type_=MPI_C_COMPLEX;
+	 }
 
       int myIdx = 0;
       int ii=0; 
@@ -116,14 +117,15 @@
 	  if(precision=='d'){
 		  tree->type_=MPI_DOUBLE;
 	  }
-	  if(precision=='s'){
-      MPI_Type_contiguous( sizeof(float), MPI_BYTE, &tree->type_ );
+	  if(precision=='c'){
+	      //MPI_Type_contiguous( sizeof(float), MPI_BYTE, &tree->type_ );
+	      tree->type_=MPI_C_COMPLEX;
 	  }
 	  if(precision=='z'){
-		  tree->type_=MPI_DOUBLE_COMPLEX;
+	      tree->type_=MPI_C_DOUBLE_COMPLEX;
 	  }
 	  if(precision=='s'){
-		  tree->type_=MPI_FLOAT;
+	      tree->type_=MPI_FLOAT;
 	  }	  
       int myIdx = 0;
       int ii=0; 
