@@ -843,7 +843,7 @@ int_t free_LUstruct_gpu (LUstruct_gpu * A_gpu)
 	checkCuda(cudaFree(A_gpu->UnzvalVec));
 	checkCuda(cudaFree(A_gpu->UnzvalPtr));
 
-	checkCuda(cudaFree(A_gpu->grid));
+	// checkCuda(cudaFree(A_gpu->grid));
 
 
 

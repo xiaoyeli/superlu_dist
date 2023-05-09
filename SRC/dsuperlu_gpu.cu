@@ -509,6 +509,10 @@ int dSchurCompUpdate_GPU(
 	/*sizeof RemainLbuf = Rnbuf*knsupc */
 	double tTmp = SuperLU_timer_();
 	gpuEventRecord(stat->ePCIeH2D[k0], FunCallStream);
+	//YL: need the following to avoid calling gpuEventElapsedTime later with nonrecorded event
+	gpuEventRecord(stat->GemmStart[k0], FunCallStream);
+	gpuEventRecord(stat->GemmEnd[k0], FunCallStream);
+	gpuEventRecord(stat->ScatterEnd[k0], FunCallStream);
 
 	checkGPU(gpuMemcpyAsync(A_gpu->scubufs[streamId].usub_IndirectJ3,
 	                          A_gpu->scubufs[streamId].usub_IndirectJ3_host,
@@ -776,7 +780,7 @@ int dfree_LUstruct_gpu (
 	checkGPU(gpuFree(A_gpu->UnzvalVec));
 	checkGPU(gpuFree(A_gpu->UnzvalPtr));
 
-	checkGPU(gpuFree(A_gpu->grid));
+	// checkGPU(gpuFree(A_gpu->grid));
 
 	/* Free the Schur complement structure on GPU */
 	checkGPU(gpuFree(A_gpu->scubufs[streamId].bigV));
@@ -840,7 +844,7 @@ int dinitSluGPU3D_t(
     SuperLUStat_t *stat
 )
 {
-    checkGPUErrors(gpuDeviceReset ());
+    // checkGPUErrors(gpuDeviceReset ()); //YL: to be moved to pddrive.c or pddrive3d.c if needed
     Glu_persist_t *Glu_persist = LUstruct->Glu_persist;
     dLocalLU_t *Llu = LUstruct->Llu;
     int* isNodeInMyGrid = sluGPU->isNodeInMyGrid;
