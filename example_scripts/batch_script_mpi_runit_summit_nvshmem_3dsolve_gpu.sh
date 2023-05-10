@@ -29,22 +29,32 @@ FILE3D=$FILE_DIR/$FILE_NAME3D
 
 export NVSHMEM_MPI_LIB_NAME=libmpi_ibm.so
 export NVSHMEM_LMPI=-lmpi_ibm
-export SUPERLU_ACC_OFFLOAD=0 # this can be 0 to do CPU tests on GPU nodes
-# export GPU3DVERSION=1
+export SUPERLU_ACC_OFFLOAD=1 # this can be 0 to do CPU tests on GPU nodes
+export GPU3DVERSION=1
 export SUPERLU_ACC_SOLVE=1
 export NEW3DSOLVE=1
 export NEW3DSOLVETREECOMM=1
-export SUPERLU_BIND_MPI_GPU=1
+export SUPERLU_BIND_MPI_GPU=1 # assign GPU based on the MPI rank, assuming one MPI per GPU
+
+export SUPERLU_MAXSUP=256 # max supernode size
+export SUPERLU_RELAX=64  # upper bound for relaxed supernode size
+export SUPERLU_MAX_BUFFER_SIZE=100000000 ## 500000000 # buffer size in words on GPU
+export SUPERLU_NUM_LOOKAHEADS=2   ##4, must be at least 2, see 'lookahead winSize'
+export SUPERLU_NUM_GPU_STREAMS=1
+export SUPERLU_MPI_PROCESS_PER_GPU=1 # 2: this can better saturate GPU
+export SUPERLU_N_GEMM=6000 # FLOPS threshold divide workload between CPU and GPU
+export BATCH_COUNT=0
 
 
-NREP=3
-nprows=(1 1 1 )
-npcols=(1 1 1 )  
-npz=(1 2 4 )
+
+NREP=1
+nprows=(1)
+npcols=(1)  
+npz=(1 )
 
 #matrix=(LU_C_BN_C_2by2.bin) #s1_mat_0_253872.bin) #s1_mat_0_507744.bin Li4244.bin DG_GrapheneDisorder_8192.bin LU_C_BN_C_2by2.bin) #Li4244.bin s1_mat_0_253872.bin) 
 # matrix=(g20.rua) #DG_GrapheneDisorder_8192.bin LU_C_BN_C_2by2.bin) #Li4244.bin s1_mat_0_253872.bin) 
-matrix=(s1_mat_0_126936.bin s1_mat_0_253872.bin s2D9pt2048.rua) #DG_GrapheneDisorder_8192.bin LU_C_BN_C_2by2.bin) #Li4244.bin s1_mat_0_253872.bin) 
+matrix=(s1_mat_0_126936.bin ) #DG_GrapheneDisorder_8192.bin LU_C_BN_C_2by2.bin) #Li4244.bin s1_mat_0_253872.bin) 
 # matrix=(s1_mat_0_126936.bin) #DG_GrapheneDisorder_8192.bin LU_C_BN_C_2by2.bin) #Li4244.bin s1_mat_0_253872.bin) 
 # matrix=(s2D9pt2048.rua) #DG_GrapheneDisorder_8192.bin LU_C_BN_C_2by2.bin) #Li4244.bin s1_mat_0_253872.bin) 
 export NVSHMEM_HOME=/ccs/home/liuyangz/my_software/nvshmem_src_2.8.0-3/
@@ -60,7 +70,7 @@ for ((i = 0; i < ${#npcols[@]}; i++)); do
 	CORE_VAL=`expr $NCOL \* $NROW \* $NPZ`
 	RANK_PER_RS=1
 	GPU_PER_RANK=1
-	export SUPERLU_NUM_GPU_STREAMS=1
+
 
 	PARTITION=regular
 	LICENSE=SCRATCH
@@ -93,11 +103,8 @@ for ((i = 0; i < ${#npcols[@]}; i++)); do
 
 			for MAT in ${matrix[@]}  ##big.rua   #A30_015_0_25356.bin
   			do
-				export NSUP=256 
-				export NREL=60
-				export MAX_BUFFER_SIZE=5000000000
-    				export OMP_NUM_THREADS=$OMP_NUM_THREADS
-    				mkdir -p ${MAT}_summit
+				export OMP_NUM_THREADS=$OMP_NUM_THREADS
+				mkdir -p ${MAT}_summit
 				mya=`expr $NCOL \* $NROW \* $NPZ`
 				echo "matrix: ${MAT},   ${mya} GPUs"
 
@@ -105,7 +112,7 @@ for ((i = 0; i < ${#npcols[@]}; i++)); do
     			do				
 				#  jsrun -n $RS_VAL -a $RANK_PER_RS -c $TH_PER_RS -g $GPU_PER_RS -b packed:$NTH
 				# jsrun -n $RS_VAL -a $RANK_PER_RS -c $TH_PER_RS -g $GPU_PER_RS $FILE -c $NCOL -r $NROW -i 0 $INPUT_DIR/$MAT | tee -a ./${MAT}_summit/SLU.o_mpi_${NROW}x${NCOL}x${NPZ}_OMP_${OMP_NUM_THREADS}_GPU_${GPU_PER_RANK}_2d_newest_gpu_nvshmem_${MYDATE}   
-				jsrun -n $RS_VAL -a $RANK_PER_RS -c $TH_PER_RS -g $GPU_PER_RS $FILE3D -c $NCOL -r $NROW -d $NPZ -i 0 $INPUT_DIR/$MAT | tee -a ./${MAT}_summit/SLU.o_mpi_${NROW}x${NCOL}x${NPZ}_OMP_${OMP_NUM_THREADS}_GPU_${GPU_PER_RANK}_3d_newest_gpu_nvshmem_${MYDATE}   
+				jsrun --smpiargs="-gpu" -n $RS_VAL -a $RANK_PER_RS -c $TH_PER_RS -g $GPU_PER_RS $FILE3D -c $NCOL -r $NROW -d $NPZ -i 0 -b $BATCH_COUNT $INPUT_DIR/$MAT | tee -a ./${MAT}_summit/SLU.o_mpi_${NROW}x${NCOL}x${NPZ}_OMP_${OMP_NUM_THREADS}_GPU_${GPU_PER_RANK}_3d_newest_gpu_nvshmem_${MYDATE}   
 				# jsrun -n $RS_VAL -a $RANK_PER_RS -c $TH_PER_RS -g $GPU_PER_RS $FILE -c $NCOL -r $NROW -i 0 $INPUT_DIR/$MAT | tee -a ./${MAT}_summit/SLU.o_mpi_${NROW}x${NCOL}x${NPZ}_OMP_${OMP_NUM_THREADS}_GPU_${GPU_PER_RANK}_3d_newest_gpu_nvshmem_${MYDATE}   
 				done
 			done ## matrix

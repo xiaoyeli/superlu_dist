@@ -551,6 +551,7 @@ dDestroy_LU(int_t n, gridinfo_t *grid, dLUstruct_t *LUstruct)
     SUPERLU_FREE(Llu->bcols_masked);
 
 #ifdef GPU_ACC
+if (getenv("SUPERLU_ACC_SOLVE")){
 	checkGPU (gpuFree (Llu->d_xsup));
 	checkGPU (gpuFree (Llu->d_bcols_masked));
 	checkGPU (gpuFree (Llu->d_LRtree_ptr));
@@ -576,6 +577,7 @@ dDestroy_LU(int_t n, gridinfo_t *grid, dLUstruct_t *LUstruct)
     checkGPU (gpuFree (Llu->d_Unzval_bc_offset));  
     checkGPU (gpuFree (Llu->d_Uindval_loc_bc_dat)); 
     checkGPU (gpuFree (Llu->d_Uindval_loc_bc_offset));
+}
 
     #ifdef HAVE_NVSHMEM  
     /* nvshmem related*/

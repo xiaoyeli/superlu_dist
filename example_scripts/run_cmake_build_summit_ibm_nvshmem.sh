@@ -42,4 +42,4 @@ cmake .. \
   -DCMAKE_VERBOSE_MAKEFILE:BOOL=ON
 
 make pddrive -j16
-make pddrive3d -j16
+make pddrive3d -j1

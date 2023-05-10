@@ -428,10 +428,12 @@ struct LUstruct_v100
 	for (i = 0; i < numDiagBufs; i++) SUPERLU_FREE(diagFactBufs[i]);
 
 	/* Sherry added the following, which comes from batch setup */
+    superlu_acc_offload = get_acc_offload();    
+    if (superlu_acc_offload){
 	printf(".. free batch buffers\n"); fflush(stdout);
 	SUPERLU_FREE(A_gpu.dFBufs);
 	SUPERLU_FREE(A_gpu.gpuGemmBuffs);
-
+    }
     } /* end destructor LUstruct_v100 */
 
   

@@ -849,7 +849,6 @@ dtrf3Dpartition_t* dinitTrf3Dpartition(int_t nsupers,
 
     /* Sherry 2/17/23
        Compute buffer sizes needed for diagonal LU blocks and C matrices in GEMM. */
-
     
     iam = grid->iam;  /* 'grid' is 2D grid */
     int k, k0, k_st, k_end, offset, nsupc, krow, kcol;
