@@ -55,7 +55,7 @@ cmake .. \
   -DCMAKE_CUDA_ARCHITECTURES=80 \
   -DCMAKE_INSTALL_PREFIX=. \
   -DCMAKE_INSTALL_LIBDIR=./lib \
-  -DCMAKE_BUILD_TYPE=Release \
+  -DCMAKE_BUILD_TYPE=Debug \
   -DTPL_BLAS_LIBRARIES=/global/cfs/cdirs/m3894/lib/PrgEnv-gnu/OpenBLAS/build/install/lib64/libopenblas.so \
   -DTPL_LAPACK_LIBRARIES=/global/cfs/cdirs/m3894/lib/PrgEnv-gnu/OpenBLAS/build/install/lib64/libopenblas.so \
   -DTPL_PARMETIS_INCLUDE_DIRS="/global/cfs/cdirs/m3894/lib/PrgEnv-gnu/parmetis-4.0.3/include;/global/cfs/cdirs/m3894/lib/PrgEnv-gnu/parmetis-4.0.3/metis/include" \
