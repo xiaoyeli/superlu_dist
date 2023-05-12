@@ -42,20 +42,22 @@ export LD_LIBRARY_PATH=${LD_LIBRARY_PATH//\/usr\/local\/cuda-11.7\/compat:/}
 NVSHMEM_HOME=/global/cfs/cdirs/m3894/lib/PrgEnv-gnu/nvshmem_src_2.8.0-3/build/
 #NVSHMEM_HOME=${CRAY_NVIDIA_PREFIX}/comm_libs/nvshmem/
 cmake .. \
-  -DCMAKE_C_FLAGS="-DGPU_SOLVE -std=c11 -DPRNTlevel=1 -DPROFlevel=0 -DDEBUGlevel=0 -DAdd_" \
+  -DCMAKE_C_FLAGS="-O2 -DGPU_SOLVE -std=c11 -DPRNTlevel=0 -DPROFlevel=0 -DDEBUGlevel=0 -DAdd_" \
+  -DCMAKE_CXX_FLAGS="-O2" \
+  -DCMAKE_Fortran_FLAGS="-O2" \
   -DCMAKE_CXX_COMPILER=CC \
   -DCMAKE_C_COMPILER=cc \
   -DCMAKE_Fortran_COMPILER=ftn \
-  -DXSDK_ENABLE_Fortran=ON \
+  -DXSDK_ENABLE_Fortran=OFF \
   -DTPL_ENABLE_INTERNAL_BLASLIB=OFF \
   -DTPL_ENABLE_LAPACKLIB=ON \
   -DBUILD_SHARED_LIBS=ON \
   -DTPL_ENABLE_CUDALIB=ON \
-  -DCMAKE_CUDA_FLAGS="-I${NVSHMEM_HOME}/include -I${MPICH_DIR}/include -ccbin=/opt/cray/pe/craype/2.7.19/bin/CC" \
+  -DCMAKE_CUDA_FLAGS="-I${NVSHMEM_HOME}/include -I${MPICH_DIR}/include -ccbin=/opt/cray/pe/craype/2.7.20/bin/CC" \
   -DCMAKE_CUDA_ARCHITECTURES=80 \
   -DCMAKE_INSTALL_PREFIX=. \
   -DCMAKE_INSTALL_LIBDIR=./lib \
-  -DCMAKE_BUILD_TYPE=Release \
+  -DCMAKE_BUILD_TYPE=Debug \
   -DTPL_BLAS_LIBRARIES=/global/cfs/cdirs/m3894/lib/PrgEnv-gnu/OpenBLAS/build/install/lib64/libopenblas.so \
   -DTPL_LAPACK_LIBRARIES=/global/cfs/cdirs/m3894/lib/PrgEnv-gnu/OpenBLAS/build/install/lib64/libopenblas.so \
   -DTPL_PARMETIS_INCLUDE_DIRS="/global/cfs/cdirs/m3894/lib/PrgEnv-gnu/parmetis-4.0.3/include;/global/cfs/cdirs/m3894/lib/PrgEnv-gnu/parmetis-4.0.3/metis/include" \
@@ -70,6 +72,5 @@ cmake .. \
 
 make pddrive -j16
 make pddrive3d -j16
-make f_pddrive
 
 ## -DTPL_BLAS_LIBRARIES=/global/cfs/cdirs/m3894/ptlin/tpl/amd_blis/install/amd_blis-20211021-n9-gcc9.3.0/lib/libblis.a \
