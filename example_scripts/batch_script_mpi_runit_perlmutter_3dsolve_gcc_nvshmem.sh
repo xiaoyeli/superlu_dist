@@ -10,7 +10,7 @@ module load cudatoolkit/11.7
 module load cray-libsci/23.02.1.1
 
 #MPI settings:
-export MPICH_GPU_SUPPORT_ENABLED=0
+export MPICH_GPU_SUPPORT_ENABLED=1
 export CRAY_ACCEL_TARGET=nvidia80
 echo MPICH_GPU_SUPPORT_ENABLED=$MPICH_GPU_SUPPORT_ENABLED
 export LD_LIBRARY_PATH=${CRAY_LD_LIBRARY_PATH}:$LD_LIBRARY_PATH
@@ -24,14 +24,22 @@ export LD_LIBRARY_PATH=${CRAY_LD_LIBRARY_PATH}:$LD_LIBRARY_PATH
 
 
 export SUPERLU_LBS=ND  
-export MAX_BUFFER_SIZE=50000000
-export SUPERLU_NUM_GPU_STREAMS=1
-export SUPERLU_BIND_MPI_GPU=1
-export SUPERLU_ACC_OFFLOAD=0 # this can be 0 to do CPU tests on GPU nodes
-# export GPU3DVERSION=1
+export SUPERLU_ACC_OFFLOAD=1 # this can be 0 to do CPU tests on GPU nodes
+export GPU3DVERSION=0
 export NEW3DSOLVE=1    # Note: SUPERLU_ACC_OFFLOAD=1 and GPU3DVERSION=1 still do CPU factorization after https://github.com/xiaoyeli/superlu_dist/commit/035106d8949bc3abf86866aea1331b2948faa1db#diff-44fa50297abaedcfaed64f93712850a8fce55e8e57065d96d0ba28d8680da11eR223
 export SUPERLU_ACC_SOLVE=1
 export NEW3DSOLVETREECOMM=1
+export SUPERLU_BIND_MPI_GPU=1 # assign GPU based on the MPI rank, assuming one MPI per GPU
+
+export SUPERLU_MAXSUP=256 # max supernode size
+export SUPERLU_RELAX=64  # upper bound for relaxed supernode size
+export SUPERLU_MAX_BUFFER_SIZE=100000000 ## 500000000 # buffer size in words on GPU
+export SUPERLU_NUM_LOOKAHEADS=2   ##4, must be at least 2, see 'lookahead winSize'
+export SUPERLU_NUM_GPU_STREAMS=1
+export SUPERLU_MPI_PROCESS_PER_GPU=1 # 2: this can better saturate GPU
+export SUPERLU_N_GEMM=6000 # FLOPS threshold divide workload between CPU and GPU
+
+
 
 ##NVSHMEM settings:
 NVSHMEM_HOME=/global/cfs/cdirs/m3894/lib/PrgEnv-gnu/nvshmem_src_2.8.0-3/build/
@@ -66,9 +74,9 @@ else
   # Host unknown; exiting
   exit $EXIT_HOST
 fi
-nprows=(1)
+nprows=(2)
 npcols=(1 )
-npz=(1 )
+npz=(2)
 NTH=1
 NREP=1
 # NODE_VAL_TOT=1
@@ -115,7 +123,7 @@ export MPICH_MAX_THREAD_SAFETY=multiple
 # export NREL=256
 # for MAT in big.rua
 # for MAT in g20.rua
-for MAT in s1_mat_0_253872.bin
+for MAT in s1_mat_0_126936.bin
 # for MAT in cage13.mtx StocF-1465.mtx Geo_1438.mtx Ga19As19H42.mtx torso3.mtx
 # for MAT in nlpkkt80.bin cage13.bin StocF-1465.bin Geo_1438.bin Ga19As19H42.bin torso3.mtx
 # for MAT in s1_mat_0_126936.bin

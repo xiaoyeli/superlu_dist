@@ -51,7 +51,7 @@ cmake .. \
   -DTPL_ENABLE_LAPACKLIB=ON \
   -DBUILD_SHARED_LIBS=ON \
   -DTPL_ENABLE_CUDALIB=ON \
-  -DCMAKE_CUDA_FLAGS="-I${NVSHMEM_HOME}/include -I${MPICH_DIR}/include -ccbin=/opt/cray/pe/craype/2.7.19/bin/CC" \
+  -DCMAKE_CUDA_FLAGS="-I${NVSHMEM_HOME}/include -I${MPICH_DIR}/include -ccbin=/opt/cray/pe/craype/2.7.20/bin/CC" \
   -DCMAKE_CUDA_ARCHITECTURES=80 \
   -DCMAKE_INSTALL_PREFIX=. \
   -DCMAKE_INSTALL_LIBDIR=./lib \

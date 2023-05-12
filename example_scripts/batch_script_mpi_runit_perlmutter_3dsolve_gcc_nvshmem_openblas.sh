@@ -23,7 +23,7 @@ export LD_LIBRARY_PATH=${CRAY_LD_LIBRARY_PATH}:$LD_LIBRARY_PATH
 
 export SUPERLU_LBS=ND  
 export SUPERLU_ACC_OFFLOAD=1 # this can be 0 to do CPU tests on GPU nodes
-export GPU3DVERSION=1
+export GPU3DVERSION=0
 export NEW3DSOLVE=1
 export SUPERLU_ACC_SOLVE=1
 export NEW3DSOLVETREECOMM=1
@@ -36,7 +36,6 @@ export SUPERLU_NUM_LOOKAHEADS=2   ##4, must be at least 2, see 'lookahead winSiz
 export SUPERLU_NUM_GPU_STREAMS=1
 export SUPERLU_MPI_PROCESS_PER_GPU=1 # 2: this can better saturate GPU
 export SUPERLU_N_GEMM=6000 # FLOPS threshold divide workload between CPU and GPU
-export BATCH_COUNT=0
 
 ##NVSHMEM settings:
 NVSHMEM_HOME=/global/cfs/cdirs/m3894/lib/PrgEnv-gnu/nvshmem_src_2.8.0-3/build/
@@ -73,7 +72,7 @@ else
 fi
 nprows=(2)
 npcols=(1 )
-npz=(1 )
+npz=(2 )
 NTH=1
 NREP=1
 # NODE_VAL_TOT=1

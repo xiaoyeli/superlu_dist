@@ -1434,13 +1434,6 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 		gpu3dVersion = atoi(getenv("GPU3DVERSION"));
 	}
 
-	int trisolveGPUopt = 0;
-	if (getenv("TRISOLVEGPUOPT"))
-	{
-		trisolveGPUopt = atoi(getenv("TRISOLVEGPUOPT"));
-		if (trisolveGPUopt == 0)
-			assert(grid3d->npdep == 1);
-	}
 	LUgpu_Handle LUgpu;
 	#endif 
 	/* Perform numerical factorization in parallel on all process layers.*/
@@ -1530,12 +1523,8 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 			/* call pdgstrf3d() in C++ code */
 			pdgstrf3d_LUpackedInterface(LUgpu);
 			
-			if (!trisolveGPUopt)
-			{
-				copyLUGPU2Host(LUgpu, LUstruct);
-
-				destroyLUgpuHandle(LUgpu);
-			}
+			copyLUGPU2Host(LUgpu, LUstruct);
+			destroyLUgpuHandle(LUgpu);
 
 			// print other stuff
 			// if (!grid3d->zscp.Iam)
@@ -1550,13 +1539,10 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 
 			pdgstrf3d(options, m, n, anorm, trf3Dpartition, SCT, LUstruct,
 					  grid3d, stat, info);
-			if (getenv("NEW3DSOLVE")){
-				dbroadcastAncestor3d(trf3Dpartition, LUstruct, grid3d, SCT);
-			}
 		}
-
-
-
+		if (getenv("NEW3DSOLVE")){
+			dbroadcastAncestor3d(trf3Dpartition, LUstruct, grid3d, SCT);
+		}
 
 		if ( options->Fact != SamePattern_SameRowPerm) {
 			if (getenv("NEW3DSOLVE") && Solve3D==true){
