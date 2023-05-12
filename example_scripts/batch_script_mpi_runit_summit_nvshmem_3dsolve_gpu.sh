@@ -29,8 +29,8 @@ FILE3D=$FILE_DIR/$FILE_NAME3D
 
 export NVSHMEM_MPI_LIB_NAME=libmpi_ibm.so
 export NVSHMEM_LMPI=-lmpi_ibm
-export SUPERLU_ACC_OFFLOAD=1 # this can be 0 to do CPU tests on GPU nodes
-export GPU3DVERSION=1
+export SUPERLU_ACC_OFFLOAD=0 # this can be 0 to do CPU tests on GPU nodes
+export GPU3DVERSION=0
 export SUPERLU_ACC_SOLVE=1
 export NEW3DSOLVE=1
 export NEW3DSOLVETREECOMM=1
@@ -38,7 +38,7 @@ export SUPERLU_BIND_MPI_GPU=1 # assign GPU based on the MPI rank, assuming one M
 
 export SUPERLU_MAXSUP=256 # max supernode size
 export SUPERLU_RELAX=64  # upper bound for relaxed supernode size
-export SUPERLU_MAX_BUFFER_SIZE=100000000 ## 500000000 # buffer size in words on GPU
+export SUPERLU_MAX_BUFFER_SIZE=10000000 ## 500000000 # buffer size in words on GPU
 export SUPERLU_NUM_LOOKAHEADS=2   ##4, must be at least 2, see 'lookahead winSize'
 export SUPERLU_NUM_GPU_STREAMS=1
 export SUPERLU_MPI_PROCESS_PER_GPU=1 # 2: this can better saturate GPU
@@ -48,9 +48,9 @@ export BATCH_COUNT=0
 
 
 NREP=1
-nprows=(1)
+nprows=(2)
 npcols=(1)  
-npz=(1 )
+npz=(2 )
 
 #matrix=(LU_C_BN_C_2by2.bin) #s1_mat_0_253872.bin) #s1_mat_0_507744.bin Li4244.bin DG_GrapheneDisorder_8192.bin LU_C_BN_C_2by2.bin) #Li4244.bin s1_mat_0_253872.bin) 
 # matrix=(g20.rua) #DG_GrapheneDisorder_8192.bin LU_C_BN_C_2by2.bin) #Li4244.bin s1_mat_0_253872.bin) 

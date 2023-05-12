@@ -249,6 +249,18 @@ int_t LUstruct_v100::pdgstrf3d()
                         dsparseTreeFactor(sforest, dFBufs,
                                           &gEtreeInfo,
                                           tag_ub);
+
+
+                        // if (ilvl == 0){
+                        // dsparseTreeFactor(sforest, dFBufs,
+                        //                 &gEtreeInfo,
+                        //                 tag_ub);
+                        // }else{
+                        // dAncestorFactorBaseline(ilvl, sforest, dFBufs,
+                        //                         &gEtreeInfo,
+                        //                         tag_ub);
+                        // }
+
 		    }
 
                     /*now reduce the updates*/

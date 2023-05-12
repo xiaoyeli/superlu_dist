@@ -161,7 +161,6 @@ void printGPUStats(int nsupers, SuperLUStat_t *stat, gridinfo3d_t *grid3d )
 	     1e-9 * stat->cPCIeD2H, stat->tHost_PCIeD2H, tPCIeD2H, 1e-9 * stat->cPCIeD2H / tPCIeD2H  );
       fflush(stdout);
     }
-    
 } /* end printGPUStats */
 
 
