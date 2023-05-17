@@ -722,6 +722,10 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 		   ------------------------------------------------------------ */
 		if (Equil)
 		{
+			#if 1
+			scaleMatrixDiagonally(Fact, ScalePermstruct, 
+                           A, stat, grid, &rowequ, &colequ);
+			#else 
 #if (DEBUGlevel >= 1)
 			CHECK_MALLOC(iam, "Enter equil");
 #endif
@@ -772,23 +776,6 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 				/* Compute the row and column scalings. */
 				pdgsequ(A, R, C, &rowcnd, &colcnd, &amax, &iinfo, grid);
 
-				// 				if (iinfo > 0)
-				// 				{
-				// 					if (iinfo <= m)
-				// 					{
-				// #if (PRNTlevel >= 1)
-				// 						fprintf(stderr, "The " IFMT "-th row of A is exactly zero\n", iinfo);
-				// #endif
-				// 					}
-				// 					else
-				// 					{
-				// #if (PRNTlevel >= 1)
-				// 						fprintf(stderr, "The " IFMT "-th column of A is exactly zero\n", iinfo - n);
-				// #endif
-				// 					}
-				// 				}
-				// 				else if (iinfo < 0)
-				// 					return;
 				if (iinfo > 0)
 				{
 #if (PRNTlevel >= 1)
@@ -838,6 +825,7 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 #if (DEBUGlevel >= 1)
 			CHECK_MALLOC(iam, "Exit equil");
 #endif
+#endif 
 		} /* end if Equil ... LAPACK style, not involving MC64 */
 
 		if (!factored)
