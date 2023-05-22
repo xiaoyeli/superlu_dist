@@ -90,8 +90,8 @@ typedef struct //LUstruct_gpu_
     /*gpu pointers for easy block accesses */
     local_l_blk_info_t *local_l_blk_infoVec;
     int_t *local_l_blk_infoPtr;
-    int_t *jib_lookupVec;
-    int_t *jib_lookupPtr;
+    int_t *jib_lookupVec;  /* NOT USED ? */
+    int_t *jib_lookupPtr;  /* NOT USED ? */
     local_u_blk_info_t *local_u_blk_infoVec;
 
     int_t *local_u_blk_infoPtr;
@@ -104,7 +104,7 @@ typedef struct //LUstruct_gpu_
     int_t buffer_size;      /**/
     int_t nsupers;  /*should have number of supernodes*/
     int_t *xsup;
-    gridinfo_t *grid;
+    // gridinfo_t *grid; // Sherry: this is not used
 
 #if 0 // Sherry: moved to 'SuperLUStat_t'
     double ScatterMOPCounter;

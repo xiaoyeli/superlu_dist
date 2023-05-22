@@ -561,8 +561,7 @@ endif()
 ######################################################################
 
 include_directories(${CMAKE_BINARY_DIR}/SRC) # For superlu_dist_config.h
-include_directories(SRC)
-# include_directories(${CMAKE_SOURCE_DIR}/SRC)
+include_directories(${CMAKE_SOURCE_DIR}/SRC/include)
 if (TPL_PARMETIS_INCLUDE_DIRS)
   include_directories(${TPL_PARMETIS_INCLUDE_DIRS})  ## parmetis
 endif ()
@@ -621,11 +620,10 @@ install(FILES ${CMAKE_CURRENT_BINARY_DIR}/superlu_dist.pc
 # configure_file(${CMAKE_SOURCE_DIR}/make.inc.in ${CMAKE_BINARY_DIR}/make.inc)
 configure_file(${SuperLU_DIST_SOURCE_DIR}/make.inc.in ${SuperLU_DIST_SOURCE_DIR}/make.inc)
 
-configure_file(${SuperLU_DIST_SOURCE_DIR}/SRC/superlu_dist_config.h.in ${SuperLU_DIST_BINARY_DIR}/SRC/superlu_dist_config.h)
-configure_file(${SuperLU_DIST_SOURCE_DIR}/SRC/superlu_dist_config.h.in ${SuperLU_DIST_SOURCE_DIR}/SRC/superlu_dist_config.h)
+#configure_file(${SuperLU_DIST_SOURCE_DIR}/SRC/superlu_dist_config.h.in ${SuperLU_DIST_BINARY_DIR}/SRC/superlu_dist_config.h)
+configure_file(${SuperLU_DIST_SOURCE_DIR}/SRC/superlu_dist_config.h.in ${SuperLU_DIST_SOURCE_DIR}/SRC/include/superlu_dist_config.h)
 
 # Following is to configure a file for FORTRAN code
 configure_file(${SuperLU_DIST_SOURCE_DIR}/SRC/superlu_dist_config.h.in ${SuperLU_DIST_BINARY_DIR}/FORTRAN/superlu_dist_config.h)
-
 
 #message("MPI_Fortran_LINK_FLAGS '${MPI_Fortran_LINK_FLAGS}'")

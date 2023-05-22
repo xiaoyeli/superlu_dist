@@ -1,6 +1,6 @@
 #pragma once 
 
-#include "../superlu_ddefs.h"
+#include "superlu_ddefs.h"
 
 
 

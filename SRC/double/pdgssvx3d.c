@@ -22,7 +22,8 @@ at the top-level directory.
  * Last update: November 8, 2021  v7.2.0
  */
 #include "superlu_ddefs.h"
-#include "TRF3dV100/superlu_summit.h"
+//#include "TRF3dV100/superlu_summit.h"
+#include "superlu_summit.h"
 
 /*! \brief
  *
