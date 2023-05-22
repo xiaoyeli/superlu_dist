@@ -220,7 +220,7 @@ if(enable_single)
     single/psgsequb.c
   )
 if (TPL_ENABLE_CUDALIB)
-  list(APPEND sources ssuperlu_gpu.cu)
+  list(APPEND sources cuda/ssuperlu_gpu.cu)
 endif()
 if (HAVE_COMBBLAS)
    if (enable_double)

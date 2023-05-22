@@ -1,7 +1,7 @@
 /* superlu_dist_config.h.in */
 
 /* Enable CUDA */
-/* #undef HAVE_CUDA */
+#define HAVE_CUDA TRUE
 
 /* Enable HIP */
 /* #undef HAVE_HIP */
@@ -22,7 +22,7 @@
 /* #undef HAVE_MAGMA */
 
 /* enable 64bit index mode */
-#define XSDK_INDEX_SIZE 64
+/* #undef XSDK_INDEX_SIZE */
 
 #if (XSDK_INDEX_SIZE == 64)
 #define _LONGINT 1
