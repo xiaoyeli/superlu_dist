@@ -1133,8 +1133,7 @@ psgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 	if (symb_comm != MPI_COMM_NULL) MPI_Comm_free (&symb_comm);
 
 	/* Distribute entries of A into L & U data structures. */
-	//if (parSymbFact == NO || ???? Fact == SamePattern_SameRowPerm) {
-	if ( parSymbFact == NO ) {
+	if ( parSymbFact == NO || Fact == SamePattern_SameRowPerm ) {
 	    /* CASE OF SERIAL SYMBOLIC */
   	    /* Apply column permutation to the original distributed A */
 	    for (j = 0; j < nnz_loc; ++j) colind[j] = perm_c[colind[j]];
