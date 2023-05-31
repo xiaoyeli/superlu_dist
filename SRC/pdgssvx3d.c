@@ -1073,7 +1073,7 @@ pdgssvx3d (superlu_dist_options_t * options, SuperMatrix * A,
 		    if (flinfo > 0)
 			ABORT ("ERROR in get perm_c parmetis.");
 		} else {
-		    get_perm_c_dist (iam, permc_spec, &GA, perm_c);
+		    get_perm_c_dist (iam, permc_spec, &GA, perm_c, grid->comm);
 		}
 	    }
 

@@ -1021,7 +1021,7 @@ pdgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 		  return;
      	      }
 	  } else {
-	      get_perm_c_dist(iam, permc_spec, &GA, perm_c);
+	      get_perm_c_dist(iam, permc_spec, &GA, perm_c, grid->comm);
           }
         }
 

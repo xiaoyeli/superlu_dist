@@ -1064,10 +1064,9 @@ extern "C" {
 extern void   superlu_gridinit(MPI_Comm, int, int, gridinfo_t *);
 extern void   superlu_gridmap(MPI_Comm, int, int, int [], int, gridinfo_t *);
 extern void   superlu_gridexit(gridinfo_t *);
-extern void   superlu_gridinit3d(MPI_Comm Bcomm,  int nprow, int npcol, int npdep,
-				 gridinfo3d_t *grid) ;
+extern void   superlu_gridinit3d(MPI_Comm, int, int, int, gridinfo3d_t *) ;
 extern void   superlu_gridmap3d(MPI_Comm, int, int, int, int [], gridinfo3d_t *);
-extern void   superlu_gridexit3d(gridinfo3d_t *grid);
+extern void   superlu_gridexit3d(gridinfo3d_t *);
 
 extern void   set_default_options_dist(superlu_dist_options_t *);
 extern void   print_options_dist(superlu_dist_options_t *);
@@ -1082,17 +1081,17 @@ extern void   sp_colorder (superlu_dist_options_t*, SuperMatrix*, int_t*, int_t*
 			   SuperMatrix*);
 extern int    sp_symetree_dist(int_t *, int_t *, int_t *, int_t, int_t *);
 extern int    sp_coletree_dist (int_t *, int_t *, int_t *, int_t, int_t, int_t *);
-extern void   get_perm_c_dist(int_t, int_t, SuperMatrix *, int_t *);
+extern void   get_perm_c_dist(int_t, int_t, SuperMatrix *, int_t *, MPI_Comm);
 extern void   at_plus_a_dist(const int_t, const int_t, int_t *, int_t *,
 			     int_t *, int_t **, int_t **);
-extern int    genmmd_dist_(int_t *, int_t *, int_t *a, 
+extern int    genmmd_dist_(int_t *, int_t *, int_t *,
 			   int_t *, int_t *, int_t *, int_t *, 
 			   int_t *, int_t *, int_t *, int_t *, int_t *);
 extern void  bcast_tree(void *, int, MPI_Datatype, int, int,
 			gridinfo_t *, int, int *);
 extern int_t symbfact(superlu_dist_options_t *, int, SuperMatrix *, int_t *,
                       int_t *, Glu_persist_t *, Glu_freeable_t *);
-extern int_t symbfact_SubInit(superlu_dist_options_t *options,
+extern int_t symbfact_SubInit(superlu_dist_options_t *,
 			      fact_t, void *, int_t, int_t, int_t, int_t,
 			      Glu_persist_t *, Glu_freeable_t *);
 extern int_t symbfact_SubXpand(int_t, int_t, int_t, MemType, int_t *,
@@ -1190,10 +1189,10 @@ extern int_t get_num_gpu_streams (void);
 extern int getnGPUStreams(void);
 extern int get_mpi_process_per_gpu (void);
 /*to print out various statistics from GPU activities*/
-extern void printGPUStats(int nsupers, SuperLUStat_t *stat, gridinfo3d_t*);
+extern void printGPUStats(int, SuperLUStat_t *, gridinfo3d_t *);
 #endif
 
-extern double estimate_cpu_time(int m, int n , int k);
+extern double estimate_cpu_time(int, int, int k);
 
 extern int get_thread_per_process(void);
 extern int_t get_max_buffer_size (void);
@@ -1208,7 +1207,7 @@ extern int get_acc_offload(void);
 extern void  print_panel_seg_dist(int_t, int_t, int_t, int_t, int_t *, int_t *);
 extern void  check_repfnz_dist(int_t, int_t, int_t, int_t *);
 extern int_t CheckZeroDiagonal(int_t, int_t *, int_t *, int_t *);
-extern int   check_perm_dist(char *what, int_t n, int_t *perm);
+extern int   check_perm_dist(char *, int_t, int_t *);
 extern void  PrintDouble5(char *, int_t, double *);
 extern void  PrintInt10(char *, int_t, int_t *);
 extern void  PrintInt32(char *, int, int *);

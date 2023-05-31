@@ -854,7 +854,7 @@ pzgssvx_ABglobal(superlu_dist_options_t *options, SuperMatrix *A,
 	permc_spec = options->ColPerm;
 	if ( permc_spec != MY_PERMC && Fact == DOFACT )
 	    /* Use an ordering provided by SuperLU */
-	    get_perm_c_dist(iam, permc_spec, A, perm_c);
+	    get_perm_c_dist(iam, permc_spec, A, perm_c, grid->comm);
 
 	/* Compute the elimination tree of Pc*(A'+A)*Pc' or Pc*A'*A*Pc'
 	   (a.k.a. column etree), depending on the choice of ColPerm.
