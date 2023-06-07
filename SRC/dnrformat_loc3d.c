@@ -281,6 +281,240 @@ void dGatherNRformat_loc3d
 
 } /* dGatherNRformat_loc3d */
 
+
+/*
+ * Gather {A,B} from 3D grid to 2D process on all layers
+ *     Input:  {A, B, ldb} are distributed on 3D process grid
+ *     Output: {A2d, B2d} are distributed 2D process grid duplicated on all layers
+ *             output is in the returned A3d->{} structure.
+ *             see supermatrix.h for nrformat_loc3d{} structure.
+ */
+void dGatherNRformat_loc3d_allgrid
+(
+ fact_t Fact,     // how matrix A will be factorized
+ NRformat_loc *A, // input, on 3D grid
+ double *B,       // input
+ int ldb, int nrhs, // input
+ gridinfo3d_t *grid3d, 
+ NRformat_loc3d **A3d_addr /* If Fact == DOFACT, it is an input;
+ 		              Else it is both input and may be modified */
+ )
+{
+    NRformat_loc3d *A3d = (NRformat_loc3d *) *A3d_addr;
+    NRformat_loc *A2d;
+    int *row_counts_int; // 32-bit, number of local rows relative to all processes
+    int *row_disp;       // displacement
+    int *nnz_counts_int; // number of local nnz relative to all processes
+    int *nnz_disp;       // displacement
+    int *b_counts_int;   // number of local B entries relative to all processes 
+    int *b_disp;         // including 'nrhs'
+	
+    /********* Gather A2d *********/
+    if ( Fact == DOFACT ) { /* Factorize from scratch */
+	/* A3d is output. Compute counts from scratch */
+	A3d = SUPERLU_MALLOC(sizeof(NRformat_loc3d));
+	A3d->num_procs_to_send = EMPTY; // No X(2d) -> X(3d) comm. schedule yet
+	A2d = SUPERLU_MALLOC(sizeof(NRformat_loc));
+    
+	// find number of nnzs
+	int_t *nnz_counts; // number of local nonzeros relative to all processes
+	int_t *row_counts; // number of local rows relative to all processes
+	int *nnz_counts_int; // 32-bit
+	int *nnz_disp; // displacement
+
+	nnz_counts = SUPERLU_MALLOC(grid3d->npdep * sizeof(int_t));
+	row_counts = SUPERLU_MALLOC(grid3d->npdep * sizeof(int_t));
+	nnz_counts_int = SUPERLU_MALLOC(grid3d->npdep * sizeof(int));
+	row_counts_int = SUPERLU_MALLOC(grid3d->npdep * sizeof(int));
+	b_counts_int = SUPERLU_MALLOC(grid3d->npdep * sizeof(int));
+	MPI_Allgather(&A->nnz_loc, 1, mpi_int_t, nnz_counts,
+		   1, mpi_int_t, grid3d->zscp.comm);
+	MPI_Allgather(&A->m_loc, 1, mpi_int_t, row_counts,
+		   1, mpi_int_t, grid3d->zscp.comm);
+	nnz_disp = SUPERLU_MALLOC((grid3d->npdep + 1) * sizeof(int));
+	row_disp = SUPERLU_MALLOC((grid3d->npdep + 1) * sizeof(int));
+	b_disp = SUPERLU_MALLOC((grid3d->npdep + 1) * sizeof(int));
+
+	nnz_disp[0] = 0;
+	row_disp[0] = 0;
+	b_disp[0] = 0;
+	int nrhs1 = nrhs; // input 
+	if ( nrhs <= 0 ) nrhs1 = 1; /* Make sure to compute offsets and
+	                               counts for future use.   */
+	for (int i = 0; i < grid3d->npdep; i++)
+	    {
+		nnz_disp[i + 1] = nnz_disp[i] + nnz_counts[i];
+		row_disp[i + 1] = row_disp[i] + row_counts[i];
+		b_disp[i + 1] = nrhs1 * row_disp[i + 1];
+		nnz_counts_int[i] = nnz_counts[i];
+		row_counts_int[i] = row_counts[i];
+		b_counts_int[i] = nrhs1 * row_counts[i];
+	    }
+
+		A2d->colind = intMalloc_dist(nnz_disp[grid3d->npdep]);
+		A2d->nzval = doubleMalloc_dist(nnz_disp[grid3d->npdep]);
+		A2d->rowptr = intMalloc_dist((row_disp[grid3d->npdep] + 1));
+		A2d->rowptr[0] = 0;
+
+	MPI_Allgatherv(A->nzval, A->nnz_loc, MPI_DOUBLE, A2d->nzval,
+		    nnz_counts_int, nnz_disp,
+		    MPI_DOUBLE, grid3d->zscp.comm);
+	MPI_Allgatherv(A->colind, A->nnz_loc, mpi_int_t, A2d->colind,
+		    nnz_counts_int, nnz_disp,
+		    mpi_int_t, grid3d->zscp.comm);
+	MPI_Allgatherv(&A->rowptr[1], A->m_loc, mpi_int_t, &A2d->rowptr[1],
+		    row_counts_int, row_disp,
+		    mpi_int_t, grid3d->zscp.comm);
+
+	for (int i = 0; i < grid3d->npdep; i++)
+		{
+		for (int j = row_disp[i] + 1; j < row_disp[i + 1] + 1; j++)
+			{
+			// A2d->rowptr[j] += row_disp[i];
+			A2d->rowptr[j] += nnz_disp[i];
+			}
+		}
+	A2d->nnz_loc = nnz_disp[grid3d->npdep];
+	A2d->m_loc = row_disp[grid3d->npdep];
+
+	if (grid3d->rankorder == 1) { // XY-major
+		A2d->fst_row = A->fst_row;
+	} else { // Z-major
+		gridinfo_t *grid2d = &(grid3d->grid2d);
+		int procs2d = grid2d->nprow * grid2d->npcol;
+		int m_loc_2d = A2d->m_loc;
+		int *m_loc_2d_counts = SUPERLU_MALLOC(procs2d * sizeof(int));
+
+		MPI_Allgather(&m_loc_2d, 1, MPI_INT, m_loc_2d_counts, 1, 
+				MPI_INT, grid2d->comm);
+
+		int fst_row = 0;
+		for (int p = 0; p < procs2d; ++p)
+		{
+			if (grid2d->iam == p)
+			A2d->fst_row = fst_row;
+			fst_row += m_loc_2d_counts[p];
+		}
+
+		SUPERLU_FREE(m_loc_2d_counts);
+	}
+
+
+	A3d->A_nfmt         = A2d;
+	A3d->row_counts_int = row_counts_int;
+	A3d->row_disp       = row_disp;
+	A3d->nnz_counts_int = nnz_counts_int;
+	A3d->nnz_disp       = nnz_disp;
+	A3d->b_counts_int   = b_counts_int;
+	A3d->b_disp         = b_disp;
+
+	/* free storage */
+	SUPERLU_FREE(nnz_counts);
+	SUPERLU_FREE(row_counts);
+	
+	*A3d_addr = (NRformat_loc3d *) A3d; // return pointer to A3d struct
+	
+    } else if ( Fact == SamePattern || Fact == SamePattern_SameRowPerm ) {
+	/* A3d is input. No need to recompute count.
+	   Only need to gather A2d matrix; the previous 2D matrix
+	   was overwritten by equilibration, perm_r and perm_c.  */
+	NRformat_loc *A2d = A3d->A_nfmt;
+	row_counts_int = A3d->row_counts_int;
+	row_disp       = A3d->row_disp;
+	nnz_counts_int = A3d->nnz_counts_int;
+	nnz_disp       = A3d->nnz_disp;
+
+	MPI_Allgatherv(A->nzval, A->nnz_loc, MPI_DOUBLE, A2d->nzval,
+		    nnz_counts_int, nnz_disp,
+		    MPI_DOUBLE, grid3d->zscp.comm);
+	MPI_Allgatherv(A->colind, A->nnz_loc, mpi_int_t, A2d->colind,
+		    nnz_counts_int, nnz_disp,
+		    mpi_int_t, grid3d->zscp.comm);
+	MPI_Allgatherv(&A->rowptr[1], A->m_loc, mpi_int_t, &A2d->rowptr[1],
+		    row_counts_int, row_disp,
+		    mpi_int_t, grid3d->zscp.comm);
+		    
+	A2d->rowptr[0] = 0;
+	for (int i = 0; i < grid3d->npdep; i++)
+	{
+	for (int j = row_disp[i] + 1; j < row_disp[i + 1] + 1; j++)
+		{
+		// A2d->rowptr[j] += row_disp[i];
+		A2d->rowptr[j] += nnz_disp[i];
+		}
+	}
+	A2d->nnz_loc = nnz_disp[grid3d->npdep];
+	A2d->m_loc = row_disp[grid3d->npdep];
+
+	if (grid3d->rankorder == 1) { // XY-major
+		A2d->fst_row = A->fst_row;
+	} else { // Z-major
+		gridinfo_t *grid2d = &(grid3d->grid2d);
+		int procs2d = grid2d->nprow * grid2d->npcol;
+		int m_loc_2d = A2d->m_loc;
+		int *m_loc_2d_counts = SUPERLU_MALLOC(procs2d * sizeof(int));
+
+		MPI_Allgather(&m_loc_2d, 1, MPI_INT, m_loc_2d_counts, 1, 
+				MPI_INT, grid2d->comm);
+
+		int fst_row = 0;
+		for (int p = 0; p < procs2d; ++p)
+		{
+			if (grid2d->iam == p)
+			A2d->fst_row = fst_row;
+			fst_row += m_loc_2d_counts[p];
+		}
+
+		SUPERLU_FREE(m_loc_2d_counts);
+	}
+    } /* SamePattern or SamePattern_SameRowPerm */
+
+    A3d->m_loc = A->m_loc;
+    A3d->B3d = (double *) B; /* save the pointer to the original B
+				    stored on 3D process grid.  */
+    A3d->ldb = ldb;
+    A3d->nrhs = nrhs; // record the input 
+	
+    /********* Gather B2d **********/
+    if ( nrhs > 0 ) {
+	
+	A2d = (NRformat_loc *) A3d->A_nfmt; // matrix A gathered on 2D grid-0
+	row_counts_int = A3d->row_counts_int;
+	row_disp       = A3d->row_disp;
+	b_counts_int   = A3d->b_counts_int;
+	b_disp         = A3d->b_disp;;
+	
+	/* Btmp <- compact(B), compacting B */
+	double *Btmp;
+	Btmp = SUPERLU_MALLOC(A->m_loc * nrhs * sizeof(double));
+	matCopy(A->m_loc, nrhs, Btmp, A->m_loc, B, ldb);
+
+	double *B1;
+	B1 = doubleMalloc_dist(A2d->m_loc * nrhs);
+	A3d->B2d = doubleMalloc_dist(A2d->m_loc * nrhs);
+
+	// B1 <- gatherv(Btmp)
+	MPI_Allgatherv(Btmp, nrhs * A->m_loc, MPI_DOUBLE, B1,
+		    b_counts_int, b_disp,
+		    MPI_DOUBLE, grid3d->zscp.comm);
+	SUPERLU_FREE(Btmp);
+
+	// B2d <- colMajor(B1)
+
+	for (int i = 0; i < grid3d->npdep; ++i)
+		{
+		/* code */
+		matCopy(row_counts_int[i], nrhs, ((double*)A3d->B2d) + row_disp[i],
+			A2d->m_loc, B1 + nrhs * row_disp[i], row_counts_int[i]);
+		}
+	
+	SUPERLU_FREE(B1);
+
+    } /* end gather B2d */
+
+} /* dGatherNRformat_loc3d_allgrid */
+
+
 /*
  * Scatter B (solution) from 2D process layer 0 to 3D grid
  *   Output: X3d <- A^{-1} B2d
@@ -568,8 +802,8 @@ int dScatter_B3d(NRformat_loc3d *A3d,  // modified
     SUPERLU_FREE(Btmp);
     if (grid3d->zscp.Iam == 0) {
 	SUPERLU_FREE(B1);
-	SUPERLU_FREE(B2d);
     }
+	SUPERLU_FREE(B2d); // YL: B2d is allocated in dGatherNRformat_loc3d_alllayer on all layers
 
     return 0;
 } /* dScatter_B3d */

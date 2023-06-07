@@ -409,6 +409,8 @@ void dLUstructInit(const int_t n, dLUstruct_t *LUstruct)
 {
     if ( !(LUstruct->etree = intMalloc_dist(n)) )
 	ABORT("Malloc fails for etree[].");
+    if ( !(LUstruct->supernodeMask = intMalloc_dist(1)) ) //YL: dummy allocation to match with dLUstructFree. The true size is nsuper and this array is used to record supernodeMask for SamePattern_SameRowPerm
+	ABORT("Malloc fails for supernodeMask[].");    
     if ( !(LUstruct->Glu_persist = (Glu_persist_t *)
 	   SUPERLU_MALLOC(sizeof(Glu_persist_t))) )
 	ABORT("Malloc fails for Glu_persist_t.");
@@ -430,6 +432,7 @@ void dLUstructFree(dLUstruct_t *LUstruct)
     SUPERLU_FREE(LUstruct->etree);
     SUPERLU_FREE(LUstruct->Glu_persist);
     SUPERLU_FREE(LUstruct->Llu);
+    SUPERLU_FREE(LUstruct->supernodeMask);
 
 #if ( DEBUGlevel>=1 )
     CHECK_MALLOC(iam, "Exit dLUstructFree()");
@@ -1242,14 +1245,14 @@ void dSolveFinalize(superlu_dist_options_t *options, dSOLVEstruct_t *SOLVEstruct
 
 void dDestroy_A3d_gathered_on_2d(dSOLVEstruct_t *SOLVEstruct, gridinfo3d_t *grid3d)
 {
-    /* free A2d and B2d, which are allocated only in 2D layer grid-0 */
+    /* free A2d and B2d, which are allocated on all 2D layers*/
     NRformat_loc3d *A3d = SOLVEstruct->A3d;
     NRformat_loc *A2d = A3d->A_nfmt;
-    if (grid3d->zscp.Iam == 0) {
+    // if (grid3d->zscp.Iam == 0) {
 	SUPERLU_FREE( A2d->rowptr );
 	SUPERLU_FREE( A2d->colind );
 	SUPERLU_FREE( A2d->nzval );
-    }
+    // }
     SUPERLU_FREE(A3d->row_counts_int);  // free displacements and counts 
     SUPERLU_FREE(A3d->row_disp);
     SUPERLU_FREE(A3d->nnz_counts_int);

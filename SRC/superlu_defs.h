@@ -1277,6 +1277,11 @@ extern int_t* getPerm_c_supno(int_t nsupers, superlu_dist_options_t *,
 			      int_t** Lrowind_bc_ptr, int_t** Ufstnz_br_ptr,
 			      gridinfo_t *);
 
+extern int_t* getPerm_c_supno_allgrid(int_t nsupers, superlu_dist_options_t *options,
+		       int_t *etree, Glu_persist_t *Glu_persist,
+		       int_t** Lrowind_bc_ptr, int_t** Ufstnz_br_ptr,
+		       gridinfo3d_t * grid3d);
+
 /* Manipulate counters */
 extern void SCT_init(SCT_t*);
 extern void SCT_print(gridinfo_t *grid, SCT_t* SCT);
@@ -1374,6 +1379,12 @@ extern int_t getBigUSize(superlu_dist_options_t *, int_t nsupers,
 extern void getSCUweight(int_t nsupers, treeList_t* treeList, int_t* xsup,
 			 int_t** Lrowind_bc_ptr, int_t** Ufstnz_br_ptr,
 			 gridinfo3d_t * grid3d);
+
+extern void getSCUweight_allgrid(int_t nsupers, treeList_t* treeList, int_t* xsup,
+		  int_t** Lrowind_bc_ptr, int_t** Ufstnz_br_ptr,
+		  gridinfo3d_t * grid3d
+		  );
+
 extern int Wait_LUDiagSend(int_t k, MPI_Request *U_diag_blk_send_req,
 			   MPI_Request *L_diag_blk_send_req,
 			   gridinfo_t *grid, SCT_t *SCT);

@@ -1022,6 +1022,60 @@ int_t num_full_cols_U(
     return temp_ncols;
 }
 
+
+
+
+int_t num_full_cols_U_mod(
+    int_t kk, int_t *usub, int_t *xsup,
+    gridinfo_t *grid, int_t *perm_u,
+    int_t *ldu /* max. segment size of nonzero columns in U(kk,:) */
+)
+{
+    int_t lk = LBi(kk, grid);
+
+    if (usub == NULL)
+        return 0; /* code */
+
+    int_t iukp = BR_HEADER; /* Skip header; Pointer to index[] of U(k,:) */
+    int_t rukp = 0;         /* Pointer to nzval[] of U(k,:) */
+    int_t nub = usub[0];    /* Number of blocks in the block row U(k,:) */
+
+    int_t klst = FstBlockC(kk + 1);
+    int_t iukp0 = iukp;
+    int_t rukp0 = rukp;
+    int_t jb, ljb;
+    int_t nsupc;
+    int_t full = 1;
+    int_t full_Phi = 1;
+    int_t temp_ncols = 0;
+    int_t segsize;
+
+    *ldu = 0;
+
+    for (int_t j = 0; j < nub; ++j)
+    {
+
+        /* Sherry -- no need to search from beginning ?? */
+        arrive_at_ublock(
+            j, &iukp, &rukp, &jb, &ljb, &nsupc,
+            iukp0, rukp0, usub, perm_u, xsup, grid);
+        for (int_t jj = iukp; jj < iukp + nsupc; ++jj)
+        {
+            segsize = klst - usub[jj];
+            if (segsize)
+                ++temp_ncols;
+            if (segsize > *ldu)
+                *ldu = segsize;
+        }
+    }
+    return temp_ncols;
+}
+
+
+
+
+
+
 int_t estimate_bigu_size(
       int_t nsupers,
       int_t **Ufstnz_br_ptr, /* point to U index[] array */

@@ -292,6 +292,7 @@ typedef struct {
     int_t *etree;
     Glu_persist_t *Glu_persist;
     dLocalLU_t *Llu;
+    int* supernodeMask; 
     char dt;
 } dLUstruct_t;
 
@@ -548,6 +549,11 @@ extern void  pdgssvx_ABglobal(superlu_dist_options_t *, SuperMatrix *,
 extern float pddistribute(superlu_dist_options_t *, int_t, SuperMatrix *,
 			 dScalePermstruct_t *, Glu_freeable_t *,
 			 dLUstruct_t *, gridinfo_t *);
+extern float pddistribute_allgrid(superlu_dist_options_t *options, int_t n, SuperMatrix *A,
+	     dScalePermstruct_t *ScalePermstruct,
+	     Glu_freeable_t *Glu_freeable, dLUstruct_t *LUstruct,
+	     gridinfo_t *grid, int* supernodeMask);
+
 extern void  pdgssvx(superlu_dist_options_t *, SuperMatrix *,
 		     dScalePermstruct_t *, double *,
 		     int, int, gridinfo_t *, dLUstruct_t *,
@@ -923,6 +929,7 @@ extern int_t bsolve_Xt_bcast(int_t ilvl, xT_struct *xT_s, int nrhs, dtrf3Dpartit
                      dLUstruct_t * LUstruct,gridinfo3d_t* grid3d , xtrsTimer_t *xtrsTimer);
 
 extern int_t zAllocBcast(int_t size, void** ptr, gridinfo3d_t* grid3d);
+extern int_t zAllocBcast_gridID(int_t size, void** ptr, int_t gridID, gridinfo3d_t* grid3d);
 
 extern int_t p2pSolvedX3d(int_t treeId, int_t sender, int_t receiver, double* x, int nrhs,
                       dtrf3Dpartition_t*  trf3Dpartition, dLUstruct_t* LUstruct, gridinfo3d_t* grid3d, xtrsTimer_t *xtrsTimer);
@@ -1079,6 +1086,10 @@ extern int dcreate_block_diag_3d(SuperMatrix *A, int batchCount, int nrhs, doubl
 extern void dGatherNRformat_loc3d(fact_t Fact, NRformat_loc *A, double *B,
 				   int ldb, int nrhs, gridinfo3d_t *grid3d,
 				   NRformat_loc3d **);
+
+extern void dGatherNRformat_loc3d_allgrid(fact_t Fact, NRformat_loc *A, double *B,
+				   int ldb, int nrhs, gridinfo3d_t *grid3d,
+				   NRformat_loc3d **);
 extern int dScatter_B3d(NRformat_loc3d *A3d, gridinfo3d_t *grid3d);
 
 extern void pdgssvx3d (superlu_dist_options_t *, SuperMatrix *,
@@ -1187,6 +1198,11 @@ extern void dRgather_U(int_t k, int_t jj0, int_t *usub, double *uval,
 extern dtrf3Dpartition_t* dinitTrf3Dpartition(int_t nsupers,
 					     superlu_dist_options_t *options,
 					     dLUstruct_t *LUstruct, gridinfo3d_t * grid3d);
+
+extern dtrf3Dpartition_t* dinitTrf3Dpartition_allgrid(int_t n, superlu_dist_options_t *options,
+				      dLUstruct_t *LUstruct, gridinfo3d_t * grid3d
+				      );
+
 extern dtrf3Dpartition_t* dinitTrf3DpartitionLUstructgrid0(int_t n,
 					     superlu_dist_options_t *options,
 					     dLUstruct_t *LUstruct, gridinfo3d_t * grid3d);                         

@@ -1716,6 +1716,22 @@ int_t zAllocBcast(int_t size, void** ptr, gridinfo3d_t* grid3d)
 
 
 
+int_t zAllocBcast_gridID(int_t size, void** ptr, int_t gridID, gridinfo3d_t* grid3d)
+{
+
+	if (size < 1) return 0;
+	if (grid3d->zscp.Iam != gridID)
+	{
+		*ptr = NULL;
+		*ptr = SUPERLU_MALLOC(size);
+	}
+	MPI_Bcast(*ptr, size, MPI_BYTE, gridID, grid3d->zscp.comm);
+
+	return 0;
+}
+
+
+
 int_t bsolve_Xt_bcast(int_t ilvl, xT_struct *xT_s, int nrhs, dtrf3Dpartition_t*  trf3Dpartition,
                      dLUstruct_t * LUstruct,gridinfo3d_t* grid3d , xtrsTimer_t *xtrsTimer)
 {
