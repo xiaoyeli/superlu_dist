@@ -48,6 +48,7 @@ void validateInput_ssvx3d(superlu_dist_options_t *options, SuperMatrix *A,int ld
     }
 } 
 
+
 void scaleRows(int_t m_loc, int_t fst_row, int_t *rowptr, double *a, double *R) {
     int_t irow = fst_row;
     for (int_t j = 0; j < m_loc; ++j) {
@@ -68,7 +69,8 @@ void scaleColumns(int_t m_loc, int_t *rowptr, int_t *colind, double *a, double *
     }
 }
 
-void scaleBoth(int_t m_loc, int_t fst_row, int_t *rowptr, int_t *colind, double *a, double *R, double *C) {
+void scaleBoth(int_t m_loc, int_t fst_row, int_t *rowptr, 
+    int_t *colind, double *a, double *R, double *C) {
     int_t irow = fst_row;
     int_t icol;
     for (int_t j = 0; j < m_loc; ++j) {
@@ -80,12 +82,7 @@ void scaleBoth(int_t m_loc, int_t fst_row, int_t *rowptr, int_t *colind, double 
     }
 }
 
-
-
-
-void scalePrecomputed(SuperMatrix *A,
-    dScalePermstruct_t *ScalePermstruct) 
-{
+void scalePrecomputed(SuperMatrix *A, dScalePermstruct_t *ScalePermstruct) {
     NRformat_loc *Astore = (NRformat_loc *)A->Store;
     int_t m_loc = Astore->m_loc;
     int_t fst_row = Astore->fst_row;
@@ -95,6 +92,8 @@ void scalePrecomputed(SuperMatrix *A,
     double *R = ScalePermstruct->R;
     double *C = ScalePermstruct->C;
     switch (ScalePermstruct->DiagScale) {
+    case NOEQUIL:
+        break;
     case ROW:
         scaleRows(m_loc, fst_row, rowptr, a, R);
         break;
@@ -110,7 +109,8 @@ void scalePrecomputed(SuperMatrix *A,
 }
 
 void scaleFromScratch(
-    SuperMatrix *A, dScalePermstruct_t *ScalePermstruct,  gridinfo_t *grid, int_t *rowequ, int_t *colequ)  
+    SuperMatrix *A, dScalePermstruct_t *ScalePermstruct,  
+    gridinfo_t *grid, int_t *rowequ, int_t *colequ, int_t*iinfo)  
 {
     NRformat_loc *Astore = (NRformat_loc *)A->Store;
     int_t m_loc = Astore->m_loc;
@@ -121,14 +121,17 @@ void scaleFromScratch(
     double *R = ScalePermstruct->R;
     double *C = ScalePermstruct->C;
     double rowcnd, colcnd, amax;
-    int_t iinfo;
+    // int_t iinfo;
     char equed[1];
     int iam = grid->iam;
 
-    pdgsequ(A, R, C, &rowcnd, &colcnd, &amax, &iinfo, grid);
+    pdgsequ(A, R, C, &rowcnd, &colcnd, &amax, iinfo, grid);
 
-    if (iinfo != 0) {
-        if (iinfo > 0) fprintf(stderr, "The " IFMT "-th %s of A is exactly zero\n", iinfo <= m_loc ? iinfo : iinfo - m_loc, iinfo <= m_loc ? "row" : "column");
+    if (*iinfo > 0) {
+#if (PRNTlevel >= 1)
+        fprintf(stderr, "The " IFMT "-th %s of A is exactly zero\n", *iinfo <= m_loc ? *iinfo : *iinfo - m_loc, *iinfo <= m_loc ? "row" : "column");
+#endif
+    } else if (*iinfo < 0) {
         return;
     }
 
@@ -138,43 +141,38 @@ void scaleFromScratch(
     else if (strncmp(equed, "C", 1) == 0) { ScalePermstruct->DiagScale = COL; *rowequ = 0; *colequ = 1; }
     else if (strncmp(equed, "B", 1) == 0) { ScalePermstruct->DiagScale = BOTH; *rowequ = 1; *colequ = 1; }
     else                                  { ScalePermstruct->DiagScale = NOEQUIL; *rowequ = 0; *colequ = 0; }
-    // else if (strncmp(equed, "C", 1) == 0) ScalePermstruct->DiagScale = COL;
-    // else if (strncmp(equed, "B", 1) == 0) ScalePermstruct->DiagScale = BOTH;
-    // else                                  ScalePermstruct->DiagScale = NOEQUIL;
 
-    if (iam == 0) printf(".. equilibrated? *equed = %c\n", *equed);
+#if (PRNTlevel >= 1)
+    if (iam == 0) {
+        printf(".. equilibrated? *equed = %c\n", *equed);
+        fflush(stdout);
+    }
+#endif
 }
 
-
-
-
-
 void scaleMatrixDiagonally(fact_t Fact, dScalePermstruct_t *ScalePermstruct, 
-                           SuperMatrix *A, SuperLUStat_t *stat, gridinfo_t *grid, int_t *rowequ, int_t *colequ) 
+                           SuperMatrix *A, SuperLUStat_t *stat, gridinfo_t *grid,
+                            int_t *rowequ, int_t *colequ, int_t*iinfo)   
 {
-    
-    // print in bold green Entering scaleMatrixDiagonally() in filename:lineno:funcname\n
-    printf("\033[1;94m Entering scaleMatrixDiagonally() in %s:%d:%s\033[0m\n", __FILE__, __LINE__, __func__);
-    
-    NRformat_loc *Astore = (NRformat_loc *)A->Store;
-    int_t m_loc = Astore->m_loc;
-    int_t fst_row = Astore->fst_row;
-    double *a = (double *)Astore->nzval;
-    int_t *rowptr = Astore->rowptr;
-    int_t *colind = Astore->colind;
-    double *R = ScalePermstruct->R;
-    double *C = ScalePermstruct->C;
-    
+    int iam = grid->iam;
+
+#if (DEBUGlevel >= 1)
+    CHECK_MALLOC(iam, "Enter equil");
+#endif
 
     double t_start = SuperLU_timer_();
 
     if (Fact == SamePattern_SameRowPerm) {
         scalePrecomputed(A, ScalePermstruct);
     } else {
-        scaleFromScratch(A, ScalePermstruct, grid, rowequ, colequ);
+        scaleFromScratch(A, ScalePermstruct, grid, rowequ, colequ, iinfo);
     }
 
     stat->utime[EQUIL] = SuperLU_timer_() - t_start;
+
+#if (DEBUGlevel >= 1)
+    CHECK_MALLOC(iam, "Exit equil");
+#endif
 }
 
 

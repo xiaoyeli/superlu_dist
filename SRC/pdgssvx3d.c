@@ -724,7 +724,8 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 		{
 			#if 1
 			scaleMatrixDiagonally(Fact, ScalePermstruct, 
-                           A, stat, grid, &rowequ, &colequ);
+                           A, stat, grid, &rowequ, &colequ, &iinfo);
+			if(iinfo <0) return; // return if error
 			#else 
 #if (DEBUGlevel >= 1)
 			CHECK_MALLOC(iam, "Enter equil");
