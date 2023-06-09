@@ -504,7 +504,7 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 			   double *berr, SuperLUStat_t *stat, int *info)
 {
 	NRformat_loc *Astore = A->Store;
-	SuperMatrix GA; /* Global A in NC format */
+	SuperMatrix GA; /* Global A in NC format */	
 	NCformat *GAstore;
 	double *a_GA;
 	SuperMatrix GAC; /* Global A in NCP format (add n end pointers) */
@@ -863,6 +863,20 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 			/* ------------------------------------------------------------
 			   Find the row permutation for A.
 			   ------------------------------------------------------------ */
+			#if 0
+			perform_row_permutation(
+				superlu_options_t *options,
+				fact_t Fact,
+				int m, int n,
+				gridinfo_t *grid,
+				int *perm_r,
+				SuperMatrix *A,
+				SuperLUStat_t *stat,
+				int job,
+				int Equil,
+				int rowequ,
+				int colequ);
+			#else 
 			if (options->RowPerm != NO)
 			{
 				t = SuperLU_timer_();
@@ -1063,7 +1077,7 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 				for (i = 0; i < m; ++i)
 					perm_r[i] = i;
 			}
-
+			#endif 
 #if (DEBUGlevel >= 2)
 			if (!iam)
 				PrintInt10("perm_r", m, perm_r);
@@ -1841,3 +1855,13 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 	CHECK_MALLOC(iam, "Exit pdgssvx3d()");
 #endif
 }
+
+// add the types to following variables
+// Astore = (NRformat_loc *)A->Store;
+// 		nnz_loc = Astore->nnz_loc;
+// 		m_loc = Astore->m_loc;
+// 		fst_row = Astore->fst_row;
+// 		a = (double *)Astore->nzval;
+// 		rowptr = Astore->rowptr;
+// 		colind = Astore->colind;
+
