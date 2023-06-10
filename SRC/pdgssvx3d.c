@@ -851,6 +851,9 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 							{
 								if (Equil)
 								{
+									#if 1
+									scale_distributed_matrix( rowequ, colequ, m, n, m_loc, rowptr, colind, fst_row, a, R, C, R1, C1);
+									#else 
 									for (i = 0; i < n; ++i)
 									{
 										R1[i] = exp(R1[i]);
@@ -896,7 +899,7 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 									else
 										for (i = 0; i < n; ++i)
 											C[i] = C1[i];
-
+									#endif 
 									ScalePermstruct->DiagScale = BOTH;
 									rowequ = colequ = 1;
 

@@ -331,6 +331,7 @@ void find_row_permutation(gridinfo_t *grid, int_t job,
  */
 void scale_distributed_matrix(int_t rowequ, int_t colequ, int_t m, int_t n, int_t m_loc, int_t *rowptr, int_t *colind, int_t fst_row, double *a, double *R, double *C, double *R1, double *C1) 
 {
+    printf("\033[1;32mEntering function scale_distributed_matrix at %s:%d\033[0m\n", __FILE__, __LINE__);
     // Scale the row and column factors
     for (int i = 0; i < n; ++i) {
         R1[i] = exp(R1[i]);
@@ -343,6 +344,21 @@ void scale_distributed_matrix(int_t rowequ, int_t colequ, int_t m, int_t n, int_
         for (int i = rowptr[j]; i < rowptr[j + 1]; ++i) {
             int columnIndex = colind[i];
             a[i] *= R1[rowIndex] * C1[columnIndex];
+#if 0
+// this is not support as dmin, dsum and dprod are not used later in pdgssvx3d 
+#if (PRNTlevel >= 2)
+            if (perm_r[irow] == icol)
+            {
+                /* New diagonal */
+                if (job == 2 || job == 3)
+                    dmin = SUPERLU_MIN(dmin, fabs(a[i]));
+                else if (job == 4)
+                    dsum += fabs(a[i]);
+                else if (job == 5)
+                    dprod *= fabs(a[i]);
+            }
+#endif
+#endif
         }
         ++rowIndex;
     }
