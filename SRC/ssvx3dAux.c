@@ -13,7 +13,7 @@
  * @param[in] grid Pointer to the grid structure.
  * @param[out] info Pointer to an integer variable that stores the error code.
  */
-void validateInput_ssvx3d(superlu_dist_options_t *options, SuperMatrix *A,int ldb, int nrhs, gridinfo3d_t *grid3d, int *info)
+void validateInput_ssvx3d(superlu_dist_options_t *options, SuperMatrix *A,int ldb, int_t nrhs, gridinfo3d_t *grid3d, int *info)
 {
     gridinfo_t *grid = &(grid3d->grid2d);
     NRformat_loc *Astore = A->Store;
@@ -181,16 +181,16 @@ void perform_LargeDiag_MC64(
     fact_t Fact, 
     dScalePermstruct_t *ScalePermstruct,
     dLUstruct_t *LUstruct,
-    int m, int n, 
+    int_t m, int_t n, 
     gridinfo_t* grid, 
     int_t* perm_r,
     SuperMatrix* A, 
     SuperMatrix* GA,
     SuperLUStat_t* stat, 
-    int job, 
-    int Equil, 
-    int rowequ, 
-    int colequ) 
+    int_t job, 
+    int_t Equil, 
+    int_t rowequ, 
+    int_t colequ) 
 {
     /* Note: R1 and C1 are now local variables */
     double* R1 = NULL;
@@ -221,7 +221,7 @@ void perform_LargeDiag_MC64(
     NCformat* GAstore = (NCformat *)GA->Store;
     int_t* colptr = GAstore->colptr;
     int_t* rowind = GAstore->rowind;
-    int nnz = GAstore->nnz;
+    int_t nnz = GAstore->nnz;
     double* a_GA = (double *)GAstore->nzval;
     /* Rest of the code goes here... */
 
@@ -362,22 +362,22 @@ void perform_LargeDiag_MC64(
 void perform_row_permutation(
     superlu_dist_options_t *options,
     fact_t Fact,
-    int m, int n,
+    int_t m, int_t n,
     gridinfo_t *grid,
     int *perm_r,
     SuperMatrix *A,
     SuperMatrix *GA, 
     SuperLUStat_t *stat,
-    int job,
-    int Equil,
-    int rowequ,
-    int colequ)
+    int_t job,
+    int_t Equil,
+    int_t rowequ,
+    int_t colequ)
 {
     /* Get NC format data from SuperMatrix GA */
     NCformat* GAstore = (NCformat *)GA->Store;
     int_t* colptr = GAstore->colptr;
     int_t* rowind = GAstore->rowind;
-    int nnz = GAstore->nnz;
+    int_t nnz = GAstore->nnz;
     double* a_GA = (double *)GAstore->nzval;
 
     int iam = grid->iam;
@@ -398,23 +398,7 @@ void perform_row_permutation(
             }
             else if (options->RowPerm == LargeDiag_MC64)
             {
-                // following incorrect
-                // perform_LargeDiag_MC64(options, Fact, m, n, grid, perm_r, A, stat, job, Equil, rowequ, colequ);
-                // following correct
-    //             superlu_dist_options_t* options, 
-    // fact_t Fact, 
-    // dScalePermstruct_t *ScalePermstruct,
-    // dLUstruct_t *LUstruct,
-    // int m, int n, 
-    // gridinfo_t* grid, 
-    // int_t* perm_r,
-    // SuperMatrix* A, 
-    // SuperMatrix* GA,
-    // SuperLUStat_t* stat, 
-    // int job, 
-    // int Equil, 
-    // int rowequ, 
-    // int colequ) 
+                // being called incorrectly
                 perform_LargeDiag_MC64(options, Fact, NULL, NULL, m, n, grid, perm_r, A, GA, stat, job, Equil, rowequ, colequ);
             }
             else // LargeDiag_HWPM
@@ -449,13 +433,188 @@ void perform_row_permutation(
 }
 
 
-void permute_rows_with_user_perm(int* colptr, int* rowind, int_t* perm_r, int n) {
+void permute_rows_with_user_perm(int* colptr, int* rowind, int_t* perm_r, int_t n) {
     // int i, irow;
     // Permute the global matrix GA for symbfact()
     for (int i = 0; i < colptr[n]; ++i)
     {
         int irow = rowind[i];
         rowind[i] = perm_r[irow];
+    }
+}
+
+
+void get_NR_NC_format_data(SuperMatrix *A, SuperMatrix *GA, 
+NRformat_loc **Astore, int_t *nnz_loc, int_t *m_loc, 
+int_t *fst_row, double **a, int_t **rowptr, int_t **colind, 
+NCformat **GAstore, int_t **colptr, int_t **rowind, int *nnz, double **a_GA) {
+    *Astore = (NRformat_loc *)A->Store;
+    *nnz_loc = (*Astore)->nnz_loc;
+    *m_loc = (*Astore)->m_loc;
+    *fst_row = (*Astore)->fst_row;
+    *a = (double *)(*Astore)->nzval;
+    *rowptr = (*Astore)->rowptr;
+    *colind = (*Astore)->colind;
+
+    *GAstore = (NCformat *)GA->Store;
+    *colptr = (*GAstore)->colptr;
+    *rowind = (*GAstore)->rowind;
+    *nnz = (*GAstore)->nnz;
+    *a_GA = (double *)(*GAstore)->nzval;
+}
+
+void find_row_permutation(gridinfo_t *grid, int_t job, int_t m, 
+    int_t nnz,
+    int_t* colptr,
+    int_t* rowind,
+    double* a_GA,
+    int_t Equil, int_t *perm_r, 
+    double *R1, double *C1, int_t*iinfo) 
+{
+    if (grid->iam == 0) {
+        *iinfo = dldperm_dist(job, m, nnz, colptr, rowind, a_GA, perm_r, R1, C1);
+        MPI_Bcast(iinfo, 1, mpi_int_t, 0, grid->comm);
+        if (*iinfo == 0) {
+            MPI_Bcast(perm_r, m, mpi_int_t, 0, grid->comm);
+            if (job == 5 && Equil) {
+                MPI_Bcast(R1, m, MPI_DOUBLE, 0, grid->comm);
+                MPI_Bcast(C1, n, MPI_DOUBLE, 0, grid->comm);
+            }
+        }
+    } else {
+        MPI_Bcast(iinfo, 1, mpi_int_t, 0, grid->comm);
+        if (*iinfo == 0) {
+            MPI_Bcast(perm_r, m, mpi_int_t, 0, grid->comm);
+            if (job == 5 && Equil) {
+                MPI_Bcast(R1, m, MPI_DOUBLE, 0, grid->comm);
+                MPI_Bcast(C1, n, MPI_DOUBLE, 0, grid->comm);
+            }
+        }
+    }
+}
+
+void scale_distributed_matrix(int_t job, int_t Equil, int_t rowequ, int_t colequ, int_t m, int_t n, int_t m_loc, int_t *rowptr, int_t *colind, int_t *fst_row, double *a, double *R, double *C, double *R1, double *C1) {
+    if (Equil) {
+        for (int i = 0; i < n; ++i) {
+            R1[i] = exp(R1[i]);
+            C1[i] = exp(C1[i]);
+        }
+
+        int irow = fst_row;
+        for (int j = 0; j < m_loc; ++j) {
+            for (int i = rowptr[j]; i < rowptr[j + 1]; ++i) {
+                int icol = colind[i];
+                a[i] *= R1[irow] * C1[icol];
+            }
+            ++irow;
+        }
+
+        if (rowequ)
+            for (int i = 0; i < m; ++i)
+                R[i] *= R1[i];
+        else
+            for (int i = 0; i < m; ++i)
+                R[i] = R1[i];
+        if (colequ)
+            for (int i = 0; i < n; ++i)
+                C[i] *= C1[i];
+        else
+            for (int i = 0; i < n; ++i)
+                C[i] = C1[i];
+    }
+}
+
+#include <stdlib.h>  // For NULL
+
+/**
+ * Performs a permutation operation on the rows of a sparse matrix (CSC format).
+ *
+ * @param m The number of rows in the sparse matrix.
+ * @param n The number of columns in the sparse matrix.
+ * @param colptr The column pointer array of the sparse matrix (CSC format).
+ * @param rowind The row index array of the sparse matrix (CSC format).
+ * @param perm_r The permutation array for the rows.
+ */
+void permute_global_A(int_t m, int_t n, int_t *colptr, int_t *rowind, int_t *perm_r) {
+    // Check input parameters
+    if (colptr == NULL || rowind == NULL || perm_r == NULL) {
+        fprintf(stderr, "Error: NULL input parameter to: permute_global_A()\n");
+        return;
+    }
+    
+    // Iterate through each column
+    for (int_t j = 0; j < n; ++j) {
+        // For each column, iterate through its non-zero elements
+        for (int_t i = colptr[j]; i < colptr[j + 1]; ++i) {
+            // Get the original row index
+            int_t irow = rowind[i];
+            // Assign the new row index from the permutation array
+            rowind[i] = perm_r[irow];
+        }
+    }
+}
+
+
+void perform_LargeDiag_MC64(
+    superlu_dist_options_t *options, fact_t Fact,
+    dScalePermstruct_t *ScalePermstruct, dLUstruct_t *LUstruct,
+    int_t m, int_t n, gridinfo_t *grid, int_t *perm_r,
+    SuperMatrix *A, SuperMatrix *GA, SuperLUStat_t *stat, int_t job, 
+    int_t Equil, int_t rowequ, int_t colequ, int_t *iinfo) {
+    double *R1 = NULL;
+    double *C1 = NULL;
+
+    perm_r = ScalePermstruct->perm_r;
+    int_t *perm_c = ScalePermstruct->perm_c;
+    int_t *etree = LUstruct->etree;
+    double *R = ScalePermstruct->R;
+    double *C = ScalePermstruct->C;
+    int iam = grid->iam;
+
+    NRformat_loc *Astore;
+    int_t nnz_loc, m_loc, fst_row;
+    double *a;
+    int_t *rowptr, *colind;
+
+    NCformat *GAstore;
+    int_t *colptr, *rowind;
+    int_t nnz;
+    double *a_GA;
+
+    get_NR_NC_format_data(A, GA, &Astore, &nnz_loc, &m_loc, &fst_row, &a, &rowptr, &colind, &GAstore, &colptr, &rowind, &nnz, &a_GA);
+
+    if (job == 5) {
+        R1 = doubleMalloc_dist(m);
+        if (!R1)
+            ABORT("SUPERLU_MALLOC fails for R1[]");
+        C1 = doubleMalloc_dist(n);
+        if (!C1)
+            ABORT("SUPERLU_MALLOC fails for C1[]");
+    }
+
+    // int iinfo;
+    find_row_permutation(grid, job, m, 
+    nnz,
+    colptr,
+    rowind,
+     a_GA, Equil, perm_r, R1, C1, iinfo);
+
+    if (*iinfo && job == 5) {
+        SUPERLU_FREE(R1);
+        SUPERLU_FREE(C1);
+    }
+
+    if (*iinfo == 0) {
+        if (job == 5) {
+            scale_distributed_matrix(job, Equil, rowequ, colequ, m, n, m_loc, rowptr, colind, fst_row, a, R, C, R1, C1);
+            ScalePermstruct->DiagScale = BOTH;
+            rowequ = colequ = 1;
+            permute_global_A( m, n, colptr, rowind, perm_r);
+            SUPERLU_FREE(R1);
+            SUPERLU_FREE(C1);
+        } else {
+            permute_global_A( m, n, colptr, rowind, perm_r);
+        }
     }
 }
 
