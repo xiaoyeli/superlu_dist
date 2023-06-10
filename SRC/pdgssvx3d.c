@@ -851,55 +851,13 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 							{
 								if (Equil)
 								{
-									#if 1
-									scale_distributed_matrix( rowequ, colequ, m, n, m_loc, rowptr, colind, fst_row, a, R, C, R1, C1);
-									#else 
-									for (i = 0; i < n; ++i)
-									{
-										R1[i] = exp(R1[i]);
-										C1[i] = exp(C1[i]);
-									}
-
 									/* Scale the distributed matrix further.
 									   A <-- diag(R1)*A*diag(C1)            */
-									irow = fst_row;
-									for (j = 0; j < m_loc; ++j)
-									{
-										for (i = rowptr[j]; i < rowptr[j + 1]; ++i)
-										{
-											icol = colind[i];
-											a[i] *= R1[irow] * C1[icol];
-#if (PRNTlevel >= 2)
-											if (perm_r[irow] == icol)
-											{
-												/* New diagonal */
-												if (job == 2 || job == 3)
-													dmin = SUPERLU_MIN(dmin, fabs(a[i]));
-												else if (job == 4)
-													dsum += fabs(a[i]);
-												else if (job == 5)
-													dprod *= fabs(a[i]);
-											}
-#endif
-										}
-										++irow;
-									}
-
-									/* Multiply together the scaling factors --
-									   R/C from simple scheme, R1/C1 from MC64. */
-									if (rowequ)
-										for (i = 0; i < m; ++i)
-											R[i] *= R1[i];
-									else
-										for (i = 0; i < m; ++i)
-											R[i] = R1[i];
-									if (colequ)
-										for (i = 0; i < n; ++i)
-											C[i] *= C1[i];
-									else
-										for (i = 0; i < n; ++i)
-											C[i] = C1[i];
-									#endif 
+									scale_distributed_matrix( rowequ, colequ, 
+									m, n, m_loc, 
+									rowptr, colind, fst_row,
+									a, R, C, R1, C1);
+									
 									ScalePermstruct->DiagScale = BOTH;
 									rowequ = colequ = 1;
 

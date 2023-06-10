@@ -279,33 +279,63 @@ NCformat **GAstore, int_t **colptr, int_t **rowind, int *nnz, double **a_GA) {
     *a_GA = (double *)(*GAstore)->nzval;
 }
 
-void find_row_permutation(gridinfo_t *grid, int_t job, 
-    int_t m, int_t n,
-    int_t nnz,
-    int_t* colptr,
-    int_t* rowind,
-    double* a_GA,
-    int_t Equil, int_t *perm_r, 
-    double *R1, double *C1, int_t*iinfo) 
-{
-    if (grid->iam == 0) {
+#include <mpi.h>
+#include <stdlib.h>
+
+/**
+ * Finds row permutations using the MC64 algorithm in a distributed manner.
+ *
+ * @param grid The grid info object, which includes the current node's information and MPI communicator.
+ * @param job The type of job to be done.
+ * @param m The number of rows in the sparse matrix.
+ * @param n The number of columns in the sparse matrix.
+ * @param nnz The number of non-zero elements in the sparse matrix.
+ * @param colptr The column pointer array of the sparse matrix (CSC format).
+ * @param rowind The row index array of the sparse matrix (CSC format).
+ * @param a_GA The non-zero values of the sparse matrix.
+ * @param Equil The equilibration flag.
+ * @param perm_r The output permutation array for the rows.
+ * @param R1 The output row scaling factors.
+ * @param C1 The output column scaling factors.
+ * @param iinfo The output status code.
+ */
+void findRowPerm_MC64(gridinfo_t* grid, int_t job,
+                      int_t m, int_t n,
+                      int_t nnz,
+                      int_t* colptr,
+                      int_t* rowind,
+                      double* a_GA,
+                      int_t Equil,
+                      int_t* perm_r,
+                      double* R1,
+                      double* C1,
+                      int_t* iinfo) {
+    // Check input parameters
+    if (colptr == NULL || rowind == NULL || a_GA == NULL || 
+        perm_r == NULL ) {
+        fprintf(stderr, "Error: NULL input parameter.\n");
+        return;
+    }
+
+    int root = 0;
+
+    // If the current node is the root node, perform the permutation computation
+    if (grid->iam == root) {
         *iinfo = dldperm_dist(job, m, nnz, colptr, rowind, a_GA, perm_r, R1, C1);
-        MPI_Bcast(iinfo, 1, mpi_int_t, 0, grid->comm);
-        if (*iinfo == 0) {
-            MPI_Bcast(perm_r, m, mpi_int_t, 0, grid->comm);
-            if (job == 5 && Equil) {
-                MPI_Bcast(R1, m, MPI_DOUBLE, 0, grid->comm);
-                MPI_Bcast(C1, n, MPI_DOUBLE, 0, grid->comm);
-            }
-        }
-    } else {
-        MPI_Bcast(iinfo, 1, mpi_int_t, 0, grid->comm);
-        if (*iinfo == 0) {
-            MPI_Bcast(perm_r, m, mpi_int_t, 0, grid->comm);
-            if (job == 5 && Equil) {
-                MPI_Bcast(R1, m, MPI_DOUBLE, 0, grid->comm);
-                MPI_Bcast(C1, n, MPI_DOUBLE, 0, grid->comm);
-            }
+    }
+
+    // Broadcast the status code to all other nodes in the communicator
+    MPI_Bcast(iinfo, 1, mpi_int_t, root, grid->comm);
+
+    // If the computation was successful
+    if (*iinfo == 0) {
+        // Broadcast the resulting permutation array to all other nodes
+        MPI_Bcast(perm_r, m, mpi_int_t, root, grid->comm);
+
+        // If job == 5 and Equil == true, broadcast the scaling factors as well
+        if (job == 5 && Equil) {
+            MPI_Bcast(R1, m, MPI_DOUBLE, root, grid->comm);
+            MPI_Bcast(C1, n, MPI_DOUBLE, root, grid->comm);
         }
     }
 }
@@ -476,7 +506,7 @@ void perform_LargeDiag_MC64(
     }
 
     // int iinfo;
-    find_row_permutation(grid, job, m, n,
+    findRowPerm_MC64(grid, job, m, n,
     nnz,
     colptr,
     rowind,
@@ -486,7 +516,11 @@ void perform_LargeDiag_MC64(
         SUPERLU_FREE(R1);
         SUPERLU_FREE(C1);
     }
-
+#if (PRNTlevel >= 2)
+    double dmin = damch_dist("Overflow");
+    double dsum = 0.0;
+    double dprod = 1.0;
+#endif
     if (*iinfo == 0) {
         if (job == 5) {
             /* Scale the distributed matrix further.
@@ -504,6 +538,30 @@ void perform_LargeDiag_MC64(
             permute_global_A( m, n, colptr, rowind, perm_r);
         }
     }
+    else
+    { /* if iinfo != 0 */
+        for (i = 0; i < m; ++i)
+            perm_r[i] = i;
+    }
+#if (PRNTlevel >= 2)
+    if (job == 2 || job == 3)
+    {
+        if (!iam)
+            printf("\tsmallest diagonal %e\n", dmin);
+    }
+    else if (job == 4)
+    {
+        if (!iam)
+            printf("\tsum of diagonal %e\n", dsum);
+    }
+    else if (job == 5)
+    {
+        if (!iam)
+            printf("\t product of diagonal %e\n", dprod);
+    }
+#endif
+
+    
 }
 
 
@@ -774,5 +832,39 @@ void perform_LargeDiag_MC64(
         }		  /* end else job ... */
     }
 }
+
+
+void findRowPerm_MC64(gridinfo_t *grid, int_t job, 
+    int_t m, int_t n,
+    int_t nnz,
+    int_t* colptr,
+    int_t* rowind,
+    double* a_GA,
+    int_t Equil, int_t *perm_r, 
+    double *R1, double *C1, int_t*iinfo) 
+{
+    if (grid->iam == 0) {
+        *iinfo = dldperm_dist(job, m, nnz, colptr, rowind, a_GA, perm_r, R1, C1);
+        MPI_Bcast(iinfo, 1, mpi_int_t, 0, grid->comm);
+        if (*iinfo == 0) {
+            MPI_Bcast(perm_r, m, mpi_int_t, 0, grid->comm);
+            if (job == 5 && Equil) {
+                MPI_Bcast(R1, m, MPI_DOUBLE, 0, grid->comm);
+                MPI_Bcast(C1, n, MPI_DOUBLE, 0, grid->comm);
+            }
+        }
+    } else {
+        MPI_Bcast(iinfo, 1, mpi_int_t, 0, grid->comm);
+        if (*iinfo == 0) {
+            MPI_Bcast(perm_r, m, mpi_int_t, 0, grid->comm);
+            if (job == 5 && Equil) {
+                MPI_Bcast(R1, m, MPI_DOUBLE, 0, grid->comm);
+                MPI_Bcast(C1, n, MPI_DOUBLE, 0, grid->comm);
+            }
+        }
+    }
+}
+
+
 #endif 
 
