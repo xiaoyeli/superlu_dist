@@ -1,4 +1,4 @@
-
+#include <stdlib.h>  // For NULL
 /**
  * @brief Validates the input parameters for a given problem.
  *
@@ -310,8 +310,56 @@ void find_row_permutation(gridinfo_t *grid, int_t job,
     }
 }
 
-void scale_distributed_matrix(int_t job, int_t Equil, int_t rowequ, int_t colequ, int_t m, int_t n, int_t m_loc, int_t *rowptr, int_t *colind, int_t *fst_row, double *a, double *R, double *C, double *R1, double *C1) {
-    if (Equil) {
+
+/**
+ * This function scales a distributed matrix. 
+ *
+ 
+ * @param[in]   rowequ  A flag indicating whether row should be equalized.
+ * @param[in]   colequ  A flag indicating whether column should be equalized.
+ * @param[in]   m       Number of rows in the matrix.
+ * @param[in]   n       Number of columns in the matrix.
+ * @param[in]   m_loc   The local row dimension.
+ * @param[in]   rowptr  Pointer to the array holding row pointers.
+ * @param[in]   colind  Pointer to the array holding column indices.
+ * @param[in]   fst_row The first row of the local block.
+ * @param[in,out] a     Pointer to the array holding the values of the matrix.
+ * @param[in,out] R     Pointer to the row scaling factors.
+ * @param[in,out] C     Pointer to the column scaling factors.
+ * @param[in,out] R1    Pointer to the array holding the new row scaling factors.
+ * @param[in,out] C1    Pointer to the array holding the new column scaling factors.
+ */
+void scale_distributed_matrix(int_t rowequ, int_t colequ, int_t m, int_t n, int_t m_loc, int_t *rowptr, int_t *colind, int_t fst_row, double *a, double *R, double *C, double *R1, double *C1) 
+{
+    // Scale the row and column factors
+    for (int i = 0; i < n; ++i) {
+        R1[i] = exp(R1[i]);
+        C1[i] = exp(C1[i]);
+    }
+
+    // Scale the elements of the matrix
+    int rowIndex = fst_row;
+    for (int j = 0; j < m_loc; ++j) {
+        for (int i = rowptr[j]; i < rowptr[j + 1]; ++i) {
+            int columnIndex = colind[i];
+            a[i] *= R1[rowIndex] * C1[columnIndex];
+        }
+        ++rowIndex;
+    }
+
+    // Scale the row factors
+    for (int i = 0; i < m; ++i)
+        R[i] = (rowequ) ? R[i] * R1[i] : R1[i];
+
+    // Scale the column factors
+    for (int i = 0; i < n; ++i)
+        C[i] = (colequ) ? C[i] * C1[i] : C1[i];
+}
+
+#if 0
+void scale_distributed_matrix(int_t job, int_t rowequ, int_t colequ, int_t m, int_t n, int_t m_loc, int_t *rowptr, int_t *colind, int_t *fst_row, double *a, double *R, double *C, double *R1, double *C1) 
+{
+    
         for (int i = 0; i < n; ++i) {
             R1[i] = exp(R1[i]);
             C1[i] = exp(C1[i]);
@@ -338,10 +386,12 @@ void scale_distributed_matrix(int_t job, int_t Equil, int_t rowequ, int_t colequ
         else
             for (int i = 0; i < n; ++i)
                 C[i] = C1[i];
-    }
+    
 }
 
-#include <stdlib.h>  // For NULL
+#endif
+
+
 
 /**
  * Performs a permutation operation on the rows of a sparse matrix (CSC format).
@@ -423,9 +473,14 @@ void perform_LargeDiag_MC64(
 
     if (*iinfo == 0) {
         if (job == 5) {
-            scale_distributed_matrix(job, Equil, rowequ, colequ, m, n, m_loc, rowptr, colind, fst_row, a, R, C, R1, C1);
-            ScalePermstruct->DiagScale = BOTH;
-            rowequ = colequ = 1;
+            /* Scale the distributed matrix further.
+									   A <-- diag(R1)*A*diag(C1)            */
+            if(Equil)
+            {
+                scale_distributed_matrix( rowequ, colequ, m, n, m_loc, rowptr, colind, fst_row, a, R, C, R1, C1);
+                ScalePermstruct->DiagScale = BOTH;
+                rowequ = colequ = 1;
+            } /* end if Equil */
             permute_global_A( m, n, colptr, rowind, perm_r);
             SUPERLU_FREE(R1);
             SUPERLU_FREE(C1);
