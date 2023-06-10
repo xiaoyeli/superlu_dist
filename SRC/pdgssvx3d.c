@@ -903,27 +903,13 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 								} /* end if Equil */
 
 								/* Now permute global A to prepare for symbfact() */
-								for (j = 0; j < n; ++j)
-								{
-									for (i = colptr[j]; i < colptr[j + 1]; ++i)
-									{
-										irow = rowind[i];
-										rowind[i] = perm_r[irow];
-									}
-								}
+								permute_global_A( m, n, colptr, rowind, perm_r);
 								SUPERLU_FREE(R1);
 								SUPERLU_FREE(C1);
 							}
 							else
 							{ /* job = 2,3,4 */
-								for (j = 0; j < n; ++j)
-								{
-									for (i = colptr[j]; i < colptr[j + 1]; ++i)
-									{
-										irow = rowind[i];
-										rowind[i] = perm_r[irow];
-									} /* end for i ... */
-								}	  /* end for j ... */
+								permute_global_A( m, n, colptr, rowind, perm_r);
 							}		  /* end else job ... */
 						}
 						else
