@@ -1,4 +1,7 @@
 #include <stdlib.h>  // For NULL
+
+#define LOG_FUNC_ENTER() printf("\033[1;32mEntering function %s at %s:%d\033[0m\n", __func__, __FILE__, __LINE__)
+
 /**
  * @brief Validates the input parameters for a given problem.
  *
@@ -310,6 +313,7 @@ void findRowPerm_MC64(gridinfo_t* grid, int_t job,
                       double* R1,
                       double* C1,
                       int_t* iinfo) {
+    LOG_FUNC_ENTER();
     // Check input parameters
     if (colptr == NULL || rowind == NULL || a_GA == NULL || 
         perm_r == NULL ) {
@@ -540,10 +544,11 @@ void perform_LargeDiag_MC64(
     }
     else
     { /* if iinfo != 0 */
-        for (i = 0; i < m; ++i)
+        for (int_t i = 0; i < m; ++i)
             perm_r[i] = i;
     }
 #if (PRNTlevel >= 2)
+#warning following is not supported 
     if (job == 2 || job == 3)
     {
         if (!iam)

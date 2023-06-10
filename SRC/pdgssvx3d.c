@@ -805,6 +805,11 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 								ABORT("SUPERLU_MALLOC fails for C1[]");
 						}
 
+						#if 1
+					  findRowPerm_MC64(grid, job, m, n,
+                      nnz, colptr, rowind, a_GA,
+                      Equil, perm_r, R1, C1, &iinfo);
+						#else 
 						if (iam == 0)
 						{
 							/* Process 0 finds a row permutation */
@@ -834,6 +839,7 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 								}
 							}
 						}
+						#endif 
 
 						if (iinfo && job == 5)
 						{ /* Error return */
