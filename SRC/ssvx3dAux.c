@@ -1,4 +1,7 @@
 #include <stdlib.h>  // For NULL
+#include <mpi.h>
+
+
 
 #define LOG_FUNC_ENTER() printf("\033[1;32mEntering function %s at %s:%d\033[0m\n", __func__, __FILE__, __LINE__)
 
@@ -206,104 +209,11 @@ void applyRowPerm(int_t* colptr, int_t* rowind, int_t* perm_r, int_t n) {
 
 
 
-void perform_row_permutation(
-    superlu_dist_options_t *options,
-    fact_t Fact,
-    int_t m, int_t n,
-    gridinfo_t *grid,
-    int_t *perm_r,
-    SuperMatrix *A,
-    SuperMatrix *GA, 
-    SuperLUStat_t *stat,
-    int_t job,
-    int_t Equil,
-    int_t rowequ,
-    int_t colequ)
-{
-    /* Get NC format data from SuperMatrix GA */
-    NCformat* GAstore = (NCformat *)GA->Store;
-    int_t* colptr = GAstore->colptr;
-    int_t* rowind = GAstore->rowind;
-    int_t nnz = GAstore->nnz;
-    double* a_GA = (double *)GAstore->nzval;
-
-    int iam = grid->iam;
-    /* ------------------------------------------------------------
-			   Find the row permutation for A.
-    ------------------------------------------------------------ */
-    double t;
-
-    if (options->RowPerm != NO)
-    {
-        t = SuperLU_timer_();
-
-        if (Fact != SamePattern_SameRowPerm)
-        {
-            if (options->RowPerm == MY_PERMR)
-            {
-                applyRowPerm(colptr, rowind, perm_r, n);
-            }
-            else if (options->RowPerm == LargeDiag_MC64)
-            {
-                // being called incorrectly
-                perform_LargeDiag_MC64(options, Fact, NULL, NULL, m, n, grid, perm_r, A, GA, stat, job, Equil, rowequ, colequ);
-            }
-            else // LargeDiag_HWPM
-            {
-#ifdef HAVE_COMBBLAS
-                d_c2cpp_GetHWPM(A, grid, ScalePermstruct);
-#else
-                if (iam == 0)
-                {
-                    printf("CombBLAS is not available\n");
-                    fflush(stdout);
-                }
-#endif
-            }
-
-            t = SuperLU_timer_() - t;
-            stat->utime[ROWPERM] = t;
-#if (PRNTlevel >= 1)
-            if (!iam)
-            {
-                printf(".. LDPERM job " IFMT "\t time: %.2f\n", job, t);
-                fflush(stdout);
-            }
-#endif
-        }
-    }
-    else // options->RowPerm == NOROWPERM / NATURAL
-    {
-        for (int i = 0; i < m; ++i)
-            perm_r[i] = i;
-    }
-}
 
 
 
 
 
-void get_NR_NC_format_data(SuperMatrix *A, SuperMatrix *GA, 
-NRformat_loc **Astore, int_t *nnz_loc, int_t *m_loc, 
-int_t *fst_row, double **a, int_t **rowptr, int_t **colind, 
-NCformat **GAstore, int_t **colptr, int_t **rowind, int *nnz, double **a_GA) {
-    *Astore = (NRformat_loc *)A->Store;
-    *nnz_loc = (*Astore)->nnz_loc;
-    *m_loc = (*Astore)->m_loc;
-    *fst_row = (*Astore)->fst_row;
-    *a = (double *)(*Astore)->nzval;
-    *rowptr = (*Astore)->rowptr;
-    *colind = (*Astore)->colind;
-
-    *GAstore = (NCformat *)GA->Store;
-    *colptr = (*GAstore)->colptr;
-    *rowind = (*GAstore)->rowind;
-    *nnz = (*GAstore)->nnz;
-    *a_GA = (double *)(*GAstore)->nzval;
-}
-
-#include <mpi.h>
-#include <stdlib.h>
 
 /**
  * Finds row permutations using the MC64 algorithm in a distributed manner.
@@ -383,7 +293,9 @@ void findRowPerm_MC64(gridinfo_t* grid, int_t job,
  * @param[in,out] R1    Pointer to the array holding the new row scaling factors.
  * @param[in,out] C1    Pointer to the array holding the new column scaling factors.
  */
-void scale_distributed_matrix(int_t rowequ, int_t colequ, int_t m, int_t n, int_t m_loc, int_t *rowptr, int_t *colind, int_t fst_row, double *a, double *R, double *C, double *R1, double *C1) 
+void scale_distributed_matrix(int_t rowequ, int_t colequ, int_t m, int_t n,
+ int_t m_loc, int_t *rowptr, int_t *colind, int_t fst_row, double *a,
+  double *R, double *C, double *R1, double *C1) 
 {
     printf("\033[1;32mEntering function scale_distributed_matrix at %s:%d\033[0m\n", __FILE__, __LINE__);
     // Scale the row and column factors
@@ -426,42 +338,6 @@ void scale_distributed_matrix(int_t rowequ, int_t colequ, int_t m, int_t n, int_
         C[i] = (colequ) ? C[i] * C1[i] : C1[i];
 }
 
-#if 0
-void scale_distributed_matrix(int_t job, int_t rowequ, int_t colequ, int_t m, int_t n, int_t m_loc, int_t *rowptr, int_t *colind, int_t *fst_row, double *a, double *R, double *C, double *R1, double *C1) 
-{
-    
-        for (int i = 0; i < n; ++i) {
-            R1[i] = exp(R1[i]);
-            C1[i] = exp(C1[i]);
-        }
-
-        int irow = fst_row;
-        for (int j = 0; j < m_loc; ++j) {
-            for (int i = rowptr[j]; i < rowptr[j + 1]; ++i) {
-                int icol = colind[i];
-                a[i] *= R1[irow] * C1[icol];
-            }
-            ++irow;
-        }
-
-        if (rowequ)
-            for (int i = 0; i < m; ++i)
-                R[i] *= R1[i];
-        else
-            for (int i = 0; i < m; ++i)
-                R[i] = R1[i];
-        if (colequ)
-            for (int i = 0; i < n; ++i)
-                C[i] *= C1[i];
-        else
-            for (int i = 0; i < n; ++i)
-                C[i] = C1[i];
-    
-}
-
-#endif
-
-
 
 /**
  * Performs a permutation operation on the rows of a sparse matrix (CSC format).
@@ -492,33 +368,58 @@ void permute_global_A(int_t m, int_t n, int_t *colptr, int_t *rowind, int_t *per
 }
 
 
+/**
+ * @brief Performs a set of operations on distributed matrices including finding row permutations, scaling, and permutation of global A. 
+ * The operations depend on job and iinfo parameters.
+ * 
+ * @param[in]     options                SuperLU options.
+ * @param[in]     Fact                   Factored form of the matrix.
+ * @param[in,out] ScalePermstruct        Scaling and Permutation structure. 
+ * @param[in,out] LUstruct               LU decomposition structure.
+ * @param[in]     m                      Number of rows in the matrix.
+ * @param[in]     n                      Number of columns in the matrix.
+ * @param[in]     grid                   Grid information for distributed computation.
+ * @param[in,out] A                      SuperMatrix A to be operated upon.
+ * @param[in,out] GA                     SuperMatrix GA to be operated upon.
+ * @param[out]    stat                   SuperLU statistics object to record factorization statistics.
+ * @param[in]     job                    The type of job to be done.
+ * @param[in]     Equil                  The equilibration flag.
+ * @param[in]     rowequ                 Flag indicating whether rows of the matrix should be equalized.
+ * @param[in]     colequ                 Flag indicating whether columns of the matrix should be equalized.
+ * @param[out]    iinfo                  The output status code.
+ *
+ * @note The functions findRowPerm_MC64, scale_distributed_matrix and permute_global_A are called in this function.
+ */
 void perform_LargeDiag_MC64(
     superlu_dist_options_t *options, fact_t Fact,
     dScalePermstruct_t *ScalePermstruct, dLUstruct_t *LUstruct,
-    int_t m, int_t n, gridinfo_t *grid, int_t *perm_r,
+    int_t m, int_t n, gridinfo_t *grid, 
     SuperMatrix *A, SuperMatrix *GA, SuperLUStat_t *stat, int_t job, 
-    int_t Equil, int_t rowequ, int_t colequ, int_t *iinfo) {
+    int_t Equil, int_t *rowequ, int_t *colequ, int_t *iinfo) {
     double *R1 = NULL;
     double *C1 = NULL;
 
-    perm_r = ScalePermstruct->perm_r;
+    int_t *perm_r = ScalePermstruct->perm_r;
     int_t *perm_c = ScalePermstruct->perm_c;
     int_t *etree = LUstruct->etree;
     double *R = ScalePermstruct->R;
     double *C = ScalePermstruct->C;
     int iam = grid->iam;
 
-    NRformat_loc *Astore;
-    int_t nnz_loc, m_loc, fst_row;
-    double *a;
-    int_t *rowptr, *colind;
 
-    NCformat *GAstore;
-    int_t *colptr, *rowind;
-    int_t nnz;
-    double *a_GA;
+    NRformat_loc *Astore = (NRformat_loc *)A->Store;
+    int_t nnz_loc = (Astore)->nnz_loc;
+    int_t m_loc = (Astore)->m_loc;
+    int_t fst_row = (Astore)->fst_row;
+    double *a = (double *)(Astore)->nzval;
+    int_t *rowptr = (Astore)->rowptr;
+    int_t *colind = (Astore)->colind;
 
-    get_NR_NC_format_data(A, GA, &Astore, &nnz_loc, &m_loc, &fst_row, &a, &rowptr, &colind, &GAstore, &colptr, &rowind, &nnz, &a_GA);
+    NCformat *GAstore = (NCformat *)GA->Store;
+    int_t *colptr = (GAstore)->colptr;
+    int_t *rowind = (GAstore)->rowind;
+    int_t nnz = (GAstore)->nnz;
+    double *a_GA = (double *)(GAstore)->nzval;
 
     if (job == 5) {
         R1 = doubleMalloc_dist(m);
@@ -551,9 +452,9 @@ void perform_LargeDiag_MC64(
 									   A <-- diag(R1)*A*diag(C1)            */
             if(Equil)
             {
-                scale_distributed_matrix( rowequ, colequ, m, n, m_loc, rowptr, colind, fst_row, a, R, C, R1, C1);
+                scale_distributed_matrix( *rowequ, *colequ, m, n, m_loc, rowptr, colind, fst_row, a, R, C, R1, C1);
                 ScalePermstruct->DiagScale = BOTH;
-                rowequ = colequ = 1;
+                *rowequ = *colequ = 1;
             } /* end if Equil */
             permute_global_A( m, n, colptr, rowind, perm_r);
             SUPERLU_FREE(R1);
@@ -585,8 +486,86 @@ void perform_LargeDiag_MC64(
             printf("\t product of diagonal %e\n", dprod);
     }
 #endif
-
+} /* perform_LargeDiag_MC64 */
     
+void perform_row_permutation(
+    superlu_dist_options_t *options,
+    fact_t Fact,
+    dScalePermstruct_t *ScalePermstruct, dLUstruct_t *LUstruct,
+    int_t m, int_t n,
+    gridinfo_t *grid,
+    int_t *perm_r,
+    SuperMatrix *A,
+    SuperMatrix *GA, 
+    SuperLUStat_t *stat,
+    int_t job,
+    int_t Equil,
+    int_t *rowequ,
+    int_t *colequ,
+    int_t *iinfo)
+{
+    /* Get NC format data from SuperMatrix GA */
+    NCformat* GAstore = (NCformat *)GA->Store;
+    int_t* colptr = GAstore->colptr;
+    int_t* rowind = GAstore->rowind;
+    int_t nnz = GAstore->nnz;
+    double* a_GA = (double *)GAstore->nzval;
+
+    int iam = grid->iam;
+    /* ------------------------------------------------------------
+			   Find the row permutation for A.
+    ------------------------------------------------------------ */
+    double t;
+
+    if (options->RowPerm != NO)
+    {
+        t = SuperLU_timer_();
+
+        if (Fact != SamePattern_SameRowPerm)
+        {
+            if (options->RowPerm == MY_PERMR)
+            {
+                applyRowPerm(colptr, rowind, perm_r, n);
+            }
+            else if (options->RowPerm == LargeDiag_MC64)
+            {
+                
+                perform_LargeDiag_MC64(
+                options, Fact,
+                ScalePermstruct, LUstruct,
+                m, n, grid, 
+                A, GA, stat, job, 
+                Equil, rowequ, colequ, iinfo);
+            }
+            else // LargeDiag_HWPM
+            {
+#ifdef HAVE_COMBBLAS
+                d_c2cpp_GetHWPM(A, grid, ScalePermstruct);
+#else
+                if (iam == 0)
+                {
+                    printf("CombBLAS is not available\n");
+                    fflush(stdout);
+                }
+#endif
+            }
+
+            t = SuperLU_timer_() - t;
+            stat->utime[ROWPERM] = t;
+#if (PRNTlevel >= 1)
+            if (!iam)
+            {
+                printf(".. LDPERM job " IFMT "\t time: %.2f\n", job, t);
+                fflush(stdout);
+            }
+#endif
+        }
+    }
+    else // options->RowPerm == NOROWPERM / NATURAL
+    {
+        for (int i = 0; i < m; ++i)
+            perm_r[i] = i;
+    }
 }
 
 

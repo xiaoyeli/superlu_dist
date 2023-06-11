@@ -791,6 +791,15 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 					}
 					else if (options->RowPerm == LargeDiag_MC64)
 					{
+#if 1
+						perform_LargeDiag_MC64(
+							options, Fact,
+							ScalePermstruct, LUstruct,
+							m, n, grid,
+							A, &GA, stat, job,
+							Equil, &rowequ, &colequ, &iinfo);
+						// rowequ = colequ = 1;
+#else
 						/* Get a new perm_r[] */
 						if (job == 5)
 						{
@@ -864,6 +873,7 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 							if (!iam)
 								printf("\t product of diagonal %e\n", dprod);
 						}
+#endif
 #endif
 					}
 					else
