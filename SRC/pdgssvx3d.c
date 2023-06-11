@@ -684,38 +684,14 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 		perm_r = ScalePermstruct->perm_r;
 		perm_c = ScalePermstruct->perm_c;
 		etree = LUstruct->etree;
+		
+		
+		/* Not factored & ask for equilibration, then alloc RC */
+		if (Equil && Fact != SamePattern_SameRowPerm)
+			dallocScalePermstruct_RC(ScalePermstruct, m, n);
+		
 		R = ScalePermstruct->R;
 		C = ScalePermstruct->C;
-		/********/
-
-		/* Not factored & ask for equilibration */
-		if (Equil && Fact != SamePattern_SameRowPerm)
-		{
-			/* Allocate storage if not done so before. */
-			switch (ScalePermstruct->DiagScale)
-			{
-			case NOEQUIL:
-				if (!(R = (double *)doubleMalloc_dist(m)))
-					ABORT("Malloc fails for R[].");
-				if (!(C = (double *)doubleMalloc_dist(n)))
-					ABORT("Malloc fails for C[].");
-				ScalePermstruct->R = R;
-				ScalePermstruct->C = C;
-				break;
-			case ROW:
-				if (!(C = (double *)doubleMalloc_dist(n)))
-					ABORT("Malloc fails for C[].");
-				ScalePermstruct->C = C;
-				break;
-			case COL:
-				if (!(R = (double *)doubleMalloc_dist(m)))
-					ABORT("Malloc fails for R[].");
-				ScalePermstruct->R = R;
-				break;
-			default:
-				break;
-			}
-		}
 
 		/* ------------------------------------------------------------
 		   Diagonal scaling to equilibrate the matrix.

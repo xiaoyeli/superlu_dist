@@ -606,6 +606,28 @@ double computeA_Norm(int_t notran, SuperMatrix *A, gridinfo_t *grid) {
     return anorm;
 }
 
+void dallocScalePermstruct_RC(dScalePermstruct_t * ScalePermstruct, int_t m, int_t n) {
+    /* Allocate storage if not done so before. */
+	switch (ScalePermstruct->DiagScale) {
+		case NOEQUIL:
+			if (!(ScalePermstruct->R = (double *)doubleMalloc_dist(m)))
+				ABORT("Malloc fails for R[].");
+			if (!(ScalePermstruct->C = (double *)doubleMalloc_dist(n)))
+				ABORT("Malloc fails for C[].");
+			break;
+		case ROW:
+			if (!(ScalePermstruct->C = (double *)doubleMalloc_dist(n)))
+				ABORT("Malloc fails for C[].");
+			break;
+		case COL:
+			if (!(ScalePermstruct->R = (double *)doubleMalloc_dist(m)))
+				ABORT("Malloc fails for R[].");
+			break;
+		default:
+			break;
+	}
+}
+
 
 #ifdef REFACTOR_SYMBOLIC 
 /**
