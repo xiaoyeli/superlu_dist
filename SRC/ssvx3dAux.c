@@ -640,7 +640,7 @@ void dallocScalePermstruct_RC(dScalePermstruct_t * ScalePermstruct, int_t m, int
  * @param[out] perm_c      Column permutation vector.
  * @return Error code (0 if successful).
  */
-int DetermineColumnPermutation(const superlu_dist_options_t *options,
+int computeColumnPermutation(const superlu_dist_options_t *options,
                                const SuperMatrix *A,
                                const gridinfo_t *grid,
                                const int parSymbFact,
