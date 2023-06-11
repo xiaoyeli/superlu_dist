@@ -765,19 +765,21 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 /* ------------------------------------------------------------
    Find the row permutation for A.
    ------------------------------------------------------------ */
-#if 0
+#if 1
 			perform_row_permutation(
-				superlu_options_t *options,
-				fact_t Fact,
-				int m, int n,
-				gridinfo_t *grid,
-				int *perm_r,
-				SuperMatrix *A,
-				SuperLUStat_t *stat,
-				int job,
-				int Equil,
-				int rowequ,
-				int colequ);
+				options,
+				Fact,
+				ScalePermstruct,LUstruct,
+				m, n,
+				grid,
+				A,
+				&GA, 
+				stat,
+				job,
+				Equil,
+				&rowequ,
+				&colequ,
+				&iinfo);
 #else
 			if (options->RowPerm != NO)
 			{
@@ -791,90 +793,14 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 					}
 					else if (options->RowPerm == LargeDiag_MC64)
 					{
-#if 1
+
 						perform_LargeDiag_MC64(
 							options, Fact,
 							ScalePermstruct, LUstruct,
 							m, n, grid,
 							A, &GA, stat, job,
 							Equil, &rowequ, &colequ, &iinfo);
-						// rowequ = colequ = 1;
-#else
-						/* Get a new perm_r[] */
-						if (job == 5)
-						{
-							/* Allocate storage for scaling factors. */
-							if (!(R1 = doubleMalloc_dist(m)))
-								ABORT("SUPERLU_MALLOC fails for R1[]");
-							if (!(C1 = doubleMalloc_dist(n)))
-								ABORT("SUPERLU_MALLOC fails for C1[]");
-						}
 
-						findRowPerm_MC64(grid, job, m, n,
-										 nnz, colptr, rowind, a_GA,
-										 Equil, perm_r, R1, C1, &iinfo);
-
-						if (iinfo && job == 5)
-						{ /* Error return */
-							SUPERLU_FREE(R1);
-							SUPERLU_FREE(C1);
-						}
-#if (PRNTlevel >= 2)
-						dmin = damch_dist("Overflow");
-						dsum = 0.0;
-						dprod = 1.0;
-#endif
-						if (iinfo == 0)
-						{
-							if (job == 5)
-							{
-								if (Equil)
-								{
-									/* Scale the distributed matrix further.
-									   A <-- diag(R1)*A*diag(C1)            */
-									scale_distributed_matrix(rowequ, colequ,
-															 m, n, m_loc,
-															 rowptr, colind, fst_row,
-															 a, R, C, R1, C1);
-
-									ScalePermstruct->DiagScale = BOTH;
-									rowequ = colequ = 1;
-
-								} /* end if Equil */
-
-								/* Now permute global A to prepare for symbfact() */
-								permute_global_A(m, n, colptr, rowind, perm_r);
-								SUPERLU_FREE(R1);
-								SUPERLU_FREE(C1);
-							}
-							else
-							{ /* job = 2,3,4 */
-								permute_global_A(m, n, colptr, rowind, perm_r);
-							} /* end else job ... */
-						}
-						else
-						{ /* if iinfo != 0 */
-							for (i = 0; i < m; ++i)
-								perm_r[i] = i;
-						}
-#if (PRNTlevel >= 2)
-						if (job == 2 || job == 3)
-						{
-							if (!iam)
-								printf("\tsmallest diagonal %e\n", dmin);
-						}
-						else if (job == 4)
-						{
-							if (!iam)
-								printf("\tsum of diagonal %e\n", dsum);
-						}
-						else if (job == 5)
-						{
-							if (!iam)
-								printf("\t product of diagonal %e\n", dprod);
-						}
-#endif
-#endif
 					}
 					else
 					{ /* use LargeDiag_HWPM */

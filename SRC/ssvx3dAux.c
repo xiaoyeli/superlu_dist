@@ -494,7 +494,6 @@ void perform_row_permutation(
     dScalePermstruct_t *ScalePermstruct, dLUstruct_t *LUstruct,
     int_t m, int_t n,
     gridinfo_t *grid,
-    int_t *perm_r,
     SuperMatrix *A,
     SuperMatrix *GA, 
     SuperLUStat_t *stat,
@@ -504,6 +503,7 @@ void perform_row_permutation(
     int_t *colequ,
     int_t *iinfo)
 {
+    int_t *perm_r = ScalePermstruct->perm_r;
     /* Get NC format data from SuperMatrix GA */
     NCformat* GAstore = (NCformat *)GA->Store;
     int_t* colptr = GAstore->colptr;
