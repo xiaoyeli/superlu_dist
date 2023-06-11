@@ -504,7 +504,7 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 			   double *berr, SuperLUStat_t *stat, int *info)
 {
 	NRformat_loc *Astore = A->Store;
-	SuperMatrix GA; /* Global A in NC format */	
+	SuperMatrix GA; /* Global A in NC format */
 	NCformat *GAstore;
 	double *a_GA;
 	SuperMatrix GAC; /* Global A in NCP format (add n end pointers) */
@@ -722,11 +722,12 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 		   ------------------------------------------------------------ */
 		if (Equil)
 		{
-			
-			scaleMatrixDiagonally(Fact, ScalePermstruct, 
-                           A, stat, grid, &rowequ, &colequ, &iinfo);
-			if(iinfo <0) return; // return if error
-			 
+
+			scaleMatrixDiagonally(Fact, ScalePermstruct,
+								  A, stat, grid, &rowequ, &colequ, &iinfo);
+			if (iinfo < 0)
+				return; // return if error
+
 		} /* end if Equil ... LAPACK style, not involving MC64 */
 
 		if (!factored)
@@ -761,10 +762,10 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 					assert(GAstore->nzval == NULL);
 			}
 
-			/* ------------------------------------------------------------
-			   Find the row permutation for A.
-			   ------------------------------------------------------------ */
-			#if 0
+/* ------------------------------------------------------------
+   Find the row permutation for A.
+   ------------------------------------------------------------ */
+#if 0
 			perform_row_permutation(
 				superlu_options_t *options,
 				fact_t Fact,
@@ -777,7 +778,7 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 				int Equil,
 				int rowequ,
 				int colequ);
-			#else 
+#else
 			if (options->RowPerm != NO)
 			{
 				t = SuperLU_timer_();
@@ -785,13 +786,8 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 				{
 					if (options->RowPerm == MY_PERMR)
 					{
-						/* Use user's perm_r. */
-						/* Permute the global matrix GA for symbfact() */
-						for (i = 0; i < colptr[n]; ++i)
-						{
-							irow = rowind[i];
-							rowind[i] = perm_r[irow];
-						}
+						/* Use user's perm_r to permute the global matrix GA for symbfact() */
+						applyRowPerm(colptr, rowind, perm_r, n);
 					}
 					else if (options->RowPerm == LargeDiag_MC64)
 					{
@@ -805,41 +801,9 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 								ABORT("SUPERLU_MALLOC fails for C1[]");
 						}
 
-						#if 1
-					  findRowPerm_MC64(grid, job, m, n,
-                      nnz, colptr, rowind, a_GA,
-                      Equil, perm_r, R1, C1, &iinfo);
-						#else 
-						if (iam == 0)
-						{
-							/* Process 0 finds a row permutation */
-							iinfo = dldperm_dist(job, m, nnz, colptr, rowind, a_GA,
-												 perm_r, R1, C1);
-							MPI_Bcast(&iinfo, 1, mpi_int_t, 0, grid->comm);
-							if (iinfo == 0)
-							{
-								MPI_Bcast(perm_r, m, mpi_int_t, 0, grid->comm);
-								if (job == 5 && Equil)
-								{
-									MPI_Bcast(R1, m, MPI_DOUBLE, 0, grid->comm);
-									MPI_Bcast(C1, n, MPI_DOUBLE, 0, grid->comm);
-								}
-							}
-						}
-						else
-						{
-							MPI_Bcast(&iinfo, 1, mpi_int_t, 0, grid->comm);
-							if (iinfo == 0)
-							{
-								MPI_Bcast(perm_r, m, mpi_int_t, 0, grid->comm);
-								if (job == 5 && Equil)
-								{
-									MPI_Bcast(R1, m, MPI_DOUBLE, 0, grid->comm);
-									MPI_Bcast(C1, n, MPI_DOUBLE, 0, grid->comm);
-								}
-							}
-						}
-						#endif 
+						findRowPerm_MC64(grid, job, m, n,
+										 nnz, colptr, rowind, a_GA,
+										 Equil, perm_r, R1, C1, &iinfo);
 
 						if (iinfo && job == 5)
 						{ /* Error return */
@@ -859,25 +823,25 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 								{
 									/* Scale the distributed matrix further.
 									   A <-- diag(R1)*A*diag(C1)            */
-									scale_distributed_matrix( rowequ, colequ, 
-									m, n, m_loc, 
-									rowptr, colind, fst_row,
-									a, R, C, R1, C1);
-									
+									scale_distributed_matrix(rowequ, colequ,
+															 m, n, m_loc,
+															 rowptr, colind, fst_row,
+															 a, R, C, R1, C1);
+
 									ScalePermstruct->DiagScale = BOTH;
 									rowequ = colequ = 1;
 
 								} /* end if Equil */
 
 								/* Now permute global A to prepare for symbfact() */
-								permute_global_A( m, n, colptr, rowind, perm_r);
+								permute_global_A(m, n, colptr, rowind, perm_r);
 								SUPERLU_FREE(R1);
 								SUPERLU_FREE(C1);
 							}
 							else
 							{ /* job = 2,3,4 */
-								permute_global_A( m, n, colptr, rowind, perm_r);
-							}		  /* end else job ... */
+								permute_global_A(m, n, colptr, rowind, perm_r);
+							} /* end else job ... */
 						}
 						else
 						{ /* if iinfo != 0 */
@@ -931,7 +895,7 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 				for (i = 0; i < m; ++i)
 					perm_r[i] = i;
 			}
-			#endif 
+#endif
 #if (DEBUGlevel >= 2)
 			if (!iam)
 				PrintInt10("perm_r", m, perm_r);
@@ -941,18 +905,7 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 		if (!factored || options->IterRefine)
 		{
 			/* Compute norm(A), which will be used to adjust small diagonal. */
-			if (notran)
-				*(unsigned char *)norm = '1';
-			else
-				*(unsigned char *)norm = 'I';
-			anorm = pdlangs(norm, A, grid);
-#if (PRNTlevel >= 1)
-			if (!iam)
-			{
-				printf(".. anorm %e\n", anorm);
-				fflush(stdout);
-			}
-#endif
+			anorm = computeA_Norm(notran, A, grid);
 		}
 
 		/* ------------------------------------------------------------
@@ -1718,4 +1671,3 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 // 		a = (double *)Astore->nzval;
 // 		rowptr = Astore->rowptr;
 // 		colind = Astore->colind;
-

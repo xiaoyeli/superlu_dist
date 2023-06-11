@@ -178,12 +178,40 @@ void scaleMatrixDiagonally(fact_t Fact, dScalePermstruct_t *ScalePermstruct,
 #endif
 }
 
+/**
+ * Performs a row permutation operation on a sparse matrix (CSC format)
+ * using a user-provided permutation array.
+ *
+ * @param colptr The column pointer array of the sparse matrix (CSC format).
+ * @param rowind The row index array of the sparse matrix (CSC format).
+ * @param perm_r The user-provided permutation array for the rows.
+ * @param n The number of columns in the sparse matrix.
+ */
+void applyRowPerm(int_t* colptr, int_t* rowind, int_t* perm_r, int_t n) {
+    // Check input parameters
+    if (colptr == NULL || rowind == NULL || perm_r == NULL) {
+        fprintf(stderr, "Error: NULL input parameter.\n");
+        return;
+    }
+
+    // Iterate through each non-zero element of the sparse matrix
+    for (int_t i = 0; i < colptr[n]; ++i) {
+        // Get the original row index
+        int_t irow = rowind[i];
+        // Assign the new row index from the user-provided permutation array
+        rowind[i] = perm_r[irow];
+    }
+}
+
+
+
+
 void perform_row_permutation(
     superlu_dist_options_t *options,
     fact_t Fact,
     int_t m, int_t n,
     gridinfo_t *grid,
-    int *perm_r,
+    int_t *perm_r,
     SuperMatrix *A,
     SuperMatrix *GA, 
     SuperLUStat_t *stat,
@@ -213,7 +241,7 @@ void perform_row_permutation(
         {
             if (options->RowPerm == MY_PERMR)
             {
-                permute_rows_with_user_perm(colptr, rowind, perm_r, n);
+                applyRowPerm(colptr, rowind, perm_r, n);
             }
             else if (options->RowPerm == LargeDiag_MC64)
             {
@@ -252,15 +280,7 @@ void perform_row_permutation(
 }
 
 
-void permute_rows_with_user_perm(int* colptr, int* rowind, int_t* perm_r, int_t n) {
-    // int i, irow;
-    // Permute the global matrix GA for symbfact()
-    for (int i = 0; i < colptr[n]; ++i)
-    {
-        int irow = rowind[i];
-        rowind[i] = perm_r[irow];
-    }
-}
+
 
 
 void get_NR_NC_format_data(SuperMatrix *A, SuperMatrix *GA, 
@@ -567,6 +587,38 @@ void perform_LargeDiag_MC64(
 #endif
 
     
+}
+
+
+/**
+ * @brief This function computes the norm of a matrix A.
+ * @param notran A flag which determines the norm type to be calculated.
+ * @param A The input matrix for which the norm is computed.
+ * @param grid The gridinfo_t object that contains the information of the grid.
+ * @return Returns the computed norm of the matrix A.
+ *
+ * the iam process is the root (iam=0), it prints the computed norm to the standard output. 
+ */
+double computeA_Norm(int_t notran, SuperMatrix *A, gridinfo_t *grid) {
+    char norm;
+    double anorm;
+
+    /* Compute norm(A), which will be used to adjust small diagonal. */
+    if (notran)
+        norm = '1';
+    else
+        norm = 'I';
+
+    anorm = pdlangs(&norm, A, grid);
+
+#if (PRNTlevel >= 1)
+    if (!grid->iam) {
+        printf(".. anorm %e\n", anorm);
+        fflush(stdout);
+    }
+#endif
+
+    return anorm;
 }
 
 
