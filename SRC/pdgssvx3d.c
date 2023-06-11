@@ -680,16 +680,14 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 			rowequ = colequ = FALSE;
 		}
 
+		/* Not factored & ask for equilibration, then alloc RC */
+		if (Equil && Fact != SamePattern_SameRowPerm)
+			dallocScalePermstruct_RC(ScalePermstruct, m, n);
+
 		/* The following arrays are replicated on all processes. */
 		perm_r = ScalePermstruct->perm_r;
 		perm_c = ScalePermstruct->perm_c;
 		etree = LUstruct->etree;
-		
-		
-		/* Not factored & ask for equilibration, then alloc RC */
-		if (Equil && Fact != SamePattern_SameRowPerm)
-			dallocScalePermstruct_RC(ScalePermstruct, m, n);
-		
 		R = ScalePermstruct->R;
 		C = ScalePermstruct->C;
 
@@ -698,7 +696,6 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 		   ------------------------------------------------------------ */
 		if (Equil)
 		{
-
 			scaleMatrixDiagonally(Fact, ScalePermstruct,
 								  A, stat, grid, &rowequ, &colequ, &iinfo);
 			if (iinfo < 0)
@@ -717,45 +714,27 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 			if (Fact != SamePattern_SameRowPerm &&
 				(parSymbFact == NO || options->RowPerm != NO))
 			{
-
-				need_value = (options->RowPerm == LargeDiag_MC64);
-
+				int_t need_value = (options->RowPerm == LargeDiag_MC64);
 				pdCompRow_loc_to_CompCol_global(need_value, A, grid, &GA);
-
 				GAstore = (NCformat *)GA.Store;
-				colptr = GAstore->colptr;
-				rowind = GAstore->rowind;
 				nnz = GAstore->nnz;
-				GA_mem_use = (nnz + n + 1) * sizeof(int_t);
-
-				if (need_value)
-				{
-					a_GA = (double *)GAstore->nzval;
-					GA_mem_use += nnz * sizeof(double);
-				}
-
-				else
-					assert(GAstore->nzval == NULL);
+				GA_mem_use = (nnz + n + 1) * sizeof(int_t) + need_value * nnz * sizeof(double);
+				if (!need_value) assert(GAstore->nzval == NULL);
 			}
 
-/* ------------------------------------------------------------
-   Find the row permutation for A.
-   ------------------------------------------------------------ */
-
+			/* ------------------------------------------------------------
+			   Find the row permutation for A.
+			------------------------------------------------------------ */
 			perform_row_permutation(
-				options,Fact,ScalePermstruct,LUstruct,
-				m, n,grid,A,&GA,  stat,job,Equil,
-				&rowequ,&colequ,&iinfo);
-
+				options, Fact, ScalePermstruct, LUstruct,
+				m, n, grid, A, &GA, stat, job, Equil,
+				&rowequ, &colequ, &iinfo);
 
 		} /* end if (!factored) */
-
+		
+		/* Compute norm(A), which will be used to adjust small diagonal. */
 		if (!factored || options->IterRefine)
-		{
-			/* Compute norm(A), which will be used to adjust small diagonal. */
 			anorm = computeA_Norm(notran, A, grid);
-		}
-
 		/* ------------------------------------------------------------
 		   Perform ordering and symbolic factorization
 		   ------------------------------------------------------------ */
