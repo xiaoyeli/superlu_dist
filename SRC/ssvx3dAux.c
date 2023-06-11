@@ -503,6 +503,7 @@ void perform_row_permutation(
     int_t *colequ,
     int_t *iinfo)
 {
+    LOG_FUNC_ENTER();
     int_t *perm_r = ScalePermstruct->perm_r;
     /* Get NC format data from SuperMatrix GA */
     NCformat* GAstore = (NCformat *)GA->Store;
@@ -566,6 +567,11 @@ void perform_row_permutation(
         for (int i = 0; i < m; ++i)
             perm_r[i] = i;
     }
+
+    #if (DEBUGlevel >= 2)
+	if (!grid->iam)
+		PrintInt10("perm_r", m, perm_r);
+    #endif
 }
 
 

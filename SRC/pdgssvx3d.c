@@ -765,77 +765,13 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 /* ------------------------------------------------------------
    Find the row permutation for A.
    ------------------------------------------------------------ */
-#if 1
+
 			perform_row_permutation(
-				options,
-				Fact,
-				ScalePermstruct,LUstruct,
-				m, n,
-				grid,
-				A,
-				&GA, 
-				stat,
-				job,
-				Equil,
-				&rowequ,
-				&colequ,
-				&iinfo);
-#else
-			if (options->RowPerm != NO)
-			{
-				t = SuperLU_timer_();
-				if (Fact != SamePattern_SameRowPerm)
-				{
-					if (options->RowPerm == MY_PERMR)
-					{
-						/* Use user's perm_r to permute the global matrix GA for symbfact() */
-						applyRowPerm(colptr, rowind, perm_r, n);
-					}
-					else if (options->RowPerm == LargeDiag_MC64)
-					{
+				options,Fact,ScalePermstruct,LUstruct,
+				m, n,grid,A,&GA,  stat,job,Equil,
+				&rowequ,&colequ,&iinfo);
 
-						perform_LargeDiag_MC64(
-							options, Fact,
-							ScalePermstruct, LUstruct,
-							m, n, grid,
-							A, &GA, stat, job,
-							Equil, &rowequ, &colequ, &iinfo);
 
-					}
-					else
-					{ /* use LargeDiag_HWPM */
-#ifdef HAVE_COMBBLAS
-						d_c2cpp_GetHWPM(A, grid, ScalePermstruct);
-#else
-						if (iam == 0)
-						{
-							printf("CombBLAS is not available\n");
-							fflush(stdout);
-						}
-#endif
-					} /* end if-else options->RowPerm ... */
-
-					t = SuperLU_timer_() - t;
-					stat->utime[ROWPERM] = t;
-#if (PRNTlevel >= 1)
-					if (!iam)
-					{
-						printf(".. LDPERM job " IFMT "\t time: %.2f\n", job, t);
-						fflush(stdout);
-					}
-#endif
-				} /* end if Fact not SamePattern_SameRowPerm ... */
-			}
-			else
-			{ /* options->RowPerm == NOROWPERM / NATURAL */
-				for (i = 0; i < m; ++i)
-					perm_r[i] = i;
-			}
-#endif
-#if (DEBUGlevel >= 2)
-			if (!iam)
-				PrintInt10("perm_r", m, perm_r);
-#endif
 		} /* end if (!factored) */
 
 		if (!factored || options->IterRefine)
