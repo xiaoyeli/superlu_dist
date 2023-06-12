@@ -507,8 +507,7 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 	SuperMatrix GA; /* Global A in NC format */
 	NCformat *GAstore;
 	double *a_GA;
-	SuperMatrix GAC; /* Global A in NCP format (add n end pointers) */
-	NCPformat *GACstore;
+	
 	Glu_persist_t *Glu_persist = LUstruct->Glu_persist;
 	Glu_freeable_t *Glu_freeable;
 	/* The nonzero structures of L and U factors, which are
@@ -557,38 +556,9 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 	/* Test the options choices. */
 	*info = 0;
 	Fact = options->Fact;
-#if 0
-	if (Fact < 0 || Fact > FACTORED)
-		*info = -1;
-	else if (options->RowPerm < 0 || options->RowPerm > MY_PERMR)
-		*info = -1;
-	else if (options->ColPerm < 0 || options->ColPerm > MY_PERMC)
-		*info = -1;
-	else if (options->IterRefine < 0 || options->IterRefine > SLU_EXTRA)
-		*info = -1;
-	else if (options->IterRefine == SLU_EXTRA)
-	{
-		*info = -1;
-		fprintf(stderr,
-				"Extra precise iterative refinement yet to support.");
-	}
-	else if (A->nrow != A->ncol || A->nrow < 0 || A->Stype != SLU_NR_loc || A->Dtype != SLU_D || A->Mtype != SLU_GE)
-		*info = -2;
-	else if (ldb < Astore->m_loc)
-		*info = -5;
-	else if (nrhs < 0)
-	{
-		*info = -6;
-	}
-	if (*info)
-	{
-		i = -(*info);
-		pxerr_dist("pdgssvx3d", grid, -(*info));
-		return;
-	}
-#else
+
 	validateInput_ssvx3d(options, A, ldb, nrhs, grid3d, info);
-#endif
+
 	/* Initialization. */
 
 	options->Algo3d = YES;
@@ -736,24 +706,25 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 		/* Compute norm(A), which will be used to adjust small diagonal. */
 		if (!factored || options->IterRefine)
 			anorm = computeA_Norm(notran, A, grid);
-/* ------------------------------------------------------------
-   Perform ordering and symbolic factorization
-   ------------------------------------------------------------ */
-#if 1
+
 		/* ------------------------------------------------------------
 		   Perform ordering and symbolic factorization
 		   ------------------------------------------------------------ */
 		if (!factored)
 		{
-			t = SuperLU_timer_();
-			/* Get column permutation vector perm_c[], according to permc_spec */
 			permc_spec = options->ColPerm;
+			if (options->ParSymbFact || permc_spec == PARMETIS)
+			{
+				fprintf(stderr, "Error: ParMETIS and Parallel Symbolic Factorization are not supported in this simplified version.\n");
+				return; // or exit(-1); if you want to terminate the program
+			}
+			t = SuperLU_timer_();
 
+			/* Get column permutation vector perm_c[], according to permc_spec */
 			if (permc_spec != MY_PERMC && Fact == DOFACT)
 			{
 				get_perm_c_dist(iam, permc_spec, &GA, perm_c);
 			}
-
 			stat->utime[COLPERM] = SuperLU_timer_() - t;
 
 			/* Compute the elimination tree of Pc*(A'+A)*Pc' or Pc*A'*A*Pc'
@@ -762,7 +733,13 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 			   Permute columns of A to form A*Pc'. */
 			if (Fact != SamePattern_SameRowPerm)
 			{
+				/*Allocating Glu_freeable used by symbfact */
+				if (!(Glu_freeable = (Glu_freeable_t *)
+						  SUPERLU_MALLOC(sizeof(Glu_freeable_t))))
+					ABORT("Malloc fails for Glu_freeable.");
 
+				SuperMatrix GAC; /* Global A in NCP format (add n end pointers) */
+				NCPformat *GACstore;
 				int_t *GACcolbeg, *GACcolend, *GACrowind;
 
 				sp_colorder(options, &GA, perm_c, etree, &GAC);
@@ -780,13 +757,14 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 						GACrowind[i] = perm_c[irow];
 					}
 				}
-
+#if (PRNTlevel >= 1)
+				if (!iam)
+					printf(".. symbfact(): relax %4d, maxsuper %4d, fill %4d\n",
+						   sp_ienv_dist(2, options), sp_ienv_dist(3, options), sp_ienv_dist(6, options));
+#endif
 				/* Perform a symbolic factorization on Pc*Pr*A*Pc' and set up
 				   the nonzero data structures for L & U. */
 				t = SuperLU_timer_();
-				if (!(Glu_freeable = (Glu_freeable_t *)
-						  SUPERLU_MALLOC(sizeof(Glu_freeable_t))))
-					ABORT("Malloc fails for Glu_freeable.");
 
 				/* Every process does this. */
 				iinfo = symbfact(options, iam, &GAC, perm_c, etree,
@@ -797,6 +775,22 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 				{
 					/* Successful return */
 					QuerySpace_dist(n, -iinfo, Glu_freeable, &symb_mem_usage);
+#if (PRNTlevel >= 1)
+					if (!iam)
+					{
+						printf("\tNo of supers %ld\n",
+							   (long)Glu_persist->supno[n - 1] + 1);
+						printf("\tSize of G(L) %ld\n", (long)Glu_freeable->xlsub[n]);
+						printf("\tSize of G(U) %ld\n", (long)Glu_freeable->xusub[n]);
+						printf("\tint %lu, short %lu, float %lu, double %lu\n",
+							   sizeof(int_t), sizeof(short),
+							   sizeof(float), sizeof(double));
+						printf("\tSYMBfact (MB):\tL\\U %.2f\ttotal %.2f\texpansions %d\n",
+							   symb_mem_usage.for_lu * 1e-6,
+							   symb_mem_usage.total * 1e-6,
+							   symb_mem_usage.expansions);
+					}
+#endif
 				}
 				else
 				{
@@ -809,8 +803,8 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 				}
 
 				/* Destroy GA */
-				Destroy_CompCol_Matrix_dist(&GA);
 				Destroy_CompCol_Permuted_dist(&GAC);
+				Destroy_CompCol_Matrix_dist(&GA);
 			} /* end if Fact not SamePattern_SameRowPerm */
 
 			/* Apply column permutation to the original distributed A */
@@ -831,235 +825,6 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 				SUPERLU_FREE(Glu_freeable);
 			}
 		} /* end if not Factored */
-
-#else
-		if (!factored)
-		{
-			t = SuperLU_timer_();
-			/*
-			 * Get column permutation vector perm_c[], according to permc_spec:
-			 *   permc_spec = NATURAL:  natural ordering
-			 *   permc_spec = MMD_AT_PLUS_A: minimum degree on structure of A'+A
-			 *   permc_spec = MMD_ATA:  minimum degree on structure of A'*A
-			 *   permc_spec = METIS_AT_PLUS_A: METIS on structure of A'+A
-			 *   permc_spec = PARMETIS: parallel METIS on structure of A'+A
-			 *   permc_spec = MY_PERMC: the ordering already supplied in perm_c[]
-			 */
-			permc_spec = options->ColPerm;
-
-			if (parSymbFact == YES || permc_spec == PARMETIS)
-			{
-				nprocs_num = grid->nprow * grid->npcol;
-				noDomains = (int)(pow(2, ((int)LOG2(nprocs_num))));
-
-				/* create a new communicator for the first noDomains
-				   processes in grid->comm */
-				key = iam;
-				if (iam < noDomains)
-					col = 0;
-				else
-					col = MPI_UNDEFINED;
-				MPI_Comm_split(grid->comm, col, key, &symb_comm);
-
-				if (permc_spec == NATURAL || permc_spec == MY_PERMC)
-				{
-					if (permc_spec == NATURAL)
-					{
-						for (j = 0; j < n; ++j)
-							perm_c[j] = j;
-					}
-					if (!(sizes = intMalloc_dist(2 * noDomains)))
-						ABORT("SUPERLU_MALLOC fails for sizes.");
-					if (!(fstVtxSep = intMalloc_dist(2 * noDomains)))
-						ABORT("SUPERLU_MALLOC fails for fstVtxSep.");
-					for (i = 0; i < 2 * noDomains - 2; ++i)
-					{
-						sizes[i] = 0;
-						fstVtxSep[i] = 0;
-					}
-					sizes[2 * noDomains - 2] = m;
-					fstVtxSep[2 * noDomains - 2] = 0;
-				}
-				else if (permc_spec != PARMETIS)
-				{
-					/* same as before */
-					printf("{%4d,%4d}: pdgssvx3d: invalid ColPerm option when ParSymbfact is used\n",
-						   (int)MYROW(grid->iam, grid), (int)MYCOL(grid->iam, grid));
-				}
-			} /* end ... use parmetis */
-
-			if (permc_spec != MY_PERMC && Fact == DOFACT)
-			{
-				if (permc_spec == PARMETIS)
-				{
-					/* Get column permutation vector in perm_c.                   *
-					 * This routine takes as input the distributed input matrix A *
-					 * and does not modify it.  It also allocates memory for      *
-					 * sizes[] and fstVtxSep[] arrays, that contain information   *
-					 * on the separator tree computed by ParMETIS.                */
-					flinfo = get_perm_c_parmetis(A, perm_r, perm_c, nprocs_num,
-												 noDomains, &sizes, &fstVtxSep,
-												 grid, &symb_comm);
-					if (flinfo > 0)
-						ABORT("ERROR in get perm_c parmetis.");
-				}
-				else
-				{
-					get_perm_c_dist(iam, permc_spec, &GA, perm_c);
-				}
-			}
-
-			stat->utime[COLPERM] = SuperLU_timer_() - t;
-
-			/* Compute the elimination tree of Pc*(A'+A)*Pc' or Pc*A'*A*Pc'
-			   (a.k.a. column etree), depending on the choice of ColPerm.
-			   Adjust perm_c[] to be consistent with a postorder of etree.
-			   Permute columns of A to form A*Pc'. */
-			if (Fact != SamePattern_SameRowPerm)
-			{
-				if (parSymbFact == NO)
-				{
-
-					int_t *GACcolbeg, *GACcolend, *GACrowind;
-
-					sp_colorder(options, &GA, perm_c, etree, &GAC);
-
-					/* Form Pc*A*Pc' to preserve the diagonal of the matrix GAC. */
-					GACstore = (NCPformat *)GAC.Store;
-					GACcolbeg = GACstore->colbeg;
-					GACcolend = GACstore->colend;
-					GACrowind = GACstore->rowind;
-					for (j = 0; j < n; ++j)
-					{
-						for (i = GACcolbeg[j]; i < GACcolend[j]; ++i)
-						{
-							irow = GACrowind[i];
-							GACrowind[i] = perm_c[irow];
-						}
-					}
-
-					/* Perform a symbolic factorization on Pc*Pr*A*Pc' and set up
-					   the nonzero data structures for L & U. */
-#if (PRNTlevel >= 1)
-					if (!iam)
-						printf(".. symbfact(): relax %4d, maxsuper %4d, fill %4d\n",
-							   sp_ienv_dist(2, options), sp_ienv_dist(3, options), sp_ienv_dist(6, options));
-#endif
-					t = SuperLU_timer_();
-					if (!(Glu_freeable = (Glu_freeable_t *)
-							  SUPERLU_MALLOC(sizeof(Glu_freeable_t))))
-						ABORT("Malloc fails for Glu_freeable.");
-
-					/* Every process does this. */
-					iinfo = symbfact(options, iam, &GAC, perm_c, etree,
-									 Glu_persist, Glu_freeable);
-
-					stat->utime[SYMBFAC] = SuperLU_timer_() - t;
-					if (iinfo < 0)
-					{
-						/* Successful return */
-						QuerySpace_dist(n, -iinfo, Glu_freeable, &symb_mem_usage);
-
-#if (PRNTlevel >= 1)
-						if (!iam)
-						{
-							printf("\tNo of supers %ld\n",
-								   (long)Glu_persist->supno[n - 1] + 1);
-							printf("\tSize of G(L) %ld\n", (long)Glu_freeable->xlsub[n]);
-							printf("\tSize of G(U) %ld\n", (long)Glu_freeable->xusub[n]);
-							printf("\tint %lu, short %lu, float %lu, double %lu\n",
-								   sizeof(int_t), sizeof(short),
-								   sizeof(float), sizeof(double));
-							printf("\tSYMBfact (MB):\tL\\U %.2f\ttotal %.2f\texpansions %d\n",
-								   symb_mem_usage.for_lu * 1e-6,
-								   symb_mem_usage.total * 1e-6,
-								   symb_mem_usage.expansions);
-						}
-#endif
-					}
-					else
-					{
-						if (!iam)
-						{
-							fprintf(stderr, "symbfact() error returns %d\n",
-									(int)iinfo);
-							exit(-1);
-						}
-					}
-
-				} /* end serial symbolic factorization */
-				else
-				{ /* parallel symbolic factorization */
-					t = SuperLU_timer_();
-					flinfo =
-						symbfact_dist(options, nprocs_num, noDomains,
-									  A, perm_c, perm_r,
-									  sizes, fstVtxSep, &Pslu_freeable,
-									  &(grid->comm), &symb_comm,
-									  &symb_mem_usage);
-					stat->utime[SYMBFAC] = SuperLU_timer_() - t;
-					if (flinfo > 0)
-						ABORT("Insufficient memory for parallel symbolic factorization.");
-				}
-
-				/* Destroy GA */
-				if (parSymbFact == NO || options->RowPerm != NO)
-					Destroy_CompCol_Matrix_dist(&GA);
-				if (parSymbFact == NO)
-					Destroy_CompCol_Permuted_dist(&GAC);
-
-			} /* end if Fact not SamePattern_SameRowPerm */
-
-			if (sizes)
-				SUPERLU_FREE(sizes);
-			if (fstVtxSep)
-				SUPERLU_FREE(fstVtxSep);
-			if (symb_comm != MPI_COMM_NULL)
-				MPI_Comm_free(&symb_comm);
-
-			if (parSymbFact == NO || Fact == SamePattern_SameRowPerm)
-			{
-				/* Apply column permutation to the original distributed A */
-				for (j = 0; j < nnz_loc; ++j)
-					colind[j] = perm_c[colind[j]];
-
-				/* Distribute Pc*Pr*diag(R)*A*diag(C)*Pc' into L and U storage.
-				   NOTE: the row permutation Pc*Pr is applied internally in the
-				   distribution routine. */
-				t = SuperLU_timer_();
-				dist_mem_use = pddistribute(options, n, A, ScalePermstruct,
-											Glu_freeable, LUstruct, grid);
-
-				stat->utime[DIST] = SuperLU_timer_() - t;
-
-				/* Deallocate storage used in symbolic factorization. */
-				if (Fact != SamePattern_SameRowPerm)
-				{
-					iinfo = symbfact_SubFree(Glu_freeable);
-					SUPERLU_FREE(Glu_freeable);
-				}
-			}
-			else
-			{
-				/* Distribute Pc*Pr*diag(R)*A*diag(C)*Pc' into L and U storage.
-				   NOTE: the row permutation Pc*Pr is applied internally in the
-				   distribution routine. */
-				/* Apply column permutation to the original distributed A */
-				for (j = 0; j < nnz_loc; ++j)
-					colind[j] = perm_c[colind[j]];
-
-				t = SuperLU_timer_();
-				dist_mem_use = ddist_psymbtonum(options, n, A, ScalePermstruct,
-												&Pslu_freeable, LUstruct, grid);
-				if (dist_mem_use > 0)
-					ABORT("Not enough memory available for dist_psymbtonum\n");
-
-				stat->utime[DIST] = SuperLU_timer_() - t;
-			}
-
-			/*if (!iam) printf ("\tDISTRIBUTE time  %8.2f\n", stat->utime[DIST]); */
-		} /* end if not Factored */
-#endif
 
 	} /* end 2D process layer 0 */
 
