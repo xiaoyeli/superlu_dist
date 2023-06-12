@@ -737,73 +737,10 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 				if (!(Glu_freeable = (Glu_freeable_t *)
 						  SUPERLU_MALLOC(sizeof(Glu_freeable_t))))
 					ABORT("Malloc fails for Glu_freeable.");
-
-				SuperMatrix GAC; /* Global A in NCP format (add n end pointers) */
-				NCPformat *GACstore;
-				int_t *GACcolbeg, *GACcolend, *GACrowind;
-
-				sp_colorder(options, &GA, perm_c, etree, &GAC);
-
-				/* Form Pc*A*Pc' to preserve the diagonal of the matrix GAC. */
-				GACstore = (NCPformat *)GAC.Store;
-				GACcolbeg = GACstore->colbeg;
-				GACcolend = GACstore->colend;
-				GACrowind = GACstore->rowind;
-				for (j = 0; j < n; ++j)
-				{
-					for (i = GACcolbeg[j]; i < GACcolend[j]; ++i)
-					{
-						irow = GACrowind[i];
-						GACrowind[i] = perm_c[irow];
-					}
-				}
-#if (PRNTlevel >= 1)
-				if (!iam)
-					printf(".. symbfact(): relax %4d, maxsuper %4d, fill %4d\n",
-						   sp_ienv_dist(2, options), sp_ienv_dist(3, options), sp_ienv_dist(6, options));
-#endif
-				/* Perform a symbolic factorization on Pc*Pr*A*Pc' and set up
-				   the nonzero data structures for L & U. */
-				t = SuperLU_timer_();
-
-				/* Every process does this. */
-				iinfo = symbfact(options, iam, &GAC, perm_c, etree,
-								 Glu_persist, Glu_freeable);
-
-				stat->utime[SYMBFAC] = SuperLU_timer_() - t;
-				if (iinfo < 0)
-				{
-					/* Successful return */
-					QuerySpace_dist(n, -iinfo, Glu_freeable, &symb_mem_usage);
-#if (PRNTlevel >= 1)
-					if (!iam)
-					{
-						printf("\tNo of supers %ld\n",
-							   (long)Glu_persist->supno[n - 1] + 1);
-						printf("\tSize of G(L) %ld\n", (long)Glu_freeable->xlsub[n]);
-						printf("\tSize of G(U) %ld\n", (long)Glu_freeable->xusub[n]);
-						printf("\tint %lu, short %lu, float %lu, double %lu\n",
-							   sizeof(int_t), sizeof(short),
-							   sizeof(float), sizeof(double));
-						printf("\tSYMBfact (MB):\tL\\U %.2f\ttotal %.2f\texpansions %d\n",
-							   symb_mem_usage.for_lu * 1e-6,
-							   symb_mem_usage.total * 1e-6,
-							   symb_mem_usage.expansions);
-					}
-#endif
-				}
-				else
-				{
-					if (!iam)
-					{
-						fprintf(stderr, "symbfact() error returns %d\n",
-								(int)iinfo);
-						exit(-1);
-					}
-				}
-
-				/* Destroy GA */
-				Destroy_CompCol_Permuted_dist(&GAC);
+				permCol_SymbolicFact3d(options, n, &GA,perm_c,etree, 
+                           Glu_persist, Glu_freeable, stat,
+						   &symb_mem_usage,
+						   grid3d);
 				Destroy_CompCol_Matrix_dist(&GA);
 			} /* end if Fact not SamePattern_SameRowPerm */
 
