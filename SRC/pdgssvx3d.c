@@ -598,6 +598,112 @@ int checkLUFromDisk(int nsupers, int_t *xsup, dLUstruct_t *LUstruct)
 	return 0;
 }
 
+
+/*! \brief Dump the factored matrix L using matlab triple-let format
+ */
+void dDumpLblocks3D(int_t nsupers, gridinfo3d_t *grid3d,
+		  Glu_persist_t *Glu_persist, dLocalLU_t *Llu)
+{
+    register int c, extra, gb, j, i, lb, nsupc, nsupr, len, nb, ncb;
+    int k, mycol, r, n, nmax;
+    int_t nnzL;
+    int_t *xsup = Glu_persist->xsup;
+    int_t *index;
+    double *nzval;
+	char filename[256];
+	FILE *fp, *fopen();
+	gridinfo_t *grid = &(grid3d->grid2d);
+	int iam = grid->iam;
+	int iam3d = grid3d->iam;
+
+	// assert(grid->npcol*grid->nprow==1);
+
+	// count nonzeros in the first pass
+	nnzL = 0;
+	n = 0;
+    ncb = nsupers / grid->npcol;
+    extra = nsupers % grid->npcol;
+    mycol = MYCOL( iam, grid );
+    if ( mycol < extra ) ++ncb;
+    for (lb = 0; lb < ncb; ++lb) {
+	index = Llu->Lrowind_bc_ptr[lb];
+	if ( index ) { /* Not an empty column */
+	    nzval = Llu->Lnzval_bc_ptr[lb];
+	    nb = index[0];
+	    nsupr = index[1];
+	    gb = lb * grid->npcol + mycol;
+	    nsupc = SuperSize( gb );
+	    for (c = 0, k = BC_HEADER, r = 0; c < nb; ++c) {
+		len = index[k+1];
+
+		for (j = 0; j < nsupc; ++j) {
+		for (i=0; i<len; ++i){
+
+		if(index[k+LB_DESCRIPTOR+i]+1>=xsup[gb]+j+1){
+			nnzL ++;
+			nmax = SUPERLU_MAX(n,index[k+LB_DESCRIPTOR+i]+1);
+			n = nmax;
+		}
+
+		}
+		}
+		k += LB_DESCRIPTOR + len;
+		r += len;
+	    }
+	}
+    }
+	MPI_Allreduce(MPI_IN_PLACE,&nnzL,1,mpi_int_t,MPI_SUM,grid->comm);
+	MPI_Allreduce(MPI_IN_PLACE,&n,1,mpi_int_t,MPI_MAX,grid->comm);
+
+	snprintf(filename, sizeof(filename), "%s-%d", "L", iam3d);
+    printf("Dumping L factor to --> %s\n", filename);
+ 	if ( !(fp = fopen(filename, "w")) ) {
+			ABORT("File open failed");
+		}
+
+	if(grid->iam==0){
+		fprintf(fp, "%d %d " IFMT "\n", n,n,nnzL);
+	}
+
+     ncb = nsupers / grid->npcol;
+    extra = nsupers % grid->npcol;
+    mycol = MYCOL( iam, grid );
+    if ( mycol < extra ) ++ncb;
+    for (lb = 0; lb < ncb; ++lb) {
+	index = Llu->Lrowind_bc_ptr[lb];
+	if ( index ) { /* Not an empty column */
+	    nzval = Llu->Lnzval_bc_ptr[lb];
+	    nb = index[0];
+	    nsupr = index[1];
+	    gb = lb * grid->npcol + mycol;
+	    nsupc = SuperSize( gb );
+	    for (c = 0, k = BC_HEADER, r = 0; c < nb; ++c) {
+		len = index[k+1];
+
+		for (j = 0; j < nsupc; ++j) {
+		for (i=0; i<len; ++i){
+			fprintf(fp, IFMT IFMT " %e\n", index[k+LB_DESCRIPTOR+i]+1, xsup[gb]+j+1, nzval[r +i+ j*nsupr]);
+#if 0
+			fprintf(fp, IFMT IFMT " %e\n", index[k+LB_DESCRIPTOR+i]+1, xsup[gb]+j+1, nzval[r +i+ j*nsupr]);
+#endif
+		}
+		}
+		k += LB_DESCRIPTOR + len;
+		r += len;
+	    }
+	}
+    }
+ 	fclose(fp);
+
+} /* dDumpLblocks3D */
+
+
+
+
+
+
+
+
 void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 			   dScalePermstruct_t *ScalePermstruct,
 			   double B[], int ldb, int nrhs, gridinfo3d_t *grid3d,
@@ -1409,15 +1515,10 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 					supernodeMask=LUstruct->supernodeMask;
 					dist_mem_use = pddistribute_allgrid(options, n, A, ScalePermstruct,
 												Glu_freeable, LUstruct, grid, supernodeMask);					
-				
 			
-					/* modified  dinitTrf3Dpartition to be able to scatter the LU in a memory efficient fashion */
-					trf3Dpartition = dinitTrf3DpartitionLUstructgrid0(n, options, LUstruct, grid3d);
-					// /* send the LU structure to all the grids */
-					// supernodeMask = trf3Dpartition->supernodeMask;
-					// dp3dScatter(n, LUstruct, grid3d, supernodeMask);
-									
-				
+					// Generate the 3D partition
+					trf3Dpartition = dinitTrf3Dpartition_allgrid(n, options, LUstruct, grid3d);
+						
 				}else{
 
 					// First call of pddistribute_allgrid with a prefixed supernodeMask
@@ -1435,7 +1536,7 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 					// trf3Dpartition = dinitTrf3DpartitionLUstructgrid0(n, options, LUstruct, grid3d);
 
 					// for (int i=0;i<nsupers;i++){
-					// 	if(grid3d->zscp.Iam == 0)
+					// 	if(grid3d->zscp.Iam == 1)
 					// 		printf("supernodeMask[%5d] %5d\n",i,trf3Dpartition->supernodeMask[i]);
 					// }
 
@@ -1495,10 +1596,17 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 											Glu_freeable, LUstruct, grid, trf3Dpartition->supernodeMask);
 
 
+					// printf("myid %5d LUstruct->Llu->Unnz[0] %10d nfrecvx %10d nfsendx %10d nbrecvx %10d nbsendx %10d\n", grid3d->iam, LUstruct->Llu->Unnz[0], LUstruct->Llu->nfrecvx,LUstruct->Llu->nfsendx,LUstruct->Llu->nbrecvx,LUstruct->Llu->nbsendx );
 											
 					// /* send the LU structure to all the grids */
 					// supernodeMask = trf3Dpartition->supernodeMask;
 					// dp3dScatter(n, LUstruct, grid3d, supernodeMask);
+
+
+
+					// for (int k = 0; k < CEILING( nsupers, grid->nprow ); ++k) {
+					// 	printf("grid3d->iam %5d fmod[k] %5d bmod[k] %5d\n",grid3d->iam,LUstruct->Llu->fmod[k],LUstruct->Llu->bmod[k]);
+					// }
 
 
 					SUPERLU_FREE(LUstruct->supernodeMask); // supernodeMask could have size 1 from the dummy allocation
@@ -1630,6 +1738,10 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 
 			pdgstrf3d(options, m, n, anorm, trf3Dpartition, SCT, LUstruct,
 					  grid3d, stat, info);
+		
+			// dDumpLblocks3D(nsupers, grid3d, LUstruct->Glu_persist, LUstruct->Llu);
+		
+		
 		}
 		if (getenv("NEW3DSOLVE")){
 			dbroadcastAncestor3d(trf3Dpartition, LUstruct, grid3d, SCT);
@@ -2088,7 +2200,7 @@ if (getenv("SUPERLU_ACC_SOLVE")){
 				m_loc, fst_row, ldb, nrhs,SOLVEstruct, stat, info);
 			}
 			if (options->IterRefine){
-				printf("iterative refinement has not been implemented for 3D solve\n..bye bye");
+				printf("iterative refinement has not been implemented for 3D solve. Exitting... \n");
 				exit(0);
 			}
 		}else{

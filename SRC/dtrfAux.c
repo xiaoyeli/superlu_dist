@@ -758,8 +758,6 @@ dtrf3Dpartition_t* dinitTrf3DpartitionLUstructgrid0(int_t n, superlu_dist_option
 
 
 
-
-
 /* YL: Initialize 3Dpartition using LUstruct on all grid. LUstruct has partial L and U meta data from a supernodemask array that assigns the supernodes on z grid in the round-robin fashion. Note that this is a function modifed based on dinitTrf3Dpartition */
 dtrf3Dpartition_t* dinitTrf3Dpartition_allgrid(int_t n, superlu_dist_options_t *options,
 				      dLUstruct_t *LUstruct, gridinfo3d_t * grid3d

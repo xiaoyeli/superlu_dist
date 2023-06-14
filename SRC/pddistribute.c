@@ -2628,29 +2628,31 @@ pddistribute_allgrid(superlu_dist_options_t *options, int_t n, SuperMatrix *A,
 			if ( myrow == PROW( gb, grid ) ) {
 			    lb = LBi( gb, grid );
  			    if ( gb < jb ) { /* in U */
- 				index = Ufstnz_br_ptr[lb];
- 				uval = Unzval_br_ptr[lb];
- 				while (  (k = index[Urb_indptr[lb]]) < jb ) {
- 				    /* Skip nonzero values in this block */
- 				    Urb_length[lb] += index[Urb_indptr[lb]+1];
- 				    /* Move pointer to the next block */
- 				    Urb_indptr[lb] += UB_DESCRIPTOR
- 					+ SuperSize( k );
- 				}
- 				/*assert(k == jb);*/
- 				/* start fstnz */
- 				istart = Urb_indptr[lb] + UB_DESCRIPTOR;
- 				len = Urb_length[lb];
- 				fsupc1 = FstBlockC( gb+1 );
- 				k = j - fsupc;
- 				/* Sum the lengths of the leading columns */
- 				for (jj = 0; jj < k; ++jj)
-				    len += fsupc1 - index[istart++];
-				/*assert(irow>=index[istart]);*/
-				uval[len + irow - index[istart]] = a[i];
+					index = Ufstnz_br_ptr[lb];
+					uval = Unzval_br_ptr[lb];
+					if(index){
+						while (  (k = index[Urb_indptr[lb]]) < jb ) {
+							/* Skip nonzero values in this block */
+							Urb_length[lb] += index[Urb_indptr[lb]+1];
+							/* Move pointer to the next block */
+							Urb_indptr[lb] += UB_DESCRIPTOR
+							+ SuperSize( k );
+						}
+						/*assert(k == jb);*/
+						/* start fstnz */
+						istart = Urb_indptr[lb] + UB_DESCRIPTOR;
+						len = Urb_length[lb];
+						fsupc1 = FstBlockC( gb+1 );
+						k = j - fsupc;
+						/* Sum the lengths of the leading columns */
+						for (jj = 0; jj < k; ++jj)
+							len += fsupc1 - index[istart++];
+						/*assert(irow>=index[istart]);*/
+						uval[len + irow - index[istart]] = a[i];
+					}
 			    } else { /* in L; put in SPA first */
-  				irow = ilsum[lb] + irow - FstBlockC( gb );
-  				dense_col[irow] = a[i];
+					irow = ilsum[lb] + irow - FstBlockC( gb );
+					dense_col[irow] = a[i];
   			    }
   			}
 		    } /* for i ... */
@@ -2739,19 +2741,8 @@ pddistribute_allgrid(superlu_dist_options_t *options, int_t n, SuperMatrix *A,
 	if ( !(Unzval_br_ptr =
               (double**)SUPERLU_MALLOC(k * sizeof(double*))) )
 	    ABORT("Malloc fails for Unzval_br_ptr[].");
-	// if ( !(Unzval_br_offset =
-	// 			(long int*)SUPERLU_MALLOC(k * sizeof(long int))) ) {
-	// 	fprintf(stderr, "Malloc fails for Unzval_br_offset[].");
-	// }
-	// Unzval_br_offset[k-1] = -1;
 	if ( !(Ufstnz_br_ptr = (int_t**)SUPERLU_MALLOC(k * sizeof(int_t*))) )
 	    ABORT("Malloc fails for Ufstnz_br_ptr[].");
-	// if ( !(Ufstnz_br_offset =
-	// 			(long int*)SUPERLU_MALLOC(k * sizeof(long int))) ) {
-	// 	fprintf(stderr, "Malloc fails for Ufstnz_br_offset[].");
-	// }
-	// Ufstnz_br_offset[k-1] = -1;
-
 
 
 	if ( !(ToSendD = SUPERLU_MALLOC(k * sizeof(int))) )
@@ -2848,12 +2839,8 @@ pddistribute_allgrid(superlu_dist_options_t *options, int_t n, SuperMatrix *A,
 				if ( !(index = intMalloc_dist(len1+1)) )
 					ABORT("Malloc fails for Uindex[].");
 				Ufstnz_br_ptr[lb] = index;
-				// Ufstnz_br_offset[lb]=len1+1;
-				// Ufstnz_br_cnt += Ufstnz_br_offset[lb];
 				if ( !(Unzval_br_ptr[lb] = doubleMalloc_dist(len)) )
 					ABORT("Malloc fails for Unzval_br_ptr[*][].");
-				// Unzval_br_offset[lb]=len;
-				// Unzval_br_cnt += Unzval_br_offset[lb];
 				index[0] = Ucbs[lb]; /* Number of column blocks */
 				index[1] = len;      /* Total length of nzval[] */
 				index[2] = len1;     /* Total length of index[] */
@@ -2865,8 +2852,6 @@ pddistribute_allgrid(superlu_dist_options_t *options, int_t n, SuperMatrix *A,
 	    } else {
 		Ufstnz_br_ptr[lb] = NULL;
 		Unzval_br_ptr[lb] = NULL;
-		// Unzval_br_offset[lb]=-1;
-		// Ufstnz_br_offset[lb]=-1;
 	    }
 	    Urb_length[lb] = 0; /* Reset block length. */
 	    Urb_indptr[lb] = BR_HEADER; /* Skip header in U index[]. */
@@ -2915,50 +2900,22 @@ pddistribute_allgrid(superlu_dist_options_t *options, int_t n, SuperMatrix *A,
 	if ( !(Lrowind_bc_ptr = (int_t**)SUPERLU_MALLOC(k * sizeof(int_t*))) )
 	    ABORT("Malloc fails for Lrowind_bc_ptr[].");
 	Lrowind_bc_ptr[k-1] = NULL;
-	// if ( !(Lrowind_bc_offset =
-	// 			(long int*)SUPERLU_MALLOC(k * sizeof(long int))) ) {
-	// 	fprintf(stderr, "Malloc fails for Lrowind_bc_offset[].");
-	// }
-	// Lrowind_bc_offset[k-1] = -1;
-	// if ( !(Lnzval_bc_offset =
-	// 			(long int*)SUPERLU_MALLOC(k * sizeof(long int))) ) {
-	// 	fprintf(stderr, "Malloc fails for Lnzval_bc_offset[].");
-	// }
-	// Lnzval_bc_offset[k-1] = -1;
-
 
 	if ( !(Lindval_loc_bc_ptr =
 				(int_t**)SUPERLU_MALLOC(k * sizeof(int_t*))) )
 		ABORT("Malloc fails for Lindval_loc_bc_ptr[].");
 	Lindval_loc_bc_ptr[k-1] = NULL;
-	// if ( !(Lindval_loc_bc_offset =
-	// 			(long int*)SUPERLU_MALLOC(k * sizeof(long int))) ) {
-	// 	fprintf(stderr, "Malloc fails for Lindval_loc_bc_offset[].");
-	// }
-	// Lindval_loc_bc_offset[k-1] = -1;
-
 
 	if ( !(Linv_bc_ptr =
 				(double**)SUPERLU_MALLOC(k * sizeof(double*))) ) {
 		fprintf(stderr, "Malloc fails for Linv_bc_ptr[].");
 	}
-	// if ( !(Linv_bc_offset =
-	// 			(long int*)SUPERLU_MALLOC(k * sizeof(long int))) ) {
-	// 	fprintf(stderr, "Malloc fails for Linv_bc_offset[].");
-	// }
 	if ( !(Uinv_bc_ptr =
 				(double**)SUPERLU_MALLOC(k * sizeof(double*))) ) {
 		fprintf(stderr, "Malloc fails for Uinv_bc_ptr[].");
 	}
-	// if ( !(Uinv_bc_offset =
-	// 			(long int*)SUPERLU_MALLOC(k * sizeof(long int))) ) {
-	// 	fprintf(stderr, "Malloc fails for Uinv_bc_offset[].");
-	// }
 	Linv_bc_ptr[k-1] = NULL;
 	Uinv_bc_ptr[k-1] = NULL;
-	// Linv_bc_offset[k-1] = -1;
-	// Uinv_bc_offset[k-1] = -1;
-
 
 	if ( !(Unnz =
 			(int_t*)SUPERLU_MALLOC(k * sizeof(int_t))) )
@@ -3151,158 +3108,131 @@ pddistribute_allgrid(superlu_dist_options_t *options, int_t n, SuperMatrix *A,
 		    }
 		} /* for i ... */
 
-		// YL: added supernode mask here
+		
 		if ( nrbl) { /* Do not ensure the blocks are sorted! */
-		    if(supernodeMask[jb]>0){
-			
-			/* Set up the initial pointers for each block in
-		       index[] and nzval[]. */
-		    /* Add room for descriptors */
-		    len1 = len + BC_HEADER + nrbl * LB_DESCRIPTOR;
-		    if ( !(index = intMalloc_dist(len1)) )
-			ABORT("Malloc fails for index[]");
-			// Lrowind_bc_offset[ljb]=len1;
-			// Lrowind_bc_cnt += Lrowind_bc_offset[ljb];
-
-		    if (!(lusup = (double*)SUPERLU_MALLOC(len*nsupc * sizeof(double))))
-			ABORT("Malloc fails for lusup[]");
-			// Lnzval_bc_offset[ljb]=len*nsupc;
-			// Lnzval_bc_cnt += Lnzval_bc_offset[ljb];
-
-		    if ( !(Lindval_loc_bc_ptr[ljb] = intCalloc_dist(nrbl*3)) )
-			ABORT("Malloc fails for Lindval_loc_bc_ptr[ljb][]");
-			// Lindval_loc_bc_offset[ljb]=nrbl*3;
-			// Lindval_loc_bc_cnt += Lindval_loc_bc_offset[ljb];
-
-			myrow = MYROW( iam, grid );
-			krow = PROW( jb, grid );
-			if(myrow==krow){   /* diagonal block */
-				if (!(Linv_bc_ptr[ljb] = (double*)SUPERLU_MALLOC(nsupc*nsupc * sizeof(double))))
-				ABORT("Malloc fails for Linv_bc_ptr[ljb][]");
-				// Linv_bc_offset[ljb]=nsupc*nsupc;
-				// Linv_bc_cnt += Linv_bc_offset[ljb];
-
-				if (!(Uinv_bc_ptr[ljb] = (double*)SUPERLU_MALLOC(nsupc*nsupc * sizeof(double))))
-				ABORT("Malloc fails for Uinv_bc_ptr[ljb][]");
-				// Uinv_bc_offset[ljb]=nsupc*nsupc;
-				// Uinv_bc_cnt += Uinv_bc_offset[ljb];
-			}else{
-				Linv_bc_ptr[ljb] = NULL;
-				// Linv_bc_offset[ljb] = -1;
-				Uinv_bc_ptr[ljb] = NULL;
-				// Uinv_bc_offset[ljb] = -1;
-			}
-
-			mybufmax[0] = SUPERLU_MAX( mybufmax[0], len1 );
-		    mybufmax[1] = SUPERLU_MAX( mybufmax[1], len*nsupc );
-		    mybufmax[4] = SUPERLU_MAX( mybufmax[4], len );
-	  	    memTRS += nrbl*3.0*iword + 2.0*nsupc*nsupc*dword;  //acount for Lindval_loc_bc_ptr[ljb],Linv_bc_ptr[ljb],Uinv_bc_ptr[ljb]
-		    index[0] = nrbl;  /* Number of row blocks */
-		    index[1] = len;   /* LDA of the nzval[] */
-		    next_lind = BC_HEADER;
-		    next_lval = 0;
-		    for (k = 0; k < nrbl; ++k) {
-			gb = Lrb_number[k];
-			lb = LBi( gb, grid );
-			len = Lrb_length[lb];
-			Lindval_loc_bc_ptr[ljb][k] = lb;
-			Lindval_loc_bc_ptr[ljb][k+nrbl] = next_lind;
-			Lindval_loc_bc_ptr[ljb][k+nrbl*2] = next_lval;
-			Lrb_length[lb] = 0;  /* Reset vector of block length */
-			index[next_lind++] = gb; /* Descriptor */
-			index[next_lind++] = len;
-			Lrb_indptr[lb] = next_lind;
-			Lrb_valptr[lb] = next_lval;
-			next_lind += len;
-			next_lval += len;
-		    }
-		    /* Propagate the compressed row subscripts to Lindex[],
-                       and the initial values of A from SPA into Lnzval[]. */
-		    len = index[1];  /* LDA of lusup[] */
-		    for (i = istart; i < xlsub[fsupc+1]; ++i) {
-			irow = lsub[i];
-			gb = BlockNum( irow );
-			if ( myrow == PROW( gb, grid ) ) {
-			    lb = LBi( gb, grid );
-			    k = Lrb_indptr[lb]++; /* Random access a block */
-			    index[k] = irow;
-			    k = Lrb_valptr[lb]++;
-			    irow = ilsum[lb] + irow - FstBlockC( gb );
-			    for (j = 0, dense_col = dense; j < nsupc; ++j) {
-				lusup[k] = dense_col[irow];
-				dense_col[irow] = 0.0;
-				k += len;
-				dense_col += ldaspa;
-			    }
-			}
-		    } /* for i ... */
-
-		    Lrowind_bc_ptr[ljb] = index;
-		    Lnzval_bc_ptr[ljb] = lusup;
-
-			/* sort Lindval_loc_bc_ptr[ljb], Lrowind_bc_ptr[ljb]
-                           and Lnzval_bc_ptr[ljb] here.  */
-			if(nrbl>1){
+		    if(supernodeMask[jb]>0){ // YL: added supernode mask here
+				/* Set up the initial pointers for each block in
+				index[] and nzval[]. */
+				/* Add room for descriptors */
+				len1 = len + BC_HEADER + nrbl * LB_DESCRIPTOR;
+				if ( !(index = intMalloc_dist(len1)) )
+				ABORT("Malloc fails for index[]");
+				if (!(lusup = (double*)SUPERLU_MALLOC(len*nsupc * sizeof(double))))
+				ABORT("Malloc fails for lusup[]");
+				if ( !(Lindval_loc_bc_ptr[ljb] = intCalloc_dist(nrbl*3)) )
+				ABORT("Malloc fails for Lindval_loc_bc_ptr[ljb][]");
+				myrow = MYROW( iam, grid );
 				krow = PROW( jb, grid );
-				if(myrow==krow){ /* skip the diagonal block */
-					uu=nrbl-2;
-					lloc = &Lindval_loc_bc_ptr[ljb][1];
+				if(myrow==krow){   /* diagonal block */
+					if (!(Linv_bc_ptr[ljb] = (double*)SUPERLU_MALLOC(nsupc*nsupc * sizeof(double))))
+					ABORT("Malloc fails for Linv_bc_ptr[ljb][]");
+					if (!(Uinv_bc_ptr[ljb] = (double*)SUPERLU_MALLOC(nsupc*nsupc * sizeof(double))))
+					ABORT("Malloc fails for Uinv_bc_ptr[ljb][]");
 				}else{
-					uu=nrbl-1;
-					lloc = Lindval_loc_bc_ptr[ljb];
-				}
-				quickSortM(lloc,0,uu,nrbl,0,3);
-			}
-
-
-			if ( !(index_srt = intMalloc_dist(len1)) )
-				ABORT("Malloc fails for index_srt[]");
-			if (!(lusup_srt = (double*)SUPERLU_MALLOC(len*nsupc * sizeof(double))))
-				ABORT("Malloc fails for lusup_srt[]");
-
-			idx_indx = BC_HEADER;
-			idx_lusup = 0;
-			for (jj=0;jj<BC_HEADER;jj++)
-				index_srt[jj] = index[jj];
-
-			for(i=0;i<nrbl;i++){
-				nbrow = index[Lindval_loc_bc_ptr[ljb][i+nrbl]+1];
-				for (jj=0;jj<LB_DESCRIPTOR+nbrow;jj++){
-					index_srt[idx_indx++] = index[Lindval_loc_bc_ptr[ljb][i+nrbl]+jj];
+					Linv_bc_ptr[ljb] = NULL;
+					Uinv_bc_ptr[ljb] = NULL;
 				}
 
-				Lindval_loc_bc_ptr[ljb][i+nrbl] = idx_indx - LB_DESCRIPTOR - nbrow;
-
-				for (jj=0;jj<nbrow;jj++){
-					k=idx_lusup;
-					k1=Lindval_loc_bc_ptr[ljb][i+nrbl*2]+jj;
-					for (j = 0; j < nsupc; ++j) {
-						lusup_srt[k] = lusup[k1];
-						k += len;
-						k1 += len;
+				mybufmax[0] = SUPERLU_MAX( mybufmax[0], len1 );
+				mybufmax[1] = SUPERLU_MAX( mybufmax[1], len*nsupc );
+				mybufmax[4] = SUPERLU_MAX( mybufmax[4], len );
+				memTRS += nrbl*3.0*iword + 2.0*nsupc*nsupc*dword;  //acount for Lindval_loc_bc_ptr[ljb],Linv_bc_ptr[ljb],Uinv_bc_ptr[ljb]
+				index[0] = nrbl;  /* Number of row blocks */
+				index[1] = len;   /* LDA of the nzval[] */
+				next_lind = BC_HEADER;
+				next_lval = 0;
+				for (k = 0; k < nrbl; ++k) {
+				gb = Lrb_number[k];
+				lb = LBi( gb, grid );
+				len = Lrb_length[lb];
+				Lindval_loc_bc_ptr[ljb][k] = lb;
+				Lindval_loc_bc_ptr[ljb][k+nrbl] = next_lind;
+				Lindval_loc_bc_ptr[ljb][k+nrbl*2] = next_lval;
+				Lrb_length[lb] = 0;  /* Reset vector of block length */
+				index[next_lind++] = gb; /* Descriptor */
+				index[next_lind++] = len;
+				Lrb_indptr[lb] = next_lind;
+				Lrb_valptr[lb] = next_lval;
+				next_lind += len;
+				next_lval += len;
+				}
+				/* Propagate the compressed row subscripts to Lindex[],
+						and the initial values of A from SPA into Lnzval[]. */
+				len = index[1];  /* LDA of lusup[] */
+				for (i = istart; i < xlsub[fsupc+1]; ++i) {
+				irow = lsub[i];
+				gb = BlockNum( irow );
+				if ( myrow == PROW( gb, grid ) ) {
+					lb = LBi( gb, grid );
+					k = Lrb_indptr[lb]++; /* Random access a block */
+					index[k] = irow;
+					k = Lrb_valptr[lb]++;
+					irow = ilsum[lb] + irow - FstBlockC( gb );
+					for (j = 0, dense_col = dense; j < nsupc; ++j) {
+					lusup[k] = dense_col[irow];
+					dense_col[irow] = 0.0;
+					k += len;
+					dense_col += ldaspa;
 					}
-					idx_lusup++;
 				}
-				Lindval_loc_bc_ptr[ljb][i+nrbl*2] = idx_lusup - nbrow;
-			}
+				} /* for i ... */
 
-			SUPERLU_FREE(lusup);
-			SUPERLU_FREE(index);
+				Lrowind_bc_ptr[ljb] = index;
+				Lnzval_bc_ptr[ljb] = lusup;
 
-			Lrowind_bc_ptr[ljb] = index_srt;
-			Lnzval_bc_ptr[ljb] = lusup_srt;
+				/* sort Lindval_loc_bc_ptr[ljb], Lrowind_bc_ptr[ljb]
+							and Lnzval_bc_ptr[ljb] here.  */
+				if(nrbl>1){
+					krow = PROW( jb, grid );
+					if(myrow==krow){ /* skip the diagonal block */
+						uu=nrbl-2;
+						lloc = &Lindval_loc_bc_ptr[ljb][1];
+					}else{
+						uu=nrbl-1;
+						lloc = Lindval_loc_bc_ptr[ljb];
+					}
+					quickSortM(lloc,0,uu,nrbl,0,3);
+				}
 
-			// if(ljb==0)
-			// for (jj=0;jj<nrbl*3;jj++){
-			// printf("iam %5d Lindval %5d\n",iam, Lindval_loc_bc_ptr[ljb][jj]);
-			// fflush(stdout);
-			// }
-			// for (jj=0;jj<nrbl;jj++){
-			// printf("iam %5d Lindval %5d\n",iam, index[Lindval_loc_bc_ptr[ljb][jj+nrbl]]);
-			// fflush(stdout);
 
-			// }
-			}else{
+				if ( !(index_srt = intMalloc_dist(len1)) )
+					ABORT("Malloc fails for index_srt[]");
+				if (!(lusup_srt = (double*)SUPERLU_MALLOC(len*nsupc * sizeof(double))))
+					ABORT("Malloc fails for lusup_srt[]");
+
+				idx_indx = BC_HEADER;
+				idx_lusup = 0;
+				for (jj=0;jj<BC_HEADER;jj++)
+					index_srt[jj] = index[jj];
+
+				for(i=0;i<nrbl;i++){
+					nbrow = index[Lindval_loc_bc_ptr[ljb][i+nrbl]+1];
+					for (jj=0;jj<LB_DESCRIPTOR+nbrow;jj++){
+						index_srt[idx_indx++] = index[Lindval_loc_bc_ptr[ljb][i+nrbl]+jj];
+					}
+
+					Lindval_loc_bc_ptr[ljb][i+nrbl] = idx_indx - LB_DESCRIPTOR - nbrow;
+
+					for (jj=0;jj<nbrow;jj++){
+						k=idx_lusup;
+						k1=Lindval_loc_bc_ptr[ljb][i+nrbl*2]+jj;
+						for (j = 0; j < nsupc; ++j) {
+							lusup_srt[k] = lusup[k1];
+							k += len;
+							k1 += len;
+						}
+						idx_lusup++;
+					}
+					Lindval_loc_bc_ptr[ljb][i+nrbl*2] = idx_lusup - nbrow;
+				}
+
+				SUPERLU_FREE(lusup);
+				SUPERLU_FREE(index);
+
+				Lrowind_bc_ptr[ljb] = index_srt;
+				Lnzval_bc_ptr[ljb] = lusup_srt;
+
+			}else{ //if(supernodeMask[jb]==0)
 
 				/* Set up the initial pointers for each block in
 				index[] and nzval[]. */
@@ -3316,27 +3246,32 @@ pddistribute_allgrid(superlu_dist_options_t *options, int_t n, SuperMatrix *A,
 				mybufmax[1] = SUPERLU_MAX( mybufmax[1], len*nsupc );
 				mybufmax[4] = SUPERLU_MAX( mybufmax[4], len );
 
+
+				/* YL: need to zero out dense_col even if supernodeMask[jb]=0 for this column. */
+				for (i = istart; i < xlsub[fsupc+1]; ++i) {
+				irow = lsub[i];
+				gb = BlockNum( irow );
+				if ( myrow == PROW( gb, grid ) ) {
+				    lb = LBi( gb, grid );
+				    irow = ilsum[lb] + irow - FstBlockC( gb );
+				    for (j = 0, dense_col = dense; j < nsupc; ++j) {
+					dense_col[irow] = 0.0;
+					dense_col += ldaspa;
+				    }
+				}
+				} /* for i ... */
+
 				Lrowind_bc_ptr[ljb] = NULL;
 				Lnzval_bc_ptr[ljb] = NULL;
 				Linv_bc_ptr[ljb] = NULL;
-				// Linv_bc_offset[ljb] = -1;
-				// Lrowind_bc_offset[ljb]=-1;
-				// Lindval_loc_bc_offset[ljb]=-1;
-				// Lnzval_bc_offset[ljb]=-1;
 				Uinv_bc_ptr[ljb] = NULL;
-				// Uinv_bc_offset[ljb] = -1;
 				Lindval_loc_bc_ptr[ljb] = NULL;				
 			}
 		} else {
 		    Lrowind_bc_ptr[ljb] = NULL;
 		    Lnzval_bc_ptr[ljb] = NULL;
 			Linv_bc_ptr[ljb] = NULL;
-			// Linv_bc_offset[ljb] = -1;
-			// Lrowind_bc_offset[ljb]=-1;
-			// Lindval_loc_bc_offset[ljb]=-1;
-			// Lnzval_bc_offset[ljb]=-1;
 			Uinv_bc_ptr[ljb] = NULL;
-			// Uinv_bc_offset[ljb] = -1;
 			Lindval_loc_bc_ptr[ljb] = NULL;
 		} /* if nrbl ... */
 #if ( PROFlevel>=1 )
@@ -3395,6 +3330,7 @@ pddistribute_allgrid(superlu_dist_options_t *options, int_t n, SuperMatrix *A,
 	}
 	for (lk = 0; lk < nlb; ++lk) { /* For each block row. */
 		usub1 = Ufstnz_br_ptr[lk];
+		// printf("ID %5d lk %5d usub1 %10d\n",supernodeMask[0],lk, usub1);
 		// YL: no need to add supernode mask here ???? 
 		if ( usub1 ) { /* Not an empty block row. */
 			i = BR_HEADER; /* Pointer in index array. */
@@ -3421,6 +3357,7 @@ pddistribute_allgrid(superlu_dist_options_t *options, int_t n, SuperMatrix *A,
 		Unnz[lb] = 0;
 		k = lb * grid->npcol + mycol;/* Global block number, column-wise. */
 		knsupc = SuperSize( k );
+		// printf("ID %5d lb %5d Urbs[lb] %10d\n",supernodeMask[0],lb, Urbs[lb+nub]);
 		for (ub = 0; ub < Urbs[lb]; ++ub) {
 			ik = Ucb_indptr[lb][ub].lbnum; /* Local block number, row-wise. */
 			i = Ucb_indptr[lb][ub].indpos; /* Start of the block in usub[]. */
@@ -3436,7 +3373,9 @@ pddistribute_allgrid(superlu_dist_options_t *options, int_t n, SuperMatrix *A,
 		}
 	}
 
-
+	// for (int lb = 0; lb < nub; ++lb) {
+	// 	printf("ID %5d lb %5d, supernodeMask[lb] %5d, Unnz[lb] %5d\n",supernodeMask[0],lb, supernodeMask[lb], Unnz[lb]);
+	// }
 
 	Llu->Lrowind_bc_ptr = Lrowind_bc_ptr;
 	Llu->Lindval_loc_bc_ptr = Lindval_loc_bc_ptr;
