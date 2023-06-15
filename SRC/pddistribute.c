@@ -3443,7 +3443,7 @@ pddistribute_allgrid(superlu_dist_options_t *options, int_t n, SuperMatrix *A,
 #if ( DEBUGlevel>=1 )
     /* Memory allocated but not freed:
        ilsum, fmod, fsendx_plist, bmod, bsendx_plist  */
-    CHECK_MALLOC(iam, "Exit pddistribute()");
+    CHECK_MALLOC(iam, "Exit pddistribute_allgrid()");
 #endif
 
     return (mem_use+memTRS);
@@ -3636,7 +3636,7 @@ pddistribute_allgrid_index_only(superlu_dist_options_t *options, int_t n, SuperM
 //#endif
 
 #if ( DEBUGlevel>=1 )
-    CHECK_MALLOC(iam, "Enter pddistribute_allgrid()");
+    CHECK_MALLOC(iam, "Enter pddistribute_allgrid_index_only()");
 #endif
 #if ( PROFlevel>=1 )
     t = SuperLU_timer_();
@@ -4014,7 +4014,7 @@ pddistribute_allgrid_index_only(superlu_dist_options_t *options, int_t n, SuperM
 #if ( DEBUGlevel>=1 )
     /* Memory allocated but not freed:
        ilsum, fmod, fsendx_plist, bmod, bsendx_plist  */
-    CHECK_MALLOC(iam, "Exit pddistribute()");
+    CHECK_MALLOC(iam, "Exit pddistribute_allgrid_index_only()");
 #endif
 
     return (mem_use);

@@ -129,8 +129,18 @@ int_t dinitScuBufs(superlu_dist_options_t *options,
                   dLUstruct_t* LUstruct,
                   gridinfo_t * grid)
 {
+
+#if (DEBUGlevel >= 1)
+	CHECK_MALLOC(grid->iam, "Enter dinitScuBufs()");
+#endif
+
     scuBufs->bigV = dgetBigV(ldt, num_threads);
     scuBufs->bigU = dgetBigU(options, nsupers, grid, LUstruct);
+
+#if (DEBUGlevel >= 1)
+	CHECK_MALLOC(grid->iam, "Exit dinitScuBufs()");
+#endif
+
     return 0;
 }
 

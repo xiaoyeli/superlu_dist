@@ -539,7 +539,6 @@ double* dgetBigU(superlu_dist_options_t *options,
 
     // printf("Size of big U is %d\n",bigu_size );
     double* bigU = doubleMalloc_dist(bigu_size);
-
     return bigU;
 } /* dgetBigU */
 
@@ -767,7 +766,7 @@ dtrf3Dpartition_t* dinitTrf3Dpartition_allgrid(int_t n, superlu_dist_options_t *
     gridinfo_t* grid = &(grid3d->grid2d);
     int iam = grid3d->iam;
 #if ( DEBUGlevel>=1 )
-    CHECK_MALLOC (iam, "Enter dinitTrf3DpartitionLUstructgrid0()");
+    CHECK_MALLOC (iam, "Enter dinitTrf3Dpartition_allgrid()");
 #endif
     int_t nsupers;
     int_t *setree;
@@ -1144,10 +1143,8 @@ dtrf3Dpartition_t* dinitTrf3Dpartition(int_t nsupers,
 /* Free memory allocated for trf3Dpartition structure. Sherry added this routine */
 void dDestroy_trf3Dpartition(dtrf3Dpartition_t *trf3Dpartition)
 {
+    if(trf3Dpartition!=NULL){
     int i;
-#if ( DEBUGlevel>=1 )
-    CHECK_MALLOC ("Enter dDestroy_trf3Dpartition()");
-#endif
     SUPERLU_FREE(trf3Dpartition->gEtreeInfo.setree);
     SUPERLU_FREE(trf3Dpartition->gEtreeInfo.numChildLeft);
     SUPERLU_FREE(trf3Dpartition->iperm_c_supno);
@@ -1178,10 +1175,8 @@ void dDestroy_trf3Dpartition(dtrf3Dpartition_t *trf3Dpartition)
     SUPERLU_FREE(trf3Dpartition->LUvsb); // Sherry: check this ...
 
     SUPERLU_FREE(trf3Dpartition);
+    }
 
-#if ( DEBUGlevel>=1 )
-    CHECK_MALLOC ("Exit dDestroy_trf3Dpartition()");
-#endif
 }
 
 
