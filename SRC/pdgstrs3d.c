@@ -561,6 +561,8 @@ int_t trs_compute_communication_structure(superlu_dist_options_t *options, int_t
     }
     SUPERLU_FREE(rowcounts);
     SUPERLU_FREE(colcounts);
+    SUPERLU_FREE(rowlists);
+    SUPERLU_FREE(collists);
 
 
 
@@ -871,7 +873,8 @@ int_t trs_compute_communication_structure(superlu_dist_options_t *options, int_t
     }
     SUPERLU_FREE(rowcounts);
     SUPERLU_FREE(colcounts);
-
+    SUPERLU_FREE(rowlists);
+    SUPERLU_FREE(collists);
 
     SUPERLU_FREE(tmpglo);
     SUPERLU_FREE(recvcounts);
@@ -4780,6 +4783,8 @@ int_t leafForestBackSolve3d(superlu_dist_options_t *options, int_t treeId, int_t
         MPI_Status status;
         MPI_Wait (&send_req[i], &status);
     }
+    SUPERLU_FREE(bmod);
+    SUPERLU_FREE(brecv);
     Llu->SolveMsgSent = 0;
     xtrsTimer->tbs_comm += SuperLU_timer_() - tx;
     return 0;
@@ -4970,6 +4975,8 @@ int_t leafForestBackSolve3d_newsolve(superlu_dist_options_t *options, int_t n,  
     }
     Llu->SolveMsgSent = 0;
     xtrsTimer->tbs_comm += SuperLU_timer_() - tx;
+    SUPERLU_FREE(bmod);
+    SUPERLU_FREE(brecv);
     return 0;
 
 }
@@ -7589,6 +7596,8 @@ pdgstrs3d (superlu_dist_options_t *options, int_t n, dLUstruct_t * LUstruct,
     SUPERLU_FREE (lsum);
     SUPERLU_FREE (x);
     SUPERLU_FREE (recvbuf);
+    SUPERLU_FREE (ilsumT);
+    SUPERLU_FREE (xT);
 
 
     /*for (i = 0; i < Llu->SolveMsgSent; ++i) MPI_Request_free(&send_req[i]); */
@@ -8124,6 +8133,8 @@ int_t pdgsTrForwardSolve3d(superlu_dist_options_t *options, int_t n, dLUstruct_t
     }
     Llu->SolveMsgSent = 0;
     xtrsTimer->tfs_comm += SuperLU_timer_() - tx;
+    SUPERLU_FREE(rtemp);
+
 
     return 0;
 }
@@ -8227,7 +8238,7 @@ if ( !(getenv("NEW3DSOLVETREECOMM") && getenv("SUPERLU_ACC_SOLVE"))){
 }
     Llu->SolveMsgSent = 0;
     xtrsTimer->tfs_comm += SuperLU_timer_() - tx;
-
+    SUPERLU_FREE(rtemp);
     return 0;
 }
 
@@ -8354,7 +8365,7 @@ int_t pdgsTrBackSolve3d(superlu_dist_options_t *options, int_t n, dLUstruct_t * 
     }
     xtrsTimer->tbs_comm += SuperLU_timer_() - tx;
     Llu->SolveMsgSent = 0;
-
+    freeLsumBmod_buff(&lbmod_buf);
 
     return 0;
 }
@@ -8443,6 +8454,7 @@ if (getenv("NEW3DSOLVETREECOMM")){
     xtrsTimer->tbs_comm += SuperLU_timer_() - tx;
     Llu->SolveMsgSent = 0;
 
+    freeLsumBmod_buff(&lbmod_buf);
 
     return 0;
 }

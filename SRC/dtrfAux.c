@@ -792,11 +792,6 @@ dtrf3Dpartition_t* dinitTrf3Dpartition_allgrid(int_t n, superlu_dist_options_t *
     getSCUweight_allgrid(nsupers, treeList, xsup,
         LUstruct->Llu->Lrowind_bc_ptr, LUstruct->Llu->Ufstnz_br_ptr,
         grid3d);
-    int_t * scuWeight = intCalloc_dist(nsupers);
-    for (int_t k = 0; k < nsupers ; ++k)
-    {
-        scuWeight[k] = treeList[k].scuWeight;
-    }
 
     calcTreeWeight(nsupers, setree, treeList, xsup); 
 
@@ -1151,6 +1146,7 @@ void dDestroy_trf3Dpartition(dtrf3Dpartition_t *trf3Dpartition)
     SUPERLU_FREE(trf3Dpartition->myNodeCount);
     SUPERLU_FREE(trf3Dpartition->myTreeIdxs);
     SUPERLU_FREE(trf3Dpartition->myZeroTrIdxs);
+    SUPERLU_FREE(trf3Dpartition->diagDims);
     SUPERLU_FREE(trf3Dpartition->treePerm); // double pointer pointing to sForests->nodeList
 
     int_t maxLvl = trf3Dpartition->maxLvl;

@@ -1192,6 +1192,9 @@ int_t dbroadcastAncestor3d( dtrf3Dpartition_t*  trf3Dpartition,
         }
 	}
 
+    SUPERLU_FREE(gNodeCount);
+    SUPERLU_FREE(gNodeLists);
+
 	return 0;
 } /* dbroadcastAncestorLU */
 
