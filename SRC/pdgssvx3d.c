@@ -1757,7 +1757,6 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 
 	if (grid3d->zscp.Iam == 0 )
 	{ // only process layer 0
-    	if(Solve3D==false){
 		if (!factored)
 		{
 			if (options->PrintStat)
@@ -1846,7 +1845,6 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 			} /* end printing stats */
 
 		} /* end if not Factored */
-        }
     }
 
     if ( options->Fact == DOFACT || options->Fact == SamePattern ) {
