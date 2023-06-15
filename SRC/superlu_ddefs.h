@@ -558,6 +558,11 @@ extern float pddistribute_allgrid(superlu_dist_options_t *options, int_t n, Supe
 	     Glu_freeable_t *Glu_freeable, dLUstruct_t *LUstruct,
 	     gridinfo_t *grid, int* supernodeMask);
 
+extern float pddistribute_allgrid_index_only(superlu_dist_options_t *options, int_t n, SuperMatrix *A,
+	     dScalePermstruct_t *ScalePermstruct,
+	     Glu_freeable_t *Glu_freeable, dLUstruct_t *LUstruct,
+	     gridinfo_t *grid, int* supernodeMask);
+
 extern void  pdgssvx(superlu_dist_options_t *, SuperMatrix *,
 		     dScalePermstruct_t *, double *,
 		     int, int, gridinfo_t *, dLUstruct_t *,

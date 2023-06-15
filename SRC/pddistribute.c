@@ -3449,3 +3449,574 @@ pddistribute_allgrid(superlu_dist_options_t *options, int_t n, SuperMatrix *A,
     return (mem_use+memTRS);
 
 } /* PDDISTRIBUTE_ALLGRID */
+
+
+
+float
+pddistribute_allgrid_index_only(superlu_dist_options_t *options, int_t n, SuperMatrix *A,
+	     dScalePermstruct_t *ScalePermstruct,
+	     Glu_freeable_t *Glu_freeable, dLUstruct_t *LUstruct,
+	     gridinfo_t *grid, int* supernodeMask)
+/*
+ * -- Distributed SuperLU routine (version 2.0) --
+ * Lawrence Berkeley National Lab, Univ. of California Berkeley.
+ * March 15, 2003
+ *
+ *
+ * Purpose
+ * =======
+ *   Distribute the matrix onto the 2D process mesh on all girds based on supernodeMask
+ *
+ * Arguments
+ * =========
+ *
+ * options (input) superlu_dist_options_t*
+ *        options->Fact Specifies whether or not the L and U structures will be re-used.
+ *        = SamePattern_SameRowPerm: L and U structures are input, and
+ *                                   unchanged on exit.
+ *        = DOFACT or SamePattern: L and U structures are computed and output.
+ *
+ * n      (input) int
+ *        Dimension of the matrix.
+ *
+ * A      (input) SuperMatrix*
+ *	  The distributed input matrix A of dimension (A->nrow, A->ncol).
+ *        A may be overwritten by diag(R)*A*diag(C)*Pc^T. The type of A can be:
+ *        Stype = SLU_NR_loc; Dtype = SLU_D; Mtype = SLU_GE.
+ *
+ * ScalePermstruct (input) dScalePermstruct_t*
+ *        The data structure to store the scaling and permutation vectors
+ *        describing the transformations performed to the original matrix A.
+ *
+ * Glu_freeable (input) *Glu_freeable_t
+ *        The global structure describing the graph of L and U.
+ *
+ * LUstruct (input) dLUstruct_t*
+ *        Data structures for L and U factors.
+ *
+ * grid   (input) gridinfo_t*
+ *        The 2D process mesh.
+ *
+ * Return value
+ * ============
+ *   > 0, working storage required (in bytes).
+ *
+ */
+{
+    Glu_persist_t *Glu_persist = LUstruct->Glu_persist;
+    dLocalLU_t *Llu = LUstruct->Llu;
+    int_t bnnz, fsupc, fsupc1, i, ii, irow, istart, j, ib, jb, jj, k, k1,
+          len, len1, nsupc, masked;
+	int_t lib;  /* local block row number */
+	int_t nlb;  /* local block rows*/
+    int_t ljb;  /* local block column number */
+    int_t nrbl; /* number of L blocks in current block column */
+    int_t nrbu; /* number of U blocks in current block column */
+    int_t gb;   /* global block number; 0 < gb <= nsuper */
+    int_t lb;   /* local block number; 0 < lb <= ceil(NSUPERS/Pr) */
+	int_t ub,gik,iklrow,fnz;
+	int iam, jbrow, kcol, krow, mycol, myrow, pc, pr;
+    int_t mybufmax[NBUFFERS];
+    NRformat_loc *Astore;
+    double *a;
+    int_t *asub, *xa;
+    int_t *xa_begin, *xa_end;
+    int_t *xsup = Glu_persist->xsup;    /* supernode and column mapping */
+    int_t *supno = Glu_persist->supno;
+    int_t *lsub, *xlsub, *usub, *usub1, *xusub;
+    int_t nsupers;
+    int_t next_lind;      /* next available position in index[*] */
+    int_t next_lval;      /* next available position in nzval[*] */
+    int_t *index;         /* indices consist of headers and row subscripts */
+	int_t *index_srt;         /* indices consist of headers and row subscripts */
+	int   *index1;        /* temporary pointer to array of int */
+    double *lusup, *lusup_srt, *uval; /* nonzero values in L and U */
+
+	double **Lnzval_bc_ptr;  /* size ceil(NSUPERS/Pc) */
+	double *Lnzval_bc_dat;  /* size sum of sizes of Lnzval_bc_ptr[lk])                 */
+    long int *Lnzval_bc_offset;  /* size ceil(NSUPERS/Pc)                 */
+
+	int_t  **Lrowind_bc_ptr; /* size ceil(NSUPERS/Pc) */
+	int_t *Lrowind_bc_dat;  /* size sum of sizes of Lrowind_bc_ptr[lk])                 */
+    long int *Lrowind_bc_offset;  /* size ceil(NSUPERS/Pc)                 */
+
+	int_t  **Lindval_loc_bc_ptr; /* size ceil(NSUPERS/Pc)                 */
+	int_t *Lindval_loc_bc_dat;  /* size sum of sizes of Lindval_loc_bc_ptr[lk])                 */
+    long int *Lindval_loc_bc_offset;  /* size ceil(NSUPERS/Pc)                 */
+
+	int_t   *Unnz; /* size ceil(NSUPERS/Pc)                 */
+	double **Unzval_br_ptr;  /* size ceil(NSUPERS/Pr) */
+	double *Unzval_br_dat;  /* size sum of sizes of Unzval_br_ptr[lk])                 */
+	long int *Unzval_br_offset;  /* size ceil(NSUPERS/Pr)    */
+    long int Unzval_br_cnt=0;
+	int_t  **Ufstnz_br_ptr;  /* size ceil(NSUPERS/Pr) */
+    int_t   *Ufstnz_br_dat;  /* size sum of sizes of Ufstnz_br_ptr[lk])                 */
+    long int *Ufstnz_br_offset;  /* size ceil(NSUPERS/Pr)    */
+    long int Ufstnz_br_cnt=0;
+
+	C_Tree  *LBtree_ptr;       /* size ceil(NSUPERS/Pc)                */
+	C_Tree  *LRtree_ptr;		  /* size ceil(NSUPERS/Pr)                */
+	C_Tree  *UBtree_ptr;       /* size ceil(NSUPERS/Pc)                */
+	C_Tree  *URtree_ptr;		  /* size ceil(NSUPERS/Pr)                */
+	int msgsize;
+
+    /*-- Counts to be used in lower triangular solve. --*/
+    int  kseen;
+
+    /*-- Counts to be used in upper triangular solve. --*/
+    int  *bmod;          /* Modification count for U-solve.        */
+    int  **bsendx_plist; /* Column process list to send down Xk.   */
+    int  nbrecvx = 0;    /* Number of Xk I will receive.           */
+    int  nbsendx = 0;    /* Number of Xk I will send               */
+
+    int_t  *ilsum;       /* starting position of each supernode in
+		            the full array (local)                 */
+
+    /*-- Auxiliary arrays; freed on return --*/
+    int_t *rb_marker;  /* block hit marker; size ceil(NSUPERS/Pr)           */
+    int_t *Urb_length; /* U block length; size ceil(NSUPERS/Pr)             */
+    int_t *Urb_indptr; /* pointers to U index[]; size ceil(NSUPERS/Pr)      */
+    int_t *Urb_fstnz;  /* # of fstnz in a block row; size ceil(NSUPERS/Pr)  */
+    int_t *Ucbs;       /* number of column blocks in a block row            */
+    int_t *Lrb_length; /* L block length; size ceil(NSUPERS/Pr)             */
+    int_t *Lrb_number; /* global block number; size ceil(NSUPERS/Pr)        */
+    int_t *Lrb_indptr; /* pointers to L index[]; size ceil(NSUPERS/Pr)      */
+    int_t *Lrb_valptr; /* pointers to L nzval[]; size ceil(NSUPERS/Pr)      */
+	int_t *ActiveFlag;
+	int_t *ActiveFlagAll;
+	int_t Iactive;
+	int *ranks;
+	int_t *idxs;
+	int_t **nzrows;
+	double rseed;
+	int rank_cnt,rank_cnt_ref,Root;
+	double *dense, *dense_col; /* SPA */
+    double zero = 0.0;
+    int_t ldaspa;     /* LDA of SPA */
+    int_t iword, dword;
+    float mem_use = 0.0;
+    float memTRS = 0.; /* memory allocated for storing the meta-data for triangular solve (positive number)*/
+
+    int *mod_bit;
+    int *frecv, *brecv;
+    int_t *lloc;
+    double **Linv_bc_ptr;  /* size ceil(NSUPERS/Pc) */
+	double *Linv_bc_dat;  /* size sum of sizes of Linv_bc_ptr[lk])                 */
+    long int *Linv_bc_offset;  /* size ceil(NSUPERS/Pc)                 */
+    double **Uinv_bc_ptr;  /* size ceil(NSUPERS/Pc) */
+	double *Uinv_bc_dat;  /* size sum of sizes of Uinv_bc_ptr[lk])                 */
+    long int *Uinv_bc_offset;  /* size ceil(NSUPERS/Pc)     */
+    double *SeedSTD_BC,*SeedSTD_RD;
+    int_t idx_indx,idx_lusup;
+    int_t nbrow;
+    int_t  ik, il, lk, rel, knsupc, idx_r;
+    int_t  lptr1_tmp, idx_i, idx_v,m, uu;
+    int_t nub;
+    int tag;
+
+
+#if ( PRNTlevel>=1 )
+    int_t nLblocks = 0, nUblocks = 0;
+#endif
+#if ( PROFlevel>=1 )
+    double t, t_u, t_l;
+    int_t u_blks;
+#endif
+
+    /* Initialization. */
+    iam = grid->iam;
+    myrow = MYROW( iam, grid );
+    mycol = MYCOL( iam, grid );
+    nsupers  = supno[n-1] + 1;
+    Astore   = (NRformat_loc *) A->Store;
+
+//#if ( PRNTlevel>=1 )
+    iword = sizeof(int_t);
+    dword = sizeof(double);
+//#endif
+
+#if ( DEBUGlevel>=1 )
+    CHECK_MALLOC(iam, "Enter pddistribute_allgrid()");
+#endif
+#if ( PROFlevel>=1 )
+    t = SuperLU_timer_();
+#endif
+
+    dReDistribute_A(A, ScalePermstruct, Glu_freeable, xsup, supno,
+		      grid, &xa, &asub, &a);
+
+#if ( PROFlevel>=1 )
+    t = SuperLU_timer_() - t;
+    if ( !iam ) printf("--------\n"
+		       ".. Phase 1 - ReDistribute_A time: %.2f\t\n", t);
+#endif
+
+        /* ------------------------------------------------------------
+	   FIRST TIME CREATING THE L AND U DATA STRUCTURES.
+	   ------------------------------------------------------------*/
+
+#if ( PROFlevel>=1 )
+	t_l = t_u = 0; u_blks = 0;
+#endif
+	/* We first need to set up the L and U data structures and then
+	 * propagate the values of A into them.
+	 */
+	lsub = Glu_freeable->lsub;    /* compressed L subscripts */
+	xlsub = Glu_freeable->xlsub;
+	usub = Glu_freeable->usub;    /* compressed U subscripts */
+	xusub = Glu_freeable->xusub;
+
+
+	k = CEILING( nsupers, grid->npcol );/* Number of local column blocks */
+	j = k * grid->npcol;
+
+
+	k = CEILING( nsupers, grid->nprow ); /* Number of local block rows */
+
+	/* Pointers to the beginning of each block row of U. */
+	if ( !(Ufstnz_br_ptr = (int_t**)SUPERLU_MALLOC(k * sizeof(int_t*))) )
+	    ABORT("Malloc fails for Ufstnz_br_ptr[].");
+
+	if ( !(ilsum = intMalloc_dist(k+1)) )
+	    ABORT("Malloc fails for ilsum[].");
+
+	/* Auxiliary arrays used to set up U block data structures.
+	   They are freed on return. */
+	if ( !(rb_marker = intCalloc_dist(k)) )
+	    ABORT("Calloc fails for rb_marker[].");
+	if ( !(Urb_length = intCalloc_dist(k)) )
+	    ABORT("Calloc fails for Urb_length[].");
+	if ( !(Urb_indptr = intMalloc_dist(k)) )
+	    ABORT("Malloc fails for Urb_indptr[].");
+	if ( !(Urb_fstnz = intCalloc_dist(k)) )
+	    ABORT("Calloc fails for Urb_fstnz[].");
+	if ( !(Ucbs = intCalloc_dist(k)) )
+	    ABORT("Calloc fails for Ucbs[].");
+
+	mem_use += 2.0*k*sizeof(int_t*) + (7*k+1)*iword;
+
+	/* Compute ldaspa and ilsum[]. */
+	ldaspa = 0;
+	ilsum[0] = 0;
+	for (gb = 0; gb < nsupers; ++gb) {
+	    if ( myrow == PROW( gb, grid ) ) {
+		i = SuperSize( gb );
+		ldaspa += i;
+		lb = LBi( gb, grid );
+		ilsum[lb + 1] = ilsum[lb] + i;
+	    }
+	}
+
+#if ( PROFlevel>=1 )
+	t = SuperLU_timer_();
+#endif
+	/* ------------------------------------------------------------
+	   COUNT NUMBER OF ROW BLOCKS AND THE LENGTH OF EACH BLOCK IN U.
+	   THIS ACCOUNTS FOR ONE-PASS PROCESSING OF G(U).
+	   ------------------------------------------------------------*/
+
+	/* Loop through each supernode column. */
+	for (jb = 0; jb < nsupers; ++jb) {
+	    pc = PCOL( jb, grid );
+	    fsupc = FstBlockC( jb );
+	    nsupc = SuperSize( jb );
+	    /* Loop through each column in the block. */
+	    for (j = fsupc; j < fsupc + nsupc; ++j) {
+		/* usub[*] contains only "first nonzero" in each segment. */
+		for (i = xusub[j]; i < xusub[j+1]; ++i) {
+		    irow = usub[i]; /* First nonzero of the segment. */
+		    gb = BlockNum( irow );
+		    kcol = PCOL( gb, grid );
+		    ljb = LBj( gb, grid );
+		    pr = PROW( gb, grid );
+		    lb = LBi( gb, grid );
+		    if ( mycol == pc ) {
+			if  ( myrow == pr ) {
+			    /* Count nonzeros in entire block row. */
+			    Urb_length[lb] += FstBlockC( gb+1 ) - irow;
+			    if (rb_marker[lb] <= jb) {/* First see the block */
+				rb_marker[lb] = jb + 1;
+				Urb_fstnz[lb] += nsupc;
+				++Ucbs[lb]; /* Number of column blocks
+					       in block row lb. */
+#if ( PRNTlevel>=1 )
+				++nUblocks;
+#endif
+			    }
+			}
+		    }
+		} /* for i ... */
+	    } /* for j ... */
+	} /* for jb ... */
+
+	/* Set up the initial pointers for each block row in U. */
+	nrbu = CEILING( nsupers, grid->nprow );/* Number of local block rows */
+	for (lb = 0; lb < nrbu; ++lb) {
+		ib = myrow+lb*grid->nprow;  /* not sure */
+	    len = Urb_length[lb];
+	    rb_marker[lb] = 0; /* Reset block marker. */
+	    if ( len ) {  
+			/* Add room for descriptors */
+			len1 = Urb_fstnz[lb] + BR_HEADER + Ucbs[lb] * UB_DESCRIPTOR;
+
+			if(supernodeMask[ib]>0){ // YL: added supernode mask here
+				if ( !(index = intMalloc_dist(len1+1)) )
+					ABORT("Malloc fails for Uindex[].");
+				Ufstnz_br_ptr[lb] = index;
+				index[0] = Ucbs[lb]; /* Number of column blocks */
+				index[1] = len;      /* Total length of nzval[] */
+				index[2] = len1;     /* Total length of index[] */
+				index[len1] = -1;    /* End marker */
+			}else{
+				Ufstnz_br_ptr[lb] = NULL;				
+			}
+	    } else {
+		Ufstnz_br_ptr[lb] = NULL;
+	    }
+	    Urb_length[lb] = 0; /* Reset block length. */
+	    Urb_indptr[lb] = BR_HEADER; /* Skip header in U index[]. */
+ 	    Urb_fstnz[lb] = BR_HEADER;
+	} /* for lb ... */
+
+	SUPERLU_FREE(Ucbs);
+
+#if ( PROFlevel>=1 )
+	t = SuperLU_timer_() - t;
+	if ( !iam) printf(".. Phase 2 - setup U strut time: %.2f\t\n", t);
+#endif
+
+        mem_use -= 2.0*k * iword;
+
+	/* Auxiliary arrays used to set up L block data structures.
+	   They are freed on return.
+	   k is the number of local row blocks.   */
+	if ( !(Lrb_length = intCalloc_dist(k)) )
+	    ABORT("Calloc fails for Lrb_length[].");
+	if ( !(Lrb_number = intMalloc_dist(k)) )
+	    ABORT("Malloc fails for Lrb_number[].");
+	if ( !(Lrb_indptr = intMalloc_dist(k)) )
+	    ABORT("Malloc fails for Lrb_indptr[].");
+
+
+
+	/* ------------------------------------------------ */
+	mem_use += 6.0*k*iword + ldaspa*sp_ienv_dist(3,options)*dword;
+
+	k = CEILING( nsupers, grid->npcol );/* Number of local block columns */
+
+	/* Pointers to the beginning of each block column of L. */
+	if ( !(Lrowind_bc_ptr = (int_t**)SUPERLU_MALLOC(k * sizeof(int_t*))) )
+	    ABORT("Malloc fails for Lrowind_bc_ptr[].");
+	Lrowind_bc_ptr[k-1] = NULL;
+
+
+	/*------------------------------------------------------------
+	  PROPAGATE ROW SUBSCRIPTS AND VALUES OF A INTO L AND U BLOCKS.
+	  THIS ACCOUNTS FOR ONE-PASS PROCESSING OF A, L AND U.
+	  ------------------------------------------------------------*/
+	long int Lrowind_bc_cnt=0;
+	for (jb = 0; jb < nsupers; ++jb) { /* for each block column ... */
+	    pc = PCOL( jb, grid );
+	    if ( mycol == pc ) { /* Block column jb in my process column */
+		fsupc = FstBlockC( jb );
+		nsupc = SuperSize( jb );
+		ljb = LBj( jb, grid ); /* Local block number */
+
+
+		jbrow = PROW( jb, grid );
+
+		/*------------------------------------------------
+		 * SET UP U BLOCKS.
+		 *------------------------------------------------*/
+#if ( PROFlevel>=1 )
+		t = SuperLU_timer_();
+#endif
+		/* Loop through each column in the block column. */
+		for (j = fsupc; j < FstBlockC( jb+1 ); ++j) {
+		    istart = xusub[j];
+		    /* NOTE: Only the first nonzero index of the segment
+		       is stored in usub[]. */
+		    for (i = istart; i < xusub[j+1]; ++i) {
+			irow = usub[i]; /* First nonzero in the segment. */
+			gb = BlockNum( irow );
+			pr = PROW( gb, grid );
+			if ( myrow == pr) { // YL: added supernode mask here
+			    if(supernodeMask[gb]>0){
+					lb = LBi( gb, grid ); /* Local block number */
+					index = Ufstnz_br_ptr[lb];
+					fsupc1 = FstBlockC( gb+1 );
+					if (rb_marker[lb] <= jb) { /* First time see
+								the block       */
+					rb_marker[lb] = jb + 1;
+					Urb_indptr[lb] = Urb_fstnz[lb];;
+					index[Urb_indptr[lb]] = jb; /* Descriptor */
+					Urb_indptr[lb] += UB_DESCRIPTOR;
+					/* Record the first location in index[] of the
+					next block */
+					Urb_fstnz[lb] = Urb_indptr[lb] + nsupc;
+					len = Urb_indptr[lb];/* Start fstnz in index */
+					index[len-1] = 0;
+					for (k = 0; k < nsupc; ++k)
+						index[len+k] = fsupc1;
+					} else { /* Already saw the block */
+					len = Urb_indptr[lb];/* Start fstnz in index */
+					}
+					jj = j - fsupc;
+					index[len+jj] = irow;
+					/* Load the numerical values */
+					k = fsupc1 - irow; /* No. of nonzeros in segment */
+					index[len-1] += k; /* Increment block length in
+							Descriptor */
+					irow = ilsum[lb] + irow - FstBlockC( gb );
+				}else{
+					lb = LBi( gb, grid ); /* Local block number */
+					fsupc1 = FstBlockC( gb+1 );
+					if (rb_marker[lb] <= jb) { /* First time see
+								the block       */
+					rb_marker[lb] = jb + 1;
+					Urb_indptr[lb] = Urb_fstnz[lb];;
+					Urb_indptr[lb] += UB_DESCRIPTOR;
+					/* Record the first location in index[] of the
+					next block */
+					Urb_fstnz[lb] = Urb_indptr[lb] + nsupc;
+
+					}
+				}
+				
+			} /* if myrow == pr ... */
+		    } /* for i ... */
+		} /* for j ... */
+
+#if ( PROFlevel>=1 )
+		t_u += SuperLU_timer_() - t;
+		t = SuperLU_timer_();
+#endif
+		/*------------------------------------------------
+		 * SET UP L BLOCKS.
+		 *------------------------------------------------*/
+
+		/* Count number of blocks and length of each block. */
+		nrbl = 0;
+		len = 0; /* Number of row subscripts I own. */
+		istart = xlsub[fsupc];
+		for (i = istart; i < xlsub[fsupc+1]; ++i) {
+		    irow = lsub[i];
+		    gb = BlockNum( irow ); /* Global block number */
+		    pr = PROW( gb, grid ); /* Process row owning this block */
+		    if ( myrow == pr ) { 
+			lb = LBi( gb, grid );  /* Local block number */
+			if (rb_marker[lb] <= jb) { /* First see this block */
+			    rb_marker[lb] = jb + 1;
+			    Lrb_length[lb] = 1;
+			    Lrb_number[nrbl++] = gb;
+#if ( PRNTlevel>=1 )
+			    ++nLblocks;
+#endif
+			} else {
+			    ++Lrb_length[lb];
+			}
+			++len;
+		    }
+		} /* for i ... */
+
+		
+		if ( nrbl) { /* Do not ensure the blocks are sorted! */
+		    if(supernodeMask[jb]>0){ // YL: added supernode mask here
+				/* Set up the initial pointers for each block in
+				index[] and nzval[]. */
+				/* Add room for descriptors */
+				len1 = len + BC_HEADER + nrbl * LB_DESCRIPTOR;
+				if ( !(index = intMalloc_dist(len1)) )
+				ABORT("Malloc fails for index[]");
+				myrow = MYROW( iam, grid );
+				krow = PROW( jb, grid );
+
+				index[0] = nrbl;  /* Number of row blocks */
+				index[1] = len;   /* LDA of the nzval[] */
+				next_lind = BC_HEADER;
+				next_lval = 0;
+				for (k = 0; k < nrbl; ++k) {
+				gb = Lrb_number[k];
+				lb = LBi( gb, grid );
+				len = Lrb_length[lb];
+				Lrb_length[lb] = 0;  /* Reset vector of block length */
+				index[next_lind++] = gb; /* Descriptor */
+				index[next_lind++] = len;
+				Lrb_indptr[lb] = next_lind;
+				next_lind += len;
+				next_lval += len;
+				}
+				/* Propagate the compressed row subscripts to Lindex[],
+						and the initial values of A from SPA into Lnzval[]. */
+				len = index[1];  /* LDA of lusup[] */
+				for (i = istart; i < xlsub[fsupc+1]; ++i) {
+				irow = lsub[i];
+				gb = BlockNum( irow );
+				if ( myrow == PROW( gb, grid ) ) {
+					lb = LBi( gb, grid );
+					k = Lrb_indptr[lb]++; /* Random access a block */
+					index[k] = irow;
+					irow = ilsum[lb] + irow - FstBlockC( gb );
+				}
+				} /* for i ... */
+
+				Lrowind_bc_ptr[ljb] = index;
+
+			}else{ //if(supernodeMask[jb]==0)
+				Lrowind_bc_ptr[ljb] = NULL;	
+			}
+		} else {
+		    Lrowind_bc_ptr[ljb] = NULL;
+		} /* if nrbl ... */
+#if ( PROFlevel>=1 )
+		t_l += SuperLU_timer_() - t;
+#endif
+	    } /* if mycol == pc */
+
+	} /* for jb ... */
+
+	/////////////////////////////////////////////////////////////////
+
+	Llu->Lrowind_bc_ptr = Lrowind_bc_ptr;
+	Llu->Ufstnz_br_ptr = Ufstnz_br_ptr;
+	Llu->ldalsum = ldaspa;
+
+#if ( PRNTlevel>=1 )
+	if ( !iam ) printf(".. # L blocks " IFMT "\t# U blocks " IFMT "\n",
+			   nLblocks, nUblocks);
+#endif
+
+	SUPERLU_FREE(rb_marker);
+	SUPERLU_FREE(Urb_fstnz);
+	SUPERLU_FREE(Urb_length);
+	SUPERLU_FREE(Urb_indptr);
+	SUPERLU_FREE(Lrb_length);
+	SUPERLU_FREE(Lrb_number);
+	SUPERLU_FREE(Lrb_indptr);
+	SUPERLU_FREE(ilsum);
+
+	k = CEILING( nsupers, grid->nprow );/* Number of local block rows */
+
+#if ( PROFlevel>=1 )
+	if ( !iam ) printf(".. 1st distribute time:\n "
+			   "\tL\t%.2f\n\tU\t%.2f\n"
+			   "\tu_blks %d\tnrbu %d\n--------\n",
+  			   t_l, t_u, u_blks, nrbu);
+#endif
+
+
+    if ( xa[A->ncol] > 0 ) { /* may not have any entries on this process. */
+        SUPERLU_FREE(asub);
+        SUPERLU_FREE(a);
+    }
+    SUPERLU_FREE(xa);
+
+#if ( DEBUGlevel>=1 )
+    /* Memory allocated but not freed:
+       ilsum, fmod, fsendx_plist, bmod, bsendx_plist  */
+    CHECK_MALLOC(iam, "Exit pddistribute()");
+#endif
+
+    return (mem_use);
+
+} /* pddistribute_allgrid_index_only */
