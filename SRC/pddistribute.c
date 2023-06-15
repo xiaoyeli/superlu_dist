@@ -2699,6 +2699,8 @@ pddistribute_allgrid(superlu_dist_options_t *options, int_t n, SuperMatrix *A,
 	SUPERLU_FREE(dense);
 	SUPERLU_FREE(Urb_length);
 	SUPERLU_FREE(Urb_indptr);
+	mem_use -= 2.0*nrbu*iword + ldaspa*sp_ienv_dist(3,options)*dword;
+	
 #if ( PROFlevel>=1 )
 	if ( !iam ) printf(".. 2nd distribute time: L %.2f\tU %.2f\tu_blks %d\tnrbu %d\n",
 			   t_l, t_u, u_blks, nrbu);
@@ -2841,6 +2843,9 @@ pddistribute_allgrid(superlu_dist_options_t *options, int_t n, SuperMatrix *A,
 				Ufstnz_br_ptr[lb] = index;
 				if ( !(Unzval_br_ptr[lb] = doubleMalloc_dist(len)) )
 					ABORT("Malloc fails for Unzval_br_ptr[*][].");
+
+				mem_use += len*dword + (len1+1)*iword;
+
 				index[0] = Ucbs[lb]; /* Number of column blocks */
 				index[1] = len;      /* Total length of nzval[] */
 				index[2] = len1;     /* Total length of index[] */
@@ -3136,6 +3141,7 @@ pddistribute_allgrid(superlu_dist_options_t *options, int_t n, SuperMatrix *A,
 				mybufmax[0] = SUPERLU_MAX( mybufmax[0], len1 );
 				mybufmax[1] = SUPERLU_MAX( mybufmax[1], len*nsupc );
 				mybufmax[4] = SUPERLU_MAX( mybufmax[4], len );
+				mem_use += len*nsupc*dword + (len1)*iword;
 				memTRS += nrbl*3.0*iword + 2.0*nsupc*nsupc*dword;  //acount for Lindval_loc_bc_ptr[ljb],Linv_bc_ptr[ljb],Uinv_bc_ptr[ljb]
 				index[0] = nrbl;  /* Number of row blocks */
 				index[1] = len;   /* LDA of the nzval[] */
@@ -3295,6 +3301,9 @@ pddistribute_allgrid(superlu_dist_options_t *options, int_t n, SuperMatrix *A,
 	if ( !(Ucb_valptr = SUPERLU_MALLOC(nub * sizeof(int_t *))) )
 		ABORT("Malloc fails for Ucb_valptr[]");
 
+	mem_use += nub * sizeof(Ucb_indptr_t *) + nub * sizeof(int_t *) + (2*nub)*iword;
+
+
 	nlb = CEILING( nsupers, grid->nprow ); /* Number of local block rows. */
 
 	/* Count number of row blocks in a block column.
@@ -3323,6 +3332,7 @@ pddistribute_allgrid(superlu_dist_options_t *options, int_t n, SuperMatrix *A,
 				ABORT("Malloc fails for Ucb_indptr[lb][]");
 			if ( !(Ucb_valptr[lb] = (int_t *) intMalloc_dist(Urbs[lb])) )
 				ABORT("Malloc fails for Ucb_valptr[lb][]");
+			mem_use += Urbs[lb] * sizeof(Ucb_indptr_t) + (Urbs[lb])*iword;
 		}else{
 			Ucb_valptr[lb]=NULL;
 			Ucb_indptr[lb]=NULL;
@@ -3416,6 +3426,9 @@ pddistribute_allgrid(superlu_dist_options_t *options, int_t n, SuperMatrix *A,
 	SUPERLU_FREE(Lrb_indptr);
 	SUPERLU_FREE(Lrb_valptr);
 	SUPERLU_FREE(dense);
+
+	k = CEILING( nsupers, grid->nprow ); /* Number of local block rows */
+	mem_use -=  (k*8)*iword+ldaspa*sp_ienv_dist(3,options)*dword;
 
 	/* Find the maximum buffer size. */
 	MPI_Allreduce(mybufmax, Llu->bufmax, NBUFFERS, mpi_int_t,
