@@ -288,11 +288,41 @@ typedef struct {
 } dLocalLU_t;
 
 
+typedef struct
+{
+    int_t * Lsub_buf ;
+    double * Lval_buf ;
+    int_t * Usub_buf ;
+    double * Uval_buf ;
+} dLUValSubBuf_t;
+
+
+typedef struct
+{
+    gEtreeInfo_t gEtreeInfo;
+    int_t* iperm_c_supno;
+    int_t* myNodeCount;
+    int_t* myTreeIdxs;
+    int_t* myZeroTrIdxs;
+    int_t** treePerm;
+    sForest_t** sForests;
+    int_t* supernode2treeMap;
+    int* supernodeMask;
+    dLUValSubBuf_t  *LUvsb;
+    int maxLvl; // YL: store this to avoid the use of grid3d
+    
+    /* Sherry added the following 3 for variable size batch. 2/17/23 */
+    int mxLeafNode; /* number of leaf nodes. */
+    int *diagDims;  /* dimensions of the diagonal blocks at any level of the tree */
+    int *gemmCsizes; /* sizes of the C matrices at any level of the tree. */
+} dtrf3Dpartition_t;
+
+
 typedef struct {
     int_t *etree;
     Glu_persist_t *Glu_persist;
     dLocalLU_t *Llu;
-    int* supernodeMask; 
+    dtrf3Dpartition_t *trf3Dpartition;
     char dt;
 } dLUstruct_t;
 
@@ -399,13 +429,6 @@ typedef struct
 #endif  // Above are moved to superlu_defs.h
 
 
-typedef struct
-{
-    int_t * Lsub_buf ;
-    double * Lval_buf ;
-    int_t * Usub_buf ;
-    double * Uval_buf ;
-} dLUValSubBuf_t;
 
 int_t scuStatUpdate(
     int_t knsupc,
@@ -413,25 +436,6 @@ int_t scuStatUpdate(
     SCT_t* SCT,
     SuperLUStat_t *stat
     );
-
-typedef struct
-{
-    gEtreeInfo_t gEtreeInfo;
-    int_t* iperm_c_supno;
-    int_t* myNodeCount;
-    int_t* myTreeIdxs;
-    int_t* myZeroTrIdxs;
-    int_t** treePerm;
-    sForest_t** sForests;
-    int_t* supernode2treeMap;
-    int* supernodeMask;
-    dLUValSubBuf_t  *LUvsb;
-    
-    /* Sherry added the following 3 for variable size batch. 2/17/23 */
-    int mxLeafNode; /* number of leaf nodes. */
-    int *diagDims;  /* dimensions of the diagonal blocks at any level of the tree */
-    int *gemmCsizes; /* sizes of the C matrices at any level of the tree. */
-} dtrf3Dpartition_t;
 
 typedef struct
 {
@@ -1206,7 +1210,7 @@ extern dtrf3Dpartition_t* dinitTrf3Dpartition_allgrid(int_t n, superlu_dist_opti
 extern dtrf3Dpartition_t* dinitTrf3DpartitionLUstructgrid0(int_t n,
 					     superlu_dist_options_t *options,
 					     dLUstruct_t *LUstruct, gridinfo3d_t * grid3d);                         
-extern void dDestroy_trf3Dpartition(dtrf3Dpartition_t *trf3Dpartition, gridinfo3d_t *grid3d);
+extern void dDestroy_trf3Dpartition(dtrf3Dpartition_t *trf3Dpartition);
 
 extern void d3D_printMemUse(dtrf3Dpartition_t*  trf3Dpartition,
 			    dLUstruct_t *LUstruct, gridinfo3d_t * grid3d);

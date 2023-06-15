@@ -737,6 +737,7 @@ dtrf3Dpartition_t* dinitTrf3DpartitionLUstructgrid0(int_t n, superlu_dist_option
     trf3Dpartition->myZeroTrIdxs = myZeroTrIdxs;
     trf3Dpartition->sForests = sForests;
     trf3Dpartition->treePerm = treePerm;
+    trf3Dpartition->maxLvl = maxLvl;
     // trf3Dpartition->LUvsb = LUvsb;
     trf3Dpartition->supernode2treeMap = supernode2treeMap;
     trf3Dpartition->supernodeMask = supernodeMask;
@@ -927,6 +928,7 @@ dtrf3Dpartition_t* dinitTrf3Dpartition_allgrid(int_t n, superlu_dist_options_t *
     trf3Dpartition->myZeroTrIdxs = myZeroTrIdxs;
     trf3Dpartition->sForests = sForests;
     trf3Dpartition->treePerm = treePerm;
+    trf3Dpartition->maxLvl = maxLvl;
     // trf3Dpartition->LUvsb = LUvsb;
     trf3Dpartition->supernode2treeMap = supernode2treeMap;
     trf3Dpartition->supernodeMask = supernodeMask;
@@ -1117,6 +1119,7 @@ dtrf3Dpartition_t* dinitTrf3Dpartition(int_t nsupers,
     trf3Dpartition->myZeroTrIdxs = myZeroTrIdxs;
     trf3Dpartition->sForests = sForests;
     trf3Dpartition->treePerm = treePerm;
+    trf3Dpartition->maxLvl = maxLvl;
     trf3Dpartition->LUvsb = LUvsb;
     trf3Dpartition->supernode2treeMap = supernode2treeMap;
     trf3Dpartition->supernodeMask = supernodeMask;
@@ -1139,11 +1142,11 @@ dtrf3Dpartition_t* dinitTrf3Dpartition(int_t nsupers,
 #endif 
 
 /* Free memory allocated for trf3Dpartition structure. Sherry added this routine */
-void dDestroy_trf3Dpartition(dtrf3Dpartition_t *trf3Dpartition, gridinfo3d_t *grid3d)
+void dDestroy_trf3Dpartition(dtrf3Dpartition_t *trf3Dpartition)
 {
     int i;
 #if ( DEBUGlevel>=1 )
-    CHECK_MALLOC (grid3d->iam, "Enter dDestroy_trf3Dpartition()");
+    CHECK_MALLOC ("Enter dDestroy_trf3Dpartition()");
 #endif
     SUPERLU_FREE(trf3Dpartition->gEtreeInfo.setree);
     SUPERLU_FREE(trf3Dpartition->gEtreeInfo.numChildLeft);
@@ -1153,7 +1156,7 @@ void dDestroy_trf3Dpartition(dtrf3Dpartition_t *trf3Dpartition, gridinfo3d_t *gr
     SUPERLU_FREE(trf3Dpartition->myZeroTrIdxs);
     SUPERLU_FREE(trf3Dpartition->treePerm); // double pointer pointing to sForests->nodeList
 
-    int_t maxLvl = log2i(grid3d->zscp.Np) + 1;
+    int_t maxLvl = trf3Dpartition->maxLvl;
     int_t numForests = (1 << maxLvl) - 1;
     sForest_t** sForests = trf3Dpartition->sForests;
     for (i = 0; i < numForests; ++i) {
@@ -1177,7 +1180,7 @@ void dDestroy_trf3Dpartition(dtrf3Dpartition_t *trf3Dpartition, gridinfo3d_t *gr
     SUPERLU_FREE(trf3Dpartition);
 
 #if ( DEBUGlevel>=1 )
-    CHECK_MALLOC (grid3d->iam, "Exit dDestroy_trf3Dpartition()");
+    CHECK_MALLOC ("Exit dDestroy_trf3Dpartition()");
 #endif
 }
 

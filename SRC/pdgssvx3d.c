@@ -756,7 +756,7 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 	double dmin, dsum, dprod;
 #endif
 
-	dtrf3Dpartition_t *trf3Dpartition;
+	dtrf3Dpartition_t *trf3Dpartition=LUstruct->trf3Dpartition;
 	int gpu3dVersion = 0;
 	#ifdef GPU_ACC
 		// gpu3dVersion = 1;
@@ -1510,14 +1510,10 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 
 				nsupers = getNsupers(n, LUstruct->Glu_persist);
 				int* supernodeMask;
-
 				if(Fact == SamePattern_SameRowPerm){
-					supernodeMask=LUstruct->supernodeMask;
+					supernodeMask=trf3Dpartition->supernodeMask;
 					dist_mem_use = pddistribute_allgrid(options, n, A, ScalePermstruct,
 												Glu_freeable, LUstruct, grid, supernodeMask);					
-			
-					// Generate the 3D partition
-					trf3Dpartition = dinitTrf3Dpartition_allgrid(n, options, LUstruct, grid3d);
 						
 				}else{
 
@@ -1533,6 +1529,8 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 
 					// Generate the 3D partition
 					trf3Dpartition = dinitTrf3Dpartition_allgrid(n, options, LUstruct, grid3d);
+					LUstruct->trf3Dpartition=trf3Dpartition;
+
 					// trf3Dpartition = dinitTrf3DpartitionLUstructgrid0(n, options, LUstruct, grid3d);
 
 					// for (int i=0;i<nsupers;i++){
@@ -1594,8 +1592,6 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 					// Second call of pddistribute_allgrid with the final supernodeMask   						
 					dist_mem_use = pddistribute_allgrid(options, n, A, ScalePermstruct,
 											Glu_freeable, LUstruct, grid, trf3Dpartition->supernodeMask);
-
-
 					// printf("myid %5d LUstruct->Llu->Unnz[0] %10d nfrecvx %10d nfsendx %10d nbrecvx %10d nbsendx %10d\n", grid3d->iam, LUstruct->Llu->Unnz[0], LUstruct->Llu->nfrecvx,LUstruct->Llu->nfsendx,LUstruct->Llu->nbrecvx,LUstruct->Llu->nbsendx );
 											
 					// /* send the LU structure to all the grids */
@@ -1606,15 +1602,7 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 
 					// for (int k = 0; k < CEILING( nsupers, grid->nprow ); ++k) {
 					// 	printf("grid3d->iam %5d fmod[k] %5d bmod[k] %5d\n",grid3d->iam,LUstruct->Llu->fmod[k],LUstruct->Llu->bmod[k]);
-					// }
-
-
-					SUPERLU_FREE(LUstruct->supernodeMask); // supernodeMask could have size 1 from the dummy allocation
-					LUstruct->supernodeMask = int32Malloc_dist(nsupers);
-					for (int i=0;i<nsupers;i++){
-							LUstruct->supernodeMask[i]=trf3Dpartition->supernodeMask;
-					}
-					
+					// }					
 
 				}
 
@@ -1815,10 +1803,6 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 		printForestWeightCost(trf3Dpartition->sForests, SCT, grid3d);
 		/*reduces stat from all the layers*/
 #endif
-
-		if(Solve3D==false){
-        dDestroy_trf3Dpartition(trf3Dpartition, grid3d);
-		}
 
 		SCT_free(SCT);
 

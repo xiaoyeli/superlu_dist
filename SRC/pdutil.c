@@ -408,9 +408,7 @@ int pdPermute_Dense_Matrix
 void dLUstructInit(const int_t n, dLUstruct_t *LUstruct)
 {
     if ( !(LUstruct->etree = intMalloc_dist(n)) )
-	ABORT("Malloc fails for etree[].");
-    if ( !(LUstruct->supernodeMask = intMalloc_dist(1)) ) //YL: dummy allocation to match with dLUstructFree. The true size is nsuper and this array is used to record supernodeMask for SamePattern_SameRowPerm
-	ABORT("Malloc fails for supernodeMask[].");    
+	ABORT("Malloc fails for etree[].");  
     if ( !(LUstruct->Glu_persist = (Glu_persist_t *)
 	   SUPERLU_MALLOC(sizeof(Glu_persist_t))) )
 	ABORT("Malloc fails for Glu_persist_t.");
@@ -432,7 +430,7 @@ void dLUstructFree(dLUstruct_t *LUstruct)
     SUPERLU_FREE(LUstruct->etree);
     SUPERLU_FREE(LUstruct->Glu_persist);
     SUPERLU_FREE(LUstruct->Llu);
-    SUPERLU_FREE(LUstruct->supernodeMask);
+    dDestroy_trf3Dpartition(LUstruct->trf3Dpartition);
 
 #if ( DEBUGlevel>=1 )
     CHECK_MALLOC(iam, "Exit dLUstructFree()");
