@@ -402,6 +402,13 @@ int_t scuStatUpdate(
     SuperLUStat_t *stat
     );
 
+typedef enum {
+    NOT_IN_GRID, 
+    IN_GRID_ZERO, 
+    IN_GRID_AIJ
+} SupernodeToGridMap_t;
+    
+
 typedef struct
 {
     gEtreeInfo_t gEtreeInfo;
@@ -413,6 +420,7 @@ typedef struct
     sForest_t** sForests;
     int_t* supernode2treeMap;
     dLUValSubBuf_t  *LUvsb;
+    SupernodeToGridMap_t* superGridMap;
 } dtrf3Dpartition_t;
 
 typedef struct
