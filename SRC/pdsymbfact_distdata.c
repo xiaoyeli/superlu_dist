@@ -3174,6 +3174,7 @@ double *dense, *dense_col; /* SPA */
 	// Llu->Ucb_valdat = Ucb_valdat;
 	// Llu->Ucb_valoffset = Ucb_valoffset;
 	// Llu->Ucb_valcnt = Ucb_valcnt;
+	LUstruct->trf3Dpartition=NULL;
 
 
 #if ( PRNTlevel>=1 )
