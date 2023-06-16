@@ -24,6 +24,7 @@ at the top-level directory.
 #include "superlu_ddefs.h"
 //#include "TRF3dV100/superlu_summit.h"
 #include "superlu_summit.h"
+#include <stdbool.h>
 
 /*! \brief
  *
