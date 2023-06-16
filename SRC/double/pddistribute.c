@@ -2341,6 +2341,7 @@ if ( !iam) printf(".. Construct Reduce tree for U: %.2f\t\n", t);
         SUPERLU_FREE(a);
     }
     SUPERLU_FREE(xa);
+	LUstruct->trf3Dpartition=NULL;
 
 #if ( DEBUGlevel>=1 )
     /* Memory allocated but not freed:

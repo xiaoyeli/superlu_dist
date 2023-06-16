@@ -1172,6 +1172,7 @@ void dDestroy_trf3Dpartition(dtrf3Dpartition_t *trf3Dpartition)
 
     SUPERLU_FREE(trf3Dpartition);
     }
+    trf3Dpartition=NULL;
 
 }
 
