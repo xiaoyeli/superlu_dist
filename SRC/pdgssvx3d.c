@@ -1529,6 +1529,7 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 					SUPERLU_FREE(supernodeMask);
 
 					// Generate the 3D partition
+					dDestroy_trf3Dpartition(LUstruct->trf3Dpartition);
 					trf3Dpartition = dinitTrf3Dpartition_allgrid(n, options, LUstruct, grid3d);
 					LUstruct->trf3Dpartition=trf3Dpartition;
 
@@ -1551,6 +1552,13 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 					dist_mem_use = pddistribute_allgrid(options, n, A, ScalePermstruct,
 											Glu_freeable, LUstruct, grid, trf3Dpartition->supernodeMask);
 
+
+					/* now that LU structure has been scattered, initialize the LU and buffers */
+					dinit3DLUstructForest(trf3Dpartition->myTreeIdxs, trf3Dpartition->myZeroTrIdxs,
+										trf3Dpartition->sForests, LUstruct, grid3d);	
+					dLUValSubBuf_t *LUvsb = SUPERLU_MALLOC(sizeof(dLUValSubBuf_t));
+					dLluBufInit(LUvsb, LUstruct);
+					trf3Dpartition->LUvsb = LUvsb;
 				}
 
 
@@ -1608,12 +1616,7 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 		#endif
 
 
-		/* now that LU structure has been scattered, initialize the LU and buffers */
-		dinit3DLUstructForest(trf3Dpartition->myTreeIdxs, trf3Dpartition->myZeroTrIdxs,
-							trf3Dpartition->sForests, LUstruct, grid3d);	
-		dLUValSubBuf_t *LUvsb = SUPERLU_MALLOC(sizeof(dLUValSubBuf_t));
-		dLluBufInit(LUvsb, LUstruct);
-		trf3Dpartition->LUvsb = LUvsb;
+
 
 
 		SCT_t *SCT = (SCT_t *)SUPERLU_MALLOC(sizeof(SCT_t));
@@ -1847,19 +1850,18 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 		} /* end if not Factored */
     }
 
-    if ( options->Fact == DOFACT || options->Fact == SamePattern ) {
-	/* Need to reset the solve's communication pattern,
-	   because perm_r[] and/or perm_c[] is changed.    */
-	if ( options->SolveInitialized == YES ) { /* Initialized before */
-	    if (grid3d->zscp.Iam == 0){  /* on 2D grid-0 */
-			dSolveFinalize(options, SOLVEstruct); /* Clean up structure */
-		}
-		pdgstrs_delete_device_lsum_x(SOLVEstruct);
-	    options->SolveInitialized = NO;   /* Reset the solve state */
-	}
-    }
-
 		if(Solve3D){
+
+			if ( options->Fact == DOFACT || options->Fact == SamePattern ) {
+			/* Need to reset the solve's communication pattern,
+			because perm_r[] and/or perm_c[] is changed.    */
+			if ( options->SolveInitialized == YES ) { /* Initialized before */
+				dSolveFinalize(options, SOLVEstruct); /* Clean up structure */
+				pdgstrs_delete_device_lsum_x(SOLVEstruct);
+				options->SolveInitialized = NO;   /* Reset the solve state */
+			}
+			}
+
 			if (getenv("NEW3DSOLVE")){
 
 
@@ -1939,7 +1941,18 @@ if (getenv("SUPERLU_ACC_SOLVE")){
 			}
 			}
 		}else{ /* if(Solve3D) */
+
 			if (grid3d->zscp.Iam == 0){  /* on 2D grid-0 */
+
+			if ( options->Fact == DOFACT || options->Fact == SamePattern ) {
+			/* Need to reset the solve's communication pattern,
+			because perm_r[] and/or perm_c[] is changed.    */
+			if ( options->SolveInitialized == YES ) { /* Initialized before */
+				dSolveFinalize(options, SOLVEstruct); /* Clean up structure */
+				pdgstrs_delete_device_lsum_x(SOLVEstruct);
+				options->SolveInitialized = NO;   /* Reset the solve state */
+			}
+			}
 
 #if (defined(GPU_ACC) && defined(GPU_SOLVE))
 			if (options->DiagInv == NO)
@@ -2052,9 +2065,183 @@ if (getenv("SUPERLU_ACC_SOLVE")){
 			}
 			}
 		}
+
+		stat->utime[SOLVE] = 0.0;
+		if(Solve3D){
+
 			// if (!(b_work = doubleMalloc_dist(n)))
 			// 	ABORT("Malloc fails for b_work[]");
-        if ( grid3d->zscp.Iam == 0 ) { // only process layer 0
+			/* ------------------------------------------------------
+			   Scale the right-hand side if equilibration was performed
+			   ------------------------------------------------------*/
+			if (notran)
+			{
+				if (rowequ)
+				{
+					b_col = B;
+					for (j = 0; j < nrhs; ++j)
+					{
+						irow = fst_row;
+						for (i = 0; i < m_loc; ++i)
+						{
+							b_col[i] *= R[irow];
+							++irow;
+						}
+						b_col += ldb;
+					}
+				}
+			}
+			else if (colequ)
+			{
+				b_col = B;
+				for (j = 0; j < nrhs; ++j)
+				{
+					irow = fst_row;
+					for (i = 0; i < m_loc; ++i)
+					{
+						b_col[i] *= C[irow];
+						++irow;
+					}
+					b_col += ldb;
+				}
+			}
+
+			/* Save a copy of the right-hand side. */
+			ldx = ldb;
+			if (!(X = doubleMalloc_dist(((size_t)ldx) * nrhs)))
+				ABORT("Malloc fails for X[]");
+			x_col = X;
+			b_col = B;
+			for (j = 0; j < nrhs; ++j)
+			{
+				for (i = 0; i < m_loc; ++i)
+					x_col[i] = b_col[i];
+				x_col += ldx;
+				b_col += ldb;
+			}
+
+			/* ------------------------------------------------------
+			   Solve the linear system.
+			   ------------------------------------------------------*/
+		
+			if (options->SolveInitialized == NO)
+			/* First time */
+			/* Inside this routine, SolveInitialized is set to YES.
+			For repeated call to pdgssvx3d(), no need to re-initialilze
+			the Solve data & communication structures, unless a new
+			factorization with Fact == DOFACT or SamePattern is asked for. */
+			{
+				dSolveInit(options, A, perm_r, perm_c, nrhs, LUstruct,
+							grid, SOLVEstruct);
+			}			
+			if (getenv("NEW3DSOLVE")){
+				pdgstrs3d_newsolve (options, n, LUstruct,ScalePermstruct, trf3Dpartition, grid3d, X,
+				m_loc, fst_row, ldb, nrhs,SOLVEstruct, stat, info);
+			}else{
+				pdgstrs3d (options, n, LUstruct,ScalePermstruct, trf3Dpartition, grid3d, X,
+				m_loc, fst_row, ldb, nrhs,SOLVEstruct, stat, info);
+			}
+			if (options->IterRefine)
+				{
+				/* Improve the solution by iterative refinement. */
+				int_t *it, *colind_gsmv = SOLVEstruct->A_colind_gsmv;
+				dSOLVEstruct_t *SOLVEstruct1; /* Used by refinement */
+
+				t = SuperLU_timer_ ();
+				if (options->RefineInitialized == NO || Fact == DOFACT) {
+					/* All these cases need to re-initialize gsmv structure */
+					if (options->RefineInitialized)
+					pdgsmv_finalize (SOLVEstruct->gsmv_comm);
+					pdgsmv_init (A, SOLVEstruct->row_to_proc, grid,
+						SOLVEstruct->gsmv_comm);
+
+					/* Save a copy of the transformed local col indices
+					in colind_gsmv[]. */
+					if (colind_gsmv) SUPERLU_FREE (colind_gsmv);
+					if (!(it = intMalloc_dist (nnz_loc)))
+					ABORT ("Malloc fails for colind_gsmv[]");
+					colind_gsmv = SOLVEstruct->A_colind_gsmv = it;
+					for (i = 0; i < nnz_loc; ++i) colind_gsmv[i] = colind[i];
+					options->RefineInitialized = YES;
+				}
+				else if (Fact == SamePattern || Fact == SamePattern_SameRowPerm) {
+					double at;
+					int_t k, jcol, p;
+					/* Swap to beginning the part of A corresponding to the
+					local part of X, as was done in pdgsmv_init() */
+					for (i = 0; i < m_loc; ++i) { /* Loop through each row */
+					k = rowptr[i];
+					for (j = rowptr[i]; j < rowptr[i + 1]; ++j)
+						{
+						jcol = colind[j];
+						p = SOLVEstruct->row_to_proc[jcol];
+						if (p == iam)
+							{	/* Local */
+							at = a[k];
+							a[k] = a[j];
+							a[j] = at;
+							++k;
+							}
+						}
+					}
+
+					/* Re-use the local col indices of A obtained from the
+					previous call to pdgsmv_init() */
+					for (i = 0; i < nnz_loc; ++i)
+					colind[i] = colind_gsmv[i];
+				}
+
+				if (nrhs == 1)
+					{	/* Use the existing solve structure */
+					SOLVEstruct1 = SOLVEstruct;
+					}
+				else {
+				/* For nrhs > 1, since refinement is performed for RHS
+			one at a time, the communication structure for pdgstrs
+			is different than the solve with nrhs RHS.
+			So we use SOLVEstruct1 for the refinement step.
+			*/
+					if (!(SOLVEstruct1 = (dSOLVEstruct_t *)
+						SUPERLU_MALLOC(sizeof(dSOLVEstruct_t))))
+						ABORT ("Malloc fails for SOLVEstruct1");
+					/* Copy the same stuff */
+					SOLVEstruct1->row_to_proc = SOLVEstruct->row_to_proc;
+					SOLVEstruct1->inv_perm_c = SOLVEstruct->inv_perm_c;
+					SOLVEstruct1->num_diag_procs = SOLVEstruct->num_diag_procs;
+					SOLVEstruct1->diag_procs = SOLVEstruct->diag_procs;
+					SOLVEstruct1->diag_len = SOLVEstruct->diag_len;
+					SOLVEstruct1->gsmv_comm = SOLVEstruct->gsmv_comm;
+					SOLVEstruct1->A_colind_gsmv = SOLVEstruct->A_colind_gsmv;
+
+					/* Initialize the *gstrs_comm for 1 RHS. */
+					if (!(SOLVEstruct1->gstrs_comm = (pxgstrs_comm_t *)
+						SUPERLU_MALLOC (sizeof (pxgstrs_comm_t))))
+						ABORT ("Malloc fails for gstrs_comm[]");
+					pdgstrs_init (n, m_loc, 1, fst_row, perm_r, perm_c, grid,
+							Glu_persist, SOLVEstruct1);
+					if (getenv("SUPERLU_ACC_SOLVE")){
+					int_t nsupers = getNsupers(n, LUstruct->Glu_persist);
+					pdgstrs_init_device_lsum_x(options, n, m_loc, 1, grid,LUstruct, SOLVEstruct1,trf3Dpartition->supernodeMask);		 
+					}
+					}
+
+				pdgsrfs3d (options, n, A, anorm, LUstruct, ScalePermstruct, grid3d, trf3Dpartition,
+					B, ldb, X, ldx, nrhs, SOLVEstruct1, berr, stat, info);
+
+				/* Deallocate the storage associated with SOLVEstruct1 */
+				if (nrhs > 1)
+					{
+					pdgstrs_delete_device_lsum_x(SOLVEstruct1);
+					pxgstrs_finalize (SOLVEstruct1->gstrs_comm);
+					SUPERLU_FREE (SOLVEstruct1);
+					}
+
+				stat->utime[REFINE] = SuperLU_timer_ () - t;
+				} /* end IterRefine */			
+		}else{
+
+			if (grid3d->zscp.Iam == 0){  /* on 2D grid-0 */
+
 			/* ------------------------------------------------------
 			   Scale the right-hand side if equilibration was performed
 			   ------------------------------------------------------*/
@@ -2117,24 +2304,6 @@ if (getenv("SUPERLU_ACC_SOLVE")){
 				dSolveInit(options, A, perm_r, perm_c, nrhs, LUstruct,
 							grid, SOLVEstruct);
 			}
-		}
-
-		stat->utime[SOLVE] = 0.0;
-		if(Solve3D){
-			if (getenv("NEW3DSOLVE")){
-				pdgstrs3d_newsolve (options, n, LUstruct,ScalePermstruct, trf3Dpartition, grid3d, X,
-				m_loc, fst_row, ldb, nrhs,SOLVEstruct, stat, info);
-			}else{
-				pdgstrs3d (options, n, LUstruct,ScalePermstruct, trf3Dpartition, grid3d, X,
-				m_loc, fst_row, ldb, nrhs,SOLVEstruct, stat, info);
-			}
-			if (options->IterRefine){
-				printf("iterative refinement has not been implemented for 3D solve. Exitting... \n");
-				exit(0);
-			}
-		}else{
-			if (grid3d->zscp.Iam == 0){  /* on 2D grid-0 */
-
 			pdgstrs(options, n, LUstruct, ScalePermstruct, grid, X, m_loc,
 				fst_row, ldb, nrhs, SOLVEstruct, stat, info);
 
@@ -2292,8 +2461,10 @@ if (grid3d->zscp.Iam == 0)  /* on 2D grid-0 */
 		    }
 
 		// SUPERLU_FREE (b_work);
-		SUPERLU_FREE (X);
 	}
+	if (grid3d->zscp.Iam == 0 || Solve3D)
+		SUPERLU_FREE (X);
+
 	} /* end if nrhs > 0 and factor successful */
 
 #if ( PRNTlevel>=1 )

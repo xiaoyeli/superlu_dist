@@ -429,8 +429,8 @@ main (int argc, char *argv[])
     dDestroy_LU (n, &(grid.grid2d), &LUstruct);
     if ( grid.zscp.Iam == 0 ) { // process layer 0
 	    PStatPrint (&options, &stat, &(grid.grid2d)); /* Print 2D statistics.*/
-        dSolveFinalize (&options, &SOLVEstruct);
     }
+    dSolveFinalize (&options, &SOLVEstruct);
     
     dDestroy_A3d_gathered_on_2d(&SOLVEstruct, &grid);
 

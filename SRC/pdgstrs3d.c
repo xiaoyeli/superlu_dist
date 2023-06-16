@@ -26,7 +26,7 @@ at the top-level directory.
 #include "superlu_ddefs.h"
 #define ISEND_IRECV
 
-
+// Broadcast the RHS to all grids from grid 0
 int_t trs_B_init3d(int_t nsupers, double* x, int nrhs, dLUstruct_t * LUstruct,
 	gridinfo3d_t *grid3d)
 {
@@ -59,7 +59,7 @@ int_t trs_B_init3d(int_t nsupers, double* x, int nrhs, dLUstruct_t * LUstruct,
 	return 0;
 }
 
-
+// Broadcast the RHS to all grids from grid 0. Once received, every grid zeros out certain subvectors to allow for the new 3D solve. 
 int_t trs_B_init3d_newsolve(int_t nsupers, double* x, int nrhs, dLUstruct_t * LUstruct,
 	gridinfo3d_t *grid3d, dtrf3Dpartition_t*  trf3Dpartition)
 {
@@ -343,6 +343,8 @@ int_t trs_compute_communication_structure(superlu_dist_options_t *options, int_t
 		C_BcTree_Nullify(&LBtree_ptr[lk]);
 	}
 
+#ifdef GPU_ACC
+#ifdef HAVE_NVSHMEM  
     if ( !(mystatus = (int*)SUPERLU_MALLOC(kc * sizeof(int))) )
         ABORT("Malloc fails for mystatus[].");
     if ( !(h_nfrecv = (int*)SUPERLU_MALLOC( 3* sizeof(int))) )
@@ -354,7 +356,8 @@ int_t trs_compute_communication_structure(superlu_dist_options_t *options, int_t
 	for (int i=0;i<kc;i++){
         mystatus[i]=1;
 	}
-
+#endif
+#endif
 
 	for (int_t lk = 0; lk < kc; ++lk) { /* for each local block column ... */
 		jb = mycol+lk*grid->npcol;  /* not sure */
@@ -424,11 +427,15 @@ int_t trs_compute_communication_structure(superlu_dist_options_t *options, int_t
                         C_BcTree_Create_nv(&LBtree_ptr[lk], grid->comm, ranks, rank_cnt, msgsize, 'd',&needrecv);
                         //C_BcTree_Create(&LBtree_ptr[ljb], grid->comm, ranks, rank_cnt, msgsize, 'd');
                         //printf("(%d) HOST create:ljb=%d,msg=%d,needrecv=%d\n",iam,ljb,mysendmsg_num,needrecv);
+                        #ifdef GPU_ACC
+                        #ifdef HAVE_NVSHMEM  
                         if (needrecv==1) {
                             mystatus[lk]=0;
                             //printf("(%d) Col %d need one msg %d\n",iam, ljb,mystatus[ljb]);
                             //fflush(stdout);
                         }
+                        #endif
+                        #endif
                         LBtree_ptr[lk].tag_=BC_L;
 
                         // printf("iam %5d btree rank_cnt %5d \n",iam,rank_cnt);
@@ -453,6 +460,8 @@ int_t trs_compute_communication_structure(superlu_dist_options_t *options, int_t
 	for (int_t lk = 0; lk <kr ; ++lk) {
 		C_RdTree_Nullify(&LRtree_ptr[lk]);
 	}
+#ifdef GPU_ACC
+#ifdef HAVE_NVSHMEM      
     if ( !(mystatusmod = (int*)SUPERLU_MALLOC(2*kr * sizeof(int))) )
         ABORT("Malloc fails for mystatusmod[].");
 	if ( !(h_recv_cnt = (int*)SUPERLU_MALLOC(kr * sizeof(int))) )
@@ -463,6 +472,8 @@ int_t trs_compute_communication_structure(superlu_dist_options_t *options, int_t
         h_recv_cnt[i]=0;
 	}
 	for (int i=0;i<2*kr;i++) mystatusmod[i]=1;
+#endif
+#endif
 
 	for (int_t lk=0;lk<kr;++lk){
 		ib = myrow+lk*grid->nprow;  /* not sure */
@@ -529,6 +540,8 @@ int_t trs_compute_communication_structure(superlu_dist_options_t *options, int_t
                         int needsendrd=0;
                         C_RdTree_Create_nv(&LRtree_ptr[lk], grid->comm, ranks, rank_cnt, msgsize, 'd', &needrecvrd, &needsendrd);
                         //C_RdTree_Create(&LRtree_ptr[lib], grid->comm, ranks, rank_cnt, msgsize, 'd');
+                        #ifdef GPU_ACC
+                        #ifdef HAVE_NVSHMEM  
                         h_nfrecvmod[3]+=needsendrd;
                         if (needrecvrd!=0) {
                             mystatusmod[lk*2]=0;
@@ -537,6 +550,8 @@ int_t trs_compute_communication_structure(superlu_dist_options_t *options, int_t
                             //printf("(%d) on CPU, lib=%d, cnt=%d\n",iam,lib,LRtree_ptr[lib].destCnt_);
                             nfrecvmod+=needrecvrd;
                         }
+                        #endif
+                        #endif
                         LRtree_ptr[lk].tag_=RD_L;
                     }
                 }
@@ -645,6 +660,8 @@ int_t trs_compute_communication_structure(superlu_dist_options_t *options, int_t
 	for (int_t lk = 0; lk <kc ; ++lk) {
 		C_BcTree_Nullify(&UBtree_ptr[lk]);
 	}
+#ifdef GPU_ACC
+#ifdef HAVE_NVSHMEM      
 	if ( !(mystatus_u = (int*)SUPERLU_MALLOC(kc * sizeof(int))) )
         ABORT("Malloc fails for mystatus_u[].");
     if ( !(h_nfrecv_u = (int*)SUPERLU_MALLOC( 3* sizeof(int))) )
@@ -656,7 +673,8 @@ int_t trs_compute_communication_structure(superlu_dist_options_t *options, int_t
 	for (int i=0;i<kc;i++){
 		mystatus_u[i]=1;
 	}
-
+#endif
+#endif
 
 
     /* update bsendx_plist with the supernode mask. Note that fsendx_plist doesn't require updates */
@@ -741,10 +759,14 @@ int_t trs_compute_communication_structure(superlu_dist_options_t *options, int_t
                         int needrecv=0;
                         C_BcTree_Create_nv(&UBtree_ptr[lk], grid->comm, ranks, rank_cnt, msgsize, 'd',&needrecv);
                         //C_BcTree_Create(&UBtree_ptr[ljb], grid->comm, ranks, rank_cnt, msgsize, 'd');
+                        #ifdef GPU_ACC
+                        #ifdef HAVE_NVSHMEM  
                         if (needrecv==1) {
                             mystatus_u[lk]=0;
                             //printf("(%d) Col %d need one msg %d\n",iam, ljb,mystatus[ljb]);
-                        }                        
+                        }     
+                        #endif                   
+                        #endif                   
                         UBtree_ptr[lk].tag_=BC_U;
                     }
                 }
@@ -765,6 +787,9 @@ int_t trs_compute_communication_structure(superlu_dist_options_t *options, int_t
 	for (int_t lk = 0; lk <kr ; ++lk) {
 		C_RdTree_Nullify(&URtree_ptr[lk]);
 	}
+
+    #ifdef GPU_ACC
+    #ifdef HAVE_NVSHMEM  
 	if ( !(mystatusmod_u = (int*)SUPERLU_MALLOC(2*kr * sizeof(int))) )
         ABORT("Malloc fails for mystatusmod_u[].");
     if ( !(h_recv_cnt_u = (int*)SUPERLU_MALLOC(kr * sizeof(int))) )
@@ -775,7 +800,8 @@ int_t trs_compute_communication_structure(superlu_dist_options_t *options, int_t
         h_recv_cnt_u[i]=0;
 	}
 	for (int i=0;i<2*kr;i++) mystatusmod_u[i]=1;
-
+    #endif
+    #endif
 
 	for (int_t lk=0;lk<kr;++lk){
 		ib = myrow+lk*grid->nprow;  /* not sure */
@@ -844,6 +870,8 @@ int_t trs_compute_communication_structure(superlu_dist_options_t *options, int_t
                         int needsendrd=0;
                         C_RdTree_Create_nv(&URtree_ptr[lk], grid->comm, ranks, rank_cnt, msgsize, 'd', &needrecvrd,&needsendrd);
                         //C_RdTree_Create(&URtree_ptr[lib], grid->comm, ranks, rank_cnt, msgsize, 'd');
+                        #ifdef GPU_ACC
+                        #ifdef HAVE_NVSHMEM  
                         h_nfrecvmod_u[3] +=needsendrd;
                         if (needrecvrd!=0) {
                             mystatusmod_u[lk*2]=0;
@@ -852,6 +880,8 @@ int_t trs_compute_communication_structure(superlu_dist_options_t *options, int_t
                             //printf("(%d) on CPU, lib=%d, cnt=%d\n",iam,lib,LRtree_ptr[lib].destCnt_);
                             nbrecvmod+=needrecvrd;
                         }
+                        #endif
+                        #endif
                         URtree_ptr[lk].tag_=RD_U;
                     }
                 }
@@ -1535,7 +1565,7 @@ int_t reduceSolvedX_newsolve(int_t treeId, int_t sender, int_t receiver, double*
 
 
 
-
+// Gather the solution vector from all grids to grid 0
 int_t trs_X_gather3d(double* x, int nrhs, dtrf3Dpartition_t*  trf3Dpartition,
                      dLUstruct_t* LUstruct,
                      gridinfo3d_t* grid3d, xtrsTimer_t *xtrsTimer)
@@ -6895,7 +6925,7 @@ int_t iBcastXk2Pck(int_t k, double* x, int nrhs,
  * <pre>
  * Purpose
  *
- *   Re-distribute B on the diagonal processes of the 2D process mesh.
+ *   Re-distribute B on the diagonal processes of the 2D process mesh (only on grid 0).
  *
  * Note
  *
@@ -7073,7 +7103,7 @@ pdReDistribute3d_B_to_X (double *B, int_t m_loc, int nrhs, int_t ldb,
  * Purpose
  *
  *   Re-distribute X on the diagonal processes to B distributed on all
- *   the processes.
+ *   the processes (only on grid 0)
  *
  * Note
  *

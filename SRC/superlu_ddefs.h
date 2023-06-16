@@ -674,6 +674,14 @@ extern void pdgsrfs(superlu_dist_options_t *, int_t,
 		    dScalePermstruct_t *, gridinfo_t *,
 		    double [], int_t, double [], int_t, int,
 		    dSOLVEstruct_t *, double *, SuperLUStat_t *, int *);
+
+
+extern void pdgsrfs3d(superlu_dist_options_t *options, int_t n,
+            SuperMatrix *A, double anorm, dLUstruct_t *LUstruct,
+	        dScalePermstruct_t *ScalePermstruct, gridinfo3d_t *grid3d,
+	        dtrf3Dpartition_t*  trf3Dpartition, double *B, int_t ldb, double *X, int_t ldx, int nrhs,
+	        dSOLVEstruct_t *SOLVEstruct, double *berr, SuperLUStat_t *stat, int *info);
+
 extern void pdgsrfs_ABXglobal(superlu_dist_options_t *, int_t,
                   SuperMatrix *, double, dLUstruct_t *,
 		  gridinfo_t *, double *, int_t, double *, int_t,

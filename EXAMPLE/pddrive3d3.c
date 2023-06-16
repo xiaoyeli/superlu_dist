@@ -392,8 +392,8 @@ main (int argc, char *argv[])
     Destroy_CompRowLoc_Matrix_dist (&A);
     if ( grid.zscp.Iam == 0 ) { // process layer 0
 	    PStatPrint (&options, &stat, &(grid.grid2d)); /* Print 2D statistics.*/
-        dSolveFinalize (&options, &SOLVEstruct);
     }
+    dSolveFinalize (&options, &SOLVEstruct);
     
     dDestroy_A3d_gathered_on_2d(&SOLVEstruct, &grid);
 
