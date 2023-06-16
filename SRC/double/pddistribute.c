@@ -4024,6 +4024,7 @@ pddistribute_allgrid_index_only(superlu_dist_options_t *options, int_t n, SuperM
         SUPERLU_FREE(a);
     }
     SUPERLU_FREE(xa);
+	LUstruct->trf3Dpartition=NULL;
 
 #if ( DEBUGlevel>=1 )
     /* Memory allocated but not freed:
