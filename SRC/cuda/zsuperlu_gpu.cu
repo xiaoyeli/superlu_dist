@@ -1289,6 +1289,15 @@ void zCopyLUToGPU3D (
 	    checkGPUErrors(gpuEventCreate(&(stat->ePCIeH2D[i])));
 	    checkGPUErrors(gpuEventCreate(&(stat->ePCIeD2H_Start[i])));
 	    checkGPUErrors(gpuEventCreate(&(stat->ePCIeD2H_End[i])));
+
+		//YL: need the following to avoid calling gpuEventElapsedTime later with nonrecorded event
+		checkGPUErrors(gpuEventRecord(stat->GemmStart[i], sluGPU->funCallStreams[0]));
+		checkGPUErrors(gpuEventRecord(stat->GemmEnd[i], sluGPU->funCallStreams[0]));
+		checkGPUErrors(gpuEventRecord(stat->ScatterEnd[i], sluGPU->funCallStreams[0]));
+		checkGPUErrors(gpuEventRecord(stat->ePCIeH2D[i], sluGPU->funCallStreams[0]));
+		checkGPUErrors(gpuEventRecord(stat->ePCIeD2H_Start[i], sluGPU->funCallStreams[0]));
+		checkGPUErrors(gpuEventRecord(stat->ePCIeD2H_End[i], sluGPU->funCallStreams[0]));
+
 	}
 
     /*---- Copy L data structure to GPU ----*/

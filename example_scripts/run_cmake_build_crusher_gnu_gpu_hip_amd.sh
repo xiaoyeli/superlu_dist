@@ -3,7 +3,9 @@
 
 module swap PrgEnv-cray PrgEnv-gnu
 module load cmake
-module load rocm				 
+module load rocm/5.1.0
+module load cray-libsci/22.12.1.1	
+module load cray-mpich/8.1.17		 
 export LD_LIBRARY_PATH="$CRAY_LD_LIBRARY_PATH:$LD_LIBRARY_PATH"
 
 export CRAYPE_LINK_TYPE=dynamic
@@ -21,22 +23,24 @@ rm -rf DartConfiguration.tcl
 
 cmake .. \
 	-DTPL_PARMETIS_INCLUDE_DIRS="${PARMETIS_ROOT}/include;${PARMETIS_ROOT}/metis/include" \
-	-DTPL_PARMETIS_LIBRARIES="${PARMETIS_BUILD_DIR}/libparmetis/libparmetis.so;${PARMETIS_BUILD_DIR}/libmetis/libmetis.so;/opt/rocm-4.5.0/lib/libroctx64.so;/opt/rocm-4.5.0/lib/libroctracer64.so" \
+	-DTPL_PARMETIS_LIBRARIES="${PARMETIS_BUILD_DIR}/libparmetis/libparmetis.so;${PARMETIS_BUILD_DIR}/libmetis/libmetis.so;/opt/rocm-5.1.0/lib/libroctx64.so;/opt/rocm-5.1.0/lib/libroctracer64.so" \
 	-DBUILD_SHARED_LIBS=OFF \
 	-DCMAKE_Fortran_COMPILER=ftn \
 	-DCMAKE_C_COMPILER=cc \
 	-DCMAKE_CXX_COMPILER=CC \
 	-DCMAKE_INSTALL_PREFIX=. \
-	-DTPL_BLAS_LIBRARIES="/opt/cray/pe/libsci/21.08.1.2/CRAY/9.0/x86_64/lib/libsci_cray.so" \
-	-DTPL_LAPACK_LIBRARIES="/opt/cray/pe/libsci/21.08.1.2/CRAY/9.0/x86_64/lib/libsci_cray.so" \
+	-DTPL_ENABLE_LAPACKLIB=ON \
+	-DTPL_BLAS_LIBRARIES="/opt/cray/pe/libsci/22.12.1.1/GNU/9.1/x86_64/lib/libsci_gnu_82_mpi_mp.so;/opt/cray/pe/libsci/22.12.1.1/GNU/9.1/x86_64/lib/libsci_gnu_82_mp.so" \
+	-DTPL_LAPACK_LIBRARIES="/opt/cray/pe/libsci/22.12.1.1/GNU/9.1/x86_64/lib/libsci_gnu_82_mpi_mp.so;/opt/cray/pe/libsci/22.12.1.1/GNU/9.1/x86_64/lib/libsci_gnu_82_mp.so" \
 	-DCMAKE_BUILD_TYPE=Release \
-	-DTPL_ENABLE_HIPLIB=TRUE \
-	-DHIP_HIPCC_FLAGS="--amdgpu-target=gfx906,gfx908,gfx90a -I/opt/cray/pe/mpich/8.1.12/ofi/GNU/9.1/include" \
+	-DTPL_ENABLE_HIPLIB=ON \
+	-DXSDK_ENABLE_Fortran=OFF \
+	-DHIP_HIPCC_FLAGS="--amdgpu-target=gfx906,gfx908,gfx90a -I/opt/cray/pe/mpich/8.1.17/ofi/GNU/9.1/include" \
 	-DCMAKE_VERBOSE_MAKEFILE:BOOL=ON \
 	-DCMAKE_CXX_FLAGS="-Wno-format -Wno-unused-value -Wno-return-type -Wno-unsequenced -Wno-switch -Wno-parentheses -DPRNTlevel=1 -DPROFlevel=0 -DDEBUGlevel=0 " \
-	-DCMAKE_C_FLAGS="-Wno-format -Wno-unused-value -Wno-return-type -Wno-unsequenced -Wno-switch -Wno-parentheses -DPRNTlevel=1 -DPROFlevel=0 -DDEBUGlevel=0 "
-make pddrive	
-make pddrive3d		
+	-DCMAKE_C_FLAGS="-DGPU_SOLVE -Wno-format -Wno-unused-value -Wno-return-type -Wno-unsequenced -Wno-switch -Wno-parentheses -DPRNTlevel=1 -DPROFlevel=0 -DDEBUGlevel=0 "
+make pddrive -j16	
+make pddrive3d -j16	
 #	-DTPL_BLAS_LIBRARIES="/opt/intel/compilers_and_libraries_2017.2.174/linux/mkl/lib/intel64/libmkl_intel_lp64.so;/opt/intel/compilers_and_libraries_2017.2.174/linux/mkl/lib/intel64/libmkl_sequential.so;/opt/intel/compilers_and_libraries_2017.2.174/linux/mkl/lib/intel64/libmkl_core.so"
 
 #	-DTPL_BLAS_LIBRARIES="/opt/intel/compilers_and_libraries_2017.2.174/linux/mkl/lib/intel64/libmkl_intel_lp64.so;/opt/intel/compilers_and_libraries_2017.2.174/linux/mkl/lib/intel64/libmkl_sequential.so;/opt/intel/compilers_and_libraries_2017.2.174/linux/mkl/lib/intel64/libmkl_core.so" \

@@ -16,7 +16,7 @@ EXIT_PARAM=2
 
 module load essl
 module load netlib-lapack/3.8.0
-module load gcc/7.4.0
+module load gcc/7.5.0
 module load cmake
 module load cuda/10.1.243
 #module unload darshan-runtime
@@ -28,6 +28,8 @@ INPUT_DIR=$MEMBERWORK/csc289/matrix
 FILE_NAME=pddrive
 FILE=$FILE_DIR/$FILE_NAME
 
+FILE_NAME3D=pddrive3d
+FILE3D=$FILE_DIR/$FILE_NAME3D
 
 nprows=(  1 )
 npcols=( 1)  
@@ -97,7 +99,8 @@ export MAX_BUFFER_SIZE=500000000
 #for MAT in   ../atmosmodd.mtx
 # for MAT in epb3.mtx
 # for MAT in matrix_ACTIVSg70k_AC_00.mtx matrix_ACTIVSg10k_AC_00.mtx s1_mat_0_126936.bin s1_mat_0_253872.bin s1_mat_0_507744.bin
-for MAT in s1_mat_0_126936.bin s1_mat_0_253872.bin s1_mat_0_507744.bin
+# for MAT in s1_mat_0_126936.bin s1_mat_0_253872.bin s1_mat_0_507744.bin
+for MAT in s1_mat_0_126936.bin 
 # for MAT in s1_mat_0_507744.bin
 # for MAT in A30_015_0_25356.bin
 # for MAT in temp_13k.mtx temp_25k.mtx temp_75k.mtx
@@ -118,6 +121,11 @@ for MAT in s1_mat_0_126936.bin s1_mat_0_253872.bin s1_mat_0_507744.bin
     mkdir -p ${MAT}_summit
 	echo "jsrun -n $RS_VAL -a $RANK_PER_RS -c $TH_PER_RS -g $GPU_PER_RS -b packed:$NTH $FILE -c $NCOL -r $NROW $INPUT_DIR/$MAT | tee ./${MAT}_summit_new_LU/SLU.o_mpi_${NROW}x${NCOL}_OMP_${OMP_NUM_THREADS}_GPU_${GPU_PER_RANK}"
     jsrun -n $RS_VAL -a $RANK_PER_RS -c $TH_PER_RS -g $GPU_PER_RS -b packed:$NTH '--smpiargs=-x PAMI_DISABLE_CUDA_HOOK=1 -disable_gpu_hooks' nvprof --profile-from-start off $FILE -c $NCOL -r $NROW $INPUT_DIR/$MAT | tee ./${MAT}_summit/SLU.o_mpi_${NROW}x${NCOL}_OMP_${OMP_NUM_THREADS}_GPU_${GPU_PER_RANK}
+
+
+	# echo "jsrun -n $RS_VAL -a $RANK_PER_RS -c $TH_PER_RS -g $GPU_PER_RS -b packed:$NTH $FILE3D -c $NCOL -r $NROW -d 1 $INPUT_DIR/$MAT | tee ./${MAT}_summit_new_LU/SLU.o_mpi_${NROW}x${NCOL}_OMP_${OMP_NUM_THREADS}_GPU_${GPU_PER_RANK}_3d"
+  #   jsrun -n $RS_VAL -a $RANK_PER_RS -c $TH_PER_RS -g $GPU_PER_RS -b packed:$NTH '--smpiargs=-x PAMI_DISABLE_CUDA_HOOK=1 -disable_gpu_hooks' nvprof --profile-from-start off $FILE3D -c $NCOL -r $NROW -d 1 $INPUT_DIR/$MAT | tee ./${MAT}_summit/SLU.o_mpi_${NROW}x${NCOL}_OMP_${OMP_NUM_THREADS}_GPU_${GPU_PER_RANK}_3d
+
   done
 #one
 

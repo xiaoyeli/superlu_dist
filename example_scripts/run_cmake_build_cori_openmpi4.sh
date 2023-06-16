@@ -14,6 +14,9 @@ module load cgpu
 module load cuda/11.1.1
 module swap gcc gcc/8.3.0
 module load openmpi/4.0.3
+module load cmake/3.22.1
+# module load cuda
+# module load openmpi
 
 export CRAYPE_LINK_TYPE=dynamic
 export PARMETIS_ROOT=~/Cori/my_software/parmetis-4.0.3_dynamic_openmpi403_gnu

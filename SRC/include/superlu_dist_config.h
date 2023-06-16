@@ -3,6 +3,9 @@
 /* Enable CUDA */
 #define HAVE_CUDA TRUE
 
+/* Enable NVSHMEM */
+/* #undef HAVE_NVSHMEM */
+
 /* Enable HIP */
 /* #undef HAVE_HIP */
 

@@ -713,11 +713,11 @@ int_t* getTreeHeads(int_t maxLvl, int_t nsupers, treeList_t* treeList)
 {
 	int_t numTrees = (1 << maxLvl) - 1;
 	int_t* treeHeads = SUPERLU_MALLOC (numTrees * sizeof (int_t));
-	// for (int i = 0; i < numTrees; ++i)
-	// {
-	// 	/* code */
-	// 	treeHeads[i]=0;
-	// }
+	for (int i = 0; i < numTrees; ++i)
+	{
+		/* code */
+		treeHeads[i]=-1;
+	}
 	treeHeads[0] = nsupers - 1;
 	for (int_t lvl = 0; lvl < maxLvl - 1; ++lvl)
 	{
@@ -727,12 +727,14 @@ int_t* getTreeHeads(int_t maxLvl, int_t nsupers, treeList_t* treeList)
 		for (int_t i = st; i < end; ++i)
 		{
 			/* code */
+			if(treeHeads[i]>-1){
 			int_t * sroots;
 			int_t numSroots; 
 			sroots = getSubTreeRoots(treeHeads[i], &numSroots, treeList);
 			treeHeads[2 * i + 1] = sroots[0];
 			treeHeads[2 * i + 2] = sroots[1];
 			SUPERLU_FREE(sroots);
+			}
 		}
 	}
 	return treeHeads;
@@ -792,8 +794,14 @@ int_t** getNodeList(int_t maxLvl, int_t* setree, int_t* nnodes,
 		for (int_t i = st; i < end; ++i)
 		{
 			/* code */
-			if (nodeList[i])
-				getCommonAncestorList(treeHeads[i], nodeList[i],  setree, treeList);
+			if (nodeList[i]){
+				int_t tmpcnt=getCommonAncestorList(treeHeads[i], nodeList[i],  setree, treeList);
+				if(tmpcnt!=nnodes[i]){
+					printf("nnodes[i] = %10d but getCommonAncestorList returns %10d. The code will continue but the solution can be wrong. Likely SUPERLU_LBS=ND is used for a non-binary tree!!! Try to use SUPERLU_LBS=GD instead. \n",nnodes[i], tmpcnt);
+					fflush(stdout);
+					nnodes[i]=tmpcnt; // this makes sure the code doesn't crash, but the result is wrong! 
+				}
+			}
 		}
 	}
 

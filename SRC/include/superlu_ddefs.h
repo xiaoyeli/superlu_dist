@@ -36,7 +36,7 @@ at the top-level directory.
 
 #include "superlu_defs.h"
 
-/* 
+/*
  *-- The structure used to store matrix A of the linear system and
  *   several vectors describing the transformations done to matrix A.
  *
@@ -44,13 +44,13 @@ at the top-level directory.
  *        Matrix A in A*X=B, of dimension (A->nrow, A->ncol).
  *        The number of linear equations is A->nrow. The type of A can be:
  *        Stype = SLU_NC; Dtype = SLU_D; Mtype = SLU_GE.
- *         
+ *
  * DiagScale  (DiagScale_t)
  *        Specifies the form of equilibration that was done.
  *        = NOEQUIL: No equilibration.
  *        = ROW:  Row equilibration, i.e., A was premultiplied by diag(R).
  *        = COL:  Column equilibration, i.e., A was postmultiplied by diag(C).
- *        = BOTH: Both row and column equilibration, i.e., A was replaced 
+ *        = BOTH: Both row and column equilibration, i.e., A was replaced
  *                 by diag(R)*A*diag(C).
  *
  * R      double*, dimension (A->nrow)
@@ -62,32 +62,35 @@ at the top-level directory.
  *        The column scale factors for A.
  *        If DiagScale = COL or BOTH, A is multiplied on the right by diag(C).
  *        If DiagScale = NOEQUIL or ROW, C is not defined.
- *         
+ *
  * perm_r (int*) dimension (A->nrow)
  *        Row permutation vector which defines the permutation matrix Pr,
  *        perm_r[i] = j means row i of A is in position j in Pr*A.
  *
  * perm_c (int*) dimension (A->ncol)
- *	  Column permutation vector, which defines the 
- *        permutation matrix Pc; perm_c[i] = j means column i of A is 
+ *	  Column permutation vector, which defines the
+ *        permutation matrix Pc; perm_c[i] = j means column i of A is
  *        in position j in A*Pc.
  *
  */
 typedef struct {
     DiagScale_t DiagScale;
     double *R;
-    double *C; 
+    double *C;
     int_t  *perm_r;
     int_t  *perm_c;
 } dScalePermstruct_t;
 
-#if 0 // Sherry: move to superlu_defs.h 
+#if 0 // Sherry: move to superlu_defs.h
 /*-- Auxiliary data type used in PxGSTRS/PxGSTRS1. */
 typedef struct {
     int_t lbnum;  /* Row block number (local).      */
     int_t indpos; /* Starting position in Uindex[]. */
 } Ucb_indptr_t;
 #endif
+
+
+
 
 /*
  * On each processor, the blocks in L are stored in compressed block
@@ -96,26 +99,26 @@ typedef struct {
 #define MAX_LOOKAHEADS 50
 typedef struct {
     int_t   **Lrowind_bc_ptr; /* size ceil(NSUPERS/Pc);
-    	                         free'd in distribution routinies */
+    	                         free'd in trs_compute_communication_structure routinies */
     int_t *Lrowind_bc_dat;  /* size sum of sizes of Lrowind_bc_ptr[lk]) */
     long int *Lrowind_bc_offset;  /* size ceil(NSUPERS/Pc)              */
     long int Lrowind_bc_cnt;
 
     double **Lnzval_bc_ptr;  /* size ceil(NSUPERS/Pc);
-    	                         free'd in distribution routinies */
+    	                         free'd in trs_compute_communication_structure routinies */
     double *Lnzval_bc_dat;  /* size sum of sizes of Lnzval_bc_ptr[lk])  */   
     long int *Lnzval_bc_offset;  /* size ceil(NSUPERS/Pc)                */    
     long int Lnzval_bc_cnt;
     
     double **Linv_bc_ptr;    /* size ceil(NSUPERS/Pc);
-    	                         free'd in distribution routinies */
+    	                         free'd in trs_compute_communication_structure routinies */
     double *Linv_bc_dat;  /* size sum of sizes of Linv_bc_ptr[lk])  */   
     long int *Linv_bc_offset;  /* size ceil(NSUPERS/Pc)              */   
     long int Linv_bc_cnt;
     
     int_t   **Lindval_loc_bc_ptr; /* size ceil(NSUPERS/Pc);
                                      pointers to locations in Lrowind_bc_ptr and Lnzval_bc_ptr;
-    	                             free'd in distribution routinies */
+    	                             free'd in trs_compute_communication_structure routinies */
 				     
     int_t *Lindval_loc_bc_dat;  /* size: sum of sizes of Lindval_loc_bc_ptr[lk]) */   
     long int *Lindval_loc_bc_offset;  /* size ceil(NSUPERS/Pc)  */   
@@ -141,20 +144,20 @@ typedef struct {
     int_t   *Unnz; /* number of nonzeros per block column in U*/
     int_t   **Lrowind_bc_2_lsum; /* size ceil(NSUPERS/Pc)  map indices of Lrowind_bc_ptr to indices of lsum  */
     double **Uinv_bc_ptr;  /* size ceil(NSUPERS/Pc)     	*/
-    double *Uinv_bc_dat;  /* size sum of sizes of Linv_bc_ptr[lk])                 */   
-    long int *Uinv_bc_offset;  /* size ceil(NSUPERS/Pc)                 */   
+    double *Uinv_bc_dat;  /* size sum of sizes of Linv_bc_ptr[lk])                 */
+    long int *Uinv_bc_offset;  /* size ceil(NSUPERS/Pc)                 */
     long int Uinv_bc_cnt;
 
     int_t   **Ufstnz_br_ptr;  /* size ceil(NSUPERS/Pr)                 */
-    int_t   *Ufstnz_br_dat;  /* size sum of sizes of Ufstnz_br_ptr[lk])                 */   
+    int_t   *Ufstnz_br_dat;  /* size sum of sizes of Ufstnz_br_ptr[lk])                 */
     long int *Ufstnz_br_offset;  /* size ceil(NSUPERS/Pr)    */
     long int Ufstnz_br_cnt;
-    
+
     double  **Unzval_br_ptr;  /* size ceil(NSUPERS/Pr)                  */
-    double  *Unzval_br_dat;   /* size sum of sizes of Unzval_br_ptr[lk]) */   
+    double  *Unzval_br_dat;   /* size sum of sizes of Unzval_br_ptr[lk]) */
     long int *Unzval_br_offset;  /* size ceil(NSUPERS/Pr)    */
     long int Unzval_br_cnt;
-    
+
         /*-- Data structures used for broadcast and reduction trees. --*/
     C_Tree  *LBtree_ptr;       /* size ceil(NSUPERS/Pc)                */
     C_Tree  *LRtree_ptr;       /* size ceil(NSUPERS/Pr)                */
@@ -197,14 +200,15 @@ typedef struct {
     int   nbrecvx;          /* Number of Xk I will receive in U-solve    */
     int   nbsendx;          /* Number of Xk I will send in U-solve       */
     int   *mod_bit;         /* Flag contribution from each row blocks    */
-
+    int   nleaf;
+    int   nroot;
     /*-- Auxiliary arrays used for forward/back solves. --*/
     int_t   *ilsum;           /* Starting position of each supernode in lsum
 				 (local)  */
     int_t   ldalsum;          /* LDA of lsum (local) */
     int_t   SolveMsgSent;     /* Number of actual messages sent in LU-solve */
     int_t   SolveMsgVol;      /* Volume of messages sent in the solve phase */
-
+    int   *bcols_masked;      /* Local block column IDs in my 2D grid */ 
 
     /*********************/
     /* The following variables are used in the hybrid solver */
@@ -221,24 +225,23 @@ typedef struct {
     int_t n_utsendx;         /* Number of Xk I will receive                 */
     int_t n_utrecvx;         /* Number of Xk I will send                    */
     int_t n_utrecvmod;
-    int_t nroot;
     int_t *ut_modbit;
     int_t *Urbs;
     Ucb_indptr_t **Ucb_indptr;/* Vertical linked list pointing to Uindex[] */
     Ucb_indptr_t *Ucb_inddat;
     long int *Ucb_indoffset;
-    long int Ucb_indcnt;  
-    
+    long int Ucb_indcnt;
+
     int_t  **Ucb_valptr;      /* Vertical linked list pointing to Unzval[] */
-    int_t  *Ucb_valdat;      
+    int_t  *Ucb_valdat;
     long int *Ucb_valoffset;
     long int Ucb_valcnt;
 
     /* some additional counters for L solve */
     int_t n;
-    int_t nleaf;
     int_t nfrecvmod;
     int_t inv; /* whether the diagonal block is inverted*/
+    int nbcol_masked; /*number of local block columns in my 2D grid*/
 
 #ifdef GPU_ACC
     /* The following variables are used in GPU trisolve */
@@ -260,7 +263,8 @@ typedef struct {
     int64_t *d_Lindval_loc_bc_offset ;     
     int_t *d_Uindval_loc_bc_dat ;     
     int64_t *d_Uindval_loc_bc_offset ;     
-    
+    int   *d_bcols_masked;      /* Local block column IDs in my 2D grid */ 
+        
     //    long int *d_Lindval_loc_bc_offset ;     
     //    int_t *d_Urbs;
     //    int_t   *d_Ufstnz_br_dat;  
@@ -277,16 +281,48 @@ typedef struct {
     C_Tree  *d_LBtree_ptr ;
     C_Tree  *d_LRtree_ptr ;
     C_Tree  *d_UBtree_ptr ;
-    C_Tree  *d_URtree_ptr ;    
+    C_Tree  *d_URtree_ptr ;
+    gridinfo_t *d_grid;
 #endif
 
 } dLocalLU_t;
+
+
+typedef struct
+{
+    int_t * Lsub_buf ;
+    double * Lval_buf ;
+    int_t * Usub_buf ;
+    double * Uval_buf ;
+} dLUValSubBuf_t;
+
+
+typedef struct
+{
+    gEtreeInfo_t gEtreeInfo;
+    int_t* iperm_c_supno;
+    int_t* myNodeCount;
+    int_t* myTreeIdxs;
+    int_t* myZeroTrIdxs;
+    int_t** treePerm;
+    sForest_t** sForests;
+    int_t* supernode2treeMap;
+    int* supernodeMask;
+    dLUValSubBuf_t  *LUvsb;
+    int maxLvl; // YL: store this to avoid the use of grid3d
+    
+    /* Sherry added the following 3 for variable size batch. 2/17/23 */
+    int mxLeafNode; /* number of leaf nodes. */
+    int *diagDims;  /* dimensions of the diagonal blocks at any level of the tree */
+    int *gemmCsizes; /* sizes of the C matrices at any level of the tree. */
+} dtrf3Dpartition_t;
 
 
 typedef struct {
     int_t *etree;
     Glu_persist_t *Glu_persist;
     dLocalLU_t *Llu;
+    dtrf3Dpartition_t *trf3Dpartition;
     char dt;
 } dLUstruct_t;
 
@@ -328,13 +364,19 @@ typedef struct {
     NRformat_loc3d* A3d; /* Point to 3D {A, B} gathered on 2D layer 0.
                             This needs to be peresistent between
 			    3D factorization and solve.  */
+    #ifdef GPU_ACC
+    double *d_lsum, *d_lsum_save;      /* used for device lsum*/
+    double *d_x;         /* used for device solution vector*/
+    int  *d_fmod_save, *d_fmod;         /* used for device fmod vector*/
+    int  *d_bmod_save, *d_bmod;         /* used for device bmod vector*/
+    #endif         
 } dSOLVEstruct_t;
 
 
 
 /*==== For 3D code ====*/
 
-// new structures for pdgstrf_4_8 
+// new structures for pdgstrf_4_8
 
 #if 0  // Sherry: moved to superlu_defs.h
 typedef struct
@@ -360,7 +402,7 @@ typedef struct
 {
     Remain_info_t *lookAhead_info, *Remain_info;
     Ublock_info_t *Ublock_info, *Ublock_info_Phi;
-    
+
     int_t first_l_block_acc , first_u_block_acc;
     int_t last_offload ;
     int_t *Lblock_dirty_bit, * Ublock_dirty_bit;
@@ -387,38 +429,13 @@ typedef struct
 #endif  // Above are moved to superlu_defs.h
 
 
-typedef struct 
-{
-    int_t * Lsub_buf ;
-    double * Lval_buf ;
-    int_t * Usub_buf ;
-    double * Uval_buf ;
-} dLUValSubBuf_t;
 
 int_t scuStatUpdate(
     int_t knsupc,
-    HyP_t* HyP, 
+    HyP_t* HyP,
     SCT_t* SCT,
     SuperLUStat_t *stat
     );
-
-typedef struct
-{
-    gEtreeInfo_t gEtreeInfo;
-    int_t* iperm_c_supno;
-    int_t* myNodeCount;
-    int_t* myTreeIdxs;
-    int_t* myZeroTrIdxs;
-    int_t** treePerm;
-    sForest_t** sForests;
-    int_t* supernode2treeMap;
-    dLUValSubBuf_t  *LUvsb;
-    
-    /* Sherry added the following 3 for variable size batch. 2/17/23 */
-    int mxLeafNode; /* number of leaf nodes. */
-    int *diagDims;  /* dimensions of the diagonal blocks at any level of the tree */
-    int *gemmCsizes; /* sizes of the C matrices at any level of the tree. */
-} dtrf3Dpartition_t;
 
 typedef struct
 {
@@ -427,10 +444,27 @@ typedef struct
 } dscuBufs_t;
 
 typedef struct
-{   
+{
     double* BlockLFactor;
     double* BlockUFactor;
 } ddiagFactBufs_t;
+
+
+typedef struct xT_struct
+{
+	double* xT;
+	int_t ldaspaT;
+	int_t* ilsumT;
+} xT_struct;
+
+typedef struct lsumBmod_buff_t
+{
+    double * tX;    // buffer for reordered X
+    double * tU;    // buffer for packedU
+    int_t *indCols; //
+}lsumBmod_buff_t;
+
+typedef enum trtype_t {UPPER_TRI, LOWER_TRI} trtype_t;
 
 /*=====================*/
 
@@ -483,7 +517,7 @@ extern int     dcreate_matrix_dat(SuperMatrix *, int, double **, int *,
 extern int dcreate_matrix_postfix(SuperMatrix *, int, double **, int *,
 				  double **, int *, FILE *, char *, gridinfo_t *);
 
-extern void   dScalePermstructInit(const int_t, const int_t, 
+extern void   dScalePermstructInit(const int_t, const int_t,
                                       dScalePermstruct_t *);
 extern void   dScalePermstructFree(dScalePermstruct_t *);
 
@@ -519,6 +553,16 @@ extern void  pdgssvx_ABglobal(superlu_dist_options_t *, SuperMatrix *,
 extern float pddistribute(superlu_dist_options_t *, int_t, SuperMatrix *,
 			 dScalePermstruct_t *, Glu_freeable_t *,
 			 dLUstruct_t *, gridinfo_t *);
+extern float pddistribute_allgrid(superlu_dist_options_t *options, int_t n, SuperMatrix *A,
+	     dScalePermstruct_t *ScalePermstruct,
+	     Glu_freeable_t *Glu_freeable, dLUstruct_t *LUstruct,
+	     gridinfo_t *grid, int* supernodeMask);
+
+extern float pddistribute_allgrid_index_only(superlu_dist_options_t *options, int_t n, SuperMatrix *A,
+	     dScalePermstruct_t *ScalePermstruct,
+	     Glu_freeable_t *Glu_freeable, dLUstruct_t *LUstruct,
+	     gridinfo_t *grid, int* supernodeMask);
+
 extern void  pdgssvx(superlu_dist_options_t *, SuperMatrix *,
 		     dScalePermstruct_t *, double *,
 		     int, int, gridinfo_t *, dLUstruct_t *,
@@ -531,6 +575,9 @@ extern void dDestroy_A3d_gathered_on_2d(dSOLVEstruct_t *, gridinfo3d_t *);
 extern int_t pdgstrs_init(int_t, int_t, int_t, int_t,
                           int_t [], int_t [], gridinfo_t *grid,
 	                  Glu_persist_t *, dSOLVEstruct_t *);
+extern int_t pdgstrs_init_device_lsum_x(superlu_dist_options_t *, int_t , int_t , int_t , gridinfo_t *,
+	     dLUstruct_t *, dSOLVEstruct_t *, int*);    
+extern int_t pdgstrs_delete_device_lsum_x(dSOLVEstruct_t *);                           
 extern void pxgstrs_finalize(pxgstrs_comm_t *);
 extern int  dldperm_dist(int, int, int_t, int_t [], int_t [],
 		    double [], int_t *, double [], double []);
@@ -607,8 +654,19 @@ extern void dComputeLevelsets(int , int_t , gridinfo_t *,
 			   
 #ifdef GPU_ACC               
 extern void pdconvertU(superlu_dist_options_t *, gridinfo_t *, dLUstruct_t *, SuperLUStat_t *, int);
-extern void dlsum_fmod_inv_gpu_wrap(int_t, int_t, int_t, int_t, double *, double *, int, int, int_t , int *fmod, C_Tree  *, C_Tree  *, int_t *, int_t *, int64_t *, double *, int64_t *, double *, int64_t *, int_t *, int64_t *, int_t *, gridinfo_t *, double * , double * , int_t );
-extern void dlsum_bmod_inv_gpu_wrap(superlu_dist_options_t *, int_t, int_t, int_t, int_t, double *, double *, int, int, int_t , int *bmod, C_Tree  *, C_Tree  *, int_t *, int_t *, int64_t *, double *, int64_t *, double *, int64_t *, int_t *, int64_t *,int_t *,gridinfo_t *);
+extern void dlsum_fmod_inv_gpu_wrap(int_t, int_t, int_t, int_t, double *,double *,int,int, int_t , int_t *, C_Tree  *, C_Tree  *, int_t *, int_t *,long int *, double *, long int *, double *, long int *, int_t *, long int *, int_t *, int *, gridinfo_t *,
+                                    int_t, uint64_t*, uint64_t*, double*, double*, int*, int*, int*,
+                                    int*, int*, int*, int*, int*, int*,int*,
+                                    int*, int*, int*, int*, int*, int*,
+                                    int*, int*, int);
+extern void dlsum_bmod_inv_gpu_wrap(superlu_dist_options_t *, int_t, int_t, int_t, int_t, double *, double *,int,int, int_t , int *, C_Tree  *, C_Tree  *, int_t *, int_t *, int64_t *, double *, int64_t *, double  *, int64_t *, int_t *, int64_t *, int_t *,gridinfo_t *,
+                                    int_t, uint64_t*, uint64_t*, double*, double*,
+                                    int*, int*, int*, int*,
+                                    int*, int*, int*, int*, int*,
+                                    int*, int*, int*, int*, int*, int*,
+                                    int*, int*, int*, int); //int*); //int*, double*);
+
+
 #endif
 
 extern void pdgsrfs(superlu_dist_options_t *, int_t,
@@ -616,6 +674,14 @@ extern void pdgsrfs(superlu_dist_options_t *, int_t,
 		    dScalePermstruct_t *, gridinfo_t *,
 		    double [], int_t, double [], int_t, int,
 		    dSOLVEstruct_t *, double *, SuperLUStat_t *, int *);
+
+
+extern void pdgsrfs3d(superlu_dist_options_t *options, int_t n,
+            SuperMatrix *A, double anorm, dLUstruct_t *LUstruct,
+	        dScalePermstruct_t *ScalePermstruct, gridinfo3d_t *grid3d,
+	        dtrf3Dpartition_t*  trf3Dpartition, double *B, int_t ldb, double *X, int_t ldx, int nrhs,
+	        dSOLVEstruct_t *SOLVEstruct, double *berr, SuperLUStat_t *stat, int *info);
+
 extern void pdgsrfs_ABXglobal(superlu_dist_options_t *, int_t,
                   SuperMatrix *, double, dLUstruct_t *,
 		  gridinfo_t *, double *, int_t, double *, int_t,
@@ -632,6 +698,262 @@ extern void pdgsmv_init(SuperMatrix *, int_t *, gridinfo_t *,
 extern void pdgsmv(int_t, SuperMatrix *, gridinfo_t *, pdgsmv_comm_t *,
 		   double x[], double ax[]);
 extern void pdgsmv_finalize(pdgsmv_comm_t *);
+
+
+extern int_t initLsumBmod_buff(int_t ns, int nrhs, lsumBmod_buff_t* lbmod_buf);
+extern int_t leafForestBackSolve3d(superlu_dist_options_t *options, int_t treeId, int_t n,  dLUstruct_t * LUstruct,
+                            dScalePermstruct_t * ScalePermstruct,
+                            dtrf3Dpartition_t*  trf3Dpartition, gridinfo3d_t *grid3d,
+                            double * x, double * lsum, double * recvbuf,
+                            MPI_Request * send_req,
+                            int nrhs, lsumBmod_buff_t* lbmod_buf,
+                            dSOLVEstruct_t * SOLVEstruct, SuperLUStat_t * stat, xtrsTimer_t *xtrsTimer);
+
+extern int_t nonLeafForestBackSolve3d( int_t treeId,  dLUstruct_t * LUstruct,
+                                dScalePermstruct_t * ScalePermstruct,
+                                dtrf3Dpartition_t*  trf3Dpartition, gridinfo3d_t *grid3d,
+                                 double * x, double * lsum, xT_struct *xT_s,double * recvbuf,
+                                MPI_Request * send_req,
+                                int nrhs, lsumBmod_buff_t* lbmod_buf,
+                                dSOLVEstruct_t * SOLVEstruct, SuperLUStat_t * stat, xtrsTimer_t *xtrsTimer);
+
+extern int_t dlasum_bmod_Tree(int_t  pTree, int_t cTree, double *lsum, double *x,
+                       xT_struct *xT_s,
+                       int    nrhs, lsumBmod_buff_t* lbmod_buf,
+                       dLUstruct_t * LUstruct,
+                       dtrf3Dpartition_t*  trf3Dpartition,
+                       gridinfo3d_t* grid3d, SuperLUStat_t * stat);
+extern int_t lsumForestBsolve(int_t k, int_t treeId,
+                       double *lsum, double *x,  xT_struct *xT_s,int    nrhs, lsumBmod_buff_t* lbmod_buf,
+                       dLUstruct_t * LUstruct,
+                       dtrf3Dpartition_t*  trf3Dpartition,
+                       gridinfo3d_t* grid3d, SuperLUStat_t * stat);
+
+extern int_t  bCastXk2Pck  (int_t k, xT_struct *xT_s, int nrhs,
+                     dLUstruct_t * LUstruct, gridinfo_t * grid, xtrsTimer_t *xtrsTimer);
+
+extern int_t  lsumReducePrK (int_t k, double*x, double* lsum, double* recvbuf, int nrhs,
+                      dLUstruct_t * LUstruct, gridinfo_t * grid, xtrsTimer_t *xtrsTimer);
+
+extern int* getBmod3d(int_t treeId, int_t nlb, sForest_t* sforest, dLUstruct_t * LUstruct, dtrf3Dpartition_t*  trf3Dpartition, gridinfo_t * grid);
+
+extern int* getBmod3d_newsolve(int_t nlb, int_t nsupers, int* supernodeMask, dLUstruct_t * LUstruct, gridinfo_t * grid);
+
+extern int* getBrecvTree(int_t nlb, sForest_t* sforest,  int* bmod, gridinfo_t * grid);
+
+extern int* getBrecvTree_newsolve(int_t nlb, int_t nsupers, int* supernodeMask, int* bmod, gridinfo_t * grid);
+
+
+extern int getNrootUsolveTree(int_t* nbrecvmod, sForest_t* sforest, int* brecv,
+	int* bmod, gridinfo_t * grid);
+
+extern int getNbrecvX(sForest_t* sforest, int_t* Urbs, gridinfo_t * grid);
+extern int getNbrecvX_newsolve(int_t nsupers, int* supernodeMask, int_t* Urbs, Ucb_indptr_t **Ucb_indptr, gridinfo_t * grid);
+extern int getNrootUsolveTree_newsolve(int_t* nbrecvmod, int_t nsupers, int* supernodeMask, int* brecv, int* bmod, gridinfo_t * grid);
+
+
+extern int_t nonLeafForestForwardSolve3d( int_t treeId,  dLUstruct_t * LUstruct,
+                                   dScalePermstruct_t * ScalePermstruct,
+                                   dtrf3Dpartition_t*  trf3Dpartition, gridinfo3d_t *grid3d,
+                                   double * x, double * lsum,
+                                   xT_struct *xT_s,
+                                   double * recvbuf, double* rtemp,
+                                   MPI_Request * send_req,
+                                   int nrhs,
+                                   dSOLVEstruct_t * SOLVEstruct, SuperLUStat_t * stat, xtrsTimer_t *xtrsTimer);
+extern int_t leafForestForwardSolve3d(superlu_dist_options_t *options, int_t treeId, int_t n,  dLUstruct_t * LUstruct,
+                               dScalePermstruct_t * ScalePermstruct,
+                               dtrf3Dpartition_t*  trf3Dpartition, gridinfo3d_t *grid3d,
+                               double * x, double * lsum, double * recvbuf, double* rtemp,
+                               MPI_Request * send_req,
+                               int nrhs,
+                               dSOLVEstruct_t * SOLVEstruct, SuperLUStat_t * stat, xtrsTimer_t *xtrsTimer);
+extern int* getfmodLeaf(int_t nlb, dLUstruct_t * LUstruct);
+extern int* getfmod_newsolve(int_t nlb, int_t nsupers, int* supernodeMask, dLUstruct_t * LUstruct, gridinfo_t * grid);
+extern int getNfrecvxLeaf(sForest_t* sforest, dLUstruct_t * LUstruct, gridinfo_t * grid);
+extern int getNfrecvx_newsolve(int_t nsupers, int* supernodeMask, dLUstruct_t * LUstruct, gridinfo_t * grid);
+extern int_t getNfrecvmodLeaf(int* nleaf, sForest_t* sforest, int* frecv, int* fmod, gridinfo_t * grid);
+extern int_t getNfrecvmod_newsolve(int* nleaf, int_t nsupers, int* supernodeMask, int* frecv, int* fmod, gridinfo_t * grid);
+extern int* getfrecvLeaf( sForest_t* sforest, int_t nlb, int* fmod,
+  dLUstruct_t * LUstruct, gridinfo_t * grid);
+extern int* getfrecv_newsolve(int_t nsupers, int* supernodeMask, int_t nlb, int* fmod,
+                     dLUstruct_t * LUstruct, gridinfo_t * grid);
+extern int_t trs_compute_communication_structure(superlu_dist_options_t *options, int_t n, dLUstruct_t * LUstruct,
+                           dScalePermstruct_t * ScalePermstruct,
+                           int* supernodeMask, gridinfo_t *grid, SuperLUStat_t * stat);
+extern int_t reduceSolvedX_newsolve(int_t treeId, int_t sender, int_t receiver, double* x, int nrhs,
+                      dtrf3Dpartition_t*  trf3Dpartition, dLUstruct_t* LUstruct, gridinfo3d_t* grid3d, double* recvbuf, xtrsTimer_t *xtrsTimer);
+
+extern void dlsum_fmod_leaf (
+  int_t treeId,
+  dtrf3Dpartition_t*  trf3Dpartition,
+    double *lsum,    /* Sum of local modifications.                        */
+    double *x,       /* X array (local)                                    */
+    double *xk,      /* X[k].                                              */
+    double *rtemp,   /* Result of full matrix-vector multiply.             */
+    int   nrhs,      /* Number of right-hand sides.                        */
+    int   knsupc,    /* Size of supernode k.                               */
+    int_t k,         /* The k-th component of X.                           */
+    int *fmod,     /* Modification count for L-solve.                    */
+    int_t nlb,       /* Number of L blocks.                                */
+    int_t lptr,      /* Starting position in lsub[*].                      */
+    int_t luptr,     /* Starting position in lusup[*].                     */
+    int_t *xsup,
+    gridinfo_t *grid,
+    dLocalLU_t *Llu,
+    MPI_Request send_req[], /* input/output */
+    SuperLUStat_t *stat, xtrsTimer_t *xtrsTimer);
+
+extern void dlsum_fmod_leaf_newsolve (
+    dtrf3Dpartition_t*  trf3Dpartition,
+    double *lsum,    /* Sum of local modifications.                        */
+    double *x,       /* X array (local)                                    */
+    double *xk,      /* X[k].                                              */
+    double *rtemp,   /* Result of full matrix-vector multiply.             */
+    int   nrhs,      /* Number of right-hand sides.                        */
+    int   knsupc,    /* Size of supernode k.                               */
+    int_t k,         /* The k-th component of X.                           */
+    int *fmod,     /* Modification count for L-solve.                    */
+    int_t nlb,       /* Number of L blocks.                                */
+    int_t lptr,      /* Starting position in lsub[*].                      */
+    int_t luptr,     /* Starting position in lusup[*].                     */
+    int_t *xsup,
+    gridinfo_t *grid,
+    dLocalLU_t *Llu,
+    MPI_Request send_req[], /* input/output */
+    SuperLUStat_t *stat,xtrsTimer_t *xtrsTimer);
+
+
+extern void dlsum_bmod_GG
+(
+    double *lsum,        /* Sum of local modifications.                    */
+    double *x,           /* X array (local).                               */
+    double *xk,          /* X[k].                                          */
+    int    nrhs,          /* Number of right-hand sides.                    */
+    lsumBmod_buff_t* lbmod_buf,
+    int_t  k,            /* The k-th component of X.                       */
+    int  *bmod,        /* Modification count for L-solve.                */
+    int_t  *Urbs,        /* Number of row blocks in each block column of U.*/
+    Ucb_indptr_t **Ucb_indptr,/* Vertical linked list pointing to Uindex[].*/
+    int_t  **Ucb_valptr, /* Vertical linked list pointing to Unzval[].     */
+    int_t  *xsup,
+    gridinfo_t *grid,
+    dLocalLU_t *Llu,
+    MPI_Request send_req[], /* input/output */
+    SuperLUStat_t *stat, xtrsTimer_t *xtrsTimer);
+
+extern void dlsum_bmod_GG_newsolve (
+    dtrf3Dpartition_t*  trf3Dpartition,
+    double *lsum,        /* Sum of local modifications.                    */
+    double *x,           /* X array (local).                               */
+    double *xk,          /* X[k].                                          */
+    int    nrhs,          /* Number of right-hand sides.                    */
+    lsumBmod_buff_t* lbmod_buf,
+    int_t  k,            /* The k-th component of X.                       */
+    int  *bmod,        /* Modification count for L-solve.                */
+    int_t  *Urbs,        /* Number of row blocks in each block column of U.*/
+    Ucb_indptr_t **Ucb_indptr,/* Vertical linked list pointing to Uindex[].*/
+    int_t  **Ucb_valptr, /* Vertical linked list pointing to Unzval[].     */
+    int_t  *xsup,
+    gridinfo_t *grid,
+    dLocalLU_t *Llu,
+    MPI_Request send_req[], /* input/output */
+    SuperLUStat_t *stat
+    , xtrsTimer_t *xtrsTimer);
+
+extern int_t
+pdReDistribute3d_B_to_X (double *B, int_t m_loc, int nrhs, int_t ldb,
+                       int_t fst_row, int_t * ilsum, double *x,
+                       dScalePermstruct_t * ScalePermstruct,
+                       Glu_persist_t * Glu_persist,
+                       gridinfo3d_t * grid3d, dSOLVEstruct_t * SOLVEstruct);
+
+
+extern int_t
+pdReDistribute3d_X_to_B (int_t n, double *B, int_t m_loc, int_t ldb,
+                       int_t fst_row, int nrhs, double *x, int_t * ilsum,
+                       dScalePermstruct_t * ScalePermstruct,
+                       Glu_persist_t * Glu_persist, gridinfo3d_t * grid3d,
+                       dSOLVEstruct_t * SOLVEstruct);
+
+extern void
+pdgstrs3d (superlu_dist_options_t *, int_t n, dLUstruct_t * LUstruct,
+           dScalePermstruct_t * ScalePermstruct,
+           dtrf3Dpartition_t*  trf3Dpartition, gridinfo3d_t *grid3d, double *B,
+           int_t m_loc, int_t fst_row, int_t ldb, int nrhs,
+           dSOLVEstruct_t * SOLVEstruct, SuperLUStat_t * stat, int *info);
+
+extern void
+pdgstrs3d_newsolve (superlu_dist_options_t *options, int_t n, dLUstruct_t * LUstruct,
+           dScalePermstruct_t * ScalePermstruct,
+           dtrf3Dpartition_t*  trf3Dpartition, gridinfo3d_t *grid3d, double *B,
+           int_t m_loc, int_t fst_row, int_t ldb, int nrhs,
+           dSOLVEstruct_t * SOLVEstruct, SuperLUStat_t * stat, int *info);
+
+extern int_t pdgsTrBackSolve3d(superlu_dist_options_t *options, int_t n, dLUstruct_t * LUstruct,
+                        dScalePermstruct_t * ScalePermstruct,
+                        dtrf3Dpartition_t*  trf3Dpartition, gridinfo3d_t *grid3d,
+                        double *x3d, double *lsum3d,
+                        xT_struct *xT_s,
+                        double * recvbuf,
+                        MPI_Request * send_req, int nrhs,
+                        dSOLVEstruct_t * SOLVEstruct, SuperLUStat_t * stat, xtrsTimer_t *xtrsTimer);
+
+extern int_t pdgsTrForwardSolve3d(superlu_dist_options_t *options, int_t n, dLUstruct_t * LUstruct,
+                           dScalePermstruct_t * ScalePermstruct,
+                           dtrf3Dpartition_t*  trf3Dpartition, gridinfo3d_t *grid3d,
+                           double *x3d, double *lsum3d,
+                           xT_struct *xT_s,
+                           double * recvbuf,
+                           MPI_Request * send_req, int nrhs,
+                           dSOLVEstruct_t * SOLVEstruct, SuperLUStat_t * stat, xtrsTimer_t *xtrsTimer);
+
+extern int_t pdgsTrForwardSolve3d_newsolve(superlu_dist_options_t *options, int_t n, dLUstruct_t * LUstruct,
+                           dScalePermstruct_t * ScalePermstruct,
+                           dtrf3Dpartition_t*  trf3Dpartition, gridinfo3d_t *grid3d,
+                           double *x3d, double *lsum3d,
+                           double * recvbuf,
+                           MPI_Request * send_req, int nrhs,
+                           dSOLVEstruct_t * SOLVEstruct, SuperLUStat_t * stat, xtrsTimer_t *xtrsTimer);
+
+extern int_t pdgsTrBackSolve3d_newsolve(superlu_dist_options_t *options, int_t n, dLUstruct_t * LUstruct,
+                        dtrf3Dpartition_t*  trf3Dpartition, gridinfo3d_t *grid3d,
+                        double *x3d, double *lsum3d,
+                        double * recvbuf,
+                        MPI_Request * send_req, int nrhs,
+                        dSOLVEstruct_t * SOLVEstruct, SuperLUStat_t * stat, xtrsTimer_t *xtrsTimer);
+
+int_t dbroadcastAncestor3d( dtrf3Dpartition_t*  trf3Dpartition,
+			   dLUstruct_t* LUstruct, gridinfo3d_t* grid3d, SCT_t* SCT );
+
+extern int_t localSolveXkYk( trtype_t trtype, int_t k, double* x, int nrhs,
+                      dLUstruct_t * LUstruct, gridinfo_t * grid,
+                      SuperLUStat_t * stat);
+
+extern int_t iBcastXk2Pck(int_t k, double* x, int nrhs,
+                   int** sendList, MPI_Request *send_req,
+                   dLUstruct_t * LUstruct, gridinfo_t * grid,xtrsTimer_t *xtrsTimer);
+
+extern int_t trs_B_init3d(int_t nsupers, double* x, int nrhs, dLUstruct_t * LUstruct, gridinfo3d_t *grid3d);
+extern int_t trs_X_gather3d(double* x, int nrhs, dtrf3Dpartition_t*  trf3Dpartition,
+                     dLUstruct_t* LUstruct,
+                     gridinfo3d_t* grid3d, xtrsTimer_t *xtrsTimer);
+extern int_t fsolveReduceLsum3d(int_t treeId, int_t sender, int_t receiver, double* lsum, double* recvbuf, int nrhs,
+                         dtrf3Dpartition_t*  trf3Dpartition, dLUstruct_t* LUstruct,
+                          gridinfo3d_t* grid3d,xtrsTimer_t *xtrsTimer);
+
+extern int_t bsolve_Xt_bcast(int_t ilvl, xT_struct *xT_s, int nrhs, dtrf3Dpartition_t*  trf3Dpartition,
+                     dLUstruct_t * LUstruct,gridinfo3d_t* grid3d , xtrsTimer_t *xtrsTimer);
+
+extern int_t zAllocBcast(int_t size, void** ptr, gridinfo3d_t* grid3d);
+extern int_t zAllocBcast_gridID(int_t size, void** ptr, int_t gridID, gridinfo3d_t* grid3d);
+
+extern int_t p2pSolvedX3d(int_t treeId, int_t sender, int_t receiver, double* x, int nrhs,
+                      dtrf3Dpartition_t*  trf3Dpartition, dLUstruct_t* LUstruct, gridinfo3d_t* grid3d, xtrsTimer_t *xtrsTimer);
+
+
+
+
 
 /* Memory-related */
 extern double  *doubleMalloc_dist(int_t);
@@ -695,7 +1017,14 @@ extern void dGenCSCLblocks(int, int_t, gridinfo_t*,
 extern void dGenCSRLblocks(int, int_t, gridinfo_t*,
 		  Glu_persist_t*, dLocalLU_t *, double **, int_t **, int_t **, int_t*, int_t*);
 
-
+/* multi-GPU */
+#ifdef GPU_SOLVE
+// extern void create_nv_buffer(int* , int*, int* , int* );
+extern void nv_init_wrapper(MPI_Comm);
+// extern void nv_init_wrapper(int* c, char *v[], int* omp_mpi_level);
+extern void prepare_multiGPU_buffers(int,int,int,int,int,int);
+extern void delete_multiGPU_buffers();
+#endif
 /* BLAS */
 
 #ifdef USE_VENDOR_BLAS
@@ -730,7 +1059,7 @@ extern void dger_(const int*, const int*, const double*,
 		 double*, const int*);
 
 extern int dscal_(const int *n, const double *alpha, double *dx, const int *incx);
-extern int daxpy_(const int *n, const double *alpha, const double *x, 
+extern int daxpy_(const int *n, const double *alpha, const double *x,
 	               const int *incx, double *y, const int *incy);
 
 /* SuperLU BLAS interface: dsuperlu_blas.c  */
@@ -774,11 +1103,15 @@ extern int dcreate_block_diag_3d(SuperMatrix *A, int batchCount, int nrhs, doubl
 extern void dGatherNRformat_loc3d(fact_t Fact, NRformat_loc *A, double *B,
 				   int ldb, int nrhs, gridinfo3d_t *grid3d,
 				   NRformat_loc3d **);
+
+extern void dGatherNRformat_loc3d_allgrid(fact_t Fact, NRformat_loc *A, double *B,
+				   int ldb, int nrhs, gridinfo3d_t *grid3d,
+				   NRformat_loc3d **);
 extern int dScatter_B3d(NRformat_loc3d *A3d, gridinfo3d_t *grid3d);
 
 extern void pdgssvx3d (superlu_dist_options_t *, SuperMatrix *,
 		       dScalePermstruct_t *, double B[], int ldb, int nrhs,
-		       gridinfo3d_t *, dLUstruct_t *, dSOLVEstruct_t *, 
+		       gridinfo3d_t *, dLUstruct_t *, dSOLVEstruct_t *,
 		       double *berr, SuperLUStat_t *, int *info);
 extern int_t pdgstrf3d(superlu_dist_options_t *, int m, int n, double anorm,
 		       dtrf3Dpartition_t*, SCT_t *, dLUstruct_t *,
@@ -786,6 +1119,8 @@ extern int_t pdgstrf3d(superlu_dist_options_t *, int m, int n, double anorm,
 extern void dInit_HyP(HyP_t* HyP, dLocalLU_t *Llu, int_t mcb, int_t mrb );
 extern void Free_HyP(HyP_t* HyP);
 extern int updateDirtyBit(int_t k0, HyP_t* HyP, gridinfo_t* grid);
+
+
 
     /* from scatter.h */
 extern void
@@ -834,7 +1169,7 @@ dblock_gemm_scatterTopLeft( int_t lb,  int_t j, double* bigV,
                                  HyP_t* HyP, dLUstruct_t *, gridinfo_t*,
                                  SCT_t*SCT, SuperLUStat_t *
                                );
-extern int_t 
+extern int_t
 dblock_gemm_scatterTopRight( int_t lb,  int_t j, double* bigV,
 				  int_t knsupc,  int_t klst, int_t* lsub,
                                   int_t * usub, int_t ldt,
@@ -844,11 +1179,11 @@ dblock_gemm_scatterTopRight( int_t lb,  int_t j, double* bigV,
 extern int_t
 dblock_gemm_scatterBottomLeft( int_t lb,  int_t j, double* bigV,
 				    int_t knsupc,  int_t klst, int_t* lsub,
-                                    int_t * usub, int_t ldt, 
+                                    int_t * usub, int_t ldt,
 				    int* indirect, int* indirect2,
                                     HyP_t* HyP, dLUstruct_t *, gridinfo_t*,
                                     SCT_t*SCT, SuperLUStat_t * );
-extern int_t 
+extern int_t
 dblock_gemm_scatterBottomRight( int_t lb,  int_t j, double* bigV,
 				     int_t knsupc,  int_t klst, int_t* lsub,
                                      int_t * usub, int_t ldt,
@@ -880,7 +1215,15 @@ extern void dRgather_U(int_t k, int_t jj0, int_t *usub, double *uval,
 extern dtrf3Dpartition_t* dinitTrf3Dpartition(int_t nsupers,
 					     superlu_dist_options_t *options,
 					     dLUstruct_t *LUstruct, gridinfo3d_t * grid3d);
-extern void dDestroy_trf3Dpartition(dtrf3Dpartition_t *trf3Dpartition, gridinfo3d_t *grid3d);
+
+extern dtrf3Dpartition_t* dinitTrf3Dpartition_allgrid(int_t n, superlu_dist_options_t *options,
+				      dLUstruct_t *LUstruct, gridinfo3d_t * grid3d
+				      );
+
+extern dtrf3Dpartition_t* dinitTrf3DpartitionLUstructgrid0(int_t n,
+					     superlu_dist_options_t *options,
+					     dLUstruct_t *LUstruct, gridinfo3d_t * grid3d);                         
+extern void dDestroy_trf3Dpartition(dtrf3Dpartition_t *trf3Dpartition);
 
 extern void d3D_printMemUse(dtrf3Dpartition_t*  trf3Dpartition,
 			    dLUstruct_t *LUstruct, gridinfo3d_t * grid3d);
@@ -901,7 +1244,7 @@ extern int_t dgatherAllFactoredLUFr(int_t* myZeroTrIdxs, sForest_t* sForests,
     /* The following are from pdgstrf2.h */
 extern int_t dLpanelUpdate(int_t off0, int_t nsupc, double* ublk_ptr,
 			  int_t ld_ujrow, double* lusup, int_t nsupr, SCT_t*);
-extern void dgstrf2(int_t k, double* diagBlk, int_t LDA, double* BlockUfactor, int_t LDU, 
+extern void dgstrf2(int_t k, double* diagBlk, int_t LDA, double* BlockUfactor, int_t LDU,
             double thresh, int_t* xsup, superlu_dist_options_t *options,
             SuperLUStat_t *stat, int *info);
 extern void Local_Dgstrf2(superlu_dist_options_t *options, int_t k,
@@ -937,11 +1280,11 @@ extern void pdgstrf2(superlu_dist_options_t *, int_t nsupers, int_t k0,
 
     /* from p3dcomm.h */
 extern int_t dAllocLlu_3d(int_t nsupers, dLUstruct_t * LUstruct, gridinfo3d_t* grid3d);
-extern int_t dp3dScatter(int_t n, dLUstruct_t * LUstruct, gridinfo3d_t* grid3d);
+extern int_t dp3dScatter(int_t n, dLUstruct_t * LUstruct, gridinfo3d_t* grid3d, int *supernodeMask);
 extern int_t dscatter3dLPanels(int_t nsupers,
-                       dLUstruct_t * LUstruct, gridinfo3d_t* grid3d);
+                       dLUstruct_t * LUstruct, gridinfo3d_t* grid3d, int *supernodeMask);
 extern int_t dscatter3dUPanels(int_t nsupers,
-                       dLUstruct_t * LUstruct, gridinfo3d_t* grid3d);
+                       dLUstruct_t * LUstruct, gridinfo3d_t* grid3d, int *supernodeMask);
 extern int_t dcollect3dLpanels(int_t layer, int_t nsupers, dLUstruct_t * LUstruct, gridinfo3d_t* grid3d);
 extern int_t dcollect3dUpanels(int_t layer, int_t nsupers, dLUstruct_t * LUstruct, gridinfo3d_t* grid3d);
 extern int_t dp3dCollect(int_t layer, int_t n, dLUstruct_t * LUstruct, gridinfo3d_t* grid3d);
@@ -975,7 +1318,7 @@ int_t dgatherFactoredLU(int_t sender, int_t receiver,
                        int_t nnodes, int_t *nodeList, dLUValSubBuf_t*  LUvsb,
                        dLUstruct_t* LUstruct, gridinfo3d_t* grid3d,SCT_t* SCT );
 
-/*Gathers all the L and U factors to grid 0 for solve stage 
+/*Gathers all the L and U factors to grid 0 for solve stage
 	By  repeatidly calling above function*/
 int_t dgatherAllFactoredLU(dtrf3Dpartition_t*  trf3Dpartition, dLUstruct_t* LUstruct,
 			   gridinfo3d_t* grid3d, SCT_t* SCT );
@@ -988,7 +1331,7 @@ int_t dinit3DLUstruct( int_t* myTreeIdxs, int_t* myZeroTrIdxs,
 
 int_t dzSendLPanel(int_t k, int_t receiver,
 		   dLUstruct_t* LUstruct,  gridinfo3d_t* grid3d, SCT_t* SCT);
-int_t dzRecvLPanel(int_t k, int_t sender, double alpha, 
+int_t dzRecvLPanel(int_t k, int_t sender, double alpha,
                    double beta, double* Lval_buf,
 		   dLUstruct_t* LUstruct,  gridinfo3d_t* grid3d, SCT_t* SCT);
 int_t dzSendUPanel(int_t k, int_t receiver,
@@ -1009,7 +1352,7 @@ extern int_t dIBcast_UPanel(int_t k, int_t k0, int_t* usub, double* uval,
 			    int *ToSendD, int );
 extern int_t dBcast_UPanel(int_t k, int_t k0, int_t* usub, double* uval,
 			   gridinfo_t *, int* msgcnt, int *ToSendD, SCT_t*, int);
-extern int_t dIrecv_LPanel (int_t k, int_t k0,  int_t* Lsub_buf, 
+extern int_t dIrecv_LPanel (int_t k, int_t k0,  int_t* Lsub_buf,
 			    double* Lval_buf, gridinfo_t *,
 			    MPI_Request *, dLocalLU_t *, int);
 extern int_t dIrecv_UPanel(int_t k, int_t k0, int_t* Usub_buf, double*,
@@ -1101,7 +1444,7 @@ extern int_t dinitScuBufs(superlu_dist_options_t *,
 extern int dfreeScuBufs(dscuBufs_t* scuBufs);
 
 #if 0 // NOT CALLED
-// the generic tree factoring code 
+// the generic tree factoring code
 extern int_t treeFactor(
     int_t nnnodes,          // number of nodes in the tree
     int_t *perm_c_supno,    // list of nodes in the order of factorization
@@ -1183,6 +1526,7 @@ extern int_t dsparseTreeFactor_ASYNC(
 extern dLUValSubBuf_t** dLluBufInitArr(int_t numLA, dLUstruct_t *LUstruct);
 extern int dLluBufFreeArr(int_t numLA, dLUValSubBuf_t **LUvsbs);
 extern ddiagFactBufs_t** dinitDiagFactBufsArr(int_t mxLeafNode, int_t ldt, gridinfo_t* grid);
+extern ddiagFactBufs_t** dinitDiagFactBufsArrMod(int_t mxLeafNode, int_t* ldts, gridinfo_t* grid);
 extern int dfreeDiagFactBufsArr(int_t mxLeafNode, ddiagFactBufs_t** dFBufs);
 extern int_t dinitDiagFactBufs(int_t ldt, ddiagFactBufs_t* dFBuf);
 extern int_t checkRecvUDiag(int_t k, commRequests_t *comReqs,
@@ -1192,7 +1536,7 @@ extern int_t checkRecvLDiag(int_t k, commRequests_t *comReqs, gridinfo_t *, SCT_
 #if 0 // NOT CALLED
 /* from ancFactorization.h (not called) */
 extern int_t ancestorFactor(
-    int_t ilvl,             // level of factorization 
+    int_t ilvl,             // level of factorization
     sForest_t* sforest,
     commRequests_t **comReqss,    // lists of communication requests // size maxEtree level
     dscuBufs_t *scuBufs,     // contains buffers for schur complement update

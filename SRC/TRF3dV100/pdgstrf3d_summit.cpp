@@ -4,7 +4,7 @@
 #include "mapsampler_api.h"
 #endif
 
-#ifdef GPU_ACC
+#ifdef HAVE_CUDA
 #include "dlustruct_gpu.h"
 #include "acc_aux.c"
 #endif
@@ -120,9 +120,11 @@ int_t pdgstrf3d_summit(superlu_dist_options_t *options, int m, int n, double ano
                 double tilvl = SuperLU_timer_();
 
                 if (superlu_acc_offload)
+                #ifdef HAVE_CUDA
                     LU_packed.dsparseTreeFactorGPU(sforest, dFBufs,
                                                    &gEtreeInfo,
                                                    tag_ub);
+                #endif
                 else
                     LU_packed.dsparseTreeFactor(sforest, dFBufs,
                                                 &gEtreeInfo,
@@ -137,6 +139,7 @@ int_t pdgstrf3d_summit(superlu_dist_options_t *options, int m, int n, double ano
             {
                 if (superlu_acc_offload)
                 {
+#ifdef HAVE_CUDA
 #define NDEBUG
 #ifndef NDEBUG
                     LU_packed.checkGPU();
@@ -145,6 +148,7 @@ int_t pdgstrf3d_summit(superlu_dist_options_t *options, int m, int n, double ano
                     LU_packed.ancestorReduction3dGPU(ilvl, myNodeCount, treePerm);
 #ifndef NDEBUG
                     LU_packed.checkGPU();
+#endif
 #endif
                 }
 
@@ -165,8 +169,10 @@ int_t pdgstrf3d_summit(superlu_dist_options_t *options, int m, int n, double ano
         double tXferGpu2Host = SuperLU_timer_();
         if (superlu_acc_offload)
         {
-            cudaStreamSynchronize(LU_packed.A_gpu.cuStreams[0]); // in theory I don't need it
+        #ifdef HAVE_CUDA
+            cudaStreamSynchronize(LU_packed.A_gpu.cuStreams[0]);    // in theory I don't need it
             LU_packed.copyLUGPUtoHost();
+        #endif
         }
 
         LU_packed.packedU2skyline(LUstruct);
@@ -243,6 +249,18 @@ int_t LUstruct_v100::pdgstrf3d()
                         dsparseTreeFactor(sforest, dFBufs,
                                           &gEtreeInfo,
                                           tag_ub);
+
+
+                        // if (ilvl == 0){
+                        // dsparseTreeFactor(sforest, dFBufs,
+                        //                 &gEtreeInfo,
+                        //                 tag_ub);
+                        // }else{
+                        // dAncestorFactorBaseline(ilvl, sforest, dFBufs,
+                        //                         &gEtreeInfo,
+                        //                         tag_ub);
+                        // }
+
 		    }
 
                     /*now reduce the updates*/

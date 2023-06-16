@@ -307,7 +307,7 @@ int* getIsNodeInMyGrid(int_t nsupers, int_t maxLvl, int_t* myNodeCount, int_t** 
     int* isNodeInMyGrid = SUPERLU_MALLOC(nsupers * sizeof(int));
 
     for(int i=0; i<nsupers; i++) isNodeInMyGrid[i] =0;
-	
+
     for (int i = 0; i < maxLvl; ++i)
     {
 	for(int node = 0; node< myNodeCount[i]; node++ )
@@ -443,7 +443,7 @@ void printForestWeightCost(sForest_t**  sForests, SCT_t* SCT, gridinfo3d_t* grid
 
 void printGantt(int root, int numForests, char* nodename, double scale, double* gFrstCostAcc, double* crPathCost)
 {
-	
+
 
 	if (2*root+1>=numForests)
 	{

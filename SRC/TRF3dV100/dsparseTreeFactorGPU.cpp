@@ -1,6 +1,7 @@
 #include <cstdio>
 #include "superlu_ddefs.h"
 #include "lupanels.hpp"
+#ifdef HAVE_CUDA
 #include "lupanels_GPU.cuh"
 #include "batch_block_copy.h"
 
@@ -177,7 +178,7 @@ void SCUMarshallData::copyPanelDataToGPU()
 
 int_t LUstruct_v100::dDFactPSolveGPU(int_t k, int_t offset, ddiagFactBufs_t **dFBufs)
 {
-    // this is new version with diagonal factor being performed on GPU 
+    // this is new version with diagonal factor being performed on GPU
     // different from dDiagFactorPanelSolveGPU (it performs diag factor in CPU)
   
     /* Sherry: argument dFBufs[] is on CPU, not used in this routine */
@@ -192,11 +193,11 @@ int_t LUstruct_v100::dDFactPSolveGPU(int_t k, int_t offset, ddiagFactBufs_t **dF
     if (iam == procIJ(k, k))
     {
         lPanelVec[g2lCol(k)].diagFactorCuSolver(k,
-                        cusolverH, cuStream, 
+                        cusolverH, cuStream,
                         A_gpu.diagFactWork[offset], A_gpu.diagFactInfo[offset], // CPU pointers
                         A_gpu.dFBufs[offset], ksupc, // CPU pointers
                         thresh, xsup, options, stat, info);
-                                    
+
     }
 
     //CHECK_MALLOC(iam, "after diagFactorCuSolver()");
@@ -387,7 +388,7 @@ int_t LUstruct_v100::dsparseTreeFactorGPU(
     sForest_t *sforest,
     ddiagFactBufs_t **dFBufs, // size maxEtree level
     gEtreeInfo_t *gEtreeInfo, // global etree info
-    
+
     int tag_ub)
 {
     int_t nnodes = sforest->nNodes; // number of nodes in the tree
@@ -448,8 +449,8 @@ int_t LUstruct_v100::dsparseTreeFactorGPU(
 		donePanelSolve[k0]=1;
     }
 
-    //TODO: its really the panels that needs to be doubled 
-    // everything else can remain as it is 
+    //TODO: its really the panels that needs to be doubled
+    // everything else can remain as it is
     int_t winSize =  SUPERLU_MIN(numLA/2, eTreeTopLims[1]);
     
     printf(". lookahead winSize %d\n", winSize); fflush(stdout);
@@ -462,12 +463,12 @@ int_t LUstruct_v100::dsparseTreeFactorGPU(
         {
             dPanelBcastGPU(k, offset);
             donePanelBcast[k0] =1;
-        }             
+        }
     }/*for (int k0 = k_st; k0 < SUPERLU_MIN(k_end, k_st + numLA); ++k0)*/
 
     int_t k1 =0;
     int_t winParity=0;
-    int_t halfWin = numLA/2; 
+    int_t halfWin = numLA/2;
     while(k1<nnodes)
     {
         for (int_t k0 = k1; k0 < SUPERLU_MIN(nnodes, k1+winSize); ++k0)
@@ -483,14 +484,14 @@ int_t LUstruct_v100::dsparseTreeFactorGPU(
         }
 
         for (int_t k0 = k1; k0 < SUPERLU_MIN(nnodes, k1+winSize); ++k0)
-        { 
+        {
             int_t k = perm_c_supno[k0];
             int_t offset = getBufferOffset(k0, k1, winSize, winParity, halfWin);
             SyncLookAheadUpdate(offset);
         }
 		
         for (int_t k0 = k1; k0 < SUPERLU_MIN(nnodes, k1+winSize); ++k0)
-        { 
+        {
             int_t k = perm_c_supno[k0];
             int_t offset = getBufferOffset(k0, k1, winSize, winParity, halfWin);
             upanel_t k_upanel = getKUpanel(k,offset);
@@ -515,11 +516,11 @@ int_t LUstruct_v100::dsparseTreeFactorGPU(
                     }
                 }
             }
-            
+
             /*proceed with remaining SchurComplement update */
             if(UidxSendCounts[k]>0 && LidxSendCounts[k]>0)
                     dSchurCompUpdateExcludeOneGPU(offset, k,k_parent, k_lpanel,k_upanel);
-            
+
         }
 
         int_t k1_next = k1+winSize;
@@ -528,25 +529,25 @@ int_t LUstruct_v100::dsparseTreeFactorGPU(
         {
             int k_next = perm_c_supno[k0_next];
             if (!localNumChildrenLeft[k0_next])
-            {   
-                // int offset_next = (k0_next-k1_next)%winSize; 
+            {
+                // int offset_next = (k0_next-k1_next)%winSize;
                 // if(!(winParity%2))
-                //     offset_next += halfWin; 
+                //     offset_next += halfWin;
 
                 int_t offset_next = getBufferOffset(k0_next, k1_next, winSize, winParity+1, halfWin);
                 dPanelBcastGPU(k_next, offset_next);
                 donePanelBcast[k0_next] =1;
                 // printf("Trying  %d on offset %d\n", k0_next, offset_next);
             }
-            else 
+            else
             {
                 winSize = k0_next - k1_next;
-                break; 
+                break;
             }
         }
 
         for (int_t k0 = k1; k0 < SUPERLU_MIN(nnodes, k1+oldWinSize); ++k0)
-        { 
+        {
             int_t k = perm_c_supno[k0];
             // int_t offset = (k0-k1)%oldWinSize;
             // if(winParity%2)
@@ -571,7 +572,7 @@ int_t LUstruct_v100::dsparseTreeFactorGPU(
         for (int_t k0 = k_st; k0 < k_end; ++k0)
         {
             int_t k = perm_c_supno[k0];
-            
+
             int_t ksupc = SuperSize(k);
             cublasHandle_t cubHandle = A_gpu.cuHandles[0];
             cudaStream_t cuStream = A_gpu.cuStreams[0];
@@ -580,7 +581,7 @@ int_t LUstruct_v100::dsparseTreeFactorGPU(
             // panelBcastGPU(k, 0);
             int_t offset = k0%numLA;
             dPanelBcastGPU(k, offset);
-            
+
             /*=======   Schurcomplement Update      ======*/
             upanel_t k_upanel(UidxRecvBufs[offset], UvalRecvBufs[offset],
                               A_gpu.UidxRecvBufs[offset], A_gpu.UvalRecvBufs[offset]);
@@ -601,7 +602,7 @@ int_t LUstruct_v100::dsparseTreeFactorGPU(
 #if 0
 
                 dSchurComplementUpdateGPU(
-                    streamId, 
+                    streamId,
                     k, k_lpanel, k_upanel);
 #else
                 int_t k_parent = gEtreeInfo->setree[k];
@@ -1210,7 +1211,7 @@ int_t LUstruct_v100::dsparseTreeFactorGPUBaseline(
     sForest_t *sforest,
     ddiagFactBufs_t **dFBufs, // size maxEtree level
     gEtreeInfo_t *gEtreeInfo, // global etree info
-    
+
     int tag_ub)
 {
     int_t nnodes = sforest->nNodes; // number of nodes in the tree
@@ -1381,3 +1382,4 @@ int_t LUstruct_v100::dsparseTreeFactorGPUBaseline(
 
     return 0;
 } /* dsparseTreeFactorGPUBaseline */
+#endif

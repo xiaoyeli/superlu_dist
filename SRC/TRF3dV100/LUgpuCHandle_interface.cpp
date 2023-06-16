@@ -38,8 +38,10 @@ int copyLUGPU2Host(LUgpu_Handle LuH, dLUstruct_t *LUstruct)
    double tXferGpu2Host = SuperLU_timer_();
    if (LuH->superlu_acc_offload)
    {
+      #ifdef HAVE_CUDA
       cudaStreamSynchronize(LuH->A_gpu.cuStreams[0]);    // in theory I don't need it 
       LuH->copyLUGPUtoHost();
+      #endif
    }
       
    LuH->packedU2skyline(LUstruct);
@@ -56,7 +58,7 @@ int copyLUGPU2Host(LUgpu_Handle LuH, dLUstruct_t *LUstruct)
 }
 
 //                      int m, int n, double anorm,
-//                            trf3Dpartition_t *trf3Dpartition, SCT_t *SCT,
+//                            dtrf3Dpartition_t *trf3Dpartition, SCT_t *SCT,
 //                            dLUstruct_t *LUstruct, gridinfo3d_t *grid3d,
 //                            SuperLUStat_t *stat, int *info)
 // {

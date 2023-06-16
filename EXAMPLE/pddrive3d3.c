@@ -342,9 +342,6 @@ main (int argc, char *argv[])
     
     if ( (grid.zscp).Iam == 0 ) { // process layer 0
 	PStatPrint (&options, &stat, &(grid.grid2d)); /* Print 2D statistics.*/
-    } else { // Process layers not equal 0
-        dDeAllocLlu_3d(n, &LUstruct, &grid);
-        dDeAllocGlu_3d(&LUstruct);
     }
     
     PStatFree(&stat);
@@ -358,10 +355,10 @@ main (int argc, char *argv[])
     options.Fact = SamePattern_SameRowPerm;
     
     /* Zero the numerical values in L and U.  */
-    if ( (grid.zscp).Iam == 0 ) { /* on 2D grid-0 */
+    // if ( (grid.zscp).Iam == 0 ) { /* on 2D grid-0 */
         dZeroLblocks(iam, n, &(grid.grid2d), &LUstruct);
         dZeroUblocks(iam, n, &(grid.grid2d), &LUstruct);
-    }
+    // }
 
     /* Get the matrix from file, perturbed some diagonal entries to force
        a different perm_r[]. Set up the right-hand side.   */
@@ -391,17 +388,12 @@ main (int argc, char *argv[])
     /* ------------------------------------------------------------
        DEALLOCATE ALL STORAGE.
        ------------------------------------------------------------ */
+    dDestroy_LU (n, &(grid.grid2d), &LUstruct);   
     Destroy_CompRowLoc_Matrix_dist (&A);
     if ( grid.zscp.Iam == 0 ) { // process layer 0
-
-	PStatPrint (&options, &stat, &(grid.grid2d)); /* Print 2D statistics.*/
-
-        dDestroy_LU (n, &(grid.grid2d), &LUstruct);
-        dSolveFinalize (&options, &SOLVEstruct);
-    } else { // Process layers not equal 0
-        dDeAllocLlu_3d(n, &LUstruct, &grid);
-        dDeAllocGlu_3d(&LUstruct);
+	    PStatPrint (&options, &stat, &(grid.grid2d)); /* Print 2D statistics.*/
     }
+    dSolveFinalize (&options, &SOLVEstruct);
     
     dDestroy_A3d_gathered_on_2d(&SOLVEstruct, &grid);
 
@@ -411,7 +403,7 @@ main (int argc, char *argv[])
     SUPERLU_FREE (b1);
     SUPERLU_FREE (xtrue1);
     SUPERLU_FREE (berr);
-    fclose(fp);
+    // fclose(fp);  // YL: no need to call it again.
 
     /* ------------------------------------------------------------
        RELEASE THE SUPERLU PROCESS GRID.

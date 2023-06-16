@@ -102,6 +102,7 @@ at the top-level directory.
 #endif
 
 #ifdef GPU_ACC
+#include "oneside.h"
 #include "gpu_api_utils.h"
 #endif
 
@@ -276,6 +277,8 @@ static const int RD_U=4;	/* MPI tag for lsum in U-solve*/
         for (i = 0; i < nrhs; ++i)
 #define X_BLK(i)                          \
         ilsum[i] * nrhs + (i+1) * XK_H
+#define XT_BLK(i)                          \
+        ilsumT[i] * nrhs + (i+1) * XK_H
 #define LSUM_BLK(i)                       \
         ilsum[i] * nrhs + (i+1) * LSUM_H
 
@@ -319,7 +322,7 @@ static const int RD_U=4;	/* MPI tag for lsum in U-solve*/
 
 #define BLK_M  DIM_X*4
 #define BLK_N  DIM_Y*4
-#define BLK_K 2048/(BLK_M)
+#define BLK_K 1024/(BLK_M)
 
 #define DIM_XA  DIM_X
 #define DIM_YA  DIM_Y
@@ -1031,11 +1034,12 @@ typedef struct xtrsTimer_t
     double trsDataSendZ;
     double trsDataRecvXY;
     double trsDataRecvZ;
-    double t_pdReDistribute_X_to_B;
-    double t_pdReDistribute_B_to_X;
+    double t_pxReDistribute_X_to_B;
+    double t_pxReDistribute_B_to_X;
     double t_forwardSolve;
     double tfs_compute;
     double tfs_comm;
+    double trs_comm_z;
     double t_backwardSolve;
     double tbs_compute;
     double tbs_comm;
@@ -1051,6 +1055,7 @@ typedef struct xtrsTimer_t
 
     double ppXmem;		// perprocess X-memory
 } xtrsTimer_t;
+
 
 /*==== end For 3D code ====*/
 
@@ -1234,6 +1239,7 @@ typedef struct
     int tag_;
     yes_no_t empty_;
     MPI_Datatype type_;
+    int myIdx;
 } C_Tree;
 
 #ifndef DEG_TREE
@@ -1243,12 +1249,14 @@ typedef struct
 #endif
 
 extern void C_RdTree_Create(C_Tree* tree, MPI_Comm comm, int* ranks, int rank_cnt, int msgSize, char precision);
+extern void C_RdTree_Create_nv(C_Tree* tree, MPI_Comm comm, int* ranks, int rank_cnt, int msgSize, char precision, int* needrecvrd,int* needsendrd);
 extern void C_RdTree_Nullify(C_Tree* tree);
 extern yes_no_t C_RdTree_IsRoot(C_Tree* tree);
 extern void C_RdTree_forwardMessageSimple(C_Tree* Tree, void* localBuffer, int msgSize);
 extern void C_RdTree_waitSendRequest(C_Tree* Tree);
 
 extern void C_BcTree_Create(C_Tree* tree, MPI_Comm comm, int* ranks, int rank_cnt, int msgSize, char precision);
+extern void C_BcTree_Create_nv(C_Tree* tree, MPI_Comm comm, int* ranks, int rank_cnt, int msgSize, char precision, int* needrecv);
 extern void C_BcTree_Nullify(C_Tree* tree);
 extern yes_no_t C_BcTree_IsRoot(C_Tree* tree);
 extern void C_BcTree_forwardMessageSimple(C_Tree* tree, void* localBuffer, int msgSize);
@@ -1261,11 +1269,18 @@ extern void DistPrint3D(char* function_name,  double value, char* Units, gridinf
 extern void treeImbalance3D(gridinfo3d_t *grid3d, SCT_t* SCT);
 extern void SCT_printComm3D(gridinfo3d_t *grid3d, SCT_t* SCT);
 
+
+
 // permutation from superLU default
 extern int_t* getPerm_c_supno(int_t nsupers, superlu_dist_options_t *,
 			      int_t *etree, Glu_persist_t *Glu_persist,
 			      int_t** Lrowind_bc_ptr, int_t** Ufstnz_br_ptr,
 			      gridinfo_t *);
+
+extern int_t* getPerm_c_supno_allgrid(int_t nsupers, superlu_dist_options_t *options,
+		       int_t *etree, Glu_persist_t *Glu_persist,
+		       int_t** Lrowind_bc_ptr, int_t** Ufstnz_br_ptr,
+		       gridinfo3d_t * grid3d);
 
 /* Manipulate counters */
 extern void SCT_init(SCT_t*);
@@ -1364,6 +1379,12 @@ extern int_t getBigUSize(superlu_dist_options_t *, int_t nsupers,
 extern void getSCUweight(int_t nsupers, treeList_t* treeList, int_t* xsup,
 			 int_t** Lrowind_bc_ptr, int_t** Ufstnz_br_ptr,
 			 gridinfo3d_t * grid3d);
+
+extern void getSCUweight_allgrid(int_t nsupers, treeList_t* treeList, int_t* xsup,
+		  int_t** Lrowind_bc_ptr, int_t** Ufstnz_br_ptr,
+		  gridinfo3d_t * grid3d
+		  );
+
 extern int Wait_LUDiagSend(int_t k, MPI_Request *U_diag_blk_send_req,
 			   MPI_Request *L_diag_blk_send_req,
 			   gridinfo_t *grid, SCT_t *SCT);

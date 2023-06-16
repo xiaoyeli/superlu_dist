@@ -585,11 +585,14 @@ get_acc_offload ()
 {
     char *ttemp;
     ttemp = getenv ("SUPERLU_ACC_OFFLOAD");
-
+#ifdef GPU_ACC
     if (ttemp)
         return atoi (ttemp);
     else
         return 1;  // default
+#else
+    return 0;  
+#endif        
 }
 
 
@@ -665,3 +668,78 @@ int_t scuStatUpdate(
     return 0;
 
 }
+
+void printTRStimer(xtrsTimer_t *xtrsTimer, gridinfo3d_t *grid3d)
+{
+
+    // TRS print communications stats
+
+    DistPrint3D("pxReDistribute_X_to_B",  xtrsTimer->t_pxReDistribute_X_to_B, "seconds", grid3d);
+    DistPrint3D("pxReDistribute_B_to_X",  xtrsTimer->t_pxReDistribute_B_to_X, "seconds", grid3d);
+    DistPrint3D("forwardSolve         ",  xtrsTimer->t_forwardSolve, "seconds", grid3d);
+    DistPrint3D("forwardSolve-compute ",  xtrsTimer->tfs_compute, "seconds", grid3d);
+    DistPrint3D("forwardSolve-comm    ",  xtrsTimer->tfs_comm, "seconds", grid3d);
+
+    int_t maxLvl = log2i(grid3d->zscp.Np) + 1;
+    char funName[100];
+    for (int i = maxLvl-1; i >-1; --i)
+    {
+        /* code */
+        sprintf( funName,
+                    "ForwardSolve:Level-%d", maxLvl-1-i);
+        DistPrint3D( funName               ,  xtrsTimer->tfs_tree[i], "seconds", grid3d);
+    }
+
+    DistPrint3D("backSolve            ",  xtrsTimer->t_backwardSolve, "seconds", grid3d);
+    DistPrint3D("backSolve-compute    ",  xtrsTimer->tbs_compute, "seconds", grid3d);
+    DistPrint3D("backSolve-comm       ",  xtrsTimer->tbs_comm, "seconds", grid3d);
+    for (int i = maxLvl-1; i >-1; --i)
+    {
+        /* code */
+        sprintf( funName,
+                    "BackSolve:Level-%d   ", maxLvl-1-i);
+        DistPrint3D( funName               ,  xtrsTimer->tbs_tree[i], "seconds", grid3d);
+    }
+    DistPrint3D("trs_comm_z           ",  xtrsTimer->trs_comm_z, "seconds", grid3d);
+
+        double trsXYComm = 0.5*(xtrsTimer->trsDataSendXY + xtrsTimer->trsDataRecvXY);
+    // printf("Data sent so far =%g and received so far= %g \n",xtrsTimer->trsDataSendXY, xtrsTimer->trsDataRecvXY);
+    double trsZComm = 0.5*(xtrsTimer->trsDataSendZ + xtrsTimer->trsDataRecvZ);
+    double trsXYZComm = trsXYComm + trsZComm;
+    DistPrint3D("TRS-XY_CommVolume    ",  trsXYComm*1e-6, "Mwords", grid3d);
+    DistPrint3D("TRS-Z_CommVolume     ",  trsZComm*1e-6, "Mwords", grid3d);
+    DistPrint3D("TRS-XYZ_CommVolume   ",  trsXYZComm*1e-6, "Mwords", grid3d);
+
+
+}
+
+
+void initTRStimer(xtrsTimer_t *xtrsTimer, gridinfo_t *grid)
+{
+    xtrsTimer->t_pxReDistribute_X_to_B =0.0;
+    xtrsTimer->t_pxReDistribute_B_to_X =0.0;
+    xtrsTimer->t_forwardSolve =0.0;
+    xtrsTimer->tfs_compute =0.0;
+    xtrsTimer->tfs_comm =0.0;
+    xtrsTimer->trs_comm_z =0.0;
+    xtrsTimer->t_backwardSolve =0.0;
+    xtrsTimer->tbs_compute =0.0;
+    xtrsTimer->tbs_comm =0.0;
+    xtrsTimer->trsDataSendXY = 0.0;
+    xtrsTimer->trsDataSendZ = 0.0;
+    xtrsTimer->trsDataRecvXY = 0.0;
+    xtrsTimer->trsDataRecvZ = 0.0;
+    xtrsTimer->ppXmem = 0.0;  
+
+    int_t maxLvl = MAX_3D_LEVEL;
+    
+    for (int_t i = maxLvl-1; i >-1; --i)
+    {
+        /* code */
+        xtrsTimer->tfs_tree[i] = 0.0;
+        xtrsTimer->tbs_tree[i] = 0.0;
+        
+    }
+
+}
+

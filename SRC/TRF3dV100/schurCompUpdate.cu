@@ -1,4 +1,5 @@
 #include "superlu_ddefs.h"
+#ifdef HAVE_CUDA
 #include "lupanels_GPU.cuh"
 #include "lupanels.hpp"
 
@@ -1310,3 +1311,4 @@ upanelGPU_t *LUstruct_v100::copyUpanelsToGPU()
     return uPanelVec_GPU;
     
 } /* copyUpanelsToGPU */
+#endif

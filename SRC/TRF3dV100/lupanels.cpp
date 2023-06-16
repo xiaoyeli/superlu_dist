@@ -1,8 +1,11 @@
 #include <algorithm>
 #include <iostream>
 #include <cassert>
+#include "superlu_defs.h"
 
+#ifdef HAVE_CUDA
 #include "lupanels_GPU.cuh"
+#endif
 #include "lupanels.hpp"
 
 // #define cudaCheckError()                                                              
@@ -15,6 +18,7 @@
 //         }                                                                    \
 //     }
 
+#ifdef HAVE_CUDA
 upanel_t LUstruct_v100::getKUpanel(int_t k, int_t offset)
 {
     return (
@@ -34,6 +38,7 @@ lpanel_t LUstruct_v100::getKLpanel(int_t k, int_t offset)
             A_gpu.LidxRecvBufs[offset], A_gpu.LvalRecvBufs[offset])
     );
 }
+#endif
 
 /* Constructor */
 LUstruct_v100::LUstruct_v100(int_t nsupers_, int_t ldt_,
@@ -224,6 +229,7 @@ LUstruct_v100::LUstruct_v100(int_t nsupers_, int_t ldt_,
         if (sForests[myTreeIdxs[ilvl]] && sForests[myTreeIdxs[ilvl]]->topoInfo.eTreeTopLims[1] > mxLeafNode)
             mxLeafNode = sForests[myTreeIdxs[ilvl]]->topoInfo.eTreeTopLims[1];
     }
+    //Yang: how is dFBufs being used in the c++ factorization code? Shall we call dinitDiagFactBufsArrMod instead to save memory? 
     dFBufs = dinitDiagFactBufsArr(mxLeafNode, ldt, grid);
     maxLeafNodes = mxLeafNode;
 
@@ -231,11 +237,13 @@ LUstruct_v100::LUstruct_v100(int_t nsupers_, int_t ldt_,
     double tGPU = SuperLU_timer_();
     if(superlu_acc_offload)
     {
-      setLUstruct_GPU();  /* Set up LU structure and buffers on GPU */
+    #ifdef HAVE_CUDA
+        setLUstruct_GPU();  /* Set up LU structure and buffers on GPU */
 	
         // TODO: remove it, checking is very slow 
         if(0)
             checkGPU();     
+    #endif
     }
         
     tGPU = SuperLU_timer_() -tGPU;

@@ -1,16 +1,16 @@
 /*! \file
 Copyright (c) 2003, The Regents of the University of California, through
-Lawrence Berkeley National Laboratory (subject to receipt of any required 
-approvals from U.S. Dept. of Energy) 
+Lawrence Berkeley National Laboratory (subject to receipt of any required
+approvals from U.S. Dept. of Energy)
 
-All rights reserved. 
+All rights reserved.
 
 The source code is distributed under BSD license, see the file License.txt
 at the top-level directory.
 */
 
 
-/*! @file 
+/*! @file
  * \brief Driver program for PDGSSVX example
  *
  * <pre>
@@ -35,7 +35,7 @@ at the top-level directory.
  *
  * This example illustrates how to use PDGSSVX with the full
  * (default) options to solve a linear system.
- * 
+ *
  * Five basic steps are required:
  *   1. Initialize the MPI environment and the SuperLU process grid
  *   2. Set up the input matrix and the right-hand side
@@ -87,14 +87,13 @@ int main(int argc, char *argv[])
     batch = 0;
 
     /* ------------------------------------------------------------
-       INITIALIZE MPI ENVIRONMENT. 
+       INITIALIZE MPI ENVIRONMENT.
        ------------------------------------------------------------*/
     //MPI_Init( &argc, &argv );
-    MPI_Init_thread( &argc, &argv, MPI_THREAD_MULTIPLE, &omp_mpi_level); 
-	
+    MPI_Init_thread( &argc, &argv, MPI_THREAD_MULTIPLE, &omp_mpi_level);
 
 #if ( VAMPIR>=1 )
-    VT_traceoff(); 
+    VT_traceoff();
 #endif
 
 #if ( VTUNE>=1 )
@@ -116,6 +115,9 @@ int main(int argc, char *argv[])
 	options.DiagInv           = NO;
      */
     set_default_options_dist(&options);
+    options.ReplaceTinyPivot = YES;
+    options.IterRefine = NOREFINE;
+    options.DiagInv           = YES;
 #if 0
     options.RowPerm = LargeDiag_HWPM;
     options.IterRefine = NOREFINE;
@@ -178,7 +180,7 @@ int main(int argc, char *argv[])
         each grid solving one linear system. */
     if ( batch ) {
 	/* ------------------------------------------------------------
-	   INITIALIZE MULTIPLE SUPERLU PROCESS GRIDS. 
+	   INITIALIZE MULTIPLE SUPERLU PROCESS GRIDS.
 	   ------------------------------------------------------------*/
         MPI_Comm_rank(MPI_COMM_WORLD, &myrank);
         usermap = SUPERLU_MALLOC(nprow*npcol * sizeof(int));
@@ -187,12 +189,12 @@ int main(int argc, char *argv[])
         /* Assuming each grid uses the same number of nprow and npcol */
 	int color = myrank/(nprow*npcol);
 	MPI_Comm_split(MPI_COMM_WORLD, color, myrank, &SubComm);
-        p = 0;    
+        p = 0;
         for (int i = 0; i < nprow; ++i)
     	    for (int j = 0; j < npcol; ++j) usermap[i+j*ldumap] = p++;
         superlu_gridmap(SubComm, nprow, npcol, usermap, ldumap, &grid);
         SUPERLU_FREE(usermap);
-
+        
 #ifdef GPU_ACC
         int superlu_acc_offload = get_acc_offload();
         if (superlu_acc_offload) {
@@ -225,8 +227,10 @@ int main(int argc, char *argv[])
         /* ------------------------------------------------------------
            INITIALIZE THE SUPERLU PROCESS GRID.
            ------------------------------------------------------------ */
+            // nv_init_wrapper(grid.comm);
+
         superlu_gridinit(MPI_COMM_WORLD, nprow, npcol, &grid);
-	
+
 #ifdef GPU_ACC
         int superlu_acc_offload = get_acc_offload();
         if (superlu_acc_offload) {
@@ -242,7 +246,7 @@ int main(int argc, char *argv[])
 	}
 #endif
     }
-    
+
     if(grid.iam==0){
 	MPI_Query_thread(&omp_mpi_level);
         switch (omp_mpi_level) {
@@ -264,7 +268,7 @@ int main(int argc, char *argv[])
 	        break;
         }
     }
-	
+
     /* Bail out if I do not belong in the grid. */
     iam = grid.iam;
     if ( (iam >= nprow * npcol) || (iam == -1) ) goto out;
@@ -303,9 +307,9 @@ int main(int argc, char *argv[])
 	}
     }
     // printf("%s\n", postfix);
-	
+
     /* ------------------------------------------------------------
-       GET THE MATRIX FROM FILE AND SETUP THE RIGHT HAND SIDE. 
+       GET THE MATRIX FROM FILE AND SETUP THE RIGHT HAND SIDE.
        ------------------------------------------------------------*/
     dcreate_matrix_postfix(&A, nrhs, &b, &ldb, &xtrue, &ldx, fp, postfix, &grid);
 
@@ -363,10 +367,10 @@ int main(int argc, char *argv[])
        ------------------------------------------------------------*/
 out:
     if ( batch ) {
-        result_min[0] = stat.utime[FACT];   
-        result_min[1] = stat.utime[SOLVE];  
-        result_max[0] = stat.utime[FACT];   
-        result_max[1] = stat.utime[SOLVE];    
+        result_min[0] = stat.utime[FACT];
+        result_min[1] = stat.utime[SOLVE];
+        result_max[0] = stat.utime[FACT];
+        result_max[1] = stat.utime[SOLVE];
         MPI_Allreduce(MPI_IN_PLACE, result_min, 2, MPI_FLOAT,MPI_MIN, MPI_COMM_WORLD);
         MPI_Allreduce(MPI_IN_PLACE, result_max, 2, MPI_FLOAT,MPI_MAX, MPI_COMM_WORLD);
         if (!myrank) {
@@ -377,10 +381,10 @@ out:
             fflush(stdout);
         }
     }
-    
+
     superlu_gridexit(&grid);
     if ( iam != -1 ) PStatFree(&stat);
-    
+
     /* ------------------------------------------------------------
        TERMINATES THE MPI EXECUTION ENVIRONMENT.
        ------------------------------------------------------------*/

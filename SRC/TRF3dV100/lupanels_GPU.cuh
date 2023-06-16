@@ -2,7 +2,6 @@
 #pragma once
 #include <vector>
 #include <iostream>
-
 #include "superlu_ddefs.h"
 
 #ifdef HAVE_CUDA

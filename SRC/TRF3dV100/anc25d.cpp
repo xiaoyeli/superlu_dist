@@ -22,7 +22,6 @@ MPI_Comm *anc25d_t::initComm(gridinfo3d_t *grid3d)
 }
 
 // A function that prints
-
 int_t LUstruct_v100::dAncestorFactorBaseline(
     int_t alvl,
     sForest_t *sforest,

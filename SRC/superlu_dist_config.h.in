@@ -3,6 +3,9 @@
 /* Enable CUDA */
 #cmakedefine HAVE_CUDA @HAVE_CUDA@
 
+/* Enable NVSHMEM */
+#cmakedefine HAVE_NVSHMEM @HAVE_NVSHMEM@
+
 /* Enable HIP */
 #cmakedefine HAVE_HIP @HAVE_HIP@
 

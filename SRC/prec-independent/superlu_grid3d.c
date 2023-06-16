@@ -242,7 +242,7 @@ void superlu_gridmap3d(
 
     // grid->grid2d.cscp = grid->cscp;
 
-#if ( PRNTlevel>=1 )
+#if ( PRNTlevel>=2 )
     if ( (grid->zscp).Iam == 0) {
       printf("(3d grid: layer 0) iam %d, grid->grid2d.iam %d\n",
 	     grid->iam, (grid->grid2d).iam);

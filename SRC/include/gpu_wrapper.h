@@ -54,6 +54,7 @@ at the top-level directory.
 #define gpuMemcpy cudaMemcpy
 #define gpuMemAttachGlobal cudaMemAttachGlobal
 #define gpuMemcpyHostToDevice cudaMemcpyHostToDevice
+#define gpuMemcpyDeviceToDevice cudaMemcpyDeviceToDevice
 #define gpuMemcpyDeviceToHost cudaMemcpyDeviceToHost
 #define gpuStreamCreateWithFlags cudaStreamCreateWithFlags
 #define gpuStreamDestroyWithFlags cudaStreamDestroyWithFlags
@@ -89,6 +90,7 @@ at the top-level directory.
 #define  GPUBLAS_OP_N CUBLAS_OP_N
 #define  gpuDoubleComplex cuDoubleComplex
 #define  gpuRuntimeGetVersion cudaRuntimeGetVersion
+#define  gpuGetLastError cudaGetLastError
 #define  threadIdx_x threadIdx.x
 #define  threadIdx_y threadIdx.y
 #define  blockIdx_x blockIdx.x
@@ -136,6 +138,7 @@ at the top-level directory.
 #define gpuMemcpy hipMemcpy
 #define gpuMemAttachGlobal hipMemAttachGlobal
 #define gpuMemcpyHostToDevice hipMemcpyHostToDevice
+#define gpuMemcpyDeviceToDevice hipMemcpyDeviceToDevice
 #define gpuMemcpyDeviceToHost hipMemcpyDeviceToHost
 #define gpuStreamCreateWithFlags hipStreamCreateWithFlags
 #define gpuStreamDestroyWithFlags hipStreamDestroyWithFlags
@@ -171,6 +174,7 @@ at the top-level directory.
 #define  GPUBLAS_OP_N HIPBLAS_OP_N
 #define  gpuDoubleComplex hipblasDoubleComplex
 #define  gpuRuntimeGetVersion hipRuntimeGetVersion
+#define  gpuGetLastError hipGetLastError
 #define  threadIdx_x hipThreadIdx_x
 #define  threadIdx_y hipThreadIdx_y
 #define  blockIdx_x hipBlockIdx_x

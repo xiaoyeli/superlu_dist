@@ -41,7 +41,6 @@ int_t dLluBufInit(dLUValSubBuf_t* LUvsb, dLUstruct_t *LUstruct)
 ddiagFactBufs_t** dinitDiagFactBufsArr(int_t mxLeafNode, int_t ldt, gridinfo_t* grid)
 {
     ddiagFactBufs_t** dFBufs;
-
     /* Sherry fix:
      * mxLeafNode can be 0 for the replicated layers of the processes ?? */
     if ( mxLeafNode ) dFBufs = (ddiagFactBufs_t** )
@@ -58,6 +57,27 @@ ddiagFactBufs_t** dinitDiagFactBufsArr(int_t mxLeafNode, int_t ldt, gridinfo_t* 
 
     return dFBufs;
 }
+
+ddiagFactBufs_t** dinitDiagFactBufsArrMod(int_t mxLeafNode, int_t* ldts, gridinfo_t* grid)
+{
+    ddiagFactBufs_t** dFBufs;
+    /* Sherry fix:
+     * mxLeafNode can be 0 for the replicated layers of the processes ?? */
+    if ( mxLeafNode ) dFBufs = (ddiagFactBufs_t** )
+                          SUPERLU_MALLOC(mxLeafNode * sizeof(ddiagFactBufs_t*));
+
+    for (int i = 0; i < mxLeafNode; ++i)
+    {
+        /* code */
+        dFBufs[i] = (ddiagFactBufs_t* ) SUPERLU_MALLOC(sizeof(ddiagFactBufs_t));
+        assert(dFBufs[i]);
+        dinitDiagFactBufs(ldts[i], dFBufs[i]);
+
+    }/*Minor for loop -2 for (int i = 0; i < mxLeafNode; ++i)*/
+
+    return dFBufs;
+}
+
 
 // sherry added
 int dfreeDiagFactBufsArr(int_t mxLeafNode, ddiagFactBufs_t** dFBufs)
@@ -109,8 +129,18 @@ int_t dinitScuBufs(superlu_dist_options_t *options,
                   dLUstruct_t* LUstruct,
                   gridinfo_t * grid)
 {
+
+#if (DEBUGlevel >= 1)
+	CHECK_MALLOC(grid->iam, "Enter dinitScuBufs()");
+#endif
+
     scuBufs->bigV = dgetBigV(ldt, num_threads);
     scuBufs->bigU = dgetBigU(options, nsupers, grid, LUstruct);
+
+#if (DEBUGlevel >= 1)
+	CHECK_MALLOC(grid->iam, "Exit dinitScuBufs()");
+#endif
+
     return 0;
 }
 
@@ -316,10 +346,11 @@ int_t dsparseTreeFactor_ASYNC(
     int * IbcastPanel_U = factStat->IbcastPanel_U;
     int_t* xsup = LUstruct->Glu_persist->xsup;
 
+
     int_t numLAMax = getNumLookAhead(options);
     int_t numLA = numLAMax;
 
-#if ( PRNTlevel>=1 )
+#if ( PRNTlevel>=2 )
     // Sherry print
     printf("sforest: nNodes %d, numlvl %d\n", (int) nnodes, (int) maxTopoLevel);
     //PrintInt10("perm_c_supno", nnodes, perm_c_supno);
@@ -341,7 +372,7 @@ int_t dsparseTreeFactor_ASYNC(
         /* k-th diagonal factorization */
         /*Now factor and broadcast diagonal block*/
 
-	dDiagFactIBCast(k, k, dFBufs[offset]->BlockUFactor, dFBufs[offset]->BlockLFactor,
+	    dDiagFactIBCast(k, k, dFBufs[offset]->BlockUFactor, dFBufs[offset]->BlockLFactor,
 			factStat->IrecvPlcd_D,
 			comReqss[offset]->U_diag_blk_recv_req, 
 			comReqss[offset]->L_diag_blk_recv_req,

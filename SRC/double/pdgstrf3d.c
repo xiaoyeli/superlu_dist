@@ -135,7 +135,7 @@ int_t pdgstrf3d(superlu_dist_options_t *options, int m, int n, double anorm,
 
     //getting Nsupers
     int_t nsupers = getNsupers(n, LUstruct->Glu_persist);
-
+    int_t* xsup = LUstruct->Glu_persist->xsup;
     // Grid related Variables
     int_t iam = grid->iam; // in 2D grid
     int num_threads = getNumThreads(grid3d->iam);
@@ -189,13 +189,55 @@ int_t pdgstrf3d(superlu_dist_options_t *options, int m, int n, double anorm,
     int_t numLA = getNumLookAhead(options);
     dLUValSubBuf_t** LUvsbs = dLluBufInitArr( SUPERLU_MAX( numLA, grid3d->zscp.Np ), LUstruct);
     msgs_t**msgss = initMsgsArr(numLA);
-    int_t mxLeafNode    = 0;
+    int_t mxLeafNode    = 0; // Yang: only need to check the leaf level of topoInfo as the factorization proceeds level by level 
     for (int ilvl = 0; ilvl < maxLvl; ++ilvl) {
+        fflush(stdout);
         if (sForests[myTreeIdxs[ilvl]] && sForests[myTreeIdxs[ilvl]]->topoInfo.eTreeTopLims[1] > mxLeafNode )
             mxLeafNode    = sForests[myTreeIdxs[ilvl]]->topoInfo.eTreeTopLims[1];
     }
-    ddiagFactBufs_t** dFBufs = dinitDiagFactBufsArr(mxLeafNode, ldt, grid);
+
+    // Yang: use ldts to track the maximum needed buffer sizes per node of topoInfo 
+    int *ldts = (int*) SUPERLU_MALLOC(mxLeafNode*sizeof(int));
+    for (int i = 0; i < mxLeafNode; ++i) {
+        ldts[i]=1;
+    }
+    
+    for (int ilvl = 0; ilvl < maxLvl; ++ilvl) {
+        int_t treeId = trf3Dpartition->myTreeIdxs[ilvl];
+        sForest_t* sforest = sForests[treeId];
+        if (sforest){
+            int_t maxTopoLevel = sforest->topoInfo.numLvl;
+            int_t *perm_c_supno = sforest->nodeList ;
+            for (int_t topoLvl = 0; topoLvl < maxTopoLevel; ++topoLvl)
+            {
+                /* code */
+                int_t k_st = sforest->topoInfo.eTreeTopLims[topoLvl];
+                int_t k_end = sforest->topoInfo.eTreeTopLims[topoLvl + 1];
+                for (int_t k0 = k_st; k0 < k_end; ++k0)
+                {
+                    int_t offset = k0 - k_st;
+                    int_t k = perm_c_supno[k0];
+                    int_t nsupc = SuperSize (k);
+                    int_t krow = PROW (k, grid);
+                    int_t kcol = PCOL (k, grid);
+                    int_t myrow = MYROW(grid->iam, grid);
+                    int_t mycol = MYCOL(grid->iam, grid);
+                    if (myrow == krow || mycol == kcol)
+                    {
+                        ldts[offset] = SUPERLU_MAX(ldts[offset],nsupc);      
+                    }
+                }               
+            }
+        }
+    }
+    
+    // dinitDiagFactBufsArrMod is modified version of dinitDiagFactBufsArr to use ldts instead of a scalar
+    ddiagFactBufs_t** dFBufs = dinitDiagFactBufsArrMod(mxLeafNode, ldts, grid);
+    SUPERLU_FREE(ldts);
+
     commRequests_t** comReqss = initCommRequestsArr(SUPERLU_MAX(mxLeafNode, numLA), ldt, grid);
+
+
 
     /* Setting up GPU related data structures */
     int_t first_l_block_acc = 0;
@@ -275,6 +317,7 @@ int_t pdgstrf3d(superlu_dist_options_t *options, int m, int n, double anorm,
 #endif
     SCT->pdgstrfTimer = SuperLU_timer_();
 
+
     for (int ilvl = 0; ilvl < maxLvl; ++ilvl)
     {
         /* if I participate in this level */
@@ -294,8 +337,7 @@ int_t pdgstrf3d(superlu_dist_options_t *options, int m, int n, double anorm,
                     comReqss, &scuBufs,  &packLUInfo,
                     msgss, LUvsbs, dFBufs,  &factStat, &fNlists,
                     &gEtreeInfo, options,  iperm_c_supno, ldt,
-                    sluGPU,  d2Hred,            // New params for GPU
-                    HyP, LUstruct, grid3d, stat,
+                    sluGPU,  d2Hred,  HyP, LUstruct, grid3d, stat,
                     thresh,  SCT, tag_ub, info);
 #else
                 dsparseTreeFactor_ASYNC(sforest, comReqss,  &scuBufs, &packLUInfo,
@@ -380,8 +422,6 @@ int_t pdgstrf3d(superlu_dist_options_t *options, int m, int n, double anorm,
     dLluBufFreeArr(numLA, LUvsbs);
     dfreeDiagFactBufsArr(mxLeafNode, dFBufs);
     Free_HyP(HyP);
-    // if (superlu_acc_offload )
-    //     dfreeSluGPU(sluGPU);
 
 #if ( DEBUGlevel>=1 )
     CHECK_MALLOC (grid3d->iam, "Exit pdgstrf3d()");
@@ -389,6 +429,3 @@ int_t pdgstrf3d(superlu_dist_options_t *options, int m, int n, double anorm,
     return 0;
 
 } /* pdgstrf3d */
-
-
-//UrowindPtr_host

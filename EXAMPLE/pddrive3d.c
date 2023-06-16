@@ -14,10 +14,11 @@ at the top-level directory.
  * \brief Driver program for PDGSSVX3D example
  *
  * <pre>
- * -- Distributed SuperLU routine (version 7.0.0) --
+ * -- Distributed SuperLU routine (version 8.1.0) --
  * Lawrence Berkeley National Lab, Georgia Institute of Technology,
  * Oak Ridge National Lab 
  * May 12, 2021
+ * August 27, 2022  Add batch option
  *
  */
 #include "superlu_ddefs.h"  
@@ -114,17 +115,32 @@ main (int argc, char *argv[])
     double *b, *xtrue;
     int_t m, n;
     int nprow, npcol, npdep;
+    int lookahead, colperm, rowperm, ir, batch;
     int iam, info, ldb, ldx, nrhs;
     char **cpp, c, *suffix;
     FILE *fp, *fopen ();
     extern int cpp_defs ();
     int ii, omp_mpi_level, batchCount = 0;
+    int*    usermap;     /* The following variables are used for batch solves */
+    float result_min[2];
+    result_min[0]=1e10;
+    result_min[1]=1e10;
+    float result_max[2];
+    result_max[0]=0.0;
+    result_max[1]=0.0;
+    MPI_Comm SubComm;
+    int myrank, p;
 
     nprow = 1;            /* Default process rows.      */
     npcol = 1;            /* Default process columns.   */
     npdep = 1;            /* replication factor must be power of two */
     nrhs = 1;             /* Number of right-hand side. */
-
+    lookahead = -1;
+    colperm = -1;
+    rowperm = -1;
+    ir = -1;
+    batch = 0;
+    
     /* ------------------------------------------------------------
        INITIALIZE MPI ENVIRONMENT.
        ------------------------------------------------------------ */
@@ -167,8 +183,18 @@ main (int argc, char *argv[])
             case 'd':
                 npdep = atoi (*cpp);
                 break;
-              case 'b': batchCount = atoi(*cpp);
-                        break;
+            case 'l': lookahead = atoi(*cpp);
+                      break;
+            case 'p': rowperm = atoi(*cpp);
+                      break;
+            case 'q': colperm = atoi(*cpp);
+                      break;
+            case 'i': ir = atoi(*cpp);
+                      break;
+            case 'b': batch = atoi(*cpp);
+                      break;
+            case 's': nrhs = atoi(*cpp);
+                      break;                      
             }
         }
         else
@@ -185,7 +211,20 @@ main (int argc, char *argv[])
        INITIALIZE THE SUPERLU PROCESS GRID.
        ------------------------------------------------------------ */
     superlu_gridinit3d (MPI_COMM_WORLD, nprow, npcol, npdep, &grid);
-
+#ifdef GPU_ACC
+    int superlu_acc_offload = get_acc_offload();
+    if (superlu_acc_offload) {
+        MPI_Comm_rank(MPI_COMM_WORLD, &myrank);
+        double t1 = SuperLU_timer_();
+        gpuFree(0);
+        double t2 = SuperLU_timer_();
+        if(!myrank)printf("first gpufree time: %7.4f\n",t2-t1);
+        gpublasHandle_t hb;
+        gpublasCreate(&hb);
+        if(!myrank)printf("first blas create time: %7.4f\n",SuperLU_timer_()-t2);
+        gpublasDestroy(hb);
+	}
+#endif
     if(grid.iam==0) {
 	MPI_Query_thread(&omp_mpi_level);
 	switch (omp_mpi_level) {
@@ -206,6 +245,7 @@ main (int argc, char *argv[])
 	    fflush(stdout);
 	    break;
 	}
+        fflush(stdout);
     }
 	
     /* Bail out if I do not belong in the grid. */
@@ -307,20 +347,23 @@ main (int argc, char *argv[])
        options.ColPerm           = METIS_AT_PLUS_A;
        options.RowPerm           = LargeDiag_MC64;
        options.ReplaceTinyPivot  = NO;
-       options.IterRefine        = DOUBLE;
+       options.IterRefine        = SLU_DOUBLE;
        options.Trans             = NOTRANS;
        options.SolveInitialized  = NO;
        options.RefineInitialized = NO;
        options.PrintStat         = YES;
-       
        options->num_lookaheads    = 10;
        options->lookahead_etree   = NO;
        options->SymPattern        = NO;
        options.DiagInv           = NO;
      */
-    //TODO: set options->num_lookaheads using an environment variable
     set_default_options_dist (&options);
+    options.Algo3d = YES;
+    options.ReplaceTinyPivot = YES;
     options.IterRefine = NOREFINE;
+    options.DiagInv           = YES;
+    // options.ParSymbFact       = YES;
+    // options.ColPerm           = PARMETIS;
 #if 0
     options.ReplaceTinyPivot = YES;
     options.RowPerm = NOROWPERM;
@@ -329,6 +372,11 @@ main (int argc, char *argv[])
     options.ReplaceTinyPivot = YES;
 #endif
 
+    if (rowperm != -1) options.RowPerm = rowperm;
+    if (colperm != -1) options.ColPerm = colperm;
+    if (lookahead != -1) options.num_lookaheads = lookahead;
+    if (ir != -1) options.IterRefine = ir;
+    
     if ( batchCount > 0 )
         options.batchCount = batchCount;
       
@@ -378,16 +426,11 @@ main (int argc, char *argv[])
        DEALLOCATE STORAGE.
        ------------------------------------------------------------ */
 
+    dDestroy_LU (n, &(grid.grid2d), &LUstruct);
     if ( grid.zscp.Iam == 0 ) { // process layer 0
-
-	PStatPrint (&options, &stat, &(grid.grid2d)); /* Print 2D statistics.*/
-
-        dDestroy_LU (n, &(grid.grid2d), &LUstruct);
-        dSolveFinalize (&options, &SOLVEstruct);
-    } else { // Process layers not equal 0
-        dDeAllocLlu_3d(n, &LUstruct, &grid);
-        dDeAllocGlu_3d(&LUstruct);
+	    PStatPrint (&options, &stat, &(grid.grid2d)); /* Print 2D statistics.*/
     }
+    dSolveFinalize (&options, &SOLVEstruct);
     
     dDestroy_A3d_gathered_on_2d(&SOLVEstruct, &grid);
 
@@ -397,14 +440,31 @@ main (int argc, char *argv[])
     SUPERLU_FREE (berr);
     dScalePermstructFree (&ScalePermstruct);
     dLUstructFree (&LUstruct);
-    PStatFree (&stat);
-
+    fclose(fp);
+    
     /* ------------------------------------------------------------
        RELEASE THE SUPERLU PROCESS GRID.
        ------------------------------------------------------------ */
 out:
-    superlu_gridexit3d (&grid);
+    if ( batch ) {
+	result_min[0] = stat.utime[FACT];   
+	result_min[1] = stat.utime[SOLVE];  
+	result_max[0] = stat.utime[FACT];   
+	result_max[1] = stat.utime[SOLVE];    
+	MPI_Allreduce(MPI_IN_PLACE, result_min, 2, MPI_FLOAT,MPI_MIN, MPI_COMM_WORLD);
+	MPI_Allreduce(MPI_IN_PLACE, result_max, 2, MPI_FLOAT,MPI_MAX, MPI_COMM_WORLD);
+	if (!myrank) {
+	    printf("Batch solves returning data:\n");
+	    printf("    Factor time over all grids.  Min: %8.4f Max: %8.4f\n",result_min[0], result_max[0]);
+	    printf("    Solve time over all grids.  Min: %8.4f Max: %8.4f\n",result_min[1], result_max[1]);
+	    printf("**************************************************\n");
+	    fflush(stdout);
+	}
+    }
 
+    superlu_gridexit3d (&grid);
+    if ( iam != -1 )PStatFree (&stat);
+    
     /* ------------------------------------------------------------
        TERMINATES THE MPI EXECUTION ENVIRONMENT.
        ------------------------------------------------------------ */

@@ -57,13 +57,13 @@ set(sources
   prec-independent/sec_structs.c  
 )
 
-if (HAVE_CUDA)
-  list(APPEND sources cuda/superlu_gpu_utils.cu)
-endif()
+# if (HAVE_CUDA)
+#   list(APPEND sources cuda/superlu_gpu_utils.cu)
+# endif()
 
-if (HAVE_HIP)
-  list(APPEND sources hip/superlu_gpu_utils.hip.cpp)
-endif()
+# if (HAVE_HIP)
+#   list(APPEND sources hip/superlu_gpu_utils.hip.cpp)
+# endif()
 
 if (MSVC)
   list(APPEND sources pred-independent/wingetopt.c)
@@ -73,7 +73,7 @@ set_source_files_properties(superlu_timer.c PROPERTIES COMPILE_FLAGS -O0)
 
 if(enable_double)
   list(APPEND headers
-  include/superlu_ddefs.h include/dlustruct_gpu.h)
+  include/superlu_ddefs.h include/dlustruct_gpu.h include/oneside.h)
 
 if(TPL_ENABLE_CUDALIB)
   list(APPEND sources cuda/pdgstrs_lsum_cuda.cu)
@@ -113,6 +113,7 @@ endif()
     double/dstatic_schedule.c
     double/pdgstrf2.c
     double/pdgstrs.c
+    double/pdgstrs3d.c
     double/pdgstrs1.c
     double/pdgstrs_lsum.c
     double/pdgstrs_Bglobal.c
@@ -306,6 +307,7 @@ if (TPL_ENABLE_HIPLIB)
   set(hipsources
     hip/pdgstrs_lsum_cuda.hip.cpp
     hip/dsuperlu_gpu.hip.cpp
+    hip/superlu_gpu_utils.hip.cpp
   )
   if(enable_single)
   list(APPEND hipsources hip/ssuperlu_gpu.hip.cpp)
@@ -335,8 +337,13 @@ if (BUILD_SHARED_LIBS AND BUILD_STATIC_LIBS)
   list(APPEND targets superlu_dist-static)
 endif()
 
+if (TPL_ENABLE_NVSHMEM)
+set(superlu_dist_libs ${MPI_C_LIBRARIES} ${MPI_CXX_LIBRARIES} ${BLAS_LIB} ${LAPACK_LIB}
+    ${PARMETIS_LIB} ${COLAMD_LIB} ${COMBBLAS_LIB} ${MAGMA_LIB} ${CUDA_LIB} ${HIP_LIB} ${NVSHMEM_LIB}) 
+else()
 set(superlu_dist_libs ${MPI_C_LIBRARIES} ${MPI_CXX_LIBRARIES} ${BLAS_LIB} ${LAPACK_LIB}
     ${PARMETIS_LIB} ${COLAMD_LIB} ${COMBBLAS_LIB} ${MAGMA_LIB} ${CUDA_LIB} ${HIP_LIB})
+endif()
 
 if (NOT MSVC)
   list(APPEND superlu_dist_libs m)

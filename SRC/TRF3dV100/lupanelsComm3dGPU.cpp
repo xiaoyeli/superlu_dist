@@ -2,6 +2,7 @@
 // #include "cublasDefs.hhandle, "
 #include "lupanels.hpp"
 
+#ifdef HAVE_CUDA
 
 int_t LUstruct_v100::ancestorReduction3dGPU(int_t ilvl, int_t *myNodeCount,
                                          int_t **treePerm)
@@ -157,4 +158,4 @@ int_t LUstruct_v100::zRecvUPanelGPU(int_t k0, int_t senderGrid, double alpha, do
 	return 0;
 }
 
-
+#endif
