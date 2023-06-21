@@ -1,0 +1,118 @@
+MPI_Query_thread with MPI_THREAD_MULTIPLE
+__STDC_VERSION__ 201112
+Library version:	8.1.2
+Input matrix file:	/global/cfs/cdirs/m2957/liuyangz/my_research/matrix/s2D9pt2048.rua
+3D process grid: 1 X 1 X 64
+Time to read and distribute matrix 5.06
+**************************************************
+.. blocking parameters from sp_ienv():
+**    relaxation                 : 60
+**    max supernode              : 256
+**    estimated fill ratio       : 5
+**    min GEMM m*k*n to use GPU  : 5000
+**************************************************
+**************************************************
+.. options:
+**    Fact                      :    0
+**    Equil                     :    1
+**    DiagInv                   :    1
+**    ParSymbFact               :    0
+**    ColPerm                   :    4
+**    RowPerm                   :    1
+**    ReplaceTinyPivot          :    1
+**    IterRefine                :    0
+**    Trans                     :    0
+**    SymPattern                :    0
+**    lookahead_etree           :    0
+**    Use_TensorCore            :    0
+**    Use 3D algorithm          :    1
+**    num_lookaheads            :   10
+** parameters that can be altered by environment variables:
+**    superlu_relax             :   60
+**    superlu_maxsup            :  256
+**    min GEMM m*k*n to use GPU : 5000
+**    GPU buffer size           :   50000000
+**    GPU streams               :    1
+**    estimated fill ratio      :    5
+**************************************************
+.. equilibrated? *equed = N
+.. LDPERM job        5	 time: 1.30
+.. anorm 2.000000e+00
+** MPI 0/1, NVSHMEM 0/1,device name: : bus id: 128, ndevices=5266,cur=3, node=nid008292 **
+** MPI 0/1, NVSHMEM 0/1,device name: : bus id: 128, ndevices=5398,cur=3, node=nid003021 **
+** MPI 0/1, NVSHMEM 0/1,device name: : bus id: 128, ndevices=5445,cur=1, node=nid003792 **
+** MPI 0/1, NVSHMEM 0/1,device name: : bus id: 128, ndevices=5333,cur=2, node=nid002872 **
+** MPI 0/1, NVSHMEM 0/1,device name: : bus id: 128, ndevices=5362,cur=3, node=nid003628 **
+** MPI 0/1, NVSHMEM 0/1,device name: : bus id: 128, ndevices=5214,cur=3, node=nid003412 **
+** MPI 0/1, NVSHMEM 0/1,device name: : bus id: 128, ndevices=5315,cur=2, node=nid008293 **
+** MPI 0/1, NVSHMEM 0/1,device name: : bus id: 128, ndevices=5419,cur=2, node=nid008289 **
+** MPI 0/1, NVSHMEM 0/1,device name: : bus id: 128, ndevices=5408,cur=2, node=nid003628 **
+** MPI 0/1, NVSHMEM 0/1,device name: : bus id: 128, ndevices=5333,cur=1, node=nid008288 **
+** MPI 0/1, NVSHMEM 0/1,device name: : bus id: 128, ndevices=5241,cur=1, node=nid003412 **
+** MPI 0/1, NVSHMEM 0/1,device name: : bus id: 128, ndevices=5217,cur=3, node=nid008293 **
+** MPI 0/1, NVSHMEM 0/1,device name: : bus id: 128, ndevices=5279,cur=3, node=nid003500 **
+** MPI 0/1, NVSHMEM 0/1,device name: : bus id: 128, ndevices=5301,cur=2, node=nid003021 **
+** MPI 0/1, NVSHMEM 0/1,device name: : bus id: 128, ndevices=5444,cur=3, node=nid003121 **
+** MPI 0/1, NVSHMEM 0/1,device name: : bus id: 128, ndevices=5376,cur=2, node=nid008288 **
+** MPI 0/1, NVSHMEM 0/1,device name: : bus id: 128, ndevices=5308,cur=2, node=nid008296 **
+** MPI 0/1, NVSHMEM 0/1,device name: : bus id: 128, ndevices=5284,cur=1, node=nid008293 **
+** MPI 0/1, NVSHMEM 0/1,device name: : bus id: 128, ndevices=5449,cur=1, node=nid003096 **
+** MPI 0/1, NVSHMEM 0/1,device name: : bus id: 128, ndevices=5283,cur=1, node=nid008289 **
+** MPI 0/1, NVSHMEM 0/1,device name: : bus id: 128, ndevices=5397,cur=3, node=nid002872 **
+** MPI 0/1, NVSHMEM 0/1,device name: : bus id: 128, ndevices=5251,cur=3, node=nid003584 **
+** MPI 0/1, NVSHMEM 0/1,device name: : bus id: 128, ndevices=5395,cur=1, node=nid003628 **
+** MPI 0/1, NVSHMEM 0/1,device name: : bus id: 128, ndevices=5298,cur=2, node=nid003121 **
+** MPI 0/1, NVSHMEM 0/1,device name: : bus id: 128, ndevices=5446,cur=3, node=nid008288 **
+** MPI 0/1, NVSHMEM 0/1,device name: : bus id: 128, ndevices=5366,cur=3, node=nid008296 **
+** MPI 0/1, NVSHMEM 0/1,device name: : bus id: 128, ndevices=5451,cur=0, node=nid008292 **
+** MPI 0/1, NVSHMEM 0/1,device name: : bus id: 128, ndevices=5349,cur=2, node=nid003096 **
+** MPI 0/1, NVSHMEM 0/1,device name: : bus id: 128, ndevices=5366,cur=3, node=nid003393 **
+** MPI 0/1, NVSHMEM 0/1,device name: : bus id: 128, ndevices=5394,cur=1, node=nid002872 **
+** MPI 0/1, NVSHMEM 0/1,device name: : bus id: 128, ndevices=5239,cur=2, node=nid003584 **
+** MPI 0/1, NVSHMEM 0/1,device name: : bus id: 128, ndevices=5343,cur=1, node=nid003121 **
+** MPI 0/1, NVSHMEM 0/1,device name: : bus id: 128, ndevices=5290,cur=1, node=nid008296 **
+** MPI 0/1, NVSHMEM 0/1,device name: : bus id: 128, ndevices=5454,cur=3, node=nid003096 **
+** MPI 0/1, NVSHMEM 0/1,device name: : bus id: 128, ndevices=5261,cur=1, node=nid003393 **
+** MPI 0/1, NVSHMEM 0/1,device name: : bus id: 128, ndevices=5357,cur=0, node=nid003792 **
+** MPI 0/1, NVSHMEM 0/1,device name: : bus id: 128, ndevices=5339,cur=1, node=nid003584 **
+** MPI 0/1, NVSHMEM 0/1,device name: : bus id: 128, ndevices=5426,cur=0, node=nid008296 **
+** MPI 0/1, NVSHMEM 0/1,device name: : bus id: 128, ndevices=5444,cur=0, node=nid008293 **
+** MPI 0/1, NVSHMEM 0/1,device name: : bus id: 128, ndevices=5251,cur=0, node=nid003021 **
+** MPI 0/1, NVSHMEM 0/1,device name: : bus id: 128, ndevices=5269,cur=2, node=nid003393 **
+** MPI 0/1, NVSHMEM 0/1,device name: : bus id: 128, ndevices=5342,cur=1, node=nid003080 **
+** MPI 0/1, NVSHMEM 0/1,device name: : bus id: 128, ndevices=5268,cur=0, node=nid003628 **
+** MPI 0/1, NVSHMEM 0/1,device name: : bus id: 128, ndevices=5345,cur=0, node=nid008288 **
+** MPI 0/1, NVSHMEM 0/1,device name: : bus id: 128, ndevices=5458,cur=1, node=nid003021 **
+** MPI 0/1, NVSHMEM 0/1,device name: : bus id: 128, ndevices=5342,cur=2, node=nid003080 **
+** MPI 0/1, NVSHMEM 0/1,device name: : bus id: 128, ndevices=5246,cur=0, node=nid003121 **
+** MPI 0/1, NVSHMEM 0/1,device name: : bus id: 128, ndevices=5311,cur=3, node=nid003080 **
+** MPI 0/1, NVSHMEM 0/1,device name: : bus id: 128, ndevices=5332,cur=0, node=nid003080 **
+** MPI 0/1, NVSHMEM 0/1,device name: : bus id: 128, ndevices=5395,cur=1, node=nid003500 **
+** MPI 0/1, NVSHMEM 0/1,device name: : bus id: 128, ndevices=5299,cur=3, node=nid008289 **
+** MPI 0/1, NVSHMEM 0/1,device name: : bus id: 128, ndevices=5408,cur=2, node=nid003500 **
+** MPI 0/1, NVSHMEM 0/1,device name: : bus id: 128, ndevices=5447,cur=0, node=nid008289 **
+** MPI 0/1, NVSHMEM 0/1,device name: : bus id: 128, ndevices=5260,cur=2, node=nid003412 **
+** MPI 0/1, NVSHMEM 0/1,device name: : bus id: 128, ndevices=5393,cur=0, node=nid003096 **
+** MPI 0/1, NVSHMEM 0/1,device name: : bus id: 128, ndevices=5283,cur=0, node=nid003584 **
+** MPI 0/1, NVSHMEM 0/1,device name: : bus id: 128, ndevices=5268,cur=0, node=nid003393 **
+** MPI 0/1, NVSHMEM 0/1,device name: : bus id: 128, ndevices=5414,cur=0, node=nid003500 **
+.. Use METIS ordering on A'+A
+.. symbfact(): relax   60, maxsuper  256, fill    5
+	Matrix size min_mn   4194304
+	Nonzeros in L       434982391
+	Nonzeros in U       434982391
+	nonzeros in L+U     865770478
+	nonzeros in LSUB    106034519
+	No of supers 153176
+	Size of G(L) 12477884
+	Size of G(U) 8283580
+	int 4, short 2, float 4, double 8
+	SYMBfact (MB):	L\U 541.16	total 692.15	expansions 0
+.. # L blocks   825381	# U blocks   672205
+ === using DAG ===
+** MPI 0/1, NVSHMEM 0/1,device name: : bus id: 128, ndevices=5247,cur=0, node=nid002872 **
+** MPI 0/1, NVSHMEM 0/1,device name: : bus id: 128, ndevices=5261,cur=0, node=nid003412 **
+** MPI 0/1, NVSHMEM 0/1,device name: : bus id: 128, ndevices=5206,cur=2, node=nid008292 **
+** MPI 0/1, NVSHMEM 0/1,device name: : bus id: 128, ndevices=5287,cur=2, node=nid003792 **
+** MPI 0/1, NVSHMEM 0/1,device name: : bus id: 128, ndevices=5284,cur=1, node=nid008292 **
+** MPI 0/1, NVSHMEM 0/1,device name: : bus id: 128, ndevices=5405,cur=3, node=nid003792 **

@@ -1,0 +1,791 @@
+MPI_Query_thread with MPI_THREAD_MULTIPLE
+__STDC_VERSION__ 201112
+Library version:	8.1.2
+Input matrix file:	/global/cfs/cdirs/m2957/liuyangz/my_research/matrix/dielFilterV3real.bin
+3D process grid: 4 X 1 X 64
+fread n  1102824	nnz 89306020
+# of doubles fread: 89306020
+Time to read and distribute matrix 1.36
+**************************************************
+.. blocking parameters from sp_ienv():
+**    relaxation                 : 60
+**    max supernode              : 256
+**    estimated fill ratio       : 5
+**    min GEMM m*k*n to use GPU  : 5000
+**************************************************
+**************************************************
+.. options:
+**    Fact                      :    0
+**    Equil                     :    1
+**    DiagInv                   :    1
+**    ParSymbFact               :    0
+**    ColPerm                   :    4
+**    RowPerm                   :    1
+**    ReplaceTinyPivot          :    1
+**    IterRefine                :    0
+**    Trans                     :    0
+**    SymPattern                :    0
+**    lookahead_etree           :    0
+**    Use_TensorCore            :    0
+**    Use 3D algorithm          :    1
+**    num_lookaheads            :   10
+** parameters that can be altered by environment variables:
+**    superlu_relax             :   60
+**    superlu_maxsup            :  256
+**    min GEMM m*k*n to use GPU : 5000
+**    GPU buffer size           :   50000000
+**    GPU streams               :    1
+**    estimated fill ratio      :    5
+**************************************************
+.. equilibrated? *equed = R
+.. LDPERM job        5	 time: 3.06
+.. anorm 4.514514e+01
+.. Use METIS ordering on A'+A
+.. symbfact(): relax   60, maxsuper  256, fill    5
+	Matrix size min_mn   1102824
+	Nonzeros in L       566414094
+	Nonzeros in U       566414094
+	nonzeros in L+U     1131725364
+	nonzeros in LSUB    134370521
+	No of supers 37167
+	Size of G(L) 8330238
+	Size of G(U) 7227414
+	int 4, short 2, float 4, double 8
+	SYMBfact (MB):	L\U 588.45	total 628.15	expansions 0
+.. # L blocks    83411	# U blocks    73826
+ === using DAG ===
+after 3D initialization.
+.. Starting with 1 openMP threads 
+MPI tag upper bound = 33554431
+Total time in factorization 	:  3.46
+MPI-communication phase 	:  2.41
+|Wait_LSend             	|     0.0000 	|     0.0000 	|     0.0000 	|     0.4238%| Seconds|
+|Wait_USend             	|     0.0399 	|     0.0359 	|     0.0456 	|     9.1670%| Seconds|
+|Wait_URecv             	|     0.2500 	|     0.1533 	|     0.3119 	|    23.5410%| Seconds|
+|Wait_LRecv             	|     0.0000 	|     0.0000 	|     0.0000 	|       -nan%| Seconds|
+|L_PanelUpdate          	|     0.0000 	|     0.0000 	|     0.0000 	|       -nan%| Seconds|
+|PDGSTRS2               	|     0.0000 	|     0.0000 	|     0.0000 	|       -nan%| Seconds|
+|wait-FunCallStream     	|     0.0000 	|     0.0000 	|     0.0000 	|       -nan%| Seconds|
+|wait-copyStream        	|     0.0000 	|     0.0000 	|     0.0000 	|       -nan%| Seconds|
+|waitGPU2CPU            	|     0.0000 	|     0.0000 	|     0.0000 	|       -nan%| Seconds|
+|SchurCompUpdate        	|     1.0587 	|     1.0093 	|     1.1244 	|     4.6155%| Seconds|
+|PanelFactorization     	|     2.4061 	|     2.3403 	|     2.4554 	|     2.0309%| Seconds|
+#### High Level Time Breakdown :     3.5217 
+
+|Function name 	| avg 	| min 	| max 	| std-dev| units|
+|---|---|---|---|---|---|
+|Startup                	|     0.0569 	|     0.0213 	|     0.0815 	|    42.2852%| Seconds|
+|Main-Factor loop       	|     3.4648 	|     3.4648 	|     3.4648 	|     0.0000%| Seconds|
+|3D-GatherLU            	|     0.0000 	|     0.0000 	|     0.0000 	|    40.9399%| Seconds|
+|tTotal                 	|     3.5217 	|     3.4861 	|     3.5462 	|     0.6833%| Seconds|
+#### Components of Factor Loop :     3.4648 
+
+|Function name 	| avg 	| min 	| max 	| std-dev| units|
+|---|---|---|---|---|---|
+|3D-AncestorReduce      	|     2.0793 	|     2.0575 	|     2.0989 	|     0.7070%| Seconds|
+|Pipeline Tail          	|     0.3139 	|     0.2242 	|     0.3858 	|    20.4159%| Seconds|
+|Grid-0 Factor:Level-0     	|     0.0550 	|     0.0527 	|     0.0575 	|     3.1434%| Seconds|
+|Grid-0 Factor:Level-1     	|     0.2723 	|     0.2656 	|     0.2865 	|     3.0568%| Seconds|
+|Grid-0 Factor:Level-2     	|     0.2466 	|     0.2421 	|     0.2508 	|     1.6494%| Seconds|
+|Grid-0 Factor:Level-3     	|     0.3643 	|     0.3594 	|     0.3702 	|     1.3347%| Seconds|
+|Grid-0 Factor:Level-4     	|     0.2032 	|     0.1947 	|     0.2142 	|     3.7773%| Seconds|
+|Grid-0 Factor:Level-5     	|     0.0995 	|     0.0962 	|     0.1033 	|     2.7416%| Seconds|
+|Grid-0 Factor:Level-6     	|     0.1446 	|     0.1415 	|     0.1459 	|     1.2289%| Seconds|
+| commVolRed | 3.97583e+10   | 1.55306e+08 |
+| commVolFactor | 1.35431e+10   | 5.29027e+07 |
+| Total Memory 	| 8.8e+07  	| 1.5e+08  	|5.4e+07  	|
+| LU-LU(repli) 	| 2.9e+07  	| 5.9e+07  	|
+|Forest | weight | cost | weight/Cost | 
+|0   | 4.65e+08   | 5.52e-02   | 8.42e+00  |
+|1   | 3.57e+09   | 2.68e-01   | 1.33e+01  |
+|2   | 2.54e+09   | 2.17e-01   | 1.17e+01  |
+|3   | 3.25e+09   | 2.42e-01   | 1.34e+01  |
+|4   | 1.14e+10   | 7.45e-01   | 1.54e+01  |
+|5   | 3.42e+09   | 2.69e-01   | 1.27e+01  |
+|6   | 1.19e+10   | 8.34e-01   | 1.43e+01  |
+|7   | 5.44e+09   | 3.60e-01   | 1.51e+01  |
+|8   | 3.39e+09   | 2.67e-01   | 1.27e+01  |
+|9   | 5.88e+09   | 4.11e-01   | 1.43e+01  |
+|10   | 1.38e+10   | 9.46e-01   | 1.46e+01  |
+|11   | 2.29e+09   | 1.86e-01   | 1.23e+01  |
+|12   | 7.41e+09   | 4.91e-01   | 1.51e+01  |
+|13   | 5.42e+09   | 3.30e-01   | 1.64e+01  |
+|14   | 9.29e+09   | 6.36e-01   | 1.46e+01  |
+|15   | 3.03e+09   | 1.98e-01   | 1.53e+01  |
+|16   | 1.99e+09   | 1.57e-01   | 1.27e+01  |
+|17   | 2.35e+09   | 1.95e-01   | 1.20e+01  |
+|18   | 2.04e+09   | 1.75e-01   | 1.16e+01  |
+|19   | 4.65e+09   | 3.49e-01   | 1.33e+01  |
+|20   | 1.60e+09   | 1.33e-01   | 1.21e+01  |
+|21   | 6.62e+09   | 4.59e-01   | 1.44e+01  |
+|22   | 5.67e+09   | 3.89e-01   | 1.46e+01  |
+|23   | 2.84e+09   | 2.02e-01   | 1.41e+01  |
+|24   | 1.98e+09   | 1.67e-01   | 1.18e+01  |
+|25   | 4.00e+09   | 3.03e-01   | 1.32e+01  |
+|26   | 3.56e+09   | 2.70e-01   | 1.32e+01  |
+|27   | 8.07e+08   | 7.58e-02   | 1.06e+01  |
+|28   | 1.45e+09   | 1.04e-01   | 1.40e+01  |
+|29   | 4.03e+09   | 2.89e-01   | 1.39e+01  |
+|30   | 3.90e+09   | 2.99e-01   | 1.31e+01  |
+|31   | 1.18e+09   | 9.77e-02   | 1.21e+01  |
+|32   | 2.17e+09   | 1.64e-01   | 1.32e+01  |
+|33   | 1.38e+09   | 1.10e-01   | 1.26e+01  |
+|34   | 6.90e+08   | 6.83e-02   | 1.01e+01  |
+|35   | 1.56e+09   | 1.16e-01   | 1.34e+01  |
+|36   | 1.07e+09   | 8.59e-02   | 1.24e+01  |
+|37   | 7.22e+08   | 6.29e-02   | 1.15e+01  |
+|38   | 1.35e+09   | 1.19e-01   | 1.13e+01  |
+|39   | 2.99e+09   | 2.16e-01   | 1.38e+01  |
+|40   | 6.42e+08   | 5.36e-02   | 1.20e+01  |
+|41   | 1.45e+09   | 1.33e-01   | 1.09e+01  |
+|42   | 2.70e+08   | 2.49e-02   | 1.09e+01  |
+|43   | 7.73e+08   | 7.00e-02   | 1.10e+01  |
+|44   | 3.19e+09   | 2.36e-01   | 1.35e+01  |
+|45   | 2.15e+09   | 1.69e-01   | 1.27e+01  |
+|46   | 1.90e+09   | 1.56e-01   | 1.22e+01  |
+|47   | 1.88e+09   | 1.42e-01   | 1.32e+01  |
+|48   | 1.51e+09   | 1.31e-01   | 1.15e+01  |
+|49   | 1.16e+09   | 1.00e-01   | 1.15e+01  |
+|50   | 1.78e+09   | 1.53e-01   | 1.16e+01  |
+|51   | 1.93e+09   | 1.50e-01   | 1.28e+01  |
+|52   | 5.66e+08   | 5.40e-02   | 1.05e+01  |
+|53   | 1.58e+09   | 1.38e-01   | 1.14e+01  |
+|54   | 5.78e+08   | 5.47e-02   | 1.06e+01  |
+|55   | 1.21e+09   | 1.16e-01   | 1.04e+01  |
+|56   | 7.60e+08   | 8.07e-02   | 9.42e+00  |
+|57   | 1.91e+09   | 1.42e-01   | 1.35e+01  |
+|58   | 1.22e+09   | 1.20e-01   | 1.02e+01  |
+|59   | 2.04e+08   | 2.08e-02   | 9.84e+00  |
+|60   | 3.06e+09   | 2.29e-01   | 1.34e+01  |
+|61   | 1.10e+09   | 9.38e-02   | 1.17e+01  |
+|62   | 2.91e+09   | 2.38e-01   | 1.22e+01  |
+|63   | 1.13e+09   | 1.46e-01   | 7.78e+00  |
+|64   | 2.57e+09   | 2.83e-01   | 9.09e+00  |
+|65   | 1.20e+09   | 1.64e-01   | 7.29e+00  |
+|66   | 1.91e+09   | 2.32e-01   | 8.24e+00  |
+|67   | 1.86e+09   | 2.56e-01   | 7.29e+00  |
+|68   | 9.44e+08   | 1.68e-01   | 5.63e+00  |
+|69   | 1.50e+09   | 2.20e-01   | 6.80e+00  |
+|70   | 1.10e+09   | 1.64e-01   | 6.70e+00  |
+|71   | 1.56e+09   | 1.84e-01   | 8.51e+00  |
+|72   | 2.34e+09   | 2.55e-01   | 9.19e+00  |
+|73   | 1.79e+09   | 2.11e-01   | 8.49e+00  |
+|74   | 4.70e+08   | 1.11e-01   | 4.23e+00  |
+|75   | 1.06e+09   | 1.52e-01   | 6.96e+00  |
+|76   | 8.53e+08   | 1.54e-01   | 5.54e+00  |
+|77   | 3.01e+09   | 3.62e-01   | 8.32e+00  |
+|78   | 1.38e+09   | 2.18e-01   | 6.33e+00  |
+|79   | 3.26e+09   | 4.30e-01   | 7.59e+00  |
+|80   | 4.23e+09   | 4.94e-01   | 8.58e+00  |
+|81   | 2.28e+09   | 3.29e-01   | 6.92e+00  |
+|82   | 1.07e+09   | 1.81e-01   | 5.89e+00  |
+|83   | 2.98e+09   | 3.52e-01   | 8.46e+00  |
+|84   | 6.80e+08   | 1.59e-01   | 4.28e+00  |
+|85   | 1.64e+09   | 2.62e-01   | 6.24e+00  |
+|86   | 6.04e+08   | 1.47e-01   | 4.12e+00  |
+|87   | 1.80e+09   | 2.69e-01   | 6.69e+00  |
+|88   | 3.39e+09   | 4.49e-01   | 7.55e+00  |
+|89   | 1.80e+09   | 2.20e-01   | 8.20e+00  |
+|90   | 6.75e+09   | 7.00e-01   | 9.65e+00  |
+|91   | 3.63e+09   | 4.31e-01   | 8.44e+00  |
+|92   | 4.24e+09   | 4.91e-01   | 8.63e+00  |
+|93   | 3.33e+09   | 4.38e-01   | 7.61e+00  |
+|94   | 2.75e+09   | 3.79e-01   | 7.27e+00  |
+|95   | 2.48e+09   | 3.22e-01   | 7.70e+00  |
+|96   | 3.63e+09   | 4.52e-01   | 8.02e+00  |
+|97   | 1.59e+09   | 2.18e-01   | 7.27e+00  |
+|98   | 2.78e+09   | 3.42e-01   | 8.13e+00  |
+|99   | 2.28e+09   | 3.09e-01   | 7.37e+00  |
+|100   | 2.01e+09   | 2.32e-01   | 8.64e+00  |
+|101   | 2.97e+09   | 3.26e-01   | 9.11e+00  |
+|102   | 4.58e+09   | 5.34e-01   | 8.58e+00  |
+|103   | 2.57e+09   | 3.26e-01   | 7.88e+00  |
+|104   | 3.64e+09   | 4.05e-01   | 9.01e+00  |
+|105   | 2.32e+09   | 2.70e-01   | 8.59e+00  |
+|106   | 7.83e+08   | 1.27e-01   | 6.17e+00  |
+|107   | 7.44e+08   | 1.14e-01   | 6.51e+00  |
+|108   | 2.79e+09   | 3.15e-01   | 8.84e+00  |
+|109   | 1.27e+09   | 1.63e-01   | 7.76e+00  |
+|110   | 7.75e+08   | 1.24e-01   | 6.27e+00  |
+|111   | 1.62e+09   | 1.90e-01   | 8.52e+00  |
+|112   | 1.38e+09   | 1.81e-01   | 7.66e+00  |
+|113   | 8.11e+08   | 1.20e-01   | 6.77e+00  |
+|114   | 1.22e+09   | 1.54e-01   | 7.93e+00  |
+|115   | 1.21e+09   | 1.67e-01   | 7.24e+00  |
+|116   | 1.49e+09   | 1.90e-01   | 7.85e+00  |
+|117   | 1.76e+09   | 1.97e-01   | 8.94e+00  |
+|118   | 1.03e+09   | 1.43e-01   | 7.18e+00  |
+|119   | 1.24e+09   | 1.71e-01   | 7.23e+00  |
+|120   | 9.83e+08   | 2.07e-01   | 4.75e+00  |
+|121   | 3.47e+09   | 4.38e-01   | 7.94e+00  |
+|122   | 3.35e+09   | 4.01e-01   | 8.35e+00  |
+|123   | 1.40e+09   | 2.26e-01   | 6.21e+00  |
+|124   | 1.09e+09   | 1.85e-01   | 5.93e+00  |
+|125   | 1.84e+09   | 2.78e-01   | 6.60e+00  |
+|126   | 3.76e+09   | 4.23e-01   | 8.90e+00  |
+|CritcalPath   | 4.58e+10   | 3.41e+00   | 1.34e+01  |
+|Pearsoncoefficient |  0.083 |
+
+~~~mermaid 
+
+gantt 
+        		 dateFormat  mm-ss 
+       		 title TreeCost and Time Gantt Chart
+
+
+	 Section Time
+	 tree-63 	:Time-63, 0d, 15d 
+	 tree-31  38 	:Time-31, after Time-64, 10d 
+	 tree-64 	:Time-64, 0d, 28d 
+	 tree-15  59 	:Time-15, after Time-32, 20d 
+	 tree-65 	:Time-65, 0d, 16d 
+	 tree-32  40 	:Time-32, after Time-66, 16d 
+	 tree-66 	:Time-66, 0d, 23d 
+	 tree-7  95 	:Time-7, after Time-15, 36d 
+	 tree-67 	:Time-67, 0d, 26d 
+	 tree-33  37 	:Time-33, after Time-67, 11d 
+	 tree-68 	:Time-68, 0d, 17d 
+	 tree-16  52 	:Time-16, after Time-33, 16d 
+	 tree-69 	:Time-69, 0d, 22d 
+	 tree-34  29 	:Time-34, after Time-69, 7d 
+	 tree-70 	:Time-70, 0d, 16d 
+	 tree-3  1.2e+02 	:Time-3, after Time-7, 24d 
+	 tree-71 	:Time-71, 0d, 18d 
+	 tree-35  37 	:Time-35, after Time-72, 12d 
+	 tree-72 	:Time-72, 0d, 26d 
+	 tree-17  57 	:Time-17, after Time-35, 20d 
+	 tree-73 	:Time-73, 0d, 21d 
+	 tree-36  30 	:Time-36, after Time-73, 9d 
+	 tree-74 	:Time-74, 0d, 11d 
+	 tree-8  92 	:Time-8, after Time-18, 27d 
+	 tree-75 	:Time-75, 0d, 15d 
+	 tree-37  22 	:Time-37, after Time-76, 6d 
+	 tree-76 	:Time-76, 0d, 15d 
+	 tree-18  66 	:Time-18, after Time-38, 18d 
+	 tree-77 	:Time-77, 0d, 36d 
+	 tree-38  48 	:Time-38, after Time-77, 12d 
+	 tree-78 	:Time-78, 0d, 22d 
+	 tree-1  3.4e+02 	:Time-1, after Time-4, 27d 
+	 tree-79 	:Time-79, 0d, 43d 
+	 tree-39  71 	:Time-39, after Time-80, 22d 
+	 tree-80 	:Time-80, 0d, 49d 
+	 tree-19  1.1e+02 	:Time-19, after Time-39, 35d 
+	 tree-81 	:Time-81, 0d, 33d 
+	 tree-40  38 	:Time-40, after Time-81, 5d 
+	 tree-82 	:Time-82, 0d, 18d 
+	 tree-9  1.5e+02 	:Time-9, after Time-19, 41d 
+	 tree-83 	:Time-83, 0d, 35d 
+	 tree-41  49 	:Time-41, after Time-83, 13d 
+	 tree-84 	:Time-84, 0d, 16d 
+	 tree-20  62 	:Time-20, after Time-41, 13d 
+	 tree-85 	:Time-85, 0d, 26d 
+	 tree-42  29 	:Time-42, after Time-85, 2d 
+	 tree-86 	:Time-86, 0d, 15d 
+	 tree-4  3.1e+02 	:Time-4, after Time-10, 74d 
+	 tree-87 	:Time-87, 0d, 27d 
+	 tree-43  52 	:Time-43, after Time-88, 7d 
+	 tree-88 	:Time-88, 0d, 45d 
+	 tree-21  1.4e+02 	:Time-21, after Time-44, 46d 
+	 tree-89 	:Time-89, 0d, 22d 
+	 tree-44  94 	:Time-44, after Time-90, 24d 
+	 tree-90 	:Time-90, 0d, 70d 
+	 tree-10  2.3e+02 	:Time-10, after Time-21, 95d 
+	 tree-91 	:Time-91, 0d, 43d 
+	 tree-45  66 	:Time-45, after Time-92, 17d 
+	 tree-92 	:Time-92, 0d, 49d 
+	 tree-22  1e+02 	:Time-22, after Time-45, 39d 
+	 tree-93 	:Time-93, 0d, 44d 
+	 tree-46  59 	:Time-46, after Time-93, 16d 
+	 tree-94 	:Time-94, 0d, 38d 
+	 tree-0  3.4e+02 	:Time-0, after Time-1, 6d 
+	 tree-95 	:Time-95, 0d, 32d 
+	 tree-47  59 	:Time-47, after Time-96, 14d 
+	 tree-96 	:Time-96, 0d, 45d 
+	 tree-23  80 	:Time-23, after Time-47, 20d 
+	 tree-97 	:Time-97, 0d, 22d 
+	 tree-48  47 	:Time-48, after Time-98, 13d 
+	 tree-98 	:Time-98, 0d, 34d 
+	 tree-11  1e+02 	:Time-11, after Time-24, 19d 
+	 tree-99 	:Time-99, 0d, 31d 
+	 tree-49  41 	:Time-49, after Time-99, 10d 
+	 tree-100 	:Time-100, 0d, 23d 
+	 tree-24  85 	:Time-24, after Time-50, 17d 
+	 tree-101 	:Time-101, 0d, 33d 
+	 tree-50  69 	:Time-50, after Time-102, 15d 
+	 tree-102 	:Time-102, 0d, 53d 
+	 tree-5  1.6e+02 	:Time-5, after Time-12, 27d 
+	 tree-103 	:Time-103, 0d, 33d 
+	 tree-51  56 	:Time-51, after Time-104, 15d 
+	 tree-104 	:Time-104, 0d, 40d 
+	 tree-25  86 	:Time-25, after Time-51, 30d 
+	 tree-105 	:Time-105, 0d, 27d 
+	 tree-52  32 	:Time-52, after Time-105, 5d 
+	 tree-106 	:Time-106, 0d, 13d 
+	 tree-12  1.3e+02 	:Time-12, after Time-25, 49d 
+	 tree-107 	:Time-107, 0d, 11d 
+	 tree-53  45 	:Time-53, after Time-108, 14d 
+	 tree-108 	:Time-108, 0d, 32d 
+	 tree-26  72 	:Time-26, after Time-53, 27d 
+	 tree-109 	:Time-109, 0d, 16d 
+	 tree-54  22 	:Time-54, after Time-109, 5d 
+	 tree-110 	:Time-110, 0d, 12d 
+	 tree-2  2.6e+02 	:Time-2, after Time-6, 22d 
+	 tree-111 	:Time-111, 0d, 19d 
+	 tree-55  31 	:Time-55, after Time-111, 12d 
+	 tree-112 	:Time-112, 0d, 18d 
+	 tree-27  38 	:Time-27, after Time-55, 8d 
+	 tree-113 	:Time-113, 0d, 12d 
+	 tree-56  23 	:Time-56, after Time-114, 8d 
+	 tree-114 	:Time-114, 0d, 15d 
+	 tree-13  77 	:Time-13, after Time-28, 33d 
+	 tree-115 	:Time-115, 0d, 17d 
+	 tree-57  33 	:Time-57, after Time-116, 14d 
+	 tree-116 	:Time-116, 0d, 19d 
+	 tree-28  44 	:Time-28, after Time-57, 10d 
+	 tree-117 	:Time-117, 0d, 20d 
+	 tree-58  32 	:Time-58, after Time-117, 12d 
+	 tree-118 	:Time-118, 0d, 14d 
+	 tree-6  2.4e+02 	:Time-6, after Time-14, 83d 
+	 tree-119 	:Time-119, 0d, 17d 
+	 tree-59  23 	:Time-59, after Time-120, 2d 
+	 tree-120 	:Time-120, 0d, 21d 
+	 tree-29  96 	:Time-29, after Time-60, 29d 
+	 tree-121 	:Time-121, 0d, 44d 
+	 tree-60  67 	:Time-60, after Time-121, 23d 
+	 tree-122 	:Time-122, 0d, 40d 
+	 tree-14  1.6e+02 	:Time-14, after Time-30, 64d 
+	 tree-123 	:Time-123, 0d, 23d 
+	 tree-61  32 	:Time-61, after Time-123, 9d 
+	 tree-124 	:Time-124, 0d, 18d 
+	 tree-30  96 	:Time-30, after Time-62, 30d 
+	 tree-125 	:Time-125, 0d, 28d 
+	 tree-62  66 	:Time-62, after Time-126, 24d 
+	 tree-126 	:Time-126, 0d, 42d 
+	 Section Weight
+	 tree-63 	:weight-63, 0d, 8d 
+	 tree-31  28 	:weight-31, after weight-64, 9d 
+	 tree-64 	:weight-64, 0d, 19d 
+	 tree-15  53 	:weight-15, after weight-32, 23d 
+	 tree-65 	:weight-65, 0d, 9d 
+	 tree-32  30 	:weight-32, after weight-66, 16d 
+	 tree-66 	:weight-66, 0d, 14d 
+	 tree-7  93 	:weight-7, after weight-15, 40d 
+	 tree-67 	:weight-67, 0d, 14d 
+	 tree-33  24 	:weight-33, after weight-67, 10d 
+	 tree-68 	:weight-68, 0d, 7d 
+	 tree-16  39 	:weight-16, after weight-33, 15d 
+	 tree-69 	:weight-69, 0d, 11d 
+	 tree-34  16 	:weight-34, after weight-69, 5d 
+	 tree-70 	:weight-70, 0d, 8d 
+	 tree-3  1.2e+02 	:weight-3, after weight-7, 24d 
+	 tree-71 	:weight-71, 0d, 12d 
+	 tree-35  29 	:weight-35, after weight-72, 12d 
+	 tree-72 	:weight-72, 0d, 17d 
+	 tree-17  47 	:weight-17, after weight-35, 17d 
+	 tree-73 	:weight-73, 0d, 13d 
+	 tree-36  21 	:weight-36, after weight-73, 8d 
+	 tree-74 	:weight-74, 0d, 3d 
+	 tree-8  73 	:weight-8, after weight-18, 25d 
+	 tree-75 	:weight-75, 0d, 8d 
+	 tree-37  12 	:weight-37, after weight-75, 5d 
+	 tree-76 	:weight-76, 0d, 6d 
+	 tree-18  48 	:weight-18, after weight-38, 15d 
+	 tree-77 	:weight-77, 0d, 22d 
+	 tree-38  32 	:weight-38, after weight-77, 10d 
+	 tree-78 	:weight-78, 0d, 10d 
+	 tree-1  3.4e+02 	:weight-1, after weight-4, 27d 
+	 tree-79 	:weight-79, 0d, 24d 
+	 tree-39  54 	:weight-39, after weight-80, 22d 
+	 tree-80 	:weight-80, 0d, 31d 
+	 tree-19  88 	:weight-19, after weight-39, 35d 
+	 tree-81 	:weight-81, 0d, 17d 
+	 tree-40  22 	:weight-40, after weight-81, 5d 
+	 tree-82 	:weight-82, 0d, 8d 
+	 tree-9  1.3e+02 	:weight-9, after weight-19, 44d 
+	 tree-83 	:weight-83, 0d, 22d 
+	 tree-41  33 	:weight-41, after weight-83, 11d 
+	 tree-84 	:weight-84, 0d, 5d 
+	 tree-20  45 	:weight-20, after weight-41, 12d 
+	 tree-85 	:weight-85, 0d, 12d 
+	 tree-42  14 	:weight-42, after weight-85, 2d 
+	 tree-86 	:weight-86, 0d, 4d 
+	 tree-4  3.1e+02 	:weight-4, after weight-10, 85d 
+	 tree-87 	:weight-87, 0d, 13d 
+	 tree-43  31 	:weight-43, after weight-88, 6d 
+	 tree-88 	:weight-88, 0d, 25d 
+	 tree-21  1.2e+02 	:weight-21, after weight-44, 49d 
+	 tree-89 	:weight-89, 0d, 13d 
+	 tree-44  74 	:weight-44, after weight-90, 24d 
+	 tree-90 	:weight-90, 0d, 50d 
+	 tree-10  2.3e+02 	:weight-10, after weight-21, 103d 
+	 tree-91 	:weight-91, 0d, 27d 
+	 tree-45  48 	:weight-45, after weight-92, 16d 
+	 tree-92 	:weight-92, 0d, 32d 
+	 tree-22  90 	:weight-22, after weight-45, 42d 
+	 tree-93 	:weight-93, 0d, 25d 
+	 tree-46  39 	:weight-46, after weight-93, 14d 
+	 tree-94 	:weight-94, 0d, 20d 
+	 tree-0  3.4e+02 	:weight-0, after weight-1, 3d 
+	 tree-95 	:weight-95, 0d, 18d 
+	 tree-47  41 	:weight-47, after weight-96, 14d 
+	 tree-96 	:weight-96, 0d, 27d 
+	 tree-23  62 	:weight-23, after weight-47, 21d 
+	 tree-97 	:weight-97, 0d, 12d 
+	 tree-48  32 	:weight-48, after weight-98, 11d 
+	 tree-98 	:weight-98, 0d, 21d 
+	 tree-11  79 	:weight-11, after weight-24, 17d 
+	 tree-99 	:weight-99, 0d, 17d 
+	 tree-49  26 	:weight-49, after weight-99, 9d 
+	 tree-100 	:weight-100, 0d, 15d 
+	 tree-24  62 	:weight-24, after weight-50, 15d 
+	 tree-101 	:weight-101, 0d, 22d 
+	 tree-50  47 	:weight-50, after weight-102, 13d 
+	 tree-102 	:weight-102, 0d, 34d 
+	 tree-5  1.5e+02 	:weight-5, after weight-12, 25d 
+	 tree-103 	:weight-103, 0d, 19d 
+	 tree-51  41 	:weight-51, after weight-104, 14d 
+	 tree-104 	:weight-104, 0d, 27d 
+	 tree-25  71 	:weight-25, after weight-51, 30d 
+	 tree-105 	:weight-105, 0d, 17d 
+	 tree-52  21 	:weight-52, after weight-105, 4d 
+	 tree-106 	:weight-106, 0d, 6d 
+	 tree-12  1.3e+02 	:weight-12, after weight-25, 55d 
+	 tree-107 	:weight-107, 0d, 6d 
+	 tree-53  32 	:weight-53, after weight-108, 12d 
+	 tree-108 	:weight-108, 0d, 21d 
+	 tree-26  59 	:weight-26, after weight-53, 26d 
+	 tree-109 	:weight-109, 0d, 9d 
+	 tree-54  14 	:weight-54, after weight-109, 4d 
+	 tree-110 	:weight-110, 0d, 6d 
+	 tree-2  2.6e+02 	:weight-2, after weight-6, 19d 
+	 tree-111 	:weight-111, 0d, 12d 
+	 tree-55  21 	:weight-55, after weight-111, 9d 
+	 tree-112 	:weight-112, 0d, 10d 
+	 tree-27  27 	:weight-27, after weight-55, 6d 
+	 tree-113 	:weight-113, 0d, 6d 
+	 tree-56  15 	:weight-56, after weight-114, 6d 
+	 tree-114 	:weight-114, 0d, 9d 
+	 tree-13  76 	:weight-13, after weight-28, 40d 
+	 tree-115 	:weight-115, 0d, 9d 
+	 tree-57  25 	:weight-57, after weight-116, 14d 
+	 tree-116 	:weight-116, 0d, 11d 
+	 tree-28  36 	:weight-28, after weight-57, 11d 
+	 tree-117 	:weight-117, 0d, 13d 
+	 tree-58  22 	:weight-58, after weight-117, 9d 
+	 tree-118 	:weight-118, 0d, 8d 
+	 tree-6  2.4e+02 	:weight-6, after weight-14, 89d 
+	 tree-119 	:weight-119, 0d, 9d 
+	 tree-59  8.8 	:weight-59, after weight-119, 2d 
+	 tree-120 	:weight-120, 0d, 7d 
+	 tree-29  79 	:weight-29, after weight-60, 30d 
+	 tree-121 	:weight-121, 0d, 26d 
+	 tree-60  49 	:weight-60, after weight-121, 23d 
+	 tree-122 	:weight-122, 0d, 25d 
+	 tree-14  1.5e+02 	:weight-14, after weight-30, 69d 
+	 tree-123 	:weight-123, 0d, 10d 
+	 tree-61  19 	:weight-61, after weight-123, 8d 
+	 tree-124 	:weight-124, 0d, 8d 
+	 tree-30  79 	:weight-30, after weight-62, 29d 
+	 tree-125 	:weight-125, 0d, 14d 
+	 tree-62  50 	:weight-62, after weight-126, 22d 
+	 tree-126 	:weight-126, 0d, 28d 
+~~~
+
+
+num_thread:     1
+|pxReDistribute_X_to_B 	|     0.0002 	|     0.0000 	|     0.0179 	|   838.6671%| seconds|
+|pxReDistribute_B_to_X 	|     0.0003 	|     0.0000 	|     0.0203 	|   779.6502%| seconds|
+|forwardSolve          	|     0.0125 	|     0.0105 	|     0.0159 	|    10.9768%| seconds|
+|forwardSolve-compute  	|     0.0062 	|     0.0036 	|     0.0107 	|    21.8325%| seconds|
+|forwardSolve-comm     	|     0.0022 	|     0.0007 	|     0.0043 	|    28.7104%| seconds|
+|ForwardSolve:Level-0 	|     0.0000 	|     0.0000 	|     0.0000 	|       -nan%| seconds|
+|ForwardSolve:Level-1 	|     0.0000 	|     0.0000 	|     0.0000 	|       -nan%| seconds|
+|ForwardSolve:Level-2 	|     0.0000 	|     0.0000 	|     0.0000 	|       -nan%| seconds|
+|ForwardSolve:Level-3 	|     0.0000 	|     0.0000 	|     0.0000 	|       -nan%| seconds|
+|ForwardSolve:Level-4 	|     0.0000 	|     0.0000 	|     0.0000 	|       -nan%| seconds|
+|ForwardSolve:Level-5 	|     0.0000 	|     0.0000 	|     0.0000 	|       -nan%| seconds|
+|ForwardSolve:Level-6 	|     0.0116 	|     0.0095 	|     0.0150 	|    11.8667%| seconds|
+|backSolve             	|     0.0252 	|     0.0194 	|     0.0365 	|    15.8305%| seconds|
+|backSolve-compute     	|     0.0171 	|     0.0091 	|     0.0291 	|    24.7341%| seconds|
+|backSolve-comm        	|     0.0044 	|     0.0006 	|     0.0104 	|    42.3957%| seconds|
+|BackSolve:Level-0    	|     0.0000 	|     0.0000 	|     0.0000 	|       -nan%| seconds|
+|BackSolve:Level-1    	|     0.0000 	|     0.0000 	|     0.0000 	|       -nan%| seconds|
+|BackSolve:Level-2    	|     0.0000 	|     0.0000 	|     0.0000 	|       -nan%| seconds|
+|BackSolve:Level-3    	|     0.0000 	|     0.0000 	|     0.0000 	|       -nan%| seconds|
+|BackSolve:Level-4    	|     0.0000 	|     0.0000 	|     0.0000 	|       -nan%| seconds|
+|BackSolve:Level-5    	|     0.0000 	|     0.0000 	|     0.0000 	|       -nan%| seconds|
+|BackSolve:Level-6    	|     0.0245 	|     0.0187 	|     0.0357 	|    16.2615%| seconds|
+|trs_comm_z            	|     0.0037 	|     0.0004 	|     0.0057 	|    36.5813%| seconds|
+|TRS-XY_CommVolume     	|     0.0362 	|     0.0244 	|     0.0620 	|    22.7942%| Mwords|
+|TRS-Z_CommVolume      	|     0.0163 	|     0.0026 	|     0.1456 	|   166.6913%| Mwords|
+|TRS-XYZ_CommVolume    	|     0.0525 	|     0.0274 	|     0.1848 	|    54.7556%| Mwords|
+.. DiagScale = 3
+.. Sol  0: ||X - Xtrue|| / ||X|| = 6.028942e-09	 max_i |x - xtrue|_i / |x|_i = 2.316636e-11
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+**************************************************
+**** Time (seconds) ****
+	EQUIL time            0.427
+	ROWPERM time          3.057
+	COLPERM time          6.852
+	SYMBFACT time         4.774
+	DISTRIBUTE time       4.655
+	FACTOR time           3.607
+	Factor flops	1.928376e+12	Mflops 	534687.49
+	SOLVE time            0.053
+	Solve flops	7.233239e+09	Mflops 	137278.85
+**************************************************
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries

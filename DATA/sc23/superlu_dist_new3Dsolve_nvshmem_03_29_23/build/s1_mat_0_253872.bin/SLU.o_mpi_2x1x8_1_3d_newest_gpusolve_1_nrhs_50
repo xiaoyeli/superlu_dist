@@ -1,0 +1,72 @@
+MPI_Query_thread with MPI_THREAD_MULTIPLE
+__STDC_VERSION__ 201112
+Library version:	8.1.2
+Input matrix file:	/global/cfs/cdirs/m2957/liuyangz/my_research/matrix/s1_mat_0_253872.bin
+3D process grid: 2 X 1 X 8
+fread n   253872	nnz 82155776
+# of doubles fread: 82155776
+Time to read and distribute matrix 0.12
+**************************************************
+.. blocking parameters from sp_ienv():
+**    relaxation                 : 60
+**    max supernode              : 256
+**    estimated fill ratio       : 5
+**    min GEMM m*k*n to use GPU  : 5000
+**************************************************
+**************************************************
+.. options:
+**    Fact                      :    0
+**    Equil                     :    1
+**    DiagInv                   :    1
+**    ParSymbFact               :    0
+**    ColPerm                   :    4
+**    RowPerm                   :    1
+**    ReplaceTinyPivot          :    1
+**    IterRefine                :    0
+**    Trans                     :    0
+**    SymPattern                :    0
+**    lookahead_etree           :    0
+**    Use_TensorCore            :    0
+**    Use 3D algorithm          :    1
+**    num_lookaheads            :   10
+** parameters that can be altered by environment variables:
+**    superlu_relax             :   60
+**    superlu_maxsup            :  256
+**    min GEMM m*k*n to use GPU : 5000
+**    GPU buffer size           :   50000000
+**    GPU streams               :    1
+**    estimated fill ratio      :    5
+**************************************************
+.. equilibrated? *equed = B
+.. LDPERM job        5	 time: 3.19
+.. anorm 1.407514e+02
+** MPI 0/2, NVSHMEM 0/2,device name: à bus id: 44368, ndevices=0,cur=2, node=nid001372 **
+** MPI 1/2, NVSHMEM 1/2,device name: à bus id: 44368, ndevices=0,cur=3, node=nid001372 **
+.. Use METIS ordering on A'+A
+.. symbfact(): relax   60, maxsuper  256, fill    5
+	Matrix size min_mn    253872
+	Nonzeros in L       211993113
+	Nonzeros in U       212005213
+	nonzeros in L+U     423744454
+	nonzeros in LSUB    39696057
+	No of supers 11080
+	Size of G(L) 4892725
+	Size of G(U) 1938947
+	int 4, short 2, float 4, double 8
+	SYMBfact (MB):	L\U 171.62	total 180.76	expansions 0
+.. # L blocks    35713	# U blocks    24261
+ === using DAG ===
+** MPI 0/2, NVSHMEM 0/2,device name: à bus id: 44368, ndevices=0,cur=0, node=nid001372 **
+** MPI 1/2, NVSHMEM 1/2,device name: à bus id: 44368, ndevices=0,cur=1, node=nid001372 **
+** MPI 0/2, NVSHMEM 0/2,device name: à bus id: 44368, ndevices=5439,cur=0, node=nid001373 **
+** MPI 1/2, NVSHMEM 1/2,device name: à bus id: 44368, ndevices=0,cur=1, node=nid001373 **
+** MPI 0/2, NVSHMEM 0/2,device name: à bus id: 44368, ndevices=0,cur=2, node=nid001373 **
+** MPI 1/2, NVSHMEM 1/2,device name: à bus id: 44368, ndevices=0,cur=3, node=nid001373 **
+** MPI 0/2, NVSHMEM 0/2,device name: à bus id: 44368, ndevices=0,cur=2, node=nid001376 **
+** MPI 1/2, NVSHMEM 1/2,device name: à bus id: 44368, ndevices=0,cur=3, node=nid001376 **
+** MPI 0/2, NVSHMEM 0/2,device name: à bus id: 44368, ndevices=0,cur=0, node=nid001376 **
+** MPI 1/2, NVSHMEM 1/2,device name: à bus id: 44368, ndevices=0,cur=1, node=nid001376 **
+** MPI 0/2, NVSHMEM 0/2,device name: à bus id: 44368, ndevices=0,cur=2, node=nid001377 **
+** MPI 1/2, NVSHMEM 1/2,device name: à bus id: 44368, ndevices=0,cur=3, node=nid001377 **
+** MPI 0/2, NVSHMEM 0/2,device name: à bus id: 44368, ndevices=5234,cur=0, node=nid001377 **
+** MPI 1/2, NVSHMEM 1/2,device name: à bus id: 44368, ndevices=0,cur=1, node=nid001377 **

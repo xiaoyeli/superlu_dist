@@ -1,0 +1,170 @@
+first gpufree time:  0.0001
+first blas create time:  0.0001
+MPI_Query_thread with MPI_THREAD_MULTIPLE
+__STDC_VERSION__ 201710
+Library version:	8.1.2
+Input matrix file:	/gpfs/alpine/scratch/liuyangz/csc289/matrix/s1_mat_0_253872.bin
+3D process grid: 1 X 1 X 2
+fread n   253872	nnz 82155776
+# of doubles fread: 82155776
+Time to read and distribute matrix 1.57
+**************************************************
+.. blocking parameters from sp_ienv():
+**    relaxation                 : 60
+**    max supernode              : 256
+**    estimated fill ratio       : 5
+**    min GEMM m*k*n to use GPU  : 5000
+**************************************************
+**************************************************
+.. options:
+**    Fact                      :    0
+**    Equil                     :    1
+**    DiagInv                   :    1
+**    ParSymbFact               :    0
+**    ColPerm                   :    4
+**    RowPerm                   :    1
+**    ReplaceTinyPivot          :    1
+**    IterRefine                :    0
+**    Trans                     :    0
+**    SymPattern                :    0
+**    lookahead_etree           :    0
+**    Use_TensorCore            :    0
+**    Use 3D algorithm          :    1
+**    num_lookaheads            :   10
+** parameters that can be altered by environment variables:
+**    superlu_relax             :   60
+**    superlu_maxsup            :  256
+**    min GEMM m*k*n to use GPU : 5000
+**    GPU buffer size           :  500000000
+**    GPU streams               :    1
+**    estimated fill ratio      :    5
+**************************************************
+.. equilibrated? *equed = B
+.. LDPERM job        5	 time: 1.27
+.. anorm 1.407514e+02
+.. Use METIS ordering on A'+A
+.. symbfact(): relax   60, maxsuper  256, fill    5
+	Matrix size min_mn    253872
+	Nonzeros in L       212887766
+	Nonzeros in U       212761084
+	nonzeros in L+U     425394978
+	nonzeros in LSUB    39352198
+	No of supers 11405
+	Size of G(L) 5134211
+	Size of G(U) 1968366
+	int 4, short 2, float 4, double 8
+	SYMBfact (MB):	L\U 170.36	total 179.50	expansions 0
+.. # L blocks    81493	# U blocks    51658
+ === using DAG ===
+after 3D initialization.
+.. Starting with 1 openMP threads 
+MPI tag upper bound = 33554431
+ === using DAG ===
+dinitSluGPU3D_t: Using hardware acceleration, with 1 gpu streams 
+dinitSluGPU3D_t: Using 256 threads per block for scatter 
+*-- GPU flops: 
+	Flops offloaded 6.039e+11, Time 0.046033, Flop rate 13117.963820 GF/sec 
+*-- GPU memory: 
+	Mop offloaded 2.081e+09, Time 0.101393, Bandwidth 164.174112 GByte/sec 
+*-- PCIe Data Transfer H2D:
+	Data Sent 1.168e+00(GB)
+	Time observed from CPU 0.134983
+	Actual time spent 0.182259
+	Bandwidth 6.408969 GByte/sec 
+*-- PCIe Data Transfer D2H:
+	Data Sent 1.353e+00(GB)
+	Time observed from CPU 0.084029
+	Actual time spent 0.104354
+	Bandwidth 12.968390 GByte/sec 
+Total time in factorization 	: 11.87
+MPI-communication phase 	:  3.25
+|Wait_LSend             	|     0.0004 	|     0.0004 	|     0.0004 	|     0.0000%| Seconds|
+|Wait_USend             	|     0.0001 	|     0.0001 	|     0.0001 	|     0.0000%| Seconds|
+|Wait_URecv             	|     0.0000 	|     0.0000 	|     0.0000 	|       -nan%| Seconds|
+|Wait_LRecv             	|     0.0000 	|     0.0000 	|     0.0000 	|       -nan%| Seconds|
+|L_PanelUpdate          	|     0.0000 	|     0.0000 	|     0.0000 	|       -nan%| Seconds|
+|PDGSTRS2               	|     0.0000 	|     0.0000 	|     0.0000 	|       -nan%| Seconds|
+|wait-FunCallStream     	|     0.0199 	|     0.0199 	|     0.0199 	|     0.0000%| Seconds|
+|wait-copyStream        	|     0.0525 	|     0.0525 	|     0.0525 	|     0.0000%| Seconds|
+|waitGPU2CPU            	|     0.0199 	|     0.0199 	|     0.0199 	|     0.0000%| Seconds|
+|SchurCompUpdate        	|     8.6132 	|     8.6132 	|     8.6132 	|     0.0000%| Seconds|
+|PanelFactorization     	|     3.2525 	|     3.2525 	|     3.2525 	|     0.0000%| Seconds|
+#### High Level Time Breakdown :    11.9347 
+
+|Function name 	| avg 	| min 	| max 	| std-dev| units|
+|---|---|---|---|---|---|
+|Startup                	|     0.0690 	|     0.0690 	|     0.0690 	|     0.0000%| Seconds|
+|Main-Factor loop       	|    11.8657 	|    11.8657 	|    11.8657 	|     0.0000%| Seconds|
+|3D-GatherLU            	|     0.0000 	|     0.0000 	|     0.0000 	|     0.0000%| Seconds|
+|tTotal                 	|    11.9347 	|    11.9347 	|    11.9347 	|     0.0000%| Seconds|
+#### Components of Factor Loop :    11.8657 
+
+|Function name 	| avg 	| min 	| max 	| std-dev| units|
+|---|---|---|---|---|---|
+|3D-AncestorReduce      	|     3.0054 	|     3.0054 	|     3.0054 	|     0.0000%| Seconds|
+|Pipeline Tail          	|     0.1653 	|     0.1653 	|     0.1653 	|     0.0000%| Seconds|
+|Grid-0 Factor:Level-0     	|     0.2329 	|     0.2329 	|     0.2329 	|     0.0000%| Seconds|
+|Grid-0 Factor:Level-1     	|     8.6273 	|     8.6273 	|     8.6273 	|     0.0000%| Seconds|
+| commVolRed | 1.67185e+08   | 8.35926e+07 |
+| commVolFactor | 5.04698e+07   | 2.52349e+07 |
+| Total Memory 	| 1.4e+09  	| 1.7e+09  	|1.1e+09  	|
+| LU-LU(repli) 	| 1.3e+09  	| 3.3e+07  	|
+|Forest | weight | cost | weight/Cost | 
+|0   | 1.10e+10   | 2.33e-01   | 4.74e+01  |
+|1   | 1.15e+11   | 8.63e+00   | 1.33e+01  |
+|2   | 2.42e+11   | 1.16e+01   | 2.08e+01  |
+|CritcalPath   | 2.53e+11   | 1.18e+01   | 2.14e+01  |
+|Pearsoncoefficient |  -0.080 |
+
+~~~mermaid 
+
+gantt 
+        		 dateFormat  mm-ss 
+       		 title TreeCost and Time Gantt Chart
+
+
+	 Section Time
+	 tree-1 	:Time-1, 0d, 863d 
+	 tree-0  1.2e+03 	:Time-0, after Time-2, 23d 
+	 tree-2 	:Time-2, 0d, 1159d 
+	 Section Weight
+	 tree-1 	:weight-1, 0d, 539d 
+	 tree-0  1.2e+03 	:weight-0, after weight-2, 52d 
+	 tree-2 	:weight-2, 0d, 1131d 
+~~~
+
+
+num_thread:     1
+.. GPU trisolve
+ === using DAG ===
+.. GPU trisolve
+|pxReDistribute_X_to_B 	|     0.0007 	|     0.0000 	|     0.0014 	|    99.5054%| seconds|
+|pxReDistribute_B_to_X 	|     0.0031 	|     0.0000 	|     0.0063 	|    99.9958%| seconds|
+|forwardSolve          	|     0.0524 	|     0.0393 	|     0.0655 	|    25.0278%| seconds|
+|forwardSolve-compute  	|     0.0000 	|     0.0000 	|     0.0000 	|       -nan%| seconds|
+|forwardSolve-comm     	|     0.0000 	|     0.0000 	|     0.0000 	|     4.3083%| seconds|
+|ForwardSolve:Level-0 	|     0.0000 	|     0.0000 	|     0.0000 	|       -nan%| seconds|
+|ForwardSolve:Level-1 	|     0.0524 	|     0.0393 	|     0.0655 	|    25.0402%| seconds|
+|backSolve             	|     0.0578 	|     0.0452 	|     0.0704 	|    21.7749%| seconds|
+|backSolve-compute     	|     0.0000 	|     0.0000 	|     0.0000 	|       -nan%| seconds|
+|backSolve-comm        	|     0.0000 	|     0.0000 	|     0.0000 	|    23.0770%| seconds|
+|BackSolve:Level-0    	|     0.0000 	|     0.0000 	|     0.0000 	|       -nan%| seconds|
+|BackSolve:Level-1    	|     0.0578 	|     0.0452 	|     0.0704 	|    21.7729%| seconds|
+|trs_comm_z            	|     0.0132 	|     0.0001 	|     0.0263 	|    99.1458%| seconds|
+|TRS-XY_CommVolume     	|     0.0000 	|     0.0000 	|     0.0000 	|       -nan%| Mwords|
+|TRS-Z_CommVolume      	|     0.0756 	|     0.0756 	|     0.0756 	|     0.0000%| Mwords|
+|TRS-XYZ_CommVolume    	|     0.0756 	|     0.0756 	|     0.0756 	|     0.0000%| Mwords|
+.. DiagScale = 3
+.. Sol  0: ||X - Xtrue|| / ||X|| = 9.134037e-05	 max_i |x - xtrue|_i / |x|_i = 5.940392e-05
+**************************************************
+**** Time (seconds) ****
+	EQUIL time            0.155
+	ROWPERM time          1.271
+	COLPERM time          0.792
+	SYMBFACT time         0.590
+	DISTRIBUTE time       3.876
+	FACTOR time          12.274
+	Factor flops	7.043699e+11	Mflops 	57384.81
+	SOLVE time            0.136
+	Solve flops	8.716881e+08	Mflops 	 6409.29
+**************************************************

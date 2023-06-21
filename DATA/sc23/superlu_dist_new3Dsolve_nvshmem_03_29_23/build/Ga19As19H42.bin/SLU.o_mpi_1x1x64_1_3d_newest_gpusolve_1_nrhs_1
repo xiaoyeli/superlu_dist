@@ -1,0 +1,791 @@
+MPI_Query_thread with MPI_THREAD_MULTIPLE
+__STDC_VERSION__ 201112
+Library version:	8.1.2
+Input matrix file:	/global/cfs/cdirs/m2957/liuyangz/my_research/matrix/Ga19As19H42.bin
+3D process grid: 1 X 1 X 64
+fread n   133123	nnz  8884839
+# of doubles fread:  8884839
+Time to read and distribute matrix 0.01
+**************************************************
+.. blocking parameters from sp_ienv():
+**    relaxation                 : 60
+**    max supernode              : 256
+**    estimated fill ratio       : 5
+**    min GEMM m*k*n to use GPU  : 5000
+**************************************************
+**************************************************
+.. options:
+**    Fact                      :    0
+**    Equil                     :    1
+**    DiagInv                   :    1
+**    ParSymbFact               :    0
+**    ColPerm                   :    4
+**    RowPerm                   :    1
+**    ReplaceTinyPivot          :    1
+**    IterRefine                :    0
+**    Trans                     :    0
+**    SymPattern                :    0
+**    lookahead_etree           :    0
+**    Use_TensorCore            :    0
+**    Use 3D algorithm          :    1
+**    num_lookaheads            :   10
+** parameters that can be altered by environment variables:
+**    superlu_relax             :   60
+**    superlu_maxsup            :  256
+**    min GEMM m*k*n to use GPU : 5000
+**    GPU buffer size           :   50000000
+**    GPU streams               :    1
+**    estimated fill ratio      :    5
+**************************************************
+.. equilibrated? *equed = N
+.. LDPERM job        5	 time: 0.26
+.. anorm 4.301589e+01
+.. Use METIS ordering on A'+A
+.. symbfact(): relax   60, maxsuper  256, fill    5
+	Matrix size min_mn    133123
+	Nonzeros in L       816746960
+	Nonzeros in U       816746960
+	nonzeros in L+U     1633360797
+	nonzeros in LSUB    94462969
+	No of supers 21996
+	Size of G(L) 50804793
+	Size of G(U) 50671670
+	int 4, short 2, float 4, double 8
+	SYMBfact (MB):	L\U 583.20	total 587.99	expansions 5
+.. # L blocks  4699986	# U blocks  4677990
+ === using DAG ===
+nnodes[i] =        422 but getCommonAncestorList returns         78. Something must be wrong!!! 
+nnodes[i] =        422 but getCommonAncestorList returns         78. Something must be wrong!!! 
+nnodes[i] =        422 but getCommonAncestorList returns         78. Something must be wrong!!! 
+nnodes[i] =        422 but getCommonAncestorList returns         78. Something must be wrong!!! 
+nnodes[i] =        422 but getCommonAncestorList returns         78. Something must be wrong!!! 
+nnodes[i] =        422 but getCommonAncestorList returns         78. Something must be wrong!!! 
+nnodes[i] =        422 but getCommonAncestorList returns         78. Something must be wrong!!! 
+nnodes[i] =        422 but getCommonAncestorList returns         78. Something must be wrong!!! 
+nnodes[i] =        422 but getCommonAncestorList returns         78. Something must be wrong!!! 
+nnodes[i] =        422 but getCommonAncestorList returns         78. Something must be wrong!!! 
+nnodes[i] =        422 but getCommonAncestorList returns         78. Something must be wrong!!! 
+nnodes[i] =        422 but getCommonAncestorList returns         78. Something must be wrong!!! 
+nnodes[i] =        422 but getCommonAncestorList returns         78. Something must be wrong!!! 
+nnodes[i] =        422 but getCommonAncestorList returns         78. Something must be wrong!!! 
+nnodes[i] =        422 but getCommonAncestorList returns         78. Something must be wrong!!! 
+nnodes[i] =        422 but getCommonAncestorList returns         78. Something must be wrong!!! 
+nnodes[i] =        422 but getCommonAncestorList returns         78. Something must be wrong!!! 
+nnodes[i] =        422 but getCommonAncestorList returns         78. Something must be wrong!!! 
+nnodes[i] =        422 but getCommonAncestorList returns         78. Something must be wrong!!! 
+nnodes[i] =        422 but getCommonAncestorList returns         78. Something must be wrong!!! 
+nnodes[i] =        422 but getCommonAncestorList returns         78. Something must be wrong!!! 
+nnodes[i] =        422 but getCommonAncestorList returns         78. Something must be wrong!!! 
+nnodes[i] =        422 but getCommonAncestorList returns         78. Something must be wrong!!! 
+nnodes[i] =        422 but getCommonAncestorList returns         78. Something must be wrong!!! 
+nnodes[i] =        422 but getCommonAncestorList returns         78. Something must be wrong!!! 
+nnodes[i] =        422 but getCommonAncestorList returns         78. Something must be wrong!!! 
+nnodes[i] =        422 but getCommonAncestorList returns         78. Something must be wrong!!! 
+nnodes[i] =        422 but getCommonAncestorList returns         78. Something must be wrong!!! 
+nnodes[i] =        422 but getCommonAncestorList returns         78. Something must be wrong!!! 
+nnodes[i] =        422 but getCommonAncestorList returns         78. Something must be wrong!!! 
+nnodes[i] =        422 but getCommonAncestorList returns         78. Something must be wrong!!! 
+nnodes[i] =        422 but getCommonAncestorList returns         78. Something must be wrong!!! 
+nnodes[i] =        422 but getCommonAncestorList returns         78. Something must be wrong!!! 
+nnodes[i] =        422 but getCommonAncestorList returns         78. Something must be wrong!!! 
+nnodes[i] =        422 but getCommonAncestorList returns         78. Something must be wrong!!! 
+nnodes[i] =        422 but getCommonAncestorList returns         78. Something must be wrong!!! 
+nnodes[i] =        422 but getCommonAncestorList returns         78. Something must be wrong!!! 
+nnodes[i] =        422 but getCommonAncestorList returns         78. Something must be wrong!!! 
+nnodes[i] =        422 but getCommonAncestorList returns         78. Something must be wrong!!! 
+nnodes[i] =        422 but getCommonAncestorList returns         78. Something must be wrong!!! 
+nnodes[i] =        422 but getCommonAncestorList returns         78. Something must be wrong!!! 
+nnodes[i] =        422 but getCommonAncestorList returns         78. Something must be wrong!!! 
+nnodes[i] =        422 but getCommonAncestorList returns         78. Something must be wrong!!! 
+nnodes[i] =        422 but getCommonAncestorList returns         78. Something must be wrong!!! 
+nnodes[i] =        422 but getCommonAncestorList returns         78. Something must be wrong!!! 
+nnodes[i] =        422 but getCommonAncestorList returns         78. Something must be wrong!!! 
+nnodes[i] =        422 but getCommonAncestorList returns         78. Something must be wrong!!! 
+nnodes[i] =        422 but getCommonAncestorList returns         78. Something must be wrong!!! 
+nnodes[i] =        422 but getCommonAncestorList returns         78. Something must be wrong!!! 
+nnodes[i] =        422 but getCommonAncestorList returns         78. Something must be wrong!!! 
+nnodes[i] =        422 but getCommonAncestorList returns         78. Something must be wrong!!! 
+nnodes[i] =        422 but getCommonAncestorList returns         78. Something must be wrong!!! 
+nnodes[i] =        422 but getCommonAncestorList returns         78. Something must be wrong!!! 
+nnodes[i] =        422 but getCommonAncestorList returns         78. Something must be wrong!!! 
+nnodes[i] =        422 but getCommonAncestorList returns         78. Something must be wrong!!! 
+nnodes[i] =        422 but getCommonAncestorList returns         78. Something must be wrong!!! 
+nnodes[i] =        422 but getCommonAncestorList returns         78. Something must be wrong!!! 
+nnodes[i] =        422 but getCommonAncestorList returns         78. Something must be wrong!!! 
+nnodes[i] =        422 but getCommonAncestorList returns         78. Something must be wrong!!! 
+nnodes[i] =        422 but getCommonAncestorList returns         78. Something must be wrong!!! 
+nnodes[i] =        422 but getCommonAncestorList returns         78. Something must be wrong!!! 
+nnodes[i] =        422 but getCommonAncestorList returns         78. Something must be wrong!!! 
+nnodes[i] =        422 but getCommonAncestorList returns         78. Something must be wrong!!! 
+nnodes[i] =        422 but getCommonAncestorList returns         78. Something must be wrong!!! 
+** MPI 0/1, NVSHMEM 0/1,device name: µ bus id: 1409024, ndevices=79,cur=0, node=nid001445 **
+** MPI 0/1, NVSHMEM 0/1,device name: µ bus id: 1409024, ndevices=79,cur=1, node=nid001445 **
+** MPI 0/1, NVSHMEM 0/1,device name: µ bus id: 1409024, ndevices=79,cur=2, node=nid001445 **
+** MPI 0/1, NVSHMEM 0/1,device name: µ bus id: 1409024, ndevices=79,cur=3, node=nid001445 **
+** MPI 0/1, NVSHMEM 0/1,device name: µ bus id: 1409024, ndevices=79,cur=1, node=nid001448 **
+** MPI 0/1, NVSHMEM 0/1,device name: µ bus id: 1409024, ndevices=79,cur=2, node=nid001448 **
+** MPI 0/1, NVSHMEM 0/1,device name: µ bus id: 1409024, ndevices=79,cur=3, node=nid001448 **
+** MPI 0/1, NVSHMEM 0/1,device name: µ bus id: 1409024, ndevices=79,cur=0, node=nid001448 **
+** MPI 0/1, NVSHMEM 0/1,device name: µ bus id: 1409024, ndevices=79,cur=3, node=nid001449 **
+** MPI 0/1, NVSHMEM 0/1,device name: µ bus id: 1409024, ndevices=79,cur=1, node=nid001449 **
+** MPI 0/1, NVSHMEM 0/1,device name: µ bus id: 1409024, ndevices=79,cur=2, node=nid001449 **
+** MPI 0/1, NVSHMEM 0/1,device name: µ bus id: 1409024, ndevices=79,cur=0, node=nid001449 **
+** MPI 0/1, NVSHMEM 0/1,device name: µ bus id: 1409024, ndevices=79,cur=2, node=nid001444 **
+** MPI 0/1, NVSHMEM 0/1,device name: µ bus id: 1409024, ndevices=79,cur=1, node=nid001444 **
+** MPI 0/1, NVSHMEM 0/1,device name: µ bus id: 1409024, ndevices=79,cur=3, node=nid001444 **
+** MPI 0/1, NVSHMEM 0/1,device name: µ bus id: 88032, ndevices=79,cur=0, node=nid001444 **
+** MPI 0/1, NVSHMEM 0/1,device name: µ bus id: 1409024, ndevices=79,cur=1, node=nid001460 **
+** MPI 0/1, NVSHMEM 0/1,device name: µ bus id: 1409024, ndevices=79,cur=2, node=nid001460 **
+** MPI 0/1, NVSHMEM 0/1,device name: µ bus id: 1409024, ndevices=79,cur=3, node=nid001460 **
+** MPI 0/1, NVSHMEM 0/1,device name: µ bus id: 1409024, ndevices=79,cur=0, node=nid001460 **
+** MPI 0/1, NVSHMEM 0/1,device name: µ bus id: 1409024, ndevices=79,cur=1, node=nid001468 **
+** MPI 0/1, NVSHMEM 0/1,device name: µ bus id: 1409024, ndevices=79,cur=3, node=nid001468 **
+** MPI 0/1, NVSHMEM 0/1,device name: µ bus id: 1409024, ndevices=79,cur=2, node=nid001468 **
+** MPI 0/1, NVSHMEM 0/1,device name: µ bus id: 1409024, ndevices=79,cur=0, node=nid001468 **
+** MPI 0/1, NVSHMEM 0/1,device name: µ bus id: 1409024, ndevices=79,cur=1, node=nid001452 **
+** MPI 0/1, NVSHMEM 0/1,device name: µ bus id: 1409024, ndevices=79,cur=2, node=nid001452 **
+** MPI 0/1, NVSHMEM 0/1,device name: µ bus id: 1409024, ndevices=79,cur=3, node=nid001452 **
+** MPI 0/1, NVSHMEM 0/1,device name: µ bus id: 1409024, ndevices=79,cur=0, node=nid001452 **
+** MPI 0/1, NVSHMEM 0/1,device name: µ bus id: 1409024, ndevices=79,cur=1, node=nid001469 **
+** MPI 0/1, NVSHMEM 0/1,device name: µ bus id: 1409024, ndevices=79,cur=2, node=nid001469 **
+** MPI 0/1, NVSHMEM 0/1,device name: µ bus id: 1409024, ndevices=79,cur=3, node=nid001469 **
+** MPI 0/1, NVSHMEM 0/1,device name: µ bus id: 1409024, ndevices=79,cur=0, node=nid001469 **
+** MPI 0/1, NVSHMEM 0/1,device name: µ bus id: 1409024, ndevices=79,cur=2, node=nid001456 **
+** MPI 0/1, NVSHMEM 0/1,device name: µ bus id: 1409024, ndevices=79,cur=3, node=nid001456 **
+** MPI 0/1, NVSHMEM 0/1,device name: µ bus id: 1409024, ndevices=79,cur=1, node=nid001456 **
+** MPI 0/1, NVSHMEM 0/1,device name: µ bus id: 1409024, ndevices=79,cur=0, node=nid001456 **
+** MPI 0/1, NVSHMEM 0/1,device name: µ bus id: 1409024, ndevices=79,cur=2, node=nid001472 **
+** MPI 0/1, NVSHMEM 0/1,device name: µ bus id: 1409024, ndevices=79,cur=1, node=nid001472 **
+** MPI 0/1, NVSHMEM 0/1,device name: µ bus id: 1409024, ndevices=79,cur=3, node=nid001472 **
+** MPI 0/1, NVSHMEM 0/1,device name: µ bus id: 1409024, ndevices=79,cur=0, node=nid001472 **
+** MPI 0/1, NVSHMEM 0/1,device name: µ bus id: 1409024, ndevices=79,cur=1, node=nid001473 **
+** MPI 0/1, NVSHMEM 0/1,device name: µ bus id: 1409024, ndevices=79,cur=3, node=nid001473 **
+** MPI 0/1, NVSHMEM 0/1,device name: µ bus id: 1409024, ndevices=79,cur=2, node=nid001473 **
+** MPI 0/1, NVSHMEM 0/1,device name: µ bus id: 1409024, ndevices=79,cur=2, node=nid001453 **
+** MPI 0/1, NVSHMEM 0/1,device name: µ bus id: 1409024, ndevices=79,cur=3, node=nid001453 **
+** MPI 0/1, NVSHMEM 0/1,device name: µ bus id: 1409024, ndevices=79,cur=1, node=nid001453 **
+** MPI 0/1, NVSHMEM 0/1,device name: µ bus id: 1409024, ndevices=79,cur=0, node=nid001473 **
+** MPI 0/1, NVSHMEM 0/1,device name: µ bus id: 1409024, ndevices=79,cur=0, node=nid001453 **
+** MPI 0/1, NVSHMEM 0/1,device name: µ bus id: 1409024, ndevices=79,cur=1, node=nid001457 **
+** MPI 0/1, NVSHMEM 0/1,device name: µ bus id: 1409024, ndevices=79,cur=3, node=nid001457 **
+** MPI 0/1, NVSHMEM 0/1,device name: µ bus id: 1409024, ndevices=79,cur=2, node=nid001457 **
+** MPI 0/1, NVSHMEM 0/1,device name: µ bus id: 1409024, ndevices=79,cur=0, node=nid001457 **
+** MPI 0/1, NVSHMEM 0/1,device name: µ bus id: 1409024, ndevices=79,cur=1, node=nid001465 **
+** MPI 0/1, NVSHMEM 0/1,device name: µ bus id: 1409024, ndevices=79,cur=2, node=nid001465 **
+** MPI 0/1, NVSHMEM 0/1,device name: µ bus id: 1409024, ndevices=79,cur=0, node=nid001465 **
+** MPI 0/1, NVSHMEM 0/1,device name: µ bus id: 1409024, ndevices=79,cur=3, node=nid001465 **
+** MPI 0/1, NVSHMEM 0/1,device name: µ bus id: 1409024, ndevices=79,cur=1, node=nid001464 **
+** MPI 0/1, NVSHMEM 0/1,device name: µ bus id: 1409024, ndevices=79,cur=3, node=nid001464 **
+** MPI 0/1, NVSHMEM 0/1,device name: µ bus id: 1409024, ndevices=79,cur=2, node=nid001464 **
+** MPI 0/1, NVSHMEM 0/1,device name: µ bus id: 1409024, ndevices=79,cur=0, node=nid001464 **
+** MPI 0/1, NVSHMEM 0/1,device name: µ bus id: 1409024, ndevices=79,cur=1, node=nid001461 **
+** MPI 0/1, NVSHMEM 0/1,device name: µ bus id: 1409024, ndevices=79,cur=2, node=nid001461 **
+** MPI 0/1, NVSHMEM 0/1,device name: µ bus id: 1409024, ndevices=79,cur=3, node=nid001461 **
+** MPI 0/1, NVSHMEM 0/1,device name: µ bus id: 1409024, ndevices=79,cur=0, node=nid001461 **
+after 3D initialization.
+.. Starting with 1 openMP threads 
+MPI tag upper bound = 33554431
+Total time in factorization 	: 636.56
+MPI-communication phase 	: 363.34
+|Wait_LSend             	|     0.0001 	|     0.0001 	|     0.0001 	|     0.0000%| Seconds|
+|Wait_USend             	|     0.0000 	|     0.0000 	|     0.0000 	|     0.0000%| Seconds|
+|Wait_URecv             	|     0.0000 	|     0.0000 	|     0.0000 	|       -nan%| Seconds|
+|Wait_LRecv             	|     0.0000 	|     0.0000 	|     0.0000 	|       -nan%| Seconds|
+|L_PanelUpdate          	|     0.0000 	|     0.0000 	|     0.0000 	|       -nan%| Seconds|
+|PDGSTRS2               	|     0.0000 	|     0.0000 	|     0.0000 	|       -nan%| Seconds|
+|wait-FunCallStream     	|     0.0000 	|     0.0000 	|     0.0000 	|       -nan%| Seconds|
+|wait-copyStream        	|     0.0000 	|     0.0000 	|     0.0000 	|       -nan%| Seconds|
+|waitGPU2CPU            	|     0.0000 	|     0.0000 	|     0.0000 	|       -nan%| Seconds|
+|SchurCompUpdate        	|   273.2198 	|   273.2198 	|   273.2198 	|     0.0000%| Seconds|
+|PanelFactorization     	|   363.3417 	|   363.3417 	|   363.3417 	|     0.0000%| Seconds|
+#### High Level Time Breakdown :   637.0308 
+
+|Function name 	| avg 	| min 	| max 	| std-dev| units|
+|---|---|---|---|---|---|
+|Startup                	|     0.4693 	|     0.4693 	|     0.4693 	|     0.0000%| Seconds|
+|Main-Factor loop       	|   636.5615 	|   636.5615 	|   636.5615 	|     0.0000%| Seconds|
+|3D-GatherLU            	|     0.0000 	|     0.0000 	|     0.0000 	|     0.0000%| Seconds|
+|tTotal                 	|   637.0308 	|   637.0308 	|   637.0308 	|     0.0000%| Seconds|
+#### Components of Factor Loop :   636.5615 
+
+|Function name 	| avg 	| min 	| max 	| std-dev| units|
+|---|---|---|---|---|---|
+|3D-AncestorReduce      	|   357.8363 	|   357.8363 	|   357.8363 	|     0.0000%| Seconds|
+|Pipeline Tail          	|     5.3561 	|     5.3561 	|     5.3561 	|     0.0000%| Seconds|
+|Grid-0 Factor:Level-0     	|    48.8158 	|    48.8158 	|    48.8158 	|     0.0000%| Seconds|
+|Grid-0 Factor:Level-1     	|    97.8576 	|    97.8576 	|    97.8576 	|     0.0000%| Seconds|
+|Grid-0 Factor:Level-2     	|    62.0789 	|    62.0789 	|    62.0789 	|     0.0000%| Seconds|
+|Grid-0 Factor:Level-3     	|    20.5944 	|    20.5944 	|    20.5944 	|     0.0000%| Seconds|
+|Grid-0 Factor:Level-4     	|     5.9033 	|     5.9033 	|     5.9033 	|     0.0000%| Seconds|
+|Grid-0 Factor:Level-5     	|    15.4174 	|    15.4174 	|    15.4174 	|     0.0000%| Seconds|
+|Grid-0 Factor:Level-6     	|    28.0576 	|    28.0576 	|    28.0576 	|     0.0000%| Seconds|
+| commVolRed | 4.71883e+11   | 7.37317e+09 |
+| commVolFactor | 2.37159e+07   | 370561 |
+| Total Memory 	| 3e+09  	| 4e+09  	|2.4e+09  	|
+| LU-LU(repli) 	| 1.9e+08  	| 2.8e+09  	|
+|Forest | weight | cost | weight/Cost | 
+|0   | 7.50e+11   | 4.88e+01   | 1.54e+01  |
+|1   | 1.29e+12   | 9.79e+01   | 1.32e+01  |
+|2   | 1.44e+12   | 9.32e+01   | 1.55e+01  |
+|3   | 2.46e+11   | 6.21e+01   | 3.97e+00  |
+|4   | 1.14e+12   | 8.43e+01   | 1.36e+01  |
+|5   | 1.30e+12   | 8.91e+01   | 1.46e+01  |
+|6   | 3.09e+11   | 7.27e+01   | 4.24e+00  |
+|7   | 3.91e+10   | 2.06e+01   | 1.90e+00  |
+|8   | 7.92e+10   | 1.25e+01   | 6.36e+00  |
+|9   | 7.54e+10   | 2.83e+01   | 2.66e+00  |
+|10   | 4.55e+11   | 1.15e+02   | 3.96e+00  |
+|11   | 4.66e+11   | 8.15e+01   | 5.72e+00  |
+|12   | 1.27e+11   | 1.05e+01   | 1.21e+01  |
+|13   | 1.48e+11   | 1.92e+01   | 7.74e+00  |
+|14   | 4.95e+10   | 1.26e+01   | 3.92e+00  |
+|15   | 1.49e+10   | 5.90e+00   | 2.53e+00  |
+|16   | 5.36e+09   | 1.13e+01   | 4.72e-01  |
+|17   | 1.94e+10   | 1.37e+01   | 1.41e+00  |
+|18   | 2.66e+10   | 2.36e+01   | 1.13e+00  |
+|19   | 2.56e+10   | 6.16e+00   | 4.16e+00  |
+|20   | 1.17e+10   | 5.52e+00   | 2.12e+00  |
+|21   | 7.61e+10   | 1.95e+01   | 3.91e+00  |
+|22   | 1.62e+11   | 2.36e+01   | 6.86e+00  |
+|23   | 8.24e+10   | 1.59e+01   | 5.17e+00  |
+|24   | 2.13e+11   | 2.87e+01   | 7.43e+00  |
+|25   | 5.45e+10   | 3.04e+01   | 1.79e+00  |
+|26   | 8.43e+09   | 3.79e+00   | 2.23e+00  |
+|27   | 4.21e+09   | 2.18e+00   | 1.93e+00  |
+|28   | 5.96e+10   | 2.18e+01   | 2.73e+00  |
+|29   | 2.24e+10   | 2.62e+01   | 8.57e-01  |
+|30   | 4.51e+09   | 9.41e+00   | 4.79e-01  |
+|31   | 6.58e+09   | 1.54e+01   | 4.27e-01  |
+|32   | 1.44e+09   | 5.08e-01   | 2.83e+00  |
+|33   | 1.60e+09   | 1.98e+00   | 8.09e-01  |
+|34   | 7.06e+08   | 9.08e+00   | 7.78e-02  |
+|35   | 2.08e+09   | 5.99e+00   | 3.47e-01  |
+|36   | 6.27e+09   | 4.78e+00   | 1.31e+00  |
+|37   | 1.28e+09   | 2.65e+00   | 4.84e-01  |
+|38   | 8.51e+09   | 1.74e+01   | 4.88e-01  |
+|39   | 1.39e+10   | 1.69e+01   | 8.19e-01  |
+|40   | 2.13e+09   | 2.28e+00   | 9.31e-01  |
+|41   | 4.28e+09   | 1.07e+01   | 3.99e-01  |
+|42   | 4.59e+08   | 1.96e+00   | 2.34e-01  |
+|43   | 2.76e+10   | 4.15e+01   | 6.65e-01  |
+|44   | 5.93e+09   | 3.85e+00   | 1.54e+00  |
+|45   | 6.68e+10   | 4.21e+01   | 1.59e+00  |
+|46   | 1.63e+10   | 1.14e+01   | 1.44e+00  |
+|47   | 6.60e+09   | 7.42e+00   | 8.90e-01  |
+|48   | 4.56e+10   | 2.94e+01   | 1.55e+00  |
+|49   | 8.96e+10   | 7.29e+01   | 1.23e+00  |
+|50   | 2.08e+10   | 1.38e+01   | 1.51e+00  |
+|51   | 7.21e+09   | 2.02e+01   | 3.57e-01  |
+|52   | 1.74e+10   | 9.66e+00   | 1.80e+00  |
+|53   | 1.40e+09   | 4.19e+00   | 3.35e-01  |
+|54   | 2.20e+09   | 2.30e+00   | 9.54e-01  |
+|55   | 7.44e+03   | 2.42e-03   | 3.07e-03  |
+|56   | 4.58e+09   | 6.13e+00   | 7.47e-01  |
+|57   | 6.52e+09   | 5.70e+00   | 1.14e+00  |
+|58   | 2.69e+10   | 2.62e+01   | 1.03e+00  |
+|59   | 2.97e+09   | 2.29e+01   | 1.30e-01  |
+|60   | 4.19e+09   | 5.24e+00   | 7.99e-01  |
+|61   | 0.00e+00   | 0.00e+00   | -nan  |
+|62   | 0.00e+00   | 0.00e+00   | -nan  |
+|63   | 2.83e+09   | 2.81e+01   | 1.01e-01  |
+|64   | 4.89e+08   | 1.87e+01   | 2.62e-02  |
+|65   | 1.59e+08   | 2.75e+00   | 5.79e-02  |
+|66   | 6.58e+08   | 1.12e+01   | 5.86e-02  |
+|67   | 1.21e+08   | 3.60e+00   | 3.37e-02  |
+|68   | 1.02e+09   | 1.18e+01   | 8.71e-02  |
+|69   | 7.14e+08   | 3.83e+01   | 1.86e-02  |
+|70   | 9.90e+07   | 3.72e+00   | 2.66e-02  |
+|71   | 7.61e+08   | 7.71e+00   | 9.87e-02  |
+|72   | 2.61e+08   | 6.95e+00   | 3.76e-02  |
+|73   | 1.12e+09   | 1.66e+01   | 6.74e-02  |
+|74   | 4.45e+09   | 1.74e+01   | 2.56e-01  |
+|75   | 1.69e+08   | 3.44e+00   | 4.91e-02  |
+|76   | 6.22e+08   | 1.45e+01   | 4.28e-02  |
+|77   | 4.99e+09   | 6.46e+01   | 7.72e-02  |
+|78   | 2.62e+09   | 3.04e+01   | 8.61e-02  |
+|79   | 1.32e+07   | 2.26e-02   | 5.87e-01  |
+|80   | 6.69e+09   | 5.19e+01   | 1.29e-01  |
+|81   | 1.69e+05   | 6.28e-03   | 2.69e-02  |
+|82   | 3.45e+09   | 1.95e+01   | 1.77e-01  |
+|83   | 2.80e+06   | 2.60e-02   | 1.08e-01  |
+|84   | 3.25e+09   | 5.62e+01   | 5.79e-02  |
+|85   | 3.25e+08   | 2.81e+00   | 1.15e-01  |
+|86   | 5.25e+07   | 9.83e-01   | 5.34e-02  |
+|87   | 1.41e+10   | 1.41e+02   | 9.99e-02  |
+|88   | 8.36e+09   | 5.44e+01   | 1.54e-01  |
+|89   | 1.16e+09   | 1.92e+01   | 6.07e-02  |
+|90   | 1.55e+09   | 1.90e+01   | 8.15e-02  |
+|91   | 2.60e+10   | 8.65e+01   | 3.01e-01  |
+|92   | 3.59e+10   | 2.19e+02   | 1.64e-01  |
+|93   | 1.04e+10   | 5.17e+01   | 2.01e-01  |
+|94   | 1.93e+09   | 2.67e+01   | 7.22e-02  |
+|95   | 5.16e+09   | 3.39e+01   | 1.52e-01  |
+|96   | 4.70e+08   | 1.04e+01   | 4.53e-02  |
+|97   | 4.52e+09   | 3.57e+01   | 1.27e-01  |
+|98   | 2.38e+10   | 1.75e+02   | 1.36e-01  |
+|99   | 4.83e+10   | 1.21e+02   | 4.00e-01  |
+|100   | 2.92e+10   | 1.96e+02   | 1.49e-01  |
+|101   | 2.72e+09   | 2.76e+01   | 9.87e-02  |
+|102   | 1.62e+10   | 8.36e+01   | 1.93e-01  |
+|103   | 3.16e+09   | 4.21e+01   | 7.50e-02  |
+|104   | 1.52e+09   | 4.09e+01   | 3.71e-02  |
+|105   | 8.34e+09   | 7.15e+01   | 1.17e-01  |
+|106   | 4.82e+09   | 2.34e+01   | 2.06e-01  |
+|107   | 7.94e+08   | 8.32e+00   | 9.54e-02  |
+|108   | 1.79e+08   | 2.65e+00   | 6.76e-02  |
+|109   | 1.78e+09   | 1.24e+01   | 1.44e-01  |
+|110   | 1.11e+08   | 8.79e-01   | 1.26e-01  |
+|111   | 0.00e+00   | 0.00e+00   | -nan  |
+|112   | 0.00e+00   | 0.00e+00   | -nan  |
+|113   | 7.65e+09   | 4.73e+01   | 1.62e-01  |
+|114   | 1.42e+09   | 1.00e+01   | 1.41e-01  |
+|115   | 2.35e+05   | 3.87e-03   | 6.07e-02  |
+|116   | 5.90e+09   | 5.24e+01   | 1.13e-01  |
+|117   | 1.23e+10   | 5.12e+01   | 2.40e-01  |
+|118   | 7.99e+09   | 1.67e+02   | 4.77e-02  |
+|119   | 1.88e+09   | 7.75e+01   | 2.43e-02  |
+|120   | 1.90e+08   | 8.68e+00   | 2.19e-02  |
+|121   | 2.56e+09   | 1.76e+01   | 1.45e-01  |
+|122   | 9.13e+08   | 1.53e+01   | 5.97e-02  |
+|123   | 0.00e+00   | 0.00e+00   | -nan  |
+|124   | 0.00e+00   | 0.00e+00   | -nan  |
+|125   | 0.00e+00   | 0.00e+00   | -nan  |
+|126   | 0.00e+00   | 0.00e+00   | -nan  |
+|CritcalPath   | 3.91e+12   | 6.30e+02   | 6.20e+00  |
+|Pearsoncoefficient |  0.453 |
+
+~~~mermaid 
+
+gantt 
+        		 dateFormat  mm-ss 
+       		 title TreeCost and Time Gantt Chart
+
+
+	 Section Time
+	 tree-63 	:Time-63, 0d, 2806d 
+	 tree-31  4.3e+03 	:Time-31, after Time-63, 1542d 
+	 tree-64 	:Time-64, 0d, 1865d 
+	 tree-15  4.9e+03 	:Time-15, after Time-31, 590d 
+	 tree-65 	:Time-65, 0d, 275d 
+	 tree-32  1.2e+03 	:Time-32, after Time-66, 51d 
+	 tree-66 	:Time-66, 0d, 1122d 
+	 tree-7  7.9e+03 	:Time-7, after Time-16, 2059d 
+	 tree-67 	:Time-67, 0d, 360d 
+	 tree-33  1.4e+03 	:Time-33, after Time-68, 198d 
+	 tree-68 	:Time-68, 0d, 1176d 
+	 tree-16  5.9e+03 	:Time-16, after Time-34, 1135d 
+	 tree-69 	:Time-69, 0d, 3834d 
+	 tree-34  4.7e+03 	:Time-34, after Time-69, 908d 
+	 tree-70 	:Time-70, 0d, 372d 
+	 tree-3  1.8e+04 	:Time-3, after Time-8, 6208d 
+	 tree-71 	:Time-71, 0d, 771d 
+	 tree-35  1.4e+03 	:Time-35, after Time-71, 599d 
+	 tree-72 	:Time-72, 0d, 695d 
+	 tree-17  3.6e+03 	:Time-17, after Time-36, 1373d 
+	 tree-73 	:Time-73, 0d, 1662d 
+	 tree-36  2.2e+03 	:Time-36, after Time-74, 478d 
+	 tree-74 	:Time-74, 0d, 1741d 
+	 tree-8  1.2e+04 	:Time-8, after Time-18, 1245d 
+	 tree-75 	:Time-75, 0d, 344d 
+	 tree-37  1.7e+03 	:Time-37, after Time-76, 265d 
+	 tree-76 	:Time-76, 0d, 1452d 
+	 tree-18  1.1e+04 	:Time-18, after Time-38, 2358d 
+	 tree-77 	:Time-77, 0d, 6464d 
+	 tree-38  8.2e+03 	:Time-38, after Time-77, 1743d 
+	 tree-78 	:Time-78, 0d, 3044d 
+	 tree-1  5.8e+04 	:Time-1, after Time-4, 9786d 
+	 tree-79 	:Time-79, 0d, 2d 
+	 tree-39  6.9e+03 	:Time-39, after Time-80, 1691d 
+	 tree-80 	:Time-80, 0d, 5188d 
+	 tree-19  7.5e+03 	:Time-19, after Time-39, 616d 
+	 tree-81 	:Time-81, 0d, 1d 
+	 tree-40  2.2e+03 	:Time-40, after Time-82, 228d 
+	 tree-82 	:Time-82, 0d, 1950d 
+	 tree-9  1e+04 	:Time-9, after Time-19, 2829d 
+	 tree-83 	:Time-83, 0d, 3d 
+	 tree-41  6.7e+03 	:Time-41, after Time-84, 1072d 
+	 tree-84 	:Time-84, 0d, 5619d 
+	 tree-20  7.2e+03 	:Time-20, after Time-41, 552d 
+	 tree-85 	:Time-85, 0d, 281d 
+	 tree-42  4.8e+02 	:Time-42, after Time-85, 196d 
+	 tree-86 	:Time-86, 0d, 98d 
+	 tree-4  4.8e+04 	:Time-4, after Time-10, 8426d 
+	 tree-87 	:Time-87, 0d, 14131d 
+	 tree-43  1.8e+04 	:Time-43, after Time-87, 4152d 
+	 tree-88 	:Time-88, 0d, 5441d 
+	 tree-21  2e+04 	:Time-21, after Time-43, 1947d 
+	 tree-89 	:Time-89, 0d, 1918d 
+	 tree-44  2.3e+03 	:Time-44, after Time-89, 385d 
+	 tree-90 	:Time-90, 0d, 1895d 
+	 tree-10  4e+04 	:Time-10, after Time-22, 11482d 
+	 tree-91 	:Time-91, 0d, 8645d 
+	 tree-45  2.6e+04 	:Time-45, after Time-92, 4206d 
+	 tree-92 	:Time-92, 0d, 21899d 
+	 tree-22  2.8e+04 	:Time-22, after Time-45, 2359d 
+	 tree-93 	:Time-93, 0d, 5167d 
+	 tree-46  6.3e+03 	:Time-46, after Time-93, 1138d 
+	 tree-94 	:Time-94, 0d, 2674d 
+	 tree-0  6.3e+04 	:Time-0, after Time-1, 4882d 
+	 tree-95 	:Time-95, 0d, 3394d 
+	 tree-47  4.1e+03 	:Time-47, after Time-95, 742d 
+	 tree-96 	:Time-96, 0d, 1036d 
+	 tree-23  2.2e+04 	:Time-23, after Time-48, 1594d 
+	 tree-97 	:Time-97, 0d, 3570d 
+	 tree-48  2e+04 	:Time-48, after Time-98, 2935d 
+	 tree-98 	:Time-98, 0d, 17543d 
+	 tree-11  3.8e+04 	:Time-11, after Time-24, 8150d 
+	 tree-99 	:Time-99, 0d, 12080d 
+	 tree-49  2.7e+04 	:Time-49, after Time-100, 7289d 
+	 tree-100 	:Time-100, 0d, 19559d 
+	 tree-24  3e+04 	:Time-24, after Time-49, 2875d 
+	 tree-101 	:Time-101, 0d, 2760d 
+	 tree-50  9.7e+03 	:Time-50, after Time-102, 1379d 
+	 tree-102 	:Time-102, 0d, 8363d 
+	 tree-5  4.7e+04 	:Time-5, after Time-11, 8911d 
+	 tree-103 	:Time-103, 0d, 4210d 
+	 tree-51  6.2e+03 	:Time-51, after Time-103, 2021d 
+	 tree-104 	:Time-104, 0d, 4092d 
+	 tree-25  1.1e+04 	:Time-25, after Time-52, 3037d 
+	 tree-105 	:Time-105, 0d, 7152d 
+	 tree-52  8.1e+03 	:Time-52, after Time-105, 966d 
+	 tree-106 	:Time-106, 0d, 2337d 
+	 tree-12  1.2e+04 	:Time-12, after Time-25, 1048d 
+	 tree-107 	:Time-107, 0d, 832d 
+	 tree-53  1.3e+03 	:Time-53, after Time-107, 419d 
+	 tree-108 	:Time-108, 0d, 265d 
+	 tree-26  1.8e+03 	:Time-26, after Time-54, 379d 
+	 tree-109 	:Time-109, 0d, 1238d 
+	 tree-54  1.5e+03 	:Time-54, after Time-109, 230d 
+	 tree-110 	:Time-110, 0d, 88d 
+	 tree-2  5.6e+04 	:Time-2, after Time-5, 9323d 
+	 tree-111 	:Time-111, 0d, 0d 
+	 tree-55  0.24 	:Time-55, after Time-112, 0d 
+	 tree-112 	:Time-112, 0d, 0d 
+	 tree-27  5.6e+03 	:Time-27, after Time-56, 218d 
+	 tree-113 	:Time-113, 0d, 4735d 
+	 tree-56  5.3e+03 	:Time-56, after Time-113, 613d 
+	 tree-114 	:Time-114, 0d, 1004d 
+	 tree-13  2.3e+04 	:Time-13, after Time-28, 1916d 
+	 tree-115 	:Time-115, 0d, 0d 
+	 tree-57  5.8e+03 	:Time-57, after Time-116, 570d 
+	 tree-116 	:Time-116, 0d, 5236d 
+	 tree-28  2.2e+04 	:Time-28, after Time-58, 2181d 
+	 tree-117 	:Time-117, 0d, 5125d 
+	 tree-58  1.9e+04 	:Time-58, after Time-118, 2619d 
+	 tree-118 	:Time-118, 0d, 16742d 
+	 tree-6  3.1e+04 	:Time-6, after Time-13, 7272d 
+	 tree-119 	:Time-119, 0d, 7753d 
+	 tree-59  1e+04 	:Time-59, after Time-119, 2290d 
+	 tree-120 	:Time-120, 0d, 868d 
+	 tree-29  1.3e+04 	:Time-29, after Time-59, 2616d 
+	 tree-121 	:Time-121, 0d, 1761d 
+	 tree-60  2.3e+03 	:Time-60, after Time-121, 524d 
+	 tree-122 	:Time-122, 0d, 1530d 
+	 tree-14  1.4e+04 	:Time-14, after Time-29, 1263d 
+	 tree-123 	:Time-123, 0d, 0d 
+	 tree-61  0 	:Time-61, after Time-124, 0d 
+	 tree-124 	:Time-124, 0d, 0d 
+	 tree-30  9.4e+02 	:Time-30, after Time-62, 941d 
+	 tree-125 	:Time-125, 0d, 0d 
+	 tree-62  0 	:Time-62, after Time-126, 0d 
+	 tree-126 	:Time-126, 0d, 0d 
+	 Section Weight
+	 tree-63 	:weight-63, 0d, 46d 
+	 tree-31  1.5e+02 	:weight-31, after weight-63, 106d 
+	 tree-64 	:weight-64, 0d, 8d 
+	 tree-15  3.9e+02 	:weight-15, after weight-31, 241d 
+	 tree-65 	:weight-65, 0d, 3d 
+	 tree-32  34 	:weight-32, after weight-66, 23d 
+	 tree-66 	:weight-66, 0d, 11d 
+	 tree-7  7.4e+02 	:weight-7, after weight-15, 631d 
+	 tree-67 	:weight-67, 0d, 2d 
+	 tree-33  42 	:weight-33, after weight-68, 26d 
+	 tree-68 	:weight-68, 0d, 17d 
+	 tree-16  1.1e+02 	:weight-16, after weight-33, 86d 
+	 tree-69 	:weight-69, 0d, 12d 
+	 tree-34  23 	:weight-34, after weight-69, 11d 
+	 tree-70 	:weight-70, 0d, 2d 
+	 tree-3  5.9e+03 	:weight-3, after weight-8, 3976d 
+	 tree-71 	:weight-71, 0d, 12d 
+	 tree-35  46 	:weight-35, after weight-71, 34d 
+	 tree-72 	:weight-72, 0d, 4d 
+	 tree-17  4.9e+02 	:weight-17, after weight-36, 312d 
+	 tree-73 	:weight-73, 0d, 18d 
+	 tree-36  1.7e+02 	:weight-36, after weight-74, 101d 
+	 tree-74 	:weight-74, 0d, 72d 
+	 tree-8  1.9e+03 	:weight-8, after weight-18, 1278d 
+	 tree-75 	:weight-75, 0d, 3d 
+	 tree-37  31 	:weight-37, after weight-76, 21d 
+	 tree-76 	:weight-76, 0d, 10d 
+	 tree-18  6.5e+02 	:weight-18, after weight-38, 429d 
+	 tree-77 	:weight-77, 0d, 81d 
+	 tree-38  2.2e+02 	:weight-38, after weight-77, 137d 
+	 tree-78 	:weight-78, 0d, 42d 
+	 tree-1  5.1e+04 	:weight-1, after weight-4, 20886d 
+	 tree-79 	:weight-79, 0d, 0d 
+	 tree-39  3.3e+02 	:weight-39, after weight-80, 224d 
+	 tree-80 	:weight-80, 0d, 108d 
+	 tree-19  7.4e+02 	:weight-19, after weight-39, 413d 
+	 tree-81 	:weight-81, 0d, 0d 
+	 tree-40  90 	:weight-40, after weight-82, 34d 
+	 tree-82 	:weight-82, 0d, 56d 
+	 tree-9  2e+03 	:weight-9, after weight-19, 1216d 
+	 tree-83 	:weight-83, 0d, 0d 
+	 tree-41  1.2e+02 	:weight-41, after weight-84, 69d 
+	 tree-84 	:weight-84, 0d, 53d 
+	 tree-20  3.1e+02 	:weight-20, after weight-41, 189d 
+	 tree-85 	:weight-85, 0d, 5d 
+	 tree-42  13 	:weight-42, after weight-85, 7d 
+	 tree-86 	:weight-86, 0d, 1d 
+	 tree-4  3e+04 	:weight-4, after weight-10, 18441d 
+	 tree-87 	:weight-87, 0d, 228d 
+	 tree-43  6.7e+02 	:weight-43, after weight-87, 446d 
+	 tree-88 	:weight-88, 0d, 135d 
+	 tree-21  1.9e+03 	:weight-21, after weight-43, 1228d 
+	 tree-89 	:weight-89, 0d, 19d 
+	 tree-44  1.1e+02 	:weight-44, after weight-90, 96d 
+	 tree-90 	:weight-90, 0d, 25d 
+	 tree-10  1.2e+04 	:weight-10, after weight-22, 7338d 
+	 tree-91 	:weight-91, 0d, 420d 
+	 tree-45  1.7e+03 	:weight-45, after weight-92, 1078d 
+	 tree-92 	:weight-92, 0d, 579d 
+	 tree-22  4.3e+03 	:weight-22, after weight-45, 2611d 
+	 tree-93 	:weight-93, 0d, 168d 
+	 tree-46  4.3e+02 	:weight-46, after weight-93, 264d 
+	 tree-94 	:weight-94, 0d, 31d 
+	 tree-0  6.3e+04 	:weight-0, after weight-2, 12107d 
+	 tree-95 	:weight-95, 0d, 83d 
+	 tree-47  1.9e+02 	:weight-47, after weight-95, 107d 
+	 tree-96 	:weight-96, 0d, 8d 
+	 tree-23  2.5e+03 	:weight-23, after weight-48, 1330d 
+	 tree-97 	:weight-97, 0d, 73d 
+	 tree-48  1.1e+03 	:weight-48, after weight-98, 736d 
+	 tree-98 	:weight-98, 0d, 384d 
+	 tree-11  1.3e+04 	:weight-11, after weight-24, 7524d 
+	 tree-99 	:weight-99, 0d, 780d 
+	 tree-49  1.9e+03 	:weight-49, after weight-99, 1446d 
+	 tree-100 	:weight-100, 0d, 472d 
+	 tree-24  5.4e+03 	:weight-24, after weight-49, 3446d 
+	 tree-101 	:weight-101, 0d, 44d 
+	 tree-50  6e+02 	:weight-50, after weight-102, 335d 
+	 tree-102 	:weight-102, 0d, 261d 
+	 tree-5  3.4e+04 	:weight-5, after weight-11, 21041d 
+	 tree-103 	:weight-103, 0d, 51d 
+	 tree-51  1.7e+02 	:weight-51, after weight-103, 116d 
+	 tree-104 	:weight-104, 0d, 24d 
+	 tree-25  1.3e+03 	:weight-25, after weight-52, 880d 
+	 tree-105 	:weight-105, 0d, 135d 
+	 tree-52  4.2e+02 	:weight-52, after weight-105, 281d 
+	 tree-106 	:weight-106, 0d, 78d 
+	 tree-12  3.3e+03 	:weight-12, after weight-25, 2047d 
+	 tree-107 	:weight-107, 0d, 13d 
+	 tree-53  35 	:weight-53, after weight-107, 23d 
+	 tree-108 	:weight-108, 0d, 3d 
+	 tree-26  2e+02 	:weight-26, after weight-54, 136d 
+	 tree-109 	:weight-109, 0d, 29d 
+	 tree-54  64 	:weight-54, after weight-109, 35d 
+	 tree-110 	:weight-110, 0d, 2d 
+	 tree-2  5.7e+04 	:weight-2, after weight-5, 23282d 
+	 tree-111 	:weight-111, 0d, 0d 
+	 tree-55  0.00012 	:weight-55, after weight-112, 0d 
+	 tree-112 	:weight-112, 0d, 0d 
+	 tree-27  2.7e+02 	:weight-27, after weight-56, 68d 
+	 tree-113 	:weight-113, 0d, 123d 
+	 tree-56  2e+02 	:weight-56, after weight-113, 74d 
+	 tree-114 	:weight-114, 0d, 23d 
+	 tree-13  3.9e+03 	:weight-13, after weight-28, 2393d 
+	 tree-115 	:weight-115, 0d, 0d 
+	 tree-57  2e+02 	:weight-57, after weight-116, 105d 
+	 tree-116 	:weight-116, 0d, 95d 
+	 tree-28  1.5e+03 	:weight-28, after weight-58, 961d 
+	 tree-117 	:weight-117, 0d, 199d 
+	 tree-58  5.6e+02 	:weight-58, after weight-117, 434d 
+	 tree-118 	:weight-118, 0d, 129d 
+	 tree-6  8.9e+03 	:weight-6, after weight-13, 4980d 
+	 tree-119 	:weight-119, 0d, 30d 
+	 tree-59  78 	:weight-59, after weight-119, 48d 
+	 tree-120 	:weight-120, 0d, 3d 
+	 tree-29  4.4e+02 	:weight-29, after weight-60, 362d 
+	 tree-121 	:weight-121, 0d, 41d 
+	 tree-60  1.1e+02 	:weight-60, after weight-121, 68d 
+	 tree-122 	:weight-122, 0d, 15d 
+	 tree-14  1.2e+03 	:weight-14, after weight-29, 799d 
+	 tree-123 	:weight-123, 0d, 0d 
+	 tree-61  0 	:weight-61, after weight-124, 0d 
+	 tree-124 	:weight-124, 0d, 0d 
+	 tree-30  73 	:weight-30, after weight-62, 73d 
+	 tree-125 	:weight-125, 0d, 0d 
+	 tree-62  0 	:weight-62, after weight-126, 0d 
+	 tree-126 	:weight-126, 0d, 0d 
+~~~
+
+
+num_thread:     1
+.. GPU trisolve
+.. GPU trisolve
+.. GPU trisolve
+.. GPU trisolve
+.. GPU trisolve
+.. GPU trisolve
+.. GPU trisolve
+.. GPU trisolve
+.. GPU trisolve
+.. GPU trisolve
+.. GPU trisolve
+.. GPU trisolve
+.. GPU trisolve
+.. GPU trisolve
+.. GPU trisolve
+.. GPU trisolve
+.. GPU trisolve
+.. GPU trisolve
+.. GPU trisolve
+.. GPU trisolve
+.. GPU trisolve
+.. GPU trisolve
+.. GPU trisolve
+.. GPU trisolve
+.. GPU trisolve
+.. GPU trisolve
+.. GPU trisolve
+.. GPU trisolve
+.. GPU trisolve
+.. GPU trisolve
+.. GPU trisolve
+.. GPU trisolve
+.. GPU trisolve
+.. GPU trisolve
+.. GPU trisolve
+.. GPU trisolve
+.. GPU trisolve
+.. GPU trisolve
+.. GPU trisolve
+.. GPU trisolve
+.. GPU trisolve
+.. GPU trisolve
+.. GPU trisolve
+.. GPU trisolve
+.. GPU trisolve
+.. GPU trisolve
+.. GPU trisolve
+.. GPU trisolve
+.. GPU trisolve
+.. GPU trisolve
+.. GPU trisolve
+.. GPU trisolve
+.. GPU trisolve
+.. GPU trisolve
+.. GPU trisolve
+.. GPU trisolve
+.. GPU trisolve
+.. GPU trisolve
+.. GPU trisolve
+.. GPU trisolve
+.. GPU trisolve
+.. GPU trisolve
+.. GPU trisolve
+.. GPU trisolve
+|pxReDistribute_X_to_B 	|     0.0001 	|     0.0000 	|     0.0038 	|   790.0757%| seconds|
+|pxReDistribute_B_to_X 	|     0.0001 	|     0.0000 	|     0.0080 	|   771.2017%| seconds|
+|forwardSolve          	|     0.1005 	|     0.0687 	|     0.1664 	|    24.3377%| seconds|
+|forwardSolve-compute  	|     0.0000 	|     0.0000 	|     0.0000 	|       -nan%| seconds|
+|forwardSolve-comm     	|     0.0000 	|     0.0000 	|     0.0000 	|    10.4031%| seconds|
+|ForwardSolve:Level-0 	|     0.0000 	|     0.0000 	|     0.0000 	|       -nan%| seconds|
+|ForwardSolve:Level-1 	|     0.0000 	|     0.0000 	|     0.0000 	|       -nan%| seconds|
+|ForwardSolve:Level-2 	|     0.0000 	|     0.0000 	|     0.0000 	|       -nan%| seconds|
+|ForwardSolve:Level-3 	|     0.0000 	|     0.0000 	|     0.0000 	|       -nan%| seconds|
+|ForwardSolve:Level-4 	|     0.0000 	|     0.0000 	|     0.0000 	|       -nan%| seconds|
+|ForwardSolve:Level-5 	|     0.0000 	|     0.0000 	|     0.0000 	|       -nan%| seconds|
+|ForwardSolve:Level-6 	|     0.1005 	|     0.0687 	|     0.1664 	|    24.3407%| seconds|
+|backSolve             	|     0.0650 	|     0.0520 	|     0.0874 	|    15.5268%| seconds|
+|backSolve-compute     	|     0.0000 	|     0.0000 	|     0.0000 	|       -nan%| seconds|
+|backSolve-comm        	|     0.0000 	|     0.0000 	|     0.0000 	|    53.2118%| seconds|
+|BackSolve:Level-0    	|     0.0000 	|     0.0000 	|     0.0000 	|       -nan%| seconds|
+|BackSolve:Level-1    	|     0.0000 	|     0.0000 	|     0.0000 	|       -nan%| seconds|
+|BackSolve:Level-2    	|     0.0000 	|     0.0000 	|     0.0000 	|       -nan%| seconds|
+|BackSolve:Level-3    	|     0.0000 	|     0.0000 	|     0.0000 	|       -nan%| seconds|
+|BackSolve:Level-4    	|     0.0000 	|     0.0000 	|     0.0000 	|       -nan%| seconds|
+|BackSolve:Level-5    	|     0.0000 	|     0.0000 	|     0.0000 	|       -nan%| seconds|
+|BackSolve:Level-6    	|     0.0650 	|     0.0520 	|     0.0874 	|    15.5292%| seconds|
+|trs_comm_z            	|     0.0697 	|     0.0039 	|     0.1014 	|    35.0660%| seconds|
+|TRS-XY_CommVolume     	|     0.0000 	|     0.0000 	|     0.0000 	|       -nan%| Mwords|
+|TRS-Z_CommVolume      	|     0.0501 	|     0.0213 	|     0.1868 	|    72.9485%| Mwords|
+|TRS-XYZ_CommVolume    	|     0.0501 	|     0.0213 	|     0.1868 	|    72.9485%| Mwords|
+.. DiagScale = 3
+.. Sol  0: ||X - Xtrue|| / ||X|| = 7.230231e-01	 max_i |x - xtrue|_i / |x|_i = 4.823834e-01
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+**************************************************
+**** Time (seconds) ****
+	EQUIL time            0.105
+	ROWPERM time          0.256
+	COLPERM time          2.663
+	SYMBFACT time         9.288
+	DISTRIBUTE time      21.209
+	FACTOR time         644.001
+	Factor flops	1.871525e+13	Mflops 	29060.92
+	SOLVE time            0.257
+	Solve flops	6.224659e+10	Mflops 	241742.23
+**************************************************
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries

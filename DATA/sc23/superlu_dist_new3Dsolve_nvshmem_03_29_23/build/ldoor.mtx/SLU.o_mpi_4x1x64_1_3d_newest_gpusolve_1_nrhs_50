@@ -1,0 +1,314 @@
+MPI_Query_thread with MPI_THREAD_MULTIPLE
+__STDC_VERSION__ 201112
+Library version:	8.1.2
+Input matrix file:	/global/cfs/cdirs/m2957/liuyangz/my_research/matrix/ldoor.mtx
+3D process grid: 4 X 1 X 64
+Symmetric matrix: will be expanded
+m 952203, n 952203, nonz 23737339
+triplet file: row/col indices are one-based.
+new_nonz after symmetric expansion:	46522475
+Time to read and distribute matrix 6.86
+**************************************************
+.. blocking parameters from sp_ienv():
+**    relaxation                 : 60
+**    max supernode              : 256
+**    estimated fill ratio       : 5
+**    min GEMM m*k*n to use GPU  : 5000
+**************************************************
+**************************************************
+.. options:
+**    Fact                      :    0
+**    Equil                     :    1
+**    DiagInv                   :    1
+**    ParSymbFact               :    0
+**    ColPerm                   :    4
+**    RowPerm                   :    1
+**    ReplaceTinyPivot          :    1
+**    IterRefine                :    0
+**    Trans                     :    0
+**    SymPattern                :    0
+**    lookahead_etree           :    0
+**    Use_TensorCore            :    0
+**    Use 3D algorithm          :    1
+**    num_lookaheads            :   10
+** parameters that can be altered by environment variables:
+**    superlu_relax             :   60
+**    superlu_maxsup            :  256
+**    min GEMM m*k*n to use GPU : 5000
+**    GPU buffer size           :   50000000
+**    GPU streams               :    1
+**    estimated fill ratio      :    5
+**************************************************
+.. equilibrated? *equed = R
+.. LDPERM job        5	 time: 1.57
+.. anorm 1.956279e+01
+** MPI 0/4, NVSHMEM 0/4,device name: ˜ bus id: 128, ndevices=5385,cur=0, node=nid001421 **
+** MPI 0/4, NVSHMEM 0/4,device name: ˜ bus id: 185408, ndevices=5262,cur=0, node=nid001424 **
+** MPI 0/4, NVSHMEM 0/4,device name: ˜ bus id: 185408, ndevices=5430,cur=0, node=nid001444 **
+** MPI 0/4, NVSHMEM 0/4,device name: ˜ bus id: 128, ndevices=5421,cur=0, node=nid001420 **
+** MPI 1/4, NVSHMEM 1/4,device name: ˜ bus id: 128, ndevices=5223,cur=1, node=nid001421 **
+** MPI 1/4, NVSHMEM 1/4,device name: ˜ bus id: 128, ndevices=5293,cur=1, node=nid001424 **
+** MPI 0/4, NVSHMEM 0/4,device name: ˜ bus id: 128, ndevices=5297,cur=0, node=nid001440 **
+** MPI 1/4, NVSHMEM 1/4,device name: ˜ bus id: 128, ndevices=5375,cur=1, node=nid001444 **
+** MPI 1/4, NVSHMEM 1/4,device name: ˜ bus id: 128, ndevices=5272,cur=1, node=nid001420 **
+** MPI 0/4, NVSHMEM 0/4,device name: ˜ bus id: 185408, ndevices=5409,cur=0, node=nid001437 **
+** MPI 2/4, NVSHMEM 2/4,device name: ˜ bus id: 128, ndevices=5427,cur=2, node=nid001421 **
+** MPI 2/4, NVSHMEM 2/4,device name: ˜ bus id: 128, ndevices=5447,cur=2, node=nid001424 **
+** MPI 1/4, NVSHMEM 1/4,device name: ˜ bus id: 128, ndevices=5287,cur=1, node=nid001440 **
+** MPI 2/4, NVSHMEM 2/4,device name: ˜ bus id: 128, ndevices=5437,cur=2, node=nid001444 **
+** MPI 2/4, NVSHMEM 2/4,device name: ˜ bus id: 128, ndevices=5307,cur=2, node=nid001420 **
+** MPI 1/4, NVSHMEM 1/4,device name: ˜ bus id: 128, ndevices=5366,cur=1, node=nid001437 **
+** MPI 3/4, NVSHMEM 3/4,device name: ˜ bus id: 128, ndevices=5255,cur=3, node=nid001421 **
+** MPI 3/4, NVSHMEM 3/4,device name: ˜ bus id: 128, ndevices=5428,cur=3, node=nid001424 **
+** MPI 2/4, NVSHMEM 2/4,device name: ˜ bus id: 128, ndevices=5305,cur=2, node=nid001440 **
+** MPI 3/4, NVSHMEM 3/4,device name: ˜ bus id: 128, ndevices=5353,cur=3, node=nid001444 **
+** MPI 3/4, NVSHMEM 3/4,device name: ˜ bus id: 128, ndevices=5458,cur=3, node=nid001420 **
+** MPI 2/4, NVSHMEM 2/4,device name: ˜ bus id: 128, ndevices=5387,cur=2, node=nid001437 **
+** MPI 3/4, NVSHMEM 3/4,device name: ˜ bus id: 128, ndevices=5208,cur=3, node=nid001440 **
+** MPI 3/4, NVSHMEM 3/4,device name: ˜ bus id: 128, ndevices=5268,cur=3, node=nid001437 **
+.. Use METIS ordering on A'+A
+.. symbfact(): relax   60, maxsuper  256, fill    5
+	Matrix size min_mn    952203
+	Nonzeros in L       160500943
+	Nonzeros in U       160500943
+	nonzeros in L+U     320049683
+	nonzeros in LSUB    48315339
+	No of supers 46340
+	Size of G(L) 5179360
+	Size of G(U) 4227157
+	int 4, short 2, float 4, double 8
+	SYMBfact (MB):	L\U 229.21	total 263.49	expansions 0
+.. # L blocks    66403	# U blocks    54456
+ === using DAG ===
+** MPI 0/4, NVSHMEM 0/4,device name: ˜ bus id: 128, ndevices=0,cur=0, node=nid001417 **
+** MPI 0/4, NVSHMEM 0/4,device name: ˜ bus id: 185408, ndevices=5212,cur=0, node=nid001433 **
+** MPI 0/4, NVSHMEM 0/4,device name: ˜ bus id: 128, ndevices=5429,cur=0, node=nid001425 **
+** MPI 0/4, NVSHMEM 0/4,device name: ˜ bus id: 128, ndevices=5292,cur=0, node=nid001432 **
+** MPI 0/4, NVSHMEM 0/4,device name: ˜ bus id: 128, ndevices=5290,cur=0, node=nid001448 **
+** MPI 0/4, NVSHMEM 0/4,device name: ˜ bus id: 128, ndevices=5397,cur=0, node=nid001436 **
+** MPI 0/4, NVSHMEM 0/4,device name: ˜ bus id: 128, ndevices=5230,cur=0, node=nid001445 **
+** MPI 0/4, NVSHMEM 0/4,device name: ˜ bus id: 128, ndevices=5297,cur=0, node=nid001441 **
+** MPI 0/4, NVSHMEM 0/4,device name: ˜ bus id: 128, ndevices=5303,cur=0, node=nid001428 **
+** MPI 0/4, NVSHMEM 0/4,device name: ˜ bus id: 185408, ndevices=5423,cur=0, node=nid001429 **
+** MPI 2/4, NVSHMEM 2/4,device name: ˜ bus id: 128, ndevices=0,cur=2, node=nid001417 **
+** MPI 1/4, NVSHMEM 1/4,device name: ˜ bus id: 128, ndevices=5377,cur=1, node=nid001433 **
+** MPI 1/4, NVSHMEM 1/4,device name: ˜ bus id: 128, ndevices=5420,cur=1, node=nid001425 **
+** MPI 1/4, NVSHMEM 1/4,device name: ˜ bus id: 128, ndevices=5394,cur=1, node=nid001432 **
+** MPI 1/4, NVSHMEM 1/4,device name: ˜ bus id: 128, ndevices=5358,cur=1, node=nid001448 **
+** MPI 1/4, NVSHMEM 1/4,device name: ˜ bus id: 128, ndevices=5319,cur=1, node=nid001436 **
+** MPI 1/4, NVSHMEM 1/4,device name: ˜ bus id: 128, ndevices=5217,cur=1, node=nid001445 **
+** MPI 1/4, NVSHMEM 1/4,device name: ˜ bus id: 128, ndevices=5346,cur=1, node=nid001441 **
+** MPI 1/4, NVSHMEM 1/4,device name: ˜ bus id: 128, ndevices=5296,cur=1, node=nid001428 **
+** MPI 1/4, NVSHMEM 1/4,device name: ˜ bus id: 128, ndevices=5407,cur=1, node=nid001429 **
+** MPI 2/4, NVSHMEM 2/4,device name: ˜ bus id: 128, ndevices=5410,cur=2, node=nid001433 **
+** MPI 2/4, NVSHMEM 2/4,device name: ˜ bus id: 128, ndevices=5237,cur=2, node=nid001425 **
+** MPI 2/4, NVSHMEM 2/4,device name: ˜ bus id: 128, ndevices=5389,cur=2, node=nid001432 **
+** MPI 2/4, NVSHMEM 2/4,device name: ˜ bus id: 128, ndevices=5273,cur=2, node=nid001448 **
+** MPI 2/4, NVSHMEM 2/4,device name: ˜ bus id: 128, ndevices=5271,cur=2, node=nid001436 **
+** MPI 2/4, NVSHMEM 2/4,device name: ˜ bus id: 128, ndevices=5207,cur=2, node=nid001445 **
+** MPI 2/4, NVSHMEM 2/4,device name: ˜ bus id: 128, ndevices=5387,cur=2, node=nid001441 **
+** MPI 2/4, NVSHMEM 2/4,device name: ˜ bus id: 128, ndevices=5281,cur=2, node=nid001428 **
+** MPI 2/4, NVSHMEM 2/4,device name: ˜ bus id: 128, ndevices=5338,cur=2, node=nid001429 **
+** MPI 3/4, NVSHMEM 3/4,device name: ˜ bus id: 128, ndevices=5428,cur=3, node=nid001433 **
+** MPI 3/4, NVSHMEM 3/4,device name: ˜ bus id: 128, ndevices=5261,cur=3, node=nid001425 **
+** MPI 3/4, NVSHMEM 3/4,device name: ˜ bus id: 128, ndevices=5223,cur=3, node=nid001432 **
+** MPI 3/4, NVSHMEM 3/4,device name: ˜ bus id: 128, ndevices=5313,cur=3, node=nid001448 **
+** MPI 3/4, NVSHMEM 3/4,device name: ˜ bus id: 128, ndevices=5339,cur=3, node=nid001436 **
+** MPI 3/4, NVSHMEM 3/4,device name: ˜ bus id: 128, ndevices=5383,cur=3, node=nid001445 **
+** MPI 3/4, NVSHMEM 3/4,device name: ˜ bus id: 128, ndevices=5441,cur=3, node=nid001441 **
+** MPI 3/4, NVSHMEM 3/4,device name: ˜ bus id: 128, ndevices=5404,cur=3, node=nid001428 **
+** MPI 3/4, NVSHMEM 3/4,device name: ˜ bus id: 128, ndevices=5340,cur=3, node=nid001429 **
+** MPI 1/4, NVSHMEM 1/4,device name: ˜ bus id: 128, ndevices=0,cur=1, node=nid001417 **
+** MPI 3/4, NVSHMEM 3/4,device name: ˜ bus id: 128, ndevices=0,cur=3, node=nid001417 **
+** MPI 0/4, NVSHMEM 0/4,device name: ˜ bus id: 128, ndevices=5209,cur=0, node=nid003508 **
+** MPI 0/4, NVSHMEM 0/4,device name: ˜ bus id: 128, ndevices=5264,cur=0, node=nid001452 **
+** MPI 0/4, NVSHMEM 0/4,device name: ˜ bus id: 128, ndevices=5400,cur=0, node=nid001460 **
+** MPI 0/4, NVSHMEM 0/4,device name: ˜ bus id: 128, ndevices=5388,cur=0, node=nid003513 **
+** MPI 0/4, NVSHMEM 0/4,device name: ˜ bus id: 128, ndevices=5423,cur=0, node=nid003505 **
+** MPI 0/4, NVSHMEM 0/4,device name: ˜ bus id: 128, ndevices=5300,cur=0, node=nid001457 **
+** MPI 0/4, NVSHMEM 0/4,device name: ˜ bus id: 128, ndevices=5422,cur=0, node=nid003504 **
+** MPI 0/4, NVSHMEM 0/4,device name: ˜ bus id: 128, ndevices=5280,cur=0, node=nid003512 **
+** MPI 0/4, NVSHMEM 0/4,device name: ˜ bus id: 128, ndevices=5402,cur=0, node=nid001449 **
+** MPI 0/4, NVSHMEM 0/4,device name: ˜ bus id: 128, ndevices=5243,cur=0, node=nid001453 **
+** MPI 0/4, NVSHMEM 0/4,device name: ˜ bus id: 128, ndevices=5287,cur=0, node=nid003517 **
+** MPI 0/4, NVSHMEM 0/4,device name: ˜ bus id: 128, ndevices=5397,cur=0, node=nid001456 **
+** MPI 1/4, NVSHMEM 1/4,device name: ˜ bus id: 128, ndevices=5294,cur=1, node=nid003513 **
+** MPI 0/4, NVSHMEM 0/4,device name: ˜ bus id: 128, ndevices=5426,cur=0, node=nid003501 **
+** MPI 0/4, NVSHMEM 0/4,device name: ˜ bus id: 128, ndevices=5441,cur=0, node=nid003516 **
+** MPI 0/4, NVSHMEM 0/4,device name: ˜ bus id: 185408, ndevices=5299,cur=0, node=nid001461 **
+** MPI 0/4, NVSHMEM 0/4,device name: ˜ bus id: 128, ndevices=5357,cur=0, node=nid003509 **
+** MPI 1/4, NVSHMEM 1/4,device name: ˜ bus id: 128, ndevices=5320,cur=1, node=nid001449 **
+** MPI 2/4, NVSHMEM 2/4,device name: ˜ bus id: 128, ndevices=5347,cur=2, node=nid003513 **
+** MPI 1/4, NVSHMEM 1/4,device name: ˜ bus id: 128, ndevices=5436,cur=1, node=nid001461 **
+** MPI 2/4, NVSHMEM 2/4,device name: ˜ bus id: 128, ndevices=5443,cur=2, node=nid001449 **
+** MPI 3/4, NVSHMEM 3/4,device name: ˜ bus id: 128, ndevices=5339,cur=3, node=nid003513 **
+** MPI 2/4, NVSHMEM 2/4,device name: ˜ bus id: 128, ndevices=5369,cur=2, node=nid001461 **
+** MPI 3/4, NVSHMEM 3/4,device name: ˜ bus id: 128, ndevices=5432,cur=3, node=nid001449 **
+** MPI 3/4, NVSHMEM 3/4,device name: ˜ bus id: 128, ndevices=5455,cur=3, node=nid001461 **
+** MPI 1/4, NVSHMEM 1/4,device name: ˜ bus id: 128, ndevices=5315,cur=1, node=nid003512 **
+** MPI 1/4, NVSHMEM 1/4,device name: ˜ bus id: 128, ndevices=5423,cur=1, node=nid001453 **
+** MPI 1/4, NVSHMEM 1/4,device name: ˜ bus id: 128, ndevices=5455,cur=1, node=nid003508 **
+** MPI 1/4, NVSHMEM 1/4,device name: ˜ bus id: 128, ndevices=5210,cur=1, node=nid003517 **
+** MPI 1/4, NVSHMEM 1/4,device name: ˜ bus id: 128, ndevices=5255,cur=1, node=nid001452 **
+** MPI 1/4, NVSHMEM 1/4,device name: ˜ bus id: 128, ndevices=5245,cur=1, node=nid001460 **
+** MPI 1/4, NVSHMEM 1/4,device name: ˜ bus id: 128, ndevices=5362,cur=1, node=nid001456 **
+** MPI 1/4, NVSHMEM 1/4,device name: ˜ bus id: 128, ndevices=5278,cur=1, node=nid003501 **
+** MPI 1/4, NVSHMEM 1/4,device name: ˜ bus id: 128, ndevices=5358,cur=1, node=nid003505 **
+** MPI 1/4, NVSHMEM 1/4,device name: ˜ bus id: 128, ndevices=5243,cur=1, node=nid003516 **
+** MPI 1/4, NVSHMEM 1/4,device name: ˜ bus id: 128, ndevices=5257,cur=1, node=nid001457 **
+** MPI 1/4, NVSHMEM 1/4,device name: ˜ bus id: 128, ndevices=5406,cur=1, node=nid003504 **
+** MPI 1/4, NVSHMEM 1/4,device name: ˜ bus id: 128, ndevices=5359,cur=1, node=nid003509 **
+** MPI 2/4, NVSHMEM 2/4,device name: ˜ bus id: 128, ndevices=5442,cur=2, node=nid003512 **
+** MPI 2/4, NVSHMEM 2/4,device name: ˜ bus id: 128, ndevices=5311,cur=2, node=nid001453 **
+** MPI 2/4, NVSHMEM 2/4,device name: ˜ bus id: 128, ndevices=5289,cur=2, node=nid003508 **
+** MPI 2/4, NVSHMEM 2/4,device name: ˜ bus id: 128, ndevices=5331,cur=2, node=nid003517 **
+** MPI 2/4, NVSHMEM 2/4,device name: ˜ bus id: 128, ndevices=5371,cur=2, node=nid001452 **
+** MPI 2/4, NVSHMEM 2/4,device name: ˜ bus id: 128, ndevices=5426,cur=2, node=nid001460 **
+** MPI 2/4, NVSHMEM 2/4,device name: ˜ bus id: 128, ndevices=5450,cur=2, node=nid001456 **
+** MPI 2/4, NVSHMEM 2/4,device name: ˜ bus id: 128, ndevices=5240,cur=2, node=nid003501 **
+** MPI 2/4, NVSHMEM 2/4,device name: ˜ bus id: 128, ndevices=5224,cur=2, node=nid003505 **
+** MPI 2/4, NVSHMEM 2/4,device name: ˜ bus id: 128, ndevices=5427,cur=2, node=nid003516 **
+** MPI 2/4, NVSHMEM 2/4,device name: ˜ bus id: 128, ndevices=5307,cur=2, node=nid001457 **
+** MPI 2/4, NVSHMEM 2/4,device name: ˜ bus id: 128, ndevices=5247,cur=2, node=nid003504 **
+** MPI 2/4, NVSHMEM 2/4,device name: ˜ bus id: 128, ndevices=5278,cur=2, node=nid003509 **
+** MPI 3/4, NVSHMEM 3/4,device name: ˜ bus id: 128, ndevices=5370,cur=3, node=nid003512 **
+** MPI 3/4, NVSHMEM 3/4,device name: ˜ bus id: 128, ndevices=5370,cur=3, node=nid001453 **
+** MPI 3/4, NVSHMEM 3/4,device name: ˜ bus id: 128, ndevices=5440,cur=3, node=nid003508 **
+** MPI 3/4, NVSHMEM 3/4,device name: ˜ bus id: 128, ndevices=5341,cur=3, node=nid003517 **
+** MPI 3/4, NVSHMEM 3/4,device name: ˜ bus id: 128, ndevices=5253,cur=3, node=nid001452 **
+** MPI 3/4, NVSHMEM 3/4,device name: ˜ bus id: 128, ndevices=5348,cur=3, node=nid001460 **
+** MPI 3/4, NVSHMEM 3/4,device name: ˜ bus id: 128, ndevices=5393,cur=3, node=nid001456 **
+** MPI 3/4, NVSHMEM 3/4,device name: ˜ bus id: 128, ndevices=5448,cur=3, node=nid003501 **
+** MPI 3/4, NVSHMEM 3/4,device name: ˜ bus id: 128, ndevices=5346,cur=3, node=nid003505 **
+** MPI 3/4, NVSHMEM 3/4,device name: ˜ bus id: 128, ndevices=5450,cur=3, node=nid003516 **
+** MPI 3/4, NVSHMEM 3/4,device name: ˜ bus id: 128, ndevices=5276,cur=3, node=nid001457 **
+** MPI 3/4, NVSHMEM 3/4,device name: ˜ bus id: 128, ndevices=5425,cur=3, node=nid003504 **
+** MPI 3/4, NVSHMEM 3/4,device name: ˜ bus id: 128, ndevices=5316,cur=3, node=nid003509 **
+** MPI 0/4, NVSHMEM 0/4,device name: ˜ bus id: 128, ndevices=5232,cur=0, node=nid003556 **
+** MPI 0/4, NVSHMEM 0/4,device name: ˜ bus id: 185408, ndevices=5284,cur=0, node=nid003564 **
+** MPI 0/4, NVSHMEM 0/4,device name: ˜ bus id: 128, ndevices=5316,cur=0, node=nid003580 **
+** MPI 0/4, NVSHMEM 0/4,device name: ˜ bus id: 185408, ndevices=5272,cur=0, node=nid003565 **
+** MPI 0/4, NVSHMEM 0/4,device name: ˜ bus id: 128, ndevices=5275,cur=0, node=nid003569 **
+** MPI 0/4, NVSHMEM 0/4,device name: ˜ bus id: 128, ndevices=5242,cur=0, node=nid003561 **
+** MPI 0/4, NVSHMEM 0/4,device name: ˜ bus id: 128, ndevices=5250,cur=0, node=nid003568 **
+** MPI 1/4, NVSHMEM 1/4,device name: ˜ bus id: 128, ndevices=5402,cur=1, node=nid003556 **
+** MPI 1/4, NVSHMEM 1/4,device name: ˜ bus id: 128, ndevices=5318,cur=1, node=nid003564 **
+** MPI 0/4, NVSHMEM 0/4,device name: ˜ bus id: 128, ndevices=5230,cur=0, node=nid003560 **
+** MPI 1/4, NVSHMEM 1/4,device name: ˜ bus id: 128, ndevices=5445,cur=1, node=nid003580 **
+** MPI 0/4, NVSHMEM 0/4,device name: ˜ bus id: 128, ndevices=5381,cur=0, node=nid003577 **
+** MPI 1/4, NVSHMEM 1/4,device name: ˜ bus id: 128, ndevices=5230,cur=1, node=nid003565 **
+** MPI 1/4, NVSHMEM 1/4,device name: ˜ bus id: 128, ndevices=5234,cur=1, node=nid003569 **
+** MPI 1/4, NVSHMEM 1/4,device name: ˜ bus id: 128, ndevices=5390,cur=1, node=nid003561 **
+** MPI 0/4, NVSHMEM 0/4,device name: ˜ bus id: 128, ndevices=5323,cur=0, node=nid003581 **
+** MPI 0/4, NVSHMEM 0/4,device name: ˜ bus id: 128, ndevices=5398,cur=0, node=nid003557 **
+** MPI 0/4, NVSHMEM 0/4,device name: ˜ bus id: 128, ndevices=5423,cur=0, node=nid003553 **
+** MPI 0/4, NVSHMEM 0/4,device name: ˜ bus id: 128, ndevices=5355,cur=0, node=nid003573 **
+** MPI 0/4, NVSHMEM 0/4,device name: ˜ bus id: 185408, ndevices=5345,cur=0, node=nid003572 **
+** MPI 1/4, NVSHMEM 1/4,device name: ˜ bus id: 128, ndevices=5214,cur=1, node=nid003568 **
+** MPI 0/4, NVSHMEM 0/4,device name: ˜ bus id: 128, ndevices=5274,cur=0, node=nid003552 **
+** MPI 0/4, NVSHMEM 0/4,device name: ˜ bus id: 128, ndevices=5252,cur=0, node=nid003576 **
+** MPI 2/4, NVSHMEM 2/4,device name: ˜ bus id: 128, ndevices=5241,cur=2, node=nid003556 **
+** MPI 2/4, NVSHMEM 2/4,device name: ˜ bus id: 128, ndevices=5314,cur=2, node=nid003564 **
+** MPI 1/4, NVSHMEM 1/4,device name: ˜ bus id: 128, ndevices=5418,cur=1, node=nid003560 **
+** MPI 2/4, NVSHMEM 2/4,device name: ˜ bus id: 128, ndevices=5419,cur=2, node=nid003580 **
+** MPI 1/4, NVSHMEM 1/4,device name: ˜ bus id: 128, ndevices=5234,cur=1, node=nid003577 **
+** MPI 2/4, NVSHMEM 2/4,device name: ˜ bus id: 128, ndevices=5352,cur=2, node=nid003565 **
+** MPI 2/4, NVSHMEM 2/4,device name: ˜ bus id: 128, ndevices=5262,cur=2, node=nid003569 **
+** MPI 2/4, NVSHMEM 2/4,device name: ˜ bus id: 128, ndevices=5359,cur=2, node=nid003561 **
+** MPI 1/4, NVSHMEM 1/4,device name: ˜ bus id: 128, ndevices=5391,cur=1, node=nid003581 **
+** MPI 1/4, NVSHMEM 1/4,device name: ˜ bus id: 128, ndevices=5396,cur=1, node=nid003557 **
+** MPI 1/4, NVSHMEM 1/4,device name: ˜ bus id: 128, ndevices=5263,cur=1, node=nid003553 **
+** MPI 1/4, NVSHMEM 1/4,device name: ˜ bus id: 128, ndevices=5373,cur=1, node=nid003573 **
+** MPI 1/4, NVSHMEM 1/4,device name: ˜ bus id: 128, ndevices=5237,cur=1, node=nid003572 **
+** MPI 2/4, NVSHMEM 2/4,device name: ˜ bus id: 128, ndevices=5351,cur=2, node=nid003568 **
+** MPI 1/4, NVSHMEM 1/4,device name: ˜ bus id: 128, ndevices=5230,cur=1, node=nid003552 **
+** MPI 1/4, NVSHMEM 1/4,device name: ˜ bus id: 128, ndevices=5224,cur=1, node=nid003576 **
+** MPI 3/4, NVSHMEM 3/4,device name: ˜ bus id: 128, ndevices=5259,cur=3, node=nid003556 **
+** MPI 3/4, NVSHMEM 3/4,device name: ˜ bus id: 128, ndevices=5384,cur=3, node=nid003564 **
+** MPI 2/4, NVSHMEM 2/4,device name: ˜ bus id: 128, ndevices=5407,cur=2, node=nid003560 **
+** MPI 3/4, NVSHMEM 3/4,device name: ˜ bus id: 128, ndevices=5252,cur=3, node=nid003580 **
+** MPI 2/4, NVSHMEM 2/4,device name: ˜ bus id: 128, ndevices=5341,cur=2, node=nid003577 **
+** MPI 3/4, NVSHMEM 3/4,device name: ˜ bus id: 128, ndevices=5407,cur=3, node=nid003565 **
+** MPI 3/4, NVSHMEM 3/4,device name: ˜ bus id: 128, ndevices=5431,cur=3, node=nid003569 **
+** MPI 3/4, NVSHMEM 3/4,device name: ˜ bus id: 128, ndevices=5347,cur=3, node=nid003561 **
+** MPI 2/4, NVSHMEM 2/4,device name: ˜ bus id: 128, ndevices=5329,cur=2, node=nid003581 **
+** MPI 2/4, NVSHMEM 2/4,device name: ˜ bus id: 128, ndevices=5318,cur=2, node=nid003557 **
+** MPI 2/4, NVSHMEM 2/4,device name: ˜ bus id: 128, ndevices=5366,cur=2, node=nid003553 **
+** MPI 2/4, NVSHMEM 2/4,device name: ˜ bus id: 128, ndevices=5284,cur=2, node=nid003573 **
+** MPI 2/4, NVSHMEM 2/4,device name: ˜ bus id: 128, ndevices=5308,cur=2, node=nid003572 **
+** MPI 3/4, NVSHMEM 3/4,device name: ˜ bus id: 128, ndevices=5369,cur=3, node=nid003568 **
+** MPI 2/4, NVSHMEM 2/4,device name: ˜ bus id: 128, ndevices=5363,cur=2, node=nid003552 **
+** MPI 2/4, NVSHMEM 2/4,device name: ˜ bus id: 128, ndevices=5261,cur=2, node=nid003576 **
+** MPI 3/4, NVSHMEM 3/4,device name: ˜ bus id: 128, ndevices=5384,cur=3, node=nid003560 **
+** MPI 3/4, NVSHMEM 3/4,device name: ˜ bus id: 128, ndevices=5402,cur=3, node=nid003577 **
+** MPI 3/4, NVSHMEM 3/4,device name: ˜ bus id: 128, ndevices=5338,cur=3, node=nid003581 **
+** MPI 3/4, NVSHMEM 3/4,device name: ˜ bus id: 128, ndevices=5372,cur=3, node=nid003557 **
+** MPI 3/4, NVSHMEM 3/4,device name: ˜ bus id: 128, ndevices=5269,cur=3, node=nid003553 **
+** MPI 3/4, NVSHMEM 3/4,device name: ˜ bus id: 128, ndevices=5277,cur=3, node=nid003573 **
+** MPI 3/4, NVSHMEM 3/4,device name: ˜ bus id: 128, ndevices=5301,cur=3, node=nid003572 **
+** MPI 3/4, NVSHMEM 3/4,device name: ˜ bus id: 128, ndevices=5414,cur=3, node=nid003552 **
+** MPI 3/4, NVSHMEM 3/4,device name: ˜ bus id: 128, ndevices=5283,cur=3, node=nid003576 **
+** MPI 0/4, NVSHMEM 0/4,device name: ˜ bus id: 128, ndevices=5244,cur=0, node=nid003548 **
+** MPI 0/4, NVSHMEM 0/4,device name: ˜ bus id: 128, ndevices=5375,cur=0, node=nid003520 **
+** MPI 0/4, NVSHMEM 0/4,device name: ˜ bus id: 128, ndevices=5296,cur=0, node=nid003536 **
+** MPI 0/4, NVSHMEM 0/4,device name: ˜ bus id: 128, ndevices=5342,cur=0, node=nid003521 **
+** MPI 0/4, NVSHMEM 0/4,device name: ˜ bus id: 128, ndevices=5353,cur=0, node=nid003549 **
+** MPI 0/4, NVSHMEM 0/4,device name: ˜ bus id: 128, ndevices=5299,cur=0, node=nid003529 **
+** MPI 0/4, NVSHMEM 0/4,device name: ˜ bus id: 185408, ndevices=5211,cur=0, node=nid003525 **
+** MPI 0/4, NVSHMEM 0/4,device name: ˜ bus id: 128, ndevices=5458,cur=0, node=nid003537 **
+** MPI 0/4, NVSHMEM 0/4,device name: ˜ bus id: 185408, ndevices=5350,cur=0, node=nid003533 **
+** MPI 0/4, NVSHMEM 0/4,device name: ˜ bus id: 128, ndevices=5432,cur=0, node=nid003532 **
+** MPI 0/4, NVSHMEM 0/4,device name: ˜ bus id: 128, ndevices=5401,cur=0, node=nid003528 **
+** MPI 0/4, NVSHMEM 0/4,device name: ˜ bus id: 128, ndevices=5284,cur=0, node=nid003540 **
+** MPI 1/4, NVSHMEM 1/4,device name: ˜ bus id: 128, ndevices=5340,cur=1, node=nid003548 **
+** MPI 1/4, NVSHMEM 1/4,device name: ˜ bus id: 128, ndevices=5374,cur=1, node=nid003520 **
+** MPI 0/4, NVSHMEM 0/4,device name: ˜ bus id: 185408, ndevices=5250,cur=0, node=nid003524 **
+** MPI 0/4, NVSHMEM 0/4,device name: ˜ bus id: 128, ndevices=5287,cur=0, node=nid003545 **
+** MPI 1/4, NVSHMEM 1/4,device name: ˜ bus id: 128, ndevices=5211,cur=1, node=nid003521 **
+** MPI 1/4, NVSHMEM 1/4,device name: ˜ bus id: 128, ndevices=5386,cur=1, node=nid003549 **
+** MPI 1/4, NVSHMEM 1/4,device name: ˜ bus id: 128, ndevices=5328,cur=1, node=nid003529 **
+** MPI 1/4, NVSHMEM 1/4,device name: ˜ bus id: 128, ndevices=5256,cur=1, node=nid003525 **
+** MPI 1/4, NVSHMEM 1/4,device name: ˜ bus id: 128, ndevices=5306,cur=1, node=nid003537 **
+** MPI 0/4, NVSHMEM 0/4,device name: ˜ bus id: 128, ndevices=5305,cur=0, node=nid003541 **
+** MPI 1/4, NVSHMEM 1/4,device name: ˜ bus id: 128, ndevices=5267,cur=1, node=nid003533 **
+** MPI 1/4, NVSHMEM 1/4,device name: ˜ bus id: 128, ndevices=5348,cur=1, node=nid003532 **
+** MPI 0/4, NVSHMEM 0/4,device name: ˜ bus id: 128, ndevices=5311,cur=0, node=nid003544 **
+** MPI 1/4, NVSHMEM 1/4,device name: ˜ bus id: 128, ndevices=5232,cur=1, node=nid003540 **
+** MPI 2/4, NVSHMEM 2/4,device name: ˜ bus id: 128, ndevices=5248,cur=2, node=nid003548 **
+** MPI 2/4, NVSHMEM 2/4,device name: ˜ bus id: 128, ndevices=5454,cur=2, node=nid003520 **
+** MPI 1/4, NVSHMEM 1/4,device name: ˜ bus id: 128, ndevices=5256,cur=1, node=nid003524 **
+** MPI 1/4, NVSHMEM 1/4,device name: ˜ bus id: 128, ndevices=5258,cur=1, node=nid003536 **
+** MPI 1/4, NVSHMEM 1/4,device name: ˜ bus id: 128, ndevices=5434,cur=1, node=nid003545 **
+** MPI 2/4, NVSHMEM 2/4,device name: ˜ bus id: 128, ndevices=5419,cur=2, node=nid003521 **
+** MPI 2/4, NVSHMEM 2/4,device name: ˜ bus id: 128, ndevices=5298,cur=2, node=nid003549 **
+** MPI 2/4, NVSHMEM 2/4,device name: ˜ bus id: 128, ndevices=5294,cur=2, node=nid003529 **
+** MPI 2/4, NVSHMEM 2/4,device name: ˜ bus id: 128, ndevices=5285,cur=2, node=nid003525 **
+** MPI 2/4, NVSHMEM 2/4,device name: ˜ bus id: 128, ndevices=5261,cur=2, node=nid003537 **
+** MPI 1/4, NVSHMEM 1/4,device name: ˜ bus id: 128, ndevices=5347,cur=1, node=nid003541 **
+** MPI 2/4, NVSHMEM 2/4,device name: ˜ bus id: 128, ndevices=5456,cur=2, node=nid003533 **
+** MPI 2/4, NVSHMEM 2/4,device name: ˜ bus id: 128, ndevices=5384,cur=2, node=nid003532 **
+** MPI 1/4, NVSHMEM 1/4,device name: ˜ bus id: 128, ndevices=5450,cur=1, node=nid003528 **
+** MPI 1/4, NVSHMEM 1/4,device name: ˜ bus id: 128, ndevices=5328,cur=1, node=nid003544 **
+** MPI 2/4, NVSHMEM 2/4,device name: ˜ bus id: 128, ndevices=5387,cur=2, node=nid003540 **
+** MPI 3/4, NVSHMEM 3/4,device name: ˜ bus id: 128, ndevices=5458,cur=3, node=nid003548 **
+** MPI 3/4, NVSHMEM 3/4,device name: ˜ bus id: 128, ndevices=5247,cur=3, node=nid003520 **
+** MPI 2/4, NVSHMEM 2/4,device name: ˜ bus id: 128, ndevices=5445,cur=2, node=nid003524 **
+** MPI 2/4, NVSHMEM 2/4,device name: ˜ bus id: 128, ndevices=5415,cur=2, node=nid003536 **
+** MPI 2/4, NVSHMEM 2/4,device name: ˜ bus id: 128, ndevices=5224,cur=2, node=nid003545 **
+** MPI 3/4, NVSHMEM 3/4,device name: ˜ bus id: 128, ndevices=5433,cur=3, node=nid003521 **
+** MPI 3/4, NVSHMEM 3/4,device name: ˜ bus id: 128, ndevices=5345,cur=3, node=nid003549 **
+** MPI 3/4, NVSHMEM 3/4,device name: ˜ bus id: 128, ndevices=5239,cur=3, node=nid003529 **
+** MPI 3/4, NVSHMEM 3/4,device name: ˜ bus id: 128, ndevices=5208,cur=3, node=nid003525 **
+** MPI 3/4, NVSHMEM 3/4,device name: ˜ bus id: 128, ndevices=5205,cur=3, node=nid003537 **
+** MPI 2/4, NVSHMEM 2/4,device name: ˜ bus id: 128, ndevices=5370,cur=2, node=nid003541 **
+** MPI 3/4, NVSHMEM 3/4,device name: ˜ bus id: 128, ndevices=5299,cur=3, node=nid003533 **
+** MPI 3/4, NVSHMEM 3/4,device name: ˜ bus id: 128, ndevices=5328,cur=3, node=nid003532 **
+** MPI 2/4, NVSHMEM 2/4,device name: ˜ bus id: 128, ndevices=5399,cur=2, node=nid003528 **
+** MPI 2/4, NVSHMEM 2/4,device name: ˜ bus id: 128, ndevices=5373,cur=2, node=nid003544 **
+** MPI 3/4, NVSHMEM 3/4,device name: ˜ bus id: 128, ndevices=5279,cur=3, node=nid003540 **
+** MPI 3/4, NVSHMEM 3/4,device name: ˜ bus id: 128, ndevices=5349,cur=3, node=nid003524 **
+** MPI 3/4, NVSHMEM 3/4,device name: ˜ bus id: 128, ndevices=5285,cur=3, node=nid003536 **
+** MPI 3/4, NVSHMEM 3/4,device name: ˜ bus id: 128, ndevices=5211,cur=3, node=nid003545 **
+** MPI 3/4, NVSHMEM 3/4,device name: ˜ bus id: 128, ndevices=5459,cur=3, node=nid003541 **
+** MPI 3/4, NVSHMEM 3/4,device name: ˜ bus id: 128, ndevices=5248,cur=3, node=nid003528 **
+** MPI 3/4, NVSHMEM 3/4,device name: ˜ bus id: 128, ndevices=5337,cur=3, node=nid003544 **

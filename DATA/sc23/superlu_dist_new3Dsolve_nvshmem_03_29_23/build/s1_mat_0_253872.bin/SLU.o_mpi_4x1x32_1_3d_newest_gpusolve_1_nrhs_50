@@ -1,0 +1,549 @@
+MPI_Query_thread with MPI_THREAD_MULTIPLE
+__STDC_VERSION__ 201112
+Library version:	8.1.2
+Input matrix file:	/global/cfs/cdirs/m2957/liuyangz/my_research/matrix/s1_mat_0_253872.bin
+3D process grid: 4 X 1 X 32
+fread n   253872	nnz 82155776
+# of doubles fread: 82155776
+Time to read and distribute matrix 0.12
+**************************************************
+.. blocking parameters from sp_ienv():
+**    relaxation                 : 60
+**    max supernode              : 256
+**    estimated fill ratio       : 5
+**    min GEMM m*k*n to use GPU  : 5000
+**************************************************
+**************************************************
+.. options:
+**    Fact                      :    0
+**    Equil                     :    1
+**    DiagInv                   :    1
+**    ParSymbFact               :    0
+**    ColPerm                   :    4
+**    RowPerm                   :    1
+**    ReplaceTinyPivot          :    1
+**    IterRefine                :    0
+**    Trans                     :    0
+**    SymPattern                :    0
+**    lookahead_etree           :    0
+**    Use_TensorCore            :    0
+**    Use 3D algorithm          :    1
+**    num_lookaheads            :   10
+** parameters that can be altered by environment variables:
+**    superlu_relax             :   60
+**    superlu_maxsup            :  256
+**    min GEMM m*k*n to use GPU : 5000
+**    GPU buffer size           :   50000000
+**    GPU streams               :    1
+**    estimated fill ratio      :    5
+**************************************************
+.. equilibrated? *equed = B
+.. LDPERM job        5	 time: 3.13
+.. anorm 1.407514e+02
+** MPI 0/4, NVSHMEM 0/4,device name: ° bus id: 46256, ndevices=0,cur=0, node=nid001232 **
+** MPI 0/4, NVSHMEM 0/4,device name: ° bus id: 46256, ndevices=0,cur=0, node=nid001116 **
+** MPI 0/4, NVSHMEM 0/4,device name: ° bus id: 46256, ndevices=0,cur=0, node=nid001281 **
+** MPI 1/4, NVSHMEM 1/4,device name: ° bus id: 46256, ndevices=0,cur=1, node=nid001116 **
+** MPI 1/4, NVSHMEM 1/4,device name: ° bus id: 128, ndevices=0,cur=1, node=nid001232 **
+** MPI 2/4, NVSHMEM 2/4,device name: ° bus id: 46256, ndevices=0,cur=2, node=nid001116 **
+** MPI 1/4, NVSHMEM 1/4,device name: ° bus id: 128, ndevices=0,cur=1, node=nid001281 **
+** MPI 2/4, NVSHMEM 2/4,device name: ° bus id: 46256, ndevices=0,cur=2, node=nid001232 **
+** MPI 3/4, NVSHMEM 3/4,device name: ° bus id: 128, ndevices=0,cur=3, node=nid001116 **
+** MPI 2/4, NVSHMEM 2/4,device name: ° bus id: 46256, ndevices=0,cur=2, node=nid001281 **
+** MPI 3/4, NVSHMEM 3/4,device name: ° bus id: 128, ndevices=0,cur=3, node=nid001232 **
+** MPI 3/4, NVSHMEM 3/4,device name: ° bus id: 128, ndevices=0,cur=3, node=nid001281 **
+.. Use METIS ordering on A'+A
+.. symbfact(): relax   60, maxsuper  256, fill    5
+	Matrix size min_mn    253872
+	Nonzeros in L       213647934
+	Nonzeros in U       213706639
+	nonzeros in L+U     427100701
+	nonzeros in LSUB    39202595
+	No of supers 11554
+	Size of G(L) 5092934
+	Size of G(U) 1998098
+	int 4, short 2, float 4, double 8
+	SYMBfact (MB):	L\U 169.88	total 179.02	expansions 0
+.. # L blocks    19483	# U blocks    12985
+ === using DAG ===
+** MPI 0/4, NVSHMEM 0/4,device name: ° bus id: 46256, ndevices=0,cur=0, node=nid001052 **
+** MPI 1/4, NVSHMEM 1/4,device name: ° bus id: 46256, ndevices=5217,cur=1, node=nid001052 **
+** MPI 2/4, NVSHMEM 2/4,device name: ° bus id: 46256, ndevices=0,cur=2, node=nid001052 **
+** MPI 3/4, NVSHMEM 3/4,device name: ° bus id: 46256, ndevices=0,cur=3, node=nid001052 **
+** MPI 0/4, NVSHMEM 0/4,device name: ° bus id: 46256, ndevices=0,cur=0, node=nid001312 **
+** MPI 0/4, NVSHMEM 0/4,device name: ° bus id: 46256, ndevices=0,cur=0, node=nid001284 **
+** MPI 0/4, NVSHMEM 0/4,device name: ° bus id: 46256, ndevices=0,cur=0, node=nid001285 **
+** MPI 0/4, NVSHMEM 0/4,device name: ° bus id: 46256, ndevices=0,cur=0, node=nid001293 **
+** MPI 1/4, NVSHMEM 1/4,device name: ° bus id: 128, ndevices=0,cur=1, node=nid001312 **
+** MPI 1/4, NVSHMEM 1/4,device name: ° bus id: 128, ndevices=0,cur=1, node=nid001284 **
+** MPI 1/4, NVSHMEM 1/4,device name: ° bus id: 128, ndevices=0,cur=1, node=nid001285 **
+** MPI 1/4, NVSHMEM 1/4,device name: ° bus id: 128, ndevices=0,cur=1, node=nid001293 **
+** MPI 2/4, NVSHMEM 2/4,device name: ° bus id: 128, ndevices=0,cur=2, node=nid001312 **
+** MPI 2/4, NVSHMEM 2/4,device name: ° bus id: 46256, ndevices=0,cur=2, node=nid001284 **
+** MPI 2/4, NVSHMEM 2/4,device name: ° bus id: 128, ndevices=0,cur=2, node=nid001285 **
+** MPI 2/4, NVSHMEM 2/4,device name: ° bus id: 128, ndevices=0,cur=2, node=nid001293 **
+** MPI 3/4, NVSHMEM 3/4,device name: ° bus id: 128, ndevices=0,cur=3, node=nid001312 **
+** MPI 3/4, NVSHMEM 3/4,device name: ° bus id: 128, ndevices=0,cur=3, node=nid001284 **
+** MPI 3/4, NVSHMEM 3/4,device name: ° bus id: 128, ndevices=0,cur=3, node=nid001285 **
+** MPI 3/4, NVSHMEM 3/4,device name: ° bus id: 46256, ndevices=0,cur=3, node=nid001293 **
+** MPI 0/4, NVSHMEM 0/4,device name: ° bus id: 46256, ndevices=0,cur=0, node=nid001421 **
+** MPI 0/4, NVSHMEM 0/4,device name: ° bus id: 46256, ndevices=0,cur=0, node=nid001433 **
+** MPI 0/4, NVSHMEM 0/4,device name: ° bus id: 46256, ndevices=0,cur=0, node=nid001432 **
+** MPI 1/4, NVSHMEM 1/4,device name: ° bus id: 128, ndevices=0,cur=1, node=nid001421 **
+** MPI 1/4, NVSHMEM 1/4,device name: ° bus id: 46256, ndevices=0,cur=1, node=nid001433 **
+** MPI 0/4, NVSHMEM 0/4,device name: ° bus id: 46256, ndevices=0,cur=0, node=nid001929 **
+** MPI 1/4, NVSHMEM 1/4,device name: ° bus id: 128, ndevices=0,cur=1, node=nid001432 **
+** MPI 0/4, NVSHMEM 0/4,device name: ° bus id: 46256, ndevices=0,cur=0, node=nid001401 **
+** MPI 0/4, NVSHMEM 0/4,device name: ° bus id: 46256, ndevices=0,cur=0, node=nid001956 **
+** MPI 0/4, NVSHMEM 0/4,device name: ° bus id: 46256, ndevices=0,cur=0, node=nid001437 **
+** MPI 0/4, NVSHMEM 0/4,device name: ° bus id: 46256, ndevices=0,cur=0, node=nid001853 **
+** MPI 2/4, NVSHMEM 2/4,device name: ° bus id: 128, ndevices=0,cur=2, node=nid001421 **
+** MPI 2/4, NVSHMEM 2/4,device name: ° bus id: 128, ndevices=0,cur=2, node=nid001433 **
+** MPI 2/4, NVSHMEM 2/4,device name: ° bus id: 128, ndevices=0,cur=2, node=nid001432 **
+** MPI 3/4, NVSHMEM 3/4,device name: ° bus id: 128, ndevices=0,cur=3, node=nid001421 **
+** MPI 3/4, NVSHMEM 3/4,device name: ° bus id: 128, ndevices=0,cur=3, node=nid001433 **
+** MPI 3/4, NVSHMEM 3/4,device name: ° bus id: 128, ndevices=0,cur=3, node=nid001432 **
+** MPI 1/4, NVSHMEM 1/4,device name: ° bus id: 128, ndevices=0,cur=1, node=nid001401 **
+** MPI 1/4, NVSHMEM 1/4,device name: ° bus id: 128, ndevices=0,cur=1, node=nid001956 **
+** MPI 1/4, NVSHMEM 1/4,device name: ° bus id: 128, ndevices=0,cur=1, node=nid001437 **
+** MPI 1/4, NVSHMEM 1/4,device name: ° bus id: 46256, ndevices=0,cur=1, node=nid001929 **
+** MPI 2/4, NVSHMEM 2/4,device name: ° bus id: 46256, ndevices=0,cur=2, node=nid001401 **
+** MPI 2/4, NVSHMEM 2/4,device name: ° bus id: 128, ndevices=0,cur=2, node=nid001956 **
+** MPI 2/4, NVSHMEM 2/4,device name: ° bus id: 128, ndevices=0,cur=2, node=nid001437 **
+** MPI 1/4, NVSHMEM 1/4,device name: ° bus id: 128, ndevices=0,cur=1, node=nid001853 **
+** MPI 2/4, NVSHMEM 2/4,device name: ° bus id: 128, ndevices=0,cur=2, node=nid001929 **
+** MPI 3/4, NVSHMEM 3/4,device name: ° bus id: 46256, ndevices=0,cur=3, node=nid001401 **
+** MPI 3/4, NVSHMEM 3/4,device name: ° bus id: 128, ndevices=0,cur=3, node=nid001956 **
+** MPI 3/4, NVSHMEM 3/4,device name: ° bus id: 128, ndevices=0,cur=3, node=nid001437 **
+** MPI 2/4, NVSHMEM 2/4,device name: ° bus id: 46256, ndevices=0,cur=2, node=nid001853 **
+** MPI 3/4, NVSHMEM 3/4,device name: ° bus id: 128, ndevices=0,cur=3, node=nid001929 **
+** MPI 3/4, NVSHMEM 3/4,device name: ° bus id: 128, ndevices=0,cur=3, node=nid001853 **
+** MPI 0/4, NVSHMEM 0/4,device name: ° bus id: 46256, ndevices=0,cur=0, node=nid002184 **
+** MPI 0/4, NVSHMEM 0/4,device name: ° bus id: 46256, ndevices=0,cur=0, node=nid003536 **
+** MPI 0/4, NVSHMEM 0/4,device name: ° bus id: 46256, ndevices=0,cur=0, node=nid002624 **
+** MPI 0/4, NVSHMEM 0/4,device name: ° bus id: 46256, ndevices=0,cur=0, node=nid002197 **
+** MPI 0/4, NVSHMEM 0/4,device name: ° bus id: 46256, ndevices=0,cur=0, node=nid002192 **
+** MPI 0/4, NVSHMEM 0/4,device name: ° bus id: 46256, ndevices=0,cur=0, node=nid002348 **
+** MPI 0/4, NVSHMEM 0/4,device name: ° bus id: 46256, ndevices=0,cur=0, node=nid002185 **
+** MPI 1/4, NVSHMEM 1/4,device name: ° bus id: 128, ndevices=0,cur=1, node=nid002184 **
+** MPI 1/4, NVSHMEM 1/4,device name: ° bus id: 128, ndevices=0,cur=1, node=nid003536 **
+** MPI 1/4, NVSHMEM 1/4,device name: ° bus id: 128, ndevices=0,cur=1, node=nid002624 **
+** MPI 0/4, NVSHMEM 0/4,device name: ° bus id: 46256, ndevices=0,cur=0, node=nid002189 **
+** MPI 1/4, NVSHMEM 1/4,device name: ° bus id: 46256, ndevices=0,cur=1, node=nid002197 **
+** MPI 1/4, NVSHMEM 1/4,device name: ° bus id: 128, ndevices=0,cur=1, node=nid002192 **
+** MPI 1/4, NVSHMEM 1/4,device name: ° bus id: 128, ndevices=0,cur=1, node=nid002348 **
+** MPI 2/4, NVSHMEM 2/4,device name: ° bus id: 128, ndevices=0,cur=2, node=nid002184 **
+** MPI 2/4, NVSHMEM 2/4,device name: ° bus id: 128, ndevices=0,cur=2, node=nid003536 **
+** MPI 2/4, NVSHMEM 2/4,device name: ° bus id: 128, ndevices=0,cur=2, node=nid002624 **
+** MPI 0/4, NVSHMEM 0/4,device name: ° bus id: 46256, ndevices=0,cur=0, node=nid002109 **
+** MPI 2/4, NVSHMEM 2/4,device name: ° bus id: 46256, ndevices=0,cur=2, node=nid002197 **
+** MPI 2/4, NVSHMEM 2/4,device name: ° bus id: 128, ndevices=0,cur=2, node=nid002192 **
+** MPI 2/4, NVSHMEM 2/4,device name: ° bus id: 128, ndevices=0,cur=2, node=nid002348 **
+** MPI 3/4, NVSHMEM 3/4,device name: ° bus id: 128, ndevices=0,cur=3, node=nid002184 **
+** MPI 3/4, NVSHMEM 3/4,device name: ° bus id: 128, ndevices=0,cur=3, node=nid003536 **
+** MPI 3/4, NVSHMEM 3/4,device name: ° bus id: 46256, ndevices=0,cur=3, node=nid002624 **
+** MPI 1/4, NVSHMEM 1/4,device name: ° bus id: 46256, ndevices=0,cur=1, node=nid002189 **
+** MPI 1/4, NVSHMEM 1/4,device name: ° bus id: 46256, ndevices=0,cur=1, node=nid002109 **
+** MPI 3/4, NVSHMEM 3/4,device name: ° bus id: 128, ndevices=0,cur=3, node=nid002197 **
+** MPI 3/4, NVSHMEM 3/4,device name: ° bus id: 128, ndevices=0,cur=3, node=nid002192 **
+** MPI 3/4, NVSHMEM 3/4,device name: ° bus id: 128, ndevices=0,cur=3, node=nid002348 **
+** MPI 2/4, NVSHMEM 2/4,device name: ° bus id: 46256, ndevices=0,cur=2, node=nid002189 **
+** MPI 2/4, NVSHMEM 2/4,device name: ° bus id: 128, ndevices=0,cur=2, node=nid002109 **
+** MPI 3/4, NVSHMEM 3/4,device name: ° bus id: 128, ndevices=0,cur=3, node=nid002189 **
+** MPI 3/4, NVSHMEM 3/4,device name: ° bus id: 46256, ndevices=0,cur=3, node=nid002109 **
+** MPI 0/4, NVSHMEM 0/4,device name: ° bus id: 46256, ndevices=0,cur=0, node=nid002200 **
+** MPI 0/4, NVSHMEM 0/4,device name: ° bus id: 46256, ndevices=0,cur=0, node=nid002196 **
+** MPI 0/4, NVSHMEM 0/4,device name: ° bus id: 46256, ndevices=0,cur=0, node=nid002345 **
+** MPI 0/4, NVSHMEM 0/4,device name: ° bus id: 46256, ndevices=0,cur=0, node=nid002188 **
+** MPI 0/4, NVSHMEM 0/4,device name: ° bus id: 46256, ndevices=0,cur=0, node=nid003533 **
+** MPI 0/4, NVSHMEM 0/4,device name: ° bus id: 46256, ndevices=0,cur=0, node=nid002193 **
+** MPI 0/4, NVSHMEM 0/4,device name: ° bus id: 46256, ndevices=0,cur=0, node=nid002621 **
+** MPI 1/4, NVSHMEM 1/4,device name: ° bus id: 128, ndevices=0,cur=1, node=nid002185 **
+** MPI 2/4, NVSHMEM 2/4,device name: ° bus id: 128, ndevices=0,cur=2, node=nid002185 **
+** MPI 3/4, NVSHMEM 3/4,device name: ° bus id: 128, ndevices=0,cur=3, node=nid002185 **
+** MPI 1/4, NVSHMEM 1/4,device name: ° bus id: 128, ndevices=0,cur=1, node=nid002200 **
+** MPI 1/4, NVSHMEM 1/4,device name: ° bus id: 128, ndevices=0,cur=1, node=nid002196 **
+** MPI 1/4, NVSHMEM 1/4,device name: ° bus id: 128, ndevices=0,cur=1, node=nid002345 **
+** MPI 1/4, NVSHMEM 1/4,device name: ° bus id: 128, ndevices=0,cur=1, node=nid002188 **
+** MPI 1/4, NVSHMEM 1/4,device name: ° bus id: 46256, ndevices=0,cur=1, node=nid003533 **
+** MPI 1/4, NVSHMEM 1/4,device name: ° bus id: 46256, ndevices=0,cur=1, node=nid002193 **
+** MPI 1/4, NVSHMEM 1/4,device name: ° bus id: 128, ndevices=0,cur=1, node=nid002621 **
+** MPI 2/4, NVSHMEM 2/4,device name: ° bus id: 46256, ndevices=0,cur=2, node=nid002200 **
+** MPI 2/4, NVSHMEM 2/4,device name: ° bus id: 46256, ndevices=0,cur=2, node=nid002196 **
+** MPI 2/4, NVSHMEM 2/4,device name: ° bus id: 128, ndevices=0,cur=2, node=nid002345 **
+** MPI 2/4, NVSHMEM 2/4,device name: ° bus id: 128, ndevices=0,cur=2, node=nid002188 **
+** MPI 2/4, NVSHMEM 2/4,device name: ° bus id: 46256, ndevices=0,cur=2, node=nid003533 **
+** MPI 2/4, NVSHMEM 2/4,device name: ° bus id: 128, ndevices=0,cur=2, node=nid002193 **
+** MPI 2/4, NVSHMEM 2/4,device name: ° bus id: 46256, ndevices=0,cur=2, node=nid002621 **
+** MPI 3/4, NVSHMEM 3/4,device name: ° bus id: 128, ndevices=0,cur=3, node=nid002200 **
+** MPI 3/4, NVSHMEM 3/4,device name: ° bus id: 46256, ndevices=0,cur=3, node=nid002196 **
+** MPI 3/4, NVSHMEM 3/4,device name: ° bus id: 128, ndevices=0,cur=3, node=nid002345 **
+** MPI 3/4, NVSHMEM 3/4,device name: ° bus id: 128, ndevices=0,cur=3, node=nid002188 **
+** MPI 3/4, NVSHMEM 3/4,device name: ° bus id: 128, ndevices=0,cur=3, node=nid003533 **
+** MPI 3/4, NVSHMEM 3/4,device name: ° bus id: 128, ndevices=0,cur=3, node=nid002193 **
+** MPI 3/4, NVSHMEM 3/4,device name: ° bus id: 128, ndevices=0,cur=3, node=nid002621 **
+after 3D initialization.
+.. Starting with 1 openMP threads 
+MPI tag upper bound = 33554431
+Total time in factorization 	:  2.76
+MPI-communication phase 	:  1.34
+|Wait_LSend             	|     0.0000 	|     0.0000 	|     0.0000 	|     1.5001%| Seconds|
+|Wait_USend             	|     0.0363 	|     0.0324 	|     0.0384 	|     6.5710%| Seconds|
+|Wait_URecv             	|     0.3290 	|     0.2925 	|     0.3514 	|     7.3777%| Seconds|
+|Wait_LRecv             	|     0.0000 	|     0.0000 	|     0.0000 	|       -nan%| Seconds|
+|L_PanelUpdate          	|     0.0000 	|     0.0000 	|     0.0000 	|       -nan%| Seconds|
+|PDGSTRS2               	|     0.0000 	|     0.0000 	|     0.0000 	|       -nan%| Seconds|
+|wait-FunCallStream     	|     0.0000 	|     0.0000 	|     0.0000 	|       -nan%| Seconds|
+|wait-copyStream        	|     0.0000 	|     0.0000 	|     0.0000 	|       -nan%| Seconds|
+|waitGPU2CPU            	|     0.0000 	|     0.0000 	|     0.0000 	|       -nan%| Seconds|
+|SchurCompUpdate        	|     1.4209 	|     1.4069 	|     1.4550 	|     1.4046%| Seconds|
+|PanelFactorization     	|     1.3368 	|     1.3026 	|     1.3507 	|     1.4930%| Seconds|
+#### High Level Time Breakdown :     2.9159 
+
+|Function name 	| avg 	| min 	| max 	| std-dev| units|
+|---|---|---|---|---|---|
+|Startup                	|     0.1582 	|     0.1380 	|     0.1660 	|     7.4352%| Seconds|
+|Main-Factor loop       	|     2.7576 	|     2.7576 	|     2.7576 	|     0.0000%| Seconds|
+|3D-GatherLU            	|     0.0000 	|     0.0000 	|     0.0000 	|     5.4392%| Seconds|
+|tTotal                 	|     2.9159 	|     2.8956 	|     2.9237 	|     0.4035%| Seconds|
+#### Components of Factor Loop :     2.7576 
+
+|Function name 	| avg 	| min 	| max 	| std-dev| units|
+|---|---|---|---|---|---|
+|3D-AncestorReduce      	|     0.9783 	|     0.9740 	|     0.9823 	|     0.3960%| Seconds|
+|Pipeline Tail          	|     0.3460 	|     0.3101 	|     0.3612 	|     6.0207%| Seconds|
+|Grid-0 Factor:Level-0     	|     0.3872 	|     0.3829 	|     0.3916 	|     0.7946%| Seconds|
+|Grid-0 Factor:Level-1     	|     0.5075 	|     0.5006 	|     0.5145 	|     1.0065%| Seconds|
+|Grid-0 Factor:Level-2     	|     0.4610 	|     0.4550 	|     0.4695 	|     1.3011%| Seconds|
+|Grid-0 Factor:Level-3     	|     0.1344 	|     0.1312 	|     0.1379 	|     2.0031%| Seconds|
+|Grid-0 Factor:Level-4     	|     0.1154 	|     0.1143 	|     0.1167 	|     0.8836%| Seconds|
+|Grid-0 Factor:Level-5     	|     0.1738 	|     0.1702 	|     0.1770 	|     1.4301%| Seconds|
+| commVolRed | 1.6325e+10   | 1.27539e+08 |
+| commVolFactor | 4.99954e+09   | 3.90589e+07 |
+| Total Memory 	| 7e+07  	| 1e+08  	|4.7e+07  	|
+| LU-LU(repli) 	| 2.1e+07  	| 4.9e+07  	|
+|Forest | weight | cost | weight/Cost | 
+|0   | 3.25e+09   | 3.87e-01   | 8.38e+00  |
+|1   | 5.12e+09   | 5.01e-01   | 1.02e+01  |
+|2   | 6.40e+09   | 6.71e-01   | 9.54e+00  |
+|3   | 4.19e+09   | 4.69e-01   | 8.92e+00  |
+|4   | 3.48e+09   | 3.61e-01   | 9.64e+00  |
+|5   | 6.44e+09   | 6.11e-01   | 1.05e+01  |
+|6   | 4.26e+09   | 4.30e-01   | 9.89e+00  |
+|7   | 1.01e+09   | 1.38e-01   | 7.29e+00  |
+|8   | 2.68e+09   | 2.50e-01   | 1.07e+01  |
+|9   | 1.18e+09   | 1.49e-01   | 7.90e+00  |
+|10   | 2.24e+09   | 2.20e-01   | 1.02e+01  |
+|11   | 3.84e+09   | 3.51e-01   | 1.09e+01  |
+|12   | 2.08e+09   | 2.33e-01   | 8.94e+00  |
+|13   | 2.93e+09   | 2.72e-01   | 1.08e+01  |
+|14   | 6.65e+08   | 1.03e-01   | 6.47e+00  |
+|15   | 1.03e+09   | 1.14e-01   | 9.03e+00  |
+|16   | 4.48e+08   | 5.51e-02   | 8.13e+00  |
+|17   | 1.79e+09   | 1.91e-01   | 9.37e+00  |
+|18   | 2.83e+09   | 2.52e-01   | 1.12e+01  |
+|19   | 7.20e+08   | 7.70e-02   | 9.36e+00  |
+|20   | 2.86e+08   | 4.52e-02   | 6.33e+00  |
+|21   | 1.79e+09   | 1.56e-01   | 1.15e+01  |
+|22   | 8.33e+08   | 1.06e-01   | 7.83e+00  |
+|23   | 2.52e+09   | 2.31e-01   | 1.09e+01  |
+|24   | 1.35e+09   | 1.57e-01   | 8.63e+00  |
+|25   | 1.17e+09   | 1.23e-01   | 9.52e+00  |
+|26   | 7.43e+08   | 1.07e-01   | 6.92e+00  |
+|27   | 1.47e+09   | 1.67e-01   | 8.77e+00  |
+|28   | 2.37e+09   | 1.98e-01   | 1.20e+01  |
+|29   | 8.72e+08   | 1.10e-01   | 7.92e+00  |
+|30   | 3.08e+08   | 4.51e-02   | 6.83e+00  |
+|31   | 1.61e+09   | 1.73e-01   | 9.30e+00  |
+|32   | 9.36e+08   | 1.28e-01   | 7.33e+00  |
+|33   | 1.32e+09   | 1.79e-01   | 7.37e+00  |
+|34   | 1.14e+09   | 1.81e-01   | 6.28e+00  |
+|35   | 2.36e+09   | 2.74e-01   | 8.60e+00  |
+|36   | 1.93e+09   | 2.65e-01   | 7.30e+00  |
+|37   | 1.91e+09   | 2.14e-01   | 8.95e+00  |
+|38   | 2.18e+09   | 2.56e-01   | 8.52e+00  |
+|39   | 1.59e+09   | 1.66e-01   | 9.61e+00  |
+|40   | 9.20e+08   | 1.24e-01   | 7.40e+00  |
+|41   | 1.11e+09   | 1.45e-01   | 7.64e+00  |
+|42   | 8.48e+08   | 1.19e-01   | 7.13e+00  |
+|43   | 1.46e+09   | 1.59e-01   | 9.15e+00  |
+|44   | 2.16e+09   | 2.50e-01   | 8.63e+00  |
+|45   | 8.23e+08   | 1.40e-01   | 5.89e+00  |
+|46   | 1.80e+09   | 2.27e-01   | 7.96e+00  |
+|47   | 4.47e+09   | 4.66e-01   | 9.59e+00  |
+|48   | 1.60e+09   | 1.87e-01   | 8.58e+00  |
+|49   | 1.99e+09   | 2.49e-01   | 8.01e+00  |
+|50   | 2.61e+09   | 3.42e-01   | 7.62e+00  |
+|51   | 2.29e+09   | 2.56e-01   | 8.94e+00  |
+|52   | 1.39e+09   | 2.05e-01   | 6.78e+00  |
+|53   | 2.60e+09   | 2.97e-01   | 8.74e+00  |
+|54   | 9.07e+08   | 1.42e-01   | 6.38e+00  |
+|55   | 2.00e+09   | 2.02e-01   | 9.90e+00  |
+|56   | 1.21e+09   | 1.89e-01   | 6.40e+00  |
+|57   | 2.02e+09   | 2.32e-01   | 8.68e+00  |
+|58   | 2.83e+09   | 2.95e-01   | 9.60e+00  |
+|59   | 1.06e+09   | 1.75e-01   | 6.07e+00  |
+|60   | 1.44e+09   | 1.66e-01   | 8.68e+00  |
+|61   | 1.04e+09   | 1.58e-01   | 6.56e+00  |
+|62   | 8.35e+08   | 1.36e-01   | 6.12e+00  |
+|CritcalPath   | 2.69e+10   | 2.72e+00   | 9.91e+00  |
+|Pearsoncoefficient |  0.336 |
+
+~~~mermaid 
+
+gantt 
+        		 dateFormat  mm-ss 
+       		 title TreeCost and Time Gantt Chart
+
+
+	 Section Time
+	 tree-31 	:Time-31, 0d, 17d 
+	 tree-15  29 	:Time-15, after Time-31, 11d 
+	 tree-32 	:Time-32, 0d, 13d 
+	 tree-7  43 	:Time-7, after Time-15, 14d 
+	 tree-33 	:Time-33, 0d, 18d 
+	 tree-16  24 	:Time-16, after Time-34, 6d 
+	 tree-34 	:Time-34, 0d, 18d 
+	 tree-3  1.2e+02 	:Time-3, after Time-8, 47d 
+	 tree-35 	:Time-35, 0d, 27d 
+	 tree-17  47 	:Time-17, after Time-35, 19d 
+	 tree-36 	:Time-36, 0d, 26d 
+	 tree-8  76 	:Time-8, after Time-18, 25d 
+	 tree-37 	:Time-37, 0d, 21d 
+	 tree-18  51 	:Time-18, after Time-38, 25d 
+	 tree-38 	:Time-38, 0d, 26d 
+	 tree-1  1.7e+02 	:Time-1, after Time-3, 50d 
+	 tree-39 	:Time-39, 0d, 17d 
+	 tree-19  24 	:Time-19, after Time-39, 8d 
+	 tree-40 	:Time-40, 0d, 12d 
+	 tree-9  39 	:Time-9, after Time-19, 15d 
+	 tree-41 	:Time-41, 0d, 15d 
+	 tree-20  19 	:Time-20, after Time-41, 5d 
+	 tree-42 	:Time-42, 0d, 12d 
+	 tree-4  99 	:Time-4, after Time-10, 36d 
+	 tree-43 	:Time-43, 0d, 16d 
+	 tree-21  41 	:Time-21, after Time-44, 16d 
+	 tree-44 	:Time-44, 0d, 25d 
+	 tree-10  63 	:Time-10, after Time-21, 22d 
+	 tree-45 	:Time-45, 0d, 14d 
+	 tree-22  33 	:Time-22, after Time-46, 11d 
+	 tree-46 	:Time-46, 0d, 23d 
+	 tree-0  2.7e+02 	:Time-0, after Time-2, 39d 
+	 tree-47 	:Time-47, 0d, 47d 
+	 tree-23  70 	:Time-23, after Time-47, 23d 
+	 tree-48 	:Time-48, 0d, 19d 
+	 tree-11  1e+02 	:Time-11, after Time-23, 35d 
+	 tree-49 	:Time-49, 0d, 25d 
+	 tree-24  50 	:Time-24, after Time-50, 16d 
+	 tree-50 	:Time-50, 0d, 34d 
+	 tree-5  1.7e+02 	:Time-5, after Time-11, 61d 
+	 tree-51 	:Time-51, 0d, 26d 
+	 tree-25  38 	:Time-25, after Time-51, 12d 
+	 tree-52 	:Time-52, 0d, 20d 
+	 tree-12  64 	:Time-12, after Time-26, 23d 
+	 tree-53 	:Time-53, 0d, 30d 
+	 tree-26  40 	:Time-26, after Time-53, 11d 
+	 tree-54 	:Time-54, 0d, 14d 
+	 tree-2  2.3e+02 	:Time-2, after Time-5, 67d 
+	 tree-55 	:Time-55, 0d, 20d 
+	 tree-27  37 	:Time-27, after Time-55, 17d 
+	 tree-56 	:Time-56, 0d, 19d 
+	 tree-13  77 	:Time-13, after Time-28, 27d 
+	 tree-57 	:Time-57, 0d, 23d 
+	 tree-28  49 	:Time-28, after Time-58, 20d 
+	 tree-58 	:Time-58, 0d, 30d 
+	 tree-6  1.2e+02 	:Time-6, after Time-13, 43d 
+	 tree-59 	:Time-59, 0d, 18d 
+	 tree-29  29 	:Time-29, after Time-59, 11d 
+	 tree-60 	:Time-60, 0d, 17d 
+	 tree-14  39 	:Time-14, after Time-29, 10d 
+	 tree-61 	:Time-61, 0d, 16d 
+	 tree-30  20 	:Time-30, after Time-61, 5d 
+	 tree-62 	:Time-62, 0d, 14d 
+	 Section Weight
+	 tree-31 	:weight-31, 0d, 16d 
+	 tree-15  27 	:weight-15, after weight-31, 10d 
+	 tree-32 	:weight-32, 0d, 9d 
+	 tree-7  37 	:weight-7, after weight-15, 10d 
+	 tree-33 	:weight-33, 0d, 13d 
+	 tree-16  16 	:weight-16, after weight-33, 5d 
+	 tree-34 	:weight-34, 0d, 11d 
+	 tree-3  1.2e+02 	:weight-3, after weight-8, 42d 
+	 tree-35 	:weight-35, 0d, 24d 
+	 tree-17  42 	:weight-17, after weight-35, 18d 
+	 tree-36 	:weight-36, 0d, 20d 
+	 tree-8  78 	:weight-8, after weight-18, 27d 
+	 tree-37 	:weight-37, 0d, 19d 
+	 tree-18  51 	:weight-18, after weight-38, 29d 
+	 tree-38 	:weight-38, 0d, 22d 
+	 tree-1  1.7e+02 	:weight-1, after weight-3, 52d 
+	 tree-39 	:weight-39, 0d, 16d 
+	 tree-19  23 	:weight-19, after weight-39, 7d 
+	 tree-40 	:weight-40, 0d, 9d 
+	 tree-9  35 	:weight-9, after weight-19, 12d 
+	 tree-41 	:weight-41, 0d, 11d 
+	 tree-20  14 	:weight-20, after weight-41, 3d 
+	 tree-42 	:weight-42, 0d, 9d 
+	 tree-4  98 	:weight-4, after weight-10, 35d 
+	 tree-43 	:weight-43, 0d, 15d 
+	 tree-21  40 	:weight-21, after weight-44, 18d 
+	 tree-44 	:weight-44, 0d, 22d 
+	 tree-10  63 	:weight-10, after weight-21, 23d 
+	 tree-45 	:weight-45, 0d, 8d 
+	 tree-22  27 	:weight-22, after weight-46, 8d 
+	 tree-46 	:weight-46, 0d, 18d 
+	 tree-0  2.7e+02 	:weight-0, after weight-2, 33d 
+	 tree-47 	:weight-47, 0d, 45d 
+	 tree-23  70 	:weight-23, after weight-47, 25d 
+	 tree-48 	:weight-48, 0d, 16d 
+	 tree-11  1.1e+02 	:weight-11, after weight-23, 39d 
+	 tree-49 	:weight-49, 0d, 20d 
+	 tree-24  40 	:weight-24, after weight-50, 14d 
+	 tree-50 	:weight-50, 0d, 26d 
+	 tree-5  1.7e+02 	:weight-5, after weight-11, 65d 
+	 tree-51 	:weight-51, 0d, 23d 
+	 tree-25  35 	:weight-25, after weight-51, 12d 
+	 tree-52 	:weight-52, 0d, 14d 
+	 tree-12  55 	:weight-12, after weight-25, 21d 
+	 tree-53 	:weight-53, 0d, 26d 
+	 tree-26  34 	:weight-26, after weight-53, 8d 
+	 tree-54 	:weight-54, 0d, 9d 
+	 tree-2  2.4e+02 	:weight-2, after weight-5, 65d 
+	 tree-55 	:weight-55, 0d, 20d 
+	 tree-27  35 	:weight-27, after weight-55, 15d 
+	 tree-56 	:weight-56, 0d, 12d 
+	 tree-13  82 	:weight-13, after weight-28, 30d 
+	 tree-57 	:weight-57, 0d, 20d 
+	 tree-28  53 	:weight-28, after weight-58, 24d 
+	 tree-58 	:weight-58, 0d, 29d 
+	 tree-6  1.3e+02 	:weight-6, after weight-13, 43d 
+	 tree-59 	:weight-59, 0d, 11d 
+	 tree-29  20 	:weight-29, after weight-60, 9d 
+	 tree-60 	:weight-60, 0d, 15d 
+	 tree-14  26 	:weight-14, after weight-29, 7d 
+	 tree-61 	:weight-61, 0d, 10d 
+	 tree-30  14 	:weight-30, after weight-61, 3d 
+	 tree-62 	:weight-62, 0d, 8d 
+~~~
+
+
+num_thread:     1
+.. GPU trisolve
+.. GPU trisolve
+.. GPU trisolve
+.. GPU trisolve
+.. GPU trisolve
+.. GPU trisolve
+.. GPU trisolve
+.. GPU trisolve
+.. GPU trisolve
+.. GPU trisolve
+.. GPU trisolve
+.. GPU trisolve
+.. GPU trisolve
+.. GPU trisolve
+.. GPU trisolve
+.. GPU trisolve
+.. GPU trisolve
+.. GPU trisolve
+.. GPU trisolve
+.. GPU trisolve
+.. GPU trisolve
+.. GPU trisolve
+.. GPU trisolve
+.. GPU trisolve
+.. GPU trisolve
+.. GPU trisolve
+.. GPU trisolve
+.. GPU trisolve
+.. GPU trisolve
+.. GPU trisolve
+.. GPU trisolve
+.. GPU trisolve
+|pxReDistribute_X_to_B 	|     0.0016 	|     0.0000 	|     0.0501 	|   556.6606%| seconds|
+|pxReDistribute_B_to_X 	|     0.0017 	|     0.0000 	|     0.0546 	|   555.3516%| seconds|
+|forwardSolve          	|     0.0211 	|     0.0194 	|     0.0235 	|     4.2040%| seconds|
+|forwardSolve-compute  	|     0.0000 	|     0.0000 	|     0.0000 	|       -nan%| seconds|
+|forwardSolve-comm     	|     0.0000 	|     0.0000 	|     0.0000 	|    11.6223%| seconds|
+|ForwardSolve:Level-0 	|     0.0000 	|     0.0000 	|     0.0000 	|       -nan%| seconds|
+|ForwardSolve:Level-1 	|     0.0000 	|     0.0000 	|     0.0000 	|       -nan%| seconds|
+|ForwardSolve:Level-2 	|     0.0000 	|     0.0000 	|     0.0000 	|       -nan%| seconds|
+|ForwardSolve:Level-3 	|     0.0000 	|     0.0000 	|     0.0000 	|       -nan%| seconds|
+|ForwardSolve:Level-4 	|     0.0000 	|     0.0000 	|     0.0000 	|       -nan%| seconds|
+|ForwardSolve:Level-5 	|     0.0211 	|     0.0194 	|     0.0235 	|     4.2118%| seconds|
+|backSolve             	|     0.0294 	|     0.0254 	|     0.0353 	|     7.5694%| seconds|
+|backSolve-compute     	|     0.0000 	|     0.0000 	|     0.0000 	|       -nan%| seconds|
+|backSolve-comm        	|     0.0000 	|     0.0000 	|     0.0000 	|    24.6729%| seconds|
+|BackSolve:Level-0    	|     0.0000 	|     0.0000 	|     0.0000 	|       -nan%| seconds|
+|BackSolve:Level-1    	|     0.0000 	|     0.0000 	|     0.0000 	|       -nan%| seconds|
+|BackSolve:Level-2    	|     0.0000 	|     0.0000 	|     0.0000 	|       -nan%| seconds|
+|BackSolve:Level-3    	|     0.0000 	|     0.0000 	|     0.0000 	|       -nan%| seconds|
+|BackSolve:Level-4    	|     0.0000 	|     0.0000 	|     0.0000 	|       -nan%| seconds|
+|BackSolve:Level-5    	|     0.0294 	|     0.0254 	|     0.0353 	|     7.5711%| seconds|
+|trs_comm_z            	|     0.0052 	|     0.0033 	|     0.0065 	|    14.9325%| seconds|
+|TRS-XY_CommVolume     	|     0.6151 	|     0.4980 	|     0.8086 	|    11.1575%| Mwords|
+|TRS-Z_CommVolume      	|     0.3938 	|     0.1007 	|     1.9805 	|   113.8546%| Mwords|
+|TRS-XYZ_CommVolume    	|     1.0089 	|     0.6031 	|     2.7234 	|    45.8322%| Mwords|
+.. DiagScale = 3
+.. Sol  0: ||X - Xtrue|| / ||X|| = 1.000000e+00	 max_i |x - xtrue|_i / |x|_i = 2.595434e+01
+.. Sol  1: ||X - Xtrue|| / ||X|| = 1.000000e+00	 max_i |x - xtrue|_i / |x|_i = 1.099824e+01
+.. Sol  2: ||X - Xtrue|| / ||X|| = 1.000000e+00	 max_i |x - xtrue|_i / |x|_i = 2.126992e+01
+.. Sol  3: ||X - Xtrue|| / ||X|| = 1.000000e+00	 max_i |x - xtrue|_i / |x|_i = 1.662934e+01
+.. Sol  4: ||X - Xtrue|| / ||X|| = 1.000000e+00	 max_i |x - xtrue|_i / |x|_i = 9.498282e+01
+.. Sol  5: ||X - Xtrue|| / ||X|| = 1.000000e+00	 max_i |x - xtrue|_i / |x|_i = 3.093253e+01
+.. Sol  6: ||X - Xtrue|| / ||X|| = 1.000000e+00	 max_i |x - xtrue|_i / |x|_i = 3.744889e+02
+.. Sol  7: ||X - Xtrue|| / ||X|| = 1.000000e+00	 max_i |x - xtrue|_i / |x|_i = 2.723961e+02
+.. Sol  8: ||X - Xtrue|| / ||X|| = 1.000000e+00	 max_i |x - xtrue|_i / |x|_i = 6.035423e+01
+.. Sol  9: ||X - Xtrue|| / ||X|| = 1.000000e+00	 max_i |x - xtrue|_i / |x|_i = 9.720432e+00
+.. Sol 10: ||X - Xtrue|| / ||X|| = 1.000000e+00	 max_i |x - xtrue|_i / |x|_i = 6.242339e+01
+.. Sol 11: ||X - Xtrue|| / ||X|| = 1.000000e+00	 max_i |x - xtrue|_i / |x|_i = 2.693385e+02
+.. Sol 12: ||X - Xtrue|| / ||X|| = 1.000000e+00	 max_i |x - xtrue|_i / |x|_i = 4.682918e+01
+.. Sol 13: ||X - Xtrue|| / ||X|| = 1.000000e+00	 max_i |x - xtrue|_i / |x|_i = 5.026933e+01
+.. Sol 14: ||X - Xtrue|| / ||X|| = 1.000000e+00	 max_i |x - xtrue|_i / |x|_i = 1.953014e+01
+.. Sol 15: ||X - Xtrue|| / ||X|| = 1.000000e+00	 max_i |x - xtrue|_i / |x|_i = 1.967426e+01
+.. Sol 16: ||X - Xtrue|| / ||X|| = 1.000000e+00	 max_i |x - xtrue|_i / |x|_i = 1.139839e+03
+.. Sol 17: ||X - Xtrue|| / ||X|| = 1.000000e+00	 max_i |x - xtrue|_i / |x|_i = 8.410965e+01
+.. Sol 18: ||X - Xtrue|| / ||X|| = 1.000000e+00	 max_i |x - xtrue|_i / |x|_i = 3.948387e+01
+.. Sol 19: ||X - Xtrue|| / ||X|| = 1.000000e+00	 max_i |x - xtrue|_i / |x|_i = 1.564435e+02
+.. Sol 20: ||X - Xtrue|| / ||X|| = 1.000000e+00	 max_i |x - xtrue|_i / |x|_i = 1.288893e+02
+.. Sol 21: ||X - Xtrue|| / ||X|| = 1.000000e+00	 max_i |x - xtrue|_i / |x|_i = 3.224440e+01
+.. Sol 22: ||X - Xtrue|| / ||X|| = 1.000000e+00	 max_i |x - xtrue|_i / |x|_i = 7.033030e+00
+.. Sol 23: ||X - Xtrue|| / ||X|| = 1.000000e+00	 max_i |x - xtrue|_i / |x|_i = 8.494045e+00
+.. Sol 24: ||X - Xtrue|| / ||X|| = 1.000000e+00	 max_i |x - xtrue|_i / |x|_i = 1.205666e+01
+.. Sol 25: ||X - Xtrue|| / ||X|| = 1.000000e+00	 max_i |x - xtrue|_i / |x|_i = 1.442646e+01
+.. Sol 26: ||X - Xtrue|| / ||X|| = 1.000000e+00	 max_i |x - xtrue|_i / |x|_i = 9.100040e+01
+.. Sol 27: ||X - Xtrue|| / ||X|| = 1.000000e+00	 max_i |x - xtrue|_i / |x|_i = 1.784125e+01
+.. Sol 28: ||X - Xtrue|| / ||X|| = 1.000000e+00	 max_i |x - xtrue|_i / |x|_i = 8.424229e+00
+.. Sol 29: ||X - Xtrue|| / ||X|| = 1.000000e+00	 max_i |x - xtrue|_i / |x|_i = 4.947054e+01
+.. Sol 30: ||X - Xtrue|| / ||X|| = 1.000000e+00	 max_i |x - xtrue|_i / |x|_i = 9.387269e+03
+.. Sol 31: ||X - Xtrue|| / ||X|| = 1.000000e+00	 max_i |x - xtrue|_i / |x|_i = 6.179640e+01
+.. Sol 32: ||X - Xtrue|| / ||X|| = 1.000000e+00	 max_i |x - xtrue|_i / |x|_i = 5.517671e+01
+.. Sol 33: ||X - Xtrue|| / ||X|| = 1.000000e+00	 max_i |x - xtrue|_i / |x|_i = 2.685712e+00
+.. Sol 34: ||X - Xtrue|| / ||X|| = 1.000000e+00	 max_i |x - xtrue|_i / |x|_i = 1.951299e+01
+.. Sol 35: ||X - Xtrue|| / ||X|| = 1.000000e+00	 max_i |x - xtrue|_i / |x|_i = 1.165492e+03
+.. Sol 36: ||X - Xtrue|| / ||X|| = 1.000000e+00	 max_i |x - xtrue|_i / |x|_i = 3.149262e+01
+.. Sol 37: ||X - Xtrue|| / ||X|| = 1.000000e+00	 max_i |x - xtrue|_i / |x|_i = 6.876657e+01
+.. Sol 38: ||X - Xtrue|| / ||X|| = 1.000000e+00	 max_i |x - xtrue|_i / |x|_i = 4.074760e+01
+.. Sol 39: ||X - Xtrue|| / ||X|| = 1.000000e+00	 max_i |x - xtrue|_i / |x|_i = 6.781656e+01
+.. Sol 40: ||X - Xtrue|| / ||X|| = 1.000000e+00	 max_i |x - xtrue|_i / |x|_i = 2.265679e+02
+.. Sol 41: ||X - Xtrue|| / ||X|| = 1.000000e+00	 max_i |x - xtrue|_i / |x|_i = 1.052703e+01
+.. Sol 42: ||X - Xtrue|| / ||X|| = 1.000000e+00	 max_i |x - xtrue|_i / |x|_i = 1.289510e+02
+.. Sol 43: ||X - Xtrue|| / ||X|| = 1.000000e+00	 max_i |x - xtrue|_i / |x|_i = 8.786083e+00
+.. Sol 44: ||X - Xtrue|| / ||X|| = 1.000000e+00	 max_i |x - xtrue|_i / |x|_i = 1.135037e+02
+.. Sol 45: ||X - Xtrue|| / ||X|| = 1.000000e+00	 max_i |x - xtrue|_i / |x|_i = 8.975769e+02
+.. Sol 46: ||X - Xtrue|| / ||X|| = 1.000000e+00	 max_i |x - xtrue|_i / |x|_i = 3.077412e+01
+.. Sol 47: ||X - Xtrue|| / ||X|| = 1.000000e+00	 max_i |x - xtrue|_i / |x|_i = 1.137565e+01
+.. Sol 48: ||X - Xtrue|| / ||X|| = 1.000000e+00	 max_i |x - xtrue|_i / |x|_i = 2.370415e+01
+.. Sol 49: ||X - Xtrue|| / ||X|| = 1.000000e+00	 max_i |x - xtrue|_i / |x|_i = 3.277226e+01
+**************************************************
+**** Time (seconds) ****
+	EQUIL time            0.328
+	ROWPERM time          3.125
+	COLPERM time          1.929
+	SYMBFACT time         1.892
+	DISTRIBUTE time       2.581
+	FACTOR time           3.000
+	Factor flops	7.087273e+11	Mflops 	236278.33
+	SOLVE time            0.061
+	Solve flops	1.447416e+11	Mflops 	2365108.09
+**************************************************

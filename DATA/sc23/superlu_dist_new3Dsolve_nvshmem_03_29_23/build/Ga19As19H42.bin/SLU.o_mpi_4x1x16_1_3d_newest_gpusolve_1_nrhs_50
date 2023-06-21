@@ -1,0 +1,120 @@
+MPI_Query_thread with MPI_THREAD_MULTIPLE
+__STDC_VERSION__ 201112
+Library version:	8.1.2
+Input matrix file:	/global/cfs/cdirs/m2957/liuyangz/my_research/matrix/Ga19As19H42.bin
+3D process grid: 4 X 1 X 16
+fread n   133123	nnz  8884839
+# of doubles fread:  8884839
+Time to read and distribute matrix 0.01
+**************************************************
+.. blocking parameters from sp_ienv():
+**    relaxation                 : 60
+**    max supernode              : 256
+**    estimated fill ratio       : 5
+**    min GEMM m*k*n to use GPU  : 5000
+**************************************************
+**************************************************
+.. options:
+**    Fact                      :    0
+**    Equil                     :    1
+**    DiagInv                   :    1
+**    ParSymbFact               :    0
+**    ColPerm                   :    4
+**    RowPerm                   :    1
+**    ReplaceTinyPivot          :    1
+**    IterRefine                :    0
+**    Trans                     :    0
+**    SymPattern                :    0
+**    lookahead_etree           :    0
+**    Use_TensorCore            :    0
+**    Use 3D algorithm          :    1
+**    num_lookaheads            :   10
+** parameters that can be altered by environment variables:
+**    superlu_relax             :   60
+**    superlu_maxsup            :  256
+**    min GEMM m*k*n to use GPU : 5000
+**    GPU buffer size           :   50000000
+**    GPU streams               :    1
+**    estimated fill ratio      :    5
+**************************************************
+.. equilibrated? *equed = N
+.. LDPERM job        5	 time: 0.24
+.. anorm 4.301589e+01
+** MPI 0/4, NVSHMEM 0/4,device name: . bus id: 1458176, ndevices=5411,cur=0, node=nid001321 **
+** MPI 1/4, NVSHMEM 1/4,device name: . bus id: 90992, ndevices=0,cur=1, node=nid001320 **
+** MPI 0/4, NVSHMEM 0/4,device name: . bus id: 1458176, ndevices=5426,cur=0, node=nid002900 **
+** MPI 3/4, NVSHMEM 3/4,device name: . bus id: 90992, ndevices=0,cur=3, node=nid001320 **
+** MPI 1/4, NVSHMEM 1/4,device name: . bus id: 1458176, ndevices=0,cur=1, node=nid001321 **
+** MPI 2/4, NVSHMEM 2/4,device name: . bus id: 1458176, ndevices=0,cur=2, node=nid001321 **
+** MPI 1/4, NVSHMEM 1/4,device name: . bus id: 1458176, ndevices=0,cur=1, node=nid002900 **
+** MPI 3/4, NVSHMEM 3/4,device name: . bus id: 1458176, ndevices=0,cur=3, node=nid001321 **
+** MPI 2/4, NVSHMEM 2/4,device name: . bus id: 1458176, ndevices=0,cur=2, node=nid002900 **
+** MPI 3/4, NVSHMEM 3/4,device name: . bus id: 1458176, ndevices=0,cur=3, node=nid002900 **
+.. Use METIS ordering on A'+A
+.. symbfact(): relax   60, maxsuper  256, fill    5
+	Matrix size min_mn    133123
+	Nonzeros in L       783104913
+	Nonzeros in U       783104913
+	nonzeros in L+U     1566076703
+	nonzeros in LSUB    85803762
+	No of supers 22736
+	Size of G(L) 49466949
+	Size of G(U) 49333826
+	int 4, short 2, float 4, double 8
+	SYMBfact (MB):	L\U 543.21	total 548.01	expansions 4
+.. # L blocks  1162358	# U blocks  1164659
+ === using DAG ===
+** MPI 0/4, NVSHMEM 0/4,device name: . bus id: 90992, ndevices=0,cur=0, node=nid001320 **
+** MPI 2/4, NVSHMEM 2/4,device name: . bus id: 90992, ndevices=0,cur=2, node=nid001320 **
+** MPI 0/4, NVSHMEM 0/4,device name: . bus id: 1458176, ndevices=5310,cur=0, node=nid002920 **
+** MPI 0/4, NVSHMEM 0/4,device name: . bus id: 1458176, ndevices=5406,cur=0, node=nid002924 **
+** MPI 0/4, NVSHMEM 0/4,device name: . bus id: 1458176, ndevices=5278,cur=0, node=nid002917 **
+** MPI 1/4, NVSHMEM 1/4,device name: . bus id: 1458176, ndevices=0,cur=1, node=nid002920 **
+** MPI 1/4, NVSHMEM 1/4,device name: . bus id: 1458176, ndevices=0,cur=1, node=nid002924 **
+** MPI 1/4, NVSHMEM 1/4,device name: . bus id: 1458176, ndevices=0,cur=1, node=nid002917 **
+** MPI 2/4, NVSHMEM 2/4,device name: . bus id: 1458176, ndevices=0,cur=2, node=nid002920 **
+** MPI 2/4, NVSHMEM 2/4,device name: . bus id: 1458176, ndevices=0,cur=2, node=nid002924 **
+** MPI 2/4, NVSHMEM 2/4,device name: . bus id: 1458176, ndevices=0,cur=2, node=nid002917 **
+** MPI 3/4, NVSHMEM 3/4,device name: . bus id: 1458176, ndevices=0,cur=3, node=nid002920 **
+** MPI 3/4, NVSHMEM 3/4,device name: . bus id: 1458176, ndevices=0,cur=3, node=nid002924 **
+** MPI 3/4, NVSHMEM 3/4,device name: . bus id: 1458176, ndevices=0,cur=3, node=nid002917 **
+** MPI 0/4, NVSHMEM 0/4,device name: . bus id: 1458176, ndevices=5266,cur=0, node=nid002897 **
+** MPI 1/4, NVSHMEM 1/4,device name: . bus id: 1458176, ndevices=0,cur=1, node=nid002897 **
+** MPI 2/4, NVSHMEM 2/4,device name: . bus id: 1458176, ndevices=0,cur=2, node=nid002897 **
+** MPI 3/4, NVSHMEM 3/4,device name: . bus id: 1458176, ndevices=0,cur=3, node=nid002897 **
+** MPI 0/4, NVSHMEM 0/4,device name: . bus id: 1458176, ndevices=5363,cur=0, node=nid002905 **
+** MPI 0/4, NVSHMEM 0/4,device name: . bus id: 1458176, ndevices=5444,cur=0, node=nid002901 **
+** MPI 0/4, NVSHMEM 0/4,device name: . bus id: 1458176, ndevices=5223,cur=0, node=nid002904 **
+** MPI 0/4, NVSHMEM 0/4,device name: . bus id: 1458176, ndevices=5391,cur=0, node=nid002908 **
+** MPI 1/4, NVSHMEM 1/4,device name: . bus id: 1458176, ndevices=0,cur=1, node=nid002905 **
+** MPI 1/4, NVSHMEM 1/4,device name: . bus id: 1458176, ndevices=0,cur=1, node=nid002901 **
+** MPI 1/4, NVSHMEM 1/4,device name: . bus id: 1458176, ndevices=0,cur=1, node=nid002904 **
+** MPI 1/4, NVSHMEM 1/4,device name: . bus id: 1458176, ndevices=0,cur=1, node=nid002908 **
+** MPI 2/4, NVSHMEM 2/4,device name: . bus id: 1458176, ndevices=0,cur=2, node=nid002905 **
+** MPI 2/4, NVSHMEM 2/4,device name: . bus id: 1458176, ndevices=0,cur=2, node=nid002901 **
+** MPI 2/4, NVSHMEM 2/4,device name: . bus id: 1458176, ndevices=0,cur=2, node=nid002904 **
+** MPI 2/4, NVSHMEM 2/4,device name: . bus id: 1458176, ndevices=0,cur=2, node=nid002908 **
+** MPI 3/4, NVSHMEM 3/4,device name: . bus id: 1458176, ndevices=0,cur=3, node=nid002905 **
+** MPI 3/4, NVSHMEM 3/4,device name: . bus id: 1458176, ndevices=0,cur=3, node=nid002901 **
+** MPI 3/4, NVSHMEM 3/4,device name: . bus id: 1458176, ndevices=0,cur=3, node=nid002904 **
+** MPI 3/4, NVSHMEM 3/4,device name: . bus id: 1458176, ndevices=0,cur=3, node=nid002908 **
+** MPI 0/4, NVSHMEM 0/4,device name: . bus id: 1458176, ndevices=5265,cur=0, node=nid002921 **
+** MPI 1/4, NVSHMEM 1/4,device name: . bus id: 1458176, ndevices=0,cur=1, node=nid002921 **
+** MPI 2/4, NVSHMEM 2/4,device name: . bus id: 1458176, ndevices=0,cur=2, node=nid002921 **
+** MPI 3/4, NVSHMEM 3/4,device name: . bus id: 1458176, ndevices=0,cur=3, node=nid002921 **
+** MPI 0/4, NVSHMEM 0/4,device name: . bus id: 1458176, ndevices=5441,cur=0, node=nid002913 **
+** MPI 0/4, NVSHMEM 0/4,device name: . bus id: 1458176, ndevices=5298,cur=0, node=nid002912 **
+** MPI 0/4, NVSHMEM 0/4,device name: . bus id: 1458176, ndevices=5240,cur=0, node=nid002916 **
+** MPI 0/4, NVSHMEM 0/4,device name: . bus id: 1458176, ndevices=5318,cur=0, node=nid002909 **
+** MPI 1/4, NVSHMEM 1/4,device name: . bus id: 1458176, ndevices=0,cur=1, node=nid002912 **
+** MPI 1/4, NVSHMEM 1/4,device name: . bus id: 1458176, ndevices=0,cur=1, node=nid002916 **
+** MPI 2/4, NVSHMEM 2/4,device name: . bus id: 1458176, ndevices=0,cur=2, node=nid002912 **
+** MPI 2/4, NVSHMEM 2/4,device name: . bus id: 1458176, ndevices=0,cur=2, node=nid002916 **
+** MPI 3/4, NVSHMEM 3/4,device name: . bus id: 1458176, ndevices=0,cur=3, node=nid002912 **
+** MPI 3/4, NVSHMEM 3/4,device name: . bus id: 1458176, ndevices=0,cur=3, node=nid002916 **
+** MPI 1/4, NVSHMEM 1/4,device name: . bus id: 1458176, ndevices=0,cur=1, node=nid002909 **
+** MPI 2/4, NVSHMEM 2/4,device name: . bus id: 1458176, ndevices=0,cur=2, node=nid002909 **
+** MPI 3/4, NVSHMEM 3/4,device name: . bus id: 1458176, ndevices=0,cur=3, node=nid002909 **
+** MPI 1/4, NVSHMEM 1/4,device name: . bus id: 1458176, ndevices=0,cur=1, node=nid002913 **
+** MPI 2/4, NVSHMEM 2/4,device name: . bus id: 1458176, ndevices=0,cur=2, node=nid002913 **
+** MPI 3/4, NVSHMEM 3/4,device name: . bus id: 1458176, ndevices=0,cur=3, node=nid002913 **

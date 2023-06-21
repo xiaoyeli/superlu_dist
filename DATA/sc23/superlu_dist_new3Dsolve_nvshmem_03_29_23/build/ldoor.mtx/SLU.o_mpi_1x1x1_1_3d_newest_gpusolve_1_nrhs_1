@@ -1,0 +1,144 @@
+MPI_Query_thread with MPI_THREAD_MULTIPLE
+__STDC_VERSION__ 201112
+Library version:	8.1.2
+Input matrix file:	/global/cfs/cdirs/m2957/liuyangz/my_research/matrix/ldoor.mtx
+3D process grid: 1 X 1 X 1
+Symmetric matrix: will be expanded
+m 952203, n 952203, nonz 23737339
+triplet file: row/col indices are one-based.
+new_nonz after symmetric expansion:	46522475
+Time to read and distribute matrix 6.71
+**************************************************
+.. blocking parameters from sp_ienv():
+**    relaxation                 : 60
+**    max supernode              : 256
+**    estimated fill ratio       : 5
+**    min GEMM m*k*n to use GPU  : 5000
+**************************************************
+**************************************************
+.. options:
+**    Fact                      :    0
+**    Equil                     :    1
+**    DiagInv                   :    1
+**    ParSymbFact               :    0
+**    ColPerm                   :    4
+**    RowPerm                   :    1
+**    ReplaceTinyPivot          :    1
+**    IterRefine                :    0
+**    Trans                     :    0
+**    SymPattern                :    0
+**    lookahead_etree           :    0
+**    Use_TensorCore            :    0
+**    Use 3D algorithm          :    1
+**    num_lookaheads            :   10
+** parameters that can be altered by environment variables:
+**    superlu_relax             :   60
+**    superlu_maxsup            :  256
+**    min GEMM m*k*n to use GPU : 5000
+**    GPU buffer size           :   50000000
+**    GPU streams               :    1
+**    estimated fill ratio      :    5
+**************************************************
+.. equilibrated? *equed = R
+.. LDPERM job        5	 time: 1.64
+.. anorm 1.956279e+01
+.. Use METIS ordering on A'+A
+.. symbfact(): relax   60, maxsuper  256, fill    5
+	Matrix size min_mn    952203
+	Nonzeros in L       160648072
+	Nonzeros in U       160648072
+	nonzeros in L+U     320343941
+	nonzeros in LSUB    47669474
+	No of supers 46509
+	Size of G(L) 5197393
+	Size of G(U) 4245190
+	int 4, short 2, float 4, double 8
+	SYMBfact (MB):	L\U 226.70	total 260.98	expansions 0
+.. # L blocks   266082	# U blocks   219573
+ === using DAG ===
+** MPI 0/1, NVSHMEM 0/1,device name: l- bus id: 128, ndevices=0,cur=0, node=nid001049 **
+after 3D initialization.
+.. Starting with 1 openMP threads 
+MPI tag upper bound = 536870911
+Total time in factorization 	: 14.37
+MPI-communication phase 	:  1.08
+|Wait_LSend             	|     0.0033 	|     0.0033 	|     0.0033 	|     0.0000%| Seconds|
+|Wait_USend             	|     0.0020 	|     0.0020 	|     0.0020 	|     0.0000%| Seconds|
+|Wait_URecv             	|     0.0000 	|     0.0000 	|     0.0000 	|       -nan%| Seconds|
+|Wait_LRecv             	|     0.0000 	|     0.0000 	|     0.0000 	|       -nan%| Seconds|
+|L_PanelUpdate          	|     0.0000 	|     0.0000 	|     0.0000 	|       -nan%| Seconds|
+|PDGSTRS2               	|     0.0000 	|     0.0000 	|     0.0000 	|       -nan%| Seconds|
+|wait-FunCallStream     	|     0.0000 	|     0.0000 	|     0.0000 	|       -nan%| Seconds|
+|wait-copyStream        	|     0.0000 	|     0.0000 	|     0.0000 	|       -nan%| Seconds|
+|waitGPU2CPU            	|     0.0000 	|     0.0000 	|     0.0000 	|       -nan%| Seconds|
+|SchurCompUpdate        	|    13.2885 	|    13.2885 	|    13.2885 	|     0.0000%| Seconds|
+|PanelFactorization     	|     1.0846 	|     1.0846 	|     1.0846 	|     0.0000%| Seconds|
+#### High Level Time Breakdown :    14.4150 
+
+|Function name 	| avg 	| min 	| max 	| std-dev| units|
+|---|---|---|---|---|---|
+|Startup                	|     0.0419 	|     0.0419 	|     0.0419 	|     0.0000%| Seconds|
+|Main-Factor loop       	|    14.3731 	|    14.3731 	|    14.3731 	|     0.0000%| Seconds|
+|3D-GatherLU            	|     0.0000 	|     0.0000 	|     0.0000 	|     0.0000%| Seconds|
+|tTotal                 	|    14.4150 	|    14.4150 	|    14.4150 	|     0.0000%| Seconds|
+#### Components of Factor Loop :    14.3731 
+
+|Function name 	| avg 	| min 	| max 	| std-dev| units|
+|---|---|---|---|---|---|
+|3D-AncestorReduce      	|     0.0000 	|     0.0000 	|     0.0000 	|       -nan%| Seconds|
+|Pipeline Tail          	|     0.6708 	|     0.6708 	|     0.6708 	|     0.0000%| Seconds|
+|Grid-0 Factor:Level-0     	|    14.3731 	|    14.3731 	|    14.3731 	|     0.0000%| Seconds|
+| commVolRed | 0   | 0 |
+| commVolFactor | 8.77769e+07   | 8.77769e+07 |
+| Total Memory 	| 2.2e+09  	| 2.2e+09  	|2.2e+09  	|
+| LU-LU(repli) 	| 2.2e+09  	| 0  	|
+|Forest | weight | cost | weight/Cost | 
+|0   | 7.20e+10   | 1.44e+01   | 5.01e+00  |
+|CritcalPath   | 7.20e+10   | 1.44e+01   | 5.01e+00  |
+|Pearsoncoefficient |  1.000 |
+
+~~~mermaid 
+
+gantt 
+        		 dateFormat  mm-ss 
+       		 title TreeCost and Time Gantt Chart
+
+
+	 Section Time
+	 tree-0 	:Time-0, 0d, 1437d 
+	 Section Weight
+	 tree-0 	:weight-0, 0d, 1437d 
+~~~
+
+
+num_thread:     1
+.. GPU trisolve
+|pxReDistribute_X_to_B 	|     0.0232 	|     0.0232 	|     0.0232 	|     0.0000%| seconds|
+|pxReDistribute_B_to_X 	|     0.0553 	|     0.0553 	|     0.0553 	|     0.0000%| seconds|
+|forwardSolve          	|     0.0160 	|     0.0160 	|     0.0160 	|     0.0000%| seconds|
+|forwardSolve-compute  	|     0.0000 	|     0.0000 	|     0.0000 	|       -nan%| seconds|
+|forwardSolve-comm     	|     0.0000 	|     0.0000 	|     0.0000 	|     0.0000%| seconds|
+|ForwardSolve:Level-0 	|     0.0160 	|     0.0160 	|     0.0160 	|     0.0000%| seconds|
+|backSolve             	|     0.0722 	|     0.0722 	|     0.0722 	|     0.0000%| seconds|
+|backSolve-compute     	|     0.0000 	|     0.0000 	|     0.0000 	|       -nan%| seconds|
+|backSolve-comm        	|     0.0000 	|     0.0000 	|     0.0000 	|     0.0000%| seconds|
+|BackSolve:Level-0    	|     0.0722 	|     0.0722 	|     0.0722 	|     0.0000%| seconds|
+|trs_comm_z            	|     0.0000 	|     0.0000 	|     0.0000 	|     0.0000%| seconds|
+|TRS-XY_CommVolume     	|     0.0000 	|     0.0000 	|     0.0000 	|       -nan%| Mwords|
+|TRS-Z_CommVolume      	|     0.0000 	|     0.0000 	|     0.0000 	|       -nan%| Mwords|
+|TRS-XYZ_CommVolume    	|     0.0000 	|     0.0000 	|     0.0000 	|       -nan%| Mwords|
+.. DiagScale = 3
+.. Sol  0: ||X - Xtrue|| / ||X|| = 1.283273e-11	 max_i |x - xtrue|_i / |x|_i = 1.283273e-11
+**************************************************
+**** Time (seconds) ****
+	EQUIL time            0.746
+	ROWPERM time          1.640
+	COLPERM time          2.324
+	SYMBFACT time         1.630
+	DISTRIBUTE time       5.873
+	FACTOR time          15.988
+	Factor flops	1.331676e+11	Mflops 	 8329.26
+	SOLVE time            0.088
+	Solve flops	6.406879e+08	Mflops 	 7258.83
+**************************************************
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries

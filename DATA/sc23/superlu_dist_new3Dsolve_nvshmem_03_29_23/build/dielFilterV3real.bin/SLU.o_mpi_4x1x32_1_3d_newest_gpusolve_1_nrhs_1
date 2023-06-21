@@ -1,0 +1,628 @@
+MPI_Query_thread with MPI_THREAD_MULTIPLE
+__STDC_VERSION__ 201112
+Library version:	8.1.2
+Input matrix file:	/global/cfs/cdirs/m2957/liuyangz/my_research/matrix/dielFilterV3real.bin
+3D process grid: 4 X 1 X 32
+fread n  1102824	nnz 89306020
+# of doubles fread: 89306020
+Time to read and distribute matrix 1.61
+**************************************************
+.. blocking parameters from sp_ienv():
+**    relaxation                 : 60
+**    max supernode              : 256
+**    estimated fill ratio       : 5
+**    min GEMM m*k*n to use GPU  : 5000
+**************************************************
+**************************************************
+.. options:
+**    Fact                      :    0
+**    Equil                     :    1
+**    DiagInv                   :    1
+**    ParSymbFact               :    0
+**    ColPerm                   :    4
+**    RowPerm                   :    1
+**    ReplaceTinyPivot          :    1
+**    IterRefine                :    0
+**    Trans                     :    0
+**    SymPattern                :    0
+**    lookahead_etree           :    0
+**    Use_TensorCore            :    0
+**    Use 3D algorithm          :    1
+**    num_lookaheads            :   10
+** parameters that can be altered by environment variables:
+**    superlu_relax             :   60
+**    superlu_maxsup            :  256
+**    min GEMM m*k*n to use GPU : 5000
+**    GPU buffer size           :   50000000
+**    GPU streams               :    1
+**    estimated fill ratio      :    5
+**************************************************
+.. equilibrated? *equed = R
+.. LDPERM job        5	 time: 3.06
+.. anorm 4.514514e+01
+** MPI 0/4, NVSHMEM 0/4,device name: Q bus id: 128, ndevices=5412,cur=0, node=nid001032 **
+** MPI 0/4, NVSHMEM 0/4,device name: Q bus id: 128, ndevices=5359,cur=0, node=nid001033 **
+** MPI 0/4, NVSHMEM 0/4,device name: Q bus id: 128, ndevices=5395,cur=0, node=nid001029 **
+** MPI 1/4, NVSHMEM 1/4,device name: Q bus id: 128, ndevices=5459,cur=1, node=nid001032 **
+** MPI 1/4, NVSHMEM 1/4,device name: Q bus id: 128, ndevices=5294,cur=1, node=nid001033 **
+** MPI 1/4, NVSHMEM 1/4,device name: Q bus id: 128, ndevices=5411,cur=1, node=nid001029 **
+** MPI 2/4, NVSHMEM 2/4,device name: Q bus id: 128, ndevices=5293,cur=2, node=nid001032 **
+** MPI 2/4, NVSHMEM 2/4,device name: Q bus id: 128, ndevices=5294,cur=2, node=nid001033 **
+** MPI 2/4, NVSHMEM 2/4,device name: Q bus id: 128, ndevices=5258,cur=2, node=nid001029 **
+** MPI 3/4, NVSHMEM 3/4,device name: Q bus id: 128, ndevices=5230,cur=3, node=nid001032 **
+** MPI 3/4, NVSHMEM 3/4,device name: Q bus id: 128, ndevices=5346,cur=3, node=nid001033 **
+** MPI 3/4, NVSHMEM 3/4,device name: Q bus id: 128, ndevices=5265,cur=3, node=nid001029 **
+.. Use METIS ordering on A'+A
+.. symbfact(): relax   60, maxsuper  256, fill    5
+	Matrix size min_mn   1102824
+	Nonzeros in L       564663423
+	Nonzeros in U       564663423
+	nonzeros in L+U     1128224022
+	nonzeros in LSUB    133585240
+	No of supers 37042
+	Size of G(L) 8292923
+	Size of G(U) 7190099
+	int 4, short 2, float 4, double 8
+	SYMBfact (MB):	L\U 585.16	total 624.86	expansions 0
+.. # L blocks    81856	# U blocks    73104
+ === using DAG ===
+** MPI 0/4, NVSHMEM 0/4,device name: Q bus id: 128, ndevices=0,cur=0, node=nid001028 **
+** MPI 1/4, NVSHMEM 1/4,device name: Q bus id: 128, ndevices=5401,cur=1, node=nid001028 **
+** MPI 2/4, NVSHMEM 2/4,device name: Q bus id: 128, ndevices=0,cur=2, node=nid001028 **
+** MPI 3/4, NVSHMEM 3/4,device name: Q bus id: 128, ndevices=0,cur=3, node=nid001028 **
+** MPI 0/4, NVSHMEM 0/4,device name: Q bus id: 128, ndevices=5342,cur=0, node=nid001225 **
+** MPI 0/4, NVSHMEM 0/4,device name: Q bus id: 128, ndevices=5228,cur=0, node=nid001396 **
+** MPI 0/4, NVSHMEM 0/4,device name: Q bus id: 128, ndevices=5271,cur=0, node=nid001333 **
+** MPI 0/4, NVSHMEM 0/4,device name: Q bus id: 128, ndevices=5384,cur=0, node=nid001329 **
+** MPI 1/4, NVSHMEM 1/4,device name: Q bus id: 128, ndevices=5266,cur=1, node=nid001225 **
+** MPI 1/4, NVSHMEM 1/4,device name: Q bus id: 128, ndevices=5337,cur=1, node=nid001333 **
+** MPI 1/4, NVSHMEM 1/4,device name: Q bus id: 128, ndevices=5323,cur=1, node=nid001329 **
+** MPI 2/4, NVSHMEM 2/4,device name: Q bus id: 128, ndevices=5321,cur=2, node=nid001225 **
+** MPI 2/4, NVSHMEM 2/4,device name: Q bus id: 128, ndevices=5334,cur=2, node=nid001333 **
+** MPI 2/4, NVSHMEM 2/4,device name: Q bus id: 128, ndevices=5412,cur=2, node=nid001329 **
+** MPI 3/4, NVSHMEM 3/4,device name: Q bus id: 128, ndevices=5409,cur=3, node=nid001225 **
+** MPI 3/4, NVSHMEM 3/4,device name: Q bus id: 128, ndevices=5331,cur=3, node=nid001333 **
+** MPI 3/4, NVSHMEM 3/4,device name: Q bus id: 128, ndevices=5253,cur=3, node=nid001329 **
+** MPI 1/4, NVSHMEM 1/4,device name: Q bus id: 128, ndevices=5236,cur=1, node=nid001396 **
+** MPI 2/4, NVSHMEM 2/4,device name: Q bus id: 128, ndevices=5231,cur=2, node=nid001396 **
+** MPI 3/4, NVSHMEM 3/4,device name: Q bus id: 128, ndevices=5298,cur=3, node=nid001396 **
+** MPI 0/4, NVSHMEM 0/4,device name: Q bus id: 128, ndevices=5322,cur=0, node=nid001840 **
+** MPI 0/4, NVSHMEM 0/4,device name: Q bus id: 128, ndevices=5454,cur=0, node=nid001820 **
+** MPI 1/4, NVSHMEM 1/4,device name: Q bus id: 128, ndevices=5357,cur=1, node=nid001840 **
+** MPI 2/4, NVSHMEM 2/4,device name: Q bus id: 128, ndevices=5287,cur=2, node=nid001840 **
+** MPI 3/4, NVSHMEM 3/4,device name: Q bus id: 128, ndevices=5416,cur=3, node=nid001840 **
+** MPI 1/4, NVSHMEM 1/4,device name: Q bus id: 128, ndevices=5394,cur=1, node=nid001820 **
+** MPI 2/4, NVSHMEM 2/4,device name: Q bus id: 128, ndevices=5417,cur=2, node=nid001820 **
+** MPI 3/4, NVSHMEM 3/4,device name: Q bus id: 128, ndevices=5238,cur=3, node=nid001820 **
+** MPI 0/4, NVSHMEM 0/4,device name: Q bus id: 128, ndevices=5359,cur=0, node=nid001657 **
+** MPI 0/4, NVSHMEM 0/4,device name: Q bus id: 128, ndevices=5293,cur=0, node=nid002681 **
+** MPI 1/4, NVSHMEM 1/4,device name: Q bus id: 128, ndevices=5324,cur=1, node=nid001657 **
+** MPI 1/4, NVSHMEM 1/4,device name: Q bus id: 128, ndevices=5313,cur=1, node=nid002681 **
+** MPI 2/4, NVSHMEM 2/4,device name: Q bus id: 128, ndevices=5245,cur=2, node=nid001657 **
+** MPI 2/4, NVSHMEM 2/4,device name: Q bus id: 128, ndevices=5448,cur=2, node=nid002681 **
+** MPI 3/4, NVSHMEM 3/4,device name: Q bus id: 128, ndevices=5341,cur=3, node=nid001657 **
+** MPI 3/4, NVSHMEM 3/4,device name: Q bus id: 128, ndevices=5299,cur=3, node=nid002681 **
+** MPI 0/4, NVSHMEM 0/4,device name: Q bus id: 128, ndevices=5295,cur=0, node=nid001609 **
+** MPI 0/4, NVSHMEM 0/4,device name: Q bus id: 128, ndevices=5378,cur=0, node=nid001621 **
+** MPI 0/4, NVSHMEM 0/4,device name: Q bus id: 128, ndevices=5317,cur=0, node=nid001564 **
+** MPI 0/4, NVSHMEM 0/4,device name: Q bus id: 128, ndevices=5327,cur=0, node=nid001552 **
+** MPI 1/4, NVSHMEM 1/4,device name: Q bus id: 128, ndevices=5416,cur=1, node=nid001609 **
+** MPI 1/4, NVSHMEM 1/4,device name: Q bus id: 128, ndevices=5273,cur=1, node=nid001564 **
+** MPI 2/4, NVSHMEM 2/4,device name: Q bus id: 128, ndevices=5451,cur=2, node=nid001609 **
+** MPI 1/4, NVSHMEM 1/4,device name: Q bus id: 128, ndevices=5363,cur=1, node=nid001621 **
+** MPI 2/4, NVSHMEM 2/4,device name: Q bus id: 128, ndevices=5242,cur=2, node=nid001564 **
+** MPI 3/4, NVSHMEM 3/4,device name: Q bus id: 128, ndevices=5329,cur=3, node=nid001609 **
+** MPI 2/4, NVSHMEM 2/4,device name: Q bus id: 128, ndevices=5246,cur=2, node=nid001621 **
+** MPI 3/4, NVSHMEM 3/4,device name: Q bus id: 128, ndevices=5444,cur=3, node=nid001564 **
+** MPI 3/4, NVSHMEM 3/4,device name: Q bus id: 128, ndevices=5403,cur=3, node=nid001621 **
+** MPI 1/4, NVSHMEM 1/4,device name: Q bus id: 128, ndevices=5313,cur=1, node=nid001552 **
+** MPI 2/4, NVSHMEM 2/4,device name: Q bus id: 128, ndevices=5219,cur=2, node=nid001552 **
+** MPI 3/4, NVSHMEM 3/4,device name: Q bus id: 128, ndevices=5424,cur=3, node=nid001552 **
+** MPI 0/4, NVSHMEM 0/4,device name: Q bus id: 128, ndevices=5438,cur=0, node=nid008264 **
+** MPI 0/4, NVSHMEM 0/4,device name: Q bus id: 128, ndevices=5385,cur=0, node=nid008441 **
+** MPI 0/4, NVSHMEM 0/4,device name: Q bus id: 128, ndevices=5299,cur=0, node=nid002685 **
+** MPI 0/4, NVSHMEM 0/4,device name: Q bus id: 128, ndevices=5290,cur=0, node=nid008316 **
+** MPI 0/4, NVSHMEM 0/4,device name: Q bus id: 128, ndevices=5415,cur=0, node=nid008449 **
+** MPI 0/4, NVSHMEM 0/4,device name: Q bus id: 128, ndevices=5335,cur=0, node=nid008480 **
+** MPI 0/4, NVSHMEM 0/4,device name: Q bus id: 128, ndevices=5308,cur=0, node=nid004029 **
+** MPI 0/4, NVSHMEM 0/4,device name: Q bus id: 128, ndevices=5339,cur=0, node=nid008425 **
+** MPI 0/4, NVSHMEM 0/4,device name: Q bus id: 128, ndevices=5397,cur=0, node=nid003260 **
+** MPI 0/4, NVSHMEM 0/4,device name: Q bus id: 128, ndevices=5404,cur=0, node=nid003705 **
+** MPI 0/4, NVSHMEM 0/4,device name: Q bus id: 128, ndevices=5349,cur=0, node=nid008393 **
+** MPI 0/4, NVSHMEM 0/4,device name: Q bus id: 128, ndevices=5409,cur=0, node=nid008445 **
+** MPI 0/4, NVSHMEM 0/4,device name: Q bus id: 128, ndevices=5218,cur=0, node=nid008317 **
+** MPI 1/4, NVSHMEM 1/4,device name: Q bus id: 128, ndevices=5344,cur=1, node=nid008441 **
+** MPI 1/4, NVSHMEM 1/4,device name: Q bus id: 128, ndevices=5425,cur=1, node=nid008316 **
+** MPI 1/4, NVSHMEM 1/4,device name: Q bus id: 128, ndevices=5428,cur=1, node=nid008449 **
+** MPI 1/4, NVSHMEM 1/4,device name: Q bus id: 128, ndevices=5405,cur=1, node=nid008480 **
+** MPI 1/4, NVSHMEM 1/4,device name: Q bus id: 128, ndevices=5354,cur=1, node=nid004029 **
+** MPI 1/4, NVSHMEM 1/4,device name: Q bus id: 128, ndevices=5317,cur=1, node=nid008425 **
+** MPI 1/4, NVSHMEM 1/4,device name: Q bus id: 128, ndevices=5425,cur=1, node=nid003260 **
+** MPI 1/4, NVSHMEM 1/4,device name: Q bus id: 128, ndevices=5206,cur=1, node=nid003705 **
+** MPI 1/4, NVSHMEM 1/4,device name: Q bus id: 128, ndevices=5252,cur=1, node=nid008445 **
+** MPI 1/4, NVSHMEM 1/4,device name: Q bus id: 128, ndevices=5222,cur=1, node=nid008317 **
+** MPI 2/4, NVSHMEM 2/4,device name: Q bus id: 128, ndevices=5298,cur=2, node=nid008441 **
+** MPI 2/4, NVSHMEM 2/4,device name: Q bus id: 128, ndevices=5440,cur=2, node=nid008316 **
+** MPI 2/4, NVSHMEM 2/4,device name: Q bus id: 128, ndevices=5427,cur=2, node=nid008449 **
+** MPI 2/4, NVSHMEM 2/4,device name: Q bus id: 128, ndevices=5379,cur=2, node=nid008480 **
+** MPI 2/4, NVSHMEM 2/4,device name: Q bus id: 128, ndevices=5277,cur=2, node=nid004029 **
+** MPI 2/4, NVSHMEM 2/4,device name: Q bus id: 128, ndevices=5286,cur=2, node=nid008425 **
+** MPI 0/4, NVSHMEM 0/4,device name: Q bus id: 128, ndevices=5396,cur=0, node=nid008404 **
+** MPI 2/4, NVSHMEM 2/4,device name: Q bus id: 128, ndevices=5303,cur=2, node=nid003260 **
+** MPI 2/4, NVSHMEM 2/4,device name: Q bus id: 128, ndevices=5257,cur=2, node=nid003705 **
+** MPI 0/4, NVSHMEM 0/4,device name: Q bus id: 128, ndevices=5400,cur=0, node=nid002684 **
+** MPI 0/4, NVSHMEM 0/4,device name: Q bus id: 128, ndevices=5449,cur=0, node=nid008476 **
+** MPI 2/4, NVSHMEM 2/4,device name: Q bus id: 128, ndevices=5393,cur=2, node=nid008445 **
+** MPI 2/4, NVSHMEM 2/4,device name: Q bus id: 128, ndevices=5217,cur=2, node=nid008317 **
+** MPI 1/4, NVSHMEM 1/4,device name: Q bus id: 128, ndevices=5223,cur=1, node=nid008264 **
+** MPI 3/4, NVSHMEM 3/4,device name: Q bus id: 128, ndevices=5257,cur=3, node=nid008441 **
+** MPI 1/4, NVSHMEM 1/4,device name: Q bus id: 128, ndevices=5434,cur=1, node=nid002685 **
+** MPI 3/4, NVSHMEM 3/4,device name: Q bus id: 128, ndevices=5207,cur=3, node=nid008316 **
+** MPI 3/4, NVSHMEM 3/4,device name: Q bus id: 128, ndevices=5312,cur=3, node=nid008449 **
+** MPI 3/4, NVSHMEM 3/4,device name: Q bus id: 128, ndevices=5445,cur=3, node=nid008480 **
+** MPI 3/4, NVSHMEM 3/4,device name: Q bus id: 128, ndevices=5258,cur=3, node=nid004029 **
+** MPI 3/4, NVSHMEM 3/4,device name: Q bus id: 128, ndevices=5409,cur=3, node=nid008425 **
+** MPI 3/4, NVSHMEM 3/4,device name: Q bus id: 128, ndevices=5381,cur=3, node=nid003260 **
+** MPI 3/4, NVSHMEM 3/4,device name: Q bus id: 128, ndevices=5240,cur=3, node=nid003705 **
+** MPI 1/4, NVSHMEM 1/4,device name: Q bus id: 128, ndevices=5353,cur=1, node=nid008393 **
+** MPI 3/4, NVSHMEM 3/4,device name: Q bus id: 128, ndevices=5350,cur=3, node=nid008445 **
+** MPI 3/4, NVSHMEM 3/4,device name: Q bus id: 128, ndevices=5297,cur=3, node=nid008317 **
+** MPI 2/4, NVSHMEM 2/4,device name: Q bus id: 128, ndevices=5211,cur=2, node=nid008264 **
+** MPI 2/4, NVSHMEM 2/4,device name: Q bus id: 128, ndevices=5248,cur=2, node=nid002685 **
+** MPI 2/4, NVSHMEM 2/4,device name: Q bus id: 128, ndevices=5315,cur=2, node=nid008393 **
+** MPI 3/4, NVSHMEM 3/4,device name: Q bus id: 128, ndevices=5348,cur=3, node=nid008264 **
+** MPI 3/4, NVSHMEM 3/4,device name: Q bus id: 128, ndevices=5298,cur=3, node=nid002685 **
+** MPI 3/4, NVSHMEM 3/4,device name: Q bus id: 128, ndevices=5294,cur=3, node=nid008393 **
+** MPI 1/4, NVSHMEM 1/4,device name: Q bus id: 128, ndevices=5414,cur=1, node=nid002684 **
+** MPI 1/4, NVSHMEM 1/4,device name: Q bus id: 128, ndevices=5399,cur=1, node=nid008476 **
+** MPI 1/4, NVSHMEM 1/4,device name: Q bus id: 128, ndevices=5343,cur=1, node=nid008404 **
+** MPI 2/4, NVSHMEM 2/4,device name: Q bus id: 128, ndevices=5309,cur=2, node=nid002684 **
+** MPI 2/4, NVSHMEM 2/4,device name: Q bus id: 128, ndevices=5443,cur=2, node=nid008476 **
+** MPI 2/4, NVSHMEM 2/4,device name: Q bus id: 128, ndevices=5389,cur=2, node=nid008404 **
+** MPI 3/4, NVSHMEM 3/4,device name: Q bus id: 128, ndevices=5396,cur=3, node=nid002684 **
+** MPI 3/4, NVSHMEM 3/4,device name: Q bus id: 128, ndevices=5372,cur=3, node=nid008476 **
+** MPI 3/4, NVSHMEM 3/4,device name: Q bus id: 128, ndevices=5375,cur=3, node=nid008404 **
+after 3D initialization.
+.. Starting with 1 openMP threads 
+MPI tag upper bound = 33554431
+Total time in factorization 	:  4.82
+MPI-communication phase 	:  3.04
+|Wait_LSend             	|     0.0001 	|     0.0001 	|     0.0001 	|     1.1213%| Seconds|
+|Wait_USend             	|     0.0534 	|     0.0430 	|     0.0686 	|    18.0926%| Seconds|
+|Wait_URecv             	|     0.3556 	|     0.2801 	|     0.4499 	|    18.0640%| Seconds|
+|Wait_LRecv             	|     0.0000 	|     0.0000 	|     0.0000 	|       -nan%| Seconds|
+|L_PanelUpdate          	|     0.0000 	|     0.0000 	|     0.0000 	|       -nan%| Seconds|
+|PDGSTRS2               	|     0.0000 	|     0.0000 	|     0.0000 	|       -nan%| Seconds|
+|wait-FunCallStream     	|     0.0000 	|     0.0000 	|     0.0000 	|       -nan%| Seconds|
+|wait-copyStream        	|     0.0000 	|     0.0000 	|     0.0000 	|       -nan%| Seconds|
+|waitGPU2CPU            	|     0.0000 	|     0.0000 	|     0.0000 	|       -nan%| Seconds|
+|SchurCompUpdate        	|     1.7797 	|     1.6293 	|     1.8804 	|     5.9822%| Seconds|
+|PanelFactorization     	|     3.0376 	|     2.9368 	|     3.1880 	|     3.5050%| Seconds|
+#### High Level Time Breakdown :     4.9067 
+
+|Function name 	| avg 	| min 	| max 	| std-dev| units|
+|---|---|---|---|---|---|
+|Startup                	|     0.0894 	|     0.0675 	|     0.0994 	|    14.2966%| Seconds|
+|Main-Factor loop       	|     4.8173 	|     4.8173 	|     4.8173 	|     0.0000%| Seconds|
+|3D-GatherLU            	|     0.0000 	|     0.0000 	|     0.0000 	|    38.9533%| Seconds|
+|tTotal                 	|     4.9067 	|     4.8847 	|     4.9166 	|     0.2606%| Seconds|
+#### Components of Factor Loop :     4.8173 
+
+|Function name 	| avg 	| min 	| max 	| std-dev| units|
+|---|---|---|---|---|---|
+|3D-AncestorReduce      	|     2.6174 	|     2.5806 	|     2.6329 	|     0.8186%| Seconds|
+|Pipeline Tail          	|     0.4029 	|     0.2859 	|     0.5947 	|    31.3665%| Seconds|
+|Grid-0 Factor:Level-0     	|     0.0809 	|     0.0780 	|     0.0856 	|     3.7427%| Seconds|
+|Grid-0 Factor:Level-1     	|     0.3536 	|     0.3466 	|     0.3701 	|     2.7129%| Seconds|
+|Grid-0 Factor:Level-2     	|     0.3267 	|     0.3220 	|     0.3291 	|     0.8470%| Seconds|
+|Grid-0 Factor:Level-3     	|     0.6710 	|     0.6598 	|     0.6888 	|     1.6283%| Seconds|
+|Grid-0 Factor:Level-4     	|     0.2942 	|     0.2889 	|     0.3004 	|     1.3987%| Seconds|
+|Grid-0 Factor:Level-5     	|     0.4735 	|     0.4699 	|     0.4762 	|     0.4900%| Seconds|
+| commVolRed | 1.77905e+10   | 1.38988e+08 |
+| commVolFactor | 1.3498e+10   | 1.05453e+08 |
+| Total Memory 	| 1.1e+08  	| 2e+08  	|6.5e+07  	|
+| LU-LU(repli) 	| 5.7e+07  	| 5.3e+07  	|
+|Forest | weight | cost | weight/Cost | 
+|0   | 5.24e+08   | 7.80e-02   | 6.71e+00  |
+|1   | 3.81e+09   | 3.47e-01   | 1.10e+01  |
+|2   | 3.56e+09   | 3.51e-01   | 1.02e+01  |
+|3   | 3.59e+09   | 3.22e-01   | 1.12e+01  |
+|4   | 1.40e+10   | 1.13e+00   | 1.24e+01  |
+|5   | 2.97e+09   | 2.99e-01   | 9.93e+00  |
+|6   | 1.15e+10   | 9.74e-01   | 1.18e+01  |
+|7   | 8.41e+09   | 6.70e-01   | 1.26e+01  |
+|8   | 1.95e+09   | 2.06e-01   | 9.45e+00  |
+|9   | 7.51e+09   | 6.45e-01   | 1.16e+01  |
+|10   | 5.69e+09   | 4.85e-01   | 1.17e+01  |
+|11   | 4.93e+09   | 4.44e-01   | 1.11e+01  |
+|12   | 2.96e+09   | 2.73e-01   | 1.08e+01  |
+|13   | 1.41e+10   | 1.09e+00   | 1.29e+01  |
+|14   | 7.24e+09   | 6.11e-01   | 1.18e+01  |
+|15   | 3.27e+09   | 3.00e-01   | 1.09e+01  |
+|16   | 4.95e+09   | 4.19e-01   | 1.18e+01  |
+|17   | 2.28e+09   | 2.24e-01   | 1.02e+01  |
+|18   | 2.10e+09   | 2.13e-01   | 9.84e+00  |
+|19   | 3.47e+09   | 3.13e-01   | 1.11e+01  |
+|20   | 1.82e+09   | 1.81e-01   | 1.01e+01  |
+|21   | 2.16e+09   | 2.20e-01   | 9.80e+00  |
+|22   | 2.01e+09   | 1.99e-01   | 1.01e+01  |
+|23   | 2.03e+09   | 1.85e-01   | 1.10e+01  |
+|24   | 2.28e+09   | 2.20e-01   | 1.04e+01  |
+|25   | 2.56e+09   | 2.60e-01   | 9.82e+00  |
+|26   | 1.99e+09   | 1.99e-01   | 9.99e+00  |
+|27   | 4.83e+09   | 4.13e-01   | 1.17e+01  |
+|28   | 7.55e+09   | 6.57e-01   | 1.15e+01  |
+|29   | 4.12e+09   | 3.72e-01   | 1.11e+01  |
+|30   | 1.13e+09   | 1.19e-01   | 9.50e+00  |
+|31   | 3.68e+09   | 4.75e-01   | 7.75e+00  |
+|32   | 3.88e+09   | 5.32e-01   | 7.29e+00  |
+|33   | 9.44e+09   | 1.08e+00   | 8.77e+00  |
+|34   | 4.39e+09   | 6.17e-01   | 7.11e+00  |
+|35   | 7.87e+09   | 1.05e+00   | 7.51e+00  |
+|36   | 5.34e+09   | 7.38e-01   | 7.24e+00  |
+|37   | 6.75e+09   | 8.52e-01   | 7.92e+00  |
+|38   | 8.64e+09   | 1.11e+00   | 7.78e+00  |
+|39   | 6.26e+09   | 7.77e-01   | 8.06e+00  |
+|40   | 4.43e+09   | 6.26e-01   | 7.09e+00  |
+|41   | 2.72e+09   | 4.14e-01   | 6.58e+00  |
+|42   | 5.07e+09   | 6.52e-01   | 7.77e+00  |
+|43   | 3.43e+09   | 4.81e-01   | 7.13e+00  |
+|44   | 6.01e+09   | 8.00e-01   | 7.51e+00  |
+|45   | 4.81e+09   | 6.42e-01   | 7.49e+00  |
+|46   | 5.07e+09   | 6.81e-01   | 7.44e+00  |
+|47   | 3.15e+09   | 4.37e-01   | 7.19e+00  |
+|48   | 4.37e+09   | 5.92e-01   | 7.39e+00  |
+|49   | 4.88e+09   | 6.06e-01   | 8.05e+00  |
+|50   | 4.63e+09   | 6.18e-01   | 7.49e+00  |
+|51   | 2.88e+09   | 4.04e-01   | 7.13e+00  |
+|52   | 6.06e+09   | 7.91e-01   | 7.66e+00  |
+|53   | 3.28e+09   | 4.50e-01   | 7.27e+00  |
+|54   | 3.44e+09   | 4.71e-01   | 7.31e+00  |
+|55   | 5.54e+09   | 7.05e-01   | 7.85e+00  |
+|56   | 8.13e+09   | 9.69e-01   | 8.39e+00  |
+|57   | 1.34e+10   | 1.62e+00   | 8.25e+00  |
+|58   | 7.87e+09   | 1.04e+00   | 7.60e+00  |
+|59   | 6.49e+09   | 8.33e-01   | 7.79e+00  |
+|60   | 4.49e+09   | 5.84e-01   | 7.69e+00  |
+|61   | 2.80e+09   | 4.40e-01   | 6.35e+00  |
+|62   | 5.52e+09   | 7.00e-01   | 7.89e+00  |
+|CritcalPath   | 5.06e+10   | 4.77e+00   | 1.06e+01  |
+|Pearsoncoefficient |  -0.005 |
+
+~~~mermaid 
+
+gantt 
+        		 dateFormat  mm-ss 
+       		 title TreeCost and Time Gantt Chart
+
+
+	 Section Time
+	 tree-31 	:Time-31, 0d, 47d 
+	 tree-15  83 	:Time-15, after Time-32, 30d 
+	 tree-32 	:Time-32, 0d, 53d 
+	 tree-7  2.2e+02 	:Time-7, after Time-16, 67d 
+	 tree-33 	:Time-33, 0d, 108d 
+	 tree-16  1.5e+02 	:Time-16, after Time-33, 42d 
+	 tree-34 	:Time-34, 0d, 62d 
+	 tree-3  2.5e+02 	:Time-3, after Time-7, 32d 
+	 tree-35 	:Time-35, 0d, 105d 
+	 tree-17  1.3e+02 	:Time-17, after Time-35, 22d 
+	 tree-36 	:Time-36, 0d, 74d 
+	 tree-8  1.5e+02 	:Time-8, after Time-18, 21d 
+	 tree-37 	:Time-37, 0d, 85d 
+	 tree-18  1.3e+02 	:Time-18, after Time-38, 21d 
+	 tree-38 	:Time-38, 0d, 111d 
+	 tree-1  3.2e+02 	:Time-1, after Time-4, 35d 
+	 tree-39 	:Time-39, 0d, 78d 
+	 tree-19  1.1e+02 	:Time-19, after Time-39, 31d 
+	 tree-40 	:Time-40, 0d, 63d 
+	 tree-9  1.7e+02 	:Time-9, after Time-19, 64d 
+	 tree-41 	:Time-41, 0d, 41d 
+	 tree-20  83 	:Time-20, after Time-42, 18d 
+	 tree-42 	:Time-42, 0d, 65d 
+	 tree-4  2.9e+02 	:Time-4, after Time-9, 113d 
+	 tree-43 	:Time-43, 0d, 48d 
+	 tree-21  1e+02 	:Time-21, after Time-44, 22d 
+	 tree-44 	:Time-44, 0d, 80d 
+	 tree-10  1.5e+02 	:Time-10, after Time-21, 48d 
+	 tree-45 	:Time-45, 0d, 64d 
+	 tree-22  88 	:Time-22, after Time-46, 20d 
+	 tree-46 	:Time-46, 0d, 68d 
+	 tree-0  4.8e+02 	:Time-0, after Time-2, 8d 
+	 tree-47 	:Time-47, 0d, 44d 
+	 tree-23  78 	:Time-23, after Time-48, 18d 
+	 tree-48 	:Time-48, 0d, 59d 
+	 tree-11  1.3e+02 	:Time-11, after Time-24, 44d 
+	 tree-49 	:Time-49, 0d, 61d 
+	 tree-24  84 	:Time-24, after Time-50, 22d 
+	 tree-50 	:Time-50, 0d, 62d 
+	 tree-5  1.6e+02 	:Time-5, after Time-12, 30d 
+	 tree-51 	:Time-51, 0d, 40d 
+	 tree-25  1.1e+02 	:Time-25, after Time-52, 26d 
+	 tree-52 	:Time-52, 0d, 79d 
+	 tree-12  1.3e+02 	:Time-12, after Time-25, 27d 
+	 tree-53 	:Time-53, 0d, 45d 
+	 tree-26  67 	:Time-26, after Time-54, 20d 
+	 tree-54 	:Time-54, 0d, 47d 
+	 tree-2  4.7e+02 	:Time-2, after Time-6, 35d 
+	 tree-55 	:Time-55, 0d, 71d 
+	 tree-27  1.4e+02 	:Time-27, after Time-56, 41d 
+	 tree-56 	:Time-56, 0d, 97d 
+	 tree-13  3.4e+02 	:Time-13, after Time-28, 109d 
+	 tree-57 	:Time-57, 0d, 162d 
+	 tree-28  2.3e+02 	:Time-28, after Time-57, 66d 
+	 tree-58 	:Time-58, 0d, 104d 
+	 tree-6  4.3e+02 	:Time-6, after Time-13, 97d 
+	 tree-59 	:Time-59, 0d, 83d 
+	 tree-29  1.2e+02 	:Time-29, after Time-59, 37d 
+	 tree-60 	:Time-60, 0d, 58d 
+	 tree-14  1.8e+02 	:Time-14, after Time-29, 61d 
+	 tree-61 	:Time-61, 0d, 44d 
+	 tree-30  82 	:Time-30, after Time-62, 12d 
+	 tree-62 	:Time-62, 0d, 70d 
+	 Section Weight
+	 tree-31 	:weight-31, 0d, 35d 
+	 tree-15  67 	:weight-15, after weight-32, 31d 
+	 tree-32 	:weight-32, 0d, 37d 
+	 tree-7  2.2e+02 	:weight-7, after weight-16, 79d 
+	 tree-33 	:weight-33, 0d, 89d 
+	 tree-16  1.4e+02 	:weight-16, after weight-33, 47d 
+	 tree-34 	:weight-34, 0d, 41d 
+	 tree-3  2.5e+02 	:weight-3, after weight-7, 34d 
+	 tree-35 	:weight-35, 0d, 74d 
+	 tree-17  96 	:weight-17, after weight-35, 22d 
+	 tree-36 	:weight-36, 0d, 50d 
+	 tree-8  1.2e+02 	:weight-8, after weight-18, 18d 
+	 tree-37 	:weight-37, 0d, 64d 
+	 tree-18  1e+02 	:weight-18, after weight-38, 20d 
+	 tree-38 	:weight-38, 0d, 82d 
+	 tree-1  3.3e+02 	:weight-1, after weight-4, 36d 
+	 tree-39 	:weight-39, 0d, 59d 
+	 tree-19  92 	:weight-19, after weight-39, 33d 
+	 tree-40 	:weight-40, 0d, 42d 
+	 tree-9  1.6e+02 	:weight-9, after weight-19, 71d 
+	 tree-41 	:weight-41, 0d, 26d 
+	 tree-20  65 	:weight-20, after weight-42, 17d 
+	 tree-42 	:weight-42, 0d, 48d 
+	 tree-4  2.9e+02 	:weight-4, after weight-9, 132d 
+	 tree-43 	:weight-43, 0d, 32d 
+	 tree-21  77 	:weight-21, after weight-44, 20d 
+	 tree-44 	:weight-44, 0d, 57d 
+	 tree-10  1.3e+02 	:weight-10, after weight-21, 54d 
+	 tree-45 	:weight-45, 0d, 45d 
+	 tree-22  67 	:weight-22, after weight-46, 19d 
+	 tree-46 	:weight-46, 0d, 48d 
+	 tree-0  4.8e+02 	:weight-0, after weight-2, 5d 
+	 tree-47 	:weight-47, 0d, 30d 
+	 tree-23  60 	:weight-23, after weight-48, 19d 
+	 tree-48 	:weight-48, 0d, 41d 
+	 tree-11  1.1e+02 	:weight-11, after weight-24, 46d 
+	 tree-49 	:weight-49, 0d, 46d 
+	 tree-24  65 	:weight-24, after weight-49, 22d 
+	 tree-50 	:weight-50, 0d, 44d 
+	 tree-5  1.4e+02 	:weight-5, after weight-11, 28d 
+	 tree-51 	:weight-51, 0d, 27d 
+	 tree-25  81 	:weight-25, after weight-52, 24d 
+	 tree-52 	:weight-52, 0d, 57d 
+	 tree-12  1.1e+02 	:weight-12, after weight-25, 28d 
+	 tree-53 	:weight-53, 0d, 31d 
+	 tree-26  51 	:weight-26, after weight-54, 19d 
+	 tree-54 	:weight-54, 0d, 32d 
+	 tree-2  4.7e+02 	:weight-2, after weight-6, 34d 
+	 tree-55 	:weight-55, 0d, 52d 
+	 tree-27  1.2e+02 	:weight-27, after weight-56, 46d 
+	 tree-56 	:weight-56, 0d, 77d 
+	 tree-13  3.3e+02 	:weight-13, after weight-28, 133d 
+	 tree-57 	:weight-57, 0d, 126d 
+	 tree-28  2e+02 	:weight-28, after weight-57, 71d 
+	 tree-58 	:weight-58, 0d, 74d 
+	 tree-6  4.4e+02 	:weight-6, after weight-13, 108d 
+	 tree-59 	:weight-59, 0d, 61d 
+	 tree-29  1e+02 	:weight-29, after weight-59, 39d 
+	 tree-60 	:weight-60, 0d, 42d 
+	 tree-14  1.7e+02 	:weight-14, after weight-29, 68d 
+	 tree-61 	:weight-61, 0d, 26d 
+	 tree-30  63 	:weight-30, after weight-62, 11d 
+	 tree-62 	:weight-62, 0d, 52d 
+~~~
+
+
+num_thread:     1
+.. GPU trisolve
+.. GPU trisolve
+.. GPU trisolve
+.. GPU trisolve
+.. GPU trisolve
+.. GPU trisolve
+.. GPU trisolve
+.. GPU trisolve
+.. GPU trisolve
+.. GPU trisolve
+.. GPU trisolve
+.. GPU trisolve
+.. GPU trisolve
+.. GPU trisolve
+.. GPU trisolve
+.. GPU trisolve
+.. GPU trisolve
+.. GPU trisolve
+.. GPU trisolve
+.. GPU trisolve
+.. GPU trisolve
+.. GPU trisolve
+.. GPU trisolve
+.. GPU trisolve
+.. GPU trisolve
+.. GPU trisolve
+.. GPU trisolve
+.. GPU trisolve
+.. GPU trisolve
+.. GPU trisolve
+.. GPU trisolve
+.. GPU trisolve
+|pxReDistribute_X_to_B 	|     0.0005 	|     0.0000 	|     0.0201 	|   583.2631%| seconds|
+|pxReDistribute_B_to_X 	|     0.0006 	|     0.0000 	|     0.0191 	|   553.2961%| seconds|
+|forwardSolve          	|     0.0087 	|     0.0075 	|     0.0175 	|    16.9684%| seconds|
+|forwardSolve-compute  	|     0.0000 	|     0.0000 	|     0.0000 	|       -nan%| seconds|
+|forwardSolve-comm     	|     0.0000 	|     0.0000 	|     0.0000 	|     4.9996%| seconds|
+|ForwardSolve:Level-0 	|     0.0000 	|     0.0000 	|     0.0000 	|       -nan%| seconds|
+|ForwardSolve:Level-1 	|     0.0000 	|     0.0000 	|     0.0000 	|       -nan%| seconds|
+|ForwardSolve:Level-2 	|     0.0000 	|     0.0000 	|     0.0000 	|       -nan%| seconds|
+|ForwardSolve:Level-3 	|     0.0000 	|     0.0000 	|     0.0000 	|       -nan%| seconds|
+|ForwardSolve:Level-4 	|     0.0000 	|     0.0000 	|     0.0000 	|       -nan%| seconds|
+|ForwardSolve:Level-5 	|     0.0087 	|     0.0075 	|     0.0175 	|    16.9750%| seconds|
+|backSolve             	|     0.0074 	|     0.0045 	|     0.0154 	|    39.6881%| seconds|
+|backSolve-compute     	|     0.0000 	|     0.0000 	|     0.0000 	|       -nan%| seconds|
+|backSolve-comm        	|     0.0000 	|     0.0000 	|     0.0000 	|    18.1702%| seconds|
+|BackSolve:Level-0    	|     0.0000 	|     0.0000 	|     0.0000 	|       -nan%| seconds|
+|BackSolve:Level-1    	|     0.0000 	|     0.0000 	|     0.0000 	|       -nan%| seconds|
+|BackSolve:Level-2    	|     0.0000 	|     0.0000 	|     0.0000 	|       -nan%| seconds|
+|BackSolve:Level-3    	|     0.0000 	|     0.0000 	|     0.0000 	|       -nan%| seconds|
+|BackSolve:Level-4    	|     0.0000 	|     0.0000 	|     0.0000 	|       -nan%| seconds|
+|BackSolve:Level-5    	|     0.0074 	|     0.0045 	|     0.0154 	|    39.7183%| seconds|
+|trs_comm_z            	|     0.0074 	|     0.0003 	|     0.0103 	|    41.6575%| seconds|
+|TRS-XY_CommVolume     	|     0.0337 	|     0.0230 	|     0.0612 	|    24.9719%| Mwords|
+|TRS-Z_CommVolume      	|     0.0247 	|     0.0041 	|     0.1426 	|   138.9873%| Mwords|
+|TRS-XYZ_CommVolume    	|     0.0585 	|     0.0272 	|     0.1690 	|    58.7447%| Mwords|
+.. DiagScale = 3
+.. Sol  0: ||X - Xtrue|| / ||X|| = 3.177398e-08	 max_i |x - xtrue|_i / |x|_i = 1.972681e-10
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+**************************************************
+**** Time (seconds) ****
+	EQUIL time            0.424
+	ROWPERM time          3.062
+	COLPERM time          6.928
+	SYMBFACT time         4.807
+	DISTRIBUTE time       4.509
+	FACTOR time           5.023
+	Factor flops	1.913732e+12	Mflops 	381030.97
+	SOLVE time            0.027
+	Solve flops	4.480263e+09	Mflops 	168054.25
+**************************************************
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries
+[CRAYBLAS_WARNING] Application linked against multiple cray-libsci libraries

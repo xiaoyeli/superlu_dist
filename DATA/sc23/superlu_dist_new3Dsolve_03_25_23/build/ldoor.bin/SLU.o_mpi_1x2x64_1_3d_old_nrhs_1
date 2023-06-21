@@ -1,0 +1,646 @@
+MPI_Query_thread with MPI_THREAD_MULTIPLE
+__STDC_VERSION__ 201112
+Library version:	8.1.2
+Input matrix file:	/global/cfs/cdirs/m2957/liuyangz/my_research/matrix/ldoor.bin
+3D process grid: 1 X 2 X 64
+fread n   952203	nnz 46522475
+# of doubles fread: 46522475
+Time to read and distribute matrix 0.52
+**************************************************
+.. blocking parameters from sp_ienv():
+**    relaxation                 : 60
+**    max supernode              : 256
+**    estimated fill ratio       : 5
+**    min GEMM m*k*n to use GPU  : 5000
+**************************************************
+**************************************************
+.. options:
+**    Fact                      :    0
+**    Equil                     :    1
+**    DiagInv                   :    1
+**    ParSymbFact               :    0
+**    ColPerm                   :    4
+**    RowPerm                   :    1
+**    ReplaceTinyPivot          :    1
+**    IterRefine                :    0
+**    Trans                     :    0
+**    SymPattern                :    0
+**    lookahead_etree           :    0
+**    Use_TensorCore            :    0
+**    Use 3D algorithm          :    1
+**    num_lookaheads            :   10
+** parameters that can be altered by environment variables:
+**    superlu_relax             :   60
+**    superlu_maxsup            :  256
+**    min GEMM m*k*n to use GPU : 5000
+**    GPU buffer size           :  256000000
+**    GPU streams               :    8
+**    estimated fill ratio      :    5
+**************************************************
+	Matrix size min_mn    952203
+	Nonzeros in L       159987432
+	Nonzeros in U       159987432
+	nonzeros in L+U     319022661
+	nonzeros in LSUB    47121004
+nnodes[i] =        921 but getCommonAncestorList returns          1. Something must be wrong!!! 
+nnodes[i] =        921 but getCommonAncestorList returns          1. Something must be wrong!!! 
+nnodes[i] =        921 but getCommonAncestorList returns          1. Something must be wrong!!! 
+nnodes[i] =        921 but getCommonAncestorList returns          1. Something must be wrong!!! 
+nnodes[i] =        921 but getCommonAncestorList returns          1. Something must be wrong!!! 
+nnodes[i] =        921 but getCommonAncestorList returns          1. Something must be wrong!!! 
+nnodes[i] =        921 but getCommonAncestorList returns          1. Something must be wrong!!! 
+nnodes[i] =        921 but getCommonAncestorList returns          1. Something must be wrong!!! 
+nnodes[i] =        921 but getCommonAncestorList returns          1. Something must be wrong!!! 
+nnodes[i] =        921 but getCommonAncestorList returns          1. Something must be wrong!!! 
+nnodes[i] =        921 but getCommonAncestorList returns          1. Something must be wrong!!! 
+nnodes[i] =        921 but getCommonAncestorList returns          1. Something must be wrong!!! 
+nnodes[i] =        921 but getCommonAncestorList returns          1. Something must be wrong!!! 
+nnodes[i] =        921 but getCommonAncestorList returns          1. Something must be wrong!!! 
+nnodes[i] =        921 but getCommonAncestorList returns          1. Something must be wrong!!! 
+nnodes[i] =        921 but getCommonAncestorList returns          1. Something must be wrong!!! 
+nnodes[i] =        921 but getCommonAncestorList returns          1. Something must be wrong!!! 
+nnodes[i] =        921 but getCommonAncestorList returns          1. Something must be wrong!!! 
+nnodes[i] =        921 but getCommonAncestorList returns          1. Something must be wrong!!! 
+nnodes[i] =        921 but getCommonAncestorList returns          1. Something must be wrong!!! 
+nnodes[i] =        921 but getCommonAncestorList returns          1. Something must be wrong!!! 
+nnodes[i] =        921 but getCommonAncestorList returns          1. Something must be wrong!!! 
+nnodes[i] =        921 but getCommonAncestorList returns          1. Something must be wrong!!! 
+nnodes[i] =        921 but getCommonAncestorList returns          1. Something must be wrong!!! 
+nnodes[i] =        921 but getCommonAncestorList returns          1. Something must be wrong!!! 
+nnodes[i] =        921 but getCommonAncestorList returns          1. Something must be wrong!!! 
+nnodes[i] =        921 but getCommonAncestorList returns          1. Something must be wrong!!! 
+nnodes[i] =        921 but getCommonAncestorList returns          1. Something must be wrong!!! 
+nnodes[i] =        921 but getCommonAncestorList returns          1. Something must be wrong!!! 
+nnodes[i] =        921 but getCommonAncestorList returns          1. Something must be wrong!!! 
+nnodes[i] =        921 but getCommonAncestorList returns          1. Something must be wrong!!! 
+nnodes[i] =        921 but getCommonAncestorList returns          1. Something must be wrong!!! 
+nnodes[i] =        921 but getCommonAncestorList returns          1. Something must be wrong!!! 
+nnodes[i] =        921 but getCommonAncestorList returns          1. Something must be wrong!!! 
+nnodes[i] =        921 but getCommonAncestorList returns          1. Something must be wrong!!! 
+nnodes[i] =        921 but getCommonAncestorList returns          1. Something must be wrong!!! 
+nnodes[i] =        921 but getCommonAncestorList returns          1. Something must be wrong!!! 
+nnodes[i] =        921 but getCommonAncestorList returns          1. Something must be wrong!!! 
+nnodes[i] =        921 but getCommonAncestorList returns          1. Something must be wrong!!! 
+nnodes[i] =        921 but getCommonAncestorList returns          1. Something must be wrong!!! 
+nnodes[i] =        921 but getCommonAncestorList returns          1. Something must be wrong!!! 
+nnodes[i] =        921 but getCommonAncestorList returns          1. Something must be wrong!!! 
+nnodes[i] =        921 but getCommonAncestorList returns          1. Something must be wrong!!! 
+nnodes[i] =        921 but getCommonAncestorList returns          1. Something must be wrong!!! 
+nnodes[i] =        921 but getCommonAncestorList returns          1. Something must be wrong!!! 
+nnodes[i] =        921 but getCommonAncestorList returns          1. Something must be wrong!!! 
+nnodes[i] =        921 but getCommonAncestorList returns          1. Something must be wrong!!! 
+nnodes[i] =        921 but getCommonAncestorList returns          1. Something must be wrong!!! 
+nnodes[i] =        921 but getCommonAncestorList returns          1. Something must be wrong!!! 
+nnodes[i] =        921 but getCommonAncestorList returns          1. Something must be wrong!!! 
+nnodes[i] =        921 but getCommonAncestorList returns          1. Something must be wrong!!! 
+nnodes[i] =        921 but getCommonAncestorList returns          1. Something must be wrong!!! 
+nnodes[i] =        921 but getCommonAncestorList returns          1. Something must be wrong!!! 
+nnodes[i] =        921 but getCommonAncestorList returns          1. Something must be wrong!!! 
+nnodes[i] =        921 but getCommonAncestorList returns          1. Something must be wrong!!! 
+nnodes[i] =        921 but getCommonAncestorList returns          1. Something must be wrong!!! 
+nnodes[i] =        921 but getCommonAncestorList returns          1. Something must be wrong!!! 
+nnodes[i] =        921 but getCommonAncestorList returns          1. Something must be wrong!!! 
+nnodes[i] =        921 but getCommonAncestorList returns          1. Something must be wrong!!! 
+nnodes[i] =        921 but getCommonAncestorList returns          1. Something must be wrong!!! 
+nnodes[i] =        921 but getCommonAncestorList returns          1. Something must be wrong!!! 
+nnodes[i] =        921 but getCommonAncestorList returns          1. Something must be wrong!!! 
+nnodes[i] =        921 but getCommonAncestorList returns          1. Something must be wrong!!! 
+nnodes[i] =        921 but getCommonAncestorList returns          1. Something must be wrong!!! 
+nnodes[i] =        921 but getCommonAncestorList returns          1. Something must be wrong!!! 
+nnodes[i] =        921 but getCommonAncestorList returns          1. Something must be wrong!!! 
+nnodes[i] =        921 but getCommonAncestorList returns          1. Something must be wrong!!! 
+nnodes[i] =        921 but getCommonAncestorList returns          1. Something must be wrong!!! 
+nnodes[i] =        921 but getCommonAncestorList returns          1. Something must be wrong!!! 
+nnodes[i] =        921 but getCommonAncestorList returns          1. Something must be wrong!!! 
+nnodes[i] =        921 but getCommonAncestorList returns          1. Something must be wrong!!! 
+nnodes[i] =        921 but getCommonAncestorList returns          1. Something must be wrong!!! 
+nnodes[i] =        921 but getCommonAncestorList returns          1. Something must be wrong!!! 
+nnodes[i] =        921 but getCommonAncestorList returns          1. Something must be wrong!!! 
+nnodes[i] =        921 but getCommonAncestorList returns          1. Something must be wrong!!! 
+nnodes[i] =        921 but getCommonAncestorList returns          1. Something must be wrong!!! 
+nnodes[i] =        921 but getCommonAncestorList returns          1. Something must be wrong!!! 
+nnodes[i] =        921 but getCommonAncestorList returns          1. Something must be wrong!!! 
+nnodes[i] =        921 but getCommonAncestorList returns          1. Something must be wrong!!! 
+nnodes[i] =        921 but getCommonAncestorList returns          1. Something must be wrong!!! 
+nnodes[i] =        921 but getCommonAncestorList returns          1. Something must be wrong!!! 
+nnodes[i] =        921 but getCommonAncestorList returns          1. Something must be wrong!!! 
+nnodes[i] =        921 but getCommonAncestorList returns          1. Something must be wrong!!! 
+nnodes[i] =        921 but getCommonAncestorList returns          1. Something must be wrong!!! 
+nnodes[i] =        921 but getCommonAncestorList returns          1. Something must be wrong!!! 
+nnodes[i] =        921 but getCommonAncestorList returns          1. Something must be wrong!!! 
+nnodes[i] =        921 but getCommonAncestorList returns          1. Something must be wrong!!! 
+nnodes[i] =        921 but getCommonAncestorList returns          1. Something must be wrong!!! 
+nnodes[i] =        921 but getCommonAncestorList returns          1. Something must be wrong!!! 
+nnodes[i] =        921 but getCommonAncestorList returns          1. Something must be wrong!!! 
+nnodes[i] =        921 but getCommonAncestorList returns          1. Something must be wrong!!! 
+nnodes[i] =        921 but getCommonAncestorList returns          1. Something must be wrong!!! 
+nnodes[i] =        921 but getCommonAncestorList returns          1. Something must be wrong!!! 
+nnodes[i] =        921 but getCommonAncestorList returns          1. Something must be wrong!!! 
+nnodes[i] =        921 but getCommonAncestorList returns          1. Something must be wrong!!! 
+nnodes[i] =        921 but getCommonAncestorList returns          1. Something must be wrong!!! 
+nnodes[i] =        921 but getCommonAncestorList returns          1. Something must be wrong!!! 
+nnodes[i] =        921 but getCommonAncestorList returns          1. Something must be wrong!!! 
+nnodes[i] =        921 but getCommonAncestorList returns          1. Something must be wrong!!! 
+nnodes[i] =        921 but getCommonAncestorList returns          1. Something must be wrong!!! 
+nnodes[i] =        921 but getCommonAncestorList returns          1. Something must be wrong!!! 
+nnodes[i] =        921 but getCommonAncestorList returns          1. Something must be wrong!!! 
+nnodes[i] =        921 but getCommonAncestorList returns          1. Something must be wrong!!! 
+nnodes[i] =        921 but getCommonAncestorList returns          1. Something must be wrong!!! 
+nnodes[i] =        921 but getCommonAncestorList returns          1. Something must be wrong!!! 
+nnodes[i] =        921 but getCommonAncestorList returns          1. Something must be wrong!!! 
+nnodes[i] =        921 but getCommonAncestorList returns          1. Something must be wrong!!! 
+nnodes[i] =        921 but getCommonAncestorList returns          1. Something must be wrong!!! 
+nnodes[i] =        921 but getCommonAncestorList returns          1. Something must be wrong!!! 
+nnodes[i] =        921 but getCommonAncestorList returns          1. Something must be wrong!!! 
+nnodes[i] =        921 but getCommonAncestorList returns          1. Something must be wrong!!! 
+nnodes[i] =        921 but getCommonAncestorList returns          1. Something must be wrong!!! 
+nnodes[i] =        921 but getCommonAncestorList returns          1. Something must be wrong!!! 
+nnodes[i] =        921 but getCommonAncestorList returns          1. Something must be wrong!!! 
+nnodes[i] =        921 but getCommonAncestorList returns          1. Something must be wrong!!! 
+nnodes[i] =        921 but getCommonAncestorList returns          1. Something must be wrong!!! 
+nnodes[i] =        921 but getCommonAncestorList returns          1. Something must be wrong!!! 
+nnodes[i] =        921 but getCommonAncestorList returns          1. Something must be wrong!!! 
+nnodes[i] =        921 but getCommonAncestorList returns          1. Something must be wrong!!! 
+nnodes[i] =        921 but getCommonAncestorList returns          1. Something must be wrong!!! 
+nnodes[i] =        921 but getCommonAncestorList returns          1. Something must be wrong!!! 
+nnodes[i] =        921 but getCommonAncestorList returns          1. Something must be wrong!!! 
+nnodes[i] =        921 but getCommonAncestorList returns          1. Something must be wrong!!! 
+nnodes[i] =        921 but getCommonAncestorList returns          1. Something must be wrong!!! 
+nnodes[i] =        921 but getCommonAncestorList returns          1. Something must be wrong!!! 
+nnodes[i] =        921 but getCommonAncestorList returns          1. Something must be wrong!!! 
+nnodes[i] =        921 but getCommonAncestorList returns          1. Something must be wrong!!! 
+nnodes[i] =        921 but getCommonAncestorList returns          1. Something must be wrong!!! 
+Total time in factorization 	:  0.58
+MPI-communication phase 	:  0.37
+|Wait_LSend             	|     0.0205 	|     0.0189 	|     0.0221 	|     7.6961%| Seconds|
+|Wait_USend             	|     0.0000 	|     0.0000 	|     0.0000 	|    18.3908%| Seconds|
+|Wait_URecv             	|     0.0000 	|     0.0000 	|     0.0000 	|       -nan%| Seconds|
+|Wait_LRecv             	|     0.0287 	|     0.0229 	|     0.0344 	|    20.0833%| Seconds|
+|L_PanelUpdate          	|     0.0000 	|     0.0000 	|     0.0000 	|       -nan%| Seconds|
+|PDGSTRS2               	|     0.0000 	|     0.0000 	|     0.0000 	|       -nan%| Seconds|
+|wait-FunCallStream     	|     0.0000 	|     0.0000 	|     0.0000 	|       -nan%| Seconds|
+|wait-copyStream        	|     0.0000 	|     0.0000 	|     0.0000 	|       -nan%| Seconds|
+|waitGPU2CPU            	|     0.0000 	|     0.0000 	|     0.0000 	|       -nan%| Seconds|
+|SchurCompUpdate        	|     0.2102 	|     0.1894 	|     0.2310 	|     9.9011%| Seconds|
+|PanelFactorization     	|     0.3721 	|     0.3513 	|     0.3929 	|     5.5935%| Seconds|
+#### High Level Time Breakdown :     0.9200 
+
+|Function name 	| avg 	| min 	| max 	| std-dev| units|
+|---|---|---|---|---|---|
+|Startup                	|     0.3376 	|     0.0156 	|     0.6597 	|    95.3925%| Seconds|
+|Main-Factor loop       	|     0.5824 	|     0.5824 	|     0.5824 	|     0.0001%| Seconds|
+|3D-GatherLU            	|     0.0000 	|     0.0000 	|     0.0000 	|       -nan%| Seconds|
+|tTotal                 	|     0.9200 	|     0.5979 	|     1.2420 	|    35.0083%| Seconds|
+#### Components of Factor Loop :     0.5824 
+
+|Function name 	| avg 	| min 	| max 	| std-dev| units|
+|---|---|---|---|---|---|
+|3D-AncestorReduce      	|     0.1022 	|     0.0975 	|     0.1069 	|     4.5869%| Seconds|
+|Pipeline Tail          	|     0.1288 	|     0.1091 	|     0.1485 	|    15.2929%| Seconds|
+|Grid-0 Factor:Level-0     	|     0.0565 	|     0.0562 	|     0.0568 	|     0.5233%| Seconds|
+|Grid-0 Factor:Level-1     	|     0.0947 	|     0.0939 	|     0.0954 	|     0.7956%| Seconds|
+|Grid-0 Factor:Level-2     	|     0.0650 	|     0.0642 	|     0.0658 	|     1.2009%| Seconds|
+|Grid-0 Factor:Level-3     	|     0.0734 	|     0.0726 	|     0.0742 	|     1.0394%| Seconds|
+|Grid-0 Factor:Level-4     	|     0.0203 	|     0.0177 	|     0.0230 	|    12.9862%| Seconds|
+|Grid-0 Factor:Level-5     	|     0.0049 	|     0.0047 	|     0.0050 	|     3.6663%| Seconds|
+|Grid-0 Factor:Level-6     	|     0.1653 	|     0.1652 	|     0.1655 	|     0.0787%| Seconds|
+| commVolRed | 4.07664e+09   | 3.18488e+07 |
+| commVolFactor | 9.74474e+08   | 7.61308e+06 |
+| Total Memory 	| 4.1e+07  	| 5.7e+07  	|2.5e+07  	|
+| LU-LU(repli) 	| 1.6e+07  	| 2.5e+07  	|
+|Forest | weight | cost | weight/Cost | 
+|0   | 5.73e+08   | 2.04e+06   | 2.80e-07  |
+|1   | 1.23e+09   | 4.09e+00   | 3.01e-01  |
+|2   | 8.05e+08   | 4.06e+00   | 1.98e-01  |
+|3   | 8.34e+08   | 4.06e+00   | 2.05e-01  |
+|4   | 1.29e+09   | 4.09e+00   | 3.16e-01  |
+|5   | 4.78e+08   | 4.04e+00   | 1.18e-01  |
+|6   | 9.43e+08   | 4.07e+00   | 2.32e-01  |
+|7   | 9.78e+08   | 4.07e+00   | 2.40e-01  |
+|8   | 4.01e+08   | 3.03e+00   | 1.32e-01  |
+|9   | 4.04e+08   | 4.03e+00   | 1.00e-01  |
+|10   | 2.97e+08   | 3.02e+00   | 9.84e-02  |
+|11   | 3.72e+08   | 4.03e+00   | 9.22e-02  |
+|12   | 5.75e+08   | 3.05e+00   | 1.89e-01  |
+|13   | 5.10e+08   | 4.04e+00   | 1.26e-01  |
+|14   | 5.41e+08   | 4.04e+00   | 1.34e-01  |
+|15   | 2.12e+08   | 4.02e+00   | 5.28e-02  |
+|16   | 5.40e+08   | 4.04e+00   | 1.33e-01  |
+|17   | 1.82e+08   | 3.02e+00   | 6.02e-02  |
+|18   | 2.04e+08   | 4.02e+00   | 5.07e-02  |
+|19   | 4.50e+08   | 4.04e+00   | 1.11e-01  |
+|20   | 2.48e+08   | 4.02e+00   | 6.18e-02  |
+|21   | 3.31e+08   | 3.03e+00   | 1.09e-01  |
+|22   | 2.83e+08   | 4.03e+00   | 7.02e-02  |
+|23   | 1.91e+08   | 4.02e+00   | 4.75e-02  |
+|24   | 2.50e+08   | 4.02e+00   | 6.21e-02  |
+|25   | 5.45e+08   | 3.05e+00   | 1.79e-01  |
+|26   | 4.07e+08   | 4.03e+00   | 1.01e-01  |
+|27   | 3.53e+08   | 4.03e+00   | 8.76e-02  |
+|28   | 4.04e+08   | 4.04e+00   | 1.00e-01  |
+|29   | 2.15e+08   | 4.02e+00   | 5.35e-02  |
+|30   | 5.66e+08   | 4.04e+00   | 1.40e-01  |
+|31   | 6.41e+07   | 4.00e+00   | 1.60e-02  |
+|32   | 1.60e+08   | 4.01e+00   | 3.99e-02  |
+|33   | 1.67e+08   | 4.02e+00   | 4.16e-02  |
+|34   | 8.27e+07   | 4.01e+00   | 2.06e-02  |
+|35   | 6.80e+07   | 3.01e+00   | 2.26e-02  |
+|36   | 8.73e+07   | 4.03e+00   | 2.17e-02  |
+|37   | 1.03e+08   | 9.34e-03   | 1.10e+01  |
+|38   | 1.60e+08   | 1.79e-02   | 8.99e+00  |
+|39   | 2.02e+08   | 2.01e-02   | 1.01e+01  |
+|40   | 1.85e+08   | 1.86e-02   | 9.95e+00  |
+|41   | 1.41e+08   | 1.78e-02   | 7.89e+00  |
+|42   | 7.50e+07   | 8.99e-03   | 8.34e+00  |
+|43   | 1.37e+08   | 1.70e-02   | 8.04e+00  |
+|44   | 2.10e+08   | 2.01e-02   | 1.04e+01  |
+|45   | 1.22e+08   | 1.44e-02   | 8.43e+00  |
+|46   | 1.25e+08   | 1.51e-02   | 8.27e+00  |
+|47   | 1.60e+08   | 2.58e-02   | 6.19e+00  |
+|48   | 8.01e+07   | 5.90e-03   | 1.36e+01  |
+|49   | 1.50e+08   | 2.17e-02   | 6.91e+00  |
+|50   | 1.40e+08   | 1.38e-02   | 1.02e+01  |
+|51   | 1.15e+08   | 8.95e-03   | 1.28e+01  |
+|52   | 1.49e+08   | 2.08e-02   | 7.15e+00  |
+|53   | 1.57e+08   | 1.69e-02   | 9.27e+00  |
+|54   | 7.44e+07   | 9.15e-03   | 8.13e+00  |
+|55   | 2.23e+08   | 2.08e-02   | 1.07e+01  |
+|56   | 1.48e+08   | 2.10e-02   | 7.06e+00  |
+|57   | 1.03e+08   | 7.91e-03   | 1.31e+01  |
+|58   | 1.67e+08   | 2.26e-02   | 7.38e+00  |
+|59   | 1.54e+08   | 2.22e-02   | 6.93e+00  |
+|60   | 9.84e+07   | 1.02e-02   | 9.63e+00  |
+|61   | 2.30e+08   | 2.13e-02   | 1.08e+01  |
+|62   | 3.52e+08   | 2.90e-02   | 1.22e+01  |
+|63   | 3.08e+08   | 1.65e-01   | 1.86e+00  |
+|64   | 1.71e+08   | 1.40e-01   | 1.22e+00  |
+|65   | 3.05e+08   | 1.55e-01   | 1.96e+00  |
+|66   | 5.27e+08   | 2.02e-01   | 2.61e+00  |
+|67   | 3.40e+08   | 1.62e-01   | 2.10e+00  |
+|68   | 3.20e+08   | 1.46e-01   | 2.18e+00  |
+|69   | 3.86e+08   | 1.18e+00   | 3.28e-01  |
+|70   | 2.55e+08   | 1.16e+00   | 2.20e-01  |
+|71   | 1.84e+08   | 1.40e-01   | 1.31e+00  |
+|72   | 1.50e+08   | 1.34e-01   | 1.12e+00  |
+|73   | 0.00e+00   | 0.00e+00   | -nan  |
+|74   | 0.00e+00   | 0.00e+00   | -nan  |
+|75   | 1.76e+08   | 1.36e-01   | 1.30e+00  |
+|76   | 2.08e+08   | 1.44e-01   | 1.44e+00  |
+|77   | 3.27e+08   | 1.62e-01   | 2.02e+00  |
+|78   | 3.36e+08   | 1.65e-01   | 2.04e+00  |
+|79   | 4.63e+08   | 1.76e-01   | 2.63e+00  |
+|80   | 2.84e+08   | 1.59e-01   | 1.79e+00  |
+|81   | 6.30e+08   | 1.89e-01   | 3.34e+00  |
+|82   | 3.50e+08   | 1.48e-01   | 2.36e+00  |
+|83   | 2.79e+08   | 1.53e-01   | 1.82e+00  |
+|84   | 2.16e+08   | 1.43e-01   | 1.51e+00  |
+|85   | 2.38e+08   | 1.43e-01   | 1.67e+00  |
+|86   | 2.26e+08   | 1.51e-01   | 1.49e+00  |
+|87   | 3.17e+08   | 1.62e-01   | 1.95e+00  |
+|88   | 2.36e+08   | 1.47e-01   | 1.60e+00  |
+|89   | 3.24e+08   | 1.48e-01   | 2.18e+00  |
+|90   | 5.90e+08   | 2.00e-01   | 2.95e+00  |
+|91   | 2.76e+08   | 1.55e-01   | 1.78e+00  |
+|92   | 1.31e+08   | 1.32e-01   | 9.93e-01  |
+|93   | 3.26e+08   | 1.51e-01   | 2.16e+00  |
+|94   | 3.33e+08   | 1.65e-01   | 2.03e+00  |
+|95   | 3.30e+08   | 1.57e-01   | 2.10e+00  |
+|96   | 3.68e+08   | 1.58e-01   | 2.32e+00  |
+|97   | 1.74e+08   | 1.39e-01   | 1.25e+00  |
+|98   | 1.89e+08   | 1.26e-01   | 1.50e+00  |
+|99   | 3.37e+08   | 1.64e-01   | 2.05e+00  |
+|100   | 3.93e+08   | 1.70e-01   | 2.32e+00  |
+|101   | 3.26e+08   | 1.65e-01   | 1.97e+00  |
+|102   | 2.38e+08   | 1.47e-01   | 1.62e+00  |
+|103   | 6.45e+08   | 1.97e-01   | 3.28e+00  |
+|104   | 5.89e+08   | 2.09e-01   | 2.82e+00  |
+|105   | 5.65e+08   | 1.93e-01   | 2.93e+00  |
+|106   | 5.37e+08   | 1.89e-01   | 2.84e+00  |
+|107   | 4.15e+08   | 1.58e-01   | 2.62e+00  |
+|108   | 4.70e+08   | 1.65e-01   | 2.85e+00  |
+|109   | 4.94e+08   | 1.87e-01   | 2.64e+00  |
+|110   | 4.21e+08   | 1.91e-01   | 2.21e+00  |
+|111   | 3.74e+08   | 1.52e-01   | 2.46e+00  |
+|112   | 3.50e+08   | 1.53e-01   | 2.28e+00  |
+|113   | 3.46e+08   | 1.66e-01   | 2.09e+00  |
+|114   | 5.27e+08   | 1.91e-01   | 2.77e+00  |
+|115   | 4.40e+08   | 1.64e-01   | 2.68e+00  |
+|116   | 3.61e+08   | 1.75e-01   | 2.06e+00  |
+|117   | 4.06e+08   | 1.58e-01   | 2.57e+00  |
+|118   | 3.65e+08   | 1.65e-01   | 2.21e+00  |
+|119   | 3.49e+08   | 1.62e-01   | 2.15e+00  |
+|120   | 2.92e+08   | 1.52e-01   | 1.91e+00  |
+|121   | 2.47e+08   | 1.54e-01   | 1.61e+00  |
+|122   | 2.34e+08   | 1.51e-01   | 1.55e+00  |
+|123   | 3.92e+08   | 1.57e-01   | 2.50e+00  |
+|124   | 7.31e+08   | 2.18e-01   | 3.35e+00  |
+|125   | 5.61e+08   | 1.87e-01   | 2.99e+00  |
+|126   | 4.45e+08   | 1.70e-01   | 2.63e+00  |
+|CritcalPath   | 4.63e+09   | 2.04e+06   | 2.26e-06  |
+|Pearsoncoefficient |  0.316 |
+
+~~~mermaid 
+
+gantt 
+        		 dateFormat  mm-ss 
+       		 title TreeCost and Time Gantt Chart
+
+
+	 Section Time
+	 tree-63 	:Time-63, 0d, 17d 
+	 tree-31  4.2e+02 	:Time-31, after Time-63, 400d 
+	 tree-64 	:Time-64, 0d, 14d 
+	 tree-15  8.2e+02 	:Time-15, after Time-32, 402d 
+	 tree-65 	:Time-65, 0d, 16d 
+	 tree-32  4.2e+02 	:Time-32, after Time-66, 401d 
+	 tree-66 	:Time-66, 0d, 20d 
+	 tree-7  1.3e+03 	:Time-7, after Time-16, 407d 
+	 tree-67 	:Time-67, 0d, 16d 
+	 tree-33  4.2e+02 	:Time-33, after Time-67, 402d 
+	 tree-68 	:Time-68, 0d, 15d 
+	 tree-16  9.2e+02 	:Time-16, after Time-34, 404d 
+	 tree-69 	:Time-69, 0d, 118d 
+	 tree-34  5.2e+02 	:Time-34, after Time-69, 401d 
+	 tree-70 	:Time-70, 0d, 116d 
+	 tree-3  1.7e+03 	:Time-3, after Time-7, 406d 
+	 tree-71 	:Time-71, 0d, 14d 
+	 tree-35  3.1e+02 	:Time-35, after Time-71, 301d 
+	 tree-72 	:Time-72, 0d, 13d 
+	 tree-17  7.1e+02 	:Time-17, after Time-36, 302d 
+	 tree-73 	:Time-73, 0d, 0d 
+	 tree-36  4e+02 	:Time-36, after Time-74, 403d 
+	 tree-74 	:Time-74, 0d, 0d 
+	 tree-8  1e+03 	:Time-8, after Time-17, 303d 
+	 tree-75 	:Time-75, 0d, 14d 
+	 tree-37  15 	:Time-37, after Time-76, 1d 
+	 tree-76 	:Time-76, 0d, 14d 
+	 tree-18  4.2e+02 	:Time-18, after Time-38, 402d 
+	 tree-77 	:Time-77, 0d, 16d 
+	 tree-38  18 	:Time-38, after Time-78, 2d 
+	 tree-78 	:Time-78, 0d, 16d 
+	 tree-1  2.1e+03 	:Time-1, after Time-3, 409d 
+	 tree-79 	:Time-79, 0d, 18d 
+	 tree-39  20 	:Time-39, after Time-79, 2d 
+	 tree-80 	:Time-80, 0d, 16d 
+	 tree-19  4.2e+02 	:Time-19, after Time-40, 404d 
+	 tree-81 	:Time-81, 0d, 19d 
+	 tree-40  21 	:Time-40, after Time-81, 2d 
+	 tree-82 	:Time-82, 0d, 15d 
+	 tree-9  8.3e+02 	:Time-9, after Time-19, 403d 
+	 tree-83 	:Time-83, 0d, 15d 
+	 tree-41  17 	:Time-41, after Time-83, 2d 
+	 tree-84 	:Time-84, 0d, 14d 
+	 tree-20  4.2e+02 	:Time-20, after Time-41, 402d 
+	 tree-85 	:Time-85, 0d, 14d 
+	 tree-42  16 	:Time-42, after Time-86, 1d 
+	 tree-86 	:Time-86, 0d, 15d 
+	 tree-4  1.2e+03 	:Time-4, after Time-9, 409d 
+	 tree-87 	:Time-87, 0d, 16d 
+	 tree-43  18 	:Time-43, after Time-87, 2d 
+	 tree-88 	:Time-88, 0d, 15d 
+	 tree-21  3.2e+02 	:Time-21, after Time-44, 303d 
+	 tree-89 	:Time-89, 0d, 15d 
+	 tree-44  22 	:Time-44, after Time-90, 2d 
+	 tree-90 	:Time-90, 0d, 20d 
+	 tree-10  7.2e+02 	:Time-10, after Time-22, 302d 
+	 tree-91 	:Time-91, 0d, 15d 
+	 tree-45  17 	:Time-45, after Time-91, 1d 
+	 tree-92 	:Time-92, 0d, 13d 
+	 tree-22  4.2e+02 	:Time-22, after Time-46, 403d 
+	 tree-93 	:Time-93, 0d, 15d 
+	 tree-46  18 	:Time-46, after Time-94, 2d 
+	 tree-94 	:Time-94, 0d, 16d 
+	 tree-0  2e+08 	:Time-0, after Time-1, 204445206d 
+	 tree-95 	:Time-95, 0d, 16d 
+	 tree-47  18 	:Time-47, after Time-96, 3d 
+	 tree-96 	:Time-96, 0d, 16d 
+	 tree-23  4.2e+02 	:Time-23, after Time-47, 402d 
+	 tree-97 	:Time-97, 0d, 14d 
+	 tree-48  15 	:Time-48, after Time-97, 1d 
+	 tree-98 	:Time-98, 0d, 13d 
+	 tree-11  8.2e+02 	:Time-11, after Time-24, 403d 
+	 tree-99 	:Time-99, 0d, 16d 
+	 tree-49  19 	:Time-49, after Time-100, 2d 
+	 tree-100 	:Time-100, 0d, 17d 
+	 tree-24  4.2e+02 	:Time-24, after Time-49, 402d 
+	 tree-101 	:Time-101, 0d, 17d 
+	 tree-50  18 	:Time-50, after Time-101, 1d 
+	 tree-102 	:Time-102, 0d, 15d 
+	 tree-5  1.2e+03 	:Time-5, after Time-11, 404d 
+	 tree-103 	:Time-103, 0d, 20d 
+	 tree-51  22 	:Time-51, after Time-104, 1d 
+	 tree-104 	:Time-104, 0d, 21d 
+	 tree-25  3.3e+02 	:Time-25, after Time-51, 305d 
+	 tree-105 	:Time-105, 0d, 19d 
+	 tree-52  21 	:Time-52, after Time-105, 2d 
+	 tree-106 	:Time-106, 0d, 19d 
+	 tree-12  7.3e+02 	:Time-12, after Time-26, 305d 
+	 tree-107 	:Time-107, 0d, 16d 
+	 tree-53  18 	:Time-53, after Time-108, 2d 
+	 tree-108 	:Time-108, 0d, 17d 
+	 tree-26  4.2e+02 	:Time-26, after Time-54, 403d 
+	 tree-109 	:Time-109, 0d, 19d 
+	 tree-54  20 	:Time-54, after Time-110, 1d 
+	 tree-110 	:Time-110, 0d, 19d 
+	 tree-2  1.6e+03 	:Time-2, after Time-6, 406d 
+	 tree-111 	:Time-111, 0d, 15d 
+	 tree-55  17 	:Time-55, after Time-112, 2d 
+	 tree-112 	:Time-112, 0d, 15d 
+	 tree-27  4.2e+02 	:Time-27, after Time-56, 403d 
+	 tree-113 	:Time-113, 0d, 17d 
+	 tree-56  21 	:Time-56, after Time-114, 2d 
+	 tree-114 	:Time-114, 0d, 19d 
+	 tree-13  8.3e+02 	:Time-13, after Time-27, 404d 
+	 tree-115 	:Time-115, 0d, 16d 
+	 tree-57  18 	:Time-57, after Time-116, 1d 
+	 tree-116 	:Time-116, 0d, 18d 
+	 tree-28  4.2e+02 	:Time-28, after Time-58, 404d 
+	 tree-117 	:Time-117, 0d, 16d 
+	 tree-58  19 	:Time-58, after Time-118, 2d 
+	 tree-118 	:Time-118, 0d, 17d 
+	 tree-6  1.2e+03 	:Time-6, after Time-14, 407d 
+	 tree-119 	:Time-119, 0d, 16d 
+	 tree-59  18 	:Time-59, after Time-119, 2d 
+	 tree-120 	:Time-120, 0d, 15d 
+	 tree-29  4.2e+02 	:Time-29, after Time-59, 402d 
+	 tree-121 	:Time-121, 0d, 15d 
+	 tree-60  16 	:Time-60, after Time-121, 1d 
+	 tree-122 	:Time-122, 0d, 15d 
+	 tree-14  8.3e+02 	:Time-14, after Time-30, 404d 
+	 tree-123 	:Time-123, 0d, 16d 
+	 tree-61  24 	:Time-61, after Time-124, 2d 
+	 tree-124 	:Time-124, 0d, 22d 
+	 tree-30  4.3e+02 	:Time-30, after Time-61, 404d 
+	 tree-125 	:Time-125, 0d, 19d 
+	 tree-62  22 	:Time-62, after Time-125, 3d 
+	 tree-126 	:Time-126, 0d, 17d 
+	 Section Weight
+	 tree-63 	:weight-63, 0d, 13622407d 
+	 tree-31  1.6e+07 	:weight-31, after weight-63, 2833928d 
+	 tree-64 	:weight-64, 0d, 7570743d 
+	 tree-15  4e+07 	:weight-15, after weight-32, 9383769d 
+	 tree-65 	:weight-65, 0d, 13461026d 
+	 tree-32  3e+07 	:weight-32, after weight-66, 7072456d 
+	 tree-66 	:weight-66, 0d, 23276853d 
+	 tree-7  8.8e+07 	:weight-7, after weight-16, 43213206d 
+	 tree-67 	:weight-67, 0d, 15008915d 
+	 tree-33  2.2e+07 	:weight-33, after weight-67, 7395705d 
+	 tree-68 	:weight-68, 0d, 14141063d 
+	 tree-16  4.5e+07 	:weight-16, after weight-33, 23853875d 
+	 tree-69 	:weight-69, 0d, 17072954d 
+	 tree-34  2.1e+07 	:weight-34, after weight-69, 3653341d 
+	 tree-70 	:weight-70, 0d, 11249477d 
+	 tree-3  1.2e+08 	:weight-3, after weight-7, 36863259d 
+	 tree-71 	:weight-71, 0d, 8131495d 
+	 tree-35  1.1e+07 	:weight-35, after weight-71, 3005010d 
+	 tree-72 	:weight-72, 0d, 6634512d 
+	 tree-17  1.2e+07 	:weight-17, after weight-35, 8045435d 
+	 tree-73 	:weight-73, 0d, 0d 
+	 tree-36  3.9e+06 	:weight-36, after weight-74, 3859886d 
+	 tree-74 	:weight-74, 0d, 0d 
+	 tree-8  3e+07 	:weight-8, after weight-18, 17720953d 
+	 tree-75 	:weight-75, 0d, 7787854d 
+	 tree-37  1.4e+07 	:weight-37, after weight-76, 4543772d 
+	 tree-76 	:weight-76, 0d, 9173934d 
+	 tree-18  3.1e+07 	:weight-18, after weight-38, 9003409d 
+	 tree-77 	:weight-77, 0d, 14468372d 
+	 tree-38  2.2e+07 	:weight-38, after weight-78, 7094206d 
+	 tree-78 	:weight-78, 0d, 14859784d 
+	 tree-1  1.8e+08 	:weight-1, after weight-4, 54476476d 
+	 tree-79 	:weight-79, 0d, 20461362d 
+	 tree-39  2.9e+07 	:weight-39, after weight-79, 8947304d 
+	 tree-80 	:weight-80, 0d, 12559837d 
+	 tree-19  5.6e+07 	:weight-19, after weight-40, 19882930d 
+	 tree-81 	:weight-81, 0d, 27829802d 
+	 tree-40  3.6e+07 	:weight-40, after weight-81, 8180850d 
+	 tree-82 	:weight-82, 0d, 15458380d 
+	 tree-9  7.4e+07 	:weight-9, after weight-19, 17877450d 
+	 tree-83 	:weight-83, 0d, 12311782d 
+	 tree-41  1.9e+07 	:weight-41, after weight-83, 6221322d 
+	 tree-84 	:weight-84, 0d, 9554945d 
+	 tree-20  3e+07 	:weight-20, after weight-41, 10982162d 
+	 tree-85 	:weight-85, 0d, 10512187d 
+	 tree-42  1.3e+07 	:weight-42, after weight-85, 3314192d 
+	 tree-86 	:weight-86, 0d, 9982664d 
+	 tree-4  1.3e+08 	:weight-4, after weight-9, 57134216d 
+	 tree-87 	:weight-87, 0d, 14001332d 
+	 tree-43  2e+07 	:weight-43, after weight-87, 6058508d 
+	 tree-88 	:weight-88, 0d, 10418265d 
+	 tree-21  5e+07 	:weight-21, after weight-44, 14625370d 
+	 tree-89 	:weight-89, 0d, 14322073d 
+	 tree-44  3.5e+07 	:weight-44, after weight-90, 9287280d 
+	 tree-90 	:weight-90, 0d, 26090895d 
+	 tree-10  4.6e+07 	:weight-10, after weight-21, 13140036d 
+	 tree-91 	:weight-91, 0d, 12178030d 
+	 tree-45  1.8e+07 	:weight-45, after weight-91, 5384587d 
+	 tree-92 	:weight-92, 0d, 5788539d 
+	 tree-22  3.3e+07 	:weight-22, after weight-46, 12496493d 
+	 tree-93 	:weight-93, 0d, 14402570d 
+	 tree-46  2e+07 	:weight-46, after weight-94, 5523051d 
+	 tree-94 	:weight-94, 0d, 14730388d 
+	 tree-0  2e+08 	:weight-0, after weight-1, 25314240d 
+	 tree-95 	:weight-95, 0d, 14593102d 
+	 tree-47  2.3e+07 	:weight-47, after weight-96, 7062246d 
+	 tree-96 	:weight-96, 0d, 16271871d 
+	 tree-23  3.2e+07 	:weight-23, after weight-47, 8441990d 
+	 tree-97 	:weight-97, 0d, 7678795d 
+	 tree-48  1.1e+07 	:weight-48, after weight-98, 3538437d 
+	 tree-98 	:weight-98, 0d, 8364515d 
+	 tree-11  5.1e+07 	:weight-11, after weight-24, 16423290d 
+	 tree-99 	:weight-99, 0d, 14907148d 
+	 tree-49  2.4e+07 	:weight-49, after weight-100, 6638375d 
+	 tree-100 	:weight-100, 0d, 17361829d 
+	 tree-24  3.5e+07 	:weight-24, after weight-49, 11048519d 
+	 tree-101 	:weight-101, 0d, 14387663d 
+	 tree-50  2.1e+07 	:weight-50, after weight-101, 6209973d 
+	 tree-102 	:weight-102, 0d, 10529027d 
+	 tree-5  7.3e+07 	:weight-5, after weight-12, 21145834d 
+	 tree-103 	:weight-103, 0d, 28502023d 
+	 tree-51  3.1e+07 	:weight-51, after weight-103, 5064739d 
+	 tree-104 	:weight-104, 0d, 26030465d 
+	 tree-25  5.5e+07 	:weight-25, after weight-52, 24087936d 
+	 tree-105 	:weight-105, 0d, 24979307d 
+	 tree-52  3.2e+07 	:weight-52, after weight-105, 6573170d 
+	 tree-106 	:weight-106, 0d, 23714414d 
+	 tree-12  6.5e+07 	:weight-12, after weight-25, 25428902d 
+	 tree-107 	:weight-107, 0d, 18324822d 
+	 tree-53  2.8e+07 	:weight-53, after weight-108, 6926413d 
+	 tree-108 	:weight-108, 0d, 20790184d 
+	 tree-26  4e+07 	:weight-26, after weight-53, 18006249d 
+	 tree-109 	:weight-109, 0d, 21827823d 
+	 tree-54  2.2e+07 	:weight-54, after weight-109, 3287103d 
+	 tree-110 	:weight-110, 0d, 18590825d 
+	 tree-2  1.7e+08 	:weight-2, after weight-6, 35567395d 
+	 tree-111 	:weight-111, 0d, 16524327d 
+	 tree-55  2.5e+07 	:weight-55, after weight-111, 9867009d 
+	 tree-112 	:weight-112, 0d, 15489352d 
+	 tree-27  4.5e+07 	:weight-27, after weight-56, 15621437d 
+	 tree-113 	:weight-113, 0d, 15314727d 
+	 tree-56  3e+07 	:weight-56, after weight-114, 6559492d 
+	 tree-114 	:weight-114, 0d, 23311475d 
+	 tree-13  6.8e+07 	:weight-13, after weight-27, 22553833d 
+	 tree-115 	:weight-115, 0d, 19433257d 
+	 tree-57  2.1e+07 	:weight-57, after weight-115, 4564649d 
+	 tree-116 	:weight-116, 0d, 15967836d 
+	 tree-28  4.1e+07 	:weight-28, after weight-58, 17868068d 
+	 tree-117 	:weight-117, 0d, 17945228d 
+	 tree-58  2.4e+07 	:weight-58, after weight-117, 7368119d 
+	 tree-118 	:weight-118, 0d, 16149301d 
+	 tree-6  1.3e+08 	:weight-6, after weight-14, 41694858d 
+	 tree-119 	:weight-119, 0d, 15413794d 
+	 tree-59  2.2e+07 	:weight-59, after weight-119, 6796050d 
+	 tree-120 	:weight-120, 0d, 12895768d 
+	 tree-29  3.2e+07 	:weight-29, after weight-59, 9512943d 
+	 tree-121 	:weight-121, 0d, 10923337d 
+	 tree-60  1.5e+07 	:weight-60, after weight-121, 4348164d 
+	 tree-122 	:weight-122, 0d, 10349662d 
+	 tree-14  9.1e+07 	:weight-14, after weight-30, 23927827d 
+	 tree-123 	:weight-123, 0d, 17324364d 
+	 tree-61  4.2e+07 	:weight-61, after weight-124, 10181056d 
+	 tree-124 	:weight-124, 0d, 32293061d 
+	 tree-30  6.7e+07 	:weight-30, after weight-61, 25025338d 
+	 tree-125 	:weight-125, 0d, 24792741d 
+	 tree-62  4e+07 	:weight-62, after weight-125, 15578101d 
+	 tree-126 	:weight-126, 0d, 19690470d 
+~~~
+
+
+|pxReDistribute_X_to_B 	|     0.0001 	|     0.0000 	|     0.0057 	|   809.0331%| seconds|
+|pxReDistribute_B_to_X 	|     0.0002 	|     0.0000 	|     0.0157 	|   793.5264%| seconds|
+|forwardSolve          	|     0.0042 	|     0.0010 	|     0.0084 	|    28.9399%| seconds|
+|forwardSolve-compute  	|     0.0018 	|     0.0000 	|     0.0037 	|    34.7825%| seconds|
+|forwardSolve-comm     	|     0.0004 	|     0.0000 	|     0.0023 	|    77.7407%| seconds|
+|ForwardSolve:Level-0 	|     0.0000 	|     0.0000 	|     0.0008 	|   792.5838%| seconds|
+|ForwardSolve:Level-1 	|     0.0000 	|     0.0000 	|     0.0010 	|   566.2365%| seconds|
+|ForwardSolve:Level-2 	|     0.0000 	|     0.0000 	|     0.0009 	|   394.8623%| seconds|
+|ForwardSolve:Level-3 	|     0.0001 	|     0.0000 	|     0.0023 	|   321.2931%| seconds|
+|ForwardSolve:Level-4 	|     0.0001 	|     0.0000 	|     0.0020 	|   232.6178%| seconds|
+|ForwardSolve:Level-5 	|     0.0003 	|     0.0000 	|     0.0038 	|   196.7658%| seconds|
+|ForwardSolve:Level-6 	|     0.0027 	|     0.0001 	|     0.0042 	|    27.9991%| seconds|
+|backSolve             	|     0.0131 	|     0.0091 	|     0.0147 	|     9.6767%| seconds|
+|backSolve-compute     	|     0.0025 	|     0.0000 	|     0.0060 	|    39.4803%| seconds|
+|backSolve-comm        	|     0.0006 	|     0.0000 	|     0.0025 	|    52.0149%| seconds|
+|BackSolve:Level-0    	|     0.0000 	|     0.0000 	|     0.0017 	|   791.7086%| seconds|
+|BackSolve:Level-1    	|     0.0001 	|     0.0000 	|     0.0035 	|   627.8556%| seconds|
+|BackSolve:Level-2    	|     0.0002 	|     0.0000 	|     0.0060 	|   500.1814%| seconds|
+|BackSolve:Level-3    	|     0.0005 	|     0.0000 	|     0.0073 	|   357.4304%| seconds|
+|BackSolve:Level-4    	|     0.0011 	|     0.0000 	|     0.0096 	|   253.1849%| seconds|
+|BackSolve:Level-5    	|     0.0024 	|     0.0000 	|     0.0102 	|   168.0551%| seconds|
+|BackSolve:Level-6    	|     0.0080 	|     0.0000 	|     0.0139 	|    62.0200%| seconds|
+|trs_comm_z            	|     0.0092 	|     0.0011 	|     0.0125 	|    17.5189%| seconds|
+|TRS-XY_CommVolume     	|     0.0250 	|     0.0054 	|     0.0394 	|    24.8967%| Mwords|
+|TRS-Z_CommVolume      	|     0.0256 	|     0.0017 	|     0.2646 	|   184.0023%| Mwords|
+|TRS-XYZ_CommVolume    	|     0.0505 	|     0.0071 	|     0.2922 	|    96.4197%| Mwords|
+.. Sol  0: ||X - Xtrue|| / ||X|| = 8.576539e-01	 max_i |x - xtrue|_i / |x|_i = 4.049322e+00
+**************************************************
+**** Time (seconds) ****
+	EQUIL time            0.089
+	ROWPERM time          1.363
+	COLPERM time          1.924
+	SYMBFACT time         0.723
+	DISTRIBUTE time       2.926
+	FACTOR time           1.361
+	Factor flops	1.292285e+11	Mflops 	94916.86
+	SOLVE time            0.019
+	Solve flops	6.338378e+08	Mflops 	32623.34
+**************************************************

@@ -1,0 +1,230 @@
+MPI_Query_thread with MPI_THREAD_MULTIPLE
+__STDC_VERSION__ 201112
+Library version:	8.1.2
+Input matrix file:	/global/cfs/cdirs/m2957/liuyangz/my_research/matrix/nlpkkt80.bin
+3D process grid: 4 X 1 X 8
+fread n  1062400	nnz 28704672
+# of doubles fread: 28704672
+Time to read and distribute matrix 0.04
+**************************************************
+.. blocking parameters from sp_ienv():
+**    relaxation                 : 60
+**    max supernode              : 256
+**    estimated fill ratio       : 5
+**    min GEMM m*k*n to use GPU  : 5000
+**************************************************
+**************************************************
+.. options:
+**    Fact                      :    0
+**    Equil                     :    1
+**    DiagInv                   :    1
+**    ParSymbFact               :    0
+**    ColPerm                   :    4
+**    RowPerm                   :    1
+**    ReplaceTinyPivot          :    1
+**    IterRefine                :    0
+**    Trans                     :    0
+**    SymPattern                :    0
+**    lookahead_etree           :    0
+**    Use_TensorCore            :    0
+**    Use 3D algorithm          :    1
+**    num_lookaheads            :   10
+** parameters that can be altered by environment variables:
+**    superlu_relax             :   60
+**    superlu_maxsup            :  256
+**    min GEMM m*k*n to use GPU : 5000
+**    GPU buffer size           :   50000000
+**    GPU streams               :    1
+**    estimated fill ratio      :    5
+**************************************************
+.. equilibrated? *equed = B
+.. LDPERM job        5	 time: 0.83
+.. anorm 7.552500e+00
+.. Use METIS ordering on A'+A
+.. symbfact(): relax   60, maxsuper  256, fill    5
+	Matrix size min_mn   1062400
+	Nonzeros in L       1899002191
+	Nonzeros in U       1899028202
+	nonzeros in L+U     -497999303
+	nonzeros in LSUB    252998420
+	No of supers 25421
+	Size of G(L) 14476652
+	Size of G(U) 13418652
+	int 4, short 2, float 4, double 8
+	SYMBfact (MB):	L\U 1086.92	total 1125.16	expansions 2
+.. # L blocks   133270	# U blocks   125886
+ === using DAG ===
+** MPI 0/4, NVSHMEM 0/4,device name: T bus id: 101728, ndevices=1,cur=0, node=nid001260 **
+** MPI 1/4, NVSHMEM 1/4,device name: T bus id: 101728, ndevices=1,cur=1, node=nid001260 **
+** MPI 2/4, NVSHMEM 2/4,device name: T bus id: 101728, ndevices=1,cur=2, node=nid001260 **
+** MPI 3/4, NVSHMEM 3/4,device name: T bus id: 101728, ndevices=1,cur=3, node=nid001260 **
+** MPI 0/4, NVSHMEM 0/4,device name: ‡â‘c bus id: 101728, ndevices=0,cur=0, node=nid001261 **
+** MPI 0/4, NVSHMEM 0/4,device name: ‡	I‡õ bus id: 101728, ndevices=0,cur=0, node=nid001265 **
+** MPI 1/4, NVSHMEM 1/4,device name: ‡©o˙¬ bus id: 101728, ndevices=0,cur=1, node=nid001261 **
+** MPI 2/4, NVSHMEM 2/4,device name: ‡πD/› bus id: 101728, ndevices=0,cur=2, node=nid001261 **
+** MPI 3/4, NVSHMEM 3/4,device name: ‡πﬂf bus id: 101728, ndevices=0,cur=3, node=nid001261 **
+** MPI 1/4, NVSHMEM 1/4,device name: ‡…©¢ bus id: 101728, ndevices=0,cur=1, node=nid001265 **
+** MPI 2/4, NVSHMEM 2/4,device name: ‡I+Ùb bus id: 101728, ndevices=0,cur=2, node=nid001265 **
+** MPI 3/4, NVSHMEM 3/4,device name: ‡È©_ bus id: 101728, ndevices=0,cur=3, node=nid001265 **
+** MPI 0/4, NVSHMEM 0/4,device name: ‡i∏eÇ bus id: 101728, ndevices=0,cur=0, node=nid001264 **
+** MPI 1/4, NVSHMEM 1/4,device name: ‡	E´( bus id: 101728, ndevices=0,cur=1, node=nid001264 **
+** MPI 2/4, NVSHMEM 2/4,device name: ‡i√±: bus id: 101728, ndevices=0,cur=2, node=nid001264 **
+** MPI 3/4, NVSHMEM 3/4,device name: ‡È‰%™ bus id: 101728, ndevices=0,cur=3, node=nid001264 **
+** MPI 0/4, NVSHMEM 0/4,device name: ‡ÈÌPD bus id: 101728, ndevices=0,cur=0, node=nid001273 **
+** MPI 0/4, NVSHMEM 0/4,device name: ‡ÁÂ§ bus id: 101728, ndevices=0,cur=0, node=nid001269 **
+** MPI 0/4, NVSHMEM 0/4,device name: ‡	H¿ë bus id: 101728, ndevices=0,cur=0, node=nid001272 **
+** MPI 0/4, NVSHMEM 0/4,device name: ‡9SA˘ bus id: 101728, ndevices=0,cur=0, node=nid001268 **
+** MPI 1/4, NVSHMEM 1/4,device name: ‡yhôÆ bus id: 101728, ndevices=0,cur=1, node=nid001272 **
+** MPI 1/4, NVSHMEM 1/4,device name: ‡9˜» bus id: 101728, ndevices=0,cur=1, node=nid001273 **
+** MPI 1/4, NVSHMEM 1/4,device name: ‡ñﬁg bus id: 101728, ndevices=0,cur=1, node=nid001269 **
+** MPI 1/4, NVSHMEM 1/4,device name: ‡…£Ò bus id: 101728, ndevices=0,cur=1, node=nid001268 **
+** MPI 2/4, NVSHMEM 2/4,device name: ‡π\Q bus id: 101728, ndevices=0,cur=2, node=nid001272 **
+** MPI 2/4, NVSHMEM 2/4,device name: ‡…π~" bus id: 101728, ndevices=0,cur=2, node=nid001273 **
+** MPI 2/4, NVSHMEM 2/4,device name: ‡âbü* bus id: 101728, ndevices=0,cur=2, node=nid001269 **
+** MPI 2/4, NVSHMEM 2/4,device name: ‡iæ¥ bus id: 101728, ndevices=0,cur=2, node=nid001268 **
+** MPI 3/4, NVSHMEM 3/4,device name: ‡…%¬. bus id: 101728, ndevices=0,cur=3, node=nid001272 **
+** MPI 3/4, NVSHMEM 3/4,device name: ‡Ÿ2-m bus id: 101728, ndevices=0,cur=3, node=nid001273 **
+** MPI 3/4, NVSHMEM 3/4,device name: ‡¯cê bus id: 101728, ndevices=0,cur=3, node=nid001269 **
+** MPI 3/4, NVSHMEM 3/4,device name: ‡IV bus id: 101728, ndevices=0,cur=3, node=nid001268 **
+after 3D initialization.
+.. Starting with 1 openMP threads 
+MPI tag upper bound = 33554431
+Total time in factorization 	: 86.14
+MPI-communication phase 	:  9.18
+|Wait_LSend             	|     0.0003 	|     0.0003 	|     0.0003 	|     1.5626%| Seconds|
+|Wait_USend             	|     0.5842 	|     0.5441 	|     0.6355 	|     6.2843%| Seconds|
+|Wait_URecv             	|     5.3679 	|     5.1612 	|     5.7432 	|     4.1973%| Seconds|
+|Wait_LRecv             	|     0.0000 	|     0.0000 	|     0.0000 	|       -nan%| Seconds|
+|L_PanelUpdate          	|     0.0000 	|     0.0000 	|     0.0000 	|       -nan%| Seconds|
+|PDGSTRS2               	|     0.0000 	|     0.0000 	|     0.0000 	|       -nan%| Seconds|
+|wait-FunCallStream     	|     0.0000 	|     0.0000 	|     0.0000 	|       -nan%| Seconds|
+|wait-copyStream        	|     0.0000 	|     0.0000 	|     0.0000 	|       -nan%| Seconds|
+|waitGPU2CPU            	|     0.0000 	|     0.0000 	|     0.0000 	|       -nan%| Seconds|
+|SchurCompUpdate        	|    76.9602 	|    75.4916 	|    77.8162 	|     1.2437%| Seconds|
+|PanelFactorization     	|     9.1756 	|     8.3195 	|    10.6441 	|    10.4315%| Seconds|
+#### High Level Time Breakdown :    86.2949 
+
+|Function name 	| avg 	| min 	| max 	| std-dev| units|
+|---|---|---|---|---|---|
+|Startup                	|     0.1591 	|     0.1514 	|     0.1667 	|     3.8138%| Seconds|
+|Main-Factor loop       	|    86.1358 	|    86.1358 	|    86.1358 	|     0.0000%| Seconds|
+|3D-GatherLU            	|     0.0000 	|     0.0000 	|     0.0000 	|    13.3631%| Seconds|
+|tTotal                 	|    86.2949 	|    86.2871 	|    86.3024 	|     0.0070%| Seconds|
+#### Components of Factor Loop :    86.1358 
+
+|Function name 	| avg 	| min 	| max 	| std-dev| units|
+|---|---|---|---|---|---|
+|3D-AncestorReduce      	|     5.0716 	|     4.9911 	|     5.1837 	|     1.3821%| Seconds|
+|Pipeline Tail          	|     4.0446 	|     3.2192 	|     5.5219 	|    23.0485%| Seconds|
+|Grid-0 Factor:Level-0     	|    15.0573 	|    15.0508 	|    15.0695 	|     0.0486%| Seconds|
+|Grid-0 Factor:Level-1     	|    31.3064 	|    31.2281 	|    31.3651 	|     0.1589%| Seconds|
+|Grid-0 Factor:Level-2     	|    13.0692 	|    13.0371 	|    13.0906 	|     0.1640%| Seconds|
+|Grid-0 Factor:Level-3     	|    21.6313 	|    21.6160 	|    21.6403 	|     0.0426%| Seconds|
+| commVolRed | 4.62663e+10   | 1.44582e+09 |
+| commVolFactor | 4.6087e+10   | 1.44022e+09 |
+| Total Memory 	| 1.3e+09  	| 1.4e+09  	|1.2e+09  	|
+| LU-LU(repli) 	| 7.5e+08  	| 5.5e+08  	|
+|Forest | weight | cost | weight/Cost | 
+|0   | 2.03e+11   | 1.51e+01   | 1.35e+01  |
+|1   | 4.63e+11   | 3.14e+01   | 1.47e+01  |
+|2   | 4.50e+11   | 3.05e+01   | 1.48e+01  |
+|3   | 1.78e+11   | 1.31e+01   | 1.36e+01  |
+|4   | 1.97e+11   | 1.36e+01   | 1.45e+01  |
+|5   | 1.82e+11   | 1.30e+01   | 1.40e+01  |
+|6   | 1.83e+11   | 1.29e+01   | 1.42e+01  |
+|7   | 2.44e+11   | 2.16e+01   | 1.13e+01  |
+|8   | 2.88e+11   | 2.58e+01   | 1.12e+01  |
+|9   | 2.74e+11   | 2.47e+01   | 1.11e+01  |
+|10   | 2.99e+11   | 2.59e+01   | 1.16e+01  |
+|11   | 2.63e+11   | 2.33e+01   | 1.13e+01  |
+|12   | 2.74e+11   | 2.47e+01   | 1.11e+01  |
+|13   | 2.62e+11   | 2.34e+01   | 1.12e+01  |
+|14   | 2.80e+11   | 2.48e+01   | 1.13e+01  |
+|CritcalPath   | 1.16e+12   | 8.59e+01   | 1.35e+01  |
+|Pearsoncoefficient |  0.273 |
+
+~~~mermaid 
+
+gantt 
+        		 dateFormat  mm-ss 
+       		 title TreeCost and Time Gantt Chart
+
+
+	 Section Time
+	 tree-7 	:Time-7, 0d, 2163d 
+	 tree-3  3.9e+03 	:Time-3, after Time-8, 1309d 
+	 tree-8 	:Time-8, 0d, 2580d 
+	 tree-1  7.1e+03 	:Time-1, after Time-4, 3137d 
+	 tree-9 	:Time-9, 0d, 2472d 
+	 tree-4  3.9e+03 	:Time-4, after Time-10, 1357d 
+	 tree-10 	:Time-10, 0d, 2589d 
+	 tree-0  8.6e+03 	:Time-0, after Time-1, 1506d 
+	 tree-11 	:Time-11, 0d, 2329d 
+	 tree-5  3.8e+03 	:Time-5, after Time-12, 1302d 
+	 tree-12 	:Time-12, 0d, 2470d 
+	 tree-2  6.8e+03 	:Time-2, after Time-5, 3048d 
+	 tree-13 	:Time-13, 0d, 2339d 
+	 tree-6  3.8e+03 	:Time-6, after Time-14, 1289d 
+	 tree-14 	:Time-14, 0d, 2475d 
+	 Section Weight
+	 tree-7 	:weight-7, 0d, 1805d 
+	 tree-3  3.4e+03 	:weight-3, after weight-8, 1318d 
+	 tree-8 	:weight-8, 0d, 2126d 
+	 tree-1  7.1e+03 	:weight-1, after weight-4, 3419d 
+	 tree-9 	:weight-9, 0d, 2026d 
+	 tree-4  3.7e+03 	:weight-4, after weight-10, 1457d 
+	 tree-10 	:weight-10, 0d, 2211d 
+	 tree-0  8.6e+03 	:weight-0, after weight-1, 1501d 
+	 tree-11 	:weight-11, 0d, 1947d 
+	 tree-5  3.4e+03 	:weight-5, after weight-12, 1345d 
+	 tree-12 	:weight-12, 0d, 2022d 
+	 tree-2  6.7e+03 	:weight-2, after weight-6, 3327d 
+	 tree-13 	:weight-13, 0d, 1939d 
+	 tree-6  3.4e+03 	:weight-6, after weight-14, 1350d 
+	 tree-14 	:weight-14, 0d, 2071d 
+~~~
+
+
+num_thread:     1
+.. GPU trisolve
+.. GPU trisolve
+.. GPU trisolve
+.. GPU trisolve
+.. GPU trisolve
+.. GPU trisolve
+.. GPU trisolve
+.. GPU trisolve
+|pxReDistribute_X_to_B 	|     0.0011 	|     0.0000 	|     0.0097 	|   266.0464%| seconds|
+|pxReDistribute_B_to_X 	|     0.0024 	|     0.0000 	|     0.0194 	|   264.2024%| seconds|
+|forwardSolve          	|     0.0298 	|     0.0279 	|     0.0340 	|     6.7767%| seconds|
+|forwardSolve-compute  	|     0.0000 	|     0.0000 	|     0.0000 	|       -nan%| seconds|
+|forwardSolve-comm     	|     0.0000 	|     0.0000 	|     0.0000 	|     3.3414%| seconds|
+|ForwardSolve:Level-0 	|     0.0000 	|     0.0000 	|     0.0000 	|       -nan%| seconds|
+|ForwardSolve:Level-1 	|     0.0000 	|     0.0000 	|     0.0000 	|       -nan%| seconds|
+|ForwardSolve:Level-2 	|     0.0000 	|     0.0000 	|     0.0000 	|       -nan%| seconds|
+|ForwardSolve:Level-3 	|     0.0298 	|     0.0278 	|     0.0340 	|     6.7752%| seconds|
+|backSolve             	|     0.0428 	|     0.0396 	|     0.0458 	|     5.2702%| seconds|
+|backSolve-compute     	|     0.0000 	|     0.0000 	|     0.0000 	|       -nan%| seconds|
+|backSolve-comm        	|     0.0000 	|     0.0000 	|     0.0000 	|    28.3821%| seconds|
+|BackSolve:Level-0    	|     0.0000 	|     0.0000 	|     0.0000 	|       -nan%| seconds|
+|BackSolve:Level-1    	|     0.0000 	|     0.0000 	|     0.0000 	|       -nan%| seconds|
+|BackSolve:Level-2    	|     0.0000 	|     0.0000 	|     0.0000 	|       -nan%| seconds|
+|BackSolve:Level-3    	|     0.0427 	|     0.0396 	|     0.0457 	|     5.2753%| seconds|
+|trs_comm_z            	|     0.0025 	|     0.0004 	|     0.0065 	|    75.6750%| seconds|
+|TRS-XY_CommVolume     	|     0.1285 	|     0.1250 	|     0.1325 	|     2.0249%| Mwords|
+|TRS-Z_CommVolume      	|     0.0578 	|     0.0209 	|     0.1295 	|    74.5995%| Mwords|
+|TRS-XYZ_CommVolume    	|     0.1863 	|     0.1496 	|     0.2549 	|    22.1221%| Mwords|
+.. DiagScale = 3
+.. Sol  0: ||X - Xtrue|| / ||X|| = 2.391420e-13	 max_i |x - xtrue|_i / |x|_i = 1.334488e-13
+**************************************************
+**** Time (seconds) ****
+	EQUIL time            0.142
+	ROWPERM time          0.831
+	COLPERM time         14.145
+	SYMBFACT time        14.711
+	DISTRIBUTE time       8.443
+	FACTOR time          87.352
+	Factor flops	2.988215e+13	Mflops 	342087.84
+	SOLVE time            0.076
+	Solve flops	1.337722e+10	Mflops 	176325.49
+**************************************************

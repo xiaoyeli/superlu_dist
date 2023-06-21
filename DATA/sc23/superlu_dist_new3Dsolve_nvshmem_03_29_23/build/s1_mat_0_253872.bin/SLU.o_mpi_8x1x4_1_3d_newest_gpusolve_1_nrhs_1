@@ -1,0 +1,88 @@
+MPI_Query_thread with MPI_THREAD_MULTIPLE
+__STDC_VERSION__ 201112
+Library version:	8.1.2
+Input matrix file:	/global/cfs/cdirs/m2957/liuyangz/my_research/matrix/s1_mat_0_253872.bin
+3D process grid: 8 X 1 X 4
+fread n   253872	nnz 82155776
+# of doubles fread: 82155776
+Time to read and distribute matrix 0.12
+**************************************************
+.. blocking parameters from sp_ienv():
+**    relaxation                 : 60
+**    max supernode              : 256
+**    estimated fill ratio       : 5
+**    min GEMM m*k*n to use GPU  : 5000
+**************************************************
+**************************************************
+.. options:
+**    Fact                      :    0
+**    Equil                     :    1
+**    DiagInv                   :    1
+**    ParSymbFact               :    0
+**    ColPerm                   :    4
+**    RowPerm                   :    1
+**    ReplaceTinyPivot          :    1
+**    IterRefine                :    0
+**    Trans                     :    0
+**    SymPattern                :    0
+**    lookahead_etree           :    0
+**    Use_TensorCore            :    0
+**    Use 3D algorithm          :    1
+**    num_lookaheads            :   10
+** parameters that can be altered by environment variables:
+**    superlu_relax             :   60
+**    superlu_maxsup            :  256
+**    min GEMM m*k*n to use GPU : 5000
+**    GPU buffer size           :   50000000
+**    GPU streams               :    1
+**    estimated fill ratio      :    5
+**************************************************
+.. equilibrated? *equed = B
+.. LDPERM job        5	 time: 3.11
+.. anorm 1.407514e+02
+.. Use METIS ordering on A'+A
+.. symbfact(): relax   60, maxsuper  256, fill    5
+	Matrix size min_mn    253872
+	Nonzeros in L       212555461
+	Nonzeros in U       213013077
+	nonzeros in L+U     425314666
+	nonzeros in LSUB    40337941
+	No of supers 11323
+	Size of G(L) 4835689
+	Size of G(U) 1912576
+	int 4, short 2, float 4, double 8
+	SYMBfact (MB):	L\U 174.08	total 183.22	expansions 0
+.. # L blocks    10130	# U blocks     6393
+ === using DAG ===
+** MPI 0/8, NVSHMEM 0/8,device name: ý bus id: 45344, ndevices=0,cur=0, node=nid002429 **
+** MPI 1/8, NVSHMEM 1/8,device name: ý bus id: 45344, ndevices=0,cur=1, node=nid002429 **
+** MPI 4/8, NVSHMEM 4/8,device name: ý bus id: 45344, ndevices=0,cur=0, node=nid002445 **
+** MPI 2/8, NVSHMEM 2/8,device name: ý bus id: 45344, ndevices=0,cur=2, node=nid002429 **
+** MPI 3/8, NVSHMEM 3/8,device name: ý bus id: 45344, ndevices=0,cur=3, node=nid002429 **
+** MPI 5/8, NVSHMEM 5/8,device name: ý bus id: 45344, ndevices=0,cur=1, node=nid002445 **
+** MPI 6/8, NVSHMEM 6/8,device name: ý bus id: 45344, ndevices=0,cur=2, node=nid002445 **
+** MPI 7/8, NVSHMEM 7/8,device name: ý bus id: 45344, ndevices=0,cur=3, node=nid002445 **
+** MPI 0/8, NVSHMEM 0/8,device name: ý bus id: 45344, ndevices=0,cur=0, node=nid002477 **
+** MPI 4/8, NVSHMEM 4/8,device name: ý bus id: 45344, ndevices=0,cur=0, node=nid002549 **
+** MPI 1/8, NVSHMEM 1/8,device name: ý bus id: 45344, ndevices=0,cur=1, node=nid002477 **
+** MPI 5/8, NVSHMEM 5/8,device name: ý bus id: 45344, ndevices=0,cur=1, node=nid002549 **
+** MPI 2/8, NVSHMEM 2/8,device name: ý bus id: 45344, ndevices=0,cur=2, node=nid002477 **
+** MPI 6/8, NVSHMEM 6/8,device name: ý bus id: 45344, ndevices=0,cur=2, node=nid002549 **
+** MPI 3/8, NVSHMEM 3/8,device name: ý bus id: 45344, ndevices=0,cur=3, node=nid002477 **
+** MPI 7/8, NVSHMEM 7/8,device name: ý bus id: 45344, ndevices=0,cur=3, node=nid002549 **
+** MPI 4/8, NVSHMEM 4/8,device name: ý bus id: 45344, ndevices=0,cur=0, node=nid003905 **
+** MPI 0/8, NVSHMEM 0/8,device name: ý bus id: 45344, ndevices=0,cur=0, node=nid003796 **
+** MPI 5/8, NVSHMEM 5/8,device name: ý bus id: 45344, ndevices=0,cur=1, node=nid003905 **
+** MPI 6/8, NVSHMEM 6/8,device name: ý bus id: 45344, ndevices=0,cur=2, node=nid003905 **
+** MPI 7/8, NVSHMEM 7/8,device name: ý bus id: 45344, ndevices=0,cur=3, node=nid003905 **
+** MPI 1/8, NVSHMEM 1/8,device name: ý bus id: 45344, ndevices=0,cur=1, node=nid003796 **
+** MPI 2/8, NVSHMEM 2/8,device name: ý bus id: 45344, ndevices=0,cur=2, node=nid003796 **
+** MPI 3/8, NVSHMEM 3/8,device name: ý bus id: 45344, ndevices=0,cur=3, node=nid003796 **
+** MPI 0/8, NVSHMEM 0/8,device name: ý bus id: 45344, ndevices=0,cur=0, node=nid003120 **
+** MPI 4/8, NVSHMEM 4/8,device name: ý bus id: 45344, ndevices=0,cur=0, node=nid003241 **
+** MPI 1/8, NVSHMEM 1/8,device name: ý bus id: 45344, ndevices=0,cur=1, node=nid003120 **
+** MPI 2/8, NVSHMEM 2/8,device name: ý bus id: 45344, ndevices=0,cur=2, node=nid003120 **
+** MPI 3/8, NVSHMEM 3/8,device name: ý bus id: 45344, ndevices=0,cur=3, node=nid003120 **
+** MPI 5/8, NVSHMEM 5/8,device name: ý bus id: 45344, ndevices=0,cur=1, node=nid003241 **
+** MPI 6/8, NVSHMEM 6/8,device name: ý bus id: 45344, ndevices=0,cur=2, node=nid003241 **
+** MPI 7/8, NVSHMEM 7/8,device name: ý bus id: 45344, ndevices=0,cur=3, node=nid003241 **

@@ -1,0 +1,857 @@
+MPI_Query_thread with MPI_THREAD_MULTIPLE
+__STDC_VERSION__ 201112
+Library version:	8.1.2
+Input matrix file:	/global/cfs/cdirs/m2957/liuyangz/my_research/matrix/s1_mat_0_253872.bin
+3D process grid: 4 X 1 X 64
+fread n   253872	nnz 82155776
+# of doubles fread: 82155776
+Time to read and distribute matrix 0.12
+**************************************************
+.. blocking parameters from sp_ienv():
+**    relaxation                 : 60
+**    max supernode              : 256
+**    estimated fill ratio       : 5
+**    min GEMM m*k*n to use GPU  : 5000
+**************************************************
+**************************************************
+.. options:
+**    Fact                      :    0
+**    Equil                     :    1
+**    DiagInv                   :    1
+**    ParSymbFact               :    0
+**    ColPerm                   :    4
+**    RowPerm                   :    1
+**    ReplaceTinyPivot          :    1
+**    IterRefine                :    0
+**    Trans                     :    0
+**    SymPattern                :    0
+**    lookahead_etree           :    0
+**    Use_TensorCore            :    0
+**    Use 3D algorithm          :    1
+**    num_lookaheads            :   10
+** parameters that can be altered by environment variables:
+**    superlu_relax             :   60
+**    superlu_maxsup            :  256
+**    min GEMM m*k*n to use GPU : 5000
+**    GPU buffer size           :   50000000
+**    GPU streams               :    1
+**    estimated fill ratio      :    5
+**************************************************
+.. equilibrated? *equed = B
+.. LDPERM job        5	 time: 3.13
+.. anorm 1.407514e+02
+** MPI 0/4, NVSHMEM 0/4,device name: êÏ óˇ bus id: 45312, ndevices=5231,cur=0, node=nid002676 **
+** MPI 1/4, NVSHMEM 1/4,device name: –9¥Ïˇ bus id: 45312, ndevices=5436,cur=1, node=nid002676 **
+** MPI 2/4, NVSHMEM 2/4,device name: –7˜ô˝ bus id: 45312, ndevices=5250,cur=2, node=nid002676 **
+** MPI 3/4, NVSHMEM 3/4,device name: †feµ¸ bus id: 45312, ndevices=5388,cur=3, node=nid002676 **
+** MPI 0/4, NVSHMEM 0/4,device name: –å…˝ bus id: 45312, ndevices=5360,cur=0, node=nid002529 **
+** MPI 1/4, NVSHMEM 1/4,device name: ¿“ôùˇ bus id: 45312, ndevices=5333,cur=1, node=nid002529 **
+** MPI 2/4, NVSHMEM 2/4,device name: ¿$1¸ bus id: 45312, ndevices=5269,cur=2, node=nid002529 **
+** MPI 3/4, NVSHMEM 3/4,device name: F# ¸ bus id: 45312, ndevices=5345,cur=3, node=nid002529 **
+** MPI 0/4, NVSHMEM 0/4,device name: @r∆x˛ bus id: 45312, ndevices=5295,cur=0, node=nid002536 **
+** MPI 1/4, NVSHMEM 1/4,device name: pâ˛ bus id: 45312, ndevices=5451,cur=1, node=nid002536 **
+** MPI 2/4, NVSHMEM 2/4,device name:  bus id: 45312, ndevices=5445,cur=2, node=nid002536 **
+** MPI 3/4, NVSHMEM 3/4,device name: ‡°O¶˛ bus id: 45312, ndevices=5217,cur=3, node=nid002536 **
+** MPI 0/4, NVSHMEM 0/4,device name: @R$\¸ bus id: 45312, ndevices=5298,cur=0, node=nid002541 **
+** MPI 1/4, NVSHMEM 1/4,device name: ∞î"¸ bus id: 45312, ndevices=5444,cur=1, node=nid002541 **
+** MPI 2/4, NVSHMEM 2/4,device name: UY˝ bus id: 45312, ndevices=5336,cur=2, node=nid002541 **
+** MPI 3/4, NVSHMEM 3/4,device name: OÂ9¸ bus id: 45312, ndevices=5256,cur=3, node=nid002541 **
+** MPI 0/4, NVSHMEM 0/4,device name:  bus id: 45312, ndevices=5388,cur=0, node=nid002540 **
+** MPI 1/4, NVSHMEM 1/4,device name: P˚›ˇ bus id: 45312, ndevices=5333,cur=1, node=nid002540 **
+** MPI 2/4, NVSHMEM 2/4,device name: @"ªˇ bus id: 45312, ndevices=5207,cur=2, node=nid002540 **
+** MPI 3/4, NVSHMEM 3/4,device name: 0Qê)˛ bus id: 45312, ndevices=5252,cur=3, node=nid002540 **
+** MPI 0/4, NVSHMEM 0/4,device name: `Â$¸ bus id: 45312, ndevices=5273,cur=0, node=nid002532 **
+** MPI 1/4, NVSHMEM 1/4,device name: @‚0Å˛ bus id: 45312, ndevices=5424,cur=1, node=nid002532 **
+** MPI 2/4, NVSHMEM 2/4,device name: 6…˝ bus id: 45312, ndevices=5306,cur=2, node=nid002532 **
+** MPI 3/4, NVSHMEM 3/4,device name:  R€rˇ bus id: 45312, ndevices=5422,cur=3, node=nid002532 **
+.. Use METIS ordering on A'+A
+.. symbfact(): relax   60, maxsuper  256, fill    5
+	Matrix size min_mn    253872
+	Nonzeros in L       215796261
+	Nonzeros in U       215847696
+	nonzeros in L+U     431390085
+	nonzeros in LSUB    40159387
+	No of supers 11318
+	Size of G(L) 5066958
+	Size of G(U) 1979949
+	int 4, short 2, float 4, double 8
+	SYMBfact (MB):	L\U 173.63	total 182.77	expansions 0
+.. # L blocks    19593	# U blocks    12967
+ === using DAG ===
+** MPI 0/4, NVSHMEM 0/4,device name: `t¿˛ bus id: 45312, ndevices=5290,cur=0, node=nid002513 **
+** MPI 1/4, NVSHMEM 1/4,device name: \ï¸ bus id: 45312, ndevices=5219,cur=1, node=nid002513 **
+** MPI 2/4, NVSHMEM 2/4,device name: –Ã“àˇ bus id: 45312, ndevices=5363,cur=2, node=nid002513 **
+** MPI 3/4, NVSHMEM 3/4,device name: K-ˇˇ bus id: 45312, ndevices=5432,cur=3, node=nid002513 **
+** MPI 0/4, NVSHMEM 0/4,device name:  bus id: 45312, ndevices=5216,cur=0, node=nid002525 **
+** MPI 1/4, NVSHMEM 1/4,device name: †§z˛ bus id: 45312, ndevices=5245,cur=1, node=nid002525 **
+** MPI 2/4, NVSHMEM 2/4,device name: \˙Â˝ bus id: 45312, ndevices=5239,cur=2, node=nid002525 **
+** MPI 3/4, NVSHMEM 3/4,device name: `>òE¸ bus id: 45312, ndevices=5309,cur=3, node=nid002525 **
+** MPI 0/4, NVSHMEM 0/4,device name: êO9ß˝ bus id: 45312, ndevices=5230,cur=0, node=nid002680 **
+** MPI 1/4, NVSHMEM 1/4,device name: `‡
+˛ bus id: 45312, ndevices=5356,cur=1, node=nid002680 **
+** MPI 2/4, NVSHMEM 2/4,device name: †ü‰≤˝ bus id: 45312, ndevices=5281,cur=2, node=nid002680 **
+** MPI 3/4, NVSHMEM 3/4,device name: 0ü∞˛ bus id: 45312, ndevices=5354,cur=3, node=nid002680 **
+** MPI 0/4, NVSHMEM 0/4,device name: ptŒZˇ bus id: 45312, ndevices=5279,cur=0, node=nid003752 **
+** MPI 1/4, NVSHMEM 1/4,device name:  ¨_{˛ bus id: 45312, ndevices=5342,cur=1, node=nid003752 **
+** MPI 2/4, NVSHMEM 2/4,device name: –m;i˛ bus id: 45312, ndevices=5353,cur=2, node=nid003752 **
+** MPI 3/4, NVSHMEM 3/4,device name: ∫}˝ bus id: 45312, ndevices=5313,cur=3, node=nid003752 **
+** MPI 0/4, NVSHMEM 0/4,device name:  bus id: 45312, ndevices=5280,cur=0, node=nid002544 **
+** MPI 1/4, NVSHMEM 1/4,device name: êÉ~∫¸ bus id: 45312, ndevices=5316,cur=1, node=nid002544 **
+** MPI 2/4, NVSHMEM 2/4,device name: ∞GÚß˝ bus id: 45312, ndevices=5309,cur=2, node=nid002544 **
+** MPI 3/4, NVSHMEM 3/4,device name: …ÆÓ¸ bus id: 45312, ndevices=5424,cur=3, node=nid002544 **
+** MPI 0/4, NVSHMEM 0/4,device name: tœ¢˛ bus id: 45312, ndevices=5435,cur=0, node=nid002520 **
+** MPI 1/4, NVSHMEM 1/4,device name: p˘ﬁˇ bus id: 45312, ndevices=5321,cur=1, node=nid002520 **
+** MPI 2/4, NVSHMEM 2/4,device name: –‚„ˇ bus id: 45312, ndevices=5436,cur=2, node=nid002520 **
+** MPI 3/4, NVSHMEM 3/4,device name:  ∑i˛ bus id: 45312, ndevices=5340,cur=3, node=nid002520 **
+** MPI 0/4, NVSHMEM 0/4,device name: '@l˝ bus id: 45312, ndevices=5333,cur=0, node=nid002537 **
+** MPI 1/4, NVSHMEM 1/4,device name: ¿]Úi¸ bus id: 45312, ndevices=5354,cur=1, node=nid002537 **
+** MPI 2/4, NVSHMEM 2/4,device name: p≤zŒˇ bus id: 45312, ndevices=5424,cur=2, node=nid002537 **
+** MPI 3/4, NVSHMEM 3/4,device name: ∞ü0úˇ bus id: 45312, ndevices=5368,cur=3, node=nid002537 **
+** MPI 0/4, NVSHMEM 0/4,device name: †m)Oˇ bus id: 45312, ndevices=5261,cur=0, node=nid002533 **
+** MPI 1/4, NVSHMEM 1/4,device name: UGˇ bus id: 45312, ndevices=5315,cur=1, node=nid002533 **
+** MPI 2/4, NVSHMEM 2/4,device name: ¿Ó∆˛ bus id: 45312, ndevices=5293,cur=2, node=nid002533 **
+** MPI 3/4, NVSHMEM 3/4,device name: @ø/˛ bus id: 45312, ndevices=5262,cur=3, node=nid002533 **
+** MPI 0/4, NVSHMEM 0/4,device name: Ä™∞û˛ bus id: 45312, ndevices=5308,cur=0, node=nid002668 **
+** MPI 1/4, NVSHMEM 1/4,device name:  T◊¸ bus id: 45312, ndevices=5326,cur=1, node=nid002668 **
+** MPI 2/4, NVSHMEM 2/4,device name: ÄÏ-ì¸ bus id: 45312, ndevices=5430,cur=2, node=nid002668 **
+** MPI 3/4, NVSHMEM 3/4,device name:  N@ü˛ bus id: 45312, ndevices=5325,cur=3, node=nid002668 **
+** MPI 0/4, NVSHMEM 0/4,device name: Äá‘˝ bus id: 45312, ndevices=5439,cur=0, node=nid003192 **
+** MPI 1/4, NVSHMEM 1/4,device name: 0ù'˛ bus id: 45312, ndevices=5434,cur=1, node=nid003192 **
+** MPI 2/4, NVSHMEM 2/4,device name: |TÉ˝ bus id: 45312, ndevices=5209,cur=2, node=nid003192 **
+** MPI 3/4, NVSHMEM 3/4,device name: ‡ÌiI¸ bus id: 45312, ndevices=5356,cur=3, node=nid003192 **
+** MPI 0/4, NVSHMEM 0/4,device name: ¿Ôc"˝ bus id: 45312, ndevices=5359,cur=0, node=nid002669 **
+** MPI 1/4, NVSHMEM 1/4,device name: @‰=—˛ bus id: 45312, ndevices=5412,cur=1, node=nid002669 **
+** MPI 2/4, NVSHMEM 2/4,device name: @~‹¸ bus id: 45312, ndevices=5329,cur=2, node=nid002669 **
+** MPI 3/4, NVSHMEM 3/4,device name:  ≥ÌŒ˛ bus id: 45312, ndevices=5428,cur=3, node=nid002669 **
+** MPI 0/4, NVSHMEM 0/4,device name: `â£¯˝ bus id: 45312, ndevices=5280,cur=0, node=nid002524 **
+** MPI 1/4, NVSHMEM 1/4,device name: –≠k¸ bus id: 45312, ndevices=5436,cur=1, node=nid002524 **
+** MPI 2/4, NVSHMEM 2/4,device name: `Eõ˛ bus id: 45312, ndevices=5308,cur=2, node=nid002524 **
+** MPI 3/4, NVSHMEM 3/4,device name: –≤F:¸ bus id: 45312, ndevices=5453,cur=3, node=nid002524 **
+** MPI 0/4, NVSHMEM 0/4,device name: êîËMˇ bus id: 45312, ndevices=5241,cur=0, node=nid003748 **
+** MPI 1/4, NVSHMEM 1/4,device name: ‡¥Òˇ bus id: 45312, ndevices=5367,cur=1, node=nid003748 **
+** MPI 2/4, NVSHMEM 2/4,device name: Pˆ6ˇ bus id: 45312, ndevices=5413,cur=2, node=nid003748 **
+** MPI 3/4, NVSHMEM 3/4,device name: ∞ái˜˛ bus id: 45312, ndevices=5249,cur=3, node=nid003748 **
+** MPI 0/4, NVSHMEM 0/4,device name: @◊í˝ bus id: 45312, ndevices=5380,cur=0, node=nid003216 **
+** MPI 1/4, NVSHMEM 1/4,device name: 0æ4¸ bus id: 45312, ndevices=5415,cur=1, node=nid003216 **
+** MPI 2/4, NVSHMEM 2/4,device name: P&z˛ bus id: 45312, ndevices=5255,cur=2, node=nid003216 **
+** MPI 3/4, NVSHMEM 3/4,device name: PQ‡˝ bus id: 45312, ndevices=5421,cur=3, node=nid003216 **
+** MPI 0/4, NVSHMEM 0/4,device name: 0÷°˚˝ bus id: 45312, ndevices=5336,cur=0, node=nid003760 **
+** MPI 1/4, NVSHMEM 1/4,device name: ∞ˆ"¸ bus id: 45312, ndevices=5267,cur=1, node=nid003760 **
+** MPI 2/4, NVSHMEM 2/4,device name: @oıN˝ bus id: 45312, ndevices=5394,cur=2, node=nid003760 **
+** MPI 3/4, NVSHMEM 3/4,device name: p'N˛ bus id: 45312, ndevices=5331,cur=3, node=nid003760 **
+** MPI 0/4, NVSHMEM 0/4,device name: ¿`]Ã¸ bus id: 45312, ndevices=5306,cur=0, node=nid002672 **
+** MPI 1/4, NVSHMEM 1/4,device name: `ªTï˛ bus id: 45312, ndevices=5339,cur=1, node=nid002672 **
+** MPI 2/4, NVSHMEM 2/4,device name: °ˇ bus id: 45312, ndevices=5392,cur=2, node=nid002672 **
+** MPI 3/4, NVSHMEM 3/4,device name: Äˇ§ò¸ bus id: 45312, ndevices=5265,cur=3, node=nid002672 **
+** MPI 0/4, NVSHMEM 0/4,device name: G’!˛ bus id: 45312, ndevices=5218,cur=0, node=nid003180 **
+** MPI 1/4, NVSHMEM 1/4,device name: @Ÿí·¸ bus id: 45312, ndevices=5294,cur=1, node=nid003180 **
+** MPI 2/4, NVSHMEM 2/4,device name: ‡>ÀÜ˝ bus id: 45312, ndevices=5453,cur=2, node=nid003180 **
+** MPI 3/4, NVSHMEM 3/4,device name:  ú›€¸ bus id: 45312, ndevices=5338,cur=3, node=nid003180 **
+** MPI 0/4, NVSHMEM 0/4,device name: @$Q˛ bus id: 45312, ndevices=5346,cur=0, node=nid003744 **
+** MPI 1/4, NVSHMEM 1/4,device name: 0+S˝ bus id: 45312, ndevices=5207,cur=1, node=nid003744 **
+** MPI 2/4, NVSHMEM 2/4,device name: Ä_lˇ bus id: 45312, ndevices=5248,cur=2, node=nid003744 **
+** MPI 3/4, NVSHMEM 3/4,device name: `l˜≤˝ bus id: 45312, ndevices=5225,cur=3, node=nid003744 **
+** MPI 0/4, NVSHMEM 0/4,device name: êÚá˛ bus id: 45312, ndevices=5278,cur=0, node=nid002516 **
+** MPI 1/4, NVSHMEM 1/4,device name: p>	µ˝ bus id: 45312, ndevices=5214,cur=1, node=nid002516 **
+** MPI 2/4, NVSHMEM 2/4,device name:  m◊<ˇ bus id: 45312, ndevices=5443,cur=2, node=nid002516 **
+** MPI 3/4, NVSHMEM 3/4,device name: Ä¿¶¸ bus id: 45312, ndevices=5244,cur=3, node=nid002516 **
+** MPI 0/4, NVSHMEM 0/4,device name: 0ﬁòˇ bus id: 45312, ndevices=5434,cur=0, node=nid003756 **
+** MPI 1/4, NVSHMEM 1/4,device name: ‡ÎnP¸ bus id: 45312, ndevices=5417,cur=1, node=nid003756 **
+** MPI 2/4, NVSHMEM 2/4,device name:  {.¸ bus id: 45312, ndevices=5401,cur=2, node=nid003756 **
+** MPI 3/4, NVSHMEM 3/4,device name: ‡Îßì˛ bus id: 45312, ndevices=5315,cur=3, node=nid003756 **
+** MPI 0/4, NVSHMEM 0/4,device name: `<j˛ bus id: 45312, ndevices=5230,cur=0, node=nid003193 **
+** MPI 1/4, NVSHMEM 1/4,device name: `Õò˛ bus id: 45312, ndevices=5251,cur=1, node=nid003193 **
+** MPI 2/4, NVSHMEM 2/4,device name: –ƒ5@˛ bus id: 45312, ndevices=5365,cur=2, node=nid003193 **
+** MPI 3/4, NVSHMEM 3/4,device name: p‘í¸ bus id: 45312, ndevices=5210,cur=3, node=nid003193 **
+** MPI 0/4, NVSHMEM 0/4,device name:  bus id: 45312, ndevices=5248,cur=0, node=nid003733 **
+** MPI 1/4, NVSHMEM 1/4,device name: ∞c~V˛ bus id: 45312, ndevices=5386,cur=1, node=nid003733 **
+** MPI 2/4, NVSHMEM 2/4,device name: `‘5ˇ bus id: 45312, ndevices=5306,cur=2, node=nid003733 **
+** MPI 3/4, NVSHMEM 3/4,device name: 0ì3ä¸ bus id: 45312, ndevices=5428,cur=3, node=nid003733 **
+** MPI 0/4, NVSHMEM 0/4,device name: êÌ◊0¸ bus id: 45312, ndevices=5383,cur=0, node=nid003732 **
+** MPI 1/4, NVSHMEM 1/4,device name: psïY˝ bus id: 45312, ndevices=5348,cur=1, node=nid003732 **
+** MPI 2/4, NVSHMEM 2/4,device name: :ﬂÆ˝ bus id: 45312, ndevices=5353,cur=2, node=nid003732 **
+** MPI 3/4, NVSHMEM 3/4,device name: p™DÚˇ bus id: 45312, ndevices=5261,cur=3, node=nid003732 **
+** MPI 0/4, NVSHMEM 0/4,device name: Ä+ª]ˇ bus id: 45312, ndevices=5459,cur=0, node=nid003217 **
+** MPI 1/4, NVSHMEM 1/4,device name: `3ŸÑ˛ bus id: 45312, ndevices=5423,cur=1, node=nid003217 **
+** MPI 2/4, NVSHMEM 2/4,device name: `ŸÒÀˇ bus id: 45312, ndevices=5346,cur=2, node=nid003217 **
+** MPI 3/4, NVSHMEM 3/4,device name: ê·˛˛ bus id: 45312, ndevices=5300,cur=3, node=nid003217 **
+** MPI 0/4, NVSHMEM 0/4,device name:  bus id: 45312, ndevices=5237,cur=0, node=nid003208 **
+** MPI 1/4, NVSHMEM 1/4,device name: 0kªò¸ bus id: 45312, ndevices=5396,cur=1, node=nid003208 **
+** MPI 2/4, NVSHMEM 2/4,device name: ‡ ˇ bus id: 45312, ndevices=5443,cur=2, node=nid003208 **
+** MPI 3/4, NVSHMEM 3/4,device name: 0T1¸ bus id: 45312, ndevices=5328,cur=3, node=nid003208 **
+** MPI 0/4, NVSHMEM 0/4,device name: ∞´Åˇ bus id: 45312, ndevices=5294,cur=0, node=nid003213 **
+** MPI 1/4, NVSHMEM 1/4,device name: p IV¸ bus id: 45312, ndevices=5245,cur=1, node=nid003213 **
+** MPI 2/4, NVSHMEM 2/4,device name: †±ÄΩ˛ bus id: 45312, ndevices=5375,cur=2, node=nid003213 **
+** MPI 3/4, NVSHMEM 3/4,device name: ¿¨ï·˛ bus id: 45312, ndevices=5409,cur=3, node=nid003213 **
+** MPI 0/4, NVSHMEM 0/4,device name: Pß?˛ bus id: 45312, ndevices=5452,cur=0, node=nid003209 **
+** MPI 1/4, NVSHMEM 1/4,device name: P ≠/ˇ bus id: 45312, ndevices=5253,cur=1, node=nid003209 **
+** MPI 2/4, NVSHMEM 2/4,device name: ¿Ÿ∆v¸ bus id: 45312, ndevices=5358,cur=2, node=nid003209 **
+** MPI 3/4, NVSHMEM 3/4,device name: p.ÃÖ˝ bus id: 45312, ndevices=5428,cur=3, node=nid003209 **
+** MPI 0/4, NVSHMEM 0/4,device name: 0sé°˛ bus id: 45312, ndevices=5314,cur=0, node=nid003197 **
+** MPI 1/4, NVSHMEM 1/4,device name: †>f'¸ bus id: 45312, ndevices=5435,cur=1, node=nid003197 **
+** MPI 2/4, NVSHMEM 2/4,device name: !j?ˇ bus id: 45312, ndevices=5278,cur=2, node=nid003197 **
+** MPI 3/4, NVSHMEM 3/4,device name: 0˙¸ bus id: 45312, ndevices=5307,cur=3, node=nid003197 **
+** MPI 0/4, NVSHMEM 0/4,device name: –Ù∞â¸ bus id: 45312, ndevices=5228,cur=0, node=nid002548 **
+** MPI 1/4, NVSHMEM 1/4,device name: 6
+˝ bus id: 45312, ndevices=5421,cur=1, node=nid002548 **
+** MPI 2/4, NVSHMEM 2/4,device name: êdæ.¸ bus id: 45312, ndevices=5344,cur=2, node=nid002548 **
+** MPI 3/4, NVSHMEM 3/4,device name: @ v2˛ bus id: 45312, ndevices=5456,cur=3, node=nid002548 **
+** MPI 0/4, NVSHMEM 0/4,device name: –_Wt˛ bus id: 45312, ndevices=5294,cur=0, node=nid003740 **
+** MPI 1/4, NVSHMEM 1/4,device name: ∞Lá-˛ bus id: 45312, ndevices=5417,cur=1, node=nid003740 **
+** MPI 2/4, NVSHMEM 2/4,device name: Ä⁄!›˛ bus id: 45312, ndevices=5251,cur=2, node=nid003740 **
+** MPI 3/4, NVSHMEM 3/4,device name: [Oõ˛ bus id: 45312, ndevices=5379,cur=3, node=nid003740 **
+** MPI 0/4, NVSHMEM 0/4,device name:  bus id: 45312, ndevices=5212,cur=0, node=nid003753 **
+** MPI 1/4, NVSHMEM 1/4,device name: PÓ bus id: 45312, ndevices=5273,cur=1, node=nid003753 **
+** MPI 2/4, NVSHMEM 2/4,device name: 0‚¢Y˝ bus id: 45312, ndevices=5356,cur=2, node=nid003753 **
+** MPI 3/4, NVSHMEM 3/4,device name: ¿˙¶˛ bus id: 45312, ndevices=5323,cur=3, node=nid003753 **
+** MPI 0/4, NVSHMEM 0/4,device name: †ÅKHˇ bus id: 45312, ndevices=5405,cur=0, node=nid003188 **
+** MPI 1/4, NVSHMEM 1/4,device name: `X[¯ˇ bus id: 45312, ndevices=5436,cur=1, node=nid003188 **
+** MPI 2/4, NVSHMEM 2/4,device name: >ˇ bus id: 45312, ndevices=5237,cur=2, node=nid003188 **
+** MPI 3/4, NVSHMEM 3/4,device name: p˜“ˇ bus id: 45312, ndevices=5438,cur=3, node=nid003188 **
+** MPI 0/4, NVSHMEM 0/4,device name: ¿iX¸ bus id: 45312, ndevices=5355,cur=0, node=nid002521 **
+** MPI 1/4, NVSHMEM 1/4,device name: @÷.µ¸ bus id: 45312, ndevices=5405,cur=1, node=nid002521 **
+** MPI 2/4, NVSHMEM 2/4,device name: ∞ ˛ bus id: 45312, ndevices=5223,cur=2, node=nid002521 **
+** MPI 3/4, NVSHMEM 3/4,device name: PZT˚˝ bus id: 45312, ndevices=5311,cur=3, node=nid002521 **
+** MPI 0/4, NVSHMEM 0/4,device name: ¿Øù¸ bus id: 45312, ndevices=5272,cur=0, node=nid003189 **
+** MPI 1/4, NVSHMEM 1/4,device name:  ä]e˛ bus id: 45312, ndevices=5425,cur=1, node=nid003189 **
+** MPI 2/4, NVSHMEM 2/4,device name: PπﬂI˛ bus id: 45312, ndevices=5398,cur=2, node=nid003189 **
+** MPI 3/4, NVSHMEM 3/4,device name: Ee¸ bus id: 45312, ndevices=5441,cur=3, node=nid003189 **
+** MPI 0/4, NVSHMEM 0/4,device name: ∞*R2ˇ bus id: 45312, ndevices=5275,cur=0, node=nid003181 **
+** MPI 1/4, NVSHMEM 1/4,device name: †Ì ˇ bus id: 45312, ndevices=5234,cur=1, node=nid003181 **
+** MPI 2/4, NVSHMEM 2/4,device name: `—ö˝ bus id: 45312, ndevices=5262,cur=2, node=nid003181 **
+** MPI 3/4, NVSHMEM 3/4,device name: 0≈Iº˛ bus id: 45312, ndevices=5320,cur=3, node=nid003181 **
+** MPI 0/4, NVSHMEM 0/4,device name: p3Ê0˝ bus id: 45312, ndevices=5299,cur=0, node=nid002528 **
+** MPI 1/4, NVSHMEM 1/4,device name:  ±ΩÀ˛ bus id: 45312, ndevices=5390,cur=1, node=nid002528 **
+** MPI 2/4, NVSHMEM 2/4,device name: 7Ûˇ bus id: 45312, ndevices=5452,cur=2, node=nid002528 **
+** MPI 3/4, NVSHMEM 3/4,device name: Äx/Ω˛ bus id: 45312, ndevices=5410,cur=3, node=nid002528 **
+** MPI 0/4, NVSHMEM 0/4,device name: ∞Üã¸ bus id: 45312, ndevices=5287,cur=0, node=nid003205 **
+** MPI 1/4, NVSHMEM 1/4,device name: 0π?\˝ bus id: 45312, ndevices=5210,cur=1, node=nid003205 **
+** MPI 2/4, NVSHMEM 2/4,device name: 4/‘¸ bus id: 45312, ndevices=5338,cur=2, node=nid003205 **
+** MPI 3/4, NVSHMEM 3/4,device name:  bus id: 45312, ndevices=5285,cur=3, node=nid003205 **
+** MPI 0/4, NVSHMEM 0/4,device name: wwˇ bus id: 45312, ndevices=5236,cur=0, node=nid002677 **
+** MPI 1/4, NVSHMEM 1/4,device name: ‡⁄∑¨˛ bus id: 45312, ndevices=5355,cur=1, node=nid002677 **
+** MPI 2/4, NVSHMEM 2/4,device name: 0˚6˝ bus id: 45312, ndevices=5460,cur=2, node=nid002677 **
+** MPI 3/4, NVSHMEM 3/4,device name:  ä∏˝ bus id: 45312, ndevices=5446,cur=3, node=nid002677 **
+** MPI 0/4, NVSHMEM 0/4,device name: ê~cB˛ bus id: 45312, ndevices=5254,cur=0, node=nid003184 **
+** MPI 1/4, NVSHMEM 1/4,device name: @ØDÃ¸ bus id: 45312, ndevices=5214,cur=1, node=nid003184 **
+** MPI 2/4, NVSHMEM 2/4,device name: ê¥˛ bus id: 45312, ndevices=5366,cur=2, node=nid003184 **
+** MPI 3/4, NVSHMEM 3/4,device name: JDˇ bus id: 45312, ndevices=5242,cur=3, node=nid003184 **
+** MPI 0/4, NVSHMEM 0/4,device name: †ø˝ bus id: 45312, ndevices=5407,cur=0, node=nid002681 **
+** MPI 1/4, NVSHMEM 1/4,device name: †Òc˛˝ bus id: 45312, ndevices=5384,cur=1, node=nid002681 **
+** MPI 2/4, NVSHMEM 2/4,device name: êX§}˛ bus id: 45312, ndevices=5461,cur=2, node=nid002681 **
+** MPI 3/4, NVSHMEM 3/4,device name: `è˝ bus id: 45312, ndevices=5232,cur=3, node=nid002681 **
+** MPI 0/4, NVSHMEM 0/4,device name: ≤¯’¸ bus id: 45312, ndevices=5445,cur=0, node=nid003204 **
+** MPI 1/4, NVSHMEM 1/4,device name: †^0¸ bus id: 45312, ndevices=5355,cur=1, node=nid003204 **
+** MPI 2/4, NVSHMEM 2/4,device name: †Ê?˝ bus id: 45312, ndevices=5316,cur=2, node=nid003204 **
+** MPI 3/4, NVSHMEM 3/4,device name: ¯®˛ bus id: 45312, ndevices=5247,cur=3, node=nid003204 **
+** MPI 0/4, NVSHMEM 0/4,device name: ¿J	Ç¸ bus id: 45312, ndevices=5257,cur=0, node=nid003736 **
+** MPI 1/4, NVSHMEM 1/4,device name: 0yfÄ˛ bus id: 45312, ndevices=5403,cur=1, node=nid003736 **
+** MPI 2/4, NVSHMEM 2/4,device name: ◊5|¸ bus id: 45312, ndevices=5345,cur=2, node=nid003736 **
+** MPI 3/4, NVSHMEM 3/4,device name: @Ér˝ bus id: 45312, ndevices=5364,cur=3, node=nid003736 **
+** MPI 0/4, NVSHMEM 0/4,device name: †6 ˝ bus id: 45312, ndevices=5411,cur=0, node=nid002685 **
+** MPI 1/4, NVSHMEM 1/4,device name: Mnˇ bus id: 45312, ndevices=5302,cur=1, node=nid002685 **
+** MPI 2/4, NVSHMEM 2/4,device name:  bus id: 45312, ndevices=5229,cur=2, node=nid002685 **
+** MPI 3/4, NVSHMEM 3/4,device name: ‡V-8¸ bus id: 45312, ndevices=5262,cur=3, node=nid002685 **
+** MPI 0/4, NVSHMEM 0/4,device name: ∞π≤¸ bus id: 45312, ndevices=5341,cur=0, node=nid003201 **
+** MPI 1/4, NVSHMEM 1/4,device name: ¿ºÜˇ bus id: 45312, ndevices=5380,cur=1, node=nid003201 **
+** MPI 2/4, NVSHMEM 2/4,device name: c¥^ˇ bus id: 45312, ndevices=5454,cur=2, node=nid003201 **
+** MPI 3/4, NVSHMEM 3/4,device name: °ı€˝ bus id: 45312, ndevices=5428,cur=3, node=nid003201 **
+** MPI 0/4, NVSHMEM 0/4,device name: 0Éö›˝ bus id: 45312, ndevices=5434,cur=0, node=nid002673 **
+** MPI 1/4, NVSHMEM 1/4,device name: `ÒÌ$˛ bus id: 45312, ndevices=5241,cur=1, node=nid002673 **
+** MPI 2/4, NVSHMEM 2/4,device name: 0ûÄ˛ bus id: 45312, ndevices=5291,cur=2, node=nid002673 **
+** MPI 3/4, NVSHMEM 3/4,device name: pÂ˙Ï˝ bus id: 45312, ndevices=5445,cur=3, node=nid002673 **
+** MPI 0/4, NVSHMEM 0/4,device name: Pˇ‰Z¸ bus id: 45312, ndevices=5400,cur=0, node=nid003212 **
+** MPI 1/4, NVSHMEM 1/4,device name: Pò≠n˛ bus id: 45312, ndevices=5237,cur=1, node=nid003212 **
+** MPI 2/4, NVSHMEM 2/4,device name: ¿Ó¡˝ bus id: 45312, ndevices=5238,cur=2, node=nid003212 **
+** MPI 3/4, NVSHMEM 3/4,device name: †Œe˛ bus id: 45312, ndevices=5345,cur=3, node=nid003212 **
+** MPI 0/4, NVSHMEM 0/4,device name:  ~¡˝ bus id: 45312, ndevices=5235,cur=0, node=nid003745 **
+** MPI 1/4, NVSHMEM 1/4,device name: Ä≤ø%˝ bus id: 45312, ndevices=5356,cur=1, node=nid003745 **
+** MPI 2/4, NVSHMEM 2/4,device name: –1O¸¸ bus id: 45312, ndevices=5226,cur=2, node=nid003745 **
+** MPI 3/4, NVSHMEM 3/4,device name: `ëÉ¥ˇ bus id: 45312, ndevices=5217,cur=3, node=nid003745 **
+** MPI 0/4, NVSHMEM 0/4,device name: ˝Oíˇ bus id: 45312, ndevices=5373,cur=0, node=nid003200 **
+** MPI 1/4, NVSHMEM 1/4,device name:  bus id: 45312, ndevices=5304,cur=1, node=nid003200 **
+** MPI 2/4, NVSHMEM 2/4,device name: `¸Rr˛ bus id: 45312, ndevices=5347,cur=2, node=nid003200 **
+** MPI 3/4, NVSHMEM 3/4,device name:  ßèc˝ bus id: 45312, ndevices=5262,cur=3, node=nid003200 **
+** MPI 0/4, NVSHMEM 0/4,device name: `ÒÀz˝ bus id: 45312, ndevices=5338,cur=0, node=nid003737 **
+** MPI 1/4, NVSHMEM 1/4,device name:  bus id: 45312, ndevices=5369,cur=1, node=nid003737 **
+** MPI 2/4, NVSHMEM 2/4,device name: Äòá2¸ bus id: 45312, ndevices=5238,cur=2, node=nid003737 **
+** MPI 3/4, NVSHMEM 3/4,device name: †ü_¸ bus id: 45312, ndevices=5340,cur=3, node=nid003737 **
+** MPI 0/4, NVSHMEM 0/4,device name: Ä!}Î˛ bus id: 45312, ndevices=5302,cur=0, node=nid003196 **
+** MPI 1/4, NVSHMEM 1/4,device name: êwG¬˛ bus id: 45312, ndevices=5379,cur=1, node=nid003196 **
+** MPI 2/4, NVSHMEM 2/4,device name: +µø˝ bus id: 45312, ndevices=5257,cur=2, node=nid003196 **
+** MPI 3/4, NVSHMEM 3/4,device name: 5b‚¸ bus id: 45312, ndevices=5409,cur=3, node=nid003196 **
+** MPI 0/4, NVSHMEM 0/4,device name:  bus id: 45312, ndevices=5215,cur=0, node=nid003749 **
+** MPI 1/4, NVSHMEM 1/4,device name: ‡ZSAˇ bus id: 45312, ndevices=5353,cur=1, node=nid003749 **
+** MPI 2/4, NVSHMEM 2/4,device name: Ä∫≠È˛ bus id: 45312, ndevices=5255,cur=2, node=nid003749 **
+** MPI 3/4, NVSHMEM 3/4,device name: ¿ﬁ¨ô¸ bus id: 45312, ndevices=5417,cur=3, node=nid003749 **
+** MPI 0/4, NVSHMEM 0/4,device name: #ü˛ bus id: 45312, ndevices=5383,cur=0, node=nid003741 **
+** MPI 1/4, NVSHMEM 1/4,device name:  bus id: 45312, ndevices=5431,cur=1, node=nid003741 **
+** MPI 2/4, NVSHMEM 2/4,device name: P†ÙD¸ bus id: 45312, ndevices=5358,cur=2, node=nid003741 **
+** MPI 3/4, NVSHMEM 3/4,device name: p1•=ˇ bus id: 45312, ndevices=5330,cur=3, node=nid003741 **
+** MPI 0/4, NVSHMEM 0/4,device name: p bus id: 45312, ndevices=5318,cur=0, node=nid002545 **
+** MPI 1/4, NVSHMEM 1/4,device name: ﬁRˇ bus id: 45312, ndevices=5220,cur=1, node=nid002545 **
+** MPI 2/4, NVSHMEM 2/4,device name: `%°ˇ bus id: 45312, ndevices=5405,cur=2, node=nid002545 **
+** MPI 3/4, NVSHMEM 3/4,device name: †fçIˇ bus id: 45312, ndevices=5253,cur=3, node=nid002545 **
+** MPI 0/4, NVSHMEM 0/4,device name: `ÊíY˝ bus id: 45312, ndevices=5277,cur=0, node=nid003761 **
+** MPI 1/4, NVSHMEM 1/4,device name: ∞uM¯˛ bus id: 45312, ndevices=5252,cur=1, node=nid003761 **
+** MPI 2/4, NVSHMEM 2/4,device name: pxT¸ bus id: 45312, ndevices=5345,cur=2, node=nid003761 **
+** MPI 3/4, NVSHMEM 3/4,device name: pëà?˛ bus id: 45312, ndevices=5249,cur=3, node=nid003761 **
+** MPI 0/4, NVSHMEM 0/4,device name: –› ¸ bus id: 45312, ndevices=5223,cur=0, node=nid002517 **
+** MPI 1/4, NVSHMEM 1/4,device name: pZ“4˝ bus id: 45312, ndevices=5392,cur=1, node=nid002517 **
+** MPI 2/4, NVSHMEM 2/4,device name: ‡¡åe˝ bus id: 45312, ndevices=5321,cur=2, node=nid002517 **
+** MPI 3/4, NVSHMEM 3/4,device name:  bus id: 45312, ndevices=5437,cur=3, node=nid002517 **
+** MPI 0/4, NVSHMEM 0/4,device name: 0Éæs˛ bus id: 45312, ndevices=5435,cur=0, node=nid003757 **
+** MPI 1/4, NVSHMEM 1/4,device name: @A$¯˝ bus id: 45312, ndevices=5272,cur=1, node=nid003757 **
+** MPI 2/4, NVSHMEM 2/4,device name: ≈¸ bus id: 45312, ndevices=5448,cur=2, node=nid003757 **
+** MPI 3/4, NVSHMEM 3/4,device name: Ö◊˙ˇ bus id: 45312, ndevices=5439,cur=3, node=nid003757 **
+** MPI 0/4, NVSHMEM 0/4,device name: ÄWÕˇ bus id: 45312, ndevices=5267,cur=0, node=nid003185 **
+** MPI 1/4, NVSHMEM 1/4,device name: Ä—b∑ˇ bus id: 45312, ndevices=5262,cur=1, node=nid003185 **
+** MPI 2/4, NVSHMEM 2/4,device name: ‡∏$Ö¸ bus id: 45312, ndevices=5316,cur=2, node=nid003185 **
+** MPI 3/4, NVSHMEM 3/4,device name: êéæ‚˝ bus id: 45312, ndevices=5418,cur=3, node=nid003185 **
+** MPI 0/4, NVSHMEM 0/4,device name: ê…,ö˝ bus id: 45312, ndevices=5247,cur=0, node=nid002684 **
+** MPI 1/4, NVSHMEM 1/4,device name: PÃ9˛ bus id: 45312, ndevices=5299,cur=1, node=nid002684 **
+** MPI 2/4, NVSHMEM 2/4,device name: †}»¸ bus id: 45312, ndevices=5205,cur=2, node=nid002684 **
+** MPI 3/4, NVSHMEM 3/4,device name: ∞∑e¸ bus id: 45312, ndevices=5262,cur=3, node=nid002684 **
+after 3D initialization.
+.. Starting with 1 openMP threads 
+MPI tag upper bound = 33554431
+Total time in factorization 	:  2.65
+MPI-communication phase 	:  1.23
+|Wait_LSend             	|     0.0000 	|     0.0000 	|     0.0000 	|     3.6729%| Seconds|
+|Wait_USend             	|     0.0543 	|     0.0390 	|     0.0863 	|    34.5177%| Seconds|
+|Wait_URecv             	|     0.2865 	|     0.2365 	|     0.3356 	|    15.0725%| Seconds|
+|Wait_LRecv             	|     0.0000 	|     0.0000 	|     0.0000 	|       -nan%| Seconds|
+|L_PanelUpdate          	|     0.0000 	|     0.0000 	|     0.0000 	|       -nan%| Seconds|
+|PDGSTRS2               	|     0.0000 	|     0.0000 	|     0.0000 	|       -nan%| Seconds|
+|wait-FunCallStream     	|     0.0000 	|     0.0000 	|     0.0000 	|       -nan%| Seconds|
+|wait-copyStream        	|     0.0000 	|     0.0000 	|     0.0000 	|       -nan%| Seconds|
+|waitGPU2CPU            	|     0.0000 	|     0.0000 	|     0.0000 	|       -nan%| Seconds|
+|SchurCompUpdate        	|     1.4181 	|     1.3485 	|     1.4882 	|     3.8198%| Seconds|
+|PanelFactorization     	|     1.2347 	|     1.1646 	|     1.3043 	|     4.3870%| Seconds|
+#### High Level Time Breakdown :     3.1053 
+
+|Function name 	| avg 	| min 	| max 	| std-dev| units|
+|---|---|---|---|---|---|
+|Startup                	|     0.4525 	|     0.4436 	|     0.4622 	|     1.7372%| Seconds|
+|Main-Factor loop       	|     2.6528 	|     2.6528 	|     2.6528 	|     0.0000%| Seconds|
+|3D-GatherLU            	|     0.0000 	|     0.0000 	|     0.0000 	|     3.2617%| Seconds|
+|tTotal                 	|     3.1053 	|     3.0964 	|     3.1150 	|     0.2531%| Seconds|
+#### Components of Factor Loop :     2.6528 
+
+|Function name 	| avg 	| min 	| max 	| std-dev| units|
+|---|---|---|---|---|---|
+|3D-AncestorReduce      	|     0.8540 	|     0.8299 	|     0.8729 	|     2.1443%| Seconds|
+|Pipeline Tail          	|     0.3697 	|     0.2817 	|     0.4647 	|    17.7333%| Seconds|
+|Grid-0 Factor:Level-0     	|     0.3996 	|     0.3824 	|     0.4121 	|     3.1447%| Seconds|
+|Grid-0 Factor:Level-1     	|     0.5312 	|     0.5260 	|     0.5401 	|     1.0036%| Seconds|
+|Grid-0 Factor:Level-2     	|     0.3830 	|     0.3746 	|     0.3882 	|     1.3404%| Seconds|
+|Grid-0 Factor:Level-3     	|     0.2707 	|     0.2656 	|     0.2789 	|     1.8526%| Seconds|
+|Grid-0 Factor:Level-4     	|     0.1160 	|     0.1119 	|     0.1210 	|     3.0870%| Seconds|
+|Grid-0 Factor:Level-5     	|     0.0338 	|     0.0301 	|     0.0368 	|     7.1061%| Seconds|
+|Grid-0 Factor:Level-6     	|     0.0646 	|     0.0638 	|     0.0656 	|     1.0044%| Seconds|
+| commVolRed | 3.56308e+10   | 1.39183e+08 |
+| commVolFactor | 5.05129e+09   | 1.97316e+07 |
+| Total Memory 	| 6.4e+07  	| 9.7e+07  	|3.7e+07  	|
+| LU-LU(repli) 	| 1.1e+07  	| 5.4e+07  	|
+|Forest | weight | cost | weight/Cost | 
+|0   | 3.86e+09   | 3.93e-01   | 9.83e+00  |
+|1   | 5.53e+09   | 5.26e-01   | 1.05e+01  |
+|2   | 5.97e+09   | 5.81e-01   | 1.03e+01  |
+|3   | 3.87e+09   | 3.75e-01   | 1.03e+01  |
+|4   | 4.45e+09   | 4.69e-01   | 9.50e+00  |
+|5   | 5.46e+09   | 4.94e-01   | 1.10e+01  |
+|6   | 5.47e+09   | -5.73e+110   | -9.54e-111  |
+|7   | 3.13e+09   | 2.68e-01   | 1.17e+01  |
+|8   | 4.55e+08   | 6.82e-02   | 6.68e+00  |
+|9   | 1.28e+09   | 1.65e-01   | 7.78e+00  |
+|10   | 3.26e+09   | 3.23e-01   | 1.01e+01  |
+|11   | 2.82e+09   | 2.43e-01   | 1.16e+01  |
+|12   | 1.40e+09   | 1.64e-01   | 8.55e+00  |
+|13   | 1.76e+09   | 1.93e-01   | 9.14e+00  |
+|14   | 3.76e+09   | 3.49e-01   | 1.08e+01  |
+|15   | 9.88e+08   | 1.21e-01   | 8.16e+00  |
+|16   | 1.56e+09   | 1.56e-01   | 9.97e+00  |
+|17   | 7.29e+08   | 8.95e-02   | 8.14e+00  |
+|18   | 2.98e+08   | 5.53e-02   | 5.38e+00  |
+|19   | 5.22e+08   | 6.98e-02   | 7.47e+00  |
+|20   | 7.49e+08   | 8.05e-02   | 9.30e+00  |
+|21   | 2.41e+09   | 1.98e-01   | 1.21e+01  |
+|22   | 1.47e+09   | 1.84e-01   | 7.99e+00  |
+|23   | 9.41e+08   | 1.25e-01   | 7.51e+00  |
+|24   | 1.17e+09   | 1.05e-01   | 1.11e+01  |
+|25   | 1.50e+09   | 1.58e-01   | 9.46e+00  |
+|26   | 5.41e+08   | 6.34e-02   | 8.53e+00  |
+|27   | 8.63e+08   | 1.08e-01   | 8.02e+00  |
+|28   | 2.08e+09   | 2.15e-01   | 9.67e+00  |
+|29   | 1.32e+09   | 1.41e-01   | 9.39e+00  |
+|30   | 2.89e+09   | 2.61e-01   | 1.11e+01  |
+|31   | 3.17e+08   | 3.37e-02   | 9.41e+00  |
+|32   | 2.08e+08   | 3.53e-02   | 5.91e+00  |
+|33   | 5.36e+08   | 5.31e-02   | 1.01e+01  |
+|34   | 5.13e+08   | 5.91e-02   | 8.67e+00  |
+|35   | 6.89e+07   | 1.17e-02   | 5.89e+00  |
+|36   | 3.14e+08   | 4.07e-02   | 7.72e+00  |
+|37   | 6.65e+07   | 1.30e-02   | 5.12e+00  |
+|38   | 1.79e+08   | 1.96e-02   | 9.12e+00  |
+|39   | 3.73e+08   | 4.83e-02   | 7.74e+00  |
+|40   | 1.21e+08   | 2.07e-02   | 5.84e+00  |
+|41   | 2.45e+08   | 3.56e-02   | 6.89e+00  |
+|42   | 5.67e+08   | 6.54e-02   | 8.66e+00  |
+|43   | 1.29e+09   | 1.22e-01   | 1.06e+01  |
+|44   | 4.12e+08   | 5.34e-02   | 7.72e+00  |
+|45   | 6.62e+08   | 7.55e-02   | 8.76e+00  |
+|46   | 1.38e+08   | 2.38e-02   | 5.80e+00  |
+|47   | 5.91e+08   | 7.16e-02   | 8.25e+00  |
+|48   | 1.41e+08   | 2.41e-02   | 5.88e+00  |
+|49   | 4.42e+08   | 4.78e-02   | 9.26e+00  |
+|50   | 5.75e+08   | 6.70e-02   | 8.57e+00  |
+|51   | 3.06e+08   | 4.90e-02   | 6.26e+00  |
+|52   | 6.21e+08   | 5.80e-02   | 1.07e+01  |
+|53   | 7.97e+08   | 9.41e-02   | 8.47e+00  |
+|54   | 2.12e+08   | 3.52e-02   | 6.00e+00  |
+|55   | 4.97e+08   | 6.20e-02   | 8.01e+00  |
+|56   | 2.32e+08   | 3.10e-02   | 7.48e+00  |
+|57   | 7.14e+08   | 8.01e-02   | 8.92e+00  |
+|58   | 2.73e+08   | 4.42e-02   | 6.18e+00  |
+|59   | 1.07e+09   | 9.14e-02   | 1.17e+01  |
+|60   | 1.64e+08   | 2.68e-02   | 6.11e+00  |
+|61   | 2.04e+09   | 1.94e-01   | 1.05e+01  |
+|62   | 6.97e+08   | 7.28e-02   | 9.57e+00  |
+|63   | 5.29e+08   | 6.38e-02   | 8.29e+00  |
+|64   | 4.78e+08   | 6.36e-02   | 7.52e+00  |
+|65   | 4.97e+08   | 7.65e-02   | 6.50e+00  |
+|66   | 4.12e+08   | 7.43e-02   | 5.55e+00  |
+|67   | 3.66e+08   | 5.31e-02   | 6.89e+00  |
+|68   | 5.36e+08   | 7.43e-02   | 7.21e+00  |
+|69   | 7.41e+08   | 1.00e-01   | 7.41e+00  |
+|70   | 3.79e+08   | 6.06e-02   | 6.24e+00  |
+|71   | 1.50e+08   | 3.39e-02   | 4.43e+00  |
+|72   | 1.69e+08   | 4.03e-02   | 4.21e+00  |
+|73   | 2.07e+08   | 2.89e-02   | 7.14e+00  |
+|74   | 3.33e+08   | 4.42e-02   | 7.53e+00  |
+|75   | 3.08e+08   | 5.12e-02   | 6.02e+00  |
+|76   | 1.65e+08   | 3.10e-02   | 5.32e+00  |
+|77   | 2.56e+08   | 5.02e-02   | 5.11e+00  |
+|78   | 3.30e+08   | 4.86e-02   | 6.79e+00  |
+|79   | 3.35e+08   | 5.16e-02   | 6.48e+00  |
+|80   | 3.39e+08   | 5.46e-02   | 6.22e+00  |
+|81   | 3.58e+08   | 5.84e-02   | 6.13e+00  |
+|82   | 1.68e+08   | 2.84e-02   | 5.90e+00  |
+|83   | 4.77e+08   | 8.11e-02   | 5.88e+00  |
+|84   | 3.85e+08   | 6.63e-02   | 5.81e+00  |
+|85   | 5.23e+08   | 7.89e-02   | 6.62e+00  |
+|86   | 4.76e+08   | 6.69e-02   | 7.11e+00  |
+|87   | 1.19e+09   | 1.43e-01   | 8.30e+00  |
+|88   | 1.20e+09   | 1.52e-01   | 7.89e+00  |
+|89   | 1.93e+08   | 3.08e-02   | 6.27e+00  |
+|90   | 5.69e+08   | 7.27e-02   | 7.83e+00  |
+|91   | 1.05e+09   | 1.18e-01   | 8.95e+00  |
+|92   | 7.64e+08   | 1.07e-01   | 7.15e+00  |
+|93   | 7.78e+08   | 1.32e-01   | 5.89e+00  |
+|94   | 5.48e+08   | 8.85e-02   | 6.19e+00  |
+|95   | 6.79e+08   | 9.05e-02   | 7.50e+00  |
+|96   | 9.76e+08   | 1.36e-01   | 7.16e+00  |
+|97   | 1.99e+08   | 3.70e-02   | 5.39e+00  |
+|98   | 3.69e+08   | 5.96e-02   | 6.18e+00  |
+|99   | 6.52e+08   | 8.72e-02   | 7.48e+00  |
+|100   | 3.88e+08   | 5.68e-02   | 6.83e+00  |
+|101   | 2.34e+07   | 4.22e-03   | 5.55e+00  |
+|102   | 1.35e+09   | 1.48e-01   | 9.14e+00  |
+|103   | 4.92e+08   | 8.17e-02   | 6.03e+00  |
+|104   | 6.96e+08   | 1.03e-01   | 6.77e+00  |
+|105   | 8.14e+08   | 1.03e-01   | 7.89e+00  |
+|106   | 7.23e+08   | 9.22e-02   | 7.84e+00  |
+|107   | 9.21e+08   | 1.19e-01   | 7.74e+00  |
+|108   | 6.15e+08   | 1.14e-01   | 5.42e+00  |
+|109   | 5.82e+08   | 8.54e-02   | 6.81e+00  |
+|110   | 1.98e+08   | 3.71e-02   | 5.33e+00  |
+|111   | 7.17e+08   | 9.09e-02   | 7.89e+00  |
+|112   | 8.96e+08   | 1.27e-01   | 7.07e+00  |
+|113   | 3.96e+08   | 6.25e-02   | 6.34e+00  |
+|114   | 9.74e+08   | 1.39e-01   | 7.00e+00  |
+|115   | 9.96e+08   | 1.25e-01   | 7.97e+00  |
+|116   | 9.72e+08   | 1.29e-01   | 7.55e+00  |
+|117   | 9.01e+08   | 1.40e-01   | 6.43e+00  |
+|118   | 6.18e+08   | 9.92e-02   | 6.23e+00  |
+|119   | 7.08e+08   | 8.58e-02   | 8.26e+00  |
+|120   | 8.58e+08   | 8.83e-02   | 9.72e+00  |
+|121   | 5.16e+08   | 8.82e-02   | 5.86e+00  |
+|122   | 4.00e+08   | 6.58e-02   | 6.08e+00  |
+|123   | 2.45e+09   | 2.60e-01   | 9.42e+00  |
+|124   | 1.71e+09   | 1.90e-01   | 9.00e+00  |
+|125   | 6.14e+08   | 8.29e-02   | 7.41e+00  |
+|126   | 8.72e+08   | 1.15e-01   | 7.55e+00  |
+|CritcalPath   | 2.20e+10   | 2.18e+00   | 1.01e+01  |
+|Pearsoncoefficient |  -0.337 |
+
+~~~mermaid 
+
+gantt 
+        		 dateFormat  mm-ss 
+       		 title TreeCost and Time Gantt Chart
+
+
+	 Section Time
+	 tree-63 	:Time-63, 0d, 6d 
+	 tree-31  9.8 	:Time-31, after Time-63, 3d 
+	 tree-64 	:Time-64, 0d, 6d 
+	 tree-15  23 	:Time-15, after Time-32, 12d 
+	 tree-65 	:Time-65, 0d, 8d 
+	 tree-32  11 	:Time-32, after Time-65, 4d 
+	 tree-66 	:Time-66, 0d, 7d 
+	 tree-7  58 	:Time-7, after Time-16, 27d 
+	 tree-67 	:Time-67, 0d, 5d 
+	 tree-33  13 	:Time-33, after Time-68, 5d 
+	 tree-68 	:Time-68, 0d, 7d 
+	 tree-16  32 	:Time-16, after Time-34, 16d 
+	 tree-69 	:Time-69, 0d, 10d 
+	 tree-34  16 	:Time-34, after Time-69, 6d 
+	 tree-70 	:Time-70, 0d, 6d 
+	 tree-3  96 	:Time-3, after Time-7, 37d 
+	 tree-71 	:Time-71, 0d, 3d 
+	 tree-35  5.2 	:Time-35, after Time-72, 1d 
+	 tree-72 	:Time-72, 0d, 4d 
+	 tree-17  17 	:Time-17, after Time-36, 9d 
+	 tree-73 	:Time-73, 0d, 3d 
+	 tree-36  8.5 	:Time-36, after Time-74, 4d 
+	 tree-74 	:Time-74, 0d, 4d 
+	 tree-8  24 	:Time-8, after Time-17, 7d 
+	 tree-75 	:Time-75, 0d, 5d 
+	 tree-37  6.4 	:Time-37, after Time-75, 1d 
+	 tree-76 	:Time-76, 0d, 3d 
+	 tree-18  13 	:Time-18, after Time-38, 6d 
+	 tree-77 	:Time-77, 0d, 5d 
+	 tree-38  7 	:Time-38, after Time-77, 2d 
+	 tree-78 	:Time-78, 0d, 5d 
+	 tree-1  1.8e+02 	:Time-1, after Time-4, 53d 
+	 tree-79 	:Time-79, 0d, 5d 
+	 tree-39  10 	:Time-39, after Time-80, 5d 
+	 tree-80 	:Time-80, 0d, 5d 
+	 tree-19  17 	:Time-19, after Time-39, 7d 
+	 tree-81 	:Time-81, 0d, 6d 
+	 tree-40  7.9 	:Time-40, after Time-81, 2d 
+	 tree-82 	:Time-82, 0d, 3d 
+	 tree-9  39 	:Time-9, after Time-20, 16d 
+	 tree-83 	:Time-83, 0d, 8d 
+	 tree-41  12 	:Time-41, after Time-83, 4d 
+	 tree-84 	:Time-84, 0d, 7d 
+	 tree-20  22 	:Time-20, after Time-42, 8d 
+	 tree-85 	:Time-85, 0d, 8d 
+	 tree-42  14 	:Time-42, after Time-85, 7d 
+	 tree-86 	:Time-86, 0d, 7d 
+	 tree-4  1.3e+02 	:Time-4, after Time-10, 47d 
+	 tree-87 	:Time-87, 0d, 14d 
+	 tree-43  27 	:Time-43, after Time-88, 12d 
+	 tree-88 	:Time-88, 0d, 15d 
+	 tree-21  47 	:Time-21, after Time-43, 20d 
+	 tree-89 	:Time-89, 0d, 3d 
+	 tree-44  13 	:Time-44, after Time-90, 5d 
+	 tree-90 	:Time-90, 0d, 7d 
+	 tree-10  80 	:Time-10, after Time-21, 32d 
+	 tree-91 	:Time-91, 0d, 12d 
+	 tree-45  19 	:Time-45, after Time-91, 8d 
+	 tree-92 	:Time-92, 0d, 11d 
+	 tree-22  38 	:Time-22, after Time-45, 18d 
+	 tree-93 	:Time-93, 0d, 13d 
+	 tree-46  16 	:Time-46, after Time-93, 2d 
+	 tree-94 	:Time-94, 0d, 9d 
+	 tree-0  2.2e+02 	:Time-0, after Time-1, 39d 
+	 tree-95 	:Time-95, 0d, 9d 
+	 tree-47  21 	:Time-47, after Time-96, 7d 
+	 tree-96 	:Time-96, 0d, 14d 
+	 tree-23  33 	:Time-23, after Time-47, 13d 
+	 tree-97 	:Time-97, 0d, 4d 
+	 tree-48  8.4 	:Time-48, after Time-98, 2d 
+	 tree-98 	:Time-98, 0d, 6d 
+	 tree-11  58 	:Time-11, after Time-23, 24d 
+	 tree-99 	:Time-99, 0d, 9d 
+	 tree-49  13 	:Time-49, after Time-99, 5d 
+	 tree-100 	:Time-100, 0d, 6d 
+	 tree-24  32 	:Time-24, after Time-50, 11d 
+	 tree-101 	:Time-101, 0d, 0d 
+	 tree-50  22 	:Time-50, after Time-102, 7d 
+	 tree-102 	:Time-102, 0d, 15d 
+	 tree-5  1.1e+02 	:Time-5, after Time-11, 49d 
+	 tree-103 	:Time-103, 0d, 8d 
+	 tree-51  15 	:Time-51, after Time-104, 5d 
+	 tree-104 	:Time-104, 0d, 10d 
+	 tree-25  32 	:Time-25, after Time-52, 16d 
+	 tree-105 	:Time-105, 0d, 10d 
+	 tree-52  16 	:Time-52, after Time-105, 6d 
+	 tree-106 	:Time-106, 0d, 9d 
+	 tree-12  48 	:Time-12, after Time-25, 16d 
+	 tree-107 	:Time-107, 0d, 12d 
+	 tree-53  21 	:Time-53, after Time-107, 9d 
+	 tree-108 	:Time-108, 0d, 11d 
+	 tree-26  28 	:Time-26, after Time-53, 6d 
+	 tree-109 	:Time-109, 0d, 9d 
+	 tree-54  12 	:Time-54, after Time-109, 4d 
+	 tree-110 	:Time-110, 0d, 4d 
+	 tree-2  1.7e+02 	:Time-2, after Time-5, 58d 
+	 tree-111 	:Time-111, 0d, 9d 
+	 tree-55  19 	:Time-55, after Time-112, 6d 
+	 tree-112 	:Time-112, 0d, 13d 
+	 tree-27  30 	:Time-27, after Time-55, 11d 
+	 tree-113 	:Time-113, 0d, 6d 
+	 tree-56  17 	:Time-56, after Time-114, 3d 
+	 tree-114 	:Time-114, 0d, 14d 
+	 tree-13  62 	:Time-13, after Time-28, 19d 
+	 tree-115 	:Time-115, 0d, 12d 
+	 tree-57  21 	:Time-57, after Time-116, 8d 
+	 tree-116 	:Time-116, 0d, 13d 
+	 tree-28  42 	:Time-28, after Time-57, 21d 
+	 tree-117 	:Time-117, 0d, 14d 
+	 tree-58  18 	:Time-58, after Time-117, 4d 
+	 tree-118 	:Time-118, 0d, 10d 
+	 tree-6  -5.7e+112 	:Time-6, after Time-14, -57334168495491302062472581827515176769936729667035098689324348200716453200577743004838863176083046358191177728000d 
+	 tree-119 	:Time-119, 0d, 9d 
+	 tree-59  18 	:Time-59, after Time-120, 9d 
+	 tree-120 	:Time-120, 0d, 9d 
+	 tree-29  32 	:Time-29, after Time-59, 14d 
+	 tree-121 	:Time-121, 0d, 9d 
+	 tree-60  12 	:Time-60, after Time-121, 3d 
+	 tree-122 	:Time-122, 0d, 7d 
+	 tree-14  1.1e+02 	:Time-14, after Time-30, 35d 
+	 tree-123 	:Time-123, 0d, 26d 
+	 tree-61  45 	:Time-61, after Time-123, 19d 
+	 tree-124 	:Time-124, 0d, 19d 
+	 tree-30  72 	:Time-30, after Time-61, 26d 
+	 tree-125 	:Time-125, 0d, 8d 
+	 tree-62  19 	:Time-62, after Time-126, 7d 
+	 tree-126 	:Time-126, 0d, 12d 
+	 Section Weight
+	 tree-63 	:weight-63, 0d, 5d 
+	 tree-31  8.4 	:weight-31, after weight-63, 3d 
+	 tree-64 	:weight-64, 0d, 5d 
+	 tree-15  17 	:weight-15, after weight-31, 10d 
+	 tree-65 	:weight-65, 0d, 5d 
+	 tree-32  7 	:weight-32, after weight-65, 2d 
+	 tree-66 	:weight-66, 0d, 4d 
+	 tree-7  59 	:weight-7, after weight-16, 31d 
+	 tree-67 	:weight-67, 0d, 4d 
+	 tree-33  11 	:weight-33, after weight-68, 5d 
+	 tree-68 	:weight-68, 0d, 5d 
+	 tree-16  28 	:weight-16, after weight-34, 15d 
+	 tree-69 	:weight-69, 0d, 7d 
+	 tree-34  12 	:weight-34, after weight-69, 5d 
+	 tree-70 	:weight-70, 0d, 4d 
+	 tree-3  97 	:weight-3, after weight-7, 38d 
+	 tree-71 	:weight-71, 0d, 1d 
+	 tree-35  2.4 	:weight-35, after weight-72, 1d 
+	 tree-72 	:weight-72, 0d, 2d 
+	 tree-17  14 	:weight-17, after weight-36, 7d 
+	 tree-73 	:weight-73, 0d, 2d 
+	 tree-36  6.4 	:weight-36, after weight-74, 3d 
+	 tree-74 	:weight-74, 0d, 3d 
+	 tree-8  18 	:weight-8, after weight-17, 5d 
+	 tree-75 	:weight-75, 0d, 3d 
+	 tree-37  3.7 	:weight-37, after weight-75, 1d 
+	 tree-76 	:weight-76, 0d, 2d 
+	 tree-18  7.3 	:weight-18, after weight-38, 3d 
+	 tree-77 	:weight-77, 0d, 3d 
+	 tree-38  4.3 	:weight-38, after weight-78, 2d 
+	 tree-78 	:weight-78, 0d, 3d 
+	 tree-1  1.8e+02 	:weight-1, after weight-4, 55d 
+	 tree-79 	:weight-79, 0d, 3d 
+	 tree-39  7.1 	:weight-39, after weight-80, 4d 
+	 tree-80 	:weight-80, 0d, 3d 
+	 tree-19  12 	:weight-19, after weight-39, 5d 
+	 tree-81 	:weight-81, 0d, 4d 
+	 tree-40  4.8 	:weight-40, after weight-81, 1d 
+	 tree-82 	:weight-82, 0d, 2d 
+	 tree-9  31 	:weight-9, after weight-20, 13d 
+	 tree-83 	:weight-83, 0d, 5d 
+	 tree-41  7.2 	:weight-41, after weight-83, 2d 
+	 tree-84 	:weight-84, 0d, 4d 
+	 tree-20  18 	:weight-20, after weight-42, 7d 
+	 tree-85 	:weight-85, 0d, 5d 
+	 tree-42  11 	:weight-42, after weight-85, 6d 
+	 tree-86 	:weight-86, 0d, 5d 
+	 tree-4  1.3e+02 	:weight-4, after weight-10, 44d 
+	 tree-87 	:weight-87, 0d, 12d 
+	 tree-43  25 	:weight-43, after weight-88, 13d 
+	 tree-88 	:weight-88, 0d, 12d 
+	 tree-21  49 	:weight-21, after weight-43, 24d 
+	 tree-89 	:weight-89, 0d, 2d 
+	 tree-44  9.7 	:weight-44, after weight-90, 4d 
+	 tree-90 	:weight-90, 0d, 6d 
+	 tree-10  81 	:weight-10, after weight-21, 32d 
+	 tree-91 	:weight-91, 0d, 10d 
+	 tree-45  17 	:weight-45, after weight-91, 7d 
+	 tree-92 	:weight-92, 0d, 8d 
+	 tree-22  32 	:weight-22, after weight-45, 15d 
+	 tree-93 	:weight-93, 0d, 8d 
+	 tree-46  9.1 	:weight-46, after weight-93, 1d 
+	 tree-94 	:weight-94, 0d, 5d 
+	 tree-0  2.2e+02 	:weight-0, after weight-1, 38d 
+	 tree-95 	:weight-95, 0d, 7d 
+	 tree-47  16 	:weight-47, after weight-96, 6d 
+	 tree-96 	:weight-96, 0d, 10d 
+	 tree-23  25 	:weight-23, after weight-47, 9d 
+	 tree-97 	:weight-97, 0d, 2d 
+	 tree-48  5.1 	:weight-48, after weight-98, 1d 
+	 tree-98 	:weight-98, 0d, 4d 
+	 tree-11  53 	:weight-11, after weight-24, 28d 
+	 tree-99 	:weight-99, 0d, 6d 
+	 tree-49  11 	:weight-49, after weight-99, 4d 
+	 tree-100 	:weight-100, 0d, 4d 
+	 tree-24  31 	:weight-24, after weight-50, 12d 
+	 tree-101 	:weight-101, 0d, 0d 
+	 tree-50  19 	:weight-50, after weight-102, 6d 
+	 tree-102 	:weight-102, 0d, 13d 
+	 tree-5  1.1e+02 	:weight-5, after weight-11, 54d 
+	 tree-103 	:weight-103, 0d, 5d 
+	 tree-51  10 	:weight-51, after weight-104, 3d 
+	 tree-104 	:weight-104, 0d, 7d 
+	 tree-25  29 	:weight-25, after weight-52, 15d 
+	 tree-105 	:weight-105, 0d, 8d 
+	 tree-52  14 	:weight-52, after weight-105, 6d 
+	 tree-106 	:weight-106, 0d, 7d 
+	 tree-12  43 	:weight-12, after weight-25, 14d 
+	 tree-107 	:weight-107, 0d, 9d 
+	 tree-53  17 	:weight-53, after weight-107, 8d 
+	 tree-108 	:weight-108, 0d, 6d 
+	 tree-26  22 	:weight-26, after weight-53, 5d 
+	 tree-109 	:weight-109, 0d, 6d 
+	 tree-54  7.9 	:weight-54, after weight-109, 2d 
+	 tree-110 	:weight-110, 0d, 2d 
+	 tree-2  1.7e+02 	:weight-2, after weight-6, 59d 
+	 tree-111 	:weight-111, 0d, 7d 
+	 tree-55  14 	:weight-55, after weight-112, 5d 
+	 tree-112 	:weight-112, 0d, 9d 
+	 tree-27  22 	:weight-27, after weight-55, 9d 
+	 tree-113 	:weight-113, 0d, 4d 
+	 tree-56  12 	:weight-56, after weight-114, 2d 
+	 tree-114 	:weight-114, 0d, 10d 
+	 tree-13  55 	:weight-13, after weight-28, 17d 
+	 tree-115 	:weight-115, 0d, 10d 
+	 tree-57  17 	:weight-57, after weight-115, 7d 
+	 tree-116 	:weight-116, 0d, 10d 
+	 tree-28  37 	:weight-28, after weight-57, 21d 
+	 tree-117 	:weight-117, 0d, 9d 
+	 tree-58  12 	:weight-58, after weight-117, 3d 
+	 tree-118 	:weight-118, 0d, 6d 
+	 tree-6  1.6e+02 	:weight-6, after weight-14, 54d 
+	 tree-119 	:weight-119, 0d, 7d 
+	 tree-59  19 	:weight-59, after weight-120, 11d 
+	 tree-120 	:weight-120, 0d, 9d 
+	 tree-29  32 	:weight-29, after weight-59, 13d 
+	 tree-121 	:weight-121, 0d, 5d 
+	 tree-60  6.7 	:weight-60, after weight-121, 2d 
+	 tree-122 	:weight-122, 0d, 4d 
+	 tree-14  1.1e+02 	:weight-14, after weight-30, 37d 
+	 tree-123 	:weight-123, 0d, 24d 
+	 tree-61  45 	:weight-61, after weight-123, 20d 
+	 tree-124 	:weight-124, 0d, 17d 
+	 tree-30  73 	:weight-30, after weight-61, 29d 
+	 tree-125 	:weight-125, 0d, 6d 
+	 tree-62  16 	:weight-62, after weight-126, 7d 
+	 tree-126 	:weight-126, 0d, 9d 
+~~~
+
+
+num_thread:     1
+.. GPU trisolve
+.. GPU trisolve
+.. GPU trisolve
+.. GPU trisolve
+.. GPU trisolve
+.. GPU trisolve
+.. GPU trisolve
+.. GPU trisolve
+.. GPU trisolve
+.. GPU trisolve
+.. GPU trisolve
+.. GPU trisolve
+.. GPU trisolve
+.. GPU trisolve
+.. GPU trisolve
+.. GPU trisolve
+.. GPU trisolve
+.. GPU trisolve
+.. GPU trisolve
+.. GPU trisolve
+.. GPU trisolve
+.. GPU trisolve
+.. GPU trisolve
+.. GPU trisolve
+.. GPU trisolve
+.. GPU trisolve
+.. GPU trisolve
+.. GPU trisolve
+.. GPU trisolve
+.. GPU trisolve
+.. GPU trisolve
+.. GPU trisolve
+.. GPU trisolve
+.. GPU trisolve
+.. GPU trisolve
+.. GPU trisolve
+.. GPU trisolve
+.. GPU trisolve
+.. GPU trisolve
+.. GPU trisolve
+.. GPU trisolve
+.. GPU trisolve
+.. GPU trisolve
+.. GPU trisolve
+.. GPU trisolve
+.. GPU trisolve
+.. GPU trisolve
+.. GPU trisolve
+.. GPU trisolve
+.. GPU trisolve
+.. GPU trisolve
+.. GPU trisolve
+.. GPU trisolve
+.. GPU trisolve
+.. GPU trisolve
+.. GPU trisolve
+.. GPU trisolve
+.. GPU trisolve
+.. GPU trisolve
+.. GPU trisolve
+.. GPU trisolve
+.. GPU trisolve
+.. GPU trisolve
+.. GPU trisolve
+|pxReDistribute_X_to_B 	|     0.0001 	|     0.0000 	|     0.0074 	|   852.8303%| seconds|
+|pxReDistribute_B_to_X 	|     0.0001 	|     0.0000 	|     0.0044 	|   757.6002%| seconds|
+|forwardSolve          	|     0.0070 	|     0.0063 	|     0.0085 	|     5.7320%| seconds|
+|forwardSolve-compute  	|     0.0000 	|     0.0000 	|     0.0000 	|       -nan%| seconds|
+|forwardSolve-comm     	|     0.0000 	|     0.0000 	|     0.0000 	|     4.6718%| seconds|
+|ForwardSolve:Level-0 	|     0.0000 	|     0.0000 	|     0.0000 	|       -nan%| seconds|
+|ForwardSolve:Level-1 	|     0.0000 	|     0.0000 	|     0.0000 	|       -nan%| seconds|
+|ForwardSolve:Level-2 	|     0.0000 	|     0.0000 	|     0.0000 	|       -nan%| seconds|
+|ForwardSolve:Level-3 	|     0.0000 	|     0.0000 	|     0.0000 	|       -nan%| seconds|
+|ForwardSolve:Level-4 	|     0.0000 	|     0.0000 	|     0.0000 	|       -nan%| seconds|
+|ForwardSolve:Level-5 	|     0.0000 	|     0.0000 	|     0.0000 	|       -nan%| seconds|
+|ForwardSolve:Level-6 	|     0.0070 	|     0.0062 	|     0.0085 	|     5.7348%| seconds|
+|backSolve             	|     0.0042 	|     0.0034 	|     0.0053 	|     7.8975%| seconds|
+|backSolve-compute     	|     0.0000 	|     0.0000 	|     0.0000 	|       -nan%| seconds|
+|backSolve-comm        	|     0.0000 	|     0.0000 	|     0.0000 	|    14.5010%| seconds|
+|BackSolve:Level-0    	|     0.0000 	|     0.0000 	|     0.0000 	|       -nan%| seconds|
+|BackSolve:Level-1    	|     0.0000 	|     0.0000 	|     0.0000 	|       -nan%| seconds|
+|BackSolve:Level-2    	|     0.0000 	|     0.0000 	|     0.0000 	|       -nan%| seconds|
+|BackSolve:Level-3    	|     0.0000 	|     0.0000 	|     0.0000 	|       -nan%| seconds|
+|BackSolve:Level-4    	|     0.0000 	|     0.0000 	|     0.0000 	|       -nan%| seconds|
+|BackSolve:Level-5    	|     0.0000 	|     0.0000 	|     0.0000 	|       -nan%| seconds|
+|BackSolve:Level-6    	|     0.0042 	|     0.0034 	|     0.0053 	|     7.9057%| seconds|
+|trs_comm_z            	|     0.0024 	|     0.0009 	|     0.0032 	|    16.3473%| seconds|
+|TRS-XY_CommVolume     	|     0.0103 	|     0.0073 	|     0.0135 	|    11.7519%| Mwords|
+|TRS-Z_CommVolume      	|     0.0064 	|     0.0014 	|     0.0450 	|   123.6646%| Mwords|
+|TRS-XYZ_CommVolume    	|     0.0167 	|     0.0093 	|     0.0558 	|    47.8904%| Mwords|
+.. DiagScale = 3
+.. Sol  0: ||X - Xtrue|| / ||X|| = 9.272634e-05	 max_i |x - xtrue|_i / |x|_i = 7.396864e-05
+**************************************************
+**** Time (seconds) ****
+	EQUIL time            0.334
+	ROWPERM time          3.127
+	COLPERM time          1.941
+	SYMBFACT time         1.910
+	DISTRIBUTE time       2.587
+	FACTOR time           3.204
+	Factor flops	7.228418e+11	Mflops 	225610.99
+	SOLVE time            0.015
+	Solve flops	5.316635e+09	Mflops 	363861.37
+**************************************************

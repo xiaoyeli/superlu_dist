@@ -1,0 +1,86 @@
+MPI_Query_thread with MPI_THREAD_MULTIPLE
+__STDC_VERSION__ 201112
+Library version:	8.1.2
+Input matrix file:	/global/cfs/cdirs/m2957/liuyangz/my_research/matrix/s2D9pt2048.rua
+3D process grid: 2 X 1 X 16
+Time to read and distribute matrix 5.07
+**************************************************
+.. blocking parameters from sp_ienv():
+**    relaxation                 : 60
+**    max supernode              : 256
+**    estimated fill ratio       : 5
+**    min GEMM m*k*n to use GPU  : 5000
+**************************************************
+**************************************************
+.. options:
+**    Fact                      :    0
+**    Equil                     :    1
+**    DiagInv                   :    1
+**    ParSymbFact               :    0
+**    ColPerm                   :    4
+**    RowPerm                   :    1
+**    ReplaceTinyPivot          :    1
+**    IterRefine                :    0
+**    Trans                     :    0
+**    SymPattern                :    0
+**    lookahead_etree           :    0
+**    Use_TensorCore            :    0
+**    Use 3D algorithm          :    1
+**    num_lookaheads            :   10
+** parameters that can be altered by environment variables:
+**    superlu_relax             :   60
+**    superlu_maxsup            :  256
+**    min GEMM m*k*n to use GPU : 5000
+**    GPU buffer size           :   50000000
+**    GPU streams               :    1
+**    estimated fill ratio      :    5
+**************************************************
+.. equilibrated? *equed = N
+.. LDPERM job        5	 time: 1.28
+.. anorm 2.000000e+00
+** MPI 0/2, NVSHMEM 0/2,device name: x	 bus id: 612016, ndevices=5401,cur=2, node=nid002185 **
+** MPI 0/2, NVSHMEM 0/2,device name: x	 bus id: 612016, ndevices=5445,cur=2, node=nid002109 **
+** MPI 0/2, NVSHMEM 0/2,device name: x	 bus id: 612016, ndevices=5360,cur=2, node=nid001232 **
+** MPI 0/2, NVSHMEM 0/2,device name: x	 bus id: 612016, ndevices=5360,cur=2, node=nid002188 **
+** MPI 1/2, NVSHMEM 1/2,device name: x	 bus id: 612016, ndevices=5408,cur=3, node=nid001232 **
+** MPI 1/2, NVSHMEM 1/2,device name: x	 bus id: 612016, ndevices=5355,cur=3, node=nid002188 **
+** MPI 1/2, NVSHMEM 1/2,device name: x	 bus id: 612016, ndevices=5221,cur=3, node=nid002185 **
+** MPI 1/2, NVSHMEM 1/2,device name: x	 bus id: 612016, ndevices=5403,cur=3, node=nid002109 **
+.. Use METIS ordering on A'+A
+.. symbfact(): relax   60, maxsuper  256, fill    5
+	Matrix size min_mn   4194304
+	Nonzeros in L       439128225
+	Nonzeros in U       439128225
+	nonzeros in L+U     874062146
+	nonzeros in LSUB    104898387
+	No of supers 152991
+	Size of G(L) 12544070
+	Size of G(U) 8349766
+	int 4, short 2, float 4, double 8
+	SYMBfact (MB):	L\U 536.88	total 687.87	expansions 0
+.. # L blocks   413598	# U blocks   339396
+ === using DAG ===
+** MPI 0/2, NVSHMEM 0/2,device name: x	 bus id: 128, ndevices=0,cur=0, node=nid001232 **
+** MPI 0/2, NVSHMEM 0/2,device name: x	 bus id: 612016, ndevices=5219,cur=0, node=nid002188 **
+** MPI 0/2, NVSHMEM 0/2,device name: x	 bus id: 612016, ndevices=5400,cur=0, node=nid002185 **
+** MPI 1/2, NVSHMEM 1/2,device name: x	 bus id: 128, ndevices=0,cur=1, node=nid001232 **
+** MPI 1/2, NVSHMEM 1/2,device name: x	 bus id: 612016, ndevices=5231,cur=1, node=nid002188 **
+** MPI 1/2, NVSHMEM 1/2,device name: x	 bus id: 612016, ndevices=5207,cur=1, node=nid002185 **
+** MPI 0/2, NVSHMEM 0/2,device name: x	 bus id: 612016, ndevices=5371,cur=0, node=nid002109 **
+** MPI 1/2, NVSHMEM 1/2,device name: x	 bus id: 612016, ndevices=5410,cur=1, node=nid002109 **
+** MPI 0/2, NVSHMEM 0/2,device name: x	 bus id: 612016, ndevices=5334,cur=2, node=nid002189 **
+** MPI 1/2, NVSHMEM 1/2,device name: x	 bus id: 612016, ndevices=5315,cur=3, node=nid002189 **
+** MPI 0/2, NVSHMEM 0/2,device name: x	 bus id: 612016, ndevices=5255,cur=2, node=nid002345 **
+** MPI 0/2, NVSHMEM 0/2,device name: x	 bus id: 612016, ndevices=5444,cur=2, node=nid002708 **
+** MPI 0/2, NVSHMEM 0/2,device name: x	 bus id: 612016, ndevices=5338,cur=0, node=nid002189 **
+** MPI 0/2, NVSHMEM 0/2,device name: x	 bus id: 612016, ndevices=5397,cur=2, node=nid002192 **
+** MPI 1/2, NVSHMEM 1/2,device name: x	 bus id: 612016, ndevices=5283,cur=1, node=nid002189 **
+** MPI 1/2, NVSHMEM 1/2,device name: x	 bus id: 612016, ndevices=5213,cur=3, node=nid002708 **
+** MPI 0/2, NVSHMEM 0/2,device name: x	 bus id: 612016, ndevices=5360,cur=0, node=nid002708 **
+** MPI 1/2, NVSHMEM 1/2,device name: x	 bus id: 612016, ndevices=5432,cur=1, node=nid002708 **
+** MPI 1/2, NVSHMEM 1/2,device name: x	 bus id: 612016, ndevices=5404,cur=3, node=nid002345 **
+** MPI 1/2, NVSHMEM 1/2,device name: x	 bus id: 612016, ndevices=5294,cur=3, node=nid002192 **
+** MPI 0/2, NVSHMEM 0/2,device name: x	 bus id: 612016, ndevices=5395,cur=0, node=nid002345 **
+** MPI 0/2, NVSHMEM 0/2,device name: x	 bus id: 612016, ndevices=5440,cur=0, node=nid002192 **
+** MPI 1/2, NVSHMEM 1/2,device name: x	 bus id: 612016, ndevices=5231,cur=1, node=nid002345 **
+** MPI 1/2, NVSHMEM 1/2,device name: x	 bus id: 612016, ndevices=5444,cur=1, node=nid002192 **

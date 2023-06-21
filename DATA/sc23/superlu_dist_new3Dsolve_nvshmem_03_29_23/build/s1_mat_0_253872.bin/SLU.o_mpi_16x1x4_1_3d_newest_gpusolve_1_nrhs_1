@@ -1,0 +1,120 @@
+MPI_Query_thread with MPI_THREAD_MULTIPLE
+__STDC_VERSION__ 201112
+Library version:	8.1.2
+Input matrix file:	/global/cfs/cdirs/m2957/liuyangz/my_research/matrix/s1_mat_0_253872.bin
+3D process grid: 16 X 1 X 4
+fread n   253872	nnz 82155776
+# of doubles fread: 82155776
+Time to read and distribute matrix 0.12
+**************************************************
+.. blocking parameters from sp_ienv():
+**    relaxation                 : 60
+**    max supernode              : 256
+**    estimated fill ratio       : 5
+**    min GEMM m*k*n to use GPU  : 5000
+**************************************************
+**************************************************
+.. options:
+**    Fact                      :    0
+**    Equil                     :    1
+**    DiagInv                   :    1
+**    ParSymbFact               :    0
+**    ColPerm                   :    4
+**    RowPerm                   :    1
+**    ReplaceTinyPivot          :    1
+**    IterRefine                :    0
+**    Trans                     :    0
+**    SymPattern                :    0
+**    lookahead_etree           :    0
+**    Use_TensorCore            :    0
+**    Use 3D algorithm          :    1
+**    num_lookaheads            :   10
+** parameters that can be altered by environment variables:
+**    superlu_relax             :   60
+**    superlu_maxsup            :  256
+**    min GEMM m*k*n to use GPU : 5000
+**    GPU buffer size           :   50000000
+**    GPU streams               :    1
+**    estimated fill ratio      :    5
+**************************************************
+.. equilibrated? *equed = B
+.. LDPERM job        5	 time: 3.09
+.. anorm 1.407514e+02
+.. Use METIS ordering on A'+A
+.. symbfact(): relax   60, maxsuper  256, fill    5
+	Matrix size min_mn    253872
+	Nonzeros in L       213515548
+	Nonzeros in U       213497746
+	nonzeros in L+U     426759422
+	nonzeros in LSUB    40320624
+	No of supers 11346
+	Size of G(L) 4989222
+	Size of G(U) 1970429
+	int 4, short 2, float 4, double 8
+	SYMBfact (MB):	L\U 174.24	total 183.38	expansions 0
+.. # L blocks     4637	# U blocks     2952
+ === using DAG ===
+** MPI 0/16, NVSHMEM 0/16,device name: È bus id: 45424, ndevices=0,cur=0, node=nid001017 **
+** MPI 1/16, NVSHMEM 1/16,device name: È bus id: 45424, ndevices=0,cur=1, node=nid001017 **
+** MPI 2/16, NVSHMEM 2/16,device name: È bus id: 45424, ndevices=0,cur=2, node=nid001017 **
+** MPI 3/16, NVSHMEM 3/16,device name: È bus id: 45424, ndevices=0,cur=3, node=nid001017 **
+** MPI 4/16, NVSHMEM 4/16,device name: È bus id: 45424, ndevices=0,cur=0, node=nid001088 **
+** MPI 12/16, NVSHMEM 12/16,device name: È bus id: 45424, ndevices=0,cur=0, node=nid001161 **
+** MPI 8/16, NVSHMEM 8/16,device name: È bus id: 45424, ndevices=0,cur=0, node=nid001152 **
+** MPI 9/16, NVSHMEM 9/16,device name: È bus id: 45424, ndevices=0,cur=1, node=nid001152 **
+** MPI 5/16, NVSHMEM 5/16,device name: È bus id: 45424, ndevices=0,cur=1, node=nid001088 **
+** MPI 13/16, NVSHMEM 13/16,device name: È bus id: 45424, ndevices=0,cur=1, node=nid001161 **
+** MPI 10/16, NVSHMEM 10/16,device name: È bus id: 45424, ndevices=0,cur=2, node=nid001152 **
+** MPI 6/16, NVSHMEM 6/16,device name: È bus id: 45424, ndevices=0,cur=2, node=nid001088 **
+** MPI 14/16, NVSHMEM 14/16,device name: È bus id: 45424, ndevices=0,cur=2, node=nid001161 **
+** MPI 11/16, NVSHMEM 11/16,device name: È bus id: 45424, ndevices=0,cur=3, node=nid001152 **
+** MPI 7/16, NVSHMEM 7/16,device name: È bus id: 45424, ndevices=0,cur=3, node=nid001088 **
+** MPI 15/16, NVSHMEM 15/16,device name: È bus id: 45424, ndevices=0,cur=3, node=nid001161 **
+** MPI 8/16, NVSHMEM 8/16,device name: È bus id: 45424, ndevices=0,cur=0, node=nid002136 **
+** MPI 4/16, NVSHMEM 4/16,device name: È bus id: 45424, ndevices=0,cur=0, node=nid002048 **
+** MPI 0/16, NVSHMEM 0/16,device name: È bus id: 45424, ndevices=0,cur=0, node=nid001876 **
+** MPI 12/16, NVSHMEM 12/16,device name: È bus id: 45424, ndevices=0,cur=0, node=nid002196 **
+** MPI 9/16, NVSHMEM 9/16,device name: È bus id: 45424, ndevices=0,cur=1, node=nid002136 **
+** MPI 10/16, NVSHMEM 10/16,device name: È bus id: 45424, ndevices=0,cur=2, node=nid002136 **
+** MPI 11/16, NVSHMEM 11/16,device name: È bus id: 45424, ndevices=0,cur=3, node=nid002136 **
+** MPI 1/16, NVSHMEM 1/16,device name: È bus id: 45424, ndevices=0,cur=1, node=nid001876 **
+** MPI 12/16, NVSHMEM 12/16,device name: È bus id: 45424, ndevices=0,cur=0, node=nid001837 **
+** MPI 4/16, NVSHMEM 4/16,device name: È bus id: 45424, ndevices=0,cur=0, node=nid001565 **
+** MPI 13/16, NVSHMEM 13/16,device name: È bus id: 45424, ndevices=0,cur=1, node=nid002196 **
+** MPI 5/16, NVSHMEM 5/16,device name: È bus id: 45424, ndevices=0,cur=1, node=nid002048 **
+** MPI 2/16, NVSHMEM 2/16,device name: È bus id: 45424, ndevices=0,cur=2, node=nid001876 **
+** MPI 0/16, NVSHMEM 0/16,device name: È bus id: 45424, ndevices=0,cur=0, node=nid001500 **
+** MPI 14/16, NVSHMEM 14/16,device name: È bus id: 45424, ndevices=0,cur=2, node=nid002196 **
+** MPI 6/16, NVSHMEM 6/16,device name: È bus id: 45424, ndevices=0,cur=2, node=nid002048 **
+** MPI 8/16, NVSHMEM 8/16,device name: È bus id: 45424, ndevices=0,cur=0, node=nid001605 **
+** MPI 3/16, NVSHMEM 3/16,device name: È bus id: 45424, ndevices=0,cur=3, node=nid001876 **
+** MPI 15/16, NVSHMEM 15/16,device name: È bus id: 45424, ndevices=0,cur=3, node=nid002196 **
+** MPI 7/16, NVSHMEM 7/16,device name: È bus id: 45424, ndevices=0,cur=3, node=nid002048 **
+** MPI 13/16, NVSHMEM 13/16,device name: È bus id: 45424, ndevices=0,cur=1, node=nid001837 **
+** MPI 5/16, NVSHMEM 5/16,device name: È bus id: 45424, ndevices=0,cur=1, node=nid001565 **
+** MPI 1/16, NVSHMEM 1/16,device name: È bus id: 45424, ndevices=0,cur=1, node=nid001500 **
+** MPI 14/16, NVSHMEM 14/16,device name: È bus id: 45424, ndevices=0,cur=2, node=nid001837 **
+** MPI 6/16, NVSHMEM 6/16,device name: È bus id: 45424, ndevices=0,cur=2, node=nid001565 **
+** MPI 2/16, NVSHMEM 2/16,device name: È bus id: 45424, ndevices=0,cur=2, node=nid001500 **
+** MPI 9/16, NVSHMEM 9/16,device name: È bus id: 45424, ndevices=0,cur=1, node=nid001605 **
+** MPI 15/16, NVSHMEM 15/16,device name: È bus id: 45424, ndevices=0,cur=3, node=nid001837 **
+** MPI 7/16, NVSHMEM 7/16,device name: È bus id: 45424, ndevices=0,cur=3, node=nid001565 **
+** MPI 3/16, NVSHMEM 3/16,device name: È bus id: 45424, ndevices=0,cur=3, node=nid001500 **
+** MPI 10/16, NVSHMEM 10/16,device name: È bus id: 45424, ndevices=0,cur=2, node=nid001605 **
+** MPI 11/16, NVSHMEM 11/16,device name: È bus id: 45424, ndevices=0,cur=3, node=nid001605 **
+** MPI 4/16, NVSHMEM 4/16,device name: È bus id: 45424, ndevices=0,cur=0, node=nid002660 **
+** MPI 8/16, NVSHMEM 8/16,device name: È bus id: 45424, ndevices=0,cur=0, node=nid002680 **
+** MPI 0/16, NVSHMEM 0/16,device name: È bus id: 45424, ndevices=0,cur=0, node=nid002373 **
+** MPI 12/16, NVSHMEM 12/16,device name: È bus id: 45424, ndevices=0,cur=0, node=nid002744 **
+** MPI 9/16, NVSHMEM 9/16,device name: È bus id: 45424, ndevices=0,cur=1, node=nid002680 **
+** MPI 10/16, NVSHMEM 10/16,device name: È bus id: 45424, ndevices=0,cur=2, node=nid002680 **
+** MPI 11/16, NVSHMEM 11/16,device name: È bus id: 45424, ndevices=0,cur=3, node=nid002680 **
+** MPI 5/16, NVSHMEM 5/16,device name: È bus id: 45424, ndevices=0,cur=1, node=nid002660 **
+** MPI 1/16, NVSHMEM 1/16,device name: È bus id: 45424, ndevices=0,cur=1, node=nid002373 **
+** MPI 13/16, NVSHMEM 13/16,device name: È bus id: 45424, ndevices=0,cur=1, node=nid002744 **
+** MPI 6/16, NVSHMEM 6/16,device name: È bus id: 45424, ndevices=0,cur=2, node=nid002660 **
+** MPI 2/16, NVSHMEM 2/16,device name: È bus id: 45424, ndevices=0,cur=2, node=nid002373 **
+** MPI 14/16, NVSHMEM 14/16,device name: È bus id: 45424, ndevices=0,cur=2, node=nid002744 **
+** MPI 7/16, NVSHMEM 7/16,device name: È bus id: 45424, ndevices=0,cur=3, node=nid002660 **
+** MPI 3/16, NVSHMEM 3/16,device name: È bus id: 45424, ndevices=0,cur=3, node=nid002373 **
+** MPI 15/16, NVSHMEM 15/16,device name: È bus id: 45424, ndevices=0,cur=3, node=nid002744 **

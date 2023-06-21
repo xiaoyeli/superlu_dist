@@ -1,0 +1,62 @@
+MPI_Query_thread with MPI_THREAD_MULTIPLE
+__STDC_VERSION__ 201112
+Library version:	8.1.2
+Input matrix file:	/global/cfs/cdirs/m2957/liuyangz/my_research/matrix/ldoor.mtx
+3D process grid: 2 X 1 X 2
+Symmetric matrix: will be expanded
+m 952203, n 952203, nonz 23737339
+triplet file: row/col indices are one-based.
+new_nonz after symmetric expansion:	46522475
+Time to read and distribute matrix 6.74
+**************************************************
+.. blocking parameters from sp_ienv():
+**    relaxation                 : 60
+**    max supernode              : 256
+**    estimated fill ratio       : 5
+**    min GEMM m*k*n to use GPU  : 5000
+**************************************************
+**************************************************
+.. options:
+**    Fact                      :    0
+**    Equil                     :    1
+**    DiagInv                   :    1
+**    ParSymbFact               :    0
+**    ColPerm                   :    4
+**    RowPerm                   :    1
+**    ReplaceTinyPivot          :    1
+**    IterRefine                :    0
+**    Trans                     :    0
+**    SymPattern                :    0
+**    lookahead_etree           :    0
+**    Use_TensorCore            :    0
+**    Use 3D algorithm          :    1
+**    num_lookaheads            :   10
+** parameters that can be altered by environment variables:
+**    superlu_relax             :   60
+**    superlu_maxsup            :  256
+**    min GEMM m*k*n to use GPU : 5000
+**    GPU buffer size           :   50000000
+**    GPU streams               :    1
+**    estimated fill ratio      :    5
+**************************************************
+.. equilibrated? *equed = R
+.. LDPERM job        5	 time: 1.58
+.. anorm 1.956279e+01
+** MPI 0/2, NVSHMEM 0/2,device name: ‡Èólù bus id: 128, ndevices=0,cur=2, node=nid002180 **
+** MPI 1/2, NVSHMEM 1/2,device name: ‡˘’/ bus id: 128, ndevices=0,cur=3, node=nid002180 **
+.. Use METIS ordering on A'+A
+.. symbfact(): relax   60, maxsuper  256, fill    5
+	Matrix size min_mn    952203
+	Nonzeros in L       160961511
+	Nonzeros in U       160961511
+	nonzeros in L+U     320970819
+	nonzeros in LSUB    48889806
+	No of supers 46196
+	Size of G(L) 5167576
+	Size of G(U) 4215373
+	int 4, short 2, float 4, double 8
+	SYMBfact (MB):	L\U 231.46	total 265.74	expansions 0
+.. # L blocks   131310	# U blocks   109563
+ === using DAG ===
+** MPI 0/2, NVSHMEM 0/2,device name: ∏ bus id: 128, ndevices=0,cur=0, node=nid002180 **
+** MPI 1/2, NVSHMEM 1/2,device name: ∏ bus id: 128, ndevices=0,cur=1, node=nid002180 **

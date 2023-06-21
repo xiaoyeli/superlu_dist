@@ -1,0 +1,324 @@
+first gpufree time:  0.0000
+first blas create time:  0.0001
+MPI_Query_thread with MPI_THREAD_MULTIPLE
+__STDC_VERSION__ 201710
+Library version:	8.1.2
+Input matrix file:	/gpfs/alpine/scratch/liuyangz/csc289/matrix/Ga19As19H42.bin
+3D process grid: 1 X 1 X 16
+fread n   133123	nnz  8884839
+# of doubles fread:  8884839
+Time to read and distribute matrix 0.15
+**************************************************
+.. blocking parameters from sp_ienv():
+**    relaxation                 : 60
+**    max supernode              : 256
+**    estimated fill ratio       : 5
+**    min GEMM m*k*n to use GPU  : 5000
+**************************************************
+**************************************************
+.. options:
+**    Fact                      :    0
+**    Equil                     :    1
+**    DiagInv                   :    1
+**    ParSymbFact               :    0
+**    ColPerm                   :    4
+**    RowPerm                   :    1
+**    ReplaceTinyPivot          :    1
+**    IterRefine                :    0
+**    Trans                     :    0
+**    SymPattern                :    0
+**    lookahead_etree           :    0
+**    Use_TensorCore            :    0
+**    Use 3D algorithm          :    1
+**    num_lookaheads            :   10
+** parameters that can be altered by environment variables:
+**    superlu_relax             :   60
+**    superlu_maxsup            :  256
+**    min GEMM m*k*n to use GPU : 5000
+**    GPU buffer size           :  500000000
+**    GPU streams               :    1
+**    estimated fill ratio      :    5
+**************************************************
+.. equilibrated? *equed = N
+.. LDPERM job        5	 time: 0.11
+.. anorm 4.301589e+01
+.. Use METIS ordering on A'+A
+.. symbfact(): relax   60, maxsuper  256, fill    5
+	Matrix size min_mn    133123
+	Nonzeros in L       816746960
+	Nonzeros in U       816746960
+	nonzeros in L+U     1633360797
+	nonzeros in LSUB    94462969
+	No of supers 21996
+	Size of G(L) 50804793
+	Size of G(U) 50671670
+	int 4, short 2, float 4, double 8
+	SYMBfact (MB):	L\U 583.20	total 587.99	expansions 5
+.. # L blocks  4699986	# U blocks  4677990
+ === using DAG ===
+after 3D initialization.
+.. Starting with 1 openMP threads 
+MPI tag upper bound = 33554431
+ === using DAG ===
+dinitSluGPU3D_t: Using hardware acceleration, with 1 gpu streams 
+dinitSluGPU3D_t: Using 256 threads per block for scatter 
+*-- GPU flops: 
+	Flops offloaded 1.825e+13, Time 0.159865, Flop rate 114170.701347 GF/sec 
+*-- GPU memory: 
+	Mop offloaded 8.171e+10, Time 0.920240, Bandwidth 710.375432 GByte/sec 
+*-- PCIe Data Transfer H2D:
+	Data Sent 3.214e+00(GB)
+	Time observed from CPU 0.086491
+	Actual time spent 0.136300
+	Bandwidth 23.580565 GByte/sec 
+*-- PCIe Data Transfer D2H:
+	Data Sent 3.229e+00(GB)
+	Time observed from CPU 0.044514
+	Actual time spent 0.244465
+	Bandwidth 13.206816 GByte/sec 
+Total time in factorization 	: 59.69
+MPI-communication phase 	: 48.69
+|Wait_LSend             	|     0.0001 	|     0.0001 	|     0.0001 	|     0.0000%| Seconds|
+|Wait_USend             	|     0.0000 	|     0.0000 	|     0.0000 	|     0.0000%| Seconds|
+|Wait_URecv             	|     0.0000 	|     0.0000 	|     0.0000 	|       -nan%| Seconds|
+|Wait_LRecv             	|     0.0000 	|     0.0000 	|     0.0000 	|       -nan%| Seconds|
+|L_PanelUpdate          	|     0.0000 	|     0.0000 	|     0.0000 	|       -nan%| Seconds|
+|PDGSTRS2               	|     0.0000 	|     0.0000 	|     0.0000 	|       -nan%| Seconds|
+|wait-FunCallStream     	|     0.8351 	|     0.8351 	|     0.8351 	|     0.0000%| Seconds|
+|wait-copyStream        	|     0.2160 	|     0.2160 	|     0.2160 	|     0.0000%| Seconds|
+|waitGPU2CPU            	|     0.8351 	|     0.8351 	|     0.8351 	|     0.0000%| Seconds|
+|SchurCompUpdate        	|    11.0044 	|    11.0044 	|    11.0044 	|     0.0000%| Seconds|
+|PanelFactorization     	|    48.6898 	|    48.6898 	|    48.6898 	|     0.0000%| Seconds|
+#### High Level Time Breakdown :    60.3686 
+
+|Function name 	| avg 	| min 	| max 	| std-dev| units|
+|---|---|---|---|---|---|
+|Startup                	|     0.6743 	|     0.6743 	|     0.6743 	|     0.0000%| Seconds|
+|Main-Factor loop       	|    59.6942 	|    59.6942 	|    59.6942 	|     0.0000%| Seconds|
+|3D-GatherLU            	|     0.0000 	|     0.0000 	|     0.0000 	|     0.0000%| Seconds|
+|tTotal                 	|    60.3686 	|    60.3686 	|    60.3686 	|     0.0000%| Seconds|
+#### Components of Factor Loop :    59.6942 
+
+|Function name 	| avg 	| min 	| max 	| std-dev| units|
+|---|---|---|---|---|---|
+|3D-AncestorReduce      	|    44.3436 	|    44.3436 	|    44.3436 	|     0.0000%| Seconds|
+|Pipeline Tail          	|     3.7894 	|     3.7894 	|     3.7894 	|     0.0000%| Seconds|
+|Grid-0 Factor:Level-0     	|     4.3229 	|     4.3229 	|     4.3229 	|     0.0000%| Seconds|
+|Grid-0 Factor:Level-1     	|     3.2145 	|     3.2145 	|     3.2145 	|     0.0000%| Seconds|
+|Grid-0 Factor:Level-2     	|     1.0055 	|     1.0055 	|     1.0055 	|     0.0000%| Seconds|
+|Grid-0 Factor:Level-3     	|     0.2549 	|     0.2549 	|     0.2549 	|     0.0000%| Seconds|
+|Grid-0 Factor:Level-4     	|     6.5525 	|     6.5525 	|     6.5525 	|     0.0000%| Seconds|
+| commVolRed | 1.01869e+11   | 6.36679e+09 |
+| commVolFactor | 2.37744e+07   | 1.4859e+06 |
+| Total Memory 	| 3.2e+09  	| 4.4e+09  	|2.5e+09  	|
+| LU-LU(repli) 	| 7.8e+08  	| 2.4e+09  	|
+|Forest | weight | cost | weight/Cost | 
+|0   | 7.50e+11   | -nan   | -nan  |
+|1   | 1.29e+12   | 3.21e+00   | 4.03e+02  |
+|2   | 1.44e+12   | -nan   | -nan  |
+|3   | 2.46e+11   | -nan   | -nan  |
+|4   | 1.14e+12   | 4.54e+223   | 2.52e-221  |
+|5   | 1.30e+12   | -nan   | -nan  |
+|6   | 3.09e+11   | 1.31e+00   | 2.35e+02  |
+|7   | 3.91e+10   | 2.55e-01   | 1.53e+02  |
+|8   | 7.92e+10   | 3.01e-01   | 2.63e+02  |
+|9   | 7.54e+10   | 4.52e-01   | 1.67e+02  |
+|10   | 4.55e+11   | 1.89e+00   | 2.40e+02  |
+|11   | 4.66e+11   | 1.53e+00   | 3.04e+02  |
+|12   | 1.27e+11   | 5.96e-01   | 2.13e+02  |
+|13   | 1.48e+11   | 7.66e+39   | 1.94e-38  |
+|14   | 4.95e+10   | -nan   | -nan  |
+|15   | 2.71e+10   | 1.36e+248   | 2.00e-247  |
+|16   | 9.62e+09   | 4.15e+199   | 2.32e-199  |
+|17   | 3.43e+10   | 8.49e+00   | 4.04e+00  |
+|18   | 4.48e+10   | 9.11e+00   | 4.92e+00  |
+|19   | 5.17e+10   | -nan   | -nan  |
+|20   | 2.01e+10   | 8.61e+00   | 2.33e+00  |
+|21   | 1.35e+11   | 1.15e+01   | 1.17e+01  |
+|22   | 3.19e+11   | 1.52e+01   | 2.10e+01  |
+|23   | 1.69e+11   | 1.56e+01   | 1.08e+01  |
+|24   | 4.20e+11   | 2.72e+01   | 1.55e+01  |
+|25   | 9.70e+10   | 2.31e+01   | 4.19e+00  |
+|26   | 1.49e+10   | 1.21e+01   | 1.23e+00  |
+|27   | 1.79e+10   | 1.74e+01   | 1.02e+00  |
+|28   | 1.19e+11   | 4.58e+01   | 2.60e+00  |
+|29   | 3.51e+10   | -4.17e+242   | -8.43e-242  |
+|30   | 6.77e+09   | -2.58e+216   | -2.62e-216  |
+|CritcalPath   | 2.56e+12   | -nan   | -nan  |
+|Pearsoncoefficient |  0.168 |
+
+~~~mermaid 
+
+gantt 
+        		 dateFormat  mm-ss 
+       		 title TreeCost and Time Gantt Chart
+
+
+	 Section Time
+	 tree-15 	:Time-15, 0d, 13561721333310883780176649974339677733733217746908462414452261305010957400738532739145168043635949484752739968470349159337012427082925845726265480789864456413161395064506276572496959106755827198088136848829181273867295173826451806835162752320974880768d 
+	 tree-7  1.4e+250 	:Time-7, after Time-15, 25d 
+	 tree-16 	:Time-16, 0d, 4148168960867432593100596870612509757256319383426644890520056996374266396800525618973367486020531067572492599914192269543151758885556662520097893910805322958623697955168382919711186877706525132292358144d 
+	 tree-3  -nan 	:Time-3, after Time-7, -nand 
+	 tree-17 	:Time-17, 0d, 849d 
+	 tree-8  9.4e+02 	:Time-8, after Time-18, 30d 
+	 tree-18 	:Time-18, 0d, 911d 
+	 tree-1  4.5e+225 	:Time-1, after Time-4, 321d 
+	 tree-19 	:Time-19, 0d, -nand 
+	 tree-9  9.1e+02 	:Time-9, after Time-20, 45d 
+	 tree-20 	:Time-20, 0d, 861d 
+	 tree-4  4.5e+225 	:Time-4, after Time-10, 4539568185163172253867439725859836605405052673208432417814619026625897468362427110373823621310787255514194080263862503813614382530470215646611242115826936874961570357782439296608605346949745709184570090582505093163250194841600d 
+	 tree-21 	:Time-21, 0d, 1148d 
+	 tree-10  1.7e+03 	:Time-10, after Time-22, 189d 
+	 tree-22 	:Time-22, 0d, 1522d 
+	 tree-0  -nan 	:Time-0, after Time-2, -nand 
+	 tree-23 	:Time-23, 0d, 1563d 
+	 tree-11  2.9e+03 	:Time-11, after Time-24, 153d 
+	 tree-24 	:Time-24, 0d, 2719d 
+	 tree-5  -nan 	:Time-5, after Time-11, -nand 
+	 tree-25 	:Time-25, 0d, 2313d 
+	 tree-12  2.4e+03 	:Time-12, after Time-25, 60d 
+	 tree-26 	:Time-26, 0d, 1212d 
+	 tree-2  -nan 	:Time-2, after Time-6, -nand 
+	 tree-27 	:Time-27, 0d, 1744d 
+	 tree-13  7.7e+41 	:Time-13, after Time-28, 766104956712707561721369422741842052513792d 
+	 tree-28 	:Time-28, 0d, 4578d 
+	 tree-6  -nan 	:Time-6, after Time-14, 131d 
+	 tree-29 	:Time-29, 0d, -41653786427674743561377932770198752459837575731610697016574640969955310078386682387379912456510000923200729983336578770405202695396445264760939010828391168409724986680556525782024696725577040459359888709105376469234161490484251359618562634285056d 
+	 tree-14  -nan 	:Time-14, after Time-30, -nand 
+	 tree-30 	:Time-30, 0d, -258040953951202647966261335922902222072442390164168968879442959120569966859487137107204044120464173956670776767348925806593546067816224639736592830094452550307330267467121569240735663418110185338062110735386587193933824d 
+	 Section Weight
+	 tree-15 	:weight-15, 0d, -nand 
+	 tree-7  -nan 	:weight-7, after weight-15, -nand 
+	 tree-16 	:weight-16, 0d, -nand 
+	 tree-3  -nan 	:weight-3, after weight-8, -nand 
+	 tree-17 	:weight-17, 0d, -nand 
+	 tree-8  -nan 	:weight-8, after weight-18, -nand 
+	 tree-18 	:weight-18, 0d, -nand 
+	 tree-1  -nan 	:weight-1, after weight-4, -nand 
+	 tree-19 	:weight-19, 0d, -nand 
+	 tree-9  -nan 	:weight-9, after weight-19, -nand 
+	 tree-20 	:weight-20, 0d, -nand 
+	 tree-4  -nan 	:weight-4, after weight-10, -nand 
+	 tree-21 	:weight-21, 0d, -nand 
+	 tree-10  -nan 	:weight-10, after weight-22, -nand 
+	 tree-22 	:weight-22, 0d, -nand 
+	 tree-0  -nan 	:weight-0, after weight-1, -nand 
+	 tree-23 	:weight-23, 0d, -nand 
+	 tree-11  -nan 	:weight-11, after weight-24, -nand 
+	 tree-24 	:weight-24, 0d, -nand 
+	 tree-5  -nan 	:weight-5, after weight-11, -nand 
+	 tree-25 	:weight-25, 0d, -nand 
+	 tree-12  -nan 	:weight-12, after weight-25, -nand 
+	 tree-26 	:weight-26, 0d, -nand 
+	 tree-2  -nan 	:weight-2, after weight-5, -nand 
+	 tree-27 	:weight-27, 0d, -nand 
+	 tree-13  -nan 	:weight-13, after weight-28, -nand 
+	 tree-28 	:weight-28, 0d, -nand 
+	 tree-6  -nan 	:weight-6, after weight-13, -nand 
+	 tree-29 	:weight-29, 0d, -nand 
+	 tree-14  -nan 	:weight-14, after weight-29, -nand 
+	 tree-30 	:weight-30, 0d, -nand 
+~~~
+
+
+num_thread:     1
+|pxReDistribute_X_to_B 	|     0.0014 	|     0.0000 	|     0.0228 	|   385.7268%| seconds|
+|pxReDistribute_B_to_X 	|     0.0020 	|     0.0000 	|     0.0322 	|   387.2377%| seconds|
+|forwardSolve          	|     0.9148 	|     0.6861 	|     1.3901 	|    23.2433%| seconds|
+|forwardSolve-compute  	|     0.9020 	|     0.6743 	|     1.3758 	|    23.5013%| seconds|
+|forwardSolve-comm     	|     0.0000 	|     0.0000 	|     0.0000 	|     8.9522%| seconds|
+|ForwardSolve:Level-0 	|     0.0000 	|     0.0000 	|     0.0000 	|       -nan%| seconds|
+|ForwardSolve:Level-1 	|     0.0000 	|     0.0000 	|     0.0000 	|       -nan%| seconds|
+|ForwardSolve:Level-2 	|     0.0000 	|     0.0000 	|     0.0000 	|       -nan%| seconds|
+|ForwardSolve:Level-3 	|     0.0000 	|     0.0000 	|     0.0000 	|       -nan%| seconds|
+|ForwardSolve:Level-4 	|     0.9080 	|     0.6793 	|     1.3833 	|    23.4146%| seconds|
+|backSolve             	|     3.1063 	|     1.9209 	|     5.2288 	|    30.4466%| seconds|
+|backSolve-compute     	|     3.0861 	|     1.9049 	|     5.2044 	|    30.5557%| seconds|
+|backSolve-comm        	|     0.0000 	|     0.0000 	|     0.0000 	|    38.6449%| seconds|
+|BackSolve:Level-0    	|     0.0000 	|     0.0000 	|     0.0000 	|       -nan%| seconds|
+|BackSolve:Level-1    	|     0.0000 	|     0.0000 	|     0.0000 	|       -nan%| seconds|
+|BackSolve:Level-2    	|     0.0000 	|     0.0000 	|     0.0000 	|       -nan%| seconds|
+|BackSolve:Level-3    	|     0.0000 	|     0.0000 	|     0.0000 	|       -nan%| seconds|
+|BackSolve:Level-4    	|     3.0999 	|     1.9144 	|     5.2224 	|    30.5093%| seconds|
+|trs_comm_z            	|     0.4913 	|     0.0162 	|     0.7201 	|    43.2752%| seconds|
+|TRS-XY_CommVolume     	|     0.0000 	|     0.0000 	|     0.0000 	|       -nan%| Mwords|
+|TRS-Z_CommVolume      	|     2.6548 	|     1.0937 	|     6.6533 	|    67.0545%| Mwords|
+|TRS-XYZ_CommVolume    	|     2.6548 	|     1.0937 	|     6.6533 	|    67.0545%| Mwords|
+.. DiagScale = 3
+.. Sol  0: ||X - Xtrue|| / ||X|| = 1.488918e-10	 max_i |x - xtrue|_i / |x|_i = 2.728340e-11
+.. Sol  1: ||X - Xtrue|| / ||X|| = 1.488918e-10	 max_i |x - xtrue|_i / |x|_i = 2.728340e-11
+.. Sol  2: ||X - Xtrue|| / ||X|| = 1.488918e-10	 max_i |x - xtrue|_i / |x|_i = 2.728340e-11
+.. Sol  3: ||X - Xtrue|| / ||X|| = 1.488918e-10	 max_i |x - xtrue|_i / |x|_i = 2.728340e-11
+.. Sol  4: ||X - Xtrue|| / ||X|| = 1.488918e-10	 max_i |x - xtrue|_i / |x|_i = 2.728340e-11
+.. Sol  5: ||X - Xtrue|| / ||X|| = 1.488918e-10	 max_i |x - xtrue|_i / |x|_i = 2.728340e-11
+.. Sol  6: ||X - Xtrue|| / ||X|| = 1.488918e-10	 max_i |x - xtrue|_i / |x|_i = 2.728340e-11
+.. Sol  7: ||X - Xtrue|| / ||X|| = 1.488918e-10	 max_i |x - xtrue|_i / |x|_i = 2.728340e-11
+.. Sol  8: ||X - Xtrue|| / ||X|| = 1.488918e-10	 max_i |x - xtrue|_i / |x|_i = 2.728340e-11
+.. Sol  9: ||X - Xtrue|| / ||X|| = 1.488918e-10	 max_i |x - xtrue|_i / |x|_i = 2.728340e-11
+.. Sol 10: ||X - Xtrue|| / ||X|| = 1.488918e-10	 max_i |x - xtrue|_i / |x|_i = 2.728340e-11
+.. Sol 11: ||X - Xtrue|| / ||X|| = 1.488918e-10	 max_i |x - xtrue|_i / |x|_i = 2.728340e-11
+.. Sol 12: ||X - Xtrue|| / ||X|| = 1.488918e-10	 max_i |x - xtrue|_i / |x|_i = 2.728340e-11
+.. Sol 13: ||X - Xtrue|| / ||X|| = 1.488918e-10	 max_i |x - xtrue|_i / |x|_i = 2.728340e-11
+.. Sol 14: ||X - Xtrue|| / ||X|| = 1.488918e-10	 max_i |x - xtrue|_i / |x|_i = 2.728340e-11
+.. Sol 15: ||X - Xtrue|| / ||X|| = 1.488918e-10	 max_i |x - xtrue|_i / |x|_i = 2.728340e-11
+.. Sol 16: ||X - Xtrue|| / ||X|| = 1.488918e-10	 max_i |x - xtrue|_i / |x|_i = 2.728340e-11
+.. Sol 17: ||X - Xtrue|| / ||X|| = 1.488918e-10	 max_i |x - xtrue|_i / |x|_i = 2.728340e-11
+.. Sol 18: ||X - Xtrue|| / ||X|| = 1.488918e-10	 max_i |x - xtrue|_i / |x|_i = 2.728340e-11
+.. Sol 19: ||X - Xtrue|| / ||X|| = 1.488918e-10	 max_i |x - xtrue|_i / |x|_i = 2.728340e-11
+.. Sol 20: ||X - Xtrue|| / ||X|| = 1.488918e-10	 max_i |x - xtrue|_i / |x|_i = 2.728340e-11
+.. Sol 21: ||X - Xtrue|| / ||X|| = 1.488918e-10	 max_i |x - xtrue|_i / |x|_i = 2.728340e-11
+.. Sol 22: ||X - Xtrue|| / ||X|| = 1.488918e-10	 max_i |x - xtrue|_i / |x|_i = 2.728340e-11
+.. Sol 23: ||X - Xtrue|| / ||X|| = 1.488918e-10	 max_i |x - xtrue|_i / |x|_i = 2.728340e-11
+.. Sol 24: ||X - Xtrue|| / ||X|| = 1.488918e-10	 max_i |x - xtrue|_i / |x|_i = 2.728340e-11
+.. Sol 25: ||X - Xtrue|| / ||X|| = 1.488918e-10	 max_i |x - xtrue|_i / |x|_i = 2.728340e-11
+.. Sol 26: ||X - Xtrue|| / ||X|| = 1.488918e-10	 max_i |x - xtrue|_i / |x|_i = 2.728340e-11
+.. Sol 27: ||X - Xtrue|| / ||X|| = 1.488918e-10	 max_i |x - xtrue|_i / |x|_i = 2.728340e-11
+.. Sol 28: ||X - Xtrue|| / ||X|| = 1.488918e-10	 max_i |x - xtrue|_i / |x|_i = 2.728340e-11
+.. Sol 29: ||X - Xtrue|| / ||X|| = 1.488918e-10	 max_i |x - xtrue|_i / |x|_i = 2.728340e-11
+.. Sol 30: ||X - Xtrue|| / ||X|| = 1.488918e-10	 max_i |x - xtrue|_i / |x|_i = 2.728340e-11
+.. Sol 31: ||X - Xtrue|| / ||X|| = 1.488918e-10	 max_i |x - xtrue|_i / |x|_i = 2.728340e-11
+.. Sol 32: ||X - Xtrue|| / ||X|| = 1.488918e-10	 max_i |x - xtrue|_i / |x|_i = 2.728340e-11
+.. Sol 33: ||X - Xtrue|| / ||X|| = 1.488918e-10	 max_i |x - xtrue|_i / |x|_i = 2.728340e-11
+.. Sol 34: ||X - Xtrue|| / ||X|| = 1.488918e-10	 max_i |x - xtrue|_i / |x|_i = 2.728340e-11
+.. Sol 35: ||X - Xtrue|| / ||X|| = 1.488918e-10	 max_i |x - xtrue|_i / |x|_i = 2.728340e-11
+.. Sol 36: ||X - Xtrue|| / ||X|| = 1.488918e-10	 max_i |x - xtrue|_i / |x|_i = 2.728340e-11
+.. Sol 37: ||X - Xtrue|| / ||X|| = 1.488918e-10	 max_i |x - xtrue|_i / |x|_i = 2.728340e-11
+.. Sol 38: ||X - Xtrue|| / ||X|| = 1.488918e-10	 max_i |x - xtrue|_i / |x|_i = 2.728340e-11
+.. Sol 39: ||X - Xtrue|| / ||X|| = 1.488918e-10	 max_i |x - xtrue|_i / |x|_i = 2.728340e-11
+.. Sol 40: ||X - Xtrue|| / ||X|| = 1.488918e-10	 max_i |x - xtrue|_i / |x|_i = 2.728340e-11
+.. Sol 41: ||X - Xtrue|| / ||X|| = 1.488918e-10	 max_i |x - xtrue|_i / |x|_i = 2.728340e-11
+.. Sol 42: ||X - Xtrue|| / ||X|| = 1.488918e-10	 max_i |x - xtrue|_i / |x|_i = 2.728340e-11
+.. Sol 43: ||X - Xtrue|| / ||X|| = 1.488918e-10	 max_i |x - xtrue|_i / |x|_i = 2.728340e-11
+.. Sol 44: ||X - Xtrue|| / ||X|| = 1.488918e-10	 max_i |x - xtrue|_i / |x|_i = 2.728340e-11
+.. Sol 45: ||X - Xtrue|| / ||X|| = 1.488918e-10	 max_i |x - xtrue|_i / |x|_i = 2.728340e-11
+.. Sol 46: ||X - Xtrue|| / ||X|| = 1.488918e-10	 max_i |x - xtrue|_i / |x|_i = 2.728340e-11
+.. Sol 47: ||X - Xtrue|| / ||X|| = 1.488918e-10	 max_i |x - xtrue|_i / |x|_i = 2.728340e-11
+.. Sol 48: ||X - Xtrue|| / ||X|| = 1.488918e-10	 max_i |x - xtrue|_i / |x|_i = 2.728340e-11
+.. Sol 49: ||X - Xtrue|| / ||X|| = 1.488918e-10	 max_i |x - xtrue|_i / |x|_i = 2.728340e-11
+ === using DAG ===
+ === using DAG ===
+ === using DAG ===
+ === using DAG ===
+ === using DAG ===
+ === using DAG ===
+ === using DAG ===
+ === using DAG ===
+ === using DAG ===
+ === using DAG ===
+ === using DAG ===
+ === using DAG ===
+ === using DAG ===
+ === using DAG ===
+ === using DAG ===
+**************************************************
+**** Time (seconds) ****
+	EQUIL time            0.012
+	ROWPERM time          0.110
+	COLPERM time          2.581
+	SYMBFACT time         3.761
+	DISTRIBUTE time      11.554
+	FACTOR time          63.762
+	Factor flops	1.871706e+13	Mflops 	293543.91
+	SOLVE time            6.635
+	Solve flops	5.408383e+11	Mflops 	81512.24
+**************************************************

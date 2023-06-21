@@ -1,0 +1,190 @@
+MPI_Query_thread with MPI_THREAD_MULTIPLE
+__STDC_VERSION__ 201112
+Library version:	8.1.2
+Input matrix file:	/global/cfs/cdirs/m2957/liuyangz/my_research/matrix/nlpkkt80.bin
+3D process grid: 16 X 16 X 8
+fread n  1062400	nnz 28704672
+# of doubles fread: 28704672
+Time to read and distribute matrix 0.23
+**************************************************
+.. blocking parameters from sp_ienv():
+**    relaxation                 : 60
+**    max supernode              : 256
+**    estimated fill ratio       : 5
+**    min GEMM m*k*n to use GPU  : 5000
+**************************************************
+**************************************************
+.. options:
+**    Fact                      :    0
+**    Equil                     :    1
+**    DiagInv                   :    1
+**    ParSymbFact               :    0
+**    ColPerm                   :    4
+**    RowPerm                   :    1
+**    ReplaceTinyPivot          :    1
+**    IterRefine                :    0
+**    Trans                     :    0
+**    SymPattern                :    0
+**    lookahead_etree           :    0
+**    Use_TensorCore            :    0
+**    Use 3D algorithm          :    1
+**    num_lookaheads            :   10
+** parameters that can be altered by environment variables:
+**    superlu_relax             :   60
+**    superlu_maxsup            :  256
+**    min GEMM m*k*n to use GPU : 5000
+**    GPU buffer size           :  256000000
+**    GPU streams               :    8
+**    estimated fill ratio      :    5
+**************************************************
+.. equilibrated? *equed = B
+.. LDPERM job        5	 time: 1.05
+.. anorm 7.552500e+00
+.. Use METIS ordering on A'+A
+.. symbfact(): relax   60, maxsuper  256, fill    5
+	Matrix size min_mn   1062400
+	Nonzeros in L       1901882424
+	Nonzeros in U       1901947473
+	nonzeros in L+U     -492199799
+	nonzeros in LSUB    264122680
+	No of supers 26479
+	Size of G(L) 14947286
+	Size of G(U) 13893303
+	int 4, short 2, float 4, double 8
+	SYMBfact (MB):	L\U 1133.31	total 1171.56	expansions 2
+.. # L blocks     3551	# U blocks     1898
+ === using DAG ===
+after 3D initialization.
+.. Starting with 1 openMP threads 
+MPI tag upper bound = 2097151
+Total time in factorization 	:  6.19
+MPI-communication phase 	:  4.68
+|Wait_LSend             	|     0.0685 	|     0.0195 	|     0.1477 	|    30.1552%| Seconds|
+|Wait_USend             	|     0.4274 	|     0.1257 	|     0.6230 	|    23.6412%| Seconds|
+|Wait_URecv             	|     0.8754 	|     0.3518 	|     1.5176 	|    26.5837%| Seconds|
+|Wait_LRecv             	|     2.4510 	|     1.6655 	|     3.5099 	|    15.5159%| Seconds|
+|L_PanelUpdate          	|     0.0000 	|     0.0000 	|     0.0000 	|       -nan%| Seconds|
+|PDGSTRS2               	|     0.0000 	|     0.0000 	|     0.0000 	|       -nan%| Seconds|
+|wait-FunCallStream     	|     0.0000 	|     0.0000 	|     0.0000 	|       -nan%| Seconds|
+|wait-copyStream        	|     0.0000 	|     0.0000 	|     0.0000 	|       -nan%| Seconds|
+|waitGPU2CPU            	|     0.0000 	|     0.0000 	|     0.0000 	|       -nan%| Seconds|
+|SchurCompUpdate        	|     1.5134 	|     0.9858 	|     2.1118 	|    15.0713%| Seconds|
+|PanelFactorization     	|     4.6756 	|     4.0770 	|     5.2031 	|     4.8784%| Seconds|
+#### High Level Time Breakdown :     6.6018 
+
+|Function name 	| avg 	| min 	| max 	| std-dev| units|
+|---|---|---|---|---|---|
+|Startup                	|     0.4129 	|     0.0042 	|     0.9806 	|    50.9135%| Seconds|
+|Main-Factor loop       	|     6.1889 	|     6.1888 	|     6.1890 	|     0.0008%| Seconds|
+|3D-GatherLU            	|     0.0000 	|     0.0000 	|     0.0000 	|   523.8745%| Seconds|
+|tTotal                 	|     6.6018 	|     6.1931 	|     7.1696 	|     3.1842%| Seconds|
+#### Components of Factor Loop :     6.1889 
+
+|Function name 	| avg 	| min 	| max 	| std-dev| units|
+|---|---|---|---|---|---|
+|3D-AncestorReduce      	|     0.4614 	|     0.3304 	|     0.5173 	|     8.7827%| Seconds|
+|Pipeline Tail          	|     0.3034 	|     0.0210 	|     0.6184 	|    34.8386%| Seconds|
+|Grid-0 Factor:Level-0     	|     1.3202 	|     1.2306 	|     1.3681 	|     2.2933%| Seconds|
+|Grid-0 Factor:Level-1     	|     1.6826 	|     1.6178 	|     1.7543 	|     1.7629%| Seconds|
+|Grid-0 Factor:Level-2     	|     0.7524 	|     0.7187 	|     0.8766 	|     4.0209%| Seconds|
+|Grid-0 Factor:Level-3     	|     1.9410 	|     1.9008 	|     1.9681 	|     0.9490%| Seconds|
+| commVolRed | 4.66469e+10   | 2.27768e+07 |
+| commVolFactor | 2.90435e+11   | 1.41814e+08 |
+| Total Memory 	| 2e+07  	| 3.3e+07  	|1.2e+07  	|
+| LU-LU(repli) 	| 1.2e+07  	| 8.6e+06  	|
+|Forest | weight | cost | weight/Cost | 
+|0   | 4.80e+09   | -1.48e+01   | -3.25e-01  |
+|1   | 8.66e+09   | -6.30e+00   | -1.38e+00  |
+|2   | 8.67e+09   | -6.25e+00   | -1.39e+00  |
+|3   | 3.87e+09   | -2.32e+01   | -1.67e-01  |
+|4   | 3.77e+09   | 1.85e+02   | 2.04e-02  |
+|5   | 4.78e+09   | -1.52e+01   | -3.15e-01  |
+|6   | 3.53e+09   | -1.51e+01   | -2.33e-01  |
+|7   | 1.27e+10   | -2.21e+01   | -5.75e-01  |
+|8   | 1.01e+10   | 2.01e+00   | 5.01e+00  |
+|9   | 1.04e+10   | 2.19e+00   | 4.74e+00  |
+|10   | 9.54e+09   | 2.13e+00   | 4.48e+00  |
+|11   | 1.19e+10   | 2.09e+00   | 5.68e+00  |
+|12   | 1.01e+10   | 2.05e+00   | 4.95e+00  |
+|13   | 9.86e+09   | 2.13e+00   | 4.62e+00  |
+|14   | 9.52e+09   | 1.89e+00   | 5.03e+00  |
+|CritcalPath   | 2.76e+10   | 1.66e+02   | 1.66e-01  |
+|Pearsoncoefficient |  0.074 |
+
+~~~mermaid 
+
+gantt 
+        		 dateFormat  mm-ss 
+       		 title TreeCost and Time Gantt Chart
+
+
+	 Section Time
+	 tree-7 	:Time-7, 0d, -2210d 
+	 tree-3  -2.1e+03 	:Time-3, after Time-8, -2324d 
+	 tree-8 	:Time-8, 0d, 201d 
+	 tree-1  1.8e+04 	:Time-1, after Time-4, -630d 
+	 tree-9 	:Time-9, 0d, 219d 
+	 tree-4  1.9e+04 	:Time-4, after Time-9, 18482d 
+	 tree-10 	:Time-10, 0d, 213d 
+	 tree-0  1.7e+04 	:Time-0, after Time-1, -1476d 
+	 tree-11 	:Time-11, 0d, 209d 
+	 tree-5  -1.3e+03 	:Time-5, after Time-11, -1520d 
+	 tree-12 	:Time-12, 0d, 205d 
+	 tree-2  -1.9e+03 	:Time-2, after Time-6, -625d 
+	 tree-13 	:Time-13, 0d, 213d 
+	 tree-6  -1.3e+03 	:Time-6, after Time-13, -1515d 
+	 tree-14 	:Time-14, 0d, 189d 
+	 Section Weight
+	 tree-7 	:weight-7, 0d, 7648d 
+	 tree-3  8.4e+03 	:weight-3, after weight-7, 2330d 
+	 tree-8 	:weight-8, 0d, 6046d 
+	 tree-1  1.4e+04 	:weight-1, after weight-4, 5211d 
+	 tree-9 	:weight-9, 0d, 6231d 
+	 tree-4  8.5e+03 	:weight-4, after weight-9, 2266d 
+	 tree-10 	:weight-10, 0d, 5735d 
+	 tree-0  1.7e+04 	:weight-0, after weight-1, 2887d 
+	 tree-11 	:weight-11, 0d, 7133d 
+	 tree-5  1e+04 	:weight-5, after weight-11, 2876d 
+	 tree-12 	:weight-12, 0d, 6095d 
+	 tree-2  1.3e+04 	:weight-2, after weight-5, 5212d 
+	 tree-13 	:weight-13, 0d, 5929d 
+	 tree-6  8e+03 	:weight-6, after weight-13, 2121d 
+	 tree-14 	:weight-14, 0d, 5723d 
+~~~
+
+
+num_thread:     1
+|pxReDistribute_X_to_B 	|     0.0008 	|     0.0000 	|     0.0060 	|   245.4152%| seconds|
+|pxReDistribute_B_to_X 	|     0.0003 	|     0.0000 	|     0.0041 	|   266.1620%| seconds|
+|forwardSolve          	|     0.0260 	|     0.0229 	|     0.0289 	|     4.2241%| seconds|
+|forwardSolve-compute  	|     0.0020 	|     0.0009 	|     0.0043 	|    30.4385%| seconds|
+|forwardSolve-comm     	|     0.0232 	|     0.0200 	|     0.0256 	|     3.8939%| seconds|
+|ForwardSolve:Level-0 	|     0.0000 	|     0.0000 	|     0.0000 	|       -nan%| seconds|
+|ForwardSolve:Level-1 	|     0.0000 	|     0.0000 	|     0.0000 	|       -nan%| seconds|
+|ForwardSolve:Level-2 	|     0.0000 	|     0.0000 	|     0.0000 	|       -nan%| seconds|
+|ForwardSolve:Level-3 	|     0.0257 	|     0.0226 	|     0.0287 	|     4.3362%| seconds|
+|backSolve             	|     0.0365 	|     0.0329 	|     0.0395 	|     3.2119%| seconds|
+|backSolve-compute     	|     0.0020 	|     0.0010 	|     0.0037 	|    23.9892%| seconds|
+|backSolve-comm        	|     0.0338 	|     0.0289 	|     0.0365 	|     3.3469%| seconds|
+|BackSolve:Level-0    	|     0.0000 	|     0.0000 	|     0.0000 	|       -nan%| seconds|
+|BackSolve:Level-1    	|     0.0000 	|     0.0000 	|     0.0000 	|       -nan%| seconds|
+|BackSolve:Level-2    	|     0.0000 	|     0.0000 	|     0.0000 	|       -nan%| seconds|
+|BackSolve:Level-3    	|     0.0363 	|     0.0327 	|     0.0392 	|     3.2133%| seconds|
+|trs_comm_z            	|     0.0001 	|     0.0000 	|     0.0020 	|   424.3025%| seconds|
+|TRS-XY_CommVolume     	|     0.0256 	|     0.0179 	|     0.0384 	|    12.6227%| Mwords|
+|TRS-Z_CommVolume      	|     0.0009 	|     0.0000 	|     0.0339 	|   492.6646%| Mwords|
+|TRS-XYZ_CommVolume    	|     0.0265 	|     0.0179 	|     0.0686 	|    24.8852%| Mwords|
+.. DiagScale = 3
+.. Sol  0: ||X - Xtrue|| / ||X|| = 2.486900e-13	 max_i |x - xtrue|_i / |x|_i = 7.904788e-14
+**************************************************
+**** Time (seconds) ****
+	EQUIL time            0.074
+	ROWPERM time          1.054
+	COLPERM time         20.669
+	SYMBFACT time         9.993
+	DISTRIBUTE time       1.878
+	FACTOR time           6.785
+	Factor flops	3.000114e+13	Mflops 	4421749.77
+	SOLVE time            0.064
+	Solve flops	1.343639e+10	Mflops 	209590.31
+**************************************************

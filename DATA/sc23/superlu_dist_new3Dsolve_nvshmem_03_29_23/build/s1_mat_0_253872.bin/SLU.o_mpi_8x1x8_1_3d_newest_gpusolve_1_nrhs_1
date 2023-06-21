@@ -1,0 +1,120 @@
+MPI_Query_thread with MPI_THREAD_MULTIPLE
+__STDC_VERSION__ 201112
+Library version:	8.1.2
+Input matrix file:	/global/cfs/cdirs/m2957/liuyangz/my_research/matrix/s1_mat_0_253872.bin
+3D process grid: 8 X 1 X 8
+fread n   253872	nnz 82155776
+# of doubles fread: 82155776
+Time to read and distribute matrix 0.12
+**************************************************
+.. blocking parameters from sp_ienv():
+**    relaxation                 : 60
+**    max supernode              : 256
+**    estimated fill ratio       : 5
+**    min GEMM m*k*n to use GPU  : 5000
+**************************************************
+**************************************************
+.. options:
+**    Fact                      :    0
+**    Equil                     :    1
+**    DiagInv                   :    1
+**    ParSymbFact               :    0
+**    ColPerm                   :    4
+**    RowPerm                   :    1
+**    ReplaceTinyPivot          :    1
+**    IterRefine                :    0
+**    Trans                     :    0
+**    SymPattern                :    0
+**    lookahead_etree           :    0
+**    Use_TensorCore            :    0
+**    Use 3D algorithm          :    1
+**    num_lookaheads            :   10
+** parameters that can be altered by environment variables:
+**    superlu_relax             :   60
+**    superlu_maxsup            :  256
+**    min GEMM m*k*n to use GPU : 5000
+**    GPU buffer size           :   50000000
+**    GPU streams               :    1
+**    estimated fill ratio      :    5
+**************************************************
+.. equilibrated? *equed = B
+.. LDPERM job        5	 time: 3.10
+.. anorm 1.407514e+02
+.. Use METIS ordering on A'+A
+.. symbfact(): relax   60, maxsuper  256, fill    5
+	Matrix size min_mn    253872
+	Nonzeros in L       213238901
+	Nonzeros in U       213232836
+	nonzeros in L+U     426217865
+	nonzeros in LSUB    39498637
+	No of supers 11326
+	Size of G(L) 4856765
+	Size of G(U) 1949063
+	int 4, short 2, float 4, double 8
+	SYMBfact (MB):	L\U 170.87	total 180.01	expansions 0
+.. # L blocks    10720	# U blocks     6322
+ === using DAG ===
+** MPI 0/8, NVSHMEM 0/8,device name: R bus id: 45344, ndevices=0,cur=0, node=nid001017 **
+** MPI 4/8, NVSHMEM 4/8,device name: R bus id: 45344, ndevices=0,cur=0, node=nid001088 **
+** MPI 1/8, NVSHMEM 1/8,device name: R bus id: 45344, ndevices=0,cur=1, node=nid001017 **
+** MPI 2/8, NVSHMEM 2/8,device name: R bus id: 45344, ndevices=0,cur=2, node=nid001017 **
+** MPI 3/8, NVSHMEM 3/8,device name: R bus id: 45344, ndevices=0,cur=3, node=nid001017 **
+** MPI 5/8, NVSHMEM 5/8,device name: R bus id: 45344, ndevices=0,cur=1, node=nid001088 **
+** MPI 6/8, NVSHMEM 6/8,device name: R bus id: 45344, ndevices=0,cur=2, node=nid001088 **
+** MPI 7/8, NVSHMEM 7/8,device name: R bus id: 45344, ndevices=0,cur=3, node=nid001088 **
+** MPI 4/8, NVSHMEM 4/8,device name: R bus id: 45344, ndevices=5205,cur=0, node=nid001565 **
+** MPI 0/8, NVSHMEM 0/8,device name: R bus id: 45344, ndevices=5388,cur=0, node=nid001605 **
+** MPI 0/8, NVSHMEM 0/8,device name: R bus id: 45344, ndevices=5437,cur=0, node=nid001500 **
+** MPI 4/8, NVSHMEM 4/8,device name: R bus id: 45344, ndevices=5326,cur=0, node=nid001837 **
+** MPI 5/8, NVSHMEM 5/8,device name: R bus id: 45344, ndevices=5293,cur=1, node=nid001565 **
+** MPI 5/8, NVSHMEM 5/8,device name: R bus id: 45344, ndevices=5262,cur=1, node=nid001837 **
+** MPI 1/8, NVSHMEM 1/8,device name: R bus id: 45344, ndevices=5251,cur=1, node=nid001605 **
+** MPI 1/8, NVSHMEM 1/8,device name: R bus id: 45344, ndevices=5259,cur=1, node=nid001500 **
+** MPI 6/8, NVSHMEM 6/8,device name: R bus id: 45344, ndevices=5350,cur=2, node=nid001565 **
+** MPI 6/8, NVSHMEM 6/8,device name: R bus id: 45344, ndevices=5319,cur=2, node=nid001837 **
+** MPI 2/8, NVSHMEM 2/8,device name: R bus id: 45344, ndevices=5392,cur=2, node=nid001605 **
+** MPI 2/8, NVSHMEM 2/8,device name: R bus id: 45344, ndevices=5223,cur=2, node=nid001500 **
+** MPI 7/8, NVSHMEM 7/8,device name: R bus id: 45344, ndevices=5252,cur=3, node=nid001565 **
+** MPI 7/8, NVSHMEM 7/8,device name: R bus id: 45344, ndevices=5300,cur=3, node=nid001837 **
+** MPI 3/8, NVSHMEM 3/8,device name: R bus id: 45344, ndevices=5425,cur=3, node=nid001605 **
+** MPI 3/8, NVSHMEM 3/8,device name: R bus id: 45344, ndevices=5417,cur=3, node=nid001500 **
+** MPI 0/8, NVSHMEM 0/8,device name: R bus id: 45344, ndevices=5435,cur=0, node=nid001152 **
+** MPI 4/8, NVSHMEM 4/8,device name: R bus id: 45344, ndevices=5270,cur=0, node=nid001161 **
+** MPI 1/8, NVSHMEM 1/8,device name: R bus id: 45344, ndevices=5445,cur=1, node=nid001152 **
+** MPI 5/8, NVSHMEM 5/8,device name: R bus id: 45344, ndevices=5270,cur=1, node=nid001161 **
+** MPI 2/8, NVSHMEM 2/8,device name: R bus id: 45344, ndevices=5337,cur=2, node=nid001152 **
+** MPI 6/8, NVSHMEM 6/8,device name: R bus id: 45344, ndevices=5221,cur=2, node=nid001161 **
+** MPI 3/8, NVSHMEM 3/8,device name: R bus id: 45344, ndevices=5247,cur=3, node=nid001152 **
+** MPI 7/8, NVSHMEM 7/8,device name: R bus id: 45344, ndevices=5445,cur=3, node=nid001161 **
+** MPI 0/8, NVSHMEM 0/8,device name: R bus id: 45344, ndevices=5420,cur=0, node=nid002373 **
+** MPI 0/8, NVSHMEM 0/8,device name: R bus id: 45344, ndevices=5310,cur=0, node=nid002680 **
+** MPI 4/8, NVSHMEM 4/8,device name: R bus id: 45344, ndevices=5266,cur=0, node=nid002196 **
+** MPI 4/8, NVSHMEM 4/8,device name: R bus id: 45344, ndevices=5252,cur=0, node=nid002744 **
+** MPI 4/8, NVSHMEM 4/8,device name: R bus id: 45344, ndevices=5253,cur=0, node=nid002048 **
+** MPI 4/8, NVSHMEM 4/8,device name: R bus id: 45344, ndevices=5390,cur=0, node=nid002660 **
+** MPI 0/8, NVSHMEM 0/8,device name: R bus id: 45344, ndevices=5275,cur=0, node=nid002136 **
+** MPI 1/8, NVSHMEM 1/8,device name: R bus id: 45344, ndevices=5421,cur=1, node=nid002373 **
+** MPI 5/8, NVSHMEM 5/8,device name: R bus id: 45344, ndevices=5256,cur=1, node=nid002048 **
+** MPI 5/8, NVSHMEM 5/8,device name: R bus id: 45344, ndevices=5253,cur=1, node=nid002660 **
+** MPI 1/8, NVSHMEM 1/8,device name: R bus id: 45344, ndevices=5272,cur=1, node=nid002680 **
+** MPI 1/8, NVSHMEM 1/8,device name: R bus id: 45344, ndevices=5275,cur=1, node=nid002136 **
+** MPI 5/8, NVSHMEM 5/8,device name: R bus id: 45344, ndevices=5256,cur=1, node=nid002196 **
+** MPI 5/8, NVSHMEM 5/8,device name: R bus id: 45344, ndevices=5374,cur=1, node=nid002744 **
+** MPI 2/8, NVSHMEM 2/8,device name: R bus id: 45344, ndevices=5230,cur=2, node=nid002373 **
+** MPI 6/8, NVSHMEM 6/8,device name: R bus id: 45344, ndevices=5267,cur=2, node=nid002048 **
+** MPI 6/8, NVSHMEM 6/8,device name: R bus id: 45344, ndevices=5420,cur=2, node=nid002660 **
+** MPI 2/8, NVSHMEM 2/8,device name: R bus id: 45344, ndevices=5295,cur=2, node=nid002680 **
+** MPI 2/8, NVSHMEM 2/8,device name: R bus id: 45344, ndevices=5389,cur=2, node=nid002136 **
+** MPI 6/8, NVSHMEM 6/8,device name: R bus id: 45344, ndevices=5315,cur=2, node=nid002196 **
+** MPI 6/8, NVSHMEM 6/8,device name: R bus id: 45344, ndevices=5274,cur=2, node=nid002744 **
+** MPI 3/8, NVSHMEM 3/8,device name: R bus id: 45344, ndevices=5340,cur=3, node=nid002373 **
+** MPI 7/8, NVSHMEM 7/8,device name: R bus id: 45344, ndevices=5279,cur=3, node=nid002048 **
+** MPI 7/8, NVSHMEM 7/8,device name: R bus id: 45344, ndevices=5221,cur=3, node=nid002660 **
+** MPI 3/8, NVSHMEM 3/8,device name: R bus id: 45344, ndevices=5384,cur=3, node=nid002680 **
+** MPI 3/8, NVSHMEM 3/8,device name: R bus id: 45344, ndevices=5360,cur=3, node=nid002136 **
+** MPI 7/8, NVSHMEM 7/8,device name: R bus id: 45344, ndevices=5236,cur=3, node=nid002196 **
+** MPI 7/8, NVSHMEM 7/8,device name: R bus id: 45344, ndevices=5231,cur=3, node=nid002744 **
+** MPI 0/8, NVSHMEM 0/8,device name: R bus id: 45344, ndevices=5424,cur=0, node=nid001876 **
+** MPI 1/8, NVSHMEM 1/8,device name: R bus id: 45344, ndevices=5320,cur=1, node=nid001876 **
+** MPI 2/8, NVSHMEM 2/8,device name: R bus id: 45344, ndevices=5304,cur=2, node=nid001876 **
+** MPI 3/8, NVSHMEM 3/8,device name: R bus id: 45344, ndevices=5330,cur=3, node=nid001876 **
