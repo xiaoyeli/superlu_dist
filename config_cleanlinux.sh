@@ -2,7 +2,6 @@
 
 ##################################################
 ##################################################
-cd ..
 export ModuleEnv='cleanlinux-unknown-openmpi-gnu'
 BuildExample=1 # whether to build all examples
 MPIFromSource=1 # whether to build openmpi from source

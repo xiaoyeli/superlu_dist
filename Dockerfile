@@ -8,6 +8,6 @@ RUN apt-get install git -y
 RUN git clone https://github.com/xiaoyeli/superlu_dist.git
 WORKDIR superlu_dist
 RUN git fetch
-RUN git pull https://github.com/xiaoyeli/superlu_dist gpu_trisolve_new
-RUN cd example_scripts
+RUN git pull
+RUN git checkout gpu_trisolve_new
 RUN bash config_cleanlinux.sh 
