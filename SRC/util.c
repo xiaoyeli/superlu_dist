@@ -333,6 +333,20 @@ void PStatInit(SuperLUStat_t *stat)
     stat->gpu_buffer = 0.0;
 }
 
+void PStatClear(SuperLUStat_t *stat)
+{
+    register int_t i;
+
+    for (i = 0; i < NPHASES; ++i)
+    {
+        stat->utime[i] = 0.;
+        stat->ops[i] = 0.;
+    }
+    stat->TinyPivots = stat->RefineSteps = 0;
+    stat->current_buffer = stat->peak_buffer = 0.0;
+    stat->gpu_buffer = 0.0;
+}
+
 void PStatPrint(superlu_dist_options_t *options, SuperLUStat_t *stat, gridinfo_t *grid)
 {
     double *utime = stat->utime;

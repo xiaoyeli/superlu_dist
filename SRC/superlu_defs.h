@@ -1130,6 +1130,7 @@ extern int_t QuerySpace_dist(int_t, int_t, Glu_freeable_t *, superlu_dist_mem_us
 extern int   xerr_dist (char *, int *);
 extern void  pxerr_dist (char *, gridinfo_t *, int_t);
 extern void  PStatInit(SuperLUStat_t *);
+extern void  PStatClear(SuperLUStat_t *);
 extern void  PStatFree(SuperLUStat_t *);
 extern void  PStatPrint(superlu_dist_options_t *, SuperLUStat_t *, gridinfo_t *);
 extern void  log_memory(int64_t, SuperLUStat_t *);
