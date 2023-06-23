@@ -30,7 +30,8 @@ if [ $ModuleEnv = 'cleanlinux-unknown-openmpi-gnu' ]; then
 		export MPICXX="$SuperLUROOT/openmpi-4.0.1/bin/mpicxx"
 		export MPIF90="$SuperLUROOT/openmpi-4.0.1/bin/mpif90"
 		export LD_LIBRARY_PATH=$SuperLUROOT/openmpi-4.0.1/lib:$LD_LIBRARY_PATH
-		export LIBRARY_PATH=$SuperLUROOT/openmpi-4.0.1/lib:$LIBRARY_PATH  		
+		export LIBRARY_PATH=$SuperLUROOT/openmpi-4.0.1/lib:$LIBRARY_PATH  	
+
 	else
 
 		#######################################
@@ -133,14 +134,15 @@ fi
 	cp $SuperLUROOT/PATCH/parmetis/CMakeLists.txt .
 	mkdir -p install
 	make config shared=1 cc=$MPICC cxx=$MPICXX prefix=$PWD/install
-	make install > make_parmetis_install.log 2>&1
+	make install 
 	cd ../
 	cp $PWD/parmetis-4.0.3/build/Linux-x86_64/libmetis/libmetis.so $PWD/parmetis-4.0.3/install/lib/.
 	cp $PWD/parmetis-4.0.3/metis/include/metis.h $PWD/parmetis-4.0.3/install/include/.
 
 
-	mkdir -p build
-	cd build
+	cd $SuperLUROOT
+	mkdir -p build_cpu
+	cd build_cpu
 	rm -rf CMakeCache.txt
 	rm -rf DartConfiguration.tcl
 	rm -rf CTestTestfile.cmake
@@ -158,5 +160,56 @@ fi
 		-DTPL_BLAS_LIBRARIES="${BLAS_LIB}" \
 		-DTPL_LAPACK_LIBRARIES="${LAPACK_LIB}" \
 		-DTPL_PARMETIS_INCLUDE_DIRS=$PARMETIS_INCLUDE_DIRS \
-		-DTPL_PARMETIS_LIBRARIES=$PARMETIS_LIBRARIES
+		-DTPL_PARMETIS_LIBRARIES=$PARMETIS_LIBRARIES 
 	make pddrive3d
+
+
+
+	cd $SuperLUROOT
+	mkdir -p build_gpu_no_nvshmem
+	cd build_gpu_no_nvshmem
+	rm -rf CMakeCache.txt
+	rm -rf DartConfiguration.tcl
+	rm -rf CTestTestfile.cmake
+	rm -rf cmake_install.cmake
+	rm -rf CMakeFiles
+	cmake .. \
+		-DCMAKE_CXX_FLAGS="-Ofast -std=c++11 -DAdd_ -DRELEASE" \
+		-DCMAKE_C_FLAGS="-DGPU_SOLVE -std=c11 -DPRNTlevel=0 -DPROFlevel=0 -DDEBUGlevel=0" \
+		-DBUILD_SHARED_LIBS=ON \
+		-DCMAKE_CXX_COMPILER=$MPICXX \
+		-DCMAKE_C_COMPILER=$MPICC \
+		-DCMAKE_Fortran_COMPILER=$MPIF90 \
+		-DCMAKE_BUILD_TYPE=Release \
+		-DCMAKE_VERBOSE_MAKEFILE:BOOL=ON \
+		-DTPL_BLAS_LIBRARIES="${BLAS_LIB}" \
+		-DTPL_LAPACK_LIBRARIES="${LAPACK_LIB}" \
+		-DTPL_PARMETIS_INCLUDE_DIRS=$PARMETIS_INCLUDE_DIRS \
+		-DTPL_PARMETIS_LIBRARIES=$PARMETIS_LIBRARIES \
+		-DTPL_ENABLE_NVSHMEM=OFF \
+		-DCMAKE_CUDA_FLAGS="-I$SuperLUROOT/openmpi-4.0.1/include -ccbin=$MPICXX" \
+		-DCMAKE_CUDA_ARCHITECTURES=70 \   
+		-DTPL_ENABLE_CUDALIB=ON 
+	make pddrive3d
+
+
+	# cd $SuperLUROOT
+	# mkdir -p build_gpu_nvshmem
+	# cd build_gpu_nvshmem
+	# rm -rf CMakeCache.txt
+	# rm -rf DartConfiguration.tcl
+	# rm -rf CTestTestfile.cmake
+	# rm -rf cmake_install.cmake
+	# rm -rf CMakeFiles
+# cmake .. \
+#   -DCMAKE_C_FLAGS="-DGPU_SOLVE -std=c11 -DPRNTlevel=0 -DPROFlevel=0 -DDEBUGlevel=0 -DAdd_ -I${NVSHMEM_HOME}/include" \
+#   -DCMAKE_CXX_COMPILER=CC \
+#   -DCMAKE_C_COMPILER=cc \
+#   -DCMAKE_Fortran_COMPILER=ftn \
+#   -DXSDK_ENABLE_Fortran=ON \
+#   -DTPL_ENABLE_INTERNAL_BLASLIB=OFF \
+#   -DTPL_ENABLE_LAPACKLIB=ON \
+#   -DBUILD_SHARED_LIBS=ON \
+#   -DTPL_ENABLE_CUDALIB=ON \
+#   -DCMAKE_CUDA_FLAGS="-I${NVSHMEM_HOME}/include -I$SuperLUROOT/openmpi-4.0.1/include -ccbin=$MPICXX" \
+#   -DCMAKE_CUDA_ARCHITECTURES=80 \
