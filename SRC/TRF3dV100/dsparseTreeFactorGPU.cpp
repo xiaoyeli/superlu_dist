@@ -1198,6 +1198,7 @@ int LUstruct_v100::dsparseTreeFactorBatchGPU(
     
 #else
     printf("MAGMA is required for batched execution!\n");
+    fflush(stdout);
     exit(0);
     
 #endif /* match ifdef have_magma */

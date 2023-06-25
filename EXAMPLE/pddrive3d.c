@@ -115,7 +115,7 @@ main (int argc, char *argv[])
     double *b, *xtrue;
     int_t m, n;
     int nprow, npcol, npdep;
-    int lookahead, colperm, rowperm, ir, batch;
+    int lookahead, colperm, rowperm, ir;
     int iam, info, ldb, ldx, nrhs;
     char **cpp, c, *suffix;
     FILE *fp, *fopen ();
@@ -139,7 +139,6 @@ main (int argc, char *argv[])
     colperm = -1;
     rowperm = -1;
     ir = -1;
-    batch = 0;
     
     /* ------------------------------------------------------------
        INITIALIZE MPI ENVIRONMENT.
@@ -191,7 +190,7 @@ main (int argc, char *argv[])
                       break;
             case 'i': ir = atoi(*cpp);
                       break;
-            case 'b': batch = atoi(*cpp);
+            case 'b': batchCount = atoi(*cpp);
                       break;
             case 's': nrhs = atoi(*cpp);
                       break;                      
@@ -446,7 +445,7 @@ main (int argc, char *argv[])
        RELEASE THE SUPERLU PROCESS GRID.
        ------------------------------------------------------------ */
 out:
-    if ( batch ) {
+    if ( batchCount ) {
 	result_min[0] = stat.utime[FACT];   
 	result_min[1] = stat.utime[SOLVE];  
 	result_max[0] = stat.utime[FACT];   
