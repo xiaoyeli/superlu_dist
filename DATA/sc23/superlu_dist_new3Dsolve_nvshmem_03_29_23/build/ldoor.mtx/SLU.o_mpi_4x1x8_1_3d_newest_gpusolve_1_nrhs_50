@@ -1,90 +1,0 @@
-MPI_Query_thread with MPI_THREAD_MULTIPLE
-__STDC_VERSION__ 201112
-Library version:	8.1.2
-Input matrix file:	/global/cfs/cdirs/m2957/liuyangz/my_research/matrix/ldoor.mtx
-3D process grid: 4 X 1 X 8
-Symmetric matrix: will be expanded
-m 952203, n 952203, nonz 23737339
-triplet file: row/col indices are one-based.
-new_nonz after symmetric expansion:	46522475
-Time to read and distribute matrix 6.72
-**************************************************
-.. blocking parameters from sp_ienv():
-**    relaxation                 : 60
-**    max supernode              : 256
-**    estimated fill ratio       : 5
-**    min GEMM m*k*n to use GPU  : 5000
-**************************************************
-**************************************************
-.. options:
-**    Fact                      :    0
-**    Equil                     :    1
-**    DiagInv                   :    1
-**    ParSymbFact               :    0
-**    ColPerm                   :    4
-**    RowPerm                   :    1
-**    ReplaceTinyPivot          :    1
-**    IterRefine                :    0
-**    Trans                     :    0
-**    SymPattern                :    0
-**    lookahead_etree           :    0
-**    Use_TensorCore            :    0
-**    Use 3D algorithm          :    1
-**    num_lookaheads            :   10
-** parameters that can be altered by environment variables:
-**    superlu_relax             :   60
-**    superlu_maxsup            :  256
-**    min GEMM m*k*n to use GPU : 5000
-**    GPU buffer size           :   50000000
-**    GPU streams               :    1
-**    estimated fill ratio      :    5
-**************************************************
-.. equilibrated? *equed = R
-.. LDPERM job        5	 time: 1.56
-.. anorm 1.956279e+01
-.. Use METIS ordering on A'+A
-.. symbfact(): relax   60, maxsuper  256, fill    5
-	Matrix size min_mn    952203
-	Nonzeros in L       161030790
-	Nonzeros in U       161030790
-	nonzeros in L+U     321109377
-	nonzeros in LSUB    46873310
-	No of supers 46513
-	Size of G(L) 5206921
-	Size of G(U) 4254718
-	int 4, short 2, float 4, double 8
-	SYMBfact (MB):	L\U 223.56	total 257.84	expansions 0
-.. # L blocks    66902	# U blocks    54940
- === using DAG ===
-** MPI 0/4, NVSHMEM 0/4,device name:  bus id: 186096, ndevices=0,cur=0, node=nid001260 **
-** MPI 1/4, NVSHMEM 1/4,device name:  bus id: 186096, ndevices=0,cur=1, node=nid001260 **
-** MPI 2/4, NVSHMEM 2/4,device name:  bus id: 186096, ndevices=0,cur=2, node=nid001260 **
-** MPI 3/4, NVSHMEM 3/4,device name:  bus id: 186096, ndevices=0,cur=3, node=nid001260 **
-** MPI 1/4, NVSHMEM 1/4,device name:  bus id: 186096, ndevices=5282,cur=1, node=nid001268 **
-** MPI 3/4, NVSHMEM 3/4,device name:  bus id: 186096, ndevices=5240,cur=3, node=nid001268 **
-** MPI 0/4, NVSHMEM 0/4,device name:  bus id: 186096, ndevices=5456,cur=0, node=nid001268 **
-** MPI 2/4, NVSHMEM 2/4,device name:  bus id: 186096, ndevices=5298,cur=2, node=nid001268 **
-** MPI 0/4, NVSHMEM 0/4,device name:  bus id: 186096, ndevices=5221,cur=0, node=nid001265 **
-** MPI 1/4, NVSHMEM 1/4,device name:  bus id: 186096, ndevices=5423,cur=1, node=nid001265 **
-** MPI 2/4, NVSHMEM 2/4,device name:  bus id: 186096, ndevices=5266,cur=2, node=nid001265 **
-** MPI 3/4, NVSHMEM 3/4,device name:  bus id: 186096, ndevices=5224,cur=3, node=nid001265 **
-** MPI 0/4, NVSHMEM 0/4,device name:  bus id: 186096, ndevices=5282,cur=0, node=nid001264 **
-** MPI 1/4, NVSHMEM 1/4,device name:  bus id: 186096, ndevices=5392,cur=1, node=nid001264 **
-** MPI 2/4, NVSHMEM 2/4,device name:  bus id: 186096, ndevices=5320,cur=2, node=nid001264 **
-** MPI 3/4, NVSHMEM 3/4,device name:  bus id: 186096, ndevices=5357,cur=3, node=nid001264 **
-** MPI 0/4, NVSHMEM 0/4,device name:  bus id: 186096, ndevices=5224,cur=0, node=nid001272 **
-** MPI 1/4, NVSHMEM 1/4,device name:  bus id: 186096, ndevices=5378,cur=1, node=nid001272 **
-** MPI 2/4, NVSHMEM 2/4,device name:  bus id: 186096, ndevices=5230,cur=2, node=nid001272 **
-** MPI 3/4, NVSHMEM 3/4,device name:  bus id: 186096, ndevices=5458,cur=3, node=nid001272 **
-** MPI 0/4, NVSHMEM 0/4,device name:  bus id: 186096, ndevices=5420,cur=0, node=nid001273 **
-** MPI 1/4, NVSHMEM 1/4,device name:  bus id: 186096, ndevices=5243,cur=1, node=nid001273 **
-** MPI 2/4, NVSHMEM 2/4,device name:  bus id: 186096, ndevices=5344,cur=2, node=nid001273 **
-** MPI 3/4, NVSHMEM 3/4,device name:  bus id: 186096, ndevices=5287,cur=3, node=nid001273 **
-** MPI 0/4, NVSHMEM 0/4,device name:  bus id: 186096, ndevices=5368,cur=0, node=nid001261 **
-** MPI 1/4, NVSHMEM 1/4,device name:  bus id: 186096, ndevices=5226,cur=1, node=nid001261 **
-** MPI 2/4, NVSHMEM 2/4,device name:  bus id: 186096, ndevices=5287,cur=2, node=nid001261 **
-** MPI 3/4, NVSHMEM 3/4,device name:  bus id: 186096, ndevices=5317,cur=3, node=nid001261 **
-** MPI 0/4, NVSHMEM 0/4,device name:  bus id: 186096, ndevices=5295,cur=0, node=nid001269 **
-** MPI 1/4, NVSHMEM 1/4,device name:  bus id: 186096, ndevices=5433,cur=1, node=nid001269 **
-** MPI 2/4, NVSHMEM 2/4,device name:  bus id: 186096, ndevices=5370,cur=2, node=nid001269 **
-** MPI 3/4, NVSHMEM 3/4,device name:  bus id: 186096, ndevices=5430,cur=3, node=nid001269 **

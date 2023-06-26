@@ -1,8 +1,0 @@
-{
-    "files.associations": {
-        "\"*.m\"": "\"matlab\"",
-        "*.m": "matlab",
-        "*.gpl": "gnuplot",
-        "cmath": "c"
-    }
-}
