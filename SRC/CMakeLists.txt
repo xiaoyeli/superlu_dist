@@ -86,6 +86,8 @@ if(enable_double)
     pdsymbfact_distdata.c
     ddistribute.c
     pddistribute.c
+    pddistribute3d.c
+    pddistribute-aux3d.c
     pdgstrf.c
     dstatic_schedule.c
     pdgstrf2.c

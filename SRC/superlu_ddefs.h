@@ -283,12 +283,6 @@ typedef struct {
 } dLocalLU_t;
 
 
-typedef struct {
-    int_t *etree;
-    Glu_persist_t *Glu_persist;
-    dLocalLU_t *Llu;
-    char dt;
-} dLUstruct_t;
 
 
 /*-- Data structure for communication during matrix-vector multiplication. */
@@ -403,9 +397,9 @@ int_t scuStatUpdate(
     );
 
 typedef enum {
-    NOT_IN_GRID, 
-    IN_GRID_ZERO, 
-    IN_GRID_AIJ
+    NOT_IN_GRID, // doesn't belong to my grid
+    IN_GRID_ZERO, // belongsto my grid but doesn't initialized with zeros
+    IN_GRID_AIJ // belongsto my grid and initialized with non-zeros
 } SupernodeToGridMap_t;
     
 
@@ -422,6 +416,15 @@ typedef struct
     dLUValSubBuf_t  *LUvsb;
     SupernodeToGridMap_t* superGridMap;
 } dtrf3Dpartition_t;
+
+
+typedef struct {
+    int_t *etree;
+    Glu_persist_t *Glu_persist;
+    dLocalLU_t *Llu;
+    dtrf3Dpartition_t *trf3Dpart;
+    char dt;
+} dLUstruct_t;
 
 typedef struct
 {
