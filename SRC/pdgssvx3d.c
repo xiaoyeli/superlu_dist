@@ -800,12 +800,12 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 	{
 
 		/* send the data across all the layers */
-		MPI_Bcast(&m, 1, mpi_int_t, 0, grid3d->zscp.comm);
-		MPI_Bcast(&n, 1, mpi_int_t, 0, grid3d->zscp.comm);
+		// MPI_Bcast(&m, 1, mpi_int_t, 0, grid3d->zscp.comm);
+		// MPI_Bcast(&n, 1, mpi_int_t, 0, grid3d->zscp.comm);
 		MPI_Bcast(&anorm, 1, MPI_DOUBLE, 0, grid3d->zscp.comm);
 
 		/* send the LU structure to all the grids */
-		dp3dScatter(n, LUstruct, grid3d);
+		// dp3dScatter(n, LUstruct, grid3d);
 
 		int_t nsupers = getNsupers(n, LUstruct->Glu_persist);
 		trf3Dpartition = dinitTrf3Dpartition(nsupers, options, LUstruct, grid3d);

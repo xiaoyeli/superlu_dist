@@ -101,6 +101,11 @@ void bcastPermutedSparseA(SuperMatrix *A,
         return;
     }
 
+    /* broadcast etree */
+    int_t *etree = LUstruct->etree;
+    MPI_Bcast( etree, n, mpi_int_t, 0,  grid3d->zscp.comm);
+    
+
     // list of all the arrays to be broadcasted 
     // A, ScalePermstruct, Glu_freeable, LUstruct
     int_t nsupers;
