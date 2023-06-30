@@ -462,12 +462,14 @@ main (int argc, char *argv[])
 
 	PStatPrint (&options, &stat, &(grid.grid2d)); /* Print 2D statistics.*/
 
-        dDestroy_LU (n, &(grid.grid2d), &LUstruct);
+        // dDestroy_LU (n, &(grid.grid2d), &LUstruct);
         dSolveFinalize (&options, &SOLVEstruct);
-    } else { // Process layers not equal 0
-        dDeAllocLlu_3d(n, &LUstruct, &grid);
-        dDeAllocGlu_3d(&LUstruct);
     }
+    // else { // Process layers not equal 0
+    //     dDeAllocLlu_3d(n, &LUstruct, &grid);
+    //     dDeAllocGlu_3d(&LUstruct);
+    // }
+    dDestroy_LU (n, &(grid.grid2d), &LUstruct);
     
     dDestroy_A3d_gathered_on_2d(&SOLVEstruct, &grid);
 
