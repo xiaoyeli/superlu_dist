@@ -22,6 +22,7 @@ at the top-level directory.
  * Last update: November 8, 2021  v7.2.0
  */
 #include "superlu_ddefs.h"
+#include "pddistribute3d.h"
 #include "ssvx3dAux.c"
 /*! \brief
  *
@@ -747,11 +748,23 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 			/* Apply column permutation to the original distributed A */
 			for (j = 0; j < nnz_loc; ++j)
 				colind[j] = perm_c[colind[j]];
+		} /* end if not Factored */
 
+	} /* end 2D process layer 0 */
+
+	/* Broadcast Permuted A and symbolic factorization data from 2d to 3d grid*/
+
+	if (grid3d->zscp.Iam == 0) /* on 2D grid-0 */
+	{
+
+		if(!factored) 
+		{ /* Skip this if already factored. */
 			/* Distribute Pc*Pr*diag(R)*A*diag(C)*Pc' into L and U storage. */
 			t = SuperLU_timer_();
 			dist_mem_use = pddistribute(options, n, A, ScalePermstruct,
 										Glu_freeable, LUstruct, grid);
+			// dist_mem_use = pddistribute3d(options, n, A, ScalePermstruct,
+			// 							Glu_freeable, LUstruct, grid3d); // not working for some reason
 
 			stat->utime[DIST] = SuperLU_timer_() - t;
 
