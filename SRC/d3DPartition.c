@@ -45,7 +45,7 @@ sForest_t **compute_sForests(int_t nsupers, superlu_dist_options_t *options, dLU
  * @param comm The MPI communicator.
  * @param root The root process.
  */
-void allocBcastArray(void **array, int_t size, int root, MPI_Comm comm)
+void allocBcastArray(void **array, int size, int root, MPI_Comm comm)
 {
     int rank;
     MPI_Comm_rank(comm, &rank); // Get the rank of the current process
@@ -62,7 +62,7 @@ void allocBcastArray(void **array, int_t size, int root, MPI_Comm comm)
     }
 
     // Send the size from root to all other processes in the communicator
-    MPI_Bcast(&size, 1, mpi_int_t, root, comm);
+    MPI_Bcast(&size, 1, MPI_INT, root, comm);
 
     // If I am not the root, receive the size from the root and allocate the array
     if (rank != root)

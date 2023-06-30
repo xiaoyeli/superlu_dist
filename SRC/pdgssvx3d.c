@@ -510,7 +510,7 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 	double *a_GA;
 	
 	Glu_persist_t *Glu_persist = LUstruct->Glu_persist;
-	Glu_freeable_t *Glu_freeable;
+	Glu_freeable_t *Glu_freeable=NULL;
 	/* The nonzero structures of L and U factors, which are
 	   replicated on all processrs.
 	   (lsub, xlsub) contains the compressed subscript of
@@ -753,6 +753,19 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 	} /* end 2D process layer 0 */
 
 	/* Broadcast Permuted A and symbolic factorization data from 2d to 3d grid*/
+	if(1) // place the exact conditions later //all the grid must execute this
+	{
+		if (Glu_freeable ==NULL)
+		{
+			if (!(Glu_freeable = (Glu_freeable_t *)
+						  SUPERLU_MALLOC(sizeof(Glu_freeable_t))))
+					ABORT("Malloc fails for Glu_freeable.");
+		}
+		bcastPermutedSparseA(A, 
+                          ScalePermstruct,
+                          Glu_freeable, 
+                          LUstruct, grid3d);
+	}
 
 	if (grid3d->zscp.Iam == 0) /* on 2D grid-0 */
 	{
