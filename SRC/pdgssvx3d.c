@@ -602,7 +602,7 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 	   - ordering,
 	   - symbolic factorization,
 	   - distribution of L & U                                      */
-
+	A->Store = Astore0; // on 2D grid-0
 	if (grid3d->zscp.Iam == 0) /* on 2D grid-0 */
 	{
 		m = A->nrow;
