@@ -602,16 +602,16 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 	   - ordering,
 	   - symbolic factorization,
 	   - distribution of L & U                                      */
+	m = A->nrow;
+	n = A->ncol;
+	// checkNRFMT(Astore0, (NRformat_loc *) A->Store);
+
+	// On input, A->Store is on 3D, now A->Store is re-assigned to 2D store
 	A->Store = Astore0; // on 2D grid-0
+	ldb = Astore0->m_loc;
 	if (grid3d->zscp.Iam == 0) /* on 2D grid-0 */
 	{
-		m = A->nrow;
-		n = A->ncol;
-		// checkNRFMT(Astore0, (NRformat_loc *) A->Store);
-
-		// On input, A->Store is on 3D, now A->Store is re-assigned to 2D store
-		A->Store = Astore0; // on 2D grid-0
-		ldb = Astore0->m_loc;
+		
 
 		/* The following code now works on 2D grid-0 */
 		Astore = (NRformat_loc *)A->Store;
@@ -753,7 +753,7 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 	} /* end 2D process layer 0 */
 
 	/* Broadcast Permuted A and symbolic factorization data from 2d to 3d grid*/
-	if(1) // place the exact conditions later //all the grid must execute this
+	if(Fact != SamePattern_SameRowPerm && !factored) // place the exact conditions later //all the grid must execute this
 	{
 		if (Glu_freeable ==NULL)
 		{
@@ -767,7 +767,9 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
                           LUstruct, grid3d);
 	}
 
+	#if 0
 	if (grid3d->zscp.Iam == 0) /* on 2D grid-0 */
+	#endif 
 	{
 
 		if(!factored) 
