@@ -66,6 +66,33 @@ int_t *createSupernode2TreeMap(int_t nsupers, int_t maxLvl, int_t *gNodeCount, i
 
     return supernode2treeMap;
 }
+
+SupernodeToGridMap_t* createSuperGridMap(int_t nsuper,int_t maxLvl, int_t *myTreeIdxs, 
+    int_t *myZeroTrIdxs, int_t* gNodeCount, int_t** gNodeLists)
+{
+    SupernodeToGridMap_t* superGridMap = SUPERLU_MALLOC(nsuper * sizeof(SupernodeToGridMap_t));
+    for (int_t i = 0; i < nsuper; ++i)
+    {
+        /* initialize with NOT_IN_GRID */
+        superGridMap[i] = NOT_IN_GRID;
+    }
+
+    
+    for(int_t lvl =0; lvl<maxLvl; lvl++ )
+    {
+        int_t treeIdx = myTreeIdxs[lvl];
+        int_t zeroTrIdx = myZeroTrIdxs[lvl];
+
+        for (int_t nd = 0; nd < gNodeCount[treeIdx]; ++nd)
+        {
+            /* code */
+            if(zeroTrIdx)
+                superGridMap[gNodeLists[treeIdx][nd]] = IN_GRID_ZERO;
+            else
+                superGridMap[gNodeLists[treeIdx][nd]] = IN_GRID_AIJ;
+        }
+    }
+}
 void newTrfPartitionInit(int_t nsupers,  dLUstruct_t *LUstruct, gridinfo3d_t *grid3d)
 {
     // check parameters
@@ -117,6 +144,7 @@ void newTrfPartitionInit(int_t nsupers,  dLUstruct_t *LUstruct, gridinfo3d_t *gr
     trf3Dpart->treePerm = treePerm;
     // trf3Dpart->LUvsb = LUvsb;
     trf3Dpart->supernode2treeMap = createSupernode2TreeMap(nsupers, maxLvl, gNodeCount, gNodeLists);
+    trf3Dpart->superGridMap = createSuperGridMap(nsupers, maxLvl, myTreeIdxs, myZeroTrIdxs, gNodeCount, gNodeLists);
 
 
 

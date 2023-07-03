@@ -562,8 +562,8 @@ float pddistribute3d(superlu_dist_options_t *options, int_t n, SuperMatrix *A,
     t = SuperLU_timer_();
 #endif
 
-    dReDistribute_A(A, ScalePermstruct, Glu_freeable, xsup, supno,
-                    grid, &xa, &asub, &a);
+    dReDistribute_A3d(A, ScalePermstruct, Glu_freeable, xsup, supno,
+                    grid3d, &xa, &asub, &a);
 
 #if (PROFlevel >= 1)
     t = SuperLU_timer_() - t;
