@@ -770,6 +770,7 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 	LUstruct->trf3Dpart =  SUPERLU_MALLOC(sizeof(dtrf3Dpartition_t));
 	int_t nsupers = getNsupers(n, LUstruct->Glu_persist);
 	dtrf3Dpartition_t *trf3Dpartition = LUstruct->trf3Dpart;
+	// computes the new partition for 3D factorization here 
 	newTrfPartitionInit(nsupers, LUstruct, grid3d);
 
 	#if 0
@@ -783,8 +784,16 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 			t = SuperLU_timer_();
 			dist_mem_use = pddistribute(options, n, A, ScalePermstruct,
 										Glu_freeable, LUstruct, grid);
-			// dist_mem_use = pddistribute3d(options, n, A, ScalePermstruct,
-			// 							Glu_freeable, LUstruct, grid3d); // not working for some reason
+				// zeros out the Supernodes that are not owned by the grid
+			dinit3DLUstructForest(trf3Dpartition->myTreeIdxs, trf3Dpartition->myZeroTrIdxs,
+							trf3Dpartition->sForests, LUstruct, grid3d);
+			
+			dLUValSubBuf_t *LUvsb = SUPERLU_MALLOC(sizeof(dLUValSubBuf_t));
+			dLluBufInit(LUvsb, LUstruct);
+			trf3Dpartition->LUvsb = LUvsb;
+			trf3Dpartition->iperm_c_supno = create_iperm_c_supno(nsupers, options, LUstruct,grid3d);
+
+			
 
 			stat->utime[DIST] = SuperLU_timer_() - t;
 
@@ -805,29 +814,8 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 	{
 
 		/* send the data across all the layers */
-		// MPI_Bcast(&m, 1, mpi_int_t, 0, grid3d->zscp.comm);
-		// MPI_Bcast(&n, 1, mpi_int_t, 0, grid3d->zscp.comm);
 		MPI_Bcast(&anorm, 1, MPI_DOUBLE, 0, grid3d->zscp.comm);
 
-		/* send the LU structure to all the grids */
-		// dp3dScatter(n, LUstruct, grid3d);
-
-		// int_t nsupers = getNsupers(n, LUstruct->Glu_persist);
-		// trf3Dpartition = dinitTrf3Dpartition(nsupers, options, LUstruct, grid3d);
-		// zeros out the not owned supernodes
-		dinit3DLUstructForest(trf3Dpartition->myTreeIdxs, trf3Dpartition->myZeroTrIdxs,
-                          trf3Dpartition->sForests, LUstruct, grid3d);
-		// trf3Dpartition->LUvsb = LUvsb;
-		dLUValSubBuf_t *LUvsb = SUPERLU_MALLOC(sizeof(dLUValSubBuf_t));
-    	dLluBufInit(LUvsb, LUstruct);
-		trf3Dpartition->LUvsb = LUvsb;
-		trf3Dpartition->iperm_c_supno = create_iperm_c_supno(nsupers, options, LUstruct,grid3d);
-
-		// int_t *perm_c_supno = getPerm_c_supno(nsupers, options,
-        //                                   LUstruct->etree,
-        //                                   LUstruct->Glu_persist,
-        //                                   LUstruct->Llu->Lrowind_bc_ptr,
-        //                                   LUstruct->Llu->Ufstnz_br_ptr, grid);
 		
 		SCT_t *SCT = (SCT_t *)SUPERLU_MALLOC(sizeof(SCT_t));
 		SCT_init(SCT);

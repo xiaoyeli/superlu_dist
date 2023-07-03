@@ -42,3 +42,4 @@ void bcastPermutedSparseA(SuperMatrix *A,
 
 int_t* create_iperm_c_supno(int_t nsupers, superlu_dist_options_t *options, dLUstruct_t *LUstruct, gridinfo3d_t *grid3d);
 gEtreeInfo_t fillEtreeInfo( int_t nsupers, int_t* setree, treeList_t *treeList);
+void newTrfPartitionInit(int_t nsupers,  dLUstruct_t *LUstruct, gridinfo3d_t *grid3d);
