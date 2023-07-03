@@ -408,6 +408,8 @@ float pddistribute3d(superlu_dist_options_t *options, int_t n, SuperMatrix *A,
  */
 {
     gridinfo_t *grid = &(grid3d->grid2d);
+    dtrf3Dpartition_t *trf3Dpart = LUstruct->trf3Dpart; /* Data structure containing 3D partition info */
+    SupernodeToGridMap_t *superGridMap = trf3Dpart->superGridMap;
     Glu_persist_t *Glu_persist = LUstruct->Glu_persist;
     dLocalLU_t *Llu = LUstruct->Llu;
     int_t bnnz, fsupc, fsupc1, i, ii, irow, istart, j, ib, jb, jj, k, k1,
@@ -574,6 +576,13 @@ float pddistribute3d(superlu_dist_options_t *options, int_t n, SuperMatrix *A,
 #endif
 
     if (options->Fact == SamePattern_SameRowPerm)
+    #if 1
+    {
+        #warning "This code is not tested in pddrive3d"
+        propagate_A_to_LU3d( LUstruct, xa, asub, a,
+            options, grid3d, nsupers,  &mem_use);
+    }
+    #else 
     {
 
 #if (PROFlevel >= 1)
@@ -719,6 +728,7 @@ float pddistribute3d(superlu_dist_options_t *options, int_t n, SuperMatrix *A,
                    t_l, t_u, u_blks, nrbu);
 #endif
     }
+    #endif 
     else
     {   /* options->Fact is not SamePattern_SameRowPerm */
         /* ------------------------------------------------------------
