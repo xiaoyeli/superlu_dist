@@ -38,3 +38,7 @@ void bcastPermutedSparseA(SuperMatrix *A,
                           dScalePermstruct_t *ScalePermstruct,
                           Glu_freeable_t *Glu_freeable, 
                           dLUstruct_t *LUstruct, gridinfo3d_t *grid3d);
+
+
+int_t* create_iperm_c_supno(int_t nsupers, superlu_dist_options_t *options, dLUstruct_t *LUstruct, gridinfo3d_t *grid3d);
+gEtreeInfo_t fillEtreeInfo( int_t nsupers, int_t* setree, treeList_t *treeList);

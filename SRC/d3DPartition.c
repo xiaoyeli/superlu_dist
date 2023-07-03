@@ -1,6 +1,6 @@
 #include "superlu_ddefs.h"
 
-sForest_t **compute_sForests(int_t nsupers, superlu_dist_options_t *options, dLUstruct_t *LUstruct, gridinfo3d_t *grid3d)
+sForest_t **compute_sForests(int_t nsupers,  dLUstruct_t *LUstruct, gridinfo3d_t *grid3d)
 {
     // Calculation of supernodal etree
     int_t *setree = supernodal_etree(nsupers, LUstruct->etree, LUstruct->Glu_persist->supno, LUstruct->Glu_persist->xsup);
@@ -22,6 +22,104 @@ sForest_t **compute_sForests(int_t nsupers, superlu_dist_options_t *options, dLU
     // dtrf3Dpartition_t *trf3Dpart = LUstruct->trf3Dpart;
 
     return sForests;
+}
+
+
+gEtreeInfo_t fillEtreeInfo( int_t nsupers, int_t* setree, treeList_t *treeList) {
+    
+    gEtreeInfo_t gEtreeInfo;
+    gEtreeInfo.setree = setree;
+    gEtreeInfo.numChildLeft = (int_t *)SUPERLU_MALLOC(sizeof(int_t) * nsupers);
+    for (int_t i = 0; i < nsupers; ++i)
+    {
+        gEtreeInfo.numChildLeft[i] = treeList[i].numChild;
+    }
+
+    return gEtreeInfo;
+}
+
+int_t* create_iperm_c_supno(int_t nsupers, superlu_dist_options_t *options, 
+    dLUstruct_t *LUstruct, gridinfo3d_t *grid3d) {
+    gridinfo_t *grid = &(grid3d->grid2d);
+    int_t *perm_c_supno = getPerm_c_supno(nsupers, options,
+                                          LUstruct->etree,
+                                          LUstruct->Glu_persist,
+                                          LUstruct->Llu->Lrowind_bc_ptr,
+                                          LUstruct->Llu->Ufstnz_br_ptr, grid);
+    int_t *iperm_c_supno = getFactIperm(perm_c_supno, nsupers);
+    SUPERLU_FREE(perm_c_supno);
+    return iperm_c_supno;
+}
+
+int_t *createSupernode2TreeMap(int_t nsupers, int_t maxLvl, int_t *gNodeCount, int_t **gNodeLists)
+{
+    int_t *supernode2treeMap = SUPERLU_MALLOC(nsupers * sizeof(int_t));
+    int_t numForests = (1 << maxLvl) - 1;
+
+    for (int_t Fr = 0; Fr < numForests; ++Fr)
+    {
+        for (int_t nd = 0; nd < gNodeCount[Fr]; ++nd)
+        {
+            supernode2treeMap[gNodeLists[Fr][nd]] = Fr;
+        }
+    }
+
+    return supernode2treeMap;
+}
+void newTrfPartitionInit(int_t nsupers,  dLUstruct_t *LUstruct, gridinfo3d_t *grid3d)
+{
+    // check parameters
+    if (LUstruct->trf3Dpart == NULL || grid3d == NULL)
+    {
+        fprintf(stderr, "Error: Invalid arguments to newTrfPartitionInit().\n");
+        return;
+    }
+
+      // Calculation of supernodal etree
+    int_t *setree = supernodal_etree(nsupers, LUstruct->etree, LUstruct->Glu_persist->supno, LUstruct->Glu_persist->xsup);
+
+    // Conversion of supernodal etree to list
+    treeList_t *treeList = setree2list(nsupers, setree);
+
+    // Calculation of tree weight
+    calcTreeWeight(nsupers, setree, treeList, LUstruct->Glu_persist->xsup);
+
+    // Calculation of maximum level
+    int_t maxLvl = log2i(grid3d->zscp.Np) + 1;
+
+    // Generation of forests
+    sForest_t **sForests = getForests(maxLvl, nsupers, setree, treeList);
+
+    dtrf3Dpartition_t *trf3Dpart = LUstruct->trf3Dpart;
+    trf3Dpart->sForests = sForests;
+
+      int_t *myTreeIdxs = getGridTrees(grid3d);
+    int_t *myZeroTrIdxs = getReplicatedTrees(grid3d);
+    int_t *gNodeCount = getNodeCountsFr(maxLvl, sForests);
+    int_t **gNodeLists = getNodeListFr(maxLvl, sForests); // reuse NodeLists stored in sForests[]
+
+    // dinit3DLUstructForest(myTreeIdxs, myZeroTrIdxs,
+    //                       sForests, LUstruct, grid3d);
+    int_t *myNodeCount = getMyNodeCountsFr(maxLvl, myTreeIdxs, sForests);
+    int_t **treePerm = getTreePermFr(myTreeIdxs, sForests, grid3d);
+
+    // dLUValSubBuf_t *LUvsb = SUPERLU_MALLOC(sizeof(dLUValSubBuf_t));
+    // dLluBufInit(LUvsb, LUstruct);
+
+    
+
+    trf3Dpart->gEtreeInfo = fillEtreeInfo(nsupers, setree, treeList);
+    // trf3Dpart->iperm_c_supno = iperm_c_supno;
+    trf3Dpart->myNodeCount = myNodeCount;
+    trf3Dpart->myTreeIdxs = myTreeIdxs;
+    trf3Dpart->myZeroTrIdxs = myZeroTrIdxs;
+    trf3Dpart->sForests = sForests;
+    trf3Dpart->treePerm = treePerm;
+    // trf3Dpart->LUvsb = LUvsb;
+    trf3Dpart->supernode2treeMap = createSupernode2TreeMap(nsupers, maxLvl, gNodeCount, gNodeLists);
+
+
+
 }
 
 /**
