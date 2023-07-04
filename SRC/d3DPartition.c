@@ -92,6 +92,7 @@ SupernodeToGridMap_t* createSuperGridMap(int_t nsuper,int_t maxLvl, int_t *myTre
                 superGridMap[gNodeLists[treeIdx][nd]] = IN_GRID_AIJ;
         }
     }
+    return superGridMap;
 }
 void newTrfPartitionInit(int_t nsupers,  dLUstruct_t *LUstruct, gridinfo3d_t *grid3d)
 {
