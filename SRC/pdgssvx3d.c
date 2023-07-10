@@ -508,9 +508,9 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 	SuperMatrix GA; /* Global A in NC format */
 	NCformat *GAstore;
 	double *a_GA;
-	
+
 	Glu_persist_t *Glu_persist = LUstruct->Glu_persist;
-	Glu_freeable_t *Glu_freeable=NULL;
+	Glu_freeable_t *Glu_freeable = NULL;
 	/* The nonzero structures of L and U factors, which are
 	   replicated on all processrs.
 	   (lsub, xlsub) contains the compressed subscript of
@@ -611,7 +611,6 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 	ldb = Astore0->m_loc;
 	if (grid3d->zscp.Iam == 0) /* on 2D grid-0 */
 	{
-		
 
 		/* The following code now works on 2D grid-0 */
 		Astore = (NRformat_loc *)A->Store;
@@ -738,10 +737,10 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 				if (!(Glu_freeable = (Glu_freeable_t *)
 						  SUPERLU_MALLOC(sizeof(Glu_freeable_t))))
 					ABORT("Malloc fails for Glu_freeable.");
-				permCol_SymbolicFact3d(options, n, &GA,perm_c,etree, 
-                           Glu_persist, Glu_freeable, stat,
-						   &symb_mem_usage,
-						   grid3d);
+				permCol_SymbolicFact3d(options, n, &GA, perm_c, etree,
+									   Glu_persist, Glu_freeable, stat,
+									   &symb_mem_usage,
+									   grid3d);
 				Destroy_CompCol_Matrix_dist(&GA);
 			} /* end if Fact not SamePattern_SameRowPerm */
 
@@ -753,47 +752,45 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 	} /* end 2D process layer 0 */
 
 	/* Broadcast Permuted A and symbolic factorization data from 2d to 3d grid*/
-	if(Fact != SamePattern_SameRowPerm && !factored) // place the exact conditions later //all the grid must execute this
+	if (Fact != SamePattern_SameRowPerm && !factored) // place the exact conditions later //all the grid must execute this
 	{
-		if (Glu_freeable ==NULL)
+		if (Glu_freeable == NULL)
 		{
 			if (!(Glu_freeable = (Glu_freeable_t *)
-						  SUPERLU_MALLOC(sizeof(Glu_freeable_t))))
-					ABORT("Malloc fails for Glu_freeable.");
+					  SUPERLU_MALLOC(sizeof(Glu_freeable_t))))
+				ABORT("Malloc fails for Glu_freeable.");
 		}
-		bcastPermutedSparseA(A, 
-                          ScalePermstruct,
-                          Glu_freeable, 
-                          LUstruct, grid3d);
+		bcastPermutedSparseA(A,
+							 ScalePermstruct,
+							 Glu_freeable,
+							 LUstruct, grid3d);
 	}
 
-	LUstruct->trf3Dpart =  SUPERLU_MALLOC(sizeof(dtrf3Dpartition_t));
+	LUstruct->trf3Dpart = SUPERLU_MALLOC(sizeof(dtrf3Dpartition_t));
 	int_t nsupers = getNsupers(n, LUstruct->Glu_persist);
 	dtrf3Dpartition_t *trf3Dpartition = LUstruct->trf3Dpart;
-	// computes the new partition for 3D factorization here 
+	// computes the new partition for 3D factorization here
 	newTrfPartitionInit(nsupers, LUstruct, grid3d);
 
-	#if 0
+#if 0
 	if (grid3d->zscp.Iam == 0) /* on 2D grid-0 */
-	#endif 
+#endif
 	{
 
-		if(!factored) 
+		if (!factored)
 		{ /* Skip this if already factored. */
 			/* Distribute Pc*Pr*diag(R)*A*diag(C)*Pc' into L and U storage. */
 			t = SuperLU_timer_();
 			dist_mem_use = pddistribute3d(options, n, A, ScalePermstruct,
-										Glu_freeable, LUstruct, grid3d);
-				// zeros out the Supernodes that are not owned by the grid
+										  Glu_freeable, LUstruct, grid3d);
+			// zeros out the Supernodes that are not owned by the grid
 			dinit3DLUstructForest(trf3Dpartition->myTreeIdxs, trf3Dpartition->myZeroTrIdxs,
-							trf3Dpartition->sForests, LUstruct, grid3d);
-			
+								  trf3Dpartition->sForests, LUstruct, grid3d);
+
 			dLUValSubBuf_t *LUvsb = SUPERLU_MALLOC(sizeof(dLUValSubBuf_t));
 			dLluBufInit(LUvsb, LUstruct);
 			trf3Dpartition->LUvsb = LUvsb;
-			trf3Dpartition->iperm_c_supno = create_iperm_c_supno(nsupers, options, LUstruct,grid3d);
-
-			
+			trf3Dpartition->iperm_c_supno = create_iperm_c_supno(nsupers, options, LUstruct, grid3d);
 
 			stat->utime[DIST] = SuperLU_timer_() - t;
 
@@ -807,8 +804,6 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 
 	} /* end 2D process layer 0 */
 
-	
-
 	/* Perform numerical factorization in parallel on all process layers.*/
 	if (!factored)
 	{
@@ -816,7 +811,6 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 		/* send the data across all the layers */
 		MPI_Bcast(&anorm, 1, MPI_DOUBLE, 0, grid3d->zscp.comm);
 
-		
 		SCT_t *SCT = (SCT_t *)SUPERLU_MALLOC(sizeof(SCT_t));
 		SCT_init(SCT);
 
@@ -981,67 +975,70 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 
 			// The following #ifdef GPU_ACC block frees and reallocates GPU data for trisolve. The data seems to be overwritten by pdgstrf3d.
 			int_t nsupers = getNsupers(n, LUstruct->Glu_persist);
+			if (0)
+			{
 #ifdef GPU_ACC
 
-			pdconvertU(options, grid, LUstruct, stat, n);
+				pdconvertU(options, grid, LUstruct, stat, n);
 
-			checkGPU(gpuFree(LUstruct->Llu->d_xsup));
-			checkGPU(gpuFree(LUstruct->Llu->d_LRtree_ptr));
-			checkGPU(gpuFree(LUstruct->Llu->d_LBtree_ptr));
-			checkGPU(gpuFree(LUstruct->Llu->d_URtree_ptr));
-			checkGPU(gpuFree(LUstruct->Llu->d_UBtree_ptr));
-			checkGPU(gpuFree(LUstruct->Llu->d_Lrowind_bc_dat));
-			checkGPU(gpuFree(LUstruct->Llu->d_Lindval_loc_bc_dat));
-			checkGPU(gpuFree(LUstruct->Llu->d_Lrowind_bc_offset));
-			checkGPU(gpuFree(LUstruct->Llu->d_Lindval_loc_bc_offset));
-			checkGPU(gpuFree(LUstruct->Llu->d_Lnzval_bc_offset));
-			checkGPU(gpuFree(LUstruct->Llu->d_Linv_bc_offset));
-			checkGPU(gpuFree(LUstruct->Llu->d_Uinv_bc_offset));
-			checkGPU(gpuFree(LUstruct->Llu->d_ilsum));
-			checkGPU(gpuFree(LUstruct->Llu->d_Lnzval_bc_dat));
-			checkGPU(gpuFree(LUstruct->Llu->d_Linv_bc_dat));
-			checkGPU(gpuFree(LUstruct->Llu->d_Uinv_bc_dat));
+				checkGPU(gpuFree(LUstruct->Llu->d_xsup));
+				checkGPU(gpuFree(LUstruct->Llu->d_LRtree_ptr));
+				checkGPU(gpuFree(LUstruct->Llu->d_LBtree_ptr));
+				checkGPU(gpuFree(LUstruct->Llu->d_URtree_ptr));
+				checkGPU(gpuFree(LUstruct->Llu->d_UBtree_ptr));
+				checkGPU(gpuFree(LUstruct->Llu->d_Lrowind_bc_dat));
+				checkGPU(gpuFree(LUstruct->Llu->d_Lindval_loc_bc_dat));
+				checkGPU(gpuFree(LUstruct->Llu->d_Lrowind_bc_offset));
+				checkGPU(gpuFree(LUstruct->Llu->d_Lindval_loc_bc_offset));
+				checkGPU(gpuFree(LUstruct->Llu->d_Lnzval_bc_offset));
+				checkGPU(gpuFree(LUstruct->Llu->d_Linv_bc_offset));
+				checkGPU(gpuFree(LUstruct->Llu->d_Uinv_bc_offset));
+				checkGPU(gpuFree(LUstruct->Llu->d_ilsum));
+				checkGPU(gpuFree(LUstruct->Llu->d_Lnzval_bc_dat));
+				checkGPU(gpuFree(LUstruct->Llu->d_Linv_bc_dat));
+				checkGPU(gpuFree(LUstruct->Llu->d_Uinv_bc_dat));
 
-			checkGPU(gpuMalloc((void **)&LUstruct->Llu->d_xsup, (n + 1) * sizeof(int_t)));
-			checkGPU(gpuMemcpy(LUstruct->Llu->d_xsup, LUstruct->Glu_persist->xsup, (n + 1) * sizeof(int_t), gpuMemcpyHostToDevice));
-			checkGPU(gpuMalloc((void **)&LUstruct->Llu->d_LRtree_ptr, CEILING(nsupers, grid->nprow) * sizeof(C_Tree)));
-			checkGPU(gpuMalloc((void **)&LUstruct->Llu->d_LBtree_ptr, CEILING(nsupers, grid->npcol) * sizeof(C_Tree)));
-			checkGPU(gpuMalloc((void **)&LUstruct->Llu->d_URtree_ptr, CEILING(nsupers, grid->nprow) * sizeof(C_Tree)));
-			checkGPU(gpuMalloc((void **)&LUstruct->Llu->d_UBtree_ptr, CEILING(nsupers, grid->npcol) * sizeof(C_Tree)));
-			checkGPU(gpuMemcpy(LUstruct->Llu->d_LRtree_ptr, LUstruct->Llu->LRtree_ptr, CEILING(nsupers, grid->nprow) * sizeof(C_Tree), gpuMemcpyHostToDevice));
-			checkGPU(gpuMemcpy(LUstruct->Llu->d_LBtree_ptr, LUstruct->Llu->LBtree_ptr, CEILING(nsupers, grid->npcol) * sizeof(C_Tree), gpuMemcpyHostToDevice));
-			checkGPU(gpuMemcpy(LUstruct->Llu->d_URtree_ptr, LUstruct->Llu->URtree_ptr, CEILING(nsupers, grid->nprow) * sizeof(C_Tree), gpuMemcpyHostToDevice));
-			checkGPU(gpuMemcpy(LUstruct->Llu->d_UBtree_ptr, LUstruct->Llu->UBtree_ptr, CEILING(nsupers, grid->npcol) * sizeof(C_Tree), gpuMemcpyHostToDevice));
-			checkGPU(gpuMalloc((void **)&LUstruct->Llu->d_Lrowind_bc_dat, (LUstruct->Llu->Lrowind_bc_cnt) * sizeof(int_t)));
-			checkGPU(gpuMemcpy(LUstruct->Llu->d_Lrowind_bc_dat, LUstruct->Llu->Lrowind_bc_dat, (LUstruct->Llu->Lrowind_bc_cnt) * sizeof(int_t), gpuMemcpyHostToDevice));
-			checkGPU(gpuMalloc((void **)&LUstruct->Llu->d_Lindval_loc_bc_dat, (LUstruct->Llu->Lindval_loc_bc_cnt) * sizeof(int_t)));
-			checkGPU(gpuMemcpy(LUstruct->Llu->d_Lindval_loc_bc_dat, LUstruct->Llu->Lindval_loc_bc_dat, (LUstruct->Llu->Lindval_loc_bc_cnt) * sizeof(int_t), gpuMemcpyHostToDevice));
-			checkGPU(gpuMalloc((void **)&LUstruct->Llu->d_Lrowind_bc_offset, CEILING(nsupers, grid->npcol) * sizeof(long int)));
-			checkGPU(gpuMemcpy(LUstruct->Llu->d_Lrowind_bc_offset, LUstruct->Llu->Lrowind_bc_offset, CEILING(nsupers, grid->npcol) * sizeof(long int), gpuMemcpyHostToDevice));
-			checkGPU(gpuMalloc((void **)&LUstruct->Llu->d_Lindval_loc_bc_offset, CEILING(nsupers, grid->npcol) * sizeof(long int)));
-			checkGPU(gpuMemcpy(LUstruct->Llu->d_Lindval_loc_bc_offset, LUstruct->Llu->Lindval_loc_bc_offset, CEILING(nsupers, grid->npcol) * sizeof(long int), gpuMemcpyHostToDevice));
-			checkGPU(gpuMalloc((void **)&LUstruct->Llu->d_Lnzval_bc_offset, CEILING(nsupers, grid->npcol) * sizeof(long int)));
-			checkGPU(gpuMemcpy(LUstruct->Llu->d_Lnzval_bc_offset, LUstruct->Llu->Lnzval_bc_offset, CEILING(nsupers, grid->npcol) * sizeof(long int), gpuMemcpyHostToDevice));
-			checkGPU(gpuMalloc((void **)&LUstruct->Llu->d_Linv_bc_offset, CEILING(nsupers, grid->npcol) * sizeof(long int)));
-			checkGPU(gpuMemcpy(LUstruct->Llu->d_Linv_bc_offset, LUstruct->Llu->Linv_bc_offset, CEILING(nsupers, grid->npcol) * sizeof(long int), gpuMemcpyHostToDevice));
-			checkGPU(gpuMalloc((void **)&LUstruct->Llu->d_Uinv_bc_offset, CEILING(nsupers, grid->npcol) * sizeof(long int)));
-			checkGPU(gpuMemcpy(LUstruct->Llu->d_Uinv_bc_offset, LUstruct->Llu->Uinv_bc_offset, CEILING(nsupers, grid->npcol) * sizeof(long int), gpuMemcpyHostToDevice));
-			checkGPU(gpuMalloc((void **)&LUstruct->Llu->d_ilsum, (CEILING(nsupers, grid->nprow) + 1) * sizeof(int_t)));
-			checkGPU(gpuMemcpy(LUstruct->Llu->d_ilsum, LUstruct->Llu->ilsum, (CEILING(nsupers, grid->nprow) + 1) * sizeof(int_t), gpuMemcpyHostToDevice));
-			checkGPU(gpuMalloc((void **)&LUstruct->Llu->d_Lnzval_bc_dat, (LUstruct->Llu->Lnzval_bc_cnt) * sizeof(double)));
-			checkGPU(gpuMalloc((void **)&LUstruct->Llu->d_Linv_bc_dat, (LUstruct->Llu->Linv_bc_cnt) * sizeof(double)));
-			checkGPU(gpuMalloc((void **)&LUstruct->Llu->d_Uinv_bc_dat, (LUstruct->Llu->Uinv_bc_cnt) * sizeof(double)));
+				checkGPU(gpuMalloc((void **)&LUstruct->Llu->d_xsup, (n + 1) * sizeof(int_t)));
+				checkGPU(gpuMemcpy(LUstruct->Llu->d_xsup, LUstruct->Glu_persist->xsup, (n + 1) * sizeof(int_t), gpuMemcpyHostToDevice));
+				checkGPU(gpuMalloc((void **)&LUstruct->Llu->d_LRtree_ptr, CEILING(nsupers, grid->nprow) * sizeof(C_Tree)));
+				checkGPU(gpuMalloc((void **)&LUstruct->Llu->d_LBtree_ptr, CEILING(nsupers, grid->npcol) * sizeof(C_Tree)));
+				checkGPU(gpuMalloc((void **)&LUstruct->Llu->d_URtree_ptr, CEILING(nsupers, grid->nprow) * sizeof(C_Tree)));
+				checkGPU(gpuMalloc((void **)&LUstruct->Llu->d_UBtree_ptr, CEILING(nsupers, grid->npcol) * sizeof(C_Tree)));
+				checkGPU(gpuMemcpy(LUstruct->Llu->d_LRtree_ptr, LUstruct->Llu->LRtree_ptr, CEILING(nsupers, grid->nprow) * sizeof(C_Tree), gpuMemcpyHostToDevice));
+				checkGPU(gpuMemcpy(LUstruct->Llu->d_LBtree_ptr, LUstruct->Llu->LBtree_ptr, CEILING(nsupers, grid->npcol) * sizeof(C_Tree), gpuMemcpyHostToDevice));
+				checkGPU(gpuMemcpy(LUstruct->Llu->d_URtree_ptr, LUstruct->Llu->URtree_ptr, CEILING(nsupers, grid->nprow) * sizeof(C_Tree), gpuMemcpyHostToDevice));
+				checkGPU(gpuMemcpy(LUstruct->Llu->d_UBtree_ptr, LUstruct->Llu->UBtree_ptr, CEILING(nsupers, grid->npcol) * sizeof(C_Tree), gpuMemcpyHostToDevice));
+				checkGPU(gpuMalloc((void **)&LUstruct->Llu->d_Lrowind_bc_dat, (LUstruct->Llu->Lrowind_bc_cnt) * sizeof(int_t)));
+				checkGPU(gpuMemcpy(LUstruct->Llu->d_Lrowind_bc_dat, LUstruct->Llu->Lrowind_bc_dat, (LUstruct->Llu->Lrowind_bc_cnt) * sizeof(int_t), gpuMemcpyHostToDevice));
+				checkGPU(gpuMalloc((void **)&LUstruct->Llu->d_Lindval_loc_bc_dat, (LUstruct->Llu->Lindval_loc_bc_cnt) * sizeof(int_t)));
+				checkGPU(gpuMemcpy(LUstruct->Llu->d_Lindval_loc_bc_dat, LUstruct->Llu->Lindval_loc_bc_dat, (LUstruct->Llu->Lindval_loc_bc_cnt) * sizeof(int_t), gpuMemcpyHostToDevice));
+				checkGPU(gpuMalloc((void **)&LUstruct->Llu->d_Lrowind_bc_offset, CEILING(nsupers, grid->npcol) * sizeof(long int)));
+				checkGPU(gpuMemcpy(LUstruct->Llu->d_Lrowind_bc_offset, LUstruct->Llu->Lrowind_bc_offset, CEILING(nsupers, grid->npcol) * sizeof(long int), gpuMemcpyHostToDevice));
+				checkGPU(gpuMalloc((void **)&LUstruct->Llu->d_Lindval_loc_bc_offset, CEILING(nsupers, grid->npcol) * sizeof(long int)));
+				checkGPU(gpuMemcpy(LUstruct->Llu->d_Lindval_loc_bc_offset, LUstruct->Llu->Lindval_loc_bc_offset, CEILING(nsupers, grid->npcol) * sizeof(long int), gpuMemcpyHostToDevice));
+				checkGPU(gpuMalloc((void **)&LUstruct->Llu->d_Lnzval_bc_offset, CEILING(nsupers, grid->npcol) * sizeof(long int)));
+				checkGPU(gpuMemcpy(LUstruct->Llu->d_Lnzval_bc_offset, LUstruct->Llu->Lnzval_bc_offset, CEILING(nsupers, grid->npcol) * sizeof(long int), gpuMemcpyHostToDevice));
+				checkGPU(gpuMalloc((void **)&LUstruct->Llu->d_Linv_bc_offset, CEILING(nsupers, grid->npcol) * sizeof(long int)));
+				checkGPU(gpuMemcpy(LUstruct->Llu->d_Linv_bc_offset, LUstruct->Llu->Linv_bc_offset, CEILING(nsupers, grid->npcol) * sizeof(long int), gpuMemcpyHostToDevice));
+				checkGPU(gpuMalloc((void **)&LUstruct->Llu->d_Uinv_bc_offset, CEILING(nsupers, grid->npcol) * sizeof(long int)));
+				checkGPU(gpuMemcpy(LUstruct->Llu->d_Uinv_bc_offset, LUstruct->Llu->Uinv_bc_offset, CEILING(nsupers, grid->npcol) * sizeof(long int), gpuMemcpyHostToDevice));
+				checkGPU(gpuMalloc((void **)&LUstruct->Llu->d_ilsum, (CEILING(nsupers, grid->nprow) + 1) * sizeof(int_t)));
+				checkGPU(gpuMemcpy(LUstruct->Llu->d_ilsum, LUstruct->Llu->ilsum, (CEILING(nsupers, grid->nprow) + 1) * sizeof(int_t), gpuMemcpyHostToDevice));
+				checkGPU(gpuMalloc((void **)&LUstruct->Llu->d_Lnzval_bc_dat, (LUstruct->Llu->Lnzval_bc_cnt) * sizeof(double)));
+				checkGPU(gpuMalloc((void **)&LUstruct->Llu->d_Linv_bc_dat, (LUstruct->Llu->Linv_bc_cnt) * sizeof(double)));
+				checkGPU(gpuMalloc((void **)&LUstruct->Llu->d_Uinv_bc_dat, (LUstruct->Llu->Uinv_bc_cnt) * sizeof(double)));
 #endif
 
 #ifdef GPU_ACC
 
-			checkGPU(gpuMemcpy(LUstruct->Llu->d_Linv_bc_dat, LUstruct->Llu->Linv_bc_dat,
-							   (LUstruct->Llu->Linv_bc_cnt) * sizeof(double), gpuMemcpyHostToDevice));
-			checkGPU(gpuMemcpy(LUstruct->Llu->d_Uinv_bc_dat, LUstruct->Llu->Uinv_bc_dat,
-							   (LUstruct->Llu->Uinv_bc_cnt) * sizeof(double), gpuMemcpyHostToDevice));
-			checkGPU(gpuMemcpy(LUstruct->Llu->d_Lnzval_bc_dat, LUstruct->Llu->Lnzval_bc_dat,
-							   (LUstruct->Llu->Lnzval_bc_cnt) * sizeof(double), gpuMemcpyHostToDevice));
+				checkGPU(gpuMemcpy(LUstruct->Llu->d_Linv_bc_dat, LUstruct->Llu->Linv_bc_dat,
+								   (LUstruct->Llu->Linv_bc_cnt) * sizeof(double), gpuMemcpyHostToDevice));
+				checkGPU(gpuMemcpy(LUstruct->Llu->d_Uinv_bc_dat, LUstruct->Llu->Uinv_bc_dat,
+								   (LUstruct->Llu->Uinv_bc_cnt) * sizeof(double), gpuMemcpyHostToDevice));
+				checkGPU(gpuMemcpy(LUstruct->Llu->d_Lnzval_bc_dat, LUstruct->Llu->Lnzval_bc_dat,
+								   (LUstruct->Llu->Lnzval_bc_cnt) * sizeof(double), gpuMemcpyHostToDevice));
 #endif
+			}
 		}
 
 		/* ------------------------------------------------------------
