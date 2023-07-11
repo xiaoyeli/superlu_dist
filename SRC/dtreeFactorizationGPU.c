@@ -461,7 +461,10 @@ int dsparseTreeFactor_ASYNC_GPU(
             if (topoLvl < maxTopoLevel - 1)
             { /* Not the root */
                 int_t k_parent = gEtreeInfo->setree[k];
-                gEtreeInfo->numChildLeft[k_parent]--;
+                // int_t nsupers = getNsupers
+                // assert(k_parent < ns);
+                if(k_parent < nnodes)
+                    gEtreeInfo->numChildLeft[k_parent]--;
                 if (gEtreeInfo->numChildLeft[k_parent] == 0 && k_parent < nnodes)
                 { /* if k is the last child in this level */
                     int_t k0_parent = myIperm[k_parent];

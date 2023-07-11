@@ -24,6 +24,8 @@ at the top-level directory.
 #include "superlu_ddefs.h"
 #include "pddistribute3d.h"
 #include "ssvx3dAux.c"
+int_t dgatherAllFactoredLU3d( dtrf3Dpartition_t*  trf3Dpartition,
+			   dLUstruct_t* LUstruct, gridinfo3d_t* grid3d, SCT_t* SCT );
 /*! \brief
  *
  * <pre>
@@ -833,6 +835,7 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 
 		double tgather = SuperLU_timer_();
 
+		// dgatherAllFactoredLU3d(trf3Dpartition, LUstruct, grid3d, SCT);
 		dgatherAllFactoredLU(trf3Dpartition, LUstruct, grid3d, SCT);
 
 		SCT->gatherLUtimer += SuperLU_timer_() - tgather;
