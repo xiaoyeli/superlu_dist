@@ -313,11 +313,11 @@ static const int RD_U=4;	/* MPI tag for lsum in U-solve*/
 #ifndef MAGMA_CONST
 #define MAGMA_CONST
 
-// #define DIM_X  32
-// #define DIM_Y  16
-
-#define DIM_X  16
+#define DIM_X  32
 #define DIM_Y  16
+
+// #define DIM_X  16
+// #define DIM_Y  16
 
 
 #define BLK_M  DIM_X*4

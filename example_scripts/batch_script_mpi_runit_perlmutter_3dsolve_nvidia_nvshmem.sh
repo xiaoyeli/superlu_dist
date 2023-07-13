@@ -32,13 +32,13 @@ export LD_LIBRARY_PATH=${CRAY_LD_LIBRARY_PATH}:$LD_LIBRARY_PATH
 
 export SUPERLU_LBS=ND  
 export SUPERLU_ACC_OFFLOAD=1 # this can be 0 to do CPU tests on GPU nodes
-export GPU3DVERSION=1
+export GPU3DVERSION=0
 export NEW3DSOLVE=1    # Note: SUPERLU_ACC_OFFLOAD=1 and GPU3DVERSION=1 still do CPU factorization after https://github.com/xiaoyeli/superlu_dist/commit/035106d8949bc3abf86866aea1331b2948faa1db#diff-44fa50297abaedcfaed64f93712850a8fce55e8e57065d96d0ba28d8680da11eR223
 export NEW3DSOLVETREECOMM=1
 export SUPERLU_BIND_MPI_GPU=1 # assign GPU based on the MPI rank, assuming one MPI per GPU
 
 export SUPERLU_MAXSUP=256 # max supernode size
-export SUPERLU_RELAX=64  # upper bound for relaxed supernode size
+export SUPERLU_RELAX=256  # upper bound for relaxed supernode size
 export SUPERLU_MAX_BUFFER_SIZE=100000000 ## 500000000 # buffer size in words on GPU
 export SUPERLU_NUM_LOOKAHEADS=2   ##4, must be at least 2, see 'lookahead winSize'
 export SUPERLU_NUM_GPU_STREAMS=1
@@ -47,7 +47,7 @@ export SUPERLU_N_GEMM=6000 # FLOPS threshold divide workload between CPU and GPU
 
 
 ##NVSHMEM settings:
-NVSHMEM_HOME=/global/cfs/cdirs/m3894/lib/PrgEnv-gnu/nvshmem_src_2.8.0-3/build/
+NVSHMEM_HOME=/global/cfs/cdirs/ntrain4/hugs4bugs/nvshmem_src_2.8.0-3/build/
 export NVSHMEM_USE_GDRCOPY=1
 export NVSHMEM_MPI_SUPPORT=1
 export MPI_HOME=${MPICH_DIR}
@@ -85,9 +85,9 @@ fi
 # npz=(64 32 16)
 # nrhs=(1 50) 
 
-nprows=(2 )
+nprows=(1 )
 npcols=(1 )
-npz=(2)
+npz=(1)
 nrhs=(1)
 
 NTH=1
@@ -135,13 +135,11 @@ export MPICH_MAX_THREAD_SAFETY=multiple
 
 # srun -n 1 ./EXAMPLE/pddrive -r 1 -c 1 ../EXAMPLE/g20.rua
 
-# export NSUP=256
-# export NREL=256
 # for MAT in big.rua
-# for MAT in g20.rua
+for MAT in g20.rua
 # for MAT in s1_mat_0_253872.bin s2D9pt2048.rua
 # for MAT in dielFilterV3real.bin
-for MAT in s1_mat_0_126936.bin
+# for MAT in s1_mat_0_253872.bin
 # for MAT in s1_mat_0_126936.bin
 # for MAT in s2D9pt2048.rua
 # for MAT in s2D9pt1536.rua
@@ -153,14 +151,26 @@ do
 mkdir -p $MAT
 for ii in `seq 1 $NREP`
 do	
-# srun -n $NCORE_VAL_TOT2D -N $NODE_VAL2D -c $TH_PER_RANK --cpu_bind=cores ./EXAMPLE/pddrive -c $NCOL -r $NROW -b $batch $CFS/m2957/liuyangz/my_research/matrix/$MAT | tee ./$MAT/SLU.o_mpi_${NROW}x${NCOL}_${NTH}_1rhs_2d
+# srun -n $NCORE_VAL_TOT2D -N $NODE_VAL2D -c $TH_PER_RANK --cpu_bind=cores ./EXAMPLE/pddrive -c $NCOL -r $NROW -b $batch /global/cfs/cdirs/ntrain4/hugs4bugs/matrix/$MAT | tee ./$MAT/SLU.o_mpi_${NROW}x${NCOL}_${NTH}_1rhs_2d
 
 # unset SUPERLU_ACC_SOLVE
-# echo "srun -n $NCORE_VAL_TOT  -c $TH_PER_RANK --cpu_bind=cores ./EXAMPLE/pddrive3d -c $NCOL -r $NROW -d $NPZ -b $batch -i 0 -s $NRHS $CFS/m2957/liuyangz/my_research/matrix/$MAT | tee ./$MAT/SLU.o_mpi_${NROW}x${NCOL}x${NPZ}_${OMP_NUM_THREADS}_3d_newest_gpusolve_${SUPERLU_ACC_SOLVE}_nrhs_${NRHS}"
-# srun -n $NCORE_VAL_TOT  -c $TH_PER_RANK --cpu_bind=cores ./EXAMPLE/pddrive3d -c $NCOL -r $NROW -d $NPZ -b $batch -i 0 -s $NRHS $CFS/m2957/liuyangz/my_research/matrix/$MAT | tee ./$MAT/SLU.o_mpi_${NROW}x${NCOL}x${NPZ}_${OMP_NUM_THREADS}_3d_newest_gpusolve_${SUPERLU_ACC_SOLVE}_nrhs_${NRHS}
+# echo "srun -n $NCORE_VAL_TOT  -c $TH_PER_RANK --cpu_bind=cores ./EXAMPLE/pddrive3d -c $NCOL -r $NROW -d $NPZ -b $batch -i 0 -s $NRHS /global/cfs/cdirs/ntrain4/hugs4bugs/matrix/$MAT | tee ./$MAT/SLU.o_mpi_${NROW}x${NCOL}x${NPZ}_${OMP_NUM_THREADS}_3d_newest_gpusolve_${SUPERLU_ACC_SOLVE}_nrhs_${NRHS}"
+# srun -n $NCORE_VAL_TOT  -c $TH_PER_RANK --cpu_bind=cores ./EXAMPLE/pddrive3d -c $NCOL -r $NROW -d $NPZ -b $batch -i 0 -s $NRHS /global/cfs/cdirs/ntrain4/hugs4bugs/matrix/$MAT | tee ./$MAT/SLU.o_mpi_${NROW}x${NCOL}x${NPZ}_${OMP_NUM_THREADS}_3d_newest_gpusolve_${SUPERLU_ACC_SOLVE}_nrhs_${NRHS}
+
+# export SUPERLU_ACC_SOLVE=1
+# srun -n $NCORE_VAL_TOT  -c $TH_PER_RANK --cpu_bind=cores ./EXAMPLE/pddrive3d -c $NCOL -r $NROW -d $NPZ -b $batch -i 0 -s $NRHS /global/cfs/cdirs/ntrain4/hugs4bugs/matrix/$MAT | tee ./$MAT/SLU.o_mpi_${NROW}x${NCOL}x${NPZ}_${OMP_NUM_THREADS}_3d_newest_gpusolve_${SUPERLU_ACC_SOLVE}_nrhs_${NRHS}
+
+# srun --ntasks-per-node 1 dcgmi profile --pause  
+# export SUPERLU_ACC_SOLVE=1
+# # srun -n 1 nsys profile --stats=true  ./EXAMPLE/pddrive -r 1 -c 1 /global/cfs/cdirs/ntrain4/hugs4bugs/matrix/$MAT
+# srun -n 1 ncu -f -k regex:".*mod_inv_gpu_mrhs" --set full --target-processes all -o trisolve ./EXAMPLE/pddrive -r 1 -c 1 -d 1 /global/cfs/cdirs/ntrain4/hugs4bugs/matrix/$MAT
+# # srun -n 1 ncu -f -k dlsum_bmod_inv_gpu_mrhs --set full --launch-count 1 --target-processes all -o trisolve_u  ./EXAMPLE/pddrive -r 1 -c 1 /global/cfs/cdirs/ntrain4/hugs4bugs/matrix/$MAT
+# # srun -n 1 ncu -f -k dlsum_fmod_inv_gpu_mrhs --set full --launch-count 1 --target-processes all -o trisolve_l  ./EXAMPLE/pddrive -r 1 -c 1 /global/cfs/cdirs/ntrain4/hugs4bugs/matrix/$MAT
+# srun --ntasks-per-node 1 dcgmi profile --resume  
 
 export SUPERLU_ACC_SOLVE=1
-srun -n $NCORE_VAL_TOT  -c $TH_PER_RANK --cpu_bind=cores ./EXAMPLE/pddrive3d -c $NCOL -r $NROW -d $NPZ -b $batch -i 0 -s $NRHS $CFS/m2957/liuyangz/my_research/matrix/$MAT | tee ./$MAT/SLU.o_mpi_${NROW}x${NCOL}x${NPZ}_${OMP_NUM_THREADS}_3d_newest_gpusolve_${SUPERLU_ACC_SOLVE}_nrhs_${NRHS}
+# srun -n 1 ./EXAMPLE/pddrive -r 1 -c 1 /global/cfs/cdirs/ntrain4/hugs4bugs/matrix/$MAT
+srun -n 1 ./EXAMPLE/pddrive3d -r 1 -c 1 -d 1 /global/cfs/cdirs/m2957/liuyangz/my_research/matrix/$MAT
 
 
 done
