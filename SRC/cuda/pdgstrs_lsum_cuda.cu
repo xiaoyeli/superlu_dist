@@ -3554,7 +3554,7 @@ gridinfo_t *grid
 	int_t tmp;
 	int_t bmod_tmp;
 	int_t tid = threadIdx_x + threadIdx_y * blockDim_x; 
-	const int block_size = blockDim_x*blockDim_y; /* number of threads per warp*/
+	const int block_size = blockDim_x*blockDim_y; /* number of threads per block*/
 	double zero = 0.0;
 	double rC[THR_N][THR_M];
 	// __shared__ double x_share[DIM_X*DIM_Y]; 
@@ -3574,10 +3574,9 @@ gridinfo_t *grid
     // int_t ready = 0;
     // int_t lock = 0;
     const int warp_size = 32; /* number of threads per warp*/
-    wrp= threadIdx_x + blockIdx_x * blockDim_x;
-    wrp/=warp_size;	
-	printf("  Entering kernel:   %i %i %i %i %i %i %i %i\n", threadIdx_x, blockIdx_x, grid->npcol, nsupers,myrow,krow,wrp,tid);
-	
+    wrp= tid + blockIdx_x*block_size;
+	// printf("  Entering kernel:   %i %i %i %i %i %i %i %i %i\n", threadIdx_x, blockIdx_x, grid->npcol, nsupers,myrow,krow,wrp,wrp/warp_size,tid);
+	wrp/=warp_size;	
 	
 	// rtemp_loc = (double*)malloc(maxsup*nrhs*Nbk*sizeof(double));
 	
