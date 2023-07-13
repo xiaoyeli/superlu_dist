@@ -123,6 +123,7 @@ endif()
     TRF3dV100/pdgstrf3d_summit.cpp
     TRF3dV100/dsparseTreeFactor_summit.cpp
     TRF3dV100/dsparseTreeFactorGPU.cpp
+    TRF3dV100/anc25d-GPU.cpp 
     TRF3dV100/lupanels.cpp
     TRF3dV100/lupanels_comm3d.cpp
     TRF3dV100/lupanelsComm3dGPU.cpp

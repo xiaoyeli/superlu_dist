@@ -215,7 +215,7 @@ extern "C"
             useAnc25D = atoi(getenv("ANC25D"));
         if (useAnc25D)
             printf("-- Using ANC25D; ONLY CPU supported \n");
-        
+
         for (int_t ilvl = 0; ilvl < maxLvl; ++ilvl)
         {
             if (useAnc25D)
@@ -224,15 +224,29 @@ extern "C"
                 if (sforest) /* 2D factorization at individual subtree */
                 {
                     double tilvl = SuperLU_timer_();
-                    if(ilvl==0)
-                        dsparseTreeFactor(sforest, dFBufs,
-                                              &gEtreeInfo,
-                                              tag_ub);
-                    else
-                        dAncestorFactorBaseline(ilvl, sforest, dFBufs,
+                    if (superlu_acc_offload)
+                    {
+                        if (ilvl == 0)
+                            dsparseTreeFactorGPU(sforest, dFBufs,
+                                                 &gEtreeInfo,
+                                                 tag_ub);
+                        else
+                            dAncestorFactorBaselineGPU(ilvl, sforest, dFBufs,
                                                     &gEtreeInfo,
                                                     tag_ub);
-                        
+                    }
+                    else
+                    {
+                        if (ilvl == 0)
+                            dsparseTreeFactor(sforest, dFBufs,
+                                              &gEtreeInfo,
+                                              tag_ub);
+                        else
+                            dAncestorFactorBaseline(ilvl, sforest, dFBufs,
+                                                    &gEtreeInfo,
+                                                    tag_ub);
+                    }
+
                     /*now reduce the updates*/
                     SCT->tFactor3D[ilvl] = SuperLU_timer_() - tilvl;
                     sForests[myTreeIdxs[ilvl]]->cost = SCT->tFactor3D[ilvl];

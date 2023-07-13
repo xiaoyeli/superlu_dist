@@ -438,6 +438,13 @@ struct LUstruct_v100
         gEtreeInfo_t *gEtreeInfo, // global etree info
         int tag_ub);
 
+    int_t dAncestorFactorBaselineGPU(
+        int_t alvl,
+        sForest_t *sforest,
+        ddiagFactBufs_t **dFBufs, // size maxEtree level
+        gEtreeInfo_t *gEtreeInfo, // global etree info
+        int tag_ub);
+
     int_t dSchurComplementUpdateGPU(
         int streamId,
         int_t k, lpanel_t &lpanel, upanel_t &upanel);
