@@ -1124,7 +1124,7 @@ int LUstruct_v100::dsparseTreeFactorBatchGPU(
     topoLvl = 0;
     k_st = eTreeTopLims[topoLvl];
     k_end = eTreeTopLims[topoLvl + 1];
-    //printf("level 0: k_st %d, k_end %d\n", k_st, k_end); fflush(stdout);
+    printf("level %d: k_st %d, k_end %d\n", topoLvl, k_st, k_end); fflush(stdout);
 
 #if 0
     //ToDo: make this batched 
@@ -1158,6 +1158,8 @@ int LUstruct_v100::dsparseTreeFactorBatchGPU(
         k_st = eTreeTopLims[topoLvl];
         k_end = eTreeTopLims[topoLvl + 1];
 
+    printf("level %d: k_st %d, k_end %d\n", topoLvl, k_st, k_end); fflush(stdout);
+    
 	/* loop over all the nodes at level topoLvl */
         for (k0 = k_st; k0 < k_end; ++k0) { /* ToDo: batch this */
             k = perm_c_supno[k0];
@@ -1175,20 +1177,23 @@ int LUstruct_v100::dsparseTreeFactorBatchGPU(
             {
                 // k_upanel.checkCorrectness();
                 int streamId = 0;
-#define NDEBUG
+
+		//#define NDEBUG
 #ifndef NDEBUG
-                checkGPU();
+                checkGPU(); // ??
 #endif
                 upanel_t k_upanel = getKUpanel(k,offset);
                 lpanel_t k_lpanel = getKLpanel(k,offset);
                 dSchurComplementUpdateGPU(streamId,
 					  k, k_lpanel, k_upanel);
 // cudaStreamSynchronize(cuStream); // there is sync inside the kernel
+#if 0 // Sherry commented out 7/4/23  
 #ifndef NDEBUG
-                dSchurComplementUpdate(k, k_lpanel, k_upanel);
+                dSchurComplementUpdate(k, k_lpanel, k_upanel);   // ?? why do this on CPU ?
                 cudaStreamSynchronize(cuStream);
                 checkGPU();
 #endif
+#endif		
             }
             // MPI_Barrier(grid3d->comm);
         } /* end for k0= k_st:k_end */
@@ -1219,7 +1224,7 @@ int LUstruct_v100::dsparseTreeFactorBatchGPU(
 #endif /* match ifdef have_magma */
     
     return 0;
-} /* dsparseTreeFactorBatchGPU */
+} /* end dsparseTreeFactorBatchGPU */
 
 
 //TODO: needs to be merged as a single factorization function
@@ -1267,7 +1272,7 @@ int_t LUstruct_v100::dsparseTreeFactorGPUBaseline(
             /*=======   Diagonal Factorization      ======*/
             if (iam == procIJ(k, k))
             {
-#define NDEBUG
+//#define NDEBUG
 #ifndef NDEBUG
                 lPanelVec[g2lCol(k)].checkGPU();
                 lPanelVec[g2lCol(k)].diagFactor(k, dFBufs[offset]->BlockUFactor, ksupc,

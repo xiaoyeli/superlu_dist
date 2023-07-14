@@ -1,3 +1,4 @@
+
 #include "superlu_ddefs.h"
 #ifdef HAVE_CUDA
 #include "lupanels_GPU.cuh"
@@ -78,7 +79,7 @@ void copyToGPU_Sparse(double *gpuValBasePtr, double *valBuffer, int_t gpuLvalSiz
     copyToGPU(gpuValBasePtr, valBufferPacked, valIdx);
 }
 
-#define NDEBUG
+//#define NDEBUG
 __device__
     int_t
     lpanelGPU_t::find(int_t k)
@@ -354,7 +355,8 @@ void scatterGPU_batchDriver(
 
 int_t LUstruct_v100::dSchurComplementUpdateGPU(
     int streamId,
-    int_t k, lpanel_t &lpanel, upanel_t &upanel)
+    int_t k, // the k-th panel or supernode
+    lpanel_t &lpanel, upanel_t &upanel)
 {
 
     if (lpanel.isEmpty() || upanel.isEmpty())
@@ -382,6 +384,8 @@ int_t LUstruct_v100::dSchurComplementUpdateGPU(
         int numberofRowChunks = (nrows + maxGemmOpSize - 1) / maxGemmOpSize;
         maxGemmRows = nrows / numberofRowChunks;
         maxGemmCols = A_gpu.gemmBufferSize / maxGemmRows;
+        /* printf("buffer exceeded! k = %d, st_lb = %d, nlb = %d, nrowsXncols %d, maxGemRows %d, maxGemmCols %d\n",
+	   k, st_lb, nlb, nrows*ncols, maxGemmRows, maxGemmCols);*/
     }
 
     while (iEnd < nlb)
@@ -389,8 +393,6 @@ int_t LUstruct_v100::dSchurComplementUpdateGPU(
         iSt = iEnd;
         iEnd = lpanel.getEndBlock(iSt, maxGemmRows);
         
-        // printf("k = %d, ist = %d, iend = %d\n", k, iSt, iEnd);
-
         assert(iEnd > iSt);
         int jSt = 0;
         int jEnd = 0;
@@ -405,14 +407,14 @@ int_t LUstruct_v100::dSchurComplementUpdateGPU(
             int gemm_m = lpanel.stRow(iEnd) - lpanel.stRow(iSt);
             int gemm_n = upanel.stCol(jEnd) - upanel.stCol(jSt);
             int gemm_k = supersize(k);
-            
-            // printf("k = %d, ist = %d, iend = %d, jst = %d, jend = %d\n", k, iSt, iEnd, jSt, jEnd);
+#if 0           
+            printf("k = %d, iSt = %d, iEnd = %d, jst = %d, jend = %d\n", k, iSt, iEnd, jSt, jEnd);
+            printf("m=%d, n=%d, k=%d\n", gemm_m, gemm_n, gemm_k);
+	    fflush(stdout);
+#endif	    
 
             double alpha = 1.0;
             double beta = 0.0;
-#ifndef NDEBUG
-            // printf("m=%d, n=%d, k=%d\n", gemm_m, gemm_n, gemm_k);
-#endif
             cublasDgemm(handle, CUBLAS_OP_N, CUBLAS_OP_N,
                         gemm_m, gemm_n, gemm_k, &alpha,
                         lpanel.blkPtrGPU(iSt), lpanel.LDA(),
@@ -428,7 +430,7 @@ int_t LUstruct_v100::dSchurComplementUpdateGPU(
     }
     gpuErrchk(cudaStreamSynchronize(A_gpu.cuStreams[streamId]));
     return 0;
-}
+} /* end dSchurComplementUpdateGPU */
 
 int_t LUstruct_v100::lookAheadUpdateGPU(
     int streamId,
@@ -726,6 +728,8 @@ int_t LUstruct_v100::setLUstruct_GPU()
     // Per stream data
     // TODO: estimate based on ancestor size
     int_t maxBuffSize = sp_ienv_dist (8, options);
+    int maxsup = sp_ienv_dist(3, options); // max. supernode size
+    maxBuffSize = SUPERLU_MAX(maxsup * maxsup, maxBuffSize); // Sherry added 7/10/23
     A_gpu.gemmBufferSize = SUPERLU_MIN(maxBuffSize, totalNzvalSize);
     
     size_t dataPerStream = 3 * sizeof(double) * maxLvalCount + 3 * sizeof(double) * maxUvalCount + 2 * sizeof(int_t) * maxLidxCount + 2 * sizeof(int_t) * maxUidxCount + A_gpu.gemmBufferSize * sizeof(double) + ldt * ldt * sizeof(double);

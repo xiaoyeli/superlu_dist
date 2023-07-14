@@ -140,7 +140,7 @@ int_t pdgstrf3d_summit(superlu_dist_options_t *options, int m, int n, double ano
                 if (superlu_acc_offload)
                 {
 #ifdef HAVE_CUDA
-#define NDEBUG
+		  //#define NDEBUG
 #ifndef NDEBUG
                     LU_packed.checkGPU();
                     LU_packed.ancestorReduction3d(ilvl, myNodeCount, treePerm);
@@ -272,7 +272,7 @@ int_t LUstruct_v100::pdgstrf3d()
                 {
                     if (superlu_acc_offload)
                     {
-#define NDEBUG
+		      //#define NDEBUG
 #ifndef NDEBUG
                         checkGPU();
                         ancestorReduction3d(ilvl, myNodeCount, treePerm);
