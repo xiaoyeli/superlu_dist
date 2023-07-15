@@ -333,16 +333,24 @@ void scatterGPU_batchDriver(
     LUstructGPU_t *dA, int batchCount, cudaStream_t cuStream
 )
 {
-    dim3 dimBlock(ldt); // 1d thread
-    dim3 dimGrid(max_ilen, max_jlen, batchCount);
-    size_t sharedMemorySize = 3 * maxSuperSize * sizeof(int_t);
+    const int op_increment = 65535;
+    
+    for(int op_start = 0; op_start < batchCount; op_start += op_increment)
+	{
+		int batch_size = std::min(op_increment, batchCount - op_start);
+    
+        dim3 dimBlock(ldt); // 1d thread
+        dim3 dimGrid(max_ilen, max_jlen, batch_size);
+        size_t sharedMemorySize = 3 * maxSuperSize * sizeof(int_t);
 
-    scatterGPU_batch<<<dimGrid, dimBlock, sharedMemorySize, cuStream>>>(
-        iSt_batch, iEnd_batch, jSt_batch, jEnd_batch, gemmBuff_ptrs, 
-        LDgemmBuff_batch, lpanels, upanels, dA 
-    );
+        scatterGPU_batch<<<dimGrid, dimBlock, sharedMemorySize, cuStream>>>(
+            iSt_batch + op_start, iEnd_batch + op_start, jSt_batch + op_start, 
+            jEnd_batch + op_start, gemmBuff_ptrs + op_start, LDgemmBuff_batch + op_start, 
+            lpanels + op_start, upanels + op_start, dA 
+        );
 
-    gpuErrchk(cudaGetLastError());
+        gpuErrchk(cudaGetLastError());
+    }
 }
 
 int_t LUstruct_v100::dSchurComplementUpdateGPU(

@@ -902,6 +902,7 @@ void LUstruct_v100::marshallBatchedTRSMUData(int k_st, int k_end, int_t *perm_c_
 		if (myrow == krow(k))
 		{			
             upanel_t& upanel = uPanelVec[g2lRow(k)];
+            lpanel_t &lpanel = lPanelVec[g2lCol(k)];
             if(!upanel.isEmpty())
             {
                 assert(mdata.batchsize < mdata.host_diag_ptrs.size());
@@ -910,8 +911,12 @@ void LUstruct_v100::marshallBatchedTRSMUData(int k_st, int k_end, int_t *perm_c_
                 panel_ld_batch[mdata.batchsize] = upanel.LDA();
                 panel_dim_batch[mdata.batchsize] = upanel.nzcols();
                 
-                diag_ptrs[mdata.batchsize] = A_gpu.dFBufs[buffer_offset];
-                diag_ld_batch[mdata.batchsize] = ksupc;
+                // Hackathon change: using the original diagonal block instead of the bcast buffer
+                // diag_ptrs[mdata.batchsize] = A_gpu.dFBufs[buffer_offset];
+                // diag_ld_batch[mdata.batchsize] = ksupc;
+                // diag_dim_batch[mdata.batchsize] = ksupc;
+                diag_ptrs[mdata.batchsize] = lpanel.blkPtrGPU(0);
+                diag_ld_batch[mdata.batchsize] = lpanel.LDA();
                 diag_dim_batch[mdata.batchsize] = ksupc;
 
                 mdata.batchsize++;
@@ -969,8 +974,12 @@ void LUstruct_v100::marshallBatchedTRSMLData(int k_st, int k_end, int_t *perm_c_
                 panel_ld_batch[mdata.batchsize] = lpanel.LDA();
                 panel_dim_batch[mdata.batchsize] = len;
                 
-                diag_ptrs[mdata.batchsize] = A_gpu.dFBufs[buffer_offset];
-                diag_ld_batch[mdata.batchsize] = ksupc;
+                // Hackathon change: using the original diagonal block instead of the bcast buffer
+                // diag_ptrs[mdata.batchsize] = A_gpu.dFBufs[buffer_offset];
+                // diag_ld_batch[mdata.batchsize] = ksupc;
+                // diag_dim_batch[mdata.batchsize] = ksupc;
+                diag_ptrs[mdata.batchsize] = lpanel.blkPtrGPU(0);
+                diag_ld_batch[mdata.batchsize] = lpanel.LDA();
                 diag_dim_batch[mdata.batchsize] = ksupc;
 
                 mdata.batchsize++;
@@ -1005,14 +1014,16 @@ void LUstruct_v100::dFactBatchSolve(int k_st, int k_end, int_t *perm_c_supno)
         A_gpu.magma_queue
     );
 
-    // Copy the diagonal block data over to the bcast buffers
-    marshallBatchedBufferCopyData(k_st, k_end, perm_c_supno);
+    // Hackathon change: assuming individual matrices in a local batch are not distributed 
+    // so we don't do the buffer copies anymore 
+    // // Copy the diagonal block data over to the bcast buffers
+    // marshallBatchedBufferCopyData(k_st, k_end, perm_c_supno);
 
-    copyBlock_vbatch(
-        stream, mdata.dev_diag_dim_array, mdata.dev_panel_dim_array, mdata.max_diag, mdata.max_panel,
-        mdata.dev_diag_ptrs, mdata.dev_diag_ld_array, mdata.dev_panel_ptrs, mdata.dev_panel_ld_array,
-        mdata.batchsize
-    );
+    // copyBlock_vbatch(
+    //     stream, mdata.dev_diag_dim_array, mdata.dev_panel_dim_array, mdata.max_diag, mdata.max_panel,
+    //     mdata.dev_diag_ptrs, mdata.dev_diag_ld_array, mdata.dev_panel_ptrs, mdata.dev_panel_ld_array,
+    //     mdata.batchsize
+    // );
     
     // Upper panel triangular solves
     marshallBatchedTRSMUData(k_st, k_end, perm_c_supno);
@@ -1037,13 +1048,14 @@ void LUstruct_v100::dFactBatchSolve(int k_st, int k_end, int_t *perm_c_supno)
     );
 
     // Wajih: This should be converted to a single bcast if possible 
-    for (int k0 = k_st; k0 < k_end; k0++)
-    {
-        int k = perm_c_supno[k0];
-        int offset = 0;
-        /*======= Panel Broadcast  ======*/
-        dPanelBcastGPU(k, offset);
-    }
+    // Hackathon change: assuming individual matrices in a local batch are not distributed 
+    // for (int k0 = k_st; k0 < k_end; k0++)
+    // {
+    //     int k = perm_c_supno[k0];
+    //     int offset = 0;
+    //     /*======= Panel Broadcast  ======*/
+    //     dPanelBcastGPU(k, offset);
+    // }
 
     // Initialize the schur complement update marshall data 
     initSCUMarshallData(k_st, k_end, perm_c_supno);
@@ -1078,7 +1090,7 @@ void LUstruct_v100::dFactBatchSolve(int k_st, int k_end, int_t *perm_c_supno)
             }
         }
     }
-    printf("SCU batches = %d\n", total_batches);
+    // printf("SCU batches = %d\n", total_batches);
 #endif
 }
 
@@ -1114,7 +1126,7 @@ int LUstruct_v100::dsparseTreeFactorBatchGPU(
     k_end = eTreeTopLims[topoLvl + 1];
     printf("level %d: k_st %d, k_end %d\n", topoLvl, k_st, k_end); fflush(stdout);
 
-#if 1
+#if 0
     //ToDo: make this batched 
     for (k0 = k_st; k0 < k_end; k0++)
     {
@@ -1187,6 +1199,8 @@ int LUstruct_v100::dsparseTreeFactorBatchGPU(
         } /* end for k0= k_st:k_end */
     } /* end for topoLvl = 0:maxTopoLevel */
 #else
+    printf("Using batched code\n");
+    double t0 = SuperLU_timer_();
     dFactBatchSolve(k_st, k_end, perm_c_supno);
 
     for (topoLvl = 1; topoLvl < maxTopoLevel; ++topoLvl) {
@@ -1195,6 +1209,7 @@ int LUstruct_v100::dsparseTreeFactorBatchGPU(
         k_end = eTreeTopLims[topoLvl + 1];
         dFactBatchSolve(k_st, k_end, perm_c_supno);
     }
+    printf("Batch time = %.3f\n", SuperLU_timer_() - t0);
 #endif
 
 #if (DEBUGlevel >= 1)
