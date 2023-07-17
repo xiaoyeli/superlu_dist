@@ -1437,9 +1437,29 @@ pdgstrs(superlu_dist_options_t *options, int_t n, dLUstruct_t *LUstruct,
     /*---------------------------------------------------
      * Forward solve Ly = b.
      *---------------------------------------------------*/
-    /* Redistribute B into X on the diagonal processes. */
+#if defined(GPU_ACC)
+	pdReDistribute_B_to_X_gpu_wrap(B, m_loc, n, nrhs, ldb, fst_row, ilsum, ldalsum, nlb, nsupers, x,
+		    ScalePermstruct, SOLVEstruct, Glu_persist, grid);
+	// pdReDistribute_B_to_X(B, m_loc, nrhs, ldb, fst_row, ilsum, x,
+	// 		  ScalePermstruct, Glu_persist, grid, SOLVEstruct);
+	// double thr = 0.0000000001;
+	// for (int ct = 0; ct < ldalsum * nrhs + nlb * XK_H; ct++) {
+	// 	double dif = x[ct]-x1[ct];
+	// 	if ((dif>thr) || (dif+thr<0)) {
+	// 		printf("x and x1 has a difference at position %d, with x value is %f and x1 value is %f\n", ct, x[ct], x1[ct]);
+	// 	}
+	// 	// if ((x[ct]>thr) || (x[ct]+thr<0)) {
+	// 	// 	printf("x has a nonzero at position %d, with x value is %f and x1 value is %f\n", ct, x[ct], x1[ct]);
+	// 	// }
+	// }
+
+#else
     pdReDistribute_B_to_X(B, m_loc, nrhs, ldb, fst_row, ilsum, x,
-			  ScalePermstruct, Glu_persist, grid, SOLVEstruct);
+			ScalePermstruct, Glu_persist, grid, SOLVEstruct);
+#endif
+    /* Redistribute B into X on the diagonal processes. */
+    // pdReDistribute_B_to_X(B, m_loc, nrhs, ldb, fst_row, ilsum, x,
+	// 		  ScalePermstruct, Glu_persist, grid, SOLVEstruct);
 
 
 #if ( PROFlevel>=1 )
@@ -3153,8 +3173,27 @@ for (i=0;i<nroot_send;i++){
 		}
 #endif
 
+#if defined(GPU_ACC)
+		pdReDistribute_X_to_B_gpu_wrap(B, m_loc, n, nrhs, ldb, fst_row, ilsum, ldalsum, nlb,
+                                    nsupers, x, ScalePermstruct, SOLVEstruct, Glu_persist, grid);
+		// pdReDistribute_X_to_B(n, B, m_loc, ldb, fst_row, nrhs, x, ilsum,
+		// 		ScalePermstruct, Glu_persist, grid, SOLVEstruct);
+		// double thr = 0.0000000001;
+		// for (int ct = 0; ct < m_loc*nrhs; ct++) {
+		// 	double dif = B[ct]-B1[ct];
+		// 	if ((dif>thr) || (dif+thr<0)) {
+		// 		printf("B and B1 has a difference at position %d, with B value is %f and B1 value is %f\n", ct, B[ct], B1[ct]);
+		// 	}
+		// 	// if ((x[ct]>thr) || (x[ct]+thr<0)) {
+		// 	// 	printf("x has a nonzero at position %d, with x value is %f and x1 value is %f\n", ct, x[ct], x1[ct]);
+		// 	// }
+		// }
+#else
 		pdReDistribute_X_to_B(n, B, m_loc, ldb, fst_row, nrhs, x, ilsum,
 				ScalePermstruct, Glu_persist, grid, SOLVEstruct);
+#endif
+		// pdReDistribute_X_to_B(n, B, m_loc, ldb, fst_row, nrhs, x, ilsum,
+		// 		ScalePermstruct, Glu_persist, grid, SOLVEstruct);
 
 
 #if ( PROFlevel>=1 )
