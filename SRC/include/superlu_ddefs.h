@@ -665,7 +665,8 @@ extern void dlsum_bmod_inv_gpu_wrap(superlu_dist_options_t *, int_t, int_t, int_
                                     int*, int*, int*, int*, int*,
                                     int*, int*, int*, int*, int*, int*,
                                     int*, int*, int*, int); //int*); //int*, double*);
-
+extern void pdReDistribute_B_to_X_gpu_wrap(double *, int_t, int_t, int, int_t, int_t, int_t *, int_t, int_t, int_t, double *, dScalePermstruct_t *, dSOLVEstruct_t *, Glu_persist_t *, gridinfo_t *);
+extern void pdReDistribute_X_to_B_gpu_wrap(double *, int_t, int_t, int, int_t, int_t, int_t *, int_t, int_t, int_t, double *, dScalePermstruct_t *, dSOLVEstruct_t *, Glu_persist_t *, gridinfo_t *);
 
 #endif
 
