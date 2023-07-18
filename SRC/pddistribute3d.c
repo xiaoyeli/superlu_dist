@@ -459,10 +459,10 @@ float pddistribute3d(superlu_dist_options_t *options, int_t n, SuperMatrix *A,
     long int *Ufstnz_br_offset; /* size ceil(NSUPERS/Pr)    */
     long int Ufstnz_br_cnt = 0;
 
-    C_Tree *LBtree_ptr= NULL; /* size ceil(NSUPERS/Pc) */
-    C_Tree *LRtree_ptr= NULL; /* size ceil(NSUPERS/Pr) */
-    C_Tree *UBtree_ptr= NULL; /* size ceil(NSUPERS/Pc) */
-    C_Tree *URtree_ptr= NULL; /* size ceil(NSUPERS/Pr) */
+    C_Tree *LBtree_ptr = NULL; /* size ceil(NSUPERS/Pc) */
+    C_Tree *LRtree_ptr = NULL; /* size ceil(NSUPERS/Pr) */
+    C_Tree *UBtree_ptr = NULL; /* size ceil(NSUPERS/Pc) */
+    C_Tree *URtree_ptr = NULL; /* size ceil(NSUPERS/Pr) */
     int msgsize;
 
     int_t *Urbs, *Urbs1;       /* Number of row blocks in each block column of U. */
@@ -494,17 +494,17 @@ float pddistribute3d(superlu_dist_options_t *options, int_t n, SuperMatrix *A,
                the full array (local)                 */
 
     /*-- Auxiliary arrays; freed on return --*/
-    int_t *rb_marker;  /* block hit marker; size ceil(NSUPERS/Pr)           */
-    int_t *Urb_length; /* U block length; size ceil(NSUPERS/Pr)             */
-    int_t *Urb_indptr; /* pointers to U index[]; size ceil(NSUPERS/Pr)      */
-    int_t *Urb_fstnz;  /* # of fstnz in a block row; size ceil(NSUPERS/Pr)  */
-    int_t *Ucbs;       /* number of column blocks in a block row            */
-    int_t *Lrb_length; /* L block length; size ceil(NSUPERS/Pr)             */
-    int_t *Lrb_number; /* global block number; size ceil(NSUPERS/Pr)        */
-    int_t *Lrb_indptr; /* pointers to L index[]; size ceil(NSUPERS/Pr)      */
-    int_t *Lrb_valptr; /* pointers to L nzval[]; size ceil(NSUPERS/Pr)      */
-    int_t *ActiveFlag;
-    int_t *ActiveFlagAll;
+    int_t *rb_marker = NULL;  /* block hit marker; size ceil(NSUPERS/Pr)           */
+    int_t *Urb_length = NULL; /* U block length; size ceil(NSUPERS/Pr)             */
+    int_t *Urb_indptr = NULL; /* pointers to U index[]; size ceil(NSUPERS/Pr)      */
+    int_t *Urb_fstnz = NULL;  /* # of fstnz in a block row; size ceil(NSUPERS/Pr)  */
+    int_t *Ucbs = NULL;       /* number of column blocks in a block row            */
+    int_t *Lrb_length = NULL; /* L block length; size ceil(NSUPERS/Pr)             */
+    int_t *Lrb_number = NULL; /* global block number; size ceil(NSUPERS/Pr)        */
+    int_t *Lrb_indptr = NULL; /* pointers to L index[]; size ceil(NSUPERS/Pr)      */
+    int_t *Lrb_valptr = NULL; /* pointers to L nzval[]; size ceil(NSUPERS/Pr)      */
+    int_t *ActiveFlag = NULL;
+    int_t *ActiveFlagAll = NULL;
     int_t Iactive;
     int *ranks;
     int_t *idxs;
@@ -666,7 +666,7 @@ float pddistribute3d(superlu_dist_options_t *options, int_t n, SuperMatrix *A,
         for (gb = 0; gb < nsupers; ++gb)
         {
 #if 1
-            if (superGridMap[gb] != NOT_IN_GRID || !grid3d->zscp.Iam)
+            if (superGridMap[gb] != NOT_IN_GRID || !grid3d->zscp.Iam || 1)
 #endif
             {
                 if (myrow == PROW(gb, grid))
@@ -696,7 +696,7 @@ float pddistribute3d(superlu_dist_options_t *options, int_t n, SuperMatrix *A,
         for (jb = 0; jb < nsupers; ++jb)
         {
 #if 1
-            if (superGridMap[jb] != NOT_IN_GRID || !grid3d->zscp.Iam)
+            if (superGridMap[jb] != NOT_IN_GRID || !grid3d->zscp.Iam || 1)
 #endif
             {
                 pc = PCOL(jb, grid);
@@ -913,7 +913,7 @@ float pddistribute3d(superlu_dist_options_t *options, int_t n, SuperMatrix *A,
         for (jb = 0; jb < nsupers; ++jb)
         { /* for each block column ... */
 #if 1
-            if (superGridMap[jb] != NOT_IN_GRID || !grid3d->zscp.Iam)
+            if (superGridMap[jb] != NOT_IN_GRID || !grid3d->zscp.Iam || 1)
 #endif
             {
                 pc = PCOL(jb, grid);
@@ -1221,8 +1221,6 @@ float pddistribute3d(superlu_dist_options_t *options, int_t n, SuperMatrix *A,
 
                         Lrowind_bc_ptr[ljb] = index_srt;
                         Lnzval_bc_ptr[ljb] = lusup_srt;
-
-                   
                     }
                     else
                     {
@@ -1679,7 +1677,7 @@ float pddistribute3d(superlu_dist_options_t *options, int_t n, SuperMatrix *A,
 
                         if (Iactive == 1)
                         {
-                        
+
                             assert(Root > -1);
                             rank_cnt = 1;
                             ranks[0] = Root;
@@ -1699,7 +1697,7 @@ float pddistribute3d(superlu_dist_options_t *options, int_t n, SuperMatrix *A,
                                     ranks[ii] = PNUM(ranks[ii], pc, grid);
 
                                 msgsize = SuperSize(jb);
-                               
+
                                 C_BcTree_Create(&LBtree_ptr[ljb], grid->comm, ranks, rank_cnt, msgsize, 'd');
                                 LBtree_ptr[ljb].tag_ = BC_L;
 
@@ -1714,8 +1712,6 @@ float pddistribute3d(superlu_dist_options_t *options, int_t n, SuperMatrix *A,
                                         }
                                     }
                                     assert(rank_cnt == rank_cnt_ref);
-
-                                   
                                 }
                                 // #endif
                             }
@@ -1776,8 +1772,6 @@ float pddistribute3d(superlu_dist_options_t *options, int_t n, SuperMatrix *A,
             if (!(ranks = (int *)SUPERLU_MALLOC(grid->npcol * sizeof(int))))
                 ABORT("Malloc fails for ranks[].");
 
-           
-
             if (!(SeedSTD_RD = (double *)SUPERLU_MALLOC(k * sizeof(double))))
                 ABORT("Malloc fails for SeedSTD_RD[].");
 
@@ -1787,8 +1781,6 @@ float pddistribute3d(superlu_dist_options_t *options, int_t n, SuperMatrix *A,
             }
 
             MPI_Allreduce(MPI_IN_PLACE, &SeedSTD_RD[0], k, MPI_DOUBLE, MPI_MAX, grid->rscp.comm);
-
-           
 
             for (lib = 0; lib < k; ++lib)
             {
@@ -1878,10 +1870,8 @@ float pddistribute3d(superlu_dist_options_t *options, int_t n, SuperMatrix *A,
 
                                 msgsize = SuperSize(ib);
 
-                            
                                 C_RdTree_Create(&LRtree_ptr[lib], grid->comm, ranks, rank_cnt, msgsize, 'd');
                                 LRtree_ptr[lib].tag_ = RD_L;
-                                
                             }
                         }
                     }
@@ -1894,9 +1884,9 @@ float pddistribute3d(superlu_dist_options_t *options, int_t n, SuperMatrix *A,
             SUPERLU_FREE(ActiveFlag);
             SUPERLU_FREE(ActiveFlagAll);
             SUPERLU_FREE(ranks);
-   
+
             SUPERLU_FREE(SeedSTD_RD);
-          
+
             memTRS -= k * dword + grid->nprow * k * iword; // acount for SeedSTD_RD, ActiveFlagAll
                                                            ////////////////////////////////////////////////////////
 
@@ -1963,11 +1953,10 @@ float pddistribute3d(superlu_dist_options_t *options, int_t n, SuperMatrix *A,
                                 gb = BlockNum(irow);
                                 pr = PROW(gb, grid);
                                 ActiveFlagAll[pr + ljb * grid->nprow] = SUPERLU_MAX(ActiveFlagAll[pr + ljb * grid->nprow], gb);
-                                
                             }
                         }
                         pr = PROW(jb, grid); // take care of diagonal node stored as L
-                      
+
                         ActiveFlagAll[pr + ljb * grid->nprow] = SUPERLU_MAX(ActiveFlagAll[pr + ljb * grid->nprow], jb);
                     }
                 }
@@ -2008,10 +1997,10 @@ float pddistribute3d(superlu_dist_options_t *options, int_t n, SuperMatrix *A,
                         }
 
                         quickSortM(ActiveFlag, 0, grid->nprow - 1, grid->nprow, 1, 2);
-                       
+
                         if (Iactive == 1)
                         {
-                        
+
                             assert(Root > -1);
                             rank_cnt = 1;
                             ranks[0] = Root;
@@ -2023,14 +2012,14 @@ float pddistribute3d(superlu_dist_options_t *options, int_t n, SuperMatrix *A,
                                     ++rank_cnt;
                                 }
                             }
-                          
+
                             if (rank_cnt > 1)
                             {
                                 for (ii = 0; ii < rank_cnt; ii++) // use global ranks rather than local ranks
                                     ranks[ii] = PNUM(ranks[ii], pc, grid);
 
                                 msgsize = SuperSize(jb);
-                              
+
                                 C_BcTree_Create(&UBtree_ptr[ljb], grid->comm, ranks, rank_cnt, msgsize, 'd');
                                 UBtree_ptr[ljb].tag_ = BC_U;
 
@@ -2039,13 +2028,13 @@ float pddistribute3d(superlu_dist_options_t *options, int_t n, SuperMatrix *A,
                                     rank_cnt_ref = 1;
                                     for (j = 0; j < grid->nprow; ++j)
                                     {
-                                        
+
                                         if (bsendx_plist[ljb][j] != SLU_EMPTY)
                                         {
                                             ++rank_cnt_ref;
                                         }
                                     }
-                                    
+
                                     assert(rank_cnt == rank_cnt_ref);
                                 }
                             }
@@ -2101,7 +2090,6 @@ float pddistribute3d(superlu_dist_options_t *options, int_t n, SuperMatrix *A,
             if (!(ranks = (int *)SUPERLU_MALLOC(grid->npcol * sizeof(int))))
                 ABORT("Malloc fails for ranks[].");
 
-     
             if (!(SeedSTD_RD = (double *)SUPERLU_MALLOC(k * sizeof(double))))
                 ABORT("Malloc fails for SeedSTD_RD[].");
 
@@ -2220,9 +2208,7 @@ float pddistribute3d(superlu_dist_options_t *options, int_t n, SuperMatrix *A,
                                 if (Root == mycol)
                                 {
                                     assert(rank_cnt == brecv[lib]);
-                                    
                                 }
-                                
                             }
                         }
                     }
@@ -2310,9 +2296,8 @@ float pddistribute3d(superlu_dist_options_t *options, int_t n, SuperMatrix *A,
         Llu->Ucb_valoffset = Ucb_valoffset;
         Llu->Ucb_valcnt = Ucb_valcnt;
 
-        
 #ifdef GPU_ACC
-        if(!grid3d->zscp.Iam && 0)
+        if (!grid3d->zscp.Iam && 0)
         {
             checkGPU(gpuMalloc((void **)&Llu->d_xsup, (n + 1) * sizeof(int_t)));
             checkGPU(gpuMemcpy(Llu->d_xsup, xsup, (n + 1) * sizeof(int_t), gpuMemcpyHostToDevice));

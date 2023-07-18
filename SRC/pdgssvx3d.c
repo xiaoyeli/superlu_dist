@@ -835,8 +835,8 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 
 		double tgather = SuperLU_timer_();
 
-		// dgatherAllFactoredLU3d(trf3Dpartition, LUstruct, grid3d, SCT);
-		dgatherAllFactoredLU(trf3Dpartition, LUstruct, grid3d, SCT);
+		// dgatherAllFactoredLU(trf3Dpartition, LUstruct, grid3d, SCT);
+		dgatherAllFactoredLU3d(trf3Dpartition, LUstruct, grid3d, SCT);
 
 		SCT->gatherLUtimer += SuperLU_timer_() - tgather;
 		/*print stats for bottom grid*/
