@@ -88,6 +88,7 @@ if(enable_double)
     pddistribute.c
     pddistribute3d.c
     d3DPartition.c
+    distCheckArray.c 
     pddistribute-aux3d.c
     pdgstrf.c
     dstatic_schedule.c

@@ -1,4 +1,5 @@
 #include "superlu_ddefs.h"
+#include "pddistribute3d.h"
 /**
  * Propagates the new values of A into the existing L and U data structures.
  * 
@@ -341,4 +342,125 @@ int **ToSendR,  int *ToSendD,  int *ToRecv)
             }
         }
     }
+}
+
+
+int_t checkDist3DLUStruct(  dLUstruct_t* LUstruct, gridinfo3d_t* grid3d)
+{
+    dtrf3Dpartition_t*  trf3Dpartition = LUstruct->trf3Dpart;
+    gridinfo_t *grid = &(grid3d->grid2d);
+    int iam = grid->iam;
+    int myrow = MYROW(iam, grid);
+    int mycol = MYCOL(iam, grid);
+    int_t maxLvl = log2i(grid3d->zscp.Np) + 1;
+    int_t myGrid = grid3d->zscp.Iam;
+    
+    sForest_t** sForests = trf3Dpartition->sForests;
+    int_t*  gNodeCount = getNodeCountsFr(maxLvl, sForests);
+    int_t** gNodeLists = getNodeListFr(maxLvl, sForests);
+    
+
+    for (int grid_id =1 ; grid_id < grid3d->zscp.Np; ++grid_id)
+    {
+        int first_tree = grid3d->zscp.Iam - 1 + grid_id;
+        while( first_tree >0 )
+        {
+            int_t* tree = gNodeLists[first_tree];
+            int_t tree_size = gNodeCount[first_tree];
+            int grid_zero = 0;
+            int result = dist_checkArrayEq(tree, tree_size, mpi_int_t, grid_zero, grid_id, grid3d->zscp.comm, compareInt_t);
+            if (myGrid == grid_id && result)
+            {
+                printf("Check tree list failed: tree_id=%d, grid_id =%d, Iam=(%d, %d) \n", 
+                    first_tree, grid_id, grid3d->zscp.Iam, grid3d->zscp.Iam);
+                exit(1);
+            }
+            
+            for(int_t node=0; node<tree_size; ++node)
+            {
+                int_t node_id = tree[node];
+                if( PROW(node_id, grid) ==myrow) 
+                {
+                    // check U index list
+                    int_t lk = LBi(node_id, grid);
+                    int_t* usub = LUstruct->Llu->Ufstnz_br_ptr[lk];
+                    int_t usub_size = 0, uval_size = 0; 
+                    if (usub != NULL)
+                    {
+                        uval_size = usub[1];
+                        usub_size = usub[2];
+                    }
+
+                    // check U index 
+                    int result = dist_checkArrayEq(usub, usub_size, mpi_int_t, 
+                        grid_zero, grid_id, grid3d->zscp.comm, compareInt_t);
+                    if (myGrid == grid_id && result)
+                    {
+                        printf("Check U index failed: node_id=%d, grid_id =%d, Iam=(%d, %d) \n", 
+                            node_id, grid_id, grid3d->zscp.Iam, grid3d->zscp.Iam);
+                        exit(1);
+                    }
+
+                    if(usub==NULL) continue;
+
+                    // check U value
+                    double* uval = LUstruct->Llu->Unzval_br_ptr[lk];
+                    result = dist_checkArrayEq(uval, uval_size, MPI_DOUBLE, 
+                        grid_zero, grid_id, grid3d->zscp.comm, compareDouble);
+                    if (myGrid == grid_id && result)
+                    {
+                        printf("Check U value failed: node_id=%d, grid_id =%d, Iam=(%d, %d) \n", 
+                            node_id, grid_id, grid3d->zscp.Iam, grid3d->zscp.Iam);
+                        exit(1);
+                    }
+                    
+                } /* Checking U panel */
+
+                if( PCOL(node_id, grid) ==mycol) 
+                {
+                    int_t lk = LBj(node_id, grid);
+                    int_t* lsub = LUstruct->Llu->Lrowind_bc_ptr[lk];
+                    double* lusup = LUstruct->Llu->Lnzval_bc_ptr[lk];
+                    int_t lsub_size = 0, lval_size = 0;
+                    if (lsub != NULL)
+                    {
+                        int_t nrbl, len;
+			            nrbl  =   lsub[0]; /*number of L blocks */
+                        len   = lsub[1];       /* LDA of the nzval[] */
+                        lsub_size  = len + BC_HEADER + nrbl * LB_DESCRIPTOR;
+                        int_t* xsup = LUstruct->Glu_persist->xsup; // for SuperSize()
+                        lval_size  = SuperSize(node_id) * len;
+                    }
+
+                    // check L index
+                    int result = dist_checkArrayEq(lsub, lsub_size, mpi_int_t, 
+                        grid_zero, grid_id, grid3d->zscp.comm, compareInt_t);
+                    if (myGrid == grid_id && result)
+                    {
+                        printf("Check L index failed: node_id=%d, grid_id =%d, Iam=(%d, %d) \n", 
+                            node_id, grid_id, grid3d->zscp.Iam, grid3d->zscp.Iam);
+                        exit(1);
+                    }
+
+                    if(lsub==NULL) continue;
+
+                    // check L value
+                    double* lval = LUstruct->Llu->Lnzval_bc_ptr[lk];
+                    result = dist_checkArrayEq(lval, lval_size, MPI_DOUBLE,
+                        grid_zero, grid_id, grid3d->zscp.comm, compareDouble);
+                    if (myGrid == grid_id && result)
+                    {
+                        printf("Check L value failed: node_id=%d, grid_id =%d, Iam=(%d, %d) \n", 
+                            node_id, grid_id, grid3d->zscp.Iam, grid3d->zscp.Iam);
+                        exit(1);
+                    }
+                }/* Check L panel*/
+
+                
+            }
+        }
+    }
+
+    printf("Check 3D LU structure passed\n");
+    return 0;
 }
