@@ -404,15 +404,15 @@ int_t checkDist3DLUStruct(  dLUstruct_t* LUstruct, gridinfo3d_t* grid3d)
                     if(usub==NULL) continue;
 
                     // check U value
-                    // double* uval = LUstruct->Llu->Unzval_br_ptr[lk];
-                    // result = dist_checkArrayEq(uval, uval_size, MPI_DOUBLE, 
-                    //     grid_zero, grid_id, grid3d->zscp.comm, compareDouble);
-                    // if (myGrid == grid_id && result)
-                    // {
-                    //     printf("Check U value failed: node_id=%d, grid_id =%d, Iam=(%d, %d) \n", 
-                    //         node_id, grid_id, grid3d->zscp.Iam, grid3d->zscp.Iam);
-                    //     exit(1);
-                    // }
+                    double* uval = LUstruct->Llu->Unzval_br_ptr[lk];
+                    result = dist_checkArrayEq(uval, uval_size, MPI_DOUBLE, 
+                        grid_zero, grid_id, grid3d->zscp.comm, compareDouble);
+                    if (myGrid == grid_id && result)
+                    {
+                        printf("Check U value failed: node_id=%d, grid_id =%d, Iam=(%d, %d) \n", 
+                            node_id, grid_id, grid3d->zscp.Iam, grid3d->zscp.Iam);
+                        exit(1);
+                    }
                     
                 } /* Checking U panel */
 
@@ -445,15 +445,15 @@ int_t checkDist3DLUStruct(  dLUstruct_t* LUstruct, gridinfo3d_t* grid3d)
                     if(lsub==NULL) continue;
 
                     // check L value
-                    // double* lval = LUstruct->Llu->Lnzval_bc_ptr[lk];
-                    // result = dist_checkArrayEq(lval, lval_size, MPI_DOUBLE,
-                    //     grid_zero, grid_id, grid3d->zscp.comm, compareDouble);
-                    // if (myGrid == grid_id && result)
-                    // {
-                    //     printf("Check L value failed: node_id=%d, grid_id =%d, Iam=(%d, %d) \n", 
-                    //         node_id, grid_id, grid3d->zscp.Iam, grid3d->zscp.Iam);
-                    //     exit(1);
-                    // }
+                    double* lval = LUstruct->Llu->Lnzval_bc_ptr[lk];
+                    result = dist_checkArrayEq(lval, lval_size, MPI_DOUBLE,
+                        grid_zero, grid_id, grid3d->zscp.comm, compareDouble);
+                    if (myGrid == grid_id && result)
+                    {
+                        printf("Check L value failed: node_id=%d, grid_id =%d, Iam=(%d, %d) \n", 
+                            node_id, grid_id, grid3d->zscp.Iam, grid3d->zscp.Iam);
+                        exit(1);
+                    }
                 }/* Check L panel*/
 
                 

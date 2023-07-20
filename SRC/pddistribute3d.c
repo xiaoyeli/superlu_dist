@@ -666,7 +666,7 @@ float pddistribute3d(superlu_dist_options_t *options, int_t n, SuperMatrix *A,
         for (gb = 0; gb < nsupers; ++gb)
         {
 #if 1
-            if (superGridMap[gb] != NOT_IN_GRID || !grid3d->zscp.Iam )
+            if (superGridMap[gb] != NOT_IN_GRID || !grid3d->zscp.Iam || 1)
 #endif
             {
                 if (myrow == PROW(gb, grid))
