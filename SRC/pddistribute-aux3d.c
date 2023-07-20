@@ -362,7 +362,7 @@ int_t checkDist3DLUStruct(  dLUstruct_t* LUstruct, gridinfo3d_t* grid3d)
 
     for (int grid_id =1 ; grid_id < grid3d->zscp.Np; ++grid_id)
     {
-        int first_tree = grid3d->zscp.Iam - 1 + grid_id;
+        int first_tree = grid3d->zscp.Np - 1 + grid_id;
         while( first_tree >0 )
         {
             int_t* tree = gNodeLists[first_tree];
@@ -458,6 +458,7 @@ int_t checkDist3DLUStruct(  dLUstruct_t* LUstruct, gridinfo3d_t* grid3d)
 
                 
             }
+            first_tree = (first_tree-1)/2;
         }
     }
 

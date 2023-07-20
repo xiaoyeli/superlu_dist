@@ -109,7 +109,7 @@ int src_rank, int dest_rank, MPI_Comm communicator, int (*compare)(void *, void 
     // Check whether the array is NULL; if its NULL, then the other rank should also have a NULL array
     if (my_rank == src_rank)
     {
-        printf("src_rank = %d, dest_rank = %d, is_null = %d\n", src_rank, dest_rank, is_null);
+        // printf("src_rank = %d, dest_rank = %d, is_null = %d\n", src_rank, dest_rank, is_null);
         MPI_Send(&is_null, 1, MPI_INT, dest_rank, 0, communicator);
         if (is_null)
         {
@@ -124,6 +124,10 @@ int src_rank, int dest_rank, MPI_Comm communicator, int (*compare)(void *, void 
         {
             printf("Array is NULL on one rank but not the other: Dest Rank= %d \n", dest_rank);
             return 1;
+        }
+        if (is_null)
+        {
+            return 0;
         }
     }
 
@@ -159,7 +163,7 @@ int src_rank, int dest_rank, MPI_Comm communicator, int (*compare)(void *, void 
         free(received_arr);
     }
 
-    printf("Rank %d: result = %d\n", my_rank, result);
+    // printf("Rank %d: result = %d\n", my_rank, result);
     return result;
 }
 

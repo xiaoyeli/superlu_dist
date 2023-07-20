@@ -785,6 +785,7 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 			t = SuperLU_timer_();
 			dist_mem_use = pddistribute3d(options, n, A, ScalePermstruct,
 										  Glu_freeable, LUstruct, grid3d);
+			checkDist3DLUStruct(LUstruct, grid3d);
 			// zeros out the Supernodes that are not owned by the grid
 			dinit3DLUstructForest(trf3Dpartition->myTreeIdxs, trf3Dpartition->myZeroTrIdxs,
 								  trf3Dpartition->sForests, LUstruct, grid3d);
