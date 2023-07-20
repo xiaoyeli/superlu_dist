@@ -666,7 +666,7 @@ float pddistribute3d(superlu_dist_options_t *options, int_t n, SuperMatrix *A,
         for (gb = 0; gb < nsupers; ++gb)
         {
 #if 1
-            if (superGridMap[gb] != NOT_IN_GRID || !grid3d->zscp.Iam || 1)
+            if (superGridMap[gb] != NOT_IN_GRID || !grid3d->zscp.Iam )
 #endif
             {
                 if (myrow == PROW(gb, grid))
@@ -696,7 +696,7 @@ float pddistribute3d(superlu_dist_options_t *options, int_t n, SuperMatrix *A,
         for (jb = 0; jb < nsupers; ++jb)
         {
 #if 1
-            if (superGridMap[jb] != NOT_IN_GRID || !grid3d->zscp.Iam || 1)
+            if (superGridMap[jb] != NOT_IN_GRID || !grid3d->zscp.Iam )
 #endif
             {
                 pc = PCOL(jb, grid);
@@ -913,7 +913,7 @@ float pddistribute3d(superlu_dist_options_t *options, int_t n, SuperMatrix *A,
         for (jb = 0; jb < nsupers; ++jb)
         { /* for each block column ... */
 #if 1
-            if (superGridMap[jb] != NOT_IN_GRID || !grid3d->zscp.Iam || 1)
+            if (superGridMap[jb] != NOT_IN_GRID || !grid3d->zscp.Iam )
 #endif
             {
                 pc = PCOL(jb, grid);

@@ -123,6 +123,7 @@ int src_rank, int dest_rank, MPI_Comm communicator, int (*compare)(void *, void 
         if (src_null != is_null)
         {
             printf("Array is NULL on one rank but not the other: Dest Rank= %d \n", dest_rank);
+            assert(0);
             return 1;
         }
         if (is_null)
@@ -156,6 +157,7 @@ int src_rank, int dest_rank, MPI_Comm communicator, int (*compare)(void *, void 
             if (compare(addr1, addr2) != 0)
             {
                 result = 1;
+                assert(0);
                 break;
             }
         }
