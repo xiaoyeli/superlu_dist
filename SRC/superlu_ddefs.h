@@ -405,6 +405,7 @@ typedef enum {
 
 typedef struct
 {
+    int_t nsupers;
     gEtreeInfo_t gEtreeInfo;
     int_t* iperm_c_supno;
     int_t* myNodeCount;

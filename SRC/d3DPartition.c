@@ -120,7 +120,7 @@ void newTrfPartitionInit(int_t nsupers,  dLUstruct_t *LUstruct, gridinfo3d_t *gr
 
     dtrf3Dpartition_t *trf3Dpart = LUstruct->trf3Dpart;
     trf3Dpart->sForests = sForests;
-
+    trf3Dpart->nsupers = nsupers;
       int_t *myTreeIdxs = getGridTrees(grid3d);
     int_t *myZeroTrIdxs = getReplicatedTrees(grid3d);
     int_t *gNodeCount = getNodeCountsFr(maxLvl, sForests);

@@ -745,41 +745,47 @@ float pddistribute3d(superlu_dist_options_t *options, int_t n, SuperMatrix *A,
 
         /* Set up the initial pointers for each block row in U. */
         nrbu = CEILING(nsupers, grid->nprow); /* Number of local block rows */
-        for (lb = 0; lb < nrbu; ++lb)
+        // for (lb = 0; lb < nrbu; ++lb)
+        for (jb = 0; jb < nsupers+grid->nprow-1; ++jb)
         {
-            len = Urb_length[lb];
-            rb_marker[lb] = 0; /* Reset block marker. */
-            if (len)
+            if(PROW(jb, grid) == myrow)
             {
-                /* Add room for descriptors */
-                len1 = Urb_fstnz[lb] + BR_HEADER + Ucbs[lb] * UB_DESCRIPTOR;
-                if (!(index = intMalloc_dist(len1 + 1)))
-                    ABORT("Malloc fails for Uindex[].");
-                Ufstnz_br_ptr[lb] = index;
-                Ufstnz_br_offset[lb] = len1 + 1;
-                Ufstnz_br_cnt += Ufstnz_br_offset[lb];
-                if (!(Unzval_br_ptr[lb] = doubleMalloc_dist(len)))
-                    ABORT("Malloc fails for Unzval_br_ptr[*][].");
-                Unzval_br_offset[lb] = len;
-                Unzval_br_cnt += Unzval_br_offset[lb];
+             
+                lb = LBi(jb, grid);
+                len = Urb_length[lb];
+                rb_marker[lb] = 0; /* Reset block marker. */
+                if (len && (superGridMap[jb] != NOT_IN_GRID || !grid3d->zscp.Iam ))
+                {
+                    /* Add room for descriptors */
+                    len1 = Urb_fstnz[lb] + BR_HEADER + Ucbs[lb] * UB_DESCRIPTOR;
+                    if (!(index = intMalloc_dist(len1 + 1)))
+                        ABORT("Malloc fails for Uindex[].");
+                    Ufstnz_br_ptr[lb] = index;
+                    Ufstnz_br_offset[lb] = len1 + 1;
+                    Ufstnz_br_cnt += Ufstnz_br_offset[lb];
+                    if (!(Unzval_br_ptr[lb] = doubleMalloc_dist(len)))
+                        ABORT("Malloc fails for Unzval_br_ptr[*][].");
+                    Unzval_br_offset[lb] = len;
+                    Unzval_br_cnt += Unzval_br_offset[lb];
 
-                mybufmax[2] = SUPERLU_MAX(mybufmax[2], len1);
-                mybufmax[3] = SUPERLU_MAX(mybufmax[3], len);
-                index[0] = Ucbs[lb]; /* Number of column blocks */
-                index[1] = len;      /* Total length of nzval[] */
-                index[2] = len1;     /* Total length of index[] */
-                index[len1] = -1;    /* End marker */
+                    mybufmax[2] = SUPERLU_MAX(mybufmax[2], len1);
+                    mybufmax[3] = SUPERLU_MAX(mybufmax[3], len);
+                    index[0] = Ucbs[lb]; /* Number of column blocks */
+                    index[1] = len;      /* Total length of nzval[] */
+                    index[2] = len1;     /* Total length of index[] */
+                    index[len1] = -1;    /* End marker */
+                }
+                else
+                {
+                    Ufstnz_br_ptr[lb] = NULL;
+                    Unzval_br_ptr[lb] = NULL;
+                    Unzval_br_offset[lb] = -1;
+                    Ufstnz_br_offset[lb] = -1;
+                }
+                Urb_length[lb] = 0;         /* Reset block length. */
+                Urb_indptr[lb] = BR_HEADER; /* Skip header in U index[]. */
+                Urb_fstnz[lb] = BR_HEADER;
             }
-            else
-            {
-                Ufstnz_br_ptr[lb] = NULL;
-                Unzval_br_ptr[lb] = NULL;
-                Unzval_br_offset[lb] = -1;
-                Ufstnz_br_offset[lb] = -1;
-            }
-            Urb_length[lb] = 0;         /* Reset block length. */
-            Urb_indptr[lb] = BR_HEADER; /* Skip header in U index[]. */
-            Urb_fstnz[lb] = BR_HEADER;
         } /* for lb ... */
 
         SUPERLU_FREE(Ucbs);
@@ -972,46 +978,49 @@ float pddistribute3d(superlu_dist_options_t *options, int_t n, SuperMatrix *A,
                             {
                                 lb = LBi(gb, grid); /* Local block number */
                                 index = Ufstnz_br_ptr[lb];
-                                uval = Unzval_br_ptr[lb];
-                                fsupc1 = FstBlockC(gb + 1);
-                                if (rb_marker[lb] <= jb)
-                                { /* First time see
-                    the block       */
-                                    rb_marker[lb] = jb + 1;
-                                    Urb_indptr[lb] = Urb_fstnz[lb];
-                                    ;
-                                    index[Urb_indptr[lb]] = jb; /* Descriptor */
-                                    Urb_indptr[lb] += UB_DESCRIPTOR;
-                                    /* Record the first location in index[] of the
-                                    next block */
-                                    Urb_fstnz[lb] = Urb_indptr[lb] + nsupc;
-                                    len = Urb_indptr[lb]; /* Start fstnz in index */
-                                    index[len - 1] = 0;
-                                    for (k = 0; k < nsupc; ++k)
-                                        index[len + k] = fsupc1;
-                                    if (gb != jb)   /* Exclude diagonal block. */
-                                        ++bmod[lb]; /* Mod. count for back solve */
-                                    if (kseen == 0 && myrow != jbrow)
-                                    {
-                                        ++nbrecvx;
-                                        kseen = 1;
-                                    }
-                                }
-                                else
-                                {                         /* Already saw the block */
-                                    len = Urb_indptr[lb]; /* Start fstnz in index */
-                                }
-                                jj = j - fsupc;
-                                index[len + jj] = irow;
-                                /* Load the numerical values */
-                                k = fsupc1 - irow;   /* No. of nonzeros in segment */
-                                index[len - 1] += k; /* Increment block length in
-                                            Descriptor */
-                                irow = ilsum[lb] + irow - FstBlockC(gb);
-                                for (ii = 0; ii < k; ++ii)
+                                if(index)
                                 {
-                                    uval[Urb_length[lb]++] = dense_col[irow + ii];
-                                    dense_col[irow + ii] = zero;
+                                    uval = Unzval_br_ptr[lb];
+                                    fsupc1 = FstBlockC(gb + 1);
+                                    if (rb_marker[lb] <= jb)
+                                    { /* First time see
+                        the block       */
+                                        rb_marker[lb] = jb + 1;
+                                        Urb_indptr[lb] = Urb_fstnz[lb];
+                                        ;
+                                        index[Urb_indptr[lb]] = jb; /* Descriptor */
+                                        Urb_indptr[lb] += UB_DESCRIPTOR;
+                                        /* Record the first location in index[] of the
+                                        next block */
+                                        Urb_fstnz[lb] = Urb_indptr[lb] + nsupc;
+                                        len = Urb_indptr[lb]; /* Start fstnz in index */
+                                        index[len - 1] = 0;
+                                        for (k = 0; k < nsupc; ++k)
+                                            index[len + k] = fsupc1;
+                                        if (gb != jb)   /* Exclude diagonal block. */
+                                            ++bmod[lb]; /* Mod. count for back solve */
+                                        if (kseen == 0 && myrow != jbrow)
+                                        {
+                                            ++nbrecvx;
+                                            kseen = 1;
+                                        }
+                                    }
+                                    else
+                                    {                         /* Already saw the block */
+                                        len = Urb_indptr[lb]; /* Start fstnz in index */
+                                    }
+                                    jj = j - fsupc;
+                                    index[len + jj] = irow;
+                                    /* Load the numerical values */
+                                    k = fsupc1 - irow;   /* No. of nonzeros in segment */
+                                    index[len - 1] += k; /* Increment block length in
+                                                Descriptor */
+                                    irow = ilsum[lb] + irow - FstBlockC(gb);
+                                    for (ii = 0; ii < k; ++ii)
+                                    {
+                                        uval[Urb_length[lb]++] = dense_col[irow + ii];
+                                        dense_col[irow + ii] = zero;
+                                    }
                                 }
                             } /* if myrow == pr ... */
                         }     /* for i ... */

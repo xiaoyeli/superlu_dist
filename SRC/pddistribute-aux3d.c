@@ -462,6 +462,48 @@ int_t checkDist3DLUStruct(  dLUstruct_t* LUstruct, gridinfo3d_t* grid3d)
         }
     }
 
+    // Now check if I am only allocating the memory for the blocks I own
+    // if(myGrid)
+    if(0)
+    {
+        SupernodeToGridMap_t *superGridMap = trf3Dpartition->superGridMap;
+        // int_t nsupers = getNsupers(n, LUstruct->Glu_persist);
+        int_t nsupers = trf3Dpartition->nsupers;
+        for(int_t k =0; k< nsupers; k++)
+        {
+            if(superGridMap[k] == NOT_IN_GRID) 
+            {
+                // all pointer should be NULL
+                int krow = PROW(k, grid);
+                int kcol = PCOL(k, grid);
+                if(myrow == krow)
+                {
+                    int_t lk = LBi(k, grid);
+                    int_t* usub = LUstruct->Llu->Ufstnz_br_ptr[lk];
+                    double* uval = LUstruct->Llu->Unzval_br_ptr[lk];
+                    if(usub != NULL || uval != NULL)
+                    {
+                        printf("Check 3D LU structure failed: node_id=%d, grid_id =%d, Iam=(%d, %d) \n", 
+                            k, myGrid, grid3d->zscp.Iam, grid3d->zscp.Iam);
+                        exit(1);
+                    }
+                }
+
+                if (mycol == kcol)
+                {
+                    int_t lk = LBj(k, grid);
+                    int_t* lsub = LUstruct->Llu->Lrowind_bc_ptr[lk];
+                    double* lusup = LUstruct->Llu->Lnzval_bc_ptr[lk];
+                    if(lsub != NULL || lusup != NULL)
+                    {
+                        printf("Check 3D LU structure failed: node_id=%d, grid_id =%d, Iam=(%d, %d) \n", 
+                            k, myGrid, grid3d->zscp.Iam, grid3d->zscp.Iam);
+                        exit(1);
+                    }
+                }
+            }
+        }
+    }
     printf("Check 3D LU structure passed\n");
     return 0;
 }
