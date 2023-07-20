@@ -720,20 +720,23 @@ float pddistribute3d(superlu_dist_options_t *options, int_t n, SuperMatrix *A,
                         {
                             if (myrow == pr)
                             {
-                                ToSendD[lb] = YES;
-                                /* Count nonzeros in entire block row. */
-                                Urb_length[lb] += FstBlockC(gb + 1) - irow;
-                                if (rb_marker[lb] <= jb)
-                                { /* First see the block */
-                                    rb_marker[lb] = jb + 1;
-                                    Urb_fstnz[lb] += nsupc;
-                                    ++Ucbs[lb]; /* Number of column blocks
-                                            in block row lb. */
-#if (PRNTlevel >= 1)
-                                    ++nUblocks;
-#endif
+                                if (superGridMap[gb] != NOT_IN_GRID || !grid3d->zscp.Iam )
+                                {
+                                    ToSendD[lb] = YES;
+                                    /* Count nonzeros in entire block row. */
+                                    Urb_length[lb] += FstBlockC(gb + 1) - irow;
+                                    if (rb_marker[lb] <= jb)
+                                    { /* First see the block */
+                                        rb_marker[lb] = jb + 1;
+                                        Urb_fstnz[lb] += nsupc;
+                                        ++Ucbs[lb]; /* Number of column blocks
+                                                in block row lb. */
+    #if (PRNTlevel >= 1)
+                                        ++nUblocks;
+    #endif
+                                    }
+                                    ToRecv[gb] = 1;
                                 }
-                                ToRecv[gb] = 1;
                             }
                             else
                                 ToRecv[gb] = 2; /* Do I need 0, 1, 2 ? */
@@ -746,7 +749,8 @@ float pddistribute3d(superlu_dist_options_t *options, int_t n, SuperMatrix *A,
         /* Set up the initial pointers for each block row in U. */
         nrbu = CEILING(nsupers, grid->nprow); /* Number of local block rows */
         // for (lb = 0; lb < nrbu; ++lb)
-        for (jb = 0; jb < nsupers+grid->nprow-1; ++jb)
+        // for (jb = 0; jb < nsupers+grid->nprow-1; ++jb)
+        for (jb = 0; jb < nrbu*grid->nprow; ++jb)
         {
             if(PROW(jb, grid) == myrow)
             {
