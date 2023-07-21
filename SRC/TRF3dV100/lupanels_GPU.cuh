@@ -130,8 +130,39 @@ class lpanelGPU_t
         }
     
         // return the maximal iEnd such that stRow(iEnd)-stRow(iSt) < maxRow;
+        // Wajih: copied from the cpu panel code 
         CUDA_CALLABLE
-        int getEndBlock(int iSt, int maxRows);
+        int getEndBlock(int iSt, int maxRows)
+        {
+            int nlb = nblocks();
+            if(iSt >= nlb )
+                return nlb; 
+            int iEnd = iSt; 
+            int ii = iSt +1;
+
+            while (
+                stRow(ii) - stRow(iSt) <= maxRows &&
+                ii < nlb)
+                ii++;
+
+        #if 1
+            if (stRow(ii) - stRow(iSt) > maxRows)
+                iEnd = ii-1;
+            else 
+                iEnd =ii; 
+        #else 
+            if (ii == nlb)
+            {
+                if (stRow(ii) - stRow(iSt) <= maxRows)
+                    iEnd = nlb;
+                else
+                    iEnd = nlb - 1;
+            }
+            else
+                iEnd = ii - 1;
+        #endif 
+            return iEnd; 
+        }
         // lpanelGPU_t::lpanelGPU_t(lpanel_t& lpanel);
         // int check(lpanel_t& lpanel);
     
@@ -241,6 +272,40 @@ public:
     {
         return index[UPANEL_HEADER_SIZE + nblocks() + k];
     } 
+
+    // Taken from the upanel
+    CUDA_CALLABLE
+    int getEndBlock(int iSt, int maxCols)
+    {
+        int nlb = nblocks();
+        if(iSt >= nlb )
+            return nlb; 
+        int iEnd = iSt; 
+        int ii = iSt +1;
+
+        while (
+            stCol(ii) - stCol(iSt) <= maxCols &&
+            ii < nlb)
+            ii++;
+
+    #if 1
+        if (stCol(ii) - stCol(iSt) > maxCols)
+            iEnd = ii-1;
+        else 
+            iEnd =ii; 
+    #else 
+        if (ii == nlb)
+        {
+            if (stCol(ii) - stCol(iSt) <= maxCols)
+                iEnd = nlb;
+            else
+                iEnd = nlb - 1;
+        }
+        else
+            iEnd = ii - 1;
+    #endif 
+        return iEnd; 
+    }
 };
 
 // Wajih: Device and host memory used to store marshalled batch data for LU and TRSM
@@ -290,6 +355,7 @@ struct SCUMarshallData
     lpanelGPU_t* dev_gpu_lpanels;
     upanelGPU_t* dev_gpu_upanels;
     int* dev_ist, *dev_iend, *dev_jst, *dev_jend;
+    int *dev_maxGemmRows, *dev_maxGemmCols;
     
     // Max of marshalled gemm device data 
     int max_m, max_n, max_k;    
@@ -311,7 +377,6 @@ struct SCUMarshallData
     std::vector<upanelGPU_t> host_gpu_upanels;
     std::vector<lpanelGPU_t> host_gpu_lpanels;
     std::vector<int> ist, iend, jst, jend, maxGemmRows, maxGemmCols;
-    int max_nlb, max_nub;
 
     void setBatchSize(int batch_size);
     void setMaxDims();
@@ -342,6 +407,7 @@ struct LUstructGPU_t
 #endif 
     LUMarshallData marshall_data;
     SCUMarshallData sc_marshall_data;
+    int* dperm_c_supno;
 
     /* Sherry: Allocate an array of buffers for the diagonal blocks
        on the leaf level.
@@ -351,6 +417,9 @@ struct LUstructGPU_t
     double **dFBufs;       
     double ** gpuGemmBuffs;
 
+    // GPU accessible array of gemm buffers 
+    double** dgpuGemmBuffs;
+    
     double* LvalRecvBufs[MAX_CUDA_STREAMS];
     double* UvalRecvBufs[MAX_CUDA_STREAMS];
     int_t* LidxRecvBufs[MAX_CUDA_STREAMS];
