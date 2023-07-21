@@ -1752,8 +1752,10 @@ int LUstruct_v100::marshallSCUBatchedDataInner(int k_st, int k_end, int_t *perm_
     sc_mdata.max_m = thrust::reduce(thrust::system::cuda::par, sc_mdata.dev_m_array, sc_mdata.dev_m_array + knum, 0, thrust::maximum<int>());
     sc_mdata.max_n = thrust::reduce(thrust::system::cuda::par, sc_mdata.dev_n_array, sc_mdata.dev_n_array + knum, 0, thrust::maximum<int>());
     sc_mdata.max_k = thrust::reduce(thrust::system::cuda::par, sc_mdata.dev_k_array, sc_mdata.dev_k_array + knum, 0, thrust::maximum<int>());
-    sc_mdata.max_ilen = thrust::transform_reduce(start, end, element_diff<int>(sc_mdata.dev_ist, sc_mdata.dev_iend), 0, thrust::maximum<int>());
-    sc_mdata.max_jlen = thrust::transform_reduce(start, end, element_diff<int>(sc_mdata.dev_jst, sc_mdata.dev_jend), 0, thrust::maximum<int>());
+    sc_mdata.max_ilen = thrust::transform_reduce(thrust::system::cuda::par, start, end, element_diff<int>(sc_mdata.dev_ist, sc_mdata.dev_iend), 0, thrust::maximum<int>());
+    sc_mdata.max_jlen = thrust::transform_reduce(thrust::system::cuda::par, start, end, element_diff<int>(sc_mdata.dev_jst, sc_mdata.dev_jend), 0, thrust::maximum<int>());
+    
+    printf("SCU %d -> %d: %d %d %d %d %d\n", k_st, k_end, sc_mdata.max_m, sc_mdata.max_n, sc_mdata.max_k, sc_mdata.max_ilen, sc_mdata.max_jlen);
 
     return thrust::all_of(
         thrust::system::cuda::par, sc_mdata.dev_m_array, sc_mdata.dev_m_array + sc_mdata.batchsize,
