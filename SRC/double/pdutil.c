@@ -574,6 +574,8 @@ if (getenv("SUPERLU_ACC_SOLVE")){
 
     checkGPU (gpuFree (Llu->d_Ucolind_bc_dat)); 
     checkGPU (gpuFree (Llu->d_Ucolind_bc_offset));
+    checkGPU (gpuFree (Llu->d_Uind_br_dat)); 
+    checkGPU (gpuFree (Llu->d_Uind_br_offset));
     checkGPU (gpuFree (Llu->d_Unzval_bc_dat)); 
     checkGPU (gpuFree (Llu->d_Unzval_bc_offset));  
     checkGPU (gpuFree (Llu->d_Uindval_loc_bc_dat)); 
