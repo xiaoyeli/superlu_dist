@@ -3099,20 +3099,18 @@ __global__ void dlsum_fmod_inv_gpu_1rhs_warp
     
     int_t wrp;
     int_t lne;
-    const int warp_size = 32; /* number of threads per warp*/
     wrp= tid + blockIdx_x*block_size;
-    lne=wrp%warp_size;
-	// printf("  Entering kernel:   %i %i %i %i %i %i %i %i %i\n", threadIdx_x, blockIdx_x, grid->npcol, nsupers,myrow,krow,wrp,wrp/warp_size,tid);
-	wrp/=warp_size;	
+    lne=wrp%WARP_SIZE;
+	// printf("  Entering kernel:   %i %i %i %i %i %i %i %i %i\n", threadIdx_x, blockIdx_x, grid->npcol, nsupers,myrow,krow,wrp,wrp/WARP_SIZE,tid);
+	wrp/=WARP_SIZE;	
 
 
     // int_t wrp;
     // int_t lne = threadIdx_x & 0x1f ;
     // // int_t ready = 0;
     // // int_t lock = 0;
-    // const int warp_size = 32; /* number of threads per warp*/
     // wrp= threadIdx_x + blockIdx_x * blockDim_x;
-    // wrp/=warp_size;	
+    // wrp/=WARP_SIZE;	
 
 
 
@@ -3194,7 +3192,7 @@ __global__ void dlsum_fmod_inv_gpu_1rhs_warp
                 il = LSUM_BLK( lib );
                 ii = X_BLK( lib );
                 
-                for (i = lne; i < knsupc; i+=warp_size)
+                for (i = lne; i < knsupc; i+=WARP_SIZE)
                     x[i + ii ] += lsum[i + il ];
                 // __syncwarp();
                 
@@ -3204,7 +3202,7 @@ __global__ void dlsum_fmod_inv_gpu_1rhs_warp
                     Linv = &Linv_bc_dat[Linv_bc_offset[lk]];
                         
                     
-                        for (i = lne; i < knsupc; i+=warp_size){					
+                        for (i = lne; i < knsupc; i+=WARP_SIZE){					
                             temp1=zero;
                             for (l=0 ; l<knsupc ; l++){
                                 temp1+=  Linv[l*knsupc+i]*x[ii+l];
@@ -3213,7 +3211,7 @@ __global__ void dlsum_fmod_inv_gpu_1rhs_warp
                         }
                         // __syncwarp();		
                             
-                        for (i = lne; i < knsupc; i+=warp_size){
+                        for (i = lne; i < knsupc; i+=WARP_SIZE){
                             x[i + ii] = lsum[il+i];
                             // printf("lk %5d %lf\n",lk,x[i + ii + j*knsupc]);
                             }					
@@ -3243,7 +3241,7 @@ __global__ void dlsum_fmod_inv_gpu_1rhs_warp
                     iknsupc = SuperSize( ik );
                     il = LSUM_BLK( lk );			
                     
-                    for (i = lne; i < m; i+=warp_size){
+                    for (i = lne; i < m; i+=WARP_SIZE){
                         while(nbrow+lsub[lptr1_tmp+1]<=i){
                             lb++;
                             nbrow +=lsub[lptr1_tmp+1];
@@ -3287,7 +3285,7 @@ __global__ void dlsum_fmod_inv_gpu_1rhs_warp
                 //     iknsupc = SuperSize( ik );
                 //     il = LSUM_BLK( lk );	 
 
-                //     for (i = lne; i < m; i+=warp_size){
+                //     for (i = lne; i < m; i+=WARP_SIZE){
                 //        while(nbrow+lsub[lptr1_tmp+1]<=i){
                 //            lb++;
                 //            nbrow +=lsub[lptr1_tmp+1];
@@ -3386,8 +3384,11 @@ void dlsum_fmod_inv_gpu_wrap
     
     if(procs==1){
         nblock_ex=0;
-        // if(nrhs>1){
+    #ifdef SINGLE_RHS_OPT
+        if(nrhs>1){
+    #else        
         if(1){
+    #endif
             dim3 dimBlock(nthread_x, nthread_y);
             dlsum_fmod_inv_gpu_mrhs<<< nbcol_loc, dimBlock >>>(nbcol_loc,nblock_ex,lsum,x,nrhs,maxsup,nsupers,fmod,LBtree_ptr,LRtree_ptr,ilsum,Lrowind_bc_dat,Lrowind_bc_offset,Lnzval_bc_dat,Lnzval_bc_offset,Linv_bc_dat,Linv_bc_offset,Lindval_loc_bc_dat,Lindval_loc_bc_offset, xsup,bcols_masked, grid);
         }else{
@@ -3873,10 +3874,9 @@ gridinfo_t *grid
   
       int_t wrp;
       int_t lne;
-      const int warp_size = 32; /* number of threads per warp*/
       wrp= tid;
-      lne=wrp%warp_size;
-      wrp/=warp_size;	
+      lne=wrp%WARP_SIZE;
+      wrp/=WARP_SIZE;	
 // printf("  Entering kernel:   %i %i %i %i %i %i %i %i\n", threadIdx_x, blockIdx_x, grid->npcol, nsupers,myrow,krow,wrp,tid);
 
       
@@ -3943,7 +3943,7 @@ gridinfo_t *grid
             lloc = &Uindval_loc_bc_dat[Uindval_loc_bc_offset[ljb]];
             rel = xsup[k]; /* Global column index of block k. */
     
-            for (i = lne; i < iknsupc; i+=warp_size){
+            for (i = lne; i < iknsupc; i+=WARP_SIZE){
                 idx_v=2*nub+ub;
                 idx_i=nub+ub;
                 luptr_tmp1 = lloc[idx_v];
@@ -3983,9 +3983,9 @@ gridinfo_t *grid
                 if(lne==0){  /*only the first thread in a warp handles the lock */
                     // printf("bk: %5d r: %5d %5d %5d\n",mycol+bid*grid->npcol,bmod[lib*aln_i],myrow,krow);
                     do{
-                        tmp=s_bmod;
-                        __threadfence();			
-                    }while(tmp>0);
+                        // tmp=s_bmod;
+                        // __threadfence();			
+                    }while(s_bmod>0);
                 }
                 __syncwarp();
 
@@ -3994,7 +3994,7 @@ gridinfo_t *grid
 
 
                 ii = X_BLK( lk );        
-                for (i = lne; i < iknsupc; i+=warp_size){
+                for (i = lne; i < iknsupc; i+=WARP_SIZE){
                     x[i + ii ] += s_lsum[i  ];
                 }
             
@@ -4003,7 +4003,7 @@ gridinfo_t *grid
                 Uinv = &Uinv_bc_dat[Uinv_bc_offset[jk]];
                     
                 if(nrhs==1){
-                    for (i = lne; i < iknsupc; i+=warp_size){					
+                    for (i = lne; i < iknsupc; i+=WARP_SIZE){					
                         temp1=zero;
                         for (l=0 ; l<iknsupc ; l++){
                             temp1+=  Uinv[l*iknsupc+i]*x[ii+l];
@@ -4012,7 +4012,7 @@ gridinfo_t *grid
                     }
                     __syncwarp();					
                         
-                    for (i = lne; i < iknsupc; i+=warp_size){
+                    for (i = lne; i < iknsupc; i+=WARP_SIZE){
                         x[i + ii] = s_lsum[i];
                         // // if(lk==69)
                         // printf("lk %5d %5d %lf\n",lk,i, x[i + ii]);
@@ -4070,6 +4070,240 @@ gridinfo_t *grid
 } /* dlsum_bmod_inv_gpu_1rhs_new */
 
 
+
+__global__ void dlsum_bmod_inv_gpu_1rhs_new_rowdata
+/************************************************************************/
+(
+ int_t nbrow_loc,
+ double *lsum,    /* Sum of local modifications.                        */
+ double *x,       /* X array (local)                                    */
+ int   nrhs,      /* Number of right-hand sides.                        */
+ int_t   nsupers,      /* Number of total supernodes.                        */
+ int *bmod,     /* Modification count for U-solve.                    */
+ C_Tree  *UBtree_ptr,
+ C_Tree  *URtree_ptr,
+ int_t *ilsum,
+ int_t *Ucolind_br_dat,      
+ long int *Ucolind_br_offset,            
+ double *Unzval_br_new_dat,     
+ long int *Unzval_br_new_offset,    
+double *Uinv_bc_dat,     
+long int *Uinv_bc_offset,     
+int_t *xsup,
+gridinfo_t *grid
+)
+{
+  //   double xtemp;
+  //   double *dest;
+    double *Uinv;/* Inverse of diagonal block */
+    int    iam, iknsupc, myrow, mycol, krow, kcol;
+    int_t  k,i, bb, l,ii, lk, jk, lib, ljb;
+    int_t gik, rel, ncol, icol;
+    double temp,temp1;
+    volatile __shared__ double s_lsum[MAXSUPER];
+    // volatile __shared__ double temp2[MAXSUPER];
+    volatile __shared__ int s_bmod;
+    int_t aln_i;
+    aln_i = 1;//ceil(CACHELINE/(double)iword);
+
+    int_t bid;
+    int_t tmp;
+    int_t tid = threadIdx_x + threadIdx_y * blockDim_x; 
+    const int block_size = blockDim_x*blockDim_y; /* number of threads per warp*/
+    double zero = 0.0;
+  //   double rC[THR_N][THR_M];
+    // __shared__ double x_share[DIM_X*DIM_Y]; 
+
+    bid= nbrow_loc-blockIdx_x-1;  // This makes sure higher block IDs are checked first in spin wait
+    int_t  *usub;
+    double *lusup;
+    int_t  LDA;
+
+    int_t wrp;
+    int_t lne;
+    wrp= tid;
+    lne=wrp%WARP_SIZE;
+    wrp/=WARP_SIZE;	
+// printf("  Entering kernel:   %i %i %i %i %i %i %i %i\n", threadIdx_x, blockIdx_x, grid->npcol, nsupers,myrow,krow,wrp,tid);
+
+    
+    
+  //   printf("  Entering kernel:   %i %i %i %i %i %i %i %i\n", threadIdx_x, blockIdx_x, grid->npcol, nsupers,myrow,krow,bid,tid);
+    
+    
+    // rtemp_loc = (double*)malloc(maxsup*nrhs*Nbk*sizeof(double));
+    
+    
+    // the first nbcol_loc handles all computations and broadcast communication
+    if(bid<nbrow_loc){
+
+        lk=bid;
+        iam = grid->iam;
+        mycol = MYCOL( iam, grid );
+        myrow = MYROW( iam, grid );
+        gik = myrow+lk*grid->nprow;
+        if(gik<nsupers){
+        iknsupc = SuperSize( gik );
+      //   il = LSUM_BLK( lk );		
+        kcol = PCOL( gik, grid );	
+        jk = LBj( gik, grid ); /* Local block number, column-wise. */
+
+        if(Uinv_bc_offset[jk]==-1 && Ucolind_br_offset[lk]==-1){
+        return;
+        }
+
+
+        // initialize the shared memory data, which requires __syncthreads  
+        if(tid==0)s_bmod = bmod[lk*aln_i];
+        for (i = tid; i < MAXSUPER; i+=block_size){s_lsum[i]=zero;}
+        __syncthreads();
+
+        usub = &Ucolind_br_dat[Ucolind_br_offset[lk]];  
+        lusup = &Unzval_br_new_dat[Unzval_br_new_offset[lk]];
+        int_t nubr = usub[0];
+      //   if(lne==0)
+      //      printf("  Entering kernel:   %i %i %i %i %i %i %i %i %i %i %i\n", threadIdx_x, bid, grid->npcol, nsupers,myrow,krow,wrp,tid,uind_br[0],bmod[lk*aln_i],NWARP);
+        for (bb = wrp; bb < nubr; bb+=NWARP){ // loop through the nonzero block columns in this block row
+          k=usub[UB_DESCRIPTOR_NEWUCPP+bb];
+          int_t idx_s = usub[UB_DESCRIPTOR_NEWUCPP+nubr+bb];
+          ncol = usub[UB_DESCRIPTOR_NEWUCPP+nubr+bb+1] - idx_s;
+          LDA = usub[2];
+          ljb = LBj( k, grid ); /* Local block number, column-wise. */
+          lib = LBi( k, grid ); /* Local block number, row-wise. */
+
+          // if(lne==0)printf("  afa kernel:   %i %i %i %i %i %i %i %i %i %i\n", threadIdx_x, bid, grid->npcol, nsupers,myrow,krow,wrp,k,uind_br[0],bmod[lib*aln_i]);
+
+          if(lne==0){  /*only the first thread in a warp handles the lock */
+              // printf("bk: %5d r: %5d %5d %5d\n",mycol+bid*grid->npcol,bmod[lib*aln_i],myrow,krow);
+              do{
+                  tmp=bmod[lib*aln_i];
+                  __threadfence();			
+              }while(tmp>-1);
+          }
+          __syncwarp();
+
+
+          ii = X_BLK( ljb );
+          rel = xsup[k]; /* Global column index of block k. */
+  
+          for (i = lne; i < LDA; i+=WARP_SIZE){
+              temp1=zero;
+              
+              for (l=0 ; l<ncol ; l++){
+                  icol = usub[UB_DESCRIPTOR_NEWUCPP+2*nubr+1+idx_s+l] - rel; /* Relative col. */
+                  temp1+= lusup[idx_s*LDA+l*LDA+i]*x[icol+ii];
+                  // // if(offset==159 && ik==1)
+                  // if(lk==8 )
+                  // printf("lsum %5d %5d %5d %10f %10f %5d %5d %5d\n",l, icol, ii, x[ii+icol], lusup[luptr_tmp1+l*iknsupc+i], luptr_tmp1, ncol, iknsupc);
+
+                  
+                  // printf("lsum %5d %5d %5d %10f %10f %10f\n",uptr-1, jj, irow - ikfrow, uval[uptr-1], xtemp, temp2[irow - ikfrow]);
+
+              }
+              // temp=atomicAdd(&lsum[il+i],-temp1);		
+              temp=atomicAdd((double *)&s_lsum[i+iknsupc-LDA],-temp1);	
+          }
+          __syncwarp();
+
+          /*only the first thread in a warp modify bmod */    
+          if(lne==0)tmp=atomicSub((int *)&s_bmod,1);
+          // if(bid==4 && lne==0)printf("  Row 4 kernel:   %i %i %i %i %i %i %i %i %i %i\n", threadIdx_x, bid, grid->npcol, nsupers,myrow,krow,wrp,tid,uind_br[0],bmod[lk*aln_i]);
+
+        } 
+
+      //   if(lne==0)printf("  Done kernel:   %i %i %i %i %i %i %i %i %i %i\n", threadIdx_x, bid, grid->npcol, nsupers,myrow,krow,wrp,tid,uind_br[0],bmod[lk*aln_i]);
+
+      #if 1
+        if(wrp==0 && mycol==kcol){
+
+              if(lne==0){  /*only the first thread in a warp handles the lock */
+                  // printf("bk: %5d r: %5d %5d %5d\n",mycol+bid*grid->npcol,bmod[lib*aln_i],myrow,krow);
+                  do{
+                      // tmp=s_bmod;
+                      // __threadfence();			
+                  }while(s_bmod>0);
+              }
+              __syncwarp();
+
+              // if(lne==0)printf("  jibaba kernel:   %i %i %i %i %i %i %i %i %i %i\n", threadIdx_x, bid, grid->npcol, nsupers,myrow,krow,wrp,tid,uind_br[0],bmod[lk*aln_i]);
+
+
+
+              ii = X_BLK( lk );        
+              for (i = lne; i < iknsupc; i+=WARP_SIZE){
+                  x[i + ii ] += s_lsum[i  ];
+              }
+          
+              __syncwarp();
+          
+              Uinv = &Uinv_bc_dat[Uinv_bc_offset[jk]];
+                  
+              if(nrhs==1){
+                  for (i = lne; i < iknsupc; i+=WARP_SIZE){					
+                      temp1=zero;
+                      for (l=0 ; l<iknsupc ; l++){
+                          temp1+=  Uinv[l*iknsupc+i]*x[ii+l];
+                      }								
+                      s_lsum[i]=temp1; //reuse lsum as temporary output as it's no longer accessed
+                  }
+                  __syncwarp();					
+                      
+                  for (i = lne; i < iknsupc; i+=WARP_SIZE){
+                      x[i + ii] = s_lsum[i];
+                      // // if(lk==69)
+                      // printf("lk %5d %5d %lf\n",lk,i, x[i + ii]);
+                      }					
+                  __syncwarp();	
+                  // if(lne==0)bmod_tmp=atomicSub(&bmod[lk*aln_i],1); // set bmod[lk*aln_i] to -1 
+                  if(lne==0)bmod[lk*aln_i]=-1; // set bmod[lk*aln_i] to -1 
+              } 
+          }
+
+      #else
+      // __syncthreads();
+      if(mycol==kcol){
+
+          // if(tid==0){  /*only the first thread in the block handles the lock */
+          //     // printf("bk: %5d r: %5d %5d %5d\n",mycol+bid*grid->npcol,bmod[lib*aln_i],myrow,krow);
+          //     do{
+          //         tmp=s_bmod;
+          //         __threadfence();			
+          //     }while(tmp>0);
+          // }
+          __syncthreads();
+
+          // if(lne==0)printf("  jibaba kernel:   %i %i %i %i %i %i %i %i %i %i\n", threadIdx_x, bid, grid->npcol, nsupers,myrow,krow,wrp,tid,uind_br[0],bmod[lk*aln_i]);
+
+          ii = X_BLK( lk );        
+          for (i = tid; i < iknsupc; i+=block_size){
+              s_lsum[i  ]+= x[i + ii ];
+          }
+          __syncthreads();
+      
+          Uinv = &Uinv_bc_dat[Uinv_bc_offset[jk]];
+              
+          if(nrhs==1){
+              for (i = tid; i < iknsupc; i+=block_size){					
+                  temp1=zero;
+                  for (l=0 ; l<iknsupc ; l++){
+                      temp1+=  Uinv[l*iknsupc+i]*s_lsum[l];
+                  }								
+                  x[i + ii]=temp1; //reuse lsum as temporary output as it's no longer accessed
+              }
+              __syncthreads();				
+                  
+              if(tid==0)bmod[lk*aln_i]=-1; // set bmod[lk*aln_i] to -1 
+          } 
+      }        
+      #endif
+
+
+
+
+          
+      }
+      }
+} /* dlsum_bmod_inv_gpu_1rhs_new_rowdata */
 
 
 
@@ -4142,11 +4376,10 @@ gridinfo_t *grid
     int_t lne;
     // int_t ready = 0;
     // int_t lock = 0;
-    const int warp_size = 32; /* number of threads per warp*/
     wrp= tid + blockIdx_x*block_size;
-    lne=wrp%warp_size;
-	// printf("  Entering kernel:   %i %i %i %i %i %i %i %i %i\n", threadIdx_x, blockIdx_x, grid->npcol, nsupers,myrow,krow,wrp,wrp/warp_size,tid);
-	wrp/=warp_size;	
+    lne=wrp%WARP_SIZE;
+	// printf("  Entering kernel:   %i %i %i %i %i %i %i %i %i\n", threadIdx_x, blockIdx_x, grid->npcol, nsupers,myrow,krow,wrp,wrp/WARP_SIZE,tid);
+	wrp/=WARP_SIZE;	
 	
 	// rtemp_loc = (double*)malloc(maxsup*nrhs*Nbk*sizeof(double));
 	
@@ -4199,7 +4432,7 @@ gridinfo_t *grid
 				ii = X_BLK( lib );
 				
 				RHS_ITERATE(j)
-                    for (i = lne; i < knsupc; i+=warp_size){
+                    for (i = lne; i < knsupc; i+=WARP_SIZE){
 						x[i + ii + j*knsupc] += lsum[i + il + j*knsupc ];
 						// if(lib==1){
 						// printf("lib %5d %5d %5d %lf\n",lib,i, il, lsum[i + il + j*knsupc ]);
@@ -4215,7 +4448,7 @@ gridinfo_t *grid
 					Uinv = &Uinv_bc_dat[Uinv_bc_offset[lk]];
 						
 					if(nrhs==1){
-						for (i = lne; i < knsupc; i+=warp_size){					
+						for (i = lne; i < knsupc; i+=WARP_SIZE){					
 							temp1=zero;
 							for (l=0 ; l<knsupc ; l++){
 								temp1+=  Uinv[l*knsupc+i]*x[ii+l];
@@ -4224,7 +4457,7 @@ gridinfo_t *grid
 						}
 						__syncwarp();			
 							
-						for (i = lne; i < knsupc; i+=warp_size){
+						for (i = lne; i < knsupc; i+=WARP_SIZE){
 							x[i + ii] = lsum[il+i];
 							// // if(lk==69)
 							// printf("lk %5d %5d %lf\n",lk,i, x[i + ii]);
@@ -4266,11 +4499,11 @@ gridinfo_t *grid
 
 				if(nrhs==1){	
 				// // if(0){	
-				// 	for (i=lne;i<knsupc;i+=warp_size)
+				// 	for (i=lne;i<knsupc;i+=WARP_SIZE)
 				// 		temp2[i]=x[ii+i];
                 //         __syncwarp();	
 
-                    for (i = lne; i < nrow; i+=warp_size){
+                    for (i = lne; i < nrow; i+=WARP_SIZE){
                         // printf("good1 bid nub i nrow %5d %5d %5d %5d\n",bid, nub, i, nrow);
                         ub = usub[nnz_offset+i*2];
                         offset = usub[nnz_offset+i*2+1];
@@ -4304,7 +4537,7 @@ gridinfo_t *grid
                     }
                     __syncwarp();
     
-                    for (ub = lne; ub < nub; ub+=warp_size){
+                    for (ub = lne; ub < nub; ub+=WARP_SIZE){
                         ik = lloc[ub];
                         bmod_tmp=atomicSub(&bmod[ik*aln_i],1);
                         // printf("ik %5d bmod[ik*aln_i] %5d\n",ik,bmod[ik*aln_i]);
@@ -4727,10 +4960,14 @@ void dlsum_bmod_inv_gpu_wrap
     int_t *ilsum,
     int_t *Ucolind_bc_dat,
     int64_t *Ucolind_bc_offset,
+    int_t *Ucolind_br_dat,
+    int64_t *Ucolind_br_offset,    
     int_t *Uind_br_dat,
     int64_t *Uind_br_offset,    
     double *Unzval_bc_dat,
     int64_t *Unzval_bc_offset,
+    double *Unzval_br_new_dat,
+    int64_t *Unzval_br_new_offset,    
     double *Uinv_bc_dat,
     int64_t *Uinv_bc_offset,
     int_t *Uindval_loc_bc_dat,
@@ -4778,14 +5015,21 @@ exit(1);
 }
 
 if(procs==1){
+#ifdef SINGLE_RHS_OPT
     if(nrhs>1){
-    // if(1){
+#else        
+    if(1){
+#endif
         dim3 dimBlock(nthread_x, nthread_y);
         dlsum_bmod_inv_gpu_mrhs<<< nbcol_loc, dimBlock >>>(nbcol_loc,lsum,x,nrhs,nsupers,bmod, UBtree_ptr,URtree_ptr,ilsum,Ucolind_bc_dat,Ucolind_bc_offset,Unzval_bc_dat,Unzval_bc_offset,Uinv_bc_dat,Uinv_bc_offset,Uindval_loc_bc_dat,Uindval_loc_bc_offset,xsup,grid);
     }else{
         dim3 dimBlock(nthread_x, nthread_y,1);
         // dlsum_bmod_inv_gpu_1rhs_warp<<< CEILING(nbcol_loc,NWARP), dimBlock >>>(nbcol_loc,lsum,x,nrhs,nsupers,bmod, UBtree_ptr,URtree_ptr,ilsum,Ucolind_bc_dat,Ucolind_bc_offset,Unzval_bc_dat,Unzval_bc_offset,Uinv_bc_dat,Uinv_bc_offset,Uindval_loc_bc_dat,Uindval_loc_bc_offset,xsup,grid);
+#ifdef U_BLOCK_PER_ROW_ROWDATA        
+        dlsum_bmod_inv_gpu_1rhs_new_rowdata<<< nbrow_loc, dimBlock >>>(nbrow_loc,lsum,x,nrhs,nsupers,bmod, UBtree_ptr,URtree_ptr,ilsum,Ucolind_br_dat,Ucolind_br_offset,Unzval_br_new_dat,Unzval_br_new_offset,Uinv_bc_dat,Uinv_bc_offset,xsup,grid);
+#else
         dlsum_bmod_inv_gpu_1rhs_new<<< nbrow_loc, dimBlock >>>(nbrow_loc,lsum,x,nrhs,nsupers,bmod, UBtree_ptr,URtree_ptr,ilsum,Ucolind_bc_dat,Ucolind_bc_offset,Uind_br_dat,Uind_br_offset,Unzval_bc_dat,Unzval_bc_offset,Uinv_bc_dat,Uinv_bc_offset,Uindval_loc_bc_dat,Uindval_loc_bc_offset,xsup,grid);
+#endif
     }    
 
 

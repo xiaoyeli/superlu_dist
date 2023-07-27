@@ -199,6 +199,7 @@ typedef MPI_C_DOUBLE_COMPLEX  SuperLU_MPI_DOUBLE_COMPLEX;
 #define UB_DESCRIPTOR  2
 #define BC_HEADER_NEWU      3
 #define UB_DESCRIPTOR_NEWU  2
+#define UB_DESCRIPTOR_NEWUCPP  3 // this should be the same as UPANEL_HEADER_SIZE, but only the highest skyline is used as the LDA
 #define NBUFFERS       5
 
 /*
@@ -329,7 +330,10 @@ static const int RD_U=4;	/* MPI tag for lsum in U-solve*/
 #define DIM_XB  DIM_X
 #define DIM_YB  DIM_Y
 
-#define NWARP  DIM_X*DIM_Y/32
+#define WARP_SIZE 32
+#define NWARP  DIM_X*DIM_Y/WARP_SIZE
+// #define U_BLOCK_PER_ROW_ROWDATA 1  // Use row-wise storage of U in single-GPU U solve
+// #define SINGLE_RHS_OPT 1           // Use optimized kernels for single-GPU L and U solve
 
 // // // // // // #define TILE_SIZE  32
 

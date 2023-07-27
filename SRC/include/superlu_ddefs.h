@@ -145,6 +145,16 @@ typedef struct {
     int64_t *Uind_br_offset;  /* size ceil(NSUPERS/Pr)                 */     
     int64_t Uind_br_cnt;   
 
+    int_t   **Ucolind_br_ptr; /* size ceil(NSUPERS/Pr)                 */
+    int_t *Ucolind_br_dat;  /* size: sum of sizes of Ucolind_br_ptr[lk])    */   
+    int64_t *Ucolind_br_offset;  /* size ceil(NSUPERS/Pr)                 */     
+    int64_t Ucolind_br_cnt;
+
+    double **Unzval_br_new_ptr;  /* size ceil(NSUPERS/Pr)                 */
+    double *Unzval_br_new_dat;  /* size: sum of sizes of Unzval_br_ptr[lk])  */   
+    int64_t *Unzval_br_new_offset;  /* size ceil(NSUPERS/Pr)                */    
+    int64_t Unzval_br_new_cnt;
+
     /* end for new U format <- */
     
     int_t   *Unnz; /* number of nonzeros per block column in U*/
@@ -261,7 +271,12 @@ typedef struct {
     int_t *d_Uind_br_dat;     
     int64_t *d_Uind_br_offset;          
     double *d_Unzval_bc_dat;     
-    long int *d_Unzval_bc_offset;        
+    long int *d_Unzval_bc_offset;   
+    int_t *d_Ucolind_br_dat;  /* size: sum of sizes of Ucolind_br_ptr[lk])    */   
+    int64_t *d_Ucolind_br_offset;  /* size ceil(NSUPERS/Pr)                 */     
+    double *d_Unzval_br_new_dat;  /* size: sum of sizes of Unzval_br_ptr[lk])  */   
+    int64_t *d_Unzval_br_new_offset;  /* size ceil(NSUPERS/Pr)                */    
+
     
     double *d_Linv_bc_dat ;     
     double *d_Uinv_bc_dat ;     
@@ -667,7 +682,7 @@ extern void dlsum_fmod_inv_gpu_wrap(int_t, int_t, int_t, int_t, double *,double 
                                     int*, int*, int*, int*, int*, int*,int*,
                                     int*, int*, int*, int*, int*, int*,
                                     int*, int*, int);
-extern void dlsum_bmod_inv_gpu_wrap(superlu_dist_options_t *, int_t, int_t, int_t, int_t, double *, double *,int,int, int_t , int *, C_Tree  *, C_Tree  *, int_t *, int_t *, int64_t *,int_t *, int64_t *, double *, int64_t *, double  *, int64_t *, int_t *, int64_t *, int_t *,gridinfo_t *,
+extern void dlsum_bmod_inv_gpu_wrap(superlu_dist_options_t *, int_t, int_t, int_t, int_t, double *, double *,int,int, int_t , int *, C_Tree  *, C_Tree  *, int_t *, int_t *, int64_t *,int_t *, int64_t *, int_t *, int64_t *, double *, int64_t *, double *, int64_t *, double  *, int64_t *, int_t *, int64_t *, int_t *,gridinfo_t *,
                                     int_t, uint64_t*, uint64_t*, double*, double*,
                                     int*, int*, int*, int*,
                                     int*, int*, int*, int*, int*,

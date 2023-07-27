@@ -573,13 +573,20 @@ if (getenv("SUPERLU_ACC_SOLVE")){
 	checkGPU (gpuFree (Llu->d_Lindval_loc_bc_offset));
 
     checkGPU (gpuFree (Llu->d_Ucolind_bc_dat)); 
-    checkGPU (gpuFree (Llu->d_Ucolind_bc_offset));
+    checkGPU (gpuFree (Llu->d_Ucolind_bc_offset));          
     checkGPU (gpuFree (Llu->d_Uind_br_dat)); 
     checkGPU (gpuFree (Llu->d_Uind_br_offset));
     checkGPU (gpuFree (Llu->d_Unzval_bc_dat)); 
-    checkGPU (gpuFree (Llu->d_Unzval_bc_offset));  
+    checkGPU (gpuFree (Llu->d_Unzval_bc_offset));     
     checkGPU (gpuFree (Llu->d_Uindval_loc_bc_dat)); 
     checkGPU (gpuFree (Llu->d_Uindval_loc_bc_offset));
+#ifdef U_BLOCK_PER_ROW_ROWDATA    
+    checkGPU (gpuFree (Llu->d_Ucolind_br_dat)); 
+    checkGPU (gpuFree (Llu->d_Ucolind_br_offset)); 
+    checkGPU (gpuFree (Llu->d_Unzval_br_new_dat)); 
+    checkGPU (gpuFree (Llu->d_Unzval_br_new_offset));   
+#endif 
+
 }
 
     #ifdef HAVE_NVSHMEM  
