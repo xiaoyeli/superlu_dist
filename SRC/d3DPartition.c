@@ -133,8 +133,14 @@ void newTrfPartitionInit(int_t nsupers,  dLUstruct_t *LUstruct, gridinfo3d_t *gr
 
     // dLUValSubBuf_t *LUvsb = SUPERLU_MALLOC(sizeof(dLUValSubBuf_t));
     // dLluBufInit(LUvsb, LUstruct);
-
     
+    // let count sum of gnodecount
+    int_t gNodeCountSum = 0;
+    for (int_t i = 0; i < (1 << maxLvl) - 1; ++i)
+    {
+        gNodeCountSum += gNodeCount[i];
+    }
+    printf(" Iam: %d, Nsupers %d, gnodecountSum =%d \n", grid3d->iam, nsupers, gNodeCountSum);
 
     trf3Dpart->gEtreeInfo = fillEtreeInfo(nsupers, setree, treeList);
     // trf3Dpart->iperm_c_supno = iperm_c_supno;
