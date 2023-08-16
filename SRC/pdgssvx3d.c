@@ -22,6 +22,7 @@ at the top-level directory.
  * Last update: November 8, 2021  v7.2.0
  */
 #include "superlu_ddefs.h"
+#include "TRF3dV100/superlu_summit.h"
 #include "pddistribute3d.h"
 #include "ssvx3dAux.c"
 int_t dgatherAllFactoredLU3d( dtrf3Dpartition_t*  trf3Dpartition,
@@ -774,38 +775,35 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 	// computes the new partition for 3D factorization here
 	newTrfPartitionInit(nsupers, LUstruct, grid3d);
 
-#if 0
-	if (grid3d->zscp.Iam == 0) /* on 2D grid-0 */
-#endif
-	{
 
-		if (!factored)
-		{ /* Skip this if already factored. */
-			/* Distribute Pc*Pr*diag(R)*A*diag(C)*Pc' into L and U storage. */
-			t = SuperLU_timer_();
-			dist_mem_use = pddistribute3d(options, n, A, ScalePermstruct,
-										  Glu_freeable, LUstruct, grid3d);
-			checkDist3DLUStruct(LUstruct, grid3d);
-			// zeros out the Supernodes that are not owned by the grid
-			dinit3DLUstructForest(trf3Dpartition->myTreeIdxs, trf3Dpartition->myZeroTrIdxs,
-								  trf3Dpartition->sForests, LUstruct, grid3d);
+	// perform the  3D distribution 
+	if (!factored)
+	{ /* Skip this if already factored. */
+		/* Distribute Pc*Pr*diag(R)*A*diag(C)*Pc' into L and U storage. */
+		t = SuperLU_timer_();
+		dist_mem_use = pddistribute3d(options, n, A, ScalePermstruct,
+										Glu_freeable, LUstruct, grid3d);
+		checkDist3DLUStruct(LUstruct, grid3d);
+		// zeros out the Supernodes that are not owned by the grid
+		dinit3DLUstructForest(trf3Dpartition->myTreeIdxs, trf3Dpartition->myZeroTrIdxs,
+								trf3Dpartition->sForests, LUstruct, grid3d);
 
-			dLUValSubBuf_t *LUvsb = SUPERLU_MALLOC(sizeof(dLUValSubBuf_t));
-			dLluBufInit(LUvsb, LUstruct);
-			trf3Dpartition->LUvsb = LUvsb;
-			trf3Dpartition->iperm_c_supno = create_iperm_c_supno(nsupers, options, LUstruct, grid3d);
+		dLUValSubBuf_t *LUvsb = SUPERLU_MALLOC(sizeof(dLUValSubBuf_t));
+		dLluBufInit(LUvsb, LUstruct);
+		trf3Dpartition->LUvsb = LUvsb;
+		trf3Dpartition->iperm_c_supno = create_iperm_c_supno(nsupers, options, LUstruct, grid3d);
 
-			stat->utime[DIST] = SuperLU_timer_() - t;
+		stat->utime[DIST] = SuperLU_timer_() - t;
 
-			/* Deallocate storage used in symbolic factorization. */
-			if (Fact != SamePattern_SameRowPerm)
-			{
-				iinfo = symbfact_SubFree(Glu_freeable);
-				SUPERLU_FREE(Glu_freeable);
-			}
-		} /* end if not Factored */
+		/* Deallocate storage used in symbolic factorization. */
+		if (Fact != SamePattern_SameRowPerm)
+		{
+			iinfo = symbfact_SubFree(Glu_freeable);
+			SUPERLU_FREE(Glu_freeable);
+		}
+	} /* end if not Factored */
 
-	} /* end 2D process layer 0 */
+	
 
 	/* Perform numerical factorization in parallel on all process layers.*/
 	if (!factored)
@@ -829,9 +827,62 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 
 		/*factorize in grid 1*/
 		// if(grid3d->zscp.Iam)
+		int gpu3dVersion=0;
+		if(getenv("GPU3DVERSION"))
+		{
+			gpu3dVersion = atoi(getenv("GPU3DVERSION"));
+		}
 
-		pdgstrf3d(options, m, n, anorm, trf3Dpartition, SCT, LUstruct,
+		int trisolveGPUopt=0;
+		if(getenv("TRISOLVEGPUOPT"))
+		{
+			trisolveGPUopt = atoi(getenv("TRISOLVEGPUOPT"));
+			if(trisolveGPUopt== 0)
+				assert(grid3d->npdep==1);
+		}
+		LUgpu_Handle LUgpu;
+
+		if(gpu3dVersion==1)
+		{
+			if(!grid3d->iam) 
+			printf("Using pdgstrf3d+gpu version 1 for Summit");
+            #if 0
+			pdgstrf3d_summit(options, m, n, anorm, trf3Dpartition, SCT, LUstruct,
 				  grid3d, stat, info);
+            #else 
+            int_t ldt = sp_ienv_dist(3, options); /* Size of maximum supernode */
+            double s_eps = smach_dist("Epsilon");
+            double thresh = s_eps * anorm;
+            // create a "C" handle for c++ object LUgpu
+            LUgpu = createLUgpuHandle(nsupers, ldt, trf3Dpartition, LUstruct, grid3d,
+                            SCT, options, stat, thresh, info);
+            // Perform factorization 
+            pdgstrf3d_LUpackedInterface(LUgpu);
+            
+            if(!trisolveGPUopt)
+            {
+                // if we are not doing triangular solve on GPU, then 
+                // copy back LU factors to host and convert into skyline format
+                copyLUGPU2Host(LUgpu, LUstruct);
+                // destroy LUgpuHandle 
+                destroyLUgpuHandle(LUgpu);
+            }
+
+            // print other stuff 
+            if (!grid3d->zscp.Iam)
+                SCT_printSummary(grid, SCT);
+            reduceStat(FACT, stat, grid3d);
+                
+            #endif 
+		}
+		else
+		{
+			pdgstrf3d(options, m, n, anorm, trf3Dpartition, SCT, LUstruct,
+				  grid3d, stat, info);
+		}
+		
+		// pdgstrf3d(options, m, n, anorm, trf3Dpartition, SCT, LUstruct,
+		// 		  grid3d, stat, info);
 		stat->utime[FACT] = SuperLU_timer_() - t;
 
 		double tgather = SuperLU_timer_();
