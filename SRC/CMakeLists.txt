@@ -65,7 +65,7 @@ if(enable_double)
   list(APPEND headers superlu_ddefs.h dlustruct_gpu.h)
 
 if(TPL_ENABLE_CUDALIB)
-  list(APPEND sources pdgstrs_lsum_cuda.cu)
+  list(APPEND sources pdgstrs_lsum_cuda.cu superlu_gpu_utils.cu dsuperlu_gpu.cu )
   list(APPEND sources TRF3dV100/schurCompUpdate.cu )
 endif()
 # if(TPL_ENABLE_HIPLIB)

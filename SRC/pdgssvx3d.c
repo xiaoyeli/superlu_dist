@@ -25,8 +25,7 @@ at the top-level directory.
 #include "pddistribute3d.h"
 #include "ssvx3dAux.c"
 int_t dgatherAllFactoredLU3d( dtrf3Dpartition_t*  trf3Dpartition,
-			   dLUstruct_t* LUstruct, gridinfo3d_t* grid3d, SCT_t* SCT );#include "TRF3dV100/superlu_summit.h"
-
+			   dLUstruct_t* LUstruct, gridinfo3d_t* grid3d, SCT_t* SCT );
 /*! \brief
  *
  * <pre>
@@ -501,106 +500,11 @@ int_t dgatherAllFactoredLU3d( dtrf3Dpartition_t*  trf3Dpartition,
  * </pre>
  */
 
-int writeLUtoDisk(int nsupers, int_t* xsup, dLUstruct_t * LUstruct)
-{
-	
-	if(getenv("LUFILE"))
-	{
-		FILE* fp = fopen( getenv("LUFILE"), "w" );
-		printf("writing to %s",getenv("LUFILE"));
-		for(int i=0; i< nsupers; i++)
-		{
-			if(LUstruct->Llu->Lrowind_bc_ptr[i])
-			{
-				int_t* lsub = LUstruct->Llu->Lrowind_bc_ptr[i];
-				double* nzval =  LUstruct->Llu->Lnzval_bc_ptr[i];
-				
-				int_t len   = lsub[1];   /* LDA of the nzval[] */
-				int_t len2  = SuperSize(i) * len;
-				fwrite( nzval, sizeof(double), len2, fp);	// assume fp will be incremented 
-			}
-			
-			if(LUstruct->Llu->Ufstnz_br_ptr[i])
-			{
-				int_t* usub = LUstruct->Llu->Ufstnz_br_ptr[i];
-				double* nzval =  LUstruct->Llu->Unzval_br_ptr[i];
-				int_t lenv = usub[1];
-				
-				fwrite( nzval, sizeof(double), lenv, fp);	// assume fp will be incremented 
-			}
-		}
-
-		fclose(fp); 
-	}	
-	else
-	{
-		printf("Please set environment variable LUFILE to write\n..bye bye");
-		exit(0);
-	}
-}
-
-#define EPSILON 1e-3
-
-static int checkArr(double *A, double *B, int n)
-{
-    for (int i = 0; i < n; i++)
-    {
-        assert(fabs(A[i] - B[i]) <= EPSILON * SUPERLU_MIN (fabs(A[i]), fabs(B[i])));
-    }
-
-    return 0;
-}
-
-int  checkLUFromDisk(int nsupers, int_t* xsup, dLUstruct_t * LUstruct)
-{
-	dLocalLU_t *Llu = LUstruct->Llu;
-    
-    double* Lval_buf = doubleMalloc_dist(Llu->bufmax[1]); //DOUBLE_ALLOC(Llu->bufmax[1]);
-    double* Uval_buf = doubleMalloc_dist(Llu->bufmax[3]); //DOUBLE_ALLOC(Llu->bufmax[3]);
-	
-	if(getenv("LUFILE"))
-	{
-		FILE* fp = fopen( getenv("LUFILE"), "r" );
-		printf("reading from %s",getenv("LUFILE"));
-		for(int i=0; i< nsupers; i++)
-		{
-			if(LUstruct->Llu->Lrowind_bc_ptr[i])
-			{
-				int_t* lsub = LUstruct->Llu->Lrowind_bc_ptr[i];
-				double* nzval =  LUstruct->Llu->Lnzval_bc_ptr[i];
-				
-				int_t len   = lsub[1];   /* LDA of the nzval[] */
-				int_t len2  = SuperSize(i) * len;
-				fread( Lval_buf, sizeof(double), len2, fp);	// assume fp will be incremented 
-				checkArr(nzval, Lval_buf, len2);
-			}
-			
-			if(LUstruct->Llu->Ufstnz_br_ptr[i])
-			{
-				int_t* usub = LUstruct->Llu->Ufstnz_br_ptr[i];
-				double* nzval =  LUstruct->Llu->Unzval_br_ptr[i];
-				int_t lenv = usub[1];
-				
-				fread( Uval_buf, sizeof(double), lenv, fp);	// assume fp will be incremented 
-				checkArr(nzval, Uval_buf, lenv);
-			}
-		}
-		printf("CHecking LU from  %s is succesful ",getenv("LUFILE"));
-		fclose(fp); 
-	}
-	else
-	{
-		printf("Please set environment variable LUFILE to read\n..bye bye");
-		exit(0); 
-	}
-}
-
-void
-pdgssvx3d (superlu_dist_options_t * options, SuperMatrix * A,
-           dScalePermstruct_t * ScalePermstruct,
-           double B[], int ldb, int nrhs, gridinfo3d_t * grid3d,
-           dLUstruct_t * LUstruct, dSOLVEstruct_t * SOLVEstruct,
-           double *berr, SuperLUStat_t * stat, int *info)
+void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
+			   dScalePermstruct_t *ScalePermstruct,
+			   double B[], int ldb, int nrhs, gridinfo3d_t *grid3d,
+			   dLUstruct_t *LUstruct, dSOLVEstruct_t *SOLVEstruct,
+			   double *berr, SuperLUStat_t *stat, int *info)
 {
 	NRformat_loc *Astore = A->Store;
 	SuperMatrix GA; /* Global A in NC format */
@@ -901,21 +805,7 @@ pdgssvx3d (superlu_dist_options_t * options, SuperMatrix * A,
 			}
 		} /* end if not Factored */
 
-    trf3Dpartition_t*  trf3Dpartition;
-    int gpu3dVersion=0;
-    if(getenv("GPU3DVERSION"))
-    {
-        gpu3dVersion = atoi(getenv("GPU3DVERSION"));
-    }
-
-    int trisolveGPUopt=0;
-    if(getenv("TRISOLVEGPUOPT"))
-    {
-        trisolveGPUopt = atoi(getenv("TRISOLVEGPUOPT"));
-        if(trisolveGPUopt== 0)
-            assert(grid3d->npdep==1);
-    }
-    LUgpu_Handle LUgpu;
+	} /* end 2D process layer 0 */
 
 	/* Perform numerical factorization in parallel on all process layers.*/
 	if (!factored)
@@ -939,84 +829,20 @@ pdgssvx3d (superlu_dist_options_t * options, SuperMatrix * A,
 
 		/*factorize in grid 1*/
 		// if(grid3d->zscp.Iam)
-		// get environment variable TRF3DVERSION
-		
-		if(gpu3dVersion==1)
-		{
-			if(!grid3d->iam) 
-			printf("Using pdgstrf3d+gpu version 1 for Summit");
-            #if 0
-			pdgstrf3d_summit(options, m, n, anorm, trf3Dpartition, SCT, LUstruct,
-				  grid3d, stat, info);
-            #else 
-            int_t ldt = sp_ienv_dist(3); /* Size of maximum supernode */
-            double s_eps = smach_dist("Epsilon");
-            double thresh = s_eps * anorm;
-            // create a "C" handle for c++ object LUgpu
-            LUgpu = createLUgpuHandle(nsupers, ldt, trf3Dpartition, LUstruct, grid3d,
-                            SCT, options, stat, thresh, info);
-            // Perform factorization 
-            pdgstrf3d_LUpackedInterface(LUgpu);
-            
-            if(!trisolveGPUopt)
-            {
-                // if we are not doing triangular solve on GPU, then 
-                // copy back LU factors to host and convert into skyline format
-                copyLUGPU2Host(LUgpu, LUstruct);
-                // destroy LUgpuHandle 
-                destroyLUgpuHandle(LUgpu);
-            }
 
-            // print other stuff 
-            if (!grid3d->zscp.Iam)
-                SCT_printSummary(grid, SCT);
-            reduceStat(FACT, stat, grid3d);
-                
-            #endif 
-		}
-		else
-		{
-			pdgstrf3d(options, m, n, anorm, trf3Dpartition, SCT, LUstruct,
+		pdgstrf3d(options, m, n, anorm, trf3Dpartition, SCT, LUstruct,
 				  grid3d, stat, info);
-		}
-		
 		stat->utime[FACT] = SuperLU_timer_() - t;
 
-	/*factorize in grid 1*/
-	// if(grid3d->zscp.Iam)
 		double tgather = SuperLU_timer_();
-		dgatherAllFactoredLU(trf3Dpartition, LUstruct, grid3d, SCT);
+
+		// dgatherAllFactoredLU(trf3Dpartition, LUstruct, grid3d, SCT);
+		dgatherAllFactoredLU3d(trf3Dpartition, LUstruct, grid3d, SCT);
 
 		SCT->gatherLUtimer += SuperLU_timer_() - tgather;
 		/*print stats for bottom grid*/
 
-		// Write LU to file 
-		int writeLU=0; 
-		if(getenv("WRITELU"))
-		{
-			writeLU = atoi(getenv("WRITELU"));
-		}
-
-		if(writeLU)
-		{
-			if(!grid3d->zscp.Iam)
-				writeLUtoDisk(nsupers, Glu_persist->xsup, LUstruct);
-		}
-
-		int checkLU=0; 
-		if(getenv("CHECKLU"))
-		{
-			checkLU = atoi(getenv("CHECKLU"));
-		}
-
-		if(checkLU)
-		{
-			if(!grid3d->zscp.Iam)
-				checkLUFromDisk(nsupers, Glu_persist->xsup, LUstruct);
-		}
-	
-
-#if (PRNTlevel >= 0)
+#if (PRNTlevel >= 1)
 		if (!grid3d->zscp.Iam)
 		{
 			SCT_print(grid, SCT);
@@ -1027,14 +853,12 @@ pdgssvx3d (superlu_dist_options_t * options, SuperMatrix * A,
 		/*print memory usage*/
 		d3D_printMemUse(trf3Dpartition, LUstruct, grid3d);
 
-		SCT->gatherLUtimer += SuperLU_timer_() - tgather;
-		/*print stats for bottom grid*/
 		/*print forest weight and costs*/
 		printForestWeightCost(trf3Dpartition->sForests, SCT, grid3d);
 		/*reduces stat from all the layers*/
 #endif
 
-        dDestroy_trf3Dpartition(trf3Dpartition, grid3d);
+		dDestroy_trf3Dpartition(trf3Dpartition, grid3d);
 		SCT_free(SCT);
 
 	} /* end if not Factored ... factor on all process layers */

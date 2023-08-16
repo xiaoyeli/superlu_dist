@@ -633,8 +633,9 @@ int_t LUstruct_v100::setLUstruct_GPU()
 
     memReqData += sizeof(LUstructGPU_t);
     // Per stream data
-    // TODO: estimate based on ancestor size
-    A_gpu.gemmBufferSize = SUPERLU_MIN(get_max_buffer_size(), totalNzvalSize);
+    // TODO: estimate based on ancestor size sp_ienv_dist(8,options)
+    // A_gpu.gemmBufferSize = SUPERLU_MIN(get_max_buffer_size(), totalNzvalSize);
+    A_gpu.gemmBufferSize = SUPERLU_MIN(sp_ienv_dist(8,options), totalNzvalSize); // get_max_buffer_size is replaced
     size_t dataPerStream = 3 * sizeof(double) * maxLvalCount + 3 * sizeof(double) * maxUvalCount + 2 * sizeof(int_t) * maxLidxCount + 2 * sizeof(int_t) * maxUidxCount + A_gpu.gemmBufferSize * sizeof(double) + ldt * ldt * sizeof(double);
     if (memReqData + 2 * dataPerStream > useableGPUMem)
     {

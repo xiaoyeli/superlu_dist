@@ -18,7 +18,7 @@ extern "C"
 #endif
 
     int_t pdgstrf3d_summit(superlu_dist_options_t *options, int m, int n, double anorm,
-                           trf3Dpartition_t *trf3Dpartition, SCT_t *SCT,
+                           dtrf3Dpartition_t *trf3Dpartition, SCT_t *SCT,
                            dLUstruct_t *LUstruct, gridinfo3d_t *grid3d,
                            SuperLUStat_t *stat, int *info)
     {
@@ -26,7 +26,7 @@ extern "C"
         dLocalLU_t *Llu = LUstruct->Llu;
 
         // problem specific contants
-        int_t ldt = sp_ienv_dist(3); /* Size of maximum supernode */
+        int_t ldt = sp_ienv_dist(3,options); /* Size of maximum supernode */
         //    double s_eps = slamch_ ("Epsilon");  -Sherry
         double s_eps = smach_dist("Epsilon");
         double thresh = s_eps * anorm;
