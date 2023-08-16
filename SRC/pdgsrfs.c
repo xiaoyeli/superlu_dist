@@ -230,7 +230,7 @@ pdgsrfs(superlu_dist_options_t *options, int_t n,
 	    }
 	    MPI_Allreduce( &s, &berr[j], 1, MPI_DOUBLE, MPI_MAX, grid->comm );
 
-#if ( PRNTlevel>= 1 )
+#if ( PRNTlevel>= 0 )
 	    if ( !iam )
 		printf("(%2d) .. Step " IFMT ": berr[j] = %e\n", iam, count, berr[j]);
 #endif

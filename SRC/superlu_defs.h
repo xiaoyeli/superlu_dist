@@ -1268,6 +1268,7 @@ extern int_t* getPerm_c_supno(int_t nsupers, superlu_dist_options_t *,
 /* Manipulate counters */
 extern void SCT_init(SCT_t*);
 extern void SCT_print(gridinfo_t *grid, SCT_t* SCT);
+extern void SCT_printSummary(gridinfo_t *grid, SCT_t* SCT);
 extern void SCT_print3D(gridinfo3d_t *grid3d, SCT_t* SCT);
 extern void SCT_free(SCT_t*);
 
@@ -1282,7 +1283,7 @@ extern int_t getCommonAncsCount(int_t k, treeList_t* treeList);
 extern int_t* getPermNodeList(int_t nnode, 	// number of nodes
 			      int_t* nlist, int_t* perm_c_sup,int_t* iperm_c_sup);
 extern int_t* getEtreeLB(int_t nnodes, int_t* perm_l, int_t* gTopOrder);
-extern int_t* getSubTreeRoots(int_t k, treeList_t* treeList);
+extern int_t* getSubTreeRoots(int_t k, int_t *numSubtrees, treeList_t* treeList);
 // int_t* treeList2perm(treeList_t* , ..);
 extern int_t* merg_perms(int_t nperms, int_t* nnodes, int_t** perms);
 // returns a concatenated permutation for three permutation arrays

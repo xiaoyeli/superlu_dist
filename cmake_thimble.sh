@@ -1,0 +1,13 @@
+cmake .. -DCMAKE_BUILD_TYPE=Debug\
+ -DCMAKE_C_COMPILER=mpicc.mpich\
+ -DCMAKE_CXX_COMPILER=mpicxx.mpich\
+ -DXSDK_INDEX_SIZE=64\
+  -DTPL_PARMETIS_INCLUDE_DIRS="/home/7ps/software/int64/include"\
+ -DTPL_PARMETIS_LIBRARIES="-L/home/7ps/software/lmpich/int64/lib -lparmetis -lmetis"    \
+ -DTPL_ENABLE_BLASLIB=OFF\
+ -DTPL_ENABLE_LAPACKLIB=OFF\
+ -DTPL_ENABLE_COMBLASLIB=OFF    \
+ -DTPL_BLAS_LIBRARIES="-L${MKLROOT}/lib/intel64 -Wl,--no-as-needed -lmkl_intel_lp64 -lmkl_gnu_thread -lmkl_core"    \
+ -DCMAKE_C_FLAGS=" -std=c99 -g -fPIC -DPRNTlevel=1 -DDEBUGlevel=0 -I${MKLROOT}/include"\
+ -DCMAKE_CXX_FLAGS=" -std=c++11 -I${MKLROOT}/include"\
+ -DCMAKE_INSTALL_PREFIX="./"

@@ -238,6 +238,7 @@ void SCT_init(SCT_t* SCT)
     SCT->CPUOffloadTimer = 0;
     SCT->pdgstrf2_timer = 0.0;
     SCT->lookaheadupdatetimer = 0;
+    SCT->OffloadSectionTimer=0;
 
     /* diagonal block factorization; part of pdgstrf2*/
     // SCT->Local_Dgstrf2_tl = 0;
@@ -251,6 +252,7 @@ void SCT_init(SCT_t* SCT)
     SCT->Wait_UDiagBlockSend_tl = 0;
     /*after obtaining U block, time spent in calculating L panel;part of pdgstrf2*/
     SCT->L_PanelUpdate_tl = 0;
+    SCT->U_PanelUpdate_tl = 0;
     /*Synchronous Broadcasting U panel*/
     SCT->Bcast_UPanel_tl = 0;
     SCT->Bcast_LPanel_tl = 0;
@@ -288,9 +290,13 @@ void SCT_init(SCT_t* SCT)
 
     SCT->tAsyncPipeTail = 0.0; 
     SCT->tStartup =0.0;
+    SCT->tStartupGPU=0.0;
 
     SCT->commVolFactor =0.0;
     SCT->commVolRed =0.0;
+
+    SCT->tDiagFactorPanelSolve=0.0;
+    SCT->tPanelBcast=0.0;
 } /* SCT_init */
 
 void SCT_free(SCT_t* SCT)
@@ -432,7 +438,7 @@ Displays as function_name  \t value \t units;
 
 /*for mkl_get_blocks_frequency*/
 // #include "mkl.h"
-void SCT_print(gridinfo_t *grid, SCT_t* SCT)
+void SCT_printSummary(gridinfo_t *grid, SCT_t* SCT)
 {
     int num_threads = 1;
 
@@ -454,8 +460,8 @@ void SCT_print(gridinfo_t *grid, SCT_t* SCT)
     if (!iam)
     {
         // printf("CPU_CLOCK_RATE  %.1f\n", CPU_CLOCK_RATE );
-        printf("Total time in factorization \t: %5.2lf\n", SCT->pdgstrfTimer);
-        printf("MPI-communication phase \t: %5.2lf\n", SCT->pdgstrfTimer - (temp_holder / num_procs));
+        printf("Factorization_Time \t: %5.2lf\n", SCT->pdgstrfTimer);
+        printf("Communication_Time \t: %5.2lf\n", SCT->pdgstrfTimer - (temp_holder / num_procs));
 
     }
 
@@ -480,12 +486,15 @@ void SCT_print(gridinfo_t *grid, SCT_t* SCT)
     DistPrint("Wait_URecv            ", SCT->Wait_URecv_tl , "Seconds", grid);
     DistPrint("Wait_LRecv            ", SCT->Wait_LRecv_tl , "Seconds", grid);
     DistPrint("L_PanelUpdate         ", SCT->L_PanelUpdate_tl , "Seconds", grid);
-    DistPrint("PDGSTRS2              ", SCT->PDGSTRS2_tl , "Seconds", grid);
+    DistPrint("U_PanelUpdate         ", SCT->U_PanelUpdate_tl , "Seconds", grid);
     
     DistPrint("wait-FunCallStream    ", SCT->PhiWaitTimer , "Seconds", grid);
     DistPrint("wait-copyStream       ", SCT->PhiWaitTimer_2 , "Seconds", grid);
     DistPrint("waitGPU2CPU           ", SCT->PhiWaitTimer , "Seconds", grid);
     DistPrint("SchurCompUpdate       ", SCT->NetSchurUpTimer, "Seconds", grid);
+    DistPrint("LookaheadUpdate       ", SCT->lookaheadupdatetimer, "Seconds", grid);
+    DistPrint("OffloadSecUpdate       ", SCT->OffloadSectionTimer, "Seconds", grid);
+    
     DistPrint("PanelFactorization    ", SCT->pdgstrfTimer - SCT->NetSchurUpTimer, "Seconds", grid);
     
     // DistPrint("Phase_Factor          ", SCT->Phase_Factor_tl / CPU_CLOCK_RATE, "Seconds", grid);
@@ -497,6 +506,7 @@ void SCT_print(gridinfo_t *grid, SCT_t* SCT)
     double t_total = SCT->tStartup + SCT->pdgstrfTimer + SCT->gatherLUtimer; 
     DistPrintMarkupHeader("High Level Time Breakdown", t_total, grid);
     DistPrint("Startup               ", SCT->tStartup, "Seconds", grid);
+    DistPrint("StartupGPU            ", SCT->tStartupGPU, "Seconds", grid);
     DistPrint("Main-Factor loop      ", SCT->pdgstrfTimer, "Seconds", grid);
     DistPrint("3D-GatherLU           ", SCT->gatherLUtimer, "Seconds", grid);
     DistPrint("tTotal                ", t_total, "Seconds", grid);

@@ -253,6 +253,7 @@ typedef struct
     double pdgstrs2_timer;
     double pdgstrf2_timer;
     double lookaheadupdatetimer;
+    double OffloadSectionTimer;
     double pdgstrfTimer;
 
 // new timers for different wait times
@@ -274,6 +275,7 @@ typedef struct
     double Wait_UDiagBlockSend_tl;  
     /*after obtaining U block, time spent in calculating L panel*/
     double L_PanelUpdate_tl;
+    double U_PanelUpdate_tl;
     /*Synchronous Broadcasting L and U panel*/
     double Bcast_UPanel_tl;
     double Bcast_LPanel_tl;
@@ -309,10 +311,15 @@ typedef struct
 
     /*double t_Startup time before factorization starts*/
     double tStartup;
+    double tStartupGPU;
 
     /*keeping track of data sent*/
     double commVolFactor;
     double commVolRed;
+
+    /*timer for new code */
+    double tDiagFactorPanelSolve;
+    double tPanelBcast;
 
 } SCT_t;
 
