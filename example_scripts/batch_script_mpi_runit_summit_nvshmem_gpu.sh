@@ -73,7 +73,7 @@ for ((i = 0; i < ${#npcols[@]}; i++)); do
 			for MAT in ${matrix[@]}  ##big.rua   #A30_015_0_25356.bin
   			do
 				export NSUP=256 
-				export NREL=256
+				#export NREL=256
 				export MAX_BUFFER_SIZE=5000000000
     				export OMP_NUM_THREADS=$OMP_NUM_THREADS
     				mkdir -p ${MAT}_summit
@@ -82,17 +82,17 @@ for ((i = 0; i < ${#npcols[@]}; i++)); do
 					jsrun -n $RS_VAL -a $RANK_PER_RS -c ALL_CPUS -g ALL_GPUS -brs ./put_block
 				else
 					mya=`expr $NCOL \* $NROW`
-					if [[ $mya -le 6 ]];then
+					#if [[ $mya -le 6 ]];then
 						myc=`expr 2 \* $mya` #each nvshmem rank needs 2CPU threads
-						jsrun -n1 -a${mya} -c${myc}  -g${mya} -r1 $FILE  -c $NCOL -r $NROW $INPUT_DIR/$MAT |& tee ./${MAT}_summit/SLU.o_mpi_${NROW}x${NCOL}_OMP_${OMP_NUM_THREADS}_GPU_${mya}_${MYDATE}
+						jsrun -n${mya} -a1 -c2  -g1 -r1 $FILE  -c $NCOL -r $NROW $INPUT_DIR/$MAT |& tee ./${MAT}_summit/SLU.o_mpi_${NROW}x${NCOL}_OMP_${OMP_NUM_THREADS}_GPU_${mya}_${MYDATE}
 						#jsrun -n1 -a2 -c4  -g2 -r1 $FILE  -c 1 -r 2 $INPUT_DIR/$MAT |& tee ./${MAT}_summit/SLU.o_mpi_2x1_OMP_${OMP_NUM_THREADS}_GPU_2_${MYDATE}
 						#jsrun -n1 -a3 -c6  -g3 -r1 $FILE  -c 1 -r 3 $INPUT_DIR/$MAT |& tee ./${MAT}_summit/SLU.o_mpi_3x1_OMP_${OMP_NUM_THREADS}_GPU_3_${MYDATE}
 						#jsrun -n1 -a6 -c12 -g6 -r1 $FILE -c 1 -r 6 $INPUT_DIR/$MAT |& tee ./${MAT}_summit/SLU.o_mpi_6x1_OMP_${OMP_NUM_THREADS}_GPU_6_${MYDATE}
- 	 				fi
-					if [[ $mya -gt 6 ]];then
-						myn=`expr $mya / 6`
-						jsrun -n${myn} -a6 -c12  -g6 $FILE  -c $NCOL -r $NROW $INPUT_DIR/$MAT |& tee ./${MAT}_summit/SLU.o_mpi_${NROW}x${NCOL}_OMP_${OMP_NUM_THREADS}_GPU_${mya}_${MYDATE}
-					fi
+ 	 				#fi
+					#if [[ $mya -gt 6 ]];then
+					#	myn=`expr $mya / 6`
+					#	jsrun -n${myn} -a6 -c12  -g6 $FILE  -c $NCOL -r $NROW $INPUT_DIR/$MAT |& tee ./${MAT}_summit/SLU.o_mpi_${NROW}x${NCOL}_OMP_${OMP_NUM_THREADS}_GPU_${mya}_${MYDATE}
+					#fi
 				fi
 			done ## matrix
 		done #NTH		
