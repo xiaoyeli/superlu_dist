@@ -23,8 +23,8 @@ cp $CPDIR/pddrive $CUR_DIR/EXAMPLE/ -rfv
 export NVSHMEM_MPI_LIB_NAME=libmpi_ibm.so
 export NVSHMEM_LMPI=-lmpi_ibm
 
-nprows=(1 1 1 1 1)
-npcols=(1 2 3 6 12)  
+nprows=(2 3 6 12)
+npcols=(1 1 1 1)  
 #matrix=(LU_C_BN_C_2by2.bin) #s1_mat_0_253872.bin) #s1_mat_0_507744.bin Li4244.bin DG_GrapheneDisorder_8192.bin LU_C_BN_C_2by2.bin) #Li4244.bin s1_mat_0_253872.bin) 
 matrix=(s1_mat_0_253872.bin Li4244.bin) #DG_GrapheneDisorder_8192.bin LU_C_BN_C_2by2.bin) #Li4244.bin s1_mat_0_253872.bin) 
 export NVSHMEM_HOME=/ccs/home/nanding/mysoftware/nvshmem270_gdr23_cuda1102_11232022
