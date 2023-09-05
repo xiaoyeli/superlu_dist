@@ -250,7 +250,7 @@ while (j < nub && perm_u[2 * j] <= k0 + num_look_aheads)
 
         scp = &grid->rscp;      /* The scope of process row. */
         for (pj = 0; pj < Pc; ++pj) {
-            if (ToSendR[lk][pj] != EMPTY) {
+            if (ToSendR[lk][pj] != SLU_EMPTY) {
 #if ( PROFlevel>=1 )
                 TIC (t1);
 #endif
@@ -271,7 +271,7 @@ while (j < nub && perm_u[2 * j] <= k0 + num_look_aheads)
                         iam, kk, msgcnt[0], msgcnt[1], pj,
 			SLU_MPI_TAG(0,kk0), SLU_MPI_TAG(1,kk0));
 #endif
-            }  /* end if ( ToSendR[lk][pj] != EMPTY ) */
+            }  /* end if ( ToSendR[lk][pj] != SLU_EMPTY ) */
         } /* end for pj ... */
     } /* end if( look_ahead[kk] == k0 && kcol == mycol ) */
 } /* end while j < nub and perm_u[j] <k0+NUM_LOOK_AHEAD */

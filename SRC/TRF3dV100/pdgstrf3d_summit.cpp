@@ -17,16 +17,16 @@ extern "C"
 {
 #endif
 
-int_t pdgstrf3d_summit(superlu_dist_options_t *options, int m, int n, double anorm,
-		       dtrf3Dpartition_t *trf3Dpartition, SCT_t *SCT,
-		       dLUstruct_t *LUstruct, gridinfo3d_t *grid3d,
-		       SuperLUStat_t *stat, int *info)
-{
+    int_t pdgstrf3d_summit(superlu_dist_options_t *options, int m, int n, double anorm,
+                           trf3Dpartition_t *trf3Dpartition, SCT_t *SCT,
+                           dLUstruct_t *LUstruct, gridinfo3d_t *grid3d,
+                           SuperLUStat_t *stat, int *info)
+    {
         gridinfo_t *grid = &(grid3d->grid2d);
         dLocalLU_t *Llu = LUstruct->Llu;
 
         // problem specific contants
-        int_t ldt = sp_ienv_dist(3, options); /* Size of maximum supernode */
+        int_t ldt = sp_ienv_dist(3,options); /* Size of maximum supernode */
         //    double s_eps = slamch_ ("Epsilon");  -Sherry
         double s_eps = smach_dist("Epsilon");
         double thresh = s_eps * anorm;
@@ -225,13 +225,40 @@ int_t LUstruct_v100::pdgstrf3d()
 #endif
 	
         SCT->pdgstrfTimer = SuperLU_timer_();
-	
-        for (int ilvl = 0; ilvl < maxLvl; ++ilvl) /* maxLvel is the tree level
-						     along Z-dim process grid */
+        // get environment variables ANC25D
+        int useAnc25D = 0;
+        if (getenv("ANC25D"))
+            useAnc25D = atoi(getenv("ANC25D"));
+        if (useAnc25D)
+            printf("-- Using ANC25D; ONLY CPU supported \n");
+        
+        for (int_t ilvl = 0; ilvl < maxLvl; ++ilvl)
         {
-            /* if I participate in this level */
-            if (!myZeroTrIdxs[ilvl])
+            if (useAnc25D)
             {
+                sForest_t *sforest = sForests[myTreeIdxs[ilvl]];
+                if (sforest) /* 2D factorization at individual subtree */
+                {
+                    double tilvl = SuperLU_timer_();
+                    if(ilvl==0)
+                        dsparseTreeFactor(sforest, dFBufs,
+                                              &gEtreeInfo,
+                                              tag_ub);
+                    else
+                        dAncestorFactorBaseline(ilvl, sforest, dFBufs,
+                                                    &gEtreeInfo,
+                                                    tag_ub);
+                        
+                    /*now reduce the updates*/
+                    SCT->tFactor3D[ilvl] = SuperLU_timer_() - tilvl;
+                    sForests[myTreeIdxs[ilvl]]->cost = SCT->tFactor3D[ilvl];
+                }
+            }
+            else
+            {
+                /* if I participate in this level */
+                if (!myZeroTrIdxs[ilvl])
+                {
 
                 sForest_t *sforest = sForests[myTreeIdxs[ilvl]];
 

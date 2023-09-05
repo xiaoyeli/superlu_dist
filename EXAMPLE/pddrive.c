@@ -119,6 +119,8 @@ int main(int argc, char *argv[])
     options.IterRefine = NOREFINE;
     options.DiagInv           = YES;
 #if 0
+    options.ParSymbFact       = YES;
+    options.ColPerm           = PARMETIS;
     options.RowPerm = LargeDiag_HWPM;
     options.IterRefine = NOREFINE;
     options.ColPerm = NATURAL;

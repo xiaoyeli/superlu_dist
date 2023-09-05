@@ -611,7 +611,7 @@ void super_stats_dist(int_t nsuper, int_t *xsup)
     }
 }
 
-/*! \brief Check whether repfnz[] == EMPTY after reset.
+/*! \brief Check whether repfnz[] == SLU_EMPTY after reset.
  */
 void check_repfnz_dist(int_t n, int_t w, int_t jcol, int_t *repfnz)
 {
@@ -619,7 +619,7 @@ void check_repfnz_dist(int_t n, int_t w, int_t jcol, int_t *repfnz)
 
     for (jj = jcol; jj < jcol + w; jj++)
         for (k = 0; k < n; k++)
-            if (repfnz[(jj - jcol) * n + k] != EMPTY)
+            if (repfnz[(jj - jcol) * n + k] != SLU_EMPTY)
             {
                 fprintf(stderr, "col %d, repfnz_col[%d] = %d\n",
                         jj, k, (int)repfnz[(jj - jcol) * n + k]);

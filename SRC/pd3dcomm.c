@@ -1195,3 +1195,79 @@ int_t dbroadcastAncestor3d( dtrf3Dpartition_t*  trf3Dpartition,
 	return 0;
 } /* dbroadcastAncestorLU */
 
+
+
+int_t dgatherAllFactoredLU3d( dtrf3Dpartition_t*  trf3Dpartition,
+			   dLUstruct_t* LUstruct, gridinfo3d_t* grid3d, SCT_t* SCT )
+{
+    int_t maxLvl = log2i(grid3d->zscp.Np) + 1;
+    int_t myGrid = grid3d->zscp.Iam;
+    int_t* myZeroTrIdxs = trf3Dpartition->myZeroTrIdxs;
+    sForest_t** sForests = trf3Dpartition->sForests;
+    dLUValSubBuf_t*  LUvsb =  trf3Dpartition->LUvsb;
+    int_t*  gNodeCount = getNodeCountsFr(maxLvl, sForests);
+    int_t** gNodeLists = getNodeListFr(maxLvl, sForests);
+    
+    for (int_t ilvl = 0; ilvl < maxLvl - 1; ++ilvl)
+	{
+		int alvl = maxLvl - ilvl - 1;
+		int start = (1 << alvl) - 1;
+		int end = (1 << (alvl + 1)) - 1;
+
+		for (int_t tr = start+1; tr < end; ++tr)
+		{
+			int sender = (1 << (ilvl )) * ( tr - start );
+			int receiver =0; 
+			printf("tr = %d, sender %d, receiver %d\n", tr, sender, receiver);
+			if(myGrid == sender || myGrid == receiver)
+			dgatherFactoredLU(sender, receiver,
+						     gNodeCount[tr], gNodeLists[tr],
+						     LUvsb,
+						     LUstruct, grid3d, SCT );
+
+		}
+		#if 0
+	    /* code */
+	    int_t sender, receiver;
+	    if (!myZeroTrIdxs[ilvl])
+		{
+		    if ((myGrid % (1 << (ilvl + 1))) == 0)
+			{
+			    sender = myGrid + (1 << ilvl);
+			    // receiver = myGrid;
+				receiver = 0;
+			}
+		    else
+			{
+			    sender = myGrid;
+			    // receiver = myGrid - (1 << ilvl);
+				receiver = 0;
+			}
+		    
+			int_t alvl = ilvl;
+		    // for (int_t alvl = 0; alvl <= ilvl; alvl++)
+			{
+			    int_t diffLvl  = ilvl - alvl;
+			    int_t numTrees = 1 << diffLvl;
+			    int_t blvl = maxLvl - alvl - 1;
+			    int_t st = (1 << blvl) - 1 + (sender >> alvl);
+			    
+			    for (int_t tr = st; tr < st + numTrees; ++tr)
+				{
+				    /* code */
+				    dgatherFactoredLU(sender, receiver,
+						     gNodeCount[tr], gNodeLists[tr],
+						     LUvsb,
+						     LUstruct, grid3d, SCT );
+				}
+			}
+		    
+		}
+		#endif
+	} /* for ilvl ... */
+    	
+    SUPERLU_FREE(gNodeCount); // sherry added
+    SUPERLU_FREE(gNodeLists);
+
+    return 0;
+} /* dgatherAllFactoredLU */

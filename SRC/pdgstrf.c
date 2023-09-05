@@ -1030,7 +1030,7 @@ pdgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
         }
 
         for (pj = 0; pj < Pc; ++pj) {
-            if (ToSendR[lk][pj] != EMPTY) {
+            if (ToSendR[lk][pj] != SLU_EMPTY) {
 #if ( PROFlevel>=1 )
                 TIC (t1);
 #endif
@@ -1155,7 +1155,7 @@ pdgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
                     }
                     scp = &grid->rscp;  /* The scope of process row. */
                     for (pj = 0; pj < Pc; ++pj) {
-                        if (ToSendR[lk][pj] != EMPTY) {
+                        if (ToSendR[lk][pj] != SLU_EMPTY) {
                             lusup1 = Lnzval_bc_ptr[lk];
 #if ( PROFlevel>=1 )
 			    TIC (t1);
@@ -1377,7 +1377,7 @@ pdgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
 #endif
             for (pj = 0; pj < Pc; ++pj) {
                 /* Wait for Isend to complete before using lsub/lusup buffer. */
-                if (ToSendR[lk][pj] != EMPTY) {
+                if (ToSendR[lk][pj] != SLU_EMPTY) {
                     MPI_Wait (&send_req[pj], &status);
                     MPI_Wait (&send_req[pj + Pc], &status);
                 }
@@ -1704,7 +1704,7 @@ pdgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
 
                         scp = &grid->rscp;  /* The scope of process row. */
                         for (pj = 0; pj < Pc; ++pj) {
-                            if (ToSendR[lk][pj] != EMPTY) {
+                            if (ToSendR[lk][pj] != SLU_EMPTY) {
 #if ( PROFlevel>=1 )
 			       TIC (t1);
 #endif
