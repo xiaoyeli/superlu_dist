@@ -665,7 +665,7 @@ int_t trs_compute_communication_structure(superlu_dist_options_t *options, int_t
         int_t kcol = PCOL(jb, grid);
         if (myrow == krow && mycol == kcol){
         for (int_t pr=0;pr<grid->nprow;++pr){
-            Llu->bsendx_plist[lk][pr]=  EMPTY;
+            Llu->bsendx_plist[lk][pr]=  SLU_EMPTY;
         }
         }
         }
@@ -2319,7 +2319,7 @@ void dlsum_fmod_leaf (
 						 */
 						for (p = 0; p < grid->nprow; ++p)
 						{
-							if ( fsendx_plist[lk][p] != EMPTY )
+							if ( fsendx_plist[lk][p] != SLU_EMPTY )
 							{
 								pi = PNUM( p, ikcol, grid );
 #ifdef ISEND_IRECV
@@ -4143,7 +4143,7 @@ void dlsum_fmod_leaf_newsolve (
                         */
                     for (p = 0; p < grid->nprow; ++p)
                     {
-                        if ( fsendx_plist[lk][p] != EMPTY )
+                        if ( fsendx_plist[lk][p] != SLU_EMPTY )
                         {
                             pi = PNUM( p, ikcol, grid );
 #ifdef ISEND_IRECV
@@ -6485,7 +6485,7 @@ void dlsum_bmod_GG (
                      */
                     for (p = 0; p < grid->nprow; ++p)
                     {
-                        if ( bsendx_plist[lk1][p] != EMPTY )
+                        if ( bsendx_plist[lk1][p] != SLU_EMPTY )
                         {
                             pi = PNUM( p, gikcol, grid );
 #ifdef ISEND_IRECV
@@ -6672,7 +6672,7 @@ void dlsum_bmod_GG_newsolve (
                      */
                     for (p = 0; p < grid->nprow; ++p)
                     {
-                        if ( bsendx_plist[lk1][p] != EMPTY )
+                        if ( bsendx_plist[lk1][p] != SLU_EMPTY )
                         {
                             pi = PNUM( p, gikcol, grid );
 #ifdef ISEND_IRECV
@@ -6850,7 +6850,7 @@ int_t iBcastXk2Pck(int_t k, double* x, int nrhs,
     int_t kcol = PCOL (k, grid);
     for (int_t p = 0; p < Pr; ++p)
     {
-        if (sendList[lk][p] != EMPTY)
+        if (sendList[lk][p] != SLU_EMPTY)
         {
             int_t pi = PNUM (p, kcol, grid);
 

@@ -443,12 +443,12 @@ int_t dp3dScatter(int_t n, dLUstruct_t * LUstruct, gridinfo3d_t* grid3d, int *su
 		int   *index1;        /* temporary pointer to array of int */
 		if ( !(index1 = int32Malloc_dist(len)) )
 			ABORT("Malloc fails for fsendx_plist[0]");
-		for (i = 0; i < len; ++i) index1[i] = EMPTY;
+		for (i = 0; i < len; ++i) index1[i] = SLU_EMPTY;
 		for (i = 0, j = 0; i < nub; ++i, j += Pr)
 			Llu->fsendx_plist[i] = &index1[j];
 		if ( !(index1 = int32Malloc_dist(len)) )
 			ABORT("Malloc fails for bsendx_plist[0]");
-		for (i = 0; i < len; ++i) index1[i] = EMPTY;
+		for (i = 0; i < len; ++i) index1[i] = SLU_EMPTY;
 		for (i = 0, j = 0; i < nub; ++i, j += Pr)
 			Llu->bsendx_plist[i] = &index1[j];
 		}
