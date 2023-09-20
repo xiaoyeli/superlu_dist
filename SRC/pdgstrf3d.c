@@ -232,7 +232,8 @@ int_t pdgstrf3d(superlu_dist_options_t *options, int m, int n, double anorm,
     }
     
     // dinitDiagFactBufsArrMod is modified version of dinitDiagFactBufsArr to use ldts instead of a scalar
-    ddiagFactBufs_t** dFBufs = dinitDiagFactBufsArrMod(mxLeafNode, ldts, grid);
+    // ddiagFactBufs_t** dFBufs = dinitDiagFactBufsArrMod(mxLeafNode, ldts, grid);
+    ddiagFactBufs_t** dFBufs = dinitDiagFactBufsArr(mxLeafNode, ldt, grid);
     SUPERLU_FREE(ldts);
 
     commRequests_t** comReqss = initCommRequestsArr(SUPERLU_MAX(mxLeafNode, numLA), ldt, grid);
