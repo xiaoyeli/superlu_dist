@@ -581,56 +581,34 @@ void dDestroy_LU(int_t n, gridinfo_t *grid, dLUstruct_t *LUstruct)
 
     SUPERLU_FREE(Glu_persist->xsup);
     SUPERLU_FREE(Glu_persist->supno);
-    SUPERLU_FREE(Llu->bcols_masked);
 
 #ifdef GPU_ACC
-if (getenv("SUPERLU_ACC_SOLVE")){
-	checkGPU (gpuFree (Llu->d_xsup));
-	checkGPU (gpuFree (Llu->d_bcols_masked));
-	checkGPU (gpuFree (Llu->d_LRtree_ptr));
-	checkGPU (gpuFree (Llu->d_LBtree_ptr));
-	checkGPU (gpuFree (Llu->d_URtree_ptr));
-	checkGPU (gpuFree (Llu->d_UBtree_ptr));    
-	checkGPU (gpuFree (Llu->d_ilsum));
-	checkGPU (gpuFree (Llu->d_grid));
-	checkGPU (gpuFree (Llu->d_Lrowind_bc_dat));
-	checkGPU (gpuFree (Llu->d_Lrowind_bc_offset));
-	checkGPU (gpuFree (Llu->d_Lnzval_bc_dat));
-	checkGPU (gpuFree (Llu->d_Lnzval_bc_offset));
-	checkGPU (gpuFree (Llu->d_Linv_bc_dat));
-	checkGPU (gpuFree (Llu->d_Uinv_bc_dat));
-	checkGPU (gpuFree (Llu->d_Linv_bc_offset));
-	checkGPU (gpuFree (Llu->d_Uinv_bc_offset));
-	checkGPU (gpuFree (Llu->d_Lindval_loc_bc_dat));
-	checkGPU (gpuFree (Llu->d_Lindval_loc_bc_offset));
+    if (0)
+    {
+        checkGPU(gpuFree(Llu->d_xsup));
+        checkGPU(gpuFree(Llu->d_LRtree_ptr));
+        checkGPU(gpuFree(Llu->d_LBtree_ptr));
+        checkGPU(gpuFree(Llu->d_URtree_ptr));
+        checkGPU(gpuFree(Llu->d_UBtree_ptr));
+        checkGPU(gpuFree(Llu->d_ilsum));
+        checkGPU(gpuFree(Llu->d_Lrowind_bc_dat));
+        checkGPU(gpuFree(Llu->d_Lrowind_bc_offset));
+        checkGPU(gpuFree(Llu->d_Lnzval_bc_dat));
+        checkGPU(gpuFree(Llu->d_Lnzval_bc_offset));
+        checkGPU(gpuFree(Llu->d_Linv_bc_dat));
+        checkGPU(gpuFree(Llu->d_Uinv_bc_dat));
+        checkGPU(gpuFree(Llu->d_Linv_bc_offset));
+        checkGPU(gpuFree(Llu->d_Uinv_bc_offset));
+        checkGPU(gpuFree(Llu->d_Lindval_loc_bc_dat));
+        checkGPU(gpuFree(Llu->d_Lindval_loc_bc_offset));
 
-    checkGPU (gpuFree (Llu->d_Ucolind_bc_dat)); 
-    checkGPU (gpuFree (Llu->d_Ucolind_bc_offset));
-    checkGPU (gpuFree (Llu->d_Unzval_bc_dat)); 
-    checkGPU (gpuFree (Llu->d_Unzval_bc_offset));  
-    checkGPU (gpuFree (Llu->d_Uindval_loc_bc_dat)); 
-    checkGPU (gpuFree (Llu->d_Uindval_loc_bc_offset));
-}
-
-    #ifdef HAVE_NVSHMEM  
-    /* nvshmem related*/
-    if (getenv("SUPERLU_ACC_SOLVE")){
-    delete_multiGPU_buffers();
+        checkGPU(gpuFree(Llu->d_Ucolind_bc_dat));
+        checkGPU(gpuFree(Llu->d_Ucolind_bc_offset));
+        checkGPU(gpuFree(Llu->d_Unzval_bc_dat));
+        checkGPU(gpuFree(Llu->d_Unzval_bc_offset));
+        checkGPU(gpuFree(Llu->d_Uindval_loc_bc_dat));
+        checkGPU(gpuFree(Llu->d_Uindval_loc_bc_offset));
     }
-    
-    SUPERLU_FREE(mystatus);
-    SUPERLU_FREE(h_nfrecv);
-    SUPERLU_FREE(h_nfrecvmod);
-    SUPERLU_FREE(mystatusmod);
-    SUPERLU_FREE(mystatus_u);
-    SUPERLU_FREE(h_nfrecv_u);
-    SUPERLU_FREE(mystatusmod_u);
-
-    checkGPU (gpuFree (d_recv_cnt));
-    checkGPU (gpuFree (d_recv_cnt_u));
-    #endif
-
-
 #endif
 
 #if (DEBUGlevel >= 1)
@@ -684,7 +662,6 @@ int_t pdgstrs_init(int_t n, int_t m_loc, int_t nrhs, int_t fst_row,
     int_t irow, q, knsupc, nsupers, *xsup, *supno;
     int iam, p, pkk, procs;
     pxgstrs_comm_t *gstrs_comm;
-    int_t Pr = grid->nprow;
 
     procs = grid->nprow * grid->npcol;
     iam = grid->iam;
@@ -693,7 +670,7 @@ int_t pdgstrs_init(int_t n, int_t m_loc, int_t nrhs, int_t fst_row,
     supno = Glu_persist->supno;
     nsupers = Glu_persist->supno[n - 1] + 1;
     row_to_proc = SOLVEstruct->row_to_proc;
-    
+
     /* ------------------------------------------------------------
        SET UP COMMUNICATION PATTERN FOR ReDistribute_B_to_X.
        ------------------------------------------------------------*/
@@ -808,8 +785,338 @@ int_t pdgstrs_init(int_t n, int_t m_loc, int_t nrhs, int_t fst_row,
     return 0;
 } /* PDGSTRS_INIT */
 
+/*! \brief Initialize the data structure for the solution phase.
+ */
+int dSolveInit(superlu_dist_options_t *options, SuperMatrix *A,
+               int_t perm_r[], int_t perm_c[], int_t nrhs,
+               dLUstruct_t *LUstruct, gridinfo_t *grid,
+               dSOLVEstruct_t *SOLVEstruct)
+{
+    int_t *row_to_proc, *inv_perm_c, *itemp;
+    NRformat_loc *Astore;
+    int_t i, fst_row, m_loc, p;
+    int procs;
+
+    Astore = (NRformat_loc *)A->Store;
+    fst_row = Astore->fst_row;
+    m_loc = Astore->m_loc;
+    procs = grid->nprow * grid->npcol;
+
+    if (!(row_to_proc = intMalloc_dist(A->nrow)))
+        ABORT("Malloc fails for row_to_proc[]");
+    SOLVEstruct->row_to_proc = row_to_proc;
+    if (!(inv_perm_c = intMalloc_dist(A->ncol)))
+        ABORT("Malloc fails for inv_perm_c[].");
+    for (i = 0; i < A->ncol; ++i)
+        inv_perm_c[perm_c[i]] = i;
+    SOLVEstruct->inv_perm_c = inv_perm_c;
+
+    /* ------------------------------------------------------------
+       EVERY PROCESS NEEDS TO KNOW GLOBAL PARTITION.
+       SET UP THE MAPPING BETWEEN ROWS AND PROCESSES.
+
+       NOTE: For those processes that do not own any row, it must
+             must be set so that fst_row == A->nrow.
+       ------------------------------------------------------------*/
+    if (!(itemp = intMalloc_dist(procs + 1)))
+        ABORT("Malloc fails for itemp[]");
+    MPI_Allgather(&fst_row, 1, mpi_int_t, itemp, 1, mpi_int_t,
+                  grid->comm);
+    itemp[procs] = A->nrow;
+    for (p = 0; p < procs; ++p)
+    {
+        for (i = itemp[p]; i < itemp[p + 1]; ++i)
+            row_to_proc[i] = p;
+    }
+#if (DEBUGlevel >= 2)
+    if (!grid->iam)
+    {
+        printf("fst_row = %d\n", fst_row);
+        PrintInt10("row_to_proc", A->nrow, row_to_proc);
+        PrintInt10("inv_perm_c", A->ncol, inv_perm_c);
+    }
+#endif
+    SUPERLU_FREE(itemp);
+
+#if 0
+    /* Compute the mapping between rows and processes. */
+    /* XSL NOTE: What happens if # of mapped processes is smaller
+       than total Procs?  For the processes without any row, let
+       fst_row be EMPTY (-1). Make sure this case works! */
+    MPI_Allgather(&fst_row, 1, mpi_int_t, itemp, 1, mpi_int_t,
+		  grid->comm);
+    itemp[procs] = n;
+    for (p = 0; p < procs; ++p) {
+        j = itemp[p];
+	if ( j != SLU_EMPTY ) {
+	    k = itemp[p+1];
+	    if ( k == SLU_EMPTY ) k = n;
+	    for (i = j ; i < k; ++i) row_to_proc[i] = p;
+	}
+    }
+#endif
+
+    get_diag_procs(A->ncol, LUstruct->Glu_persist, grid,
+                   &SOLVEstruct->num_diag_procs,
+                   &SOLVEstruct->diag_procs,
+                   &SOLVEstruct->diag_len);
+
+    /* Setup communication pattern for redistribution of B and X. */
+    if (!(SOLVEstruct->gstrs_comm = (pxgstrs_comm_t *)
+              SUPERLU_MALLOC(sizeof(pxgstrs_comm_t))))
+        ABORT("Malloc fails for gstrs_comm[]");
+    pdgstrs_init(A->ncol, m_loc, nrhs, fst_row, perm_r, perm_c, grid,
+                 LUstruct->Glu_persist, SOLVEstruct);
+
+    if (!(SOLVEstruct->gsmv_comm = (pdgsmv_comm_t *)
+              SUPERLU_MALLOC(sizeof(pdgsmv_comm_t))))
+        ABORT("Malloc fails for gsmv_comm[]");
+    SOLVEstruct->A_colind_gsmv = NULL;
+
+    options->SolveInitialized = YES;
+    return 0;
+} /* dSolveInit */
+
+/*! \brief Release the resources used for the solution phase.
+ */
+void dSolveFinalize(superlu_dist_options_t *options, dSOLVEstruct_t *SOLVEstruct)
+{
+    if (options->SolveInitialized)
+    {
+        pxgstrs_finalize(SOLVEstruct->gstrs_comm);
+
+        if (options->RefineInitialized)
+        {
+            pdgsmv_finalize(SOLVEstruct->gsmv_comm);
+            options->RefineInitialized = NO;
+        }
+        SUPERLU_FREE(SOLVEstruct->gsmv_comm);
+        SUPERLU_FREE(SOLVEstruct->row_to_proc);
+        SUPERLU_FREE(SOLVEstruct->inv_perm_c);
+        SUPERLU_FREE(SOLVEstruct->diag_procs);
+        SUPERLU_FREE(SOLVEstruct->diag_len);
+        if (SOLVEstruct->A_colind_gsmv)
+            SUPERLU_FREE(SOLVEstruct->A_colind_gsmv);
+        options->SolveInitialized = NO;
+    }
+} /* dSolveFinalize */
+
+void dDestroy_A3d_gathered_on_2d(dSOLVEstruct_t *SOLVEstruct, gridinfo3d_t *grid3d)
+{
+    /* free A2d and B2d, which are allocated only in 2D layer grid-0 */
+    NRformat_loc3d *A3d = SOLVEstruct->A3d;
+    NRformat_loc *A2d = A3d->A_nfmt;
+    if (grid3d->zscp.Iam == 0)
+    {
+        SUPERLU_FREE(A2d->rowptr);
+        SUPERLU_FREE(A2d->colind);
+        SUPERLU_FREE(A2d->nzval);
+    }
+    SUPERLU_FREE(A3d->row_counts_int); // free displacements and counts
+    SUPERLU_FREE(A3d->row_disp);
+    SUPERLU_FREE(A3d->nnz_counts_int);
+    SUPERLU_FREE(A3d->nnz_disp);
+    SUPERLU_FREE(A3d->b_counts_int);
+    SUPERLU_FREE(A3d->b_disp);
+    int rankorder = grid3d->rankorder;
+    if (rankorder == 0)
+    { /* Z-major in 3D grid */
+        SUPERLU_FREE(A3d->procs_to_send_list);
+        SUPERLU_FREE(A3d->send_count_list);
+        SUPERLU_FREE(A3d->procs_recv_from_list);
+        SUPERLU_FREE(A3d->recv_count_list);
+    }
+    SUPERLU_FREE(A2d); // free 2D structure
+    SUPERLU_FREE(A3d); // free 3D structure
+} /* dDestroy_A3d_gathered_on_2d */
+
+/*! \brief Check the inf-norm of the error vector
+ */
+void pdinf_norm_error(int iam, int_t n, int_t nrhs, double x[], int_t ldx,
+                      double xtrue[], int_t ldxtrue, MPI_Comm slucomm)
+{
+    double err, xnorm, temperr, tempxnorm;
+    double *x_work, *xtrue_work;
+    int i, j;
+    double errcomp; // componentwise error
+    double derr;
+
+    for (j = 0; j < nrhs; j++)
+    {
+        x_work = &x[j * ldx];
+        xtrue_work = &xtrue[j * ldxtrue];
+        err = xnorm = errcomp = 0.0;
+        for (i = 0; i < n; i++)
+        {
+            derr = fabs(x_work[i] - xtrue_work[i]);
+            err = SUPERLU_MAX(err, derr);
+            xnorm = SUPERLU_MAX(xnorm, fabs(x_work[i]));
+            errcomp = SUPERLU_MAX(errcomp, derr / fabs(x_work[i]));
+        }
+
+        /* get the golbal max err & xnrom */
+        temperr = err;
+        MPI_Allreduce(&temperr, &err, 1, MPI_DOUBLE, MPI_MAX, slucomm);
+        tempxnorm = xnorm;
+        MPI_Allreduce(&tempxnorm, &xnorm, 1, MPI_DOUBLE, MPI_MAX, slucomm);
+        temperr = errcomp;
+        MPI_Allreduce(&temperr, &errcomp, 1, MPI_FLOAT, MPI_MAX, slucomm);
+
+        err = err / xnorm;
+        if (!iam)
+        {
+            printf(".. Sol %2d: ||X - Xtrue|| / ||X|| = %e\t max_i |x - xtrue|_i / |x|_i = %e\n", j, err, errcomp);
+            fflush(stdout);
+        }
+    }
+}
+
+/*! \brief Destroy broadcast and reduction trees used in triangular solve */
+void dDestroy_Tree(int_t n, gridinfo_t *grid, dLUstruct_t *LUstruct)
+{
+    int i, nb, nsupers;
+    Glu_persist_t *Glu_persist = LUstruct->Glu_persist;
+    dLocalLU_t *Llu = LUstruct->Llu;
+#if (DEBUGlevel >= 1)
+    int iam;
+    MPI_Comm_rank(MPI_COMM_WORLD, &iam);
+    CHECK_MALLOC(iam, "Enter dDestroy_Tree()");
+#endif
+
+#if 1
+    nsupers = Glu_persist->supno[n - 1] + 1;
+
+    nb = CEILING(nsupers, grid->npcol);
+    if (Llu->LBtree_ptr != NULL)
+    {
+        for (i = 0; i < nb; ++i)
+        {
+            if (Llu->LBtree_ptr[i].empty_ == NO)
+            {
+                // BcTree_Destroy(Llu->LBtree_ptr[i],LUstruct->dt);
+                C_BcTree_Nullify(&Llu->LBtree_ptr[i]);
+            }
+        }
+        SUPERLU_FREE(Llu->LBtree_ptr);
+    }
+    if (Llu->UBtree_ptr != NULL)
+    {
+        for (i = 0; i < nb; ++i)
+        {
+            if (Llu->UBtree_ptr[i].empty_ == NO)
+            {
+                // BcTree_Destroy(Llu->UBtree_ptr[i],LUstruct->dt);
+                C_BcTree_Nullify(&Llu->UBtree_ptr[i]);
+            }
+        }
+        SUPERLU_FREE(Llu->UBtree_ptr);
+    }
+
+    nb = CEILING(nsupers, grid->nprow);
+    if (Llu->LRtree_ptr != NULL)
+    {
+        for (i = 0; i < nb; ++i)
+        {
+            if (Llu->LRtree_ptr[i].empty_ == NO)
+            {
+                // RdTree_Destroy(Llu->LRtree_ptr[i],LUstruct->dt);
+                C_RdTree_Nullify(&Llu->LRtree_ptr[i]);
+            }
+        }
+        SUPERLU_FREE(Llu->LRtree_ptr);
+    }
+    if (Llu->URtree_ptr != NULL)
+    {
+        for (i = 0; i < nb; ++i)
+        {
+            if (Llu->URtree_ptr[i].empty_ == NO)
+            {
+                // RdTree_Destroy(Llu->URtree_ptr[i],LUstruct->dt);
+                C_RdTree_Nullify(&Llu->URtree_ptr[i]);
+            }
+        }
+        SUPERLU_FREE(Llu->URtree_ptr);
+    }
+#else
+    nsupers = Glu_persist->supno[n - 1] + 1;
+
+    nb = CEILING(nsupers, grid->npcol);
+    for (i = 0; i < nb; ++i)
+    {
+        if (Llu->LBtree_ptr[i].empty_ == NO)
+        {
+            // BcTree_Destroy(Llu->LBtree_ptr[i],LUstruct->dt);
+            C_BcTree_Nullify(&Llu->LBtree_ptr[i]);
+        }
+        if (Llu->UBtree_ptr[i].empty_ == NO)
+        {
+            // BcTree_Destroy(Llu->UBtree_ptr[i],LUstruct->dt);
+            C_BcTree_Nullify(&Llu->UBtree_ptr[i]);
+        }
+    }
+    SUPERLU_FREE(Llu->LBtree_ptr);
+    SUPERLU_FREE(Llu->UBtree_ptr);
+
+    nb = CEILING(nsupers, grid->nprow);
+    for (i = 0; i < nb; ++i)
+    {
+        if (Llu->LRtree_ptr[i].empty_ == NO)
+        {
+            // RdTree_Destroy(Llu->LRtree_ptr[i],LUstruct->dt);
+            C_RdTree_Nullify(&Llu->LRtree_ptr[i]);
+        }
+        if (Llu->URtree_ptr[i].empty_ == NO)
+        {
+            // RdTree_Destroy(Llu->URtree_ptr[i],LUstruct->dt);
+            C_RdTree_Nullify(&Llu->URtree_ptr[i]);
+        }
+    }
+    SUPERLU_FREE(Llu->LRtree_ptr);
+    SUPERLU_FREE(Llu->URtree_ptr);
+#endif
+#if (DEBUGlevel >= 1)
+    CHECK_MALLOC(iam, "Exit dDestroy_Tree()");
+#endif
+}
 
 
+int_t
+pdgstrs_delete_device_lsum_x(dSOLVEstruct_t *SOLVEstruct)
+{
+#if ( defined(GPU_ACC) && defined(GPU_SOLVE) )
+    checkGPU (gpuFree (SOLVEstruct->d_x));
+    checkGPU (gpuFree (SOLVEstruct->d_lsum));   
+    checkGPU (gpuFree (SOLVEstruct->d_lsum_save));   
+    checkGPU (gpuFree (SOLVEstruct->d_fmod));   
+    checkGPU (gpuFree (SOLVEstruct->d_fmod_save));       
+    checkGPU (gpuFree (SOLVEstruct->d_bmod));   
+    checkGPU (gpuFree (SOLVEstruct->d_bmod_save));   
+
+
+/* nvshmem related*/
+
+    #ifdef HAVE_NVSHMEM  
+    // delete_multiGPU_buffers();
+
+    checkGPU(gpuFree(d_colnum));       
+    checkGPU(gpuFree(d_mynum));       
+    checkGPU(gpuFree(d_mymaskstart));       
+    checkGPU(gpuFree(d_mymasklength));       
+    checkGPU(gpuFree(d_status));       
+    checkGPU(gpuFree(d_nfrecv));       
+
+    checkGPU(gpuFree(d_nfrecvmod));       
+    checkGPU(gpuFree(d_statusmod));       
+    checkGPU(gpuFree(d_mynummod));       
+    checkGPU(gpuFree(d_mymaskstartmod));       
+    checkGPU(gpuFree(d_mymasklengthmod));       
+    checkGPU(gpuFree(d_msgnum));       
+    checkGPU(gpuFree(d_flag_mod));    
+    #endif
+
+#endif  
+    return 0;
+} /* pdgstrs_delete_device_lsum_x */
 
 int_t
 pdgstrs_init_device_lsum_x(superlu_dist_options_t *options, int_t n, int_t m_loc, int_t nrhs, gridinfo_t *grid,
@@ -1131,337 +1438,3 @@ pdgstrs_init_device_lsum_x(superlu_dist_options_t *options, int_t n, int_t m_loc
 
     return 0;
 } /* pdgstrs_init_device_lsum_x */
-
-
-int_t
-pdgstrs_delete_device_lsum_x(dSOLVEstruct_t *SOLVEstruct)
-{
-#if ( defined(GPU_ACC) && defined(GPU_SOLVE) )
-    checkGPU (gpuFree (SOLVEstruct->d_x));
-    checkGPU (gpuFree (SOLVEstruct->d_lsum));   
-    checkGPU (gpuFree (SOLVEstruct->d_lsum_save));   
-    checkGPU (gpuFree (SOLVEstruct->d_fmod));   
-    checkGPU (gpuFree (SOLVEstruct->d_fmod_save));       
-    checkGPU (gpuFree (SOLVEstruct->d_bmod));   
-    checkGPU (gpuFree (SOLVEstruct->d_bmod_save));   
-
-
-/* nvshmem related*/
-
-    #ifdef HAVE_NVSHMEM  
-    // delete_multiGPU_buffers();
-
-    checkGPU(gpuFree(d_colnum));       
-    checkGPU(gpuFree(d_mynum));       
-    checkGPU(gpuFree(d_mymaskstart));       
-    checkGPU(gpuFree(d_mymasklength));       
-    checkGPU(gpuFree(d_status));       
-    checkGPU(gpuFree(d_nfrecv));       
-
-    checkGPU(gpuFree(d_nfrecvmod));       
-    checkGPU(gpuFree(d_statusmod));       
-    checkGPU(gpuFree(d_mynummod));       
-    checkGPU(gpuFree(d_mymaskstartmod));       
-    checkGPU(gpuFree(d_mymasklengthmod));       
-    checkGPU(gpuFree(d_msgnum));       
-    checkGPU(gpuFree(d_flag_mod));    
-    #endif
-
-#endif  
-    return 0;
-} /* pdgstrs_delete_device_lsum_x */
-
-
-
-/*! \brief Initialize the data structure for the solution phase.
- */
-int dSolveInit(superlu_dist_options_t *options, SuperMatrix *A,
-               int_t perm_r[], int_t perm_c[], int_t nrhs,
-               dLUstruct_t *LUstruct, gridinfo_t *grid,
-               dSOLVEstruct_t *SOLVEstruct)
-{
-    int_t *row_to_proc, *inv_perm_c, *itemp;
-    NRformat_loc *Astore;
-    int_t i, fst_row, m_loc, p;
-    int procs;
-
-    Astore = (NRformat_loc *)A->Store;
-    fst_row = Astore->fst_row;
-    m_loc = Astore->m_loc;
-    procs = grid->nprow * grid->npcol;
-
-    if (!(row_to_proc = intMalloc_dist(A->nrow)))
-        ABORT("Malloc fails for row_to_proc[]");
-    SOLVEstruct->row_to_proc = row_to_proc;
-    if (!(inv_perm_c = intMalloc_dist(A->ncol)))
-        ABORT("Malloc fails for inv_perm_c[].");
-    for (i = 0; i < A->ncol; ++i)
-        inv_perm_c[perm_c[i]] = i;
-    SOLVEstruct->inv_perm_c = inv_perm_c;
-
-    /* ------------------------------------------------------------
-       EVERY PROCESS NEEDS TO KNOW GLOBAL PARTITION.
-       SET UP THE MAPPING BETWEEN ROWS AND PROCESSES.
-
-       NOTE: For those processes that do not own any row, it must
-             must be set so that fst_row == A->nrow.
-       ------------------------------------------------------------*/
-    if (!(itemp = intMalloc_dist(procs + 1)))
-        ABORT("Malloc fails for itemp[]");
-    MPI_Allgather(&fst_row, 1, mpi_int_t, itemp, 1, mpi_int_t,
-                  grid->comm);
-    itemp[procs] = A->nrow;
-    for (p = 0; p < procs; ++p)
-    {
-        for (i = itemp[p]; i < itemp[p + 1]; ++i)
-            row_to_proc[i] = p;
-    }
-#if (DEBUGlevel >= 2)
-    if (!grid->iam)
-    {
-        printf("fst_row = %d\n", fst_row);
-        PrintInt10("row_to_proc", A->nrow, row_to_proc);
-        PrintInt10("inv_perm_c", A->ncol, inv_perm_c);
-    }
-#endif
-    SUPERLU_FREE(itemp);
-
-#if 0
-    /* Compute the mapping between rows and processes. */
-    /* XSL NOTE: What happens if # of mapped processes is smaller
-       than total Procs?  For the processes without any row, let
-       fst_row be EMPTY (-1). Make sure this case works! */
-    MPI_Allgather(&fst_row, 1, mpi_int_t, itemp, 1, mpi_int_t,
-		  grid->comm);
-    itemp[procs] = n;
-    for (p = 0; p < procs; ++p) {
-        j = itemp[p];
-	if ( j != SLU_EMPTY ) {
-	    k = itemp[p+1];
-	    if ( k == SLU_EMPTY ) k = n;
-	    for (i = j ; i < k; ++i) row_to_proc[i] = p;
-	}
-    }
-#endif
-
-    get_diag_procs(A->ncol, LUstruct->Glu_persist, grid,
-                   &SOLVEstruct->num_diag_procs,
-                   &SOLVEstruct->diag_procs,
-                   &SOLVEstruct->diag_len);
-
-    /* Setup communication pattern for redistribution of B and X. */
-    if (!(SOLVEstruct->gstrs_comm = (pxgstrs_comm_t *)
-              SUPERLU_MALLOC(sizeof(pxgstrs_comm_t))))
-        ABORT("Malloc fails for gstrs_comm[]");
-    pdgstrs_init(A->ncol, m_loc, nrhs, fst_row, perm_r, perm_c, grid,
-                 LUstruct->Glu_persist, SOLVEstruct);
-
-    if (!(SOLVEstruct->gsmv_comm = (pdgsmv_comm_t *)
-              SUPERLU_MALLOC(sizeof(pdgsmv_comm_t))))
-        ABORT("Malloc fails for gsmv_comm[]");
-    SOLVEstruct->A_colind_gsmv = NULL;
-    options->SolveInitialized = YES;
-    return 0;
-} /* dSolveInit */
-
-/*! \brief Release the resources used for the solution phase.
- */
-void dSolveFinalize(superlu_dist_options_t *options, dSOLVEstruct_t *SOLVEstruct)
-{
-    if (options->SolveInitialized)
-    {
-        pxgstrs_finalize(SOLVEstruct->gstrs_comm);
-
-        if (options->RefineInitialized)
-        {
-            pdgsmv_finalize(SOLVEstruct->gsmv_comm);
-            options->RefineInitialized = NO;
-        }
-        SUPERLU_FREE(SOLVEstruct->gsmv_comm);
-        SUPERLU_FREE(SOLVEstruct->row_to_proc);
-        SUPERLU_FREE(SOLVEstruct->inv_perm_c);
-        SUPERLU_FREE(SOLVEstruct->diag_procs);
-        SUPERLU_FREE(SOLVEstruct->diag_len);
-        if (SOLVEstruct->A_colind_gsmv)
-            SUPERLU_FREE(SOLVEstruct->A_colind_gsmv);
-        options->SolveInitialized = NO;
-    }
-} /* dSolveFinalize */
-
-void dDestroy_A3d_gathered_on_2d(dSOLVEstruct_t *SOLVEstruct, gridinfo3d_t *grid3d)
-{
-    /* free A2d and B2d, which are allocated only in 2D layer grid-0 */
-    NRformat_loc3d *A3d = SOLVEstruct->A3d;
-    NRformat_loc *A2d = A3d->A_nfmt;
-    if (grid3d->zscp.Iam == 0)
-    {
-        SUPERLU_FREE(A2d->rowptr);
-        SUPERLU_FREE(A2d->colind);
-        SUPERLU_FREE(A2d->nzval);
-    }
-    SUPERLU_FREE(A3d->row_counts_int); // free displacements and counts
-    SUPERLU_FREE(A3d->row_disp);
-    SUPERLU_FREE(A3d->nnz_counts_int);
-    SUPERLU_FREE(A3d->nnz_disp);
-    SUPERLU_FREE(A3d->b_counts_int);
-    SUPERLU_FREE(A3d->b_disp);
-    int rankorder = grid3d->rankorder;
-    if (rankorder == 0)
-    { /* Z-major in 3D grid */
-        SUPERLU_FREE(A3d->procs_to_send_list);
-        SUPERLU_FREE(A3d->send_count_list);
-        SUPERLU_FREE(A3d->procs_recv_from_list);
-        SUPERLU_FREE(A3d->recv_count_list);
-    }
-    SUPERLU_FREE(A2d); // free 2D structure
-    SUPERLU_FREE(A3d); // free 3D structure
-} /* dDestroy_A3d_gathered_on_2d */
-
-/*! \brief Check the inf-norm of the error vector
- */
-void pdinf_norm_error(int iam, int_t n, int_t nrhs, double x[], int_t ldx,
-                      double xtrue[], int_t ldxtrue, MPI_Comm slucomm)
-{
-    double err, xnorm, temperr, tempxnorm;
-    double *x_work, *xtrue_work;
-    int i, j;
-    double errcomp; // componentwise error
-    double derr;
-
-    for (j = 0; j < nrhs; j++)
-    {
-        x_work = &x[j * ldx];
-        xtrue_work = &xtrue[j * ldxtrue];
-        err = xnorm = errcomp = 0.0;
-        for (i = 0; i < n; i++)
-        {
-            derr = fabs(x_work[i] - xtrue_work[i]);
-            err = SUPERLU_MAX(err, derr);
-            xnorm = SUPERLU_MAX(xnorm, fabs(x_work[i]));
-            errcomp = SUPERLU_MAX(errcomp, derr / fabs(x_work[i]));
-        }
-
-        /* get the golbal max err & xnrom */
-        temperr = err;
-        MPI_Allreduce(&temperr, &err, 1, MPI_DOUBLE, MPI_MAX, slucomm);
-        tempxnorm = xnorm;
-        MPI_Allreduce(&tempxnorm, &xnorm, 1, MPI_DOUBLE, MPI_MAX, slucomm);
-        temperr = errcomp;
-        MPI_Allreduce(&temperr, &errcomp, 1, MPI_FLOAT, MPI_MAX, slucomm);
-
-        err = err / xnorm;
-        if (!iam)
-        {
-            printf(".. Sol %2d: ||X - Xtrue|| / ||X|| = %e\t max_i |x - xtrue|_i / |x|_i = %e\n", j, err, errcomp);
-            fflush(stdout);
-        }
-    }
-}
-
-/*! \brief Destroy broadcast and reduction trees used in triangular solve */
-void dDestroy_Tree(int_t n, gridinfo_t *grid, dLUstruct_t *LUstruct)
-{
-    int i, nb, nsupers;
-    Glu_persist_t *Glu_persist = LUstruct->Glu_persist;
-    dLocalLU_t *Llu = LUstruct->Llu;
-#if (DEBUGlevel >= 1)
-    int iam;
-    MPI_Comm_rank(MPI_COMM_WORLD, &iam);
-    CHECK_MALLOC(iam, "Enter dDestroy_Tree()");
-#endif
-
-#if 1
-    nsupers = Glu_persist->supno[n - 1] + 1;
-
-    nb = CEILING(nsupers, grid->npcol);
-    if (Llu->LBtree_ptr != NULL)
-    {
-        for (i = 0; i < nb; ++i)
-        {
-            if (Llu->LBtree_ptr[i].empty_ == NO)
-            {
-                // BcTree_Destroy(Llu->LBtree_ptr[i],LUstruct->dt);
-                C_BcTree_Nullify(&Llu->LBtree_ptr[i]);
-            }
-        }
-        SUPERLU_FREE(Llu->LBtree_ptr);
-    }
-    if (Llu->UBtree_ptr != NULL)
-    {
-        for (i = 0; i < nb; ++i)
-        {
-            if (Llu->UBtree_ptr[i].empty_ == NO)
-            {
-                // BcTree_Destroy(Llu->UBtree_ptr[i],LUstruct->dt);
-                C_BcTree_Nullify(&Llu->UBtree_ptr[i]);
-            }
-        }
-        SUPERLU_FREE(Llu->UBtree_ptr);
-    }
-
-    nb = CEILING(nsupers, grid->nprow);
-    if (Llu->LRtree_ptr != NULL)
-    {
-        for (i = 0; i < nb; ++i)
-        {
-            if (Llu->LRtree_ptr[i].empty_ == NO)
-            {
-                // RdTree_Destroy(Llu->LRtree_ptr[i],LUstruct->dt);
-                C_RdTree_Nullify(&Llu->LRtree_ptr[i]);
-            }
-        }
-        SUPERLU_FREE(Llu->LRtree_ptr);
-    }
-    if (Llu->URtree_ptr != NULL)
-    {
-        for (i = 0; i < nb; ++i)
-        {
-            if (Llu->URtree_ptr[i].empty_ == NO)
-            {
-                // RdTree_Destroy(Llu->URtree_ptr[i],LUstruct->dt);
-                C_RdTree_Nullify(&Llu->URtree_ptr[i]);
-            }
-        }
-        SUPERLU_FREE(Llu->URtree_ptr);
-    }
-#else
-    nsupers = Glu_persist->supno[n - 1] + 1;
-
-    nb = CEILING(nsupers, grid->npcol);
-    for (i = 0; i < nb; ++i)
-    {
-        if (Llu->LBtree_ptr[i].empty_ == NO)
-        {
-            // BcTree_Destroy(Llu->LBtree_ptr[i],LUstruct->dt);
-            C_BcTree_Nullify(&Llu->LBtree_ptr[i]);
-        }
-        if (Llu->UBtree_ptr[i].empty_ == NO)
-        {
-            // BcTree_Destroy(Llu->UBtree_ptr[i],LUstruct->dt);
-            C_BcTree_Nullify(&Llu->UBtree_ptr[i]);
-        }
-    }
-    SUPERLU_FREE(Llu->LBtree_ptr);
-    SUPERLU_FREE(Llu->UBtree_ptr);
-
-    nb = CEILING(nsupers, grid->nprow);
-    for (i = 0; i < nb; ++i)
-    {
-        if (Llu->LRtree_ptr[i].empty_ == NO)
-        {
-            // RdTree_Destroy(Llu->LRtree_ptr[i],LUstruct->dt);
-            C_RdTree_Nullify(&Llu->LRtree_ptr[i]);
-        }
-        if (Llu->URtree_ptr[i].empty_ == NO)
-        {
-            // RdTree_Destroy(Llu->URtree_ptr[i],LUstruct->dt);
-            C_RdTree_Nullify(&Llu->URtree_ptr[i]);
-        }
-    }
-    SUPERLU_FREE(Llu->LRtree_ptr);
-    SUPERLU_FREE(Llu->URtree_ptr);
-#endif
-#if (DEBUGlevel >= 1)
-    CHECK_MALLOC(iam, "Exit dDestroy_Tree()");
-#endif
-}

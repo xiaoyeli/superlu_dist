@@ -429,7 +429,7 @@ main (int argc, char *argv[])
        DEALLOCATE STORAGE.
        ------------------------------------------------------------ */
 
-    dDestroy_LU (n, &(grid.grid2d), &LUstruct);
+    // dDestroy_LU (n, &(grid.grid2d), &LUstruct);
     if ( grid.zscp.Iam == 0 ) { // process layer 0
 
 	PStatPrint (&options, &stat, &(grid.grid2d)); /* Print 2D statistics.*/
