@@ -296,9 +296,17 @@ typedef struct
     double * Uval_buf ;
 } dLUValSubBuf_t;
 
+typedef enum {
+    NOT_IN_GRID, // doesn't belong to my grid
+    IN_GRID_ZERO, // belongsto my grid but doesn't initialized with zeros
+    IN_GRID_AIJ // belongsto my grid and initialized with non-zeros
+} SupernodeToGridMap_t;
+  
+
 
 typedef struct
 {
+    int_t nsupers;
     gEtreeInfo_t gEtreeInfo;
     int_t* iperm_c_supno;
     int_t* myNodeCount;
@@ -309,6 +317,7 @@ typedef struct
     int_t* supernode2treeMap;
     int* supernodeMask;
     dLUValSubBuf_t  *LUvsb;
+    SupernodeToGridMap_t* superGridMap;
     int maxLvl; // YL: store this to avoid the use of grid3d
     
     /* Sherry added the following 3 for variable size batch. 2/17/23 */
@@ -322,9 +331,10 @@ typedef struct {
     int_t *etree;
     Glu_persist_t *Glu_persist;
     dLocalLU_t *Llu;
-    dtrf3Dpartition_t *trf3Dpartition;
+    dtrf3Dpartition_t *trf3Dpart;
     char dt;
 } dLUstruct_t;
+
 
 
 /*-- Data structure for communication during matrix-vector multiplication. */
@@ -436,6 +446,8 @@ int_t scuStatUpdate(
     SCT_t* SCT,
     SuperLUStat_t *stat
     );
+
+  
 
 typedef struct
 {
@@ -654,11 +666,57 @@ extern void dComputeLevelsets(int , int_t , gridinfo_t *,
 			   
 #ifdef GPU_ACC               
 extern void pdconvertU(superlu_dist_options_t *, gridinfo_t *, dLUstruct_t *, SuperLUStat_t *, int);
-extern void dlsum_fmod_inv_gpu_wrap(int_t, int_t, int_t, int_t, double *,double *,int,int, int_t , int_t *, C_Tree  *, C_Tree  *, int_t *, int_t *,long int *, double *, long int *, double *, long int *, int_t *, long int *, int_t *, int *, gridinfo_t *,
-                                    int_t, uint64_t*, uint64_t*, double*, double*, int*, int*, int*,
-                                    int*, int*, int*, int*, int*, int*,int*,
-                                    int*, int*, int*, int*, int*, int*,
-                                    int*, int*, int);
+extern void dlsum_fmod_inv_gpu_wrap
+        (
+                int_t nbcol_loc,    /*number of local supernode columns*/
+                int_t nbrow_loc,    /*number of local supernode rows*/
+                int_t nthread_x,     /*kernel launch parameter*/
+                int_t nthread_y,     /*kernel launch parameter*/
+                double *lsum,    /* Sum of local modifications.                        */
+                double *x,       /* X array (local)                                    */
+                int   nrhs,      /* Number of right-hand sides.                        */
+                int   maxsup,      /* Max supernode size.                        */
+                int_t   nsupers,      /* Number of total supernodes.                        */
+                int *fmod,     /* Modification count for L-solve.                    */
+                C_Tree  *LBtree_ptr,
+                C_Tree  *LRtree_ptr,
+                int_t *ilsum,
+                int_t *Lrowind_bc_dat,
+                long int *Lrowind_bc_offset,
+                double *Lnzval_bc_dat,
+                long int *Lnzval_bc_offset,
+                double *Linv_bc_dat,
+                long int *Linv_bc_offset,
+                int_t *Lindval_loc_bc_dat,
+                long int *Lindval_loc_bc_offset,
+                int_t *xsup,
+                int * bcols_masked,
+                gridinfo_t *grid,
+                int_t maxrecvsz,
+                uint64_t* flag_bc_q,
+                uint64_t* flag_rd_q,
+                double* ready_x,
+                double* ready_lsum,
+                int* my_flag_bc,
+                int* my_flag_rd,
+                int* d_nfrecv,
+                int* h_nfrecv,
+                int* d_status,
+                int* d_colnum,
+                int* d_mynum,
+                int* d_mymaskstart,
+                int* d_mymasklength,
+                int* d_nfrecvmod,
+                int* d_statusmod,
+                int* d_colnummod,
+                int* d_mynummod,
+                int* d_mymaskstartmod,
+                int* d_mymasklengthmod,
+                int* d_recv_cnt,
+                int* d_msgnum,
+                int* d_flag_mod,
+                int procs
+        );
 extern void dlsum_bmod_inv_gpu_wrap(superlu_dist_options_t *, int_t, int_t, int_t, int_t, double *, double *,int,int, int_t , int *, C_Tree  *, C_Tree  *, int_t *, int_t *, int64_t *, double *, int64_t *, double  *, int64_t *, int_t *, int64_t *, int_t *,gridinfo_t *,
                                     int_t, uint64_t*, uint64_t*, double*, double*,
                                     int*, int*, int*, int*,

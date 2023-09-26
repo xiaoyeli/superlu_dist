@@ -72,9 +72,9 @@ set_source_files_properties(superlu_timer.c PROPERTIES COMPILE_FLAGS -O0)
 
 if(enable_double)
   list(APPEND headers superlu_ddefs.h dlustruct_gpu.h)
-
+endif()
 if(TPL_ENABLE_CUDALIB)
-  list(APPEND sources pdgstrs_lsum_cuda.cu)
+  list(APPEND sources pdgstrs_lsum_cuda.cu superlu_gpu_utils.cu dsuperlu_gpu.cu )
   list(APPEND sources TRF3dV100/schurCompUpdate.cu )
   list(APPEND sources TRF3dV100/batch_block_copy.cu)
 endif()
@@ -107,6 +107,10 @@ endif()
     pdsymbfact_distdata.c
     ddistribute.c
     pddistribute.c
+    pddistribute3d.c
+    d3DPartition.c
+    distCheckArray.c 
+    pddistribute-aux3d.c
     pdgstrf.c
     dstatic_schedule.c
     pdgstrf2.c
@@ -140,6 +144,7 @@ if (TPL_ENABLE_CUDALIB)
   TRF3dV100/pdgstrf3d_summit.cpp
     TRF3dV100/dsparseTreeFactor_summit.cpp
     TRF3dV100/dsparseTreeFactorGPU.cpp
+    TRF3dV100/anc25d-GPU.cpp 
     TRF3dV100/lupanels.cpp
     TRF3dV100/lupanels_comm3d.cpp
     TRF3dV100/lupanelsComm3dGPU.cpp
@@ -150,6 +155,9 @@ if (TPL_ENABLE_CUDALIB)
     TRF3dV100/anc25d.cpp 
     TRF3dV100/LUgpuCHandle_interface.cpp
   )
+if (HAVE_CUDA)
+  list(APPEND sources TRF3dV100/schurCompUpdate.cu dsuperlu_gpu.cu )
+  list(APPEND headers TRF3dV100/lupanels_GPU.cuh)
 endif()
 
 if (HAVE_COMBBLAS)

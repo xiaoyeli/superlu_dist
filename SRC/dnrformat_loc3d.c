@@ -313,7 +313,7 @@ void dGatherNRformat_loc3d_allgrid
     if ( Fact == DOFACT ) { /* Factorize from scratch */
 	/* A3d is output. Compute counts from scratch */
 	A3d = SUPERLU_MALLOC(sizeof(NRformat_loc3d));
-	A3d->num_procs_to_send = EMPTY; // No X(2d) -> X(3d) comm. schedule yet
+	A3d->num_procs_to_send = SLU_EMPTY; // No X(2d) -> X(3d) comm. schedule yet
 	A2d = SUPERLU_MALLOC(sizeof(NRformat_loc));
     
 	// find number of nnzs

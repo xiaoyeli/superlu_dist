@@ -334,7 +334,7 @@ struct LUstruct_v100
     SuperLUStat_t *stat;
 
 
-    // Adding more variables for factorization
+    // Adding more variables for factorization 
     dtrf3Dpartition_t *trf3Dpartition;
     int_t maxLvl;
     int maxLeafNodes; /* Sherry added 12/31/22. Computed in LUstruct_v100 constructor */
@@ -396,7 +396,7 @@ struct LUstruct_v100
     /**
     *          C O N / D E S - T R U C T O R S
     */
-    LUstruct_v100(int_t nsupers, int_t ldt_, dtrf3Dpartition_t *trf3Dpartition,
+    LUstruct_v100(int_t nsupers, int_t ldt_, dtrf3Dpartition_t *trf3Dpartition, 
                   dLUstruct_t *LUstruct, gridinfo3d_t *grid3d,
                   SCT_t *SCT_, superlu_dist_options_t *options_, SuperLUStat_t *stat,
                   double thresh_, int *info_);
@@ -517,6 +517,13 @@ struct LUstruct_v100
         gEtreeInfo_t *gEtreeInfo, // global etree info
         int tag_ub);
     int_t dsparseTreeFactorGPUBaseline(
+        sForest_t *sforest,
+        ddiagFactBufs_t **dFBufs, // size maxEtree level
+        gEtreeInfo_t *gEtreeInfo, // global etree info
+        int tag_ub);
+
+    int_t dAncestorFactorBaselineGPU(
+        int_t alvl,
         sForest_t *sforest,
         ddiagFactBufs_t **dFBufs, // size maxEtree level
         gEtreeInfo_t *gEtreeInfo, // global etree info

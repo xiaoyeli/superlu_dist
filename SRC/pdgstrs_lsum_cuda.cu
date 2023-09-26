@@ -805,41 +805,7 @@ __device__ void C_BcTree_forwardMessageSimple_Device(C_Tree* tree,  volatile uin
     for( int idxRecv = 0; idxRecv < tree->destCnt_; ++idxRecv ) {
         int iProc = tree->myDests_[idxRecv];
         nvshmemx_double_put_signal_nbi_block(&ready_x[data_ofset], &ready_x[data_ofset], my_flag_bc[1],(uint64_t*)(flag_bc_q + my_flag_bc[0]), sig, NVSHMEM_SIGNAL_SET,iProc);
-        // //BCsendoffset = my_flag_bc[2];
-        // //double sum=0;
-        // //if (tid==0) {
-        // //    for(int i=0;i<my_flag_bc[3];i++){
-        // //        //printf("(%d), data, %d,%lf\n",mype,i,ready_x[i]);
-        // //        sum+=ready_x[my_flag_bc[2]+i];
-        // //    }
-        // //    printf("Start (%d), forwardDevice, send to %d, signal offset=%d, msgsz=%d,sum=%lf\n",mype,iProc,my_flag_bc[0],my_flag_bc[3],sum);
-        // //}
-        // //__syncthreads();
-        // //if (tid==0)
-        // //    printf("---- Start BC (%d), forwardDevice, send to %d, "
-        // //                  "signal offset=%d, "
-        // //                  "data offset=%d "
-        // //                  "msgsz=%d, maxrecvsz=%d\n",
-        // //                  mype,iProc,
-        // //                  my_flag_bc[0],
-        // //                  data_ofset,
-        // //                  my_flag_bc[1], maxrecvsz);
-        // //__syncthreads();
-        // //nvshmemx_double_put_block(&ready_x[BCsendoffset],ready_x,my_flag_bc[3],iProc);
-        // nvshmemx_double_put_nbi_block(&ready_x[data_ofset], &ready_x[data_ofset], my_flag_bc[1], iProc);
-        // //nvshmem_double_put_nbi(ready_x, &ready_x[0], my_flag_bc[3], iProc);
-        // //nvshmem_double_put(&ready_x[BCsendoffset],ready_x,my_flag_bc[3],iProc);
-        // //nvshmem_quiet();
-        // nvshmem_fence();
-        // //__syncthreads();
-        // if (tid == 0) {
-        //     nvshmemx_signal_op((uint64_t*)(flag_bc_q + my_flag_bc[0]), sig, NVSHMEM_SIGNAL_SET,iProc);
-        //     //nvshmemx_int_signal((int*)(flag_bc_q + my_flag_bc[0]), sig, iProc);
-        //     //nvshmem_quiet();
-        //     //printf("Done (%d), forwardDevice, send to %d, signal offset=%d, data offset=%d, msgsz=%d\n", mype, iProc,
-        //     //       my_flag_bc[0], my_flag_bc[2], my_flag_bc[3]);
-
-        // }
+        
     }
 #endif
 }
@@ -1031,7 +997,7 @@ __global__ void wait_bcrd
                 int* d_msgnum,
                 int* d_flag_mod,
                 double *lsum,    /* Sum of local modifications.                        */
-                int_t *fmod,     /* Modification count for L-solve.                    */
+                int *fmod,     /* Modification count for L-solve.                    */
                 gridinfo_t *grid,
                 int_t *xsup,
                 int_t *ilsum,
@@ -3049,7 +3015,7 @@ void dlsum_fmod_inv_gpu_wrap
                 int   nrhs,      /* Number of right-hand sides.                        */
                 int   maxsup,      /* Max supernode size.                        */
                 int_t   nsupers,      /* Number of total supernodes.                        */
-                int_t *fmod,     /* Modification count for L-solve.                    */
+                int *fmod,     /* Modification count for L-solve.                    */
                 C_Tree  *LBtree_ptr,
                 C_Tree  *LRtree_ptr,
                 int_t *ilsum,

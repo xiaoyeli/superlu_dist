@@ -1968,7 +1968,7 @@ if ( !iam) printf(".. Construct Reduce tree for U: %.2f\t\n", t);
 	SUPERLU_FREE(Lrb_indptr);
 	SUPERLU_FREE(Lrb_valptr);
 	SUPERLU_FREE(dense);
-	LUstruct->trf3Dpartition=NULL;
+	LUstruct->trf3Dpart=NULL;
 
 	k = CEILING( nsupers, grid->nprow );/* Number of local block rows */
 	if ( !(Llu->mod_bit = int32Malloc_dist(k)) )

@@ -73,6 +73,7 @@ at the top-level directory.
 
 #include <stdlib.h>
 #include <stdio.h>
+#include "superlu_defs.h"
 
 int
 sp_ienv_dist(int ispec, superlu_dist_options_t *options)
