@@ -126,11 +126,11 @@ void pzgsmv_init
     }
 
     /* Build SPA to aid global to local translation. */
-    for (i = 0; i < n; ++i) spa[i] = EMPTY;
+    for (i = 0; i < n; ++i) spa[i] = SLU_EMPTY;
     for (i = 0; i < m_loc; ++i) { /* Loop through each row of A */
         for (j = rowptr[i]; j < rowptr[i+1]; ++j) {
 	    jcol = colind[j];
-	    if ( spa[jcol] == EMPTY ) { /* First time see this index */
+	    if ( spa[jcol] == SLU_EMPTY ) { /* First time see this index */
 	        p = row_to_proc[jcol];
 		if ( p == iam ) { /* Local */
 		  /*assert(jcol>=fst_row);*/

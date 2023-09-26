@@ -48,7 +48,7 @@ int_t dIBcast_LPanel
 
     for (int_t pj = 0; pj < Pc; ++pj)
     {
-        if (ToSendR[lk][pj] != EMPTY)
+        if (ToSendR[lk][pj] != SLU_EMPTY)
         {
 
 
@@ -90,7 +90,7 @@ int_t dBcast_LPanel
 
     for (int_t pj = 0; pj < Pc; ++pj)
     {
-        if (ToSendR[lk][pj] != EMPTY)
+        if (ToSendR[lk][pj] != SLU_EMPTY)
         {
 
 

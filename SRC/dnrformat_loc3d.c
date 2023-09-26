@@ -68,7 +68,7 @@ void dGatherNRformat_loc3d
     if ( Fact == DOFACT ) { /* Factorize from scratch */
 	/* A3d is output. Compute counts from scratch */
 	A3d = SUPERLU_MALLOC(sizeof(NRformat_loc3d));
-	A3d->num_procs_to_send = EMPTY; // No X(2d) -> X(3d) comm. schedule yet
+	A3d->num_procs_to_send = SLU_EMPTY; // No X(2d) -> X(3d) comm. schedule yet
 	A2d = SUPERLU_MALLOC(sizeof(NRformat_loc));
     
 	// find number of nnzs
@@ -598,11 +598,11 @@ int dScatter_B3d(NRformat_loc3d *A3d,  // modified
          In the most general case, block rows of B are not of even size, then the
 	 Layer 0 partition may overlap with 3D partition in an arbitrary manner.
 	 For example:
-	                  P0        P1        P2       P3
+	                  P0          P1         P2        P3
              X on grid-0: |___________|__________|_________|________|
 
 	     X on 3D:     |___|____|_____|____|__|______|_____|_____|
-	                  P0  P1   P2    P3   P4   P5     P6   P7  
+	                  P0  P1   P2    P3   P4 P5     P6    P7  
 	*/
 	MPI_Status recv_status;
 	int pxy = grid2d->nprow * grid2d->npcol;
@@ -646,14 +646,14 @@ int dScatter_B3d(NRformat_loc3d *A3d,  // modified
 	    for (p = 0; p < nprocs; ++p) {
 		x_send_counts[p] = 0;
 		x_recv_counts[p] = 0;
-		procs_to_send_list[p] = EMPTY; // (-1)
-		procs_recv_from_list[p] = EMPTY;
+		procs_to_send_list[p] = SLU_EMPTY; // (-1)
+		procs_recv_from_list[p] = SLU_EMPTY;
 	    }
 	    
 	    /* All procs participate */
 	    MPI_Allgather(&(A3d->m_loc), 1, MPI_INT, m_loc_3d_counts, 1,
 			  MPI_INT, grid3d->comm);
-
+	    
 	    /* Layer 0 set up sends info. The other layers have 0 send counts. */
 	    if (grid3d->zscp.Iam == 0) {
 		int x_fst_row = A2d->fst_row; // start from a layer 0 boundary
@@ -695,7 +695,7 @@ int dScatter_B3d(NRformat_loc3d *A3d,  // modified
 	       x_recv_counts matrix */
 	    MPI_Alltoall(x_send_counts, 1, MPI_INT, x_recv_counts, 1, MPI_INT,
 			 grid3d->comm);
-
+	    
 	    j = 0; // tracking number procs to receive from
 	    for (p = 0; p < nprocs; ++p) {
 		if (x_recv_counts[p]) {
@@ -703,7 +703,7 @@ int dScatter_B3d(NRformat_loc3d *A3d,  // modified
 		    recv_count_list[j] = x_recv_counts[p];
 		    src = p;  tag = iam;
 		    ++j;
-#if 0
+#if 0		    
 		    printf("RECV: src %d -> iam %d, x_recv_counts[p] %d, tag %d\n",
 			   src, iam, x_recv_counts[p], tag);
 		    fflush(stdout);

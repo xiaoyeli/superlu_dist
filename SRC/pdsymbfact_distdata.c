@@ -275,7 +275,7 @@ dist_symbLU (superlu_dist_options_t *options,
      THEN ALLOCATE SPACE.
      THIS ACCOUNTS FOR THE FIRST PASS OF L and U.
      ------------------------------------------------------------*/
-  gb = EMPTY;
+  gb = SLU_EMPTY;
   for (i = 0; i < n; i++) {
     if (gb != supno_n[i]) {
       /* a new supernode starts */
@@ -561,6 +561,13 @@ dist_symbLU (superlu_dist_options_t *options,
     else
       nnzToRecv[iam] = nnz_loc_u;
 
+#if ( DEBUGlevel>=1 )
+    if (iam==0) {
+	printf("\t.dist_symbLU [1] memAux %.2f, memRet %.2f (MB)\n", memAux*1e-6, memRet*1e-6);
+	fflush(stdout);
+    }
+#endif
+
     /* ------------------------------------------------------------
        DEALLOCATE TEMPORARY STORAGE.
        -------------------------------------------------------------*/
@@ -649,7 +656,16 @@ dist_symbLU (superlu_dist_options_t *options,
     }
     else
       sendU = FALSE;
-  }
+
+    /* Sherry: this loop goes around twice ? */
+    
+#if ( DEBUGlevel>=1 )
+    if (iam==0) {
+	printf("\t.dist_symbLU [2] end while: memAux %.4f\t memRet %.4f (MB)\n", memAux*1e-6, memRet*1e-6);
+	fflush(stdout);
+    }
+#endif
+ } /* end while sendL || sendU */
 
   /* deallocate memory allocated during symbolic factorization routine */
   if (rcv_luind != NULL) {
@@ -677,6 +693,14 @@ dist_symbLU (superlu_dist_options_t *options,
   *p_xlsub = xlsub_n; *p_lsub = lsub_n;
   *p_xusub = xusub_n; *p_usub = usub_n;
 
+#if ( DEBUGlevel>=1 )
+    if (iam==0) {
+	printf("\t.dist_symbLU [3] before return: memAux %.4f\t memRet %.4f (MB)\n", memAux*1e-6, memRet*1e-6);
+	fflush(stdout);
+    }
+#endif
+
+    /* It is confirmed that memAux is 0 now */
 #if ( DEBUGlevel>=1 )
   CHECK_MALLOC(iam, "Exit dist_symbLU()");
 #endif
@@ -1441,7 +1465,7 @@ double *dense, *dense_col; /* SPA */
   }
   memNLU += j*iword;
 
-  for (i = 0; i < j; ++i) index1[i] = EMPTY;
+  for (i = 0; i < j; ++i) index1[i] = SLU_EMPTY;
   for (i = 0,j = 0; i < k; ++i, j += grid->npcol) ToSendR[i] = &index1[j];
 
   /* Auxiliary arrays used to set up L and U block data structures.
@@ -1493,6 +1517,12 @@ double *dense, *dense_col; /* SPA */
 
 
   memNLU += nsupers_i*sizeof(double*) + nsupers_i*sizeof(int_t*);
+#if ( DEBUGlevel>=1 )  
+  if (iam==0) {
+      printf("\t.ddist_psymbtonum [1] memDist %.4f, memNLU %.4f\n", memDist*1e-6, memNLU*1e-6);
+  }
+#endif
+
   Unzval_br_ptr[nsupers_i-1] = NULL;
   Ufstnz_br_ptr[nsupers_i-1] = NULL;
 
@@ -1532,7 +1562,13 @@ double *dense, *dense_col; /* SPA */
   }
   /* ------------------------------------------------ */
   memNLU += 2*nsupers_i*iword +
-      SUPERLU_MAX(ldaspa, ldaspa_j)*sp_ienv_dist(3, options)*dword;
+    SUPERLU_MAX(ldaspa, ldaspa_j)*sp_ienv_dist(3, options)*dword;
+#if ( DEBUGlevel>=1 )    
+  if (iam==0) {
+      printf("\t.ddist_psymbtonum [[2]] memDist %.2f, memNLU %.2f [+ dense SPA]\n", memDist*1e-6, memNLU*1e-6);
+      fflush(stdout);
+  }
+#endif
 
   /* Pointers to the beginning of each block column of L. */
   if ( !(Lnzval_bc_ptr =
@@ -1598,6 +1634,13 @@ double *dense, *dense_col; /* SPA */
   memTRS += nsupers_j*sizeof(int_t*) + 2.0*nsupers_j*sizeof(double*) + nsupers_j*iword;  //acount for Lindval_loc_bc_ptr, Unnz, Linv_bc_ptr,Uinv_bc_ptr
 
   memNLU += nsupers_j * sizeof(double*) + nsupers_j * sizeof(int_t*)+ nsupers_j * sizeof(int_t*);
+#if ( DEBUGlevel>=1 )  
+  if (iam==0) {
+      printf("\t.ddist_psymbtonum [[3]] memNLU %.2f, memTRS %.2f\n", memNLU*1e-6, memTRS*1e-6);
+      fflush(stdout);
+  }
+#endif
+
   Lnzval_bc_ptr[nsupers_j-1] = NULL;
   Lrowind_bc_ptr[nsupers_j-1] = NULL;
   Linv_bc_ptr[nsupers_j-1] = NULL;
@@ -1614,7 +1657,7 @@ double *dense, *dense_col; /* SPA */
     fprintf(stderr, "Malloc fails for fsendx_plist[0]");
     return (memDist + memNLU + memTRS);
   }
-  for (i = 0; i < len; ++i) index1[i] = EMPTY;
+  for (i = 0; i < len; ++i) index1[i] = SLU_EMPTY;
   for (i = 0, j = 0; i < nsupers_j; ++i, j += grid->nprow)
     fsendx_plist[i] = &index1[j];
   if ( !(bsendx_plist = (int **) SUPERLU_MALLOC(nsupers_j*sizeof(int*))) ) {
@@ -1625,11 +1668,17 @@ double *dense, *dense_col; /* SPA */
     fprintf(stderr, "Malloc fails for bsendx_plist[0]");
     return (memDist + memNLU + memTRS);
   }
-  for (i = 0; i < len; ++i) index1[i] = EMPTY;
+  for (i = 0; i < len; ++i) index1[i] = SLU_EMPTY;
   for (i = 0, j = 0; i < nsupers_j; ++i, j += grid->nprow)
     bsendx_plist[i] = &index1[j];
   /* -------------------------------------------------------------- */
   memNLU += 2*nsupers_j*sizeof(int_t*) + 2*len*iword;
+#if ( DEBUGlevel>=1 )
+  if (iam==0) {
+      printf("\t.ddist_psymbtonum [[4]] memNLU %.2f, memTRS %.2f\n", memNLU*1e-6, memTRS*1e-6);
+      fflush(stdout);
+  }
+#endif
 
   /*------------------------------------------------------------
     PROPAGATE ROW SUBSCRIPTS AND VALUES OF A INTO L AND U BLOCKS.
@@ -1753,6 +1802,15 @@ double *dense, *dense_col; /* SPA */
 	}
 	// Unzval_br_offset[ljb_i]=len;
 	// Unzval_br_cnt += Unzval_br_offset[ljb_i];
+	
+	memNLU += (len1+1)*iword + len*dword;
+#if ( DEBUGlevel>=1 )	
+	if (iam==0 && (jb %10000 == 0) ) {
+	    printf("\t.ddist_psymbtonum [jb %d setup-U] memNLU %.4f, memTRS %.4f\n",
+	    			(int) jb, memNLU*1e-6, memTRS*1e-6);
+      	    fflush(stdout);
+      	}
+#endif
 
 	memNLU += (len1+1)*iword + len*dword;
 	uval = Unzval_br_ptr[ljb_i];
@@ -1851,7 +1909,7 @@ double *dense, *dense_col; /* SPA */
 	irow = lsub[i];
 	gb = BlockNum( irow ); /* Global block number */
 	pr = PROW( gb, grid ); /* Process row owning this block */
-	if ( pr != jbrow && fsendx_plist[ljb_j][pr] == EMPTY &&
+	if ( pr != jbrow && fsendx_plist[ljb_j][pr] == SLU_EMPTY &&
 	     myrow == jbrow) {
 	  fsendx_plist[ljb_j][pr] = YES;
 	  ++nfsendx;
@@ -1882,12 +1940,12 @@ double *dense, *dense_col; /* SPA */
 	   index[] and nzval[]. */
 	/* If I am the owner of the diagonal block, order it first in LUb_number.
 	   Necessary for SuperLU_DIST routines */
-	kseen = EMPTY;
+	kseen = SLU_EMPTY;
 	for (j = 0; j < nrbl; j++) {
 	  if (LUb_number[j] == jb)
 	    kseen = j;
 	}
-	if (kseen != EMPTY && kseen != 0) {
+	if (kseen != SLU_EMPTY && kseen != 0) {
 	  LUb_number[kseen] = LUb_number[0];
 	  LUb_number[0] = jb;
 	}
@@ -2050,6 +2108,13 @@ double *dense, *dense_col; /* SPA */
   } /* for jb ... */
 
   SUPERLU_FREE(ilsum_j);
+#if ( DEBUGlevel>=1 )
+  if (iam==0) {
+      printf("\t.ddist_psymbtonum [[5]] memNLU %.2f, memTRS %.2f\n", memNLU*1e-6, memTRS*1e-6);
+      fflush(stdout);
+  }
+#endif
+
   SUPERLU_FREE(Urb_marker);
   SUPERLU_FREE(LUb_length);
   SUPERLU_FREE(LUb_indptr);
@@ -2155,7 +2220,7 @@ double *dense, *dense_col; /* SPA */
     if (mycol == jbcol) {
       for (i = 0, j = ptrToRecv[p]; i < grid->npcol; i++, j++)
 	ToSendR[ljb_j][i] = recvBuf[j];
-      ToSendR[ljb_j][mycol] = EMPTY;
+      ToSendR[ljb_j][mycol] = SLU_EMPTY;
     }
     ptrToRecv[p] += grid->npcol;
   }
@@ -2173,13 +2238,13 @@ double *dense, *dense_col; /* SPA */
       if (myrow == jbrow ) {
 	for (k = ljb_j * grid->nprow; k < (ljb_j+1) * grid->nprow; k++) {
 	  (*bsendx_plist)[k] = recvBuf[k];
-	  if ((*bsendx_plist)[k] != EMPTY)
+	  if ((*bsendx_plist)[k] != SLU_EMPTY)
 	    nbsendx ++;
 	}
       }
       else {
 	for (k = ljb_j * grid->nprow; k < (ljb_j+1) * grid->nprow; k++)
-	  (*bsendx_plist)[k] = EMPTY;
+	  (*bsendx_plist)[k] = SLU_EMPTY;
       }
     }
   }
@@ -2582,7 +2647,7 @@ double *dense, *dense_col; /* SPA */
 					if(Root==myrow){
 						rank_cnt_ref=1;
 						for (j = 0; j < grid->nprow; ++j) {
-							if ( fsendx_plist[ljb][j] != EMPTY ) {
+							if ( fsendx_plist[ljb][j] != SLU_EMPTY ) {
 								++rank_cnt_ref;
 							}
 						}
@@ -2907,7 +2972,7 @@ double *dense, *dense_col; /* SPA */
 					for (j = 0; j < grid->nprow; ++j) {
 						// printf("ljb %5d j %5d nprow %5d\n",ljb,j,grid->nprow);
 						// fflush(stdout);
-						if ( bsendx_plist[ljb][j] != EMPTY ) {
+						if ( bsendx_plist[ljb][j] != SLU_EMPTY ) {
 							++rank_cnt_ref;
 						}
 					}
@@ -3199,5 +3264,5 @@ double *dense, *dense_col; /* SPA */
 #endif
 
   return (- (memDist+memNLU));
-} /* ddist_psymbtonum */
+} /* end ddist_psymbtonum */
 

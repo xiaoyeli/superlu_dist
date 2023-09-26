@@ -1191,9 +1191,9 @@ int dSolveInit(superlu_dist_options_t *options, SuperMatrix *A,
     itemp[procs] = n;
     for (p = 0; p < procs; ++p) {
         j = itemp[p];
-	if ( j != EMPTY ) {
+	if ( j != SLU_EMPTY ) {
 	    k = itemp[p+1];
-	    if ( k == EMPTY ) k = n;
+	    if ( k == SLU_EMPTY ) k = n;
 	    for (i = j ; i < k; ++i) row_to_proc[i] = p;
 	}
     }

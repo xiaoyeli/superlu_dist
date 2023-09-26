@@ -207,7 +207,6 @@ int main(int argc, char *argv[])
     }
     
     PStatPrint(&options, &stat, &grid);        /* Print the statistics. */
-    PStatFree(&stat);
 
     /* ------------------------------------------------------------
        2. NOW SOLVE ANOTHER SYSTEM WITH THE SAME A BUT DIFFERENT
@@ -215,7 +214,7 @@ int main(int argc, char *argv[])
        LUSTRUCT OBTAINED FROM A PREVIOUS FATORIZATION.
        ------------------------------------------------------------*/
     options.Fact = FACTORED; /* Indicate the factored form of A is supplied. */
-    PStatInit(&stat); /* Initialize the statistics variables. */
+    PStatClear(&stat); /* clear the statistics variables. */
 
     nrhs = 1;
     psgssvx(&options, &A, &ScalePermstruct, b1, ldb, nrhs, &grid,
@@ -233,7 +232,6 @@ int main(int argc, char *argv[])
     }
     
     PStatPrint(&options, &stat, &grid);        /* Print the statistics. */
-    PStatFree(&stat);
 
     /* ------------------------------------------------------------
        3. SOLVE ANOTHER SYSTEM WITH THE SAME A BUT DIFFERENT
@@ -241,7 +239,7 @@ int main(int argc, char *argv[])
        FACTORS IN LUSTRUCT OBTAINED FROM A PREVIOUS FATORIZATION.
        ------------------------------------------------------------*/
     options.Fact = FACTORED; /* Indicate the factored form of A is supplied. */
-    PStatInit(&stat); /* Initialize the statistics variables. */
+    PStatClear(&stat); /* clear the statistics variables. */
 
     nrhs = 3;
     
@@ -270,11 +268,11 @@ int main(int argc, char *argv[])
     }
     
     PStatPrint(&options, &stat, &grid);        /* Print the statistics. */
-    PStatFree(&stat);
 
     /* ------------------------------------------------------------
        DEALLOCATE STORAGE.
        ------------------------------------------------------------*/
+    PStatFree(&stat);
     Destroy_CompRowLoc_Matrix_dist(&A);
     sScalePermstructFree(&ScalePermstruct);   
     sDestroy_LU(n, &grid, &LUstruct);

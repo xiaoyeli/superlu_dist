@@ -335,6 +335,20 @@ void PStatInit(SuperLUStat_t *stat)
     stat->gpu_buffer = 0.0;
 }
 
+void PStatClear(SuperLUStat_t *stat)
+{
+    register int_t i;
+
+    for (i = 0; i < NPHASES; ++i)
+    {
+        stat->utime[i] = 0.;
+        stat->ops[i] = 0.;
+    }
+    stat->TinyPivots = stat->RefineSteps = 0;
+    stat->current_buffer = stat->peak_buffer = 0.0;
+    stat->gpu_buffer = 0.0;
+}
+
 void PStatPrint(superlu_dist_options_t *options, SuperLUStat_t *stat, gridinfo_t *grid)
 {
     double *utime = stat->utime;
@@ -611,7 +625,7 @@ void super_stats_dist(int_t nsuper, int_t *xsup)
     }
 }
 
-/*! \brief Check whether repfnz[] == EMPTY after reset.
+/*! \brief Check whether repfnz[] == SLU_EMPTY after reset.
  */
 void check_repfnz_dist(int_t n, int_t w, int_t jcol, int_t *repfnz)
 {
@@ -619,7 +633,7 @@ void check_repfnz_dist(int_t n, int_t w, int_t jcol, int_t *repfnz)
 
     for (jj = jcol; jj < jcol + w; jj++)
         for (k = 0; k < n; k++)
-            if (repfnz[(jj - jcol) * n + k] != EMPTY)
+            if (repfnz[(jj - jcol) * n + k] != SLU_EMPTY)
             {
                 fprintf(stderr, "col %d, repfnz_col[%d] = %d\n",
                         jj, k, (int)repfnz[(jj - jcol) * n + k]);

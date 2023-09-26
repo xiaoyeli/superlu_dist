@@ -20,6 +20,7 @@
 //#include <thrust/system/cuda/detail/cub/cub.cuh>
 
 #include "zlustruct_gpu.h"
+
 #ifdef HAVE_HIP
 #include "superlu_gpu_utils.hip.cpp"
 #endif
@@ -807,8 +808,10 @@ int zfree_LUstruct_gpu (
 
 	checkGPU(gpuFree(A_gpu->local_l_blk_infoVec));
 	checkGPU(gpuFree(A_gpu->local_l_blk_infoPtr));
-	checkGPU(gpuFree(A_gpu->jib_lookupVec));
-	checkGPU(gpuFree(A_gpu->jib_lookupPtr));
+#if 0	
+	checkGPU(gpuFree(A_gpu->jib_lookupVec)); // not used
+	checkGPU(gpuFree(A_gpu->jib_lookupPtr)); // not used
+#endif	
 	checkGPU(gpuFree(A_gpu->local_u_blk_infoVec));
 	checkGPU(gpuFree(A_gpu->local_u_blk_infoPtr));
 
@@ -874,10 +877,11 @@ int zinitSluGPU3D_t(
     
     if (grid3d->iam == 0)
     {
+#if ( PRNTlevel>=1 )
 	printf("dinitSluGPU3D_t: Using hardware acceleration, with %d gpu streams \n", sluGPU->nGPUStreams);
 	fflush(stdout);
 	printf("dinitSluGPU3D_t: Using %d threads per block for scatter \n", SCATTER_THREAD_BLOCK_SIZE);
-	
+#endif	
 	if ( MAX_SUPER_SIZE < ldt )
 	{
 		ABORT("MAX_SUPER_SIZE smaller than requested NSUP");
