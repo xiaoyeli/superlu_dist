@@ -21,6 +21,6 @@
 /* enable 64bit index mode */
 #cmakedefine XSDK_INDEX_SIZE @XSDK_INDEX_SIZE@
 
-#if (XSDK_INDEX_SIZE == 64)
+#if defined(XSDK_INDEX_SIZE) && (XSDK_INDEX_SIZE == 64)
 #define _LONGINT 1
 #endif

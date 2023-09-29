@@ -65,7 +65,7 @@ at the top-level directory.
 // #include <ittnotify.h>
 // #define USE_VTUNE
 // #endif
-#if ( VTUNE>=1 )
+#if defined(VTUNE) && VTUNE>=1
 #include <ittnotify.h>			 
 #endif
 
@@ -281,7 +281,7 @@ static const int RD_U=4;	/* MPI tag for lsum in U-solve*/
 #define SuperLU_timer_  SuperLU_timer_dist_
 #define LOG2(x)   (log10((double) x) / log10(2.0))
 
-#if ( VAMPIR>=1 ) 
+#if defined(VAMPIR) && VAMPIR>=1
 #define VT_TRACEON    VT_traceon()
 #define VT_TRACEOFF   VT_traceoff()
 #else
@@ -291,7 +291,7 @@ static const int RD_U=4;	/* MPI tag for lsum in U-solve*/
 
 /* Support Windows */
 #ifndef SUPERLU_DIST_EXPORT
-#if MSVC
+#if defined(MSVC) && MSVC
 #ifdef SUPERLU_DIST_EXPORTS
 #define SUPERLU_DIST_EXPORT __declspec(dllexport)
 #else
