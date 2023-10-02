@@ -111,12 +111,8 @@ if(enable_double)
     dtrfCommWrapper.c
     dsuperlu_blas.c
   )
-if (TPL_ENABLE_CUDALIB OR TPL_ENABLE_HIPLIB) # OR TPL_ENABLE_SYCLLIB)
-  set(GPU_SOURCES pdgstrs_lsum_cuda.cu superlu_gpu_utils.cu dsuperlu_gpu.cu)
-endif ()
-
 if (TPL_ENABLE_CUDALIB OR TPL_ENABLE_HIPLIB OR TPL_ENABLE_SYCLLIB)
-  set(GPU_SOURCES dsuperlu_gpu.c)
+  set(GPU_SOURCES pdgstrs_lsum_gpu.c superlu_gpu_utils.c dsuperlu_gpu.c)
 endif ()
 
 if (HAVE_COMBBLAS)
@@ -184,9 +180,9 @@ if(enable_single)
     psgsmv_d2.c
     psgsequb.c
   )
-if (TPL_ENABLE_CUDALIB)
-  list(APPEND sources ssuperlu_gpu.cu)
-endif()
+if (TPL_ENABLE_CUDALIB OR TPL_ENABLE_HIPLIB OR TPL_ENABLE_SYCLLIB)
+    list(APPEND GPU_SOURCES ssuperlu_gpu.c)
+endif ()
 if (HAVE_COMBBLAS)
    if (enable_double)
        list(APPEND sources s_c2cpp_GetHWPM.cpp)
@@ -251,9 +247,9 @@ if(enable_complex16)
     ztrfCommWrapper.c
     zsuperlu_blas.c
   )
-if (TPL_ENABLE_CUDALIB)
-    list(APPEND GPU_SOURCES zsuperlu_gpu.cu)
-endif()
+if (TPL_ENABLE_CUDALIB OR TPL_ENABLE_HIPLIB OR TPL_ENABLE_SYCLLIB)
+    list(APPEND GPU_SOURCES zsuperlu_gpu.c)
+endif ()
 if (HAVE_COMBBLAS)
     list(APPEND SOURCES z_c2cpp_GetHWPM.cpp zHWPM_CombBLAS.hpp)
 endif()
@@ -287,7 +283,7 @@ else()
   endif()
 endif()
 
-target_sources(superlu_dist PRIVATE ${SOURCES} ${HEADERS})
+target_sources(superlu_dist PRIVATE ${SOURCES} ${GPU_SOURCES} ${HEADERS})
 set(targets superlu_dist)
 
 if (TPL_ENABLE_CUDALIB)
@@ -310,7 +306,7 @@ endif (TPL_ENABLE_SYCLLIB)
 
 if (BUILD_SHARED_LIBS AND BUILD_STATIC_LIBS)
   # build both shared and static libs
-  target_sources(superlu_dist-static PRIVATE ${SOURCES} ${HEADERS})
+  target_sources(superlu_dist-static PRIVATE ${SOURCES} ${GPU_SOURCES} ${HEADERS})
   list(APPEND targets superlu_dist-static)
 endif()
 
@@ -348,6 +344,10 @@ endif()
 
 if(HIP_FOUND)
   target_link_libraries( superlu_dist PUBLIC hip::device roc::hipblas roc::rocblas )
+endif()
+
+if(TPL_ENABLE_SYCLLIB)
+  target_link_libraries( superlu_dist PUBLIC "-fsycl -fsycl-targets=spir64_gen -Xsycl-target-backend \"-device 12.60.7\"" )
 endif()
 
 # This is recommended by modern cmake:

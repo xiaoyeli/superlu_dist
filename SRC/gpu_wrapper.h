@@ -38,6 +38,8 @@ at the top-level directory.
 #define gpuSuccess cudaSuccess
 #define gpuGetErrorString cudaGetErrorString
 #define gpuMalloc cudaMalloc
+#define gpuHostMalloc cudaHostAlloc
+#define gpuHostMallocDefault cudaHostAllocDefault
 #define gpuMallocManaged cudaMallocManaged
 #define gpuStream_t cudaStream_t
 #define gpuStreamCreate cudaStreamCreate
@@ -97,17 +99,17 @@ at the top-level directory.
 #define  gridDim_y gridDim.y
 
 
- #define gpublasCheckErrors(fn) \
-	 do { \
-		 gpublasStatus_t __err = fn; \
-		 if (__err != GPUBLAS_STATUS_SUCCESS) { \
-			 fprintf(stderr, "Fatal gpublas error: %d (at %s:%d)\n", \
-				 (int)(__err), \
-				 __FILE__, __LINE__); \
-			 fprintf(stderr, "*** FAILED - ABORTING\n"); \
-			 exit(1); \
-		 } \
-	 } while(0);
+#define gpublasCheckErrors(fn)                                          \
+do {                                                                    \
+        gpublasStatus_t __err = fn;                                     \
+        if (__err != GPUBLAS_STATUS_SUCCESS) {                          \
+                fprintf(stderr, "Fatal gpublas error: %d (at %s:%d)n",  \
+                        (int)(__err),                                   \
+                        __FILE__, __LINE__);                            \
+                fprintf(stderr, "*** FAILED - ABORTINGn");              \
+                exit(1);                                                \
+        }                                                               \
+} while(0);
 
 
 #elif defined(HAVE_HIP)
@@ -129,6 +131,8 @@ at the top-level directory.
 #define gpuSuccess hipSuccess
 #define gpuGetErrorString hipGetErrorString
 #define gpuMalloc hipMalloc
+#define gpuHostMalloc hipHostMalloc
+#define gpuHostMallocDefault hipHostMallocDefault
 #define gpuMallocManaged hipMallocManaged
 #define gpuStream_t hipStream_t
 #define gpuStreamCreate hipStreamCreate
@@ -188,58 +192,91 @@ at the top-level directory.
 #define  gridDim_y hipGridDim_y
 
 
- #define gpublasCheckErrors(fn) \
-	 do { \
-		 gpublasStatus_t __err = fn; \
-		 if (__err != GPUBLAS_STATUS_SUCCESS) { \
-			 fprintf(stderr, "Fatal gpublas error: %d (at %s:%d)\n", \
-				 (int)(__err), \
-				 __FILE__, __LINE__); \
-			 fprintf(stderr, "*** FAILED - ABORTING\n"); \
-			 exit(1); \
-		 } \
-	 } while(0);
+#define gpublasCheckErrors(fn)                                          \
+do {                                                                    \
+        gpublasStatus_t __err = fn;                                     \
+        if (__err != GPUBLAS_STATUS_SUCCESS) {                          \
+                fprintf(stderr, "Fatal gpublas error: %d (at %s:%d)n",  \
+                        (int)(__err),                                   \
+                        __FILE__, __LINE__);                            \
+                fprintf(stderr, "*** FAILED - ABORTINGn");              \
+                exit(1);                                                \
+        }                                                               \
+} while(0);
 
 
 #elif defined(HAVE_SYCL)
 
 #include "sycl_device.hpp"
-#include "syclmemcpy2D.hpp"
 #include <oneapi/mkl/blas.hpp>
 
 #define __global__
 #define __device__
+#define checkGPUErrors
 #define gpuMemcpyHostToDevice
 #define gpuMemcpyDeviceToHost
+using gpuDoubleComplex = std::complex<double>;
+#define threadIdx_x (item.get_local_id(2))
+#define threadIdx_y (item.get_local_id(1))
+#define blockIdx_x (item.get_group(2))
+#define blockIdx_y (item.get_group(1))
+#define blockDim_x (item.get_local_range().get(2))
+#define blockDim_y (item.get_local_range().get(1))
+#define gridDim_x (item.get_group_range(2))
+#define gridDim_y (item.get_group_range(1))
+#define atomicAdd(addr,val) sycl::atomic_ref<double, sycl::memory_order::relaxed, sycl::memory_scope::device, sycl::access::address_space::global_space>(*addr).fetch_add( val )
+#define atomicSub(addr,val) sycl::atomic_ref<int, sycl::memory_order::relaxed, sycl::memory_scope::device, sycl::access::address_space::global_space>(*addr).fetch_sub( val )
+#define __threadfence() (sycl::atomic_fence(sycl::memory_order::seq_cst, sycl::memory_scope::device))
+#define __syncthreads() (sycl::group_barrier(sycl::ext::oneapi::experimental::this_group<3>()))
 
 #define gpuGetDeviceCount syclGetDeviceCount
 #define gpuSetDevice syclSetDevice
 #define gpuGetDevice syclGetDevice
-#define gpuMemcpy(dst, src, size, kind) sycl_get_queue()->memcpy(dst, src, size).wait();
-#define gpuDeviceSynchronize sycl_get_queue()->wait();
-#define gpuMemcpyAsync(dst, src, count, kind, stream) stream.memcpy(dst, src, size)
-#define gpuMemcpy2DAsync(dst, dpitch, src, spitch, width, height, kind, stream) syclMemcpy2DAsync(stream, dst, dpitch, src, spitch, width, height)
-#define gpuMallocHost() std::malloc()
-#define gpuFree(ptr) sycl::free(ptr, *sycl_get_queue())
+#define gpuDeviceReset() { }
 
+#define gpuMemcpy(dst, src, size, kind) (sycl_get_queue()->memcpy(dst, src, size).wait())
+#define gpuDeviceSynchronize() (sycl_get_queue()->wait())
+#define gpuMemcpyAsync(dst, src, count, kind, stream) (stream->memcpy(dst, src, count))
+#define gpuMemset(ptr, val, size) (sycl_get_queue()->memset(ptr, val, size).wait())
+#define gpuMemGetInfo(free, total) do {                                 \
+    *free = sycl_get_queue()->get_device().get_info<sycl::ext::intel::info::device::free_memory>(); \
+    *total = sycl_get_queue()->get_device().get_info<sycl::info::device::global_mem_size>(); \
+  } while(0)
+#define gpuMemcpy2DAsync(dst, dpitch, src, spitch, width, height, kind, stream) (stream->ext_oneapi_memcpy2d(dst, dpitch, src, spitch, width, height))
+#define gpuMalloc(ptr, size) ((*ptr) = (void*)sycl::malloc_device((size), *sycl_get_queue()))
+#define gpuMallocHost(ptr, size) ((*ptr) = (void*)sycl::malloc_host((size), *sycl_get_queue()))
+#define gpuFree(ptr) (sycl::free(ptr, sycl_get_queue()->get_context()))
+#define gpuStreamCreate(stream) do {                                    \
+    *stream = new sycl::queue( sycl_get_queue()->get_context(), sycl_get_queue()->get_device(), asyncHandler, sycl::property_list{sycl::property::queue::in_order{}} ); \
+} while(0)
+#define gpuStreamDestroy(stream) (delete stream)
+#define gpuStreamSynchronize(stream) (stream->wait())
+#define gpuFreeHost(ptr) (delete ptr)
+#define gpuEventCreate(syclevent) do { \
+ *syclevent = new sycl::event{};   \
+} while(0)
+#define gpuEventDestroy(event) (delete event)
+#define gpuEventRecord(event, stream) (*event = stream->ext_oneapi_submit_barrier())
 
-#define gpuStream_t sycl::queue
-#define gpuEvent_t sycl::event
+using gpuStream_t = sycl::queue*;
+using gpuEvent_t = sycl::event*;
+#define GPUBLAS_OP_N oneapi::mkl::transpose::nontrans
 
+#define checkGPUblas(fn)
 #define checkGPU(fn)
 
 #define gpublasCheckErrors(fn)						\
-  do {									\
-    try {								\
-      FN;								\
-    } catch (oneapi::mkl::exception const &ex) {			\
-      std::stringstream msg;						\
-      msg << "Fatal oneMKL error: " << __FILE__ << " : " << __LINE__	\
-	  << std::endl;							\
-      throw(std::runtime_error(ex.what()));				\
-      exit(1);								\
-    }									\
-  } while(0);
+do {									\
+        try {								\
+                fn;                                                     \
+        } catch (oneapi::mkl::exception const &ex) {			\
+                std::stringstream msg;                                  \
+                msg << "Fatal oneMKL error: " << __FILE__ << " : " << __LINE__ \
+                    << std::endl;                                       \
+                throw(std::runtime_error(ex.what()));                   \
+                exit(1);                                                \
+        }                                                               \
+} while(0);
 
 #endif // HAVE_CUDA
 

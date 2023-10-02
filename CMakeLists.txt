@@ -193,25 +193,25 @@ if (TPL_ENABLE_SYCLLIB)   ## want to use SYCL
   unset(CMAKE_CXX_STANDARD)
   set(CMAKE_CXX_STANDARD 17)
 
-  # set SYCL flags for AoT compilation for ATS, PVC devices
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-expected-file-type -fsycl -sycl-std=2020 -fsycl-unnamed-lambda -fsycl-device-code-split=per_kernel -fsycl-targets=spir64_gen -Xsycl-target-backend \"-device 12.6.70\"")
+  # set SYCL flags
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-expected-file-type -fsycl -sycl-std=2020 -fsycl-unnamed-lambda -fsycl-device-code-split=per_kernel")
 
   message("-- Enabled support for SYCL.")
 
   # Note: 06/01/22, Fortran is turned off because of linker issues with CXX
   # TODO
   set(XSDK_ENABLE_Fortran OFF)
-  
+
   set(HAVE_SYCL TRUE)
 
   set(HAVE_DPCPP FALSE)
   if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "IntelLLVM")
-      message("  -- Enabled (additional) support for DPCPP.")
+      message("  -- Enabled (experimental) support for DPCPP.")
       set(HAVE_DPCPP TRUE)
   endif ()
 
   #include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/FindoneMKL.cmake)
-   
+
   if (BUILD_SHARED_LIBS)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC")
   endif (BUILD_SHARED_LIBS)
@@ -392,7 +392,7 @@ FOREACH(_lib ${_c_libs})
   set(EXTRA_LIB "-l${_lib} ${EXTRA_LIB}")
 ENDFOREACH()
 string (REPLACE ";" " " EXTRA_LIB_STR "${EXTRA_LIB}")
-set(EXTRA_LIB_EXPORT ${EXTRA_LIB_STR}) 
+set(EXTRA_LIB_EXPORT ${EXTRA_LIB_STR})
 message("-- EXTRA_LIB_EXPORT='${EXTRA_LIB_EXPORT}'")
 
 #---------------------- Additional Fortran linker library ---------
@@ -404,7 +404,7 @@ if (XSDK_ENABLE_Fortran)
    string (REPLACE ";" " " EXTRA_FLIB_STR "${EXTRA_FLIB}")
    set(EXTRA_FLIB_EXPORT ${EXTRA_FLIB_STR})
    message("-- EXTRA_FLIB_EXPORT='${EXTRA_FLIB_EXPORT}'")
-   
+
    if (BUILD_SHARED_LIBS)
       message("-- superlu_dist_fortran will be built as a dynamic library.")
       set(PROJECT_NAME_LIB_FORTRAN libsuperlu_dist_fortran.so)

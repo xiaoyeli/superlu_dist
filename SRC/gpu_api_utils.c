@@ -10,7 +10,7 @@ at the top-level directory.
 */
 #include "superlu_defs.h"
 
-#ifdef GPU_ACC  // enable CUDA
+#ifdef GPU_ACC  // enable CUDA, HIP, SYCL
 
 #include <stdio.h>
 #include "gpu_api_utils.h"
@@ -146,15 +146,15 @@ gpublasStatus_t checkGPUblas(gpublasStatus_t result)
 
 gpublasHandle_t create_handle ()
 {
-       gpublasHandle_t handle;
-       checkGPUblas(gpublasCreate(&handle));
-       return handle;
- }
+    gpublasHandle_t handle;
+    checkGPUblas(gpublasCreate(&handle));
+    return handle;
+}
 
- void destroy_handle (gpublasHandle_t handle)
- {
-      checkGPUblas(gpublasDestroy(handle));
- }
+void destroy_handle (gpublasHandle_t handle)
+{
+    checkGPUblas(gpublasDestroy(handle));
+}
 
 void printGPUStats(int nsupers, SuperLUStat_t *stat, gridinfo3d_t *grid3d )
 {

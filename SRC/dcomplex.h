@@ -30,7 +30,7 @@ at the top-level directory.
 #if defined(HAVE_SYCL)
 #include <complex>
 
-typedef std::complex<double> doublecomplex;
+using doublecomplex = std::complex<double>;
 
 /*
  * These variables will be defined to be MPI datatypes for complex
