@@ -425,7 +425,7 @@ psgsrfs_d2(superlu_dist_options_t *options,
 	    psgsmv_d2(0, A, grid, gsmv_comm, y_col, ax);
 #endif
 
-	    /* Compute residual, stored in resid[] in SINGLE */
+	    /* Compute residual in double, stored in resid[] in SINGLE */
 	    for (i = 0; i < m_loc; ++i) resid[i] = B_col[i] - ax[i];
 
 	    /* Save a copy of resid for BERR calculation */

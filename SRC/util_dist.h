@@ -71,7 +71,7 @@ at the top-level directory.
 /* 
  * Constants 
  */
-#define EMPTY	(-1)
+#define SLU_EMPTY	(-1)
 #ifndef FALSE
 #define FALSE	(0)
 #endif

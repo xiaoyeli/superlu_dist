@@ -382,7 +382,7 @@ int_t dIBcastRecvLPanel(
     MPI_Request *recv_req ,
     int_t* Lsub_buf,
     double* Lval_buf,
-    int_t * factored,
+    int * factored,
     gridinfo_t *grid,
     dLUstruct_t *LUstruct,
     SCT_t *SCT,
@@ -438,7 +438,7 @@ int_t dIBcastRecvLPanel(
     factored[k] = 0;
 
     return 0;
-}
+} /* dIBcastRecvLPanel */
 
 int_t dIBcastRecvUPanel(int_t k, int_t k0, int* msgcnt,
     			     MPI_Request *send_requ,

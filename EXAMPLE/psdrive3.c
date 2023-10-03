@@ -217,7 +217,6 @@ int main(int argc, char *argv[])
     }
     
     PStatPrint(&options, &stat, &grid);        /* Print the statistics. */
-    PStatFree(&stat);
     Destroy_CompRowLoc_Matrix_dist(&A); /* Deallocate storage of matrix A.  */
     SUPERLU_FREE(b);                 /* Free storage of right-hand side.    */
 
@@ -228,7 +227,7 @@ int main(int argc, char *argv[])
        NUMERICAL VALUES AS THAT IN A PREVIOUS SYSTEM.
        ------------------------------------------------------------*/
     options.Fact = SamePattern_SameRowPerm;
-    PStatInit(&stat); /* Initialize the statistics variables. */
+    PStatClear(&stat); /* clear the statistics variables. */
 
     /* Set up the local A in NR_loc format */
 

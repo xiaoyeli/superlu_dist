@@ -201,7 +201,6 @@ int main(int argc, char *argv[])
     }
     
     PStatPrint(&options, &stat, &grid);        /* Print the statistics. */
-    PStatFree(&stat);
     Destroy_CompRowLoc_Matrix_dist(&A); /* Deallocate storage of matrix A.  */ 
     dDestroy_LU(n, &grid, &LUstruct); /* Deallocate storage associated with 
 					the L and U matrices.  */
@@ -228,7 +227,7 @@ int main(int argc, char *argv[])
     dcreate_matrix_perturbed_postfix(&A, nrhs, &b1, &ldb,
                                   &xtrue1, &ldx, fp, postfix, &grid);
 			     
-    PStatInit(&stat); /* Initialize the statistics variables. */
+    PStatClear(&stat); /* clear the statistics variables. */
 
     /* Solve the linear system. */
     pdgssvx(&options, &A, &ScalePermstruct, b1, ldb, nrhs, &grid,

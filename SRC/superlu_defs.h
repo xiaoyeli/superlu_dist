@@ -65,7 +65,7 @@ at the top-level directory.
 // #include <ittnotify.h>
 // #define USE_VTUNE
 // #endif
-#if ( VTUNE>=1 )
+#if defined(VTUNE) && VTUNE>=1
 #include <ittnotify.h>			 
 #endif
 
@@ -272,7 +272,7 @@ static const int RD_U=4;	/* MPI tag for lsum in U-solve*/
 #define SuperLU_timer_  SuperLU_timer_dist_
 #define LOG2(x)   (log10((double) x) / log10(2.0))
 
-#if ( VAMPIR>=1 ) 
+#if defined(VAMPIR) && VAMPIR>=1
 #define VT_TRACEON    VT_traceon()
 #define VT_TRACEOFF   VT_traceoff()
 #else
@@ -282,7 +282,7 @@ static const int RD_U=4;	/* MPI tag for lsum in U-solve*/
 
 /* Support Windows */
 #ifndef SUPERLU_DIST_EXPORT
-#if MSVC
+#if defined(MSVC) && MSVC
 #ifdef SUPERLU_DIST_EXPORTS
 #define SUPERLU_DIST_EXPORT __declspec(dllexport)
 #else
@@ -902,7 +902,7 @@ typedef struct
 
 typedef struct
 {   
-    int_t* factored;
+    int* factored;
     int_t* factored_D;
     int_t* factored_L;
     int_t* factored_U;
@@ -1110,7 +1110,7 @@ extern int_t estimate_bigu_size (int_t, int_t **, Glu_persist_t *,
 				 gridinfo_t *, int_t *, int_t*);
 
 /* Auxiliary routines */
-extern double SuperLU_timer_ ();
+extern double SuperLU_timer_ (void);
 extern void   superlu_abort_and_exit_dist(char *);
 extern int    sp_ienv_dist (int, superlu_dist_options_t *);
 extern void   ifill_dist (int_t *, int_t, int_t);
@@ -1121,6 +1121,7 @@ extern int_t QuerySpace_dist(int_t, int_t, Glu_freeable_t *, superlu_dist_mem_us
 extern int   xerr_dist (char *, int *);
 extern void  pxerr_dist (char *, gridinfo_t *, int_t);
 extern void  PStatInit(SuperLUStat_t *);
+extern void  PStatClear(SuperLUStat_t *);
 extern void  PStatFree(SuperLUStat_t *);
 extern void  PStatPrint(superlu_dist_options_t *, SuperLUStat_t *, gridinfo_t *);
 extern void  log_memory(int64_t, SuperLUStat_t *);
@@ -1176,23 +1177,23 @@ int superlu_sort_perm (const void *arg1, const void *arg2)
 extern void gemm_division_cpu_gpu (superlu_dist_options_t *,
 				   int *, int *, int *, int,
 				   int, int, int *, int, int_t);
-extern int_t get_gpublas_nb ();
-extern int_t get_num_gpu_streams ();
-extern int getnGPUStreams();
-extern int get_mpi_process_per_gpu ();
+extern int_t get_gpublas_nb (void);
+extern int_t get_num_gpu_streams (void);
+extern int getnGPUStreams(void);
+extern int get_mpi_process_per_gpu (void);
 /*to print out various statistics from GPU activities*/
 extern void printGPUStats(int nsupers, SuperLUStat_t *stat, gridinfo3d_t*);
 #endif
 
 extern double estimate_cpu_time(int m, int n , int k);
 
-extern int get_thread_per_process();
-extern int_t get_max_buffer_size ();
+extern int get_thread_per_process(void);
+extern int_t get_max_buffer_size (void);
 extern int_t get_min (int_t *, int_t);
 extern int compare_pair (const void *, const void *);
 extern int_t static_partition (struct superlu_pair *, int_t, int_t *, int_t,
 			       int_t *, int_t *, int);
-extern int get_acc_offload();
+extern int get_acc_offload(void);
     
 
 /* Routines for debugging */
@@ -1356,7 +1357,7 @@ extern int Wait_LUDiagSend(int_t k, MPI_Request *U_diag_blk_send_req,
 			   gridinfo_t *grid, SCT_t *SCT);
 
 extern int getNsupers(int n, Glu_persist_t *Glu_persist);
-extern int set_tag_ub();
+extern int set_tag_ub(void);
 extern int getNumThreads(int);
 extern int_t num_full_cols_U(int_t kk, int_t **Ufstnz_br_ptr, int_t *xsup,
 			     gridinfo_t *, int_t *, int_t *);

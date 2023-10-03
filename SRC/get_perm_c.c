@@ -30,7 +30,7 @@ at the top-level directory.
 #endif
 
 void
-get_metis(
+get_metis_dist(
 	  int_t n,         /* dimension of matrix B */
 	  int_t bnz,       /* number of nonzeros in matrix A. */
 	  int_t *b_colptr, /* column pointer of size n+1 for matrix B. */
@@ -528,7 +528,7 @@ get_perm_c_dist(int_t pnum, int_t ispec, SuperMatrix *A, int_t *perm_c)
 			     &bnz, &b_colptr, &b_rowind);
 
 	      if ( bnz ) { /* non-empty adjacency structure */
-		  get_metis(n, bnz, b_colptr, b_rowind, perm_c);
+		  get_metis_dist(n, bnz, b_colptr, b_rowind, perm_c);
 	      } else { /* e.g., diagonal matrix */
 		  for (i = 0; i < n; ++i) perm_c[i] = i;
 		  SUPERLU_FREE(b_colptr);

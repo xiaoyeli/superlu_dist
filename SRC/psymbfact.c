@@ -324,7 +324,7 @@ float symbfact_dist
   VInfo.maxSzBlk = sp_ienv_dist(3, options);
   maxSzBlk = VInfo.maxSzBlk;
   
-  mark = EMPTY;
+  mark = SLU_EMPTY;
   nsuper_loc = 0;
   nextl   = 0; nextu      = 0;
   neltsZr = 0; neltsTotal = 0;
@@ -409,9 +409,9 @@ float symbfact_dist
 #endif
     }
     
-    /* set to EMPTY marker[] array */
+    /* set to SLU_EMPTY marker[] array */
     for (i = 0; i < n; i++)
-      tempArray[i] = EMPTY;
+      tempArray[i] = SLU_EMPTY;
     
     szSep = nprocs_symb;
     iSep = 0;
@@ -1086,7 +1086,7 @@ symbfact_mapVtcs
   globToLoc[n] = n;  
   for (p = 0; p < nprocs_symb; p++) {
     vtcs_pe[p] = 0;
-    avail_pes[p] = EMPTY;
+    avail_pes[p] = SLU_EMPTY;
   }
   nvtcs_loc = 0;
   nblks_loc = 0;
@@ -1130,9 +1130,9 @@ symbfact_mapVtcs
 	/* first allocate processors from previous levels */	
 	for (ind_ap_s = (jSep-iSep) * npNode; ind_ap_s < (jSep-iSep+1) * npNode; ind_ap_s ++) {
 	  p = avail_pes[ind_ap_s];
-	  if (p != EMPTY && k < lstVtx) {
+	  if (p != SLU_EMPTY && k < lstVtx) {
 	    /* for each column in the separator */	  
-	    avail_pes[ind_ap_s] = EMPTY;
+	    avail_pes[ind_ap_s] = SLU_EMPTY;
 	    kk = 0;
 	    while (kk < noVtcsProc && k < lstVtx) {
 	      globToLoc[k] = p;
@@ -1147,8 +1147,8 @@ symbfact_mapVtcs
 	    }
 	  }
 	  else {
-	    if (p != EMPTY && k == lstVtx) {
-	      avail_pes[ind_ap_s] = EMPTY;
+	    if (p != SLU_EMPTY && k == lstVtx) {
+	      avail_pes[ind_ap_s] = SLU_EMPTY;
 	      avail_pes[ind_ap_d] = p; ind_ap_d ++;
 	    }
 	  }
@@ -1429,13 +1429,13 @@ symbfact_distributeMatrix
   for (i = 0, j = 0, p = 0; p < nprocs_num; p++) {
     if ( p != iam ) {
       if (nnzToSend[p] != 0) { 
-	snd_aind[i + nnzAinf_toSnd[p]] = EMPTY;
+	snd_aind[i + nnzAinf_toSnd[p]] = SLU_EMPTY;
 	ptr_toSnd[p] = i + nnzAinf_toSnd[p] + 1;
       }
     }
     else {
       if (nnzToRecv[p] != 0) {
-	rcv_aind[j + nnzAinf_toSnd[p]] = EMPTY;
+	rcv_aind[j + nnzAinf_toSnd[p]] = SLU_EMPTY;
 	ptr_toSnd[p] = j + nnzAinf_toSnd[p] + 1;
       }
     }
@@ -1578,7 +1578,7 @@ symbfact_distributeMatrix
       k = 0;
       while (k < nnzToRecv[p]) {
 	j = rcv_aind[i + k];
-	if (j == EMPTY) {
+	if (j == SLU_EMPTY) {
 	  ainf_data = FALSE;
 	  k ++;
 	}
@@ -1625,7 +1625,7 @@ symbfact_distributeMatrix
       k = 0;
       while (k < nnzToRecv[p]) {
 	j = rcv_aind[i + k];
-	if (ainf_data && j == EMPTY) {
+	if (ainf_data && j == SLU_EMPTY) {
 	  ainf_data = FALSE;
 	  k ++;
 	}
@@ -1985,14 +1985,14 @@ int symbfact_alloc
   CS->snd_buf      = NULL;
 
   for (p = 0; p < nprocs; p++) {
-    CS->rcv_interLvl[p] = EMPTY;
-    CS->snd_interLvl[p] = EMPTY;
-    CS->rcv_intraLvl[p] = EMPTY;
-    CS->snd_intraLvl[p] = EMPTY;
+    CS->rcv_interLvl[p] = SLU_EMPTY;
+    CS->snd_interLvl[p] = SLU_EMPTY;
+    CS->rcv_intraLvl[p] = SLU_EMPTY;
+    CS->snd_intraLvl[p] = SLU_EMPTY;
   }
   
   for (p = 0; p <= nlvls; p++) {
-    CS->snd_vtxinter[p] = EMPTY;
+    CS->snd_vtxinter[p] = SLU_EMPTY;
     CS->snd_interSz[p]  = 0;
     CS->snd_LinterSz[p] = 0;
   }
@@ -2079,9 +2079,9 @@ symbfact_vtx
   x_aind_end = xsub[vtx_lid + 1];
   xsub[vtx_lid] = next;
   k = x_aind_beg;
-  /* while (sub[k] != EMPTY && k < x_aind_end) { */
+  /* while (sub[k] != SLU_EMPTY && k < x_aind_end) { */
   while (k < x_aind_end) {
-    if (sub[k] == EMPTY)
+    if (sub[k] == SLU_EMPTY)
       k = x_aind_end;
     else {
       vtx_elt = sub[k];
@@ -2124,7 +2124,7 @@ symbfact_vtx
   if (vtx_bel_othSn == vtx)
     upd_lstSn = TRUE;
 
-  while (ind != EMPTY || upd_lstSn) {
+  while (ind != SLU_EMPTY || upd_lstSn) {
     if (upd_lstSn ) {
       upd_lstSn = FALSE;
       pr_lid = snrep_lid;
@@ -2162,7 +2162,7 @@ symbfact_vtx
 					  Pslu_freeable, Llu_symbfact, VInfo, PS)) )
 		  return (mem_error);
 	  } else if ( (mem_error =
-		       psymbfact_LUXpand (iam, n, EMPTY, vtx, &next, 0, 
+		       psymbfact_LUXpand (iam, n, SLU_EMPTY, vtx, &next, 0, 
 					  computeL, LL_SYMB, 1, 
 					  Pslu_freeable, Llu_symbfact, VInfo, PS)) )
 	    return (mem_error);
@@ -2292,13 +2292,13 @@ updateRcvd_prGraph
     xsub_rcvd[i] = 0;
   
   i = 0;
-  fstVtx_srcUpd = EMPTY;
+  fstVtx_srcUpd = SLU_EMPTY;
   while (i < sub_rcvd_sz) {
     vtx   = sub_rcvd[i + DIAG_IND];
     nelts = sub_rcvd[i + NELTS_IND];
     i += RCVD_IND;
     prVal = sub_rcvd[i];
-    if (fstVtx_srcUpd == EMPTY) fstVtx_srcUpd = vtx;
+    if (fstVtx_srcUpd == SLU_EMPTY) fstVtx_srcUpd = vtx;
     xsub_rcvd[vtx - fstVtx_srcUpd] = i - RCVD_IND;
     xsub_rcvd[vtx-fstVtx_srcUpd+1] = i + nelts;
     for (k = i; k < i + nelts; k++) {
@@ -2365,7 +2365,7 @@ updateRcvd_prGraph
 	    if (marker[vtx_elt_lid] != xsubPr[vtx_lid_p] - 1) 
 	      subPr[marker[vtx_elt_lid] - 2] = marker[vtx_elt_lid] + 1;
 	    subPr[marker[vtx_elt_lid] + 1] = vtx - fstVtx_srcUpd + VInfo->nvtcs_loc;
-	    subPr[marker[vtx_elt_lid]] = EMPTY;
+	    subPr[marker[vtx_elt_lid]] = SLU_EMPTY;
 	    marker[vtx_elt_lid] += 2;
 	  }
 	}
@@ -2425,7 +2425,7 @@ update_prGraph
   if (prval_cursn != n)
     maxElt = prval_cursn;
   else
-    maxElt = EMPTY;
+    maxElt = SLU_EMPTY;
   while (kmin <= kmax) {
     if (prval_cursn == n) {
       /* compute maximum element of L(:, vtx) */
@@ -2565,16 +2565,16 @@ blk_symbfact
   szsn = 1;
   nvtcs = lstVtx_blk - fstVtx_blk;
   prval_cursn = n;
-  vtx_bel_snL = EMPTY; vtx_bel_snU = EMPTY;
+  vtx_bel_snL = SLU_EMPTY; vtx_bel_snU = SLU_EMPTY;
   
-  /* set up to EMPTY xlsubPr[], xusubPr[] */
+  /* set up to SLU_EMPTY xlsubPr[], xusubPr[] */
   if (PS->maxSzLPr < Llu_symbfact->indLsubPr)
     PS->maxSzLPr = Llu_symbfact->indLsubPr;
   if (PS->maxSzUPr < Llu_symbfact->indUsubPr)
     PS->maxSzUPr = Llu_symbfact->indUsubPr;
   for (i = 0; i < nvtcs; i++) {
-    xlsubPr[i] = EMPTY;
-    xusubPr[i] = EMPTY;
+    xlsubPr[i] = SLU_EMPTY;
+    xusubPr[i] = SLU_EMPTY;
   }
   Llu_symbfact->indLsubPr = 0;
   Llu_symbfact->indUsubPr = 0;
@@ -2602,10 +2602,10 @@ blk_symbfact
   for (vtx = fstVtx_blk; vtx < lstVtx_blk; vtx++, vtx_lid ++, vtx_prid ++) {
     vtxp1 = vtx + 1;
     if (marku2_vtx +4 >= n) {
-      /* reset to EMPTY marker array */
+      /* reset to SLU_EMPTY marker array */
       for (i = 0; i < n; i++)
-	marker[i] = EMPTY;
-      marku2_vtx = EMPTY;
+	marker[i] = SLU_EMPTY;
+      marku2_vtx = SLU_EMPTY;
     }
     markl1_vtx = marku2_vtx + 1; markl2_vtx = markl1_vtx + 1;
     marku1_vtx = markl2_vtx + 1; marku2_vtx = marku1_vtx + 1;    
@@ -2851,7 +2851,7 @@ blk_symbfact
 	      lstVtx_tmp = fstVtxSep[jj] + sizes[jj];
 	      CS->snd_interSz[lvl_tmp] += neltSn_L + neltSn_U + 4;
 	      CS->snd_LinterSz[lvl_tmp] += neltSn_L + 2;
-	      if (CS->snd_vtxinter[lvl_tmp] == EMPTY)
+	      if (CS->snd_vtxinter[lvl_tmp] == SLU_EMPTY)
 		CS->snd_vtxinter[lvl_tmp] = snrep;
 	    }
 	  }
@@ -2870,7 +2870,7 @@ blk_symbfact
 	if (marker[vtxp1] == marku1_vtx)
 	  vtx_bel_snU = vtxp1;
 	else
-	  vtx_bel_snU = EMPTY;
+	  vtx_bel_snU = SLU_EMPTY;
       }
     }
     if (vtx == lstVtx_blk - 1)
@@ -2932,8 +2932,8 @@ domain_symbfact
   /* call blk_symbfact */
   blk_symbfact (A, iam, lvl, 
 		szSep, ind_sizes1, ind_sizes2, sizes, fstVtxSep,
-		EMPTY, fstVtx, lstVtx, 
-		NULL, EMPTY, NULL, EMPTY,
+		SLU_EMPTY, fstVtx, lstVtx, 
+		NULL, SLU_EMPTY, NULL, SLU_EMPTY,
 		Pslu_freeable, Llu_symbfact, VInfo, CS, PS,
 		marker, p_mark,
 		p_nextl, p_nextu, p_neltsZr, p_neltsTotal, 
@@ -3123,7 +3123,7 @@ initLvl_symbfact
 	nelts ++;
       }
       if (nelts < cntelt_vtx_l) 
-	lsub[nextl] = EMPTY; 
+	lsub[nextl] = SLU_EMPTY; 
       nextl += cntelt_vtx_l - nelts;
       x_aind_end = xusub[vtx_lid + 1];
       xusub[vtx_lid] = nextu;
@@ -3133,7 +3133,7 @@ initLvl_symbfact
 	nelts ++;
       }
       if (nelts < cntelt_vtx_u) 
-	usub[nextu] = EMPTY; 
+	usub[nextu] = SLU_EMPTY; 
       nextu += cntelt_vtx_u - nelts;
     }
   }
@@ -3225,8 +3225,8 @@ expand_RL
   vtxXp_lid = LOCAL_IND( globToLoc[vtxXp] );
   nextl = xlsub[vtxXp_lid+1];
     
-  lvtx_lid = EMPTY;
-  if (lstVtx_srcUpd != EMPTY)
+  lvtx_lid = SLU_EMPTY;
+  if (lstVtx_srcUpd != SLU_EMPTY)
     lvtx_lid = LOCAL_IND( globToLoc[lstVtx_srcUpd - 1] );
 
   /* count the number of new elements, and update Llu_symbfact->cntelt_vtcs */
@@ -3240,7 +3240,7 @@ expand_RL
       vtx = usubPr[j];
       /* setup marker structure for already existing elements */
       ii = xlsub[vtx_lid];
-      while (lsub[ii] != EMPTY && ii < xlsub[vtx_lid + 1]) {
+      while (lsub[ii] != SLU_EMPTY && ii < xlsub[vtx_lid + 1]) {
 	marker[lsub[ii]] = markl;
 	ii ++;
       }
@@ -3289,7 +3289,7 @@ expand_RL
       if (markl == n) {
 	/* reset marker array */
 	for (j = fstVtx_toUpd; j < n; j++)
-	  marker[j] = EMPTY;
+	  marker[j] = SLU_EMPTY;
 	markl = 0;
       }
     }
@@ -3360,8 +3360,8 @@ rl_update
   maxNvtcsPProc = Pslu_freeable->maxNvtcsPProc;
   globToLoc     = Pslu_freeable->globToLoc;
   
-  fstVtx_upd = EMPTY;
-  lstVtx_upd = EMPTY;
+  fstVtx_upd = SLU_EMPTY;
+  lstVtx_upd = SLU_EMPTY;
   xusubPr = Llu_symbfact->xlsubPr; usubPr  = Llu_symbfact->lsubPr;
   if (computeL) {
     xlsub   = Llu_symbfact->xlsub;   lsub    = Llu_symbfact->lsub;
@@ -3380,12 +3380,12 @@ rl_update
     marker[i] = 0;
   
   i = 0;
-  if (fstVtx_srcUpd != EMPTY) {
+  if (fstVtx_srcUpd != SLU_EMPTY) {
     fstVtx_srcUpd_lid = LOCAL_IND( globToLoc[fstVtx_srcUpd] );
     vtx_lid = fstVtx_srcUpd_lid;
   }
-  lvtx_lid = EMPTY;
-  if (lstVtx_srcUpd != EMPTY)
+  lvtx_lid = SLU_EMPTY;
+  if (lstVtx_srcUpd != SLU_EMPTY)
     lvtx_lid = LOCAL_IND( globToLoc[lstVtx_srcUpd - 1] );
   
   while (i < usub_rcvd_sz) {
@@ -3423,7 +3423,7 @@ rl_update
   for (i = 0; i < nvtcs_toUpd; i++) {
     if (marker[i] != 0) {
       marker[i] ++;
-      if (fstVtx_upd == EMPTY)
+      if (fstVtx_upd == SLU_EMPTY)
 	fstVtx_upd = i;
       lstVtx_upd = i;
     }
@@ -3447,7 +3447,7 @@ rl_update
   }
   
   i = 0;
-  if (fstVtx_srcUpd != EMPTY) {
+  if (fstVtx_srcUpd != SLU_EMPTY) {
     vtx_loc = fstVtx_srcUpd;
     vtx_lid = LOCAL_IND( globToLoc[vtx_loc] );
     ind_blk = indBlk_srcUpd;
@@ -3466,7 +3466,7 @@ rl_update
 	nelts = xusub[vtx_lid + 1] - xusub[vtx_lid];
       vtx_lid ++;
       vtx_loc ++;
-      if (ind_blk != EMPTY)
+      if (ind_blk != SLU_EMPTY)
 	if (vtx_loc == VInfo->begEndBlks_loc[ind_blk+1]) {
 	  ind_blk += 2;
 	  vtx_loc = VInfo->begEndBlks_loc[ind_blk];
@@ -3497,8 +3497,8 @@ rl_update
   }
   /* reset marker array */
   for (i = 0; i < nvtcs_toUpd; i++)
-    marker[i] = EMPTY;
-  if (fstVtx_srcUpd != EMPTY) {
+    marker[i] = SLU_EMPTY;
+  if (fstVtx_srcUpd != SLU_EMPTY) {
     vtx_loc = fstVtx_srcUpd;
     vtx_lid = LOCAL_IND( globToLoc[vtx_loc] );
     ind_blk = indBlk_srcUpd;
@@ -3520,7 +3520,7 @@ rl_update
       vtx_lid ++;
       marker[vtx] = i;
       vtx_loc ++;
-      if (ind_blk != EMPTY)
+      if (ind_blk != SLU_EMPTY)
 	if (vtx_loc == VInfo->begEndBlks_loc[ind_blk+1]) {
 	  ind_blk += 2;
 	  vtx_loc = VInfo->begEndBlks_loc[ind_blk];
@@ -3538,7 +3538,7 @@ rl_update
       vtx = usubPr[j];
       /* setup marker structure for already existing elements */
       ii = xlsub[vtx_lid];
-      while (lsub[ii] != EMPTY && ii < xlsub[vtx_lid + 1]) {
+      while (lsub[ii] != SLU_EMPTY && ii < xlsub[vtx_lid + 1]) {
 	marker[lsub[ii]] = markl;
 	ii ++;
       }
@@ -3598,12 +3598,12 @@ rl_update
 	}
       }
       if (nextl < xlsub[vtx_lid+1])
-	lsub[nextl] = EMPTY;
+	lsub[nextl] = SLU_EMPTY;
       markl ++;
       if (markl == n) {
 	/* reset marker array */
 	for (j = fstVtx_toUpd; j < n; j++)
-	  marker[j] = EMPTY;
+	  marker[j] = SLU_EMPTY;
 	markl = 0;
       }
     }
@@ -3653,7 +3653,7 @@ dnsUpSeps_symbfact
   VInfo->nnz_ainf_loc = 0;
   VInfo->nnz_asup_loc = 0;
 
-  if (fstVtx_dns == EMPTY)
+  if (fstVtx_dns == SLU_EMPTY)
     fstVtx_blk     = VInfo->begEndBlks_loc[curblk_loc];
   else 
     fstVtx_blk  = fstVtx_dns;
@@ -3800,7 +3800,7 @@ dnsCurSep_symbfact
     VInfo->curblk_loc += 2;
   
   computeL = TRUE; computeU = TRUE;
-  lstVtx_dns_lid = EMPTY;
+  lstVtx_dns_lid = SLU_EMPTY;
   globToLoc = Pslu_freeable->globToLoc;
   maxNvtcsPProc = Pslu_freeable->maxNvtcsPProc;
   fstVtx = fstVtxSep[ind_sizes2];
@@ -3849,7 +3849,7 @@ dnsCurSep_symbfact
       nvtcs_upd += lstVtx_blk - fstVtx_blk;
       for (vtx = fstVtx_blk; vtx < lstVtx_blk; vtx++, vtx_lid++) {
 	j = xsub[vtx_lid];
-	while (j < xsub[vtx_lid+1] && sub[j] != EMPTY) {
+	while (j < xsub[vtx_lid+1] && sub[j] != SLU_EMPTY) {
 	  PS->nops ++;
 	  vtx_elt = sub[j] - fstVtx_dns;
 	  if (minElt_vtx[vtx_elt] == n) {
@@ -3953,7 +3953,7 @@ dnsCurSep_symbfact
   }
   
   for (i = fstVtx_dns; i < n; i++)
-    marker[i] = EMPTY;
+    marker[i] = SLU_EMPTY;
   mark = 0;
   
   /* update vertices */
@@ -3976,9 +3976,9 @@ dnsCurSep_symbfact
 	snlid = vtx_lid;
 	snrep = vtx;
 	if (mark + 2 > n) {
-	  /* reset to EMPTY marker array */
+	  /* reset to SLU_EMPTY marker array */
 	  for (i = 0; i < n; i++)
-	    marker[i] = EMPTY;
+	    marker[i] = SLU_EMPTY;
 	  mark = 0;
 	}
 
@@ -4090,7 +4090,7 @@ dnsCurSep_symbfact
 	  }
 	}
 	else {
-	  maxElt = EMPTY;
+	  maxElt = SLU_EMPTY;
 	  while (kmin <= kmax) {
 	    /* compute maximum element of L(:, vtx) */
 	    if (sub[kmin] > maxElt) {
@@ -4117,7 +4117,7 @@ dnsCurSep_symbfact
 	  lstVtx = fstVtxSep[ind_sizes2] + sizes[ind_sizes2];
 	  CS->snd_interSz[lvl] += i + j + 4;
 	  CS->snd_LinterSz[lvl] += i + 2;
-	  if (CS->snd_vtxinter[lvl] == EMPTY)
+	  if (CS->snd_vtxinter[lvl] == SLU_EMPTY)
 	    CS->snd_vtxinter[lvl] = snrep;
 	}
       }
@@ -4125,7 +4125,7 @@ dnsCurSep_symbfact
   }
 
   /* restore value in cntelt_vtcs */
-  if (lstVtx_dns_lid != EMPTY)
+  if (lstVtx_dns_lid != SLU_EMPTY)
     Llu_symbfact->cntelt_vtcs[lstVtx_dns_lid] = save_cnt;
   *p_mark = mark;
   if (minElt_vtx != CS->rcv_buf)
@@ -4250,7 +4250,7 @@ denseSep_symbfact
   else if (rcvd_dnsSep) 
       if ( (mem_error = 
 	    dnsUpSeps_symbfact (n, iam, szSep, ind_sizes1, ind_sizes2, 
-				sizes, fstVtxSep, EMPTY,
+				sizes, fstVtxSep, SLU_EMPTY,
 				Llu_symbfact, Pslu_freeable, VInfo, CS, PS,
 				p_nextl, p_nextu, p_nsuper_loc)) )
       return (mem_error);
@@ -4367,7 +4367,7 @@ interLvl_symbfact
       if ( (mem_error = 
 	    dnsUpSeps_symbfact (n, iam, szSep, ind_sizes1, ind_sizes2, sizes, 
 				fstVtxSep,
-				EMPTY, Llu_symbfact, Pslu_freeable, VInfo, CS, PS,
+				SLU_EMPTY, Llu_symbfact, Pslu_freeable, VInfo, CS, PS,
 				p_nextl, p_nextu, p_nsuper_loc)) )
 	return (mem_error);
     }
@@ -4395,7 +4395,7 @@ interLvl_symbfact
    * information setup during the copy of data to be send in the buffer  
    * rcv_interLvl : from which processors iam receives update data  */
   for (p = 2*fstP; p < 2*lstP; p++)
-    snd_interLvl[p] = EMPTY;
+    snd_interLvl[p] = SLU_EMPTY;
 
   if (snd_interLvlSz == 0 && nvtcsLvl_loc == 0) {
     code_err = MPI_Alltoall (&(snd_interLvl[2*fstP]), 2, mpi_int_t,
@@ -4495,12 +4495,12 @@ interLvl_symbfact
   
   if (nextl == 0 || nextu - snd_LinterLvlSz == 0) {
     for (p = 2*fstP; p < 2*lstP; p++)
-      snd_interLvl[p] = EMPTY;
+      snd_interLvl[p] = SLU_EMPTY;
   }
   
   nprocsToSnd = 0;
   for (p = 2*fstP; p < 2*lstP; p +=2) {
-    if (snd_interLvl[p] != EMPTY || snd_interLvl[p+1] != EMPTY) {
+    if (snd_interLvl[p] != SLU_EMPTY || snd_interLvl[p+1] != SLU_EMPTY) {
       snd_interLvl[p] = nextl;
       snd_interLvl[p+1] = nextu - snd_LinterLvlSz;
       nprocsToSnd ++;
@@ -4520,12 +4520,12 @@ interLvl_symbfact
   nprocsToRcv = 0;
   for (p = 2*fstP; p < 2*lstP; p +=2) {
     CS->ptr_rcvBuf[p] = max_rcvSz;
-    if (rcv_interLvl[p] != EMPTY) 
+    if (rcv_interLvl[p] != SLU_EMPTY) 
       max_rcvSz += rcv_interLvl[p];
     CS->ptr_rcvBuf[p+1] = max_rcvSz;
-    if (rcv_interLvl[p+1] != EMPTY) 
+    if (rcv_interLvl[p+1] != SLU_EMPTY) 
       max_rcvSz += rcv_interLvl[p+1];
-    if (rcv_interLvl[p] != EMPTY || rcv_interLvl[p+1] != EMPTY) 
+    if (rcv_interLvl[p] != SLU_EMPTY || rcv_interLvl[p+1] != SLU_EMPTY) 
       nprocsToRcv ++;
   }
 
@@ -4557,7 +4557,7 @@ interLvl_symbfact
   /* determine if we have to send data */
   i = 0;
   for (toSend = fstP, p = 2*fstP; p < 2*lstP; toSend++, p+=2) 
-    if (snd_interLvl[p] != EMPTY && toSend != iam) {
+    if (snd_interLvl[p] != SLU_EMPTY && toSend != iam) {
       MPI_Isend (CS->snd_buf, nextl, mpi_int_t, toSend,
 		 tag_interLvl_LData, (*symb_comm), &(request_snd[2*i]));
       MPI_Isend (&(CS->snd_buf[snd_LinterLvlSz]), 
@@ -4583,7 +4583,7 @@ interLvl_symbfact
     
     mem_error = 
       rl_update (0, n, iam, lsub_rcvd, lsub_rcvd_sz,
-		 usub_rcvd, usub_rcvd_sz, snd_vtxLvl, EMPTY, snd_indBlk,
+		 usub_rcvd, usub_rcvd_sz, snd_vtxLvl, SLU_EMPTY, snd_indBlk,
 		 fstVtxLvl_loc, lstVtx, nvtcsLvl_loc,
 		 1, &mark, marker, Pslu_freeable, Llu_symbfact, VInfo, PS);
 
@@ -4594,7 +4594,7 @@ interLvl_symbfact
     lsub = Llu_symbfact->lsub; usub = Llu_symbfact->usub;
     mem_error = 
       rl_update (0, n, iam, usub_rcvd, usub_rcvd_sz,
-		 lsub_rcvd, lsub_rcvd_sz, snd_vtxLvl, EMPTY, snd_indBlk,
+		 lsub_rcvd, lsub_rcvd_sz, snd_vtxLvl, SLU_EMPTY, snd_indBlk,
 		 fstVtxLvl_loc, lstVtx, nvtcsLvl_loc,
 		 0, &mark, marker, Pslu_freeable, Llu_symbfact, VInfo, PS);
     lsub = Llu_symbfact->lsub; usub = Llu_symbfact->usub;
@@ -4603,7 +4603,7 @@ interLvl_symbfact
   /* post non-blocking receives for all the incoming messages */
   i = 0;
   for (rcvdP = fstP, p = 2*fstP; p < 2*lstP; rcvdP++, p += 2) 
-    if (rcv_interLvl[p] != EMPTY) {
+    if (rcv_interLvl[p] != SLU_EMPTY) {
       lsub_rcvd    = &(CS->rcv_buf[CS->ptr_rcvBuf[p]]);
       MPI_Irecv (lsub_rcvd, rcv_interLvl[p], mpi_int_t, rcvdP,
 		 tag_interLvl_LData, (*symb_comm), &(request_rcv[i]));
@@ -4626,7 +4626,7 @@ interLvl_symbfact
     MPI_Waitany (2*nprocsToRcv, request_rcv, &ind1, status);
     ij = 0;
     for (p = fstP; p < lstP; p++)
-      if (rcv_interLvl[2*p] != EMPTY) {
+      if (rcv_interLvl[2*p] != SLU_EMPTY) {
 	if (ij <= ind1 && ind1 < ij+2) {
 	  rcvdP = p; p = lstP;
 	  if (ind1 == ij) ind2 = ij+1;
@@ -4651,13 +4651,13 @@ interLvl_symbfact
     /* use received data to update symbolic factorization information */
     mem_error = 
       rl_update (1, n, iam, lsub_rcvd, lsub_rcvd_sz,
-		 usub_rcvd, usub_rcvd_sz, EMPTY, EMPTY, EMPTY,
+		 usub_rcvd, usub_rcvd_sz, SLU_EMPTY, SLU_EMPTY, SLU_EMPTY,
 		 fstVtxLvl_loc, lstVtx, nvtcsLvl_loc,
 		 1, &mark, marker, Pslu_freeable, Llu_symbfact, VInfo, PS);
     lsub = Llu_symbfact->lsub;
     mem_error = 
       rl_update (1, n, iam, usub_rcvd, usub_rcvd_sz,
-		 lsub_rcvd, lsub_rcvd_sz, EMPTY, EMPTY, EMPTY,
+		 lsub_rcvd, lsub_rcvd_sz, SLU_EMPTY, SLU_EMPTY, SLU_EMPTY,
 		 fstVtxLvl_loc, lstVtx, nvtcsLvl_loc,
 		 0, &mark, marker, Pslu_freeable, Llu_symbfact, VInfo, PS);
     usub = Llu_symbfact->usub;      
@@ -4876,7 +4876,7 @@ intraLvl_symbfact
     nmsgsTRcv      = n;
     VInfo->maxNeltsVtx -= fstVtx_blk - prv_fstVtx_blk;
 
-    index_req[0] = EMPTY;
+    index_req[0] = SLU_EMPTY;
     for (r = 0; r < 3; r++) 
       request[r] = MPI_REQUEST_NULL;
     if (fstVtx_blk != fstVtx) {
@@ -4964,14 +4964,14 @@ intraLvl_symbfact
 	  if (!lstBlkRcvd) {
 	    mem_error = 
 	      rl_update (1, n, iam, lsub_rcvd, lsub_rcvd_sz,
-			 usub_rcvd, usub_rcvd_sz, EMPTY, EMPTY, EMPTY,
+			 usub_rcvd, usub_rcvd_sz, SLU_EMPTY, SLU_EMPTY, SLU_EMPTY,
 			 fstVtx_blk, lstVtx, nvtcs_blk + nvtcs_toUpd,
 			 1, p_mark,
 			 marker, Pslu_freeable, Llu_symbfact, VInfo, PS);
 	    lsub = Llu_symbfact->lsub;
 	    mem_error = 
 	      rl_update (1, n, iam, usub_rcvd, usub_rcvd_sz,
-			 lsub_rcvd, lsub_rcvd_sz, EMPTY, EMPTY, EMPTY, 
+			 lsub_rcvd, lsub_rcvd_sz, SLU_EMPTY, SLU_EMPTY, SLU_EMPTY, 
 			 fstVtx_blk, lstVtx, nvtcs_blk + nvtcs_toUpd,
 			 0, p_mark,
 			 marker, Pslu_freeable, Llu_symbfact, VInfo, PS);
@@ -5032,14 +5032,14 @@ intraLvl_symbfact
 	  if (lstBlkRcvd) {
 	    mem_error = 
 	      rl_update (1, n, iam, lsub_rcvd, lsub_rcvd_sz,
-			 usub_rcvd, usub_rcvd_sz, EMPTY, EMPTY, EMPTY,
+			 usub_rcvd, usub_rcvd_sz, SLU_EMPTY, SLU_EMPTY, SLU_EMPTY,
 			 fstVtx_toUpd, lstVtx, nvtcs_toUpd,
 			 1, p_mark,
 			 marker, Pslu_freeable, Llu_symbfact, VInfo, PS);
 	    lsub = Llu_symbfact->lsub;
 	    mem_error = 
 	      rl_update (1, n, iam, usub_rcvd, usub_rcvd_sz,
-			 lsub_rcvd, lsub_rcvd_sz, EMPTY, EMPTY, EMPTY, 
+			 lsub_rcvd, lsub_rcvd_sz, SLU_EMPTY, SLU_EMPTY, SLU_EMPTY, 
 			 fstVtx_toUpd, lstVtx, nvtcs_toUpd,
 			 0, p_mark,
 			 marker, Pslu_freeable, Llu_symbfact, VInfo, PS);
@@ -5194,7 +5194,7 @@ intraLvl_symbfact
 	    mem_error =
 	      rl_update (0, n, iam, lsub_rcvd, lsub_rcvd_sz,
 			 usub_rcvd, usub_rcvd_sz, fstVtx_blk, lstVtx_blk,
-			 EMPTY,
+			 SLU_EMPTY,
 			 fstVtx_toUpd, lstVtx, nvtcs_toUpd,
 			 1, p_mark,
 			 marker, Pslu_freeable, Llu_symbfact, VInfo, PS);
@@ -5203,7 +5203,7 @@ intraLvl_symbfact
 	    mem_error =
 	      rl_update (0, n, iam, usub_rcvd, usub_rcvd_sz,
 			 lsub_rcvd, lsub_rcvd_sz, fstVtx_blk, lstVtx_blk,
-			 EMPTY,
+			 SLU_EMPTY,
 			 fstVtx_toUpd, lstVtx, nvtcs_toUpd,
 			 0, p_mark,
 			 marker, Pslu_freeable, Llu_symbfact, VInfo, PS);

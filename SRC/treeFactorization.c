@@ -78,7 +78,7 @@ int_t initFactStat(int_t nsupers, factStat_t* factStat)
     factStat->factored_D = intMalloc_dist( nsupers); //INT_T_ALLOC( nsupers);
     factStat->factored_L = intMalloc_dist( nsupers); //INT_T_ALLOC( nsupers);
     factStat->factored_U = intMalloc_dist( nsupers); //INT_T_ALLOC( nsupers);
-    factStat->factored = intMalloc_dist( nsupers);   //INT_T_ALLOC( nsupers);
+    factStat->factored = int32Malloc_dist( nsupers);   //INT_T_ALLOC( nsupers);
     factStat->IbcastPanel_L = intMalloc_dist(nsupers); //INT_T_ALLOC(nsupers);
     factStat->IbcastPanel_U = intMalloc_dist(nsupers); //INT_T_ALLOC(nsupers);
     factStat->gpuLUreduced = intMalloc_dist(nsupers); //INT_T_ALLOC(nsupers);

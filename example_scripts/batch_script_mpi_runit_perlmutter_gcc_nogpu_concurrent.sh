@@ -1,8 +1,14 @@
+# superlu_dist batch script for Perlmutter CPU-only compute nodes
+# gnu compiler
+# updated 2023/04/01
 
-module swap PrgEnv-nvidia PrgEnv-gnu
-module load gcc #/10.3.0
-module load cmake/3.22.0
-module load cudatoolkit
+# please make sure the following module loads/unloads match your build script
+module unload gpu
+#module load PrgEnv-gnu
+#module load gcc/11.2.0
+#module load cmake/3.24.3
+#module load cudatoolkit/11.7
+
 
 
 if [[ $NERSC_HOST == edison ]]; then
@@ -61,10 +67,11 @@ TMP_BATCH_FILE=tmp.sh
 > $TMP_BATCH_FILE
 echo "#!/bin/bash -l" >> $TMP_BATCH_FILE
 echo " " >> $TMP_BATCH_FILE
-echo "module swap PrgEnv-nvidia PrgEnv-gnu" >> $TMP_BATCH_FILE
-echo "module load gcc" >>  $TMP_BATCH_FILE
-echo "module load cmake/3.22.0" >> $TMP_BATCH_FILE
-echo "module load cudatoolkit" >> $TMP_BATCH_FILE
+echo "module unload gpu" >> $TMP_BATCH_FILE
+#echo "module swap PrgEnv-nvidia PrgEnv-gnu" >> $TMP_BATCH_FILE
+#echo "module load gcc" >>  $TMP_BATCH_FILE
+#echo "module load cmake/3.24.3" >> $TMP_BATCH_FILE
+#echo "module load cudatoolkit" >> $TMP_BATCH_FILE
 echo "export OMP_NUM_THREADS=$NTH" >> $TMP_BATCH_FILE
 echo "export OMP_PROC_BIND=spread" >> $TMP_BATCH_FILE
 echo "export MPICH_MAX_THREAD_SAFETY=multiple" >> $TMP_BATCH_FILE

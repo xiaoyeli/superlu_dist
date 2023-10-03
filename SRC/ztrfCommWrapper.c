@@ -381,7 +381,7 @@ int_t zIBcastRecvLPanel(
     MPI_Request *recv_req ,
     int_t* Lsub_buf,
     doublecomplex* Lval_buf,
-    int_t * factored,
+    int * factored,
     gridinfo_t *grid,
     zLUstruct_t *LUstruct,
     SCT_t *SCT,
@@ -437,7 +437,7 @@ int_t zIBcastRecvLPanel(
     factored[k] = 0;
 
     return 0;
-}
+} /* zIBcastRecvLPanel */
 
 int_t zIBcastRecvUPanel(int_t k, int_t k0, int* msgcnt,
     			     MPI_Request *send_requ,

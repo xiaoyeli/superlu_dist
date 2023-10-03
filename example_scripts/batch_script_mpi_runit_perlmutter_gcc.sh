@@ -2,25 +2,17 @@
 #
 # Run SuperLU_dist examples built with GNU compiler on NERSC Perlmutter
 #
-# Last update: July 22, 2022
+# Last updated: 2023/05/01
+# 
 # Perlmutter is not in production and the software environment changes rapidly.
-# Expect this file to be frequently updated
-
-module load PrgEnv-gnu
-module load gcc/11.2.0
-module load cmake/3.22.0
-module load cudatoolkit/11.7
-# avoid bug in cray-libsci/21.08.1.2
-module load cray-libsci/22.11.1.2
-module load Nsight-Systems
-module load Nsight-Compute
-# avoid bug in cudatoolkit
-export LD_LIBRARY_PATH=${LD_LIBRARY_PATH//\/usr\/local\/cuda-11.5\/compat:/}
-export LD_LIBRARY_PATH=${LD_LIBRARY_PATH//\/usr\/local\/cuda-11.7\/compat:/}
-# please make sure the above module load and export LD_LIBRARY_PATH commands match your build script
+# Expect this file to be frequently updated.
 
 
+# please make sure the following module loads/unloads match your build script
 
+#module load PrgEnv-gnu
+#module load gcc/11.2.0
+module load cmake/3.24.3
 
 
 export CUDA_MPS_PIPE_DIRECTORY=/tmp/nvidia-mps

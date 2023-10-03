@@ -198,7 +198,6 @@ int_t sLPanelTrSolve( int_t k,   int_t* factored_L,
 
         float* ublk_ptr = BlockUFactor;
         int ld_ujrow = nsupc;
-
         // printf("%d: L update \n",k );
 
 #define BL  32
@@ -383,7 +382,7 @@ int_t sIBcastRecvLPanel(
     MPI_Request *recv_req ,
     int_t* Lsub_buf,
     float* Lval_buf,
-    int_t * factored,
+    int * factored,
     gridinfo_t *grid,
     sLUstruct_t *LUstruct,
     SCT_t *SCT,
@@ -439,7 +438,7 @@ int_t sIBcastRecvLPanel(
     factored[k] = 0;
 
     return 0;
-}
+} /* sIBcastRecvLPanel */
 
 int_t sIBcastRecvUPanel(int_t k, int_t k0, int* msgcnt,
     			     MPI_Request *send_requ,
@@ -524,6 +523,7 @@ int_t sWaitU( int_t k, int* msgcnt,
     	      gridinfo_t *grid, sLUstruct_t *LUstruct, SCT_t *SCT)
 {
     sLocalLU_t *Llu = LUstruct->Llu;
+
     int* ToRecv = Llu->ToRecv;
     int* ToSendD = Llu->ToSendD;
     int_t iam = grid->iam;

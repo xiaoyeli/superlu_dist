@@ -343,7 +343,7 @@ void pzgstrs1(superlu_dist_options_t *options, int_t n,
 		 * Send Xk to process column Pc[k].
 		 */
 		for (p = 0; p < Pr; ++p)
-		    if ( fsendx_plist[lk][p] != EMPTY ) {
+		    if ( fsendx_plist[lk][p] != SLU_EMPTY ) {
 			pi = PNUM( p, kcol, grid );
 #ifdef ISEND_IRECV
 			MPI_Isend( &x[ii - XK_H], knsupc * nrhs + XK_H,
@@ -460,7 +460,7 @@ void pzgstrs1(superlu_dist_options_t *options, int_t n,
 		   */
 		  kcol = PCOL( k, grid );
 		  for (p = 0; p < Pr; ++p)
-		      if ( fsendx_plist[lk][p] != EMPTY ) {
+		      if ( fsendx_plist[lk][p] != SLU_EMPTY ) {
 			  pi = PNUM( p, kcol, grid );
 #ifdef ISEND_IRECV
 			  MPI_Isend( &x[ii - XK_H], knsupc * nrhs + XK_H,
@@ -770,7 +770,7 @@ void pzgstrs1(superlu_dist_options_t *options, int_t n,
 		 * Send Xk to process column Pc[k].
 		 */
 		for (p = 0; p < Pr; ++p)
-		    if ( bsendx_plist[lk][p] != EMPTY ) {
+		    if ( bsendx_plist[lk][p] != SLU_EMPTY ) {
 			pi = PNUM( p, kcol, grid );
 #ifdef ISEND_IRECV
 			MPI_Isend( &x[ii - XK_H], knsupc * nrhs + XK_H,
@@ -862,7 +862,7 @@ void pzgstrs1(superlu_dist_options_t *options, int_t n,
 		     */
 		    kcol = PCOL( k, grid );
 		    for (p = 0; p < Pr; ++p)
-			if ( bsendx_plist[lk][p] != EMPTY ) {
+			if ( bsendx_plist[lk][p] != SLU_EMPTY ) {
 			    pi = PNUM( p, kcol, grid );
 #ifdef ISEND_IRECV
 			    MPI_Isend( &x[ii - XK_H], knsupc * nrhs + XK_H,
