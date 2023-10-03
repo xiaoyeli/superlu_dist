@@ -582,34 +582,54 @@ void dDestroy_LU(int_t n, gridinfo_t *grid, dLUstruct_t *LUstruct)
 
     SUPERLU_FREE(Glu_persist->xsup);
     SUPERLU_FREE(Glu_persist->supno);
+    SUPERLU_FREE(Llu->bcols_masked);
 
 #ifdef GPU_ACC
-    if (0)
-    {
-        checkGPU(gpuFree(Llu->d_xsup));
-        checkGPU(gpuFree(Llu->d_LRtree_ptr));
-        checkGPU(gpuFree(Llu->d_LBtree_ptr));
-        checkGPU(gpuFree(Llu->d_URtree_ptr));
-        checkGPU(gpuFree(Llu->d_UBtree_ptr));
-        checkGPU(gpuFree(Llu->d_ilsum));
-        checkGPU(gpuFree(Llu->d_Lrowind_bc_dat));
-        checkGPU(gpuFree(Llu->d_Lrowind_bc_offset));
-        checkGPU(gpuFree(Llu->d_Lnzval_bc_dat));
-        checkGPU(gpuFree(Llu->d_Lnzval_bc_offset));
-        checkGPU(gpuFree(Llu->d_Linv_bc_dat));
-        checkGPU(gpuFree(Llu->d_Uinv_bc_dat));
-        checkGPU(gpuFree(Llu->d_Linv_bc_offset));
-        checkGPU(gpuFree(Llu->d_Uinv_bc_offset));
-        checkGPU(gpuFree(Llu->d_Lindval_loc_bc_dat));
-        checkGPU(gpuFree(Llu->d_Lindval_loc_bc_offset));
+if (get_acc_solve()){
+    checkGPU(gpuFree(Llu->d_xsup));
+    checkGPU (gpuFree (Llu->d_bcols_masked));
+    checkGPU(gpuFree(Llu->d_LRtree_ptr));
+    checkGPU(gpuFree(Llu->d_LBtree_ptr));
+    checkGPU(gpuFree(Llu->d_URtree_ptr));
+    checkGPU(gpuFree(Llu->d_UBtree_ptr));
+    checkGPU(gpuFree(Llu->d_ilsum));
+    checkGPU(gpuFree(Llu->d_Lrowind_bc_dat));
+    checkGPU(gpuFree(Llu->d_Lrowind_bc_offset));
+    checkGPU(gpuFree(Llu->d_Lnzval_bc_dat));
+    checkGPU(gpuFree(Llu->d_Lnzval_bc_offset));
+    checkGPU(gpuFree(Llu->d_Linv_bc_dat));
+    checkGPU(gpuFree(Llu->d_Uinv_bc_dat));
+    checkGPU(gpuFree(Llu->d_Linv_bc_offset));
+    checkGPU(gpuFree(Llu->d_Uinv_bc_offset));
+    checkGPU(gpuFree(Llu->d_Lindval_loc_bc_dat));
+    checkGPU(gpuFree(Llu->d_Lindval_loc_bc_offset));
 
-        checkGPU(gpuFree(Llu->d_Ucolind_bc_dat));
-        checkGPU(gpuFree(Llu->d_Ucolind_bc_offset));
-        checkGPU(gpuFree(Llu->d_Unzval_bc_dat));
-        checkGPU(gpuFree(Llu->d_Unzval_bc_offset));
-        checkGPU(gpuFree(Llu->d_Uindval_loc_bc_dat));
-        checkGPU(gpuFree(Llu->d_Uindval_loc_bc_offset));
+    checkGPU(gpuFree(Llu->d_Ucolind_bc_dat));
+    checkGPU(gpuFree(Llu->d_Ucolind_bc_offset));
+    checkGPU(gpuFree(Llu->d_Unzval_bc_dat));
+    checkGPU(gpuFree(Llu->d_Unzval_bc_offset));
+    checkGPU(gpuFree(Llu->d_Uindval_loc_bc_dat));
+    checkGPU(gpuFree(Llu->d_Uindval_loc_bc_offset));
     }
+
+    #ifdef HAVE_NVSHMEM  
+    /* nvshmem related*/
+    if (get_acc_solve()){
+    delete_multiGPU_buffers();
+    }
+    
+    SUPERLU_FREE(mystatus);
+    SUPERLU_FREE(h_nfrecv);
+    SUPERLU_FREE(h_nfrecvmod);
+    SUPERLU_FREE(mystatusmod);
+    SUPERLU_FREE(mystatus_u);
+    SUPERLU_FREE(h_nfrecv_u);
+    SUPERLU_FREE(mystatusmod_u);
+
+    checkGPU (gpuFree (d_recv_cnt));
+    checkGPU (gpuFree (d_recv_cnt_u));
+    #endif
+
 #endif
 
 #if (DEBUGlevel >= 1)
@@ -787,44 +807,6 @@ int_t pdgstrs_init(int_t n, int_t m_loc, int_t nrhs, int_t fst_row,
 } /* PDGSTRS_INIT */
 
 
-
-int_t
-pdgstrs_delete_device_lsum_x(dSOLVEstruct_t *SOLVEstruct)
-{
-#if ( defined(GPU_ACC) && defined(GPU_SOLVE) )
-    checkGPU (gpuFree (SOLVEstruct->d_x));
-    checkGPU (gpuFree (SOLVEstruct->d_lsum));   
-    checkGPU (gpuFree (SOLVEstruct->d_lsum_save));   
-    checkGPU (gpuFree (SOLVEstruct->d_fmod));   
-    checkGPU (gpuFree (SOLVEstruct->d_fmod_save));       
-    checkGPU (gpuFree (SOLVEstruct->d_bmod));   
-    checkGPU (gpuFree (SOLVEstruct->d_bmod_save));   
-
-
-/* nvshmem related*/
-
-    #ifdef HAVE_NVSHMEM  
-    // delete_multiGPU_buffers();
-
-    checkGPU(gpuFree(d_colnum));       
-    checkGPU(gpuFree(d_mynum));       
-    checkGPU(gpuFree(d_mymaskstart));       
-    checkGPU(gpuFree(d_mymasklength));       
-    checkGPU(gpuFree(d_status));       
-    checkGPU(gpuFree(d_nfrecv));       
-
-    checkGPU(gpuFree(d_nfrecvmod));       
-    checkGPU(gpuFree(d_statusmod));       
-    checkGPU(gpuFree(d_mynummod));       
-    checkGPU(gpuFree(d_mymaskstartmod));       
-    checkGPU(gpuFree(d_mymasklengthmod));       
-    checkGPU(gpuFree(d_msgnum));       
-    checkGPU(gpuFree(d_flag_mod));    
-    #endif
-
-#endif  
-    return 0;
-} /* pdgstrs_delete_device_lsum_x */
 
 int_t
 pdgstrs_init_device_lsum_x(superlu_dist_options_t *options, int_t n, int_t m_loc, int_t nrhs, gridinfo_t *grid,
@@ -1146,6 +1128,45 @@ pdgstrs_init_device_lsum_x(superlu_dist_options_t *options, int_t n, int_t m_loc
 
     return 0;
 } /* pdgstrs_init_device_lsum_x */
+
+
+int_t
+pdgstrs_delete_device_lsum_x(dSOLVEstruct_t *SOLVEstruct)
+{
+#if ( defined(GPU_ACC) && defined(GPU_SOLVE) )
+    checkGPU (gpuFree (SOLVEstruct->d_x));
+    checkGPU (gpuFree (SOLVEstruct->d_lsum));   
+    checkGPU (gpuFree (SOLVEstruct->d_lsum_save));   
+    checkGPU (gpuFree (SOLVEstruct->d_fmod));   
+    checkGPU (gpuFree (SOLVEstruct->d_fmod_save));       
+    checkGPU (gpuFree (SOLVEstruct->d_bmod));   
+    checkGPU (gpuFree (SOLVEstruct->d_bmod_save));   
+
+
+/* nvshmem related*/
+
+    #ifdef HAVE_NVSHMEM  
+    // delete_multiGPU_buffers();
+
+    checkGPU(gpuFree(d_colnum));       
+    checkGPU(gpuFree(d_mynum));       
+    checkGPU(gpuFree(d_mymaskstart));       
+    checkGPU(gpuFree(d_mymasklength));       
+    checkGPU(gpuFree(d_status));       
+    checkGPU(gpuFree(d_nfrecv));       
+
+    checkGPU(gpuFree(d_nfrecvmod));       
+    checkGPU(gpuFree(d_statusmod));       
+    checkGPU(gpuFree(d_mynummod));       
+    checkGPU(gpuFree(d_mymaskstartmod));       
+    checkGPU(gpuFree(d_mymasklengthmod));       
+    checkGPU(gpuFree(d_msgnum));       
+    checkGPU(gpuFree(d_flag_mod));    
+    #endif
+
+#endif  
+    return 0;
+} /* pdgstrs_delete_device_lsum_x */
 
 
 

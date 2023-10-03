@@ -1397,7 +1397,7 @@ pdgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 		int maxrecvsz = sp_ienv_dist(3, options)* nrhs + SUPERLU_MAX( XK_H, LSUM_H );
 		int ready_x_size = maxrecvsz*nc;
 		int ready_lsum_size = 2*maxrecvsz*nr;
-		if (getenv("SUPERLU_ACC_SOLVE")){
+		if (get_acc_solve()){
 		nv_init_wrapper(grid->comm);
 		prepare_multiGPU_buffers(flag_bc_size,flag_rd_size,ready_x_size,ready_lsum_size,my_flag_bc_size,my_flag_rd_size);
 		}
@@ -1584,7 +1584,7 @@ pdgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 	       the Solve data & communication structures, unless a new
 	       factorization with Fact == DOFACT or SamePattern is asked for. */			   
 		
-		if (getenv("SUPERLU_ACC_SOLVE")){
+		if (get_acc_solve()){
 		int_t nsupers = getNsupers(n, LUstruct->Glu_persist);
 		int* supernodeMask = int32Malloc_dist(nsupers);
 		for(int ii=0; ii<nsupers; ii++)
@@ -1679,7 +1679,7 @@ pdgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 				ABORT("Malloc fails for gstrs_comm[]");
 			pdgstrs_init(n, m_loc, 1, fst_row, perm_r, perm_c, grid,
 					Glu_persist, SOLVEstruct1);
-			if (getenv("SUPERLU_ACC_SOLVE")){
+			if (get_acc_solve()){
 			int_t nsupers = getNsupers(n, LUstruct->Glu_persist);
 			int* supernodeMask = int32Malloc_dist(nsupers);
 			for(int ii=0; ii<nsupers; ii++)
@@ -2030,7 +2030,7 @@ for (lk=0;lk<nsupers_j;++lk){
 	// printf("Llu->Ucolind_bc_offset %10d\n",Llu->Ucolind_bc_offset[0]);
 
 
-if (getenv("SUPERLU_ACC_SOLVE")){
+if (get_acc_solve()){
 	// checkGPU(gpuFree(Llu->d_Ucolind_bc_dat));
 	// checkGPU(gpuFree(Llu->d_Ucolind_bc_offset));
 	// checkGPU(gpuFree(Llu->d_Unzval_bc_dat));
@@ -2053,10 +2053,13 @@ if (getenv("SUPERLU_ACC_SOLVE")){
 	checkGPU(gpuMemcpy(Llu->d_Uindval_loc_bc_offset, Llu->Uindval_loc_bc_offset, CEILING( nsupers, grid->npcol ) * sizeof(int64_t), gpuMemcpyHostToDevice));
 }
 
+	SUPERLU_FREE (Llu->Ucolind_bc_ptr);
 	SUPERLU_FREE (Llu->Ucolind_bc_dat);
 	SUPERLU_FREE (Llu->Ucolind_bc_offset);
 	SUPERLU_FREE (Llu->Unzval_bc_dat);
+	SUPERLU_FREE (Llu->Unzval_bc_ptr);
 	SUPERLU_FREE (Llu->Unzval_bc_offset);
+	SUPERLU_FREE (Llu->Uindval_loc_bc_ptr);
 	SUPERLU_FREE (Llu->Uindval_loc_bc_dat);
 	SUPERLU_FREE (Llu->Uindval_loc_bc_offset);
 

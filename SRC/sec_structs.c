@@ -595,6 +595,44 @@ get_acc_offload ()
 #endif        
 }
 
+int
+get_acc_solve ()
+{
+    char *ttemp;
+    ttemp = getenv ("SUPERLU_ACC_SOLVE");
+#ifdef GPU_ACC
+    if (ttemp)
+        return atoi (ttemp);
+    else
+        return 0;  // default
+#else
+    return 0;  
+#endif        
+}
+
+int
+get_new3dsolve ()
+{
+    char *ttemp;
+    ttemp = getenv ("NEW3DSOLVE");
+    if (ttemp)
+        return atoi (ttemp);
+    else
+        return 1;  // default      
+}
+
+int
+get_new3dsolvetreecomm ()
+{
+    char *ttemp;
+    ttemp = getenv ("NEW3DSOLVETREECOMM");
+    if (ttemp)
+        return atoi (ttemp);
+    else
+        return 1;  // default      
+}
+
+
 
 void Free_HyP(HyP_t* HyP)
 {

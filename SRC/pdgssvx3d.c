@@ -1190,7 +1190,7 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 			int maxrecvsz = sp_ienv_dist(3, options)* nrhs + SUPERLU_MAX( XK_H, LSUM_H );
 			int ready_x_size = maxrecvsz*nc;
 			int ready_lsum_size = 2*maxrecvsz*nr;
-			if (getenv("SUPERLU_ACC_SOLVE")){
+			if (get_acc_solve()){
 			nv_init_wrapper(grid->comm);
 			prepare_multiGPU_buffers(flag_bc_size,flag_rd_size,ready_x_size,ready_lsum_size,my_flag_bc_size,my_flag_rd_size);
 			}
@@ -1262,12 +1262,13 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 		
 		
 		}
-		if (getenv("NEW3DSOLVE")){
+		
+		if (get_new3dsolve()){
 			dbroadcastAncestor3d(trf3Dpartition, LUstruct, grid3d, SCT);
 		}
 
 		if ( options->Fact != SamePattern_SameRowPerm) {
-			if (getenv("NEW3DSOLVE") && Solve3D==true){
+			if (get_new3dsolve() && Solve3D==true){
 				trs_compute_communication_structure(options, n, LUstruct,
 							ScalePermstruct, trf3Dpartition->supernodeMask, grid, stat);
 			}else{
@@ -1443,7 +1444,7 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 			}
 			}
 
-			if (getenv("NEW3DSOLVE")){
+			if (get_new3dsolve()){
 
 
 			if (options->DiagInv == YES && (Fact != FACTORED))
@@ -1509,7 +1510,7 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 				// checkGPU(gpuMalloc( (void**)&LUstruct->Llu->d_grid, sizeof(gridinfo_t)));
     			// checkGPU(gpuMemcpy(LUstruct->Llu->d_grid, grid, sizeof(gridinfo_t), gpuMemcpyHostToDevice));
 #endif
-if (getenv("SUPERLU_ACC_SOLVE")){
+if (get_acc_solve()){
 #ifdef GPU_ACC
 				checkGPU(gpuMemcpy(LUstruct->Llu->d_Linv_bc_dat, LUstruct->Llu->Linv_bc_dat,
 								   (LUstruct->Llu->Linv_bc_cnt) * sizeof(double), gpuMemcpyHostToDevice));
@@ -1612,7 +1613,7 @@ if (getenv("SUPERLU_ACC_SOLVE")){
     			// checkGPU(gpuMemcpy(LUstruct->Llu->d_grid, grid, sizeof(gridinfo_t), gpuMemcpyHostToDevice));
 #endif
 
-if (getenv("SUPERLU_ACC_SOLVE")){
+if (get_acc_solve()){
 #ifdef GPU_ACC
 
 				checkGPU(gpuMemcpy(LUstruct->Llu->d_Linv_bc_dat, LUstruct->Llu->Linv_bc_dat,
@@ -1634,8 +1635,8 @@ if (getenv("SUPERLU_ACC_SOLVE")){
 		if ((nrhs > 0) && (*info == 0))
 		{
 		if (options->SolveInitialized == NO){
-			if (getenv("SUPERLU_ACC_SOLVE")){
-			if (getenv("NEW3DSOLVE") && Solve3D==true){
+			if (get_acc_solve()){
+			if (get_new3dsolve() && Solve3D==true){
 				pdgstrs_init_device_lsum_x(options, n, m_loc, nrhs, grid,LUstruct, SOLVEstruct,trf3Dpartition->supernodeMask);	
 			}else{
 				int* supernodeMask = int32Malloc_dist(nsupers);
@@ -1715,7 +1716,7 @@ if (getenv("SUPERLU_ACC_SOLVE")){
 				dSolveInit(options, A, perm_r, perm_c, nrhs, LUstruct,
 							grid, SOLVEstruct);
 			}			
-			if (getenv("NEW3DSOLVE")){
+			if (get_new3dsolve()){
 				pdgstrs3d_newsolve (options, n, LUstruct,ScalePermstruct, trf3Dpartition, grid3d, X,
 				m_loc, fst_row, ldb, nrhs,SOLVEstruct, stat, info);
 			}else{
@@ -1800,7 +1801,7 @@ if (getenv("SUPERLU_ACC_SOLVE")){
 						ABORT ("Malloc fails for gstrs_comm[]");
 					pdgstrs_init (n, m_loc, 1, fst_row, perm_r, perm_c, grid,
 							LUstruct->Glu_persist, SOLVEstruct1);
-					if (getenv("SUPERLU_ACC_SOLVE")){
+					if (get_acc_solve()){
 					int_t nsupers = getNsupers(n, LUstruct->Glu_persist);
 					pdgstrs_init_device_lsum_x(options, n, m_loc, 1, grid,LUstruct, SOLVEstruct1,trf3Dpartition->supernodeMask);		 
 					}
@@ -1970,7 +1971,7 @@ if (getenv("SUPERLU_ACC_SOLVE")){
 						ABORT ("Malloc fails for gstrs_comm[]");
 					pdgstrs_init (n, m_loc, 1, fst_row, perm_r, perm_c, grid,
 							LUstruct->Glu_persist, SOLVEstruct1);
-					if (getenv("SUPERLU_ACC_SOLVE")){
+					if (get_acc_solve()){
 					int_t nsupers = getNsupers(n, LUstruct->Glu_persist);
 					int* supernodeMask = int32Malloc_dist(nsupers);
 					for(int ii=0; ii<nsupers; ii++)

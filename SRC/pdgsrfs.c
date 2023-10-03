@@ -480,7 +480,7 @@ pdgsrfs3d(superlu_dist_options_t *options, int_t n,
 #endif
 	    if ( berr[j] > eps && berr[j] * 2 <= lstres && count < ITMAX ) {
 		/* Compute new dx. */
-        if (getenv("NEW3DSOLVE")){
+        if (get_new3dsolve()){
             pdgstrs3d_newsolve (options, n, LUstruct,ScalePermstruct, trf3Dpartition, grid3d, dx,
             m_loc, fst_row, m_loc, 1,SOLVEstruct, stat, info);
         }else{

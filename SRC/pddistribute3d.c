@@ -1564,7 +1564,7 @@ pddistribute3d_Yang(superlu_dist_options_t *options, int_t n, SuperMatrix *A,
 //#endif
 
 #if ( DEBUGlevel>=1 )
-    CHECK_MALLOC(iam, "Enter pddistribute_allgrid()");
+    CHECK_MALLOC(iam, "Enter pddistribute3d_Yang()");
 #endif
 #if ( PROFlevel>=1 )
     t = SuperLU_timer_();
@@ -2461,7 +2461,7 @@ pddistribute3d_Yang(superlu_dist_options_t *options, int_t n, SuperMatrix *A,
 #if ( DEBUGlevel>=1 )
     /* Memory allocated but not freed:
        ilsum, fmod, fsendx_plist, bmod, bsendx_plist  */
-    CHECK_MALLOC(iam, "Exit pddistribute_allgrid()");
+    CHECK_MALLOC(iam, "Exit pddistribute3d_Yang()");
 #endif
 
     return (mem_use+memTRS);

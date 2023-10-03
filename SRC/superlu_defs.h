@@ -1211,6 +1211,9 @@ extern int compare_pair (const void *, const void *);
 extern int_t static_partition (struct superlu_pair *, int_t, int_t *, int_t,
 			       int_t *, int_t *, int);
 extern int get_acc_offload(void);
+extern int get_acc_solve(void);
+extern int get_new3dsolve(void);
+extern int get_new3dsolvetreecomm(void);
 
 /* Routines for debugging */
 extern void  print_panel_seg_dist(int_t, int_t, int_t, int_t, int_t *, int_t *);

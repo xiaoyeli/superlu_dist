@@ -383,10 +383,19 @@ void bcastPermutedSparseA(SuperMatrix *A,
 // } dScalePermstruct_t;
 
     MPI_Bcast(&(ScalePermstruct->DiagScale), sizeof(DiagScale_t), MPI_BYTE, 0, grid3d->zscp.comm);
+    
+/***** YL: remove the allocation in the following as perm_r/perm_c has been allocated on all grids by dScalePermstructInit
+*/
+#if 1  
+    MPI_Bcast(ScalePermstruct->perm_r, m*sizeof(int_t), MPI_BYTE, 0, grid3d->zscp.comm);  
+    MPI_Bcast(ScalePermstruct->perm_c, n*sizeof(int_t), MPI_BYTE, 0, grid3d->zscp.comm);  
+#else
     allocBcastArray ( &(ScalePermstruct->perm_r), m*sizeof(int_t), 
         0, grid3d->zscp.comm);
     allocBcastArray ( &(ScalePermstruct->perm_c), n*sizeof(int_t),
         0, grid3d->zscp.comm);
+#endif
+
     allocBcastArray ( &(ScalePermstruct->R), m*sizeof(double),
         0, grid3d->zscp.comm);
     allocBcastArray ( &(ScalePermstruct->C), n*sizeof(double),
