@@ -1,16 +1,16 @@
 /*! \file
 Copyright (c) 2003, The Regents of the University of California, through
-Lawrence Berkeley National Laboratory (subject to receipt of any required
-approvals from U.S. Dept. of Energy)
+Lawrence Berkeley National Laboratory (subject to receipt of any required 
+approvals from U.S. Dept. of Energy) 
 
-All rights reserved.
+All rights reserved. 
 
 The source code is distributed under BSD license, see the file License.txt
 at the top-level directory.
 */
 
 
-/*! @file
+/*! @file 
  * \brief Driver program for testing PDGSSVX.
  *
  * <pre>
@@ -36,14 +36,17 @@ at the top-level directory.
 #include "superlu_ddefs.h"
 
 #define NTESTS 1 /*5*/      /* Number of test types */
-#define NTRAN  2
+#define NTRAN  2    
 #define THRESH 20.0
 #define FMT1   "%10s:n=%d, test(%d)=%12.5g\n"
 #define	FMT2   "%10s:fact=%4d, DiagScale=%d, n=%d, imat=%d, test(%d)=%12.5g, berr=%12.5g\n"
 #define FMT3   "%10s:info=%d, izero=%d, n=%d, nrhs=%d, imat=%d, nfail=%d\n"
 
-extern "C" {
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+    
 static void
 parse_command_line(int argc, char *argv[], int *nprow, int *npcol,
 		   char *matrix_type, int *n, int *relax, int *maxsuper,
@@ -101,9 +104,9 @@ int main(int argc, char *argv[])
  * Purpose
  * =======
  *
- * PDTEST is the main test program for the DOUBLE linear
+ * PDTEST is the main test program for the DOUBLE linear 
  * equation driver routines PDGSSVX.
- *
+ * 
  * The program is invoked by a shell script file -- dtest.csh.
  * The output from the tests are written into a file -- dtest.out.
  */
@@ -124,7 +127,7 @@ int main(int argc, char *argv[])
     int    iam, info, ldb, ldx, nrhs;
     int_t  iinfo;
     char     **cpp, c;
-    FILE *fp;
+    FILE *fp, *fopen();
     char matrix_type[8], equed[1];
     int  relax, maxsuper, fill_ratio, min_gemm_gpu_offload=0;
     int    equil, ifact, nfact, iequil, iequed, prefact, notfactored, diaginv;
@@ -152,12 +155,12 @@ int main(int argc, char *argv[])
 		       &fill_ratio, &min_gemm_gpu_offload, &nrhs, &fp);
 
     /* ------------------------------------------------------------
-       INITIALIZE MPI ENVIRONMENT.
+       INITIALIZE MPI ENVIRONMENT. 
        ------------------------------------------------------------*/
     MPI_Init( &argc, &argv );
 
     /* ------------------------------------------------------------
-       INITIALIZE THE SUPERLU PROCESS GRID.
+       INITIALIZE THE SUPERLU PROCESS GRID. 
        ------------------------------------------------------------*/
     superlu_gridinit(MPI_COMM_WORLD, nprow, npcol, &grid);
 
@@ -176,7 +179,7 @@ int main(int argc, char *argv[])
     /* Set the default input options. */
     set_default_options_dist(&options);
     options.PrintStat = NO;
-
+	
     if (!iam) {
 	print_sp_ienv_dist(&options);
 	print_options_dist(&options);
@@ -185,15 +188,15 @@ int main(int argc, char *argv[])
 
     maxsuper = sp_ienv_dist(3, &options);
     fill_ratio = sp_ienv_dist(6, &options);
-
+    
     if ( !(berr = doubleMalloc_dist(nrhs)) )
 	ABORT("Malloc fails for berr[].");
-
+	
     /* Loop through all the input options. */
     for (imat = fimat; imat < nimat; ++imat) { /* All matrix types */
 	//if (!iam) printf("imat loop ... %d\n", imat);
 	/* ------------------------------------------------------------
-	   GET THE MATRIX FROM FILE AND SETUP THE RIGHT HAND SIDE.
+	   GET THE MATRIX FROM FILE AND SETUP THE RIGHT HAND SIDE. 
 	   ------------------------------------------------------------*/
 	dcreate_matrix(&A, nrhs, &b, &ldb, &xtrue, &ldx, fp, &grid);
 
@@ -230,14 +233,14 @@ int main(int argc, char *argv[])
 		fact = facts[ifact];
 		options.Fact = fact;
 		//if (!iam) printf("ifact loop ... %d\n", ifact);
-#ifdef SLU_HAVE_LAPACK
+#ifdef SLU_HAVE_LAPACK 
 	        for (diaginv = 0; diaginv < 2; ++diaginv) {
 #endif
 		    for (equil = 0; equil < 2; ++equil) {
 
 		    	//if (!iam) printf("equil loop ... %d\n", equil);
 
-		        options.Equil = static_cast<yes_no_t>(equil);
+		    	options.Equil = equil;
 
 		    	/* Need a first factor */
 		    	prefact   = ( options.Fact == FACTORED ||
@@ -255,7 +258,7 @@ int main(int argc, char *argv[])
 
 			    R = (double *) SUPERLU_MALLOC(m*sizeof(double));
 			    C = (double *) SUPERLU_MALLOC(n*sizeof(double));
-
+			
 			    /* Later call to PDGSSVX only needs to solve. */
                             if ( equil || iequed ) {
 			        /* Compute row and column scale factors to
@@ -283,12 +286,12 @@ int main(int argc, char *argv[])
 				      ScalePermstruct.C = C;
 				   }
 			        }
-
+			
 			        /* Equilibrate the matrix. */
 			    	pdlaqgs(&A, R, C, rowcnd, colcnd, amax, equed);
 			    	// printf("after pdlaqgs: *equed %c\n", *equed);
 
-			    	/* Not equilibrate anymore when calling
+			    	/* Not equilibrate anymore when calling 
 				   PDGSSVX, so, no malloc/free {R,C}
 				   inside PDGSSVX. */
 			    	options.Equil = NO;
@@ -296,14 +299,14 @@ int main(int argc, char *argv[])
 		    	} /* end if prefact */
 
 		        if ( prefact ) { /* Need a first factor */
-
+			
 			    /* Save Fact option. */
 		            fact = options.Fact;
 			    options.Fact = DOFACT;
 
 			    /* Initialize the statistics variables. */
 			    PStatInit(&stat);
-
+	
 			    int nrhs1 = 0; /* Only performs factorization */
 			    pdgssvx(&options, &A, &ScalePermstruct, b,
                                 ldb, nrhs1, &grid, &LUstruct, &SOLVEstruct,
@@ -338,19 +341,19 @@ int main(int argc, char *argv[])
 			    /* Restore the matrix A. */
 			    dCopy_CompRowLoc_NoAllocation(&Asave, &A);
 			    if (fact == SamePattern_SameRowPerm && iam == 0) {
-                                /* Perturb the 1st diagonal of the matrix
+                                /* Perturb the 1st diagonal of the matrix 
                                    to larger value, so to have a different A. */
                                 ((double *) Astore->nzval)[0] += 1.0e-12; //1.0e-8;
                              }
 
-		        }
+		        } 
 
 		        /* Set the right-hand side. */
 		        dCopy_Dense_Matrix_dist(m_loc, nrhs, bsave, ldb, b, ldb);
 
 		        PStatInit(&stat);
 
-		    /*if ( !iam ) printf("\ttest pdgssvx: nrun %d, iequed %d, equil %d, fact %d\n",
+		    /*if ( !iam ) printf("\ttest pdgssvx: nrun %d, iequed %d, equil %d, fact %d\n", 
 		      nrun, iequed, equil, options.Fact);*/
 		        /* Testing PDGSSVX: solve and compute the error bounds. */
 		        pdgssvx(&options, &A, &ScalePermstruct, b, ldb, nrhs,
@@ -372,7 +375,7 @@ int main(int argc, char *argv[])
 			    solx = b;
 			    pdcompute_resid(m, n, nrhs, &A, solx, ldx,
                                         bsave, ldb, &grid, &SOLVEstruct, &result[0]);
-
+			
 #if 0  /* how to get RCOND? */
 			/* Check solution accuracy from generated exact solution. */
 			    dgst04(n, nrhs, solx, ldx, xact, ldx, rcond,
@@ -386,7 +389,7 @@ int main(int argc, char *argv[])
 			    int k1 = 0;
 			    for (i = k1; i < NTESTS; ++i) {
 			        if ( result[i] >= THRESH ) {
-				    printf(FMT2, "pdgssvx", options.Fact,
+				    printf(FMT2, "pdgssvx", options.Fact, 
 				       ScalePermstruct.DiagScale,
 				       n, imat, i, result[i], berr[0]);
 				    ++nfail;
@@ -394,7 +397,7 @@ int main(int argc, char *argv[])
 			    }
 			    nrun += NTESTS;
 		        } /* end else .. info == 0 */
-
+		   
 		        /* -------------------------------------------------
 		           Deallocate storage associated with {L,U}.
 		           ------------------------------------------------- */
@@ -412,13 +415,13 @@ int main(int argc, char *argv[])
 
 		    } /* end for equil ... */
 
-#ifdef SLU_HAVE_LAPACK
+#ifdef SLU_HAVE_LAPACK 
                 } /* end for diaginv ... */
 #endif
 	    } /* end for ifact ... */
-
+		
 	} /* end for iequed ... */
-
+	
 	/* ------------------------------------------------------------
 	   DEALLOCATE STORAGE.
 	   ------------------------------------------------------------*/
@@ -453,7 +456,7 @@ out:
 
 }
 
-/*
+/*  
  * Parse command line options to get various input parameters.
  */
 static void
@@ -493,7 +496,7 @@ parse_command_line(int argc, char *argv[], int *nprow, int *npcol,
 #ifdef _MSC_VER
 #define putenv _putenv
 #endif
-	  case 'x': // c = atoi(optarg);
+	  case 'x': // c = atoi(optarg); 
 	            // sprintf(str, "%d", c);
 	            // setenv("NREL", str, 1);
 		    xenvstr = (char*) malloc((20+strlen(optarg))*sizeof(char));
@@ -502,7 +505,7 @@ parse_command_line(int argc, char *argv[], int *nprow, int *npcol,
 		    putenv(xenvstr);
 	            //printf("Reset relax env. variable to %d\n", c);
 	            break;
-	  case 'm': // c = atoi(optarg);
+	  case 'm': // c = atoi(optarg); 
 	            // sprintf(str, "%d", c);
 		    // setenv("NSUP", str, 1);
 		    menvstr = (char*) malloc((20+strlen(optarg))*sizeof(char));
@@ -511,7 +514,7 @@ parse_command_line(int argc, char *argv[], int *nprow, int *npcol,
 		    putenv(menvstr);
 		    //printf("Reset maxsuper env. variable to %d\n", c);
 	            break;
-	  case 'b': // c = atoi(optarg);
+	  case 'b': // c = atoi(optarg); 
 	            // sprintf(str, "%d", c);
 		    // setenv("FILL", str, 1);
 		    benvstr = (char*) malloc((20+strlen(optarg))*sizeof(char));
@@ -520,7 +523,7 @@ parse_command_line(int argc, char *argv[], int *nprow, int *npcol,
 		    putenv(benvstr);
 		    //printf("Reset fill_ratio env. variable to %d\n", c);
 	            break;
-	  case 'g': // c = atoi(optarg);
+	  case 'g': // c = atoi(optarg); 
 	            // sprintf(str, "%d", c);
 		    // setenv("N_GEMM", str, 1);
 		    genvstr = (char*) malloc((20+strlen(optarg))*sizeof(char));
@@ -529,7 +532,7 @@ parse_command_line(int argc, char *argv[], int *nprow, int *npcol,
 		    putenv(genvstr);
 		    //printf("Reset min_gemm_gpu_offload env. variable to %d\n", c);
 	            break;
-	  case 's': *nrhs = atoi(optarg);
+	  case 's': *nrhs = atoi(optarg); 
 	            break;
           case 'f':
                     if ( !(*fp = fopen(optarg, "r")) ) {
@@ -560,4 +563,6 @@ int cpp_defs()
     return 0;
 }
 
-}
+#ifdef __cplusplus
+extern "C" {
+#endif

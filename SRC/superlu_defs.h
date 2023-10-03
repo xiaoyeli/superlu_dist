@@ -1048,9 +1048,9 @@ typedef struct xtrsTimer_t
  * Function prototypes
  ***********************************************************************/
 
-/* #ifdef __cplusplus */
-/* extern "C" { */
-/* #endif */
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 extern void   superlu_gridinit(MPI_Comm, int, int, gridinfo_t *);
 extern void   superlu_gridmap(MPI_Comm, int, int, int [], int, gridinfo_t *);
@@ -1422,8 +1422,8 @@ extern int_t LDiagBlockRecvWait( int_t k, int_t* factored_U, MPI_Request *, grid
 
 /*=====================*/
 
-/* #ifdef __cplusplus */
-/*   } */
-/* #endif */
+#ifdef __cplusplus
+  }
+#endif
 
 #endif /* __SUPERLU_DEFS */

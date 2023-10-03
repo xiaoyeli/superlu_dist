@@ -1,16 +1,16 @@
 /* superlu_dist_config.h.in */
 
 /* Enable CUDA */
-/* #undef HAVE_CUDA */
+#define HAVE_CUDA TRUE
 
 /* Enable HIP */
 /* #undef HAVE_HIP */
 
 /* Enable SYCL */
-#define HAVE_SYCL TRUE
+/* #undef HAVE_SYCL */
 
 /* Enable DPCPP */
-#define HAVE_DPCPP TRUE
+/* #undef HAVE_DPCPP */
 
 /* Enable parmetis */
 /* #undef HAVE_PARMETIS */

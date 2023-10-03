@@ -168,7 +168,7 @@ void dreadrhs(int m, double *b)
     FILE *fp;
     int i;
 
-    if ( !(fp = ::fopen("b.dat", "r")) ) {
+    if ( !(fp = fopen("b.dat", "r")) ) {
         fprintf(stderr, "dreadrhs: file does not exist\n");
 	exit(-1);
     }

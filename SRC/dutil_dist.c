@@ -725,7 +725,7 @@ void dDumpLblocks(int iam, int_t nsupers, gridinfo_t *grid,
 
 	snprintf(filename, sizeof(filename), "%s-%d", "L", iam);
 	printf("Dumping L factor to --> %s\n", filename);
- 	if ( !(fp = ::fopen(filename, "w")) ) {
+ 	if ( !(fp = fopen(filename, "w")) ) {
 	  ABORT("File open failed");
 	}
 

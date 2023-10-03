@@ -77,8 +77,9 @@ if(enable_double)
   if (TPL_ENABLE_SYCLLIB)
     set_source_files_properties(${DTEST} PROPERTIES LANGUAGE CXX)
   endif (TPL_ENABLE_SYCLLIB)
-  
+
   add_executable(pdtest ${DTEST})
+  set_target_properties(pdtest PROPERTIES LINKER_LANGUAGE C)  
   target_link_libraries(pdtest PUBLIC ${all_link_libs})
   add_superlu_dist_tests(pdtest g20.rua)
 endif()

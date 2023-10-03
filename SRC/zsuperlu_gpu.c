@@ -21,10 +21,6 @@
 
 #include "zlustruct_gpu.h"
 
-#ifdef HAVE_HIP
-#include "superlu_gpu_utils.hip.cpp"
-#endif
-
 #include "dcomplex.h"
 
 //extern "C" {
