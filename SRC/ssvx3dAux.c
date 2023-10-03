@@ -243,7 +243,9 @@ void findRowPerm_MC64(gridinfo_t* grid, int_t job,
                       double* R1,
                       double* C1,
                       int_t* iinfo) {
+    #if ( DEBUGlevel>=1 )                    
     LOG_FUNC_ENTER();
+    #endif
     // Check input parameters
     if (colptr == NULL || rowind == NULL || a_GA == NULL || 
         perm_r == NULL ) {
@@ -297,7 +299,9 @@ void scale_distributed_matrix(int_t rowequ, int_t colequ, int_t m, int_t n,
  int_t m_loc, int_t *rowptr, int_t *colind, int_t fst_row, double *a,
   double *R, double *C, double *R1, double *C1) 
 {
-    printf("\033[1;32mEntering function scale_distributed_matrix at %s:%d\033[0m\n", __FILE__, __LINE__);
+    #if ( DEBUGlevel>=1 )                    
+    LOG_FUNC_ENTER();
+    #endif    
     // Scale the row and column factors
     for (int i = 0; i < n; ++i) {
         R1[i] = exp(R1[i]);
@@ -503,7 +507,9 @@ void perform_row_permutation(
     int_t *colequ,
     int_t *iinfo)
 {
+    #if ( DEBUGlevel>=1 )                    
     LOG_FUNC_ENTER();
+    #endif
     int_t *perm_r = ScalePermstruct->perm_r;
     /* Get NC format data from SuperMatrix GA */
     NCformat* GAstore = (NCformat *)GA->Store;
@@ -648,7 +654,9 @@ void permCol_SymbolicFact3d(superlu_dist_options_t *options, int_t n, SuperMatri
 						   superlu_dist_mem_usage_t*symb_mem_usage,
 						   gridinfo3d_t* grid3d)
 {
+    #if ( DEBUGlevel>=1 )                    
     LOG_FUNC_ENTER();
+    #endif
     SuperMatrix GAC; /* Global A in NCP format */
     NCPformat *GACstore;
     int_t *GACcolbeg, *GACcolend, *GACrowind, irow;

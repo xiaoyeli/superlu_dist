@@ -504,6 +504,8 @@ int_t checkDist3DLUStruct(  dLUstruct_t* LUstruct, gridinfo3d_t* grid3d)
             }
         }
     }
-    printf("Check 3D LU structure passed\n");
+#if ( DEBUGlevel>=1 )
+    CHECK_MALLOC (grid3d->iam, "Exit checkDist3DLUStruct()");
+#endif
     return 0;
 }

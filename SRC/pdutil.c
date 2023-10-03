@@ -1258,6 +1258,37 @@ void dSolveFinalize(superlu_dist_options_t *options, dSOLVEstruct_t *SOLVEstruct
     }
 } /* dSolveFinalize */
 
+#if 0
+void dDestroy_A3d_gathered_on_2d(dSOLVEstruct_t *SOLVEstruct, gridinfo3d_t *grid3d)
+{
+    /* free A2d and B2d, which are allocated only in 2D layer grid-0 */
+    NRformat_loc3d *A3d = SOLVEstruct->A3d;
+    NRformat_loc *A2d = A3d->A_nfmt;
+    if (grid3d->zscp.Iam == 0)
+    {
+        SUPERLU_FREE(A2d->rowptr);
+        SUPERLU_FREE(A2d->colind);
+        SUPERLU_FREE(A2d->nzval);
+    }
+    SUPERLU_FREE(A3d->row_counts_int); // free displacements and counts
+    SUPERLU_FREE(A3d->row_disp);
+    SUPERLU_FREE(A3d->nnz_counts_int);
+    SUPERLU_FREE(A3d->nnz_disp);
+    SUPERLU_FREE(A3d->b_counts_int);
+    SUPERLU_FREE(A3d->b_disp);
+    int rankorder = grid3d->rankorder;
+    if (rankorder == 0)
+    { /* Z-major in 3D grid */
+        SUPERLU_FREE(A3d->procs_to_send_list);
+        SUPERLU_FREE(A3d->send_count_list);
+        SUPERLU_FREE(A3d->procs_recv_from_list);
+        SUPERLU_FREE(A3d->recv_count_list);
+    }
+    SUPERLU_FREE(A2d); // free 2D structure
+    SUPERLU_FREE(A3d); // free 3D structure
+} /* dDestroy_A3d_gathered_on_2d */
+
+#else 
 void dDestroy_A3d_gathered_on_2d(dSOLVEstruct_t *SOLVEstruct, gridinfo3d_t *grid3d)
 {
     /* free A2d and B2d, which are allocated on all 2D layers*/
@@ -1283,7 +1314,9 @@ void dDestroy_A3d_gathered_on_2d(dSOLVEstruct_t *SOLVEstruct, gridinfo3d_t *grid
     }
     SUPERLU_FREE( A2d );         // free 2D structure
     SUPERLU_FREE( A3d );         // free 3D structure
-} /* dDestroy_A3d_gathered_on_2d */
+} /* dDestroy_A3d_gathered_on_2d_allgrid */
+#endif
+
 
 
 /*! \brief Check the inf-norm of the error vector
