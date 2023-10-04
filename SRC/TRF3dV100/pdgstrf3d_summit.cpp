@@ -230,7 +230,7 @@ int_t LUstruct_v100::pdgstrf3d()
         if (getenv("ANC25D"))
             useAnc25D = atoi(getenv("ANC25D"));
         if (useAnc25D)
-            printf("-- Using ANC25D \n");
+            printf("-- Using ANC25D; ONLY CPU supported \n");
 
         for (int ilvl = 0; ilvl < maxLvl; ++ilvl) /* maxLvel is the tree level
 						     along Z-dim process grid */
@@ -243,6 +243,7 @@ int_t LUstruct_v100::pdgstrf3d()
                     double tilvl = SuperLU_timer_();
                     if (superlu_acc_offload)
                     {
+                        printf("-- ANC25D on GPU is not working yet!!!!! \n");    
                         if (ilvl == 0)
                             dsparseTreeFactorGPU(sforest, dFBufs,
                                                  &gEtreeInfo,
