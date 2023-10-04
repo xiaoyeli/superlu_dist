@@ -120,6 +120,13 @@ public:
 
     // return the maximal iEnd such that stRow(iEnd)-stRow(iSt) < maxRow;
     int getEndBlock(int iSt, int maxRows);
+
+    // ~lpanel_t()
+    // {
+    //     SUPERLU_FREE(index);    
+    //     // SUPERLU_FREE(val);    
+    // }
+
 #ifdef HAVE_CUDA
     lpanelGPU_t copyToGPU();
     lpanelGPU_t copyToGPU(void *basePtr); // when we are doing a single allocation
@@ -282,6 +289,13 @@ public:
     }
     int getEndBlock(int jSt, int maxCols);
 
+    // ~upanel_t()
+    // {
+    //     SUPERLU_FREE(index);    
+    //     SUPERLU_FREE(val);    
+    // }
+
+
 #ifdef HAVE_CUDA
     upanelGPU_t copyToGPU();
     //TODO: implement with baseptr
@@ -334,7 +348,7 @@ struct LUstruct_v100
     SuperLUStat_t *stat;
 
 
-    // Adding more variables for factorization
+    // Adding more variables for factorization 
     dtrf3Dpartition_t *trf3Dpartition;
     int_t maxLvl;
     int maxLeafNodes; /* Sherry added 12/31/22. Computed in LUstruct_v100 constructor */
@@ -396,18 +410,34 @@ struct LUstruct_v100
     /**
     *          C O N / D E S - T R U C T O R S
     */
-    LUstruct_v100(int_t nsupers, int_t ldt_, dtrf3Dpartition_t *trf3Dpartition,
+    LUstruct_v100(int_t nsupers, int_t ldt_, dtrf3Dpartition_t *trf3Dpartition, 
                   dLUstruct_t *LUstruct, gridinfo3d_t *grid3d,
                   SCT_t *SCT_, superlu_dist_options_t *options_, SuperLUStat_t *stat,
                   double thresh_, int *info_);
 
     ~LUstruct_v100()
     {
-        delete[] lPanelVec;
-        delete[] uPanelVec;
-	
+
 	/* Sherry: SUPERLU_MALLOC in constructor are not free'd,
 	   need to call the following functions. 12/31/22    */
+
+    /* Yang: I was trying to add the following but it causes crash, not sure why. */
+        
+        // for (int_t i = 0; i < CEILING(nsupers, Pc); ++i)
+        //     if (i * Pc + mycol < nsupers && isNodeInMyGrid[i * Pc + mycol] == 1){
+        //         SUPERLU_FREE(lPanelVec[i].index);
+        //         SUPERLU_FREE(lPanelVec[i].val);
+        //     }
+
+        // for (int_t i = 0; i < CEILING(nsupers, Pr); ++i)
+        //     if (i * Pr + myrow < nsupers && isNodeInMyGrid[i * Pr + myrow] == 1){
+        //         SUPERLU_FREE(uPanelVec[i].index);
+        //         SUPERLU_FREE(uPanelVec[i].val);
+        //     }
+    
+        delete[] lPanelVec;
+        delete[] uPanelVec;
+
 
 	/* free diagonal L and U blocks */
 	dfreeDiagFactBufsArr(maxLeafNodes, dFBufs);
@@ -433,7 +463,20 @@ struct LUstruct_v100
 	printf(".. free batch buffers\n"); fflush(stdout);
 	SUPERLU_FREE(A_gpu.dFBufs);
 	SUPERLU_FREE(A_gpu.gpuGemmBuffs);
+
+    for (int stream = 0; stream < A_gpu.numCudaStreams; stream++)
+    {
+        cusolverDnDestroy(A_gpu.cuSolveHandles[stream]);
+        cublasDestroy(A_gpu.cuHandles[stream]);
+        cublasDestroy(A_gpu.lookAheadLHandle[stream]);
+        cublasDestroy(A_gpu.lookAheadUHandle[stream]);
     }
+
+
+    }
+
+    SUPERLU_FREE(isNodeInMyGrid);
+
     } /* end destructor LUstruct_v100 */
 
   
@@ -517,6 +560,13 @@ struct LUstruct_v100
         gEtreeInfo_t *gEtreeInfo, // global etree info
         int tag_ub);
     int_t dsparseTreeFactorGPUBaseline(
+        sForest_t *sforest,
+        ddiagFactBufs_t **dFBufs, // size maxEtree level
+        gEtreeInfo_t *gEtreeInfo, // global etree info
+        int tag_ub);
+
+    int_t dAncestorFactorBaselineGPU(
+        int_t alvl,
         sForest_t *sforest,
         ddiagFactBufs_t **dFBufs, // size maxEtree level
         gEtreeInfo_t *gEtreeInfo, // global etree info

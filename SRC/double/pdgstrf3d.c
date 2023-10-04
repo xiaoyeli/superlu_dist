@@ -232,7 +232,8 @@ int_t pdgstrf3d(superlu_dist_options_t *options, int m, int n, double anorm,
     }
     
     // dinitDiagFactBufsArrMod is modified version of dinitDiagFactBufsArr to use ldts instead of a scalar
-    ddiagFactBufs_t** dFBufs = dinitDiagFactBufsArrMod(mxLeafNode, ldts, grid);
+    // ddiagFactBufs_t** dFBufs = dinitDiagFactBufsArrMod(mxLeafNode, ldts, grid);
+    ddiagFactBufs_t** dFBufs = dinitDiagFactBufsArr(mxLeafNode, ldt, grid);
     SUPERLU_FREE(ldts);
 
     commRequests_t** comReqss = initCommRequestsArr(SUPERLU_MAX(mxLeafNode, numLA), ldt, grid);
@@ -271,7 +272,6 @@ int_t pdgstrf3d(superlu_dist_options_t *options, int m, int n, double anorm,
     d2Hreduce_t* d2Hred = &d2HredObj;
     dsluGPU_t sluGPUobj;
     dsluGPU_t *sluGPU = &sluGPUobj;
-    sluGPU->isNodeInMyGrid = getIsNodeInMyGrid(nsupers, maxLvl, myNodeCount, treePerm);
     if (superlu_acc_offload)
     {
 #if 0 	/* Sherry: For GPU code on titan, we do not need performance 
@@ -284,7 +284,7 @@ int_t pdgstrf3d(superlu_dist_options_t *options, int m, int n, double anorm,
         LookUpTableInit(iam);
         acc_async_cost = get_acc_async_cost();
 #endif
-
+    sluGPU->isNodeInMyGrid = getIsNodeInMyGrid(nsupers, maxLvl, myNodeCount, treePerm);
 	//OLD: int_t* perm_c_supno = getPerm_c_supno(nsupers, options, LUstruct, grid);
 	int_t* perm_c_supno = getPerm_c_supno(nsupers, options,
 					      LUstruct->etree,
@@ -381,14 +381,14 @@ int_t pdgstrf3d(superlu_dist_options_t *options, int m, int n, double anorm,
     //printf("After factorization: INFO = %d\n", *info); fflush(stdout);
 
     SCT->pdgstrfTimer = SuperLU_timer_() - SCT->pdgstrfTimer;
-    #ifdef GPU_ACC
-    // if(!grid3d->zscp.Iam)
-    // {
-    //     // SCT_printSummary(grid, SCT);
-    //     if (superlu_acc_offload )
-    //         dprintGPUStats(sluGPU->A_gpu);
-    // }
-    #endif
+
+    if(!grid3d->zscp.Iam)
+    {
+        // SCT_printSummary(grid, SCT);
+        // if (superlu_acc_offload )
+        //     dprintGPUStats(sluGPU->A_gpu);
+    }
+        
 
     
 

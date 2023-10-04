@@ -26,7 +26,7 @@ at the top-level directory.
 /*
  * Global variables
  */
-SuperLU_ExpHeader *expanders; /* Array of pointers to 4 types of memory */
+SuperLU_ExpHeader *expanders=NULL; /* Array of pointers to 4 types of memory */
 SuperLU_LU_stack_t stack;
 int_t no_expand;
 
@@ -477,8 +477,10 @@ int_t symbfact_SubFree(Glu_freeable_t *Glu_freeable)
     MPI_Comm_rank( MPI_COMM_WORLD, &iam );
     CHECK_MALLOC(iam, "Enter symbfact_SubFree()");
 #endif
-    
-    SUPERLU_FREE(expanders);
+    if(expanders != NULL){
+		SUPERLU_FREE(expanders);
+		expanders=NULL;
+	}
     SUPERLU_FREE(Glu_freeable->lsub);
     SUPERLU_FREE(Glu_freeable->xlsub);
     SUPERLU_FREE(Glu_freeable->usub);

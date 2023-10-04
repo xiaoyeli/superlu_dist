@@ -24,6 +24,10 @@ at the top-level directory.
 #include "superlu_ddefs.h"
 //#include "TRF3dV100/superlu_summit.h"
 #include "superlu_summit.h"
+#include "pddistribute3d.h"
+#include "ssvx3dAux.c"
+// int_t dgatherAllFactoredLU3d( dtrf3Dpartition_t*  trf3Dpartition,
+// 			   dLUstruct_t* LUstruct, gridinfo3d_t* grid3d, SCT_t* SCT );
 #include <stdbool.h>
 
 /*! \brief
@@ -499,8 +503,6 @@ at the top-level directory.
  * See superlu_ddefs.h for the definitions of varioous data types.
  * </pre>
  */
-// dSOLVEstruct3d_t * SOLVEstruct,
-// SOLVEstruct->A3d
 
 int writeLUtoDisk(int nsupers, int_t *xsup, dLUstruct_t *LUstruct)
 {
@@ -716,10 +718,9 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 	SuperMatrix GA; /* Global A in NC format */
 	NCformat *GAstore;
 	double *a_GA;
-	SuperMatrix GAC; /* Global A in NCP format (add n end pointers) */
-	NCPformat *GACstore;
+
 	Glu_persist_t *Glu_persist = LUstruct->Glu_persist;
-	Glu_freeable_t *Glu_freeable;
+	Glu_freeable_t *Glu_freeable = NULL;
 	/* The nonzero structures of L and U factors, which are
 	   replicated on all processrs.
 	   (lsub, xlsub) contains the compressed subscript of
@@ -758,7 +759,7 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 	double dmin, dsum, dprod;
 #endif
 
-	dtrf3Dpartition_t *trf3Dpartition=LUstruct->trf3Dpartition;
+	dtrf3Dpartition_t *trf3Dpartition=LUstruct->trf3Dpart;
 	int gpu3dVersion = 0;
 	#ifdef GPU_ACC
 		// gpu3dVersion = 1;
@@ -780,34 +781,8 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 	/* Test the options choices. */
 	*info = 0;
 	Fact = options->Fact;
-	if (Fact < 0 || Fact > FACTORED)
-		*info = -1;
-	else if (options->RowPerm < 0 || options->RowPerm > MY_PERMR)
-		*info = -1;
-	else if (options->ColPerm < 0 || options->ColPerm > MY_PERMC)
-		*info = -1;
-	else if (options->IterRefine < 0 || options->IterRefine > SLU_EXTRA)
-		*info = -1;
-	else if (options->IterRefine == SLU_EXTRA)
-	{
-		*info = -1;
-		fprintf(stderr,
-				"Extra precise iterative refinement yet to support.");
-	}
-	else if (A->nrow != A->ncol || A->nrow < 0 || A->Stype != SLU_NR_loc || A->Dtype != SLU_D || A->Mtype != SLU_GE)
-		*info = -2;
-	else if (ldb < Astore->m_loc)
-		*info = -5;
-	else if (nrhs < 0)
-	{
-		*info = -6;
-	}
-	if (*info)
-	{
-		i = -(*info);
-		pxerr_dist("pdgssvx3d", grid, -(*info));
-		return;
-	}
+
+	validateInput_ssvx3d(options, A, ldb, nrhs, grid3d, info);
 
 	/* Initialization. */
 
@@ -828,7 +803,7 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 	   B is then aliased to B2d for the following 2D solve;
 	*/
 	dGatherNRformat_loc3d_allgrid(Fact, (NRformat_loc *)A->Store,
-						  B, ldb, nrhs, grid3d, &A3d);  
+						  B, ldb, nrhs, grid3d, &A3d);
 
 	B = (double *)A3d->B2d; /* B is now pointing to B2d,
 			   allocated in dGatherNRformat_loc3d.  */
@@ -882,8 +857,13 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 
 		Equil = (!factored && options->Equil == YES);
 		notran = (options->Trans == NOTRANS);
-
 		iam = grid->iam;
+
+	if (grid3d->zscp.Iam == 0) /* on 2D grid-0 */
+	{
+
+		/* The following code now works on 2D grid-0 */
+
 		job = 5;
 		/* Extract equilibration status from a previous factorization */
 		if (factored || (Fact == SamePattern_SameRowPerm && Equil))
@@ -898,154 +878,27 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 			rowequ = colequ = FALSE;
 		}
 
+		/* Not factored & ask for equilibration, then alloc RC */
+		if (Equil && Fact != SamePattern_SameRowPerm)
+			dallocScalePermstruct_RC(ScalePermstruct, m, n);
+
 		/* The following arrays are replicated on all processes. */
 		perm_r = ScalePermstruct->perm_r;
 		perm_c = ScalePermstruct->perm_c;
 		etree = LUstruct->etree;
 		R = ScalePermstruct->R;
 		C = ScalePermstruct->C;
-		/********/
-
-		/* Not factored & ask for equilibration */
-		if (Equil && Fact != SamePattern_SameRowPerm)
-		{
-			/* Allocate storage if not done so before. */
-			switch (ScalePermstruct->DiagScale)
-			{
-			case NOEQUIL:
-				if (!(R = (double *)doubleMalloc_dist(m)))
-					ABORT("Malloc fails for R[].");
-				if (!(C = (double *)doubleMalloc_dist(n)))
-					ABORT("Malloc fails for C[].");
-				ScalePermstruct->R = R;
-				ScalePermstruct->C = C;
-				break;
-			case ROW:
-				if (!(C = (double *)doubleMalloc_dist(n)))
-					ABORT("Malloc fails for C[].");
-				ScalePermstruct->C = C;
-				break;
-			case COL:
-				if (!(R = (double *)doubleMalloc_dist(m)))
-					ABORT("Malloc fails for R[].");
-				ScalePermstruct->R = R;
-				break;
-			default:
-				break;
-			}
-		}
 
 		/* ------------------------------------------------------------
 		   Diagonal scaling to equilibrate the matrix.
 		   ------------------------------------------------------------ */
 		if (Equil)
 		{
-#if (DEBUGlevel >= 1)
-			CHECK_MALLOC(iam, "Enter equil");
-#endif
-			t = SuperLU_timer_();
+			scaleMatrixDiagonally(Fact, ScalePermstruct,
+								  A, stat, grid, &rowequ, &colequ, &iinfo);
+			if (iinfo < 0)
+				return; // return if error
 
-			if (Fact == SamePattern_SameRowPerm)
-			{
-				/* Reuse R and C. */
-				switch (ScalePermstruct->DiagScale)
-				{
-				case NOEQUIL:
-					break;
-				case ROW:
-					irow = fst_row;
-					for (j = 0; j < m_loc; ++j)
-					{
-						for (i = rowptr[j]; i < rowptr[j + 1]; ++i)
-						{
-							a[i] *= R[irow]; /* Scale rows. */
-						}
-						++irow;
-					}
-					break;
-				case COL:
-					for (j = 0; j < m_loc; ++j)
-						for (i = rowptr[j]; i < rowptr[j + 1]; ++i)
-						{
-							icol = colind[i];
-							a[i] *= C[icol]; /* Scale columns. */
-						}
-					break;
-				case BOTH:
-					irow = fst_row;
-					for (j = 0; j < m_loc; ++j)
-					{
-						for (i = rowptr[j]; i < rowptr[j + 1]; ++i)
-						{
-							icol = colind[i];
-							a[i] *= R[irow] * C[icol]; /* Scale rows and cols. */
-						}
-						++irow;
-					}
-					break;
-				}
-			}
-			else
-			{ /* Compute R & C from scratch */
-				/* Compute the row and column scalings. */
-				pdgsequ(A, R, C, &rowcnd, &colcnd, &amax, &iinfo, grid);
-
-				if (iinfo > 0)
-				{
-					if (iinfo <= m)
-					{
-#if (PRNTlevel >= 1)
-						fprintf(stderr, "The " IFMT "-th row of A is exactly zero\n", iinfo);
-#endif
-					}
-					else
-					{
-#if (PRNTlevel >= 1)
-						fprintf(stderr, "The " IFMT "-th column of A is exactly zero\n", iinfo - n);
-#endif
-					}
-				}
-				else if (iinfo < 0)
-					return;
-
-				/* Now iinfo == 0 */
-
-				/* Equilibrate matrix A if it is badly-scaled.
-				   A <-- diag(R)*A*diag(C)                     */
-				pdlaqgs(A, R, C, rowcnd, colcnd, amax, equed);
-
-				if (strncmp(equed, "R", 1) == 0)
-				{
-					ScalePermstruct->DiagScale = ROW;
-					rowequ = ROW;
-				}
-				else if (strncmp(equed, "C", 1) == 0)
-				{
-					ScalePermstruct->DiagScale = COL;
-					colequ = COL;
-				}
-				else if (strncmp(equed, "B", 1) == 0)
-				{
-					ScalePermstruct->DiagScale = BOTH;
-					rowequ = ROW;
-					colequ = COL;
-				}
-				else
-					ScalePermstruct->DiagScale = NOEQUIL;
-
-#if (PRNTlevel >= 1)
-				if (iam == 0)
-				{
-					printf(".. equilibrated? *equed = %c\n", *equed);
-					fflush(stdout);
-				}
-#endif
-			} /* end if-else Fact ... */
-
-			stat->utime[EQUIL] = SuperLU_timer_() - t;
-#if (DEBUGlevel >= 1)
-			CHECK_MALLOC(iam, "Exit equil");
-#endif
 		} /* end if Equil ... LAPACK style, not involving MC64 */
 
 		if (!factored)
@@ -1059,253 +912,28 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 			if (Fact != SamePattern_SameRowPerm &&
 				(parSymbFact == NO || options->RowPerm != NO))
 			{
-
-				need_value = (options->RowPerm == LargeDiag_MC64);
-
+				int_t need_value = (options->RowPerm == LargeDiag_MC64);
 				pdCompRow_loc_to_CompCol_global(need_value, A, grid, &GA);
-
 				GAstore = (NCformat *)GA.Store;
-				colptr = GAstore->colptr;
-				rowind = GAstore->rowind;
 				nnz = GAstore->nnz;
-				GA_mem_use = (nnz + n + 1) * sizeof(int_t);
-
-				if (need_value)
-				{
-					a_GA = (double *)GAstore->nzval;
-					GA_mem_use += nnz * sizeof(double);
-				}
-
-				else
+				GA_mem_use = (nnz + n + 1) * sizeof(int_t) + need_value * nnz * sizeof(double);
+				if (!need_value)
 					assert(GAstore->nzval == NULL);
 			}
 
 			/* ------------------------------------------------------------
 			   Find the row permutation for A.
-			   ------------------------------------------------------------ */
-			if (options->RowPerm != NO)
-			{
-				t = SuperLU_timer_();
-				if (Fact != SamePattern_SameRowPerm)
-				{
-					if (options->RowPerm == MY_PERMR)
-					{
-						/* Use user's perm_r. */
-						/* Permute the global matrix GA for symbfact() */
-						for (i = 0; i < colptr[n]; ++i)
-						{
-							irow = rowind[i];
-							rowind[i] = perm_r[irow];
-						}
-					}
-					else if (options->RowPerm == LargeDiag_MC64)
-					{
-						/* Get a new perm_r[] */
-						if (job == 5)
-						{
-							/* Allocate storage for scaling factors. */
-							if (!(R1 = doubleMalloc_dist(m)))
-								ABORT("SUPERLU_MALLOC fails for R1[]");
-							if (!(C1 = doubleMalloc_dist(n)))
-								ABORT("SUPERLU_MALLOC fails for C1[]");
-						}
+			------------------------------------------------------------ */
+			perform_row_permutation(
+				options, Fact, ScalePermstruct, LUstruct,
+				m, n, grid, A, &GA, stat, job, Equil,
+				&rowequ, &colequ, &iinfo);
 
-						if (iam == 0)
-						{
-							/* Process 0 finds a row permutation */
-							iinfo = dldperm_dist(job, m, nnz, colptr, rowind, a_GA,
-												 perm_r, R1, C1);
-							MPI_Bcast(&iinfo, 1, mpi_int_t, 0, grid->comm);
-							if (iinfo == 0)
-							{
-								MPI_Bcast(perm_r, m, mpi_int_t, 0, grid->comm);
-								if (job == 5 && Equil)
-								{
-									MPI_Bcast(R1, m, MPI_DOUBLE, 0, grid->comm);
-									MPI_Bcast(C1, n, MPI_DOUBLE, 0, grid->comm);
-								}
-							}
-						}
-						else
-						{
-							MPI_Bcast(&iinfo, 1, mpi_int_t, 0, grid->comm);
-							if (iinfo == 0)
-							{
-								MPI_Bcast(perm_r, m, mpi_int_t, 0, grid->comm);
-								if (job == 5 && Equil)
-								{
-									MPI_Bcast(R1, m, MPI_DOUBLE, 0, grid->comm);
-									MPI_Bcast(C1, n, MPI_DOUBLE, 0, grid->comm);
-								}
-							}
-						}
-
-						if (iinfo && job == 5)
-						{ /* Error return */
-							SUPERLU_FREE(R1);
-							SUPERLU_FREE(C1);
-						}
-#if (PRNTlevel >= 2)
-						dmin = damch_dist("Overflow");
-						dsum = 0.0;
-						dprod = 1.0;
-#endif
-						if (iinfo == 0)
-						{
-							if (job == 5)
-							{
-								if (Equil)
-								{
-									for (i = 0; i < n; ++i)
-									{
-										R1[i] = exp(R1[i]);
-										C1[i] = exp(C1[i]);
-									}
-
-									/* Scale the distributed matrix further.
-									   A <-- diag(R1)*A*diag(C1)            */
-									irow = fst_row;
-									for (j = 0; j < m_loc; ++j)
-									{
-										for (i = rowptr[j]; i < rowptr[j + 1]; ++i)
-										{
-											icol = colind[i];
-											a[i] *= R1[irow] * C1[icol];
-#if (PRNTlevel >= 2)
-											if (perm_r[irow] == icol)
-											{
-												/* New diagonal */
-												if (job == 2 || job == 3)
-													dmin = SUPERLU_MIN(dmin, fabs(a[i]));
-												else if (job == 4)
-													dsum += fabs(a[i]);
-												else if (job == 5)
-													dprod *= fabs(a[i]);
-											}
-#endif
-										}
-										++irow;
-									}
-
-									/* Multiply together the scaling factors --
-									   R/C from simple scheme, R1/C1 from MC64. */
-									if (rowequ)
-										for (i = 0; i < m; ++i)
-											R[i] *= R1[i];
-									else
-										for (i = 0; i < m; ++i)
-											R[i] = R1[i];
-									if (colequ)
-										for (i = 0; i < n; ++i)
-											C[i] *= C1[i];
-									else
-										for (i = 0; i < n; ++i)
-											C[i] = C1[i];
-
-									ScalePermstruct->DiagScale = BOTH;
-									rowequ = colequ = 1;
-
-								} /* end if Equil */
-
-								/* Now permute global A to prepare for symbfact() */
-								for (j = 0; j < n; ++j)
-								{
-									for (i = colptr[j]; i < colptr[j + 1]; ++i)
-									{
-										irow = rowind[i];
-										rowind[i] = perm_r[irow];
-									}
-								}
-								SUPERLU_FREE(R1);
-								SUPERLU_FREE(C1);
-							}
-							else
-							{ /* job = 2,3,4 */
-								for (j = 0; j < n; ++j)
-								{
-									for (i = colptr[j]; i < colptr[j + 1]; ++i)
-									{
-										irow = rowind[i];
-										rowind[i] = perm_r[irow];
-									} /* end for i ... */
-								}	  /* end for j ... */
-							}		  /* end else job ... */
-						}
-						else
-						{ /* if iinfo != 0 */
-							for (i = 0; i < m; ++i)
-								perm_r[i] = i;
-						}
-#if (PRNTlevel >= 2)
-						if (job == 2 || job == 3)
-						{
-							if (!iam)
-								printf("\tsmallest diagonal %e\n", dmin);
-						}
-						else if (job == 4)
-						{
-							if (!iam)
-								printf("\tsum of diagonal %e\n", dsum);
-						}
-						else if (job == 5)
-						{
-							if (!iam)
-								printf("\t product of diagonal %e\n", dprod);
-						}
-#endif
-					}
-					else
-					{ /* use LargeDiag_HWPM */
-#ifdef HAVE_COMBBLAS
-						d_c2cpp_GetHWPM(A, grid, ScalePermstruct);
-#else
-						if (iam == 0)
-						{
-							printf("CombBLAS is not available\n");
-							fflush(stdout);
-						}
-#endif
-					} /* end if-else options->RowPerm ... */
-
-					t = SuperLU_timer_() - t;
-					stat->utime[ROWPERM] = t;
-#if (PRNTlevel >= 1)
-					if (!iam)
-					{
-						printf(".. LDPERM job " IFMT "\t time: %.2f\n", job, t);
-						fflush(stdout);
-					}
-#endif
-				} /* end if Fact not SamePattern_SameRowPerm ... */
-			}
-			else
-			{ /* options->RowPerm == NOROWPERM / NATURAL */
-				for (i = 0; i < m; ++i)
-					perm_r[i] = i;
-			}
-
-#if (DEBUGlevel >= 2)
-			if (!iam)
-				PrintInt10("perm_r", m, perm_r);
-#endif
 		} /* end if (!factored) */
 
+		/* Compute norm(A), which will be used to adjust small diagonal. */
 		if (!factored || options->IterRefine)
-		{
-			/* Compute norm(A), which will be used to adjust small diagonal. */
-			if (notran)
-				*(unsigned char *)norm = '1';
-			else
-				*(unsigned char *)norm = 'I';
-			anorm = pdlangs(norm, A, grid);
-#if (PRNTlevel >= 1)
-			if (!iam)
-			{
-				printf(".. anorm %e\n", anorm);
-				fflush(stdout);
-			}
-#endif
-		}
+			anorm = computeA_Norm(notran, A, grid);
 
 		/* ------------------------------------------------------------
 		   Perform ordering and symbolic factorization
@@ -1326,6 +954,10 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 
 			if (parSymbFact == YES || permc_spec == PARMETIS)
 			{
+				if(grid3d->npdep!=1){
+					fprintf(stderr, "Error: ParMETIS and Parallel Symbolic Factorization are not yet supported with grid3d->npdep>1.\n");
+					return; // or exit(-1); if you want to terminate the program
+				}
 				nprocs_num = grid->nprow * grid->npcol;
 				noDomains = (int)(pow(2, ((int)LOG2(nprocs_num))));
 
@@ -1397,77 +1029,19 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 			{
 				if (parSymbFact == NO)
 				{
-
-					int_t *GACcolbeg, *GACcolend, *GACrowind;
-
-					sp_colorder(options, &GA, perm_c, etree, &GAC);
-
-					/* Form Pc*A*Pc' to preserve the diagonal of the matrix GAC. */
-					GACstore = (NCPformat *)GAC.Store;
-					GACcolbeg = GACstore->colbeg;
-					GACcolend = GACstore->colend;
-					GACrowind = GACstore->rowind;
-					for (j = 0; j < n; ++j)
-					{
-						for (i = GACcolbeg[j]; i < GACcolend[j]; ++i)
-						{
-							irow = GACrowind[i];
-							GACrowind[i] = perm_c[irow];
-						}
-					}
-
-					/* Perform a symbolic factorization on Pc*Pr*A*Pc' and set up
-					   the nonzero data structures for L & U. */
-#if (PRNTlevel >= 1)
-					if (!iam)
-						printf(".. symbfact(): relax %4d, maxsuper %4d, fill %4d\n",
-							   sp_ienv_dist(2, options), sp_ienv_dist(3, options), sp_ienv_dist(6, options));
-#endif
-					t = SuperLU_timer_();
-					if (!(Glu_freeable = (Glu_freeable_t *)
-							  SUPERLU_MALLOC(sizeof(Glu_freeable_t))))
-						ABORT("Malloc fails for Glu_freeable.");
-
-					/* Every process does this. */
-					iinfo = symbfact(options, iam, &GAC, perm_c, etree,
-									 Glu_persist, Glu_freeable);
-
-					stat->utime[SYMBFAC] = SuperLU_timer_() - t;
-					if (iinfo < 0)
-					{
-						/* Successful return */
-						QuerySpace_dist(n, -iinfo, Glu_freeable, &symb_mem_usage);
-
-#if (PRNTlevel >= 1)
-						if (!iam)
-						{
-							printf("\tNo of supers %ld\n",
-								   (long)Glu_persist->supno[n - 1] + 1);
-							printf("\tSize of G(L) %ld\n", (long)Glu_freeable->xlsub[n]);
-							printf("\tSize of G(U) %ld\n", (long)Glu_freeable->xusub[n]);
-							printf("\tint %lu, short %lu, float %lu, double %lu\n",
-								   sizeof(int_t), sizeof(short),
-								   sizeof(float), sizeof(double));
-							printf("\tSYMBfact (MB):\tL\\U %.2f\ttotal %.2f\texpansions %d\n",
-								   symb_mem_usage.for_lu * 1e-6,
-								   symb_mem_usage.total * 1e-6,
-								   symb_mem_usage.expansions);
-						}
-#endif
-					}
-					else
-					{
-						if (!iam)
-						{
-							fprintf(stderr, "symbfact() error returns %d\n",
-									(int)iinfo);
-							exit(-1);
-						}
-					}
+				/*Allocating Glu_freeable used by symbfact */
+				if (!(Glu_freeable = (Glu_freeable_t *)
+						  SUPERLU_MALLOC(sizeof(Glu_freeable_t))))
+					ABORT("Malloc fails for Glu_freeable.");
+				permCol_SymbolicFact3d(options, n, &GA, perm_c, etree,
+									   Glu_persist, Glu_freeable, stat,
+									   &symb_mem_usage,
+									   grid3d);
 
 				} /* end serial symbolic factorization */
 				else
 				{ /* parallel symbolic factorization */
+					//TODO: need a 3D version of symbfact_dist
 					t = SuperLU_timer_();
 					flinfo =
 						symbfact_dist(options, nprocs_num, noDomains,
@@ -1483,120 +1057,127 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 				/* Destroy GA */
 				if (parSymbFact == NO || options->RowPerm != NO)
 					Destroy_CompCol_Matrix_dist(&GA);
-				if (parSymbFact == NO)
-					Destroy_CompCol_Permuted_dist(&GAC);
 
 			} /* end if Fact not SamePattern_SameRowPerm */
-
-#if (DEBUGlevel >= 2) // Sherry
-			if (!iam)
-				PrintInt10("perm_c", m, perm_c);
-#endif
-			if (sizes)
-				SUPERLU_FREE(sizes);
-			if (fstVtxSep)
-				SUPERLU_FREE(fstVtxSep);
-			if (symb_comm != MPI_COMM_NULL)
-				MPI_Comm_free(&symb_comm);
-
-			if (parSymbFact == NO || Fact == SamePattern_SameRowPerm)
-			{
-				/* Apply column permutation to the original distributed A */
-				for (j = 0; j < nnz_loc; ++j)
-					colind[j] = perm_c[colind[j]];
-
-				/* Distribute Pc*Pr*diag(R)*A*diag(C)*Pc' into L and U storage.
-				   NOTE: the row permutation Pc*Pr is applied internally in the
-				   distribution routine. */
-				t = SuperLU_timer_();
-
-				nsupers = getNsupers(n, LUstruct->Glu_persist);
-				int* supernodeMask;
-				if(Fact == SamePattern_SameRowPerm){
-					supernodeMask=trf3Dpartition->supernodeMask;
-					dist_mem_use = pddistribute_allgrid(options, n, A, ScalePermstruct,
-												Glu_freeable, LUstruct, grid, supernodeMask);					
-						
-				}else{
-
-					// First call of pddistribute_allgrid with a prefixed supernodeMask
-					// YL: this first call can be removed with Piyush's cleaner fix 
-					int* supernodeMask = int32Calloc_dist(nsupers);
-					for (int i=0;i<nsupers;i++){
-						if(grid3d->zscp.Iam == i%grid3d->npdep)
-							supernodeMask[i]=1;
-					}
-					dist_mem_use = pddistribute_allgrid_index_only(options, n, A, ScalePermstruct,
-											Glu_freeable, LUstruct, grid, supernodeMask);
-					SUPERLU_FREE(supernodeMask);
-
-					// Generate the 3D partition
-					dDestroy_trf3Dpartition(LUstruct->trf3Dpartition);
-					trf3Dpartition = dinitTrf3Dpartition_allgrid(n, options, LUstruct, grid3d);
-					LUstruct->trf3Dpartition=trf3Dpartition;
-
-					// Delete the meta data generated by pddistribute_allgrid
-					dLocalLU_t *Llu = LUstruct->Llu;
-					for (int jb = 0; jb < CEILING( nsupers, grid->npcol ); ++jb) { /* for each block column ... */						
-						if ( Llu->Lrowind_bc_ptr[jb] ) {
-							SUPERLU_FREE (Llu->Lrowind_bc_ptr[jb]);
-						}													
-					}
-					SUPERLU_FREE (Llu->Lrowind_bc_ptr);
-					for (int lb = 0; lb < CEILING( nsupers, grid->nprow ); ++lb) { /* for each block row ... */
-						if(Llu->Ufstnz_br_ptr[lb]!=NULL)
-							SUPERLU_FREE(Llu->Ufstnz_br_ptr[lb]);															
-					}
-					SUPERLU_FREE(Llu->Ufstnz_br_ptr);
+		} /* end if not Factored */
+	} /* end 2D process layer 0 */
 	
+	MPI_Bcast(&rowequ, 1, mpi_int_t, 0, grid3d->zscp.comm);
+	MPI_Bcast(&colequ, 1, mpi_int_t, 0, grid3d->zscp.comm);
 
-					// Second call of pddistribute_allgrid with the final supernodeMask   						
-					dist_mem_use = pddistribute_allgrid(options, n, A, ScalePermstruct,
-											Glu_freeable, LUstruct, grid, trf3Dpartition->supernodeMask);
-
-
-					/* now that LU structure has been scattered, initialize the LU and buffers */
-					dinit3DLUstructForest(trf3Dpartition->myTreeIdxs, trf3Dpartition->myZeroTrIdxs,
-										trf3Dpartition->sForests, LUstruct, grid3d);	
-					dLUValSubBuf_t *LUvsb = SUPERLU_MALLOC(sizeof(dLUValSubBuf_t));
-					dLluBufInit(LUvsb, LUstruct);
-					trf3Dpartition->LUvsb = LUvsb;
-				}
-
-
-				stat->utime[DIST] = SuperLU_timer_() - t;
-
-				/* Deallocate storage used in symbolic factorization. */
-				if (Fact != SamePattern_SameRowPerm)
-				{
-					iinfo = symbfact_SubFree(Glu_freeable);
-					SUPERLU_FREE(Glu_freeable);
-				}
-
-			}
-			else
+	/* Broadcast Permuted A and symbolic factorization data from 2d to 3d grid*/
+	if (Fact != SamePattern_SameRowPerm && !factored) // place the exact conditions later //all the grid must execute this
+	{
+		if (parSymbFact == NO){
+			if (Glu_freeable == NULL)
 			{
-				/* Distribute Pc*Pr*diag(R)*A*diag(C)*Pc' into L and U storage.
-				   NOTE: the row permutation Pc*Pr is applied internally in the
-				   distribution routine. */
-				/* Apply column permutation to the original distributed A */
-				for (j = 0; j < nnz_loc; ++j)
-					colind[j] = perm_c[colind[j]];
-
-				t = SuperLU_timer_();
-				dist_mem_use = ddist_psymbtonum(options, n, A, ScalePermstruct,
-												&Pslu_freeable, LUstruct, grid);
-				if (dist_mem_use > 0)
-					ABORT("Not enough memory available for dist_psymbtonum\n");
-
-				stat->utime[DIST] = SuperLU_timer_() - t;
-
-				ABORT("ddist_psymbtonum does not yet work with 3D factorization\n");
-
+				if (!(Glu_freeable = (Glu_freeable_t *)
+						SUPERLU_MALLOC(sizeof(Glu_freeable_t))))
+					ABORT("Malloc fails for Glu_freeable.");
 			}
+			bcastPermutedSparseA(A,
+								ScalePermstruct,
+								Glu_freeable,
+								LUstruct, grid3d);
+		}else{
+			//TODO: need a parmetis version of bcastPermutedSparseA broadcasting Pslu_freeable
+		}
+	}
 
-			/*if (!iam) printf ("\tDISTRIBUTE time  %8.2f\n", stat->utime[DIST]); */
+	perm_r = ScalePermstruct->perm_r;
+	perm_c = ScalePermstruct->perm_c;
+	etree = LUstruct->etree;
+	R = ScalePermstruct->R;
+	C = ScalePermstruct->C;
+	nsupers = getNsupers(n, LUstruct->Glu_persist);
+	Astore = (NRformat_loc *)A->Store;
+	a = (double *)Astore->nzval;
+	rowptr = Astore->rowptr;
+	colind = Astore->colind;
+	Glu_persist = LUstruct->Glu_persist;
+	
+	// perform the  3D distribution 
+	if (!factored)
+	{
+		/* Apply column permutation to the original distributed A */
+		for (j = 0; j < nnz_loc; ++j)
+			colind[j] = perm_c[colind[j]];
+		// free quauntities used in Parmetis
+		if (sizes)
+			SUPERLU_FREE(sizes);
+		if (fstVtxSep)
+			SUPERLU_FREE(fstVtxSep);
+		if (symb_comm != MPI_COMM_NULL)
+			MPI_Comm_free(&symb_comm);
+		if ( Fact != SamePattern_SameRowPerm){
+			LUstruct->trf3Dpart = SUPERLU_MALLOC(sizeof(dtrf3Dpartition_t));
+			// computes the new partition for 3D factorization here
+			trf3Dpartition=LUstruct->trf3Dpart;
+			newTrfPartitionInit(nsupers, LUstruct, grid3d);
+		}
+	}
 
+
+
+	// perform the  3D distribution 
+	if (!factored)
+	{ /* Skip this if already factored. */
+
+		if (parSymbFact == NO || Fact == SamePattern_SameRowPerm)
+		{
+
+
+			/* Distribute Pc*Pr*diag(R)*A*diag(C)*Pc' into L and U storage.
+				NOTE: the row permutation Pc*Pr is applied internally in the
+				distribution routine. */
+			t = SuperLU_timer_();
+
+			dist_mem_use = pddistribute3d_Yang(options, n, A, ScalePermstruct,
+											Glu_freeable, LUstruct, grid3d);
+			stat->utime[DIST] = SuperLU_timer_() - t;
+
+			/* Deallocate storage used in symbolic factorization. */
+			if (Fact != SamePattern_SameRowPerm)
+			{
+				iinfo = symbfact_SubFree(Glu_freeable);
+				SUPERLU_FREE(Glu_freeable);
+			}
+		}
+		else
+		{
+			/* Distribute Pc*Pr*diag(R)*A*diag(C)*Pc' into L and U storage.
+				NOTE: the row permutation Pc*Pr is applied internally in the
+				distribution routine. */
+
+			// TODO: need a 3D version of ddist_psymbtonum
+			t = SuperLU_timer_();
+			dist_mem_use = ddist_psymbtonum(options, n, A, ScalePermstruct,
+											&Pslu_freeable, LUstruct, grid);
+			if (dist_mem_use > 0)
+				ABORT("Not enough memory available for dist_psymbtonum\n");
+
+			stat->utime[DIST] = SuperLU_timer_() - t;
+
+			ABORT("ddist_psymbtonum does not yet work with 3D factorization\n");
+
+		}
+
+		if(Fact != SamePattern_SameRowPerm){
+			// checkDist3DLUStruct(LUstruct, grid3d);
+			// zeros out the Supernodes that are not owned by the grid
+			dinit3DLUstructForest(trf3Dpartition->myTreeIdxs, trf3Dpartition->myZeroTrIdxs,
+									trf3Dpartition->sForests, LUstruct, grid3d);
+
+			dLUValSubBuf_t *LUvsb = SUPERLU_MALLOC(sizeof(dLUValSubBuf_t));
+			dLluBufInit(LUvsb, LUstruct);
+			trf3Dpartition->LUvsb = LUvsb;
+			trf3Dpartition->iperm_c_supno = create_iperm_c_supno(nsupers, options, LUstruct, grid3d);
+		}
+
+
+		/*if (!iam) printf ("\tDISTRIBUTE time  %8.2f\n", stat->utime[DIST]); */
+		
+		MPI_Bcast(&anorm, 1, MPI_DOUBLE, 0, grid3d->zscp.comm);
 
 		/* Perform numerical factorization in parallel on all process layers.*/
 
@@ -1611,7 +1192,7 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 			int maxrecvsz = sp_ienv_dist(3, options)* nrhs + SUPERLU_MAX( XK_H, LSUM_H );
 			int ready_x_size = maxrecvsz*nc;
 			int ready_lsum_size = 2*maxrecvsz*nr;
-			if (getenv("SUPERLU_ACC_SOLVE")){
+			if (get_acc_solve()){
 			nv_init_wrapper(grid->comm);
 			prepare_multiGPU_buffers(flag_bc_size,flag_rd_size,ready_x_size,ready_lsum_size,my_flag_bc_size,my_flag_rd_size);
 			}
@@ -1683,12 +1264,13 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 		
 		
 		}
-		if (getenv("NEW3DSOLVE")){
+		
+		if (get_new3dsolve()){
 			dbroadcastAncestor3d(trf3Dpartition, LUstruct, grid3d, SCT);
 		}
 
 		if ( options->Fact != SamePattern_SameRowPerm) {
-			if (getenv("NEW3DSOLVE") && Solve3D==true){
+			if (get_new3dsolve() && Solve3D==true){
 				trs_compute_communication_structure(options, n, LUstruct,
 							ScalePermstruct, trf3Dpartition->supernodeMask, grid, stat);
 			}else{
@@ -1723,7 +1305,7 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 		if (writeLU)
 		{
 			if (!grid3d->zscp.Iam)
-				writeLUtoDisk(nsupers, Glu_persist->xsup, LUstruct);
+				writeLUtoDisk(nsupers, LUstruct->Glu_persist->xsup, LUstruct);
 		}
 
 		int checkLU = 0;
@@ -1735,7 +1317,7 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 		if (checkLU)
 		{
 			if (!grid3d->zscp.Iam)
-				checkLUFromDisk(nsupers, Glu_persist->xsup, LUstruct);
+				checkLUFromDisk(nsupers, LUstruct->Glu_persist->xsup, LUstruct);
 		}
 
 #if (PRNTlevel >= 0)
@@ -1864,7 +1446,7 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 			}
 			}
 
-			if (getenv("NEW3DSOLVE")){
+			if (get_new3dsolve()){
 
 
 			if (options->DiagInv == YES && (Fact != FACTORED))
@@ -1930,7 +1512,7 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 				// checkGPU(gpuMalloc( (void**)&LUstruct->Llu->d_grid, sizeof(gridinfo_t)));
     			// checkGPU(gpuMemcpy(LUstruct->Llu->d_grid, grid, sizeof(gridinfo_t), gpuMemcpyHostToDevice));
 #endif
-if (getenv("SUPERLU_ACC_SOLVE")){
+if (get_acc_solve()){
 #ifdef GPU_ACC
 				checkGPU(gpuMemcpy(LUstruct->Llu->d_Linv_bc_dat, LUstruct->Llu->Linv_bc_dat,
 								   (LUstruct->Llu->Linv_bc_cnt) * sizeof(double), gpuMemcpyHostToDevice));
@@ -2033,7 +1615,7 @@ if (getenv("SUPERLU_ACC_SOLVE")){
     			// checkGPU(gpuMemcpy(LUstruct->Llu->d_grid, grid, sizeof(gridinfo_t), gpuMemcpyHostToDevice));
 #endif
 
-if (getenv("SUPERLU_ACC_SOLVE")){
+if (get_acc_solve()){
 #ifdef GPU_ACC
 
 				checkGPU(gpuMemcpy(LUstruct->Llu->d_Linv_bc_dat, LUstruct->Llu->Linv_bc_dat,
@@ -2055,8 +1637,8 @@ if (getenv("SUPERLU_ACC_SOLVE")){
 		if ((nrhs > 0) && (*info == 0))
 		{
 		if (options->SolveInitialized == NO){
-			if (getenv("SUPERLU_ACC_SOLVE")){
-			if (getenv("NEW3DSOLVE") && Solve3D==true){
+			if (get_acc_solve()){
+			if (get_new3dsolve() && Solve3D==true){
 				pdgstrs_init_device_lsum_x(options, n, m_loc, nrhs, grid,LUstruct, SOLVEstruct,trf3Dpartition->supernodeMask);	
 			}else{
 				int* supernodeMask = int32Malloc_dist(nsupers);
@@ -2136,7 +1718,7 @@ if (getenv("SUPERLU_ACC_SOLVE")){
 				dSolveInit(options, A, perm_r, perm_c, nrhs, LUstruct,
 							grid, SOLVEstruct);
 			}			
-			if (getenv("NEW3DSOLVE")){
+			if (get_new3dsolve()){
 				pdgstrs3d_newsolve (options, n, LUstruct,ScalePermstruct, trf3Dpartition, grid3d, X,
 				m_loc, fst_row, ldb, nrhs,SOLVEstruct, stat, info);
 			}else{
@@ -2220,8 +1802,8 @@ if (getenv("SUPERLU_ACC_SOLVE")){
 						SUPERLU_MALLOC (sizeof (pxgstrs_comm_t))))
 						ABORT ("Malloc fails for gstrs_comm[]");
 					pdgstrs_init (n, m_loc, 1, fst_row, perm_r, perm_c, grid,
-							Glu_persist, SOLVEstruct1);
-					if (getenv("SUPERLU_ACC_SOLVE")){
+							LUstruct->Glu_persist, SOLVEstruct1);
+					if (get_acc_solve()){
 					int_t nsupers = getNsupers(n, LUstruct->Glu_persist);
 					pdgstrs_init_device_lsum_x(options, n, m_loc, 1, grid,LUstruct, SOLVEstruct1,trf3Dpartition->supernodeMask);		 
 					}
@@ -2390,8 +1972,8 @@ if (getenv("SUPERLU_ACC_SOLVE")){
 						SUPERLU_MALLOC (sizeof (pxgstrs_comm_t))))
 						ABORT ("Malloc fails for gstrs_comm[]");
 					pdgstrs_init (n, m_loc, 1, fst_row, perm_r, perm_c, grid,
-							Glu_persist, SOLVEstruct1);
-					if (getenv("SUPERLU_ACC_SOLVE")){
+							LUstruct->Glu_persist, SOLVEstruct1);
+					if (get_acc_solve()){
 					int_t nsupers = getNsupers(n, LUstruct->Glu_persist);
 					int* supernodeMask = int32Malloc_dist(nsupers);
 					for(int ii=0; ii<nsupers; ii++)

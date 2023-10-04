@@ -454,8 +454,8 @@ void SCT_print(gridinfo_t *grid, SCT_t* SCT)
     if (!iam)
     {
         // printf("CPU_CLOCK_RATE  %.1f\n", CPU_CLOCK_RATE );
-        printf("Total time in factorization \t: %5.2lf\n", SCT->pdgstrfTimer);
-        printf("MPI-communication phase \t: %5.2lf\n", SCT->pdgstrfTimer - (temp_holder / num_procs));
+        printf("Factorization_Time \t: %5.2lf\n", SCT->pdgstrfTimer);
+        printf("Communication_Time \t: %5.2lf\n", SCT->pdgstrfTimer - (temp_holder / num_procs));
 
     }
 
@@ -594,6 +594,44 @@ get_acc_offload ()
     return 0;  
 #endif        
 }
+
+int
+get_acc_solve ()
+{
+    char *ttemp;
+    ttemp = getenv ("SUPERLU_ACC_SOLVE");
+#ifdef GPU_ACC
+    if (ttemp)
+        return atoi (ttemp);
+    else
+        return 0;  // default
+#else
+    return 0;  
+#endif        
+}
+
+int
+get_new3dsolve ()
+{
+    char *ttemp;
+    ttemp = getenv ("NEW3DSOLVE");
+    if (ttemp)
+        return atoi (ttemp);
+    else
+        return 1;  // default      
+}
+
+int
+get_new3dsolvetreecomm ()
+{
+    char *ttemp;
+    ttemp = getenv ("NEW3DSOLVETREECOMM");
+    if (ttemp)
+        return atoi (ttemp);
+    else
+        return 1;  // default      
+}
+
 
 
 void Free_HyP(HyP_t* HyP)

@@ -1163,6 +1163,7 @@ void dDestroy_trf3Dpartition(dtrf3Dpartition_t *trf3Dpartition)
     SUPERLU_FREE(trf3Dpartition->sForests); // double pointer
     SUPERLU_FREE(trf3Dpartition->supernode2treeMap);
     SUPERLU_FREE(trf3Dpartition->supernodeMask);
+    SUPERLU_FREE(trf3Dpartition->superGridMap);
 
     SUPERLU_FREE((trf3Dpartition->LUvsb)->Lsub_buf);
     SUPERLU_FREE((trf3Dpartition->LUvsb)->Lval_buf);

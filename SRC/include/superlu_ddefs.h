@@ -319,9 +319,17 @@ typedef struct
     double * Uval_buf ;
 } dLUValSubBuf_t;
 
+typedef enum {
+    NOT_IN_GRID, // doesn't belong to my grid
+    IN_GRID_ZERO, // belongsto my grid but doesn't initialized with zeros
+    IN_GRID_AIJ // belongsto my grid and initialized with non-zeros
+} SupernodeToGridMap_t;
+  
+
 
 typedef struct
 {
+    int_t nsupers;
     gEtreeInfo_t gEtreeInfo;
     int_t* iperm_c_supno;
     int_t* myNodeCount;
@@ -332,6 +340,7 @@ typedef struct
     int_t* supernode2treeMap;
     int* supernodeMask;
     dLUValSubBuf_t  *LUvsb;
+    SupernodeToGridMap_t* superGridMap;
     int maxLvl; // YL: store this to avoid the use of grid3d
     
     /* Sherry added the following 3 for variable size batch. 2/17/23 */
@@ -345,9 +354,10 @@ typedef struct {
     int_t *etree;
     Glu_persist_t *Glu_persist;
     dLocalLU_t *Llu;
-    dtrf3Dpartition_t *trf3Dpartition;
+    dtrf3Dpartition_t *trf3Dpart;
     char dt;
 } dLUstruct_t;
+
 
 
 /*-- Data structure for communication during matrix-vector multiplication. */
@@ -459,6 +469,8 @@ int_t scuStatUpdate(
     SCT_t* SCT,
     SuperLUStat_t *stat
     );
+
+  
 
 typedef struct
 {

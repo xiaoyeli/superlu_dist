@@ -34,7 +34,7 @@ at the top-level directory.
 #include <stdio.h>
 #include <stdlib.h>
 #include "superlu_ddefs.h"
-
+#include "superlu_defs.h"
 
 static 
 int_t *mxCallocInt(int_t n)

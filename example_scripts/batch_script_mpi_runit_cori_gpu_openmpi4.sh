@@ -11,11 +11,10 @@ module load cuda/11.1.1
 module load openmpi/4.0.3
 module load nsight-systems
 
-export OMP_NUM_THREADS=1
-export MAX_BUFFER_SIZE=50000000
-export SUPERLU_NUM_GPU_STREAMS=1
-export SUPERLU_BIND_MPI_GPU=1
-export SUPERLU_ACC_OFFLOAD=1 # this can be 0 to do CPU tests on GPU nodes
+
+export OMP_NUM_THREADS=5
+export NUM_CUDA_STREAMS=1 # no effect in 3d
+export N_CUDA_STREAMS=1  # no effect in 3d
 export GPU3DVERSION=1   
 
 # export NSUP=256
@@ -27,8 +26,11 @@ DIR=$CFS/ntrain9/YangLiu/matrix
 
 # export NSUP=128
 # export NREL=20
-# export NSUP=256
-# export NREL=256
+export NSUP=256
+export NREL=256
+
+export NSUP=128
+export NREL=20
 # for MAT in big.rua 
 # for MAT in g20.rua 
 for MAT in g4.rua 

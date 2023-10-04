@@ -225,70 +225,102 @@ int_t LUstruct_v100::pdgstrf3d()
 #endif
 	
         SCT->pdgstrfTimer = SuperLU_timer_();
-	
+        // get environment variables ANC25D
+        int useAnc25D = 0;
+        if (getenv("ANC25D"))
+            useAnc25D = atoi(getenv("ANC25D"));
+        if (useAnc25D)
+            printf("-- Using ANC25D \n");
+
         for (int ilvl = 0; ilvl < maxLvl; ++ilvl) /* maxLvel is the tree level
 						     along Z-dim process grid */
         {
-            /* if I participate in this level */
-            if (!myZeroTrIdxs[ilvl])
+            if (useAnc25D)
             {
-
                 sForest_t *sforest = sForests[myTreeIdxs[ilvl]];
-
-                /* main loop over all the supernodes */
                 if (sforest) /* 2D factorization at individual subtree */
                 {
                     double tilvl = SuperLU_timer_();
-
-                    if ( superlu_acc_offload ) {
-		        if ( options->batchCount==0 )
-			    dsparseTreeFactorGPU(sforest, dFBufs, &gEtreeInfo, tag_ub);
-			else
-			    dsparseTreeFactorBatchGPU(sforest, dFBufs, &gEtreeInfo, tag_ub);
-		    } else {
-                        dsparseTreeFactor(sforest, dFBufs,
-                                          &gEtreeInfo,
-                                          tag_ub);
-
-
-                        // if (ilvl == 0){
-                        // dsparseTreeFactor(sforest, dFBufs,
-                        //                 &gEtreeInfo,
-                        //                 tag_ub);
-                        // }else{
-                        // dAncestorFactorBaseline(ilvl, sforest, dFBufs,
-                        //                         &gEtreeInfo,
-                        //                         tag_ub);
-                        // }
-
-		    }
+                    if (superlu_acc_offload)
+                    {
+                        if (ilvl == 0)
+                            dsparseTreeFactorGPU(sforest, dFBufs,
+                                                 &gEtreeInfo,
+                                                 tag_ub);
+                        else
+                            dAncestorFactorBaselineGPU(ilvl, sforest, dFBufs,
+                                                    &gEtreeInfo,
+                                                    tag_ub);
+                    }
+                    else
+                    {
+                        if (ilvl == 0)
+                            dsparseTreeFactor(sforest, dFBufs,
+                                              &gEtreeInfo,
+                                              tag_ub);
+                        else
+                            dAncestorFactorBaseline(ilvl, sforest, dFBufs,
+                                                    &gEtreeInfo,
+                                                    tag_ub);
+                    }
 
                     /*now reduce the updates*/
                     SCT->tFactor3D[ilvl] = SuperLU_timer_() - tilvl;
                     sForests[myTreeIdxs[ilvl]]->cost = SCT->tFactor3D[ilvl];
                 }
-
-                if (ilvl < maxLvl - 1) /*then reduce before factorization*/
+            }
+            else
+            {
+                /* if I participate in this level */
+                if (!myZeroTrIdxs[ilvl])
                 {
-                    if (superlu_acc_offload)
+
+                    sForest_t *sforest = sForests[myTreeIdxs[ilvl]];
+
+                    /* main loop over all the supernodes */
+                    if (sforest) /* 2D factorization at individual subtree */
                     {
-		      //#define NDEBUG
-#ifndef NDEBUG
-                        checkGPU();
-                        ancestorReduction3d(ilvl, myNodeCount, treePerm);
-#endif
-			
-                        ancestorReduction3dGPU(ilvl, myNodeCount, treePerm);
-			
-#ifndef NDEBUG
-                        checkGPU();
-#endif
+                        double tilvl = SuperLU_timer_();
+
+                        if ( superlu_acc_offload ) {
+                            if ( options->batchCount==0 )
+                                dsparseTreeFactorGPU(sforest, dFBufs, &gEtreeInfo, tag_ub);
+                            else
+                                dsparseTreeFactorBatchGPU(sforest, dFBufs, &gEtreeInfo, tag_ub);
+                        } else {
+                            dsparseTreeFactor(sforest, dFBufs,
+                                            &gEtreeInfo,
+                                            tag_ub);
+
+                        }
+
+                        /*now reduce the updates*/
+                        SCT->tFactor3D[ilvl] = SuperLU_timer_() - tilvl;
+                        sForests[myTreeIdxs[ilvl]]->cost = SCT->tFactor3D[ilvl];
                     }
 
-                    else
-                        ancestorReduction3d(ilvl, myNodeCount, treePerm);
-                }
-            } /*if (!myZeroTrIdxs[ilvl])  ... If I participate in this level*/
+                    if (ilvl < maxLvl - 1) /*then reduce before factorization*/
+                    {
+                        if (superlu_acc_offload)
+                        {
+                //#define NDEBUG
+    #ifndef NDEBUG
+                            checkGPU();
+                            ancestorReduction3d(ilvl, myNodeCount, treePerm);
+    #endif
+                
+                            ancestorReduction3dGPU(ilvl, myNodeCount, treePerm);
+                
+    #ifndef NDEBUG
+                            checkGPU();
+    #endif
+                        }
+
+                        else
+                            ancestorReduction3d(ilvl, myNodeCount, treePerm);
+                    }
+                } /*if (!myZeroTrIdxs[ilvl])  ... If I participate in this level*/
+            }
 
             SCT->tSchCompUdt3d[ilvl] = ilvl == 0 ? SCT->NetSchurUpTimer
                                                  : SCT->NetSchurUpTimer - SCT->tSchCompUdt3d[ilvl - 1];

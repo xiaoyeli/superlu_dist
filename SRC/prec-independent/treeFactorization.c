@@ -74,14 +74,14 @@ int freeCommRequestsArr(int_t mxLeafNode, commRequests_t** comReqss)
 
 int_t initFactStat(int nsupers, factStat_t* factStat)
 {
-    factStat->IrecvPlcd_D = int32Malloc_dist( nsupers);
-    factStat->factored_D = int32Malloc_dist( nsupers); //INT_T_ALLOC( nsupers);
-    factStat->factored_L = int32Malloc_dist( nsupers); //INT_T_ALLOC( nsupers);
-    factStat->factored_U = int32Malloc_dist( nsupers); //INT_T_ALLOC( nsupers);
+    factStat->IrecvPlcd_D = intMalloc_dist( nsupers);
+    factStat->factored_D = intMalloc_dist( nsupers); //INT_T_ALLOC( nsupers);
+    factStat->factored_L = intMalloc_dist( nsupers); //INT_T_ALLOC( nsupers);
+    factStat->factored_U = intMalloc_dist( nsupers); //INT_T_ALLOC( nsupers);
     factStat->factored = int32Malloc_dist( nsupers);   //INT_T_ALLOC( nsupers);
-    factStat->IbcastPanel_L = int32Malloc_dist(nsupers); //INT_T_ALLOC(nsupers);
-    factStat->IbcastPanel_U = int32Malloc_dist(nsupers); //INT_T_ALLOC(nsupers);
-    factStat->gpuLUreduced = int32Malloc_dist(nsupers); //INT_T_ALLOC(nsupers);
+    factStat->IbcastPanel_L = intMalloc_dist(nsupers); //INT_T_ALLOC(nsupers);
+    factStat->IbcastPanel_U = intMalloc_dist(nsupers); //INT_T_ALLOC(nsupers);
+    factStat->gpuLUreduced = intMalloc_dist(nsupers); //INT_T_ALLOC(nsupers);
 
     for (int i = 0; i < nsupers; ++i)
     {

@@ -109,6 +109,10 @@ endif()
     double/pdsymbfact_distdata.c
     double/ddistribute.c
     double/pddistribute.c
+    double/pddistribute3d.c
+    double/d3DPartition.c
+    double/distCheckArray.c
+    double/pddistribute-aux3d.c
     double/pdgstrf.c
     double/dstatic_schedule.c
     double/pdgstrf2.c
@@ -142,6 +146,7 @@ if (TPL_ENABLE_CUDALIB)
   TRF3dV100/pdgstrf3d_summit.cpp
     TRF3dV100/dsparseTreeFactor_summit.cpp
     TRF3dV100/dsparseTreeFactorGPU.cpp
+    TRF3dV100/anc25d-GPU.cpp 
     TRF3dV100/lupanels.cpp
     TRF3dV100/lupanels_comm3d.cpp
     TRF3dV100/lupanelsComm3dGPU.cpp

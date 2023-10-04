@@ -380,7 +380,7 @@ ddistribute(superlu_dist_options_t *options,
 
 	mem_use += (float) k*sizeof(int_t*) + (j + nsupers)*iword;
 
-	for (i = 0; i < j; ++i) index1[i] = EMPTY;
+	for (i = 0; i < j; ++i) index1[i] = SLU_EMPTY;
 	for (i = 0,j = 0; i < k; ++i, j += grid->npcol) ToSendR[i] = &index1[j];
 	k = CEILING( nsupers, grid->nprow ); /* Number of local block rows */
 
@@ -605,14 +605,14 @@ ddistribute(superlu_dist_options_t *options,
 	len = k * grid->nprow;
 	if ( !(index1 = int32Malloc_dist(len)) )
 	    ABORT("Malloc fails for fsendx_plist[0]");
-	for (i = 0; i < len; ++i) index1[i] = EMPTY;
+	for (i = 0; i < len; ++i) index1[i] = SLU_EMPTY;
 	for (i = 0, j = 0; i < k; ++i, j += grid->nprow)
 	    fsendx_plist[i] = &index1[j];
 	if ( !(bsendx_plist = (int **) SUPERLU_MALLOC(k*sizeof(int*))) )
 	    ABORT("Malloc fails for bsendx_plist[].");
 	if ( !(index1 = int32Malloc_dist(len)) )
 	    ABORT("Malloc fails for bsendx_plist[0]");
-	for (i = 0; i < len; ++i) index1[i] = EMPTY;
+	for (i = 0; i < len; ++i) index1[i] = SLU_EMPTY;
 	for (i = 0, j = 0; i < k; ++i, j += grid->nprow)
 	    bsendx_plist[i] = &index1[j];
 
@@ -669,7 +669,7 @@ ddistribute(superlu_dist_options_t *options,
 			pr = PROW( gb, grid );
 			if ( pr != jbrow &&
 			     myrow == jbrow &&  /* diag. proc. owning jb */
-			     bsendx_plist[ljb][pr] == EMPTY ) {
+			     bsendx_plist[ljb][pr] == SLU_EMPTY ) {
 			    bsendx_plist[ljb][pr] = YES;
 			    ++nbsendx;
                         }
@@ -736,7 +736,7 @@ ddistribute(superlu_dist_options_t *options,
 		    pr = PROW( gb, grid ); /* Process row owning this block */
 		    if ( pr != jbrow &&
 			 myrow == jbrow &&  /* diag. proc. owning jb */
-			 fsendx_plist[ljb][pr] == EMPTY /* first time */ ) {
+			 fsendx_plist[ljb][pr] == SLU_EMPTY /* first time */ ) {
 			fsendx_plist[ljb][pr] = YES;
 			++nfsendx;
                     }
@@ -1314,7 +1314,7 @@ ddistribute(superlu_dist_options_t *options,
 				if(Root==myrow){
 					rank_cnt_ref=1;
 					for (j = 0; j < grid->nprow; ++j) {
-						if ( fsendx_plist[ljb][j] != EMPTY ) {
+						if ( fsendx_plist[ljb][j] != SLU_EMPTY ) {
 							++rank_cnt_ref;
 						}
 					}
@@ -1655,7 +1655,7 @@ if ( !iam) printf(".. Construct Reduce tree for L: %.2f\t\n", t);
 				for (j = 0; j < grid->nprow; ++j) {
 					// printf("ljb %5d j %5d nprow %5d\n",ljb,j,grid->nprow);
 					// fflush(stdout);
-					if ( bsendx_plist[ljb][j] != EMPTY ) {
+					if ( bsendx_plist[ljb][j] != SLU_EMPTY ) {
 						++rank_cnt_ref;
 					}
 				}
@@ -1968,7 +1968,7 @@ if ( !iam) printf(".. Construct Reduce tree for U: %.2f\t\n", t);
 	SUPERLU_FREE(Lrb_indptr);
 	SUPERLU_FREE(Lrb_valptr);
 	SUPERLU_FREE(dense);
-	LUstruct->trf3Dpartition=NULL;
+	LUstruct->trf3Dpart=NULL;
 
 	k = CEILING( nsupers, grid->nprow );/* Number of local block rows */
 	if ( !(Llu->mod_bit = int32Malloc_dist(k)) )

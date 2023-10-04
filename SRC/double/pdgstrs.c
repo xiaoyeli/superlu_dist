@@ -1172,7 +1172,7 @@ pdgstrs(superlu_dist_options_t *options, int_t n, dLUstruct_t *LUstruct,
 #if defined(GPU_ACC) && defined(SLU_HAVE_LAPACK) && defined(GPU_SOLVE)  
 
 #if ( PRNTlevel>=1 )
-    if (getenv("SUPERLU_ACC_SOLVE")){
+    if (get_acc_solve()){
 	if ( !iam) printf(".. GPU trisolve\n");
 	fflush(stdout);
     }
@@ -1567,7 +1567,7 @@ if(procs==1){
 	// fflush(stdout);
 	// }
 
-if (getenv("SUPERLU_ACC_SOLVE")){  /* GPU trisolve*/
+if (get_acc_solve()){  /* GPU trisolve*/
 #if defined(GPU_ACC) && defined(SLU_HAVE_LAPACK) && defined(GPU_SOLVE) 
 // #if 0 /* CPU trisolve*/
 
@@ -2672,7 +2672,7 @@ thread_id=0;
 
 
 
-if (getenv("SUPERLU_ACC_SOLVE")){  /* GPU trisolve*/
+if (get_acc_solve()){  /* GPU trisolve*/
 #if defined(GPU_ACC) && defined(SLU_HAVE_LAPACK) && defined(GPU_SOLVE)  
 // #if 0 /* CPU trisolve*/
 	

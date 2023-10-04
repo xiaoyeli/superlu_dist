@@ -685,7 +685,7 @@ int_t trs_compute_communication_structure(superlu_dist_options_t *options, int_t
         int_t kcol = PCOL(jb, grid);
         if (myrow == krow && mycol == kcol){
         for (int_t pr=0;pr<grid->nprow;++pr){
-            Llu->bsendx_plist[lk][pr]=  EMPTY;
+            Llu->bsendx_plist[lk][pr]=  SLU_EMPTY;
         }
         }
         }
@@ -1301,7 +1301,7 @@ int_t trs_compute_communication_structure(superlu_dist_options_t *options, int_t
 
 
 #ifdef GPU_ACC
-    if (getenv("SUPERLU_ACC_SOLVE")){
+    if (get_acc_solve()){
 	checkGPU(gpuMalloc( (void**)&Llu->d_bcols_masked, Llu->nbcol_masked * sizeof(int)));
 	checkGPU(gpuMemcpy(Llu->d_bcols_masked, Llu->bcols_masked, Llu->nbcol_masked * sizeof(int), gpuMemcpyHostToDevice));        
 	checkGPU(gpuMalloc( (void**)&Llu->d_xsup, (n+1) * sizeof(int_t)));
@@ -2374,7 +2374,7 @@ void dlsum_fmod_leaf (
 						 */
 						for (p = 0; p < grid->nprow; ++p)
 						{
-							if ( fsendx_plist[lk][p] != EMPTY )
+							if ( fsendx_plist[lk][p] != SLU_EMPTY )
 							{
 								pi = PNUM( p, ikcol, grid );
 #ifdef ISEND_IRECV
@@ -2742,7 +2742,7 @@ void ForwardSolve3d_newsolve_reusepdgstrs(superlu_dist_options_t *options, int_t
 
 #if ( PRNTlevel>=1 )
 
-    if (getenv("SUPERLU_ACC_SOLVE")) /* GPU trisolve*/
+    if (get_acc_solve()) /* GPU trisolve*/
     {
     iam = grid->iam;
 	if ( !iam) printf(".. GPU trisolve\n");
@@ -2803,7 +2803,7 @@ void ForwardSolve3d_newsolve_reusepdgstrs(superlu_dist_options_t *options, int_t
     stat->utime[SOL_TOT] = 0.0;
 
 #if ( DEBUGlevel>=1 )
-    CHECK_MALLOC(iam, "Enter pdgstrs()");
+    CHECK_MALLOC(iam, "Enter ForwardSolve3d_newsolve_reusepdgstrs()");
 #endif
 
     stat->ops[SOLVE] = 0.0;
@@ -2813,7 +2813,7 @@ void ForwardSolve3d_newsolve_reusepdgstrs(superlu_dist_options_t *options, int_t
        subsequent call to PDGSTRS. */
 
 /* skip fmod on CPU if using GPU solve*/
-if ( !(getenv("NEW3DSOLVETREECOMM") && getenv("SUPERLU_ACC_SOLVE"))){     
+if ( !(get_new3dsolvetreecomm() && get_acc_solve())){     
 	fmod = getfmod_newsolve(nlb, nsupers, supernodeMask, LUstruct, grid);
 }
 	int  nfrecvx = getNfrecvx_newsolve(nsupers, supernodeMask, LUstruct, grid);
@@ -2847,7 +2847,7 @@ if ( !(getenv("NEW3DSOLVETREECOMM") && getenv("SUPERLU_ACC_SOLVE"))){
 
 
 /* skip rtemp on CPU if using GPU solve*/
-if ( !(getenv("NEW3DSOLVETREECOMM") && getenv("SUPERLU_ACC_SOLVE"))){
+if ( !(get_new3dsolvetreecomm() && get_acc_solve())){
     sizertemp=ldalsum * nrhs;
     sizertemp = ((sizertemp + (aln_d - 1)) / aln_d) * aln_d;
     if ( !(rtemp = (double*)SUPERLU_MALLOC((sizertemp*num_thread + 1) * sizeof(double))) )
@@ -2924,7 +2924,7 @@ if ( !(getenv("NEW3DSOLVETREECOMM") && getenv("SUPERLU_ACC_SOLVE"))){
     
 
     /* skip fmod,leafsups,nleaf on CPU if using GPU solve*/
-    if ( !(getenv("NEW3DSOLVETREECOMM") && getenv("SUPERLU_ACC_SOLVE"))){
+    if ( !(get_new3dsolvetreecomm() && get_acc_solve())){
         if(procs==1){
             for (lk=0;lk<nsupers_i;++lk){
                 gb = myrow+lk*grid->nprow;  /* not sure */
@@ -2948,7 +2948,7 @@ if ( !(getenv("NEW3DSOLVETREECOMM") && getenv("SUPERLU_ACC_SOLVE"))){
                                 kcol = PCOL( gb, grid );
                                 if(mycol==kcol) { /* Diagonal process */
                                     /* skip fmod,leafsups,nleaf on CPU if using GPU solve*/
-                                    if ( !(getenv("NEW3DSOLVETREECOMM") && getenv("SUPERLU_ACC_SOLVE"))){    
+                                    if ( !(get_new3dsolvetreecomm() && get_acc_solve())){    
                                         if (fmod[lk*aln_i]==0 && supernodeMask[gb]){
                                                 leafsups[nleaf]=gb;
                                                 ++nleaf;
@@ -2976,7 +2976,7 @@ if ( !(getenv("NEW3DSOLVETREECOMM") && getenv("SUPERLU_ACC_SOLVE"))){
     }   
 
 /* skip fmod on CPU if using GPU solve*/
-if ( !(getenv("NEW3DSOLVETREECOMM") && getenv("SUPERLU_ACC_SOLVE"))){    
+if ( !(get_new3dsolvetreecomm() && get_acc_solve())){    
 	for (i = 0; i < nlb; ++i) fmod[i*aln_i] += frecv[i];
 }
 	if ( !(recvbuf_BC_fwd = (double*)SUPERLU_MALLOC(maxrecvsz*(nfrecvx+1) * sizeof(double))) )  // this needs to be optimized for 1D row mapping
@@ -3026,7 +3026,7 @@ if ( !(getenv("NEW3DSOLVETREECOMM") && getenv("SUPERLU_ACC_SOLVE"))){
 	// fflush(stdout);
 	// }
 
-    if (getenv("SUPERLU_ACC_SOLVE")) /* GPU trisolve*/
+    if (get_acc_solve()) /* GPU trisolve*/
     {
 #if defined(GPU_ACC) && defined(SLU_HAVE_LAPACK) && defined(GPU_SOLVE) 
 // #if 0 /* CPU trisolve*/
@@ -3612,7 +3612,7 @@ thread_id=0;
 		}
 #endif
 /* skip fmod on CPU if using GPU solve*/
-if ( !(getenv("NEW3DSOLVETREECOMM") && getenv("SUPERLU_ACC_SOLVE"))){    
+if ( !(get_new3dsolvetreecomm() && get_acc_solve())){    
 		SUPERLU_FREE(fmod);
 }
 		SUPERLU_FREE(frecv);
@@ -3673,7 +3673,7 @@ if ( !(getenv("NEW3DSOLVETREECOMM") && getenv("SUPERLU_ACC_SOLVE"))){
 		SUPERLU_FREE(stat_loc);
 
 /* skip rtemp on CPU if using GPU solve*/
-if ( !(getenv("NEW3DSOLVETREECOMM") && getenv("SUPERLU_ACC_SOLVE"))){        
+if ( !(get_new3dsolvetreecomm() && get_acc_solve())){        
 		SUPERLU_FREE(rtemp);
 }        
 		// SUPERLU_FREE(lsum);
@@ -3707,7 +3707,7 @@ if ( !(getenv("NEW3DSOLVETREECOMM") && getenv("SUPERLU_ACC_SOLVE"))){
     stat->utime[SOLVE] = SuperLU_timer_() - t1_sol;
 
 #if ( DEBUGlevel>=1 )
-    CHECK_MALLOC(iam, "Exit pdgstrs()");
+    CHECK_MALLOC(iam, "Exit ForwardSolve3d_newsolve_reusepdgstrs()");
 #endif
 
 
@@ -4198,7 +4198,7 @@ void dlsum_fmod_leaf_newsolve (
                         */
                     for (p = 0; p < grid->nprow; ++p)
                     {
-                        if ( fsendx_plist[lk][p] != EMPTY )
+                        if ( fsendx_plist[lk][p] != SLU_EMPTY )
                         {
                             pi = PNUM( p, ikcol, grid );
 #ifdef ISEND_IRECV
@@ -5204,7 +5204,7 @@ void BackSolve3d_newsolve_reusepdgstrs(superlu_dist_options_t *options, int_t n,
     // stat->utime[SOL_TOT] = 0.0;
 
 #if ( DEBUGlevel>=1 )
-    CHECK_MALLOC(iam, "Enter pdgstrs()");
+    CHECK_MALLOC(iam, "Enter BackSolve3d_newsolve_reusepdgstrs()");
 #endif
 
     // stat->ops[SOLVE] = 0.0;
@@ -5235,7 +5235,7 @@ void BackSolve3d_newsolve_reusepdgstrs(superlu_dist_options_t *options, int_t n,
     sizelsum = ((sizelsum + (aln_d - 1)) / aln_d) * aln_d;
 
 /* skip rtemp on CPU if using GPU solve*/
-if ( !(getenv("NEW3DSOLVETREECOMM") && getenv("SUPERLU_ACC_SOLVE"))){
+if ( !(get_new3dsolvetreecomm() && get_acc_solve())){
     sizertemp=ldalsum * nrhs;
     sizertemp = ((sizertemp + (aln_d - 1)) / aln_d) * aln_d;
     if ( !(rtemp = (double*)SUPERLU_MALLOC((sizertemp*num_thread + 1) * sizeof(double))) )
@@ -5269,7 +5269,7 @@ if ( !(getenv("NEW3DSOLVETREECOMM") && getenv("SUPERLU_ACC_SOLVE"))){
 
 
 /* skip bmod on CPU if using GPU solve*/
-if ( !(getenv("NEW3DSOLVETREECOMM") && getenv("SUPERLU_ACC_SOLVE"))){ 
+if ( !(get_new3dsolvetreecomm() && get_acc_solve())){ 
     bmod=  getBmod3d_newsolve(nlb, nsupers, supernodeMask, LUstruct, grid);
 }
     nbrecvx= getNbrecvX_newsolve(nsupers, supernodeMask, Urbs, Ucb_indptr, grid);
@@ -5285,7 +5285,7 @@ if ( !(getenv("NEW3DSOLVETREECOMM") && getenv("SUPERLU_ACC_SOLVE"))){
 
 
 /* skip lsum on CPU if using GPU solve*/
-if ( !(getenv("NEW3DSOLVETREECOMM") && getenv("SUPERLU_ACC_SOLVE"))){
+if ( !(get_new3dsolvetreecomm() && get_acc_solve())){
 #ifdef _OPENMP
 #pragma omp parallel default(shared) private(ii)
 	{
@@ -5392,7 +5392,7 @@ if ( !(getenv("NEW3DSOLVETREECOMM") && getenv("SUPERLU_ACC_SOLVE"))){
     }
 
 /* skip bmod/rootsups/nroot on CPU if using GPU solve*/
-if ( !(getenv("NEW3DSOLVETREECOMM") && getenv("SUPERLU_ACC_SOLVE"))){ 
+if ( !(get_new3dsolvetreecomm() && get_acc_solve())){ 
 	nrtree = 0;
 	nroot=0;
 	for (lk=0;lk<nsupers_i;++lk){
@@ -5431,7 +5431,7 @@ if ( !(getenv("NEW3DSOLVETREECOMM") && getenv("SUPERLU_ACC_SOLVE"))){
 }
     
 /* skip bmod on CPU if using GPU solve*/
-if ( !(getenv("NEW3DSOLVETREECOMM") && getenv("SUPERLU_ACC_SOLVE"))){ 
+if ( !(get_new3dsolvetreecomm() && get_acc_solve())){ 
 	for (i = 0; i < nlb; ++i) bmod[i*aln_i] += brecv[i];
 	// for (i = 0; i < nlb; ++i)printf("bmod[i]: %5d\n",bmod[i]);
 }
@@ -5469,7 +5469,7 @@ if ( !(getenv("NEW3DSOLVETREECOMM") && getenv("SUPERLU_ACC_SOLVE"))){
 
 
 
-if (getenv("SUPERLU_ACC_SOLVE")){  /* GPU trisolve*/
+if (get_acc_solve()){  /* GPU trisolve*/
 #if defined(GPU_ACC) && defined(SLU_HAVE_LAPACK) && defined(GPU_SOLVE)  
 // #if 0 /* CPU trisolve*/
 
@@ -5958,12 +5958,12 @@ xtrsTimer->tbs_compute += SuperLU_timer_() - tx;
 		}
 		SUPERLU_FREE(stat_loc);
 /* skip rtemp on CPU if using GPU solve*/
-if ( !(getenv("NEW3DSOLVETREECOMM") && getenv("SUPERLU_ACC_SOLVE"))){        
+if ( !(get_new3dsolvetreecomm() && get_acc_solve())){        
 		SUPERLU_FREE(rtemp);
 }
 
 /* skip bmod on CPU if using GPU solve*/
-if ( !(getenv("NEW3DSOLVETREECOMM") && getenv("SUPERLU_ACC_SOLVE"))){  
+if ( !(get_new3dsolvetreecomm() && get_acc_solve())){  
 		SUPERLU_FREE(bmod);
 }
 		SUPERLU_FREE(brecv);
@@ -6017,7 +6017,7 @@ if ( !(getenv("NEW3DSOLVETREECOMM") && getenv("SUPERLU_ACC_SOLVE"))){
     stat->utime[SOLVE] = SuperLU_timer_() - t1_sol;
 
 #if ( DEBUGlevel>=1 )
-    CHECK_MALLOC(iam, "Exit pdgstrs()");
+    CHECK_MALLOC(iam, "Exit BackSolve3d_newsolve_reusepdgstrs()");
 #endif
 
 
@@ -6545,7 +6545,7 @@ void dlsum_bmod_GG (
                      */
                     for (p = 0; p < grid->nprow; ++p)
                     {
-                        if ( bsendx_plist[lk1][p] != EMPTY )
+                        if ( bsendx_plist[lk1][p] != SLU_EMPTY )
                         {
                             pi = PNUM( p, gikcol, grid );
 #ifdef ISEND_IRECV
@@ -6732,7 +6732,7 @@ void dlsum_bmod_GG_newsolve (
                      */
                     for (p = 0; p < grid->nprow; ++p)
                     {
-                        if ( bsendx_plist[lk1][p] != EMPTY )
+                        if ( bsendx_plist[lk1][p] != SLU_EMPTY )
                         {
                             pi = PNUM( p, gikcol, grid );
 #ifdef ISEND_IRECV
@@ -6910,7 +6910,7 @@ int_t iBcastXk2Pck(int_t k, double* x, int nrhs,
     int_t kcol = PCOL (k, grid);
     for (int_t p = 0; p < Pr; ++p)
     {
-        if (sendList[lk][p] != EMPTY)
+        if (sendList[lk][p] != SLU_EMPTY)
         {
             int_t pi = PNUM (p, kcol, grid);
 
@@ -7404,7 +7404,7 @@ pdgstrs3d (superlu_dist_options_t *options, int_t n, dLUstruct_t * LUstruct,
     int_t nub = CEILING (nsupers, Pc);
 
 #if ( DEBUGlevel>=1 )
-    CHECK_MALLOC (iam, "Enter pdgstrs()");
+    CHECK_MALLOC (iam, "Enter pdgstrs3d()");
 #endif
 
     stat->ops[SOLVE] = 0.0;
@@ -7648,7 +7648,7 @@ pdgstrs3d (superlu_dist_options_t *options, int_t n, dLUstruct_t * LUstruct,
 
     printTRStimer(&xtrsTimer, grid3d);
 #if ( DEBUGlevel>=1 )
-    CHECK_MALLOC (iam, "Exit pdgstrs()");
+    CHECK_MALLOC (iam, "Exit pdgstrs3d()");
 #endif
 
     return;
@@ -7731,7 +7731,7 @@ pdgstrs3d_newsolve (superlu_dist_options_t *options, int_t n, dLUstruct_t * LUst
     int_t nub = CEILING (nsupers, Pc);
 
 #if ( DEBUGlevel>=1 )
-    CHECK_MALLOC (iam, "Enter pdgstrs()");
+    CHECK_MALLOC (iam, "Enter pdgstrs3d_newsolve()");
 #endif
 
     stat->ops[SOLVE] = 0.0;
@@ -7739,7 +7739,7 @@ pdgstrs3d_newsolve (superlu_dist_options_t *options, int_t n, dLUstruct_t * LUst
 
     k = SUPERLU_MAX (Llu->nfsendx, Llu->nbsendx) + nlb;
  /* skip send_req on CPU if using GPU solve*/
-if ( !(getenv("NEW3DSOLVETREECOMM") && getenv("SUPERLU_ACC_SOLVE"))){   
+if ( !(get_new3dsolvetreecomm() && get_acc_solve())){   
     if (!(send_req =
                  (MPI_Request *) SUPERLU_MALLOC (k * sizeof (MPI_Request))))
         ABORT ("Malloc fails for send_req[].");
@@ -7784,7 +7784,7 @@ if ( !(getenv("NEW3DSOLVETREECOMM") && getenv("SUPERLU_ACC_SOLVE"))){
 
 
 /* skip lsum on CPU if using GPU solve*/
-if ( !(getenv("NEW3DSOLVETREECOMM") && getenv("SUPERLU_ACC_SOLVE"))){
+if ( !(get_new3dsolvetreecomm() && get_acc_solve())){
 #ifdef _OPENMP
     if ( !(lsum = (double*)SUPERLU_MALLOC(sizelsum*num_thread * sizeof(double))))
 	ABORT("Malloc fails for lsum[].");
@@ -8006,7 +8006,7 @@ if ( !(getenv("NEW3DSOLVETREECOMM") && getenv("SUPERLU_ACC_SOLVE"))){
     /* Deallocate storage. */
 
 /* skip lsum on CPU if using GPU solve*/
-if ( !(getenv("NEW3DSOLVETREECOMM") && getenv("SUPERLU_ACC_SOLVE"))){    
+if ( !(get_new3dsolvetreecomm() && get_acc_solve())){    
     SUPERLU_FREE (lsum);
 }    
     SUPERLU_FREE (x);
@@ -8014,7 +8014,7 @@ if ( !(getenv("NEW3DSOLVETREECOMM") && getenv("SUPERLU_ACC_SOLVE"))){
 
 
 /* skip send_req on CPU if using GPU solve*/
-if ( !(getenv("NEW3DSOLVETREECOMM") && getenv("SUPERLU_ACC_SOLVE"))){
+if ( !(get_new3dsolvetreecomm() && get_acc_solve())){
     /*for (i = 0; i < Llu->SolveMsgSent; ++i) MPI_Request_free(&send_req[i]); */
     for (i = 0; i < Llu->SolveMsgSent; ++i)
         MPI_Wait (&send_req[i], &status);
@@ -8025,7 +8025,7 @@ if ( !(getenv("NEW3DSOLVETREECOMM") && getenv("SUPERLU_ACC_SOLVE"))){
 
     printTRStimer(&xtrsTimer, grid3d);
 #if ( DEBUGlevel>=1 )
-    CHECK_MALLOC (iam, "Exit pdgstrs()");
+    CHECK_MALLOC (iam, "Exit pdgstrs3d_newsolve()");
 #endif
 
     return;
@@ -8213,7 +8213,7 @@ int_t pdgsTrForwardSolve3d_newsolve(superlu_dist_options_t *options, int_t n, dL
         ABORT ("Malloc fails for rtemp[].");
 
 /* skip lsum on CPU if using GPU solve*/
-if ( !(getenv("NEW3DSOLVETREECOMM") && getenv("SUPERLU_ACC_SOLVE"))){
+if ( !(get_new3dsolvetreecomm() && get_acc_solve())){
     int_t ii = 0;
     for (int_t k = 0; k < nsupers; ++k)
     {
@@ -8251,7 +8251,7 @@ if ( !(getenv("NEW3DSOLVETREECOMM") && getenv("SUPERLU_ACC_SOLVE"))){
 
     double tx = SuperLU_timer_();
 
-if (getenv("NEW3DSOLVETREECOMM")){
+if (get_new3dsolvetreecomm()){
     ForwardSolve3d_newsolve_reusepdgstrs(options, n, LUstruct,
                                 ScalePermstruct, trf3Dpartition->supernodeMask, grid3d,
                                 x3d, lsum3d, nrhs, SOLVEstruct, stat, xtrsTimer);
@@ -8266,7 +8266,7 @@ if (getenv("NEW3DSOLVETREECOMM")){
     xtrsTimer->tfs_tree[0] = SuperLU_timer_() - tx;
     tx = SuperLU_timer_();
 /* skip send_req on CPU if using GPU solve*/
-if ( !(getenv("NEW3DSOLVETREECOMM") && getenv("SUPERLU_ACC_SOLVE"))){
+if ( !(get_new3dsolvetreecomm() && get_acc_solve())){
     for (int_t i = 0; i < Llu->SolveMsgSent; ++i)
     {
         MPI_Status status;
@@ -8440,7 +8440,7 @@ int_t pdgsTrBackSolve3d_newsolve(superlu_dist_options_t *options, int_t n, dLUst
 
 
 /* skip lsum on CPU if using GPU solve*/
-if ( !(getenv("NEW3DSOLVETREECOMM") && getenv("SUPERLU_ACC_SOLVE"))){
+if ( !(get_new3dsolvetreecomm() && get_acc_solve())){
     /*initilize lsum to zero*/
     for (int_t k = 0; k < nsupers; ++k)
     {
@@ -8471,7 +8471,7 @@ if ( !(getenv("NEW3DSOLVETREECOMM") && getenv("SUPERLU_ACC_SOLVE"))){
     Llu->SolveMsgSent = 0;
     double tx = SuperLU_timer_();
 
-if (getenv("NEW3DSOLVETREECOMM")){    
+if (get_new3dsolvetreecomm()){    
     BackSolve3d_newsolve_reusepdgstrs(options, n, LUstruct,
                                 trf3Dpartition->supernodeMask, grid3d,
                                 x3d, lsum3d, nrhs, SOLVEstruct, stat, xtrsTimer);
