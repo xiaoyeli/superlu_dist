@@ -433,10 +433,11 @@ typedef struct
  * Function prototypes
  ***********************************************************************/
 
+#ifndef HAVE_SYCL
 #ifdef __cplusplus
 extern "C" {
 #endif
-
+#endif
 
 /* Supernodal LU factor related */
 extern void
@@ -692,6 +693,9 @@ extern void dGenCSRLblocks(int, int_t, gridinfo_t*,
 
 
 /* BLAS */
+#ifdef HAVE_SYCL
+extern "C" {
+#endif
 
 #ifdef USE_VENDOR_BLAS
 extern void dgemm_(const char*, const char*, const int*, const int*, const int*,
@@ -718,7 +722,7 @@ extern int dtrsm_(const char*, const char*, const char*, const char*,
 extern void dgemv_(const char *, const int *, const int *, const double *,
                   const double *a, const int *, const double *, const int *,
 		  const double *, double *, const int *);
-#endif
+#endif // USE_VENDOR_BLAS
 
 extern void dger_(const int*, const int*, const double*,
                  const double*, const int*, const double*, const int*,
@@ -727,6 +731,10 @@ extern void dger_(const int*, const int*, const double*,
 extern int dscal_(const int *n, const double *alpha, double *dx, const int *incx);
 extern int daxpy_(const int *n, const double *alpha, const double *x,
 	               const int *incx, double *y, const int *incy);
+
+#ifdef HAVE_SYCL
+}
+#endif
 
 /* SuperLU BLAS interface: dsuperlu_blas.c  */
 extern int superlu_dgemm(const char *transa, const char *transb,
@@ -1204,9 +1212,10 @@ extern int_t ancestorFactor(
 
 /*== end 3D prototypes ===================*/
 
-
+#ifndef HAVE_SYCL
 #ifdef __cplusplus
   }
+#endif
 #endif
 
 #endif /* __SUPERLU_dDEFS */

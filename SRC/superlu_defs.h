@@ -328,9 +328,11 @@ static const int RD_U=4;	/* MPI tag for lsum in U-solve*/
 #define fma(A, B, C) C += (A*B)
 #endif
 /*---- end MAGMA ----*/
-    
+
+#ifndef HAVE_SYCL
 #ifdef __cplusplus
 extern "C" {
+#endif
 #endif
 
 
@@ -338,8 +340,10 @@ extern "C" {
     #define cmax(a,b) ((a) > (b) ? (a) : (b))
 #endif
 
+#ifndef HAVE_SYCL
 #ifdef __cplusplus
   }
+#endif
 #endif
 
 
@@ -1048,8 +1052,10 @@ typedef struct xtrsTimer_t
  * Function prototypes
  ***********************************************************************/
 
+#ifndef HAVE_SYCL
 #ifdef __cplusplus
 extern "C" {
+#endif
 #endif
 
 extern void   superlu_gridinit(MPI_Comm, int, int, gridinfo_t *);
@@ -1422,8 +1428,10 @@ extern int_t LDiagBlockRecvWait( int_t k, int_t* factored_U, MPI_Request *, grid
 
 /*=====================*/
 
+#ifndef HAVE_SYCL
 #ifdef __cplusplus
   }
+#endif
 #endif
 
 #endif /* __SUPERLU_DEFS */

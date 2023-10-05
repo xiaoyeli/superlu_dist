@@ -19,6 +19,12 @@ at the top-level directory.
  */
 #include "superlu_zdefs.h"
 
+#ifdef HAVE_SYCL
+extern "C" double dzasum_(int *, doublecomplex *, int *);
+#else
+extern double dzasum_(int *, doublecomplex *, int *);
+#endif
+
 int pzcompute_resid(int m, int n, int nrhs, SuperMatrix *A,
 		    doublecomplex *x, int ldx, doublecomplex *b, int ldb,
 		    gridinfo_t *grid, zSOLVEstruct_t *SOLVEstruct, double *resid)
@@ -90,9 +96,6 @@ int pzcompute_resid(int m, int n, int nrhs, SuperMatrix *A,
     pzgsmv_comm_t gsmv_comm; 
     int m_loc = ((NRformat_loc*) A->Store)->m_loc;
 
-    /* Function prototypes */
-    extern double dzasum_(int *, doublecomplex *, int *);
-    
     /* Function Body */
     if ( m <= 0 || n <= 0 || nrhs == 0) {
 	*resid = 0.;

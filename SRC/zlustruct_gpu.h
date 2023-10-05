@@ -148,8 +148,10 @@ typedef struct //sluGPU_t_
 } zsluGPU_t;
 
 
+#ifndef HAVE_SYCL
 #ifdef __cplusplus
 extern "C" {
+#endif
 #endif
 
 extern int zsparseTreeFactor_ASYNC_GPU(
@@ -240,8 +242,10 @@ extern int zfree_LUstruct_gpu (zsluGPU_t *sluGPU, SuperLUStat_t *);
 
 extern void zPrint_matrix( char *desc, int_t m, int_t n, doublecomplex *dA, int_t lda );
 
+#ifndef HAVE_SYCL
 #ifdef __cplusplus
 }
+#endif
 #endif
 
 #endif // matching: enable GPU

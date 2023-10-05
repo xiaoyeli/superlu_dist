@@ -34,9 +34,10 @@ at the top-level directory.
  #endif
 
 
-
+#ifndef HAVE_SYCL
 #ifdef __cplusplus
-	extern "C" {
+extern "C" {
+#endif
 #endif
 
 #ifdef HAVE_SYCL
@@ -1953,6 +1954,8 @@ superlu_dist_options_t *options,
 	gpuDeviceSynchronize();
 }
 
+#ifndef HAVE_SYCL
 #ifdef __cplusplus
 }
+#endif
 #endif

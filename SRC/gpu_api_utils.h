@@ -35,8 +35,10 @@ typedef struct LUstruct_gpu_  LUstruct_gpu;  // Sherry - not in this distributio
 #define MAX_NGPU_STREAMS 1
 #endif
 
+#ifndef HAVE_SYCL
 #ifdef __cplusplus
 extern "C" {
+#endif
 #endif
 
 extern void DisplayHeader();
@@ -49,9 +51,11 @@ extern gpublasStatus_t checkGPUblas(gpublasStatus_t);
 extern gpublasHandle_t create_handle ();
 extern void destroy_handle (gpublasHandle_t handle);
 #endif // HAVE_CUDA, HAVE_HIP
-  
+
+#ifndef HAVE_SYCL
 #ifdef __cplusplus
   }
+#endif
 #endif
 
 #endif // end GPU_ACC

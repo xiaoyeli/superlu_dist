@@ -43,10 +43,6 @@ at the top-level directory.
 #define FMT3   "%10s:info=%d, izero=%d, n=%d, nrhs=%d, imat=%d, nfail=%d\n"
 
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-    
 static void
 parse_command_line(int argc, char *argv[], int *nprow, int *npcol,
 		   char *matrix_type, int *n, int *relax, int *maxsuper,
@@ -240,7 +236,9 @@ int main(int argc, char *argv[])
 
 		    	//if (!iam) printf("equil loop ... %d\n", equil);
 
-		    	options.Equil = equil;
+                        // C++ Compiler (using SYCL) doesn't permit direct assignment of int
+                        // to a enum type, hence explicit cast is needed
+                        options.Equil = (yes_no_t)equil;
 
 		    	/* Need a first factor */
 		    	prefact   = ( options.Fact == FACTORED ||
@@ -562,7 +560,3 @@ int cpp_defs()
     printf("....\n");
     return 0;
 }
-
-#ifdef __cplusplus
-extern "C" {
-#endif

@@ -1,7 +1,7 @@
 /* superlu_dist_config.h.in */
 
 /* Enable CUDA */
-#define HAVE_CUDA TRUE
+/* #undef HAVE_CUDA */
 
 /* Enable HIP */
 /* #undef HAVE_HIP */
@@ -13,7 +13,7 @@
 /* #undef HAVE_DPCPP */
 
 /* Enable parmetis */
-/* #undef HAVE_PARMETIS */
+#define HAVE_PARMETIS TRUE
 
 /* Enable colamd */
 /* #undef HAVE_COLAMD */
