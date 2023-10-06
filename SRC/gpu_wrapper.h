@@ -23,9 +23,9 @@ at the top-level directory.
 
 #ifdef HAVE_CUDA
 #include <cublas_v2.h>
-#include "cuda.h"
-#include "cuda_runtime_api.h"
-#include "cuda_runtime.h"
+#include <cuda.h>
+#include <cuda_runtime_api.h>
+#include <cuda_runtime.h>
 #include <cusparse.h>
 #include <cuda_profiler_api.h>
 
@@ -114,9 +114,9 @@ do {                                                                    \
 
 #elif defined(HAVE_HIP)
 
-#include "hip/hip_runtime_api.h"
-#include "hip/hip_runtime.h"
-#include "hipblas.h"
+#include <hip/hip_runtime_api.h>
+#include <hip/hip_runtime.h>
+#include <hipblas/hipblas.h>
 
 // #include "roctracer_ext.h"    // need to pass the include dir directly to HIP_HIPCC_FLAGS
 // // roctx header file
@@ -208,6 +208,7 @@ do {                                                                    \
 #elif defined(HAVE_SYCL)
 
 #include "sycl_device.hpp"
+//#include "syclmemcpy2D.hpp"
 #include <oneapi/mkl/blas.hpp>
 
 #define __global__
@@ -243,6 +244,7 @@ using gpuDoubleComplex = std::complex<double>;
     *total = sycl_get_queue()->get_device().get_info<sycl::info::device::global_mem_size>(); \
   } while(0)
 #define gpuMemcpy2DAsync(dst, dpitch, src, spitch, width, height, kind, stream) (stream->ext_oneapi_memcpy2d(dst, dpitch, src, spitch, width, height))
+//#define gpuMemcpy2DAsync(dst, dpitch, src, spitch, width, height, kind, stream) syclMemcpy2DAsync(stream, dst, dpitch, src, spitch, width, height)
 #define gpuMalloc(ptr, size) ((*ptr) = (void*)sycl::malloc_device((size), *sycl_get_queue()))
 #define gpuMallocHost(ptr, size) ((*ptr) = (void*)sycl::malloc_host((size), *sycl_get_queue()))
 #define gpuFree(ptr) (sycl::free(ptr, sycl_get_queue()->get_context()))

@@ -770,8 +770,8 @@ static void printDevProp(gpuDeviceProp devProp)
 	printf("pciBusID:                      %d\n",  devProp.pciBusID);
 	printf("pciDeviceID:                   %d\n",  devProp.pciDeviceID);
 	printf("GPU Name:                      %s\n",  devProp.name);
-	printf("Total global memory:           %zu\n",  devProp.totalGlobalMem);
-	printf("Total free memory:             %zu\n",  mfree);
+	printf("Total global memory:           %zu\n", devProp.totalGlobalMem);
+	printf("Total free memory:             %zu\n", mfree);
 	printf("Clock rate:                    %d\n",  devProp.clockRate);
 
 	return;
