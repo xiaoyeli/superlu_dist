@@ -22,7 +22,7 @@ option(enable_single    "Enable single precision library" ON)
 option(enable_double    "Enable double precision library" ON)
 option(enable_complex16 "Enable complex16 precision library" ON)
 option(enable_tests  "Build tests" ON)
-option(enable_examples  "Build examples" OFF)
+option(enable_examples  "Build examples" ON)
 option(XSDK_ENABLE_Fortran "Enable Fortran" ON)
 
 #-- BLAS

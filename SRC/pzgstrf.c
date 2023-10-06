@@ -845,25 +845,23 @@ pzgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
         // allocate device memory
         dA = nullptr;
         dA = sycl::malloc_device<double>(max_row_size * sp_ienv_dist(3, options), *(sycl_get_queue()));
-        if (dA != nullptr) {
-          fprintf(stderr, "!!!! Error in allocating A in the device %ld \n",
-                  m * k * sizeof(double));
+        if (dA == nullptr) {
+          fprintf(stderr, "!!!! Error in allocating A in the device of %ld bytes\n",m*k*sizeof(double));
           return 1;
         }
 
         // size of B should be bigu_size
         dB = nullptr;
         dB = sycl::malloc_device<double>(bigu_size, *(sycl_get_queue()));
-        if (dB != nullptr) {
-          fprintf(stderr, "!!!! Error in allocating B in the device %ld \n",
-                  n * k * sizeof(double));
+        if (dB == nullptr) {
+          fprintf(stderr, "!!!! Error in allocating B in the device of %ld bytes\n",n*k*sizeof(double));
           return 1;
         }
 
         dC = nullptr;
         dC = sycl::malloc_device<double>(buffer_size, *(sycl_get_queue()));
-        if (dC != nullptr) {
-          fprintf(stderr, "!!!! Error in allocating C in the device \n");
+        if (dC == nullptr) {
+          fprintf(stderr, "!!!! Error in allocating C in the device of %ld bytes\n",buffer_size*sizeof(double));
           return 1;
         }
 #else // CUDA/HIP

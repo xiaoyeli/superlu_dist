@@ -835,7 +835,7 @@ psgstrf(superlu_dist_options_t * options, int m, int n, float anorm,
         dA = nullptr;
         dA = sycl::malloc_device<float>(max_row_size * sp_ienv_dist(3, options), *(sycl_get_queue()));
         if (dA == nullptr) {
-            fprintf(stderr, "!!!! Error in allocating A in the device of size %ld bytes\n",m*k*sizeof(float) );
+            fprintf(stderr, "!!!! Error in allocating A in the device of %ld bytes\n",m*k*sizeof(float) );
             return 1;
         }
 
@@ -843,14 +843,14 @@ psgstrf(superlu_dist_options_t * options, int m, int n, float anorm,
         dB = nullptr;
         dB = sycl::malloc_device<float>(bigu_size, *(sycl_get_queue()));
         if (dB == nullptr) {
-            fprintf(stderr, "!!!! Error in allocating B in the device of size %ld bytes\n",n*k*sizeof(float));
+            fprintf(stderr, "!!!! Error in allocating B in the device of %ld bytes\n",n*k*sizeof(float));
             return 1;
         }
 
         dC = nullptr;
         dC = sycl::malloc_device<float>(buffer_size, *(sycl_get_queue()));
         if (dC == nullptr) {
-            fprintf(stderr, "!!!! Error in allocating C in the device of size %ld bytes\n",buffer_size*sizeof(float));
+            fprintf(stderr, "!!!! Error in allocating C in the device of %ld bytes\n",buffer_size*sizeof(float));
             return 1;
         }
 #else
@@ -864,20 +864,20 @@ psgstrf(superlu_dist_options_t * options, int m, int n, float anorm,
 
         gpuStat = gpuMalloc( (void**)&dA, max_row_size * sp_ienv_dist(3,options) * sizeof(float));
         if (gpuStat!= gpuSuccess) {
-            fprintf(stderr, "!!!! Error in allocating A in the device of size %ld bytes\n",m*k*sizeof(float) );
+            fprintf(stderr, "!!!! Error in allocating A in the device of %ld bytes\n",m*k*sizeof(float) );
             return 1;
         }
 
         // size of B should be bigu_size
         gpuStat = gpuMalloc((void**)&dB, bigu_size * sizeof(float));
         if (gpuStat!= gpuSuccess) {
-            fprintf(stderr, "!!!! Error in allocating B in the device of size %ld bytes\n",n*k*sizeof(float));
+            fprintf(stderr, "!!!! Error in allocating B in the device of %ld bytes\n",n*k*sizeof(float));
             return 1;
         }
 
         gpuStat = gpuMalloc((void**)&dC, buffer_size * sizeof(float) );
         if (gpuStat!= gpuSuccess) {
-            fprintf(stderr, "!!!! Error in allocating C in the device of size %ld bytes\n",buffer_size*sizeof(float));
+            fprintf(stderr, "!!!! Error in allocating C in the device of %ld bytes\n",buffer_size*sizeof(float));
             return 1;
         }
 #endif // cuda/hip only

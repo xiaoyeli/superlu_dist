@@ -26,7 +26,7 @@ void DisplayHeader()
     //printf("GPU Driver version:   v %d\n",version);
     //cout << "Thrust version: v" << THRUST_MAJOR_VERSION << "." << THRUST_MINOR_VERSION << endl << endl;
 
-    printf( "GPU Devices: \n \n");
+    printf( "GPU Devices: \n");
 
     #if defined(HAVE_CUDA) || defined(HAVE_HIP)
     int devCount;
@@ -63,35 +63,14 @@ void DisplayHeader()
 
     #elif defined(HAVE_SYCL)
 
-    std::vector<sycl::device> sycl_all_devs =
-      sycl::device::get_devices(sycl::info::device_type::gpu);
-
-    int devCount=0;
-    for(auto& dev: sycl_all_devs) {
-      if(dev.get_info<sycl::info::device::partition_max_sub_devices>() > 0) {
-	auto subDevicesDomainNuma =
-	  dev.create_sub_devices<sycl::info::partition_property::partition_by_affinity_domain>(
-	    sycl::info::partition_affinity_domain::numa);
-	for(auto& tile: subDevicesDomainNuma) {
-	  std::cout << "[" << devCount << "]: " << tile.get_info<sycl::info::device::name>() << ", "
-		    << tile.get_info<sycl::info::device::version>() << std::endl;
-	  printf("  Global memory:   %ld mb \n", tile.get_info<sycl::info::device::global_mem_size>() / mb);
-	  printf("  Shared memory:   %ld kb \n", tile.get_info<sycl::info::device::local_mem_size>() / kb ); //<<  << "kb" << endl;
-	  printf("  Constant memory: %ld kb \n", tile.get_info<sycl::info::device::max_constant_buffer_size>() / kb );
-
-	  devCount++;
-	}
-      }
-      else {
-	std::cout << "[" << devCount << "]: " << dev.get_info<sycl::info::device::name>() << ", "
-		  << dev.get_info<sycl::info::device::version>() << std::endl;
-	printf("  Global memory:   %ld mb \n", dev.get_info<sycl::info::device::global_mem_size>() / mb);
-	printf("  Shared memory:   %ld kb \n", dev.get_info<sycl::info::device::local_mem_size>() / kb ); //<<  << "kb" << endl;
-	printf("  Constant memory: %ld kb \n", dev.get_info<sycl::info::device::max_constant_buffer_size>() / kb );
-
-	devCount++;
-      }
-    }
+    sycl::device dev(sycl::gpu_selector_v);
+    std::string sycl_backend = ((dev.get_platform().get_backend() == sycl::backend::ext_oneapi_level_zero) ? "Level-zero"
+                                : ((dev.get_platform().get_backend() == sycl::backend::ext_oneapi_cuda) ? "CUDA"
+                                 : ((dev.get_platform().get_backend() == sycl::backend::ext_oneapi_hip) ? "HIP"
+                                    : "Invalid backend")));
+    std::cout << dev.get_info<sycl::info::device::name>() << ", " << sycl_backend << " Driver version: " <<  dev.get_info<sycl::info::device::driver_version>() << std::endl;
+    printf("  Global memory:   %ld mb \n", dev.get_info<sycl::info::device::global_mem_size>() / mb);
+    printf("  Shared memory:   %ld kb \n", dev.get_info<sycl::info::device::local_mem_size>() / kb ); //<<  << "kb" << endl;
 
     #endif
 }

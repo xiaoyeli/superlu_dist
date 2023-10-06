@@ -1,6 +1,5 @@
 #pragma once
 
-#include <cstring>
 #include <map>
 #include <memory>
 #include <mutex>
