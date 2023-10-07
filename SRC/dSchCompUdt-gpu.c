@@ -607,6 +607,3 @@ if ( msg0 && msg2 ) {  /* L(:,k) and U(k,:) are not empty. */
     } /* if nbrow>0 */
 
  }   /* if msg1 and msg 2 */
-
-
-

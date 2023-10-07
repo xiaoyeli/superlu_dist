@@ -43,8 +43,8 @@ extern "C" {
 
 extern void DisplayHeader();
 
-// Note: 06/01/22, for now all the functions below are defined only for CUDA, HIP  
-#if defined(HAVE_CUDA) || defined(HAVE_HIP)  
+// Note: for now all the functions below are defined only for CUDA, HIP
+#if defined(HAVE_CUDA) || defined(HAVE_HIP)
 extern const char* gpublasGetErrorString(gpublasStatus_t status);
 extern gpuError_t checkGPU(gpuError_t);
 extern gpublasStatus_t checkGPUblas(gpublasStatus_t);

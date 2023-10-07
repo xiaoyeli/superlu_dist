@@ -232,10 +232,8 @@ void set_default_options_dist(superlu_dist_options_t *options)
     options->superlu_n_gemm = 5000;
     options->superlu_max_buffer_size = 256000000;
     
-    #if defined(HAVE_CUDA) || defined(HAVE_HIP)
+    #if defined(HAVE_CUDA) || defined(HAVE_HIP) || defined(HAVE_SYCL)
     options->superlu_num_gpu_streams = 8;
-    #elif defined(HAVE_SYCL)
-    options->superlu_num_gpu_streams = 1;    
     #endif
 
     
