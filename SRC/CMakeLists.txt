@@ -249,46 +249,45 @@ if(enable_complex16)
   )
 if (TPL_ENABLE_CUDALIB OR TPL_ENABLE_HIPLIB OR TPL_ENABLE_SYCLLIB)
     list(APPEND GPU_SOURCES zsuperlu_gpu.c)
-endif ()
+endif()
 if (HAVE_COMBBLAS)
     list(APPEND SOURCES z_c2cpp_GetHWPM.cpp zHWPM_CombBLAS.hpp)
 endif()
-endif() ######### enable compex16
+endif(enable_complex16) ########## enable complex16
 
-if (TPL_ENABLE_HIPLIB)
-  file(GLOB MyFiles *.hip.cpp)
-  set_source_files_properties(
-    ${MyFiles}
-    PROPERTIES HIP_SOURCE_PROPERTY_FORMAT 1)
+# if (TPL_ENABLE_HIPLIB)
+#   file(GLOB MyFiles *.hip.cpp)
+#   set_source_files_properties(
+#     ${MyFiles}
+#     PROPERTIES HIP_SOURCE_PROPERTY_FORMAT 1)
 
-  set(hipsources
-    pdgstrs_lsum_cuda.hip.cpp
-    dsuperlu_gpu.hip.cpp
-  )
-  if(enable_single)
-    list(APPEND hipsources ssuperlu_gpu.hip.cpp)
-  endif()
-  if(enable_complex16)
-    list(APPEND hipsources zsuperlu_gpu.hip.cpp)
-  endif()
-  hip_add_library(superlu_dist ${hipsources})
-  if (BUILD_SHARED_LIBS AND BUILD_STATIC_LIBS)
-    hip_add_library(superlu_dist-static STATIC  ${hipsources})
-  endif()
+#   set(hipsources
+#     pdgstrs_lsum_cuda.hip.cpp
+#     dsuperlu_gpu.hip.cpp
+#   )
+#   if(enable_single)
+#     list(APPEND hipsources ssuperlu_gpu.hip.cpp)
+#   endif()
+#   if(enable_complex16)
+#     list(APPEND hipsources zsuperlu_gpu.hip.cpp)
+#   endif()
+#   hip_add_library(superlu_dist ${hipsources})
+#   if (BUILD_SHARED_LIBS AND BUILD_STATIC_LIBS)
+#     hip_add_library(superlu_dist-static STATIC  ${hipsources})
+#   endif()
 
-else()
+# else()
   add_library(superlu_dist "")
   if (BUILD_SHARED_LIBS AND BUILD_STATIC_LIBS)
     add_library(superlu_dist-static STATIC "")
   endif()
-endif()
+# endif()
 
 target_sources(superlu_dist PRIVATE ${SOURCES} ${GPU_SOURCES} ${HEADERS})
 set(targets superlu_dist)
 
 if (TPL_ENABLE_CUDALIB)
   find_package( CUDAToolkit REQUIRED )
-
   set_source_files_properties(${GPU_SOURCES} PROPERTIES LANGUAGE CUDA)
 endif (TPL_ENABLE_CUDALIB)
 
@@ -296,7 +295,6 @@ if (TPL_ENABLE_HIPLIB)
   find_package(hip REQUIRED)
   find_package(hipblas REQUIRED)
   find_package(rocblas REQUIRED)
-
   set_source_files_properties(${GPU_SOURCES} PROPERTIES LANGUAGE HIP)
 endif (TPL_ENABLE_HIPLIB)
 
@@ -350,17 +348,12 @@ if(TPL_ENABLE_SYCLLIB)
   target_link_libraries( superlu_dist PUBLIC "-fsycl -fsycl-targets=spir64_gen -Xsycl-target-backend \"-device 12.60.7\"" )
 endif()
 
-# This is recommended by modern cmake:
-# https://cliutils.gitlab.io/modern-cmake/chapters/packages/OpenMP.html
-if(OpenMP_FOUND) # this is found in top-level CMakeLists.txt
+if(OpenMP_FOUND)
   target_link_libraries(superlu_dist PUBLIC OpenMP::OpenMP_C)
 endif()
 
 if (XSDK_ENABLE_Fortran)
-## target_link_libraries(superlu_dist PUBLIC MPI::MPI_CXX MPI::MPI_C MPI::MPI_Fortran)
-## PUBLIC keyword causes error:
-##   The plain signature for target_link_libraries has already been used ...
-  target_link_libraries(superlu_dist MPI::MPI_CXX MPI::MPI_C MPI::MPI_Fortran)
+  target_link_libraries(superlu_dist PUBLIC MPI::MPI_CXX MPI::MPI_C MPI::MPI_Fortran)
 else()
   target_link_libraries(superlu_dist PUBLIC MPI::MPI_CXX MPI::MPI_C)
 endif()
