@@ -349,7 +349,11 @@ if(TPL_ENABLE_SYCLLIB)
 endif()
 
 if(OpenMP_FOUND)
-  target_link_libraries(superlu_dist PUBLIC OpenMP::OpenMP_C)
+  if(TPL_ENABLE_SYCLLIB)
+    target_link_libraries(superlu_dist PUBLIC OpenMP::OpenMP_C OpenMP::OpenMP_CXX)
+  else()
+    target_link_libraries(superlu_dist PUBLIC OpenMP::OpenMP_C)
+  endif()
 endif()
 
 if (XSDK_ENABLE_Fortran)
