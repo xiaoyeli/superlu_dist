@@ -64,8 +64,6 @@ if (enable_complex16)
     )
 endif()
 
-set_source_files_properties(${sources} ${HEADERS} PROPERTIES LANGUAGE CXX)
-
 add_library(blas ${sources} ${HEADERS})
 
 install(TARGETS blas DESTINATION "${INSTALL_LIB_DIR}")

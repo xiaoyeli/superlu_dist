@@ -4,8 +4,8 @@
 #
 ######################################################################
 
-# Required version
-cmake_minimum_required(VERSION 3.18.1 FATAL_ERROR)
+# Required version (3.21 is min required to support HIP)
+cmake_minimum_required(VERSION 3.21 FATAL_ERROR)
 
 # Project version numbers
 project(SuperLU_DIST LANGUAGES C CXX)
@@ -177,7 +177,7 @@ endif()
 
 #---- OpenMP libraries
 if (enable_openmp)
-  find_package(openmp)
+  find_package(OpenMP REQUIRED)
 endif()
 
 #---- CUDA libraries
@@ -204,8 +204,7 @@ if (TPL_ENABLE_SYCLLIB)   ## want to use SYCL
 
   message("-- Enabled support for SYCL.")
 
-  # Note: 06/01/22, Fortran is turned off because of linker issues with CXX
-  # TODO
+  # TODO: Fortran is turned off because of linker issues with CXX
   set(XSDK_ENABLE_Fortran OFF)
 
   set(HAVE_SYCL TRUE)
@@ -232,7 +231,7 @@ if(NOT TPL_ENABLE_INTERNAL_BLASLIB)
   if(TPL_BLAS_LIBRARIES)
     set(BLAS_FOUND TRUE)
   else()
-    find_package(BLAS)
+    find_package(BLAS REQUIRED)
     if(BLAS_FOUND)
       set(TPL_BLAS_LIBRARIES "${BLAS_LIBRARIES}" CACHE FILEPATH
         "Set from FindBLAS.cmake BLAS_LIBRARIES." FORCE)
@@ -242,8 +241,7 @@ endif()
 
 if(BLAS_FOUND)
     message("-- Using TPL_BLAS_LIBRARIES='${TPL_BLAS_LIBRARIES}'")
-    set(CMAKE_C_FLAGS "-DUSE_VENDOR_BLAS ${CMAKE_C_FLAGS}")
-    set(CMAKE_CUDA_FLAGS "-DUSE_VENDOR_BLAS ${CMAKE_CUDA_FLAGS}")
+    add_definitions(-DUSE_VENDOR_BLAS)
     set(BLAS_LIB ${TPL_BLAS_LIBRARIES})
     # fix up BLAS library name
     string (REPLACE ";" " " BLAS_LIB_STR "${BLAS_LIB}")
@@ -427,19 +425,19 @@ endif()
 # Fortran-C name mangling
 #
 ######################################################################
-# if (XSDK_ENABLE_Fortran)
-#   include(FortranCInterface)
-#   FortranCInterface_HEADER(${SuperLU_DIST_SOURCE_DIR}/SRC/superlu_FortranCInterface.h
-#                             MACRO_NAMESPACE "FC_")
-#   FortranCInterface_VERIFY(CXX)
-#   SET(MPI_Fortran_LINK_FLAGS "${CMAKE_EXE_LINKER_FLAGS}")
+if (XSDK_ENABLE_Fortran)
+  include(FortranCInterface)
+  FortranCInterface_HEADER(${SuperLU_DIST_SOURCE_DIR}/SRC/superlu_FortranCInterface.h
+                            MACRO_NAMESPACE "FC_")
+  FortranCInterface_VERIFY(CXX)
+  SET(MPI_Fortran_LINK_FLAGS "${CMAKE_EXE_LINKER_FLAGS}")
 
-#   #---------------------------------------------------------------------
-#   # Set default fortran format to free and preprocess all files
-#   #---------------------------------------------------------------------
-#   set(CMAKE_Fortran_FORMAT FREE)
-#   set(CMAKE_Fortran_PREPROCESS ON)
-# endif()
+  #---------------------------------------------------------------------
+  # Set default fortran format to free and preprocess all files
+  #---------------------------------------------------------------------
+  set(CMAKE_Fortran_FORMAT FREE)
+  set(CMAKE_Fortran_PREPROCESS ON)
+endif()
 
 ######################################################################
 #
