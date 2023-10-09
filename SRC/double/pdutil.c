@@ -958,8 +958,15 @@ pdgstrs_init_device_lsum_x(superlu_dist_options_t *options, int_t n, int_t m_loc
     //fflush(stdout);
 
     h_nfrecv[0]=nfrecvx;
+#ifdef _USE_SUMMIT   
     h_nfrecv[1]=32;
     h_nfrecv[2]=8;
+#else
+    //printf("I'm here------- %d\n",iam);
+    //fflush(stdout);
+    h_nfrecv[1]=1024;
+    h_nfrecv[2]=2;
+#endif    
 
     checkGPU(gpuMalloc( (void**)&d_mynum, h_nfrecv[1]  * sizeof(int)));
     checkGPU(gpuMalloc( (void**)&d_mymaskstart, h_nfrecv[1] * sizeof(int)));
@@ -1035,8 +1042,13 @@ pdgstrs_init_device_lsum_x(superlu_dist_options_t *options, int_t n, int_t m_loc
         }
     }
     h_nfrecv_u[0]=nbrecvx;
+#ifdef _USE_SUMMIT
     h_nfrecv_u[1]=32;
     h_nfrecv_u[2]=8;
+#else
+    h_nfrecv_u[1]=1024;
+    h_nfrecv_u[2]=2;
+#endif 
     //printf("(%d), wait=%d,%d\n",iam,h_nfrecv[2],h_nfrecv[1]);
     //fflush(stdout);
 
