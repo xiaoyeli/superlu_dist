@@ -24,7 +24,7 @@ export LD_LIBRARY_PATH=${CRAY_LD_LIBRARY_PATH}:$LD_LIBRARY_PATH
 #SUPERLU settings:
 
 
-export SUPERLU_LBS=ND  
+export SUPERLU_LBS=GD  
 export SUPERLU_ACC_OFFLOAD=1 # this can be 0 to do CPU tests on GPU nodes
 export GPU3DVERSION=1
 export ANC25D=0
@@ -148,6 +148,7 @@ do
 mkdir -p $MAT
 for ii in `seq 1 $NREP`
 do	
+# export SUPERLU_ACC_SOLVE=1
 # srun -n $NCORE_VAL_TOT2D -N $NODE_VAL2D -c $TH_PER_RANK --cpu_bind=cores ./EXAMPLE/pddrive -c $NCOL -r $NROW -b $batch $CFS/m2957/liuyangz/my_research/matrix/$MAT | tee ./$MAT/SLU.o_mpi_${NROW}x${NCOL}_${NTH}_1rhs_2d
 
 # unset SUPERLU_ACC_SOLVE

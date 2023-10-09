@@ -1690,26 +1690,26 @@ float ddist_psymbtonum(superlu_dist_options_t *options, int_t n, SuperMatrix *A,
     return (memDist + memNLU + memTRS);
   }
 
-  if (!(Unzval_br_offset =
-            (long int *)SUPERLU_MALLOC(nsupers_i * sizeof(long int))))
-  {
-    fprintf(stderr, "Malloc fails for Unzval_br_offset[].");
-    return (memDist + memNLU + memTRS);
-  }
-  Unzval_br_offset[nsupers_i - 1] = -1;
+  // if (!(Unzval_br_offset =
+  //           (long int *)SUPERLU_MALLOC(nsupers_i * sizeof(long int))))
+  // {
+  //   fprintf(stderr, "Malloc fails for Unzval_br_offset[].");
+  //   return (memDist + memNLU + memTRS);
+  // }
+  // Unzval_br_offset[nsupers_i - 1] = -1;
 
   if (!(Ufstnz_br_ptr = (int_t **)SUPERLU_MALLOC(nsupers_i * sizeof(int_t *))))
   {
     fprintf(stderr, "Malloc fails for Ufstnz_br_ptr[].");
     return (memDist + memNLU + memTRS);
   }
-  if (!(Ufstnz_br_offset =
-            (long int *)SUPERLU_MALLOC(nsupers_i * sizeof(long int))))
-  {
-    fprintf(stderr, "Malloc fails for Ufstnz_br_offset[].");
-    return (memDist + memNLU + memTRS);
-  }
-  Ufstnz_br_offset[nsupers_i - 1] = -1;
+  // if (!(Ufstnz_br_offset =
+  //           (long int *)SUPERLU_MALLOC(nsupers_i * sizeof(long int))))
+  // {
+  //   fprintf(stderr, "Malloc fails for Ufstnz_br_offset[].");
+  //   return (memDist + memNLU + memTRS);
+  // }
+  // Ufstnz_br_offset[nsupers_i - 1] = -1;
   memTRS += 2 * nsupers_i * sizeof(long int);
 
   memNLU += nsupers_i * sizeof(double *) + nsupers_i * sizeof(int_t *);
@@ -1792,27 +1792,18 @@ float ddist_psymbtonum(superlu_dist_options_t *options, int_t n, SuperMatrix *A,
     fprintf(stderr, "Malloc fails for Lrowind_bc_ptr[].");
     return (memDist + memNLU + memTRS);
   }
-	// if ( !(Lrowind_bc_offset =
-	// 			(long int*)SUPERLU_MALLOC(nsupers_j * sizeof(long int))) ) {
-	// 	fprintf(stderr, "Malloc fails for Lrowind_bc_offset[].");
-	// }
-	// Lrowind_bc_offset[nsupers_j-1] = -1;
-	// if ( !(Lnzval_bc_offset =
-	// 			(long int*)SUPERLU_MALLOC(nsupers_j * sizeof(long int))) ) {
-	// 	fprintf(stderr, "Malloc fails for Lnzval_bc_offset[].");
-	// }
 
-  if (!(Lrowind_bc_offset =
-            (long int *)SUPERLU_MALLOC(nsupers_j * sizeof(long int))))
-  {
-    fprintf(stderr, "Malloc fails for Lrowind_bc_offset[].");
-  }
-  Lrowind_bc_offset[nsupers_j - 1] = -1;
-  if (!(Lnzval_bc_offset =
-            (long int *)SUPERLU_MALLOC(nsupers_j * sizeof(long int))))
-  {
-    fprintf(stderr, "Malloc fails for Lnzval_bc_offset[].");
-  }
+  // if (!(Lrowind_bc_offset =
+  //           (long int *)SUPERLU_MALLOC(nsupers_j * sizeof(long int))))
+  // {
+  //   fprintf(stderr, "Malloc fails for Lrowind_bc_offset[].");
+  // }
+  // Lrowind_bc_offset[nsupers_j - 1] = -1;
+  // if (!(Lnzval_bc_offset =
+  //           (long int *)SUPERLU_MALLOC(nsupers_j * sizeof(long int))))
+  // {
+  //   fprintf(stderr, "Malloc fails for Lnzval_bc_offset[].");
+  // }
 
   if (!(Linv_bc_ptr =
             (double **)SUPERLU_MALLOC(nsupers_j * sizeof(double *))))
@@ -1820,11 +1811,11 @@ float ddist_psymbtonum(superlu_dist_options_t *options, int_t n, SuperMatrix *A,
     fprintf(stderr, "Malloc fails for Linv_bc_ptr[].");
     return (memDist + memNLU + memTRS);
   }
-  if (!(Linv_bc_offset =
-            (long int *)SUPERLU_MALLOC(nsupers_j * sizeof(long int))))
-  {
-    fprintf(stderr, "Malloc fails for Linv_bc_offset[].");
-  }
+  // if (!(Linv_bc_offset =
+  //           (long int *)SUPERLU_MALLOC(nsupers_j * sizeof(long int))))
+  // {
+  //   fprintf(stderr, "Malloc fails for Linv_bc_offset[].");
+  // }
 
   if (!(Uinv_bc_ptr =
             (double **)SUPERLU_MALLOC(nsupers_j * sizeof(double *))))
@@ -1833,27 +1824,27 @@ float ddist_psymbtonum(superlu_dist_options_t *options, int_t n, SuperMatrix *A,
     return (memDist + memNLU + memTRS);
   }
 
-  if (!(Uinv_bc_offset =
-            (long int *)SUPERLU_MALLOC(nsupers_j * sizeof(long int))))
-  {
-    fprintf(stderr, "Malloc fails for Uinv_bc_offset[].");
-    return (memDist + memNLU + memTRS);
-  }
+  // if (!(Uinv_bc_offset =
+  //           (long int *)SUPERLU_MALLOC(nsupers_j * sizeof(long int))))
+  // {
+  //   fprintf(stderr, "Malloc fails for Uinv_bc_offset[].");
+  //   return (memDist + memNLU + memTRS);
+  // }
   Linv_bc_ptr[nsupers_j - 1] = NULL;
   Uinv_bc_ptr[nsupers_j - 1] = NULL;
-  Linv_bc_offset[nsupers_j - 1] = -1;
-  Uinv_bc_offset[nsupers_j - 1] = -1;
+  // Linv_bc_offset[nsupers_j - 1] = -1;
+  // Uinv_bc_offset[nsupers_j - 1] = -1;
 
   if (!(Lindval_loc_bc_ptr = (int_t **)SUPERLU_MALLOC(nsupers_j * sizeof(int_t *))))
   {
     fprintf(stderr, "Malloc fails for Lindval_loc_bc_ptr[].");
     return (memDist + memNLU + memTRS);
   }
-  if (!(Lindval_loc_bc_offset =
-            (long int *)SUPERLU_MALLOC(nsupers_j * sizeof(long int))))
-  {
-    fprintf(stderr, "Malloc fails for Lindval_loc_bc_offset[].");
-  }
+  // if (!(Lindval_loc_bc_offset =
+  //           (long int *)SUPERLU_MALLOC(nsupers_j * sizeof(long int))))
+  // {
+  //   fprintf(stderr, "Malloc fails for Lindval_loc_bc_offset[].");
+  // }
 
   if (!(Unnz = (int_t *)SUPERLU_MALLOC(nsupers_j * sizeof(int_t))))
   {
@@ -1944,8 +1935,8 @@ float ddist_psymbtonum(superlu_dist_options_t *options, int_t n, SuperMatrix *A,
     { /* Block row jb in my process row */
       Ufstnz_br_ptr[ljb_i] = NULL;
       Unzval_br_ptr[ljb_i] = NULL;
-      Unzval_br_offset[ljb_i] = -1;
-      Ufstnz_br_offset[ljb_i] = -1;
+      // Unzval_br_offset[ljb_i] = -1;
+      // Ufstnz_br_offset[ljb_i] = -1;
 
       /* Scatter A into SPA. */
       for (j = ilsum[ljb_i], dense_col = dense; j < ilsum[ljb_i] + nsupc; j++)
@@ -2051,8 +2042,8 @@ float ddist_psymbtonum(superlu_dist_options_t *options, int_t n, SuperMatrix *A,
           return (memDist + memNLU + memTRS);
         }
         Ufstnz_br_ptr[ljb_i] = index;
-        Ufstnz_br_offset[ljb_i] = len1 + 1;
-        Ufstnz_br_cnt += Ufstnz_br_offset[ljb_i];
+        // Ufstnz_br_offset[ljb_i] = len1 + 1;
+        // Ufstnz_br_cnt += Ufstnz_br_offset[ljb_i];
 
         if (!(Unzval_br_ptr[ljb_i] =
                   doubleMalloc_dist(len)))
@@ -2060,8 +2051,8 @@ float ddist_psymbtonum(superlu_dist_options_t *options, int_t n, SuperMatrix *A,
           fprintf(stderr, "Malloc fails for Unzval_br_ptr[*][]");
           return (memDist + memNLU + memTRS);
         }
-        Unzval_br_offset[ljb_i] = len;
-        Unzval_br_cnt += Unzval_br_offset[ljb_i];
+        // Unzval_br_offset[ljb_i] = len;
+        // Unzval_br_cnt += Unzval_br_offset[ljb_i];
 
         memNLU += (len1 + 1) * iword + len * dword;
 #if ( DEBUGlevel>=1 )
@@ -2248,8 +2239,8 @@ float ddist_psymbtonum(superlu_dist_options_t *options, int_t n, SuperMatrix *A,
           return (memDist + memNLU + memTRS);
         }
 
-        Lrowind_bc_offset[ljb_j] = len1;
-        Lrowind_bc_cnt += Lrowind_bc_offset[ljb_j];
+        // Lrowind_bc_offset[ljb_j] = len1;
+        // Lrowind_bc_cnt += Lrowind_bc_offset[ljb_j];
         Lrowind_bc_ptr[ljb_j] = index;
 
         if (!(Lnzval_bc_ptr[ljb_j] =
@@ -2258,8 +2249,8 @@ float ddist_psymbtonum(superlu_dist_options_t *options, int_t n, SuperMatrix *A,
           fprintf(stderr, "Malloc fails for Lnzval_bc_ptr[*][] col block %d\n", (int)jb);
           return (memDist + memNLU + memTRS);
         }
-        Lnzval_bc_offset[ljb_j] = len * nsupc;
-        Lnzval_bc_cnt += Lnzval_bc_offset[ljb_j];
+        // Lnzval_bc_offset[ljb_j] = len * nsupc;
+        // Lnzval_bc_cnt += Lnzval_bc_offset[ljb_j];
 
         myrow = MYROW(iam, grid);
         krow = PROW(jb, grid);
@@ -2267,19 +2258,19 @@ float ddist_psymbtonum(superlu_dist_options_t *options, int_t n, SuperMatrix *A,
         { /* diagonal block */
           if (!(Linv_bc_ptr[ljb_j] = (double *)doubleMalloc_dist(nsupc * nsupc)))
             ABORT("Malloc fails for Linv_bc_ptr[ljb_j][]");
-          Linv_bc_offset[ljb_j] = nsupc * nsupc;
-          Linv_bc_cnt += Linv_bc_offset[ljb_j];
+          // Linv_bc_offset[ljb_j] = nsupc * nsupc;
+          // Linv_bc_cnt += Linv_bc_offset[ljb_j];
           if (!(Uinv_bc_ptr[ljb_j] = (double *)doubleMalloc_dist(nsupc * nsupc)))
             ABORT("Malloc fails for Uinv_bc_ptr[ljb_j][]");
-          Uinv_bc_offset[ljb_j] = nsupc * nsupc;
-          Uinv_bc_cnt += Uinv_bc_offset[ljb_j];
+          // Uinv_bc_offset[ljb_j] = nsupc * nsupc;
+          // Uinv_bc_cnt += Uinv_bc_offset[ljb_j];
         }
         else
         {
           Linv_bc_ptr[ljb_j] = NULL;
-          Linv_bc_offset[ljb_j] = -1;
+          // Linv_bc_offset[ljb_j] = -1;
           Uinv_bc_ptr[ljb_j] = NULL;
-          Uinv_bc_offset[ljb_j] = -1;
+          // Uinv_bc_offset[ljb_j] = -1;
         }
 
         memNLU += len1 * iword + len * nsupc * dword;
@@ -2290,8 +2281,8 @@ float ddist_psymbtonum(superlu_dist_options_t *options, int_t n, SuperMatrix *A,
         // acount for Lindval_loc_bc_ptr[ljb],Linv_bc_ptr[ljb],Uinv_bc_ptr[ljb]
         memTRS += nrbl * 3.0 * iword + 2.0 * nsupc * nsupc * dword;
 
-        Lindval_loc_bc_offset[ljb_j] = nrbl * 3;
-        Lindval_loc_bc_cnt += Lindval_loc_bc_offset[ljb_j];
+        // Lindval_loc_bc_offset[ljb_j] = nrbl * 3;
+        // Lindval_loc_bc_cnt += Lindval_loc_bc_offset[ljb_j];
 
         lusup = Lnzval_bc_ptr[ljb_j];
         mybufmax[0] = SUPERLU_MAX(mybufmax[0], len1);
@@ -2406,12 +2397,12 @@ float ddist_psymbtonum(superlu_dist_options_t *options, int_t n, SuperMatrix *A,
         Lrowind_bc_ptr[ljb_j] = NULL;
         Lnzval_bc_ptr[ljb_j] = NULL;
         Linv_bc_ptr[ljb_j] = NULL;
-        Linv_bc_offset[ljb_j] = -1;
-        Lrowind_bc_offset[ljb_j] = -1;
-        Lindval_loc_bc_offset[ljb_j] = -1;
-        Lnzval_bc_offset[ljb_j] = -1;
+        // Linv_bc_offset[ljb_j] = -1;
+        // Lrowind_bc_offset[ljb_j] = -1;
+        // Lindval_loc_bc_offset[ljb_j] = -1;
+        // Lnzval_bc_offset[ljb_j] = -1;
         Uinv_bc_ptr[ljb_j] = NULL;
-        Uinv_bc_offset[ljb_j] = -1;
+        // Uinv_bc_offset[ljb_j] = -1;
         Lindval_loc_bc_ptr[ljb_j] = NULL;
       } /* if nrbl ... */
     }   /* if mycol == pc */
@@ -2578,107 +2569,108 @@ float ddist_psymbtonum(superlu_dist_options_t *options, int_t n, SuperMatrix *A,
     }
   }
 
-  Linv_bc_cnt += 1; // safe guard
-  Uinv_bc_cnt += 1;
-  Lrowind_bc_cnt += 1;
-  Lindval_loc_bc_cnt += 1;
-  Lnzval_bc_cnt += 1;
-  if (!(Linv_bc_dat = 
-            (double *)SUPERLU_MALLOC(Linv_bc_cnt * sizeof(double))))
-  {
-    fprintf(stderr, "Malloc fails for Linv_bc_dat[].");
-  }
-  if (!(Uinv_bc_dat =
-            (double *)SUPERLU_MALLOC(Uinv_bc_cnt * sizeof(double))))
-  {
-    fprintf(stderr, "Malloc fails for Uinv_bc_dat[].");
-  }
-  if (!(Lrowind_bc_dat =
-            (int_t *)SUPERLU_MALLOC(Lrowind_bc_cnt * sizeof(int_t))))
-  {
-    fprintf(stderr, "Malloc fails for Lrowind_bc_dat[].");
-  }
-  if (!(Lindval_loc_bc_dat =
-            (int_t *)SUPERLU_MALLOC(Lindval_loc_bc_cnt * sizeof(int_t))))
-  {
-    fprintf(stderr, "Malloc fails for Lindval_loc_bc_dat[].");
-  }
-  if (!(Lnzval_bc_dat =
-            (double *)SUPERLU_MALLOC(Lnzval_bc_cnt * sizeof(double))))
-  {
-    fprintf(stderr, "Malloc fails for Lnzval_bc_dat[].");
-  }
-  /* use contingous memory for Linv_bc_ptr, Lrowind_bc_ptr, Lnzval_bc_ptr*/
-  k = CEILING(nsupers, grid->npcol); /* Number of local block columns */
-  Linv_bc_cnt = 0;
-  Uinv_bc_cnt = 0;
-  Lrowind_bc_cnt = 0;
-  Lnzval_bc_cnt = 0;
-  Lindval_loc_bc_cnt = 0;
-  long int tmp_cnt;
-  for (jb = 0; jb < k; ++jb)
-  { /* for each block column ... */
-    if (Linv_bc_ptr[jb] != NULL)
-    {
-      for (jj = 0; jj < Linv_bc_offset[jb]; ++jj)
-      {
-        Linv_bc_dat[Linv_bc_cnt + jj] = Linv_bc_ptr[jb][jj];
-      }
-      SUPERLU_FREE(Linv_bc_ptr[jb]);
-      Linv_bc_ptr[jb] = &Linv_bc_dat[Linv_bc_cnt];
-      tmp_cnt = Linv_bc_offset[jb];
-      Linv_bc_offset[jb] = Linv_bc_cnt;
-      Linv_bc_cnt += tmp_cnt;
-    }
-    if (Uinv_bc_ptr[jb] != NULL)
-    {
-      for (jj = 0; jj < Uinv_bc_offset[jb]; ++jj)
-      {
-        Uinv_bc_dat[Uinv_bc_cnt + jj] = Uinv_bc_ptr[jb][jj];
-      }
-      SUPERLU_FREE(Uinv_bc_ptr[jb]);
-      Uinv_bc_ptr[jb] = &Uinv_bc_dat[Uinv_bc_cnt];
-      tmp_cnt = Uinv_bc_offset[jb];
-      Uinv_bc_offset[jb] = Uinv_bc_cnt;
-      Uinv_bc_cnt += tmp_cnt;
-    }
-    if (Lrowind_bc_ptr[jb] != NULL)
-    {
-      for (jj = 0; jj < Lrowind_bc_offset[jb]; ++jj)
-      {
-        Lrowind_bc_dat[Lrowind_bc_cnt + jj] = Lrowind_bc_ptr[jb][jj];
-      }
-      SUPERLU_FREE(Lrowind_bc_ptr[jb]);
-      Lrowind_bc_ptr[jb] = &Lrowind_bc_dat[Lrowind_bc_cnt];
-      tmp_cnt = Lrowind_bc_offset[jb];
-      Lrowind_bc_offset[jb] = Lrowind_bc_cnt;
-      Lrowind_bc_cnt += tmp_cnt;
-    }
-    if (Lnzval_bc_ptr[jb] != NULL)
-    {
-      for (jj = 0; jj < Lnzval_bc_offset[jb]; ++jj)
-      {
-        Lnzval_bc_dat[Lnzval_bc_cnt + jj] = Lnzval_bc_ptr[jb][jj];
-      }
-      SUPERLU_FREE(Lnzval_bc_ptr[jb]);
-      Lnzval_bc_ptr[jb] = &Lnzval_bc_dat[Lnzval_bc_cnt];
-      tmp_cnt = Lnzval_bc_offset[jb];
-      Lnzval_bc_offset[jb] = Lnzval_bc_cnt;
-      Lnzval_bc_cnt += tmp_cnt;
-    }
-    if (Lindval_loc_bc_ptr[jb] != NULL)
-    {
-      for (jj = 0; jj < Lindval_loc_bc_offset[jb]; ++jj)
-      {
-        Lindval_loc_bc_dat[Lindval_loc_bc_cnt + jj] = Lindval_loc_bc_ptr[jb][jj];
-      }
-      SUPERLU_FREE(Lindval_loc_bc_ptr[jb]);
-      Lindval_loc_bc_ptr[jb] = &Lindval_loc_bc_dat[Lindval_loc_bc_cnt];
-      tmp_cnt = Lindval_loc_bc_offset[jb];
-      Lindval_loc_bc_offset[jb] = Lindval_loc_bc_cnt;
-      Lindval_loc_bc_cnt += tmp_cnt;
-    }
-  } /* end for jb ... */
+
+  // Linv_bc_cnt += 1; // safe guard
+  // Uinv_bc_cnt += 1;
+  // Lrowind_bc_cnt += 1;
+  // Lindval_loc_bc_cnt += 1;
+  // Lnzval_bc_cnt += 1;
+  // if (!(Linv_bc_dat = 
+  //           (double *)SUPERLU_MALLOC(Linv_bc_cnt * sizeof(double))))
+  // {
+  //   fprintf(stderr, "Malloc fails for Linv_bc_dat[].");
+  // }
+  // if (!(Uinv_bc_dat =
+  //           (double *)SUPERLU_MALLOC(Uinv_bc_cnt * sizeof(double))))
+  // {
+  //   fprintf(stderr, "Malloc fails for Uinv_bc_dat[].");
+  // }
+  // if (!(Lrowind_bc_dat =
+  //           (int_t *)SUPERLU_MALLOC(Lrowind_bc_cnt * sizeof(int_t))))
+  // {
+  //   fprintf(stderr, "Malloc fails for Lrowind_bc_dat[].");
+  // }
+  // if (!(Lindval_loc_bc_dat =
+  //           (int_t *)SUPERLU_MALLOC(Lindval_loc_bc_cnt * sizeof(int_t))))
+  // {
+  //   fprintf(stderr, "Malloc fails for Lindval_loc_bc_dat[].");
+  // }
+  // if (!(Lnzval_bc_dat =
+  //           (double *)SUPERLU_MALLOC(Lnzval_bc_cnt * sizeof(double))))
+  // {
+  //   fprintf(stderr, "Malloc fails for Lnzval_bc_dat[].");
+  // }
+  // /* use contingous memory for Linv_bc_ptr, Lrowind_bc_ptr, Lnzval_bc_ptr*/
+  // k = CEILING(nsupers, grid->npcol); /* Number of local block columns */
+  // Linv_bc_cnt = 0;
+  // Uinv_bc_cnt = 0;
+  // Lrowind_bc_cnt = 0;
+  // Lnzval_bc_cnt = 0;
+  // Lindval_loc_bc_cnt = 0;
+  // long int tmp_cnt;
+  // for (jb = 0; jb < k; ++jb)
+  // { /* for each block column ... */
+  //   if (Linv_bc_ptr[jb] != NULL)
+  //   {
+  //     for (jj = 0; jj < Linv_bc_offset[jb]; ++jj)
+  //     {
+  //       Linv_bc_dat[Linv_bc_cnt + jj] = Linv_bc_ptr[jb][jj];
+  //     }
+  //     SUPERLU_FREE(Linv_bc_ptr[jb]);
+  //     Linv_bc_ptr[jb] = &Linv_bc_dat[Linv_bc_cnt];
+  //     tmp_cnt = Linv_bc_offset[jb];
+  //     Linv_bc_offset[jb] = Linv_bc_cnt;
+  //     Linv_bc_cnt += tmp_cnt;
+  //   }
+  //   if (Uinv_bc_ptr[jb] != NULL)
+  //   {
+  //     for (jj = 0; jj < Uinv_bc_offset[jb]; ++jj)
+  //     {
+  //       Uinv_bc_dat[Uinv_bc_cnt + jj] = Uinv_bc_ptr[jb][jj];
+  //     }
+  //     SUPERLU_FREE(Uinv_bc_ptr[jb]);
+  //     Uinv_bc_ptr[jb] = &Uinv_bc_dat[Uinv_bc_cnt];
+  //     tmp_cnt = Uinv_bc_offset[jb];
+  //     Uinv_bc_offset[jb] = Uinv_bc_cnt;
+  //     Uinv_bc_cnt += tmp_cnt;
+  //   }
+  //   if (Lrowind_bc_ptr[jb] != NULL)
+  //   {
+  //     for (jj = 0; jj < Lrowind_bc_offset[jb]; ++jj)
+  //     {
+  //       Lrowind_bc_dat[Lrowind_bc_cnt + jj] = Lrowind_bc_ptr[jb][jj];
+  //     }
+  //     SUPERLU_FREE(Lrowind_bc_ptr[jb]);
+  //     Lrowind_bc_ptr[jb] = &Lrowind_bc_dat[Lrowind_bc_cnt];
+  //     tmp_cnt = Lrowind_bc_offset[jb];
+  //     Lrowind_bc_offset[jb] = Lrowind_bc_cnt;
+  //     Lrowind_bc_cnt += tmp_cnt;
+  //   }
+  //   if (Lnzval_bc_ptr[jb] != NULL)
+  //   {
+  //     for (jj = 0; jj < Lnzval_bc_offset[jb]; ++jj)
+  //     {
+  //       Lnzval_bc_dat[Lnzval_bc_cnt + jj] = Lnzval_bc_ptr[jb][jj];
+  //     }
+  //     SUPERLU_FREE(Lnzval_bc_ptr[jb]);
+  //     Lnzval_bc_ptr[jb] = &Lnzval_bc_dat[Lnzval_bc_cnt];
+  //     tmp_cnt = Lnzval_bc_offset[jb];
+  //     Lnzval_bc_offset[jb] = Lnzval_bc_cnt;
+  //     Lnzval_bc_cnt += tmp_cnt;
+  //   }
+  //   if (Lindval_loc_bc_ptr[jb] != NULL)
+  //   {
+  //     for (jj = 0; jj < Lindval_loc_bc_offset[jb]; ++jj)
+  //     {
+  //       Lindval_loc_bc_dat[Lindval_loc_bc_cnt + jj] = Lindval_loc_bc_ptr[jb][jj];
+  //     }
+  //     SUPERLU_FREE(Lindval_loc_bc_ptr[jb]);
+  //     Lindval_loc_bc_ptr[jb] = &Lindval_loc_bc_dat[Lindval_loc_bc_cnt];
+  //     tmp_cnt = Lindval_loc_bc_offset[jb];
+  //     Lindval_loc_bc_offset[jb] = Lindval_loc_bc_cnt;
+  //     Lindval_loc_bc_cnt += tmp_cnt;
+  //   }
+  // } /* end for jb ... */
 
   /////////////////////////////////////////////////////////////////
 
@@ -2693,18 +2685,18 @@ float ddist_psymbtonum(superlu_dist_options_t *options, int_t n, SuperMatrix *A,
     ABORT("Malloc fails for Ucb_indptr[]");
   if (!(Ucb_valptr = SUPERLU_MALLOC(nub * sizeof(int_t *))))
     ABORT("Malloc fails for Ucb_valptr[]");
-  if (!(Ucb_valoffset =
-            (long int *)SUPERLU_MALLOC(nub * sizeof(long int))))
-  {
-    fprintf(stderr, "Malloc fails for Ucb_valoffset[].");
-  }
-  Ucb_valoffset[nub - 1] = -1;
-  if (!(Ucb_indoffset =
-            (long int *)SUPERLU_MALLOC(nub * sizeof(long int))))
-  {
-    fprintf(stderr, "Malloc fails for Ucb_indoffset[].");
-  }
-  Ucb_indoffset[nub - 1] = -1;
+  // if (!(Ucb_valoffset =
+  //           (long int *)SUPERLU_MALLOC(nub * sizeof(long int))))
+  // {
+  //   fprintf(stderr, "Malloc fails for Ucb_valoffset[].");
+  // }
+  // Ucb_valoffset[nub - 1] = -1;
+  // if (!(Ucb_indoffset =
+  //           (long int *)SUPERLU_MALLOC(nub * sizeof(long int))))
+  // {
+  //   fprintf(stderr, "Malloc fails for Ucb_indoffset[].");
+  // }
+  // Ucb_indoffset[nub - 1] = -1;
 
   nlb = CEILING(nsupers, grid->nprow); /* Number of local block rows. */
 
@@ -2734,20 +2726,20 @@ float ddist_psymbtonum(superlu_dist_options_t *options, int_t n, SuperMatrix *A,
     { /* Not an empty block column. */
       if (!(Ucb_indptr[lb] = SUPERLU_MALLOC(Urbs[lb] * sizeof(Ucb_indptr_t))))
         ABORT("Malloc fails for Ucb_indptr[lb][]");
-      Ucb_indoffset[lb] = Urbs[lb];
-      Ucb_indcnt += Ucb_indoffset[lb];
+      // Ucb_indoffset[lb] = Urbs[lb];
+      // Ucb_indcnt += Ucb_indoffset[lb];
 
       if (!(Ucb_valptr[lb] = (int_t *)intMalloc_dist(Urbs[lb])))
         ABORT("Malloc fails for Ucb_valptr[lb][]");
-      Ucb_valoffset[lb] = Urbs[lb];
-      Ucb_valcnt += Ucb_valoffset[lb];
+      // Ucb_valoffset[lb] = Urbs[lb];
+      // Ucb_valcnt += Ucb_valoffset[lb];
     }
     else
     {
       Ucb_valptr[lb] = NULL;
-      Ucb_valoffset[lb] = -1;
+      // Ucb_valoffset[lb] = -1;
       Ucb_indptr[lb] = NULL;
-      Ucb_indoffset[lb] = -1;
+      // Ucb_indoffset[lb] = -1;
     }
   }
   for (lk = 0; lk < nlb; ++lk)
@@ -2798,94 +2790,94 @@ float ddist_psymbtonum(superlu_dist_options_t *options, int_t n, SuperMatrix *A,
     }
   } /* end for lb ... */
 
-  Unzval_br_cnt += 1; // safe guard
-  Ufstnz_br_cnt += 1;
-  Ucb_valcnt += 1;
-  Ucb_indcnt += 1;
-  if (!(Unzval_br_dat =
-            (double *)SUPERLU_MALLOC(Unzval_br_cnt * sizeof(double))))
-  {
-    fprintf(stderr, "Malloc fails for Lnzval_bc_dat[].");
-  }
-  if (!(Ufstnz_br_dat =
-            (int_t *)SUPERLU_MALLOC(Ufstnz_br_cnt * sizeof(int_t))))
-  {
-    fprintf(stderr, "Malloc fails for Ufstnz_br_dat[].");
-  }
-  if (!(Ucb_valdat =
-            (int_t *)SUPERLU_MALLOC(Ucb_valcnt * sizeof(int_t))))
-  {
-    fprintf(stderr, "Malloc fails for Ucb_valdat[].");
-  }
-  if (!(Ucb_inddat =
-            (Ucb_indptr_t *)SUPERLU_MALLOC(Ucb_indcnt * sizeof(Ucb_indptr_t))))
-  {
-    fprintf(stderr, "Malloc fails for Ucb_inddat[].");
-  }
+  // Unzval_br_cnt += 1; // safe guard
+  // Ufstnz_br_cnt += 1;
+  // Ucb_valcnt += 1;
+  // Ucb_indcnt += 1;
+  // if (!(Unzval_br_dat =
+  //           (double *)SUPERLU_MALLOC(Unzval_br_cnt * sizeof(double))))
+  // {
+  //   fprintf(stderr, "Malloc fails for Lnzval_bc_dat[].");
+  // }
+  // if (!(Ufstnz_br_dat =
+  //           (int_t *)SUPERLU_MALLOC(Ufstnz_br_cnt * sizeof(int_t))))
+  // {
+  //   fprintf(stderr, "Malloc fails for Ufstnz_br_dat[].");
+  // }
+  // if (!(Ucb_valdat =
+  //           (int_t *)SUPERLU_MALLOC(Ucb_valcnt * sizeof(int_t))))
+  // {
+  //   fprintf(stderr, "Malloc fails for Ucb_valdat[].");
+  // }
+  // if (!(Ucb_inddat =
+  //           (Ucb_indptr_t *)SUPERLU_MALLOC(Ucb_indcnt * sizeof(Ucb_indptr_t))))
+  // {
+  //   fprintf(stderr, "Malloc fails for Ucb_inddat[].");
+  // }
 
-  /* use contingous memory for Unzval_br_ptr, Ufstnz_br_ptr, Ucb_valptr */
-  k = CEILING(nsupers, grid->nprow); /* Number of local block rows */
-  Unzval_br_cnt = 0;
-  Ufstnz_br_cnt = 0;
-  for (lb = 0; lb < k; ++lb)
-  { /* for each block row ... */
-    if (Unzval_br_ptr[lb] != NULL)
-    {
-      for (jj = 0; jj < Unzval_br_offset[lb]; ++jj)
-      {
-        Unzval_br_dat[Unzval_br_cnt + jj] = Unzval_br_ptr[lb][jj];
-      }
-      SUPERLU_FREE(Unzval_br_ptr[lb]);
-      Unzval_br_ptr[lb] = &Unzval_br_dat[Unzval_br_cnt];
-      tmp_cnt = Unzval_br_offset[lb];
-      Unzval_br_offset[lb] = Unzval_br_cnt;
-      Unzval_br_cnt += tmp_cnt;
-    }
+  // /* use contingous memory for Unzval_br_ptr, Ufstnz_br_ptr, Ucb_valptr */
+  // k = CEILING(nsupers, grid->nprow); /* Number of local block rows */
+  // Unzval_br_cnt = 0;
+  // Ufstnz_br_cnt = 0;
+  // for (lb = 0; lb < k; ++lb)
+  // { /* for each block row ... */
+  //   if (Unzval_br_ptr[lb] != NULL)
+  //   {
+  //     for (jj = 0; jj < Unzval_br_offset[lb]; ++jj)
+  //     {
+  //       Unzval_br_dat[Unzval_br_cnt + jj] = Unzval_br_ptr[lb][jj];
+  //     }
+  //     SUPERLU_FREE(Unzval_br_ptr[lb]);
+  //     Unzval_br_ptr[lb] = &Unzval_br_dat[Unzval_br_cnt];
+  //     tmp_cnt = Unzval_br_offset[lb];
+  //     Unzval_br_offset[lb] = Unzval_br_cnt;
+  //     Unzval_br_cnt += tmp_cnt;
+  //   }
 
-    if (Ufstnz_br_ptr[lb] != NULL)
-    {
-      for (jj = 0; jj < Ufstnz_br_offset[lb]; ++jj)
-      {
-        Ufstnz_br_dat[Ufstnz_br_cnt + jj] = Ufstnz_br_ptr[lb][jj];
-      }
-      SUPERLU_FREE(Ufstnz_br_ptr[lb]);
-      Ufstnz_br_ptr[lb] = &Ufstnz_br_dat[Ufstnz_br_cnt];
-      tmp_cnt = Ufstnz_br_offset[lb];
-      Ufstnz_br_offset[lb] = Ufstnz_br_cnt;
-      Ufstnz_br_cnt += tmp_cnt;
-    }
-  } /* end for lb ... */
+  //   if (Ufstnz_br_ptr[lb] != NULL)
+  //   {
+  //     for (jj = 0; jj < Ufstnz_br_offset[lb]; ++jj)
+  //     {
+  //       Ufstnz_br_dat[Ufstnz_br_cnt + jj] = Ufstnz_br_ptr[lb][jj];
+  //     }
+  //     SUPERLU_FREE(Ufstnz_br_ptr[lb]);
+  //     Ufstnz_br_ptr[lb] = &Ufstnz_br_dat[Ufstnz_br_cnt];
+  //     tmp_cnt = Ufstnz_br_offset[lb];
+  //     Ufstnz_br_offset[lb] = Ufstnz_br_cnt;
+  //     Ufstnz_br_cnt += tmp_cnt;
+  //   }
+  // } /* end for lb ... */
 
-  k = CEILING(nsupers, grid->npcol); /* Number of local block columns */
-  Ucb_valcnt = 0;
-  Ucb_indcnt = 0;
-  for (lb = 0; lb < k; ++lb)
-  { /* for each block row ... */
-    if (Ucb_valptr[lb] != NULL)
-    {
-      for (jj = 0; jj < Ucb_valoffset[lb]; ++jj)
-      {
-        Ucb_valdat[Ucb_valcnt + jj] = Ucb_valptr[lb][jj];
-      }
-      SUPERLU_FREE(Ucb_valptr[lb]);
-      Ucb_valptr[lb] = &Ucb_valdat[Ucb_valcnt];
-      tmp_cnt = Ucb_valoffset[lb];
-      Ucb_valoffset[lb] = Ucb_valcnt;
-      Ucb_valcnt += tmp_cnt;
-    }
-    if (Ucb_indptr[lb] != NULL)
-    {
-      for (jj = 0; jj < Ucb_indoffset[lb]; ++jj)
-      {
-        Ucb_inddat[Ucb_indcnt + jj] = Ucb_indptr[lb][jj];
-      }
-      SUPERLU_FREE(Ucb_indptr[lb]);
-      Ucb_indptr[lb] = &Ucb_inddat[Ucb_indcnt];
-      tmp_cnt = Ucb_indoffset[lb];
-      Ucb_indoffset[lb] = Ucb_indcnt;
-      Ucb_indcnt += tmp_cnt;
-    }
-  } /* end for lb ... */
+  // k = CEILING(nsupers, grid->npcol); /* Number of local block columns */
+  // Ucb_valcnt = 0;
+  // Ucb_indcnt = 0;
+  // for (lb = 0; lb < k; ++lb)
+  // { /* for each block row ... */
+  //   if (Ucb_valptr[lb] != NULL)
+  //   {
+  //     for (jj = 0; jj < Ucb_valoffset[lb]; ++jj)
+  //     {
+  //       Ucb_valdat[Ucb_valcnt + jj] = Ucb_valptr[lb][jj];
+  //     }
+  //     SUPERLU_FREE(Ucb_valptr[lb]);
+  //     Ucb_valptr[lb] = &Ucb_valdat[Ucb_valcnt];
+  //     tmp_cnt = Ucb_valoffset[lb];
+  //     Ucb_valoffset[lb] = Ucb_valcnt;
+  //     Ucb_valcnt += tmp_cnt;
+  //   }
+  //   if (Ucb_indptr[lb] != NULL)
+  //   {
+  //     for (jj = 0; jj < Ucb_indoffset[lb]; ++jj)
+  //     {
+  //       Ucb_inddat[Ucb_indcnt + jj] = Ucb_indptr[lb][jj];
+  //     }
+  //     SUPERLU_FREE(Ucb_indptr[lb]);
+  //     Ucb_indptr[lb] = &Ucb_inddat[Ucb_indcnt];
+  //     tmp_cnt = Ucb_indoffset[lb];
+  //     Ucb_indoffset[lb] = Ucb_indcnt;
+  //     Ucb_indcnt += tmp_cnt;
+  //   }
+  // } /* end for lb ... */
 
 		/////////////////////////////////////////////////////////////////
 
@@ -2894,709 +2886,712 @@ float ddist_psymbtonum(superlu_dist_options_t *options, int_t n, SuperMatrix *A,
 #if (PROFlevel >= 1)
   t = SuperLU_timer_();
 #endif
-  /* construct the Bcast tree for L ... */
-
-  k = CEILING(nsupers, grid->npcol); /* Number of local block columns */
-  if (!(LBtree_ptr = (C_Tree *)SUPERLU_MALLOC(k * sizeof(C_Tree))))
-    ABORT("Malloc fails for LBtree_ptr[].");
-  if (!(ActiveFlag = intCalloc_dist(grid->nprow * 2)))
-    ABORT("Calloc fails for ActiveFlag[].");
-  if (!(ranks = (int *)SUPERLU_MALLOC(grid->nprow * sizeof(int))))
-    ABORT("Malloc fails for ranks[].");
-  if (!(SeedSTD_BC = (double *)SUPERLU_MALLOC(k * sizeof(double))))
-    ABORT("Malloc fails for SeedSTD_BC[].");
-
-  for (i = 0; i < k; i++)
-  {
-    SeedSTD_BC[i] = rand();
-  }
-
-  MPI_Allreduce(MPI_IN_PLACE, &SeedSTD_BC[0], k, MPI_DOUBLE, MPI_MAX, grid->cscp.comm);
-
-  for (ljb = 0; ljb < k; ++ljb)
-  {
-    C_BcTree_Nullify(&LBtree_ptr[ljb]);
-  }
-
-  if (!(ActiveFlagAll = intMalloc_dist(grid->nprow * k)))
-    ABORT("Calloc fails for ActiveFlag[].");
-  for (j = 0; j < grid->nprow * k; ++j)
-    ActiveFlagAll[j] = 3 * nsupers;
-  memTRS += k * sizeof(C_Tree) + k * dword + grid->nprow * k * iword; // acount for LBtree_ptr, SeedSTD_BC, ActiveFlagAll
-  for (ljb = 0; ljb < k; ++ljb)
-  {                                 /* for each local block column ... */
-    jb = mycol + ljb * grid->npcol; /* not sure */
-    if (jb < nsupers)
-    {
-      pc = PCOL(jb, grid);
-
-      istart = xlsub[ljb];
-      for (i = istart; i < xlsub[ljb + 1]; ++i)
-      {
-        irow = lsub[i];
-        gb = BlockNum(irow);
-        pr = PROW(gb, grid);
-        ActiveFlagAll[pr + ljb * grid->nprow] = SUPERLU_MIN(ActiveFlagAll[pr + ljb * grid->nprow], gb);
-      } /* for j ... */
-    }
-  }
-
-  MPI_Allreduce(MPI_IN_PLACE, ActiveFlagAll, grid->nprow * k, mpi_int_t, MPI_MIN, grid->cscp.comm);
-
-  for (ljb = 0; ljb < k; ++ljb)
-  { /* for each local block column ... */
-
-    jb = mycol + ljb * grid->npcol; /* not sure */
-    if (jb < nsupers)
-    {
-      pc = PCOL(jb, grid);
-
-      for (j = 0; j < grid->nprow; ++j)
-        ActiveFlag[j] = ActiveFlagAll[j + ljb * grid->nprow];
-      for (j = 0; j < grid->nprow; ++j)
-        ActiveFlag[j + grid->nprow] = j;
-      for (j = 0; j < grid->nprow; ++j)
-        ranks[j] = -1;
-
-      Root = -1;
-      Iactive = 0;
-      for (j = 0; j < grid->nprow; ++j)
-      {
-        if (ActiveFlag[j] != 3 * nsupers)
-        {
-          gb = ActiveFlag[j];
-          pr = PROW(gb, grid);
-          if (gb == jb)
-            Root = pr;
-          if (myrow == pr)
-            Iactive = 1;
-        }
-      }
-
-      quickSortM(ActiveFlag, 0, grid->nprow - 1, grid->nprow, 0, 2);
-
-      if (Iactive == 1)
-      {
-        // printf("jb %5d damn\n",jb);
-        // fflush(stdout);
-        assert(Root > -1);
-        rank_cnt = 1;
-        ranks[0] = Root;
-        for (j = 0; j < grid->nprow; ++j)
-        {
-          if (ActiveFlag[j] != 3 * nsupers && ActiveFlag[j + grid->nprow] != Root)
-          {
-            ranks[rank_cnt] = ActiveFlag[j + grid->nprow];
-            ++rank_cnt;
-          }
-        }
-
-        if (rank_cnt > 1)
-        {
-
-          for (ii = 0; ii < rank_cnt; ii++) // use global ranks rather than local ranks
-            ranks[ii] = PNUM(ranks[ii], pc, grid);
-
-          // rseed=rand();
-          // rseed=1.0;
-          msgsize = SuperSize(jb);
-          // LBtree_ptr[ljb] = BcTree_Create(grid->comm, ranks, rank_cnt, msgsize,SeedSTD_BC[ljb],'d');
-          // BcTree_SetTag(LBtree_ptr[ljb],BC_L,'d');
-          C_BcTree_Create(&LBtree_ptr[ljb], grid->comm, ranks, rank_cnt, msgsize, 'd');
-          LBtree_ptr[ljb].tag_ = BC_L;
-
-          // printf("iam %5d btree rank_cnt %5d \n",iam,rank_cnt);
-          // fflush(stdout);
-
-          // if(iam==15 || iam==3){
-          // printf("iam %5d btree lk %5d tag %5d root %5d\n",iam, ljb,jb,BcTree_IsRoot(LBtree_ptr[ljb],'d'));
-          // fflush(stdout);
-          // }
-
-          // #if ( PRNTlevel>=1 )
-          if (Root == myrow)
-          {
-            rank_cnt_ref = 1;
-            for (j = 0; j < grid->nprow; ++j)
-            {
-              if (fsendx_plist[ljb][j] != SLU_EMPTY)
-              {
-                ++rank_cnt_ref;
-              }
-            }
-            assert(rank_cnt == rank_cnt_ref);
-
-            // printf("Partial Bcast Procs: col%7d np%4d\n",jb,rank_cnt);
-
-            // // printf("Partial Bcast Procs: %4d %4d: ",iam, rank_cnt);
-            // // for(j=0;j<rank_cnt;++j)printf("%4d",ranks[j]);
-            // // printf("\n");
-          }
-          // #endif
-        }
-      }
-    }
-  }
-
-  SUPERLU_FREE(ActiveFlag);
-  SUPERLU_FREE(ActiveFlagAll);
-  SUPERLU_FREE(ranks);
-  SUPERLU_FREE(SeedSTD_BC);
-  memTRS -= k * dword + grid->nprow * k * iword; // acount for SeedSTD_BC, ActiveFlagAll
-
-#if (PROFlevel >= 1)
-  t = SuperLU_timer_() - t;
-  if (!iam)
-    printf(".. Construct Bcast tree for L: %.2f\t\n", t);
-#endif
-
-#if (PROFlevel >= 1)
-  t = SuperLU_timer_();
-#endif
-  /* construct the Reduce tree for L ... */
-  /* the following is used as reference */
-  nlb = CEILING(nsupers, grid->nprow); /* Number of local block rows */
-  if (!(mod_bit = int32Malloc_dist(nlb)))
-    ABORT("Malloc fails for mod_bit[].");
-  if (!(frecv = int32Malloc_dist(nlb)))
-    ABORT("Malloc fails for frecv[].");
-
-  for (k = 0; k < nlb; ++k)
-    mod_bit[k] = 0;
-  for (k = 0; k < nsupers; ++k)
-  {
-    pr = PROW(k, grid);
-    if (myrow == pr)
-    {
-      lib = LBi(k, grid); /* local block number */
-      kcol = PCOL(k, grid);
-      if (mycol == kcol || fmod[lib])
-        mod_bit[lib] = 1; /* contribution from off-diagonal and diagonal*/
-    }
-  }
-  /* Every process receives the count, but it is only useful on the
-     diagonal processes.  */
-#if 0 // Sherry
-		MPI_Allreduce( mod_bit, frecv, nlb, mpi_int_t, MPI_SUM, grid->rscp.comm);
-#else
-  MPI_Allreduce(mod_bit, frecv, nlb, MPI_INT, MPI_SUM, grid->rscp.comm);
-#endif
-
-  k = CEILING(nsupers, grid->nprow); /* Number of local block rows */
-  if (!(LRtree_ptr = (C_Tree *)SUPERLU_MALLOC(k * sizeof(C_Tree))))
-    ABORT("Malloc fails for LRtree_ptr[].");
-  if (!(ActiveFlag = intCalloc_dist(grid->npcol * 2)))
-    ABORT("Calloc fails for ActiveFlag[].");
-  if (!(ranks = (int *)SUPERLU_MALLOC(grid->npcol * sizeof(int))))
-    ABORT("Malloc fails for ranks[].");
-
-  // if ( !(idxs = intCalloc_dist(nsupers)) )
-  // ABORT("Calloc fails for idxs[].");
-
-  // if ( !(nzrows = (int_t**)SUPERLU_MALLOC(nsupers * sizeof(int_t*))) )
-  // ABORT("Malloc fails for nzrows[].");
-
-  if (!(SeedSTD_RD = (double *)SUPERLU_MALLOC(k * sizeof(double))))
-    ABORT("Malloc fails for SeedSTD_RD[].");
-
-  for (i = 0; i < k; i++)
-  {
-    SeedSTD_RD[i] = rand();
-  }
-
-  MPI_Allreduce(MPI_IN_PLACE, &SeedSTD_RD[0], k, MPI_DOUBLE, MPI_MAX, grid->rscp.comm);
-
-  for (lib = 0; lib < k; ++lib)
-  {
-    C_RdTree_Nullify(&LRtree_ptr[lib]);
-  }
-
-  if (!(ActiveFlagAll = intMalloc_dist(grid->npcol * k)))
-    ABORT("Calloc fails for ActiveFlagAll[].");
-  for (j = 0; j < grid->npcol * k; ++j)
-    ActiveFlagAll[j] = -3 * nsupers;
-  memTRS += k * sizeof(C_Tree) + k * dword + grid->npcol * k * iword; // acount for LRtree_ptr, SeedSTD_RD, ActiveFlagAll
-
-  for (ljb = 0; ljb < CEILING(nsupers, grid->npcol); ++ljb)
-  {                                 /* for each local block column ... */
-    jb = mycol + ljb * grid->npcol; /* not sure */
-    if (jb < nsupers)
-    {
-      pc = PCOL(jb, grid);
-      for (i = xlsub[ljb]; i < xlsub[ljb + 1]; ++i)
-      {
-        irow = lsub[i];
-        ib = BlockNum(irow);
-        pr = PROW(ib, grid);
-        if (myrow == pr)
-        {                      /* Block row ib in my process row */
-          lib = LBi(ib, grid); /* Local block number */
-          ActiveFlagAll[pc + lib * grid->npcol] = SUPERLU_MAX(ActiveFlagAll[pc + lib * grid->npcol], jb);
-        }
-      }
-    }
-  }
-
-  MPI_Allreduce(MPI_IN_PLACE, ActiveFlagAll, grid->npcol * k, mpi_int_t, MPI_MAX, grid->rscp.comm);
-
-  for (lib = 0; lib < k; ++lib)
-  {
-    ib = myrow + lib * grid->nprow; /* not sure */
-    if (ib < nsupers)
-    {
-      pr = PROW(ib, grid);
-      for (j = 0; j < grid->npcol; ++j)
-        ActiveFlag[j] = ActiveFlagAll[j + lib * grid->npcol];
-      ;
-      for (j = 0; j < grid->npcol; ++j)
-        ActiveFlag[j + grid->npcol] = j;
-      for (j = 0; j < grid->npcol; ++j)
-        ranks[j] = -1;
-      Root = -1;
-      Iactive = 0;
-
-      for (j = 0; j < grid->npcol; ++j)
-      {
-        if (ActiveFlag[j] != -3 * nsupers)
-        {
-          jb = ActiveFlag[j];
-          pc = PCOL(jb, grid);
-          if (jb == ib)
-            Root = pc;
-          if (mycol == pc)
-            Iactive = 1;
-        }
-      }
-
-      quickSortM(ActiveFlag, 0, grid->npcol - 1, grid->npcol, 1, 2);
-
-      if (Iactive == 1)
-      {
-        assert(Root > -1);
-        rank_cnt = 1;
-        ranks[0] = Root;
-        for (j = 0; j < grid->npcol; ++j)
-        {
-          if (ActiveFlag[j] != -3 * nsupers && ActiveFlag[j + grid->npcol] != Root)
-          {
-            ranks[rank_cnt] = ActiveFlag[j + grid->npcol];
-            ++rank_cnt;
-          }
-        }
-        if (rank_cnt > 1)
-        {
-
-          for (ii = 0; ii < rank_cnt; ii++) // use global ranks rather than local ranks
-            ranks[ii] = PNUM(pr, ranks[ii], grid);
-
-          // rseed=rand();
-          // rseed=1.0;
-          msgsize = SuperSize(ib);
-
-          // if(ib==0){
-
-          // LRtree_ptr[lib] = RdTree_Create(grid->comm, ranks, rank_cnt, msgsize,SeedSTD_RD[lib],'d');
-          // RdTree_SetTag(LRtree_ptr[lib], RD_L,'d');
-          C_RdTree_Create(&LRtree_ptr[lib], grid->comm, ranks, rank_cnt, msgsize, 'd');
-          LRtree_ptr[lib].tag_ = RD_L;
-          // }
-
-          // printf("iam %5d rtree rank_cnt %5d \n",iam,rank_cnt);
-          // fflush(stdout);
-
-#if (PRNTlevel >= 1)
-          if (Root == mycol)
-          {
-            assert(rank_cnt == frecv[lib]);
-            // printf("Partial Reduce Procs: row%7d np%4d\n",ib,rank_cnt);
-            // printf("Partial Reduce Procs: %4d %4d: ",iam, rank_cnt);
-            // // for(j=0;j<rank_cnt;++j)printf("%4d",ranks[j]);
-            // printf("\n");
-          }
-#endif
-        }
-      }
-    }
-  }
-
-  SUPERLU_FREE(mod_bit);
-  SUPERLU_FREE(frecv);
-
-  SUPERLU_FREE(ActiveFlag);
-  SUPERLU_FREE(ActiveFlagAll);
-  SUPERLU_FREE(ranks);
-  // SUPERLU_FREE(idxs);
-  SUPERLU_FREE(SeedSTD_RD);
-  // for(i=0;i<nsupers;++i){
-  // if(nzrows[i])SUPERLU_FREE(nzrows[i]);
-  // }
-  // SUPERLU_FREE(nzrows);
-  memTRS -= k * dword + grid->nprow * k * iword; // acount for SeedSTD_RD, ActiveFlagAll
-                                                 ////////////////////////////////////////////////////////
-
-#if (PROFlevel >= 1)
-  t = SuperLU_timer_() - t;
-  if (!iam)
-    printf(".. Construct Reduce tree for L: %.2f\t\n", t);
-#endif
-
-#if (PROFlevel >= 1)
-  t = SuperLU_timer_();
-#endif
-
-  /* construct the Bcast tree for U ... */
-
-  k = CEILING(nsupers, grid->npcol); /* Number of local block columns */
-  if (!(UBtree_ptr = (C_Tree *)SUPERLU_MALLOC(k * sizeof(C_Tree))))
-    ABORT("Malloc fails for UBtree_ptr[].");
-  if (!(ActiveFlag = intCalloc_dist(grid->nprow * 2)))
-    ABORT("Calloc fails for ActiveFlag[].");
-  if (!(ranks = (int *)SUPERLU_MALLOC(grid->nprow * sizeof(int))))
-    ABORT("Malloc fails for ranks[].");
-  if (!(SeedSTD_BC = (double *)SUPERLU_MALLOC(k * sizeof(double))))
-    ABORT("Malloc fails for SeedSTD_BC[].");
-
-  for (i = 0; i < k; i++)
-  {
-    SeedSTD_BC[i] = rand();
-  }
-
-  MPI_Allreduce(MPI_IN_PLACE, &SeedSTD_BC[0], k, MPI_DOUBLE, MPI_MAX, grid->cscp.comm);
-
-  for (ljb = 0; ljb < k; ++ljb)
-  {
-    C_BcTree_Nullify(&UBtree_ptr[ljb]);
-  }
-
-  if (!(ActiveFlagAll = intMalloc_dist(grid->nprow * k)))
-    ABORT("Calloc fails for ActiveFlagAll[].");
-  for (j = 0; j < grid->nprow * k; ++j)
-    ActiveFlagAll[j] = -3 * nsupers;
-  memTRS += k * sizeof(C_Tree) + k * dword + grid->nprow * k * iword; // acount for UBtree_ptr, SeedSTD_BC, ActiveFlagAll
-
-  for (lib = 0; lib < CEILING(nsupers, grid->nprow); ++lib)
-  {                                 /* for each local block row ... */
-    ib = myrow + lib * grid->nprow; /* not sure */
-
-    // if(ib==0)printf("iam %5d ib %5d\n",iam,ib);
-    // fflush(stdout);
-
-    if (ib < nsupers)
-    {
-      for (i = xusub[lib]; i < xusub[lib + 1]; i++)
-      {
-        jcol = usub[i];
-        jb = BlockNum(jcol);
-        ljb = LBj(jb, grid); /* local block number */
-        pc = PCOL(jb, grid);
-        pr = PROW(ib, grid);
-        if (mycol == pc)
-        { /* Block column ib in my process column */
-          ActiveFlagAll[pr + ljb * grid->nprow] = SUPERLU_MAX(ActiveFlagAll[pr + ljb * grid->nprow], ib);
-        }
-      }                    /* for i ... */
-      pr = PROW(ib, grid); // take care of diagonal node stored as L
-      pc = PCOL(ib, grid);
-      if (mycol == pc)
-      {                      /* Block column ib in my process column */
-        ljb = LBj(ib, grid); /* local block number */
-        ActiveFlagAll[pr + ljb * grid->nprow] = SUPERLU_MAX(ActiveFlagAll[pr + ljb * grid->nprow], ib);
-        // if(pr+ljb*grid->nprow==0)printf("iam %5d ib %5d ActiveFlagAll %5d pr %5d ljb %5d\n",iam,ib,ActiveFlagAll[pr+ljb*grid->nprow],pr,ljb);
-        // fflush(stdout);
-      }
-    }
-  }
-
-  // printf("iam %5d ActiveFlagAll %5d\n",iam,ActiveFlagAll[0]);
-  // fflush(stdout);
-
-  MPI_Allreduce(MPI_IN_PLACE, ActiveFlagAll, grid->nprow * k, mpi_int_t, MPI_MAX, grid->cscp.comm);
-
-  for (ljb = 0; ljb < k; ++ljb)
-  {                                 /* for each block column ... */
-    jb = mycol + ljb * grid->npcol; /* not sure */
-    if (jb < nsupers)
-    {
-      pc = PCOL(jb, grid);
-      // if ( mycol == pc ) { /* Block column jb in my process column */
-
-      for (j = 0; j < grid->nprow; ++j)
-        ActiveFlag[j] = ActiveFlagAll[j + ljb * grid->nprow];
-      for (j = 0; j < grid->nprow; ++j)
-        ActiveFlag[j + grid->nprow] = j;
-      for (j = 0; j < grid->nprow; ++j)
-        ranks[j] = -1;
-
-      Root = -1;
-      Iactive = 0;
-      for (j = 0; j < grid->nprow; ++j)
-      {
-        if (ActiveFlag[j] != -3 * nsupers)
-        {
-          gb = ActiveFlag[j];
-          pr = PROW(gb, grid);
-          if (gb == jb)
-            Root = pr;
-          if (myrow == pr)
-            Iactive = 1;
-        }
-      }
-
-      quickSortM(ActiveFlag, 0, grid->nprow - 1, grid->nprow, 1, 2);
-      // printf("jb: %5d Iactive %5d\n",jb,Iactive);
-      // fflush(stdout);
-      if (Iactive == 1)
-      {
-        // if(jb==0)printf("root:%5d jb: %5d ActiveFlag %5d \n",Root,jb,ActiveFlag[0]);
-        fflush(stdout);
-        assert(Root > -1);
-        rank_cnt = 1;
-        ranks[0] = Root;
-        for (j = 0; j < grid->nprow; ++j)
-        {
-          if (ActiveFlag[j] != -3 * nsupers && ActiveFlag[j + grid->nprow] != Root)
-          {
-            ranks[rank_cnt] = ActiveFlag[j + grid->nprow];
-            ++rank_cnt;
-          }
-        }
-        // printf("jb: %5d rank_cnt %5d\n",jb,rank_cnt);
-        // fflush(stdout);
-        if (rank_cnt > 1)
-        {
-          for (ii = 0; ii < rank_cnt; ii++) // use global ranks rather than local ranks
-            ranks[ii] = PNUM(ranks[ii], pc, grid);
-
-          // rseed=rand();
-          // rseed=1.0;
-          msgsize = SuperSize(jb);
-          // UBtree_ptr[ljb] = BcTree_Create(grid->comm, ranks, rank_cnt, msgsize,SeedSTD_BC[ljb],'d');
-          // BcTree_SetTag(UBtree_ptr[ljb],BC_U,'d');
-          C_BcTree_Create(&UBtree_ptr[ljb], grid->comm, ranks, rank_cnt, msgsize, 'd');
-          UBtree_ptr[ljb].tag_ = BC_U;
-
-          // printf("iam %5d btree rank_cnt %5d \n",iam,rank_cnt);
-          // fflush(stdout);
-
-          if (Root == myrow)
-          {
-            rank_cnt_ref = 1;
-            for (j = 0; j < grid->nprow; ++j)
-            {
-              // printf("ljb %5d j %5d nprow %5d\n",ljb,j,grid->nprow);
-              // fflush(stdout);
-              if (bsendx_plist[ljb][j] != SLU_EMPTY)
-              {
-                ++rank_cnt_ref;
-              }
-            }
-            // printf("ljb %5d rank_cnt %5d rank_cnt_ref %5d\n",ljb,rank_cnt,rank_cnt_ref);
-            // fflush(stdout);
-            assert(rank_cnt == rank_cnt_ref);
-          }
-        }
-      }
-    }
-  }
-  SUPERLU_FREE(ActiveFlag);
-  SUPERLU_FREE(ActiveFlagAll);
-  SUPERLU_FREE(ranks);
-  SUPERLU_FREE(SeedSTD_BC);
-  memTRS -= k * dword + grid->nprow * k * iword; // acount for SeedSTD_BC, ActiveFlagAll
-
-#if (PROFlevel >= 1)
-  t = SuperLU_timer_() - t;
-  if (!iam)
-    printf(".. Construct Bcast tree for U: %.2f\t\n", t);
-#endif
-
-#if (PROFlevel >= 1)
-  t = SuperLU_timer_();
-#endif
-  /* construct the Reduce tree for U ... */
-  /* the following is used as reference */
-  nlb = CEILING(nsupers, grid->nprow); /* Number of local block rows */
-  if (!(mod_bit = int32Malloc_dist(nlb)))
-    ABORT("Malloc fails for mod_bit[].");
-  if (!(brecv = int32Malloc_dist(nlb)))
-    ABORT("Malloc fails for brecv[].");
-
-		for (k = 0; k < nlb; ++k) mod_bit[k] = 0;
-		for (k = 0; k < nsupers; ++k) {
-			pr = PROW( k, grid );
-			if ( myrow == pr ) {
-				lib = LBi( k, grid );    /* local block number */
-				kcol = PCOL( k, grid );
-				if (mycol == kcol || bmod[lib] )
-					mod_bit[lib] = 1;  /* contribution from off-diagonal and diagonal*/
-			}
-		}
-		/* Every process receives the count, but it is only useful on the
-		   diagonal processes.  */
-#if 0 // Sherry
-		MPI_Allreduce( mod_bit, brecv, nlb, mpi_int_t, MPI_SUM, grid->rscp.comm);
-#else		
-		MPI_Allreduce( mod_bit, brecv, nlb, MPI_INT, MPI_SUM, grid->rscp.comm);
-#endif		
-
-  k = CEILING(nsupers, grid->nprow); /* Number of local block rows */
-  if (!(URtree_ptr = (C_Tree *)SUPERLU_MALLOC(k * sizeof(C_Tree))))
-    ABORT("Malloc fails for URtree_ptr[].");
-  if (!(ActiveFlag = intCalloc_dist(grid->npcol * 2)))
-    ABORT("Calloc fails for ActiveFlag[].");
-  if (!(ranks = (int *)SUPERLU_MALLOC(grid->npcol * sizeof(int))))
-    ABORT("Malloc fails for ranks[].");
-
-  // if ( !(idxs = intCalloc_dist(nsupers)) )
-  // ABORT("Calloc fails for idxs[].");
-
-  // if ( !(nzrows = (int_t**)SUPERLU_MALLOC(nsupers * sizeof(int_t*))) )
-  // ABORT("Malloc fails for nzrows[].");
-
-  if (!(SeedSTD_RD = (double *)SUPERLU_MALLOC(k * sizeof(double))))
-    ABORT("Malloc fails for SeedSTD_RD[].");
-
-  for (i = 0; i < k; i++)
-  {
-    SeedSTD_RD[i] = rand();
-  }
-
-  MPI_Allreduce(MPI_IN_PLACE, &SeedSTD_RD[0], k, MPI_DOUBLE, MPI_MAX, grid->rscp.comm);
-
-  for (lib = 0; lib < k; ++lib)
-  {
-    C_RdTree_Nullify(&URtree_ptr[lib]);
-  }
-
-  if (!(ActiveFlagAll = intMalloc_dist(grid->npcol * k)))
-    ABORT("Calloc fails for ActiveFlagAll[].");
-  for (j = 0; j < grid->npcol * k; ++j)
-    ActiveFlagAll[j] = 3 * nsupers;
-  memTRS += k * sizeof(C_Tree) + k * dword + grid->npcol * k * iword; // acount for URtree_ptr, SeedSTD_RD, ActiveFlagAll
-
-  for (lib = 0; lib < CEILING(nsupers, grid->nprow); ++lib)
-  {                                 /* for each local block row ... */
-    ib = myrow + lib * grid->nprow; /* not sure */
-    if (ib < nsupers)
-    {
-      for (i = xusub[lib]; i < xusub[lib + 1]; i++)
-      {
-        jcol = usub[i];
-        jb = BlockNum(jcol);
-        pc = PCOL(jb, grid);
-        if (mycol == pc)
-        { /* Block column ib in my process column */
-          ActiveFlagAll[pc + lib * grid->npcol] = SUPERLU_MIN(ActiveFlagAll[pc + lib * grid->npcol], jb);
-        }
-      } /* for i ... */
-      pc = PCOL(ib, grid);
-      if (mycol == pc)
-      { /* Block column ib in my process column */
-        ActiveFlagAll[pc + lib * grid->npcol] = SUPERLU_MIN(ActiveFlagAll[pc + lib * grid->npcol], ib);
-      }
-    }
-  }
-
-  MPI_Allreduce(MPI_IN_PLACE, ActiveFlagAll, grid->npcol * k, mpi_int_t, MPI_MIN, grid->rscp.comm);
-
-  for (lib = 0; lib < k; ++lib)
-  {
-    ib = myrow + lib * grid->nprow; /* not sure */
-    if (ib < nsupers)
-    {
-      pr = PROW(ib, grid);
-      for (j = 0; j < grid->npcol; ++j)
-        ActiveFlag[j] = ActiveFlagAll[j + lib * grid->npcol];
-      ;
-      for (j = 0; j < grid->npcol; ++j)
-        ActiveFlag[j + grid->npcol] = j;
-      for (j = 0; j < grid->npcol; ++j)
-        ranks[j] = -1;
-      Root = -1;
-      Iactive = 0;
-
-      for (j = 0; j < grid->npcol; ++j)
-      {
-        if (ActiveFlag[j] != 3 * nsupers)
-        {
-          jb = ActiveFlag[j];
-          pc = PCOL(jb, grid);
-          if (jb == ib)
-            Root = pc;
-          if (mycol == pc)
-            Iactive = 1;
-        }
-      }
-
-      quickSortM(ActiveFlag, 0, grid->npcol - 1, grid->npcol, 0, 2);
-
-      if (Iactive == 1)
-      {
-        assert(Root > -1);
-        rank_cnt = 1;
-        ranks[0] = Root;
-        for (j = 0; j < grid->npcol; ++j)
-        {
-          if (ActiveFlag[j] != 3 * nsupers && ActiveFlag[j + grid->npcol] != Root)
-          {
-            ranks[rank_cnt] = ActiveFlag[j + grid->npcol];
-            ++rank_cnt;
-          }
-        }
-        if (rank_cnt > 1)
-        {
-
-          for (ii = 0; ii < rank_cnt; ii++) // use global ranks rather than local ranks
-            ranks[ii] = PNUM(pr, ranks[ii], grid);
-
-          // rseed=rand();
-          // rseed=1.0;
-          msgsize = SuperSize(ib);
-
-          // if(ib==0){
-
-          // URtree_ptr[lib] = RdTree_Create(grid->comm, ranks, rank_cnt, msgsize,SeedSTD_RD[lib],'d');
-          // RdTree_SetTag(URtree_ptr[lib], RD_U,'d');
-          C_RdTree_Create(&URtree_ptr[lib], grid->comm, ranks, rank_cnt, msgsize, 'd');
-          URtree_ptr[lib].tag_ = RD_U;
-          // }
-
-          // #if ( PRNTlevel>=1 )
-          if (Root == mycol)
-          {
-            // printf("Partial Reduce Procs: %4d %4d %5d \n",iam, rank_cnt,brecv[lib]);
-            // fflush(stdout);
-            assert(rank_cnt == brecv[lib]);
-            // printf("Partial Reduce Procs: row%7d np%4d\n",ib,rank_cnt);
-            // printf("Partial Reduce Procs: %4d %4d: ",iam, rank_cnt);
-            // // for(j=0;j<rank_cnt;++j)printf("%4d",ranks[j]);
-            // printf("\n");
-          }
-          // #endif
-        }
-      }
-    }
-  }
-
-  SUPERLU_FREE(mod_bit);
-  SUPERLU_FREE(brecv);
-
-  SUPERLU_FREE(ActiveFlag);
-  SUPERLU_FREE(ActiveFlagAll);
-  SUPERLU_FREE(ranks);
-  // SUPERLU_FREE(idxs);
-  SUPERLU_FREE(SeedSTD_RD);
-  // for(i=0;i<nsupers;++i){
-  // if(nzrows[i])SUPERLU_FREE(nzrows[i]);
-  // }
-  // SUPERLU_FREE(nzrows);
-  memTRS -= k * dword + grid->nprow * k * iword; // acount for SeedSTD_RD, ActiveFlagAll
-
-#if (PROFlevel >= 1)
-  t = SuperLU_timer_() - t;
-  if (!iam)
-    printf(".. Construct Reduce tree for U: %.2f\t\n", t);
-#endif
+  
+  
+  
+//   /* construct the Bcast tree for L ... */
+
+//   k = CEILING(nsupers, grid->npcol); /* Number of local block columns */
+//   if (!(LBtree_ptr = (C_Tree *)SUPERLU_MALLOC(k * sizeof(C_Tree))))
+//     ABORT("Malloc fails for LBtree_ptr[].");
+//   if (!(ActiveFlag = intCalloc_dist(grid->nprow * 2)))
+//     ABORT("Calloc fails for ActiveFlag[].");
+//   if (!(ranks = (int *)SUPERLU_MALLOC(grid->nprow * sizeof(int))))
+//     ABORT("Malloc fails for ranks[].");
+//   if (!(SeedSTD_BC = (double *)SUPERLU_MALLOC(k * sizeof(double))))
+//     ABORT("Malloc fails for SeedSTD_BC[].");
+
+//   for (i = 0; i < k; i++)
+//   {
+//     SeedSTD_BC[i] = rand();
+//   }
+
+//   MPI_Allreduce(MPI_IN_PLACE, &SeedSTD_BC[0], k, MPI_DOUBLE, MPI_MAX, grid->cscp.comm);
+
+//   for (ljb = 0; ljb < k; ++ljb)
+//   {
+//     C_BcTree_Nullify(&LBtree_ptr[ljb]);
+//   }
+
+//   if (!(ActiveFlagAll = intMalloc_dist(grid->nprow * k)))
+//     ABORT("Calloc fails for ActiveFlag[].");
+//   for (j = 0; j < grid->nprow * k; ++j)
+//     ActiveFlagAll[j] = 3 * nsupers;
+//   memTRS += k * sizeof(C_Tree) + k * dword + grid->nprow * k * iword; // acount for LBtree_ptr, SeedSTD_BC, ActiveFlagAll
+//   for (ljb = 0; ljb < k; ++ljb)
+//   {                                 /* for each local block column ... */
+//     jb = mycol + ljb * grid->npcol; /* not sure */
+//     if (jb < nsupers)
+//     {
+//       pc = PCOL(jb, grid);
+
+//       istart = xlsub[ljb];
+//       for (i = istart; i < xlsub[ljb + 1]; ++i)
+//       {
+//         irow = lsub[i];
+//         gb = BlockNum(irow);
+//         pr = PROW(gb, grid);
+//         ActiveFlagAll[pr + ljb * grid->nprow] = SUPERLU_MIN(ActiveFlagAll[pr + ljb * grid->nprow], gb);
+//       } /* for j ... */
+//     }
+//   }
+
+//   MPI_Allreduce(MPI_IN_PLACE, ActiveFlagAll, grid->nprow * k, mpi_int_t, MPI_MIN, grid->cscp.comm);
+
+//   for (ljb = 0; ljb < k; ++ljb)
+//   { /* for each local block column ... */
+
+//     jb = mycol + ljb * grid->npcol; /* not sure */
+//     if (jb < nsupers)
+//     {
+//       pc = PCOL(jb, grid);
+
+//       for (j = 0; j < grid->nprow; ++j)
+//         ActiveFlag[j] = ActiveFlagAll[j + ljb * grid->nprow];
+//       for (j = 0; j < grid->nprow; ++j)
+//         ActiveFlag[j + grid->nprow] = j;
+//       for (j = 0; j < grid->nprow; ++j)
+//         ranks[j] = -1;
+
+//       Root = -1;
+//       Iactive = 0;
+//       for (j = 0; j < grid->nprow; ++j)
+//       {
+//         if (ActiveFlag[j] != 3 * nsupers)
+//         {
+//           gb = ActiveFlag[j];
+//           pr = PROW(gb, grid);
+//           if (gb == jb)
+//             Root = pr;
+//           if (myrow == pr)
+//             Iactive = 1;
+//         }
+//       }
+
+//       quickSortM(ActiveFlag, 0, grid->nprow - 1, grid->nprow, 0, 2);
+
+//       if (Iactive == 1)
+//       {
+//         // printf("jb %5d damn\n",jb);
+//         // fflush(stdout);
+//         assert(Root > -1);
+//         rank_cnt = 1;
+//         ranks[0] = Root;
+//         for (j = 0; j < grid->nprow; ++j)
+//         {
+//           if (ActiveFlag[j] != 3 * nsupers && ActiveFlag[j + grid->nprow] != Root)
+//           {
+//             ranks[rank_cnt] = ActiveFlag[j + grid->nprow];
+//             ++rank_cnt;
+//           }
+//         }
+
+//         if (rank_cnt > 1)
+//         {
+
+//           for (ii = 0; ii < rank_cnt; ii++) // use global ranks rather than local ranks
+//             ranks[ii] = PNUM(ranks[ii], pc, grid);
+
+//           // rseed=rand();
+//           // rseed=1.0;
+//           msgsize = SuperSize(jb);
+//           // LBtree_ptr[ljb] = BcTree_Create(grid->comm, ranks, rank_cnt, msgsize,SeedSTD_BC[ljb],'d');
+//           // BcTree_SetTag(LBtree_ptr[ljb],BC_L,'d');
+//           C_BcTree_Create(&LBtree_ptr[ljb], grid->comm, ranks, rank_cnt, msgsize, 'd');
+//           LBtree_ptr[ljb].tag_ = BC_L;
+
+//           // printf("iam %5d btree rank_cnt %5d \n",iam,rank_cnt);
+//           // fflush(stdout);
+
+//           // if(iam==15 || iam==3){
+//           // printf("iam %5d btree lk %5d tag %5d root %5d\n",iam, ljb,jb,BcTree_IsRoot(LBtree_ptr[ljb],'d'));
+//           // fflush(stdout);
+//           // }
+
+//           // #if ( PRNTlevel>=1 )
+//           if (Root == myrow)
+//           {
+//             rank_cnt_ref = 1;
+//             for (j = 0; j < grid->nprow; ++j)
+//             {
+//               if (fsendx_plist[ljb][j] != SLU_EMPTY)
+//               {
+//                 ++rank_cnt_ref;
+//               }
+//             }
+//             assert(rank_cnt == rank_cnt_ref);
+
+//             // printf("Partial Bcast Procs: col%7d np%4d\n",jb,rank_cnt);
+
+//             // // printf("Partial Bcast Procs: %4d %4d: ",iam, rank_cnt);
+//             // // for(j=0;j<rank_cnt;++j)printf("%4d",ranks[j]);
+//             // // printf("\n");
+//           }
+//           // #endif
+//         }
+//       }
+//     }
+//   }
+
+//   SUPERLU_FREE(ActiveFlag);
+//   SUPERLU_FREE(ActiveFlagAll);
+//   SUPERLU_FREE(ranks);
+//   SUPERLU_FREE(SeedSTD_BC);
+//   memTRS -= k * dword + grid->nprow * k * iword; // acount for SeedSTD_BC, ActiveFlagAll
+
+// #if (PROFlevel >= 1)
+//   t = SuperLU_timer_() - t;
+//   if (!iam)
+//     printf(".. Construct Bcast tree for L: %.2f\t\n", t);
+// #endif
+
+// #if (PROFlevel >= 1)
+//   t = SuperLU_timer_();
+// #endif
+//   /* construct the Reduce tree for L ... */
+//   /* the following is used as reference */
+//   nlb = CEILING(nsupers, grid->nprow); /* Number of local block rows */
+//   if (!(mod_bit = int32Malloc_dist(nlb)))
+//     ABORT("Malloc fails for mod_bit[].");
+//   if (!(frecv = int32Malloc_dist(nlb)))
+//     ABORT("Malloc fails for frecv[].");
+
+//   for (k = 0; k < nlb; ++k)
+//     mod_bit[k] = 0;
+//   for (k = 0; k < nsupers; ++k)
+//   {
+//     pr = PROW(k, grid);
+//     if (myrow == pr)
+//     {
+//       lib = LBi(k, grid); /* local block number */
+//       kcol = PCOL(k, grid);
+//       if (mycol == kcol || fmod[lib])
+//         mod_bit[lib] = 1; /* contribution from off-diagonal and diagonal*/
+//     }
+//   }
+//   /* Every process receives the count, but it is only useful on the
+//      diagonal processes.  */
+// #if 0 // Sherry
+// 		MPI_Allreduce( mod_bit, frecv, nlb, mpi_int_t, MPI_SUM, grid->rscp.comm);
+// #else
+//   MPI_Allreduce(mod_bit, frecv, nlb, MPI_INT, MPI_SUM, grid->rscp.comm);
+// #endif
+
+//   k = CEILING(nsupers, grid->nprow); /* Number of local block rows */
+//   if (!(LRtree_ptr = (C_Tree *)SUPERLU_MALLOC(k * sizeof(C_Tree))))
+//     ABORT("Malloc fails for LRtree_ptr[].");
+//   if (!(ActiveFlag = intCalloc_dist(grid->npcol * 2)))
+//     ABORT("Calloc fails for ActiveFlag[].");
+//   if (!(ranks = (int *)SUPERLU_MALLOC(grid->npcol * sizeof(int))))
+//     ABORT("Malloc fails for ranks[].");
+
+//   // if ( !(idxs = intCalloc_dist(nsupers)) )
+//   // ABORT("Calloc fails for idxs[].");
+
+//   // if ( !(nzrows = (int_t**)SUPERLU_MALLOC(nsupers * sizeof(int_t*))) )
+//   // ABORT("Malloc fails for nzrows[].");
+
+//   if (!(SeedSTD_RD = (double *)SUPERLU_MALLOC(k * sizeof(double))))
+//     ABORT("Malloc fails for SeedSTD_RD[].");
+
+//   for (i = 0; i < k; i++)
+//   {
+//     SeedSTD_RD[i] = rand();
+//   }
+
+//   MPI_Allreduce(MPI_IN_PLACE, &SeedSTD_RD[0], k, MPI_DOUBLE, MPI_MAX, grid->rscp.comm);
+
+//   for (lib = 0; lib < k; ++lib)
+//   {
+//     C_RdTree_Nullify(&LRtree_ptr[lib]);
+//   }
+
+//   if (!(ActiveFlagAll = intMalloc_dist(grid->npcol * k)))
+//     ABORT("Calloc fails for ActiveFlagAll[].");
+//   for (j = 0; j < grid->npcol * k; ++j)
+//     ActiveFlagAll[j] = -3 * nsupers;
+//   memTRS += k * sizeof(C_Tree) + k * dword + grid->npcol * k * iword; // acount for LRtree_ptr, SeedSTD_RD, ActiveFlagAll
+
+//   for (ljb = 0; ljb < CEILING(nsupers, grid->npcol); ++ljb)
+//   {                                 /* for each local block column ... */
+//     jb = mycol + ljb * grid->npcol; /* not sure */
+//     if (jb < nsupers)
+//     {
+//       pc = PCOL(jb, grid);
+//       for (i = xlsub[ljb]; i < xlsub[ljb + 1]; ++i)
+//       {
+//         irow = lsub[i];
+//         ib = BlockNum(irow);
+//         pr = PROW(ib, grid);
+//         if (myrow == pr)
+//         {                      /* Block row ib in my process row */
+//           lib = LBi(ib, grid); /* Local block number */
+//           ActiveFlagAll[pc + lib * grid->npcol] = SUPERLU_MAX(ActiveFlagAll[pc + lib * grid->npcol], jb);
+//         }
+//       }
+//     }
+//   }
+
+//   MPI_Allreduce(MPI_IN_PLACE, ActiveFlagAll, grid->npcol * k, mpi_int_t, MPI_MAX, grid->rscp.comm);
+
+//   for (lib = 0; lib < k; ++lib)
+//   {
+//     ib = myrow + lib * grid->nprow; /* not sure */
+//     if (ib < nsupers)
+//     {
+//       pr = PROW(ib, grid);
+//       for (j = 0; j < grid->npcol; ++j)
+//         ActiveFlag[j] = ActiveFlagAll[j + lib * grid->npcol];
+//       ;
+//       for (j = 0; j < grid->npcol; ++j)
+//         ActiveFlag[j + grid->npcol] = j;
+//       for (j = 0; j < grid->npcol; ++j)
+//         ranks[j] = -1;
+//       Root = -1;
+//       Iactive = 0;
+
+//       for (j = 0; j < grid->npcol; ++j)
+//       {
+//         if (ActiveFlag[j] != -3 * nsupers)
+//         {
+//           jb = ActiveFlag[j];
+//           pc = PCOL(jb, grid);
+//           if (jb == ib)
+//             Root = pc;
+//           if (mycol == pc)
+//             Iactive = 1;
+//         }
+//       }
+
+//       quickSortM(ActiveFlag, 0, grid->npcol - 1, grid->npcol, 1, 2);
+
+//       if (Iactive == 1)
+//       {
+//         assert(Root > -1);
+//         rank_cnt = 1;
+//         ranks[0] = Root;
+//         for (j = 0; j < grid->npcol; ++j)
+//         {
+//           if (ActiveFlag[j] != -3 * nsupers && ActiveFlag[j + grid->npcol] != Root)
+//           {
+//             ranks[rank_cnt] = ActiveFlag[j + grid->npcol];
+//             ++rank_cnt;
+//           }
+//         }
+//         if (rank_cnt > 1)
+//         {
+
+//           for (ii = 0; ii < rank_cnt; ii++) // use global ranks rather than local ranks
+//             ranks[ii] = PNUM(pr, ranks[ii], grid);
+
+//           // rseed=rand();
+//           // rseed=1.0;
+//           msgsize = SuperSize(ib);
+
+//           // if(ib==0){
+
+//           // LRtree_ptr[lib] = RdTree_Create(grid->comm, ranks, rank_cnt, msgsize,SeedSTD_RD[lib],'d');
+//           // RdTree_SetTag(LRtree_ptr[lib], RD_L,'d');
+//           C_RdTree_Create(&LRtree_ptr[lib], grid->comm, ranks, rank_cnt, msgsize, 'd');
+//           LRtree_ptr[lib].tag_ = RD_L;
+//           // }
+
+//           // printf("iam %5d rtree rank_cnt %5d \n",iam,rank_cnt);
+//           // fflush(stdout);
+
+// #if (PRNTlevel >= 1)
+//           if (Root == mycol)
+//           {
+//             assert(rank_cnt == frecv[lib]);
+//             // printf("Partial Reduce Procs: row%7d np%4d\n",ib,rank_cnt);
+//             // printf("Partial Reduce Procs: %4d %4d: ",iam, rank_cnt);
+//             // // for(j=0;j<rank_cnt;++j)printf("%4d",ranks[j]);
+//             // printf("\n");
+//           }
+// #endif
+//         }
+//       }
+//     }
+//   }
+
+//   SUPERLU_FREE(mod_bit);
+//   SUPERLU_FREE(frecv);
+
+//   SUPERLU_FREE(ActiveFlag);
+//   SUPERLU_FREE(ActiveFlagAll);
+//   SUPERLU_FREE(ranks);
+//   // SUPERLU_FREE(idxs);
+//   SUPERLU_FREE(SeedSTD_RD);
+//   // for(i=0;i<nsupers;++i){
+//   // if(nzrows[i])SUPERLU_FREE(nzrows[i]);
+//   // }
+//   // SUPERLU_FREE(nzrows);
+//   memTRS -= k * dword + grid->nprow * k * iword; // acount for SeedSTD_RD, ActiveFlagAll
+//                                                  ////////////////////////////////////////////////////////
+
+// #if (PROFlevel >= 1)
+//   t = SuperLU_timer_() - t;
+//   if (!iam)
+//     printf(".. Construct Reduce tree for L: %.2f\t\n", t);
+// #endif
+
+// #if (PROFlevel >= 1)
+//   t = SuperLU_timer_();
+// #endif
+
+//   /* construct the Bcast tree for U ... */
+
+//   k = CEILING(nsupers, grid->npcol); /* Number of local block columns */
+//   if (!(UBtree_ptr = (C_Tree *)SUPERLU_MALLOC(k * sizeof(C_Tree))))
+//     ABORT("Malloc fails for UBtree_ptr[].");
+//   if (!(ActiveFlag = intCalloc_dist(grid->nprow * 2)))
+//     ABORT("Calloc fails for ActiveFlag[].");
+//   if (!(ranks = (int *)SUPERLU_MALLOC(grid->nprow * sizeof(int))))
+//     ABORT("Malloc fails for ranks[].");
+//   if (!(SeedSTD_BC = (double *)SUPERLU_MALLOC(k * sizeof(double))))
+//     ABORT("Malloc fails for SeedSTD_BC[].");
+
+//   for (i = 0; i < k; i++)
+//   {
+//     SeedSTD_BC[i] = rand();
+//   }
+
+//   MPI_Allreduce(MPI_IN_PLACE, &SeedSTD_BC[0], k, MPI_DOUBLE, MPI_MAX, grid->cscp.comm);
+
+//   for (ljb = 0; ljb < k; ++ljb)
+//   {
+//     C_BcTree_Nullify(&UBtree_ptr[ljb]);
+//   }
+
+//   if (!(ActiveFlagAll = intMalloc_dist(grid->nprow * k)))
+//     ABORT("Calloc fails for ActiveFlagAll[].");
+//   for (j = 0; j < grid->nprow * k; ++j)
+//     ActiveFlagAll[j] = -3 * nsupers;
+//   memTRS += k * sizeof(C_Tree) + k * dword + grid->nprow * k * iword; // acount for UBtree_ptr, SeedSTD_BC, ActiveFlagAll
+
+//   for (lib = 0; lib < CEILING(nsupers, grid->nprow); ++lib)
+//   {                                 /* for each local block row ... */
+//     ib = myrow + lib * grid->nprow; /* not sure */
+
+//     // if(ib==0)printf("iam %5d ib %5d\n",iam,ib);
+//     // fflush(stdout);
+
+//     if (ib < nsupers)
+//     {
+//       for (i = xusub[lib]; i < xusub[lib + 1]; i++)
+//       {
+//         jcol = usub[i];
+//         jb = BlockNum(jcol);
+//         ljb = LBj(jb, grid); /* local block number */
+//         pc = PCOL(jb, grid);
+//         pr = PROW(ib, grid);
+//         if (mycol == pc)
+//         { /* Block column ib in my process column */
+//           ActiveFlagAll[pr + ljb * grid->nprow] = SUPERLU_MAX(ActiveFlagAll[pr + ljb * grid->nprow], ib);
+//         }
+//       }                    /* for i ... */
+//       pr = PROW(ib, grid); // take care of diagonal node stored as L
+//       pc = PCOL(ib, grid);
+//       if (mycol == pc)
+//       {                      /* Block column ib in my process column */
+//         ljb = LBj(ib, grid); /* local block number */
+//         ActiveFlagAll[pr + ljb * grid->nprow] = SUPERLU_MAX(ActiveFlagAll[pr + ljb * grid->nprow], ib);
+//         // if(pr+ljb*grid->nprow==0)printf("iam %5d ib %5d ActiveFlagAll %5d pr %5d ljb %5d\n",iam,ib,ActiveFlagAll[pr+ljb*grid->nprow],pr,ljb);
+//         // fflush(stdout);
+//       }
+//     }
+//   }
+
+//   // printf("iam %5d ActiveFlagAll %5d\n",iam,ActiveFlagAll[0]);
+//   // fflush(stdout);
+
+//   MPI_Allreduce(MPI_IN_PLACE, ActiveFlagAll, grid->nprow * k, mpi_int_t, MPI_MAX, grid->cscp.comm);
+
+//   for (ljb = 0; ljb < k; ++ljb)
+//   {                                 /* for each block column ... */
+//     jb = mycol + ljb * grid->npcol; /* not sure */
+//     if (jb < nsupers)
+//     {
+//       pc = PCOL(jb, grid);
+//       // if ( mycol == pc ) { /* Block column jb in my process column */
+
+//       for (j = 0; j < grid->nprow; ++j)
+//         ActiveFlag[j] = ActiveFlagAll[j + ljb * grid->nprow];
+//       for (j = 0; j < grid->nprow; ++j)
+//         ActiveFlag[j + grid->nprow] = j;
+//       for (j = 0; j < grid->nprow; ++j)
+//         ranks[j] = -1;
+
+//       Root = -1;
+//       Iactive = 0;
+//       for (j = 0; j < grid->nprow; ++j)
+//       {
+//         if (ActiveFlag[j] != -3 * nsupers)
+//         {
+//           gb = ActiveFlag[j];
+//           pr = PROW(gb, grid);
+//           if (gb == jb)
+//             Root = pr;
+//           if (myrow == pr)
+//             Iactive = 1;
+//         }
+//       }
+
+//       quickSortM(ActiveFlag, 0, grid->nprow - 1, grid->nprow, 1, 2);
+//       // printf("jb: %5d Iactive %5d\n",jb,Iactive);
+//       // fflush(stdout);
+//       if (Iactive == 1)
+//       {
+//         // if(jb==0)printf("root:%5d jb: %5d ActiveFlag %5d \n",Root,jb,ActiveFlag[0]);
+//         fflush(stdout);
+//         assert(Root > -1);
+//         rank_cnt = 1;
+//         ranks[0] = Root;
+//         for (j = 0; j < grid->nprow; ++j)
+//         {
+//           if (ActiveFlag[j] != -3 * nsupers && ActiveFlag[j + grid->nprow] != Root)
+//           {
+//             ranks[rank_cnt] = ActiveFlag[j + grid->nprow];
+//             ++rank_cnt;
+//           }
+//         }
+//         // printf("jb: %5d rank_cnt %5d\n",jb,rank_cnt);
+//         // fflush(stdout);
+//         if (rank_cnt > 1)
+//         {
+//           for (ii = 0; ii < rank_cnt; ii++) // use global ranks rather than local ranks
+//             ranks[ii] = PNUM(ranks[ii], pc, grid);
+
+//           // rseed=rand();
+//           // rseed=1.0;
+//           msgsize = SuperSize(jb);
+//           // UBtree_ptr[ljb] = BcTree_Create(grid->comm, ranks, rank_cnt, msgsize,SeedSTD_BC[ljb],'d');
+//           // BcTree_SetTag(UBtree_ptr[ljb],BC_U,'d');
+//           C_BcTree_Create(&UBtree_ptr[ljb], grid->comm, ranks, rank_cnt, msgsize, 'd');
+//           UBtree_ptr[ljb].tag_ = BC_U;
+
+//           // printf("iam %5d btree rank_cnt %5d \n",iam,rank_cnt);
+//           // fflush(stdout);
+
+//           if (Root == myrow)
+//           {
+//             rank_cnt_ref = 1;
+//             for (j = 0; j < grid->nprow; ++j)
+//             {
+//               // printf("ljb %5d j %5d nprow %5d\n",ljb,j,grid->nprow);
+//               // fflush(stdout);
+//               if (bsendx_plist[ljb][j] != SLU_EMPTY)
+//               {
+//                 ++rank_cnt_ref;
+//               }
+//             }
+//             // printf("ljb %5d rank_cnt %5d rank_cnt_ref %5d\n",ljb,rank_cnt,rank_cnt_ref);
+//             // fflush(stdout);
+//             assert(rank_cnt == rank_cnt_ref);
+//           }
+//         }
+//       }
+//     }
+//   }
+//   SUPERLU_FREE(ActiveFlag);
+//   SUPERLU_FREE(ActiveFlagAll);
+//   SUPERLU_FREE(ranks);
+//   SUPERLU_FREE(SeedSTD_BC);
+//   memTRS -= k * dword + grid->nprow * k * iword; // acount for SeedSTD_BC, ActiveFlagAll
+
+// #if (PROFlevel >= 1)
+//   t = SuperLU_timer_() - t;
+//   if (!iam)
+//     printf(".. Construct Bcast tree for U: %.2f\t\n", t);
+// #endif
+
+// #if (PROFlevel >= 1)
+//   t = SuperLU_timer_();
+// #endif
+//   /* construct the Reduce tree for U ... */
+//   /* the following is used as reference */
+//   nlb = CEILING(nsupers, grid->nprow); /* Number of local block rows */
+//   if (!(mod_bit = int32Malloc_dist(nlb)))
+//     ABORT("Malloc fails for mod_bit[].");
+//   if (!(brecv = int32Malloc_dist(nlb)))
+//     ABORT("Malloc fails for brecv[].");
+
+// 		for (k = 0; k < nlb; ++k) mod_bit[k] = 0;
+// 		for (k = 0; k < nsupers; ++k) {
+// 			pr = PROW( k, grid );
+// 			if ( myrow == pr ) {
+// 				lib = LBi( k, grid );    /* local block number */
+// 				kcol = PCOL( k, grid );
+// 				if (mycol == kcol || bmod[lib] )
+// 					mod_bit[lib] = 1;  /* contribution from off-diagonal and diagonal*/
+// 			}
+// 		}
+// 		/* Every process receives the count, but it is only useful on the
+// 		   diagonal processes.  */
+// #if 0 // Sherry
+// 		MPI_Allreduce( mod_bit, brecv, nlb, mpi_int_t, MPI_SUM, grid->rscp.comm);
+// #else		
+// 		MPI_Allreduce( mod_bit, brecv, nlb, MPI_INT, MPI_SUM, grid->rscp.comm);
+// #endif		
+
+//   k = CEILING(nsupers, grid->nprow); /* Number of local block rows */
+//   if (!(URtree_ptr = (C_Tree *)SUPERLU_MALLOC(k * sizeof(C_Tree))))
+//     ABORT("Malloc fails for URtree_ptr[].");
+//   if (!(ActiveFlag = intCalloc_dist(grid->npcol * 2)))
+//     ABORT("Calloc fails for ActiveFlag[].");
+//   if (!(ranks = (int *)SUPERLU_MALLOC(grid->npcol * sizeof(int))))
+//     ABORT("Malloc fails for ranks[].");
+
+//   // if ( !(idxs = intCalloc_dist(nsupers)) )
+//   // ABORT("Calloc fails for idxs[].");
+
+//   // if ( !(nzrows = (int_t**)SUPERLU_MALLOC(nsupers * sizeof(int_t*))) )
+//   // ABORT("Malloc fails for nzrows[].");
+
+//   if (!(SeedSTD_RD = (double *)SUPERLU_MALLOC(k * sizeof(double))))
+//     ABORT("Malloc fails for SeedSTD_RD[].");
+
+//   for (i = 0; i < k; i++)
+//   {
+//     SeedSTD_RD[i] = rand();
+//   }
+
+//   MPI_Allreduce(MPI_IN_PLACE, &SeedSTD_RD[0], k, MPI_DOUBLE, MPI_MAX, grid->rscp.comm);
+
+//   for (lib = 0; lib < k; ++lib)
+//   {
+//     C_RdTree_Nullify(&URtree_ptr[lib]);
+//   }
+
+//   if (!(ActiveFlagAll = intMalloc_dist(grid->npcol * k)))
+//     ABORT("Calloc fails for ActiveFlagAll[].");
+//   for (j = 0; j < grid->npcol * k; ++j)
+//     ActiveFlagAll[j] = 3 * nsupers;
+//   memTRS += k * sizeof(C_Tree) + k * dword + grid->npcol * k * iword; // acount for URtree_ptr, SeedSTD_RD, ActiveFlagAll
+
+//   for (lib = 0; lib < CEILING(nsupers, grid->nprow); ++lib)
+//   {                                 /* for each local block row ... */
+//     ib = myrow + lib * grid->nprow; /* not sure */
+//     if (ib < nsupers)
+//     {
+//       for (i = xusub[lib]; i < xusub[lib + 1]; i++)
+//       {
+//         jcol = usub[i];
+//         jb = BlockNum(jcol);
+//         pc = PCOL(jb, grid);
+//         if (mycol == pc)
+//         { /* Block column ib in my process column */
+//           ActiveFlagAll[pc + lib * grid->npcol] = SUPERLU_MIN(ActiveFlagAll[pc + lib * grid->npcol], jb);
+//         }
+//       } /* for i ... */
+//       pc = PCOL(ib, grid);
+//       if (mycol == pc)
+//       { /* Block column ib in my process column */
+//         ActiveFlagAll[pc + lib * grid->npcol] = SUPERLU_MIN(ActiveFlagAll[pc + lib * grid->npcol], ib);
+//       }
+//     }
+//   }
+
+//   MPI_Allreduce(MPI_IN_PLACE, ActiveFlagAll, grid->npcol * k, mpi_int_t, MPI_MIN, grid->rscp.comm);
+
+//   for (lib = 0; lib < k; ++lib)
+//   {
+//     ib = myrow + lib * grid->nprow; /* not sure */
+//     if (ib < nsupers)
+//     {
+//       pr = PROW(ib, grid);
+//       for (j = 0; j < grid->npcol; ++j)
+//         ActiveFlag[j] = ActiveFlagAll[j + lib * grid->npcol];
+//       ;
+//       for (j = 0; j < grid->npcol; ++j)
+//         ActiveFlag[j + grid->npcol] = j;
+//       for (j = 0; j < grid->npcol; ++j)
+//         ranks[j] = -1;
+//       Root = -1;
+//       Iactive = 0;
+
+//       for (j = 0; j < grid->npcol; ++j)
+//       {
+//         if (ActiveFlag[j] != 3 * nsupers)
+//         {
+//           jb = ActiveFlag[j];
+//           pc = PCOL(jb, grid);
+//           if (jb == ib)
+//             Root = pc;
+//           if (mycol == pc)
+//             Iactive = 1;
+//         }
+//       }
+
+//       quickSortM(ActiveFlag, 0, grid->npcol - 1, grid->npcol, 0, 2);
+
+//       if (Iactive == 1)
+//       {
+//         assert(Root > -1);
+//         rank_cnt = 1;
+//         ranks[0] = Root;
+//         for (j = 0; j < grid->npcol; ++j)
+//         {
+//           if (ActiveFlag[j] != 3 * nsupers && ActiveFlag[j + grid->npcol] != Root)
+//           {
+//             ranks[rank_cnt] = ActiveFlag[j + grid->npcol];
+//             ++rank_cnt;
+//           }
+//         }
+//         if (rank_cnt > 1)
+//         {
+
+//           for (ii = 0; ii < rank_cnt; ii++) // use global ranks rather than local ranks
+//             ranks[ii] = PNUM(pr, ranks[ii], grid);
+
+//           // rseed=rand();
+//           // rseed=1.0;
+//           msgsize = SuperSize(ib);
+
+//           // if(ib==0){
+
+//           // URtree_ptr[lib] = RdTree_Create(grid->comm, ranks, rank_cnt, msgsize,SeedSTD_RD[lib],'d');
+//           // RdTree_SetTag(URtree_ptr[lib], RD_U,'d');
+//           C_RdTree_Create(&URtree_ptr[lib], grid->comm, ranks, rank_cnt, msgsize, 'd');
+//           URtree_ptr[lib].tag_ = RD_U;
+//           // }
+
+//           // #if ( PRNTlevel>=1 )
+//           if (Root == mycol)
+//           {
+//             // printf("Partial Reduce Procs: %4d %4d %5d \n",iam, rank_cnt,brecv[lib]);
+//             // fflush(stdout);
+//             assert(rank_cnt == brecv[lib]);
+//             // printf("Partial Reduce Procs: row%7d np%4d\n",ib,rank_cnt);
+//             // printf("Partial Reduce Procs: %4d %4d: ",iam, rank_cnt);
+//             // // for(j=0;j<rank_cnt;++j)printf("%4d",ranks[j]);
+//             // printf("\n");
+//           }
+//           // #endif
+//         }
+//       }
+//     }
+//   }
+
+//   SUPERLU_FREE(mod_bit);
+//   SUPERLU_FREE(brecv);
+
+//   SUPERLU_FREE(ActiveFlag);
+//   SUPERLU_FREE(ActiveFlagAll);
+//   SUPERLU_FREE(ranks);
+//   // SUPERLU_FREE(idxs);
+//   SUPERLU_FREE(SeedSTD_RD);
+//   // for(i=0;i<nsupers;++i){
+//   // if(nzrows[i])SUPERLU_FREE(nzrows[i]);
+//   // }
+//   // SUPERLU_FREE(nzrows);
+//   memTRS -= k * dword + grid->nprow * k * iword; // acount for SeedSTD_RD, ActiveFlagAll
+
+// #if (PROFlevel >= 1)
+//   t = SuperLU_timer_() - t;
+//   if (!iam)
+//     printf(".. Construct Reduce tree for U: %.2f\t\n", t);
+// #endif
 
   ////////////////////////////////////////////////////////
 
@@ -3616,29 +3611,29 @@ float ddist_psymbtonum(superlu_dist_options_t *options, int_t n, SuperMatrix *A,
   SUPERLU_FREE(recvBuf);
 
   Llu->Lrowind_bc_ptr = Lrowind_bc_ptr;
-  Llu->Lrowind_bc_dat = Lrowind_bc_dat;
-  Llu->Lrowind_bc_offset = Lrowind_bc_offset;
-  Llu->Lrowind_bc_cnt = Lrowind_bc_cnt;
+  // Llu->Lrowind_bc_dat = Lrowind_bc_dat;
+  // Llu->Lrowind_bc_offset = Lrowind_bc_offset;
+  // Llu->Lrowind_bc_cnt = Lrowind_bc_cnt;
 
   Llu->Lindval_loc_bc_ptr = Lindval_loc_bc_ptr;
-  Llu->Lindval_loc_bc_dat = Lindval_loc_bc_dat;
-  Llu->Lindval_loc_bc_offset = Lindval_loc_bc_offset;
-  Llu->Lindval_loc_bc_cnt = Lindval_loc_bc_cnt;
+  // Llu->Lindval_loc_bc_dat = Lindval_loc_bc_dat;
+  // Llu->Lindval_loc_bc_offset = Lindval_loc_bc_offset;
+  // Llu->Lindval_loc_bc_cnt = Lindval_loc_bc_cnt;
 
   Llu->Lnzval_bc_ptr = Lnzval_bc_ptr;
-  Llu->Lnzval_bc_dat = Lnzval_bc_dat;
-  Llu->Lnzval_bc_offset = Lnzval_bc_offset;
-  Llu->Lnzval_bc_cnt = Lnzval_bc_cnt;
+  // Llu->Lnzval_bc_dat = Lnzval_bc_dat;
+  // Llu->Lnzval_bc_offset = Lnzval_bc_offset;
+  // Llu->Lnzval_bc_cnt = Lnzval_bc_cnt;
 
   Llu->Ufstnz_br_ptr = Ufstnz_br_ptr;
-  Llu->Ufstnz_br_dat = Ufstnz_br_dat;
-  Llu->Ufstnz_br_offset = Ufstnz_br_offset;
-  Llu->Ufstnz_br_cnt = Ufstnz_br_cnt;
+  // Llu->Ufstnz_br_dat = Ufstnz_br_dat;
+  // Llu->Ufstnz_br_offset = Ufstnz_br_offset;
+  // Llu->Ufstnz_br_cnt = Ufstnz_br_cnt;
 
   Llu->Unzval_br_ptr = Unzval_br_ptr;
-  Llu->Unzval_br_dat = Unzval_br_dat;
-  Llu->Unzval_br_offset = Unzval_br_offset;
-  Llu->Unzval_br_cnt = Unzval_br_cnt;
+  // Llu->Unzval_br_dat = Unzval_br_dat;
+  // Llu->Unzval_br_offset = Unzval_br_offset;
+  // Llu->Unzval_br_cnt = Unzval_br_cnt;
 
   Llu->Unnz = Unnz;
   Llu->ToRecv = ToRecv;
@@ -3655,10 +3650,10 @@ float ddist_psymbtonum(superlu_dist_options_t *options, int_t n, SuperMatrix *A,
   Llu->ilsum = ilsum;
   Llu->ldalsum = ldaspa;
   LUstruct->Glu_persist = Glu_persist;
-  Llu->LRtree_ptr = LRtree_ptr;
-  Llu->LBtree_ptr = LBtree_ptr;
-  Llu->URtree_ptr = URtree_ptr;
-  Llu->UBtree_ptr = UBtree_ptr;
+  // Llu->LRtree_ptr = LRtree_ptr;
+  // Llu->LBtree_ptr = LBtree_ptr;
+  // Llu->URtree_ptr = URtree_ptr;
+  // Llu->UBtree_ptr = UBtree_ptr;
 
   Llu->Linv_bc_ptr = Linv_bc_ptr;
 	// Llu->Linv_bc_dat = Linv_bc_dat;
@@ -3666,9 +3661,9 @@ float ddist_psymbtonum(superlu_dist_options_t *options, int_t n, SuperMatrix *A,
 	// Llu->Linv_bc_cnt = Linv_bc_cnt;
 
   Llu->Uinv_bc_ptr = Uinv_bc_ptr;
-  Llu->Uinv_bc_dat = Uinv_bc_dat;
-  Llu->Uinv_bc_offset = Uinv_bc_offset;
-  Llu->Uinv_bc_cnt = Uinv_bc_cnt;
+  // Llu->Uinv_bc_dat = Uinv_bc_dat;
+  // Llu->Uinv_bc_offset = Uinv_bc_offset;
+  // Llu->Uinv_bc_cnt = Uinv_bc_cnt;
 
 	Llu->Urbs = Urbs;
 	Llu->Ucb_indptr = Ucb_indptr;
@@ -3682,50 +3677,50 @@ float ddist_psymbtonum(superlu_dist_options_t *options, int_t n, SuperMatrix *A,
 	LUstruct->trf3Dpart=NULL;
 
 
-#ifdef GPU_ACC
+// #ifdef GPU_ACC
 
-  checkGPU(gpuMalloc((void **)&Llu->d_xsup, (n + 1) * sizeof(int_t)));
-  checkGPU(gpuMemcpy(Llu->d_xsup, xsup, (n + 1) * sizeof(int_t), gpuMemcpyHostToDevice));
-  checkGPU(gpuMalloc((void **)&Llu->d_LRtree_ptr, CEILING(nsupers, grid->nprow) * sizeof(C_Tree)));
-  checkGPU(gpuMalloc((void **)&Llu->d_LBtree_ptr, CEILING(nsupers, grid->npcol) * sizeof(C_Tree)));
-  checkGPU(gpuMalloc((void **)&Llu->d_URtree_ptr, CEILING(nsupers, grid->nprow) * sizeof(C_Tree)));
-  checkGPU(gpuMalloc((void **)&Llu->d_UBtree_ptr, CEILING(nsupers, grid->npcol) * sizeof(C_Tree)));
-  checkGPU(gpuMemcpy(Llu->d_LRtree_ptr, Llu->LRtree_ptr, CEILING(nsupers, grid->nprow) * sizeof(C_Tree), gpuMemcpyHostToDevice));
-  checkGPU(gpuMemcpy(Llu->d_LBtree_ptr, Llu->LBtree_ptr, CEILING(nsupers, grid->npcol) * sizeof(C_Tree), gpuMemcpyHostToDevice));
-  checkGPU(gpuMemcpy(Llu->d_URtree_ptr, Llu->URtree_ptr, CEILING(nsupers, grid->nprow) * sizeof(C_Tree), gpuMemcpyHostToDevice));
-  checkGPU(gpuMemcpy(Llu->d_UBtree_ptr, Llu->UBtree_ptr, CEILING(nsupers, grid->npcol) * sizeof(C_Tree), gpuMemcpyHostToDevice));
-  checkGPU(gpuMalloc((void **)&Llu->d_Lrowind_bc_dat, (Llu->Lrowind_bc_cnt) * sizeof(int_t)));
-  checkGPU(gpuMemcpy(Llu->d_Lrowind_bc_dat, Llu->Lrowind_bc_dat, (Llu->Lrowind_bc_cnt) * sizeof(int_t), gpuMemcpyHostToDevice));
-  checkGPU(gpuMalloc((void **)&Llu->d_Lindval_loc_bc_dat, (Llu->Lindval_loc_bc_cnt) * sizeof(int_t)));
-  checkGPU(gpuMemcpy(Llu->d_Lindval_loc_bc_dat, Llu->Lindval_loc_bc_dat, (Llu->Lindval_loc_bc_cnt) * sizeof(int_t), gpuMemcpyHostToDevice));
-  checkGPU(gpuMalloc((void **)&Llu->d_Lrowind_bc_offset, CEILING(nsupers, grid->npcol) * sizeof(long int)));
-  checkGPU(gpuMemcpy(Llu->d_Lrowind_bc_offset, Llu->Lrowind_bc_offset, CEILING(nsupers, grid->npcol) * sizeof(long int), gpuMemcpyHostToDevice));
-  checkGPU(gpuMalloc((void **)&Llu->d_Lindval_loc_bc_offset, CEILING(nsupers, grid->npcol) * sizeof(long int)));
-  checkGPU(gpuMemcpy(Llu->d_Lindval_loc_bc_offset, Llu->Lindval_loc_bc_offset, CEILING(nsupers, grid->npcol) * sizeof(long int), gpuMemcpyHostToDevice));
-  checkGPU(gpuMalloc((void **)&Llu->d_Lnzval_bc_offset, CEILING(nsupers, grid->npcol) * sizeof(long int)));
-  checkGPU(gpuMemcpy(Llu->d_Lnzval_bc_offset, Llu->Lnzval_bc_offset, CEILING(nsupers, grid->npcol) * sizeof(long int), gpuMemcpyHostToDevice));
+//   checkGPU(gpuMalloc((void **)&Llu->d_xsup, (n + 1) * sizeof(int_t)));
+//   checkGPU(gpuMemcpy(Llu->d_xsup, xsup, (n + 1) * sizeof(int_t), gpuMemcpyHostToDevice));
+//   checkGPU(gpuMalloc((void **)&Llu->d_LRtree_ptr, CEILING(nsupers, grid->nprow) * sizeof(C_Tree)));
+//   checkGPU(gpuMalloc((void **)&Llu->d_LBtree_ptr, CEILING(nsupers, grid->npcol) * sizeof(C_Tree)));
+//   checkGPU(gpuMalloc((void **)&Llu->d_URtree_ptr, CEILING(nsupers, grid->nprow) * sizeof(C_Tree)));
+//   checkGPU(gpuMalloc((void **)&Llu->d_UBtree_ptr, CEILING(nsupers, grid->npcol) * sizeof(C_Tree)));
+//   checkGPU(gpuMemcpy(Llu->d_LRtree_ptr, Llu->LRtree_ptr, CEILING(nsupers, grid->nprow) * sizeof(C_Tree), gpuMemcpyHostToDevice));
+//   checkGPU(gpuMemcpy(Llu->d_LBtree_ptr, Llu->LBtree_ptr, CEILING(nsupers, grid->npcol) * sizeof(C_Tree), gpuMemcpyHostToDevice));
+//   checkGPU(gpuMemcpy(Llu->d_URtree_ptr, Llu->URtree_ptr, CEILING(nsupers, grid->nprow) * sizeof(C_Tree), gpuMemcpyHostToDevice));
+//   checkGPU(gpuMemcpy(Llu->d_UBtree_ptr, Llu->UBtree_ptr, CEILING(nsupers, grid->npcol) * sizeof(C_Tree), gpuMemcpyHostToDevice));
+//   checkGPU(gpuMalloc((void **)&Llu->d_Lrowind_bc_dat, (Llu->Lrowind_bc_cnt) * sizeof(int_t)));
+//   checkGPU(gpuMemcpy(Llu->d_Lrowind_bc_dat, Llu->Lrowind_bc_dat, (Llu->Lrowind_bc_cnt) * sizeof(int_t), gpuMemcpyHostToDevice));
+//   checkGPU(gpuMalloc((void **)&Llu->d_Lindval_loc_bc_dat, (Llu->Lindval_loc_bc_cnt) * sizeof(int_t)));
+//   checkGPU(gpuMemcpy(Llu->d_Lindval_loc_bc_dat, Llu->Lindval_loc_bc_dat, (Llu->Lindval_loc_bc_cnt) * sizeof(int_t), gpuMemcpyHostToDevice));
+//   checkGPU(gpuMalloc((void **)&Llu->d_Lrowind_bc_offset, CEILING(nsupers, grid->npcol) * sizeof(long int)));
+//   checkGPU(gpuMemcpy(Llu->d_Lrowind_bc_offset, Llu->Lrowind_bc_offset, CEILING(nsupers, grid->npcol) * sizeof(long int), gpuMemcpyHostToDevice));
+//   checkGPU(gpuMalloc((void **)&Llu->d_Lindval_loc_bc_offset, CEILING(nsupers, grid->npcol) * sizeof(long int)));
+//   checkGPU(gpuMemcpy(Llu->d_Lindval_loc_bc_offset, Llu->Lindval_loc_bc_offset, CEILING(nsupers, grid->npcol) * sizeof(long int), gpuMemcpyHostToDevice));
+//   checkGPU(gpuMalloc((void **)&Llu->d_Lnzval_bc_offset, CEILING(nsupers, grid->npcol) * sizeof(long int)));
+//   checkGPU(gpuMemcpy(Llu->d_Lnzval_bc_offset, Llu->Lnzval_bc_offset, CEILING(nsupers, grid->npcol) * sizeof(long int), gpuMemcpyHostToDevice));
 
-  // some dummy allocation to avoid checking whether they are null pointers later
-  checkGPU(gpuMalloc((void **)&Llu->d_Ucolind_bc_dat, sizeof(int_t)));
-  checkGPU(gpuMalloc((void **)&Llu->d_Ucolind_bc_offset, sizeof(int64_t)));
-  checkGPU(gpuMalloc((void **)&Llu->d_Unzval_bc_dat, sizeof(double)));
-  checkGPU(gpuMalloc((void **)&Llu->d_Unzval_bc_offset, sizeof(int64_t)));
-  checkGPU(gpuMalloc((void **)&Llu->d_Uindval_loc_bc_dat, sizeof(int_t)));
-  checkGPU(gpuMalloc((void **)&Llu->d_Uindval_loc_bc_offset, sizeof(int_t)));
+//   // some dummy allocation to avoid checking whether they are null pointers later
+//   checkGPU(gpuMalloc((void **)&Llu->d_Ucolind_bc_dat, sizeof(int_t)));
+//   checkGPU(gpuMalloc((void **)&Llu->d_Ucolind_bc_offset, sizeof(int64_t)));
+//   checkGPU(gpuMalloc((void **)&Llu->d_Unzval_bc_dat, sizeof(double)));
+//   checkGPU(gpuMalloc((void **)&Llu->d_Unzval_bc_offset, sizeof(int64_t)));
+//   checkGPU(gpuMalloc((void **)&Llu->d_Uindval_loc_bc_dat, sizeof(int_t)));
+//   checkGPU(gpuMalloc((void **)&Llu->d_Uindval_loc_bc_offset, sizeof(int_t)));
 
-  checkGPU(gpuMalloc((void **)&Llu->d_Linv_bc_offset, CEILING(nsupers, grid->npcol) * sizeof(long int)));
-  checkGPU(gpuMemcpy(Llu->d_Linv_bc_offset, Llu->Linv_bc_offset, CEILING(nsupers, grid->npcol) * sizeof(long int), gpuMemcpyHostToDevice));
-  checkGPU(gpuMalloc((void **)&Llu->d_Uinv_bc_offset, CEILING(nsupers, grid->npcol) * sizeof(long int)));
-  checkGPU(gpuMemcpy(Llu->d_Uinv_bc_offset, Llu->Uinv_bc_offset, CEILING(nsupers, grid->npcol) * sizeof(long int), gpuMemcpyHostToDevice));
-  checkGPU(gpuMalloc((void **)&Llu->d_ilsum, (CEILING(nsupers, grid->nprow) + 1) * sizeof(int_t)));
-  checkGPU(gpuMemcpy(Llu->d_ilsum, Llu->ilsum, (CEILING(nsupers, grid->nprow) + 1) * sizeof(int_t), gpuMemcpyHostToDevice));
+//   checkGPU(gpuMalloc((void **)&Llu->d_Linv_bc_offset, CEILING(nsupers, grid->npcol) * sizeof(long int)));
+//   checkGPU(gpuMemcpy(Llu->d_Linv_bc_offset, Llu->Linv_bc_offset, CEILING(nsupers, grid->npcol) * sizeof(long int), gpuMemcpyHostToDevice));
+//   checkGPU(gpuMalloc((void **)&Llu->d_Uinv_bc_offset, CEILING(nsupers, grid->npcol) * sizeof(long int)));
+//   checkGPU(gpuMemcpy(Llu->d_Uinv_bc_offset, Llu->Uinv_bc_offset, CEILING(nsupers, grid->npcol) * sizeof(long int), gpuMemcpyHostToDevice));
+//   checkGPU(gpuMalloc((void **)&Llu->d_ilsum, (CEILING(nsupers, grid->nprow) + 1) * sizeof(int_t)));
+//   checkGPU(gpuMemcpy(Llu->d_ilsum, Llu->ilsum, (CEILING(nsupers, grid->nprow) + 1) * sizeof(int_t), gpuMemcpyHostToDevice));
 
-  /* gpuMemcpy for the following is performed in pxgssvx */
-  checkGPU(gpuMalloc((void **)&Llu->d_Lnzval_bc_dat, (Llu->Lnzval_bc_cnt) * sizeof(double)));
-  checkGPU(gpuMalloc((void **)&Llu->d_Linv_bc_dat, (Llu->Linv_bc_cnt) * sizeof(double)));
-  checkGPU(gpuMalloc((void **)&Llu->d_Uinv_bc_dat, (Llu->Uinv_bc_cnt) * sizeof(double)));
+//   /* gpuMemcpy for the following is performed in pxgssvx */
+//   checkGPU(gpuMalloc((void **)&Llu->d_Lnzval_bc_dat, (Llu->Lnzval_bc_cnt) * sizeof(double)));
+//   checkGPU(gpuMalloc((void **)&Llu->d_Linv_bc_dat, (Llu->Linv_bc_cnt) * sizeof(double)));
+//   checkGPU(gpuMalloc((void **)&Llu->d_Uinv_bc_dat, (Llu->Uinv_bc_cnt) * sizeof(double)));
 
-#endif /* end ifdef GPU_ACC */
+// #endif /* end ifdef GPU_ACC */
 
 #if (PRNTlevel >= 1)
   if (!iam)

@@ -515,11 +515,11 @@ void dDestroy_LU(int_t n, gridinfo_t *grid, dLUstruct_t *LUstruct)
     //	    SUPERLU_FREE (Llu->Unzval_br_ptr[i]);
     //	}
     SUPERLU_FREE(Llu->Ufstnz_br_ptr);
-    SUPERLU_FREE(Llu->Ufstnz_br_dat);
-    SUPERLU_FREE(Llu->Ufstnz_br_offset);
+    // SUPERLU_FREE(Llu->Ufstnz_br_dat);
+    // SUPERLU_FREE(Llu->Ufstnz_br_offset);
     SUPERLU_FREE(Llu->Unzval_br_ptr);
-    SUPERLU_FREE(Llu->Unzval_br_dat);
-    SUPERLU_FREE(Llu->Unzval_br_offset);
+    // SUPERLU_FREE(Llu->Unzval_br_dat);
+    // SUPERLU_FREE(Llu->Unzval_br_offset);
 
     /* The following can be freed after factorization. */
     SUPERLU_FREE(Llu->ToRecv);
@@ -565,19 +565,18 @@ void dDestroy_LU(int_t n, gridinfo_t *grid, dLUstruct_t *LUstruct)
     SUPERLU_FREE(Llu->Uinv_bc_offset);
     SUPERLU_FREE(Llu->Unnz);
 
-    /* Following are free'd in distribution routines */
-    // nb = CEILING(nsupers, grid->npcol);
-    // for (i = 0; i < nb; ++i)
-    //	if ( Llu->Urbs[i] ) {
-    //	    SUPERLU_FREE(Llu->Ucb_indptr[i]);
-    //	    SUPERLU_FREE(Llu->Ucb_valptr[i]);
-    // }
+    nb = CEILING(nsupers, grid->npcol);
+    for (i = 0; i < nb; ++i)
+    	if ( Llu->Urbs[i] ) {
+    	    SUPERLU_FREE(Llu->Ucb_indptr[i]);
+    	    SUPERLU_FREE(Llu->Ucb_valptr[i]);
+    }
     SUPERLU_FREE(Llu->Ucb_indptr);
-    SUPERLU_FREE(Llu->Ucb_inddat);
-    SUPERLU_FREE(Llu->Ucb_indoffset);
+    // SUPERLU_FREE(Llu->Ucb_inddat);
+    // SUPERLU_FREE(Llu->Ucb_indoffset);
     SUPERLU_FREE(Llu->Ucb_valptr);
-    SUPERLU_FREE(Llu->Ucb_valdat);
-    SUPERLU_FREE(Llu->Ucb_valoffset);
+    // SUPERLU_FREE(Llu->Ucb_valdat);
+    // SUPERLU_FREE(Llu->Ucb_valoffset);
     SUPERLU_FREE(Llu->Urbs);
 
     SUPERLU_FREE(Glu_persist->xsup);

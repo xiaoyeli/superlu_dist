@@ -1889,29 +1889,29 @@ if ( !iam) printf(".. Construct Reduce tree for U: %.2f\t\n", t);
 
 
 	Llu->Lrowind_bc_ptr = Lrowind_bc_ptr;
-	Llu->Lrowind_bc_dat = Lrowind_bc_dat;
-	Llu->Lrowind_bc_offset = Lrowind_bc_offset;
-	Llu->Lrowind_bc_cnt = Lrowind_bc_cnt;
+	// Llu->Lrowind_bc_dat = Lrowind_bc_dat;
+	// Llu->Lrowind_bc_offset = Lrowind_bc_offset;
+	// Llu->Lrowind_bc_cnt = Lrowind_bc_cnt;
 
 	Llu->Lindval_loc_bc_ptr = Lindval_loc_bc_ptr;
-	Llu->Lindval_loc_bc_dat = Lindval_loc_bc_dat;
-	Llu->Lindval_loc_bc_offset = Lindval_loc_bc_offset;
-	Llu->Lindval_loc_bc_cnt = Lindval_loc_bc_cnt;
+	// Llu->Lindval_loc_bc_dat = Lindval_loc_bc_dat;
+	// Llu->Lindval_loc_bc_offset = Lindval_loc_bc_offset;
+	// Llu->Lindval_loc_bc_cnt = Lindval_loc_bc_cnt;
 
 	Llu->Lnzval_bc_ptr = Lnzval_bc_ptr;
-	Llu->Lnzval_bc_dat = Lnzval_bc_dat;
-	Llu->Lnzval_bc_offset = Lnzval_bc_offset;
-	Llu->Lnzval_bc_cnt = Lnzval_bc_cnt;
+	// Llu->Lnzval_bc_dat = Lnzval_bc_dat;
+	// Llu->Lnzval_bc_offset = Lnzval_bc_offset;
+	// Llu->Lnzval_bc_cnt = Lnzval_bc_cnt;
 
 	Llu->Ufstnz_br_ptr = Ufstnz_br_ptr;
-    Llu->Ufstnz_br_dat = Ufstnz_br_dat;
-    Llu->Ufstnz_br_offset = Ufstnz_br_offset;
-    Llu->Ufstnz_br_cnt = Ufstnz_br_cnt;
+    // Llu->Ufstnz_br_dat = Ufstnz_br_dat;
+    // Llu->Ufstnz_br_offset = Ufstnz_br_offset;
+    // Llu->Ufstnz_br_cnt = Ufstnz_br_cnt;
 
 	Llu->Unzval_br_ptr = Unzval_br_ptr;
-	Llu->Unzval_br_dat = Unzval_br_dat;
-	Llu->Unzval_br_offset = Unzval_br_offset;
-	Llu->Unzval_br_cnt = Unzval_br_cnt;
+	// Llu->Unzval_br_dat = Unzval_br_dat;
+	// Llu->Unzval_br_offset = Unzval_br_offset;
+	// Llu->Unzval_br_cnt = Unzval_br_cnt;
 
 	Llu->Unnz = Unnz;
 	Llu->ToRecv = ToRecv;
@@ -1934,23 +1934,23 @@ if ( !iam) printf(".. Construct Reduce tree for U: %.2f\t\n", t);
 	// Llu->UBtree_ptr = UBtree_ptr;
 
 	Llu->Linv_bc_ptr = Linv_bc_ptr;
-	Llu->Linv_bc_dat = Linv_bc_dat;
-	Llu->Linv_bc_offset = Linv_bc_offset;
-	Llu->Linv_bc_cnt = Linv_bc_cnt;
+	// Llu->Linv_bc_dat = Linv_bc_dat;
+	// Llu->Linv_bc_offset = Linv_bc_offset;
+	// Llu->Linv_bc_cnt = Linv_bc_cnt;
 
 	Llu->Uinv_bc_ptr = Uinv_bc_ptr;
-	Llu->Uinv_bc_dat = Uinv_bc_dat;
-	Llu->Uinv_bc_offset = Uinv_bc_offset;
-	Llu->Uinv_bc_cnt = Uinv_bc_cnt;
+	// Llu->Uinv_bc_dat = Uinv_bc_dat;
+	// Llu->Uinv_bc_offset = Uinv_bc_offset;
+	// Llu->Uinv_bc_cnt = Uinv_bc_cnt;
 	Llu->Urbs = Urbs;
 	Llu->Ucb_indptr = Ucb_indptr;
-	Llu->Ucb_inddat = Ucb_inddat;
-	Llu->Ucb_indoffset = Ucb_indoffset;
-	Llu->Ucb_indcnt = Ucb_indcnt;
+	// Llu->Ucb_inddat = Ucb_inddat;
+	// Llu->Ucb_indoffset = Ucb_indoffset;
+	// Llu->Ucb_indcnt = Ucb_indcnt;
 	Llu->Ucb_valptr = Ucb_valptr;
-	Llu->Ucb_valdat = Ucb_valdat;
-	Llu->Ucb_valoffset = Ucb_valoffset;
-	Llu->Ucb_valcnt = Ucb_valcnt;
+	// Llu->Ucb_valdat = Ucb_valdat;
+	// Llu->Ucb_valoffset = Ucb_valoffset;
+	// Llu->Ucb_valcnt = Ucb_valcnt;
 
 
 
