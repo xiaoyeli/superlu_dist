@@ -30,7 +30,7 @@ at the top-level directory.
  #endif
  
  #ifndef MAXSUPER
- #define MAXSUPER 256  
+ #define MAXSUPER 256
  #endif
 
 #ifndef RDMA_FLAG_SIZE
@@ -740,12 +740,12 @@ void nv_init_wrapper( MPI_Comm mpi_comm)
     cudaDeviceProp prop;
     //CUDA_CHECK(cudaGetDeviceProperties(&prop, rank%ndevices));
     // CUDA_CHECK(cudaGetDeviceProperties(&prop, mype_node)); // Yang Liu: this line is causing runtime error
-    //int status=nvshmemx_init_status();
-    printf("** MPI %d/%d, NVSHMEM %d/%d,device name: %s bus id: %d, "
-           "ndevices=%d,cur=%d, node=%s **\n",
-           rank,nranks,mype,npes,prop.name, prop.pciBusID,
-           ndevices,get_cur_dev,name);
-    fflush(stdout);
+    // //int status=nvshmemx_init_status();
+    // printf("** MPI %d/%d, NVSHMEM %d/%d,device name: %s bus id: %d, "
+    //        "ndevices=%d,cur=%d, node=%s **\n",
+    //        rank,nranks,mype,npes,prop.name, prop.pciBusID,
+    //        ndevices,get_cur_dev,name);
+    // fflush(stdout);
 
 
     //int *target;
@@ -1459,11 +1459,13 @@ __global__ void wait_bcrd_u
 //int global_id= blockIdx.x * blockDim.x * blockDim.y + threadIdx.x + threadIdx.y * blockDim.x;
     int tid = threadIdx.x + threadIdx.y * blockDim.x;
     int WAIT_NUM_THREADS = d_nfrecv[1]; //*d_nfrecv[2];
+    #ifdef _USE_SUMMIT
     if (bid <4) { // for BC recv
-        tid=bid*WAIT_NUM_THREADS+tid;
-        WAIT_NUM_THREADS=WAIT_NUM_THREADS*4;
-       //if (tid < WAIT_NUM_THREADS) { // for BC recv
-       //if (tid==0) printf("(%d) U WAIT_NUM_THREADS=%d,tot_wait_col=%d\n",mype,WAIT_NUM_THREADS,d_nfrecv[0]);
+          tid=bid*WAIT_NUM_THREADS+tid;
+          WAIT_NUM_THREADS=WAIT_NUM_THREADS*4;
+    #else      
+        if (bid == 0) { // for BC recv
+    #endif   
         if (WAIT_NUM_THREADS >= d_nfrecv[0]) {
             if (tid < d_nfrecv[0]) {
                 nvshmem_signal_wait_until((uint64_t *) flag_bc_q + d_colnum[tid], NVSHMEM_CMP_EQ, 1);
@@ -1497,10 +1499,9 @@ __global__ void wait_bcrd_u
 //if (tid==0) printf("(%d,%d,%d) WAIT EXIT\n",mype,bid,tid);
 #ifdef _USE_SUMMIT
      if (bid >=4) { // for RD recv
-        //if (tid >= WAIT_NUM_THREADS) { // for RD recv
         tid=(bid-4)*WAIT_NUM_THREADS+tid;
         WAIT_NUM_THREADS=WAIT_NUM_THREADS*4;
-#else			 
+#else
      if (bid == 1) { // for RD recv
 #endif
         //if (tid==0) printf("RD---(%d) WAIT_NUM_THREADS=%d,tot_wait_col=%d\n",mype,WAIT_NUM_THREADS,d_nfrecvmod[1]);

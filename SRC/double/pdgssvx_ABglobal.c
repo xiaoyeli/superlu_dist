@@ -920,6 +920,11 @@ pdgssvx_ABglobal(superlu_dist_options_t *options, SuperMatrix *A,
 	dist_mem_use = ddistribute(options, n, &AC, Glu_freeable, LUstruct, grid);
 	stat->utime[DIST] = SuperLU_timer_() - t;
 
+	/* Flatten L metadata into one buffer. */
+	if ( Fact != SamePattern_SameRowPerm ) {
+		pdflatten_LDATA(options, n, LUstruct, grid, stat);
+	}
+
 	/* Deallocate storage used in symbolic factor. */
 	if ( Fact != SamePattern_SameRowPerm ) {
 	    iinfo = symbfact_SubFree(Glu_freeable);

@@ -1162,6 +1162,12 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 
 		}
 
+		/* Flatten L metadata into one buffer. */
+		if ( Fact != SamePattern_SameRowPerm ) {
+			pdflatten_LDATA(options, n, LUstruct, grid, stat);
+		}
+
+
 		if(Fact != SamePattern_SameRowPerm){
 			// checkDist3DLUStruct(LUstruct, grid3d);
 			// zeros out the Supernodes that are not owned by the grid

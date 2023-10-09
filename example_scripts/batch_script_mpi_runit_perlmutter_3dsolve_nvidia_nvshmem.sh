@@ -80,8 +80,8 @@ fi
 # npz=(64 32 16)
 # nrhs=(1 50) 
 
-nprows=(2 )
-npcols=(1 )
+nprows=(1 )
+npcols=(2 )
 npz=(2)
 nrhs=(1)
 

@@ -1164,6 +1164,11 @@ pdgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 	}
 	/*if (!iam) printf ("\tDISTRIBUTE time  %8.2f\n", stat->utime[DIST]);*/
 
+	/* Flatten L metadata into one buffer. */
+	if ( Fact != SamePattern_SameRowPerm ) {
+		pdflatten_LDATA(options, n, LUstruct, grid, stat);
+	}
+
 	/* Perform numerical factorization in parallel. */
 	t = SuperLU_timer_();
     // #pragma omp parallel
@@ -2016,7 +2021,13 @@ for (lk=0;lk<nsupers_j;++lk){
 	}
 
 
-	/////////////////////////  row-wise data structure for GPU U solve (using the highest skyline accross the entire supernode row)
+/////////////////////////  row-wise data structure for GPU U solve (using the highest skyline accross the entire supernode row)
+	// Ucolind_br_ptr[lk][0]: number of nonempty supernode columns
+	// Ucolind_br_ptr[lk][1]: number of nonempty columns
+	// Ucolind_br_ptr[lk][2]: highest highest skyline accross the supernode row
+	// Ucolind_br_ptr[lk][UB_DESCRIPTOR_NEWUCPP:UB_DESCRIPTOR_NEWUCPP+nub-1]: global supernodal ID
+	// Ucolind_br_ptr[lk][UB_DESCRIPTOR_NEWUCPP+nub:UB_DESCRIPTOR_NEWUCPP+2*nub]: the starting index of each supernodal column in all nonempty columns 
+	// Ucolind_br_ptr[lk][UB_DESCRIPTOR_NEWUCPP+2*nub+1:UB_DESCRIPTOR_NEWUCPP+2*nub+ncol]: the global column id of each nonempty column
 #ifdef U_BLOCK_PER_ROW_ROWDATA
 	if ( !(Llu->Ucolind_br_ptr = (int_t**)SUPERLU_MALLOC(nsupers_i * sizeof(int_t*))) )
 		ABORT("Malloc fails for Llu->Ucolind_br_ptr[].");
@@ -2315,3 +2326,531 @@ if (get_acc_solve()){
 } /* pdconvertU */
 
 #endif /* ifdef GPU_ACC */
+
+
+
+void dpacked2skyline(int_t k, int_t *usubpack, double *valpack, int_t *usub, double *uval, int_t*xsup)
+{
+    int_t kLastRow = xsup[k + 1];
+    int_t srcUvalPtr = 0;
+    int_t dstUvalPtr = 0;
+    // reset the USUB ptr
+    int_t usubPtr = BR_HEADER;
+    int_t nub = usubpack[0];
+    int_t kSupSz = usubpack[2];
+
+    for (int_t ub = 0; ub < nub; ub++)
+    {
+        int_t gblockId = usub[usubPtr];
+        int_t gsupc = SuperSize(gblockId);
+        for (int_t col = 0; col < gsupc; col++)
+        {
+            int_t segsize = kLastRow - usub[usubPtr + UB_DESCRIPTOR + col];
+            if (segsize)
+            {
+                for(int row=0; row<kSupSz; row++)
+                {
+                    if(row<kSupSz-segsize)
+                        dstUvalPtr++;
+                    else 
+                        uval[srcUvalPtr++] =valpack[dstUvalPtr++];
+                }
+                
+            }
+        }
+        
+        usubPtr += UB_DESCRIPTOR + gsupc;
+    }   
+    return 0;
+}
+
+
+void
+pdconvertUROWDATA2skyline(superlu_dist_options_t *options, gridinfo_t *grid,
+	   dLUstruct_t *LUstruct, SuperLUStat_t *stat, int n)
+{
+
+    int_t **Ufstnz_br_ptr = LUstruct->Llu->Ufstnz_br_ptr;
+    double **Unzval_br_ptr = LUstruct->Llu->Unzval_br_ptr;
+	int_t nsupers = getNsupers(n, LUstruct->Glu_persist);
+	int iam = grid->iam;
+	int mycol = MYCOL (iam, grid);
+	int myrow = MYROW (iam, grid);	
+	int Pr = grid->nprow;
+	int Pc = grid->npcol;
+	int_t *xsup = LUstruct->Glu_persist->xsup;
+
+    for (int_t i = 0; i < CEILING(nsupers, Pr); ++i)
+    {
+        if (Ufstnz_br_ptr[i] != NULL )
+        {
+            int_t globalId = i * Pr + myrow;
+            dpacked2skyline(globalId, LUstruct->Llu->Ucolind_br_ptr[i], LUstruct->Llu->Unzval_br_new_ptr[i], Ufstnz_br_ptr[i], Unzval_br_ptr[i], xsup);
+        }
+    }
+}
+
+
+void
+pdconvert_flatten_skyline2UROWDATA(superlu_dist_options_t *options, gridinfo_t *grid,
+	   dLUstruct_t *LUstruct, SuperLUStat_t *stat, int n)
+{
+int64_t nnz_ind,nnz_offset;
+int64_t nnz_val;
+Glu_persist_t *Glu_persist = LUstruct->Glu_persist;
+int_t nsupers,nsupers_j,nsupers_i,ncol,ncol_loc,nrow;
+int_t lk,ik,ub,nub,i,il,gik,k,uptr,jj,ii,fnz,irow,jb;
+dLocalLU_t *Llu = LUstruct->Llu;
+int_t  *Urbs = Llu->Urbs;
+int_t  **Ucb_valptr = Llu->Ucb_valptr;      /* Vertical linked list pointing to Unzval[] */
+Ucb_indptr_t **Ucb_indptr = Llu->Ucb_indptr;/* Vertical linked list pointing to Uindex[] */
+int_t knsupc,iknsupc,ikfrow,iklrow;
+int_t  *xsup = Glu_persist->xsup;;
+
+int iam = grid->iam;
+int mycol = MYCOL (iam, grid);
+int myrow = MYROW (iam, grid);
+
+int_t  *usub,*usub1;
+double *uval;
+
+int64_t Ucolind_bc_cnt=0, Uind_br_cnt=0;
+int64_t Unzval_bc_cnt=0, Unzval_br_cnt=0;
+int64_t Uindval_loc_bc_cnt=0;
+
+int_t next_lind;      /* next available position in index[*] */
+int_t next_lval;      /* next available position in nzval[*] */
+
+nsupers = Glu_persist->supno[n-1] + 1;
+nsupers_j = CEILING( nsupers, grid->npcol ); /* Number of local block columns */
+nsupers_i = CEILING( nsupers, grid->nprow ); /* Number of local block rows */
+
+/////////////////////////  row-wise data structure (using the highest skyline accross the entire supernode row)
+	// Ucolind_br_ptr[lk][0]: number of nonempty supernode columns
+	// Ucolind_br_ptr[lk][1]: number of nonempty columns
+	// Ucolind_br_ptr[lk][2]: highest highest skyline accross the supernode row
+	// Ucolind_br_ptr[lk][UB_DESCRIPTOR_NEWUCPP:UB_DESCRIPTOR_NEWUCPP+nub-1]: global supernodal ID
+	// Ucolind_br_ptr[lk][UB_DESCRIPTOR_NEWUCPP+nub:UB_DESCRIPTOR_NEWUCPP+2*nub]: the starting index of each supernodal column in all nonempty columns 
+	// Ucolind_br_ptr[lk][UB_DESCRIPTOR_NEWUCPP+2*nub+1:UB_DESCRIPTOR_NEWUCPP+2*nub+ncol]: the global column id of each nonempty column
+
+	if ( !(Llu->Ucolind_br_ptr = (int_t**)SUPERLU_MALLOC(nsupers_i * sizeof(int_t*))) )
+		ABORT("Malloc fails for Llu->Ucolind_br_ptr[].");
+	Llu->Ucolind_br_ptr[nsupers_i-1] = NULL;
+	if ( !(Llu->Ucolind_br_offset =
+		(int64_t*)SUPERLU_MALLOC(nsupers_i * sizeof(int64_t))) ) {
+		fprintf(stderr, "Malloc fails for Llu->Ucolind_br_offset[].");
+	}
+	Llu->Ucolind_br_offset[nsupers_i-1] = -1;
+
+	if ( !(Llu->Unzval_br_new_ptr =
+		(double**)SUPERLU_MALLOC(nsupers_i * sizeof(double*))) )
+		ABORT("Malloc fails for Llu->Unzval_br_new_ptr[].");
+	Llu->Unzval_br_new_ptr[nsupers_i-1] = NULL;
+	if ( !(Llu->Unzval_br_new_offset =
+		(int64_t*)SUPERLU_MALLOC(nsupers_i * sizeof(int64_t))) ) {
+		fprintf(stderr, "Malloc fails for Llu->Unzval_br_new_offset[].");
+	}
+	Llu->Unzval_br_new_offset[nsupers_i-1] = -1;
+
+	int64_t tmp_cnt;
+	int64_t Ucolind_br_cnt=0;
+	int64_t Unzval_br_new_cnt=0;
+	for (lk = 0; lk < nsupers_i; ++lk) { /* For each block row. */
+		gik = lk * grid->nprow + myrow;/* Global block number, row-wise. */
+		iknsupc = SuperSize( gik );
+		usub1 = Llu->Ufstnz_br_ptr[lk];
+		uval = Llu->Unzval_br_ptr[lk];
+		if ( usub1 ) { /* Not an empty block row. */
+			i = BR_HEADER; /* Pointer in index array. */
+			uptr = 0;         /* Pointer in nzval array. */
+			int_t nub=usub1[0];
+			int_t ncol=0;
+			int_t LDA=0;
+			ikfrow = FstBlockC( gik );
+			iklrow = FstBlockC( gik+1 );
+			for (int_t lb = 0; lb < nub; ++lb) { /* For all column blocks. */
+				k = usub1[i];          /* Global block number, column-wise. */
+				knsupc = SuperSize( k );
+				i += UB_DESCRIPTOR;
+				for (jj = 0; jj < knsupc; ++jj) {
+					fnz = usub1[i + jj];
+					if ( fnz < iklrow ) {
+						LDA = SUPERLU_MAX(LDA,iklrow-fnz);
+						ncol +=1;
+					}
+				} /* for jj ... */				
+				i += knsupc;
+			}
+			if ( !(Llu->Ucolind_br_ptr[lk] = intMalloc_dist(UB_DESCRIPTOR_NEWUCPP+ncol+nub*2+1)) )
+				ABORT("Malloc fails for Llu->Ucolind_br_ptr[lk]");
+			Llu->Ucolind_br_offset[lk]=UB_DESCRIPTOR_NEWUCPP+ncol+nub*2+1;
+			Ucolind_br_cnt += Llu->Ucolind_br_offset[lk];
+
+			if (!(Llu->Unzval_br_new_ptr[lk]=doubleCalloc_dist(ncol*LDA)))
+				ABORT("Calloc fails for Llu->Unzval_br_new_ptr[lk].");
+			Llu->Unzval_br_new_offset[lk]=ncol*LDA;
+			Unzval_br_new_cnt += Llu->Unzval_br_new_offset[lk];
+
+			Llu->Ucolind_br_ptr[lk][0]=nub;
+			Llu->Ucolind_br_ptr[lk][1]=ncol;
+			Llu->Ucolind_br_ptr[lk][2]=LDA;
+			
+			ncol=0;
+			i = BR_HEADER; /* Pointer in index array. */
+			Llu->Ucolind_br_ptr[lk][UB_DESCRIPTOR_NEWUCPP+nub]=0;
+			for (int_t lb = 0; lb < nub; ++lb) { /* For all column blocks. */
+				k = usub1[i];          /* Global block number, column-wise. */
+				
+				knsupc = SuperSize( k );
+				Llu->Ucolind_br_ptr[lk][UB_DESCRIPTOR_NEWUCPP+lb]=k;
+				
+				for (jj = 0; jj < knsupc; ++jj) {
+					fnz = usub1[i + jj + UB_DESCRIPTOR];
+					if ( fnz < iklrow ) {
+						Llu->Ucolind_br_ptr[lk][UB_DESCRIPTOR_NEWUCPP+2*nub+1+ncol]=FstBlockC(k)+jj; /* Global column number */
+						for (irow = fnz; irow < iklrow; ++irow){
+							Llu->Unzval_br_new_ptr[lk][ncol*LDA+irow - (ikfrow + iknsupc-LDA)]=uval[uptr++];
+						}						
+						ncol +=1;
+					}
+				} /* for jj ... */		
+				// j += usub1[i+1];       /* number of nonzeros for this block in Llu->Unzval_br_ptr[lk]*/		
+				i += knsupc + UB_DESCRIPTOR;
+				Llu->Ucolind_br_ptr[lk][UB_DESCRIPTOR_NEWUCPP+nub+lb+1]=ncol;
+			}
+		}else{
+			Llu->Ucolind_br_ptr[lk] = NULL;
+			Llu->Unzval_br_new_ptr[lk] = NULL;
+			Llu->Ucolind_br_offset[lk]=-1;
+			Llu->Unzval_br_new_offset[lk]=-1;
+		}
+	}
+
+	// safe guard
+	Ucolind_br_cnt +=1;
+	Unzval_br_new_cnt +=1;	
+	
+	if ( !(Llu->Ucolind_br_dat =
+		(int_t*)SUPERLU_MALLOC(Ucolind_br_cnt * sizeof(int_t))) ) {
+		fprintf(stderr, "Malloc fails for Llu->Ucolind_br_dat[].");
+	}	
+	if ( !(Llu->Unzval_br_new_dat =
+		(double*)SUPERLU_MALLOC(Unzval_br_new_cnt * sizeof(double))) ) {
+		fprintf(stderr, "Malloc fails for Llu->Unzval_br_new_dat[].");
+	}	
+
+	/* use contingous memory for Ucolind_bc_ptr, Unzval_bc_ptr, Uindval_loc_bc_ptr*/
+	k = CEILING( nsupers, grid->npcol );/* Number of local block columns */
+
+	Ucolind_br_cnt =0;
+	Unzval_br_new_cnt =0;
+
+	
+	k = CEILING( nsupers, grid->nprow );/* Number of local block rows */
+	for (int_t ib = 0; ib < k; ++ib) { /* for each block row ... */
+		
+		if(Llu->Ucolind_br_ptr[ib]!=NULL){
+			for (ii = 0; ii < Llu->Ucolind_br_offset[ib]; ++ii) {
+			    Llu->Ucolind_br_dat[Ucolind_br_cnt+ii]=Llu->Ucolind_br_ptr[ib][ii];
+			}
+			SUPERLU_FREE(Llu->Ucolind_br_ptr[ib]);
+			Llu->Ucolind_br_ptr[ib]=&Llu->Ucolind_br_dat[Ucolind_br_cnt];
+			tmp_cnt = Llu->Ucolind_br_offset[ib];
+			Llu->Ucolind_br_offset[ib]=Ucolind_br_cnt;
+			// printf("ib %5d Llu->Ucolind_br_offset[ib] %5d\n",ib,Llu->Ucolind_br_offset[ib]);
+			Ucolind_br_cnt+=tmp_cnt;
+		}
+
+		if(Llu->Unzval_br_new_ptr[ib]!=NULL){
+			for (ii = 0; ii < Llu->Unzval_br_new_offset[ib]; ++ii) {
+			    Llu->Unzval_br_new_dat[Unzval_br_new_cnt+ii]=Llu->Unzval_br_new_ptr[ib][ii];
+			}
+			SUPERLU_FREE(Llu->Unzval_br_new_ptr[ib]);
+			Llu->Unzval_br_new_ptr[ib]=&Llu->Unzval_br_new_dat[Unzval_br_new_cnt];
+			tmp_cnt = Llu->Unzval_br_new_offset[ib];
+			Llu->Unzval_br_new_offset[ib]=Unzval_br_new_cnt;
+			// printf("ib %5d Llu->Unzval_br_new_offset[ib] %5d\n",ib,Llu->Unzval_br_new_offset[ib]);
+			Unzval_br_new_cnt+=tmp_cnt;
+		}
+	}
+
+	Llu->Unzval_br_new_cnt = Unzval_br_new_cnt;
+	Llu->Ucolind_br_cnt = Ucolind_br_cnt;
+
+} /* pdconvert_flatten_skyline2UROWDATA */
+
+
+
+
+int_t pdflatten_LDATA(superlu_dist_options_t *options, int_t n, dLUstruct_t * LUstruct, 
+                           gridinfo_t *grid, SuperLUStat_t * stat)
+{
+    Glu_persist_t *Glu_persist = LUstruct->Glu_persist;
+    int kr,kc,nlb,nub;
+    int nsupers = Glu_persist->supno[n - 1] + 1;
+    int_t *rowcounts, *colcounts, **rowlists, **collists, *tmpglo;
+    int_t  *lsub, *lloc;
+    int_t idx_i, lptr1_tmp, ib, jb, jj;
+    int   *displs, *recvcounts, count, nbg;
+
+    kr = CEILING( nsupers, grid->nprow);/* Number of local block rows */
+    kc = CEILING( nsupers, grid->npcol);/* Number of local block columns */
+    int_t iam=grid->iam;
+    int nprocs = grid->nprow * grid->npcol;
+    int_t myrow = MYROW( iam, grid );
+    int_t mycol = MYCOL( iam, grid );
+    int_t *ActiveFlag;
+    int *ranks;
+    superlu_scope_t *rscp = &grid->rscp;
+    superlu_scope_t *cscp = &grid->cscp;
+    int rank_cnt,rank_cnt_ref,Root;
+    int_t Iactive,gb,pr,pc,nb, idx_n;
+
+	C_Tree  *LBtree_ptr;       /* size ceil(NSUPERS/Pc)                */
+	C_Tree  *LRtree_ptr;		  /* size ceil(NSUPERS/Pr)                */
+	C_Tree  *UBtree_ptr;       /* size ceil(NSUPERS/Pc)                */
+	C_Tree  *URtree_ptr;		  /* size ceil(NSUPERS/Pr)                */
+	int msgsize;
+
+    dLocalLU_t *Llu = LUstruct->Llu;
+    int_t* xsup = Glu_persist->xsup;
+    int_t  *Urbs = Llu->Urbs; /* Number of row blocks in each block column of U. */
+    Ucb_indptr_t **Ucb_indptr = Llu->Ucb_indptr;/* Vertical linked list pointing to Uindex[] */
+    int_t *usub;
+    double *lnzval;
+
+
+    int_t len, len1, len2, len3, nrbl;
+
+
+	double **Lnzval_bc_ptr=Llu->Lnzval_bc_ptr;  /* size ceil(NSUPERS/Pc) */
+	double *Lnzval_bc_dat;  /* size sum of sizes of Lnzval_bc_ptr[lk])                 */
+    long int *Lnzval_bc_offset;  /* size ceil(NSUPERS/Pc)                 */
+
+	int_t  **Lrowind_bc_ptr=Llu->Lrowind_bc_ptr; /* size ceil(NSUPERS/Pc) */
+	int_t *Lrowind_bc_dat;  /* size sum of sizes of Lrowind_bc_ptr[lk])                 */
+    long int *Lrowind_bc_offset;  /* size ceil(NSUPERS/Pc)                 */
+
+	int_t  **Lindval_loc_bc_ptr=Llu->Lindval_loc_bc_ptr; /* size ceil(NSUPERS/Pc)                 */
+	int_t *Lindval_loc_bc_dat;  /* size sum of sizes of Lindval_loc_bc_ptr[lk])                 */
+    long int *Lindval_loc_bc_offset;  /* size ceil(NSUPERS/Pc)                 */
+
+    double **Linv_bc_ptr=Llu->Linv_bc_ptr;  /* size ceil(NSUPERS/Pc) */
+	double *Linv_bc_dat;  /* size sum of sizes of Linv_bc_ptr[lk])                 */
+    long int *Linv_bc_offset;  /* size ceil(NSUPERS/Pc)                 */
+    double **Uinv_bc_ptr=Llu->Uinv_bc_ptr;  /* size ceil(NSUPERS/Pc) */
+	double *Uinv_bc_dat;  /* size sum of sizes of Uinv_bc_ptr[lk])                 */
+    long int *Uinv_bc_offset;  /* size ceil(NSUPERS/Pc) */
+
+
+	double **Unzval_br_ptr=Llu->Unzval_br_ptr;  /* size ceil(NSUPERS/Pr) */
+	double *Unzval_br_dat;  /* size sum of sizes of Unzval_br_ptr[lk])                 */
+	long int *Unzval_br_offset;  /* size ceil(NSUPERS/Pr)    */
+	int_t  **Ufstnz_br_ptr=Llu->Ufstnz_br_ptr;  /* size ceil(NSUPERS/Pr) */
+    int_t   *Ufstnz_br_dat;  /* size sum of sizes of Ufstnz_br_ptr[lk])                 */
+    long int *Ufstnz_br_offset;  /* size ceil(NSUPERS/Pr)    */
+
+    Ucb_indptr_t *Ucb_inddat;
+    long int *Ucb_indoffset;
+    int_t  **Ucb_valptr = Llu->Ucb_valptr;
+    int_t  *Ucb_valdat;
+    long int *Ucb_valoffset;
+
+    ////////////////////////////////////////////////////
+    // use contignous memory for the L meta data
+    int_t k = kc;/* Number of local block columns */
+    long int Lnzval_bc_cnt=0;
+    long int Lrowind_bc_cnt=0;
+    long int Lindval_loc_bc_cnt=0;
+	long int Linv_bc_cnt=0;
+	long int Uinv_bc_cnt=0;
+
+	if ( !(Lnzval_bc_offset =
+				(long int*)SUPERLU_MALLOC(k * sizeof(long int))) ) {
+		fprintf(stderr, "Malloc fails for Lnzval_bc_offset[].");
+	}
+	Lnzval_bc_offset[k-1] = -1;
+
+	if ( !(Lrowind_bc_offset =
+				(long int*)SUPERLU_MALLOC(k * sizeof(long int))) ) {
+		fprintf(stderr, "Malloc fails for Lrowind_bc_offset[].");
+	}
+	Lrowind_bc_offset[k-1] = -1;
+	if ( !(Lindval_loc_bc_offset =
+				(long int*)SUPERLU_MALLOC(k * sizeof(long int))) ) {
+		fprintf(stderr, "Malloc fails for Lindval_loc_bc_offset[].");
+	}
+	Lindval_loc_bc_offset[k-1] = -1;
+	if ( !(Linv_bc_offset =
+				(long int*)SUPERLU_MALLOC(k * sizeof(long int))) ) {
+		fprintf(stderr, "Malloc fails for Linv_bc_offset[].");
+	}
+	Linv_bc_offset[k-1] = -1;
+	if ( !(Uinv_bc_offset =
+				(long int*)SUPERLU_MALLOC(k * sizeof(long int))) ) {
+		fprintf(stderr, "Malloc fails for Uinv_bc_offset[].");
+	}
+	Uinv_bc_offset[k-1] = -1;
+
+
+    for (int_t lk=0;lk<k;++lk){
+        jb = mycol+lk*grid->npcol;  /* not sure */
+	    lsub = Lrowind_bc_ptr[lk];
+	    lloc = Lindval_loc_bc_ptr[lk];
+	    lnzval = Lnzval_bc_ptr[lk];
+
+        Linv_bc_offset[lk] = -1;
+        Uinv_bc_offset[lk] = -1;
+        Lrowind_bc_offset[lk]=-1;
+        Lindval_loc_bc_offset[lk]=-1;
+        Lnzval_bc_offset[lk]=-1;
+
+        if(lsub){
+            nrbl  =   lsub[0]; /*number of L blocks */
+            len   = lsub[1];   /* LDA of the nzval[] */
+            len1  = len + BC_HEADER + nrbl * LB_DESCRIPTOR;
+            int_t nsupc = SuperSize(jb);
+            len2  = nsupc * len;
+            len3 = nrbl*3;
+            Lnzval_bc_offset[lk]=len2;
+            Lnzval_bc_cnt += Lnzval_bc_offset[lk];
+
+            Lrowind_bc_offset[lk]=len1;
+            Lrowind_bc_cnt += Lrowind_bc_offset[lk];
+
+			Lindval_loc_bc_offset[lk]=nrbl*3;
+			Lindval_loc_bc_cnt += Lindval_loc_bc_offset[lk];
+
+            int_t krow = PROW( jb, grid );
+			if(myrow==krow){   /* diagonal block */
+				Linv_bc_offset[lk]=nsupc*nsupc;
+				Linv_bc_cnt += Linv_bc_offset[lk];
+				Uinv_bc_offset[lk]=nsupc*nsupc;
+				Uinv_bc_cnt += Uinv_bc_offset[lk];
+			}else{
+				Linv_bc_offset[lk] = -1;
+				Uinv_bc_offset[lk] = -1;
+			}
+
+        }
+    }
+
+	Linv_bc_cnt +=1; // safe guard
+	Uinv_bc_cnt +=1;
+	Lrowind_bc_cnt +=1;
+	Lindval_loc_bc_cnt +=1;
+	Lnzval_bc_cnt +=1;
+	if ( !(Linv_bc_dat =
+				(double*)SUPERLU_MALLOC(Linv_bc_cnt * sizeof(double))) ) {
+		fprintf(stderr, "Malloc fails for Linv_bc_dat[].");
+	}
+	if ( !(Uinv_bc_dat =
+				(double*)SUPERLU_MALLOC(Uinv_bc_cnt * sizeof(double))) ) {
+		fprintf(stderr, "Malloc fails for Uinv_bc_dat[].");
+	}
+
+	if ( !(Lrowind_bc_dat =
+				(int_t*)SUPERLU_MALLOC(Lrowind_bc_cnt * sizeof(int_t))) ) {
+		fprintf(stderr, "Malloc fails for Lrowind_bc_dat[].");
+	}
+	if ( !(Lindval_loc_bc_dat =
+				(int_t*)SUPERLU_MALLOC(Lindval_loc_bc_cnt * sizeof(int_t))) ) {
+		fprintf(stderr, "Malloc fails for Lindval_loc_bc_dat[].");
+	}
+	if ( !(Lnzval_bc_dat =
+				(double*)SUPERLU_MALLOC(Lnzval_bc_cnt * sizeof(double))) ) {
+		fprintf(stderr, "Malloc fails for Lnzval_bc_dat[].");
+	}
+
+
+	/* use contingous memory for Linv_bc_ptr, Uinv_bc_ptr, Lrowind_bc_ptr, Lnzval_bc_ptr*/
+	Linv_bc_cnt=0;
+	Uinv_bc_cnt=0;
+	Lrowind_bc_cnt=0;
+	Lnzval_bc_cnt=0;
+	Lindval_loc_bc_cnt=0;
+	long int tmp_cnt;
+	for (jb = 0; jb < k; ++jb) { /* for each block column ... */
+		if(Linv_bc_ptr[jb]!=NULL){
+			for (jj = 0; jj < Linv_bc_offset[jb]; ++jj) {
+				Linv_bc_dat[Linv_bc_cnt+jj]=Linv_bc_ptr[jb][jj];
+			}
+			SUPERLU_FREE(Linv_bc_ptr[jb]);
+			Linv_bc_ptr[jb]=&Linv_bc_dat[Linv_bc_cnt];
+			tmp_cnt = Linv_bc_offset[jb];
+			Linv_bc_offset[jb]=Linv_bc_cnt;
+			Linv_bc_cnt+=tmp_cnt;
+		}
+
+		if(Uinv_bc_ptr[jb]!=NULL){
+			for (jj = 0; jj < Uinv_bc_offset[jb]; ++jj) {
+				Uinv_bc_dat[Uinv_bc_cnt+jj]=Uinv_bc_ptr[jb][jj];
+			}
+			SUPERLU_FREE(Uinv_bc_ptr[jb]);
+			Uinv_bc_ptr[jb]=&Uinv_bc_dat[Uinv_bc_cnt];
+			tmp_cnt = Uinv_bc_offset[jb];
+			Uinv_bc_offset[jb]=Uinv_bc_cnt;
+			Uinv_bc_cnt+=tmp_cnt;
+		}
+
+
+		if(Lrowind_bc_ptr[jb]!=NULL){
+			for (jj = 0; jj < Lrowind_bc_offset[jb]; ++jj) {
+				Lrowind_bc_dat[Lrowind_bc_cnt+jj]=Lrowind_bc_ptr[jb][jj];
+			}
+			SUPERLU_FREE(Lrowind_bc_ptr[jb]);
+			Lrowind_bc_ptr[jb]=&Lrowind_bc_dat[Lrowind_bc_cnt];
+			tmp_cnt = Lrowind_bc_offset[jb];
+			Lrowind_bc_offset[jb]=Lrowind_bc_cnt;
+			Lrowind_bc_cnt+=tmp_cnt;
+		}
+
+		if(Lnzval_bc_ptr[jb]!=NULL){
+			for (jj = 0; jj < Lnzval_bc_offset[jb]; ++jj) {
+				Lnzval_bc_dat[Lnzval_bc_cnt+jj]=Lnzval_bc_ptr[jb][jj];
+			}
+			SUPERLU_FREE(Lnzval_bc_ptr[jb]);
+			Lnzval_bc_ptr[jb]=&Lnzval_bc_dat[Lnzval_bc_cnt];
+			tmp_cnt = Lnzval_bc_offset[jb];
+			Lnzval_bc_offset[jb]=Lnzval_bc_cnt;
+			Lnzval_bc_cnt+=tmp_cnt;
+		}
+
+		if(Lindval_loc_bc_ptr[jb]!=NULL){
+			for (jj = 0; jj < Lindval_loc_bc_offset[jb]; ++jj) {
+				Lindval_loc_bc_dat[Lindval_loc_bc_cnt+jj]=Lindval_loc_bc_ptr[jb][jj];
+			}
+			SUPERLU_FREE(Lindval_loc_bc_ptr[jb]);
+			Lindval_loc_bc_ptr[jb]=&Lindval_loc_bc_dat[Lindval_loc_bc_cnt];
+			tmp_cnt = Lindval_loc_bc_offset[jb];
+			Lindval_loc_bc_offset[jb]=Lindval_loc_bc_cnt;
+			Lindval_loc_bc_cnt+=tmp_cnt;
+		}
+	}
+
+	Llu->Lrowind_bc_ptr = Lrowind_bc_ptr;
+	Llu->Lrowind_bc_dat = Lrowind_bc_dat;
+	Llu->Lrowind_bc_offset = Lrowind_bc_offset;
+	Llu->Lrowind_bc_cnt = Lrowind_bc_cnt;
+
+	Llu->Lindval_loc_bc_ptr = Lindval_loc_bc_ptr;
+	Llu->Lindval_loc_bc_dat = Lindval_loc_bc_dat;
+	Llu->Lindval_loc_bc_offset = Lindval_loc_bc_offset;
+	Llu->Lindval_loc_bc_cnt = Lindval_loc_bc_cnt;
+
+	Llu->Lnzval_bc_ptr = Lnzval_bc_ptr;
+	Llu->Lnzval_bc_dat = Lnzval_bc_dat;
+	Llu->Lnzval_bc_offset = Lnzval_bc_offset;
+	Llu->Lnzval_bc_cnt = Lnzval_bc_cnt;
+
+	Llu->Linv_bc_ptr = Linv_bc_ptr;
+	Llu->Linv_bc_dat = Linv_bc_dat;
+	Llu->Linv_bc_offset = Linv_bc_offset;
+	Llu->Linv_bc_cnt = Linv_bc_cnt;
+
+	Llu->Uinv_bc_ptr = Uinv_bc_ptr;
+	Llu->Uinv_bc_dat = Uinv_bc_dat;
+	Llu->Uinv_bc_offset = Uinv_bc_offset;
+	Llu->Uinv_bc_cnt = Uinv_bc_cnt;
+
+} // pdflatten_LDATA

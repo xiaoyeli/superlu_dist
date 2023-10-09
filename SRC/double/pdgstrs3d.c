@@ -912,186 +912,186 @@ int_t trs_compute_communication_structure(superlu_dist_options_t *options, int_t
 
 
 
-    ////////////////////////////////////////////////////
-    // use contignous memory for the L meta data
-    int_t k = kc;/* Number of local block columns */
-    long int Lnzval_bc_cnt=0;
-    long int Lrowind_bc_cnt=0;
-    long int Lindval_loc_bc_cnt=0;
-	long int Linv_bc_cnt=0;
-	long int Uinv_bc_cnt=0;
+    // ////////////////////////////////////////////////////
+    // // use contignous memory for the L meta data
+    // int_t k = kc;/* Number of local block columns */
+    // long int Lnzval_bc_cnt=0;
+    // long int Lrowind_bc_cnt=0;
+    // long int Lindval_loc_bc_cnt=0;
+	// long int Linv_bc_cnt=0;
+	// long int Uinv_bc_cnt=0;
 
-	if ( !(Lnzval_bc_offset =
-				(long int*)SUPERLU_MALLOC(k * sizeof(long int))) ) {
-		fprintf(stderr, "Malloc fails for Lnzval_bc_offset[].");
-	}
-	Lnzval_bc_offset[k-1] = -1;
+	// if ( !(Lnzval_bc_offset =
+	// 			(long int*)SUPERLU_MALLOC(k * sizeof(long int))) ) {
+	// 	fprintf(stderr, "Malloc fails for Lnzval_bc_offset[].");
+	// }
+	// Lnzval_bc_offset[k-1] = -1;
 
-	if ( !(Lrowind_bc_offset =
-				(long int*)SUPERLU_MALLOC(k * sizeof(long int))) ) {
-		fprintf(stderr, "Malloc fails for Lrowind_bc_offset[].");
-	}
-	Lrowind_bc_offset[k-1] = -1;
-	if ( !(Lindval_loc_bc_offset =
-				(long int*)SUPERLU_MALLOC(k * sizeof(long int))) ) {
-		fprintf(stderr, "Malloc fails for Lindval_loc_bc_offset[].");
-	}
-	Lindval_loc_bc_offset[k-1] = -1;
-	if ( !(Linv_bc_offset =
-				(long int*)SUPERLU_MALLOC(k * sizeof(long int))) ) {
-		fprintf(stderr, "Malloc fails for Linv_bc_offset[].");
-	}
-	Linv_bc_offset[k-1] = -1;
-	if ( !(Uinv_bc_offset =
-				(long int*)SUPERLU_MALLOC(k * sizeof(long int))) ) {
-		fprintf(stderr, "Malloc fails for Uinv_bc_offset[].");
-	}
-	Uinv_bc_offset[k-1] = -1;
-
-
-    for (int_t lk=0;lk<k;++lk){
-        jb = mycol+lk*grid->npcol;  /* not sure */
-	    lsub = Lrowind_bc_ptr[lk];
-	    lloc = Lindval_loc_bc_ptr[lk];
-	    lnzval = Lnzval_bc_ptr[lk];
-
-        Linv_bc_offset[lk] = -1;
-        Uinv_bc_offset[lk] = -1;
-        Lrowind_bc_offset[lk]=-1;
-        Lindval_loc_bc_offset[lk]=-1;
-        Lnzval_bc_offset[lk]=-1;
-
-        if(lsub){
-            nrbl  =   lsub[0]; /*number of L blocks */
-            len   = lsub[1];   /* LDA of the nzval[] */
-            len1  = len + BC_HEADER + nrbl * LB_DESCRIPTOR;
-            int_t nsupc = SuperSize(jb);
-            len2  = nsupc * len;
-            len3 = nrbl*3;
-            Lnzval_bc_offset[lk]=len2;
-            Lnzval_bc_cnt += Lnzval_bc_offset[lk];
-
-            Lrowind_bc_offset[lk]=len1;
-            Lrowind_bc_cnt += Lrowind_bc_offset[lk];
-
-			Lindval_loc_bc_offset[lk]=nrbl*3;
-			Lindval_loc_bc_cnt += Lindval_loc_bc_offset[lk];
-
-            int_t krow = PROW( jb, grid );
-			if(myrow==krow){   /* diagonal block */
-				Linv_bc_offset[lk]=nsupc*nsupc;
-				Linv_bc_cnt += Linv_bc_offset[lk];
-				Uinv_bc_offset[lk]=nsupc*nsupc;
-				Uinv_bc_cnt += Uinv_bc_offset[lk];
-			}else{
-				Linv_bc_offset[lk] = -1;
-				Uinv_bc_offset[lk] = -1;
-			}
-
-        }
-    }
-
-	Linv_bc_cnt +=1; // safe guard
-	Uinv_bc_cnt +=1;
-	Lrowind_bc_cnt +=1;
-	Lindval_loc_bc_cnt +=1;
-	Lnzval_bc_cnt +=1;
-	if ( !(Linv_bc_dat =
-				(double*)SUPERLU_MALLOC(Linv_bc_cnt * sizeof(double))) ) {
-		fprintf(stderr, "Malloc fails for Linv_bc_dat[].");
-	}
-	if ( !(Uinv_bc_dat =
-				(double*)SUPERLU_MALLOC(Uinv_bc_cnt * sizeof(double))) ) {
-		fprintf(stderr, "Malloc fails for Uinv_bc_dat[].");
-	}
-
-	if ( !(Lrowind_bc_dat =
-				(int_t*)SUPERLU_MALLOC(Lrowind_bc_cnt * sizeof(int_t))) ) {
-		fprintf(stderr, "Malloc fails for Lrowind_bc_dat[].");
-	}
-	if ( !(Lindval_loc_bc_dat =
-				(int_t*)SUPERLU_MALLOC(Lindval_loc_bc_cnt * sizeof(int_t))) ) {
-		fprintf(stderr, "Malloc fails for Lindval_loc_bc_dat[].");
-	}
-	if ( !(Lnzval_bc_dat =
-				(double*)SUPERLU_MALLOC(Lnzval_bc_cnt * sizeof(double))) ) {
-		fprintf(stderr, "Malloc fails for Lnzval_bc_dat[].");
-	}
+	// if ( !(Lrowind_bc_offset =
+	// 			(long int*)SUPERLU_MALLOC(k * sizeof(long int))) ) {
+	// 	fprintf(stderr, "Malloc fails for Lrowind_bc_offset[].");
+	// }
+	// Lrowind_bc_offset[k-1] = -1;
+	// if ( !(Lindval_loc_bc_offset =
+	// 			(long int*)SUPERLU_MALLOC(k * sizeof(long int))) ) {
+	// 	fprintf(stderr, "Malloc fails for Lindval_loc_bc_offset[].");
+	// }
+	// Lindval_loc_bc_offset[k-1] = -1;
+	// if ( !(Linv_bc_offset =
+	// 			(long int*)SUPERLU_MALLOC(k * sizeof(long int))) ) {
+	// 	fprintf(stderr, "Malloc fails for Linv_bc_offset[].");
+	// }
+	// Linv_bc_offset[k-1] = -1;
+	// if ( !(Uinv_bc_offset =
+	// 			(long int*)SUPERLU_MALLOC(k * sizeof(long int))) ) {
+	// 	fprintf(stderr, "Malloc fails for Uinv_bc_offset[].");
+	// }
+	// Uinv_bc_offset[k-1] = -1;
 
 
-	/* use contingous memory for Linv_bc_ptr, Uinv_bc_ptr, Lrowind_bc_ptr, Lnzval_bc_ptr*/
-	Linv_bc_cnt=0;
-	Uinv_bc_cnt=0;
-	Lrowind_bc_cnt=0;
-	Lnzval_bc_cnt=0;
-	Lindval_loc_bc_cnt=0;
-	long int tmp_cnt;
-	for (jb = 0; jb < k; ++jb) { /* for each block column ... */
-		if(Linv_bc_ptr[jb]!=NULL){
-			for (jj = 0; jj < Linv_bc_offset[jb]; ++jj) {
-				Linv_bc_dat[Linv_bc_cnt+jj]=Linv_bc_ptr[jb][jj];
-			}
-			SUPERLU_FREE(Linv_bc_ptr[jb]);
-			Linv_bc_ptr[jb]=&Linv_bc_dat[Linv_bc_cnt];
-			tmp_cnt = Linv_bc_offset[jb];
-			Linv_bc_offset[jb]=Linv_bc_cnt;
-			Linv_bc_cnt+=tmp_cnt;
-		}
+    // for (int_t lk=0;lk<k;++lk){
+    //     jb = mycol+lk*grid->npcol;  /* not sure */
+	//     lsub = Lrowind_bc_ptr[lk];
+	//     lloc = Lindval_loc_bc_ptr[lk];
+	//     lnzval = Lnzval_bc_ptr[lk];
 
-		if(Uinv_bc_ptr[jb]!=NULL){
-			for (jj = 0; jj < Uinv_bc_offset[jb]; ++jj) {
-				Uinv_bc_dat[Uinv_bc_cnt+jj]=Uinv_bc_ptr[jb][jj];
-			}
-			SUPERLU_FREE(Uinv_bc_ptr[jb]);
-			Uinv_bc_ptr[jb]=&Uinv_bc_dat[Uinv_bc_cnt];
-			tmp_cnt = Uinv_bc_offset[jb];
-			Uinv_bc_offset[jb]=Uinv_bc_cnt;
-			Uinv_bc_cnt+=tmp_cnt;
-		}
+    //     Linv_bc_offset[lk] = -1;
+    //     Uinv_bc_offset[lk] = -1;
+    //     Lrowind_bc_offset[lk]=-1;
+    //     Lindval_loc_bc_offset[lk]=-1;
+    //     Lnzval_bc_offset[lk]=-1;
+
+    //     if(lsub){
+    //         nrbl  =   lsub[0]; /*number of L blocks */
+    //         len   = lsub[1];   /* LDA of the nzval[] */
+    //         len1  = len + BC_HEADER + nrbl * LB_DESCRIPTOR;
+    //         int_t nsupc = SuperSize(jb);
+    //         len2  = nsupc * len;
+    //         len3 = nrbl*3;
+    //         Lnzval_bc_offset[lk]=len2;
+    //         Lnzval_bc_cnt += Lnzval_bc_offset[lk];
+
+    //         Lrowind_bc_offset[lk]=len1;
+    //         Lrowind_bc_cnt += Lrowind_bc_offset[lk];
+
+	// 		Lindval_loc_bc_offset[lk]=nrbl*3;
+	// 		Lindval_loc_bc_cnt += Lindval_loc_bc_offset[lk];
+
+    //         int_t krow = PROW( jb, grid );
+	// 		if(myrow==krow){   /* diagonal block */
+	// 			Linv_bc_offset[lk]=nsupc*nsupc;
+	// 			Linv_bc_cnt += Linv_bc_offset[lk];
+	// 			Uinv_bc_offset[lk]=nsupc*nsupc;
+	// 			Uinv_bc_cnt += Uinv_bc_offset[lk];
+	// 		}else{
+	// 			Linv_bc_offset[lk] = -1;
+	// 			Uinv_bc_offset[lk] = -1;
+	// 		}
+
+    //     }
+    // }
+
+	// Linv_bc_cnt +=1; // safe guard
+	// Uinv_bc_cnt +=1;
+	// Lrowind_bc_cnt +=1;
+	// Lindval_loc_bc_cnt +=1;
+	// Lnzval_bc_cnt +=1;
+	// if ( !(Linv_bc_dat =
+	// 			(double*)SUPERLU_MALLOC(Linv_bc_cnt * sizeof(double))) ) {
+	// 	fprintf(stderr, "Malloc fails for Linv_bc_dat[].");
+	// }
+	// if ( !(Uinv_bc_dat =
+	// 			(double*)SUPERLU_MALLOC(Uinv_bc_cnt * sizeof(double))) ) {
+	// 	fprintf(stderr, "Malloc fails for Uinv_bc_dat[].");
+	// }
+
+	// if ( !(Lrowind_bc_dat =
+	// 			(int_t*)SUPERLU_MALLOC(Lrowind_bc_cnt * sizeof(int_t))) ) {
+	// 	fprintf(stderr, "Malloc fails for Lrowind_bc_dat[].");
+	// }
+	// if ( !(Lindval_loc_bc_dat =
+	// 			(int_t*)SUPERLU_MALLOC(Lindval_loc_bc_cnt * sizeof(int_t))) ) {
+	// 	fprintf(stderr, "Malloc fails for Lindval_loc_bc_dat[].");
+	// }
+	// if ( !(Lnzval_bc_dat =
+	// 			(double*)SUPERLU_MALLOC(Lnzval_bc_cnt * sizeof(double))) ) {
+	// 	fprintf(stderr, "Malloc fails for Lnzval_bc_dat[].");
+	// }
 
 
-		if(Lrowind_bc_ptr[jb]!=NULL){
-			for (jj = 0; jj < Lrowind_bc_offset[jb]; ++jj) {
-				Lrowind_bc_dat[Lrowind_bc_cnt+jj]=Lrowind_bc_ptr[jb][jj];
-			}
-			SUPERLU_FREE(Lrowind_bc_ptr[jb]);
-			Lrowind_bc_ptr[jb]=&Lrowind_bc_dat[Lrowind_bc_cnt];
-			tmp_cnt = Lrowind_bc_offset[jb];
-			Lrowind_bc_offset[jb]=Lrowind_bc_cnt;
-			Lrowind_bc_cnt+=tmp_cnt;
-		}
+	// /* use contingous memory for Linv_bc_ptr, Uinv_bc_ptr, Lrowind_bc_ptr, Lnzval_bc_ptr*/
+	// Linv_bc_cnt=0;
+	// Uinv_bc_cnt=0;
+	// Lrowind_bc_cnt=0;
+	// Lnzval_bc_cnt=0;
+	// Lindval_loc_bc_cnt=0;
+	// long int tmp_cnt;
+	// for (jb = 0; jb < k; ++jb) { /* for each block column ... */
+	// 	if(Linv_bc_ptr[jb]!=NULL){
+	// 		for (jj = 0; jj < Linv_bc_offset[jb]; ++jj) {
+	// 			Linv_bc_dat[Linv_bc_cnt+jj]=Linv_bc_ptr[jb][jj];
+	// 		}
+	// 		SUPERLU_FREE(Linv_bc_ptr[jb]);
+	// 		Linv_bc_ptr[jb]=&Linv_bc_dat[Linv_bc_cnt];
+	// 		tmp_cnt = Linv_bc_offset[jb];
+	// 		Linv_bc_offset[jb]=Linv_bc_cnt;
+	// 		Linv_bc_cnt+=tmp_cnt;
+	// 	}
 
-		if(Lnzval_bc_ptr[jb]!=NULL){
-			for (jj = 0; jj < Lnzval_bc_offset[jb]; ++jj) {
-				Lnzval_bc_dat[Lnzval_bc_cnt+jj]=Lnzval_bc_ptr[jb][jj];
-			}
-			SUPERLU_FREE(Lnzval_bc_ptr[jb]);
-			Lnzval_bc_ptr[jb]=&Lnzval_bc_dat[Lnzval_bc_cnt];
-			tmp_cnt = Lnzval_bc_offset[jb];
-			Lnzval_bc_offset[jb]=Lnzval_bc_cnt;
-			Lnzval_bc_cnt+=tmp_cnt;
-		}
-
-		if(Lindval_loc_bc_ptr[jb]!=NULL){
-			for (jj = 0; jj < Lindval_loc_bc_offset[jb]; ++jj) {
-				Lindval_loc_bc_dat[Lindval_loc_bc_cnt+jj]=Lindval_loc_bc_ptr[jb][jj];
-			}
-			SUPERLU_FREE(Lindval_loc_bc_ptr[jb]);
-			Lindval_loc_bc_ptr[jb]=&Lindval_loc_bc_dat[Lindval_loc_bc_cnt];
-			tmp_cnt = Lindval_loc_bc_offset[jb];
-			Lindval_loc_bc_offset[jb]=Lindval_loc_bc_cnt;
-			Lindval_loc_bc_cnt+=tmp_cnt;
-		}
-	}
+	// 	if(Uinv_bc_ptr[jb]!=NULL){
+	// 		for (jj = 0; jj < Uinv_bc_offset[jb]; ++jj) {
+	// 			Uinv_bc_dat[Uinv_bc_cnt+jj]=Uinv_bc_ptr[jb][jj];
+	// 		}
+	// 		SUPERLU_FREE(Uinv_bc_ptr[jb]);
+	// 		Uinv_bc_ptr[jb]=&Uinv_bc_dat[Uinv_bc_cnt];
+	// 		tmp_cnt = Uinv_bc_offset[jb];
+	// 		Uinv_bc_offset[jb]=Uinv_bc_cnt;
+	// 		Uinv_bc_cnt+=tmp_cnt;
+	// 	}
 
 
+	// 	if(Lrowind_bc_ptr[jb]!=NULL){
+	// 		for (jj = 0; jj < Lrowind_bc_offset[jb]; ++jj) {
+	// 			Lrowind_bc_dat[Lrowind_bc_cnt+jj]=Lrowind_bc_ptr[jb][jj];
+	// 		}
+	// 		SUPERLU_FREE(Lrowind_bc_ptr[jb]);
+	// 		Lrowind_bc_ptr[jb]=&Lrowind_bc_dat[Lrowind_bc_cnt];
+	// 		tmp_cnt = Lrowind_bc_offset[jb];
+	// 		Lrowind_bc_offset[jb]=Lrowind_bc_cnt;
+	// 		Lrowind_bc_cnt+=tmp_cnt;
+	// 	}
 
-    // use contignous memory for the U meta data
-    k = kr;/* Number of local block rows */
-    long int Unzval_br_cnt=0;
-    long int Ufstnz_br_cnt=0;
-    long int Ucb_indcnt=0;
-    long int Ucb_valcnt=0;
+	// 	if(Lnzval_bc_ptr[jb]!=NULL){
+	// 		for (jj = 0; jj < Lnzval_bc_offset[jb]; ++jj) {
+	// 			Lnzval_bc_dat[Lnzval_bc_cnt+jj]=Lnzval_bc_ptr[jb][jj];
+	// 		}
+	// 		SUPERLU_FREE(Lnzval_bc_ptr[jb]);
+	// 		Lnzval_bc_ptr[jb]=&Lnzval_bc_dat[Lnzval_bc_cnt];
+	// 		tmp_cnt = Lnzval_bc_offset[jb];
+	// 		Lnzval_bc_offset[jb]=Lnzval_bc_cnt;
+	// 		Lnzval_bc_cnt+=tmp_cnt;
+	// 	}
+
+	// 	if(Lindval_loc_bc_ptr[jb]!=NULL){
+	// 		for (jj = 0; jj < Lindval_loc_bc_offset[jb]; ++jj) {
+	// 			Lindval_loc_bc_dat[Lindval_loc_bc_cnt+jj]=Lindval_loc_bc_ptr[jb][jj];
+	// 		}
+	// 		SUPERLU_FREE(Lindval_loc_bc_ptr[jb]);
+	// 		Lindval_loc_bc_ptr[jb]=&Lindval_loc_bc_dat[Lindval_loc_bc_cnt];
+	// 		tmp_cnt = Lindval_loc_bc_offset[jb];
+	// 		Lindval_loc_bc_offset[jb]=Lindval_loc_bc_cnt;
+	// 		Lindval_loc_bc_cnt+=tmp_cnt;
+	// 	}
+	// }
+
+
+
+    // // use contignous memory for the U meta data
+    // k = kr;/* Number of local block rows */
+    // long int Unzval_br_cnt=0;
+    // long int Ufstnz_br_cnt=0;
+    // long int Ucb_indcnt=0;
+    // long int Ucb_valcnt=0;
 
 	// if ( !(Unzval_br_offset =
 	// 			(long int*)SUPERLU_MALLOC(k * sizeof(long int))) ) {
@@ -1104,8 +1104,8 @@ int_t trs_compute_communication_structure(superlu_dist_options_t *options, int_t
 	// }
 	// Ufstnz_br_offset[k-1] = -1;
 
-    int_t Pc = grid->npcol;
-    nub = CEILING (nsupers, Pc);
+    // int_t Pc = grid->npcol;
+    // nub = CEILING (nsupers, Pc);
 	// if ( !(Ucb_valoffset =
 	// 			(long int*)SUPERLU_MALLOC(nub * sizeof(long int))) ) {
 	// 	fprintf(stderr, "Malloc fails for Ucb_valoffset[].");
@@ -1222,30 +1222,30 @@ int_t trs_compute_communication_structure(superlu_dist_options_t *options, int_t
 	// 	}
 	// }
 
-	Llu->Lrowind_bc_ptr = Lrowind_bc_ptr;
-	Llu->Lrowind_bc_dat = Lrowind_bc_dat;
-	Llu->Lrowind_bc_offset = Lrowind_bc_offset;
-	Llu->Lrowind_bc_cnt = Lrowind_bc_cnt;
+	// Llu->Lrowind_bc_ptr = Lrowind_bc_ptr;
+	// Llu->Lrowind_bc_dat = Lrowind_bc_dat;
+	// Llu->Lrowind_bc_offset = Lrowind_bc_offset;
+	// Llu->Lrowind_bc_cnt = Lrowind_bc_cnt;
 
-	Llu->Lindval_loc_bc_ptr = Lindval_loc_bc_ptr;
-	Llu->Lindval_loc_bc_dat = Lindval_loc_bc_dat;
-	Llu->Lindval_loc_bc_offset = Lindval_loc_bc_offset;
-	Llu->Lindval_loc_bc_cnt = Lindval_loc_bc_cnt;
+	// Llu->Lindval_loc_bc_ptr = Lindval_loc_bc_ptr;
+	// Llu->Lindval_loc_bc_dat = Lindval_loc_bc_dat;
+	// Llu->Lindval_loc_bc_offset = Lindval_loc_bc_offset;
+	// Llu->Lindval_loc_bc_cnt = Lindval_loc_bc_cnt;
 
-	Llu->Lnzval_bc_ptr = Lnzval_bc_ptr;
-	Llu->Lnzval_bc_dat = Lnzval_bc_dat;
-	Llu->Lnzval_bc_offset = Lnzval_bc_offset;
-	Llu->Lnzval_bc_cnt = Lnzval_bc_cnt;
+	// Llu->Lnzval_bc_ptr = Lnzval_bc_ptr;
+	// Llu->Lnzval_bc_dat = Lnzval_bc_dat;
+	// Llu->Lnzval_bc_offset = Lnzval_bc_offset;
+	// Llu->Lnzval_bc_cnt = Lnzval_bc_cnt;
 
-	Llu->Linv_bc_ptr = Linv_bc_ptr;
-	Llu->Linv_bc_dat = Linv_bc_dat;
-	Llu->Linv_bc_offset = Linv_bc_offset;
-	Llu->Linv_bc_cnt = Linv_bc_cnt;
+	// Llu->Linv_bc_ptr = Linv_bc_ptr;
+	// Llu->Linv_bc_dat = Linv_bc_dat;
+	// Llu->Linv_bc_offset = Linv_bc_offset;
+	// Llu->Linv_bc_cnt = Linv_bc_cnt;
 
-	Llu->Uinv_bc_ptr = Uinv_bc_ptr;
-	Llu->Uinv_bc_dat = Uinv_bc_dat;
-	Llu->Uinv_bc_offset = Uinv_bc_offset;
-	Llu->Uinv_bc_cnt = Uinv_bc_cnt;
+	// Llu->Uinv_bc_ptr = Uinv_bc_ptr;
+	// Llu->Uinv_bc_dat = Uinv_bc_dat;
+	// Llu->Uinv_bc_offset = Uinv_bc_offset;
+	// Llu->Uinv_bc_cnt = Uinv_bc_cnt;
 
 
 	Llu->Ufstnz_br_ptr = Ufstnz_br_ptr;

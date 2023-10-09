@@ -1198,6 +1198,10 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 
 			/*if (!iam) printf ("\tDISTRIBUTE time  %8.2f\n", stat->utime[DIST]); */
 
+		/* Flatten L metadata into one buffer. */
+		if ( Fact != SamePattern_SameRowPerm ) {
+			pdflatten_LDATA(options, n, LUstruct, grid, stat);
+		}
 
 		/* Perform numerical factorization in parallel on all process layers.*/
 

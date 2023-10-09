@@ -1890,7 +1890,7 @@ t1 = SuperLU_timer_();
 // roctxMark("before hipLaunchKernel");
 // roctxRangePush("hipLaunchKernel");
 // #endif
-
+	k = CEILING( nsupers, grid->npcol);/* Number of local block columns divided by #warps per block used as number of thread blocks*/
     d_fmod=SOLVEstruct->d_fmod;
     d_lsum=SOLVEstruct->d_lsum;
 	d_x=SOLVEstruct->d_x;

@@ -1159,6 +1159,12 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 			ABORT("ddist_psymbtonum does not yet work with 3D factorization\n");
 
 		}
+		/* Flatten L metadata into one buffer. */
+		if ( Fact != SamePattern_SameRowPerm ) {
+			pdflatten_LDATA(options, n, LUstruct, grid, stat);
+		}
+
+
 
 		if(Fact != SamePattern_SameRowPerm){
 			// checkDist3DLUStruct(LUstruct, grid3d);
