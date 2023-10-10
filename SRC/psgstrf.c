@@ -824,31 +824,31 @@ psgstrf(superlu_dist_options_t * options, int m, int n, float anorm,
 
         // (de)allocation of Arrays are slightly different for SYCL & CUDA/HIP sections
 #ifdef HAVE_SYCL
-        bigU = new float[bigu_size];
+        bigU = new float[size_t(bigu_size)];
         if (bigU == nullptr)
             ABORT("Malloc fails for dgemm buffer U ");
-        bigV = new float[bigv_size];
+        bigV = new float[size_t(bigv_size)];
         if (bigV == nullptr)
             ABORT("Malloc fails for dgemm buffer V ");
 
         // allocate device memory
         dA = nullptr;
-        dA = sycl::malloc_device<float>(max_row_size * sp_ienv_dist(3, options), *(sycl_get_queue()));
+        dA = sycl::malloc_device<float>(size_t(max_row_size) * size_t(sp_ienv_dist(3, options)), *(sycl_get_queue()));
         if (dA == nullptr) {
-            fprintf(stderr, "!!!! Error in allocating A in the device of %ld bytes\n",m*k*sizeof(float) );
+            fprintf(stderr, "!!!! Error in allocating A in the device of %ld bytes\n",max_row_size*sp_ienv_dist(3, options)*sizeof(float) );
             return 1;
         }
 
         // size of B should be bigu_size
         dB = nullptr;
-        dB = sycl::malloc_device<float>(bigu_size, *(sycl_get_queue()));
+        dB = sycl::malloc_device<float>(size_t(bigu_size), *(sycl_get_queue()));
         if (dB == nullptr) {
-            fprintf(stderr, "!!!! Error in allocating B in the device of %ld bytes\n",n*k*sizeof(float));
+            fprintf(stderr, "!!!! Error in allocating B in the device of %ld bytes\n",bigu_size*sizeof(float));
             return 1;
         }
 
         dC = nullptr;
-        dC = sycl::malloc_device<float>(buffer_size, *(sycl_get_queue()));
+        dC = sycl::malloc_device<float>(size_t(buffer_size), *(sycl_get_queue()));
         if (dC == nullptr) {
             fprintf(stderr, "!!!! Error in allocating C in the device of %ld bytes\n",buffer_size*sizeof(float));
             return 1;

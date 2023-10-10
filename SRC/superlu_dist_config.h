@@ -10,7 +10,7 @@
 #define HAVE_SYCL TRUE
 
 /* Enable DPCPP */
-#define HAVE_DPCPP TRUE
+/* #undef HAVE_DPCPP */
 
 /* Enable parmetis */
 /* #undef HAVE_PARMETIS */

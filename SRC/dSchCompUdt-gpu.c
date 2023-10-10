@@ -201,10 +201,10 @@ if ( msg0 && msg2 ) {  /* L(:,k) and U(k,:) are not empty. */
                 /*                  nsupr*sizeof(double), nbrow*sizeof(double), */
                 /*                  ldu, dpct::host_to_device, *(streams[0])); */
                 
-		gpuMemcpy2DAsync(dA, nbrow*sizeof(double),
-				  &lusup[luptr+(knsupc-ldu)*nsupr],
-				  nsupr*sizeof(double), nbrow*sizeof(double),
-				  ldu, gpuMemcpyHostToDevice, streams[0]);
+		gpuMemcpy2DAsync(dA, size_t(nbrow*sizeof(double)),
+				 &lusup[luptr+(knsupc-ldu)*nsupr],
+				 size_t(nsupr*sizeof(double)), size_t(nbrow*sizeof(double)),
+				 size_t(ldu), gpuMemcpyHostToDevice, streams[0]);
                 std::cout << "2. value of memcpy2D: " << nbrow*sizeof(double) << ", " << nsupr*sizeof(double) << ", " << nbrow*sizeof(double) << ", " << ldu << std::endl;                
 	    }
 

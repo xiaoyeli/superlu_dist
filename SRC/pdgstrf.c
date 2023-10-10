@@ -835,16 +835,16 @@ pdgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
 #endif
 
 #ifdef HAVE_SYCL
-        bigU = new double[bigu_size];
+        bigU = new double[size_t(bigu_size)];
         if (bigU == nullptr)
           ABORT("Malloc fails for dgemm buffer U ");
-        bigV = new double[bigv_size];
+        bigV = new double[size_t(bigv_size)];
         if (bigV == nullptr)
           ABORT("Malloc fails for dgemm buffer V ");
 
         // allocate device memory
         dA = nullptr;
-        dA = sycl::malloc_device<double>(max_row_size * sp_ienv_dist(3, options), *(sycl_get_queue()));
+        dA = sycl::malloc_device<double>(size_t(max_row_size) * size_t(sp_ienv_dist(3, options)), *(sycl_get_queue()));
         if (dA == nullptr) {
           fprintf(stderr, "!!!! Error in allocating A in the device of %ld bytes\n",max_row_size * sp_ienv_dist(3, options)*sizeof(double));
           return 1;
@@ -852,14 +852,14 @@ pdgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
 
         // size of B should be bigu_size
         dB = nullptr;
-        dB = sycl::malloc_device<double>(bigu_size, *(sycl_get_queue()));
+        dB = sycl::malloc_device<double>(size_t(bigu_size), *(sycl_get_queue()));
         if (dB == nullptr) {
           fprintf(stderr, "!!!! Error in allocating B in the device of %ld bytes\n",bigu_size*sizeof(double));
           return 1;
         }
 
         dC = nullptr;
-        dC = sycl::malloc_device<double>(buffer_size, *(sycl_get_queue()));
+        dC = sycl::malloc_device<double>(size_t(buffer_size), *(sycl_get_queue()));
         if (dC == nullptr) {
           fprintf(stderr, "!!!! Error in allocating C in the device of %ld bytes\n",buffer_size*sizeof(double));
           return 1;
@@ -901,8 +901,10 @@ pdgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
 
         // creating streams
         streams = (gpuStream_t *) SUPERLU_MALLOC(sizeof(gpuStream_t)*nstreams);
-        for (i = 0; i < nstreams; ++i)
-            checkGPU( gpuStreamCreate(&streams[i]) );
+        for (i = 0; i < nstreams; ++i) {
+            streams[i] = new sycl::queue( sycl_get_queue()->get_context(), sycl_get_queue()->get_device(), asyncHandler, sycl::property_list{sycl::property::queue::in_order{}} );
+            //checkGPU( gpuStreamCreate(&streams[i]) );
+        }
 
         stat->gpu_buffer += dword * ( max_row_size * sp_ienv_dist(3,options) // dA
                                      + bigu_size                     // dB
