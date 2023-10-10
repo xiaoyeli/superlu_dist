@@ -288,18 +288,21 @@ if (TPL_ENABLE_CUDALIB)   ## want to use cuda
     set(HAVE_CUDA TRUE)
     # set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DHAVE_CUDA")
     # set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -DHAVE_CUDA")
+
+    #--------------------- NVSHMEM libraries ---------------------
+    if (TPL_ENABLE_NVSHMEM)   ## want to use nvshmem
+        set(NVSHMEM_LIB ${TPL_NVSHMEM_LIBRARIES}) 
+        message("-- Enabled support for NVSHMEM='${NVSHMEM_LIB}'")
+        set(HAVE_NVSHMEM TRUE)
+    endif()
+
   else()
     message("-- CUDA libraries not found.")
   endif()
 endif()
 
 
-#--------------------- NVSHMEM libraries ---------------------
-if (TPL_ENABLE_NVSHMEM)   ## want to use nvshmem
-    set(NVSHMEM_LIB ${TPL_NVSHMEM_LIBRARIES}) 
-    message("-- Enabled support for NVSHMEM='${NVSHMEM_LIB}'")
-    set(HAVE_NVSHMEM TRUE)
-endif()
+
 
 #--------------------- HIP libraries ---------------------
 if (TPL_ENABLE_HIPLIB)   ## want to use hip

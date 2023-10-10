@@ -1142,6 +1142,7 @@ extern int_t QuerySpace_dist(int_t, int_t, Glu_freeable_t *, superlu_dist_mem_us
 extern int   xerr_dist (char *, int *);
 extern void  pxerr_dist (char *, gridinfo_t *, int_t);
 extern void  PStatInit(SuperLUStat_t *);
+extern void  PStatClear(SuperLUStat_t *);
 extern void  PStatFree(SuperLUStat_t *);
 extern void  PStatPrint(superlu_dist_options_t *, SuperLUStat_t *, gridinfo_t *);
 extern void  log_memory(int64_t, SuperLUStat_t *);
@@ -1214,6 +1215,9 @@ extern int compare_pair (const void *, const void *);
 extern int_t static_partition (struct superlu_pair *, int_t, int_t *, int_t,
 			       int_t *, int_t *, int);
 extern int get_acc_offload(void);
+extern int get_acc_solve(void);
+extern int get_new3dsolve(void);
+extern int get_new3dsolvetreecomm(void);
 
 /* Routines for debugging */
 extern void  print_panel_seg_dist(int_t, int_t, int_t, int_t, int_t *, int_t *);

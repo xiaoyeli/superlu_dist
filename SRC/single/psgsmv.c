@@ -127,11 +127,11 @@ void psgsmv_init
     }
 
     /* Build SPA to aid global to local translation. */
-    for (i = 0; i < n; ++i) spa[i] = EMPTY;
+    for (i = 0; i < n; ++i) spa[i] = SLU_EMPTY;
     for (i = 0; i < m_loc; ++i) { /* Loop through each row of A */
         for (j = rowptr[i]; j < rowptr[i+1]; ++j) {
 	    jcol = colind[j];
-	    if ( spa[jcol] == EMPTY ) { /* First time see this index */
+	    if ( spa[jcol] == SLU_EMPTY ) { /* First time see this index */
 	        p = row_to_proc[jcol];
 		if ( p == iam ) { /* Local */
 		  /*assert(jcol>=fst_row);*/
@@ -371,19 +371,13 @@ psgsmv
 void psgsmv_finalize(psgsmv_comm_t *gsmv_comm)
 {
     int_t *it;
-    //float *dt;  // Sherry: this can be precision-independent
+    float *dt;
     SUPERLU_FREE(gsmv_comm->extern_start);
-    
     if ( (it = gsmv_comm->ind_tosend) ) SUPERLU_FREE(it);
     if ( (it = gsmv_comm->ind_torecv) ) SUPERLU_FREE(it);
     SUPERLU_FREE(gsmv_comm->ptr_ind_tosend);
     SUPERLU_FREE(gsmv_comm->SendCounts);
-#if 0    
     if ( (dt = gsmv_comm->val_tosend) ) SUPERLU_FREE(dt);
     if ( (dt = gsmv_comm->val_torecv) ) SUPERLU_FREE(dt);
-#else
-    if ( gsmv_comm->val_tosend != NULL ) SUPERLU_FREE(gsmv_comm->val_tosend);
-    if ( gsmv_comm->val_torecv != NULL ) SUPERLU_FREE(gsmv_comm->val_torecv);
-#endif
 }
 

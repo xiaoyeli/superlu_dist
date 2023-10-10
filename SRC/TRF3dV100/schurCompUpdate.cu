@@ -682,7 +682,8 @@ int getMPIProcsPerGPU()
         int devCount;
         cudaGetDeviceCount(&devCount);
         int envCount = atoi(getenv("MPI_PROCESS_PER_GPU"));
-        envCount = SUPERLU_MAX(envCount, 0);
+        envCount = SUPERLU_MAX(envCount, 1);
+        printf("MPI_PROCESS_PER_GPU=%d, devCount=%d\n", envCount, devCount);
         return SUPERLU_MIN(envCount, devCount);
     }
 }
@@ -724,7 +725,8 @@ int_t LUstruct_v100::setLUstruct_GPU()
     /* Sherry: this mapping may be inefficient on Frontier */
     /*Mapping to device*/
     int deviceCount;
-    cudaGetDeviceCount(&deviceCount); // How many GPUs
+    cudaGetDeviceCount(&deviceCount); // How many GPUs?
+    printf("deviceCount=%d\n", deviceCount);
     int device_id = grid3d->iam % deviceCount;
     cudaSetDevice(device_id);
 
@@ -926,6 +928,9 @@ int_t LUstruct_v100::setLUstruct_GPU()
     gpuErrchk(cudaMemcpy(A_gpu.uPanelVec, uPanelVec_GPU,
                CEILING(nsupers, Pr) * sizeof(upanelGPU_t), cudaMemcpyHostToDevice));
 
+    delete uPanelVec_GPU;
+    delete lPanelVec_GPU;
+
     tRegion[2] = SuperLU_timer_();
     int dfactBufSize = 0;
     // TODO: does it work with NULL pointer?
@@ -933,6 +938,8 @@ int_t LUstruct_v100::setLUstruct_GPU()
     cusolverDnCreate(&cusolverH);
     
     cusolverDnDgetrf_bufferSize(cusolverH, ldt, ldt, NULL, ldt, &dfactBufSize);
+    
+    cusolverDnDestroy(cusolverH);
     printf("Size of dfactBuf is %d\n", dfactBufSize);
     tRegion[2] = SuperLU_timer_() - tRegion[2];
     printf("TRegion dfactBuf: \t %g\n", tRegion[2]);
@@ -1021,7 +1028,7 @@ int_t LUstruct_v100::setLUstruct_GPU()
     } else { /* uniform-size buffers */
 	l = ldt * ldt;
 	for (i = 0; i < num_dfbufs; ++i) {
-	    gpuErrchk(cudaMalloc(&(A_gpu.dFBufs[i]), l * sizeof(double)));
+        gpuErrchk(cudaMalloc(&(A_gpu.dFBufs[i]), l * sizeof(double)));
 	    gpuErrchk(cudaMalloc(&(A_gpu.gpuGemmBuffs[i]), A_gpu.gemmBufferSize * sizeof(double)));
 	}
     }
@@ -1071,7 +1078,7 @@ int_t LUstruct_v100::setLUstruct_GPU()
     
     for (stream = 0; stream < A_gpu.numCudaStreams; stream++)
     {
-        cublasCreate(&A_gpu.cuHandles[stream]);
+        // cublasCreate(&A_gpu.cuHandles[stream]);
         cusolverDnCreate(&A_gpu.cuSolveHandles[stream]);
     }
     tcuStream = SuperLU_timer_() - tcuStream;

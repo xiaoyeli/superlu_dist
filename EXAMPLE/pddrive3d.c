@@ -363,6 +363,9 @@ main (int argc, char *argv[])
     options.DiagInv           = YES;
     // options.ParSymbFact       = YES;
     // options.ColPerm           = PARMETIS;
+    options.Algo3d = YES;
+	options.DiagInv = YES;
+    options.ReplaceTinyPivot  = YES;    
 #if 0
     options.ReplaceTinyPivot = YES;
     options.RowPerm = NOROWPERM;
@@ -425,11 +428,12 @@ main (int argc, char *argv[])
        DEALLOCATE STORAGE.
        ------------------------------------------------------------ */
 
-    dDestroy_LU (n, &(grid.grid2d), &LUstruct);
+    // dDestroy_LU (n, &(grid.grid2d), &LUstruct);
     if ( grid.zscp.Iam == 0 ) { // process layer 0
 	    PStatPrint (&options, &stat, &(grid.grid2d)); /* Print 2D statistics.*/
     }
     dSolveFinalize (&options, &SOLVEstruct);
+    dDestroy_LU (n, &(grid.grid2d), &LUstruct);
     
     dDestroy_A3d_gathered_on_2d(&SOLVEstruct, &grid);
 

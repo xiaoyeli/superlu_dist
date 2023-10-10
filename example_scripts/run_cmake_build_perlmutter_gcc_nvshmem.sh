@@ -29,7 +29,7 @@
 
 module load PrgEnv-gnu
 module load gcc/11.2.0
-module load cmake/3.22.0
+module load cmake
 module load cudatoolkit/11.7
 # avoid bug in cray-libsci/21.08.1.2
 # module load cray-libsci/22.11.1.2
@@ -55,7 +55,7 @@ cmake .. \
   -DCMAKE_CUDA_ARCHITECTURES=80 \
   -DCMAKE_INSTALL_PREFIX=. \
   -DCMAKE_INSTALL_LIBDIR=./lib \
-  -DCMAKE_BUILD_TYPE=Release \
+  -DCMAKE_BUILD_TYPE=Debug \
   -DTPL_BLAS_LIBRARIES=/opt/cray/pe/libsci/23.02.1.1/GNU/9.1/x86_64/lib/libsci_gnu_82_mp.so \
   -DTPL_LAPACK_LIBRARIES=/opt/cray/pe/libsci/23.02.1.1/GNU/9.1/x86_64/lib/libsci_gnu_82_mp.so \
   -DTPL_PARMETIS_INCLUDE_DIRS="/global/cfs/cdirs/m3894/lib/PrgEnv-gnu/parmetis-4.0.3/include;/global/cfs/cdirs/m3894/lib/PrgEnv-gnu/parmetis-4.0.3/metis/include" \

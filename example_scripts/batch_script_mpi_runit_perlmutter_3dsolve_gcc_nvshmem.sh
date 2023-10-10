@@ -3,7 +3,7 @@
 #modules:
 module load PrgEnv-gnu
 module load gcc/11.2.0
-module load cmake/3.22.0
+module load cmake
 module load cudatoolkit/11.7
 # avoid bug in cray-libsci/21.08.1.2
 # module load cray-libsci/22.11.1.2
@@ -25,10 +25,11 @@ export LD_LIBRARY_PATH=${CRAY_LD_LIBRARY_PATH}:$LD_LIBRARY_PATH
 
 export SUPERLU_LBS=ND  
 export SUPERLU_ACC_OFFLOAD=1 # this can be 0 to do CPU tests on GPU nodes
-export GPU3DVERSION=0
-export NEW3DSOLVE=1    # Note: SUPERLU_ACC_OFFLOAD=1 and GPU3DVERSION=1 still do CPU factorization after https://github.com/xiaoyeli/superlu_dist/commit/035106d8949bc3abf86866aea1331b2948faa1db#diff-44fa50297abaedcfaed64f93712850a8fce55e8e57065d96d0ba28d8680da11eR223
-export SUPERLU_ACC_SOLVE=1
+export GPU3DVERSION=1
+export ANC25D=0
+export NEW3DSOLVE=1    
 export NEW3DSOLVETREECOMM=1
+export SUPERLU_ACC_SOLVE=0
 export SUPERLU_BIND_MPI_GPU=1 # assign GPU based on the MPI rank, assuming one MPI per GPU
 
 export SUPERLU_MAXSUP=256 # max supernode size

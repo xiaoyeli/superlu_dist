@@ -774,6 +774,10 @@ int dfree_LUstruct_gpu (
 	SUPERLU_FREE(stat->ePCIeD2H_Start);
 	SUPERLU_FREE(stat->ePCIeD2H_End);
 
+	SUPERLU_FREE(sluGPU->isNodeInMyGrid);
+	SUPERLU_FREE(A_gpu->perm_c_supno);
+
+
 	/* Free the U data structure on GPU */
 	checkGPU(gpuFree(A_gpu->UrowindVec));
 	checkGPU(gpuFree(A_gpu->UrowindPtr));
@@ -816,6 +820,7 @@ int dfree_LUstruct_gpu (
 	    gpublasDestroy(sluGPU->gpublasHandles[streamId]);
     	}
     
+	free(A_gpu);
 	return 0;
 } /* end dfree_LUstruct_gpu */
 
@@ -1360,12 +1365,13 @@ void dCopyLUToGPU3D (
     A_gpu->local_l_blk_infoVec = (local_l_blk_info_t *) tmp_ptr;
     gpu_mem_used += cum_num_l_blocks * sizeof(local_l_blk_info_t);
     checkGPUErrors(gpuMemcpy( (A_gpu->local_l_blk_infoVec), local_l_blk_infoVec, cum_num_l_blocks * sizeof(local_l_blk_info_t), gpuMemcpyHostToDevice)) ;
+	free(local_l_blk_infoVec);
 
     checkGPUErrors(gpuMalloc(  &tmp_ptr,  CEILING(nsupers, Pc)*sizeof(int_t))) ;
     A_gpu->local_l_blk_infoPtr = (int_t *) tmp_ptr;
     gpu_mem_used += CEILING(nsupers, Pc) * sizeof(int_t);
     checkGPUErrors(gpuMemcpy( (A_gpu->local_l_blk_infoPtr), local_l_blk_infoPtr, CEILING(nsupers, Pc)*sizeof(int_t), gpuMemcpyHostToDevice)) ;
-
+	free(local_l_blk_infoPtr);
     /*---- Copy U data structure to GPU ----*/
 
     local_u_blk_info_t  *local_u_blk_infoVec;
@@ -1429,11 +1435,13 @@ void dCopyLUToGPU3D (
 	A_gpu->local_u_blk_infoVec = (local_u_blk_info_t *) tmp_ptr;
 	gpu_mem_used += cum_num_u_blocks * sizeof(local_u_blk_info_t);
 	checkGPUErrors(gpuMemcpy( (A_gpu->local_u_blk_infoVec), local_u_blk_infoVec, cum_num_u_blocks * sizeof(local_u_blk_info_t), gpuMemcpyHostToDevice)) ;
+	free(local_u_blk_infoVec);
 
 	checkGPUErrors(gpuMalloc( &tmp_ptr,  CEILING(nsupers, Pr)*sizeof(int_t))) ;
 	A_gpu->local_u_blk_infoPtr = (int_t *) tmp_ptr;
 	gpu_mem_used += CEILING(nsupers, Pr) * sizeof(int_t);
 	checkGPUErrors(gpuMemcpy( (A_gpu->local_u_blk_infoPtr), local_u_blk_infoPtr, CEILING(nsupers, Pr)*sizeof(int_t), gpuMemcpyHostToDevice)) ;
+	free(local_u_blk_infoPtr);
 
 	/* Copy the actual L indices and values */
 	int_t l_k = CEILING( nsupers, grid->npcol ); /* # of local block columns */
@@ -1673,6 +1681,9 @@ void dCopyLUToGPU3D (
 	free (temp_UrowindPtr);
 	free (indtemp1);
 	free (indtemp);
+	free (Unzval_size);
+	free (temp_UnzvalPtr);
+	free (Lnzval_size);
 
 } /* end dCopyLUToGPU3D */
 
@@ -1696,7 +1707,7 @@ int dreduceAllAncestors3d_GPU (
     int_t maxLvl = log2i( (int_t) grid3d->zscp.Np) + 1;
     int_t myGrid = grid3d->zscp.Iam;
     gridinfo_t* grid = &(grid3d->grid2d);
-    int_t* gpuLUreduced = factStat->gpuLUreduced;
+    int* gpuLUreduced = factStat->gpuLUreduced;
 
     int_t sender;
     if ((myGrid % (1 << (ilvl + 1))) == 0)

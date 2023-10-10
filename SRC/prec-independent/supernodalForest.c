@@ -90,6 +90,8 @@ sForest_t**  getNestDissForests( int_t maxLvl, int_t nsupers, int_t*setree, tree
 			calcTopInfoForest(sForests[i],  nsupers, setree);
 		}
 	}
+	SUPERLU_FREE(gNodeCount);
+	SUPERLU_FREE(gNodeLists);
 
 	return sForests;
 }

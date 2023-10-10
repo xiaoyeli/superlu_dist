@@ -166,19 +166,41 @@ int_t estimateWeight(int_t nsupers, int_t*setree, treeList_t* treeList, int_t* x
 		}
 		else
 		{
+#if 0 		
+			// scuWeight has not been updated by getSCUweight as it's not called anymore
 			for (int i = 0; i < nsupers; ++i)
 			{
 				treeList[i].weight = treeList[i].scuWeight;
+
 			}
+#else 
+			for (int i = 0; i < nsupers; ++i)
+			{
+				double dep = 1.0 * treeList[i].depth ;
+				double sz = 1.0 *  SuperSize(i);
+				treeList[i].weight = sz * dep;
+			}
+#endif 	
 		}
 	}
 	else
 	{
+
+#if 0 		
+		// scuWeight has not been updated by getSCUweight as it's not called anymore
 		for (int i = 0; i < nsupers; ++i)
 		{
 			treeList[i].weight = treeList[i].scuWeight;
 
 		}
+#else 
+		for (int i = 0; i < nsupers; ++i)
+		{
+			double dep = 1.0 * treeList[i].depth ;
+			double sz = 1.0 *  SuperSize(i);
+			treeList[i].weight = sz * dep;
+		}
+#endif 		
 	}
 
 	return 0;

@@ -328,12 +328,12 @@ int_t psymbfact_LUXpand
     for (; vtx_lid > vtxXp_lid; vtx_lid --) {
       j = xsub[vtx_lid];  
       nel = 0;
-      while (j < xsub[vtx_lid+1] && prev_mem[j] != EMPTY) {
+      while (j < xsub[vtx_lid+1] && prev_mem[j] != SLU_EMPTY) {
 	nel ++; j ++;
       }
       j = xsub[vtx_lid] + nel - 1;  
       k = i - (xsub[vtx_lid+1] - xsub[vtx_lid]) + nel - 1;
-      if (k+1 < i)  new_mem[k+1] = EMPTY; 
+      if (k+1 < i)  new_mem[k+1] = SLU_EMPTY; 
       while (j >= xsub[vtx_lid]) {
 	new_mem[k] = prev_mem[j]; k--; j--;
       }
@@ -344,7 +344,7 @@ int_t psymbfact_LUXpand
     xsub[vtx_lid+1] = i;
     k = *p_next;
     if (k < xsub[vtx_lid+1])
-      new_mem[k] = EMPTY;
+      new_mem[k] = SLU_EMPTY;
   }
 
   if (rout_type == RL_SYMB) {
@@ -358,12 +358,12 @@ int_t psymbfact_LUXpand
 	nelts = Llu_symbfact->cntelt_vtcs[vtx_lid];
       j = xsub[vtx_lid];  
       nel = 0;
-      while (j < xsub[vtx_lid+1] && prev_mem[j] != EMPTY) {
+      while (j < xsub[vtx_lid+1] && prev_mem[j] != SLU_EMPTY) {
 	nel ++; j ++;
       }
       j = xsub[vtx_lid] + nel - 1;  
       k = i - nelts + nel - 1;
-      if (k+1 < i) new_mem[k+1] = EMPTY; 
+      if (k+1 < i) new_mem[k+1] = SLU_EMPTY; 
       while (j >= xsub[vtx_lid]) {
 	new_mem[k] = prev_mem[j]; k--; j--;
       }
@@ -475,13 +475,13 @@ int_t psymbfact_LUXpand_RL
   for (; vtx_lid > vtxXp_lid; vtx_lid --) {
     j = xsub[vtx_lid];  
     nel = 0;
-    while (j < xsub[vtx_lid+1] && prev_mem[j] != EMPTY) {
+    while (j < xsub[vtx_lid+1] && prev_mem[j] != SLU_EMPTY) {
       nel ++; j++;
     }
     j = xsub[vtx_lid] + nel - 1;  
     k = i - Llu_symbfact->cntelt_vtcs[vtx_lid] + nel - 1;
     if (k+1 < i) 
-      new_mem[k+1] = EMPTY; 
+      new_mem[k+1] = SLU_EMPTY; 
     while (j >= xsub[vtx_lid]) {
       new_mem[k] = prev_mem[j];
       k--; j--;
@@ -493,7 +493,7 @@ int_t psymbfact_LUXpand_RL
   xsub[vtx_lid+1] = i;
   k = next;
   if (k < xsub[vtx_lid+1])
-    new_mem[k] = EMPTY;
+    new_mem[k] = SLU_EMPTY;
   
   if (new_mem != prev_mem)
     SUPERLU_FREE (prev_mem);

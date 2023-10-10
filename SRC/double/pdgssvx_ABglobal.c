@@ -920,6 +920,11 @@ pdgssvx_ABglobal(superlu_dist_options_t *options, SuperMatrix *A,
 	dist_mem_use = ddistribute(options, n, &AC, Glu_freeable, LUstruct, grid);
 	stat->utime[DIST] = SuperLU_timer_() - t;
 
+	/* Flatten L metadata into one buffer. */
+	if ( Fact != SamePattern_SameRowPerm ) {
+		pdflatten_LDATA(options, n, LUstruct, grid, stat);
+	}
+
 	/* Deallocate storage used in symbolic factor. */
 	if ( Fact != SamePattern_SameRowPerm ) {
 	    iinfo = symbfact_SubFree(Glu_freeable);
@@ -944,7 +949,7 @@ pdgssvx_ABglobal(superlu_dist_options_t *options, SuperMatrix *A,
 		int maxrecvsz = sp_ienv_dist(3, options)* nrhs + SUPERLU_MAX( XK_H, LSUM_H );
 		int ready_x_size = maxrecvsz*nc;
 		int ready_lsum_size = 2*maxrecvsz*nr;
-		if (getenv("SUPERLU_ACC_SOLVE")){
+		if (get_acc_solve()){
 		nv_init_wrapper(grid->comm);
 		prepare_multiGPU_buffers(flag_bc_size,flag_rd_size,ready_x_size,ready_lsum_size,my_flag_bc_size,my_flag_rd_size);
 		}

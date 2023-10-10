@@ -47,7 +47,7 @@ int_t zIBcast_LPanel
 
     for (int_t pj = 0; pj < Pc; ++pj)
     {
-        if (ToSendR[lk][pj] != EMPTY)
+        if (ToSendR[lk][pj] != SLU_EMPTY)
         {
 
 
@@ -89,7 +89,7 @@ int_t zBcast_LPanel
 
     for (int_t pj = 0; pj < Pc; ++pj)
     {
-        if (ToSendR[lk][pj] != EMPTY)
+        if (ToSendR[lk][pj] != SLU_EMPTY)
         {
 
 

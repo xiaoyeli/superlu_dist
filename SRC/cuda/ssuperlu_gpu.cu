@@ -1696,7 +1696,7 @@ int sreduceAllAncestors3d_GPU (
     int_t maxLvl = log2i( (int_t) grid3d->zscp.Np) + 1;
     int_t myGrid = grid3d->zscp.Iam;
     gridinfo_t* grid = &(grid3d->grid2d);
-    int_t* gpuLUreduced = factStat->gpuLUreduced;
+    int* gpuLUreduced = factStat->gpuLUreduced;
 
     int_t sender;
     if ((myGrid % (1 << (ilvl + 1))) == 0)

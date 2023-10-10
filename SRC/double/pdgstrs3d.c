@@ -685,7 +685,7 @@ int_t trs_compute_communication_structure(superlu_dist_options_t *options, int_t
         int_t kcol = PCOL(jb, grid);
         if (myrow == krow && mycol == kcol){
         for (int_t pr=0;pr<grid->nprow;++pr){
-            Llu->bsendx_plist[lk][pr]=  EMPTY;
+            Llu->bsendx_plist[lk][pr]=  SLU_EMPTY;
         }
         }
         }
@@ -912,360 +912,360 @@ int_t trs_compute_communication_structure(superlu_dist_options_t *options, int_t
 
 
 
-    ////////////////////////////////////////////////////
-    // use contignous memory for the L meta data
-    int_t k = kc;/* Number of local block columns */
-    long int Lnzval_bc_cnt=0;
-    long int Lrowind_bc_cnt=0;
-    long int Lindval_loc_bc_cnt=0;
-	long int Linv_bc_cnt=0;
-	long int Uinv_bc_cnt=0;
+    // ////////////////////////////////////////////////////
+    // // use contignous memory for the L meta data
+    // int_t k = kc;/* Number of local block columns */
+    // long int Lnzval_bc_cnt=0;
+    // long int Lrowind_bc_cnt=0;
+    // long int Lindval_loc_bc_cnt=0;
+	// long int Linv_bc_cnt=0;
+	// long int Uinv_bc_cnt=0;
 
-	if ( !(Lnzval_bc_offset =
-				(long int*)SUPERLU_MALLOC(k * sizeof(long int))) ) {
-		fprintf(stderr, "Malloc fails for Lnzval_bc_offset[].");
-	}
-	Lnzval_bc_offset[k-1] = -1;
+	// if ( !(Lnzval_bc_offset =
+	// 			(long int*)SUPERLU_MALLOC(k * sizeof(long int))) ) {
+	// 	fprintf(stderr, "Malloc fails for Lnzval_bc_offset[].");
+	// }
+	// Lnzval_bc_offset[k-1] = -1;
 
-	if ( !(Lrowind_bc_offset =
-				(long int*)SUPERLU_MALLOC(k * sizeof(long int))) ) {
-		fprintf(stderr, "Malloc fails for Lrowind_bc_offset[].");
-	}
-	Lrowind_bc_offset[k-1] = -1;
-	if ( !(Lindval_loc_bc_offset =
-				(long int*)SUPERLU_MALLOC(k * sizeof(long int))) ) {
-		fprintf(stderr, "Malloc fails for Lindval_loc_bc_offset[].");
-	}
-	Lindval_loc_bc_offset[k-1] = -1;
-	if ( !(Linv_bc_offset =
-				(long int*)SUPERLU_MALLOC(k * sizeof(long int))) ) {
-		fprintf(stderr, "Malloc fails for Linv_bc_offset[].");
-	}
-	Linv_bc_offset[k-1] = -1;
-	if ( !(Uinv_bc_offset =
-				(long int*)SUPERLU_MALLOC(k * sizeof(long int))) ) {
-		fprintf(stderr, "Malloc fails for Uinv_bc_offset[].");
-	}
-	Uinv_bc_offset[k-1] = -1;
-
-
-    for (int_t lk=0;lk<k;++lk){
-        jb = mycol+lk*grid->npcol;  /* not sure */
-	    lsub = Lrowind_bc_ptr[lk];
-	    lloc = Lindval_loc_bc_ptr[lk];
-	    lnzval = Lnzval_bc_ptr[lk];
-
-        Linv_bc_offset[lk] = -1;
-        Uinv_bc_offset[lk] = -1;
-        Lrowind_bc_offset[lk]=-1;
-        Lindval_loc_bc_offset[lk]=-1;
-        Lnzval_bc_offset[lk]=-1;
-
-        if(lsub){
-            nrbl  =   lsub[0]; /*number of L blocks */
-            len   = lsub[1];   /* LDA of the nzval[] */
-            len1  = len + BC_HEADER + nrbl * LB_DESCRIPTOR;
-            int_t nsupc = SuperSize(jb);
-            len2  = nsupc * len;
-            len3 = nrbl*3;
-            Lnzval_bc_offset[lk]=len2;
-            Lnzval_bc_cnt += Lnzval_bc_offset[lk];
-
-            Lrowind_bc_offset[lk]=len1;
-            Lrowind_bc_cnt += Lrowind_bc_offset[lk];
-
-			Lindval_loc_bc_offset[lk]=nrbl*3;
-			Lindval_loc_bc_cnt += Lindval_loc_bc_offset[lk];
-
-            int_t krow = PROW( jb, grid );
-			if(myrow==krow){   /* diagonal block */
-				Linv_bc_offset[lk]=nsupc*nsupc;
-				Linv_bc_cnt += Linv_bc_offset[lk];
-				Uinv_bc_offset[lk]=nsupc*nsupc;
-				Uinv_bc_cnt += Uinv_bc_offset[lk];
-			}else{
-				Linv_bc_offset[lk] = -1;
-				Uinv_bc_offset[lk] = -1;
-			}
-
-        }
-    }
-
-	Linv_bc_cnt +=1; // safe guard
-	Uinv_bc_cnt +=1;
-	Lrowind_bc_cnt +=1;
-	Lindval_loc_bc_cnt +=1;
-	Lnzval_bc_cnt +=1;
-	if ( !(Linv_bc_dat =
-				(double*)SUPERLU_MALLOC(Linv_bc_cnt * sizeof(double))) ) {
-		fprintf(stderr, "Malloc fails for Linv_bc_dat[].");
-	}
-	if ( !(Uinv_bc_dat =
-				(double*)SUPERLU_MALLOC(Uinv_bc_cnt * sizeof(double))) ) {
-		fprintf(stderr, "Malloc fails for Uinv_bc_dat[].");
-	}
-
-	if ( !(Lrowind_bc_dat =
-				(int_t*)SUPERLU_MALLOC(Lrowind_bc_cnt * sizeof(int_t))) ) {
-		fprintf(stderr, "Malloc fails for Lrowind_bc_dat[].");
-	}
-	if ( !(Lindval_loc_bc_dat =
-				(int_t*)SUPERLU_MALLOC(Lindval_loc_bc_cnt * sizeof(int_t))) ) {
-		fprintf(stderr, "Malloc fails for Lindval_loc_bc_dat[].");
-	}
-	if ( !(Lnzval_bc_dat =
-				(double*)SUPERLU_MALLOC(Lnzval_bc_cnt * sizeof(double))) ) {
-		fprintf(stderr, "Malloc fails for Lnzval_bc_dat[].");
-	}
+	// if ( !(Lrowind_bc_offset =
+	// 			(long int*)SUPERLU_MALLOC(k * sizeof(long int))) ) {
+	// 	fprintf(stderr, "Malloc fails for Lrowind_bc_offset[].");
+	// }
+	// Lrowind_bc_offset[k-1] = -1;
+	// if ( !(Lindval_loc_bc_offset =
+	// 			(long int*)SUPERLU_MALLOC(k * sizeof(long int))) ) {
+	// 	fprintf(stderr, "Malloc fails for Lindval_loc_bc_offset[].");
+	// }
+	// Lindval_loc_bc_offset[k-1] = -1;
+	// if ( !(Linv_bc_offset =
+	// 			(long int*)SUPERLU_MALLOC(k * sizeof(long int))) ) {
+	// 	fprintf(stderr, "Malloc fails for Linv_bc_offset[].");
+	// }
+	// Linv_bc_offset[k-1] = -1;
+	// if ( !(Uinv_bc_offset =
+	// 			(long int*)SUPERLU_MALLOC(k * sizeof(long int))) ) {
+	// 	fprintf(stderr, "Malloc fails for Uinv_bc_offset[].");
+	// }
+	// Uinv_bc_offset[k-1] = -1;
 
 
-	/* use contingous memory for Linv_bc_ptr, Uinv_bc_ptr, Lrowind_bc_ptr, Lnzval_bc_ptr*/
-	Linv_bc_cnt=0;
-	Uinv_bc_cnt=0;
-	Lrowind_bc_cnt=0;
-	Lnzval_bc_cnt=0;
-	Lindval_loc_bc_cnt=0;
-	long int tmp_cnt;
-	for (jb = 0; jb < k; ++jb) { /* for each block column ... */
-		if(Linv_bc_ptr[jb]!=NULL){
-			for (jj = 0; jj < Linv_bc_offset[jb]; ++jj) {
-				Linv_bc_dat[Linv_bc_cnt+jj]=Linv_bc_ptr[jb][jj];
-			}
-			SUPERLU_FREE(Linv_bc_ptr[jb]);
-			Linv_bc_ptr[jb]=&Linv_bc_dat[Linv_bc_cnt];
-			tmp_cnt = Linv_bc_offset[jb];
-			Linv_bc_offset[jb]=Linv_bc_cnt;
-			Linv_bc_cnt+=tmp_cnt;
-		}
+    // for (int_t lk=0;lk<k;++lk){
+    //     jb = mycol+lk*grid->npcol;  /* not sure */
+	//     lsub = Lrowind_bc_ptr[lk];
+	//     lloc = Lindval_loc_bc_ptr[lk];
+	//     lnzval = Lnzval_bc_ptr[lk];
 
-		if(Uinv_bc_ptr[jb]!=NULL){
-			for (jj = 0; jj < Uinv_bc_offset[jb]; ++jj) {
-				Uinv_bc_dat[Uinv_bc_cnt+jj]=Uinv_bc_ptr[jb][jj];
-			}
-			SUPERLU_FREE(Uinv_bc_ptr[jb]);
-			Uinv_bc_ptr[jb]=&Uinv_bc_dat[Uinv_bc_cnt];
-			tmp_cnt = Uinv_bc_offset[jb];
-			Uinv_bc_offset[jb]=Uinv_bc_cnt;
-			Uinv_bc_cnt+=tmp_cnt;
-		}
+    //     Linv_bc_offset[lk] = -1;
+    //     Uinv_bc_offset[lk] = -1;
+    //     Lrowind_bc_offset[lk]=-1;
+    //     Lindval_loc_bc_offset[lk]=-1;
+    //     Lnzval_bc_offset[lk]=-1;
 
+    //     if(lsub){
+    //         nrbl  =   lsub[0]; /*number of L blocks */
+    //         len   = lsub[1];   /* LDA of the nzval[] */
+    //         len1  = len + BC_HEADER + nrbl * LB_DESCRIPTOR;
+    //         int_t nsupc = SuperSize(jb);
+    //         len2  = nsupc * len;
+    //         len3 = nrbl*3;
+    //         Lnzval_bc_offset[lk]=len2;
+    //         Lnzval_bc_cnt += Lnzval_bc_offset[lk];
 
-		if(Lrowind_bc_ptr[jb]!=NULL){
-			for (jj = 0; jj < Lrowind_bc_offset[jb]; ++jj) {
-				Lrowind_bc_dat[Lrowind_bc_cnt+jj]=Lrowind_bc_ptr[jb][jj];
-			}
-			SUPERLU_FREE(Lrowind_bc_ptr[jb]);
-			Lrowind_bc_ptr[jb]=&Lrowind_bc_dat[Lrowind_bc_cnt];
-			tmp_cnt = Lrowind_bc_offset[jb];
-			Lrowind_bc_offset[jb]=Lrowind_bc_cnt;
-			Lrowind_bc_cnt+=tmp_cnt;
-		}
+    //         Lrowind_bc_offset[lk]=len1;
+    //         Lrowind_bc_cnt += Lrowind_bc_offset[lk];
 
-		if(Lnzval_bc_ptr[jb]!=NULL){
-			for (jj = 0; jj < Lnzval_bc_offset[jb]; ++jj) {
-				Lnzval_bc_dat[Lnzval_bc_cnt+jj]=Lnzval_bc_ptr[jb][jj];
-			}
-			SUPERLU_FREE(Lnzval_bc_ptr[jb]);
-			Lnzval_bc_ptr[jb]=&Lnzval_bc_dat[Lnzval_bc_cnt];
-			tmp_cnt = Lnzval_bc_offset[jb];
-			Lnzval_bc_offset[jb]=Lnzval_bc_cnt;
-			Lnzval_bc_cnt+=tmp_cnt;
-		}
+	// 		Lindval_loc_bc_offset[lk]=nrbl*3;
+	// 		Lindval_loc_bc_cnt += Lindval_loc_bc_offset[lk];
 
-		if(Lindval_loc_bc_ptr[jb]!=NULL){
-			for (jj = 0; jj < Lindval_loc_bc_offset[jb]; ++jj) {
-				Lindval_loc_bc_dat[Lindval_loc_bc_cnt+jj]=Lindval_loc_bc_ptr[jb][jj];
-			}
-			SUPERLU_FREE(Lindval_loc_bc_ptr[jb]);
-			Lindval_loc_bc_ptr[jb]=&Lindval_loc_bc_dat[Lindval_loc_bc_cnt];
-			tmp_cnt = Lindval_loc_bc_offset[jb];
-			Lindval_loc_bc_offset[jb]=Lindval_loc_bc_cnt;
-			Lindval_loc_bc_cnt+=tmp_cnt;
-		}
-	}
+    //         int_t krow = PROW( jb, grid );
+	// 		if(myrow==krow){   /* diagonal block */
+	// 			Linv_bc_offset[lk]=nsupc*nsupc;
+	// 			Linv_bc_cnt += Linv_bc_offset[lk];
+	// 			Uinv_bc_offset[lk]=nsupc*nsupc;
+	// 			Uinv_bc_cnt += Uinv_bc_offset[lk];
+	// 		}else{
+	// 			Linv_bc_offset[lk] = -1;
+	// 			Uinv_bc_offset[lk] = -1;
+	// 		}
 
+    //     }
+    // }
 
+	// Linv_bc_cnt +=1; // safe guard
+	// Uinv_bc_cnt +=1;
+	// Lrowind_bc_cnt +=1;
+	// Lindval_loc_bc_cnt +=1;
+	// Lnzval_bc_cnt +=1;
+	// if ( !(Linv_bc_dat =
+	// 			(double*)SUPERLU_MALLOC(Linv_bc_cnt * sizeof(double))) ) {
+	// 	fprintf(stderr, "Malloc fails for Linv_bc_dat[].");
+	// }
+	// if ( !(Uinv_bc_dat =
+	// 			(double*)SUPERLU_MALLOC(Uinv_bc_cnt * sizeof(double))) ) {
+	// 	fprintf(stderr, "Malloc fails for Uinv_bc_dat[].");
+	// }
 
-    // use contignous memory for the U meta data
-    k = kr;/* Number of local block rows */
-    long int Unzval_br_cnt=0;
-    long int Ufstnz_br_cnt=0;
-    long int Ucb_indcnt=0;
-    long int Ucb_valcnt=0;
-
-	if ( !(Unzval_br_offset =
-				(long int*)SUPERLU_MALLOC(k * sizeof(long int))) ) {
-		fprintf(stderr, "Malloc fails for Unzval_br_offset[].");
-	}
-	Unzval_br_offset[k-1] = -1;
-	if ( !(Ufstnz_br_offset =
-				(long int*)SUPERLU_MALLOC(k * sizeof(long int))) ) {
-		fprintf(stderr, "Malloc fails for Ufstnz_br_offset[].");
-	}
-	Ufstnz_br_offset[k-1] = -1;
-
-    int_t Pc = grid->npcol;
-    nub = CEILING (nsupers, Pc);
-	if ( !(Ucb_valoffset =
-				(long int*)SUPERLU_MALLOC(nub * sizeof(long int))) ) {
-		fprintf(stderr, "Malloc fails for Ucb_valoffset[].");
-	}
-	Ucb_valoffset[nub-1] = -1;
-	if ( !(Ucb_indoffset =
-				(long int*)SUPERLU_MALLOC(nub * sizeof(long int))) ) {
-		fprintf(stderr, "Malloc fails for Ucb_indoffset[].");
-	}
-	Ucb_indoffset[nub-1] = -1;
-
-    for (int_t lk=0;lk<k;++lk){
-        ib = myrow+lk*grid->nprow;  /* not sure */
-	    usub =  Ufstnz_br_ptr[lk];
-        Unzval_br_offset[lk]=-1;
-        Ufstnz_br_offset[lk]=-1;
-        if(usub){
-            int_t lenv = usub[1];
-		    int_t lens = usub[2];
-            Unzval_br_offset[lk]=lenv;
-		    Unzval_br_cnt += Unzval_br_offset[lk];
-            Ufstnz_br_offset[lk]=lens;
-            Ufstnz_br_cnt += Ufstnz_br_offset[lk];
-        }
-    }
-
-	/* Set up the vertical linked lists for the row blocks.
-	   One pass of the skeleton graph of U. */
-	for (int_t lb = 0; lb < kc; ++lb) {
-		if ( Urbs[lb] ) { /* Not an empty block column. */
-			Ucb_indoffset[lb]=Urbs[lb];
-			Ucb_indcnt += Ucb_indoffset[lb];
-			Ucb_valoffset[lb]=Urbs[lb];
-			Ucb_valcnt += Ucb_valoffset[lb];
-		}else{
-			Ucb_valoffset[lb]=-1;
-			Ucb_indoffset[lb]=-1;
-		}
-	}
-
-	Unzval_br_cnt +=1; // safe guard
-	Ufstnz_br_cnt +=1;
-	Ucb_valcnt +=1;
-	Ucb_indcnt +=1;
-	if ( !(Unzval_br_dat =
-				(double*)SUPERLU_MALLOC(Unzval_br_cnt * sizeof(double))) ) {
-		fprintf(stderr, "Malloc fails for Lnzval_bc_dat[].");
-	}
-	if ( !(Ufstnz_br_dat =
-				(int_t*)SUPERLU_MALLOC(Ufstnz_br_cnt * sizeof(int_t))) ) {
-		fprintf(stderr, "Malloc fails for Ufstnz_br_dat[].");
-	}
-	if ( !(Ucb_valdat =
-				(int_t*)SUPERLU_MALLOC(Ucb_valcnt * sizeof(int_t))) ) {
-		fprintf(stderr, "Malloc fails for Ucb_valdat[].");
-	}
-	if ( !(Ucb_inddat =
-				(Ucb_indptr_t*)SUPERLU_MALLOC(Ucb_indcnt * sizeof(Ucb_indptr_t))) ) {
-		fprintf(stderr, "Malloc fails for Ucb_inddat[].");
-	}
+	// if ( !(Lrowind_bc_dat =
+	// 			(int_t*)SUPERLU_MALLOC(Lrowind_bc_cnt * sizeof(int_t))) ) {
+	// 	fprintf(stderr, "Malloc fails for Lrowind_bc_dat[].");
+	// }
+	// if ( !(Lindval_loc_bc_dat =
+	// 			(int_t*)SUPERLU_MALLOC(Lindval_loc_bc_cnt * sizeof(int_t))) ) {
+	// 	fprintf(stderr, "Malloc fails for Lindval_loc_bc_dat[].");
+	// }
+	// if ( !(Lnzval_bc_dat =
+	// 			(double*)SUPERLU_MALLOC(Lnzval_bc_cnt * sizeof(double))) ) {
+	// 	fprintf(stderr, "Malloc fails for Lnzval_bc_dat[].");
+	// }
 
 
-	/* use contingous memory for Unzval_br_ptr, Ufstnz_br_ptr, Ucb_valptr */
-	k = CEILING( nsupers, grid->nprow );/* Number of local block rows */
-	Unzval_br_cnt=0;
-	Ufstnz_br_cnt=0;
-	for (int_t lb = 0; lb < k; ++lb) { /* for each block row ... */
-		if(Unzval_br_ptr[lb]!=NULL){
-			for (jj = 0; jj < Unzval_br_offset[lb]; ++jj) {
-				Unzval_br_dat[Unzval_br_cnt+jj]=Unzval_br_ptr[lb][jj];
-			}
-			SUPERLU_FREE(Unzval_br_ptr[lb]);
-			Unzval_br_ptr[lb]=&Unzval_br_dat[Unzval_br_cnt];
-			tmp_cnt = Unzval_br_offset[lb];
-			Unzval_br_offset[lb]=Unzval_br_cnt;
-			Unzval_br_cnt+=tmp_cnt;
-		}
+	// /* use contingous memory for Linv_bc_ptr, Uinv_bc_ptr, Lrowind_bc_ptr, Lnzval_bc_ptr*/
+	// Linv_bc_cnt=0;
+	// Uinv_bc_cnt=0;
+	// Lrowind_bc_cnt=0;
+	// Lnzval_bc_cnt=0;
+	// Lindval_loc_bc_cnt=0;
+	// long int tmp_cnt;
+	// for (jb = 0; jb < k; ++jb) { /* for each block column ... */
+	// 	if(Linv_bc_ptr[jb]!=NULL){
+	// 		for (jj = 0; jj < Linv_bc_offset[jb]; ++jj) {
+	// 			Linv_bc_dat[Linv_bc_cnt+jj]=Linv_bc_ptr[jb][jj];
+	// 		}
+	// 		SUPERLU_FREE(Linv_bc_ptr[jb]);
+	// 		Linv_bc_ptr[jb]=&Linv_bc_dat[Linv_bc_cnt];
+	// 		tmp_cnt = Linv_bc_offset[jb];
+	// 		Linv_bc_offset[jb]=Linv_bc_cnt;
+	// 		Linv_bc_cnt+=tmp_cnt;
+	// 	}
 
-		if(Ufstnz_br_ptr[lb]!=NULL){
-			for (jj = 0; jj < Ufstnz_br_offset[lb]; ++jj) {
-				Ufstnz_br_dat[Ufstnz_br_cnt+jj]=Ufstnz_br_ptr[lb][jj];
-			}
-			SUPERLU_FREE(Ufstnz_br_ptr[lb]);
-			Ufstnz_br_ptr[lb]=&Ufstnz_br_dat[Ufstnz_br_cnt];
-			tmp_cnt = Ufstnz_br_offset[lb];
-			Ufstnz_br_offset[lb]=Ufstnz_br_cnt;
-			Ufstnz_br_cnt+=tmp_cnt;
-		}
-	}
+	// 	if(Uinv_bc_ptr[jb]!=NULL){
+	// 		for (jj = 0; jj < Uinv_bc_offset[jb]; ++jj) {
+	// 			Uinv_bc_dat[Uinv_bc_cnt+jj]=Uinv_bc_ptr[jb][jj];
+	// 		}
+	// 		SUPERLU_FREE(Uinv_bc_ptr[jb]);
+	// 		Uinv_bc_ptr[jb]=&Uinv_bc_dat[Uinv_bc_cnt];
+	// 		tmp_cnt = Uinv_bc_offset[jb];
+	// 		Uinv_bc_offset[jb]=Uinv_bc_cnt;
+	// 		Uinv_bc_cnt+=tmp_cnt;
+	// 	}
 
-	k = CEILING( nsupers, grid->npcol );/* Number of local block columns */
-	Ucb_valcnt=0;
-	Ucb_indcnt=0;
-	for (int_t lb = 0; lb < k; ++lb) { /* for each block row ... */
-		if(Ucb_valptr[lb]!=NULL){
-			for (jj = 0; jj < Ucb_valoffset[lb]; ++jj) {
-				Ucb_valdat[Ucb_valcnt+jj]=Ucb_valptr[lb][jj];
-			}
-			SUPERLU_FREE(Ucb_valptr[lb]);
-			Ucb_valptr[lb]=&Ucb_valdat[Ucb_valcnt];
-			tmp_cnt = Ucb_valoffset[lb];
-			Ucb_valoffset[lb]=Ucb_valcnt;
-			Ucb_valcnt+=tmp_cnt;
-		}
-		if(Ucb_indptr[lb]!=NULL){
-			for (jj = 0; jj < Ucb_indoffset[lb]; ++jj) {
-				Ucb_inddat[Ucb_indcnt+jj]=Ucb_indptr[lb][jj];
-			}
-			SUPERLU_FREE(Ucb_indptr[lb]);
-			Ucb_indptr[lb]=&Ucb_inddat[Ucb_indcnt];
-			tmp_cnt = Ucb_indoffset[lb];
-			Ucb_indoffset[lb]=Ucb_indcnt;
-			Ucb_indcnt+=tmp_cnt;
-		}
-	}
 
-	Llu->Lrowind_bc_ptr = Lrowind_bc_ptr;
-	Llu->Lrowind_bc_dat = Lrowind_bc_dat;
-	Llu->Lrowind_bc_offset = Lrowind_bc_offset;
-	Llu->Lrowind_bc_cnt = Lrowind_bc_cnt;
+	// 	if(Lrowind_bc_ptr[jb]!=NULL){
+	// 		for (jj = 0; jj < Lrowind_bc_offset[jb]; ++jj) {
+	// 			Lrowind_bc_dat[Lrowind_bc_cnt+jj]=Lrowind_bc_ptr[jb][jj];
+	// 		}
+	// 		SUPERLU_FREE(Lrowind_bc_ptr[jb]);
+	// 		Lrowind_bc_ptr[jb]=&Lrowind_bc_dat[Lrowind_bc_cnt];
+	// 		tmp_cnt = Lrowind_bc_offset[jb];
+	// 		Lrowind_bc_offset[jb]=Lrowind_bc_cnt;
+	// 		Lrowind_bc_cnt+=tmp_cnt;
+	// 	}
 
-	Llu->Lindval_loc_bc_ptr = Lindval_loc_bc_ptr;
-	Llu->Lindval_loc_bc_dat = Lindval_loc_bc_dat;
-	Llu->Lindval_loc_bc_offset = Lindval_loc_bc_offset;
-	Llu->Lindval_loc_bc_cnt = Lindval_loc_bc_cnt;
+	// 	if(Lnzval_bc_ptr[jb]!=NULL){
+	// 		for (jj = 0; jj < Lnzval_bc_offset[jb]; ++jj) {
+	// 			Lnzval_bc_dat[Lnzval_bc_cnt+jj]=Lnzval_bc_ptr[jb][jj];
+	// 		}
+	// 		SUPERLU_FREE(Lnzval_bc_ptr[jb]);
+	// 		Lnzval_bc_ptr[jb]=&Lnzval_bc_dat[Lnzval_bc_cnt];
+	// 		tmp_cnt = Lnzval_bc_offset[jb];
+	// 		Lnzval_bc_offset[jb]=Lnzval_bc_cnt;
+	// 		Lnzval_bc_cnt+=tmp_cnt;
+	// 	}
 
-	Llu->Lnzval_bc_ptr = Lnzval_bc_ptr;
-	Llu->Lnzval_bc_dat = Lnzval_bc_dat;
-	Llu->Lnzval_bc_offset = Lnzval_bc_offset;
-	Llu->Lnzval_bc_cnt = Lnzval_bc_cnt;
+	// 	if(Lindval_loc_bc_ptr[jb]!=NULL){
+	// 		for (jj = 0; jj < Lindval_loc_bc_offset[jb]; ++jj) {
+	// 			Lindval_loc_bc_dat[Lindval_loc_bc_cnt+jj]=Lindval_loc_bc_ptr[jb][jj];
+	// 		}
+	// 		SUPERLU_FREE(Lindval_loc_bc_ptr[jb]);
+	// 		Lindval_loc_bc_ptr[jb]=&Lindval_loc_bc_dat[Lindval_loc_bc_cnt];
+	// 		tmp_cnt = Lindval_loc_bc_offset[jb];
+	// 		Lindval_loc_bc_offset[jb]=Lindval_loc_bc_cnt;
+	// 		Lindval_loc_bc_cnt+=tmp_cnt;
+	// 	}
+	// }
 
-	Llu->Linv_bc_ptr = Linv_bc_ptr;
-	Llu->Linv_bc_dat = Linv_bc_dat;
-	Llu->Linv_bc_offset = Linv_bc_offset;
-	Llu->Linv_bc_cnt = Linv_bc_cnt;
 
-	Llu->Uinv_bc_ptr = Uinv_bc_ptr;
-	Llu->Uinv_bc_dat = Uinv_bc_dat;
-	Llu->Uinv_bc_offset = Uinv_bc_offset;
-	Llu->Uinv_bc_cnt = Uinv_bc_cnt;
+
+    // // use contignous memory for the U meta data
+    // k = kr;/* Number of local block rows */
+    // long int Unzval_br_cnt=0;
+    // long int Ufstnz_br_cnt=0;
+    // long int Ucb_indcnt=0;
+    // long int Ucb_valcnt=0;
+
+	// if ( !(Unzval_br_offset =
+	// 			(long int*)SUPERLU_MALLOC(k * sizeof(long int))) ) {
+	// 	fprintf(stderr, "Malloc fails for Unzval_br_offset[].");
+	// }
+	// Unzval_br_offset[k-1] = -1;
+	// if ( !(Ufstnz_br_offset =
+	// 			(long int*)SUPERLU_MALLOC(k * sizeof(long int))) ) {
+	// 	fprintf(stderr, "Malloc fails for Ufstnz_br_offset[].");
+	// }
+	// Ufstnz_br_offset[k-1] = -1;
+
+    // int_t Pc = grid->npcol;
+    // nub = CEILING (nsupers, Pc);
+	// if ( !(Ucb_valoffset =
+	// 			(long int*)SUPERLU_MALLOC(nub * sizeof(long int))) ) {
+	// 	fprintf(stderr, "Malloc fails for Ucb_valoffset[].");
+	// }
+	// Ucb_valoffset[nub-1] = -1;
+	// if ( !(Ucb_indoffset =
+	// 			(long int*)SUPERLU_MALLOC(nub * sizeof(long int))) ) {
+	// 	fprintf(stderr, "Malloc fails for Ucb_indoffset[].");
+	// }
+	// Ucb_indoffset[nub-1] = -1;
+
+    // for (int_t lk=0;lk<k;++lk){
+    //     ib = myrow+lk*grid->nprow;  /* not sure */
+	//     usub =  Ufstnz_br_ptr[lk];
+    //     Unzval_br_offset[lk]=-1;
+    //     Ufstnz_br_offset[lk]=-1;
+    //     if(usub){
+    //         int_t lenv = usub[1];
+	// 	    int_t lens = usub[2];
+    //         Unzval_br_offset[lk]=lenv;
+	// 	    Unzval_br_cnt += Unzval_br_offset[lk];
+    //         Ufstnz_br_offset[lk]=lens;
+    //         Ufstnz_br_cnt += Ufstnz_br_offset[lk];
+    //     }
+    // }
+
+	// /* Set up the vertical linked lists for the row blocks.
+	//    One pass of the skeleton graph of U. */
+	// for (int_t lb = 0; lb < kc; ++lb) {
+	// 	if ( Urbs[lb] ) { /* Not an empty block column. */
+	// 		Ucb_indoffset[lb]=Urbs[lb];
+	// 		Ucb_indcnt += Ucb_indoffset[lb];
+	// 		Ucb_valoffset[lb]=Urbs[lb];
+	// 		Ucb_valcnt += Ucb_valoffset[lb];
+	// 	}else{
+	// 		Ucb_valoffset[lb]=-1;
+	// 		Ucb_indoffset[lb]=-1;
+	// 	}
+	// }
+
+	// Unzval_br_cnt +=1; // safe guard
+	// Ufstnz_br_cnt +=1;
+	// Ucb_valcnt +=1;
+	// Ucb_indcnt +=1;
+	// if ( !(Unzval_br_dat =
+	// 			(double*)SUPERLU_MALLOC(Unzval_br_cnt * sizeof(double))) ) {
+	// 	fprintf(stderr, "Malloc fails for Lnzval_bc_dat[].");
+	// }
+	// if ( !(Ufstnz_br_dat =
+	// 			(int_t*)SUPERLU_MALLOC(Ufstnz_br_cnt * sizeof(int_t))) ) {
+	// 	fprintf(stderr, "Malloc fails for Ufstnz_br_dat[].");
+	// }
+	// if ( !(Ucb_valdat =
+	// 			(int_t*)SUPERLU_MALLOC(Ucb_valcnt * sizeof(int_t))) ) {
+	// 	fprintf(stderr, "Malloc fails for Ucb_valdat[].");
+	// }
+	// if ( !(Ucb_inddat =
+	// 			(Ucb_indptr_t*)SUPERLU_MALLOC(Ucb_indcnt * sizeof(Ucb_indptr_t))) ) {
+	// 	fprintf(stderr, "Malloc fails for Ucb_inddat[].");
+	// }
+
+
+	// /* use contingous memory for Unzval_br_ptr, Ufstnz_br_ptr, Ucb_valptr */
+	// k = CEILING( nsupers, grid->nprow );/* Number of local block rows */
+	// Unzval_br_cnt=0;
+	// Ufstnz_br_cnt=0;
+	// for (int_t lb = 0; lb < k; ++lb) { /* for each block row ... */
+	// 	if(Unzval_br_ptr[lb]!=NULL){
+	// 		for (jj = 0; jj < Unzval_br_offset[lb]; ++jj) {
+	// 			Unzval_br_dat[Unzval_br_cnt+jj]=Unzval_br_ptr[lb][jj];
+	// 		}
+	// 		SUPERLU_FREE(Unzval_br_ptr[lb]);
+	// 		Unzval_br_ptr[lb]=&Unzval_br_dat[Unzval_br_cnt];
+	// 		tmp_cnt = Unzval_br_offset[lb];
+	// 		Unzval_br_offset[lb]=Unzval_br_cnt;
+	// 		Unzval_br_cnt+=tmp_cnt;
+	// 	}
+
+	// 	if(Ufstnz_br_ptr[lb]!=NULL){
+	// 		for (jj = 0; jj < Ufstnz_br_offset[lb]; ++jj) {
+	// 			Ufstnz_br_dat[Ufstnz_br_cnt+jj]=Ufstnz_br_ptr[lb][jj];
+	// 		}
+	// 		SUPERLU_FREE(Ufstnz_br_ptr[lb]);
+	// 		Ufstnz_br_ptr[lb]=&Ufstnz_br_dat[Ufstnz_br_cnt];
+	// 		tmp_cnt = Ufstnz_br_offset[lb];
+	// 		Ufstnz_br_offset[lb]=Ufstnz_br_cnt;
+	// 		Ufstnz_br_cnt+=tmp_cnt;
+	// 	}
+	// }
+
+	// k = CEILING( nsupers, grid->npcol );/* Number of local block columns */
+	// Ucb_valcnt=0;
+	// Ucb_indcnt=0;
+	// for (int_t lb = 0; lb < k; ++lb) { /* for each block row ... */
+	// 	if(Ucb_valptr[lb]!=NULL){
+	// 		for (jj = 0; jj < Ucb_valoffset[lb]; ++jj) {
+	// 			Ucb_valdat[Ucb_valcnt+jj]=Ucb_valptr[lb][jj];
+	// 		}
+	// 		SUPERLU_FREE(Ucb_valptr[lb]);
+	// 		Ucb_valptr[lb]=&Ucb_valdat[Ucb_valcnt];
+	// 		tmp_cnt = Ucb_valoffset[lb];
+	// 		Ucb_valoffset[lb]=Ucb_valcnt;
+	// 		Ucb_valcnt+=tmp_cnt;
+	// 	}
+	// 	if(Ucb_indptr[lb]!=NULL){
+	// 		for (jj = 0; jj < Ucb_indoffset[lb]; ++jj) {
+	// 			Ucb_inddat[Ucb_indcnt+jj]=Ucb_indptr[lb][jj];
+	// 		}
+	// 		SUPERLU_FREE(Ucb_indptr[lb]);
+	// 		Ucb_indptr[lb]=&Ucb_inddat[Ucb_indcnt];
+	// 		tmp_cnt = Ucb_indoffset[lb];
+	// 		Ucb_indoffset[lb]=Ucb_indcnt;
+	// 		Ucb_indcnt+=tmp_cnt;
+	// 	}
+	// }
+
+	// Llu->Lrowind_bc_ptr = Lrowind_bc_ptr;
+	// Llu->Lrowind_bc_dat = Lrowind_bc_dat;
+	// Llu->Lrowind_bc_offset = Lrowind_bc_offset;
+	// Llu->Lrowind_bc_cnt = Lrowind_bc_cnt;
+
+	// Llu->Lindval_loc_bc_ptr = Lindval_loc_bc_ptr;
+	// Llu->Lindval_loc_bc_dat = Lindval_loc_bc_dat;
+	// Llu->Lindval_loc_bc_offset = Lindval_loc_bc_offset;
+	// Llu->Lindval_loc_bc_cnt = Lindval_loc_bc_cnt;
+
+	// Llu->Lnzval_bc_ptr = Lnzval_bc_ptr;
+	// Llu->Lnzval_bc_dat = Lnzval_bc_dat;
+	// Llu->Lnzval_bc_offset = Lnzval_bc_offset;
+	// Llu->Lnzval_bc_cnt = Lnzval_bc_cnt;
+
+	// Llu->Linv_bc_ptr = Linv_bc_ptr;
+	// Llu->Linv_bc_dat = Linv_bc_dat;
+	// Llu->Linv_bc_offset = Linv_bc_offset;
+	// Llu->Linv_bc_cnt = Linv_bc_cnt;
+
+	// Llu->Uinv_bc_ptr = Uinv_bc_ptr;
+	// Llu->Uinv_bc_dat = Uinv_bc_dat;
+	// Llu->Uinv_bc_offset = Uinv_bc_offset;
+	// Llu->Uinv_bc_cnt = Uinv_bc_cnt;
 
 
 	Llu->Ufstnz_br_ptr = Ufstnz_br_ptr;
-    Llu->Ufstnz_br_dat = Ufstnz_br_dat;
-    Llu->Ufstnz_br_offset = Ufstnz_br_offset;
-    Llu->Ufstnz_br_cnt = Ufstnz_br_cnt;
+    // Llu->Ufstnz_br_dat = Ufstnz_br_dat;
+    // Llu->Ufstnz_br_offset = Ufstnz_br_offset;
+    // Llu->Ufstnz_br_cnt = Ufstnz_br_cnt;
 
 	Llu->Unzval_br_ptr = Unzval_br_ptr;
-	Llu->Unzval_br_dat = Unzval_br_dat;
-	Llu->Unzval_br_offset = Unzval_br_offset;
-	Llu->Unzval_br_cnt = Unzval_br_cnt;
+	// Llu->Unzval_br_dat = Unzval_br_dat;
+	// Llu->Unzval_br_offset = Unzval_br_offset;
+	// Llu->Unzval_br_cnt = Unzval_br_cnt;
 
 	Llu->Ucb_indptr = Ucb_indptr;
-	Llu->Ucb_inddat = Ucb_inddat;
-	Llu->Ucb_indoffset = Ucb_indoffset;
-	Llu->Ucb_indcnt = Ucb_indcnt;
+	// Llu->Ucb_inddat = Ucb_inddat;
+	// Llu->Ucb_indoffset = Ucb_indoffset;
+	// Llu->Ucb_indcnt = Ucb_indcnt;
 	Llu->Ucb_valptr = Ucb_valptr;
-	Llu->Ucb_valdat = Ucb_valdat;
-	Llu->Ucb_valoffset = Ucb_valoffset;
-	Llu->Ucb_valcnt = Ucb_valcnt;
+	// Llu->Ucb_valdat = Ucb_valdat;
+	// Llu->Ucb_valoffset = Ucb_valoffset;
+	// Llu->Ucb_valcnt = Ucb_valcnt;
 
 
 	Llu->LRtree_ptr = LRtree_ptr;
@@ -1301,7 +1301,7 @@ int_t trs_compute_communication_structure(superlu_dist_options_t *options, int_t
 
 
 #ifdef GPU_ACC
-    if (getenv("SUPERLU_ACC_SOLVE")){
+    if (get_acc_solve()){
 	checkGPU(gpuMalloc( (void**)&Llu->d_bcols_masked, Llu->nbcol_masked * sizeof(int)));
 	checkGPU(gpuMemcpy(Llu->d_bcols_masked, Llu->bcols_masked, Llu->nbcol_masked * sizeof(int), gpuMemcpyHostToDevice));        
 	checkGPU(gpuMalloc( (void**)&Llu->d_xsup, (n+1) * sizeof(int_t)));
@@ -2374,7 +2374,7 @@ void dlsum_fmod_leaf (
 						 */
 						for (p = 0; p < grid->nprow; ++p)
 						{
-							if ( fsendx_plist[lk][p] != EMPTY )
+							if ( fsendx_plist[lk][p] != SLU_EMPTY )
 							{
 								pi = PNUM( p, ikcol, grid );
 #ifdef ISEND_IRECV
@@ -2742,7 +2742,7 @@ void ForwardSolve3d_newsolve_reusepdgstrs(superlu_dist_options_t *options, int_t
 
 #if ( PRNTlevel>=1 )
 
-    if (getenv("SUPERLU_ACC_SOLVE")) /* GPU trisolve*/
+    if (get_acc_solve()) /* GPU trisolve*/
     {
     iam = grid->iam;
 	if ( !iam) printf(".. GPU trisolve\n");
@@ -2803,7 +2803,7 @@ void ForwardSolve3d_newsolve_reusepdgstrs(superlu_dist_options_t *options, int_t
     stat->utime[SOL_TOT] = 0.0;
 
 #if ( DEBUGlevel>=1 )
-    CHECK_MALLOC(iam, "Enter pdgstrs()");
+    CHECK_MALLOC(iam, "Enter ForwardSolve3d_newsolve_reusepdgstrs()");
 #endif
 
     stat->ops[SOLVE] = 0.0;
@@ -2813,7 +2813,7 @@ void ForwardSolve3d_newsolve_reusepdgstrs(superlu_dist_options_t *options, int_t
        subsequent call to PDGSTRS. */
 
 /* skip fmod on CPU if using GPU solve*/
-if ( !(getenv("NEW3DSOLVETREECOMM") && getenv("SUPERLU_ACC_SOLVE"))){     
+if ( !(get_new3dsolvetreecomm() && get_acc_solve())){     
 	fmod = getfmod_newsolve(nlb, nsupers, supernodeMask, LUstruct, grid);
 }
 	int  nfrecvx = getNfrecvx_newsolve(nsupers, supernodeMask, LUstruct, grid);
@@ -2847,7 +2847,7 @@ if ( !(getenv("NEW3DSOLVETREECOMM") && getenv("SUPERLU_ACC_SOLVE"))){
 
 
 /* skip rtemp on CPU if using GPU solve*/
-if ( !(getenv("NEW3DSOLVETREECOMM") && getenv("SUPERLU_ACC_SOLVE"))){
+if ( !(get_new3dsolvetreecomm() && get_acc_solve())){
     sizertemp=ldalsum * nrhs;
     sizertemp = ((sizertemp + (aln_d - 1)) / aln_d) * aln_d;
     if ( !(rtemp = (double*)SUPERLU_MALLOC((sizertemp*num_thread + 1) * sizeof(double))) )
@@ -2924,7 +2924,7 @@ if ( !(getenv("NEW3DSOLVETREECOMM") && getenv("SUPERLU_ACC_SOLVE"))){
     
 
     /* skip fmod,leafsups,nleaf on CPU if using GPU solve*/
-    if ( !(getenv("NEW3DSOLVETREECOMM") && getenv("SUPERLU_ACC_SOLVE"))){
+    if ( !(get_new3dsolvetreecomm() && get_acc_solve())){
         if(procs==1){
             for (lk=0;lk<nsupers_i;++lk){
                 gb = myrow+lk*grid->nprow;  /* not sure */
@@ -2948,7 +2948,7 @@ if ( !(getenv("NEW3DSOLVETREECOMM") && getenv("SUPERLU_ACC_SOLVE"))){
                                 kcol = PCOL( gb, grid );
                                 if(mycol==kcol) { /* Diagonal process */
                                     /* skip fmod,leafsups,nleaf on CPU if using GPU solve*/
-                                    if ( !(getenv("NEW3DSOLVETREECOMM") && getenv("SUPERLU_ACC_SOLVE"))){    
+                                    if ( !(get_new3dsolvetreecomm() && get_acc_solve())){    
                                         if (fmod[lk*aln_i]==0 && supernodeMask[gb]){
                                                 leafsups[nleaf]=gb;
                                                 ++nleaf;
@@ -2976,7 +2976,7 @@ if ( !(getenv("NEW3DSOLVETREECOMM") && getenv("SUPERLU_ACC_SOLVE"))){
     }   
 
 /* skip fmod on CPU if using GPU solve*/
-if ( !(getenv("NEW3DSOLVETREECOMM") && getenv("SUPERLU_ACC_SOLVE"))){    
+if ( !(get_new3dsolvetreecomm() && get_acc_solve())){    
 	for (i = 0; i < nlb; ++i) fmod[i*aln_i] += frecv[i];
 }
 	if ( !(recvbuf_BC_fwd = (double*)SUPERLU_MALLOC(maxrecvsz*(nfrecvx+1) * sizeof(double))) )  // this needs to be optimized for 1D row mapping
@@ -3026,7 +3026,7 @@ if ( !(getenv("NEW3DSOLVETREECOMM") && getenv("SUPERLU_ACC_SOLVE"))){
 	// fflush(stdout);
 	// }
 
-    if (getenv("SUPERLU_ACC_SOLVE")) /* GPU trisolve*/
+    if (get_acc_solve()) /* GPU trisolve*/
     {
 #if defined(GPU_ACC) && defined(SLU_HAVE_LAPACK) && defined(GPU_SOLVE) 
 // #if 0 /* CPU trisolve*/
@@ -3612,7 +3612,7 @@ thread_id=0;
 		}
 #endif
 /* skip fmod on CPU if using GPU solve*/
-if ( !(getenv("NEW3DSOLVETREECOMM") && getenv("SUPERLU_ACC_SOLVE"))){    
+if ( !(get_new3dsolvetreecomm() && get_acc_solve())){    
 		SUPERLU_FREE(fmod);
 }
 		SUPERLU_FREE(frecv);
@@ -3673,7 +3673,7 @@ if ( !(getenv("NEW3DSOLVETREECOMM") && getenv("SUPERLU_ACC_SOLVE"))){
 		SUPERLU_FREE(stat_loc);
 
 /* skip rtemp on CPU if using GPU solve*/
-if ( !(getenv("NEW3DSOLVETREECOMM") && getenv("SUPERLU_ACC_SOLVE"))){        
+if ( !(get_new3dsolvetreecomm() && get_acc_solve())){        
 		SUPERLU_FREE(rtemp);
 }        
 		// SUPERLU_FREE(lsum);
@@ -3707,7 +3707,7 @@ if ( !(getenv("NEW3DSOLVETREECOMM") && getenv("SUPERLU_ACC_SOLVE"))){
     stat->utime[SOLVE] = SuperLU_timer_() - t1_sol;
 
 #if ( DEBUGlevel>=1 )
-    CHECK_MALLOC(iam, "Exit pdgstrs()");
+    CHECK_MALLOC(iam, "Exit ForwardSolve3d_newsolve_reusepdgstrs()");
 #endif
 
 
@@ -4198,7 +4198,7 @@ void dlsum_fmod_leaf_newsolve (
                         */
                     for (p = 0; p < grid->nprow; ++p)
                     {
-                        if ( fsendx_plist[lk][p] != EMPTY )
+                        if ( fsendx_plist[lk][p] != SLU_EMPTY )
                         {
                             pi = PNUM( p, ikcol, grid );
 #ifdef ISEND_IRECV
@@ -5204,7 +5204,7 @@ void BackSolve3d_newsolve_reusepdgstrs(superlu_dist_options_t *options, int_t n,
     // stat->utime[SOL_TOT] = 0.0;
 
 #if ( DEBUGlevel>=1 )
-    CHECK_MALLOC(iam, "Enter pdgstrs()");
+    CHECK_MALLOC(iam, "Enter BackSolve3d_newsolve_reusepdgstrs()");
 #endif
 
     // stat->ops[SOLVE] = 0.0;
@@ -5235,7 +5235,7 @@ void BackSolve3d_newsolve_reusepdgstrs(superlu_dist_options_t *options, int_t n,
     sizelsum = ((sizelsum + (aln_d - 1)) / aln_d) * aln_d;
 
 /* skip rtemp on CPU if using GPU solve*/
-if ( !(getenv("NEW3DSOLVETREECOMM") && getenv("SUPERLU_ACC_SOLVE"))){
+if ( !(get_new3dsolvetreecomm() && get_acc_solve())){
     sizertemp=ldalsum * nrhs;
     sizertemp = ((sizertemp + (aln_d - 1)) / aln_d) * aln_d;
     if ( !(rtemp = (double*)SUPERLU_MALLOC((sizertemp*num_thread + 1) * sizeof(double))) )
@@ -5269,7 +5269,7 @@ if ( !(getenv("NEW3DSOLVETREECOMM") && getenv("SUPERLU_ACC_SOLVE"))){
 
 
 /* skip bmod on CPU if using GPU solve*/
-if ( !(getenv("NEW3DSOLVETREECOMM") && getenv("SUPERLU_ACC_SOLVE"))){ 
+if ( !(get_new3dsolvetreecomm() && get_acc_solve())){ 
     bmod=  getBmod3d_newsolve(nlb, nsupers, supernodeMask, LUstruct, grid);
 }
     nbrecvx= getNbrecvX_newsolve(nsupers, supernodeMask, Urbs, Ucb_indptr, grid);
@@ -5285,7 +5285,7 @@ if ( !(getenv("NEW3DSOLVETREECOMM") && getenv("SUPERLU_ACC_SOLVE"))){
 
 
 /* skip lsum on CPU if using GPU solve*/
-if ( !(getenv("NEW3DSOLVETREECOMM") && getenv("SUPERLU_ACC_SOLVE"))){
+if ( !(get_new3dsolvetreecomm() && get_acc_solve())){
 #ifdef _OPENMP
 #pragma omp parallel default(shared) private(ii)
 	{
@@ -5392,7 +5392,7 @@ if ( !(getenv("NEW3DSOLVETREECOMM") && getenv("SUPERLU_ACC_SOLVE"))){
     }
 
 /* skip bmod/rootsups/nroot on CPU if using GPU solve*/
-if ( !(getenv("NEW3DSOLVETREECOMM") && getenv("SUPERLU_ACC_SOLVE"))){ 
+if ( !(get_new3dsolvetreecomm() && get_acc_solve())){ 
 	nrtree = 0;
 	nroot=0;
 	for (lk=0;lk<nsupers_i;++lk){
@@ -5431,7 +5431,7 @@ if ( !(getenv("NEW3DSOLVETREECOMM") && getenv("SUPERLU_ACC_SOLVE"))){
 }
     
 /* skip bmod on CPU if using GPU solve*/
-if ( !(getenv("NEW3DSOLVETREECOMM") && getenv("SUPERLU_ACC_SOLVE"))){ 
+if ( !(get_new3dsolvetreecomm() && get_acc_solve())){ 
 	for (i = 0; i < nlb; ++i) bmod[i*aln_i] += brecv[i];
 	// for (i = 0; i < nlb; ++i)printf("bmod[i]: %5d\n",bmod[i]);
 }
@@ -5469,7 +5469,7 @@ if ( !(getenv("NEW3DSOLVETREECOMM") && getenv("SUPERLU_ACC_SOLVE"))){
 
 
 
-if (getenv("SUPERLU_ACC_SOLVE")){  /* GPU trisolve*/
+if (get_acc_solve()){  /* GPU trisolve*/
 #if defined(GPU_ACC) && defined(SLU_HAVE_LAPACK) && defined(GPU_SOLVE)  
 // #if 0 /* CPU trisolve*/
 
@@ -5958,12 +5958,12 @@ xtrsTimer->tbs_compute += SuperLU_timer_() - tx;
 		}
 		SUPERLU_FREE(stat_loc);
 /* skip rtemp on CPU if using GPU solve*/
-if ( !(getenv("NEW3DSOLVETREECOMM") && getenv("SUPERLU_ACC_SOLVE"))){        
+if ( !(get_new3dsolvetreecomm() && get_acc_solve())){        
 		SUPERLU_FREE(rtemp);
 }
 
 /* skip bmod on CPU if using GPU solve*/
-if ( !(getenv("NEW3DSOLVETREECOMM") && getenv("SUPERLU_ACC_SOLVE"))){  
+if ( !(get_new3dsolvetreecomm() && get_acc_solve())){  
 		SUPERLU_FREE(bmod);
 }
 		SUPERLU_FREE(brecv);
@@ -6017,7 +6017,7 @@ if ( !(getenv("NEW3DSOLVETREECOMM") && getenv("SUPERLU_ACC_SOLVE"))){
     stat->utime[SOLVE] = SuperLU_timer_() - t1_sol;
 
 #if ( DEBUGlevel>=1 )
-    CHECK_MALLOC(iam, "Exit pdgstrs()");
+    CHECK_MALLOC(iam, "Exit BackSolve3d_newsolve_reusepdgstrs()");
 #endif
 
 
@@ -6545,7 +6545,7 @@ void dlsum_bmod_GG (
                      */
                     for (p = 0; p < grid->nprow; ++p)
                     {
-                        if ( bsendx_plist[lk1][p] != EMPTY )
+                        if ( bsendx_plist[lk1][p] != SLU_EMPTY )
                         {
                             pi = PNUM( p, gikcol, grid );
 #ifdef ISEND_IRECV
@@ -6732,7 +6732,7 @@ void dlsum_bmod_GG_newsolve (
                      */
                     for (p = 0; p < grid->nprow; ++p)
                     {
-                        if ( bsendx_plist[lk1][p] != EMPTY )
+                        if ( bsendx_plist[lk1][p] != SLU_EMPTY )
                         {
                             pi = PNUM( p, gikcol, grid );
 #ifdef ISEND_IRECV
@@ -6910,7 +6910,7 @@ int_t iBcastXk2Pck(int_t k, double* x, int nrhs,
     int_t kcol = PCOL (k, grid);
     for (int_t p = 0; p < Pr; ++p)
     {
-        if (sendList[lk][p] != EMPTY)
+        if (sendList[lk][p] != SLU_EMPTY)
         {
             int_t pi = PNUM (p, kcol, grid);
 
@@ -7404,7 +7404,7 @@ pdgstrs3d (superlu_dist_options_t *options, int_t n, dLUstruct_t * LUstruct,
     int_t nub = CEILING (nsupers, Pc);
 
 #if ( DEBUGlevel>=1 )
-    CHECK_MALLOC (iam, "Enter pdgstrs()");
+    CHECK_MALLOC (iam, "Enter pdgstrs3d()");
 #endif
 
     stat->ops[SOLVE] = 0.0;
@@ -7648,7 +7648,7 @@ pdgstrs3d (superlu_dist_options_t *options, int_t n, dLUstruct_t * LUstruct,
 
     printTRStimer(&xtrsTimer, grid3d);
 #if ( DEBUGlevel>=1 )
-    CHECK_MALLOC (iam, "Exit pdgstrs()");
+    CHECK_MALLOC (iam, "Exit pdgstrs3d()");
 #endif
 
     return;
@@ -7731,7 +7731,7 @@ pdgstrs3d_newsolve (superlu_dist_options_t *options, int_t n, dLUstruct_t * LUst
     int_t nub = CEILING (nsupers, Pc);
 
 #if ( DEBUGlevel>=1 )
-    CHECK_MALLOC (iam, "Enter pdgstrs()");
+    CHECK_MALLOC (iam, "Enter pdgstrs3d_newsolve()");
 #endif
 
     stat->ops[SOLVE] = 0.0;
@@ -7739,7 +7739,7 @@ pdgstrs3d_newsolve (superlu_dist_options_t *options, int_t n, dLUstruct_t * LUst
 
     k = SUPERLU_MAX (Llu->nfsendx, Llu->nbsendx) + nlb;
  /* skip send_req on CPU if using GPU solve*/
-if ( !(getenv("NEW3DSOLVETREECOMM") && getenv("SUPERLU_ACC_SOLVE"))){   
+if ( !(get_new3dsolvetreecomm() && get_acc_solve())){   
     if (!(send_req =
                  (MPI_Request *) SUPERLU_MALLOC (k * sizeof (MPI_Request))))
         ABORT ("Malloc fails for send_req[].");
@@ -7784,7 +7784,7 @@ if ( !(getenv("NEW3DSOLVETREECOMM") && getenv("SUPERLU_ACC_SOLVE"))){
 
 
 /* skip lsum on CPU if using GPU solve*/
-if ( !(getenv("NEW3DSOLVETREECOMM") && getenv("SUPERLU_ACC_SOLVE"))){
+if ( !(get_new3dsolvetreecomm() && get_acc_solve())){
 #ifdef _OPENMP
     if ( !(lsum = (double*)SUPERLU_MALLOC(sizelsum*num_thread * sizeof(double))))
 	ABORT("Malloc fails for lsum[].");
@@ -8006,7 +8006,7 @@ if ( !(getenv("NEW3DSOLVETREECOMM") && getenv("SUPERLU_ACC_SOLVE"))){
     /* Deallocate storage. */
 
 /* skip lsum on CPU if using GPU solve*/
-if ( !(getenv("NEW3DSOLVETREECOMM") && getenv("SUPERLU_ACC_SOLVE"))){    
+if ( !(get_new3dsolvetreecomm() && get_acc_solve())){    
     SUPERLU_FREE (lsum);
 }    
     SUPERLU_FREE (x);
@@ -8014,7 +8014,7 @@ if ( !(getenv("NEW3DSOLVETREECOMM") && getenv("SUPERLU_ACC_SOLVE"))){
 
 
 /* skip send_req on CPU if using GPU solve*/
-if ( !(getenv("NEW3DSOLVETREECOMM") && getenv("SUPERLU_ACC_SOLVE"))){
+if ( !(get_new3dsolvetreecomm() && get_acc_solve())){
     /*for (i = 0; i < Llu->SolveMsgSent; ++i) MPI_Request_free(&send_req[i]); */
     for (i = 0; i < Llu->SolveMsgSent; ++i)
         MPI_Wait (&send_req[i], &status);
@@ -8025,7 +8025,7 @@ if ( !(getenv("NEW3DSOLVETREECOMM") && getenv("SUPERLU_ACC_SOLVE"))){
 
     printTRStimer(&xtrsTimer, grid3d);
 #if ( DEBUGlevel>=1 )
-    CHECK_MALLOC (iam, "Exit pdgstrs()");
+    CHECK_MALLOC (iam, "Exit pdgstrs3d_newsolve()");
 #endif
 
     return;
@@ -8213,7 +8213,7 @@ int_t pdgsTrForwardSolve3d_newsolve(superlu_dist_options_t *options, int_t n, dL
         ABORT ("Malloc fails for rtemp[].");
 
 /* skip lsum on CPU if using GPU solve*/
-if ( !(getenv("NEW3DSOLVETREECOMM") && getenv("SUPERLU_ACC_SOLVE"))){
+if ( !(get_new3dsolvetreecomm() && get_acc_solve())){
     int_t ii = 0;
     for (int_t k = 0; k < nsupers; ++k)
     {
@@ -8251,7 +8251,7 @@ if ( !(getenv("NEW3DSOLVETREECOMM") && getenv("SUPERLU_ACC_SOLVE"))){
 
     double tx = SuperLU_timer_();
 
-if (getenv("NEW3DSOLVETREECOMM")){
+if (get_new3dsolvetreecomm()){
     ForwardSolve3d_newsolve_reusepdgstrs(options, n, LUstruct,
                                 ScalePermstruct, trf3Dpartition->supernodeMask, grid3d,
                                 x3d, lsum3d, nrhs, SOLVEstruct, stat, xtrsTimer);
@@ -8266,7 +8266,7 @@ if (getenv("NEW3DSOLVETREECOMM")){
     xtrsTimer->tfs_tree[0] = SuperLU_timer_() - tx;
     tx = SuperLU_timer_();
 /* skip send_req on CPU if using GPU solve*/
-if ( !(getenv("NEW3DSOLVETREECOMM") && getenv("SUPERLU_ACC_SOLVE"))){
+if ( !(get_new3dsolvetreecomm() && get_acc_solve())){
     for (int_t i = 0; i < Llu->SolveMsgSent; ++i)
     {
         MPI_Status status;
@@ -8440,7 +8440,7 @@ int_t pdgsTrBackSolve3d_newsolve(superlu_dist_options_t *options, int_t n, dLUst
 
 
 /* skip lsum on CPU if using GPU solve*/
-if ( !(getenv("NEW3DSOLVETREECOMM") && getenv("SUPERLU_ACC_SOLVE"))){
+if ( !(get_new3dsolvetreecomm() && get_acc_solve())){
     /*initilize lsum to zero*/
     for (int_t k = 0; k < nsupers; ++k)
     {
@@ -8471,7 +8471,7 @@ if ( !(getenv("NEW3DSOLVETREECOMM") && getenv("SUPERLU_ACC_SOLVE"))){
     Llu->SolveMsgSent = 0;
     double tx = SuperLU_timer_();
 
-if (getenv("NEW3DSOLVETREECOMM")){    
+if (get_new3dsolvetreecomm()){    
     BackSolve3d_newsolve_reusepdgstrs(options, n, LUstruct,
                                 trf3Dpartition->supernodeMask, grid3d,
                                 x3d, lsum3d, nrhs, SOLVEstruct, stat, xtrsTimer);

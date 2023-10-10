@@ -40,7 +40,7 @@ int_t Wait_LSend
     for (int_t pj = 0; pj < Pc; ++pj)
     {
         /* Wait for Isend to complete before using lsub/lusup. */
-        if (ToSendR[lk][pj] != EMPTY && pj != mycol)
+        if (ToSendR[lk][pj] != SLU_EMPTY && pj != mycol)
         {
             MPI_Wait (&send_req[pj], &status);
             MPI_Wait (&send_req[pj + Pc], &status);
