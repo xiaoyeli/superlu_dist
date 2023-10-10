@@ -1220,9 +1220,9 @@ pdgstrs(superlu_dist_options_t *options, int_t n, dLUstruct_t *LUstruct,
 #else
 	printf("only cusparse is implemented\n");
 	exit(0);
-#endif
-#else	
-	
+#endif // HAVE_CUDA
+#else // GPUREF
+
 	const int nwrp_block = 1; /* number of warps in each block */
 	const int warp_size = 32; /* number of threads per warp*/
 	gpuStream_t sid=0;
@@ -1230,9 +1230,9 @@ pdgstrs(superlu_dist_options_t *options, int_t n, dLUstruct_t *LUstruct,
 	gridinfo_t *d_grid = NULL;
 	double *d_x = NULL;
 	double *d_lsum = NULL;
-    int_t  *d_fmod = NULL;	
-#endif		
-#endif
+    int_t  *d_fmod = NULL;
+#endif // GPUREF
+#endif //#if defined(GPU_ACC) && defined(SLU_HAVE_LAPACK) && defined(GPU_SOLVE)  /* GPU trisolve*/
 
 
 // cudaProfilerStart();
