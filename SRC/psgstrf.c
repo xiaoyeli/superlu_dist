@@ -903,8 +903,15 @@ psgstrf(superlu_dist_options_t * options, int m, int n, float anorm,
 
     // creating streams
     streams = (gpuStream_t *) SUPERLU_MALLOC(sizeof(gpuStream_t)*nstreams);
-    for (i = 0; i < nstreams; ++i)
-      checkGPU( gpuStreamCreate(&streams[i]) );
+    for (i = 0; i < nstreams; ++i) {
+        // TODO: there is support for gpuStreamCreate in SYCL too but
+        // somehow segfault
+        #ifdef HAVE_SYCL
+        streams[i] = new sycl::queue( sycl_get_queue()->get_context(), sycl_get_queue()->get_device(), asyncHandler, sycl::property_list{sycl::property::queue::in_order{}} );
+        #else
+        checkGPU( gpuStreamCreate(&streams[i]) );
+        #endif
+    }
 
     stat->gpu_buffer += dword * ( max_row_size * sp_ienv_dist(3,options) // dA
                                   + bigu_size                     // dB
@@ -1915,7 +1922,16 @@ psgstrf(superlu_dist_options_t * options, int m, int n, float anorm,
         sycl::free( dC, *(sycl_get_queue()) );
         #endif
 
+	// destroy streams before freeing
+	for (i = 0; i < nstreams; i++) {
+        #ifdef HAVE_SYCL
+	    delete streams[i];
+        #else
+	    gpuStreamDestroy(streams[i]);
+        #endif
+	}
         SUPERLU_FREE( streams );
+
         SUPERLU_FREE( stream_end_col );
     } else {
         SUPERLU_FREE (bigV);    // allocated on CPU

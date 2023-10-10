@@ -190,22 +190,10 @@ if ( msg0 && msg2 ) {  /* L(:,k) and U(k,:) are not empty. */
 		printf("nbrow %d *ldu %d  =%d < ldt %d * max_row_size %d =%d \n",nbrow,ldu,nbrow*ldu,ldt,max_row_size,ldt*max_row_size ); fflush(stdout);
 		assert(nbrow*ldu<=ldt*max_row_size);
 #endif
-                std::cout << "1. value of memcpy2D: " << nbrow*sizeof(double) << ", " << nsupr*sizeof(double) << ", " << nbrow*sizeof(double) << ", " << ldu << std::endl;
-		/* streams[0]->ext_oneapi_memcpy2d(dA, nbrow*sizeof(double), */
-		/* 		  &lusup[luptr+(knsupc-ldu)*nsupr], */
-		/* 		  nsupr*sizeof(double), nbrow*sizeof(double), */
-		/* 		  ldu); */
-
-                /* dpct::async_dpct_memcpy(dA, nbrow*sizeof(double), */
-                /*                  &lusup[luptr+(knsupc-ldu)*nsupr], */
-                /*                  nsupr*sizeof(double), nbrow*sizeof(double), */
-                /*                  ldu, dpct::host_to_device, *(streams[0])); */
-                
 		gpuMemcpy2DAsync(dA, size_t(nbrow*sizeof(double)),
 				 &lusup[luptr+(knsupc-ldu)*nsupr],
 				 size_t(nsupr*sizeof(double)), size_t(nbrow*sizeof(double)),
 				 size_t(ldu), gpuMemcpyHostToDevice, streams[0]);
-                std::cout << "2. value of memcpy2D: " << nbrow*sizeof(double) << ", " << nsupr*sizeof(double) << ", " << nbrow*sizeof(double) << ", " << ldu << std::endl;                
 	    }
 
 	    for (int i = 0; i < num_streams_used; ++i) { // streams on GPU

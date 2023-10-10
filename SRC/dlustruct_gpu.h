@@ -44,8 +44,6 @@ void check(gpuError_t result, char const *const func, const char *const file, in
 #define checkGPUErrors(val)  check ( (val), #val, __FILE__, __LINE__ )
 #endif // #if defined(HAVE_CUDA) || defined(HAVE_HIP)
 
-#ifdef GPU_ACC
-
 typedef struct //SCUbuf_gpu_
 {
     /*Informations for various buffers*/
@@ -152,8 +150,6 @@ typedef struct //sluGPU_t_
     #endif
   
 } dsluGPU_t;
-
-#endif // GPU_ACC
 
 #ifndef HAVE_SYCL
 #ifdef __cplusplus
