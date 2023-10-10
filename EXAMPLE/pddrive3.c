@@ -1,16 +1,16 @@
 /*! \file
 Copyright (c) 2003, The Regents of the University of California, through
-Lawrence Berkeley National Laboratory (subject to receipt of any required 
-approvals from U.S. Dept. of Energy) 
+Lawrence Berkeley National Laboratory (subject to receipt of any required
+approvals from U.S. Dept. of Energy)
 
-All rights reserved. 
+All rights reserved.
 
 The source code is distributed under BSD license, see the file License.txt
 at the top-level directory.
 */
 
 
-/*! @file 
+/*! @file
  * \brief Driver program for PDGSSVX example
  *
  * <pre>
@@ -23,6 +23,22 @@ at the top-level directory.
 
 #include <math.h>
 #include "superlu_ddefs.h"
+
+void exit_test(int myIam, gridinfo_t* myGrid) {
+      /* ------------------------------------------------------------
+         RELEASE THE SUPERLU PROCESS GRID.
+         ------------------------------------------------------------*/
+      superlu_gridexit(myGrid);
+
+      /* ------------------------------------------------------------
+         TERMINATES THE MPI EXECUTION ENVIRONMENT.
+         ------------------------------------------------------------*/
+      MPI_Finalize();
+
+#if ( DEBUGlevel>=1 )
+      CHECK_MALLOC(myIam, "Exit main()");
+#endif
+}
 
 /*! \brief
  *
@@ -77,9 +93,9 @@ int main(int argc, char *argv[])
     nrhs = 1;   /* Number of right-hand side. */
 
     /* ------------------------------------------------------------
-       INITIALIZE MPI ENVIRONMENT. 
+       INITIALIZE MPI ENVIRONMENT.
        ------------------------------------------------------------*/
-    MPI_Init_thread( &argc, &argv, MPI_THREAD_MULTIPLE, &omp_mpi_level); 
+    MPI_Init_thread( &argc, &argv, MPI_THREAD_MULTIPLE, &omp_mpi_level);
 
     /* Parse command line argv[]. */
     for (cpp = argv+1; *cpp; ++cpp) {
@@ -99,7 +115,7 @@ int main(int argc, char *argv[])
 		        break;
 	    }
 	} else { /* Last arg is considered a filename */
-	    if ( !(fp = fopen(*cpp, "r")) ) {
+            if ( !(fp = ::fopen(*cpp, "r")) ) {
                 ABORT("File does not exist");
             }
 	    break;
@@ -107,13 +123,17 @@ int main(int argc, char *argv[])
     }
 
     /* ------------------------------------------------------------
-       INITIALIZE THE SUPERLU PROCESS GRID. 
+       INITIALIZE THE SUPERLU PROCESS GRID.
        ------------------------------------------------------------*/
     superlu_gridinit(MPI_COMM_WORLD, nprow, npcol, &grid);
 
     /* Bail out if I do not belong in the grid. */
     iam = grid.iam;
-    if ( iam == -1 )	goto out;
+    if ( iam == -1 ) {
+      exit_test(iam, &grid);
+      return;
+    }
+
     if ( !iam ) {
 	int v_major, v_minor, v_bugfix;
 #ifdef __INTEL_COMPILER
@@ -128,7 +148,7 @@ int main(int argc, char *argv[])
         printf("Process grid:\t\t%d X %d\n", (int)grid.nprow, (int)grid.npcol);
 	fflush(stdout);
     }
-    
+
 #if ( DEBUGlevel>=1 )
     CHECK_MALLOC(iam, "Enter main()");
 #endif
@@ -137,11 +157,11 @@ int main(int argc, char *argv[])
 	if((*cpp)[ii]=='.'){
   	    postfix = &((*cpp)[ii+1]);
 	}
-    }	
+    }
     // printf("%s\n", postfix);
 
     /* ------------------------------------------------------------
-       GET THE MATRIX FROM FILE AND SETUP THE RIGHT HAND SIDE. 
+       GET THE MATRIX FROM FILE AND SETUP THE RIGHT HAND SIDE.
        ------------------------------------------------------------*/
     dcreate_matrix_postfix(&A, nrhs, &b, &ldb, &xtrue, &ldx, fp, postfix, &grid);
 
@@ -214,7 +234,7 @@ int main(int argc, char *argv[])
         /* Check the accuracy of the solution. */
         pdinf_norm_error(iam, m_loc, nrhs, b, ldb, xtrue, ldx, grid.comm);
     }
-    
+
     PStatPrint(&options, &stat, &grid);        /* Print the statistics. */
     Destroy_CompRowLoc_Matrix_dist(&A); /* Deallocate storage of matrix A.  */
     SUPERLU_FREE(b);                 /* Free storage of right-hand side.    */
@@ -268,7 +288,7 @@ int main(int argc, char *argv[])
        ------------------------------------------------------------*/
     PStatFree(&stat);
     Destroy_CompRowLoc_Matrix_dist(&A); /* Deallocate storage of matrix A.  */
-    dDestroy_LU(n, &grid, &LUstruct); /* Deallocate storage associated with    
+    dDestroy_LU(n, &grid, &LUstruct); /* Deallocate storage associated with
 					the L and U matrices.               */
     dScalePermstructFree(&ScalePermstruct);
     dLUstructFree(&LUstruct);         /* Deallocate the structure of L and U.*/
@@ -280,20 +300,7 @@ int main(int argc, char *argv[])
     SUPERLU_FREE(berr);
     fclose(fp);
 
-    /* ------------------------------------------------------------
-       RELEASE THE SUPERLU PROCESS GRID.
-       ------------------------------------------------------------*/
-out:
-    superlu_gridexit(&grid);
-
-    /* ------------------------------------------------------------
-       TERMINATES THE MPI EXECUTION ENVIRONMENT.
-       ------------------------------------------------------------*/
-    MPI_Finalize();
-
-#if ( DEBUGlevel>=1 )
-    CHECK_MALLOC(iam, "Exit main()");
-#endif
+    exit_test(iam, &grid);
 
 }
 

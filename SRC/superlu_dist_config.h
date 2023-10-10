@@ -7,13 +7,13 @@
 /* #undef HAVE_HIP */
 
 /* Enable SYCL */
-/* #undef HAVE_SYCL */
+#define HAVE_SYCL TRUE
 
 /* Enable DPCPP */
-/* #undef HAVE_DPCPP */
+#define HAVE_DPCPP TRUE
 
 /* Enable parmetis */
-#define HAVE_PARMETIS TRUE
+/* #undef HAVE_PARMETIS */
 
 /* Enable colamd */
 /* #undef HAVE_COLAMD */

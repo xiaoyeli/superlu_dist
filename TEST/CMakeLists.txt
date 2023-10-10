@@ -74,12 +74,16 @@ endfunction(add_superlu_dist_tests)
 if(enable_double)
   set(DTEST pdtest.c dcreate_matrix.c pdcompute_resid.c)
 
+  # For SYCL, the source- & linker-language needs to be CXX
   if (TPL_ENABLE_SYCLLIB)
     set_source_files_properties(${DTEST} PROPERTIES LANGUAGE CXX)
+    add_executable(pdtest ${DTEST})
+    set_target_properties(pdtest PROPERTIES LINKER_LANGUAGE CXX)
+  else ()
+    add_executable(pdtest ${DTEST})
+    set_target_properties(pdtest PROPERTIES LINKER_LANGUAGE C)
   endif (TPL_ENABLE_SYCLLIB)
 
-  add_executable(pdtest ${DTEST})
-  set_target_properties(pdtest PROPERTIES LINKER_LANGUAGE C)  
   target_link_libraries(pdtest PUBLIC ${all_link_libs})
   add_superlu_dist_tests(pdtest g20.rua)
 endif()

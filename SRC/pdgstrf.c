@@ -846,7 +846,7 @@ pdgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
         dA = nullptr;
         dA = sycl::malloc_device<double>(max_row_size * sp_ienv_dist(3, options), *(sycl_get_queue()));
         if (dA == nullptr) {
-          fprintf(stderr, "!!!! Error in allocating A in the device of %ld bytes\n",m*k*sizeof(double));
+          fprintf(stderr, "!!!! Error in allocating A in the device of %ld bytes\n",max_row_size * sp_ienv_dist(3, options)*sizeof(double));
           return 1;
         }
 
@@ -854,7 +854,7 @@ pdgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
         dB = nullptr;
         dB = sycl::malloc_device<double>(bigu_size, *(sycl_get_queue()));
         if (dB == nullptr) {
-          fprintf(stderr, "!!!! Error in allocating B in the device of %ld bytes\n",n*k*sizeof(double));
+          fprintf(stderr, "!!!! Error in allocating B in the device of %ld bytes\n",bigu_size*sizeof(double));
           return 1;
         }
 
@@ -875,14 +875,14 @@ pdgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
 
         gpuStat = gpuMalloc( (void**)&dA, max_row_size * sp_ienv_dist(3,options) * sizeof(double));
         if (gpuStat!= gpuSuccess) {
-          fprintf(stderr, "!!!! Error in allocating A in the device of %ld bytes\n",m*k*sizeof(double));
+          fprintf(stderr, "!!!! Error in allocating A in the device of %ld bytes\n",max_row_size * sp_ienv_dist(3,options)*sizeof(double));
           return 1;
         }
 
         // size of B should be bigu_size
         gpuStat = gpuMalloc((void**)&dB, bigu_size * sizeof(double));
         if (gpuStat!= gpuSuccess) {
-          fprintf(stderr, "!!!! Error in allocating B in the device of %ld bytes\n",n*k*sizeof(double));
+          fprintf(stderr, "!!!! Error in allocating B in the device of %ld bytes\n",bigu_size*sizeof(double));
           return 1;
         }
 

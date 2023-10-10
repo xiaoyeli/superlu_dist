@@ -207,8 +207,9 @@ do {                                                                    \
 
 #elif defined(HAVE_SYCL)
 
+//#include <dpct/dpct.hpp>
 #include "sycl_device.hpp"
-//#include "syclmemcpy2D.hpp"
+#include "syclmemcpy2D.hpp"
 #include <oneapi/mkl/blas.hpp>
 
 #define __global__
@@ -243,8 +244,8 @@ using gpuDoubleComplex = std::complex<double>;
     *free = sycl_get_queue()->get_device().get_info<sycl::ext::intel::info::device::free_memory>(); \
     *total = sycl_get_queue()->get_device().get_info<sycl::info::device::global_mem_size>(); \
   } while(0)
-#define gpuMemcpy2DAsync(dst, dpitch, src, spitch, width, height, kind, stream) (stream->ext_oneapi_memcpy2d(dst, dpitch, src, spitch, width, height))
-//#define gpuMemcpy2DAsync(dst, dpitch, src, spitch, width, height, kind, stream) syclMemcpy2DAsync(stream, dst, dpitch, src, spitch, width, height)
+//#define gpuMemcpy2DAsync(dst, dpitch, src, spitch, width, height, kind, stream) (stream->ext_oneapi_memcpy2d(dst, dpitch, src, spitch, width, height))
+#define gpuMemcpy2DAsync(dst, dpitch, src, spitch, width, height, kind, stream) syclMemcpy2DAsync(stream, dst, dpitch, src, spitch, width, height)
 #define gpuMalloc(ptr, size) ((*ptr) = (void*)sycl::malloc_device((size), *sycl_get_queue()))
 #define gpuMallocHost(ptr, size) ((*ptr) = (void*)sycl::malloc_host((size), *sycl_get_queue()))
 #define gpuFree(ptr) (sycl::free(ptr, sycl_get_queue()->get_context()))

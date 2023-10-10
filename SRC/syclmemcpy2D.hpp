@@ -41,7 +41,9 @@ syclMemcpy2DAsync(sycl::queue *q,
     unsigned char *to_ptr = to_surface;
     const unsigned char *from_ptr = from_surface;
     for (size_t y = 0; y < size.get(1); ++y) {
+      std::cout << "1. calling memcpy: " << size.get(0) << std::endl;
       q->memcpy(to_ptr, from_ptr, size.get(0)).wait();
+      std::cout << "2. calling memcpy: " << size.get(0) << std::endl;      
       to_ptr += to_range.get(0);
       from_ptr += from_range.get(0);
     }

@@ -25,6 +25,22 @@ at the top-level directory.
 #include <math.h>
 #include "superlu_ddefs.h"
 
+void exit_test(int myIam, gridinfo_t* myGrid) {
+      /* ------------------------------------------------------------
+         RELEASE THE SUPERLU PROCESS GRID.
+         ------------------------------------------------------------*/
+      superlu_gridexit(myGrid);
+
+      /* ------------------------------------------------------------
+         TERMINATES THE MPI EXECUTION ENVIRONMENT.
+         ------------------------------------------------------------*/
+      MPI_Finalize();
+
+#if ( DEBUGlevel>=1 )
+      CHECK_MALLOC(myIam, "Exit main()");
+#endif
+}
+
 /*! \brief
  *
  * <pre>
@@ -92,7 +108,7 @@ int main(int argc, char *argv[])
 		        break;
 	    }
 	} else { /* Last arg is considered a filename */
-	    if ( !(fp = fopen(*cpp, "r")) ) {
+          if ( !(fp = ::fopen(*cpp, "r")) ) {
                 ABORT("File does not exist");
             }
 	    break;
@@ -106,13 +122,22 @@ int main(int argc, char *argv[])
 
     /* Bail out if I do not belong in the grid. */
     iam = grid.iam;
-    if ( iam == -1 )	goto out;
+    if ( iam == -1 ) {
+      exit_test(iam, &grid);
+      return;
+    }
+
     if ( !iam ) {
 	int v_major, v_minor, v_bugfix;
+
+        // C-specific prints (not applicable to SYCL) since SYCL is
+        // only compliant from C++17 onwards
+        #ifndef HAVE_SYCL
 #ifdef __INTEL_COMPILER
 	printf("__INTEL_COMPILER is defined\n");
 #endif
 	printf("__STDC_VERSION__ %ld\n", __STDC_VERSION__);
+        #endif
 
 	superlu_dist_GetVersionNumber(&v_major, &v_minor, &v_bugfix);
 	printf("Library version:\t%d.%d.%d\n", v_major, v_minor, v_bugfix);
@@ -286,20 +311,7 @@ int main(int argc, char *argv[])
     SUPERLU_FREE(berr);
     fclose(fp);
 
-    /* ------------------------------------------------------------
-       RELEASE THE SUPERLU PROCESS GRID.
-       ------------------------------------------------------------*/
-out:
-    superlu_gridexit(&grid);
-
-    /* ------------------------------------------------------------
-       TERMINATES THE MPI EXECUTION ENVIRONMENT.
-       ------------------------------------------------------------*/
-    MPI_Finalize();
-
-#if ( DEBUGlevel>=1 )
-    CHECK_MALLOC(iam, "Exit main()");
-#endif
+    exit_test(iam, &grid);
 
 }
 

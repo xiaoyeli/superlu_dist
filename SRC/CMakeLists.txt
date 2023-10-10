@@ -345,7 +345,7 @@ if(HIP_FOUND)
 endif()
 
 if(TPL_ENABLE_SYCLLIB)
-  target_link_libraries( superlu_dist PUBLIC "-fsycl -fsycl-targets=spir64_gen -Xsycl-target-backend \"-device 12.60.7\"" )
+  #target_link_libraries( superlu_dist PUBLIC "-fsycl -fsycl-targets=spir64_gen -Xsycl-target-backend \"-device 12.60.7\"" )
 endif()
 
 if(OpenMP_FOUND)

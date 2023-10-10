@@ -25,6 +25,38 @@ at the top-level directory.
 #include <math.h>
 #include "superlu_sdefs.h"
 
+void exit_test() {
+    /* ------------------------------------------------------------
+       RELEASE THE SUPERLU PROCESS GRID.
+       ------------------------------------------------------------*/
+    if ( batch ) {
+        result_min[0] = stat.utime[FACT];   
+        result_min[1] = stat.utime[SOLVE];  
+        result_max[0] = stat.utime[FACT];   
+        result_max[1] = stat.utime[SOLVE];    
+        MPI_Allreduce(MPI_IN_PLACE, result_min, 2, MPI_FLOAT,MPI_MIN, MPI_COMM_WORLD);
+        MPI_Allreduce(MPI_IN_PLACE, result_max, 2, MPI_FLOAT,MPI_MAX, MPI_COMM_WORLD);
+        if (!myrank) {
+            printf("Batch solves returning data:\n");
+            printf("    Factor time over all grids.  Min: %8.4f Max: %8.4f\n",result_min[0], result_max[0]);
+                        printf("    Solve time over all grids.  Min: %8.4f Max: %8.4f\n",result_min[1], result_max[1]);
+            printf("**************************************************\n");
+            fflush(stdout);
+        }
+    }
+    
+    superlu_gridexit(&grid);
+    if ( iam != -1 ) PStatFree(&stat);
+    
+    /* ------------------------------------------------------------
+       TERMINATES THE MPI EXECUTION ENVIRONMENT.
+       ------------------------------------------------------------*/
+    MPI_Finalize();
+
+#if ( DEBUGlevel>=1 )
+    CHECK_MALLOC(iam, "Exit main()");
+#endif
+}
 /*! \brief
  *
  * <pre>
@@ -268,6 +300,8 @@ int main(int argc, char *argv[])
 	
     /* Bail out if I do not belong in the grid. */
     iam = grid.iam;
+    if ( (iam >= nprow * npcol) || (iam == -1) ) goto out;
+    
     if ( (iam >= nprow * npcol) || (iam == -1) ) goto out;
     if ( !iam ) {
 	int v_major, v_minor, v_bugfix;

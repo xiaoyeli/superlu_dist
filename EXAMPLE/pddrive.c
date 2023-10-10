@@ -162,7 +162,7 @@ int main(int argc, char *argv[])
                         break;
 	    }
 	} else { /* Last arg is considered a filename */
-	    if ( !(fp = fopen(*cpp, "r")) ) {
+            if ( !(fp = ::fopen(*cpp, "r")) ) {
                 ABORT("File does not exist");
             }
 	    break;
@@ -170,11 +170,11 @@ int main(int argc, char *argv[])
     }
 
     /* Command line input to modify default options */
-    if (rowperm != -1) options.RowPerm = rowperm;
-    if (colperm != -1) options.ColPerm = colperm;
+    if (rowperm != -1) options.RowPerm = (rowperm_t) rowperm;
+    if (colperm != -1) options.ColPerm = (colperm_t) colperm;
     if (lookahead != -1) options.num_lookaheads = lookahead;
-    if (ir != -1) options.IterRefine = ir;
-    if (symbfact != -1) options.ParSymbFact = symbfact;
+    if (ir != -1) options.IterRefine = (IterRefine_t) ir;
+    if (symbfact != -1) options.ParSymbFact = (yes_no_t) symbfact;
 
     /* In the batch mode: create multiple SuperLU grids,
         each grid solving one linear system. */
@@ -183,7 +183,7 @@ int main(int argc, char *argv[])
 	   INITIALIZE MULTIPLE SUPERLU PROCESS GRIDS. 
 	   ------------------------------------------------------------*/
         MPI_Comm_rank(MPI_COMM_WORLD, &myrank);
-        usermap = SUPERLU_MALLOC(nprow*npcol * sizeof(int));
+        usermap = (int*) SUPERLU_MALLOC(nprow*npcol * sizeof(int));
         ldumap = nprow;
 	
         /* Assuming each grid uses the same number of nprow and npcol */
@@ -214,10 +214,12 @@ int main(int argc, char *argv[])
             gpuFree(0);
             double t2 = SuperLU_timer_();    
             if(!myrank)printf("first gpufree time: %7.4f\n",t2-t1);
+            #ifndef HAVE_SYCL
             gpublasHandle_t hb;           
             gpublasCreate(&hb);
             if(!myrank)printf("first blas create time: %7.4f\n",SuperLU_timer_()-t2);
             gpublasDestroy(hb);
+            #endif
         }
 #endif
         // printf("grid.iam %5d, myrank %5d\n",grid.iam,myrank);
@@ -237,10 +239,12 @@ int main(int argc, char *argv[])
             gpuFree(0);
             double t2 = SuperLU_timer_();    
             if(!myrank)printf("first gpufree time: %7.4f\n",t2-t1);
+            #ifndef HAVE_SYCL
             gpublasHandle_t hb;           
             gpublasCreate(&hb);
             if(!myrank)printf("first blas create time: %7.4f\n",SuperLU_timer_()-t2);
             gpublasDestroy(hb);
+            #endif
 	}
 #endif
     }
@@ -272,10 +276,15 @@ int main(int argc, char *argv[])
     if ( (iam >= nprow * npcol) || (iam == -1) ) goto out;
     if ( !iam ) {
 	int v_major, v_minor, v_bugfix;
+
+        // C-specific prints (not applicable to SYCL) since SYCL is
+        // only compliant from C++17 onwards
+        #ifndef HAVE_SYCL
 #ifdef __INTEL_COMPILER
-	printf("__INTEL_COMPILER is defined\n");
+        printf("__INTEL_COMPILER is defined\n");
 #endif
-	printf("__STDC_VERSION__ %ld\n", __STDC_VERSION__);
+        printf("__STDC_VERSION__ %ld\n", __STDC_VERSION__);
+        #endif
 
 	superlu_dist_GetVersionNumber(&v_major, &v_minor, &v_bugfix);
 	printf("Library version:\t%d.%d.%d\n", v_major, v_minor, v_bugfix);
