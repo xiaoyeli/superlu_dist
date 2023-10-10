@@ -79,22 +79,8 @@ private:
   mutable std::mutex m_mutex;
 
   dev_mgr() {
-    std::vector<sycl::device> sycl_all_devs =
-      sycl::device::get_devices(sycl::info::device_type::gpu);
-
-    for(auto& dev: sycl_all_devs) {
-      if(dev.get_info<sycl::info::device::partition_max_sub_devices>() > 0) {
-	auto subDevicesDomainNuma =
-	  dev.create_sub_devices<sycl::info::partition_property::partition_by_affinity_domain>(
-	    sycl::info::partition_affinity_domain::numa);
-	for(auto& tile: subDevicesDomainNuma) {
-	  _queues.push_back(new sycl::queue(tile, asyncHandler));
-	}
-      }
-      else {
-	_queues.push_back(new sycl::queue(dev, asyncHandler));
-      }
-    }
+    sycl::device dev(sycl::gpu_selector_v);
+    _queues.push_back(new sycl::queue(dev, asyncHandler, sycl::property_list{sycl::property::queue::in_order{}}));
   }
 
   void check_id(int id) const {
