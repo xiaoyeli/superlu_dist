@@ -23,6 +23,46 @@ cudaError_t checkCudaLocal(cudaError_t result)
     return result;
 }
 
+template <class T>
+struct UnaryOffsetPtrAssign
+{
+	T *base_mem, **ptrs;
+	size_t* offsets;
+	
+    UnaryOffsetPtrAssign(T *base_mem, size_t* offsets, T **ptrs)
+	{
+		this->base_mem = base_mem;
+		this->offsets = offsets;
+		this->ptrs = ptrs;
+	}
+	
+    inline __host__ __device__ void operator()(const size_t &index) const
+    {
+        ptrs[index] = base_mem + offsets[index];
+    }
+};
+
+template<class T>
+void generateOffsetPointersT(T *base_mem, long int *offsets, T **ptrs, size_t num_arrays)
+{
+    UnaryOffsetPtrAssign<T> offset_ptr_functor(base_mem, offsets, ptrs);
+
+    thrust::for_each(
+        thrust::system::cuda::par, thrust::counting_iterator<long int>(0),
+        thrust::counting_iterator<long int>(num_arrays), offset_ptr_functor
+    );
+}
+
+void generateOffsetPointers(double *base_mem, long int *offsets, double **ptrs, size_t num_arrays)
+{
+	generateOffsetPointersT<double>(base_mem, offsets, ptrs, num_arrays);
+}
+
+void generateOffsetPointers(int *base_mem, long int *offsets, int **ptrs, size_t num_arrays)
+{
+	generateOffsetPointersT<int>(base_mem, offsets, ptrs, num_arrays);
+}
+
 __global__ void indirectCopy(double *dest, double *src, int_t *idx, int n)
 {
     int i = blockIdx.x * blockDim.x + threadIdx.x;
@@ -990,6 +1030,29 @@ int_t LUstruct_v100::setLUstruct_GPU()
     // TODO: these are serialized workspaces, so the allocations can be shared 
     A_gpu.marshall_data.setBatchSize(num_dfbufs);
     A_gpu.sc_marshall_data.setBatchSize(num_dfbufs);
+
+    ///////////////////////////////////////////////////////////////////////////
+    // New intermediate code for batched routine 
+    ///////////////////////////////////////////////////////////////////////////
+
+    d_localLU.Lrowind_bc_cnt = host_Llu->Lrowind_bc_cnt;
+    gpuErrchk( cudaMalloc(&(d_localLU.Lrowind_bc_dat), d_localLU.Lrowind_bc_cnt * sizeof(int_t)) );
+    gpuErrchk( cudaMalloc(&(d_localLU.Lrowind_bc_offset), nsupers * sizeof(long int)) );
+    gpuErrchk( cudaMalloc(&(d_localLU.Lrowind_bc_ptr), nsupers * sizeof(int_t*)) );
+
+    d_localLU.Lnzval_bc_cnt = host_Llu->Lnzval_bc_cnt;
+    gpuErrchk( cudaMalloc(&(d_localLU.Lnzval_bc_dat), d_localLU.Lnzval_bc_cnt * sizeof(double)) );
+    gpuErrchk( cudaMalloc(&(d_localLU.Lnzval_bc_offset), nsupers * sizeof(long int)) );
+    gpuErrchk( cudaMalloc(&(d_localLU.Lnzval_bc_ptr), nsupers * sizeof(double*)) );
+
+    // Generate the pointers using the offsets 
+    generateOffsetPointers(d_localLU.Lrowind_bc_dat, d_localLU.Lrowind_bc_offset, d_localLU.Lrowind_bc_ptr, nsupers);
+    generateOffsetPointers(d_localLU.Lnzval_bc_dat, d_localLU.Lnzval_bc_offset, d_localLU.Lnzval_bc_ptr, nsupers);
+
+    // Copy the index and nzval data over to the GPU 
+    gpuErrchk( cudaMemcpy(d_localLU.Lrowind_bc_dat, host_Llu->Lrowind_bc_dat, d_localLU.Lrowind_bc_cnt * sizeof(int_t), cudaMemcpyHostToDevice) );
+    gpuErrchk( cudaMemcpy(d_localLU.Lnzval_bc_dat, host_Llu->Lnzval_bc_dat, d_localLU.Lnzval_bc_cnt * sizeof(double), cudaMemcpyHostToDevice) );
+
     // TODO: where should these be freed?
     // Allocate GPU copy for the node list 
     gpuErrchk(cudaMalloc(&(A_gpu.dperm_c_supno), sizeof(int) * mx_fsize));
@@ -1121,6 +1184,38 @@ struct MarshallLUFunc {
     }
 };
 
+struct MarshallLUFunc_flat {
+    int k_st, *ld_batch, *dim_batch;
+    double** diag_ptrs, **Lnzval_bc_ptr;
+    int** Lrowind_bc_ptr, *dperm_c_supno, *xsup;
+
+    MarshallLUFunc_flat(
+        int k_st, double** diag_ptrs, int *ld_batch, int *dim_batch, double** Lnzval_bc_ptr,
+        int** Lrowind_bc_ptr, int *dperm_c_supno, int *xsup
+    )
+    {
+        this->k_st = k_st;
+        this->ld_batch = ld_batch;
+        this->dim_batch = dim_batch;
+        this->diag_ptrs = diag_ptrs;
+
+        this->Lnzval_bc_ptr = Lnzval_bc_ptr;
+        this->Lrowind_bc_ptr = Lrowind_bc_ptr;
+        this->dperm_c_supno = dperm_c_supno;
+        this->xsup = xsup;
+    }
+    
+    __device__ void operator()(const unsigned int &i) const
+    {   
+        int k = dperm_c_supno[k_st + i];
+        int *Lrowind_bc = Lrowind_bc_ptr[k];
+
+        diag_ptrs[i] = Lnzval_bc_ptr[k];
+        ld_batch[i] = Lrowind_bc[1];
+        dim_batch[i] = SuperSize(k);
+    }
+};
+
 struct MarshallTRSMUFunc {
     int k_st, *diag_ld_batch, *diag_dim_batch, *panel_ld_batch, *panel_dim_batch;
     double** diag_ptrs, **panel_ptrs;
@@ -1210,6 +1305,61 @@ struct MarshallTRSMLFunc {
             panel_dim_batch[i] = len;
             diag_ptrs[i] = lpanel.blkPtr(0);
             diag_ld_batch[i] = lpanel.LDA();
+            diag_dim_batch[i] = ksupc;
+        }
+        else
+        {
+            panel_ptrs[i] = diag_ptrs[i] = NULL;
+            panel_ld_batch[i] = diag_ld_batch[i] = 1;
+            panel_dim_batch[i] = diag_dim_batch[i] = 0;
+        }    
+    }
+};
+
+
+struct MarshallTRSMLFunc_flat {
+    int k_st, *diag_ld_batch, *diag_dim_batch, *panel_ld_batch, *panel_dim_batch;
+    double** diag_ptrs, **panel_ptrs, **Lnzval_bc_ptr;
+    int** Lrowind_bc_ptr, *dperm_c_supno, *xsup;
+
+    MarshallTRSMLFunc_flat(
+        int k_st, double** diag_ptrs, int *diag_ld_batch, int *diag_dim_batch, double** panel_ptrs,
+        int *panel_ld_batch, int *panel_dim_batch, double** Lnzval_bc_ptr, int** Lrowind_bc_ptr, 
+        int *dperm_c_supno, int *xsup
+    )
+    {
+        this->k_st = k_st;
+        this->diag_ptrs = diag_ptrs;
+        this->diag_ld_batch = diag_ld_batch;
+        this->diag_dim_batch = diag_dim_batch;
+        this->panel_ptrs = panel_ptrs;
+        this->panel_ld_batch = panel_ld_batch;
+        this->panel_dim_batch = panel_dim_batch;
+
+        this->Lnzval_bc_ptr = Lnzval_bc_ptr;
+        this->Lrowind_bc_ptr = Lrowind_bc_ptr;
+        this->dperm_c_supno = dperm_c_supno;
+        this->xsup = xsup;
+    }
+    
+    __device__ void operator()(const unsigned int &i) const
+    {
+        int k = dperm_c_supno[k_st + i];
+        int ksupc = SuperSize(k);
+        int *Lrowind_bc = Lrowind_bc_ptr[k];
+        double* Lnzval = Lnzval_bc_ptr[k];
+
+        if(!Lnzval && !Lrowind_bc)
+        {
+            int diag_block_offset = Lrowind_bc[BC_HEADER + 1];
+            int nzrows = Lrowind_bc[1];
+            int len = nzrows - diag_block_offset;
+
+            panel_ptrs[i] = Lnzval + diag_block_offset;
+            panel_ld_batch[i] = nzrows;
+            panel_dim_batch[i] = len;
+            diag_ptrs[i] = Lnzval;
+            diag_ld_batch[i] = nzrows;
             diag_dim_batch[i] = ksupc;
         }
         else
@@ -1433,7 +1583,12 @@ void LUstruct_v100::marshallBatchedLUData(int k_st, int k_end, int_t *perm_c_sup
     LUMarshallData& mdata = A_gpu.marshall_data;
     mdata.batchsize = k_end - k_st;
     
-    MarshallLUFunc func(k_st, mdata.dev_diag_ptrs, mdata.dev_diag_ld_array, mdata.dev_diag_dim_array, dA_gpu);
+    // MarshallLUFunc func(k_st, mdata.dev_diag_ptrs, mdata.dev_diag_ld_array, mdata.dev_diag_dim_array, dA_gpu);
+
+    MarshallLUFunc_flat func(
+        k_st, mdata.dev_diag_ptrs, mdata.dev_diag_ld_array, mdata.dev_diag_dim_array, 
+        d_localLU.Lnzval_bc_ptr, d_localLU.Lrowind_bc_ptr, A_gpu.dperm_c_supno, A_gpu.xsup
+    );
 
     thrust::for_each(
         thrust::system::cuda::par, thrust::counting_iterator<int>(0),
@@ -1543,9 +1698,15 @@ void LUstruct_v100::marshallBatchedTRSMLData(int k_st, int k_end, int_t *perm_c_
     LUMarshallData& mdata = A_gpu.marshall_data;
     mdata.batchsize = k_end - k_st;
 
-    MarshallTRSMLFunc func(
+    // MarshallTRSMLFunc func(
+    //     k_st, mdata.dev_diag_ptrs, mdata.dev_diag_ld_array, mdata.dev_diag_dim_array, 
+    //     mdata.dev_panel_ptrs, mdata.dev_panel_ld_array, mdata.dev_panel_dim_array, dA_gpu
+    // );
+
+    MarshallTRSMLFunc_flat func(
         k_st, mdata.dev_diag_ptrs, mdata.dev_diag_ld_array, mdata.dev_diag_dim_array, 
-        mdata.dev_panel_ptrs, mdata.dev_panel_ld_array, mdata.dev_panel_dim_array, dA_gpu
+        mdata.dev_panel_ptrs, mdata.dev_panel_ld_array, mdata.dev_panel_dim_array,
+        d_localLU.Lnzval_bc_ptr, d_localLU.Lrowind_bc_ptr, A_gpu.dperm_c_supno, A_gpu.xsup
     );
 
     thrust::for_each(
