@@ -222,7 +222,7 @@ if ( msg0 && msg2 ) {  /* L(:,k) and U(k,:) are not empty. */
 		    		    gpuMemcpyHostToDevice, streams[stream_id]);
 
                     #ifdef HAVE_SYCL
-                    oneapi::mkl::blas::gemm(*streams[stream_id],
+                    oneapi::mkl::blas::column_major::gemm(*streams[stream_id],
                                             GPUBLAS_OP_N, GPUBLAS_OP_N,
                                             nbrow, num_col_stream, ldu,
                                             alpha, dA, nbrow,
