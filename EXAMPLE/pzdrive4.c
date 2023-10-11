@@ -65,8 +65,8 @@ int main(int argc, char *argv[])
     int      nrhs = 1;   /* Number of right-hand side. */
     int ii, omp_mpi_level;
     char     **cpp, c, *postfix;
-    FILE *fp, *fopen();
-    int cpp_defs();
+    FILE *fp;
+    
 
 
     /* ------------------------------------------------------------

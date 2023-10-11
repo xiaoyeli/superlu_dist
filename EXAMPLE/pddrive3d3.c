@@ -124,7 +124,7 @@ main (int argc, char *argv[])
     int iam, info, ldb, ldx, nrhs, ii, omp_mpi_level;
     char **cpp, c, *suffix;
     FILE *fp, *fopen ();
-    extern int cpp_defs ();
+    
     
     nprow = 1;            /* Default process rows.      */
     npcol = 1;            /* Default process columns.   */

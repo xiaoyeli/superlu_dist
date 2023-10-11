@@ -63,8 +63,8 @@ int main(int argc, char *argv[])
     int      iam, info, ldb, ldx, nrhs;
     char     **cpp, c, *postfix;
     int ii, omp_mpi_level;
-    FILE *fp, *fopen();
-    int cpp_defs();
+    FILE *fp;
+    
 
     /* prototypes */
     extern int zcreate_matrix_perturbed
