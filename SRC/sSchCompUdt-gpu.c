@@ -190,10 +190,10 @@ if ( msg0 && msg2 ) {  /* L(:,k) and U(k,:) are not empty. */
 		printf("nbrow %d *ldu %d  =%d < ldt %d * max_row_size %d =%d \n",nbrow,ldu,nbrow*ldu,ldt,max_row_size,ldt*max_row_size ); fflush(stdout);
 		assert(nbrow*ldu<=ldt*max_row_size);
 #endif
-		gpuMemcpy2DAsync(dA, size_t(nbrow*sizeof(float)),
+		gpuMemcpy2DAsync(dA, nbrow*sizeof(float),
 				 &lusup[luptr+(knsupc-ldu)*nsupr],
-				 size_t(nsupr*sizeof(float)), size_t(nbrow*sizeof(float)),
-				 size_t(ldu), gpuMemcpyHostToDevice, streams[0]);
+				 nsupr*sizeof(float), nbrow*sizeof(float),
+				 ldu, gpuMemcpyHostToDevice, streams[0]);
 	    }
 
 	    for (int i = 0; i < num_streams_used; ++i) { // streams on GPU
