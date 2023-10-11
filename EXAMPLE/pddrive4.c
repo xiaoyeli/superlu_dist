@@ -116,7 +116,7 @@ int main(int argc, char *argv[])
 		        break;
 	    }
 	} else { /* Last arg is considered a filename */
-            if ( !(fp = ::fopen(*cpp, "r")) ) {
+            if ( !(fp = fopen(*cpp, "r")) ) {
                 ABORT("File does not exist");
             }
 	    break;
