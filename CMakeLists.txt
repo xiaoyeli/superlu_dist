@@ -275,7 +275,6 @@ endif()
 
 if(LAPACK_FOUND)
     message("-- Using TPL_LAPACK_LIBRARIES='${TPL_LAPACK_LIBRARIES}'")
-    add_definitions(-DUSE_VENDOR_BLAS)
     set(LAPACK_LIB ${TPL_LAPACK_LIBRARIES})
     # fix up LAPACK library name
     string (REPLACE ";" " " LAPACK_LIB_STR "${LAPACK_LIB}")
