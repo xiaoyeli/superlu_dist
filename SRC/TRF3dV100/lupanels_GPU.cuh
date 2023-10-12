@@ -460,3 +460,11 @@ void scatterGPU_batchDriver(
     int maxSuperSize, int ldt, lpanelGPU_t *lpanels, upanelGPU_t *upanels, 
     LUstructGPU_t *dA, int batchCount, cudaStream_t cuStream
 );
+
+void scatterGPU_batchDriver(
+    int k_st, int maxSuperSize, double **gemmBuff_ptrs, int *LDgemmBuff_batch,
+    double **Unzval_br_new_ptr, int** Ucolind_br_ptr, double** Lnzval_bc_ptr, 
+    int** Lrowind_bc_ptr, int** lblock_gid_ptrs, int **lblock_start_ptrs, 
+    int *dperm_c_supno, int *xsup, int ldt, int max_ilen, int max_jlen, int batchCount, 
+    cudaStream_t cuStream
+);

@@ -1568,6 +1568,14 @@ extern int_t checkRecvUDiag(int_t k, commRequests_t *comReqs,
 			    gridinfo_t *grid, SCT_t *SCT);
 extern int_t checkRecvLDiag(int_t k, commRequests_t *comReqs, gridinfo_t *, SCT_t *);
 
+// The new flattening routines 
+extern int_t pdflatten_LDATA(superlu_dist_options_t *options, int_t n, dLUstruct_t * LUstruct, 
+                           gridinfo_t *grid, SuperLUStat_t * stat);
+extern void pdconvert_flatten_skyline2UROWDATA(superlu_dist_options_t *options, gridinfo_t *grid,
+	   dLUstruct_t *LUstruct, SuperLUStat_t *stat, int n);
+extern void pdconvertUROWDATA2skyline(superlu_dist_options_t *options, gridinfo_t *grid,
+	   dLUstruct_t *LUstruct, SuperLUStat_t *stat, int n);
+       
 #if 0 // NOT CALLED
 /* from ancFactorization.h (not called) */
 extern int_t ancestorFactor(

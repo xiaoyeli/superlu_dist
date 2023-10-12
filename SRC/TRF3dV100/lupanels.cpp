@@ -72,6 +72,12 @@ LUstruct_v100::LUstruct_v100(int_t nsupers_, int_t ldt_,
     double **Lnzval_bc_ptr = LUstruct->Llu->Lnzval_bc_ptr;
     double **Unzval_br_ptr = LUstruct->Llu->Unzval_br_ptr;
 
+    // Temp changes for flat structure
+    gridinfo_t *grid = &(grid3d->grid2d);
+    int n = xsup[nsupers];
+    pdconvert_flatten_skyline2UROWDATA(options, grid, LUstruct, stat, n);
+    host_Llu = LUstruct->Llu;
+    
     lPanelVec = new lpanel_t[CEILING(nsupers, Pc)];
     uPanelVec = new upanel_t[CEILING(nsupers, Pr)];
     // create the lvectors

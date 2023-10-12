@@ -748,39 +748,58 @@ void LUstruct_v100::dFactBatchSolve(int k_st, int k_end, int_t *perm_c_supno)
     //     dPanelBcastGPU(k, offset);
     // }
 
-    // Initialize the schur complement update marshall data 
-    initSCUMarshallData(k_st, k_end, perm_c_supno);
+    // // Initialize the schur complement update marshall data 
+    // initSCUMarshallData(k_st, k_end, perm_c_supno);
+    // SCUMarshallData& sc_mdata = A_gpu.sc_marshall_data;
+
+    // // Keep marshalling while there are batches to be processed 
+    // int done_i = 0;
+    // int total_batches = 0;
+    // while(done_i == 0)
+    // {
+    //     done_i = marshallSCUBatchedDataOuter(k_st, k_end, perm_c_supno);
+    //     int done_j = 0;
+    //     while(done_i == 0 && done_j == 0)
+    //     {
+    //         done_j = marshallSCUBatchedDataInner(k_st, k_end, perm_c_supno);
+    //         if(done_j != 1)
+    //         {
+    //             total_batches++;
+    //             magmablas_dgemm_vbatched_max_nocheck (
+    //                 MagmaNoTrans, MagmaNoTrans, sc_mdata.dev_m_array, sc_mdata.dev_n_array, sc_mdata.dev_k_array,
+    //                 1.0, sc_mdata.dev_A_ptrs, sc_mdata.dev_lda_array, sc_mdata.dev_B_ptrs, sc_mdata.dev_ldb_array,
+    //                 0.0, sc_mdata.dev_C_ptrs, sc_mdata.dev_ldc_array, sc_mdata.batchsize,
+    //                 sc_mdata.max_m, sc_mdata.max_n, sc_mdata.max_k, A_gpu.magma_queue 
+    //             );
+
+    //             scatterGPU_batchDriver(
+    //                 sc_mdata.dev_ist, sc_mdata.dev_iend, sc_mdata.dev_jst, sc_mdata.dev_jend, 
+    //                 sc_mdata.max_ilen, sc_mdata.max_jlen, sc_mdata.dev_C_ptrs, sc_mdata.dev_ldc_array, 
+    //                 A_gpu.maxSuperSize, ldt, sc_mdata.dev_gpu_lpanels, sc_mdata.dev_gpu_upanels, 
+    //                 dA_gpu, sc_mdata.batchsize, A_gpu.cuStreams[0]
+    //             );
+    //         }
+    //     }
+    // }
+
+    marshallBatchedSCUData(k_st, k_end, perm_c_supno);
     SCUMarshallData& sc_mdata = A_gpu.sc_marshall_data;
 
-    // Keep marshalling while there are batches to be processed 
-    int done_i = 0;
-    int total_batches = 0;
-    while(done_i == 0)
-    {
-        done_i = marshallSCUBatchedDataOuter(k_st, k_end, perm_c_supno);
-        int done_j = 0;
-        while(done_i == 0 && done_j == 0)
-        {
-            done_j = marshallSCUBatchedDataInner(k_st, k_end, perm_c_supno);
-            if(done_j != 1)
-            {
-                total_batches++;
-                magmablas_dgemm_vbatched_max_nocheck (
-                    MagmaNoTrans, MagmaNoTrans, sc_mdata.dev_m_array, sc_mdata.dev_n_array, sc_mdata.dev_k_array,
-                    1.0, sc_mdata.dev_A_ptrs, sc_mdata.dev_lda_array, sc_mdata.dev_B_ptrs, sc_mdata.dev_ldb_array,
-                    0.0, sc_mdata.dev_C_ptrs, sc_mdata.dev_ldc_array, sc_mdata.batchsize,
-                    sc_mdata.max_m, sc_mdata.max_n, sc_mdata.max_k, A_gpu.magma_queue 
-                );
+    magmablas_dgemm_vbatched_max_nocheck (
+        MagmaNoTrans, MagmaNoTrans, sc_mdata.dev_m_array, sc_mdata.dev_n_array, sc_mdata.dev_k_array,
+        1.0, sc_mdata.dev_A_ptrs, sc_mdata.dev_lda_array, sc_mdata.dev_B_ptrs, sc_mdata.dev_ldb_array,
+        0.0, sc_mdata.dev_C_ptrs, sc_mdata.dev_ldc_array, sc_mdata.batchsize,
+        sc_mdata.max_m, sc_mdata.max_n, sc_mdata.max_k, A_gpu.magma_queue 
+    );
+    
+    scatterGPU_batchDriver(
+        k_st, A_gpu.maxSuperSize, sc_mdata.dev_C_ptrs, sc_mdata.dev_ldc_array,
+        d_localLU.Unzval_br_new_ptr, d_localLU.Ucolind_br_ptr, d_localLU.Lnzval_bc_ptr, 
+        d_localLU.Lrowind_bc_ptr, d_lblock_gid_ptrs, d_lblock_start_ptrs, 
+        A_gpu.dperm_c_supno, A_gpu.xsup, ldt, sc_mdata.max_ilen, sc_mdata.max_jlen, 
+        sc_mdata.batchsize, A_gpu.cuStreams[0]
+    );
 
-                scatterGPU_batchDriver(
-                    sc_mdata.dev_ist, sc_mdata.dev_iend, sc_mdata.dev_jst, sc_mdata.dev_jend, 
-                    sc_mdata.max_ilen, sc_mdata.max_jlen, sc_mdata.dev_C_ptrs, sc_mdata.dev_ldc_array, 
-                    A_gpu.maxSuperSize, ldt, sc_mdata.dev_gpu_lpanels, sc_mdata.dev_gpu_upanels, 
-                    dA_gpu, sc_mdata.batchsize, A_gpu.cuStreams[0]
-                );
-            }
-        }
-    }
     // printf("SCU batches = %d\n", total_batches);
 #endif
 }

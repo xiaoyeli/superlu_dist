@@ -401,6 +401,20 @@ struct LUstruct_v100
     LUstructGPU_t *dA_gpu; // pointing to memory on GPU
     LUstructGPU_t A_gpu;   // pointing to memory accessible on CPU
 
+    /////////////////////////////////////////////////////////////////
+    // Intermediate for flat batched 
+    /////////////////////////////////////////////////////////////////
+    dLocalLU_t* host_Llu;
+    dLocalLU_t d_localLU;
+
+    int *d_lblock_gid_dat, **d_lblock_gid_ptrs;
+    int *d_lblock_start_dat, **d_lblock_start_ptrs;
+    int64_t *d_lblock_gid_offsets, *d_lblock_start_offsets;
+    int64_t total_l_blocks, total_start_size;
+
+    void computeLBlockData();
+    /////////////////////////////////////////////////////////////////
+
     enum indirectMapType
     {
         ROW_MAP,
@@ -518,6 +532,7 @@ struct LUstruct_v100
     void marshallBatchedBufferCopyData(int k_st, int k_end, int_t *perm_c_supno);
     void marshallBatchedTRSMUData(int k_st, int k_end, int_t *perm_c_supno);
     void marshallBatchedTRSMLData(int k_st, int k_end, int_t *perm_c_supno);
+    void marshallBatchedSCUData(int k_st, int k_end, int_t *perm_c_supno);
     void initSCUMarshallData(int k_st, int k_end, int_t *perm_c_supno);
     int marshallSCUBatchedDataInner(int k_st, int k_end, int_t *perm_c_supno);
     int marshallSCUBatchedDataOuter(int k_st, int k_end, int_t *perm_c_supno);
