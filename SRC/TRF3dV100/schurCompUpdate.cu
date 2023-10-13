@@ -11,6 +11,7 @@
 #include "superlu_ddefs.h"
 #include "lupanels_GPU.cuh"
 #include "lupanels.hpp"
+#include "batch_factorize_marshall.h"
 
 cudaError_t checkCudaLocal(cudaError_t result)
 {
@@ -23,36 +24,6 @@ cudaError_t checkCudaLocal(cudaError_t result)
     }
     // #endif
     return result;
-}
-
-template <class T, class offT>
-struct UnaryOffsetPtrAssign
-{
-	T *base_mem, **ptrs;
-	offT* offsets;
-	
-    UnaryOffsetPtrAssign(T *base_mem, offT* offsets, T **ptrs)
-	{
-		this->base_mem = base_mem;
-		this->offsets = offsets;
-		this->ptrs = ptrs;
-	}
-	
-    inline __host__ __device__ void operator()(const offT &index) const
-    {
-        ptrs[index] = (offsets[index] < 0 ? NULL : base_mem + offsets[index]);
-    }
-};
-
-template<class T, class offT>
-void generateOffsetPointers(T *base_mem, offT *offsets, T **ptrs, size_t num_arrays)
-{
-    UnaryOffsetPtrAssign<T, offT> offset_ptr_functor(base_mem, offsets, ptrs);
-
-    thrust::for_each(
-        thrust::system::cuda::par, thrust::counting_iterator<offT>(0),
-        thrust::counting_iterator<offT>(num_arrays), offset_ptr_functor
-    );
 }
 
 __global__ void indirectCopy(double *dest, double *src, int_t *idx, int n)
@@ -1597,48 +1568,6 @@ struct MarshallLUFunc {
     }
 };
 
-struct MarshallLUFunc_flat {
-    int k_st, *ld_batch, *dim_batch;
-    double** diag_ptrs, **Lnzval_bc_ptr;
-    int** Lrowind_bc_ptr, *dperm_c_supno, *xsup;
-
-    MarshallLUFunc_flat(
-        int k_st, double** diag_ptrs, int *ld_batch, int *dim_batch, double** Lnzval_bc_ptr,
-        int** Lrowind_bc_ptr, int *dperm_c_supno, int *xsup
-    )
-    {
-        this->k_st = k_st;
-        this->ld_batch = ld_batch;
-        this->dim_batch = dim_batch;
-        this->diag_ptrs = diag_ptrs;
-
-        this->Lnzval_bc_ptr = Lnzval_bc_ptr;
-        this->Lrowind_bc_ptr = Lrowind_bc_ptr;
-        this->dperm_c_supno = dperm_c_supno;
-        this->xsup = xsup;
-    }
-    
-    __device__ void operator()(const unsigned int &i) const
-    {   
-        int k = dperm_c_supno[k_st + i];
-        int *Lrowind_bc = Lrowind_bc_ptr[k];
-        double* Lnzval = Lnzval_bc_ptr[k];
-
-        if(Lnzval && Lrowind_bc)
-        {
-            diag_ptrs[i] = Lnzval;
-            ld_batch[i] = Lrowind_bc[1];
-            dim_batch[i] = SuperSize(k);
-        }
-        else
-        {
-            diag_ptrs[i] = NULL;
-            ld_batch[i] = 1;
-            dim_batch[i] = 0;
-        }
-    }
-};
-
 struct MarshallTRSMUFunc {
     int k_st, *diag_ld_batch, *diag_dim_batch, *panel_ld_batch, *panel_dim_batch;
     double** diag_ptrs, **panel_ptrs;
@@ -1675,60 +1604,6 @@ struct MarshallTRSMUFunc {
             panel_dim_batch[i] = upanel.nzcols();
             diag_ptrs[i] = lpanel.blkPtr(0);
             diag_ld_batch[i] = lpanel.LDA();
-            diag_dim_batch[i] = ksupc;
-        }
-        else
-        {
-            panel_ptrs[i] = diag_ptrs[i] = NULL;
-            panel_ld_batch[i] = diag_ld_batch[i] = 1;
-            panel_dim_batch[i] = diag_dim_batch[i] = 0;
-        }    
-    }
-};
-
-struct MarshallTRSMUFunc_flat {
-    int k_st, *diag_ld_batch, *diag_dim_batch, *panel_ld_batch, *panel_dim_batch;
-    double** diag_ptrs, **panel_ptrs, **Unzval_br_new_ptr, **Lnzval_bc_ptr;
-    int** Ucolind_br_ptr, **Lrowind_bc_ptr, *dperm_c_supno, *xsup;
-
-    MarshallTRSMUFunc_flat(
-        int k_st, double** diag_ptrs, int *diag_ld_batch, int *diag_dim_batch, double** panel_ptrs,
-        int *panel_ld_batch, int *panel_dim_batch, double **Unzval_br_new_ptr, int** Ucolind_br_ptr, 
-        double** Lnzval_bc_ptr, int** Lrowind_bc_ptr, int *dperm_c_supno, int *xsup
-    )
-    {
-        this->k_st = k_st;
-        this->diag_ptrs = diag_ptrs;
-        this->diag_ld_batch = diag_ld_batch;
-        this->diag_dim_batch = diag_dim_batch;
-        this->panel_ptrs = panel_ptrs;
-        this->panel_ld_batch = panel_ld_batch;
-        this->panel_dim_batch = panel_dim_batch;
-        this->Unzval_br_new_ptr = Unzval_br_new_ptr;
-        this->Ucolind_br_ptr = Ucolind_br_ptr; 
-        this->Lnzval_bc_ptr = Lnzval_bc_ptr;
-        this->Lrowind_bc_ptr = Lrowind_bc_ptr;
-        this->dperm_c_supno = dperm_c_supno;
-        this->xsup = xsup;
-    }
-    
-    __device__ void operator()(const unsigned int &i) const
-    {   
-        int k = dperm_c_supno[k_st + i];
-        int ksupc = SuperSize(k);
-
-        int *Ucolind_br = Ucolind_br_ptr[k];
-        double* Unzval = Unzval_br_new_ptr[k];
-        int *Lrowind_bc = Lrowind_bc_ptr[k];
-        double* Lnzval = Lnzval_bc_ptr[k];
-
-        if(Ucolind_br && Unzval && Lrowind_bc && Lnzval)
-        {
-            panel_ptrs[i] = Unzval;
-            panel_ld_batch[i] = Ucolind_br[2];
-            panel_dim_batch[i] = Ucolind_br[1];
-            diag_ptrs[i] = Lnzval;
-            diag_ld_batch[i] = Lrowind_bc[1];
             diag_dim_batch[i] = ksupc;
         }
         else
@@ -1782,60 +1657,6 @@ struct MarshallTRSMLFunc {
             panel_dim_batch[i] = len;
             diag_ptrs[i] = lpanel.blkPtr(0);
             diag_ld_batch[i] = lpanel.LDA();
-            diag_dim_batch[i] = ksupc;
-        }
-        else
-        {
-            panel_ptrs[i] = diag_ptrs[i] = NULL;
-            panel_ld_batch[i] = diag_ld_batch[i] = 1;
-            panel_dim_batch[i] = diag_dim_batch[i] = 0;
-        }    
-    }
-};
-
-struct MarshallTRSMLFunc_flat {
-    int k_st, *diag_ld_batch, *diag_dim_batch, *panel_ld_batch, *panel_dim_batch;
-    double** diag_ptrs, **panel_ptrs, **Lnzval_bc_ptr;
-    int** Lrowind_bc_ptr, *dperm_c_supno, *xsup;
-
-    MarshallTRSMLFunc_flat(
-        int k_st, double** diag_ptrs, int *diag_ld_batch, int *diag_dim_batch, double** panel_ptrs,
-        int *panel_ld_batch, int *panel_dim_batch, double** Lnzval_bc_ptr, int** Lrowind_bc_ptr, 
-        int *dperm_c_supno, int *xsup
-    )
-    {
-        this->k_st = k_st;
-        this->diag_ptrs = diag_ptrs;
-        this->diag_ld_batch = diag_ld_batch;
-        this->diag_dim_batch = diag_dim_batch;
-        this->panel_ptrs = panel_ptrs;
-        this->panel_ld_batch = panel_ld_batch;
-        this->panel_dim_batch = panel_dim_batch;
-
-        this->Lnzval_bc_ptr = Lnzval_bc_ptr;
-        this->Lrowind_bc_ptr = Lrowind_bc_ptr;
-        this->dperm_c_supno = dperm_c_supno;
-        this->xsup = xsup;
-    }
-    
-    __device__ void operator()(const unsigned int &i) const
-    {
-        int k = dperm_c_supno[k_st + i];
-        int ksupc = SuperSize(k);
-        int *Lrowind_bc = Lrowind_bc_ptr[k];
-        double* Lnzval = Lnzval_bc_ptr[k];
-
-        if(Lnzval && Lrowind_bc)
-        {
-            int diag_block_offset = Lrowind_bc[BC_HEADER + 1];
-            int nzrows = Lrowind_bc[1];
-            int len = nzrows - diag_block_offset;
-
-            panel_ptrs[i] = Lnzval + diag_block_offset;
-            panel_ld_batch[i] = nzrows;
-            panel_dim_batch[i] = len;
-            diag_ptrs[i] = Lnzval;
-            diag_ld_batch[i] = nzrows;
             diag_dim_batch[i] = ksupc;
         }
         else
@@ -1964,100 +1785,6 @@ struct MarshallSCUInner_Predicate
     __host__ __device__ bool operator()(const int &x)
     {
         return x == 0;
-    }
-};
-
-template<typename T>
-struct element_diff : public thrust::unary_function<T,T>
-{
-    T* st, *end;
-    element_diff(T* st, T *end) 
-    {
-        this->st = st;
-        this->end = end;
-    }
-    
-    __device__ T operator()(const T &x) const
-    {
-        return end[x] - st[x];
-    }
-};
-
-struct MarshallSCUFunc_flat {
-    double** A_ptrs, **B_ptrs, **C_ptrs;
-    int* lda_array, *ldb_array, *ldc_array, *m_array, *n_array, *k_array;
-    double **Unzval_br_new_ptr, **Lnzval_bc_ptr, **dgpuGemmBuffs;
-    int** Ucolind_br_ptr, **Lrowind_bc_ptr, *dperm_c_supno, *xsup, k_st;
-    int *ist, *iend, *jst, *jend;
-
-    MarshallSCUFunc_flat(
-        int k_st, double** A_ptrs, int* lda_array, double** B_ptrs, int* ldb_array, double **C_ptrs, int *ldc_array,
-        int *m_array, int *n_array, int *k_array, int *ist, int *iend, int *jst, int *jend, 
-        double **Unzval_br_new_ptr, int** Ucolind_br_ptr, double** Lnzval_bc_ptr, int** Lrowind_bc_ptr, 
-        int *dperm_c_supno, int *xsup, double** dgpuGemmBuffs
-    )
-    {
-        this->k_st = k_st;
-        this->A_ptrs = A_ptrs;
-        this->B_ptrs = B_ptrs;
-        this->C_ptrs = C_ptrs;
-        this->lda_array = lda_array;
-        this->ldb_array = ldb_array;
-        this->ldc_array = ldc_array;
-        this->m_array = m_array;
-        this->n_array = n_array;
-        this->k_array = k_array;
-        this->ist = ist;
-        this->iend = iend;
-        this->jst = jst;
-        this->jend = jend;
-        this->Unzval_br_new_ptr = Unzval_br_new_ptr;
-        this->Ucolind_br_ptr = Ucolind_br_ptr; 
-        this->Lnzval_bc_ptr = Lnzval_bc_ptr;
-        this->Lrowind_bc_ptr = Lrowind_bc_ptr;
-        this->dperm_c_supno = dperm_c_supno;
-        this->xsup = xsup;
-        this->dgpuGemmBuffs = dgpuGemmBuffs;
-    }
-
-    __device__ void operator()(const unsigned int &i) const
-    {
-        int k = dperm_c_supno[k_st + i];
-        
-        int *Ucolind_br = Ucolind_br_ptr[k];
-        double* Unzval = Unzval_br_new_ptr[k];
-        int *Lrowind_bc = Lrowind_bc_ptr[k];
-        double* Lnzval = Lnzval_bc_ptr[k];
-
-        if(Ucolind_br && Unzval && Lrowind_bc && Lnzval)
-        {
-            int diag_block_offset = Lrowind_bc[BC_HEADER + 1];
-            int L_nzrows = Lrowind_bc[1];
-            int L_len = L_nzrows - diag_block_offset;
-
-            A_ptrs[i] = Lnzval + diag_block_offset;
-            B_ptrs[i] = Unzval;
-            C_ptrs[i] = dgpuGemmBuffs[i];
-
-            lda_array[i] = L_nzrows;
-            ldb_array[i] = Ucolind_br[2];
-            ldc_array[i] = L_len;
-                        
-            m_array[i] = ldc_array[i];
-            n_array[i] = Ucolind_br[1];
-            k_array[i] = SuperSize(k);
-
-            ist[i] = 1;
-            jst[i] = 0;
-            iend[i] = Lrowind_bc[0];
-            jend[i] = Ucolind_br[0];
-        }
-        else
-        {
-            A_ptrs[i] = B_ptrs[i] = C_ptrs[i] = NULL;
-            lda_array[i] = ldb_array[i] = ldc_array[i] = 1;
-            m_array[i] = n_array[i] = k_array[i] = 0;
-        }
     }
 };
 

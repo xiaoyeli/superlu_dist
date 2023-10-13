@@ -690,6 +690,15 @@ void LUstruct_v100::marshallBatchedBufferCopyData(int k_st, int k_end, int_t *pe
     gpuErrchk(cudaMemcpy(mdata.dev_panel_dim_array, panel_dim_batch, mdata.batchsize * sizeof(int), cudaMemcpyHostToDevice));
 }
 
+extern "C" void
+magmablas_dtrsm_vbatched_nocheck(
+    magma_side_t side, magma_uplo_t uplo, magma_trans_t transA, magma_diag_t diag,
+    magma_int_t* m, magma_int_t* n,
+    double alpha,
+    double** dA_array,    magma_int_t* ldda,
+    double** dB_array,    magma_int_t* lddb,
+    magma_int_t batchCount, magma_queue_t queue);
+
 void LUstruct_v100::dFactBatchSolve(int k_st, int k_end, int_t *perm_c_supno)
 {
 #ifdef HAVE_MAGMA
@@ -697,7 +706,8 @@ void LUstruct_v100::dFactBatchSolve(int k_st, int k_end, int_t *perm_c_supno)
     LUMarshallData& mdata = A_gpu.marshall_data;
     cudaStream_t stream = A_gpu.cuStreams[0];
     marshallBatchedLUData(k_st, k_end, perm_c_supno);
-    
+    gpuErrchk (cudaGetLastError() );
+
     int info = magma_dgetrf_vbatched(
         mdata.dev_diag_dim_array, mdata.dev_diag_dim_array, 
         mdata.dev_diag_ptrs, mdata.dev_diag_ld_array, 
@@ -718,8 +728,9 @@ void LUstruct_v100::dFactBatchSolve(int k_st, int k_end, int_t *perm_c_supno)
     
     // Upper panel triangular solves
     marshallBatchedTRSMUData(k_st, k_end, perm_c_supno);
+    gpuErrchk (cudaGetLastError() );
 
-    magmablas_dtrsm_vbatched(
+    magmablas_dtrsm_vbatched_nocheck(
         MagmaLeft, MagmaLower, MagmaNoTrans, MagmaUnit, 
         mdata.dev_diag_dim_array, mdata.dev_panel_dim_array, 1.0, 
         mdata.dev_diag_ptrs, mdata.dev_diag_ld_array, 
@@ -729,8 +740,9 @@ void LUstruct_v100::dFactBatchSolve(int k_st, int k_end, int_t *perm_c_supno)
 
     // Lower panel triangular solves
     marshallBatchedTRSMLData(k_st, k_end, perm_c_supno);
+    gpuErrchk (cudaGetLastError() );
 
-    magmablas_dtrsm_vbatched(
+    magmablas_dtrsm_vbatched_nocheck(
         MagmaRight, MagmaUpper, MagmaNoTrans, MagmaNonUnit, 
         mdata.dev_panel_dim_array, mdata.dev_diag_dim_array, 1.0, 
         mdata.dev_diag_ptrs, mdata.dev_diag_ld_array, 
@@ -748,9 +760,10 @@ void LUstruct_v100::dFactBatchSolve(int k_st, int k_end, int_t *perm_c_supno)
     //     dPanelBcastGPU(k, offset);
     // }
 
-    // // Initialize the schur complement update marshall data 
+    // Initialize the schur complement update marshall data 
     // initSCUMarshallData(k_st, k_end, perm_c_supno);
     // SCUMarshallData& sc_mdata = A_gpu.sc_marshall_data;
+    // gpuErrchk (cudaGetLastError() );
 
     // // Keep marshalling while there are batches to be processed 
     // int done_i = 0;
@@ -758,10 +771,12 @@ void LUstruct_v100::dFactBatchSolve(int k_st, int k_end, int_t *perm_c_supno)
     // while(done_i == 0)
     // {
     //     done_i = marshallSCUBatchedDataOuter(k_st, k_end, perm_c_supno);
+    //     gpuErrchk (cudaGetLastError() );
     //     int done_j = 0;
     //     while(done_i == 0 && done_j == 0)
     //     {
     //         done_j = marshallSCUBatchedDataInner(k_st, k_end, perm_c_supno);
+    //         gpuErrchk (cudaGetLastError() );
     //         if(done_j != 1)
     //         {
     //             total_batches++;
@@ -772,12 +787,14 @@ void LUstruct_v100::dFactBatchSolve(int k_st, int k_end, int_t *perm_c_supno)
     //                 sc_mdata.max_m, sc_mdata.max_n, sc_mdata.max_k, A_gpu.magma_queue 
     //             );
 
+    //             gpuErrchk (cudaGetLastError() );
     //             scatterGPU_batchDriver(
     //                 sc_mdata.dev_ist, sc_mdata.dev_iend, sc_mdata.dev_jst, sc_mdata.dev_jend, 
     //                 sc_mdata.max_ilen, sc_mdata.max_jlen, sc_mdata.dev_C_ptrs, sc_mdata.dev_ldc_array, 
     //                 A_gpu.maxSuperSize, ldt, sc_mdata.dev_gpu_lpanels, sc_mdata.dev_gpu_upanels, 
     //                 dA_gpu, sc_mdata.batchsize, A_gpu.cuStreams[0]
     //             );
+    //             gpuErrchk (cudaGetLastError() );
     //         }
     //     }
     // }
@@ -1117,4 +1134,5 @@ int_t LUstruct_v100::dsparseTreeFactorGPUBaseline(
 
     return 0;
 } /* dsparseTreeFactorGPUBaseline */
+
 #endif
