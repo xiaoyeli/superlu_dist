@@ -432,22 +432,20 @@ struct LUstruct_v100
     ~LUstruct_v100()
     {
 
-	/* Sherry: SUPERLU_MALLOC in constructor are not free'd,
-	   need to call the following functions. 12/31/22    */
-
-    /* Yang: I was trying to add the following but it causes crash, not sure why. */
+    /* Yang: Deallocate the lPanelVec[i] and uPanelVec[i] here instead of using destructors ~lpanel_t or ~upanel_t, 
+    as lpanel_t/upanel_t is used for holding temporary communication buffers as well. Note that lPanelVec[i].val is not deallocated here as it's pointing to the L data in the C code*/
         
-        // for (int_t i = 0; i < CEILING(nsupers, Pc); ++i)
-        //     if (i * Pc + mycol < nsupers && isNodeInMyGrid[i * Pc + mycol] == 1){
-        //         SUPERLU_FREE(lPanelVec[i].index);
-        //         SUPERLU_FREE(lPanelVec[i].val);
-        //     }
+        for (int_t i = 0; i < CEILING(nsupers, Pc); ++i)
+            if (i * Pc + mycol < nsupers && isNodeInMyGrid[i * Pc + mycol] == 1){
+                SUPERLU_FREE(lPanelVec[i].index);
+                // SUPERLU_FREE(lPanelVec[i].val);
+            }
 
-        // for (int_t i = 0; i < CEILING(nsupers, Pr); ++i)
-        //     if (i * Pr + myrow < nsupers && isNodeInMyGrid[i * Pr + myrow] == 1){
-        //         SUPERLU_FREE(uPanelVec[i].index);
-        //         SUPERLU_FREE(uPanelVec[i].val);
-        //     }
+        for (int_t i = 0; i < CEILING(nsupers, Pr); ++i)
+            if (i * Pr + myrow < nsupers && isNodeInMyGrid[i * Pr + myrow] == 1){
+                SUPERLU_FREE(uPanelVec[i].index);
+                SUPERLU_FREE(uPanelVec[i].val);
+            }
     
         delete[] lPanelVec;
         delete[] uPanelVec;
