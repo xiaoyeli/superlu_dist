@@ -42,7 +42,9 @@ export LD_LIBRARY_PATH=${LD_LIBRARY_PATH//\/usr\/local\/cuda-11.7\/compat:/}
 NVSHMEM_HOME=/global/cfs/cdirs/m3894/lib/PrgEnv-gnu/nvshmem_src_2.8.0-3/build/
 #NVSHMEM_HOME=${CRAY_NVIDIA_PREFIX}/comm_libs/nvshmem/
 cmake .. \
-  -DCMAKE_C_FLAGS="-DGPU_SOLVE -std=c11 -DPRNTlevel=0 -DPROFlevel=0 -DDEBUGlevel=0 -DAdd_" \
+  -DCMAKE_C_FLAGS="-O2 -DGPU_SOLVE -std=c11 -DPRNTlevel=0 -DPROFlevel=0 -DDEBUGlevel=0 -DAdd_" \
+  -DCMAKE_CXX_FLAGS="-O2" \
+  -DCMAKE_Fortran_FLAGS="-O2" \
   -DCMAKE_CXX_COMPILER=CC \
   -DCMAKE_C_COMPILER=cc \
   -DCMAKE_Fortran_COMPILER=ftn \

@@ -401,6 +401,20 @@ struct LUstruct_v100
     LUstructGPU_t *dA_gpu; // pointing to memory on GPU
     LUstructGPU_t A_gpu;   // pointing to memory accessible on CPU
 
+    /////////////////////////////////////////////////////////////////
+    // Intermediate for flat batched 
+    /////////////////////////////////////////////////////////////////
+    dLocalLU_t* host_Llu;
+    dLocalLU_t d_localLU;
+
+    int *d_lblock_gid_dat, **d_lblock_gid_ptrs;
+    int *d_lblock_start_dat, **d_lblock_start_ptrs;
+    int64_t *d_lblock_gid_offsets, *d_lblock_start_offsets;
+    int64_t total_l_blocks, total_start_size;
+
+    void computeLBlockData();
+    /////////////////////////////////////////////////////////////////
+
     enum indirectMapType
     {
         ROW_MAP,
@@ -418,22 +432,20 @@ struct LUstruct_v100
     ~LUstruct_v100()
     {
 
-	/* Sherry: SUPERLU_MALLOC in constructor are not free'd,
-	   need to call the following functions. 12/31/22    */
-
-    /* Yang: I was trying to add the following but it causes crash, not sure why. */
+    /* Yang: Deallocate the lPanelVec[i] and uPanelVec[i] here instead of using destructors ~lpanel_t or ~upanel_t, 
+    as lpanel_t/upanel_t is used for holding temporary communication buffers as well. Note that lPanelVec[i].val is not deallocated here as it's pointing to the L data in the C code*/
         
-        // for (int_t i = 0; i < CEILING(nsupers, Pc); ++i)
-        //     if (i * Pc + mycol < nsupers && isNodeInMyGrid[i * Pc + mycol] == 1){
-        //         SUPERLU_FREE(lPanelVec[i].index);
-        //         SUPERLU_FREE(lPanelVec[i].val);
-        //     }
+        for (int_t i = 0; i < CEILING(nsupers, Pc); ++i)
+            if (i * Pc + mycol < nsupers && isNodeInMyGrid[i * Pc + mycol] == 1){
+                SUPERLU_FREE(lPanelVec[i].index);
+                // SUPERLU_FREE(lPanelVec[i].val);
+            }
 
-        // for (int_t i = 0; i < CEILING(nsupers, Pr); ++i)
-        //     if (i * Pr + myrow < nsupers && isNodeInMyGrid[i * Pr + myrow] == 1){
-        //         SUPERLU_FREE(uPanelVec[i].index);
-        //         SUPERLU_FREE(uPanelVec[i].val);
-        //     }
+        for (int_t i = 0; i < CEILING(nsupers, Pr); ++i)
+            if (i * Pr + myrow < nsupers && isNodeInMyGrid[i * Pr + myrow] == 1){
+                SUPERLU_FREE(uPanelVec[i].index);
+                SUPERLU_FREE(uPanelVec[i].val);
+            }
     
         delete[] lPanelVec;
         delete[] uPanelVec;
@@ -518,6 +530,7 @@ struct LUstruct_v100
     void marshallBatchedBufferCopyData(int k_st, int k_end, int_t *perm_c_supno);
     void marshallBatchedTRSMUData(int k_st, int k_end, int_t *perm_c_supno);
     void marshallBatchedTRSMLData(int k_st, int k_end, int_t *perm_c_supno);
+    void marshallBatchedSCUData(int k_st, int k_end, int_t *perm_c_supno);
     void initSCUMarshallData(int k_st, int k_end, int_t *perm_c_supno);
     int marshallSCUBatchedDataInner(int k_st, int k_end, int_t *perm_c_supno);
     int marshallSCUBatchedDataOuter(int k_st, int k_end, int_t *perm_c_supno);

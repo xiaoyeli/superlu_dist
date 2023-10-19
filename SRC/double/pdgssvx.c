@@ -2311,6 +2311,7 @@ if (get_acc_solve()){
 	SUPERLU_FREE (Llu->Unzval_br_new_offset);
 #endif
 
+	SUPERLU_FREE (Llu->Uind_br_ptr);
 	SUPERLU_FREE (Llu->Uind_br_dat);
 	SUPERLU_FREE (Llu->Uind_br_offset);
 	SUPERLU_FREE (Llu->Ucolind_bc_ptr);
@@ -2465,7 +2466,7 @@ nsupers_i = CEILING( nsupers, grid->nprow ); /* Number of local block rows */
 			uptr = 0;         /* Pointer in nzval array. */
 			int_t nub=usub1[0];
 			int_t ncol=0;
-			int_t LDA=0;
+			int_t LDA=iknsupc;
 			ikfrow = FstBlockC( gik );
 			iklrow = FstBlockC( gik+1 );
 			for (int_t lb = 0; lb < nub; ++lb) { /* For all column blocks. */

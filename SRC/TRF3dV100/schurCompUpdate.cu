@@ -888,8 +888,8 @@ int_t LUstruct_v100::setLUstruct_GPU()
     gpuErrchk(cudaMemcpy(A_gpu.uPanelVec, uPanelVec_GPU,
                CEILING(nsupers, Pr) * sizeof(upanelGPU_t), cudaMemcpyHostToDevice));
 
-    delete uPanelVec_GPU;
-    delete lPanelVec_GPU;
+    delete [] uPanelVec_GPU;
+    delete [] lPanelVec_GPU;
 
     tRegion[2] = SuperLU_timer_();
     int dfactBufSize = 0;

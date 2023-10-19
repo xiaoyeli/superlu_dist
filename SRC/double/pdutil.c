@@ -508,12 +508,12 @@ void dDestroy_LU(int_t n, gridinfo_t *grid, dLUstruct_t *LUstruct)
     SUPERLU_FREE(Llu->Lnzval_bc_offset);
 
     /* Following are free'd in distribution routines */
-    // nb = CEILING(nsupers, grid->nprow);
-    // for (i = 0; i < nb; ++i)
-    //	if ( Llu->Ufstnz_br_ptr[i] ) {
-    //	    SUPERLU_FREE (Llu->Ufstnz_br_ptr[i]);
-    //	    SUPERLU_FREE (Llu->Unzval_br_ptr[i]);
-    //	}
+    nb = CEILING(nsupers, grid->nprow);
+    for (i = 0; i < nb; ++i)
+    	if ( Llu->Ufstnz_br_ptr[i] ) {
+    	    SUPERLU_FREE (Llu->Ufstnz_br_ptr[i]);
+    	    SUPERLU_FREE (Llu->Unzval_br_ptr[i]);
+    	}
     SUPERLU_FREE(Llu->Ufstnz_br_ptr);
     // SUPERLU_FREE(Llu->Ufstnz_br_dat);
     // SUPERLU_FREE(Llu->Ufstnz_br_offset);
