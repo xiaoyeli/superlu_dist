@@ -615,6 +615,7 @@ void copyHostLUDataToGPU(BatchFactorizeWorkspace* ws, dLocalLU_t* host_Llu, int_
 
 void dFactBatchSolve(BatchFactorizeWorkspace* ws, int_t k_st, int_t k_end)
 {
+#ifdef HAVE_MAGMA
     dLocalLU_t& d_localLU = ws->d_localLU;
     BatchLUMarshallData& mdata = ws->marshall_data;
     BatchSCUMarshallData& sc_mdata = ws->sc_marshall_data;
@@ -668,6 +669,7 @@ void dFactBatchSolve(BatchFactorizeWorkspace* ws, int_t k_st, int_t k_end)
         ws->perm_c_supno, ws->xsup, ws->ldt, sc_mdata.max_ilen, sc_mdata.max_jlen, 
         sc_mdata.batchsize, ws->stream
     );
+#endif
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -702,6 +704,7 @@ BatchFactorizeWorkspace* getBatchFactorizeWorkspace(
     gridinfo3d_t *grid3d, superlu_dist_options_t *options, SuperLUStat_t *stat, int *info
 )
 {
+#ifdef HAVE_MAGMA
     BatchFactorizeWorkspace* ws = new BatchFactorizeWorkspace();
     
     // TODO: this should be assigned somewhere 
@@ -738,6 +741,7 @@ BatchFactorizeWorkspace* getBatchFactorizeWorkspace(
     batchAllocateGemmBuffers(ws, LUstruct, trf3Dpartition, grid3d);
 
     return ws;
+#endif
 }
 
 void copyGPULUDataToHost(

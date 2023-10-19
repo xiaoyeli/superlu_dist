@@ -689,7 +689,7 @@ void LUstruct_v100::marshallBatchedBufferCopyData(int k_st, int k_end, int_t *pe
     gpuErrchk(cudaMemcpy(mdata.dev_panel_ld_array, panel_ld_batch, mdata.batchsize * sizeof(int), cudaMemcpyHostToDevice));
     gpuErrchk(cudaMemcpy(mdata.dev_panel_dim_array, panel_dim_batch, mdata.batchsize * sizeof(int), cudaMemcpyHostToDevice));
 }
-
+#ifdef HAVE_MAGMA
 extern "C" void
 magmablas_dtrsm_vbatched_nocheck(
     magma_side_t side, magma_uplo_t uplo, magma_trans_t transA, magma_diag_t diag,
@@ -698,7 +698,7 @@ magmablas_dtrsm_vbatched_nocheck(
     double** dA_array,    magma_int_t* ldda,
     double** dB_array,    magma_int_t* lddb,
     magma_int_t batchCount, magma_queue_t queue);
-
+#endif
 void LUstruct_v100::dFactBatchSolve(int k_st, int k_end, int_t *perm_c_supno)
 {
 #ifdef HAVE_MAGMA

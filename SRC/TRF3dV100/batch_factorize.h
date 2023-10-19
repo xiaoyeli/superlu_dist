@@ -2,8 +2,9 @@
 #define __SUPERLU_BATCH_FACTORIZE_H__
 
 #include "superlu_ddefs.h"
+#ifdef HAVE_MAGMA
 #include "magma.h"
-
+#endif
 // Device memory used to store marshalled batch data for LU and TRSM
 struct BatchLUMarshallData 
 {
@@ -55,7 +56,9 @@ struct BatchSCUMarshallData
 
 struct BatchFactorizeWorkspace {
     // Library handles 
+#ifdef HAVE_MAGMA    
     magma_queue_t magma_queue;
+#endif
     cudaStream_t stream;
     cublasHandle_t cuhandle;
     
