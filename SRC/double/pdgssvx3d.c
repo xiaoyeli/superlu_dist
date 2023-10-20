@@ -1273,6 +1273,7 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
                 }
 
                 copyGPULUDataToHost(batch_ws, LUstruct, grid3d, SCT, options, stat);
+                freeBatchFactorizeWorkspace(batch_ws);
             }
 
 			// print other stuff

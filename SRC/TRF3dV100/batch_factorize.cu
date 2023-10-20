@@ -777,4 +777,37 @@ void copyGPULUDataToHost(
     pdconvertUROWDATA2skyline(options, grid, LUstruct, stat, n);
 }
 
+void freeBatchFactorizeWorkspace(BatchFactorizeWorkspace* ws)
+{
+    gpuErrchk( cudaFree(ws->d_lblock_gid_dat) );
+    gpuErrchk( cudaFree(ws->d_lblock_gid_offsets) );
+    gpuErrchk( cudaFree(ws->d_lblock_gid_ptrs) );
+    gpuErrchk( cudaFree(ws->d_lblock_start_dat) );
+    gpuErrchk( cudaFree(ws->d_lblock_start_offsets) );
+    gpuErrchk( cudaFree(ws->d_lblock_start_ptrs) );
+    gpuErrchk( cudaFree(ws->gemm_buff_base) );
+    gpuErrchk( cudaFree(ws->gemm_buff_offsets) );
+    gpuErrchk( cudaFree(ws->gemm_buff_ptrs) );
+    gpuErrchk( cudaFree(ws->perm_c_supno) );
+    gpuErrchk( cudaFree(ws->xsup) );
+
+    dLocalLU_t& d_localLU = ws->d_localLU;
+    gpuErrchk( cudaFree(d_localLU.Lrowind_bc_dat) );
+    gpuErrchk( cudaFree(d_localLU.Lrowind_bc_offset) );
+    gpuErrchk( cudaFree(d_localLU.Lrowind_bc_ptr) );
+    gpuErrchk( cudaFree(d_localLU.Lnzval_bc_dat) );
+    gpuErrchk( cudaFree(d_localLU.Lnzval_bc_offset) );
+    gpuErrchk( cudaFree(d_localLU.Lnzval_bc_ptr) );
+    gpuErrchk( cudaFree(d_localLU.Ucolind_br_dat) );
+    gpuErrchk( cudaFree(d_localLU.Ucolind_br_offset) );
+    gpuErrchk( cudaFree(d_localLU.Ucolind_br_ptr) );
+    gpuErrchk( cudaFree(d_localLU.Unzval_br_new_dat) );
+    gpuErrchk( cudaFree(d_localLU.Unzval_br_new_offset) );
+    gpuErrchk( cudaFree(d_localLU.Unzval_br_new_ptr) );
+
+    magma_queue_destroy(ws->magma_queue);
+    cublasDestroy( ws->cuhandle );
+    gpuErrchk( cudaStreamDestroy(ws->stream) );
+}
+
 }

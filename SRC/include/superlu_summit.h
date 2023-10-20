@@ -44,6 +44,8 @@ extern void copyGPULUDataToHost(
     SCT_t *SCT_, superlu_dist_options_t *options, SuperLUStat_t *stat
 );
 
+extern void freeBatchFactorizeWorkspace(BatchFactorize_Handle ws);
+
 #ifdef __cplusplus
 }
 #endif
