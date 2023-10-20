@@ -1242,15 +1242,38 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 			double s_eps = smach_dist("Epsilon");
 			double thresh = s_eps * anorm;
 
-			/* call constructor in C++ code */
-			LUgpu = createLUgpuHandle(nsupers, ldt, trf3Dpartition, LUstruct, grid3d,
-						  SCT, options, stat, thresh, info);
-			
-			/* call pdgstrf3d() in C++ code */
-			pdgstrf3d_LUpackedInterface(LUgpu);
-			
-			copyLUGPU2Host(LUgpu, LUstruct);
-			destroyLUgpuHandle(LUgpu);
+            if(options->batchCount == 0)
+			{
+                /* call constructor in C++ code */
+                LUgpu = createLUgpuHandle(nsupers, ldt, trf3Dpartition, LUstruct, grid3d,
+                            SCT, options, stat, thresh, info);
+                
+                /* call pdgstrf3d() in C++ code */
+                pdgstrf3d_LUpackedInterface(LUgpu);
+                
+                copyLUGPU2Host(LUgpu, LUstruct);
+                destroyLUgpuHandle(LUgpu);
+            }
+            else
+            {
+                BatchFactorize_Handle batch_ws = getBatchFactorizeWorkspace(
+                    nsupers, ldt, trf3Dpartition, LUstruct, grid3d, options, stat, info
+                );
+
+                int maxLvl = log2i(grid3d->zscp.Np) + 1;
+                
+                for (int ilvl = 0; ilvl < maxLvl; ++ilvl)
+                {
+                    if (!trf3Dpartition->myZeroTrIdxs[ilvl])
+                    {
+                        sForest_t *sforest = trf3Dpartition->sForests[trf3Dpartition->myTreeIdxs[ilvl]];
+                        if (sforest)
+                            dsparseTreeFactorBatchGPU(batch_ws, sforest);
+                    }
+                }
+
+                copyGPULUDataToHost(batch_ws, LUstruct, grid3d, SCT, options, stat);
+            }
 
 			// print other stuff
 			// if (!grid3d->zscp.Iam)

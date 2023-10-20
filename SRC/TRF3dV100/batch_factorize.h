@@ -2,6 +2,8 @@
 #define __SUPERLU_BATCH_FACTORIZE_H__
 
 #include "superlu_ddefs.h"
+#include "superlu_summit.h"
+
 #ifdef HAVE_MAGMA
 #include "magma.h"
 #endif

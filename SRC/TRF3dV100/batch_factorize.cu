@@ -513,7 +513,7 @@ void batchAllocateGemmBuffers(
     // TODO: is this necessary if this is being done on a single node?
     int maxLvl = log2i(grid3d->zscp.Np) + 1;
 
-    std::vector<int64_t> gemmCsizes(mxLeafNode);
+    std::vector<int64_t> gemmCsizes(mxLeafNode, 0);
 	int_t mx_fsize = 0;
 	
 	for (int ilvl = 0; ilvl < maxLvl; ++ilvl) 
@@ -535,21 +535,23 @@ void batchAllocateGemmBuffers(
                 {
                     int_t offset = k0 - k_st;
                     int_t k = perm_c_supno[k0];
-                    int_t L_rows = LUstruct->Llu->Lrowind_bc_ptr[k][1];
-                    int_t U_cols = LUstruct->Llu->Ucolind_br_ptr[k][1];
-                    int_t Csize = L_rows * U_cols;
-                    gemmCsizes[offset] = SUPERLU_MAX(gemmCsizes[offset], Csize);
+                    int_t* L_data = LUstruct->Llu->Lrowind_bc_ptr[k];
+                    int_t* U_data = LUstruct->Llu->Ucolind_br_ptr[k];
+                    if(L_data && U_data)
+                    {
+                        int_t Csize = L_data[1] * U_data[1];
+                        gemmCsizes[offset] = SUPERLU_MAX(gemmCsizes[offset], Csize);
+                    }
                 }
 		    }
 	    }
 	}
-
     // Allocate the gemm buffers 
     gpuErrchk( cudaMalloc(&(ws->gemm_buff_ptrs), sizeof(double*) * mxLeafNode) );
     gpuErrchk( cudaMalloc(&(ws->gemm_buff_offsets), sizeof(int64_t) * (mxLeafNode + 1)) );
 
     // Copy the host offset to the device 
-    gpuErrchk( cudaMemcpy( ws->gemm_buff_offsets + 1, gemmCsizes.data(), mxLeafNode, cudaMemcpyHostToDevice) );
+    gpuErrchk( cudaMemcpy( ws->gemm_buff_offsets + 1, gemmCsizes.data(), mxLeafNode * sizeof(int64_t), cudaMemcpyHostToDevice) );
     *(thrust::device_ptr<int64_t>(ws->gemm_buff_offsets)) = 0;
 
     int64_t total_entries = *(thrust::device_ptr<int64_t>(
@@ -613,6 +615,17 @@ void copyHostLUDataToGPU(BatchFactorizeWorkspace* ws, dLocalLU_t* host_Llu, int_
     computeLBlockData(ws, nsupers);
 }
 
+#ifdef HAVE_MAGMA
+extern "C" void
+magmablas_dtrsm_vbatched_nocheck(
+    magma_side_t side, magma_uplo_t uplo, magma_trans_t transA, magma_diag_t diag,
+    magma_int_t* m, magma_int_t* n,
+    double alpha,
+    double** dA_array,    magma_int_t* ldda,
+    double** dB_array,    magma_int_t* lddb,
+    magma_int_t batchCount, magma_queue_t queue);
+#endif
+
 void dFactBatchSolve(BatchFactorizeWorkspace* ws, int_t k_st, int_t k_end)
 {
 #ifdef HAVE_MAGMA
@@ -633,7 +646,7 @@ void dFactBatchSolve(BatchFactorizeWorkspace* ws, int_t k_st, int_t k_end)
     // Upper panel batched triangular solves
     marshallBatchedTRSMUData(ws, k_st, k_end);
 
-    magmablas_dtrsm_vbatched(
+    magmablas_dtrsm_vbatched_nocheck(
         MagmaLeft, MagmaLower, MagmaNoTrans, MagmaUnit, 
         mdata.dev_diag_dim_array, mdata.dev_panel_dim_array, 1.0, 
         mdata.dev_diag_ptrs, mdata.dev_diag_ld_array, 
@@ -644,7 +657,7 @@ void dFactBatchSolve(BatchFactorizeWorkspace* ws, int_t k_st, int_t k_end)
     // Lower panel batched triangular solves
     marshallBatchedTRSMLData(ws, k_st, k_end);
 
-    magmablas_dtrsm_vbatched(
+    magmablas_dtrsm_vbatched_nocheck(
         MagmaRight, MagmaUpper, MagmaNoTrans, MagmaNonUnit, 
         mdata.dev_panel_dim_array, mdata.dev_diag_dim_array, 1.0, 
         mdata.dev_diag_ptrs, mdata.dev_diag_ld_array, 
@@ -677,6 +690,7 @@ void dFactBatchSolve(BatchFactorizeWorkspace* ws, int_t k_st, int_t k_end)
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Main factorization routiunes
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+extern "C" {
 int dsparseTreeFactorBatchGPU(BatchFactorizeWorkspace* ws, sForest_t *sforest)
 {
     int_t nnodes = sforest->nNodes; 
@@ -761,4 +775,6 @@ void copyGPULUDataToHost(
     int n = xsup[ws->nsupers];
     gridinfo_t *grid = &(grid3d->grid2d);
     pdconvertUROWDATA2skyline(options, grid, LUstruct, stat, n);
+}
+
 }
