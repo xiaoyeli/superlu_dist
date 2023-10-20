@@ -1568,6 +1568,17 @@ extern int_t checkRecvUDiag(int_t k, commRequests_t *comReqs,
 			    gridinfo_t *grid, SCT_t *SCT);
 extern int_t checkRecvLDiag(int_t k, commRequests_t *comReqs, gridinfo_t *, SCT_t *);
 
+
+
+extern int_t pdflatten_LDATA(superlu_dist_options_t *options, int_t n, dLUstruct_t * LUstruct, 
+                           gridinfo_t *grid, SuperLUStat_t * stat);
+
+extern int_t
+dReDistribute_A(SuperMatrix *A, dScalePermstruct_t *ScalePermstruct,
+                Glu_freeable_t *Glu_freeable, int_t *xsup, int_t *supno,
+                gridinfo_t *grid, int_t *colptr[], int_t *rowind[],
+                double *a[]);
+
 #if 0 // NOT CALLED
 /* from ancFactorization.h (not called) */
 extern int_t ancestorFactor(

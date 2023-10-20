@@ -1461,6 +1461,13 @@ extern int_t Wait_LDiagBlock_Recv(MPI_Request *, SCT_t *);
 extern int_t Test_LDiagBlock_Recv(MPI_Request *, SCT_t *);
 extern int_t LDiagBlockRecvWait( int_t k, int* factored_U, MPI_Request *, gridinfo_t *);
 
+
+extern int_t num_full_cols_U_mod(
+    int_t kk, int_t *usub, int_t *xsup,
+    gridinfo_t *grid, int_t *perm_u,
+    int_t *ldu /* max. segment size of nonzero columns in U(kk,:) */
+);
+
 /*=====================*/
 
 #ifdef __cplusplus
