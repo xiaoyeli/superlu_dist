@@ -124,7 +124,7 @@ while (j < nub && perm_u[2 * j] <= k0 + num_look_aheads)
 #if !defined __INTEL_LLVM_COMPILER 
 /* Yang: this parallel for is causing segfault for one-api compilers*/    
 #pragma omp parallel for \
-    firstprivate(lptr,luptr,ib,current_b) private(lb) \
+    firstprivate(lptr,luptr,current_b) private(ib,lb) \
     default(shared) schedule(dynamic)
 #endif
 #endif
