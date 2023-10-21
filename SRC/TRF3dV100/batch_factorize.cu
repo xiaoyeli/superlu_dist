@@ -804,8 +804,9 @@ void freeBatchFactorizeWorkspace(BatchFactorizeWorkspace* ws)
     gpuErrchk( cudaFree(d_localLU.Unzval_br_new_dat) );
     gpuErrchk( cudaFree(d_localLU.Unzval_br_new_offset) );
     gpuErrchk( cudaFree(d_localLU.Unzval_br_new_ptr) );
-
+#ifdef HAVE_MAGMA
     magma_queue_destroy(ws->magma_queue);
+#endif
     cublasDestroy( ws->cuhandle );
     gpuErrchk( cudaStreamDestroy(ws->stream) );
 }
