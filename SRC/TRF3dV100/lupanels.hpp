@@ -437,13 +437,16 @@ struct LUstruct_v100
         
         for (int_t i = 0; i < CEILING(nsupers, Pc); ++i)
             if (i * Pc + mycol < nsupers && isNodeInMyGrid[i * Pc + mycol] == 1){
+                if(lPanelVec[i].index)
                 SUPERLU_FREE(lPanelVec[i].index);
                 // SUPERLU_FREE(lPanelVec[i].val);
             }
 
         for (int_t i = 0; i < CEILING(nsupers, Pr); ++i)
             if (i * Pr + myrow < nsupers && isNodeInMyGrid[i * Pr + myrow] == 1){
+                if(uPanelVec[i].index)
                 SUPERLU_FREE(uPanelVec[i].index);
+                if(uPanelVec[i].val)
                 SUPERLU_FREE(uPanelVec[i].val);
             }
     
