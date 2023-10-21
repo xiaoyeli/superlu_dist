@@ -121,9 +121,12 @@ while (j < nub && perm_u[2 * j] <= k0 + num_look_aheads)
     /* Sherry -- examine all the shared variables ??
        'firstprivate' ensures that the private variables are initialized
        to the values before entering the loop.  */
+#if !defined __INTEL_LLVM_COMPILER 
+/* Yang: this parallel for is causing segfault for one-api compilers*/    
 #pragma omp parallel for \
     firstprivate(lptr,luptr,ib,current_b) private(lb) \
     default(shared) schedule(dynamic)
+#endif
 #endif
     for (lb = 0; lb < nlb; lb++) { /* Loop through each block in L(:,k) */
         int temp_nbrow; /* automatic variable is private */
