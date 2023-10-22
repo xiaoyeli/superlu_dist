@@ -1264,60 +1264,62 @@ int_t LUstruct_v100::setLUstruct_GPU()
     fflush(stdout);
 
     ///////////////////////////////////////////////////////////////////////////
-    // New intermediate code for batched routine 
+    // New intermediate code for batched routine - this should all be removed 
+    // as soon as the batched code is stable 
     ///////////////////////////////////////////////////////////////////////////
+    if ( options->batchCount > 0 ) 
+    { 
+        // Allocate data, offset and ptr arrays for the indices and lower triangular blocks 
+        d_localLU.Lrowind_bc_cnt = host_Llu->Lrowind_bc_cnt;
+        gpuErrchk( cudaMalloc(&(d_localLU.Lrowind_bc_dat), d_localLU.Lrowind_bc_cnt * sizeof(int_t)) );
+        gpuErrchk( cudaMalloc(&(d_localLU.Lrowind_bc_offset), nsupers * sizeof(long int)) );
+        gpuErrchk( cudaMalloc(&(d_localLU.Lrowind_bc_ptr), nsupers * sizeof(int_t*)) );
 
-    // Allocate data, offset and ptr arrays for the indices and lower triangular blocks 
-    d_localLU.Lrowind_bc_cnt = host_Llu->Lrowind_bc_cnt;
-    gpuErrchk( cudaMalloc(&(d_localLU.Lrowind_bc_dat), d_localLU.Lrowind_bc_cnt * sizeof(int_t)) );
-    gpuErrchk( cudaMalloc(&(d_localLU.Lrowind_bc_offset), nsupers * sizeof(long int)) );
-    gpuErrchk( cudaMalloc(&(d_localLU.Lrowind_bc_ptr), nsupers * sizeof(int_t*)) );
+        d_localLU.Lnzval_bc_cnt = host_Llu->Lnzval_bc_cnt;
+        gpuErrchk( cudaMalloc(&(d_localLU.Lnzval_bc_dat), d_localLU.Lnzval_bc_cnt * sizeof(double)) );
+        gpuErrchk( cudaMalloc(&(d_localLU.Lnzval_bc_offset), nsupers * sizeof(long int)) );
+        gpuErrchk( cudaMalloc(&(d_localLU.Lnzval_bc_ptr), nsupers * sizeof(double*)) );
 
-    d_localLU.Lnzval_bc_cnt = host_Llu->Lnzval_bc_cnt;
-    gpuErrchk( cudaMalloc(&(d_localLU.Lnzval_bc_dat), d_localLU.Lnzval_bc_cnt * sizeof(double)) );
-    gpuErrchk( cudaMalloc(&(d_localLU.Lnzval_bc_offset), nsupers * sizeof(long int)) );
-    gpuErrchk( cudaMalloc(&(d_localLU.Lnzval_bc_ptr), nsupers * sizeof(double*)) );
+        // Allocate data, offset and ptr arrays for the indices and upper triangular blocks 
+        d_localLU.Ucolind_br_cnt = host_Llu->Ucolind_br_cnt;
+        gpuErrchk( cudaMalloc(&(d_localLU.Ucolind_br_dat), d_localLU.Ucolind_br_cnt * sizeof(int_t)) );
+        gpuErrchk( cudaMalloc(&(d_localLU.Ucolind_br_offset), nsupers * sizeof(int64_t)) );
+        gpuErrchk( cudaMalloc(&(d_localLU.Ucolind_br_ptr), nsupers * sizeof(int_t*)) );
 
-    // Allocate data, offset and ptr arrays for the indices and upper triangular blocks 
-    d_localLU.Ucolind_br_cnt = host_Llu->Ucolind_br_cnt;
-    gpuErrchk( cudaMalloc(&(d_localLU.Ucolind_br_dat), d_localLU.Ucolind_br_cnt * sizeof(int_t)) );
-    gpuErrchk( cudaMalloc(&(d_localLU.Ucolind_br_offset), nsupers * sizeof(int64_t)) );
-    gpuErrchk( cudaMalloc(&(d_localLU.Ucolind_br_ptr), nsupers * sizeof(int_t*)) );
+        d_localLU.Unzval_br_new_cnt = host_Llu->Unzval_br_new_cnt;
+        gpuErrchk( cudaMalloc(&(d_localLU.Unzval_br_new_dat), d_localLU.Unzval_br_new_cnt * sizeof(double)) );
+        gpuErrchk( cudaMalloc(&(d_localLU.Unzval_br_new_offset), nsupers * sizeof(int64_t)) );
+        gpuErrchk( cudaMalloc(&(d_localLU.Unzval_br_new_ptr), nsupers * sizeof(double*)) );
 
-    d_localLU.Unzval_br_new_cnt = host_Llu->Unzval_br_new_cnt;
-    gpuErrchk( cudaMalloc(&(d_localLU.Unzval_br_new_dat), d_localLU.Unzval_br_new_cnt * sizeof(double)) );
-    gpuErrchk( cudaMalloc(&(d_localLU.Unzval_br_new_offset), nsupers * sizeof(int64_t)) );
-    gpuErrchk( cudaMalloc(&(d_localLU.Unzval_br_new_ptr), nsupers * sizeof(double*)) );
+        // Copy the index and nzval data over to the GPU 
+        gpuErrchk( cudaMemcpy(d_localLU.Lrowind_bc_dat, host_Llu->Lrowind_bc_dat, d_localLU.Lrowind_bc_cnt * sizeof(int_t), cudaMemcpyHostToDevice) );
+        gpuErrchk( cudaMemcpy(d_localLU.Lrowind_bc_offset, host_Llu->Lrowind_bc_offset, nsupers * sizeof(long int), cudaMemcpyHostToDevice) );
+        gpuErrchk( cudaMemcpy(d_localLU.Lnzval_bc_dat, host_Llu->Lnzval_bc_dat, d_localLU.Lnzval_bc_cnt * sizeof(double), cudaMemcpyHostToDevice) );
+        gpuErrchk( cudaMemcpy(d_localLU.Lnzval_bc_offset, host_Llu->Lnzval_bc_offset, nsupers * sizeof(long int), cudaMemcpyHostToDevice) );
+        
+        gpuErrchk( cudaMemcpy(d_localLU.Ucolind_br_dat, host_Llu->Ucolind_br_dat, d_localLU.Ucolind_br_cnt * sizeof(int_t), cudaMemcpyHostToDevice) );
+        gpuErrchk( cudaMemcpy(d_localLU.Ucolind_br_offset, host_Llu->Ucolind_br_offset, nsupers * sizeof(int64_t), cudaMemcpyHostToDevice) );
+        gpuErrchk( cudaMemcpy(d_localLU.Unzval_br_new_dat, host_Llu->Unzval_br_new_dat, d_localLU.Unzval_br_new_cnt * sizeof(double), cudaMemcpyHostToDevice) );
+        gpuErrchk( cudaMemcpy(d_localLU.Unzval_br_new_offset, host_Llu->Unzval_br_new_offset, nsupers * sizeof(int64_t), cudaMemcpyHostToDevice) );
 
-    // Copy the index and nzval data over to the GPU 
-    gpuErrchk( cudaMemcpy(d_localLU.Lrowind_bc_dat, host_Llu->Lrowind_bc_dat, d_localLU.Lrowind_bc_cnt * sizeof(int_t), cudaMemcpyHostToDevice) );
-    gpuErrchk( cudaMemcpy(d_localLU.Lrowind_bc_offset, host_Llu->Lrowind_bc_offset, nsupers * sizeof(long int), cudaMemcpyHostToDevice) );
-    gpuErrchk( cudaMemcpy(d_localLU.Lnzval_bc_dat, host_Llu->Lnzval_bc_dat, d_localLU.Lnzval_bc_cnt * sizeof(double), cudaMemcpyHostToDevice) );
-    gpuErrchk( cudaMemcpy(d_localLU.Lnzval_bc_offset, host_Llu->Lnzval_bc_offset, nsupers * sizeof(long int), cudaMemcpyHostToDevice) );
-    
-    gpuErrchk( cudaMemcpy(d_localLU.Ucolind_br_dat, host_Llu->Ucolind_br_dat, d_localLU.Ucolind_br_cnt * sizeof(int_t), cudaMemcpyHostToDevice) );
-    gpuErrchk( cudaMemcpy(d_localLU.Ucolind_br_offset, host_Llu->Ucolind_br_offset, nsupers * sizeof(int64_t), cudaMemcpyHostToDevice) );
-    gpuErrchk( cudaMemcpy(d_localLU.Unzval_br_new_dat, host_Llu->Unzval_br_new_dat, d_localLU.Unzval_br_new_cnt * sizeof(double), cudaMemcpyHostToDevice) );
-    gpuErrchk( cudaMemcpy(d_localLU.Unzval_br_new_offset, host_Llu->Unzval_br_new_offset, nsupers * sizeof(int64_t), cudaMemcpyHostToDevice) );
+        // Generate the pointers using the offsets 
+        generateOffsetPointers(d_localLU.Lrowind_bc_dat, d_localLU.Lrowind_bc_offset, d_localLU.Lrowind_bc_ptr, nsupers);
+        generateOffsetPointers(d_localLU.Lnzval_bc_dat, d_localLU.Lnzval_bc_offset, d_localLU.Lnzval_bc_ptr, nsupers);
+        generateOffsetPointers(d_localLU.Ucolind_br_dat, d_localLU.Ucolind_br_offset, d_localLU.Ucolind_br_ptr, nsupers);
+        generateOffsetPointers(d_localLU.Unzval_br_new_dat, d_localLU.Unzval_br_new_offset, d_localLU.Unzval_br_new_ptr, nsupers);
 
-    // Generate the pointers using the offsets 
-    generateOffsetPointers(d_localLU.Lrowind_bc_dat, d_localLU.Lrowind_bc_offset, d_localLU.Lrowind_bc_ptr, nsupers);
-    generateOffsetPointers(d_localLU.Lnzval_bc_dat, d_localLU.Lnzval_bc_offset, d_localLU.Lnzval_bc_ptr, nsupers);
-    generateOffsetPointers(d_localLU.Ucolind_br_dat, d_localLU.Ucolind_br_offset, d_localLU.Ucolind_br_ptr, nsupers);
-    generateOffsetPointers(d_localLU.Unzval_br_new_dat, d_localLU.Unzval_br_new_offset, d_localLU.Unzval_br_new_ptr, nsupers);
+        // Copy the L data for global ids and block offsets into a more parallel friendly data structure 
+        computeLBlockData();
 
-    // Copy the L data for global ids and block offsets into a more parallel friendly data structure 
-    computeLBlockData();
-
-    // Temporarily use the values from the flat arrays 
-    for (i = 0; i < CEILING(nsupers, Pc); ++i)
-    {
-        if (!lPanelVec[i].isEmpty())
-            lPanelVec_GPU[i].val = lPanelVec[i].gpuPanel.val = (host_Llu->Lnzval_bc_offset[i] < 0 ? NULL : d_localLU.Lnzval_bc_dat + host_Llu->Lnzval_bc_offset[i]);
-        if (!uPanelVec[i].isEmpty())
-            uPanelVec_GPU[i].val = uPanelVec[i].gpuPanel.val = (host_Llu->Unzval_br_new_offset[i] < 0 ? NULL : d_localLU.Unzval_br_new_dat + host_Llu->Unzval_br_new_offset[i]);
+        // Temporarily use the values from the flat arrays 
+        for (i = 0; i < CEILING(nsupers, Pc); ++i)
+        {
+            if (!lPanelVec[i].isEmpty())
+                lPanelVec_GPU[i].val = lPanelVec[i].gpuPanel.val = (host_Llu->Lnzval_bc_offset[i] < 0 ? NULL : d_localLU.Lnzval_bc_dat + host_Llu->Lnzval_bc_offset[i]);
+            if (!uPanelVec[i].isEmpty())
+                uPanelVec_GPU[i].val = uPanelVec[i].gpuPanel.val = (host_Llu->Unzval_br_new_offset[i] < 0 ? NULL : d_localLU.Unzval_br_new_dat + host_Llu->Unzval_br_new_offset[i]);
+        }
     }
-
     ///////////////////////////////////////////////////////////////////////////
 
     gpuErrchk(cudaMalloc(&A_gpu.lPanelVec, CEILING(nsupers, Pc) * sizeof(lpanelGPU_t)));
