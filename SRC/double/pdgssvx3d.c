@@ -1256,6 +1256,7 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
             }
             else
             {
+                #ifdef HAVE_MAGMA
                 BatchFactorize_Handle batch_ws = getBatchFactorizeWorkspace(
                     nsupers, ldt, trf3Dpartition, LUstruct, grid3d, options, stat, info
                 );
@@ -1274,6 +1275,10 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 
                 copyGPULUDataToHost(batch_ws, LUstruct, grid3d, SCT, options, stat);
                 freeBatchFactorizeWorkspace(batch_ws);
+                #else 
+                // TODO: How should we handle this?
+                ABORT("Fatal error: Batched mode requires magma support!\n");
+                #endif 
             }
 
 			// print other stuff
