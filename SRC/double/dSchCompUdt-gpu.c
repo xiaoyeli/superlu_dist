@@ -216,7 +216,7 @@ if ( msg0 && msg2 ) {  /* L(:,k) and U(k,:) are not empty. */
 		    size_t C_stream_size = nbrow * num_col_stream * sizeof(double);
 
 		    // Sherry: Check dC buffer of *buffer_size* is large enough
-		    assert(nbrow*(st_col+num_col_stream) < buffer_size);
+		    assert(nbrow*(st_col+num_col_stream) <= buffer_size);
 
 		    gpuMemcpyAsync(dB+b_offset, tempu+b_offset, B_stream_size,
 		    		    gpuMemcpyHostToDevice, streams[stream_id]);

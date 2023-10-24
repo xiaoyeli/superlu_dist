@@ -940,7 +940,7 @@ int_t LUstruct_v100::dSchurCompUpdatePartGPU(
     double alpha = 1.0;
     double beta = 0.0;
 #ifndef NDEBUG
-    printf("m=%d, n=%d, k=%d\n", gemm_m, gemm_n, gemm_k);
+   // printf("m=%d, n=%d, k=%d\n", gemm_m, gemm_n, gemm_k);
 #endif
     cublasDgemm(handle, CUBLAS_OP_N, CUBLAS_OP_N,
                 gemm_m, gemm_n, gemm_k, &alpha,
@@ -1088,6 +1088,8 @@ int_t LUstruct_v100::setLUstruct_GPU()
     
     size_t totalNzvalSize = 0; /* too big for gemmBufferSize */
     size_t max_gemmCsize = 0;  /* Sherry added 2/20/2023 */
+    size_t max_nzrow = 0;  /* Yang added 10/20/2023 */
+    size_t max_nzcol = 0;  
     
     /*Memory for lpapenl and upanel Data*/
     for (i = 0; i < CEILING(nsupers, Pc); ++i)
@@ -1096,6 +1098,8 @@ int_t LUstruct_v100::setLUstruct_GPU()
         {
             memReqData += lPanelVec[i].totalSize();
             totalNzvalSize += lPanelVec[i].nzvalSize();
+            if(lPanelVec[i].nzvalSize()>0)
+                max_nzrow = SUPERLU_MAX(lPanelVec[i].nzrows(),max_nzrow);
 	    //max_gemmCsize = SUPERoLU_MAX(max_gemmCsize, ???);
         }
     }
@@ -1105,8 +1109,11 @@ int_t LUstruct_v100::setLUstruct_GPU()
         {
             memReqData += uPanelVec[i].totalSize();
             totalNzvalSize += uPanelVec[i].nzvalSize();
+            if(uPanelVec[i].nzvalSize()>0)
+                max_nzcol = SUPERLU_MAX(uPanelVec[i].nzcols(),max_nzcol);
         }
     }
+    max_gemmCsize = max_nzcol*max_nzrow;
     
     memReqData += CEILING(nsupers, Pc) * sizeof(lpanelGPU_t);
     memReqData += CEILING(nsupers, Pr) * sizeof(upanelGPU_t);
@@ -1118,8 +1125,11 @@ int_t LUstruct_v100::setLUstruct_GPU()
     int_t maxBuffSize = sp_ienv_dist (8, options);
     int maxsup = sp_ienv_dist(3, options); // max. supernode size
     maxBuffSize = SUPERLU_MAX(maxsup * maxsup, maxBuffSize); // Sherry added 7/10/23
-    A_gpu.gemmBufferSize = SUPERLU_MIN(maxBuffSize, totalNzvalSize);
-    
+ #if 0   
+    A_gpu.gemmBufferSize = SUPERLU_MIN(maxBuffSize, totalNzvalSize); 
+ #else 
+    A_gpu.gemmBufferSize = SUPERLU_MIN(maxBuffSize, SUPERLU_MAX(max_gemmCsize,totalNzvalSize)); /* Yang added 10/20/2023 */
+ #endif    
     size_t dataPerStream = 3 * sizeof(double) * maxLvalCount + 3 * sizeof(double) * maxUvalCount + 2 * sizeof(int_t) * maxLidxCount + 2 * sizeof(int_t) * maxUidxCount + A_gpu.gemmBufferSize * sizeof(double) + ldt * ldt * sizeof(double);
     if (memReqData + 2 * dataPerStream > useableGPUMem)
     {

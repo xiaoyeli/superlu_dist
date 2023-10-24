@@ -1575,7 +1575,16 @@ extern void pdconvert_flatten_skyline2UROWDATA(superlu_dist_options_t *options, 
 	   dLUstruct_t *LUstruct, SuperLUStat_t *stat, int n);
 extern void pdconvertUROWDATA2skyline(superlu_dist_options_t *options, gridinfo_t *grid,
 	   dLUstruct_t *LUstruct, SuperLUStat_t *stat, int n);
-       
+extern int_t
+dReDistribute_A(SuperMatrix *A, dScalePermstruct_t *ScalePermstruct,
+                Glu_freeable_t *Glu_freeable, int_t *xsup, int_t *supno,
+                gridinfo_t *grid, int_t *colptr[], int_t *rowind[],
+                double *a[]);
+extern float
+pddistribute3d_Yang(superlu_dist_options_t *options, int_t n, SuperMatrix *A,
+	     dScalePermstruct_t *ScalePermstruct,
+	     Glu_freeable_t *Glu_freeable, dLUstruct_t *LUstruct,
+	     gridinfo3d_t *grid3d);       
 #if 0 // NOT CALLED
 /* from ancFactorization.h (not called) */
 extern int_t ancestorFactor(

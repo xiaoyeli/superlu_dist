@@ -2362,7 +2362,6 @@ void dpacked2skyline(int_t k, int_t *usubpack, double *valpack, int_t *usub, dou
         
         usubPtr += UB_DESCRIPTOR + gsupc;
     }   
-    return 0;
 }
 
 
