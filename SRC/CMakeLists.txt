@@ -78,6 +78,7 @@ if(enable_double)
 
 if(TPL_ENABLE_CUDALIB)
   list(APPEND sources cuda/pdgstrs_lsum_cuda.cu)
+  list(APPEND sources cuda/pdgstrs_perm_cuda.cu)
   list(APPEND sources TRF3dV100/schurCompUpdate.cu )
   list(APPEND sources TRF3dV100/batch_block_copy.cu)
   list(APPEND sources TRF3dV100/batch_factorize.cu)
@@ -143,7 +144,7 @@ endif()
   )
 if (TPL_ENABLE_CUDALIB)
   list(APPEND sources
-       cuda/pdgstrs_lsum_cuda.cu cuda/superlu_gpu_utils.cu cuda/dsuperlu_gpu.cu
+       cuda/pdgstrs_lsum_cuda.cu cuda/superlu_gpu_utils.cu cuda/dsuperlu_gpu.cu cuda/pdgstrs_perm_cuda.cu
   TRF3dV100/schurCompUpdate.cu 
   TRF3dV100/pdgstrf3d_summit.cpp
     TRF3dV100/dsparseTreeFactor_summit.cpp
