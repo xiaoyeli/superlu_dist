@@ -103,6 +103,10 @@ at the top-level directory.
 
 #elif defined(HAVE_HIP)
 
+#ifndef __HIP_PLATFORM_AMD__ 
+#define __HIP_PLATFORM_AMD__
+#endif
+
 #include "hip/hip_runtime_api.h"
 #include "hip/hip_runtime.h"
 #include <hipblas/hipblas.h>
