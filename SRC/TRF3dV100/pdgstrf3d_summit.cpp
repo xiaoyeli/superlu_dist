@@ -305,16 +305,16 @@ int_t LUstruct_v100::pdgstrf3d()
                         if (superlu_acc_offload)
                         {
                 //#define NDEBUG
-    #ifndef NDEBUG
-                            checkGPU();
-                            ancestorReduction3d(ilvl, myNodeCount, treePerm);
-    #endif
+    // #ifndef NDEBUG
+    //                         checkGPU();
+    //                         ancestorReduction3d(ilvl, myNodeCount, treePerm);
+    // #endif
                 
                             ancestorReduction3dGPU(ilvl, myNodeCount, treePerm);
                 
-    #ifndef NDEBUG
-                            checkGPU();
-    #endif
+    // #ifndef NDEBUG
+    //                         checkGPU();
+    // #endif
                         }
 
                         else
