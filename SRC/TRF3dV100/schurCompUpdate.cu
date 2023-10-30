@@ -953,7 +953,7 @@ int_t LUstruct_v100::setLUstruct_GPU()
 	    sForest_t* sforest = trf3Dpartition->sForests[treeId];
 	    if (sforest){
 		int_t *perm_c_supno = sforest->nodeList ;
-        mx_fsize = max(mx_fsize, sforest->nNodes);
+        mx_fsize = max((int_t)mx_fsize, sforest->nNodes);
 
 		int maxTopoLevel = sforest->topoInfo.numLvl;/* number of levels at each outer-tree node */
 		for (int topoLvl = 0; topoLvl < maxTopoLevel; ++topoLvl) {
@@ -1129,7 +1129,7 @@ struct MarshallLUFunc {
     __device__ void operator()(const unsigned int &i) const
     {   
         int k = A_gpu->dperm_c_supno[k_st + i];
-        int* xsup = A_gpu->xsup;
+        int_t* xsup = A_gpu->xsup;
         lpanelGPU_t &lpanel = A_gpu->lPanelVec[A_gpu->g2lCol(k)];
 
         diag_ptrs[i] = lpanel.blkPtr(0);
@@ -1161,7 +1161,7 @@ struct MarshallTRSMUFunc {
     __device__ void operator()(const unsigned int &i) const
     {   
         int k = A_gpu->dperm_c_supno[k_st + i];
-        int* xsup = A_gpu->xsup;
+        int_t* xsup = A_gpu->xsup;
         int ksupc = SuperSize(k);
 
         upanelGPU_t &upanel = A_gpu->uPanelVec[A_gpu->g2lRow(k)];
@@ -1208,7 +1208,7 @@ struct MarshallTRSMLFunc {
     __device__ void operator()(const unsigned int &i) const
     {
         int k = A_gpu->dperm_c_supno[k_st + i];
-        int* xsup = A_gpu->xsup;
+        int_t* xsup = A_gpu->xsup;
         int ksupc = SuperSize(k);
 
         lpanelGPU_t &lpanel = A_gpu->lPanelVec[A_gpu->g2lCol(k)];
@@ -1408,7 +1408,7 @@ struct MarshallSCUInnerFunc {
     __device__ void operator()(const unsigned int &i) const
     {
         int k = A_gpu->dperm_c_supno[k_st + i];
-        int* xsup = A_gpu->xsup;
+        int_t* xsup = A_gpu->xsup;
         lpanelGPU_t &lpanel = A_gpu->lPanelVec[A_gpu->g2lCol(k)];
         upanelGPU_t &upanel = A_gpu->uPanelVec[A_gpu->g2lCol(k)];
         
