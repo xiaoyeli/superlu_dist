@@ -25,11 +25,11 @@ export SUPERLU_N_GEMM=6000 # FLOPS threshold divide workload between CPU and GPU
 
 CPUS_PER_NODE=104
 THREADS_PER_NODE=208
-nprows=(1 2 4 8)
-npcols=(1 2 4 8)
-npz=(1 1 1 1 )
+nprows=(1 )
+npcols=(1 )
+npz=(1  )
 nrhs=(1)
-NTH=1
+NTHS=( 4 8 16 32 52 104)
 NREP=1
 # NODE_VAL_TOT=1
 
@@ -37,6 +37,8 @@ for ((i = 0; i < ${#npcols[@]}; i++)); do
 NROW=${nprows[i]}
 NCOL=${npcols[i]}
 NPZ=${npz[i]}
+for ((g = 0; g < ${#NTHS[@]}; g++)); do
+NTH=${NTHS[g]}
 for ((s = 0; s < ${#nrhs[@]}; s++)); do
 NRHS=${nrhs[s]}
 CORE_VAL2D=`expr $NCOL \* $NROW`
@@ -79,8 +81,8 @@ export MPICH_MAX_THREAD_SAFETY=multiple
 # for MAT in s1_mat_0_253872.bin s2D9pt2048.rua
 # for MAT in dielFilterV3real.bin
 #for MAT in rma10.mtx
-# for MAT in Geo_1438.bin
-for MAT in s2D9pt2048.rua raefsky3.mtx rma10.mtx
+for MAT in Geo_1438.bin
+# for MAT in s2D9pt2048.rua raefsky3.mtx rma10.mtx
 # for MAT in s1_mat_0_126936.bin  # for MAT in s1_mat_0_126936.bin
 # for MAT in s2D9pt2048.rua
 # for MAT in s2D9pt1536.rua
@@ -102,6 +104,7 @@ mpirun -n $NCORE_VAL_TOT  --depth $NTH --cpu-bind depth ./EXAMPLE/pddrive3d -c $
 
 done
 
+done
 done
 done
 done
