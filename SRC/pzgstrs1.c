@@ -234,8 +234,12 @@ void pzgstrs1(superlu_dist_options_t *options, int_t n,
 	if ( myrow == krow ) {
 	    lk = LBi( k, grid );   /* Local block number. */
 	    il = LSUM_BLK( lk );
-	    lsum[il - LSUM_H].r = k;
-	    lsum[il - LSUM_H].i = 0;
+	    #ifdef HAVE_SYCL
+	    lsum[il - LSUM_H] = {k, 0};
+	    #else
+	    real(lsum[il - LSUM_H]) = k;
+	    imag(lsum[il - LSUM_H]) = 0;
+	    #endif
 	}
     }
 
@@ -391,7 +395,7 @@ void pzgstrs1(superlu_dist_options_t *options, int_t n,
 		 MPI_ANY_TAG, grid->comm, &status );
 #endif
 
-	k = (*recvbuf).r;
+	k = real(*recvbuf);
 
 #if ( DEBUGlevel>=2 )
 	printf("(%2d) Recv'd block %d, tag %2d\n", iam, k, status.MPI_TAG);
@@ -636,9 +640,9 @@ void pzgstrs1(superlu_dist_options_t *options, int_t n,
 	ABORT("Malloc fails for Urbs[]"); /* Record number of nonzero
 					     blocks in a block column. */
     Urbs1 = Urbs + nub;
-    if ( !(Ucb_indptr = SUPERLU_MALLOC(nub * sizeof(Ucb_indptr_t *))) )
+    if ( !(Ucb_indptr = (Ucb_indptr_t **) SUPERLU_MALLOC(nub * sizeof(Ucb_indptr_t *))) )
         ABORT("Malloc fails for Ucb_indptr[]");
-    if ( !(Ucb_valptr = SUPERLU_MALLOC(nub * sizeof(int_t *))) )
+    if ( !(Ucb_valptr = (int_t **) SUPERLU_MALLOC(nub * sizeof(int_t *))) )
         ABORT("Malloc fails for Ucb_valptr[]");
 
     /* Count number of row blocks in a block column.
@@ -664,7 +668,7 @@ void pzgstrs1(superlu_dist_options_t *options, int_t n,
     for (lb = 0; lb < nub; ++lb)
 	if ( Urbs[lb] ) { /* Not an empty block column. */
 	    if ( !(Ucb_indptr[lb]
-		   = SUPERLU_MALLOC(Urbs[lb] * sizeof(Ucb_indptr_t))) )
+		   = (Ucb_indptr_t *) SUPERLU_MALLOC(Urbs[lb] * sizeof(Ucb_indptr_t))) )
 		ABORT("Malloc fails for Ucb_indptr[lb][]");
 	    if ( !(Ucb_valptr[lb] = (int_t *) intMalloc_dist(Urbs[lb])) )
 		ABORT("Malloc fails for Ucb_valptr[lb][]");
@@ -802,7 +806,7 @@ void pzgstrs1(superlu_dist_options_t *options, int_t n,
 	/* Receive a message. */
 	MPI_Recv( recvbuf, maxrecvsz, SuperLU_MPI_DOUBLE_COMPLEX,
                  MPI_ANY_SOURCE, MPI_ANY_TAG, grid->comm, &status );
-	k = (*recvbuf).r;
+	k = real(*recvbuf);
 
 #if ( DEBUGlevel>=2 )
 	printf("(%2d) Recv'd block %d, tag %2d\n", iam, k, status.MPI_TAG);

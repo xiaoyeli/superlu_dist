@@ -18,7 +18,7 @@
 #include "superlu_sdefs.h"
 
 #ifdef GPU_ACC // enable GPU
-#include "gpu_api_utils.h"
+//#include "gpu_api_utils.h"
 // #include "mkl.h"
 // #include "sec_structs.h"
 // #include "supernodal_etree.h"
@@ -26,8 +26,8 @@
 /* Constants */
 //#define SLU_TARGET_GPU 0
 //#define MAX_BLOCK_SIZE 10000
-#define MAX_NGPU_STREAMS 32
 
+#if defined(HAVE_CUDA) || defined(HAVE_HIP)
 static
 void check(gpuError_t result, char const *const func, const char *const file, int const line)
 {
@@ -42,6 +42,7 @@ void check(gpuError_t result, char const *const func, const char *const file, in
 }
 
 #define checkGPUErrors(val)  check ( (val), #val, __FILE__, __LINE__ )
+#endif //defined(HAVE_CUDA) || defined(HAVE_HIP)
 
 typedef struct //SCUbuf_gpu_
 {
@@ -135,17 +136,23 @@ typedef struct //sluGPU_t_
 {
     //int gpuId;      // if there are multiple GPUs ( NOT USED )
     sLUstruct_gpu_t *A_gpu, *dA_gpu; // holds the LU structure on GPU
-    gpuStream_t funCallStreams[MAX_NGPU_STREAMS], CopyStream;
-    gpublasHandle_t gpublasHandles[MAX_NGPU_STREAMS];
+    gpuStream_t funCallStreams[MAX_NGPU_STREAMS];
+    gpuStream_t CopyStream;
     int lastOffloadStream[MAX_NGPU_STREAMS];
     int nGPUStreams;
     int* isNodeInMyGrid;
     double acc_async_cost;
+
+    #if defined(HAVE_CUDA) || defined(HAVE_HIP)
+    gpublasHandle_t gpublasHandles[MAX_NGPU_STREAMS];
+    #endif
+  
 } ssluGPU_t;
 
-
+#ifndef HAVE_SYCL
 #ifdef __cplusplus
 extern "C" {
+#endif
 #endif
 
 extern int ssparseTreeFactor_ASYNC_GPU(
@@ -236,8 +243,10 @@ extern int sfree_LUstruct_gpu (ssluGPU_t *sluGPU, SuperLUStat_t *);
 
 extern void sPrint_matrix( char *desc, int_t m, int_t n, float *dA, int_t lda );
 
+#ifndef HAVE_SYCL
 #ifdef __cplusplus
 }
+#endif
 #endif
 
 #endif // matching: enable GPU

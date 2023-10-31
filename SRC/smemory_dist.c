@@ -73,7 +73,7 @@ void suser_free_dist(int_t bytes, int_t which_end)
 int_t sQuerySpace_dist(int_t n, sLUstruct_t *LUstruct, gridinfo_t *grid,
 		       SuperLUStat_t *stat, superlu_dist_mem_usage_t *mem_usage)
 {
-    register int_t dword, gb, iword, k, nb, nsupers;
+    int_t dword, gb, iword, k, nb, nsupers;
     int_t *index, *xsup;
     int iam, mycol, myrow;
     Glu_persist_t *Glu_persist = LUstruct->Glu_persist;
@@ -162,7 +162,7 @@ float *floatMalloc_dist(int_t n)
 float *floatCalloc_dist(int_t n)
 {
     float *buf;
-    register int_t i;
+    int_t i;
     float zero = 0.0;
     buf = (float *) SUPERLU_MALLOC( SUPERLU_MAX(1, n) * sizeof(float));
     if ( !buf ) return (buf);

@@ -100,8 +100,8 @@ pslaqgs(SuperMatrix *A, float *r, float *c,
 	return;
     }
 
-    Astore = A->Store;
-    Aval = Astore->nzval;
+    Astore = (NRformat_loc *) A->Store;
+    Aval = (float *) Astore->nzval;
     m_loc = Astore->m_loc;
 
     /* Initialize LARGE and SMALL. */

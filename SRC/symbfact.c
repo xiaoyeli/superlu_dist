@@ -237,8 +237,8 @@ static void relax_snode
  )
 {
 
-    register int_t j, parent, nsuper;
-    register int_t fsupc; /* beginning of a snode */
+    int_t j, parent, nsuper;
+    int_t fsupc; /* beginning of a snode */
     
     ifill_dist(relax_end, n, SLU_EMPTY);
     ifill_dist(desc, n+1, 0);
@@ -303,30 +303,25 @@ static int_t snode_dfs
  )
 {
 
-    NCPformat *Astore;
-    int_t  *asub, *xa_begin, *xa_end;
-    register int_t i, k, ifrom, ito, nextl, new_next;
-    int_t  nsuper, krow, kmark, mem_error;
-    int_t  *xsup, *supno;
-    int_t  *lsub, *xlsub;
-    int_t  nzlmax, nextu;
-    
-    Astore   = A->Store;
-    asub     = Astore->rowind;
-    xa_begin = Astore->colbeg;
-    xa_end   = Astore->colend;
-    xsup     = Glu_persist->xsup;
-    supno    = Glu_persist->supno;
-    lsub     = Glu_freeable->lsub;
-    xlsub    = Glu_freeable->xlsub;
-    nzlmax   = Glu_freeable->nzlmax;
-    nsuper   = ++supno[jcol]; /* Next available supernode number */
-    nextl    = xlsub[jcol];
-    nextu    = Glu_freeable->xusub[jcol];
+    int_t ito, new_next;
+    int_t krow, kmark, mem_error;
 
-    for (i = jcol; i <= kcol; i++) {
+    NCPformat *Astore   = (NCPformat *) A->Store;
+    int_t *asub         = (int_t *) Astore->rowind;
+    int_t *xa_begin     = (int_t *) Astore->colbeg;
+    int_t *xa_end       = (int_t *) Astore->colend;
+    int_t *xsup         = (int_t *)Glu_persist->xsup;
+    int_t *supno        = (int_t *)Glu_persist->supno;
+    int_t *lsub         = (int_t *)Glu_freeable->lsub;
+    int_t *xlsub        = (int_t *)Glu_freeable->xlsub;
+    int_t nzlmax        = Glu_freeable->nzlmax;
+    int_t nsuper        = ++supno[jcol]; /* Next available supernode number */
+    int_t nextl         = xlsub[jcol];
+    int_t nextu         = Glu_freeable->xusub[jcol];
+
+    for (int_t i = jcol; i <= kcol; i++) {
 	/* For each nonzero in A[*,i] */
-	for (k = xa_begin[i]; k < xa_end[i]; ++k) {
+	for (int_t k = xa_begin[i]; k < xa_end[i]; ++k) {
 	    krow = asub[k];
 	    kmark = marker[krow];
 	    if ( kmark != kcol ) { /* First time visit krow */
@@ -355,9 +350,9 @@ static int_t snode_dfs
 	    lsub = Glu_freeable->lsub;
 	}
 	ito = nextl;
-	for (ifrom = xlsub[jcol]; ifrom < nextl; )
+	for (int_t ifrom = xlsub[jcol]; ifrom < nextl; )
 	    lsub[ito++] = lsub[ifrom++];	
-        for (i = jcol+1; i <= kcol; i++) xlsub[i] = nextl;
+        for (int_t i = jcol+1; i <= kcol; i++) xlsub[i] = nextl;
 	nextl = ito;
     }
 
@@ -492,7 +487,7 @@ static int_t column_dfs
     int_t     mem_error;
     
     /* Initializations */
-    Astore   = A->Store;
+    Astore   = (NCPformat *)A->Store;
     asub     = Astore->rowind;
     xa_begin = Astore->colbeg;
     xa_end   = Astore->colend;

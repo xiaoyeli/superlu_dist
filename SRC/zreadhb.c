@@ -106,7 +106,7 @@ zreadhb_dist(int iam, FILE *fp, int_t *nrow, int_t *ncol, int_t *nonz,
 	     doublecomplex **nzval, int_t **rowind, int_t **colptr)
 {
 
-    register int_t i, numer_lines, rhscrd = 0;
+    int_t i, numer_lines, rhscrd = 0;
     int_t tmp, colnum, colsize, rownum, rowsize, valnum, valsize;
     char buf[100], type[4];
 
@@ -191,7 +191,7 @@ zreadhb_dist(int iam, FILE *fp, int_t *nrow, int_t *ncol, int_t *nonz,
 /* Eat up the rest of the current line */
 static int DumpLine(FILE *fp)
 {
-    register int c;
+    int c;
     while ((c = fgetc(fp)) != '\n') ;
     return 0;
 }
@@ -239,7 +239,7 @@ static int ParseFloatFormat(char *buf, int_t *num, int_t *size)
 static void
 ReadVector(FILE *fp, int_t n, int_t *where, int_t perline, int_t persize)
 {
-    register int_t i, j, item;
+    int_t i, j, item;
     char tmp, buf[100];
 
     i = 0;
@@ -260,9 +260,9 @@ void
 zReadValues(FILE *fp, int_t n, doublecomplex *destination,
              int_t perline, int_t persize)
 {
-    register int_t i, j, k, s;
-    register int_t pair;
-    register double realpart;
+    int_t i, j, k, s;
+    int_t pair;
+    double realpart;
     char tmp, buf[100];
 
     i = 0;
@@ -280,13 +280,18 @@ zReadValues(FILE *fp, int_t n, doublecomplex *destination,
 		realpart = atof(&buf[s]);
 		pair = 1;
 	    } else {
-		/* The value is imaginary part */
-	        destination[i].r = realpart;
-		destination[i++].i = atof(&buf[s]);
+                /* The value is imaginary part */
+                #ifdef HAVE_SYCL
+                destination[i].real() = realpart;
+                destination[i++].imag() = atof(&buf[s]);
+                #else
+                destination[i].r = realpart;
+                destination[i++].i = atof(&buf[s]);
+                #endif
+
 		pair = 0;
 	    }
 	    buf[(j+1)*persize] = tmp;     /* recover the char at that place */
 	}
     }
 }
-

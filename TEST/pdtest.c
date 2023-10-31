@@ -123,7 +123,7 @@ int main(int argc, char *argv[])
     int    iam, info, ldb, ldx, nrhs;
     int_t  iinfo;
     char     **cpp, c;
-    FILE *fp, *fopen();
+    FILE *fp;
     char matrix_type[8], equed[1];
     int  relax, maxsuper, fill_ratio, min_gemm_gpu_offload=0;
     int    equil, ifact, nfact, iequil, iequed, prefact, notfactored, diaginv;
@@ -236,7 +236,9 @@ int main(int argc, char *argv[])
 
 		    	//if (!iam) printf("equil loop ... %d\n", equil);
 
-		    	options.Equil = equil;
+                        // C++ Compiler (using SYCL) doesn't permit direct assignment of int
+                        // to a enum type, hence explicit cast is needed
+                        options.Equil = (yes_no_t)equil;
 
 		    	/* Need a first factor */
 		    	prefact   = ( options.Fact == FACTORED ||

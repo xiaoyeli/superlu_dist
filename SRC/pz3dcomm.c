@@ -71,10 +71,10 @@ int_t zAllocLlu(int_t nsupers, zLUstruct_t * LUstruct, gridinfo3d_t* grid3d)
 
    // Sherry: use int type
                   /* Recv from no one (0), left (1), and up (2).*/
-    int *ToRecv = SUPERLU_MALLOC(nsupers * sizeof(int));
+    int *ToRecv = (int *) SUPERLU_MALLOC(nsupers * sizeof(int));
     for (i = 0; i < nsupers; ++i) ToRecv[i] = 0;
                   /* Whether need to send down block row. */
-    int *ToSendD = SUPERLU_MALLOC(nbr * sizeof(int));
+    int *ToSendD = (int *) SUPERLU_MALLOC(nbr * sizeof(int));
     for (i = 0; i < nbr; ++i) ToSendD[i] = 0;
                   /* List of processes to send right block col. */
     int **ToSendR = (int **) SUPERLU_MALLOC(nbc * sizeof(int*));
@@ -83,7 +83,7 @@ int_t zAllocLlu(int_t nsupers, zLUstruct_t * LUstruct, gridinfo3d_t* grid3d)
 	{
 	    /* code */
 	    //ToSendR[i] = INT_T_ALLOC(Pc);
-	    ToSendR[i] = SUPERLU_MALLOC(Pc * sizeof(int));
+	  ToSendR[i] = (int *) SUPERLU_MALLOC(Pc * sizeof(int));
 	}
     
     /*now setup the pointers*/

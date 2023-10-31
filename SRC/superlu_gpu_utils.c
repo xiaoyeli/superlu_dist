@@ -27,9 +27,12 @@ __device__ int dnextpow2(int v)
     return v;
 }
 
-
 typedef int pfx_dtype ; 
-__device__ void incScan(pfx_dtype *inOutArr, pfx_dtype *temp, int n)
+__device__ void incScan(pfx_dtype *inOutArr, pfx_dtype *temp, int n
+                        #ifdef HAVE_SYCL
+                        , sycl::nd_item<3> item
+                        #endif
+                        )
 {
     // extern __shared__ pfx_dtype temp[];
     int n_original = n;
@@ -81,7 +84,6 @@ __device__ void incScan(pfx_dtype *inOutArr, pfx_dtype *temp, int n)
     __syncthreads();
     
 } /* end incScan */ 
-
 
 #if 0 // Not used
 __global__ void gExScan(pfx_dtype *inArr, int n)

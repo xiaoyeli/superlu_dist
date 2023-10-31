@@ -218,7 +218,7 @@ int_t ddenseTreeFactor(
                 int_t ub = ij / nlb;
                 int_t lb
                     = ij % nlb;
-                double *L_mat = lPanelInfo->lusup;
+                double *L_mat = (double *) lPanelInfo->lusup;
                 int_t ldl = lPanelInfo->nsupr;
                 int_t luptr0 = lPanelInfo->luptr0;
                 double *U_mat = bigU;

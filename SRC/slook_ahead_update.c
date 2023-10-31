@@ -25,7 +25,7 @@ at the top-level directory.
  *
  */
 
-#include <assert.h>  /* assertion doesn't work if NDEBUG is defined */
+//#include <assert.h>  /* assertion doesn't work if NDEBUG is defined */
 
 iukp = iukp0; /* point to the first block in index[] */
 rukp = rukp0; /* point to the start of nzval[] */

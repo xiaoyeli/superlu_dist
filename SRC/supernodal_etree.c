@@ -558,8 +558,8 @@ int* getLastDep(gridinfo_t *grid, SuperLUStat_t *stat,
 	int_t   ncb = nsupers / Pc;
 	int_t  nrb = nsupers / Pr;
 	stat->num_look_aheads = num_look_aheads;
-	int* look_ahead_l = SUPERLU_MALLOC (nsupers * sizeof (int));
-	int* look_ahead = SUPERLU_MALLOC (nsupers * sizeof (int));
+	int* look_ahead_l = (int_t *) SUPERLU_MALLOC (nsupers * sizeof (int));
+	int* look_ahead = (int_t *) SUPERLU_MALLOC (nsupers * sizeof (int));
 	for (int_t lb = 0; lb < nsupers; lb++)
 		look_ahead_l[lb] = -1;
 	/* go through U-factor */
@@ -643,7 +643,7 @@ int* getLastDep(gridinfo_t *grid, SuperLUStat_t *stat,
 
 int* getLastDepBtree( int_t nsupers, treeList_t* treeList)
 {
-	int* look_ahead = SUPERLU_MALLOC (nsupers * sizeof (int));
+	int* look_ahead = (int_t *) SUPERLU_MALLOC (nsupers * sizeof (int));
 	for (int i = 0; i < nsupers; ++i)
 	{
 		look_ahead[i] = -1;
@@ -681,8 +681,8 @@ int_t* getGlobal_iperm(int_t nsupers, int_t nperms,  // number of permutations
                        int_t* nnodes 		// number of nodes in each permutation
                       )
 {
-	int_t*  gperm = SUPERLU_MALLOC (nsupers * sizeof (int_t));
-	int_t*  giperm = SUPERLU_MALLOC (nsupers * sizeof (int_t));
+	int_t*  gperm = (int_t *) SUPERLU_MALLOC (nsupers * sizeof (int_t));
+	int_t*  giperm = (int_t *) SUPERLU_MALLOC (nsupers * sizeof (int_t));
 	int_t ptr = 0;
 	for (int_t perm = 0; perm < nperms; ++perm)
 	{
@@ -705,7 +705,7 @@ int_t* getGlobal_iperm(int_t nsupers, int_t nperms,  // number of permutations
 int_t* getTreeHeads(int_t maxLvl, int_t nsupers, treeList_t* treeList)
 {
 	int_t numTrees = (1 << maxLvl) - 1;
-	int_t* treeHeads = SUPERLU_MALLOC (numTrees * sizeof (int_t));
+	int_t* treeHeads = (int_t *) SUPERLU_MALLOC (numTrees * sizeof (int_t));
 	// for (int i = 0; i < numTrees; ++i)
 	// {
 	// 	/* code */
@@ -733,7 +733,7 @@ int_t* getTreeHeads(int_t maxLvl, int_t nsupers, treeList_t* treeList)
 int_t* calcNumNodes(int_t maxLvl,  int_t* treeHeads, treeList_t* treeList)
 {
 	int_t numTrees = (1 << maxLvl) - 1;
-	int_t* nnodes = SUPERLU_MALLOC (numTrees * sizeof (int_t));
+	int_t* nnodes = (int_t *) SUPERLU_MALLOC (numTrees * sizeof (int_t));
 	for (int_t i = 0; i < numTrees; ++i)
 	{
 		/* code */
@@ -760,13 +760,13 @@ int_t** getNodeList(int_t maxLvl, int_t* setree, int_t* nnodes,
                     int_t* treeHeads, treeList_t* treeList)
 {
 	int_t numTrees = (1 << maxLvl) - 1;
-	int_t** nodeList = SUPERLU_MALLOC (numTrees * sizeof (int_t*));
+	int_t** nodeList = (int_t **) SUPERLU_MALLOC (numTrees * sizeof (int_t*));
 	for (int_t i = 0; i < numTrees; ++i)
 	{
 		/* code */
 		if (nnodes[i] > 0)
 		{
-			nodeList[i] = SUPERLU_MALLOC (nnodes[i] * sizeof (int_t));
+		  nodeList[i] = (int_t *) SUPERLU_MALLOC (nnodes[i] * sizeof (int_t));
 			assert(nodeList[i]);
 		}
 		else

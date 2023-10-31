@@ -34,7 +34,7 @@ zCreate_CompCol_Matrix_dist(SuperMatrix *A, int_t m, int_t n, int_t nnz,
     A->Mtype = mtype;
     A->nrow = m;
     A->ncol = n;
-    A->Store = (void *) SUPERLU_MALLOC( sizeof(NCformat) );
+    A->Store = (NCformat *) SUPERLU_MALLOC( sizeof(NCformat) );
     if ( !(A->Store) ) ABORT("SUPERLU_MALLOC fails for A->Store");
     Astore = (NCformat *) A->Store;
     Astore->nnz = nnz;
@@ -56,7 +56,7 @@ zCreate_CompRowLoc_Matrix_dist(SuperMatrix *A, int_t m, int_t n,
     A->Mtype = mtype;
     A->nrow = m;
     A->ncol = n;
-    A->Store = (void *) SUPERLU_MALLOC( sizeof(NRformat_loc) );
+    A->Store = (NRformat_loc *) SUPERLU_MALLOC( sizeof(NRformat_loc) );
     if ( !(A->Store) ) ABORT("SUPERLU_MALLOC fails for A->Store");
     Astore = (NRformat_loc *) A->Store;
     Astore->nnz_loc = nnz_loc;
@@ -74,7 +74,7 @@ zCompRow_to_CompCol_dist(int_t m, int_t n, int_t nnz,
                          doublecomplex *a, int_t *colind, int_t *rowptr,
                          doublecomplex **at, int_t **rowind, int_t **colptr)
 {
-    register int_t i, j, col, relpos;
+    int_t i, j, col, relpos;
     int_t *marker;
 
     /* Allocate storage for another copy of the matrix. */
@@ -131,7 +131,7 @@ zCopy_CompCol_Matrix_dist(SuperMatrix *A, SuperMatrix *B)
 void zPrint_CompCol_Matrix_dist(SuperMatrix *A)
 {
     NCformat     *Astore;
-    register int i;
+    int i;
     doublecomplex       *dp;
 
     printf("\nCompCol matrix: ");
@@ -141,7 +141,7 @@ void zPrint_CompCol_Matrix_dist(SuperMatrix *A)
 	    (long long) A->ncol, (long long) Astore->nnz);
     if ( (dp = (doublecomplex *) Astore->nzval) != NULL ) {
         printf("nzval:\n");
-        for (i = 0; i < Astore->nnz; ++i) printf("%f\t%f\n", dp[i].r, dp[i].i);
+        for (i = 0; i < Astore->nnz; ++i) printf("%f\t%f\n", real(dp[i]), imag(dp[i]));
     }
     printf("\nrowind:\n");
     for (i = 0; i < Astore->nnz; ++i)
@@ -155,7 +155,7 @@ void zPrint_CompCol_Matrix_dist(SuperMatrix *A)
 void zPrint_Dense_Matrix_dist(SuperMatrix *A)
 {
     DNformat     *Astore;
-    register int_t i;
+    int_t i;
     doublecomplex       *dp;
 
     printf("\nDense matrix: ");
@@ -165,7 +165,7 @@ void zPrint_Dense_Matrix_dist(SuperMatrix *A)
     printf("nrow %lld, ncol %lld, lda %lld\n",
         (long long) A->nrow, (long long) A->ncol, (long long) Astore->lda);
     printf("\nnzval: ");
-    for (i = 0; i < A->nrow; ++i) printf("%f\t%f\n", dp[i].r, dp[i].i);
+    for (i = 0; i < A->nrow; ++i) printf("%f\t%f\n", real(dp[i]), imag(dp[i]));
     printf("\nend Dense matrix.\n");
 }
 
@@ -224,7 +224,7 @@ zCreate_Dense_Matrix_dist(SuperMatrix *X, int_t m, int_t n, doublecomplex *x,
     X->Mtype = mtype;
     X->nrow = m;
     X->ncol = n;
-    X->Store = (void *) SUPERLU_MALLOC( sizeof(DNformat) );
+    X->Store = (DNformat *) SUPERLU_MALLOC( sizeof(DNformat) );
     if ( !(X->Store) ) ABORT("SUPERLU_MALLOC fails for X->Store");
     Xstore = (DNformat *) X->Store;
     Xstore->lda = ldx;
@@ -265,9 +265,9 @@ zCreate_SuperNode_Matrix_dist(SuperMatrix *L, int_t m, int_t n, int_t nnz,
     L->Mtype = mtype;
     L->nrow = m;
     L->ncol = n;
-    L->Store = (void *) SUPERLU_MALLOC( sizeof(SCformat) );
+    L->Store = (SCformat *) SUPERLU_MALLOC( sizeof(SCformat) );
     if ( !(L->Store) ) ABORT("SUPERLU_MALLOC fails for L->Store");
-    Lstore = L->Store;
+    Lstore = (SCformat *) L->Store;
     Lstore->nnz = nnz;
     Lstore->nsuper = col_to_sup[n];
     Lstore->nzval = nzval;
@@ -299,7 +299,7 @@ void zClone_CompRowLoc_Matrix_dist(SuperMatrix *A, SuperMatrix *B)
     B->nrow  = A->nrow;;
     B->ncol  = A->ncol;
     Astore   = (NRformat_loc *) A->Store;
-    B->Store = (void *) SUPERLU_MALLOC( sizeof(NRformat_loc) );
+    B->Store = (NRformat_loc *) SUPERLU_MALLOC( sizeof(NRformat_loc) );
     if ( !(B->Store) ) ABORT("SUPERLU_MALLOC fails for B->Store");
     Bstore = (NRformat_loc *) B->Store;
 
@@ -338,7 +338,7 @@ void zCopy_CompRowLoc_Matrix_dist(SuperMatrix *A, SuperMatrix *B)
 void zZero_CompRowLoc_Matrix_dist(SuperMatrix *A)
 {
     doublecomplex zero = {0.0, 0.0};
-    NRformat_loc  *Astore = A->Store;
+    NRformat_loc  *Astore = (NRformat_loc *) A->Store;
     doublecomplex *aval;
     int_t i;
 
@@ -355,7 +355,7 @@ void zZero_CompRowLoc_Matrix_dist(SuperMatrix *A)
 void zScaleAddId_CompRowLoc_Matrix_dist(SuperMatrix *A, doublecomplex c)
 {
     doublecomplex one = {1.0, 0.0};
-    NRformat_loc  *Astore = A->Store;
+    NRformat_loc  *Astore = (NRformat_loc *) A->Store;
     doublecomplex *aval = (doublecomplex *) Astore->nzval;
     int_t i, j;
     doublecomplex temp;
@@ -380,8 +380,8 @@ void zScaleAddId_CompRowLoc_Matrix_dist(SuperMatrix *A, doublecomplex c)
  */
 void zScaleAdd_CompRowLoc_Matrix_dist(SuperMatrix *A, SuperMatrix *B, doublecomplex c)
 {
-    NRformat_loc  *Astore = A->Store;
-    NRformat_loc  *Bstore = B->Store;
+    NRformat_loc  *Astore = (NRformat_loc *) A->Store;
+    NRformat_loc  *Bstore = (NRformat_loc *) B->Store;
     doublecomplex *aval = (doublecomplex *) Astore->nzval, *bval = (doublecomplex *) Bstore->nzval;
     int_t i;
     doublecomplex temp;
@@ -486,18 +486,33 @@ int zDeAllocLlu_3d(int_t n, zLUstruct_t * LUstruct, gridinfo3d_t* grid3d)
 void
 zGenXtrue_dist(int_t n, int_t nrhs, doublecomplex *x, int_t ldx)
 {
-    int  i, j;
-    for (j = 0; j < nrhs; ++j)
-	for (i = 0; i < n; ++i) {
-	    if ( i % 2 ) {
-	        x[i + j*ldx].r = 1.0 + (double)(i+1.)/n;
-		x[i + j*ldx].i = 1.0;
-	    }
-	    else {
-	        x[i + j*ldx].r = 2.0 + (double)(i+1.)/n;
-	        x[i + j*ldx].i = 2.0;
-            }
-	}
+  // Note: Since real() and imag() are 
+  #ifdef HAVE_SYCL
+  for (int j = 0; j < nrhs; ++j) {
+    for (int i = 0; i < n; ++i) {
+      if ( i % 2 ) {
+	x[i + j*ldx] = {1.0 + (double)(i+1.)/n, 1.0};
+      }
+      else {
+	x[i + j*ldx] = {2.0 + (double)(i+1.)/n, 2.0};
+      }
+    }
+  }    
+  #else
+  int  i, j;
+  for (j = 0; j < nrhs; ++j) {
+    for (i = 0; i < n; ++i) {
+      if ( i % 2 ) {
+	real(x[i + j*ldx]) = 1.0 + (double)(i+1.)/n;
+	imag(x[i + j*ldx]) = 1.0;
+      }
+      else {
+	real(x[i + j*ldx]) = 2.0 + (double)(i+1.)/n;
+	imag(x[i + j*ldx]) = 2.0;
+      }
+    }
+  }
+  #endif
 }
 
 /*! \brief Let rhs[i] = sum of i-th row of A, so the solution vector is all 1's
@@ -518,7 +533,7 @@ zFillRHS_dist(char *trans, int_t nrhs, doublecomplex *x, int_t ldx,
 void
 zfill_dist(doublecomplex *a, int_t alen, doublecomplex dval)
 {
-    register int_t i;
+    int_t i;
     for (i = 0; i < alen; i++) a[i] = dval;
 }
 
@@ -551,20 +566,20 @@ void zinf_norm_error_dist(int_t n, int_t nrhs, doublecomplex *x, int_t ldx,
 
 void PrintDoublecomplex(char *name, int_t len, doublecomplex *x)
 {
-    register int_t i;
+    int_t i;
 
     printf("%10s:\tReal\tImag\n", name);
     for (i = 0; i < len; ++i)
-	printf("\t" IFMT "\t%.4f\t%.4f\n", i, x[i].r, x[i].i);
+      printf("\t" IFMT "\t%.4f\t%.4f\n", i, real(x[i]), imag(x[i]));
 }
 
 int file_PrintDoublecomplex(FILE *fp, char *name, int_t len, doublecomplex *x)
 {
-    register int_t i;
+    int_t i;
 
     fprintf(fp, "%10s:\tReal\tImag\n", name);
     for (i = 0; i < len; ++i)
-	fprintf(fp, "\t" IFMT "\t%.4f\t%.4f\n", i, x[i].r, x[i].i);
+      fprintf(fp, "\t" IFMT "\t%.4f\t%.4f\n", i, real(x[i]), imag(x[i]));
     return 0;
 }
 
@@ -573,8 +588,8 @@ int file_PrintDoublecomplex(FILE *fp, char *name, int_t len, doublecomplex *x)
 void zPrintLblocks(int iam, int_t nsupers, gridinfo_t *grid,
 		  Glu_persist_t *Glu_persist, zLocalLU_t *Llu)
 {
-    register int c, extra, gb, j, lb, nsupc, nsupr, len, nb, ncb;
-    register int_t k, mycol, r;
+    int c, extra, gb, j, lb, nsupc, nsupr, len, nb, ncb;
+    int_t k, mycol, r;
     int_t *xsup = Glu_persist->xsup;
     int_t *index;
     doublecomplex *nzval;
@@ -622,8 +637,8 @@ void zPrintLblocks(int iam, int_t nsupers, gridinfo_t *grid,
 void zZeroLblocks(int iam, int n, gridinfo_t *grid, zLUstruct_t *LUstruct)
 {
     doublecomplex zero = {0.0, 0.0};
-    register int extra, gb, j, lb, nsupc, nsupr, ncb;
-    register int k, mycol, r;
+    int extra, gb, j, lb, nsupc, nsupr, ncb;
+    int k, mycol, r;
     zLocalLU_t *Llu = LUstruct->Llu;
     Glu_persist_t *Glu_persist = LUstruct->Glu_persist;
     int_t *xsup = Glu_persist->xsup;
@@ -657,14 +672,14 @@ void zZeroLblocks(int iam, int n, gridinfo_t *grid, zLUstruct_t *LUstruct)
 void zDumpLblocks(int iam, int_t nsupers, gridinfo_t *grid,
 		  Glu_persist_t *Glu_persist, zLocalLU_t *Llu)
 {
-    register int c, extra, gb, j, i, lb, nsupc, nsupr, len, nb, ncb;
+    int c, extra, gb, j, i, lb, nsupc, nsupr, len, nb, ncb;
     int k, mycol, r, n, nmax;
     int_t nnzL;
     int_t *xsup = Glu_persist->xsup;
     int_t *index;
     doublecomplex *nzval;
 	char filename[256];
-	FILE *fp, *fopen();
+	FILE *fp;
 
 	// assert(grid->npcol*grid->nprow==1);
 
@@ -706,7 +721,7 @@ void zDumpLblocks(int iam, int_t nsupers, gridinfo_t *grid,
 	MPI_Allreduce(MPI_IN_PLACE,&n,1,mpi_int_t,MPI_MAX,grid->comm);
 
 	snprintf(filename, sizeof(filename), "%s-%d", "L", iam);
-    printf("Dumping L factor to --> %s\n", filename);
+	printf("Dumping L factor to --> %s\n", filename);
  	if ( !(fp = fopen(filename, "w")) ) {
 			ABORT("File open failed");
 		}
@@ -734,7 +749,7 @@ void zDumpLblocks(int iam, int_t nsupers, gridinfo_t *grid,
 		for (i=0; i<len; ++i){
 			fprintf(fp, IFMT IFMT " %e\n", index[k+LB_DESCRIPTOR+i]+1, xsup[gb]+j+1, (double)iam);
 #if 0
-			fprintf(fp, IFMT IFMT " %e %e\n", index[k+LB_DESCRIPTOR+i]+1, xsup[gb]+j+1, nzval[r +i+ j*nsupr].r,nzval[r +i+ j*nsupr].i);
+			fprintf(fp, IFMT IFMT " %e %e\n", index[k+LB_DESCRIPTOR+i]+1, xsup[gb]+j+1, real(nzval[r +i+ j*nsupr]), imag(nzval[r +i+ j*nsupr]));
 #endif
 		}
 		}
@@ -753,8 +768,8 @@ void zDumpLblocks(int iam, int_t nsupers, gridinfo_t *grid,
 void zPrintUblocks(int iam, int_t nsupers, gridinfo_t *grid,
 		  Glu_persist_t *Glu_persist, zLocalLU_t *Llu)
 {
-    register int c, extra, jb, k, lb, len, nb, nrb, nsupc;
-    register int_t myrow, r;
+    int c, extra, jb, k, lb, len, nb, nrb, nsupc;
+    int_t myrow, r;
     int_t *xsup = Glu_persist->xsup;
     int_t *index;
     doublecomplex *nzval;
@@ -794,8 +809,8 @@ void zPrintUblocks(int iam, int_t nsupers, gridinfo_t *grid,
 void zZeroUblocks(int iam, int n, gridinfo_t *grid, zLUstruct_t *LUstruct)
 {
     doublecomplex zero = {0.0, 0.0};
-    register int_t i, extra, lb, len, nrb;
-    register int myrow, r;
+    int_t i, extra, lb, len, nrb;
+    int myrow, r;
     zLocalLU_t *Llu = LUstruct->Llu;
     Glu_persist_t *Glu_persist = LUstruct->Glu_persist;
     int_t *xsup = Glu_persist->xsup;

@@ -1220,9 +1220,9 @@ pdgstrs(superlu_dist_options_t *options, int_t n, dLUstruct_t *LUstruct,
 #else
 	printf("only cusparse is implemented\n");
 	exit(0);
-#endif
-#else	
-	
+#endif // HAVE_CUDA
+#else // GPUREF
+
 	const int nwrp_block = 1; /* number of warps in each block */
 	const int warp_size = 32; /* number of threads per warp*/
 	gpuStream_t sid=0;
@@ -1230,9 +1230,9 @@ pdgstrs(superlu_dist_options_t *options, int_t n, dLUstruct_t *LUstruct,
 	gridinfo_t *d_grid = NULL;
 	double *d_x = NULL;
 	double *d_lsum = NULL;
-    int_t  *d_fmod = NULL;	
-#endif		
-#endif
+    int_t  *d_fmod = NULL;
+#endif // GPUREF
+#endif //#if defined(GPU_ACC) && defined(SLU_HAVE_LAPACK) && defined(GPU_SOLVE)  /* GPU trisolve*/
 
 
 // cudaProfilerStart();
@@ -1577,7 +1577,7 @@ t1 = SuperLU_timer_();
 
 #if 0  // this will readin a matrix with only lower triangular part, note that this code block is only for benchmarking cusparse performance  
 	
-	FILE *fp, *fopen();
+	FILE *fp;
 	if ( !(fp = fopen("/gpfs/alpine/scratch/liuyangz/csc289/matrix/HTS/copter2.mtx", "r")) ) {
 	// if ( !(fp = fopen("/gpfs/alpine/scratch/liuyangz/csc289/matrix/HTS/epb3.mtx", "r")) ) {
 	// if ( !(fp = fopen("/gpfs/alpine/scratch/liuyangz/csc289/matrix/HTS/gridgena.mtx", "r")) ) { 

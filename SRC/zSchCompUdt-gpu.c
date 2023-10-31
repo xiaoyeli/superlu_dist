@@ -190,9 +190,9 @@ if ( msg0 && msg2 ) {  /* L(:,k) and U(k,:) are not empty. */
 		assert(nbrow*ldu<=ldt*max_row_size);
 #endif
 		gpuMemcpy2DAsync(dA, nbrow*sizeof(doublecomplex),
-				  &lusup[luptr+(knsupc-ldu)*nsupr],
-				  nsupr*sizeof(doublecomplex), nbrow*sizeof(doublecomplex),
-				  ldu, gpuMemcpyHostToDevice, streams[0]);
+				 &lusup[luptr+(knsupc-ldu)*nsupr],
+				 nsupr*sizeof(doublecomplex), nbrow*sizeof(doublecomplex),
+				 ldu, gpuMemcpyHostToDevice, streams[0]);
 	    }
 
 	    for (int i = 0; i < num_streams_used; ++i) { // streams on GPU
@@ -220,6 +220,19 @@ if ( msg0 && msg2 ) {  /* L(:,k) and U(k,:) are not empty. */
 		    gpuMemcpyAsync(dB+b_offset, tempu+b_offset, B_stream_size,
 		    		    gpuMemcpyHostToDevice, streams[stream_id]);
 
+                    #ifdef HAVE_SYCL
+                    oneapi::mkl::blas::column_major::gemm(streams[stream_id],
+                                            GPUBLAS_OP_N, GPUBLAS_OP_N,
+                                            nbrow, num_col_stream, ldu,
+                                            alpha,
+                                            (const gpuDoubleComplex*) dA,
+                                            nbrow,
+                                            (const gpuDoubleComplex*) &dB[b_offset],
+                                            ldu,
+                                            beta,
+                                            (gpuDoubleComplex*)&dC[c_offset],
+                                            nbrow);
+                    #else
 		    gpublasCheckErrors(
 				  gpublasSetStream(handle[stream_id],
 						  streams[stream_id])
@@ -238,6 +251,7 @@ if ( msg0 && msg2 ) {  /* L(:,k) and U(k,:) are not empty. */
 					      (gpuDoubleComplex*)&dC[c_offset],
                                               nbrow)
 				  );
+                    #endif
 
 		    checkGPU( gpuMemcpyAsync(tempv1, dC+c_offset,
 					   C_stream_size,

@@ -62,8 +62,8 @@ void pdgsmv_init
     fst_row = Astore->fst_row;
     colind = Astore->colind;
     rowptr = Astore->rowptr;
-    nzval = Astore->nzval;
-    if ( !(SendCounts = SUPERLU_MALLOC(2*procs * sizeof(int))) )
+    nzval = (double *) Astore->nzval;
+    if ( !(SendCounts = (int *) SUPERLU_MALLOC(2*procs * sizeof(int))) )
         ABORT("Malloc fails for SendCounts[]");
     /*for (i = 0; i < 2*procs; ++i) SendCounts[i] = 0;*/
     RecvCounts = SendCounts + procs;
@@ -373,11 +373,11 @@ void pdgsmv_finalize(pdgsmv_comm_t *gsmv_comm)
     int_t *it;
     double *dt;
     SUPERLU_FREE(gsmv_comm->extern_start);
-    if ( (it = gsmv_comm->ind_tosend) ) SUPERLU_FREE(it);
-    if ( (it = gsmv_comm->ind_torecv) ) SUPERLU_FREE(it);
+    if ( (it = (int_t *)gsmv_comm->ind_tosend) ) SUPERLU_FREE(it);
+    if ( (it = (int_t *)gsmv_comm->ind_torecv) ) SUPERLU_FREE(it);
     SUPERLU_FREE(gsmv_comm->ptr_ind_tosend);
     SUPERLU_FREE(gsmv_comm->SendCounts);
-    if ( (dt = gsmv_comm->val_tosend) ) SUPERLU_FREE(dt);
-    if ( (dt = gsmv_comm->val_torecv) ) SUPERLU_FREE(dt);
+    if ( (dt = (double *)gsmv_comm->val_tosend) ) SUPERLU_FREE(dt);
+    if ( (dt = (double *)gsmv_comm->val_torecv) ) SUPERLU_FREE(dt);
 }
 

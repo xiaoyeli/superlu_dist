@@ -20,6 +20,12 @@ at the top-level directory.
  */
 #include "superlu_ddefs.h"
 
+#ifdef HAVE_SYCL
+extern "C" double dasum_(int *, double *, int *);
+#else
+extern double dasum_(int *, double *, int *);
+#endif
+  
 int pdcompute_resid(int m, int n, int nrhs, SuperMatrix *A,
 		    double *x, int ldx, double *b, int ldb,
 		    gridinfo_t *grid, dSOLVEstruct_t *SOLVEstruct, double *resid)
@@ -91,9 +97,6 @@ int pdcompute_resid(int m, int n, int nrhs, SuperMatrix *A,
     pdgsmv_comm_t gsmv_comm; 
     int m_loc = ((NRformat_loc*) A->Store)->m_loc;
 
-    /* Function prototypes */
-    extern double dasum_(int *, double *, int *);
-    
     /* Function Body */
     if ( m <= 0 || n <= 0 || nrhs == 0) {
 	*resid = 0.;
@@ -131,6 +134,7 @@ int pdcompute_resid(int m, int n, int nrhs, SuperMatrix *A,
 
 	rnorm = dasum_(&m_loc, R, &inc);
 	xnorm = dasum_(&m_loc, X_col, &inc);
+          
 
 	/* */
 	MPI_Allreduce( &rnorm, &rnorm_g, 1, MPI_DOUBLE, MPI_SUM, grid->comm );
@@ -152,4 +156,4 @@ int pdcompute_resid(int m, int n, int nrhs, SuperMatrix *A,
 
     return 0;
 
-} /* pdcompute_redid */
+} /* pdcompute_resid */

@@ -26,18 +26,38 @@ at the top-level directory.
 #include "gpu_wrapper.h"
 typedef struct LUstruct_gpu_  LUstruct_gpu;  // Sherry - not in this distribution
 
+// set the max number of streams to be used in {s,d,z}lustruct_gpu.h
+#if defined(HAVE_CUDA)
+#define MAX_NGPU_STREAMS 32
+#elif defined(HAVE_HIP)
+#define MAX_NGPU_STREAMS 4
+#elif defined(HAVE_SYCL)
+#define MAX_NGPU_STREAMS 1
+#endif
+
+#ifndef HAVE_SYCL
 #ifdef __cplusplus
 extern "C" {
 #endif
+#endif
+
 extern void DisplayHeader();
+
+// Note: for now all the functions below are defined only for CUDA, HIP
+#if defined(HAVE_CUDA) || defined(HAVE_HIP)
 extern const char* gpublasGetErrorString(gpublasStatus_t status);
 extern gpuError_t checkGPU(gpuError_t);
 extern gpublasStatus_t checkGPUblas(gpublasStatus_t);
 extern gpublasHandle_t create_handle ();
 extern void destroy_handle (gpublasHandle_t handle);
+#endif // HAVE_CUDA, HAVE_HIP
+
+#ifndef HAVE_SYCL
 #ifdef __cplusplus
   }
 #endif
+#endif
 
 #endif // end GPU_ACC
-#endif 
+
+#endif // gpu_api_utils_H

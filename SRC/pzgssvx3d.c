@@ -503,7 +503,7 @@ pzgssvx3d (superlu_dist_options_t * options, SuperMatrix * A,
            zLUstruct_t * LUstruct, zSOLVEstruct_t * SOLVEstruct,
            double *berr, SuperLUStat_t * stat, int *info)
 {
-    NRformat_loc *Astore = A->Store;
+  NRformat_loc *Astore = (NRformat_loc *) A->Store;
     SuperMatrix GA;        /* Global A in NC format */
     NCformat *GAstore;
     doublecomplex *a_GA;
@@ -612,8 +612,8 @@ pzgssvx3d (superlu_dist_options_t * options, SuperMatrix * A,
     SOLVEstruct->A3d = A3d; /* This structure need to be persistent across
 			       multiple calls of pdgssvx3d()   */
     
-    NRformat_loc *Astore0 = A3d->A_nfmt; // on 2D grid-0
-    NRformat_loc *A_orig = A->Store;
+    NRformat_loc *Astore0 = (NRformat_loc *) A3d->A_nfmt; // on 2D grid-0
+    NRformat_loc *A_orig = (NRformat_loc *) A->Store;
 //////    
 
 #if ( DEBUGlevel>=1 )
@@ -1620,7 +1620,7 @@ pzgssvx3d (superlu_dist_options_t * options, SuperMatrix * A,
     /* Scatter the solution from 2D grid-0 to 3D grid */
     if ( nrhs > 0 ) zScatter_B3d(A3d, grid3d);
 
-    B = A3d->B3d; // B is now assigned back to B3d on return
+    B = (doublecomplex *) A3d->B3d; // B is now assigned back to B3d on return
     A->Store = Astore3d; // restore Astore to 3D
     
 #if ( DEBUGlevel>=1 )

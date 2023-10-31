@@ -87,7 +87,7 @@ at the top-level directory.
 /*! \brief Eat up the rest of the current line */
 static int DumpLine(FILE *fp)
 {
-    register int c;
+    int c;
     while ((c = fgetc(fp)) != '\n') ;
     return 0;
 }
@@ -134,7 +134,7 @@ static int ParseFloatFormat(char *buf, int_t *num, int_t *size)
 
 static int ReadVector(FILE *fp, int_t n, int_t *where, int_t perline, int_t persize)
 {
-    register int_t i, j, item;
+    int_t i, j, item;
     char tmp, buf[100];
 
     i = 0;
@@ -155,8 +155,8 @@ static int ReadVector(FILE *fp, int_t n, int_t *where, int_t perline, int_t pers
 /*! \brief Read complex numbers as pairs of (real, imaginary) */
 static int zReadValues(FILE *fp, int n, doublecomplex *destination, int perline, int persize)
 {
-    register int i, j, k, s, pair;
-    register double realpart;
+    int i, j, k, s, pair;
+    double realpart;
     char tmp, buf[100];
 
     i = pair = 0;
@@ -174,8 +174,14 @@ static int zReadValues(FILE *fp, int n, doublecomplex *destination, int perline,
 		pair = 1;
 	    } else {
 		/* The value is imaginary part */
+                #ifdef HAVE_SYCL
+	        destination[i].real() = realpart;
+	        destination[i++].imag() = atof(&buf[s]);
+	        #else
 	        destination[i].r = realpart;
-		destination[i++].i = atof(&buf[s]);
+	        destination[i++].i = atof(&buf[s]);
+	        #endif
+
 		pair = 0;
 	    }
 	    buf[(j+1)*persize] = tmp;     /* recover the char at that place */
@@ -196,7 +202,7 @@ static int zReadValues(FILE *fp, int n, doublecomplex *destination, int perline,
 static void
 FormFullA(int_t n, int_t *nonz, doublecomplex **nzval, int_t **rowind, int_t **colptr)
 {
-    register int_t i, j, k, col, new_nnz;
+    int_t i, j, k, col, new_nnz;
     int_t *t_rowind, *t_colptr, *al_rowind, *al_colptr, *a_rowind, *a_colptr;
     int_t *marker;
     doublecomplex *t_val, *al_val, *a_val;
@@ -283,7 +289,7 @@ void
 zreadrb_dist(int iam, FILE *fp, int_t *nrow, int_t *ncol, int_t *nonz,
         doublecomplex **nzval, int_t **rowind, int_t **colptr)
 {
-    register int_t i, numer_lines = 0;
+    int_t i, numer_lines = 0;
     int_t tmp, colnum, colsize, rownum, rowsize, valnum, valsize;
     char buf[100], type[4];
     int sym;

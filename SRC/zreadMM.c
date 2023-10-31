@@ -142,7 +142,7 @@ zreadMM_dist(FILE *fp, int_t *m, int_t *n, int_t *nonz,
     /* 4/ Read triplets of values */
     for (nnz = 0, nz = 0; nnz < *nonz; ++nnz) {
 
-	j = fscanf(fp, IFMT IFMT "%lf%lf\n", &row[nz], &col[nz], &val[nz].r, &val[nz].i);
+        j = fscanf(fp, IFMT IFMT "%lf%lf\n", &row[nz], &col[nz], &real(val[nz]), &imag(val[nz]));
 
 	if ( nnz == 0 ) /* first nonzero */ {
 	    if ( row[0] == 0 || col[0] == 0 ) {
@@ -162,7 +162,7 @@ zreadMM_dist(FILE *fp, int_t *m, int_t *n, int_t *nonz,
 	if (row[nz] < 0 || row[nz] >= *m || col[nz] < 0 || col[nz] >= *n
 	    /*|| val[nz] == 0.*/) {
 	    fprintf(stderr, "nz " IFMT ", (" IFMT ", " IFMT ") = {%e\t%e} out of bound, removed\n",
-		    nz, row[nz], col[nz], val[nz].r, val[nz].i);
+		    nz, row[nz], col[nz], real(val[nz]), imag(val[nz]));
 	    exit(-1);
 	} else {
 	    ++xa[col[nz]];
@@ -228,7 +228,7 @@ zreadMM_dist(FILE *fp, int_t *m, int_t *n, int_t *nonz,
 
 static void zreadrhs(int m, doublecomplex *b)
 {
-    FILE *fp, *fopen();
+    FILE *fp;
     int i;
 
     if ( !(fp = fopen("b.dat", "r")) ) {
@@ -236,6 +236,6 @@ static void zreadrhs(int m, doublecomplex *b)
 	exit(-1);
     }
     for (i = 0; i < m; ++i)
-      i = fscanf(fp, "%lf%lf\n", &b[i].r, &b[i].i);
+      i = fscanf(fp, "%lf%lf\n", &(real(b[i])), &(imag(b[i])));
     fclose(fp);
 }

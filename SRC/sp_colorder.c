@@ -85,7 +85,7 @@ sp_colorder(superlu_dist_options_t *options,  SuperMatrix *A, int_t *perm_c,
     NCformat  *Astore;
     NCPformat *ACstore;
     int_t       *iwork, *post;
-    register  int_t n, i;
+     int_t n, i;
 #if ( DEBUGlevel>=1 )
     int iam;
     MPI_Comm_rank( MPI_COMM_WORLD, &iam );
@@ -101,8 +101,11 @@ sp_colorder(superlu_dist_options_t *options,  SuperMatrix *A, int_t *perm_c,
     AC->Mtype       = A->Mtype;
     AC->nrow        = A->nrow;
     AC->ncol        = A->ncol;
-    Astore          = A->Store;
-    ACstore = AC->Store = (void *) SUPERLU_MALLOC( sizeof(NCPformat) );
+    Astore          = (NCformat *) A->Store;
+
+    AC->Store       = (void *) SUPERLU_MALLOC( sizeof(NCPformat) );
+    ACstore         = (NCPformat *) AC->Store;
+    
     if ( !ACstore ) ABORT("SUPERLU_MALLOC fails for ACstore");
     ACstore->nnz    = Astore->nnz;
     ACstore->nzval  = Astore->nzval;
@@ -223,7 +226,7 @@ sp_colorder(superlu_dist_options_t *options,  SuperMatrix *A, int_t *perm_c,
 int
 check_perm_dist(char *what, int_t n, int_t *perm)
 {
-    register int i;
+    int i;
     int_t          *marker;
     marker = (int_t *) intCalloc_dist(n);
 

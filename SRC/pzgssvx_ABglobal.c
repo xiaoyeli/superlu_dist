@@ -545,9 +545,9 @@ pzgssvx_ABglobal(superlu_dist_options_t *options, SuperMatrix *A,
     job = 5;
     m = A->nrow;
     n = A->ncol;
-    Astore = A->Store;
+    Astore = (NCformat *) A->Store;
     nnz = Astore->nnz;
-    a = Astore->nzval;
+    a = (doublecomplex *) Astore->nzval;
     colptr = Astore->colptr;
     rowind = Astore->rowind;
     if ( factored || (Fact == SamePattern_SameRowPerm && Equil) ) {
@@ -863,7 +863,7 @@ pzgssvx_ABglobal(superlu_dist_options_t *options, SuperMatrix *A,
 	sp_colorder(options, A, perm_c, etree, &AC);
 
 	/* Form Pc*A*Pc' to preserve the diagonal of the matrix Pr*A. */
-	ACstore = AC.Store;
+	ACstore = (NCPformat *) AC.Store;
 	for (j = 0; j < n; ++j)
 	    for (i = ACstore->colbeg[j]; i < ACstore->colend[j]; ++i) {
 		irow = ACstore->rowind[i];

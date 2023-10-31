@@ -25,10 +25,9 @@ at the top-level directory.
 #include "psymbfact.h"
 
 static void
-copy_mem_int(int_t howmany, int_t* old, int_t* new)
+copy_mem_int(int_t howmany, int_t* old_ptr, int_t* new_ptr)
 {
-  register int_t i;
-  for (i = 0; i < howmany; i++) new[i] = old[i];
+  for (int_t i = 0; i < howmany; i++) new_ptr[i] = old_ptr[i];
 }
 
 
@@ -61,7 +60,7 @@ static int_t *expand
   if (min_new_len > 0 && new_len < min_new_len)
     new_len = min_new_len;
   
-  new_mem = (void *) SUPERLU_MALLOC(new_len * lword);
+  new_mem = (int_t *) SUPERLU_MALLOC(new_len * lword);
   PS->allocMem += new_len * lword;
   
   if (new_mem) {

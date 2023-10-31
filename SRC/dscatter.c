@@ -169,7 +169,7 @@ dscatter_l (
     }
 
     nzval = Lnzval_bc_ptr[ljb] + luptrj; /* Destination block L(i,j) */
-#ifdef __INTEL_COMPILER
+#if defined(__INTEL_COMPILER) || defined(__INTEL_LLVM_COMPILER)
 #pragma ivdep
 #endif
     for (jj = 0; jj < nsupc; ++jj) {

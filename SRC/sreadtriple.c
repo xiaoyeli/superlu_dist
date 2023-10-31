@@ -165,7 +165,7 @@ sreadtriple_dist(FILE *fp, int_t *m, int_t *n, int_t *nonz,
 
 void sreadrhs(int m, float *b)
 {
-    FILE *fp, *fopen();
+    FILE *fp;
     int i;
 
     if ( !(fp = fopen("b.dat", "r")) ) {

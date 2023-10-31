@@ -128,7 +128,7 @@ double getFreq(void)
     char *line = NULL;
 #else
     size_t len = 100;   // Sherry fix
-    char *line = SUPERLU_MALLOC(len * sizeof(char));
+    char *line = (char *) SUPERLU_MALLOC(len * sizeof(char));
 #endif
     size_t read;
     while ((read = getline(&line, &len, fp)) != -1)

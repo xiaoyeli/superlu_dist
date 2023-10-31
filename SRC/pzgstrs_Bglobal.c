@@ -247,13 +247,24 @@ pzgstrs_Bglobal(superlu_dist_options_t *options, int_t n,
 	if ( myrow == krow ) {
 	    lk = LBi( k, grid );   /* Local block number. */
 	    il = LSUM_BLK( lk );
-	    lsum[il - LSUM_H].r = k;/* Block number prepended in the header. */
-	    lsum[il - LSUM_H].i = 0;
+
+            #ifdef HAVE_SYCL
+	    lsum[il - LSUM_H] = {k, 0};/* Block number prepended in the header. */
+	    #else
+	    real(lsum[il - LSUM_H]) = k;/* Block number prepended in the header. */
+	    imag(lsum[il - LSUM_H]) = 0;
+	    #endif
+	    
 	    kcol = PCOL( k, grid );
 	    if ( mycol == kcol ) { /* Diagonal process. */
 		jj = X_BLK( lk );
-		x[jj - XK_H].r = k; /* Block number prepended in the header. */
-		x[jj - XK_H].i = 0;
+
+                #ifdef HAVE_SYCL
+		x[jj - XK_H] = {k, 0}; /* Block number prepended in the header. */
+		#else
+		real(x[jj - XK_H]) = k; /* Block number prepended in the header. */
+		imag(x[jj - XK_H]) = 0;
+		#endif
 		RHS_ITERATE(j)
 		    for (i = 0; i < knsupc; ++i) /* X is stored in blocks. */
 			x[i + jj + j*knsupc] = B[i + ii + j*ldb];
@@ -423,7 +434,7 @@ pzgstrs_Bglobal(superlu_dist_options_t *options, int_t n,
 	MPI_Wait( &request, &status );
 #endif
 
-	k = (*recvbuf).r;
+	k = real(*recvbuf);
 
 
 
@@ -673,9 +684,9 @@ pzgstrs_Bglobal(superlu_dist_options_t *options, int_t n,
 	ABORT("Malloc fails for Urbs[]"); /* Record number of nonzero
 					     blocks in a block column. */
     Urbs1 = Urbs + nub;
-    if ( !(Ucb_indptr = SUPERLU_MALLOC(nub * sizeof(Ucb_indptr_t *))) )
+    if ( !(Ucb_indptr = (Ucb_indptr_t **) SUPERLU_MALLOC(nub * sizeof(Ucb_indptr_t *))) )
         ABORT("Malloc fails for Ucb_indptr[]");
-    if ( !(Ucb_valptr = SUPERLU_MALLOC(nub * sizeof(int_t *))) )
+    if ( !(Ucb_valptr = (int_t **) SUPERLU_MALLOC(nub * sizeof(int_t *))) )
         ABORT("Malloc fails for Ucb_valptr[]");
 
     /* Count number of row blocks in a block column.
@@ -701,7 +712,7 @@ pzgstrs_Bglobal(superlu_dist_options_t *options, int_t n,
     for (lb = 0; lb < nub; ++lb) {
 	if ( Urbs[lb] ) { /* Not an empty block column. */
 	    if ( !(Ucb_indptr[lb]
-		   = SUPERLU_MALLOC(Urbs[lb] * sizeof(Ucb_indptr_t))) )
+		   = (Ucb_indptr_t*) SUPERLU_MALLOC(Urbs[lb] * sizeof(Ucb_indptr_t))) )
 		ABORT("Malloc fails for Ucb_indptr[lb][]");
 	    if ( !(Ucb_valptr[lb] = (int_t *) intMalloc_dist(Urbs[lb])) )
 		ABORT("Malloc fails for Ucb_valptr[lb][]");
@@ -847,7 +858,7 @@ pzgstrs_Bglobal(superlu_dist_options_t *options, int_t n,
 	MPI_Recv( recvbuf, maxrecvsz, SuperLU_MPI_DOUBLE_COMPLEX, MPI_ANY_SOURCE,
 		 MPI_ANY_TAG, grid->comm, &status );
 
-	k = (*recvbuf).r;
+	k = real(*recvbuf);
 
 #if ( DEBUGlevel>=2 )
 	printf("(%2d) Recv'd block %d, tag %2d\n", iam, k, status.MPI_TAG);

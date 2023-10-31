@@ -127,9 +127,6 @@ static int_t c__2 = 2;
     int_t i__1, i__2;
     double d__1, d__2;
 
-    /* Builtin functions */
-    double log(double);
-
     /* Local variables */
     int_t i__, j, k;
     double fact, rinf;

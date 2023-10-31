@@ -6,8 +6,14 @@
 /* Enable HIP */
 /* #undef HAVE_HIP */
 
+/* Enable SYCL */
+#define HAVE_SYCL TRUE
+
+/* Enable DPCPP */
+/* #undef HAVE_DPCPP */
+
 /* Enable parmetis */
-#define HAVE_PARMETIS TRUE
+/* #undef HAVE_PARMETIS */
 
 /* Enable colamd */
 /* #undef HAVE_COLAMD */
@@ -21,6 +27,6 @@
 /* enable 64bit index mode */
 #define XSDK_INDEX_SIZE 64
 
-#if (XSDK_INDEX_SIZE == 64)
+#if defined(XSDK_INDEX_SIZE) && (XSDK_INDEX_SIZE == 64)
 #define _LONGINT 1
 #endif

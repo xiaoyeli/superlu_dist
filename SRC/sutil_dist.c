@@ -75,7 +75,7 @@ sCompRow_to_CompCol_dist(int_t m, int_t n, int_t nnz,
                          float *a, int_t *colind, int_t *rowptr,
                          float **at, int_t **rowind, int_t **colptr)
 {
-    register int_t i, j, col, relpos;
+    int_t i, j, col, relpos;
     int_t *marker;
 
     /* Allocate storage for another copy of the matrix. */
@@ -132,7 +132,7 @@ sCopy_CompCol_Matrix_dist(SuperMatrix *A, SuperMatrix *B)
 void sPrint_CompCol_Matrix_dist(SuperMatrix *A)
 {
     NCformat     *Astore;
-    register int_t i;
+    int_t i;
     float       *dp;
 
     printf("\nCompCol matrix: ");
@@ -156,7 +156,7 @@ void sPrint_CompCol_Matrix_dist(SuperMatrix *A)
 void sPrint_Dense_Matrix_dist(SuperMatrix *A)
 {
     DNformat     *Astore;
-    register int_t i;
+    int_t i;
     float       *dp;
 
     printf("\nDense matrix: ");
@@ -268,7 +268,7 @@ sCreate_SuperNode_Matrix_dist(SuperMatrix *L, int_t m, int_t n, int_t nnz,
     L->ncol = n;
     L->Store = (void *) SUPERLU_MALLOC( sizeof(SCformat) );
     if ( !(L->Store) ) ABORT("SUPERLU_MALLOC fails for L->Store");
-    Lstore = L->Store;
+    Lstore = (SCformat *) L->Store;
     Lstore->nnz = nnz;
     Lstore->nsuper = col_to_sup[n];
     Lstore->nzval = nzval;
@@ -339,7 +339,7 @@ void sCopy_CompRowLoc_Matrix_dist(SuperMatrix *A, SuperMatrix *B)
 void sZero_CompRowLoc_Matrix_dist(SuperMatrix *A)
 {
     float zero = 0.0;
-    NRformat_loc  *Astore = A->Store;
+    NRformat_loc  *Astore = (NRformat_loc *) A->Store;
     float *aval;
     int_t i;
 
@@ -356,7 +356,7 @@ void sZero_CompRowLoc_Matrix_dist(SuperMatrix *A)
 void sScaleAddId_CompRowLoc_Matrix_dist(SuperMatrix *A, float c)
 {
     float one = 1.0;
-    NRformat_loc  *Astore = A->Store;
+    NRformat_loc  *Astore = (NRformat_loc *) A->Store;
     float *aval = (float *) Astore->nzval;
     int_t i, j;
     float temp;
@@ -380,8 +380,8 @@ void sScaleAddId_CompRowLoc_Matrix_dist(SuperMatrix *A, float c)
  */
 void sScaleAdd_CompRowLoc_Matrix_dist(SuperMatrix *A, SuperMatrix *B, float c)
 {
-    NRformat_loc  *Astore = A->Store;
-    NRformat_loc  *Bstore = B->Store;
+    NRformat_loc  *Astore = (NRformat_loc *) A->Store;
+    NRformat_loc  *Bstore = (NRformat_loc *) B->Store;
     float *aval = (float *) Astore->nzval, *bval = (float *) Bstore->nzval;
     int_t i;
     float temp;
@@ -401,8 +401,8 @@ void sScaleAdd_CompRowLoc_Matrix_dist(SuperMatrix *A, SuperMatrix *B, float c)
 float sMaxAbsLij(int iam, int n, Glu_persist_t *Glu_persist,
 		 sLUstruct_t *LUstruct, gridinfo_t *grid)
 {
-    register int extra, gb, j, lb, nsupc, nsupr, ncb;
-    register int_t k, mycol, r;
+    int extra, gb, j, lb, nsupc, nsupr, ncb;
+    int_t k, mycol, r;
     sLocalLU_t *Llu = LUstruct->Llu;
     int_t *xsup = Glu_persist->xsup;
     int_t *index;
@@ -443,8 +443,8 @@ float sMaxAbsUij(int iam, int n, Glu_persist_t *Glu_persist,
 		 sLUstruct_t *LUstruct, gridinfo_t *grid)
 {
     sLocalLU_t *Llu = LUstruct->Llu;
-    register int c, extra, jb, k, lb, len, nb, nrb, nsupc;
-    register int myrow, r, j, nsupers;
+    int c, extra, jb, k, lb, len, nb, nrb, nsupc;
+    int myrow, r, j, nsupers;
     int_t *xsup = Glu_persist->xsup;
     int_t *index;
     float *nzval;
@@ -645,7 +645,7 @@ sFillRHS_dist(char *trans, int_t nrhs, float *x, int_t ldx,
 void
 sfill_dist(float *a, int_t alen, float dval)
 {
-    register int_t i;
+    int_t i;
     for (i = 0; i < alen; i++) a[i] = dval;
 }
 
@@ -676,7 +676,7 @@ void sinf_norm_error_dist(int_t n, int_t nrhs, float *x, int_t ldx,
 
 void Printfloat5(char *name, int_t len, float *x)
 {
-    register int i;
+    int i;
 
     printf("%10s:", name);
     for (i = 0; i < len; ++i) {
@@ -688,7 +688,7 @@ void Printfloat5(char *name, int_t len, float *x)
 
 int file_Printfloat5(FILE *fp, char *name, int_t len, float *x)
 {
-    register int_t i;
+    int_t i;
 
     fprintf(fp, "%10s:", name);
     for (i = 0; i < len; ++i) {
@@ -704,8 +704,8 @@ int file_Printfloat5(FILE *fp, char *name, int_t len, float *x)
 void sPrintLblocks(int iam, int_t nsupers, gridinfo_t *grid,
 		  Glu_persist_t *Glu_persist, sLocalLU_t *Llu)
 {
-    register int c, extra, gb, j, lb, nsupc, nsupr, len, nb, ncb;
-    register int_t k, mycol, r;
+    int c, extra, gb, j, lb, nsupc, nsupr, len, nb, ncb;
+    int_t k, mycol, r;
     int_t *xsup = Glu_persist->xsup;
     int_t *index;
     float *nzval;
@@ -753,8 +753,8 @@ void sPrintLblocks(int iam, int_t nsupers, gridinfo_t *grid,
 void sZeroLblocks(int iam, int n, gridinfo_t *grid, sLUstruct_t *LUstruct)
 {
     float zero = 0.0;
-    register int extra, gb, j, lb, nsupc, nsupr, ncb;
-    register int k, mycol, r;
+    int extra, gb, j, lb, nsupc, nsupr, ncb;
+    int k, mycol, r;
     sLocalLU_t *Llu = LUstruct->Llu;
     Glu_persist_t *Glu_persist = LUstruct->Glu_persist;
     int_t *xsup = Glu_persist->xsup;
@@ -788,14 +788,14 @@ void sZeroLblocks(int iam, int n, gridinfo_t *grid, sLUstruct_t *LUstruct)
 void sDumpLblocks(int iam, int_t nsupers, gridinfo_t *grid,
 		  Glu_persist_t *Glu_persist, sLocalLU_t *Llu)
 {
-    register int c, extra, gb, j, i, lb, nsupc, nsupr, len, nb, ncb;
+    int c, extra, gb, j, i, lb, nsupc, nsupr, len, nb, ncb;
     int k, mycol, r, n, nmax;
     int_t nnzL;
     int_t *xsup = Glu_persist->xsup;
     int_t *index;
     float *nzval;
 	char filename[256];
-	FILE *fp, *fopen();
+	FILE *fp;
 
 	// assert(grid->npcol*grid->nprow==1);
 
@@ -884,8 +884,8 @@ void sDumpLblocks(int iam, int_t nsupers, gridinfo_t *grid,
 void sPrintUblocks(int iam, int_t nsupers, gridinfo_t *grid,
 		  Glu_persist_t *Glu_persist, sLocalLU_t *Llu)
 {
-    register int c, extra, jb, k, lb, len, nb, nrb, nsupc;
-    register int_t myrow, r;
+    int c, extra, jb, k, lb, len, nb, nrb, nsupc;
+    int_t myrow, r;
     int_t *xsup = Glu_persist->xsup;
     int_t *index;
     float *nzval;
@@ -925,8 +925,8 @@ void sPrintUblocks(int iam, int_t nsupers, gridinfo_t *grid,
 void sZeroUblocks(int iam, int n, gridinfo_t *grid, sLUstruct_t *LUstruct)
 {
     float zero = 0.0;
-    register int i, extra, lb, len, nrb;
-    register int myrow, r;
+    int i, extra, lb, len, nrb;
+    int myrow, r;
     sLocalLU_t *Llu = LUstruct->Llu;
     Glu_persist_t *Glu_persist = LUstruct->Glu_persist;
     int_t *xsup = Glu_persist->xsup;
@@ -987,7 +987,7 @@ sGenXtrueRHS(int nrhs, SuperMatrix *A, Glu_persist_t *Glu_persist,
     iam = grid->iam;
     myrow = MYROW( iam, grid );
     Astore = (NCformat *) A->Store;
-    aval = Astore->nzval;
+    aval = (float *) Astore->nzval;
     lb = CEILING( nsupers, grid->nprow ) + 1;
     if ( !(lxsup = intMalloc_dist(lb)) )
 	ABORT("Malloc fails for lxsup[].");

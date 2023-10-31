@@ -184,8 +184,8 @@ static void zcreate_msr_matrix
     if ( !N_update ) return;
 
     n = A->ncol;
-    Astore = A->Store;
-    nzval = Astore->nzval;
+    Astore = (NCPformat *) A->Store;
+    nzval = (doublecomplex *) Astore->nzval;
 
     /* One pass of original matrix A to count nonzeros of each row. */
     if ( !(rowcnt = (int_t *) intCalloc_dist(N_update)) )

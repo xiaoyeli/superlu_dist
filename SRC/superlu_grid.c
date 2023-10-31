@@ -43,7 +43,7 @@ void superlu_gridinit(MPI_Comm Bcomm, /* The base communicator upon which
     int i, j, info;
 
     /* Make a list of the processes in the new communicator. */
-    usermap = SUPERLU_MALLOC(Np*sizeof(int));
+    usermap = (int *) SUPERLU_MALLOC(Np*sizeof(int));
     for (j = 0; j < npcol; ++j)
 	for (i = 0; i < nprow; ++i) usermap[j*nprow+i] = i*npcol+j;
     
@@ -66,12 +66,17 @@ void superlu_gridinit(MPI_Comm Bcomm, /* The base communicator upon which
     /* Binding each MPI to a GPU device */
     char *ttemp;
     ttemp = getenv ("SUPERLU_BIND_MPI_GPU");
+    int devs=0;
 
     if (ttemp) {
-	int devs, rank;
+	int rank;
 	MPI_Comm_rank(Bcomm, &rank); // MPI_COMM_WORLD??
 	gpuGetDeviceCount(&devs);  // Returns the number of compute-capable devices
 	gpuSetDevice(rank % devs); // Set device to be used for GPU executions
+    }
+    else {
+      gpuGetDeviceCount(&devs);  // Returns the number of compute-capable devices
+      if (devs != 0 ) gpuSetDevice(0); // Set device to be used for GPU executions
     }
 #endif
 }

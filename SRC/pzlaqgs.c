@@ -100,8 +100,8 @@ pzlaqgs(SuperMatrix *A, double *r, double *c,
 	return;
     }
 
-    Astore = A->Store;
-    Aval = Astore->nzval;
+    Astore = (NRformat_loc *) A->Store;
+    Aval = (doublecomplex *) Astore->nzval;
     m_loc = Astore->m_loc;
 
     /* Initialize LARGE and SMALL. */

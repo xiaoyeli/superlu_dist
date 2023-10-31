@@ -496,13 +496,13 @@ pdgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
 		* dword, stat );
 
     /* creating pointers to the look-ahead buffers */
-    if (! (Lsub_buf_2 = SUPERLU_MALLOC ((1 + num_look_aheads) * sizeof (int_t *))))
+    if (! (Lsub_buf_2 = (int_t**) SUPERLU_MALLOC ((1 + num_look_aheads) * sizeof (int_t *))))
         ABORT ("Malloc fails for Lsub_buf_2[].");
-    if (! (Lval_buf_2 = SUPERLU_MALLOC ((1 + num_look_aheads) * sizeof (double *))))
+    if (! (Lval_buf_2 = (double**) SUPERLU_MALLOC ((1 + num_look_aheads) * sizeof (double *))))
         ABORT ("Malloc fails for Lval_buf_2[].");
-    if (! (Usub_buf_2 = SUPERLU_MALLOC ((1 + num_look_aheads) * sizeof (int_t *))))
+    if (! (Usub_buf_2 = (int_t**) SUPERLU_MALLOC ((1 + num_look_aheads) * sizeof (int_t *))))
         ABORT ("Malloc fails for Uval_buf_2[].");
-    if (! (Uval_buf_2 = SUPERLU_MALLOC ((1 + num_look_aheads) * sizeof (double *))))
+    if (! (Uval_buf_2 = (double**) SUPERLU_MALLOC ((1 + num_look_aheads) * sizeof (double *))))
         ABORT ("Malloc fails for buf_2[].");
     for (i = 0; i <= num_look_aheads; i++) {
         Lval_buf_2[i] = Llu->Lval_buf_2[i];
@@ -511,24 +511,24 @@ pdgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
         Usub_buf_2[i] = Llu->Usub_buf_2[i];
     }
 
-    if (!(msgcnts = SUPERLU_MALLOC ((1 + num_look_aheads) * sizeof (int *))))
+    if (!(msgcnts = (int**) SUPERLU_MALLOC ((1 + num_look_aheads) * sizeof (int *))))
         ABORT ("Malloc fails for msgcnts[].");
-    if (!(msgcntsU = SUPERLU_MALLOC ((1 + num_look_aheads) * sizeof (int *))))
+    if (!(msgcntsU = (int**) SUPERLU_MALLOC ((1 + num_look_aheads) * sizeof (int *))))
         ABORT ("Malloc fails for msgcntsU[].");
     for (i = 0; i <= num_look_aheads; i++) {
-        if (!(msgcnts[i] = SUPERLU_MALLOC (4 * sizeof (int))))
+      if (!(msgcnts[i] = (int*) SUPERLU_MALLOC (4 * sizeof (int))))
             ABORT ("Malloc fails for msgcnts[].");
-        if (!(msgcntsU[i] = SUPERLU_MALLOC (4 * sizeof (int))))
+      if (!(msgcntsU[i] = (int*) SUPERLU_MALLOC (4 * sizeof (int))))
             ABORT ("Malloc fails for msgcntsU[].");
     }
 
-    if (! (recv_reqs_u = SUPERLU_MALLOC ((1 + num_look_aheads) * sizeof (MPI_Request *))))
+    if (! (recv_reqs_u = (MPI_Request**) SUPERLU_MALLOC ((1 + num_look_aheads) * sizeof (MPI_Request *))))
         ABORT ("Malloc fails for recv_reqs_u[].");
-    if (! (send_reqs_u = SUPERLU_MALLOC ((1 + num_look_aheads) * sizeof (MPI_Request *))))
+    if (! (send_reqs_u = (MPI_Request**) SUPERLU_MALLOC ((1 + num_look_aheads) * sizeof (MPI_Request *))))
         ABORT ("Malloc fails for send_reqs_u[].");
-    if (! (send_reqs = SUPERLU_MALLOC ((1 + num_look_aheads) * sizeof (MPI_Request *))))
+    if (! (send_reqs = (MPI_Request**) SUPERLU_MALLOC ((1 + num_look_aheads) * sizeof (MPI_Request *))))
         ABORT ("Malloc fails for send_reqs_u[].");
-    if (! (recv_reqs = SUPERLU_MALLOC ((1 + num_look_aheads) * sizeof (MPI_Request *))))
+    if (! (recv_reqs = (MPI_Request**) SUPERLU_MALLOC ((1 + num_look_aheads) * sizeof (MPI_Request *))))
         ABORT ("Malloc fails for recv_reqs[].");
     for (i = 0; i <= num_look_aheads; i++) {
         if (!(recv_reqs_u[i] = (MPI_Request *) SUPERLU_MALLOC (2 * sizeof (MPI_Request))))
@@ -543,9 +543,9 @@ pdgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
         recv_reqs[i][0] = recv_reqs[i][1] = MPI_REQUEST_NULL;
     }
 
-    if (!(factored = SUPERLU_MALLOC (nsupers * sizeof (int))))
+    if (!(factored = (int*) SUPERLU_MALLOC (nsupers * sizeof (int))))
         ABORT ("Malloc fails for factored[].");
-    if (!(factoredU = SUPERLU_MALLOC (nsupers * sizeof (int))))
+    if (!(factoredU = (int*) SUPERLU_MALLOC (nsupers * sizeof (int))))
         ABORT ("Malloc fails for factoredU[].");
     for (i = 0; i < nsupers; i++) factored[i] = factoredU[i] = -1;
 
@@ -584,8 +584,8 @@ pdgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
     full_u_cols = (int_t *) _mm_malloc (sizeof (int_t) * ncb,64);
     blk_ldu = (int_t *) _mm_malloc (sizeof (int_t) * ncb,64);
 #else
-    full_u_cols = SUPERLU_MALLOC((ncb+1) * sizeof(int));
-    blk_ldu = SUPERLU_MALLOC((ncb+1) * sizeof(int)); // +1 to accommodate un-even division
+    full_u_cols = (int*) SUPERLU_MALLOC((ncb+1) * sizeof(int));
+    blk_ldu = (int*) SUPERLU_MALLOC((ncb+1) * sizeof(int)); // +1 to accommodate un-even division
 #endif
 
     log_memory(2 * ncb * iword, stat);
@@ -603,7 +603,7 @@ pdgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
     /* ##################################################################
      *  Compute a good static schedule based on the factorization task graph.
      * ################################################################## */
-    perm_c_supno = SUPERLU_MALLOC (2 * nsupers * sizeof (int_t));
+    perm_c_supno = (int_t*) SUPERLU_MALLOC (2 * nsupers * sizeof (int_t));
     iperm_c_supno = perm_c_supno + nsupers;
 
     dstatic_schedule(options, m, n, LUstruct, grid, stat,
@@ -622,8 +622,8 @@ pdgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
     int *look_ahead_l; /* Sherry: add comment on look_ahead_l[] */
     stat->num_look_aheads = num_look_aheads;
 
-    look_ahead_l = SUPERLU_MALLOC (nsupers * sizeof (int));
-    look_ahead = SUPERLU_MALLOC (nsupers * sizeof (int));
+    look_ahead_l = (int*) SUPERLU_MALLOC (nsupers * sizeof (int));
+    look_ahead = (int*) SUPERLU_MALLOC (nsupers * sizeof (int));
     for (lb = 0; lb < nsupers; lb++) look_ahead_l[lb] = -1; /* vectorized */
     log_memory(3 * nsupers * iword, stat);
 
@@ -694,10 +694,10 @@ pdgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
     SUPERLU_FREE (look_ahead_l);
 
 #ifdef ISORT
-    iperm_u = SUPERLU_MALLOC (nsupers * sizeof (int_t));
-    perm_u = SUPERLU_MALLOC (nsupers * sizeof (int_t));
+    iperm_u = (int_t*) SUPERLU_MALLOC (nsupers * sizeof (int_t));
+    perm_u = (int_t*) SUPERLU_MALLOC (nsupers * sizeof (int_t));
 #else
-    perm_u = SUPERLU_MALLOC (2 * nsupers * sizeof (int_t));
+    perm_u = (int_t*) SUPERLU_MALLOC (2 * nsupers * sizeof (int_t));
 #endif
     log_memory(nsupers * iword, stat);
 
@@ -801,7 +801,7 @@ pdgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
 
 #ifdef GPU_ACC /*-- use GPU --*/
     int superlu_acc_offload = get_acc_offload();
-    
+
     int gpublas_nb = get_gpublas_nb(); // default 64
     int nstreams = get_num_gpu_streams (); // default 8
 
@@ -809,86 +809,126 @@ pdgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
                                      //   get_max_buffer_size());
     double *dA, *dB, *dC; // GEMM matrices on device
     int *stream_end_col;
+    #ifndef HAVE_SYCL
     gpuError_t gpuStat;
     gpublasHandle_t *handle;
+    #endif
     gpuStream_t *streams;
-		       
+
     if (superlu_acc_offload) {
-    
+
         /* array holding last column blk for each partition,
            used in SchCompUdt-GPU.c         */
         //int *stream_end_col = (int_t *) _mm_malloc (sizeof (int_t) * nstreams,64);
-        stream_end_col = SUPERLU_MALLOC( nstreams * sizeof(int) );
-
-        if ( checkGPU(gpuHostMalloc((void**)&bigU,  bigu_size * sizeof(double), gpuHostMallocDefault)) )
-            ABORT("Malloc fails for dgemm buffer U ");
+      stream_end_col = (int*) SUPERLU_MALLOC( nstreams * sizeof(int) );
 
 #if 0 // !!Sherry fix -- only dC on GPU uses buffer_size
-    bigv_size = buffer_size;
+        bigv_size = buffer_size;
 #endif
 
 #if ( PRNTlevel>=1 )
-    if ( iam==0 ) {
-        printf("[%d].. BIG V size " IFMT " (on CPU), dC buffer_size " IFMT " (on GPU)\n",
-                iam, bigv_size, buffer_size);
-        fflush(stdout);
-    }
+        if ( iam==0 ) {
+          printf("[%d].. BIG V size " IFMT " (on CPU), dC buffer_size " IFMT " (on GPU)\n",
+                 iam, bigv_size, buffer_size);
+          fflush(stdout);
+        }
 #endif
 
-        if ( checkGPU(gpuHostMalloc((void**)&bigV, bigv_size * sizeof(double), gpuHostMallocDefault)) )
-            ABORT("Malloc fails for dgemm buffer V");
+#ifdef HAVE_SYCL
+        bigU = new double[size_t(bigu_size)];
+        if (bigU == nullptr)
+          ABORT("Malloc fails for dgemm buffer U ");
+        bigV = new double[size_t(bigv_size)];
+        if (bigV == nullptr)
+          ABORT("Malloc fails for dgemm buffer V ");
 
-    if ( iam==0 && options->PrintStat==YES ) {
-        DisplayHeader();
-	printf(" Starting with %d GPU Streams \n", nstreams);
-        fflush(stdout);
-    }
+        // allocate device memory
+        dA = nullptr;
+        dA = sycl::malloc_device<double>(size_t(max_row_size) * size_t(sp_ienv_dist(3, options)), *(sycl_get_queue()));
+        if (dA == nullptr) {
+          fprintf(stderr, "!!!! Error in allocating A in the device of %ld bytes\n",max_row_size * sp_ienv_dist(3, options)*sizeof(double));
+          return 1;
+        }
+
+        // size of B should be bigu_size
+        dB = nullptr;
+        dB = sycl::malloc_device<double>(size_t(bigu_size), *(sycl_get_queue()));
+        if (dB == nullptr) {
+          fprintf(stderr, "!!!! Error in allocating B in the device of %ld bytes\n",bigu_size*sizeof(double));
+          return 1;
+        }
+
+        dC = nullptr;
+        dC = sycl::malloc_device<double>(size_t(buffer_size), *(sycl_get_queue()));
+        if (dC == nullptr) {
+          fprintf(stderr, "!!!! Error in allocating C in the device of %ld bytes\n",buffer_size*sizeof(double));
+          return 1;
+        }
+#else // CUDA/HIP
+        if ( checkGPU(gpuHostMalloc((void**)&bigU,  bigu_size * sizeof(double), gpuHostMallocDefault)) )
+          ABORT("Malloc fails for dgemm buffer U ");
+        if ( checkGPU(gpuHostMalloc((void**)&bigV, bigv_size * sizeof(double), gpuHostMallocDefault)) )
+          ABORT("Malloc fails for dgemm buffer V");
 
         handle = (gpublasHandle_t *) SUPERLU_MALLOC(sizeof(gpublasHandle_t)*nstreams);
         for (i = 0; i < nstreams; i++) handle[i] = create_handle();
 
-        // creating streams
-        streams = (gpuStream_t *) SUPERLU_MALLOC(sizeof(gpuStream_t)*nstreams);
-        for (i = 0; i < nstreams; ++i)
-            checkGPU( gpuStreamCreate(&streams[i]) );
-
         gpuStat = gpuMalloc( (void**)&dA, max_row_size * sp_ienv_dist(3,options) * sizeof(double));
         if (gpuStat!= gpuSuccess) {
-            fprintf(stderr, "!!!! Error in allocating A in the device %ld \n",m*k*sizeof(double) );
-            return 1;
+          fprintf(stderr, "!!!! Error in allocating A in the device of %ld bytes\n",max_row_size * sp_ienv_dist(3,options)*sizeof(double));
+          return 1;
         }
 
         // size of B should be bigu_size
         gpuStat = gpuMalloc((void**)&dB, bigu_size * sizeof(double));
         if (gpuStat!= gpuSuccess) {
-            fprintf(stderr, "!!!! Error in allocating B in the device %ld \n",n*k*sizeof(double));
-            return 1;
+          fprintf(stderr, "!!!! Error in allocating B in the device of %ld bytes\n",bigu_size*sizeof(double));
+          return 1;
         }
 
         gpuStat = gpuMalloc((void**)&dC, buffer_size * sizeof(double) );
         if (gpuStat!= gpuSuccess) {
-            fprintf(stderr, "!!!! Error in allocating C in the device \n" );
-            return 1;
+          fprintf(stderr, "!!!! Error in allocating C in the device of %ld bytes\n",buffer_size*sizeof(double));
+          return 1;
+        }
+#endif // CUDA/HIP only
+
+        if ( iam==0 && options->PrintStat==YES ) {
+          DisplayHeader();
+          printf(" Starting with %d GPU Streams \n", nstreams);
+          fflush(stdout);
+        }
+
+        // creating streams
+        streams = (gpuStream_t *) SUPERLU_MALLOC(sizeof(gpuStream_t)*nstreams);
+        for (i = 0; i < nstreams; ++i) {
+            // TODO: there is support for gpuStreamCreate in SYCL too but
+            // somehow segfault
+            #ifdef HAVE_SYCL
+            streams[i] = new sycl::queue( sycl_get_queue()->get_context(), sycl_get_queue()->get_device(), asyncHandler, sycl::property_list{sycl::property::queue::in_order{}} );
+            #else
+            checkGPU( gpuStreamCreate(&streams[i]) );
+            #endif
         }
 
         stat->gpu_buffer += dword * ( max_row_size * sp_ienv_dist(3,options) // dA
                                      + bigu_size                     // dB
                                      + buffer_size );                // dC
-				     
+
     } else { /* now superlu_acc_offload==0, GEMM will use CPU buffer */
         if ( !(bigU = doubleMalloc_dist(bigu_size)) )
 	     ABORT ("Malloc fails for dgemm U buffer");
 	if ( !(bigV = doubleMalloc_dist(bigv_size)) )
 	     ABORT ("Malloc failed for dgemm V buffer");
     }
-							    
+
 #else  /*-------- not to use GPU --------*/
 
   #if 0  /* Does not use buffer_size on CPU */
     int Threads_per_process = get_thread_per_process();
     int_t buffer_size  = SUPERLU_MAX(max_row_size * Threads_per_process * ldt, sp_ienv_dist(8));
   #endif
-  
+
     // for GEMM padding 0
     j = bigu_size / ldt;
     bigu_size += (gemm_k_pad * (j + ldt + gemm_n_pad));
@@ -901,7 +941,7 @@ pdgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
     }
 #endif
 
-//#ifdef __INTEL_COMPILER
+//#if defined(__INTEL_COMPILER) || defined(__INTEL_LLVM_COMPILER)
 //    bigU = _mm_malloc(bigu_size * sizeof(double), 1<<12); // align at 4K page
 //    bigV = _mm_malloc(bigv_size * sizeof(double), 1<<12);
 //#else
@@ -929,9 +969,9 @@ pdgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
     /* Sherry: (ldt + 16), avoid cache line false sharing.
        KNL cacheline size = 64 bytes = 16 int */
     iinfo = ldt + CACHELINE / sizeof(int);
-    if (!(indirect = SUPERLU_MALLOC (iinfo * num_threads * sizeof(int))))
+    if (!(indirect = (int*) SUPERLU_MALLOC (iinfo * num_threads * sizeof(int))))
         ABORT ("Malloc fails for indirect[].");
-    if (!(indirect2 = SUPERLU_MALLOC (iinfo * num_threads * sizeof(int))))
+    if (!(indirect2 = (int*) SUPERLU_MALLOC (iinfo * num_threads * sizeof(int))))
         ABORT ("Malloc fails for indirect[].");
 
     log_memory(2 * ldt*ldt * dword + 2 * iinfo * num_threads * iword, stat);
@@ -1467,7 +1507,7 @@ pdgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
 /* #pragma omp parallel */ /* Sherry -- parallel done inside pdgstrs2 */
 #endif
                 {
-                    pdgstrs2_omp (k0, k, Glu_persist, grid, Llu, 
+                    pdgstrs2_omp (k0, k, Glu_persist, grid, Llu,
 		                    Ublock_info, stat);
                 }
                 pdgstrs2_timer += SuperLU_timer_() - ttt2;
@@ -1865,9 +1905,21 @@ pdgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
         gpuFree( (void*)dA ); /* Sherry added */
         gpuFree( (void*)dB );
         gpuFree( (void*)dC );
-        for (i = 0; i < nstreams; i++) destroy_handle(handle[i]);	
+        #ifndef HAVE_SYCL
+        for (i = 0; i < nstreams; i++) destroy_handle(handle[i]);
         SUPERLU_FREE( handle );
+        #endif
+
+	// destroy streams before freeing
+	for (i = 0; i < nstreams; i++) {
+        #ifdef HAVE_SYCL
+	    delete streams[i];
+        #else
+	    gpuStreamDestroy(streams[i]);
+        #endif
+	}
         SUPERLU_FREE( streams );
+
         SUPERLU_FREE( stream_end_col );
     } else {
         SUPERLU_FREE (bigV);    // allocated on CPU
@@ -1999,4 +2051,3 @@ pdgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
 
     return 0;
 } /* PDGSTRF */
-

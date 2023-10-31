@@ -233,10 +233,10 @@ void sRgather_L( int_t k, int_t *lsub, float *lusup,
     luptr = luptr0;
 
     sgather_l( HyP->lookAheadBlk, knsupc, HyP->lookAhead_info,
-               &lusup[luptr], nsupr, HyP->lookAhead_L_buff);
+               &lusup[luptr], nsupr, (float *) HyP->lookAhead_L_buff);
 
     sgather_l( HyP->RemainBlk, knsupc, HyP->Remain_info,
-               &lusup[luptr], nsupr, HyP->Remain_L_buff);
+               &lusup[luptr], nsupr, (float *) HyP->Remain_L_buff);
 
     assert(HyP->lookAheadBlk + HyP->RemainBlk ==nlb );
     HyP->Lnbrow = HyP->lookAheadBlk == 0 ? 0 : HyP->lookAhead_info[HyP->lookAheadBlk - 1].FullRow;
@@ -389,10 +389,10 @@ void sRgather_U( int_t k, int_t jj0, int_t *usub,	float *uval,
     else
 	HyP->bigU_host = bigU + HyP->ldu_Phi * HyP->Ublock_info_Phi[HyP->num_u_blks_Phi - 1].full_u_cols;
 
-    sgather_u(HyP->num_u_blks, HyP->Ublock_info, usub, uval, HyP->bigU_host,
+    sgather_u(HyP->num_u_blks, HyP->Ublock_info, usub, uval, (float *) HyP->bigU_host,
                HyP->ldu, xsup, klst );
 
     sgather_u(HyP->num_u_blks_Phi, HyP->Ublock_info_Phi, usub, uval,
-               HyP->bigU_Phi,  HyP->ldu_Phi, xsup, klst );
+	      (float *) HyP->bigU_Phi,  HyP->ldu_Phi, xsup, klst );
 
 } /* sRgather_U */

@@ -1,4 +1,4 @@
-set(headers 
+set(headers
     f2c.h
 )
 set(sources input_error_dist.c)

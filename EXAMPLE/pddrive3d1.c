@@ -119,7 +119,7 @@ main (int argc, char *argv[])
     int iam, info, ldb, ldx, nrhs;
     char **cpp, c, *suffix;
     FILE *fp, *fopen ();
-    extern int cpp_defs ();
+    
     int ii, omp_mpi_level;
 
     nprow = 1;            /* Default process rows.      */

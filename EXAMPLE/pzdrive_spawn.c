@@ -62,8 +62,8 @@ int main(int argc, char *argv[])
     int      nprow, npcol,lookahead,colperm;
     int      iam, info, ldb, ldx, nrhs;
     char     **cpp, c, *postfix;;
-    FILE *fp, *fopen();
-    int cpp_defs();
+    FILE *fp;
+    
     int ii, omp_mpi_level;
 	MPI_Comm parent;
 	float result[2];

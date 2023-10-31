@@ -433,8 +433,10 @@ typedef struct
  * Function prototypes
  ***********************************************************************/
 
+#ifndef HAVE_SYCL
 #ifdef __cplusplus
 extern "C" {
+#endif
 #endif
 
 
@@ -1204,9 +1206,10 @@ extern int_t ancestorFactor(
 
 /*== end 3D prototypes ===================*/
 
-
+#ifndef HAVE_SYCL
 #ifdef __cplusplus
   }
+#endif
 #endif
 
 #endif /* __SUPERLU_dDEFS */

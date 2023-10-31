@@ -73,7 +73,7 @@ zstatic_schedule(superlu_dist_options_t * options, int m, int n,
     float edag_supno_l_bytes;
     int nnodes, *sendcnts, *sdispls, *recvcnts, *rdispls, *srows, *rrows;
     etree_node *head, *tail, *ptr;
-    int *num_child;
+    int_t *num_child;
 
     int iword = sizeof (int_t);
 
@@ -128,7 +128,7 @@ zstatic_schedule(superlu_dist_options_t * options, int m, int n,
 #endif
 
             /* look for the first off-diagonal blocks */
-            etree_supno = SUPERLU_MALLOC (nsupers * sizeof (int_t));
+            etree_supno = (int_t *) SUPERLU_MALLOC (nsupers * sizeof (int_t));
 	    log_memory(nsupers * iword, stat);
 
             for (i = 0; i < nsupers; i++) etree_supno[i] = nsupers;
@@ -150,7 +150,7 @@ zstatic_schedule(superlu_dist_options_t * options, int m, int n,
 #endif
 
             /* find the first block in each supernodal-column of local L-factor */
-            etree_supno_l = SUPERLU_MALLOC (nsupers * sizeof (int_t));
+            etree_supno_l = (int_t *) SUPERLU_MALLOC (nsupers * sizeof (int_t));
 	    log_memory(nsupers * iword, stat);
 
             for (i = 0; i < nsupers; i++) etree_supno_l[i] = nsupers;
@@ -205,7 +205,7 @@ zstatic_schedule(superlu_dist_options_t * options, int m, int n,
             }
 
             /* form global e-tree */
-            etree_supno = SUPERLU_MALLOC (nsupers * sizeof (int_t));
+            etree_supno = (int_t *) SUPERLU_MALLOC (nsupers * sizeof (int_t));
 
             MPI_Allreduce (etree_supno_l, etree_supno, nsupers, mpi_int_t,
                            MPI_MIN, grid->comm);
@@ -214,7 +214,7 @@ zstatic_schedule(superlu_dist_options_t * options, int m, int n,
         }
 
         /* initialize number of children for each node */
-        num_child = SUPERLU_MALLOC (nsupers * sizeof (int_t));
+        num_child = (int_t *) SUPERLU_MALLOC (nsupers * sizeof (int_t));
         for (i = 0; i < nsupers; i++) num_child[i] = 0;
         for (i = 0; i < nsupers; i++)
             if (etree_supno[i] != nsupers)  num_child[etree_supno[i]]++;
@@ -223,7 +223,7 @@ zstatic_schedule(superlu_dist_options_t * options, int m, int n,
         nnodes = 0;
         for (i = 0; i < nsupers; i++) {
             if (num_child[i] == 0) {
-                ptr = SUPERLU_MALLOC (sizeof (etree_node));
+	        ptr = (etree_node *) SUPERLU_MALLOC (sizeof (etree_node));
                 ptr->id = i;
                 ptr->next = NULL;
                 /*printf( " == push leaf %d (%d) ==\n",i,nnodes ); */
@@ -245,7 +245,7 @@ zstatic_schedule(superlu_dist_options_t * options, int m, int n,
         while (nnodes > 0) {
             ptr = head;
             j = ptr->id;
-            head = ptr->next;
+            head = (etree_node *) ptr->next;
             perm_c_supno[i] = j;
             SUPERLU_FREE (ptr);
             i++;
@@ -256,7 +256,7 @@ zstatic_schedule(superlu_dist_options_t * options, int m, int n,
                 if (num_child[etree_supno[j]] == 0) {
                     nnodes++;
 
-                    ptr = SUPERLU_MALLOC (sizeof (etree_node));
+                    ptr = (etree_node *) SUPERLU_MALLOC (sizeof (etree_node));
                     ptr->id = etree_supno[j];
                     ptr->next = NULL;
 
@@ -284,7 +284,7 @@ zstatic_schedule(superlu_dist_options_t * options, int m, int n,
 	float Ublock_bytes, Urows_bytes, Lblock_bytes, Lrows_bytes;
 
         /* allocate some workspace */
-        if (! (sendcnts = SUPERLU_MALLOC ((4 + 2 * nrbp1) * Pr * Pc * sizeof (int))))
+        if (! (sendcnts = (int *) SUPERLU_MALLOC ((4 + 2 * nrbp1) * Pr * Pc * sizeof (int))))
             ABORT ("Malloc fails for sendcnts[].");
 	log_memory((4 + 2 * nrbp1) * Pr * Pc * sizeof (int), stat);
 
@@ -747,7 +747,7 @@ zstatic_schedule(superlu_dist_options_t * options, int m, int n,
         SUPERLU_FREE (edag_supno_l);
 	log_memory(-edag_supno_l_bytes, stat);
 
-        if (!(edag_supno = SUPERLU_MALLOC (nsupers * sizeof (int_t *))))
+        if (!(edag_supno = (int_t **) SUPERLU_MALLOC (nsupers * sizeof (int_t *))))
             ABORT ("Malloc fails for edag_supno[].");
 	log_memory(nsupers * iword, stat);
 
@@ -837,7 +837,7 @@ zstatic_schedule(superlu_dist_options_t * options, int m, int n,
         SUPERLU_FREE (edag_supno_l);
 	log_memory(-edag_supno_l_bytes, stat);
 
-        if (!(edag_supno = SUPERLU_MALLOC (nsupers * sizeof (int_t *))))
+        if (!(edag_supno = (int_t **) SUPERLU_MALLOC (nsupers * sizeof (int_t *))))
             ABORT ("Malloc fails for edag_supno[].");
 	log_memory(nsupers * sizeof(int_t *), stat);
 
@@ -886,7 +886,7 @@ zstatic_schedule(superlu_dist_options_t * options, int m, int n,
 #endif  /* end USE_ALL_GATHER */
 
         /* initialize the num of child for each node */
-        num_child = SUPERLU_MALLOC (nsupers * sizeof (int_t));
+        num_child = (int_t *) SUPERLU_MALLOC (nsupers * sizeof (int_t));
         for (i = 0; i < nsupers; i++) num_child[i] = 0;
         for (i = 0; i < nsupers; i++) {
             for (jb = 0; jb < nnodes_l[i]; jb++) {
@@ -898,7 +898,7 @@ zstatic_schedule(superlu_dist_options_t * options, int m, int n,
         nnodes = 0;
         for (i = 0; i < nsupers; i++) {
             if (num_child[i] == 0) {
-                ptr = SUPERLU_MALLOC (sizeof (etree_node));
+	        ptr = (etree_node *) SUPERLU_MALLOC (sizeof (etree_node));
                 ptr->id = i;
                 ptr->next = NULL;
                 /*printf( " == push leaf %d (%d) ==\n",i,nnodes ); */
@@ -921,7 +921,7 @@ zstatic_schedule(superlu_dist_options_t * options, int m, int n,
             /*printf( "=== pop %d (%d) ===\n",head->id,i ); */
             ptr = head;
             j = ptr->id;
-            head = ptr->next;
+            head = (etree_node *) ptr->next;
 
             perm_c_supno[i] = j;
             SUPERLU_FREE (ptr);
@@ -933,7 +933,7 @@ zstatic_schedule(superlu_dist_options_t * options, int m, int n,
                 if (num_child[edag_supno[j][jb]] == 0) {
                     nnodes++;
 
-                    ptr = SUPERLU_MALLOC (sizeof (etree_node));
+                    ptr = (etree_node *) SUPERLU_MALLOC (sizeof (etree_node));
                     ptr->id = edag_supno[j][jb];
                     ptr->next = NULL;
 

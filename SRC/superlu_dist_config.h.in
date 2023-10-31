@@ -6,6 +6,12 @@
 /* Enable HIP */
 #cmakedefine HAVE_HIP @HAVE_HIP@
 
+/* Enable SYCL */
+#cmakedefine HAVE_SYCL @HAVE_SYCL@
+
+/* Enable DPCPP */
+#cmakedefine HAVE_DPCPP @HAVE_DPCPP@
+
 /* Enable parmetis */
 #cmakedefine HAVE_PARMETIS @HAVE_PARMETIS@
 
