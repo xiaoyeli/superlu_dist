@@ -1,4 +1,12 @@
 #!/bin/bash
+#SBATCH -A csc289
+#SBATCH -J superlu_test
+#SBATCH -o %x-%j.out
+#SBATCH -t 00:20:00
+#SBATCH -p batch
+#SBATCH -N 2
+
+
 # Bash script to submit many files to Cori/Edison/Queue
 EXIT_SUCCESS=0
 EXIT_HOST=1
@@ -35,7 +43,10 @@ FILE=$FILE_DIR/$FILE_NAME
 CORES_PER_NODE=64
 
 
-
+export SUPERLU_NUM_GPU_STREAMS=1
+# export SUPERLU_BIND_MPI_GPU=1
+export SUPERLU_ACC_OFFLOAD=0
+export MAX_BUFFER_SIZE=500000000 
 #nprows=(6 12 24)
 #npcols=(6 12 24)
 
@@ -74,8 +85,8 @@ CORES_PER_NODE=64
 #npcols=(12 144 1)
 
 
-nprows=(2 4 8)
-npcols=(2 4 8)
+nprows=(4)
+npcols=(4)
  
 for ((i = 0; i < ${#npcols[@]}; i++)); do
 NROW=${nprows[i]}
@@ -90,8 +101,7 @@ then
   NODE_VAL=`expr $NODE_VAL + 1`
 fi
 
-export MAX_BUFFER_SIZE=500000000 
-export NUM_GPU_STREAMS=1
+
 for NTH in 1 
 do
 OMP_NUM_THREADS=$NTH
@@ -121,7 +131,9 @@ OMP_NUM_THREADS=$NTH
   # for MAT in HTS/boyd1.mtx
   # for MAT in HTS/rajat16.mtx
   # for MAT in big.rua
-  for MAT in Ga19As19H42.mtx
+  # for MAT in Geo_1438.mtx
+  # for MAT in Ga19As19H42.mtx
+  for MAT in s2D9pt2048.rua 
   # for MAT in matrix121.dat matrix211.dat tdr190k.dat tdr455k.dat nlpkkt80.mtx torso3.mtx helm2d03.mtx  
   # for MAT in tdr190k.dat Ga19As19H42.mtx
  # for MAT in torso3.mtx hvdc2.mtx matrix121.dat nlpkkt80.mtx helm2d03.mtx
@@ -137,7 +149,8 @@ OMP_NUM_THREADS=$NTH
     mkdir -p $MAT
     #srun -n $CORE_VAL -c $NTH --cpu_bind=cores /opt/rocm/bin/rocprof --hsa-trace --hip-trace $FILE -c $NCOL -r $NROW $INPUT_DIR/$MAT | tee ./$MAT/SLU.o_mpi_${NROW}x${NCOL}_${OMP_NUM_THREADS}_mrhs
     #srun -n $CORE_VAL -c $NTH --cpu_bind=cores /opt/rocm/bin/rocprof --hsa-trace --roctx-trace $FILE -c $NCOL -r $NROW $INPUT_DIR/$MAT | tee ./$MAT/SLU.o_mpi_${NROW}x${NCOL}_${OMP_NUM_THREADS}_mrhs
-    srun -n $CORE_VAL -c $NTH --cpu_bind=cores $FILE -c $NCOL -r $NROW $INPUT_DIR/$MAT | tee ./$MAT/SLU.o_mpi_${NROW}x${NCOL}_${OMP_NUM_THREADS}_mrhs
+    # srun -n $CORE_VAL -c $NTH --gpu-bind=closest --ntasks-per-gpu=1 --gpus $CORE_VAL --gpus-per-node=8 $FILE -c $NCOL -r $NROW $INPUT_DIR/$MAT | tee ./$MAT/SLU.o_mpi_${NROW}x${NCOL}_${OMP_NUM_THREADS}_mrhs
+    srun -N ${SLURM_NNODES} --ntasks-per-node=8 --gpus-per-task=1 --gpu-bind=closest $FILE -c $NCOL -r $NROW $INPUT_DIR/$MAT | tee ./$MAT/SLU.o_mpi_${NROW}x${NCOL}_${OMP_NUM_THREADS}_mrhs
     # Add final line (srun line) to temporary slurm script
 
   done

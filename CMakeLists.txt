@@ -30,11 +30,11 @@ option(XSDK_ENABLE_Fortran "Enable Fortran" ON)
 option(TPL_ENABLE_INTERNAL_BLASLIB  "Build the CBLAS library" ${enable_blaslib_DEFAULT})
 option(TPL_BLAS_LIBRARIES "List of absolute paths to blas libraries [].")
 #-- ParMETIS
-option(TPL_ENABLE_PARMETISLIB   "Build the ParMETIS library" ON)
+option(TPL_ENABLE_PARMETISLIB   "Enable the ParMETIS library" ON)
 option(TPL_PARMETIS_LIBRARIES "List of absolute paths to ParMETIS link libraries [].")
 option(TPL_PARMETIS_INCLUDE_DIRS "List of absolute paths to ParMETIS include directories [].")
 #-- COLAMD
-option(TPL_ENABLE_COLAMDLIB   "Build the COLAMD library" OFF)
+option(TPL_ENABLE_COLAMDLIB   "Enable the COLAMD library" OFF)
 option(TPL_COLAMD_LIBRARIES "List of absolute paths to COLAMD link libraries [].")
 option(TPL_COLAMD_INCLUDE_DIRS "List of absolute paths to COLAMD include directories [].")
 #-- LAPACK
