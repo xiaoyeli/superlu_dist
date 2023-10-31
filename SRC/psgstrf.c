@@ -943,7 +943,7 @@ psgstrf(superlu_dist_options_t * options, int m, int n, float anorm,
     }
 #endif
 
-//#ifdef __INTEL_COMPILER
+//#if defined(__INTEL_COMPILER) || defined(__INTEL_LLVM_COMPILER)
 //    bigU = _mm_malloc(bigu_size * sizeof(float), 1<<12); // align at 4K page
 //    bigV = _mm_malloc(bigv_size * sizeof(float), 1<<12);
 //#else
