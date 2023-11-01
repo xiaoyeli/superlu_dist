@@ -73,7 +73,7 @@ zstatic_schedule(superlu_dist_options_t * options, int m, int n,
     float edag_supno_l_bytes;
     int nnodes, *sendcnts, *sdispls, *recvcnts, *rdispls, *srows, *rrows;
     etree_node *head, *tail, *ptr;
-    int_t *num_child;
+    int *num_child;
 
     int iword = sizeof (int_t);
 
@@ -214,7 +214,7 @@ zstatic_schedule(superlu_dist_options_t * options, int m, int n,
         }
 
         /* initialize number of children for each node */
-        num_child = (int_t *) SUPERLU_MALLOC (nsupers * sizeof (int_t));
+        num_child = (int *) SUPERLU_MALLOC (nsupers * sizeof (int));
         for (i = 0; i < nsupers; i++) num_child[i] = 0;
         for (i = 0; i < nsupers; i++)
             if (etree_supno[i] != nsupers)  num_child[etree_supno[i]]++;
@@ -886,7 +886,7 @@ zstatic_schedule(superlu_dist_options_t * options, int m, int n,
 #endif  /* end USE_ALL_GATHER */
 
         /* initialize the num of child for each node */
-        num_child = (int_t *) SUPERLU_MALLOC (nsupers * sizeof (int_t));
+        num_child = (int *) SUPERLU_MALLOC (nsupers * sizeof (int));
         for (i = 0; i < nsupers; i++) num_child[i] = 0;
         for (i = 0; i < nsupers; i++) {
             for (jb = 0; jb < nnodes_l[i]; jb++) {

@@ -261,7 +261,7 @@ int_t* getPerm_c_supno(int_t nsupers, superlu_dist_options_t *options,
     int nnodes, *sendcnts, *sdispls, *recvcnts, *rdispls, *srows, *rrows;
     int_t j, k, krow,  yourcol;
     etree_node *head, *tail, *ptr;
-    int_t *num_child;
+    int *num_child;
     nblocks = 0;
     ncb = nsupers / Pc;
     nrb = nsupers / Pr;
@@ -374,7 +374,7 @@ int_t* getPerm_c_supno(int_t nsupers, superlu_dist_options_t *options,
         }
 
         /* initialize the num of child for each node */
-        num_child = (int_t *) SUPERLU_MALLOC( nsupers * sizeof(int_t) );
+        num_child = (int *) SUPERLU_MALLOC( nsupers * sizeof(int) );
         for ( i = 0; i < nsupers; i++ ) num_child[i] = 0;
         for ( i = 0; i < nsupers; i++ ) if ( etree_supno[i] != nsupers ) num_child[etree_supno[i]] ++;
 
@@ -1073,7 +1073,7 @@ int_t* getPerm_c_supno(int_t nsupers, superlu_dist_options_t *options,
 #endif
 
         /* initialize the num of child for each node */
-        num_child = (int_t *) SUPERLU_MALLOC( nsupers * sizeof(int_t) );
+        num_child = (int *) SUPERLU_MALLOC( nsupers * sizeof(int) );
         for ( i = 0; i < nsupers; i++ ) num_child[i] = 0;
         for ( i = 0; i < nsupers; i++ )
         {
