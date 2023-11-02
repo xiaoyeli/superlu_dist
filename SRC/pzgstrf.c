@@ -835,60 +835,60 @@ pzgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
 #endif
 
 #ifdef HAVE_SYCL
-        bigU = new double[size_t(bigu_size)];
+        bigU = new doublecomplex[size_t(bigu_size)];
         if (bigU == nullptr)
           ABORT("Malloc fails for dgemm buffer U ");
-        bigV = new double[size_t(bigv_size)];
+        bigV = new doublecomplex[size_t(bigv_size)];
         if (bigV == nullptr)
           ABORT("Malloc fails for dgemm buffer V ");
 
         // allocate device memory
         dA = nullptr;
-        dA = sycl::malloc_device<double>(size_t(max_row_size) * size_t(sp_ienv_dist(3, options)), *(sycl_get_queue()));
+        dA = sycl::malloc_device<doublecomplex>(size_t(max_row_size) * size_t(sp_ienv_dist(3, options)), *(sycl_get_queue()));
         if (dA == nullptr) {
-          fprintf(stderr, "!!!! Error in allocating A in the device of %ld bytes\n",max_row_size*sp_ienv_dist(3, options)*sizeof(double));
+          fprintf(stderr, "!!!! Error in allocating A in the device of %ld bytes\n",max_row_size*sp_ienv_dist(3, options)*sizeof(doublecomplex));
           return 1;
         }
 
         // size of B should be bigu_size
         dB = nullptr;
-        dB = sycl::malloc_device<double>(size_t(bigu_size), *(sycl_get_queue()));
+        dB = sycl::malloc_device<doublecomplex>(size_t(bigu_size), *(sycl_get_queue()));
         if (dB == nullptr) {
-          fprintf(stderr, "!!!! Error in allocating B in the device of %ld bytes\n",bigu_size*sizeof(double));
+          fprintf(stderr, "!!!! Error in allocating B in the device of %ld bytes\n",bigu_size*sizeof(doublecomplex));
           return 1;
         }
 
         dC = nullptr;
-        dC = sycl::malloc_device<double>(size_t(buffer_size), *(sycl_get_queue()));
+        dC = sycl::malloc_device<doublecomplex>(size_t(buffer_size), *(sycl_get_queue()));
         if (dC == nullptr) {
-          fprintf(stderr, "!!!! Error in allocating C in the device of %ld bytes\n",buffer_size*sizeof(double));
+          fprintf(stderr, "!!!! Error in allocating C in the device of %ld bytes\n",buffer_size*sizeof(doublecomplex));
           return 1;
         }
 #else // CUDA/HIP
-        if ( checkGPU(gpuHostMalloc((void**)&bigU,  bigu_size * sizeof(double), gpuHostMallocDefault)) )
+        if ( checkGPU(gpuHostMalloc((void**)&bigU, bigu_size * sizeof(doublecomplex), gpuHostMallocDefault)) )
           ABORT("Malloc fails for dgemm buffer U ");
-        if ( checkGPU(gpuHostMalloc((void**)&bigV, bigv_size * sizeof(double), gpuHostMallocDefault)) )
+        if ( checkGPU(gpuHostMalloc((void**)&bigV, bigv_size * sizeof(doublecomplex), gpuHostMallocDefault)) )
           ABORT("Malloc fails for dgemm buffer V");
 
         handle = (gpublasHandle_t *) SUPERLU_MALLOC(sizeof(gpublasHandle_t)*nstreams);
         for (i = 0; i < nstreams; i++) handle[i] = create_handle();
 
-        gpuStat = gpuMalloc( (void**)&dA, max_row_size * sp_ienv_dist(3,options) * sizeof(double));
+        gpuStat = gpuMalloc( (void**)&dA, max_row_size * sp_ienv_dist(3,options) * sizeof(doublecomplex));
         if (gpuStat!= gpuSuccess) {
-          fprintf(stderr, "!!!! Error in allocating A in the device %ld \n",m*k*sizeof(double) );
+          fprintf(stderr, "!!!! Error in allocating A in the device %ld bytes\n",max_row_size*sp_ienv_dist(3,options)*sizeof(doublecomplex) );
           return 1;
         }
 
         // size of B should be bigu_size
-        gpuStat = gpuMalloc((void**)&dB, bigu_size * sizeof(double));
+        gpuStat = gpuMalloc((void**)&dB, bigu_size * sizeof(doublecomplex));
         if (gpuStat!= gpuSuccess) {
-          fprintf(stderr, "!!!! Error in allocating B in the device %ld \n",n*k*sizeof(double));
+          fprintf(stderr, "!!!! Error in allocating B in the device %ld bytes\n",bigu_size*sizeof(doublecomplex));
           return 1;
         }
 
-        gpuStat = gpuMalloc((void**)&dC, buffer_size * sizeof(double) );
+        gpuStat = gpuMalloc((void**)&dC, buffer_size * sizeof(doublecomplex) );
         if (gpuStat!= gpuSuccess) {
-          fprintf(stderr, "!!!! Error in allocating C in the device \n" );
+          fprintf(stderr, "!!!! Error in allocating C in the device %ld bytes\n",buffer_size*sizeof(doublecomplex));
           return 1;
         }
 #endif // CUDA/HIP only
@@ -922,7 +922,7 @@ pzgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
 	     ABORT ("Malloc failed for dgemm V buffer");
     }
 							    
-#else  /*-------- not to use GPU --------*/
+#else //GPU_ACC  /*-------- not to use GPU --------*/
 
   #if 0  /* Does not use buffer_size on CPU */
     int Threads_per_process = get_thread_per_process();

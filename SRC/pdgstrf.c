@@ -875,7 +875,7 @@ pdgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
 
         gpuStat = gpuMalloc( (void**)&dA, max_row_size * sp_ienv_dist(3,options) * sizeof(double));
         if (gpuStat!= gpuSuccess) {
-          fprintf(stderr, "!!!! Error in allocating A in the device of %ld bytes\n",max_row_size * sp_ienv_dist(3,options)*sizeof(double));
+          fprintf(stderr, "!!!! Error in allocating A in the device of %ld bytes\n",max_row_size*sp_ienv_dist(3,options)*sizeof(double));
           return 1;
         }
 
