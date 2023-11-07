@@ -16,7 +16,7 @@ cmake .. \
   -DTPL_ENABLE_CUDALIB=OFF \
   -DCMAKE_INSTALL_PREFIX=. \
   -DCMAKE_INSTALL_LIBDIR=./lib \
-  -DCMAKE_BUILD_TYPE=Debug \
+  -DCMAKE_BUILD_TYPE=Release \
   -DTPL_BLAS_LIBRARIES="-L${MKLROOT}/lib/intel64 -lmkl_intel_lp64 -lmkl_sequential -lmkl_core" \
   -DTPL_LAPACK_LIBRARIES="-L${MKLROOT}/lib/intel64 -lmkl_intel_lp64 -lmkl_sequential -lmkl_core" \
   -DTPL_PARMETIS_INCLUDE_DIRS="/home/liuyangz/my_software/parmetis-4.0.3/include;/home/liuyangz/my_software/parmetis-4.0.3/metis/include" \
