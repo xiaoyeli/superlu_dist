@@ -71,7 +71,15 @@ void superlu_gridinit(MPI_Comm Bcomm, /* The base communicator upon which
 	int devs, rank;
 	MPI_Comm_rank(Bcomm, &rank); // MPI_COMM_WORLD??
 	gpuGetDeviceCount(&devs);  // Returns the number of compute-capable devices
-	gpuSetDevice(rank % devs); // Set device to be used for GPU executions
+    int device_id = (int)(rank/get_mpi_process_per_gpu ()) % (devs); //YL: allow multiple MPIs per GPU
+	gpuSetDevice(device_id); // Set device to be used for GPU executions
+
+    int get_cur_dev;
+    gpuGetDevice(&get_cur_dev);
+    printf("** MPI rank %d, gpu=%d **\n",rank,get_cur_dev);
+    fflush(stdout);
+
+
     }
 #endif
 }
