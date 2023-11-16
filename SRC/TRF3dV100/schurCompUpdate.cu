@@ -976,7 +976,8 @@ int_t LUstruct_v100::setLUstruct_GPU()
     if ( options->batchCount > 0 ) { /* use batch code */
 	num_dfbufs = mxLeafNode;
     } else { /* use pipelined code */
-	num_dfbufs = MAX_CUDA_STREAMS;
+	// num_dfbufs = MAX_CUDA_STREAMS; // 
+    num_dfbufs = A_gpu.numCudaStreams;
     }
     int num_gemmbufs = num_dfbufs;
     printf(".. setLUstrut_GPU: num_dfbufs %d, num_gemmbufs %d\n", num_dfbufs, num_gemmbufs); fflush(stdout);

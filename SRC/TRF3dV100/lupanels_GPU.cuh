@@ -26,15 +26,16 @@
 class lpanel_t;
 class upanel_t;
 
+template <typename Ftype>
 class lpanelGPU_t 
 {
     
     public:
         int_t *index;
-        double *val;
+        Ftype *val;
         // bool isDiagIncluded;
         CUDA_CALLABLE
-        lpanelGPU_t(int_t k, int_t *lsub, double *nzval, int_t *xsup, int_t isDiagIncluded);
+        lpanelGPU_t(int_t k, int_t *lsub, Ftype *nzval, int_t *xsup, int_t isDiagIncluded);
         // default constuctor
         
         CUDA_CALLABLE
@@ -44,7 +45,7 @@ class lpanelGPU_t
             val = NULL;
         }
         CUDA_CALLABLE
-        lpanelGPU_t(int_t *index_, double *val_): index(index_), val(val_) {return;};
+        lpanelGPU_t(int_t *index_, Ftype *val_): index(index_), val(val_) {return;};
         
     
         // index[0] is number of blocks
@@ -94,7 +95,7 @@ class lpanelGPU_t
         }
     
         CUDA_CALLABLE
-        double *blkPtr(int_t k)
+        Ftype *blkPtr(int_t k)
         {
             return &val[index[LPANEL_HEADER_SIZE + nblocks() + k]];
         }
@@ -105,10 +106,10 @@ class lpanelGPU_t
         DEVICE_CALLABLE
         int_t find(int_t k);
         // // for L panel I don't need any special transformation function
-        // int_t panelSolve(int_t ksupsz, double *DiagBlk, int_t LDD);
-        // int_t diagFactor(int_t k, double *UBlk, int_t LDU, double thresh, int_t *xsup,
+        // int_t panelSolve(int_t ksupsz, Ftype *DiagBlk, int_t LDD);
+        // int_t diagFactor(int_t k, Ftype *UBlk, int_t LDU, Ftype thresh, int_t *xsup,
         //                  superlu_dist_options_t *options, SuperLUStat_t *stat, int *info);
-        // int_t packDiagBlock(double *DiagLBlk, int_t LDD);
+        // int_t packDiagBlock(Ftype *DiagLBlk, int_t LDD);
 
         CUDA_CALLABLE
         int_t isEmpty() { return index == NULL; }
@@ -168,16 +169,17 @@ class lpanelGPU_t
     
 };
 
+template <typename Ftype>
 class upanelGPU_t 
 {
 public:
     int_t *index;
-    double *val;
+    Ftype *val;
     // upanelGPU_t* upanelGPU;
 
-    // upanelGPU_t(int_t *usub, double *uval);
+    // upanelGPU_t(int_t *usub, Ftype *uval);
     CUDA_CALLABLE
-    upanelGPU_t(int_t k, int_t *usub, double *uval, int_t *xsup);
+    upanelGPU_t(int_t k, int_t *usub, Ftype *uval, int_t *xsup);
 
     CUDA_CALLABLE
     upanelGPU_t()
@@ -187,7 +189,7 @@ public:
     }
     // classstructing from recevied index and val 
     CUDA_CALLABLE
-    upanelGPU_t(int_t *index_, double *val_): index(index_), val(val_) {return;};
+    upanelGPU_t(int_t *index_, Ftype *val_): index(index_), val(val_) {return;};
     // index[0] is number of blocks
     CUDA_CALLABLE
     int_t nblocks()
@@ -227,7 +229,7 @@ public:
     }
 
     CUDA_CALLABLE
-    double *blkPtr(int_t k)
+    Ftype *blkPtr(int_t k)
     {
         return &val[LDA() * index[UPANEL_HEADER_SIZE + nblocks() + k]];
     }
@@ -238,14 +240,14 @@ public:
         return LDA() * index[UPANEL_HEADER_SIZE + nblocks() + k];
     }
     // for U panel
-    // int_t packed2skyline(int_t* usub, double* uval );
-    // int_t packed2skyline(int_t k, int_t *usub, double *uval, int_t *xsup);
-    // int_t panelSolve(int_t ksupsz, double *DiagBlk, int_t LDD);
-    // int_t diagFactor(int_t k, double *UBlk, int_t LDU, double thresh, int_t *xsup,
+    // int_t packed2skyline(int_t* usub, Ftype* uval );
+    // int_t packed2skyline(int_t k, int_t *usub, Ftype *uval, int_t *xsup);
+    // int_t panelSolve(int_t ksupsz, Ftype *DiagBlk, int_t LDD);
+    // int_t diagFactor(int_t k, Ftype *UBlk, int_t LDU, Ftype thresh, int_t *xsup,
     //                  superlu_dist_options_t *options,
     //                  SuperLUStat_t *stat, int *info);
 
-    // double* blkPtr(int_t k);
+    // Ftype* blkPtr(int_t k);
     // int_t LDA();
     DEVICE_CALLABLE
     int_t find(int_t k);
@@ -309,17 +311,18 @@ public:
 };
 
 // Wajih: Device and host memory used to store marshalled batch data for LU and TRSM
+template <typename Ftype>
 struct LUMarshallData 
 {
     LUMarshallData();
     ~LUMarshallData();
 
     // Diagonal device pointer data 
-    double **dev_diag_ptrs;
+    Ftype **dev_diag_ptrs;
     int *dev_diag_ld_array, *dev_diag_dim_array, *dev_info_array;
     
     // TRSM panel device pointer data 
-    double **dev_panel_ptrs;
+    Ftype **dev_panel_ptrs;
     int *dev_panel_ld_array, *dev_panel_dim_array;
 
     // Max of marshalled device data 
@@ -329,10 +332,10 @@ struct LUMarshallData
     int batchsize;
 
     // Data accumulated on the host
-    std::vector<double*> host_diag_ptrs;
+    std::vector<Ftype*> host_diag_ptrs;
     std::vector<int> host_diag_ld_array, host_diag_dim_array;
     
-    std::vector<double*> host_panel_ptrs;
+    std::vector<Ftype*> host_panel_ptrs;
     std::vector<int> host_panel_ld_array, host_panel_dim_array;
     
     void setBatchSize(int batch_size);
@@ -341,13 +344,14 @@ struct LUMarshallData
 };
 
 // Wajih: Device and host memory used to store marshalled batch data for Schur complement update 
+template <typename Ftype>
 struct SCUMarshallData 
 {
     SCUMarshallData();
     ~SCUMarshallData();
 
     // GEMM device pointer data 
-    double **dev_A_ptrs, **dev_B_ptrs, **dev_C_ptrs;
+    Ftype **dev_A_ptrs, **dev_B_ptrs, **dev_C_ptrs;
     int *dev_lda_array, *dev_ldb_array, *dev_ldc_array;
     int *dev_m_array, *dev_n_array, *dev_k_array;
 
@@ -367,15 +371,15 @@ struct SCUMarshallData
     int batchsize;
 
     // Data accumulated on the host
-    std::vector<double*> host_A_ptrs, host_B_ptrs, host_C_ptrs;
+    std::vector<Ftype*> host_A_ptrs, host_B_ptrs, host_C_ptrs;
     std::vector<int> host_lda_array, host_ldb_array, host_ldc_array;
     std::vector<int> host_m_array, host_n_array, host_k_array;
 
     // Host data initialized once per level 
-    std::vector<upanel_t> upanels;
-    std::vector<lpanel_t> lpanels;
-    std::vector<upanelGPU_t> host_gpu_upanels;
-    std::vector<lpanelGPU_t> host_gpu_lpanels;
+    std::vector<upanel_t<Ftype>> upanels;
+    std::vector<lpanel_t<Ftype>> lpanels;
+    std::vector<upanelGPU_t<Ftype>> host_gpu_upanels;
+    std::vector<lpanelGPU_t<Ftype>> host_gpu_lpanels;
     std::vector<int> ist, iend, jst, jend, maxGemmRows, maxGemmCols;
 
     void setBatchSize(int batch_size);
@@ -389,15 +393,15 @@ struct LUstructGPU_t
 {
     // all pointers are device pointers 
 
-    upanelGPU_t* uPanelVec;
-    lpanelGPU_t* lPanelVec; 
+    upanelGPU_t<Ftype>* uPanelVec;
+    lpanelGPU_t<Ftype>* lPanelVec; 
     int_t* xsup; 
     int Pr, Pc, Pd;
     
     size_t gemmBufferSize; 
     int numCudaStreams;     
     int maxSuperSize;
-    // double arrays are problematic 
+    // Ftype arrays are problematic 
     cudaStream_t cuStreams[MAX_CUDA_STREAMS];
     cublasHandle_t cuHandles[MAX_CUDA_STREAMS];
     
@@ -412,32 +416,32 @@ struct LUstructGPU_t
     /* Sherry: Allocate an array of buffers for the diagonal blocks
        on the leaf level.
        The sizes are uniform: ldt is the maximum among all the nodes.    */
-    //    double* dFBufs[MAX_CUDA_STREAMS];
-    // double* gpuGemmBuffs[MAX_CUDA_STREAMS];
-    double **dFBufs;       
-    double ** gpuGemmBuffs;
+    //    Ftype* dFBufs[MAX_CUDA_STREAMS];
+    // Ftype* gpuGemmBuffs[MAX_CUDA_STREAMS];
+    Ftype **dFBufs;       
+    Ftype ** gpuGemmBuffs;
 
     // GPU accessible array of gemm buffers 
-    double** dgpuGemmBuffs;
+    Ftype** dgpuGemmBuffs;
     
-    double* LvalRecvBufs[MAX_CUDA_STREAMS];
-    double* UvalRecvBufs[MAX_CUDA_STREAMS];
+    Ftype* LvalRecvBufs[MAX_CUDA_STREAMS];
+    Ftype* UvalRecvBufs[MAX_CUDA_STREAMS];
     int_t* LidxRecvBufs[MAX_CUDA_STREAMS];
     int_t* UidxRecvBufs[MAX_CUDA_STREAMS];
 
     cusolverDnHandle_t cuSolveHandles[MAX_CUDA_STREAMS];
-    double* diagFactWork[MAX_CUDA_STREAMS];
+    Ftype* diagFactWork[MAX_CUDA_STREAMS];
     int* diagFactInfo[MAX_CUDA_STREAMS]; // CPU pointers
     /*data structure for lookahead Update */
     cublasHandle_t lookAheadLHandle[MAX_CUDA_STREAMS];
     cudaStream_t lookAheadLStream[MAX_CUDA_STREAMS];
 
-    double *lookAheadLGemmBuffer[MAX_CUDA_STREAMS];
+    Ftype *lookAheadLGemmBuffer[MAX_CUDA_STREAMS];
 
     cublasHandle_t lookAheadUHandle[MAX_CUDA_STREAMS];
     cudaStream_t lookAheadUStream[MAX_CUDA_STREAMS];
 
-    double *lookAheadUGemmBuffer[MAX_CUDA_STREAMS];
+    Ftype *lookAheadUGemmBuffer[MAX_CUDA_STREAMS];
     
     __device__
     int_t supersize(int_t k) { return xsup[k + 1] - xsup[k]; }
@@ -448,15 +452,17 @@ struct LUstructGPU_t
     
 };/* LUstructGPU_t{} */
 
+template <typename Ftype>
 void scatterGPU_driver(
-    int iSt, int iEnd, int jSt, int jEnd, double *gemmBuff, int LDgemmBuff,
-    int maxSuperSize, int ldt, lpanelGPU_t lpanel, upanelGPU_t upanel, 
-    LUstructGPU_t *dA, cudaStream_t cuStream
+    int iSt, int iEnd, int jSt, int jEnd, Ftype *gemmBuff, int LDgemmBuff,
+    int maxSuperSize, int ldt, lpanelGPU_t<Ftype> lpanel, upanelGPU_t<Ftype> upanel, 
+    LUstructGPU_t<Ftype> *dA, cudaStream_t cuStream
 );
 
+template <typename Ftype>
 void scatterGPU_batchDriver(
     int* iSt_batch, int *iEnd_batch, int *jSt_batch, int *jEnd_batch, 
-    int max_ilen, int max_jlen, double **gemmBuff_ptrs, int *LDgemmBuff_batch, 
-    int maxSuperSize, int ldt, lpanelGPU_t *lpanels, upanelGPU_t *upanels, 
-    LUstructGPU_t *dA, int batchCount, cudaStream_t cuStream
+    int max_ilen, int max_jlen, Ftype **gemmBuff_ptrs, int *LDgemmBuff_batch, 
+    int maxSuperSize, int ldt, lpanelGPU_t<Ftype> *lpanels, upanelGPU_t<Ftype> *upanels, 
+    LUstructGPU_t<Ftype> *dA, int batchCount, cudaStream_t cuStream
 );

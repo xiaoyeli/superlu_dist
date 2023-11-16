@@ -57,13 +57,7 @@ int copyLUGPU2Host(LUgpu_Handle LuH, dLUstruct_t *LUstruct)
    return LUHand->pdgstrf3d();
 }
 
-//                      int m, int n, double anorm,
-//                            dtrf3Dpartition_t *trf3Dpartition, SCT_t *SCT,
-//                            dLUstruct_t *LUstruct, gridinfo3d_t *grid3d,
-//                            SuperLUStat_t *stat, int *info)
-// {
 
-// }
 
 
 }
