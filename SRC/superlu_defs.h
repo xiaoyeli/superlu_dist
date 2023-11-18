@@ -31,6 +31,7 @@ at the top-level directory.
  *     July 5, 2022        version 8.1.0
  *     October 1, 2022     version 8.1.1
  *     November 12, 2022   version 8.1.2
+ *     November 17, 2023   version 8.2.1
  * </pre>
  */
 
@@ -83,9 +84,9 @@ at the top-level directory.
  * Versions 4.x and earlier do not include a #define'd version numbers.
  */
 #define SUPERLU_DIST_MAJOR_VERSION     8
-#define SUPERLU_DIST_MINOR_VERSION     1
-#define SUPERLU_DIST_PATCH_VERSION     2
-#define SUPERLU_DIST_RELEASE_DATE      "November 12, 2022"
+#define SUPERLU_DIST_MINOR_VERSION     2
+#define SUPERLU_DIST_PATCH_VERSION     1
+#define SUPERLU_DIST_RELEASE_DATE      "November 17, 2023"
 
 #include "superlu_dist_config.h"
 
