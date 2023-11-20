@@ -195,7 +195,7 @@ void SCUMarshallData<Ftype>::copyPanelDataToGPU()
 }
 
 template <typename Ftype>
-int_t LUstruct_v100<Ftype>::dDFactPSolveGPU(int_t k, int_t offset, ddiagFactBufs_t **dFBufs)
+int_t xLUstruct_t<Ftype>::dDFactPSolveGPU(int_t k, int_t offset, ddiagFactBufs_t **dFBufs)
 {
     // this is new version with diagonal factor being performed on GPU
     // different from dDiagFactorPanelSolveGPU (it performs diag factor in CPU)
@@ -254,7 +254,7 @@ int_t LUstruct_v100<Ftype>::dDFactPSolveGPU(int_t k, int_t offset, ddiagFactBufs
 } /* dDFactPSolveGPU */
 
 template <typename Ftype>
-int_t LUstruct_v100<Ftype>::dDFactPSolveGPU(int_t k, int_t handle_offset, int buffer_offset, ddiagFactBufs_t **dFBufs)
+int_t xLUstruct_t<Ftype>::dDFactPSolveGPU(int_t k, int_t handle_offset, int buffer_offset, ddiagFactBufs_t **dFBufs)
 {
     // this is new version with diagonal factor being performed on GPU
     // different from dDiagFactorPanelSolveGPU (it performs diag factor in CPU)
@@ -314,7 +314,7 @@ int_t LUstruct_v100<Ftype>::dDFactPSolveGPU(int_t k, int_t handle_offset, int bu
 
 /* This performs diag factor on CPU */
 template <typename Ftype>
-int_t LUstruct_v100<Ftype>::dDiagFactorPanelSolveGPU(int_t k, int_t offset, ddiagFactBufs_t **dFBufs)
+int_t xLUstruct_t<Ftype>::dDiagFactorPanelSolveGPU(int_t k, int_t offset, ddiagFactBufs_t **dFBufs)
 {
     double t0 = SuperLU_timer_();
     int_t ksupc = SuperSize(k);
@@ -364,7 +364,7 @@ int_t LUstruct_v100<Ftype>::dDiagFactorPanelSolveGPU(int_t k, int_t offset, ddia
 }
 
 template <typename Ftype>
-int_t LUstruct_v100<Ftype>::dPanelBcastGPU(int_t k, int_t offset)
+int_t xLUstruct_t<Ftype>::dPanelBcastGPU(int_t k, int_t offset)
 {
     double t0 = SuperLU_timer_();
     /*=======   Panel Broadcast             ======*/
@@ -403,7 +403,7 @@ int_t LUstruct_v100<Ftype>::dPanelBcastGPU(int_t k, int_t offset)
 }
 
 template <typename Ftype>
-int_t LUstruct_v100<Ftype>::dsparseTreeFactorGPU(
+int_t xLUstruct_t<Ftype>::dsparseTreeFactorGPU(
     sForest_t *sforest,
     ddiagFactBufs_t **dFBufs, // size maxEtree level
     gEtreeInfo_t *gEtreeInfo, // global etree info
@@ -654,7 +654,7 @@ int_t LUstruct_v100<Ftype>::dsparseTreeFactorGPU(
 } /* dsparseTreeFactorGPU */
 
 template <typename Ftype>
-void LUstruct_v100<Ftype>::marshallBatchedBufferCopyData(int k_st, int k_end, int_t *perm_c_supno)
+void xLUstruct_t<Ftype>::marshallBatchedBufferCopyData(int k_st, int k_end, int_t *perm_c_supno)
 {
     // First gather up all the pointer and meta data on the host
     LUMarshallData &mdata = A_gpu.marshall_data;
@@ -704,7 +704,7 @@ void LUstruct_v100<Ftype>::marshallBatchedBufferCopyData(int k_st, int k_end, in
 }
 
 template <typename Ftype>
-void LUstruct_v100<Ftype>::dFactBatchSolve(int k_st, int k_end, int_t *perm_c_supno)
+void xLUstruct_t<Ftype>::dFactBatchSolve(int k_st, int k_end, int_t *perm_c_supno)
 {
 #ifdef HAVE_MAGMA
     // Marshall the data for the leaf level batched LU decomposition
@@ -795,7 +795,7 @@ void LUstruct_v100<Ftype>::dFactBatchSolve(int k_st, int k_end, int_t *perm_c_su
 }
 
 template <typename Ftype>
-int LUstruct_v100<Ftype>::dsparseTreeFactorBatchGPU(
+int xLUstruct_t<Ftype>::dsparseTreeFactorBatchGPU(
     sForest_t *sforest,
     ddiagFactBufs_t **dFBufs, // size maxEtree level
     gEtreeInfo_t *gEtreeInfo, // global etree info
@@ -935,7 +935,7 @@ int LUstruct_v100<Ftype>::dsparseTreeFactorBatchGPU(
 
 // TODO: needs to be merged as a single factorization function
 template <typename Ftype>
-int_t LUstruct_v100<Ftype>::dsparseTreeFactorGPUBaseline(
+int_t xLUstruct_t<Ftype>::dsparseTreeFactorGPUBaseline(
     sForest_t *sforest,
     ddiagFactBufs_t **dFBufs, // size maxEtree level
     gEtreeInfo_t *gEtreeInfo, // global etree info

@@ -6,7 +6,7 @@
 #include "luAuxStructTemplated.hpp"
 
 template <typename Ftype>
-int_t LUstruct_v100<Ftype>::dAncestorFactorBaselineGPU(
+int_t xLUstruct_t<Ftype>::dAncestorFactorBaselineGPU(
     int_t alvl,
     sForest_t *sforest,
     diagFactBufs_type<Ftype> **dFBufs, // size maxEtree level

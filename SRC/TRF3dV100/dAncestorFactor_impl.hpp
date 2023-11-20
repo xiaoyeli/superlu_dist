@@ -3,7 +3,7 @@
 #include "lupanels.hpp"
 
 template <typename Ftype>
-int_t LUstruct_v100<Ftype>::dAncestorFactor(
+int_t xLUstruct_t<Ftype>::dAncestorFactor(
     int_t ilvl,
     sForest_t *sforest,
     diagFactBufs_type<Ftype> **dFBufs, // size maxEtree level

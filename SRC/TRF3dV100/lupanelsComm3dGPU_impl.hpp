@@ -5,7 +5,7 @@
 #ifdef HAVE_CUDA
 
 template <typename Ftype>
-int_t LUstruct_v100<Ftype>::ancestorReduction3dGPU(int_t ilvl, int_t *myNodeCount,
+int_t xLUstruct_t<Ftype>::ancestorReduction3dGPU(int_t ilvl, int_t *myNodeCount,
                                          int_t **treePerm)
 {
     int_t maxLvl = log2i(grid3d->zscp.Np) + 1;
@@ -69,7 +69,7 @@ int_t LUstruct_v100<Ftype>::ancestorReduction3dGPU(int_t ilvl, int_t *myNodeCoun
 }
 
 template <typename Ftype>
-int_t LUstruct_v100<Ftype>::zSendLPanelGPU(int_t k0, int_t receiverGrid)
+int_t xLUstruct_t<Ftype>::zSendLPanelGPU(int_t k0, int_t receiverGrid)
 {
     
 	if (mycol == kcol(k0))
@@ -86,7 +86,7 @@ int_t LUstruct_v100<Ftype>::zSendLPanelGPU(int_t k0, int_t receiverGrid)
 }
 
 template <typename Ftype>
-int_t LUstruct_v100<Ftype>::zRecvLPanelGPU(int_t k0, int_t senderGrid, Ftype alpha, Ftype beta)
+int_t xLUstruct_t<Ftype>::zRecvLPanelGPU(int_t k0, int_t senderGrid, Ftype alpha, Ftype beta)
 {
     if (mycol == kcol(k0))
 	{
@@ -112,7 +112,7 @@ int_t LUstruct_v100<Ftype>::zRecvLPanelGPU(int_t k0, int_t senderGrid, Ftype alp
 }
 
 template <typename Ftype>
-int_t LUstruct_v100<Ftype>::zSendUPanelGPU(int_t k0, int_t receiverGrid)
+int_t xLUstruct_t<Ftype>::zSendUPanelGPU(int_t k0, int_t receiverGrid)
 {
     
 	if (myrow == krow(k0))
@@ -129,7 +129,7 @@ int_t LUstruct_v100<Ftype>::zSendUPanelGPU(int_t k0, int_t receiverGrid)
 }
 
 template <typename Ftype>
-int_t LUstruct_v100<Ftype>::zRecvUPanelGPU(int_t k0, int_t senderGrid, Ftype alpha, Ftype beta)
+int_t xLUstruct_t<Ftype>::zRecvUPanelGPU(int_t k0, int_t senderGrid, Ftype alpha, Ftype beta)
 {
     if (myrow == krow(k0))
 	{

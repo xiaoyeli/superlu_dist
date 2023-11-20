@@ -6,7 +6,7 @@
 
 // A function that prints
 template <typename Ftype>
-int_t LUstruct_v100<Ftype>::dAncestorFactorBaseline(
+int_t xLUstruct_t<Ftype>::dAncestorFactorBaseline(
     int_t alvl,
     sForest_t *sforest,
     diagFactBufs_type<Ftype> **dFBufs, // size maxEtree level

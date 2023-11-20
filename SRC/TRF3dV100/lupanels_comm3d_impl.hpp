@@ -6,7 +6,7 @@
 #include "superlu_blas.hpp"
 
 template <typename Ftype>
-int_t LUstruct_v100<Ftype>::ancestorReduction3d(int_t ilvl, int_t *myNodeCount,
+int_t xLUstruct_t<Ftype>::ancestorReduction3d(int_t ilvl, int_t *myNodeCount,
                                          int_t **treePerm)
 {
     int_t maxLvl = log2i(grid3d->zscp.Np) + 1;
@@ -59,7 +59,7 @@ int_t LUstruct_v100<Ftype>::ancestorReduction3d(int_t ilvl, int_t *myNodeCount,
 }
 
 template <typename Ftype>
-int_t LUstruct_v100<Ftype>::zSendLPanel(int_t k0, int_t receiverGrid)
+int_t xLUstruct_t<Ftype>::zSendLPanel(int_t k0, int_t receiverGrid)
 {
     
 	if (mycol == kcol(k0))
@@ -76,7 +76,7 @@ int_t LUstruct_v100<Ftype>::zSendLPanel(int_t k0, int_t receiverGrid)
 }
 
 template <typename Ftype>
-int_t LUstruct_v100<Ftype>::zRecvLPanel(int_t k0, int_t senderGrid, Ftype alpha, Ftype beta)
+int_t xLUstruct_t<Ftype>::zRecvLPanel(int_t k0, int_t senderGrid, Ftype alpha, Ftype beta)
 {
     if (mycol == kcol(k0))
 	{
@@ -97,7 +97,7 @@ int_t LUstruct_v100<Ftype>::zRecvLPanel(int_t k0, int_t senderGrid, Ftype alpha,
 }
 
 template <typename Ftype>
-int_t LUstruct_v100<Ftype>::zSendUPanel(int_t k0, int_t receiverGrid)
+int_t xLUstruct_t<Ftype>::zSendUPanel(int_t k0, int_t receiverGrid)
 {
     
 	if (myrow == krow(k0))
@@ -114,7 +114,7 @@ int_t LUstruct_v100<Ftype>::zSendUPanel(int_t k0, int_t receiverGrid)
 }
 
 template <typename Ftype>
-int_t LUstruct_v100<Ftype>::zRecvUPanel(int_t k0, int_t senderGrid, Ftype alpha, Ftype beta)
+int_t xLUstruct_t<Ftype>::zRecvUPanel(int_t k0, int_t senderGrid, Ftype alpha, Ftype beta)
 {
     if (myrow == krow(k0))
 	{

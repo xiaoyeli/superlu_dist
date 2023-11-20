@@ -11,7 +11,7 @@
 
 #ifdef HAVE_CUDA
 template <typename Ftype>
-upanel_t<Ftype> LUstruct_v100<Ftype>::getKUpanel(int_t k, int_t offset)
+upanel_t<Ftype> xLUstruct_t<Ftype>::getKUpanel(int_t k, int_t offset)
 {
     return (
         myrow == krow(k) ? 
@@ -22,7 +22,7 @@ upanel_t<Ftype> LUstruct_v100<Ftype>::getKUpanel(int_t k, int_t offset)
 }
 
 template <typename Ftype>
-lpanel_t<Ftype> LUstruct_v100<Ftype>::getKLpanel(int_t k, int_t offset)
+lpanel_t<Ftype> xLUstruct_t<Ftype>::getKLpanel(int_t k, int_t offset)
 { 
     return (
         mycol == kcol(k) ? 
@@ -35,7 +35,7 @@ lpanel_t<Ftype> LUstruct_v100<Ftype>::getKLpanel(int_t k, int_t offset)
 
 /* Constructor */
 template <typename Ftype>
-LUstruct_v100<Ftype>::LUstruct_v100(int_t nsupers_, int_t ldt_,
+xLUstruct_t<Ftype>::LUstruct_v100(int_t nsupers_, int_t ldt_,
                              dtrf3Dpartition_t *trf3Dpartition_, 
                              dLUstruct_t *LUstruct,
                              gridinfo3d_t *grid3d_in,
@@ -262,7 +262,7 @@ LUstruct_v100<Ftype>::LUstruct_v100(int_t nsupers_, int_t ldt_,
 } /* constructor LUstruct_v100 */
 
 template <typename Ftype>
-int_t LUstruct_v100<Ftype>::dSchurComplementUpdate(
+int_t xLUstruct_t<Ftype>::dSchurComplementUpdate(
     int_t k, lpanel_t<Ftype> &lpanel, upanel_t<Ftype> &upanel)
 {
     if (lpanel.isEmpty() || upanel.isEmpty())
@@ -288,7 +288,7 @@ int_t LUstruct_v100<Ftype>::dSchurComplementUpdate(
 
 // should be called from an openMP region
 template <typename Ftype>
-int_t *LUstruct_v100<Ftype>::computeIndirectMap(indirectMapType direction, int_t srcLen, int_t *srcVec,
+int_t *xLUstruct_t<Ftype>::computeIndirectMap(indirectMapType direction, int_t srcLen, int_t *srcVec,
                                          int_t dstLen, int_t *dstVec)
 {
     if (dstVec == NULL) /*uncompressed dimension*/
@@ -320,7 +320,7 @@ int_t *LUstruct_v100<Ftype>::computeIndirectMap(indirectMapType direction, int_t
 }
 
 template <typename Ftype>
-int_t LUstruct_v100<Ftype>::dScatter(int_t m, int_t n,
+int_t xLUstruct_t<Ftype>::dScatter(int_t m, int_t n,
                               int_t gi, int_t gj,
                               Ftype *Src, int_t ldsrc,
                               int_t *srcRowList, int_t *srcColList)
@@ -375,7 +375,7 @@ int_t LUstruct_v100<Ftype>::dScatter(int_t m, int_t n,
 }
 
 template <typename Ftype>
-int_t LUstruct_v100<Ftype>::packedU2skyline(dLUstruct_t *LUstruct)
+int_t xLUstruct_t<Ftype>::packedU2skyline(dLUstruct_t *LUstruct)
 {
 
     int_t **Ufstnz_br_ptr = LUstruct->Llu->Ufstnz_br_ptr;
@@ -404,7 +404,7 @@ int numProcsPerNode(MPI_Comm baseCommunicator)
 
 
 template <typename Ftype>
-int_t LUstruct_v100<Ftype>::lookAheadUpdate(
+int_t xLUstruct_t<Ftype>::lookAheadUpdate(
     int_t k, int_t laIdx, lpanel_t<Ftype> &lpanel, upanel_t<Ftype> &upanel)
 {
     if (lpanel.isEmpty() || upanel.isEmpty())
@@ -444,7 +444,7 @@ int_t LUstruct_v100<Ftype>::lookAheadUpdate(
 }
 
 template <typename Ftype>
-int_t LUstruct_v100<Ftype>::blockUpdate(int_t k,
+int_t xLUstruct_t<Ftype>::blockUpdate(int_t k,
                                  int_t ii, int_t jj, lpanel_t<Ftype> &lpanel, upanel_t<Ftype> &upanel)
 {
     int thread_id;
@@ -475,7 +475,7 @@ int_t LUstruct_v100<Ftype>::blockUpdate(int_t k,
 }
 
 template <typename Ftype>
-int_t LUstruct_v100<Ftype>::dSchurCompUpdateExcludeOne(
+int_t xLUstruct_t<Ftype>::dSchurCompUpdateExcludeOne(
     int_t k, int_t ex, // suypernodes to be excluded
     lpanel_t<Ftype> &lpanel, upanel_t<Ftype> &upanel)
 {
@@ -505,7 +505,7 @@ int_t LUstruct_v100<Ftype>::dSchurCompUpdateExcludeOne(
 }
 
 template <typename Ftype>
-int_t LUstruct_v100<Ftype>::dDiagFactorPanelSolve(int_t k, int_t offset, ddiagFactBufs_t **dFBufs)
+int_t xLUstruct_t<Ftype>::dDiagFactorPanelSolve(int_t k, int_t offset, ddiagFactBufs_t **dFBufs)
 {
 
     int_t ksupc = SuperSize(k);
@@ -536,7 +536,7 @@ int_t LUstruct_v100<Ftype>::dDiagFactorPanelSolve(int_t k, int_t offset, ddiagFa
 }
 
 template <typename Ftype>
-int_t LUstruct_v100<Ftype>::dPanelBcast(int_t k, int_t offset)
+int_t xLUstruct_t<Ftype>::dPanelBcast(int_t k, int_t offset)
 {
     /*=======   Panel Broadcast             ======*/
     upanel_t<Ftype> k_upanel(UidxRecvBufs[offset], UvalRecvBufs[offset]);

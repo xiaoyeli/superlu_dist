@@ -5,7 +5,7 @@
 #include "luAuxStructTemplated.hpp"
 
 template <typename Ftype>
-int_t LUstruct_v100<Ftype>::dsparseTreeFactor(
+int_t xLUstruct_t<Ftype>::dsparseTreeFactor(
     sForest_t *sforest,
     ddiagFactBufs_t **dFBufs,  // size maxEtree level
     gEtreeInfo_t *gEtreeInfo, // global etree info
@@ -217,7 +217,7 @@ int_t LUstruct_v100<Ftype>::dsparseTreeFactor(
 }
 
 template <typename Ftype>
-int_t LUstruct_v100<Ftype>::dsparseTreeFactorBaseline(
+int_t xLUstruct_t<Ftype>::dsparseTreeFactorBaseline(
     sForest_t *sforest,
     ddiagFactBufs_t **dFBufs,  // size maxEtree level
     gEtreeInfo_t *gEtreeInfo, // global etree info

@@ -91,7 +91,7 @@ int_t pdgstrf3d_summit(superlu_dist_options_t *options, int m, int n, AnormType<
         int *isNodeInMyGrid = getIsNodeInMyGrid(nsupers, maxLvl, myNodeCount, treePerm);
         int superlu_acc_offload = get_acc_offload();
         double tConst = SuperLU_timer_();
-        LUstruct_v100<Ftype> LU_packed(nsupers, ldt, trf3Dpartition, LUstruct, grid3d,
+        xLUstruct_t<Ftype> LU_packed(nsupers, ldt, trf3Dpartition, LUstruct, grid3d,
                                 SCT, options, stat, thresh, info);
 
         tConst = SuperLU_timer_() - tConst;
@@ -208,7 +208,7 @@ int_t pdgstrf3d_summit(superlu_dist_options_t *options, int m, int n, AnormType<
 
 /* This can be accessed from the C handle  */
 template <typename Ftype>
-int_t LUstruct_v100<Ftype>::pdgstrf3d()
+int_t xLUstruct_t<Ftype>::pdgstrf3d()
 {
         int tag_ub = set_tag_ub();
         gEtreeInfo_t gEtreeInfo = trf3Dpartition->gEtreeInfo;
