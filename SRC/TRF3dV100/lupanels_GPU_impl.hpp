@@ -1,3 +1,4 @@
+#pragma once
 #include <cassert>
 #include <algorithm>
 #include <cmath>
@@ -13,16 +14,23 @@
 
 #include "lupanels.hpp"
 
-template <typename T>
-int checkArr(T *A, T *B, int n)
+#include <cmath>
+#include <complex>
+#include <cassert>
+
+template<typename T>
+int checkArr(const T *A, const T *B, int n)
 {
-    T nrmA = 0;
-    for (int i = 0; i < n; i++) 
-        nrmA += A[i]*A[i];
-    nrmA = sqrt(nrmA);
-    for (int i = 0; i < n; i++)
-    {
-        assert(fabs(A[i] - B[i]) <= EPSILON * nrmA/n );
+    double nrmA = 0;
+    for (int i = 0; i < n; i++) {
+        // For complex numbers, std::norm gives the squared magnitude.
+        nrmA += std::norm(A[i]);
+    }
+    nrmA = std::sqrt(nrmA);
+
+    for (int i = 0; i < n; i++) {
+        // Use std::abs for both real and complex numbers to get the magnitude.
+        assert(std::abs(A[i] - B[i]) <= EPSILON * nrmA / n);
     }
 
     return 0;

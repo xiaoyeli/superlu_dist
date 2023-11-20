@@ -50,7 +50,7 @@ int_t LUstruct_v100<Ftype>::ancestorReduction3dGPU(int_t ilvl, int_t *myNodeCoun
             }
             else
             {
-                double alpha = 1.0, beta = 1.0; 
+                Ftype alpha = 1.0, beta = 1.0; 
 
                 zRecvLPanelGPU(k0, sender, alpha, beta);
                 zRecvUPanelGPU(k0, sender, alpha, beta);
@@ -78,15 +78,15 @@ int_t LUstruct_v100<Ftype>::zSendLPanelGPU(int_t k0, int_t receiverGrid)
         if (!lPanelVec[lk].isEmpty())
 		{
             MPI_Send(lPanelVec[lk].blkPtrGPU(0), lPanelVec[lk].nzvalSize(), 
-                    get_mpi_type<Ftype>, receiverGrid, k0, grid3d->zscp.comm);
-			SCT->commVolRed += lPanelVec[lk].nzvalSize() * sizeof(double);
+                    get_mpi_type<Ftype>(), receiverGrid, k0, grid3d->zscp.comm);
+			SCT->commVolRed += lPanelVec[lk].nzvalSize() * sizeof(Ftype);
 		}
 	}
 	return 0;
 }
 
 template <typename Ftype>
-int_t LUstruct_v100<Ftype>::zRecvLPanelGPU(int_t k0, int_t senderGrid, double alpha, double beta)
+int_t LUstruct_v100<Ftype>::zRecvLPanelGPU(int_t k0, int_t senderGrid, Ftype alpha, Ftype beta)
 {
     if (mycol == kcol(k0))
 	{
@@ -95,23 +95,17 @@ int_t LUstruct_v100<Ftype>::zRecvLPanelGPU(int_t k0, int_t senderGrid, double al
 		{
             
             MPI_Status status;
-			MPI_Recv(A_gpu.LvalRecvBufs[0], lPanelVec[lk].nzvalSize(), get_mpi_type<Ftype>, senderGrid, k0,
+			MPI_Recv(A_gpu.LvalRecvBufs[0], lPanelVec[lk].nzvalSize(), get_mpi_type<Ftype>(), senderGrid, k0,
 					 grid3d->zscp.comm, &status);
 
 			/*reduce the updates*/
             cublasHandle_t handle=A_gpu.cuHandles[0];
             cudaStream_t cuStream = A_gpu.cuStreams[0];
             cublasSetStream(handle, cuStream);
-			cublasDscal(handle, lPanelVec[lk].nzvalSize(), &alpha, lPanelVec[lk].blkPtrGPU(0), 1);
-			cublasDaxpy(handle, lPanelVec[lk].nzvalSize(), &beta, A_gpu.LvalRecvBufs[0], 1, lPanelVec[lk].blkPtrGPU(0), 1);
-            cudaStreamSynchronize(cuStream);
-            // cublasDscal(cublasHandle_t handle, int n,
-            //                 const double          *alpha,
-            //                 double          *x, int incx)
-            // cublasDaxpy(cublasHandle_t handle, int n,
-            //                const double          *alpha,
-            //                const double          *x, int incx,
-            //                double                *y, int incy)
+            myCublasScal<Ftype>(handle, lPanelVec[lk].nzvalSize(), &alpha, lPanelVec[lk].blkPtrGPU(0), 1);
+            myCublasAxpy<Ftype>(handle, lPanelVec[lk].nzvalSize(), &beta, A_gpu.LvalRecvBufs[0], 1, lPanelVec[lk].blkPtrGPU(0), 1);
+			cudaStreamSynchronize(cuStream);
+            
 		}
 	}
 	return 0;
@@ -127,15 +121,15 @@ int_t LUstruct_v100<Ftype>::zSendUPanelGPU(int_t k0, int_t receiverGrid)
         if (!uPanelVec[lk].isEmpty())
 		{
             MPI_Send(uPanelVec[lk].blkPtrGPU(0), uPanelVec[lk].nzvalSize(), 
-                    get_mpi_type<Ftype>, receiverGrid, k0, grid3d->zscp.comm);
-			SCT->commVolRed += uPanelVec[lk].nzvalSize() * sizeof(double);
+                    get_mpi_type<Ftype>(), receiverGrid, k0, grid3d->zscp.comm);
+			SCT->commVolRed += uPanelVec[lk].nzvalSize() * sizeof(Ftype);
 		}
 	}
 	return 0;
 }
 
 template <typename Ftype>
-int_t LUstruct_v100<Ftype>::zRecvUPanelGPU(int_t k0, int_t senderGrid, double alpha, double beta)
+int_t LUstruct_v100<Ftype>::zRecvUPanelGPU(int_t k0, int_t senderGrid, Ftype alpha, Ftype beta)
 {
     if (myrow == krow(k0))
 	{
@@ -144,15 +138,15 @@ int_t LUstruct_v100<Ftype>::zRecvUPanelGPU(int_t k0, int_t senderGrid, double al
 		{
 
             MPI_Status status;
-			MPI_Recv(A_gpu.UvalRecvBufs[0], uPanelVec[lk].nzvalSize(), get_mpi_type<Ftype>, senderGrid, k0,
+			MPI_Recv(A_gpu.UvalRecvBufs[0], uPanelVec[lk].nzvalSize(), get_mpi_type<Ftype>(), senderGrid, k0,
 					 grid3d->zscp.comm, &status);
 
 			/*reduce the updates*/
             cublasHandle_t handle=A_gpu.cuHandles[0];
             cudaStream_t cuStream = A_gpu.cuStreams[0];
             cublasSetStream(handle, cuStream);
-			cublasDscal(handle, uPanelVec[lk].nzvalSize(), &alpha, uPanelVec[lk].blkPtrGPU(0), 1);
-			cublasDaxpy(handle, uPanelVec[lk].nzvalSize(), &beta, A_gpu.UvalRecvBufs[0], 1, uPanelVec[lk].blkPtrGPU(0), 1);
+			myCublasScal<Ftype>(handle, uPanelVec[lk].nzvalSize(), &alpha, uPanelVec[lk].blkPtrGPU(0), 1);
+			myCublasAxpy<Ftype>(handle, uPanelVec[lk].nzvalSize(), &beta, A_gpu.UvalRecvBufs[0], 1, uPanelVec[lk].blkPtrGPU(0), 1);
             cudaStreamSynchronize(cuStream);
 		}
 	}

@@ -5,6 +5,11 @@
 #include "lupanels_GPU.cuh"
 #include "batch_block_copy.h"
 
+// [0, 1, 2, 3] independent
+// [0, 1] schur complement update , [2, 3] panel bcast 
+// [2,3] schur complement update, [ 4,5] panel bcast 
+
+
 int getBufferOffset(int k0, int k1, int winSize, int winParity, int halfWin)
 {
     int_t offset = (k0-k1)%winSize;
