@@ -376,8 +376,8 @@ struct SCUMarshallData
     std::vector<int> host_m_array, host_n_array, host_k_array;
 
     // Host data initialized once per level 
-    std::vector<upanel_t<Ftype>> upanels;
-    std::vector<lpanel_t<Ftype>> lpanels;
+    std::vector<xupanel_t<Ftype>> upanels;
+    std::vector<xlpanel_t<Ftype>> lpanels;
     std::vector<upanelGPU_t<Ftype>> host_gpu_upanels;
     std::vector<lpanelGPU_t<Ftype>> host_gpu_lpanels;
     std::vector<int> ist, iend, jst, jend, maxGemmRows, maxGemmCols;

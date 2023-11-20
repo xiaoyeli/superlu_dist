@@ -330,8 +330,8 @@ public:
 template <typename Ftype>
 struct LUstruct_v100
 {
-    lpanel_t<Ftype> *lPanelVec;
-    upanel_t<Ftype> *uPanelVec;
+    xlpanel_t<Ftype> *lPanelVec;
+    xupanel_t<Ftype> *uPanelVec;
     gridinfo3d_t *grid3d;
     gridinfo_t *grid;
     int_t iam, Pc, Pr, myrow, mycol, ldt;
@@ -508,7 +508,7 @@ struct LUstruct_v100
      *           Compute Functions
      */
     int_t pdgstrf3d();
-    int_t dSchurComplementUpdate(int_t k, lpanel_t<Ftype> &lpanel, upanel_t<Ftype> &upanel);
+    int_t dSchurComplementUpdate(int_t k, xlpanel_t<Ftype> &lpanel, xupanel_t<Ftype> &upanel);
     int_t *computeIndirectMap(indirectMapType direction, int_t srcLen, int_t *srcVec,
                               int_t dstLen, int_t *dstVec);
 
@@ -518,12 +518,12 @@ struct LUstruct_v100
                    int_t *srcRowList, int_t *srcColList);
 
     int_t lookAheadUpdate(
-        int_t k, int_t laIdx, lpanel_t<Ftype> &lpanel, upanel_t<Ftype> &upanel);
+        int_t k, int_t laIdx, xlpanel_t<Ftype> &lpanel, xupanel_t<Ftype> &upanel);
     int_t blockUpdate(int_t k,
-                      int_t ii, int_t jj, lpanel_t<Ftype> &lpanel, upanel_t<Ftype> &upanel);
+                      int_t ii, int_t jj, xlpanel_t<Ftype> &lpanel, xupanel_t<Ftype> &upanel);
     int_t dSchurCompUpdateExcludeOne(
         int_t k, int_t ex, // suypernodes to be excluded
-        lpanel_t<Ftype> &lpanel, upanel_t<Ftype> &upanel);
+        xlpanel_t<Ftype> &lpanel, xupanel_t<Ftype> &upanel);
 
     int_t dsparseTreeFactor(
         sForest_t *sforest,
@@ -597,24 +597,24 @@ struct LUstruct_v100
 
     int_t dSchurComplementUpdateGPU(
         int streamId,
-        int_t k, lpanel_t<Ftype> &lpanel, upanel_t<Ftype> &upanel);
+        int_t k, xlpanel_t<Ftype> &lpanel, xupanel_t<Ftype> &upanel);
     int_t dSchurCompUpdatePartGPU(
         int_t iSt, int_t iEnd, int_t jSt, int_t jEnd,
-        int_t k, lpanel_t<Ftype> &lpanel, upanel_t<Ftype> &upanel,
+        int_t k, xlpanel_t<Ftype> &lpanel, xupanel_t<Ftype> &upanel,
         cublasHandle_t handle, cudaStream_t cuStream,
         Ftype *gemmBuff);
     int_t lookAheadUpdateGPU(
         int streamId,
-        int_t k, int_t laIdx, lpanel_t<Ftype> &lpanel, upanel_t<Ftype> &upanel);
+        int_t k, int_t laIdx, xlpanel_t<Ftype> &lpanel, xupanel_t<Ftype> &upanel);
     int_t dSchurCompUpLimitedMem(
         int streamId,
         int_t lStart, int_t lEnd,
         int_t uStart, int_t uEnd,
-        int_t k, lpanel_t<Ftype> &lpanel, upanel_t<Ftype> &upanel);
+        int_t k, xlpanel_t<Ftype> &lpanel, xupanel_t<Ftype> &upanel);
     int_t dSchurCompUpdateExcludeOneGPU(
         int streamId,
         int_t k, int_t ex, // suypernodes to be excluded
-        lpanel_t<Ftype> &lpanel, upanel_t<Ftype> &upanel);
+        xlpanel_t<Ftype> &lpanel, xupanel_t<Ftype> &upanel);
 
     int_t dDiagFactorPanelSolveGPU(int_t k, int_t offset, ddiagFactBufs_t **dFBufs);
     int_t dPanelBcastGPU(int_t k, int_t offset);

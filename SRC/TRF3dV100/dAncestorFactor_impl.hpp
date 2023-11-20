@@ -91,8 +91,8 @@ int_t xLUstruct_t<Ftype>::dAncestorFactor(
                 offset += halfWin; //
 
             /*=======   SchurComplement Update ======*/
-            upanel_t<Ftype> k_upanel(UidxRecvBufs[offset], UvalRecvBufs[offset]);
-            lpanel_t<Ftype> k_lpanel(LidxRecvBufs[offset], LvalRecvBufs[offset]);
+            xupanel_t<Ftype> k_upanel(UidxRecvBufs[offset], UvalRecvBufs[offset]);
+            xlpanel_t<Ftype> k_lpanel(LidxRecvBufs[offset], LvalRecvBufs[offset]);
             if (myrow == krow(k))
                 k_upanel = uPanelVec[g2lRow(k)];
             if (mycol == kcol(k))

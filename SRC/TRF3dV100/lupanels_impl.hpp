@@ -11,23 +11,23 @@
 
 #ifdef HAVE_CUDA
 template <typename Ftype>
-upanel_t<Ftype> xLUstruct_t<Ftype>::getKUpanel(int_t k, int_t offset)
+xupanel_t<Ftype> xLUstruct_t<Ftype>::getKUpanel(int_t k, int_t offset)
 {
     return (
         myrow == krow(k) ? 
         uPanelVec[g2lRow(k)] : 
-        upanel_t<Ftype>(UidxRecvBufs[offset], UvalRecvBufs[offset],
+        xupanel_t<Ftype>(UidxRecvBufs[offset], UvalRecvBufs[offset],
             A_gpu.UidxRecvBufs[offset], A_gpu.UvalRecvBufs[offset])
     );
 }
 
 template <typename Ftype>
-lpanel_t<Ftype> xLUstruct_t<Ftype>::getKLpanel(int_t k, int_t offset)
+xlpanel_t<Ftype> xLUstruct_t<Ftype>::getKLpanel(int_t k, int_t offset)
 { 
     return (
         mycol == kcol(k) ? 
         lPanelVec[g2lCol(k)] : 
-        lpanel_t<Ftype>(LidxRecvBufs[offset], LvalRecvBufs[offset],
+        xlpanel_t<Ftype>(LidxRecvBufs[offset], LvalRecvBufs[offset],
             A_gpu.LidxRecvBufs[offset], A_gpu.LvalRecvBufs[offset])
     );
 }
@@ -66,8 +66,8 @@ xLUstruct_t<Ftype>::LUstruct_v100(int_t nsupers_, int_t ldt_,
     Ftype **Lnzval_bc_ptr = LUstruct->Llu->Lnzval_bc_ptr;
     Ftype **Unzval_br_ptr = LUstruct->Llu->Unzval_br_ptr;
 
-    lPanelVec = new lpanel_t<Ftype>[CEILING(nsupers, Pc)];
-    uPanelVec = new upanel_t<Ftype>[CEILING(nsupers, Pr)];
+    lPanelVec = new xlpanel_t<Ftype>[CEILING(nsupers, Pc)];
+    uPanelVec = new xupanel_t<Ftype>[CEILING(nsupers, Pr)];
     // create the lvectors
     maxLvalCount = 0;
     maxLidxCount = 0;
@@ -88,7 +88,7 @@ xLUstruct_t<Ftype>::LUstruct_v100(int_t nsupers_, int_t ldt_,
 
             if (myrow == krow(k0))
                 isDiagIncluded = 1;
-            lpanel_t<Ftype> lpanel(k0, Lrowind_bc_ptr[i], Lnzval_bc_ptr[i], xsup, isDiagIncluded);
+            xlpanel_t<Ftype> lpanel(k0, Lrowind_bc_ptr[i], Lnzval_bc_ptr[i], xsup, isDiagIncluded);
             lPanelVec[i] = lpanel;
             maxLvalCount = std::max(lPanelVec[i].nzvalSize(), maxLvalCount);
             maxLidxCount = std::max(lPanelVec[i].indexSize(), maxLidxCount);
@@ -103,7 +103,7 @@ xLUstruct_t<Ftype>::LUstruct_v100(int_t nsupers_, int_t ldt_,
         if (Ufstnz_br_ptr[i] != NULL && isNodeInMyGrid[i * Pr + myrow] == 1)
         {
             int_t globalId = i * Pr + myrow;
-            upanel_t<Ftype> upanel(globalId, Ufstnz_br_ptr[i], Unzval_br_ptr[i], xsup);
+            xupanel_t<Ftype> upanel(globalId, Ufstnz_br_ptr[i], Unzval_br_ptr[i], xsup);
             uPanelVec[i] = upanel;
             maxUvalCount = std::max(uPanelVec[i].nzvalSize(), maxUvalCount);
             maxUidxCount = std::max(uPanelVec[i].indexSize(), maxUidxCount);
@@ -263,7 +263,7 @@ xLUstruct_t<Ftype>::LUstruct_v100(int_t nsupers_, int_t ldt_,
 
 template <typename Ftype>
 int_t xLUstruct_t<Ftype>::dSchurComplementUpdate(
-    int_t k, lpanel_t<Ftype> &lpanel, upanel_t<Ftype> &upanel)
+    int_t k, xlpanel_t<Ftype> &lpanel, xupanel_t<Ftype> &upanel)
 {
     if (lpanel.isEmpty() || upanel.isEmpty())
         return 0;
@@ -405,7 +405,7 @@ int numProcsPerNode(MPI_Comm baseCommunicator)
 
 template <typename Ftype>
 int_t xLUstruct_t<Ftype>::lookAheadUpdate(
-    int_t k, int_t laIdx, lpanel_t<Ftype> &lpanel, upanel_t<Ftype> &upanel)
+    int_t k, int_t laIdx, xlpanel_t<Ftype> &lpanel, xupanel_t<Ftype> &upanel)
 {
     if (lpanel.isEmpty() || upanel.isEmpty())
         return 0;
@@ -445,7 +445,7 @@ int_t xLUstruct_t<Ftype>::lookAheadUpdate(
 
 template <typename Ftype>
 int_t xLUstruct_t<Ftype>::blockUpdate(int_t k,
-                                 int_t ii, int_t jj, lpanel_t<Ftype> &lpanel, upanel_t<Ftype> &upanel)
+                                 int_t ii, int_t jj, xlpanel_t<Ftype> &lpanel, xupanel_t<Ftype> &upanel)
 {
     int thread_id;
 #ifdef _OPENMP
@@ -477,7 +477,7 @@ int_t xLUstruct_t<Ftype>::blockUpdate(int_t k,
 template <typename Ftype>
 int_t xLUstruct_t<Ftype>::dSchurCompUpdateExcludeOne(
     int_t k, int_t ex, // suypernodes to be excluded
-    lpanel_t<Ftype> &lpanel, upanel_t<Ftype> &upanel)
+    xlpanel_t<Ftype> &lpanel, xupanel_t<Ftype> &upanel)
 {
     if (lpanel.isEmpty() || upanel.isEmpty())
         return 0;
@@ -539,8 +539,8 @@ template <typename Ftype>
 int_t xLUstruct_t<Ftype>::dPanelBcast(int_t k, int_t offset)
 {
     /*=======   Panel Broadcast             ======*/
-    upanel_t<Ftype> k_upanel(UidxRecvBufs[offset], UvalRecvBufs[offset]);
-    lpanel_t<Ftype> k_lpanel(LidxRecvBufs[offset], LvalRecvBufs[offset]);
+    xupanel_t<Ftype> k_upanel(UidxRecvBufs[offset], UvalRecvBufs[offset]);
+    xlpanel_t<Ftype> k_lpanel(LidxRecvBufs[offset], LvalRecvBufs[offset]);
     if (myrow == krow(k))
         k_upanel = uPanelVec[g2lRow(k)];
 

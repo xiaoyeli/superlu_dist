@@ -90,8 +90,8 @@ int_t xLUstruct_t<Ftype>::dAncestorFactorBaseline(
                     lPanelVec[g2lCol(k)].panelSolve(ksupc, dFBufs[offset]->BlockUFactor, ksupc);
 
                 /*=======   Panel Broadcast             ======*/
-                upanel_t<Ftype> k_upanel(UidxRecvBufs[0], UvalRecvBufs[0]);
-                lpanel_t<Ftype> k_lpanel(LidxRecvBufs[0], LvalRecvBufs[0]);
+                xupanel_t<Ftype> k_upanel(UidxRecvBufs[0], UvalRecvBufs[0]);
+                xlpanel_t<Ftype> k_lpanel(LidxRecvBufs[0], LvalRecvBufs[0]);
                 if (myrow == krow(k))
                 {
                     k_upanel = uPanelVec[g2lRow(k)];

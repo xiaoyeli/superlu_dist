@@ -2,7 +2,7 @@
 #include "lupanels.hpp"
 
 template <typename Ftype>
-lpanel_t<Ftype>::lpanel_t(int_t k, int_t *lsub, Ftype* lval, int_t *xsup, int_t isDiagIncluded)
+xlpanel_t<Ftype>::lpanel_t(int_t k, int_t *lsub, Ftype* lval, int_t *xsup, int_t isDiagIncluded)
 {
     // set the value
     val = lval;
@@ -49,7 +49,7 @@ lpanel_t<Ftype>::lpanel_t(int_t k, int_t *lsub, Ftype* lval, int_t *xsup, int_t 
 
 //TODO: can be optimized
 template <typename Ftype>
-int_t lpanel_t<Ftype>::find(int_t k)
+int_t xlpanel_t<Ftype>::find(int_t k)
 {
     for (int_t i = 0; i < nblocks(); i++)
     {
@@ -61,7 +61,7 @@ int_t lpanel_t<Ftype>::find(int_t k)
 }
 
 template <typename Ftype>
-int_t lpanel_t<Ftype>::panelSolve(int_t ksupsz, Ftype* DiagBlk, int_t LDD)
+int_t xlpanel_t<Ftype>::panelSolve(int_t ksupsz, Ftype* DiagBlk, int_t LDD)
 {
     if (isEmpty())
         return 0;
@@ -80,7 +80,7 @@ int_t lpanel_t<Ftype>::panelSolve(int_t ksupsz, Ftype* DiagBlk, int_t LDD)
 }
 
 template <typename Ftype>
-int_t lpanel_t<Ftype>::diagFactor(int_t k, Ftype* UBlk, int_t LDU, Ftype thresh, int_t *xsup,
+int_t xlpanel_t<Ftype>::diagFactor(int_t k, Ftype* UBlk, int_t LDU, Ftype thresh, int_t *xsup,
                            superlu_dist_options_t *options,
                            SuperLUStat_t *stat, int *info)
 {
@@ -91,7 +91,7 @@ int_t lpanel_t<Ftype>::diagFactor(int_t k, Ftype* UBlk, int_t LDU, Ftype thresh,
 }
 
 template <typename Ftype>
-int_t lpanel_t<Ftype>::packDiagBlock(Ftype* DiagLBlk, int_t LDD)
+int_t xlpanel_t<Ftype>::packDiagBlock(Ftype* DiagLBlk, int_t LDD)
 {
     assert(haveDiag());
     assert(LDD >= nbrow(0));
@@ -104,7 +104,7 @@ int_t lpanel_t<Ftype>::packDiagBlock(Ftype* DiagLBlk, int_t LDD)
 }
 
 template <typename Ftype>
-int lpanel_t<Ftype>::getEndBlock(int iSt, int maxRows)
+int xlpanel_t<Ftype>::getEndBlock(int iSt, int maxRows)
 {
     int nlb = nblocks();
     if(iSt >= nlb )

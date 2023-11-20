@@ -98,9 +98,9 @@ int_t xLUstruct_t<Ftype>::dAncestorFactorBaselineGPU(
                 // upanel_t k_upanel(UidxRecvBufs[0], UvalRecvBufs[0]);
                 // lpanel_t k_lpanel(LidxRecvBufs[0], LvalRecvBufs[0]);
                             /*=======   Panel Broadcast             ======*/
-                upanel_t<Ftype> k_upanel(UidxRecvBufs[0], UvalRecvBufs[0],
+                xupanel_t<Ftype> k_upanel(UidxRecvBufs[0], UvalRecvBufs[0],
                                 A_gpu.UidxRecvBufs[0], A_gpu.UvalRecvBufs[0]);
-                lpanel_t<Ftype> k_lpanel(LidxRecvBufs[0], LvalRecvBufs[0],
+                xlpanel_t<Ftype> k_lpanel(LidxRecvBufs[0], LvalRecvBufs[0],
                                 A_gpu.LidxRecvBufs[0], A_gpu.LvalRecvBufs[0]);
                 if (myrow == krow(k))
                 {

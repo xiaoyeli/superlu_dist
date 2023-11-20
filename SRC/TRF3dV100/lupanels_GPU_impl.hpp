@@ -37,7 +37,7 @@ int checkArr(const T *A, const T *B, int n)
 }
 
 template <typename T>
-lpanelGPU_t lpanel_t<T>::copyToGPU()
+lpanelGPU_t xlpanel_t<T>::copyToGPU()
 {
     if (isEmpty())
         return gpuPanel;
@@ -54,7 +54,7 @@ lpanelGPU_t lpanel_t<T>::copyToGPU()
 }
 
 template <typename T>
-lpanelGPU_t lpanel_t<T>::copyToGPU(void* basePtr)
+lpanelGPU_t xlpanel_t<T>::copyToGPU(void* basePtr)
 {
     if (isEmpty())
         return gpuPanel;
@@ -73,7 +73,7 @@ lpanelGPU_t lpanel_t<T>::copyToGPU(void* basePtr)
 }
 
 template <typename T>
-int_t lpanel_t<T>::copyFromGPU()
+int_t xlpanel_t<T>::copyFromGPU()
 {
     if(isEmpty())
         return 0;
@@ -82,7 +82,7 @@ int_t lpanel_t<T>::copyFromGPU()
 }
 
 template <typename T>
-int_t upanel_t<T>::copyFromGPU()
+int_t xupanel_t<T>::copyFromGPU()
 {
     if(isEmpty())
         return 0;
@@ -91,7 +91,7 @@ int_t upanel_t<T>::copyFromGPU()
 }
 
 template <typename T>
-int upanel_t<T>::copyBackToGPU()
+int xupanel_t<T>::copyBackToGPU()
 {
     if(isEmpty())
         return 0;
@@ -100,7 +100,7 @@ int upanel_t<T>::copyBackToGPU()
 }
 
 template <typename T>
-int lpanel_t<T>::copyBackToGPU()
+int xlpanel_t<T>::copyBackToGPU()
 {
     if(isEmpty())
         return 0;
@@ -109,7 +109,7 @@ int lpanel_t<T>::copyBackToGPU()
 }
 
 template <typename T>
-upanelGPU_t upanel_t<T>::copyToGPU()
+upanelGPU_t xupanel_t<T>::copyToGPU()
 {
     if (isEmpty())
         return gpuPanel;
@@ -125,7 +125,7 @@ upanelGPU_t upanel_t<T>::copyToGPU()
 }
 
 template <typename T>
-upanelGPU_t upanel_t<T>::copyToGPU(void* basePtr)
+upanelGPU_t xupanel_t<T>::copyToGPU(void* basePtr)
 {
     if (isEmpty())
         return gpuPanel;
@@ -144,7 +144,7 @@ upanelGPU_t upanel_t<T>::copyToGPU(void* basePtr)
 }
 
 template <typename T>
-int lpanel_t<T>::checkGPU()
+int xlpanel_t<T>::checkGPU()
 {
     assert(isEmpty() == gpuPanel.isEmpty());
 
@@ -162,7 +162,7 @@ int lpanel_t<T>::checkGPU()
 }
 
 template <typename T>
-int_t lpanel_t<T>::panelSolveGPU(cublasHandle_t handle, cudaStream_t cuStream,
+int_t xlpanel_t<T>::panelSolveGPU(cublasHandle_t handle, cudaStream_t cuStream,
                               int_t ksupsz,
                               T *DiagBlk, // device pointer
                               int_t LDD)
@@ -191,7 +191,7 @@ int_t lpanel_t<T>::panelSolveGPU(cublasHandle_t handle, cudaStream_t cuStream,
 }
 
 template <typename T>
-int_t lpanel_t<T>::diagFactorPackDiagBlockGPU(int_t k,
+int_t xlpanel_t<T>::diagFactorPackDiagBlockGPU(int_t k,
                                            T *UBlk, int_t LDU,     // CPU pointers
                                            T *DiagLBlk, int_t LDD, // CPU pointers
                                            T thresh, int_t *xsup,
@@ -220,7 +220,7 @@ int_t lpanel_t<T>::diagFactorPackDiagBlockGPU(int_t k,
 }
 
 template <typename T>
-int_t lpanel_t<T>::diagFactorCuSolver(int_t k,
+int_t xlpanel_t<T>::diagFactorCuSolver(int_t k,
                                      cusolverDnHandle_t cusolverH, cudaStream_t cuStream,
                                     T *dWork, int* dInfo,  // GPU pointers 
                                     T *dDiagBuf, int_t LDD, // GPU pointers
@@ -246,7 +246,7 @@ int_t lpanel_t<T>::diagFactorCuSolver(int_t k,
 }
 
 template <typename T>
-int_t upanel_t<T>::panelSolveGPU(cublasHandle_t handle, cudaStream_t cuStream,
+int_t xupanel_t<T>::panelSolveGPU(cublasHandle_t handle, cudaStream_t cuStream,
                               int_t ksupsz, T *DiagBlk, int_t LDD)
 {
     if (isEmpty())
@@ -264,7 +264,7 @@ int_t upanel_t<T>::panelSolveGPU(cublasHandle_t handle, cudaStream_t cuStream,
 }
 
 template <typename T>
-int upanel_t<T>::checkGPU()
+int xupanel_t<T>::checkGPU()
 {
     assert(isEmpty() == gpuPanel.isEmpty());
 

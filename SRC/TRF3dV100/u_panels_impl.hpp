@@ -2,7 +2,7 @@
 #include "lupanels.hpp"
 
 template <typename Ftype>
-upanel_t<Ftype>::upanel_t(int_t k, int_t *usub, Ftype *uval, int_t *xsup)
+xupanel_t<Ftype>::upanel_t(int_t k, int_t *usub, Ftype *uval, int_t *xsup)
 {
     int_t kSupSz = SuperSize(k);
     int_t kLastRow = xsup[k + 1];
@@ -73,7 +73,7 @@ upanel_t<Ftype>::upanel_t(int_t k, int_t *usub, Ftype *uval, int_t *xsup)
 }
 
 template <typename Ftype>
-int_t upanel_t<Ftype>::packed2skyline(int_t k, int_t *usub, Ftype *uval, int_t*xsup)
+int_t xupanel_t<Ftype>::packed2skyline(int_t k, int_t *usub, Ftype *uval, int_t*xsup)
 {
     int_t kSupSz = SuperSize(k);
     int_t kLastRow = xsup[k + 1];
@@ -109,7 +109,7 @@ int_t upanel_t<Ftype>::packed2skyline(int_t k, int_t *usub, Ftype *uval, int_t*x
 }
 
 template <typename Ftype>
-int_t upanel_t<Ftype>::find(int_t k)
+int_t xupanel_t<Ftype>::find(int_t k)
 {
     //TODO: possible to optimize
     for (int_t i = 0; i < nblocks(); i++)
@@ -121,7 +121,7 @@ int_t upanel_t<Ftype>::find(int_t k)
     return GLOBAL_BLOCK_NOT_FOUND;
 }
 template <typename Ftype>
-int_t upanel_t<Ftype>::panelSolve(int_t ksupsz, Ftype *DiagBlk, int_t LDD)
+int_t xupanel_t<Ftype>::panelSolve(int_t ksupsz, Ftype *DiagBlk, int_t LDD)
 {
     if (isEmpty()) return 0;
     
@@ -131,7 +131,7 @@ int_t upanel_t<Ftype>::panelSolve(int_t ksupsz, Ftype *DiagBlk, int_t LDD)
 }
 
 template <typename Ftype>
-int upanel_t<Ftype>::getEndBlock(int iSt, int maxCols)
+int xupanel_t<Ftype>::getEndBlock(int iSt, int maxCols)
 {
     int nlb = nblocks();
     if(iSt >= nlb )
