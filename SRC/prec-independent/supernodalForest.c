@@ -1008,3 +1008,714 @@ sForest_t**  getOneLevelBalForests( int_t maxLvl, int_t nsupers, int_t * setree,
 	return sForests;
 
 }
+
+
+int* getBrecvTree(int_t nlb, sForest_t* sforest,  int* bmod, gridinfo_t * grid)
+{
+    int_t nnodes =   sforest->nNodes ;      // number of nodes in the tree
+    if (nnodes < 1) return NULL;
+    int_t *nodeList = sforest->nodeList ;
+
+    // int_t Pr = grid->nprow;
+    // int_t Pc = grid->npcol;
+    int_t iam = grid->iam;
+    int_t myrow = MYROW (iam, grid);
+    int_t mycol = MYCOL (iam, grid);
+    superlu_scope_t *scp = &grid->rscp;
+
+
+
+    int* mod_bit = SUPERLU_MALLOC(sizeof(int) * nlb);
+    for (int_t k = 0; k < nlb; ++k)
+        mod_bit[k] = 0;
+
+    int* brecv = SUPERLU_MALLOC(sizeof(int) * nlb);
+
+
+    for (int_t k0 = 0; k0 < nnodes ; ++k0)
+    {
+        /* code */
+        int_t k = nodeList[k0];
+        int_t krow = PROW (k, grid);
+        if (myrow == krow)
+        {
+            int_t lk = LBi (k, grid); /* local block number */
+            int_t kcol = PCOL (k, grid);  /* root process in this row scope */
+            if (mycol != kcol )
+                mod_bit[lk] = 1;    /* Contribution from off-diagonal */
+        }
+    }
+
+    /* Every process receives the count, but it is only useful on the
+       diagonal processes.  */
+    MPI_Allreduce (mod_bit, brecv, nlb, MPI_INT, MPI_SUM, scp->comm);
+
+    SUPERLU_FREE(mod_bit);
+    return brecv;
+}
+
+
+
+int* getBrecvTree_newsolve(int_t nlb, int_t nsupers, int* supernodeMask, int* bmod, gridinfo_t * grid)
+{
+    int_t iam = grid->iam;
+    int_t myrow = MYROW (iam, grid);
+    int_t mycol = MYCOL (iam, grid);
+    superlu_scope_t *scp = &grid->rscp;
+
+
+
+    int* mod_bit = SUPERLU_MALLOC(sizeof(int) * nlb);
+    for (int_t k = 0; k < nlb; ++k)
+        mod_bit[k] = 0;
+
+    int* brecv = SUPERLU_MALLOC(sizeof(int) * nlb);
+
+
+	for (int_t k = 0; k < nsupers; ++k)
+	{
+		if(supernodeMask[k]>0)
+        {
+        int_t krow = PROW (k, grid);
+        if (myrow == krow)
+        {
+            int_t lk = LBi (k, grid); /* local block number */
+            int_t kcol = PCOL (k, grid);  /* root process in this row scope */
+            if (mycol != kcol && bmod[lk])
+                mod_bit[lk] = 1;    /* Contribution from off-diagonal */
+        }
+        }
+    }
+
+    /* Every process receives the count, but it is only useful on the
+       diagonal processes.  */
+    MPI_Allreduce (mod_bit, brecv, nlb, MPI_INT, MPI_SUM, scp->comm);
+
+    SUPERLU_FREE(mod_bit);
+    return brecv;
+}
+
+int getNrootUsolveTree(int_t* nbrecvmod, sForest_t* sforest, int* brecv, int* bmod, gridinfo_t * grid)
+{
+    int_t nnodes =   sforest->nNodes ;      // number of nodes in the tree
+    if (nnodes < 1) return 0;
+    int_t *nodeList = sforest->nodeList ;
+
+    // int_t Pr = grid->nprow;
+    // int_t Pc = grid->npcol;
+    int_t iam = grid->iam;
+    int_t myrow = MYROW (iam, grid);
+    int_t mycol = MYCOL (iam, grid);
+    int nroot = 0;
+    for (int_t k0 = 0; k0 < nnodes ; ++k0)
+    {
+        /* code */
+        int_t k = nodeList[k0];
+        int_t krow = PROW (k, grid);
+        if (myrow == krow)
+        {
+            int_t lk = LBi (k, grid); /* local block number */
+            int_t kcol = PCOL (k, grid);  /* root process in this row scope. */
+            if (mycol == kcol)
+            {
+                /* diagonal process */
+                *nbrecvmod += brecv[lk];
+                if (!brecv[lk] && !bmod[lk])
+                    ++nroot;
+
+            }
+        }
+    }
+
+    return nroot;
+}
+
+
+int getNbrecvX(sForest_t* sforest, int_t* Urbs, gridinfo_t * grid)
+{
+    int_t nnodes =   sforest->nNodes ;      // number of nodes in the tree
+    if (nnodes < 1) return 0;
+    int_t *nodeList = sforest->nodeList ;
+
+    // int_t Pr = grid->nprow;
+    // int_t Pc = grid->npcol;
+    int_t iam = grid->iam;
+    int_t myrow = MYROW (iam, grid);
+    int_t mycol = MYCOL (iam, grid);
+    int nbrecvx = 0;
+    for (int_t k0 = 0; k0 < nnodes ; ++k0)
+    {
+        /* code */
+        int_t k = nodeList[k0];
+        int_t krow = PROW (k, grid);
+        int_t kcol = PCOL (k, grid);
+        if (mycol == kcol && myrow != krow)
+        {
+            /* code */
+            int_t lk = LBj( k, grid ); /* Local block number, column-wise. */
+            int_t nub = Urbs[lk];      /* Number of U blocks in block column lk */
+            if (nub > 0)
+                nbrecvx++;
+        }
+    }
+
+    return nbrecvx;
+}
+
+int getNbrecvX_newsolve(int_t nsupers, int* supernodeMask, int_t* Urbs, Ucb_indptr_t **Ucb_indptr, gridinfo_t * grid)
+{
+
+    int_t iam = grid->iam;
+    int_t myrow = MYROW (iam, grid);
+    int_t mycol = MYCOL (iam, grid);
+    int nbrecvx = 0;
+    int_t ik;
+
+	for (int_t k = 0; k < nsupers; ++k)
+	{
+        if(supernodeMask[k]>0)
+        {
+        int_t krow = PROW (k, grid);
+        int_t kcol = PCOL (k, grid);
+        if (mycol == kcol && myrow != krow)
+        {
+            /* code */
+            int_t lk = LBj( k, grid ); /* Local block number, column-wise. */
+            int_t nub = Urbs[lk];      /* Number of U blocks in block column lk */
+            int_t flag=0;
+            for (int_t ub = 0; ub < nub; ++ub) {
+                ik = Ucb_indptr[lk][ub].lbnum; /* Local block number, row-wise. */
+                int_t gik = ik * grid->nprow + myrow;/* Global block number, row-wise. */
+                if(supernodeMask[gik]>0)
+                    flag=1;
+            }
+            if(flag==1)
+                nbrecvx++;
+        }
+        }
+    }
+
+    return nbrecvx;
+}
+
+
+int getNrootUsolveTree_newsolve(int_t* nbrecvmod, int_t nsupers, int* supernodeMask, int* brecv, int* bmod, gridinfo_t * grid)
+{
+
+    int_t iam = grid->iam;
+    int_t myrow = MYROW (iam, grid);
+    int_t mycol = MYCOL (iam, grid);
+    int nroot = 0;
+	for (int_t k = 0; k < nsupers; ++k)
+	{
+        if(supernodeMask[k]>0)
+        {
+        int_t krow = PROW (k, grid);
+        if (myrow == krow)
+        {
+            int_t lk = LBi (k, grid); /* local block number */
+            int_t kcol = PCOL (k, grid);  /* root process in this row scope. */
+            if (mycol == kcol)
+            {
+                /* diagonal process */
+                *nbrecvmod += brecv[lk];
+                if (!brecv[lk] && !bmod[lk])
+                    ++nroot;
+
+            }
+        }
+        }
+    }
+
+    return nroot;
+}
+
+
+int_t getNfrecvmodLeaf(int* nleaf, sForest_t* sforest, int* frecv, int* fmod, gridinfo_t * grid)
+{
+	int_t iam = grid->iam;
+	int_t myrow = MYROW (iam, grid);
+	int_t mycol = MYCOL (iam, grid);
+
+	int_t nnodes =   sforest->nNodes ;
+	int_t *nodeList = sforest->nodeList ;
+	int_t nfrecvmod = 0;
+	for (int_t k0 = 0; k0 < nnodes; ++k0)
+	{
+		int_t k = nodeList[k0];
+		int_t krow = PROW (k, grid);
+		int_t kcol = PCOL (k, grid);
+
+		if (myrow == krow)
+		{
+			int_t lk = LBi (k, grid); /* local block number */
+			int_t kcol = PCOL (k, grid);
+			if (mycol == kcol)
+			{
+				/* diagonal process */
+				nfrecvmod += frecv[lk];
+				if (!frecv[lk] && !fmod[lk])
+					++(*nleaf);
+			}
+		}
+	}
+	return nfrecvmod;
+}
+
+int_t getNfrecvmod_newsolve(int* nleaf, int_t nsupers, int* supernodeMask, int* frecv, int* fmod, gridinfo_t * grid)
+{
+	int_t iam = grid->iam;
+	int_t myrow = MYROW (iam, grid);
+	int_t mycol = MYCOL (iam, grid);
+
+	int_t nfrecvmod = 0;
+	for (int_t k = 0; k < nsupers; ++k)
+	{
+        // printf("anni k %5d supernodeMask[k] %5d\n",k,supernodeMask[k]);
+        if(supernodeMask[k]>0)
+        {
+            int_t krow = PROW (k, grid);
+            int_t kcol = PCOL (k, grid);
+
+            if (myrow == krow)
+            {
+                int_t lk = LBi (k, grid); /* local block number */
+                int_t kcol = PCOL (k, grid);
+                if (mycol == kcol)
+                {
+                    /* diagonal process */
+                    nfrecvmod += frecv[lk];
+                    if (!frecv[lk] && !fmod[lk])
+                        ++(*nleaf);
+                }
+            }
+        }
+	}
+	return nfrecvmod;
+}
+
+
+int_t zAllocBcast(int_t size, void** ptr, gridinfo3d_t* grid3d)
+{
+
+	if (size < 1) return 0;
+	if (grid3d->zscp.Iam)
+	{
+		*ptr = NULL;
+		*ptr = SUPERLU_MALLOC(size);
+	}
+	MPI_Bcast(*ptr, size, MPI_BYTE, 0, grid3d->zscp.comm);
+
+	return 0;
+}
+
+
+
+int_t zAllocBcast_gridID(int_t size, void** ptr, int_t gridID, gridinfo3d_t* grid3d)
+{
+
+	if (size < 1) return 0;
+	if (grid3d->zscp.Iam != gridID)
+	{
+		*ptr = NULL;
+		*ptr = SUPERLU_MALLOC(size);
+	}
+	MPI_Bcast(*ptr, size, MPI_BYTE, gridID, grid3d->zscp.comm);
+
+	return 0;
+}
+
+
+int* getfrecv_newsolve(int_t nsupers, int* supernodeMask, int_t nlb, int* fmod,
+                     int *mod_bit, gridinfo_t * grid)
+{
+
+	int* frecv;
+	if (!(frecv = int32Malloc_dist (nlb)))
+		ABORT ("Malloc fails for frecv[].");
+	superlu_scope_t *scp = &grid->rscp;
+	for (int_t k = 0; k < nlb; ++k)
+		mod_bit[k] = 0;
+	int_t iam = grid->iam;
+	int_t myrow = MYROW (iam, grid);
+	int_t mycol = MYCOL (iam, grid);
+
+	for (int_t k = 0; k < nsupers; ++k)
+	{
+		if(supernodeMask[k]>0)
+        {
+            int_t krow = PROW (k, grid);
+            int_t kcol = PCOL (k, grid);
+
+            if (myrow == krow)
+            {
+                int_t lk = LBi (k, grid); /* local block number */
+                int_t kcol = PCOL (k, grid);
+                if (mycol != kcol && fmod[lk])
+                    mod_bit[lk] = 1;    /* contribution from off-diagonal */
+            }
+        }
+	}
+	/* Every process receives the count, but it is only useful on the
+	   diagonal processes.  */
+	MPI_Allreduce (mod_bit, frecv, nlb, MPI_INT, MPI_SUM, scp->comm);
+
+	// for (int_t i = 0; i < nlb; ++i){
+    //     printf("id %5d i %5d frecv %5d\n",iam,i,frecv[i]);
+    // }
+
+	return frecv;
+}
+
+
+int* getfrecvLeaf( sForest_t* sforest, int_t nlb, int* fmod,
+                     int *mod_bit, gridinfo_t * grid)
+{
+
+	int* frecv;
+	if (!(frecv = int32Malloc_dist (nlb)))
+		ABORT ("Malloc fails for frecv[].");
+	superlu_scope_t *scp = &grid->rscp;
+	for (int_t k = 0; k < nlb; ++k)
+		mod_bit[k] = 0;
+	int_t iam = grid->iam;
+	int_t myrow = MYROW (iam, grid);
+	int_t mycol = MYCOL (iam, grid);
+
+	int_t nnodes =   sforest->nNodes ;
+	int_t *nodeList = sforest->nodeList ;
+	for (int_t k0 = 0; k0 < nnodes; ++k0)
+	{
+		int_t k = nodeList[k0];
+		int_t krow = PROW (k, grid);
+		int_t kcol = PCOL (k, grid);
+
+		if (myrow == krow)
+		{
+			int_t lk = LBi (k, grid); /* local block number */
+			int_t kcol = PCOL (k, grid);
+			if (mycol != kcol && fmod[lk])
+				mod_bit[lk] = 1;    /* contribution from off-diagonal */
+		}
+	}
+	/* Every process receives the count, but it is only useful on the
+	   diagonal processes.  */
+	MPI_Allreduce (mod_bit, frecv, nlb, MPI_INT, MPI_SUM, scp->comm);
+
+
+	return frecv;
+}
+
+int getNfrecvx_newsolve(int_t nsupers, int* supernodeMask, int_t** Lrowind_bc_ptr, int_t** Lindval_loc_bc_ptr, gridinfo_t * grid)
+{
+	int_t iam = grid->iam;
+	int_t myrow = MYROW (iam, grid);
+	int_t mycol = MYCOL (iam, grid);
+
+	// int_t** Lrowind_bc_ptr = LUstruct->Llu->Lrowind_bc_ptr;
+	int nfrecvx = 0;
+    int_t nb, idx_n, idx_i, lb, lptr1_tmp, ik;
+	for (int_t k = 0; k < nsupers; ++k)
+	{
+        if(supernodeMask[k]==1)
+        {
+            int_t krow = PROW (k, grid);
+            int_t kcol = PCOL (k, grid);
+
+            if (mycol == kcol)
+            {
+                int_t lk = LBj(k, grid);
+                int_t flag=0;
+                int_t* lsub = Lrowind_bc_ptr[lk];
+                int_t* lloc = Lindval_loc_bc_ptr[lk];
+                if(lsub){
+                nb = lsub[0];
+                if(nb>0){
+                    if(myrow!=krow){
+                        idx_i = nb;
+                        for (lb=0;lb<nb;lb++){
+                            lptr1_tmp = lloc[lb+idx_i];
+                            ik = lsub[lptr1_tmp]; /* Global block number, row-wise. */
+                            if(supernodeMask[ik]>0)
+                                flag=1;
+                        }
+                    }
+                    if(flag==1)
+                        nfrecvx++;
+                }
+                }
+            }
+        }
+	}
+
+	return nfrecvx;
+}
+
+int getNfrecvxLeaf(sForest_t* sforest, int_t** Lrowind_bc_ptr, gridinfo_t * grid)
+{
+	int_t iam = grid->iam;
+	int_t myrow = MYROW (iam, grid);
+	int_t mycol = MYCOL (iam, grid);
+
+	int_t nnodes =   sforest->nNodes ;
+	int_t *nodeList = sforest->nodeList ;
+	int nfrecvx = 0;
+	for (int_t k0 = 0; k0 < nnodes; ++k0)
+	{
+		int_t k = nodeList[k0];
+		int_t krow = PROW (k, grid);
+		int_t kcol = PCOL (k, grid);
+
+		if (mycol == kcol && myrow != krow)
+		{
+			int_t lk = LBj(k, grid);
+			int_t* lsub = Lrowind_bc_ptr[lk];
+			if (lsub)
+			{
+				if (lsub[0] > 0)
+				{
+					/* code */
+					nfrecvx++;
+				}
+			}
+
+		}
+	}
+
+	return nfrecvx;
+}
+
+int* getfmod_newsolve(int_t nlb, int_t nsupers, int* supernodeMask, int_t** Lrowind_bc_ptr, int_t** Lindval_loc_bc_ptr, gridinfo_t * grid)
+{
+	int* fmod;
+	int_t iam = grid->iam;
+	int_t myrow = MYROW (iam, grid);
+	int_t mycol = MYCOL (iam, grid);
+    int_t nb;
+
+    int_t idx_n,idx_i, lptr1_tmp, lb, lk, ik, ljk;
+
+	if (!(fmod = int32Calloc_dist (nlb)))
+		ABORT ("Calloc fails for fmod[].");
+
+	for (int_t k = 0; k < nsupers; ++k)
+	{
+		if(supernodeMask[k]>0)
+        {
+            int_t krow = PROW (k, grid);
+            int_t kcol = PCOL (k, grid);
+
+            if (mycol == kcol)
+            {
+                ljk = LBj(k, grid);
+                int_t* lsub = Lrowind_bc_ptr[ljk];
+                int_t* lloc = Lindval_loc_bc_ptr[ljk];
+                if(lsub){
+                if(lsub[0]>0){
+                    if(myrow==krow){
+                        nb = lsub[0] - 1;
+                        idx_n = 1;
+                        idx_i = nb+2;
+                    }else{
+                        nb = lsub[0];
+                        idx_n = 0;
+                        idx_i = nb;
+                    }
+                    for (lb=0;lb<nb;lb++){
+                        lk = lloc[lb+idx_n]; /* Local block number, row-wise. */
+                        lptr1_tmp = lloc[lb+idx_i];
+                        ik = lsub[lptr1_tmp]; /* Global block number, row-wise. */
+                        if(supernodeMask[ik]>0)
+                            fmod[lk] +=1;
+                    }
+                }
+                }
+
+            }
+        }
+	}
+
+	// for (int_t i = 0; i < nlb; ++i){
+    //     printf("id %5d i %5d fmod %5d\n",iam,i,fmod[i]);
+    // }
+
+	return fmod;
+}
+
+
+int* getfmodLeaf(int_t nlb, int* fmod_i)
+{
+	int* fmod;
+	if (!(fmod = int32Calloc_dist(nlb)))
+		ABORT ("Calloc fails for fmod[].");
+	for (int_t i = 0; i < nlb; ++i)
+		fmod[i] = fmod_i[i];
+
+	return fmod;
+}
+
+
+int getldu(int_t knsupc, int_t iklrow, int_t* usub )
+{
+    int ldu = 0;
+
+    for (int_t jj = 0; jj < knsupc; ++jj)
+    {
+        int_t fnz = usub[jj];
+        if ( fnz < iklrow )
+        {
+            int segsize = iklrow - fnz;
+            ldu = SUPERLU_MAX(ldu, segsize);
+        }
+
+    }
+    return ldu;
+}
+
+
+int* getBmod3d(int_t treeId, int_t nlb, sForest_t* sforest, int_t* xsup,int_t **Ufstnz_br_ptr,
+                 int_t* supernode2treeMap, gridinfo_t * grid)
+{
+    // Glu_persist_t *Glu_persist = LUstruct->Glu_persist;
+    // dLocalLU_t *Llu = LUstruct->Llu;
+    // int_t* xsup = Glu_persist->xsup;
+    int_t nnodes =   sforest->nNodes ;      // number of nodes in the tree
+    if (nnodes < 1) return NULL;
+    int_t *nodeList = sforest->nodeList ;
+
+    // int_t Pr = grid->nprow;
+    // int_t Pc = grid->npcol;
+    int_t iam = grid->iam;
+    int_t myrow = MYROW (iam, grid);
+    // int_t mycol = MYCOL (iam, grid);
+    // int_t **Ufstnz_br_ptr = Llu->Ufstnz_br_ptr;
+    int* bmod = SUPERLU_MALLOC(sizeof(int) * nlb);
+
+    for (int_t k = 0; k < nlb; ++k)
+        bmod[k] = 0;
+    for (int_t k0 = 0; k0 < nnodes ; ++k0)
+    {
+        /* code */
+
+        int_t k = nodeList[k0];
+
+        int_t krow = PROW (k, grid);
+        if (myrow == krow)
+        {
+            int_t lk = LBi (k, grid);
+            bmod[lk] = 0;
+            int_t* usub = Ufstnz_br_ptr[lk];
+            if (usub)
+            {
+                /* code */
+                int_t nub = usub[0];       /* Number of blocks in the block row U(k,:) */
+                int_t iukp = BR_HEADER;   /* Skip header; Pointer to index[] of U(k,:) */
+                // int_t rukp = 0;           /* Pointer to nzval[] of U(k,:) */
+                for (int_t ii = 0; ii < nub; ii++)
+                {
+                    int_t jb = usub[iukp];
+                    if ( supernode2treeMap[jb] == treeId)
+                    {
+                        /* code */
+                        bmod[lk]++;
+                    }
+                    iukp += UB_DESCRIPTOR;
+                    iukp += SuperSize (jb);
+
+                }
+
+
+            }
+            else
+            {
+                bmod[lk] = 0;
+            }
+
+        }
+    }
+    return bmod;
+}
+
+int* getBmod3d_newsolve(int_t nlb, int_t nsupers, int* supernodeMask, int_t* xsup, int_t **Ufstnz_br_ptr,
+                  gridinfo_t * grid)
+{
+    // Glu_persist_t *Glu_persist = LUstruct->Glu_persist;
+    // dLocalLU_t *Llu = LUstruct->Llu;
+    // int_t* xsup = Glu_persist->xsup;
+    // int_t nnodes =   sforest->nNodes ;      // number of nodes in the tree
+    // if (nnodes < 1) return NULL;
+    // int_t *nodeList = sforest->nodeList ;
+
+    // int_t Pr = grid->nprow;
+    // int_t Pc = grid->npcol;
+    int_t iam = grid->iam;
+    int_t myrow = MYROW (iam, grid);
+    // int_t mycol = MYCOL (iam, grid);
+    // int_t **Ufstnz_br_ptr = Llu->Ufstnz_br_ptr;
+    int* bmod = SUPERLU_MALLOC(sizeof(int) * nlb);
+
+    for (int_t k = 0; k < nlb; ++k)
+        bmod[k] = 0;
+
+	for (int_t k = 0; k < nsupers; ++k)
+	{
+		if(supernodeMask[k]>0)
+        {
+        int_t krow = PROW (k, grid);
+        if (myrow == krow)
+        {
+            int_t lk = LBi (k, grid);
+            bmod[lk] = 0;
+            int_t* usub = Ufstnz_br_ptr[lk];
+            if (usub)
+            {
+                /* code */
+                int_t nub = usub[0];       /* Number of blocks in the block row U(k,:) */
+                int_t iukp = BR_HEADER;   /* Skip header; Pointer to index[] of U(k,:) */
+                // int_t rukp = 0;           /* Pointer to nzval[] of U(k,:) */
+                for (int_t ii = 0; ii < nub; ii++)
+                {
+                    int_t jb = usub[iukp];
+                    if(supernodeMask[jb]>0)
+                    {
+                        /* code */
+                        bmod[lk]++;
+                    }
+                    iukp += UB_DESCRIPTOR;
+                    iukp += SuperSize (jb);
+
+                }
+            }
+            else
+            {
+                bmod[lk] = 0;
+            }
+
+        }
+        }
+    }
+    return bmod;
+}
+
+
+
+
+// #ifdef HAVE_NVSHMEM   
+/*global variables for nvshmem, is it safe to be put them here? */
+int* mystatus, *mystatusmod,*d_rownum,*d_rowstart;
+int* mystatus_u, *mystatusmod_u;
+int *d_status, *d_statusmod;
+uint64_t *flag_bc_q, *flag_rd_q ;
+int* my_flag_bc, *my_flag_rd;
+int* d_mynum,*d_mymaskstart,*d_mymasklength;
+int* d_mynum_u,*d_mymaskstart_u,*d_mymasklength_u;
+int*d_nfrecv, *h_nfrecv, *d_colnum;
+int*d_nfrecv_u, *h_nfrecv_u, *d_colnum_u;
+int* d_nfrecvmod, *h_nfrecvmod, *d_colnummod;
+int* d_nfrecvmod_u, *h_nfrecvmod_u, *d_colnummod_u;
+int* d_mynummod,*d_mymaskstartmod,*d_mymasklengthmod;
+int* d_mynummod_u,*d_mymaskstartmod_u,*d_mymasklengthmod_u;
+int *d_recv_cnt, *d_msgnum;
+int *d_recv_cnt_u, *d_msgnum_u;
+int *d_flag_mod, *d_flag_mod_u;
+// #endif

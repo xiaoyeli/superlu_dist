@@ -937,7 +937,7 @@ pdgssvx_ABglobal(superlu_dist_options_t *options, SuperMatrix *A,
 	stat->utime[FACT] = SuperLU_timer_() - t;
 
 
-    /* nvshmem related. The nvshmem_malloc has to be called before trs_compute_communication_structure, otherwise solve is much slower*/
+    /* nvshmem related. The nvshmem_malloc has to be called before dtrs_compute_communication_structure, otherwise solve is much slower*/
     int nsupers = Glu_persist->supno[n-1] + 1;
 	#ifdef HAVE_NVSHMEM 
 		int nc = CEILING( nsupers, grid->npcol);
@@ -960,7 +960,7 @@ pdgssvx_ABglobal(superlu_dist_options_t *options, SuperMatrix *A,
 		int* supernodeMask = int32Malloc_dist(nsupers);
 		for(int ii=0; ii<nsupers; ii++)
 			supernodeMask[ii]=1;
-		trs_compute_communication_structure(options, n, LUstruct,
+		dtrs_compute_communication_structure(options, n, LUstruct,
 						ScalePermstruct, supernodeMask, grid, stat);
 		SUPERLU_FREE(supernodeMask);
 	}

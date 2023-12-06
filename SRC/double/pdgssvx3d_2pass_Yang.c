@@ -1239,7 +1239,7 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 
 		/* Perform numerical factorization in parallel on all process layers.*/
 
-		/* nvshmem related. The nvshmem_malloc has to be called before trs_compute_communication_structure, otherwise solve is much slower*/
+		/* nvshmem related. The nvshmem_malloc has to be called before dtrs_compute_communication_structure, otherwise solve is much slower*/
 		#ifdef HAVE_NVSHMEM  
 			int nc = CEILING( nsupers, grid->npcol);
 			int nr = CEILING( nsupers, grid->nprow);
@@ -1328,13 +1328,13 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 
 		if ( options->Fact != SamePattern_SameRowPerm) {
 			if (get_new3dsolve() && Solve3D==true){
-				trs_compute_communication_structure(options, n, LUstruct,
+				dtrs_compute_communication_structure(options, n, LUstruct,
 							ScalePermstruct, trf3Dpartition->supernodeMask, grid, stat);
 			}else{
 				int* supernodeMask = int32Malloc_dist(nsupers);
 				for(int ii=0; ii<nsupers; ii++)
 					supernodeMask[ii]=1;
-				trs_compute_communication_structure(options, n, LUstruct,
+				dtrs_compute_communication_structure(options, n, LUstruct,
 							ScalePermstruct, supernodeMask, grid, stat);
 				SUPERLU_FREE(supernodeMask);
 			}

@@ -99,26 +99,26 @@ typedef struct {
 #define MAX_LOOKAHEADS 50
 typedef struct {
     int_t   **Lrowind_bc_ptr; /* size ceil(NSUPERS/Pc);
-    	                         free'd in trs_compute_communication_structure routinies */
+    	                         free'd in dtrs_compute_communication_structure routinies */
     int_t *Lrowind_bc_dat;  /* size sum of sizes of Lrowind_bc_ptr[lk]) */
     long int *Lrowind_bc_offset;  /* size ceil(NSUPERS/Pc)              */
     long int Lrowind_bc_cnt;
 
     double **Lnzval_bc_ptr;  /* size ceil(NSUPERS/Pc);
-    	                         free'd in trs_compute_communication_structure routinies */
+    	                         free'd in dtrs_compute_communication_structure routinies */
     double *Lnzval_bc_dat;  /* size sum of sizes of Lnzval_bc_ptr[lk])  */   
     long int *Lnzval_bc_offset;  /* size ceil(NSUPERS/Pc)                */    
     long int Lnzval_bc_cnt;
     
     double **Linv_bc_ptr;    /* size ceil(NSUPERS/Pc);
-    	                         free'd in trs_compute_communication_structure routinies */
+    	                         free'd in dtrs_compute_communication_structure routinies */
     double *Linv_bc_dat;  /* size sum of sizes of Linv_bc_ptr[lk])  */   
     long int *Linv_bc_offset;  /* size ceil(NSUPERS/Pc)              */   
     long int Linv_bc_cnt;
     
     int_t   **Lindval_loc_bc_ptr; /* size ceil(NSUPERS/Pc);
                                      pointers to locations in Lrowind_bc_ptr and Lnzval_bc_ptr;
-    	                             free'd in trs_compute_communication_structure routinies */
+    	                             free'd in dtrs_compute_communication_structure routinies */
 				     
     int_t *Lindval_loc_bc_dat;  /* size: sum of sizes of Lindval_loc_bc_ptr[lk]) */   
     long int *Lindval_loc_bc_offset;  /* size ceil(NSUPERS/Pc)  */   
@@ -485,21 +485,20 @@ typedef struct
 } ddiagFactBufs_t;
 
 
-typedef struct xT_struct
+typedef struct dxT_struct
 {
 	double* xT;
 	int_t ldaspaT;
 	int_t* ilsumT;
-} xT_struct;
+} dxT_struct;
 
-typedef struct lsumBmod_buff_t
+typedef struct dlsumBmod_buff_t
 {
     double * tX;    // buffer for reordered X
     double * tU;    // buffer for packedU
     int_t *indCols; //
-}lsumBmod_buff_t;
+}dlsumBmod_buff_t;
 
-typedef enum trtype_t {UPPER_TRI, LOWER_TRI} trtype_t;
 
 /*=====================*/
 
@@ -718,8 +717,8 @@ extern void dlsum_fmod_inv_gpu_wrap
                 int_t maxrecvsz,
                 uint64_t* flag_bc_q,
                 uint64_t* flag_rd_q,
-                double* ready_x,
-                double* ready_lsum,
+                double* dready_x,
+                double* dready_lsum,
                 int* my_flag_bc,
                 int* my_flag_rd,
                 int* d_nfrecv,
@@ -781,88 +780,63 @@ extern void pdgsmv(int_t, SuperMatrix *, gridinfo_t *, pdgsmv_comm_t *,
 extern void pdgsmv_finalize(pdgsmv_comm_t *);
 
 
-extern int_t initLsumBmod_buff(int_t ns, int nrhs, lsumBmod_buff_t* lbmod_buf);
+extern int_t dinitLsumBmod_buff(int_t ns, int nrhs, dlsumBmod_buff_t* lbmod_buf);
 extern int_t leafForestBackSolve3d(superlu_dist_options_t *options, int_t treeId, int_t n,  dLUstruct_t * LUstruct,
                             dScalePermstruct_t * ScalePermstruct,
                             dtrf3Dpartition_t*  trf3Dpartition, gridinfo3d_t *grid3d,
                             double * x, double * lsum, double * recvbuf,
                             MPI_Request * send_req,
-                            int nrhs, lsumBmod_buff_t* lbmod_buf,
+                            int nrhs, dlsumBmod_buff_t* lbmod_buf,
                             dSOLVEstruct_t * SOLVEstruct, SuperLUStat_t * stat, xtrsTimer_t *xtrsTimer);
 
 extern int_t nonLeafForestBackSolve3d( int_t treeId,  dLUstruct_t * LUstruct,
                                 dScalePermstruct_t * ScalePermstruct,
                                 dtrf3Dpartition_t*  trf3Dpartition, gridinfo3d_t *grid3d,
-                                 double * x, double * lsum, xT_struct *xT_s,double * recvbuf,
+                                 double * x, double * lsum, dxT_struct *xT_s,double * recvbuf,
                                 MPI_Request * send_req,
-                                int nrhs, lsumBmod_buff_t* lbmod_buf,
+                                int nrhs, dlsumBmod_buff_t* lbmod_buf,
                                 dSOLVEstruct_t * SOLVEstruct, SuperLUStat_t * stat, xtrsTimer_t *xtrsTimer);
 
 extern int_t dlasum_bmod_Tree(int_t  pTree, int_t cTree, double *lsum, double *x,
-                       xT_struct *xT_s,
-                       int    nrhs, lsumBmod_buff_t* lbmod_buf,
+                       dxT_struct *xT_s,
+                       int    nrhs, dlsumBmod_buff_t* lbmod_buf,
                        dLUstruct_t * LUstruct,
                        dtrf3Dpartition_t*  trf3Dpartition,
                        gridinfo3d_t* grid3d, SuperLUStat_t * stat);
-extern int_t lsumForestBsolve(int_t k, int_t treeId,
-                       double *lsum, double *x,  xT_struct *xT_s,int    nrhs, lsumBmod_buff_t* lbmod_buf,
+extern int_t dlsumForestBsolve(int_t k, int_t treeId,
+                       double *lsum, double *x,  dxT_struct *xT_s,int    nrhs, dlsumBmod_buff_t* lbmod_buf,
                        dLUstruct_t * LUstruct,
                        dtrf3Dpartition_t*  trf3Dpartition,
                        gridinfo3d_t* grid3d, SuperLUStat_t * stat);
 
-extern int_t  bCastXk2Pck  (int_t k, xT_struct *xT_s, int nrhs,
+extern int_t  dbCastXk2Pck  (int_t k, dxT_struct *xT_s, int nrhs,
                      dLUstruct_t * LUstruct, gridinfo_t * grid, xtrsTimer_t *xtrsTimer);
 
-extern int_t  lsumReducePrK (int_t k, double*x, double* lsum, double* recvbuf, int nrhs,
+extern int_t  dlsumReducePrK (int_t k, double*x, double* lsum, double* recvbuf, int nrhs,
                       dLUstruct_t * LUstruct, gridinfo_t * grid, xtrsTimer_t *xtrsTimer);
 
-extern int* getBmod3d(int_t treeId, int_t nlb, sForest_t* sforest, dLUstruct_t * LUstruct, dtrf3Dpartition_t*  trf3Dpartition, gridinfo_t * grid);
-
-extern int* getBmod3d_newsolve(int_t nlb, int_t nsupers, int* supernodeMask, dLUstruct_t * LUstruct, gridinfo_t * grid);
-
-extern int* getBrecvTree(int_t nlb, sForest_t* sforest,  int* bmod, gridinfo_t * grid);
-
-extern int* getBrecvTree_newsolve(int_t nlb, int_t nsupers, int* supernodeMask, int* bmod, gridinfo_t * grid);
-
-
-extern int getNrootUsolveTree(int_t* nbrecvmod, sForest_t* sforest, int* brecv,
-	int* bmod, gridinfo_t * grid);
-
-extern int getNbrecvX(sForest_t* sforest, int_t* Urbs, gridinfo_t * grid);
-extern int getNbrecvX_newsolve(int_t nsupers, int* supernodeMask, int_t* Urbs, Ucb_indptr_t **Ucb_indptr, gridinfo_t * grid);
-extern int getNrootUsolveTree_newsolve(int_t* nbrecvmod, int_t nsupers, int* supernodeMask, int* brecv, int* bmod, gridinfo_t * grid);
-
-
-extern int_t nonLeafForestForwardSolve3d( int_t treeId,  dLUstruct_t * LUstruct,
+extern int_t dnonLeafForestForwardSolve3d( int_t treeId,  dLUstruct_t * LUstruct,
                                    dScalePermstruct_t * ScalePermstruct,
                                    dtrf3Dpartition_t*  trf3Dpartition, gridinfo3d_t *grid3d,
                                    double * x, double * lsum,
-                                   xT_struct *xT_s,
+                                   dxT_struct *xT_s,
                                    double * recvbuf, double* rtemp,
                                    MPI_Request * send_req,
                                    int nrhs,
                                    dSOLVEstruct_t * SOLVEstruct, SuperLUStat_t * stat, xtrsTimer_t *xtrsTimer);
-extern int_t leafForestForwardSolve3d(superlu_dist_options_t *options, int_t treeId, int_t n,  dLUstruct_t * LUstruct,
+extern int_t dleafForestForwardSolve3d(superlu_dist_options_t *options, int_t treeId, int_t n,  dLUstruct_t * LUstruct,
                                dScalePermstruct_t * ScalePermstruct,
                                dtrf3Dpartition_t*  trf3Dpartition, gridinfo3d_t *grid3d,
                                double * x, double * lsum, double * recvbuf, double* rtemp,
                                MPI_Request * send_req,
                                int nrhs,
                                dSOLVEstruct_t * SOLVEstruct, SuperLUStat_t * stat, xtrsTimer_t *xtrsTimer);
-extern int* getfmodLeaf(int_t nlb, dLUstruct_t * LUstruct);
-extern int* getfmod_newsolve(int_t nlb, int_t nsupers, int* supernodeMask, dLUstruct_t * LUstruct, gridinfo_t * grid);
-extern int getNfrecvxLeaf(sForest_t* sforest, dLUstruct_t * LUstruct, gridinfo_t * grid);
-extern int getNfrecvx_newsolve(int_t nsupers, int* supernodeMask, dLUstruct_t * LUstruct, gridinfo_t * grid);
-extern int_t getNfrecvmodLeaf(int* nleaf, sForest_t* sforest, int* frecv, int* fmod, gridinfo_t * grid);
-extern int_t getNfrecvmod_newsolve(int* nleaf, int_t nsupers, int* supernodeMask, int* frecv, int* fmod, gridinfo_t * grid);
-extern int* getfrecvLeaf( sForest_t* sforest, int_t nlb, int* fmod,
-  dLUstruct_t * LUstruct, gridinfo_t * grid);
-extern int* getfrecv_newsolve(int_t nsupers, int* supernodeMask, int_t nlb, int* fmod,
-                     dLUstruct_t * LUstruct, gridinfo_t * grid);
-extern int_t trs_compute_communication_structure(superlu_dist_options_t *options, int_t n, dLUstruct_t * LUstruct,
+
+
+extern int_t dtrs_compute_communication_structure(superlu_dist_options_t *options, int_t n, dLUstruct_t * LUstruct,
                            dScalePermstruct_t * ScalePermstruct,
                            int* supernodeMask, gridinfo_t *grid, SuperLUStat_t * stat);
-extern int_t reduceSolvedX_newsolve(int_t treeId, int_t sender, int_t receiver, double* x, int nrhs,
+extern int_t dreduceSolvedX_newsolve(int_t treeId, int_t sender, int_t receiver, double* x, int nrhs,
                       dtrf3Dpartition_t*  trf3Dpartition, dLUstruct_t* LUstruct, gridinfo3d_t* grid3d, double* recvbuf, xtrsTimer_t *xtrsTimer);
 
 extern void dlsum_fmod_leaf (
@@ -911,7 +885,7 @@ extern void dlsum_bmod_GG
     double *x,           /* X array (local).                               */
     double *xk,          /* X[k].                                          */
     int    nrhs,          /* Number of right-hand sides.                    */
-    lsumBmod_buff_t* lbmod_buf,
+    dlsumBmod_buff_t* lbmod_buf,
     int_t  k,            /* The k-th component of X.                       */
     int  *bmod,        /* Modification count for L-solve.                */
     int_t  *Urbs,        /* Number of row blocks in each block column of U.*/
@@ -929,7 +903,7 @@ extern void dlsum_bmod_GG_newsolve (
     double *x,           /* X array (local).                               */
     double *xk,          /* X[k].                                          */
     int    nrhs,          /* Number of right-hand sides.                    */
-    lsumBmod_buff_t* lbmod_buf,
+    dlsumBmod_buff_t* lbmod_buf,
     int_t  k,            /* The k-th component of X.                       */
     int  *bmod,        /* Modification count for L-solve.                */
     int_t  *Urbs,        /* Number of row blocks in each block column of U.*/
@@ -975,7 +949,7 @@ extern int_t pdgsTrBackSolve3d(superlu_dist_options_t *options, int_t n, dLUstru
                         dScalePermstruct_t * ScalePermstruct,
                         dtrf3Dpartition_t*  trf3Dpartition, gridinfo3d_t *grid3d,
                         double *x3d, double *lsum3d,
-                        xT_struct *xT_s,
+                        dxT_struct *xT_s,
                         double * recvbuf,
                         MPI_Request * send_req, int nrhs,
                         dSOLVEstruct_t * SOLVEstruct, SuperLUStat_t * stat, xtrsTimer_t *xtrsTimer);
@@ -984,7 +958,7 @@ extern int_t pdgsTrForwardSolve3d(superlu_dist_options_t *options, int_t n, dLUs
                            dScalePermstruct_t * ScalePermstruct,
                            dtrf3Dpartition_t*  trf3Dpartition, gridinfo3d_t *grid3d,
                            double *x3d, double *lsum3d,
-                           xT_struct *xT_s,
+                           dxT_struct *xT_s,
                            double * recvbuf,
                            MPI_Request * send_req, int nrhs,
                            dSOLVEstruct_t * SOLVEstruct, SuperLUStat_t * stat, xtrsTimer_t *xtrsTimer);
@@ -1007,29 +981,26 @@ extern int_t pdgsTrBackSolve3d_newsolve(superlu_dist_options_t *options, int_t n
 int_t dbroadcastAncestor3d( dtrf3Dpartition_t*  trf3Dpartition,
 			   dLUstruct_t* LUstruct, gridinfo3d_t* grid3d, SCT_t* SCT );
 
-extern int_t localSolveXkYk( trtype_t trtype, int_t k, double* x, int nrhs,
+extern int_t dlocalSolveXkYk( trtype_t trtype, int_t k, double* x, int nrhs,
                       dLUstruct_t * LUstruct, gridinfo_t * grid,
                       SuperLUStat_t * stat);
 
-extern int_t iBcastXk2Pck(int_t k, double* x, int nrhs,
+extern int_t diBcastXk2Pck(int_t k, double* x, int nrhs,
                    int** sendList, MPI_Request *send_req,
                    dLUstruct_t * LUstruct, gridinfo_t * grid,xtrsTimer_t *xtrsTimer);
 
-extern int_t trs_B_init3d(int_t nsupers, double* x, int nrhs, dLUstruct_t * LUstruct, gridinfo3d_t *grid3d);
-extern int_t trs_X_gather3d(double* x, int nrhs, dtrf3Dpartition_t*  trf3Dpartition,
+extern int_t dtrs_B_init3d(int_t nsupers, double* x, int nrhs, dLUstruct_t * LUstruct, gridinfo3d_t *grid3d);
+extern int_t dtrs_X_gather3d(double* x, int nrhs, dtrf3Dpartition_t*  trf3Dpartition,
                      dLUstruct_t* LUstruct,
                      gridinfo3d_t* grid3d, xtrsTimer_t *xtrsTimer);
-extern int_t fsolveReduceLsum3d(int_t treeId, int_t sender, int_t receiver, double* lsum, double* recvbuf, int nrhs,
+extern int_t dfsolveReduceLsum3d(int_t treeId, int_t sender, int_t receiver, double* lsum, double* recvbuf, int nrhs,
                          dtrf3Dpartition_t*  trf3Dpartition, dLUstruct_t* LUstruct,
                           gridinfo3d_t* grid3d,xtrsTimer_t *xtrsTimer);
 
-extern int_t bsolve_Xt_bcast(int_t ilvl, xT_struct *xT_s, int nrhs, dtrf3Dpartition_t*  trf3Dpartition,
+extern int_t dbsolve_Xt_bcast(int_t ilvl, dxT_struct *xT_s, int nrhs, dtrf3Dpartition_t*  trf3Dpartition,
                      dLUstruct_t * LUstruct,gridinfo3d_t* grid3d , xtrsTimer_t *xtrsTimer);
 
-extern int_t zAllocBcast(int_t size, void** ptr, gridinfo3d_t* grid3d);
-extern int_t zAllocBcast_gridID(int_t size, void** ptr, int_t gridID, gridinfo3d_t* grid3d);
-
-extern int_t p2pSolvedX3d(int_t treeId, int_t sender, int_t receiver, double* x, int nrhs,
+extern int_t dp2pSolvedX3d(int_t treeId, int_t sender, int_t receiver, double* x, int nrhs,
                       dtrf3Dpartition_t*  trf3Dpartition, dLUstruct_t* LUstruct, gridinfo3d_t* grid3d, xtrsTimer_t *xtrsTimer);
 
 
@@ -1654,6 +1625,10 @@ extern int_t ancestorFactor(
 #endif
 
 /*== end 3D prototypes ===================*/
+
+
+extern double *dready_x;
+extern double *dready_lsum;
 
 
 #ifdef __cplusplus

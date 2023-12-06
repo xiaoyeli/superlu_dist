@@ -4,6 +4,7 @@
 #include "cuda_runtime.h"
 #endif
 
+
 /* ************************************************* */
 /*  reuse L and U                                    */
 /*  *_nfrecv: totol number of received msg           */
@@ -17,8 +18,6 @@ extern uint64_t *flag_bc_q;
 extern uint64_t *flag_rd_q;
 extern int *my_flag_bc;
 extern int *my_flag_rd;
-extern double *ready_x;
-extern double *ready_lsum;
 extern int *mystatus;
 extern int *mystatusmod;
 extern int *mystatus_u;

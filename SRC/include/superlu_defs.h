@@ -1276,8 +1276,33 @@ extern void DistPrint(char* function_name,  double value, char* Units, gridinfo_
 extern void DistPrint3D(char* function_name,  double value, char* Units, gridinfo3d_t* grid3d);
 extern void treeImbalance3D(gridinfo3d_t *grid3d, SCT_t* SCT);
 extern void SCT_printComm3D(gridinfo3d_t *grid3d, SCT_t* SCT);
+extern int_t zAllocBcast(int_t size, void** ptr, gridinfo3d_t* grid3d);
+extern int_t zAllocBcast_gridID(int_t size, void** ptr, int_t gridID, gridinfo3d_t* grid3d);
 
 
+// 3D SpTRSV
+typedef enum trtype_t {UPPER_TRI, LOWER_TRI} trtype_t;
+
+extern int* getBrecvTree(int_t nlb, sForest_t* sforest,  int* bmod, gridinfo_t * grid);
+extern int* getBrecvTree_newsolve(int_t nlb, int_t nsupers, int* supernodeMask, int* bmod, gridinfo_t * grid);
+extern int getNrootUsolveTree(int_t* nbrecvmod, sForest_t* sforest, int* brecv,
+	int* bmod, gridinfo_t * grid);
+extern int getNbrecvX(sForest_t* sforest, int_t* Urbs, gridinfo_t * grid);
+extern int getNbrecvX_newsolve(int_t nsupers, int* supernodeMask, int_t* Urbs, Ucb_indptr_t **Ucb_indptr, gridinfo_t * grid);
+extern int getNrootUsolveTree_newsolve(int_t* nbrecvmod, int_t nsupers, int* supernodeMask, int* brecv, int* bmod, gridinfo_t * grid);
+extern int_t getNfrecvmodLeaf(int* nleaf, sForest_t* sforest, int* frecv, int* fmod, gridinfo_t * grid);
+extern int_t getNfrecvmod_newsolve(int* nleaf, int_t nsupers, int* supernodeMask, int* frecv, int* fmod, gridinfo_t * grid);
+extern int* getfrecv_newsolve(int_t nsupers, int* supernodeMask, int_t nlb, int* fmod,
+                     int *mod_bit, gridinfo_t * grid);
+extern int* getfrecvLeaf( sForest_t* sforest, int_t nlb, int* fmod,
+  int *mod_bit, gridinfo_t * grid);
+extern int getNfrecvx_newsolve(int_t nsupers, int* supernodeMask, int_t** Lrowind_bc_ptr, int_t** Lindval_loc_bc_ptr, gridinfo_t * grid);
+extern int getNfrecvxLeaf(sForest_t* sforest, int_t** Lrowind_bc_ptr, gridinfo_t * grid);
+extern int* getfmod_newsolve(int_t nlb, int_t nsupers, int* supernodeMask, int_t** Lrowind_bc_ptr, int_t** Lindval_loc_bc_ptr, gridinfo_t * grid);
+extern int* getfmodLeaf(int_t nlb, int* fmod_i);
+extern int getldu(int_t knsupc, int_t iklrow, int_t* usub );
+extern int* getBmod3d(int_t treeId, int_t nlb, sForest_t* sforest, int_t* xsup, int_t **Ufstnz_br_ptr, int_t* supernode2treeMap, gridinfo_t * grid);
+extern int* getBmod3d_newsolve(int_t nlb, int_t nsupers, int* supernodeMask, int_t* xsup, int_t **Ufstnz_br_ptr, gridinfo_t * grid);
 
 // permutation from superLU default
 extern int_t* getPerm_c_supno(int_t nsupers, superlu_dist_options_t *,

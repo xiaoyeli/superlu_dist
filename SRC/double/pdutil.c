@@ -873,8 +873,8 @@ pdgstrs_init_device_lsum_x(superlu_dist_options_t *options, int_t n, int_t m_loc
     checkGPU(gpuMemcpy(SOLVEstruct->d_lsum_save, lsum, sizelsum * sizeof(double), gpuMemcpyHostToDevice));
     SUPERLU_FREE(lsum);
 
-    int* fmod = getfmod_newsolve(nlb, nsupers, supernodeMask, LUstruct, grid);
-    int  nfrecvx = getNfrecvx_newsolve(nsupers, supernodeMask, LUstruct, grid);
+    int* fmod = getfmod_newsolve(nlb, nsupers, supernodeMask, LUstruct->Llu->Lrowind_bc_ptr, LUstruct->Llu->Lindval_loc_bc_ptr, grid);
+    int  nfrecvx = getNfrecvx_newsolve(nsupers, supernodeMask, LUstruct->Llu->Lrowind_bc_ptr, LUstruct->Llu->Lindval_loc_bc_ptr, grid);
     if ( !(frecv = int32Calloc_dist(nlb)) )
 	ABORT("Calloc fails for frecv[].");
     C_Tree  *LRtree_ptr = LUstruct->Llu->LRtree_ptr;
@@ -899,7 +899,7 @@ pdgstrs_init_device_lsum_x(superlu_dist_options_t *options, int_t n, int_t m_loc
     
 
 
-    int* bmod=  getBmod3d_newsolve(nlb, nsupers, supernodeMask, LUstruct, grid);
+    int* bmod=  getBmod3d_newsolve(nlb, nsupers, supernodeMask, xsup, LUstruct->Llu->Ufstnz_br_ptr, grid);
     int nbrecvx= getNbrecvX_newsolve(nsupers, supernodeMask, Urbs, Ucb_indptr, grid);
     if ( !(brecv = int32Calloc_dist(nlb)) )
         ABORT("Calloc fails for brecv[].");	
