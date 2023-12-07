@@ -782,6 +782,7 @@ int dfree_LUstruct_gpu (
 	checkGPU(gpuFree(A_gpu->UrowindVec));
 	checkGPU(gpuFree(A_gpu->UrowindPtr));
 
+	free(A_gpu->UnzvalPtr_host);
 	//free(A_gpu->UrowindPtr_host); // Sherry: this is NOT allocated
 
 	checkGPU(gpuFree(A_gpu->UnzvalVec));
@@ -1682,7 +1683,6 @@ void dCopyLUToGPU3D (
 	free (indtemp1);
 	free (indtemp);
 	free (Unzval_size);
-	free (temp_UnzvalPtr);
 	free (Lnzval_size);
 
 } /* end dCopyLUToGPU3D */
