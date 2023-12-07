@@ -1243,14 +1243,14 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 			double thresh = s_eps * anorm;
 
 			/* call constructor in C++ code */
-			LUgpu = createLUgpuHandle(nsupers, ldt, trf3Dpartition, LUstruct, grid3d,
+			LUgpu = dCreateLUgpuHandle(nsupers, ldt, trf3Dpartition, LUstruct, grid3d,
 						  SCT, options, stat, thresh, info);
 			
 			/* call pdgstrf3d() in C++ code */
 			pdgstrf3d_LUpackedInterface(LUgpu);
 			
-			copyLUGPU2Host(LUgpu, LUstruct);
-			destroyLUgpuHandle(LUgpu);
+			dCopyLUGPU2Host(LUgpu, LUstruct);
+			dDestroyLUgpuHandle(LUgpu);
 
 			// print other stuff
 			// if (!grid3d->zscp.Iam)

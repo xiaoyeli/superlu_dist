@@ -16,16 +16,16 @@ extern "C" {
 struct LUstruct_v100;
 typedef struct LUstruct_v100* LUgpu_Handle; 
 
-extern LUgpu_Handle createLUgpuHandle(int_t nsupers, int_t ldt_, dtrf3Dpartition_t *trf3Dpartition,
+extern LUgpu_Handle dCreateLUgpuHandle(int_t nsupers, int_t ldt_, dtrf3Dpartition_t *trf3Dpartition,
                   dLUstruct_t *LUstruct, gridinfo3d_t *grid3d,
                   SCT_t *SCT_, superlu_dist_options_t *options_, SuperLUStat_t *stat,
                   double thresh_, int *info_); 
 
-extern void destroyLUgpuHandle(LUgpu_Handle LuH);
+extern void dDestroyLUgpuHandle(LUgpu_Handle LuH);
 
 extern int dgatherFactoredLU3Dto2D(LUgpu_Handle LuH);
 
-extern int copyLUGPU2Host(LUgpu_Handle LuH, dLUstruct_t *LUstruct);
+extern int dCopyLUGPU2Host(LUgpu_Handle LuH, dLUstruct_t *LUstruct);
 
 extern int pdgstrf3d_LUpackedInterface( LUgpu_Handle LUHand);
 

@@ -4,7 +4,7 @@
 #define HAVE_CUDA TRUE
 
 /* Enable NVSHMEM */
-#define HAVE_NVSHMEM TRUE
+/* #undef HAVE_NVSHMEM */
 
 /* Enable HIP */
 /* #undef HAVE_HIP */
@@ -16,13 +16,13 @@
 /* #undef HAVE_COLAMD */
 
 /* Enable LAPACK */
-#define SLU_HAVE_LAPACK TRUE
+/* #undef SLU_HAVE_LAPACK */
 
 /* Enable CombBLAS */
 /* #undef HAVE_COMBBLAS */
 
 /* Enable MAGMA */
-#define HAVE_MAGMA TRUE
+/* #undef HAVE_MAGMA */
 
 /* enable 64bit index mode */
 /* #undef XSDK_INDEX_SIZE */
