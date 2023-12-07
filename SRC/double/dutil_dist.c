@@ -112,7 +112,7 @@ void
 dCopy_CompCol_Matrix_dist(SuperMatrix *A, SuperMatrix *B)
 {
     NCformat *Astore, *Bstore;
-    int_t      ncol, nnz, i;
+    int_t    ncol, nnz, i;
 
     B->Stype = A->Stype;
     B->Dtype = A->Dtype;
@@ -641,13 +641,13 @@ void dZeroLblocks(int iam, int n, gridinfo_t *grid, dLUstruct_t *LUstruct)
 {
     double zero = 0.0;
     register int extra, gb, j, lb, nsupc, nsupr, ncb;
-    register int_t k, mycol, r;
+    register int k, mycol, r;
     dLocalLU_t *Llu = LUstruct->Llu;
     Glu_persist_t *Glu_persist = LUstruct->Glu_persist;
     int_t *xsup = Glu_persist->xsup;
     int_t *index;
     double *nzval;
-    int_t nsupers = Glu_persist->supno[n-1] + 1;
+    int nsupers = Glu_persist->supno[n-1] + 1;
 
     ncb = nsupers / grid->npcol;
     extra = nsupers % grid->npcol;
@@ -1293,7 +1293,7 @@ void dZeroUblocks(int iam, int n, gridinfo_t *grid, dLUstruct_t *LUstruct)
 	    }
 	}
     }
-} /* end dZeroUlocks */
+} /* end dZeroUblocks */
 
 int
 dprint_gsmv_comm(FILE *fp, int_t m_loc, pdgsmv_comm_t *gsmv_comm,

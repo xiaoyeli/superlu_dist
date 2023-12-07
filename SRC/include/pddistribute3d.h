@@ -17,7 +17,7 @@ int_t dReDistribute_A3d(SuperMatrix *A, dScalePermstruct_t *ScalePermstruct,
                         gridinfo3d_t *grid3d, int_t *colptr[], int_t *rowind[],
                         double *a[]);
 
-void propagate_A_to_LU3d(
+void dpropagate_A_to_LU3d(
     dLUstruct_t *LUstruct,
     int_t *xa,
     int_t *asub,

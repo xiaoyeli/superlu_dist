@@ -623,7 +623,7 @@ if (get_acc_solve()){
     #ifdef HAVE_NVSHMEM  
     /* nvshmem related*/
     if (get_acc_solve()){
-    delete_multiGPU_buffers();
+    ddelete_multiGPU_buffers();
     }
     
     SUPERLU_FREE(mystatus);
@@ -1166,7 +1166,7 @@ pdgstrs_delete_device_lsum_x(dSOLVEstruct_t *SOLVEstruct)
 /* nvshmem related*/
 
     #ifdef HAVE_NVSHMEM  
-    // delete_multiGPU_buffers();
+    // ddelete_multiGPU_buffers();
 
     checkGPU(gpuFree(d_colnum));       
     checkGPU(gpuFree(d_mynum));       

@@ -13,7 +13,7 @@
  * 
  * @return void
  */
-void propagate_A_to_LU3d(
+void dpropagate_A_to_LU3d(
     dLUstruct_t *LUstruct,
     int_t *xa,
     int_t *asub,

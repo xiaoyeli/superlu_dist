@@ -49,43 +49,6 @@ at the top-level directory.
 #include <nvml.h>
 #endif
 
-#undef CUDA_CHECK
-#define CUDA_CHECK(stmt)                                                          \
-     do {                                                                          \
-         cudaError_t result = (stmt);                                              \
-         if (cudaSuccess != result) {                                              \
-             fprintf(stderr, "[%s:%d] cuda failed with %s \n", __FILE__, __LINE__, \
-                     cudaGetErrorString(result));                                  \
-             exit(-1);                                                             \
-         }                                                                         \
-         assert(cudaSuccess == result);                                            \
-     } while (0)
-
-#undef MPI_CHECK
-#define MPI_CHECK(stmt)                                 \
- do {                                                    \
-     int result = (stmt);                                \
-     if (MPI_SUCCESS != result) {                        \
-         fprintf(stderr, "[%s:%d] MPI failed with error %d \n",\
-          __FILE__, __LINE__, result);                   \
-         exit(-1);                                       \
-     }                                                   \
- } while (0)
-
-#define NVSHMEM_CHECK(stmt)                               \
- do {                                                    \
-     int result = (stmt);                                \
-     if (cudaSuccess != result) {                      \
-         fprintf(stderr, "[%s:%d] nvshmem failed with error %d \n",\
-          __FILE__, __LINE__, result);                   \
-         exit(-1);                                       \
-     }                                                   \
- } while (0)
-
-
-
-
-
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -104,7 +67,7 @@ extern "C" {
 	 @ingroup magma_kernel
  *******************************************************************************/
 __device__ void
-magma_sum_reduce( int n, int i, double* x )
+dmagma_sum_reduce( int n, int i, double* x )
 {
     __syncthreads();
     if ( n > 1024 ) { if ( i < 1024 && i + 1024 < n ) { x[i] += x[i+1024]; }  __syncthreads(); }
@@ -184,7 +147,7 @@ gemv_device_dlsum_fmod(
 
             if ( DIM_Y > 16)
             {
-                magma_sum_reduce(DIM_Y, ty, sdata + tx * DIM_Y);
+                dmagma_sum_reduce(DIM_Y, ty, sdata + tx * DIM_Y);
             }
             else
             {
@@ -613,151 +576,7 @@ __global__ void simple_shift(int *target, int mype, int npes) {
 }
 
 
-// void nv_init_wrapper(int* c, char *v[], int* omp_mpi_level)
-// {
-//     int rank, nranks, ndevices;
-//     MPI_Comm mpi_comm;
-//     nvshmemx_init_attr_t attr;
-//     int mype, npes, mype_node;
-
-//     MPI_CHECK(MPI_Init(c, &v));
-//     //MPI_CHECK(MPI_Init_thread( c, &v, MPI_THREAD_MULTIPLE, omp_mpi_level));
-//     MPI_CHECK(MPI_Comm_rank(MPI_COMM_WORLD, &rank));
-//     MPI_CHECK(MPI_Comm_size(MPI_COMM_WORLD, &nranks));
-
-
-//     mpi_comm = MPI_COMM_WORLD;
-//     attr.mpi_comm = &mpi_comm;
-//     NVSHMEM_CHECK(nvshmemx_init_attr (NVSHMEMX_INIT_WITH_MPI_COMM, &attr));
-//     mype = nvshmem_my_pe();
-//     npes = nvshmem_n_pes();
-//     mype_node = nvshmem_team_my_pe(NVSHMEMX_TEAM_NODE);
-//     CUDA_CHECK(cudaSetDevice(mype_node));
-
-//     char name[MPI_MAX_PROCESSOR_NAME];
-//     int resultlength;
-//     MPI_CHECK(MPI_Get_processor_name(name, &resultlength));
-//     int get_cur_dev;
-//     CUDA_CHECK(cudaGetDeviceCount(&ndevices));
-//     CUDA_CHECK(cudaGetDevice(&get_cur_dev));
-
-//     cudaDeviceProp prop;
-//     //CUDA_CHECK(cudaGetDeviceProperties(&prop, rank%ndevices));
-//     CUDA_CHECK(cudaGetDeviceProperties(&prop, mype_node));
-//     //int status=nvshmemx_init_status();
-//     printf("** MPI %d/%d, NVSHMEM %d/%d, mype_node=%d, device name: %s bus id: %d, "
-//            "ndevices=%d,cur=%d, node=%s **\n",
-//            rank,nranks,mype,npes,mype_node, prop.name, prop.pciBusID,
-//            ndevices,get_cur_dev,name);
-//     fflush(stdout);
-
-
-//     //int *target;
-//     //target = (int *)nvshmem_malloc(sizeof(int)*256);
-//     //printf("(%d) nvshmem malloc target success\n",mype);
-//     //fflush(stdout);
-//     //simple_shift<<<1, 256>>>(target, mype, npes);
-//     //CUDA_CHECK(cudaDeviceSynchronize());
-
-// }
-
-// void nv_init_wrapper(MPI_Comm mpi_comm1)
-// {
-//     int rank, nranks, ndevices;
-//     MPI_Comm mpi_comm;
-//     nvshmemx_init_attr_t attr;
-//     int mype, npes, mype_node;
-
-//     // MPI_CHECK(MPI_Init(c, &v));
-//     //MPI_CHECK(MPI_Init_thread( c, &v, MPI_THREAD_MULTIPLE, omp_mpi_level));
-//     MPI_CHECK(MPI_Comm_rank(MPI_COMM_WORLD, &rank));
-//     MPI_CHECK(MPI_Comm_size(MPI_COMM_WORLD, &nranks));
-
-
-//     mpi_comm = MPI_COMM_WORLD;
-//     attr.mpi_comm = &mpi_comm;
-//     NVSHMEM_CHECK(nvshmemx_init_attr (NVSHMEMX_INIT_WITH_MPI_COMM, &attr));
-//     mype = nvshmem_my_pe();
-//     npes = nvshmem_n_pes();
-//     CUDA_CHECK(cudaGetDeviceCount(&ndevices));
-//     CUDA_CHECK(cudaSetDevice(rank%ndevices));
-
-//     char name[MPI_MAX_PROCESSOR_NAME];
-//     int resultlength;
-//     MPI_CHECK(MPI_Get_processor_name(name, &resultlength));
-//     int get_cur_dev;
-//     CUDA_CHECK(cudaGetDevice(&get_cur_dev));
-
-//     cudaDeviceProp prop;
-//     CUDA_CHECK(cudaGetDeviceProperties(&prop, rank%ndevices));
-//     //int status=nvshmemx_init_status();
-//     printf("** MPI %d/%d, NVSHMEM %d/%d,device name: %s bus id: %d, "
-//            "ndevices=%d,cur=%d, node=%s **\n",
-//            rank,nranks,mype,npes,prop.name, prop.pciBusID,
-//            ndevices,get_cur_dev,name);
-//     fflush(stdout);
-
-
-//     //int *target;
-//     //target = (int *)nvshmem_malloc(sizeof(int)*256);
-//     //printf("(%d) nvshmem malloc target success\n",mype);
-//     //fflush(stdout);
-//     //simple_shift<<<1, 256>>>(target, mype, npes);
-//     //CUDA_CHECK(cudaDeviceSynchronize());
-
-// }
-
-
-void nv_init_wrapper( MPI_Comm mpi_comm)
-{
-#ifdef HAVE_NVSHMEM    
-    int rank, nranks, ndevices;
-    nvshmemx_init_attr_t attr;
-    int mype, npes, mype_node;
-
-    // MPI_CHECK(MPI_Init(c, &v));
-    //MPI_CHECK(MPI_Init_thread( c, &v, MPI_THREAD_MULTIPLE, omp_mpi_level));
-    MPI_CHECK(MPI_Comm_rank(mpi_comm, &rank));
-    MPI_CHECK(MPI_Comm_size(mpi_comm, &nranks));
-
-
-    attr.mpi_comm = &mpi_comm;
-    NVSHMEM_CHECK(nvshmemx_init_attr (NVSHMEMX_INIT_WITH_MPI_COMM, &attr));
-    mype = nvshmem_my_pe();
-    npes = nvshmem_n_pes();
-    mype_node = nvshmem_team_my_pe(NVSHMEMX_TEAM_NODE);
-    
-    /* Yang: is it safe to call it here?; commenting this out will cause "cudaOccupancyMaxActiveBlocksPerMultiprocessor failed" */
-    // CUDA_CHECK(cudaGetDeviceCount(&ndevices));
-    // CUDA_CHECK(cudaSetDevice(rank%ndevices));
-
-    char name[MPI_MAX_PROCESSOR_NAME];
-    int resultlength;
-    MPI_CHECK(MPI_Get_processor_name(name, &resultlength));
-    int get_cur_dev;
-    CUDA_CHECK(cudaGetDevice(&get_cur_dev));
-
-    cudaDeviceProp prop;
-    //CUDA_CHECK(cudaGetDeviceProperties(&prop, rank%ndevices));
-    // CUDA_CHECK(cudaGetDeviceProperties(&prop, mype_node)); // Yang Liu: this line is causing runtime error
-    // //int status=nvshmemx_init_status();
-    // printf("** MPI %d/%d, NVSHMEM %d/%d,device name: %s bus id: %d, "
-    //        "ndevices=%d,cur=%d, node=%s **\n",
-    //        rank,nranks,mype,npes,prop.name, prop.pciBusID,
-    //        ndevices,get_cur_dev,name);
-    // fflush(stdout);
-
-
-    //int *target;
-    //target = (int *)nvshmem_malloc(sizeof(int)*256);
-    //printf("(%d) nvshmem malloc target success\n",mype);
-    //fflush(stdout);
-    //simple_shift<<<1, 256>>>(target, mype, npes);
-    //CUDA_CHECK(cudaDeviceSynchronize());
-#endif
-}
-
-void prepare_multiGPU_buffers(int flag_bc_size,int flag_rd_size,int ready_x_size,int ready_lsum_size,int my_flag_bc_size,int my_flag_rd_size){
+void dprepare_multiGPU_buffers(int flag_bc_size,int flag_rd_size,int ready_x_size,int ready_lsum_size,int my_flag_bc_size,int my_flag_rd_size){
 #ifdef HAVE_NVSHMEM 
     flag_bc_q = (uint64_t *)nvshmem_malloc( flag_bc_size * sizeof(uint64_t)); // for sender
     flag_rd_q = (uint64_t *)nvshmem_malloc( flag_rd_size * sizeof(uint64_t)); // for sender
@@ -775,7 +594,7 @@ void prepare_multiGPU_buffers(int flag_bc_size,int flag_rd_size,int ready_x_size
 
 	// int iam;
     // MPI_CHECK(MPI_Comm_rank(MPI_COMM_WORLD, &iam)); 
-    //printf("(%d) in prepare_multiGPU_buffers:\n "
+    //printf("(%d) in dprepare_multiGPU_buffers:\n "
     //       "flag_bc_size=%d int, dready_x=%d double, "
     //       "flag_rd_size=%d int, dready_lsum=%d double, "
     //       "int=%d B, double=%d B\n",
@@ -787,7 +606,7 @@ void prepare_multiGPU_buffers(int flag_bc_size,int flag_rd_size,int ready_x_size
 #endif
 }
 
-void delete_multiGPU_buffers(){
+void ddelete_multiGPU_buffers(){
 #ifdef HAVE_NVSHMEM     
     nvshmem_free(my_flag_bc);
     nvshmem_free(my_flag_rd);
@@ -797,7 +616,7 @@ void delete_multiGPU_buffers(){
 #endif
 }
 
-__device__ void C_BcTree_forwardMessageSimple_Device(C_Tree* tree,  volatile uint64_t* flag_bc_q,  int* my_flag_bc, int mype, int tid,double* dready_x, int maxrecvsz){
+__device__ void dC_BcTree_forwardMessageSimple_Device(C_Tree* tree,  volatile uint64_t* flag_bc_q,  int* my_flag_bc, int mype, int tid,double* dready_x, int maxrecvsz){
 #ifdef HAVE_NVSHMEM
 //int BCsendoffset;
     uint64_t sig = 1;
@@ -809,7 +628,7 @@ __device__ void C_BcTree_forwardMessageSimple_Device(C_Tree* tree,  volatile uin
     }
 #endif
 }
-__device__ void C_RdTree_forwardMessageSimple_Device(C_Tree* Tree, volatile uint64_t* flag_rd_q, int* my_flag_rd, int mype, int bid, int tid, double* dready_lsum, int maxrecvsz, int myroot){
+__device__ void dC_RdTree_forwardMessageSimple_Device(C_Tree* Tree, volatile uint64_t* flag_rd_q, int* my_flag_rd, int mype, int bid, int tid, double* dready_lsum, int maxrecvsz, int myroot){
     #ifdef HAVE_NVSHMEM  
         int data_ofset,sig_ofset;
         uint64_t sig = 1;
@@ -850,7 +669,7 @@ __device__ void C_RdTree_forwardMessageSimple_Device(C_Tree* Tree, volatile uint
 
 
 
-__device__ void C_RdTree_forwardMessageBlock_Device(C_Tree* Tree, volatile int* flag_rd_q, int* my_flag_rd, int mype, int bid, int tid, double* dready_lsum, int maxrecvsz, int myroot){
+__device__ void dC_RdTree_forwardMessageBlock_Device(C_Tree* Tree, volatile int* flag_rd_q, int* my_flag_rd, int mype, int bid, int tid, double* dready_lsum, int maxrecvsz, int myroot){
 #ifdef HAVE_NVSHMEM
     int data_ofset,sig_ofset;
 if (Tree->myIdx % 2 == 0) {
@@ -889,7 +708,7 @@ if (Tree->myIdx % 2 == 0) {
 }
 
 
-__device__ void C_RdTree_forwardMessageWarp_Device(C_Tree* Tree, volatile uint64_t* flag_rd_q, int* my_flag_rd, int mype, int bid, int tid, double* dready_lsum, int maxrecvsz, int myroot){
+__device__ void dC_RdTree_forwardMessageWarp_Device(C_Tree* Tree, volatile uint64_t* flag_rd_q, int* my_flag_rd, int mype, int bid, int tid, double* dready_lsum, int maxrecvsz, int myroot){
 #ifdef HAVE_NVSHMEM
     int data_ofset,sig_ofset;
     if (Tree->myIdx % 2 == 0) {
@@ -931,7 +750,7 @@ __device__ void C_RdTree_forwardMessageWarp_Device(C_Tree* Tree, volatile uint64
 
 
 
-__device__ void C_RdTree_forwardMessageThread_Device(C_Tree* Tree, volatile uint64_t* flag_rd_q, int* my_flag_rd, int mype, int bid, int tid, double* dready_lsum, int maxrecvsz, int myroot){
+__device__ void dC_RdTree_forwardMessageThread_Device(C_Tree* Tree, volatile uint64_t* flag_rd_q, int* my_flag_rd, int mype, int bid, int tid, double* dready_lsum, int maxrecvsz, int myroot){
 #ifdef HAVE_NVSHMEM    
     int data_ofset,sig_ofset;
     if (Tree->myIdx % 2 == 0) {
@@ -979,7 +798,7 @@ __device__ void C_RdTree_forwardMessageThread_Device(C_Tree* Tree, volatile uint
 // Therefore, on Summit one should always define _USE_SUMMIT in C_FLAGS; on Perlmutter one should not define it.  
 
 
-__global__ void wait_bcrd
+__global__ void dwait_bcrd
         (
                 int nrhs,
                 C_Tree  *LRtree_ptr,
@@ -1165,7 +984,7 @@ __global__ void wait_bcrd
                                //int temp_flag_mod=atomicExch(&d_flag_mod[temp_mysendcout+1],lib);
                                //printf("iam=%d in wait,lib=%d,%d,%d, pos=%d, temp %d,%d\n",mype,lib,k, d_flag_mod[temp_mysendcout+1], temp_mysendcout+1, temp_mysendcout,temp_flag_mod);
                                //printf("iam=%d in wait,lib=%d,%d,%d, pos=%d, temp %d,%d, sum=%lf\n",mype,lib,k, d_flag_mod[temp_mysendcout+1], temp_mysendcout+1, temp_mysendcout,temp_flag_mod, tmp_sum);
-                               C_RdTree_forwardMessageSimple_Device(&LRtree_ptr[lib], flag_rd_q,
+                               dC_RdTree_forwardMessageSimple_Device(&LRtree_ptr[lib], flag_rd_q,
                                                                     &my_flag_rd[RDMA_FLAG_SIZE * lib], mype, bid, tid,
                                                                     &dready_lsum[0], maxrecvsz,LRtree_ptr[lib].myRoot_ );
                            }
@@ -1302,7 +1121,7 @@ __global__ void wait_bcrd
                            //int temp_mysendcout=atomicAdd(&d_flag_mod[0], 1);
                            //int temp_flag_mod=atomicExch(&d_flag_mod[temp_mysendcout+1],lib);
                            //printf("iam=%d in wait2,lib=%d,%d,%d, pos=%d, temp %d,%d\n",mype,lib,k, d_flag_mod[temp_mysendcout+1], temp_mysendcout+1, temp_mysendcout,temp_flag_mod);
-                           C_RdTree_forwardMessageSimple_Device(&LRtree_ptr[lib], flag_rd_q,
+                           dC_RdTree_forwardMessageSimple_Device(&LRtree_ptr[lib], flag_rd_q,
                                                                 &my_flag_rd[RDMA_FLAG_SIZE * lib], mype, bid, tid,
                                                                 &dready_lsum[0], maxrecvsz,LRtree_ptr[lib].myRoot_);
                        }
@@ -1353,7 +1172,7 @@ __global__ void wait_bcrd
             //    myrank=LRtree_ptr[lk].myRank_;
             //    //if (tid==0) printf("B,(%d,%d) loop=%d, recv_num=%d,cur_send_num=%d, k=%d, to %d\n",mype,tid,i, recv_num,cur_send_num,lk, myroot);
             //    //__syncthreads();
-            //    C_RdTree_forwardMessageBlock_Device(&LRtree_ptr[lk], (int*)flag_rd_q, &my_flag_rd[RDMA_FLAG_SIZE*k], mype, bid, tid, &dready_lsum[0],maxrecvsz,myroot);
+            //    dC_RdTree_forwardMessageBlock_Device(&LRtree_ptr[lk], (int*)flag_rd_q, &my_flag_rd[RDMA_FLAG_SIZE*k], mype, bid, tid, &dready_lsum[0],maxrecvsz,myroot);
             //    //__syncthreads();
             //    //if (tid==0) printf("B Done,(%d,%d) loop=%d, recv_num=%d,cur_send_num=%d\n",mype,tid,i, recv_num,cur_send_num);
             //}else if ((cur_send_num <= tot_threads/32) && (cur_send_num >1)){
@@ -1368,7 +1187,7 @@ __global__ void wait_bcrd
                     myroot=LRtree_ptr[lk].myRoot_;
                     myrank=LRtree_ptr[lk].myRank_;
                     //if (tid%32==0) printf("W, (%d,%d) loop=%d, recv_num=%d,cur_send_num=%d, lk=%d, to %d\n",mype,tid,i, recv_num,cur_send_num, lk, myroot);
-                    C_RdTree_forwardMessageWarp_Device(&LRtree_ptr[lk], (uint64_t*)flag_rd_q, &my_flag_rd[RDMA_FLAG_SIZE*k], mype, bid, tid, &dready_lsum[0],maxrecvsz,myroot);
+                    dC_RdTree_forwardMessageWarp_Device(&LRtree_ptr[lk], (uint64_t*)flag_rd_q, &my_flag_rd[RDMA_FLAG_SIZE*k], mype, bid, tid, &dready_lsum[0],maxrecvsz,myroot);
                     //if (tid%32==0) printf("W Done, (%d,%d) loop=%d, recv_num=%d,cur_send_num=%d, lk=%d\n",mype,tid,i, recv_num,cur_send_num,lk);
                 }
             }else if ((cur_send_num > tot_threads/32) && (cur_send_num <= tot_threads)){
@@ -1382,7 +1201,7 @@ __global__ void wait_bcrd
                     myroot=LRtree_ptr[lk].myRoot_;
                     myrank=LRtree_ptr[lk].myRank_;
                     //printf("-- Thread, (%d,%d) i=%d, recv_num=%d,cur_send_num=%d, lk=%d, size=%d\n",mype,tid,i, recv_num,cur_send_num,lk,my_flag_rd[RDMA_FLAG_SIZE*k+1]);
-                    C_RdTree_forwardMessageThread_Device(&LRtree_ptr[lk], (uint64_t*)flag_rd_q, &my_flag_rd[RDMA_FLAG_SIZE*k], mype, bid, tid, &dready_lsum[0],maxrecvsz,myroot);
+                    dC_RdTree_forwardMessageThread_Device(&LRtree_ptr[lk], (uint64_t*)flag_rd_q, &my_flag_rd[RDMA_FLAG_SIZE*k], mype, bid, tid, &dready_lsum[0],maxrecvsz,myroot);
                     //printf("T Done,(%d,%d) recv_num=%d,cur_send_num=%d\n",mype,tid, recv_num,cur_send_num);
                 }
             }else if (cur_send_num > tot_threads){
@@ -1404,7 +1223,7 @@ __global__ void wait_bcrd
                     myroot=LRtree_ptr[lk].myRoot_;
                     myrank=LRtree_ptr[lk].myRank_;
                     //printf("-- Threadloop, (%d,%d) i=%d, recv_num=%d,cur_send_num=%d, lk=%d, size=%d\n",mype,tid,i, recv_num,cur_send_num,lk,my_flag_rd[RDMA_FLAG_SIZE*k+1]);
-                    C_RdTree_forwardMessageThread_Device(&LRtree_ptr[lk], (uint64_t*)flag_rd_q, &my_flag_rd[RDMA_FLAG_SIZE*k], mype, bid, tid, &dready_lsum[0],maxrecvsz,myroot);
+                    dC_RdTree_forwardMessageThread_Device(&LRtree_ptr[lk], (uint64_t*)flag_rd_q, &my_flag_rd[RDMA_FLAG_SIZE*k], mype, bid, tid, &dready_lsum[0],maxrecvsz,myroot);
                     //printf("Ts Done,(%d,%d) loop=%d (%d,%d) recv_num=%d,cur_send_num=%d, k=%d, to %d\n",mype, tid,i, j, mynum,recv_num,cur_send_num,lk,myroot);
                 }
             }
@@ -1419,7 +1238,7 @@ __global__ void wait_bcrd
 }
 
 
-__global__ void wait_bcrd_u
+__global__ void dwait_bcrd_u
         (
                 int nrhs,
                 C_Tree  *URtree_ptr,
@@ -1601,7 +1420,7 @@ __global__ void wait_bcrd_u
                                 // int temp_flag_mod=atomicExch(&d_flag_mod_u[temp_mysendcout+1],lib);
                                 //printf("iam=%d in wait,lib=%d,%d,%d, pos=%d, temp %d,%d\n",mype,lib,k, d_flag_mod_u[temp_mysendcout+1], temp_mysendcout+1, temp_mysendcout,temp_flag_mod);
                                 //printf("iam=%d in wait,lib=%d,%d,%d, pos=%d, temp %d,%d, sum=%lf\n",mype,lib,k, d_flag_mod_u[temp_mysendcout+1], temp_mysendcout+1, temp_mysendcout,temp_flag_mod, tmp_sum);
-                                C_RdTree_forwardMessageSimple_Device(&URtree_ptr[lib], flag_rd_q,
+                                dC_RdTree_forwardMessageSimple_Device(&URtree_ptr[lib], flag_rd_q,
                                                                      &my_flag_rd[RDMA_FLAG_SIZE * lib], mype, bid, tid,
                                                                      &dready_lsum[0], maxrecvsz, URtree_ptr[lib].myRoot_);
                             }
@@ -1739,7 +1558,7 @@ __global__ void wait_bcrd_u
                             // int temp_mysendcout=atomicAdd(&d_flag_mod_u[0], 1);
                             // int temp_flag_mod=atomicExch(&d_flag_mod_u[temp_mysendcout+1],lib);
                             //printf("iam=%d in wait2,lib=%d,%d,%d, pos=%d, temp %d,%d\n",mype,lib,k, d_flag_mod_u[temp_mysendcout+1], temp_mysendcout+1, temp_mysendcout,temp_flag_mod);
-                            C_RdTree_forwardMessageSimple_Device(&URtree_ptr[lib], flag_rd_q,
+                            dC_RdTree_forwardMessageSimple_Device(&URtree_ptr[lib], flag_rd_q,
                                                                  &my_flag_rd[RDMA_FLAG_SIZE * lib], mype, bid, tid,
                                                                  &dready_lsum[0], maxrecvsz,URtree_ptr[lib].myRoot_);
                         }
@@ -1790,7 +1609,7 @@ __global__ void wait_bcrd_u
             //    myrank=URtree_ptr[lk].myRank_;
             //    //if (tid==0) printf("B,(%d,%d) loop=%d, recv_num=%d,cur_send_num=%d, k=%d, to %d\n",mype,tid,i, recv_num,cur_send_num,lk, myroot);
             //    //__syncthreads();
-            //    C_RdTree_forwardMessageBlock_Device(&URtree_ptr[lk], (int*)flag_rd_q, &my_flag_rd[RDMA_FLAG_SIZE*k], mype, bid, tid, &dready_lsum[0],maxrecvsz,myroot);
+            //    dC_RdTree_forwardMessageBlock_Device(&URtree_ptr[lk], (int*)flag_rd_q, &my_flag_rd[RDMA_FLAG_SIZE*k], mype, bid, tid, &dready_lsum[0],maxrecvsz,myroot);
             //    //__syncthreads();
             //    //if (tid==0) printf("B Done,(%d,%d) loop=%d, recv_num=%d,cur_send_num=%d\n",mype,tid,i, recv_num,cur_send_num);
             //}else if ((cur_send_num <= tot_threads/32) && (cur_send_num >1)){
@@ -1805,7 +1624,7 @@ __global__ void wait_bcrd_u
                     myroot=URtree_ptr[lk].myRoot_;
                     myrank=URtree_ptr[lk].myRank_;
                     //if (tid%32==0) printf("in U W, (%d,%d) loop=%d, recv_num=%d,cur_send_num=%d, k=%d, to %d\n",mype,tid,i, recv_num,cur_send_num, lk, myroot);
-                    C_RdTree_forwardMessageWarp_Device(&URtree_ptr[lk], (uint64_t*)flag_rd_q, &my_flag_rd[RDMA_FLAG_SIZE*k], mype, bid, tid, &dready_lsum[0],maxrecvsz,myroot);
+                    dC_RdTree_forwardMessageWarp_Device(&URtree_ptr[lk], (uint64_t*)flag_rd_q, &my_flag_rd[RDMA_FLAG_SIZE*k], mype, bid, tid, &dready_lsum[0],maxrecvsz,myroot);
                     //if (tid%32==0) printf("W Done, (%d,%d) loop=%d, recv_num=%d,cur_send_num=%d, lk=%d\n",mype,tid,i, recv_num,cur_send_num,lk);
                 }
             }else if ((cur_send_num > tot_threads/32) && (cur_send_num <= tot_threads)){
@@ -1819,7 +1638,7 @@ __global__ void wait_bcrd_u
                     myroot=URtree_ptr[lk].myRoot_;
                     myrank=URtree_ptr[lk].myRank_;
                     //printf("-- Thread, (%d,%d) i=%d, recv_num=%d,cur_send_num=%d, lk=%d, size=%d\n",mype,tid,i, recv_num,cur_send_num,lk,my_flag_rd[RDMA_FLAG_SIZE*k+1]);
-                    C_RdTree_forwardMessageThread_Device(&URtree_ptr[lk], (uint64_t*)flag_rd_q, &my_flag_rd[RDMA_FLAG_SIZE*k], mype, bid, tid, &dready_lsum[0],maxrecvsz,myroot);
+                    dC_RdTree_forwardMessageThread_Device(&URtree_ptr[lk], (uint64_t*)flag_rd_q, &my_flag_rd[RDMA_FLAG_SIZE*k], mype, bid, tid, &dready_lsum[0],maxrecvsz,myroot);
                     //printf("T Done,(%d,%d) recv_num=%d,cur_send_num=%d\n",mype,tid, recv_num,cur_send_num);
                 }
             }else if (cur_send_num > tot_threads){
@@ -1841,7 +1660,7 @@ __global__ void wait_bcrd_u
                     myroot=URtree_ptr[lk].myRoot_;
                     myrank=URtree_ptr[lk].myRank_;
                     //printf("-- Threadloop, (%d,%d) i=%d, recv_num=%d,cur_send_num=%d, lk=%d, size=%d\n",mype,tid,i, recv_num,cur_send_num,lk,my_flag_rd[RDMA_FLAG_SIZE*k+1]);
-                    C_RdTree_forwardMessageThread_Device(&URtree_ptr[lk], (uint64_t*)flag_rd_q, &my_flag_rd[RDMA_FLAG_SIZE*k], mype, bid, tid, &dready_lsum[0],maxrecvsz,myroot);
+                    dC_RdTree_forwardMessageThread_Device(&URtree_ptr[lk], (uint64_t*)flag_rd_q, &my_flag_rd[RDMA_FLAG_SIZE*k], mype, bid, tid, &dready_lsum[0],maxrecvsz,myroot);
                     //printf("Ts Done,(%d,%d) loop=%d (%d,%d) recv_num=%d,cur_send_num=%d, k=%d, to %d\n",mype, tid,i, j, mynum,recv_num,cur_send_num,lk,myroot);
                 }
             }
@@ -2169,10 +1988,10 @@ __global__ void dlsum_fmod_inv_gpu_mrhs_nvshmem
         //cnt=LBtree_ptr[lk].msgSize_;
         my_flag_bc[gc * RDMA_FLAG_SIZE] = lk;
         my_flag_bc[gc * RDMA_FLAG_SIZE + 1] = LBtree_ptr[lk].msgSize_ * nrhs + XK_H;
-        C_BcTree_forwardMessageSimple_Device(&LBtree_ptr[lk], flag_bc_q, &my_flag_bc[gc * RDMA_FLAG_SIZE],
+        dC_BcTree_forwardMessageSimple_Device(&LBtree_ptr[lk], flag_bc_q, &my_flag_bc[gc * RDMA_FLAG_SIZE],
                                              mype, tid, &dready_x[0], maxrecvsz);
         //printf("(%d,%d,%d), lk=%d, gc=%d\n",mype,bid,tid,lk,gc);
-        //C_BcTree_forwardMessageSimple_Device(&LBtree_ptr[lk],&dready_x[maxrecvsz*lk],cnt*nrhs+XK_H);
+        //dC_BcTree_forwardMessageSimple_Device(&LBtree_ptr[lk],&dready_x[maxrecvsz*lk],cnt*nrhs+XK_H);
     }
     int keep_lk = lk;
     __syncthreads();
@@ -2289,7 +2108,7 @@ __global__ void dlsum_fmod_inv_gpu_mrhs_nvshmem
                             //       temp_mysendcout,temp_flag_mod,
                             //       maxrecvsz);
                             //printf("(%d,%d,%d) in solve,lib=%d,gr=%d,ik=%d,myflagrd=%d,%d\n",mype,bid,tid,lk,gr,ik,my_flag_rd[ik*RDMA_FLAG_SIZE],my_flag_rd[ik*RDMA_FLAG_SIZE+1]);
-                            C_RdTree_forwardMessageSimple_Device(&LRtree_ptr[lk], flag_rd_q, &my_flag_rd[RDMA_FLAG_SIZE*ik], mype, bid, tid, &dready_lsum[0],maxrecvsz,LRtree_ptr[lk].myRoot_);
+                            dC_RdTree_forwardMessageSimple_Device(&LRtree_ptr[lk], flag_rd_q, &my_flag_rd[RDMA_FLAG_SIZE*ik], mype, bid, tid, &dready_lsum[0],maxrecvsz,LRtree_ptr[lk].myRoot_);
                         }
                     }
                 }
@@ -3125,7 +2944,7 @@ void dlsum_fmod_inv_gpu_wrap
         cudaDeviceSetLimit(cudaLimitStackSize, cuattr.localSizeBytes);
 
         int minGridSize, myblockSize;
-        cudaOccupancyMaxPotentialBlockSize(&minGridSize,&myblockSize,(const void *) wait_bcrd ,0,0 );
+        cudaOccupancyMaxPotentialBlockSize(&minGridSize,&myblockSize,(const void *) dwait_bcrd ,0,0 );
         if (myblockSize < h_nfrecv[1]) {
             h_nfrecv[1] = myblockSize;
             gpuMemcpy(d_nfrecv, h_nfrecv, 3 * sizeof(int), gpuMemcpyHostToDevice);
@@ -3153,7 +2972,7 @@ void dlsum_fmod_inv_gpu_wrap
                         &d_recv_cnt, &d_msgnum, &d_flag_mod, &lsum,&fmod,&grid,&xsup,&ilsum,&nbrow_loc,&nsupers};
 
         int status=1;
-        status = nvshmemx_collective_launch((const void *) wait_bcrd, dimGrid_bc, dimBlock_bc, args, 0, stream[0]);
+        status = nvshmemx_collective_launch((const void *) dwait_bcrd, dimGrid_bc, dimBlock_bc, args, 0, stream[0]);
         //status1 = nvshmemx_collective_launch((const void *) send_rd, dimGrid_rd, dimBlock_bc, args, 0, stream[1]);
         //printf("(%d), status=%d\n",mype, status);
         //fflush(stdout);
@@ -3396,7 +3215,7 @@ gridinfo_t *grid
 	  //  //  printf("good1 %5d%5d\n",lk,cnt);
 	  //   if(cnt>0){
 	  // 	 cnt=LBtree_ptr[lk].msgSize_;
-	  // 	  C_BcTree_forwardMessageSimple_Device(&LBtree_ptr[lk],&recvbuf_BC_gpu[maxrecvsz*lk],cnt*nrhs+XK_H);
+	  // 	  dC_BcTree_forwardMessageSimple_Device(&LBtree_ptr[lk],&recvbuf_BC_gpu[maxrecvsz*lk],cnt*nrhs+XK_H);
 	  //   }
 	  //   }	
 		
@@ -4192,7 +4011,7 @@ gridinfo_t *grid
 	  //  //  printf("good1 %5d%5d\n",lk,cnt);
 	  //   if(cnt>0){
 	  // 	 cnt=LBtree_ptr[lk].msgSize_;
-	  // 	  C_BcTree_forwardMessageSimple_Device(&LBtree_ptr[lk],&recvbuf_BC_gpu[maxrecvsz*lk],cnt*nrhs+XK_H);
+	  // 	  dC_BcTree_forwardMessageSimple_Device(&LBtree_ptr[lk],&recvbuf_BC_gpu[maxrecvsz*lk],cnt*nrhs+XK_H);
 	  //   }
 	  //   }	
 		
@@ -4503,7 +4322,7 @@ gridinfo_t *grid
          //cnt=LBtree_ptr[lk].msgSize_;
          my_flag_bc[k * RDMA_FLAG_SIZE] = lk;
          my_flag_bc[k * RDMA_FLAG_SIZE + 1] = UBtree_ptr[lk].msgSize_ * nrhs + XK_H;
-         C_BcTree_forwardMessageSimple_Device(&UBtree_ptr[lk], flag_bc_q, &my_flag_bc[k * RDMA_FLAG_SIZE],
+         dC_BcTree_forwardMessageSimple_Device(&UBtree_ptr[lk], flag_bc_q, &my_flag_bc[k * RDMA_FLAG_SIZE],
                                               mype, tid, &dready_x[0], maxrecvsz);
          //if (tid==0) printf("(%d,%d,%d), lk=%d, gc=%d\n",mype,bid,tid,lk,gc);
      }
@@ -4635,7 +4454,7 @@ gridinfo_t *grid
                      //       temp_mysendcout,temp_flag_mod,
                      //       maxrecvsz);
                      //printf("(%d,%d,%d) in u solve,lib=%d,gr=%d,myflagrd=%d,%d, sum=%lf\n",mype,bid,tid,ik,gik,my_flag_rd[gik*RDMA_FLAG_SIZE],my_flag_rd[gik*RDMA_FLAG_SIZE+1], tmp_sum);
-                     C_RdTree_forwardMessageSimple_Device(&URtree_ptr[ik], flag_rd_q, &my_flag_rd[RDMA_FLAG_SIZE*ik], mype, bid, tid, &dready_lsum[0],maxrecvsz,URtree_ptr[ik].myRoot_);
+                     dC_RdTree_forwardMessageSimple_Device(&URtree_ptr[ik], flag_rd_q, &my_flag_rd[RDMA_FLAG_SIZE*ik], mype, bid, tid, &dready_lsum[0],maxrecvsz,URtree_ptr[ik].myRoot_);
                  }
              }
          }
@@ -4782,7 +4601,7 @@ if(procs==1){
 
     int minGridSize;
     int myblockSize;
-    cudaOccupancyMaxPotentialBlockSize(&minGridSize, &myblockSize, (const void *) wait_bcrd_u, 0, 0);
+    cudaOccupancyMaxPotentialBlockSize(&minGridSize, &myblockSize, (const void *) dwait_bcrd_u, 0, 0);
     if (myblockSize < h_nfrecv_u[1]) {
     h_nfrecv_u[1] = myblockSize;
     gpuMemcpy(d_nfrecv_u, h_nfrecv_u, 3 * sizeof(int), gpuMemcpyHostToDevice);
@@ -4807,7 +4626,7 @@ if(procs==1){
             &nsupers};
 
     int status = 1;
-    status = nvshmemx_collective_launch((const void *) wait_bcrd_u, dimGrid_nv, dimBlock_nv, args, 0, stream[0]);
+    status = nvshmemx_collective_launch((const void *) dwait_bcrd_u, dimGrid_nv, dimBlock_nv, args, 0, stream[0]);
     //status1 = nvshmemx_collective_launch((const void *) send_rd, dimGrid_rd, dimBlock_bc, args, 0, stream[1]);
     //printf("(%d), status=%d,%d\n",mype, status,status1);
     //fflush(stdout);

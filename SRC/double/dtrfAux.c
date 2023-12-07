@@ -1046,10 +1046,8 @@ dtrf3Dpartition_t* dinitTrf3Dpartition(int_t nsupers,
     int krow = PROW (k, grid);
     int kcol = PCOL (k, grid);
     int_t** Lrowind_bc_ptr = Llu->Lrowind_bc_ptr;
-    double** Lnzval_bc_ptr = Llu->Lnzval_bc_ptr;
 
     int_t** Ufstnz_br_ptr = Llu->Ufstnz_br_ptr;
-    double** Unzval_br_ptr = Llu->Unzval_br_ptr;
 #endif    
     
     int mxLeafNode = 0; // Yang: only need to check the leaf level of topoInfo as the factorization proceeds level by level 

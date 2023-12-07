@@ -552,7 +552,7 @@ float pddistribute3d(superlu_dist_options_t *options, int_t n, SuperMatrix *A,
     if (options->Fact == SamePattern_SameRowPerm)
     {
 #warning "This code is not tested in pddrive3d"
-        propagate_A_to_LU3d(LUstruct, xa, asub, a,
+        dpropagate_A_to_LU3d(LUstruct, xa, asub, a,
                             options, grid3d, nsupers, &mem_use);
     }
     else
