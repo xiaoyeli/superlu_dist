@@ -23,11 +23,13 @@
 #define DEVICE_CALLABLE
 #endif
 
-class lpanel_t;
-class upanel_t;
+template <typename Ftype>
+class xlpanel_t;
+template <typename Ftype>
+class xupanel_t;
 
 template <typename Ftype>
-class lpanelGPU_t 
+class xlpanelGPU_t 
 {
     
     public:
@@ -35,17 +37,17 @@ class lpanelGPU_t
         Ftype *val;
         // bool isDiagIncluded;
         CUDA_CALLABLE
-        lpanelGPU_t(int_t k, int_t *lsub, Ftype *nzval, int_t *xsup, int_t isDiagIncluded);
+        xlpanelGPU_t(int_t k, int_t *lsub, Ftype *nzval, int_t *xsup, int_t isDiagIncluded);
         // default constuctor
         
         CUDA_CALLABLE
-        lpanelGPU_t()
+        xlpanelGPU_t()
         {
             index = NULL;
             val = NULL;
         }
         CUDA_CALLABLE
-        lpanelGPU_t(int_t *index_, Ftype *val_): index(index_), val(val_) {return;};
+        xlpanelGPU_t(int_t *index_, Ftype *val_): index(index_), val(val_) {return;};
         
     
         // index[0] is number of blocks
@@ -164,32 +166,32 @@ class lpanelGPU_t
         #endif 
             return iEnd; 
         }
-        // lpanelGPU_t::lpanelGPU_t(lpanel_t& lpanel);
+        // xlpanelGPU_t::lpanelGPU_t(lpanel_t& lpanel);
         // int check(lpanel_t& lpanel);
     
 };
 
 template <typename Ftype>
-class upanelGPU_t 
+class xupanelGPU_t 
 {
 public:
     int_t *index;
     Ftype *val;
-    // upanelGPU_t* upanelGPU;
+    // xupanelGPU_t* upanelGPU;
 
-    // upanelGPU_t(int_t *usub, Ftype *uval);
+    // xupanelGPU_t(int_t *usub, Ftype *uval);
     CUDA_CALLABLE
-    upanelGPU_t(int_t k, int_t *usub, Ftype *uval, int_t *xsup);
+    xupanelGPU_t(int_t k, int_t *usub, Ftype *uval, int_t *xsup);
 
     CUDA_CALLABLE
-    upanelGPU_t()
+    xupanelGPU_t()
     {
         index = NULL;
         val = NULL;
     }
     // classstructing from recevied index and val 
     CUDA_CALLABLE
-    upanelGPU_t(int_t *index_, Ftype *val_): index(index_), val(val_) {return;};
+    xupanelGPU_t(int_t *index_, Ftype *val_): index(index_), val(val_) {return;};
     // index[0] is number of blocks
     CUDA_CALLABLE
     int_t nblocks()
@@ -345,10 +347,10 @@ struct LUMarshallData
 
 // Wajih: Device and host memory used to store marshalled batch data for Schur complement update 
 template <typename Ftype>
-struct SCUMarshallData 
+struct xSCUMarshallData 
 {
-    SCUMarshallData();
-    ~SCUMarshallData();
+    xSCUMarshallData();
+    ~xSCUMarshallData();
 
     // GEMM device pointer data 
     Ftype **dev_A_ptrs, **dev_B_ptrs, **dev_C_ptrs;
@@ -356,8 +358,8 @@ struct SCUMarshallData
     int *dev_m_array, *dev_n_array, *dev_k_array;
 
     // Panel device pointer data and scu loop limits 
-    lpanelGPU_t* dev_gpu_lpanels;
-    upanelGPU_t* dev_gpu_upanels;
+    xlpanelGPU_t<Ftype>* dev_gpu_lpanels;
+    xupanelGPU_t<Ftype>* dev_gpu_upanels;
     int* dev_ist, *dev_iend, *dev_jst, *dev_jend;
     int *dev_maxGemmRows, *dev_maxGemmCols;
     
@@ -388,8 +390,9 @@ struct SCUMarshallData
     void copyToGPU();
 };
 
-#define MAX_CUDA_STREAMS 64 
-struct LUstructGPU_t
+#define MAX_CUDA_STREAMS 64
+template <typename Ftype> 
+struct xLUstructGPU_t
 {
     // all pointers are device pointers 
 
@@ -410,7 +413,7 @@ struct LUstructGPU_t
     magma_queue_t magma_queue;
 #endif 
     LUMarshallData marshall_data;
-    SCUMarshallData sc_marshall_data;
+    xSCUMarshallData<Ftype> sc_marshall_data;
     int* dperm_c_supno;
 
     /* Sherry: Allocate an array of buffers for the diagonal blocks
@@ -450,7 +453,7 @@ struct LUstructGPU_t
     __device__
     int_t g2lCol(int_t k) { return k / Pc; }
     
-};/* LUstructGPU_t{} */
+};/* xLUstructGPU_t{} */
 
 template <typename Ftype>
 void scatterGPU_driver(

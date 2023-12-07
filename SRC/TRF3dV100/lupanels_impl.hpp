@@ -35,7 +35,7 @@ xlpanel_t<Ftype> xLUstruct_t<Ftype>::getKLpanel(int_t k, int_t offset)
 
 /* Constructor */
 template <typename Ftype>
-xLUstruct_t<Ftype>::LUstruct_v100(int_t nsupers_, int_t ldt_,
+xLUstruct_t<Ftype>::xLUstruct_t(int_t nsupers_, int_t ldt_,
                              dtrf3Dpartition_t *trf3Dpartition_, 
                              dLUstruct_t *LUstruct,
                              gridinfo3d_t *grid3d_in,
@@ -52,7 +52,7 @@ xLUstruct_t<Ftype>::LUstruct_v100(int_t nsupers_, int_t ldt_,
     superlu_acc_offload = get_acc_offload();
 
 #if (DEBUGlevel >= 1)
-    CHECK_MALLOC(grid3d_in->iam, "Enter LUstruct_v100 constructor");
+    CHECK_MALLOC(grid3d_in->iam, "Enter xLUstruct_t constructor");
 #endif
     grid = &(grid3d->grid2d);
     iam = grid->iam;
@@ -256,10 +256,10 @@ xLUstruct_t<Ftype>::LUstruct_v100(int_t nsupers_, int_t ldt_,
     // }
 
 #if (DEBUGlevel >= 1)
-    CHECK_MALLOC(grid3d_in->iam, "Exit LUstruct_v100 constructor");
+    CHECK_MALLOC(grid3d_in->iam, "Exit xLUstruct_t constructor");
 #endif
     
-} /* constructor LUstruct_v100 */
+} /* constructor xLUstruct_t */
 
 template <typename Ftype>
 int_t xLUstruct_t<Ftype>::dSchurComplementUpdate(

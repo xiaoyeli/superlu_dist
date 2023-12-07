@@ -16,6 +16,26 @@ set(headers
     TRF3dV100/commWrapper.hpp
     TRF3dV100/lupanels_GPU.cuh
     TRF3dV100/batch_block_copy.h
+    TRF3dV100/anc25d-GPU_impl.hpp
+    TRF3dV100/anc25d.hpp
+    TRF3dV100/lupanelsComm3dGPU_impl.hpp
+    TRF3dV100/anc25d_impl.hpp
+    TRF3dV100/lupanels_GPU_impl.hpp
+    TRF3dV100/lupanels_comm3d_impl.hpp
+    TRF3dV100/cublas_cusolver_wrappers.hpp
+    TRF3dV100/lupanels_impl.hpp
+    TRF3dV100/dAncestorFactor_impl.hpp
+    TRF3dV100/pdgstrf3d_summit_impl.hpp
+    TRF3dV100/dsparseTreeFactorGPU_impl.hpp
+    TRF3dV100/sparseTreeFactor_impl.hpp
+    TRF3dV100/dsparseTreeFactor_summit_impl.hpp
+    TRF3dV100/superlu_blas.hpp
+    TRF3dV100/l_panels_impl.hpp
+    TRF3dV100/u_panels_impl.hpp
+    TRF3dV100/luAuxStructTemplated.hpp
+    TRF3dV100/xlupanels.hpp
+    TRF3dV100/lu_common.hpp
+    TRF3dV100/xlupanels_GPU.cuh
 )
 #    ${CMAKE_CURRENT_BINARY_DIR}/superlu_dist_config.h
 #    ${PROJECT_SOURCE_DIR}/SRC/superlu_FortranCInterface.h
@@ -156,6 +176,7 @@ if (TPL_ENABLE_CUDALIB)
     TRF3dV100/lupanels_GPU.cpp
     TRF3dV100/anc25d.cpp 
     TRF3dV100/LUgpuCHandle_interface.cpp
+    TRF3dV100/LUgpuCHandle_interface_impl.cpp 
   )
 endif()
 

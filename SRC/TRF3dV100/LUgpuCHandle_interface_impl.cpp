@@ -1,6 +1,9 @@
 
 #include "superlu_summit.h"
 #include "lupanels.hpp"
+#include "xlupanels.hpp"
+#include "lupanels_impl.hpp"
+
 
 extern "C"
 {

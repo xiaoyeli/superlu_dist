@@ -1242,6 +1242,18 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 			double s_eps = smach_dist("Epsilon");
 			double thresh = s_eps * anorm;
 
+#define TEMPLATED_VERSION 
+#ifdef TEMPLATED_VERSION
+dLUgpu_Handle dLUgpu = dCreateLUgpuHandle(nsupers, ldt, trf3Dpartition, LUstruct, grid3d,
+						  SCT, options, stat, thresh, info);
+			
+			/* call pdgstrf3d() in C++ code */
+			pdgstrf3d_LUv1(dLUgpu);
+			
+			dCopyLUGPU2Host(dLUgpu, LUstruct);
+			dDestroyLUgpuHandle(dLUgpu);
+			
+#else 
 			/* call constructor in C++ code */
 			LUgpu = createLUgpuHandle(nsupers, ldt, trf3Dpartition, LUstruct, grid3d,
 						  SCT, options, stat, thresh, info);
@@ -1251,7 +1263,7 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 			
 			copyLUGPU2Host(LUgpu, LUstruct);
 			destroyLUgpuHandle(LUgpu);
-
+#endif /* TEMPLATED_VERSION */
 			// print other stuff
 			// if (!grid3d->zscp.Iam)
 			// 	SCT_printSummary(grid, SCT);

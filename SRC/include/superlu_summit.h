@@ -42,6 +42,21 @@ extern "C"
 
     int pdgstrf3d_LUv1(dLUgpu_Handle LUHand);
 
+    // Forward declaration of structs 
+    // Forward declarations
+struct strf3Dpartition_t;
+typedef struct strf3Dpartition_t strf3Dpartition_t;
+struct sLUstruct_t;
+typedef struct sLUstruct_t sLUstruct_t;
+struct ctrf3Dpartition_t;
+typedef struct ctrf3Dpartition_t ctrf3Dpartition_t;
+struct cLUstruct_t;
+typedef struct cLUstruct_t cLUstruct_t;
+struct ztrf3Dpartition_t;
+typedef struct ztrf3Dpartition_t ztrf3Dpartition_t;
+struct zLUstruct_t;
+typedef struct zLUstruct_t zLUstruct_t;
+
 //  Define the single precision real interface
     struct sLUstruct_v1;
     typedef struct sLUstruct_v1 *sLUgpu_Handle;

@@ -5,6 +5,7 @@
 #include "lu_common.hpp"
 #ifdef HAVE_CUDA
 #include "lupanels_GPU.cuh"
+#include "xlupanels_GPU.cuh"
 #endif
 #include "commWrapper.hpp"
 #include "anc25d.hpp"
@@ -15,7 +16,7 @@
 
 
 template <typename Ftype>
-class lpanel_t
+class xlpanel_t
 {
 public:
     int_t *index;
@@ -27,24 +28,24 @@ public:
 #endif
     // bool isDiagIncluded;
 
-    lpanel_t(int_t k, int_t *lsub, Ftype *nzval, int_t *xsup, int_t isDiagIncluded);
+    xlpanel_t(int_t k, int_t *lsub, Ftype *nzval, int_t *xsup, int_t isDiagIncluded);
 
     // default constuctor
 #ifdef HAVE_CUDA
-    lpanel_t() : gpuPanel(NULL, NULL)
+    xlpanel_t() : gpuPanel(NULL, NULL)
     {
         index = NULL;
         val = NULL;
     }
 #else
-    lpanel_t()
+    xlpanel_t()
     {
         index = NULL;
         val = NULL;
     }
 #endif
 
-    lpanel_t(int_t *index_, Ftype *val_) : index(index_), val(val_) { return; };
+    xlpanel_t(int_t *index_, Ftype *val_) : index(index_), val(val_) { return; };
 
     // index[0] is number of blocks
     int_t nblocks()
@@ -160,7 +161,7 @@ public:
         return &gpuPanel.val[blkPtrOffset(k)];
     }
 
-    lpanel_t(int_t *index_, Ftype *val_, int_t *indexGPU, Ftype *valGPU) : index(index_), val(val_), gpuPanel(indexGPU, valGPU)
+    xlpanel_t(int_t *index_, Ftype *val_, int_t *indexGPU, Ftype *valGPU) : index(index_), val(val_), gpuPanel(indexGPU, valGPU)
     {
         return;
     };
@@ -169,7 +170,7 @@ public:
 };
 
 template <typename Ftype>
-class upanel_t
+class xupanel_t
 {
 public:
     int_t *index;
@@ -179,23 +180,23 @@ public:
     xupanelGPU_t<Ftype> gpuPanel;
 #endif
 
-    // upanel_t(int_t *usub, Ftype *uval);
-    upanel_t(int_t k, int_t *usub, Ftype *uval, int_t *xsup);
+    // xupanel_t(int_t *usub, Ftype *uval);
+    xupanel_t(int_t k, int_t *usub, Ftype *uval, int_t *xsup);
 #ifdef HAVE_CUDA
-    upanel_t() : gpuPanel(NULL, NULL)
+    xupanel_t() : gpuPanel(NULL, NULL)
     {
         index = NULL;
         val = NULL;
     }
 #else
-    upanel_t()
+    xupanel_t()
     {
         index = NULL;
         val = NULL;
     }
 #endif
     // constructing from recevied index and val
-    upanel_t(int_t *index_, Ftype *val_) : index(index_), val(val_) { return; };
+    xupanel_t(int_t *index_, Ftype *val_) : index(index_), val(val_) { return; };
     // index[0] is number of blocks
     int_t nblocks()
     {
@@ -316,7 +317,7 @@ public:
         return &gpuPanel.val[blkPtrOffset(k)];
     }
 
-    upanel_t(int_t *index_, Ftype *val_, int_t *indexGPU, Ftype *valGPU) : index(index_), val(val_), gpuPanel(indexGPU, valGPU)
+    xupanel_t(int_t *index_, Ftype *val_, int_t *indexGPU, Ftype *valGPU) : index(index_), val(val_), gpuPanel(indexGPU, valGPU)
     {
         return;
     };
@@ -328,7 +329,7 @@ public:
 // lapenGPU_t has exact same structure has lapanel_t but
 // the pointers are on GPU
 template <typename Ftype>
-struct LUstruct_v100
+struct xLUstruct_t
 {
     xlpanel_t<Ftype> *lPanelVec;
     xupanel_t<Ftype> *uPanelVec;
@@ -355,7 +356,7 @@ struct LUstruct_v100
     // Adding more variables for factorization
     dtrf3Dpartition_t *trf3Dpartition;
     int_t maxLvl;
-    int maxLeafNodes; /* Sherry added 12/31/22. Computed in LUstruct_v100 constructor */
+    int maxLeafNodes; /* Sherry added 12/31/22. Computed in xLUstruct_t constructor */
 
     ddiagFactBufs_t **dFBufs; /* stores L and U diagonal blocks */
     int superlu_acc_offload;
@@ -431,16 +432,16 @@ struct LUstruct_v100
     /**
      *          C O N / D E S - T R U C T O R S
      */
-    LUstruct_v100(int_t nsupers, int_t ldt_, dtrf3Dpartition_t *trf3Dpartition,
+    xLUstruct_t(int_t nsupers, int_t ldt_, dtrf3Dpartition_t *trf3Dpartition,
                   dLUstruct_t *LUstruct, gridinfo3d_t *grid3d,
                   SCT_t *SCT_, superlu_dist_options_t *options_, SuperLUStat_t *stat,
                   Ftype thresh_, int *info_);
 
-    ~LUstruct_v100()
+    ~xLUstruct_t()
     {
 
         /* Yang: Deallocate the lPanelVec[i] and uPanelVec[i] here instead of using destructors ~lpanel_t or ~upanel_t,
-        as lpanel_t/upanel_t is used for holding temporary communication buffers as well. Note that lPanelVec[i].val is not deallocated here as it's pointing to the L data in the C code*/
+        as xlpanel_t/upanel_t is used for holding temporary communication buffers as well. Note that lPanelVec[i].val is not deallocated here as it's pointing to the L data in the C code*/
 
         for (int_t i = 0; i < CEILING(nsupers, Pc); ++i)
             if (i * Pc + mycol < nsupers && isNodeInMyGrid[i * Pc + mycol] == 1)
@@ -502,7 +503,7 @@ struct LUstruct_v100
 
         SUPERLU_FREE(isNodeInMyGrid);
 
-    } /* end destructor LUstruct_v100 */
+    } /* end destructor xLUstruct_t */
 
     /**
      *           Compute Functions
@@ -630,8 +631,8 @@ struct LUstruct_v100
     int_t checkGPU();
 
     // some more helper functions
-    upanel_t getKUpanel(int_t k, int_t offset);
-    lpanel_t getKLpanel(int_t k, int_t offset);
+    xupanel_t<Ftype> getKUpanel(int_t k, int_t offset);
+    xlpanel_t<Ftype> getKLpanel(int_t k, int_t offset);
     int_t SyncLookAheadUpdate(int streamId);
 
     Ftype *gpuLvalBasePtr, *gpuUvalBasePtr;
