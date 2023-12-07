@@ -19,7 +19,7 @@
  * @param[in] grid Pointer to the grid structure.
  * @param[out] info Pointer to an integer variable that stores the error code.
  */
-void validateInput_ssvx3d(superlu_dist_options_t *options, SuperMatrix *A,int ldb, int_t nrhs, gridinfo3d_t *grid3d, int *info)
+void validateInput_pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,int ldb, int_t nrhs, gridinfo3d_t *grid3d, int *info)
 {
     gridinfo_t *grid = &(grid3d->grid2d);
     NRformat_loc *Astore = A->Store;
@@ -55,7 +55,7 @@ void validateInput_ssvx3d(superlu_dist_options_t *options, SuperMatrix *A,int ld
 } 
 
 
-void scaleRows(int_t m_loc, int_t fst_row, int_t *rowptr, double *a, double *R) {
+void dscaleRows(int_t m_loc, int_t fst_row, int_t *rowptr, double *a, double *R) {
     int_t irow = fst_row;
     for (int_t j = 0; j < m_loc; ++j) {
         for (int_t i = rowptr[j]; i < rowptr[j + 1]; ++i) {
@@ -65,7 +65,7 @@ void scaleRows(int_t m_loc, int_t fst_row, int_t *rowptr, double *a, double *R) 
     }
 }
 
-void scaleColumns(int_t m_loc, int_t *rowptr, int_t *colind, double *a, double *C) {
+void dscaleColumns(int_t m_loc, int_t *rowptr, int_t *colind, double *a, double *C) {
     int_t icol;
     for (int_t j = 0; j < m_loc; ++j) {
         for (int_t i = rowptr[j]; i < rowptr[j + 1]; ++i) {
@@ -75,7 +75,7 @@ void scaleColumns(int_t m_loc, int_t *rowptr, int_t *colind, double *a, double *
     }
 }
 
-void scaleBoth(int_t m_loc, int_t fst_row, int_t *rowptr, 
+void dscaleBoth(int_t m_loc, int_t fst_row, int_t *rowptr, 
     int_t *colind, double *a, double *R, double *C) {
     int_t irow = fst_row;
     int_t icol;
@@ -88,7 +88,7 @@ void scaleBoth(int_t m_loc, int_t fst_row, int_t *rowptr,
     }
 }
 
-void scalePrecomputed(SuperMatrix *A, dScalePermstruct_t *ScalePermstruct) {
+void dscalePrecomputed(SuperMatrix *A, dScalePermstruct_t *ScalePermstruct) {
     NRformat_loc *Astore = (NRformat_loc *)A->Store;
     int_t m_loc = Astore->m_loc;
     int_t fst_row = Astore->fst_row;
@@ -101,20 +101,20 @@ void scalePrecomputed(SuperMatrix *A, dScalePermstruct_t *ScalePermstruct) {
     case NOEQUIL:
         break;
     case ROW:
-        scaleRows(m_loc, fst_row, rowptr, a, R);
+        dscaleRows(m_loc, fst_row, rowptr, a, R);
         break;
     case COL:
-        scaleColumns(m_loc, rowptr, colind, a, C);
+        dscaleColumns(m_loc, rowptr, colind, a, C);
         break;
     case BOTH:
-        scaleBoth(m_loc, fst_row, rowptr, colind, a, R, C);
+        dscaleBoth(m_loc, fst_row, rowptr, colind, a, R, C);
         break;
     default:
         break;
     }
 }
 
-void scaleFromScratch(
+void dscaleFromScratch(
     SuperMatrix *A, dScalePermstruct_t *ScalePermstruct,  
     gridinfo_t *grid, int_t *rowequ, int_t *colequ, int_t*iinfo)  
 {
@@ -156,7 +156,7 @@ void scaleFromScratch(
 #endif
 }
 
-void scaleMatrixDiagonally(fact_t Fact, dScalePermstruct_t *ScalePermstruct, 
+void dscaleMatrixDiagonally(fact_t Fact, dScalePermstruct_t *ScalePermstruct, 
                            SuperMatrix *A, SuperLUStat_t *stat, gridinfo_t *grid,
                             int_t *rowequ, int_t *colequ, int_t*iinfo)   
 {
@@ -169,9 +169,9 @@ void scaleMatrixDiagonally(fact_t Fact, dScalePermstruct_t *ScalePermstruct,
     double t_start = SuperLU_timer_();
 
     if (Fact == SamePattern_SameRowPerm) {
-        scalePrecomputed(A, ScalePermstruct);
+        dscalePrecomputed(A, ScalePermstruct);
     } else {
-        scaleFromScratch(A, ScalePermstruct, grid, rowequ, colequ, iinfo);
+        dscaleFromScratch(A, ScalePermstruct, grid, rowequ, colequ, iinfo);
     }
 
     stat->utime[EQUIL] = SuperLU_timer_() - t_start;
@@ -180,40 +180,6 @@ void scaleMatrixDiagonally(fact_t Fact, dScalePermstruct_t *ScalePermstruct,
     CHECK_MALLOC(iam, "Exit equil");
 #endif
 }
-
-/**
- * Performs a row permutation operation on a sparse matrix (CSC format)
- * using a user-provided permutation array.
- *
- * @param colptr The column pointer array of the sparse matrix (CSC format).
- * @param rowind The row index array of the sparse matrix (CSC format).
- * @param perm_r The user-provided permutation array for the rows.
- * @param n The number of columns in the sparse matrix.
- */
-void applyRowPerm(int_t* colptr, int_t* rowind, int_t* perm_r, int_t n) {
-    // Check input parameters
-    if (colptr == NULL || rowind == NULL || perm_r == NULL) {
-        fprintf(stderr, "Error: NULL input parameter.\n");
-        return;
-    }
-
-    // Iterate through each non-zero element of the sparse matrix
-    for (int_t i = 0; i < colptr[n]; ++i) {
-        // Get the original row index
-        int_t irow = rowind[i];
-        // Assign the new row index from the user-provided permutation array
-        rowind[i] = perm_r[irow];
-    }
-}
-
-
-
-
-
-
-
-
-
 
 /**
  * Finds row permutations using the MC64 algorithm in a distributed manner.
@@ -232,7 +198,7 @@ void applyRowPerm(int_t* colptr, int_t* rowind, int_t* perm_r, int_t n) {
  * @param C1 The output column scaling factors.
  * @param iinfo The output status code.
  */
-void findRowPerm_MC64(gridinfo_t* grid, int_t job,
+void dfindRowPerm_MC64(gridinfo_t* grid, int_t job,
                       int_t m, int_t n,
                       int_t nnz,
                       int_t* colptr,
@@ -295,7 +261,7 @@ void findRowPerm_MC64(gridinfo_t* grid, int_t job,
  * @param[in,out] R1    Pointer to the array holding the new row scaling factors.
  * @param[in,out] C1    Pointer to the array holding the new column scaling factors.
  */
-void scale_distributed_matrix(int_t rowequ, int_t colequ, int_t m, int_t n,
+void dscale_distributed_matrix(int_t rowequ, int_t colequ, int_t m, int_t n,
  int_t m_loc, int_t *rowptr, int_t *colind, int_t fst_row, double *a,
   double *R, double *C, double *R1, double *C1) 
 {
@@ -352,10 +318,10 @@ void scale_distributed_matrix(int_t rowequ, int_t colequ, int_t m, int_t n,
  * @param rowind The row index array of the sparse matrix (CSC format).
  * @param perm_r The permutation array for the rows.
  */
-void permute_global_A(int_t m, int_t n, int_t *colptr, int_t *rowind, int_t *perm_r) {
+void dpermute_global_A(int_t m, int_t n, int_t *colptr, int_t *rowind, int_t *perm_r) {
     // Check input parameters
     if (colptr == NULL || rowind == NULL || perm_r == NULL) {
-        fprintf(stderr, "Error: NULL input parameter to: permute_global_A()\n");
+        fprintf(stderr, "Error: NULL input parameter to: dpermute_global_A()\n");
         return;
     }
     
@@ -392,9 +358,9 @@ void permute_global_A(int_t m, int_t n, int_t *colptr, int_t *rowind, int_t *per
  * @param[in]     colequ                 Flag indicating whether columns of the matrix should be equalized.
  * @param[out]    iinfo                  The output status code.
  *
- * @note The functions findRowPerm_MC64, scale_distributed_matrix and permute_global_A are called in this function.
+ * @note The functions dfindRowPerm_MC64, dscale_distributed_matrix and dpermute_global_A are called in this function.
  */
-void perform_LargeDiag_MC64(
+void dperform_LargeDiag_MC64(
     superlu_dist_options_t *options, fact_t Fact,
     dScalePermstruct_t *ScalePermstruct, dLUstruct_t *LUstruct,
     int_t m, int_t n, gridinfo_t *grid, 
@@ -435,7 +401,7 @@ void perform_LargeDiag_MC64(
     }
 
     // int iinfo;
-    findRowPerm_MC64(grid, job, m, n,
+    dfindRowPerm_MC64(grid, job, m, n,
     nnz,
     colptr,
     rowind,
@@ -456,15 +422,15 @@ void perform_LargeDiag_MC64(
 									   A <-- diag(R1)*A*diag(C1)            */
             if(Equil)
             {
-                scale_distributed_matrix( *rowequ, *colequ, m, n, m_loc, rowptr, colind, fst_row, a, R, C, R1, C1);
+                dscale_distributed_matrix( *rowequ, *colequ, m, n, m_loc, rowptr, colind, fst_row, a, R, C, R1, C1);
                 ScalePermstruct->DiagScale = BOTH;
                 *rowequ = *colequ = 1;
             } /* end if Equil */
-            permute_global_A( m, n, colptr, rowind, perm_r);
+            dpermute_global_A( m, n, colptr, rowind, perm_r);
             SUPERLU_FREE(R1);
             SUPERLU_FREE(C1);
         } else {
-            permute_global_A( m, n, colptr, rowind, perm_r);
+            dpermute_global_A( m, n, colptr, rowind, perm_r);
         }
     }
     else
@@ -490,9 +456,9 @@ void perform_LargeDiag_MC64(
             printf("\t product of diagonal %e\n", dprod);
     }
 #endif
-} /* perform_LargeDiag_MC64 */
+} /* dperform_LargeDiag_MC64 */
     
-void perform_row_permutation(
+void dperform_row_permutation(
     superlu_dist_options_t *options,
     fact_t Fact,
     dScalePermstruct_t *ScalePermstruct, dLUstruct_t *LUstruct,
@@ -537,7 +503,7 @@ void perform_row_permutation(
             else if (options->RowPerm == LargeDiag_MC64)
             {
                 
-                perform_LargeDiag_MC64(
+                dperform_LargeDiag_MC64(
                 options, Fact,
                 ScalePermstruct, LUstruct,
                 m, n, grid, 
@@ -590,7 +556,7 @@ void perform_row_permutation(
  *
  * the iam process is the root (iam=0), it prints the computed norm to the standard output. 
  */
-double computeA_Norm(int_t notran, SuperMatrix *A, gridinfo_t *grid) {
+double dcomputeA_Norm(int_t notran, SuperMatrix *A, gridinfo_t *grid) {
     char norm;
     double anorm;
 
@@ -635,140 +601,7 @@ void dallocScalePermstruct_RC(dScalePermstruct_t * ScalePermstruct, int_t m, int
 }
 
 
-/**
- * @brief This function performs the symbolic factorization on matrix Pc*Pr*A*Pc' and sets up 
- * the nonzero data structures for L & U matrices. In the process, the matrix is also ordered and
- * its memory usage information is fetched.
- * 
- * @param options The options for the SuperLU distribution.
- * @param GA A pointer to the global matrix A.
- * @param perm_c The column permutation vector.
- * @param etree The elimination tree of Pc*Pr*A*Pc'.
- * @param iam The processor number (0 <= iam < Pr*Pc).
- * @param Glu_persist Pointer to the structure which tracks the symbolic factorization information.
- * @param Glu_freeable Pointer to the structure which tracks the space used to store L/U data structures.
- * @param stat Information on program execution.
- */
-void permCol_SymbolicFact3d(superlu_dist_options_t *options, int_t n, SuperMatrix *GA, int_t *perm_c, int_t *etree, 
-                           Glu_persist_t *Glu_persist, Glu_freeable_t *Glu_freeable, SuperLUStat_t *stat,
-						   superlu_dist_mem_usage_t*symb_mem_usage,
-						   gridinfo3d_t* grid3d)
-{
-    #if ( DEBUGlevel>=1 )                    
-    LOG_FUNC_ENTER();
-    #endif
-    SuperMatrix GAC; /* Global A in NCP format */
-    NCPformat *GACstore;
-    int_t *GACcolbeg, *GACcolend, *GACrowind, irow;
-    double t;
-    int_t iinfo;
-    int iam = grid3d->iam;
-
-    sp_colorder(options, GA, perm_c, etree, &GAC);
-
-    /* Form Pc*A*Pc' to preserve the diagonal of the matrix GAC. */
-    GACstore = (NCPformat *)GAC.Store;
-    GACcolbeg = GACstore->colbeg;
-    GACcolend = GACstore->colend;
-    GACrowind = GACstore->rowind;
-    for (int_t j = 0; j < n; ++j)
-    {
-        for (int_t i = GACcolbeg[j]; i < GACcolend[j]; ++i)
-        {
-            irow = GACrowind[i];
-            GACrowind[i] = perm_c[irow];
-        }
-    }
-
-#if (PRNTlevel >= 1)
-    if (!iam)
-        printf(".. symbfact(): relax %4d, maxsuper %4d, fill %4d\n",
-               sp_ienv_dist(2, options), sp_ienv_dist(3, options), sp_ienv_dist(6, options));
-#endif
-
-    t = SuperLU_timer_();
-    iinfo = symbfact(options, iam, &GAC, perm_c, etree, Glu_persist, Glu_freeable);
-    stat->utime[SYMBFAC] = SuperLU_timer_() - t;
-
-    if (iinfo < 0)
-    {
-        QuerySpace_dist(n, -iinfo, Glu_freeable, symb_mem_usage);
-#if (PRNTlevel >= 1)
-        if (!iam)
-        {
-            printf("\tNo of supers %ld\n", (long)Glu_persist->supno[n - 1] + 1);
-            printf("\tSize of G(L) %ld\n", (long)Glu_freeable->xlsub[n]);
-            printf("\tSize of G(U) %ld\n", (long)Glu_freeable->xusub[n]);
-            printf("\tint %lu, short %lu, float %lu, double %lu\n",
-                   sizeof(int_t), sizeof(short), sizeof(float), sizeof(double));
-            printf("\tSYMBfact (MB):\tL\\U %.2f\ttotal %.2f\texpansions %d\n",
-                   symb_mem_usage->for_lu * 1e-6, symb_mem_usage->total * 1e-6, symb_mem_usage->expansions);
-        }
-#endif
-    }
-    else
-    {
-        if (!iam)
-        {
-            fprintf(stderr, "symbfact() error returns %d\n", (int)iinfo);
-            exit(-1); 
-        }
-    }
-
-    Destroy_CompCol_Permuted_dist(&GAC);
-}
-
-
-
 #ifdef REFACTOR_SYMBOLIC 
-/**
- * @brief Determines the column permutation vector based on the chosen method.
- *
- * @param[in] options      Pointer to the options structure.
- * @param[in] A            Pointer to the input matrix.
- * @param[in] grid         Pointer to the process grid.
- * @param[in] parSymbFact  Flag indicating whether parallel symbolic factorization is used.
- * @param[out] perm_c      Column permutation vector.
- * @return Error code (0 if successful).
- */
-int computeColumnPermutation(const superlu_dist_options_t *options,
-                               const SuperMatrix *A,
-                               const gridinfo_t *grid,
-                               const int parSymbFact,
-                               int_t *perm_c);
-
-/**
- * @brief Computes the elimination tree based on the chosen column permutation method.
- *
- * @param[in] options  Pointer to the options structure.
- * @param[in] A        Pointer to the input matrix.
- * @param[in] perm_c   Column permutation vector.
- * @param[out] etree   Elimination tree.
- * @return Error code (0 if successful).
- */
-int ComputeEliminationTree(const superlu_dist_options_t *options,
-                           const SuperMatrix *A,
-                           const int_t *perm_c,
-                           int_t *etree);
-
-/**
- * @brief Performs a symbolic factorization on the permuted matrix and sets up the nonzero data structures for L & U.
- *
- * @param[in] options        Pointer to the options structure.
- * @param[in] A              Pointer to the input matrix.
- * @param[in] perm_c         Column permutation vector.
- * @param[in] etree          Elimination tree.
- * @param[out] Glu_persist   Pointer to the global LU data structures.
- * @param[out] Glu_freeable  Pointer to the LU data structures that can be deallocated.
- * @return Error code (0 if successful).
- */
-int PerformSymbolicFactorization(const superlu_dist_options_t *options,
-                                 const SuperMatrix *A,
-                                 const int_t *perm_c,
-                                 const int_t *etree,
-                                 Glu_persist_t *Glu_persist,
-                                 Glu_freeable_t *Glu_freeable);
-
 /**
  * @brief Distributes the permuted matrix into L and U storage.
  *
@@ -781,7 +614,7 @@ int PerformSymbolicFactorization(const superlu_dist_options_t *options,
  * @param[in] grid              Pointer to the process grid.
  * @return Memory usage in bytes (0 if successful).
  */
-int DistributePermutedMatrix(const superlu_dist_options_t *options,
+int dDistributePermutedMatrix(const superlu_dist_options_t *options,
                              const int_t n,
                              const SuperMatrix *A,
                              const dScalePermstruct_t *ScalePermstruct,
@@ -789,13 +622,6 @@ int DistributePermutedMatrix(const superlu_dist_options_t *options,
                              LUstruct_t *LUstruct,
                              const gridinfo_t *grid);
 
-/**
- * @brief Deallocates the storage used in symbolic factorization.
- *
- * @param[in] Glu_freeable  Pointer to the LU data structures that can be deallocated.
- * @return Error code (0 if successful).
- */
-int DeallocateSymbolicFactorizationStorage(const Glu_freeable_t *Glu_freeable);
 #endif // REFACTOR_SYMBOLIC
 
 
@@ -805,7 +631,7 @@ int DeallocateSymbolicFactorizationStorage(const Glu_freeable_t *Glu_freeable);
 #endif // REFACTOR_DistributePermutedMatrix
 #if 0 
 // this function is refactored below
-void perform_LargeDiag_MC64(
+void dperform_LargeDiag_MC64(
     superlu_dist_options_t* options, 
     fact_t Fact, 
     dScalePermstruct_t *ScalePermstruct,
@@ -989,7 +815,7 @@ void perform_LargeDiag_MC64(
 }
 
 
-void findRowPerm_MC64(gridinfo_t *grid, int_t job, 
+void dfindRowPerm_MC64(gridinfo_t *grid, int_t job, 
     int_t m, int_t n,
     int_t nnz,
     int_t* colptr,
@@ -1019,7 +845,5 @@ void findRowPerm_MC64(gridinfo_t *grid, int_t job,
         }
     }
 }
-
-
 #endif 
 

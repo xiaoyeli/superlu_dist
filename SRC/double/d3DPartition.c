@@ -458,7 +458,7 @@ void bcastPermutedSparseA(SuperMatrix *A,
 
 
 /***** YL: remove the allocation in the following as dGatherNRformat_loc3d_allgrid instead of dGatherNRformat_loc3d has been called, which already allocate A->Store on all grids
- * Note the the broadcast is still needed as the A->Store has been scaled by scaleMatrixDiagonally only on grid 0
+ * Note the the broadcast is still needed as the A->Store has been scaled by dscaleMatrixDiagonally only on grid 0
 */
 #if 1
     MPI_Bcast(Astore->nzval, Astore->nnz_loc*sizeof(double), MPI_BYTE, 0, grid3d->zscp.comm);

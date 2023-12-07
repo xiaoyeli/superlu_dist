@@ -24,7 +24,7 @@ at the top-level directory.
 #include "superlu_ddefs.h"
 #include "TRF3dV100/superlu_summit.h"
 #include "pddistribute3d.h"
-#include "ssvx3dAux.c"
+#include "dssvx3dAux.c"
 int_t dgatherAllFactoredLU3d( dtrf3Dpartition_t*  trf3Dpartition,
 			   dLUstruct_t* LUstruct, gridinfo3d_t* grid3d, SCT_t* SCT );
 #include <stdbool.h>
@@ -780,7 +780,7 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 	/* Test the options choices. */
 	*info = 0;
 	Fact = options->Fact;
-	validateInput_ssvx3d(options, A, ldb, nrhs, grid3d, info);
+	validateInput_pdgssvx3d(options, A, ldb, nrhs, grid3d, info);
 
 	/* Initialization. */
 
@@ -887,7 +887,7 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 		   ------------------------------------------------------------ */
 		if (Equil)
 		{
-			scaleMatrixDiagonally(Fact, ScalePermstruct,
+			dscaleMatrixDiagonally(Fact, ScalePermstruct,
 								  A, stat, grid, &rowequ, &colequ, &iinfo);
 			if (iinfo < 0)
 				return; // return if error
@@ -929,7 +929,7 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 			/* ------------------------------------------------------------
 			   Find the row permutation for A.
 			------------------------------------------------------------ */
-			perform_row_permutation(
+			dperform_row_permutation(
 				options, Fact, ScalePermstruct, LUstruct,
 				m, n, grid, A, &GA, stat, job, Equil,
 				&rowequ, &colequ, &iinfo);
@@ -938,7 +938,7 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 
 		/* Compute norm(A), which will be used to adjust small diagonal. */
 		if (!factored || options->IterRefine)
-			anorm = computeA_Norm(notran, A, grid);
+			anorm = dcomputeA_Norm(notran, A, grid);
 
 		/* ------------------------------------------------------------
 		   Perform ordering and symbolic factorization
