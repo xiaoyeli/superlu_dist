@@ -25,6 +25,10 @@ at the top-level directory.
 #include "gpu_api_utils.h"
 #endif
 #include "pddistribute3d.h"
+
+
+
+#if 0
 /*! \brief
  *
  * <pre>
@@ -1355,7 +1359,7 @@ float pddistribute3d(superlu_dist_options_t *options, int_t n, SuperMatrix *A,
     return (mem_use + memTRS);
 
 } /* PDDISTRIBUTE3D */
-
+#endif
 
 
 float

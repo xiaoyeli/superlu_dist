@@ -1075,12 +1075,12 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 						SUPERLU_MALLOC(sizeof(Glu_freeable_t))))
 					ABORT("Malloc fails for Glu_freeable.");
 			}
-			bcastPermutedSparseA(A,
+			dbcastPermutedSparseA(A,
 								ScalePermstruct,
 								Glu_freeable,
 								LUstruct, grid3d);
 		}else{
-			//TODO: need a parmetis version of bcastPermutedSparseA broadcasting Pslu_freeable
+			//TODO: need a parmetis version of dbcastPermutedSparseA broadcasting Pslu_freeable
 		}
 	}
 
@@ -1113,7 +1113,7 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 			LUstruct->trf3Dpart = SUPERLU_MALLOC(sizeof(dtrf3Dpartition_t));
 			// computes the new partition for 3D factorization here
 			trf3Dpartition=LUstruct->trf3Dpart;
-			newTrfPartitionInit(nsupers, LUstruct, grid3d);
+			dnewTrfPartitionInit(nsupers, LUstruct, grid3d);
 		}
 	}
 
@@ -1177,9 +1177,10 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 			dLUValSubBuf_t *LUvsb = SUPERLU_MALLOC(sizeof(dLUValSubBuf_t));
 			dLluBufInit(LUvsb, LUstruct);
 			trf3Dpartition->LUvsb = LUvsb;
-			trf3Dpartition->iperm_c_supno = create_iperm_c_supno(nsupers, options, LUstruct, grid3d);
+			trf3Dpartition->iperm_c_supno = create_iperm_c_supno(nsupers, options, LUstruct->Glu_persist, LUstruct->etree, LUstruct->Llu->Lrowind_bc_ptr, LUstruct->Llu->Ufstnz_br_ptr, grid3d);
 		}
-
+                                          
+                                          
 
 		/*if (!iam) printf ("\tDISTRIBUTE time  %8.2f\n", stat->utime[DIST]); */
 		

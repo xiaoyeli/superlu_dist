@@ -1271,6 +1271,11 @@ extern void C_BcTree_forwardMessageSimple(C_Tree* tree, void* localBuffer, int m
 extern void C_BcTree_waitSendRequest(C_Tree* tree);
 
 /*==== For 3D code ====*/
+typedef enum {
+    NOT_IN_GRID, // doesn't belong to my grid
+    IN_GRID_ZERO, // belongsto my grid but doesn't initialized with zeros
+    IN_GRID_AIJ // belongsto my grid and initialized with non-zeros
+} SupernodeToGridMap_t;
 
 extern void DistPrint(char* function_name,  double value, char* Units, gridinfo_t* grid);
 extern void DistPrint3D(char* function_name,  double value, char* Units, gridinfo3d_t* grid3d);
@@ -1282,6 +1287,13 @@ extern void permCol_SymbolicFact3d(superlu_dist_options_t *options, int_t n, Sup
                            Glu_persist_t *Glu_persist, Glu_freeable_t *Glu_freeable, SuperLUStat_t *stat,
 						   superlu_dist_mem_usage_t*symb_mem_usage,
 						   gridinfo3d_t* grid3d);
+extern SupernodeToGridMap_t* createSuperGridMap(int_t nsuper,int_t maxLvl, int_t *myTreeIdxs, 
+    int_t *myZeroTrIdxs, int_t* gNodeCount, int_t** gNodeLists);
+extern int_t *createSupernode2TreeMap(int_t nsupers, int_t maxLvl, int_t *gNodeCount, int_t **gNodeLists);
+extern void allocBcastArray(void **array, int_t size, int root, MPI_Comm comm);
+extern int_t* create_iperm_c_supno(int_t nsupers, superlu_dist_options_t *options, Glu_persist_t *Glu_persist, int_t *etree, int_t** Lrowind_bc_ptr, int_t** Ufstnz_br_ptr, gridinfo3d_t *grid3d);
+extern gEtreeInfo_t fillEtreeInfo( int_t nsupers, int_t* setree, treeList_t *treeList);
+extern sForest_t **compute_sForests(int_t nsupers,  Glu_persist_t *Glu_persist, int_t *etree, gridinfo3d_t *grid3d);
 
 // 3D SpTRSV
 typedef enum trtype_t {UPPER_TRI, LOWER_TRI} trtype_t;

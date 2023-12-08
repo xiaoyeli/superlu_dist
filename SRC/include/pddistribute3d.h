@@ -34,17 +34,13 @@ int_t ComputeLDAspa_Ilsum( int_t nsupers, int_t* ilsum,  gridinfo3d_t* grid3d) ;
 void propagateDataThroughMatrixBlocks(int_t nsupers, Glu_freeable_t *Glu_freeable, dLUstruct_t *LUstruct, gridinfo3d_t* grid3d,  
 int_t *Urb_length, int_t *rb_marker, int_t *Urb_fstnz, int_t *Ucbs,
 int **ToSendR,  int *ToSendD,  int *ToRecv);
-void allocBcastArray(void **array, int_t size, int root, MPI_Comm comm);
 
-void bcastPermutedSparseA(SuperMatrix *A, 
+void dbcastPermutedSparseA(SuperMatrix *A, 
                           dScalePermstruct_t *ScalePermstruct,
                           Glu_freeable_t *Glu_freeable, 
                           dLUstruct_t *LUstruct, gridinfo3d_t *grid3d);
 
-
-int_t* create_iperm_c_supno(int_t nsupers, superlu_dist_options_t *options, dLUstruct_t *LUstruct, gridinfo3d_t *grid3d);
-gEtreeInfo_t fillEtreeInfo( int_t nsupers, int_t* setree, treeList_t *treeList);
-void newTrfPartitionInit(int_t nsupers,  dLUstruct_t *LUstruct, gridinfo3d_t *grid3d);
+void dnewTrfPartitionInit(int_t nsupers,  dLUstruct_t *LUstruct, gridinfo3d_t *grid3d);
 
 
 int compareInt_t(void *a, void *b);

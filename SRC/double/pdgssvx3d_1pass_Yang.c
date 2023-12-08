@@ -1147,7 +1147,7 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 				
 				if(Fact != SamePattern_SameRowPerm){
 					LUstruct->trf3Dpart = SUPERLU_MALLOC(sizeof(dtrf3Dpartition_t));
-					newTrfPartitionInit(nsupers, LUstruct, grid3d);
+					dnewTrfPartitionInit(nsupers, LUstruct, grid3d);
 					trf3Dpartition=LUstruct->trf3Dpart;
 				}
 
@@ -1161,7 +1161,7 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 					dLUValSubBuf_t *LUvsb = SUPERLU_MALLOC(sizeof(dLUValSubBuf_t));
 					dLluBufInit(LUvsb, LUstruct);
 					trf3Dpartition->LUvsb = LUvsb;
-					trf3Dpartition->iperm_c_supno = create_iperm_c_supno(nsupers, options, LUstruct, grid3d);
+					trf3Dpartition->iperm_c_supno = create_iperm_c_supno(nsupers, options, LUstruct->Glu_persist, LUstruct->etree, LUstruct->Llu->Lrowind_bc_ptr, LUstruct->Llu->Ufstnz_br_ptr, grid3d);
 				}
 
 

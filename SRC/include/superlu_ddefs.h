@@ -319,11 +319,7 @@ typedef struct
     double * Uval_buf ;
 } dLUValSubBuf_t;
 
-typedef enum {
-    NOT_IN_GRID, // doesn't belong to my grid
-    IN_GRID_ZERO, // belongsto my grid but doesn't initialized with zeros
-    IN_GRID_AIJ // belongsto my grid and initialized with non-zeros
-} SupernodeToGridMap_t;
+
   
 
 
