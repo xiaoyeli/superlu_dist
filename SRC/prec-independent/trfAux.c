@@ -2547,9 +2547,6 @@ void permCol_SymbolicFact3d(superlu_dist_options_t *options, int_t n, SuperMatri
 						   superlu_dist_mem_usage_t*symb_mem_usage,
 						   gridinfo3d_t* grid3d)
 {
-    #if ( DEBUGlevel>=1 )                    
-    LOG_FUNC_ENTER();
-    #endif
     SuperMatrix GAC; /* Global A in NCP format */
     NCPformat *GACstore;
     int_t *GACcolbeg, *GACcolend, *GACrowind, irow;

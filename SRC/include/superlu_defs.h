@@ -1278,7 +1278,10 @@ extern void treeImbalance3D(gridinfo3d_t *grid3d, SCT_t* SCT);
 extern void SCT_printComm3D(gridinfo3d_t *grid3d, SCT_t* SCT);
 extern int_t zAllocBcast(int_t size, void** ptr, gridinfo3d_t* grid3d);
 extern int_t zAllocBcast_gridID(int_t size, void** ptr, int_t gridID, gridinfo3d_t* grid3d);
-
+extern void permCol_SymbolicFact3d(superlu_dist_options_t *options, int_t n, SuperMatrix *GA, int_t *perm_c, int_t *etree, 
+                           Glu_persist_t *Glu_persist, Glu_freeable_t *Glu_freeable, SuperLUStat_t *stat,
+						   superlu_dist_mem_usage_t*symb_mem_usage,
+						   gridinfo3d_t* grid3d);
 
 // 3D SpTRSV
 typedef enum trtype_t {UPPER_TRI, LOWER_TRI} trtype_t;
