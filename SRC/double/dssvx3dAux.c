@@ -1,6 +1,6 @@
 #include <stdlib.h>  // For NULL
 #include <mpi.h>
-
+#include "superlu_ddefs.h"
 
 
 #define LOG_FUNC_ENTER() printf("\033[1;32mEntering function %s at %s:%d\033[0m\n", __func__, __FILE__, __LINE__)

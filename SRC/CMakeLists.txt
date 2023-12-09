@@ -127,6 +127,7 @@ endif()
     double/pdgsmv_AXglobal.c
     double/pdGetDiagU.c
     double/pdgssvx3d.c     ## 3D code
+    double/dssvx3dAux.c    
     double/dnrformat_loc3d.c 
     double/pdgstrf3d.c 
     double/dtreeFactorization.c
