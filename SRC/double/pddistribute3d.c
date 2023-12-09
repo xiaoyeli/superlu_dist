@@ -9,23 +9,14 @@ The source code is distributed under BSD license, see the file License.txt
 at the top-level directory.
 */
 
-/*! @file
- * \brief Re-distribute A on the 2D process mesh.
- * <pre>
- * -- Distributed SuperLU routine (version 9.0) --
- * Lawrence Berkeley National Lab, Univ. of California Berkeley.
- * October 15, 2008
- * October 18, 2021, minor fix, v7.1.1
- * January 9,  2023, add new data structures for SpTRSV
- * </pre>
- */
+
+
 
 #include "superlu_ddefs.h"
 #ifdef GPU_ACC
 #include "gpu_api_utils.h"
 #endif
-// #include "pddistribute3d.h"
-
+//#include "pddistribute3d.h"
 
 
 #if 0
@@ -720,7 +711,7 @@ float pddistribute3d(superlu_dist_options_t *options, int_t n, SuperMatrix *A,
         {
             if(PROW(jb, grid) == myrow)
             {
-             
+
                 lb = LBi(jb, grid);
                 len = Urb_length[lb];
                 rb_marker[lb] = 0; /* Reset block marker. */
@@ -1519,7 +1510,6 @@ pddistribute3d_Yang(superlu_dist_options_t *options, int_t n, SuperMatrix *A,
 	int *ranks;
 	int_t *idxs;
 	int_t **nzrows;
-	double rseed;
 	int rank_cnt,rank_cnt_ref,Root;
 	double *dense, *dense_col; /* SPA */
     double zero = 0.0;
@@ -1537,7 +1527,6 @@ pddistribute3d_Yang(superlu_dist_options_t *options, int_t n, SuperMatrix *A,
     double **Uinv_bc_ptr;  /* size ceil(NSUPERS/Pc) */
 	double *Uinv_bc_dat;  /* size sum of sizes of Uinv_bc_ptr[lk])                 */
     long int *Uinv_bc_offset;  /* size ceil(NSUPERS/Pc)     */
-    double *SeedSTD_BC,*SeedSTD_RD;
     int_t idx_indx,idx_lusup;
     int_t nbrow;
     int_t  ik, il, lk, rel, knsupc, idx_r;
@@ -1709,7 +1698,7 @@ pddistribute3d_Yang(superlu_dist_options_t *options, int_t n, SuperMatrix *A,
 	SUPERLU_FREE(Urb_length);
 	SUPERLU_FREE(Urb_indptr);
 	mem_use -= 2.0*nrbu*iword + ldaspa*sp_ienv_dist(3,options)*dword;
-	
+
 #if ( PROFlevel>=1 )
 	if ( !iam ) printf(".. 2nd distribute time: L %.2f\tU %.2f\tu_blks %d\tnrbu %d\n",
 			   t_l, t_u, u_blks, nrbu);
@@ -1840,7 +1829,7 @@ pddistribute3d_Yang(superlu_dist_options_t *options, int_t n, SuperMatrix *A,
 		ib = myrow+lb*grid->nprow;  /* not sure */
 	    len = Urb_length[lb];
 	    rb_marker[lb] = 0; /* Reset block marker. */
-	    if ( len ) {  
+	    if ( len ) {
 			/* Add room for descriptors */
 			len1 = Urb_fstnz[lb] + BR_HEADER + Ucbs[lb] * UB_DESCRIPTOR;
 			mybufmax[2] = SUPERLU_MAX( mybufmax[2], len1 );
@@ -1861,7 +1850,7 @@ pddistribute3d_Yang(superlu_dist_options_t *options, int_t n, SuperMatrix *A,
 				index[len1] = -1;    /* End marker */
 			}else{
 				Ufstnz_br_ptr[lb] = NULL;
-				Unzval_br_ptr[lb] = NULL;				
+				Unzval_br_ptr[lb] = NULL;
 			}
 	    } else {
 		Ufstnz_br_ptr[lb] = NULL;
@@ -2048,7 +2037,7 @@ pddistribute3d_Yang(superlu_dist_options_t *options, int_t n, SuperMatrix *A,
 					irow = ilsum[lb] + irow - FstBlockC( gb );
 					for (ii = 0; ii < k; ++ii) {
 					uval[Urb_length[lb]++] = dense_col[irow + ii];
-					dense_col[irow + ii] = zero;
+				    dense_col[irow + ii] = zero;
 					}
 				}else{
 					lb = LBi( gb, grid ); /* Local block number */
@@ -2071,7 +2060,7 @@ pddistribute3d_Yang(superlu_dist_options_t *options, int_t n, SuperMatrix *A,
 					}
 					}
 				}
-				
+
 			} /* if myrow == pr ... */
 		    } /* for i ... */
                     dense_col += ldaspa;
@@ -2100,7 +2089,7 @@ pddistribute3d_Yang(superlu_dist_options_t *options, int_t n, SuperMatrix *A,
 			fsendx_plist[ljb][pr] = YES;
 			++nfsendx;
                     }
-		    if ( myrow == pr ) { 
+		    if ( myrow == pr ) {
 			lb = LBi( gb, grid );  /* Local block number */
 			if (rb_marker[lb] <= jb) { /* First see this block */
 			    rb_marker[lb] = jb + 1;
@@ -2122,7 +2111,7 @@ pddistribute3d_Yang(superlu_dist_options_t *options, int_t n, SuperMatrix *A,
 		    }
 		} /* for i ... */
 
-		
+
 		if ( nrbl) { /* Do not ensure the blocks are sorted! */
 		    if(superGridMap[jb]!= NOT_IN_GRID){ // YL: added supernode mask here
 				/* Set up the initial pointers for each block in
@@ -2280,7 +2269,7 @@ pddistribute3d_Yang(superlu_dist_options_t *options, int_t n, SuperMatrix *A,
 				Lnzval_bc_ptr[ljb] = NULL;
 				Linv_bc_ptr[ljb] = NULL;
 				Uinv_bc_ptr[ljb] = NULL;
-				Lindval_loc_bc_ptr[ljb] = NULL;				
+				Lindval_loc_bc_ptr[ljb] = NULL;
 			}
 		} else {
 		    Lrowind_bc_ptr[ljb] = NULL;
@@ -2319,7 +2308,7 @@ pddistribute3d_Yang(superlu_dist_options_t *options, int_t n, SuperMatrix *A,
 	   One pass of the skeleton graph of U. */
 	for (lk = 0; lk < nlb; ++lk) {
 		usub1 = Ufstnz_br_ptr[lk];
-		// YL: no need to supernode mask here ???? 
+		// YL: no need to supernode mask here ????
 		if ( usub1 ) { /* Not an empty block row. */
 			/* usub1[0] -- number of column blocks in this block row. */
 			i = BR_HEADER; /* Pointer in index array. */
@@ -2334,7 +2323,7 @@ pddistribute3d_Yang(superlu_dist_options_t *options, int_t n, SuperMatrix *A,
 	/* Set up the vertical linked lists for the row blocks.
 	   One pass of the skeleton graph of U. */
 	for (lb = 0; lb < nub; ++lb) {
-		// YL: no need to add supernode mask here ???? 
+		// YL: no need to add supernode mask here ????
 		if ( Urbs[lb] ) { /* Not an empty block column. */
 			if ( !(Ucb_indptr[lb]
 						= SUPERLU_MALLOC(Urbs[lb] * sizeof(Ucb_indptr_t))) )
@@ -2350,7 +2339,7 @@ pddistribute3d_Yang(superlu_dist_options_t *options, int_t n, SuperMatrix *A,
 	for (lk = 0; lk < nlb; ++lk) { /* For each block row. */
 		usub1 = Ufstnz_br_ptr[lk];
 		// printf("ID %5d lk %5d usub1 %10d\n",superGridMap[0],lk, usub1);
-		// YL: no need to add supernode mask here ???? 
+		// YL: no need to add supernode mask here ????
 		if ( usub1 ) { /* Not an empty block row. */
 			i = BR_HEADER; /* Pointer in index array. */
 			j = 0;         /* Pointer in nzval array. */

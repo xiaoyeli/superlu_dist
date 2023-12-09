@@ -939,11 +939,11 @@ pdgssvx_ABglobal(superlu_dist_options_t *options, SuperMatrix *A,
 
     /* nvshmem related. The nvshmem_malloc has to be called before dtrs_compute_communication_structure, otherwise solve is much slower*/
     int nsupers = Glu_persist->supno[n-1] + 1;
-	#ifdef HAVE_NVSHMEM 
+	#ifdef HAVE_NVSHMEM
 		int nc = CEILING( nsupers, grid->npcol);
 		int nr = CEILING( nsupers, grid->nprow);
 		int flag_bc_size = RDMA_FLAG_SIZE * (nc+1);
-		int flag_rd_size = RDMA_FLAG_SIZE * nr * 2;    
+		int flag_rd_size = RDMA_FLAG_SIZE * nr * 2;
 		int my_flag_bc_size = RDMA_FLAG_SIZE * (nc+1);
 		int my_flag_rd_size = RDMA_FLAG_SIZE * nr * 2;
 		int maxrecvsz = sp_ienv_dist(3, options)* nrhs + SUPERLU_MAX( XK_H, LSUM_H );
@@ -956,7 +956,7 @@ pdgssvx_ABglobal(superlu_dist_options_t *options, SuperMatrix *A,
 	#endif
 
 	if ( Fact != SamePattern_SameRowPerm ) {
-		
+
 		int* supernodeMask = int32Malloc_dist(nsupers);
 		for(int ii=0; ii<nsupers; ii++)
 			supernodeMask[ii]=1;
@@ -964,6 +964,8 @@ pdgssvx_ABglobal(superlu_dist_options_t *options, SuperMatrix *A,
 						ScalePermstruct, supernodeMask, grid, stat);
 		SUPERLU_FREE(supernodeMask);
 	}
+
+
 
 #if ( PRNTlevel>=1 )
 	{

@@ -1,8 +1,10 @@
+
+
 #include <stdlib.h>  // For NULL
 #include <mpi.h>
 #include "superlu_ddefs.h"
 
-
+#undef LOG_FUNC_ENTER
 #define LOG_FUNC_ENTER() printf("\033[1;32mEntering function %s at %s:%d\033[0m\n", __func__, __FILE__, __LINE__)
 
 /**
@@ -52,14 +54,14 @@ void validateInput_pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,int
         pxerr_dist("pdgssvx3d", grid, -(*info));
         return;
     }
-} 
+}
 
 
 void dscaleRows(int_t m_loc, int_t fst_row, int_t *rowptr, double *a, double *R) {
     int_t irow = fst_row;
     for (int_t j = 0; j < m_loc; ++j) {
         for (int_t i = rowptr[j]; i < rowptr[j + 1]; ++i) {
-            a[i] *= R[irow];
+			    a[i] *= R[irow];    /* Scale rows. */
         }
         ++irow;
     }
@@ -70,19 +72,19 @@ void dscaleColumns(int_t m_loc, int_t *rowptr, int_t *colind, double *a, double 
     for (int_t j = 0; j < m_loc; ++j) {
         for (int_t i = rowptr[j]; i < rowptr[j + 1]; ++i) {
             icol = colind[i];
-            a[i] *= C[icol];
+            a[i] *= C[icol];          /* Scale columns. */
         }
     }
 }
 
-void dscaleBoth(int_t m_loc, int_t fst_row, int_t *rowptr, 
+void dscaleBoth(int_t m_loc, int_t fst_row, int_t *rowptr,
     int_t *colind, double *a, double *R, double *C) {
     int_t irow = fst_row;
     int_t icol;
     for (int_t j = 0; j < m_loc; ++j) {
         for (int_t i = rowptr[j]; i < rowptr[j + 1]; ++i) {
             icol = colind[i];
-            a[i] *= R[irow] * C[icol];
+            a[i] *= R[irow] * C[icol]; /* Scale rows and cols. */
         }
         ++irow;
     }
@@ -115,8 +117,8 @@ void dscalePrecomputed(SuperMatrix *A, dScalePermstruct_t *ScalePermstruct) {
 }
 
 void dscaleFromScratch(
-    SuperMatrix *A, dScalePermstruct_t *ScalePermstruct,  
-    gridinfo_t *grid, int_t *rowequ, int_t *colequ, int_t*iinfo)  
+    SuperMatrix *A, dScalePermstruct_t *ScalePermstruct,
+    gridinfo_t *grid, int_t *rowequ, int_t *colequ, int_t*iinfo)
 {
     NRformat_loc *Astore = (NRformat_loc *)A->Store;
     int_t m_loc = Astore->m_loc;
@@ -156,9 +158,9 @@ void dscaleFromScratch(
 #endif
 }
 
-void dscaleMatrixDiagonally(fact_t Fact, dScalePermstruct_t *ScalePermstruct, 
+void dscaleMatrixDiagonally(fact_t Fact, dScalePermstruct_t *ScalePermstruct,
                            SuperMatrix *A, SuperLUStat_t *stat, gridinfo_t *grid,
-                            int_t *rowequ, int_t *colequ, int_t*iinfo)   
+                            int_t *rowequ, int_t *colequ, int_t*iinfo)
 {
     int iam = grid->iam;
 
@@ -209,11 +211,11 @@ void dfindRowPerm_MC64(gridinfo_t* grid, int_t job,
                       double* R1,
                       double* C1,
                       int_t* iinfo) {
-    #if ( DEBUGlevel>=1 )                    
+    #if ( DEBUGlevel>=1 )
     LOG_FUNC_ENTER();
     #endif
     // Check input parameters
-    if (colptr == NULL || rowind == NULL || a_GA == NULL || 
+    if (colptr == NULL || rowind == NULL || a_GA == NULL ||
         perm_r == NULL ) {
         fprintf(stderr, "Error: NULL input parameter.\n");
         return;
@@ -244,9 +246,9 @@ void dfindRowPerm_MC64(gridinfo_t* grid, int_t job,
 
 
 /**
- * This function scales a distributed matrix. 
+ * This function scales a distributed matrix.
  *
- 
+
  * @param[in]   rowequ  A flag indicating whether row should be equalized.
  * @param[in]   colequ  A flag indicating whether column should be equalized.
  * @param[in]   m       Number of rows in the matrix.
@@ -263,11 +265,11 @@ void dfindRowPerm_MC64(gridinfo_t* grid, int_t job,
  */
 void dscale_distributed_matrix(int_t rowequ, int_t colequ, int_t m, int_t n,
  int_t m_loc, int_t *rowptr, int_t *colind, int_t fst_row, double *a,
-  double *R, double *C, double *R1, double *C1) 
+  double *R, double *C, double *R1, double *C1)
 {
-    #if ( DEBUGlevel>=1 )                    
+    #if ( DEBUGlevel>=1 )
     LOG_FUNC_ENTER();
-    #endif    
+    #endif
     // Scale the row and column factors
     for (int i = 0; i < n; ++i) {
         R1[i] = exp(R1[i]);
@@ -281,7 +283,7 @@ void dscale_distributed_matrix(int_t rowequ, int_t colequ, int_t m, int_t n,
             int columnIndex = colind[i];
             a[i] *= R1[rowIndex] * C1[columnIndex];
 #if 0
-// this is not support as dmin, dsum and dprod are not used later in pdgssvx3d 
+// this is not support as dmin, dsum and dprod are not used later in pdgssvx3d
 #if (PRNTlevel >= 2)
             if (perm_r[irow] == icol)
             {
@@ -324,7 +326,7 @@ void dpermute_global_A(int_t m, int_t n, int_t *colptr, int_t *rowind, int_t *pe
         fprintf(stderr, "Error: NULL input parameter to: dpermute_global_A()\n");
         return;
     }
-    
+
     // Iterate through each column
     for (int_t j = 0; j < n; ++j) {
         // For each column, iterate through its non-zero elements
@@ -339,12 +341,12 @@ void dpermute_global_A(int_t m, int_t n, int_t *colptr, int_t *rowind, int_t *pe
 
 
 /**
- * @brief Performs a set of operations on distributed matrices including finding row permutations, scaling, and permutation of global A. 
+ * @brief Performs a set of operations on distributed matrices including finding row permutations, scaling, and permutation of global A.
  * The operations depend on job and iinfo parameters.
- * 
+ *
  * @param[in]     options                SuperLU options.
  * @param[in]     Fact                   Factored form of the matrix.
- * @param[in,out] ScalePermstruct        Scaling and Permutation structure. 
+ * @param[in,out] ScalePermstruct        Scaling and Permutation structure.
  * @param[in,out] LUstruct               LU decomposition structure.
  * @param[in]     m                      Number of rows in the matrix.
  * @param[in]     n                      Number of columns in the matrix.
@@ -363,8 +365,8 @@ void dpermute_global_A(int_t m, int_t n, int_t *colptr, int_t *rowind, int_t *pe
 void dperform_LargeDiag_MC64(
     superlu_dist_options_t *options, fact_t Fact,
     dScalePermstruct_t *ScalePermstruct, dLUstruct_t *LUstruct,
-    int_t m, int_t n, gridinfo_t *grid, 
-    SuperMatrix *A, SuperMatrix *GA, SuperLUStat_t *stat, int_t job, 
+    int_t m, int_t n, gridinfo_t *grid,
+    SuperMatrix *A, SuperMatrix *GA, SuperLUStat_t *stat, int_t job,
     int_t Equil, int_t *rowequ, int_t *colequ, int_t *iinfo) {
     double *R1 = NULL;
     double *C1 = NULL;
@@ -439,7 +441,7 @@ void dperform_LargeDiag_MC64(
             perm_r[i] = i;
     }
 #if (PRNTlevel >= 2)
-#warning following is not supported 
+#warning following is not supported
     if (job == 2 || job == 3)
     {
         if (!iam)
@@ -457,7 +459,7 @@ void dperform_LargeDiag_MC64(
     }
 #endif
 } /* dperform_LargeDiag_MC64 */
-    
+
 void dperform_row_permutation(
     superlu_dist_options_t *options,
     fact_t Fact,
@@ -465,7 +467,7 @@ void dperform_row_permutation(
     int_t m, int_t n,
     gridinfo_t *grid,
     SuperMatrix *A,
-    SuperMatrix *GA, 
+    SuperMatrix *GA,
     SuperLUStat_t *stat,
     int_t job,
     int_t Equil,
@@ -473,7 +475,7 @@ void dperform_row_permutation(
     int_t *colequ,
     int_t *iinfo)
 {
-    #if ( DEBUGlevel>=1 )                    
+    #if ( DEBUGlevel>=1 )
     LOG_FUNC_ENTER();
     #endif
     int_t *perm_r = ScalePermstruct->perm_r;
@@ -502,12 +504,12 @@ void dperform_row_permutation(
             }
             else if (options->RowPerm == LargeDiag_MC64)
             {
-                
+
                 dperform_LargeDiag_MC64(
                 options, Fact,
                 ScalePermstruct, LUstruct,
-                m, n, grid, 
-                A, GA, stat, job, 
+                m, n, grid,
+                A, GA, stat, job,
                 Equil, rowequ, colequ, iinfo);
             }
             else // LargeDiag_HWPM
@@ -554,7 +556,7 @@ void dperform_row_permutation(
  * @param grid The gridinfo_t object that contains the information of the grid.
  * @return Returns the computed norm of the matrix A.
  *
- * the iam process is the root (iam=0), it prints the computed norm to the standard output. 
+ * the iam process is the root (iam=0), it prints the computed norm to the standard output.
  */
 double dcomputeA_Norm(int_t notran, SuperMatrix *A, gridinfo_t *grid) {
     char norm;
@@ -601,7 +603,7 @@ void dallocScalePermstruct_RC(dScalePermstruct_t * ScalePermstruct, int_t m, int
 }
 
 
-#ifdef REFACTOR_SYMBOLIC 
+#ifdef REFACTOR_SYMBOLIC
 /**
  * @brief Distributes the permuted matrix into L and U storage.
  *
@@ -629,23 +631,23 @@ int dDistributePermutedMatrix(const superlu_dist_options_t *options,
 
 
 #endif // REFACTOR_DistributePermutedMatrix
-#if 0 
+#if 0
 // this function is refactored below
 void dperform_LargeDiag_MC64(
-    superlu_dist_options_t* options, 
-    fact_t Fact, 
+    superlu_dist_options_t* options,
+    fact_t Fact,
     dScalePermstruct_t *ScalePermstruct,
     dLUstruct_t *LUstruct,
-    int_t m, int_t n, 
-    gridinfo_t* grid, 
+    int_t m, int_t n,
+    gridinfo_t* grid,
     int_t* perm_r,
-    SuperMatrix* A, 
+    SuperMatrix* A,
     SuperMatrix* GA,
-    SuperLUStat_t* stat, 
-    int_t job, 
-    int_t Equil, 
-    int_t rowequ, 
-    int_t colequ) 
+    SuperLUStat_t* stat,
+    int_t job,
+    int_t Equil,
+    int_t rowequ,
+    int_t colequ)
 {
     /* Note: R1 and C1 are now local variables */
     double* R1 = NULL;
@@ -815,14 +817,14 @@ void dperform_LargeDiag_MC64(
 }
 
 
-void dfindRowPerm_MC64(gridinfo_t *grid, int_t job, 
+void dfindRowPerm_MC64(gridinfo_t *grid, int_t job,
     int_t m, int_t n,
     int_t nnz,
     int_t* colptr,
     int_t* rowind,
     double* a_GA,
-    int_t Equil, int_t *perm_r, 
-    double *R1, double *C1, int_t*iinfo) 
+    int_t Equil, int_t *perm_r,
+    double *R1, double *C1, int_t*iinfo)
 {
     if (grid->iam == 0) {
         *iinfo = dldperm_dist(job, m, nnz, colptr, rowind, a_GA, perm_r, R1, C1);
@@ -845,5 +847,5 @@ void dfindRowPerm_MC64(gridinfo_t *grid, int_t job,
         }
     }
 }
-#endif 
+#endif
 

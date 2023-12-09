@@ -1,3 +1,5 @@
+
+
 #include "superlu_ddefs.h"
 
 void dnewTrfPartitionInit(int_t nsupers,  dLUstruct_t *LUstruct, gridinfo3d_t *grid3d)
@@ -22,8 +24,8 @@ void dnewTrfPartitionInit(int_t nsupers,  dLUstruct_t *LUstruct, gridinfo3d_t *g
     // Conversion of supernodal etree to list
     treeList_t *treeList = setree2list(nsupers, setree);
 
-// YL: The essential difference between this function and dinitTrf3Dpartition_allgrid to avoid calling pddistribute* twice is that Piyush has removed the treelist weight update function below (and iperm_c_supno as well), which requires the LU data structure  
-#if 0 
+// YL: The essential difference between this function and dinitTrf3Dpartition_allgrid to avoid calling pddistribute* twice is that Piyush has removed the treelist weight update function below (and iperm_c_supno as well), which requires the LU data structure
+#if 0
     /*update treelist with weight and depth*/
     getSCUweight_allgrid(nsupers, treeList, xsup,
         LUstruct->Llu->Lrowind_bc_ptr, LUstruct->Llu->Ufstnz_br_ptr,
@@ -69,7 +71,7 @@ void dnewTrfPartitionInit(int_t nsupers,  dLUstruct_t *LUstruct, gridinfo3d_t *g
     // dLUValSubBuf_t *LUvsb = SUPERLU_MALLOC(sizeof(dLUValSubBuf_t));
     // dLluBufInit(LUvsb, LUstruct);
 
-#if (DEBUGlevel>=1)    
+#if (DEBUGlevel>=1)
     // let count sum of gnodecount
     int_t gNodeCountSum = 0;
     for (int_t i = 0; i < (1 << maxLvl) - 1; ++i)
@@ -82,14 +84,14 @@ void dnewTrfPartitionInit(int_t nsupers,  dLUstruct_t *LUstruct, gridinfo3d_t *g
     /* Sherry 2/17/23
        Compute buffer sizes needed for diagonal LU blocks and C matrices in GEMM. */
 
-    
+
     iam = grid->iam;  /* 'grid' is 2D grid */
     int k, k0, k_st, k_end, offset, nsupc, krow, kcol;
     int myrow = MYROW (iam, grid);
     int mycol = MYCOL (iam, grid);
     int_t *xsup  = LUstruct->Glu_persist->xsup;
-    
-#if 0    
+
+#if 0
     int krow = PROW (k, grid);
     int kcol = PCOL (k, grid);
     int_t** Lrowind_bc_ptr = Llu->Lrowind_bc_ptr;
@@ -97,15 +99,15 @@ void dnewTrfPartitionInit(int_t nsupers,  dLUstruct_t *LUstruct, gridinfo3d_t *g
 
     int_t** Ufstnz_br_ptr = Llu->Ufstnz_br_ptr;
     double** Unzval_br_ptr = Llu->Unzval_br_ptr;
-#endif    
-    
-    int mxLeafNode = 0; // Yang: only need to check the leaf level of topoInfo as the factorization proceeds level by level 
+#endif
+
+    int mxLeafNode = 0; // Yang: only need to check the leaf level of topoInfo as the factorization proceeds level by level
     for (int ilvl = 0; ilvl < maxLvl; ++ilvl) {
         if (sForests[myTreeIdxs[ilvl]] && sForests[myTreeIdxs[ilvl]]->topoInfo.eTreeTopLims[1] > mxLeafNode )
             mxLeafNode    = sForests[myTreeIdxs[ilvl]]->topoInfo.eTreeTopLims[1];
     }
 
-    // Yang: use ldts to track the maximum needed buffer sizes per node of topoInfo 
+    // Yang: use ldts to track the maximum needed buffer sizes per node of topoInfo
     //int *ldts = (int*) SUPERLU_MALLOC(mxLeafNode*sizeof(int));
     //for (int i = 0; i < mxLeafNode; ++i) {  //????????
     //ldts[i]=1;
@@ -124,7 +126,7 @@ void dnewTrfPartitionInit(int_t nsupers,  dLUstruct_t *LUstruct, gridinfo3d_t *g
                 k_st = sforest->topoInfo.eTreeTopLims[topoLvl];
                 k_end = sforest->topoInfo.eTreeTopLims[topoLvl + 1];
 		//printf("\t..topoLvl %d, k_st %d, k_end %d\n", topoLvl, k_st, k_end);
-		
+
                 for (int k0 = k_st; k0 < k_end; ++k0)
                 {
                     offset = k0 - k_st;
@@ -139,12 +141,12 @@ void dnewTrfPartitionInit(int_t nsupers,  dLUstruct_t *LUstruct, gridinfo3d_t *g
 #if 0 /* GPU gemm buffers can only be set on GPU side, because here we only know
 	 the size of U data structure on CPU.  It is different on GPU */
                     if ( mycol == kcol ) { /* processes owning L panel */
-		      
+
 		    }
-                    if ( myrow == krow ) 
+                    if ( myrow == krow )
 			gemmCsizes[offset] = SUPERLU_MAX(ldts[offset], ???);
-#endif		    
-                }               
+#endif
+                }
             }
         }
     }
@@ -182,9 +184,9 @@ void dnewTrfPartitionInit(int_t nsupers,  dLUstruct_t *LUstruct, gridinfo3d_t *g
 // function to broad permuted sparse matrix and symbolic factorization data from
 // 2d to 3d grid
 
-void dbcastPermutedSparseA(SuperMatrix *A, 
+void dbcastPermutedSparseA(SuperMatrix *A,
                           dScalePermstruct_t *ScalePermstruct,
-                          Glu_freeable_t *Glu_freeable, 
+                          Glu_freeable_t *Glu_freeable,
                           dLUstruct_t *LUstruct, gridinfo3d_t *grid3d)
 {
     int_t m = A->nrow;
@@ -194,7 +196,7 @@ void dbcastPermutedSparseA(SuperMatrix *A,
     NRformat_loc *Astore   = (NRformat_loc *) A->Store;
     // check if the varaibles are not NULL
     if (A == NULL || ScalePermstruct == NULL ||
-        Glu_freeable == NULL || LUstruct == NULL  || grid3d == NULL ||  
+        Glu_freeable == NULL || LUstruct == NULL  || grid3d == NULL ||
         Glu_persist == NULL || Llu == NULL || Astore == NULL)
     {
         fprintf(stderr, "Error: Invalid arguments to dbcastPermutedSparseA().\n");
@@ -204,26 +206,26 @@ void dbcastPermutedSparseA(SuperMatrix *A,
     /* broadcast etree */
     int_t *etree = LUstruct->etree;
     MPI_Bcast( etree, n, mpi_int_t, 0,  grid3d->zscp.comm);
-    
 
-    // list of all the arrays to be broadcasted 
+
+    // list of all the arrays to be broadcasted
     // A, ScalePermstruct, Glu_freeable, LUstruct
     int_t nsupers;
-    
+
     if (!grid3d->zscp.Iam)
         nsupers = Glu_persist->supno[n-1] + 1;
     // broadcast the number of supernodes
     MPI_Bcast(&nsupers, 1, mpi_int_t, 0, grid3d->zscp.comm);
-    
+
     /* ==== Broadcasting GLU_persist   ======= */
     // what is the size of xsup and supno?
-    allocBcastArray( &(Glu_persist->xsup), (nsupers+1)*sizeof(int_t), 
+    allocBcastArray( &(Glu_persist->xsup), (nsupers+1)*sizeof(int_t),
         0, grid3d->zscp.comm);
-    allocBcastArray( &(Glu_persist->supno), (n)*sizeof(int_t), 
+    allocBcastArray( &(Glu_persist->supno), (n)*sizeof(int_t),
         0, grid3d->zscp.comm);
     int_t *xsup = Glu_persist->xsup;    /* supernode and column mapping */
     int_t *supno = Glu_persist->supno;
-    
+
 
     /* ==== Broadcasting ScalePermstruct ======= */
 //     typedef struct {
@@ -235,14 +237,14 @@ void dbcastPermutedSparseA(SuperMatrix *A,
 // } dScalePermstruct_t;
 
     MPI_Bcast(&(ScalePermstruct->DiagScale), sizeof(DiagScale_t), MPI_BYTE, 0, grid3d->zscp.comm);
-    
+
 /***** YL: remove the allocation in the following as perm_r/perm_c has been allocated on all grids by dScalePermstructInit
 */
-#if 1  
-    MPI_Bcast(ScalePermstruct->perm_r, m*sizeof(int_t), MPI_BYTE, 0, grid3d->zscp.comm);  
-    MPI_Bcast(ScalePermstruct->perm_c, n*sizeof(int_t), MPI_BYTE, 0, grid3d->zscp.comm);  
+#if 1
+    MPI_Bcast(ScalePermstruct->perm_r, m*sizeof(int_t), MPI_BYTE, 0, grid3d->zscp.comm);
+    MPI_Bcast(ScalePermstruct->perm_c, n*sizeof(int_t), MPI_BYTE, 0, grid3d->zscp.comm);
 #else
-    allocBcastArray ( &(ScalePermstruct->perm_r), m*sizeof(int_t), 
+    allocBcastArray ( &(ScalePermstruct->perm_r), m*sizeof(int_t),
         0, grid3d->zscp.comm);
     allocBcastArray ( &(ScalePermstruct->perm_c), n*sizeof(int_t),
         0, grid3d->zscp.comm);
@@ -252,7 +254,7 @@ void dbcastPermutedSparseA(SuperMatrix *A,
         0, grid3d->zscp.comm);
     allocBcastArray ( &(ScalePermstruct->C), n*sizeof(double),
         0, grid3d->zscp.comm);
-    
+
 
     /* ==== Broadcasting Glu_freeable ======= */
 //     typedef struct {
@@ -284,8 +286,8 @@ void dbcastPermutedSparseA(SuperMatrix *A,
     {
         Glu_freeable->MemModel = SYSTEM;
     }
-    
-    
+
+
     /* ==== Broadcasting permuted sparse matrix ======= */
     // Astore = (NRformat_loc *) A->Store;
 //     /typedef struct {
@@ -293,7 +295,7 @@ void dbcastPermutedSparseA(SuperMatrix *A,
 //     int_t m_loc;     /* number of rows local to this processor */
 //     int_t fst_row;   /* global index of the first row */
 //     void  *nzval;    /* pointer to array of nonzero values, packed by row */
-//     int_t *rowptr;   /* pointer to array of beginning of rows in nzval[] 
+//     int_t *rowptr;   /* pointer to array of beginning of rows in nzval[]
 // 			and colind[]  */
 //     int_t *colind;   /* pointer to array of column indices of the nonzeros */
 //                      /* Note:
@@ -302,7 +304,7 @@ void dbcastPermutedSparseA(SuperMatrix *A,
 // 			beyond the last row, so that rowptr[n_loc] = nnz_loc.*/
 // } NRformat_loc;
 
-    
+
     // NRformat_loc *Astore = (NRformat_loc *) A->Store;
     MPI_Bcast(&(Astore->nnz_loc), sizeof(int_t), MPI_BYTE, 0, grid3d->zscp.comm);
     MPI_Bcast(&(Astore->m_loc), sizeof(int_t), MPI_BYTE, 0, grid3d->zscp.comm);
@@ -316,12 +318,12 @@ void dbcastPermutedSparseA(SuperMatrix *A,
     MPI_Bcast(Astore->nzval, Astore->nnz_loc*sizeof(double), MPI_BYTE, 0, grid3d->zscp.comm);
     MPI_Bcast(Astore->rowptr, (Astore->m_loc+1)*sizeof(int_t), MPI_BYTE, 0, grid3d->zscp.comm);
     MPI_Bcast(Astore->colind, Astore->nnz_loc*sizeof(int_t), MPI_BYTE, 0, grid3d->zscp.comm);
-#else    
+#else
     allocBcastArray( &(Astore->nzval), Astore->nnz_loc*sizeof(double),
         0, grid3d->zscp.comm);
-    allocBcastArray( &(Astore->rowptr), (Astore->m_loc+1)*sizeof(int_t), 
+    allocBcastArray( &(Astore->rowptr), (Astore->m_loc+1)*sizeof(int_t),
         0, grid3d->zscp.comm);
-    allocBcastArray( &(Astore->colind), Astore->nnz_loc*sizeof(int_t), 
+    allocBcastArray( &(Astore->colind), Astore->nnz_loc*sizeof(int_t),
         0, grid3d->zscp.comm);
 #endif
 

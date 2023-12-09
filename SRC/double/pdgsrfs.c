@@ -42,7 +42,7 @@ at the top-level directory.
  * options (input) superlu_dist_options_t* (global)
  *         The structure defines the input parameters to control
  *         how the LU decomposition and triangular solve are performed.
- * 	   
+ *
  * n      (input) int (global)
  *        The order of the system of linear equations.
  *
@@ -230,7 +230,7 @@ pdgsrfs(superlu_dist_options_t *options, int_t n,
 	    }
 	    MPI_Allreduce( &s, &berr[j], 1, MPI_DOUBLE, MPI_MAX, grid->comm );
 
-#if ( PRNTlevel>= 0 )
+#if ( PRNTlevel>= 1 )
 	    if ( !iam )
 		printf("(%2d) .. Step " IFMT ": berr[j] = %e\n", iam, count, berr[j]);
 #endif
@@ -282,7 +282,7 @@ pdgsrfs(superlu_dist_options_t *options, int_t n,
  * options (input) superlu_dist_options_t* (global)
  *         The structure defines the input parameters to control
  *         how the LU decomposition and triangular solve are performed.
- * 	   
+ *
  * n      (input) int (global)
  *        The order of the system of linear equations.
  *
@@ -411,7 +411,7 @@ pdgsrfs3d(superlu_dist_options_t *options, int_t n,
 
 
 #if ( DEBUGlevel>=1 )
-    CHECK_MALLOC(iam, "Enter pdgsrfs()");
+    CHECK_MALLOC(iam, "Enter pdgsrfs3D()");
 #endif
 
     lwork = 2 * m_loc;  /* For ax/R/dx and temp */
@@ -447,30 +447,30 @@ pdgsrfs3d(superlu_dist_options_t *options, int_t n,
 	    /* Compute residual R = B - op(A) * X,
 	       where op(A) = A, A**T, or A**H, depending on TRANS. */
 
-        if (!grid3d->zscp.Iam){
-            /* Matrix-vector multiply. */
-            pdgsmv(0, A, grid, gsmv_comm, X_col, ax);
+if (!grid3d->zscp.Iam){
+	    /* Matrix-vector multiply. */
+	    pdgsmv(0, A, grid, gsmv_comm, X_col, ax);
 
-            /* Compute residual, stored in R[]. */
-            for (i = 0; i < m_loc; ++i) R[i] = B_col[i] - ax[i];
+	    /* Compute residual, stored in R[]. */
+	    for (i = 0; i < m_loc; ++i) R[i] = B_col[i] - ax[i];
 
-            /* Compute abs(op(A))*abs(X) + abs(B), stored in temp[]. */
-            pdgsmv(1, A, grid, gsmv_comm, X_col, temp);
-            for (i = 0; i < m_loc; ++i) temp[i] += fabs(B_col[i]);
+	    /* Compute abs(op(A))*abs(X) + abs(B), stored in temp[]. */
+	    pdgsmv(1, A, grid, gsmv_comm, X_col, temp);
+	    for (i = 0; i < m_loc; ++i) temp[i] += fabs(B_col[i]);
 
-            s = 0.0;
-            for (i = 0; i < m_loc; ++i) {
-            if ( temp[i] > safe2 ) {
-                s = SUPERLU_MAX(s, fabs(R[i]) / temp[i]);
-            } else if ( temp[i] != 0.0 ) {
-                        /* Adding SAFE1 to the numerator guards against
-                        spuriously zero residuals (underflow). */
-                        s = SUPERLU_MAX(s, (safe1 + fabs(R[i])) /temp[i]);
-                    }
-                    /* If temp[i] is exactly 0.0 (computed by PxGSMV), then
-                    we know the true residual also must be exactly 0.0. */
-            }
-            MPI_Allreduce( &s, &berr[j], 1, MPI_DOUBLE, MPI_MAX, grid->comm );
+	    s = 0.0;
+	    for (i = 0; i < m_loc; ++i) {
+		if ( temp[i] > safe2 ) {
+		    s = SUPERLU_MAX(s, fabs(R[i]) / temp[i]);
+		} else if ( temp[i] != 0.0 ) {
+                    /* Adding SAFE1 to the numerator guards against
+                       spuriously zero residuals (underflow). */
+                    s = SUPERLU_MAX(s, (safe1 + fabs(R[i])) /temp[i]);
+                }
+                /* If temp[i] is exactly 0.0 (computed by PxGSMV), then
+                   we know the true residual also must be exactly 0.0. */
+	    }
+	    MPI_Allreduce( &s, &berr[j], 1, MPI_DOUBLE, MPI_MAX, grid->comm );
         }
         MPI_Bcast( &berr[j], 1, MPI_DOUBLE, 0,  grid3d->zscp.comm);
 
@@ -490,7 +490,7 @@ pdgsrfs3d(superlu_dist_options_t *options, int_t n,
 
 		/* Update solution. */
         if (!grid3d->zscp.Iam)
-		    for (i = 0; i < m_loc; ++i) X_col[i] += dx[i];
+		for (i = 0; i < m_loc; ++i) X_col[i] += dx[i];
 
 		lstres = berr[j];
 		++count;
@@ -507,7 +507,7 @@ pdgsrfs3d(superlu_dist_options_t *options, int_t n,
     SUPERLU_FREE(work);
 
 #if ( DEBUGlevel>=1 )
-    CHECK_MALLOC(iam, "Exit pdgsrfs()");
+    CHECK_MALLOC(iam, "Exit pdgsrfs3d()");
 #endif
 
 } /* PDGSRFS3D */

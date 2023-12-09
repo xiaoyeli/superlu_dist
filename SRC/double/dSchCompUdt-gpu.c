@@ -42,13 +42,13 @@ if ( msg0 && msg2 ) {  /* L(:,k) and U(k,:) are not empty. */
 
     if (nbrow>0) {
 
-        // Maximum number of columns that can fit in dC[buffer_size] on GPU 
+        // Maximum number of columns that can fit in dC[buffer_size] on GPU
 #if 0   // max_ldu can be < ldt, so bigu_size/ldt may be smaller, giving false alarm
         int ncol_max = SUPERLU_MIN(buffer_size/nbrow,bigu_size/ldt);
 #else // Sherry fix
         int ncol_max = SUPERLU_MIN(buffer_size/nbrow, max_ncols);
 #endif
-	
+
         int num_streams_used, /* number of streams that will be used*/
         ncpu_blks;            /* the leading number of CPU dgemm blks
 			         in each partition */
@@ -77,7 +77,7 @@ if ( msg0 && msg2 ) {  /* L(:,k) and U(k,:) are not empty. */
 	int parts = 1;
         // #pragma omp barrier
         while ( jjj < nub ) {
-#if ( PRNTlevel>=1 )	
+#if ( PRNTlevel>=1 )
            if ( parts>1 ){
 	      printf("warning: number of partitions %d > 1, try increasing MAX_BUFFER_SIZE.\n",
 	              parts);
@@ -130,7 +130,7 @@ if ( msg0 && msg2 ) {  /* L(:,k) and U(k,:) are not empty. */
             } /* pragma omp single */
 
             jjj = jjj_global; /* Move to the next [ CPU : GPU ] partition */
-	    
+
 #if 0 // !!Sherry: this test is not necessary
 	    // if jjj_global - jjj_st == 1, everything is on CPU.
 	    // bigv_size is calculated sufficiently large.
@@ -149,13 +149,13 @@ if ( msg0 && msg2 ) {  /* L(:,k) and U(k,:) are not empty. */
             assert(jjj_st<nub);
             assert(jjj-1<nub);
             // TAU_STATIC_TIMER_START("GATHER_U");
-	    
+
 	    tt_start = SuperLU_timer_();
 
 #ifdef _OPENMP
 #pragma omp for schedule( SCHEDULE_STRATEGY )
 #endif
-	    // Copy U segments into tempu, up to jjj_global block */	
+	    // Copy U segments into tempu, up to jjj_global block */
             for (j = jjj_st; j < jjj; ++j) {
                 if (j==jjj_st) tempu = bigU; /* leading block(s) on CPU */
                 else tempu = bigU + ldu*full_u_cols[j-1];
@@ -184,7 +184,7 @@ if ( msg0 && msg2 ) {  /* L(:,k) and U(k,:) are not empty. */
 
 	    tt_end = SuperLU_timer_();
 	    GatherUTimer += tt_end - tt_start;
-	    
+
 	    if ( num_streams_used > 0 ) {
 #ifdef PI_DEBUG
 		printf("nbrow %d *ldu %d  =%d < ldt %d * max_row_size %d =%d \n",nbrow,ldu,nbrow*ldu,ldt,max_row_size,ldt*max_row_size ); fflush(stdout);
@@ -207,7 +207,7 @@ if ( msg0 && msg2 ) {  /* L(:,k) and U(k,:) are not empty. */
 
 		/* Following is for testing purpose */
 		if ( num_col_stream > 0 ) {
-		
+
 #ifdef GPU_ACC  /* Sherry: this file is not used if GPU_ACC is not defined. */
 		    int stream_id = i;
 		    int b_offset  = ldu * st_col;
@@ -216,7 +216,7 @@ if ( msg0 && msg2 ) {  /* L(:,k) and U(k,:) are not empty. */
 		    size_t C_stream_size = nbrow * num_col_stream * sizeof(double);
 
 		    // Sherry: Check dC buffer of *buffer_size* is large enough
-		    assert(nbrow*(st_col+num_col_stream) <= buffer_size);
+		    assert(nbrow*(st_col+num_col_stream) < buffer_size);
 
 		    gpuMemcpyAsync(dB+b_offset, tempu+b_offset, B_stream_size,
 		    		    gpuMemcpyHostToDevice, streams[stream_id]);
@@ -242,7 +242,7 @@ if ( msg0 && msg2 ) {  /* L(:,k) and U(k,:) are not empty. */
 					   streams[stream_id]) );
 #else /*-- on CPU --*/
 		} else { // num_col_stream == 0  Sherry: how can get here?
-                    // Sherry: looks like a batched GEMM 
+                    // Sherry: looks like a batched GEMM
 	            my_dgemm_("N", "N", &nbrow, &num_col_stream, &ldu,
 			      &alpha, &lusup[luptr+(knsupc-ldu)*nsupr],
 			      &nsupr, tempu+ldu*st_col, &ldu, &beta,
@@ -254,7 +254,7 @@ if ( msg0 && msg2 ) {  /* L(:,k) and U(k,:) are not empty. */
 
 	    } /* end for i = 1 to num_streams used */
 
-	    /* Special case for CPU -- leading block columns are computed 
+	    /* Special case for CPU -- leading block columns are computed
 	       on CPU in order to mask the GPU data transfer latency */
 	    int num_col = full_u_cols[jjj_st+ncpu_blks-1];
 	    int st_col = 0; /* leading part on CPU */
@@ -293,13 +293,13 @@ if ( msg0 && msg2 ) {  /* L(:,k) and U(k,:) are not empty. */
     firstprivate(luptr,lptr) default (shared)
 #endif
             {
-#ifdef _OPENMP	    
+#ifdef _OPENMP
                 int thread_id = omp_get_thread_num();
 		int num_threads = omp_get_num_threads();
 #else
                 int thread_id = 0;
 		int num_threads = 1;
-#endif		
+#endif
 
                 int* indirect_thread = indirect + ldt*thread_id;
                 int* indirect2_thread = indirect2 + ldt*thread_id;
@@ -477,7 +477,7 @@ if ( msg0 && msg2 ) {  /* L(:,k) and U(k,:) are not empty. */
 	    }         /* parallel region */
 
 	    scatter_timer += SuperLU_timer_() - tstart;
-	    
+
 	    // Scatter tempv(:, (jjj_st1 : jjj_global)) computed on GPU.
 #ifdef _OPENMP
 #pragma omp parallel							\
@@ -489,9 +489,9 @@ if ( msg0 && msg2 ) {  /* L(:,k) and U(k,:) are not empty. */
     firstprivate(luptr,lptr) default (shared)
 #endif
             {
-#ifdef _OPENMP	    
+#ifdef _OPENMP
                 int thread_id = omp_get_thread_num();
-#else		
+#else
                 int thread_id = 0;
 #endif
                 int* indirect_thread = indirect + ldt*thread_id;
@@ -584,13 +584,13 @@ if ( msg0 && msg2 ) {  /* L(:,k) and U(k,:) are not empty. */
                     } /* for j = jjj_st ... */
 
                 } /* end for i = 0 to num_streams_used  */
-		
+
                 // TAU_STATIC_TIMER_STOP("GPU_SCATTER");
                 // TAU_STATIC_TIMER_STOP("INSIDE_OMP");
-		
+
             } /* end pragma omp parallel */
             // TAU_STATIC_TIMER_STOP("OUTSIDE_OMP");
-	    
+
 	    RemainScatterTimer += SuperLU_timer_() - tstart;
 
         }  /* end while(jjj<nub) */

@@ -51,7 +51,7 @@ dreadMM_dist(FILE *fp, int_t *m, int_t *n, int_t *nonz,
      *    % ...
      *    % (optional comments)
      *    % ...
-     *    #rows    #non-zero
+     *    #rows  #cols  #non-zeros
      *    Triplet in the rest of lines: row    col    value
      */
 

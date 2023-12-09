@@ -2381,7 +2381,7 @@ t1 = SuperLU_timer_();
 					knsupc = SuperSize( k );
 					for (ii=1;ii<num_thread;ii++)
 					    for (jj=0;jj<knsupc*nrhs;jj++)
-						lsum[il + jj] += lsum[il + jj + ii*sizelsum];
+						lsum[il + jj ] += lsum[il + jj + ii*sizelsum];
 					//RdTree_forwardMessageSimple(LRtree_ptr[lk],&lsum[il-LSUM_H],RdTree_GetMsgSize(LRtree_ptr[lk],'d')*nrhs+LSUM_H,'d');
 					C_RdTree_forwardMessageSimple(&LRtree_ptr[lk],&lsum[il - LSUM_H ],LRtree_ptr[lk].msgSize_*nrhs+LSUM_H);
 				    } /* end if-else */

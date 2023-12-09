@@ -10,6 +10,8 @@ at the top-level directory.
 */
 
 
+
+
 /*! @file
  * \brief Solves a system of distributed linear equations A*X = B with a
  * general N-by-N matrix A using the LU factors computed previously.
@@ -59,7 +61,7 @@ int_t dtrs_B_init3d(int_t nsupers, double* x, int nrhs, dLUstruct_t * LUstruct,
 	return 0;
 }
 
-// Broadcast the RHS to all grids from grid 0. Once received, every grid zeros out certain subvectors to allow for the new 3D solve. 
+// Broadcast the RHS to all grids from grid 0. Once received, every grid zeros out certain subvectors to allow for the new 3D solve.
 int_t dtrs_B_init3d_newsolve(int_t nsupers, double* x, int nrhs, dLUstruct_t * LUstruct,
 	gridinfo3d_t *grid3d, dtrf3Dpartition_t*  trf3Dpartition)
 {
@@ -143,7 +145,7 @@ int_t dtrs_B_init3d_newsolve(int_t nsupers, double* x, int nrhs, dLUstruct_t * L
 	return 0;
 }
 
-// #ifdef HAVE_NVSHMEM   
+// #ifdef HAVE_NVSHMEM
 /*global variables for nvshmem, is it safe to be put them here? */
 double *dready_x, *dready_lsum;
 // #endif
@@ -325,7 +327,7 @@ int_t dtrs_compute_communication_structure(superlu_dist_options_t *options, int_
 	}
 
 #ifdef GPU_ACC
-#ifdef HAVE_NVSHMEM  
+#ifdef HAVE_NVSHMEM
     if ( !(mystatus = (int*)SUPERLU_MALLOC(kc * sizeof(int))) )
         ABORT("Malloc fails for mystatus[].");
     if ( !(h_nfrecv = (int*)SUPERLU_MALLOC( 3* sizeof(int))) )
@@ -409,7 +411,7 @@ int_t dtrs_compute_communication_structure(superlu_dist_options_t *options, int_
                         //C_BcTree_Create(&LBtree_ptr[ljb], grid->comm, ranks, rank_cnt, msgsize, 'd');
                         //printf("(%d) HOST create:ljb=%d,msg=%d,needrecv=%d\n",iam,ljb,mysendmsg_num,needrecv);
                         #ifdef GPU_ACC
-                        #ifdef HAVE_NVSHMEM  
+                        #ifdef HAVE_NVSHMEM
                         if (needrecv==1) {
                             mystatus[lk]=0;
                             //printf("(%d) Col %d need one msg %d\n",iam, ljb,mystatus[ljb]);
@@ -442,7 +444,7 @@ int_t dtrs_compute_communication_structure(superlu_dist_options_t *options, int_
 		C_RdTree_Nullify(&LRtree_ptr[lk]);
 	}
 #ifdef GPU_ACC
-#ifdef HAVE_NVSHMEM      
+#ifdef HAVE_NVSHMEM
     if ( !(mystatusmod = (int*)SUPERLU_MALLOC(2*kr * sizeof(int))) )
         ABORT("Malloc fails for mystatusmod[].");
 	if ( !(h_recv_cnt = (int*)SUPERLU_MALLOC(kr * sizeof(int))) )
@@ -522,7 +524,7 @@ int_t dtrs_compute_communication_structure(superlu_dist_options_t *options, int_
                         C_RdTree_Create_nv(&LRtree_ptr[lk], grid->comm, ranks, rank_cnt, msgsize, 'd', &needrecvrd, &needsendrd);
                         //C_RdTree_Create(&LRtree_ptr[lib], grid->comm, ranks, rank_cnt, msgsize, 'd');
                         #ifdef GPU_ACC
-                        #ifdef HAVE_NVSHMEM  
+                        #ifdef HAVE_NVSHMEM
                         h_nfrecvmod[3]+=needsendrd;
                         if (needrecvrd!=0) {
                             mystatusmod[lk*2]=0;
@@ -642,7 +644,7 @@ int_t dtrs_compute_communication_structure(superlu_dist_options_t *options, int_
 		C_BcTree_Nullify(&UBtree_ptr[lk]);
 	}
 #ifdef GPU_ACC
-#ifdef HAVE_NVSHMEM      
+#ifdef HAVE_NVSHMEM
 	if ( !(mystatus_u = (int*)SUPERLU_MALLOC(kc * sizeof(int))) )
         ABORT("Malloc fails for mystatus_u[].");
     if ( !(h_nfrecv_u = (int*)SUPERLU_MALLOC( 3* sizeof(int))) )
@@ -736,18 +738,18 @@ int_t dtrs_compute_communication_structure(superlu_dist_options_t *options, int_
                             ranks[ii] = PNUM( ranks[ii], pc, grid );
                         msgsize = SuperSize( jb );
                         // C_BcTree_Create(&UBtree_ptr[lk], grid->comm, ranks, rank_cnt, msgsize, 'd');
-                        
+
                         int needrecv=0;
                         C_BcTree_Create_nv(&UBtree_ptr[lk], grid->comm, ranks, rank_cnt, msgsize, 'd',&needrecv);
                         //C_BcTree_Create(&UBtree_ptr[ljb], grid->comm, ranks, rank_cnt, msgsize, 'd');
                         #ifdef GPU_ACC
-                        #ifdef HAVE_NVSHMEM  
+                        #ifdef HAVE_NVSHMEM
                         if (needrecv==1) {
                             mystatus_u[lk]=0;
                             //printf("(%d) Col %d need one msg %d\n",iam, ljb,mystatus[ljb]);
-                        }     
-                        #endif                   
-                        #endif                   
+                        }
+                        #endif
+                        #endif
                         UBtree_ptr[lk].tag_=BC_U;
                     }
                 }
@@ -770,7 +772,7 @@ int_t dtrs_compute_communication_structure(superlu_dist_options_t *options, int_
 	}
 
     #ifdef GPU_ACC
-    #ifdef HAVE_NVSHMEM  
+    #ifdef HAVE_NVSHMEM
 	if ( !(mystatusmod_u = (int*)SUPERLU_MALLOC(2*kr * sizeof(int))) )
         ABORT("Malloc fails for mystatusmod_u[].");
     if ( !(h_recv_cnt_u = (int*)SUPERLU_MALLOC(kr * sizeof(int))) )
@@ -852,7 +854,7 @@ int_t dtrs_compute_communication_structure(superlu_dist_options_t *options, int_
                         C_RdTree_Create_nv(&URtree_ptr[lk], grid->comm, ranks, rank_cnt, msgsize, 'd', &needrecvrd,&needsendrd);
                         //C_RdTree_Create(&URtree_ptr[lib], grid->comm, ranks, rank_cnt, msgsize, 'd');
                         #ifdef GPU_ACC
-                        #ifdef HAVE_NVSHMEM  
+                        #ifdef HAVE_NVSHMEM
                         h_nfrecvmod_u[3] +=needsendrd;
                         if (needrecvrd!=0) {
                             mystatusmod_u[lk*2]=0;
@@ -1255,20 +1257,20 @@ int_t dtrs_compute_communication_structure(superlu_dist_options_t *options, int_
 	Llu->UBtree_ptr = UBtree_ptr;
 
 
-    Llu->nbcol_masked=0; 
+    Llu->nbcol_masked=0;
 	for (int_t lk = 0; lk < kc; ++lk) { /* for each local block column ... */
 		jb = mycol+lk*grid->npcol;  /* not sure */
         if(jb<nsupers){
             if(supernodeMask[jb]==1){ // only record the columns performed on GPU
-               Llu->nbcol_masked++; 
+               Llu->nbcol_masked++;
             }
         }
     }
  	if ( !(Llu->bcols_masked =
 				(int*)SUPERLU_MALLOC(Llu->nbcol_masked * sizeof(int))) ) {
 		fprintf(stderr, "Malloc fails for nbcol_masked[].");
-	}   
-    Llu->nbcol_masked=0; 
+	}
+    Llu->nbcol_masked=0;
 	for (int_t lk = 0; lk < kc; ++lk) { /* for each local block column ... */
 		jb = mycol+lk*grid->npcol;  /* not sure */
         if(jb<nsupers){
@@ -1284,7 +1286,7 @@ int_t dtrs_compute_communication_structure(superlu_dist_options_t *options, int_
 #ifdef GPU_ACC
     if (get_acc_solve()){
 	checkGPU(gpuMalloc( (void**)&Llu->d_bcols_masked, Llu->nbcol_masked * sizeof(int)));
-	checkGPU(gpuMemcpy(Llu->d_bcols_masked, Llu->bcols_masked, Llu->nbcol_masked * sizeof(int), gpuMemcpyHostToDevice));        
+	checkGPU(gpuMemcpy(Llu->d_bcols_masked, Llu->bcols_masked, Llu->nbcol_masked * sizeof(int), gpuMemcpyHostToDevice));
 	checkGPU(gpuMalloc( (void**)&Llu->d_xsup, (n+1) * sizeof(int_t)));
 	checkGPU(gpuMemcpy(Llu->d_xsup, xsup, (n+1) * sizeof(int_t), gpuMemcpyHostToDevice));
 	checkGPU(gpuMalloc( (void**)&Llu->d_LRtree_ptr, CEILING( nsupers, grid->nprow ) * sizeof(C_Tree)));
@@ -1306,7 +1308,7 @@ int_t dtrs_compute_communication_structure(superlu_dist_options_t *options, int_
 	checkGPU(gpuMalloc( (void**)&Llu->d_Lnzval_bc_offset, CEILING( nsupers, grid->npcol ) * sizeof(long int)));
 	checkGPU(gpuMemcpy(Llu->d_Lnzval_bc_offset, Llu->Lnzval_bc_offset, CEILING( nsupers, grid->npcol ) * sizeof(long int), gpuMemcpyHostToDevice));
     checkGPU(gpuMalloc( (void**)&Llu->d_grid, sizeof(gridinfo_t)));
-    checkGPU(gpuMemcpy(Llu->d_grid, grid, sizeof(gridinfo_t), gpuMemcpyHostToDevice));	
+    checkGPU(gpuMemcpy(Llu->d_grid, grid, sizeof(gridinfo_t), gpuMemcpyHostToDevice));
 
 	// some dummy allocation to avoid checking whether they are null pointers later
 #if 0
@@ -1322,11 +1324,11 @@ int_t dtrs_compute_communication_structure(superlu_dist_options_t *options, int_
     Llu->d_Ucolind_bc_offset=NULL;
     Llu->d_Ucolind_br_offset=NULL;
     Llu->d_Uind_br_dat=NULL;
-    Llu->d_Uind_br_offset=NULL;    
+    Llu->d_Uind_br_offset=NULL;
     Llu->d_Unzval_bc_dat=NULL;
     Llu->d_Unzval_bc_offset=NULL;
     Llu->d_Unzval_br_new_dat=NULL;
-    Llu->d_Unzval_br_new_offset=NULL;    
+    Llu->d_Unzval_br_new_offset=NULL;
     Llu->d_Uindval_loc_bc_dat=NULL;
     Llu->d_Uindval_loc_bc_offset=NULL;
 #endif
@@ -1344,25 +1346,20 @@ int_t dtrs_compute_communication_structure(superlu_dist_options_t *options, int_
 	checkGPU(gpuMalloc( (void**)&Llu->d_Lnzval_bc_dat, (Llu->Lnzval_bc_cnt) * sizeof(double)));
 	checkGPU(gpuMalloc( (void**)&Llu->d_Linv_bc_dat, (Llu->Linv_bc_cnt) * sizeof(double)));
 	checkGPU(gpuMalloc( (void**)&Llu->d_Uinv_bc_dat, (Llu->Uinv_bc_cnt) * sizeof(double)));
-    
-    
+
+
     /* nvshmem related*/
- #ifdef HAVE_NVSHMEM   
+ #ifdef HAVE_NVSHMEM
 	checkGPU(gpuMalloc( (void**)&d_recv_cnt, CEILING(nsupers, grid->nprow) * sizeof(int)));
 	checkGPU(gpuMemcpy(d_recv_cnt, h_recv_cnt,  CEILING(nsupers, grid->nprow) * sizeof(int), gpuMemcpyHostToDevice));
     checkGPU(gpuMalloc( (void**)&d_recv_cnt_u, CEILING(nsupers, grid->nprow) * sizeof(int)));
     checkGPU(gpuMemcpy(d_recv_cnt_u, h_recv_cnt_u,  CEILING(nsupers, grid->nprow) * sizeof(int), gpuMemcpyHostToDevice));
-    
+
     SUPERLU_FREE(h_recv_cnt);
     SUPERLU_FREE(h_recv_cnt_u);
 #endif
     }
 #endif
-
-
-
-
-
 
     // /* recompute fmod, bmod */
 	// for (int_t i = 0; i < kc; ++i)
@@ -1864,7 +1861,8 @@ int_t dlsumForestFsolve(int_t k,
 	{
 		int_t ik = lsub[lptr]; /* Global block number, row-wise. */
 		int nbrow = lsub[lptr + 1];
-		double alpha = 1.0, beta = 0.0;
+        double alpha = 1.0;
+        double beta = 0.0;
 #ifdef _CRAY
 		SGEMM( ftcs2, ftcs2, &nbrow, &nrhs, &knsupc,
 		       &alpha, &lusup[luptr], &nsupr, xk,
@@ -2201,7 +2199,8 @@ void dlsum_fmod_leaf (
     SuperLUStat_t *stat,xtrsTimer_t *xtrsTimer)
 
 {
-	double alpha = 1.0, beta = 0.0;
+    double alpha = 1.0;
+    double beta = 0.0;
 	double *lusup, *lusup1;
 	double *dest;
 	int    iam, iknsupc, myrow, nbrow, nsupr, nsupr1, p, pi;
@@ -2560,7 +2559,7 @@ int_t dleafForestForwardSolve3d_newsolve(superlu_dist_options_t *options, int_t 
 void dForwardSolve3d_newsolve_reusepdgstrs(superlu_dist_options_t *options, int_t n,  dLUstruct_t * LUstruct,
                                dScalePermstruct_t * ScalePermstruct,
                                int*  supernodeMask, gridinfo3d_t *grid3d,
-                               double * x, double * lsum, 
+                               double * x, double * lsum,
                                int nrhs,
                                dSOLVEstruct_t * SOLVEstruct, SuperLUStat_t * stat, xtrsTimer_t *xtrsTimer)
 {
@@ -2688,7 +2687,7 @@ void dForwardSolve3d_newsolve_reusepdgstrs(superlu_dist_options_t *options, int_
 
 
 
-#if defined(GPU_ACC) && defined(SLU_HAVE_LAPACK) && defined(GPU_SOLVE)  
+#if defined(GPU_ACC) && defined(SLU_HAVE_LAPACK) && defined(GPU_SOLVE)
 
 #if ( PRNTlevel>=1 )
 
@@ -2707,7 +2706,7 @@ void dForwardSolve3d_newsolve_reusepdgstrs(superlu_dist_options_t *options, int_
 	gridinfo_t *d_grid = NULL;
 	double *d_x = NULL;
 	double *d_lsum = NULL;
-    int  *d_fmod = NULL;		
+    int  *d_fmod = NULL;
 #endif
 
 
@@ -2763,7 +2762,7 @@ void dForwardSolve3d_newsolve_reusepdgstrs(superlu_dist_options_t *options, int_
        subsequent call to PDGSTRS. */
 
 /* skip fmod on CPU if using GPU solve*/
-if ( !(get_new3dsolvetreecomm() && get_acc_solve())){     
+if ( !(get_new3dsolvetreecomm() && get_acc_solve())){
 	fmod = getfmod_newsolve(nlb, nsupers, supernodeMask, LUstruct->Llu->Lrowind_bc_ptr, LUstruct->Llu->Lindval_loc_bc_ptr, grid);
 }
 	int  nfrecvx = getNfrecvx_newsolve(nsupers, supernodeMask, LUstruct->Llu->Lrowind_bc_ptr, LUstruct->Llu->Lindval_loc_bc_ptr, grid);
@@ -2830,7 +2829,7 @@ if ( !(get_new3dsolvetreecomm() && get_acc_solve())){
 	// if ( myrow == krow ) {
 	//     lk = LBi( k, grid );   /* Local block number. */
 	//     il = LSUM_BLK( lk );
-	//     lsum[il - LSUM_H] = k; /* Block number prepended in the header. */
+	    // lsum[il - LSUM_H] = k; /* Block number prepended in the header. */
 	// }
     // }
 
@@ -2863,22 +2862,22 @@ if ( !(get_new3dsolvetreecomm() && get_acc_solve())){
 
 	for (lk=0;lk<nsupers_j;++lk){
 		if(LBtree_ptr[lk].empty_==NO){
-            xtrsTimer->trsDataSendXY  += LBtree_ptr[lk].msgSize_*nrhs+XK_H; 
+            xtrsTimer->trsDataSendXY  += LBtree_ptr[lk].msgSize_*nrhs+XK_H;
 		}
     }
 	for (lk=0;lk<nsupers_i;++lk){
 		if(LRtree_ptr[lk].empty_==NO){
-            xtrsTimer->trsDataSendXY  += LRtree_ptr[lk].msgSize_*nrhs+LSUM_H; 
+            xtrsTimer->trsDataSendXY  += LRtree_ptr[lk].msgSize_*nrhs+LSUM_H;
 		}
     }
-    
+
 
     /* skip fmod,leafsups,nleaf on CPU if using GPU solve*/
     if ( !(get_new3dsolvetreecomm() && get_acc_solve())){
         if(procs==1){
             for (lk=0;lk<nsupers_i;++lk){
                 gb = myrow+lk*grid->nprow;  /* not sure */
-                if(gb<nsupers){                   
+                if(gb<nsupers){
                         if (fmod[lk*aln_i]==0 && supernodeMask[gb]){
                                 leafsups[nleaf]=gb;
                                 ++nleaf;
@@ -2898,7 +2897,7 @@ if ( !(get_new3dsolvetreecomm() && get_acc_solve())){
                                 kcol = PCOL( gb, grid );
                                 if(mycol==kcol) { /* Diagonal process */
                                     /* skip fmod,leafsups,nleaf on CPU if using GPU solve*/
-                                    if ( !(get_new3dsolvetreecomm() && get_acc_solve())){    
+                                    if ( !(get_new3dsolvetreecomm() && get_acc_solve())){
                                         if (fmod[lk*aln_i]==0 && supernodeMask[gb]){
                                                 leafsups[nleaf]=gb;
                                                 ++nleaf;
@@ -2908,7 +2907,7 @@ if ( !(get_new3dsolvetreecomm() && get_acc_solve())){
                         }
                 }
             }
-        }        
+        }
     }else{
         if(procs>1){
             for (lk=0;lk<nsupers_i;++lk){
@@ -2922,11 +2921,11 @@ if ( !(get_new3dsolvetreecomm() && get_acc_solve())){
                     }
                 }
             }
-        }   
-    }   
+        }
+    }
 
 /* skip fmod on CPU if using GPU solve*/
-if ( !(get_new3dsolvetreecomm() && get_acc_solve())){    
+if ( !(get_new3dsolvetreecomm() && get_acc_solve())){
 	for (i = 0; i < nlb; ++i) fmod[i*aln_i] += frecv[i];
 }
 	if ( !(recvbuf_BC_fwd = (double*)SUPERLU_MALLOC(maxrecvsz*(nfrecvx+1) * sizeof(double))) )  // this needs to be optimized for 1D row mapping
@@ -2972,17 +2971,17 @@ if ( !(get_new3dsolvetreecomm() && get_acc_solve())){
 	// ii = X_BLK( 0 );
 	// knsupc = SuperSize( 0 );
 	// for (i=0 ; i<knsupc*nrhs ; i++){
-	// printf("x_l: %f\n",x[ii+i]);
+	    // printf("x_l: %f\n",x[ii+i]);
 	// fflush(stdout);
 	// }
 
     if (get_acc_solve()) /* GPU trisolve*/
     {
-#if defined(GPU_ACC) && defined(SLU_HAVE_LAPACK) && defined(GPU_SOLVE) 
+#if defined(GPU_ACC) && defined(SLU_HAVE_LAPACK) && defined(GPU_SOLVE)
 // #if 0 /* CPU trisolve*/
 
 // #if HAVE_CUDA
-// cudaProfilerStart(); 
+// cudaProfilerStart();
 // #elif defined(HAVE_HIP)
 // roctracer_mark("before HIP LaunchKernel");
 // roctxMark("before hipLaunchKernel");
@@ -2999,14 +2998,14 @@ if ( !(get_new3dsolvetreecomm() && get_acc_solve())){
 	d_grid=Llu->d_grid;
 
 	checkGPU(gpuMemcpy(d_fmod, SOLVEstruct->d_fmod_save, nlb * sizeof(int), gpuMemcpyDeviceToDevice));
-    checkGPU(gpuMemcpy(d_lsum, SOLVEstruct->d_lsum_save, sizelsum * sizeof(double), gpuMemcpyDeviceToDevice));	
-	checkGPU(gpuMemcpy(d_x, x, (ldalsum * nrhs + nlb * XK_H) * sizeof(double), gpuMemcpyHostToDevice));	
-	
+    checkGPU(gpuMemcpy(d_lsum, SOLVEstruct->d_lsum_save, sizelsum * sizeof(double), gpuMemcpyDeviceToDevice));
+	checkGPU(gpuMemcpy(d_x, x, (ldalsum * nrhs + nlb * XK_H) * sizeof(double), gpuMemcpyHostToDevice));
+
 	k = CEILING( nsupers, grid->npcol);/* Number of local block columns divided by #warps per block used as number of thread blocks*/
 	knsupc = sp_ienv_dist(3, options);
 
-    if(procs>1){ /* only nvshmem needs the following*/  
-    #ifdef HAVE_NVSHMEM  
+    if(procs>1){ /* only nvshmem needs the following*/
+    #ifdef HAVE_NVSHMEM
     checkGPU(gpuMemcpy(d_status, mystatus, k * sizeof(int), gpuMemcpyHostToDevice));
 	checkGPU(gpuMemcpy(d_statusmod, mystatusmod, 2* nlb * sizeof(int), gpuMemcpyHostToDevice));
 	//for(int i=0;i<2*nlb;i++) printf("(%d),mystatusmod[%d]=%d\n",iam,i,mystatusmod[i]);
@@ -3042,8 +3041,8 @@ if ( !(get_new3dsolvetreecomm() && get_acc_solve())){
 	if ( !iam) printf(".. Grid %3d: around L kernel time\t%8.4f\n", myGrid, t);
 #endif
 
-	stat_loc[0]->ops[SOLVE]+=Llu->Lnzval_bc_cnt*nrhs*2; // YL: this is a rough estimate 
-#endif	
+	stat_loc[0]->ops[SOLVE]+=Llu->Lnzval_bc_cnt*nrhs*2; // YL: this is a rough estimate
+#endif
     }else{/* CPU trisolve */
 
 tx = SuperLU_timer_();
@@ -3103,12 +3102,12 @@ thread_id=0;
 #endif
 
 					for (i=0 ; i<knsupc*nrhs ; i++){
-						x[ii+i] = rtemp_loc[i];
+				        x[ii+i] = rtemp_loc[i];
 					}
 							// printf("\n");
-							// printf("k: %5d\n",k);	
-					// for (i=0 ; i<knsupc*nrhs ; i++){				
-					// printf("x_l: %f\n",x[ii+i]);
+							// printf("k: %5d\n",k);
+					// for (i=0 ; i<knsupc*nrhs ; i++){
+                        // printf("x_l: %f\n",x[ii+i]);
 					// fflush(stdout);
 					// }
 
@@ -3119,7 +3118,8 @@ thread_id=0;
 
 #endif
 
-					stat_loc[thread_id]->ops[SOLVE] += knsupc * (knsupc - 1) * nrhs;
+			        stat_loc[thread_id]->ops[SOLVE] += knsupc * (knsupc - 1) * nrhs;
+
 
 
 					// --nleaf;
@@ -3184,7 +3184,7 @@ thread_id=0;
 
 #endif
 
-		    stat_loc[thread_id]->ops[SOLVE] += knsupc * (knsupc - 1) * nrhs;
+            stat_loc[thread_id]->ops[SOLVE] += knsupc * (knsupc - 1) * nrhs;
 
 		    // --nleaf;
 #if ( DEBUGlevel>=2 )
@@ -3268,7 +3268,7 @@ thread_id=0;
 					ii = X_BLK( lib );
 					// BcTree_forwardMessageSimple(LBtree_ptr[lk],&x[ii - XK_H],BcTree_GetMsgSize(LBtree_ptr[lk],'d')*nrhs+XK_H,'d');
 					C_BcTree_forwardMessageSimple(&LBtree_ptr[lk], &x[ii - XK_H], LBtree_ptr[lk].msgSize_*nrhs+XK_H);
-				
+
 				}else{ // this is a reduce forwarding
 					lk = -lk - 1;
 					il = LSUM_BLK( lk );
@@ -3313,8 +3313,8 @@ thread_id=0;
 						/* Receive a message. */
 						MPI_Recv( recvbuf0, maxrecvsz, MPI_DOUBLE,
 								MPI_ANY_SOURCE, MPI_ANY_TAG, grid->comm, &status );
-                        xtrsTimer->tfs_comm += SuperLU_timer_() - tx;                        
-                        
+                        xtrsTimer->tfs_comm += SuperLU_timer_() - tx;
+
 						// MPI_Irecv(recvbuf0,maxrecvsz,MPI_DOUBLE,MPI_ANY_SOURCE,MPI_ANY_TAG,grid->comm,&req);
 						// ready=0;
 						// while(ready==0){
@@ -3332,7 +3332,7 @@ thread_id=0;
 
 						{
                             double tx = SuperLU_timer_();
-							k = *recvbuf0;
+			                k = *recvbuf0;
 
 #if ( DEBUGlevel>=2 )
 							printf("(%2d) Recv'd block %d, tag %2d\n", iam, k, status.MPI_TAG);
@@ -3344,7 +3344,7 @@ thread_id=0;
 								nfrecvx_buf++;
 								{
 									lk = LBj( k, grid );    /* local block number */
-										
+
 									if(LBtree_ptr[lk].destCnt_>0){
 
 										// BcTree_forwardMessageSimple(LBtree_ptr[lk],recvbuf0,BcTree_GetMsgSize(LBtree_ptr[lk],'d')*nrhs+XK_H,'d');
@@ -3389,7 +3389,7 @@ thread_id=0;
 								il = LSUM_BLK( lk );
 								RHS_ITERATE(j) {
 									for (i = 0; i < knsupc; ++i)
-										lsum[i + il + j*knsupc + thread_id*sizelsum] += tempv[i + j*knsupc];
+					                    lsum[i + il + j*knsupc + thread_id*sizelsum] += tempv[i + j*knsupc];
 
 								}
 
@@ -3411,7 +3411,7 @@ thread_id=0;
 											ii = X_BLK( lk );
 											RHS_ITERATE(j)
 												for (i = 0; i < knsupc; ++i)
-													x[i + ii + j*knsupc] += lsum[i + il + j*knsupc ];
+					                                x[i + ii + j*knsupc] += lsum[i + il + j*knsupc];
 
 											// fmod[lk] = -1; /* Do not solve X[k] in the future. */
 											lk = LBj( k, grid ); /* Local block number, column-wise. */
@@ -3439,7 +3439,7 @@ thread_id=0;
 														&knsupc, &beta, rtemp_loc, &knsupc );
 #endif
 												for (i=0 ; i<knsupc*nrhs ; i++){
-													x[ii+i] = rtemp_loc[i];
+				                                    x[ii+i] = rtemp_loc[i];
 												}
 											}
 											else{
@@ -3460,7 +3460,7 @@ thread_id=0;
 											stat_loc[thread_id]->utime[SOL_TRSM] += t2;
 #endif
 
-											stat_loc[thread_id]->ops[SOLVE] += knsupc * (knsupc - 1) * nrhs;
+			                                stat_loc[thread_id]->ops[SOLVE] += knsupc * (knsupc - 1) * nrhs;
 
 #if ( DEBUGlevel>=2 )
 											printf("(%2d) Solve X[%2d]\n", iam, k);
@@ -3518,7 +3518,7 @@ thread_id=0;
 		} // end of parallel
 	}  /* end CPU trisolve */
 
-	
+
 // #if ( PRNTlevel>=1 )
 #if 0
 		t = SuperLU_timer_() - t;
@@ -3562,7 +3562,7 @@ thread_id=0;
 		}
 #endif
 /* skip fmod on CPU if using GPU solve*/
-if ( !(get_new3dsolvetreecomm() && get_acc_solve())){    
+if ( !(get_new3dsolvetreecomm() && get_acc_solve())){
 		SUPERLU_FREE(fmod);
 }
 		SUPERLU_FREE(frecv);
@@ -3582,7 +3582,7 @@ if ( !(get_new3dsolvetreecomm() && get_acc_solve())){
 		}
 
 		for (lk=0;lk<nsupers_i;++lk){
-			if(LRtree_ptr[lk].empty_==NO){	
+			if(LRtree_ptr[lk].empty_==NO){
 				C_RdTree_waitSendRequest(&LRtree_ptr[lk]);
 				// deallocate requests here
 			}
@@ -3623,9 +3623,9 @@ if ( !(get_new3dsolvetreecomm() && get_acc_solve())){
 		SUPERLU_FREE(stat_loc);
 
 /* skip rtemp on CPU if using GPU solve*/
-if ( !(get_new3dsolvetreecomm() && get_acc_solve())){        
+if ( !(get_new3dsolvetreecomm() && get_acc_solve())){
 		SUPERLU_FREE(rtemp);
-}        
+}
 		// SUPERLU_FREE(lsum);
 		// SUPERLU_FREE(x);
 
@@ -3685,7 +3685,7 @@ if ( !(get_new3dsolvetreecomm() && get_acc_solve())){
 #endif
 
 // cudaProfilerStop();
-	    
+
     return;
 } /* dForwardSolve3d_newsolve_reusepdgstrs */
 
@@ -3715,7 +3715,8 @@ void dlsum_fmod_leaf_newsolve (
     SuperLUStat_t *stat,xtrsTimer_t *xtrsTimer)
 
 {
-	double alpha = 1.0, beta = 0.0;
+    double alpha = 1.0;
+    double beta = 0.0;
 	double *lusup, *lusup1;
 	double *dest;
 	int    iam, iknsupc, myrow, nbrow, nsupr, nsupr1, p, pi;
@@ -3936,6 +3937,7 @@ int dpackUblock(int ldu, int_t* indCols,
                  int_t knsupc, int_t iklrow,  int_t* usub,
                  double* tempu, double* uval )
 {
+    double zero = 0.0;
     int ncols = 0;
     for (int_t jj = 0; jj < knsupc; ++jj)
     {
@@ -3944,7 +3946,7 @@ int dpackUblock(int ldu, int_t* indCols,
         if ( segsize )
         {
             int_t lead_zero = ldu - segsize;
-            for (int_t i = 0; i < lead_zero; ++i) tempu[i] = 0.0;
+            for (int_t i = 0; i < lead_zero; ++i) tempu[i] = zero;
             tempu += lead_zero;
             for (int_t i = 0; i < segsize; ++i)
             {
@@ -3999,8 +4001,7 @@ int_t dlsumBmod(int_t gik, int_t gjk, int nrhs, dlsumBmod_buff_t* lbmod_buf,
                              tempu, uval );
 
     double alpha = -1.0;
-    double beta = 1;
-
+    double beta = 1.0;
     double* X;
 
     if (ncols < knsupc)
@@ -4649,7 +4650,7 @@ int_t dleafForestBackSolve3d_newsolve(superlu_dist_options_t *options, int_t n, 
 
 void dBackSolve3d_newsolve_reusepdgstrs(superlu_dist_options_t *options, int_t n,  dLUstruct_t * LUstruct,
                                int*  supernodeMask, gridinfo3d_t *grid3d,
-                               double * x, double * lsum, 
+                               double * x, double * lsum,
                                int nrhs,
                                dSOLVEstruct_t * SOLVEstruct, SuperLUStat_t * stat, xtrsTimer_t *xtrsTimer)
 {
@@ -4775,7 +4776,7 @@ void dBackSolve3d_newsolve_reusepdgstrs(superlu_dist_options_t *options, int_t n
 	int_t cnt1,cnt2;
     double tx;
 
-#if defined(GPU_ACC) && defined(SLU_HAVE_LAPACK) && defined(GPU_SOLVE)  
+#if defined(GPU_ACC) && defined(SLU_HAVE_LAPACK) && defined(GPU_SOLVE)
 
 	const int nwrp_block = 1; /* number of warps in each block */
 	const int warp_size = 32; /* number of threads per warp*/
@@ -4784,7 +4785,7 @@ void dBackSolve3d_newsolve_reusepdgstrs(superlu_dist_options_t *options, int_t n
 	gridinfo_t *d_grid = NULL;
 	double *d_x = NULL;
 	double *d_lsum = NULL;
-    int_t  *d_bmod = NULL;		
+    int_t  *d_bmod = NULL;
 #endif
 
 
@@ -4895,7 +4896,7 @@ if ( !(get_new3dsolvetreecomm() && get_acc_solve())){
 
 
 /* skip bmod on CPU if using GPU solve*/
-if ( !(get_new3dsolvetreecomm() && get_acc_solve())){ 
+if ( !(get_new3dsolvetreecomm() && get_acc_solve())){
     bmod=  getBmod3d_newsolve(nlb, nsupers, supernodeMask, xsup, Llu->Ufstnz_br_ptr, grid);
 }
     nbrecvx= getNbrecvX_newsolve(nsupers, supernodeMask, Urbs, Ucb_indptr, grid);
@@ -5008,17 +5009,17 @@ if ( !(get_new3dsolvetreecomm() && get_acc_solve())){
 
 	for (lk=0;lk<nsupers_j;++lk){
 		if(UBtree_ptr[lk].empty_==NO){
-            xtrsTimer->trsDataSendXY  += UBtree_ptr[lk].msgSize_*nrhs+XK_H; 
+            xtrsTimer->trsDataSendXY  += UBtree_ptr[lk].msgSize_*nrhs+XK_H;
 		}
     }
 	for (lk=0;lk<nsupers_i;++lk){
 		if(URtree_ptr[lk].empty_==NO){
-            xtrsTimer->trsDataSendXY  += URtree_ptr[lk].msgSize_*nrhs+LSUM_H; 
+            xtrsTimer->trsDataSendXY  += URtree_ptr[lk].msgSize_*nrhs+LSUM_H;
 		}
     }
 
 /* skip bmod/rootsups/nroot on CPU if using GPU solve*/
-if ( !(get_new3dsolvetreecomm() && get_acc_solve())){ 
+if ( !(get_new3dsolvetreecomm() && get_acc_solve())){
 	nrtree = 0;
 	nroot=0;
 	for (lk=0;lk<nsupers_i;++lk){
@@ -5053,11 +5054,11 @@ if ( !(get_new3dsolvetreecomm() && get_acc_solve())){
 			brecv[lk] = URtree_ptr[lk].destCnt_;
 			nbrecvmod += brecv[lk];
 		}
-    }    
+    }
 }
-    
+
 /* skip bmod on CPU if using GPU solve*/
-if ( !(get_new3dsolvetreecomm() && get_acc_solve())){ 
+if ( !(get_new3dsolvetreecomm() && get_acc_solve())){
 	for (i = 0; i < nlb; ++i) bmod[i*aln_i] += brecv[i];
 	// for (i = 0; i < nlb; ++i)printf("bmod[i]: %5d\n",bmod[i]);
 }
@@ -5096,7 +5097,7 @@ if ( !(get_new3dsolvetreecomm() && get_acc_solve())){
 
 
 if (get_acc_solve()){  /* GPU trisolve*/
-#if defined(GPU_ACC) && defined(SLU_HAVE_LAPACK) && defined(GPU_SOLVE)  
+#if defined(GPU_ACC) && defined(SLU_HAVE_LAPACK) && defined(GPU_SOLVE)
 // #if 0 /* CPU trisolve*/
 
 
@@ -5110,14 +5111,14 @@ if (get_acc_solve()){  /* GPU trisolve*/
 	d_grid=Llu->d_grid;
 
 	checkGPU(gpuMemcpy(d_bmod, SOLVEstruct->d_bmod_save, nlb * sizeof(int), gpuMemcpyDeviceToDevice));
-    checkGPU(gpuMemcpy(d_lsum, SOLVEstruct->d_lsum_save, sizelsum * sizeof(double), gpuMemcpyDeviceToDevice));	
-    checkGPU(gpuMemcpy(d_x, x, (ldalsum * nrhs + nlb * XK_H) * sizeof(double), gpuMemcpyHostToDevice));	
+    checkGPU(gpuMemcpy(d_lsum, SOLVEstruct->d_lsum_save, sizelsum * sizeof(double), gpuMemcpyDeviceToDevice));
+    checkGPU(gpuMemcpy(d_x, x, (ldalsum * nrhs + nlb * XK_H) * sizeof(double), gpuMemcpyHostToDevice));
 
 	k = CEILING( nsupers, grid->npcol);/* Number of local block columns divided by #warps per block used as number of thread blocks*/
 	knsupc = sp_ienv_dist(3, options);
- 
+
     if(procs>1){ /* only nvshmem needs the following*/
-    #ifdef HAVE_NVSHMEM  
+    #ifdef HAVE_NVSHMEM
     checkGPU(gpuMemcpy(d_status, mystatus_u, k * sizeof(int), gpuMemcpyHostToDevice));
     checkGPU(gpuMemcpy(d_statusmod, mystatusmod_u, 2* nlb * sizeof(int), gpuMemcpyHostToDevice));
     //for(int i=0;i<2*nlb;i++) printf("(%d),mystatusmod[%d]=%d\n",iam,i,mystatusmod[i]);
@@ -5131,25 +5132,22 @@ if (get_acc_solve()){  /* GPU trisolve*/
     #endif
     }
 
-
     dlsum_bmod_inv_gpu_wrap(options, k,nlb,DIM_X,DIM_Y,d_lsum,d_x,nrhs,knsupc,nsupers,d_bmod,
-                            Llu->d_UBtree_ptr,Llu->d_URtree_ptr,
-                            Llu->d_ilsum,Llu->d_Ucolind_bc_dat,Llu->d_Ucolind_bc_offset,Llu->d_Ucolind_br_dat,Llu->d_Ucolind_br_offset,
-                            Llu->d_Uind_br_dat,Llu->d_Uind_br_offset,
-                            Llu->d_Unzval_bc_dat,Llu->d_Unzval_bc_offset,Llu->d_Unzval_br_new_dat,Llu->d_Unzval_br_new_offset,
-                            Llu->d_Uinv_bc_dat,Llu->d_Uinv_bc_offset,
-                            Llu->d_Uindval_loc_bc_dat,Llu->d_Uindval_loc_bc_offset,
-                            Llu->d_xsup,d_grid,
-                            maxrecvsz, flag_bc_q, flag_rd_q, dready_x, dready_lsum,
-                            my_flag_bc, my_flag_rd,
-                            d_nfrecv_u, h_nfrecv_u, d_status, d_colnum_u, d_mynum_u,
-                            d_mymaskstart_u,d_mymasklength_u,
-                            d_nfrecvmod_u, d_statusmod, d_colnummod_u, d_mynummod_u,
-                            d_mymaskstartmod_u, d_mymasklengthmod_u,
-                            d_recv_cnt_u, d_msgnum, d_flag_mod_u, procs);
+                        Llu->d_UBtree_ptr,Llu->d_URtree_ptr,
+                        Llu->d_ilsum,Llu->d_Ucolind_bc_dat,Llu->d_Ucolind_bc_offset,Llu->d_Ucolind_br_dat,Llu->d_Ucolind_br_offset,
+                        Llu->d_Uind_br_dat,Llu->d_Uind_br_offset,
+                        Llu->d_Unzval_bc_dat,Llu->d_Unzval_bc_offset,Llu->d_Unzval_br_new_dat,Llu->d_Unzval_br_new_offset,
+                        Llu->d_Uinv_bc_dat,Llu->d_Uinv_bc_offset,
+                        Llu->d_Uindval_loc_bc_dat,Llu->d_Uindval_loc_bc_offset,
+                        Llu->d_xsup,d_grid,
+                        maxrecvsz, flag_bc_q, flag_rd_q, dready_x, dready_lsum,
+                        my_flag_bc, my_flag_rd,
+                        d_nfrecv_u, h_nfrecv_u, d_status, d_colnum_u, d_mynum_u,
+                        d_mymaskstart_u,d_mymasklength_u,
+                        d_nfrecvmod_u, d_statusmod, d_colnummod_u, d_mynummod_u,
+                        d_mymaskstartmod_u, d_mymasklengthmod_u,
+                        d_recv_cnt_u, d_msgnum, d_flag_mod_u, procs);
 
-
-    
     checkGPU(gpuMemcpy(x, d_x, (ldalsum * nrhs + nlb * XK_H) * sizeof(double), gpuMemcpyDeviceToHost));
 
 
@@ -5158,7 +5156,7 @@ if (get_acc_solve()){  /* GPU trisolve*/
 	if ( !iam) printf(".. Grid %3d: around U kernel time\t%8.4f\n", myGrid, t);
 #endif
 
-	stat_loc[0]->ops[SOLVE]+=Llu->Unzval_br_cnt*nrhs*2; // YL: this is a rough estimate 
+	stat_loc[0]->ops[SOLVE]+=Llu->Unzval_br_cnt*nrhs*2; // YL: this is a rough estimate
 #endif
 }else{  /* CPU trisolve*/
 
@@ -5224,7 +5222,7 @@ tx = SuperLU_timer_();
 						&knsupc, &beta, rtemp_loc, &knsupc );
 #endif
 				for (i=0 ; i<knsupc*nrhs ; i++){
-					x[ii+i] = rtemp_loc[i];
+				    x[ii+i] = rtemp_loc[i];
 				}
 			}else{
 #ifdef _CRAY
@@ -5392,7 +5390,7 @@ xtrsTimer->tbs_compute += SuperLU_timer_() - tx;
 						Ucb_indptr, Ucb_valptr, xsup, grid, Llu,
 						stat_loc, sizelsum,sizertemp,thread_id,num_thread);
 			}else if(status.MPI_TAG==RD_U){
-                xtrsTimer->trsDataRecvXY  += SuperSize (k)*nrhs + LSUM_H;    
+                xtrsTimer->trsDataRecvXY  += SuperSize (k)*nrhs + LSUM_H;
 				lk = LBi( k, grid ); /* Local block number, row-wise. */
 
 				knsupc = SuperSize( k );
@@ -5400,7 +5398,7 @@ xtrsTimer->tbs_compute += SuperLU_timer_() - tx;
 				il = LSUM_BLK( lk );
 				RHS_ITERATE(j) {
 					for (i = 0; i < knsupc; ++i)
-						lsum[i + il + j*knsupc + thread_id*sizelsum] += tempv[i + j*knsupc];
+					    lsum[i + il + j*knsupc + thread_id*sizelsum] += tempv[i + j*knsupc];
 
 				}
 			// #ifdef _OPENMP
@@ -5415,12 +5413,13 @@ xtrsTimer->tbs_compute += SuperLU_timer_() - tx;
 						knsupc = SuperSize( k );
 						for (ii=1;ii<num_thread;ii++)
 							for (jj=0;jj<knsupc*nrhs;jj++)
-								lsum[il+ jj ] += lsum[il + jj + ii*sizelsum];
+					            lsum[il+ jj ] += lsum[il + jj + ii*sizelsum];
+
 
 						ii = X_BLK( lk );
 						RHS_ITERATE(j)
 							for (i = 0; i < knsupc; ++i)
-							    x[i + ii + j*knsupc] += lsum[i + il + j*knsupc ];
+					            x[i + ii + j*knsupc] += lsum[i + il + j*knsupc];
 
 						lk = LBj( k, grid ); /* Local block number, column-wise. */
 						lsub = Lrowind_bc_ptr[lk];
@@ -5446,7 +5445,7 @@ xtrsTimer->tbs_compute += SuperLU_timer_() - tx;
 #endif
 
 							for (i=0 ; i<knsupc*nrhs ; i++){
-								x[ii+i] = rtemp_loc[i];
+				                x[ii+i] = rtemp_loc[i];
 							}
 						}else{
 #ifdef _CRAY
@@ -5584,12 +5583,12 @@ xtrsTimer->tbs_compute += SuperLU_timer_() - tx;
 		}
 		SUPERLU_FREE(stat_loc);
 /* skip rtemp on CPU if using GPU solve*/
-if ( !(get_new3dsolvetreecomm() && get_acc_solve())){        
+if ( !(get_new3dsolvetreecomm() && get_acc_solve())){
 		SUPERLU_FREE(rtemp);
 }
 
 /* skip bmod on CPU if using GPU solve*/
-if ( !(get_new3dsolvetreecomm() && get_acc_solve())){  
+if ( !(get_new3dsolvetreecomm() && get_acc_solve())){
 		SUPERLU_FREE(bmod);
 }
 		SUPERLU_FREE(brecv);
@@ -5671,7 +5670,7 @@ if ( !(get_new3dsolvetreecomm() && get_acc_solve())){
 #endif
 
 // cudaProfilerStop();
-	    
+
     return;
 } /* dBackSolve3d_newsolve_reusepdgstrs */
 
@@ -5702,7 +5701,8 @@ void dlsum_bmod_GG (
      * =======
      *   Perform local block modifications: lsum[i] -= U_i,k * X[k].
      */
-    double alpha = 1.0, beta = 0.0;
+    double alpha = 1.0;
+    double beta = 0.0;
     int    iam, iknsupc, knsupc, myrow, nsupr, p, pi;
     int_t  fnz, gik, gikcol, i, ii, ik, ikfrow, iklrow, il, irow,
            j, jj, lk, lk1, nub, ub, uptr;
@@ -5887,7 +5887,8 @@ void dlsum_bmod_GG_newsolve (
      * =======
      *   Perform local block modifications: lsum[i] -= U_i,k * X[k].
      */
-    double alpha = 1.0, beta = 0.0;
+    double alpha = 1.0;
+    double beta = 0.0;
     int    iam, iknsupc, knsupc, myrow, nsupr, p, pi;
     int_t  fnz, gik, gikcol, i, ii, ik, ikfrow, iklrow, il, irow,
            j, jj, lk, lk1, nub, ub, uptr;
@@ -6360,7 +6361,7 @@ pdReDistribute3d_B_to_X (double *B, int_t m_loc, int nrhs, int_t ldb,
                 knsupc = SuperSize (k);
                 lk = LBi (k, grid); /* Local block number. */
                 l = X_BLK (lk);
-                x[l - XK_H] = k;    /* Block number prepended in the header. */
+			    x[l - XK_H] = k;      /* Block number prepended in the header. */
                 irow = irow - FstBlockC (k);    /* Relative row number in X-block */
                 for (int_t j = 0; j < nrhs; ++j)
                 {
@@ -7003,7 +7004,7 @@ pdgstrs3d_newsolve (superlu_dist_options_t *options, int_t n, dLUstruct_t * LUst
 
     k = SUPERLU_MAX (Llu->nfsendx, Llu->nbsendx) + nlb;
  /* skip send_req on CPU if using GPU solve*/
-if ( !(get_new3dsolvetreecomm() && get_acc_solve())){   
+if ( !(get_new3dsolvetreecomm() && get_acc_solve())){
     if (!(send_req =
                  (MPI_Request *) SUPERLU_MALLOC (k * sizeof (MPI_Request))))
         ABORT ("Malloc fails for send_req[].");
@@ -7052,7 +7053,7 @@ if ( !(get_new3dsolvetreecomm() && get_acc_solve())){
 #ifdef _OPENMP
     if ( !(lsum = (double*)SUPERLU_MALLOC(sizelsum*num_thread * sizeof(double))))
 	ABORT("Malloc fails for lsum[].");
-#pragma omp parallel default(shared) private(ii) 
+#pragma omp parallel default(shared) private(ii)
     {
 	int thread_id = omp_get_thread_num(); //mjc
 	for (ii=0; ii<sizelsum; ii++)
@@ -7270,9 +7271,9 @@ if ( !(get_new3dsolvetreecomm() && get_acc_solve())){
     /* Deallocate storage. */
 
 /* skip lsum on CPU if using GPU solve*/
-if ( !(get_new3dsolvetreecomm() && get_acc_solve())){    
+if ( !(get_new3dsolvetreecomm() && get_acc_solve())){
     SUPERLU_FREE (lsum);
-}    
+}
     SUPERLU_FREE (x);
     SUPERLU_FREE (recvbuf);
 
@@ -7309,7 +7310,8 @@ int_t pdgsTrForwardSolve3d(superlu_dist_options_t *options, int_t n, dLUstruct_t
 {
     gridinfo_t * grid = &(grid3d->grid2d);
     Glu_persist_t *Glu_persist = LUstruct->Glu_persist;
-    dLocalLU_t *Llu = LUstruct->Llu;  double zero = 0.0;
+    dLocalLU_t *Llu = LUstruct->Llu;
+    double zero = 0.0;
     int_t* xsup = Glu_persist->xsup;
 
     int_t nsupers = Glu_persist->supno[n - 1] + 1;
@@ -7367,7 +7369,7 @@ int_t pdgsTrForwardSolve3d(superlu_dist_options_t *options, int_t n, dLUstruct_t
             }
         }
     }
-    
+
 
     Llu->SolveMsgSent = 0;
     for (int_t ilvl = 0; ilvl < maxLvl; ++ilvl)
@@ -7452,7 +7454,8 @@ int_t pdgsTrForwardSolve3d_newsolve(superlu_dist_options_t *options, int_t n, dL
 {
     gridinfo_t * grid = &(grid3d->grid2d);
     Glu_persist_t *Glu_persist = LUstruct->Glu_persist;
-    dLocalLU_t *Llu = LUstruct->Llu;  double zero = 0.0;
+    dLocalLU_t *Llu = LUstruct->Llu;
+    double zero = 0.0;
     int_t* xsup = Glu_persist->xsup;
 
     int_t nsupers = Glu_persist->supno[n - 1] + 1;
@@ -7560,7 +7563,8 @@ int_t pdgsTrBackSolve3d(superlu_dist_options_t *options, int_t n, dLUstruct_t * 
 
     gridinfo_t * grid = &(grid3d->grid2d);
     Glu_persist_t *Glu_persist = LUstruct->Glu_persist;
-    dLocalLU_t *Llu = LUstruct->Llu;  double zero = 0.0;
+    dLocalLU_t *Llu = LUstruct->Llu;
+    double zero = 0.0;
     int_t* xsup = Glu_persist->xsup;
 
     int_t nsupers = Glu_persist->supno[n - 1] + 1;
@@ -7684,7 +7688,8 @@ int_t pdgsTrBackSolve3d_newsolve(superlu_dist_options_t *options, int_t n, dLUst
 
     gridinfo_t * grid = &(grid3d->grid2d);
     Glu_persist_t *Glu_persist = LUstruct->Glu_persist;
-    dLocalLU_t *Llu = LUstruct->Llu;  double zero = 0.0;
+    dLocalLU_t *Llu = LUstruct->Llu;
+    double zero = 0.0;
     int_t* xsup = Glu_persist->xsup;
 
     int_t nsupers = Glu_persist->supno[n - 1] + 1;
@@ -7735,13 +7740,13 @@ if ( !(get_new3dsolvetreecomm() && get_acc_solve())){
     Llu->SolveMsgSent = 0;
     double tx = SuperLU_timer_();
 
-if (get_new3dsolvetreecomm()){    
+if (get_new3dsolvetreecomm()){
     dBackSolve3d_newsolve_reusepdgstrs(options, n, LUstruct,
                                 trf3Dpartition->supernodeMask, grid3d,
                                 x3d, lsum3d, nrhs, SOLVEstruct, stat, xtrsTimer);
 }else{
     dleafForestBackSolve3d_newsolve(options, n, LUstruct, trf3Dpartition, grid3d, x3d,  lsum3d, recvbuf,
-                            send_req,  nrhs, &lbmod_buf, SOLVEstruct,  stat, xtrsTimer);    
+                            send_req,  nrhs, &lbmod_buf, SOLVEstruct,  stat, xtrsTimer);
 }
 
     xtrsTimer->tbs_tree[0] = SuperLU_timer_() - tx;

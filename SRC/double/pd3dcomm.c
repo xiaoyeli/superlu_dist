@@ -50,7 +50,7 @@ int_t dAllocLlu(int_t nsupers, dLUstruct_t * LUstruct, gridinfo3d_t* grid3d)
 	(int_t**) SUPERLU_MALLOC(sizeof(int_t*)*nbc); 	/* size ceil(NSUPERS/Pc) */
     int_t   **Lindval_loc_bc_ptr =
 	(int_t**) SUPERLU_MALLOC(sizeof(int_t*)*nbc); 	/* size ceil(NSUPERS/Pc) */
-    double  **Lnzval_bc_ptr =
+	double  **Lnzval_bc_ptr =
 	(double **) SUPERLU_MALLOC(sizeof(double*)*nbc);  /* size ceil(NSUPERS/Pc) */
 	double** Linv_bc_ptr = (double**)SUPERLU_MALLOC(nbc * sizeof(double*));
 	double** Uinv_bc_ptr = (double**)SUPERLU_MALLOC(nbc * sizeof(double*));
@@ -59,7 +59,7 @@ int_t dAllocLlu(int_t nsupers, dLUstruct_t * LUstruct, gridinfo3d_t* grid3d)
 	{
 	    /* code */
 	    Lrowind_bc_ptr[i] = NULL;
-	    Lindval_loc_bc_ptr[i] = NULL;
+		Lindval_loc_bc_ptr[i] = NULL;
 	    Lnzval_bc_ptr[i] = NULL;
 	    Linv_bc_ptr[i] = NULL;
 	    Uinv_bc_ptr[i] = NULL;
@@ -436,9 +436,9 @@ int_t dp3dScatter(int_t n, dLUstruct_t * LUstruct, gridinfo3d_t* grid3d, int *su
 	#if 0
 		for(int lk=0; lk<nub; lk++){
 			Llu->bsendx_plist[lk]=NULL;
-			Llu->fsendx_plist[lk]=NULL;	
-		}	
-	#else // need to use a contiguous chunk to allocate fsendx_plist and bsendx_plist on other girds, to be consistent with grid 0. Otherwise dDestroy_LU will crash.  
+			Llu->fsendx_plist[lk]=NULL;
+		}
+	#else // need to use a contiguous chunk to allocate fsendx_plist and bsendx_plist on other girds, to be consistent with grid 0. Otherwise dDestroy_LU will crash.
 		int_t len = nub * Pr;
 		int   *index1;        /* temporary pointer to array of int */
 		if ( !(index1 = int32Malloc_dist(len)) )
@@ -564,7 +564,7 @@ int_t dp3dScatter(int_t n, dLUstruct_t * LUstruct, gridinfo3d_t* grid3d, int *su
         if (myrow == krow && mycol == kcol)
         {
             int_t lk = LBj(k, grid);
-        #if 0    // Yang: zAllocBcast cannot be used as fsendx_plist is allocated as a contiguous chunk using index1 above   
+        #if 0    // Yang: zAllocBcast cannot be used as fsendx_plist is allocated as a contiguous chunk using index1 above
 			zAllocBcast(Pr * sizeof (int), (void**)&(Llu->bsendx_plist[lk]), grid3d);
             zAllocBcast(Pr * sizeof (int), (void**)&(Llu->fsendx_plist[lk]), grid3d);
 		#else
@@ -587,8 +587,6 @@ int_t dscatter3dUPanels(int_t nsupers,
     int_t** Ufstnz_br_ptr = Llu->Ufstnz_br_ptr;
     double** Unzval_br_ptr = Llu->Unzval_br_ptr;
     gridinfo_t* grid = &(grid3d->grid2d);
-
-
 
     int_t k = CEILING( nsupers, grid->nprow ); /* Number of local block rows */
     for ( int_t lb = 0; lb < k; ++lb) {
@@ -671,7 +669,7 @@ int_t dscatter3dLPanels(int_t nsupers,
     gridinfo_t* grid = &(grid3d->grid2d);
     int_t** Lrowind_bc_ptr = Llu->Lrowind_bc_ptr;
     int_t** Lindval_loc_bc_ptr = Llu->Lindval_loc_bc_ptr;
-    double** Lnzval_bc_ptr = Llu->Lnzval_bc_ptr;
+	double** Lnzval_bc_ptr = Llu->Lnzval_bc_ptr;
 	double **Linv_bc_ptr = Llu->Linv_bc_ptr;
 	double **Uinv_bc_ptr = Llu->Uinv_bc_ptr;
     int_t iam = grid->iam;
@@ -687,10 +685,10 @@ int_t dscatter3dLPanels(int_t nsupers,
         {
 	    int_t ljb = LBj( jb, grid ); /* Local block number */
 	    int_t  *lsub;
-	    int_t  *lloc;
+		int_t  *lloc;
 	    double* lnzval;
 	    lsub = Lrowind_bc_ptr[ljb];
-	    lloc = Lindval_loc_bc_ptr[ljb];
+		lloc = Lindval_loc_bc_ptr[ljb];
 	    lnzval = Lnzval_bc_ptr[ljb];
 
 	    int_t flag = 0;
@@ -782,7 +780,7 @@ int_t dscatter3dLPanels(int_t nsupers,
 
 		    /*setup the pointers*/
 		    Lnzval_bc_ptr[ljb] = lnzval;
-			
+
 			if(supernodeMask[jb]==0){
 				SUPERLU_FREE(Lrowind_bc_ptr[ljb]);
 				Lrowind_bc_ptr[ljb]=NULL;
@@ -1092,11 +1090,11 @@ int_t dgatherAllFactoredLU( dtrf3Dpartition_t*  trf3Dpartition,
     dLUValSubBuf_t*  LUvsb =  trf3Dpartition->LUvsb;
     int_t*  gNodeCount = getNodeCountsFr(maxLvl, sForests);
     int_t** gNodeLists = getNodeListFr(maxLvl, sForests);
-    
+
 #if (DEBUGlevel >= 1)
-    CHECK_MALLOC(grid3d->iam, "dEnter gatherAllFactoredLU");
+    CHECK_MALLOC(grid3d->iam, "Enter dgatherAllFactoredLU");
 #endif
-			
+
     for (int_t ilvl = 0; ilvl < maxLvl - 1; ++ilvl)
 	{
 	    /* code */
@@ -1140,13 +1138,9 @@ int_t dgatherAllFactoredLU( dtrf3Dpartition_t*  trf3Dpartition,
 #if (DEBUGlevel >= 1)
     CHECK_MALLOC(grid3d->iam, "Exit dgatherAllFactoredLU");
 #endif
-    
+
     return 0;
 } /* dgatherAllFactoredLU */
-
-
-
-
 
 int_t dbroadcastAncestor3d( dtrf3Dpartition_t*  trf3Dpartition,
 			   dLUstruct_t* LUstruct, gridinfo3d_t* grid3d, SCT_t* SCT )
@@ -1210,7 +1204,7 @@ int_t dgatherAllFactoredLU3d( dtrf3Dpartition_t*  trf3Dpartition,
     dLUValSubBuf_t*  LUvsb =  trf3Dpartition->LUvsb;
     int_t*  gNodeCount = getNodeCountsFr(maxLvl, sForests);
     int_t** gNodeLists = getNodeListFr(maxLvl, sForests);
-    
+
     for (int_t ilvl = 0; ilvl < maxLvl - 1; ++ilvl)
 	{
 		int alvl = maxLvl - ilvl - 1;
@@ -1220,7 +1214,7 @@ int_t dgatherAllFactoredLU3d( dtrf3Dpartition_t*  trf3Dpartition,
 		for (int_t tr = start+1; tr < end; ++tr)
 		{
 			int sender = (1 << (ilvl )) * ( tr - start );
-			int receiver =0; 
+			int receiver =0;
 			printf("tr = %d, sender %d, receiver %d\n", tr, sender, receiver);
 			if(myGrid == sender || myGrid == receiver)
 			dgatherFactoredLU(sender, receiver,
@@ -1246,7 +1240,7 @@ int_t dgatherAllFactoredLU3d( dtrf3Dpartition_t*  trf3Dpartition,
 			    // receiver = myGrid - (1 << ilvl);
 				receiver = 0;
 			}
-		    
+
 			int_t alvl = ilvl;
 		    // for (int_t alvl = 0; alvl <= ilvl; alvl++)
 			{
@@ -1254,7 +1248,7 @@ int_t dgatherAllFactoredLU3d( dtrf3Dpartition_t*  trf3Dpartition,
 			    int_t numTrees = 1 << diffLvl;
 			    int_t blvl = maxLvl - alvl - 1;
 			    int_t st = (1 << blvl) - 1 + (sender >> alvl);
-			    
+
 			    for (int_t tr = st; tr < st + numTrees; ++tr)
 				{
 				    /* code */
@@ -1264,11 +1258,11 @@ int_t dgatherAllFactoredLU3d( dtrf3Dpartition_t*  trf3Dpartition,
 						     LUstruct, grid3d, SCT );
 				}
 			}
-		    
+
 		}
 		#endif
 	} /* for ilvl ... */
-    	
+
     SUPERLU_FREE(gNodeCount); // sherry added
     SUPERLU_FREE(gNodeLists);
 

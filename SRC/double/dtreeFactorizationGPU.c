@@ -560,6 +560,7 @@ int dsparseTreeFactor_ASYNC_GPU(
                                 int_t usub_len = usub[2];
                                 int_t lsub_len = lsub[1] + BC_HEADER + lsub[0] * LB_DESCRIPTOR;
                                 //{printf("... before SchurCompUpdate_GPU, bigu_send_size %d\n", bigu_send_size); fflush(stdout);}
+
                                 dSchurCompUpdate_GPU(
                                     streamId, 0, jj_cpu, klst, knsupc, HyP->Rnbrow, HyP->RemainBlk,
                                     Remain_lbuf_send_size, bigu_send_size, HyP->ldu_Phi, HyP->num_u_blks_Phi,

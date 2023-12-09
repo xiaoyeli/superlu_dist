@@ -1,8 +1,11 @@
+
+
 #include "superlu_ddefs.h"
-// #include "pddistribute3d.h"
+//#include "pddistribute3d.h"
+
 /**
  * Propagates the new values of A into the existing L and U data structures.
- * 
+ *
  * @param Llu The local L and U data structures.
  * @param xa The index array of A.
  * @param asub The row subscripts of A.
@@ -10,7 +13,7 @@
  * @param options The options array.
  * @param grid The process grid.
  * @param mem_use The memory usage.
- * 
+ *
  * @return void
  */
 void dpropagate_A_to_LU3d(
@@ -20,7 +23,7 @@ void dpropagate_A_to_LU3d(
     double *a,
     superlu_dist_options_t* options,
     gridinfo3d_t *grid3d,
-    int_t nsupers, 
+    int_t nsupers,
     float *mem_use)
 {
     /* Initialization. */
@@ -182,7 +185,7 @@ void dpropagate_A_to_LU3d(
 
 /**
  * Function: computeLDAspa_Ilsum
- * 
+ *
  * This function computes the Local Distributed Storages (LDS) for the L factor in the LU decomposition.
  * It also updates the input array 'ilsum' to hold the prefix sum of the size of each supernode.
  *  Compute ldaspa and ilsum[]. */
@@ -198,18 +201,18 @@ void dpropagate_A_to_LU3d(
         //         ilsum[lb + 1] = ilsum[lb] + i;
         //     }
         // }
-/*     
+/*
  * Inputs:
  * - nsupers: The total number of supernodes in the LU decomposition.
  * - ilsum: An array of size 'nsupers'. On output, ilsum[i] will hold the sum of the sizes of the first 'i' supernodes.
  * - LUstruct: A pointer to the LU decomposition structure, which holds the information about the LU decomposition.
  * - grid3d: A pointer to the 3D process grid structure, which holds the information about the 3D process grid.
- * 
+ *
  * Outputs:
  * - The function returns the Local Distributed Storage (LDS) for the L factor.
  * - The array 'ilsum' is updated in-place to hold the prefix sum of the size of each supernode.
  */
-int_t computeLDAspa_Ilsum( int_t nsupers, int_t* ilsum,  dLUstruct_t *LUstruct, gridinfo3d_t* grid3d) 
+int_t computeLDAspa_Ilsum( int_t nsupers, int_t* ilsum,  dLUstruct_t *LUstruct, gridinfo3d_t* grid3d)
 {
     // Extract the supernode and column mapping from the LU structure
     Glu_persist_t *Glu_persist = LUstruct->Glu_persist;
@@ -251,11 +254,11 @@ int_t computeLDAspa_Ilsum( int_t nsupers, int_t* ilsum,  dLUstruct_t *LUstruct, 
 
 
 /**
- * The function propagate_blocks performs data propagation in the form of values through blocks 
- * of a supernodal sparse matrix. It sends values to particular blocks and marks blocks to receive 
- * new values depending on certain conditions. It also counts the number of non-zeros in each block row 
+ * The function propagate_blocks performs data propagation in the form of values through blocks
+ * of a supernodal sparse matrix. It sends values to particular blocks and marks blocks to receive
+ * new values depending on certain conditions. It also counts the number of non-zeros in each block row
  * and keeps track of the number of column blocks in each block row.
- * 
+ *
  * Input:
  *   nsupers: Total number of supernodes, i.e., the number of block columns in the original matrix.
  *   grid: The process grid. This grid contains the mapping of the matrix blocks to the process grid.
@@ -268,14 +271,14 @@ int_t computeLDAspa_Ilsum( int_t nsupers, int_t* ilsum,  dLUstruct_t *LUstruct, 
  *   Urb_fstnz: An array containing the number of first non-zero elements in each block row of the matrix.
  *   Ucbs: An array counting the number of column blocks in each block row.
  *   ToRecv: A flag array indicating which blocks are to be received from other processes.
- * 
+ *
  * Output:
- *   ToSendR, ToSendD, Urb_length, rb_marker, Urb_fstnz, Ucbs, ToRecv are modified in place. Their new values 
+ *   ToSendR, ToSendD, Urb_length, rb_marker, Urb_fstnz, Ucbs, ToRecv are modified in place. Their new values
  *   depend on the conditions checked during the loops.
- * 
+ *
  * @return void
  */
-void propagateDataThroughMatrixBlocks(int_t nsupers, Glu_freeable_t *Glu_freeable, dLUstruct_t *LUstruct, gridinfo3d_t* grid3d,  
+void propagateDataThroughMatrixBlocks(int_t nsupers, Glu_freeable_t *Glu_freeable, dLUstruct_t *LUstruct, gridinfo3d_t* grid3d,
 int_t *Urb_length, int_t *rb_marker, int_t *Urb_fstnz, int_t *Ucbs,
 int **ToSendR,  int *ToSendD,  int *ToRecv)
 {
@@ -325,7 +328,7 @@ int **ToSendR,  int *ToSendD,  int *ToRecv)
                     {
                         ToSendD[lb] = YES;
                         Urb_length[lb] += FstBlockC(gb + 1) - irow;
-                        
+
                         if (rb_marker[lb] <= jb)
                         {
                             rb_marker[lb] = jb + 1;
@@ -354,11 +357,11 @@ int_t checkDist3DLUStruct(  dLUstruct_t* LUstruct, gridinfo3d_t* grid3d)
     int mycol = MYCOL(iam, grid);
     int_t maxLvl = log2i(grid3d->zscp.Np) + 1;
     int_t myGrid = grid3d->zscp.Iam;
-    
+
     sForest_t** sForests = trf3Dpartition->sForests;
     int_t*  gNodeCount = getNodeCountsFr(maxLvl, sForests);
     int_t** gNodeLists = getNodeListFr(maxLvl, sForests);
-    
+
 
     for (int grid_id =1 ; grid_id < grid3d->zscp.Np; ++grid_id)
     {
@@ -371,32 +374,32 @@ int_t checkDist3DLUStruct(  dLUstruct_t* LUstruct, gridinfo3d_t* grid3d)
             int result = dist_checkArrayEq(tree, tree_size, mpi_int_t, grid_zero, grid_id, grid3d->zscp.comm, compareInt_t);
             if (myGrid == grid_id && result)
             {
-                printf("Check tree list failed: tree_id=%d, grid_id =%d, Iam=(%d, %d) \n", 
+                printf("Check tree list failed: tree_id=%d, grid_id =%d, Iam=(%d, %d) \n",
                     first_tree, grid_id, grid3d->zscp.Iam, grid3d->zscp.Iam);
                 exit(1);
             }
-            
+
             for(int_t node=0; node<tree_size; ++node)
             {
                 int_t node_id = tree[node];
-                if( PROW(node_id, grid) ==myrow) 
+                if( PROW(node_id, grid) ==myrow)
                 {
                     // check U index list
                     int_t lk = LBi(node_id, grid);
                     int_t* usub = LUstruct->Llu->Ufstnz_br_ptr[lk];
-                    int_t usub_size = 0, uval_size = 0; 
+                    int_t usub_size = 0, uval_size = 0;
                     if (usub != NULL)
                     {
                         uval_size = usub[1];
                         usub_size = usub[2];
                     }
 
-                    // check U index 
-                    int result = dist_checkArrayEq(usub, usub_size, mpi_int_t, 
+                    // check U index
+                    int result = dist_checkArrayEq(usub, usub_size, mpi_int_t,
                         grid_zero, grid_id, grid3d->zscp.comm, compareInt_t);
                     if (myGrid == grid_id && result)
                     {
-                        printf("Check U index failed: node_id=%d, grid_id =%d, Iam=(%d, %d) \n", 
+                        printf("Check U index failed: node_id=%d, grid_id =%d, Iam=(%d, %d) \n",
                             node_id, grid_id, grid3d->zscp.Iam, grid3d->zscp.Iam);
                         exit(1);
                     }
@@ -405,18 +408,18 @@ int_t checkDist3DLUStruct(  dLUstruct_t* LUstruct, gridinfo3d_t* grid3d)
 
                     // check U value
                     double* uval = LUstruct->Llu->Unzval_br_ptr[lk];
-                    result = dist_checkArrayEq(uval, uval_size, MPI_DOUBLE, 
+                    result = dist_checkArrayEq(uval, uval_size, MPI_DOUBLE,
                         grid_zero, grid_id, grid3d->zscp.comm, compareDouble);
                     if (myGrid == grid_id && result)
                     {
-                        printf("Check U value failed: node_id=%d, grid_id =%d, Iam=(%d, %d) \n", 
+                        printf("Check U value failed: node_id=%d, grid_id =%d, Iam=(%d, %d) \n",
                             node_id, grid_id, grid3d->zscp.Iam, grid3d->zscp.Iam);
                         exit(1);
                     }
-                    
+
                 } /* Checking U panel */
 
-                if( PCOL(node_id, grid) ==mycol) 
+                if( PCOL(node_id, grid) ==mycol)
                 {
                     int_t lk = LBj(node_id, grid);
                     int_t* lsub = LUstruct->Llu->Lrowind_bc_ptr[lk];
@@ -433,11 +436,11 @@ int_t checkDist3DLUStruct(  dLUstruct_t* LUstruct, gridinfo3d_t* grid3d)
                     }
 
                     // check L index
-                    int result = dist_checkArrayEq(lsub, lsub_size, mpi_int_t, 
+                    int result = dist_checkArrayEq(lsub, lsub_size, mpi_int_t,
                         grid_zero, grid_id, grid3d->zscp.comm, compareInt_t);
                     if (myGrid == grid_id && result)
                     {
-                        printf("Check L index failed: node_id=%d, grid_id =%d, Iam=(%d, %d) \n", 
+                        printf("Check L index failed: node_id=%d, grid_id =%d, Iam=(%d, %d) \n",
                             node_id, grid_id, grid3d->zscp.Iam, grid3d->zscp.Iam);
                         exit(1);
                     }
@@ -450,13 +453,13 @@ int_t checkDist3DLUStruct(  dLUstruct_t* LUstruct, gridinfo3d_t* grid3d)
                         grid_zero, grid_id, grid3d->zscp.comm, compareDouble);
                     if (myGrid == grid_id && result)
                     {
-                        printf("Check L value failed: node_id=%d, grid_id =%d, Iam=(%d, %d) \n", 
+                        printf("Check L value failed: node_id=%d, grid_id =%d, Iam=(%d, %d) \n",
                             node_id, grid_id, grid3d->zscp.Iam, grid3d->zscp.Iam);
                         exit(1);
                     }
                 }/* Check L panel*/
 
-                
+
             }
             first_tree = (first_tree-1)/2;
         }
@@ -471,7 +474,7 @@ int_t checkDist3DLUStruct(  dLUstruct_t* LUstruct, gridinfo3d_t* grid3d)
         int_t nsupers = trf3Dpartition->nsupers;
         for(int_t k =0; k< nsupers; k++)
         {
-            if(superGridMap[k] == NOT_IN_GRID) 
+            if(superGridMap[k] == NOT_IN_GRID)
             {
                 // all pointer should be NULL
                 int krow = PROW(k, grid);
@@ -483,7 +486,7 @@ int_t checkDist3DLUStruct(  dLUstruct_t* LUstruct, gridinfo3d_t* grid3d)
                     double* uval = LUstruct->Llu->Unzval_br_ptr[lk];
                     if(usub != NULL || uval != NULL)
                     {
-                        printf("Check 3D LU structure failed: node_id=%d, grid_id =%d, Iam=(%d, %d) \n", 
+                        printf("Check 3D LU structure failed: node_id=%d, grid_id =%d, Iam=(%d, %d) \n",
                             k, myGrid, grid3d->zscp.Iam, grid3d->zscp.Iam);
                         exit(1);
                     }
@@ -496,7 +499,7 @@ int_t checkDist3DLUStruct(  dLUstruct_t* LUstruct, gridinfo3d_t* grid3d)
                     double* lusup = LUstruct->Llu->Lnzval_bc_ptr[lk];
                     if(lsub != NULL || lusup != NULL)
                     {
-                        printf("Check 3D LU structure failed: node_id=%d, grid_id =%d, Iam=(%d, %d) \n", 
+                        printf("Check 3D LU structure failed: node_id=%d, grid_id =%d, Iam=(%d, %d) \n",
                             k, myGrid, grid3d->zscp.Iam, grid3d->zscp.Iam);
                         exit(1);
                     }
@@ -509,3 +512,4 @@ int_t checkDist3DLUStruct(  dLUstruct_t* LUstruct, gridinfo3d_t* grid3d)
 #endif
     return 0;
 }
+

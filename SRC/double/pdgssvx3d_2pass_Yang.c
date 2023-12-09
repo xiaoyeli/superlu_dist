@@ -504,7 +504,7 @@ int_t dgatherAllFactoredLU3d( dtrf3Dpartition_t*  trf3Dpartition,
 // dSOLVEstruct3d_t * SOLVEstruct,
 // SOLVEstruct->A3d
 
-int writeLUtoDisk(int nsupers, int_t *xsup, dLUstruct_t *LUstruct)
+int dwriteLUtoDisk(int nsupers, int_t *xsup, dLUstruct_t *LUstruct)
 {
 
 	if (getenv("LUFILE"))
@@ -556,7 +556,7 @@ static int checkArr(double *A, double *B, int n)
 	return 0;
 }
 
-int checkLUFromDisk(int nsupers, int_t *xsup, dLUstruct_t *LUstruct)
+int dcheckLUFromDisk(int nsupers, int_t *xsup, dLUstruct_t *LUstruct)
 {
 	dLocalLU_t *Llu = LUstruct->Llu;
 
@@ -1362,7 +1362,7 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 		if (writeLU)
 		{
 			if (!grid3d->zscp.Iam)
-				writeLUtoDisk(nsupers, Glu_persist->xsup, LUstruct);
+				dwriteLUtoDisk(nsupers, Glu_persist->xsup, LUstruct);
 		}
 
 		int checkLU = 0;
@@ -1374,7 +1374,7 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 		if (checkLU)
 		{
 			if (!grid3d->zscp.Iam)
-				checkLUFromDisk(nsupers, Glu_persist->xsup, LUstruct);
+				dcheckLUFromDisk(nsupers, Glu_persist->xsup, LUstruct);
 		}
 
 #if (PRNTlevel >= 0)
