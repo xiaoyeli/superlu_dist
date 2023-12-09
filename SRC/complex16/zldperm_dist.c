@@ -13,7 +13,7 @@ at the top-level directory.
  * \brief Finds a row permutation so that the matrix has large entries on the diagonal
  *
  * <pre>
- * -- Distributed SuperLU routine (version 1.0) --
+ * -- Distributed SuperLU routine (version 9.0) --
  * Lawrence Berkeley National Lab, Univ. of California Berkeley.
  * September 1, 1999
  * </pre>

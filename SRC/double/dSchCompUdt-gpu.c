@@ -16,7 +16,7 @@ at the top-level directory.
  *        Uses GPU.
  *
  * <pre>
- * -- Distributed SuperLU routine (version 4.0) --
+ * -- Distributed SuperLU routine (version 9.0) --
  * Lawrence Berkeley National Lab, Univ. of California Berkeley.
  * October 1, 2014
  *

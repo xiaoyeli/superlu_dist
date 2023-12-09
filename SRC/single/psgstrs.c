@@ -15,7 +15,7 @@ at the top-level directory.
  * general N-by-N matrix A using the LU factors computed previously.
  *
  * <pre>
- * -- Distributed SuperLU routine (version 6.1) --
+ * -- Distributed SuperLU routine (version 9.0) --
  * Lawrence Berkeley National Lab, Univ. of California Berkeley.
  * October 15, 2008
  * September 18, 2018  version 6.0

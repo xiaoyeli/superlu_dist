@@ -13,7 +13,7 @@ at the top-level directory.
  * \brief Distribute the matrix onto the 2D process mesh.
  *
  * <pre>
- * -- Distributed SuperLU routine (version 2.3) --
+ * -- Distributed SuperLU routine (version 9.0) --
  * Lawrence Berkeley National Lab, Univ. of California Berkeley.
  * October 15, 2008
  *

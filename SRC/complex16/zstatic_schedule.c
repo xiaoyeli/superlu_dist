@@ -13,7 +13,7 @@ at the top-level directory.
  * \brief Performs static scheduling for the look-ahead factorization algorithm.
  *
  * <pre>
- * -- Distributed SuperLU routine (version 4.0) --
+ * -- Distributed SuperLU routine (version 9.0) --
  * Lawrence Berkeley National Lab, Univ. of California Berkeley.
  * August 15, 2014
  *

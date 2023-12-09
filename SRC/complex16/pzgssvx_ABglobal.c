@@ -13,7 +13,7 @@ at the top-level directory.
  * \brief Solves a system of linear equations A*X=B,
  *
  * <pre>
- * -- Distributed SuperLU routine (version 4.3) --
+ * -- Distributed SuperLU routine (version 9.0) --
  * Lawrence Berkeley National Lab, Univ. of California Berkeley.
  * September 1, 1999
  *

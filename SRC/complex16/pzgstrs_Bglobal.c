@@ -13,7 +13,7 @@ at the top-level directory.
  * \brief Solves a system of distributed linear equations A*X = B with a general N-by-N matrix A using the LU factorization
  *
  * <pre>
- * -- Distributed SuperLU routine (version 2.3) --
+ * -- Distributed SuperLU routine (version 9.0) --
  * Lawrence Berkeley National Lab, Univ. of California Berkeley.
  * October 15, 2008
  *

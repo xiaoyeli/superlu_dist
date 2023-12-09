@@ -13,7 +13,7 @@ at the top-level directory.
  * \brief Communication routines.
  *
  * <pre>
- * -- Distributed SuperLU routine (version 7.0) --
+ * -- Distributed SuperLU routine (version 9.0) --
  * Lawrence Berkeley National Lab, Georgia Institute of Technology,
  * Oak Ridge National Lab
  * May 12, 2021

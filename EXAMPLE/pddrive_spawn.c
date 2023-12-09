@@ -14,7 +14,7 @@ at the top-level directory.
  * \brief Driver program for PDGSSVX example
  *
  * <pre>
- * -- Distributed SuperLU routine (version 6.1) --
+ * -- Distributed SuperLU routine (version 9.0) --
  * Lawrence Berkeley National Lab, Univ. of California Berkeley.
  * November 1, 2007
  * December 6, 2018

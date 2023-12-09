@@ -13,7 +13,7 @@ at the top-level directory.
  * \brief Definitions which are precision-neutral
  *
  * <pre>
- * -- Distributed SuperLU routine (version 8.1.2) --
+ * -- Distributed SuperLU routine (version 9.0) --
  * Lawrence Berkeley National Lab, Univ. of California Berkeley.
  * November 1, 2007
  *
@@ -1152,6 +1152,13 @@ extern void  quickSort( int_t*, int_t, int_t, int_t);
 extern void  quickSortM( int_t*, int_t, int_t, int_t, int_t, int_t);
 extern int_t partition( int_t*, int_t, int_t, int_t);
 extern int_t partitionM( int_t*, int_t, int_t, int_t, int_t, int_t);
+
+extern int compareInt_t(void *a, void *b);
+extern int compareInt(void *a, void *b);
+extern int compareDouble(void *a, void *b);
+extern int dist_checkArrayEq(void *arr, int length, MPI_Datatype datatype, int src_rank, int dest_rank, MPI_Comm communicator, int (*compare)(void *, void *));
+
+
 
 /* Prototypes for parallel symbolic factorization */
 extern float symbfact_dist

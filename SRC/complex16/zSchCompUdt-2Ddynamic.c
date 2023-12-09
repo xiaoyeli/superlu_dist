@@ -15,7 +15,7 @@ at the top-level directory.
  *        Uses 2D partitioning for the scatter phase.
  *
  * <pre>
- * -- Distributed SuperLU routine (version 5.4) --
+ * -- Distributed SuperLU routine (version 9.0) --
  * Lawrence Berkeley National Lab, Univ. of California Berkeley.
  * October 1, 2014
  *

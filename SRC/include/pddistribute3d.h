@@ -5,7 +5,6 @@
 // Defining DIST3D temoprarily to track changes in this file while fully
 // integrating the 3D code
 // #define DIST3D
-
 float pddistribute3d(superlu_dist_options_t *options, int_t n, SuperMatrix *A,
                      dScalePermstruct_t *ScalePermstruct,
                      Glu_freeable_t *Glu_freeable, dLUstruct_t *LUstruct,
@@ -34,6 +33,7 @@ int_t ComputeLDAspa_Ilsum( int_t nsupers, int_t* ilsum,  gridinfo3d_t* grid3d) ;
 void propagateDataThroughMatrixBlocks(int_t nsupers, Glu_freeable_t *Glu_freeable, dLUstruct_t *LUstruct, gridinfo3d_t* grid3d,  
 int_t *Urb_length, int_t *rb_marker, int_t *Urb_fstnz, int_t *Ucbs,
 int **ToSendR,  int *ToSendD,  int *ToRecv);
+int_t checkDist3DLUStruct(dLUstruct_t* LUstruct, gridinfo3d_t* grid3d);
 
 void dbcastPermutedSparseA(SuperMatrix *A, 
                           dScalePermstruct_t *ScalePermstruct,
@@ -47,4 +47,3 @@ int compareInt_t(void *a, void *b);
 int compareInt(void *a, void *b);
 int compareDouble(void *a, void *b);
 int dist_checkArrayEq(void *arr, int length, MPI_Datatype datatype, int src_rank, int dest_rank, MPI_Comm communicator, int (*compare)(void *, void *));
-int_t checkDist3DLUStruct(dLUstruct_t* LUstruct, gridinfo3d_t* grid3d);

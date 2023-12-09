@@ -14,7 +14,7 @@ at the top-level directory.
  * \brief Driver program for PSGSSVX3D example
  *
  * <pre>
- * -- Distributed SuperLU routine (version 7.0) --
+ * -- Distributed SuperLU routine (version 9.0) --
  * Lawrence Berkeley National Lab, Georgia Institute of Technology,
  * Oak Ridge National Lab 
  * September 10, 2021

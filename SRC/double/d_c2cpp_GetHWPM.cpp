@@ -13,7 +13,7 @@ at the top-level directory.
  * \brief Get heavy-weight perfect matching (HWPM).
  *
  * <pre>
- * -- Distributed SuperLU routine (version 5.4) --
+ * -- Distributed SuperLU routine (version 9.0) --
  * Lawrence Berkeley National Lab, Univ. of California Berkeley.
  * April 1, 2018
  * Modified: April 2, 2020

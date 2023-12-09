@@ -13,7 +13,7 @@ at the top-level directory.
  * \brief  Distributed SuperLU data types and function prototypes
  *
  * <pre>
- * -- Distributed SuperLU routine (version 7.0) --
+ * -- Distributed SuperLU routine (version 9.0) --
  * Lawrence Berkeley National Lab, Univ. of California Berkeley,
  * Georgia Institute of Technology
  * November 1, 2007

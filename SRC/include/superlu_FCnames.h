@@ -12,7 +12,7 @@ at the top-level directory.
  * \brief Macro definitions
  *
  * <pre>
- * -- Distributed SuperLU routine (version 6.2) --
+ * -- Distributed SuperLU routine (version 9.0) --
  * Lawrence Berkeley National Lab, Univ. of California Berkeley.
  * November 12, 2019
  *

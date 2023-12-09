@@ -14,7 +14,7 @@ at the top-level directory.
  * \brief  Distributed SuperLU data types and function prototypes
  *
  * <pre>
- * -- Distributed SuperLU routine (version 7.0) --
+ * -- Distributed SuperLU routine (version 9.0) --
  * Lawrence Berkeley National Lab, Univ. of California Berkeley,
  * Georgia Institute of Technology
  * November 1, 2007
@@ -1258,6 +1258,16 @@ extern void dRgather_U(int_t k, int_t jj0, int_t *usub, double *uval,
 		      double *bigU, gEtreeInfo_t*, Glu_persist_t *,
 		      gridinfo_t *, HyP_t *, int_t *myIperm,
 		      int_t *iperm_c_supno, int_t *perm_u);
+
+    /* from pxdistribute3d.h */
+extern void dbcastPermutedSparseA(SuperMatrix *A, 
+                          dScalePermstruct_t *ScalePermstruct,
+                          Glu_freeable_t *Glu_freeable, 
+                          dLUstruct_t *LUstruct, gridinfo3d_t *grid3d);
+
+extern void dnewTrfPartitionInit(int_t nsupers,  dLUstruct_t *LUstruct, gridinfo3d_t *grid3d);
+
+
 
     /* from xtrf3Dpartition.h */
 extern dtrf3Dpartition_t* dinitTrf3Dpartition(int_t nsupers,

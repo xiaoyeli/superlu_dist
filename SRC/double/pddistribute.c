@@ -13,7 +13,7 @@ at the top-level directory.
 /*! @file
  * \brief Re-distribute A on the 2D process mesh.
  * <pre>
- * -- Distributed SuperLU routine (version 7.1.1) --
+ * -- Distributed SuperLU routine (version 9.0) --
  * Lawrence Berkeley National Lab, Univ. of California Berkeley.
  * October 15, 2008
  * October 18, 2021, minor fix, v7.1.1
@@ -330,7 +330,7 @@ pddistribute(superlu_dist_options_t *options, int_t n, SuperMatrix *A,
 	     Glu_freeable_t *Glu_freeable, dLUstruct_t *LUstruct,
 	     gridinfo_t *grid)
 /*
- * -- Distributed SuperLU routine (version 2.0) --
+ * -- Distributed SuperLU routine (version 9.0) --
  * Lawrence Berkeley National Lab, Univ. of California Berkeley.
  * March 15, 2003
  *
@@ -2363,7 +2363,7 @@ pddistribute_allgrid(superlu_dist_options_t *options, int_t n, SuperMatrix *A,
 	     Glu_freeable_t *Glu_freeable, dLUstruct_t *LUstruct,
 	     gridinfo_t *grid, int* supernodeMask)
 /*
- * -- Distributed SuperLU routine (version 2.0) --
+ * -- Distributed SuperLU routine (version 9.0) --
  * Lawrence Berkeley National Lab, Univ. of California Berkeley.
  * March 15, 2003
  *
@@ -3472,7 +3472,7 @@ pddistribute_allgrid_index_only(superlu_dist_options_t *options, int_t n, SuperM
 	     Glu_freeable_t *Glu_freeable, dLUstruct_t *LUstruct,
 	     gridinfo_t *grid, int* supernodeMask)
 /*
- * -- Distributed SuperLU routine (version 2.0) --
+ * -- Distributed SuperLU routine (version 9.0) --
  * Lawrence Berkeley National Lab, Univ. of California Berkeley.
  * March 15, 2003
  *

@@ -14,7 +14,7 @@ at the top-level directory.
  * \brief Look-ahead update of the Schur complement.
  *
  * <pre>
- * -- Distributed SuperLU routine (version 4.0) --
+ * -- Distributed SuperLU routine (version 9.0) --
  * Lawrence Berkeley National Lab, Univ. of California Berkeley.
  * August 15, 2014
  *

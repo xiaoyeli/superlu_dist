@@ -13,7 +13,7 @@ at the top-level directory.
  * \brief Perform local block modifications: lsum[i] -= L_i,k * X[k]
  *
  * <pre>
- * -- Distributed SuperLU routine (version 7.1.0) --
+ * -- Distributed SuperLU routine (version 9.0) --
  * Lawrence Berkeley National Lab, Univ. of California Berkeley.
  * March 15, 2003
  *

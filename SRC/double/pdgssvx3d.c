@@ -14,7 +14,7 @@ at the top-level directory.
  * \brief Solves a system of linear equations A*X=B using 3D process grid.
  *
  * <pre>
- * -- Distributed SuperLU routine (version 7.2) --
+ * -- Distributed SuperLU routine (version 9.0) --
  * Lawrence Berkeley National Lab, Georgia Institute of Technology,
  * Oak Ridge National Lab
  * May 12, 2021
@@ -24,7 +24,7 @@ at the top-level directory.
 #include "superlu_ddefs.h"
 //#include "TRF3dV100/superlu_summit.h"
 #include "superlu_summit.h"
-#include "pddistribute3d.h"
+// #include "pddistribute3d.h"
 #include "dssvx3dAux.c"
 // int_t dgatherAllFactoredLU3d( dtrf3Dpartition_t*  trf3Dpartition,
 // 			   dLUstruct_t* LUstruct, gridinfo3d_t* grid3d, SCT_t* SCT );

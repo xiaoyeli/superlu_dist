@@ -3,7 +3,7 @@
  * \brief Factorization routines for the subtree using 2D process grid, with GPUs.
  *
  * <pre>
- * -- Distributed SuperLU routine (version 7.0) --
+ * -- Distributed SuperLU routine (version 9.0) --
  * Lawrence Berkeley National Lab, Univ. of California Berkeley,
  * Georgia Institute of Technology, Oak Ridge National Laboratory
  * May 12, 2021

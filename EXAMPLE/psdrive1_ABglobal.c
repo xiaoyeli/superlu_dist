@@ -14,7 +14,7 @@ at the top-level directory.
  * \brief Driver program for psgssvx_ABglobal example
  *
  * <pre>
- * -- Distributed SuperLU routine (version 4.1) --
+ * -- Distributed SuperLU routine (version 9.0) --
  * Lawrence Berkeley National Lab, Univ. of California Berkeley.
  * September 1, 1999
  * April 5, 2015

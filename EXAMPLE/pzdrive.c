@@ -13,7 +13,7 @@ at the top-level directory.
  * \brief Driver program for PZGSSVX example
  *
  * <pre>
- * -- Distributed SuperLU routine (version 8.1.0) --
+ * -- Distributed SuperLU routine (version 9.0) --
  * Lawrence Berkeley National Lab, Univ. of California Berkeley.
  * November 1, 2007
  * December 6, 2018

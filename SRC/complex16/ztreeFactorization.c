@@ -13,7 +13,7 @@ at the top-level directory.
  * \brief Factorization routines for the subtree using 2D process grid.
  *
  * <pre>
- * -- Distributed SuperLU routine (version 7.2) --
+ * -- Distributed SuperLU routine (version 9.0) --
  * Lawrence Berkeley National Lab, Georgia Institute of Technology,
  * Oak Ridge National Lab
  * May 12, 2021

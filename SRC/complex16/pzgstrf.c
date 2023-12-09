@@ -13,7 +13,7 @@ at the top-level directory.
  * \brief Performs LU factorization in parallel.
  *
  * <pre>
- * -- Distributed SuperLU routine (version 6.1) --
+ * -- Distributed SuperLU routine (version 9.0) --
  * Lawrence Berkeley National Lab, Univ. of California Berkeley.
  * October 1, 2014
  *
