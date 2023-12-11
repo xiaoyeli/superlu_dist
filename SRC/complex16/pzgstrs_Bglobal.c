@@ -282,11 +282,11 @@ pzgstrs_Bglobal(superlu_dist_options_t *options, int_t n,
 
 	/* Every process receives the count, but it is only useful on the
 	   diagonal processes.  */
-#if 0	   
+#if 0
 	MPI_Allreduce( mod_bit, frecv, nlb, mpi_int_t, MPI_SUM, scp->comm );
-#else	
+#else
 	MPI_Allreduce( mod_bit, frecv, nlb, MPI_INT, MPI_SUM, scp->comm );
-#endif	
+#endif
 
 	for (k = 0; k < nsupers; ++k) {
 	    krow = PROW( k, grid );
@@ -606,9 +606,9 @@ pzgstrs_Bglobal(superlu_dist_options_t *options, int_t n,
 
 	/* Every process receives the count, but it is only useful on the
 	   diagonal processes.  */
-#if 0	   
+#if 0
 	MPI_Allreduce( mod_bit, brecv, nlb, mpi_int_t, MPI_SUM, scp->comm );
-#else	
+#else
 	MPI_Allreduce( mod_bit, brecv, nlb, MPI_INT, MPI_SUM, scp->comm );
 #endif
 

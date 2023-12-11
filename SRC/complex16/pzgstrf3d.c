@@ -133,7 +133,7 @@ int_t pzgstrf3d(superlu_dist_options_t *options, int m, int n, double anorm,
 
     /* Test the input parameters. */
     *info = 0;
-    
+
 #if ( DEBUGlevel>=1 )
     CHECK_MALLOC (grid3d->iam, "Enter pzgstrf3d()");
 #endif
@@ -147,7 +147,7 @@ int_t pzgstrf3d(superlu_dist_options_t *options, int m, int n, double anorm,
 
     //getting Nsupers
     int_t nsupers = getNsupers(n, LUstruct->Glu_persist);
-
+    int_t* xsup = LUstruct->Glu_persist->xsup;
     // Grid related Variables
     int_t iam = grid->iam; // in 2D grid
     int num_threads = getNumThreads(grid3d->iam);
@@ -159,7 +159,7 @@ int_t pzgstrf3d(superlu_dist_options_t *options, int m, int n, double anorm,
     zdiagFactBufs_t dFBuf;
     zinitDiagFactBufs(ldt, &dFBuf);
 
-    commRequests_t comReqs;   
+    commRequests_t comReqs;
     initCommRequests(&comReqs, grid);
 
     msgs_t msgs;
@@ -201,12 +201,54 @@ int_t pzgstrf3d(superlu_dist_options_t *options, int m, int n, double anorm,
     int_t numLA = getNumLookAhead(options);
     zLUValSubBuf_t** LUvsbs = zLluBufInitArr( SUPERLU_MAX( numLA, grid3d->zscp.Np ), LUstruct);
     msgs_t**msgss = initMsgsArr(numLA);
-    int_t mxLeafNode    = 0;
+    int_t mxLeafNode    = 0; // Yang: only need to check the leaf level of topoInfo as the factorization proceeds level by level
     for (int ilvl = 0; ilvl < maxLvl; ++ilvl) {
         if (sForests[myTreeIdxs[ilvl]] && sForests[myTreeIdxs[ilvl]]->topoInfo.eTreeTopLims[1] > mxLeafNode )
             mxLeafNode    = sForests[myTreeIdxs[ilvl]]->topoInfo.eTreeTopLims[1];
     }
-    zdiagFactBufs_t** dFBufs = zinitDiagFactBufsArr(mxLeafNode, ldt, grid);
+
+    // Yang: use ldts to track the maximum needed buffer sizes per node of topoInfo
+    int *ldts = (int*) SUPERLU_MALLOC(mxLeafNode*sizeof(int));
+    for (int i = 0; i < mxLeafNode; ++i) {
+        ldts[i]=1;
+    }
+
+    for (int ilvl = 0; ilvl < maxLvl; ++ilvl) {
+        int_t treeId = trf3Dpartition->myTreeIdxs[ilvl];
+        sForest_t* sforest = sForests[treeId];
+        if (sforest){
+            int_t maxTopoLevel = sforest->topoInfo.numLvl;
+            int_t *perm_c_supno = sforest->nodeList ;
+            for (int_t topoLvl = 0; topoLvl < maxTopoLevel; ++topoLvl)
+            {
+                /* code */
+                int_t k_st = sforest->topoInfo.eTreeTopLims[topoLvl];
+                int_t k_end = sforest->topoInfo.eTreeTopLims[topoLvl + 1];
+                for (int_t k0 = k_st; k0 < k_end; ++k0)
+                {
+                    int_t offset = k0 - k_st;
+                    int_t k = perm_c_supno[k0];
+                    int_t nsupc = SuperSize (k);
+                    int_t krow = PROW (k, grid);
+                    int_t kcol = PCOL (k, grid);
+                    int_t myrow = MYROW(grid->iam, grid);
+                    int_t mycol = MYCOL(grid->iam, grid);
+                    if (myrow == krow || mycol == kcol)
+                    {
+                        ldts[offset] = SUPERLU_MAX(ldts[offset],nsupc);
+                    }
+                }
+            }
+        }
+    }
+
+#if 1
+    // dinitDiagFactBufsArrMod is modified version of dinitDiagFactBufsArr to use ldts instead of a scalar
+    zdiagFactBufs_t** dFBufs = zinitDiagFactBufsArrMod(mxLeafNode, ldts, grid);
+    SUPERLU_FREE(ldts);
+#else
+    // zdiagFactBufs_t** dFBufs = zinitDiagFactBufsArr(mxLeafNode, ldt, grid);
+#endif
     commRequests_t** comReqss = initCommRequestsArr(SUPERLU_MAX(mxLeafNode, numLA), ldt, grid);
 
     /* Setting up GPU related data structures */
@@ -242,10 +284,9 @@ int_t pzgstrf3d(superlu_dist_options_t *options, int m, int n, double anorm,
     d2Hreduce_t* d2Hred = &d2HredObj;
     zsluGPU_t sluGPUobj;
     zsluGPU_t *sluGPU = &sluGPUobj;
-    sluGPU->isNodeInMyGrid = getIsNodeInMyGrid(nsupers, maxLvl, myNodeCount, treePerm);
     if (superlu_acc_offload)
     {
-#if 0 	/* Sherry: For GPU code on titan, we do not need performance 
+#if 0 	/* Sherry: For GPU code on titan, we do not need performance
 	   lookup tables since due to difference in CPU-GPU performance,
 	   it didn't make much sense to do any Schur-complement update
 	   on CPU, except for the lookahead-update on CPU. Same should
@@ -255,7 +296,7 @@ int_t pzgstrf3d(superlu_dist_options_t *options, int m, int n, double anorm,
         LookUpTableInit(iam);
         acc_async_cost = get_acc_async_cost();
 #endif
-
+    sluGPU->isNodeInMyGrid = getIsNodeInMyGrid(nsupers, maxLvl, myNodeCount, treePerm);
 	//OLD: int_t* perm_c_supno = getPerm_c_supno(nsupers, options, LUstruct, grid);
 	int_t* perm_c_supno = getPerm_c_supno(nsupers, options,
 					      LUstruct->etree,
@@ -351,6 +392,12 @@ int_t pzgstrf3d(superlu_dist_options_t *options, int m, int n, double anorm,
     //printf("After factorization: INFO = %d\n", *info); fflush(stdout);
 
     SCT->pdgstrfTimer = SuperLU_timer_() - SCT->pdgstrfTimer;
+    if(!grid3d->zscp.Iam)
+    {
+        // SCT_printSummary(grid, SCT);
+        // if (superlu_acc_offload )
+        //     zprintGPUStats(sluGPU->A_gpu);
+    }
 
 #ifdef ITAC_PROF
     VT_traceoff();

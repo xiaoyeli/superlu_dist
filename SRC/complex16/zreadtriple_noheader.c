@@ -66,7 +66,7 @@ zreadtriple_noheader(FILE *fp, int_t *m, int_t *n, int_t *nonz,
         ret_val = fscanf(fp, "%d%d%lf%lf\n", &i, &j, &vali.r, &vali.i);
 #endif
     }
-    
+
     if ( minn == 0 ) { /* zero-based indexing */
 	zero_base = 1;
 	++(*n);

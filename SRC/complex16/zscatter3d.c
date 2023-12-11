@@ -100,11 +100,11 @@ zblock_gemm_scatter( int_t lb, int_t j,
                   )
 {
     // return ;
-#ifdef _OPENMP    
+#ifdef _OPENMP
     thread_id = omp_get_thread_num();
-#else    
+#else
     thread_id = 0;
-#endif    
+#endif
     int *indirect_thread = indirect + ldt * thread_id;
     int *indirect2_thread = indirect2 + ldt * thread_id;
     doublecomplex *tempv1 = bigV + thread_id * ldt * ldt;
@@ -143,7 +143,7 @@ zblock_gemm_scatter( int_t lb, int_t j,
                 &L_mat[(knsupc - ldu)*ldl + cum_nrow], ldl,
                 &U_mat[st_col * ldu], ldu,
                 beta, tempv1, temp_nbrow);
-    
+
     // printf("SCU update: (%d, %d)\n",ib,jb );
 #ifdef SCATTER_PROFILE
     double ttx = SuperLU_timer_();
@@ -238,7 +238,7 @@ zblock_gemm_scatter_lock( int_t lb, int_t j,
     superlu_zgemm("N", "N", temp_nbrow, ncols, ldu, alpha,
            &L_mat[(knsupc - ldu)*ldl + cum_nrow], ldl,
            &U_mat[st_col * ldu], ldu, beta, tempv1, temp_nbrow);
-    
+
     /*try to get the lock for the block*/
     if (lock)       /*lock is not null*/
         while (!omp_test_lock(lock))
@@ -266,7 +266,7 @@ zblock_gemm_scatter_lock( int_t lb, int_t j,
     else
     {
         //scatter_l (  Sherry
-        zscatter_l ( 
+        zscatter_l (
             ib, ljb, nsupc, iukp, xsup, klst, temp_nbrow, lptr,
             temp_nbrow, usub, lsub, tempv1,
             indirect_thread, indirect2_thread,
@@ -329,12 +329,12 @@ int_t zblock_gemm_scatterTopLeft( int_t lb, /* block number in L */
     int_t** Ufstnz_br_ptr = Llu->Ufstnz_br_ptr;
     doublecomplex** Lnzval_bc_ptr = Llu->Lnzval_bc_ptr;
     doublecomplex** Unzval_br_ptr = Llu->Unzval_br_ptr;
-#ifdef _OPENMP    
+#ifdef _OPENMP
     volatile int_t thread_id = omp_get_thread_num();
-#else    
+#else
     volatile int_t thread_id = 0;
-#endif    
-    
+#endif
+
 //    printf("Thread's ID %lld \n", thread_id);
     //unsigned long long t1 = _rdtsc();
     double t1 = SuperLU_timer_();
@@ -371,11 +371,11 @@ int_t zblock_gemm_scatterTopRight( int_t lb,  int_t j,
     int_t** Ufstnz_br_ptr = Llu->Ufstnz_br_ptr;
     doublecomplex** Lnzval_bc_ptr = Llu->Lnzval_bc_ptr;
     doublecomplex** Unzval_br_ptr = Llu->Unzval_br_ptr;
-#ifdef _OPENMP    
+#ifdef _OPENMP
     volatile  int_t thread_id = omp_get_thread_num();
-#else    
+#else
     volatile  int_t thread_id = 0;
-#endif    
+#endif
     //unsigned long long t1 = _rdtsc();
     double t1 = SuperLU_timer_();
     zblock_gemm_scatter( lb, j, HyP->Ublock_info_Phi, HyP->lookAhead_info, HyP->lookAhead_L_buff, HyP->Lnbrow,
@@ -408,11 +408,11 @@ int_t zblock_gemm_scatterBottomLeft( int_t lb,  int_t j,
     int_t** Ufstnz_br_ptr = Llu->Ufstnz_br_ptr;
     doublecomplex** Lnzval_bc_ptr = Llu->Lnzval_bc_ptr;
     doublecomplex** Unzval_br_ptr = Llu->Unzval_br_ptr;
-#ifdef _OPENMP    
+#ifdef _OPENMP
     volatile int_t thread_id = omp_get_thread_num();
-#else    
+#else
     volatile int_t thread_id = 0;
-#endif    
+#endif
     //printf("Thread's ID %lld \n", thread_id);
     //unsigned long long t1 = _rdtsc();
     double t1 = SuperLU_timer_();
@@ -447,11 +447,11 @@ int_t zblock_gemm_scatterBottomRight( int_t lb,  int_t j,
     int_t** Ufstnz_br_ptr = Llu->Ufstnz_br_ptr;
     doublecomplex** Lnzval_bc_ptr = Llu->Lnzval_bc_ptr;
     doublecomplex** Unzval_br_ptr = Llu->Unzval_br_ptr;
-#ifdef _OPENMP    
+#ifdef _OPENMP
     volatile  int_t thread_id = omp_get_thread_num();
-#else    
+#else
     volatile  int_t thread_id = 0;
-#endif    
+#endif
    // printf("Thread's ID %lld \n", thread_id);
     //unsigned long long t1 = _rdtsc();
     double t1 = SuperLU_timer_();

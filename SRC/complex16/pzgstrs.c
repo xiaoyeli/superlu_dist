@@ -19,6 +19,7 @@ at the top-level directory.
  * October 15, 2008
  * September 18, 2018  version 6.0
  * February 8, 2019  version 6.1.1
+ * July 5, 2022       version 8.1.0  improved GPU U-solve
  * </pre>
  */
 #include <math.h>
@@ -26,6 +27,14 @@ at the top-level directory.
 #ifndef CACHELINE
 #define CACHELINE 64  /* bytes, Xeon Phi KNL, Cori haswell, Edision */
 #endif
+
+#ifdef GPU_ACC
+#include "gpu_api_utils.h"
+#endif
+
+// #ifndef GPUREF
+// #define GPUREF 1
+// #endif
 
 /*
  * Sketch of the algorithm for L-solve:
@@ -96,6 +105,7 @@ _fcd ftcs1;
 _fcd ftcs2;
 _fcd ftcs3;
 #endif
+			//TODO: zreadMM_dist_intoL_CSR not implemented
 
 /*! \brief
  *
@@ -686,7 +696,7 @@ pzCompute_Diag_Inv(int_t n, zLUstruct_t *LUstruct,gridinfo_t *grid,
     t = SuperLU_timer_();
 #endif
 
-#if ( PRNTlevel>=2 )
+#if ( PROFlevel>=1 )
     if ( grid->iam==0 ) {
 	printf("computing inverse of diagonal blocks...\n");
 	fflush(stdout);
@@ -725,6 +735,7 @@ pzCompute_Diag_Inv(int_t n, zLUstruct_t *LUstruct,gridinfo_t *grid,
 
 	     	  lk = LBj( k, grid ); /* Local block number, column-wise. */
 		  lsub = Lrowind_bc_ptr[lk];
+		  if(lsub){
 		  lusup = Lnzval_bc_ptr[lk];
 		  Linv = Linv_bc_ptr[lk];
 		  Uinv = Uinv_bc_ptr[lk];
@@ -754,7 +765,8 @@ pzCompute_Diag_Inv(int_t n, zLUstruct_t *LUstruct,gridinfo_t *grid,
 
 		  ztrtri_("U","N",&knsupc,Uinv,&knsupc,&INFO);
 
-	    } /* end if (mycol === kcol) */
+	      } /* end if(lsub) */
+		} /* end if (mycol === kcol) */
 	} /* end if (myrow === krow) */
     } /* end fo k = ... nsupers */
 
@@ -908,7 +920,11 @@ pzgstrs(superlu_dist_options_t *options, int_t n,
     int  *fmod;         /* Modification count for L-solve --
     			 Count the number of local block products to
     			 be summed into lsum[lk]. */
-    int  fmod_tmp;
+	int_t *fmod_sort;
+	int_t *order;
+	//int_t *order1;
+	//int_t *order2;
+    int fmod_tmp;
     int  **fsendx_plist = Llu->fsendx_plist;
     int  nfrecvx = Llu->nfrecvx; /* Number of X components to be recv'd. */
     int  nfrecvx_buf=0;
@@ -946,7 +962,7 @@ pzgstrs(superlu_dist_options_t *options, int_t n,
     int_t tmpresult;
 
     // #if ( PROFlevel>=1 )
-    double t1, t2;
+    double t1, t2, t3;
     float msg_vol = 0, msg_cnt = 0;
     // #endif
 
@@ -972,7 +988,36 @@ pzgstrs(superlu_dist_options_t *options, int_t n,
     aln_d = 1; //ceil(CACHELINE/(double)dword);
     aln_i = 1; //ceil(CACHELINE/(double)iword);
     int num_thread = 1;
+	int_t cnt1,cnt2;
 
+
+#if defined(GPU_ACC) && defined(SLU_HAVE_LAPACK) && defined(GPU_SOLVE)
+
+#if ( PRNTlevel>=1 )
+    if (get_acc_solve()){
+	if ( !iam) printf(".. GPU trisolve\n");
+	fflush(stdout);
+    }
+#endif
+
+
+#ifdef GPUREF
+			//TODO: cusparse not yet implemented for this precision
+#else
+
+	const int nwrp_block = 1; /* number of warps in each block */
+	const int warp_size = 32; /* number of threads per warp*/
+	gpuStream_t sid=0;
+	int gid=0;
+	gridinfo_t *d_grid = NULL;
+	double *d_x = NULL;
+	double *d_lsum = NULL;
+    int  *d_bmod = NULL;
+    int  *d_fmod = NULL;
+#endif
+#endif
+
+// cudaProfilerStart();
     maxsuper = sp_ienv_dist(3, options);
 
 //#ifdef _OPENMP
@@ -1044,6 +1089,56 @@ pzgstrs(superlu_dist_options_t *options, int_t n,
     if ( !(fmod = int32Malloc_dist(nlb*aln_i)) )
 	ABORT("Malloc fails for fmod[].");
     for (i = 0; i < nlb; ++i) fmod[i*aln_i] = Llu->fmod[i];
+
+#if 0
+	if ( !(fmod_sort = intCalloc_dist(nlb*2)) )
+		ABORT("Calloc fails for fmod_sort[].");
+
+	for (j=0;j<nlb;++j)fmod_sort[j]=0;
+	for (j=0;j<nlb;++j)fmod_sort[j+nlb]=j;
+	dComputeLevelsets(iam, nsupers, grid, Glu_persist, Llu,fmod_sort);
+
+	quickSortM(fmod_sort,0,nlb-1,nlb,0,2);
+
+	if ( !(order = intCalloc_dist(nlb)) )
+		ABORT("Calloc fails for order[].");
+	for (j=0;j<nlb;++j) order[j]=fmod_sort[j+nlb];
+
+
+	// if ( !(order1 = intCalloc_dist(nlb)) )
+	// 	ABORT("Calloc fails for order1[].");
+	// if ( !(order2 = intCalloc_dist(nlb)) )
+	// 	ABORT("Calloc fails for order2[].");
+	// cnt1=0;
+	// cnt2=0;
+	// for (j=0;j<nlb;++j){
+	// 	if(Llu->fmod[j]==0){
+	// 		order1[cnt1]=j;
+	// 		cnt1++;
+	// 	}else{
+	// 		order2[cnt2]=j;
+	// 		cnt2++;
+	// 	}
+	// }
+
+	// for (j=0;j<cnt1;++j){
+	// 	order[j]=order1[j];
+	// }
+	// for (j=0;j<cnt2;++j){
+	// 	order[j+cnt1]=order2[j];
+	// }
+	// SUPERLU_FREE(order1);
+	// SUPERLU_FREE(order2);
+
+	// for (j=0;j<nlb;++j){
+	// 	printf("%5d%5d\n",order[j],fmod_sort[j]);
+	// 	fflush(stdout);
+	// }
+
+	SUPERLU_FREE(fmod_sort);
+	SUPERLU_FREE(order);
+#endif
+
     if ( !(frecv = int32Calloc_dist(nlb)) )
 	ABORT("Calloc fails for frecv[].");
     Llu->frecv = frecv;
@@ -1075,9 +1170,9 @@ pzgstrs(superlu_dist_options_t *options, int_t n,
 #ifdef _OPENMP
     if ( !(lsum = (doublecomplex*)SUPERLU_MALLOC(sizelsum*num_thread * sizeof(doublecomplex))))
 	ABORT("Malloc fails for lsum[].");
-#pragma omp parallel default(shared) private(ii,thread_id)
+#pragma omp parallel default(shared) private(ii)
     {
-	thread_id = omp_get_thread_num(); //mjc
+	int thread_id = omp_get_thread_num(); //mjc
 	for (ii=0; ii<sizelsum; ii++)
     	    lsum[thread_id*sizelsum+ii]=zero;
     }
@@ -1096,9 +1191,9 @@ pzgstrs(superlu_dist_options_t *options, int_t n,
     if ( !(rtemp = (doublecomplex*)SUPERLU_MALLOC((sizertemp*num_thread + 1) * sizeof(doublecomplex))) )
 	ABORT("Malloc fails for rtemp[].");
 #ifdef _OPENMP
-#pragma omp parallel default(shared) private(ii,thread_id)
+#pragma omp parallel default(shared) private(ii)
     {
-	thread_id=omp_get_thread_num();
+	int thread_id=omp_get_thread_num();
 	for ( ii=0; ii<sizertemp; ii++ )
 		rtemp[thread_id*sizertemp+ii]=zero;
     }
@@ -1127,7 +1222,7 @@ pzgstrs(superlu_dist_options_t *options, int_t n,
     pzReDistribute_B_to_X(B, m_loc, nrhs, ldb, fst_row, ilsum, x,
 			  ScalePermstruct, Glu_persist, grid, SOLVEstruct);
 
-#if ( PRNTlevel>=2 )
+#if ( PROFlevel>=1 )
     t = SuperLU_timer_() - t;
     if ( !iam) printf(".. B to X redistribute time\t%8.4f\n", t);
     fflush(stdout);
@@ -1154,13 +1249,10 @@ pzgstrs(superlu_dist_options_t *options, int_t n,
 	for (lk=0;lk<nsupers_j;++lk){
 		if(LBtree_ptr[lk].empty_==NO){
 			// printf("LBtree_ptr lk %5d\n",lk);
-			//if(BcTree_IsRoot(LBtree_ptr[lk],'z')==NO){
 			if(C_BcTree_IsRoot(&LBtree_ptr[lk])==NO){
 				nbtree++;
-				//if(BcTree_getDestCount(LBtree_ptr[lk],'z')>0)nfrecvx_buf++;
 				if(LBtree_ptr[lk].destCnt_>0)nfrecvx_buf++;
 			}
-			//BcTree_allocateRequest(LBtree_ptr[lk],'z');
 		}
 	}
 
@@ -1187,7 +1279,6 @@ if(procs==1){
 		if(LRtree_ptr[lk].empty_==NO){
 			nrtree++;
 			//RdTree_allocateRequest(LRtree_ptr[lk],'z');
-			//frecv[lk] = RdTree_GetDestCount(LRtree_ptr[lk],'z');
 			frecv[lk] = LRtree_ptr[lk].destCnt_;
 			nfrecvmod += frecv[lk];
 		}else{
@@ -1205,9 +1296,7 @@ if(procs==1){
 	}
 }
 
-#ifdef _OPENMP
-#pragma omp simd
-#endif
+
 	for (i = 0; i < nlb; ++i) fmod[i*aln_i] += frecv[i];
 
 	if ( !(recvbuf_BC_fwd = (doublecomplex*)SUPERLU_MALLOC(maxrecvsz*(nfrecvx+1) * sizeof(doublecomplex))) )  // this needs to be optimized for 1D row mapping
@@ -1222,12 +1311,13 @@ if(procs==1){
 	fflush(stdout);
 #endif
 
-#if ( PRNTlevel>=2 )
+#if ( PROFlevel>=1 )
 	t = SuperLU_timer_() - t;
 	if ( !iam) printf(".. Setup L-solve time\t%8.4f\n", t);
 	fflush(stdout);
 	MPI_Barrier( grid->comm );
 	t = SuperLU_timer_();
+	t3 = SuperLU_timer_();
 #endif
 
 #if ( VAMPIR>=1 )
@@ -1247,6 +1337,26 @@ if(procs==1){
 	printf("(%2d) nleaf %4d\n", iam, nleaf);
 	fflush(stdout);
 #endif
+
+	// ii = X_BLK( 0 );
+	// knsupc = SuperSize( 0 );
+	// for (i=0 ; i<knsupc*nrhs ; i++){
+	// printf("x_l: %f\n",x[ii+i]);
+	// fflush(stdout);
+	// }
+
+if (get_acc_solve()){  /* GPU trisolve*/
+#if defined(GPU_ACC) && defined(SLU_HAVE_LAPACK) && defined(GPU_SOLVE)
+// #if 0 /* CPU trisolve*/
+
+#ifdef GPUREF /* use cuSparse*/
+			//TODO: cusparse not yet implemented for this precision
+#else
+
+			//TODO: L-solve not implemented in GPU yet
+#endif
+#endif
+}else{  /* CPU trisolve*/
 
 #ifdef _OPENMP
 #pragma omp parallel default (shared)
@@ -1409,6 +1519,11 @@ if(procs==1){
 
 	jj=0;
 
+#if ( DEBUGlevel>=2 )
+	printf("(%2d) end solving nleaf %4d\n", iam, nleaf);
+	fflush(stdout);
+#endif
+
 #ifdef _OPENMP
 #pragma omp parallel default (shared)
 #endif
@@ -1424,6 +1539,7 @@ if(procs==1){
 #pragma	omp taskloop private (k,ii,lk,thread_id) num_tasks(num_thread*8) nogroup
 #endif
 #endif
+
 		for (jj=0;jj<nleaf;jj++){
 		    k=leafsups[jj];
 
@@ -1454,13 +1570,13 @@ if(procs==1){
 			ii = X_BLK( lib );
 			//BcTree_forwardMessageSimple(LBtree_ptr[lk],&x[ii - XK_H],BcTree_GetMsgSize(LBtree_ptr[lk],'z')*nrhs+XK_H,'z');
 			C_BcTree_forwardMessageSimple(&LBtree_ptr[lk], &x[ii - XK_H], LBtree_ptr[lk].msgSize_*nrhs+XK_H);
-			
+
 		}else{ // this is a reduce forwarding
 			lk = -lk - 1;
 			il = LSUM_BLK( lk );
 			//RdTree_forwardMessageSimple(LRtree_ptr[lk],&lsum[il - LSUM_H ],RdTree_GetMsgSize(LRtree_ptr[lk],'z')*nrhs+LSUM_H,'z');
 			C_RdTree_forwardMessageSimple(&LRtree_ptr[lk],&lsum[il - LSUM_H],LRtree_ptr[lk].msgSize_*nrhs+LSUM_H);
-			
+
 		}
 	}
 
@@ -1553,8 +1669,8 @@ if(procs==1){
 					    knsupc = SuperSize( k );
 					    xin = &recvbuf0[XK_H] ;
 					}
-					zlsum_fmod_inv_master(lsum, x, xin, rtemp, nrhs, knsupc, k, 
-					    fmod, nb, xsup, grid, Llu, 
+					zlsum_fmod_inv_master(lsum, x, xin, rtemp, nrhs, knsupc, k,
+					    fmod, nb, xsup, grid, Llu,
 					    stat_loc,sizelsum,sizertemp,0,maxsuper,thread_id,num_thread);
 
 				} /* if lsub */
@@ -1569,7 +1685,7 @@ if(procs==1){
 				RHS_ITERATE(j) {
 				for (i = 0; i < knsupc; ++i)
 					z_add(&lsum[i + il + j*knsupc + thread_id*sizelsum], &lsum[i + il + j*knsupc + thread_id*sizelsum], &tempv[i + j*knsupc]);
-				} 
+				}
 
 			// #ifdef _OPENMP
 			// #pragma omp atomic capture
@@ -1588,9 +1704,6 @@ if(procs==1){
 							 &lsum[il + jj + ii*sizelsum]);
 					ii = X_BLK( lk );
 					RHS_ITERATE(j)
-				#ifdef _OPENMP
-				#pragma omp simd
-				#endif
 					    for (i = 0; i < knsupc; ++i)
 					        z_add(&x[i + ii + j*knsupc],
 						       &x[i + ii + j*knsupc],
@@ -1620,9 +1733,6 @@ if(procs==1){
 							&alpha, Linv, &knsupc, &x[ii],
 							&knsupc, &beta, rtemp_loc, &knsupc );
 #endif
-					#ifdef _OPENMP
-					#pragma omp simd
-					#endif
 						for (i=0 ; i<knsupc*nrhs ; i++){
 							z_copy(&x[ii+i],&rtemp_loc[i]);
 						}
@@ -1657,7 +1767,7 @@ if(procs==1){
 					if(LBtree_ptr[lk].empty_==NO){
 					    //BcTree_forwardMessageSimple(LBtree_ptr[lk],&x[ii - XK_H],BcTree_GetMsgSize(LBtree_ptr[lk],'z')*nrhs+XK_H,'z');
 					    C_BcTree_forwardMessageSimple(&LBtree_ptr[lk], &x[ii - XK_H], LBtree_ptr[lk].msgSize_*nrhs+XK_H);
-					    
+
 					}
 					/*
 					 * Perform local block modifications.
@@ -1697,16 +1807,34 @@ if(procs==1){
                     } /* while not finished ... */
        	    }
         } // end of parallel
+		for (lk=0;lk<nsupers_j;++lk){
+			if(LBtree_ptr[lk].empty_==NO){
+				// if(BcTree_IsRoot(LBtree_ptr[lk],'d')==YES){
+				// BcTree_waitSendRequest(LBtree_ptr[lk],'d');
+				C_BcTree_waitSendRequest(&LBtree_ptr[lk]);
+				// }
+				// deallocate requests here
+			}
+		}
 
-#if ( PRNTlevel>=2 )
-	t = SuperLU_timer_() - t;
-	stat->utime[SOL_TOT] += t;
+		for (lk=0;lk<nsupers_i;++lk){
+			if(LRtree_ptr[lk].empty_==NO){
+				C_RdTree_waitSendRequest(&LRtree_ptr[lk]);
+				// deallocate requests here
+			}
+		}
+		MPI_Barrier( grid->comm );
+
+	}  /* end CPU trisolve */
+#if ( PROFlevel>=1 )
+	t3 = SuperLU_timer_() - t3;
+	stat->utime[SOL_TOT] += t3;
 	if ( !iam ) {
-		printf(".. L-solve time\t%8.4f\n", t);
+		printf(".. L-solve time\t%8.4f\n", t3);
 		fflush(stdout);
 	}
 
-	MPI_Reduce (&t, &tmax, 1, MPI_DOUBLE, MPI_MAX, 0, grid->comm);
+	MPI_Reduce (&t3, &tmax, 1, MPI_DOUBLE, MPI_MAX, 0, grid->comm);
 	if ( !iam ) {
 		printf(".. L-solve time (MAX) \t%8.4f\n", tmax);
 		fflush(stdout);
@@ -1716,7 +1844,7 @@ if(procs==1){
 
 #if ( DEBUGlevel==2 )
 	{
-		printf("(%d) .. After L-solve: y =\n", iam);
+		printf("(%d) .. After L-solve: y =\n", iam); fflush(stdout);
 		for (i = 0, k = 0; k < nsupers; ++k) {
 			krow = PROW( k, grid );
 			kcol = PCOL( k, grid );
@@ -1740,23 +1868,6 @@ if(procs==1){
 	SUPERLU_FREE(recvbuf_BC_fwd);
 	log_memory(-nlb*aln_i*iword-nlb*iword-(CEILING( nsupers, Pr )+CEILING( nsupers, Pc ))*aln_i*iword- nsupers_i*iword -maxrecvsz*(nfrecvx+1)*dword*2.0, stat);	//account for fmod, frecv, leaf_send, leafsups, recvbuf_BC_fwd
 
-	for (lk=0;lk<nsupers_j;++lk){
-		if(LBtree_ptr[lk].empty_==NO){
-			// if(BcTree_IsRoot(LBtree_ptr[lk],'z')==YES){
-			//BcTree_waitSendRequest(LBtree_ptr[lk],'z');
-			C_BcTree_waitSendRequest(&LBtree_ptr[lk]);
-			// }
-			// deallocate requests here
-		}
-	}
-
-	for (lk=0;lk<nsupers_i;++lk){
-		if(LRtree_ptr[lk].empty_==NO){
-			C_RdTree_waitSendRequest(&LRtree_ptr[lk]);
-			// deallocate requests here
-		}
-	}
-	MPI_Barrier( grid->comm );
 
 #if ( VAMPIR>=1 )
 	VT_traceoff();
@@ -1918,7 +2029,7 @@ if(procs==1){
 #endif
 
 
-#if ( PRNTlevel>=2 )
+#if ( PROFlevel>=1 )
 	t = SuperLU_timer_() - t;
 	if ( !iam) printf(".. Setup U-solve time\t%8.4f\n", t);
 	fflush(stdout);
@@ -1933,6 +2044,22 @@ if(procs==1){
 	printf("(%2d) nroot %4d\n", iam, nroot);
 	fflush(stdout);
 #endif
+
+
+
+
+
+if (get_acc_solve()){  /* GPU trisolve*/
+#if defined(GPU_ACC) && defined(SLU_HAVE_LAPACK) && defined(GPU_SOLVE)
+// #if 0 /* CPU trisolve*/
+
+			//TODO: U-solve not yet implemented on GPU
+#endif
+}else{  /* CPU trisolve*/
+
+
+
+
 
 #ifdef _OPENMP
 #pragma omp parallel default (shared)
@@ -2089,7 +2216,7 @@ for (i=0;i<nroot_send;i++){
 #pragma omp parallel default (shared)
 	{
 	    int thread_id=omp_get_thread_num();
-#else 
+#else
         {
 	    thread_id = 0;
 #endif
@@ -2264,12 +2391,30 @@ for (i=0;i<nroot_send;i++){
 		    } /* end if MPI_TAG==RD_U */
 		} /* while not finished ... */
 	} /* end parallel region */
+for (lk=0;lk<nsupers_j;++lk){
+		if(UBtree_ptr[lk].empty_==NO){
+			// if(BcTree_IsRoot(LBtree_ptr[lk],'d')==YES){
+			C_BcTree_waitSendRequest(&UBtree_ptr[lk]);
+			// }
+			// deallocate requests here
+		}
+	}
 
-#if ( PRNTlevel>=2 )
-	t = SuperLU_timer_() - t;
-	stat->utime[SOL_TOT] += t;
-	if ( !iam ) printf(".. U-solve time\t%8.4f\n", t);
-	MPI_Reduce (&t, &tmax, 1, MPI_DOUBLE, MPI_MAX, 0, grid->comm);
+	for (lk=0;lk<nsupers_i;++lk){
+		if(URtree_ptr[lk].empty_==NO){
+			C_RdTree_waitSendRequest(&URtree_ptr[lk]);
+			// deallocate requests here
+		}
+	}
+	MPI_Barrier( grid->comm );
+}
+
+#if ( PROFlevel>=1 )
+		t3 = SuperLU_timer_() - t3;
+	stat->utime[SOL_TOT] += t3;
+	if ( !iam ) printf(".. U-solve time\t%8.4f\n", t3);
+	MPI_Reduce (&t3, &tmax, 1, MPI_DOUBLE,
+				MPI_MAX, 0, grid->comm);
 	if ( !iam ) {
 		printf(".. U-solve time (MAX) \t%8.4f\n", tmax);
 		fflush(stdout);
@@ -2295,7 +2440,7 @@ for (i=0;i<nroot_send;i++){
 		   RHS_ITERATE(j) {
 		       for (i = 0; i < knsupc; ++i) { /* X stored in blocks */
 			   printf("\t(%d)\t%4d\t%.10f\n", iam, xsup[k]+i, x_col[i]);
-		       }      
+		       }
 		       x_col += knsupc;
 		   }
 		}
@@ -2307,7 +2452,7 @@ for (i=0;i<nroot_send;i++){
 	pzReDistribute_X_to_B(n, B, m_loc, ldb, fst_row, nrhs, x, ilsum,
 				ScalePermstruct, Glu_persist, grid, SOLVEstruct);
 
-#if ( PRNTlevel>=2 )
+#if ( PROFlevel>=1 )
 	t = SuperLU_timer_() - t;
 	if ( !iam) printf(".. X to B redistribute time\t%8.4f\n", t);
 	t = SuperLU_timer_();
@@ -2351,22 +2496,6 @@ for (i=0;i<nroot_send;i++){
 
 	log_memory(-nlb*aln_i*iword-nlb*iword - nsupers_i*iword - (CEILING( nsupers, Pr )+CEILING( nsupers, Pc ))*aln_i*iword - maxrecvsz*(nbrecvx+1)*dword*2.0 - sizelsum*num_thread * dword*2.0 - (ldalsum * nrhs + nlb * XK_H) *dword*2.0 - (sizertemp*num_thread + 1)*dword*2.0, stat);	//account for bmod, brecv, root_send, rootsups, recvbuf_BC_fwd,rtemp,lsum,x
 
-	for (lk=0;lk<nsupers_j;++lk){
-		if(UBtree_ptr[lk].empty_==NO){
-			// if(BcTree_IsRoot(LBtree_ptr[lk],'z')==YES){
-			C_BcTree_waitSendRequest(&UBtree_ptr[lk]);
-			// }
-			// deallocate requests here
-		}
-	}
-
-	for (lk=0;lk<nsupers_i;++lk){
-		if(URtree_ptr[lk].empty_==NO){
-			C_RdTree_waitSendRequest(&URtree_ptr[lk]);
-			// deallocate requests here
-		}
-	}
-	MPI_Barrier( grid->comm );
 
 
 #if ( PROFlevel>=2 )

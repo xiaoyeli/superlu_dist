@@ -45,13 +45,13 @@ cmake .. \
   -DXSDK_ENABLE_Fortran=ON \
   -DTPL_ENABLE_INTERNAL_BLASLIB=OFF \
   -DTPL_ENABLE_LAPACKLIB=ON \
-  -DBUILD_SHARED_LIBS=ON \
+  -DBUILD_SHARED_LIBS=OFF \
   -DTPL_ENABLE_CUDALIB=ON \
   -DCMAKE_CUDA_FLAGS="-I${NVSHMEM_HOME}/include -I${MPICH_DIR}/include -ccbin=/opt/cray/pe/craype/2.7.20/bin/CC" \
   -DCMAKE_CUDA_ARCHITECTURES=80 \
   -DCMAKE_INSTALL_PREFIX=. \
   -DCMAKE_INSTALL_LIBDIR=./lib \
-  -DCMAKE_BUILD_TYPE=Debug \
+  -DCMAKE_BUILD_TYPE=Release \
   -DTPL_BLAS_LIBRARIES=/opt/cray/pe/libsci/23.02.1.1/NVIDIA/20.7/x86_64/lib/libsci_nvidia_mp.so \
   -DTPL_LAPACK_LIBRARIES=/opt/cray/pe/libsci/23.02.1.1/NVIDIA/20.7/x86_64/lib/libsci_nvidia_mp.so \
   -DTPL_PARMETIS_INCLUDE_DIRS="/global/cfs/cdirs/m3894/lib/PrgEnv-nvidia/parmetis-4.0.3/include;/global/cfs/cdirs/m3894/lib/PrgEnv-nvidia/parmetis-4.0.3/metis/include" \

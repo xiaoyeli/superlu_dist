@@ -111,7 +111,7 @@ void
 zCopy_CompCol_Matrix_dist(SuperMatrix *A, SuperMatrix *B)
 {
     NCformat *Astore, *Bstore;
-    int_t      ncol, nnz, i;
+    int_t    ncol, nnz, i;
 
     B->Stype = A->Stype;
     B->Dtype = A->Dtype;
@@ -131,7 +131,7 @@ zCopy_CompCol_Matrix_dist(SuperMatrix *A, SuperMatrix *B)
 void zPrint_CompCol_Matrix_dist(SuperMatrix *A)
 {
     NCformat     *Astore;
-    register int i;
+    register int_t i;
     doublecomplex       *dp;
 
     printf("\nCompCol matrix: ");
@@ -456,7 +456,7 @@ int zDeAllocLlu_3d(int_t n, zLUstruct_t * LUstruct, gridinfo3d_t* grid3d)
     nsupers = (LUstruct->Glu_persist)->supno[n-1] + 1;
 
     nbc = CEILING(nsupers, grid3d->npcol);
-    for (i = 0; i < nbc; ++i) 
+    for (i = 0; i < nbc; ++i)
 	if ( Llu->Lrowind_bc_ptr[i] ) {
 	    SUPERLU_FREE (Llu->Lrowind_bc_ptr[i]);
 	    SUPERLU_FREE (Llu->Lnzval_bc_ptr[i]);
@@ -487,7 +487,22 @@ void
 zGenXtrue_dist(int_t n, int_t nrhs, doublecomplex *x, int_t ldx)
 {
     int  i, j;
-    for (j = 0; j < nrhs; ++j)
+    double exponent, tau; /* See TOMS paper on ItRef (LAWN165); testing code:
+			     Codes/UCB-itref-xblas-etc/xiaoye/itref/driver.c  */
+    double r;
+
+    exponent = (double)rand() / (double)((unsigned)RAND_MAX + 1); /* uniform in [0,1) */
+#if 1
+    tau = pow(2.0, 12.0 * exponent);
+#else
+    tau = 5.0;
+#endif
+    //printf("new dGenXtrue, tau %e\n", tau);
+
+    r = (double)rand() / (double)((unsigned)RAND_MAX + 1); /* uniform in [0,1) */
+    r = r + 0.5; /* uniform in (0.5, 1.5) */
+
+    for (j = 0; j < nrhs; ++j) {
 	for (i = 0; i < n; ++i) {
 	    if ( i % 2 ) {
 	        x[i + j*ldx].r = 1.0 + (double)(i+1.)/n;
@@ -498,6 +513,7 @@ zGenXtrue_dist(int_t n, int_t nrhs, doublecomplex *x, int_t ldx)
 	        x[i + j*ldx].i = 2.0;
             }
 	}
+    }
 }
 
 /*! \brief Let rhs[i] = sum of i-th row of A, so the solution vector is all 1's
@@ -748,6 +764,10 @@ void zDumpLblocks(int iam, int_t nsupers, gridinfo_t *grid,
 } /* zDumpLblocks */
 
 
+
+
+
+
 /*! \brief Print the blocks in the factored matrix U.
  */
 void zPrintUblocks(int iam, int_t nsupers, gridinfo_t *grid,
@@ -794,7 +814,7 @@ void zPrintUblocks(int iam, int_t nsupers, gridinfo_t *grid,
 void zZeroUblocks(int iam, int n, gridinfo_t *grid, zLUstruct_t *LUstruct)
 {
     doublecomplex zero = {0.0, 0.0};
-    register int_t i, extra, lb, len, nrb;
+    register int i, extra, lb, len, nrb;
     register int myrow, r;
     zLocalLU_t *Llu = LUstruct->Llu;
     Glu_persist_t *Glu_persist = LUstruct->Glu_persist;
@@ -817,7 +837,7 @@ void zZeroUblocks(int iam, int n, gridinfo_t *grid, zLUstruct_t *LUstruct)
 	    }
 	}
     }
-} /* end zZeroUlocks */
+} /* end zZeroUblocks */
 
 int
 zprint_gsmv_comm(FILE *fp, int_t m_loc, pzgsmv_comm_t *gsmv_comm,

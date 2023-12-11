@@ -253,7 +253,7 @@ int_t zWait_LRecv
     //unsigned long long t1 = _rdtsc();
     double t1 = SuperLU_timer_();
     MPI_Status status;
-    
+
     if (recv_req[0] != MPI_REQUEST_NULL)
     {
         MPI_Wait (&recv_req[0], &status);
@@ -348,7 +348,7 @@ int_t zPackLBlock(int_t k, doublecomplex* Dest, Glu_persist_t *Glu_persist,
 	memcpy( &Dest[j * nsupc], &lusup[j * nsupr], nsupc * sizeof(doublecomplex) );
     }
 #endif
-    
+
     return 0;
 }
 
@@ -438,7 +438,7 @@ int_t zIBcast_UDiagBlock(int_t k, doublecomplex *ublk_ptr, /*pointer for the dia
     MPI_Comm comm = (grid->cscp).comm;
 
     MPI_Ibcast(ublk_ptr, size, SuperLU_MPI_DOUBLE_COMPLEX, krow,comm, L_diag_blk_ibcast_req);
-    
+
     // MPI_Status status;
     // MPI_Wait(L_diag_blk_ibcast_req, &status);
     return 0;
@@ -458,7 +458,7 @@ int_t zIBcast_LDiagBlock(int_t k, doublecomplex *lblk_ptr, /*pointer for the dia
     return 0;
 }
 
-#endif 
+#endif
 
 int_t zUDiagBlockRecvWait( int_t k,  int* IrecvPlcd_D, int* factored_L,
                            MPI_Request * U_diag_blk_recv_req,
