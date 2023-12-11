@@ -67,10 +67,6 @@ void superlu_scal<float>(int n, float alpha, float *x, int incx) {
 // }
 
 // Specialization for double complex
-template<>
-void superlu_scal<doublecomplex>(int n, doublecomplex alpha, doublecomplex *x, int incx) {
-    superlu_zscal(n, alpha, x, incx);
-}   
 
 // create variant for superlu_daxpy, superlu_saxpy, superlu_caxpy, superlu_zaxpy
 template<typename T>
@@ -94,9 +90,31 @@ void superlu_axpy<float>(int n, float alpha, float *x, int incx, float *y, int i
 //     superlu_caxpy(n, alpha, x, incx, y, incy);
 // }
 
+#ifdef enable_complex16
 // Specialization for double complex
 template<>
 void superlu_axpy<doublecomplex>(int n, doublecomplex alpha, doublecomplex *x, int incx, doublecomplex *y, int incy) {
     superlu_zaxpy(n, alpha, x, incx, y, incy);
 }
 
+template<>
+void superlu_scal<doublecomplex>(int n, doublecomplex alpha, doublecomplex *x, int incx) {
+    superlu_zscal(n, alpha, x, incx);
+}   
+
+
+template<>
+void superlu_gemm<doublecomplex>(char *transa, char *transb, int m, int n, int k, doublecomplex alpha,
+                      doublecomplex *A, int lda, doublecomplex *B, int ldb, doublecomplex beta,
+                      doublecomplex *C, int ldc) {
+    superlu_zgemm(transa, transb, m, n, k, alpha, A, lda, B, ldb, beta, C, ldc);
+}
+
+
+template<>
+void superlu_trsm<doublecomplex>(char *side, char *uplo, char *transa, char *diag,
+                      int m, int n, doublecomplex alpha, doublecomplex *A, int lda, doublecomplex *B, int ldb) {
+    superlu_ztrsm(side, uplo, transa, diag, m, n, alpha, A, lda, B, ldb);
+}
+
+#endif 

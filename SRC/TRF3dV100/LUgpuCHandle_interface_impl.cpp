@@ -3,6 +3,7 @@
 #include "lupanels.hpp"
 #include "xlupanels.hpp"
 #include "lupanels_impl.hpp"
+#include "pdgstrf3d_summit_impl.hpp"
 
 
 extern "C"

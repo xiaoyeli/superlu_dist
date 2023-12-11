@@ -1,6 +1,7 @@
 #pragma once 
 #include <mpi.h>
 #include "superlu_defs.h"
+#include "superlu_zdefs.h"
 template<typename Ftype>
 struct diagFactBufs_t {
     Ftype* BlockLFactor;
@@ -32,11 +33,11 @@ MPI_Datatype get_mpi_type<double>()
     return MPI_DOUBLE;
 }
 
-template <>
-MPI_Datatype get_mpi_type<complex>()
-{
-    return MPI_C_COMPLEX;
-}
+// template <>
+// MPI_Datatype get_mpi_type<complex>()
+// {
+//     return MPI_C_COMPLEX;
+// }
 
 template <>
 MPI_Datatype get_mpi_type<doublecomplex>()
@@ -48,24 +49,28 @@ MPI_Datatype get_mpi_type<doublecomplex>()
 
 template <typename Ftype>
 using AnormType = typename std::conditional<
-    std::is_same<Ftype, complex>::value || std::is_same<Ftype, double complex>::value,
+    std::is_same<Ftype, float>::value,
     float,
-    double
+    typename std::conditional<
+        std::is_same<Ftype, double>::value || std::is_same<Ftype, doublecomplex>::value,
+        double,
+        float  // Default to float
+    >::type
 >::type;
 
-template <typename Ftype>
-using trf3dpartitionType 
+// template <typename Ftype>
+// using trf3dpartitionType 
 template <typename Ftype>
 using trf3dpartitionType = typename std::conditional<
     std::is_same<Ftype, double>::value,
-    dtrf3dpartition_t,
+    dtrf3Dpartition_t,
     typename std::conditional<
         std::is_same<Ftype, float>::value,
-        strf3dpartition_t,
+        strf3Dpartition_t,
         typename std::conditional<
-            std::is_same<Ftype, complex>::value,
-            ctrf3dpartition_t,
-            ztrf3dpartition_t
+            std::is_same<Ftype, doublecomplex>::value,
+            ztrf3Dpartition_t,
+            void
         >::type
     >::type
 >::type;
@@ -78,9 +83,9 @@ using LUStruct_type = typename std::conditional<
         std::is_same<Ftype, float>::value,
         sLUstruct_t,
         typename std::conditional<
-            std::is_same<Ftype, complex>::value,
-            cLUstruct_t,
-            zLUstruct_t
+            std::is_same<Ftype, doublecomplex>::value,
+            zLUstruct_t,
+            void
         >::type
     >::type
 >::type;
@@ -93,9 +98,9 @@ using LocalLU_type = typename std::conditional<
         std::is_same<Ftype, float>::value,
         sLocalLU_t,
         typename std::conditional<
-            std::is_same<Ftype, complex>::value,
-            cLocalLU_t,
-            zLocalLU_t
+            std::is_same<Ftype, doublecomplex>::value,
+            zLocalLU_t,
+            void 
         >::type
     >::type
 >::type;
@@ -108,9 +113,9 @@ using LUValSubBuf_type = typename std::conditional<
         std::is_same<Ftype, float>::value,
         sLUValSubBuf_t,
         typename std::conditional<
-            std::is_same<Ftype, complex>::value,
-            cLUValSubBuf_t,
-            zLUValSubBuf_t
+            std::is_same<Ftype, doublecomplex>::value,
+            zLUValSubBuf_t,
+            void 
         >::type
     >::type
 >::type;
@@ -123,9 +128,9 @@ using diagFactBufs_type = typename std::conditional<
         std::is_same<Ftype, float>::value,
         sdiagFactBufs_t,
         typename std::conditional<
-            std::is_same<Ftype, complex>::value,
-            cdiagFactBufs_t,
-            zdiagFactBufs_t
+            std::is_same<Ftype, doublecomplex>::value,
+            zdiagFactBufs_t,
+            void 
         >::type
     >::type
 >::type;

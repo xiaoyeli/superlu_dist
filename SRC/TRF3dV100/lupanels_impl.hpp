@@ -393,14 +393,15 @@ int_t xLUstruct_t<Ftype>::packedU2skyline(dLUstruct_t *LUstruct)
     return 0;
 }
 
-int numProcsPerNode(MPI_Comm baseCommunicator)
-{
-    MPI_Comm sharedComm;
-    MPI_Comm_split_type(baseCommunicator, MPI_COMM_TYPE_SHARED, 0, MPI_INFO_NULL, &sharedComm);
-    int count = 0;
-    MPI_Comm_size(sharedComm, &count);
-    return count;
-}
+int numProcsPerNode(MPI_Comm baseCommunicator);
+// int numProcsPerNode(MPI_Comm baseCommunicator)
+// {
+//     MPI_Comm sharedComm;
+//     MPI_Comm_split_type(baseCommunicator, MPI_COMM_TYPE_SHARED, 0, MPI_INFO_NULL, &sharedComm);
+//     int count = 0;
+//     MPI_Comm_size(sharedComm, &count);
+//     return count;
+// }
 
 
 template <typename Ftype>
