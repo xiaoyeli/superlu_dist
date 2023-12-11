@@ -13,7 +13,12 @@
 #include "lupanels.hpp"
 #include "superlu_summit.h"
 #include "luAuxStructTemplated.hpp"
-
+#include "anc25d-GPU_impl.hpp"
+#include "dAncestorFactor_impl.hpp"
+#include "anc25d_impl.hpp"
+#include "dsparseTreeFactorGPU_impl.hpp"
+#include "dsparseTreeFactor_summit_impl.hpp"
+// #include "sparseTreeFactor_impl.hpp"
 
 template <typename Ftype>
 int_t pdgstrf3d_summit(superlu_dist_options_t *options, int m, int n, AnormType<Ftype> anorm,

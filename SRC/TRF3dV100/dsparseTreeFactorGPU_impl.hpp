@@ -36,7 +36,7 @@ xLUMarshallData<Ftype>::~xLUMarshallData()
 }
 
 template <typename Ftype>
-void LUMarshallData<Ftype>::setBatchSize(int batch_size)
+void xLUMarshallData<Ftype>::setBatchSize(int batch_size)
 {
     gpuErrchk(cudaMalloc(&dev_diag_ptrs, batch_size * sizeof(Ftype *)));
     gpuErrchk(cudaMalloc(&dev_panel_ptrs, batch_size * sizeof(Ftype *)));
@@ -56,7 +56,7 @@ void LUMarshallData<Ftype>::setBatchSize(int batch_size)
 }
 
 template <typename Ftype>
-void LUMarshallData<Ftype>::setMaxDiag()
+void xLUMarshallData<Ftype>::setMaxDiag()
 {
     max_diag = 0;
     for (int i = 0; i < batchsize; i++)
@@ -64,7 +64,7 @@ void LUMarshallData<Ftype>::setMaxDiag()
 }
 
 template <typename Ftype>
-void LUMarshallData<Ftype>::setMaxPanel()
+void xLUMarshallData<Ftype>::setMaxPanel()
 {
     max_panel = 0;
     for (int i = 0; i < batchsize; i++)
@@ -72,7 +72,7 @@ void LUMarshallData<Ftype>::setMaxPanel()
 }
 
 template <typename Ftype>
-SCUMarshallData<Ftype>::SCUMarshallData()
+xSCUMarshallData<Ftype>::xSCUMarshallData()
 {
     dev_A_ptrs = dev_B_ptrs = dev_C_ptrs = NULL;
     dev_lda_array = dev_ldb_array = dev_ldc_array = NULL;
@@ -84,7 +84,7 @@ SCUMarshallData<Ftype>::SCUMarshallData()
 }
 
 template <typename Ftype>
-SCUMarshallData<Ftype>::~SCUMarshallData()
+xSCUMarshallData<Ftype>::~xSCUMarshallData()
 {
     gpuErrchk(cudaFree(dev_A_ptrs));
     gpuErrchk(cudaFree(dev_B_ptrs));
@@ -106,7 +106,7 @@ SCUMarshallData<Ftype>::~SCUMarshallData()
 }
 
 template <typename Ftype>
-void SCUMarshallData<Ftype>::setBatchSize(int batch_size)
+void xSCUMarshallData<Ftype>::setBatchSize(int batch_size)
 {
     gpuErrchk(cudaMalloc(&dev_A_ptrs, batch_size * sizeof(Ftype *)));
     gpuErrchk(cudaMalloc(&dev_B_ptrs, batch_size * sizeof(Ftype *)));
@@ -153,7 +153,7 @@ void SCUMarshallData<Ftype>::setBatchSize(int batch_size)
 }
 
 template <typename Ftype>
-void SCUMarshallData<Ftype>::setMaxDims()
+void xSCUMarshallData<Ftype>::setMaxDims()
 {
     max_n = max_k = max_m = max_ilen = max_jlen = 0;
     for (int i = 0; i < batchsize; i++)
@@ -167,7 +167,7 @@ void SCUMarshallData<Ftype>::setMaxDims()
 }
 
 template <typename Ftype>
-void SCUMarshallData<Ftype>::copyToGPU()
+void xSCUMarshallData<Ftype>::copyToGPU()
 {
     gpuErrchk(cudaMemcpy(dev_A_ptrs, host_A_ptrs.data(), batchsize * sizeof(Ftype *), cudaMemcpyHostToDevice));
     gpuErrchk(cudaMemcpy(dev_B_ptrs, host_B_ptrs.data(), batchsize * sizeof(Ftype *), cudaMemcpyHostToDevice));
@@ -188,14 +188,14 @@ void SCUMarshallData<Ftype>::copyToGPU()
 }
 
 template <typename Ftype>
-void SCUMarshallData<Ftype>::copyPanelDataToGPU()
+void xSCUMarshallData<Ftype>::copyPanelDataToGPU()
 {
     gpuErrchk(cudaMemcpy(dev_gpu_lpanels, host_gpu_lpanels.data(), batchsize * sizeof(lpanelGPU_t), cudaMemcpyHostToDevice));
     gpuErrchk(cudaMemcpy(dev_gpu_upanels, host_gpu_upanels.data(), batchsize * sizeof(upanelGPU_t), cudaMemcpyHostToDevice));
 }
 
 template <typename Ftype>
-int_t xLUstruct_t<Ftype>::dDFactPSolveGPU(int_t k, int_t offset, ddiagFactBufs_t **dFBufs)
+int_t xLUstruct_t<Ftype>::dDFactPSolveGPU(int_t k, int_t offset, diagFactBufs_type<Ftype> **dFBufs)
 {
     // this is new version with diagonal factor being performed on GPU
     // different from dDiagFactorPanelSolveGPU (it performs diag factor in CPU)
@@ -254,7 +254,7 @@ int_t xLUstruct_t<Ftype>::dDFactPSolveGPU(int_t k, int_t offset, ddiagFactBufs_t
 } /* dDFactPSolveGPU */
 
 template <typename Ftype>
-int_t xLUstruct_t<Ftype>::dDFactPSolveGPU(int_t k, int_t handle_offset, int buffer_offset, ddiagFactBufs_t **dFBufs)
+int_t xLUstruct_t<Ftype>::dDFactPSolveGPU(int_t k, int_t handle_offset, int buffer_offset, diagFactBufs_type<Ftype> **dFBufs)
 {
     // this is new version with diagonal factor being performed on GPU
     // different from dDiagFactorPanelSolveGPU (it performs diag factor in CPU)
@@ -314,7 +314,7 @@ int_t xLUstruct_t<Ftype>::dDFactPSolveGPU(int_t k, int_t handle_offset, int buff
 
 /* This performs diag factor on CPU */
 template <typename Ftype>
-int_t xLUstruct_t<Ftype>::dDiagFactorPanelSolveGPU(int_t k, int_t offset, ddiagFactBufs_t **dFBufs)
+int_t xLUstruct_t<Ftype>::dDiagFactorPanelSolveGPU(int_t k, int_t offset, diagFactBufs_type<Ftype> **dFBufs)
 {
     double t0 = SuperLU_timer_();
     int_t ksupc = SuperSize(k);
@@ -378,8 +378,8 @@ int_t xLUstruct_t<Ftype>::dPanelBcastGPU(int_t k, int_t offset)
     // }
     // if (mycol == kcol(k))
     //     k_lpanel = lPanelVec[g2lCol(k)];
-    upanel_t k_upanel = getKUpanel(k, offset);
-    lpanel_t k_lpanel = getKLpanel(k, offset);
+    xupanel_t<Ftype> k_upanel = getKUpanel(k, offset);
+    xlpanel_t<Ftype> k_lpanel = getKLpanel(k, offset);
 
     if (UidxSendCounts[k] > 0)
     {
@@ -405,7 +405,7 @@ int_t xLUstruct_t<Ftype>::dPanelBcastGPU(int_t k, int_t offset)
 template <typename Ftype>
 int_t xLUstruct_t<Ftype>::dsparseTreeFactorGPU(
     sForest_t *sforest,
-    ddiagFactBufs_t **dFBufs, // size maxEtree level
+    diagFactBufs_type<Ftype> **dFBufs, // size maxEtree level
     gEtreeInfo_t *gEtreeInfo, // global etree info
 
     int tag_ub)
@@ -497,8 +497,8 @@ int_t xLUstruct_t<Ftype>::dsparseTreeFactorGPU(
         {
             int_t k = perm_c_supno[k0];
             int_t offset = getBufferOffset(k0, k1, winSize, winParity, halfWin);
-            upanel_t k_upanel = getKUpanel(k, offset);
-            lpanel_t k_lpanel = getKLpanel(k, offset);
+            xupanel_t<Ftype> k_upanel = getKUpanel(k, offset);
+            xlpanel_t<Ftype> k_lpanel = getKLpanel(k, offset);
             int_t k_parent = gEtreeInfo->setree[k];
             /* L o o k   A h e a d   P a n e l   U p d a t e */
             if (UidxSendCounts[k] > 0 && LidxSendCounts[k] > 0)
@@ -516,8 +516,8 @@ int_t xLUstruct_t<Ftype>::dsparseTreeFactorGPU(
         {
             int_t k = perm_c_supno[k0];
             int_t offset = getBufferOffset(k0, k1, winSize, winParity, halfWin);
-            upanel_t k_upanel = getKUpanel(k, offset);
-            lpanel_t k_lpanel = getKLpanel(k, offset);
+            xupanel_t<Ftype> k_upanel = getKUpanel(k, offset);
+            xlpanel_t<Ftype> k_lpanel = getKLpanel(k, offset);
             int_t k_parent = gEtreeInfo->setree[k];
             /* Look Ahead Panel Solve */
             if (k_parent < nsupers)
@@ -761,7 +761,7 @@ void xLUstruct_t<Ftype>::dFactBatchSolve(int k_st, int k_end, int_t *perm_c_supn
 
     // Initialize the schur complement update marshall data
     initSCUMarshallData(k_st, k_end, perm_c_supno);
-    SCUMarshallData &sc_mdata = A_gpu.sc_marshall_data;
+    xSCUMarshallData &sc_mdata = A_gpu.sc_marshall_data;
 
     // Keep marshalling while there are batches to be processed
     int done_i = 0;
@@ -797,7 +797,7 @@ void xLUstruct_t<Ftype>::dFactBatchSolve(int k_st, int k_end, int_t *perm_c_supn
 template <typename Ftype>
 int xLUstruct_t<Ftype>::dsparseTreeFactorBatchGPU(
     sForest_t *sforest,
-    ddiagFactBufs_t **dFBufs, // size maxEtree level
+    diagFactBufs_type<Ftype> **dFBufs, // size maxEtree level
     gEtreeInfo_t *gEtreeInfo, // global etree info
     int tag_ub)
 {
@@ -937,7 +937,7 @@ int xLUstruct_t<Ftype>::dsparseTreeFactorBatchGPU(
 template <typename Ftype>
 int_t xLUstruct_t<Ftype>::dsparseTreeFactorGPUBaseline(
     sForest_t *sforest,
-    ddiagFactBufs_t **dFBufs, // size maxEtree level
+    diagFactBufs_type<Ftype> **dFBufs, // size maxEtree level
     gEtreeInfo_t *gEtreeInfo, // global etree info
 
     int tag_ub)

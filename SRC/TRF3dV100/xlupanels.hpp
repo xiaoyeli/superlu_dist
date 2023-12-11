@@ -10,6 +10,7 @@
 #endif
 #include "commWrapper.hpp"
 #include "anc25d.hpp"
+#include "luAuxStructTemplated.hpp"
 // class lpanelGPU_t;
 // class upanelGPU_t;
 #define GLOBAL_BLOCK_NOT_FOUND -1
@@ -359,7 +360,7 @@ struct xLUstruct_t
     int_t maxLvl;
     int maxLeafNodes; /* Sherry added 12/31/22. Computed in xLUstruct_t constructor */
 
-    ddiagFactBufs_t **dFBufs; /* stores L and U diagonal blocks */
+    diagFactBufs_type<Ftype>** dFBufs; /* stores L and U diagonal blocks */
     int superlu_acc_offload;
     // myNodeCount,
     // treePerm
@@ -529,13 +530,13 @@ struct xLUstruct_t
 
     int_t dsparseTreeFactor(
         sForest_t *sforest,
-        ddiagFactBufs_t **dFBufs, // size maxEtree level
+        diagFactBufs_type<Ftype>** dFBufs, // size maxEtree level
         gEtreeInfo_t *gEtreeInfo, // global etree info
         int tag_ub);
 
     int dsparseTreeFactorBatchGPU(
         sForest_t *sforest,
-        ddiagFactBufs_t **dFBufs, // size maxEtree level
+        diagFactBufs_type<Ftype>** dFBufs, // size maxEtree level
         gEtreeInfo_t *gEtreeInfo, // global etree info
         int tag_ub);
 
@@ -551,11 +552,11 @@ struct xLUstruct_t
     void dFactBatchSolve(int k_st, int k_end, int_t *perm_c_supno);
 
     //
-    int_t dDiagFactorPanelSolve(int_t k, int_t offset, ddiagFactBufs_t **dFBufs);
+    int_t dDiagFactorPanelSolve(int_t k, int_t offset, diagFactBufs_type<Ftype>** dFBufs);
     int_t dPanelBcast(int_t k, int_t offset);
     int_t dsparseTreeFactorBaseline(
         sForest_t *sforest,
-        ddiagFactBufs_t **dFBufs, // size maxEtree level
+        diagFactBufs_type<Ftype>** dFBufs, // size maxEtree level
         gEtreeInfo_t *gEtreeInfo, // global etree info
         int tag_ub);
 
@@ -572,28 +573,34 @@ struct xLUstruct_t
     int_t dAncestorFactorBaseline(
         int_t alvl,
         sForest_t *sforest,
-        ddiagFactBufs_t **dFBufs, // size maxEtree level
+        diagFactBufs_type<Ftype> **dFBufs, // size maxEtree level
         gEtreeInfo_t *gEtreeInfo, // global etree info
         int tag_ub);
 
+    int_t dAncestorFactor(
+        int_t alvl,
+        sForest_t *sforest,
+        diagFactBufs_type<Ftype> **dFBufs, // size maxEtree level
+        gEtreeInfo_t *gEtreeInfo, // global etree info
+        int tag_ub);
     // GPU related functions
 #ifdef HAVE_CUDA
     int_t setLUstruct_GPU();
     int_t dsparseTreeFactorGPU(
         sForest_t *sforest,
-        ddiagFactBufs_t **dFBufs, // size maxEtree level
+        diagFactBufs_type<Ftype> **dFBufs, // size maxEtree level
         gEtreeInfo_t *gEtreeInfo, // global etree info
         int tag_ub);
     int_t dsparseTreeFactorGPUBaseline(
         sForest_t *sforest,
-        ddiagFactBufs_t **dFBufs, // size maxEtree level
+        diagFactBufs_type<Ftype> **dFBufs, // size maxEtree level
         gEtreeInfo_t *gEtreeInfo, // global etree info
         int tag_ub);
 
     int_t dAncestorFactorBaselineGPU(
         int_t alvl,
         sForest_t *sforest,
-        ddiagFactBufs_t **dFBufs, // size maxEtree level
+        diagFactBufs_type<Ftype> **dFBufs, // size maxEtree level
         gEtreeInfo_t *gEtreeInfo, // global etree info
         int tag_ub);
 
@@ -618,7 +625,7 @@ struct xLUstruct_t
         int_t k, int_t ex, // suypernodes to be excluded
         xlpanel_t<Ftype> &lpanel, xupanel_t<Ftype> &upanel);
 
-    int_t dDiagFactorPanelSolveGPU(int_t k, int_t offset, ddiagFactBufs_t **dFBufs);
+    int_t dDiagFactorPanelSolveGPU(int_t k, int_t offset, diagFactBufs_type<Ftype>** dFBufs);
     int_t dPanelBcastGPU(int_t k, int_t offset);
 
     int_t ancestorReduction3dGPU(int_t ilvl, int_t *myNodeCount,
@@ -644,8 +651,8 @@ struct xLUstruct_t
     xupanelGPU_t<Ftype> *copyUpanelsToGPU();
 
     // to perform diagFactOn GPU
-    int_t dDFactPSolveGPU(int_t k, int_t offset, ddiagFactBufs_t **dFBufs);
-    int_t dDFactPSolveGPU(int_t k, int_t handle_offset, int buffer_offset, ddiagFactBufs_t **dFBufs);
+    int_t dDFactPSolveGPU(int_t k, int_t offset, diagFactBufs_type<Ftype>** dFBufs);
+    int_t dDFactPSolveGPU(int_t k, int_t handle_offset, int buffer_offset, diagFactBufs_type<Ftype>** dFBufs);
 #endif
 };
 

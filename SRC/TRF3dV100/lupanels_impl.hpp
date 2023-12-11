@@ -506,7 +506,7 @@ int_t xLUstruct_t<Ftype>::dSchurCompUpdateExcludeOne(
 }
 
 template <typename Ftype>
-int_t xLUstruct_t<Ftype>::dDiagFactorPanelSolve(int_t k, int_t offset, ddiagFactBufs_t **dFBufs)
+int_t xLUstruct_t<Ftype>::dDiagFactorPanelSolve(int_t k, int_t offset, diagFactBufs_type<Ftype>**dFBufs)
 {
 
     int_t ksupc = SuperSize(k);

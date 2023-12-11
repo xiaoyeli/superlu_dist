@@ -5,7 +5,7 @@
 template <typename Ftype>
 int_t xLUstruct_t<Ftype>::dsparseTreeFactor(
     sForest_t *sforest,
-    ddiagFactBufs_t **dFBufs,  // size maxEtree level
+    diagFactBufs_type<Ftype>**dFBufs,  // size maxEtree level
     gEtreeInfo_t *gEtreeInfo, // global etree info
     int tag_ub)
 {
@@ -217,7 +217,7 @@ int_t xLUstruct_t<Ftype>::dsparseTreeFactor(
 template <typename Ftype>
 int_t xLUstruct_t<Ftype>::dsparseTreeFactorBaseline(
     sForest_t *sforest,
-    ddiagFactBufs_t **dFBufs,  // size maxEtree level
+    diagFactBufs_type<Ftype>**dFBufs,  // size maxEtree level
     gEtreeInfo_t *gEtreeInfo, // global etree info
     int tag_ub)
 {
