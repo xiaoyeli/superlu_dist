@@ -314,10 +314,10 @@ public:
 
 // Wajih: Device and host memory used to store marshalled batch data for LU and TRSM
 template <typename Ftype>
-struct LUMarshallData 
+struct xLUMarshallData 
 {
-    LUMarshallData();
-    ~LUMarshallData();
+    xLUMarshallData();
+    ~xLUMarshallData();
 
     // Diagonal device pointer data 
     Ftype **dev_diag_ptrs;

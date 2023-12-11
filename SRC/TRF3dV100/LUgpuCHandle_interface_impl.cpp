@@ -68,7 +68,7 @@ extern "C"
     int pdgstrf3d_LUv1(dLUgpu_Handle LUHand)
     {
         // perform the factorization
-        xLUstruct_t<double> *LU_v1 = reinterpret_cast<xLUstruct_t<double> *>(LuH);
+        xLUstruct_t<double> *LU_v1 = reinterpret_cast<xLUstruct_t<double> *>(LUHand);
         return LU_v1->pdgstrf3d();
         // return LUHand->pdgstrf3d();
     }

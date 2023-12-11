@@ -16,7 +16,7 @@ int getBufferOffset(int k0, int k1, int winSize, int winParity, int halfWin)
 }
 
 template <typename Ftype>
-LUMarshallData<Ftype>::LUMarshallData()
+xLUMarshallData<Ftype>::xLUMarshallData()
 {
     dev_diag_ptrs = dev_panel_ptrs = NULL;
     dev_diag_ld_array = dev_diag_dim_array = dev_info_array = NULL;
@@ -24,7 +24,7 @@ LUMarshallData<Ftype>::LUMarshallData()
 }
 
 template <typename Ftype>
-LUMarshallData<Ftype>::~LUMarshallData()
+xLUMarshallData<Ftype>::~xLUMarshallData()
 {
     gpuErrchk(cudaFree(dev_diag_ptrs));
     gpuErrchk(cudaFree(dev_panel_ptrs));

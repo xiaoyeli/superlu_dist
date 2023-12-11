@@ -178,10 +178,10 @@ xLUstruct_t<Ftype>::xLUstruct_t(int_t nsupers_, int_t ldt_,
     UvalRecvBufs.resize(options->num_lookaheads);
     LidxRecvBufs.resize(options->num_lookaheads);
     UidxRecvBufs.resize(options->num_lookaheads);
-    bcastLval.resize(options->num_lookaheads);
-    bcastUval.resize(options->num_lookaheads);
-    bcastLidx.resize(options->num_lookaheads);
-    bcastUidx.resize(options->num_lookaheads);
+    // bcastLval.resize(options->num_lookaheads);
+    // bcastUval.resize(options->num_lookaheads);
+    // bcastLidx.resize(options->num_lookaheads);
+    // bcastUidx.resize(options->num_lookaheads);
 
     for (int i = 0; i < options->num_lookaheads; i++)
     {
@@ -205,16 +205,16 @@ xLUstruct_t<Ftype>::xLUstruct_t(int_t nsupers_, int_t ldt_,
     }
 
     diagFactBufs.resize(numDiagBufs);  /* Sherry?? numDiagBufs == 32 hard-coded */
-    bcastDiagRow.resize(numDiagBufs);
-    bcastDiagCol.resize(numDiagBufs);
+    // bcastDiagRow.resize(numDiagBufs);
+    // bcastDiagCol.resize(numDiagBufs);
 
     for (int i = 0; i < numDiagBufs; i++) /* Sherry?? these strcutures not used */
     {
         diagFactBufs[i] = (Ftype *)SUPERLU_MALLOC(sizeof(Ftype) * ldt * ldt);
-        bcastStruct bcDiagRow(grid3d->rscp.comm, MPI_DOUBLE, SYNC);
-        bcastDiagRow[i] = bcDiagRow;
-        bcastStruct bcDiagCol(grid3d->cscp.comm, MPI_DOUBLE, SYNC);
-        bcastDiagCol[i] = bcDiagCol;
+        // bcastStruct bcDiagRow(grid3d->rscp.comm, MPI_DOUBLE, SYNC);
+        // bcastDiagRow[i] = bcDiagRow;
+        // bcastStruct bcDiagCol(grid3d->cscp.comm, MPI_DOUBLE, SYNC);
+        // bcastDiagCol[i] = bcDiagCol;
     }
 
     int mxLeafNode = 0;

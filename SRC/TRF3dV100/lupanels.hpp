@@ -5,6 +5,7 @@
 #include "lu_common.hpp"
 #ifdef HAVE_CUDA
 #include "lupanels_GPU.cuh"
+#include "gpuCommon.hpp"
 #endif
 #include "commWrapper.hpp"
 #include "anc25d.hpp"
@@ -640,31 +641,3 @@ struct LUstruct_v100
 #endif
 };
 
-// GPU related functions
-#ifdef HAVE_CUDA
-cudaError_t checkCudaLocal(cudaError_t result);
-
-#define gpuErrchk(ans)                                                                                                 \
-{                                                                                                                  \
-    gpuAssert((ans), __FILE__, __LINE__);                                                                          \
-}
-
-inline void gpuAssert(cudaError_t code, const char *file, int line)
-{
-    if (code != cudaSuccess)
-    {
-        printf("GPUassert: %s(%d) %s %d\n", cudaGetErrorString(code), (int)code, file, line);
-        exit(-1);
-    }
-}
-
-#define gpuCusolverErrchk(ans)                                                                                         \
-{                                                                                                                  \
-    gpuCusolverAssert((ans), __FILE__, __LINE__);                                                                  \
-}
-inline void gpuCusolverAssert(cusolverStatus_t code, const char *file, int line)
-{
-    if (code != CUSOLVER_STATUS_SUCCESS)
-        printf("cuSolverAssert: %d %s %d\n", code, file, line);
-}
-#endif

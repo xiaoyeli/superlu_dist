@@ -1,6 +1,8 @@
 #pragma once
 
 #include "superlu_ddefs.h"
+#include "superlu_zdefs.h"
+#include "superlu_sdefs.h"
 
 int_t pdgstrf3d_v100(superlu_dist_options_t *options, int m, int n, double anorm,
                      dtrf3Dpartition_t *trf3Dpartition, SCT_t *SCT,
@@ -44,18 +46,18 @@ extern "C"
 
     // Forward declaration of structs 
     // Forward declarations
-struct strf3Dpartition_t;
-typedef struct strf3Dpartition_t strf3Dpartition_t;
-struct sLUstruct_t;
-typedef struct sLUstruct_t sLUstruct_t;
+// struct strf3Dpartition_t;
+// typedef struct strf3Dpartition_t strf3Dpartition_t;
+// struct sLUstruct_t;
+// typedef struct sLUstruct_t sLUstruct_t;
 struct ctrf3Dpartition_t;
 typedef struct ctrf3Dpartition_t ctrf3Dpartition_t;
 struct cLUstruct_t;
 typedef struct cLUstruct_t cLUstruct_t;
-struct ztrf3Dpartition_t;
-typedef struct ztrf3Dpartition_t ztrf3Dpartition_t;
-struct zLUstruct_t;
-typedef struct zLUstruct_t zLUstruct_t;
+// struct ztrf3Dpartition_t;
+// typedef struct ztrf3Dpartition_t ztrf3Dpartition_t;
+// struct zLUstruct_t;
+// typedef struct zLUstruct_t zLUstruct_t;
 
 //  Define the single precision real interface
     struct sLUstruct_v1;
@@ -75,21 +77,21 @@ typedef struct zLUstruct_t zLUstruct_t;
 
     extern int psgstrf3d_LUpackedInterface(sLUgpu_Handle LUHand);
 
-    struct cLUstruct_v1;
-    typedef struct cLUstruct_v1 *cLUgpu_Handle;
+    // struct cLUstruct_v1;
+    // typedef struct cLUstruct_v1 *cLUgpu_Handle;
 
-    extern cLUgpu_Handle cCreateLUgpuHandle(int_t nsupers, int_t ldt_, ctrf3Dpartition_t *trf3Dpartition,
-                                           cLUstruct_t *LUstruct, gridinfo3d_t *grid3d,
-                                           SCT_t *SCT_, superlu_dist_options_t *options_, SuperLUStat_t *stat,
-                                           float thresh_, int *info_);
+    // extern cLUgpu_Handle cCreateLUgpuHandle(int_t nsupers, int_t ldt_, ctrf3Dpartition_t *trf3Dpartition,
+    //                                        cLUstruct_t *LUstruct, gridinfo3d_t *grid3d,
+    //                                        SCT_t *SCT_, superlu_dist_options_t *options_, SuperLUStat_t *stat,
+    //                                        float thresh_, int *info_);
 
-    extern void cdestroyLUgpuHandle(cLUgpu_Handle LuH);
+    // extern void cdestroyLUgpuHandle(cLUgpu_Handle LuH);
 
-    extern int cgatherFactoredLU3Dto2D(cLUgpu_Handle LuH);
+    // extern int cgatherFactoredLU3Dto2D(cLUgpu_Handle LuH);
 
-    extern int ccopyLUGPU2Host(cLUgpu_Handle LuH, cLUstruct_t *LUstruct);
+    // extern int ccopyLUGPU2Host(cLUgpu_Handle LuH, cLUstruct_t *LUstruct);
 
-    extern int pcgstrf3d_LUpackedInterface(cLUgpu_Handle LUHand);
+    // extern int pcgstrf3d_LUpackedInterface(cLUgpu_Handle LUHand);
 
     struct zLUstruct_v1;
     typedef struct zLUstruct_v1 *zLUgpu_Handle;
