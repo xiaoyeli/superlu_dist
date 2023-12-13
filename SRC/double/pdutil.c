@@ -591,7 +591,7 @@ if (get_acc_solve()){
     #ifdef HAVE_NVSHMEM
     /* nvshmem related*/
     if (get_acc_solve()){
-    ddelete_multiGPU_buffers();
+        ddelete_multiGPU_buffers();
     }
 
     SUPERLU_FREE(mystatus);
@@ -824,7 +824,7 @@ pdgstrs_init_device_lsum_x(superlu_dist_options_t *options, int_t n, int_t m_loc
         {
             int_t lk = LBi (k, grid); /* Local block number. */
             int_t il = LSUM_BLK (lk);
-            lsum[il - LSUM_H] = k;  /* Block number prepended in the header. */
+	        lsum[il - LSUM_H] = k; /* Block number prepended in the header. */
         }
         ii += knsupc;
     }

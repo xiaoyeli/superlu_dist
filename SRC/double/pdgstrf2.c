@@ -450,8 +450,8 @@ void dgstrf2(int_t k, double* diagBlk, int_t LDA, double* BlockUfactor, int_t LD
             int_t st = j * LDU + j;
             ublk_ptr[st + l * LDU] = diagBlk[i]; /* copy one row of U */
         }
-            double alpha = -1, zero = 0.0;
-        if (ujrow[0] == zero) /* Test for singularity. */
+            double alpha = -1, zero = 0.0, one = 1.0;
+        if ( ujrow[0] == zero )  /* Test for singularity. */
         {
             *info = j + jfst + 1;
         }
@@ -459,7 +459,7 @@ void dgstrf2(int_t k, double* diagBlk, int_t LDA, double* BlockUfactor, int_t LD
         {
             double temp;
             temp = 1.0 / ujrow[0];
-            for (int_t i = luptr + 1; i < luptr - j + nsupc; ++i)
+            for (i = luptr + 1; i < luptr - j + nsupc; ++i)
                 diagBlk[i] *= temp;
             stat->ops[FACT] += nsupc - j - 1;
         }

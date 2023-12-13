@@ -1403,6 +1403,7 @@ pdgssvx(superlu_dist_options_t *options, SuperMatrix *A,
 		if (get_acc_solve()){
 		nv_init_wrapper(grid->comm);
 		dprepare_multiGPU_buffers(flag_bc_size,flag_rd_size,ready_x_size,ready_lsum_size,my_flag_bc_size,my_flag_rd_size);
+
 		}
 	#endif
 

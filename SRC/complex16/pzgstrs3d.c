@@ -3029,7 +3029,11 @@ if ( !(get_new3dsolvetreecomm() && get_acc_solve())){
     }else{
         nblock_loc=k;
     }
-    //TODO: zlsum_fmod_inv_gpu_wrap not implemented in GPU yet
+	zlsum_fmod_inv_gpu_wrap(nblock_loc,nlb,DIM_X,DIM_Y,d_lsum,d_x,nrhs,knsupc,nsupers,d_fmod,Llu->d_LBtree_ptr,Llu->d_LRtree_ptr,Llu->d_ilsum,Llu->d_Lrowind_bc_dat, Llu->d_Lrowind_bc_offset, Llu->d_Lnzval_bc_dat, Llu->d_Lnzval_bc_offset, Llu->d_Linv_bc_dat, Llu->d_Linv_bc_offset, Llu->d_Lindval_loc_bc_dat, Llu->d_Lindval_loc_bc_offset,Llu->d_xsup,Llu->d_bcols_masked, d_grid,
+                         maxrecvsz,
+	                        flag_bc_q, flag_rd_q, zready_x, zready_lsum, my_flag_bc, my_flag_rd, d_nfrecv, h_nfrecv,
+	                        d_status,d_colnum,d_mynum, d_mymaskstart,d_mymasklength,
+	                        d_nfrecvmod,d_statusmod,d_colnummod,d_mynummod,d_mymaskstartmod,d_mymasklengthmod,d_recv_cnt,d_msgnum,d_flag_mod,procs);
 	checkGPU(gpuMemcpy(x, d_x, (ldalsum * nrhs + nlb * XK_H) * sizeof(doublecomplex), gpuMemcpyDeviceToHost));
 
 
@@ -5140,7 +5144,22 @@ if (get_acc_solve()){  /* GPU trisolve*/
     #endif
     }
 
-    //TODO: zlsum_bmod_inv_gpu_wrap not implemented in GPU yet
+    zlsum_bmod_inv_gpu_wrap(options, k,nlb,DIM_X,DIM_Y,d_lsum,d_x,nrhs,knsupc,nsupers,d_bmod,
+                        Llu->d_UBtree_ptr,Llu->d_URtree_ptr,
+                        Llu->d_ilsum,Llu->d_Ucolind_bc_dat,Llu->d_Ucolind_bc_offset,Llu->d_Ucolind_br_dat,Llu->d_Ucolind_br_offset,
+                        Llu->d_Uind_br_dat,Llu->d_Uind_br_offset,
+                        Llu->d_Unzval_bc_dat,Llu->d_Unzval_bc_offset,Llu->d_Unzval_br_new_dat,Llu->d_Unzval_br_new_offset,
+                        Llu->d_Uinv_bc_dat,Llu->d_Uinv_bc_offset,
+                        Llu->d_Uindval_loc_bc_dat,Llu->d_Uindval_loc_bc_offset,
+                        Llu->d_xsup,d_grid,
+                        maxrecvsz, flag_bc_q, flag_rd_q, zready_x, zready_lsum,
+                        my_flag_bc, my_flag_rd,
+                        d_nfrecv_u, h_nfrecv_u, d_status, d_colnum_u, d_mynum_u,
+                        d_mymaskstart_u,d_mymasklength_u,
+                        d_nfrecvmod_u, d_statusmod, d_colnummod_u, d_mynummod_u,
+                        d_mymaskstartmod_u, d_mymasklengthmod_u,
+                        d_recv_cnt_u, d_msgnum, d_flag_mod_u, procs);
+
 
     checkGPU(gpuMemcpy(x, d_x, (ldalsum * nrhs + nlb * XK_H) * sizeof(doublecomplex), gpuMemcpyDeviceToHost));
 

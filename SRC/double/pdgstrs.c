@@ -1879,7 +1879,6 @@ t1 = SuperLU_timer_();
 #endif
 #else
 
-
 // #if HAVE_CUDA
 // cudaProfilerStart();
 // #elif defined(HAVE_HIP)
@@ -1949,6 +1948,7 @@ t1 = SuperLU_timer_();
 
 
 	stat_loc[0]->ops[SOLVE]+=Llu->Lnzval_bc_cnt*nrhs*2; // YL: this is a rough estimate
+
 #endif
 #endif
 }else{  /* CPU trisolve*/
@@ -2639,7 +2639,6 @@ if (get_acc_solve()){  /* GPU trisolve*/
 #if defined(GPU_ACC) && defined(SLU_HAVE_LAPACK) && defined(GPU_SOLVE)
 // #if 0 /* CPU trisolve*/
 
-
     d_bmod=SOLVEstruct->d_bmod;
     d_lsum=SOLVEstruct->d_lsum;
 	d_x=SOLVEstruct->d_x;
@@ -2712,6 +2711,7 @@ if (get_acc_solve()){  /* GPU trisolve*/
 
 
 	stat_loc[0]->ops[SOLVE]+=Llu->Unzval_br_cnt*nrhs*2; // YL: this is a rough estimate
+
 #endif
 }else{  /* CPU trisolve*/
 

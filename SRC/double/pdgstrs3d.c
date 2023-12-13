@@ -1705,8 +1705,8 @@ int_t dfsolveReduceLsum3d(int_t treeId, int_t sender, int_t receiver, double* ls
 					for (int_t j = 0; j < nrhs; ++j)
 					{
 						for (int_t i = 0; i < knsupc; ++i)
-							dest[i + j * knsupc] += tempv[i + j * knsupc];
-					}
+                            dest[i + j * knsupc] += tempv[i + j * knsupc];
+                    }
 				}
 
 			}
@@ -1888,7 +1888,7 @@ int_t dlsumForestFsolve(int_t k,
 		{
 			int_t irow = lsub[lptr++] - rel; /* Relative row. */
 			for (int_t j = 0; j < nrhs; ++j)
-				dest[irow + j * iknsupc] -= rtemp[i + j * nbrow];
+                dest[irow + j * iknsupc] -= rtemp[i + j * nbrow];
 		}
 		luptr += nbrow;
 	}
@@ -2256,7 +2256,7 @@ void dlsum_fmod_leaf (
 		{
 			irow = lsub[lptr++] - rel; /* Relative row. */
 			RHS_ITERATE(j)
-			dest[irow + j * iknsupc] -= rtemp[i + j * nbrow];
+            dest[irow + j * iknsupc] -= rtemp[i + j * nbrow];
 		}
 		luptr += nbrow;
 
@@ -2294,7 +2294,8 @@ void dlsum_fmod_leaf (
 					ii = X_BLK( lk );
 					RHS_ITERATE(j)
 					for (i = 0; i < iknsupc; ++i)
-						x[i + ii + j * iknsupc] += lsum[i + il + j * iknsupc];
+					    x[i + ii + j * iknsupc] += lsum[i + il + j * iknsupc];
+
 					if ( frecv[lk] == 0 )   /* Becomes a leaf node. */
 					{
 						fmod[lk] = -1; /* Do not solve X[k] in the future. */
@@ -3406,7 +3407,8 @@ thread_id=0;
 											knsupc = SuperSize( k );
 											for (ii=1;ii<num_thread;ii++)
 												for (jj=0;jj<knsupc*nrhs;jj++)
-													lsum[il + jj ] += lsum[il + jj + ii*sizelsum];
+						                            lsum[il + jj ] += lsum[il + jj + ii*sizelsum];
+
 
 											ii = X_BLK( lk );
 											RHS_ITERATE(j)
@@ -3500,7 +3502,7 @@ thread_id=0;
 
 										for (ii=1;ii<num_thread;ii++)
 											for (jj=0;jj<knsupc*nrhs;jj++)
-												lsum[il + jj] += lsum[il + jj + ii*sizelsum];
+                                                lsum[il + jj ] += lsum[il + jj + ii*sizelsum];
 										// RdTree_forwardMessageSimple(LRtree_ptr[lk],&lsum[il-LSUM_H],RdTree_GetMsgSize(LRtree_ptr[lk],'d')*nrhs+LSUM_H,'d');
 										C_RdTree_forwardMessageSimple(&LRtree_ptr[lk],&lsum[il - LSUM_H ],LRtree_ptr[lk].msgSize_*nrhs+LSUM_H);
 									}
@@ -3776,7 +3778,7 @@ void dlsum_fmod_leaf_newsolve (
 		{
 			irow = lsub[lptr++] - rel; /* Relative row. */
 			RHS_ITERATE(j)
-			dest[irow + j * iknsupc] -= rtemp[i + j * nbrow];
+                dest[irow + j * iknsupc] -= rtemp[i + j * nbrow];
 		}
 		luptr += nbrow;
 
@@ -4389,7 +4391,7 @@ int_t dleafForestBackSolve3d(superlu_dist_options_t *options, int_t treeId, int_
         MPI_Recv (recvbuf, maxrecvsz, MPI_DOUBLE,
                   MPI_ANY_SOURCE, MPI_ANY_TAG, grid->comm, &status);
         xtrsTimer->tbs_comm += SuperLU_timer_() - tx;
-        int_t k = *recvbuf;
+		int_t k = *recvbuf;
 
         tx = SuperLU_timer_();
         switch (status.MPI_TAG)
@@ -4418,7 +4420,7 @@ int_t dleafForestBackSolve3d(superlu_dist_options_t *options, int_t treeId, int_
             for (int_t j = 0; j < nrhs; ++j)
             {
                 for (int_t i = 0; i < knsupc; ++i)
-                    x[i + ii + j * knsupc] += tempv[i + j * knsupc];
+					x[i + ii + j * knsupc] += tempv[i + j * knsupc];
             }
 
             if ((--brecv[lk]) == 0 && bmod[lk] == 0)
@@ -4579,7 +4581,7 @@ int_t dleafForestBackSolve3d_newsolve(superlu_dist_options_t *options, int_t n, 
         MPI_Recv (recvbuf, maxrecvsz, MPI_DOUBLE,
                   MPI_ANY_SOURCE, MPI_ANY_TAG, grid->comm, &status);
         xtrsTimer->tbs_comm += SuperLU_timer_() - tx;
-        int_t k = *recvbuf;
+		int_t k = *recvbuf;
 
         tx = SuperLU_timer_();
         switch (status.MPI_TAG)
@@ -4608,7 +4610,7 @@ int_t dleafForestBackSolve3d_newsolve(superlu_dist_options_t *options, int_t n, 
             for (int_t j = 0; j < nrhs; ++j)
             {
                 for (int_t i = 0; i < knsupc; ++i)
-                    x[i + ii + j * knsupc] += tempv[i + j * knsupc];
+					x[i + ii + j * knsupc] += tempv[i + j * knsupc];
             }
 
             if ((--brecv[lk]) == 0 && bmod[lk] == 0)
@@ -5148,6 +5150,7 @@ if (get_acc_solve()){  /* GPU trisolve*/
                         d_mymaskstartmod_u, d_mymasklengthmod_u,
                         d_recv_cnt_u, d_msgnum, d_flag_mod_u, procs);
 
+
     checkGPU(gpuMemcpy(x, d_x, (ldalsum * nrhs + nlb * XK_H) * sizeof(double), gpuMemcpyDeviceToHost));
 
 
@@ -5494,7 +5497,7 @@ xtrsTimer->tbs_compute += SuperLU_timer_() - tx;
 
 						for (ii=1;ii<num_thread;ii++)
 							for (jj=0;jj<knsupc*nrhs;jj++)
-								lsum[il+ jj ] += lsum[il + jj + ii*sizelsum];
+					            lsum[il+ jj ] += lsum[il + jj + ii*sizelsum];
 
 						// RdTree_forwardMessageSimple(URtree_ptr[lk],&lsum[il-LSUM_H],RdTree_GetMsgSize(URtree_ptr[lk],'d')*nrhs+LSUM_H,'d');
 						C_RdTree_forwardMessageSimple(&URtree_ptr[lk],&lsum[il - LSUM_H ],URtree_ptr[lk].msgSize_*nrhs+LSUM_H);
@@ -5980,7 +5983,8 @@ void dlsum_bmod_GG_newsolve (
                 dest = &x[ii];
                 for (int_t j = 0; j < nrhs; ++j)
                     for (i = 0; i < iknsupc; ++i)
-                        dest[i + j * iknsupc] += lsum[i + il + j * iknsupc];
+                    dest[i + j * iknsupc] += lsum[i + il + j * iknsupc];
+
                 if ( !brecv[ik] )   /* Becomes a leaf node. */
                 {
                     bmod[ik] = -1; /* Do not solve X[k] in the future. */
@@ -6128,7 +6132,8 @@ int_t dlocalSolveXkYk( trtype_t trtype, int_t k, double* x, int nrhs,
 {
     // printf("Solving %d \n",k );
     Glu_persist_t *Glu_persist = LUstruct->Glu_persist;
-    dLocalLU_t *Llu = LUstruct->Llu; double alpha = 1.0;
+    dLocalLU_t *Llu = LUstruct->Llu;
+    double alpha = 1.0;
     int_t* xsup = Glu_persist->xsup;
     int_t** Lrowind_bc_ptr = Llu->Lrowind_bc_ptr;
     double** Lnzval_bc_ptr = Llu->Lnzval_bc_ptr;
@@ -6731,7 +6736,8 @@ pdgstrs3d (superlu_dist_options_t *options, int_t n, dLUstruct_t * LUstruct,
         {
             int_t ljb = LBj( jb, grid );
             int_t jj = XT_BLK (ljb);
-            xT[jj] = jb;
+
+	        xT[jj] = jb;
 
         }
     }
@@ -7347,7 +7353,8 @@ int_t pdgsTrForwardSolve3d(superlu_dist_options_t *options, int_t n, dLUstruct_t
         {
             int_t lk = LBi (k, grid); /* Local block number. */
             int_t il = LSUM_BLK (lk);
-            lsum3d[il - LSUM_H] = k;  /* Block number prepended in the header. */
+	        lsum3d[il - LSUM_H] = k; /* Block number prepended in the header. */
+
         }
         ii += knsupc;
     }
@@ -7490,7 +7497,7 @@ if ( !(get_new3dsolvetreecomm() && get_acc_solve())){
         {
             int_t lk = LBi (k, grid); /* Local block number. */
             int_t il = LSUM_BLK (lk);
-            lsum3d[il - LSUM_H] = k;  /* Block number prepended in the header. */
+	        lsum3d[il - LSUM_H] = k; /* Block number prepended in the header. */
         }
         ii += knsupc;
     }

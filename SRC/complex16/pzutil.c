@@ -590,7 +590,7 @@ if (get_acc_solve()){
     #ifdef HAVE_NVSHMEM
     /* nvshmem related*/
     if (get_acc_solve()){
-        //TODO: zdelete_multiGPU_buffers() hasn't been created
+        zdelete_multiGPU_buffers();
     }
 
     SUPERLU_FREE(mystatus);

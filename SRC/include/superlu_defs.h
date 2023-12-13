@@ -320,11 +320,6 @@ static const int RD_U=4;	/* MPI tag for lsum in U-solve*/
 // #define DIM_X  16
 // #define DIM_Y  16
 
-
-#define BLK_M  DIM_X*4
-#define BLK_N  DIM_Y*4
-#define BLK_K 1024/(BLK_M)
-
 #define DIM_XA  DIM_X
 #define DIM_YA  DIM_Y
 #define DIM_XB  DIM_X

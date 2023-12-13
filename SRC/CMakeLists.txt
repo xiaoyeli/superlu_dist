@@ -12,6 +12,7 @@ set(headers
     include/superlu_summit.h
     include/superlu_dist_config.h
     include/superlu_FortranCInterface.h
+    include/oneside.h
     TRF3dV100/lupanels.hpp
     TRF3dV100/commWrapper.hpp
     TRF3dV100/lupanels_GPU.cuh
@@ -73,7 +74,7 @@ set_source_files_properties(superlu_timer.c PROPERTIES COMPILE_FLAGS -O0)
 
 if(enable_double)
   list(APPEND headers
-  include/superlu_ddefs.h include/dlustruct_gpu.h include/oneside.h)
+  include/superlu_ddefs.h include/dlustruct_gpu.h)
 
 if(TPL_ENABLE_CUDALIB)
   list(APPEND sources cuda/pdgstrs_lsum_cuda.cu)
@@ -301,7 +302,7 @@ if(enable_complex16)
       complex16/zsuperlu_blas.c
      )
 if (TPL_ENABLE_CUDALIB)
-    list(APPEND sources cuda/zsuperlu_gpu.cu)
+    list(APPEND sources cuda/pzgstrs_lsum_cuda.cu cuda/zsuperlu_gpu.cu)
 endif()
 if (HAVE_COMBBLAS)
     list(APPEND sources

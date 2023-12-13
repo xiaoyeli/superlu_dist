@@ -1070,7 +1070,7 @@ float pddistribute3d(superlu_dist_options_t *options, int_t n, SuperMatrix *A,
                                 for (j = 0, dense_col = dense; j < nsupc; ++j)
                                 {
                                     lusup[k] = dense_col[irow];
-                                    dense_col[irow] = 0.0;
+                                    dense_col[irow] = zero;
                                     k += len;
                                     dense_col += ldaspa;
                                 }
@@ -2174,7 +2174,7 @@ pddistribute3d_Yang(superlu_dist_options_t *options, int_t n, SuperMatrix *A,
 					irow = ilsum[lb] + irow - FstBlockC( gb );
 					for (j = 0, dense_col = dense; j < nsupc; ++j) {
 					lusup[k] = dense_col[irow];
-					dense_col[irow] = 0.0;
+					dense_col[irow] = zero;
 					k += len;
 					dense_col += ldaspa;
 					}
@@ -2259,7 +2259,7 @@ pddistribute3d_Yang(superlu_dist_options_t *options, int_t n, SuperMatrix *A,
 				    lb = LBi( gb, grid );
 				    irow = ilsum[lb] + irow - FstBlockC( gb );
 				    for (j = 0, dense_col = dense; j < nsupc; ++j) {
-					dense_col[irow] = 0.0;
+					dense_col[irow] = zero;
 					dense_col += ldaspa;
 				    }
 				}

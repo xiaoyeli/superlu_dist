@@ -3525,7 +3525,6 @@ pddistribute_allgrid_index_only(superlu_dist_options_t *options, int_t n, SuperM
     C_Tree  *URtree_ptr;  /* size ceil(NSUPERS/Pr) */
     int msgsize;
 
-    /*-- Counts to be used in lower triangular solve. --*/             
     int  kseen;
 
     /*-- Counts to be used in upper triangular solve. --*/

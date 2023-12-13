@@ -1353,7 +1353,76 @@ if (get_acc_solve()){  /* GPU trisolve*/
 			//TODO: cusparse not yet implemented for this precision
 #else
 
-			//TODO: L-solve not implemented in GPU yet
+// #if HAVE_CUDA
+// cudaProfilerStart();
+// #elif defined(HAVE_HIP)
+// roctracer_mark("before HIP LaunchKernel");
+// roctxMark("before hipLaunchKernel");
+// roctxRangePush("hipLaunchKernel");
+// #endif
+	k = CEILING( nsupers, grid->npcol);/* Number of local block columns divided by #warps per block used as number of thread blocks*/
+    d_fmod=SOLVEstruct->d_fmod;
+    d_lsum=SOLVEstruct->d_lsum;
+	d_x=SOLVEstruct->d_x;
+	d_grid=Llu->d_grid;
+
+	checkGPU(gpuMemcpy(d_fmod, SOLVEstruct->d_fmod_save, nlb * sizeof(int), gpuMemcpyDeviceToDevice));
+    checkGPU(gpuMemcpy(d_lsum, SOLVEstruct->d_lsum_save, sizelsum * sizeof(doublecomplex), gpuMemcpyDeviceToDevice));
+	checkGPU(gpuMemcpy(d_x, x, (ldalsum * nrhs + nlb * XK_H) * sizeof(doublecomplex), gpuMemcpyHostToDevice));
+#ifdef HAVE_NVSHMEM
+	checkGPU(gpuMemcpy(d_status, mystatus, k * sizeof(int), gpuMemcpyHostToDevice));
+	checkGPU(gpuMemcpy(d_statusmod, mystatusmod, 2* nlb * sizeof(int), gpuMemcpyHostToDevice));
+	//for(int i=0;i<2*nlb;i++) printf("(%d),mystatusmod[%d]=%d\n",iam,i,mystatusmod[i]);
+	checkGPU(gpuMemset(flag_rd_q, 0, RDMA_FLAG_SIZE * nlb * 2 * sizeof(uint64_t)));
+    checkGPU(gpuMemset(flag_bc_q, 0, RDMA_FLAG_SIZE * (k+1)  * sizeof(uint64_t)));
+	checkGPU(gpuMemset(zready_x, 0, maxrecvsz*CEILING( nsupers, grid->npcol) * sizeof(doublecomplex)));
+    checkGPU(gpuMemset(zready_lsum, 0, 2*maxrecvsz*CEILING( nsupers, grid->nprow) * sizeof(doublecomplex)));
+    checkGPU(gpuMemset(d_msgnum, 0, h_nfrecv[1] * sizeof(int)));
+	//printf("2-(%d) maxrecvsz=%d,zready_x=%d, zready_lsum=%d,RDMA_FLAG_SIZE=%d,k=%d,nlb=%d\n",iam,maxrecvsz,maxrecvsz*CEILING( nsupers, grid->npcol),2*maxrecvsz*CEILING( nsupers, grid->nprow),RDMA_FLAG_SIZE,k,nlb);
+	//fflush(stdout);
+	// MUST have this barrier, otherwise the code hang.
+	MPI_Barrier( grid->comm );
+#endif
+#if ( PROFlevel>=1 )
+	t = SuperLU_timer_() - t;
+	if ( !iam) printf(".. Setup GPU L-solve time\t%8.4f\n", t);
+	fflush(stdout);
+	MPI_Barrier( grid->comm );
+//	nvshmem_barrier_all();
+	t = SuperLU_timer_();
+#endif
+
+	k = CEILING( nsupers, grid->npcol);/* Number of local block columns divided by #warps per block used as number of thread blocks*/
+	knsupc = sp_ienv_dist(3, options);
+	// k -> Llu->nbcol_masked ???
+	zlsum_fmod_inv_gpu_wrap(k,nlb,DIM_X,DIM_Y,d_lsum,d_x,nrhs,knsupc,nsupers,d_fmod,Llu->d_LBtree_ptr,Llu->d_LRtree_ptr,Llu->d_ilsum,Llu->d_Lrowind_bc_dat, Llu->d_Lrowind_bc_offset, Llu->d_Lnzval_bc_dat, Llu->d_Lnzval_bc_offset, Llu->d_Linv_bc_dat, Llu->d_Linv_bc_offset, Llu->d_Lindval_loc_bc_dat, Llu->d_Lindval_loc_bc_offset,Llu->d_xsup,Llu->d_bcols_masked, d_grid,
+                         maxrecvsz,
+	                        flag_bc_q, flag_rd_q, zready_x, zready_lsum, my_flag_bc, my_flag_rd, d_nfrecv, h_nfrecv,
+	                        d_status,d_colnum,d_mynum, d_mymaskstart,d_mymasklength,
+	                        d_nfrecvmod,d_statusmod,d_colnummod,d_mynummod,d_mymaskstartmod,d_mymasklengthmod,d_recv_cnt,d_msgnum,d_flag_mod,procs);
+#if ( PROFlevel>=1 )
+		t = SuperLU_timer_() - t;
+		stat->utime[SOL_TOT] += t;
+		if ( !iam ) {
+			printf(".. L-solve (kernel) time\t%8.4f\n", t);
+			fflush(stdout);
+		}
+		MPI_Reduce (&t, &tmax, 1, MPI_DOUBLE,
+				MPI_MAX, 0, grid->comm);
+		if ( !iam ) {
+			printf(".. L-solve time  (kernel) (MAX) \t%8.4f\n", tmax);
+			fflush(stdout);
+		}
+
+		t = SuperLU_timer_();
+#endif
+
+	/* the following transfer is not needed at the U solve works on the d_x directly */
+	// checkGPU(gpuMemcpy(x, d_x, (ldalsum * nrhs + nlb * XK_H) * sizeof(doublecomplex), gpuMemcpyDeviceToHost));
+
+
+	stat_loc[0]->ops[SOLVE]+=Llu->Lnzval_bc_cnt*nrhs*2; // YL: this is a rough estimate
+
 #endif
 #endif
 }else{  /* CPU trisolve*/
@@ -1409,6 +1478,11 @@ if (get_acc_solve()){  /* GPU trisolve*/
 					&alpha, Linv, &knsupc, &x[ii],
 					&knsupc, &beta, rtemp_loc, &knsupc );
 #endif
+
+			// for (i=0 ; i<knsupc ; i++){
+			// printf("x_l: %f %f %f %f\n",Linv[i*knsupc].r, Linv[i*knsupc].i, x[ii+i].r,x[ii+i].i);
+			// fflush(stdout);
+			// }
 
 			for (i=0 ; i<knsupc*nrhs ; i++){
 				z_copy(&x[ii+i],&rtemp_loc[i]);
@@ -2053,7 +2127,79 @@ if (get_acc_solve()){  /* GPU trisolve*/
 #if defined(GPU_ACC) && defined(SLU_HAVE_LAPACK) && defined(GPU_SOLVE)
 // #if 0 /* CPU trisolve*/
 
-			//TODO: U-solve not yet implemented on GPU
+    d_bmod=SOLVEstruct->d_bmod;
+    d_lsum=SOLVEstruct->d_lsum;
+	d_x=SOLVEstruct->d_x;
+	d_grid=Llu->d_grid;
+
+	checkGPU(gpuMemcpy(d_bmod, SOLVEstruct->d_bmod_save, nlb * sizeof(int), gpuMemcpyDeviceToDevice));
+    checkGPU(gpuMemcpy(d_lsum, SOLVEstruct->d_lsum_save, sizelsum * sizeof(doublecomplex), gpuMemcpyDeviceToDevice));
+    /* the following transfer is not needed at the U solve works on the d_x directly */
+	// checkGPU(gpuMemcpy(d_x, x, (ldalsum * nrhs + nlb * XK_H) * sizeof(doublecomplex), gpuMemcpyHostToDevice));
+
+	k = CEILING( nsupers, grid->npcol);/* Number of local block columns divided by #warps per block used as number of thread blocks*/
+	knsupc = sp_ienv_dist(3, options);
+
+ #ifdef HAVE_NVSHMEM
+    checkGPU(gpuMemcpy(d_status, mystatus_u, k * sizeof(int), gpuMemcpyHostToDevice));
+    checkGPU(gpuMemcpy(d_statusmod, mystatusmod_u, 2* nlb * sizeof(int), gpuMemcpyHostToDevice));
+    //for(int i=0;i<2*nlb;i++) printf("(%d),mystatusmod[%d]=%d\n",iam,i,mystatusmod[i]);
+    checkGPU(gpuMemset(flag_rd_q, 0, RDMA_FLAG_SIZE * nlb * 2 * sizeof(uint64_t)));
+    checkGPU(gpuMemset(flag_bc_q, 0, RDMA_FLAG_SIZE * (k+1)  * sizeof(uint64_t)));
+    checkGPU(gpuMemset(zready_x, 0, maxrecvsz*CEILING( nsupers, grid->npcol) * sizeof(doublecomplex)));
+    checkGPU(gpuMemset(zready_lsum, 0, 2*maxrecvsz*CEILING( nsupers, grid->nprow) * sizeof(doublecomplex)));
+    checkGPU(gpuMemset(d_msgnum, 0, h_nfrecv_u[1] * sizeof(int)));
+	// MUST have this barrier, otherwise the code hang.
+	MPI_Barrier( grid->comm );
+#endif
+#if ( PROFlevel>=1 )
+    t = SuperLU_timer_() - t;
+	if ( !iam) printf(".. Setup GPU U-solve time\t%8.4f\n", t);
+	fflush(stdout);
+	MPI_Barrier( grid->comm );
+	t = SuperLU_timer_();
+#endif
+
+    zlsum_bmod_inv_gpu_wrap(options, k,nlb,DIM_X,DIM_Y,d_lsum,d_x,nrhs,knsupc,nsupers,d_bmod,
+                            Llu->d_UBtree_ptr,Llu->d_URtree_ptr,
+                            Llu->d_ilsum,Llu->d_Ucolind_bc_dat,Llu->d_Ucolind_bc_offset,Llu->d_Ucolind_br_dat,Llu->d_Ucolind_br_offset,
+                            Llu->d_Uind_br_dat,Llu->d_Uind_br_offset,Llu->d_Unzval_bc_dat,Llu->d_Unzval_bc_offset,Llu->d_Unzval_br_new_dat,Llu->d_Unzval_br_new_offset,
+                            Llu->d_Uinv_bc_dat,Llu->d_Uinv_bc_offset,
+                            Llu->d_Uindval_loc_bc_dat,Llu->d_Uindval_loc_bc_offset,
+                            Llu->d_xsup,d_grid,
+                            maxrecvsz, flag_bc_q, flag_rd_q, zready_x, zready_lsum,
+                            my_flag_bc, my_flag_rd,
+                            d_nfrecv_u, h_nfrecv_u, d_status, d_colnum_u, d_mynum_u,
+                            d_mymaskstart_u,d_mymasklength_u,
+                            d_nfrecvmod_u, d_statusmod, d_colnummod_u, d_mynummod_u,
+                            d_mymaskstartmod_u, d_mymasklengthmod_u,
+                            d_recv_cnt_u, d_msgnum,d_flag_mod_u,procs);
+    //printf("(%d) done dlsum_bmod_inv_gpu_wrap\n",iam);
+    //fflush(stdout);
+
+#if ( PROFlevel>=1 )
+		t = SuperLU_timer_() - t;
+		stat->utime[SOL_TOT] += t;
+		if ( !iam ) {
+			printf(".. U-solve (kernel) time\t%8.4f\n", t);
+			fflush(stdout);
+		}
+		MPI_Reduce (&t, &tmax, 1, MPI_DOUBLE,
+				MPI_MAX, 0, grid->comm);
+		if ( !iam ) {
+			printf(".. U-solve time  (kernel) (MAX) \t%8.4f\n", tmax);
+			fflush(stdout);
+		}
+
+		t = SuperLU_timer_();
+#endif
+
+
+	checkGPU(gpuMemcpy(x, d_x, (ldalsum * nrhs + nlb * XK_H) * sizeof(doublecomplex), gpuMemcpyDeviceToHost));
+
+
+	stat_loc[0]->ops[SOLVE]+=Llu->Unzval_br_cnt*nrhs*2; // YL: this is a rough estimate
+
 #endif
 }else{  /* CPU trisolve*/
 

@@ -282,6 +282,7 @@ void dscale_distributed_matrix(int_t rowequ, int_t colequ, int_t m, int_t n,
         for (int i = rowptr[j]; i < rowptr[j + 1]; ++i) {
             int columnIndex = colind[i];
             a[i] *= R1[rowIndex] * C1[columnIndex];
+
 #if 0
 // this is not support as dmin, dsum and dprod are not used later in pdgssvx3d
 #if (PRNTlevel >= 2)
