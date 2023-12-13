@@ -2,7 +2,7 @@
 #include "lupanels.hpp"
 
 template <typename Ftype>
-xupanel_t<Ftype>::upanel_t(int_t k, int_t *usub, Ftype *uval, int_t *xsup)
+xupanel_t<Ftype>::xupanel_t(int_t k, int_t *usub, Ftype *uval, int_t *xsup)
 {
     int_t kSupSz = SuperSize(k);
     int_t kLastRow = xsup[k + 1];

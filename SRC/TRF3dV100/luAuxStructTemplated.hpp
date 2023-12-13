@@ -8,7 +8,7 @@ struct diagFactBufs_t {
     Ftype* BlockUFactor;
     // Add other members as needed
 };
-
+struct complex; 
 template <typename T>
 MPI_Datatype get_mpi_type()
 {
@@ -45,7 +45,7 @@ MPI_Datatype get_mpi_type<doublecomplex>()
     return MPI_C_DOUBLE_COMPLEX;
 }
 
-
+// AnormType<double> 
 
 template <typename Ftype>
 using AnormType = typename std::conditional<

@@ -6,31 +6,31 @@
 
 
 template<typename T>
-void superlu_trsm(char *side, char *uplo, char *transa, char *diag,
+void superlu_trsm(const char *side, const char *uplo, const char *transa, const char *diag,
                int m, int n, T alpha, T *A, int lda, T *B, int ldb);
 
 // Specialization for double
 template<>
-void superlu_trsm<double>(char *side, char *uplo, char *transa, char *diag,
+void superlu_trsm<double>(const char *side, const char *uplo, const char *transa, const char *diag,
                        int m, int n, double alpha, double *A, int lda, double *B, int ldb) {
     superlu_dtrsm(side, uplo, transa, diag, m, n, alpha, A, lda, B, ldb);
 }
 
 // Specialization for float
 template<>
-void superlu_trsm<float>(char *side, char *uplo, char *transa, char *diag,
+void superlu_trsm<float>(const char *side, const char *uplo, const char *transa, const char *diag,
                       int m, int n, float alpha, float *A, int lda, float *B, int ldb) {
     superlu_strsm(side, uplo, transa, diag, m, n, alpha, A, lda, B, ldb);
 }
 
 
 template<typename T>
-void superlu_gemm(char *transa, char *transb, int m, int n, int k, T alpha,
+void superlu_gemm(const char *transa, const char *transb, int m, int n, int k, T alpha,
                T *A, int lda, T *B, int ldb, T beta, T *C, int ldc);
 
 // Specialization for double
 template<>
-void superlu_gemm<double>(char *transa, char *transb, int m, int n, int k, double alpha,
+void superlu_gemm<double>(const char *transa, const char *transb, int m, int n, int k, double alpha,
                        double *A, int lda, double *B, int ldb, double beta, 
                        double *C, int ldc) {
     superlu_dgemm(transa, transb, m, n, k, alpha, A, lda, B, ldb, beta, C, ldc);
@@ -38,7 +38,7 @@ void superlu_gemm<double>(char *transa, char *transb, int m, int n, int k, doubl
 
 // Specialization for float
 template<>
-void superlu_gemm<float>(char *transa, char *transb, int m, int n, int k, float alpha,
+void superlu_gemm<float>(const char *transa, const char *transb, int m, int n, int k, float alpha,
                       float *A, int lda, float *B, int ldb, float beta,
                       float *C, int ldc) {
     superlu_sgemm(transa, transb, m, n, k, alpha, A, lda, B, ldb, beta, C, ldc);
@@ -104,7 +104,7 @@ void superlu_scal<doublecomplex>(int n, doublecomplex alpha, doublecomplex *x, i
 
 
 template<>
-void superlu_gemm<doublecomplex>(char *transa, char *transb, int m, int n, int k, doublecomplex alpha,
+void superlu_gemm<doublecomplex>(const char *transa, const char *transb, int m, int n, int k, doublecomplex alpha,
                       doublecomplex *A, int lda, doublecomplex *B, int ldb, doublecomplex beta,
                       doublecomplex *C, int ldc) {
     superlu_zgemm(transa, transb, m, n, k, alpha, A, lda, B, ldb, beta, C, ldc);
@@ -112,7 +112,7 @@ void superlu_gemm<doublecomplex>(char *transa, char *transb, int m, int n, int k
 
 
 template<>
-void superlu_trsm<doublecomplex>(char *side, char *uplo, char *transa, char *diag,
+void superlu_trsm<doublecomplex>(const char *side, const char *uplo, const char *transa, const char *diag,
                       int m, int n, doublecomplex alpha, doublecomplex *A, int lda, doublecomplex *B, int ldb) {
     superlu_ztrsm(side, uplo, transa, diag, m, n, alpha, A, lda, B, ldb);
 }

@@ -6,14 +6,15 @@
 #include "lupanels_GPU.cuh"
 #include "batch_block_copy.h"
 
-int getBufferOffset(int k0, int k1, int winSize, int winParity, int halfWin)
-{
-    int_t offset = (k0 - k1) % winSize;
-    if (winParity % 2)
-        offset += halfWin;
+int getBufferOffset(int k0, int k1, int winSize, int winParity, int halfWin);
+// int getBufferOffset(int k0, int k1, int winSize, int winParity, int halfWin)
+// {
+//     int_t offset = (k0 - k1) % winSize;
+//     if (winParity % 2)
+//         offset += halfWin;
 
-    return offset;
-}
+//     return offset;
+// }
 
 template <typename Ftype>
 xLUMarshallData<Ftype>::xLUMarshallData()

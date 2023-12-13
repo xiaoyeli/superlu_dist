@@ -5,8 +5,8 @@
 #include "superlu_defs.h"
 #include "superlu_dist_config.h"
 
-#ifdef HAVE_CUDA
-
+// #ifdef HAVE_CUDA
+#define EPSILON 1e-3
 #include <cuda_runtime.h>
 
 #include "cublas_v2.h"
@@ -37,7 +37,7 @@ int checkArr(const T *A, const T *B, int n)
 }
 
 template <typename T>
-lpanelGPU_t xlpanel_t<T>::copyToGPU()
+xlpanelGPU_t<T> xlpanel_t<T>::copyToGPU()
 {
     if (isEmpty())
         return gpuPanel;
@@ -54,7 +54,7 @@ lpanelGPU_t xlpanel_t<T>::copyToGPU()
 }
 
 template <typename T>
-lpanelGPU_t xlpanel_t<T>::copyToGPU(void* basePtr)
+xlpanelGPU_t<T> xlpanel_t<T>::copyToGPU(void* basePtr)
 {
     if (isEmpty())
         return gpuPanel;
@@ -109,7 +109,7 @@ int xlpanel_t<T>::copyBackToGPU()
 }
 
 template <typename T>
-upanelGPU_t xupanel_t<T>::copyToGPU()
+xupanelGPU_t<T> xupanel_t<T>::copyToGPU()
 {
     if (isEmpty())
         return gpuPanel;
@@ -125,7 +125,7 @@ upanelGPU_t xupanel_t<T>::copyToGPU()
 }
 
 template <typename T>
-upanelGPU_t xupanel_t<T>::copyToGPU(void* basePtr)
+xupanelGPU_t<T> xupanel_t<T>::copyToGPU(void* basePtr)
 {
     if (isEmpty())
         return gpuPanel;

@@ -1,6 +1,7 @@
 #include "mpi.h"
 // #include "cublasDefs.hhandle, "
 #include "lupanels.hpp"
+#include "cublas_cusolver_wrappers.hpp"
 
 #ifdef HAVE_CUDA
 
@@ -10,7 +11,7 @@ int_t xLUstruct_t<Ftype>::ancestorReduction3dGPU(int_t ilvl, int_t *myNodeCount,
 {
     int_t maxLvl = log2i(grid3d->zscp.Np) + 1;
     int_t myGrid = grid3d->zscp.Iam;
-`
+
 #if (DEBUGlevel >= 1)
     printf(".maxLvl %d\n", maxLvl); fflush(stdout);
     CHECK_MALLOC(grid3d->iam, "Enter ancestorReduction3dGPU()");

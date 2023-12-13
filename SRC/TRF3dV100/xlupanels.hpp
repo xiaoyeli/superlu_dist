@@ -134,8 +134,8 @@ public:
     // }
 
 #ifdef HAVE_CUDA
-    lpanelGPU_t copyToGPU();
-    lpanelGPU_t copyToGPU(void *basePtr); // when we are doing a single allocation
+    xlpanelGPU_t<Ftype> copyToGPU();
+    xlpanelGPU_t<Ftype> copyToGPU(void *basePtr); // when we are doing a single allocation
     int checkGPU();
     int copyBackToGPU();
 
@@ -305,9 +305,9 @@ public:
     // }
 
 #ifdef HAVE_CUDA
-    upanelGPU_t copyToGPU();
+    xupanelGPU_t<Ftype> copyToGPU();
     // TODO: implement with baseptr
-    upanelGPU_t copyToGPU(void *basePtr);
+    xupanelGPU_t<Ftype> copyToGPU(void *basePtr);
     int copyBackToGPU();
 
     int_t panelSolveGPU(cublasHandle_t handle, cudaStream_t cuStream,
@@ -408,8 +408,8 @@ struct xLUstruct_t
 
     anc25d_t anc25d;
     // For GPU acceleration
-    LUstructGPU_t *dA_gpu; // pointing to memory on GPU
-    LUstructGPU_t A_gpu;   // pointing to memory accessible on CPU
+    xLUstructGPU_t<Ftype> *dA_gpu; // pointing to memory on GPU
+    xLUstructGPU_t<Ftype> A_gpu;   // pointing to memory accessible on CPU
 
     /////////////////////////////////////////////////////////////////
     // Intermediate for flat batched

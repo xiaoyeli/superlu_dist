@@ -18,8 +18,15 @@
 #include "anc25d_impl.hpp"
 #include "dsparseTreeFactorGPU_impl.hpp"
 #include "dsparseTreeFactor_summit_impl.hpp"
+#include "schurCompUpdate_impl.cuh"
+#include "l_panels_impl.hpp"
+#include "u_panels_impl.hpp"
+#include "lupanels_impl.hpp"
+#include "lupanels_GPU_impl.hpp"
+#include "lupanelsComm3dGPU_impl.hpp"
+#include "lupanels_comm3d_impl.hpp"
 // #include "sparseTreeFactor_impl.hpp"
-
+// pxgstrf3d<double>
 template <typename Ftype>
 int_t pdgstrf3d_summit(superlu_dist_options_t *options, int m, int n, AnormType<Ftype> anorm,
 		       trf3dpartitionType<Ftype> *trf3Dpartition, SCT_t *SCT,
@@ -323,7 +330,7 @@ int_t xLUstruct_t<Ftype>::pdgstrf3d()
                         }
 
                         else
-                            ancestorReduction3d(ilvl, myNodeCount, treePerm);
+                            this->ancestorReduction3d(ilvl, myNodeCount, treePerm);
                     }
                 } /*if (!myZeroTrIdxs[ilvl])  ... If I participate in this level*/
             }

@@ -36,6 +36,7 @@ set(headers
     TRF3dV100/xlupanels.hpp
     TRF3dV100/lu_common.hpp
     TRF3dV100/xlupanels_GPU.cuh
+    TRF3dV100/schurCompUpdate_impl.cuh 
 )
 #    ${CMAKE_CURRENT_BINARY_DIR}/superlu_dist_config.h
 #    ${PROJECT_SOURCE_DIR}/SRC/superlu_FortranCInterface.h
@@ -176,7 +177,7 @@ if (TPL_ENABLE_CUDALIB)
     TRF3dV100/lupanels_GPU.cpp
     TRF3dV100/anc25d.cpp 
     TRF3dV100/LUgpuCHandle_interface.cpp
-    TRF3dV100/LUgpuCHandle_interface_impl.cpp 
+    TRF3dV100/LUgpuCHandle_interface_impl.cu  
   )
 endif()
 

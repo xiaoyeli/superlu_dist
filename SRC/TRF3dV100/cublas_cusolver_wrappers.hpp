@@ -19,13 +19,13 @@ cusolverStatus_t myCusolverGetrf<float>(cusolverDnHandle_t handle, int m, int n,
 template <>
 cusolverStatus_t myCusolverGetrf<cuComplex>(cusolverDnHandle_t handle, int m, int n, cuComplex *A, int lda, cuComplex *Workspace, int *devIpiv, int *devInfo)
 {
-    return cusolverCnCgetrf(handle, m, n, A, lda, Workspace, devIpiv, devInfo);
+    return cusolverDnCgetrf(handle, m, n, A, lda, Workspace, devIpiv, devInfo);
 }
 
 template <>
 cusolverStatus_t myCusolverGetrf<cuDoubleComplex>(cusolverDnHandle_t handle, int m, int n, cuDoubleComplex *A, int lda, cuDoubleComplex *Workspace, int *devIpiv, int *devInfo)
 {
-    return cusolverZnZgetrf(handle, m, n, A, lda, Workspace, devIpiv, devInfo);
+    return cusolverDnZgetrf(handle, m, n, A, lda, Workspace, devIpiv, devInfo);
 }
 
 template <typename Ftype>

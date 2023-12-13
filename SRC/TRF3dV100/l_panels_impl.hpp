@@ -2,7 +2,7 @@
 #include "lupanels.hpp"
 
 template <typename Ftype>
-xlpanel_t<Ftype>::lpanel_t(int_t k, int_t *lsub, Ftype* lval, int_t *xsup, int_t isDiagIncluded)
+xlpanel_t<Ftype>::xlpanel_t(int_t k, int_t *lsub, Ftype* lval, int_t *xsup, int_t isDiagIncluded)
 {
     // set the value
     val = lval;
