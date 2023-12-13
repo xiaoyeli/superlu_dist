@@ -213,7 +213,7 @@ int_t xLUstruct_t<Ftype>::dsparseTreeFactor(
     #if (DEBUGlevel >= 1)
     CHECK_MALLOC(grid3d->iam, "Exit dsparseTreeFactor_ASYNC()");
     #endif
-    
+    return 0;
 }
 
 template <typename Ftype>

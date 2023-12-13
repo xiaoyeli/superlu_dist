@@ -77,6 +77,7 @@ int_t xlpanel_t<Ftype>::panelSolve(int_t ksupsz, Ftype* DiagBlk, int_t LDD)
     superlu_trsm<Ftype>("R", "U", "N", "N",
                   len, ksupsz, alpha, DiagBlk, LDD,
                   lPanelStPtr, LDA());
+    return 0;
 }
 
 template <typename Ftype>

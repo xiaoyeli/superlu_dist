@@ -79,6 +79,7 @@ int_t xlpanel_t<T>::copyFromGPU()
         return 0;
     size_t valSize = sizeof(T) * nzvalSize();
     gpuErrchk(cudaMemcpy(val, gpuPanel.val,  valSize, cudaMemcpyDeviceToHost));
+    return 0;
 }
 
 template <typename T>
@@ -88,6 +89,7 @@ int_t xupanel_t<T>::copyFromGPU()
         return 0;
     size_t valSize = sizeof(T) * nzvalSize();
     gpuErrchk(cudaMemcpy(val, gpuPanel.val,  valSize, cudaMemcpyDeviceToHost));
+    return 0;
 }
 
 template <typename T>
