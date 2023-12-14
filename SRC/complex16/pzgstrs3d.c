@@ -3042,7 +3042,7 @@ if ( !(get_new3dsolvetreecomm() && get_acc_solve())){
 	if ( !iam) printf(".. Grid %3d: around L kernel time\t%8.4f\n", myGrid, t);
 #endif
 
-	stat_loc[0]->ops[SOLVE]+=Llu->Lnzval_bc_cnt*nrhs*2; // YL: this is a rough estimate
+	stat_loc[0]->ops[SOLVE]+=Llu->Lnzval_bc_cnt*nrhs*8; // YL: this is a rough estimate
 #endif
     }else{/* CPU trisolve */
 
@@ -5169,7 +5169,7 @@ if (get_acc_solve()){  /* GPU trisolve*/
 	if ( !iam) printf(".. Grid %3d: around U kernel time\t%8.4f\n", myGrid, t);
 #endif
 
-	stat_loc[0]->ops[SOLVE]+=Llu->Unzval_br_cnt*nrhs*2; // YL: this is a rough estimate
+	stat_loc[0]->ops[SOLVE]+=Llu->Unzval_br_cnt*nrhs*8; // YL: this is a rough estimate
 #endif
 }else{  /* CPU trisolve*/
 

@@ -1421,7 +1421,7 @@ if (get_acc_solve()){  /* GPU trisolve*/
 	// checkGPU(gpuMemcpy(x, d_x, (ldalsum * nrhs + nlb * XK_H) * sizeof(doublecomplex), gpuMemcpyDeviceToHost));
 
 
-	stat_loc[0]->ops[SOLVE]+=Llu->Lnzval_bc_cnt*nrhs*2; // YL: this is a rough estimate
+	stat_loc[0]->ops[SOLVE]+=Llu->Lnzval_bc_cnt*nrhs*8; // YL: this is a rough estimate
 
 #endif
 #endif
@@ -2198,7 +2198,7 @@ if (get_acc_solve()){  /* GPU trisolve*/
 	checkGPU(gpuMemcpy(x, d_x, (ldalsum * nrhs + nlb * XK_H) * sizeof(doublecomplex), gpuMemcpyDeviceToHost));
 
 
-	stat_loc[0]->ops[SOLVE]+=Llu->Unzval_br_cnt*nrhs*2; // YL: this is a rough estimate
+	stat_loc[0]->ops[SOLVE]+=Llu->Unzval_br_cnt*nrhs*8; // YL: this is a rough estimate
 
 #endif
 }else{  /* CPU trisolve*/
