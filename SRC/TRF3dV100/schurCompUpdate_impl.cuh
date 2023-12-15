@@ -85,7 +85,7 @@ __device__ int_t xlpanelGPU_t<Ftype>::find(int_t k)
 {
     int threadId = threadIdx.x;
     __shared__ int idx;
-    // __shared__ int found;
+    __shared__ int found;
     if (!threadId)
     {
         idx = -1;
@@ -119,7 +119,7 @@ __device__ int_t xupanelGPU_t<Ftype>::find(int_t k)
 {
     int threadId = threadIdx.x;
     __shared__ int idx;
-    // __shared__ int found;
+    __shared__ int found;
     if (!threadId)
     {
         idx = -1;

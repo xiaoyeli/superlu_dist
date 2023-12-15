@@ -1115,8 +1115,8 @@ extern void    countnz_dist (const int_t, int_t *, int_t *, int_t *,
 extern int64_t fixupL_dist (const int_t, const int_t *, Glu_persist_t *,
 				  Glu_freeable_t *);
 extern int_t   *TreePostorder_dist (int_t, int_t *);
-extern float   smach_dist(char *);
-extern double  dmach_dist(char *);
+extern float   smach_dist(const char *);
+extern double  dmach_dist(const char *);
 extern void    *superlu_malloc_dist (size_t);
 extern void    superlu_free_dist (void*);
 extern int   *int32Malloc_dist (int);

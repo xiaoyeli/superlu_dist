@@ -13,7 +13,7 @@ at the top-level directory.
 #include <stdio.h>
 #include <string.h>
 
-double dmach_dist(char *cmach)
+double dmach_dist(const char *cmach)
 {
 /*  -- SuperLU auxiliary routine (version 5.0) --   
     This uses C99 standard constants, and is thread safe.
