@@ -230,7 +230,7 @@ int_t xlpanel_t<T>::diagFactorCuSolver(int_t k,
                                     superlu_dist_options_t *options,
                                     SuperLUStat_t *stat, int *info)
 {
-    cudaStream_t stream = NULL;
+    // cudaStream_t stream = NULL;
     int kSupSize = SuperSize(k);
     size_t dpitch = LDD * sizeof(T);
     size_t spitch = LDA() * sizeof(T);
@@ -263,6 +263,8 @@ int_t xupanel_t<T>::panelSolveGPU(cublasHandle_t handle, cudaStream_t cuStream,
                     CUBLAS_OP_N, CUBLAS_DIAG_UNIT,
                     ksupsz, nzcols(), &alpha, DiagBlk, LDD,
                     blkPtrGPU(0), LDA());
+    
+    return 0; 
 }
 
 template <typename T>

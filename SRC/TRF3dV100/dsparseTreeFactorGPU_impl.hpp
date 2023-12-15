@@ -428,12 +428,12 @@ int_t xLUstruct_t<Ftype>::dsparseTreeFactorGPU(
 
 #if (DEBUGlevel >= 1)
     CHECK_MALLOC(grid3d->iam, "Enter dsparseTreeFactorGPU()");
-#endif
+
     printf("Using New code V100 with GPU acceleration\n");
     fflush(stdout);
     printf(". lookahead numLA %d\n", numLA);
     fflush(stdout);
-
+#endif
     // start the pipeline.  Sherry: need to free these 3 arrays
     int *donePanelBcast = int32Malloc_dist(nnodes);
     int *donePanelSolve = int32Malloc_dist(nnodes);
@@ -508,7 +508,7 @@ int_t xLUstruct_t<Ftype>::dsparseTreeFactorGPU(
 
         for (int_t k0 = k1; k0 < SUPERLU_MIN(nnodes, k1 + winSize); ++k0)
         {
-            int_t k = perm_c_supno[k0];
+            // int_t k = perm_c_supno[k0];
             int_t offset = getBufferOffset(k0, k1, winSize, winParity, halfWin);
             SyncLookAheadUpdate(offset);
         }

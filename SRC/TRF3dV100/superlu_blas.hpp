@@ -60,11 +60,6 @@ void superlu_scal<float>(int n, float alpha, float *x, int incx) {
     superlu_sscal(n, alpha, x, incx);
 }
 
-// // Specialization for complex
-// template<>
-// void superlu_scal<complex>(int n, complex alpha, complex *x, int incx) {
-//     superlu_cscal(n, alpha, x, incx);
-// }
 
 // Specialization for double complex
 
@@ -84,11 +79,6 @@ void superlu_axpy<float>(int n, float alpha, float *x, int incx, float *y, int i
     superlu_saxpy(n, alpha, x, incx, y, incy);
 }
 
-// // Specialization for complex
-// template<>
-// void superlu_axpy<complex>(int n, complex alpha, complex *x, int incx, complex *y, int incy) {
-//     superlu_caxpy(n, alpha, x, incx, y, incy);
-// }
 
 #ifdef enable_complex16
 // Specialization for double complex

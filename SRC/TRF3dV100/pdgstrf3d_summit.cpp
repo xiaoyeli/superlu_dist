@@ -6,7 +6,7 @@
 
 #ifdef HAVE_CUDA
 #include "dlustruct_gpu.h"
-#include "acc_aux.c"
+// #include "acc_aux.c"
 #endif
 
 #include "lupanels.hpp"

@@ -25,7 +25,7 @@ int_t xLUstruct_t<Ftype>::dAncestorFactorBaseline(
 
     int_t *perm_c_supno = sforest->nodeList; // list of nodes in the order of factorization
     treeTopoInfo_t *treeTopoInfo = &sforest->topoInfo;
-    int_t *myIperm = treeTopoInfo->myIperm;
+    // int_t *myIperm = treeTopoInfo->myIperm;
     int_t maxTopoLevel = treeTopoInfo->numLvl;
     int_t *eTreeTopLims = treeTopoInfo->eTreeTopLims;
 

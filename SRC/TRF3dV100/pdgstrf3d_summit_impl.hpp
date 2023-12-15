@@ -7,7 +7,7 @@
 
 #ifdef HAVE_CUDA
 #include "dlustruct_gpu.h"
-#include "acc_aux.c"
+// #include "acc_aux.c"
 #endif
 
 #include "lupanels.hpp"
@@ -224,7 +224,7 @@ int_t xLUstruct_t<Ftype>::pdgstrf3d()
 {
         int tag_ub = set_tag_ub();
         gEtreeInfo_t gEtreeInfo = trf3Dpartition->gEtreeInfo;
-        int_t *iperm_c_supno = trf3Dpartition->iperm_c_supno;
+        // int_t *iperm_c_supno = trf3Dpartition->iperm_c_supno;
         int_t *myNodeCount = trf3Dpartition->myNodeCount;
         int_t *myTreeIdxs = trf3Dpartition->myTreeIdxs;
         int_t *myZeroTrIdxs = trf3Dpartition->myZeroTrIdxs;

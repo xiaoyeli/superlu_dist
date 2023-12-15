@@ -220,7 +220,7 @@ xLUstruct_t<Ftype>::xLUstruct_t(int_t nsupers_, int_t ldt_,
 
     int mxLeafNode = 0;
     int_t *myTreeIdxs = trf3Dpartition->myTreeIdxs;
-    int_t *myZeroTrIdxs = trf3Dpartition->myZeroTrIdxs;
+    // int_t *myZeroTrIdxs = trf3Dpartition->myZeroTrIdxs;
     sForest_t **sForests = trf3Dpartition->sForests;
     for (int ilvl = 0; ilvl < maxLvl; ++ilvl)
     {

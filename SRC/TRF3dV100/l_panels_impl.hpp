@@ -80,8 +80,8 @@ int_t xlpanel_t<Ftype>::panelSolve(int_t ksupsz, Ftype* DiagBlk, int_t LDD)
     return 0;
 }
 
-template <typename Ftype>
-int_t xlpanel_t<Ftype>::diagFactor(int_t k, Ftype* UBlk, int_t LDU, Ftype thresh, int_t *xsup,
+template <>
+int_t xlpanel_t<double>::diagFactor(int_t k, double* UBlk, int_t LDU, double thresh, int_t *xsup,
                            superlu_dist_options_t *options,
                            SuperLUStat_t *stat, int *info)
 {

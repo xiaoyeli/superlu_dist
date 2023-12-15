@@ -25,7 +25,7 @@ int_t xLUstruct_t<Ftype>::dAncestorFactorBaselineGPU(
 
     int_t *perm_c_supno = sforest->nodeList; // list of nodes in the order of factorization
     treeTopoInfo_t *treeTopoInfo = &sforest->topoInfo;
-    int_t *myIperm = treeTopoInfo->myIperm;
+    // int_t *myIperm = treeTopoInfo->myIperm;
     int_t maxTopoLevel = treeTopoInfo->numLvl;
     int_t *eTreeTopLims = treeTopoInfo->eTreeTopLims;
 
@@ -67,7 +67,7 @@ int_t xLUstruct_t<Ftype>::dAncestorFactorBaselineGPU(
             {
 
                 int_t offset = k0 - k_st;
-                int_t ksupc = SuperSize(k);
+                // int_t ksupc = SuperSize(k);
                 dDFactPSolveGPU(k, offset, dFBufs);
 
                 #if 0
