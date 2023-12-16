@@ -197,10 +197,14 @@ if(enable_single)
     single/pssymbfact_distdata.c
     single/sdistribute.c
     single/psdistribute.c
+    single/psdistribute3d.c
+    single/s3DPartition.c
+    single/psdistribute-aux3d.c
     single/psgstrf.c
     single/sstatic_schedule.c
     single/psgstrf2.c
     single/psgstrs.c
+    single/psgstrs3d.c
     single/psgstrs1.c
     single/psgstrs_lsum.c
     single/psgstrs_Bglobal.c
@@ -211,6 +215,7 @@ if(enable_single)
     single/psgsmv_AXglobal.c
     single/psGetDiagU.c
     single/psgssvx3d.c     ## 3D code
+    single/sssvx3dAux.c  
     single/snrformat_loc3d.c 
     single/psgstrf3d.c 
     single/streeFactorization.c
@@ -228,7 +233,7 @@ if(enable_single)
     single/psgsequb.c
   )
 if (TPL_ENABLE_CUDALIB)
-  list(APPEND sources cuda/ssuperlu_gpu.cu)
+    list(APPEND sources cuda/psgstrs_lsum_cuda.cu cuda/ssuperlu_gpu.cu)
 endif()
 if (HAVE_COMBBLAS)
    if (enable_double)

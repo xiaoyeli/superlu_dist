@@ -78,7 +78,7 @@ sreadtriple_dist(FILE *fp, int_t *m, int_t *n, int_t *nonz,
 
 #ifdef _LONGINT
         fscanf(fp, "%lld%lld%f\n", &row[nz], &col[nz], &val[nz]);
-#else // int 
+#else // int
         fscanf(fp, "%d%d%f\n", &row[nz], &col[nz], &val[nz]);
 #endif
 
@@ -90,7 +90,7 @@ sreadtriple_dist(FILE *fp, int_t *m, int_t *n, int_t *nonz,
 		printf("triplet file: row/col indices are one-based.\n");
      	    }
         }
-	
+
 	if ( !zero_base ) {
 	    /* Change to 0-based indexing. */
 	    --row[nz];

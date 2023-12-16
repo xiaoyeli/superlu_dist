@@ -1,16 +1,16 @@
 /*! \file
 Copyright (c) 2003, The Regents of the University of California, through
-Lawrence Berkeley National Laboratory (subject to receipt of any required 
-approvals from U.S. Dept. of Energy) 
+Lawrence Berkeley National Laboratory (subject to receipt of any required
+approvals from U.S. Dept. of Energy)
 
-All rights reserved. 
+All rights reserved.
 
 The source code is distributed under BSD license, see the file License.txt
 at the top-level directory.
 */
 
 
-/*! @file 
+/*! @file
  * \brief Driver program for psgssvx_ABglobal example
  *
  * <pre>
@@ -75,7 +75,7 @@ int main(int argc, char *argv[])
     nrhs = 1;   /* Number of right-hand side. */
 
     /* ------------------------------------------------------------
-       INITIALIZE MPI ENVIRONMENT. 
+       INITIALIZE MPI ENVIRONMENT.
        ------------------------------------------------------------*/
     MPI_Init( &argc, &argv );
 
@@ -105,14 +105,14 @@ int main(int argc, char *argv[])
     }
 
     /* ------------------------------------------------------------
-       INITIALIZE THE SUPERLU PROCESS GRID. 
+       INITIALIZE THE SUPERLU PROCESS GRID.
        ------------------------------------------------------------*/
     superlu_gridinit(MPI_COMM_WORLD, nprow, npcol, &grid);
 
     /* Bail out if I do not belong in the grid. */
     iam = grid.iam;
     if ( iam == -1 )	goto out;
-    
+
 #if ( DEBUGlevel>=1 )
     CHECK_MALLOC(iam, "Enter main()");
 #endif
@@ -124,10 +124,10 @@ int main(int argc, char *argv[])
     if ( !iam ) {
 	/* Print the CPP definitions. */
 	cpp_defs();
-	
+
 	/* Read the matrix stored on disk in Harwell-Boeing format. */
 	sreadhb_dist(iam, fp, &m, &n, &nnz, &a, &asub, &xa);
-	
+
 	printf("Input matrix file: %s\n", *cpp);
 	printf("\tDimension\t" IFMT "x" IFMT "\t # nonzeros " IFMT "\n", m, n, nnz);
 	printf("\tProcess grid\t%d X %d\n", (int) grid.nprow, (int) grid.npcol);
@@ -152,7 +152,7 @@ int main(int argc, char *argv[])
 	MPI_Bcast( asub, nnz, mpi_int_t,  0, grid.comm );
 	MPI_Bcast( xa,   n+1, mpi_int_t,  0, grid.comm );
     }
-	
+
     /* Create compressed column matrix for A. */
     sCreate_CompCol_Matrix_dist(&A, m, n, nnz, a, asub, xa,
 				SLU_NC, SLU_S, SLU_GE);
@@ -167,7 +167,7 @@ int main(int argc, char *argv[])
     if ( iam==0 ) {
         sGenXtrue_dist(n, nrhs, xtrue, ldx);
         sFillRHS_dist(trans, nrhs, xtrue, ldx, &A, b, ldb);
-	
+
         MPI_Bcast( xtrue, n*nrhs, MPI_FLOAT, 0, grid.comm );
         MPI_Bcast( b, m*nrhs, MPI_FLOAT, 0, grid.comm );
     } else {
@@ -175,11 +175,11 @@ int main(int argc, char *argv[])
         MPI_Bcast( b, m*nrhs, MPI_FLOAT, 0, grid.comm );
     }
 
-    /* Save a copy of the right-hand side. */  
+    /* Save a copy of the right-hand side. */
     if ( !(b1 = floatMalloc_dist(m * nrhs)) ) ABORT("Malloc fails for b1[]");
     for (j = 0; j < nrhs; ++j)
 	for (i = 0; i < m; ++i) b1[i+j*ldb] = b[i+j*ldb];
-    
+
     if ( !(berr = floatMalloc_dist(nrhs)) )
 	ABORT("Malloc fails for berr[].");
 
@@ -226,8 +226,8 @@ int main(int argc, char *argv[])
     if ( !iam ) {
 	sinf_norm_error_dist(n, nrhs, b, ldb, xtrue, ldx, &grid);
     }
-    
-    
+
+
     PStatPrint(&options, &stat, &grid);        /* Print the statistics. */
     PStatFree(&stat);
     Destroy_CompCol_Matrix_dist(&A); /* Deallocate storage of matrix A.     */
@@ -264,7 +264,7 @@ int main(int argc, char *argv[])
        ------------------------------------------------------------*/
     PStatFree(&stat);
     Destroy_CompCol_Matrix_dist(&A); /* Deallocate storage of matrix A.     */
-    sDestroy_LU(n, &grid, &LUstruct); /* Deallocate storage associated with    
+    sDestroy_LU(n, &grid, &LUstruct); /* Deallocate storage associated with
 					the L and U matrices.               */
     sScalePermstructFree(&ScalePermstruct);
     sLUstructFree(&LUstruct);         /* Deallocate the structure of L and U.*/

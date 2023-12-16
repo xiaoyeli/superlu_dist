@@ -54,12 +54,12 @@ typedef struct //SCUbuf_gpu_
 
     float *Remain_L_buff;  /* on GPU */
     float *Remain_L_buff_host; /* Sherry: this memory is page-locked, why need another copy on GPU ? */
-    
+
     int_t *lsub;
     int_t *usub;
 
     int_t *lsub_buf, *usub_buf;
-    
+
     Ublock_info_t *Ublock_info; /* on GPU */
     Remain_info_t *Remain_info;
     Ublock_info_t *Ublock_info_host;
@@ -71,7 +71,7 @@ typedef struct //SCUbuf_gpu_
 } sSCUbuf_gpu_t;
 
 /* Holds the L & U data structures on the GPU side */
-typedef struct //LUstruct_gpu_ 
+typedef struct //LUstruct_gpu_
 {
     int_t   *LrowindVec;      /* A single vector */
     int_t   *LrowindPtr;      /* A single vector */
@@ -87,7 +87,7 @@ typedef struct //LUstruct_gpu_
 
     float  *UnzvalVec;       /* A single vector */
     int_t   *UnzvalPtr;        /* A single vector */
-    
+
     /*gpu pointers for easy block accesses */
     local_l_blk_info_t *local_l_blk_infoVec;
     int_t *local_l_blk_infoPtr;
@@ -166,7 +166,7 @@ extern int ssparseTreeFactor_ASYNC_GPU(
     ssluGPU_t *sluGPU,
     d2Hreduce_t *d2Hred,
     HyP_t *HyP,
-    sLUstruct_t *LUstruct, gridinfo3d_t *grid3d, 
+    sLUstruct_t *LUstruct, gridinfo3d_t *grid3d,
     SuperLUStat_t *stat,
     double thresh, SCT_t *SCT, int tag_ub,
     int *info);
