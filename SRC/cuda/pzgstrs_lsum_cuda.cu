@@ -528,14 +528,19 @@ void zdelete_multiGPU_buffers(){
 #endif
 }
 
-__device__ void zC_BcTree_forwardMessageSimple_Device(C_Tree* tree,  volatile uint64_t* flag_bc_q,  int* my_flag_bc, int mype, int tid,doublecomplex* zready_x, int maxrecvsz){
+__device__ void zC_BcTree_forwardMessageSimple_Device(C_Tree* tree,  volatile uint64_t* flag_bc_q,  int* my_flag_bc, int mype, int tid, doublecomplex* zready_x, int maxrecvsz){
 #ifdef HAVE_NVSHMEM
 //int BCsendoffset;
     uint64_t sig = 1;
     int data_ofset=my_flag_bc[0]*maxrecvsz;
+    //for(int i=0; i<my_flag_bc[1]; i++){
+    //    printf("DC iam=%d, to %d, col=%d, i=%d, val=%f\n",mype, tree->myDests_[0],my_flag_bc[0],i, zready_x[my_flag_bc[0]*maxrecvsz+i].r, zready_x[my_flag_bc[0]*maxrecvsz+i].i);
+    //}
+
+
     for( int idxRecv = 0; idxRecv < tree->destCnt_; ++idxRecv ) {
         int iProc = tree->myDests_[idxRecv];
-        //TODO: nvshmemx_double_put_signal_nbi_block not yet working for other precisions?
+        nvshmemx_double_put_signal_nbi_block((double*)&zready_x[data_ofset], (double*)&zready_x[data_ofset], my_flag_bc[1]*2,(uint64_t*)(flag_bc_q + my_flag_bc[0]), sig, NVSHMEM_SIGNAL_SET,iProc);
     }
 #endif
 }
@@ -545,12 +550,12 @@ __device__ void zC_RdTree_forwardMessageSimple_Device(C_Tree* Tree, volatile uin
         uint64_t sig = 1;
         if (Tree->myIdx % 2 == 0) {
             sig_ofset = my_flag_rd[0] * 2;
-            data_ofset = my_flag_rd[0] * maxrecvsz * 2;
+            data_ofset = my_flag_rd[0] * (maxrecvsz )* 2;
         } else {
             sig_ofset = my_flag_rd[0] * 2 + 1;
-            data_ofset = my_flag_rd[0] * maxrecvsz * 2 + maxrecvsz;
+           data_ofset = my_flag_rd[0] * (maxrecvsz) * 2 + (maxrecvsz);
         }
-        //TODO: nvshmem_double_put_signal_nbi not yet working for other precisions?
+        nvshmem_double_put_signal_nbi((double*)&zready_lsum[data_ofset], (double*)&zready_lsum[my_flag_rd[0]*(maxrecvsz)*2],my_flag_rd[1]*2,(uint64_t*)flag_rd_q+sig_ofset, sig, NVSHMEM_SIGNAL_SET, myroot);
 
 
     // ////forward to my root if I have received everything
@@ -582,101 +587,145 @@ __device__ void zC_RdTree_forwardMessageSimple_Device(C_Tree* Tree, volatile uin
 
 
 
-__device__ void zC_RdTree_forwardMessageBlock_Device(C_Tree* Tree, volatile int* flag_rd_q, int* my_flag_rd, int mype, int bid, int tid, doublecomplex* zready_lsum, int maxrecvsz, int myroot){
-#ifdef HAVE_NVSHMEM
-    int data_ofset,sig_ofset;
-if (Tree->myIdx % 2 == 0) {
-    sig_ofset = my_flag_rd[0] * 2;
-    data_ofset = my_flag_rd[0] * maxrecvsz * 2;
-} else {
-    sig_ofset = my_flag_rd[0] * 2 + 1;
-    data_ofset = my_flag_rd[0] * maxrecvsz * 2 + maxrecvsz;
-}
-////forward to my root if I have received everything
-//double sum = 0;
-//if (tid==0){
-//    for (int i = my_flag_rd[0]*maxrecvsz*2; i < my_flag_rd[0]*maxrecvsz*2 + my_flag_rd[1]; i++) {
-//        //printf("(%d), data, %d\n",mype,i);
-//        //printf("(%d), data, %d,%lf\n", mype, i, zready_lsum[i]);
-//        sum += zready_lsum[i];
+//__device__ void zC_RdTree_forwardMessageBlock_Device(C_Tree* Tree, volatile int* flag_rd_q, int* my_flag_rd, int mype, int bid, int tid, doublecomplex* zready_lsum, int maxrecvsz, int myroot){
+//#ifdef HAVE_NVSHMEM
+//    int data_ofset,sig_ofset;
+//if (Tree->myIdx % 2 == 0) {
+//    sig_ofset = my_flag_rd[0] * 2;
+//    data_ofset = my_flag_rd[0] * maxrecvsz * 2;
+//} else {
+//    sig_ofset = my_flag_rd[0] * 2 + 1;
+//    data_ofset = my_flag_rd[0] * maxrecvsz * 2 + maxrecvsz;
+//}
+//////forward to my root if I have received everything
+////double sum = 0;
+////if (tid==0){
+////    for (int i = my_flag_rd[0]*maxrecvsz*2; i < my_flag_rd[0]*maxrecvsz*2 + my_flag_rd[1]; i++) {
+////        //printf("(%d), data, %d\n",mype,i);
+////        //printf("(%d), data, %d,%lf\n", mype, i, zready_lsum[i]);
+////        sum += zready_lsum[i];
+////    }
+////    printf("---- Start RD (%d,%d,%d), forwardMessage, forwardDevice, send to %d, "
+////       "lib=%d,size=%d,  dataoffset=%d,maxrecvsz=%d\n",
+////       mype, bid,tid, myroot,
+////       my_flag_rd[0], my_flag_rd[1], data_ofset,maxrecvsz);
+////}
+//
+//@precision DOUBLE
+//
+//    nvshmemx_double_put_nbi_block(&zready_lsum[data_ofset],&zready_lsum[my_flag_rd[0]*maxrecvsz*2],my_flag_rd[1],myroot);
+////if (tid==0)
+////    printf("---- END RD (%d), forwardMessage, forwardDevice, send to %d, "
+////       "lib=%d,size=%d, sum=%lf, dataoffset=%d,maxrecvsz=%d\n",
+////       mype, myroot,
+////       my_flag_rd[0], my_flag_rd[1], sum, data_ofset,maxrecvsz);
+//    nvshmem_fence();
+//    int sig=1;
+//    if (tid==0)  nvshmemx_signal_op((uint64_t*)(flag_rd_q+sig_ofset), sig, NVSHMEM_SIGNAL_SET,myroot);
+//    //if (tid==0)  nvshmemx_int_signal((int*)flag_rd_q+sig_ofset, sig, myroot);
+//@precision SCOMPLEX DCOMPLEX SINGLE
+//        //TODO: nvshmemx_double_put_nbi_block and nvshmemx_int_signal not yet working for other precisions?
+//@precision !
+//
+////if (tid==0)
+////    printf("Bsend:%d,%d,%d,%d,%d\n", mype, my_flag_rd[0],data_ofset, sig_ofset,my_flag_rd[1]);
+//#endif
+//}
+//
+//
+//__device__ void zC_RdTree_forwardMessageWarp_Device(C_Tree* Tree, volatile uint64_t* flag_rd_q, int* my_flag_rd, int mype, int bid, int tid, doublecomplex* zready_lsum, int maxrecvsz, int myroot){
+//#ifdef HAVE_NVSHMEM
+//    int data_ofset,sig_ofset;
+//    if (Tree->myIdx % 2 == 0) {
+//        sig_ofset = my_flag_rd[0] * 2;
+//        data_ofset = my_flag_rd[0] * maxrecvsz * 2;
+//    } else {
+//        sig_ofset = my_flag_rd[0] * 2 + 1;
+//        data_ofset = my_flag_rd[0] * maxrecvsz * 2 + maxrecvsz;
 //    }
-//    printf("---- Start RD (%d,%d,%d), forwardMessage, forwardDevice, send to %d, "
-//       "lib=%d,size=%d,  dataoffset=%d,maxrecvsz=%d\n",
-//       mype, bid,tid, myroot,
-//       my_flag_rd[0], my_flag_rd[1], data_ofset,maxrecvsz);
+//
+//////forward to my root if I have received everything
+////double sum = 0;
+////if (tid%32==0) {
+////    for (int i = my_flag_rd[0]*maxrecvsz*2; i < my_flag_rd[0]*maxrecvsz*2 + my_flag_rd[1]; i++) {
+////        //printf("(%d), data, %d\n",mype,i);
+////        //printf("(%d), data, %d,%lf\n", mype, i, zready_lsum[i]);
+////        sum += zready_lsum[i];
+////    }
+////    printf("---- Start RD Warp (%d,%d,%d), forwardMessage, forwardDevice, send to %d, "
+////           "lib=%d,size=%d,  dataoffset=%d,maxrecvsz=%d\n",
+////           mype, bid, tid, myroot,
+////           my_flag_rd[0], my_flag_rd[1], data_ofset, maxrecvsz);
+////}
+//
+//@precision DOUBLE
+//    nvshmemx_double_put_nbi_warp(&zready_lsum[data_ofset],&zready_lsum[my_flag_rd[0]*maxrecvsz*2],my_flag_rd[1],myroot);
+////if (tid%32==0)
+////    printf("---- END RD Warp (%d), forwardMessage, forwardDevice, send to %d, "
+////       "lib=%d,size=%d, sum=%lf, dataoffset=%d,maxrecvsz=%d\n",
+////       mype, myroot,
+////       my_flag_rd[0], my_flag_rd[1], sum, data_ofset,maxrecvsz);
+//    nvshmem_fence();
+//    int sig=1;
+//    if (tid%32==0)  nvshmemx_signal_op((uint64_t*)flag_rd_q+sig_ofset, sig, NVSHMEM_SIGNAL_SET, myroot);
+////if (tid%32==0)
+////    printf("Wsend:%d,%d,%d,%d,%d\n", mype, my_flag_rd[0],data_ofset, sig_ofset,my_flag_rd[1]);
+//
+//@precision SCOMPLEX DCOMPLEX SINGLE
+//        //TODO: nvshmemx_double_put_nbi_warp and nvshmemx_signal_op not yet working for other precisions?
+//@precision !
+//
+//
+//#endif
 //}
-
-        //TODO: nvshmemx_double_put_nbi_block and nvshmemx_int_signal not yet working for other precisions?
-
-//if (tid==0)
-//    printf("Bsend:%d,%d,%d,%d,%d\n", mype, my_flag_rd[0],data_ofset, sig_ofset,my_flag_rd[1]);
-#endif
-}
-
-
-__device__ void zC_RdTree_forwardMessageWarp_Device(C_Tree* Tree, volatile uint64_t* flag_rd_q, int* my_flag_rd, int mype, int bid, int tid, doublecomplex* zready_lsum, int maxrecvsz, int myroot){
-#ifdef HAVE_NVSHMEM
-    int data_ofset,sig_ofset;
-    if (Tree->myIdx % 2 == 0) {
-        sig_ofset = my_flag_rd[0] * 2;
-        data_ofset = my_flag_rd[0] * maxrecvsz * 2;
-    } else {
-        sig_ofset = my_flag_rd[0] * 2 + 1;
-        data_ofset = my_flag_rd[0] * maxrecvsz * 2 + maxrecvsz;
-    }
-
-////forward to my root if I have received everything
-//double sum = 0;
-//if (tid%32==0) {
-//    for (int i = my_flag_rd[0]*maxrecvsz*2; i < my_flag_rd[0]*maxrecvsz*2 + my_flag_rd[1]; i++) {
-//        //printf("(%d), data, %d\n",mype,i);
-//        //printf("(%d), data, %d,%lf\n", mype, i, zready_lsum[i]);
-//        sum += zready_lsum[i];
+//
+//
+//
+//
+//__device__ void zC_RdTree_forwardMessageThread_Device(C_Tree* Tree, volatile uint64_t* flag_rd_q, int* my_flag_rd, int mype, int bid, int tid, doublecomplex* zready_lsum, int maxrecvsz, int myroot){
+//#ifdef HAVE_NVSHMEM
+//    int data_ofset,sig_ofset;
+//    if (Tree->myIdx % 2 == 0) {
+//        sig_ofset = my_flag_rd[0] * 2;
+//        data_ofset = my_flag_rd[0] * maxrecvsz * 2;
+//    } else {
+//        sig_ofset = my_flag_rd[0] * 2 + 1;
+//        data_ofset = my_flag_rd[0] * maxrecvsz * 2 + maxrecvsz;
 //    }
-//    printf("---- Start RD Warp (%d,%d,%d), forwardMessage, forwardDevice, send to %d, "
-//           "lib=%d,size=%d,  dataoffset=%d,maxrecvsz=%d\n",
-//           mype, bid, tid, myroot,
-//           my_flag_rd[0], my_flag_rd[1], data_ofset, maxrecvsz);
+//
+//////forward to my root if I have received everything
+////double sum = 0;
+//
+////for (int i = my_flag_rd[0]*maxrecvsz*2; i < my_flag_rd[0]*maxrecvsz*2 + my_flag_rd[1]; i++) {
+////    //printf("(%d), data, %d\n",mype,i);
+////    printf("(%d), data, %d,%lf\n", mype, i, zready_lsum[i]);
+////    sum += zready_lsum[i];
+////}
+//
+////printf("---- Start RD Thread (%d,%d,%d), forwardMessage, forwardDevice, send to %d, "
+////       "lib=%d,size=%d,  dataoffset=%d,maxrecvsz=%d\n",
+////       mype, bid,tid, myroot,
+////       my_flag_rd[0], my_flag_rd[1], data_ofset,maxrecvsz);
+//
+//@precision DOUBLE
+//    nvshmem_double_put_nbi(&zready_lsum[data_ofset],&zready_lsum[my_flag_rd[0]*maxrecvsz*2],my_flag_rd[1],myroot);
+////printf("---- END RD Thread (%d,%d,%d), forwardMessage, forwardDevice, send to %d, "
+////       "lib=%d,size=%d,  dataoffset=%d,maxrecvsz=%d\n",
+////       mype, bid,tid, myroot,
+////       my_flag_rd[0], my_flag_rd[1], data_ofset,maxrecvsz);
+//    nvshmem_fence();
+//    int sig=1;
+//    nvshmemx_signal_op((uint64_t*)flag_rd_q+sig_ofset, sig, NVSHMEM_SIGNAL_SET, myroot);
+////printf("Tsend:%d,%d,%d,%d,%d\n",
+////       mype, my_flag_rd[0],data_ofset, sig_ofset,my_flag_rd[1]);
+//
+//
+//@precision SCOMPLEX DCOMPLEX SINGLE
+//        //TODO: nvshmem_double_put_nbi and nvshmemx_signal_op not yet working for other precisions?
+//@precision !
+//
+//#endif
 //}
-
-        //TODO: nvshmemx_double_put_nbi_warp and nvshmemx_signal_op not yet working for other precisions?
-
-
-#endif
-}
-
-
-
-
-__device__ void zC_RdTree_forwardMessageThread_Device(C_Tree* Tree, volatile uint64_t* flag_rd_q, int* my_flag_rd, int mype, int bid, int tid, doublecomplex* zready_lsum, int maxrecvsz, int myroot){
-#ifdef HAVE_NVSHMEM
-    int data_ofset,sig_ofset;
-    if (Tree->myIdx % 2 == 0) {
-        sig_ofset = my_flag_rd[0] * 2;
-        data_ofset = my_flag_rd[0] * maxrecvsz * 2;
-    } else {
-        sig_ofset = my_flag_rd[0] * 2 + 1;
-        data_ofset = my_flag_rd[0] * maxrecvsz * 2 + maxrecvsz;
-    }
-
-////forward to my root if I have received everything
-//double sum = 0;
-
-//for (int i = my_flag_rd[0]*maxrecvsz*2; i < my_flag_rd[0]*maxrecvsz*2 + my_flag_rd[1]; i++) {
-//    //printf("(%d), data, %d\n",mype,i);
-//    printf("(%d), data, %d,%lf\n", mype, i, zready_lsum[i]);
-//    sum += zready_lsum[i];
-//}
-
-//printf("---- Start RD Thread (%d,%d,%d), forwardMessage, forwardDevice, send to %d, "
-//       "lib=%d,size=%d,  dataoffset=%d,maxrecvsz=%d\n",
-//       mype, bid,tid, myroot,
-//       my_flag_rd[0], my_flag_rd[1], data_ofset,maxrecvsz);
-
-        //TODO: nvshmem_double_put_nbi and nvshmemx_signal_op not yet working for other precisions?
-
-#endif
-}
 
 
 // Yang/Nan. Note that NVSHMEM-based SpTRSV has only been tested on Perlmutter and Summit. Here is the status of the code on the two mahchines:
@@ -857,7 +906,7 @@ __global__ void zwait_bcrd
                            if (LRtree_ptr[lib].myRoot_ != LRtree_ptr[lib].myRank_) {
                                //cnt=LRtree_ptr[lib].msgSize_;
                                my_flag_rd[lib * RDMA_FLAG_SIZE] = lib;
-                               my_flag_rd[lib * RDMA_FLAG_SIZE + 1] = LRtree_ptr[lib].msgSize_;
+                               my_flag_rd[lib * RDMA_FLAG_SIZE + 1] = LRtree_ptr[lib].msgSize_ ;
                                //double tmp_sum=0;
                                RHS_ITERATE(j) {
                                    for (int aab = 0; aab < knsupc; aab++) {
@@ -1872,9 +1921,10 @@ __global__ void zlsum_fmod_inv_gpu_mrhs_nvshmem
             //printf("(%d,%d,%d,%d) in compute kernel, I have msg=%d,sz=%d,ofset=%d\n",mype,bid,tid,gc,msg_recv,LBtree_ptr[lk].msgSize_*nrhs+XK_H,maxrecvsz*lk);
             //double sum=0;
             //for (int myi=0;myi<LBtree_ptr[lk].msgSize_*nrhs+XK_H;myi++){
-            //    sum+=zready_x[maxrecvsz*lk+myi];
+            //    printf("(%d,%d,%d), gc=%d,lk=%d, val=%lf,%f\n",mype,bid,tid,gc,lk,zready_x[maxrecvsz*lk+myi].r, zready_x[maxrecvsz*lk+myi].i);
+            //    //sum+=zready_x[maxrecvsz*lk+myi];
             //}
-            //printf("(%d,%d,%d), gc=%d,lk=%d, sum=%lf\n",mype,bid,tid,gc,lk,sum);
+            ////printf("(%d,%d,%d), gc=%d,lk=%d, sum=%lf\n",mype,bid,tid,gc,lk,sum);
         }
         __syncthreads();
     }
@@ -1885,10 +1935,10 @@ __global__ void zlsum_fmod_inv_gpu_mrhs_nvshmem
     if (cnt > 0) {
         //cnt=LBtree_ptr[lk].msgSize_;
         my_flag_bc[gc * RDMA_FLAG_SIZE] = lk;
-        my_flag_bc[gc * RDMA_FLAG_SIZE + 1] = LBtree_ptr[lk].msgSize_ * nrhs + XK_H;
+        my_flag_bc[gc * RDMA_FLAG_SIZE + 1] = (LBtree_ptr[lk].msgSize_ ) * nrhs + XK_H;
         zC_BcTree_forwardMessageSimple_Device(&LBtree_ptr[lk], flag_bc_q, &my_flag_bc[gc * RDMA_FLAG_SIZE],
                                              mype, tid, &zready_x[0], maxrecvsz);
-        //printf("(%d,%d,%d), lk=%d, gc=%d\n",mype,bid,tid,lk,gc);
+        //printf("(%d,%d,%d), lk=%d, gc=%d, head=%lf,%lf\n",mype,bid,tid,lk,gc,zready_x[maxrecvsz*lk].r, zready_x[maxrecvsz*lk].i);
         //zC_BcTree_forwardMessageSimple_Device(&LBtree_ptr[lk],&zready_x[maxrecvsz*lk],cnt*nrhs+XK_H);
     }
     int keep_lk = lk;
@@ -4313,7 +4363,7 @@ gridinfo_t *grid
      if (cnt > 0) {
          //cnt=LBtree_ptr[lk].msgSize_;
          my_flag_bc[k * RDMA_FLAG_SIZE] = lk;
-         my_flag_bc[k * RDMA_FLAG_SIZE + 1] = UBtree_ptr[lk].msgSize_ * nrhs + XK_H;
+         my_flag_bc[k * RDMA_FLAG_SIZE + 1] = UBtree_ptr[lk].msgSize_  * nrhs + XK_H;
          zC_BcTree_forwardMessageSimple_Device(&UBtree_ptr[lk], flag_bc_q, &my_flag_bc[k * RDMA_FLAG_SIZE],
                                               mype, tid, &zready_x[0], maxrecvsz);
          //if (tid==0) printf("(%d,%d,%d), lk=%d, gc=%d\n",mype,bid,tid,lk,gc);
