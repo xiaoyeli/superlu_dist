@@ -1,6 +1,6 @@
 #pragma once 
 #include "lupanels.hpp"
-
+#include "xgstrf2.hpp"
 template <typename Ftype>
 xlpanel_t<Ftype>::xlpanel_t(int_t k, int_t *lsub, Ftype* lval, int_t *xsup, int_t isDiagIncluded)
 {
@@ -73,19 +73,24 @@ int_t xlpanel_t<Ftype>::panelSolve(int_t ksupsz, Ftype* DiagBlk, int_t LDD)
         lPanelStPtr = blkPtr(1);
         len -= nbrow(0);
     }
-    Ftype alpha = 1.0;
+    Ftype alpha = 1.0; // {1.0, 0.0}; std::complex<double> alpha = {1.0, 0.0};
     superlu_trsm<Ftype>("R", "U", "N", "N",
                   len, ksupsz, alpha, DiagBlk, LDD,
                   lPanelStPtr, LDA());
     return 0;
 }
 
-template <>
-int_t xlpanel_t<double>::diagFactor(int_t k, double* UBlk, int_t LDU, double thresh, int_t *xsup,
+
+
+template <typename Ftype>
+int_t xlpanel_t<Ftype>::diagFactor(int_t k, Ftype* UBlk, int_t LDU, Ftype thresh, int_t *xsup,
                            superlu_dist_options_t *options,
                            SuperLUStat_t *stat, int *info)
 {
-    dgstrf2(k, val, LDA(), UBlk, LDU,
+    // dgstrf2(k, val, LDA(), UBlk, LDU,
+    //         thresh, xsup, options, stat, info);
+
+    xgstrf2<Ftype>(k, val, LDA(), UBlk, LDU,
             thresh, xsup, options, stat, info);
 
     return 0;

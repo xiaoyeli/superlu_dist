@@ -66,7 +66,7 @@ extern "C"
         return 0;
     }
 
-    int pdgstrf3d_LUv1(dLUgpu_Handle LUHand)
+    int pdgstrf3d_LUv1(dLUgpu_Handle LUHand) // pdgstrf3d_Upacked 
     {
         // perform the factorization
         xLUstruct_t<double> *LU_v1 = reinterpret_cast<xLUstruct_t<double> *>(LUHand);

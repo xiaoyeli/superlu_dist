@@ -79,6 +79,30 @@ void superlu_axpy<float>(int n, float alpha, float *x, int incx, float *y, int i
     superlu_saxpy(n, alpha, x, incx, y, incy);
 }
 
+template<typename T>
+void superlu_ger(const int m, const int n, const T alpha,
+                 const T *x, const int incx, const T *y,
+                 const int incy, T *a, const int lda);
+
+// Specialization for double
+template<>
+void superlu_ger<double>(const int m, const int n, const double alpha,
+                         const double *x, const int incx, const double *y,
+                         const int incy, double *a, const int lda) {
+    superlu_dger(m, n, alpha, x, incx, y, incy, a, lda);
+}
+
+// Specialization for float
+template<>
+void superlu_ger<float>(const int m, const int n, const float alpha,
+                        const float *x, const int incx, const float *y,
+                        const int incy, float *a, const int lda) {
+    superlu_sger(m, n, alpha, x, incx, y, incy, a, lda);
+}
+
+
+
+
 
 #ifdef enable_complex16
 // Specialization for double complex
@@ -107,4 +131,10 @@ void superlu_trsm<doublecomplex>(const char *side, const char *uplo, const char 
     superlu_ztrsm(side, uplo, transa, diag, m, n, alpha, A, lda, B, ldb);
 }
 
+template<>
+void superlu_ger<doublecomplex>(const int m, const int n, const doublecomplex alpha,
+                         const doublecomplex *x, const int incx, const doublecomplex *y,
+                         const int incy, doublecomplex *a, const int lda) {
+    superlu_zger(m, n, alpha, x, incx, y, incy, a, lda);
+}
 #endif 
