@@ -26,7 +26,8 @@ at the top-level directory.
 
 #include "superlu_sdefs.h"
 //#include "TRF3dV100/superlu_summit.h"
-#include "superlu_summit.h"
+// #include "superlu_summit.h"
+#include "superlu_upacked.h"
 // #include "psdistribute3d.h"
 
 // #include "sssvx3dAux.c"
@@ -1213,6 +1214,14 @@ void psgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 
 		    //TODO: sCreateLUgpuHandle,psgstrf3d_LUpackedInterface,sCopyLUGPU2Host,sDestroyLUgpuHandle haven't been created
 
+			sLUgpu_Handle sLUgpu = sCreateLUgpuHandle(nsupers, ldt, trf3Dpartition, LUstruct, grid3d,
+						  SCT, options, stat, thresh, info);
+			
+			/* call pdgstrf3d() in C++ code */
+			psgstrf3d_LUv1(sLUgpu);
+			
+			sCopyLUGPU2Host(sLUgpu, LUstruct);
+			sDestroyLUgpuHandle(sLUgpu);
 
 			// print other stuff
 			// if (!grid3d->zscp.Iam)
