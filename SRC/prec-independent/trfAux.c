@@ -2680,7 +2680,7 @@ int DeallocateSymbolicFactorizationStorage(const Glu_freeable_t *Glu_freeable);
  * @param comm The MPI communicator.
  * @param root The root process.
  */
-void allocBcastArray(void **array, int size, int root, MPI_Comm comm)
+void allocBcastArray(void **array, int_t size, int root, MPI_Comm comm)
 {
     int rank;
     MPI_Comm_rank(comm, &rank); // Get the rank of the current process

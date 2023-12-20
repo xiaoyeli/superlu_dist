@@ -5,7 +5,7 @@
 extern "C"
 {
 
-LUgpu_Handle dCreateLUgpuHandle(int_t nsupers, int_t ldt_, dtrf3Dpartition_t *trf3Dpartition,
+LUgpu_Handle createLUgpuHandle(int_t nsupers, int_t ldt_, dtrf3Dpartition_t *trf3Dpartition,
                   dLUstruct_t *LUstruct, gridinfo3d_t *grid3d,
                   SCT_t *SCT_, superlu_dist_options_t *options_, SuperLUStat_t *stat,
                   double thresh_, int *info_)
@@ -24,7 +24,7 @@ LUgpu_Handle dCreateLUgpuHandle(int_t nsupers, int_t ldt_, dtrf3Dpartition_t *tr
 #endif
 } 
 
-    void dDestroyLUgpuHandle(LUgpu_Handle LuH)
+void destroyLUgpuHandle(LUgpu_Handle LuH)
 {
   printf("\t... before delete luH\n"); fflush(stdout);
    delete LuH; 
@@ -33,7 +33,7 @@ LUgpu_Handle dCreateLUgpuHandle(int_t nsupers, int_t ldt_, dtrf3Dpartition_t *tr
 
 int dgatherFactoredLU3Dto2D(LUgpu_Handle LuH);
 
-int dCopyLUGPU2Host(LUgpu_Handle LuH, dLUstruct_t *LUstruct)
+int copyLUGPU2Host(LUgpu_Handle LuH, dLUstruct_t *LUstruct)
 {
    double tXferGpu2Host = SuperLU_timer_();
    if (LuH->superlu_acc_offload)
