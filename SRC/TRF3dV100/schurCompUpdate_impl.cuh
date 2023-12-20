@@ -100,7 +100,7 @@ __device__ int_t xlpanelGPU_t<Ftype>::find(int_t k)
          blk < blocksPerThreads * (threadIdx.x + 1);
          blk++)
     {
-        // if(found) break;
+        if(found) break;
 
         if (blk < nblocks())
         {
@@ -135,7 +135,7 @@ __device__ int_t xupanelGPU_t<Ftype>::find(int_t k)
          blk < blocksPerThreads * (threadIdx.x + 1);
          blk++)
     {
-        // if(found) break;
+        if(found) break;
 
         if (blk < nblocks())
         {
