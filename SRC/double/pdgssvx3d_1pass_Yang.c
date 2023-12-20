@@ -22,7 +22,7 @@ at the top-level directory.
  * Last update: November 8, 2021  v7.2.0
  */
 #include "superlu_ddefs.h"
-#include "TRF3dV100/superlu_summit.h"
+#include "TRF3dV100/superlu_upacked.h"
 #include "pddistribute3d.h"
 #include "ssvx3dAux.c"
 int_t dgatherAllFactoredLU3d( dtrf3Dpartition_t*  trf3Dpartition,
@@ -1253,7 +1253,7 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 			if (!grid3d->iam)
 				printf("Using pdgstrf3d+gpu version 1 for Summit\n");
 #if 0
-			pdgstrf3d_summit(options, m, n, anorm, trf3Dpartition, SCT, LUstruct,
+			pdgstrf3d_upacked(options, m, n, anorm, trf3Dpartition, SCT, LUstruct,
 				  grid3d, stat, info);
 #else
 			int_t ldt = sp_ienv_dist(3, options); /* Size of maximum supernode */

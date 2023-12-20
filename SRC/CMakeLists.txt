@@ -9,13 +9,34 @@ set(headers
     include/util_dist.h
     include/gpu_api_utils.h
     include/gpu_wrapper.h
-    include/superlu_summit.h
+    include/superlu_upacked.h
     include/superlu_dist_config.h
     include/superlu_FortranCInterface.h
     TRF3dV100/lupanels.hpp
     TRF3dV100/commWrapper.hpp
     TRF3dV100/lupanels_GPU.cuh
     TRF3dV100/batch_block_copy.h
+    TRF3dV100/anc25d-GPU_impl.hpp
+    TRF3dV100/anc25d.hpp
+    TRF3dV100/lupanelsComm3dGPU_impl.hpp
+    TRF3dV100/anc25d_impl.hpp
+    TRF3dV100/lupanels_GPU_impl.hpp
+    TRF3dV100/lupanels_comm3d_impl.hpp
+    TRF3dV100/cublas_cusolver_wrappers.hpp
+    TRF3dV100/lupanels_impl.hpp
+    TRF3dV100/dAncestorFactor_impl.hpp
+    TRF3dV100/pdgstrf3d_upacked_impl.hpp
+    TRF3dV100/dsparseTreeFactorGPU_impl.hpp
+    TRF3dV100/sparseTreeFactor_impl.hpp
+    TRF3dV100/dsparseTreeFactor_upacked_impl.hpp
+    TRF3dV100/superlu_blas.hpp
+    TRF3dV100/l_panels_impl.hpp
+    TRF3dV100/u_panels_impl.hpp
+    TRF3dV100/luAuxStructTemplated.hpp
+    TRF3dV100/xlupanels.hpp
+    TRF3dV100/lu_common.hpp
+    TRF3dV100/xlupanels_GPU.cuh
+    TRF3dV100/schurCompUpdate_impl.cuh 
 )
 #    ${CMAKE_CURRENT_BINARY_DIR}/superlu_dist_config.h
 #    ${PROJECT_SOURCE_DIR}/SRC/superlu_FortranCInterface.h
@@ -143,9 +164,8 @@ if (TPL_ENABLE_CUDALIB)
   list(APPEND sources
        cuda/pdgstrs_lsum_cuda.cu cuda/superlu_gpu_utils.cu cuda/dsuperlu_gpu.cu
   TRF3dV100/schurCompUpdate.cu 
-  TRF3dV100/pdgstrf3d_summit.cpp
-    TRF3dV100/dsparseTreeFactor_summit.cpp
-    TRF3dV100/dsparseTreeFactorGPU.cpp
+  TRF3dV100/pdgstrf3d_upacked.cpp
+    TRF3dV100/dsparseTreeFactor_upacked.cpp    TRF3dV100/dsparseTreeFactorGPU.cpp
     TRF3dV100/anc25d-GPU.cpp 
     TRF3dV100/lupanels.cpp
     TRF3dV100/lupanels_comm3d.cpp
@@ -156,6 +176,7 @@ if (TPL_ENABLE_CUDALIB)
     TRF3dV100/lupanels_GPU.cpp
     TRF3dV100/anc25d.cpp 
     TRF3dV100/LUgpuCHandle_interface.cpp
+    TRF3dV100/LUgpuCHandle_interface_impl.cu  
   )
 endif()
 

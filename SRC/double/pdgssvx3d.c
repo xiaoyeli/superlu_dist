@@ -22,8 +22,8 @@ at the top-level directory.
  * Last update: November 8, 2021  v7.2.0
  */
 #include "superlu_ddefs.h"
-//#include "TRF3dV100/superlu_summit.h"
-#include "superlu_summit.h"
+//#include "TRF3dV100/superlu_upacked.h"
+#include "superlu_upacked.h"
 #include "pddistribute3d.h"
 #include "ssvx3dAux.c"
 // int_t dgatherAllFactoredLU3d( dtrf3Dpartition_t*  trf3Dpartition,
@@ -1235,13 +1235,25 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 			if (!grid3d->iam)
 				printf("Using pdgstrf3d+gpu version 1 for Summit\n");
 #if 0
-			pdgstrf3d_summit(options, m, n, anorm, trf3Dpartition, SCT, LUstruct,
+			pdgstrf3d_upacked(options, m, n, anorm, trf3Dpartition, SCT, LUstruct,
 				  grid3d, stat, info);
 #else
 			int_t ldt = sp_ienv_dist(3, options); /* Size of maximum supernode */
 			double s_eps = smach_dist("Epsilon");
 			double thresh = s_eps * anorm;
 
+#define TEMPLATED_VERSION 
+#ifdef TEMPLATED_VERSION
+dLUgpu_Handle dLUgpu = dCreateLUgpuHandle(nsupers, ldt, trf3Dpartition, LUstruct, grid3d,
+						  SCT, options, stat, thresh, info);
+			
+			/* call pdgstrf3d() in C++ code */
+			pdgstrf3d_LUv1(dLUgpu);
+			
+			dCopyLUGPU2Host(dLUgpu, LUstruct);
+			dDestroyLUgpuHandle(dLUgpu);
+			
+#else 
 			/* call constructor in C++ code */
 			LUgpu = createLUgpuHandle(nsupers, ldt, trf3Dpartition, LUstruct, grid3d,
 						  SCT, options, stat, thresh, info);
@@ -1251,7 +1263,7 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 			
 			copyLUGPU2Host(LUgpu, LUstruct);
 			destroyLUgpuHandle(LUgpu);
-
+#endif /* TEMPLATED_VERSION */
 			// print other stuff
 			// if (!grid3d->zscp.Iam)
 			// 	SCT_printSummary(grid, SCT);

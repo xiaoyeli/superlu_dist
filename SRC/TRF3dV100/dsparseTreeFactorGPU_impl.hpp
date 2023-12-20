@@ -1,32 +1,32 @@
+#pragma once
 #include <cstdio>
+#include <cinttypes>
 #include "superlu_ddefs.h"
 #include "lupanels.hpp"
 #ifdef HAVE_CUDA
 #include "lupanels_GPU.cuh"
 #include "batch_block_copy.h"
 
-// [0, 1, 2, 3] independent
-// [0, 1] schur complement update , [2, 3] panel bcast 
-// [2,3] schur complement update, [ 4,5] panel bcast 
+int getBufferOffset(int k0, int k1, int winSize, int winParity, int halfWin);
+// int getBufferOffset(int k0, int k1, int winSize, int winParity, int halfWin)
+// {
+//     int_t offset = (k0 - k1) % winSize;
+//     if (winParity % 2)
+//         offset += halfWin;
 
+//     return offset;
+// }
 
-int getBufferOffset(int k0, int k1, int winSize, int winParity, int halfWin)
-{
-    int_t offset = (k0-k1)%winSize;
-            if(winParity%2)
-                offset+= halfWin;
-
-    return offset;
-}
-
-LUMarshallData::LUMarshallData()
+template <typename Ftype>
+xLUMarshallData<Ftype>::xLUMarshallData()
 {
     dev_diag_ptrs = dev_panel_ptrs = NULL;
     dev_diag_ld_array = dev_diag_dim_array = dev_info_array = NULL;
     dev_panel_ld_array = dev_panel_dim_array = NULL;
 }
 
-LUMarshallData::~LUMarshallData()
+template <typename Ftype>
+xLUMarshallData<Ftype>::~xLUMarshallData()
 {
     gpuErrchk(cudaFree(dev_diag_ptrs));
     gpuErrchk(cudaFree(dev_panel_ptrs));
@@ -37,17 +37,18 @@ LUMarshallData::~LUMarshallData()
     gpuErrchk(cudaFree(dev_panel_dim_array));
 }
 
-void LUMarshallData::setBatchSize(int batch_size)
+template <typename Ftype>
+void xLUMarshallData<Ftype>::setBatchSize(int batch_size)
 {
-    gpuErrchk(cudaMalloc(&dev_diag_ptrs, batch_size * sizeof(double*)));
-    gpuErrchk(cudaMalloc(&dev_panel_ptrs, batch_size * sizeof(double*)));
+    gpuErrchk(cudaMalloc(&dev_diag_ptrs, batch_size * sizeof(Ftype *)));
+    gpuErrchk(cudaMalloc(&dev_panel_ptrs, batch_size * sizeof(Ftype *)));
 
     gpuErrchk(cudaMalloc(&dev_diag_ld_array, batch_size * sizeof(int)));
     gpuErrchk(cudaMalloc(&dev_diag_dim_array, (batch_size + 1) * sizeof(int)));
     gpuErrchk(cudaMalloc(&dev_info_array, batch_size * sizeof(int)));
     gpuErrchk(cudaMalloc(&dev_panel_ld_array, batch_size * sizeof(int)));
     gpuErrchk(cudaMalloc(&dev_panel_dim_array, (batch_size + 1) * sizeof(int)));
-    
+
     host_diag_ptrs.resize(batch_size);
     host_diag_ld_array.resize(batch_size);
     host_diag_dim_array.resize(batch_size);
@@ -56,21 +57,24 @@ void LUMarshallData::setBatchSize(int batch_size)
     host_panel_dim_array.resize(batch_size);
 }
 
-void LUMarshallData::setMaxDiag()
+template <typename Ftype>
+void xLUMarshallData<Ftype>::setMaxDiag()
 {
     max_diag = 0;
-    for(int i = 0; i < batchsize; i++)
-        max_diag = SUPERLU_MAX(max_diag, host_diag_dim_array[i]); 
+    for (int i = 0; i < batchsize; i++)
+        max_diag = SUPERLU_MAX(max_diag, host_diag_dim_array[i]);
 }
 
-void LUMarshallData::setMaxPanel()
+template <typename Ftype>
+void xLUMarshallData<Ftype>::setMaxPanel()
 {
     max_panel = 0;
-    for(int i = 0; i < batchsize; i++)
-        max_panel = SUPERLU_MAX(max_panel, host_panel_dim_array[i]); 
+    for (int i = 0; i < batchsize; i++)
+        max_panel = SUPERLU_MAX(max_panel, host_panel_dim_array[i]);
 }
 
-SCUMarshallData::SCUMarshallData()
+template <typename Ftype>
+xSCUMarshallData<Ftype>::xSCUMarshallData()
 {
     dev_A_ptrs = dev_B_ptrs = dev_C_ptrs = NULL;
     dev_lda_array = dev_ldb_array = dev_ldc_array = NULL;
@@ -81,7 +85,8 @@ SCUMarshallData::SCUMarshallData()
     dev_maxGemmCols = dev_maxGemmRows = NULL;
 }
 
-SCUMarshallData::~SCUMarshallData()
+template <typename Ftype>
+xSCUMarshallData<Ftype>::~xSCUMarshallData()
 {
     gpuErrchk(cudaFree(dev_A_ptrs));
     gpuErrchk(cudaFree(dev_B_ptrs));
@@ -102,11 +107,12 @@ SCUMarshallData::~SCUMarshallData()
     gpuErrchk(cudaFree(dev_maxGemmRows));
 }
 
-void SCUMarshallData::setBatchSize(int batch_size)
+template <typename Ftype>
+void xSCUMarshallData<Ftype>::setBatchSize(int batch_size)
 {
-    gpuErrchk(cudaMalloc(&dev_A_ptrs, batch_size * sizeof(double*)));
-    gpuErrchk(cudaMalloc(&dev_B_ptrs, batch_size * sizeof(double*)));
-    gpuErrchk(cudaMalloc(&dev_C_ptrs, batch_size * sizeof(double*)));
+    gpuErrchk(cudaMalloc(&dev_A_ptrs, batch_size * sizeof(Ftype *)));
+    gpuErrchk(cudaMalloc(&dev_B_ptrs, batch_size * sizeof(Ftype *)));
+    gpuErrchk(cudaMalloc(&dev_C_ptrs, batch_size * sizeof(Ftype *)));
 
     gpuErrchk(cudaMalloc(&dev_lda_array, batch_size * sizeof(int)));
     gpuErrchk(cudaMalloc(&dev_ldb_array, batch_size * sizeof(int)));
@@ -126,7 +132,7 @@ void SCUMarshallData::setBatchSize(int batch_size)
 
     gpuErrchk(cudaMalloc(&dev_gpu_lpanels, batch_size * sizeof(lpanelGPU_t)));
     gpuErrchk(cudaMalloc(&dev_gpu_upanels, batch_size * sizeof(upanelGPU_t)));
-    
+
     host_A_ptrs.resize(batch_size);
     host_B_ptrs.resize(batch_size);
     host_C_ptrs.resize(batch_size);
@@ -148,24 +154,26 @@ void SCUMarshallData::setBatchSize(int batch_size)
     maxGemmCols.resize(batch_size);
 }
 
-void SCUMarshallData::setMaxDims()
+template <typename Ftype>
+void xSCUMarshallData<Ftype>::setMaxDims()
 {
     max_n = max_k = max_m = max_ilen = max_jlen = 0;
-    for(int i = 0; i < batchsize; i++)
+    for (int i = 0; i < batchsize; i++)
     {
-        max_m = SUPERLU_MAX(max_m, host_m_array[i]); 
-        max_n = SUPERLU_MAX(max_n, host_n_array[i]); 
-        max_k = SUPERLU_MAX(max_k, host_k_array[i]); 
+        max_m = SUPERLU_MAX(max_m, host_m_array[i]);
+        max_n = SUPERLU_MAX(max_n, host_n_array[i]);
+        max_k = SUPERLU_MAX(max_k, host_k_array[i]);
         max_ilen = SUPERLU_MAX(max_ilen, iend[i] - ist[i]);
         max_jlen = SUPERLU_MAX(max_jlen, jend[i] - jst[i]);
     }
 }
 
-void SCUMarshallData::copyToGPU()
+template <typename Ftype>
+void xSCUMarshallData<Ftype>::copyToGPU()
 {
-    gpuErrchk(cudaMemcpy(dev_A_ptrs, host_A_ptrs.data(), batchsize * sizeof(double*), cudaMemcpyHostToDevice));
-    gpuErrchk(cudaMemcpy(dev_B_ptrs, host_B_ptrs.data(), batchsize * sizeof(double*), cudaMemcpyHostToDevice));
-    gpuErrchk(cudaMemcpy(dev_C_ptrs, host_C_ptrs.data(), batchsize * sizeof(double*), cudaMemcpyHostToDevice));
+    gpuErrchk(cudaMemcpy(dev_A_ptrs, host_A_ptrs.data(), batchsize * sizeof(Ftype *), cudaMemcpyHostToDevice));
+    gpuErrchk(cudaMemcpy(dev_B_ptrs, host_B_ptrs.data(), batchsize * sizeof(Ftype *), cudaMemcpyHostToDevice));
+    gpuErrchk(cudaMemcpy(dev_C_ptrs, host_C_ptrs.data(), batchsize * sizeof(Ftype *), cudaMemcpyHostToDevice));
 
     gpuErrchk(cudaMemcpy(dev_lda_array, host_lda_array.data(), batchsize * sizeof(int), cudaMemcpyHostToDevice));
     gpuErrchk(cudaMemcpy(dev_ldb_array, host_ldb_array.data(), batchsize * sizeof(int), cudaMemcpyHostToDevice));
@@ -181,17 +189,19 @@ void SCUMarshallData::copyToGPU()
     gpuErrchk(cudaMemcpy(dev_jend, jend.data(), batchsize * sizeof(int), cudaMemcpyHostToDevice));
 }
 
-void SCUMarshallData::copyPanelDataToGPU()
+template <typename Ftype>
+void xSCUMarshallData<Ftype>::copyPanelDataToGPU()
 {
     gpuErrchk(cudaMemcpy(dev_gpu_lpanels, host_gpu_lpanels.data(), batchsize * sizeof(lpanelGPU_t), cudaMemcpyHostToDevice));
     gpuErrchk(cudaMemcpy(dev_gpu_upanels, host_gpu_upanels.data(), batchsize * sizeof(upanelGPU_t), cudaMemcpyHostToDevice));
 }
 
-int_t LUstruct_v100::dDFactPSolveGPU(int_t k, int_t offset, ddiagFactBufs_t **dFBufs)
+template <typename Ftype>
+int_t xLUstruct_t<Ftype>::dDFactPSolveGPU(int_t k, int_t offset, diagFactBufs_type<Ftype> **dFBufs)
 {
     // this is new version with diagonal factor being performed on GPU
     // different from dDiagFactorPanelSolveGPU (it performs diag factor in CPU)
-  
+
     /* Sherry: argument dFBufs[] is on CPU, not used in this routine */
 
     double t0 = SuperLU_timer_();
@@ -204,28 +214,27 @@ int_t LUstruct_v100::dDFactPSolveGPU(int_t k, int_t offset, ddiagFactBufs_t **dF
     if (iam == procIJ(k, k))
     {
         lPanelVec[g2lCol(k)].diagFactorCuSolver(k,
-                        cusolverH, cuStream,
-                        A_gpu.diagFactWork[offset], A_gpu.diagFactInfo[offset], // CPU pointers
-                        A_gpu.dFBufs[offset], ksupc, // CPU pointers
-                        thresh, xsup, options, stat, info);
-
+                                                cusolverH, cuStream,
+                                                A_gpu.diagFactWork[offset], A_gpu.diagFactInfo[offset], // CPU pointers
+                                                A_gpu.dFBufs[offset], ksupc,                            // CPU pointers
+                                                thresh, xsup, options, stat, info);
     }
 
-    //CHECK_MALLOC(iam, "after diagFactorCuSolver()");
-		 
-    //TODO: need to synchronize the cuda stream 
+    // CHECK_MALLOC(iam, "after diagFactorCuSolver()");
+
+    // TODO: need to synchronize the cuda stream
     /*======= Diagonal Broadcast ======*/
     if (myrow == krow(k))
         MPI_Bcast((void *)A_gpu.dFBufs[offset], ksupc * ksupc,
-                  MPI_DOUBLE, kcol(k), (grid->rscp).comm);
-    
-    //CHECK_MALLOC(iam, "after row Bcast");
-    
+                  get_mpi_type<Ftype>(), kcol(k), (grid->rscp).comm);
+
+    // CHECK_MALLOC(iam, "after row Bcast");
+
     if (mycol == kcol(k))
         MPI_Bcast((void *)A_gpu.dFBufs[offset], ksupc * ksupc,
-                  MPI_DOUBLE, krow(k), (grid->cscp).comm);
+                  get_mpi_type<Ftype>(), krow(k), (grid->cscp).comm);
 
-    // do the panels solver 
+    // do the panels solver
     if (myrow == krow(k))
     {
         uPanelVec[g2lRow(k)].panelSolveGPU(
@@ -246,12 +255,12 @@ int_t LUstruct_v100::dDFactPSolveGPU(int_t k, int_t offset, ddiagFactBufs_t **dF
     return 0;
 } /* dDFactPSolveGPU */
 
-
-int_t LUstruct_v100::dDFactPSolveGPU(int_t k, int_t handle_offset, int buffer_offset, ddiagFactBufs_t **dFBufs)
+template <typename Ftype>
+int_t xLUstruct_t<Ftype>::dDFactPSolveGPU(int_t k, int_t handle_offset, int buffer_offset, diagFactBufs_type<Ftype> **dFBufs)
 {
-    // this is new version with diagonal factor being performed on GPU 
+    // this is new version with diagonal factor being performed on GPU
     // different from dDiagFactorPanelSolveGPU (it performs diag factor in CPU)
-  
+
     /* Sherry: argument dFBufs[] is on CPU, not used in this routine */
 
     double t0 = SuperLU_timer_();
@@ -264,28 +273,27 @@ int_t LUstruct_v100::dDFactPSolveGPU(int_t k, int_t handle_offset, int buffer_of
     if (iam == procIJ(k, k))
     {
         lPanelVec[g2lCol(k)].diagFactorCuSolver(k,
-                        cusolverH, cuStream, 
-                        A_gpu.diagFactWork[handle_offset], A_gpu.diagFactInfo[handle_offset], // CPU pointers
-                        A_gpu.dFBufs[buffer_offset], ksupc, // CPU pointers
-                        thresh, xsup, options, stat, info);
-                                    
+                                                cusolverH, cuStream,
+                                                A_gpu.diagFactWork[handle_offset], A_gpu.diagFactInfo[handle_offset], // CPU pointers
+                                                A_gpu.dFBufs[buffer_offset], ksupc,                                   // CPU pointers
+                                                thresh, xsup, options, stat, info);
     }
 
-    //CHECK_MALLOC(iam, "after diagFactorCuSolver()");
-		 
-    //TODO: need to synchronize the cuda stream 
+    // CHECK_MALLOC(iam, "after diagFactorCuSolver()");
+
+    // TODO: need to synchronize the cuda stream
     /*======= Diagonal Broadcast ======*/
     if (myrow == krow(k))
         MPI_Bcast((void *)A_gpu.dFBufs[buffer_offset], ksupc * ksupc,
-                  MPI_DOUBLE, kcol(k), (grid->rscp).comm);
-    
-    //CHECK_MALLOC(iam, "after row Bcast");
-    
+                  get_mpi_type<Ftype>(), kcol(k), (grid->rscp).comm);
+
+    // CHECK_MALLOC(iam, "after row Bcast");
+
     if (mycol == kcol(k))
         MPI_Bcast((void *)A_gpu.dFBufs[buffer_offset], ksupc * ksupc,
-                  MPI_DOUBLE, krow(k), (grid->cscp).comm);
+                  get_mpi_type<Ftype>(), krow(k), (grid->cscp).comm);
 
-    // do the panels solver 
+    // do the panels solver
     if (myrow == krow(k))
     {
         uPanelVec[g2lRow(k)].panelSolveGPU(
@@ -307,7 +315,8 @@ int_t LUstruct_v100::dDFactPSolveGPU(int_t k, int_t handle_offset, int buffer_of
 } /* dDFactPSolveGPU */
 
 /* This performs diag factor on CPU */
-int_t LUstruct_v100::dDiagFactorPanelSolveGPU(int_t k, int_t offset, ddiagFactBufs_t **dFBufs)
+template <typename Ftype>
+int_t xLUstruct_t<Ftype>::dDiagFactorPanelSolveGPU(int_t k, int_t offset, diagFactBufs_type<Ftype> **dFBufs)
 {
     double t0 = SuperLU_timer_();
     int_t ksupc = SuperSize(k);
@@ -325,17 +334,17 @@ int_t LUstruct_v100::dDiagFactorPanelSolveGPU(int_t k, int_t offset, ddiagFactBu
     /*=======   Diagonal Broadcast          ======*/
     if (myrow == krow(k))
         MPI_Bcast((void *)dFBufs[offset]->BlockLFactor, ksupc * ksupc,
-                  MPI_DOUBLE, kcol(k), (grid->rscp).comm);
+                  get_mpi_type<Ftype>(), kcol(k), (grid->rscp).comm);
     if (mycol == kcol(k))
         MPI_Bcast((void *)dFBufs[offset]->BlockUFactor, ksupc * ksupc,
-                  MPI_DOUBLE, krow(k), (grid->cscp).comm);
+                  get_mpi_type<Ftype>(), krow(k), (grid->cscp).comm);
 
     /*=======   Panel Update                ======*/
     if (myrow == krow(k))
     {
 
         cudaMemcpy(A_gpu.dFBufs[offset], dFBufs[offset]->BlockLFactor,
-                   ksupc * ksupc * sizeof(double), cudaMemcpyHostToDevice);
+                   ksupc * ksupc * sizeof(Ftype), cudaMemcpyHostToDevice);
         uPanelVec[g2lRow(k)].panelSolveGPU(
             cubHandle, cuStream,
             ksupc, A_gpu.dFBufs[offset], ksupc);
@@ -345,7 +354,7 @@ int_t LUstruct_v100::dDiagFactorPanelSolveGPU(int_t k, int_t offset, ddiagFactBu
     if (mycol == kcol(k))
     {
         cudaMemcpy(A_gpu.dFBufs[offset], dFBufs[offset]->BlockUFactor,
-                   ksupc * ksupc * sizeof(double), cudaMemcpyHostToDevice);
+                   ksupc * ksupc * sizeof(Ftype), cudaMemcpyHostToDevice);
         lPanelVec[g2lCol(k)].panelSolveGPU(
             cubHandle, cuStream,
             ksupc, A_gpu.dFBufs[offset], ksupc);
@@ -356,7 +365,8 @@ int_t LUstruct_v100::dDiagFactorPanelSolveGPU(int_t k, int_t offset, ddiagFactBu
     return 0;
 }
 
-int_t LUstruct_v100::dPanelBcastGPU(int_t k, int_t offset)
+template <typename Ftype>
+int_t xLUstruct_t<Ftype>::dPanelBcastGPU(int_t k, int_t offset)
 {
     double t0 = SuperLU_timer_();
     /*=======   Panel Broadcast             ======*/
@@ -370,34 +380,34 @@ int_t LUstruct_v100::dPanelBcastGPU(int_t k, int_t offset)
     // }
     // if (mycol == kcol(k))
     //     k_lpanel = lPanelVec[g2lCol(k)];
-    upanel_t k_upanel = getKUpanel(k,offset);
-    lpanel_t k_lpanel = getKLpanel(k,offset);
-
+    xupanel_t<Ftype> k_upanel = getKUpanel(k, offset);
+    xlpanel_t<Ftype> k_lpanel = getKLpanel(k, offset);
 
     if (UidxSendCounts[k] > 0)
     {
         // assuming GPU direct is available
         MPI_Bcast(k_upanel.gpuPanel.index, UidxSendCounts[k], mpi_int_t, krow(k), grid3d->cscp.comm);
-        MPI_Bcast(k_upanel.gpuPanel.val, UvalSendCounts[k], MPI_DOUBLE, krow(k), grid3d->cscp.comm);
+        MPI_Bcast(k_upanel.gpuPanel.val, UvalSendCounts[k], get_mpi_type<Ftype>(), krow(k), grid3d->cscp.comm);
         // copy the index to cpu
         gpuErrchk(cudaMemcpy(k_upanel.index, k_upanel.gpuPanel.index,
-                   sizeof(int_t) * UidxSendCounts[k], cudaMemcpyDeviceToHost));
+                             sizeof(int_t) * UidxSendCounts[k], cudaMemcpyDeviceToHost));
     }
 
     if (LidxSendCounts[k] > 0)
     {
         MPI_Bcast(k_lpanel.gpuPanel.index, LidxSendCounts[k], mpi_int_t, kcol(k), grid3d->rscp.comm);
-        MPI_Bcast(k_lpanel.gpuPanel.val, LvalSendCounts[k], MPI_DOUBLE, kcol(k), grid3d->rscp.comm);
+        MPI_Bcast(k_lpanel.gpuPanel.val, LvalSendCounts[k], get_mpi_type<Ftype>(), kcol(k), grid3d->rscp.comm);
         gpuErrchk(cudaMemcpy(k_lpanel.index, k_lpanel.gpuPanel.index,
-                   sizeof(int_t) * LidxSendCounts[k], cudaMemcpyDeviceToHost));
+                             sizeof(int_t) * LidxSendCounts[k], cudaMemcpyDeviceToHost));
     }
     SCT->tPanelBcast += (SuperLU_timer_() - t0);
     return 0;
 }
 
-int_t LUstruct_v100::dsparseTreeFactorGPU(
+template <typename Ftype>
+int_t xLUstruct_t<Ftype>::dsparseTreeFactorGPU(
     sForest_t *sforest,
-    ddiagFactBufs_t **dFBufs, // size maxEtree level
+    diagFactBufs_type<Ftype> **dFBufs, // size maxEtree level
     gEtreeInfo_t *gEtreeInfo, // global etree info
 
     int tag_ub)
@@ -419,16 +429,18 @@ int_t LUstruct_v100::dsparseTreeFactorGPU(
 
 #if (DEBUGlevel >= 1)
     CHECK_MALLOC(grid3d->iam, "Enter dsparseTreeFactorGPU()");
+
+    printf("Using New code V100 with GPU acceleration\n");
+    fflush(stdout);
+    printf(". lookahead numLA %d\n", numLA);
+    fflush(stdout);
 #endif
-    printf("Using New code V100 with GPU acceleration\n"); fflush(stdout);
-    printf(". lookahead numLA %d\n", numLA); fflush(stdout);
-    
     // start the pipeline.  Sherry: need to free these 3 arrays
     int *donePanelBcast = int32Malloc_dist(nnodes);
     int *donePanelSolve = int32Malloc_dist(nnodes);
     int *localNumChildrenLeft = int32Malloc_dist(nnodes);
 
-    //TODO: not needed, remove after testing
+    // TODO: not needed, remove after testing
     for (int_t i = 0; i < nnodes; i++)
     {
         donePanelBcast[i] = 0;
@@ -450,93 +462,94 @@ int_t LUstruct_v100::dsparseTreeFactorGPU(
     int_t k_st = eTreeTopLims[topoLvl];
     int_t k_end = eTreeTopLims[topoLvl + 1];
 
-    //TODO: make this asynchronous 
+    // TODO: make this asynchronous
     for (int_t k0 = k_st; k0 < k_end; k0++)
     {
         int_t k = perm_c_supno[k0];
-		int_t offset = 0;
+        int_t offset = 0;
         // dDiagFactorPanelSolveGPU(k, offset, dFBufs);
         dDFactPSolveGPU(k, offset, dFBufs);
-		donePanelSolve[k0]=1;
+        donePanelSolve[k0] = 1;
     }
 
-    //TODO: its really the panels that needs to be doubled
-    // everything else can remain as it is
-    int_t winSize =  SUPERLU_MIN(numLA/2, eTreeTopLims[1]);
-    
-    printf(". lookahead winSize %d\n", winSize); fflush(stdout);
-    
+    // TODO: its really the panels that needs to be doubled
+    //  everything else can remain as it is
+    int_t winSize = SUPERLU_MIN(numLA / 2, eTreeTopLims[1]);
+
+    // printf(". lookahead winSize %d\n", winSize);
+    printf(". lookahead winSize %" PRIdMAX "\n", static_cast<intmax_t>(winSize));
+    fflush(stdout);
+
     for (int k0 = k_st; k0 < winSize; ++k0)
     {
         int_t k = perm_c_supno[k0];
-        int_t offset = k0%numLA;
-        if(!donePanelBcast[k0])
+        int_t offset = k0 % numLA;
+        if (!donePanelBcast[k0])
         {
             dPanelBcastGPU(k, offset);
-            donePanelBcast[k0] =1;
+            donePanelBcast[k0] = 1;
         }
-    }/*for (int k0 = k_st; k0 < SUPERLU_MIN(k_end, k_st + numLA); ++k0)*/
+    } /*for (int k0 = k_st; k0 < SUPERLU_MIN(k_end, k_st + numLA); ++k0)*/
 
-    int_t k1 =0;
-    int_t winParity=0;
-    int_t halfWin = numLA/2;
-    while(k1<nnodes)
+    int_t k1 = 0;
+    int_t winParity = 0;
+    int_t halfWin = numLA / 2;
+    while (k1 < nnodes)
     {
-        for (int_t k0 = k1; k0 < SUPERLU_MIN(nnodes, k1+winSize); ++k0)
-        { 
-			int_t k = perm_c_supno[k0];
-            int_t offset = getBufferOffset(k0, k1, winSize, winParity, halfWin);
-            upanel_t k_upanel = getKUpanel(k,offset);
-            lpanel_t k_lpanel = getKLpanel(k,offset);
-            int_t k_parent = gEtreeInfo->setree[k];
-            /* L o o k   A h e a d   P a n e l   U p d a t e */
-            if(UidxSendCounts[k]>0 && LidxSendCounts[k]>0)
-                lookAheadUpdateGPU(offset, k,k_parent, k_lpanel,k_upanel);
-        }
-
-        for (int_t k0 = k1; k0 < SUPERLU_MIN(nnodes, k1+winSize); ++k0)
+        for (int_t k0 = k1; k0 < SUPERLU_MIN(nnodes, k1 + winSize); ++k0)
         {
             int_t k = perm_c_supno[k0];
+            int_t offset = getBufferOffset(k0, k1, winSize, winParity, halfWin);
+            xupanel_t<Ftype> k_upanel = getKUpanel(k, offset);
+            xlpanel_t<Ftype> k_lpanel = getKLpanel(k, offset);
+            int_t k_parent = gEtreeInfo->setree[k];
+            /* L o o k   A h e a d   P a n e l   U p d a t e */
+            if (UidxSendCounts[k] > 0 && LidxSendCounts[k] > 0)
+                lookAheadUpdateGPU(offset, k, k_parent, k_lpanel, k_upanel);
+        }
+
+        for (int_t k0 = k1; k0 < SUPERLU_MIN(nnodes, k1 + winSize); ++k0)
+        {
+            // int_t k = perm_c_supno[k0];
             int_t offset = getBufferOffset(k0, k1, winSize, winParity, halfWin);
             SyncLookAheadUpdate(offset);
         }
-		
-        for (int_t k0 = k1; k0 < SUPERLU_MIN(nnodes, k1+winSize); ++k0)
+
+        for (int_t k0 = k1; k0 < SUPERLU_MIN(nnodes, k1 + winSize); ++k0)
         {
             int_t k = perm_c_supno[k0];
             int_t offset = getBufferOffset(k0, k1, winSize, winParity, halfWin);
-            upanel_t k_upanel = getKUpanel(k,offset);
-            lpanel_t k_lpanel = getKLpanel(k,offset);
+            xupanel_t<Ftype> k_upanel = getKUpanel(k, offset);
+            xlpanel_t<Ftype> k_lpanel = getKLpanel(k, offset);
             int_t k_parent = gEtreeInfo->setree[k];
             /* Look Ahead Panel Solve */
-            if(k_parent < nsupers)
+            if (k_parent < nsupers)
             {
-                int_t k0_parent =  myIperm[k_parent];
-                if (k0_parent > 0 && k0_parent<nnodes)
+                int_t k0_parent = myIperm[k_parent];
+                if (k0_parent > 0 && k0_parent < nnodes)
                 {
                     localNumChildrenLeft[k0_parent]--;
                     if (topoLvl < maxTopoLevel - 1 && !localNumChildrenLeft[k0_parent])
                     {
 #if (PRNTlevel >= 2)
-						printf("parent %d of node %d during second phase\n", k0_parent, k0);
+                        printf("parent %d of node %d during second phase\n", k0_parent, k0);
 #endif
-                        int_t dOffset = 0;  // this is wrong 
+                        int_t dOffset = 0; // this is wrong
                         // dDiagFactorPanelSolveGPU(k_parent, dOffset,dFBufs);
-                        dDFactPSolveGPU(k_parent, dOffset,dFBufs);
-                        donePanelSolve[k0_parent]=1;
+                        dDFactPSolveGPU(k_parent, dOffset, dFBufs);
+                        donePanelSolve[k0_parent] = 1;
                     }
                 }
             }
 
             /*proceed with remaining SchurComplement update */
-            if(UidxSendCounts[k]>0 && LidxSendCounts[k]>0)
-                    dSchurCompUpdateExcludeOneGPU(offset, k,k_parent, k_lpanel,k_upanel);
-
+            if (UidxSendCounts[k] > 0 && LidxSendCounts[k] > 0)
+                dSchurCompUpdateExcludeOneGPU(offset, k, k_parent, k_lpanel, k_upanel);
         }
 
-        int_t k1_next = k1+winSize;
+        int_t k1_next = k1 + winSize;
         int_t oldWinSize = winSize;
-        for (int_t k0_next = k1_next; k0_next < SUPERLU_MIN(nnodes, k1_next+winSize); ++k0_next)
+        for (int_t k0_next = k1_next; k0_next < SUPERLU_MIN(nnodes, k1_next + winSize); ++k0_next)
         {
             int k_next = perm_c_supno[k0_next];
             if (!localNumChildrenLeft[k0_next])
@@ -545,9 +558,9 @@ int_t LUstruct_v100::dsparseTreeFactorGPU(
                 // if(!(winParity%2))
                 //     offset_next += halfWin;
 
-                int_t offset_next = getBufferOffset(k0_next, k1_next, winSize, winParity+1, halfWin);
+                int_t offset_next = getBufferOffset(k0_next, k1_next, winSize, winParity + 1, halfWin);
                 dPanelBcastGPU(k_next, offset_next);
-                donePanelBcast[k0_next] =1;
+                donePanelBcast[k0_next] = 1;
                 // printf("Trying  %d on offset %d\n", k0_next, offset_next);
             }
             else
@@ -557,7 +570,7 @@ int_t LUstruct_v100::dsparseTreeFactorGPU(
             }
         }
 
-        for (int_t k0 = k1; k0 < SUPERLU_MIN(nnodes, k1+oldWinSize); ++k0)
+        for (int_t k0 = k1; k0 < SUPERLU_MIN(nnodes, k1 + oldWinSize); ++k0)
         {
             int_t k = perm_c_supno[k0];
             // int_t offset = (k0-k1)%oldWinSize;
@@ -565,11 +578,11 @@ int_t LUstruct_v100::dsparseTreeFactorGPU(
             //     offset+= halfWin;
             int_t offset = getBufferOffset(k0, k1, oldWinSize, winParity, halfWin);
             // printf("Syncing stream %d on offset %d\n", k0, offset);
-            if(UidxSendCounts[k]>0 && LidxSendCounts[k]>0)
+            if (UidxSendCounts[k] > 0 && LidxSendCounts[k] > 0)
                 gpuErrchk(cudaStreamSynchronize(A_gpu.cuStreams[offset]));
         }
 
-        k1=k1_next;
+        k1 = k1_next;
         winParity++;
     }
 
@@ -609,7 +622,6 @@ int_t LUstruct_v100::dsparseTreeFactorGPU(
             {
                 int streamId = 0;
 
-
 #if 0
 
                 dSchurComplementUpdateGPU(
@@ -632,12 +644,11 @@ int_t LUstruct_v100::dsparseTreeFactorGPU(
 
 #endif /* match  #if 0 at line 562 before "for (int_t topoLvl = 0; topoLvl < maxTopoLevel; ++topoLvl)" */
 
-
     /* Sherry added 2/1/23 */
     SUPERLU_FREE(donePanelBcast);
     SUPERLU_FREE(donePanelSolve);
     SUPERLU_FREE(localNumChildrenLeft);
-    
+
 #if (DEBUGlevel >= 1)
     CHECK_MALLOC(grid3d->iam, "Exit dsparseTreeFactorGPU()");
 #endif
@@ -645,73 +656,73 @@ int_t LUstruct_v100::dsparseTreeFactorGPU(
     return 0;
 } /* dsparseTreeFactorGPU */
 
-void LUstruct_v100::marshallBatchedBufferCopyData(int k_st, int k_end, int_t *perm_c_supno)
+template <typename Ftype>
+void xLUstruct_t<Ftype>::marshallBatchedBufferCopyData(int k_st, int k_end, int_t *perm_c_supno)
 {
-    // First gather up all the pointer and meta data on the host 
-    LUMarshallData& mdata = A_gpu.marshall_data;
-    double **panel_ptrs = mdata.host_panel_ptrs.data();
+    // First gather up all the pointer and meta data on the host
+    LUMarshallData &mdata = A_gpu.marshall_data;
+    Ftype **panel_ptrs = mdata.host_panel_ptrs.data();
     int *panel_ld_batch = mdata.host_panel_ld_array.data();
     int *panel_dim_batch = mdata.host_panel_dim_array.data();
-    double **diag_ptrs = mdata.host_diag_ptrs.data();
+    Ftype **diag_ptrs = mdata.host_diag_ptrs.data();
     int *diag_ld_batch = mdata.host_diag_ld_array.data();
     int *diag_dim_batch = mdata.host_diag_dim_array.data();
- 
+
     mdata.batchsize = 0;
 
     for (int_t k0 = k_st; k0 < k_end; k0++)
     {
         int_t k = perm_c_supno[k0];
         int_t buffer_offset = k0 - k_st;
-		int ksupc = SuperSize(k);
+        int ksupc = SuperSize(k);
 
-		if (iam == procIJ(k, k))
-		{			
+        if (iam == procIJ(k, k))
+        {
             lpanel_t &lpanel = lPanelVec[g2lCol(k)];
- 
+
             assert(mdata.batchsize < mdata.host_diag_ptrs.size());
 
             panel_ptrs[mdata.batchsize] = lpanel.blkPtrGPU(0);
             panel_ld_batch[mdata.batchsize] = lpanel.LDA();
             panel_dim_batch[mdata.batchsize] = ksupc;
-            
+
             diag_ptrs[mdata.batchsize] = A_gpu.dFBufs[buffer_offset];
             diag_ld_batch[mdata.batchsize] = ksupc;
             diag_dim_batch[mdata.batchsize] = ksupc;
 
             mdata.batchsize++;
-
-		}     
+        }
     }
 
     mdata.setMaxDiag();
     mdata.setMaxPanel();
-    
-    // Then copy the marshalled data over to the GPU 
-    gpuErrchk(cudaMemcpy(mdata.dev_diag_ptrs, diag_ptrs, mdata.batchsize * sizeof(double*), cudaMemcpyHostToDevice));
+
+    // Then copy the marshalled data over to the GPU
+    gpuErrchk(cudaMemcpy(mdata.dev_diag_ptrs, diag_ptrs, mdata.batchsize * sizeof(Ftype *), cudaMemcpyHostToDevice));
     gpuErrchk(cudaMemcpy(mdata.dev_diag_ld_array, diag_ld_batch, mdata.batchsize * sizeof(int), cudaMemcpyHostToDevice));
     gpuErrchk(cudaMemcpy(mdata.dev_diag_dim_array, diag_dim_batch, mdata.batchsize * sizeof(int), cudaMemcpyHostToDevice));
-    gpuErrchk(cudaMemcpy(mdata.dev_panel_ptrs, panel_ptrs, mdata.batchsize * sizeof(double*), cudaMemcpyHostToDevice));
+    gpuErrchk(cudaMemcpy(mdata.dev_panel_ptrs, panel_ptrs, mdata.batchsize * sizeof(Ftype *), cudaMemcpyHostToDevice));
     gpuErrchk(cudaMemcpy(mdata.dev_panel_ld_array, panel_ld_batch, mdata.batchsize * sizeof(int), cudaMemcpyHostToDevice));
     gpuErrchk(cudaMemcpy(mdata.dev_panel_dim_array, panel_dim_batch, mdata.batchsize * sizeof(int), cudaMemcpyHostToDevice));
 }
 
-void LUstruct_v100::dFactBatchSolve(int k_st, int k_end, int_t *perm_c_supno)
+template <typename Ftype>
+void xLUstruct_t<Ftype>::dFactBatchSolve(int k_st, int k_end, int_t *perm_c_supno)
 {
 #ifdef HAVE_MAGMA
-    // Marshall the data for the leaf level batched LU decomposition   
-    LUMarshallData& mdata = A_gpu.marshall_data;
+    // Marshall the data for the leaf level batched LU decomposition
+    LUMarshallData &mdata = A_gpu.marshall_data;
     cudaStream_t stream = A_gpu.cuStreams[0];
     marshallBatchedLUData(k_st, k_end, perm_c_supno);
-    
-    int info = magma_dgetrf_vbatched(
-        mdata.dev_diag_dim_array, mdata.dev_diag_dim_array, 
-        mdata.dev_diag_ptrs, mdata.dev_diag_ld_array, 
-        NULL, mdata.dev_info_array, mdata.batchsize, 
-        A_gpu.magma_queue
-    );
 
-    // Hackathon change: assuming individual matrices in a local batch are not distributed 
-    // so we don't do the buffer copies anymore 
+    int info = magma_dgetrf_vbatched(
+        mdata.dev_diag_dim_array, mdata.dev_diag_dim_array,
+        mdata.dev_diag_ptrs, mdata.dev_diag_ld_array,
+        NULL, mdata.dev_info_array, mdata.batchsize,
+        A_gpu.magma_queue);
+
+    // Hackathon change: assuming individual matrices in a local batch are not distributed
+    // so we don't do the buffer copies anymore
     // // Copy the diagonal block data over to the bcast buffers
     // marshallBatchedBufferCopyData(k_st, k_end, perm_c_supno);
 
@@ -720,31 +731,29 @@ void LUstruct_v100::dFactBatchSolve(int k_st, int k_end, int_t *perm_c_supno)
     //     mdata.dev_diag_ptrs, mdata.dev_diag_ld_array, mdata.dev_panel_ptrs, mdata.dev_panel_ld_array,
     //     mdata.batchsize
     // );
-    
+
     // Upper panel triangular solves
     marshallBatchedTRSMUData(k_st, k_end, perm_c_supno);
 
     magmablas_dtrsm_vbatched(
-        MagmaLeft, MagmaLower, MagmaNoTrans, MagmaUnit, 
-        mdata.dev_diag_dim_array, mdata.dev_panel_dim_array, 1.0, 
-        mdata.dev_diag_ptrs, mdata.dev_diag_ld_array, 
-        mdata.dev_panel_ptrs, mdata.dev_panel_ld_array, 
-        mdata.batchsize, A_gpu.magma_queue
-    );
+        MagmaLeft, MagmaLower, MagmaNoTrans, MagmaUnit,
+        mdata.dev_diag_dim_array, mdata.dev_panel_dim_array, 1.0,
+        mdata.dev_diag_ptrs, mdata.dev_diag_ld_array,
+        mdata.dev_panel_ptrs, mdata.dev_panel_ld_array,
+        mdata.batchsize, A_gpu.magma_queue);
 
     // Lower panel triangular solves
     marshallBatchedTRSMLData(k_st, k_end, perm_c_supno);
 
     magmablas_dtrsm_vbatched(
-        MagmaRight, MagmaUpper, MagmaNoTrans, MagmaNonUnit, 
-        mdata.dev_panel_dim_array, mdata.dev_diag_dim_array, 1.0, 
-        mdata.dev_diag_ptrs, mdata.dev_diag_ld_array, 
-        mdata.dev_panel_ptrs, mdata.dev_panel_ld_array, 
-        mdata.batchsize, A_gpu.magma_queue
-    );
+        MagmaRight, MagmaUpper, MagmaNoTrans, MagmaNonUnit,
+        mdata.dev_panel_dim_array, mdata.dev_diag_dim_array, 1.0,
+        mdata.dev_diag_ptrs, mdata.dev_diag_ld_array,
+        mdata.dev_panel_ptrs, mdata.dev_panel_ld_array,
+        mdata.batchsize, A_gpu.magma_queue);
 
-    // Wajih: This should be converted to a single bcast if possible 
-    // Hackathon change: assuming individual matrices in a local batch are not distributed 
+    // Wajih: This should be converted to a single bcast if possible
+    // Hackathon change: assuming individual matrices in a local batch are not distributed
     // for (int k0 = k_st; k0 < k_end; k0++)
     // {
     //     int k = perm_c_supno[k0];
@@ -753,36 +762,34 @@ void LUstruct_v100::dFactBatchSolve(int k_st, int k_end, int_t *perm_c_supno)
     //     dPanelBcastGPU(k, offset);
     // }
 
-    // Initialize the schur complement update marshall data 
+    // Initialize the schur complement update marshall data
     initSCUMarshallData(k_st, k_end, perm_c_supno);
-    SCUMarshallData& sc_mdata = A_gpu.sc_marshall_data;
+    xSCUMarshallData &sc_mdata = A_gpu.sc_marshall_data;
 
-    // Keep marshalling while there are batches to be processed 
+    // Keep marshalling while there are batches to be processed
     int done_i = 0;
     int total_batches = 0;
-    while(done_i == 0)
+    while (done_i == 0)
     {
         done_i = marshallSCUBatchedDataOuter(k_st, k_end, perm_c_supno);
         int done_j = 0;
-        while(done_i == 0 && done_j == 0)
+        while (done_i == 0 && done_j == 0)
         {
             done_j = marshallSCUBatchedDataInner(k_st, k_end, perm_c_supno);
-            if(done_j != 1)
+            if (done_j != 1)
             {
                 total_batches++;
-                magmablas_dgemm_vbatched_max_nocheck (
+                magmablas_dgemm_vbatched_max_nocheck(
                     MagmaNoTrans, MagmaNoTrans, sc_mdata.dev_m_array, sc_mdata.dev_n_array, sc_mdata.dev_k_array,
                     1.0, sc_mdata.dev_A_ptrs, sc_mdata.dev_lda_array, sc_mdata.dev_B_ptrs, sc_mdata.dev_ldb_array,
                     0.0, sc_mdata.dev_C_ptrs, sc_mdata.dev_ldc_array, sc_mdata.batchsize,
-                    sc_mdata.max_m, sc_mdata.max_n, sc_mdata.max_k, A_gpu.magma_queue 
-                );
+                    sc_mdata.max_m, sc_mdata.max_n, sc_mdata.max_k, A_gpu.magma_queue);
 
                 scatterGPU_batchDriver(
-                    sc_mdata.dev_ist, sc_mdata.dev_iend, sc_mdata.dev_jst, sc_mdata.dev_jend, 
-                    sc_mdata.max_ilen, sc_mdata.max_jlen, sc_mdata.dev_C_ptrs, sc_mdata.dev_ldc_array, 
-                    A_gpu.maxSuperSize, ldt, sc_mdata.dev_gpu_lpanels, sc_mdata.dev_gpu_upanels, 
-                    dA_gpu, sc_mdata.batchsize, A_gpu.cuStreams[0]
-                );
+                    sc_mdata.dev_ist, sc_mdata.dev_iend, sc_mdata.dev_jst, sc_mdata.dev_jend,
+                    sc_mdata.max_ilen, sc_mdata.max_jlen, sc_mdata.dev_C_ptrs, sc_mdata.dev_ldc_array,
+                    A_gpu.maxSuperSize, ldt, sc_mdata.dev_gpu_lpanels, sc_mdata.dev_gpu_upanels,
+                    dA_gpu, sc_mdata.batchsize, A_gpu.cuStreams[0]);
             }
         }
     }
@@ -790,9 +797,10 @@ void LUstruct_v100::dFactBatchSolve(int k_st, int k_end, int_t *perm_c_supno)
 #endif
 }
 
-int LUstruct_v100::dsparseTreeFactorBatchGPU(
+template <typename Ftype>
+int xLUstruct_t<Ftype>::dsparseTreeFactorBatchGPU(
     sForest_t *sforest,
-    ddiagFactBufs_t **dFBufs, // size maxEtree level
+    diagFactBufs_type<Ftype> **dFBufs, // size maxEtree level
     gEtreeInfo_t *gEtreeInfo, // global etree info
     int tag_ub)
 {
@@ -810,17 +818,18 @@ int LUstruct_v100::dsparseTreeFactorBatchGPU(
     int_t maxTopoLevel = treeTopoInfo->numLvl;
     int_t *eTreeTopLims = treeTopoInfo->eTreeTopLims;
 
-
 #if (DEBUGlevel >= 1)
     CHECK_MALLOC(grid3d->iam, "Enter dsparseTreeFactorBatchGPU()");
 #endif
-    printf("Using level-based scheduling on GPU\n"); fflush(stdout);
+    printf("Using level-based scheduling on GPU\n");
+    fflush(stdout);
 
     /* For all the leaves at level 0 */
     topoLvl = 0;
     k_st = eTreeTopLims[topoLvl];
     k_end = eTreeTopLims[topoLvl + 1];
-    printf("level %d: k_st %d, k_end %d\n", topoLvl, k_st, k_end); fflush(stdout);
+    printf("level %d: k_st %d, k_end %d\n", topoLvl, k_st, k_end);
+    fflush(stdout);
 
 #if 0
     //ToDo: make this batched 
@@ -883,7 +892,7 @@ int LUstruct_v100::dsparseTreeFactorBatchGPU(
                 dSchurComplementUpdateGPU(streamId,
 					  k, k_lpanel, k_upanel);
 // cudaStreamSynchronize(cuStream); // there is sync inside the kernel
-#if 0 // Sherry commented out 7/4/23  
+#if 0 // Sherry commented out 7/4/23
 #ifndef NDEBUG
                 dSchurComplementUpdate(k, k_lpanel, k_upanel);   // ?? why do this on CPU ?
                 cudaStreamSynchronize(cuStream);
@@ -898,13 +907,14 @@ int LUstruct_v100::dsparseTreeFactorBatchGPU(
     printf("Using batched code\n");
     double t0 = SuperLU_timer_();
 
-    // Copy the nodelist to the GPU 
+    // Copy the nodelist to the GPU
     gpuErrchk(cudaMemcpy(A_gpu.dperm_c_supno, perm_c_supno, sizeof(int) * sforest->nNodes, cudaMemcpyHostToDevice));
 
-    // Solve level by level 
+    // Solve level by level
     dFactBatchSolve(k_st, k_end, perm_c_supno);
-    for (topoLvl = 1; topoLvl < maxTopoLevel; ++topoLvl) {
-      
+    for (topoLvl = 1; topoLvl < maxTopoLevel; ++topoLvl)
+    {
+
         k_st = eTreeTopLims[topoLvl];
         k_end = eTreeTopLims[topoLvl + 1];
         dFactBatchSolve(k_st, k_end, perm_c_supno);
@@ -915,22 +925,22 @@ int LUstruct_v100::dsparseTreeFactorBatchGPU(
 #if (DEBUGlevel >= 1)
     CHECK_MALLOC(grid3d->iam, "Exit dsparseTreeFactorBatchGPU()");
 #endif
-    
+
 #else
     printf("MAGMA is required for batched execution!\n");
     fflush(stdout);
     exit(0);
-    
+
 #endif /* match ifdef have_magma */
-    
+
     return 0;
 } /* end dsparseTreeFactorBatchGPU */
 
-
-//TODO: needs to be merged as a single factorization function
-int_t LUstruct_v100::dsparseTreeFactorGPUBaseline(
+// TODO: needs to be merged as a single factorization function
+template <typename Ftype>
+int_t xLUstruct_t<Ftype>::dsparseTreeFactorGPUBaseline(
     sForest_t *sforest,
-    ddiagFactBufs_t **dFBufs, // size maxEtree level
+    diagFactBufs_type<Ftype> **dFBufs, // size maxEtree level
     gEtreeInfo_t *gEtreeInfo, // global etree info
 
     int tag_ub)
@@ -972,7 +982,7 @@ int_t LUstruct_v100::dsparseTreeFactorGPUBaseline(
             /*=======   Diagonal Factorization      ======*/
             if (iam == procIJ(k, k))
             {
-//#define NDEBUG
+// #define NDEBUG
 #ifndef NDEBUG
                 lPanelVec[g2lCol(k)].checkGPU();
                 lPanelVec[g2lCol(k)].diagFactor(k, dFBufs[offset]->BlockUFactor, ksupc,
@@ -993,10 +1003,10 @@ int_t LUstruct_v100::dsparseTreeFactorGPUBaseline(
             /*=======   Diagonal Broadcast          ======*/
             if (myrow == krow(k))
                 MPI_Bcast((void *)dFBufs[offset]->BlockLFactor, ksupc * ksupc,
-                          MPI_DOUBLE, kcol(k), (grid->rscp).comm);
+                          get_mpi_type<Ftype>(), kcol(k), (grid->rscp).comm);
             if (mycol == kcol(k))
                 MPI_Bcast((void *)dFBufs[offset]->BlockUFactor, ksupc * ksupc,
-                          MPI_DOUBLE, krow(k), (grid->cscp).comm);
+                          get_mpi_type<Ftype>(), krow(k), (grid->cscp).comm);
 
             /*=======   Panel Update                ======*/
             if (myrow == krow(k))
@@ -1005,7 +1015,7 @@ int_t LUstruct_v100::dsparseTreeFactorGPUBaseline(
                 uPanelVec[g2lRow(k)].checkGPU();
 #endif
                 cudaMemcpy(A_gpu.dFBufs[0], dFBufs[offset]->BlockLFactor,
-                           ksupc * ksupc * sizeof(double), cudaMemcpyHostToDevice);
+                           ksupc * ksupc * sizeof(Ftype), cudaMemcpyHostToDevice);
                 uPanelVec[g2lRow(k)].panelSolveGPU(
                     cubHandle, cuStream,
                     ksupc, A_gpu.dFBufs[0], ksupc);
@@ -1020,7 +1030,7 @@ int_t LUstruct_v100::dsparseTreeFactorGPUBaseline(
             if (mycol == kcol(k))
             {
                 cudaMemcpy(A_gpu.dFBufs[0], dFBufs[offset]->BlockUFactor,
-                           ksupc * ksupc * sizeof(double), cudaMemcpyHostToDevice);
+                           ksupc * ksupc * sizeof(Ftype), cudaMemcpyHostToDevice);
                 lPanelVec[g2lCol(k)].panelSolveGPU(
                     cubHandle, cuStream,
                     ksupc, A_gpu.dFBufs[0], ksupc);
@@ -1048,27 +1058,27 @@ int_t LUstruct_v100::dsparseTreeFactorGPUBaseline(
             {
                 // assuming GPU direct is available
                 MPI_Bcast(k_upanel.gpuPanel.index, UidxSendCounts[k], mpi_int_t, krow(k), grid3d->cscp.comm);
-                MPI_Bcast(k_upanel.gpuPanel.val, UvalSendCounts[k], MPI_DOUBLE, krow(k), grid3d->cscp.comm);
+                MPI_Bcast(k_upanel.gpuPanel.val, UvalSendCounts[k], get_mpi_type<Ftype>(), krow(k), grid3d->cscp.comm);
                 // copy the index to cpu
                 cudaMemcpy(k_upanel.index, k_upanel.gpuPanel.index,
                            sizeof(int_t) * UidxSendCounts[k], cudaMemcpyDeviceToHost);
 
 #ifndef NDEBUG
                 MPI_Bcast(k_upanel.index, UidxSendCounts[k], mpi_int_t, krow(k), grid3d->cscp.comm);
-                MPI_Bcast(k_upanel.val, UvalSendCounts[k], MPI_DOUBLE, krow(k), grid3d->cscp.comm);
+                MPI_Bcast(k_upanel.val, UvalSendCounts[k], get_mpi_type<Ftype>(), krow(k), grid3d->cscp.comm);
 #endif
             }
 
             if (LidxSendCounts[k] > 0)
             {
                 MPI_Bcast(k_lpanel.gpuPanel.index, LidxSendCounts[k], mpi_int_t, kcol(k), grid3d->rscp.comm);
-                MPI_Bcast(k_lpanel.gpuPanel.val, LvalSendCounts[k], MPI_DOUBLE, kcol(k), grid3d->rscp.comm);
+                MPI_Bcast(k_lpanel.gpuPanel.val, LvalSendCounts[k], get_mpi_type<Ftype>(), kcol(k), grid3d->rscp.comm);
                 cudaMemcpy(k_lpanel.index, k_lpanel.gpuPanel.index,
                            sizeof(int_t) * LidxSendCounts[k], cudaMemcpyDeviceToHost);
 
 #ifndef NDEBUG
                 MPI_Bcast(k_lpanel.index, LidxSendCounts[k], mpi_int_t, kcol(k), grid3d->rscp.comm);
-                MPI_Bcast(k_lpanel.val, LvalSendCounts[k], MPI_DOUBLE, kcol(k), grid3d->rscp.comm);
+                MPI_Bcast(k_lpanel.val, LvalSendCounts[k], get_mpi_type<Ftype>(), kcol(k), grid3d->rscp.comm);
 #endif
             }
 
