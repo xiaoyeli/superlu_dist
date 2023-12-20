@@ -1,5 +1,6 @@
 #pragma once
 #include <cstdio>
+#include <cinttypes>
 #include "superlu_ddefs.h"
 #include "lupanels.hpp"
 #ifdef HAVE_CUDA
@@ -475,7 +476,8 @@ int_t xLUstruct_t<Ftype>::dsparseTreeFactorGPU(
     //  everything else can remain as it is
     int_t winSize = SUPERLU_MIN(numLA / 2, eTreeTopLims[1]);
 
-    printf(". lookahead winSize %d\n", winSize);
+    // printf(". lookahead winSize %d\n", winSize);
+    printf(". lookahead winSize %" PRIdMAX "\n", static_cast<intmax_t>(winSize));
     fflush(stdout);
 
     for (int k0 = k_st; k0 < winSize; ++k0)

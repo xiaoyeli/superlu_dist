@@ -466,7 +466,8 @@ struct xLUstruct_t
         delete[] uPanelVec;
 
         /* free diagonal L and U blocks */
-        dfreeDiagFactBufsArr(maxLeafNodes, dFBufs);
+        // dfreeDiagFactBufsArr(maxLeafNodes, dFBufs);
+        freeDiagFactBufsArr(numDiagBufs, dFBufs);
 
         SUPERLU_FREE(bigV);
         SUPERLU_FREE(indirect);
@@ -651,6 +652,8 @@ struct xLUstruct_t
 
     xlpanelGPU_t<Ftype> *copyLpanelsToGPU();
     xupanelGPU_t<Ftype> *copyUpanelsToGPU();
+
+    int freeDiagFactBufsArr(int_t num_bufs, diagFactBufs_type<Ftype>** dFBufs);
 
     // to perform diagFactOn GPU
     int_t dDFactPSolveGPU(int_t k, int_t offset, diagFactBufs_type<Ftype>** dFBufs);
