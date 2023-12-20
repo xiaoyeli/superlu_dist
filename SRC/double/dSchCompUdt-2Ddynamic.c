@@ -16,7 +16,7 @@ at the top-level directory.
  *        Uses 2D partitioning for the scatter phase.
  *
  * <pre>
- * -- Distributed SuperLU routine (version 5.4) --
+ * -- Distributed SuperLU routine (version 9.0) --
  * Lawrence Berkeley National Lab, Univ. of California Berkeley.
  * October 1, 2014
  *
@@ -404,9 +404,9 @@ if ( msg0 && msg2 ) { /* L(:,k) and U(k,:) are not empty. */
 #ifdef _OPENMP
 #pragma omp parallel default (shared) private(thread_id)
 	 {
-#ifdef _OPENMP	 
+#ifdef _OPENMP
 	   thread_id = omp_get_thread_num();
-#else	   
+#else
 	   thread_id = 0;
 #endif
 
@@ -601,9 +601,9 @@ if ( msg0 && msg2 ) { /* L(:,k) and U(k,:) are not empty. */
 #ifdef _OPENMP
 #pragma omp parallel default(shared) private(thread_id)
 	{
-#ifdef _OPENMP	
+#ifdef _OPENMP
 	    thread_id = omp_get_thread_num();
-#else	    
+#else
 	    thread_id = 0;
 #endif
 

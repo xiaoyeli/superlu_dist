@@ -12,6 +12,7 @@ set(headers
     include/superlu_upacked.h
     include/superlu_dist_config.h
     include/superlu_FortranCInterface.h
+    include/oneside.h
     TRF3dV100/lupanels.hpp
     TRF3dV100/commWrapper.hpp
     TRF3dV100/lupanels_GPU.cuh
@@ -94,7 +95,7 @@ set_source_files_properties(superlu_timer.c PROPERTIES COMPILE_FLAGS -O0)
 
 if(enable_double)
   list(APPEND headers
-  include/superlu_ddefs.h include/dlustruct_gpu.h include/oneside.h)
+  include/superlu_ddefs.h include/dlustruct_gpu.h)
 
 if(TPL_ENABLE_CUDALIB)
   list(APPEND sources cuda/pdgstrs_lsum_cuda.cu)
@@ -148,6 +149,7 @@ endif()
     double/pdgsmv_AXglobal.c
     double/pdGetDiagU.c
     double/pdgssvx3d.c     ## 3D code
+    double/dssvx3dAux.c    
     double/dnrformat_loc3d.c 
     double/pdgstrf3d.c 
     double/dtreeFactorization.c
@@ -216,10 +218,14 @@ if(enable_single)
     single/pssymbfact_distdata.c
     single/sdistribute.c
     single/psdistribute.c
+    single/psdistribute3d.c
+    single/s3DPartition.c
+    single/psdistribute-aux3d.c
     single/psgstrf.c
     single/sstatic_schedule.c
     single/psgstrf2.c
     single/psgstrs.c
+    single/psgstrs3d.c
     single/psgstrs1.c
     single/psgstrs_lsum.c
     single/psgstrs_Bglobal.c
@@ -230,6 +236,7 @@ if(enable_single)
     single/psgsmv_AXglobal.c
     single/psGetDiagU.c
     single/psgssvx3d.c     ## 3D code
+    single/sssvx3dAux.c  
     single/snrformat_loc3d.c 
     single/psgstrf3d.c 
     single/streeFactorization.c
@@ -247,7 +254,7 @@ if(enable_single)
     single/psgsequb.c
   )
 if (TPL_ENABLE_CUDALIB)
-  list(APPEND sources cuda/ssuperlu_gpu.cu)
+    list(APPEND sources cuda/psgstrs_lsum_cuda.cu cuda/ssuperlu_gpu.cu)
 endif()
 if (HAVE_COMBBLAS)
    if (enable_double)
@@ -264,59 +271,64 @@ if(enable_complex16)
   list(APPEND headers
        include/superlu_zdefs.h include/zlustruct_gpu.h)
 
-  list(APPEND sources
-    complex16/dcomplex_dist.c
-    complex16/zlangs_dist.c
-    complex16/zgsequ_dist.c
-    complex16/zlaqgs_dist.c
-    complex16/zutil_dist.c
-    complex16/zmemory_dist.c
-    complex16/zmyblas2_dist.c
-    complex16/zsp_blas2_dist.c
-    complex16/zsp_blas3_dist.c
-    complex16/pzgssvx.c
-    complex16/pzgssvx_ABglobal.c
-    complex16/zreadhb.c
-    complex16/zreadrb.c
-    complex16/zreadtriple.c
-    complex16/zreadtriple_noheader.c
-    complex16/zbinary_io.c	
-    complex16/zreadMM.c
-    complex16/pzgsequ.c
-    complex16/pzlaqgs.c
-    complex16/zldperm_dist.c
-    complex16/pzlangs.c
-    complex16/pzutil.c
-    complex16/pzsymbfact_distdata.c
-    complex16/zdistribute.c
-    complex16/pzdistribute.c
-    complex16/pzgstrf.c
-    complex16/zstatic_schedule.c
-    complex16/pzgstrf2.c
-    complex16/pzgstrs.c
-    complex16/pzgstrs1.c
-    complex16/pzgstrs_lsum.c
-    complex16/pzgstrs_Bglobal.c
-    complex16/pzgsrfs.c
-    complex16/pzgsmv.c
-    complex16/pzgsrfs_ABXglobal.c
-    complex16/pzgsmv_AXglobal.c
-    complex16/pzGetDiagU.c
-    complex16/pzgssvx3d.c   ## 3D code
-    complex16/znrformat_loc3d.c 
-    complex16/pzgstrf3d.c
-    complex16/ztreeFactorization.c 
-    complex16/ztreeFactorizationGPU.c 
-    complex16/zscatter3d.c
-    complex16/zgather.c 
-    complex16/pz3dcomm.c
-    complex16/ztrfAux.c
-    complex16/zcommunication_aux.c
-    complex16/ztrfCommWrapper.c
-    complex16/zsuperlu_blas.c
-  )
+      list(APPEND sources
+      complex16/dcomplex_dist.c
+      complex16/zlangs_dist.c
+      complex16/zgsequ_dist.c
+      complex16/zlaqgs_dist.c
+      complex16/zutil_dist.c
+      complex16/zmemory_dist.c
+      complex16/zmyblas2_dist.c
+      complex16/zsp_blas2_dist.c
+      complex16/zsp_blas3_dist.c
+      complex16/pzgssvx.c
+      complex16/pzgssvx_ABglobal.c
+      complex16/zreadhb.c
+      complex16/zreadrb.c
+      complex16/zreadtriple.c
+      complex16/zreadtriple_noheader.c
+      complex16/zbinary_io.c	
+      complex16/zreadMM.c
+      complex16/pzgsequ.c
+      complex16/pzlaqgs.c
+      complex16/zldperm_dist.c
+      complex16/pzlangs.c
+      complex16/pzutil.c
+      complex16/pzsymbfact_distdata.c
+      complex16/zdistribute.c
+      complex16/pzdistribute.c
+      complex16/pzdistribute3d.c
+      complex16/z3DPartition.c
+      complex16/pzdistribute-aux3d.c
+      complex16/pzgstrf.c
+      complex16/zstatic_schedule.c
+      complex16/pzgstrf2.c
+      complex16/pzgstrs.c
+      complex16/pzgstrs3d.c
+      complex16/pzgstrs1.c
+      complex16/pzgstrs_lsum.c
+      complex16/pzgstrs_Bglobal.c
+      complex16/pzgsrfs.c
+      complex16/pzgsmv.c
+      complex16/pzgsrfs_ABXglobal.c
+      complex16/pzgsmv_AXglobal.c
+      complex16/pzGetDiagU.c
+      complex16/pzgssvx3d.c     ## 3D code
+      complex16/zssvx3dAux.c    
+      complex16/znrformat_loc3d.c 
+      complex16/pzgstrf3d.c 
+      complex16/ztreeFactorization.c
+      complex16/ztreeFactorizationGPU.c
+      complex16/zgather.c
+      complex16/zscatter3d.c
+      complex16/pz3dcomm.c
+      complex16/ztrfAux.c	
+      complex16/zcommunication_aux.c 
+      complex16/ztrfCommWrapper.c
+      complex16/zsuperlu_blas.c
+     )
 if (TPL_ENABLE_CUDALIB)
-    list(APPEND sources cuda/zsuperlu_gpu.cu)
+    list(APPEND sources cuda/pzgstrs_lsum_cuda.cu cuda/zsuperlu_gpu.cu)
 endif()
 if (HAVE_COMBBLAS)
     list(APPEND sources

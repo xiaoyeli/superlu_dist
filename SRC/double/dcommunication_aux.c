@@ -14,7 +14,7 @@ at the top-level directory.
  * \brief Communication routines.
  *
  * <pre>
- * -- Distributed SuperLU routine (version 7.0) --
+ * -- Distributed SuperLU routine (version 9.0) --
  * Lawrence Berkeley National Lab, Georgia Institute of Technology,
  * Oak Ridge National Lab
  * May 12, 2021
@@ -254,7 +254,7 @@ int_t dWait_LRecv
     //unsigned long long t1 = _rdtsc();
     double t1 = SuperLU_timer_();
     MPI_Status status;
-    
+
     if (recv_req[0] != MPI_REQUEST_NULL)
     {
         MPI_Wait (&recv_req[0], &status);
@@ -349,7 +349,7 @@ int_t dPackLBlock(int_t k, double* Dest, Glu_persist_t *Glu_persist,
 	memcpy( &Dest[j * nsupc], &lusup[j * nsupr], nsupc * sizeof(double) );
     }
 #endif
-    
+
     return 0;
 }
 
@@ -439,7 +439,7 @@ int_t dIBcast_UDiagBlock(int_t k, double *ublk_ptr, /*pointer for the diagonal b
     MPI_Comm comm = (grid->cscp).comm;
 
     MPI_Ibcast(ublk_ptr, size, MPI_DOUBLE, krow,comm, L_diag_blk_ibcast_req);
-    
+
     // MPI_Status status;
     // MPI_Wait(L_diag_blk_ibcast_req, &status);
     return 0;
@@ -459,7 +459,7 @@ int_t dIBcast_LDiagBlock(int_t k, double *lblk_ptr, /*pointer for the diagonal b
     return 0;
 }
 
-#endif 
+#endif
 
 int_t dUDiagBlockRecvWait( int_t k,  int* IrecvPlcd_D, int* factored_L,
                            MPI_Request * U_diag_blk_recv_req,

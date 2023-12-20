@@ -12,7 +12,7 @@ at the top-level directory.
  * \brief Utilities functions
  *
  * <pre>
- * -- Distributed SuperLU routine (version 6.1) --
+ * -- Distributed SuperLU routine (version 9.0) --
  * Lawrence Berkeley National Lab, Univ. of California Berkeley.
  * February 1, 2003
  *

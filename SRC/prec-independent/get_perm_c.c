@@ -12,7 +12,7 @@ at the top-level directory.
  * \brief Gets matrix permutation
  *
  * <pre>
- * -- Distributed SuperLU routine (version 2.1) --
+ * -- Distributed SuperLU routine (version 9.0) --
  * Lawrence Berkeley National Lab, Univ. of California Berkeley,
  * November 1, 2007
  * Feburary 20, 2008

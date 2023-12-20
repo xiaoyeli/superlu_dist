@@ -4,7 +4,7 @@
  * \brief Descriptions and declarations for structures used in GPU
  *
  * <pre>
- * -- Distributed SuperLU routine (version 7.2) --
+ * -- Distributed SuperLU routine (version 9.0) --
  * Lawrence Berkeley National Lab, Univ. of California Berkeley,
  * Georgia Institute of Technology, Oak Ridge National Laboratory
  *
@@ -159,7 +159,7 @@ void device_scatter_u_2D (int thread_id,
     int i;
 
     if ( thread_id < temp_nbrow * ColPerBlock )
-    {    
+    {
 	/* 1D threads are logically arranged in 2D shape. */
 	int thread_id_x  = thread_id % temp_nbrow;
 	int thread_id_y  = thread_id / temp_nbrow;
@@ -208,16 +208,16 @@ void Scatter_GPU_kernel(
 	   assigned to block (lb, j) in 2D grid */
 	int lb = blockIdx.x + ii_st;
 	int j  = blockIdx.y + jj_st;
-	
+
 	extern __shared__ int s[];
 	int* indirect_lptr = s;  /* row-wise */
 	int* indirect2_thread= (int*) &indirect_lptr[ldt]; /* row-wise */
 	int* IndirectJ1= (int*) &indirect2_thread[ldt];    /* column-wise */
 	int* IndirectJ3= (int*) &IndirectJ1[ldt];    /* column-wise */
-	//int THREAD_BLOCK_SIZE =ldt; 
-	
+	//int THREAD_BLOCK_SIZE =ldt;
+
 	int* pfxStorage = (int*) &IndirectJ3[ldt];
-	
+
 	int thread_id = threadIdx.x;
 
 	int iukp = Ublock_info[j].iukp;
@@ -244,7 +244,7 @@ void Scatter_GPU_kernel(
 	/* # of nonzero columns in block j  */
 	int nnz_cols = (j == 0) ? Ublock_info[j].full_u_cols
 	               : (Ublock_info[j].full_u_cols - Ublock_info[j - 1].full_u_cols);
-	int cum_ncol = (j == 0) ? 0	
+	int cum_ncol = (j == 0) ? 0
 					: Ublock_info[j - 1].full_u_cols;
 
 	int lptr = Remain_info[lb].lptr;
@@ -279,7 +279,7 @@ void Scatter_GPU_kernel(
 		/*do a search ljb_ind at local row lib*/
 		int blks_per_threads = CEILING(num_u_blocks, blockDim.x);
 		// printf("blockDim.x =%d \n", blockDim.x);
-		
+
 		for (int i = 0; i < blks_per_threads; ++i)
 			/* each thread is assigned a chunk of consecutive U blocks to search */
 		{
@@ -331,9 +331,9 @@ void Scatter_GPU_kernel(
 
 		/* perform an inclusive block-wide prefix sum among all threads */
 		__syncthreads();
-		
+
 		incScan(IndirectJ1, pfxStorage, nsupc);
-		
+
 		__syncthreads();
 
 		device_scatter_u_2D (
@@ -427,7 +427,7 @@ int dSchurCompUpdate_GPU(
     int_t buffer_size, int_t lsub_len, int_t usub_len,
     int_t ldt, int_t k0,
     dsluGPU_t *sluGPU, gridinfo_t *grid,
-    SuperLUStat_t *stat    
+    SuperLUStat_t *stat
 )
 {
     int SCATTER_THREAD_BLOCK_SIZE=512;
@@ -510,7 +510,7 @@ int dSchurCompUpdate_GPU(
 
 	/*sizeof RemainLbuf = Rnbuf*knsupc */
 	double tTmp = SuperLU_timer_();
-	
+
 	gpuEventRecord(stat->ePCIeH2D[k0], FunCallStream);
         //YL: need the following to avoid calling gpuEventElapsedTime later with nonrecorded event
         gpuEventRecord(stat->GemmStart[k0], FunCallStream);
@@ -712,7 +712,7 @@ static void printDevProp(gpuDeviceProp devProp)
 {
 	size_t mfree, mtotal;
 	gpuMemGetInfo	(&mfree, &mtotal);
-	
+
 	printf("pciBusID:                      %d\n",  devProp.pciBusID);
 	printf("pciDeviceID:                   %d\n",  devProp.pciDeviceID);
 	printf("GPU Name:                      %s\n",  devProp.name);
@@ -745,7 +745,7 @@ int dfree_LUstruct_gpu (
 {
 	dLUstruct_gpu_t * A_gpu = sluGPU->A_gpu;
 	int streamId = 0;
-    
+
 	/* Free the L data structure on GPU */
 	checkGPU(gpuFree(A_gpu->LrowindVec));
 	checkGPU(gpuFree(A_gpu->LrowindPtr));
@@ -753,7 +753,7 @@ int dfree_LUstruct_gpu (
 	checkGPU(gpuFree(A_gpu->LnzvalVec));
 	checkGPU(gpuFree(A_gpu->LnzvalPtr));
 	free(A_gpu->LnzvalPtr_host);
-	
+
 	/*freeing the pinned memory*/
 	checkGPU (gpuFreeHost (A_gpu->scubufs[streamId].Remain_info_host));
 	checkGPU (gpuFreeHost (A_gpu->scubufs[streamId].Ublock_info_host));
@@ -773,15 +773,14 @@ int dfree_LUstruct_gpu (
 	SUPERLU_FREE(stat->ePCIeH2D);
 	SUPERLU_FREE(stat->ePCIeD2H_Start);
 	SUPERLU_FREE(stat->ePCIeD2H_End);
-
 	SUPERLU_FREE(sluGPU->isNodeInMyGrid);
 	SUPERLU_FREE(A_gpu->perm_c_supno);
-
 
 	/* Free the U data structure on GPU */
 	checkGPU(gpuFree(A_gpu->UrowindVec));
 	checkGPU(gpuFree(A_gpu->UrowindPtr));
 
+	free(A_gpu->UnzvalPtr_host);
 	//free(A_gpu->UrowindPtr_host); // Sherry: this is NOT allocated
 
 	checkGPU(gpuFree(A_gpu->UnzvalVec));
@@ -806,10 +805,10 @@ int dfree_LUstruct_gpu (
 
 	checkGPU(gpuFree(A_gpu->local_l_blk_infoVec));
 	checkGPU(gpuFree(A_gpu->local_l_blk_infoPtr));
-#if 0	
+#if 0
 	checkGPU(gpuFree(A_gpu->jib_lookupVec)); // not used
 	checkGPU(gpuFree(A_gpu->jib_lookupPtr)); // not used
-#endif	
+#endif
 	checkGPU(gpuFree(A_gpu->local_u_blk_infoVec));
 	checkGPU(gpuFree(A_gpu->local_u_blk_infoPtr));
 
@@ -819,7 +818,6 @@ int dfree_LUstruct_gpu (
 	    gpuStreamDestroy(sluGPU->funCallStreams[streamId]);
 	    gpublasDestroy(sluGPU->gpublasHandles[streamId]);
     	}
-    
 	free(A_gpu);
 	return 0;
 } /* end dfree_LUstruct_gpu */
@@ -845,7 +843,7 @@ void dPrint_matrix( char *desc, int_t m, int_t n, double * dA, int_t lda )
 
 /* Initialize the GPU side of the data structure. */
 int dinitSluGPU3D_t(
-    dsluGPU_t *sluGPU, // LU structures on GPU, see dlustruct_gpu.h 
+    dsluGPU_t *sluGPU, // LU structures on GPU, see dlustruct_gpu.h
     dLUstruct_t *LUstruct,
     gridinfo3d_t * grid3d,
     int_t* perm_c_supno,
@@ -862,25 +860,25 @@ int dinitSluGPU3D_t(
     int* isNodeInMyGrid = sluGPU->isNodeInMyGrid;
 
     sluGPU->nGPUStreams = getnGPUStreams();
-    
-    int SCATTER_THREAD_BLOCK_SIZE = ldt; 
+
+    int SCATTER_THREAD_BLOCK_SIZE = ldt;
     if(getenv("SCATTER_THREAD_BLOCK_SIZE"))
     {
 	int stbs = atoi(getenv("SCATTER_THREAD_BLOCK_SIZE"));
 	if(stbs>=ldt)
 	{
-	    SCATTER_THREAD_BLOCK_SIZE = stbs; 
+	    SCATTER_THREAD_BLOCK_SIZE = stbs;
 	}
-	
+
     }
-    
+
     if (grid3d->iam == 0)
     {
 #if ( PRNTlevel>=1 )
 	printf("dinitSluGPU3D_t: Using hardware acceleration, with %d gpu streams \n", sluGPU->nGPUStreams);
 	fflush(stdout);
 	printf("dinitSluGPU3D_t: Using %d threads per block for scatter \n", SCATTER_THREAD_BLOCK_SIZE);
-#endif	
+#endif
 	if ( MAX_SUPER_SIZE < ldt )
 	{
 		ABORT("MAX_SUPER_SIZE smaller than requested NSUP");
@@ -928,21 +926,21 @@ int dinitD2Hreduce(
     // int_t next_col = SUPERLU_MIN (k0 + num_look_aheads + 1, nsupers - 1);
     // int_t next_k = perm_c_supno[next_col];  /* global block number for next colum*/
     int_t mkcol, mkrow;
-    
+
     int_t kljb = LBj( next_k, grid );   /*local block number for next block*/
     int_t kijb = LBi( next_k, grid );   /*local block number for next block*/
-    
+
     int_t *kindexL ;                     /*for storing index vectors*/
     int_t *kindexU ;
     mkrow = PROW (next_k, grid);
     mkcol = PCOL (next_k, grid);
     int_t ksup_size = SuperSize(next_k);
-    
+
     int_t copyL_kljb = 0;
     int_t copyU_kljb = 0;
     int_t l_copy_len = 0;
     int_t u_copy_len = 0;
-    
+
     if (mkcol == mycol &&  Lrowind_bc_ptr[kljb] != NULL  && last_flag)
     {
 	if (HyP->Lblock_dirty_bit[kljb] > -1)
@@ -986,7 +984,7 @@ int dinitD2Hreduce(
     }
 
     // wait for streams if they have not been finished
-    
+
     // d2Hred->next_col = next_col;
     d2Hred->next_k = next_k;
     d2Hred->kljb = kljb;
@@ -1020,7 +1018,7 @@ int dreduceGPUlu(
     double** Lnzval_bc_ptr = Llu->Lnzval_bc_ptr;
     int_t** Ufstnz_br_ptr = Llu->Ufstnz_br_ptr;
     double** Unzval_br_ptr = Llu->Unzval_br_ptr;
-    
+
     gpuStream_t CopyStream;
     dLUstruct_gpu_t *A_gpu;
     A_gpu = sluGPU->A_gpu;
@@ -1095,7 +1093,7 @@ int dsendLUpanelGPU2HOST(
     int_t k0,
     d2Hreduce_t* d2Hred,
     dsluGPU_t *sluGPU,
-    SuperLUStat_t *stat     
+    SuperLUStat_t *stat
 )
 {
     int_t kljb = d2Hred->kljb;
@@ -1267,7 +1265,7 @@ void dCopyLUToGPU3D (
 	checkGPUErrors(gpuMalloc(  &tmp_ptr,  A_host->bufmax[2]*sizeof(int_t))) ;
 	A_gpu->scubufs[streamId].usub = (int_t *) tmp_ptr;
 	gpu_mem_used += A_host->bufmax[2] * sizeof(int_t);
-	
+
     } /* endfor streamID ... allocate paged-locked memory */
 
     stat->isOffloaded = (int *) SUPERLU_MALLOC (sizeof(int) * nsupers);
@@ -1277,7 +1275,7 @@ void dCopyLUToGPU3D (
     stat->ePCIeH2D = (gpuEvent_t *) SUPERLU_MALLOC(sizeof(gpuEvent_t) * nsupers);
     stat->ePCIeD2H_Start = (gpuEvent_t *) SUPERLU_MALLOC(sizeof(gpuEvent_t) * nsupers);
     stat->ePCIeD2H_End = (gpuEvent_t *) SUPERLU_MALLOC(sizeof(gpuEvent_t) * nsupers);
-    
+
     for (int i = 0; i < nsupers; ++i)
 	{
 	    stat->isOffloaded[i] = 0;
@@ -1352,7 +1350,7 @@ void dCopyLUToGPU3D (
 				    local_l_blk_info_i[j].luptrj = luptrj;
 				    luptrj += index[lptrj + 1];
 				    lptrj += LB_DESCRIPTOR + index[lptrj + 1];
-					
+
 				}
 			}
 		    cum_num_l_blocks += num_l_blocks;
@@ -1372,6 +1370,7 @@ void dCopyLUToGPU3D (
     gpu_mem_used += CEILING(nsupers, Pc) * sizeof(int_t);
     checkGPUErrors(gpuMemcpy( (A_gpu->local_l_blk_infoPtr), local_l_blk_infoPtr, CEILING(nsupers, Pc)*sizeof(int_t), gpuMemcpyHostToDevice)) ;
 	free(local_l_blk_infoPtr);
+
     /*---- Copy U data structure to GPU ----*/
 
     local_u_blk_info_t  *local_u_blk_infoVec;
@@ -1500,7 +1499,7 @@ void dCopyLUToGPU3D (
 		{
 		    int_t len = index_host[1];
 		    int_t len1 = index_host[2];
-		    
+
 		    u_ind_len += len1;
 		    u_val_len += len;
 		    Unzval_size[lb] = len;
@@ -1614,7 +1613,7 @@ void dCopyLUToGPU3D (
 			    int_t nrbl  =   index_host[0]; /* number of L blocks */
 			    int_t len   = index_host[1];   /* LDA of the nzval[] */
 			    int_t len1  = len + BC_HEADER + nrbl * LB_DESCRIPTOR;
-			    
+
 			    memcpy(&indtemp[temp_LrowindPtr[ljb]] , index_host, len1 * sizeof(int_t)) ;
 			}
 		}
@@ -1682,7 +1681,6 @@ void dCopyLUToGPU3D (
 	free (indtemp1);
 	free (indtemp);
 	free (Unzval_size);
-	free (temp_UnzvalPtr);
 	free (Lnzval_size);
 
 } /* end dCopyLUToGPU3D */
@@ -1713,7 +1711,7 @@ int dreduceAllAncestors3d_GPU (
     if ((myGrid % (1 << (ilvl + 1))) == 0)
 	{
 	    sender = myGrid + (1 << ilvl);
-	    
+
 	}
     else
 	{

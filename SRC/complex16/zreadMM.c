@@ -46,11 +46,11 @@ zreadMM_dist(FILE *fp, int_t *m, int_t *n, int_t *nonz,
     char *cs;
 
     /* 	File format:
-     *    %%MatrixMarket matrix coordinate real general/symmetric/...
+     *    %%MatrixMarket matrix coordinate complex general/symmetric/...
      *    % ...
      *    % (optional comments)
      *    % ...
-     *    #rows    #non-zero
+     *    #rows  #cols  #non-zeros
      *    Triplet in the rest of lines: row    col    value
      */
 

@@ -13,7 +13,7 @@ at the top-level directory.
  * \brief Auxiliary routines to support 3D algorithms
  *
  * <pre>
- * -- Distributed SuperLU routine (version 7.0) --
+ * -- Distributed SuperLU routine (version 9.0) --
  * Lawrence Berkeley National Lab, Oak Ridge National Lab
  * May 12, 2021
  * </pre>
@@ -2500,3 +2500,311 @@ void getSCUweight_allgrid(int_t nsupers, treeList_t* treeList, int_t* xsup,
     SUPERLU_FREE(perm_u);
 
 } /* getSCUweight_allgrid */
+
+
+/**
+ * Performs a row permutation operation on a sparse matrix (CSC format)
+ * using a user-provided permutation array.
+ *
+ * @param colptr The column pointer array of the sparse matrix (CSC format).
+ * @param rowind The row index array of the sparse matrix (CSC format).
+ * @param perm_r The user-provided permutation array for the rows.
+ * @param n The number of columns in the sparse matrix.
+ */
+void applyRowPerm(int_t* colptr, int_t* rowind, int_t* perm_r, int_t n) {
+    // Check input parameters
+    if (colptr == NULL || rowind == NULL || perm_r == NULL) {
+        fprintf(stderr, "Error: NULL input parameter.\n");
+        return;
+    }
+
+    // Iterate through each non-zero element of the sparse matrix
+    for (int_t i = 0; i < colptr[n]; ++i) {
+        // Get the original row index
+        int_t irow = rowind[i];
+        // Assign the new row index from the user-provided permutation array
+        rowind[i] = perm_r[irow];
+    }
+}
+
+
+/**
+ * @brief This function performs the symbolic factorization on matrix Pc*Pr*A*Pc' and sets up 
+ * the nonzero data structures for L & U matrices. In the process, the matrix is also ordered and
+ * its memory usage information is fetched.
+ * 
+ * @param options The options for the SuperLU distribution.
+ * @param GA A pointer to the global matrix A.
+ * @param perm_c The column permutation vector.
+ * @param etree The elimination tree of Pc*Pr*A*Pc'.
+ * @param iam The processor number (0 <= iam < Pr*Pc).
+ * @param Glu_persist Pointer to the structure which tracks the symbolic factorization information.
+ * @param Glu_freeable Pointer to the structure which tracks the space used to store L/U data structures.
+ * @param stat Information on program execution.
+ */
+void permCol_SymbolicFact3d(superlu_dist_options_t *options, int_t n, SuperMatrix *GA, int_t *perm_c, int_t *etree, 
+                           Glu_persist_t *Glu_persist, Glu_freeable_t *Glu_freeable, SuperLUStat_t *stat,
+						   superlu_dist_mem_usage_t*symb_mem_usage,
+						   gridinfo3d_t* grid3d)
+{
+    SuperMatrix GAC; /* Global A in NCP format */
+    NCPformat *GACstore;
+    int_t *GACcolbeg, *GACcolend, *GACrowind, irow;
+    double t;
+    int_t iinfo;
+    int iam = grid3d->iam;
+
+    sp_colorder(options, GA, perm_c, etree, &GAC);
+
+    /* Form Pc*A*Pc' to preserve the diagonal of the matrix GAC. */
+    GACstore = (NCPformat *)GAC.Store;
+    GACcolbeg = GACstore->colbeg;
+    GACcolend = GACstore->colend;
+    GACrowind = GACstore->rowind;
+    for (int_t j = 0; j < n; ++j)
+    {
+        for (int_t i = GACcolbeg[j]; i < GACcolend[j]; ++i)
+        {
+            irow = GACrowind[i];
+            GACrowind[i] = perm_c[irow];
+        }
+    }
+
+#if (PRNTlevel >= 1)
+    if (!iam)
+        printf(".. symbfact(): relax %4d, maxsuper %4d, fill %4d\n",
+               sp_ienv_dist(2, options), sp_ienv_dist(3, options), sp_ienv_dist(6, options));
+#endif
+
+    t = SuperLU_timer_();
+    iinfo = symbfact(options, iam, &GAC, perm_c, etree, Glu_persist, Glu_freeable);
+    stat->utime[SYMBFAC] = SuperLU_timer_() - t;
+
+    if (iinfo < 0)
+    {
+        QuerySpace_dist(n, -iinfo, Glu_freeable, symb_mem_usage);
+#if (PRNTlevel >= 1)
+        if (!iam)
+        {
+            printf("\tNo of supers %ld\n", (long)Glu_persist->supno[n - 1] + 1);
+            printf("\tSize of G(L) %ld\n", (long)Glu_freeable->xlsub[n]);
+            printf("\tSize of G(U) %ld\n", (long)Glu_freeable->xusub[n]);
+            printf("\tint %lu, short %lu, float %lu, double %lu\n",
+                   sizeof(int_t), sizeof(short), sizeof(float), sizeof(double));
+            printf("\tSYMBfact (MB):\tL\\U %.2f\ttotal %.2f\texpansions %d\n",
+                   symb_mem_usage->for_lu * 1e-6, symb_mem_usage->total * 1e-6, symb_mem_usage->expansions);
+        }
+#endif
+    }
+    else
+    {
+        if (!iam)
+        {
+            fprintf(stderr, "symbfact() error returns %d\n", (int)iinfo);
+            exit(-1); 
+        }
+    }
+
+    Destroy_CompCol_Permuted_dist(&GAC);
+}
+
+#ifdef REFACTOR_SYMBOLIC 
+/**
+ * @brief Determines the column permutation vector based on the chosen method.
+ *
+ * @param[in] options      Pointer to the options structure.
+ * @param[in] A            Pointer to the input matrix.
+ * @param[in] grid         Pointer to the process grid.
+ * @param[in] parSymbFact  Flag indicating whether parallel symbolic factorization is used.
+ * @param[out] perm_c      Column permutation vector.
+ * @return Error code (0 if successful).
+ */
+int computeColumnPermutation(const superlu_dist_options_t *options,
+                               const SuperMatrix *A,
+                               const gridinfo_t *grid,
+                               const int parSymbFact,
+                               int_t *perm_c);
+
+/**
+ * @brief Computes the elimination tree based on the chosen column permutation method.
+ *
+ * @param[in] options  Pointer to the options structure.
+ * @param[in] A        Pointer to the input matrix.
+ * @param[in] perm_c   Column permutation vector.
+ * @param[out] etree   Elimination tree.
+ * @return Error code (0 if successful).
+ */
+int ComputeEliminationTree(const superlu_dist_options_t *options,
+                           const SuperMatrix *A,
+                           const int_t *perm_c,
+                           int_t *etree);
+
+/**
+ * @brief Performs a symbolic factorization on the permuted matrix and sets up the nonzero data structures for L & U.
+ *
+ * @param[in] options        Pointer to the options structure.
+ * @param[in] A              Pointer to the input matrix.
+ * @param[in] perm_c         Column permutation vector.
+ * @param[in] etree          Elimination tree.
+ * @param[out] Glu_persist   Pointer to the global LU data structures.
+ * @param[out] Glu_freeable  Pointer to the LU data structures that can be deallocated.
+ * @return Error code (0 if successful).
+ */
+int PerformSymbolicFactorization(const superlu_dist_options_t *options,
+                                 const SuperMatrix *A,
+                                 const int_t *perm_c,
+                                 const int_t *etree,
+                                 Glu_persist_t *Glu_persist,
+                                 Glu_freeable_t *Glu_freeable);
+
+/**
+ * @brief Deallocates the storage used in symbolic factorization.
+ *
+ * @param[in] Glu_freeable  Pointer to the LU data structures that can be deallocated.
+ * @return Error code (0 if successful).
+ */
+int DeallocateSymbolicFactorizationStorage(const Glu_freeable_t *Glu_freeable);
+#endif // REFACTOR_SYMBOLIC
+
+
+/**
+ * @brief Allocates and broadcasts an array in a MPI environment.
+ *
+ * This function sends the size from the root process to all other processes in
+ * the communicator. If the process is not the root, it receives the size from
+ * the root and allocates the array. Then, the function broadcasts the array
+ * from the root process to all other processes in the communicator.
+ *
+ * @param array Pointer to the array to be allocated and broadcasted.
+ * @param size The size of the array.
+ * @param comm The MPI communicator.
+ * @param root The root process.
+ */
+void allocBcastArray(void **array, int size, int root, MPI_Comm comm)
+{
+    int rank;
+    MPI_Comm_rank(comm, &rank); // Get the rank of the current process
+
+    // Check if the size is valid
+    if (rank == root)
+    {
+        if (size <= 0)
+        {
+            fprintf(stderr, "Error: Size should be a positive integer.\n");
+            MPI_Abort(comm, EXIT_FAILURE);
+        }
+        
+    }
+
+    // Send the size from root to all other processes in the communicator
+    MPI_Bcast(&size, 1, MPI_INT, root, comm);
+
+    // If I am not the root, receive the size from the root and allocate the array
+    if (rank != root)
+    {
+        *array = SUPERLU_MALLOC(size);
+        if (*array == NULL)
+        {
+            fprintf(stderr, "Error: Failed to allocate memory.\n");
+            MPI_Abort(comm, EXIT_FAILURE);
+        }
+    }
+
+    // Then broadcast the array from the root to all other processes
+    MPI_Bcast(*array, size, MPI_BYTE, root, comm);
+}
+
+sForest_t **compute_sForests(int_t nsupers,  Glu_persist_t *Glu_persist, int_t *etree, gridinfo3d_t *grid3d)
+{
+    // Calculation of supernodal etree
+    int_t *setree = supernodal_etree(nsupers, etree, Glu_persist->supno, Glu_persist->xsup);
+
+    // Conversion of supernodal etree to list
+    treeList_t *treeList = setree2list(nsupers, setree);
+
+    // Calculation of tree weight
+    calcTreeWeight(nsupers, setree, treeList, Glu_persist->xsup);
+
+    // Calculation of maximum level
+    int_t maxLvl = log2i(grid3d->zscp.Np) + 1;
+
+    // Generation of forests
+    sForest_t **sForests = getForests(maxLvl, nsupers, setree, treeList);
+
+    // Allocate trf3d data structure
+    // LUstruct->trf3Dpart = (dtrf3Dpartition_t *)SUPERLU_MALLOC(sizeof(dtrf3Dpartition_t));
+    // dtrf3Dpartition_t *trf3Dpart = LUstruct->trf3Dpart;
+
+    return sForests;
+}
+
+
+gEtreeInfo_t fillEtreeInfo( int_t nsupers, int_t* setree, treeList_t *treeList) {
+    
+    gEtreeInfo_t gEtreeInfo;
+    gEtreeInfo.setree = setree;
+    gEtreeInfo.numChildLeft = (int_t *)SUPERLU_MALLOC(sizeof(int_t) * nsupers);
+    for (int_t i = 0; i < nsupers; ++i)
+    {
+        gEtreeInfo.numChildLeft[i] = treeList[i].numChild;
+    }
+
+    return gEtreeInfo;
+}
+
+int_t* create_iperm_c_supno(int_t nsupers, superlu_dist_options_t *options, 
+    Glu_persist_t *Glu_persist, int_t *etree, int_t** Lrowind_bc_ptr, int_t** Ufstnz_br_ptr, gridinfo3d_t *grid3d) {
+    gridinfo_t *grid = &(grid3d->grid2d);
+    int_t *perm_c_supno = getPerm_c_supno(nsupers, options,
+                                          etree,
+                                          Glu_persist,
+                                          Lrowind_bc_ptr,
+                                          Ufstnz_br_ptr, grid);
+    int_t *iperm_c_supno = getFactIperm(perm_c_supno, nsupers);
+    SUPERLU_FREE(perm_c_supno);
+    return iperm_c_supno;
+}
+
+int_t *createSupernode2TreeMap(int_t nsupers, int_t maxLvl, int_t *gNodeCount, int_t **gNodeLists)
+{
+    int_t *supernode2treeMap = SUPERLU_MALLOC(nsupers * sizeof(int_t));
+    int_t numForests = (1 << maxLvl) - 1;
+
+    for (int_t Fr = 0; Fr < numForests; ++Fr)
+    {
+        for (int_t nd = 0; nd < gNodeCount[Fr]; ++nd)
+        {
+            supernode2treeMap[gNodeLists[Fr][nd]] = Fr;
+        }
+    }
+
+    return supernode2treeMap;
+}
+
+SupernodeToGridMap_t* createSuperGridMap(int_t nsuper,int_t maxLvl, int_t *myTreeIdxs, 
+    int_t *myZeroTrIdxs, int_t* gNodeCount, int_t** gNodeLists)
+{
+    SupernodeToGridMap_t* superGridMap = SUPERLU_MALLOC(nsuper * sizeof(SupernodeToGridMap_t));
+    for (int_t i = 0; i < nsuper; ++i)
+    {
+        /* initialize with NOT_IN_GRID */
+        superGridMap[i] = NOT_IN_GRID;
+    }
+
+    
+    for(int_t lvl =0; lvl<maxLvl; lvl++ )
+    {
+        int_t treeIdx = myTreeIdxs[lvl];
+        int_t zeroTrIdx = myZeroTrIdxs[lvl];
+
+        for (int_t nd = 0; nd < gNodeCount[treeIdx]; ++nd)
+        {
+            /* code */
+            if(zeroTrIdx)
+                superGridMap[gNodeLists[treeIdx][nd]] = IN_GRID_ZERO;
+            else
+                superGridMap[gNodeLists[treeIdx][nd]] = IN_GRID_AIJ;
+        }
+    }
+    return superGridMap;
+}

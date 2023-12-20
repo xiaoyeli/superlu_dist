@@ -1,20 +1,20 @@
 /*! \file
 Copyright (c) 2003, The Regents of the University of California, through
-Lawrence Berkeley National Laboratory (subject to receipt of any required 
-approvals from U.S. Dept. of Energy) 
+Lawrence Berkeley National Laboratory (subject to receipt of any required
+approvals from U.S. Dept. of Energy)
 
-All rights reserved. 
+All rights reserved.
 
 The source code is distributed under BSD license, see the file License.txt
 at the top-level directory.
 */
 
 
-/*! @file 
+/*! @file
  * \brief This example illustrates how to divide up the processes into subgroups
  *
  * <pre>
- * -- Distributed SuperLU routine (version 4.1) --
+ * -- Distributed SuperLU routine (version 9.0) --
  * Lawrence Berkeley National Lab, Univ. of California Berkeley.
  * September 1, 1999
  * April 5, 2015
@@ -68,7 +68,7 @@ int main(int argc, char *argv[])
     FILE *fp, *fopen();
 
     /* ------------------------------------------------------------
-       INITIALIZE MPI ENVIRONMENT. 
+       INITIALIZE MPI ENVIRONMENT.
        ------------------------------------------------------------*/
     MPI_Init( &argc, &argv );
     MPI_Comm_size( MPI_COMM_WORLD, &nprocs );
@@ -103,7 +103,7 @@ int main(int argc, char *argv[])
     }
 
     /* ------------------------------------------------------------
-       INITIALIZE THE SUPERLU PROCESS GRID 1. 
+       INITIALIZE THE SUPERLU PROCESS GRID 1.
        ------------------------------------------------------------*/
     nprow = 2;
     npcol = 3;
@@ -114,7 +114,7 @@ int main(int argc, char *argv[])
     superlu_gridmap(MPI_COMM_WORLD, nprow, npcol, usermap, ldumap, &grid1);
 
     /* ------------------------------------------------------------
-       INITIALIZE THE SUPERLU PROCESS GRID 2. 
+       INITIALIZE THE SUPERLU PROCESS GRID 2.
        ------------------------------------------------------------*/
     nprow = 2;
     npcol = 2;
@@ -127,7 +127,7 @@ int main(int argc, char *argv[])
     /* Bail out if I do not belong in any of the 2 grids. */
     MPI_Comm_rank( MPI_COMM_WORLD, &iam );
     if ( iam == -1 ) goto out;
-    
+
 #if ( DEBUGlevel>=1 )
     CHECK_MALLOC(iam, "Enter main()");
 #endif
@@ -142,7 +142,7 @@ int main(int argc, char *argv[])
 	if ( !iam ) {
 	    /* Read the matrix stored on disk in Harwell-Boeing format. */
 	    sreadhb_dist(iam, fp, &m, &n, &nnz, &a, &asub, &xa);
-	
+
 	    printf("\tDimension\t" IFMT "x" IFMT "\t # nonzeros " IFMT "\n", m, n, nnz);
 	    printf("\tProcess grid\t%d X %d\n", (int) grid1.nprow, (int) grid1.npcol);
 
@@ -161,12 +161,12 @@ int main(int argc, char *argv[])
 
 	    /* Allocate storage for compressed column representation. */
 	    sallocateA_dist(n, nnz, &a, &asub, &xa);
-	    
+
 	    MPI_Bcast( a,    nnz, MPI_FLOAT, 0, grid1.comm );
 	    MPI_Bcast( asub, nnz, mpi_int_t,  0, grid1.comm );
 	    MPI_Bcast( xa,   n+1, mpi_int_t,  0, grid1.comm );
 	}
-	
+
 	/* Create compressed column matrix for A. */
 	sCreate_CompCol_Matrix_dist(&A, m, n, nnz, a, asub, xa,
 				    SLU_NC, SLU_S, SLU_GE);
@@ -181,7 +181,7 @@ int main(int argc, char *argv[])
   	if ( iam==0 ) {
 	    sGenXtrue_dist(n, nrhs, xtrue, ldx);
 	    sFillRHS_dist(trans, nrhs, xtrue, ldx, &A, b, ldb);
-	    
+
             MPI_Bcast( xtrue, n*nrhs, MPI_FLOAT, 0, grid1.comm );
             MPI_Bcast( b, m*nrhs, MPI_FLOAT, 0, grid1.comm );
 	} else {
@@ -195,7 +195,7 @@ int main(int argc, char *argv[])
 	/* ------------------------------------------------------------
 	   NOW WE SOLVE THE LINEAR SYSTEM.
 	   ------------------------------------------------------------*/
-	
+
         /* Set the default input options:
             options.Fact = DOFACT;
             options.Equil = YES;
@@ -220,7 +220,7 @@ int main(int argc, char *argv[])
 
 	/* Initialize the statistics variables. */
 	PStatInit(&stat);
-	
+
 	/* Call the linear equation solver: factorize and solve. */
 	psgssvx_ABglobal(&options, &A, &ScalePermstruct, b, ldb, nrhs, &grid1,
 			 &LUstruct, berr, &stat, &info);
@@ -229,8 +229,8 @@ int main(int argc, char *argv[])
 	if ( !iam ) {
 	    sinf_norm_error_dist(n, nrhs, b, ldb, xtrue, ldx, &grid1);
 	}
-    
-    
+
+
 	/* Print the statistics. */
 	PStatPrint(&options, &stat, &grid1);
 
@@ -238,7 +238,7 @@ int main(int argc, char *argv[])
 	   DEALLOCATE STORAGE.
 	   ------------------------------------------------------------*/
 	PStatFree(&stat);
-	Destroy_CompCol_Matrix_dist(&A); 
+	Destroy_CompCol_Matrix_dist(&A);
 	sDestroy_LU(n, &grid1, &LUstruct);
 	sScalePermstructFree(&ScalePermstruct);
 	sLUstructFree(&LUstruct);
@@ -256,7 +256,7 @@ int main(int argc, char *argv[])
 	if ( !iam ) {
 	    /* Read the matrix stored on disk in Harwell-Boeing format. */
 	    sreadhb_dist(iam, fp, &m, &n, &nnz, &a, &asub, &xa);
-	
+
 	    printf("\tDimension\t" IFMT "x" IFMT "\t # nonzeros " IFMT "\n", m, n, nnz);
 	    printf("\tProcess grid\t%d X %d\n", (int) grid2.nprow, (int) grid2.npcol);
 
@@ -275,12 +275,12 @@ int main(int argc, char *argv[])
 
 	    /* Allocate storage for compressed column representation. */
 	    sallocateA_dist(n, nnz, &a, &asub, &xa);
-	    
+
 	    MPI_Bcast( a,    nnz, MPI_FLOAT, 0, grid2.comm );
 	    MPI_Bcast( asub, nnz, mpi_int_t,  0, grid2.comm );
 	    MPI_Bcast( xa,   n+1, mpi_int_t,  0, grid2.comm );
 	}
-	
+
 	/* Create compressed column matrix for A. */
 	sCreate_CompCol_Matrix_dist(&A, m, n, nnz, a, asub, xa,
 				    SLU_NC, SLU_S, SLU_GE);
@@ -308,7 +308,7 @@ int main(int argc, char *argv[])
 	/* ------------------------------------------------------------
 	   NOW WE SOLVE THE LINEAR SYSTEM.
 	   ------------------------------------------------------------*/
-	
+
         /* Set the default input options:
             options.Fact = DOFACT;
             options.Equil = YES;
@@ -322,14 +322,14 @@ int main(int argc, char *argv[])
             options.PrintStat = YES;
          */
 	set_default_options_dist(&options);
-	
+
 	/* Initialize ScalePermstruct and LUstruct. */
 	sScalePermstructInit(m, n, &ScalePermstruct);
 	sLUstructInit(n, &LUstruct);
 
 	/* Initialize the statistics variables. */
 	PStatInit(&stat);
-	
+
 	/* Call the linear equation solver: factorize and solve. */
 	psgssvx_ABglobal(&options, &A, &ScalePermstruct, b, ldb, nrhs, &grid2,
 			 &LUstruct, berr, &stat, &info);
@@ -338,8 +338,8 @@ int main(int argc, char *argv[])
 	if ( !iam ) {
 	    sinf_norm_error_dist(n, nrhs, b, ldb, xtrue, ldx, &grid2);
 	}
-    
-    
+
+
 	/* Print the statistics. */
 	PStatPrint(&options, &stat, &grid2);
 
@@ -347,7 +347,7 @@ int main(int argc, char *argv[])
 	   DEALLOCATE STORAGE.
 	   ------------------------------------------------------------*/
 	PStatFree(&stat);
-	Destroy_CompCol_Matrix_dist(&A); 
+	Destroy_CompCol_Matrix_dist(&A);
 	sDestroy_LU(n, &grid2, &LUstruct);
 	sScalePermstructFree(&ScalePermstruct);
 	sLUstructFree(&LUstruct);

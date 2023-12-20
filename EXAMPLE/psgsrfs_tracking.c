@@ -14,7 +14,7 @@ at the top-level directory.
  * \brief Improves the computed solution to a system of linear equations and provides error bounds and backward error estimates
  *
  * <pre>
- * -- Distributed SuperLU routine (version 8.0) --
+ * -- Distributed SuperLU routine (version 9.0) --
  * Lawrence Berkeley National Lab, Univ. of California Berkeley.
  * May 22, 2022
  *

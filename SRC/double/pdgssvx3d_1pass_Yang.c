@@ -14,7 +14,7 @@ at the top-level directory.
  * \brief Solves a system of linear equations A*X=B using 3D process grid.
  *
  * <pre>
- * -- Distributed SuperLU routine (version 7.2) --
+ * -- Distributed SuperLU routine (version 9.0) --
  * Lawrence Berkeley National Lab, Georgia Institute of Technology,
  * Oak Ridge National Lab
  * May 12, 2021
@@ -23,8 +23,8 @@ at the top-level directory.
  */
 #include "superlu_ddefs.h"
 #include "TRF3dV100/superlu_upacked.h"
-#include "pddistribute3d.h"
-#include "ssvx3dAux.c"
+// #include "pddistribute3d.h"
+// #include "ssvx3dAux.c"
 int_t dgatherAllFactoredLU3d( dtrf3Dpartition_t*  trf3Dpartition,
 			   dLUstruct_t* LUstruct, gridinfo3d_t* grid3d, SCT_t* SCT );
 #include <stdbool.h>
@@ -502,7 +502,7 @@ int_t dgatherAllFactoredLU3d( dtrf3Dpartition_t*  trf3Dpartition,
  * </pre>
  */
 
-int writeLUtoDisk(int nsupers, int_t *xsup, dLUstruct_t *LUstruct)
+int dwriteLUtoDisk(int nsupers, int_t *xsup, dLUstruct_t *LUstruct)
 {
 
 	if (getenv("LUFILE"))
@@ -554,7 +554,7 @@ static int checkArr(double *A, double *B, int n)
 	return 0;
 }
 
-int checkLUFromDisk(int nsupers, int_t *xsup, dLUstruct_t *LUstruct)
+int dcheckLUFromDisk(int nsupers, int_t *xsup, dLUstruct_t *LUstruct)
 {
 	dLocalLU_t *Llu = LUstruct->Llu;
 
@@ -780,7 +780,7 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 	/* Test the options choices. */
 	*info = 0;
 	Fact = options->Fact;
-	validateInput_ssvx3d(options, A, ldb, nrhs, grid3d, info);
+	validateInput_pdgssvx3d(options, A, ldb, nrhs, grid3d, info);
 
 	/* Initialization. */
 
@@ -887,7 +887,7 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 		   ------------------------------------------------------------ */
 		if (Equil)
 		{
-			scaleMatrixDiagonally(Fact, ScalePermstruct,
+			dscaleMatrixDiagonally(Fact, ScalePermstruct,
 								  A, stat, grid, &rowequ, &colequ, &iinfo);
 			if (iinfo < 0)
 				return; // return if error
@@ -929,7 +929,7 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 			/* ------------------------------------------------------------
 			   Find the row permutation for A.
 			------------------------------------------------------------ */
-			perform_row_permutation(
+			dperform_row_permutation(
 				options, Fact, ScalePermstruct, LUstruct,
 				m, n, grid, A, &GA, stat, job, Equil,
 				&rowequ, &colequ, &iinfo);
@@ -938,7 +938,7 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 
 		/* Compute norm(A), which will be used to adjust small diagonal. */
 		if (!factored || options->IterRefine)
-			anorm = computeA_Norm(notran, A, grid);
+			anorm = dcomputeA_Norm(notran, A, grid);
 
 		/* ------------------------------------------------------------
 		   Perform ordering and symbolic factorization
@@ -1147,7 +1147,7 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 				
 				if(Fact != SamePattern_SameRowPerm){
 					LUstruct->trf3Dpart = SUPERLU_MALLOC(sizeof(dtrf3Dpartition_t));
-					newTrfPartitionInit(nsupers, LUstruct, grid3d);
+					dnewTrfPartitionInit(nsupers, LUstruct, grid3d);
 					trf3Dpartition=LUstruct->trf3Dpart;
 				}
 
@@ -1161,7 +1161,7 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 					dLUValSubBuf_t *LUvsb = SUPERLU_MALLOC(sizeof(dLUValSubBuf_t));
 					dLluBufInit(LUvsb, LUstruct);
 					trf3Dpartition->LUvsb = LUvsb;
-					trf3Dpartition->iperm_c_supno = create_iperm_c_supno(nsupers, options, LUstruct, grid3d);
+					trf3Dpartition->iperm_c_supno = create_iperm_c_supno(nsupers, options, LUstruct->Glu_persist, LUstruct->etree, LUstruct->Llu->Lrowind_bc_ptr, LUstruct->Llu->Ufstnz_br_ptr, grid3d);
 				}
 
 
@@ -1205,7 +1205,7 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 
 		/* Perform numerical factorization in parallel on all process layers.*/
 
-		/* nvshmem related. The nvshmem_malloc has to be called before trs_compute_communication_structure, otherwise solve is much slower*/
+		/* nvshmem related. The nvshmem_malloc has to be called before dtrs_compute_communication_structure, otherwise solve is much slower*/
 		#ifdef HAVE_NVSHMEM  
 			int nc = CEILING( nsupers, grid->npcol);
 			int nr = CEILING( nsupers, grid->nprow);
@@ -1218,7 +1218,7 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 			int ready_lsum_size = 2*maxrecvsz*nr;
 			if (get_acc_solve()){
 			nv_init_wrapper(grid->comm);
-			prepare_multiGPU_buffers(flag_bc_size,flag_rd_size,ready_x_size,ready_lsum_size,my_flag_bc_size,my_flag_rd_size);
+			dprepare_multiGPU_buffers(flag_bc_size,flag_rd_size,ready_x_size,ready_lsum_size,my_flag_bc_size,my_flag_rd_size);
 			}
 		#endif
 
@@ -1294,13 +1294,13 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 
 		if ( options->Fact != SamePattern_SameRowPerm) {
 			if (get_new3dsolve() && Solve3D==true){
-				trs_compute_communication_structure(options, n, LUstruct,
+				dtrs_compute_communication_structure(options, n, LUstruct,
 							ScalePermstruct, trf3Dpartition->supernodeMask, grid, stat);
 			}else{
 				int* supernodeMask = int32Malloc_dist(nsupers);
 				for(int ii=0; ii<nsupers; ii++)
 					supernodeMask[ii]=1;
-				trs_compute_communication_structure(options, n, LUstruct,
+				dtrs_compute_communication_structure(options, n, LUstruct,
 							ScalePermstruct, supernodeMask, grid, stat);
 				SUPERLU_FREE(supernodeMask);
 			}
@@ -1328,7 +1328,7 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 		if (writeLU)
 		{
 			if (!grid3d->zscp.Iam)
-				writeLUtoDisk(nsupers, LUstruct->Glu_persist->xsup, LUstruct);
+				dwriteLUtoDisk(nsupers, LUstruct->Glu_persist->xsup, LUstruct);
 		}
 
 		int checkLU = 0;
@@ -1340,7 +1340,7 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 		if (checkLU)
 		{
 			if (!grid3d->zscp.Iam)
-				checkLUFromDisk(nsupers, LUstruct->Glu_persist->xsup, LUstruct);
+				dcheckLUFromDisk(nsupers, LUstruct->Glu_persist->xsup, LUstruct);
 		}
 
 #if (PRNTlevel >= 0)

@@ -13,7 +13,7 @@ at the top-level directory.
  * \brief Solves a system of distributed linear equations
  *
  * <pre>
- * -- Distributed SuperLU routine (version 2.3) --
+ * -- Distributed SuperLU routine (version 9.0) --
  * Lawrence Berkeley National Lab, Univ. of California Berkeley.
  * October 15, 2008
  *
@@ -564,9 +564,9 @@ void pzgstrs1(superlu_dist_options_t *options, int_t n,
 
 	/* Every process receives the count, but it is only useful on the
 	   diagonal processes.  */
-#if 0	   
+#if 0
 	MPI_Allreduce( mod_bit, brecv, nlb, mpi_int_t, MPI_SUM, scp->comm );
-#else	
+#else
 	MPI_Allreduce( mod_bit, brecv, nlb, MPI_INT, MPI_SUM, scp->comm );
 #endif
 
@@ -596,10 +596,10 @@ void pzgstrs1(superlu_dist_options_t *options, int_t n,
 		if ( mycol != kcol && bmod[lk] )
 		    i = 1;  /* Contribution from non-diagonal process. */
 		else i = 0;
-#if 0 // Sherry		
+#if 0 // Sherry
 		MPI_Reduce( &i, &brecv[lk], 1, mpi_int_t,
 			   MPI_SUM, kcol, scp->comm );
-#else			   
+#else
 		MPI_Reduce( &i, &brecv[lk], 1, MPI_INT, MPI_SUM, kcol, scp->comm );
 #endif
 

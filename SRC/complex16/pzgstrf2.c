@@ -13,7 +13,7 @@ at the top-level directory.
  * \brief Performs panel LU factorization.
  *
  * <pre>
- * -- Distributed SuperLU routine (version 7.2) --
+ * -- Distributed SuperLU routine (version 9.0) --
  * Lawrence Berkeley National Lab, Univ. of California Berkeley.
  * August 15, 2014
  *
@@ -363,6 +363,7 @@ pzgstrf2_trsm
 }  /* PZGSTRF2_trsm */
 
 
+
 /*****************************************************************************
  * The following functions are for the new pdgstrf2_ztrsm in the 3D code.
  *****************************************************************************/
@@ -382,7 +383,7 @@ int_t LpanelUpdate(int off0,  int nsupc, doublecomplex* ublk_ptr, int ld_ujrow,
     {
         int_t off = i * GT;
         int len = SUPERLU_MIN(GT, l - i * GT);
-	
+
         superlu_ztrsm("R", "U", "N", "N", len, nsupc, alpha,
 		      ublk_ptr, ld_ujrow, &lusup[off0 + off], nsupr);
 
@@ -398,6 +399,96 @@ int_t LpanelUpdate(int off0,  int nsupc, doublecomplex* ublk_ptr, int ld_ujrow,
 
 #pragma GCC push_options
 #pragma GCC optimize ("O0")
+
+
+void zgstrf2(int_t k, doublecomplex* diagBlk, int_t LDA, doublecomplex* BlockUfactor, int_t LDU,
+    double thresh, int_t* xsup,
+    superlu_dist_options_t *options,
+    SuperLUStat_t *stat, int *info
+ )
+{
+
+    int_t jfst = FstBlockC(k);
+    int_t jlst = FstBlockC(k + 1);
+    int_t nsupc = SuperSize(k);
+
+    doublecomplex *ublk_ptr = BlockUfactor;
+    doublecomplex *ujrow = BlockUfactor;
+    int_t luptr = 0;       /* Point_t to the diagonal entries. */
+    int cols_left = nsupc; /* supernode size */
+
+    for (int_t j = 0; j < nsupc; ++j) /* for each column in panel */
+    {
+        /* Diagonal pivot */
+        int_t i = luptr;
+        /* Not to replace zero pivot.  */
+        if (options->ReplaceTinyPivot == YES)
+        {
+            if (slud_z_abs1(&diagBlk[i]) < thresh)
+            { /* Diagonal */
+
+#if (PRNTlevel >= 2)
+                printf("(%d) .. col %d, tiny pivot %e  ",
+                       iam, jfst + j, diagBlk[i]);
+#endif
+                /* Keep the new diagonal entry with the same sign. */
+
+                if ( diagBlk[i].r < 0 )
+                    diagBlk[i].r = -thresh;
+                else
+                    diagBlk[i].r = thresh;
+                diagBlk[i].i = 0.0;
+
+#if (PRNTlevel >= 2)
+                printf("replaced by %e\n", diagBlk[i]);
+#endif
+                ++(stat->TinyPivots);
+            }
+        }
+
+        for (int_t l = 0; l < cols_left; ++l, i += LDA)
+        {
+            int_t st = j * LDU + j;
+            ublk_ptr[st + l * LDU] = diagBlk[i]; /* copy one row of U */
+        }
+            doublecomplex alpha = {-1.0, 0.0}, zero = {0.0, 0.0}, one = {1.0, 0.0};
+        /* Test for singularity. */
+        if ( ujrow[0].r == 0.0 && ujrow[0].i == 0.0 )
+        {
+            *info = j + jfst + 1;
+        }
+        else /* Scale the j-th column. */
+        {
+            doublecomplex temp;
+            slud_z_div(&temp, &one, &ujrow[0]);
+            for (i = luptr + 1; i < luptr - j + nsupc; ++i)
+                zz_mult(&diagBlk[i], &diagBlk[i], &temp);
+            stat->ops[FACT] += 6*(nsupc-j-1) + 10;
+        }
+
+        /* Rank-1 update of the trailing submatrix. */
+        if (--cols_left)
+        {
+            /*following must be int*/
+            int l = nsupc - j - 1;
+            int incx = 1;
+            int incy = LDU;
+            /* Rank-1 update */
+            superlu_zger(l, cols_left, alpha, &diagBlk[luptr + 1], incx,
+                         &ujrow[LDU], incy, &diagBlk[luptr + LDA + 1],
+                         LDA);
+            stat->ops[FACT] += 2 * l * cols_left;
+        }
+
+        ujrow = ujrow + LDU + 1; /* move to next row of U */
+        luptr += LDA + 1;           /* move to next column */
+
+    } /* for column j ...  first loop */
+
+    // printf("Coming to local zgstrf2\n");
+}
+
+
 /************************************************************************/
 /*! \brief
  *
@@ -408,7 +499,7 @@ int_t LpanelUpdate(int off0,  int nsupc, doublecomplex* ublk_ptr, int ld_ujrow,
  *
  * Arguments
  * =========
- * 
+ *
  * info   (output) int*
  *        = 0: successful exit
  *        > 0: if info = i, U(i,i) is exactly zero. The factorization has
@@ -455,8 +546,8 @@ void Local_Zgstrf2(superlu_dist_options_t *options, int_t k, double thresh,
 		     lusup[i].r != 0.0 && lusup[i].i != 0.0 ) { /* Diagonal */
 
 #if ( PRNTlevel>=2 )
-                    // printf ("(%d) .. col %d, tiny pivot %e  ",
-                    //         iam, jfst + j, lusup[i]);
+                    printf ("(%d) .. col %d, tiny pivot %e  ",
+                            iam, jfst + j, lusup[i]);
 #endif
                 /* Keep the new diagonal entry with the same sign. */
                 if ( lusup[i].r < 0 ) lusup[i].r = -thresh;
@@ -568,7 +659,7 @@ void Local_Zgstrf2(superlu_dist_options_t *options, int_t k, double thresh,
  *             been completed, but the factor U is exactly singular,
  *             and division by zero will occur if it is used to solve a
  *             system of equations.
- * 
+ *
  * SCT    (output) SCT_t*
  *        Additional statistics used in the 3D algorithm.
  *
@@ -740,7 +831,7 @@ int_t zTrs2_GatherTrsmScatter(int_t klst, int_t iukp, int_t rukp,
     /*now call ztrsm on packed dense block*/
     int_t luptr = (knsupc - ldu) * (nsupr + 1);
     // if(ldu>nsupr) printf("nsupr %d ldu %d\n",nsupr,ldu );
-    
+
     superlu_ztrsm("L", "L", "N", "U", ldu, ncols, alpha,
 		  &lusup[luptr], nsupr, tempv, ldu);
 
@@ -749,7 +840,6 @@ int_t zTrs2_GatherTrsmScatter(int_t klst, int_t iukp, int_t rukp,
 
     return 0;
 }
-
 /* END 3D CODE */
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 
@@ -855,7 +945,7 @@ void pzgstrs2_omp
 	nsupc = SuperSize( gb );
 	iukp += UB_DESCRIPTOR;
         for (j = 0; j < nsupc; j++) {
-#else	
+#else
         for (j = 0; j < nsupc_temp[b]; j++) {
 #endif
             segsize = klst - usub[iukp++];
@@ -881,7 +971,7 @@ void pzgstrs2_omp
 #endif
 	    } /* end if segsize > 0 */
 	} /* end for j in parallel ... */
-#ifdef _OPENMP    
+#ifdef _OPENMP
 /* #pragma omp taskwait */
 #endif
     }  /* end for b ... */
@@ -901,7 +991,7 @@ void pzgstrs2_omp
 
 #else  /*==== new version from Piyush ====*/
 
-void pzgstrs2_omp(int_t k0, int_t k, int_t* Lsub_buf, 
+void pzgstrs2_omp(int_t k0, int_t k, int_t* Lsub_buf,
 		  doublecomplex *Lval_buf, Glu_persist_t *Glu_persist,
 		  gridinfo_t *grid, zLocalLU_t *Llu, SuperLUStat_t *stat,
 		  Ublock_info_t *Ublock_info, doublecomplex *bigV, int_t ldt, SCT_t *SCT)
@@ -927,16 +1017,16 @@ void pzgstrs2_omp(int_t k0, int_t k, int_t* Lsub_buf,
     Trs2_InitUbloc_info(klst, nb, Ublock_info, usub, Glu_persist, stat );
 
     /* Loop through all the row blocks. */
-#ifdef _OPENMP    
+#ifdef _OPENMP
 #pragma omp parallel for schedule(dynamic,2)
 #endif
     for (int_t b = 0; b < nb; ++b)
     {
-#ifdef _OPENMP    
+#ifdef _OPENMP
         int thread_id = omp_get_thread_num();
-#else	
+#else
         int thread_id = 0;
-#endif	
+#endif
         doublecomplex *tempv = bigV +  thread_id * ldt * ldt;
         zTrs2_GatherTrsmScatter(klst, Ublock_info[b].iukp, Ublock_info[b].rukp,
 				usub, uval, tempv, knsupc, nsupr, lusup, Glu_persist);

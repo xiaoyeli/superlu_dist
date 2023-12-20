@@ -12,7 +12,7 @@ at the top-level directory.
  * \brief Permutes the columns of the original matrix
  *
  * <pre>
- * -- Distributed SuperLU routine (version 5.1.3) --
+ * -- Distributed SuperLU routine (version 9.0) --
  * Lawrence Berkeley National Lab, Univ. of California Berkeley.
  * September 1, 1999
  * December 31, 2016 version 5.1.3

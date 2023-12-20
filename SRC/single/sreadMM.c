@@ -51,7 +51,7 @@ sreadMM_dist(FILE *fp, int_t *m, int_t *n, int_t *nonz,
      *    % ...
      *    % (optional comments)
      *    % ...
-     *    #rows    #non-zero
+     *    #rows  #cols  #non-zeros
      *    Triplet in the rest of lines: row    col    value
      */
 
@@ -237,7 +237,7 @@ static void sreadrhs(int m, float *b)
 	exit(-1);
     }
     for (i = 0; i < m; ++i)
-      i = fscanf(fp, "%f\n", &b[i]);
+      i = fscanf(fp, "%lf\n", &b[i]);
       /*fscanf(fp, "%d%lf\n", &j, &b[i]);*/
     /*        readpair_(j, &b[i]);*/
     fclose(fp);

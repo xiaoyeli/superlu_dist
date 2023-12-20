@@ -420,7 +420,7 @@ int_t LUstruct_v100::dsparseTreeFactorGPU(
 #if (DEBUGlevel >= 1)
     CHECK_MALLOC(grid3d->iam, "Enter dsparseTreeFactorGPU()");
 #endif
-    printf("Using New code V100 with GPU acceleration\n"); fflush(stdout);
+    printf("Using New C++ code with GPU acceleration\n"); fflush(stdout);
     printf(". lookahead numLA %d\n", numLA); fflush(stdout);
     
     // start the pipeline.  Sherry: need to free these 3 arrays
@@ -941,7 +941,7 @@ int_t LUstruct_v100::dsparseTreeFactorGPUBaseline(
         return 1;
     }
 
-    printf("Using New code V100 with GPU acceleration\n");
+    printf("Using New C++ code with GPU acceleration\n");
 #if (DEBUGlevel >= 1)
     CHECK_MALLOC(grid3d->iam, "Enter dsparseTreeFactorGPUBaseline()");
 #endif

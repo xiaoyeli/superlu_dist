@@ -14,7 +14,7 @@ at the top-level directory.
  * \brief Auxiliary routine for 3D factorization.
  *
  * <pre>
- * -- Distributed SuperLU routine (version 7.0) --
+ * -- Distributed SuperLU routine (version 9.0) --
  * Lawrence Berkeley National Lab, Georgia Institute of Technology,
  * Oak Ridge National Lab
  * May 12, 2021
@@ -539,17 +539,16 @@ double* dgetBigU(superlu_dist_options_t *options,
 
     // printf("Size of big U is %d\n",bigu_size );
     double* bigU = doubleMalloc_dist(bigu_size);
+
     return bigU;
 } /* dgetBigU */
-
-
 
 
 /* YL: Initialize 3Dpartition using only LUstruct on grid 0. Note that this is a function modifed based on dinitTrf3Dpartition */
 dtrf3Dpartition_t* dinitTrf3DpartitionLUstructgrid0(int_t n, superlu_dist_options_t *options,
 				      dLUstruct_t *LUstruct, gridinfo3d_t * grid3d
 				      )
-{   
+{
     gridinfo_t* grid = &(grid3d->grid2d);
     int iam = grid3d->iam;
 #if ( DEBUGlevel>=1 )
@@ -569,10 +568,10 @@ dtrf3Dpartition_t* dinitTrf3DpartitionLUstructgrid0(int_t n, superlu_dist_option
     int_t *xsup;
     if (!grid3d->zscp.Iam){
         int_t* perm_c_supno = getPerm_c_supno(nsupers, options,
-                                            LUstruct->etree,
-                                    LUstruct->Glu_persist,
-                                    LUstruct->Llu->Lrowind_bc_ptr,
-                        LUstruct->Llu->Ufstnz_br_ptr, grid);
+                                         LUstruct->etree,
+    	   		                 LUstruct->Glu_persist,
+		                         LUstruct->Llu->Lrowind_bc_ptr,
+					 LUstruct->Llu->Ufstnz_br_ptr, grid);
         iperm_c_supno = getFactIperm(perm_c_supno, nsupers);
         SUPERLU_FREE(perm_c_supno);
         xsup  = LUstruct->Glu_persist->xsup;
@@ -603,7 +602,7 @@ dtrf3Dpartition_t* dinitTrf3DpartitionLUstructgrid0(int_t n, superlu_dist_option
         }
         SUPERLU_FREE(scuWeight);
     }
-    calcTreeWeight(nsupers, setree, treeList, xsup); 
+    calcTreeWeight(nsupers, setree, treeList, xsup);
 
     if (grid3d->zscp.Iam){
         SUPERLU_FREE(xsup);
@@ -616,8 +615,8 @@ dtrf3Dpartition_t* dinitTrf3DpartitionLUstructgrid0(int_t n, superlu_dist_option
     {
         /* code */
         gEtreeInfo.numChildLeft[i] = treeList[i].numChild;
-    }		
-    
+    }
+
     int maxLvl = log2i(grid3d->zscp.Np) + 1; /* Levels for Pz process layer */
     sForest_t**  sForests = getForests( maxLvl, nsupers, setree, treeList);
     /*indexes of trees for my process grid in gNodeList size(maxLvl)*/
@@ -629,8 +628,8 @@ dtrf3Dpartition_t* dinitTrf3DpartitionLUstructgrid0(int_t n, superlu_dist_option
 
     int_t* myNodeCount = getMyNodeCountsFr(maxLvl, myTreeIdxs, sForests);
     int_t** treePerm = getTreePermFr( myTreeIdxs, sForests, grid3d);
-    
-    
+
+
     int_t* supernode2treeMap = SUPERLU_MALLOC(nsupers*sizeof(int_t));
     int_t numForests = (1 << maxLvl) - 1;
     for (int_t Fr = 0; Fr < numForests; ++Fr)
@@ -641,8 +640,8 @@ dtrf3Dpartition_t* dinitTrf3DpartitionLUstructgrid0(int_t n, superlu_dist_option
             /* code */
             supernode2treeMap[gNodeLists[Fr][nd]]=Fr;
         }
-    }		
-		
+    }
+
     int* supernodeMask = SUPERLU_MALLOC(nsupers*sizeof(int));
     for (int ii = 0; ii < nsupers; ++ii)
         supernodeMask[ii]=0;
@@ -659,13 +658,13 @@ dtrf3Dpartition_t* dinitTrf3DpartitionLUstructgrid0(int_t n, superlu_dist_option
     /* Sherry 2/17/23
        Compute buffer sizes needed for diagonal LU blocks and C matrices in GEMM. */
 
-    
+
     iam = grid->iam;  /* 'grid' is 2D grid */
     int k, k0, k_st, k_end, offset, nsupc, krow, kcol;
     int myrow = MYROW (iam, grid);
     int mycol = MYCOL (iam, grid);
-    
-#if 0    
+
+#if 0
     int krow = PROW (k, grid);
     int kcol = PCOL (k, grid);
     int_t** Lrowind_bc_ptr = Llu->Lrowind_bc_ptr;
@@ -673,15 +672,15 @@ dtrf3Dpartition_t* dinitTrf3DpartitionLUstructgrid0(int_t n, superlu_dist_option
 
     int_t** Ufstnz_br_ptr = Llu->Ufstnz_br_ptr;
     double** Unzval_br_ptr = Llu->Unzval_br_ptr;
-#endif    
-    
-    int mxLeafNode = 0; // Yang: only need to check the leaf level of topoInfo as the factorization proceeds level by level 
+#endif
+
+    int mxLeafNode = 0; // Yang: only need to check the leaf level of topoInfo as the factorization proceeds level by level
     for (int ilvl = 0; ilvl < maxLvl; ++ilvl) {
         if (sForests[myTreeIdxs[ilvl]] && sForests[myTreeIdxs[ilvl]]->topoInfo.eTreeTopLims[1] > mxLeafNode )
             mxLeafNode    = sForests[myTreeIdxs[ilvl]]->topoInfo.eTreeTopLims[1];
     }
 
-    // Yang: use ldts to track the maximum needed buffer sizes per node of topoInfo 
+    // Yang: use ldts to track the maximum needed buffer sizes per node of topoInfo
     //int *ldts = (int*) SUPERLU_MALLOC(mxLeafNode*sizeof(int));
     //for (int i = 0; i < mxLeafNode; ++i) {  //????????
     //ldts[i]=1;
@@ -700,7 +699,7 @@ dtrf3Dpartition_t* dinitTrf3DpartitionLUstructgrid0(int_t n, superlu_dist_option
                 k_st = sforest->topoInfo.eTreeTopLims[topoLvl];
                 k_end = sforest->topoInfo.eTreeTopLims[topoLvl + 1];
 		//printf("\t..topoLvl %d, k_st %d, k_end %d\n", topoLvl, k_st, k_end);
-		
+
                 for (int k0 = k_st; k0 < k_end; ++k0)
                 {
                     offset = k0 - k_st;
@@ -715,18 +714,18 @@ dtrf3Dpartition_t* dinitTrf3DpartitionLUstructgrid0(int_t n, superlu_dist_option
 #if 0 /* GPU gemm buffers can only be set on GPU side, because here we only know
 	 the size of U data structure on CPU.  It is different on GPU */
                     if ( mycol == kcol ) { /* processes owning L panel */
-		      
+
 		    }
-                    if ( myrow == krow ) 
+                    if ( myrow == krow )
 			gemmCsizes[offset] = SUPERLU_MAX(ldts[offset], ???);
-#endif		    
-                }               
+#endif
+                }
             }
         }
     }
 
     //PrintInt10("inittrf3Dpartition: ldts", mxLeafNode, ldts);
-    
+
     dtrf3Dpartition_t*  trf3Dpartition = SUPERLU_MALLOC(sizeof(dtrf3Dpartition_t));
 
     trf3Dpartition->gEtreeInfo = gEtreeInfo;
@@ -756,13 +755,11 @@ dtrf3Dpartition_t* dinitTrf3DpartitionLUstructgrid0(int_t n, superlu_dist_option
     return trf3Dpartition;
 } /* dinitTrf3DpartitionLUstructgrid0 */
 
-
-
 /* YL: Initialize 3Dpartition using LUstruct on all grid. LUstruct has partial L and U meta data from a supernodemask array that assigns the supernodes on z grid in the round-robin fashion. Note that this is a function modifed based on dinitTrf3Dpartition */
 dtrf3Dpartition_t* dinitTrf3Dpartition_allgrid(int_t n, superlu_dist_options_t *options,
 				      dLUstruct_t *LUstruct, gridinfo3d_t * grid3d
 				      )
-{   
+{
     gridinfo_t* grid = &(grid3d->grid2d);
     int iam = grid3d->iam;
 #if ( DEBUGlevel>=1 )
@@ -793,7 +790,7 @@ dtrf3Dpartition_t* dinitTrf3Dpartition_allgrid(int_t n, superlu_dist_options_t *
         LUstruct->Llu->Lrowind_bc_ptr, LUstruct->Llu->Ufstnz_br_ptr,
         grid3d);
 
-    calcTreeWeight(nsupers, setree, treeList, xsup); 
+    calcTreeWeight(nsupers, setree, treeList, xsup);
 
     gEtreeInfo_t gEtreeInfo;
     gEtreeInfo.setree = setree;
@@ -802,8 +799,8 @@ dtrf3Dpartition_t* dinitTrf3Dpartition_allgrid(int_t n, superlu_dist_options_t *
     {
         /* code */
         gEtreeInfo.numChildLeft[i] = treeList[i].numChild;
-    }		
-    
+    }
+
     int maxLvl = log2i(grid3d->zscp.Np) + 1; /* Levels for Pz process layer */
     sForest_t**  sForests = getForests( maxLvl, nsupers, setree, treeList);
     /*indexes of trees for my process grid in gNodeList size(maxLvl)*/
@@ -815,8 +812,8 @@ dtrf3Dpartition_t* dinitTrf3Dpartition_allgrid(int_t n, superlu_dist_options_t *
 
     int_t* myNodeCount = getMyNodeCountsFr(maxLvl, myTreeIdxs, sForests);
     int_t** treePerm = getTreePermFr( myTreeIdxs, sForests, grid3d);
-    
-    
+
+
     int_t* supernode2treeMap = SUPERLU_MALLOC(nsupers*sizeof(int_t));
     int_t numForests = (1 << maxLvl) - 1;
     for (int_t Fr = 0; Fr < numForests; ++Fr)
@@ -827,8 +824,8 @@ dtrf3Dpartition_t* dinitTrf3Dpartition_allgrid(int_t n, superlu_dist_options_t *
             /* code */
             supernode2treeMap[gNodeLists[Fr][nd]]=Fr;
         }
-    }		
-		
+    }
+
     int* supernodeMask = SUPERLU_MALLOC(nsupers*sizeof(int));
     for (int ii = 0; ii < nsupers; ++ii)
         supernodeMask[ii]=0;
@@ -845,13 +842,13 @@ dtrf3Dpartition_t* dinitTrf3Dpartition_allgrid(int_t n, superlu_dist_options_t *
     /* Sherry 2/17/23
        Compute buffer sizes needed for diagonal LU blocks and C matrices in GEMM. */
 
-    
+
     iam = grid->iam;  /* 'grid' is 2D grid */
     int k, k0, k_st, k_end, offset, nsupc, krow, kcol;
     int myrow = MYROW (iam, grid);
     int mycol = MYCOL (iam, grid);
-    
-#if 0    
+
+#if 0
     int krow = PROW (k, grid);
     int kcol = PCOL (k, grid);
     int_t** Lrowind_bc_ptr = Llu->Lrowind_bc_ptr;
@@ -859,15 +856,15 @@ dtrf3Dpartition_t* dinitTrf3Dpartition_allgrid(int_t n, superlu_dist_options_t *
 
     int_t** Ufstnz_br_ptr = Llu->Ufstnz_br_ptr;
     double** Unzval_br_ptr = Llu->Unzval_br_ptr;
-#endif    
-    
-    int mxLeafNode = 0; // Yang: only need to check the leaf level of topoInfo as the factorization proceeds level by level 
+#endif
+
+    int mxLeafNode = 0; // Yang: only need to check the leaf level of topoInfo as the factorization proceeds level by level
     for (int ilvl = 0; ilvl < maxLvl; ++ilvl) {
         if (sForests[myTreeIdxs[ilvl]] && sForests[myTreeIdxs[ilvl]]->topoInfo.eTreeTopLims[1] > mxLeafNode )
             mxLeafNode    = sForests[myTreeIdxs[ilvl]]->topoInfo.eTreeTopLims[1];
     }
 
-    // Yang: use ldts to track the maximum needed buffer sizes per node of topoInfo 
+    // Yang: use ldts to track the maximum needed buffer sizes per node of topoInfo
     //int *ldts = (int*) SUPERLU_MALLOC(mxLeafNode*sizeof(int));
     //for (int i = 0; i < mxLeafNode; ++i) {  //????????
     //ldts[i]=1;
@@ -886,7 +883,7 @@ dtrf3Dpartition_t* dinitTrf3Dpartition_allgrid(int_t n, superlu_dist_options_t *
                 k_st = sforest->topoInfo.eTreeTopLims[topoLvl];
                 k_end = sforest->topoInfo.eTreeTopLims[topoLvl + 1];
 		//printf("\t..topoLvl %d, k_st %d, k_end %d\n", topoLvl, k_st, k_end);
-		
+
                 for (int k0 = k_st; k0 < k_end; ++k0)
                 {
                     offset = k0 - k_st;
@@ -901,18 +898,18 @@ dtrf3Dpartition_t* dinitTrf3Dpartition_allgrid(int_t n, superlu_dist_options_t *
 #if 0 /* GPU gemm buffers can only be set on GPU side, because here we only know
 	 the size of U data structure on CPU.  It is different on GPU */
                     if ( mycol == kcol ) { /* processes owning L panel */
-		      
+
 		    }
-                    if ( myrow == krow ) 
+                    if ( myrow == krow )
 			gemmCsizes[offset] = SUPERLU_MAX(ldts[offset], ???);
-#endif		    
-                }               
+#endif
+                }
             }
         }
     }
 
     //PrintInt10("inittrf3Dpartition: ldts", mxLeafNode, ldts);
-    
+
     dtrf3Dpartition_t*  trf3Dpartition = SUPERLU_MALLOC(sizeof(dtrf3Dpartition_t));
 
     trf3Dpartition->gEtreeInfo = gEtreeInfo;
@@ -942,9 +939,6 @@ dtrf3Dpartition_t* dinitTrf3Dpartition_allgrid(int_t n, superlu_dist_options_t *
     return trf3Dpartition;
 } /* dinitTrf3Dpartition_allgrid */
 
-
-
-
 #if 0
 /* This routine is called by all 3D processes, in driver pdgssvx3d(). */
 dtrf3Dpartition_t* dinitTrf3Dpartition(int_t nsupers,
@@ -972,8 +966,8 @@ dtrf3Dpartition_t* dinitTrf3Dpartition(int_t nsupers,
 
     /*update treelist with weight and depth*/
     getSCUweight(nsupers, treeList, xsup,
-		 LUstruct->Llu->Lrowind_bc_ptr, LUstruct->Llu->Ufstnz_br_ptr,
-		 grid3d);
+		  LUstruct->Llu->Lrowind_bc_ptr, LUstruct->Llu->Ufstnz_br_ptr,
+		  grid3d);
 
     calcTreeWeight(nsupers, setree, treeList, xsup);
 
@@ -998,7 +992,7 @@ dtrf3Dpartition_t* dinitTrf3Dpartition(int_t nsupers,
                          sForests, LUstruct, grid3d);
     // printf("iam3d %5d, gNodeCount[0] %5d, gNodeCount[1] %5d, gNodeCount[2] %5d\n",grid3d->iam, gNodeCount[0],gNodeCount[1],gNodeCount[2]);
     // printf("iam3d %5d, myTreeIdxs[0] %5d, myZeroTrIdxs[0] %5d\n",grid3d->iam, myTreeIdxs[0],myZeroTrIdxs[0]);
-    // printf("iam3d %5d, sForests[0]->nodeList[0] %5d, sForests[1]->nodeList[0] %5d,sForests[2]->nodeList[0] %5d\n",grid3d->iam, sForests[0]->nodeList[0], sForests[1]->nodeList[0],sForests[2]->nodeList[0]);    
+    // printf("iam3d %5d, sForests[0]->nodeList[0] %5d, sForests[1]->nodeList[0] %5d,sForests[2]->nodeList[0] %5d\n",grid3d->iam, sForests[0]->nodeList[0], sForests[1]->nodeList[0],sForests[2]->nodeList[0]);
     // printf("iam3d %5d, myTreeIdxs[0] %5d, myZeroTrIdxs[0] %5d, myTreeIdxs[1] %5d, myZeroTrIdxs[1] %5d, myTreeIdxs[2] %5d, myZeroTrIdxs[2] %5d, myTreeIdxs[3] %5d, myZeroTrIdxs[3] %5d\n",grid3d->iam, myTreeIdxs[0],myZeroTrIdxs[0],myTreeIdxs[1],myZeroTrIdxs[1],myTreeIdxs[2],myZeroTrIdxs[2],myTreeIdxs[3],myZeroTrIdxs[3]);
 
 
@@ -1020,7 +1014,6 @@ dtrf3Dpartition_t* dinitTrf3Dpartition(int_t nsupers,
             supernode2treeMap[gNodeLists[Fr][nd]]=Fr;
         }
     }
-
     int* supernodeMask = SUPERLU_MALLOC(nsupers*sizeof(int));
     for (int ii = 0; ii < nsupers; ++ii)
         supernodeMask[ii]=0;
@@ -1036,29 +1029,27 @@ dtrf3Dpartition_t* dinitTrf3Dpartition(int_t nsupers,
 
     /* Sherry 2/17/23
        Compute buffer sizes needed for diagonal LU blocks and C matrices in GEMM. */
-    
+
     iam = grid->iam;  /* 'grid' is 2D grid */
     int k, k0, k_st, k_end, offset, nsupc, krow, kcol;
     int myrow = MYROW (iam, grid);
     int mycol = MYCOL (iam, grid);
-    
-#if 0    
+
+#if 0
     int krow = PROW (k, grid);
     int kcol = PCOL (k, grid);
     int_t** Lrowind_bc_ptr = Llu->Lrowind_bc_ptr;
-    double** Lnzval_bc_ptr = Llu->Lnzval_bc_ptr;
 
     int_t** Ufstnz_br_ptr = Llu->Ufstnz_br_ptr;
-    double** Unzval_br_ptr = Llu->Unzval_br_ptr;
-#endif    
-    
-    int mxLeafNode = 0; // Yang: only need to check the leaf level of topoInfo as the factorization proceeds level by level 
+#endif
+
+    int mxLeafNode = 0; // Yang: only need to check the leaf level of topoInfo as the factorization proceeds level by level
     for (int ilvl = 0; ilvl < maxLvl; ++ilvl) {
         if (sForests[myTreeIdxs[ilvl]] && sForests[myTreeIdxs[ilvl]]->topoInfo.eTreeTopLims[1] > mxLeafNode )
             mxLeafNode    = sForests[myTreeIdxs[ilvl]]->topoInfo.eTreeTopLims[1];
     }
 
-    // Yang: use ldts to track the maximum needed buffer sizes per node of topoInfo 
+    // Yang: use ldts to track the maximum needed buffer sizes per node of topoInfo
     //int *ldts = (int*) SUPERLU_MALLOC(mxLeafNode*sizeof(int));
     //for (int i = 0; i < mxLeafNode; ++i) {  //????????
     //ldts[i]=1;
@@ -1077,7 +1068,7 @@ dtrf3Dpartition_t* dinitTrf3Dpartition(int_t nsupers,
                 k_st = sforest->topoInfo.eTreeTopLims[topoLvl];
                 k_end = sforest->topoInfo.eTreeTopLims[topoLvl + 1];
 		//printf("\t..topoLvl %d, k_st %d, k_end %d\n", topoLvl, k_st, k_end);
-		
+
                 for (int k0 = k_st; k0 < k_end; ++k0)
                 {
                     offset = k0 - k_st;
@@ -1092,18 +1083,17 @@ dtrf3Dpartition_t* dinitTrf3Dpartition(int_t nsupers,
 #if 0 /* GPU gemm buffers can only be set on GPU side, because here we only know
 	 the size of U data structure on CPU.  It is different on GPU */
                     if ( mycol == kcol ) { /* processes owning L panel */
-		      
+
 		    }
-                    if ( myrow == krow ) 
+                    if ( myrow == krow )
 			gemmCsizes[offset] = SUPERLU_MAX(ldts[offset], ???);
-#endif		    
-                }               
+#endif
+                }
             }
         }
     }
 
     //PrintInt10("inittrf3Dpartition: ldts", mxLeafNode, ldts);
-    
     dtrf3Dpartition_t*  trf3Dpartition = SUPERLU_MALLOC(sizeof(dtrf3Dpartition_t));
 
     trf3Dpartition->gEtreeInfo = gEtreeInfo;
@@ -1133,7 +1123,7 @@ dtrf3Dpartition_t* dinitTrf3Dpartition(int_t nsupers,
 #endif
     return trf3Dpartition;
 } /* end dinitTrf3Dpartition */
-#endif 
+#endif
 
 /* Free memory allocated for trf3Dpartition structure. Sherry added this routine */
 void dDestroy_trf3Dpartition(dtrf3Dpartition_t *trf3Dpartition)

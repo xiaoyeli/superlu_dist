@@ -4,7 +4,7 @@
  * \brief Factorization routines for the subtree using 2D process grid, with GPUs.
  *
  * <pre>
- * -- Distributed SuperLU routine (version 7.0) --
+ * -- Distributed SuperLU routine (version 9.0) --
  * Lawrence Berkeley National Lab, Univ. of California Berkeley,
  * Georgia Institute of Technology, Oak Ridge National Laboratory
  * May 12, 2021
@@ -18,7 +18,7 @@
 
 #ifdef GPU_ACC ///////////////// enable GPU
 
-/* 
+/*
 /-- num_u_blks--\ /-- num_u_blks_Phi --\
 ----------------------------------------
 |  host_cols    ||    GPU   |   host   |
@@ -271,7 +271,7 @@ int ssparseTreeFactor_ASYNC_GPU(
 
         //printf(".. after CPU panel updates. numLA %d\n", numLA); fflush(stdout);
 
-        /* Process all the panels in look-ahead window: 
+        /* Process all the panels in look-ahead window:
 	   broadcast L and U panels. */
         for (int k0 = k_st; k0 < SUPERLU_MIN(k_end, k_st + numLA); ++k0)
         {
@@ -416,7 +416,7 @@ int ssparseTreeFactor_ASYNC_GPU(
 #ifdef _OPENMP
                 int thread_id = omp_get_thread_num();
 #else
-		int thread_id = 0; 
+		int thread_id = 0;
 #endif
 
 #ifdef _OPENMP
@@ -527,9 +527,9 @@ int ssparseTreeFactor_ASYNC_GPU(
                     {
 #ifdef _OPENMP
                         int thread_id = omp_get_thread_num();
-#else			
+#else
                         int thread_id = 0;
-#endif			
+#endif
                         double t1 = SuperLU_timer_();
 
                         if (offload_condition)
@@ -581,7 +581,7 @@ int ssparseTreeFactor_ASYNC_GPU(
                     } /* endif (superlu_acc_offload) */
 
                 } /* end omp master thread */
-		
+
 #ifdef _OPENMP
 #pragma omp for
 #endif
@@ -621,7 +621,7 @@ int ssparseTreeFactor_ASYNC_GPU(
                 if (IbcastPanel_L[next_k] == 0 && factored_L[next_k])
                 {
 #if 0
-                    sIBcastRecvLPanel( next_k, comReqss[offset], 
+                    sIBcastRecvLPanel( next_k, comReqss[offset],
 				       LUvsbs[offset], msgss[offset], factStat,
 				       grid, LUstruct, SCT, tag_ub );
 #else

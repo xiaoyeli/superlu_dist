@@ -13,7 +13,7 @@ at the top-level directory.
  * \brief Distribute the matrix onto the 2D process mesh.
  *
  * <pre>
- * -- Distributed SuperLU routine (version 2.3) --
+ * -- Distributed SuperLU routine (version 9.0) --
  * Lawrence Berkeley National Lab, Univ. of California Berkeley.
  * October 15, 2008
  *
@@ -97,20 +97,20 @@ zdistribute(superlu_dist_options_t *options,
 	int   *index1;        /* temporary pointer to array of int */
     doublecomplex *lusup, *lusup_srt, *uval; /* nonzero values in L and U */
     doublecomplex **Lnzval_bc_ptr; /* size ceil(NSUPERS/Pc) */
-    doublecomplex *Lnzval_bc_dat;  /* size: sum of sizes of Lnzval_bc_ptr[lk]) */   
+    doublecomplex *Lnzval_bc_dat;  /* size: sum of sizes of Lnzval_bc_ptr[lk]) */
     long int *Lnzval_bc_offset;  /* size ceil(NSUPERS/Pc)  */
-    
+
     int_t  **Lrowind_bc_ptr; /* size ceil(NSUPERS/Pc) */
     int_t *Lrowind_bc_dat; /* size: sum of sizes of Lrowind_bc_ptr[lk]) */
-    long int *Lrowind_bc_offset;  /* size ceil(NSUPERS/Pc)     */   
+    long int *Lrowind_bc_offset;  /* size ceil(NSUPERS/Pc)     */
     int_t **Lindval_loc_bc_ptr; /* size ceil(NSUPERS/Pc)     */
     int_t *Lindval_loc_bc_dat; /* size: sum of sizes of Lindval_loc_bc_ptr[lk]) */
     long int *Lindval_loc_bc_offset; /* size ceil(NSUPERS/Pc) */
-    
+
     int_t   *Unnz; /* size ceil(NSUPERS/Pc)                 */
     doublecomplex **Unzval_br_ptr;  /* size ceil(NSUPERS/Pr) */
     doublecomplex *Unzval_br_dat; /* size: sum of sizes of Unzval_br_ptr[lk]) */
-    long int *Unzval_br_offset;  /* size ceil(NSUPERS/Pr)    */   
+    long int *Unzval_br_offset;  /* size ceil(NSUPERS/Pr)    */
     long int Unzval_br_cnt=0;
     int_t  **Ufstnz_br_ptr; /* size ceil(NSUPERS/Pr) */
     int_t   *Ufstnz_br_dat; /* size: sum of sizes of Ufstnz_br_ptr[lk])  */
@@ -120,19 +120,19 @@ zdistribute(superlu_dist_options_t *options,
     C_Tree  *LRtree_ptr;  /* size ceil(NSUPERS/Pr)                */
     C_Tree  *UBtree_ptr;  /* size ceil(NSUPERS/Pc)                */
     C_Tree  *URtree_ptr;  /* size ceil(NSUPERS/Pr)                */
-    
+
     int msgsize;
 
     int_t  *Urbs,*Urbs1; /* Number of row blocks in each block column of U. */
     Ucb_indptr_t **Ucb_indptr;/* Vertical linked list pointing to Uindex[] */
     Ucb_indptr_t *Ucb_inddat;
     long int *Ucb_indoffset;
-    long int Ucb_indcnt=0; 
-    
+    long int Ucb_indcnt=0;
+
     int_t  **Ucb_valptr;      /* Vertical linked list pointing to Unzval[] */
-    int_t  *Ucb_valdat;      
+    int_t  *Ucb_valdat;
     long int *Ucb_valoffset;
-    long int Ucb_valcnt=0;   
+    long int Ucb_valcnt=0;
 
     /*-- Counts to be used in factorization. --*/
     int  *ToRecv, *ToSendD, **ToSendR;
@@ -149,7 +149,7 @@ zdistribute(superlu_dist_options_t *options,
     int  **bsendx_plist; /* Column process list to send down Xk.   */
     int  nbrecvx = 0;    /* Number of Xk I will receive.           */
     int  nbsendx = 0;    /* Number of Xk I will send               */
-    
+
     int_t  *ilsum;       /* starting position of each supernode in
 		            the full array (local)                 */
 
@@ -181,12 +181,12 @@ zdistribute(superlu_dist_options_t *options,
     int *frecv, *brecv;
     int_t *lloc;
     doublecomplex **Linv_bc_ptr;  /* size ceil(NSUPERS/Pc) */
-    doublecomplex *Linv_bc_dat;   /* size: sum of sizes of Linv_bc_ptr[lk]) */   
-    long int *Linv_bc_offset;  /* size ceil(NSUPERS/Pc)                 */ 	 
+    doublecomplex *Linv_bc_dat;   /* size: sum of sizes of Linv_bc_ptr[lk]) */
+    long int *Linv_bc_offset;  /* size ceil(NSUPERS/Pc)                 */
     doublecomplex **Uinv_bc_ptr;  /* size ceil(NSUPERS/Pc) */
     doublecomplex *Uinv_bc_dat;   /* size: sum of sizes of Uinv_bc_ptr[lk]) */
-    long int *Uinv_bc_offset;  /* size ceil(NSUPERS/Pc)     */	
-    
+    long int *Uinv_bc_offset;  /* size ceil(NSUPERS/Pc)     */
+
     double *SeedSTD_BC,*SeedSTD_RD;
     int_t idx_indx,idx_lusup;
     int_t nbrow;
@@ -391,19 +391,18 @@ zdistribute(superlu_dist_options_t *options,
 	if ( !(Unzval_br_ptr =
                (doublecomplex**)SUPERLU_MALLOC(k * sizeof(doublecomplex*))) )
 	    ABORT("Malloc fails for Unzval_br_ptr[].");
-	if ( !(Unzval_br_offset =
-				(long int*)SUPERLU_MALLOC(k * sizeof(long int))) ) {
-		fprintf(stderr, "Malloc fails for Unzval_br_offset[].");
-	}
-	Unzval_br_offset[k-1] = -1;		
-	    
-	if ( !(Ufstnz_br_ptr = (int_t**)SUPERLU_MALLOC(k * sizeof(int_t*))) )
+	// if ( !(Unzval_br_offset =
+				// 			(long int*)SUPERLU_MALLOC(k * sizeof(long int))) ) {
+		// 	fprintf(stderr, "Malloc fails for Unzval_br_offset[].");
+	// }
+	// Unzval_br_offset[k-1] = -1;
+	    	if ( !(Ufstnz_br_ptr = (int_t**)SUPERLU_MALLOC(k * sizeof(int_t*))) )
 	    ABORT("Malloc fails for Ufstnz_br_ptr[].");
-	if ( !(Ufstnz_br_offset =
-				(long int*)SUPERLU_MALLOC(k * sizeof(long int))) ) {
-		fprintf(stderr, "Malloc fails for Ufstnz_br_offset[].");
-	}
-	Ufstnz_br_offset[k-1] = -1;	
+	// if ( !(Ufstnz_br_offset =
+				// 			(long int*)SUPERLU_MALLOC(k * sizeof(long int))) ) {
+		// 	fprintf(stderr, "Malloc fails for Ufstnz_br_offset[].");
+	// }
+	// Ufstnz_br_offset[k-1] = -1;
 
 	if ( !(ToSendD = SUPERLU_MALLOC(k * sizeof(int))) )
 	    ABORT("Malloc fails for ToSendD[].");
@@ -492,14 +491,14 @@ zdistribute(superlu_dist_options_t *options,
 		if ( !(index = intMalloc_dist(len1+1)) )
 		    ABORT("Malloc fails for Uindex[].");
 		Ufstnz_br_ptr[lb] = index;
-		Ufstnz_br_offset[lb] = len1+1;
-		Ufstnz_br_cnt += Ufstnz_br_offset[lb];
-		
+		// Ufstnz_br_offset[lb] = len1+1;
+		// Ufstnz_br_cnt += Ufstnz_br_offset[lb];
+
 		if ( !(Unzval_br_ptr[lb] = doublecomplexMalloc_dist(len)) )
 		    ABORT("Malloc fails for Unzval_br_ptr[*][].");
-		Unzval_br_offset[lb]=len;
-		Unzval_br_cnt += Unzval_br_offset[lb];
-		
+		// Unzval_br_offset[lb]=len;
+		// Unzval_br_cnt += Unzval_br_offset[lb];
+
 		mybufmax[2] = SUPERLU_MAX( mybufmax[2], len1 );
 		mybufmax[3] = SUPERLU_MAX( mybufmax[3], len );
 		index[0] = Ucbs[lb]; /* Number of column blocks */
@@ -509,8 +508,8 @@ zdistribute(superlu_dist_options_t *options,
 	    } else {
 		Ufstnz_br_ptr[lb] = NULL;
 		Unzval_br_ptr[lb] = NULL;
-		Unzval_br_offset[lb]=-1;
-		Ufstnz_br_offset[lb]=-1;
+		// Unzval_br_offset[lb]=-1;
+		// Ufstnz_br_offset[lb]=-1;
 	    }
 	    Urb_length[lb] = 0; /* Reset block length. */
 	    Urb_indptr[lb] = BR_HEADER; /* Skip header in U index[]. */
@@ -554,51 +553,51 @@ zdistribute(superlu_dist_options_t *options,
 	/* Pointers to the beginning of each block column of L. */
 	if ( !(Lnzval_bc_ptr = (doublecomplex**)SUPERLU_MALLOC(k * sizeof(doublecomplex*))) )
 	    ABORT("Malloc fails for Lnzval_bc_ptr[].");
-	Lnzval_bc_ptr[k-1] = NULL;	
+	Lnzval_bc_ptr[k-1] = NULL;
 	if ( !(Lrowind_bc_ptr = (int_t**)SUPERLU_MALLOC(k * sizeof(int_t*))) )
 	    ABORT("Malloc fails for Lrowind_bc_ptr[].");
 	Lrowind_bc_ptr[k-1] = NULL;
-	if ( !(Lrowind_bc_offset =
-				(long int*)SUPERLU_MALLOC(k * sizeof(long int))) ) {
-		fprintf(stderr, "Malloc fails for Lrowind_bc_offset[].");
-	}
-	Lrowind_bc_offset[k-1] = -1;	
-	if ( !(Lnzval_bc_offset =
-				(long int*)SUPERLU_MALLOC(k * sizeof(long int))) ) {
-		fprintf(stderr, "Malloc fails for Lnzval_bc_offset[].");
-	}
-	Lnzval_bc_offset[k-1] = -1;			
+	// if ( !(Lrowind_bc_offset =
+	// 			(long int*)SUPERLU_MALLOC(k * sizeof(long int))) ) {
+	// 	fprintf(stderr, "Malloc fails for Lrowind_bc_offset[].");
+	// }
+	// Lrowind_bc_offset[k-1] = -1;
+	// if ( !(Lnzval_bc_offset =
+	// 			(long int*)SUPERLU_MALLOC(k * sizeof(long int))) ) {
+	//	fprintf(stderr, "Malloc fails for Lnzval_bc_offset[].");
+	// }
+	// Lnzval_bc_offset[k-1] = -1;
 
 	if ( !(Lindval_loc_bc_ptr =
 				(int_t**)SUPERLU_MALLOC(k * sizeof(int_t*))) )
 		ABORT("Malloc fails for Lindval_loc_bc_ptr[].");
 	Lindval_loc_bc_ptr[k-1] = NULL;
-	if ( !(Lindval_loc_bc_offset =
-				(long int*)SUPERLU_MALLOC(k * sizeof(long int))) ) {
-		fprintf(stderr, "Malloc fails for Lindval_loc_bc_offset[].");
-	}
-	Lindval_loc_bc_offset[k-1] = -1;
+	// if ( !(Lindval_loc_bc_offset =
+	// 			(long int*)SUPERLU_MALLOC(k * sizeof(long int))) ) {
+	// 	fprintf(stderr, "Malloc fails for Lindval_loc_bc_offset[].");
+	// }
+	// Lindval_loc_bc_offset[k-1] = -1;
 
 	if ( !(Linv_bc_ptr =
 				(doublecomplex**)SUPERLU_MALLOC(k * sizeof(doublecomplex*))) ) {
 		fprintf(stderr, "Malloc fails for Linv_bc_ptr[].");
 	}
-	if ( !(Linv_bc_offset =
-				(long int*)SUPERLU_MALLOC(k * sizeof(long int))) ) {
-		fprintf(stderr, "Malloc fails for Linv_bc_offset[].");
-	}		
+	// if ( !(Linv_bc_offset =
+	// 			(long int*)SUPERLU_MALLOC(k * sizeof(long int))) ) {
+	// 	fprintf(stderr, "Malloc fails for Linv_bc_offset[].");
+	// }
 	if ( !(Uinv_bc_ptr =
 				(doublecomplex**)SUPERLU_MALLOC(k * sizeof(doublecomplex*))) ) {
 		fprintf(stderr, "Malloc fails for Uinv_bc_ptr[].");
 	}
-	if ( !(Uinv_bc_offset =
-				(long int*)SUPERLU_MALLOC(k * sizeof(long int))) ) {
-		fprintf(stderr, "Malloc fails for Uinv_bc_offset[].");
-	}		
+	// if ( !(Uinv_bc_offset =
+	// 			(long int*)SUPERLU_MALLOC(k * sizeof(long int))) ) {
+	// 	fprintf(stderr, "Malloc fails for Uinv_bc_offset[].");
+	// }
 	Linv_bc_ptr[k-1] = NULL;
 	Uinv_bc_ptr[k-1] = NULL;
-	Linv_bc_offset[k-1] = -1;
-	Uinv_bc_offset[k-1] = -1;
+	// Linv_bc_offset[k-1] = -1;
+	// Uinv_bc_offset[k-1] = -1;
 
 	if ( !(Unnz = (int_t*)SUPERLU_MALLOC(k * sizeof(int_t))) )
 	    ABORT("Malloc fails for Unnz[].");
@@ -774,36 +773,36 @@ zdistribute(superlu_dist_options_t *options,
 		    len1 = len + BC_HEADER + nrbl * LB_DESCRIPTOR;
 		    if ( !(index = intMalloc_dist(len1)) )
 			ABORT("Malloc fails for index[]");
-		    Lrowind_bc_offset[ljb]=len1;
-		    Lrowind_bc_cnt += Lrowind_bc_offset[ljb];
+		    // Lrowind_bc_offset[ljb]=len1;
+		    // Lrowind_bc_cnt += Lrowind_bc_offset[ljb];
 		    if (!(lusup = (doublecomplex*)SUPERLU_MALLOC(len*nsupc * sizeof(doublecomplex))))
 				ABORT("Malloc fails for lusup[]");
-		    Lnzval_bc_offset[ljb]=len*nsupc;
-		    Lnzval_bc_cnt += Lnzval_bc_offset[ljb];
-		    
+		    // Lnzval_bc_offset[ljb]=len*nsupc;
+		    // Lnzval_bc_cnt += Lnzval_bc_offset[ljb];
+
 		    if ( !(Lindval_loc_bc_ptr[ljb] = intCalloc_dist(nrbl*3) ))
 				ABORT("Malloc fails for Lindval_loc_bc_ptr[ljb][]");
-		    Lindval_loc_bc_offset[ljb]=nrbl*3;
-		    Lindval_loc_bc_cnt += Lindval_loc_bc_offset[ljb];
-		    
+		    // Lindval_loc_bc_offset[ljb]=nrbl*3;
+		    // Lindval_loc_bc_cnt += Lindval_loc_bc_offset[ljb];
+
 		    myrow = MYROW( iam, grid );
-		    krow = PROW( jb, grid );	
+		    krow = PROW( jb, grid );
 		    if(myrow==krow){   /* diagonal block */
 		        if (!(Linv_bc_ptr[ljb] = (doublecomplex*)SUPERLU_MALLOC(nsupc*nsupc * sizeof(doublecomplex))))
 			    ABORT("Malloc fails for Linv_bc_ptr[ljb][]");
-			Linv_bc_offset[ljb]=nsupc*nsupc;
-			Linv_bc_cnt += Linv_bc_offset[ljb];						    
+			// Linv_bc_offset[ljb]=nsupc*nsupc;
+			// Linv_bc_cnt += Linv_bc_offset[ljb];
 			if (!(Uinv_bc_ptr[ljb] = (doublecomplex*)SUPERLU_MALLOC(nsupc*nsupc * sizeof(doublecomplex))))
 				ABORT("Malloc fails for Uinv_bc_ptr[ljb][]");
-			Uinv_bc_offset[ljb]=nsupc*nsupc;
-			Uinv_bc_cnt += Uinv_bc_offset[ljb];	
+			// Uinv_bc_offset[ljb]=nsupc*nsupc;
+			// Uinv_bc_cnt += Uinv_bc_offset[ljb];
 		    }else{
 		        Linv_bc_ptr[ljb] = NULL;
-			Linv_bc_offset[ljb] = -1;  
+			// Linv_bc_offset[ljb] = -1;
 			Uinv_bc_ptr[ljb] = NULL;
-			Uinv_bc_offset[ljb] = -1;  			
+			// Uinv_bc_offset[ljb] = -1;
 		    }
-				
+
 		    mybufmax[0] = SUPERLU_MAX( mybufmax[0], len1 );
 		    mybufmax[1] = SUPERLU_MAX( mybufmax[1], len*nsupc );
 		    mybufmax[4] = SUPERLU_MAX( mybufmax[4], len );
@@ -916,12 +915,12 @@ zdistribute(superlu_dist_options_t *options,
 		    Lrowind_bc_ptr[ljb] = NULL;
 		    Lnzval_bc_ptr[ljb] = NULL;
 		    Linv_bc_ptr[ljb] = NULL;
-		    Linv_bc_offset[ljb] = -1;
-		    Lrowind_bc_offset[ljb]=-1;
-		    Lindval_loc_bc_offset[ljb]=-1;
-		    Lnzval_bc_offset[ljb]=-1;			
+		    // Linv_bc_offset[ljb] = -1;
+		    // Lrowind_bc_offset[ljb]=-1;
+		    // Lindval_loc_bc_offset[ljb]=-1;
+		    // Lnzval_bc_offset[ljb]=-1;
 		    Uinv_bc_ptr[ljb] = NULL;
-		    Uinv_bc_offset[ljb] = -1;
+		    // Uinv_bc_offset[ljb] = -1;
 		    Lindval_loc_bc_ptr[ljb] = NULL;
 		} /* if nrbl ... */
 #if ( PROFlevel>=1 )
@@ -930,12 +929,12 @@ zdistribute(superlu_dist_options_t *options,
 	    } /* if mycol == pc */
 
 	} /* for jb ... */
-
+#if 0
 	Linv_bc_cnt +=1; // safe guard
-	Uinv_bc_cnt +=1; 
-	Lrowind_bc_cnt +=1; 
-	Lindval_loc_bc_cnt +=1; 
-	Lnzval_bc_cnt +=1; 
+	Uinv_bc_cnt +=1;
+	Lrowind_bc_cnt +=1;
+	Lindval_loc_bc_cnt +=1;
+	Lnzval_bc_cnt +=1;
 
 	if ( !(Linv_bc_dat =
 		(doublecomplex*)SUPERLU_MALLOC(Linv_bc_cnt * sizeof(doublecomplex))) ) {
@@ -949,15 +948,15 @@ zdistribute(superlu_dist_options_t *options,
 	if ( !(Lrowind_bc_dat =
 		(int_t*)SUPERLU_MALLOC(Lrowind_bc_cnt * sizeof(int_t))) ) {
 		fprintf(stderr, "Malloc fails for Lrowind_bc_dat[].");
-	}		
+	}
 	if ( !(Lindval_loc_bc_dat =
 		(int_t*)SUPERLU_MALLOC(Lindval_loc_bc_cnt * sizeof(int_t))) ) {
 		fprintf(stderr, "Malloc fails for Lindval_loc_bc_dat[].");
-	}	
+	}
 	if ( !(Lnzval_bc_dat =
 		(doublecomplex*)SUPERLU_MALLOC(Lnzval_bc_cnt * sizeof(doublecomplex))) ) {
 		fprintf(stderr, "Malloc fails for Lnzval_bc_dat[].");
-	}	
+	}
 
 	/* use contingous memory for Linv_bc_ptr, Uinv_bc_ptr, Lrowind_bc_ptr, Lnzval_bc_ptr*/
 	k = CEILING( nsupers, grid->npcol );/* Number of local block columns */
@@ -1020,8 +1019,9 @@ zdistribute(superlu_dist_options_t *options,
 			Lindval_loc_bc_offset[jb]=Lindval_loc_bc_cnt;
 			Lindval_loc_bc_cnt+=tmp_cnt;
 		}
-		
+
 	} /* for jb ... */
+#endif
 
 	/////////////////////////////////////////////////////////////////
 
@@ -1036,18 +1036,17 @@ zdistribute(superlu_dist_options_t *options,
 		ABORT("Malloc fails for Ucb_indptr[]");
 	if ( !(Ucb_valptr = SUPERLU_MALLOC(nub * sizeof(int_t *))) )
 		ABORT("Malloc fails for Ucb_valptr[]");
-	if ( !(Ucb_valoffset =
-				(long int*)SUPERLU_MALLOC(nub * sizeof(long int))) ) {
-		fprintf(stderr, "Malloc fails for Ucb_valoffset[].");
-	}
-	Ucb_valoffset[nub-1] = -1;
-	if ( !(Ucb_indoffset =
-				(long int*)SUPERLU_MALLOC(nub * sizeof(long int))) ) {
-		fprintf(stderr, "Malloc fails for Ucb_indoffset[].");
-	}
-	Ucb_indoffset[nub-1] = -1;
-		
-	nlb = CEILING( nsupers, grid->nprow ); /* Number of local block rows. */
+	// if ( !(Ucb_valoffset =
+				// 			(long int*)SUPERLU_MALLOC(nub * sizeof(long int))) ) {
+		// 	fprintf(stderr, "Malloc fails for Ucb_valoffset[].");
+	// }
+	// Ucb_valoffset[nub-1] = -1;
+	// if ( !(Ucb_indoffset =
+				// 			(long int*)SUPERLU_MALLOC(nub * sizeof(long int))) ) {
+		// 	fprintf(stderr, "Malloc fails for Ucb_indoffset[].");
+	// }
+	// Ucb_indoffset[nub-1] = -1;
+			nlb = CEILING( nsupers, grid->nprow ); /* Number of local block rows. */
 
 	/* Count number of row blocks in a block column.
 	   One pass of the skeleton graph of U. */
@@ -1071,17 +1070,17 @@ zdistribute(superlu_dist_options_t *options,
 			if ( !(Ucb_indptr[lb]
 				= SUPERLU_MALLOC(Urbs[lb] * sizeof(Ucb_indptr_t))) )
 				ABORT("Malloc fails for Ucb_indptr[lb][]");
-			Ucb_indoffset[lb]=Urbs[lb];
-			Ucb_indcnt += Ucb_indoffset[lb];
+			// Ucb_indoffset[lb]=Urbs[lb];
+			// Ucb_indcnt += Ucb_indoffset[lb];
 			if ( !(Ucb_valptr[lb] = (int_t *) intMalloc_dist(Urbs[lb])) )
 				ABORT("Malloc fails for Ucb_valptr[lb][]");
-			Ucb_valoffset[lb]=Urbs[lb];
-			Ucb_valcnt += Ucb_valoffset[lb];
+			// Ucb_valoffset[lb]=Urbs[lb];
+			// Ucb_valcnt += Ucb_valoffset[lb];
 		}else{
 			Ucb_valptr[lb]=NULL;
-			Ucb_valoffset[lb]=-1;
+			// Ucb_valoffset[lb]=-1;
 			Ucb_indptr[lb]=NULL;
-			Ucb_indoffset[lb]=-1;
+			// Ucb_indoffset[lb]=-1;
 		}
 	}
 	for (lk = 0; lk < nlb; ++lk) { /* For each block row. */
@@ -1125,27 +1124,27 @@ zdistribute(superlu_dist_options_t *options,
 			} /* for jj ... */
 		}
 	}
-
+#if 0
 	Unzval_br_cnt +=1; // safe guard
-	Ufstnz_br_cnt +=1; 
+	Ufstnz_br_cnt +=1;
 	Ucb_valcnt +=1 ;
-	Ucb_indcnt +=1; 
+	Ucb_indcnt +=1;
 	if ( !(Unzval_br_dat =
 		(doublecomplex*)SUPERLU_MALLOC(Unzval_br_cnt * sizeof(doublecomplex))) ) {
 		fprintf(stderr, "Malloc fails for Lnzval_bc_dat[].");
-	}	
+	}
 	if ( !(Ufstnz_br_dat =
 		(int_t*)SUPERLU_MALLOC(Ufstnz_br_cnt * sizeof(int_t))) ) {
 		fprintf(stderr, "Malloc fails for Ufstnz_br_dat[].");
-	}	
+	}
 	if ( !(Ucb_valdat =
 		(int_t*)SUPERLU_MALLOC(Ucb_valcnt * sizeof(int_t))) ) {
 		fprintf(stderr, "Malloc fails for Ucb_valdat[].");
-	}	
+	}
 	if ( !(Ucb_inddat =
 		(Ucb_indptr_t*)SUPERLU_MALLOC(Ucb_indcnt * sizeof(Ucb_indptr_t))) ) {
 		fprintf(stderr, "Malloc fails for Ucb_inddat[].");
-	}	
+	}
 
 	/* use contingous memory for Unzval_br_ptr, Ufstnz_br_ptr, Ucb_valptr */
 	k = CEILING( nsupers, grid->nprow );/* Number of local block rows */
@@ -1200,9 +1199,10 @@ zdistribute(superlu_dist_options_t *options,
 			Ucb_indcnt+=tmp_cnt;
 		}
 	}
+#endif
 
 	/////////////////////////////////////////////////////////////////
-
+#if 0
 #if ( PROFlevel>=1 )
 		t = SuperLU_timer_();
 #endif
@@ -1877,34 +1877,34 @@ if ( !iam) printf(".. Construct Bcast tree for U: %.2f\t\n", t);
 t = SuperLU_timer_() - t;
 if ( !iam) printf(".. Construct Reduce tree for U: %.2f\t\n", t);
 #endif
-
+#endif
 	////////////////////////////////////////////////////////
 
 	Llu->Lrowind_bc_ptr = Lrowind_bc_ptr;
-	Llu->Lrowind_bc_dat = Lrowind_bc_dat;
-	Llu->Lrowind_bc_offset = Lrowind_bc_offset;
-	Llu->Lrowind_bc_cnt = Lrowind_bc_cnt;
-	
+	// Llu->Lrowind_bc_dat = Lrowind_bc_dat;
+	// Llu->Lrowind_bc_offset = Lrowind_bc_offset;
+	// Llu->Lrowind_bc_cnt = Lrowind_bc_cnt;
+
 	Llu->Lindval_loc_bc_ptr = Lindval_loc_bc_ptr;
-	Llu->Lindval_loc_bc_dat = Lindval_loc_bc_dat;
-	Llu->Lindval_loc_bc_offset = Lindval_loc_bc_offset;
-	Llu->Lindval_loc_bc_cnt = Lindval_loc_bc_cnt;
-	
+	// Llu->Lindval_loc_bc_dat = Lindval_loc_bc_dat;
+	// Llu->Lindval_loc_bc_offset = Lindval_loc_bc_offset;
+	// Llu->Lindval_loc_bc_cnt = Lindval_loc_bc_cnt;
+
 	Llu->Lnzval_bc_ptr = Lnzval_bc_ptr;
-	Llu->Lnzval_bc_dat = Lnzval_bc_dat;
-	Llu->Lnzval_bc_offset = Lnzval_bc_offset;
-	Llu->Lnzval_bc_cnt = Lnzval_bc_cnt;
-	
+	// Llu->Lnzval_bc_dat = Lnzval_bc_dat;
+	// Llu->Lnzval_bc_offset = Lnzval_bc_offset;
+	// Llu->Lnzval_bc_cnt = Lnzval_bc_cnt;
+
 	Llu->Ufstnz_br_ptr = Ufstnz_br_ptr;
-    	Llu->Ufstnz_br_dat = Ufstnz_br_dat;  
-    	Llu->Ufstnz_br_offset = Ufstnz_br_offset;  
-    	Llu->Ufstnz_br_cnt = Ufstnz_br_cnt;
-	
+    // Llu->Ufstnz_br_dat = Ufstnz_br_dat;
+	// Llu->Ufstnz_br_offset = Ufstnz_br_offset;
+	// Llu->Ufstnz_br_cnt = Ufstnz_br_cnt;
+
 	Llu->Unzval_br_ptr = Unzval_br_ptr;
-	Llu->Unzval_br_dat = Unzval_br_dat;
-	Llu->Unzval_br_offset = Unzval_br_offset;
-	Llu->Unzval_br_cnt = Unzval_br_cnt;
-	
+	// Llu->Unzval_br_dat = Unzval_br_dat;
+	// Llu->Unzval_br_offset = Unzval_br_offset;
+	// Llu->Unzval_br_cnt = Unzval_br_cnt;
+
 	Llu->Unnz = Unnz;
 	Llu->ToRecv = ToRecv;
 	Llu->ToSendD = ToSendD;
@@ -1919,79 +1919,32 @@ if ( !iam) printf(".. Construct Reduce tree for U: %.2f\t\n", t);
 	Llu->nbsendx = nbsendx;
 	Llu->ilsum = ilsum;
 	Llu->ldalsum = ldaspa;
-	
-	Llu->LRtree_ptr = LRtree_ptr;
-	Llu->LBtree_ptr = LBtree_ptr;
-	Llu->URtree_ptr = URtree_ptr;
-	Llu->UBtree_ptr = UBtree_ptr;
-	
+
+	// Llu->LRtree_ptr = LRtree_ptr;
+	// Llu->LBtree_ptr = LBtree_ptr;
+	// Llu->URtree_ptr = URtree_ptr;
+	// Llu->UBtree_ptr = UBtree_ptr;
+
 	Llu->Linv_bc_ptr = Linv_bc_ptr;
-	Llu->Linv_bc_dat = Linv_bc_dat;
-	Llu->Linv_bc_offset = Linv_bc_offset;
-	Llu->Linv_bc_cnt = Linv_bc_cnt;
-	
+	// Llu->Linv_bc_dat = Linv_bc_dat;
+	// Llu->Linv_bc_offset = Linv_bc_offset;
+	// Llu->Linv_bc_cnt = Linv_bc_cnt;
+
 	Llu->Uinv_bc_ptr = Uinv_bc_ptr;
-	Llu->Uinv_bc_dat = Uinv_bc_dat;
-	Llu->Uinv_bc_offset = Uinv_bc_offset;
-	Llu->Uinv_bc_cnt = Uinv_bc_cnt;
-	
-	Llu->Urbs = Urbs;
+	// Llu->Uinv_bc_dat = Uinv_bc_dat;
+	// Llu->Uinv_bc_offset = Uinv_bc_offset;
+	// Llu->Uinv_bc_cnt = Uinv_bc_cnt;
+		Llu->Urbs = Urbs;
 	Llu->Ucb_indptr = Ucb_indptr;
-	Llu->Ucb_inddat = Ucb_inddat;
-	Llu->Ucb_indoffset = Ucb_indoffset;
-	Llu->Ucb_indcnt = Ucb_indcnt;
+	// Llu->Ucb_inddat = Ucb_inddat;
+	// Llu->Ucb_indoffset = Ucb_indoffset;
+	// Llu->Ucb_indcnt = Ucb_indcnt;
 	Llu->Ucb_valptr = Ucb_valptr;
-	Llu->Ucb_valdat = Ucb_valdat;
-	Llu->Ucb_valoffset = Ucb_valoffset;
-	Llu->Ucb_valcnt = Ucb_valcnt;
-
-#ifdef GPU_ACC
-
-	checkGPU(gpuMalloc( (void**)&Llu->d_xsup, (n+1) * sizeof(int_t)));
-	checkGPU(gpuMemcpy(Llu->d_xsup, xsup, (n+1) * sizeof(int_t), gpuMemcpyHostToDevice));
-	checkGPU(gpuMalloc( (void**)&Llu->d_LRtree_ptr, CEILING( nsupers, grid->nprow ) * sizeof(C_Tree)));
-	checkGPU(gpuMalloc( (void**)&Llu->d_LBtree_ptr, CEILING( nsupers, grid->npcol ) * sizeof(C_Tree)));
-	checkGPU(gpuMalloc( (void**)&Llu->d_URtree_ptr, CEILING( nsupers, grid->nprow ) * sizeof(C_Tree)));
-	checkGPU(gpuMalloc( (void**)&Llu->d_UBtree_ptr, CEILING( nsupers, grid->npcol ) * sizeof(C_Tree)));	
-	checkGPU(gpuMemcpy(Llu->d_LRtree_ptr, Llu->LRtree_ptr, CEILING( nsupers, grid->nprow ) * sizeof(C_Tree), gpuMemcpyHostToDevice));	
-	checkGPU(gpuMemcpy(Llu->d_LBtree_ptr, Llu->LBtree_ptr, CEILING( nsupers, grid->npcol ) * sizeof(C_Tree), gpuMemcpyHostToDevice));			
-	checkGPU(gpuMemcpy(Llu->d_URtree_ptr, Llu->URtree_ptr, CEILING( nsupers, grid->nprow ) * sizeof(C_Tree), gpuMemcpyHostToDevice));	
-	checkGPU(gpuMemcpy(Llu->d_UBtree_ptr, Llu->UBtree_ptr, CEILING( nsupers, grid->npcol ) * sizeof(C_Tree), gpuMemcpyHostToDevice));		
-	checkGPU(gpuMalloc( (void**)&Llu->d_Lrowind_bc_dat, (Llu->Lrowind_bc_cnt) * sizeof(int_t)));
-	checkGPU(gpuMemcpy(Llu->d_Lrowind_bc_dat, Llu->Lrowind_bc_dat, (Llu->Lrowind_bc_cnt) * sizeof(int_t), gpuMemcpyHostToDevice));	
-	checkGPU(gpuMalloc( (void**)&Llu->d_Lindval_loc_bc_dat, (Llu->Lindval_loc_bc_cnt) * sizeof(int_t)));
-	checkGPU(gpuMemcpy(Llu->d_Lindval_loc_bc_dat, Llu->Lindval_loc_bc_dat, (Llu->Lindval_loc_bc_cnt) * sizeof(int_t), gpuMemcpyHostToDevice));	
-	checkGPU(gpuMalloc( (void**)&Llu->d_Lrowind_bc_offset, CEILING( nsupers, grid->npcol ) * sizeof(long int)));
-	checkGPU(gpuMemcpy(Llu->d_Lrowind_bc_offset, Llu->Lrowind_bc_offset, CEILING( nsupers, grid->npcol ) * sizeof(long int), gpuMemcpyHostToDevice));	
-	checkGPU(gpuMalloc( (void**)&Llu->d_Lindval_loc_bc_offset, CEILING( nsupers, grid->npcol ) * sizeof(long int)));
-	checkGPU(gpuMemcpy(Llu->d_Lindval_loc_bc_offset, Llu->Lindval_loc_bc_offset, CEILING( nsupers, grid->npcol ) * sizeof(long int), gpuMemcpyHostToDevice));	
-	checkGPU(gpuMalloc( (void**)&Llu->d_Lnzval_bc_offset, CEILING( nsupers, grid->npcol ) * sizeof(long int)));
-	checkGPU(gpuMemcpy(Llu->d_Lnzval_bc_offset, Llu->Lnzval_bc_offset, CEILING( nsupers, grid->npcol ) * sizeof(long int), gpuMemcpyHostToDevice));	
-	
-
-	// some dummy allocation to avoid checking whether they are null pointers later
-	checkGPU(gpuMalloc( (void**)&Llu->d_Ucolind_bc_dat, sizeof(int_t)));
-	checkGPU(gpuMalloc( (void**)&Llu->d_Ucolind_bc_offset, sizeof(int64_t)));
-	checkGPU(gpuMalloc( (void**)&Llu->d_Unzval_bc_dat, sizeof(doublecomplex) ));
-	checkGPU(gpuMalloc( (void**)&Llu->d_Unzval_bc_offset, sizeof(int64_t)));
-	checkGPU(gpuMalloc( (void**)&Llu->d_Uindval_loc_bc_dat, sizeof(int_t)));
-	checkGPU(gpuMalloc( (void**)&Llu->d_Uindval_loc_bc_offset, sizeof(int_t)));
+	// Llu->Ucb_valdat = Ucb_valdat;
+	// Llu->Ucb_valoffset = Ucb_valoffset;
+	// Llu->Ucb_valcnt = Ucb_valcnt;
 
 
-	checkGPU(gpuMalloc( (void**)&Llu->d_Linv_bc_offset, CEILING( nsupers, grid->npcol ) * sizeof(long int)));
-	checkGPU(gpuMemcpy(Llu->d_Linv_bc_offset, Llu->Linv_bc_offset, CEILING( nsupers, grid->npcol ) * sizeof(long int), gpuMemcpyHostToDevice));	
-	checkGPU(gpuMalloc( (void**)&Llu->d_Uinv_bc_offset, CEILING( nsupers, grid->npcol ) * sizeof(long int)));
-	checkGPU(gpuMemcpy(Llu->d_Uinv_bc_offset, Llu->Uinv_bc_offset, CEILING( nsupers, grid->npcol ) * sizeof(long int), gpuMemcpyHostToDevice));		
-	checkGPU(gpuMalloc( (void**)&Llu->d_ilsum, (CEILING( nsupers, grid->nprow )+1) * sizeof(int_t)));
-	checkGPU(gpuMemcpy(Llu->d_ilsum, Llu->ilsum, (CEILING( nsupers, grid->nprow )+1) * sizeof(int_t), gpuMemcpyHostToDevice));
-
-
-	/* gpuMemcpy for the following is performed in pxgssvx */
-	checkGPU(gpuMalloc( (void**)&Llu->d_Lnzval_bc_dat, (Llu->Lnzval_bc_cnt) * sizeof(doublecomplex) ));
-	checkGPU(gpuMalloc( (void**)&Llu->d_Linv_bc_dat, (Llu->Linv_bc_cnt) * sizeof(doublecomplex) ));
-	checkGPU(gpuMalloc( (void**)&Llu->d_Uinv_bc_dat, (Llu->Uinv_bc_cnt) * sizeof(doublecomplex) ));
-	
-#endif  /* match ifdef GPU_ACC */
 
 #if ( PRNTlevel>=1 )
 	if ( !iam ) printf(".. # L blocks " IFMT "\t# U blocks " IFMT "\n",
@@ -2007,6 +1960,7 @@ if ( !iam) printf(".. Construct Reduce tree for U: %.2f\t\n", t);
 	SUPERLU_FREE(Lrb_indptr);
 	SUPERLU_FREE(Lrb_valptr);
 	SUPERLU_FREE(dense);
+	LUstruct->trf3Dpart=NULL;
 
 	k = CEILING( nsupers, grid->nprow );/* Number of local block rows */
 	if ( !(Llu->mod_bit = int32Malloc_dist(k)) )

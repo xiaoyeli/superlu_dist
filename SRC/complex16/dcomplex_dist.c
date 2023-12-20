@@ -12,7 +12,7 @@ at the top-level directory.
  * \brief Defines common arithmetic operations for complex type
  *
  * <pre>
- * -- Distributed SuperLU routine (version 1.0) --
+ * -- Distributed SuperLU routine (version 9.0) --
  * Lawrence Berkeley National Lab, Univ. of California Berkeley.
  * September 1, 1999
  * </pre>

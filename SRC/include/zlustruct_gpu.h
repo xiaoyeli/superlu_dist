@@ -3,7 +3,7 @@
  * \brief Descriptions and declarations for structures used in GPU
  *
  * <pre>
- * -- Distributed SuperLU routine (version 7.2) --
+ * -- Distributed SuperLU routine (version 9.0) --
  * Lawrence Berkeley National Lab, Univ. of California Berkeley,
  * Georgia Institute of Technology, Oak Ridge National Laboratory
  * March 14, 2021 version 7.0.0

@@ -9,11 +9,12 @@ The source code is distributed under BSD license, see the file License.txt
 at the top-level directory.
 */
 
+
 /*! @file
  * \brief Several matrix utilities
  *
  * <pre>
- * -- Distributed SuperLU routine (version 2.0) --
+ * -- Distributed SuperLU routine (version 9.0) --
  * Lawrence Berkeley National Lab, Univ. of California Berkeley.
  * March 15, 2003
  *
@@ -30,11 +31,12 @@ at the top-level directory.
 
 /*! \brief Gather A from the distributed compressed row format to global A in compressed column format.
  */
-int pdCompRow_loc_to_CompCol_global(
-    int_t need_value, /* Input. Whether need to gather numerical values */
-    SuperMatrix *A,   /* Input. Distributed matrix in NRformat_loc format. */
-    gridinfo_t *grid, /* Input */
-    SuperMatrix *GA   /* Output */
+int pdCompRow_loc_to_CompCol_global
+(
+ int_t need_value, /* Input. Whether need to gather numerical values */
+ SuperMatrix *A,   /* Input. Distributed matrix in NRformat_loc format. */
+ gridinfo_t *grid, /* Input */
+ SuperMatrix *GA   /* Output */
 )
 {
     NRformat_loc *Astore;
@@ -44,28 +46,28 @@ int pdCompRow_loc_to_CompCol_global(
     int_t *colptr_loc, *rowind_loc;
     int_t m_loc, n, i, j, k, l;
     int_t colnnz, fst_row, nnz_loc, nnz;
-    double *a_recv; /* Buffer to receive the blocks of values. */
-    double *a_buf;  /* Buffer to merge blocks into block columns. */
+    double *a_recv;  /* Buffer to receive the blocks of values. */
+    double *a_buf;   /* Buffer to merge blocks into block columns. */
     int_t *itemp;
     int_t *colptr_send; /* Buffer to redistribute the column pointers of the
-               local block rows.
-               Use n_loc+1 pointers for each block. */
+			   local block rows.
+			   Use n_loc+1 pointers for each block. */
     int_t *colptr_blk;  /* The column pointers for each block, after
-               redistribution to the local block columns.
-               Use n_loc+1 pointers for each block. */
+			   redistribution to the local block columns.
+			   Use n_loc+1 pointers for each block. */
     int_t *rowind_recv; /* Buffer to receive the blocks of row indices. */
     int_t *rowind_buf;  /* Buffer to merge blocks into block columns. */
     int_t *fst_rows, *n_locs;
-    int *sendcnts, *sdispls, *recvcnts, *rdispls, *itemp_32;
-    int it, n_loc, procs;
+    int   *sendcnts, *sdispls, *recvcnts, *rdispls, *itemp_32;
+    int   it, n_loc, procs;
 
-#if (DEBUGlevel >= 1)
+#if ( DEBUGlevel>=1 )
     CHECK_MALLOC(grid->iam, "Enter pdCompRow_loc_to_CompCol_global");
 #endif
 
     /* Initialization. */
     n = A->ncol;
-    Astore = (NRformat_loc *)A->Store;
+    Astore = (NRformat_loc *) A->Store;
     nnz_loc = Astore->nnz_loc;
     m_loc = Astore->m_loc;
     fst_row = Astore->fst_row;
@@ -80,26 +82,24 @@ int pdCompRow_loc_to_CompCol_global(
     dCompRow_to_CompCol_dist(m_loc, n, nnz_loc, a, colind, rowptr, &a_loc,
                              &rowind_loc, &colptr_loc);
     /* Change local row index numbers to global numbers. */
-    for (i = 0; i < nnz_loc; ++i)
-        rowind_loc[i] += fst_row;
+    for (i = 0; i < nnz_loc; ++i) rowind_loc[i] += fst_row;
 
-#if (DEBUGlevel >= 2)
+#if ( DEBUGlevel>=2 )
     printf("Proc %d\n", grid->iam);
     PrintInt10("rowind_loc", nnz_loc, rowind_loc);
-    PrintInt10("colptr_loc", n + 1, colptr_loc);
+    PrintInt10("colptr_loc", n+1, colptr_loc);
 #endif
 
     procs = grid->nprow * grid->npcol;
-    if (!(fst_rows = (int_t *)intMalloc_dist(2 * procs)))
-        ABORT("Malloc fails for fst_rows[]");
+    if ( !(fst_rows = (int_t *) intMalloc_dist(2*procs)) )
+	  ABORT("Malloc fails for fst_rows[]");
     n_locs = fst_rows + procs;
     MPI_Allgather(&fst_row, 1, mpi_int_t, fst_rows, 1, mpi_int_t,
-                  grid->comm);
-    for (i = 0; i < procs - 1; ++i)
-        n_locs[i] = fst_rows[i + 1] - fst_rows[i];
-    n_locs[procs - 1] = n - fst_rows[procs - 1];
-    if (!(recvcnts = SUPERLU_MALLOC(5 * procs * sizeof(int))))
-        ABORT("Malloc fails for recvcnts[]");
+		  grid->comm);
+    for (i = 0; i < procs-1; ++i) n_locs[i] = fst_rows[i+1] - fst_rows[i];
+    n_locs[procs-1] = n - fst_rows[procs-1];
+    if ( !(recvcnts = SUPERLU_MALLOC(5*procs * sizeof(int))) )
+	  ABORT("Malloc fails for recvcnts[]");
     sendcnts = recvcnts + procs;
     rdispls = sendcnts + procs;
     sdispls = rdispls + procs;
@@ -108,74 +108,66 @@ int pdCompRow_loc_to_CompCol_global(
     /* All-to-all transfer column pointers of each block.
        Now the matrix view is P-by-P block-partition. */
     /* n column starts for each column, and procs column ends for each block */
-    if (!(colptr_send = intMalloc_dist(n + procs)))
-        ABORT("Malloc fails for colptr_send[]");
-    if (!(colptr_blk = intMalloc_dist((((size_t)n_loc) + 1) * procs)))
-        ABORT("Malloc fails for colptr_blk[]");
-    for (i = 0, j = 0; i < procs; ++i)
-    {
-        for (k = j; k < j + n_locs[i]; ++k)
-            colptr_send[i + k] = colptr_loc[k];
-        colptr_send[i + k] = colptr_loc[k]; /* Add an END marker */
-        sendcnts[i] = n_locs[i] + 1;
-#if (DEBUGlevel >= 1)
-        assert(j == fst_rows[i]);
+    if ( !(colptr_send = intMalloc_dist(n + procs)) )
+	   ABORT("Malloc fails for colptr_send[]");
+    if ( !(colptr_blk = intMalloc_dist( (((size_t) n_loc)+1)*procs)) )
+	   ABORT("Malloc fails for colptr_blk[]");
+    for (i = 0, j = 0; i < procs; ++i) {
+        for (k = j; k < j + n_locs[i]; ++k) colptr_send[i+k] = colptr_loc[k];
+	colptr_send[i+k] = colptr_loc[k]; /* Add an END marker */
+	sendcnts[i] = n_locs[i] + 1;
+#if ( DEBUGlevel>=1 )
+	assert(j == fst_rows[i]);
 #endif
-        sdispls[i] = j + i;
-        recvcnts[i] = n_loc + 1;
-        rdispls[i] = i * (n_loc + 1);
-        j += n_locs[i]; /* First column of next block in colptr_loc[] */
+	sdispls[i] = j + i;
+	recvcnts[i] = n_loc + 1;
+	rdispls[i] = i * (n_loc + 1);
+	j += n_locs[i]; /* First column of next block in colptr_loc[] */
     }
     MPI_Alltoallv(colptr_send, sendcnts, sdispls, mpi_int_t,
-                  colptr_blk, recvcnts, rdispls, mpi_int_t, grid->comm);
+		  colptr_blk, recvcnts, rdispls, mpi_int_t, grid->comm);
 
     /* Adjust colptr_blk[] so that they contain the local indices of the
        column pointers in the receive buffer. */
     nnz = 0; /* The running sum of the nonzeros counted by far */
     k = 0;
-    for (i = 0; i < procs; ++i)
-    {
-        for (j = rdispls[i]; j < rdispls[i] + n_loc; ++j)
-        {
-            colnnz = colptr_blk[j + 1] - colptr_blk[j];
-            /*assert(k<=j);*/
-            colptr_blk[k] = nnz;
-            nnz += colnnz; /* Start of the next column */
-            ++k;
-        }
-        colptr_blk[k++] = nnz; /* Add an END marker for each block */
+    for (i = 0; i < procs; ++i) {
+	for (j = rdispls[i]; j < rdispls[i] + n_loc; ++j) {
+	    colnnz = colptr_blk[j+1] - colptr_blk[j];
+	    /*assert(k<=j);*/
+	    colptr_blk[k] = nnz;
+	    nnz += colnnz; /* Start of the next column */
+	    ++k;
+	}
+	colptr_blk[k++] = nnz; /* Add an END marker for each block */
     }
     /*assert(k == (n_loc+1)*procs);*/
 
     /* Now prepare to transfer row indices and values. */
     sdispls[0] = 0;
-    for (i = 0; i < procs - 1; ++i)
-    {
-        sendcnts[i] = colptr_loc[fst_rows[i + 1]] - colptr_loc[fst_rows[i]];
-        sdispls[i + 1] = sdispls[i] + sendcnts[i];
+    for (i = 0; i < procs-1; ++i) {
+        sendcnts[i] = colptr_loc[fst_rows[i+1]] - colptr_loc[fst_rows[i]];
+	sdispls[i+1] = sdispls[i] + sendcnts[i];
     }
-    sendcnts[procs - 1] = colptr_loc[n] - colptr_loc[fst_rows[procs - 1]];
-    for (i = 0; i < procs; ++i)
-    {
+    sendcnts[procs-1] = colptr_loc[n] - colptr_loc[fst_rows[procs-1]];
+    for (i = 0; i < procs; ++i) {
         j = rdispls[i]; /* Point to this block in colptr_blk[]. */
-        recvcnts[i] = colptr_blk[j + n_loc] - colptr_blk[j];
+	recvcnts[i] = colptr_blk[j+n_loc] - colptr_blk[j];
     }
     rdispls[0] = 0; /* Recompute rdispls[] for row indices. */
-    for (i = 0; i < procs - 1; ++i)
-        rdispls[i + 1] = rdispls[i] + recvcnts[i];
+    for (i = 0; i < procs-1; ++i) rdispls[i+1] = rdispls[i] + recvcnts[i];
 
-    k = rdispls[procs - 1] + recvcnts[procs - 1]; /* Total received */
-    if (!(rowind_recv = (int_t *)intMalloc_dist(2 * k)))
+    k = rdispls[procs-1] + recvcnts[procs-1]; /* Total received */
+    if ( !(rowind_recv = (int_t *) intMalloc_dist(2*k)) )
         ABORT("Malloc fails for rowind_recv[]");
     rowind_buf = rowind_recv + k;
     MPI_Alltoallv(rowind_loc, sendcnts, sdispls, mpi_int_t,
-                  rowind_recv, recvcnts, rdispls, mpi_int_t, grid->comm);
-    if (need_value)
-    {
-        if (!(a_recv = (double *)doubleMalloc_dist(2 * k)))
-            ABORT("Malloc fails for rowind_recv[]");
-        a_buf = a_recv + k;
-        MPI_Alltoallv(a_loc, sendcnts, sdispls, MPI_DOUBLE,
+		  rowind_recv, recvcnts, rdispls, mpi_int_t, grid->comm);
+    if ( need_value ) {
+        if ( !(a_recv = (double *) doubleMalloc_dist(2*k)) )
+	    ABORT("Malloc fails for rowind_recv[]");
+	a_buf = a_recv + k;
+	MPI_Alltoallv(a_loc, sendcnts, sdispls, MPI_DOUBLE,
                       a_recv, recvcnts, rdispls, MPI_DOUBLE,
                       grid->comm);
     }
@@ -183,122 +175,102 @@ int pdCompRow_loc_to_CompCol_global(
     /* Reset colptr_loc[] to point to the n_loc global columns. */
     colptr_loc[0] = 0;
     itemp = colptr_send;
-    for (j = 0; j < n_loc; ++j)
-    {
+    for (j = 0; j < n_loc; ++j) {
         colnnz = 0;
-        for (i = 0; i < procs; ++i)
-        {
-            k = i * (n_loc + 1) + j; /* j-th column in i-th block */
-            colnnz += colptr_blk[k + 1] - colptr_blk[k];
-        }
-        colptr_loc[j + 1] = colptr_loc[j] + colnnz;
-        itemp[j] = colptr_loc[j]; /* Save a copy of the column starts */
+	for (i = 0; i < procs; ++i) {
+	    k = i * (n_loc + 1) + j; /* j-th column in i-th block */
+	    colnnz += colptr_blk[k+1] - colptr_blk[k];
+	}
+	colptr_loc[j+1] = colptr_loc[j] + colnnz;
+	itemp[j] = colptr_loc[j]; /* Save a copy of the column starts */
     }
     itemp[n_loc] = colptr_loc[n_loc];
 
     /* Merge blocks of row indices into columns of row indices. */
-    for (i = 0; i < procs; ++i)
-    {
+    for (i = 0; i < procs; ++i) {
         k = i * (n_loc + 1);
-        for (j = 0; j < n_loc; ++j)
-        { /* i-th block */
-            for (l = colptr_blk[k + j]; l < colptr_blk[k + j + 1]; ++l)
-            {
-                rowind_buf[itemp[j]] = rowind_recv[l];
-                ++itemp[j];
-            }
-        }
+	for (j = 0; j < n_loc; ++j) { /* i-th block */
+	    for (l = colptr_blk[k+j]; l < colptr_blk[k+j+1]; ++l) {
+	        rowind_buf[itemp[j]] = rowind_recv[l];
+		++itemp[j];
+	    }
+	}
     }
 
-    if (need_value)
-    {
-        for (j = 0; j < n_loc + 1; ++j)
-            itemp[j] = colptr_loc[j];
-        for (i = 0; i < procs; ++i)
-        {
-            k = i * (n_loc + 1);
-            for (j = 0; j < n_loc; ++j)
-            { /* i-th block */
-                for (l = colptr_blk[k + j]; l < colptr_blk[k + j + 1]; ++l)
-                {
-                    a_buf[itemp[j]] = a_recv[l];
-                    ++itemp[j];
-                }
-            }
-        }
+    if ( need_value ) {
+        for (j = 0; j < n_loc+1; ++j) itemp[j] = colptr_loc[j];
+        for (i = 0; i < procs; ++i) {
+	    k = i * (n_loc + 1);
+	    for (j = 0; j < n_loc; ++j) { /* i-th block */
+	        for (l = colptr_blk[k+j]; l < colptr_blk[k+j+1]; ++l) {
+		    a_buf[itemp[j]] = a_recv[l];
+		    ++itemp[j];
+		}
+	    }
+	}
     }
 
     /* ------------------------------------------------------------
        SECOND PHASE: GATHER TO GLOBAL A IN COMPRESSED COLUMN FORMAT.
        ------------------------------------------------------------*/
-    GA->nrow = A->nrow;
-    GA->ncol = A->ncol;
+    GA->nrow  = A->nrow;
+    GA->ncol  = A->ncol;
     GA->Stype = SLU_NC;
     GA->Dtype = A->Dtype;
     GA->Mtype = A->Mtype;
-    GAstore = GA->Store = (NCformat *)SUPERLU_MALLOC(sizeof(NCformat));
-    if (!GAstore)
-        ABORT("SUPERLU_MALLOC fails for GAstore");
+    GAstore = GA->Store = (NCformat *) SUPERLU_MALLOC ( sizeof(NCformat) );
+    if ( !GAstore ) ABORT ("SUPERLU_MALLOC fails for GAstore");
 
     /* First gather the size of each piece. */
     nnz_loc = colptr_loc[n_loc];
     MPI_Allgather(&nnz_loc, 1, mpi_int_t, itemp, 1, mpi_int_t, grid->comm);
-    for (i = 0, nnz = 0; i < procs; ++i)
-        nnz += itemp[i];
+    for (i = 0, nnz = 0; i < procs; ++i) nnz += itemp[i];
     GAstore->nnz = nnz;
 
-    if (!(GAstore->rowind = (int_t *)intMalloc_dist(nnz)))
-        ABORT("SUPERLU_MALLOC fails for GAstore->rowind[]");
-    if (!(GAstore->colptr = (int_t *)intMalloc_dist(n + 1)))
-        ABORT("SUPERLU_MALLOC fails for GAstore->colptr[]");
+    if ( !(GAstore->rowind = (int_t *) intMalloc_dist (nnz)) )
+        ABORT ("SUPERLU_MALLOC fails for GAstore->rowind[]");
+    if ( !(GAstore->colptr = (int_t *) intMalloc_dist (n+1)) )
+        ABORT ("SUPERLU_MALLOC fails for GAstore->colptr[]");
 
     /* Allgatherv for row indices. */
     rdispls[0] = 0;
-    for (i = 0; i < procs - 1; ++i)
-    {
-        rdispls[i + 1] = rdispls[i] + itemp[i];
+    for (i = 0; i < procs-1; ++i) {
+        rdispls[i+1] = rdispls[i] + itemp[i];
         itemp_32[i] = itemp[i];
     }
-    itemp_32[procs - 1] = itemp[procs - 1];
+    itemp_32[procs-1] = itemp[procs-1];
     it = nnz_loc;
     MPI_Allgatherv(rowind_buf, it, mpi_int_t, GAstore->rowind,
-                   itemp_32, rdispls, mpi_int_t, grid->comm);
-    if (need_value)
-    {
-        if (!(GAstore->nzval = (double *)doubleMalloc_dist(nnz)))
-            ABORT("SUPERLU_MALLOC fails for GAstore->rnzval[]");
-        MPI_Allgatherv(a_buf, it, MPI_DOUBLE, GAstore->nzval,
-                       itemp_32, rdispls, MPI_DOUBLE, grid->comm);
-    }
-    else
-        GAstore->nzval = NULL;
+		   itemp_32, rdispls, mpi_int_t, grid->comm);
+    if ( need_value ) {
+      if ( !(GAstore->nzval = (double *) doubleMalloc_dist (nnz)) )
+          ABORT ("SUPERLU_MALLOC fails for GAstore->rnzval[]");
+      MPI_Allgatherv(a_buf, it, MPI_DOUBLE, GAstore->nzval,
+		     itemp_32, rdispls, MPI_DOUBLE, grid->comm);
+    } else GAstore->nzval = NULL;
 
     /* Now gather the column pointers. */
     rdispls[0] = 0;
-    for (i = 0; i < procs - 1; ++i)
-    {
-        rdispls[i + 1] = rdispls[i] + n_locs[i];
+    for (i = 0; i < procs-1; ++i) {
+        rdispls[i+1] = rdispls[i] + n_locs[i];
         itemp_32[i] = n_locs[i];
     }
-    itemp_32[procs - 1] = n_locs[procs - 1];
+    itemp_32[procs-1] = n_locs[procs-1];
     MPI_Allgatherv(colptr_loc, n_loc, mpi_int_t, GAstore->colptr,
-                   itemp_32, rdispls, mpi_int_t, grid->comm);
+		   itemp_32, rdispls, mpi_int_t, grid->comm);
 
     /* Recompute column pointers. */
-    for (i = 1; i < procs; ++i)
-    {
+    for (i = 1; i < procs; ++i) {
         k = rdispls[i];
-        for (j = 0; j < n_locs[i]; ++j)
-            GAstore->colptr[k++] += itemp[i - 1];
-        itemp[i] += itemp[i - 1]; /* prefix sum */
+	for (j = 0; j < n_locs[i]; ++j) GAstore->colptr[k++] += itemp[i-1];
+	itemp[i] += itemp[i-1]; /* prefix sum */
     }
     GAstore->colptr[n] = nnz;
 
-#if (DEBUGlevel >= 2)
-    if (!grid->iam)
-    {
+#if ( DEBUGlevel>=2 )
+    if ( !grid->iam ) {
         printf("After pdCompRow_loc_to_CompCol_global()\n");
-        dPrint_CompCol_Matrix_dist(GA);
+	dPrint_CompCol_Matrix_dist(GA);
     }
 #endif
 
@@ -310,27 +282,28 @@ int pdCompRow_loc_to_CompCol_global(
     SUPERLU_FREE(colptr_send);
     SUPERLU_FREE(colptr_blk);
     SUPERLU_FREE(rowind_recv);
-    if (need_value)
-        SUPERLU_FREE(a_recv);
-#if (DEBUGlevel >= 1)
-    if (!grid->iam)
-        printf("sizeof(NCformat) %lu\n", sizeof(NCformat));
+    if ( need_value) SUPERLU_FREE(a_recv);
+#if ( DEBUGlevel>=1 )
+    if ( !grid->iam ) printf("sizeof(NCformat) %lu\n", sizeof(NCformat));
     CHECK_MALLOC(grid->iam, "Exit pdCompRow_loc_to_CompCol_global");
 #endif
     return 0;
 } /* pdCompRow_loc_to_CompCol_global */
 
+
 /*! \brief Permute the distributed dense matrix: B <= perm(X). perm[i] = j means the i-th row of X is in the j-th row of B.
  */
-int pdPermute_Dense_Matrix(
-    int_t fst_row,
-    int_t m_loc,
-    int_t row_to_proc[],
-    int_t perm[],
-    double X[], int ldx,
-    double B[], int ldb,
-    int nrhs,
-    gridinfo_t *grid)
+int pdPermute_Dense_Matrix
+(
+ int_t fst_row,
+ int_t m_loc,
+ int_t row_to_proc[],
+ int_t perm[],
+ double X[], int ldx,
+ double B[], int ldb,
+ int nrhs,
+ gridinfo_t *grid
+)
 {
     int_t i, j, k, l;
     int p, procs;
@@ -340,12 +313,12 @@ int pdPermute_Dense_Matrix(
     int_t *send_ibuf, *recv_ibuf;
     double *send_dbuf, *recv_dbuf;
 
-#if (DEBUGlevel >= 1)
+#if ( DEBUGlevel>=1 )
     CHECK_MALLOC(grid->iam, "Enter pdPermute_Dense_Matrix()");
 #endif
 
     procs = grid->nprow * grid->npcol;
-    if (!(sendcnts = SUPERLU_MALLOC(10 * procs * sizeof(int))))
+    if ( !(sendcnts = SUPERLU_MALLOC(10*procs * sizeof(int))) )
         ABORT("Malloc fails for sendcnts[].");
     sendcnts_nrhs = sendcnts + procs;
     recvcnts = sendcnts_nrhs + procs;
@@ -357,92 +330,85 @@ int pdPermute_Dense_Matrix(
     ptr_to_ibuf = rdispls_nrhs + procs;
     ptr_to_dbuf = ptr_to_ibuf + procs;
 
-    for (i = 0; i < procs; ++i)
-        sendcnts[i] = 0;
+    for (i = 0; i < procs; ++i) sendcnts[i] = 0;
 
     /* Count the number of X entries to be sent to each process.*/
-    for (i = fst_row; i < fst_row + m_loc; ++i)
-    {
+    for (i = fst_row; i < fst_row + m_loc; ++i) {
         p = row_to_proc[perm[i]];
-        ++sendcnts[p];
+	++sendcnts[p];
     }
     MPI_Alltoall(sendcnts, 1, MPI_INT, recvcnts, 1, MPI_INT, grid->comm);
     sdispls[0] = rdispls[0] = 0;
     sdispls_nrhs[0] = rdispls_nrhs[0] = 0;
     sendcnts_nrhs[0] = sendcnts[0] * nrhs;
     recvcnts_nrhs[0] = recvcnts[0] * nrhs;
-    for (i = 1; i < procs; ++i)
-    {
-        sdispls[i] = sdispls[i - 1] + sendcnts[i - 1];
-        sdispls_nrhs[i] = sdispls[i] * nrhs;
-        rdispls[i] = rdispls[i - 1] + recvcnts[i - 1];
-        rdispls_nrhs[i] = rdispls[i] * nrhs;
-        sendcnts_nrhs[i] = sendcnts[i] * nrhs;
-        recvcnts_nrhs[i] = recvcnts[i] * nrhs;
+    for (i = 1; i < procs; ++i) {
+        sdispls[i] = sdispls[i-1] + sendcnts[i-1];
+	sdispls_nrhs[i] = sdispls[i] * nrhs;
+	rdispls[i] = rdispls[i-1] + recvcnts[i-1];
+	rdispls_nrhs[i] = rdispls[i] * nrhs;
+	sendcnts_nrhs[i] = sendcnts[i] * nrhs;
+	recvcnts_nrhs[i] = recvcnts[i] * nrhs;
     }
-    k = sdispls[procs - 1] + sendcnts[procs - 1]; /* Total number of sends */
-    l = rdispls[procs - 1] + recvcnts[procs - 1]; /* Total number of recvs */
+    k = sdispls[procs-1] + sendcnts[procs-1];/* Total number of sends */
+    l = rdispls[procs-1] + recvcnts[procs-1];/* Total number of recvs */
     /*assert(k == m_loc);*/
     /*assert(l == m_loc);*/
-    if (!(send_ibuf = intMalloc_dist(k + l)))
+    if ( !(send_ibuf = intMalloc_dist(k + l)) )
         ABORT("Malloc fails for send_ibuf[].");
     recv_ibuf = send_ibuf + k;
-    if (!(send_dbuf = doubleMalloc_dist((k + l) * nrhs)))
+    if ( !(send_dbuf = doubleMalloc_dist((k + l)*nrhs)) )
         ABORT("Malloc fails for send_dbuf[].");
     recv_dbuf = send_dbuf + k * nrhs;
 
-    for (i = 0; i < procs; ++i)
-    {
+    for (i = 0; i < procs; ++i) {
         ptr_to_ibuf[i] = sdispls[i];
-        ptr_to_dbuf[i] = sdispls_nrhs[i];
+	ptr_to_dbuf[i] = sdispls_nrhs[i];
     }
 
     /* Fill in the send buffers: send_ibuf[] and send_dbuf[]. */
-    for (i = fst_row; i < fst_row + m_loc; ++i)
-    {
+    for (i = fst_row; i < fst_row + m_loc; ++i) {
         j = perm[i];
-        p = row_to_proc[j];
-        send_ibuf[ptr_to_ibuf[p]] = j;
-        j = ptr_to_dbuf[p];
-        RHS_ITERATE(k)
-        { /* RHS stored in row major in the buffer */
-            send_dbuf[j++] = X[i - fst_row + k * ldx];
-        }
-        ++ptr_to_ibuf[p];
-        ptr_to_dbuf[p] += nrhs;
+	p = row_to_proc[j];
+	send_ibuf[ptr_to_ibuf[p]] = j;
+	j = ptr_to_dbuf[p];
+	RHS_ITERATE(k) { /* RHS stored in row major in the buffer */
+	    send_dbuf[j++] = X[i-fst_row + k*ldx];
+	}
+	++ptr_to_ibuf[p];
+	ptr_to_dbuf[p] += nrhs;
     }
 
     /* Transfer the (permuted) row indices and numerical values. */
     MPI_Alltoallv(send_ibuf, sendcnts, sdispls, mpi_int_t,
-                  recv_ibuf, recvcnts, rdispls, mpi_int_t, grid->comm);
+		  recv_ibuf, recvcnts, rdispls, mpi_int_t, grid->comm);
     MPI_Alltoallv(send_dbuf, sendcnts_nrhs, sdispls_nrhs, MPI_DOUBLE,
-                  recv_dbuf, recvcnts_nrhs, rdispls_nrhs, MPI_DOUBLE,
-                  grid->comm);
+		  recv_dbuf, recvcnts_nrhs, rdispls_nrhs, MPI_DOUBLE,
+		  grid->comm);
 
     /* Copy the buffer into b. */
-    for (i = 0, l = 0; i < m_loc; ++i)
-    {
+    for (i = 0, l = 0; i < m_loc; ++i) {
         j = recv_ibuf[i] - fst_row; /* Relative row number */
-        RHS_ITERATE(k)
-        { /* RHS stored in row major in the buffer */
-            B[j + k * ldb] = recv_dbuf[l++];
-        }
+	RHS_ITERATE(k) { /* RHS stored in row major in the buffer */
+	    B[j + k*ldb] = recv_dbuf[l++];
+	}
     }
 
     SUPERLU_FREE(sendcnts);
     SUPERLU_FREE(send_ibuf);
     SUPERLU_FREE(send_dbuf);
-#if (DEBUGlevel >= 1)
+#if ( DEBUGlevel>=1 )
     CHECK_MALLOC(grid->iam, "Exit pdPermute_Dense_Matrix()");
 #endif
     return 0;
 } /* pdPermute_Dense_Matrix */
 
+
 /*! \brief Allocate storage in LUstruct */
 void dLUstructInit(const int_t n, dLUstruct_t *LUstruct)
 {
     if ( !(LUstruct->etree = intMalloc_dist(n)) )
-	ABORT("Malloc fails for etree[].");  
+	ABORT("Malloc fails for etree[].");
     if ( !(LUstruct->Glu_persist = (Glu_persist_t *)
 	   SUPERLU_MALLOC(sizeof(Glu_persist_t))) )
 	ABORT("Malloc fails for Glu_persist_t.");
@@ -455,9 +421,9 @@ void dLUstructInit(const int_t n, dLUstruct_t *LUstruct)
 /*! \brief Deallocate LUstruct */
 void dLUstructFree(dLUstruct_t *LUstruct)
 {
-#if (DEBUGlevel >= 1)
+#if ( DEBUGlevel>=1 )
     int iam;
-    MPI_Comm_rank(MPI_COMM_WORLD, &iam);
+    MPI_Comm_rank( MPI_COMM_WORLD, &iam );
     CHECK_MALLOC(iam, "Enter dLUstructFree()");
 #endif
 
@@ -466,46 +432,47 @@ void dLUstructFree(dLUstruct_t *LUstruct)
     SUPERLU_FREE(LUstruct->Llu);
     dDestroy_trf3Dpartition(LUstruct->trf3Dpart);
 
-#if (DEBUGlevel >= 1)
+#if ( DEBUGlevel>=1 )
     CHECK_MALLOC(iam, "Exit dLUstructFree()");
 #endif
 }
 
 /*! \brief Destroy distributed L & U matrices. */
-void dDestroy_LU(int_t n, gridinfo_t *grid, dLUstruct_t *LUstruct)
+void
+dDestroy_LU(int_t n, gridinfo_t *grid, dLUstruct_t *LUstruct)
 {
     int_t i, nb, nsupers;
     Glu_persist_t *Glu_persist = LUstruct->Glu_persist;
     dLocalLU_t *Llu = LUstruct->Llu;
 
-#if (DEBUGlevel >= 1)
+#if ( DEBUGlevel>=1 )
     int iam;
-    MPI_Comm_rank(MPI_COMM_WORLD, &iam);
+    MPI_Comm_rank( MPI_COMM_WORLD, &iam );
     CHECK_MALLOC(iam, "Enter dDestroy_LU()");
 #endif
 
     dDestroy_Tree(n, grid, LUstruct);
 
-    nsupers = Glu_persist->supno[n - 1] + 1;
+    nsupers = Glu_persist->supno[n-1] + 1;
 
     /* Following are free'd in distribution routines */
     // nb = CEILING(nsupers, grid->npcol);
     // for (i = 0; i < nb; ++i)
     //	if ( Llu->Lrowind_bc_ptr[i] ) {
     //	    SUPERLU_FREE (Llu->Lrowind_bc_ptr[i]);
-#if 0 // Sherry: the following is not allocated with cudaHostAlloc    
+#if 0 // Sherry: the following is not allocated with cudaHostAlloc
     //#ifdef GPU_ACC
 	    checkGPU(gpuFreeHost(Llu->Lnzval_bc_ptr[i]));
 #endif
     //	    SUPERLU_FREE (Llu->Lnzval_bc_ptr[i]);
     //	}
 
-    SUPERLU_FREE(Llu->Lrowind_bc_ptr);
-    SUPERLU_FREE(Llu->Lrowind_bc_dat);
-    SUPERLU_FREE(Llu->Lrowind_bc_offset);
-    SUPERLU_FREE(Llu->Lnzval_bc_ptr);
-    SUPERLU_FREE(Llu->Lnzval_bc_dat);
-    SUPERLU_FREE(Llu->Lnzval_bc_offset);
+    SUPERLU_FREE (Llu->Lrowind_bc_ptr);
+    SUPERLU_FREE (Llu->Lrowind_bc_dat);
+    SUPERLU_FREE (Llu->Lrowind_bc_offset);
+    SUPERLU_FREE (Llu->Lnzval_bc_ptr);
+    SUPERLU_FREE (Llu->Lnzval_bc_dat);
+    SUPERLU_FREE (Llu->Lnzval_bc_offset);
 
     /* Following are free'd in distribution routines */
     nb = CEILING(nsupers, grid->nprow);
@@ -514,12 +481,12 @@ void dDestroy_LU(int_t n, gridinfo_t *grid, dLUstruct_t *LUstruct)
     	    SUPERLU_FREE (Llu->Ufstnz_br_ptr[i]);
     	    SUPERLU_FREE (Llu->Unzval_br_ptr[i]);
     	}
-    SUPERLU_FREE(Llu->Ufstnz_br_ptr);
-    // SUPERLU_FREE(Llu->Ufstnz_br_dat);
-    // SUPERLU_FREE(Llu->Ufstnz_br_offset);
-    SUPERLU_FREE(Llu->Unzval_br_ptr);
-    // SUPERLU_FREE(Llu->Unzval_br_dat);
-    // SUPERLU_FREE(Llu->Unzval_br_offset);
+    SUPERLU_FREE (Llu->Ufstnz_br_ptr);
+    // SUPERLU_FREE (Llu->Ufstnz_br_dat);
+    // SUPERLU_FREE (Llu->Ufstnz_br_offset);
+    SUPERLU_FREE (Llu->Unzval_br_ptr);
+    // SUPERLU_FREE (Llu->Unzval_br_dat);
+    // SUPERLU_FREE (Llu->Unzval_br_offset);
 
     /* The following can be freed after factorization. */
     SUPERLU_FREE(Llu->ToRecv);
@@ -565,6 +532,7 @@ void dDestroy_LU(int_t n, gridinfo_t *grid, dLUstruct_t *LUstruct)
     SUPERLU_FREE(Llu->Uinv_bc_offset);
     SUPERLU_FREE(Llu->Unnz);
 
+    /* Following are free'd in distribution routines */
     nb = CEILING(nsupers, grid->npcol);
     for (i = 0; i < nb; ++i)
     	if ( Llu->Urbs[i] ) {
@@ -585,47 +553,47 @@ void dDestroy_LU(int_t n, gridinfo_t *grid, dLUstruct_t *LUstruct)
 
 #ifdef GPU_ACC
 if (get_acc_solve()){
-    checkGPU(gpuFree(Llu->d_xsup));
+    checkGPU (gpuFree (Llu->d_xsup));
     checkGPU (gpuFree (Llu->d_bcols_masked));
-    checkGPU(gpuFree(Llu->d_LRtree_ptr));
-    checkGPU(gpuFree(Llu->d_LBtree_ptr));
-    checkGPU(gpuFree(Llu->d_URtree_ptr));
-    checkGPU(gpuFree(Llu->d_UBtree_ptr));
-    checkGPU(gpuFree(Llu->d_ilsum));
-    checkGPU(gpuFree(Llu->d_Lrowind_bc_dat));
-    checkGPU(gpuFree(Llu->d_Lrowind_bc_offset));
-    checkGPU(gpuFree(Llu->d_Lnzval_bc_dat));
-    checkGPU(gpuFree(Llu->d_Lnzval_bc_offset));
-    checkGPU(gpuFree(Llu->d_Linv_bc_dat));
-    checkGPU(gpuFree(Llu->d_Uinv_bc_dat));
-    checkGPU(gpuFree(Llu->d_Linv_bc_offset));
-    checkGPU(gpuFree(Llu->d_Uinv_bc_offset));
-    checkGPU(gpuFree(Llu->d_Lindval_loc_bc_dat));
-    checkGPU(gpuFree(Llu->d_Lindval_loc_bc_offset));
+    checkGPU (gpuFree (Llu->d_LRtree_ptr));
+    checkGPU (gpuFree (Llu->d_LBtree_ptr));
+    checkGPU (gpuFree (Llu->d_URtree_ptr));
+    checkGPU (gpuFree (Llu->d_UBtree_ptr));
+    checkGPU (gpuFree (Llu->d_ilsum));
+    checkGPU (gpuFree (Llu->d_Lrowind_bc_dat));
+    checkGPU (gpuFree (Llu->d_Lrowind_bc_offset));
+    checkGPU (gpuFree (Llu->d_Lnzval_bc_dat));
+    checkGPU (gpuFree (Llu->d_Lnzval_bc_offset));
+    checkGPU (gpuFree (Llu->d_Linv_bc_dat));
+    checkGPU (gpuFree (Llu->d_Uinv_bc_dat));
+    checkGPU (gpuFree (Llu->d_Linv_bc_offset));
+    checkGPU (gpuFree (Llu->d_Uinv_bc_offset));
+    checkGPU (gpuFree (Llu->d_Lindval_loc_bc_dat));
+    checkGPU (gpuFree (Llu->d_Lindval_loc_bc_offset));
 
-    checkGPU (gpuFree (Llu->d_Ucolind_bc_dat)); 
-    checkGPU (gpuFree (Llu->d_Ucolind_bc_offset));          
-    checkGPU (gpuFree (Llu->d_Uind_br_dat)); 
+    checkGPU (gpuFree (Llu->d_Ucolind_bc_dat));
+    checkGPU (gpuFree (Llu->d_Ucolind_bc_offset));
+    checkGPU (gpuFree (Llu->d_Uind_br_dat));
     checkGPU (gpuFree (Llu->d_Uind_br_offset));
-    checkGPU (gpuFree (Llu->d_Unzval_bc_dat)); 
-    checkGPU (gpuFree (Llu->d_Unzval_bc_offset));     
-    checkGPU (gpuFree (Llu->d_Uindval_loc_bc_dat)); 
+    checkGPU (gpuFree (Llu->d_Unzval_bc_dat));
+    checkGPU (gpuFree (Llu->d_Unzval_bc_offset));
+    checkGPU (gpuFree (Llu->d_Uindval_loc_bc_dat));
     checkGPU (gpuFree (Llu->d_Uindval_loc_bc_offset));
-#ifdef U_BLOCK_PER_ROW_ROWDATA    
-    checkGPU (gpuFree (Llu->d_Ucolind_br_dat)); 
-    checkGPU (gpuFree (Llu->d_Ucolind_br_offset)); 
-    checkGPU (gpuFree (Llu->d_Unzval_br_new_dat)); 
-    checkGPU (gpuFree (Llu->d_Unzval_br_new_offset));   
-#endif 
-
+#ifdef U_BLOCK_PER_ROW_ROWDATA
+    checkGPU (gpuFree (Llu->d_Ucolind_br_dat));
+    checkGPU (gpuFree (Llu->d_Ucolind_br_offset));
+    checkGPU (gpuFree (Llu->d_Unzval_br_new_dat));
+    checkGPU (gpuFree (Llu->d_Unzval_br_new_offset));
+#endif
 }
 
-    #ifdef HAVE_NVSHMEM  
+
+    #ifdef HAVE_NVSHMEM
     /* nvshmem related*/
     if (get_acc_solve()){
-    delete_multiGPU_buffers();
+        ddelete_multiGPU_buffers();
     }
-    
+
     SUPERLU_FREE(mystatus);
     SUPERLU_FREE(h_nfrecv);
     SUPERLU_FREE(h_nfrecvmod);
@@ -640,7 +608,7 @@ if (get_acc_solve()){
 
 #endif
 
-#if (DEBUGlevel >= 1)
+#if ( DEBUGlevel>=1 )
     CHECK_MALLOC(iam, "Exit dDestroy_LU()");
 #endif
 }
@@ -678,9 +646,10 @@ if (get_acc_solve()){
  *        The 2D process mesh.
  * </pre>
  */
-int_t pdgstrs_init(int_t n, int_t m_loc, int_t nrhs, int_t fst_row,
-                   int_t perm_r[], int_t perm_c[], gridinfo_t *grid,
-                   Glu_persist_t *Glu_persist, dSOLVEstruct_t *SOLVEstruct)
+int_t
+pdgstrs_init(int_t n, int_t m_loc, int_t nrhs, int_t fst_row,
+	     int_t perm_r[], int_t perm_c[], gridinfo_t *grid,
+	     Glu_persist_t *Glu_persist, dSOLVEstruct_t *SOLVEstruct)
 {
 
     int *SendCnt, *SendCnt_nrhs, *RecvCnt, *RecvCnt_nrhs;
@@ -689,7 +658,7 @@ int_t pdgstrs_init(int_t n, int_t m_loc, int_t nrhs, int_t fst_row,
     int_t *row_to_proc;
     int_t i, gbi, k, l, num_diag_procs, *diag_procs;
     int_t irow, q, knsupc, nsupers, *xsup, *supno;
-    int iam, p, pkk, procs;
+    int   iam, p, pkk, procs;
     pxgstrs_comm_t *gstrs_comm;
 
     procs = grid->nprow * grid->npcol;
@@ -697,48 +666,44 @@ int_t pdgstrs_init(int_t n, int_t m_loc, int_t nrhs, int_t fst_row,
     gstrs_comm = SOLVEstruct->gstrs_comm;
     xsup = Glu_persist->xsup;
     supno = Glu_persist->supno;
-    nsupers = Glu_persist->supno[n - 1] + 1;
+    nsupers = Glu_persist->supno[n-1] + 1;
     row_to_proc = SOLVEstruct->row_to_proc;
 
     /* ------------------------------------------------------------
        SET UP COMMUNICATION PATTERN FOR ReDistribute_B_to_X.
        ------------------------------------------------------------*/
-    if (!(itemp = SUPERLU_MALLOC(8 * procs * sizeof(int))))
+    if ( !(itemp = SUPERLU_MALLOC(8*procs * sizeof(int))) )
         ABORT("Malloc fails for B_to_X_itemp[].");
-    SendCnt = itemp;
-    SendCnt_nrhs = itemp + procs;
-    RecvCnt = itemp + 2 * procs;
-    RecvCnt_nrhs = itemp + 3 * procs;
-    sdispls = itemp + 4 * procs;
-    sdispls_nrhs = itemp + 5 * procs;
-    rdispls = itemp + 6 * procs;
-    rdispls_nrhs = itemp + 7 * procs;
+    SendCnt      = itemp;
+    SendCnt_nrhs = itemp +   procs;
+    RecvCnt      = itemp + 2*procs;
+    RecvCnt_nrhs = itemp + 3*procs;
+    sdispls      = itemp + 4*procs;
+    sdispls_nrhs = itemp + 5*procs;
+    rdispls      = itemp + 6*procs;
+    rdispls_nrhs = itemp + 7*procs;
 
     /* Count the number of elements to be sent to each diagonal process.*/
-    for (p = 0; p < procs; ++p)
-        SendCnt[p] = 0;
-    for (i = 0, l = fst_row; i < m_loc; ++i, ++l)
-    {
+    for (p = 0; p < procs; ++p) SendCnt[p] = 0;
+    for (i = 0, l = fst_row; i < m_loc; ++i, ++l) {
         irow = perm_c[perm_r[l]]; /* Row number in Pc*Pr*B */
-        gbi = BlockNum(irow);
-        p = PNUM(PROW(gbi, grid), PCOL(gbi, grid), grid); /* Diagonal process */
-        ++SendCnt[p];
+	gbi = BlockNum( irow );
+	p = PNUM( PROW(gbi,grid), PCOL(gbi,grid), grid ); /* Diagonal process */
+	++SendCnt[p];
     }
 
     /* Set up the displacements for alltoall. */
     MPI_Alltoall(SendCnt, 1, MPI_INT, RecvCnt, 1, MPI_INT, grid->comm);
     sdispls[0] = rdispls[0] = 0;
-    for (p = 1; p < procs; ++p)
-    {
-        sdispls[p] = sdispls[p - 1] + SendCnt[p - 1];
-        rdispls[p] = rdispls[p - 1] + RecvCnt[p - 1];
+    for (p = 1; p < procs; ++p) {
+        sdispls[p] = sdispls[p-1] + SendCnt[p-1];
+        rdispls[p] = rdispls[p-1] + RecvCnt[p-1];
     }
-    for (p = 0; p < procs; ++p)
-    {
+    for (p = 0; p < procs; ++p) {
         SendCnt_nrhs[p] = SendCnt[p] * nrhs;
-        sdispls_nrhs[p] = sdispls[p] * nrhs;
+	sdispls_nrhs[p] = sdispls[p] * nrhs;
         RecvCnt_nrhs[p] = RecvCnt[p] * nrhs;
-        rdispls_nrhs[p] = rdispls[p] * nrhs;
+	rdispls_nrhs[p] = rdispls[p] * nrhs;
     }
 
     /* This is saved for repeated solves, and is freed in pxgstrs_finalize().*/
@@ -748,44 +713,39 @@ int_t pdgstrs_init(int_t n, int_t m_loc, int_t nrhs, int_t fst_row,
        SET UP COMMUNICATION PATTERN FOR ReDistribute_X_to_B.
        ------------------------------------------------------------*/
     /* This is freed in pxgstrs_finalize(). */
-    if (!(itemp = SUPERLU_MALLOC(8 * procs * sizeof(int))))
+    if ( !(itemp = SUPERLU_MALLOC(8*procs * sizeof(int))) )
         ABORT("Malloc fails for X_to_B_itemp[].");
-    SendCnt = itemp;
-    SendCnt_nrhs = itemp + procs;
-    RecvCnt = itemp + 2 * procs;
-    RecvCnt_nrhs = itemp + 3 * procs;
-    sdispls = itemp + 4 * procs;
-    sdispls_nrhs = itemp + 5 * procs;
-    rdispls = itemp + 6 * procs;
-    rdispls_nrhs = itemp + 7 * procs;
+    SendCnt      = itemp;
+    SendCnt_nrhs = itemp +   procs;
+    RecvCnt      = itemp + 2*procs;
+    RecvCnt_nrhs = itemp + 3*procs;
+    sdispls      = itemp + 4*procs;
+    sdispls_nrhs = itemp + 5*procs;
+    rdispls      = itemp + 6*procs;
+    rdispls_nrhs = itemp + 7*procs;
 
     /* Count the number of X entries to be sent to each process.*/
-    for (p = 0; p < procs; ++p)
-        SendCnt[p] = 0;
+    for (p = 0; p < procs; ++p) SendCnt[p] = 0;
     num_diag_procs = SOLVEstruct->num_diag_procs;
     diag_procs = SOLVEstruct->diag_procs;
 
-    for (p = 0; p < num_diag_procs; ++p)
-    { /* for all diagonal processes */
-        pkk = diag_procs[p];
-        if (iam == pkk)
-        {
-            for (k = p; k < nsupers; k += num_diag_procs)
-            {
-                knsupc = SuperSize(k);
-                irow = FstBlockC(k);
-                for (i = 0; i < knsupc; ++i)
-                {
+    for (p = 0; p < num_diag_procs; ++p) { /* for all diagonal processes */
+	pkk = diag_procs[p];
+	if ( iam == pkk ) {
+	    for (k = p; k < nsupers; k += num_diag_procs) {
+		knsupc = SuperSize( k );
+		irow = FstBlockC( k );
+		for (i = 0; i < knsupc; ++i) {
 #if 0
 		    q = row_to_proc[inv_perm_c[irow]];
 #else
-                    q = row_to_proc[irow];
+		    q = row_to_proc[irow];
 #endif
-                    ++SendCnt[q];
-                    ++irow;
-                }
-            }
-        }
+		    ++SendCnt[q];
+		    ++irow;
+		}
+	    }
+	}
     }
 
     MPI_Alltoall(SendCnt, 1, MPI_INT, RecvCnt, 1, MPI_INT, grid->comm);
@@ -793,20 +753,19 @@ int_t pdgstrs_init(int_t n, int_t m_loc, int_t nrhs, int_t fst_row,
     sdispls_nrhs[0] = rdispls_nrhs[0] = 0;
     SendCnt_nrhs[0] = SendCnt[0] * nrhs;
     RecvCnt_nrhs[0] = RecvCnt[0] * nrhs;
-    for (p = 1; p < procs; ++p)
-    {
-        sdispls[p] = sdispls[p - 1] + SendCnt[p - 1];
-        rdispls[p] = rdispls[p - 1] + RecvCnt[p - 1];
+    for (p = 1; p < procs; ++p) {
+        sdispls[p] = sdispls[p-1] + SendCnt[p-1];
+        rdispls[p] = rdispls[p-1] + RecvCnt[p-1];
         sdispls_nrhs[p] = sdispls[p] * nrhs;
         rdispls_nrhs[p] = rdispls[p] * nrhs;
-        SendCnt_nrhs[p] = SendCnt[p] * nrhs;
-        RecvCnt_nrhs[p] = RecvCnt[p] * nrhs;
+	SendCnt_nrhs[p] = SendCnt[p] * nrhs;
+	RecvCnt_nrhs[p] = RecvCnt[p] * nrhs;
     }
 
     /* This is saved for repeated solves, and is freed in pxgstrs_finalize().*/
     gstrs_comm->X_to_B_SendCnt = SendCnt;
 
-    if (!(ptr_to_ibuf = SUPERLU_MALLOC(2 * procs * sizeof(int))))
+    if ( !(ptr_to_ibuf = SUPERLU_MALLOC(2*procs * sizeof(int))) )
         ABORT("Malloc fails for ptr_to_ibuf[].");
     gstrs_comm->ptr_to_ibuf = ptr_to_ibuf;
     gstrs_comm->ptr_to_dbuf = ptr_to_ibuf + procs;
@@ -834,7 +793,7 @@ pdgstrs_init_device_lsum_x(superlu_dist_options_t *options, int_t n, int_t m_loc
     int_t* ilsum = LUstruct->Llu->ilsum;
     int *frecv, *brecv;
     int_t  *Urbs = LUstruct->Llu->Urbs; /* Number of row blocks in each block column of U. */
-    Ucb_indptr_t **Ucb_indptr = LUstruct->Llu->Ucb_indptr;/* Vertical linked list pointing to Uindex[] */    
+    Ucb_indptr_t **Ucb_indptr = LUstruct->Llu->Ucb_indptr;/* Vertical linked list pointing to Uindex[] */
 
     procs = grid->nprow * grid->npcol;
     iam = grid->iam;
@@ -850,7 +809,7 @@ pdgstrs_init_device_lsum_x(superlu_dist_options_t *options, int_t n, int_t m_loc
     int_t sizelsum = (((size_t)ldalsum)*nrhs + nlb*LSUM_H);
     checkGPU(gpuMalloc( (void**)&(SOLVEstruct->d_lsum), sizelsum * sizeof(double)));
     checkGPU(gpuMalloc( (void**)&(SOLVEstruct->d_x), (ldalsum * nrhs + nlb * XK_H) * sizeof(double)));
-    checkGPU(gpuMemset( SOLVEstruct->d_lsum, 0, sizelsum * sizeof(double)));    
+    checkGPU(gpuMemset( SOLVEstruct->d_lsum, 0, sizelsum * sizeof(double)));
     checkGPU(gpuMemset( SOLVEstruct->d_x, 0, (ldalsum * nrhs + nlb * XK_H) * sizeof(double)));
 
     double* lsum = (double*)SUPERLU_MALLOC(sizelsum * sizeof(double));
@@ -865,7 +824,7 @@ pdgstrs_init_device_lsum_x(superlu_dist_options_t *options, int_t n, int_t m_loc
         {
             int_t lk = LBi (k, grid); /* Local block number. */
             int_t il = LSUM_BLK (lk);
-            lsum[il - LSUM_H] = k;  /* Block number prepended in the header. */
+	        lsum[il - LSUM_H] = k; /* Block number prepended in the header. */
         }
         ii += knsupc;
     }
@@ -873,8 +832,8 @@ pdgstrs_init_device_lsum_x(superlu_dist_options_t *options, int_t n, int_t m_loc
     checkGPU(gpuMemcpy(SOLVEstruct->d_lsum_save, lsum, sizelsum * sizeof(double), gpuMemcpyHostToDevice));
     SUPERLU_FREE(lsum);
 
-    int* fmod = getfmod_newsolve(nlb, nsupers, supernodeMask, LUstruct, grid);
-    int  nfrecvx = getNfrecvx_newsolve(nsupers, supernodeMask, LUstruct, grid);
+    int* fmod = getfmod_newsolve(nlb, nsupers, supernodeMask, LUstruct->Llu->Lrowind_bc_ptr, LUstruct->Llu->Lindval_loc_bc_ptr, grid);
+    int  nfrecvx = getNfrecvx_newsolve(nsupers, supernodeMask, LUstruct->Llu->Lrowind_bc_ptr, LUstruct->Llu->Lindval_loc_bc_ptr, grid);
     if ( !(frecv = int32Calloc_dist(nlb)) )
 	ABORT("Calloc fails for frecv[].");
     C_Tree  *LRtree_ptr = LUstruct->Llu->LRtree_ptr;
@@ -890,19 +849,19 @@ pdgstrs_init_device_lsum_x(superlu_dist_options_t *options, int_t n, int_t m_loc
 	}
 	for (i = 0; i < nlb; ++i) fmod[i] += frecv[i];
 
-    checkGPU(gpuMalloc( (void**)&SOLVEstruct->d_fmod, nlb * sizeof(int)));	
-    checkGPU(gpuMemset( SOLVEstruct->d_fmod, 0, nlb * sizeof(int)));    
-    checkGPU(gpuMalloc( (void**)&SOLVEstruct->d_fmod_save, nlb * sizeof(int)));	
+    checkGPU(gpuMalloc( (void**)&SOLVEstruct->d_fmod, nlb * sizeof(int)));
+    checkGPU(gpuMemset( SOLVEstruct->d_fmod, 0, nlb * sizeof(int)));
+    checkGPU(gpuMalloc( (void**)&SOLVEstruct->d_fmod_save, nlb * sizeof(int)));
 	checkGPU(gpuMemcpy(SOLVEstruct->d_fmod_save, fmod, nlb * sizeof(int), gpuMemcpyHostToDevice));
     SUPERLU_FREE(fmod);
     SUPERLU_FREE(frecv);
-    
 
 
-    int* bmod=  getBmod3d_newsolve(nlb, nsupers, supernodeMask, LUstruct, grid);
+
+    int* bmod=  getBmod3d_newsolve(nlb, nsupers, supernodeMask, xsup, LUstruct->Llu->Ufstnz_br_ptr, grid);
     int nbrecvx= getNbrecvX_newsolve(nsupers, supernodeMask, Urbs, Ucb_indptr, grid);
     if ( !(brecv = int32Calloc_dist(nlb)) )
-        ABORT("Calloc fails for brecv[].");	
+        ABORT("Calloc fails for brecv[].");
     C_Tree  *URtree_ptr = LUstruct->Llu->URtree_ptr;
     nbrecvmod=0;
     for (int_t lk=0;lk<nlb;++lk){
@@ -913,9 +872,9 @@ pdgstrs_init_device_lsum_x(superlu_dist_options_t *options, int_t n, int_t m_loc
 	}
 	for (i = 0; i < nlb; ++i) bmod[i] += brecv[i];
 
-    checkGPU(gpuMalloc( (void**)&SOLVEstruct->d_bmod, nlb * sizeof(int)));	
-    checkGPU(gpuMemset( SOLVEstruct->d_bmod, 0, nlb * sizeof(int)));    
-    checkGPU(gpuMalloc( (void**)&SOLVEstruct->d_bmod_save, nlb * sizeof(int)));	
+    checkGPU(gpuMalloc( (void**)&SOLVEstruct->d_bmod, nlb * sizeof(int)));
+    checkGPU(gpuMemset( SOLVEstruct->d_bmod, 0, nlb * sizeof(int)));
+    checkGPU(gpuMalloc( (void**)&SOLVEstruct->d_bmod_save, nlb * sizeof(int)));
 	checkGPU(gpuMemcpy(SOLVEstruct->d_bmod_save, bmod, nlb * sizeof(int), gpuMemcpyHostToDevice));
     SUPERLU_FREE(bmod);
     SUPERLU_FREE(brecv);
@@ -933,7 +892,7 @@ pdgstrs_init_device_lsum_x(superlu_dist_options_t *options, int_t n, int_t m_loc
 	// }
 
     /* nvshmem related. */
-    #ifdef HAVE_NVSHMEM  
+    #ifdef HAVE_NVSHMEM
     /////* for L solve *////
     int *my_colnum;
     if ( !(my_colnum = (int*)SUPERLU_MALLOC((nfrecvx+1) * sizeof(int))) )
@@ -957,7 +916,7 @@ pdgstrs_init_device_lsum_x(superlu_dist_options_t *options, int_t n, int_t m_loc
     //fflush(stdout);
 
     h_nfrecv[0]=nfrecvx;
-#ifdef _USE_SUMMIT   
+#ifdef _USE_SUMMIT
     h_nfrecv[1]=32;
     h_nfrecv[2]=8;
 #else
@@ -965,7 +924,7 @@ pdgstrs_init_device_lsum_x(superlu_dist_options_t *options, int_t n, int_t m_loc
     //fflush(stdout);
     h_nfrecv[1]=1024;
     h_nfrecv[2]=2;
-#endif    
+#endif
 
     checkGPU(gpuMalloc( (void**)&d_mynum, h_nfrecv[1]  * sizeof(int)));
     checkGPU(gpuMalloc( (void**)&d_mymaskstart, h_nfrecv[1] * sizeof(int)));
@@ -1047,7 +1006,7 @@ pdgstrs_init_device_lsum_x(superlu_dist_options_t *options, int_t n, int_t m_loc
 #else
     h_nfrecv_u[1]=1024;
     h_nfrecv_u[2]=2;
-#endif 
+#endif
     //printf("(%d), wait=%d,%d\n",iam,h_nfrecv[2],h_nfrecv[1]);
     //fflush(stdout);
 
@@ -1095,56 +1054,10 @@ pdgstrs_init_device_lsum_x(superlu_dist_options_t *options, int_t n, int_t m_loc
     for(int i=1; i<h_nfrecvmod_u[3]+1;i++) tmp_val_u[i]=-1;
     checkGPU(gpuMemcpy(d_flag_mod_u, tmp_val_u,  (h_nfrecvmod_u[3]+1) * sizeof(int), gpuMemcpyHostToDevice));
     SUPERLU_FREE(tmp_val_u);
-    //double mygpumem_L=0,mygpumem_U=0;
-    //double mygpumem_L_nv=0,mygpumem_U_nv=0;
-    //mygpumem_L=((Llu->Lnzval_bc_cnt) * sizeof(double)
-    //            +(Llu->Linv_bc_cnt) * sizeof(double)
-    //            +CEILING( nsupers, grid->npcol ) * sizeof(long int)
-    //            +(CEILING( nsupers, grid->nprow )+1) * sizeof(int_t)
-    //            +(n+1) * sizeof(int_t)
-    //            +CEILING( nsupers, grid->nprow ) * sizeof(C_Tree)*4
-    //            +(Llu->Lrowind_bc_cnt) * sizeof(int_t)
-    //            +(Llu->Lindval_loc_bc_cnt) * sizeof(int_t)
-    //            +CEILING( nsupers, grid->npcol ) * sizeof(long int)
-    //            +CEILING( nsupers, grid->npcol ) * sizeof(long int)
-    //            +CEILING( nsupers, grid->npcol ) * sizeof(long int)
-    //            )/1e6;
-
-    //mygpumem_U=((Llu->Unzval_br_cnt) * sizeof(double)
-    //            +(Llu->Uinv_bc_cnt) * sizeof(double)
-    //            +CEILING( nsupers, grid->npcol ) * sizeof(long int)
-    //            +CEILING( nsupers, grid->npcol ) * sizeof(long int)
-    //            +Llu->Ucb_indcnt * sizeof(Ucb_indptr_t)
-    //            +CEILING( nsupers, grid->npcol ) * sizeof(long int)
-    //            +Llu->Ucb_valcnt * sizeof(int_t)
-    //            +2* CEILING( nsupers, grid->npcol ) * sizeof(int_t)
-    //            +(Llu->Ufstnz_br_cnt) * sizeof(int_t)
-    //            +CEILING( nsupers, grid->nprow ) * sizeof(long int)
-    //            +CEILING( nsupers, grid->nprow ) * sizeof(long int)
-    //            )/1e6;
-
-    //printf("(%d) CUDA buffer size, L= %lf MB, U= %lf MB\n",iam,mygpumem_L, mygpumem_U);
-
-    //mygpumem_L_nv=(h_nfrecv[1] * sizeof(int)*7
-    //              +3*CEILING(nsupers, grid->nprow) * sizeof(int)
-    //              + (nfrecvmod+1) * sizeof(int)
-    //              + (nfrecvx+1) * sizeof(int)
-    //              +CEILING( nsupers, grid->npcol) * sizeof(int) )/1e6;
-    //mygpumem_U_nv=(h_nfrecv_u[1]*3*sizeof(int)
-    //              + h_nfrecv_u[1]*3*sizeof(int)
-    //              +(nbrecvmod+1) * sizeof(int)
-    //               +(nbrecvx+1) * sizeof(int)
-    //              +CEILING(nsupers, grid->nprow) * sizeof(int)
-    //              + 3 * sizeof(int))/1e6;
-    //printf("(%d) NVSHMEM buffer size, L= %lf MB, U= %lf MB\n",iam,mygpumem_L_nv, mygpumem_U_nv);
-    //fflush(stdout);
-
     #endif
 
-    
 
-
-#endif  
+#endif
 
     return 0;
 } /* pdgstrs_init_device_lsum_x */
@@ -1155,36 +1068,36 @@ pdgstrs_delete_device_lsum_x(dSOLVEstruct_t *SOLVEstruct)
 {
 #if ( defined(GPU_ACC) && defined(GPU_SOLVE) )
     checkGPU (gpuFree (SOLVEstruct->d_x));
-    checkGPU (gpuFree (SOLVEstruct->d_lsum));   
-    checkGPU (gpuFree (SOLVEstruct->d_lsum_save));   
-    checkGPU (gpuFree (SOLVEstruct->d_fmod));   
-    checkGPU (gpuFree (SOLVEstruct->d_fmod_save));       
-    checkGPU (gpuFree (SOLVEstruct->d_bmod));   
-    checkGPU (gpuFree (SOLVEstruct->d_bmod_save));   
+    checkGPU (gpuFree (SOLVEstruct->d_lsum));
+    checkGPU (gpuFree (SOLVEstruct->d_lsum_save));
+    checkGPU (gpuFree (SOLVEstruct->d_fmod));
+    checkGPU (gpuFree (SOLVEstruct->d_fmod_save));
+    checkGPU (gpuFree (SOLVEstruct->d_bmod));
+    checkGPU (gpuFree (SOLVEstruct->d_bmod_save));
 
 
 /* nvshmem related*/
 
-    #ifdef HAVE_NVSHMEM  
-    // delete_multiGPU_buffers();
+    #ifdef HAVE_NVSHMEM
+    // ddelete_multiGPU_buffers();
 
-    checkGPU(gpuFree(d_colnum));       
-    checkGPU(gpuFree(d_mynum));       
-    checkGPU(gpuFree(d_mymaskstart));       
-    checkGPU(gpuFree(d_mymasklength));       
-    checkGPU(gpuFree(d_status));       
-    checkGPU(gpuFree(d_nfrecv));       
+    checkGPU(gpuFree(d_colnum));
+    checkGPU(gpuFree(d_mynum));
+    checkGPU(gpuFree(d_mymaskstart));
+    checkGPU(gpuFree(d_mymasklength));
+    checkGPU(gpuFree(d_status));
+    checkGPU(gpuFree(d_nfrecv));
 
-    checkGPU(gpuFree(d_nfrecvmod));       
-    checkGPU(gpuFree(d_statusmod));       
-    checkGPU(gpuFree(d_mynummod));       
-    checkGPU(gpuFree(d_mymaskstartmod));       
-    checkGPU(gpuFree(d_mymasklengthmod));       
-    checkGPU(gpuFree(d_msgnum));       
-    checkGPU(gpuFree(d_flag_mod));    
+    checkGPU(gpuFree(d_nfrecvmod));
+    checkGPU(gpuFree(d_statusmod));
+    checkGPU(gpuFree(d_mynummod));
+    checkGPU(gpuFree(d_mymaskstartmod));
+    checkGPU(gpuFree(d_mymasklengthmod));
+    checkGPU(gpuFree(d_msgnum));
+    checkGPU(gpuFree(d_flag_mod));
     #endif
 
-#endif  
+#endif
     return 0;
 } /* pdgstrs_delete_device_lsum_x */
 
@@ -1273,6 +1186,7 @@ int dSolveInit(superlu_dist_options_t *options, SuperMatrix *A,
            SUPERLU_MALLOC(sizeof(pdgsmv_comm_t))) )
         ABORT("Malloc fails for gsmv_comm[]");
     SOLVEstruct->A_colind_gsmv = NULL;
+
     options->SolveInitialized = YES;
     return 0;
 } /* dSolveInit */
@@ -1281,7 +1195,7 @@ int dSolveInit(superlu_dist_options_t *options, SuperMatrix *A,
  */
 void dSolveFinalize(superlu_dist_options_t *options, dSOLVEstruct_t *SOLVEstruct)
 {
-    if ( options->SolveInitialized ) {      
+    if ( options->SolveInitialized ) {
         pxgstrs_finalize(SOLVEstruct->gstrs_comm);
 
         if ( options->RefineInitialized ) {
@@ -1305,31 +1219,28 @@ void dDestroy_A3d_gathered_on_2d(dSOLVEstruct_t *SOLVEstruct, gridinfo3d_t *grid
     /* free A2d and B2d, which are allocated only in 2D layer grid-0 */
     NRformat_loc3d *A3d = SOLVEstruct->A3d;
     NRformat_loc *A2d = A3d->A_nfmt;
-    if (grid3d->zscp.Iam == 0)
-    {
-        SUPERLU_FREE(A2d->rowptr);
-        SUPERLU_FREE(A2d->colind);
-        SUPERLU_FREE(A2d->nzval);
+    if (grid3d->zscp.Iam == 0) {
+	SUPERLU_FREE( A2d->rowptr );
+	SUPERLU_FREE( A2d->colind );
+	SUPERLU_FREE( A2d->nzval );
     }
-    SUPERLU_FREE(A3d->row_counts_int); // free displacements and counts
+    SUPERLU_FREE(A3d->row_counts_int);  // free displacements and counts
     SUPERLU_FREE(A3d->row_disp);
     SUPERLU_FREE(A3d->nnz_counts_int);
     SUPERLU_FREE(A3d->nnz_disp);
     SUPERLU_FREE(A3d->b_counts_int);
     SUPERLU_FREE(A3d->b_disp);
     int rankorder = grid3d->rankorder;
-    if (rankorder == 0)
-    { /* Z-major in 3D grid */
+    if ( rankorder == 0 ) { /* Z-major in 3D grid */
         SUPERLU_FREE(A3d->procs_to_send_list);
         SUPERLU_FREE(A3d->send_count_list);
         SUPERLU_FREE(A3d->procs_recv_from_list);
         SUPERLU_FREE(A3d->recv_count_list);
     }
-    SUPERLU_FREE(A2d); // free 2D structure
-    SUPERLU_FREE(A3d); // free 3D structure
+    SUPERLU_FREE( A2d );         // free 2D structure
+    SUPERLU_FREE( A3d );         // free 3D structure
 } /* dDestroy_A3d_gathered_on_2d */
-
-#else 
+#else
 void dDestroy_A3d_gathered_on_2d(dSOLVEstruct_t *SOLVEstruct, gridinfo3d_t *grid3d)
 {
     /* free A2d and B2d, which are allocated on all 2D layers*/
@@ -1340,7 +1251,7 @@ void dDestroy_A3d_gathered_on_2d(dSOLVEstruct_t *SOLVEstruct, gridinfo3d_t *grid
 	SUPERLU_FREE( A2d->colind );
 	SUPERLU_FREE( A2d->nzval );
     // }
-    SUPERLU_FREE(A3d->row_counts_int);  // free displacements and counts 
+    SUPERLU_FREE(A3d->row_counts_int);  // free displacements and counts
     SUPERLU_FREE(A3d->row_disp);
     SUPERLU_FREE(A3d->nnz_counts_int);
     SUPERLU_FREE(A3d->nnz_disp);
@@ -1357,8 +1268,6 @@ void dDestroy_A3d_gathered_on_2d(dSOLVEstruct_t *SOLVEstruct, gridinfo3d_t *grid
     SUPERLU_FREE( A3d );         // free 3D structure
 } /* dDestroy_A3d_gathered_on_2d_allgrid */
 #endif
-
-
 
 /*! \brief Check the inf-norm of the error vector
  */
@@ -1415,25 +1324,25 @@ dDestroy_Tree(int_t n, gridinfo_t *grid, dLUstruct_t *LUstruct)
 
     nb = CEILING(nsupers, grid->npcol);
     for (i=0;i<nb;++i){
-        if(Llu->LBtree_ptr[i].empty_==NO){    
+        if(Llu->LBtree_ptr[i].empty_==NO){
 			// BcTree_Destroy(Llu->LBtree_ptr[i],LUstruct->dt);
             C_BcTree_Nullify(&Llu->LBtree_ptr[i]);
 	}
-        if(Llu->UBtree_ptr[i].empty_==NO){  
+        if(Llu->UBtree_ptr[i].empty_==NO){
 			// BcTree_Destroy(Llu->UBtree_ptr[i],LUstruct->dt);
             C_BcTree_Nullify(&Llu->UBtree_ptr[i]);
 	}
     }
     SUPERLU_FREE(Llu->LBtree_ptr);
     SUPERLU_FREE(Llu->UBtree_ptr);
-	
+
     nb = CEILING(nsupers, grid->nprow);
     for (i=0;i<nb;++i){
-        if(Llu->LRtree_ptr[i].empty_==NO){             
+        if(Llu->LRtree_ptr[i].empty_==NO){
 			// RdTree_Destroy(Llu->LRtree_ptr[i],LUstruct->dt);
             C_RdTree_Nullify(&Llu->LRtree_ptr[i]);
 	}
-        if(Llu->URtree_ptr[i].empty_==NO){ 
+        if(Llu->URtree_ptr[i].empty_==NO){
 			// RdTree_Destroy(Llu->URtree_ptr[i],LUstruct->dt);
             C_RdTree_Nullify(&Llu->URtree_ptr[i]);
 	}

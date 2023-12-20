@@ -1,20 +1,20 @@
 /*! \file
 Copyright (c) 2003, The Regents of the University of California, through
-Lawrence Berkeley National Laboratory (subject to receipt of any required 
-approvals from U.S. Dept. of Energy) 
+Lawrence Berkeley National Laboratory (subject to receipt of any required
+approvals from U.S. Dept. of Energy)
 
-All rights reserved. 
+All rights reserved.
 
 The source code is distributed under BSD license, see the file License.txt
 at the top-level directory.
 */
 
 
-/*! @file 
+/*! @file
  * \brief Driver program for PSGSSVX example
  *
  * <pre>
- * -- Distributed SuperLU routine (version 7.0) --
+ * -- Distributed SuperLU routine (version 9.0) --
  * Lawrence Berkeley National Lab, Univ. of California Berkeley.
  * March 15, 2003
  * April 5, 2015
@@ -41,7 +41,7 @@ at the top-level directory.
  * in the subsequent call to PSGSSVX:
  *        ScalePermstruct  : DiagScale, R, C, perm_r, perm_c
  *        LUstruct         : Glu_persist, Llu
- * 
+ *
  * With MPICH,  program may be run by typing:
  *    mpiexec -n <np> psdrive1 -r <proc rows> -c <proc columns> big.rua
  * </pre>
@@ -70,9 +70,9 @@ int main(int argc, char *argv[])
     nrhs  = 3;  /* Max. number of right-hand sides. */
 
     /* ------------------------------------------------------------
-       INITIALIZE MPI ENVIRONMENT. 
+       INITIALIZE MPI ENVIRONMENT.
        ------------------------------------------------------------*/
-    MPI_Init_thread( &argc, &argv, MPI_THREAD_MULTIPLE, &omp_mpi_level); 
+    MPI_Init_thread( &argc, &argv, MPI_THREAD_MULTIPLE, &omp_mpi_level);
 
     /* Parse command line argv[]. */
     for (cpp = argv+1; *cpp; ++cpp) {
@@ -100,7 +100,7 @@ int main(int argc, char *argv[])
     }
 
     /* ------------------------------------------------------------
-       INITIALIZE THE SUPERLU PROCESS GRID. 
+       INITIALIZE THE SUPERLU PROCESS GRID.
        ------------------------------------------------------------*/
     superlu_gridinit(MPI_COMM_WORLD, nprow, npcol, &grid);
 
@@ -134,11 +134,11 @@ int main(int argc, char *argv[])
 	if((*cpp)[ii]=='.'){
 		postfix = &((*cpp)[ii+1]);
 	}
-    }	
+    }
     // printf("%s\n", postfix);
 
     /* ------------------------------------------------------------
-       GET THE MATRIX FROM FILE AND SETUP THE RIGHT HAND SIDE. 
+       GET THE MATRIX FROM FILE AND SETUP THE RIGHT HAND SIDE.
        ------------------------------------------------------------*/
     screate_matrix_postfix(&A, nrhs, &b, &ldb, &xtrue, &ldx, fp, postfix, &grid);
     if ( !(b1 = floatMalloc_dist(ldb * nrhs)) )
@@ -150,7 +150,7 @@ int main(int argc, char *argv[])
 	    b1[i+j*ldb] = b[i+j*ldb];
 	    b2[i+j*ldb] = b[i+j*ldb];
         }
-    }	    
+    }
 
     if ( !(berr = floatMalloc_dist(nrhs)) )
 	ABORT("Malloc fails for berr[].");
@@ -158,7 +158,7 @@ int main(int argc, char *argv[])
     m = A.nrow;
     n = A.ncol;
     m_loc = ((NRformat_loc *)A.Store)->m_loc;
-    
+
     /* ------------------------------------------------------------
        1. SOLVE THE LINEAR SYSTEM FOR THE FIRST TIME, WITH 1 RHS.
        ------------------------------------------------------------*/
@@ -205,7 +205,7 @@ int main(int argc, char *argv[])
         if ( !iam ) printf("\tSolve the first system:\n");
         psinf_norm_error(iam, m_loc, nrhs, b, ldb, xtrue, ldx, grid.comm);
     }
-    
+
     PStatPrint(&options, &stat, &grid);        /* Print the statistics. */
 
     /* ------------------------------------------------------------
@@ -225,12 +225,12 @@ int main(int argc, char *argv[])
 	    printf("ERROR: INFO = %d returned from psgssvx()\n", info);
 	    fflush(stdout);
 	}
-    } else {    
+    } else {
         /* Check the accuracy of the solution. */
         if ( !iam ) printf("\tSolve the system with a different B:\n");
         psinf_norm_error(iam, m_loc, nrhs, b1, ldb, xtrue, ldx, grid.comm);
     }
-    
+
     PStatPrint(&options, &stat, &grid);        /* Print the statistics. */
 
     /* ------------------------------------------------------------
@@ -242,8 +242,8 @@ int main(int argc, char *argv[])
     PStatClear(&stat); /* clear the statistics variables. */
 
     nrhs = 3;
-    
-    /* When changing the number of RHS's, the following counters 
+
+    /* When changing the number of RHS's, the following counters
        for communication messages must be reset. */
     pxgstrs_comm_t *gstrs_comm = SOLVEstruct.gstrs_comm;
     SUPERLU_FREE(gstrs_comm->B_to_X_SendCnt);
@@ -252,7 +252,7 @@ int main(int argc, char *argv[])
     psgstrs_init(n, m_loc, nrhs, ((NRformat_loc *)A.Store)->fst_row,
 		 ScalePermstruct.perm_r, ScalePermstruct.perm_c, &grid,
 		 LUstruct.Glu_persist, &SOLVEstruct);
-    
+
     psgssvx(&options, &A, &ScalePermstruct, b2, ldb, nrhs, &grid,
 	    &LUstruct, &SOLVEstruct, berr, &stat, &info);
 
@@ -266,7 +266,7 @@ int main(int argc, char *argv[])
         if ( !iam ) printf("\tSolve the system with 3 RHS's:\n");
         psinf_norm_error(iam, m_loc, nrhs, b2, ldb, xtrue, ldx, grid.comm);
     }
-    
+
     PStatPrint(&options, &stat, &grid);        /* Print the statistics. */
 
     /* ------------------------------------------------------------
@@ -274,7 +274,7 @@ int main(int argc, char *argv[])
        ------------------------------------------------------------*/
     PStatFree(&stat);
     Destroy_CompRowLoc_Matrix_dist(&A);
-    sScalePermstructFree(&ScalePermstruct);   
+    sScalePermstructFree(&ScalePermstruct);
     sDestroy_LU(n, &grid, &LUstruct);
     sLUstructFree(&LUstruct);
     if ( options.SolveInitialized ) {

@@ -963,10 +963,14 @@ int_t initSluGPU3D_t(
 
 	int deviceCount;
 	cudaGetDeviceCount(&deviceCount);               // How many GPUs?
-	int device_id = grid3d->iam % deviceCount;
+	int device_id = int()(grid3d->iam/get_mpi_process_per_gpu ()) % (deviceCount); //YL: allow multiple MPIs per GPU
 	
-	
-	cudaSetDevice(device_id);     
+	char *ttemp;
+    ttemp = getenv ("SUPERLU_BIND_MPI_GPU");
+    if (ttemp) {
+	cudaSetDevice(device_id); 
+	}
+
 // #ifdef GPU_DEBUG
 // 	if(!grid3d->iam)
 // 	{

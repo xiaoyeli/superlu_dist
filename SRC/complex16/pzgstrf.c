@@ -13,7 +13,7 @@ at the top-level directory.
  * \brief Performs LU factorization in parallel.
  *
  * <pre>
- * -- Distributed SuperLU routine (version 6.1) --
+ * -- Distributed SuperLU routine (version 9.0) --
  * Lawrence Berkeley National Lab, Univ. of California Berkeley.
  * October 1, 2014
  *
@@ -769,7 +769,7 @@ pzgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
     /* symmetric assumption -- using L's supernode to estimate. */
     /* Note that in following expression 8 can be anything
        as long as its not too big */
-    int bigu_size = 8 * i * (max_row_size);
+    int bigu_size = 8 * sp_ienv_dist (3, options) * (max_row_size);
 #else
     int_t bigu_size = estimate_bigu_size( nsupers, Ufstnz_br_ptr, Glu_persist,
     	                                  grid, perm_u, &max_ncols );
@@ -801,7 +801,7 @@ pzgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
 
 #ifdef GPU_ACC /*-- use GPU --*/
     int superlu_acc_offload = get_acc_offload();
-    
+
     int gpublas_nb = get_gpublas_nb(); // default 64
     int nstreams = get_num_gpu_streams (); // default 8
 
@@ -812,9 +812,9 @@ pzgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
     gpuError_t gpuStat;
     gpublasHandle_t *handle;
     gpuStream_t *streams;
-		       
+
     if (superlu_acc_offload) {
-    
+
         /* array holding last column blk for each partition,
            used in SchCompUdt-GPU.c         */
         //int *stream_end_col = (int_t *) _mm_malloc (sizeof (int_t) * nstreams,64);
@@ -874,21 +874,21 @@ pzgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
         stat->gpu_buffer += dword * ( max_row_size * sp_ienv_dist(3,options) // dA
                                      + bigu_size                     // dB
                                      + buffer_size );                // dC
-				     
+
     } else { /* now superlu_acc_offload==0, GEMM will use CPU buffer */
         if ( !(bigU = doublecomplexMalloc_dist(bigu_size)) )
 	     ABORT ("Malloc fails for dgemm U buffer");
 	if ( !(bigV = doublecomplexMalloc_dist(bigv_size)) )
 	     ABORT ("Malloc failed for dgemm V buffer");
     }
-							    
+
 #else  /*-------- not to use GPU --------*/
 
   #if 0  /* Does not use buffer_size on CPU */
     int Threads_per_process = get_thread_per_process();
     int_t buffer_size  = SUPERLU_MAX(max_row_size * Threads_per_process * ldt, sp_ienv_dist(8));
   #endif
-  
+
     // for GEMM padding 0
     j = bigu_size / ldt;
     bigu_size += (gemm_k_pad * (j + ldt + gemm_n_pad));
@@ -1467,7 +1467,7 @@ pzgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
 /* #pragma omp parallel */ /* Sherry -- parallel done inside pzgstrs2 */
 #endif
                 {
-                    pzgstrs2_omp (k0, k, Glu_persist, grid, Llu, 
+                    pzgstrs2_omp (k0, k, Glu_persist, grid, Llu,
 		                    Ublock_info, stat);
                 }
                 pdgstrs2_timer += SuperLU_timer_() - ttt2;
@@ -1865,7 +1865,7 @@ pzgstrf(superlu_dist_options_t * options, int m, int n, double anorm,
         gpuFree( (void*)dA ); /* Sherry added */
         gpuFree( (void*)dB );
         gpuFree( (void*)dC );
-        for (i = 0; i < nstreams; i++) destroy_handle(handle[i]);	
+        for (i = 0; i < nstreams; i++) destroy_handle(handle[i]);
         SUPERLU_FREE( handle );
         SUPERLU_FREE( streams );
         SUPERLU_FREE( stream_end_col );

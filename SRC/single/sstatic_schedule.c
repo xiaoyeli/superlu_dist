@@ -1,9 +1,9 @@
 /*! \file
 Copyright (c) 2003, The Regents of the University of California, through
-Lawrence Berkeley National Laboratory (subject to receipt of any required 
-approvals from U.S. Dept. of Energy) 
+Lawrence Berkeley National Laboratory (subject to receipt of any required
+approvals from U.S. Dept. of Energy)
 
-All rights reserved. 
+All rights reserved.
 
 The source code is distributed under BSD license, see the file License.txt
 at the top-level directory.
@@ -14,14 +14,14 @@ at the top-level directory.
  * \brief Performs static scheduling for the look-ahead factorization algorithm.
  *
  * <pre>
- * -- Distributed SuperLU routine (version 4.0) --
+ * -- Distributed SuperLU routine (version 9.0) --
  * Lawrence Berkeley National Lab, Univ. of California Berkeley.
  * August 15, 2014
  *
  * Modified: February 20, 2020, changed to be precision-dependent.
  *
  * Reference:
- * 
+ *
  * </pre>
  */
 
@@ -43,26 +43,26 @@ superlu_sort_perm (const void *arg1, const void *arg2)
 #endif
 
 int
-sstatic_schedule(superlu_dist_options_t * options, int m, int n, 
+sstatic_schedule(superlu_dist_options_t * options, int m, int n,
 		sLUstruct_t * LUstruct, gridinfo_t * grid, SuperLUStat_t * stat,
 		int_t *perm_c_supno, int_t *iperm_c_supno, int *info)
 {
-/* 
+/*
  * Arguments
  * =========
  *
- * perm_c_supno (output) 
+ * perm_c_supno (output)
  *      perm_c_supno[k] = j means at the k-th step of elimination, the j-th
  *      supernode is chosen.
  * iperm_c_supno (output), inverse of perm_c_supno[]
  *      iperm_c_supno[j] = k means the j-th supernode will be scheduled
  *      at the k-th step of elimination.
- * 
+ *
  */
     int_t *xsup;
     int_t  i, ib, jb, lb, nlb, il, iu;
     int_t Pc, Pr;
-    int iam, krow, yourcol, mycol, myrow; 
+    int iam, krow, yourcol, mycol, myrow;
     int j, k, nsupers;  /* k - current panel to work on */
     int_t *index;
     Glu_persist_t *Glu_persist = LUstruct->Glu_persist;
@@ -89,12 +89,12 @@ sstatic_schedule(superlu_dist_options_t * options, int m, int n,
 
     /* Quick return if possible. */
     if (m == 0 || n == 0) return 0;
- 
-    /* 
-     * Initialization.  
+
+    /*
+     * Initialization.
      */
     iam = grid->iam;
-    Pc = grid->npcol; 
+    Pc = grid->npcol;
     Pr = grid->nprow;
     myrow = MYROW (iam, grid);
     mycol = MYCOL (iam, grid);
@@ -104,7 +104,7 @@ sstatic_schedule(superlu_dist_options_t * options, int m, int n,
     ncb = nsupers / Pc;
     nrb = nsupers / Pr;
 
-#if ( DEBUGlevel >= 1 ) 
+#if ( DEBUGlevel >= 1 )
     print_memorylog(stat, "before static schedule");
 #endif
 
@@ -417,7 +417,7 @@ sstatic_schedule(superlu_dist_options_t * options, int m, int n,
 
         SUPERLU_FREE (blocks); /* memory logged before */
 
-	
+
         /* store the received U-blocks by rows */
         nlb = nsupers / Pc;
         if (!(Ublock = intMalloc_dist (nblocks))) ABORT ("Malloc fails for Ublock[].");
@@ -821,7 +821,7 @@ sstatic_schedule(superlu_dist_options_t * options, int m, int n,
         SUPERLU_FREE (nnodes_u);
 	log_memory(-nsupers * iword, stat);
 
-        /* form global DAG on each processor */  
+        /* form global DAG on each processor */
         MPI_Allgather (&nblocks, 1, MPI_INT, recvcnts, 1, MPI_INT, grid->comm);
         nblocks = recvcnts[0];
         rdispls[0] = 0;

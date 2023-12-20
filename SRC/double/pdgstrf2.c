@@ -14,7 +14,7 @@ at the top-level directory.
  * \brief Performs panel LU factorization.
  *
  * <pre>
- * -- Distributed SuperLU routine (version 7.2) --
+ * -- Distributed SuperLU routine (version 9.0) --
  * Lawrence Berkeley National Lab, Univ. of California Berkeley.
  * August 15, 2014
  *
@@ -23,6 +23,7 @@ at the top-level directory.
  *   May 10, 2019  v7.0.0
  *   December 12, 2021  v7.2.0
  *
+ * <pre>
  * Purpose
  * =======
  *   Panel factorization -- block column k
@@ -362,6 +363,7 @@ pdgstrf2_trsm
 }  /* PDGSTRF2_trsm */
 
 
+
 /*****************************************************************************
  * The following functions are for the new pdgstrf2_dtrsm in the 3D code.
  *****************************************************************************/
@@ -381,7 +383,7 @@ int_t LpanelUpdate(int off0,  int nsupc, double* ublk_ptr, int ld_ujrow,
     {
         int_t off = i * GT;
         int len = SUPERLU_MIN(GT, l - i * GT);
-	
+
         superlu_dtrsm("R", "U", "N", "N", len, nsupc, alpha,
 		      ublk_ptr, ld_ujrow, &lusup[off0 + off], nsupr);
 
@@ -398,7 +400,8 @@ int_t LpanelUpdate(int off0,  int nsupc, double* ublk_ptr, int ld_ujrow,
 #pragma GCC push_options
 #pragma GCC optimize ("O0")
 
-void dgstrf2(int_t k, double* diagBlk, int_t LDA, double* BlockUfactor, int_t LDU, 
+
+void dgstrf2(int_t k, double* diagBlk, int_t LDA, double* BlockUfactor, int_t LDU,
     double thresh, int_t* xsup,
     superlu_dist_options_t *options,
     SuperLUStat_t *stat, int *info
@@ -408,7 +411,7 @@ void dgstrf2(int_t k, double* diagBlk, int_t LDA, double* BlockUfactor, int_t LD
     int_t jfst = FstBlockC(k);
     int_t jlst = FstBlockC(k + 1);
     int_t nsupc = SuperSize(k);
-    
+
     double *ublk_ptr = BlockUfactor;
     double *ujrow = BlockUfactor;
     int_t luptr = 0;       /* Point_t to the diagonal entries. */
@@ -429,10 +432,12 @@ void dgstrf2(int_t k, double* diagBlk, int_t LDA, double* BlockUfactor, int_t LD
                        iam, jfst + j, diagBlk[i]);
 #endif
                 /* Keep the new diagonal entry with the same sign. */
+
                 if (diagBlk[i] < 0)
                     diagBlk[i] = -thresh;
                 else
                     diagBlk[i] = thresh;
+
 #if (PRNTlevel >= 2)
                 printf("replaced by %e\n", diagBlk[i]);
 #endif
@@ -445,8 +450,8 @@ void dgstrf2(int_t k, double* diagBlk, int_t LDA, double* BlockUfactor, int_t LD
             int_t st = j * LDU + j;
             ublk_ptr[st + l * LDU] = diagBlk[i]; /* copy one row of U */
         }
-        double zero = 0.0;
-        if (ujrow[0] == zero) /* Test for singularity. */
+            double alpha = -1, zero = 0.0, one = 1.0;
+        if ( ujrow[0] == zero )  /* Test for singularity. */
         {
             *info = j + jfst + 1;
         }
@@ -454,7 +459,7 @@ void dgstrf2(int_t k, double* diagBlk, int_t LDA, double* BlockUfactor, int_t LD
         {
             double temp;
             temp = 1.0 / ujrow[0];
-            for (int_t i = luptr + 1; i < luptr - j + nsupc; ++i)
+            for (i = luptr + 1; i < luptr - j + nsupc; ++i)
                 diagBlk[i] *= temp;
             stat->ops[FACT] += nsupc - j - 1;
         }
@@ -467,7 +472,6 @@ void dgstrf2(int_t k, double* diagBlk, int_t LDA, double* BlockUfactor, int_t LD
             int incx = 1;
             int incy = LDU;
             /* Rank-1 update */
-            double alpha = -1;
             superlu_dger(l, cols_left, alpha, &diagBlk[luptr + 1], incx,
                          &ujrow[LDU], incy, &diagBlk[luptr + LDA + 1],
                          LDA);
@@ -482,6 +486,7 @@ void dgstrf2(int_t k, double* diagBlk, int_t LDA, double* BlockUfactor, int_t LD
     // printf("Coming to local dgstrf2\n");
 }
 
+
 /************************************************************************/
 /*! \brief
  *
@@ -492,7 +497,7 @@ void dgstrf2(int_t k, double* diagBlk, int_t LDA, double* BlockUfactor, int_t LD
  *
  * Arguments
  * =========
- * 
+ *
  * info   (output) int*
  *        = 0: successful exit
  *        > 0: if info = i, U(i,i) is exactly zero. The factorization has
@@ -541,8 +546,8 @@ void Local_Dgstrf2(superlu_dist_options_t *options, int_t k, double thresh,
             if (fabs (lusup[i]) < thresh) {  /* Diagonal */
 
 #if ( PRNTlevel>=2 )
-                    // printf ("(%d) .. col %d, tiny pivot %e  ",
-                    //         iam, jfst + j, lusup[i]);
+                    printf ("(%d) .. col %d, tiny pivot %e  ",
+                            iam, jfst + j, lusup[i]);
 #endif
                 /* Keep the new diagonal entry with the same sign. */
                 if (lusup[i] < 0) lusup[i] = -thresh;
@@ -582,7 +587,6 @@ void Local_Dgstrf2(superlu_dist_options_t *options, int_t k, double thresh,
 	    /* Rank-1 update */
             superlu_dger(l, cols_left, alpha, &lusup[luptr + 1], incx,
                          &ujrow[ld_ujrow], incy, &lusup[luptr + nsupr + 1], nsupr);
-	    
             stat->ops[FACT] += 2 * l * cols_left;
         }
 
@@ -653,7 +657,7 @@ void Local_Dgstrf2(superlu_dist_options_t *options, int_t k, double thresh,
  *             been completed, but the factor U is exactly singular,
  *             and division by zero will occur if it is used to solve a
  *             system of equations.
- * 
+ *
  * SCT    (output) SCT_t*
  *        Additional statistics used in the 3D algorithm.
  *
@@ -825,7 +829,7 @@ int_t dTrs2_GatherTrsmScatter(int_t klst, int_t iukp, int_t rukp,
     /*now call dtrsm on packed dense block*/
     int_t luptr = (knsupc - ldu) * (nsupr + 1);
     // if(ldu>nsupr) printf("nsupr %d ldu %d\n",nsupr,ldu );
-    
+
     superlu_dtrsm("L", "L", "N", "U", ldu, ncols, alpha,
 		  &lusup[luptr], nsupr, tempv, ldu);
 
@@ -834,7 +838,6 @@ int_t dTrs2_GatherTrsmScatter(int_t klst, int_t iukp, int_t rukp,
 
     return 0;
 }
-
 /* END 3D CODE */
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 
@@ -940,7 +943,7 @@ void pdgstrs2_omp
 	nsupc = SuperSize( gb );
 	iukp += UB_DESCRIPTOR;
         for (j = 0; j < nsupc; j++) {
-#else	
+#else
         for (j = 0; j < nsupc_temp[b]; j++) {
 #endif
             segsize = klst - usub[iukp++];
@@ -966,7 +969,7 @@ void pdgstrs2_omp
 #endif
 	    } /* end if segsize > 0 */
 	} /* end for j in parallel ... */
-#ifdef _OPENMP    
+#ifdef _OPENMP
 /* #pragma omp taskwait */
 #endif
     }  /* end for b ... */
@@ -986,7 +989,7 @@ void pdgstrs2_omp
 
 #else  /*==== new version from Piyush ====*/
 
-void pdgstrs2_omp(int_t k0, int_t k, int_t* Lsub_buf, 
+void pdgstrs2_omp(int_t k0, int_t k, int_t* Lsub_buf,
 		  double *Lval_buf, Glu_persist_t *Glu_persist,
 		  gridinfo_t *grid, dLocalLU_t *Llu, SuperLUStat_t *stat,
 		  Ublock_info_t *Ublock_info, double *bigV, int_t ldt, SCT_t *SCT)
@@ -1012,16 +1015,16 @@ void pdgstrs2_omp(int_t k0, int_t k, int_t* Lsub_buf,
     Trs2_InitUbloc_info(klst, nb, Ublock_info, usub, Glu_persist, stat );
 
     /* Loop through all the row blocks. */
-#ifdef _OPENMP    
+#ifdef _OPENMP
 #pragma omp parallel for schedule(dynamic,2)
 #endif
     for (int_t b = 0; b < nb; ++b)
     {
-#ifdef _OPENMP    
+#ifdef _OPENMP
         int thread_id = omp_get_thread_num();
-#else	
+#else
         int thread_id = 0;
-#endif	
+#endif
         double *tempv = bigV +  thread_id * ldt * ldt;
         dTrs2_GatherTrsmScatter(klst, Ublock_info[b].iukp, Ublock_info[b].rukp,
 				usub, uval, tempv, knsupc, nsupr, lusup, Glu_persist);

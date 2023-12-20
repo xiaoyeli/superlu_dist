@@ -13,7 +13,7 @@ at the top-level directory.
  * \brief Read the matrix from data file
  *
  * <pre>
- * -- Distributed SuperLU routine (version 5.1.3) --
+ * -- Distributed SuperLU routine (version 9.0) --
  * Lawrence Berkeley National Lab, Univ. of California Berkeley.
  * December 31, 2016
  * </pre>

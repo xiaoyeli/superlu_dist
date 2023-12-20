@@ -14,7 +14,7 @@ at the top-level directory.
  * \brief Perform local block modifications: lsum[i] -= L_i,k * X[k]
  *
  * <pre>
- * -- Distributed SuperLU routine (version 7.1.0) --
+ * -- Distributed SuperLU routine (version 9.0) --
  * Lawrence Berkeley National Lab, Univ. of California Berkeley.
  * March 15, 2003
  *
@@ -522,7 +522,7 @@ void dlsum_fmod_inv
 			// Nchunk=1;
 			nlb_loc = floor(((double)nlb)/Nchunk);
 			remainder = nlb % Nchunk;
-			
+
 #ifdef _OPENMP
 #ifdef __INTEL_COMPILER
 #pragma	omp	parallel for private (lptr1,luptr1,nlb1,thread_id1,lsub1,lusup1,nsupr1,Linv,nn,lbstart,lbend,luptr_tmp1,nbrow,lb,lptr1_tmp,rtemp_loc,nbrow_ref,lptr,nbrow1,ik,rel,lk,iknsupc,il,i,irow,fmod_tmp,ikcol,p,ii,jj,t1,t2,j,nleaf_send_tmp)
@@ -1485,7 +1485,7 @@ void dlsum_bmod_inv
 						fnz = usub[i + jj];
 						if ( fnz < iklrow ) { /* Nonzero segment. */
 							/* AXPY */
-//#ifdef _OPENMP  
+//#ifdef _OPENMP
 //#pragma omp simd // In complex case, this SIMD loop has 2 instructions, the compiler may generate incoreect code, so need to disable this omp simd
 //#endif
 							for (irow = fnz; irow < iklrow; ++irow)

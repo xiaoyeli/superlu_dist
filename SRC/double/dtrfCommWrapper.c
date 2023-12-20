@@ -14,7 +14,7 @@ at the top-level directory.
  * \brief Communication wrapper routines for 2D factorization.
  *
  * <pre>
- * -- Distributed SuperLU routine (version 7.0) --
+ * -- Distributed SuperLU routine (version 9.0) --
  * Lawrence Berkeley National Lab, Georgia Institute of Technology,
  * Oak Ridge National Lab
  * May 12, 2021
@@ -160,15 +160,15 @@ int_t dLPanelTrSolve( int_t k,   int* factored_L,
 
         // unsigned long long t1 = _rdtsc();
 
-#ifdef _OPENMP    
+#ifdef _OPENMP
         // #pragma omp for schedule(dynamic) nowait
-#endif	
+#endif
 #define BL  32
         for (int i = 0; i < CEILING(l, BL); ++i)
         {
-#ifdef _OPENMP    
+#ifdef _OPENMP
             #pragma omp task
-#endif	    
+#endif
             {
                 int_t off = i * BL;
                 // Sherry: int_t len = MY_MIN(BL, l - i * BL);
@@ -201,15 +201,15 @@ int_t dLPanelTrSolve( int_t k,   int* factored_L,
         // printf("%d: L update \n",k );
 
 #define BL  32
-#ifdef _OPENMP    
+#ifdef _OPENMP
         // #pragma omp parallel for
-#endif	
+#endif
         for (int i = 0; i < CEILING(l, BL); ++i)
         {
             int_t off = i * BL;
             // Sherry: int_t len = MY_MIN(BL, l - i * BL);
             int len = SUPERLU_MIN(BL, (l - i * BL));
-#ifdef _OPENMP    
+#ifdef _OPENMP
 //#pragma omp task
 #endif
             {
@@ -239,7 +239,7 @@ int_t dLPanelUpdate( int_t k,  int* IrecvPlcd_D, int* factored_L,
 
 #define BL  32
 
-int_t dUPanelTrSolve( int_t k,  
+int_t dUPanelTrSolve( int_t k,
                      double* BlockLFactor,
                      double* bigV,
                      int_t ldt,
@@ -277,20 +277,20 @@ int_t dUPanelTrSolve( int_t k,
         Trs2_InitUblock_info(klst, nb, Ublock_info, usub, Glu_persist, stat );
 
         /* Loop through all the row blocks. */
-#ifdef _OPENMP    
+#ifdef _OPENMP
         // #pragma omp for schedule(dynamic,2) nowait
-#endif	
+#endif
         for (int_t b = 0; b < nb; ++b)
         {
-#ifdef _OPENMP    
+#ifdef _OPENMP
             #pragma omp task
 #endif
             {
-#ifdef _OPENMP	    
+#ifdef _OPENMP
                 int thread_id = omp_get_thread_num();
-#else		
+#else
                 int thread_id = 0;
-#endif		
+#endif
                 double *tempv = bigV +  thread_id * ldt * ldt;
                 dTrs2_GatherTrsmScatter(klst, Ublock_info[b].iukp, Ublock_info[b].rukp,
 				       usub, uval, tempv, nsupc, nsupc, lusup, Glu_persist);
@@ -335,15 +335,15 @@ int_t dUPanelTrSolve( int_t k,
             // printf("%d :U update \n", k);
             for (int_t b = 0; b < nb; ++b)
             {
-#ifdef _OPENMP    
+#ifdef _OPENMP
                 #pragma omp task
 #endif
                 {
-#ifdef _OPENMP		
+#ifdef _OPENMP
                     int thread_id = omp_get_thread_num();
-#else		    
+#else
                     int thread_id = 0;
-#endif		    
+#endif
                     double *tempv = bigV +  thread_id * ldt * ldt;
                     dTrs2_GatherTrsmScatter(klst, Ublock_info[b].iukp, Ublock_info[b].rukp,
 					   usub, uval, tempv, nsupc, nsupr, lusup, Glu_persist);

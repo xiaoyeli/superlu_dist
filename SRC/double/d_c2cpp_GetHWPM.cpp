@@ -1,19 +1,21 @@
 /*! \file
 Copyright (c) 2003, The Regents of the University of California, through
-Lawrence Berkeley National Laboratory (subject to receipt of any required 
-approvals from U.S. Dept. of Energy) 
+Lawrence Berkeley National Laboratory (subject to receipt of any required
+approvals from U.S. Dept. of Energy)
 
-All rights reserved. 
+All rights reserved.
 
 The source code is distributed under BSD license, see the file License.txt
 at the top-level directory.
 */
 
-/*! @file 
+
+
+/*! @file
  * \brief Get heavy-weight perfect matching (HWPM).
  *
  * <pre>
- * -- Distributed SuperLU routine (version 5.4) --
+ * -- Distributed SuperLU routine (version 9.0) --
  * Lawrence Berkeley National Lab, Univ. of California Berkeley.
  * April 1, 2018
  * Modified: April 2, 2020
@@ -30,9 +32,9 @@ at the top-level directory.
  * =======
  *
  * Get heavy-weight perfect matching (HWPM).
- * 
+ *
  * Reference:
- * 
+ *
  *
  * Arguments
  * =========

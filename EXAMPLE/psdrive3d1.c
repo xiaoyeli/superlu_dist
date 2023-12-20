@@ -1,9 +1,9 @@
 /*! \file
 Copyright (c) 2003, The Regents of the University of California, through
-Lawrence Berkeley National Laboratory (subject to receipt of any required 
-approvals from U.S. Dept. of Energy) 
+Lawrence Berkeley National Laboratory (subject to receipt of any required
+approvals from U.S. Dept. of Energy)
 
-All rights reserved. 
+All rights reserved.
 
 The source code is distributed under BSD license, see the file License.txt
 at the top-level directory.
@@ -14,13 +14,13 @@ at the top-level directory.
  * \brief Driver program for PSGSSVX3D example
  *
  * <pre>
- * -- Distributed SuperLU routine (version 7.0) --
+ * -- Distributed SuperLU routine (version 9.0) --
  * Lawrence Berkeley National Lab, Georgia Institute of Technology,
- * Oak Ridge National Lab 
+ * Oak Ridge National Lab
  * September 10, 2021
  *
  */
-#include "superlu_sdefs.h"  
+#include "superlu_sdefs.h"
 
 /*! \brief
  *
@@ -40,7 +40,7 @@ at the top-level directory.
  *        LUstruct         : Glu_persist, Llu
  *        SOLVEstruct      : communication metadata for SpTRSV, SpMV, and
  *                           3D<->2D gather/scatter of {A,B} stored in A3d.
- * 
+ *
  * The program may be run by typing:
  *    mpiexec -np <p> psdrive3d1 -r <proc rows> -c <proc columns> \
  *                                    -d <proc Z-dimension> <input_file>
@@ -49,7 +49,7 @@ at the top-level directory.
  *
  * </pre>
  */
- 
+
 static void matCheck(int n, int m, float* A, int LDA,
        float* B, int LDB)
 {
@@ -106,7 +106,7 @@ main (int argc, char *argv[])
 {
     superlu_dist_options_t options;
     SuperLUStat_t stat;
-    SuperMatrix A;  // Now, A is on all 3D processes  
+    SuperMatrix A;  // Now, A is on all 3D processes
     sScalePermstruct_t ScalePermstruct;
     sLUstruct_t LUstruct;
     sSOLVEstruct_t SOLVEstruct;
@@ -220,7 +220,7 @@ main (int argc, char *argv[])
 	}
 	fflush(stdout);
     }
-	
+
     /* Bail out if I do not belong in the grid. */
     iam = grid.iam;
     if (iam == -1)     goto out;
@@ -258,7 +258,7 @@ main (int argc, char *argv[])
     screate_matrix_postfix3d(&A, nrhs, &b, &ldb,
                              &xtrue, &ldx, fp, suffix, &(grid));
     //printf("ldx %d, ldb %d\n", ldx, ldb);
-    
+
 #if 0  // following code is only for checking *Gather* routine
     NRformat_loc *Astore, *Astore0;
     float* B2d;
@@ -272,20 +272,20 @@ main (int argc, char *argv[])
     if ( grid.zscp.Iam == 0 )  // only in process layer 0
     {
         screate_matrix_postfix(&Aref, nrhs, &bref, &ldb,
-                               &xtrueref, &ldx, fp0, 
+                               &xtrueref, &ldx, fp0,
                                suffix, &(grid.grid2d));
         Astore0 = (NRformat_loc *) Aref.Store;
 
 	/*
 	if ( (grid.grid2d).iam == 0 ) {
-	    printf(" iam %d\n", 0); 
+	    printf(" iam %d\n", 0);
 	    checkNRFMT(Astore, Astore0);
 	} else if ((grid.grid2d).iam == 1 ) {
-	    printf(" iam %d\n", 1); 
+	    printf(" iam %d\n", 1);
 	    checkNRFMT(Astore, Astore0);
-	} 
+	}
 	*/
-    
+
 	// bref, xtrueref are created on 2D
         matCheck(Astore->m_loc, nrhs, B2d, Astore->m_loc, bref, ldb);
     }
@@ -302,8 +302,8 @@ main (int argc, char *argv[])
 	    b1[i+j*ldb] = b[i+j*ldb];
 	    b2[i+j*ldb] = b[i+j*ldb];
         }
-    }	    
-    
+    }
+
     if (!(berr = floatMalloc_dist (nrhs)))
         ABORT ("Malloc fails for berr[].");
 
@@ -342,13 +342,13 @@ main (int argc, char *argv[])
     if (colperm != -1) options.ColPerm = colperm;
     if (lookahead != -1) options.num_lookaheads = lookahead;
     if (ir != -1) options.IterRefine = ir;
-    
+
     if (!iam) {
 	print_options_dist(&options);
 	fflush(stdout);
     }
 
-    // matrix is on 3D process grid  
+    // matrix is on 3D process grid
     m = A.nrow;
     n = A.ncol;
 
@@ -374,7 +374,7 @@ main (int argc, char *argv[])
         psinf_norm_error (iam, ((NRformat_loc *) A.Store)->m_loc,
                               nrhs, b, ldb, xtrue, ldx, grid.comm);
     }
-    
+
     if ( grid.zscp.Iam == 0 ) { // process layer 0
 	PStatPrint (&options, &stat, &(grid.grid2d)); /* Print 2D statistics.*/
     }
@@ -404,21 +404,17 @@ main (int argc, char *argv[])
         psinf_norm_error (iam, ((NRformat_loc *) A.Store)->m_loc,
                             nrhs, b1, ldb, xtrue, ldx, grid.comm);
     }
-    
+
     /* ------------------------------------------------------------
        DEALLOCATE STORAGE.
        ------------------------------------------------------------ */
     if ( grid.zscp.Iam == 0 ) { // process layer 0
 
 	PStatPrint (&options, &stat, &(grid.grid2d)); /* Print 2D statistics.*/
-
-        sDestroy_LU (n, &(grid.grid2d), &LUstruct);
-        sSolveFinalize (&options, &SOLVEstruct);
-    } else { // Process layers not equal 0
-        sDeAllocLlu_3d(n, &LUstruct, &grid);
-        sDeAllocGlu_3d(&LUstruct);
     }
-    
+        sSolveFinalize (&options, &SOLVEstruct);
+        sDestroy_LU (n, &(grid.grid2d), &LUstruct);
+
     sDestroy_A3d_gathered_on_2d(&SOLVEstruct, &grid);
 
     Destroy_CompRowLoc_Matrix_dist (&A);

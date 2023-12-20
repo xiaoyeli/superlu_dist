@@ -13,7 +13,7 @@ at the top-level directory.
  * \brief Improves the computed solution and provies error bounds
  *
  * <pre>
- * -- Distributed SuperLU routine (version 4.3) --
+ * -- Distributed SuperLU routine (version 9.0) --
  * Lawrence Berkeley National Lab, Univ. of California Berkeley.
  * September 1, 1999
  *

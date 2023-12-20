@@ -13,7 +13,7 @@ at the top-level directory.
  * \brief Various gather routines.
  *
  * <pre>
- * -- Distributed SuperLU routine (version 7.0) --
+ * -- Distributed SuperLU routine (version 9.0) --
  * Lawrence Berkeley National Lab, Georgia Institute of Technology,
  * Oak Ridge National Lab
  * May 12, 2021
@@ -52,7 +52,7 @@ void zgather_u(int_t num_u_blks,
     // jj, i)
     doublecomplex zero = {0.0, 0.0};
 
-#ifdef _OPENMP    
+#ifdef _OPENMP
 #pragma omp parallel for default (shared) schedule(dynamic)
 #endif
     for (int_t j = 0; j < num_u_blks; ++j)
@@ -98,7 +98,7 @@ void zgather_l( int_t num_LBlk, int_t knsupc,
     }
 
     int_t LD_LBuff = L_info[num_LBlk - 1].FullRow;  /*leading dimension of buffer*/
-#ifdef _OPENMP    
+#ifdef _OPENMP
 #pragma omp parallel for
 #endif
     for (int_t i = 0; i < num_LBlk; ++i)
@@ -120,7 +120,7 @@ void zgather_l( int_t num_LBlk, int_t knsupc,
         LAPACKE_dlacpy (LAPACK_COL_MAJOR, 'A', temp_nbrow, knsupc, &lval[StRowSource], LD_lval, &L_buff[StRowDest], LD_LBuff);
 #else  /* Sherry */
 	for (int j = 0; j < knsupc; ++j) {
-            memcpy( &L_buff[StRowDest + j * LD_LBuff], 
+            memcpy( &L_buff[StRowDest + j * LD_LBuff],
 	            &lval[StRowSource + j * LD_lval],
 	            temp_nbrow * sizeof(doublecomplex) );
         }
@@ -174,7 +174,7 @@ void zRgather_L( int_t k, int_t *lsub, doublecomplex *lusup,
         if (iperm_c_supno[ib] < HyP->first_u_block_acc) look_up_flag = 0;
 
         // if it myIperm[ib] is within look ahead window
-        if (myIperm[ib]< myIperm[k] + HyP->nGPUStreams && myIperm[ib]>0) look_up_flag = 0;        
+        if (myIperm[ib]< myIperm[k] + HyP->nGPUStreams && myIperm[ib]>0) look_up_flag = 0;
 
         if (k <= HyP->nsupers - 2 && gEtreeInfo->setree[k] > 0 )
         {
@@ -253,7 +253,7 @@ void zRgather_L( int_t k, int_t *lsub, doublecomplex *lusup,
 //                int_t *perm_u)
 
 void zRgather_U( int_t k, int_t jj0, int_t *usub,	doublecomplex *uval,
-                 doublecomplex *bigU, gEtreeInfo_t* gEtreeInfo,	
+                 doublecomplex *bigU, gEtreeInfo_t* gEtreeInfo,
                  Glu_persist_t *Glu_persist, gridinfo_t *grid, HyP_t *HyP,
                  int_t* myIperm, int_t *iperm_c_supno, int_t *perm_u)
 {
@@ -295,7 +295,7 @@ void zRgather_U( int_t k, int_t jj0, int_t *usub,	doublecomplex *uval,
         /*here goes the condition wether jb block exists on Phi or not*/
         int_t u_blk_acc_cond = 0;
         // if (j == jj0) u_blk_acc_cond = 1;   /* must schedule first colum on cpu */
-        if (iperm_c_supno[jb] < HyP->first_l_block_acc) 
+        if (iperm_c_supno[jb] < HyP->first_l_block_acc)
         {
             // printf("k=%d jb=%d got at condition-1:%d, %d \n",k,jb, iperm_c_supno[jb] , HyP->first_l_block_acc);
             u_blk_acc_cond = 1;
@@ -306,7 +306,7 @@ void zRgather_U( int_t k, int_t jj0, int_t *usub,	doublecomplex *uval,
             // printf("k=%d jb=%d got at condition-2:%d, %d\n ",k,jb, myIperm[jb] , myIperm[k]);
             u_blk_acc_cond = 1;
         }
- 
+
         if (k <= HyP->nsupers - 2 && gEtreeInfo->setree[k] > 0 )
         {
             int_t k_parent = gEtreeInfo->setree[k];

@@ -14,7 +14,7 @@ at the top-level directory.
  * \brief Factorization routines for the subtree using 2D process grid.
  *
  * <pre>
- * -- Distributed SuperLU routine (version 7.2) --
+ * -- Distributed SuperLU routine (version 9.0) --
  * Lawrence Berkeley National Lab, Georgia Institute of Technology,
  * Oak Ridge National Lab
  * May 12, 2021
@@ -23,7 +23,7 @@ at the top-level directory.
  * December 12, 2021  v7.2.0
  * October 1, 2022    v8.1.1  code cleanup (remove #if 0 ...)
  */
- 
+
 #include "superlu_sdefs.h"
 
 int_t sLluBufInit(sLUValSubBuf_t* LUvsb, sLUstruct_t *LUstruct)
@@ -53,6 +53,26 @@ sdiagFactBufs_t** sinitDiagFactBufsArr(int_t mxLeafNode, int_t ldt, gridinfo_t* 
         dFBufs[i] = (sdiagFactBufs_t* ) SUPERLU_MALLOC(sizeof(sdiagFactBufs_t));
         assert(dFBufs[i]);
         sinitDiagFactBufs(ldt, dFBufs[i]);
+
+    }/*Minor for loop -2 for (int i = 0; i < mxLeafNode; ++i)*/
+
+    return dFBufs;
+}
+sdiagFactBufs_t** sinitDiagFactBufsArrMod(int_t mxLeafNode, int_t* ldts, gridinfo_t* grid)
+{
+    sdiagFactBufs_t** dFBufs;
+
+    /* Sherry fix:
+     * mxLeafNode can be 0 for the replicated layers of the processes ?? */
+    if ( mxLeafNode ) dFBufs = (sdiagFactBufs_t** )
+                          SUPERLU_MALLOC(mxLeafNode * sizeof(sdiagFactBufs_t*));
+
+    for (int i = 0; i < mxLeafNode; ++i)
+    {
+        /* code */
+        dFBufs[i] = (sdiagFactBufs_t* ) SUPERLU_MALLOC(sizeof(sdiagFactBufs_t));
+        assert(dFBufs[i]);
+        sinitDiagFactBufs(ldts[i], dFBufs[i]);
 
     }/*Minor for loop -2 for (int i = 0; i < mxLeafNode; ++i)*/
 
@@ -109,8 +129,14 @@ int_t sinitScuBufs(superlu_dist_options_t *options,
                   sLUstruct_t* LUstruct,
                   gridinfo_t * grid)
 {
+#if (DEBUGlevel >= 1)
+	CHECK_MALLOC(grid->iam, "Enter sinitScuBufs()");
+#endif
     scuBufs->bigV = sgetBigV(ldt, num_threads);
     scuBufs->bigU = sgetBigU(options, nsupers, grid, LUstruct);
+#if (DEBUGlevel >= 1)
+	CHECK_MALLOC(grid->iam, "Exit sinitScuBufs()");
+#endif
     return 0;
 }
 
@@ -159,9 +185,9 @@ int_t sdenseTreeFactor(
         /* diagonal factorization */
 	sDiagFactIBCast(k, k, dFBuf->BlockUFactor, dFBuf->BlockLFactor,
 			factStat->IrecvPlcd_D,
-			comReqs->U_diag_blk_recv_req, 
+			comReqs->U_diag_blk_recv_req,
 			comReqs->L_diag_blk_recv_req,
-			comReqs->U_diag_blk_send_req, 
+			comReqs->U_diag_blk_send_req,
 			comReqs->L_diag_blk_send_req,
 			grid, options, thresh, LUstruct, stat, info, SCT, tag_ub);
 
@@ -170,7 +196,7 @@ int_t sdenseTreeFactor(
 		      comReqs->U_diag_blk_recv_req, dFBuf->BlockUFactor, grid, LUstruct, SCT);
         /*L Ibcast*/
 	sIBcastRecvLPanel(k, k, msgs->msgcnt, comReqs->send_req, comReqs->recv_req,
-			  LUvsb->Lsub_buf, LUvsb->Lval_buf, factStat->factored, 
+			  LUvsb->Lsub_buf, LUvsb->Lval_buf, factStat->factored,
 			  grid, LUstruct, SCT, tag_ub);
         /*U update*/
 	sUPanelUpdate(k, factStat->factored_U, comReqs->L_diag_blk_recv_req,
@@ -178,7 +204,7 @@ int_t sdenseTreeFactor(
 		      packLUInfo->Ublock_info, grid, LUstruct, stat, SCT);
         /*U bcast*/
 	sIBcastRecvUPanel(k, k, msgs->msgcnt, comReqs->send_requ, comReqs->recv_requ,
-			  LUvsb->Usub_buf, LUvsb->Uval_buf, 
+			  LUvsb->Usub_buf, LUvsb->Uval_buf,
 			  grid, LUstruct, SCT, tag_ub);
 	sWaitL(k, msgs->msgcnt, msgs->msgcntU, comReqs->send_req, comReqs->recv_req,
 	       grid, LUstruct, SCT);
@@ -207,7 +233,7 @@ int_t sdenseTreeFactor(
             float* bigV = scuBufs->bigV;
             float* bigU = scuBufs->bigU;
 
-#ifdef _OPENMP    
+#ifdef _OPENMP
 #pragma omp parallel for schedule(dynamic)
 #endif
             for (int_t ij = 0; ij < nub * nlb; ++ij)
@@ -230,11 +256,11 @@ int_t sdenseTreeFactor(
                 int_t klst = FstBlockC (k + 1);
                 int_t *lsub = lPanelInfo->lsub;
                 int_t *usub = uPanelInfo->usub;
-#ifdef _OPENMP		
+#ifdef _OPENMP
                 int thread_id = omp_get_thread_num();
-#else		
+#else
                 int thread_id = 0;
-#endif		
+#endif
                 sblock_gemm_scatter( lb, ub,
                                     Ublock_info,
                                     Remain_info,
@@ -255,7 +281,7 @@ int_t sdenseTreeFactor(
         } /*if (LU_nonempty)*/
         SCT->NetSchurUpTimer += SuperLU_timer_() - tsch;
 
-	Wait_LUDiagSend(k, comReqs->U_diag_blk_send_req, comReqs->L_diag_blk_send_req, 
+	Wait_LUDiagSend(k, comReqs->U_diag_blk_send_req, comReqs->L_diag_blk_send_req,
 			grid, SCT);
 
     } /*for main loop (int_t k0 = 0; k0 < gNodeCount[tree]; ++k0)*/
@@ -294,7 +320,7 @@ int_t ssparseTreeFactor_ASYNC(
 
     /* Test the input parameters. */
     *info = 0;
-    
+
 #if ( DEBUGlevel>=1 )
     CHECK_MALLOC (grid3d->iam, "Enter ssparseTreeFactor_ASYNC()");
 #endif
@@ -319,7 +345,7 @@ int_t ssparseTreeFactor_ASYNC(
     int_t numLAMax = getNumLookAhead(options);
     int_t numLA = numLAMax;
 
-#if ( PRNTlevel>=1 )
+#if ( PRNTlevel>=2 )
     // Sherry print
     printf("sforest: nNodes %d, numlvl %d\n", (int) nnodes, (int) maxTopoLevel);
     //PrintInt10("perm_c_supno", nnodes, perm_c_supno);
@@ -343,9 +369,9 @@ int_t ssparseTreeFactor_ASYNC(
 
 	sDiagFactIBCast(k, k, dFBufs[offset]->BlockUFactor, dFBufs[offset]->BlockLFactor,
 			factStat->IrecvPlcd_D,
-			comReqss[offset]->U_diag_blk_recv_req, 
+			comReqss[offset]->U_diag_blk_recv_req,
 			comReqss[offset]->L_diag_blk_recv_req,
-			comReqss[offset]->U_diag_blk_send_req, 
+			comReqss[offset]->U_diag_blk_send_req,
 			comReqss[offset]->L_diag_blk_send_req,
 			grid, options, thresh, LUstruct, stat, info, SCT, tag_ub);
 
@@ -369,9 +395,9 @@ int_t ssparseTreeFactor_ASYNC(
 
 		sDiagFactIBCast(k, k, dFBufs[offset]->BlockUFactor,
 				dFBufs[offset]->BlockLFactor, factStat->IrecvPlcd_D,
-				comReqss[offset]->U_diag_blk_recv_req, 
+				comReqss[offset]->U_diag_blk_recv_req,
 				comReqss[offset]->L_diag_blk_recv_req,
-				comReqss[offset]->U_diag_blk_send_req, 
+				comReqss[offset]->U_diag_blk_send_req,
 				comReqss[offset]->L_diag_blk_send_req,
 				grid, options, thresh, LUstruct, stat, info, SCT, tag_ub);
             }
@@ -385,9 +411,9 @@ int_t ssparseTreeFactor_ASYNC(
 
             /*L update */
             if (factored_L[k] == 0)
-            {  
+            {
 		sLPanelUpdate(k, factStat->IrecvPlcd_D, factStat->factored_L,
-			      comReqss[offset]->U_diag_blk_recv_req, 
+			      comReqss[offset]->U_diag_blk_recv_req,
 			      dFBufs[offset]->BlockUFactor, grid, LUstruct, SCT);
                 factored_L[k] = 1;
             }
@@ -412,7 +438,7 @@ int_t ssparseTreeFactor_ASYNC(
 	    {
 		sIBcastRecvLPanel(k, k, msgss[offset]->msgcnt, comReqss[offset]->send_req,
 				  comReqss[offset]->recv_req, LUvsbs[offset]->Lsub_buf,
-				  LUvsbs[offset]->Lval_buf, factStat->factored, 
+				  LUvsbs[offset]->Lval_buf, factStat->factored,
 				  grid, LUstruct, SCT, tag_ub);
                 IbcastPanel_L[k] = 1; /*for consistancy; unused later*/
             }
@@ -435,17 +461,17 @@ int_t ssparseTreeFactor_ASYNC(
             int_t k = perm_c_supno[k0];   // direct computation no perm_c_supno
             int_t offset = k0 % numLA;
 
-	    sWaitL(k, msgss[offset]->msgcnt, msgss[offset]->msgcntU, 
+	    sWaitL(k, msgss[offset]->msgcnt, msgss[offset]->msgcntU,
 		   comReqss[offset]->send_req, comReqss[offset]->recv_req,
 		   grid, LUstruct, SCT);
-	    sWaitU(k, msgss[offset]->msgcnt, comReqss[offset]->send_requ, 
+	    sWaitU(k, msgss[offset]->msgcnt, comReqss[offset]->send_requ,
 		   comReqss[offset]->recv_requ, grid, LUstruct, SCT);
-		   
+
             double tsch = SuperLU_timer_();
-	    
+
             int_t LU_nonempty = sSchurComplementSetupGPU(k,
 							 msgss[offset], packLUInfo,
-							 myIperm, gIperm_c_supno, 
+							 myIperm, gIperm_c_supno,
 							 perm_c_supno, gEtreeInfo,
 							 fNlists, scuBufs,
 							 LUvsbs[offset],
@@ -467,12 +493,12 @@ int_t ssparseTreeFactor_ASYNC(
             int_t klst = FstBlockC (k + 1);
 
             float* bigV = scuBufs->bigV;
-	    
-#ifdef _OPENMP    
+
+#ifdef _OPENMP
 #pragma omp parallel
 #endif
             {
-#ifdef _OPENMP    
+#ifdef _OPENMP
 #pragma omp for schedule(dynamic,2) nowait
 #endif
 		/* Each thread is assigned one loop index ij, responsible for
@@ -482,15 +508,15 @@ int_t ssparseTreeFactor_ASYNC(
 		    /* Get the entire area of L (look-ahead) X U (all-blocks). */
 		    /* for each j-block in U, go through all L-blocks in the
 		       look-ahead window. */
-                    int_t j   = ij / HyP->lookAheadBlk; 
-							   
+                    int_t j   = ij / HyP->lookAheadBlk;
+
                     int_t lb  = ij % HyP->lookAheadBlk;
                     sblock_gemm_scatterTopLeft( lb,  j, bigV, knsupc, klst, lsub,
 					       usub, ldt,  indirect, indirect2, HyP,
 					       LUstruct, grid, SCT, stat );
                 }
 
-#ifdef _OPENMP    
+#ifdef _OPENMP
 #pragma omp for schedule(dynamic,2) nowait
 #endif
                 for (int_t ij = 0; ij < HyP->lookAheadBlk * HyP->num_u_blks_Phi; ++ij)
@@ -502,7 +528,7 @@ int_t ssparseTreeFactor_ASYNC(
 						LUstruct, grid, SCT, stat);
                 }
 
-#ifdef _OPENMP    
+#ifdef _OPENMP
 #pragma omp for schedule(dynamic,2) nowait
 #endif
                 for (int_t ij = 0; ij < HyP->RemainBlk * HyP->num_u_blks; ++ij) //
@@ -530,9 +556,9 @@ int_t ssparseTreeFactor_ASYNC(
 
 			    sDiagFactIBCast(k_parent, k_parent, dFBufs[offset]->BlockUFactor,
 					dFBufs[offset]->BlockLFactor, factStat->IrecvPlcd_D,
-					comReqss[offset]->U_diag_blk_recv_req, 
+					comReqss[offset]->U_diag_blk_recv_req,
 					comReqss[offset]->L_diag_blk_recv_req,
-					comReqss[offset]->U_diag_blk_send_req, 
+					comReqss[offset]->U_diag_blk_send_req,
 					comReqss[offset]->L_diag_blk_send_req,
 					grid, options, thresh, LUstruct, stat, info, SCT, tag_ub);
 
@@ -542,11 +568,11 @@ int_t ssparseTreeFactor_ASYNC(
                 }
             }
 
-#ifdef _OPENMP    
+#ifdef _OPENMP
 #pragma omp parallel
 #endif
             {
-#ifdef _OPENMP    
+#ifdef _OPENMP
 #pragma omp for schedule(dynamic,2) nowait
 #endif
                 for (int_t ij = 0; ij < HyP->RemainBlk * (HyP->num_u_blks_Phi - jj_cpu) ; ++ij)
@@ -564,8 +590,8 @@ int_t ssparseTreeFactor_ASYNC(
             // finish waiting for diag block send
             int_t abs_offset = k0 - k_st;
 
-	    Wait_LUDiagSend(k, comReqss[abs_offset]->U_diag_blk_send_req, 
-			    comReqss[abs_offset]->L_diag_blk_send_req, 
+	    Wait_LUDiagSend(k, comReqss[abs_offset]->U_diag_blk_send_req,
+			    comReqss[abs_offset]->L_diag_blk_send_req,
 			    grid, SCT);
 
             /*Schedule next I bcasts*/
@@ -578,7 +604,7 @@ int_t ssparseTreeFactor_ASYNC(
                 /*L Ibcast*/
                 if (IbcastPanel_L[next_k] == 0 && factored_L[next_k])
                 {
-		    sIBcastRecvLPanel(next_k, next_k, msgss[offset]->msgcnt, 
+		    sIBcastRecvLPanel(next_k, next_k, msgss[offset]->msgcnt,
 				      comReqss[offset]->send_req, comReqss[offset]->recv_req,
 				      LUvsbs[offset]->Lsub_buf, LUvsbs[offset]->Lval_buf,
 				      factStat->factored, grid, LUstruct, SCT, tag_ub);
@@ -587,9 +613,9 @@ int_t ssparseTreeFactor_ASYNC(
                 /*U Ibcast*/
                 if (IbcastPanel_U[next_k] == 0 && factored_U[next_k])
                 {
-		    sIBcastRecvUPanel(next_k, next_k, msgss[offset]->msgcnt, 
+		    sIBcastRecvUPanel(next_k, next_k, msgss[offset]->msgcnt,
 				      comReqss[offset]->send_requ, comReqss[offset]->recv_requ,
-				      LUvsbs[offset]->Usub_buf, LUvsbs[offset]->Uval_buf, 
+				      LUvsbs[offset]->Usub_buf, LUvsbs[offset]->Uval_buf,
 				      grid, LUstruct, SCT, tag_ub);
 
                     IbcastPanel_U[next_k] = 1;
@@ -615,7 +641,7 @@ int_t ssparseTreeFactor_ASYNC(
                         if (recvUDiag)
                         {
 
-			    sLPanelTrSolve( kx, factStat->factored_L, 
+			    sLPanelTrSolve( kx, factStat->factored_L,
 					    dFBufs[offset]->BlockUFactor, grid, LUstruct);
 
                             factored_L[kx] = 1;
@@ -628,12 +654,12 @@ int_t ssparseTreeFactor_ASYNC(
                             {
                                 int_t offset1 = k0x % numLA;
 
-				sIBcastRecvLPanel(kx, kx, msgss[offset1]->msgcnt, 
+				sIBcastRecvLPanel(kx, kx, msgss[offset1]->msgcnt,
 						  comReqss[offset1]->send_req,
 						  comReqss[offset1]->recv_req,
 						  LUvsbs[offset1]->Lsub_buf,
-						  LUvsbs[offset1]->Lval_buf, 
-						  factStat->factored, 
+						  LUvsbs[offset1]->Lval_buf,
+						  factStat->factored,
 						  grid, LUstruct, SCT, tag_ub);
 
                                 IbcastPanel_L[kx] = 1; /*will be used later*/
@@ -652,7 +678,7 @@ int_t ssparseTreeFactor_ASYNC(
 
 			    sUPanelTrSolve( kx, dFBufs[offset]->BlockLFactor,
                                             scuBufs->bigV,
-					    ldt, packLUInfo->Ublock_info, 
+					    ldt, packLUInfo->Ublock_info,
 					    grid, LUstruct, stat, SCT);
 
                             factored_U[kx] = 1;
@@ -664,11 +690,11 @@ int_t ssparseTreeFactor_ASYNC(
                             {
                                 int_t offset = k0x % numLA;
 
-				sIBcastRecvUPanel(kx, kx, msgss[offset]->msgcnt, 
+				sIBcastRecvUPanel(kx, kx, msgss[offset]->msgcnt,
 						  comReqss[offset]->send_requ,
 						  comReqss[offset]->recv_requ,
 						  LUvsbs[offset]->Usub_buf,
-						  LUvsbs[offset]->Uval_buf, 
+						  LUvsbs[offset]->Uval_buf,
 						  grid, LUstruct, SCT, tag_ub);
 
                                 IbcastPanel_U[kx] = 1; /*will be used later*/

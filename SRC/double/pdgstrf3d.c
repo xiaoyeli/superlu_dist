@@ -14,7 +14,7 @@ at the top-level directory.
  * \brief Performs LU factorization in 3D process grid.
  *
  * <pre>
- * -- Distributed SuperLU routine (version 7.2) --
+ * -- Distributed SuperLU routine (version 9.0) --
  * Lawrence Berkeley National Lab, Georgia Institute of Technology,
  * Oak Ridge National Lab
  * May 12, 2021
@@ -22,6 +22,19 @@ at the top-level directory.
  */
 
 #include "superlu_ddefs.h"
+#if 0
+#include "pdgstrf3d.h"
+#include "trfCommWrapper.h"
+#include "trfAux.h"
+//#include "load-balance/supernodal_etree.h"
+//#include "load-balance/supernodalForest.h"
+#include "supernodal_etree.h"
+#include "supernodalForest.h"
+#include "p3dcomm.h"
+#include "treeFactorization.h"
+#include "ancFactorization.h"
+#include "xtrf3Dpartition.h"
+#endif
 
 #ifdef MAP_PROFILE
 #include  "mapsampler_api.h"
@@ -121,7 +134,7 @@ int_t pdgstrf3d(superlu_dist_options_t *options, int m, int n, double anorm,
 
     /* Test the input parameters. */
     *info = 0;
-    
+
 #if ( DEBUGlevel>=1 )
     CHECK_MALLOC (grid3d->iam, "Enter pdgstrf3d()");
 #endif
@@ -147,7 +160,7 @@ int_t pdgstrf3d(superlu_dist_options_t *options, int m, int n, double anorm,
     ddiagFactBufs_t dFBuf;
     dinitDiagFactBufs(ldt, &dFBuf);
 
-    commRequests_t comReqs;   
+    commRequests_t comReqs;
     initCommRequests(&comReqs, grid);
 
     msgs_t msgs;
@@ -189,19 +202,18 @@ int_t pdgstrf3d(superlu_dist_options_t *options, int m, int n, double anorm,
     int_t numLA = getNumLookAhead(options);
     dLUValSubBuf_t** LUvsbs = dLluBufInitArr( SUPERLU_MAX( numLA, grid3d->zscp.Np ), LUstruct);
     msgs_t**msgss = initMsgsArr(numLA);
-    int_t mxLeafNode    = 0; // Yang: only need to check the leaf level of topoInfo as the factorization proceeds level by level 
+    int_t mxLeafNode    = 0; // Yang: only need to check the leaf level of topoInfo as the factorization proceeds level by level
     for (int ilvl = 0; ilvl < maxLvl; ++ilvl) {
-        fflush(stdout);
         if (sForests[myTreeIdxs[ilvl]] && sForests[myTreeIdxs[ilvl]]->topoInfo.eTreeTopLims[1] > mxLeafNode )
             mxLeafNode    = sForests[myTreeIdxs[ilvl]]->topoInfo.eTreeTopLims[1];
     }
 
-    // Yang: use ldts to track the maximum needed buffer sizes per node of topoInfo 
+    // Yang: use ldts to track the maximum needed buffer sizes per node of topoInfo
     int *ldts = (int*) SUPERLU_MALLOC(mxLeafNode*sizeof(int));
     for (int i = 0; i < mxLeafNode; ++i) {
         ldts[i]=1;
     }
-    
+
     for (int ilvl = 0; ilvl < maxLvl; ++ilvl) {
         int_t treeId = trf3Dpartition->myTreeIdxs[ilvl];
         sForest_t* sforest = sForests[treeId];
@@ -224,23 +236,24 @@ int_t pdgstrf3d(superlu_dist_options_t *options, int m, int n, double anorm,
                     int_t mycol = MYCOL(grid->iam, grid);
                     if (myrow == krow || mycol == kcol)
                     {
-                        ldts[offset] = SUPERLU_MAX(ldts[offset],nsupc);      
+                        ldts[offset] = SUPERLU_MAX(ldts[offset],nsupc);
                     }
-                }               
+                }
             }
         }
     }
-    
-    // dinitDiagFactBufsArrMod is modified version of dinitDiagFactBufsArr to use ldts instead of a scalar
-    // ddiagFactBufs_t** dFBufs = dinitDiagFactBufsArrMod(mxLeafNode, ldts, grid);
-    ddiagFactBufs_t** dFBufs = dinitDiagFactBufsArr(mxLeafNode, ldt, grid);
-    SUPERLU_FREE(ldts);
 
+#if 1
+    // dinitDiagFactBufsArrMod is modified version of dinitDiagFactBufsArr to use ldts instead of a scalar
+    ddiagFactBufs_t** dFBufs = dinitDiagFactBufsArrMod(mxLeafNode, ldts, grid);
+    SUPERLU_FREE(ldts);
+#else
+    // ddiagFactBufs_t** dFBufs = dinitDiagFactBufsArr(mxLeafNode, ldt, grid);
+#endif
     commRequests_t** comReqss = initCommRequestsArr(SUPERLU_MAX(mxLeafNode, numLA), ldt, grid);
 
-
-
     /* Setting up GPU related data structures */
+
     int_t first_l_block_acc = 0;
     int_t first_u_block_acc = 0;
     int_t Pc = grid->npcol;
@@ -274,7 +287,7 @@ int_t pdgstrf3d(superlu_dist_options_t *options, int m, int n, double anorm,
     dsluGPU_t *sluGPU = &sluGPUobj;
     if (superlu_acc_offload)
     {
-#if 0 	/* Sherry: For GPU code on titan, we do not need performance 
+#if 0 	/* Sherry: For GPU code on titan, we do not need performance
 	   lookup tables since due to difference in CPU-GPU performance,
 	   it didn't make much sense to do any Schur-complement update
 	   on CPU, except for the lookahead-update on CPU. Same should
@@ -316,7 +329,6 @@ int_t pdgstrf3d(superlu_dist_options_t *options, int m, int n, double anorm,
     allinea_start_sampling();
 #endif
     SCT->pdgstrfTimer = SuperLU_timer_();
-
 
     for (int ilvl = 0; ilvl < maxLvl; ++ilvl)
     {
@@ -381,16 +393,12 @@ int_t pdgstrf3d(superlu_dist_options_t *options, int m, int n, double anorm,
     //printf("After factorization: INFO = %d\n", *info); fflush(stdout);
 
     SCT->pdgstrfTimer = SuperLU_timer_() - SCT->pdgstrfTimer;
-
     if(!grid3d->zscp.Iam)
     {
         // SCT_printSummary(grid, SCT);
         // if (superlu_acc_offload )
         //     dprintGPUStats(sluGPU->A_gpu);
     }
-        
-
-    
 
 #ifdef ITAC_PROF
     VT_traceoff();

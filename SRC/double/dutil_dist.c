@@ -14,7 +14,7 @@ at the top-level directory.
  * \brief Several matrix utilities
  *
  * <pre>
- * -- Distributed SuperLU routine (version 7.1.0) --
+ * -- Distributed SuperLU routine (version 9.0) --
  * Lawrence Berkeley National Lab, Univ. of California Berkeley.
  * March 15, 2003
  * October 5, 2021
@@ -112,7 +112,7 @@ void
 dCopy_CompCol_Matrix_dist(SuperMatrix *A, SuperMatrix *B)
 {
     NCformat *Astore, *Bstore;
-    int_t      ncol, nnz, i;
+    int_t    ncol, nnz, i;
 
     B->Stype = A->Stype;
     B->Dtype = A->Dtype;
@@ -455,7 +455,7 @@ int dDeAllocLlu_3d(int_t n, dLUstruct_t * LUstruct, gridinfo3d_t* grid3d)
     nsupers = (LUstruct->Glu_persist)->supno[n-1] + 1;
 
     nbc = CEILING(nsupers, grid3d->npcol);
-    for (i = 0; i < nbc; ++i) 
+    for (i = 0; i < nbc; ++i)
 	if ( Llu->Lrowind_bc_ptr[i] ) {
 	    SUPERLU_FREE (Llu->Lrowind_bc_ptr[i]);
 	    SUPERLU_FREE (Llu->Lnzval_bc_ptr[i]);
@@ -486,10 +486,10 @@ void
 dGenXtrue_dist(int_t n, int_t nrhs, double *x, int_t ldx)
 {
     int  i, j;
-    double exponent, tau; /* See TOMS paper on ItRef (LAWN165); testing code: 
+    double exponent, tau; /* See TOMS paper on ItRef (LAWN165); testing code:
 			     Codes/UCB-itref-xblas-etc/xiaoye/itref/driver.c  */
     double r;
-    
+
     exponent = (double)rand() / (double)((unsigned)RAND_MAX + 1); /* uniform in [0,1) */
 #if 1
     tau = pow(2.0, 12.0 * exponent);
@@ -497,7 +497,7 @@ dGenXtrue_dist(int_t n, int_t nrhs, double *x, int_t ldx)
     tau = 5.0;
 #endif
     //printf("new dGenXtrue, tau %e\n", tau);
-    
+
     r = (double)rand() / (double)((unsigned)RAND_MAX + 1); /* uniform in [0,1) */
     r = r + 0.5; /* uniform in (0.5, 1.5) */
 
@@ -641,13 +641,13 @@ void dZeroLblocks(int iam, int n, gridinfo_t *grid, dLUstruct_t *LUstruct)
 {
     double zero = 0.0;
     register int extra, gb, j, lb, nsupc, nsupr, ncb;
-    register int_t k, mycol, r;
+    register int k, mycol, r;
     dLocalLU_t *Llu = LUstruct->Llu;
     Glu_persist_t *Glu_persist = LUstruct->Glu_persist;
     int_t *xsup = Glu_persist->xsup;
     int_t *index;
     double *nzval;
-    int_t nsupers = Glu_persist->supno[n-1] + 1;
+    int nsupers = Glu_persist->supno[n-1] + 1;
 
     ncb = nsupers / grid->npcol;
     extra = nsupers % grid->npcol;
@@ -768,6 +768,7 @@ void dDumpLblocks(int iam, int_t nsupers, gridinfo_t *grid,
 
 
 
+
 /*! \Compute the level sets in the L factor
  */
 void dComputeLevelsets(int iam, int_t nsupers, gridinfo_t *grid,
@@ -825,7 +826,7 @@ void dGenCOOLblocks(int iam, int_t nsupers, gridinfo_t *grid,
 
 	assert(grid->npcol*grid->nprow==1);
 
-	 
+
 	// count nonzeros in the first pass
 	*nnzL = 0;
 	*n = 0;
@@ -848,7 +849,7 @@ void dGenCOOLblocks(int iam, int_t nsupers, gridinfo_t *grid,
 		for (j = 0; j < nsupc; ++j) {
 		for (i=0; i<len; ++i){
 
-		if(index[k+LB_DESCRIPTOR+i]+1>=xsup[gb]+j+1){			
+		if(index[k+LB_DESCRIPTOR+i]+1>=xsup[gb]+j+1){
 			(*nnzL) ++;
 			nmax = SUPERLU_MAX(*n,index[k+LB_DESCRIPTOR+i]+1);
 			*n = nmax;
@@ -860,8 +861,8 @@ void dGenCOOLblocks(int iam, int_t nsupers, gridinfo_t *grid,
 		r += len;
 		}
 	}
-	} 
-				
+	}
+
 	// fill the triplets in the second pass
     if ( !(*cooRows = (int_t*)SUPERLU_MALLOC(*nnzL * sizeof(int_t))) )
         ABORT("Malloc fails for cooRows[].");
@@ -896,9 +897,9 @@ void dGenCOOLblocks(int iam, int_t nsupers, gridinfo_t *grid,
             if((*cooRows)[(*nnzL)]==(*cooCols)[(*nnzL)]){
                 (*cooVals)[(*nnzL)]=1.0;
             }else{
-                (*cooVals)[(*nnzL)]=nzval[r +i+ j*nsupr];								
+                (*cooVals)[(*nnzL)]=nzval[r +i+ j*nsupr];
             }
-			
+
 			(*nnzL) ++;
 			nmax = SUPERLU_MAX(*n,index[k+LB_DESCRIPTOR+i]+1);
 			*n = nmax;
@@ -910,7 +911,7 @@ void dGenCOOLblocks(int iam, int_t nsupers, gridinfo_t *grid,
 		r += len;
 		}
 	}
-	} 
+	}
 
 } /* dGenCOOLblocks */
 
@@ -929,7 +930,7 @@ void dGenCSCLblocks(int iam, int_t nsupers, gridinfo_t *grid,
     int_t *index;
     double *nzval0;
 	FILE *fp, *fopen();
-    
+
     double *val;
     int_t  *row, *col;
 
@@ -962,7 +963,7 @@ void dGenCSCLblocks(int iam, int_t nsupers, gridinfo_t *grid,
 		for (j = 0; j < nsupc; ++j) {
 		for (i=0; i<len; ++i){
 
-		if(index[k+LB_DESCRIPTOR+i]+1>=xsup[gb]+j+1){			
+		if(index[k+LB_DESCRIPTOR+i]+1>=xsup[gb]+j+1){
 			(*nnzL) ++;
 			nmax = SUPERLU_MAX(*n,index[k+LB_DESCRIPTOR+i]+1);
 			*n = nmax;
@@ -974,8 +975,8 @@ void dGenCSCLblocks(int iam, int_t nsupers, gridinfo_t *grid,
 		r += len;
 		}
 	}
-	} 
-				
+	}
+
 	// get triplelets in the second pass
     if ( !(val = (double *) SUPERLU_MALLOC(*nnzL * sizeof(double))) )
         ABORT("Malloc fails for val[]");
@@ -1010,9 +1011,9 @@ void dGenCSCLblocks(int iam, int_t nsupers, gridinfo_t *grid,
             if(row[(*nnzL)]==col[(*nnzL)]){
                 val[(*nnzL)]=1.0;
             }else{
-                val[(*nnzL)]=nzval0[r +i+ j*nsupr];								
+                val[(*nnzL)]=nzval0[r +i+ j*nsupr];
             }
-			
+
 			(*nnzL) ++;
 			nmax = SUPERLU_MAX(*n,index[k+LB_DESCRIPTOR+i]+1);
 			*n = nmax;
@@ -1082,7 +1083,7 @@ void dGenCSRLblocks(int iam, int_t nsupers, gridinfo_t *grid,
     int_t *index;
     double *nzval0;
 	FILE *fp, *fopen();
-    
+
     double *val;
     int_t  *row, *col;
 
@@ -1115,7 +1116,7 @@ void dGenCSRLblocks(int iam, int_t nsupers, gridinfo_t *grid,
 		for (j = 0; j < nsupc; ++j) {
 		for (i=0; i<len; ++i){
 
-		if(index[k+LB_DESCRIPTOR+i]+1>=xsup[gb]+j+1){			
+		if(index[k+LB_DESCRIPTOR+i]+1>=xsup[gb]+j+1){
 			(*nnzL) ++;
 			nmax = SUPERLU_MAX(*n,index[k+LB_DESCRIPTOR+i]+1);
 			*n = nmax;
@@ -1127,8 +1128,8 @@ void dGenCSRLblocks(int iam, int_t nsupers, gridinfo_t *grid,
 		r += len;
 		}
 	}
-	} 
-				
+	}
+
 	// get triplelets in the second pass
     if ( !(val = (double *) SUPERLU_MALLOC(*nnzL * sizeof(double))) )
         ABORT("Malloc fails for val[]");
@@ -1163,9 +1164,9 @@ void dGenCSRLblocks(int iam, int_t nsupers, gridinfo_t *grid,
             if(row[(*nnzL)]==col[(*nnzL)]){
                 val[(*nnzL)]=1.0;
             }else{
-                val[(*nnzL)]=nzval0[r +i+ j*nsupr];								
+                val[(*nnzL)]=nzval0[r +i+ j*nsupr];
             }
-			
+
 			(*nnzL) ++;
 			nmax = SUPERLU_MAX(*n,index[k+LB_DESCRIPTOR+i]+1);
 			*n = nmax;
@@ -1293,7 +1294,7 @@ void dZeroUblocks(int iam, int n, gridinfo_t *grid, dLUstruct_t *LUstruct)
 	    }
 	}
     }
-} /* end dZeroUlocks */
+} /* end dZeroUblocks */
 
 int
 dprint_gsmv_comm(FILE *fp, int_t m_loc, pdgsmv_comm_t *gsmv_comm,

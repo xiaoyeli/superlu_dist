@@ -1,20 +1,20 @@
 /*! \file
 Copyright (c) 2003, The Regents of the University of California, through
-Lawrence Berkeley National Laboratory (subject to receipt of any required 
-approvals from U.S. Dept. of Energy) 
+Lawrence Berkeley National Laboratory (subject to receipt of any required
+approvals from U.S. Dept. of Energy)
 
-All rights reserved. 
+All rights reserved.
 
 The source code is distributed under BSD license, see the file License.txt
 at the top-level directory.
 */
 
 
-/*! @file 
+/*! @file
  * \brief Driver program for PSGSSVX example
  *
  * <pre>
- * -- Distributed SuperLU routine (version 6.1) --
+ * -- Distributed SuperLU routine (version 9.0) --
  * Lawrence Berkeley National Lab, Univ. of California Berkeley.
  * March 15, 2003
  * April 5, 2015
@@ -77,9 +77,9 @@ int main(int argc, char *argv[])
     nrhs = 1;   /* Number of right-hand side. */
 
     /* ------------------------------------------------------------
-       INITIALIZE MPI ENVIRONMENT. 
+       INITIALIZE MPI ENVIRONMENT.
        ------------------------------------------------------------*/
-    MPI_Init_thread( &argc, &argv, MPI_THREAD_MULTIPLE, &omp_mpi_level); 
+    MPI_Init_thread( &argc, &argv, MPI_THREAD_MULTIPLE, &omp_mpi_level);
 
     /* Parse command line argv[]. */
     for (cpp = argv+1; *cpp; ++cpp) {
@@ -107,7 +107,7 @@ int main(int argc, char *argv[])
     }
 
     /* ------------------------------------------------------------
-       INITIALIZE THE SUPERLU PROCESS GRID. 
+       INITIALIZE THE SUPERLU PROCESS GRID.
        ------------------------------------------------------------*/
     superlu_gridinit(MPI_COMM_WORLD, nprow, npcol, &grid);
 
@@ -128,7 +128,7 @@ int main(int argc, char *argv[])
         printf("Process grid:\t\t%d X %d\n", (int)grid.nprow, (int)grid.npcol);
 	fflush(stdout);
     }
-    
+
 #if ( DEBUGlevel>=1 )
     CHECK_MALLOC(iam, "Enter main()");
 #endif
@@ -137,11 +137,11 @@ int main(int argc, char *argv[])
 	if((*cpp)[ii]=='.'){
   	    postfix = &((*cpp)[ii+1]);
 	}
-    }	
+    }
     // printf("%s\n", postfix);
 
     /* ------------------------------------------------------------
-       GET THE MATRIX FROM FILE AND SETUP THE RIGHT HAND SIDE. 
+       GET THE MATRIX FROM FILE AND SETUP THE RIGHT HAND SIDE.
        ------------------------------------------------------------*/
     screate_matrix_postfix(&A, nrhs, &b, &ldb, &xtrue, &ldx, fp, postfix, &grid);
 
@@ -215,7 +215,7 @@ int main(int argc, char *argv[])
         /* Check the accuracy of the solution. */
         psinf_norm_error(iam, m_loc, nrhs, b, ldb, xtrue, ldx, grid.comm);
     }
-    
+
     PStatPrint(&options, &stat, &grid);        /* Print the statistics. */
     Destroy_CompRowLoc_Matrix_dist(&A); /* Deallocate storage of matrix A.  */
     SUPERLU_FREE(b);                 /* Free storage of right-hand side.    */
@@ -268,7 +268,7 @@ int main(int argc, char *argv[])
        ------------------------------------------------------------*/
     PStatFree(&stat);
     Destroy_CompRowLoc_Matrix_dist(&A); /* Deallocate storage of matrix A.  */
-    sDestroy_LU(n, &grid, &LUstruct); /* Deallocate storage associated with    
+    sDestroy_LU(n, &grid, &LUstruct); /* Deallocate storage associated with
 					the L and U matrices.               */
     sScalePermstructFree(&ScalePermstruct);
     sLUstructFree(&LUstruct);         /* Deallocate the structure of L and U.*/

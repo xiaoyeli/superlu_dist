@@ -14,7 +14,7 @@ at the top-level directory.
  * \brief Solves a system of linear equations A*X=B,
  *
  * <pre>
- * -- Distributed SuperLU routine (version 4.3) --
+ * -- Distributed SuperLU routine (version 9.0) --
  * Lawrence Berkeley National Lab, Univ. of California Berkeley.
  * September 1, 1999
  *
@@ -920,6 +920,11 @@ psgssvx_ABglobal(superlu_dist_options_t *options, SuperMatrix *A,
 	dist_mem_use = sdistribute(options, n, &AC, Glu_freeable, LUstruct, grid);
 	stat->utime[DIST] = SuperLU_timer_() - t;
 
+	/* Flatten L metadata into one buffer. */
+	if ( Fact != SamePattern_SameRowPerm ) {
+		psflatten_LDATA(options, n, LUstruct, grid, stat);
+	}
+
 	/* Deallocate storage used in symbolic factor. */
 	if ( Fact != SamePattern_SameRowPerm ) {
 	    iinfo = symbfact_SubFree(Glu_freeable);
@@ -930,6 +935,40 @@ psgssvx_ABglobal(superlu_dist_options_t *options, SuperMatrix *A,
 	t = SuperLU_timer_();
 	psgstrf(options, m, n, anorm, LUstruct, grid, stat, info);
 	stat->utime[FACT] = SuperLU_timer_() - t;
+
+
+    /* nvshmem related. The nvshmem_malloc has to be called before strs_compute_communication_structure, otherwise solve is much slower*/
+    int nsupers = Glu_persist->supno[n-1] + 1;
+	#ifdef HAVE_NVSHMEM
+		int nc = CEILING( nsupers, grid->npcol);
+		int nr = CEILING( nsupers, grid->nprow);
+		int flag_bc_size = RDMA_FLAG_SIZE * (nc+1);
+		int flag_rd_size = RDMA_FLAG_SIZE * nr * 2;
+		int my_flag_bc_size = RDMA_FLAG_SIZE * (nc+1);
+		int my_flag_rd_size = RDMA_FLAG_SIZE * nr * 2;
+		int maxrecvsz = sp_ienv_dist(3, options)* nrhs + SUPERLU_MAX( XK_H, LSUM_H );
+		int ready_x_size = maxrecvsz*nc;
+		int ready_lsum_size = 2*maxrecvsz*nr;
+		if (get_acc_solve()){
+		nv_init_wrapper(grid->comm);
+
+		sprepare_multiGPU_buffers(flag_bc_size,flag_rd_size,ready_x_size,ready_lsum_size,my_flag_bc_size,my_flag_rd_size);
+
+
+		}
+	#endif
+
+	if ( Fact != SamePattern_SameRowPerm ) {
+
+		int* supernodeMask = int32Malloc_dist(nsupers);
+		for(int ii=0; ii<nsupers; ii++)
+			supernodeMask[ii]=1;
+		dtrs_compute_communication_structure(options, n, LUstruct,
+						ScalePermstruct, supernodeMask, grid, stat);
+		SUPERLU_FREE(supernodeMask);
+	}
+
+
 
 #if ( PRNTlevel>=1 )
 	{

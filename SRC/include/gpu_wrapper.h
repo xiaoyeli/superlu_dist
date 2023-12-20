@@ -12,7 +12,7 @@ at the top-level directory.
  * \brief Wrappers for multiple types of GPUs
  *
  * <pre>
- * -- Distributed SuperLU routine (version 8.0) --
+ * -- Distributed SuperLU routine (version 9.0) --
  * Lawrence Berkeley National Lab, Univ. of California Berkeley.
  * May 22, 2022
  * </pre>

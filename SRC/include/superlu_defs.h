@@ -13,7 +13,7 @@ at the top-level directory.
  * \brief Definitions which are precision-neutral
  *
  * <pre>
- * -- Distributed SuperLU routine (version 8.1.2) --
+ * -- Distributed SuperLU routine (version 9.0) --
  * Lawrence Berkeley National Lab, Univ. of California Berkeley.
  * November 1, 2007
  *
@@ -319,11 +319,6 @@ static const int RD_U=4;	/* MPI tag for lsum in U-solve*/
 
 // #define DIM_X  16
 // #define DIM_Y  16
-
-
-#define BLK_M  DIM_X*4
-#define BLK_N  DIM_Y*4
-#define BLK_K 1024/(BLK_M)
 
 #define DIM_XA  DIM_X
 #define DIM_YA  DIM_Y
@@ -1153,6 +1148,13 @@ extern void  quickSortM( int_t*, int_t, int_t, int_t, int_t, int_t);
 extern int_t partition( int_t*, int_t, int_t, int_t);
 extern int_t partitionM( int_t*, int_t, int_t, int_t, int_t, int_t);
 
+extern int compareInt_t(void *a, void *b);
+extern int compareInt(void *a, void *b);
+extern int compareDouble(void *a, void *b);
+extern int dist_checkArrayEq(void *arr, int length, MPI_Datatype datatype, int src_rank, int dest_rank, MPI_Comm communicator, int (*compare)(void *, void *));
+
+
+
 /* Prototypes for parallel symbolic factorization */
 extern float symbfact_dist
 (superlu_dist_options_t *, int,  int,
@@ -1271,13 +1273,53 @@ extern void C_BcTree_forwardMessageSimple(C_Tree* tree, void* localBuffer, int m
 extern void C_BcTree_waitSendRequest(C_Tree* tree);
 
 /*==== For 3D code ====*/
+typedef enum {
+    NOT_IN_GRID, // doesn't belong to my grid
+    IN_GRID_ZERO, // belongsto my grid but doesn't initialized with zeros
+    IN_GRID_AIJ // belongsto my grid and initialized with non-zeros
+} SupernodeToGridMap_t;
 
 extern void DistPrint(char* function_name,  double value, char* Units, gridinfo_t* grid);
 extern void DistPrint3D(char* function_name,  double value, char* Units, gridinfo3d_t* grid3d);
 extern void treeImbalance3D(gridinfo3d_t *grid3d, SCT_t* SCT);
 extern void SCT_printComm3D(gridinfo3d_t *grid3d, SCT_t* SCT);
+extern int_t zAllocBcast(int_t size, void** ptr, gridinfo3d_t* grid3d);
+extern int_t zAllocBcast_gridID(int_t size, void** ptr, int_t gridID, gridinfo3d_t* grid3d);
+extern void permCol_SymbolicFact3d(superlu_dist_options_t *options, int_t n, SuperMatrix *GA, int_t *perm_c, int_t *etree, 
+                           Glu_persist_t *Glu_persist, Glu_freeable_t *Glu_freeable, SuperLUStat_t *stat,
+						   superlu_dist_mem_usage_t*symb_mem_usage,
+						   gridinfo3d_t* grid3d);
+extern SupernodeToGridMap_t* createSuperGridMap(int_t nsuper,int_t maxLvl, int_t *myTreeIdxs, 
+    int_t *myZeroTrIdxs, int_t* gNodeCount, int_t** gNodeLists);
+extern int_t *createSupernode2TreeMap(int_t nsupers, int_t maxLvl, int_t *gNodeCount, int_t **gNodeLists);
+extern void allocBcastArray(void **array, int_t size, int root, MPI_Comm comm);
+extern int_t* create_iperm_c_supno(int_t nsupers, superlu_dist_options_t *options, Glu_persist_t *Glu_persist, int_t *etree, int_t** Lrowind_bc_ptr, int_t** Ufstnz_br_ptr, gridinfo3d_t *grid3d);
+extern gEtreeInfo_t fillEtreeInfo( int_t nsupers, int_t* setree, treeList_t *treeList);
+extern sForest_t **compute_sForests(int_t nsupers,  Glu_persist_t *Glu_persist, int_t *etree, gridinfo3d_t *grid3d);
 
+// 3D SpTRSV
+typedef enum trtype_t {UPPER_TRI, LOWER_TRI} trtype_t;
 
+extern int* getBrecvTree(int_t nlb, sForest_t* sforest,  int* bmod, gridinfo_t * grid);
+extern int* getBrecvTree_newsolve(int_t nlb, int_t nsupers, int* supernodeMask, int* bmod, gridinfo_t * grid);
+extern int getNrootUsolveTree(int_t* nbrecvmod, sForest_t* sforest, int* brecv,
+	int* bmod, gridinfo_t * grid);
+extern int getNbrecvX(sForest_t* sforest, int_t* Urbs, gridinfo_t * grid);
+extern int getNbrecvX_newsolve(int_t nsupers, int* supernodeMask, int_t* Urbs, Ucb_indptr_t **Ucb_indptr, gridinfo_t * grid);
+extern int getNrootUsolveTree_newsolve(int_t* nbrecvmod, int_t nsupers, int* supernodeMask, int* brecv, int* bmod, gridinfo_t * grid);
+extern int_t getNfrecvmodLeaf(int* nleaf, sForest_t* sforest, int* frecv, int* fmod, gridinfo_t * grid);
+extern int_t getNfrecvmod_newsolve(int* nleaf, int_t nsupers, int* supernodeMask, int* frecv, int* fmod, gridinfo_t * grid);
+extern int* getfrecv_newsolve(int_t nsupers, int* supernodeMask, int_t nlb, int* fmod,
+                     int *mod_bit, gridinfo_t * grid);
+extern int* getfrecvLeaf( sForest_t* sforest, int_t nlb, int* fmod,
+  int *mod_bit, gridinfo_t * grid);
+extern int getNfrecvx_newsolve(int_t nsupers, int* supernodeMask, int_t** Lrowind_bc_ptr, int_t** Lindval_loc_bc_ptr, gridinfo_t * grid);
+extern int getNfrecvxLeaf(sForest_t* sforest, int_t** Lrowind_bc_ptr, gridinfo_t * grid);
+extern int* getfmod_newsolve(int_t nlb, int_t nsupers, int* supernodeMask, int_t** Lrowind_bc_ptr, int_t** Lindval_loc_bc_ptr, gridinfo_t * grid);
+extern int* getfmodLeaf(int_t nlb, int* fmod_i);
+extern int getldu(int_t knsupc, int_t iklrow, int_t* usub );
+extern int* getBmod3d(int_t treeId, int_t nlb, sForest_t* sforest, int_t* xsup, int_t **Ufstnz_br_ptr, int_t* supernode2treeMap, gridinfo_t * grid);
+extern int* getBmod3d_newsolve(int_t nlb, int_t nsupers, int* supernodeMask, int_t* xsup, int_t **Ufstnz_br_ptr, gridinfo_t * grid);
 
 // permutation from superLU default
 extern int_t* getPerm_c_supno(int_t nsupers, superlu_dist_options_t *,
@@ -1396,6 +1438,8 @@ extern void getSCUweight_allgrid(int_t nsupers, treeList_t* treeList, int_t* xsu
 extern int Wait_LUDiagSend(int_t k, MPI_Request *U_diag_blk_send_req,
 			   MPI_Request *L_diag_blk_send_req,
 			   gridinfo_t *grid, SCT_t *SCT);
+extern void applyRowPerm(int_t* colptr, int_t* rowind, int_t* perm_r, int_t n);
+
 
 extern int getNsupers(int n, Glu_persist_t *Glu_persist);
 extern int set_tag_ub(void);

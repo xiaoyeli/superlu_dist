@@ -11,7 +11,7 @@ at the top-level directory.
 /** @file superlu_dist_version.h
  * \brief Gets the SuperLU_DIST's version information from the library.
  *
- * -- Distributed SuperLU routine (version 5.2) --
+ * -- Distributed SuperLU routine (version 9.0) --
  * Lawrence Berkeley National Lab, Univ. of California Berkeley, 
  * October 13, 2017
  *

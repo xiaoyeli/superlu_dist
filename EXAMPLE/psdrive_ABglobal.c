@@ -1,20 +1,20 @@
 /*! \file
 Copyright (c) 2003, The Regents of the University of California, through
-Lawrence Berkeley National Laboratory (subject to receipt of any required 
-approvals from U.S. Dept. of Energy) 
+Lawrence Berkeley National Laboratory (subject to receipt of any required
+approvals from U.S. Dept. of Energy)
 
-All rights reserved. 
+All rights reserved.
 
 The source code is distributed under BSD license, see the file License.txt
 at the top-level directory.
 */
 
 
-/*! @file 
+/*! @file
  * \brief Driver program for psgssvx_ABglobal example
  *
  * <pre>
- * -- Distributed SuperLU routine (version 1.0) --
+ * -- Distributed SuperLU routine (version 9.0) --
  * Lawrence Berkeley National Lab, Univ. of California Berkeley.
  * September 1, 1999
  * </pre>
@@ -33,7 +33,7 @@ at the top-level directory.
  *
  * This example illustrates how to use psgssvx_ABglobal with the full
  * (default) options to solve a linear system.
- * 
+ *
  * Five basic steps are required:
  *   1. Initialize the MPI environment and the SuperLU process grid
  *   2. Set up the input matrix and the right-hand side
@@ -70,7 +70,7 @@ int main(int argc, char *argv[])
     nrhs = 1;   /* Number of right-hand side. */
 
     /* ------------------------------------------------------------
-       INITIALIZE MPI ENVIRONMENT. 
+       INITIALIZE MPI ENVIRONMENT.
        ------------------------------------------------------------*/
     MPI_Init( &argc, &argv );
 
@@ -100,7 +100,7 @@ int main(int argc, char *argv[])
     }
 
     /* ------------------------------------------------------------
-       INITIALIZE THE SUPERLU PROCESS GRID. 
+       INITIALIZE THE SUPERLU PROCESS GRID.
        ------------------------------------------------------------*/
     superlu_gridinit(MPI_COMM_WORLD, nprow, npcol, &grid);
 
@@ -112,7 +112,7 @@ int main(int argc, char *argv[])
 #if ( DEBUGlevel>=1 )
     CHECK_MALLOC(iam, "Enter main()");
 #endif
-    
+
     /* ------------------------------------------------------------
        PROCESS 0 READS THE MATRIX A, AND THEN BROADCASTS IT TO ALL
        THE OTHER PROCESSES.
@@ -120,10 +120,10 @@ int main(int argc, char *argv[])
     if ( !iam ) {
 	/* Print the CPP definitions. */
 	cpp_defs();
-	
+
 	/* Read the matrix stored on disk in Harwell-Boeing format. */
 	sreadhb_dist(iam, fp, &m, &n, &nnz, &a, &asub, &xa);
-	
+
 	printf("Input matrix file: %s\n", *cpp);
 	printf("\tDimension\t" IFMT "x" IFMT "\t # nonzeros " IFMT "\n", m, n, nnz);
 	printf("\tProcess grid\t%d X %d\n", (int) grid.nprow, (int) grid.npcol);
@@ -148,7 +148,7 @@ int main(int argc, char *argv[])
 	MPI_Bcast( asub, nnz, mpi_int_t,  0, grid.comm );
 	MPI_Bcast( xa,   n+1, mpi_int_t,  0, grid.comm );
     }
-	
+
     /* Create compressed column matrix for A. */
     sCreate_CompCol_Matrix_dist(&A, m, n, nnz, a, asub, xa,
 				SLU_NC, SLU_S, SLU_GE);
@@ -163,7 +163,7 @@ int main(int argc, char *argv[])
     if ( iam==0 ) {
         sGenXtrue_dist(n, nrhs, xtrue, ldx);
         sFillRHS_dist(trans, nrhs, xtrue, ldx, &A, b, ldb);
-	
+
         MPI_Bcast( xtrue, n*nrhs, MPI_FLOAT, 0, grid.comm );
         MPI_Bcast( b, m*nrhs, MPI_FLOAT, 0, grid.comm );
     } else {

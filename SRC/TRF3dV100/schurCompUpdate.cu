@@ -687,8 +687,13 @@ int_t LUstruct_v100::setLUstruct_GPU()
     int deviceCount;
     cudaGetDeviceCount(&deviceCount); // How many GPUs?
     printf("deviceCount=%d\n", deviceCount);
-    int device_id = grid3d->iam % deviceCount;
+    int device_id = (int)(grid3d->iam/get_mpi_process_per_gpu ()); //YL: allow multiple MPIs per GPU
+    
+    char *ttemp;
+    ttemp = getenv ("SUPERLU_BIND_MPI_GPU");
+    if (ttemp) {    
     cudaSetDevice(device_id);
+    }
 
     double tRegion[5];
     size_t useableGPUMem = getGPUMemPerProcs(grid3d->comm);

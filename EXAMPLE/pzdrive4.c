@@ -13,7 +13,7 @@ at the top-level directory.
  * \brief This example illustrates how to divide up the processes into subgroups
  *
  * <pre>
- * -- Distributed SuperLU routine (version 6.1) --
+ * -- Distributed SuperLU routine (version 9.0) --
  * Lawrence Berkeley National Lab, Univ. of California Berkeley.
  * March 15, 2003
  * April 5, 2015
