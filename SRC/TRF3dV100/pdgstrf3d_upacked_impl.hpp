@@ -17,7 +17,7 @@
 #include "dAncestorFactor_impl.hpp"
 #include "anc25d_impl.hpp"
 #include "dsparseTreeFactorGPU_impl.hpp"
-#include "dsparseTreeFactor_summit_impl.hpp"
+#include "dsparseTreeFactor_upacked_impl.hpp"
 #include "schurCompUpdate_impl.cuh"
 #include "l_panels_impl.hpp"
 #include "u_panels_impl.hpp"
