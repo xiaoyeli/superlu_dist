@@ -10,6 +10,20 @@
 #include "lupanels.hpp"
 #include "superlu_blas.hpp"
 
+template <typename Ftype>
+diagFactBufs_type<Ftype> **xLUstruct_t<Ftype>::initDiagFactBufsArr(int_t mxLeafNode, int_t ldt)
+{
+    
+    diagFactBufs_type<Ftype> **dFBufs = new diagFactBufs_type<Ftype> *[numDiagBufs];
+    for (int i = 0; i < numDiagBufs; i++)
+    {
+        dFBufs[i] = new diagFactBufs_type<Ftype>;
+        dFBufs[i]->BlockUFactor = (Ftype *)SUPERLU_MALLOC(ldt * ldt * sizeof(Ftype));
+        dFBufs[i]->BlockLFactor = (Ftype *)SUPERLU_MALLOC(ldt * ldt * sizeof(Ftype));
+    }
+    return dFBufs;
+}
+
 #ifdef HAVE_CUDA
 template <typename Ftype>
 xupanel_t<Ftype> xLUstruct_t<Ftype>::getKUpanel(int_t k, int_t offset)
@@ -34,11 +48,20 @@ xlpanel_t<Ftype> xLUstruct_t<Ftype>::getKLpanel(int_t k, int_t offset)
 }
 #endif
 
+template <typename Ftype>
+Ftype* getBigV(int_t ldt, int_t num_threads)
+{
+    Ftype *bigV;
+    if (!(bigV = SUPERLU_MALLOC (8 * ldt * ldt * num_threads * sizeof(Ftype))))
+        ABORT ("Malloc failed for dgemm buffV");
+    return bigV;
+}
+
 /* Constructor */
 template <typename Ftype>
 xLUstruct_t<Ftype>::xLUstruct_t(int_t nsupers_, int_t ldt_,
-                             dtrf3Dpartition_t *trf3Dpartition_, 
-                             dLUstruct_t *LUstruct,
+                             trf3dpartitionType<Ftype> *trf3Dpartition_, 
+                             LUStruct_type<Ftype> *LUstruct,
                              gridinfo3d_t *grid3d_in,
                              SCT_t *SCT_, superlu_dist_options_t *options_,
                              SuperLUStat_t *stat_, Ftype thresh_, int *info_) :
@@ -169,7 +192,8 @@ xLUstruct_t<Ftype>::xLUstruct_t(int_t nsupers_, int_t ldt_,
 
     // Allocate bigV, indirect
     nThreads = getNumThreads(iam);
-    bigV = dgetBigV(ldt, nThreads);
+    // bigV = dgetBigV(ldt, nThreads);
+    bigV = getBigV<Ftype>(ldt, nThreads);
     indirect = (int_t *)SUPERLU_MALLOC(nThreads * ldt * sizeof(int_t));
     indirectRow = (int_t *)SUPERLU_MALLOC(nThreads * ldt * sizeof(int_t));
     indirectCol = (int_t *)SUPERLU_MALLOC(nThreads * ldt * sizeof(int_t));
@@ -205,6 +229,7 @@ xLUstruct_t<Ftype>::xLUstruct_t(int_t nsupers_, int_t ldt_,
         #endif
     }
 
+    numDiagBufs = 2*options->num_lookaheads;
     diagFactBufs.resize(numDiagBufs);  /* Sherry?? numDiagBufs == 32 hard-coded */
     // bcastDiagRow.resize(numDiagBufs);
     // bcastDiagCol.resize(numDiagBufs);
@@ -228,7 +253,7 @@ xLUstruct_t<Ftype>::xLUstruct_t(int_t nsupers_, int_t ldt_,
             mxLeafNode = sForests[myTreeIdxs[ilvl]]->topoInfo.eTreeTopLims[1];
     }
     //Yang: how is dFBufs being used in the c++ factorization code? Shall we call dinitDiagFactBufsArrMod instead to save memory? 
-    dFBufs = dinitDiagFactBufsArr(mxLeafNode, ldt, grid);
+    dFBufs = initDiagFactBufsArr(numDiagBufs, ldt);
     maxLeafNodes = mxLeafNode;
 
     
@@ -376,7 +401,7 @@ int_t xLUstruct_t<Ftype>::dScatter(int_t m, int_t n,
 }
 
 template <typename Ftype>
-int_t xLUstruct_t<Ftype>::packedU2skyline(dLUstruct_t *LUstruct)
+int_t xLUstruct_t<Ftype>::packedU2skyline(LUStruct_type<Ftype> *LUstruct)
 {
 
     int_t **Ufstnz_br_ptr = LUstruct->Llu->Ufstnz_br_ptr;
@@ -460,7 +485,7 @@ int_t xLUstruct_t<Ftype>::blockUpdate(int_t k,
 
     Ftype alpha = 1.0;
     Ftype beta = 0.0;
-    superlu_gemm<double>("N", "N",
+    superlu_gemm<Ftype>("N", "N",
                   lpanel.nbrow(ii), upanel.nbcol(jj), supersize(k), alpha,
                   lpanel.blkPtr(ii), lpanel.LDA(),
                   upanel.blkPtr(jj), upanel.LDA(), beta,

@@ -356,7 +356,7 @@ struct xLUstruct_t
     SuperLUStat_t *stat;
 
     // Adding more variables for factorization
-    dtrf3Dpartition_t *trf3Dpartition;
+    trf3dpartitionType<Ftype> *trf3Dpartition;
     int_t maxLvl;
     int maxLeafNodes; /* Sherry added 12/31/22. Computed in xLUstruct_t constructor */
 
@@ -434,8 +434,8 @@ struct xLUstruct_t
     /**
      *          C O N / D E S - T R U C T O R S
      */
-    xLUstruct_t(int_t nsupers, int_t ldt_, dtrf3Dpartition_t *trf3Dpartition,
-                  dLUstruct_t *LUstruct, gridinfo3d_t *grid3d,
+    xLUstruct_t(int_t nsupers, int_t ldt_, trf3dpartitionType<Ftype> *trf3Dpartition,
+                  LUStruct_type<Ftype> *LUstruct, gridinfo3d_t *grid3d,
                   SCT_t *SCT_, superlu_dist_options_t *options_, SuperLUStat_t *stat,
                   Ftype thresh_, int *info_);
 
@@ -540,6 +540,8 @@ struct xLUstruct_t
         gEtreeInfo_t *gEtreeInfo, // global etree info
         int tag_ub);
 
+    diagFactBufs_type<Ftype>** initDiagFactBufsArr(int_t mxLeafNode, int_t ldt);
+
     // Helper routine to marshall batch LU data into the device data in A_gpu
     void marshallBatchedLUData(int k_st, int k_end, int_t *perm_c_supno);
     void marshallBatchedBufferCopyData(int k_st, int k_end, int_t *perm_c_supno);
@@ -560,7 +562,7 @@ struct xLUstruct_t
         gEtreeInfo_t *gEtreeInfo, // global etree info
         int tag_ub);
 
-    int_t packedU2skyline(dLUstruct_t *LUstruct);
+    int_t packedU2skyline(LUStruct_type<Ftype> *LUstruct);
 
     int_t ancestorReduction3d(int_t ilvl, int_t *myNodeCount,
                               int_t **treePerm);

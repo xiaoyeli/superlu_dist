@@ -183,7 +183,7 @@ int_t xlpanel_t<T>::panelSolveGPU(cublasHandle_t handle, cudaStream_t cuStream,
 
     cublasSetStream(handle, cuStream);
     cublasStatus_t cbstatus =
-        cublasDtrsm(handle,
+        myCublasTrsm<T>(handle,
                     CUBLAS_SIDE_RIGHT, CUBLAS_FILL_MODE_UPPER,
                     CUBLAS_OP_N, CUBLAS_DIAG_NON_UNIT,
                     len, ksupsz, &alpha, DiagBlk, LDD,
@@ -239,7 +239,7 @@ int_t xlpanel_t<T>::diagFactorCuSolver(int_t k,
     T *val = blkPtrGPU(0);
     
     gpuCusolverErrchk(cusolverDnSetStream(cusolverH, cuStream));
-    gpuCusolverErrchk(cusolverDnDgetrf(cusolverH, kSupSize, kSupSize, val, LDA(), dWork, NULL, dInfo));
+    gpuCusolverErrchk(myCusolverGetrf<T>(cusolverH, kSupSize, kSupSize, val, LDA(), dWork, NULL, dInfo));
 
     gpuErrchk(cudaMemcpy2DAsync(dDiagBuf, dpitch, val, spitch,
                  width, height, cudaMemcpyDeviceToDevice, cuStream));
@@ -258,7 +258,7 @@ int_t xupanel_t<T>::panelSolveGPU(cublasHandle_t handle, cudaStream_t cuStream,
     
     cublasSetStream(handle, cuStream);
     cublasStatus_t cbstatus =
-        cublasDtrsm(handle,
+        myCublasTrsm<T>(handle,
                     CUBLAS_SIDE_LEFT, CUBLAS_FILL_MODE_LOWER,
                     CUBLAS_OP_N, CUBLAS_DIAG_UNIT,
                     ksupsz, nzcols(), &alpha, DiagBlk, LDD,

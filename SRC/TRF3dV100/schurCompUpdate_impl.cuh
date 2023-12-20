@@ -11,6 +11,7 @@
 #include "lupanels_GPU.cuh"
 #include "lupanels.hpp"
 #include "gpuCommon.hpp"
+#include "cublas_cusolver_wrappers.hpp"
 
 size_t getGPUMemPerProcs(MPI_Comm baseCommunicator);
 
@@ -416,12 +417,17 @@ int_t xLUstruct_t<Ftype>::dSchurComplementUpdateGPU(
 
             Ftype alpha = 1.0;
             Ftype beta = 0.0;
-            cublasDgemm(handle, CUBLAS_OP_N, CUBLAS_OP_N,
-                        gemm_m, gemm_n, gemm_k, &alpha,
-                        lpanel.blkPtrGPU(iSt), lpanel.LDA(),
-                        upanel.blkPtrGPU(jSt), upanel.LDA(), &beta,
-                        A_gpu.gpuGemmBuffs[streamId], gemm_m);
-            
+            // cublasDgemm(handle, CUBLAS_OP_N, CUBLAS_OP_N,
+            //             gemm_m, gemm_n, gemm_k, &alpha,
+            //             lpanel.blkPtrGPU(iSt), lpanel.LDA(),
+            //             upanel.blkPtrGPU(jSt), upanel.LDA(), &beta,
+            //             A_gpu.gpuGemmBuffs[streamId], gemm_m);
+            myCublasGemm<Ftype>(handle, CUBLAS_OP_N, CUBLAS_OP_N,
+                                gemm_m, gemm_n, gemm_k, &alpha,
+                                lpanel.blkPtrGPU(iSt), lpanel.LDA(),
+                                upanel.blkPtrGPU(jSt), upanel.LDA(), &beta,
+                                A_gpu.gpuGemmBuffs[streamId], gemm_m);
+
             scatterGPU_driver<Ftype>(
                 iSt, iEnd, jSt, jEnd, A_gpu.gpuGemmBuffs[streamId], gemm_m,
                 A_gpu.maxSuperSize, ldt, lpanel.gpuPanel, upanel.gpuPanel, 
@@ -561,11 +567,17 @@ int_t xLUstruct_t<Ftype>::dSchurCompUpdatePartGPU(
 #ifndef NDEBUG
    // printf("m=%d, n=%d, k=%d\n", gemm_m, gemm_n, gemm_k);
 #endif
-    cublasDgemm(handle, CUBLAS_OP_N, CUBLAS_OP_N,
-                gemm_m, gemm_n, gemm_k, &alpha,
-                lpanel.blkPtrGPU(iSt), lpanel.LDA(),
-                upanel.blkPtrGPU(jSt), upanel.LDA(), &beta,
-                gemmBuff, gemm_m);
+    // cublasDgemm(handle, CUBLAS_OP_N, CUBLAS_OP_N,
+    //             gemm_m, gemm_n, gemm_k, &alpha,
+    //             lpanel.blkPtrGPU(iSt), lpanel.LDA(),
+    //             upanel.blkPtrGPU(jSt), upanel.LDA(), &beta,
+    //             gemmBuff, gemm_m);
+
+    myCublasGemm<Ftype>(handle, CUBLAS_OP_N, CUBLAS_OP_N,
+                        gemm_m, gemm_n, gemm_k, &alpha,
+                        lpanel.blkPtrGPU(iSt), lpanel.LDA(),
+                        upanel.blkPtrGPU(jSt), upanel.LDA(), &beta,
+                        gemmBuff, gemm_m);
 
     // setting up scatter
     dim3 dimBlock(ldt); // 1d thread

@@ -63,11 +63,15 @@ typedef struct cLUstruct_t cLUstruct_t;
     struct sLUstruct_v1;
     typedef struct sLUstruct_v1 *sLUgpu_Handle;
 
-    extern sLUgpu_Handle sCreateLUgpuHandle(int_t nsupers, int_t ldt_, 
-    strf3Dpartition_t *trf3Dpartition,
-                                           sLUstruct_t *LUstruct, gridinfo3d_t *grid3d,
-                                           SCT_t *SCT_, superlu_dist_options_t *options_, SuperLUStat_t *stat,
-                                           double thresh_, int *info_);
+    // extern sLUgpu_Handle sCreateLUgpuHandle(int_t nsupers, int_t ldt_, 
+    // strf3Dpartition_t *trf3Dpartition,
+    //                                        sLUstruct_t *LUstruct, gridinfo3d_t *grid3d,
+    //                                        SCT_t *SCT_, superlu_dist_options_t *options_, SuperLUStat_t *stat,
+    //                                        double thresh_, int *info_);
+    extern sLUgpu_Handle sCreateLUgpuHandle(int_t nsupers, int_t ldt_, strf3Dpartition_t *trf3Dpartition,
+                                     sLUstruct_t *LUstruct, gridinfo3d_t *grid3d,
+                                     SCT_t *SCT_, superlu_dist_options_t *options_, SuperLUStat_t *stat,
+                                     float thresh_, int *info_);
 
     extern void sdestroyLUgpuHandle(sLUgpu_Handle LuH);
 
