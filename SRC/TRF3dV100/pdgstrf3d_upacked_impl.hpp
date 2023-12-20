@@ -28,7 +28,7 @@
 // #include "sparseTreeFactor_impl.hpp"
 // pxgstrf3d<double>
 template <typename Ftype>
-int_t pdgstrf3d_summit(superlu_dist_options_t *options, int m, int n, AnormType<Ftype> anorm,
+int_t pdgstrf3d_upacked(superlu_dist_options_t *options, int m, int n, AnormType<Ftype> anorm,
 		       trf3dpartitionType<Ftype> *trf3Dpartition, SCT_t *SCT,
 		       LUStruct_type<Ftype> *LUstruct, gridinfo3d_t *grid3d,
 		       SuperLUStat_t *stat, int *info)
@@ -43,7 +43,7 @@ int_t pdgstrf3d_summit(superlu_dist_options_t *options, int m, int n, AnormType<
         AnormType<Ftype> thresh = s_eps * anorm;
 
 #if (DEBUGlevel >= 1)
-        CHECK_MALLOC(grid3d->iam, "Enter pdgstrf3d_summit()");
+        CHECK_MALLOC(grid3d->iam, "Enter pdgstrf3d_upacked()");
 #endif
 
         // Initilize stat
@@ -211,11 +211,11 @@ int_t pdgstrf3d_summit(superlu_dist_options_t *options, int m, int n, AnormType<
         // dfreeDiagFactBufsArr(mxLeafNode, dFBufs);
 
 #if (DEBUGlevel >= 1)
-        CHECK_MALLOC(grid3d->iam, "Exit pdgstrf3d_summit()");
+        CHECK_MALLOC(grid3d->iam, "Exit pdgstrf3d_upacked()");
 #endif
         return 0;
 
-} /* pdgstrf3d_summit */
+} /* pdgstrf3d_upacked */
 
 
 /* This can be accessed from the C handle  */

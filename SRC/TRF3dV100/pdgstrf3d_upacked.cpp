@@ -17,7 +17,7 @@ extern "C"
 {
 #endif
 
-int_t pdgstrf3d_summit(superlu_dist_options_t *options, int m, int n, double anorm,
+int_t pdgstrf3d_upacked(superlu_dist_options_t *options, int m, int n, double anorm,
 		       dtrf3Dpartition_t *trf3Dpartition, SCT_t *SCT,
 		       dLUstruct_t *LUstruct, gridinfo3d_t *grid3d,
 		       SuperLUStat_t *stat, int *info)
@@ -32,7 +32,7 @@ int_t pdgstrf3d_summit(superlu_dist_options_t *options, int m, int n, double ano
         double thresh = s_eps * anorm;
 
 #if (DEBUGlevel >= 1)
-        CHECK_MALLOC(grid3d->iam, "Enter pdgstrf3d_summit()");
+        CHECK_MALLOC(grid3d->iam, "Enter pdgstrf3d_upacked()");
 #endif
 
         // Initilize stat
@@ -200,11 +200,11 @@ int_t pdgstrf3d_summit(superlu_dist_options_t *options, int m, int n, double ano
         // dfreeDiagFactBufsArr(mxLeafNode, dFBufs);
 
 #if (DEBUGlevel >= 1)
-        CHECK_MALLOC(grid3d->iam, "Exit pdgstrf3d_summit()");
+        CHECK_MALLOC(grid3d->iam, "Exit pdgstrf3d_upacked()");
 #endif
         return 0;
 
-} /* pdgstrf3d_summit */
+} /* pdgstrf3d_upacked */
 
 
 /* This can be accessed from the C handle  */

@@ -164,7 +164,7 @@ if (TPL_ENABLE_CUDALIB)
   list(APPEND sources
        cuda/pdgstrs_lsum_cuda.cu cuda/superlu_gpu_utils.cu cuda/dsuperlu_gpu.cu
   TRF3dV100/schurCompUpdate.cu 
-  TRF3dV100/pdgstrf3d_summit.cpp
+  TRF3dV100/pdgstrf3d_upacked.cpp
     TRF3dV100/dsparseTreeFactor_upacked.cpp    TRF3dV100/dsparseTreeFactorGPU.cpp
     TRF3dV100/anc25d-GPU.cpp 
     TRF3dV100/lupanels.cpp

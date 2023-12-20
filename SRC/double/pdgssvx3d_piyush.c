@@ -1233,7 +1233,7 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 			if (!grid3d->iam)
 				printf("Using pdgstrf3d+gpu version 1 for Summit\n");
 #if 0
-			pdgstrf3d_summit(options, m, n, anorm, trf3Dpartition, SCT, LUstruct,
+			pdgstrf3d_upacked(options, m, n, anorm, trf3Dpartition, SCT, LUstruct,
 				  grid3d, stat, info);
 #else
 			int_t ldt = sp_ienv_dist(3, options); /* Size of maximum supernode */
