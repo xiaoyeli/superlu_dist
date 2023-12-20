@@ -1,5 +1,5 @@
 
-#include "superlu_summit.h"
+#include "superlu_upacked.h"
 #include "lupanels.hpp"
 
 extern "C"

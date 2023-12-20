@@ -9,7 +9,7 @@ set(headers
     include/util_dist.h
     include/gpu_api_utils.h
     include/gpu_wrapper.h
-    include/superlu_summit.h
+    include/superlu_upacked.h
     include/superlu_dist_config.h
     include/superlu_FortranCInterface.h
     TRF3dV100/lupanels.hpp

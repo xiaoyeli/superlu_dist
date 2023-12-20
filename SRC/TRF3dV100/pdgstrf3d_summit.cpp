@@ -10,7 +10,7 @@
 #endif
 
 #include "lupanels.hpp"
-#include "superlu_summit.h"
+#include "superlu_upacked.h"
 
 #ifdef __cplusplus
 extern "C"
