@@ -149,7 +149,7 @@ int_t ztrs_B_init3d_newsolve(int_t nsupers, doublecomplex* x, int nrhs, zLUstruc
 doublecomplex *zready_x, *zready_lsum;
 // #endif
 
-int_t ztrs_compute_communication_structure(superlu_dist_options_t *options, int_t n, zLUstruct_t * LUstruct,
+int ztrs_compute_communication_structure(superlu_dist_options_t *options, int_t n, zLUstruct_t * LUstruct,
                            zScalePermstruct_t * ScalePermstruct,
                            int* supernodeMask, gridinfo_t *grid, SuperLUStat_t * stat)
 {
@@ -560,9 +560,6 @@ int_t ztrs_compute_communication_structure(superlu_dist_options_t *options, int_
     SUPERLU_FREE(colcounts);
     SUPERLU_FREE(rowlists);
     SUPERLU_FREE(collists);
-
-
-
 
 
     /* gather information about the global U structure */
@@ -1399,7 +1396,8 @@ int_t ztrs_compute_communication_structure(superlu_dist_options_t *options, int_
     //     }
     // }
 
-} // ztrs_compute_communication_structure
+    return 0;
+} // end ztrs_compute_communication_structure
 
 
 

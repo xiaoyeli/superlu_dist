@@ -25,10 +25,12 @@ at the top-level directory.
  */
 
 #include "superlu_ddefs.h"
-//#include "TRF3dV100/superlu_upacked.h"
+//#include "TRF3dV100/superlu_summit.h"
 #include "superlu_upacked.h"
 // #include "pddistribute3d.h"
-// #include "ssvx3dAux.c"
+
+// #include "dssvx3dAux.c"
+
 // int_t dgatherAllFactoredLU3d( dtrf3Dpartition_t*  trf3Dpartition,
 // 			   dLUstruct_t* LUstruct, gridinfo3d_t* grid3d, SCT_t* SCT );
 #include <stdbool.h>
@@ -738,7 +740,7 @@ void pdgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
     int_t *perm_c;			/* column permutation vector */
     int_t *etree;			/* elimination tree */
     int_t *rowptr, *colind; /* Local A in NR */
-    int_t colequ, Equil, factored, job, notran, rowequ, need_value;
+    int colequ, Equil, factored, job, notran, rowequ, need_value;
     int_t i, iinfo, j, irow, m, n, nnz, permc_spec;
     int_t nnz_loc, m_loc, fst_row, icol;
     int iam;
@@ -1219,7 +1221,6 @@ dLUgpu_Handle dLUgpu = dCreateLUgpuHandle(nsupers, ldt, trf3Dpartition, LUstruct
 			
 			dCopyLUGPU2Host(dLUgpu, LUstruct);
 			dDestroyLUgpuHandle(dLUgpu);
-			
 #else 
 			/* call constructor in C++ code */
 			LUgpu = dCreateLUgpuHandle(nsupers, ldt, trf3Dpartition, LUstruct, grid3d,
@@ -1231,12 +1232,12 @@ dLUgpu_Handle dLUgpu = dCreateLUgpuHandle(nsupers, ldt, trf3Dpartition, LUstruct
 			copyLUGPU2Host(LUgpu, LUstruct);
 			destroyLUgpuHandle(LUgpu);
 #endif /* TEMPLATED_VERSION */
+
 			// print other stuff
 			// if (!grid3d->zscp.Iam)
 			// 	SCT_printSummary(grid, SCT);
 			reduceStat(FACT, stat, grid3d);
-
-#endif
+#endif /* matching #if 0 #else */
 		}
 		else /* this is the old C code, with less GPU offload */
 #endif /* matching ifdef GPU_ACC */

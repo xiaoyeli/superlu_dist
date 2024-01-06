@@ -1512,6 +1512,11 @@ extern int_t num_full_cols_U_mod(
     int_t *ldu /* max. segment size of nonzero columns in U(kk,:) */
 );
 
+/* new auxiliary functions */
+extern void validateInput_pdgssvx3d(superlu_dist_options_t *, SuperMatrix *, int ldb, int nrhs,
+				    gridinfo3d_t *, int *);
+    
+
 /*=====================*/
 
 #ifdef __cplusplus

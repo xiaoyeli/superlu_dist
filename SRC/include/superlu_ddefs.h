@@ -971,6 +971,20 @@ extern void  dreadMM_dist(FILE *, int_t *, int_t *, int_t *,
 	                  double **, int_t **, int_t **);
 extern int  dread_binary(FILE *, int_t *, int_t *, int_t *,
 	                  double **, int_t **, int_t **);
+			  
+extern void validateInput_pdgssvx3d(superlu_dist_options_t *, SuperMatrix *A,
+       int ldb, int nrhs, gridinfo3d_t *, int *info);
+extern void dallocScalePermstruct_RC(dScalePermstruct_t *, int_t m, int_t n);
+extern void dscaleMatrixDiagonally(fact_t Fact, dScalePermstruct_t *, SuperMatrix *,
+       	    		SuperLUStat_t *, gridinfo_t *, int *rowequ, int *colequ, int_t*iinfo);
+extern void dperform_row_permutation(superlu_dist_options_t *, fact_t Fact,
+           dScalePermstruct_t *, dLUstruct_t *LUstruct, int_t m, int_t n,
+	       gridinfo_t *, SuperMatrix *A, SuperMatrix *GA, SuperLUStat_t *,
+	       int job, int_t Equil, int *rowequ, int *colequ, int_t *iinfo);
+extern double dcomputeA_Norm(int notran, SuperMatrix *, gridinfo_t *);
+extern int dtrs_compute_communication_structure(superlu_dist_options_t *options,
+       int_t n, dLUstruct_t *, dScalePermstruct_t * ScalePermstruct,
+       int* supernodeMask, gridinfo_t *, SuperLUStat_t *);
 
 /* Distribute the data for numerical factorization */
 extern float ddist_psymbtonum(superlu_dist_options_t *, int_t, SuperMatrix *,

@@ -26,7 +26,6 @@ at the top-level directory.
 
 #include "superlu_sdefs.h"
 //#include "TRF3dV100/superlu_summit.h"
-// #include "superlu_summit.h"
 #include "superlu_upacked.h"
 // #include "psdistribute3d.h"
 
@@ -741,7 +740,7 @@ void psgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
     int_t *perm_c;			/* column permutation vector */
     int_t *etree;			/* elimination tree */
     int_t *rowptr, *colind; /* Local A in NR */
-    int_t colequ, Equil, factored, job, notran, rowequ, need_value;
+    int colequ, Equil, factored, job, notran, rowequ, need_value;
     int_t i, iinfo, j, irow, m, n, nnz, permc_spec;
     int_t nnz_loc, m_loc, fst_row, icol;
     int iam;
@@ -1205,30 +1204,41 @@ void psgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 			if (!grid3d->iam)
 				printf("Using psgstrf3d+gpu version 1 for Summit\n");
 #if 0
-			psgstrf3d_summit(options, m, n, anorm, trf3Dpartition, SCT, LUstruct,
+			psgstrf3d_upacked(options, m, n, anorm, trf3Dpartition, SCT, LUstruct,
 				  grid3d, stat, info);
 #else
 			int_t ldt = sp_ienv_dist(3, options); /* Size of maximum supernode */
 			double s_eps = smach_dist("Epsilon");
 			double thresh = s_eps * anorm;
 
-		    //TODO: sCreateLUgpuHandle,psgstrf3d_LUpackedInterface,sCopyLUGPU2Host,sDestroyLUgpuHandle haven't been created
-
-			sLUgpu_Handle sLUgpu = sCreateLUgpuHandle(nsupers, ldt, trf3Dpartition, LUstruct, grid3d,
+#define TEMPLATED_VERSION 
+#ifdef TEMPLATED_VERSION
+sLUgpu_Handle sLUgpu = sCreateLUgpuHandle(nsupers, ldt, trf3Dpartition, LUstruct, grid3d,
 						  SCT, options, stat, thresh, info);
 			
-			/* call pdgstrf3d() in C++ code */
+			/* call psgstrf3d() in C++ code */
 			psgstrf3d_LUv1(sLUgpu);
 			
 			sCopyLUGPU2Host(sLUgpu, LUstruct);
 			sDestroyLUgpuHandle(sLUgpu);
+		    //TODO: sCreateLUgpuHandle,psgstrf3d_LUpackedInterface,sCopyLUGPU2Host,sDestroyLUgpuHandle haven't been created
+#else 
+			/* call constructor in C++ code */
+			LUgpu = sCreateLUgpuHandle(nsupers, ldt, trf3Dpartition, LUstruct, grid3d,
+						  SCT, options, stat, thresh, info);
+
+			/* call psgstrf3d() in C++ code */
+			psgstrf3d_LUpackedInterface(LUgpu);
+			
+			copyLUGPU2Host(LUgpu, LUstruct);
+			destroyLUgpuHandle(LUgpu);
+#endif /* TEMPLATED_VERSION */
 
 			// print other stuff
 			// if (!grid3d->zscp.Iam)
 			// 	SCT_printSummary(grid, SCT);
 			reduceStat(FACT, stat, grid3d);
-
-#endif
+#endif /* matching #if 0 #else */
 		}
 		else /* this is the old C code, with less GPU offload */
 #endif /* matching ifdef GPU_ACC */

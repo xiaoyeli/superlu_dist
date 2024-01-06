@@ -21,7 +21,8 @@
  * @param[in] grid Pointer to the grid structure.
  * @param[out] info Pointer to an integer variable that stores the error code.
  */
-void validateInput_psgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,int ldb, int_t nrhs, gridinfo3d_t *grid3d, int *info)
+void validateInput_psgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
+     int ldb, int nrhs, gridinfo3d_t *grid3d, int *info)
 {
     gridinfo_t *grid = &(grid3d->grid2d);
     NRformat_loc *Astore = A->Store;
@@ -160,7 +161,7 @@ void sscaleFromScratch(
 
 void sscaleMatrixDiagonally(fact_t Fact, sScalePermstruct_t *ScalePermstruct,
                            SuperMatrix *A, SuperLUStat_t *stat, gridinfo_t *grid,
-                            int_t *rowequ, int_t *colequ, int_t*iinfo)
+                            int *rowequ, int *colequ, int_t*iinfo)
 {
     int iam = grid->iam;
 
@@ -470,11 +471,11 @@ void sperform_row_permutation(
     SuperMatrix *A,
     SuperMatrix *GA,
     SuperLUStat_t *stat,
-    int_t job,
-    int_t Equil,
+    int job,
+    int Equil,
     int_t *rowequ,
-    int_t *colequ,
-    int_t *iinfo)
+    int *colequ,
+    int *iinfo)
 {
     #if ( DEBUGlevel>=1 )
     LOG_FUNC_ENTER();
@@ -559,7 +560,7 @@ void sperform_row_permutation(
  *
  * the iam process is the root (iam=0), it prints the computed norm to the standard output.
  */
-float scomputeA_Norm(int_t notran, SuperMatrix *A, gridinfo_t *grid) {
+float scomputeA_Norm(int notran, SuperMatrix *A, gridinfo_t *grid) {
     char norm;
     float anorm;
 

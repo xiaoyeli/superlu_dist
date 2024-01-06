@@ -150,7 +150,7 @@ int_t strs_B_init3d_newsolve(int_t nsupers, float* x, int nrhs, sLUstruct_t * LU
 float *sready_x, *sready_lsum;
 // #endif
 
-int_t strs_compute_communication_structure(superlu_dist_options_t *options, int_t n, sLUstruct_t * LUstruct,
+int strs_compute_communication_structure(superlu_dist_options_t *options, int_t n, sLUstruct_t * LUstruct,
                            sScalePermstruct_t * ScalePermstruct,
                            int* supernodeMask, gridinfo_t *grid, SuperLUStat_t * stat)
 {
@@ -561,9 +561,6 @@ int_t strs_compute_communication_structure(superlu_dist_options_t *options, int_
     SUPERLU_FREE(colcounts);
     SUPERLU_FREE(rowlists);
     SUPERLU_FREE(collists);
-
-
-
 
 
     /* gather information about the global U structure */
@@ -1400,7 +1397,8 @@ int_t strs_compute_communication_structure(superlu_dist_options_t *options, int_
     //     }
     // }
 
-} // strs_compute_communication_structure
+    return 0;
+} // end strs_compute_communication_structure
 
 
 

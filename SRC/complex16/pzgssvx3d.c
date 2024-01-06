@@ -25,7 +25,7 @@ at the top-level directory.
 
 #include "superlu_zdefs.h"
 //#include "TRF3dV100/superlu_summit.h"
-#include "superlu_summit.h"
+#include "superlu_upacked.h"
 // #include "pzdistribute3d.h"
 
 // #include "zssvx3dAux.c"
@@ -741,7 +741,7 @@ void pzgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
     int_t *perm_c;			/* column permutation vector */
     int_t *etree;			/* elimination tree */
     int_t *rowptr, *colind; /* Local A in NR */
-    int_t colequ, Equil, factored, job, notran, rowequ, need_value;
+    int colequ, Equil, factored, job, notran, rowequ, need_value;
     int_t i, iinfo, j, irow, m, n, nnz, permc_spec;
     int_t nnz_loc, m_loc, fst_row, icol;
     int iam;
@@ -1205,22 +1205,41 @@ void pzgssvx3d(superlu_dist_options_t *options, SuperMatrix *A,
 			if (!grid3d->iam)
 				printf("Using pzgstrf3d+gpu version 1 for Summit\n");
 #if 0
-			pzgstrf3d_summit(options, m, n, anorm, trf3Dpartition, SCT, LUstruct,
+			pzgstrf3d_upacked(options, m, n, anorm, trf3Dpartition, SCT, LUstruct,
 				  grid3d, stat, info);
 #else
 			int_t ldt = sp_ienv_dist(3, options); /* Size of maximum supernode */
 			double s_eps = smach_dist("Epsilon");
 			double thresh = s_eps * anorm;
 
+#define TEMPLATED_VERSION 
+#ifdef TEMPLATED_VERSION
+zLUgpu_Handle zLUgpu = zCreateLUgpuHandle(nsupers, ldt, trf3Dpartition, LUstruct, grid3d,
+						  SCT, options, stat, thresh, info);
+			
+			/* call pzgstrf3d() in C++ code */
+			pzgstrf3d_LUv1(zLUgpu);
+			
+			zCopyLUGPU2Host(zLUgpu, LUstruct);
+			zDestroyLUgpuHandle(zLUgpu);
 		    //TODO: zCreateLUgpuHandle,pzgstrf3d_LUpackedInterface,zCopyLUGPU2Host,zDestroyLUgpuHandle haven't been created
+#else 
+			/* call constructor in C++ code */
+			LUgpu = zCreateLUgpuHandle(nsupers, ldt, trf3Dpartition, LUstruct, grid3d,
+						  SCT, options, stat, thresh, info);
 
+			/* call pzgstrf3d() in C++ code */
+			pzgstrf3d_LUpackedInterface(LUgpu);
+			
+			copyLUGPU2Host(LUgpu, LUstruct);
+			destroyLUgpuHandle(LUgpu);
+#endif /* TEMPLATED_VERSION */
 
 			// print other stuff
 			// if (!grid3d->zscp.Iam)
 			// 	SCT_printSummary(grid, SCT);
 			reduceStat(FACT, stat, grid3d);
-
-#endif
+#endif /* matching #if 0 #else */
 		}
 		else /* this is the old C code, with less GPU offload */
 #endif /* matching ifdef GPU_ACC */

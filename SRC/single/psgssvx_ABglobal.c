@@ -963,7 +963,7 @@ psgssvx_ABglobal(superlu_dist_options_t *options, SuperMatrix *A,
 		int* supernodeMask = int32Malloc_dist(nsupers);
 		for(int ii=0; ii<nsupers; ii++)
 			supernodeMask[ii]=1;
-		dtrs_compute_communication_structure(options, n, LUstruct,
+		strs_compute_communication_structure(options, n, LUstruct,
 						ScalePermstruct, supernodeMask, grid, stat);
 		SUPERLU_FREE(supernodeMask);
 	}
