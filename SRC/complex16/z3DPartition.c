@@ -218,9 +218,9 @@ void zbcastPermutedSparseA(SuperMatrix *A,
 
     /* ==== Broadcasting GLU_persist   ======= */
     // what is the size of xsup and supno?
-    allocBcastArray( &(Glu_persist->xsup), (nsupers+1)*sizeof(int_t),
+    allocBcastArray( (void **) &(Glu_persist->xsup), (nsupers+1)*sizeof(int_t),
         0, grid3d->zscp.comm);
-    allocBcastArray( &(Glu_persist->supno), (n)*sizeof(int_t),
+    allocBcastArray( (void **) &(Glu_persist->supno), (n)*sizeof(int_t),
         0, grid3d->zscp.comm);
     int_t *xsup = Glu_persist->xsup;    /* supernode and column mapping */
     int_t *supno = Glu_persist->supno;
@@ -249,9 +249,9 @@ void zbcastPermutedSparseA(SuperMatrix *A,
         0, grid3d->zscp.comm);
 #endif
 
-    allocBcastArray ( &(ScalePermstruct->R), m*sizeof(double),
+    allocBcastArray ( (void **) &(ScalePermstruct->R), m*sizeof(double),
         0, grid3d->zscp.comm);
-    allocBcastArray ( &(ScalePermstruct->C), n*sizeof(double),
+    allocBcastArray ( (void **) &(ScalePermstruct->C), n*sizeof(double),
         0, grid3d->zscp.comm);
 
 
@@ -269,13 +269,13 @@ void zbcastPermutedSparseA(SuperMatrix *A,
 //     int64_t nnzLU;   /* number of nonzeros in L+U*/
 // } Glu_freeable_t;
 
-    allocBcastArray( &(Glu_freeable->lsub), Glu_freeable->nzlmax*sizeof(int_t),
+    allocBcastArray( (void **) &(Glu_freeable->lsub), Glu_freeable->nzlmax*sizeof(int_t),
         0, grid3d->zscp.comm);
-    allocBcastArray( &(Glu_freeable->xlsub), (n+1)*sizeof(int_t),
+    allocBcastArray( (void **) &(Glu_freeable->xlsub), (n+1)*sizeof(int_t),
         0, grid3d->zscp.comm);
-    allocBcastArray( &(Glu_freeable->usub), Glu_freeable->nzumax*sizeof(int_t),
+    allocBcastArray( (void **) &(Glu_freeable->usub), Glu_freeable->nzumax*sizeof(int_t),
         0, grid3d->zscp.comm);
-    allocBcastArray( &(Glu_freeable->xusub), (n+1)*sizeof(int_t),
+    allocBcastArray( (void **) &(Glu_freeable->xusub), (n+1)*sizeof(int_t),
         0, grid3d->zscp.comm);
     MPI_Bcast(&(Glu_freeable->nzlmax), sizeof(int_t), MPI_BYTE, 0, grid3d->zscp.comm);
     MPI_Bcast(&(Glu_freeable->nzumax), sizeof(int_t), MPI_BYTE, 0, grid3d->zscp.comm);
@@ -318,11 +318,11 @@ void zbcastPermutedSparseA(SuperMatrix *A,
     MPI_Bcast(Astore->rowptr, (Astore->m_loc+1)*sizeof(int_t), MPI_BYTE, 0, grid3d->zscp.comm);
     MPI_Bcast(Astore->colind, Astore->nnz_loc*sizeof(int_t), MPI_BYTE, 0, grid3d->zscp.comm);
 #else
-    allocBcastArray( &(Astore->nzval), Astore->nnz_loc*sizeof(doublecomplex),
+    allocBcastArray( (void **) &(Astore->nzval), Astore->nnz_loc*sizeof(doublecomplex),
         0, grid3d->zscp.comm);
-    allocBcastArray( &(Astore->rowptr), (Astore->m_loc+1)*sizeof(int_t),
+    allocBcastArray( (void **) &(Astore->rowptr), (Astore->m_loc+1)*sizeof(int_t),
         0, grid3d->zscp.comm);
-    allocBcastArray( &(Astore->colind), Astore->nnz_loc*sizeof(int_t),
+    allocBcastArray( (void **) &(Astore->colind), Astore->nnz_loc*sizeof(int_t),
         0, grid3d->zscp.comm);
 #endif
 

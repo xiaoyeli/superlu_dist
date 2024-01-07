@@ -106,6 +106,44 @@ dCompRow_to_CompCol_dist(int_t m, int_t n, int_t nnz,
 
     SUPERLU_FREE(marker);
 }
+/*! \brief Convert a compressed column storage into a compressed row storage.
+ */
+void
+dCompCol_to_CompRow_dist(int_t m, int_t n, int_t nnz,
+                         double *a, int_t *colptr, int_t *rowind,
+                         double **at, int_t **rowptr, int_t **colind)
+{
+    int_t i, j, row, relpos;
+    int_t *marker;
+
+    /* Allocate storage for another copy of the matrix. */
+    *at = (double *) doubleMalloc_dist(nnz);
+    *colind = intMalloc_dist(nnz);
+    *rowptr = intMalloc_dist(m+1);
+    marker = intCalloc_dist(m);
+
+    /* Get counts of each row of A, and set up rowpointers */
+    for (i = 0; i < n; ++i) /* loop through each column */
+	for (j = colptr[i]; j < colptr[i+1]; ++j) ++marker[rowind[j]];
+    (*rowptr)[0] = 0;
+    for (j = 0; j < m; ++j) {
+	(*rowptr)[j+1] = (*rowptr)[j] + marker[j];
+	marker[j] = (*rowptr)[j]; /* points to the start of each row */
+    }
+
+    /* Transfer the matrix into the compressed row storage. */
+    for (i = 0; i < n; ++i) { /* loop though each column */
+	for (j = colptr[i]; j < colptr[i+1]; ++j) {
+	    row = rowind[j];
+	    relpos = marker[row];
+	    (*colind)[relpos] = i;
+	    (*at)[relpos] = a[j];
+	    ++marker[row]; /* move pointer to next empty location */
+	}
+    }
+
+    SUPERLU_FREE(marker);
+} /* end dCompCol_to_CompRow_dist */
 
 /*! \brief Copy matrix A into matrix B. */
 void

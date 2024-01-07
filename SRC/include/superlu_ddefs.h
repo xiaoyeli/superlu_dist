@@ -506,6 +506,9 @@ dCreate_CompRowLoc_Matrix_dist(SuperMatrix *, int_t, int_t, int_t, int_t,
 extern void
 dCompRow_to_CompCol_dist(int_t, int_t, int_t, double *, int_t *, int_t *,
                          double **, int_t **, int_t **);
+extern void
+dCompCol_to_CompRow_dist(int_t, int_t, int_t, double *a, int_t *, int_t *,
+                         double **, int_t **, int_t **);
 extern int
 pdCompRow_loc_to_CompCol_global(int_t, SuperMatrix *, gridinfo_t *,
 	 		        SuperMatrix *);
@@ -1094,6 +1097,9 @@ extern int dcreate_matrix_postfix3d(SuperMatrix *A, int nrhs, double **rhs,
 extern int dcreate_block_diag_3d(SuperMatrix *A, int batchCount, int nrhs, double **rhs,
 				 int *ldb, double **x, int *ldx,
 				 FILE *fp, char * postfix, gridinfo3d_t *grid3d);
+extern int dcreate_batch_systems(handle_t *SparseMatrix_handles, int batchCount,
+				 int nrhs, double **rhs, int *ldb, double **x, int *ldx,
+				 FILE *fp, char * postfix, gridinfo3d_t *grid3d);
 
 /* Matrix distributed in NRformat_loc in 3D process grid. It converts
    it to a NRformat_loc distributed in 2D grid in grid-0 */
@@ -1573,6 +1579,29 @@ extern int_t ancestorFactor(
 );
 #endif
 
+    /* Batch interface */
+extern int pdgssvx3d_csc_batch(superlu_dist_options_t *options,	int batchCount,
+			       int M, int N, int NNZ, int NRHS,
+			       handle_t  *SparseMatrix_handles,
+			       double **RHSptr,	int *ldRHS,
+			       double **ReqPtr,	double **CeqPtr,
+			       int **RpivPtr, int **CpivPtr, DiagScale_t *, handle_t *F,
+			       double **Xptr, int *ldX, double **Berr,
+			       gridinfo3d_t *grid3d, SuperLUStat_t *, int *info
+			       //DeviceContext context 
+			       );
+extern int dequil_batch(superlu_dist_options_t *options, int batchCount,
+			int m, int n, handle_t  *SparseMatrix_handles,
+			double **ReqPtr, double **CeqPtr, DiagScale_t *DiagScale
+			//    DeviceContext context
+			);
+extern int dpivot_batch(superlu_dist_options_t *options, int batchCount,
+			int m, int n, handle_t *SparseMatrix_handles,
+			double **ReqPtr, double **CeqPtr, DiagScale_t *DiagScale,
+			int **RpivPtr
+			//    DeviceContext context
+			);
+    
 /*== end 3D prototypes ===================*/
 
 extern double *dready_x;

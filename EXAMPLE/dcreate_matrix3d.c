@@ -15,7 +15,7 @@ at the top-level directory.
  * \brief Read the matrix from data file
  *
  * <pre>
- * -- Distributed SuperLU routine (version 9.0) --
+ * -- Distributed SuperLU routine (version 7.0) --
  * Lawrence Berkeley National Lab, Univ. of California Berkeley,
  * Oak Ridge National Lab.
  * May 12, 2021
@@ -275,7 +275,7 @@ int dcreate_matrix_postfix3d(SuperMatrix *A, int nrhs, double **rhs,
     /* Set the true X */
     *ldx = m_loc;
     if ( !((*x) = doubleMalloc_dist(*ldx * nrhs)) )
-        ABORT("Malloc fails for x_loc[]");
+        ABORT("Malloc fails for x[]");
 
     /* Get the local part of xtrue_global */
     for (j = 0; j < nrhs; ++j)
@@ -608,3 +608,107 @@ int dcreate_block_diag_3d(SuperMatrix *A, int batchCount, int nrhs, double **rhs
 #endif
     return 0;
 }
+
+
+int dcreate_batch_systems(handle_t *SparseMatrix_handles, int batchCount,
+			  int nrhs, double **RHSptr,
+			  int *ldRHS, double **xtrue, int *ldX,
+			  FILE *fp, char * postfix, gridinfo3d_t *grid3d)
+{
+    int_t    *rowind, *colptr;   /* global */
+    int_t    *rowind_d, *colptr_d;  /* metadata for one diagonal block */
+    double   *nzval, *nzval_d;      /* global */
+    double   *nzval_loc;         /* local */
+    int_t    *colind, *rowptr;   /* local */
+    int_t    m, n, nnz;
+    int    row, col, i, j, relpos;
+    int      iam;
+    char     trans[1];
+
+    iam = grid3d->iam;
+
+#if ( DEBUGlevel>=1 )
+    CHECK_MALLOC(iam, "Enter dcreate_batch_matrices()");
+#endif
+
+    if ( !iam )
+    {
+        double t = SuperLU_timer_();
+
+        if (!strcmp(postfix, "rua"))
+        {
+            /* Read the matrix stored on disk in Harwell-Boeing format. */
+            dreadhb_dist(iam, fp, &m, &n, &nnz, &nzval, &rowind, &colptr);
+        }
+        else if (!strcmp(postfix, "mtx"))
+        {
+            /* Read the matrix stored on disk in Matrix Market format. */
+            dreadMM_dist(fp, &m, &n, &nnz, &nzval, &rowind, &colptr);
+        }
+        else if (!strcmp(postfix, "rb"))
+        {
+            /* Read the matrix stored on disk in Rutherford-Boeing format. */
+            dreadrb_dist(iam, fp, &m, &n, &nnz, &nzval, &rowind, &colptr);
+        }
+        else if (!strcmp(postfix, "dat"))
+        {
+            /* Read the matrix stored on disk in triplet format. */
+            dreadtriple_dist(fp, &m, &n, &nnz, &nzval, &rowind, &colptr);
+        }
+        else if (!strcmp(postfix, "datnh"))
+        {
+            /* Read the matrix stored on disk in triplet format (without header). */
+            dreadtriple_noheader(fp, &m, &n, &nnz, &nzval, &rowind, &colptr);
+        }
+        else if (!strcmp(postfix, "bin"))
+        {
+            /* Read the matrix stored on disk in binary format. */
+            dread_binary(fp, &m, &n, &nnz, &nzval, &rowind, &colptr);
+        }
+        else
+        {
+            ABORT("File format not known");
+        }
+
+        printf("Time to read and distribute matrix %.2f\n",
+               SuperLU_timer_() - t);  fflush(stdout);
+    }
+	
+    /* Allocate storage for CSC containing all the matrices */
+    SuperMatrix **A = SUPERLU_MALLOC( batchCount * sizeof(SuperMatrix *) );
+    int d = 0;
+    for (d = 0; d < batchCount; ++d) {
+	int_t  *rowind_d, *colptr_d; /* each block */
+	double *nzval_d;
+	
+        /* Allocate storage for compressed column representation. */
+        dallocateA_dist(n, nnz, &nzval_d, &rowind_d, &colptr_d);
+	
+	/* Copy the CSC arrays */
+	for (j = 0; j < n+1; ++j) colptr_d[j] = colptr[j];
+	for (i = 0; i < nnz; ++i) {
+	    rowind_d[i] = rowind[i];
+	    nzval_d[i] = nzval[i];
+	}
+	    
+	/* Create compressed column matrix. */
+	A[d] = (SuperMatrix *) SUPERLU_MALLOC( sizeof(SuperMatrix) );
+	dCreate_CompCol_Matrix_dist(A[d], m, n, nnz, nzval_d, rowind_d, colptr_d,
+				    SLU_NC, SLU_D, SLU_GE);
+	SparseMatrix_handles[d] = (handle_t) A[d];
+	
+	/* Generate the exact solutions and compute the right-hand sides. */
+	RHSptr[d] = doubleMalloc_dist( m * nrhs );
+	xtrue[d] = doubleMalloc_dist( n * nrhs );
+	ldRHS[d] = m;
+	ldX[d] = n;
+	*trans = 'N';
+	dGenXtrue_dist(n, nrhs, xtrue[d], n);
+	dFillRHS_dist(trans, nrhs, xtrue[d], n, A[d], RHSptr[d], m);
+    }
+
+#if ( DEBUGlevel>=1 )
+    CHECK_MALLOC(iam, "Exit dcreate_batch_matrices()");
+#endif
+    return 0;
+} /* end dcreate_batch_systems */

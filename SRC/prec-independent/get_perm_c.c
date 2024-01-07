@@ -49,6 +49,10 @@ get_metis_dist(
     extern int METIS_NodeND(int_t*, int_t*, int_t*, int_t*, int_t*,
 			    int_t*, int_t*);
 
+#if ( DEBUGlevel>=1 )
+    CHECK_MALLOC(0, "Enter get_metis_dist()");
+#endif
+    
     metis_options[0] = 0; /* Use Defaults for now */
 
     perm = (int_t*) SUPERLU_MALLOC(2*n * sizeof(int_t));
@@ -104,8 +108,13 @@ get_metis_dist(
     SUPERLU_FREE(b_rowind);
 #endif
     SUPERLU_FREE(perm);
+    
+#if ( DEBUGlevel>=1 )
+    CHECK_MALLOC(0, "Exit get_metis_dist()");
+#endif
 #endif /* HAVE_PARMETIS */
-}
+    return;
+} /* end get_metis_dist */
 
 void
 get_colamd_dist(
@@ -592,4 +601,4 @@ get_perm_c_dist(int_t pnum, int_t ispec, SuperMatrix *A, int_t *perm_c)
 #if ( DEBUGlevel>=1 )
     CHECK_MALLOC((int) pnum, "Exit get_perm_c_dist()");
 #endif
-} /* get_perm_c_dist */
+} /* end get_perm_c_dist */

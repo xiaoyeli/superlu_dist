@@ -77,6 +77,7 @@ set(sources
   prec-independent/communication_aux.c
   prec-independent/treeFactorization.c
   prec-independent/sec_structs.c  
+  prec-independent/get_perm_c_batch.c
 )
 
 # if (HAVE_CUDA)
@@ -161,6 +162,9 @@ endif()
     double/dcommunication_aux.c 
     double/dtrfCommWrapper.c
     double/dsuperlu_blas.c
+    double/pdgssvx3d_csc_batch.c # batch in CSC format
+    double/dequil_batch.c # batch in CSC format
+    double/dpivot_batch.c
   )
 if (TPL_ENABLE_CUDALIB)
   list(APPEND sources

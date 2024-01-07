@@ -731,9 +731,9 @@ int_t zscatter3dLPanels(int_t nsupers,
 				int_t krow = PROW( jb, grid );
 				if(myrow==krow){   /* diagonal block */
 					int_t nsupc = SuperSize(jb);
-					if (!(Linv_bc_ptr[ljb] = (double*)SUPERLU_MALLOC(nsupc*nsupc * sizeof(double))))
+					if (!(Linv_bc_ptr[ljb] = (doublecomplex*)SUPERLU_MALLOC(nsupc*nsupc * sizeof(doublecomplex))))
 					ABORT("Malloc fails for Linv_bc_ptr[ljb][]");
-					if (!(Uinv_bc_ptr[ljb] = (double*)SUPERLU_MALLOC(nsupc*nsupc * sizeof(double))))
+					if (!(Uinv_bc_ptr[ljb] = (doublecomplex*)SUPERLU_MALLOC(nsupc*nsupc * sizeof(doublecomplex))))
 					ABORT("Malloc fails for Uinv_bc_ptr[ljb][]");
 				}else{
 					Linv_bc_ptr[ljb] = NULL;

@@ -995,7 +995,7 @@ int_t num_full_cols_U(
     int_t *ldu /* max. segment size of nonzero columns in U(kk,:) */
 )
 {
-    int_t lk = LBi(kk, grid);
+    int lk = LBi(kk, grid);
     int_t *usub = Ufstnz_br_ptr[lk];
 
     if (usub == NULL)
@@ -1003,17 +1003,17 @@ int_t num_full_cols_U(
 
     int_t iukp = BR_HEADER; /* Skip header; Pointer to index[] of U(k,:) */
     int_t rukp = 0;         /* Pointer to nzval[] of U(k,:) */
-    int_t nub = usub[0];    /* Number of blocks in the block row U(k,:) */
+    int nub = usub[0];    /* Number of blocks in the block row U(k,:) */
 
-    int_t klst = FstBlockC(kk + 1);
+    int klst = FstBlockC(kk + 1);
     int_t iukp0 = iukp;
     int_t rukp0 = rukp;
     int_t jb, ljb;
-    int_t nsupc;
-    int_t full = 1;
-    int_t full_Phi = 1;
-    int_t temp_ncols = 0;
-    int_t segsize;
+    int nsupc;
+    int full = 1;
+    int full_Phi = 1;
+    int temp_ncols = 0;
+    int segsize;
 
     *ldu = 0;
 
@@ -1058,11 +1058,11 @@ int_t num_full_cols_U_mod(
     int_t iukp0 = iukp;
     int_t rukp0 = rukp;
     int_t jb, ljb;
-    int_t nsupc;
-    int_t full = 1;
-    int_t full_Phi = 1;
-    int_t temp_ncols = 0;
-    int_t segsize;
+    int nsupc;
+    int full = 1;
+    int full_Phi = 1;
+    int temp_ncols = 0;
+    int segsize;
 
     *ldu = 0;
 

@@ -341,6 +341,11 @@ static const int RD_U=4;	/* MPI tag for lsum in U-solve*/
 #endif
 /*---- end MAGMA ----*/
 
+/* New batched types */
+#define HANDLE_SIZE  8
+typedef int64_t handle_t;
+
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -1090,8 +1095,15 @@ extern void   sp_colorder (superlu_dist_options_t*, SuperMatrix*, int_t*, int_t*
 extern int    sp_symetree_dist(int_t *, int_t *, int_t *, int_t, int_t *);
 extern int    sp_coletree_dist (int_t *, int_t *, int_t *, int_t, int_t, int_t *);
 extern void   get_perm_c_dist(int_t, int_t, SuperMatrix *, int_t *);
+extern void   get_perm_c_batch(superlu_dist_options_t *options,	int batchCount,
+			       handle_t  *SparseMatrix_handles, int **CpivPtr);
 extern void   at_plus_a_dist(const int_t, const int_t, int_t *, int_t *,
 			     int_t *, int_t **, int_t **);
+extern void   getata_dist(const int_t m, const int_t n, const int_t nz, int_t *colptr, int_t *rowind,
+			  int_t *atanz, int_t **ata_colptr, int_t **ata_rowind);
+extern void   get_metis_dist(int_t n, int_t bnz, int_t *b_colptr, int_t *b_rowind, int_t *perm_c);
+extern void   get_colamd_dist(const int m, const int n, const int nnz,
+			      int_t *colptr, int_t *rowind, int_t *perm_c);
 extern int    genmmd_dist_(int_t *, int_t *, int_t *a,
 			   int_t *, int_t *, int_t *, int_t *,
 			   int_t *, int_t *, int_t *, int_t *, int_t *);
@@ -1511,11 +1523,6 @@ extern int_t num_full_cols_U_mod(
     gridinfo_t *grid, int_t *perm_u,
     int_t *ldu /* max. segment size of nonzero columns in U(kk,:) */
 );
-
-/* new auxiliary functions */
-extern void validateInput_pdgssvx3d(superlu_dist_options_t *, SuperMatrix *, int ldb, int nrhs,
-				    gridinfo3d_t *, int *);
-    
 
 /*=====================*/
 
