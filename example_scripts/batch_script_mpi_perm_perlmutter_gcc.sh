@@ -47,8 +47,8 @@ else
   # Host unknown; exiting
   exit $EXIT_HOST
 fi
-nprows=(1 1)
-npcols=(1 2)
+nprows=(1 1 2 2)
+npcols=(1 2 1 2)
 NTH=1
 NODE_VAL_TOT=1
 
@@ -78,7 +78,9 @@ export OMP_PROC_BIND=spread
 export MPICH_MAX_THREAD_SAFETY=multiple
 
 # srun -n $NGPU -N $NODE_VAL_TOT -c $TH_PER_RANK --cpu_bind=cores ./EXAMPLE/pddrive -r $NROW -c $NCOL $CFS/m2957/liuyangz/my_research/matrix/s1_mat_0_126936.bin
-srun -n $NGPU -N $NODE_VAL_TOT -c $TH_PER_RANK --cpu_bind=cores ./EXAMPLE/pddrive -r $NROW -c $NCOL $CFS/m2957/liuyangz/my_research/matrix/Ga19As19H42.bin
+# srun -n $NGPU -N $NODE_VAL_TOT -c $TH_PER_RANK --cpu_bind=cores ./EXAMPLE/pddrive -r $NROW -c $NCOL $CFS/m2957/liuyangz/my_research/matrix/Ga19As19H42.bin
+srun -n $NGPU -N $NODE_VAL_TOT -c $TH_PER_RANK --cpu_bind=cores ./EXAMPLE/pddrive -r $NROW -c $NCOL $CFS/m2957/liuyangz/my_research/matrix/torso3.mtx
+# srun -n $NGPU -N $NODE_VAL_TOT -c $TH_PER_RANK --cpu_bind=cores ./EXAMPLE/pddrive -r $NROW -c $NCOL $CFS/m2957/tianyi/matrix/bbmat.mtx
 # srun -n $NGPU -N $NODE_VAL_TOT -c $TH_PER_RANK --cpu_bind=cores ./EXAMPLE/pddrive -r $NROW -c $NCOL ../EXAMPLE/big.rua
 
 # export NSUP=5

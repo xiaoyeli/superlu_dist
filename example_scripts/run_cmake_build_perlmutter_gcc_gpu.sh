@@ -16,7 +16,7 @@ module load cmake/3.24.3
 module load cudatoolkit/11.7
 
 cmake .. \
-  -DCMAKE_C_FLAGS="-DGPU_SOLVE -std=c11 -DPRNTlevel=1 -DPROFlevel=0 -DDEBUGlevel=0 -DAdd_" \
+  -DCMAKE_C_FLAGS="-DGPU_SOLVE -std=c11 -DPRNTlevel=0 -DPROFlevel=1 -DDEBUGlevel=0 -DAdd_" \
   -DCMAKE_CXX_COMPILER=CC \
   -DCMAKE_C_COMPILER=cc \
   -DCMAKE_Fortran_COMPILER=ftn \
@@ -41,8 +41,10 @@ cmake .. \
   -DMPIEXEC_EXECUTABLE=/usr/bin/srun \
   -DMPIEXEC_MAX_NUMPROCS=16
 
-make pddrive -j16
-make pddrive3d -j16
-make f_pddrive
+#make pddrive -j16
+#make pddrive3d -j16
+#make f_pddrive
+make -j16
+make install
 
 ## -DTPL_BLAS_LIBRARIES=/global/cfs/cdirs/m3894/ptlin/tpl/amd_blis/install/amd_blis-20211021-n9-gcc9.3.0/lib/libblis.a \

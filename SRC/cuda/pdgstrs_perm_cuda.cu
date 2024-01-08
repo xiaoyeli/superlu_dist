@@ -242,7 +242,7 @@ void pdReDistribute_B_to_X_gpu_wrap(double *B, int_t m_loc, int_t n, int nrhs, i
      GPU DEVICE RUNNING.
      ------------------------------------------------------------*/
   int_t nthreads = 256;
-  int_t row_per_th = 8;
+  int_t row_per_th = 16;
   int_t nblocks = (m_loc+nthreads*row_per_th-1)/(nthreads*row_per_th);
   if (procs == 1) {
      MPI_Barrier( grid->comm );
@@ -252,7 +252,7 @@ void pdReDistribute_B_to_X_gpu_wrap(double *B, int_t m_loc, int_t n, int nrhs, i
                                                               d_perm_r, d_perm_c, d_xsup, d_supno, d_grid, row_per_th);
 
      t = SuperLU_timer_() - t;
-     if ( !grid->iam ) printf(".. B to X redistribute time on host\t%8.4f\n", t);
+     if ( !grid->iam ) printf(".. B to X GPU kernel redistribute time\t%8.6f\n", t);
      fflush(stdout);
   }
   else {
@@ -388,7 +388,7 @@ void pdReDistribute_B_to_X_gpu_wrap(double *B, int_t m_loc, int_t n, int nrhs, i
                                  d_xsup, d_supno, d_grid, row_per_th);
      
      t = SuperLU_timer_() - t;
-     if ( !grid->iam ) printf(".. B to X redistribute time on host\t%8.4f\n", t);
+     if ( !grid->iam ) printf(".. B to X GPU kernel redistribute time\t%8.6f\n", t);
      fflush(stdout);
      // printf("GPU B_to_X receive buffers used.\n");
 
@@ -681,7 +681,7 @@ void pdReDistribute_X_to_B_gpu_wrap(double *B, int_t m_loc, int_t n, int nrhs, i
      ------------------------------------------------------------*/
 
   int_t nthreads = 256;
-  int_t row_per_th = 8;
+  int_t row_per_th = 16;
   int_t nblocks = (m_loc+nthreads*row_per_th-1)/(nthreads*row_per_th);
   if (procs == 1) {
      MPI_Barrier( grid->comm );
@@ -691,7 +691,7 @@ void pdReDistribute_X_to_B_gpu_wrap(double *B, int_t m_loc, int_t n, int nrhs, i
                                                               d_ilsum, d_xsup, d_supno, d_grid, row_per_th);
      
      t = SuperLU_timer_() - t;
-     if ( !grid->iam ) printf(".. X to B redistribute time on host\t%8.4f\n", t);
+     if ( !grid->iam ) printf(".. X to B GPU kernel redistribute time \t%8.6f\n", t);
      fflush(stdout);
   }
   else {
@@ -801,7 +801,7 @@ void pdReDistribute_X_to_B_gpu_wrap(double *B, int_t m_loc, int_t n, int nrhs, i
                           d_xsup, d_supno, d_grid, row_per_th);
      
      t = SuperLU_timer_() - t;
-     if ( !grid->iam ) printf(".. X to B redistribute time on host\t%8.4f\n", t);
+     if ( !grid->iam ) printf(".. X to B GPU kernel redistribute time\t%8.6f\n", t);
      fflush(stdout);
      // printf("GPU X_to_B receive buffers used.\n");
 
