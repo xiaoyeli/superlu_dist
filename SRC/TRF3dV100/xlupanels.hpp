@@ -101,7 +101,7 @@ public:
     int_t find(int_t k);
     // for L panel I don't need any special transformation function
     int_t panelSolve(int_t ksupsz, Ftype *DiagBlk, int_t LDD);
-    int_t diagFactor(int_t k, Ftype *UBlk, int_t LDU, Ftype thresh, int_t *xsup,
+    int_t diagFactor(int_t k, Ftype *UBlk, int_t LDU, threshPivValType<Ftype> thresh, int_t *xsup,
                      superlu_dist_options_t *options, SuperLUStat_t *stat, int *info);
     int_t packDiagBlock(Ftype *DiagLBlk, int_t LDD);
     int_t isEmpty() { return index == NULL; }
@@ -154,7 +154,7 @@ public:
                              cusolverDnHandle_t cusolverH, cudaStream_t cuStream,
                              Ftype *dWork, int *dInfo,   // GPU pointers
                              Ftype *dDiagBuf, int_t LDD, // GPU pointers
-                             Ftype thresh, int_t *xsup,
+                             threshPivValType<Ftype> thresh, int_t *xsup,
                              superlu_dist_options_t *options,
                              SuperLUStat_t *stat, int *info);
 
@@ -345,8 +345,8 @@ struct xLUstruct_t
     int_t *indirect, *indirectRow, *indirectCol;
     Ftype *bigV; // size = THREAD_Size*ldt*ldt
     int *isNodeInMyGrid;
-    Ftype thresh;
-    int *info;
+    threshPivValType<Ftype> thresh;
+    int *info; 
     // TODO: get it from environment
     int numDiagBufs = 32; /* Sherry: not fixed yet */
 
@@ -437,7 +437,7 @@ struct xLUstruct_t
     xLUstruct_t(int_t nsupers, int_t ldt_, trf3dpartitionType<Ftype> *trf3Dpartition,
                   LUStruct_type<Ftype> *LUstruct, gridinfo3d_t *grid3d,
                   SCT_t *SCT_, superlu_dist_options_t *options_, SuperLUStat_t *stat,
-                  Ftype thresh_, int *info_);
+                  threshPivValType<Ftype> thresh_, int *info_);
 
     ~xLUstruct_t()
     {

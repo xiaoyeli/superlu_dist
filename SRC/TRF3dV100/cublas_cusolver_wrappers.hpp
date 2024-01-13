@@ -32,22 +32,26 @@ template <typename Ftype>
 cublasStatus_t myCublasTrsm(cublasHandle_t handle, cublasSideMode_t side, cublasFillMode_t uplo, cublasOperation_t trans, cublasDiagType_t diag, int m, int n, const Ftype *alpha, const Ftype *A, int lda, Ftype *B, int ldb);
 
 template <>
-cublasStatus_t myCublasTrsm<double>(cublasHandle_t handle, cublasSideMode_t side, cublasFillMode_t uplo, cublasOperation_t trans, cublasDiagType_t diag, int m, int n, const double *alpha, const double *A, int lda, double *B, int ldb) {
+cublasStatus_t myCublasTrsm<double>(cublasHandle_t handle, cublasSideMode_t side, cublasFillMode_t uplo, cublasOperation_t trans, cublasDiagType_t diag, int m, int n, const double *alpha, const double *A, int lda, double *B, int ldb)
+{
     return cublasDtrsm(handle, side, uplo, trans, diag, m, n, alpha, A, lda, B, ldb);
 }
 
 template <>
-cublasStatus_t myCublasTrsm<float>(cublasHandle_t handle, cublasSideMode_t side, cublasFillMode_t uplo, cublasOperation_t trans, cublasDiagType_t diag, int m, int n, const float *alpha, const float *A, int lda, float *B, int ldb) {
+cublasStatus_t myCublasTrsm<float>(cublasHandle_t handle, cublasSideMode_t side, cublasFillMode_t uplo, cublasOperation_t trans, cublasDiagType_t diag, int m, int n, const float *alpha, const float *A, int lda, float *B, int ldb)
+{
     return cublasStrsm(handle, side, uplo, trans, diag, m, n, alpha, A, lda, B, ldb);
 }
 
 template <>
-cublasStatus_t myCublasTrsm<cuComplex>(cublasHandle_t handle, cublasSideMode_t side, cublasFillMode_t uplo, cublasOperation_t trans, cublasDiagType_t diag, int m, int n, const cuComplex *alpha, const cuComplex *A, int lda, cuComplex *B, int ldb) {
+cublasStatus_t myCublasTrsm<cuComplex>(cublasHandle_t handle, cublasSideMode_t side, cublasFillMode_t uplo, cublasOperation_t trans, cublasDiagType_t diag, int m, int n, const cuComplex *alpha, const cuComplex *A, int lda, cuComplex *B, int ldb)
+{
     return cublasCtrsm(handle, side, uplo, trans, diag, m, n, alpha, A, lda, B, ldb);
 }
 
 template <>
-cublasStatus_t myCublasTrsm<cuDoubleComplex>(cublasHandle_t handle, cublasSideMode_t side, cublasFillMode_t uplo, cublasOperation_t trans, cublasDiagType_t diag, int m, int n, const cuDoubleComplex *alpha, const cuDoubleComplex *A, int lda, cuDoubleComplex *B, int ldb) {
+cublasStatus_t myCublasTrsm<cuDoubleComplex>(cublasHandle_t handle, cublasSideMode_t side, cublasFillMode_t uplo, cublasOperation_t trans, cublasDiagType_t diag, int m, int n, const cuDoubleComplex *alpha, const cuDoubleComplex *A, int lda, cuDoubleComplex *B, int ldb)
+{
     return cublasZtrsm(handle, side, uplo, trans, diag, m, n, alpha, A, lda, B, ldb);
 }
 
@@ -109,21 +113,97 @@ template <typename Ftype>
 cublasStatus_t myCublasGemm(cublasHandle_t handle, cublasOperation_t transa, cublasOperation_t transb, int m, int n, int k, const Ftype *alpha, const Ftype *A, int lda, const Ftype *B, int ldb, const Ftype *beta, Ftype *C, int ldc);
 
 template <>
-cublasStatus_t myCublasGemm<double>(cublasHandle_t handle, cublasOperation_t transa, cublasOperation_t transb, int m, int n, int k, const double *alpha, const double *A, int lda, const double *B, int ldb, const double *beta, double *C, int ldc) {
+cublasStatus_t myCublasGemm<double>(cublasHandle_t handle, cublasOperation_t transa, cublasOperation_t transb, int m, int n, int k, const double *alpha, const double *A, int lda, const double *B, int ldb, const double *beta, double *C, int ldc)
+{
     return cublasDgemm(handle, transa, transb, m, n, k, alpha, A, lda, B, ldb, beta, C, ldc);
 }
 
 template <>
-cublasStatus_t myCublasGemm<float>(cublasHandle_t handle, cublasOperation_t transa, cublasOperation_t transb, int m, int n, int k, const float *alpha, const float *A, int lda, const float *B, int ldb, const float *beta, float *C, int ldc) {
+cublasStatus_t myCublasGemm<float>(cublasHandle_t handle, cublasOperation_t transa, cublasOperation_t transb, int m, int n, int k, const float *alpha, const float *A, int lda, const float *B, int ldb, const float *beta, float *C, int ldc)
+{
     return cublasSgemm(handle, transa, transb, m, n, k, alpha, A, lda, B, ldb, beta, C, ldc);
 }
 
 template <>
-cublasStatus_t myCublasGemm<cuComplex>(cublasHandle_t handle, cublasOperation_t transa, cublasOperation_t transb, int m, int n, int k, const cuComplex *alpha, const cuComplex *A, int lda, const cuComplex *B, int ldb, const cuComplex *beta, cuComplex *C, int ldc) {
+cublasStatus_t myCublasGemm<cuComplex>(cublasHandle_t handle, cublasOperation_t transa, cublasOperation_t transb, int m, int n, int k, const cuComplex *alpha, const cuComplex *A, int lda, const cuComplex *B, int ldb, const cuComplex *beta, cuComplex *C, int ldc)
+{
     return cublasCgemm(handle, transa, transb, m, n, k, alpha, A, lda, B, ldb, beta, C, ldc);
 }
 
 template <>
-cublasStatus_t myCublasGemm<cuDoubleComplex>(cublasHandle_t handle, cublasOperation_t transa, cublasOperation_t transb, int m, int n, int k, const cuDoubleComplex *alpha, const cuDoubleComplex *A, int lda, const cuDoubleComplex *B, int ldb, const cuDoubleComplex *beta, cuDoubleComplex *C, int ldc) {
+cublasStatus_t myCublasGemm<cuDoubleComplex>(cublasHandle_t handle, cublasOperation_t transa, cublasOperation_t transb, int m, int n, int k, const cuDoubleComplex *alpha, const cuDoubleComplex *A, int lda, const cuDoubleComplex *B, int ldb, const cuDoubleComplex *beta, cuDoubleComplex *C, int ldc)
+{
     return cublasZgemm(handle, transa, transb, m, n, k, alpha, A, lda, B, ldb, beta, C, ldc);
 }
+
+template <>
+cublasStatus_t myCublasGemm<doublecomplex>(cublasHandle_t handle, cublasOperation_t transa, cublasOperation_t transb, int m, int n, int k, const doublecomplex *alpha, const doublecomplex *A, int lda, const doublecomplex *B, int ldb, const doublecomplex *beta, doublecomplex *C, int ldc)
+{
+    // return cublasZgemm(handle, transa, transb, m, n, k, 
+    // alpha, A, lda, B, ldb, beta, C, ldc);
+    // cast doublecomplex to cuDoubleComplex
+    return cublasZgemm(
+        handle, transa, transb, m, n, k,
+        reinterpret_cast<const cuDoubleComplex *>(alpha),
+        reinterpret_cast<const cuDoubleComplex *>(A), lda,
+        reinterpret_cast<const cuDoubleComplex *>(B), ldb,
+        reinterpret_cast<const cuDoubleComplex *>(beta),
+        reinterpret_cast<cuDoubleComplex *>(C), ldc);
+    
+}
+
+template <>
+cusolverStatus_t myCusolverGetrf<doublecomplex>(
+    cusolverDnHandle_t handle, int m, int n, doublecomplex *A, int lda,
+    doublecomplex *Workspace, int *devIpiv, int *devInfo)
+{
+    // return cusolverDnZgetrf(handle, m, n, A, lda, Workspace, devIpiv, devInfo);
+    // cast doublecomplex to cuDoubleComplex
+    return cusolverDnZgetrf(
+        handle, m, n, reinterpret_cast<cuDoubleComplex *>(A), lda,
+        reinterpret_cast<cuDoubleComplex *>(Workspace), devIpiv, devInfo);
+}
+
+// now creating the wrappers for the other functions 
+template <>
+cublasStatus_t myCublasTrsm<doublecomplex>(cublasHandle_t handle,
+                                           cublasSideMode_t side, cublasFillMode_t uplo,
+                                           cublasOperation_t trans, cublasDiagType_t diag,
+                                           int m, int n,
+                                           const doublecomplex *alpha,
+                                           const doublecomplex *A, int lda,
+                                           doublecomplex *B, int ldb) {
+    // Your implementation here
+    // You can use cublasZtrsm function because it's for cuDoubleComplex type
+    return cublasZtrsm(handle, side, uplo, trans, diag, m, n, 
+                       reinterpret_cast<const cuDoubleComplex*>(alpha), 
+                       reinterpret_cast<const cuDoubleComplex*>(A), lda, 
+                       reinterpret_cast<cuDoubleComplex*>(B), ldb);
+}
+
+template <>
+cublasStatus_t myCublasScal<doublecomplex>(cublasHandle_t handle, int n, 
+                                           const doublecomplex *alpha, 
+                                           doublecomplex *x, int incx) {
+    // Your implementation here
+    // You can use cublasZscal function because it's for cuDoubleComplex type
+    return cublasZscal(handle, n, reinterpret_cast<const cuDoubleComplex*>(alpha), 
+                       reinterpret_cast<cuDoubleComplex*>(x), incx);
+}
+
+template <>
+cublasStatus_t myCublasAxpy<doublecomplex>(cublasHandle_t handle, int n, 
+                                           const doublecomplex *alpha, 
+                                           const doublecomplex *x, int incx, 
+                                           doublecomplex *y, int incy) {
+    // Your implementation here
+    // You can use cublasZaxpy function because it's for cuDoubleComplex type
+    return cublasZaxpy(handle, n, reinterpret_cast<const cuDoubleComplex*>(alpha), 
+                       reinterpret_cast<const cuDoubleComplex*>(x), incx, 
+                       reinterpret_cast<cuDoubleComplex*>(y), incy);
+}
+
+
+// cublasStatus_t myCublasScal<doublecomplex> 
+// cublasStatus_t myCublasAxpy<doublecomplex>
+// cublasStatus_t myCublasGemm<doublecomplex>

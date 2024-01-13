@@ -264,7 +264,7 @@ __device__ void scatterGPU_dev(
 // Atomic Scatter is need if I want to perform multiple Schur Complement
 //  update concurrently
 #ifdef ATOMIC_SCATTER
-            atomicAdd(&Dst[rowS2D[i] + lddst * colS2D[j]], -Src[i + ldsrc * j]);
+            atomicAddT<Ftype>(&Dst[rowS2D[i] + lddst * colS2D[j]], -Src[i + ldsrc * j]);
 #else
             Dst[rowS2D[i] + lddst * colS2D[j]] -= Src[i + ldsrc * j];
 #endif
@@ -415,8 +415,8 @@ int_t xLUstruct_t<Ftype>::dSchurComplementUpdateGPU(
 	    fflush(stdout);
 #endif	    
 
-            Ftype alpha = 1.0;
-            Ftype beta = 0.0;
+            Ftype alpha = one<Ftype>();
+            Ftype beta = zeroT<Ftype>();
             // cublasDgemm(handle, CUBLAS_OP_N, CUBLAS_OP_N,
             //             gemm_m, gemm_n, gemm_k, &alpha,
             //             lpanel.blkPtrGPU(iSt), lpanel.LDA(),
@@ -562,8 +562,8 @@ int_t xLUstruct_t<Ftype>::dSchurCompUpdatePartGPU(
     int gemm_m = lpanel.stRow(iEnd) - lpanel.stRow(iSt);
     int gemm_n = upanel.stCol(jEnd) - upanel.stCol(jSt);
     int gemm_k = supersize(k);
-    Ftype alpha = 1.0;
-    Ftype beta = 0.0;
+    Ftype alpha = one<Ftype>();
+    Ftype beta = zeroT<Ftype>();
 #ifndef NDEBUG
    // printf("m=%d, n=%d, k=%d\n", gemm_m, gemm_n, gemm_k);
 #endif
@@ -705,7 +705,7 @@ int_t xLUstruct_t<Ftype>::setLUstruct_GPU()
     int device_id = grid3d->iam % deviceCount;
     cudaSetDevice(device_id);
 
-    Ftype tRegion[5];
+    double tRegion[5];
     size_t useableGPUMem = getGPUMemPerProcs(grid3d->comm);
     /**
      *  Memory is divided into two parts data memory and buffer memory
@@ -874,7 +874,7 @@ int_t xLUstruct_t<Ftype>::setLUstruct_GPU()
     gpuErrchk(cudaMalloc(&A_gpu.xsup, (nsupers + 1) * sizeof(int_t)));
     gpuErrchk(cudaMemcpy(A_gpu.xsup, xsup, (nsupers + 1) * sizeof(int_t), cudaMemcpyHostToDevice));
 
-    Ftype tLsend, tUsend;
+    double tLsend, tUsend;
 #if 0
     tLsend = SuperLU_timer_();
     xupanelGPU_t<Ftype> *uPanelVec_GPU = copyUpanelsToGPU();
@@ -932,7 +932,7 @@ int_t xLUstruct_t<Ftype>::setLUstruct_GPU()
     
     tRegion[3] = SuperLU_timer_();
 
-    Ftype tcuMalloc=SuperLU_timer_();
+    double tcuMalloc=SuperLU_timer_();
 
     /* Sherry: where are these freed ?? */
     for (stream = 0; stream < A_gpu.numCudaStreams; stream++)
@@ -1037,7 +1037,7 @@ int_t xLUstruct_t<Ftype>::setLUstruct_GPU()
     fflush(stdout);
 #endif
 
-    Ftype tcuStream=SuperLU_timer_();
+    double tcuStream=SuperLU_timer_();
     
     for (stream = 0; stream < A_gpu.numCudaStreams; stream++)
     {
@@ -1047,7 +1047,7 @@ int_t xLUstruct_t<Ftype>::setLUstruct_GPU()
     tcuStream = SuperLU_timer_() - tcuStream;
     printf("Time to create cublas streams: %g\n", tcuStream);
 
-    Ftype tcuStreamCreate=SuperLU_timer_();
+    double tcuStreamCreate=SuperLU_timer_();
     for (stream = 0; stream < A_gpu.numCudaStreams; stream++)
     {
         cudaStreamCreate(&A_gpu.cuStreams[stream]);

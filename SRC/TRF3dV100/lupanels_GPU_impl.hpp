@@ -24,13 +24,14 @@ int checkArr(const T *A, const T *B, int n)
     double nrmA = 0;
     for (int i = 0; i < n; i++) {
         // For complex numbers, std::norm gives the squared magnitude.
-        nrmA += std::norm(A[i]);
+        nrmA += sqnorm(A[i]);
     }
     nrmA = std::sqrt(nrmA);
 
     for (int i = 0; i < n; i++) {
         // Use std::abs for both real and complex numbers to get the magnitude.
-        assert(std::abs(A[i] - B[i]) <= EPSILON * nrmA / n);
+        // assert(std::abs(A[i] - B[i]) <= EPSILON * nrmA / n);
+        assert(std::sqrt(sqnorm(A[i] - B[i])) <= EPSILON * nrmA / n);
     }
 
     return 0;
@@ -179,7 +180,7 @@ int_t xlpanel_t<T>::panelSolveGPU(cublasHandle_t handle, cudaStream_t cuStream,
         len -= nbrow(0);
     }
 
-    T alpha = 1.0;
+    T alpha = one<T>();
 
     cublasSetStream(handle, cuStream);
     cublasStatus_t cbstatus =
@@ -226,7 +227,7 @@ int_t xlpanel_t<T>::diagFactorCuSolver(int_t k,
                                      cusolverDnHandle_t cusolverH, cudaStream_t cuStream,
                                     T *dWork, int* dInfo,  // GPU pointers 
                                     T *dDiagBuf, int_t LDD, // GPU pointers
-                                    T thresh, int_t *xsup,
+                                    threshPivValType<T> thresh, int_t *xsup,
                                     superlu_dist_options_t *options,
                                     SuperLUStat_t *stat, int *info)
 {
@@ -254,7 +255,7 @@ int_t xupanel_t<T>::panelSolveGPU(cublasHandle_t handle, cudaStream_t cuStream,
     if (isEmpty())
         return 0;
 
-    T alpha = 1.0;
+    T alpha = one<T>();
     
     cublasSetStream(handle, cuStream);
     cublasStatus_t cbstatus =
