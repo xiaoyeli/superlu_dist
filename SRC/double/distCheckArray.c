@@ -1,4 +1,4 @@
-#pragma once 
+//#pragma once // warning: #pragma once in main file [-Wpragma-once-outside-header]
 /**
  * @file mpi_functions.c
  * @brief Functions for checking array equality in MPI communication

@@ -2516,7 +2516,7 @@ nsupers_i = CEILING( nsupers, grid->nprow ); /* Number of local block rows */
 
 
 
-int_t pdflatten_LDATA(superlu_dist_options_t *options, int_t n, dLUstruct_t * LUstruct,
+int pdflatten_LDATA(superlu_dist_options_t *options, int_t n, dLUstruct_t * LUstruct,
                            gridinfo_t *grid, SuperLUStat_t * stat)
 {
     Glu_persist_t *Glu_persist = LUstruct->Glu_persist;
@@ -2787,4 +2787,5 @@ int_t pdflatten_LDATA(superlu_dist_options_t *options, int_t n, dLUstruct_t * LU
 	Llu->Uinv_bc_offset = Uinv_bc_offset;
 	Llu->Uinv_bc_cnt = Uinv_bc_cnt;
 
-} // pdflatten_LDATA
+	return 0;
+} // end pdflatten_LDATA

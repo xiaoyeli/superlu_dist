@@ -9,16 +9,16 @@ The source code is distributed under BSD license, see the file License.txt
 at the top-level directory.
 */
 
+
+
 /*
  * -- Distributed SuperLU routine (version 9.0) --
- * Lawrence Berkeley National Lab, Georgia Institute of Technology,
- * November 5, 2023
+ * Lawrence Berkeley National Lab
+ * January 13, 2024
  * Last update:
  */
 #include "superlu_ddefs.h"
-//#include "TRF3dV100/superlu_summit.h"
 #include "superlu_defs.h"
-//#include "superlu_summit.h"
 #include "superlu_upacked.h"
 #include <stdbool.h>
 
@@ -91,9 +91,9 @@ pdgssvx3d_csc_batch(
 						  */
 		double **RHSptr, // array of pointers to dense RHS storage
 		int *ldRHS, // array of leading dimensions of RHS
-		double **ReqPtr, /* array of pointers to diagonal row scaling  vectors,
+		double **ReqPtr, /* array of pointers to diagonal row scaling vectors,
 				     each of size M   */
-		double **CeqPtr, /* array of pointers to diagonal column scaling  vectors,
+		double **CeqPtr, /* array of pointers to diagonal column scaling vectors,
 				    each of size N    */
 		int **RpivPtr, /* array of pointers to row permutation vectors , each of size M */
 		int **CpivPtr, /* array of pointers to column permutation vectors , each of size N */
@@ -126,7 +126,6 @@ pdgssvx3d_csc_batch(
 
      5. Solve (2 designs)
              5.1 using LU_big -- requires RHS to be in contiguous memory
-
 	         compute level set. Leverage B-to-X with an internal copy.
         (OR) 5.2 loop through individual LU -- may lose some data-parallel opportunity
     */
@@ -168,17 +167,12 @@ pdgssvx3d_csc_batch(
 #endif
 
     int colequ, Equil, factored, job, notran, rowequ, need_value;
-    int_t i, iinfo, j, k, irow, permc_spec;
-    int_t nnz_loc, m_loc, fst_row, icol;
-    int iam;
+    int_t i, iinfo, j, k, irow;
     int ldx; /* LDA for matrix X (local). */
     double *C, *R; //*C1, *R1, amax, anorm, colcnd, rowcnd;
-    //double *X, *b_col, *b_work, *x_col;
     float GA_mem_use;	/* memory usage by global A */
     float dist_mem_use; /* memory usage during distribution */
     superlu_dist_mem_usage_t num_mem_usage, symb_mem_usage;
-    float flinfo; /* track memory usage of parallel symbolic factorization */
-    bool Solve3D = true;
     int d; /* index into each matrix in the batch */
 
     double t = SuperLU_timer_();
@@ -256,6 +250,7 @@ pdgssvx3d_csc_batch(
     j = 0;   /* running sum of total nnz */
     row = 0;
     col = 0;
+    double alpha = -1.0, beta = 1.0;
     
     for (d = 0; d < batchCount; ++d) {
 
@@ -305,7 +300,7 @@ pdgssvx3d_csc_batch(
 	// NEED TO SAVE A COPY OF RHS ??
 	
 	rowequ = ( DiagScale[d] == ROW || DiagScale[d] == BOTH );
-	printf("  before transform RHS: rowequ %d\n", rowequ);
+	//printf("  before transform RHS: rowequ %d\n", rowequ);
 	if ( rowequ ) { /* Scale RHS by R[] */
 	    R = ReqPtr[d];
 	    rhs = RHSptr[d]; // first RHS
@@ -314,10 +309,12 @@ pdgssvx3d_csc_batch(
 		rhs += ldRHS[d]; /* move to next RHS */
 	    }
 	}
-
+	
+#if ( DEBUGlevel>=1 )
 	printf("System %d, next row %d, next col %d, next j %d\n", d, row, col, j);
 	//Printdouble5("big-RHS", m, RHSptr[d]);
-	
+#endif
+
 	rhs = RHSptr[d]; // first RHS
 	for (k = 0; k < nrhs; ++k) {
 	    for (i = 0; i < m; ++i) /* permute RHS by Pc*Pr (out-of-place) */
@@ -382,7 +379,6 @@ pdgssvx3d_csc_batch(
 
     if (!(berr = doubleCalloc_dist (nrhs))) ABORT ("Malloc fails for berr[].");
 
-    
     /*---------------------
      **** Call the linear equation solver
      ----------------------*/
@@ -398,13 +394,15 @@ pdgssvx3d_csc_batch(
     pdgssvx3d (&options_big, &A_big, &ScalePermstruct, b, m_big, nrhs, &grid,
                &LUstruct, &SOLVEstruct, berr, stat, info);
 
+#if (PRNTlevel >= 1)
     printf("\tBIG system: berr[0] %e\n", berr[0]);
     printf("after pdgssvx3d: DiagScale %d\n", ScalePermstruct.DiagScale);
     //PrintInt10("after pdgssvx3d: ScalePermstruct.perm_c", (int_t) m_big, ScalePermstruct.perm_c);
     //Printdouble5("big-B-solution", m_big, b);
+#endif
 
     if ( *info ) {  /* Something is wrong */
-        if ( iam==0 ) {
+        if ( grid3d->iam==0 ) {
 	    printf("ERROR: INFO = %d returned from pdgssvx3d()\n", *info);
 	    fflush(stdout);
 	}
@@ -458,10 +456,8 @@ pdgssvx3d_csc_batch(
 		b[k*m_big + d*m + perm_c[perm_r[i]]] = RHSptr[d][k*ldRHS[d] + i];
 	    }
 	    
-	    //asp_dgemv_dist("N", -1.0, A, x, 1, 1.0, &(RHSptr[d][k*m]), 1);
-	    sp_dgemv_dist("N", -1.0, A, x, 1, 1.0, &b[k*m_big + d*m], 1);
+	    sp_dgemv_dist("N", alpha, A, x, 1, beta, &b[k*m_big + d*m], 1);
 	    
-	    //for (i = 0; i < m; ++i) rn = SUPERLU_MAX( rn, fabs(RHSptr[d][k*m + i]) );
 	    for (i = 0; i < m; ++i) rn = SUPERLU_MAX( rn, fabs(b[k*m_big + d*m + i]) );
 	    Berrs[d][k] = rn / bn;
 	    x += ldX[d]; /* move to next x */
@@ -471,7 +467,6 @@ pdgssvx3d_csc_batch(
 	 * original system before equilibration: x <= C*z
 	 */
 	colequ = ( DiagScale[d] == COL || DiagScale[d] == BOTH );
-	printf("\tcolequ %d\n", colequ); fflush(stdout);
 	if ( colequ ) {
 	    C = CeqPtr[d];
 	    x = Xptr[d];

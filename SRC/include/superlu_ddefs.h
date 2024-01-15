@@ -507,8 +507,9 @@ extern void
 dCompRow_to_CompCol_dist(int_t, int_t, int_t, double *, int_t *, int_t *,
                          double **, int_t **, int_t **);
 extern void
-dCompCol_to_CompRow_dist(int_t, int_t, int_t, double *a, int_t *, int_t *,
-                         double **, int_t **, int_t **);
+dCompCol_to_CompRow_dist(int_t m, int_t n, int_t nnz,
+                         double *a, int_t *colptr, int_t *rowind,
+                         double **at, int_t **rowptr, int_t **colind);
 extern int
 pdCompRow_loc_to_CompCol_global(int_t, SuperMatrix *, gridinfo_t *,
 	 		        SuperMatrix *);
@@ -957,6 +958,8 @@ extern void dScaleAddId_CompRowLoc_Matrix_dist(SuperMatrix *, double);
 extern void dScaleAdd_CompRowLoc_Matrix_dist(SuperMatrix *, SuperMatrix *, double);
 extern void dZeroLblocks(int, int, gridinfo_t *, dLUstruct_t *);
 extern void dZeroUblocks(int iam, int n, gridinfo_t *, dLUstruct_t *);
+extern double dMaxAbsLij(int iam, int n, Glu_persist_t *,
+		 dLUstruct_t *, gridinfo_t *);
 extern void    dfill_dist (double *, int_t, double);
 extern void    dinf_norm_error_dist (int_t, int_t, double*, int_t,
                                      double*, int_t, gridinfo_t*);
@@ -1541,7 +1544,7 @@ extern int_t checkRecvUDiag(int_t k, commRequests_t *comReqs,
 extern int_t checkRecvLDiag(int_t k, commRequests_t *comReqs, gridinfo_t *, SCT_t *);
 
 
-extern int_t pdflatten_LDATA(superlu_dist_options_t *options, int_t n, dLUstruct_t * LUstruct,
+extern int pdflatten_LDATA(superlu_dist_options_t *options, int_t n, dLUstruct_t * LUstruct,
                            gridinfo_t *grid, SuperLUStat_t * stat);
 
 extern int_t
@@ -1580,27 +1583,25 @@ extern int_t ancestorFactor(
 #endif
 
     /* Batch interface */
-extern int pdgssvx3d_csc_batch(superlu_dist_options_t *options,	int batchCount,
-			       int M, int N, int NNZ, int NRHS,
-			       handle_t  *SparseMatrix_handles,
-			       double **RHSptr,	int *ldRHS,
-			       double **ReqPtr,	double **CeqPtr,
-			       int **RpivPtr, int **CpivPtr, DiagScale_t *, handle_t *F,
-			       double **Xptr, int *ldX, double **Berr,
-			       gridinfo3d_t *grid3d, SuperLUStat_t *, int *info
-			       //DeviceContext context 
-			       );
-extern int dequil_batch(superlu_dist_options_t *options, int batchCount,
-			int m, int n, handle_t  *SparseMatrix_handles,
-			double **ReqPtr, double **CeqPtr, DiagScale_t *DiagScale
-			//    DeviceContext context
-			);
-extern int dpivot_batch(superlu_dist_options_t *options, int batchCount,
-			int m, int n, handle_t *SparseMatrix_handles,
-			double **ReqPtr, double **CeqPtr, DiagScale_t *DiagScale,
-			int **RpivPtr
-			//    DeviceContext context
-			);
+extern int pdgssvx3d_csc_batch(
+		superlu_dist_options_t *, int batchCount, int m, int n,	int nnz,
+		int nrhs, handle_t *, double **RHSptr, int *ldRHS,
+		double **ReqPtr, double **CeqPtr,
+		int **RpivPtr, int **CpivPtr, DiagScale_t *DiagScale,
+		handle_t *F, double **Xptr, int *ldX, double **Berrs, 
+		gridinfo3d_t *grid3d, SuperLUStat_t *stat, int *info
+		//DeviceContext context /* device context including queues, events, dependencies */
+		);
+extern int dequil_batch(
+    superlu_dist_options_t *, int batchCount, int m, int n, handle_t *,
+    double **ReqPtr, double **CeqPtr, DiagScale_t *
+    //    DeviceContext context /* device context including queues, events, dependencies */
+    );
+extern int dpivot_batch(
+    superlu_dist_options_t *, int batchCount, int m, int n, handle_t *,
+    double **ReqPtr, double **CeqPtr, DiagScale_t *, int **RpivPtr
+    //    DeviceContext context /* device context including queues, events, dependencies */
+    );
     
 /*== end 3D prototypes ===================*/
 

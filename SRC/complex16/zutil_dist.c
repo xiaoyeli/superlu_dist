@@ -106,6 +106,45 @@ zCompRow_to_CompCol_dist(int_t m, int_t n, int_t nnz,
     SUPERLU_FREE(marker);
 }
 
+/*! \brief Convert a compressed column storage into a compressed row storage.
+ */
+void
+zCompCol_to_CompRow_dist(int_t m, int_t n, int_t nnz,
+                         doublecomplex *a, int_t *colptr, int_t *rowind,
+                         doublecomplex **at, int_t **rowptr, int_t **colind)
+{
+    int_t i, j, row, relpos;
+    int_t *marker;
+
+    /* Allocate storage for another copy of the matrix. */
+    *at = (doublecomplex *) doublecomplexMalloc_dist(nnz);
+    *colind = intMalloc_dist(nnz);
+    *rowptr = intMalloc_dist(m+1);
+    marker = intCalloc_dist(m);
+
+    /* Get counts of each row of A, and set up rowpointers */
+    for (i = 0; i < n; ++i) /* loop through each column */
+	for (j = colptr[i]; j < colptr[i+1]; ++j) ++marker[rowind[j]];
+    (*rowptr)[0] = 0;
+    for (j = 0; j < m; ++j) {
+	(*rowptr)[j+1] = (*rowptr)[j] + marker[j];
+	marker[j] = (*rowptr)[j]; /* points to the start of each row */
+    }
+
+    /* Transfer the matrix into the compressed row storage. */
+    for (i = 0; i < n; ++i) { /* loop though each column */
+	for (j = colptr[i]; j < colptr[i+1]; ++j) {
+	    row = rowind[j];
+	    relpos = marker[row];
+	    (*colind)[relpos] = i;
+	    (*at)[relpos] = a[j];
+	    ++marker[row]; /* move pointer to next empty location */
+	}
+    }
+
+    SUPERLU_FREE(marker);
+} /* end zCompCol_to_CompRow_dist */
+
 /*! \brief Copy matrix A into matrix B. */
 void
 zCopy_CompCol_Matrix_dist(SuperMatrix *A, SuperMatrix *B)
@@ -490,10 +529,11 @@ zGenXtrue_dist(int_t n, int_t nrhs, doublecomplex *x, int_t ldx)
     double exponent, tau; /* See TOMS paper on ItRef (LAWN165); testing code:
 			     Codes/UCB-itref-xblas-etc/xiaoye/itref/driver.c  */
     double r;
+    double xmax = 0.0, xmin = 1.0e6;
 
     exponent = (double)rand() / (double)((unsigned)RAND_MAX + 1); /* uniform in [0,1) */
 #if 1
-    tau = pow(2.0, 12.0 * exponent);
+    tau = pow(2.0, 12.0 * exponent); // 24.0
 #else
     tau = 5.0;
 #endif
@@ -512,9 +552,19 @@ zGenXtrue_dist(int_t n, int_t nrhs, doublecomplex *x, int_t ldx)
 	        x[i + j*ldx].r = 2.0 + (double)(i+1.)/n;
 	        x[i + j*ldx].i = 2.0;
             }
+       	  xmax = SUPERLU_MAX( xmax, slud_z_abs1(&x[i + j*ldx]) );
+	  xmin = SUPERLU_MIN( xmin, slud_z_abs1(&x[i + j*ldx]) );
+	} /* for i ... */
+#if ( PRNTlevel>=1 )
+	int iam;
+	MPI_Comm_rank(MPI_COMM_WORLD, &iam);
+	if (iam==0) {
+	  printf(".. zGenXtrue: xmax %e, xmin %e\n", xmax, xmin);
+	  fflush(stdout);
 	}
-    }
-}
+#endif	
+    } /* for j ... */
+} /* end zGenXtrue_dist */
 
 /*! \brief Let rhs[i] = sum of i-th row of A, so the solution vector is all 1's
  */
@@ -583,6 +633,47 @@ int file_PrintDoublecomplex(FILE *fp, char *name, int_t len, doublecomplex *x)
 	fprintf(fp, "\t" IFMT "\t%.4f\t%.4f\n", i, x[i].r, x[i].i);
     return 0;
 }
+
+/*! \brief Find max(abs(L(i,j)))
+ */
+double zMaxAbsLij(int iam, int n, Glu_persist_t *Glu_persist,
+		 zLUstruct_t *LUstruct, gridinfo_t *grid)
+{
+    register int extra, gb, j, lb, nsupc, nsupr, ncb;
+    register int_t k, mycol, r;
+    zLocalLU_t *Llu = LUstruct->Llu;
+    int_t *xsup = Glu_persist->xsup;
+    int_t *index;
+    doublecomplex *nzval;
+    int nsupers = Glu_persist->supno[n-1] + 1;
+    double lmax = 0.0, lmax_loc = 0.0;
+
+    ncb = nsupers / grid->npcol;
+    extra = nsupers % grid->npcol;
+    mycol = MYCOL( iam, grid );
+    if ( mycol < extra ) ++ncb;
+    for (lb = 0; lb < ncb; ++lb) {
+	index = Llu->Lrowind_bc_ptr[lb];
+	if ( index ) { /* Not an empty column */
+	    nzval = Llu->Lnzval_bc_ptr[lb];
+	    nsupr = index[1];
+	    gb = lb * grid->npcol + mycol;
+	    nsupc = SuperSize( gb );
+	    for (j = 0; j < nsupc; ++j) {
+                for (r = 0; r < nsupr; ++r) {
+		    lmax_loc = SUPERLU_MAX( lmax_loc, slud_z_abs1(&nzval[r + j*nsupr]) );
+		}
+            }
+	}
+    } /* end for */
+
+    /* Reduce max(abs(Uij)) from all processes, to process 0 */
+    MPI_Reduce (&lmax_loc, &lmax, 1, MPI_DOUBLE, MPI_MAX, 0, grid->comm);
+
+    /* Reduce sum of the row counts from each process. */
+
+    return (lmax);
+} /* end zMaxAbsLij */
 
 /*! \brief Print the blocks in the factored matrix L.
  */

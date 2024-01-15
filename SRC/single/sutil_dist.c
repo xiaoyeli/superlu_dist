@@ -107,12 +107,51 @@ sCompRow_to_CompCol_dist(int_t m, int_t n, int_t nnz,
     SUPERLU_FREE(marker);
 }
 
+/*! \brief Convert a compressed column storage into a compressed row storage.
+ */
+void
+sCompCol_to_CompRow_dist(int_t m, int_t n, int_t nnz,
+                         float *a, int_t *colptr, int_t *rowind,
+                         float **at, int_t **rowptr, int_t **colind)
+{
+    int_t i, j, row, relpos;
+    int_t *marker;
+
+    /* Allocate storage for another copy of the matrix. */
+    *at = (float *) floatMalloc_dist(nnz);
+    *colind = intMalloc_dist(nnz);
+    *rowptr = intMalloc_dist(m+1);
+    marker = intCalloc_dist(m);
+
+    /* Get counts of each row of A, and set up rowpointers */
+    for (i = 0; i < n; ++i) /* loop through each column */
+	for (j = colptr[i]; j < colptr[i+1]; ++j) ++marker[rowind[j]];
+    (*rowptr)[0] = 0;
+    for (j = 0; j < m; ++j) {
+	(*rowptr)[j+1] = (*rowptr)[j] + marker[j];
+	marker[j] = (*rowptr)[j]; /* points to the start of each row */
+    }
+
+    /* Transfer the matrix into the compressed row storage. */
+    for (i = 0; i < n; ++i) { /* loop though each column */
+	for (j = colptr[i]; j < colptr[i+1]; ++j) {
+	    row = rowind[j];
+	    relpos = marker[row];
+	    (*colind)[relpos] = i;
+	    (*at)[relpos] = a[j];
+	    ++marker[row]; /* move pointer to next empty location */
+	}
+    }
+
+    SUPERLU_FREE(marker);
+} /* end sCompCol_to_CompRow_dist */
+
 /*! \brief Copy matrix A into matrix B. */
 void
 sCopy_CompCol_Matrix_dist(SuperMatrix *A, SuperMatrix *B)
 {
     NCformat *Astore, *Bstore;
-    int_t     ncol, nnz, i;
+    int_t    ncol, nnz, i;
 
     B->Stype = A->Stype;
     B->Dtype = A->Dtype;
@@ -394,97 +433,6 @@ void sScaleAdd_CompRowLoc_Matrix_dist(SuperMatrix *A, SuperMatrix *B, float c)
 }
 /**** end utilities added for SUNDIALS ****/
 
-/**** end additions for SUNDIALS ****/
-
-/*! \brief Find max(abs(L(i,j)))
- */
-float sMaxAbsLij(int iam, int n, Glu_persist_t *Glu_persist,
-		 sLUstruct_t *LUstruct, gridinfo_t *grid)
-{
-    register int extra, gb, j, lb, nsupc, nsupr, ncb;
-    register int_t k, mycol, r;
-    sLocalLU_t *Llu = LUstruct->Llu;
-    int_t *xsup = Glu_persist->xsup;
-    int_t *index;
-    float *nzval;
-    int nsupers = Glu_persist->supno[n-1] + 1;
-    float lmax = 0.0, lmax_loc = 0.0;
-
-    ncb = nsupers / grid->npcol;
-    extra = nsupers % grid->npcol;
-    mycol = MYCOL( iam, grid );
-    if ( mycol < extra ) ++ncb;
-    for (lb = 0; lb < ncb; ++lb) {
-	index = Llu->Lrowind_bc_ptr[lb];
-	if ( index ) { /* Not an empty column */
-	    nzval = Llu->Lnzval_bc_ptr[lb];
-	    nsupr = index[1];
-	    gb = lb * grid->npcol + mycol;
-	    nsupc = SuperSize( gb );
-	    for (j = 0; j < nsupc; ++j) {
-                for (r = 0; r < nsupr; ++r) {
-		    lmax_loc = SUPERLU_MAX(lmax_loc, fabs(nzval[r + j*nsupr]));
-		}
-            }
-	}
-    } /* end for */
-
-    /* Reduce max(abs(Uij)) from all processes, to process 0 */
-    MPI_Reduce (&lmax_loc, &lmax, 1, MPI_FLOAT, MPI_MAX, 0, grid->comm);
-
-    /* Reduce sum of the row counts from each process. */
-
-    return (lmax);
-} /* sMaxAbsLij */
-
-/*! \brief Find max(abs(U(i,j)))
- */
-float sMaxAbsUij(int iam, int n, Glu_persist_t *Glu_persist,
-		 sLUstruct_t *LUstruct, gridinfo_t *grid)
-{
-    sLocalLU_t *Llu = LUstruct->Llu;
-    register int c, extra, jb, k, lb, len, nb, nrb, nsupc;
-    register int myrow, r, j, nsupers;
-    int_t *xsup = Glu_persist->xsup;
-    int_t *index;
-    float *nzval;
-    float umax = 0.0, umax_loc = 0.0;
-
-    nsupers = Glu_persist->supno[n-1] + 1;
-    nrb = nsupers / grid->nprow;
-    extra = nsupers % grid->nprow;
-    myrow = MYROW( iam, grid );
-    if ( myrow < extra ) ++nrb;
-
-    // Sherry: Can also compute the maximum row count ...
-    for (lb = 0; lb < nrb; ++lb) {
-	index = Llu->Ufstnz_br_ptr[lb];
-	if ( index ) { /* Not an empty block row */
-	    nzval = Llu->Unzval_br_ptr[lb];
-	    nb = index[0]; /* number of blocks */
-	    r  = 0;
-	    for (c = 0, k = BR_HEADER; c < nb; ++c) {
-	        jb = index[k];    /* block number */
-		len = index[k+1]; /* number of nonzeros in the block */
-		nsupc = SuperSize( jb );
-		for (j = r; j < r + len; ++j) 
-		    umax_loc = SUPERLU_MAX(umax_loc, fabs(nzval[j]));
-		k += UB_DESCRIPTOR + nsupc;
-		r += len;
-	    }
-	}
-    }
-    
-    /* Reduce max(abs(Uij)) from all processes, to process 0 */
-    MPI_Reduce (&umax_loc, &umax, 1, MPI_FLOAT, MPI_MAX, 0, grid->comm);
-
-    /* Reduce sum of the row counts from each process. */
-
-    return (umax);
-
-} /* sMaxAbsUij */
-
-
 /*! \brief Allocate storage in ScalePermstruct */
 void sScalePermstructInit(const int_t m, const int_t n,
                          sScalePermstruct_t *ScalePermstruct)
@@ -546,7 +494,7 @@ int sDeAllocLlu_3d(int_t n, sLUstruct_t * LUstruct, gridinfo3d_t* grid3d)
     nsupers = (LUstruct->Glu_persist)->supno[n-1] + 1;
 
     nbc = CEILING(nsupers, grid3d->npcol);
-    for (i = 0; i < nbc; ++i) 
+    for (i = 0; i < nbc; ++i)
 	if ( Llu->Lrowind_bc_ptr[i] ) {
 	    SUPERLU_FREE (Llu->Lrowind_bc_ptr[i]);
 	    SUPERLU_FREE (Llu->Lnzval_bc_ptr[i]);
@@ -571,51 +519,40 @@ int sDeAllocLlu_3d(int_t n, sLUstruct_t * LUstruct, gridinfo3d_t* grid3d)
     return 0;
 } /* sDeAllocLlu_3d */
 
+
 /**** Other utilities ****/
 void
 sGenXtrue_dist(int_t n, int_t nrhs, float *x, int_t ldx)
 {
     int  i, j;
-    double exponent, tau; /* See TOMS paper on ItRef (LAWN165); testing code: 
+    double exponent, tau; /* See TOMS paper on ItRef (LAWN165); testing code:
 			     Codes/UCB-itref-xblas-etc/xiaoye/itref/driver.c  */
     double r;
     float xmax = 0.0, xmin = 1.0e6;
 
-#if 0    
-    // NEED TO REMOVE THE FOLLOWING
-    for (j = 0; j < nrhs; ++j) {
-	for (i = 0; i < n; ++i) {
-	  x[i + j*ldx] = 1.0;
-	}
-    }
-    return;
-    /////////////////////////////
-#endif
-    
     exponent = (double)rand() / (double)((unsigned)RAND_MAX + 1); /* uniform in [0,1) */
 #if 1
-    tau = pow(2.0, 12.0 * exponent);  // 24.0
+    tau = pow(2.0, 12.0 * exponent); // 24.0
 #else
     tau = 5.0;
 #endif
     //printf("new dGenXtrue, tau %e\n", tau);
-    
+
     r = (double)rand() / (double)((unsigned)RAND_MAX + 1); /* uniform in [0,1) */
     r = r + 0.5; /* uniform in (0.5, 1.5) */
 
     for (j = 0; j < nrhs; ++j) {
-        xmax = 0.0, xmin = 1.0e6;
 	for (i = 0; i < n; ++i) {
 #if 1
-	  x[i + j*ldx] = pow(tau, - ((double)i / (n-1))) * r;
+	//   x[i + j*ldx] = (double) pow(tau, - ((double)i / (n-1))) * r;
 
-	  //if (i % 2) x[i + j*ldx] = 1.0; else x[i + j*ldx] = -1.0;
+	  if (i % 2) x[i + j*ldx] = 1.0; else x[i + j*ldx] = -1.0;
 #else
-	  x[i + j*ldx] = rand() / (double)((unsigned)RAND_MAX + 1); /* uniform in [0,1) */
+	  x[i + j*ldx] = (double)rand() / (double)((unsigned)RAND_MAX + 1); /* uniform in [0,1) */
 #endif
-	  xmax = SUPERLU_MAX( xmax, x[i + j*ldx] );
+       	  xmax = SUPERLU_MAX( xmax, x[i + j*ldx] );
 	  xmin = SUPERLU_MIN( xmin, x[i + j*ldx] );
-	}
+	} /* for i ... */
 #if ( PRNTlevel>=1 )
 	int iam;
 	MPI_Comm_rank(MPI_COMM_WORLD, &iam);
@@ -624,8 +561,8 @@ sGenXtrue_dist(int_t n, int_t nrhs, float *x, int_t ldx)
 	  fflush(stdout);
 	}
 #endif	
-    }
-}
+    } /* for j ... */
+} /* end sGenXtrue_dist */
 
 /*! \brief Let rhs[i] = sum of i-th row of A, so the solution vector is all 1's
  */
@@ -676,12 +613,12 @@ void sinf_norm_error_dist(int_t n, int_t nrhs, float *x, int_t ldx,
 
 void Printfloat5(char *name, int_t len, float *x)
 {
-    register int i;
+    register int_t i;
 
     printf("%10s:", name);
     for (i = 0; i < len; ++i) {
-	if ( i % 5 == 0 ) printf("\n[%d-%d] ",  i, i+4);
-	printf("%14e", x[i]);
+	if ( i % 5 == 0 ) printf("\n[%d-%d] ", (int) i, (int) i+4);
+	printf("%20.16e ", x[i]);
     }
     printf("\n\n");
 }
@@ -698,6 +635,47 @@ int file_Printfloat5(FILE *fp, char *name, int_t len, float *x)
     fprintf(fp, "\n");
     return 0;
 }
+
+/*! \brief Find max(abs(L(i,j)))
+ */
+float sMaxAbsLij(int iam, int n, Glu_persist_t *Glu_persist,
+		 sLUstruct_t *LUstruct, gridinfo_t *grid)
+{
+    register int extra, gb, j, lb, nsupc, nsupr, ncb;
+    register int_t k, mycol, r;
+    sLocalLU_t *Llu = LUstruct->Llu;
+    int_t *xsup = Glu_persist->xsup;
+    int_t *index;
+    float *nzval;
+    int nsupers = Glu_persist->supno[n-1] + 1;
+    float lmax = 0.0, lmax_loc = 0.0;
+
+    ncb = nsupers / grid->npcol;
+    extra = nsupers % grid->npcol;
+    mycol = MYCOL( iam, grid );
+    if ( mycol < extra ) ++ncb;
+    for (lb = 0; lb < ncb; ++lb) {
+	index = Llu->Lrowind_bc_ptr[lb];
+	if ( index ) { /* Not an empty column */
+	    nzval = Llu->Lnzval_bc_ptr[lb];
+	    nsupr = index[1];
+	    gb = lb * grid->npcol + mycol;
+	    nsupc = SuperSize( gb );
+	    for (j = 0; j < nsupc; ++j) {
+                for (r = 0; r < nsupr; ++r) {
+		    lmax_loc = SUPERLU_MAX(lmax_loc, fabs(nzval[r + j*nsupr]));
+		}
+            }
+	}
+    } /* end for */
+
+    /* Reduce max(abs(Uij)) from all processes, to process 0 */
+    MPI_Reduce (&lmax_loc, &lmax, 1, MPI_FLOAT, MPI_MAX, 0, grid->comm);
+
+    /* Reduce sum of the row counts from each process. */
+
+    return (lmax);
+} /* end sMaxAbsLij */
 
 /*! \brief Print the blocks in the factored matrix L.
  */
@@ -879,6 +857,10 @@ void sDumpLblocks(int iam, int_t nsupers, gridinfo_t *grid,
 } /* sDumpLblocks */
 
 
+
+
+
+
 /*! \brief Print the blocks in the factored matrix U.
  */
 void sPrintUblocks(int iam, int_t nsupers, gridinfo_t *grid,
@@ -948,7 +930,7 @@ void sZeroUblocks(int iam, int n, gridinfo_t *grid, sLUstruct_t *LUstruct)
 	    }
 	}
     }
-} /* end sZeroUlocks */
+} /* end sZeroUblocks */
 
 int
 sprint_gsmv_comm(FILE *fp, int_t m_loc, psgsmv_comm_t *gsmv_comm,

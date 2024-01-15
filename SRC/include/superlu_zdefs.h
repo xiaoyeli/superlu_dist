@@ -506,6 +506,10 @@ zCreate_CompRowLoc_Matrix_dist(SuperMatrix *, int_t, int_t, int_t, int_t,
 extern void
 zCompRow_to_CompCol_dist(int_t, int_t, int_t, doublecomplex *, int_t *, int_t *,
                          doublecomplex **, int_t **, int_t **);
+extern void
+zCompCol_to_CompRow_dist(int_t m, int_t n, int_t nnz,
+                         doublecomplex *a, int_t *colptr, int_t *rowind,
+                         doublecomplex **at, int_t **rowptr, int_t **colind);
 extern int
 pzCompRow_loc_to_CompCol_global(int_t, SuperMatrix *, gridinfo_t *,
 	 		        SuperMatrix *);
@@ -956,6 +960,8 @@ extern void zScaleAddId_CompRowLoc_Matrix_dist(SuperMatrix *, doublecomplex);
 extern void zScaleAdd_CompRowLoc_Matrix_dist(SuperMatrix *, SuperMatrix *, doublecomplex);
 extern void zZeroLblocks(int, int, gridinfo_t *, zLUstruct_t *);
 extern void zZeroUblocks(int iam, int n, gridinfo_t *, zLUstruct_t *);
+extern double zMaxAbsLij(int iam, int n, Glu_persist_t *,
+		 zLUstruct_t *, gridinfo_t *);
 extern void    zfill_dist (doublecomplex *, int_t, doublecomplex);
 extern void    zinf_norm_error_dist (int_t, int_t, doublecomplex*, int_t,
                                      doublecomplex*, int_t, gridinfo_t*);
@@ -1095,6 +1101,9 @@ extern int zcreate_matrix_postfix3d(SuperMatrix *A, int nrhs, doublecomplex **rh
                            FILE *fp, char * postfix, gridinfo3d_t *grid3d);
 extern int zcreate_block_diag_3d(SuperMatrix *A, int batchCount, int nrhs, doublecomplex **rhs,
 				 int *ldb, doublecomplex **x, int *ldx,
+				 FILE *fp, char * postfix, gridinfo3d_t *grid3d);
+extern int zcreate_batch_systems(handle_t *SparseMatrix_handles, int batchCount,
+				 int nrhs, doublecomplex **rhs, int *ldb, doublecomplex **x, int *ldx,
 				 FILE *fp, char * postfix, gridinfo3d_t *grid3d);
 
 /* Matrix distributed in NRformat_loc in 3D process grid. It converts
@@ -1537,7 +1546,7 @@ extern int_t checkRecvUDiag(int_t k, commRequests_t *comReqs,
 extern int_t checkRecvLDiag(int_t k, commRequests_t *comReqs, gridinfo_t *, SCT_t *);
 
 
-extern int_t pzflatten_LDATA(superlu_dist_options_t *options, int_t n, zLUstruct_t * LUstruct,
+extern int pzflatten_LDATA(superlu_dist_options_t *options, int_t n, zLUstruct_t * LUstruct,
                            gridinfo_t *grid, SuperLUStat_t * stat);
 
 extern int_t
@@ -1575,6 +1584,27 @@ extern int_t ancestorFactor(
 );
 #endif
 
+    /* Batch interface */
+extern int pzgssvx3d_csc_batch(
+		superlu_dist_options_t *, int batchCount, int m, int n,	int nnz,
+		int nrhs, handle_t *, doublecomplex **RHSptr, int *ldRHS,
+		double **ReqPtr, double **CeqPtr,
+		int **RpivPtr, int **CpivPtr, DiagScale_t *DiagScale,
+		handle_t *F, doublecomplex **Xptr, int *ldX, double **Berrs, 
+		gridinfo3d_t *grid3d, SuperLUStat_t *stat, int *info
+		//DeviceContext context /* device context including queues, events, dependencies */
+		);
+extern int zequil_batch(
+    superlu_dist_options_t *, int batchCount, int m, int n, handle_t *,
+    double **ReqPtr, double **CeqPtr, DiagScale_t *
+    //    DeviceContext context /* device context including queues, events, dependencies */
+    );
+extern int zpivot_batch(
+    superlu_dist_options_t *, int batchCount, int m, int n, handle_t *,
+    double **ReqPtr, double **CeqPtr, DiagScale_t *, int **RpivPtr
+    //    DeviceContext context /* device context including queues, events, dependencies */
+    );
+    
 /*== end 3D prototypes ===================*/
 
 extern doublecomplex *zready_x;

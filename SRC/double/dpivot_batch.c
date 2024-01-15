@@ -9,6 +9,8 @@ The source code is distributed under BSD license, see the file License.txt
 at the top-level directory.
 */
 
+
+
 /*
  * -- Distributed SuperLU routine (version 9.0) --
  * Lawrence Berkeley National Lab
@@ -33,9 +35,12 @@ at the top-level directory.
  * @param[in,out] RpivPtr pointers to row permutation vectors for each matrix, each of size m
  *     On exit, each RpivPtr[] is applied to each matrix
  *
+ * Return value:
+ *     0,  success
+ *     -1, invalid RowPerm option; an Identity perm_r[] is returned
+ *     d, indicates that the d-th matrix is the first one in the batch encountering error
  * </pre>
  */
-
 int
 dpivot_batch(
     superlu_dist_options_t *options, /* options for algorithm choices and algorithm parameters */
@@ -45,16 +50,16 @@ dpivot_batch(
     handle_t  *SparseMatrix_handles, /* array of sparse matrix handles,
 				      * of size 'batchCount', each pointing to the actual storage
 				      */
-    double **ReqPtr, /* array of pointers to diagonal row scaling  vectors,
+    double **ReqPtr, /* array of pointers to diagonal row scaling vectors,
 			each of size M   */
-    double **CeqPtr, /* array of pointers to diagonal column scaling  vectors,
+    double **CeqPtr, /* array of pointers to diagonal column scaling vectors,
 			each of size N    */
     DiagScale_t *DiagScale, /* How equilibration is done for each matrix. */
     int **RpivPtr /* array of pointers to row permutation vectors , each of size M */
     //    DeviceContext context /* device context including queues, events, dependencies */
 		  )
 {
-    int i, j, irow, iinfo, rowequ, colequ;
+    int i, j, irow, iinfo, rowequ, colequ, info = 0;
     fact_t Fact = options->Fact;
     int factored = (Fact == FACTORED);
     int Equil = (!factored && options->Equil == YES);
@@ -137,7 +142,8 @@ dpivot_batch(
 					     perm_r, R1, C1);
 
 			if ( iinfo ) { /* Error */
-			    printf(".. LDPERM ERROR %d\n", iinfo); 
+			    printf(".. Matrix %d: LDPERM ERROR %d\n", d, iinfo);
+			    if ( info==0 ) info = d+1 ;
 			}
 #if (PRNTlevel >= 2)
 			dmin = damch_dist("Overflow");
@@ -160,6 +166,7 @@ dpivot_batch(
 					for (i = colptr[j]; i < colptr[j + 1]; ++i) {
 					    irow = rowind[i];
 					    a[i] *= R1[irow] * cj;
+					    
 					}
 				    }
 
@@ -179,13 +186,13 @@ dpivot_batch(
 
 				} /* end if Equil */
 
-				/* Now permute row of A to prepare for symbfact() */
+				/* Now permute rows of A to prepare for symbfact() */
 				for (j = 0; j < n; ++j)	{
 				    for (i = colptr[j]; i < colptr[j + 1]; ++i) {
 					irow = rowind[i];
 					rowind[i] = perm_r[irow];
 #if (PRNTlevel >= 2)
-					dprod *= fabs(a[i]);
+				        dprod *= fabs(a[i]);
 #endif
 				    }
 				}
@@ -206,7 +213,7 @@ dpivot_batch(
 				}  /* end for j ... */
 			    }  /* end else job ... */
 			    
-			} else	{ /* if iinfo != 0 */
+			} else	{ /* if iinfo != 0 ... MC64 returns error */
 			    for (i = 0; i < m; ++i) perm_r[i] = i;
 			}
 #if (PRNTlevel >= 2)
@@ -215,13 +222,13 @@ dpivot_batch(
 			} else if (job == 4) {
 			    if (!iam) printf("\tsum of diagonal %e\n", dsum);
 			} else if (job == 5) {
-			    if (!iam) printf("\t product of diagonal %e\n", dprod);
+n			    if (!iam) printf("\t product of diagonal %e\n", dprod);
 			}
 #endif
-			
 		    } else {
 			printf(".. LDPERM invalid RowPerm option %d\n", options->RowPerm);
-			return (-1);
+			info = -1;
+			for (i = 0; i < m; ++i)	perm_r[i] = i;
 		    } /* end if-else options->RowPerm ... */
 
 #if (PRNTlevel >= 1)
@@ -237,9 +244,6 @@ dpivot_batch(
 
 #if ( DEBUGlevel>=1 )
 	    check_perm_dist("perm_r", m, perm_r);
-#endif
-#if (DEBUGlevel >= 2)
-	    if (!iam)
 		PrintInt10("perm_r", m, perm_r);
 #endif
 	} /* end if (!factored) */
@@ -262,5 +266,6 @@ dpivot_batch(
 #if (DEBUGlevel >= 1)
     CHECK_MALLOC(0, "Exit dpivot_batch()");
 #endif
-    return 0;
+    return info;
+    
 } /* end dpivot_batch */

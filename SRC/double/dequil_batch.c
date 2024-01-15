@@ -9,6 +9,8 @@ The source code is distributed under BSD license, see the file License.txt
 at the top-level directory.
 */
 
+
+
 /*
  * -- Distributed SuperLU routine (version 9.0) --
  * Lawrence Berkeley National Lab
@@ -29,9 +31,14 @@ at the top-level directory.
  * @param[out]     ReqPtr pointers to row scaling vectors (allocated internally)
  * @param[out]     CeqPtr pointers to column scaling vectors (allocated internally)
  * @param[in, out] DiagScale arrays indicating how each system is equilibrated: {ROW, COL, BOTH}
+ *
+ * Return value i:
+ *     = 0: successful exit
+ *     > 0: indicates the first matrix in the batch has zero row or column
+ *          if i <= m: the i-th row of A is exactly zero
+ *          if i >  m: the (i-m)-th column of A is exactly zero
  * </pre>
  */
-
 int
 dequil_batch(
     superlu_dist_options_t *options, /* options for algorithm choices and algorithm parameters */
@@ -49,7 +56,7 @@ dequil_batch(
     //    DeviceContext context /* device context including queues, events, dependencies */
 		  )
 {
-    int i, j, irow, icol;
+    int i, j, irow, icol, info = 0;
     fact_t Fact = options->Fact;
     int factored = (Fact == FACTORED);
     int Equil = (!factored && options->Equil == YES);
@@ -135,6 +142,7 @@ dequil_batch(
 			    for (i = colptr[j]; i < colptr[j + 1]; ++i) {
 				irow = rowind[i];
 				a[i] *= R[irow] * cj; /* Scale rows and cols. */
+
 			    }
 			}
 			break;
@@ -152,15 +160,15 @@ dequil_batch(
 		if (iinfo > 0) {
 		    if (iinfo <= m) {
 #if (PRNTlevel >= 1)
-			fprintf(stderr, "The " IFMT "-th row of A is exactly zero\n", iinfo);
+			fprintf(stderr, "Matrix %d: the %d-th row of A is exactly zero\n", k, (int)iinfo);
 #endif
 		    } else {
 #if (PRNTlevel >= 1)
-			fprintf(stderr, "The " IFMT "-th column of A is exactly zero\n", iinfo - n);
+			fprintf(stderr, "Matrix %d: the %d-th column of A is exactly zero\n", k, (int)iinfo - n);
 #endif
 		    }
 		} else if (iinfo < 0) {
-		    return iinfo;
+		    if ( info==0 ) info = iinfo;
 		}
 
 		/* Now iinfo == 0 */
@@ -191,5 +199,5 @@ dequil_batch(
 #if (DEBUGlevel >= 1)
     CHECK_MALLOC(0, "Exit dequil_batch()");
 #endif
-    return 0;
+    return info;
 } /* end dequil_batch */
