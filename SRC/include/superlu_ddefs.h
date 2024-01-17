@@ -960,6 +960,8 @@ extern void dZeroLblocks(int, int, gridinfo_t *, dLUstruct_t *);
 extern void dZeroUblocks(int iam, int n, gridinfo_t *, dLUstruct_t *);
 extern double dMaxAbsLij(int iam, int n, Glu_persist_t *,
 		 dLUstruct_t *, gridinfo_t *);
+extern double dMaxAbsUij(int iam, int n, Glu_persist_t *,
+		 dLUstruct_t *, gridinfo_t *);
 extern void    dfill_dist (double *, int_t, double);
 extern void    dinf_norm_error_dist (int_t, int_t, double*, int_t,
                                      double*, int_t, gridinfo_t*);

@@ -962,6 +962,8 @@ extern void zZeroLblocks(int, int, gridinfo_t *, zLUstruct_t *);
 extern void zZeroUblocks(int iam, int n, gridinfo_t *, zLUstruct_t *);
 extern double zMaxAbsLij(int iam, int n, Glu_persist_t *,
 		 zLUstruct_t *, gridinfo_t *);
+extern double zMaxAbsUij(int iam, int n, Glu_persist_t *,
+		 zLUstruct_t *, gridinfo_t *);
 extern void    zfill_dist (doublecomplex *, int_t, doublecomplex);
 extern void    zinf_norm_error_dist (int_t, int_t, doublecomplex*, int_t,
                                      doublecomplex*, int_t, gridinfo_t*);

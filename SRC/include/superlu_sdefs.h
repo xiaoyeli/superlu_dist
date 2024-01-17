@@ -960,6 +960,8 @@ extern void sZeroLblocks(int, int, gridinfo_t *, sLUstruct_t *);
 extern void sZeroUblocks(int iam, int n, gridinfo_t *, sLUstruct_t *);
 extern float sMaxAbsLij(int iam, int n, Glu_persist_t *,
 		 sLUstruct_t *, gridinfo_t *);
+extern float sMaxAbsUij(int iam, int n, Glu_persist_t *,
+		 sLUstruct_t *, gridinfo_t *);
 extern void    sfill_dist (float *, int_t, float);
 extern void    sinf_norm_error_dist (int_t, int_t, float*, int_t,
                                      float*, int_t, gridinfo_t*);

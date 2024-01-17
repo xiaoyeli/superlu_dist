@@ -675,6 +675,54 @@ double zMaxAbsLij(int iam, int n, Glu_persist_t *Glu_persist,
     return (lmax);
 } /* end zMaxAbsLij */
 
+/*! \brief Find max(abs(U(i,j)))
+ */
+double zMaxAbsUij(int iam, int n, Glu_persist_t *Glu_persist,
+		 zLUstruct_t *LUstruct, gridinfo_t *grid)
+{
+    zLocalLU_t *Llu = LUstruct->Llu;
+    register int c, extra, jb, k, lb, len, nb, nrb, nsupc;
+    register int myrow, r, j, nsupers;
+    int_t *xsup = Glu_persist->xsup;
+    int_t *index;
+    doublecomplex *nzval;
+    double umax = 0.0, umax_loc = 0.0;
+
+    nsupers = Glu_persist->supno[n-1] + 1;
+    nrb = nsupers / grid->nprow;
+    extra = nsupers % grid->nprow;
+    myrow = MYROW( iam, grid );
+    if ( myrow < extra ) ++nrb;
+
+    // Sherry: Can also compute the maximum row count ...
+    for (lb = 0; lb < nrb; ++lb) {
+	index = Llu->Ufstnz_br_ptr[lb];
+	if ( index ) { /* Not an empty block row */
+	    nzval = Llu->Unzval_br_ptr[lb];
+	    nb = index[0]; /* number of blocks */
+	    r  = 0;
+	    for (c = 0, k = BR_HEADER; c < nb; ++c) {
+	        jb = index[k];    /* block number */
+		len = index[k+1]; /* number of nonzeros in the block */
+		nsupc = SuperSize( jb );
+		for (j = r; j < r + len; ++j) 
+		    umax_loc = SUPERLU_MAX(umax_loc, slud_z_abs1(&nzval[j]));
+		k += UB_DESCRIPTOR + nsupc;
+		r += len;
+	    }
+	}
+    }
+    
+    /* Reduce max(abs(Uij)) from all processes, to process 0 */
+    MPI_Reduce (&umax_loc, &umax, 1, MPI_DOUBLE, MPI_MAX, 0, grid->comm);
+
+    /* Reduce sum of the row counts from each process. */
+
+    return (umax);
+
+} /* end zMaxAbsUij */
+
+
 /*! \brief Print the blocks in the factored matrix L.
  */
 void zPrintLblocks(int iam, int_t nsupers, gridinfo_t *grid,
