@@ -38,7 +38,7 @@ set(headers
     TRF3dV100/lu_common.hpp
     TRF3dV100/xlupanels_GPU.cuh
     TRF3dV100/schurCompUpdate_impl.cuh
-    TRF3dV100/batch_factorize.cuh 
+    TRF3dV100/batch_factorize.h 
     TRF3dV100/batch_factorize_marshall.h 
 )
 #    ${CMAKE_CURRENT_BINARY_DIR}/superlu_dist_config.h
