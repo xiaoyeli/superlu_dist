@@ -51,7 +51,7 @@ int_t xLUstruct_t<Ftype>::ancestorReduction3dGPU(int_t ilvl, int_t *myNodeCount,
             }
             else
             {
-                Ftype alpha = 1.0, beta = 1.0; 
+                Ftype alpha = one<Ftype>(); Ftype beta = one<Ftype>(); 
 
                 zRecvLPanelGPU(k0, sender, alpha, beta);
                 zRecvUPanelGPU(k0, sender, alpha, beta);

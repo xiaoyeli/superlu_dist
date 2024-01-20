@@ -15,7 +15,7 @@ at the top-level directory.
  * \brief Read the matrix from data file
  *
  * <pre>
- * -- Distributed SuperLU routine (version 7.0) --
+ * -- Distributed SuperLU routine (version 9.0) --
  * Lawrence Berkeley National Lab, Univ. of California Berkeley,
  * Oak Ridge National Lab.
  * May 12, 2021
@@ -618,7 +618,6 @@ int dcreate_batch_systems(handle_t *SparseMatrix_handles, int batchCount,
     int_t    *rowind, *colptr;   /* global */
     int_t    *rowind_d, *colptr_d;  /* metadata for one diagonal block */
     double   *nzval, *nzval_d;      /* global */
-    double   *nzval_loc;         /* local */
     int_t    *colind, *rowptr;   /* local */
     int_t    m, n, nnz;
     int    row, col, i, j, relpos;
@@ -628,7 +627,7 @@ int dcreate_batch_systems(handle_t *SparseMatrix_handles, int batchCount,
     iam = grid3d->iam;
 
 #if ( DEBUGlevel>=1 )
-    CHECK_MALLOC(iam, "Enter dcreate_batch_matrices()");
+    CHECK_MALLOC(iam, "Enter dcreate_batch_systems()");
 #endif
 
     if ( !iam )
@@ -679,7 +678,6 @@ int dcreate_batch_systems(handle_t *SparseMatrix_handles, int batchCount,
     int d = 0;
     for (d = 0; d < batchCount; ++d) {
 	int_t  *rowind_d, *colptr_d; /* each block */
-	double *nzval_d;
 	
         /* Allocate storage for compressed column representation. */
         dallocateA_dist(n, nnz, &nzval_d, &rowind_d, &colptr_d);
@@ -708,7 +706,7 @@ int dcreate_batch_systems(handle_t *SparseMatrix_handles, int batchCount,
     }
 
 #if ( DEBUGlevel>=1 )
-    CHECK_MALLOC(iam, "Exit dcreate_batch_matrices()");
+    CHECK_MALLOC(iam, "Exit dcreate_batch_systems()");
 #endif
     return 0;
 } /* end dcreate_batch_systems */

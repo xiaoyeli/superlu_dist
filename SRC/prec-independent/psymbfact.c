@@ -654,7 +654,7 @@ float symbfact_dist
       printf("\t relax_gen %.2f, relax_curSep %.2f, relax_seps %.2f\n",
 	     PS.relax_gen, PS.relax_curSep, PS.relax_seps);
 #endif
-      printf("INT_T_MAX %ld\n", INT_T_MAX);
+      printf("INT_T_MAX %ld\n", (long) INT_T_MAX);
       printf("\tParameters: fill mem %ld fill pelt %ld\n",
 	     (long) sp_ienv_dist(6,options), (long) PS.fill_par);
       printf("\tNonzeros in L       %lld\n", nnzL);

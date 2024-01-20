@@ -2516,7 +2516,7 @@ nsupers_i = CEILING( nsupers, grid->nprow ); /* Number of local block rows */
 
 
 
-int_t psflatten_LDATA(superlu_dist_options_t *options, int_t n, sLUstruct_t * LUstruct,
+int psflatten_LDATA(superlu_dist_options_t *options, int_t n, sLUstruct_t * LUstruct,
                            gridinfo_t *grid, SuperLUStat_t * stat)
 {
     Glu_persist_t *Glu_persist = LUstruct->Glu_persist;
@@ -2787,4 +2787,5 @@ int_t psflatten_LDATA(superlu_dist_options_t *options, int_t n, sLUstruct_t * LU
 	Llu->Uinv_bc_offset = Uinv_bc_offset;
 	Llu->Uinv_bc_cnt = Uinv_bc_cnt;
 
-} // psflatten_LDATA
+	return 0;
+} // end psflatten_LDATA

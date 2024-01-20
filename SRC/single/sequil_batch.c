@@ -17,7 +17,7 @@ at the top-level directory.
  * November 5, 2023
  * Last update:
  */
-#include "superlu_ddefs.h"
+#include "superlu_sdefs.h"
 
 /*! \brief Equilibrate the systems using the LAPACK-style algorithm
  *
@@ -40,7 +40,7 @@ at the top-level directory.
  * </pre>
  */
 int
-dequil_batch(
+sequil_batch(
     superlu_dist_options_t *options, /* options for algorithm choices and algorithm parameters */
     int batchCount, /* number of matrices in the batch */
     int m, /* matrix row dimension */
@@ -48,9 +48,9 @@ dequil_batch(
     handle_t  *SparseMatrix_handles, /* array of sparse matrix handles, of size 'batchCount',
 				      * each pointing to the actual storage
 				      */
-    double **ReqPtr, /* array of pointers to diagonal row scaling vectors,
+    float **ReqPtr, /* array of pointers to diagonal row scaling vectors,
 			each of size M   */
-    double **CeqPtr, /* array of pointers to diagonal column scaling vectors,
+    float **CeqPtr, /* array of pointers to diagonal column scaling vectors,
 			each of size N    */
     DiagScale_t *DiagScale /* How equilibration is done for each matrix. */
     //    DeviceContext context /* device context including queues, events, dependencies */
@@ -75,7 +75,7 @@ dequil_batch(
     for (int k = 0; k < batchCount; ++k) {
 	
 	NCformat *Astore = (NCformat *) A[k]->Store;
-	double *a = (double *) Astore->nzval;
+	float *a = (float *) Astore->nzval;
 	int_t *colptr = Astore->colptr;
 	int_t *rowind = Astore->rowind;
 	
@@ -85,8 +85,8 @@ dequil_batch(
 	 */
 
 	/* The following arrays are replicated on all processes. */
-	double *R = ReqPtr[k];
-	double *C = CeqPtr[k];
+	float *R = ReqPtr[k];
+	float *C = CeqPtr[k];
 	
 	/* Allocate stoage if not factored & ask for equilibration */
 	if (Equil && Fact != SamePattern_SameRowPerm) {
@@ -94,17 +94,17 @@ dequil_batch(
 	    //switch (ScalePermstruct->DiagScale)
 	    switch ( DiagScale[k] ) {
 		case NOEQUIL:
-		    if (!(R = (double *)doubleMalloc_dist(m))) ABORT("Malloc fails for R[].");
-		    if (!(C = (double *)doubleMalloc_dist(n))) ABORT("Malloc fails for C[].");
+		    if (!(R = (float *)floatMalloc_dist(m))) ABORT("Malloc fails for R[].");
+		    if (!(C = (float *)floatMalloc_dist(n))) ABORT("Malloc fails for C[].");
 		    ReqPtr[k] = R;
 		    CeqPtr[k] = C;
 		    break;
 		case ROW: /* R[] was already allocated before */
-		    if (!(C = (double *)doubleMalloc_dist(n))) ABORT("Malloc fails for C[].");
+		    if (!(C = (float *)floatMalloc_dist(n))) ABORT("Malloc fails for C[].");
 		    CeqPtr[k] = C;
 		    break;
 		case COL: /* C[] was already allocated before */
-		    if (!(R = (double *)doubleMalloc_dist(m))) ABORT("Malloc fails for R[].");
+		    if (!(R = (float *)floatMalloc_dist(m))) ABORT("Malloc fails for R[].");
 		    ReqPtr[k] = R;
 		    break;
 		default:
@@ -130,7 +130,7 @@ dequil_batch(
 			break;
 		    case COL:
 			for (j = 0; j < n; ++j) {
-			    double cj = C[j];
+			    float cj = C[j];
 			    for (i = colptr[j]; i < colptr[j+1]; ++i) {
 				a[i] *= cj; /* Scale columns. */
 			    }
@@ -138,7 +138,7 @@ dequil_batch(
 			break;
 		    case BOTH:
 			for (j = 0; j < n; ++j) {
-			    double cj = C[j];
+			    float cj = C[j];
 			    for (i = colptr[j]; i < colptr[j + 1]; ++i) {
 				irow = rowind[i];
 				a[i] *= R[irow] * cj; /* Scale rows and cols. */
@@ -152,10 +152,10 @@ dequil_batch(
 		
 		int iinfo;
 		char equed[1];
-		double amax, anorm, colcnd, rowcnd;
+		float amax, anorm, colcnd, rowcnd;
 		
 		/* Compute the row and column scalings. */
-		dgsequ_dist(A[k], R, C, &rowcnd, &colcnd, &amax, &iinfo);
+		sgsequ_dist(A[k], R, C, &rowcnd, &colcnd, &amax, &iinfo);
 		
 		if (iinfo > 0) {
 		    if (iinfo <= m) {
@@ -175,7 +175,7 @@ dequil_batch(
 
 		/* Equilibrate matrix A if it is badly-scaled.
 		   A <-- diag(R)*A*diag(C)                     */
-		dlaqgs_dist(A[k], R, C, rowcnd, colcnd, amax, equed);
+		slaqgs_dist(A[k], R, C, rowcnd, colcnd, amax, equed);
 
 		if (strncmp(equed, "R", 1) == 0) {
 		    DiagScale[k] = ROW;
@@ -197,7 +197,7 @@ dequil_batch(
     } /* end for k ... batchCount */
 
 #if (DEBUGlevel >= 1)
-    CHECK_MALLOC(0, "Exit dequil_batch()");
+    CHECK_MALLOC(0, "Exit sequil_batch()");
 #endif
     return info;
-} /* end dequil_batch */
+} /* end sequil_batch */

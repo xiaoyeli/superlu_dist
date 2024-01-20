@@ -73,7 +73,7 @@ int_t xlpanel_t<Ftype>::panelSolve(int_t ksupsz, Ftype* DiagBlk, int_t LDD)
         lPanelStPtr = blkPtr(1);
         len -= nbrow(0);
     }
-    Ftype alpha = 1.0; // {1.0, 0.0}; std::complex<double> alpha = {1.0, 0.0};
+    Ftype alpha = one<Ftype>(); // {1.0, 0.0}; std::complex<double> alpha = {1.0, 0.0};
     superlu_trsm<Ftype>("R", "U", "N", "N",
                   len, ksupsz, alpha, DiagBlk, LDD,
                   lPanelStPtr, LDA());
@@ -83,7 +83,8 @@ int_t xlpanel_t<Ftype>::panelSolve(int_t ksupsz, Ftype* DiagBlk, int_t LDD)
 
 
 template <typename Ftype>
-int_t xlpanel_t<Ftype>::diagFactor(int_t k, Ftype* UBlk, int_t LDU, Ftype thresh, int_t *xsup,
+int_t xlpanel_t<Ftype>::diagFactor(int_t k, Ftype* UBlk, int_t LDU, 
+threshPivValType<Ftype> thresh, int_t *xsup,
                            superlu_dist_options_t *options,
                            SuperLUStat_t *stat, int *info)
 {

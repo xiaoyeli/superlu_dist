@@ -10,14 +10,13 @@ at the top-level directory.
 */
 
 
-
 /*
  * -- Distributed SuperLU routine (version 9.0) --
  * Lawrence Berkeley National Lab
  * November 5, 2023
  * Last update:
  */
-#include "superlu_ddefs.h"
+#include "superlu_zdefs.h"
 
 /*! \brief Equilibrate the systems using the LAPACK-style algorithm
  *
@@ -40,7 +39,7 @@ at the top-level directory.
  * </pre>
  */
 int
-dequil_batch(
+zequil_batch(
     superlu_dist_options_t *options, /* options for algorithm choices and algorithm parameters */
     int batchCount, /* number of matrices in the batch */
     int m, /* matrix row dimension */
@@ -75,7 +74,7 @@ dequil_batch(
     for (int k = 0; k < batchCount; ++k) {
 	
 	NCformat *Astore = (NCformat *) A[k]->Store;
-	double *a = (double *) Astore->nzval;
+	doublecomplex *a = (doublecomplex *) Astore->nzval;
 	int_t *colptr = Astore->colptr;
 	int_t *rowind = Astore->rowind;
 	
@@ -124,7 +123,7 @@ dequil_batch(
 			for (j = 0; j < n; ++j) {
 			    for (i = colptr[j]; i < colptr[j + 1]; ++i) {
 				irow = rowind[i];
-				a[i] *= R[irow]; /* Scale rows. */
+	                        zd_mult(&a[i], &a[i], R[irow]);
 			    }
 			}
 			break;
@@ -132,7 +131,7 @@ dequil_batch(
 			for (j = 0; j < n; ++j) {
 			    double cj = C[j];
 			    for (i = colptr[j]; i < colptr[j+1]; ++i) {
-				a[i] *= cj; /* Scale columns. */
+	                        zd_mult(&a[i], &a[i], cj);
 			    }
 			}
 			break;
@@ -141,8 +140,8 @@ dequil_batch(
 			    double cj = C[j];
 			    for (i = colptr[j]; i < colptr[j + 1]; ++i) {
 				irow = rowind[i];
-				a[i] *= R[irow] * cj; /* Scale rows and cols. */
-
+                                zd_mult(&a[i], &a[i], R[irow]);
+			        zd_mult(&a[i], &a[i], cj);
 			    }
 			}
 			break;
@@ -155,7 +154,7 @@ dequil_batch(
 		double amax, anorm, colcnd, rowcnd;
 		
 		/* Compute the row and column scalings. */
-		dgsequ_dist(A[k], R, C, &rowcnd, &colcnd, &amax, &iinfo);
+		zgsequ_dist(A[k], R, C, &rowcnd, &colcnd, &amax, &iinfo);
 		
 		if (iinfo > 0) {
 		    if (iinfo <= m) {
@@ -175,7 +174,7 @@ dequil_batch(
 
 		/* Equilibrate matrix A if it is badly-scaled.
 		   A <-- diag(R)*A*diag(C)                     */
-		dlaqgs_dist(A[k], R, C, rowcnd, colcnd, amax, equed);
+		zlaqgs_dist(A[k], R, C, rowcnd, colcnd, amax, equed);
 
 		if (strncmp(equed, "R", 1) == 0) {
 		    DiagScale[k] = ROW;
@@ -197,7 +196,7 @@ dequil_batch(
     } /* end for k ... batchCount */
 
 #if (DEBUGlevel >= 1)
-    CHECK_MALLOC(0, "Exit dequil_batch()");
+    CHECK_MALLOC(0, "Exit zequil_batch()");
 #endif
     return info;
-} /* end dequil_batch */
+} /* end zequil_batch */

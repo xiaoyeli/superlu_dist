@@ -106,6 +106,7 @@ dCompRow_to_CompCol_dist(int_t m, int_t n, int_t nnz,
 
     SUPERLU_FREE(marker);
 }
+
 /*! \brief Convert a compressed column storage into a compressed row storage.
  */
 void
@@ -527,10 +528,11 @@ dGenXtrue_dist(int_t n, int_t nrhs, double *x, int_t ldx)
     double exponent, tau; /* See TOMS paper on ItRef (LAWN165); testing code:
 			     Codes/UCB-itref-xblas-etc/xiaoye/itref/driver.c  */
     double r;
+    double xmax = 0.0, xmin = 1.0e6;
 
     exponent = (double)rand() / (double)((unsigned)RAND_MAX + 1); /* uniform in [0,1) */
 #if 1
-    tau = pow(2.0, 12.0 * exponent);
+    tau = pow(2.0, 12.0 * exponent); // 24.0
 #else
     tau = 5.0;
 #endif
@@ -548,9 +550,19 @@ dGenXtrue_dist(int_t n, int_t nrhs, double *x, int_t ldx)
 #else
 	  x[i + j*ldx] = (double)rand() / (double)((unsigned)RAND_MAX + 1); /* uniform in [0,1) */
 #endif
+       	  xmax = SUPERLU_MAX( xmax, x[i + j*ldx] );
+	  xmin = SUPERLU_MIN( xmin, x[i + j*ldx] );
+	} /* for i ... */
+#if ( PRNTlevel>=1 )
+	int iam;
+	MPI_Comm_rank(MPI_COMM_WORLD, &iam);
+	if (iam==0) {
+	  printf(".. dGenXtrue: xmax %e, xmin %e\n", xmax, xmin);
+	  fflush(stdout);
 	}
-    }
-}
+#endif	
+    } /* for j ... */
+} /* end dGenXtrue_dist */
 
 /*! \brief Let rhs[i] = sum of i-th row of A, so the solution vector is all 1's
  */
@@ -623,6 +635,95 @@ int file_Printdouble5(FILE *fp, char *name, int_t len, double *x)
     fprintf(fp, "\n");
     return 0;
 }
+
+/*! \brief Find max(abs(L(i,j)))
+ */
+double dMaxAbsLij(int iam, int n, Glu_persist_t *Glu_persist,
+		 dLUstruct_t *LUstruct, gridinfo_t *grid)
+{
+    register int extra, gb, j, lb, nsupc, nsupr, ncb;
+    register int_t k, mycol, r;
+    dLocalLU_t *Llu = LUstruct->Llu;
+    int_t *xsup = Glu_persist->xsup;
+    int_t *index;
+    double *nzval;
+    int nsupers = Glu_persist->supno[n-1] + 1;
+    double lmax = 0.0, lmax_loc = 0.0;
+
+    ncb = nsupers / grid->npcol;
+    extra = nsupers % grid->npcol;
+    mycol = MYCOL( iam, grid );
+    if ( mycol < extra ) ++ncb;
+    for (lb = 0; lb < ncb; ++lb) {
+	index = Llu->Lrowind_bc_ptr[lb];
+	if ( index ) { /* Not an empty column */
+	    nzval = Llu->Lnzval_bc_ptr[lb];
+	    nsupr = index[1];
+	    gb = lb * grid->npcol + mycol;
+	    nsupc = SuperSize( gb );
+	    for (j = 0; j < nsupc; ++j) {
+                for (r = 0; r < nsupr; ++r) {
+		    lmax_loc = SUPERLU_MAX(lmax_loc, fabs(nzval[r + j*nsupr]));
+		}
+            }
+	}
+    } /* end for */
+
+    /* Reduce max(abs(Uij)) from all processes, to process 0 */
+    MPI_Reduce (&lmax_loc, &lmax, 1, MPI_DOUBLE, MPI_MAX, 0, grid->comm);
+
+    /* Reduce sum of the row counts from each process. */
+
+    return (lmax);
+} /* end dMaxAbsLij */
+
+/*! \brief Find max(abs(U(i,j)))
+ */
+double dMaxAbsUij(int iam, int n, Glu_persist_t *Glu_persist,
+		 dLUstruct_t *LUstruct, gridinfo_t *grid)
+{
+    dLocalLU_t *Llu = LUstruct->Llu;
+    register int c, extra, jb, k, lb, len, nb, nrb, nsupc;
+    register int myrow, r, j, nsupers;
+    int_t *xsup = Glu_persist->xsup;
+    int_t *index;
+    double *nzval;
+    double umax = 0.0, umax_loc = 0.0;
+
+    nsupers = Glu_persist->supno[n-1] + 1;
+    nrb = nsupers / grid->nprow;
+    extra = nsupers % grid->nprow;
+    myrow = MYROW( iam, grid );
+    if ( myrow < extra ) ++nrb;
+
+    // Sherry: Can also compute the maximum row count ...
+    for (lb = 0; lb < nrb; ++lb) {
+	index = Llu->Ufstnz_br_ptr[lb];
+	if ( index ) { /* Not an empty block row */
+	    nzval = Llu->Unzval_br_ptr[lb];
+	    nb = index[0]; /* number of blocks */
+	    r  = 0;
+	    for (c = 0, k = BR_HEADER; c < nb; ++c) {
+	        jb = index[k];    /* block number */
+		len = index[k+1]; /* number of nonzeros in the block */
+		nsupc = SuperSize( jb );
+		for (j = r; j < r + len; ++j) 
+		    umax_loc = SUPERLU_MAX(umax_loc, fabs(nzval[j]));
+		k += UB_DESCRIPTOR + nsupc;
+		r += len;
+	    }
+	}
+    }
+    
+    /* Reduce max(abs(Uij)) from all processes, to process 0 */
+    MPI_Reduce (&umax_loc, &umax, 1, MPI_DOUBLE, MPI_MAX, 0, grid->comm);
+
+    /* Reduce sum of the row counts from each process. */
+
+    return (umax);
+
+} /* end dMaxAbsUij */
+
 
 /*! \brief Print the blocks in the factored matrix L.
  */

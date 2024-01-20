@@ -17,7 +17,7 @@ at the top-level directory.
  * November 5, 2023
  * Last update:
  */
-#include "superlu_ddefs.h"
+#include "superlu_sdefs.h"
 
 /*! \brief Compute row pivotings for each matrix, for numerical stability
  * <pre>
@@ -42,7 +42,7 @@ at the top-level directory.
  * </pre>
  */
 int
-dpivot_batch(
+spivot_batch(
     superlu_dist_options_t *options, /* options for algorithm choices and algorithm parameters */
     int batchCount, /* number of matrices in the batch */
     int m, /* matrix row dimension */
@@ -50,9 +50,9 @@ dpivot_batch(
     handle_t  *SparseMatrix_handles, /* array of sparse matrix handles,
 				      * of size 'batchCount', each pointing to the actual storage
 				      */
-    double **ReqPtr, /* array of pointers to diagonal row scaling vectors,
+    float **ReqPtr, /* array of pointers to diagonal row scaling vectors,
 			each of size M   */
-    double **CeqPtr, /* array of pointers to diagonal column scaling vectors,
+    float **CeqPtr, /* array of pointers to diagonal column scaling vectors,
 			each of size N    */
     DiagScale_t *DiagScale, /* How equilibration is done for each matrix. */
     int **RpivPtr /* array of pointers to row permutation vectors , each of size M */
@@ -65,7 +65,7 @@ dpivot_batch(
     int Equil = (!factored && options->Equil == YES);
     int notran = (options->Trans == NOTRANS);
     int job = 5;
-    double *R1, *C1;
+    float *R1, *C1;
 
 #if (DEBUGlevel >= 1)
     CHECK_MALLOC(0, "Enter dpivot_batch()");
@@ -80,15 +80,15 @@ dpivot_batch(
 
     if (job == 5) {
 	/* Allocate storage for scaling factors. */
-	if (!(R1 = doubleMalloc_dist(m)))
+	if (!(R1 = floatMalloc_dist(m)))
 	    ABORT("SUPERLU_MALLOC fails for R1[]");
-	if (!(C1 = doubleMalloc_dist(n)))
+	if (!(C1 = floatMalloc_dist(n)))
 	    ABORT("SUPERLU_MALLOC fails for C1[]");
     }
 
     int_t *colptr;
     int_t *rowind;
-    double *a, *at;
+    float *a, *at;
     int_t nnz;
     
     /* Loop through each matrix in the batch */
@@ -100,9 +100,9 @@ dpivot_batch(
 	/* If the matrix type is SLU_NR (CSR), then need to convert to CSC first */
 	if ( A[d]->Stype == SLU_NR ) { /* CSR format */
 	    NRformat *Astore = (NRformat *) A[d]->Store;
-	    a = (double *)Astore->nzval;
+	    a = (float *)Astore->nzval;
 	    
-	    dCompRow_to_CompCol_dist(m, n, nnz, a,
+	    sCompRow_to_CompCol_dist(m, n, nnz, a,
 				     Astore->colind, Astore->rowptr,
 				     &at, &rowind, &colptr);
 	    
@@ -110,15 +110,15 @@ dpivot_batch(
 	    nnz = Astore->nnz;
 	} else { /* CSC format */
 	    NCformat *Astore = (NCformat *) A[d]->Store;
-	    a = (double *)Astore->nzval;
+	    a = (float *)Astore->nzval;
 	    colptr = Astore->colptr;
 	    rowind = Astore->rowind;
 	    nnz = Astore->nnz;
 	}
 
 	/* Row and column scaling factors. */
-	double *R = ReqPtr[d];
-	double *C = CeqPtr[d];
+	float *R = ReqPtr[d];
+	float *C = CeqPtr[d];
 
 	if ( !factored ) { /* Skip this if already factored. */
 	    
@@ -138,7 +138,7 @@ dpivot_batch(
 			}
 		    } else if (options->RowPerm == LargeDiag_MC64) {
 			/* Finds a row permutation (serial) */
-			iinfo = dldperm_dist(job, m, nnz, colptr, rowind, a,
+			iinfo = sldperm_dist(job, m, nnz, colptr, rowind, a,
 					     perm_r, R1, C1);
 
 			if ( iinfo ) { /* Error */
@@ -160,7 +160,7 @@ dpivot_batch(
 
 				    /* Scale the matrix further.
 				       A <-- diag(R1)*A*diag(C1)            */
-				    double cj;
+				    float cj;
 				    for (j = 0; j < n; ++j) {
 					cj = C1[j];
 					for (i = colptr[j]; i < colptr[j + 1]; ++i) {
@@ -264,8 +264,8 @@ n			    if (!iam) printf("\t product of diagonal %e\n", dprod);
     }
 
 #if (DEBUGlevel >= 1)
-    CHECK_MALLOC(0, "Exit dpivot_batch()");
+    CHECK_MALLOC(0, "Exit spivot_batch()");
 #endif
     return info;
     
-} /* end dpivot_batch */
+} /* end spivot_batch */

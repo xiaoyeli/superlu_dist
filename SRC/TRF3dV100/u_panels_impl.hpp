@@ -55,7 +55,7 @@ xupanel_t<Ftype>::xupanel_t(int_t k, int_t *usub, Ftype *uval, int_t *xsup)
                 for(int row=0; row<kSupSz; row++)
                 {
                     if(row<kSupSz-segsize)
-                        val[dstUvalPtr++] =0.0;
+                        val[dstUvalPtr++] = zeroT<Ftype>();
                     else 
                         val[dstUvalPtr++] =uval[srcUvalPtr++];
                 }
@@ -126,7 +126,7 @@ int_t xupanel_t<Ftype>::panelSolve(int_t ksupsz, Ftype *DiagBlk, int_t LDD)
     if (isEmpty()) return 0;
     
     superlu_trsm<Ftype>("L", "L", "N", "U",
-                  ksupsz, nzcols(), 1.0, DiagBlk, LDD, val, LDA());
+                  ksupsz, nzcols(), one<Ftype>(), DiagBlk, LDD, val, LDA());
     return 0;
 }
 

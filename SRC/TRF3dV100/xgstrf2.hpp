@@ -8,7 +8,7 @@
 
 template<typename Ftype>
 void xgstrf2(int_t k, Ftype* diagBlk, int_t LDA, Ftype* BlockUfactor, int_t LDU, 
-    Ftype thresh, int_t* xsup,
+    threshPivValType<Ftype> thresh, int_t* xsup,
     superlu_dist_options_t *options,
     SuperLUStat_t *stat, int *info
  )
@@ -30,7 +30,8 @@ void xgstrf2(int_t k, Ftype* diagBlk, int_t LDA, Ftype* BlockUfactor, int_t LDU,
         /* Not to replace zero pivot.  */
         if (options->ReplaceTinyPivot == YES)
         {
-            if (fabs(diagBlk[i]) < thresh)
+            // if (fabs(diagBlk[i]) < thresh)
+            if (std::sqrt(sqnorm(diagBlk[i])) < thresh)
             { /* Diagonal */
 
 #if (PRNTlevel >= 2)
@@ -38,10 +39,13 @@ void xgstrf2(int_t k, Ftype* diagBlk, int_t LDA, Ftype* BlockUfactor, int_t LDU,
                        iam, jfst + j, diagBlk[i]);
 #endif
                 /* Keep the new diagonal entry with the same sign. */
-                if (diagBlk[i] < 0)
-                    diagBlk[i] = -thresh;
-                else
-                    diagBlk[i] = thresh;
+                setDiagToThreshold(&diagBlk[i], thresh);
+                // if (diagBlk[i] < 0)
+                //     // diagBlk[i] = -thresh;
+                //     setDiagToThreshold(&diagBlk[i], -thresh);
+                // else
+                //     // diagBlk[i] = thresh;
+                //     setDiagToThreshold(&diagBlk[i], thresh);
 #if (PRNTlevel >= 2)
                 printf("replaced by %e\n", diagBlk[i]);
 #endif
@@ -54,7 +58,7 @@ void xgstrf2(int_t k, Ftype* diagBlk, int_t LDA, Ftype* BlockUfactor, int_t LDU,
             int_t st = j * LDU + j;
             ublk_ptr[st + l * LDU] = diagBlk[i]; /* copy one row of U */
         }
-        Ftype zero = 0.0;
+        Ftype zero = zeroT<Ftype>();
         if (ujrow[0] == zero) /* Test for singularity. */
         {
             *info = j + jfst + 1;
@@ -62,7 +66,7 @@ void xgstrf2(int_t k, Ftype* diagBlk, int_t LDA, Ftype* BlockUfactor, int_t LDU,
         else /* Scale the j-th column. */
         {
             Ftype temp;
-            temp = 1.0 / ujrow[0];
+            temp = one<Ftype>() / ujrow[0];
             for (int_t i = luptr + 1; i < luptr - j + nsupc; ++i)
                 diagBlk[i] *= temp;
             stat->ops[FACT] += nsupc - j - 1;
@@ -76,7 +80,7 @@ void xgstrf2(int_t k, Ftype* diagBlk, int_t LDA, Ftype* BlockUfactor, int_t LDU,
             int incx = 1;
             int incy = LDU;
             /* Rank-1 update */
-            Ftype alpha = -1;
+            Ftype alpha = -one<Ftype>();
             superlu_ger<Ftype>(l, cols_left, alpha, &diagBlk[luptr + 1], incx,
                          &ujrow[LDU], incy, &diagBlk[luptr + LDA + 1],
                          LDA);

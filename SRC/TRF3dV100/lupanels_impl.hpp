@@ -3,7 +3,7 @@
 #include <iostream>
 #include <cassert>
 #include "superlu_defs.h"
-
+#include "luAuxStructTemplated.hpp"
 #ifdef HAVE_CUDA
 #include "lupanels_GPU.cuh"
 #endif
@@ -83,7 +83,8 @@ xLUstruct_t<Ftype>::xLUstruct_t(int_t nsupers_, int_t ldt_,
                              LUStruct_type<Ftype> *LUstruct,
                              gridinfo3d_t *grid3d_in,
                              SCT_t *SCT_, superlu_dist_options_t *options_,
-                             SuperLUStat_t *stat_, Ftype thresh_, int *info_) :
+                             SuperLUStat_t *stat_, 
+                             threshPivValType<Ftype> thresh_, int *info_) :
                              nsupers(nsupers_), trf3Dpartition(trf3Dpartition_),
                              ldt(ldt_), /* maximum supernode size */
 			     grid3d(grid3d_in), SCT(SCT_),
@@ -276,7 +277,7 @@ xLUstruct_t<Ftype>::xLUstruct_t(int_t nsupers_, int_t ldt_,
     maxLeafNodes = mxLeafNode;
 
     
-    Ftype tGPU = SuperLU_timer_();
+    double tGPU = SuperLU_timer_();
     if(superlu_acc_offload)
     {
     #ifdef HAVE_CUDA
@@ -502,8 +503,8 @@ int_t xLUstruct_t<Ftype>::blockUpdate(int_t k,
 
     Ftype *V = bigV + thread_id * ldt * ldt;
 
-    Ftype alpha = 1.0;
-    Ftype beta = 0.0;
+    Ftype alpha = one<Ftype>();
+    Ftype beta = zeroT<Ftype>();
     superlu_gemm<Ftype>("N", "N",
                   lpanel.nbrow(ii), upanel.nbcol(jj), supersize(k), alpha,
                   lpanel.blkPtr(ii), lpanel.LDA(),

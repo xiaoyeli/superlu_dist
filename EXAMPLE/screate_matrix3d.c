@@ -195,8 +195,8 @@ int screate_matrix_postfix3d(SuperMatrix *A, int nrhs, float **rhs,
         MPI_Bcast( xtrue_global, n*nrhs, MPI_FLOAT, 0, grid3d->comm );
         MPI_Bcast( b_global, m*nrhs, MPI_FLOAT, 0, grid3d->comm );
     }
-	
-    
+
+
 
     /*************************************************
      * Change GA to a local A with NR_loc format     *
@@ -291,3 +291,104 @@ int screate_matrix_postfix3d(SuperMatrix *A, int nrhs, float **rhs,
 #endif
     return 0;
 }
+
+int screate_batch_systems(handle_t *SparseMatrix_handles, int batchCount,
+			  int nrhs, float **RHSptr,
+			  int *ldRHS, float **xtrue, int *ldX,
+			  FILE *fp, char * postfix, gridinfo3d_t *grid3d)
+{
+    int_t    *rowind, *colptr;   /* global */
+    int_t    *rowind_d, *colptr_d;  /* metadata for one diagonal block */
+    float   *nzval, *nzval_d;      /* global */
+    int_t    *colind, *rowptr;   /* local */
+    int_t    m, n, nnz;
+    int    row, col, i, j, relpos;
+    int      iam;
+    char     trans[1];
+
+    iam = grid3d->iam;
+
+#if ( DEBUGlevel>=1 )
+    CHECK_MALLOC(iam, "Enter screate_batch_systems()");
+#endif
+
+    if ( !iam )
+    {
+        double t = SuperLU_timer_();
+
+        if (!strcmp(postfix, "rua"))
+        {
+            /* Read the matrix stored on disk in Harwell-Boeing format. */
+            sreadhb_dist(iam, fp, &m, &n, &nnz, &nzval, &rowind, &colptr);
+        }
+        else if (!strcmp(postfix, "mtx"))
+        {
+            /* Read the matrix stored on disk in Matrix Market format. */
+            sreadMM_dist(fp, &m, &n, &nnz, &nzval, &rowind, &colptr);
+        }
+        else if (!strcmp(postfix, "rb"))
+        {
+            /* Read the matrix stored on disk in Rutherford-Boeing format. */
+            sreadrb_dist(iam, fp, &m, &n, &nnz, &nzval, &rowind, &colptr);
+        }
+        else if (!strcmp(postfix, "dat"))
+        {
+            /* Read the matrix stored on disk in triplet format. */
+            sreadtriple_dist(fp, &m, &n, &nnz, &nzval, &rowind, &colptr);
+        }
+        else if (!strcmp(postfix, "datnh"))
+        {
+            /* Read the matrix stored on disk in triplet format (without header). */
+            sreadtriple_noheader(fp, &m, &n, &nnz, &nzval, &rowind, &colptr);
+        }
+        else if (!strcmp(postfix, "bin"))
+        {
+            /* Read the matrix stored on disk in binary format. */
+            sread_binary(fp, &m, &n, &nnz, &nzval, &rowind, &colptr);
+        }
+        else
+        {
+            ABORT("File format not known");
+        }
+
+        printf("Time to read and distribute matrix %.2f\n",
+               SuperLU_timer_() - t);  fflush(stdout);
+    }
+	
+    /* Allocate storage for CSC containing all the matrices */
+    SuperMatrix **A = SUPERLU_MALLOC( batchCount * sizeof(SuperMatrix *) );
+    int d = 0;
+    for (d = 0; d < batchCount; ++d) {
+	int_t  *rowind_d, *colptr_d; /* each block */
+	
+        /* Allocate storage for compressed column representation. */
+        sallocateA_dist(n, nnz, &nzval_d, &rowind_d, &colptr_d);
+	
+	/* Copy the CSC arrays */
+	for (j = 0; j < n+1; ++j) colptr_d[j] = colptr[j];
+	for (i = 0; i < nnz; ++i) {
+	    rowind_d[i] = rowind[i];
+	    nzval_d[i] = nzval[i];
+	}
+	    
+	/* Create compressed column matrix. */
+	A[d] = (SuperMatrix *) SUPERLU_MALLOC( sizeof(SuperMatrix) );
+	sCreate_CompCol_Matrix_dist(A[d], m, n, nnz, nzval_d, rowind_d, colptr_d,
+				    SLU_NC, SLU_S, SLU_GE);
+	SparseMatrix_handles[d] = (handle_t) A[d];
+	
+	/* Generate the exact solutions and compute the right-hand sides. */
+	RHSptr[d] = floatMalloc_dist( m * nrhs );
+	xtrue[d] = floatMalloc_dist( n * nrhs );
+	ldRHS[d] = m;
+	ldX[d] = n;
+	*trans = 'N';
+	sGenXtrue_dist(n, nrhs, xtrue[d], n);
+	sFillRHS_dist(trans, nrhs, xtrue[d], n, A[d], RHSptr[d], m);
+    }
+
+#if ( DEBUGlevel>=1 )
+    CHECK_MALLOC(iam, "Exit screate_batch_systems()");
+#endif
+    return 0;
+} /* end screate_batch_systems */

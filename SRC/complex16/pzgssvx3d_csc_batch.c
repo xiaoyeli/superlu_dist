@@ -10,7 +10,6 @@ at the top-level directory.
 */
 
 
-
 /*
  * -- Distributed SuperLU routine (version 9.0) --
  * Lawrence Berkeley National Lab
@@ -22,11 +21,11 @@ at the top-level directory.
 #include "superlu_upacked.h"
 #include <stdbool.h>
 
-int file_dPrint_CompRowLoc_to_Triples(SuperMatrix *A)
+int file_zPrint_CompRowLoc_to_Triples(SuperMatrix *A)
 {
     NRformat_loc *Astore = A->Store;
     int nnz, m, n, i, j;
-    double  *dp;
+    doublecomplex  *dp;
     FILE *fp = fopen("CSR.txt", "w");
 
     m = A->nrow;
@@ -37,7 +36,7 @@ int file_dPrint_CompRowLoc_to_Triples(SuperMatrix *A)
     printf("print to triples: m %d, n %d, nnz %d\n", m, n, nnz);
     for (i = 0; i < m; ++i) {
 	for (j = Astore->rowptr[i]; j < Astore->rowptr[i+1]; ++j) {
-	    fprintf(fp, "%8d %8d %16.8e\n", i, Astore->colind[j], dp[j]);
+	    fprintf(fp, "%8d %8d %16.8e\t%16.8e\n", i, Astore->colind[j], dp[j].r, dp[j].i);
 	}
     }
     fclose(fp);
@@ -78,7 +77,7 @@ int file_dPrint_CompRowLoc_to_Triples(SuperMatrix *A)
  * </pre>
  */
 int
-pdgssvx3d_csc_batch(
+pzgssvx3d_csc_batch(
 		superlu_dist_options_t *options, /* options for algorithm choices and algorithm parameters */
 		int batchCount, /* number of matrices in the batch */
 		int m, /* matrix row dimension */
@@ -89,7 +88,7 @@ pdgssvx3d_csc_batch(
 						  * of size 'batchCount',
 						  * each pointing to the actual storage
 						  */
-		double **RHSptr, // array of pointers to dense RHS storage
+		doublecomplex **RHSptr, // array of pointers to dense RHS storage
 		int *ldRHS, // array of leading dimensions of RHS
 		double **ReqPtr, /* array of pointers to diagonal row scaling vectors,
 				     each of size M   */
@@ -99,7 +98,7 @@ pdgssvx3d_csc_batch(
 		int **CpivPtr, /* array of pointers to column permutation vectors , each of size N */
 		DiagScale_t *DiagScale, /* indicate how equilibration is done for each matrix */
 		handle_t *F, /* array of handles pointing to the factored matrices */
- 		double **Xptr, // array of pointers to dense solution storage
+ 		doublecomplex **Xptr, // array of pointers to dense solution storage
 		int *ldX, // array of leading dimensions of X
 		double **Berrs, /* array of poiniters to backward errors */
 		gridinfo3d_t *grid3d,
@@ -151,19 +150,19 @@ pdgssvx3d_csc_batch(
 	}
     else if (batchCount < 0) *info = -2;
     /* Need to check M, N, NNZ */
-    else if (A0->nrow != A0->ncol || A0->nrow < 0 || A0->Stype != SLU_NC || A0->Dtype != SLU_D || A0->Mtype != SLU_GE)
+    else if (A0->nrow != A0->ncol || A0->nrow < 0 || A0->Stype != SLU_NC || A0->Dtype != SLU_Z || A0->Mtype != SLU_GE)
 	*info = -7;
     else if (nrhs < 0)
 	{
 	    *info = -6;
 	}
     if (*info) {
-	pxerr_dist("pdgssvx3d_csc_batch", &(grid3d->grid2d), -(*info));
+	pxerr_dist("pzgssvx3d_csc_batch", &(grid3d->grid2d), -(*info));
 	return -1;
     }
     
 #if ( DEBUGlevel>=1 )
-    CHECK_MALLOC(grid3d->iam, "Enter pdgssvx3d_csc_batch()");
+    CHECK_MALLOC(grid3d->iam, "Enter pzgssvx3d_csc_batch()");
 #endif
 
     int colequ, Equil, factored, job, notran, rowequ, need_value;
@@ -180,7 +179,7 @@ pdgssvx3d_csc_batch(
     /**** equilibration (LAPACK style) ****/
     /* ReqPtr[] and CeqPtr[] are allocated internally */
     /* Each A may be overwritten by R*A*C */
-    dequil_batch(options, batchCount, m, n, SparseMatrix_handles, 
+    zequil_batch(options, batchCount, m, n, SparseMatrix_handles, 
 		 ReqPtr, CeqPtr, DiagScale);
 
     stat->utime[EQUIL] = SuperLU_timer_() - t;
@@ -192,7 +191,7 @@ pdgssvx3d_csc_batch(
      * perm_r[]'s are applied to each matrix.
      */
     /* no internal malloc */
-    dpivot_batch(options, batchCount, m, n, SparseMatrix_handles,
+    zpivot_batch(options, batchCount, m, n, SparseMatrix_handles,
 		 ReqPtr, CeqPtr, DiagScale, RpivPtr);
     
     for (d = 0; d < batchCount; ++d) {
@@ -234,23 +233,23 @@ pdgssvx3d_csc_batch(
     
     /* Allocate storage in CSR containing all matrices in the batch */
     // TO-DELETE: dallocateA_dist(n, nnz, &nzval, &rowind, &colptr);
-    double *a_big = (double *) doubleMalloc_dist(nnz_big);
+    doublecomplex *a_big = (doublecomplex *) doublecomplexMalloc_dist(nnz_big);
     int_t *colind = (int_t *) intMalloc_dist(nnz_big);
     int_t *rowptr = (int_t *) intMalloc_dist(n_big + 1);
-    double *nzval_d; /* each diagonal block */
+    doublecomplex *nzval_d; /* each diagonal block */
     int_t *colind_d;
     int_t *rowptr_d;
     int_t nnz_d, col, row;
     int *perm_c, *perm_r;
     
     /* B_big */
-    double *b;
-    if ( !(b = doubleMalloc_dist(m_big * nrhs)) ) ABORT("Malloc fails for b[:,nrhs]");
+    doublecomplex *b;
+    if ( !(b = doublecomplexMalloc_dist(m_big * nrhs)) ) ABORT("Malloc fails for b[:,nrhs]");
     
     j = 0;   /* running sum of total nnz */
     row = 0;
     col = 0;
-    double alpha = -1.0, beta = 1.0;
+    doublecomplex alpha = {-1.0, 0.0}, beta = {1.0, 0.0};
     
     for (d = 0; d < batchCount; ++d) {
 
@@ -265,7 +264,7 @@ pdgssvx3d_csc_batch(
 	    Astore->rowind[i] = perm_c[Astore->rowind[i]];
 	
 	/* Convert to CSR format. */
-	dCompCol_to_CompRow_dist(m, n, Astore->nnz, Astore->nzval, Astore->colptr,
+	zCompCol_to_CompRow_dist(m, n, Astore->nnz, Astore->nzval, Astore->colptr,
 				 Astore->rowind, &nzval_d, &rowptr_d, &colind_d);
 
 	//PrintInt32("rowptr_d", m+1, rowptr_d);
@@ -295,7 +294,7 @@ pdgssvx3d_csc_batch(
 	SUPERLU_FREE(rowptr_d);
 
 	/* Transform the right-hand side: RHS overwritten by B <= R*B */
-	double *rhs;
+	doublecomplex *rhs;
 
 	// NEED TO SAVE A COPY OF RHS ??
 	
@@ -305,14 +304,14 @@ pdgssvx3d_csc_batch(
 	    R = ReqPtr[d];
 	    rhs = RHSptr[d]; // first RHS
 	    for (k = 0; k < nrhs; ++k) {
-		for (i = 0; i < m; ++i) rhs[i] *= R[i];
+		for (i = 0; i < m; ++i) zd_mult(&rhs[i], &rhs[i], R[i]);
 		rhs += ldRHS[d]; /* move to next RHS */
 	    }
 	}
 	
 #if ( DEBUGlevel>=1 )
 	printf("System %d, next row %d, next col %d, next j %d\n", d, row, col, j);
-	//Printdouble5("big-RHS", m, RHSptr[d]);
+	//Printdoublecomplex5("big-RHS", m, RHSptr[d]);
 #endif
 
 	rhs = RHSptr[d]; // first RHS
@@ -337,8 +336,8 @@ pdgssvx3d_csc_batch(
 
     /* Set up A_big in NR_loc format */
     SuperMatrix A_big;
-    dCreate_CompRowLoc_Matrix_dist(&A_big, m_big, n_big, nnz_big, m_big, 0,
-				   a_big, colind, rowptr, SLU_NR_loc, SLU_D, SLU_GE);
+    zCreate_CompRowLoc_Matrix_dist(&A_big, m_big, n_big, nnz_big, m_big, 0,
+				   a_big, colind, rowptr, SLU_NR_loc, SLU_Z, SLU_GE);
 
     //file_dPrint_CompRowLoc_to_Triples(&A_big);
     
@@ -359,9 +358,9 @@ pdgssvx3d_csc_batch(
     options_big.RefineInitialized = options->RefineInitialized;
     options_big.PrintStat = options->PrintStat;
 
-    dScalePermstruct_t ScalePermstruct;
-    dLUstruct_t LUstruct;
-    dSOLVEstruct_t SOLVEstruct;
+    zScalePermstruct_t ScalePermstruct;
+    zLUstruct_t LUstruct;
+    zSOLVEstruct_t SOLVEstruct;
     gridinfo3d_t grid;
     double *berr;
     MPI_Comm comm = grid3d->comm;
@@ -371,8 +370,8 @@ pdgssvx3d_csc_batch(
     superlu_gridinit3d (comm, nprow, npcol, npdep, &grid);
     
     /* Initialize ScalePermstruct and LUstruct. */
-    dScalePermstructInit (m_big, n_big, &ScalePermstruct);
-    dLUstructInit (n_big, &LUstruct);
+    zScalePermstructInit (m_big, n_big, &ScalePermstruct);
+    zLUstructInit (n_big, &LUstruct);
 
     //printf("\tbefore pdgssvx3d: m_big %d, n_big %d, nrhs %d\n", m_big, n_big, nrhs);
     //dPrint_CompRowLoc_Matrix_dist(&A_big);
@@ -389,21 +388,21 @@ pdgssvx3d_csc_batch(
     */
     /* perm_c_big may not be Identity due to etree postordering, however,
      * since b[] is transormed back to the solution of the original BIG system,
-     * we do not need to consider perm_c_big outside pdgssvx3d(). 
+     * we do not need to consider perm_c_big outside pzgssvx3d(). 
      */
-    pdgssvx3d (&options_big, &A_big, &ScalePermstruct, b, m_big, nrhs, &grid,
+    pzgssvx3d (&options_big, &A_big, &ScalePermstruct, b, m_big, nrhs, &grid,
                &LUstruct, &SOLVEstruct, berr, stat, info);
 
 #if (PRNTlevel >= 1)
     printf("\tBIG system: berr[0] %e\n", berr[0]);
-    printf("after pdgssvx3d: DiagScale %d\n", ScalePermstruct.DiagScale);
+    printf("after pzgssvx3d: DiagScale %d\n", ScalePermstruct.DiagScale);
     //PrintInt10("after pdgssvx3d: ScalePermstruct.perm_c", (int_t) m_big, ScalePermstruct.perm_c);
     //Printdouble5("big-B-solution", m_big, b);
 #endif
 
     if ( *info ) {  /* Something is wrong */
         if ( grid3d->iam==0 ) {
-	    printf("ERROR: INFO = %d returned from pdgssvx3d()\n", *info);
+	    printf("ERROR: INFO = %d returned from pzgssvx3d()\n", *info);
 	    fflush(stdout);
 	}
     } 
@@ -412,20 +411,20 @@ pdgssvx3d_csc_batch(
        DEALLOCATE STORAGE.
        ------------------------------------------------------------ */
 
-    dDestroy_LU (n_big, &(grid.grid2d), &LUstruct);
+    zDestroy_LU (n_big, &(grid.grid2d), &LUstruct);
     if ( grid.zscp.Iam == 0 ) { // process layer 0
 	    PStatPrint (options, stat, &(grid3d->grid2d)); /* Print 2D statistics.*/
     }
     
-    dSolveFinalize (&options_big, &SOLVEstruct);
+    zSolveFinalize (&options_big, &SOLVEstruct);
     
     Destroy_CompRowLoc_Matrix_dist (&A_big);
-    dScalePermstructFree (&ScalePermstruct);
-    dLUstructFree (&LUstruct);
+    zScalePermstructFree (&ScalePermstruct);
+    zLUstructFree (&LUstruct);
 
     /* Copy the big solution into individual ones, and compute B'errs */
     double bn, rn;  // inf-norm of B and R
-    double *x;
+    doublecomplex *x;
     for (d = 0; d < batchCount; ++d) {
 	
 	A = (SuperMatrix *) SparseMatrix_handles[d];
@@ -450,15 +449,15 @@ pdgssvx3d_csc_batch(
 	    bn = 0.; // norm of B
 	    rn = 0.; // norm of R
 	    for (i = 0; i < m; ++i) {
-		bn = SUPERLU_MAX( bn, fabs(RHSptr[d][k*m + i]) );
+		bn = SUPERLU_MAX( bn, slud_z_abs1( &(RHSptr[d][k*m + i]) ) );
 		
 		/* permute RHS by Pc*Pr, use b[] as temporary storage */
 		b[k*m_big + d*m + perm_c[perm_r[i]]] = RHSptr[d][k*ldRHS[d] + i];
 	    }
 	    
-	    sp_dgemv_dist("N", alpha, A, x, 1, beta, &b[k*m_big + d*m], 1);
+	    sp_zgemv_dist("N", alpha, A, x, 1, beta, &b[k*m_big + d*m], 1);
 	    
-	    for (i = 0; i < m; ++i) rn = SUPERLU_MAX( rn, fabs(b[k*m_big + d*m + i]) );
+	    for (i = 0; i < m; ++i) rn = SUPERLU_MAX( rn, slud_z_abs1( &b[k*m_big + d*m + i]) );
 	    Berrs[d][k] = rn / bn;
 	    x += ldX[d]; /* move to next x */
 	} /* end for k ... */
@@ -471,7 +470,7 @@ pdgssvx3d_csc_batch(
 	    C = CeqPtr[d];
 	    x = Xptr[d];
 	    for (k = 0; k < nrhs; ++k) {
-		for (i = 0; i < n; ++i) x[i] *= C[i];
+		for (i = 0; i < n; ++i) zd_mult(&x[i], &x[i], C[i]);
 		x += ldX[d]; /* move to next x */
 	    }
 	}
@@ -482,8 +481,8 @@ pdgssvx3d_csc_batch(
     SUPERLU_FREE (berr);
     
 #if ( DEBUGlevel>=1 )
-    CHECK_MALLOC(grid3d->iam, "Exit pdgssvx3d_csc_batch()");
+    CHECK_MALLOC(grid3d->iam, "Exit pzgssvx3d_csc_batch()");
 #endif
 
     return 0;
-} /* end pdgssvx3d_csc_batched */
+} /* end pzgssvx3d_csc_batched */

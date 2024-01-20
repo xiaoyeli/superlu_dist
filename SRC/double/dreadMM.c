@@ -238,7 +238,5 @@ static void dreadrhs(int m, double *b)
     }
     for (i = 0; i < m; ++i)
       i = fscanf(fp, "%lf\n", &b[i]);
-      /*fscanf(fp, "%d%lf\n", &j, &b[i]);*/
-    /*        readpair_(j, &b[i]);*/
     fclose(fp);
 }

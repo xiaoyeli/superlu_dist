@@ -10,14 +10,13 @@ at the top-level directory.
 */
 
 
-
 /*
  * -- Distributed SuperLU routine (version 9.0) --
  * Lawrence Berkeley National Lab
  * November 5, 2023
  * Last update:
  */
-#include "superlu_ddefs.h"
+#include "superlu_zdefs.h"
 
 /*! \brief Compute row pivotings for each matrix, for numerical stability
  * <pre>
@@ -42,7 +41,7 @@ at the top-level directory.
  * </pre>
  */
 int
-dpivot_batch(
+zpivot_batch(
     superlu_dist_options_t *options, /* options for algorithm choices and algorithm parameters */
     int batchCount, /* number of matrices in the batch */
     int m, /* matrix row dimension */
@@ -88,7 +87,7 @@ dpivot_batch(
 
     int_t *colptr;
     int_t *rowind;
-    double *a, *at;
+    doublecomplex *a, *at;
     int_t nnz;
     
     /* Loop through each matrix in the batch */
@@ -100,9 +99,9 @@ dpivot_batch(
 	/* If the matrix type is SLU_NR (CSR), then need to convert to CSC first */
 	if ( A[d]->Stype == SLU_NR ) { /* CSR format */
 	    NRformat *Astore = (NRformat *) A[d]->Store;
-	    a = (double *)Astore->nzval;
+	    a = (doublecomplex *)Astore->nzval;
 	    
-	    dCompRow_to_CompCol_dist(m, n, nnz, a,
+	    zCompRow_to_CompCol_dist(m, n, nnz, a,
 				     Astore->colind, Astore->rowptr,
 				     &at, &rowind, &colptr);
 	    
@@ -110,7 +109,7 @@ dpivot_batch(
 	    nnz = Astore->nnz;
 	} else { /* CSC format */
 	    NCformat *Astore = (NCformat *) A[d]->Store;
-	    a = (double *)Astore->nzval;
+	    a = (doublecomplex *)Astore->nzval;
 	    colptr = Astore->colptr;
 	    rowind = Astore->rowind;
 	    nnz = Astore->nnz;
@@ -138,7 +137,7 @@ dpivot_batch(
 			}
 		    } else if (options->RowPerm == LargeDiag_MC64) {
 			/* Finds a row permutation (serial) */
-			iinfo = dldperm_dist(job, m, nnz, colptr, rowind, a,
+			iinfo = zldperm_dist(job, m, nnz, colptr, rowind, a,
 					     perm_r, R1, C1);
 
 			if ( iinfo ) { /* Error */
@@ -165,7 +164,8 @@ dpivot_batch(
 					cj = C1[j];
 					for (i = colptr[j]; i < colptr[j + 1]; ++i) {
 					    irow = rowind[i];
-					    a[i] *= R1[irow] * cj;
+	                                    zd_mult(&a[i], &a[i], R1[irow]);
+           				    zd_mult(&a[i], &a[i], cj);
 					    
 					}
 				    }
@@ -192,7 +192,7 @@ dpivot_batch(
 					irow = rowind[i];
 					rowind[i] = perm_r[irow];
 #if (PRNTlevel >= 2)
-				        dprod *= fabs(a[i]);
+				        dprod *= slud_z_abs1(&a[i]);
 #endif
 				    }
 				}
@@ -205,9 +205,9 @@ dpivot_batch(
 #if (PRNTlevel >= 2)
 					/* New diagonal */
 					if (job == 2 || job == 3)
-					    dmin = SUPERLU_MIN(dmin, fabs(a[i]));
+			                    dmin = SUPERLU_MIN(dmin, slud_z_abs1(&a[i]));
 					else if (job == 4)
-					    dsum += fabs(a[i]);
+				            dsum += slud_z_abs1(&a[i]);
 #endif					
 				    } /* end for i ... */
 				}  /* end for j ... */
@@ -264,8 +264,8 @@ n			    if (!iam) printf("\t product of diagonal %e\n", dprod);
     }
 
 #if (DEBUGlevel >= 1)
-    CHECK_MALLOC(0, "Exit dpivot_batch()");
+    CHECK_MALLOC(0, "Exit zpivot_batch()");
 #endif
     return info;
     
-} /* end dpivot_batch */
+} /* end zpivot_batch */

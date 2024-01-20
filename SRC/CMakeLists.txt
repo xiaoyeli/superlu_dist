@@ -259,6 +259,9 @@ if(enable_single)
     single/psgsrfs_d2.c
     single/psgsmv_d2.c
     single/psgsequb.c
+    single/psgssvx3d_csc_batch.c # batch in CSC format
+    single/sequil_batch.c # batch in CSC format
+    single/spivot_batch.c
   )
 if (TPL_ENABLE_CUDALIB)
     list(APPEND sources cuda/psgstrs_lsum_cuda.cu cuda/ssuperlu_gpu.cu)
@@ -333,6 +336,9 @@ if(enable_complex16)
       complex16/zcommunication_aux.c 
       complex16/ztrfCommWrapper.c
       complex16/zsuperlu_blas.c
+      complex16/pzgssvx3d_csc_batch.c # batch in CSC format
+      complex16/zequil_batch.c # batch in CSC format
+      complex16/zpivot_batch.c
      )
 if (TPL_ENABLE_CUDALIB)
     list(APPEND sources cuda/pzgstrs_lsum_cuda.cu cuda/zsuperlu_gpu.cu)

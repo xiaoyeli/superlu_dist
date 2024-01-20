@@ -205,7 +205,8 @@ void sbcastPermutedSparseA(SuperMatrix *A,
 
     /* broadcast etree */
     int_t *etree = LUstruct->etree;
-    MPI_Bcast( etree, n, mpi_int_t, 0,  grid3d->zscp.comm);
+    if(etree)
+        MPI_Bcast( etree, n, mpi_int_t, 0,  grid3d->zscp.comm);
 
 
     // list of all the arrays to be broadcasted
@@ -249,10 +250,11 @@ void sbcastPermutedSparseA(SuperMatrix *A,
     allocBcastArray ( &(ScalePermstruct->perm_c), n*sizeof(int_t),
         0, grid3d->zscp.comm);
 #endif
-
-    allocBcastArray ( (void **) &(ScalePermstruct->R), m*sizeof(float),
+    if(ScalePermstruct->DiagScale==ROW || ScalePermstruct->DiagScale==BOTH)
+    allocBcastArray ( (void **) &(ScalePermstruct->R), m*sizeof(double),
         0, grid3d->zscp.comm);
-    allocBcastArray ( (void **) &(ScalePermstruct->C), n*sizeof(float),
+    if(ScalePermstruct->DiagScale==COL || ScalePermstruct->DiagScale==BOTH)
+    allocBcastArray ( (void **) &(ScalePermstruct->C), n*sizeof(double),
         0, grid3d->zscp.comm);
 
 

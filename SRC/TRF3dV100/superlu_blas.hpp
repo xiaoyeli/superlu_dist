@@ -103,8 +103,8 @@ void superlu_ger<float>(const int m, const int n, const float alpha,
 
 
 
-
-#ifdef enable_complex16
+ 
+// #ifdef enable_complex16
 // Specialization for double complex
 template<>
 void superlu_axpy<doublecomplex>(int n, doublecomplex alpha, doublecomplex *x, int incx, doublecomplex *y, int incy) {
@@ -137,4 +137,4 @@ void superlu_ger<doublecomplex>(const int m, const int n, const doublecomplex al
                          const int incy, doublecomplex *a, const int lda) {
     superlu_zger(m, n, alpha, x, incx, y, incy, a, lda);
 }
-#endif 
+// #endif 

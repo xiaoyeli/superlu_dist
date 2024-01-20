@@ -1,39 +1,35 @@
 /*! \file
 Copyright (c) 2003, The Regents of the University of California, through
-Lawrence Berkeley National Laboratory (subject to receipt of any required 
-approvals from U.S. Dept. of Energy) 
+Lawrence Berkeley National Laboratory (subject to receipt of any required
+approvals from U.S. Dept. of Energy)
 
-All rights reserved. 
+All rights reserved.
 
 The source code is distributed under BSD license, see the file License.txt
 at the top-level directory.
 */
 
 
-/*! @file
- * \brief Driver program for PDGSSVX3D example
- *
+/*
  * <pre>
  * -- Distributed SuperLU routine (version 9.0) --
  * Lawrence Berkeley National Lab, Georgia Institute of Technology,
- * Oak Ridge National Lab 
+ * Oak Ridge National Lab
  * May 12, 2021
- * August 27, 2022 Add batch option
- * January 7, 2024 Complete the batch interface
+ * August 27, 2022  Add batch option
+ * January 15, 2024 Complete the batch interface
  *
  */
-#include "superlu_ddefs.h"  
+#include "superlu_ddefs.h"
 
-/*! \brief
+/*! \brief The driver program PDDRIVE3D.
  *
  * <pre>
  * Purpose
  * =======
  *
- * The driver program PDDRIVE3D.
- *
- * This example illustrates how to use PDGSSVX3D with the full
- * (default) options to solve a linear system.
+ * This example illustrates how to use PDGSSVX3D or PDGSSVX3D_CSC_BATCH
+ * with the full (default) options to solve a linear system.
  *
  * Five basic steps are required:
  *   1. Initialize the MPI environment and the SuperLU process grid
@@ -50,7 +46,7 @@ at the top-level directory.
  *
  * </pre>
  */
- 
+
 static void matCheck(int n, int m, double* A, int LDA,
        double* B, int LDB)
 {
@@ -102,12 +98,11 @@ static void checkNRFMT(NRformat_loc*A, NRformat_loc*B)
 
 }
 
-int
-main (int argc, char *argv[])
+int main (int argc, char *argv[])
 {
     superlu_dist_options_t options;
     SuperLUStat_t stat;
-    SuperMatrix A;  // Now, A is on all 3D processes  
+    SuperMatrix A;  // Now, A is on all 3D processes
     dScalePermstruct_t ScalePermstruct;
     dLUstruct_t LUstruct;
     dSOLVEstruct_t SOLVEstruct;
@@ -116,7 +111,7 @@ main (int argc, char *argv[])
     double *b, *xtrue;
     int_t m, n;
     int nprow, npcol, npdep;
-    int equil,colperm, rowperm, ir, lookahead;
+    int equil, colperm, rowperm, ir, lookahead;
     int iam, info, ldb, ldx, nrhs;
     char **cpp, c, *suffix;
     FILE *fp, *fopen ();
@@ -141,7 +136,7 @@ main (int argc, char *argv[])
     rowperm = -1;
     ir = -1;
     lookahead = -1;
-    
+
     /* ------------------------------------------------------------
        INITIALIZE MPI ENVIRONMENT.
        ------------------------------------------------------------ */
@@ -346,7 +341,8 @@ main (int argc, char *argv[])
 	int **CpivPtr;
 	double **Xptr;
 	int *ldX;
-	double **Berrs, **xtrues;
+	double **xtrues;
+	double **Berrs;
 	
 	handle_t *SparseMatrix_handles = SUPERLU_MALLOC( batchCount *  sizeof(handle_t) );
 	RHSptr = (double **) SUPERLU_MALLOC( batchCount *  sizeof(double *) );
@@ -369,7 +365,7 @@ main (int argc, char *argv[])
 	CpivPtr = (int **) SUPERLU_MALLOC( batchCount * sizeof(int *) );
 	DiagScale = (DiagScale_t *) SUPERLU_MALLOC( batchCount * sizeof(DiagScale_t) );
 	Xptr = (double **) SUPERLU_MALLOC( batchCount * sizeof(double*) );
-	Berrs = (double **) SUPERLU_MALLOC( batchCount * sizeof(double*) );
+	Berrs = (double **) SUPERLU_MALLOC( batchCount * sizeof(double *) );
 	for (int d = 0; d < batchCount; ++d) {
 	    DiagScale[d] = NOEQUIL;
 	    RpivPtr[d] = int32Malloc_dist(m);
@@ -422,10 +418,17 @@ main (int argc, char *argv[])
 	goto out;
 	
     } else {
-	dcreate_matrix_postfix3d(&A, nrhs, &b, &ldb,
-				 &xtrue, &ldx, fp, suffix, &(grid));
-    }
     
+#define NRFRMT
+#ifndef NRFRMT
+        if ( grid.zscp.Iam == 0 )  // only in process layer 0
+	    dcreate_matrix_postfix(&A, nrhs, &b, &ldb, &xtrue, &ldx, fp, suffix, &(grid.grid2d));
+
+#else
+        dcreate_matrix_postfix3d(&A, nrhs, &b, &ldb,
+                             &xtrue, &ldx, fp, suffix, &(grid));
+    }
+
 #if 0  // following code is only for checking *Gather* routine
     NRformat_loc *Astore, *Astore0;
     double* B2d;
@@ -439,25 +442,26 @@ main (int argc, char *argv[])
     if ( grid.zscp.Iam == 0 )  // only in process layer 0
     {
         dcreate_matrix_postfix(&Aref, nrhs, &bref, &ldb,
-                               &xtrueref, &ldx, fp0, 
+                               &xtrueref, &ldx, fp0,
                                suffix, &(grid.grid2d));
         Astore0 = (NRformat_loc *) Aref.Store;
 
 	/*
 	if ( (grid.grid2d).iam == 0 ) {
-	    printf(" iam %d\n", 0); 
+	    printf(" iam %d\n", 0);
 	    checkNRFMT(Astore, Astore0);
 	} else if ((grid.grid2d).iam == 1 ) {
-	    printf(" iam %d\n", 1); 
+	    printf(" iam %d\n", 1);
 	    checkNRFMT(Astore, Astore0);
-	} 
+	}
 	*/
-    
+
 	// bref, xtrueref are created on 2D
         matCheck(Astore->m_loc, nrhs, B2d, Astore->m_loc, bref, ldb);
     }
     // MPI_Finalize(); exit(0);
-#endif
+    #endif
+#endif  // end if 0
 
     if (!(berr = doubleMalloc_dist (nrhs)))
         ABORT ("Malloc fails for berr[].");
@@ -466,9 +470,20 @@ main (int argc, char *argv[])
        NOW WE SOLVE THE LINEAR SYSTEM.
        ------------------------------------------------------------ */
 
+#ifdef NRFRMT  // matrix is on 3D process grid
     m = A.nrow;
     n = A.ncol;
-    
+#else
+    if ( grid.zscp.Iam == 0 )  // Process layer 0
+    {
+	m = A.nrow;
+        n = A.ncol;
+    }
+    // broadcast m, n to all the process layers;
+    MPI_Bcast( &m, 1, mpi_int_t, 0,  grid.zscp.comm);
+    MPI_Bcast( &n, 1, mpi_int_t, 0,  grid.zscp.comm);
+#endif
+
     /* Initialize ScalePermstruct and LUstruct. */
     dScalePermstructInit (m, n, &ScalePermstruct);
     dLUstructInit (n, &LUstruct);
@@ -495,10 +510,10 @@ main (int argc, char *argv[])
        DEALLOCATE STORAGE.
        ------------------------------------------------------------ */
 
-    dDestroy_LU (n, &(grid.grid2d), &LUstruct);
     if ( grid.zscp.Iam == 0 ) { // process layer 0
 	PStatPrint (&options, &stat, &(grid.grid2d)); /* Print 2D statistics.*/
     }
+    dDestroy_LU (n, &(grid.grid2d), &LUstruct);
     dSolveFinalize (&options, &SOLVEstruct);
 
     dDestroy_A3d_gathered_on_2d(&SOLVEstruct, &grid);
@@ -510,19 +525,19 @@ main (int argc, char *argv[])
     dScalePermstructFree (&ScalePermstruct);
     dLUstructFree (&LUstruct);
     fclose(fp);
-    
+
     /* ------------------------------------------------------------
        RELEASE THE SUPERLU PROCESS GRID.
        ------------------------------------------------------------ */
 out:
-#if 0  // the following makes sense only for coarse-grain parallel model 
+#if 0 // the following makes sense only for coarse-grain parallel model 
     if ( batchCount ) {
-	result_min[0] = stat.utime[FACT];   
-	result_min[1] = stat.utime[SOLVE];  
-	result_max[0] = stat.utime[FACT];   
-	result_max[1] = stat.utime[SOLVE];    
-	MPI_Allreduce(MPI_IN_PLACE, result_min, 2, MPI_FLOAT, MPI_MIN, MPI_COMM_WORLD);
-	MPI_Allreduce(MPI_IN_PLACE, result_max, 2, MPI_FLOAT, MPI_MAX, MPI_COMM_WORLD);
+	result_min[0] = stat.utime[FACT];
+	result_min[1] = stat.utime[SOLVE];
+	result_max[0] = stat.utime[FACT];
+	result_max[1] = stat.utime[SOLVE];
+	MPI_Allreduce(MPI_IN_PLACE, result_min, 2, MPI_FLOAT,MPI_MIN, MPI_COMM_WORLD);
+	MPI_Allreduce(MPI_IN_PLACE, result_max, 2, MPI_FLOAT,MPI_MAX, MPI_COMM_WORLD);
 	if (!myrank) {
 	    printf("Batch solves returning data:\n");
 	    printf("    Factor time over all grids.  Min: %8.4f Max: %8.4f\n",result_min[0], result_max[0]);
@@ -531,11 +546,11 @@ out:
 	    fflush(stdout);
 	}
     }
-#endif    
+#endif
 
     superlu_gridexit3d (&grid);
-    if ( iam != -1 )PStatFree (&stat);
-    
+    if ( iam != -1 ) PStatFree (&stat);
+
     /* ------------------------------------------------------------
        TERMINATES THE MPI EXECUTION ENVIRONMENT.
        ------------------------------------------------------------ */
@@ -545,7 +560,7 @@ out:
     CHECK_MALLOC (iam, "Exit main()");
 #endif
 
-}
+} /* end MAIN */
 
 
 int

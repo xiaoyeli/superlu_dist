@@ -2795,12 +2795,12 @@ SupernodeToGridMap_t* createSuperGridMap(int_t nsuper,int_t maxLvl, int_t *myTre
     for(int_t lvl =0; lvl<maxLvl; lvl++ )
     {
         int_t treeIdx = myTreeIdxs[lvl];
-        int_t zeroTrIdx = myZeroTrIdxs[lvl];
+        int_t  zeroTrIdx = myZeroTrIdxs[lvl];
 
         for (int_t nd = 0; nd < gNodeCount[treeIdx]; ++nd)
         {
             /* code */
-            if(zeroTrIdx)
+            if( zeroTrIdx)
                 superGridMap[gNodeLists[treeIdx][nd]] = IN_GRID_ZERO;
             else
                 superGridMap[gNodeLists[treeIdx][nd]] = IN_GRID_AIJ;
