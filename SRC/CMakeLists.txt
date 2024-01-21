@@ -82,6 +82,13 @@ set(sources
   prec-independent/get_perm_c_batch.c
 )
 
+# Add all the BLAS routines: TRF3dV100/supelu_blas.hpp needs all
+list(APPEND sources
+  double/dsuperlu_blas.c
+  single/ssuperlu_blas.c
+  complex16/zsuperlu_blas.c
+)
+
 # if (HAVE_CUDA)
 #   list(APPEND sources cuda/superlu_gpu_utils.cu)
 # endif()
@@ -100,11 +107,13 @@ if(enable_double)
   list(APPEND headers
   include/superlu_ddefs.h include/dlustruct_gpu.h)
 
-if(TPL_ENABLE_CUDALIB)
-  list(APPEND sources cuda/pdgstrs_lsum_cuda.cu)
-  list(APPEND sources TRF3dV100/schurCompUpdate.cu )
-  list(APPEND sources TRF3dV100/batch_block_copy.cu)
-endif()
+# sherry: TO DELETE
+#if(TPL_ENABLE_CUDALIB)
+#  list(APPEND sources cuda/pdgstrs_lsum_cuda.cu)
+#  list(APPEND sources TRF3dV100/schurCompUpdate.cu )
+#  list(APPEND sources TRF3dV100/batch_block_copy.cu)
+# endif()
+
 # if(TPL_ENABLE_HIPLIB)
 #   list(APPEND sources hip/pdgstrs_lsum_cuda.hip.cpp)
 # endif()    	
@@ -173,7 +182,8 @@ if (TPL_ENABLE_CUDALIB)
        cuda/pdgstrs_lsum_cuda.cu cuda/superlu_gpu_utils.cu cuda/dsuperlu_gpu.cu
   TRF3dV100/schurCompUpdate.cu 
   TRF3dV100/pdgstrf3d_upacked.cpp
-    TRF3dV100/dsparseTreeFactor_upacked.cpp    TRF3dV100/dsparseTreeFactorGPU.cpp
+    TRF3dV100/dsparseTreeFactor_upacked.cpp
+    TRF3dV100/dsparseTreeFactorGPU.cpp
     TRF3dV100/anc25d-GPU.cpp 
     TRF3dV100/lupanels.cpp
     TRF3dV100/lupanels_comm3d.cpp
@@ -186,6 +196,7 @@ if (TPL_ENABLE_CUDALIB)
     TRF3dV100/LUgpuCHandle_interface.cpp
     TRF3dV100/LUgpuCHandle_interface_impl.cu  
     TRF3dV100/batch_factorize.cu 
+    TRF3dV100/batch_block_copy.cu
   )
 endif()
 

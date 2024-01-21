@@ -39,12 +39,8 @@ get_metis_dist(
 	  )
 {
 #ifdef HAVE_PARMETIS
-    /*#define METISOPTIONS 8*/
-#define METISOPTIONS 40
-    int_t metis_options[METISOPTIONS];
-    int_t i, nm, numflag = 0; /* C-Style ordering */
+    int_t i, nm;
     int_t *perm, *iperm;
-    int_t *b_colptr_int, *b_rowind_int;
 
     extern int METIS_NodeND(int_t*, int_t*, int_t*, int_t*, int_t*,
 			    int_t*, int_t*);
@@ -53,16 +49,15 @@ get_metis_dist(
     CHECK_MALLOC(0, "Enter get_metis_dist()");
 #endif
     
-    metis_options[0] = 0; /* Use Defaults for now */
-
     perm = (int_t*) SUPERLU_MALLOC(2*n * sizeof(int_t));
     if (!perm) ABORT("SUPERLU_MALLOC fails for perm.");
     iperm = perm + n;
     nm = n;
 
-#if 0
+#if 0 // for old Metis version
 #if defined(_LONGINT)
     /* Metis can only take 32-bit integers */
+    int_t *b_colptr_int, *b_rowind_int;
 
     if ( !(b_colptr_int = (int*) SUPERLU_MALLOC((n+1) * sizeof(int))) )
 	 ABORT("SUPERLU_MALLOC fails for b_colptr_int.");
@@ -82,7 +77,13 @@ get_metis_dist(
 
     /* Call metis */
 #undef USEEND
+    
 #ifdef USEEND
+#define METISOPTIONS 40
+    int_t numflag = 0; /* C-Style ordering */
+    int_t metis_options[METISOPTIONS];
+    metis_options[0] = 0; /* Use Defaults for now */
+
     METIS_EdgeND(&nm, b_colptr_int, b_rowind_int, &numflag, metis_options,
 		 perm, iperm);
 #else

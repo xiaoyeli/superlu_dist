@@ -1085,7 +1085,7 @@ int zreduceGPUlu(
     double tt_end = SuperLU_timer_();
     SCT->AssemblyTimer += tt_end - tt_start;
     return 0;
-} /* zreduceGPUlu */
+} /* end zreduceGPUlu */
 
 
 int zwaitGPUscu(int streamId, zsluGPU_t *sluGPU, SCT_t *SCT)
