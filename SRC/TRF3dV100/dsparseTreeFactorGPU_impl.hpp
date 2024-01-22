@@ -806,7 +806,6 @@ int xLUstruct_t<Ftype>::dsparseTreeFactorBatchGPU(
     int tag_ub)
 {
 #if 0// def HAVE_MAGMA
-    //#ifdef HAVE_MAGMA
     int nnodes = sforest->nNodes; // number of nodes in the tree
     int topoLvl, k_st, k_end, k0, k, offset, ksupc;
     if (nnodes < 1)

@@ -716,6 +716,7 @@ float symbfact_dist
 #endif      
 
 #if ( PROFlevel>=1 )
+      int p;
       printf("Distribute matrix time = %8.3f\n", t_symbFact[0]);
       printf("Count vertices time    = %8.3f\n", t_symbFact[2]);
       printf("Symbfact DIST time     = %8.3f\n", t_symbFact[1]);
