@@ -348,7 +348,7 @@ pdgssvx3d_csc_batch(
     options_big.ColPerm  = NATURAL;
     options_big.RowPerm  = NOROWPERM;
     options_big.ParSymbFact = NO;
-    options_big.batchCount = 0;
+    options_big.batchCount = batchCount;
 
     /* Copy most of the other options */
     options_big.Fact = options->Fact;
